@@ -1,8 +1,8 @@
 package core
 
 import (
-  "encoding/hex"
-  "fmt"
+	"encoding/hex"
+	"fmt"
 )
 
 type VID [16]byte
@@ -11,8 +11,8 @@ var byteGroups = []int{8, 4, 4, 4, 12}
 
 // TODO: leverage a full functional UUID library
 func UUIDToVID(uuid string) (v VID, err error) {
-  text := []byte(uuid)
-  if len(text) < 32 {
+	text := []byte(uuid)
+	if len(text) < 32 {
 		err = fmt.Errorf("uuid: invalid UUID string: %s", text)
 		return
 	}
