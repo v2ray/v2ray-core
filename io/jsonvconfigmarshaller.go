@@ -12,7 +12,6 @@ type JsonVUser struct {
 }
 
 type JsonVConfig struct {
-	RunAs    string      `json:"runas"`
 	Port     uint8       `json:"port"`
 	Clients  []JsonVUser `json:"users"`
 	Protocol string      `json:"protocol"`
@@ -32,6 +31,5 @@ func (*JsonVConfigUnmarshaller) Unmarshall(data []byte) (*core.VConfig, error) {
 		return nil, err
 	}
 	var vconfig = new(core.VConfig)
-	vconfig.RunAs = core.VUser{}
 	return vconfig, nil
 }

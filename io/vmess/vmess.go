@@ -1,4 +1,5 @@
-package io
+// Package vmess contains protocol definition, io lib for VMess.
+package vmess
 
 import (
 	"net"
