@@ -1,7 +1,7 @@
 package core
 
 import (
-  "crypto/md5"
+	"crypto/md5"
 	"encoding/hex"
 	"fmt"
 )
@@ -10,10 +10,10 @@ import (
 type VID [16]byte
 
 func (v VID) Hash(suffix []byte) []byte {
-  md5 := md5.New()
-  md5.Write(v[:])
-  md5.Write(suffix)
-  return md5.Sum(nil)
+	md5 := md5.New()
+	md5.Write(v[:])
+	md5.Write(suffix)
+	return md5.Sum(nil)
 }
 
 var byteGroups = []int{8, 4, 4, 4, 12}
