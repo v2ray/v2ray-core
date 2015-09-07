@@ -2,7 +2,7 @@
 package vmess
 
 import (
-  "fmt"
+	"fmt"
 	"io"
 )
 
@@ -21,18 +21,17 @@ type VMessInput struct {
 }
 
 func Read(reader io.Reader) (input *VMessInput, err error) {
-  buffer := make([]byte, 17 /* version + user hash */)
-  nBytes, err := reader.Read(buffer)
-  if err != nil {
-    return
-  }
-  if nBytes != len(buffer) {
-    err = fmt.Errorf("Unexpected length of header %d", nBytes)
-    return
-  }
-  
-  return
+	buffer := make([]byte, 17 /* version + user hash */)
+	nBytes, err := reader.Read(buffer)
+	if err != nil {
+		return
+	}
+	if nBytes != len(buffer) {
+		err = fmt.Errorf("Unexpected length of header %d", nBytes)
+		return
+	}
+
+	return
 }
 
 type VMessOutput [4]byte
-
