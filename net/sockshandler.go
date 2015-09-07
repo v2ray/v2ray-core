@@ -15,7 +15,7 @@ func (server *SocksServer) Listen(port uint8) error {
 		return err
 	}
 	server.accepting = true
-	go server.AcceptConns(listener)
+	go server.AcceptConnections(listener)
 	return nil
 }
 
@@ -30,6 +30,6 @@ func (server *SocksServer) AcceptConnections(listener net.Listener) error {
 	return nil
 }
 
-func (server *SocksServer) HandleConnection(connection *net.Conn) error {
+func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	return nil
 }
