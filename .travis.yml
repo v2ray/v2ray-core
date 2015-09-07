@@ -4,7 +4,7 @@ go:
   - 1.5
   
 install:
-  - go get code.google.com/p/go.tools/cmd/cover
+  - go get golang.org/x/tools/cmd/cover
   - go get github.com/mattn/goveralls
 
 script:
