@@ -1,6 +1,7 @@
 # Project V2Ray
 
 [![Build Status](https://travis-ci.org/v2ray/v2ray-core.svg?branch=master)](https://travis-ci.org/v2ray/v2ray-core)
+[![Coverage Status](https://coveralls.io/repos/v2ray/v2ray-core/badge.svg?branch=master&service=github)](https://coveralls.io/github/v2ray/v2ray-core?branch=master)
 
 V2Ray 是一个翻墙工具包，用于简化和复用其它翻墙工具，加速二次开发。
 
