@@ -17,7 +17,7 @@ done
 
 if [ "$fail" -eq 0 ]
 then
-  $HOME/gopath/bin/goveralls -v -coverprofile=acc.out -service=travis-ci -repotoken $COVERALLS_TOKEN
+  $HOME/gopath/bin/goveralls -v -coverprofile=coverall.out -service=travis-ci -repotoken $COVERALLS_TOKEN
 fi
 
 rm -f coverall.out
