@@ -4,6 +4,7 @@ import (
 	"net"
 )
 
+// VMessInput implements the input message of VMess protocol.
 type VMessInput struct {
 	version  byte
 	userHash [16]byte

@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// The ID of en entity, in the form of an UUID.
 type VID [16]byte
 
 var byteGroups = []int{8, 4, 4, 4, 12}
