@@ -1,0 +1,25 @@
+#!/bin/bash
+
+echo "mode: set" > coverall.out
+fail=0
+
+for dir in $(find . -maxdepth 10 -not -path './.git*' -type d);
+do
+  if ls $dir/*.go &> /dev/null; then
+    go test -coverprofile=coversingle.out $dir || fail=1
+    if [ -f coversingle.out ]
+    then
+      cat coversingle.out | grep -v "mode: set" >> coverall.out
+      rm coversingle.out
+    fi
+  fi
+done
+
+if [ "$fail" -eq 0 ]
+then
+  $HOME/gopath/bin/goveralls -v -coverprofile=acc.out -service=travis-ci -repotoken $COVERALLS_TOKEN
+fi
+
+rm -f coverall.out
+
+exit $fail
