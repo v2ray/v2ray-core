@@ -11,7 +11,7 @@ before_install:
   - go get github.com/mattn/goveralls
 
 script:
-    - go test ./...
+    - for d in $(find -type d -printf './%P\n'); do echo go test -v -coverprofile=cover.coverprofile $d; done
     - gover
     - $HOME/gopath/bin/goveralls -coverprofile=gover.coverprofile -service=travis-ci -repotoken $COVERALLS_TOKEN
 
