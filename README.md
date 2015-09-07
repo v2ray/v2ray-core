@@ -1,5 +1,7 @@
 # Project V2Ray
 
+[![Build Status](https://travis-ci.org/v2ray/v2ray-core.svg?branch=master)](https://travis-ci.org/v2ray/v2ray-core)
+
 V2Ray 是一个翻墙工具包，用于简化和复用其它翻墙工具，加速二次开发。
 
 “V2”来源于 [V2 火箭](https://zh.wikipedia.org/wiki/V-2%E7%81%AB%E7%AE%AD)，Ray 即射线，意指新一代的翻墙工具。
