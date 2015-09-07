@@ -14,7 +14,7 @@
 * VSource：用户所使用的需要翻墙的软件，比如浏览器
 * VEnd：用户需要访问的网站
 * VUser：一个受到 VPoint 认证的帐号
-* VID：全局唯一的 ID，类似于 UUID
+* [VID](https://github.com/V2Ray/v2ray-core/blob/master/spec/vid.md)：全局唯一的 ID，类似于 UUID
 
 
 ### 工作流程
