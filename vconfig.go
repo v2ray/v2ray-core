@@ -1,17 +1,17 @@
 package core
 
-// User account that is used for connection to a VPoint
+// VUser is the user account that is used for connection to a VPoint
 type VUser struct {
-	id VID // The ID of this VUser.
+	Id VID // The ID of this VUser.
 }
 
-// The next VPoint server in the connection chain.
+// VNext is the next VPoint server in the connection chain.
 type VNext struct {
 	ServerAddress string  // Address of VNext server, in the form of "IP:Port"
 	User          []VUser // User accounts for accessing VNext.
 }
 
-// The config for VPoint server.
+// VConfig is the config for VPoint server.
 type VConfig struct {
 	Port           uint16 // Port of this VPoint server.
 	AllowedClients []VUser

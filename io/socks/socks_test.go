@@ -68,3 +68,27 @@ func TestRequestRead(t *testing.T) {
 		t.Errorf("Expected port 53, but got %d", request.port)
 	}
 }
+
+func TestResponseToBytes(t *testing.T) {
+	response := Socks5Response{
+		socksVersion,
+		ErrorSuccess,
+		AddrTypeIPv4,
+		[4]byte{0x72, 0x72, 0x72, 0x72},
+		"",
+		[16]byte{},
+		uint16(53),
+	}
+	rawResponse := response.toBytes()
+	expectedBytes := []byte{
+		socksVersion,
+		ErrorSuccess,
+		byte(0x00),
+		AddrTypeIPv4,
+		0x72, 0x72, 0x72, 0x72,
+		byte(0x00), byte(0x035),
+	}
+	if !bytes.Equal(rawResponse, expectedBytes) {
+		t.Errorf("Expected response %v, but got %v", expectedBytes, rawResponse)
+	}
+}

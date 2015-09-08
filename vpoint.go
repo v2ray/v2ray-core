@@ -4,6 +4,7 @@ import (
 	"fmt"
 )
 
+// VPoint is an single server in V2Ray system.
 type VPoint struct {
 	config      VConfig
 	connHandler ConnectionHandler

@@ -9,6 +9,7 @@ import (
 // The ID of en entity, in the form of an UUID.
 type VID [16]byte
 
+// Hash generates a MD5 hash based on current VID and a suffix string.
 func (v VID) Hash(suffix []byte) []byte {
 	md5 := md5.New()
 	md5.Write(v[:])
