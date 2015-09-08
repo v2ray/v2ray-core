@@ -6,8 +6,8 @@ import (
 	"crypto/cipher"
 	"fmt"
 	"io"
-  
-  v2io "github.com/v2ray/v2ray-core/io"
+
+	v2io "github.com/v2ray/v2ray-core/io"
 )
 
 const (
@@ -17,7 +17,7 @@ const (
 // DecryptionReader is a byte stream reader to decrypt AES-128 CBC (for now)
 // encrypted content.
 type DecryptionReader struct {
-  reader *v2io.CryptionReader
+	reader *v2io.CryptionReader
 	buffer *bytes.Buffer
 }
 
@@ -29,7 +29,7 @@ func NewDecryptionReader(reader io.Reader, key []byte, iv []byte) (*DecryptionRe
 	if err != nil {
 		return nil, err
 	}
-  aesBlockMode := cipher.NewCBCDecrypter(aesCipher, iv)
+	aesBlockMode := cipher.NewCBCDecrypter(aesCipher, iv)
 	decryptionReader.reader = v2io.NewCryptionReader(aesBlockMode, reader)
 	decryptionReader.buffer = bytes.NewBuffer(make([]byte, 0, 2*blockSize))
 	return decryptionReader, nil

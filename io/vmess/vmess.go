@@ -14,7 +14,7 @@ type VMessInput struct {
 	userHash [16]byte
 	respKey  [16]byte
 	iv       [16]byte
-  respHead [4]byte
+	respHead [4]byte
 	command  byte
 	port     uint16
 	target   [256]byte

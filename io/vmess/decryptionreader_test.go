@@ -3,7 +3,7 @@ package vmess
 import (
 	"bytes"
 	"crypto/aes"
-  "crypto/cipher"
+	"crypto/cipher"
 	"crypto/rand"
 	mrand "math/rand"
 	"testing"
@@ -27,17 +27,17 @@ func TestNormalReading(t *testing.T) {
 	keySize := 16
 	key := make([]byte, keySize)
 	randomBytes(key, t)
-  iv := make([]byte, keySize)
-  randomBytes(iv, t)
+	iv := make([]byte, keySize)
+	randomBytes(iv, t)
 
 	aesBlock, err := aes.NewCipher(key)
 	if err != nil {
 		t.Fatal(err)
 	}
-  aesMode := cipher.NewCBCEncrypter(aesBlock, iv)
+	aesMode := cipher.NewCBCEncrypter(aesBlock, iv)
 
 	ciphertext := make([]byte, testSize)
-  aesMode.CryptBlocks(ciphertext, plaintext)
+	aesMode.CryptBlocks(ciphertext, plaintext)
 
 	ciphertextcopy := make([]byte, testSize)
 	copy(ciphertextcopy, ciphertext)
