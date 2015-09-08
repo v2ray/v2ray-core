@@ -12,6 +12,7 @@ type VUserSet struct {
 func NewVUserSet() *VUserSet {
 	vuSet := new(VUserSet)
 	vuSet.validUserIds = make([]VID, 0, 16)
+	vuSet.userIdsAskHash = make(map[string]int)
 	return vuSet
 }
 
