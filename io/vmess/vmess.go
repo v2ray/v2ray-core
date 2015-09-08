@@ -12,9 +12,9 @@ import (
 type VMessInput struct {
 	version  byte
 	userHash [16]byte
-	randHash [256]byte
-	respKey  [32]byte
+	respKey  [16]byte
 	iv       [16]byte
+  respHead [4]byte
 	command  byte
 	port     uint16
 	target   [256]byte
