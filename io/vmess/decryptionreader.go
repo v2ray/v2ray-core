@@ -1,7 +1,7 @@
 package vmess
 
 import (
-  "bytes"
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"fmt"
@@ -13,9 +13,9 @@ const (
 )
 
 type DecryptionReader struct {
-	cipher             cipher.Block
-	reader             io.Reader
-	buffer             *bytes.Buffer
+	cipher cipher.Block
+	reader io.Reader
+	buffer *bytes.Buffer
 }
 
 func NewDecryptionReader(reader io.Reader, key []byte) (*DecryptionReader, error) {
@@ -26,13 +26,13 @@ func NewDecryptionReader(reader io.Reader, key []byte) (*DecryptionReader, error
 	}
 	decryptionReader.cipher = cipher
 	decryptionReader.reader = reader
-  decryptionReader.buffer = bytes.NewBuffer(make([]byte, 0, 2 * blockSize))
+	decryptionReader.buffer = bytes.NewBuffer(make([]byte, 0, 2*blockSize))
 	return decryptionReader, nil
 }
 
 func (reader *DecryptionReader) readBlock() error {
-  buffer := make([]byte, blockSize)
-  nBytes, err := reader.reader.Read(buffer)
+	buffer := make([]byte, blockSize)
+	nBytes, err := reader.reader.Read(buffer)
 	if err != nil {
 		return err
 	}
@@ -40,34 +40,34 @@ func (reader *DecryptionReader) readBlock() error {
 		return fmt.Errorf("Expected to read %d bytes, but got %d bytes", blockSize, nBytes)
 	}
 	reader.cipher.Decrypt(buffer, buffer)
-  reader.buffer.Write(buffer)
+	reader.buffer.Write(buffer)
 	return nil
 }
 
 func (reader *DecryptionReader) Read(p []byte) (int, error) {
-  if reader.buffer.Len() == 0 {
-    err := reader.readBlock()
-    if err != nil {
-      return 0, err
-    }
-  }
+	if reader.buffer.Len() == 0 {
+		err := reader.readBlock()
+		if err != nil {
+			return 0, err
+		}
+	}
 	nBytes, err := reader.buffer.Read(p)
-  if err != nil {
-    return nBytes, err
-  }
-  if nBytes < len(p) {
-    err = reader.readBlock()
-    if err != nil {
-      return nBytes, err
-    }
-    moreBytes, err := reader.buffer.Read(p[nBytes:])
-    if err != nil {
-      return nBytes, err
-    }
-    nBytes += moreBytes
-    if nBytes != len(p) {
-      return nBytes, fmt.Errorf("Unable to read %d bytes", len(p))
-    }
-  }
-  return nBytes, err
+	if err != nil {
+		return nBytes, err
+	}
+	if nBytes < len(p) {
+		err = reader.readBlock()
+		if err != nil {
+			return nBytes, err
+		}
+		moreBytes, err := reader.buffer.Read(p[nBytes:])
+		if err != nil {
+			return nBytes, err
+		}
+		nBytes += moreBytes
+		if nBytes != len(p) {
+			return nBytes, fmt.Errorf("Unable to read %d bytes", len(p))
+		}
+	}
+	return nBytes, err
 }
