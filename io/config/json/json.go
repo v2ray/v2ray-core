@@ -1,8 +1,10 @@
-package io
+// Package json contains io library for VConfig in Json format.
+package json
 
 import (
 	"encoding/json"
 	_ "fmt"
+  
 	"github.com/v2ray/v2ray-core"
 )
 
