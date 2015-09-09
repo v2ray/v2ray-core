@@ -3,9 +3,13 @@ package socks
 import (
 	"bytes"
 	"testing"
+
+	"github.com/v2ray/v2ray-core/testing/unit"
 )
 
 func TestAuthenticationRequestRead(t *testing.T) {
+	assert := unit.Assert(t)
+
 	rawRequest := []byte{
 		0x05, // version
 		0x01, // nMethods
@@ -15,31 +19,26 @@ func TestAuthenticationRequestRead(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error %v", err)
 	}
-	if request.version != 0x05 {
-		t.Errorf("Expected version 5, but got %d", request.version)
-	}
-	if request.nMethods != 0x01 {
-		t.Errorf("Expected nMethod 1, but got %d", request.nMethods)
-	}
-	if request.authMethods[0] != 0x02 {
-		t.Errorf("Expected method 2, but got %d", request.authMethods[0])
-	}
+	assert.Byte(request.version).Named("Version").Equals(0x05)
+	assert.Byte(request.nMethods).Named("#Methods").Equals(0x01)
+	assert.Byte(request.authMethods[0]).Named("Auth Method").Equals(0x02)
 }
 
 func TestAuthenticationResponseToBytes(t *testing.T) {
+	assert := unit.Assert(t)
+
 	socksVersion := uint8(5)
 	authMethod := uint8(1)
 	response := Socks5AuthenticationResponse{socksVersion, authMethod}
 	bytes := response.ToBytes()
-	if bytes[0] != socksVersion {
-		t.Errorf("Unexpected Socks version %d", bytes[0])
-	}
-	if bytes[1] != authMethod {
-		t.Errorf("Unexpected Socks auth method %d", bytes[1])
-	}
+
+	assert.Byte(bytes[0]).Named("Version").Equals(socksVersion)
+	assert.Byte(bytes[1]).Named("Auth Method").Equals(authMethod)
 }
 
 func TestRequestRead(t *testing.T) {
+	assert := unit.Assert(t)
+
 	rawRequest := []byte{
 		0x05,                   // version
 		0x01,                   // cmd connect
@@ -52,24 +51,16 @@ func TestRequestRead(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error %v", err)
 	}
-	if request.Version != 0x05 {
-		t.Errorf("Expected version 5, but got %d", request.Version)
-	}
-	if request.Command != 0x01 {
-		t.Errorf("Expected command 1, but got %d", request.Command)
-	}
-	if request.AddrType != 0x01 {
-		t.Errorf("Expected addresstype 1, but got %d", request.AddrType)
-	}
-	if !bytes.Equal([]byte{0x72, 0x72, 0x72, 0x72}, request.IPv4[:]) {
-		t.Errorf("Expected IPv4 address 114.114.114.114, but got %v", request.IPv4[:])
-	}
-	if request.Port != 53 {
-		t.Errorf("Expected port 53, but got %d", request.Port)
-	}
+	assert.Byte(request.Version).Named("Version").Equals(0x05)
+	assert.Byte(request.Command).Named("Command").Equals(0x01)
+	assert.Byte(request.AddrType).Named("Address Type").Equals(0x01)
+	assert.Bytes(request.IPv4[:]).Named("IPv4").Equals([]byte{0x72, 0x72, 0x72, 0x72})
+	assert.Uint16(request.Port).Named("Port").Equals(53)
 }
 
 func TestResponseToBytes(t *testing.T) {
+	assert := unit.Assert(t)
+
 	response := Socks5Response{
 		socksVersion,
 		ErrorSuccess,
@@ -88,7 +79,5 @@ func TestResponseToBytes(t *testing.T) {
 		0x72, 0x72, 0x72, 0x72,
 		byte(0x00), byte(0x035),
 	}
-	if !bytes.Equal(rawResponse, expectedBytes) {
-		t.Errorf("Expected response %v, but got %v", expectedBytes, rawResponse)
-	}
+	assert.Bytes(rawResponse).Named("raw response").Equals(expectedBytes)
 }
