@@ -4,6 +4,8 @@ import (
 	"testing"
 )
 
+// Assertion is an assertion library inspired by Truth.
+// See http://google.github.io/truth/
 type Assertion struct {
 	t *testing.T
 }
@@ -28,4 +30,12 @@ func (a *Assertion) Byte(value byte) *ByteSubject {
 
 func (a *Assertion) Bytes(value []byte) *BytesSubject {
 	return NewBytesSubject(NewSubject(a), value)
+}
+
+func (a *Assertion) String(value string) *StringSubject {
+  return NewStringSubject(NewSubject(a), value)
+}
+
+func (a *Assertion) Error(value error) *ErrorSubject {
+  return NewErrorSubject(NewSubject(a), value)
 }
