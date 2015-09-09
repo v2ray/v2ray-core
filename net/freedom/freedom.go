@@ -3,6 +3,8 @@ package tcp
 import (
 	"io"
 	"net"
+
+	"github.com/v2ray/v2ray-core"
 )
 
 type VFreeConnection struct {
@@ -17,18 +19,19 @@ func NewVFreeConnection(network string, address string) *VFreeConnection {
 	return conn
 }
 
-func (vconn *VFreeConnection) Start(input <-chan []byte) chan<- []byte {
-	output := make(chan []byte, 128)
+func (vconn *VFreeConnection) Start(vRay core.OutboundVRay) error {
+	input := vRay.OutboundInput()
+	output := vRay.OutboundOutput()
 	conn, err := net.Dial(vconn.network, vconn.address)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	finish := make(chan bool, 2)
 	go vconn.DumpInput(conn, input, finish)
 	go vconn.DumpOutput(conn, output, finish)
 	go vconn.CloseConn(conn, finish)
-	return output
+	return nil
 }
 
 func (vconn *VFreeConnection) DumpInput(conn net.Conn, input <-chan []byte, finish chan<- bool) {
