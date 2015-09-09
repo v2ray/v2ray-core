@@ -9,6 +9,10 @@ import (
 
 const (
 	socksVersion = uint8(5)
+
+	AuthNotRequired = byte(0x00)
+	AuthGssApi      = byte(0x01)
+	AuthUserPass    = byte(0x02)
 )
 
 // Authentication request header of Socks5 protocol
@@ -16,6 +20,15 @@ type Socks5AuthenticationRequest struct {
 	version     byte
 	nMethods    byte
 	authMethods [256]byte
+}
+
+func (request *Socks5AuthenticationRequest) HasAuthMethod(method byte) bool {
+	for i := byte(0); i < request.nMethods; i++ {
+		if request.authMethods[i] == method {
+			return true
+		}
+	}
+	return false
 }
 
 func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, err error) {
@@ -59,6 +72,13 @@ type Socks5AuthenticationResponse struct {
 	authMethod byte
 }
 
+func NewAuthenticationResponse(authMethod byte) *Socks5AuthenticationResponse {
+	response := new(Socks5AuthenticationResponse)
+	response.version = socksVersion
+	response.authMethod = authMethod
+	return response
+}
+
 func (r *Socks5AuthenticationResponse) ToBytes() []byte {
 	buffer := make([]byte, 2 /* size of Socks5AuthenticationResponse */)
 	buffer[0] = r.version
@@ -66,7 +86,7 @@ func (r *Socks5AuthenticationResponse) ToBytes() []byte {
 	return buffer
 }
 
-func WriteAuthentication(writer io.Writer, response Socks5AuthenticationResponse) error {
+func WriteAuthentication(writer io.Writer, response *Socks5AuthenticationResponse) error {
 	_, err := writer.Write(response.ToBytes())
 	return err
 }
@@ -75,16 +95,20 @@ const (
 	AddrTypeIPv4   = byte(0x01)
 	AddrTypeIPv6   = byte(0x04)
 	AddrTypeDomain = byte(0x03)
+
+	CmdConnect      = byte(0x01)
+	CmdBind         = byte(0x02)
+	CmdUdpAssociate = byte(0x03)
 )
 
 type Socks5Request struct {
-	version  byte
-	command  byte
-	addrType byte
-	ipv4     [4]byte
-	domain   string
-	ipv6     [16]byte
-	port     uint16
+	Version  byte
+	Command  byte
+	AddrType byte
+	IPv4     [4]byte
+	Domain   string
+	IPv6     [16]byte
+	Port     uint16
 }
 
 func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
@@ -99,13 +123,13 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 		return
 	}
 
-	request.version = buffer[0]
-	request.command = buffer[1]
+	request.Version = buffer[0]
+	request.Command = buffer[1]
 	// buffer[2] is a reserved field
-	request.addrType = buffer[3]
-	switch request.addrType {
+	request.AddrType = buffer[3]
+	switch request.AddrType {
 	case 0x01:
-		nBytes, err = reader.Read(request.ipv4[:])
+		nBytes, err = reader.Read(request.IPv4[:])
 		if err != nil {
 			return
 		}
@@ -124,9 +148,9 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 			err = fmt.Errorf("Unable to read domain")
 			return
 		}
-		request.domain = string(buffer[1 : domainLength+1])
+		request.Domain = string(buffer[1 : domainLength+1])
 	case 0x04:
-		nBytes, err = reader.Read(request.ipv6[:])
+		nBytes, err = reader.Read(request.IPv6[:])
 		if err != nil {
 			return
 		}
@@ -135,7 +159,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 			return
 		}
 	default:
-		err = fmt.Errorf("Unexpected address type %d", request.addrType)
+		err = fmt.Errorf("Unexpected address type %d", request.AddrType)
 		return
 	}
 
@@ -149,7 +173,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 		return
 	}
 
-	request.port = binary.BigEndian.Uint16(buffer)
+	request.Port = binary.BigEndian.Uint16(buffer)
 	return
 }
 
@@ -175,7 +199,28 @@ type Socks5Response struct {
 	Port     uint16
 }
 
-func (r Socks5Response) toBytes() []byte {
+func NewSocks5Response() *Socks5Response {
+	response := new(Socks5Response)
+	response.Version = socksVersion
+	return response
+}
+
+func (r *Socks5Response) SetIPv4(ipv4 []byte) {
+	r.AddrType = AddrTypeIPv4
+	copy(r.IPv4[:], ipv4)
+}
+
+func (r *Socks5Response) SetIPv6(ipv6 []byte) {
+	r.AddrType = AddrTypeIPv6
+	copy(r.IPv6[:], ipv6)
+}
+
+func (r *Socks5Response) SetDomain(domain string) {
+	r.AddrType = AddrTypeDomain
+	r.Domain = domain
+}
+
+func (r *Socks5Response) toBytes() []byte {
 	buffer := make([]byte, 0, 300)
 	buffer = append(buffer, r.Version)
 	buffer = append(buffer, r.Error)
@@ -196,7 +241,7 @@ func (r Socks5Response) toBytes() []byte {
 	return buffer
 }
 
-func WriteResponse(writer io.Writer, response Socks5Response) error {
+func WriteResponse(writer io.Writer, response *Socks5Response) error {
 	_, err := writer.Write(response.toBytes())
 	return err
 }

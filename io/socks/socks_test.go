@@ -52,20 +52,20 @@ func TestRequestRead(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error %v", err)
 	}
-	if request.version != 0x05 {
-		t.Errorf("Expected version 5, but got %d", request.version)
+	if request.Version != 0x05 {
+		t.Errorf("Expected version 5, but got %d", request.Version)
 	}
-	if request.command != 0x01 {
-		t.Errorf("Expected command 1, but got %d", request.command)
+	if request.Command != 0x01 {
+		t.Errorf("Expected command 1, but got %d", request.Command)
 	}
-	if request.addrType != 0x01 {
-		t.Errorf("Expected addresstype 1, but got %d", request.addrType)
+	if request.AddrType != 0x01 {
+		t.Errorf("Expected addresstype 1, but got %d", request.AddrType)
 	}
-	if !bytes.Equal([]byte{0x72, 0x72, 0x72, 0x72}, request.ipv4[:]) {
-		t.Errorf("Expected IPv4 address 114.114.114.114, but got %v", request.ipv4[:])
+	if !bytes.Equal([]byte{0x72, 0x72, 0x72, 0x72}, request.IPv4[:]) {
+		t.Errorf("Expected IPv4 address 114.114.114.114, but got %v", request.IPv4[:])
 	}
-	if request.port != 53 {
-		t.Errorf("Expected port 53, but got %d", request.port)
+	if request.Port != 53 {
+		t.Errorf("Expected port 53, but got %d", request.Port)
 	}
 }
 
