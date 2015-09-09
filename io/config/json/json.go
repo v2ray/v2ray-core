@@ -4,7 +4,7 @@ package json
 import (
 	"encoding/json"
 	_ "fmt"
-  
+
 	"github.com/v2ray/v2ray-core"
 )
 
