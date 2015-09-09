@@ -1,16 +1,12 @@
 package unit
 
-import (
-  "fmt"
-)
-
 type ErrorSubject struct {
 	*Subject
 	value error
 }
 
 func NewErrorSubject(base *Subject, value error) *ErrorSubject {
-	subject := new(StringSubject)
+	subject := new(ErrorSubject)
 	subject.Subject = base
 	subject.value = value
 	return subject
@@ -37,6 +33,6 @@ func (subject *ErrorSubject) Equals(expectation error) {
 
 func (subject *ErrorSubject) IsNil() {
   if subject.value != nil {
-    subject.FailWithMethod("Not true that " + subject.DisplayString() + " is nil.")
+    subject.FailWithMessage("Not true that " + subject.DisplayString() + " is nil.")
   }
 }

@@ -1,7 +1,6 @@
 package core
 
 import (
-	"bytes"
 	"testing"
   
   "github.com/v2ray/v2ray-core/testing/unit"
