@@ -32,7 +32,7 @@ func (subject *ErrorSubject) Equals(expectation error) {
 }
 
 func (subject *ErrorSubject) IsNil() {
-  if subject.value != nil {
-    subject.FailWithMessage("Not true that " + subject.DisplayString() + " is nil.")
-  }
+	if subject.value != nil {
+		subject.FailWithMessage("Not true that " + subject.DisplayString() + " is nil.")
+	}
 }

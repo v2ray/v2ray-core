@@ -7,21 +7,21 @@ import (
 	"crypto/rand"
 	mrand "math/rand"
 	"testing"
-  
-  "github.com/v2ray/v2ray-core/testing/unit"
+
+	"github.com/v2ray/v2ray-core/testing/unit"
 )
 
 func randomBytes(p []byte, t *testing.T) {
-  assert := unit.Assert(t)
-  
+	assert := unit.Assert(t)
+
 	nBytes, err := rand.Read(p)
-  assert.Error(err).IsNil()
-  assert.Int(nBytes).Named("# bytes of random buffer").Equals(len(p))
+	assert.Error(err).IsNil()
+	assert.Int(nBytes).Named("# bytes of random buffer").Equals(len(p))
 }
 
 func TestNormalReading(t *testing.T) {
-  assert := unit.Assert(t)
-  
+	assert := unit.Assert(t)
+
 	testSize := 256
 	plaintext := make([]byte, testSize)
 	randomBytes(plaintext, t)
@@ -33,8 +33,8 @@ func TestNormalReading(t *testing.T) {
 	randomBytes(iv, t)
 
 	aesBlock, err := aes.NewCipher(key)
-  assert.Error(err).IsNil()
-  
+	assert.Error(err).IsNil()
+
 	aesMode := cipher.NewCBCEncrypter(aesBlock, iv)
 
 	ciphertext := make([]byte, testSize)
@@ -55,8 +55,8 @@ func TestNormalReading(t *testing.T) {
 		}
 		bytesRead, err := reader.Read(readtext[readSize : readSize+nBytes])
 		assert.Error(err).IsNil()
-    assert.Int(bytesRead).Equals(nBytes)
+		assert.Int(bytesRead).Equals(nBytes)
 		readSize += nBytes
 	}
-  assert.Bytes(readtext).Named("Plaintext").Equals(plaintext)
+	assert.Bytes(readtext).Named("Plaintext").Equals(plaintext)
 }

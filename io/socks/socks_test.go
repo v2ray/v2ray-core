@@ -16,7 +16,7 @@ func TestAuthenticationRequestRead(t *testing.T) {
 		0x02, // methods
 	}
 	request, err := ReadAuthentication(bytes.NewReader(rawRequest))
-  assert.Error(err).IsNil()
+	assert.Error(err).IsNil()
 	assert.Byte(request.version).Named("Version").Equals(0x05)
 	assert.Byte(request.nMethods).Named("#Methods").Equals(0x01)
 	assert.Byte(request.authMethods[0]).Named("Auth Method").Equals(0x02)
@@ -46,7 +46,7 @@ func TestRequestRead(t *testing.T) {
 		0x00, 0x35, // port 53
 	}
 	request, err := ReadRequest(bytes.NewReader(rawRequest))
-  assert.Error(err).IsNil()
+	assert.Error(err).IsNil()
 	assert.Byte(request.Version).Named("Version").Equals(0x05)
 	assert.Byte(request.Command).Named("Command").Equals(0x01)
 	assert.Byte(request.AddrType).Named("Address Type").Equals(0x01)

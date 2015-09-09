@@ -33,9 +33,9 @@ func (a *Assertion) Bytes(value []byte) *BytesSubject {
 }
 
 func (a *Assertion) String(value string) *StringSubject {
-  return NewStringSubject(NewSubject(a), value)
+	return NewStringSubject(NewSubject(a), value)
 }
 
 func (a *Assertion) Error(value error) *ErrorSubject {
-  return NewErrorSubject(NewSubject(a), value)
+	return NewErrorSubject(NewSubject(a), value)
 }
