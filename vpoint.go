@@ -2,11 +2,14 @@ package core
 
 import (
 	"fmt"
+
+	v2net "github.com/v2ray/v2ray-core/net"
 )
 
 // VPoint is an single server in V2Ray system.
 type VPoint struct {
-	config     VConfig
+	Config     VConfig
+	UserSet    *VUserSet
 	ichFactory InboundConnectionHandlerFactory
 	ochFactory OutboundConnectionHandlerFactory
 }
@@ -15,7 +18,13 @@ type VPoint struct {
 // The server is not started at this point.
 func NewVPoint(config *VConfig) (*VPoint, error) {
 	var vpoint = new(VPoint)
-	vpoint.config = *config
+	vpoint.Config = *config
+	vpoint.UserSet = NewVUserSet()
+
+	for _, user := range vpoint.Config.AllowedClients {
+		vpoint.UserSet.AddUser(user)
+	}
+
 	return vpoint, nil
 }
 
@@ -28,23 +37,46 @@ type InboundConnectionHandler interface {
 }
 
 type OutboundConnectionHandlerFactory interface {
-	Create(vPoint *VPoint) (OutboundConnectionHandler, error)
+	Create(vPoint *VPoint, dest v2net.VAddress) (OutboundConnectionHandler, error)
 }
 
 type OutboundConnectionHandler interface {
-	Start(vray *OutboundVRay) error
+	Start(vray OutboundVRay) error
 }
 
 // Start starts the VPoint server, and return any error during the process.
 // In the case of any errors, the state of the server is unpredicatable.
 func (vp *VPoint) Start() error {
-	if vp.config.Port <= 0 {
-		return fmt.Errorf("Invalid port %d", vp.config.Port)
+	if vp.Config.Port <= 0 {
+		return fmt.Errorf("Invalid port %d", vp.Config.Port)
 	}
 	inboundConnectionHandler, err := vp.ichFactory.Create(vp)
 	if err != nil {
 		return err
 	}
-	err = inboundConnectionHandler.Listen(vp.config.Port)
+	err = inboundConnectionHandler.Listen(vp.Config.Port)
 	return nil
+}
+
+func (vp *VPoint) NewInboundConnectionAccepted(destination v2net.VAddress) InboundVRay {
+	/*
+	  vNextLen := len(vp.Config.VNextList)
+	  if vNextLen > 0 {
+	    vNextIndex := rand.Intn(vNextLen)
+	    vNext := vp.Config.VNextList[vNextIndex]
+	    vNextUser := dest.User
+	    vNextUserLen := len(vNext.Users)
+	    if vNextUserLen > 0 {
+	      vNextUserIndex = rand.Intn(vNextUserLen)
+	      vNextUser = vNext.Users[vNextUserIndex]
+	    }
+	    newDest := VDestination{"tcp", vNext.ServerAddress, vNextUser}
+	    dest = newDest
+	  }*/
+
+	ray := NewVRay()
+	// TODO: handle error
+	och, _ := vp.ochFactory.Create(vp, destination)
+	_ = och.Start(ray)
+	return ray
 }

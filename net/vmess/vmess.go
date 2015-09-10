@@ -1,17 +1,5 @@
-package vemss
+package vmess
 
-import (
-	"net"
+const (
+	BufferSize = 256
 )
-
-type VMessHandler struct {
-}
-
-func (*VMessHandler) Listen(port uint8) error {
-	_, err := net.Listen("tcp", ":"+string(port))
-	if err != nil {
-		return err
-	}
-
-	return nil
-}

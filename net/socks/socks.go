@@ -2,8 +2,10 @@ package socks
 
 import (
 	"errors"
+	"io"
 	"net"
 
+	"github.com/v2ray/v2ray-core"
 	socksio "github.com/v2ray/v2ray-core/io/socks"
 )
 
@@ -15,6 +17,13 @@ var (
 // SocksServer is a SOCKS 5 proxy server
 type SocksServer struct {
 	accepting bool
+	vPoint    *core.VPoint
+}
+
+func NewSocksServer(vp *core.VPoint) *SocksServer {
+	server := new(SocksServer)
+	server.vPoint = vp
+	return server
 }
 
 func (server *SocksServer) Listen(port uint8) error {
@@ -65,7 +74,43 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 		return ErrorCommandNotSupported
 	}
 
-	// TODO: establish connection with VNext
+	ray := server.vPoint.NewInboundConnectionAccepted(request.Destination())
+	input := ray.InboundInput()
+	output := ray.InboundOutput()
+	finish := make(chan bool, 2)
+
+	go server.dumpInput(connection, input, finish)
+	go server.dumpOutput(connection, output, finish)
+	server.waitForFinish(finish)
 
 	return nil
+}
+
+func (server *SocksServer) dumpInput(conn net.Conn, input chan<- []byte, finish chan<- bool) {
+	for {
+		buffer := make([]byte, 256)
+		nBytes, err := conn.Read(buffer)
+		if err == io.EOF {
+			finish <- true
+			break
+		}
+		input <- buffer[:nBytes]
+	}
+}
+
+func (server *SocksServer) dumpOutput(conn net.Conn, output <-chan []byte, finish chan<- bool) {
+	for {
+		buffer, open := <-output
+		if !open {
+			finish <- true
+			break
+		}
+		conn.Write(buffer)
+	}
+}
+
+func (server *SocksServer) waitForFinish(finish <-chan bool) {
+	for i := 0; i < 2; i++ {
+		<-finish
+	}
 }

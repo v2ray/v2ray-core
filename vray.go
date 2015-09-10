@@ -5,11 +5,8 @@ type VRay struct {
 	Output chan []byte
 }
 
-func NewVRay() *VRay {
-	ray := new(VRay)
-	ray.Input = make(chan []byte, 128)
-	ray.Output = make(chan []byte, 128)
-	return ray
+func NewVRay() VRay {
+	return VRay{make(chan []byte, 128), make(chan []byte, 128)}
 }
 
 type OutboundVRay interface {
@@ -19,21 +16,21 @@ type OutboundVRay interface {
 
 type InboundVRay interface {
 	InboundInput() chan<- []byte
-	OutboundOutput() <-chan []byte
+	InboundOutput() <-chan []byte
 }
 
-func (ray *VRay) OutboundInput() <-chan []byte {
+func (ray VRay) OutboundInput() <-chan []byte {
 	return ray.Input
 }
 
-func (ray *VRay) OutboundOutput() chan<- []byte {
+func (ray VRay) OutboundOutput() chan<- []byte {
 	return ray.Output
 }
 
-func (ray *VRay) InboundInput() chan<- []byte {
+func (ray VRay) InboundInput() chan<- []byte {
 	return ray.Input
 }
 
-func (ray *VRay) InboundOutput() <-chan []byte {
+func (ray VRay) InboundOutput() <-chan []byte {
 	return ray.Output
 }

@@ -5,24 +5,25 @@ import (
 	"net"
 
 	"github.com/v2ray/v2ray-core"
+	v2net "github.com/v2ray/v2ray-core/net"
 )
 
 type VFreeConnection struct {
-	network string
-	address string
+	vPoint *core.VPoint
+	dest   v2net.VAddress
 }
 
-func NewVFreeConnection(network string, address string) *VFreeConnection {
+func NewVFreeConnection(vp *core.VPoint, dest v2net.VAddress) *VFreeConnection {
 	conn := new(VFreeConnection)
-	conn.network = network
-	conn.address = address
+	conn.vPoint = vp
+	conn.dest = dest
 	return conn
 }
 
 func (vconn *VFreeConnection) Start(vRay core.OutboundVRay) error {
 	input := vRay.OutboundInput()
 	output := vRay.OutboundOutput()
-	conn, err := net.Dial(vconn.network, vconn.address)
+	conn, err := net.Dial("tcp", vconn.dest.String())
 	if err != nil {
 		return err
 	}

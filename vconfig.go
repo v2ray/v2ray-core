@@ -1,5 +1,9 @@
 package core
 
+import (
+	v2net "github.com/v2ray/v2ray-core/net"
+)
+
 // VUser is the user account that is used for connection to a VPoint
 type VUser struct {
 	Id VID // The ID of this VUser.
@@ -7,8 +11,8 @@ type VUser struct {
 
 // VNext is the next VPoint server in the connection chain.
 type VNext struct {
-	ServerAddress string  // Address of VNext server, in the form of "IP:Port"
-	User          []VUser // User accounts for accessing VNext.
+	Address v2net.VAddress // Address of VNext server
+	Users   []VUser        // User accounts for accessing VNext.
 }
 
 // VConfig is the config for VPoint server.

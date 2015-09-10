@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+
+	v2net "github.com/v2ray/v2ray-core/net"
 )
 
 const (
@@ -128,7 +130,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 	// buffer[2] is a reserved field
 	request.AddrType = buffer[3]
 	switch request.AddrType {
-	case 0x01:
+	case AddrTypeIPv4:
 		nBytes, err = reader.Read(request.IPv4[:])
 		if err != nil {
 			return
@@ -137,7 +139,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 			err = fmt.Errorf("Unable to read IPv4 address.")
 			return
 		}
-	case 0x03:
+	case AddrTypeDomain:
 		buffer = make([]byte, 257)
 		nBytes, err = reader.Read(buffer)
 		if err != nil {
@@ -149,7 +151,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 			return
 		}
 		request.Domain = string(buffer[1 : domainLength+1])
-	case 0x04:
+	case AddrTypeIPv6:
 		nBytes, err = reader.Read(request.IPv6[:])
 		if err != nil {
 			return
@@ -175,6 +177,19 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 
 	request.Port = binary.BigEndian.Uint16(buffer)
 	return
+}
+
+func (request *Socks5Request) Destination() v2net.VAddress {
+	switch request.AddrType {
+	case AddrTypeIPv4:
+		return v2net.IPAddress(request.IPv4[:], request.Port)
+	case AddrTypeIPv6:
+		return v2net.IPAddress(request.IPv6[:], request.Port)
+	case AddrTypeDomain:
+		return v2net.DomainAddress(request.Domain, request.Port)
+	default:
+		panic("Unknown address type")
+	}
 }
 
 const (

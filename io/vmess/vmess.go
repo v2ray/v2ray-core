@@ -15,6 +15,7 @@ import (
 
 	"github.com/v2ray/v2ray-core"
 	v2io "github.com/v2ray/v2ray-core/io"
+	v2net "github.com/v2ray/v2ray-core/net"
 )
 
 const (
@@ -22,7 +23,7 @@ const (
 	addrTypeIPv6   = byte(0x03)
 	addrTypeDomain = byte(0x02)
 
-	vMessVersion = byte(0x01)
+	Version = byte(0x01)
 )
 
 var (
@@ -95,12 +96,25 @@ func (r *VMessRequest) targetAddressType() byte {
 	return r[56]
 }
 
+func (r *VMessRequest) Destination() v2net.VAddress {
+	switch r.targetAddressType() {
+	case addrTypeIPv4:
+		fallthrough
+	case addrTypeIPv6:
+		return v2net.IPAddress(r.targetAddressBytes(), r.Port())
+	case addrTypeDomain:
+		return v2net.DomainAddress(r.TargetAddress(), r.Port())
+	default:
+		panic("Unpexected address type")
+	}
+}
+
 func (r *VMessRequest) TargetAddress() string {
 	switch r.targetAddressType() {
 	case addrTypeIPv4:
-		return string(net.IPv4(r[57], r[58], r[59], r[60]))
+		return net.IP(r[57:61]).String()
 	case addrTypeIPv6:
-		return string(net.IP(r[57:73]))
+		return net.IP(r[57:73]).String()
 	case addrTypeDomain:
 		domainLength := int(r[57])
 		return string(r[58 : 58+domainLength])
@@ -326,4 +340,10 @@ func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) erro
 	return nil
 }
 
-type VMessOutput [4]byte
+type VMessResponse [4]byte
+
+func NewVMessResponse(request *VMessRequest) *VMessResponse {
+	response := new(VMessResponse)
+	copy(response[:], request.ResponseHeader())
+	return response
+}
