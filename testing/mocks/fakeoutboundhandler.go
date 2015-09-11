@@ -8,7 +8,7 @@ import (
 )
 
 type FakeOutboundConnectionHandler struct {
-	Data2Send   bytes.Buffer
+	Data2Send   *bytes.Buffer
 	Data2Return []byte
 	Destination v2net.VAddress
 }
