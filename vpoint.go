@@ -9,7 +9,6 @@ import (
 // VPoint is an single server in V2Ray system.
 type VPoint struct {
 	Config     VConfig
-	UserSet    *VUserSet
 	ichFactory InboundConnectionHandlerFactory
 	ochFactory OutboundConnectionHandlerFactory
 }
@@ -19,12 +18,6 @@ type VPoint struct {
 func NewVPoint(config *VConfig, ichFactory InboundConnectionHandlerFactory, ochFactory OutboundConnectionHandlerFactory) (*VPoint, error) {
 	var vpoint = new(VPoint)
 	vpoint.Config = *config
-	vpoint.UserSet = NewVUserSet()
-
-	for _, user := range vpoint.Config.AllowedClients {
-		vpoint.UserSet.AddUser(user)
-	}
-
 	vpoint.ichFactory = ichFactory
 	vpoint.ochFactory = ochFactory
 

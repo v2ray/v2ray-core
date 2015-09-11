@@ -12,12 +12,14 @@ import (
 
 type VMessInboundHandler struct {
 	vPoint    *core.VPoint
+	clients   *core.VUserSet
 	accepting bool
 }
 
-func NewVMessInboundHandler(vp *core.VPoint) *VMessInboundHandler {
+func NewVMessInboundHandler(vp *core.VPoint, clients *core.VUserSet) *VMessInboundHandler {
 	handler := new(VMessInboundHandler)
 	handler.vPoint = vp
+	handler.clients = clients
 	return handler
 }
 
@@ -45,7 +47,7 @@ func (handler *VMessInboundHandler) AcceptConnections(listener net.Listener) err
 
 func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error {
 	defer connection.Close()
-	reader := vmessio.NewVMessRequestReader(handler.vPoint.UserSet)
+	reader := vmessio.NewVMessRequestReader(handler.clients)
 
 	request, err := reader.Read(connection)
 	if err != nil {
@@ -55,8 +57,8 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 	response := vmessio.NewVMessResponse(request)
 	connection.Write(response[:])
 
-	requestKey := request.RequestKey()
-	requestIV := request.RequestIV()
+	requestKey := request.RequestKey[:]
+	requestIV := request.RequestIV[:]
 	responseKey := md5.Sum(requestKey)
 	responseIV := md5.Sum(requestIV)
 
@@ -70,7 +72,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 		return err
 	}
 
-	ray := handler.vPoint.NewInboundConnectionAccepted(request.Destination())
+	ray := handler.vPoint.NewInboundConnectionAccepted(request.Address)
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 	finish := make(chan bool, 2)
@@ -112,8 +114,18 @@ func (handler *VMessInboundHandler) waitForFinish(finish <-chan bool) {
 }
 
 type VMessInboundHandlerFactory struct {
+	allowedClients *core.VUserSet
+}
+
+func NewVMessInboundHandlerFactory(clients []core.VUser) *VMessInboundHandlerFactory {
+	factory := new(VMessInboundHandlerFactory)
+	factory.allowedClients = core.NewVUserSet()
+	for _, user := range clients {
+		factory.allowedClients.AddUser(user)
+	}
+	return factory
 }
 
 func (factory *VMessInboundHandlerFactory) Create(vp *core.VPoint) *VMessInboundHandler {
-	return NewVMessInboundHandler(vp)
+	return NewVMessInboundHandler(vp, factory.allowedClients)
 }

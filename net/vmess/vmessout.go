@@ -45,23 +45,13 @@ func (handler *VMessOutboundHandler) Start(ray core.OutboundVRay) error {
 	vNextAddress, vNextUser := handler.pickVNext()
 
 	request := new(vmessio.VMessRequest)
-	request.SetVersion(vmessio.Version)
-	copy(request.UserHash(), vNextUser.Id.Hash([]byte("ASK")))
-	rand.Read(request.RequestIV())
-	rand.Read(request.RequestKey())
-	rand.Read(request.ResponseHeader())
-	request.SetCommand(byte(0x01))
-	request.SetPort(handler.dest.Port)
-
-	address := handler.dest
-	switch {
-	case address.IsIPv4():
-		request.SetIPv4(address.IP)
-	case address.IsIPv6():
-		request.SetIPv6(address.IP)
-	case address.IsDomain():
-		request.SetDomain(address.Domain)
-	}
+	request.Version = vmessio.Version
+	request.UserId = vNextUser.Id
+	rand.Read(request.RequestIV[:])
+	rand.Read(request.RequestKey[:])
+	rand.Read(request.ResponseHeader[:])
+	request.Command = byte(0x01)
+	request.Address = handler.dest
 
 	conn, err := net.Dial("tcp", vNextAddress.String())
 	if err != nil {
@@ -69,11 +59,11 @@ func (handler *VMessOutboundHandler) Start(ray core.OutboundVRay) error {
 	}
 	defer conn.Close()
 
-	requestWriter := vmessio.NewVMessRequestWriter(handler.vPoint.UserSet)
+	requestWriter := vmessio.NewVMessRequestWriter()
 	requestWriter.Write(conn, request)
 
-	requestKey := request.RequestKey()
-	requestIV := request.RequestIV()
+	requestKey := request.RequestKey[:]
+	requestIV := request.RequestIV[:]
 	responseKey := md5.Sum(requestKey)
 	responseIV := md5.Sum(requestIV)
 

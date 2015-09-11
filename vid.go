@@ -3,7 +3,8 @@ package core
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"fmt"
+
+	"github.com/v2ray/v2ray-core/log"
 )
 
 // The ID of en entity, in the form of an UUID.
@@ -23,7 +24,7 @@ var byteGroups = []int{8, 4, 4, 4, 12}
 func UUIDToVID(uuid string) (v VID, err error) {
 	text := []byte(uuid)
 	if len(text) < 32 {
-		err = fmt.Errorf("uuid: invalid UUID string: %s", text)
+		err = log.Error("uuid: invalid UUID string: %s", text)
 		return
 	}
 

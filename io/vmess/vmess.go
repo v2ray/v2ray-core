@@ -11,7 +11,6 @@ import (
 	"io"
 	_ "log"
 	mrand "math/rand"
-	"net"
 
 	"github.com/v2ray/v2ray-core"
 	v2io "github.com/v2ray/v2ray-core/io"
@@ -33,127 +32,15 @@ var (
 // VMessRequest implements the request message of VMess protocol. It only contains
 // the header of a request message. The data part will be handled by conection
 // handler directly, in favor of data streaming.
-// 1 Version
-// 16 UserHash
-// 16 Request IV
-// 16 Request Key
-// 4 Response Header
-// 1 Command
-// 2 Port
-// 1 Address Type
-// 256 Target Address
 
-type VMessRequest [312]byte
-
-func (r *VMessRequest) Version() byte {
-	return r[0]
-}
-
-func (r *VMessRequest) SetVersion(version byte) *VMessRequest {
-	r[0] = version
-	return r
-}
-
-func (r *VMessRequest) UserHash() []byte {
-	return r[1:17]
-}
-
-func (r *VMessRequest) RequestIV() []byte {
-	return r[17:33]
-}
-
-func (r *VMessRequest) RequestKey() []byte {
-	return r[33:49]
-}
-
-func (r *VMessRequest) ResponseHeader() []byte {
-	return r[49:53]
-}
-
-func (r *VMessRequest) Command() byte {
-	return r[53]
-}
-
-func (r *VMessRequest) SetCommand(command byte) *VMessRequest {
-	r[53] = command
-	return r
-}
-
-func (r *VMessRequest) Port() uint16 {
-	return binary.BigEndian.Uint16(r.portBytes())
-}
-
-func (r *VMessRequest) portBytes() []byte {
-	return r[54:56]
-}
-
-func (r *VMessRequest) SetPort(port uint16) *VMessRequest {
-	binary.BigEndian.PutUint16(r.portBytes(), port)
-	return r
-}
-
-func (r *VMessRequest) targetAddressType() byte {
-	return r[56]
-}
-
-func (r *VMessRequest) Destination() v2net.VAddress {
-	switch r.targetAddressType() {
-	case addrTypeIPv4:
-		fallthrough
-	case addrTypeIPv6:
-		return v2net.IPAddress(r.targetAddressBytes(), r.Port())
-	case addrTypeDomain:
-		return v2net.DomainAddress(r.TargetAddress(), r.Port())
-	default:
-		panic("Unpexected address type")
-	}
-}
-
-func (r *VMessRequest) TargetAddress() string {
-	switch r.targetAddressType() {
-	case addrTypeIPv4:
-		return net.IP(r[57:61]).String()
-	case addrTypeIPv6:
-		return net.IP(r[57:73]).String()
-	case addrTypeDomain:
-		domainLength := int(r[57])
-		return string(r[58 : 58+domainLength])
-	default:
-		panic("Unexpected address type")
-	}
-}
-
-func (r *VMessRequest) targetAddressBytes() []byte {
-	switch r.targetAddressType() {
-	case addrTypeIPv4:
-		return r[57:61]
-	case addrTypeIPv6:
-		return r[57:73]
-	case addrTypeDomain:
-		domainLength := int(r[57])
-		return r[57 : 58+domainLength]
-	default:
-		panic("Unexpected address type")
-	}
-}
-
-func (r *VMessRequest) SetIPv4(ipv4 []byte) *VMessRequest {
-	r[56] = addrTypeIPv4
-	copy(r[57:], ipv4)
-	return r
-}
-
-func (r *VMessRequest) SetIPv6(ipv6 []byte) *VMessRequest {
-	r[56] = addrTypeIPv6
-	copy(r[57:], ipv6)
-	return r
-}
-
-func (r *VMessRequest) SetDomain(domain string) *VMessRequest {
-	r[56] = addrTypeDomain
-	r[57] = byte(len(domain))
-	copy(r[58:], []byte(domain))
-	return r
+type VMessRequest struct {
+	Version        byte
+	UserId         core.VID
+	RequestIV      [16]byte
+	RequestKey     [16]byte
+	ResponseHeader [4]byte
+	Command        byte
+	Address        v2net.VAddress
 }
 
 type VMessRequestReader struct {
@@ -169,26 +56,30 @@ func NewVMessRequestReader(vUserSet *core.VUserSet) *VMessRequestReader {
 func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	request := new(VMessRequest)
 
-	nBytes, err := reader.Read(request[0:17] /* version + user hash */)
+	buffer := make([]byte, 256)
+	nBytes, err := reader.Read(buffer[0:1])
 	if err != nil {
 		return nil, err
 	}
-	if nBytes != 17 {
-		err = fmt.Errorf("Unexpected length of header %d", nBytes)
+	// TODO: verify version number
+	request.Version = buffer[0]
+
+	nBytes, err = reader.Read(buffer[:len(request.UserId)])
+	if err != nil {
 		return nil, err
 	}
-	// TODO: verify version number
-	userId, valid := r.vUserSet.IsValidUserId(request.UserHash())
+
+	userId, valid := r.vUserSet.IsValidUserId(buffer[:nBytes])
 	if !valid {
 		return nil, ErrorInvalidUser
 	}
+	request.UserId = *userId
 
 	decryptor, err := NewDecryptionReader(reader, userId.Hash([]byte("PWD")), make([]byte, blockSize))
 	if err != nil {
 		return nil, err
 	}
 
-	buffer := make([]byte, 300)
 	nBytes, err = decryptor.Read(buffer[0:1])
 	if err != nil {
 		return nil, err
@@ -204,15 +95,15 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	}
 
 	// TODO: check number of bytes returned
-	_, err = decryptor.Read(request.RequestIV())
+	_, err = decryptor.Read(request.RequestIV[:])
 	if err != nil {
 		return nil, err
 	}
-	_, err = decryptor.Read(request.RequestKey())
+	_, err = decryptor.Read(request.RequestKey[:])
 	if err != nil {
 		return nil, err
 	}
-	_, err = decryptor.Read(request.ResponseHeader())
+	_, err = decryptor.Read(request.ResponseHeader[:])
 	if err != nil {
 		return nil, err
 	}
@@ -220,13 +111,13 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	if err != nil {
 		return nil, err
 	}
-	request.SetCommand(buffer[0])
+	request.Command = buffer[0]
 
 	_, err = decryptor.Read(buffer[0:2])
 	if err != nil {
 		return nil, err
 	}
-	request.SetPort(binary.BigEndian.Uint16(buffer[0:2]))
+	port := binary.BigEndian.Uint16(buffer[0:2])
 
 	_, err = decryptor.Read(buffer[0:1])
 	if err != nil {
@@ -238,13 +129,13 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 		if err != nil {
 			return nil, err
 		}
-		request.SetIPv4(buffer[1:5])
+		request.Address = v2net.IPAddress(buffer[1:5], port)
 	case addrTypeIPv6:
 		_, err = decryptor.Read(buffer[1:17])
 		if err != nil {
 			return nil, err
 		}
-		request.SetIPv6(buffer[1:17])
+		request.Address = v2net.IPAddress(buffer[1:17], port)
 	case addrTypeDomain:
 		_, err = decryptor.Read(buffer[1:2])
 		if err != nil {
@@ -255,7 +146,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 		if err != nil {
 			return nil, err
 		}
-		request.SetDomain(string(buffer[2 : 2+domainLength]))
+		request.Address = v2net.DomainAddress(string(buffer[2:2+domainLength]), port)
 	}
 	_, err = decryptor.Read(buffer[0:1])
 	if err != nil {
@@ -271,19 +162,17 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 }
 
 type VMessRequestWriter struct {
-	vUserSet *core.VUserSet
 }
 
-func NewVMessRequestWriter(vUserSet *core.VUserSet) *VMessRequestWriter {
+func NewVMessRequestWriter() *VMessRequestWriter {
 	writer := new(VMessRequestWriter)
-	writer.vUserSet = vUserSet
 	return writer
 }
 
 func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) error {
 	buffer := make([]byte, 0, 300)
-	buffer = append(buffer, request.Version())
-	buffer = append(buffer, request.UserHash()...)
+	buffer = append(buffer, request.Version)
+	buffer = append(buffer, request.UserId.Hash([]byte("ASK"))...)
 
 	encryptionBegin := len(buffer)
 
@@ -296,13 +185,27 @@ func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) erro
 	buffer = append(buffer, byte(randomLength))
 	buffer = append(buffer, randomContent...)
 
-	buffer = append(buffer, request.RequestIV()...)
-	buffer = append(buffer, request.RequestKey()...)
-	buffer = append(buffer, request.ResponseHeader()...)
-	buffer = append(buffer, request.Command())
-	buffer = append(buffer, request.portBytes()...)
-	buffer = append(buffer, request.targetAddressType())
-	buffer = append(buffer, request.targetAddressBytes()...)
+	buffer = append(buffer, request.RequestIV[:]...)
+	buffer = append(buffer, request.RequestKey[:]...)
+	buffer = append(buffer, request.ResponseHeader[:]...)
+	buffer = append(buffer, request.Command)
+
+	portBytes := make([]byte, 2)
+	binary.BigEndian.PutUint16(portBytes, request.Address.Port)
+	buffer = append(buffer, portBytes...)
+
+	switch {
+	case request.Address.IsIPv4():
+		buffer = append(buffer, addrTypeIPv4)
+		buffer = append(buffer, request.Address.IP...)
+	case request.Address.IsIPv6():
+		buffer = append(buffer, addrTypeIPv6)
+		buffer = append(buffer, request.Address.IP...)
+	case request.Address.IsDomain():
+		buffer = append(buffer, addrTypeDomain)
+		buffer = append(buffer, byte(len(request.Address.Domain)))
+		buffer = append(buffer, []byte(request.Address.Domain)...)
+	}
 
 	paddingLength := blockSize - 1 - (len(buffer)-encryptionBegin)%blockSize
 	if paddingLength == 0 {
@@ -317,11 +220,7 @@ func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) erro
 	buffer = append(buffer, paddingBuffer...)
 	encryptionEnd := len(buffer)
 
-	userId, valid := w.vUserSet.IsValidUserId(request.UserHash())
-	if !valid {
-		return ErrorInvalidUser
-	}
-	aesCipher, err := aes.NewCipher(userId.Hash([]byte("PWD")))
+	aesCipher, err := aes.NewCipher(request.UserId.Hash([]byte("PWD")))
 	if err != nil {
 		return err
 	}
@@ -344,6 +243,6 @@ type VMessResponse [4]byte
 
 func NewVMessResponse(request *VMessRequest) *VMessResponse {
 	response := new(VMessResponse)
-	copy(response[:], request.ResponseHeader())
+	copy(response[:], request.ResponseHeader[:])
 	return response
 }
