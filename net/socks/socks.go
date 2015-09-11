@@ -3,7 +3,9 @@ package socks
 import (
 	"errors"
 	"io"
+  "log"
 	"net"
+  "strconv"
 
 	"github.com/v2ray/v2ray-core"
 	socksio "github.com/v2ray/v2ray-core/io/socks"
@@ -26,8 +28,8 @@ func NewSocksServer(vp *core.VPoint) *SocksServer {
 	return server
 }
 
-func (server *SocksServer) Listen(port uint8) error {
-	listener, err := net.Listen("tcp", ":"+string(port))
+func (server *SocksServer) Listen(port uint16) error {
+	listener, err := net.Listen("tcp", ":"+strconv.Itoa(int(port)))
 	if err != nil {
 		return err
 	}
@@ -40,6 +42,7 @@ func (server *SocksServer) AcceptConnections(listener net.Listener) error {
 	for server.accepting {
 		connection, err := listener.Accept()
 		if err != nil {
+      log.Print(err)
 			return err
 		}
 		go server.HandleConnection(connection)
@@ -52,10 +55,14 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 
 	auth, err := socksio.ReadAuthentication(connection)
 	if err != nil {
+    log.Print(err)
 		return err
 	}
+  log.Print(auth)
 
-	if auth.HasAuthMethod(socksio.AuthNotRequired) {
+	if !auth.HasAuthMethod(socksio.AuthNotRequired) {
+    // TODO send response with FF
+    log.Print(ErrorAuthenticationFailed)
 		return ErrorAuthenticationFailed
 	}
 
@@ -64,15 +71,33 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 
 	request, err := socksio.ReadRequest(connection)
 	if err != nil {
+    log.Print(err)
 		return err
 	}
+  
+  response := socksio.NewSocks5Response()
 
 	if request.Command == socksio.CmdBind || request.Command == socksio.CmdUdpAssociate {
 		response := socksio.NewSocks5Response()
 		response.Error = socksio.ErrorCommandNotSupported
 		socksio.WriteResponse(connection, response)
+    log.Print(ErrorCommandNotSupported)
 		return ErrorCommandNotSupported
 	}
+  
+  response.Error = socksio.ErrorSuccess
+  response.Port = request.Port
+  response.AddrType = request.AddrType
+  switch response.AddrType {
+    case socksio.AddrTypeIPv4:
+    copy(response.IPv4[:], request.IPv4[:])
+    case socksio.AddrTypeIPv6:
+    copy(response.IPv6[:], request.IPv6[:])
+    case socksio.AddrTypeDomain:
+    response.Domain = request.Domain
+  }
+  socksio.WriteResponse(connection, response)
+  
 
 	ray := server.vPoint.NewInboundConnectionAccepted(request.Destination())
 	input := ray.InboundInput()
@@ -90,7 +115,9 @@ func (server *SocksServer) dumpInput(conn net.Conn, input chan<- []byte, finish 
 	for {
 		buffer := make([]byte, 256)
 		nBytes, err := conn.Read(buffer)
+    log.Printf("Reading %d bytes, with error %v", nBytes, err)
 		if err == io.EOF {
+      close(input)
 			finish <- true
 			break
 		}
@@ -105,7 +132,8 @@ func (server *SocksServer) dumpOutput(conn net.Conn, output <-chan []byte, finis
 			finish <- true
 			break
 		}
-		conn.Write(buffer)
+		nBytes, _ := conn.Write(buffer)
+    log.Printf("Writing %d bytes", nBytes)
 	}
 }
 

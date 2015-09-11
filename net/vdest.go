@@ -50,7 +50,11 @@ func (addr VAddress) String() string {
 	var host string
 	switch addr.Type {
 	case AddrTypeIP:
-		host = addr.IP.String()
+    host = addr.IP.String()
+    if len(addr.IP) == net.IPv6len {
+      host = "[" + host + "]"
+    }
+		
 	case AddrTypeDomain:
 		host = addr.Domain
 	default:

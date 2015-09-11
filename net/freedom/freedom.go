@@ -1,8 +1,9 @@
-package tcp
+package freedom
 
 import (
 	"io"
 	"net"
+  "log"
 
 	"github.com/v2ray/v2ray-core"
 	v2net "github.com/v2ray/v2ray-core/net"
@@ -25,8 +26,10 @@ func (vconn *VFreeConnection) Start(vRay core.OutboundVRay) error {
 	output := vRay.OutboundOutput()
 	conn, err := net.Dial("tcp", vconn.dest.String())
 	if err != nil {
+    log.Print(err)
 		return err
 	}
+  log.Print("Working on tcp:" + vconn.dest.String())
 
 	finish := make(chan bool, 2)
 	go vconn.DumpInput(conn, input, finish)
@@ -51,9 +54,11 @@ func (vconn *VFreeConnection) DumpOutput(conn net.Conn, output chan<- []byte, fi
 		buffer := make([]byte, 128)
 		nBytes, err := conn.Read(buffer)
 		if err == io.EOF {
+      close(output)
 			finish <- true
 			break
 		}
+    log.Print(buffer[:nBytes])
 		output <- buffer[:nBytes]
 	}
 }

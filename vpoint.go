@@ -16,7 +16,7 @@ type VPoint struct {
 
 // NewVPoint returns a new VPoint server based on given configuration.
 // The server is not started at this point.
-func NewVPoint(config *VConfig) (*VPoint, error) {
+func NewVPoint(config *VConfig, ichFactory InboundConnectionHandlerFactory, ochFactory OutboundConnectionHandlerFactory) (*VPoint, error) {
 	var vpoint = new(VPoint)
 	vpoint.Config = *config
 	vpoint.UserSet = NewVUserSet()
@@ -24,6 +24,9 @@ func NewVPoint(config *VConfig) (*VPoint, error) {
 	for _, user := range vpoint.Config.AllowedClients {
 		vpoint.UserSet.AddUser(user)
 	}
+  
+  vpoint.ichFactory = ichFactory
+  vpoint.ochFactory = ochFactory
 
 	return vpoint, nil
 }
@@ -59,21 +62,6 @@ func (vp *VPoint) Start() error {
 }
 
 func (vp *VPoint) NewInboundConnectionAccepted(destination v2net.VAddress) InboundVRay {
-	/*
-	  vNextLen := len(vp.Config.VNextList)
-	  if vNextLen > 0 {
-	    vNextIndex := rand.Intn(vNextLen)
-	    vNext := vp.Config.VNextList[vNextIndex]
-	    vNextUser := dest.User
-	    vNextUserLen := len(vNext.Users)
-	    if vNextUserLen > 0 {
-	      vNextUserIndex = rand.Intn(vNextUserLen)
-	      vNextUser = vNext.Users[vNextUserIndex]
-	    }
-	    newDest := VDestination{"tcp", vNext.ServerAddress, vNextUser}
-	    dest = newDest
-	  }*/
-
 	ray := NewVRay()
 	// TODO: handle error
 	och, _ := vp.ochFactory.Create(vp, destination)

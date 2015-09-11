@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+  _ "log"
 
 	v2net "github.com/v2ray/v2ray-core/net"
 )
@@ -25,7 +26,7 @@ type Socks5AuthenticationRequest struct {
 }
 
 func (request *Socks5AuthenticationRequest) HasAuthMethod(method byte) bool {
-	for i := byte(0); i < request.nMethods; i++ {
+  for i := 0; i < int(request.nMethods); i++ {
 		if request.authMethods[i] == method {
 			return true
 		}
@@ -140,17 +141,22 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 			return
 		}
 	case AddrTypeDomain:
-		buffer = make([]byte, 257)
-		nBytes, err = reader.Read(buffer)
+		buffer = make([]byte, 256)
+    nBytes, err = reader.Read(buffer[0:1])
+    if err != nil {
+      return
+    }
+    domainLength := buffer[0]
+		nBytes, err = reader.Read(buffer[:domainLength])
 		if err != nil {
 			return
 		}
-		domainLength := buffer[0]
-		if nBytes != int(domainLength)+1 {
-			err = fmt.Errorf("Unable to read domain")
+		
+		if nBytes != int(domainLength) {
+			err = fmt.Errorf("Unable to read domain with %d bytes, expecting %d bytes", nBytes, domainLength)
 			return
 		}
-		request.Domain = string(buffer[1 : domainLength+1])
+		request.Domain = string(buffer[:domainLength])
 	case AddrTypeIPv6:
 		nBytes, err = reader.Read(request.IPv6[:])
 		if err != nil {
