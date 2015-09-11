@@ -2,7 +2,7 @@ package freedom
 
 import (
 	"github.com/v2ray/v2ray-core"
-  v2net "github.com/v2ray/v2ray-core/net"
+	v2net "github.com/v2ray/v2ray-core/net"
 )
 
 type FreedomFactory struct {

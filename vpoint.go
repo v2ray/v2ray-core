@@ -24,9 +24,9 @@ func NewVPoint(config *VConfig, ichFactory InboundConnectionHandlerFactory, ochF
 	for _, user := range vpoint.Config.AllowedClients {
 		vpoint.UserSet.AddUser(user)
 	}
-  
-  vpoint.ichFactory = ichFactory
-  vpoint.ochFactory = ochFactory
+
+	vpoint.ichFactory = ichFactory
+	vpoint.ochFactory = ochFactory
 
 	return vpoint, nil
 }
