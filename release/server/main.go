@@ -8,6 +8,7 @@ import (
 	"github.com/v2ray/v2ray-core"
 	"github.com/v2ray/v2ray-core/log"
 
+  // The following are neccesary as they register handlers in their init functions.
 	_ "github.com/v2ray/v2ray-core/net/freedom"
 	_ "github.com/v2ray/v2ray-core/net/socks"
 	_ "github.com/v2ray/v2ray-core/net/vmess"

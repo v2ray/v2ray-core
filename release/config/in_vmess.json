@@ -1,7 +1,5 @@
-/* VMess 接收配置 */
 {
   "clients": [
-    /* 允许的用户 ID */
     {"id": "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"}
   ]
 }
