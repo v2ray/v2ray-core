@@ -24,8 +24,8 @@ func RegisterOutboundConnectionHandlerFactory(name string, factory OutboundConne
 	return nil
 }
 
-// VPoint is an single server in V2Ray system.
-type VPoint struct {
+// Point is an single server in V2Ray system.
+type Point struct {
 	port       uint16
 	ichFactory InboundConnectionHandlerFactory
 	ichConfig  []byte
@@ -33,10 +33,10 @@ type VPoint struct {
 	ochConfig  []byte
 }
 
-// NewVPoint returns a new VPoint server based on given configuration.
+// NewPoint returns a new Point server based on given configuration.
 // The server is not started at this point.
-func NewVPoint(config VConfig) (*VPoint, error) {
-	var vpoint = new(VPoint)
+func NewPoint(config Config) (*Point, error) {
+	var vpoint = new(Point)
 	vpoint.port = config.Port
 
 	ichFactory, ok := inboundFactories[config.InboundConfig.Protocol]
@@ -70,7 +70,7 @@ func NewVPoint(config VConfig) (*VPoint, error) {
 }
 
 type InboundConnectionHandlerFactory interface {
-	Create(vp *VPoint, config []byte) (InboundConnectionHandler, error)
+	Create(vp *Point, config []byte) (InboundConnectionHandler, error)
 }
 
 type InboundConnectionHandler interface {
@@ -78,16 +78,16 @@ type InboundConnectionHandler interface {
 }
 
 type OutboundConnectionHandlerFactory interface {
-	Create(VP *VPoint, config []byte, dest v2net.VAddress) (OutboundConnectionHandler, error)
+	Create(VP *Point, config []byte, dest v2net.Address) (OutboundConnectionHandler, error)
 }
 
 type OutboundConnectionHandler interface {
-	Start(vray OutboundVRay) error
+	Start(ray OutboundRay) error
 }
 
-// Start starts the VPoint server, and return any error during the process.
+// Start starts the Point server, and return any error during the process.
 // In the case of any errors, the state of the server is unpredicatable.
-func (vp *VPoint) Start() error {
+func (vp *Point) Start() error {
 	if vp.port <= 0 {
 		return log.Error("Invalid port %d", vp.port)
 	}
@@ -99,8 +99,8 @@ func (vp *VPoint) Start() error {
 	return nil
 }
 
-func (vp *VPoint) NewInboundConnectionAccepted(destination v2net.VAddress) InboundVRay {
-	ray := NewVRay()
+func (vp *Point) NewInboundConnectionAccepted(destination v2net.Address) InboundRay {
+	ray := NewRay()
 	// TODO: handle error
 	och, _ := vp.ochFactory.Create(vp, vp.ochConfig, destination)
 	_ = och.Start(ray)

@@ -8,10 +8,10 @@ import (
 )
 
 // The ID of en entity, in the form of an UUID.
-type VID [16]byte
+type ID [16]byte
 
-// Hash generates a MD5 hash based on current VID and a suffix string.
-func (v VID) Hash(suffix []byte) []byte {
+// Hash generates a MD5 hash based on current ID and a suffix string.
+func (v ID) Hash(suffix []byte) []byte {
 	md5 := md5.New()
 	md5.Write(v[:])
 	md5.Write(suffix)
@@ -21,7 +21,7 @@ func (v VID) Hash(suffix []byte) []byte {
 var byteGroups = []int{8, 4, 4, 4, 12}
 
 // TODO: leverage a full functional UUID library
-func UUIDToVID(uuid string) (v VID, err error) {
+func UUIDToID(uuid string) (v ID, err error) {
 	text := []byte(uuid)
 	if len(text) < 32 {
 		err = log.Error("uuid: invalid UUID string: %s", text)

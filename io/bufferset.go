@@ -14,21 +14,21 @@ var (
 	ErrorNoChannel = errors.New("No suitable channels found.")
 )
 
-type VBufferSet struct {
+type BufferSet struct {
 	small  chan []byte
 	medium chan []byte
 	large  chan []byte
 }
 
-func NewVBufferSet() *VBufferSet {
-	bSet := new(VBufferSet)
+func NewBufferSet() *BufferSet {
+	bSet := new(BufferSet)
 	bSet.small = make(chan []byte, 128)
 	bSet.medium = make(chan []byte, 128)
 	bSet.large = make(chan []byte, 128)
 	return bSet
 }
 
-func (bSet *VBufferSet) detectBucket(size int, strict bool) (chan []byte, error) {
+func (bSet *BufferSet) detectBucket(size int, strict bool) (chan []byte, error) {
 	if strict {
 		if size == SizeSmall {
 			return bSet.small, nil
@@ -49,7 +49,7 @@ func (bSet *VBufferSet) detectBucket(size int, strict bool) (chan []byte, error)
 	return nil, ErrorNoChannel
 }
 
-func (bSet *VBufferSet) FetchBuffer(minSize int) []byte {
+func (bSet *BufferSet) FetchBuffer(minSize int) []byte {
 	var buffer []byte
 	byteChan, err := bSet.detectBucket(minSize, false)
 	if err != nil {
@@ -63,7 +63,7 @@ func (bSet *VBufferSet) FetchBuffer(minSize int) []byte {
 	return buffer
 }
 
-func (bSet *VBufferSet) ReturnBuffer(buffer []byte) {
+func (bSet *BufferSet) ReturnBuffer(buffer []byte) {
 	byteChan, err := bSet.detectBucket(len(buffer), true)
 	if err != nil {
 		return

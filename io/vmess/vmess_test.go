@@ -13,13 +13,13 @@ import (
 func TestVMessSerialization(t *testing.T) {
 	assert := unit.Assert(t)
 
-	userId, err := core.UUIDToVID("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
+	userId, err := core.UUIDToID("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	userSet := core.NewVUserSet()
-	userSet.AddUser(core.VUser{userId})
+	userSet := core.NewUserSet()
+	userSet.AddUser(core.User{userId})
 
 	request := new(VMessRequest)
 	request.Version = byte(0x01)

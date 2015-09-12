@@ -186,7 +186,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 	return
 }
 
-func (request *Socks5Request) Destination() v2net.VAddress {
+func (request *Socks5Request) Destination() v2net.Address {
 	switch request.AddrType {
 	case AddrTypeIPv4:
 		return v2net.IPAddress(request.IPv4[:], request.Port)

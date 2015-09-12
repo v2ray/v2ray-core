@@ -13,9 +13,9 @@ type VMessUser struct {
 	Email string `json:"email"`
 }
 
-func (u *VMessUser) ToVUser() (core.VUser, error) {
-	id, err := core.UUIDToVID(u.Id)
-	return core.VUser{id}, err
+func (u *VMessUser) ToUser() (core.User, error) {
+	id, err := core.UUIDToID(u.Id)
+	return core.User{id}, err
 }
 
 type VMessInboundConfig struct {
@@ -35,11 +35,11 @@ type VNextConfig struct {
 }
 
 func (config VNextConfig) ToVNextServer() VNextServer {
-	users := make([]core.VUser, 0, len(config.Users))
+	users := make([]core.User, 0, len(config.Users))
 	for _, user := range config.Users {
-		vuser, err := user.ToVUser()
+		vuser, err := user.ToUser()
 		if err != nil {
-			panic(log.Error("Failed to convert %v to VUser.", user))
+			panic(log.Error("Failed to convert %v to User.", user))
 		}
 		users = append(users, vuser)
 	}

@@ -17,12 +17,12 @@ func TestSocksTcpConnect(t *testing.T) {
 		port := uint16(12384)
 
 		uuid := "2418d087-648d-4990-86e8-19dca1d006d3"
-		vid, err := core.UUIDToVID(uuid)
+		id, err := core.UUIDToID(uuid)
 		assert.Error(err).IsNil()
 
 		config := core.VConfig{
 			port,
-			[]core.VUser{core.VUser{vid}},
+			[]core.User{core.User{id}},
 			"",
 			[]core.VNext{}}
 
@@ -30,7 +30,7 @@ func TestSocksTcpConnect(t *testing.T) {
 		och.Data2Send = bytes.NewBuffer(make([]byte, 1024))
 		och.Data2Return = []byte("The data to be returned to socks server.")
 
-		vpoint, err := core.NewVPoint(&config, SocksServerFactory{}, och)
+		vpoint, err := core.NewPoint(&config, SocksServerFactory{}, och)
 		assert.Error(err).IsNil()
 
 		err = vpoint.Start()

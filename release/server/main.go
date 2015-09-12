@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	configFile = flag.String("config", "", "Config file for this VPoint server.")
+	configFile = flag.String("config", "", "Config file for this Point server.")
 )
 
 func main() {
@@ -29,9 +29,9 @@ func main() {
 	if err != nil {
 		panic(log.Error("Failed to read config file (%s): %v", *configFile, err))
 	}
-	vconfig, err := core.LoadVConfig(rawVConfig)
+	vconfig, err := core.LoadConfig(rawVConfig)
 	if err != nil {
-		panic(log.Error("Failed to parse VConfig: %v", err))
+		panic(log.Error("Failed to parse Config: %v", err))
 	}
 
 	if !path.IsAbs(vconfig.InboundConfig.File) && len(vconfig.InboundConfig.File) > 0 {
@@ -42,14 +42,14 @@ func main() {
 		vconfig.OutboundConfig.File = path.Join(path.Dir(*configFile), vconfig.OutboundConfig.File)
 	}
 
-	vPoint, err := core.NewVPoint(vconfig)
+	vPoint, err := core.NewPoint(vconfig)
 	if err != nil {
-		panic(log.Error("Failed to create VPoint server: %v", err))
+		panic(log.Error("Failed to create Point server: %v", err))
 	}
 
 	err = vPoint.Start()
 	if err != nil {
-		log.Error("Error starting VPoint server.")
+		log.Error("Error starting Point server: %v", err)
 	}
 
 	finish := make(chan bool)

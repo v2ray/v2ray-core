@@ -35,19 +35,19 @@ var (
 
 type VMessRequest struct {
 	Version        byte
-	UserId         core.VID
+	UserId         core.ID
 	RequestIV      [16]byte
 	RequestKey     [16]byte
 	ResponseHeader [4]byte
 	Command        byte
-	Address        v2net.VAddress
+	Address        v2net.Address
 }
 
 type VMessRequestReader struct {
-	vUserSet *core.VUserSet
+	vUserSet *core.UserSet
 }
 
-func NewVMessRequestReader(vUserSet *core.VUserSet) *VMessRequestReader {
+func NewVMessRequestReader(vUserSet *core.UserSet) *VMessRequestReader {
 	reader := new(VMessRequestReader)
 	reader.vUserSet = vUserSet
 	return reader

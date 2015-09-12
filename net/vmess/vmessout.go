@@ -14,19 +14,19 @@ import (
 	v2net "github.com/v2ray/v2ray-core/net"
 )
 
-// VNext is the next VPoint server in the connection chain.
+// VNext is the next Point server in the connection chain.
 type VNextServer struct {
-	Address v2net.VAddress // Address of VNext server
-	Users   []core.VUser   // User accounts for accessing VNext.
+	Address v2net.Address // Address of VNext server
+	Users   []core.User   // User accounts for accessing VNext.
 }
 
 type VMessOutboundHandler struct {
-	vPoint    *core.VPoint
-	dest      v2net.VAddress
+	vPoint    *core.Point
+	dest      v2net.Address
 	vNextList []VNextServer
 }
 
-func NewVMessOutboundHandler(vp *core.VPoint, vNextList []VNextServer, dest v2net.VAddress) *VMessOutboundHandler {
+func NewVMessOutboundHandler(vp *core.Point, vNextList []VNextServer, dest v2net.Address) *VMessOutboundHandler {
 	handler := new(VMessOutboundHandler)
 	handler.vPoint = vp
 	handler.dest = dest
@@ -34,7 +34,7 @@ func NewVMessOutboundHandler(vp *core.VPoint, vNextList []VNextServer, dest v2ne
 	return handler
 }
 
-func (handler *VMessOutboundHandler) pickVNext() (v2net.VAddress, core.VUser) {
+func (handler *VMessOutboundHandler) pickVNext() (v2net.Address, core.User) {
 	vNextLen := len(handler.vNextList)
 	if vNextLen == 0 {
 		panic("Zero vNext is configured.")
@@ -50,7 +50,7 @@ func (handler *VMessOutboundHandler) pickVNext() (v2net.VAddress, core.VUser) {
 	return vNext.Address, vNextUser
 }
 
-func (handler *VMessOutboundHandler) Start(ray core.OutboundVRay) error {
+func (handler *VMessOutboundHandler) Start(ray core.OutboundRay) error {
 	vNextAddress, vNextUser := handler.pickVNext()
 
 	request := new(vmessio.VMessRequest)
@@ -66,7 +66,7 @@ func (handler *VMessOutboundHandler) Start(ray core.OutboundVRay) error {
 	return nil
 }
 
-func (handler *VMessOutboundHandler) startCommunicate(request *vmessio.VMessRequest, dest v2net.VAddress, ray core.OutboundVRay) error {
+func (handler *VMessOutboundHandler) startCommunicate(request *vmessio.VMessRequest, dest v2net.Address, ray core.OutboundRay) error {
 	conn, err := net.Dial("tcp", dest.String())
 	log.Debug("VMessOutbound dialing tcp: %s", dest.String())
 	if err != nil {
@@ -155,7 +155,7 @@ func (handler *VMessOutboundHandler) waitForFinish(finish <-chan bool) {
 type VMessOutboundHandlerFactory struct {
 }
 
-func (factory *VMessOutboundHandlerFactory) Create(vp *core.VPoint, rawConfig []byte, destination v2net.VAddress) (core.OutboundConnectionHandler, error) {
+func (factory *VMessOutboundHandlerFactory) Create(vp *core.Point, rawConfig []byte, destination v2net.Address) (core.OutboundConnectionHandler, error) {
 	config, err := loadOutboundConfig(rawConfig)
 	if err != nil {
 		panic(log.Error("Failed to load VMess outbound config: %v", err))

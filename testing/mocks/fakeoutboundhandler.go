@@ -10,10 +10,10 @@ import (
 type FakeOutboundConnectionHandler struct {
 	Data2Send   *bytes.Buffer
 	Data2Return []byte
-	Destination v2net.VAddress
+	Destination v2net.Address
 }
 
-func (handler *FakeOutboundConnectionHandler) Start(ray core.OutboundVRay) error {
+func (handler *FakeOutboundConnectionHandler) Start(ray core.OutboundRay) error {
 	input := ray.OutboundInput()
 	output := ray.OutboundOutput()
 
@@ -28,6 +28,6 @@ func (handler *FakeOutboundConnectionHandler) Start(ray core.OutboundVRay) error
 	return nil
 }
 
-func (handler *FakeOutboundConnectionHandler) Create(vPoint *core.VPoint, dest v2net.VAddress) (core.OutboundConnectionHandler, error) {
+func (handler *FakeOutboundConnectionHandler) Create(point *core.Point, dest v2net.Address) (core.OutboundConnectionHandler, error) {
 	return handler, nil
 }

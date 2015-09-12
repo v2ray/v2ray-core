@@ -19,11 +19,11 @@ var (
 // SocksServer is a SOCKS 5 proxy server
 type SocksServer struct {
 	accepting bool
-	vPoint    *core.VPoint
+	vPoint    *core.Point
 	config    SocksConfig
 }
 
-func NewSocksServer(vp *core.VPoint, rawConfig []byte) *SocksServer {
+func NewSocksServer(vp *core.Point, rawConfig []byte) *SocksServer {
 	server := new(SocksServer)
 	server.vPoint = vp
 	config, err := loadConfig(rawConfig)

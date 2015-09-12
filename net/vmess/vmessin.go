@@ -13,12 +13,12 @@ import (
 )
 
 type VMessInboundHandler struct {
-	vPoint    *core.VPoint
-	clients   *core.VUserSet
+	vPoint    *core.Point
+	clients   *core.UserSet
 	accepting bool
 }
 
-func NewVMessInboundHandler(vp *core.VPoint, clients *core.VUserSet) *VMessInboundHandler {
+func NewVMessInboundHandler(vp *core.Point, clients *core.UserSet) *VMessInboundHandler {
 	handler := new(VMessInboundHandler)
 	handler.vPoint = vp
 	handler.clients = clients
@@ -128,14 +128,14 @@ func (handler *VMessInboundHandler) waitForFinish(finish <-chan bool) {
 type VMessInboundHandlerFactory struct {
 }
 
-func (factory *VMessInboundHandlerFactory) Create(vp *core.VPoint, rawConfig []byte) (core.InboundConnectionHandler, error) {
+func (factory *VMessInboundHandlerFactory) Create(vp *core.Point, rawConfig []byte) (core.InboundConnectionHandler, error) {
 	config, err := loadInboundConfig(rawConfig)
 	if err != nil {
 		panic(log.Error("Failed to load VMess inbound config: %v", err))
 	}
-	allowedClients := core.NewVUserSet()
+	allowedClients := core.NewUserSet()
 	for _, client := range config.AllowedClients {
-		user, err := client.ToVUser()
+		user, err := client.ToUser()
 		if err != nil {
 			panic(log.Error("Failed to parse user id %s: %v", client.Id, err))
 		}

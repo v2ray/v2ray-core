@@ -4,14 +4,14 @@ import (
 	"encoding/base64"
 )
 
-type VUserSet struct {
-	validUserIds   []VID
+type UserSet struct {
+	validUserIds   []ID
 	userIdsAskHash map[string]int
 }
 
-func NewVUserSet() *VUserSet {
-	vuSet := new(VUserSet)
-	vuSet.validUserIds = make([]VID, 0, 16)
+func NewUserSet() *UserSet {
+	vuSet := new(UserSet)
+	vuSet.validUserIds = make([]ID, 0, 16)
 	vuSet.userIdsAskHash = make(map[string]int)
 	return vuSet
 }
@@ -20,7 +20,7 @@ func hashBytesToString(hash []byte) string {
 	return base64.StdEncoding.EncodeToString(hash)
 }
 
-func (us *VUserSet) AddUser(user VUser) error {
+func (us *UserSet) AddUser(user User) error {
 	id := user.Id
 	us.validUserIds = append(us.validUserIds, id)
 
@@ -30,7 +30,7 @@ func (us *VUserSet) AddUser(user VUser) error {
 	return nil
 }
 
-func (us VUserSet) IsValidUserId(askHash []byte) (*VID, bool) {
+func (us UserSet) IsValidUserId(askHash []byte) (*ID, bool) {
 	askBase64 := hashBytesToString(askHash)
 	idIndex, found := us.userIdsAskHash[askBase64]
 	if found {
