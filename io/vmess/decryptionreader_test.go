@@ -35,10 +35,10 @@ func TestNormalReading(t *testing.T) {
 	aesBlock, err := aes.NewCipher(key)
 	assert.Error(err).IsNil()
 
-	aesMode := cipher.NewCBCEncrypter(aesBlock, iv)
+	aesStream := cipher.NewCFBEncrypter(aesBlock, iv)
 
 	ciphertext := make([]byte, testSize)
-	aesMode.CryptBlocks(ciphertext, plaintext)
+	aesStream.XORKeyStream(ciphertext, plaintext)
 
 	ciphertextcopy := make([]byte, testSize)
 	copy(ciphertextcopy, ciphertext)

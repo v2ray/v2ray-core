@@ -62,26 +62,48 @@ func (handler *VMessOutboundHandler) Start(ray core.OutboundVRay) error {
 	request.Command = byte(0x01)
 	request.Address = handler.dest
 
-	conn, err := net.Dial("tcp", vNextAddress.String())
+	go handler.startCommunicate(request, vNextAddress, ray)
+	return nil
+}
+
+func (handler *VMessOutboundHandler) startCommunicate(request *vmessio.VMessRequest, dest v2net.VAddress, ray core.OutboundVRay) error {
+	conn, err := net.Dial("tcp", dest.String())
+	log.Debug("VMessOutbound dialing tcp: %s", dest.String())
 	if err != nil {
+		log.Error("Failed to open tcp (%s): %v", dest.String(), err)
 		return err
 	}
 	defer conn.Close()
 
 	requestWriter := vmessio.NewVMessRequestWriter()
-	requestWriter.Write(conn, request)
+	err = requestWriter.Write(conn, request)
+	if err != nil {
+		log.Error("Failed to write VMess request: %v", err)
+		return err
+	}
 
 	requestKey := request.RequestKey[:]
 	requestIV := request.RequestIV[:]
 	responseKey := md5.Sum(requestKey)
 	responseIV := md5.Sum(requestIV)
 
-	encryptRequestWriter, err := v2io.NewAesEncryptWriter(requestKey, requestIV, conn)
+	response := vmessio.VMessResponse{}
+	nBytes, err := conn.Read(response[:])
 	if err != nil {
+		log.Error("Failed to read VMess response (%d bytes): %v", nBytes, err)
 		return err
 	}
-	responseReader, err := v2io.NewAesDecryptReader(responseKey[:], responseIV[:], conn)
+	log.Debug("Got response %v", response)
+	// TODO: check response
+
+	encryptRequestWriter, err := v2io.NewAesEncryptWriter(requestKey, requestIV, conn)
 	if err != nil {
+		log.Error("Failed to create encrypt writer: %v", err)
+		return err
+	}
+	decryptResponseReader, err := v2io.NewAesDecryptReader(responseKey[:], responseIV[:], conn)
+	if err != nil {
+		log.Error("Failed to create decrypt reader: %v", err)
 		return err
 	}
 
@@ -90,7 +112,7 @@ func (handler *VMessOutboundHandler) Start(ray core.OutboundVRay) error {
 	finish := make(chan bool, 2)
 
 	go handler.dumpInput(encryptRequestWriter, input, finish)
-	go handler.dumpOutput(responseReader, output, finish)
+	go handler.dumpOutput(decryptResponseReader, output, finish)
 	handler.waitForFinish(finish)
 	return nil
 }
@@ -99,9 +121,11 @@ func (handler *VMessOutboundHandler) dumpOutput(reader io.Reader, output chan<- 
 	for {
 		buffer := make([]byte, BufferSize)
 		nBytes, err := reader.Read(buffer)
+		log.Debug("VMessOutbound: Reading %d bytes, with error %v", nBytes, err)
 		if err == io.EOF {
 			close(output)
 			finish <- true
+			log.Debug("VMessOutbound finishing output.")
 			break
 		}
 		output <- buffer[:nBytes]
@@ -113,9 +137,11 @@ func (handler *VMessOutboundHandler) dumpInput(writer io.Writer, input <-chan []
 		buffer, open := <-input
 		if !open {
 			finish <- true
+			log.Debug("VMessOutbound finishing input.")
 			break
 		}
-		writer.Write(buffer)
+		nBytes, err := writer.Write(buffer)
+		log.Debug("VMessOutbound: Wrote %d bytes with error %v", nBytes, err)
 	}
 }
 
@@ -123,12 +149,13 @@ func (handler *VMessOutboundHandler) waitForFinish(finish <-chan bool) {
 	for i := 0; i < 2; i++ {
 		<-finish
 	}
+	log.Debug("Finishing waiting for VMessOutbound ending.")
 }
 
 type VMessOutboundHandlerFactory struct {
 }
 
-func (factory *VMessOutboundHandlerFactory) Create(vp *core.VPoint, rawConfig []byte, destination v2net.VAddress) *VMessOutboundHandler {
+func (factory *VMessOutboundHandlerFactory) Create(vp *core.VPoint, rawConfig []byte, destination v2net.VAddress) (core.OutboundConnectionHandler, error) {
 	config, err := loadOutboundConfig(rawConfig)
 	if err != nil {
 		panic(log.Error("Failed to load VMess outbound config: %v", err))
@@ -137,5 +164,9 @@ func (factory *VMessOutboundHandlerFactory) Create(vp *core.VPoint, rawConfig []
 	for _, server := range config.VNextList {
 		servers = append(servers, server.ToVNextServer())
 	}
-	return NewVMessOutboundHandler(vp, servers, destination)
+	return NewVMessOutboundHandler(vp, servers, destination), nil
+}
+
+func init() {
+	core.RegisterOutboundConnectionHandlerFactory("vmess", &VMessOutboundHandlerFactory{})
 }

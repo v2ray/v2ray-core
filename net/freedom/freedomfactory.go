@@ -11,3 +11,7 @@ type FreedomFactory struct {
 func (factory FreedomFactory) Create(vp *core.VPoint, config []byte, dest v2net.VAddress) (core.OutboundConnectionHandler, error) {
 	return NewVFreeConnection(dest), nil
 }
+
+func init() {
+	core.RegisterOutboundConnectionHandlerFactory("freedom", FreedomFactory{})
+}

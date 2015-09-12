@@ -1,5 +1,5 @@
 package vmess
 
 const (
-	BufferSize = 256
+	BufferSize = 512
 )

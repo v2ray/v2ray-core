@@ -2,10 +2,10 @@ package freedom
 
 import (
 	"io"
-	"log"
 	"net"
 
 	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/log"
 	v2net "github.com/v2ray/v2ray-core/net"
 )
 
@@ -24,10 +24,9 @@ func (vconn *VFreeConnection) Start(vRay core.OutboundVRay) error {
 	output := vRay.OutboundOutput()
 	conn, err := net.Dial("tcp", vconn.dest.String())
 	if err != nil {
-		log.Print(err)
-		return err
+		return log.Error("Failed to open tcp: %s", vconn.dest.String())
 	}
-	log.Print("Working on tcp:" + vconn.dest.String())
+	log.Debug("Sending outbound tcp: %s", vconn.dest.String())
 
 	finish := make(chan bool, 2)
 	go vconn.DumpInput(conn, input, finish)
@@ -41,22 +40,25 @@ func (vconn *VFreeConnection) DumpInput(conn net.Conn, input <-chan []byte, fini
 		data, open := <-input
 		if !open {
 			finish <- true
+			log.Debug("Freedom finishing input.")
 			break
 		}
-		conn.Write(data)
+		nBytes, err := conn.Write(data)
+		log.Debug("Freedom wrote %d bytes with error %v", nBytes, err)
 	}
 }
 
 func (vconn *VFreeConnection) DumpOutput(conn net.Conn, output chan<- []byte, finish chan<- bool) {
 	for {
-		buffer := make([]byte, 128)
+		buffer := make([]byte, 512)
 		nBytes, err := conn.Read(buffer)
+		log.Debug("Freedom reading %d bytes with error %v", nBytes, err)
 		if err == io.EOF {
 			close(output)
 			finish <- true
+			log.Debug("Freedom finishing output.")
 			break
 		}
-		log.Print(buffer[:nBytes])
 		output <- buffer[:nBytes]
 	}
 }

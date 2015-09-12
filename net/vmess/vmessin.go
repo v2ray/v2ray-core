@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"io"
 	"net"
+	"strconv"
 
 	"github.com/v2ray/v2ray-core"
 	v2io "github.com/v2ray/v2ray-core/io"
@@ -24,10 +25,10 @@ func NewVMessInboundHandler(vp *core.VPoint, clients *core.VUserSet) *VMessInbou
 	return handler
 }
 
-func (handler *VMessInboundHandler) Listen(port uint8) error {
-	listener, err := net.Listen("tcp", ":"+string(port))
+func (handler *VMessInboundHandler) Listen(port uint16) error {
+	listener, err := net.Listen("tcp", ":"+strconv.Itoa(int(port)))
 	if err != nil {
-		return err
+		return log.Error("Unable to listen tcp:%d", port)
 	}
 	handler.accepting = true
 	go handler.AcceptConnections(listener)
@@ -39,7 +40,7 @@ func (handler *VMessInboundHandler) AcceptConnections(listener net.Listener) err
 	for handler.accepting {
 		connection, err := listener.Accept()
 		if err != nil {
-			return err
+			return log.Error("Failed to accpet connection: %s", err.Error())
 		}
 		go handler.HandleConnection(connection)
 	}
@@ -54,9 +55,14 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 	if err != nil {
 		return err
 	}
+	log.Debug("Received request for %s", request.Address.String())
 
 	response := vmessio.NewVMessResponse(request)
-	connection.Write(response[:])
+	nBytes, err := connection.Write(response[:])
+	log.Debug("Writing VMess response %v", response)
+	if err != nil {
+		return log.Error("Failed to write VMess response (%d bytes): %v", nBytes, err)
+	}
 
 	requestKey := request.RequestKey[:]
 	requestIV := request.RequestIV[:]
@@ -65,12 +71,12 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 
 	requestReader, err := v2io.NewAesDecryptReader(requestKey, requestIV, connection)
 	if err != nil {
-		return err
+		return log.Error("Failed to create decrypt reader: %v", err)
 	}
 
 	responseWriter, err := v2io.NewAesEncryptWriter(responseKey[:], responseIV[:], connection)
 	if err != nil {
-		return err
+		return log.Error("Failed to create encrypt writer: %v", err)
 	}
 
 	ray := handler.vPoint.NewInboundConnectionAccepted(request.Address)
@@ -89,8 +95,10 @@ func (handler *VMessInboundHandler) dumpInput(reader io.Reader, input chan<- []b
 	for {
 		buffer := make([]byte, BufferSize)
 		nBytes, err := reader.Read(buffer)
+		log.Debug("VMessInbound: Reading %d bytes with error %v", nBytes, err)
 		if err == io.EOF {
 			close(input)
+			log.Debug("VMessInbound finishing input.")
 			finish <- true
 			break
 		}
@@ -103,9 +111,11 @@ func (handler *VMessInboundHandler) dumpOutput(writer io.Writer, output <-chan [
 		buffer, open := <-output
 		if !open {
 			finish <- true
+			log.Debug("VMessInbound finishing output.")
 			break
 		}
-		writer.Write(buffer)
+		nBytes, err := writer.Write(buffer)
+		log.Debug("VmessInbound: Wrote %d bytes with error %v", nBytes, err)
 	}
 }
 
@@ -118,14 +128,22 @@ func (handler *VMessInboundHandler) waitForFinish(finish <-chan bool) {
 type VMessInboundHandlerFactory struct {
 }
 
-func (factory *VMessInboundHandlerFactory) Create(vp *core.VPoint, rawConfig []byte) *VMessInboundHandler {
+func (factory *VMessInboundHandlerFactory) Create(vp *core.VPoint, rawConfig []byte) (core.InboundConnectionHandler, error) {
 	config, err := loadInboundConfig(rawConfig)
 	if err != nil {
 		panic(log.Error("Failed to load VMess inbound config: %v", err))
 	}
 	allowedClients := core.NewVUserSet()
-	for _, user := range config.AllowedClients {
+	for _, client := range config.AllowedClients {
+		user, err := client.ToVUser()
+		if err != nil {
+			panic(log.Error("Failed to parse user id %s: %v", client.Id, err))
+		}
 		allowedClients.AddUser(user)
 	}
-	return NewVMessInboundHandler(vp, allowedClients)
+	return NewVMessInboundHandler(vp, allowedClients), nil
+}
+
+func init() {
+	core.RegisterInboundConnectionHandlerFactory("vmess", &VMessInboundHandlerFactory{})
 }

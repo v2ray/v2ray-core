@@ -21,30 +21,33 @@ func SetLogLevel(level LogLevel) {
 	logLevel = level
 }
 
-func writeLog(data string, level LogLevel) {
+func writeLog(level LogLevel, prefix, format string, v ...interface{}) string {
 	if level < logLevel {
-		return
+		return ""
 	}
-	log.Print(data)
+	var data string
+	if v == nil || len(v) == 0 {
+		data = format
+	} else {
+		data = fmt.Sprintf(format, v...)
+	}
+	log.Print(prefix + data)
+	return data
 }
 
 func Debug(format string, v ...interface{}) {
-	data := fmt.Sprintf(format, v)
-	writeLog("[Debug]"+data, DebugLevel)
+	writeLog(DebugLevel, "[Debug]", format, v...)
 }
 
 func Info(format string, v ...interface{}) {
-	data := fmt.Sprintf(format, v)
-	writeLog("[Info]"+data, InfoLevel)
+	writeLog(InfoLevel, "[Info]", format, v...)
 }
 
 func Warning(format string, v ...interface{}) {
-	data := fmt.Sprintf(format, v)
-	writeLog("[Warning]"+data, WarningLevel)
+	writeLog(WarningLevel, "[Warning]", format, v...)
 }
 
 func Error(format string, v ...interface{}) error {
-	data := fmt.Sprintf(format, v)
-	writeLog("[Error]"+data, ErrorLevel)
+	data := writeLog(ErrorLevel, "[Error]", format, v...)
 	return errors.New(data)
 }

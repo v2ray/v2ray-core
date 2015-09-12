@@ -12,8 +12,8 @@ func NewAesDecryptReader(key []byte, iv []byte, reader io.Reader) (io.Reader, er
 		return nil, err
 	}
 
-	aesMode := cipher.NewCBCDecrypter(aesBlock, iv)
-	return NewCryptionReader(aesMode, reader), nil
+	aesStream := cipher.NewCFBDecrypter(aesBlock, iv)
+	return NewCryptionReader(aesStream, reader), nil
 }
 
 func NewAesEncryptWriter(key []byte, iv []byte, writer io.Writer) (io.Writer, error) {
@@ -22,6 +22,6 @@ func NewAesEncryptWriter(key []byte, iv []byte, writer io.Writer) (io.Writer, er
 		return nil, err
 	}
 
-	aesMode := cipher.NewCBCEncrypter(aesBlock, iv)
-	return NewCryptionWriter(aesMode, writer), nil
+	aesStream := cipher.NewCFBEncrypter(aesBlock, iv)
+	return NewCryptionWriter(aesStream, writer), nil
 }

@@ -29,8 +29,8 @@ func NewDecryptionReader(reader io.Reader, key []byte, iv []byte) (*DecryptionRe
 	if err != nil {
 		return nil, err
 	}
-	aesBlockMode := cipher.NewCBCDecrypter(aesCipher, iv)
-	decryptionReader.reader = v2io.NewCryptionReader(aesBlockMode, reader)
+	aesStream := cipher.NewCFBDecrypter(aesCipher, iv)
+	decryptionReader.reader = v2io.NewCryptionReader(aesStream, reader)
 	decryptionReader.buffer = bytes.NewBuffer(make([]byte, 0, 2*blockSize))
 	return decryptionReader, nil
 }

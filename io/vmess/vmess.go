@@ -224,8 +224,8 @@ func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) erro
 	if err != nil {
 		return err
 	}
-	aesMode := cipher.NewCBCEncrypter(aesCipher, make([]byte, blockSize))
-	cWriter := v2io.NewCryptionWriter(aesMode, writer)
+	aesStream := cipher.NewCFBEncrypter(aesCipher, make([]byte, blockSize))
+	cWriter := v2io.NewCryptionWriter(aesStream, writer)
 
 	_, err = writer.Write(buffer[0:encryptionBegin])
 	if err != nil {

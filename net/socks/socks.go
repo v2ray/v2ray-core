@@ -37,8 +37,10 @@ func NewSocksServer(vp *core.VPoint, rawConfig []byte) *SocksServer {
 func (server *SocksServer) Listen(port uint16) error {
 	listener, err := net.Listen("tcp", ":"+strconv.Itoa(int(port)))
 	if err != nil {
-		return log.Error("Error on listening port %d: %v", port, err)
+		log.Error("Error on listening port %d: %v", port, err)
+		return err
 	}
+	log.Debug("Working on tcp:%d", port)
 	server.accepting = true
 	go server.AcceptConnections(listener)
 	return nil
@@ -48,7 +50,8 @@ func (server *SocksServer) AcceptConnections(listener net.Listener) error {
 	for server.accepting {
 		connection, err := listener.Accept()
 		if err != nil {
-			return log.Error("Error on accepting socks connection: %v", err)
+			log.Error("Error on accepting socks connection: %v", err)
+			return err
 		}
 		go server.HandleConnection(connection)
 	}
@@ -60,7 +63,8 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 
 	auth, err := socksio.ReadAuthentication(connection)
 	if err != nil {
-		return log.Error("Error on reading authentication: %v", err)
+		log.Error("Error on reading authentication: %v", err)
+		return err
 	}
 
 	expectedAuthMethod := socksio.AuthNotRequired
@@ -76,12 +80,14 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 		return ErrorAuthenticationFailed
 	}
 
+	log.Debug("Auth accepted, responding auth.")
 	authResponse := socksio.NewAuthenticationResponse(socksio.AuthNotRequired)
 	socksio.WriteAuthentication(connection, authResponse)
 
 	request, err := socksio.ReadRequest(connection)
 	if err != nil {
-		return log.Error("Error on reading socks request: %v", err)
+		log.Error("Error on reading socks request: %v", err)
+		return err
 	}
 
 	response := socksio.NewSocks5Response()
@@ -105,6 +111,7 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	case socksio.AddrTypeDomain:
 		response.Domain = request.Domain
 	}
+	log.Debug("Socks response port = %d", response.Port)
 	socksio.WriteResponse(connection, response)
 
 	ray := server.vPoint.NewInboundConnectionAccepted(request.Destination())
@@ -121,12 +128,13 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 
 func (server *SocksServer) dumpInput(conn net.Conn, input chan<- []byte, finish chan<- bool) {
 	for {
-		buffer := make([]byte, 256)
+		buffer := make([]byte, 512)
 		nBytes, err := conn.Read(buffer)
 		log.Debug("Reading %d bytes, with error %v", nBytes, err)
 		if err == io.EOF {
 			close(input)
 			finish <- true
+			log.Debug("Socks finishing input.")
 			break
 		}
 		input <- buffer[:nBytes]
@@ -138,10 +146,11 @@ func (server *SocksServer) dumpOutput(conn net.Conn, output <-chan []byte, finis
 		buffer, open := <-output
 		if !open {
 			finish <- true
+			log.Debug("Socks finishing output")
 			break
 		}
-		nBytes, _ := conn.Write(buffer)
-		log.Debug("Writing %d bytes", nBytes)
+		nBytes, err := conn.Write(buffer)
+		log.Debug("Writing %d bytes with error %v", nBytes, err)
 	}
 }
 

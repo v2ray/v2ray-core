@@ -1,0 +1,11 @@
+{
+  "port": 27183,
+  "inbound": {
+    "protocol": "vmess",
+    "file": "in_vmess.json"
+  },
+  "outbound": {
+    "protocol": "freedom",
+    "file": ""
+  }
+}

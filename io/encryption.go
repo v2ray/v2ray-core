@@ -3,18 +3,20 @@ package io
 import (
 	"crypto/cipher"
 	"io"
+
+	"github.com/v2ray/v2ray-core/log"
 )
 
 // CryptionReader is a general purpose reader that applies
 // block cipher on top of a regular reader.
 type CryptionReader struct {
-	mode   cipher.BlockMode
+	stream cipher.Stream
 	reader io.Reader
 }
 
-func NewCryptionReader(mode cipher.BlockMode, reader io.Reader) *CryptionReader {
+func NewCryptionReader(stream cipher.Stream, reader io.Reader) *CryptionReader {
 	this := new(CryptionReader)
-	this.mode = mode
+	this.stream = stream
 	this.reader = reader
 	return this
 }
@@ -23,32 +25,26 @@ func NewCryptionReader(mode cipher.BlockMode, reader io.Reader) *CryptionReader 
 // a multiply of BlockSize()
 func (reader CryptionReader) Read(blocks []byte) (int, error) {
 	nBytes, err := reader.reader.Read(blocks)
-	if err != nil && err != io.EOF {
-		return nBytes, err
+	log.Debug("CryptionReader: Read %d bytes", nBytes)
+	if nBytes > 0 {
+		reader.stream.XORKeyStream(blocks[:nBytes], blocks[:nBytes])
 	}
-	if nBytes < len(blocks) {
-		for i, _ := range blocks[nBytes:] {
-			blocks[i] = 0
-		}
+	if err != nil {
+		log.Error("Error reading blocks: %v", err)
 	}
-	reader.mode.CryptBlocks(blocks, blocks)
 	return nBytes, err
-}
-
-func (reader CryptionReader) BlockSize() int {
-	return reader.mode.BlockSize()
 }
 
 // Cryption writer is a general purpose of byte stream writer that applies
 // block cipher on top of a regular writer.
 type CryptionWriter struct {
-	mode   cipher.BlockMode
+	stream cipher.Stream
 	writer io.Writer
 }
 
-func NewCryptionWriter(mode cipher.BlockMode, writer io.Writer) *CryptionWriter {
+func NewCryptionWriter(stream cipher.Stream, writer io.Writer) *CryptionWriter {
 	this := new(CryptionWriter)
-	this.mode = mode
+	this.stream = stream
 	this.writer = writer
 	return this
 }
@@ -56,10 +52,7 @@ func NewCryptionWriter(mode cipher.BlockMode, writer io.Writer) *CryptionWriter 
 // Write writes the give blocks to underlying writer. The length of the blocks
 // must be a multiply of BlockSize()
 func (writer CryptionWriter) Write(blocks []byte) (int, error) {
-	writer.mode.CryptBlocks(blocks, blocks)
+	log.Debug("CryptionWriter writing %d bytes", len(blocks))
+	writer.stream.XORKeyStream(blocks, blocks)
 	return writer.writer.Write(blocks)
-}
-
-func (writer CryptionWriter) BlockSize() int {
-	return writer.mode.BlockSize()
 }

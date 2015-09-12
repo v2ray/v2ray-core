@@ -1,0 +1,11 @@
+{
+  "port": 1080,
+  "inbound": {
+    "protocol": "socks",
+    "file": "in_socks.json"
+  },
+  "outbound": {
+    "protocol": "vmess",
+    "file": "out_vmess.json"
+  }
+}
