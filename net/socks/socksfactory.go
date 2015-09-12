@@ -7,6 +7,6 @@ import (
 type SocksServerFactory struct {
 }
 
-func (factory SocksServerFactory) Create(vp *core.VPoint) (core.InboundConnectionHandler, error) {
-	return NewSocksServer(vp), nil
+func (factory SocksServerFactory) Create(vp *core.VPoint, config []byte) (core.InboundConnectionHandler, error) {
+	return NewSocksServer(vp, config), nil
 }

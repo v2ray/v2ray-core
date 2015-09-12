@@ -10,28 +10,37 @@ import (
 	"github.com/v2ray/v2ray-core"
 	v2io "github.com/v2ray/v2ray-core/io"
 	vmessio "github.com/v2ray/v2ray-core/io/vmess"
+	"github.com/v2ray/v2ray-core/log"
 	v2net "github.com/v2ray/v2ray-core/net"
 )
 
-type VMessOutboundHandler struct {
-	vPoint *core.VPoint
-	dest   v2net.VAddress
+// VNext is the next VPoint server in the connection chain.
+type VNextServer struct {
+	Address v2net.VAddress // Address of VNext server
+	Users   []core.VUser   // User accounts for accessing VNext.
 }
 
-func NewVMessOutboundHandler(vp *core.VPoint, dest v2net.VAddress) *VMessOutboundHandler {
+type VMessOutboundHandler struct {
+	vPoint    *core.VPoint
+	dest      v2net.VAddress
+	vNextList []VNextServer
+}
+
+func NewVMessOutboundHandler(vp *core.VPoint, vNextList []VNextServer, dest v2net.VAddress) *VMessOutboundHandler {
 	handler := new(VMessOutboundHandler)
 	handler.vPoint = vp
 	handler.dest = dest
+	handler.vNextList = vNextList
 	return handler
 }
 
 func (handler *VMessOutboundHandler) pickVNext() (v2net.VAddress, core.VUser) {
-	vNextLen := len(handler.vPoint.Config.VNextList)
+	vNextLen := len(handler.vNextList)
 	if vNextLen == 0 {
 		panic("Zero vNext is configured.")
 	}
 	vNextIndex := mrand.Intn(vNextLen)
-	vNext := handler.vPoint.Config.VNextList[vNextIndex]
+	vNext := handler.vNextList[vNextIndex]
 	vNextUserLen := len(vNext.Users)
 	if vNextUserLen == 0 {
 		panic("Zero User account.")
@@ -91,6 +100,7 @@ func (handler *VMessOutboundHandler) dumpOutput(reader io.Reader, output chan<- 
 		buffer := make([]byte, BufferSize)
 		nBytes, err := reader.Read(buffer)
 		if err == io.EOF {
+			close(output)
 			finish <- true
 			break
 		}
@@ -118,6 +128,14 @@ func (handler *VMessOutboundHandler) waitForFinish(finish <-chan bool) {
 type VMessOutboundHandlerFactory struct {
 }
 
-func (factory *VMessOutboundHandlerFactory) Create(vp *core.VPoint, destination v2net.VAddress) *VMessOutboundHandler {
-	return NewVMessOutboundHandler(vp, destination)
+func (factory *VMessOutboundHandlerFactory) Create(vp *core.VPoint, rawConfig []byte, destination v2net.VAddress) *VMessOutboundHandler {
+	config, err := loadOutboundConfig(rawConfig)
+	if err != nil {
+		panic(log.Error("Failed to load VMess outbound config: %v", err))
+	}
+	servers := make([]VNextServer, 0, len(config.VNextList))
+	for _, server := range config.VNextList {
+		servers = append(servers, server.ToVNextServer())
+	}
+	return NewVMessOutboundHandler(vp, servers, destination)
 }

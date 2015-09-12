@@ -3,12 +3,12 @@ package socks
 import (
 	"errors"
 	"io"
-	"log"
 	"net"
 	"strconv"
 
 	"github.com/v2ray/v2ray-core"
 	socksio "github.com/v2ray/v2ray-core/io/socks"
+	"github.com/v2ray/v2ray-core/log"
 )
 
 var (
@@ -20,18 +20,24 @@ var (
 type SocksServer struct {
 	accepting bool
 	vPoint    *core.VPoint
+	config    SocksConfig
 }
 
-func NewSocksServer(vp *core.VPoint) *SocksServer {
+func NewSocksServer(vp *core.VPoint, rawConfig []byte) *SocksServer {
 	server := new(SocksServer)
 	server.vPoint = vp
+	config, err := loadConfig(rawConfig)
+	if err != nil {
+		panic(log.Error("Unable to load socks config: %v", err))
+	}
+	server.config = config
 	return server
 }
 
 func (server *SocksServer) Listen(port uint16) error {
 	listener, err := net.Listen("tcp", ":"+strconv.Itoa(int(port)))
 	if err != nil {
-		return err
+		return log.Error("Error on listening port %d: %v", port, err)
 	}
 	server.accepting = true
 	go server.AcceptConnections(listener)
@@ -42,8 +48,7 @@ func (server *SocksServer) AcceptConnections(listener net.Listener) error {
 	for server.accepting {
 		connection, err := listener.Accept()
 		if err != nil {
-			log.Print(err)
-			return err
+			return log.Error("Error on accepting socks connection: %v", err)
 		}
 		go server.HandleConnection(connection)
 	}
@@ -55,14 +60,19 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 
 	auth, err := socksio.ReadAuthentication(connection)
 	if err != nil {
-		log.Print(err)
-		return err
+		return log.Error("Error on reading authentication: %v", err)
 	}
-	log.Print(auth)
 
-	if !auth.HasAuthMethod(socksio.AuthNotRequired) {
-		// TODO send response with FF
-		log.Print(ErrorAuthenticationFailed)
+	expectedAuthMethod := socksio.AuthNotRequired
+	if server.config.AuthMethod == JsonAuthMethodUserPass {
+		expectedAuthMethod = socksio.AuthUserPass
+	}
+
+	if !auth.HasAuthMethod(expectedAuthMethod) {
+		authResponse := socksio.NewAuthenticationResponse(socksio.AuthNoMatchingMethod)
+		socksio.WriteAuthentication(connection, authResponse)
+
+		log.Info("Client doesn't support allowed any auth methods.")
 		return ErrorAuthenticationFailed
 	}
 
@@ -71,8 +81,7 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 
 	request, err := socksio.ReadRequest(connection)
 	if err != nil {
-		log.Print(err)
-		return err
+		return log.Error("Error on reading socks request: %v", err)
 	}
 
 	response := socksio.NewSocks5Response()
@@ -81,7 +90,7 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 		response := socksio.NewSocks5Response()
 		response.Error = socksio.ErrorCommandNotSupported
 		socksio.WriteResponse(connection, response)
-		log.Print(ErrorCommandNotSupported)
+		log.Info("Unsupported socks command %d", request.Command)
 		return ErrorCommandNotSupported
 	}
 
@@ -114,7 +123,7 @@ func (server *SocksServer) dumpInput(conn net.Conn, input chan<- []byte, finish 
 	for {
 		buffer := make([]byte, 256)
 		nBytes, err := conn.Read(buffer)
-		log.Printf("Reading %d bytes, with error %v", nBytes, err)
+		log.Debug("Reading %d bytes, with error %v", nBytes, err)
 		if err == io.EOF {
 			close(input)
 			finish <- true
@@ -132,7 +141,7 @@ func (server *SocksServer) dumpOutput(conn net.Conn, output <-chan []byte, finis
 			break
 		}
 		nBytes, _ := conn.Write(buffer)
-		log.Printf("Writing %d bytes", nBytes)
+		log.Debug("Writing %d bytes", nBytes)
 	}
 }
 

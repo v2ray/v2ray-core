@@ -10,13 +10,11 @@ import (
 )
 
 type VFreeConnection struct {
-	vPoint *core.VPoint
-	dest   v2net.VAddress
+	dest v2net.VAddress
 }
 
-func NewVFreeConnection(vp *core.VPoint, dest v2net.VAddress) *VFreeConnection {
+func NewVFreeConnection(dest v2net.VAddress) *VFreeConnection {
 	conn := new(VFreeConnection)
-	conn.vPoint = vp
 	conn.dest = dest
 	return conn
 }

@@ -28,6 +28,11 @@ func writeLog(data string, level LogLevel) {
 	log.Print(data)
 }
 
+func Debug(format string, v ...interface{}) {
+	data := fmt.Sprintf(format, v)
+	writeLog("[Debug]"+data, DebugLevel)
+}
+
 func Info(format string, v ...interface{}) {
 	data := fmt.Sprintf(format, v)
 	writeLog("[Info]"+data, InfoLevel)

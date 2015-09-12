@@ -13,9 +13,10 @@ import (
 const (
 	socksVersion = uint8(5)
 
-	AuthNotRequired = byte(0x00)
-	AuthGssApi      = byte(0x01)
-	AuthUserPass    = byte(0x02)
+	AuthNotRequired      = byte(0x00)
+	AuthGssApi           = byte(0x01)
+	AuthUserPass         = byte(0x02)
+	AuthNoMatchingMethod = byte(0xFF)
 )
 
 // Authentication request header of Socks5 protocol

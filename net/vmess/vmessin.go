@@ -8,6 +8,7 @@ import (
 	"github.com/v2ray/v2ray-core"
 	v2io "github.com/v2ray/v2ray-core/io"
 	vmessio "github.com/v2ray/v2ray-core/io/vmess"
+	"github.com/v2ray/v2ray-core/log"
 )
 
 type VMessInboundHandler struct {
@@ -89,6 +90,7 @@ func (handler *VMessInboundHandler) dumpInput(reader io.Reader, input chan<- []b
 		buffer := make([]byte, BufferSize)
 		nBytes, err := reader.Read(buffer)
 		if err == io.EOF {
+			close(input)
 			finish <- true
 			break
 		}
@@ -114,18 +116,16 @@ func (handler *VMessInboundHandler) waitForFinish(finish <-chan bool) {
 }
 
 type VMessInboundHandlerFactory struct {
-	allowedClients *core.VUserSet
 }
 
-func NewVMessInboundHandlerFactory(clients []core.VUser) *VMessInboundHandlerFactory {
-	factory := new(VMessInboundHandlerFactory)
-	factory.allowedClients = core.NewVUserSet()
-	for _, user := range clients {
-		factory.allowedClients.AddUser(user)
+func (factory *VMessInboundHandlerFactory) Create(vp *core.VPoint, rawConfig []byte) *VMessInboundHandler {
+	config, err := loadInboundConfig(rawConfig)
+	if err != nil {
+		panic(log.Error("Failed to load VMess inbound config: %v", err))
 	}
-	return factory
-}
-
-func (factory *VMessInboundHandlerFactory) Create(vp *core.VPoint) *VMessInboundHandler {
-	return NewVMessInboundHandler(vp, factory.allowedClients)
+	allowedClients := core.NewVUserSet()
+	for _, user := range config.AllowedClients {
+		allowedClients.AddUser(user)
+	}
+	return NewVMessInboundHandler(vp, allowedClients)
 }
