@@ -64,8 +64,7 @@ func (vconn *FreedomConnection) DumpOutput(conn net.Conn, output chan<- []byte, 
 }
 
 func (vconn *FreedomConnection) CloseConn(conn net.Conn, finish <-chan bool) {
-	for i := 0; i < 2; i++ {
-		<-finish
-	}
+	<-finish
+	<-finish
 	conn.Close()
 }

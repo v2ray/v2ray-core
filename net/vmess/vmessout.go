@@ -146,9 +146,8 @@ func (handler *VMessOutboundHandler) dumpInput(writer io.Writer, input <-chan []
 }
 
 func (handler *VMessOutboundHandler) waitForFinish(finish <-chan bool) {
-	for i := 0; i < 2; i++ {
-		<-finish
-	}
+	<-finish
+	<-finish
 	log.Debug("Finishing waiting for VMessOutbound ending.")
 }
 

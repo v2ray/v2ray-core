@@ -120,9 +120,8 @@ func (handler *VMessInboundHandler) dumpOutput(writer io.Writer, output <-chan [
 }
 
 func (handler *VMessInboundHandler) waitForFinish(finish <-chan bool) {
-	for i := 0; i < 2; i++ {
-		<-finish
-	}
+	<-finish
+	<-finish
 }
 
 type VMessInboundHandlerFactory struct {

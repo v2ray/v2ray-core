@@ -155,7 +155,6 @@ func (server *SocksServer) dumpOutput(conn net.Conn, output <-chan []byte, finis
 }
 
 func (server *SocksServer) waitForFinish(finish <-chan bool) {
-	for i := 0; i < 2; i++ {
-		<-finish
-	}
+	<-finish
+	<-finish
 }
