@@ -1,11 +1,12 @@
+/* Point 服务器配置，接受 Socks5 协议请求，并转发到一下 Point 服务器。 */
 {
-  "port": 1080,
+  "port": 1080, /* Socks 5 端口 */
   "inbound": {
     "protocol": "socks",
-    "file": "in_socks.json"
+    "file": "in_socks.json" /* Socks 5 配置文件 */
   },
   "outbound": {
     "protocol": "vmess",
-    "file": "out_vmess.json"
+    "file": "out_vmess.json" /* VMess 配置文件 */
   }
 }

@@ -1,3 +1,4 @@
+/* Socks 5 协议配置 */
 {
-  "auth": "noauth"
+  "auth": "noauth" /* 用户验证方式，暂时只支持匿名模式 */
 }
