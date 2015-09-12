@@ -1,17 +1,17 @@
 package socks
 
 import (
-	"bytes"
+	// "bytes"
 	"testing"
 
-	"github.com/v2ray/v2ray-core"
-	"github.com/v2ray/v2ray-core/testing/mocks"
-	"github.com/v2ray/v2ray-core/testing/unit"
+	// "github.com/v2ray/v2ray-core"
+	// "github.com/v2ray/v2ray-core/testing/mocks"
+	// "github.com/v2ray/v2ray-core/testing/unit"
 )
 
 func TestSocksTcpConnect(t *testing.T) {
 	t.Skip("Not ready yet.")
-
+  /*
 	assert := unit.Assert(t)
 
 	port := uint16(12384)
@@ -35,5 +35,5 @@ func TestSocksTcpConnect(t *testing.T) {
 
 	err = vpoint.Start()
 	assert.Error(err).IsNil()
-
+  */
 }
