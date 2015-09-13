@@ -3,11 +3,11 @@ package net
 import (
 	"io"
 
-	"github.com/v2ray/v2ray-core/log"
+	_ "github.com/v2ray/v2ray-core/log"
 )
 
 const (
-	bufferSize = 8192
+	bufferSize = 32 * 1024
 )
 
 func ReaderToChan(stream chan<- []byte, reader io.Reader) error {
@@ -24,8 +24,7 @@ func ReaderToChan(stream chan<- []byte, reader io.Reader) error {
 
 func ChanToWriter(writer io.Writer, stream <-chan []byte) error {
 	for buffer := range stream {
-		nBytes, err := writer.Write(buffer)
-		log.Debug("Writing %d bytes with error %v", nBytes, err)
+		_, err := writer.Write(buffer)
 		if err != nil {
 			return err
 		}

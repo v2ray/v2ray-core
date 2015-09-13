@@ -25,7 +25,6 @@ func NewCryptionReader(stream cipher.Stream, reader io.Reader) *CryptionReader {
 // a multiply of BlockSize()
 func (reader CryptionReader) Read(blocks []byte) (int, error) {
 	nBytes, err := reader.reader.Read(blocks)
-	log.Debug("CryptionReader: Read %d bytes", nBytes)
 	if nBytes > 0 {
 		reader.stream.XORKeyStream(blocks[:nBytes], blocks[:nBytes])
 	}
@@ -52,7 +51,6 @@ func NewCryptionWriter(stream cipher.Stream, writer io.Writer) *CryptionWriter {
 // Write writes the give blocks to underlying writer. The length of the blocks
 // must be a multiply of BlockSize()
 func (writer CryptionWriter) Write(blocks []byte) (int, error) {
-	log.Debug("CryptionWriter writing %d bytes", len(blocks))
 	writer.stream.XORKeyStream(blocks, blocks)
 	return writer.writer.Write(blocks)
 }
