@@ -118,31 +118,14 @@ func (handler *VMessOutboundHandler) startCommunicate(request *vmessio.VMessRequ
 }
 
 func (handler *VMessOutboundHandler) dumpOutput(reader io.Reader, output chan<- []byte, finish chan<- bool) {
-	for {
-		buffer := make([]byte, BufferSize)
-		nBytes, err := reader.Read(buffer)
-		log.Debug("VMessOutbound: Reading %d bytes, with error %v", nBytes, err)
-		if err == io.EOF {
-			close(output)
-			finish <- true
-			log.Debug("VMessOutbound finishing output.")
-			break
-		}
-		output <- buffer[:nBytes]
-	}
+	v2net.ReaderToChan(output, reader)
+	close(output)
+	finish <- true
 }
 
 func (handler *VMessOutboundHandler) dumpInput(writer io.Writer, input <-chan []byte, finish chan<- bool) {
-	for {
-		buffer, open := <-input
-		if !open {
-			finish <- true
-			log.Debug("VMessOutbound finishing input.")
-			break
-		}
-		nBytes, err := writer.Write(buffer)
-		log.Debug("VMessOutbound: Wrote %d bytes with error %v", nBytes, err)
-	}
+	v2net.ChanToWriter(writer, input)
+	finish <- true
 }
 
 func (handler *VMessOutboundHandler) waitForFinish(finish <-chan bool) {

@@ -10,6 +10,7 @@ import (
 	v2io "github.com/v2ray/v2ray-core/io"
 	vmessio "github.com/v2ray/v2ray-core/io/vmess"
 	"github.com/v2ray/v2ray-core/log"
+	v2net "github.com/v2ray/v2ray-core/net"
 )
 
 type VMessInboundHandler struct {
@@ -92,31 +93,14 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 }
 
 func (handler *VMessInboundHandler) dumpInput(reader io.Reader, input chan<- []byte, finish chan<- bool) {
-	for {
-		buffer := make([]byte, BufferSize)
-		nBytes, err := reader.Read(buffer)
-		log.Debug("VMessInbound: Reading %d bytes with error %v", nBytes, err)
-		if err == io.EOF {
-			close(input)
-			log.Debug("VMessInbound finishing input.")
-			finish <- true
-			break
-		}
-		input <- buffer[:nBytes]
-	}
+	v2net.ReaderToChan(input, reader)
+	close(input)
+	finish <- true
 }
 
 func (handler *VMessInboundHandler) dumpOutput(writer io.Writer, output <-chan []byte, finish chan<- bool) {
-	for {
-		buffer, open := <-output
-		if !open {
-			finish <- true
-			log.Debug("VMessInbound finishing output.")
-			break
-		}
-		nBytes, err := writer.Write(buffer)
-		log.Debug("VmessInbound: Wrote %d bytes with error %v", nBytes, err)
-	}
+	v2net.ChanToWriter(writer, output)
+	finish <- true
 }
 
 func (handler *VMessInboundHandler) waitForFinish(finish <-chan bool) {

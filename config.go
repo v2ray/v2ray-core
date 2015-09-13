@@ -16,7 +16,7 @@ type ConnectionConfig struct {
 
 // Config is the config for Point server.
 type Config struct {
-	Port           uint16            `json:"port"` // Port of this Point server.
+	Port           uint16           `json:"port"` // Port of this Point server.
 	InboundConfig  ConnectionConfig `json:"inbound"`
 	OutboundConfig ConnectionConfig `json:"outbound"`
 }

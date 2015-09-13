@@ -2,13 +2,13 @@ package socks
 
 import (
 	"errors"
-	"io"
 	"net"
 	"strconv"
 
 	"github.com/v2ray/v2ray-core"
 	socksio "github.com/v2ray/v2ray-core/io/socks"
 	"github.com/v2ray/v2ray-core/log"
+	v2net "github.com/v2ray/v2ray-core/net"
 )
 
 var (
@@ -127,31 +127,14 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 }
 
 func (server *SocksServer) dumpInput(conn net.Conn, input chan<- []byte, finish chan<- bool) {
-	for {
-		buffer := make([]byte, 512)
-		nBytes, err := conn.Read(buffer)
-		log.Debug("Reading %d bytes, with error %v", nBytes, err)
-		if err == io.EOF {
-			close(input)
-			finish <- true
-			log.Debug("Socks finishing input.")
-			break
-		}
-		input <- buffer[:nBytes]
-	}
+	v2net.ReaderToChan(input, conn)
+	close(input)
+	finish <- true
 }
 
 func (server *SocksServer) dumpOutput(conn net.Conn, output <-chan []byte, finish chan<- bool) {
-	for {
-		buffer, open := <-output
-		if !open {
-			finish <- true
-			log.Debug("Socks finishing output")
-			break
-		}
-		nBytes, err := conn.Write(buffer)
-		log.Debug("Writing %d bytes with error %v", nBytes, err)
-	}
+	v2net.ChanToWriter(conn, output)
+	finish <- true
 }
 
 func (server *SocksServer) waitForFinish(finish <-chan bool) {

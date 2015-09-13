@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	_ "log"
 	mrand "math/rand"
 
 	"github.com/v2ray/v2ray-core"
@@ -27,6 +26,8 @@ const (
 
 var (
 	ErrorInvalidUser = errors.New("Invalid User")
+
+	emptyIV = make([]byte, blockSize)
 )
 
 // VMessRequest implements the request message of VMess protocol. It only contains
@@ -75,7 +76,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	}
 	request.UserId = *userId
 
-	decryptor, err := NewDecryptionReader(reader, userId.Hash([]byte("PWD")), make([]byte, blockSize))
+	decryptor, err := NewDecryptionReader(reader, userId.Hash([]byte("PWD")), emptyIV)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +225,7 @@ func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) erro
 	if err != nil {
 		return err
 	}
-	aesStream := cipher.NewCFBEncrypter(aesCipher, make([]byte, blockSize))
+	aesStream := cipher.NewCFBEncrypter(aesCipher, emptyIV)
 	cWriter := v2io.NewCryptionWriter(aesStream, writer)
 
 	_, err = writer.Write(buffer[0:encryptionBegin])
