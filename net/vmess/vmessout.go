@@ -110,28 +110,28 @@ func (handler *VMessOutboundHandler) startCommunicate(request *vmessio.VMessRequ
 	input := ray.OutboundInput()
 	output := ray.OutboundOutput()
 	readFinish := make(chan bool)
-  writeFinish := make(chan bool)
+	writeFinish := make(chan bool)
 
 	go handler.dumpInput(encryptRequestWriter, input, readFinish)
 	go handler.dumpOutput(decryptResponseReader, output, writeFinish)
-  
-  <-readFinish
-  conn.CloseWrite()
-  log.Debug("VMessOut closing write")
-  <-writeFinish
-  return nil
+
+	<-readFinish
+	conn.CloseWrite()
+	log.Debug("VMessOut closing write")
+	<-writeFinish
+	return nil
 }
 
 func (handler *VMessOutboundHandler) dumpOutput(reader io.Reader, output chan<- []byte, finish chan<- bool) {
 	v2net.ReaderToChan(output, reader)
 	close(output)
-  log.Debug("VMessOut closing output")
+	log.Debug("VMessOut closing output")
 	finish <- true
 }
 
 func (handler *VMessOutboundHandler) dumpInput(writer io.Writer, input <-chan []byte, finish chan<- bool) {
 	v2net.ChanToWriter(writer, input)
-  log.Debug("VMessOut closing input")
+	log.Debug("VMessOut closing input")
 	finish <- true
 }
 

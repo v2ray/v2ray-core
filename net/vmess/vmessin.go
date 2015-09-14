@@ -50,7 +50,7 @@ func (handler *VMessInboundHandler) AcceptConnections(listener net.Listener) err
 
 func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error {
 	defer connection.Close()
-  
+
 	reader := vmessio.NewVMessRequestReader(handler.clients)
 
 	request, err := reader.Read(connection)
@@ -83,19 +83,19 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 	ray := handler.vPoint.NewInboundConnectionAccepted(request.Address)
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
-  
+
 	readFinish := make(chan bool)
-  writeFinish := make(chan bool)
+	writeFinish := make(chan bool)
 
 	go handler.dumpInput(requestReader, input, readFinish)
 	go handler.dumpOutput(responseWriter, output, writeFinish)
-	
-  <-writeFinish
-  if tcpConn, ok := connection.(*net.TCPConn); ok {
-    log.Debug("VMessIn closing write")
-    tcpConn.CloseWrite();
-  }
-  <-readFinish
+
+	<-writeFinish
+	if tcpConn, ok := connection.(*net.TCPConn); ok {
+		log.Debug("VMessIn closing write")
+		tcpConn.CloseWrite()
+	}
+	<-readFinish
 
 	return nil
 }
@@ -103,16 +103,15 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 func (handler *VMessInboundHandler) dumpInput(reader io.Reader, input chan<- []byte, finish chan<- bool) {
 	v2net.ReaderToChan(input, reader)
 	close(input)
-  log.Debug("VMessIn closing input")
+	log.Debug("VMessIn closing input")
 	finish <- true
 }
 
 func (handler *VMessInboundHandler) dumpOutput(writer io.Writer, output <-chan []byte, finish chan<- bool) {
 	v2net.ChanToWriter(writer, output)
-  log.Debug("VMessOut closing output")
+	log.Debug("VMessOut closing output")
 	finish <- true
 }
-
 
 type VMessInboundHandlerFactory struct {
 }

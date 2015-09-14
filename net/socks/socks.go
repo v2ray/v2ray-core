@@ -116,7 +116,7 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 	readFinish := make(chan bool)
-  writeFinish := make(chan bool)
+	writeFinish := make(chan bool)
 
 	go server.dumpInput(connection, input, readFinish)
 	go server.dumpOutput(connection, output, writeFinish)
@@ -128,12 +128,12 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 func (server *SocksServer) dumpInput(conn net.Conn, input chan<- []byte, finish chan<- bool) {
 	v2net.ReaderToChan(input, conn)
 	close(input)
-  log.Debug("Socks input closed")
+	log.Debug("Socks input closed")
 	finish <- true
 }
 
 func (server *SocksServer) dumpOutput(conn net.Conn, output <-chan []byte, finish chan<- bool) {
 	v2net.ChanToWriter(conn, output)
-  log.Debug("Socks output closed")
+	log.Debug("Socks output closed")
 	finish <- true
 }

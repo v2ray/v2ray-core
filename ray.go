@@ -1,7 +1,7 @@
 package core
 
 const (
-  bufferSize = 16
+	bufferSize = 16
 )
 
 type Ray struct {

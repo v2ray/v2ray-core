@@ -22,8 +22,10 @@ const (
 	addrTypeDomain = byte(0x02)
 
 	Version = byte(0x01)
-  
-  blockSize = 16
+
+	blockSize = 16
+
+	CryptoMessage = "c48619fe-8f02-49e0-b9e9-edf763e17e21"
 )
 
 var (
@@ -67,7 +69,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	// TODO: verify version number
 	request.Version = buffer[0]
 
-	nBytes, err = reader.Read(buffer[:len(request.UserId)])
+	nBytes, err = reader.Read(buffer[:core.IDBytesLen])
 	if err != nil {
 		return nil, err
 	}
@@ -77,8 +79,8 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 		return nil, ErrorInvalidUser
 	}
 	request.UserId = *userId
-  
-  aesCipher, err := aes.NewCipher(userId.Hash([]byte("PWD")))
+
+	aesCipher, err := aes.NewCipher(userId.Hash([]byte(CryptoMessage)))
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +183,7 @@ func NewVMessRequestWriter() *VMessRequestWriter {
 func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) error {
 	buffer := make([]byte, 0, 300)
 	buffer = append(buffer, request.Version)
-	buffer = append(buffer, request.UserId.Hash([]byte("ASK"))...)
+	buffer = append(buffer, request.UserId.TimeRangeHash(30)...)
 
 	encryptionBegin := len(buffer)
 
@@ -229,7 +231,7 @@ func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) erro
 	buffer = append(buffer, paddingBuffer...)
 	encryptionEnd := len(buffer)
 
-	aesCipher, err := aes.NewCipher(request.UserId.Hash([]byte("PWD")))
+	aesCipher, err := aes.NewCipher(request.UserId.Hash([]byte(CryptoMessage)))
 	if err != nil {
 		return err
 	}
