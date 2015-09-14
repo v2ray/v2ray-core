@@ -15,11 +15,11 @@ import (
 
 type VMessInboundHandler struct {
 	vPoint    *core.Point
-	clients   *core.UserSet
+	clients   core.UserSet
 	accepting bool
 }
 
-func NewVMessInboundHandler(vp *core.Point, clients *core.UserSet) *VMessInboundHandler {
+func NewVMessInboundHandler(vp *core.Point, clients core.UserSet) *VMessInboundHandler {
 	handler := new(VMessInboundHandler)
 	handler.vPoint = vp
 	handler.clients = clients
@@ -121,7 +121,7 @@ func (factory *VMessInboundHandlerFactory) Create(vp *core.Point, rawConfig []by
 	if err != nil {
 		panic(log.Error("Failed to load VMess inbound config: %v", err))
 	}
-	allowedClients := core.NewUserSet()
+	allowedClients := core.NewTimedUserSet()
 	for _, client := range config.AllowedClients {
 		user, err := client.ToUser()
 		if err != nil {

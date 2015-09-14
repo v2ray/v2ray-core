@@ -9,7 +9,12 @@ const (
 	cacheDurationSec  = 120
 )
 
-type UserSet struct {
+type UserSet interface {
+	AddUser(user User) error
+	GetUser(timeHash []byte) (*ID, bool)
+}
+
+type TimedUserSet struct {
 	validUserIds []ID
 	userHashes   map[string]int
 }
@@ -19,8 +24,8 @@ type hashEntry struct {
 	timeSec int64
 }
 
-func NewUserSet() *UserSet {
-	vuSet := new(UserSet)
+func NewTimedUserSet() UserSet {
+	vuSet := new(TimedUserSet)
 	vuSet.validUserIds = make([]ID, 0, 16)
 	vuSet.userHashes = make(map[string]int)
 
@@ -28,7 +33,7 @@ func NewUserSet() *UserSet {
 	return vuSet
 }
 
-func (us *UserSet) updateUserHash(tick <-chan time.Time) {
+func (us *TimedUserSet) updateUserHash(tick <-chan time.Time) {
 	now := time.Now().UTC()
 	lastSec := now.Unix() - cacheDurationSec
 
@@ -57,13 +62,13 @@ func (us *UserSet) updateUserHash(tick <-chan time.Time) {
 	}
 }
 
-func (us *UserSet) AddUser(user User) error {
+func (us *TimedUserSet) AddUser(user User) error {
 	id := user.Id
 	us.validUserIds = append(us.validUserIds, id)
 	return nil
 }
 
-func (us UserSet) IsValidUserId(userHash []byte) (*ID, bool) {
+func (us TimedUserSet) GetUser(userHash []byte) (*ID, bool) {
 	idIndex, found := us.userHashes[string(userHash)]
 	if found {
 		return &us.validUserIds[idIndex], true

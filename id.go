@@ -54,7 +54,10 @@ func (v ID) TimeHash(timeSec int64) []byte {
 }
 
 func (v ID) Hash(data []byte) []byte {
-	return v.hasher.Sum(data)
+	v.hasher.Write(data)
+	hash := v.hasher.Sum(nil)
+	v.hasher.Reset()
+	return hash
 }
 
 var byteGroups = []int{8, 4, 4, 4, 12}

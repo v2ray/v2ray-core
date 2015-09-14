@@ -7,18 +7,19 @@ import (
 
 	"github.com/v2ray/v2ray-core"
 	v2net "github.com/v2ray/v2ray-core/net"
+	"github.com/v2ray/v2ray-core/testing/mocks"
 	"github.com/v2ray/v2ray-core/testing/unit"
 )
 
 func TestVMessSerialization(t *testing.T) {
 	assert := unit.Assert(t)
 
-	userId, err := core.UUIDToID("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
+	userId, err := core.NewID("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	userSet := core.NewUserSet()
+	userSet := mocks.MockUserSet{[]core.ID{}, make(map[string]int)}
 	userSet.AddUser(core.User{userId})
 
 	request := new(VMessRequest)
@@ -50,14 +51,16 @@ func TestVMessSerialization(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	requestReader := NewVMessRequestReader(userSet)
+	userSet.UserHashes[string(buffer.Bytes()[1:17])] = 0
+
+	requestReader := NewVMessRequestReader(&userSet)
 	actualRequest, err := requestReader.Read(buffer)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	assert.Byte(actualRequest.Version).Named("Version").Equals(byte(0x01))
-	assert.Bytes(actualRequest.UserId[:]).Named("UserId").Equals(request.UserId[:])
+	assert.String(actualRequest.UserId.String).Named("UserId").Equals(request.UserId.String)
 	assert.Bytes(actualRequest.RequestIV[:]).Named("RequestIV").Equals(request.RequestIV[:])
 	assert.Bytes(actualRequest.RequestKey[:]).Named("RequestKey").Equals(request.RequestKey[:])
 	assert.Bytes(actualRequest.ResponseHeader[:]).Named("ResponseHeader").Equals(request.ResponseHeader[:])

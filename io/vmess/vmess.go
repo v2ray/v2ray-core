@@ -49,10 +49,10 @@ type VMessRequest struct {
 }
 
 type VMessRequestReader struct {
-	vUserSet *core.UserSet
+	vUserSet core.UserSet
 }
 
-func NewVMessRequestReader(vUserSet *core.UserSet) *VMessRequestReader {
+func NewVMessRequestReader(vUserSet core.UserSet) *VMessRequestReader {
 	reader := new(VMessRequestReader)
 	reader.vUserSet = vUserSet
 	return reader
@@ -74,7 +74,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 		return nil, err
 	}
 
-	userId, valid := r.vUserSet.IsValidUserId(buffer[:nBytes])
+	userId, valid := r.vUserSet.GetUser(buffer[:nBytes])
 	if !valid {
 		return nil, ErrorInvalidUser
 	}
