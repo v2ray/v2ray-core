@@ -11,12 +11,17 @@ const (
 
 type UserSet interface {
 	AddUser(user User) error
-	GetUser(timeHash []byte) (*ID, bool)
+	GetUser(timeHash []byte) (*ID, int64, bool)
 }
 
 type TimedUserSet struct {
 	validUserIds []ID
-	userHashes   map[string]int
+	userHashes   map[string]indexTimePair
+}
+
+type indexTimePair struct {
+  index int
+  timeSec int64
 }
 
 type hashEntry struct {
@@ -27,7 +32,7 @@ type hashEntry struct {
 func NewTimedUserSet() UserSet {
 	vuSet := new(TimedUserSet)
 	vuSet.validUserIds = make([]ID, 0, 16)
-	vuSet.userHashes = make(map[string]int)
+	vuSet.userHashes = make(map[string]indexTimePair)
 
 	go vuSet.updateUserHash(time.Tick(updateIntervalSec * time.Second))
 	return vuSet
@@ -56,7 +61,7 @@ func (us *TimedUserSet) updateUserHash(tick <-chan time.Time) {
       for idx, id := range us.validUserIds {
 				idHash := id.TimeHash(lastSec)
 				hash2Remove <- hashEntry{string(idHash), lastSec}
-				us.userHashes[string(idHash)] = idx
+				us.userHashes[string(idHash)] = indexTimePair{idx, lastSec}
 			}
       lastSec ++
     }
@@ -69,10 +74,10 @@ func (us *TimedUserSet) AddUser(user User) error {
 	return nil
 }
 
-func (us TimedUserSet) GetUser(userHash []byte) (*ID, bool) {
-	idIndex, found := us.userHashes[string(userHash)]
+func (us TimedUserSet) GetUser(userHash []byte) (*ID, int64, bool) {
+	pair, found := us.userHashes[string(userHash)]
 	if found {
-		return &us.validUserIds[idIndex], true
+		return &us.validUserIds[pair.index], pair.timeSec, true
 	}
-	return nil, false
+	return nil, 0, false
 }

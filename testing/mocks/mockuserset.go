@@ -14,10 +14,10 @@ func (us *MockUserSet) AddUser(user core.User) error {
 	return nil
 }
 
-func (us *MockUserSet) GetUser(userhash []byte) (*core.ID, bool) {
+func (us *MockUserSet) GetUser(userhash []byte) (*core.ID, int64, bool) {
 	idx, found := us.UserHashes[string(userhash)]
 	if found {
-		return &us.UserIds[idx], true
+		return &us.UserIds[idx], 1234, true
 	}
-	return nil, false
+	return nil, 0, false
 }

@@ -35,12 +35,12 @@ func NewID(id string) (ID, error) {
 	return ID{id, idBytes, cmdKey[:]}, nil
 }
 
-func (v ID) TimeRangeHash(rangeSec int) []byte {
+func (v ID) TimeRangeHash(rangeSec int) ([]byte, int64) {
 	nowSec := time.Now().UTC().Unix()
 	delta := mrand.Intn(rangeSec*2) - rangeSec
 
 	targetSec := nowSec + int64(delta)
-	return v.TimeHash(targetSec)
+	return v.TimeHash(targetSec), targetSec
 }
 
 func (v ID) TimeHash(timeSec int64) []byte {
@@ -65,6 +65,25 @@ func (v ID) Hash(data []byte) []byte {
 
 func (v ID) CmdKey() []byte {
 	return v.cmdKey
+}
+
+func TimestampHash(timeSec int64) []byte {
+  md5hash := md5.New()
+  buffer := []byte{
+		byte(timeSec >> 56),
+		byte(timeSec >> 48),
+		byte(timeSec >> 40),
+		byte(timeSec >> 32),
+		byte(timeSec >> 24),
+		byte(timeSec >> 16),
+		byte(timeSec >> 8),
+		byte(timeSec),
+	}
+	md5hash.Write(buffer)
+  md5hash.Write(buffer)
+  md5hash.Write(buffer)
+  md5hash.Write(buffer)
+	return md5hash.Sum(nil)
 }
 
 var byteGroups = []int{8, 4, 4, 4, 12}

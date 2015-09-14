@@ -30,8 +30,6 @@ const (
 var (
 	ErrorInvalidUser   = errors.New("Invalid User")
 	ErrorInvalidVerion = errors.New("Invalid Version")
-
-	emptyIV = make([]byte, blockSize)
 )
 
 // VMessRequest implements the request message of VMess protocol. It only contains
@@ -70,7 +68,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
   
   log.Debug("Read user hash: %v", buffer[:nBytes])
 
-	userId, valid := r.vUserSet.GetUser(buffer[:nBytes])
+	userId, timeSec, valid := r.vUserSet.GetUser(buffer[:nBytes])
 	if !valid {
 		return nil, ErrorInvalidUser
 	}
@@ -80,7 +78,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	if err != nil {
 		return nil, err
 	}
-	aesStream := cipher.NewCFBDecrypter(aesCipher, emptyIV)
+	aesStream := cipher.NewCFBDecrypter(aesCipher, core.TimestampHash(timeSec))
 	decryptor := v2io.NewCryptionReader(aesStream, reader)
 
 	if err != nil {
@@ -189,7 +187,7 @@ func NewVMessRequestWriter() *VMessRequestWriter {
 
 func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) error {
 	buffer := make([]byte, 0, 300)
-  userHash := request.UserId.TimeRangeHash(30)
+  userHash, timeSec := request.UserId.TimeRangeHash(30)
   
   log.Debug("Writing userhash: %v", userHash)
 	buffer = append(buffer, userHash...)
@@ -245,7 +243,7 @@ func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) erro
 	if err != nil {
 		return err
 	}
-	aesStream := cipher.NewCFBEncrypter(aesCipher, emptyIV)
+	aesStream := cipher.NewCFBEncrypter(aesCipher, core.TimestampHash(timeSec))
 	cWriter := v2io.NewCryptionWriter(aesStream, writer)
 
 	_, err = writer.Write(buffer[0:encryptionBegin])
