@@ -55,6 +55,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 
 	request, err := reader.Read(connection)
 	if err != nil {
+    log.Debug("Failed to parse VMess request: %v", err)
 		return err
 	}
 	log.Debug("Received request for %s", request.Address.String())

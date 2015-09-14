@@ -4,7 +4,6 @@ import (
 	"crypto/hmac"
 	"crypto/md5"
 	"encoding/hex"
-	"hash"
 	mrand "math/rand"
 	"time"
 
@@ -19,7 +18,7 @@ const (
 type ID struct {
 	String string
 	Bytes  []byte
-	hasher hash.Hash
+	cmdKey []byte
 }
 
 func NewID(id string) (ID, error) {
@@ -27,8 +26,13 @@ func NewID(id string) (ID, error) {
 	if err != nil {
 		return ID{}, log.Error("Failed to parse id %s", id)
 	}
-	hasher := hmac.New(md5.New, idBytes)
-	return ID{id, idBytes, hasher}, nil
+  
+  md5hash := md5.New()
+	md5hash.Write(idBytes)
+	md5hash.Write([]byte("c48619fe-8f02-49e0-b9e9-edf763e17e21"))
+	cmdKey := md5.Sum(nil)
+
+	return ID{id, idBytes, cmdKey[:]}, nil
 }
 
 func (v ID) TimeRangeHash(rangeSec int) []byte {
@@ -54,10 +58,13 @@ func (v ID) TimeHash(timeSec int64) []byte {
 }
 
 func (v ID) Hash(data []byte) []byte {
-	v.hasher.Write(data)
-	hash := v.hasher.Sum(nil)
-	v.hasher.Reset()
-	return hash
+  hasher := hmac.New(md5.New, v.Bytes)
+	hasher.Write(data)
+	return hasher.Sum(nil)
+}
+
+func (v ID) CmdKey() []byte {
+	return v.cmdKey
 }
 
 var byteGroups = []int{8, 4, 4, 4, 12}

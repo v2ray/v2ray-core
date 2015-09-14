@@ -74,11 +74,15 @@ func (handler *VMessOutboundHandler) startCommunicate(request *vmessio.VMessRequ
 		return err
 	}
 	defer conn.Close()
+  
+  input := ray.OutboundInput()
+	output := ray.OutboundOutput()
 
 	requestWriter := vmessio.NewVMessRequestWriter()
 	err = requestWriter.Write(conn, request)
 	if err != nil {
 		log.Error("Failed to write VMess request: %v", err)
+    close(output)
 		return err
 	}
 
@@ -90,6 +94,7 @@ func (handler *VMessOutboundHandler) startCommunicate(request *vmessio.VMessRequ
 	response := vmessio.VMessResponse{}
 	nBytes, err := conn.Read(response[:])
 	if err != nil {
+    close(output)
 		log.Error("Failed to read VMess response (%d bytes): %v", nBytes, err)
 		return err
 	}
@@ -98,17 +103,17 @@ func (handler *VMessOutboundHandler) startCommunicate(request *vmessio.VMessRequ
 
 	encryptRequestWriter, err := v2io.NewAesEncryptWriter(requestKey, requestIV, conn)
 	if err != nil {
+    close(output)
 		log.Error("Failed to create encrypt writer: %v", err)
 		return err
 	}
 	decryptResponseReader, err := v2io.NewAesDecryptReader(responseKey[:], responseIV[:], conn)
 	if err != nil {
+    close(output)
 		log.Error("Failed to create decrypt reader: %v", err)
 		return err
 	}
 
-	input := ray.OutboundInput()
-	output := ray.OutboundOutput()
 	readFinish := make(chan bool)
 	writeFinish := make(chan bool)
 
