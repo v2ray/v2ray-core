@@ -2,8 +2,6 @@ package core
 
 import (
 	"time"
-  
-  "github.com/v2ray/v2ray-core/log"
 )
 
 const (
