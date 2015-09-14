@@ -3,7 +3,7 @@ package core
 import (
 	"time"
   
-  _ "github.com/v2ray/v2ray-core/log"
+  "github.com/v2ray/v2ray-core/log"
 )
 
 const (
@@ -39,13 +39,18 @@ func (us *TimedUserSet) updateUserHash(tick <-chan time.Time) {
 	now := time.Now().UTC()
 	lastSec := now.Unix() - cacheDurationSec
 
-	hash2Remove := make(chan hashEntry, cacheDurationSec*2)
-	lastSec2Remove := now.Unix() + cacheDurationSec
+	hash2Remove := make(chan hashEntry, cacheDurationSec*2*len(us.validUserIds))
+	lastSec2Remove := now.Unix()
+  log.Debug("Start updating")
 	for {
 		now := <-tick
 		nowSec := now.UTC().Unix()
+    
+    remove2Sec := nowSec - cacheDurationSec
+    
+    log.Debug("remove2Sec %d, to %d", lastSec2Remove, remove2Sec)
 
-		remove2Sec := nowSec - cacheDurationSec
+		
 		if remove2Sec > lastSec2Remove {
 			for lastSec2Remove+1 < remove2Sec {
 				entry := <-hash2Remove
@@ -54,11 +59,13 @@ func (us *TimedUserSet) updateUserHash(tick <-chan time.Time) {
 			}
 		}
     
-    for lastSec < nowSec + updateIntervalSec {
+    log.Debug("LastSec %d, to %d", lastSec, nowSec + updateIntervalSec)
+    
+    for lastSec < nowSec + cacheDurationSec {
       for idx, id := range us.validUserIds {
 				idHash := id.TimeHash(lastSec)
 				hash2Remove <- hashEntry{string(idHash), lastSec}
-        //log.Debug("Hash: %v", idHash)
+        log.Debug("Hash: %v", idHash)
 				us.userHashes[string(idHash)] = idx
 			}
       lastSec ++
