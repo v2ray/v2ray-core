@@ -2,6 +2,8 @@ package core
 
 import (
 	"time"
+  
+  _ "github.com/v2ray/v2ray-core/log"
 )
 
 const (
@@ -37,7 +39,7 @@ func (us *TimedUserSet) updateUserHash(tick <-chan time.Time) {
 	now := time.Now().UTC()
 	lastSec := now.Unix() - cacheDurationSec
 
-	hash2Remove := make(chan hashEntry, updateIntervalSec*2)
+	hash2Remove := make(chan hashEntry, cacheDurationSec*2)
 	lastSec2Remove := now.Unix() + cacheDurationSec
 	for {
 		now := <-tick
@@ -51,14 +53,16 @@ func (us *TimedUserSet) updateUserHash(tick <-chan time.Time) {
 				delete(us.userHashes, entry.hash)
 			}
 		}
-
-		for i := lastSec + 1; i <= nowSec; i++ {
-			for idx, id := range us.validUserIds {
-				idHash := id.TimeHash(i)
-				hash2Remove <- hashEntry{string(idHash), i}
+    
+    for lastSec < nowSec + updateIntervalSec {
+      for idx, id := range us.validUserIds {
+				idHash := id.TimeHash(lastSec)
+				hash2Remove <- hashEntry{string(idHash), lastSec}
+        //log.Debug("Hash: %v", idHash)
 				us.userHashes[string(idHash)] = idx
 			}
-		}
+      lastSec ++
+    }
 	}
 }
 
