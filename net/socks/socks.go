@@ -76,11 +76,10 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 		authResponse := socksio.NewAuthenticationResponse(socksio.AuthNoMatchingMethod)
 		socksio.WriteAuthentication(connection, authResponse)
 
-		log.Info("Client doesn't support allowed any auth methods.")
+		log.Warning("Client doesn't support allowed any auth methods.")
 		return ErrorAuthenticationFailed
 	}
 
-	log.Debug("Auth accepted, responding auth.")
 	authResponse := socksio.NewAuthenticationResponse(socksio.AuthNotRequired)
 	socksio.WriteAuthentication(connection, authResponse)
 
@@ -96,7 +95,7 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 		response := socksio.NewSocks5Response()
 		response.Error = socksio.ErrorCommandNotSupported
 		socksio.WriteResponse(connection, response)
-		log.Info("Unsupported socks command %d", request.Command)
+		log.Warning("Unsupported socks command %d", request.Command)
 		return ErrorCommandNotSupported
 	}
 
@@ -111,17 +110,17 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	case socksio.AddrTypeDomain:
 		response.Domain = request.Domain
 	}
-	log.Debug("Socks response port = %d", response.Port)
 	socksio.WriteResponse(connection, response)
 
 	ray := server.vPoint.NewInboundConnectionAccepted(request.Destination())
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
-	finish := make(chan bool, 2)
+	readFinish := make(chan bool)
+  writeFinish := make(chan bool)
 
-	go server.dumpInput(connection, input, finish)
-	go server.dumpOutput(connection, output, finish)
-	server.waitForFinish(finish)
+	go server.dumpInput(connection, input, readFinish)
+	go server.dumpOutput(connection, output, writeFinish)
+	<-writeFinish
 
 	return nil
 }
@@ -129,15 +128,12 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 func (server *SocksServer) dumpInput(conn net.Conn, input chan<- []byte, finish chan<- bool) {
 	v2net.ReaderToChan(input, conn)
 	close(input)
+  log.Debug("Socks input closed")
 	finish <- true
 }
 
 func (server *SocksServer) dumpOutput(conn net.Conn, output <-chan []byte, finish chan<- bool) {
 	v2net.ChanToWriter(conn, output)
+  log.Debug("Socks output closed")
 	finish <- true
-}
-
-func (server *SocksServer) waitForFinish(finish <-chan bool) {
-	<-finish
-	<-finish
 }

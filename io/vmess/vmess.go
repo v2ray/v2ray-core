@@ -22,6 +22,8 @@ const (
 	addrTypeDomain = byte(0x02)
 
 	Version = byte(0x01)
+  
+  blockSize = 16
 )
 
 var (
@@ -75,8 +77,14 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 		return nil, ErrorInvalidUser
 	}
 	request.UserId = *userId
+  
+  aesCipher, err := aes.NewCipher(userId.Hash([]byte("PWD")))
+	if err != nil {
+		return nil, err
+	}
+	aesStream := cipher.NewCFBDecrypter(aesCipher, emptyIV)
+	decryptor := v2io.NewCryptionReader(aesStream, reader)
 
-	decryptor, err := NewDecryptionReader(reader, userId.Hash([]byte("PWD")), emptyIV)
 	if err != nil {
 		return nil, err
 	}

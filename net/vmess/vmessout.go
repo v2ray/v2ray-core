@@ -67,7 +67,7 @@ func (handler *VMessOutboundHandler) Start(ray core.OutboundRay) error {
 }
 
 func (handler *VMessOutboundHandler) startCommunicate(request *vmessio.VMessRequest, dest v2net.Address, ray core.OutboundRay) error {
-	conn, err := net.Dial("tcp", dest.String())
+	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{dest.IP, int(dest.Port), ""})
 	log.Debug("VMessOutbound dialing tcp: %s", dest.String())
 	if err != nil {
 		log.Error("Failed to open tcp (%s): %v", dest.String(), err)
@@ -109,22 +109,29 @@ func (handler *VMessOutboundHandler) startCommunicate(request *vmessio.VMessRequ
 
 	input := ray.OutboundInput()
 	output := ray.OutboundOutput()
-	finish := make(chan bool, 2)
+	readFinish := make(chan bool)
+  writeFinish := make(chan bool)
 
-	go handler.dumpInput(encryptRequestWriter, input, finish)
-	go handler.dumpOutput(decryptResponseReader, output, finish)
-	handler.waitForFinish(finish)
-	return nil
+	go handler.dumpInput(encryptRequestWriter, input, readFinish)
+	go handler.dumpOutput(decryptResponseReader, output, writeFinish)
+  
+  <-readFinish
+  conn.CloseWrite()
+  log.Debug("VMessOut closing write")
+  <-writeFinish
+  return nil
 }
 
 func (handler *VMessOutboundHandler) dumpOutput(reader io.Reader, output chan<- []byte, finish chan<- bool) {
 	v2net.ReaderToChan(output, reader)
 	close(output)
+  log.Debug("VMessOut closing output")
 	finish <- true
 }
 
 func (handler *VMessOutboundHandler) dumpInput(writer io.Writer, input <-chan []byte, finish chan<- bool) {
 	v2net.ChanToWriter(writer, input)
+  log.Debug("VMessOut closing input")
 	finish <- true
 }
 

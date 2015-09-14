@@ -1,12 +1,16 @@
 package core
 
+const (
+  bufferSize = 16
+)
+
 type Ray struct {
 	Input  chan []byte
 	Output chan []byte
 }
 
 func NewRay() Ray {
-	return Ray{make(chan []byte, 128), make(chan []byte, 128)}
+	return Ray{make(chan []byte, bufferSize), make(chan []byte, bufferSize)}
 }
 
 type OutboundRay interface {
