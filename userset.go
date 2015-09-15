@@ -42,7 +42,7 @@ func (us *TimedUserSet) updateUserHash(tick <-chan time.Time) {
 	now := time.Now().UTC()
 	lastSec := now.Unix() - cacheDurationSec
 
-	hash2Remove := make(chan hashEntry, cacheDurationSec*2*len(us.validUserIds))
+	hash2Remove := make(chan hashEntry, cacheDurationSec*3*len(us.validUserIds))
 	lastSec2Remove := now.Unix()
 	for {
 		now := <-tick
