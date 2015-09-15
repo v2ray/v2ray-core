@@ -12,17 +12,4 @@
 5. go get github.com/v2ray/v2ray-core
 6. go build github.com/v2ray/v2ray-core/release/server
 
-## 运行
-
-Socks 5 转发 VMess：
-
-./server --config=$HOME/work/src/github.com/v2ray/v2ray-core/release/config/vpoint_socks_vmess.json
-
-VMess 转发最终网站：
-
-./server --config=$HOME/work/src/github.com/v2ray/v2ray-core/release/config/vpoint_vmess_freedom.json
-
-测试服务器可用性：
-
-curl -v --socks5-hostname 127.0.0.1:1080 https://www.google.com/
 
