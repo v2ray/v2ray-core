@@ -65,8 +65,8 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	if err != nil {
 		return nil, err
 	}
-  
-  log.Debug("Read user hash: %v", buffer[:nBytes])
+
+	log.Debug("Read user hash: %v", buffer[:nBytes])
 
 	userId, timeSec, valid := r.vUserSet.GetUser(buffer[:nBytes])
 	if !valid {
@@ -187,9 +187,9 @@ func NewVMessRequestWriter() *VMessRequestWriter {
 
 func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) error {
 	buffer := make([]byte, 0, 300)
-  userHash, timeSec := request.UserId.TimeRangeHash(30)
-  
-  log.Debug("Writing userhash: %v", userHash)
+	userHash, timeSec := request.UserId.TimeRangeHash(30)
+
+	log.Debug("Writing userhash: %v", userHash)
 	buffer = append(buffer, userHash...)
 
 	encryptionBegin := len(buffer)

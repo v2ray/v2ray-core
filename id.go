@@ -26,8 +26,8 @@ func NewID(id string) (ID, error) {
 	if err != nil {
 		return ID{}, log.Error("Failed to parse id %s", id)
 	}
-  
-  md5hash := md5.New()
+
+	md5hash := md5.New()
 	md5hash.Write(idBytes)
 	md5hash.Write([]byte("c48619fe-8f02-49e0-b9e9-edf763e17e21"))
 	cmdKey := md5.Sum(nil)
@@ -58,7 +58,7 @@ func (v ID) TimeHash(timeSec int64) []byte {
 }
 
 func (v ID) Hash(data []byte) []byte {
-  hasher := hmac.New(md5.New, v.Bytes)
+	hasher := hmac.New(md5.New, v.Bytes)
 	hasher.Write(data)
 	return hasher.Sum(nil)
 }
@@ -68,8 +68,8 @@ func (v ID) CmdKey() []byte {
 }
 
 func TimestampHash(timeSec int64) []byte {
-  md5hash := md5.New()
-  buffer := []byte{
+	md5hash := md5.New()
+	buffer := []byte{
 		byte(timeSec >> 56),
 		byte(timeSec >> 48),
 		byte(timeSec >> 40),
@@ -80,9 +80,9 @@ func TimestampHash(timeSec int64) []byte {
 		byte(timeSec),
 	}
 	md5hash.Write(buffer)
-  md5hash.Write(buffer)
-  md5hash.Write(buffer)
-  md5hash.Write(buffer)
+	md5hash.Write(buffer)
+	md5hash.Write(buffer)
+	md5hash.Write(buffer)
 	return md5hash.Sum(nil)
 }
 

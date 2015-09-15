@@ -13,7 +13,7 @@ import (
 )
 
 func TestVMessSerialization(t *testing.T) {
-  t.Skip();
+	t.Skip()
 	assert := unit.Assert(t)
 
 	userId, err := core.NewID("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")

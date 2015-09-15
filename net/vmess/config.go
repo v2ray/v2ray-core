@@ -2,7 +2,7 @@ package vmess
 
 import (
 	"encoding/json"
-  "net"
+	"net"
 
 	"github.com/v2ray/v2ray-core"
 	"github.com/v2ray/v2ray-core/log"
@@ -44,10 +44,10 @@ func (config VNextConfig) ToVNextServer() VNextServer {
 		}
 		users = append(users, vuser)
 	}
-  ip := net.ParseIP(config.Address)
-  if ip == nil {
-    panic(log.Error("Unable to parse VNext IP: %s", config.Address))
-  }
+	ip := net.ParseIP(config.Address)
+	if ip == nil {
+		panic(log.Error("Unable to parse VNext IP: %s", config.Address))
+	}
 	return VNextServer{
 		v2net.IPAddress(ip, config.Port),
 		users}

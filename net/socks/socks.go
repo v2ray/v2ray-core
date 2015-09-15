@@ -1,9 +1,9 @@
 package socks
 
 import (
-  "bufio"
+	"bufio"
 	"errors"
-  "io"
+	"io"
 	"net"
 	"strconv"
 
@@ -16,7 +16,7 @@ import (
 var (
 	ErrorAuthenticationFailed = errors.New("None of the authentication methods is allowed.")
 	ErrorCommandNotSupported  = errors.New("Client requested an unsupported command.")
-  ErrorInvalidUser = errors.New("Invalid username or password.")
+	ErrorInvalidUser          = errors.New("Invalid username or password.")
 )
 
 // SocksServer is a SOCKS 5 proxy server
@@ -63,8 +63,8 @@ func (server *SocksServer) AcceptConnections(listener net.Listener) error {
 
 func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	defer connection.Close()
-  
-  reader := bufio.NewReader(connection)
+
+	reader := bufio.NewReader(connection)
 
 	auth, err := socksio.ReadAuthentication(reader)
 	if err != nil {
@@ -87,23 +87,23 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 
 	authResponse := socksio.NewAuthenticationResponse(expectedAuthMethod)
 	socksio.WriteAuthentication(connection, authResponse)
-  
-  if server.config.AuthMethod == JsonAuthMethodUserPass {
-    upRequest, err := socksio.ReadUserPassRequest(reader)
-    if err != nil {
-      log.Error("Failed to read username and password: %v", err)
-      return err
-    }
-    status := byte(0)
-    if ! upRequest.IsValid(server.config.Username, server.config.Password) {
-      status = byte(0xFF)
-    }
-    upResponse := socksio.NewSocks5UserPassResponse(status)
-    socksio.WriteUserPassResponse(connection, upResponse)
-    if status != byte(0) {
-      return ErrorInvalidUser
-    }
-  }
+
+	if server.config.AuthMethod == JsonAuthMethodUserPass {
+		upRequest, err := socksio.ReadUserPassRequest(reader)
+		if err != nil {
+			log.Error("Failed to read username and password: %v", err)
+			return err
+		}
+		status := byte(0)
+		if !upRequest.IsValid(server.config.Username, server.config.Password) {
+			status = byte(0xFF)
+		}
+		upResponse := socksio.NewSocks5UserPassResponse(status)
+		socksio.WriteUserPassResponse(connection, upResponse)
+		if status != byte(0) {
+			return ErrorInvalidUser
+		}
+	}
 
 	request, err := socksio.ReadRequest(reader)
 	if err != nil {

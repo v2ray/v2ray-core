@@ -20,8 +20,8 @@ type TimedUserSet struct {
 }
 
 type indexTimePair struct {
-  index int
-  timeSec int64
+	index   int
+	timeSec int64
 }
 
 type hashEntry struct {
@@ -47,8 +47,8 @@ func (us *TimedUserSet) updateUserHash(tick <-chan time.Time) {
 	for {
 		now := <-tick
 		nowSec := now.UTC().Unix()
-    
-    remove2Sec := nowSec - cacheDurationSec
+
+		remove2Sec := nowSec - cacheDurationSec
 		if remove2Sec > lastSec2Remove {
 			for lastSec2Remove+1 < remove2Sec {
 				entry := <-hash2Remove
@@ -56,15 +56,15 @@ func (us *TimedUserSet) updateUserHash(tick <-chan time.Time) {
 				delete(us.userHashes, entry.hash)
 			}
 		}
-    
-    for lastSec < nowSec + cacheDurationSec {
-      for idx, id := range us.validUserIds {
+
+		for lastSec < nowSec+cacheDurationSec {
+			for idx, id := range us.validUserIds {
 				idHash := id.TimeHash(lastSec)
 				hash2Remove <- hashEntry{string(idHash), lastSec}
 				us.userHashes[string(idHash)] = indexTimePair{idx, lastSec}
 			}
-      lastSec ++
-    }
+			lastSec++
+		}
 	}
 }
 
