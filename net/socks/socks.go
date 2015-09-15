@@ -3,6 +3,7 @@ package socks
 import (
   "bufio"
 	"errors"
+  "io"
 	"net"
 	"strconv"
 
@@ -128,15 +129,15 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	return nil
 }
 
-func (server *SocksServer) dumpInput(conn net.Conn, input chan<- []byte, finish chan<- bool) {
-	v2net.ReaderToChan(input, conn)
+func (server *SocksServer) dumpInput(reader io.Reader, input chan<- []byte, finish chan<- bool) {
+	v2net.ReaderToChan(input, reader)
 	close(input)
 	log.Debug("Socks input closed")
 	finish <- true
 }
 
-func (server *SocksServer) dumpOutput(conn net.Conn, output <-chan []byte, finish chan<- bool) {
-	v2net.ChanToWriter(conn, output)
+func (server *SocksServer) dumpOutput(writer io.Writer, output <-chan []byte, finish chan<- bool) {
+	v2net.ChanToWriter(writer, output)
 	log.Debug("Socks output closed")
 	finish <- true
 }
