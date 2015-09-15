@@ -86,6 +86,57 @@ func WriteAuthentication(writer io.Writer, response *Socks5AuthenticationRespons
 	return err
 }
 
+type Socks5UserPassRequest struct {
+  version byte
+  username string
+  password string
+}
+
+func (request Socks5UserPassRequest) IsValid(username string, password string) bool {
+  return request.username == username && request.password == password
+}
+
+func ReadUserPassRequest(reader io.Reader) (request Socks5UserPassRequest, err error) {
+  buffer := make([]byte, 256)
+  _, err = reader.Read(buffer[0:2])
+  if err != nil {
+    return
+  }
+  request.version = buffer[0]
+  nUsername := buffer[1]
+  nBytes, err := reader.Read(buffer[:nUsername])
+  if err != nil {
+    return
+  }
+  request.username = string(buffer[:nBytes])
+  
+  _, err = reader.Read(buffer[0:1])
+  if err != nil {
+    return
+  }
+  nPassword := buffer[0]
+  nBytes, err = reader.Read(buffer[:nPassword])
+  if err != nil {
+    return
+  }
+  request.password = string(buffer[:nBytes])
+  return
+}
+
+type Socks5UserPassResponse struct {
+  version byte
+  status byte
+}
+
+func NewSocks5UserPassResponse(status byte) Socks5UserPassResponse {
+  return Socks5UserPassResponse{socksVersion, status}
+}
+
+func WriteUserPassResponse(writer io.Writer, response Socks5UserPassResponse) error {
+  _, err := writer.Write([]byte{response.version, response.status})
+  return err
+}
+
 const (
 	AddrTypeIPv4   = byte(0x01)
 	AddrTypeIPv6   = byte(0x04)
