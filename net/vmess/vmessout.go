@@ -67,17 +67,18 @@ func (handler *VMessOutboundHandler) Start(ray core.OutboundRay) error {
 }
 
 func (handler *VMessOutboundHandler) startCommunicate(request *vmessio.VMessRequest, dest v2net.Address, ray core.OutboundRay) error {
+  input := ray.OutboundInput()
+	output := ray.OutboundOutput()
+  
 	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{dest.IP, int(dest.Port), ""})
 	log.Debug("VMessOutbound dialing tcp: %s", dest.String())
 	if err != nil {
 		log.Error("Failed to open tcp (%s): %v", dest.String(), err)
+    close(output)
 		return err
 	}
 	defer conn.Close()
   
-  input := ray.OutboundInput()
-	output := ray.OutboundOutput()
-
 	requestWriter := vmessio.NewVMessRequestWriter()
 	err = requestWriter.Write(conn, request)
 	if err != nil {
