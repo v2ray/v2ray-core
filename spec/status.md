@@ -1,6 +1,7 @@
 # 当前状态
 
 **注释**
+* S：接近完美
 * A：稳定可用
 * B：默认开启，还在测试期，可能有各种问题
 * C：需要手动开启
@@ -33,7 +34,7 @@
 
 | 功能       | 状态 | 备注 |
 | --------- | ---- | ---- |
-| TCP 连接    | B |  |
+| TCP 连接    | A |  |
 | UDP 连接    | E | [Issue #3](https://github.com/v2ray/v2ray-core/issues/3) |
 | FTP 支持    | E | [Issue #2](https://github.com/v2ray/v2ray-core/issues/2) |
 
@@ -41,7 +42,7 @@
 
 | 功能       | 状态 | 备注 |
 | --------- | ---- | ---- |
-| 单一连接    | B |  |
+| 单一连接    | A |  |
 | 连接复用    | E |  |
 
 **ShadowSocks 协议**
