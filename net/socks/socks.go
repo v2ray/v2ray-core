@@ -1,6 +1,7 @@
 package socks
 
 import (
+  "bufio"
 	"errors"
 	"net"
 	"strconv"
@@ -60,8 +61,10 @@ func (server *SocksServer) AcceptConnections(listener net.Listener) error {
 
 func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	defer connection.Close()
+  
+  reader := bufio.NewReader(connection)
 
-	auth, err := socksio.ReadAuthentication(connection)
+	auth, err := socksio.ReadAuthentication(reader)
 	if err != nil {
 		log.Error("Error on reading authentication: %v", err)
 		return err
@@ -83,7 +86,7 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	authResponse := socksio.NewAuthenticationResponse(socksio.AuthNotRequired)
 	socksio.WriteAuthentication(connection, authResponse)
 
-	request, err := socksio.ReadRequest(connection)
+	request, err := socksio.ReadRequest(reader)
 	if err != nil {
 		log.Error("Error on reading socks request: %v", err)
 		return err
@@ -118,7 +121,7 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	readFinish := make(chan bool)
 	writeFinish := make(chan bool)
 
-	go server.dumpInput(connection, input, readFinish)
+	go server.dumpInput(reader, input, readFinish)
 	go server.dumpOutput(connection, output, writeFinish)
 	<-writeFinish
 
