@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	_ "log"
 
 	v2net "github.com/v2ray/v2ray-core/net"
 )
@@ -36,7 +35,7 @@ func (request *Socks5AuthenticationRequest) HasAuthMethod(method byte) bool {
 }
 
 func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, err error) {
-	buffer := make([]byte, 2)
+	buffer := make([]byte, 256)
 	nBytes, err := reader.Read(buffer)
 	if err != nil {
 		return
@@ -58,16 +57,11 @@ func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, err
 		return
 	}
 
-	buffer = make([]byte, auth.nMethods)
-	nBytes, err = reader.Read(buffer)
-	if err != nil {
-		return
-	}
-	if nBytes != int(auth.nMethods) {
+	if nBytes - 2 != int(auth.nMethods) {
 		err = fmt.Errorf("Unmatching number of auth methods, expecting %d, but got %d", auth.nMethods, nBytes)
 		return
 	}
-	copy(auth.authMethods[:nBytes], buffer)
+	copy(auth.authMethods[:], buffer[2:nBytes])
 	return
 }
 
@@ -84,10 +78,7 @@ func NewAuthenticationResponse(authMethod byte) *Socks5AuthenticationResponse {
 }
 
 func (r *Socks5AuthenticationResponse) ToBytes() []byte {
-	buffer := make([]byte, 2 /* size of Socks5AuthenticationResponse */)
-	buffer[0] = r.version
-	buffer[1] = r.authMethod
-	return buffer
+  return []byte{r.version, r.authMethod}
 }
 
 func WriteAuthentication(writer io.Writer, response *Socks5AuthenticationResponse) error {
