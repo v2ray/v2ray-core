@@ -32,7 +32,11 @@
 数据部分
 * N 字节：请求数据
 
-其中指令部分经过 AES-128-CFB 加密，Key 为 md5(用户 ID + 'c48619fe-8f02-49e0-b9e9-edf763e17e21')，IV 为 md5(4 * []byte(UserHash 生成的时间))；数据部分使用 AES-128-CFB 加密
+其中指令部分经过 AES-128-CFB 加密：
+* Key：md5(用户 ID + 'c48619fe-8f02-49e0-b9e9-edf763e17e21')
+* IV：md5(X + X + X + X)，X = []byte(UserHash 生成的时间) (8 字节, Big Endian)
+
+数据部分使用 AES-128-CFB 加密，Key 和 IV 在请求数据中
 
 ## 数据应答
 认证部分：
@@ -47,5 +51,5 @@
 
 * H = MD5
 * K = 用户 ID (16 字节)
-* M = UTC 时间，精确到秒，取值为当前时间的前后 30 秒随机值(8 字节)
+* M = UTC 时间，精确到秒，取值为当前时间的前后 30 秒随机值(8 字节, Big Endian)
 * Hash = HMAC(H, K, M)
