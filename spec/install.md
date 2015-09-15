@@ -7,9 +7,10 @@
 2. 安装 golang：
   1. curl -o go_latest.tar.gz https://storage.googleapis.com/golang/go1.5.1.linux-amd64.tar.gz
   2. sudo tar -C /usr/local -xzf go_latest.tar.gz
-3. export PATH=$PATH:/usr/local/go/bin
-4. export GOPATH=$HOME/work
-5. go get github.com/v2ray/v2ray-core
-6. go build github.com/v2ray/v2ray-core/release/server
+  3. export PATH=$PATH:/usr/local/go/bin
+  4. export GOPATH=$HOME/work
+3. go get github.com/v2ray/v2ray-core
+4. go build github.com/v2ray/v2ray-core/release/server
 
-
+## 配置和运行
+[链接](https://github.com/V2Ray/v2ray-core/blob/master/spec/guide.md)
