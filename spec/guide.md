@@ -42,7 +42,7 @@
 {
   "vnext": [
     {
-      "address": "127.0.0.1", // Point B 的 IP 地址
+      "address": "127.0.0.1", // Point B 的 IP 地址，IPv4 或 IPv6，不支持域名
       "port": 27183, // Point B 的监听端口
       "users": [
         {"id": "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"}  // 用户 ID，必须包含在 Point B 的配置文件中
