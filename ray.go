@@ -10,7 +10,10 @@ type Ray struct {
 }
 
 func NewRay() Ray {
-	return Ray{make(chan []byte, bufferSize), make(chan []byte, bufferSize)}
+	return Ray{
+		Input:  make(chan []byte, bufferSize),
+		Output: make(chan []byte, bufferSize),
+	}
 }
 
 type OutboundRay interface {

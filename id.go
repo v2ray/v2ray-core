@@ -32,7 +32,11 @@ func NewID(id string) (ID, error) {
 	md5hash.Write([]byte("c48619fe-8f02-49e0-b9e9-edf763e17e21"))
 	cmdKey := md5.Sum(nil)
 
-	return ID{id, idBytes, cmdKey[:]}, nil
+	return ID{
+		String: id,
+		Bytes:  idBytes,
+		cmdKey: cmdKey[:],
+	}, nil
 }
 
 func (v ID) TimeRangeHash(rangeSec int) ([]byte, int64) {

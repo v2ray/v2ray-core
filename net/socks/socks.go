@@ -49,16 +49,14 @@ func (server *SocksServer) Listen(port uint16) error {
 	return nil
 }
 
-func (server *SocksServer) AcceptConnections(listener net.Listener) error {
+func (server *SocksServer) AcceptConnections(listener net.Listener) {
 	for server.accepting {
 		connection, err := listener.Accept()
 		if err != nil {
 			log.Error("Error on accepting socks connection: %v", err)
-			return err
 		}
 		go server.HandleConnection(connection)
 	}
-	return nil
 }
 
 func (server *SocksServer) HandleConnection(connection net.Conn) error {
@@ -79,15 +77,21 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 
 	if !auth.HasAuthMethod(expectedAuthMethod) {
 		authResponse := socksio.NewAuthenticationResponse(socksio.AuthNoMatchingMethod)
-		socksio.WriteAuthentication(connection, authResponse)
-
+		err = socksio.WriteAuthentication(connection, authResponse)
+		if err != nil {
+			log.Error("Error on socksio write authentication: %v", err)
+			return err
+		}
 		log.Warning("Client doesn't support allowed any auth methods.")
 		return ErrorAuthenticationFailed
 	}
 
 	authResponse := socksio.NewAuthenticationResponse(expectedAuthMethod)
-	socksio.WriteAuthentication(connection, authResponse)
-
+	err = socksio.WriteAuthentication(connection, authResponse)
+	if err != nil {
+		log.Error("Error on socksio write authentication: %v", err)
+		return err
+	}
 	if server.config.AuthMethod == JsonAuthMethodUserPass {
 		upRequest, err := socksio.ReadUserPassRequest(reader)
 		if err != nil {
@@ -99,7 +103,11 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 			status = byte(0xFF)
 		}
 		upResponse := socksio.NewSocks5UserPassResponse(status)
-		socksio.WriteUserPassResponse(connection, upResponse)
+		err = socksio.WriteUserPassResponse(connection, upResponse)
+		if err != nil {
+			log.Error("Error on socksio write user pass response: %v", err)
+			return err
+		}
 		if status != byte(0) {
 			return ErrorInvalidUser
 		}
@@ -116,7 +124,11 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	if request.Command == socksio.CmdBind || request.Command == socksio.CmdUdpAssociate {
 		response := socksio.NewSocks5Response()
 		response.Error = socksio.ErrorCommandNotSupported
-		socksio.WriteResponse(connection, response)
+		err = socksio.WriteResponse(connection, response)
+		if err != nil {
+			log.Error("Error on socksio write response: %v", err)
+			return err
+		}
 		log.Warning("Unsupported socks command %d", request.Command)
 		return ErrorCommandNotSupported
 	}
@@ -132,8 +144,11 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	case socksio.AddrTypeDomain:
 		response.Domain = request.Domain
 	}
-	socksio.WriteResponse(connection, response)
-
+	err = socksio.WriteResponse(connection, response)
+	if err != nil {
+		log.Error("Error on socksio write response: %v", err)
+		return err
+	}
 	ray := server.vPoint.NewInboundConnectionAccepted(request.Destination())
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
