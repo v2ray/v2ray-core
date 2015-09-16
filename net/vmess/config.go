@@ -17,7 +17,7 @@ type VMessUser struct {
 func (u *VMessUser) ToUser() (core.User, error) {
 	id, err := core.NewID(u.Id)
 	return core.User{
-		Id:    id,
+		Id: id,
 	}, err
 }
 
