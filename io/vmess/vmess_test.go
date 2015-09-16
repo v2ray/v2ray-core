@@ -7,13 +7,14 @@ import (
 	"testing"
 
 	"github.com/v2ray/v2ray-core"
+	v2hash "github.com/v2ray/v2ray-core/hash"
+	v2math "github.com/v2ray/v2ray-core/math"
 	v2net "github.com/v2ray/v2ray-core/net"
 	"github.com/v2ray/v2ray-core/testing/mocks"
 	"github.com/v2ray/v2ray-core/testing/unit"
 )
 
 func TestVMessSerialization(t *testing.T) {
-	t.Skip()
 	assert := unit.Assert(t)
 
 	userId, err := core.NewID("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
@@ -21,7 +22,7 @@ func TestVMessSerialization(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	userSet := mocks.MockUserSet{[]core.ID{}, make(map[string]int)}
+	userSet := mocks.MockUserSet{[]core.ID{}, make(map[string]int), make(map[string]int64)}
 	userSet.AddUser(core.User{userId})
 
 	request := new(VMessRequest)
@@ -47,13 +48,15 @@ func TestVMessSerialization(t *testing.T) {
 	request.Address = v2net.DomainAddress("v2ray.com", 80)
 
 	buffer := bytes.NewBuffer(make([]byte, 0, 300))
-	requestWriter := NewVMessRequestWriter()
+	mockTime := int64(1823730)
+	requestWriter := NewVMessRequestWriter(v2hash.NewTimeHash(v2hash.HMACHash{}), func(base int64, delta int) int64 { return mockTime })
 	err = requestWriter.Write(buffer, request)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	userSet.UserHashes[string(buffer.Bytes()[:16])] = 0
+	userSet.Timestamps[string(buffer.Bytes()[:16])] = mockTime
 
 	requestReader := NewVMessRequestReader(&userSet)
 	actualRequest, err := requestReader.Read(buffer)
@@ -72,7 +75,7 @@ func TestVMessSerialization(t *testing.T) {
 
 func BenchmarkVMessRequestWriting(b *testing.B) {
 	userId, _ := core.NewID("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
-	userSet := mocks.MockUserSet{[]core.ID{}, make(map[string]int)}
+	userSet := mocks.MockUserSet{[]core.ID{}, make(map[string]int), make(map[string]int64)}
 	userSet.AddUser(core.User{userId})
 
 	request := new(VMessRequest)
@@ -86,7 +89,7 @@ func BenchmarkVMessRequestWriting(b *testing.B) {
 	request.Command = byte(0x01)
 	request.Address = v2net.DomainAddress("v2ray.com", 80)
 
-	requestWriter := NewVMessRequestWriter()
+	requestWriter := NewVMessRequestWriter(v2hash.NewTimeHash(v2hash.HMACHash{}), v2math.GenerateRandomInt64InRange)
 	for i := 0; i < b.N; i++ {
 		requestWriter.Write(ioutil.Discard, request)
 	}

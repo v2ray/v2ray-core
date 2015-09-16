@@ -10,10 +10,13 @@ import (
 	"fmt"
 	"io"
 	mrand "math/rand"
+	"time"
 
 	"github.com/v2ray/v2ray-core"
+	v2hash "github.com/v2ray/v2ray-core/hash"
 	v2io "github.com/v2ray/v2ray-core/io"
 	"github.com/v2ray/v2ray-core/log"
+	v2math "github.com/v2ray/v2ray-core/math"
 	v2net "github.com/v2ray/v2ray-core/net"
 )
 
@@ -57,7 +60,6 @@ func NewVMessRequestReader(vUserSet core.UserSet) *VMessRequestReader {
 }
 
 func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
-
 	buffer := make([]byte, 256)
 
 	nBytes, err := reader.Read(buffer[:core.IDBytesLen])
@@ -76,7 +78,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	if err != nil {
 		return nil, err
 	}
-	aesStream := cipher.NewCFBDecrypter(aesCipher, core.TimestampHash(timeSec))
+	aesStream := cipher.NewCFBDecrypter(aesCipher, v2hash.Int64Hash(timeSec))
 	decryptor := v2io.NewCryptionReader(aesStream, reader)
 
 	if err != nil {
@@ -180,18 +182,25 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 }
 
 type VMessRequestWriter struct {
+	idHash           v2hash.CounterHash
+	randomRangeInt64 v2math.RandomInt64InRange
 }
 
-func NewVMessRequestWriter() *VMessRequestWriter {
-	return &VMessRequestWriter{}
+func NewVMessRequestWriter(idHash v2hash.CounterHash, randomRangeInt64 v2math.RandomInt64InRange) *VMessRequestWriter {
+	return &VMessRequestWriter{
+		idHash:           idHash,
+		randomRangeInt64: randomRangeInt64,
+	}
 }
 
 func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) error {
 	buffer := make([]byte, 0, 300)
-	userHash, timeSec := request.UserId.TimeRangeHash(30)
 
-	log.Debug("Writing userhash: %v", userHash)
-	buffer = append(buffer, userHash...)
+	counter := w.randomRangeInt64(time.Now().UTC().Unix(), 30)
+	idHash := w.idHash.Hash(request.UserId.Bytes, counter)
+
+	log.Debug("Writing userhash: %v", idHash)
+	buffer = append(buffer, idHash...)
 
 	encryptionBegin := len(buffer)
 
@@ -241,7 +250,7 @@ func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) erro
 	if err != nil {
 		return err
 	}
-	aesStream := cipher.NewCFBEncrypter(aesCipher, core.TimestampHash(timeSec))
+	aesStream := cipher.NewCFBEncrypter(aesCipher, v2hash.Int64Hash(counter))
 	cWriter := v2io.NewCryptionWriter(aesStream, writer)
 
 	_, err = writer.Write(buffer[0:encryptionBegin])

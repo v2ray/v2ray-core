@@ -43,7 +43,7 @@ func TestAuthenticationResponseWrite(t *testing.T) {
 	response := NewAuthenticationResponse(byte(0x05))
 
 	buffer := bytes.NewBuffer(make([]byte, 0, 10))
-	WriteAuthentication(buffer, &response)
+	WriteAuthentication(buffer, response)
 	assert.Bytes(buffer.Bytes()).Equals([]byte{socksVersion, byte(0x05)})
 }
 

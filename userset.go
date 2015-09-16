@@ -2,6 +2,8 @@ package core
 
 import (
 	"time"
+
+	v2hash "github.com/v2ray/v2ray-core/hash"
 )
 
 const (
@@ -44,6 +46,7 @@ func (us *TimedUserSet) updateUserHash(tick <-chan time.Time) {
 
 	hash2Remove := make(chan hashEntry, cacheDurationSec*3*len(us.validUserIds))
 	lastSec2Remove := now.Unix()
+	idHash := v2hash.NewTimeHash(v2hash.HMACHash{})
 	for {
 		now := <-tick
 		nowSec := now.UTC().Unix()
@@ -59,7 +62,7 @@ func (us *TimedUserSet) updateUserHash(tick <-chan time.Time) {
 
 		for lastSec < nowSec+cacheDurationSec {
 			for idx, id := range us.validUserIds {
-				idHash := id.TimeHash(lastSec)
+				idHash := idHash.Hash(id.Bytes, lastSec)
 				hash2Remove <- hashEntry{string(idHash), lastSec}
 				us.userHashes[string(idHash)] = indexTimePair{idx, lastSec}
 			}

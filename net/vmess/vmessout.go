@@ -7,9 +7,11 @@ import (
 	"net"
 
 	"github.com/v2ray/v2ray-core"
+	v2hash "github.com/v2ray/v2ray-core/hash"
 	v2io "github.com/v2ray/v2ray-core/io"
 	vmessio "github.com/v2ray/v2ray-core/io/vmess"
 	"github.com/v2ray/v2ray-core/log"
+	v2math "github.com/v2ray/v2ray-core/math"
 	v2net "github.com/v2ray/v2ray-core/net"
 )
 
@@ -94,7 +96,7 @@ func startCommunicate(request *vmessio.VMessRequest, dest v2net.Address, ray cor
 
 func handleRequest(conn *net.TCPConn, request *vmessio.VMessRequest, input <-chan []byte, finish chan<- bool) error {
 	defer close(finish)
-	requestWriter := vmessio.NewVMessRequestWriter()
+	requestWriter := vmessio.NewVMessRequestWriter(v2hash.NewTimeHash(v2hash.HMACHash{}), v2math.GenerateRandomInt64InRange)
 	err := requestWriter.Write(conn, request)
 	if err != nil {
 		log.Error("Failed to write VMess request: %v", err)
