@@ -7,6 +7,21 @@ import (
 	"github.com/v2ray/v2ray-core/testing/unit"
 )
 
+func TestHasAuthenticationMethod(t *testing.T) {
+	assert := unit.Assert(t)
+
+	request := Socks5AuthenticationRequest{
+		version:     socksVersion,
+		nMethods:    byte(0x02),
+		authMethods: [256]byte{0x01, 0x02},
+	}
+
+	assert.Bool(request.HasAuthMethod(byte(0x01))).IsTrue()
+
+	request.authMethods[0] = byte(0x03)
+	assert.Bool(request.HasAuthMethod(byte(0x01))).IsFalse()
+}
+
 func TestAuthenticationRequestRead(t *testing.T) {
 	assert := unit.Assert(t)
 
@@ -20,6 +35,19 @@ func TestAuthenticationRequestRead(t *testing.T) {
 	assert.Byte(request.version).Named("Version").Equals(0x05)
 	assert.Byte(request.nMethods).Named("#Methods").Equals(0x01)
 	assert.Byte(request.authMethods[0]).Named("Auth Method").Equals(0x02)
+}
+
+func TestAuthenticationResponseWrite(t *testing.T) {
+	assert := unit.Assert(t)
+
+	response := Socks5AuthenticationResponse{
+		version:    socksVersion,
+		authMethod: byte(0x05),
+	}
+
+	buffer := bytes.NewBuffer(make([]byte, 0, 10))
+	WriteAuthentication(buffer, &response)
+	assert.Bytes(buffer.Bytes()).Equals([]byte{socksVersion, byte(0x05)})
 }
 
 func TestRequestRead(t *testing.T) {

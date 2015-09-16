@@ -39,3 +39,7 @@ func (a *Assertion) String(value string) *StringSubject {
 func (a *Assertion) Error(value error) *ErrorSubject {
 	return NewErrorSubject(NewSubject(a), value)
 }
+
+func (a *Assertion) Bool(value bool) *BoolSubject {
+	return NewBoolSubject(NewSubject(a), value)
+}
