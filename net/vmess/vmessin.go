@@ -20,10 +20,10 @@ type VMessInboundHandler struct {
 }
 
 func NewVMessInboundHandler(vp *core.Point, clients core.UserSet) *VMessInboundHandler {
-	handler := new(VMessInboundHandler)
-	handler.vPoint = vp
-	handler.clients = clients
-	return handler
+	return &VMessInboundHandler{
+		vPoint:  vp,
+		clients: clients,
+	}
 }
 
 func (handler *VMessInboundHandler) Listen(port uint16) error {

@@ -26,11 +26,11 @@ type VMessOutboundHandler struct {
 }
 
 func NewVMessOutboundHandler(vp *core.Point, vNextList []VNextServer, dest v2net.Address) *VMessOutboundHandler {
-	handler := new(VMessOutboundHandler)
-	handler.vPoint = vp
-	handler.dest = dest
-	handler.vNextList = vNextList
-	return handler
+	return &VMessOutboundHandler{
+		vPoint:    vp,
+		dest:      dest,
+		vNextList: vNextList,
+	}
 }
 
 func (handler *VMessOutboundHandler) pickVNext() (v2net.Address, core.User) {
@@ -52,14 +52,15 @@ func (handler *VMessOutboundHandler) pickVNext() (v2net.Address, core.User) {
 func (handler *VMessOutboundHandler) Start(ray core.OutboundRay) error {
 	vNextAddress, vNextUser := handler.pickVNext()
 
-	request := new(vmessio.VMessRequest)
-	request.Version = vmessio.Version
-	request.UserId = vNextUser.Id
+	request := &vmessio.VMessRequest{
+		Version: vmessio.Version,
+		UserId:  vNextUser.Id,
+		Command: byte(0x01),
+		Address: handler.dest,
+	}
 	rand.Read(request.RequestIV[:])
 	rand.Read(request.RequestKey[:])
 	rand.Read(request.ResponseHeader[:])
-	request.Command = byte(0x01)
-	request.Address = handler.dest
 
 	go startCommunicate(request, vNextAddress, ray)
 	return nil

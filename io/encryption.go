@@ -15,10 +15,10 @@ type CryptionReader struct {
 }
 
 func NewCryptionReader(stream cipher.Stream, reader io.Reader) *CryptionReader {
-	this := new(CryptionReader)
-	this.stream = stream
-	this.reader = reader
-	return this
+	return &CryptionReader{
+		stream: stream,
+		reader: reader,
+	}
 }
 
 // Read reads blocks from underlying reader, the length of blocks must be
@@ -42,10 +42,10 @@ type CryptionWriter struct {
 }
 
 func NewCryptionWriter(stream cipher.Stream, writer io.Writer) *CryptionWriter {
-	this := new(CryptionWriter)
-	this.stream = stream
-	this.writer = writer
-	return this
+	return &CryptionWriter{
+		stream: stream,
+		writer: writer,
+	}
 }
 
 // Write writes the give blocks to underlying writer. The length of the blocks

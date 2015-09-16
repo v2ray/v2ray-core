@@ -13,9 +13,9 @@ type FreedomConnection struct {
 }
 
 func NewFreedomConnection(dest v2net.Address) *FreedomConnection {
-	conn := new(FreedomConnection)
-	conn.dest = dest
-	return conn
+	return &FreedomConnection{
+		dest: dest,
+	}
 }
 
 func (vconn *FreedomConnection) Start(ray core.OutboundRay) error {
