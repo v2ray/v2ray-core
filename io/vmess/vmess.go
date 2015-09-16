@@ -226,10 +226,7 @@ func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) erro
 		buffer = append(buffer, []byte(request.Address.Domain)...)
 	}
 
-	paddingLength := blockSize - 1 - (len(buffer)-encryptionBegin)%blockSize
-	if paddingLength == 0 {
-		paddingLength = blockSize
-	}
+	paddingLength := mrand.Intn(32) + 1
 	paddingBuffer := make([]byte, paddingLength)
 	_, err = rand.Read(paddingBuffer)
 	if err != nil {
