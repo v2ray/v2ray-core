@@ -18,7 +18,6 @@ func (u *VMessUser) ToUser() (core.User, error) {
 	id, err := core.NewID(u.Id)
 	return core.User{
 		Id:    id,
-		Email: "",
 	}, err
 }
 
