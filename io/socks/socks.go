@@ -125,7 +125,10 @@ type Socks5UserPassResponse struct {
 }
 
 func NewSocks5UserPassResponse(status byte) Socks5UserPassResponse {
-	return Socks5UserPassResponse{socksVersion, status}
+	return Socks5UserPassResponse{
+		version: socksVersion,
+		status:  status,
+	}
 }
 
 func WriteUserPassResponse(writer io.Writer, response Socks5UserPassResponse) error {

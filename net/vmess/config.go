@@ -16,7 +16,10 @@ type VMessUser struct {
 
 func (u *VMessUser) ToUser() (core.User, error) {
 	id, err := core.NewID(u.Id)
-	return core.User{id}, err
+	return core.User{
+		Id:    id,
+		Email: "",
+	}, err
 }
 
 type VMessInboundConfig struct {
@@ -49,8 +52,9 @@ func (config VNextConfig) ToVNextServer() VNextServer {
 		panic(log.Error("Unable to parse VNext IP: %s", config.Address))
 	}
 	return VNextServer{
-		v2net.IPAddress(ip, config.Port),
-		users}
+		Address: v2net.IPAddress(ip, config.Port),
+		Users:   users,
+	}
 }
 
 type VMessOutboundConfig struct {

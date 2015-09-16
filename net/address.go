@@ -20,18 +20,20 @@ type Address struct {
 func IPAddress(ip []byte, port uint16) Address {
 	// TODO: check IP length
 	return Address{
-		AddrTypeIP,
-		net.IP(ip),
-		"",
-		port}
+		Type:   AddrTypeIP,
+		IP:     net.IP(ip),
+		Domain: "",
+		Port:   port,
+	}
 }
 
 func DomainAddress(domain string, port uint16) Address {
 	return Address{
-		AddrTypeDomain,
-		nil,
-		domain,
-		port}
+		Type:   AddrTypeDomain,
+		IP:     nil,
+		Domain: domain,
+		Port:   port,
+	}
 }
 
 func (addr Address) IsIPv4() bool {
