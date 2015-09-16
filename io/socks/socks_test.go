@@ -40,10 +40,7 @@ func TestAuthenticationRequestRead(t *testing.T) {
 func TestAuthenticationResponseWrite(t *testing.T) {
 	assert := unit.Assert(t)
 
-	response := Socks5AuthenticationResponse{
-		version:    socksVersion,
-		authMethod: byte(0x05),
-	}
+	response := NewAuthenticationResponse(byte(0x05))
 
 	buffer := bytes.NewBuffer(make([]byte, 0, 10))
 	WriteAuthentication(buffer, &response)
