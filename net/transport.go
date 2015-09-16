@@ -14,9 +14,9 @@ func ReaderToChan(stream chan<- []byte, reader io.Reader) error {
 	for {
 		buffer := make([]byte, bufferSize)
 		nBytes, err := reader.Read(buffer)
-    if nBytes > 0 {
-      stream <- buffer[:nBytes]
-    }
+		if nBytes > 0 {
+			stream <- buffer[:nBytes]
+		}
 		if err != nil {
 			return err
 		}

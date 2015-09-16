@@ -3,7 +3,6 @@ package vmess
 import (
 	"crypto/md5"
 	"crypto/rand"
-	"io"
 	mrand "math/rand"
 	"net"
 
@@ -62,30 +61,59 @@ func (handler *VMessOutboundHandler) Start(ray core.OutboundRay) error {
 	request.Command = byte(0x01)
 	request.Address = handler.dest
 
-	go handler.startCommunicate(request, vNextAddress, ray)
+	go startCommunicate(request, vNextAddress, ray)
 	return nil
 }
 
-func (handler *VMessOutboundHandler) startCommunicate(request *vmessio.VMessRequest, dest v2net.Address, ray core.OutboundRay) error {
-	conn, err := net.Dial("tcp", dest.String())
+func startCommunicate(request *vmessio.VMessRequest, dest v2net.Address, ray core.OutboundRay) error {
+	input := ray.OutboundInput()
+	output := ray.OutboundOutput()
+
+	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{dest.IP, int(dest.Port), ""})
 	log.Debug("VMessOutbound dialing tcp: %s", dest.String())
 	if err != nil {
 		log.Error("Failed to open tcp (%s): %v", dest.String(), err)
+		close(output)
 		return err
 	}
 	defer conn.Close()
+	defer close(output)
 
+	requestFinish := make(chan bool)
+	responseFinish := make(chan bool)
+
+	go handleRequest(conn, request, input, requestFinish)
+	go handleResponse(conn, request, output, responseFinish)
+
+	<-requestFinish
+	conn.CloseWrite()
+	<-responseFinish
+	return nil
+}
+
+func handleRequest(conn *net.TCPConn, request *vmessio.VMessRequest, input <-chan []byte, finish chan<- bool) error {
+	defer close(finish)
 	requestWriter := vmessio.NewVMessRequestWriter()
-	err = requestWriter.Write(conn, request)
+	err := requestWriter.Write(conn, request)
 	if err != nil {
 		log.Error("Failed to write VMess request: %v", err)
 		return err
 	}
 
-	requestKey := request.RequestKey[:]
-	requestIV := request.RequestIV[:]
-	responseKey := md5.Sum(requestKey)
-	responseIV := md5.Sum(requestIV)
+	encryptRequestWriter, err := v2io.NewAesEncryptWriter(request.RequestKey[:], request.RequestIV[:], conn)
+	if err != nil {
+		log.Error("Failed to create encrypt writer: %v", err)
+		return err
+	}
+
+	v2net.ChanToWriter(encryptRequestWriter, input)
+	return nil
+}
+
+func handleResponse(conn *net.TCPConn, request *vmessio.VMessRequest, output chan<- []byte, finish chan<- bool) error {
+	defer close(finish)
+	responseKey := md5.Sum(request.RequestKey[:])
+	responseIV := md5.Sum(request.RequestIV[:])
 
 	response := vmessio.VMessResponse{}
 	nBytes, err := conn.Read(response[:])
@@ -96,42 +124,14 @@ func (handler *VMessOutboundHandler) startCommunicate(request *vmessio.VMessRequ
 	log.Debug("Got response %v", response)
 	// TODO: check response
 
-	encryptRequestWriter, err := v2io.NewAesEncryptWriter(requestKey, requestIV, conn)
-	if err != nil {
-		log.Error("Failed to create encrypt writer: %v", err)
-		return err
-	}
 	decryptResponseReader, err := v2io.NewAesDecryptReader(responseKey[:], responseIV[:], conn)
 	if err != nil {
 		log.Error("Failed to create decrypt reader: %v", err)
 		return err
 	}
 
-	input := ray.OutboundInput()
-	output := ray.OutboundOutput()
-	finish := make(chan bool, 2)
-
-	go handler.dumpInput(encryptRequestWriter, input, finish)
-	go handler.dumpOutput(decryptResponseReader, output, finish)
-	handler.waitForFinish(finish)
+	v2net.ReaderToChan(output, decryptResponseReader)
 	return nil
-}
-
-func (handler *VMessOutboundHandler) dumpOutput(reader io.Reader, output chan<- []byte, finish chan<- bool) {
-	v2net.ReaderToChan(output, reader)
-	close(output)
-	finish <- true
-}
-
-func (handler *VMessOutboundHandler) dumpInput(writer io.Writer, input <-chan []byte, finish chan<- bool) {
-	v2net.ChanToWriter(writer, input)
-	finish <- true
-}
-
-func (handler *VMessOutboundHandler) waitForFinish(finish <-chan bool) {
-	<-finish
-	<-finish
-	log.Debug("Finishing waiting for VMessOutbound ending.")
 }
 
 type VMessOutboundHandlerFactory struct {

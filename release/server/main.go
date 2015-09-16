@@ -16,12 +16,22 @@ import (
 
 var (
 	configFile = flag.String("config", "", "Config file for this Point server.")
+	logLevel   = flag.String("loglevel", "", "Level of log info to be printed to console, available value: debug, info, warning, error")
 )
 
 func main() {
 	flag.Parse()
 
-	log.SetLogLevel(log.DebugLevel)
+	switch *logLevel {
+	case "debug":
+		log.SetLogLevel(log.DebugLevel)
+	case "info":
+		log.SetLogLevel(log.InfoLevel)
+	case "warning":
+		log.SetLogLevel(log.WarningLevel)
+	case "error":
+		log.SetLogLevel(log.ErrorLevel)
+	}
 
 	if configFile == nil || len(*configFile) == 0 {
 		panic(log.Error("Config file is not set."))

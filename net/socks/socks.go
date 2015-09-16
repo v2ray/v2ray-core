@@ -1,7 +1,9 @@
 package socks
 
 import (
+	"bufio"
 	"errors"
+	"io"
 	"net"
 	"strconv"
 
@@ -14,6 +16,7 @@ import (
 var (
 	ErrorAuthenticationFailed = errors.New("None of the authentication methods is allowed.")
 	ErrorCommandNotSupported  = errors.New("Client requested an unsupported command.")
+	ErrorInvalidUser          = errors.New("Invalid username or password.")
 )
 
 // SocksServer is a SOCKS 5 proxy server
@@ -61,7 +64,9 @@ func (server *SocksServer) AcceptConnections(listener net.Listener) error {
 func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	defer connection.Close()
 
-	auth, err := socksio.ReadAuthentication(connection)
+	reader := bufio.NewReader(connection)
+
+	auth, err := socksio.ReadAuthentication(reader)
 	if err != nil {
 		log.Error("Error on reading authentication: %v", err)
 		return err
@@ -76,15 +81,31 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 		authResponse := socksio.NewAuthenticationResponse(socksio.AuthNoMatchingMethod)
 		socksio.WriteAuthentication(connection, authResponse)
 
-		log.Info("Client doesn't support allowed any auth methods.")
+		log.Warning("Client doesn't support allowed any auth methods.")
 		return ErrorAuthenticationFailed
 	}
 
-	log.Debug("Auth accepted, responding auth.")
-	authResponse := socksio.NewAuthenticationResponse(socksio.AuthNotRequired)
+	authResponse := socksio.NewAuthenticationResponse(expectedAuthMethod)
 	socksio.WriteAuthentication(connection, authResponse)
 
-	request, err := socksio.ReadRequest(connection)
+	if server.config.AuthMethod == JsonAuthMethodUserPass {
+		upRequest, err := socksio.ReadUserPassRequest(reader)
+		if err != nil {
+			log.Error("Failed to read username and password: %v", err)
+			return err
+		}
+		status := byte(0)
+		if !upRequest.IsValid(server.config.Username, server.config.Password) {
+			status = byte(0xFF)
+		}
+		upResponse := socksio.NewSocks5UserPassResponse(status)
+		socksio.WriteUserPassResponse(connection, upResponse)
+		if status != byte(0) {
+			return ErrorInvalidUser
+		}
+	}
+
+	request, err := socksio.ReadRequest(reader)
 	if err != nil {
 		log.Error("Error on reading socks request: %v", err)
 		return err
@@ -96,7 +117,7 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 		response := socksio.NewSocks5Response()
 		response.Error = socksio.ErrorCommandNotSupported
 		socksio.WriteResponse(connection, response)
-		log.Info("Unsupported socks command %d", request.Command)
+		log.Warning("Unsupported socks command %d", request.Command)
 		return ErrorCommandNotSupported
 	}
 
@@ -111,33 +132,30 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	case socksio.AddrTypeDomain:
 		response.Domain = request.Domain
 	}
-	log.Debug("Socks response port = %d", response.Port)
 	socksio.WriteResponse(connection, response)
 
 	ray := server.vPoint.NewInboundConnectionAccepted(request.Destination())
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
-	finish := make(chan bool, 2)
+	readFinish := make(chan bool)
+	writeFinish := make(chan bool)
 
-	go server.dumpInput(connection, input, finish)
-	go server.dumpOutput(connection, output, finish)
-	server.waitForFinish(finish)
+	go server.dumpInput(reader, input, readFinish)
+	go server.dumpOutput(connection, output, writeFinish)
+	<-writeFinish
 
 	return nil
 }
 
-func (server *SocksServer) dumpInput(conn net.Conn, input chan<- []byte, finish chan<- bool) {
-	v2net.ReaderToChan(input, conn)
+func (server *SocksServer) dumpInput(reader io.Reader, input chan<- []byte, finish chan<- bool) {
+	v2net.ReaderToChan(input, reader)
 	close(input)
+	log.Debug("Socks input closed")
 	finish <- true
 }
 
-func (server *SocksServer) dumpOutput(conn net.Conn, output <-chan []byte, finish chan<- bool) {
-	v2net.ChanToWriter(conn, output)
+func (server *SocksServer) dumpOutput(writer io.Writer, output <-chan []byte, finish chan<- bool) {
+	v2net.ChanToWriter(writer, output)
+	log.Debug("Socks output closed")
 	finish <- true
-}
-
-func (server *SocksServer) waitForFinish(finish <-chan bool) {
-	<-finish
-	<-finish
 }

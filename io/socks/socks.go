@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	_ "log"
 
 	v2net "github.com/v2ray/v2ray-core/net"
 )
@@ -36,7 +35,7 @@ func (request *Socks5AuthenticationRequest) HasAuthMethod(method byte) bool {
 }
 
 func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, err error) {
-	buffer := make([]byte, 2)
+	buffer := make([]byte, 256)
 	nBytes, err := reader.Read(buffer)
 	if err != nil {
 		return
@@ -58,16 +57,11 @@ func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, err
 		return
 	}
 
-	buffer = make([]byte, auth.nMethods)
-	nBytes, err = reader.Read(buffer)
-	if err != nil {
-		return
-	}
-	if nBytes != int(auth.nMethods) {
+	if nBytes-2 != int(auth.nMethods) {
 		err = fmt.Errorf("Unmatching number of auth methods, expecting %d, but got %d", auth.nMethods, nBytes)
 		return
 	}
-	copy(auth.authMethods[:nBytes], buffer)
+	copy(auth.authMethods[:], buffer[2:nBytes])
 	return
 }
 
@@ -84,14 +78,62 @@ func NewAuthenticationResponse(authMethod byte) *Socks5AuthenticationResponse {
 }
 
 func (r *Socks5AuthenticationResponse) ToBytes() []byte {
-	buffer := make([]byte, 2 /* size of Socks5AuthenticationResponse */)
-	buffer[0] = r.version
-	buffer[1] = r.authMethod
-	return buffer
+	return []byte{r.version, r.authMethod}
 }
 
 func WriteAuthentication(writer io.Writer, response *Socks5AuthenticationResponse) error {
 	_, err := writer.Write(response.ToBytes())
+	return err
+}
+
+type Socks5UserPassRequest struct {
+	version  byte
+	username string
+	password string
+}
+
+func (request Socks5UserPassRequest) IsValid(username string, password string) bool {
+	return request.username == username && request.password == password
+}
+
+func ReadUserPassRequest(reader io.Reader) (request Socks5UserPassRequest, err error) {
+	buffer := make([]byte, 256)
+	_, err = reader.Read(buffer[0:2])
+	if err != nil {
+		return
+	}
+	request.version = buffer[0]
+	nUsername := buffer[1]
+	nBytes, err := reader.Read(buffer[:nUsername])
+	if err != nil {
+		return
+	}
+	request.username = string(buffer[:nBytes])
+
+	_, err = reader.Read(buffer[0:1])
+	if err != nil {
+		return
+	}
+	nPassword := buffer[0]
+	nBytes, err = reader.Read(buffer[:nPassword])
+	if err != nil {
+		return
+	}
+	request.password = string(buffer[:nBytes])
+	return
+}
+
+type Socks5UserPassResponse struct {
+	version byte
+	status  byte
+}
+
+func NewSocks5UserPassResponse(status byte) Socks5UserPassResponse {
+	return Socks5UserPassResponse{socksVersion, status}
+}
+
+func WriteUserPassResponse(writer io.Writer, response Socks5UserPassResponse) error {
+	_, err := writer.Write([]byte{response.version, response.status})
 	return err
 }
 

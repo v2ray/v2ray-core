@@ -13,6 +13,7 @@ import (
 
 	"github.com/v2ray/v2ray-core"
 	v2io "github.com/v2ray/v2ray-core/io"
+	"github.com/v2ray/v2ray-core/log"
 	v2net "github.com/v2ray/v2ray-core/net"
 )
 
@@ -22,12 +23,13 @@ const (
 	addrTypeDomain = byte(0x02)
 
 	Version = byte(0x01)
+
+	blockSize = 16
 )
 
 var (
-	ErrorInvalidUser = errors.New("Invalid User")
-
-	emptyIV = make([]byte, blockSize)
+	ErrorInvalidUser   = errors.New("Invalid User")
+	ErrorInvalidVerion = errors.New("Invalid Version")
 )
 
 // VMessRequest implements the request message of VMess protocol. It only contains
@@ -45,10 +47,10 @@ type VMessRequest struct {
 }
 
 type VMessRequestReader struct {
-	vUserSet *core.UserSet
+	vUserSet core.UserSet
 }
 
-func NewVMessRequestReader(vUserSet *core.UserSet) *VMessRequestReader {
+func NewVMessRequestReader(vUserSet core.UserSet) *VMessRequestReader {
 	reader := new(VMessRequestReader)
 	reader.vUserSet = vUserSet
 	return reader
@@ -58,25 +60,27 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	request := new(VMessRequest)
 
 	buffer := make([]byte, 256)
-	nBytes, err := reader.Read(buffer[0:1])
-	if err != nil {
-		return nil, err
-	}
-	// TODO: verify version number
-	request.Version = buffer[0]
 
-	nBytes, err = reader.Read(buffer[:len(request.UserId)])
+	nBytes, err := reader.Read(buffer[:core.IDBytesLen])
 	if err != nil {
 		return nil, err
 	}
 
-	userId, valid := r.vUserSet.IsValidUserId(buffer[:nBytes])
+	log.Debug("Read user hash: %v", buffer[:nBytes])
+
+	userId, timeSec, valid := r.vUserSet.GetUser(buffer[:nBytes])
 	if !valid {
 		return nil, ErrorInvalidUser
 	}
 	request.UserId = *userId
 
-	decryptor, err := NewDecryptionReader(reader, userId.Hash([]byte("PWD")), emptyIV)
+	aesCipher, err := aes.NewCipher(userId.CmdKey())
+	if err != nil {
+		return nil, err
+	}
+	aesStream := cipher.NewCFBDecrypter(aesCipher, core.TimestampHash(timeSec))
+	decryptor := v2io.NewCryptionReader(aesStream, reader)
+
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +97,17 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	_, err = decryptor.Read(buffer[:randomLength])
 	if err != nil {
 		return nil, err
+	}
+
+	nBytes, err = decryptor.Read(buffer[0:1])
+	if err != nil {
+		return nil, err
+	}
+
+	request.Version = buffer[0]
+	if request.Version != Version {
+		log.Error("Unknown VMess version %d", request.Version)
+		return nil, ErrorInvalidVerion
 	}
 
 	// TODO: check number of bytes returned
@@ -172,8 +187,10 @@ func NewVMessRequestWriter() *VMessRequestWriter {
 
 func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) error {
 	buffer := make([]byte, 0, 300)
-	buffer = append(buffer, request.Version)
-	buffer = append(buffer, request.UserId.Hash([]byte("ASK"))...)
+	userHash, timeSec := request.UserId.TimeRangeHash(30)
+
+	log.Debug("Writing userhash: %v", userHash)
+	buffer = append(buffer, userHash...)
 
 	encryptionBegin := len(buffer)
 
@@ -186,6 +203,7 @@ func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) erro
 	buffer = append(buffer, byte(randomLength))
 	buffer = append(buffer, randomContent...)
 
+	buffer = append(buffer, request.Version)
 	buffer = append(buffer, request.RequestIV[:]...)
 	buffer = append(buffer, request.RequestKey[:]...)
 	buffer = append(buffer, request.ResponseHeader[:]...)
@@ -221,11 +239,11 @@ func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) erro
 	buffer = append(buffer, paddingBuffer...)
 	encryptionEnd := len(buffer)
 
-	aesCipher, err := aes.NewCipher(request.UserId.Hash([]byte("PWD")))
+	aesCipher, err := aes.NewCipher(request.UserId.CmdKey())
 	if err != nil {
 		return err
 	}
-	aesStream := cipher.NewCFBEncrypter(aesCipher, emptyIV)
+	aesStream := cipher.NewCFBEncrypter(aesCipher, core.TimestampHash(timeSec))
 	cWriter := v2io.NewCryptionWriter(aesStream, writer)
 
 	_, err = writer.Write(buffer[0:encryptionBegin])

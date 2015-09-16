@@ -2,6 +2,7 @@ package vmess
 
 import (
 	"encoding/json"
+	"net"
 
 	"github.com/v2ray/v2ray-core"
 	"github.com/v2ray/v2ray-core/log"
@@ -14,7 +15,7 @@ type VMessUser struct {
 }
 
 func (u *VMessUser) ToUser() (core.User, error) {
-	id, err := core.UUIDToID(u.Id)
+	id, err := core.NewID(u.Id)
 	return core.User{id}, err
 }
 
@@ -43,8 +44,12 @@ func (config VNextConfig) ToVNextServer() VNextServer {
 		}
 		users = append(users, vuser)
 	}
+	ip := net.ParseIP(config.Address)
+	if ip == nil {
+		panic(log.Error("Unable to parse VNext IP: %s", config.Address))
+	}
 	return VNextServer{
-		v2net.DomainAddress(config.Address, config.Port),
+		v2net.IPAddress(ip, config.Port),
 		users}
 }
 
