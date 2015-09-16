@@ -77,12 +77,8 @@ func NewAuthenticationResponse(authMethod byte) *Socks5AuthenticationResponse {
 	return response
 }
 
-func (r *Socks5AuthenticationResponse) ToBytes() []byte {
-	return []byte{r.version, r.authMethod}
-}
-
-func WriteAuthentication(writer io.Writer, response *Socks5AuthenticationResponse) error {
-	_, err := writer.Write(response.ToBytes())
+func WriteAuthentication(writer io.Writer, r *Socks5AuthenticationResponse) error {
+	_, err := writer.Write([]byte{r.version, r.authMethod})
 	return err
 }
 

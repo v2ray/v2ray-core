@@ -22,18 +22,6 @@ func TestAuthenticationRequestRead(t *testing.T) {
 	assert.Byte(request.authMethods[0]).Named("Auth Method").Equals(0x02)
 }
 
-func TestAuthenticationResponseToBytes(t *testing.T) {
-	assert := unit.Assert(t)
-
-	socksVersion := uint8(5)
-	authMethod := uint8(1)
-	response := Socks5AuthenticationResponse{socksVersion, authMethod}
-	bytes := response.ToBytes()
-
-	assert.Byte(bytes[0]).Named("Version").Equals(socksVersion)
-	assert.Byte(bytes[1]).Named("Auth Method").Equals(authMethod)
-}
-
 func TestRequestRead(t *testing.T) {
 	assert := unit.Assert(t)
 
