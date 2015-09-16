@@ -27,14 +27,14 @@ type SocksServer struct {
 }
 
 func NewSocksServer(vp *core.Point, rawConfig []byte) *SocksServer {
-	server := new(SocksServer)
-	server.vPoint = vp
 	config, err := loadConfig(rawConfig)
 	if err != nil {
 		panic(log.Error("Unable to load socks config: %v", err))
 	}
-	server.config = config
-	return server
+	return &SocksServer{
+		vPoint: vp,
+		config: config,
+	}
 }
 
 func (server *SocksServer) Listen(port uint16) error {

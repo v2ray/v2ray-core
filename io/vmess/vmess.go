@@ -51,13 +51,12 @@ type VMessRequestReader struct {
 }
 
 func NewVMessRequestReader(vUserSet core.UserSet) *VMessRequestReader {
-	reader := new(VMessRequestReader)
-	reader.vUserSet = vUserSet
-	return reader
+	return &VMessRequestReader{
+		vUserSet: vUserSet,
+	}
 }
 
 func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
-	request := new(VMessRequest)
 
 	buffer := make([]byte, 256)
 
@@ -72,7 +71,6 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	if !valid {
 		return nil, ErrorInvalidUser
 	}
-	request.UserId = *userId
 
 	aesCipher, err := aes.NewCipher(userId.CmdKey())
 	if err != nil {
@@ -104,7 +102,11 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 		return nil, err
 	}
 
-	request.Version = buffer[0]
+	request := &VMessRequest{
+		UserId:  *userId,
+		Version: buffer[0],
+	}
+
 	if request.Version != Version {
 		log.Error("Unknown VMess version %d", request.Version)
 		return nil, ErrorInvalidVerion
@@ -181,8 +183,7 @@ type VMessRequestWriter struct {
 }
 
 func NewVMessRequestWriter() *VMessRequestWriter {
-	writer := new(VMessRequestWriter)
-	return writer
+	return &VMessRequestWriter{}
 }
 
 func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) error {

@@ -71,10 +71,10 @@ type Socks5AuthenticationResponse struct {
 }
 
 func NewAuthenticationResponse(authMethod byte) *Socks5AuthenticationResponse {
-	response := new(Socks5AuthenticationResponse)
-	response.version = socksVersion
-	response.authMethod = authMethod
-	return response
+	return &Socks5AuthenticationResponse{
+		version:    socksVersion,
+		authMethod: authMethod,
+	}
 }
 
 func WriteAuthentication(writer io.Writer, r *Socks5AuthenticationResponse) error {
@@ -154,7 +154,7 @@ type Socks5Request struct {
 }
 
 func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
-	request = new(Socks5Request)
+
 	buffer := make([]byte, 4)
 	nBytes, err := reader.Read(buffer)
 	if err != nil {
@@ -164,11 +164,12 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 		err = fmt.Errorf("Unable to read request.")
 		return
 	}
-
-	request.Version = buffer[0]
-	request.Command = buffer[1]
-	// buffer[2] is a reserved field
-	request.AddrType = buffer[3]
+	request = &Socks5Request{
+		Version: buffer[0],
+		Command: buffer[1],
+		// buffer[2] is a reserved field
+		AddrType: buffer[3],
+	}
 	switch request.AddrType {
 	case AddrTypeIPv4:
 		nBytes, err = reader.Read(request.IPv4[:])
@@ -260,9 +261,9 @@ type Socks5Response struct {
 }
 
 func NewSocks5Response() *Socks5Response {
-	response := new(Socks5Response)
-	response.Version = socksVersion
-	return response
+	return &Socks5Response{
+		Version: socksVersion,
+	}
 }
 
 func (r *Socks5Response) SetIPv4(ipv4 []byte) {
