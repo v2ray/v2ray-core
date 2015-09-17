@@ -6,7 +6,7 @@ import (
 	"io"
 )
 
-func NewAesDecryptReader(key []byte, iv []byte, reader io.Reader) (io.Reader, error) {
+func NewAesDecryptReader(key []byte, iv []byte, reader io.Reader) (*CryptionReader, error) {
 	aesBlock, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -16,7 +16,7 @@ func NewAesDecryptReader(key []byte, iv []byte, reader io.Reader) (io.Reader, er
 	return NewCryptionReader(aesStream, reader), nil
 }
 
-func NewAesEncryptWriter(key []byte, iv []byte, writer io.Writer) (io.Writer, error) {
+func NewAesEncryptWriter(key []byte, iv []byte, writer io.Writer) (*CryptionWriter, error) {
 	aesBlock, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err

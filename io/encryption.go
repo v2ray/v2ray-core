@@ -48,9 +48,13 @@ func NewCryptionWriter(stream cipher.Stream, writer io.Writer) *CryptionWriter {
 	}
 }
 
+func (writer CryptionWriter) Crypt(blocks []byte) {
+	writer.stream.XORKeyStream(blocks, blocks)
+}
+
 // Write writes the give blocks to underlying writer. The length of the blocks
 // must be a multiply of BlockSize()
 func (writer CryptionWriter) Write(blocks []byte) (int, error) {
-	writer.stream.XORKeyStream(blocks, blocks)
+	writer.Crypt(blocks)
 	return writer.writer.Write(blocks)
 }

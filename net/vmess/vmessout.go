@@ -98,17 +98,30 @@ func startCommunicate(request *vmessio.VMessRequest, dest v2net.Address, ray cor
 
 func handleRequest(conn *net.TCPConn, request *vmessio.VMessRequest, input <-chan []byte, finish chan<- bool) error {
 	defer close(finish)
-	requestWriter := vmessio.NewVMessRequestWriter(v2hash.NewTimeHash(v2hash.HMACHash{}), v2math.GenerateRandomInt64InRange)
-	err := requestWriter.Write(conn, request)
-	if err != nil {
-		log.Error("Failed to write VMess request: %v", err)
-		return err
-	}
-
 	encryptRequestWriter, err := v2io.NewAesEncryptWriter(request.RequestKey[:], request.RequestIV[:], conn)
 	if err != nil {
 		log.Error("Failed to create encrypt writer: %v", err)
 		return err
+	}
+
+	buffer, err := request.ToBytes(v2hash.NewTimeHash(v2hash.HMACHash{}), v2math.GenerateRandomInt64InRange)
+	if err != nil {
+		log.Error("VMessOut: Failed to serialize VMess request: %v", err)
+	}
+	//conn.Write(buffer)
+	data, open := <-input
+	if open {
+		encryptRequestWriter.Crypt(data)
+		buffer = append(buffer, data...)
+	}
+
+	_, err = conn.Write(buffer)
+	if err != nil {
+		log.Error("VMessOut: Failed to write VMess request: %v", err)
+	}
+
+	if !open {
+		return nil
 	}
 
 	v2net.ChanToWriter(encryptRequestWriter, input)

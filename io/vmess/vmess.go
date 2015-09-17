@@ -181,26 +181,14 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	return request, nil
 }
 
-type VMessRequestWriter struct {
-	idHash           v2hash.CounterHash
-	randomRangeInt64 v2math.RandomInt64InRange
-}
-
-func NewVMessRequestWriter(idHash v2hash.CounterHash, randomRangeInt64 v2math.RandomInt64InRange) *VMessRequestWriter {
-	return &VMessRequestWriter{
-		idHash:           idHash,
-		randomRangeInt64: randomRangeInt64,
-	}
-}
-
-func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) error {
+func (request *VMessRequest) ToBytes(idHash v2hash.CounterHash, randomRangeInt64 v2math.RandomInt64InRange) ([]byte, error) {
 	buffer := make([]byte, 0, 300)
 
-	counter := w.randomRangeInt64(time.Now().UTC().Unix(), 30)
-	idHash := w.idHash.Hash(request.UserId.Bytes, counter)
+	counter := randomRangeInt64(time.Now().UTC().Unix(), 30)
+	hash := idHash.Hash(request.UserId.Bytes, counter)
 
-	log.Debug("Writing userhash: %v", idHash)
-	buffer = append(buffer, idHash...)
+	log.Debug("Writing userhash: %v", hash)
+	buffer = append(buffer, hash...)
 
 	encryptionBegin := len(buffer)
 
@@ -208,7 +196,7 @@ func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) erro
 	randomContent := make([]byte, randomLength)
 	_, err := rand.Read(randomContent)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	buffer = append(buffer, byte(randomLength))
 	buffer = append(buffer, randomContent...)
@@ -240,7 +228,7 @@ func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) erro
 	paddingBuffer := make([]byte, paddingLength)
 	_, err = rand.Read(paddingBuffer)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	buffer = append(buffer, byte(paddingLength))
 	buffer = append(buffer, paddingBuffer...)
@@ -248,21 +236,12 @@ func (w *VMessRequestWriter) Write(writer io.Writer, request *VMessRequest) erro
 
 	aesCipher, err := aes.NewCipher(request.UserId.CmdKey())
 	if err != nil {
-		return err
+		return nil, err
 	}
 	aesStream := cipher.NewCFBEncrypter(aesCipher, v2hash.Int64Hash(counter))
-	cWriter := v2io.NewCryptionWriter(aesStream, writer)
+	aesStream.XORKeyStream(buffer[encryptionBegin:encryptionEnd], buffer[encryptionBegin:encryptionEnd])
 
-	_, err = writer.Write(buffer[0:encryptionBegin])
-	if err != nil {
-		return err
-	}
-	_, err = cWriter.Write(buffer[encryptionBegin:encryptionEnd])
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return buffer, nil
 }
 
 type VMessResponse [4]byte
