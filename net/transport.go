@@ -31,7 +31,8 @@ func putBuffer(buffer []byte) {
 
 func ReaderToChan(stream chan<- []byte, reader io.Reader) error {
 	for {
-		buffer := getBuffer()
+    buffer := make([]byte, bufferSize)
+		//buffer := getBuffer()
 		nBytes, err := reader.Read(buffer)
 		if nBytes > 0 {
 			stream <- buffer[:nBytes]
@@ -46,7 +47,7 @@ func ReaderToChan(stream chan<- []byte, reader io.Reader) error {
 func ChanToWriter(writer io.Writer, stream <-chan []byte) error {
 	for buffer := range stream {
 		_, err := writer.Write(buffer)
-		putBuffer(buffer)
+		//putBuffer(buffer)
 		if err != nil {
 			return err
 		}
