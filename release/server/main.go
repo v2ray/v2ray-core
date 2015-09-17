@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"io/ioutil"
-	"path"
+	"path/filepath"
 
 	"github.com/v2ray/v2ray-core"
 	"github.com/v2ray/v2ray-core/log"
@@ -45,12 +45,12 @@ func main() {
 		panic(log.Error("Failed to parse Config: %v", err))
 	}
 
-	if !path.IsAbs(vconfig.InboundConfig.File) && len(vconfig.InboundConfig.File) > 0 {
-		vconfig.InboundConfig.File = path.Join(path.Dir(*configFile), vconfig.InboundConfig.File)
+	if !filepath.IsAbs(vconfig.InboundConfig.File) && len(vconfig.InboundConfig.File) > 0 {
+		vconfig.InboundConfig.File = filepath.Join(filepath.Dir(*configFile), vconfig.InboundConfig.File)
 	}
 
-	if !path.IsAbs(vconfig.OutboundConfig.File) && len(vconfig.OutboundConfig.File) > 0 {
-		vconfig.OutboundConfig.File = path.Join(path.Dir(*configFile), vconfig.OutboundConfig.File)
+	if !filepath.IsAbs(vconfig.OutboundConfig.File) && len(vconfig.OutboundConfig.File) > 0 {
+		vconfig.OutboundConfig.File = filepath.Join(filepath.Dir(*configFile), vconfig.OutboundConfig.File)
 	}
 
 	vPoint, err := core.NewPoint(vconfig)
