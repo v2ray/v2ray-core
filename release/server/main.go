@@ -4,6 +4,7 @@ import (
 	"flag"
 	"io/ioutil"
 	"path"
+	"path/filepath"
 
 	"github.com/v2ray/v2ray-core"
 	"github.com/v2ray/v2ray-core/log"
@@ -34,11 +35,15 @@ func main() {
 	}
 
 	if configFile == nil || len(*configFile) == 0 {
-		panic(log.Error("Config file is not set."))
+		panic(log.Error("Main config file is not set."))
 	}
-	rawVConfig, err := ioutil.ReadFile(*configFile)
+	absPath, err := filepath.Abs(*configFile)
 	if err != nil {
-		panic(log.Error("Failed to read config file (%s): %v", *configFile, err))
+		panic(log.Error("Unable to read main config file %v", err))
+	}
+	rawVConfig, err := ioutil.ReadFile(absPath)
+	if err != nil {
+		panic(log.Error("Failed to read main config file (%s): %v", *configFile, err))
 	}
 	vconfig, err := core.LoadConfig(rawVConfig)
 	if err != nil {
