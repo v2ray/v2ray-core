@@ -3,7 +3,6 @@ package vmess
 import (
 	"bytes"
 	"crypto/rand"
-	"io/ioutil"
 	"testing"
 
 	"github.com/v2ray/v2ray-core"
@@ -47,19 +46,17 @@ func TestVMessSerialization(t *testing.T) {
 	request.Command = byte(0x01)
 	request.Address = v2net.DomainAddress("v2ray.com", 80)
 
-	buffer := bytes.NewBuffer(make([]byte, 0, 300))
 	mockTime := int64(1823730)
-	requestWriter := NewVMessRequestWriter(v2hash.NewTimeHash(v2hash.HMACHash{}), func(base int64, delta int) int64 { return mockTime })
-	err = requestWriter.Write(buffer, request)
+	buffer, err := request.ToBytes(v2hash.NewTimeHash(v2hash.HMACHash{}), func(base int64, delta int) int64 { return mockTime })
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	userSet.UserHashes[string(buffer.Bytes()[:16])] = 0
-	userSet.Timestamps[string(buffer.Bytes()[:16])] = mockTime
+	userSet.UserHashes[string(buffer[:16])] = 0
+	userSet.Timestamps[string(buffer[:16])] = mockTime
 
 	requestReader := NewVMessRequestReader(&userSet)
-	actualRequest, err := requestReader.Read(buffer)
+	actualRequest, err := requestReader.Read(bytes.NewReader(buffer))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,8 +86,7 @@ func BenchmarkVMessRequestWriting(b *testing.B) {
 	request.Command = byte(0x01)
 	request.Address = v2net.DomainAddress("v2ray.com", 80)
 
-	requestWriter := NewVMessRequestWriter(v2hash.NewTimeHash(v2hash.HMACHash{}), v2math.GenerateRandomInt64InRange)
 	for i := 0; i < b.N; i++ {
-		requestWriter.Write(ioutil.Discard, request)
+		request.ToBytes(v2hash.NewTimeHash(v2hash.HMACHash{}), v2math.GenerateRandomInt64InRange)
 	}
 }
