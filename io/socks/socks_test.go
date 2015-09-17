@@ -30,11 +30,28 @@ func TestAuthenticationRequestRead(t *testing.T) {
 		0x01, // nMethods
 		0x02, // methods
 	}
-	request, err := ReadAuthentication(bytes.NewReader(rawRequest))
+	request, _, err := ReadAuthentication(bytes.NewReader(rawRequest))
 	assert.Error(err).IsNil()
 	assert.Byte(request.version).Named("Version").Equals(0x05)
 	assert.Byte(request.nMethods).Named("#Methods").Equals(0x01)
 	assert.Byte(request.authMethods[0]).Named("Auth Method").Equals(0x02)
+}
+
+func TestAuthentication4RequestRead(t *testing.T) {
+	assert := unit.Assert(t)
+
+	rawRequest := []byte{
+		0x04, // version
+		0x01, // command
+		0x00, 0x35,
+		0x72, 0x72, 0x72, 0x72,
+	}
+	_, request4, err := ReadAuthentication(bytes.NewReader(rawRequest))
+	assert.Error(err).Equals(ErrorSocksVersion4)
+	assert.Byte(request4.Version).Named("Version").Equals(0x04)
+	assert.Byte(request4.Command).Named("Command").Equals(0x01)
+	assert.Uint16(request4.Port).Named("Port").Equals(53)
+	assert.Bytes(request4.IP[:]).Named("IP").Equals([]byte{0x72, 0x72, 0x72, 0x72})
 }
 
 func TestAuthenticationResponseWrite(t *testing.T) {

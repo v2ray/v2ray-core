@@ -23,7 +23,7 @@ func (vconn *FreedomConnection) Start(ray core.OutboundRay) error {
 	output := ray.OutboundOutput()
 	conn, err := net.Dial("tcp", vconn.dest.String())
 	if err != nil {
-		return log.Error("Failed to open tcp: %s", vconn.dest.String())
+		return log.Error("Failed to open tcp: %s : %v", vconn.dest.String(), err)
 	}
 	log.Debug("Sending outbound tcp: %s", vconn.dest.String())
 

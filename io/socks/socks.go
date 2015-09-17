@@ -3,19 +3,29 @@ package socks
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 
+	"github.com/v2ray/v2ray-core/log"
 	v2net "github.com/v2ray/v2ray-core/net"
 )
 
 const (
-	socksVersion = uint8(5)
+	socksVersion  = byte(0x05)
+	socks4Version = byte(0x04)
 
 	AuthNotRequired      = byte(0x00)
 	AuthGssApi           = byte(0x01)
 	AuthUserPass         = byte(0x02)
 	AuthNoMatchingMethod = byte(0xFF)
+
+	Socks4RequestGranted  = byte(90)
+	Socks4RequestRejected = byte(91)
+)
+
+var (
+	ErrorSocksVersion4 = errors.New("Using SOCKS version 4.")
 )
 
 // Authentication request header of Socks5 protocol
@@ -23,6 +33,13 @@ type Socks5AuthenticationRequest struct {
 	version     byte
 	nMethods    byte
 	authMethods [256]byte
+}
+
+type Socks4AuthenticationRequest struct {
+	Version byte
+	Command byte
+	Port    uint16
+	IP      [4]byte
 }
 
 func (request *Socks5AuthenticationRequest) HasAuthMethod(method byte) bool {
@@ -34,14 +51,24 @@ func (request *Socks5AuthenticationRequest) HasAuthMethod(method byte) bool {
 	return false
 }
 
-func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, err error) {
+func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, auth4 Socks4AuthenticationRequest, err error) {
 	buffer := make([]byte, 256)
 	nBytes, err := reader.Read(buffer)
 	if err != nil {
+		log.Error("Failed to read socks authentication: %v", err)
 		return
 	}
 	if nBytes < 2 {
 		err = fmt.Errorf("Expected 2 bytes read, but actaully %d bytes read", nBytes)
+		return
+	}
+
+	if buffer[0] == socks4Version {
+		auth4.Version = buffer[0]
+		auth4.Command = buffer[1]
+		auth4.Port = binary.BigEndian.Uint16(buffer[2:4])
+		copy(auth4.IP[:], buffer[4:8])
+		err = ErrorSocksVersion4
 		return
 	}
 
@@ -70,6 +97,12 @@ type Socks5AuthenticationResponse struct {
 	authMethod byte
 }
 
+type Socks4AuthenticationResponse struct {
+	result byte
+	port   uint16
+	ip     []byte
+}
+
 func NewAuthenticationResponse(authMethod byte) *Socks5AuthenticationResponse {
 	return &Socks5AuthenticationResponse{
 		version:    socksVersion,
@@ -77,8 +110,26 @@ func NewAuthenticationResponse(authMethod byte) *Socks5AuthenticationResponse {
 	}
 }
 
+func NewSocks4AuthenticationResponse(result byte, port uint16, ip []byte) *Socks4AuthenticationResponse {
+	return &Socks4AuthenticationResponse{
+		result: result,
+		port:   port,
+		ip:     ip,
+	}
+}
+
 func WriteAuthentication(writer io.Writer, r *Socks5AuthenticationResponse) error {
 	_, err := writer.Write([]byte{r.version, r.authMethod})
+	return err
+}
+
+func WriteSocks4AuthenticationResponse(writer io.Writer, r *Socks4AuthenticationResponse) error {
+	buffer := make([]byte, 8)
+	// buffer[0] is always 0
+	buffer[1] = r.result
+	binary.BigEndian.PutUint16(buffer[2:4], r.port)
+	copy(buffer[4:], r.ip)
+	_, err := writer.Write(buffer)
 	return err
 }
 

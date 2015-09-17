@@ -64,92 +64,113 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 
 	reader := bufio.NewReader(connection)
 
-	auth, err := socksio.ReadAuthentication(reader)
-	if err != nil {
+	auth, auth4, err := socksio.ReadAuthentication(reader)
+	if err != nil && err != socksio.ErrorSocksVersion4 {
 		log.Error("Error on reading authentication: %v", err)
 		return err
 	}
 
-	expectedAuthMethod := socksio.AuthNotRequired
-	if server.config.AuthMethod == JsonAuthMethodUserPass {
-		expectedAuthMethod = socksio.AuthUserPass
-	}
+	var dest v2net.Address
 
-	if !auth.HasAuthMethod(expectedAuthMethod) {
-		authResponse := socksio.NewAuthenticationResponse(socksio.AuthNoMatchingMethod)
+	// TODO refactor this part
+	if err == socksio.ErrorSocksVersion4 {
+		result := socksio.Socks4RequestGranted
+		if auth4.Command == socksio.CmdBind {
+			result = socksio.Socks4RequestRejected
+		}
+		socks4Response := socksio.NewSocks4AuthenticationResponse(result, auth4.Port, auth4.IP[:])
+		socksio.WriteSocks4AuthenticationResponse(connection, socks4Response)
+
+		if result == socksio.Socks4RequestRejected {
+			return ErrorCommandNotSupported
+		}
+
+		dest = v2net.IPAddress(auth4.IP[:], auth4.Port)
+	} else {
+		expectedAuthMethod := socksio.AuthNotRequired
+		if server.config.AuthMethod == JsonAuthMethodUserPass {
+			expectedAuthMethod = socksio.AuthUserPass
+		}
+
+		if !auth.HasAuthMethod(expectedAuthMethod) {
+			authResponse := socksio.NewAuthenticationResponse(socksio.AuthNoMatchingMethod)
+			err = socksio.WriteAuthentication(connection, authResponse)
+			if err != nil {
+				log.Error("Error on socksio write authentication: %v", err)
+				return err
+			}
+			log.Warning("Client doesn't support allowed any auth methods.")
+			return ErrorAuthenticationFailed
+		}
+
+		authResponse := socksio.NewAuthenticationResponse(expectedAuthMethod)
 		err = socksio.WriteAuthentication(connection, authResponse)
 		if err != nil {
 			log.Error("Error on socksio write authentication: %v", err)
 			return err
 		}
-		log.Warning("Client doesn't support allowed any auth methods.")
-		return ErrorAuthenticationFailed
-	}
+		if server.config.AuthMethod == JsonAuthMethodUserPass {
+			upRequest, err := socksio.ReadUserPassRequest(reader)
+			if err != nil {
+				log.Error("Failed to read username and password: %v", err)
+				return err
+			}
+			status := byte(0)
+			if !upRequest.IsValid(server.config.Username, server.config.Password) {
+				status = byte(0xFF)
+			}
+			upResponse := socksio.NewSocks5UserPassResponse(status)
+			err = socksio.WriteUserPassResponse(connection, upResponse)
+			if err != nil {
+				log.Error("Error on socksio write user pass response: %v", err)
+				return err
+			}
+			if status != byte(0) {
+				return ErrorInvalidUser
+			}
+		}
 
-	authResponse := socksio.NewAuthenticationResponse(expectedAuthMethod)
-	err = socksio.WriteAuthentication(connection, authResponse)
-	if err != nil {
-		log.Error("Error on socksio write authentication: %v", err)
-		return err
-	}
-	if server.config.AuthMethod == JsonAuthMethodUserPass {
-		upRequest, err := socksio.ReadUserPassRequest(reader)
+		request, err := socksio.ReadRequest(reader)
 		if err != nil {
-			log.Error("Failed to read username and password: %v", err)
+			log.Error("Error on reading socks request: %v", err)
 			return err
 		}
-		status := byte(0)
-		if !upRequest.IsValid(server.config.Username, server.config.Password) {
-			status = byte(0xFF)
-		}
-		upResponse := socksio.NewSocks5UserPassResponse(status)
-		err = socksio.WriteUserPassResponse(connection, upResponse)
-		if err != nil {
-			log.Error("Error on socksio write user pass response: %v", err)
-			return err
-		}
-		if status != byte(0) {
-			return ErrorInvalidUser
-		}
-	}
 
-	request, err := socksio.ReadRequest(reader)
-	if err != nil {
-		log.Error("Error on reading socks request: %v", err)
-		return err
-	}
-
-	response := socksio.NewSocks5Response()
-
-	if request.Command == socksio.CmdBind || request.Command == socksio.CmdUdpAssociate {
 		response := socksio.NewSocks5Response()
-		response.Error = socksio.ErrorCommandNotSupported
+
+		if request.Command == socksio.CmdBind || request.Command == socksio.CmdUdpAssociate {
+			response := socksio.NewSocks5Response()
+			response.Error = socksio.ErrorCommandNotSupported
+			err = socksio.WriteResponse(connection, response)
+			if err != nil {
+				log.Error("Error on socksio write response: %v", err)
+				return err
+			}
+			log.Warning("Unsupported socks command %d", request.Command)
+			return ErrorCommandNotSupported
+		}
+
+		response.Error = socksio.ErrorSuccess
+		response.Port = request.Port
+		response.AddrType = request.AddrType
+		switch response.AddrType {
+		case socksio.AddrTypeIPv4:
+			copy(response.IPv4[:], request.IPv4[:])
+		case socksio.AddrTypeIPv6:
+			copy(response.IPv6[:], request.IPv6[:])
+		case socksio.AddrTypeDomain:
+			response.Domain = request.Domain
+		}
 		err = socksio.WriteResponse(connection, response)
 		if err != nil {
 			log.Error("Error on socksio write response: %v", err)
 			return err
 		}
-		log.Warning("Unsupported socks command %d", request.Command)
-		return ErrorCommandNotSupported
+
+		dest = request.Destination()
 	}
 
-	response.Error = socksio.ErrorSuccess
-	response.Port = request.Port
-	response.AddrType = request.AddrType
-	switch response.AddrType {
-	case socksio.AddrTypeIPv4:
-		copy(response.IPv4[:], request.IPv4[:])
-	case socksio.AddrTypeIPv6:
-		copy(response.IPv6[:], request.IPv6[:])
-	case socksio.AddrTypeDomain:
-		response.Domain = request.Domain
-	}
-	err = socksio.WriteResponse(connection, response)
-	if err != nil {
-		log.Error("Error on socksio write response: %v", err)
-		return err
-	}
-	ray := server.vPoint.NewInboundConnectionAccepted(request.Destination())
+	ray := server.vPoint.NewInboundConnectionAccepted(dest)
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 	readFinish := make(chan bool)
