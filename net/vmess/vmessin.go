@@ -60,27 +60,6 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 	}
 	log.Debug("Received request for %s", request.Address.String())
 
-	response := vmessio.NewVMessResponse(request)
-	nBytes, err := connection.Write(response[:])
-	if err != nil {
-		return log.Error("Failed to write VMess response (%d bytes): %v", nBytes, err)
-	}
-
-	requestKey := request.RequestKey[:]
-	requestIV := request.RequestIV[:]
-	responseKey := md5.Sum(requestKey)
-	responseIV := md5.Sum(requestIV)
-
-	requestReader, err := v2io.NewAesDecryptReader(requestKey, requestIV, connection)
-	if err != nil {
-		return log.Error("Failed to create decrypt reader: %v", err)
-	}
-
-	responseWriter, err := v2io.NewAesEncryptWriter(responseKey[:], responseIV[:], connection)
-	if err != nil {
-		return log.Error("Failed to create encrypt writer: %v", err)
-	}
-
 	ray := handler.vPoint.NewInboundConnectionAccepted(request.Address)
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
@@ -88,8 +67,27 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 	readFinish := make(chan bool)
 	writeFinish := make(chan bool)
 
-	go handler.dumpInput(requestReader, input, readFinish)
-	go handler.dumpOutput(responseWriter, output, writeFinish)
+	go handleInput(request, connection, input, readFinish)
+
+	responseKey := md5.Sum(request.RequestKey[:])
+	responseIV := md5.Sum(request.RequestIV[:])
+
+	response := vmessio.NewVMessResponse(request)
+	responseWriter, err := v2io.NewAesEncryptWriter(responseKey[:], responseIV[:], connection)
+	if err != nil {
+		return log.Error("Failed to create encrypt writer: %v", err)
+	}
+
+	// Optimize for small response packet
+	buffer := make([]byte, 0, 1024)
+	buffer = append(buffer, response[:]...)
+	data, open := <-output
+	if open {
+		buffer = append(buffer, data...)
+	}
+	responseWriter.Write(buffer)
+
+	go handleOutput(request, responseWriter, output, writeFinish)
 
 	<-writeFinish
 	if tcpConn, ok := connection.(*net.TCPConn); ok {
@@ -101,17 +99,22 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 	return nil
 }
 
-func (handler *VMessInboundHandler) dumpInput(reader io.Reader, input chan<- []byte, finish chan<- bool) {
-	v2net.ReaderToChan(input, reader)
-	close(input)
-	log.Debug("VMessIn closing input")
-	finish <- true
+func handleInput(request *vmessio.VMessRequest, reader io.Reader, input chan<- []byte, finish chan<- bool) {
+	defer close(input)
+	defer close(finish)
+
+	requestReader, err := v2io.NewAesDecryptReader(request.RequestKey[:], request.RequestIV[:], reader)
+	if err != nil {
+		log.Error("Failed to create decrypt reader: %v", err)
+		return
+	}
+
+	v2net.ReaderToChan(input, requestReader)
 }
 
-func (handler *VMessInboundHandler) dumpOutput(writer io.Writer, output <-chan []byte, finish chan<- bool) {
+func handleOutput(request *vmessio.VMessRequest, writer io.Writer, output <-chan []byte, finish chan<- bool) {
 	v2net.ChanToWriter(writer, output)
-	log.Debug("VMessOut closing output")
-	finish <- true
+	close(finish)
 }
 
 type VMessInboundHandlerFactory struct {

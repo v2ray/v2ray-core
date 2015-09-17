@@ -79,8 +79,10 @@ func startCommunicate(request *vmessio.VMessRequest, dest v2net.Address, ray cor
 		close(output)
 		return err
 	}
+
+	log.Debug("VMessOut: Tunneling request for %s", request.Address.String())
+
 	defer conn.Close()
-	defer close(output)
 
 	requestFinish := make(chan bool)
 	responseFinish := make(chan bool)
@@ -115,23 +117,24 @@ func handleRequest(conn *net.TCPConn, request *vmessio.VMessRequest, input <-cha
 
 func handleResponse(conn *net.TCPConn, request *vmessio.VMessRequest, output chan<- []byte, finish chan<- bool) error {
 	defer close(finish)
+	defer close(output)
 	responseKey := md5.Sum(request.RequestKey[:])
 	responseIV := md5.Sum(request.RequestIV[:])
-
-	response := vmessio.VMessResponse{}
-	nBytes, err := conn.Read(response[:])
-	if err != nil {
-		log.Error("Failed to read VMess response (%d bytes): %v", nBytes, err)
-		return err
-	}
-	log.Debug("Got response %v", response)
-	// TODO: check response
 
 	decryptResponseReader, err := v2io.NewAesDecryptReader(responseKey[:], responseIV[:], conn)
 	if err != nil {
 		log.Error("Failed to create decrypt reader: %v", err)
 		return err
 	}
+
+	response := vmessio.VMessResponse{}
+	nBytes, err := decryptResponseReader.Read(response[:])
+	if err != nil {
+		log.Error("Failed to read VMess response (%d bytes): %v", nBytes, err)
+		return err
+	}
+	log.Debug("Got response %v", response)
+	// TODO: check response
 
 	v2net.ReaderToChan(output, decryptResponseReader)
 	return nil
