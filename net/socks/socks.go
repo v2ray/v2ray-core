@@ -1,7 +1,7 @@
 package socks
 
 import (
-	"bufio"
+	_ "bufio"
 	"errors"
 	"io"
 	"net"
@@ -62,7 +62,7 @@ func (server *SocksServer) AcceptConnections(listener net.Listener) {
 func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	defer connection.Close()
 
-	reader := bufio.NewReader(connection)
+	reader := connection.(io.Reader)
 
 	auth, auth4, err := socksio.ReadAuthentication(reader)
 	if err != nil && err != socksio.ErrorSocksVersion4 {
