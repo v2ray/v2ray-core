@@ -2,6 +2,7 @@ package core
 
 import (
 	"io/ioutil"
+	"path/filepath"
 
 	"github.com/v2ray/v2ray-core/log"
 	v2net "github.com/v2ray/v2ray-core/net"
@@ -45,9 +46,13 @@ func NewPoint(config Config) (*Point, error) {
 	}
 	vpoint.ichFactory = ichFactory
 	if len(config.InboundConfig.File) > 0 {
-		ichConfig, err := ioutil.ReadFile(config.InboundConfig.File)
+		absPath, err := filepath.Abs(config.InboundConfig.File)
 		if err != nil {
-			panic(log.Error("Unable to read config file %v", err))
+			panic(log.Error("Unable to read inbound config file %v", err))
+		}
+		ichConfig, err := ioutil.ReadFile(absPath)
+		if err != nil {
+			panic(log.Error("Unable to read inbound config file %v", err))
 		}
 		vpoint.ichConfig = ichConfig
 	}
@@ -59,9 +64,13 @@ func NewPoint(config Config) (*Point, error) {
 
 	vpoint.ochFactory = ochFactory
 	if len(config.OutboundConfig.File) > 0 {
-		ochConfig, err := ioutil.ReadFile(config.OutboundConfig.File)
+		absPath, err := filepath.Abs(config.OutboundConfig.File)
 		if err != nil {
-			panic(log.Error("Unable to read config file %v", err))
+			panic(log.Error("Unable to read outbound config file %v", err))
+		}
+		ochConfig, err := ioutil.ReadFile(absPath)
+		if err != nil {
+			panic(log.Error("Unable to read outbound config file %v", err))
 		}
 		vpoint.ochConfig = ochConfig
 	}
