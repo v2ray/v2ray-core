@@ -18,12 +18,10 @@ type Address struct {
 }
 
 func IPAddress(ip []byte, port uint16) Address {
-	ipCopy := make([]byte, 4)
-	copy(ipCopy, ip)
 	// TODO: check IP length
 	return Address{
 		Type:   AddrTypeIP,
-		IP:     net.IP(ipCopy),
+		IP:     net.IP(ip),
 		Domain: "",
 		Port:   port,
 	}
