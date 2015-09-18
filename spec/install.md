@@ -12,5 +12,10 @@
 3. go get github.com/v2ray/v2ray-core
 4. go build github.com/v2ray/v2ray-core/release/server
 
+### Debian / Ubuntu
+sudo bash <(curl -s https://raw.githubusercontent.com/v2ray/v2ray-core/master/release/install.sh)
+
+此脚本会自动安装 git 和 golan 1.5 （如果系统上没有的话），然后把 v2ray 编译到 $GOPATH/bin/v2ray，新装的 golang 会把 GOPATH 设定到 /v2ray。
+
 ## 配置和运行
 [链接](https://github.com/V2Ray/v2ray-core/blob/master/spec/guide.md)
