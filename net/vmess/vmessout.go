@@ -108,23 +108,20 @@ func handleRequest(conn *net.TCPConn, request *vmessio.VMessRequest, input <-cha
 	if err != nil {
 		log.Error("VMessOut: Failed to serialize VMess request: %v", err)
 	}
-	//conn.Write(buffer)
-	data, open := <-input
+
+  // Send first packet of payload together with request, in favor of small requests.
+	payload, open := <-input
 	if open {
-		encryptRequestWriter.Crypt(data)
-		buffer = append(buffer, data...)
+		encryptRequestWriter.Crypt(payload)
+		buffer = append(buffer, payload...)
+    
+    _, err = conn.Write(buffer)
+    if err != nil {
+      log.Error("VMessOut: Failed to write VMess request: %v", err)
+    }
+    
+    v2net.ChanToWriter(encryptRequestWriter, input)
 	}
-
-	_, err = conn.Write(buffer)
-	if err != nil {
-		log.Error("VMessOut: Failed to write VMess request: %v", err)
-	}
-
-	if !open {
-		return nil
-	}
-
-	v2net.ChanToWriter(encryptRequestWriter, input)
 	return nil
 }
 

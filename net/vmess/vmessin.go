@@ -77,24 +77,18 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 	if err != nil {
 		return log.Error("Failed to create encrypt writer: %v", err)
 	}
-	//responseWriter.Write(response[:])
 
 	// Optimize for small response packet
 	buffer := make([]byte, 0, 1024)
 	buffer = append(buffer, response[:]...)
-	data, open := <-output
-	if open {
+	
+	if data, open := <-output; open {
 		buffer = append(buffer, data...)
+    responseWriter.Write(buffer)
+    go handleOutput(request, responseWriter, output, writeFinish)
+    <-writeFinish
 	}
-	responseWriter.Write(buffer)
-
-	if open {
-		go handleOutput(request, responseWriter, output, writeFinish)
-	} else {
-		close(writeFinish)
-	}
-
-	<-writeFinish
+	
 	if tcpConn, ok := connection.(*net.TCPConn); ok {
 		log.Debug("VMessIn closing write")
 		tcpConn.CloseWrite()
