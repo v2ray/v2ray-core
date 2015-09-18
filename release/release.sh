@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=$(sed -n 's/.*Version = \"\([^"]*\)\"*/\1/p' $GOPATH/src/github.com/v2ray/v2ray-core/core.go)
+VERSION=$(sed -n 's/.*Version.*=.*\"\([^"]*\)\".*/\1/p' $GOPATH/src/github.com/v2ray/v2ray-core/core.go)
 
 REL_PATH=$GOPATH/bin/$VERSION
 if [ -d "$REL_PATH" ]; then
@@ -25,12 +25,11 @@ build "windows" "amd64" "-windows-64.exe"
 build "linux" "amd64" "-linux-64"
 build "linux" "386" "-linux-32"
 
-ZIP_FILE=$GOPATH/bin/v2ray-$VERSION.zip
+ZIP_FILE=$GOPATH/bin/v2ray.zip
 if [ -f $ZIP_FILE ]; then
   rm -f $ZIP_FILE
 fi
 
-pushd $REL_PATH
-zip -r $GOPATH/bin/v2ray-$VERSION.zip *
-cp $GOPATH/bin/v2ray-$VERSION.zip $GOPATH/bin/v2ray-latest.zip
+pushd $GOPATH/bin/
+zip -r $ZIP_FILE ./$VERSION/*
 popd
