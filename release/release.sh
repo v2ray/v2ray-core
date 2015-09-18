@@ -32,4 +32,5 @@ fi
 
 pushd $REL_PATH
 zip -r $GOPATH/bin/v2ray-$VERSION.zip *
+cp $GOPATH/bin/v2ray-$VERSION.zip $GOPATH/bin/v2ray-latest.zip
 popd
