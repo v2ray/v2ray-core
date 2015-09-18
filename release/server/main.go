@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 
@@ -17,10 +18,17 @@ import (
 var (
 	configFile = flag.String("config", "", "Config file for this Point server.")
 	logLevel   = flag.String("loglevel", "", "Level of log info to be printed to console, available value: debug, info, warning, error")
+	version    = flag.Bool("version", false, "Show current version of V2Ray.")
 )
 
 func main() {
 	flag.Parse()
+
+	if *version {
+		fmt.Printf("V2Ray version %s (%s): %s", core.Version, core.Codename, core.Intro)
+		fmt.Println()
+		return
+	}
 
 	switch *logLevel {
 	case "debug":
