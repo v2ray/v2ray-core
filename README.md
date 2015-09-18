@@ -4,6 +4,8 @@
 [![Coverage Status](https://coveralls.io/repos/v2ray/v2ray-core/badge.svg?branch=master&service=github)](https://coveralls.io/github/v2ray/v2ray-core?branch=master)
 [![GoDoc](https://godoc.org/github.com/v2ray/v2ray-core?status.svg)](https://godoc.org/github.com/v2ray/v2ray-core)
 
+[中文](https://github.com/V2Ray/v2ray-core/blob/master/README.md) | [English](https://github.com/V2Ray/v2ray-core/blob/master/spec/en/README.md)
+
 V2Ray 是一个翻墙工具包，用于简化和复用其它翻墙工具，加速二次开发。
 
 “V2”来源于 [V2 火箭](https://zh.wikipedia.org/wiki/V-2%E7%81%AB%E7%AE%AD)，Ray 即射线，意指新一代的翻墙工具。
