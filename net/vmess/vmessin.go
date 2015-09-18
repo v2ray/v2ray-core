@@ -55,10 +55,10 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 
 	request, err := reader.Read(connection)
 	if err != nil {
-		log.Debug("Failed to parse VMess request: %v", err)
+		log.Warning("VMessIn: Invalid request from (%s): %v", connection.RemoteAddr().String(), err)
 		return err
 	}
-	log.Debug("Received request for %s", request.Address.String())
+	log.Debug("VMessIn: Received request for %s", request.Address.String())
 
 	ray := handler.vPoint.NewInboundConnectionAccepted(request.Address)
 	input := ray.InboundInput()
@@ -75,7 +75,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 	response := vmessio.NewVMessResponse(request)
 	responseWriter, err := v2io.NewAesEncryptWriter(responseKey[:], responseIV[:], connection)
 	if err != nil {
-		return log.Error("Failed to create encrypt writer: %v", err)
+		return log.Error("VMessIn: Failed to create encrypt writer: %v", err)
 	}
 
 	// Optimize for small response packet
@@ -90,7 +90,6 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 	}
 
 	if tcpConn, ok := connection.(*net.TCPConn); ok {
-		log.Debug("VMessIn closing write")
 		tcpConn.CloseWrite()
 	}
 	<-readFinish
@@ -104,7 +103,7 @@ func handleInput(request *vmessio.VMessRequest, reader io.Reader, input chan<- [
 
 	requestReader, err := v2io.NewAesDecryptReader(request.RequestKey[:], request.RequestIV[:], reader)
 	if err != nil {
-		log.Error("Failed to create decrypt reader: %v", err)
+		log.Error("VMessIn: Failed to create decrypt reader: %v", err)
 		return
 	}
 
@@ -122,13 +121,13 @@ type VMessInboundHandlerFactory struct {
 func (factory *VMessInboundHandlerFactory) Create(vp *core.Point, rawConfig []byte) (core.InboundConnectionHandler, error) {
 	config, err := loadInboundConfig(rawConfig)
 	if err != nil {
-		panic(log.Error("Failed to load VMess inbound config: %v", err))
+		panic(log.Error("VMessIn: Failed to load VMess inbound config: %v", err))
 	}
 	allowedClients := core.NewTimedUserSet()
 	for _, client := range config.AllowedClients {
 		user, err := client.ToUser()
 		if err != nil {
-			panic(log.Error("Failed to parse user id %s: %v", client.Id, err))
+			panic(log.Error("VMessIn: Failed to parse user id %s: %v", client.Id, err))
 		}
 		allowedClients.AddUser(user)
 	}

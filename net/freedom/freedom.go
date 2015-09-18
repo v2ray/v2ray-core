@@ -24,9 +24,9 @@ func (vconn *FreedomConnection) Start(ray core.OutboundRay) error {
 	conn, err := net.Dial("tcp", vconn.dest.String())
 	if err != nil {
 		close(output)
-		return log.Error("Failed to open tcp: %s : %v", vconn.dest.String(), err)
+		return log.Error("Freedom: Failed to open tcp connection: %s : %v", vconn.dest.String(), err)
 	}
-	log.Debug("Sending outbound tcp: %s", vconn.dest.String())
+	log.Info("Freedom: Sending outbound tcp: %s", vconn.dest.String())
 
 	readFinish := make(chan bool)
 	writeFinish := make(chan bool)
@@ -39,21 +39,18 @@ func (vconn *FreedomConnection) Start(ray core.OutboundRay) error {
 
 func (vconn *FreedomConnection) DumpInput(conn net.Conn, input <-chan []byte, finish chan<- bool) {
 	v2net.ChanToWriter(conn, input)
-	log.Debug("Freedom closing input")
 	finish <- true
 }
 
 func (vconn *FreedomConnection) DumpOutput(conn net.Conn, output chan<- []byte, finish chan<- bool) {
 	v2net.ReaderToChan(output, conn)
 	close(output)
-	log.Debug("Freedom closing output")
 	finish <- true
 }
 
 func (vconn *FreedomConnection) CloseConn(conn net.Conn, readFinish <-chan bool, writeFinish <-chan bool) {
 	<-writeFinish
 	if tcpConn, ok := conn.(*net.TCPConn); ok {
-		log.Debug("Closing freedom write.")
 		tcpConn.CloseWrite()
 	}
 	<-readFinish

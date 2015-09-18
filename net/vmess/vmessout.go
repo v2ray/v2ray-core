@@ -1,6 +1,7 @@
 package vmess
 
 import (
+	"bytes"
 	"crypto/md5"
 	"crypto/rand"
 	mrand "math/rand"
@@ -38,13 +39,13 @@ func NewVMessOutboundHandler(vp *core.Point, vNextList []VNextServer, dest v2net
 func (handler *VMessOutboundHandler) pickVNext() (v2net.Address, core.User) {
 	vNextLen := len(handler.vNextList)
 	if vNextLen == 0 {
-		panic("Zero vNext is configured.")
+		panic("VMessOut: Zero vNext is configured.")
 	}
 	vNextIndex := mrand.Intn(vNextLen)
 	vNext := handler.vNextList[vNextIndex]
 	vNextUserLen := len(vNext.Users)
 	if vNextUserLen == 0 {
-		panic("Zero User account.")
+		panic("VMessOut: Zero User account.")
 	}
 	vNextUserIndex := mrand.Intn(vNextUserLen)
 	vNextUser := vNext.Users[vNextUserIndex]
@@ -73,14 +74,12 @@ func startCommunicate(request *vmessio.VMessRequest, dest v2net.Address, ray cor
 	output := ray.OutboundOutput()
 
 	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{dest.IP, int(dest.Port), ""})
-	log.Debug("VMessOutbound dialing tcp: %s", dest.String())
 	if err != nil {
 		log.Error("Failed to open tcp (%s): %v", dest.String(), err)
 		close(output)
 		return err
 	}
-
-	log.Debug("VMessOut: Tunneling request for %s", request.Address.String())
+	log.Info("VMessOut: Tunneling request for %s", request.Address.String())
 
 	defer conn.Close()
 
@@ -96,17 +95,18 @@ func startCommunicate(request *vmessio.VMessRequest, dest v2net.Address, ray cor
 	return nil
 }
 
-func handleRequest(conn *net.TCPConn, request *vmessio.VMessRequest, input <-chan []byte, finish chan<- bool) error {
+func handleRequest(conn *net.TCPConn, request *vmessio.VMessRequest, input <-chan []byte, finish chan<- bool) {
 	defer close(finish)
 	encryptRequestWriter, err := v2io.NewAesEncryptWriter(request.RequestKey[:], request.RequestIV[:], conn)
 	if err != nil {
-		log.Error("Failed to create encrypt writer: %v", err)
-		return err
+		log.Error("VMessOut: Failed to create encrypt writer: %v", err)
+		return
 	}
 
 	buffer, err := request.ToBytes(v2hash.NewTimeHash(v2hash.HMACHash{}), v2math.GenerateRandomInt64InRange)
 	if err != nil {
 		log.Error("VMessOut: Failed to serialize VMess request: %v", err)
+		return
 	}
 
 	// Send first packet of payload together with request, in favor of small requests.
@@ -118,14 +118,15 @@ func handleRequest(conn *net.TCPConn, request *vmessio.VMessRequest, input <-cha
 		_, err = conn.Write(buffer)
 		if err != nil {
 			log.Error("VMessOut: Failed to write VMess request: %v", err)
+			return
 		}
 
 		v2net.ChanToWriter(encryptRequestWriter, input)
 	}
-	return nil
+	return
 }
 
-func handleResponse(conn *net.TCPConn, request *vmessio.VMessRequest, output chan<- []byte, finish chan<- bool) error {
+func handleResponse(conn *net.TCPConn, request *vmessio.VMessRequest, output chan<- []byte, finish chan<- bool) {
 	defer close(finish)
 	defer close(output)
 	responseKey := md5.Sum(request.RequestKey[:])
@@ -133,21 +134,23 @@ func handleResponse(conn *net.TCPConn, request *vmessio.VMessRequest, output cha
 
 	decryptResponseReader, err := v2io.NewAesDecryptReader(responseKey[:], responseIV[:], conn)
 	if err != nil {
-		log.Error("Failed to create decrypt reader: %v", err)
-		return err
+		log.Error("VMessOut: Failed to create decrypt reader: %v", err)
+		return
 	}
 
 	response := vmessio.VMessResponse{}
 	nBytes, err := decryptResponseReader.Read(response[:])
 	if err != nil {
-		log.Error("Failed to read VMess response (%d bytes): %v", nBytes, err)
-		return err
+		log.Error("VMessOut: Failed to read VMess response (%d bytes): %v", nBytes, err)
+		return
 	}
-	log.Debug("Got response %v", response)
-	// TODO: check response
+	if !bytes.Equal(response[:], request.ResponseHeader[:]) {
+		log.Warning("VMessOut: unexepcted response header. The connection is probably hijacked.")
+		return
+	}
 
 	v2net.ReaderToChan(output, decryptResponseReader)
-	return nil
+	return
 }
 
 type VMessOutboundHandlerFactory struct {
