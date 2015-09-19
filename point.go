@@ -1,8 +1,6 @@
 package core
 
 import (
-	"io/ioutil"
-
 	"github.com/v2ray/v2ray-core/log"
 	v2net "github.com/v2ray/v2ray-core/net"
 )
@@ -35,36 +33,24 @@ type Point struct {
 
 // NewPoint returns a new Point server based on given configuration.
 // The server is not started at this point.
-func NewPoint(config Config) (*Point, error) {
+func NewPoint(config PointConfig) (*Point, error) {
 	var vpoint = new(Point)
-	vpoint.port = config.Port
+	vpoint.port = config.Port()
 
-	ichFactory, ok := inboundFactories[config.InboundConfig.Protocol]
+	ichFactory, ok := inboundFactories[config.InboundConfig().Protocol()]
 	if !ok {
-		panic(log.Error("Unknown inbound connection handler factory %s", config.InboundConfig.Protocol))
+		panic(log.Error("Unknown inbound connection handler factory %s", config.InboundConfig().Protocol()))
 	}
 	vpoint.ichFactory = ichFactory
-	if len(config.InboundConfig.File) > 0 {
-		ichConfig, err := ioutil.ReadFile(config.InboundConfig.File)
-		if err != nil {
-			panic(log.Error("Unable to read config file %v", err))
-		}
-		vpoint.ichConfig = ichConfig
-	}
+  vpoint.ichConfig = config.InboundConfig().Content()
 
-	ochFactory, ok := outboundFactories[config.OutboundConfig.Protocol]
+	ochFactory, ok := outboundFactories[config.OutboundConfig().Protocol()]
 	if !ok {
-		panic(log.Error("Unknown outbound connection handler factory %s", config.OutboundConfig.Protocol))
+		panic(log.Error("Unknown outbound connection handler factory %s", config.OutboundConfig().Protocol))
 	}
 
 	vpoint.ochFactory = ochFactory
-	if len(config.OutboundConfig.File) > 0 {
-		ochConfig, err := ioutil.ReadFile(config.OutboundConfig.File)
-		if err != nil {
-			panic(log.Error("Unable to read config file %v", err))
-		}
-		vpoint.ochConfig = ochConfig
-	}
+  vpoint.ochConfig = config.OutboundConfig().Content()
 
 	return vpoint, nil
 }
