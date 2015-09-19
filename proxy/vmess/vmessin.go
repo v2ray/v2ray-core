@@ -7,19 +7,19 @@ import (
 	"strconv"
 
 	"github.com/v2ray/v2ray-core"
-	v2io "github.com/v2ray/v2ray-core/io"
-	vmessio "github.com/v2ray/v2ray-core/io/vmess"
+	v2io "github.com/v2ray/v2ray-core/common/io"
+	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/log"
-	v2net "github.com/v2ray/v2ray-core/net"
+	protocol "github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 )
 
 type VMessInboundHandler struct {
 	vPoint    *core.Point
-	clients   core.UserSet
+	clients   protocol.UserSet
 	accepting bool
 }
 
-func NewVMessInboundHandler(vp *core.Point, clients core.UserSet) *VMessInboundHandler {
+func NewVMessInboundHandler(vp *core.Point, clients protocol.UserSet) *VMessInboundHandler {
 	return &VMessInboundHandler{
 		vPoint:  vp,
 		clients: clients,
@@ -51,7 +51,7 @@ func (handler *VMessInboundHandler) AcceptConnections(listener net.Listener) err
 func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error {
 	defer connection.Close()
 
-	reader := vmessio.NewVMessRequestReader(handler.clients)
+	reader := protocol.NewVMessRequestReader(handler.clients)
 
 	request, err := reader.Read(connection)
 	if err != nil {
@@ -72,7 +72,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 	responseKey := md5.Sum(request.RequestKey[:])
 	responseIV := md5.Sum(request.RequestIV[:])
 
-	response := vmessio.NewVMessResponse(request)
+	response := protocol.NewVMessResponse(request)
 	responseWriter, err := v2io.NewAesEncryptWriter(responseKey[:], responseIV[:], connection)
 	if err != nil {
 		return log.Error("VMessIn: Failed to create encrypt writer: %v", err)
@@ -97,7 +97,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 	return nil
 }
 
-func handleInput(request *vmessio.VMessRequest, reader io.Reader, input chan<- []byte, finish chan<- bool) {
+func handleInput(request *protocol.VMessRequest, reader io.Reader, input chan<- []byte, finish chan<- bool) {
 	defer close(input)
 	defer close(finish)
 
@@ -110,7 +110,7 @@ func handleInput(request *vmessio.VMessRequest, reader io.Reader, input chan<- [
 	v2net.ReaderToChan(input, requestReader)
 }
 
-func handleOutput(request *vmessio.VMessRequest, writer io.Writer, output <-chan []byte, finish chan<- bool) {
+func handleOutput(request *protocol.VMessRequest, writer io.Writer, output <-chan []byte, finish chan<- bool) {
 	v2net.ChanToWriter(writer, output)
 	close(finish)
 }
@@ -123,7 +123,7 @@ func (factory *VMessInboundHandlerFactory) Create(vp *core.Point, rawConfig []by
 	if err != nil {
 		panic(log.Error("VMessIn: Failed to load VMess inbound config: %v", err))
 	}
-	allowedClients := core.NewTimedUserSet()
+	allowedClients := protocol.NewTimedUserSet()
 	for _, client := range config.AllowedClients {
 		user, err := client.ToUser()
 		if err != nil {

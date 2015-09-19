@@ -4,7 +4,7 @@ import (
 	"bytes"
 
 	"github.com/v2ray/v2ray-core"
-	v2net "github.com/v2ray/v2ray-core/net"
+	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
 type OutboundConnectionHandler struct {

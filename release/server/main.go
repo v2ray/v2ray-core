@@ -5,13 +5,13 @@ import (
 	"fmt"
 
 	"github.com/v2ray/v2ray-core"
-	jsonconf "github.com/v2ray/v2ray-core/io/config/json"
+	jsonconf "github.com/v2ray/v2ray-core/config/json"
 	"github.com/v2ray/v2ray-core/log"
 
 	// The following are neccesary as they register handlers in their init functions.
-	_ "github.com/v2ray/v2ray-core/net/freedom"
-	_ "github.com/v2ray/v2ray-core/net/socks"
-	_ "github.com/v2ray/v2ray-core/net/vmess"
+	_ "github.com/v2ray/v2ray-core/proxy/freedom"
+	_ "github.com/v2ray/v2ray-core/proxy/socks"
+	_ "github.com/v2ray/v2ray-core/proxy/vmess"
 )
 
 var (

@@ -8,18 +8,16 @@ import (
 	"net"
 
 	"github.com/v2ray/v2ray-core"
-	v2hash "github.com/v2ray/v2ray-core/hash"
-	v2io "github.com/v2ray/v2ray-core/io"
-	vmessio "github.com/v2ray/v2ray-core/io/vmess"
+	v2io "github.com/v2ray/v2ray-core/common/io"
+	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/log"
-	v2math "github.com/v2ray/v2ray-core/math"
-	v2net "github.com/v2ray/v2ray-core/net"
+	protocol "github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 )
 
 // VNext is the next Point server in the connection chain.
 type VNextServer struct {
-	Address v2net.Address // Address of VNext server
-	Users   []core.User   // User accounts for accessing VNext.
+	Address v2net.Address   // Address of VNext server
+	Users   []protocol.User // User accounts for accessing VNext.
 }
 
 type VMessOutboundHandler struct {
@@ -36,7 +34,7 @@ func NewVMessOutboundHandler(vp *core.Point, vNextList []VNextServer, dest v2net
 	}
 }
 
-func (handler *VMessOutboundHandler) pickVNext() (v2net.Address, core.User) {
+func (handler *VMessOutboundHandler) pickVNext() (v2net.Address, protocol.User) {
 	vNextLen := len(handler.vNextList)
 	if vNextLen == 0 {
 		panic("VMessOut: Zero vNext is configured.")
@@ -55,8 +53,8 @@ func (handler *VMessOutboundHandler) pickVNext() (v2net.Address, core.User) {
 func (handler *VMessOutboundHandler) Start(ray core.OutboundRay) error {
 	vNextAddress, vNextUser := handler.pickVNext()
 
-	request := &vmessio.VMessRequest{
-		Version: vmessio.Version,
+	request := &protocol.VMessRequest{
+		Version: protocol.Version,
 		UserId:  vNextUser.Id,
 		Command: byte(0x01),
 		Address: handler.dest,
@@ -69,7 +67,7 @@ func (handler *VMessOutboundHandler) Start(ray core.OutboundRay) error {
 	return nil
 }
 
-func startCommunicate(request *vmessio.VMessRequest, dest v2net.Address, ray core.OutboundRay) error {
+func startCommunicate(request *protocol.VMessRequest, dest v2net.Address, ray core.OutboundRay) error {
 	input := ray.OutboundInput()
 	output := ray.OutboundOutput()
 
@@ -95,7 +93,7 @@ func startCommunicate(request *vmessio.VMessRequest, dest v2net.Address, ray cor
 	return nil
 }
 
-func handleRequest(conn *net.TCPConn, request *vmessio.VMessRequest, input <-chan []byte, finish chan<- bool) {
+func handleRequest(conn *net.TCPConn, request *protocol.VMessRequest, input <-chan []byte, finish chan<- bool) {
 	defer close(finish)
 	encryptRequestWriter, err := v2io.NewAesEncryptWriter(request.RequestKey[:], request.RequestIV[:], conn)
 	if err != nil {
@@ -103,7 +101,7 @@ func handleRequest(conn *net.TCPConn, request *vmessio.VMessRequest, input <-cha
 		return
 	}
 
-	buffer, err := request.ToBytes(v2hash.NewTimeHash(v2hash.HMACHash{}), v2math.GenerateRandomInt64InRange)
+	buffer, err := request.ToBytes(protocol.NewTimeHash(protocol.HMACHash{}), protocol.GenerateRandomInt64InRange)
 	if err != nil {
 		log.Error("VMessOut: Failed to serialize VMess request: %v", err)
 		return
@@ -126,7 +124,7 @@ func handleRequest(conn *net.TCPConn, request *vmessio.VMessRequest, input <-cha
 	return
 }
 
-func handleResponse(conn *net.TCPConn, request *vmessio.VMessRequest, output chan<- []byte, finish chan<- bool) {
+func handleResponse(conn *net.TCPConn, request *protocol.VMessRequest, output chan<- []byte, finish chan<- bool) {
 	defer close(finish)
 	defer close(output)
 	responseKey := md5.Sum(request.RequestKey[:])
@@ -138,7 +136,7 @@ func handleResponse(conn *net.TCPConn, request *vmessio.VMessRequest, output cha
 		return
 	}
 
-	response := vmessio.VMessResponse{}
+	response := protocol.VMessResponse{}
 	nBytes, err := decryptResponseReader.Read(response[:])
 	if err != nil {
 		log.Error("VMessOut: Failed to read VMess response (%d bytes): %v", nBytes, err)

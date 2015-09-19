@@ -1,5 +1,5 @@
 // Package vmess contains protocol definition, io lib for VMess.
-package vmess
+package protocol
 
 import (
 	"crypto/aes"
@@ -12,12 +12,9 @@ import (
 	mrand "math/rand"
 	"time"
 
-	"github.com/v2ray/v2ray-core"
-	v2hash "github.com/v2ray/v2ray-core/hash"
-	v2io "github.com/v2ray/v2ray-core/io"
+	v2io "github.com/v2ray/v2ray-core/common/io"
+	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/log"
-	v2math "github.com/v2ray/v2ray-core/math"
-	v2net "github.com/v2ray/v2ray-core/net"
 )
 
 const (
@@ -41,7 +38,7 @@ var (
 
 type VMessRequest struct {
 	Version        byte
-	UserId         core.ID
+	UserId         ID
 	RequestIV      [16]byte
 	RequestKey     [16]byte
 	ResponseHeader [4]byte
@@ -50,10 +47,10 @@ type VMessRequest struct {
 }
 
 type VMessRequestReader struct {
-	vUserSet core.UserSet
+	vUserSet UserSet
 }
 
-func NewVMessRequestReader(vUserSet core.UserSet) *VMessRequestReader {
+func NewVMessRequestReader(vUserSet UserSet) *VMessRequestReader {
 	return &VMessRequestReader{
 		vUserSet: vUserSet,
 	}
@@ -62,7 +59,7 @@ func NewVMessRequestReader(vUserSet core.UserSet) *VMessRequestReader {
 func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	buffer := make([]byte, 256)
 
-	nBytes, err := reader.Read(buffer[:core.IDBytesLen])
+	nBytes, err := reader.Read(buffer[:IDBytesLen])
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +75,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	if err != nil {
 		return nil, err
 	}
-	aesStream := cipher.NewCFBDecrypter(aesCipher, v2hash.Int64Hash(timeSec))
+	aesStream := cipher.NewCFBDecrypter(aesCipher, Int64Hash(timeSec))
 	decryptor := v2io.NewCryptionReader(aesStream, reader)
 
 	if err != nil {
@@ -181,7 +178,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	return request, nil
 }
 
-func (request *VMessRequest) ToBytes(idHash v2hash.CounterHash, randomRangeInt64 v2math.RandomInt64InRange) ([]byte, error) {
+func (request *VMessRequest) ToBytes(idHash CounterHash, randomRangeInt64 RandomInt64InRange) ([]byte, error) {
 	buffer := make([]byte, 0, 300)
 
 	counter := randomRangeInt64(time.Now().UTC().Unix(), 30)
@@ -238,7 +235,7 @@ func (request *VMessRequest) ToBytes(idHash v2hash.CounterHash, randomRangeInt64
 	if err != nil {
 		return nil, err
 	}
-	aesStream := cipher.NewCFBEncrypter(aesCipher, v2hash.Int64Hash(counter))
+	aesStream := cipher.NewCFBEncrypter(aesCipher, Int64Hash(counter))
 	aesStream.XORKeyStream(buffer[encryptionBegin:encryptionEnd], buffer[encryptionBegin:encryptionEnd])
 
 	return buffer, nil

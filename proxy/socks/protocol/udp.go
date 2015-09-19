@@ -1,9 +1,9 @@
-package socks
+package protocol
 
 import (
 	"io"
 
-	v2net "github.com/v2ray/v2ray-core/net"
+	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
 type Socks5UDPRequest struct {

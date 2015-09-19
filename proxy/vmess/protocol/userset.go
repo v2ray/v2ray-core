@@ -1,10 +1,9 @@
-package core
+package protocol
 
 import (
 	"container/heap"
 	"time"
 
-	v2hash "github.com/v2ray/v2ray-core/hash"
 	"github.com/v2ray/v2ray-core/log"
 )
 
@@ -74,7 +73,7 @@ func NewTimedUserSet() UserSet {
 }
 
 func (us *TimedUserSet) generateNewHashes(lastSec, nowSec int64, idx int, id ID) {
-	idHash := v2hash.NewTimeHash(v2hash.HMACHash{})
+	idHash := NewTimeHash(HMACHash{})
 	for lastSec < nowSec+cacheDurationSec {
 
 		idHash := idHash.Hash(id.Bytes, lastSec)

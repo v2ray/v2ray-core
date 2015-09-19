@@ -1,5 +1,4 @@
-// Package socks contains protocol definition and io lib for SOCKS5 protocol
-package socks
+package protocol
 
 import (
 	"encoding/binary"
@@ -7,8 +6,8 @@ import (
 	"fmt"
 	"io"
 
+	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/log"
-	v2net "github.com/v2ray/v2ray-core/net"
 )
 
 const (

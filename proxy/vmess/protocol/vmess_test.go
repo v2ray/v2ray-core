@@ -1,4 +1,4 @@
-package vmess
+package protocol
 
 import (
 	"bytes"
@@ -6,9 +6,7 @@ import (
 	"testing"
 
 	"github.com/v2ray/v2ray-core"
-	v2hash "github.com/v2ray/v2ray-core/hash"
-	v2math "github.com/v2ray/v2ray-core/math"
-	v2net "github.com/v2ray/v2ray-core/net"
+	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/testing/mocks"
 	"github.com/v2ray/v2ray-core/testing/unit"
 )
@@ -47,7 +45,7 @@ func TestVMessSerialization(t *testing.T) {
 	request.Address = v2net.DomainAddress("v2ray.com", 80)
 
 	mockTime := int64(1823730)
-	buffer, err := request.ToBytes(v2hash.NewTimeHash(v2hash.HMACHash{}), func(base int64, delta int) int64 { return mockTime })
+	buffer, err := request.ToBytes(NewTimeHash(HMACHash{}), func(base int64, delta int) int64 { return mockTime })
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,6 +85,6 @@ func BenchmarkVMessRequestWriting(b *testing.B) {
 	request.Address = v2net.DomainAddress("v2ray.com", 80)
 
 	for i := 0; i < b.N; i++ {
-		request.ToBytes(v2hash.NewTimeHash(v2hash.HMACHash{}), v2math.GenerateRandomInt64InRange)
+		request.ToBytes(NewTimeHash(HMACHash{}), GenerateRandomInt64InRange)
 	}
 }
