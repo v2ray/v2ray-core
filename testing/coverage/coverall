@@ -1,25 +1,35 @@
 #!/bin/bash
 
-echo "mode: set" > coverall.out
-fail=0
+FAIL=0
 
-for dir in $(find . -maxdepth 10 -not -path './.git*' -type d);
-do
-  if ls $dir/*.go &> /dev/null; then
-    go test -coverprofile=coversingle.out $dir || fail=1
-    if [ -f coversingle.out ]
-    then
-      cat coversingle.out | grep -v "mode: set" >> coverall.out
-      rm coversingle.out
-    fi
+function join { local IFS="$1"; shift; echo "$*"; }
+
+function test_package {
+  DIR="github.com/v2ray/v2ray-core/$1"
+  DEP=$2
+  IFS=',' read -ra DEPS <<< "$DEP"
+  DEPS=("${DEPS[@]/#/github.com/v2ray/v2ray-core/}")
+  DEP=$(join , "${DEPS[@]}")
+  go test -coverprofile=coversingle.out -coverpkg=$DEP $DIR || FAIL=1
+  if [ -f coversingle.out ]; then
+    cat coversingle.out | grep -v "mode: set" >> coverall.out
+    rm coversingle.out
   fi
-done
+}
 
-if [ "$fail" -eq 0 ]
-then
+echo "mode: set" > coverall.out
+
+test_package "." "."
+test_package "io/socks" "io,io/socks"
+test_package "io/vmess" "hash,io,io/vmess"
+test_package "math" "math"
+test_package "net/socks" "io,io/socks,net,net/socks"
+test_package "net" "net"
+
+if [ "$FAIL" -eq 0 ]; then
   $HOME/gopath/bin/goveralls -v -coverprofile=coverall.out -service=travis-ci -repotoken $COVERALLS_TOKEN
 fi
 
 rm -f coverall.out
 
-exit $fail
+exit $FAIL
