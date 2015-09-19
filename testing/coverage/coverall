@@ -23,7 +23,7 @@ test_package "." "."
 test_package "io/socks" "io/socks"
 test_package "io/vmess" "hash,io,io/vmess"
 test_package "math" "math"
-test_package "net/socks" "io/socks,net,net/socks"
+test_package "net/socks" ".,io/socks,net,net/socks"
 test_package "net" "net"
 
 if [ "$FAIL" -eq 0 ]; then
