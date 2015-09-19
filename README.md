@@ -15,28 +15,19 @@ V2Ray 是一个翻墙工具包，用于简化和复用其它翻墙工具，加�
 * 支持多用户
 * 开放协议支持，兼容 ShadowSocks 和 GoAgent
 
-## 简明教程
-[链接](https://github.com/V2Ray/v2ray-core/blob/master/spec/guide.md)
+## 使用说明
+* [简明教程](https://github.com/V2Ray/v2ray-core/blob/master/spec/guide.md)
+* [建议或意见](https://github.com/v2ray/v2ray-core/issues)
+* [Issue 指引](https://github.com/V2Ray/v2ray-core/blob/master/spec/issue.md)
+* [当前状态](https://github.com/V2Ray/v2ray-core/blob/master/spec/status.md)
 
-## 概要设计
-[链接](https://github.com/V2Ray/v2ray-core/blob/master/spec/design.md)
+## 开发人员相关
+* [概要设计](https://github.com/V2Ray/v2ray-core/blob/master/spec/design.md)
+* [开发计划](https://github.com/V2Ray/v2ray-core/blob/master/spec/roadmap.md)
+* [Help Wanted](https://github.com/v2ray/v2ray-core/labels/help%20wanted)：所有被标记为“Help Wanted”的 Issue 都接受 Pull Request，如果你对本项目感兴趣并想做点贡献，请挑选其中之一完善之，不甚感激。
 
 ## 联系方式
-公开的建议或意见请发 [Issue](https://github.com/v2ray/v2ray-core/issues)，发 Issue 之前请先阅读 [Issue 指引](https://github.com/V2Ray/v2ray-core/blob/master/spec/issue.md)。
-
 私下联系：love@v2ray.com
-
-## 合作机会
-所有被标记为“[Help Wanted](https://github.com/v2ray/v2ray-core/labels/help%20wanted)”的 Issue 都接受 Pull Request，如果你对本项目感兴趣并想做点贡献，请挑选其中之一完善之，不甚感激。
-
-## 开发日程
-
-* 2015.11 **1.0** 完成，单服务器模式，可独立运行
-* 2016.01 **1.5** 完成，兼容 ShadowSocks 协议
-* 2016.04 **2.0** 完成，多服务器模式
-
-## 进展
-[当前状态](https://github.com/V2Ray/v2ray-core/blob/master/spec/status.md)：Version 1.0 Alpha，[安装方式](https://github.com/V2Ray/v2ray-core/blob/master/spec/install.md)。理论上可用，简单测试通过，还未进行稳定性和性能测试。
 
 ## 捐赠
 目前 V2Ray 还在早期开发阶段，暂时没什么可用性，也谈不上捐赠。如果你执意想捐赠，请发送 Amazon Gift Card 至 donate@v2ray.com
