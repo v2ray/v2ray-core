@@ -42,7 +42,7 @@ func NewPoint(config PointConfig) (*Point, error) {
 		panic(log.Error("Unknown inbound connection handler factory %s", config.InboundConfig().Protocol()))
 	}
 	vpoint.ichFactory = ichFactory
-  vpoint.ichConfig = config.InboundConfig().Content()
+	vpoint.ichConfig = config.InboundConfig().Content()
 
 	ochFactory, ok := outboundFactories[config.OutboundConfig().Protocol()]
 	if !ok {
@@ -50,7 +50,7 @@ func NewPoint(config PointConfig) (*Point, error) {
 	}
 
 	vpoint.ochFactory = ochFactory
-  vpoint.ochConfig = config.OutboundConfig().Content()
+	vpoint.ochConfig = config.OutboundConfig().Content()
 
 	return vpoint, nil
 }

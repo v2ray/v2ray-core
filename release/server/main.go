@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/v2ray/v2ray-core"
-  jsonconf "github.com/v2ray/v2ray-core/io/config/json"
+	jsonconf "github.com/v2ray/v2ray-core/io/config/json"
 	"github.com/v2ray/v2ray-core/log"
 
 	// The following are neccesary as they register handlers in their init functions.
@@ -43,7 +43,7 @@ func main() {
 	if configFile == nil || len(*configFile) == 0 {
 		panic(log.Error("Config file is not set."))
 	}
-  config, err := jsonconf.LoadConfig(*configFile)
+	config, err := jsonconf.LoadConfig(*configFile)
 	if err != nil {
 		panic(log.Error("Failed to read config file (%s): %v", *configFile, err))
 	}

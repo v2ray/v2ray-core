@@ -6,12 +6,12 @@ type User struct {
 }
 
 type ConnectionConfig interface {
-  Protocol() string
-  Content() []byte
+	Protocol() string
+	Content() []byte
 }
 
 type PointConfig interface {
-  Port() uint16
-  InboundConfig() ConnectionConfig
-  OutboundConfig() ConnectionConfig
+	Port() uint16
+	InboundConfig() ConnectionConfig
+	OutboundConfig() ConnectionConfig
 }

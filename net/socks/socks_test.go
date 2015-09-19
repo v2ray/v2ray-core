@@ -1,39 +1,63 @@
 package socks
 
 import (
-	// "bytes"
+	"bytes"
+	"io/ioutil"
+	"net"
 	"testing"
 
-	// "github.com/v2ray/v2ray-core"
-	// "github.com/v2ray/v2ray-core/testing/mocks"
-	// "github.com/v2ray/v2ray-core/testing/unit"
+	"golang.org/x/net/proxy"
+
+	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/testing/mocks"
+	"github.com/v2ray/v2ray-core/testing/unit"
 )
 
 func TestSocksTcpConnect(t *testing.T) {
-	t.Skip("Not ready yet.")
-	/*
-		assert := unit.Assert(t)
+	assert := unit.Assert(t)
+	port := uint16(12385)
 
-		port := uint16(12384)
+	och := &mocks.OutboundConnectionHandler{
+		Data2Send:   bytes.NewBuffer(make([]byte, 0, 1024)),
+		Data2Return: []byte("The data to be returned to socks server."),
+	}
 
-		uuid := "2418d087-648d-4990-86e8-19dca1d006d3"
-		id, err := core.UUIDToID(uuid)
-		assert.Error(err).IsNil()
+	core.RegisterOutboundConnectionHandlerFactory("mock_och", och)
 
-		config := core.VConfig{
-			port,
-			[]core.User{core.User{id}},
-			"",
-			[]core.VNext{}}
+	config := mocks.Config{
+		PortValue: port,
+		InboundConfigValue: &mocks.ConnectionConfig{
+			ProtocolValue: "socks",
+			ContentValue:  []byte("{\"auth\": \"noauth\"}"),
+		},
+		OutboundConfigValue: &mocks.ConnectionConfig{
+			ProtocolValue: "mock_och",
+			ContentValue:  nil,
+		},
+	}
 
-		och := new(mocks.FakeOutboundConnectionHandler)
-		och.Data2Send = bytes.NewBuffer(make([]byte, 1024))
-		och.Data2Return = []byte("The data to be returned to socks server.")
+	point, err := core.NewPoint(&config)
+	assert.Error(err).IsNil()
 
-		vpoint, err := core.NewPoint(&config, SocksServerFactory{}, och)
-		assert.Error(err).IsNil()
+	err = point.Start()
+	assert.Error(err).IsNil()
 
-		err = vpoint.Start()
-		assert.Error(err).IsNil()
-	*/
+	socks5Client, err := proxy.SOCKS5("tcp", "127.0.0.1:12385", nil, proxy.Direct)
+	assert.Error(err).IsNil()
+
+	conn, err := socks5Client.Dial("tcp", "google.com:80")
+	assert.Error(err).IsNil()
+
+	data2Send := "The data to be sent to remote server."
+	conn.Write([]byte(data2Send))
+	if tcpConn, ok := conn.(*net.TCPConn); ok {
+		tcpConn.CloseWrite()
+	}
+
+	dataReturned, err := ioutil.ReadAll(conn)
+	assert.Error(err).IsNil()
+	conn.Close()
+
+	assert.Bytes([]byte(data2Send)).Equals(och.Data2Send.Bytes())
+	assert.Bytes(dataReturned).Equals(och.Data2Return)
 }

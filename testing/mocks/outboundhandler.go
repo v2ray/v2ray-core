@@ -1,0 +1,38 @@
+package mocks
+
+import (
+	"bytes"
+
+	"github.com/v2ray/v2ray-core"
+	v2net "github.com/v2ray/v2ray-core/net"
+)
+
+type OutboundConnectionHandler struct {
+	Data2Send   *bytes.Buffer
+	Data2Return []byte
+	Destination v2net.Address
+}
+
+func (handler *OutboundConnectionHandler) Start(ray core.OutboundRay) error {
+	input := ray.OutboundInput()
+	output := ray.OutboundOutput()
+
+	go func() {
+		for {
+			data, open := <-input
+			if !open {
+				break
+			}
+			handler.Data2Send.Write(data)
+		}
+		output <- handler.Data2Return
+		close(output)
+	}()
+
+	return nil
+}
+
+func (handler *OutboundConnectionHandler) Create(point *core.Point, config []byte, dest v2net.Address) (core.OutboundConnectionHandler, error) {
+	handler.Destination = dest
+	return handler, nil
+}
