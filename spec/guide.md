@@ -43,9 +43,9 @@
   "vnext": [
     {
       "address": "127.0.0.1", // Point B 的 IP 地址，IPv4 或 IPv6，不支持域名
-      "port": 27183, // Point B 的监听端口
+      "port": 27183, // Point B 的监听端口，请更换成其它的值
       "users": [
-        {"id": "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"}  // 用户 ID，必须包含在 Point B 的配置文件中
+        {"id": "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"}  // 用户 ID，必须包含在 Point B 的配置文件中。此 ID 将被用于通信的认证，请自行更换随机的 ID，可以使用 https://www.uuidgenerator.net/ 来生成新的 ID。
       ]
     }
   ]
@@ -56,13 +56,13 @@
 示例配置保存于 vpoint_vmess_freedom.json 文件中，格式如下：
 ```javascript
 {
-  "port": 27183, // 监听端口
+  "port": 27183, // 监听端口，必须和 out_vmess.json 中指定的一致
   "inbound": {
-    "protocol": "vmess", // 中继协议
+    "protocol": "vmess", // 中继协议，不用改
     "file": "in_vmess.json" // vmess 配置文件
   },
   "outbound": {
-    "protocol": "freedom", // 出口协议，暂时只有这一个，不用改
+    "protocol": "freedom", // 出口协议，不用改
     "file": "" // 暂无配置
   }
 }
@@ -73,13 +73,14 @@
 // in_vmess.json
 {
   "clients": [
-    {"id": "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"}  // 认可的用户 ID
+    {"id": "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"}  // 认可的用户 ID，必须包含 out_vmess.json 中的用户 ID
   ]
 }
 ```
 
 ### 其它
-* V2Ray 的用户验证基于时间，请确保 A 和 B 的时间误差在一分钟以内。
+* V2Ray 的用户验证基于时间，请确保 A 和 B 所在机器的系统时间误差在一分钟以内。
+* json 配置文件实际上不支持注释（即“//”之后的部分，在使用时请务必删去）。
 
 ## 运行
 
