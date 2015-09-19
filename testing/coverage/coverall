@@ -25,6 +25,7 @@ test_package "io/vmess" "hash,io,io/vmess"
 test_package "math" "math"
 test_package "net/socks" ".,io/socks,net,net/socks"
 test_package "net" "net"
+test_package "net/vmess" ".,io,math,net,net/vmess"
 
 if [ "$FAIL" -eq 0 ]; then
   $HOME/gopath/bin/goveralls -v -coverprofile=coverall.out -service=travis-ci -repotoken $COVERALLS_TOKEN
