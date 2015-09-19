@@ -8,8 +8,8 @@ import (
 	"strconv"
 
 	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/log"
 	protocol "github.com/v2ray/v2ray-core/proxy/socks/protocol"
 )
 

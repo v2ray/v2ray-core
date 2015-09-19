@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/common/log"
 	jsonconf "github.com/v2ray/v2ray-core/config/json"
-	"github.com/v2ray/v2ray-core/log"
 
 	// The following are neccesary as they register handlers in their init functions.
 	_ "github.com/v2ray/v2ray-core/proxy/freedom"

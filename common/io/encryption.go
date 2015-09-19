@@ -4,7 +4,7 @@ import (
 	"crypto/cipher"
 	"io"
 
-	"github.com/v2ray/v2ray-core/log"
+	"github.com/v2ray/v2ray-core/common/log"
 )
 
 // CryptionReader is a general purpose reader that applies

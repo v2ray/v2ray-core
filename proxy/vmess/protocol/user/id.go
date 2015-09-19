@@ -4,7 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 
-	"github.com/v2ray/v2ray-core/log"
+	"github.com/v2ray/v2ray-core/common/log"
 )
 
 const (

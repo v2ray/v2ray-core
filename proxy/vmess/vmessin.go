@@ -8,10 +8,10 @@ import (
 
 	"github.com/v2ray/v2ray-core"
 	v2io "github.com/v2ray/v2ray-core/common/io"
+	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/log"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
-  "github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
+	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 )
 
 type VMessInboundHandler struct {

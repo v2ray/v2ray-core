@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/v2ray/v2ray-core"
-	"github.com/v2ray/v2ray-core/log"
+	"github.com/v2ray/v2ray-core/common/log"
 )
 
 type ConnectionConfig struct {

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
-  	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
+	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 	"github.com/v2ray/v2ray-core/testing/mocks"
 	"github.com/v2ray/v2ray-core/testing/unit"
 )

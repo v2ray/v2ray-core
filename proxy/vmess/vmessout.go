@@ -9,16 +9,16 @@ import (
 
 	"github.com/v2ray/v2ray-core"
 	v2io "github.com/v2ray/v2ray-core/common/io"
+	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/log"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
-  "github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
+	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 )
 
 // VNext is the next Point server in the connection chain.
 type VNextServer struct {
-	Address v2net.Address   // Address of VNext server
-	Users   []user.User // User accounts for accessing VNext.
+	Address v2net.Address // Address of VNext server
+	Users   []user.User   // User accounts for accessing VNext.
 }
 
 type VMessOutboundHandler struct {
