@@ -15,6 +15,7 @@ import (
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/log"
+  "github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 )
 
 const (
@@ -38,7 +39,7 @@ var (
 
 type VMessRequest struct {
 	Version        byte
-	UserId         ID
+	UserId         user.ID
 	RequestIV      [16]byte
 	RequestKey     [16]byte
 	ResponseHeader [4]byte
@@ -47,10 +48,10 @@ type VMessRequest struct {
 }
 
 type VMessRequestReader struct {
-	vUserSet UserSet
+	vUserSet user.UserSet
 }
 
-func NewVMessRequestReader(vUserSet UserSet) *VMessRequestReader {
+func NewVMessRequestReader(vUserSet user.UserSet) *VMessRequestReader {
 	return &VMessRequestReader{
 		vUserSet: vUserSet,
 	}
@@ -59,7 +60,7 @@ func NewVMessRequestReader(vUserSet UserSet) *VMessRequestReader {
 func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	buffer := make([]byte, 256)
 
-	nBytes, err := reader.Read(buffer[:IDBytesLen])
+	nBytes, err := reader.Read(buffer[:user.IDBytesLen])
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +76,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	if err != nil {
 		return nil, err
 	}
-	aesStream := cipher.NewCFBDecrypter(aesCipher, Int64Hash(timeSec))
+	aesStream := cipher.NewCFBDecrypter(aesCipher, user.Int64Hash(timeSec))
 	decryptor := v2io.NewCryptionReader(aesStream, reader)
 
 	if err != nil {
@@ -178,7 +179,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	return request, nil
 }
 
-func (request *VMessRequest) ToBytes(idHash CounterHash, randomRangeInt64 RandomInt64InRange) ([]byte, error) {
+func (request *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 user.RandomInt64InRange) ([]byte, error) {
 	buffer := make([]byte, 0, 300)
 
 	counter := randomRangeInt64(time.Now().UTC().Unix(), 30)
@@ -235,7 +236,7 @@ func (request *VMessRequest) ToBytes(idHash CounterHash, randomRangeInt64 Random
 	if err != nil {
 		return nil, err
 	}
-	aesStream := cipher.NewCFBEncrypter(aesCipher, Int64Hash(counter))
+	aesStream := cipher.NewCFBEncrypter(aesCipher, user.Int64Hash(counter))
 	aesStream.XORKeyStream(buffer[encryptionBegin:encryptionEnd], buffer[encryptionBegin:encryptionEnd])
 
 	return buffer, nil

@@ -19,13 +19,12 @@ function test_package {
 
 echo "mode: set" > coverall.out
 
-test_package "." "."
-test_package "io/socks" "io/socks"
-test_package "io/vmess" "hash,io,io/vmess"
-test_package "math" "math"
-test_package "net" "net"
-test_package "net/socks" ".,io/socks,net,net/socks"
-test_package "net/vmess" ".,io,math,net,net/vmess"
+test_package "common/net" "common/net"
+test_package "proxy/socks" "proxy/socks,proxy/socks/protocol"
+test_package "proxy/socks/protocol" "proxy/socks/protocol"
+test_package "proxy/vmess" "common/io,common/net,proxy/vmess,proxy/vmess/protocol,proxy/vmess/protocol/user"
+test_package "proxy/vmess/protocol" "proxy/vmess/protocol,proxy/vmess/protocol/user"
+test_package "proxy/vmess/protocol/user" "proxy/vmess/protocol/user"
 
 if [ "$FAIL" -eq 0 ]; then
   $HOME/gopath/bin/goveralls -v -coverprofile=coverall.out -service=travis-ci -repotoken $COVERALLS_TOKEN

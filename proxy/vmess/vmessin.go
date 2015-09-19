@@ -10,16 +10,17 @@ import (
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/log"
-	protocol "github.com/v2ray/v2ray-core/proxy/vmess/protocol"
+	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
+  "github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 )
 
 type VMessInboundHandler struct {
 	vPoint    *core.Point
-	clients   protocol.UserSet
+	clients   user.UserSet
 	accepting bool
 }
 
-func NewVMessInboundHandler(vp *core.Point, clients protocol.UserSet) *VMessInboundHandler {
+func NewVMessInboundHandler(vp *core.Point, clients user.UserSet) *VMessInboundHandler {
 	return &VMessInboundHandler{
 		vPoint:  vp,
 		clients: clients,
@@ -123,7 +124,7 @@ func (factory *VMessInboundHandlerFactory) Create(vp *core.Point, rawConfig []by
 	if err != nil {
 		panic(log.Error("VMessIn: Failed to load VMess inbound config: %v", err))
 	}
-	allowedClients := protocol.NewTimedUserSet()
+	allowedClients := user.NewTimedUserSet()
 	for _, client := range config.AllowedClients {
 		user, err := client.ToUser()
 		if err != nil {

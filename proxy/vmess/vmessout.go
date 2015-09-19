@@ -11,13 +11,14 @@ import (
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/log"
-	protocol "github.com/v2ray/v2ray-core/proxy/vmess/protocol"
+	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
+  "github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 )
 
 // VNext is the next Point server in the connection chain.
 type VNextServer struct {
 	Address v2net.Address   // Address of VNext server
-	Users   []protocol.User // User accounts for accessing VNext.
+	Users   []user.User // User accounts for accessing VNext.
 }
 
 type VMessOutboundHandler struct {
@@ -34,7 +35,7 @@ func NewVMessOutboundHandler(vp *core.Point, vNextList []VNextServer, dest v2net
 	}
 }
 
-func (handler *VMessOutboundHandler) pickVNext() (v2net.Address, protocol.User) {
+func (handler *VMessOutboundHandler) pickVNext() (v2net.Address, user.User) {
 	vNextLen := len(handler.vNextList)
 	if vNextLen == 0 {
 		panic("VMessOut: Zero vNext is configured.")
@@ -101,7 +102,7 @@ func handleRequest(conn *net.TCPConn, request *protocol.VMessRequest, input <-ch
 		return
 	}
 
-	buffer, err := request.ToBytes(protocol.NewTimeHash(protocol.HMACHash{}), protocol.GenerateRandomInt64InRange)
+	buffer, err := request.ToBytes(user.NewTimeHash(user.HMACHash{}), user.GenerateRandomInt64InRange)
 	if err != nil {
 		log.Error("VMessOut: Failed to serialize VMess request: %v", err)
 		return

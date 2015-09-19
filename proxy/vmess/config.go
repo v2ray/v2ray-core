@@ -6,7 +6,7 @@ import (
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/log"
-	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
+  "github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 )
 
 type VMessUser struct {
@@ -14,9 +14,9 @@ type VMessUser struct {
 	Email string `json:"email"`
 }
 
-func (u *VMessUser) ToUser() (protocol.User, error) {
-	id, err := protocol.NewID(u.Id)
-	return protocol.User{
+func (u *VMessUser) ToUser() (user.User, error) {
+	id, err := user.NewID(u.Id)
+	return user.User{
 		Id: id,
 	}, err
 }
@@ -38,7 +38,7 @@ type VNextConfig struct {
 }
 
 func (config VNextConfig) ToVNextServer() VNextServer {
-	users := make([]protocol.User, 0, len(config.Users))
+	users := make([]user.User, 0, len(config.Users))
 	for _, user := range config.Users {
 		vuser, err := user.ToUser()
 		if err != nil {

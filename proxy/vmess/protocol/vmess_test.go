@@ -5,8 +5,8 @@ import (
 	"crypto/rand"
 	"testing"
 
-	"github.com/v2ray/v2ray-core"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+  	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 	"github.com/v2ray/v2ray-core/testing/mocks"
 	"github.com/v2ray/v2ray-core/testing/unit"
 )
@@ -14,13 +14,13 @@ import (
 func TestVMessSerialization(t *testing.T) {
 	assert := unit.Assert(t)
 
-	userId, err := core.NewID("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
+	userId, err := user.NewID("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	userSet := mocks.MockUserSet{[]core.ID{}, make(map[string]int), make(map[string]int64)}
-	userSet.AddUser(core.User{userId})
+	userSet := mocks.MockUserSet{[]user.ID{}, make(map[string]int), make(map[string]int64)}
+	userSet.AddUser(user.User{userId})
 
 	request := new(VMessRequest)
 	request.Version = byte(0x01)
@@ -45,7 +45,7 @@ func TestVMessSerialization(t *testing.T) {
 	request.Address = v2net.DomainAddress("v2ray.com", 80)
 
 	mockTime := int64(1823730)
-	buffer, err := request.ToBytes(NewTimeHash(HMACHash{}), func(base int64, delta int) int64 { return mockTime })
+	buffer, err := request.ToBytes(user.NewTimeHash(user.HMACHash{}), func(base int64, delta int) int64 { return mockTime })
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,9 +69,9 @@ func TestVMessSerialization(t *testing.T) {
 }
 
 func BenchmarkVMessRequestWriting(b *testing.B) {
-	userId, _ := core.NewID("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
-	userSet := mocks.MockUserSet{[]core.ID{}, make(map[string]int), make(map[string]int64)}
-	userSet.AddUser(core.User{userId})
+	userId, _ := user.NewID("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
+	userSet := mocks.MockUserSet{[]user.ID{}, make(map[string]int), make(map[string]int64)}
+	userSet.AddUser(user.User{userId})
 
 	request := new(VMessRequest)
 	request.Version = byte(0x01)
@@ -85,6 +85,6 @@ func BenchmarkVMessRequestWriting(b *testing.B) {
 	request.Address = v2net.DomainAddress("v2ray.com", 80)
 
 	for i := 0; i < b.N; i++ {
-		request.ToBytes(NewTimeHash(HMACHash{}), GenerateRandomInt64InRange)
+		request.ToBytes(user.NewTimeHash(user.HMACHash{}), user.GenerateRandomInt64InRange)
 	}
 }
