@@ -72,7 +72,7 @@ func startCommunicate(request *protocol.VMessRequest, dest *v2net.Destination, r
 	input := ray.OutboundInput()
 	output := ray.OutboundOutput()
 
-	conn, err := net.DialTCP(dest.Network(), nil, &net.TCPAddr{dest.Address().IP, int(dest.Address().Port), ""})
+	conn, err := net.DialTCP(dest.Network(), nil, &net.TCPAddr{dest.Address().IP(), int(dest.Address().Port()), ""})
 	if err != nil {
 		log.Error("Failed to open tcp (%s): %v", dest.String(), err)
 		close(output)

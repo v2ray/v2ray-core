@@ -211,22 +211,19 @@ func (request *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 u
 	buffer = append(buffer, request.RequestKey[:]...)
 	buffer = append(buffer, request.ResponseHeader[:]...)
 	buffer = append(buffer, request.Command)
-
-	portBytes := make([]byte, 2)
-	binary.BigEndian.PutUint16(portBytes, request.Address.Port)
-	buffer = append(buffer, portBytes...)
+	buffer = append(buffer, request.Address.PortBytes()...)
 
 	switch {
 	case request.Address.IsIPv4():
 		buffer = append(buffer, addrTypeIPv4)
-		buffer = append(buffer, request.Address.IP...)
+		buffer = append(buffer, request.Address.IP()...)
 	case request.Address.IsIPv6():
 		buffer = append(buffer, addrTypeIPv6)
-		buffer = append(buffer, request.Address.IP...)
+		buffer = append(buffer, request.Address.IP()...)
 	case request.Address.IsDomain():
 		buffer = append(buffer, addrTypeDomain)
-		buffer = append(buffer, byte(len(request.Address.Domain)))
-		buffer = append(buffer, []byte(request.Address.Domain)...)
+		buffer = append(buffer, byte(len(request.Address.Domain())))
+		buffer = append(buffer, []byte(request.Address.Domain())...)
 	}
 
 	paddingLength := mrand.Intn(32) + 1
