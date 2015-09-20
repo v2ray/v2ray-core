@@ -47,3 +47,7 @@ func (a *Assertion) Error(value error) *ErrorSubject {
 func (a *Assertion) Bool(value bool) *BoolSubject {
 	return NewBoolSubject(NewSubject(a), value)
 }
+
+func (a *Assertion) Pointer(value interface{}) *PointerSubject {
+	return NewPointerSubject(NewSubject(a), value)
+}

@@ -46,3 +46,9 @@ func (subject *Uint16Subject) LessThan(expectation uint16) {
 		subject.Fail("is less than", expectation)
 	}
 }
+
+func (subject *Uint16Subject) Positive() {
+	if subject.value <= 0 {
+		subject.FailWithMessage("Not true that " + subject.DisplayString() + " is positive.")
+	}
+}

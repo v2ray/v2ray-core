@@ -3,6 +3,7 @@ package json
 import (
 	"encoding/json"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/v2ray/v2ray-core"
@@ -49,7 +50,8 @@ func (config *Config) OutboundConfig() core.ConnectionConfig {
 }
 
 func LoadConfig(file string) (*Config, error) {
-	rawConfig, err := ioutil.ReadFile(file)
+	fixedFile := os.ExpandEnv(file)
+	rawConfig, err := ioutil.ReadFile(fixedFile)
 	if err != nil {
 		log.Error("Failed to read point config file (%s): %v", file, err)
 		return nil, err
@@ -59,11 +61,11 @@ func LoadConfig(file string) (*Config, error) {
 	err = json.Unmarshal(rawConfig, config)
 
 	if !filepath.IsAbs(config.InboundConfigValue.File) && len(config.InboundConfigValue.File) > 0 {
-		config.InboundConfigValue.File = filepath.Join(filepath.Dir(file), config.InboundConfigValue.File)
+		config.InboundConfigValue.File = filepath.Join(filepath.Dir(fixedFile), config.InboundConfigValue.File)
 	}
 
 	if !filepath.IsAbs(config.OutboundConfigValue.File) && len(config.OutboundConfigValue.File) > 0 {
-		config.OutboundConfigValue.File = filepath.Join(filepath.Dir(file), config.OutboundConfigValue.File)
+		config.OutboundConfigValue.File = filepath.Join(filepath.Dir(fixedFile), config.OutboundConfigValue.File)
 	}
 
 	return config, err

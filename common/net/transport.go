@@ -19,7 +19,6 @@ func ReaderToChan(stream chan<- []byte, reader io.Reader) error {
 			return err
 		}
 	}
-	return nil
 }
 
 func ChanToWriter(writer io.Writer, stream <-chan []byte) error {
