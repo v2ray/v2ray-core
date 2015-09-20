@@ -31,24 +31,24 @@ func (vconn *FreedomConnection) Start(ray core.OutboundRay) error {
 	readFinish := make(chan bool)
 	writeFinish := make(chan bool)
 
-	go vconn.DumpInput(conn, input, writeFinish)
-	go vconn.DumpOutput(conn, output, readFinish)
-	go vconn.CloseConn(conn, readFinish, writeFinish)
+	go dumpInput(conn, input, writeFinish)
+	go dumpOutput(conn, output, readFinish)
+	go closeConn(conn, readFinish, writeFinish)
 	return nil
 }
 
-func (vconn *FreedomConnection) DumpInput(conn net.Conn, input <-chan []byte, finish chan<- bool) {
+func dumpInput(conn net.Conn, input <-chan []byte, finish chan<- bool) {
 	v2net.ChanToWriter(conn, input)
-	finish <- true
+	close(finish)
 }
 
-func (vconn *FreedomConnection) DumpOutput(conn net.Conn, output chan<- []byte, finish chan<- bool) {
+func dumpOutput(conn net.Conn, output chan<- []byte, finish chan<- bool) {
 	v2net.ReaderToChan(output, conn)
 	close(output)
-	finish <- true
+	close(finish)
 }
 
-func (vconn *FreedomConnection) CloseConn(conn net.Conn, readFinish <-chan bool, writeFinish <-chan bool) {
+func closeConn(conn net.Conn, readFinish <-chan bool, writeFinish <-chan bool) {
 	<-writeFinish
 	if tcpConn, ok := conn.(*net.TCPConn); ok {
 		tcpConn.CloseWrite()
