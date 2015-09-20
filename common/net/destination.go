@@ -1,46 +1,66 @@
 package net
 
-import (
-	"github.com/v2ray/v2ray-core/common/log"
-)
+type Destination interface {
+	Network() string
+	Address() Address
+	String() string
 
-const (
-	NetTCP = byte(0x01)
-	NetUDP = byte(0x02)
-)
+	IsTCP() bool
+	IsUDP() bool
+}
 
-type Destination struct {
-	network byte
+func NewTCPDestination(address Address) Destination {
+	return TCPDestination{address: address}
+}
+
+func NewUDPDestination(address Address) Destination {
+	return UDPDestination{address: address}
+}
+
+type TCPDestination struct {
 	address Address
 }
 
-func NewDestination(network byte, address Address) *Destination {
-	return &Destination{
-		network: network,
-		address: address,
-	}
+func (dest TCPDestination) Network() string {
+	return "tcp"
 }
 
-func (dest *Destination) Network() string {
-	switch dest.network {
-	case NetTCP:
-		return "tcp"
-	case NetUDP:
-		return "udp"
-	default:
-		log.Warning("Unknown network %d", dest.network)
-		return "tcp"
-	}
-}
-
-func (dest *Destination) NetworkByte() byte {
-	return dest.network
-}
-
-func (dest *Destination) Address() Address {
+func (dest TCPDestination) Address() Address {
 	return dest.address
 }
 
-func (dest *Destination) String() string {
-	return dest.address.String() + " (" + dest.Network() + ")"
+func (dest TCPDestination) String() string {
+	return "tcp:" + dest.address.String()
+}
+
+func (dest TCPDestination) IsTCP() bool {
+	return true
+}
+
+func (dest TCPDestination) IsUDP() bool {
+	return false
+}
+
+type UDPDestination struct {
+	address Address
+}
+
+func (dest UDPDestination) Network() string {
+	return "udp"
+}
+
+func (dest UDPDestination) Address() Address {
+	return dest.address
+}
+
+func (dest UDPDestination) String() string {
+	return "udp:" + dest.address.String()
+}
+
+func (dest UDPDestination) IsTCP() bool {
+	return false
+}
+
+func (dest UDPDestination) IsUDP() bool {
+	return true
 }

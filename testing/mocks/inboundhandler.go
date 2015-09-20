@@ -19,7 +19,7 @@ func (handler *InboundConnectionHandler) Listen(port uint16) error {
 	return nil
 }
 
-func (handler *InboundConnectionHandler) Communicate(dest *v2net.Destination) error {
+func (handler *InboundConnectionHandler) Communicate(dest v2net.Destination) error {
 	ray := handler.Server.NewInboundConnectionAccepted(dest)
 
 	input := ray.InboundInput()

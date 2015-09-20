@@ -51,12 +51,13 @@ func (config VNextConfig) ToVNextServer() VNextServer {
 	if ip == nil {
 		panic(log.Error("Unable to parse VNext IP: %s", config.Address))
 	}
-	network := v2net.NetTCP
+	address := v2net.IPAddress(ip, config.Port)
+	dest := v2net.NewTCPDestination(address)
 	if config.Network == "udp" {
-		network = v2net.NetUDP
+		dest = v2net.NewUDPDestination(address)
 	}
 	return VNextServer{
-		Destination: v2net.NewDestination(network, v2net.IPAddress(ip, config.Port)),
+		Destination: dest,
 		Users:       users,
 	}
 }

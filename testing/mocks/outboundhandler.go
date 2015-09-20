@@ -10,7 +10,7 @@ import (
 type OutboundConnectionHandler struct {
 	Data2Send   *bytes.Buffer
 	Data2Return []byte
-	Destination *v2net.Destination
+	Destination v2net.Destination
 }
 
 func (handler *OutboundConnectionHandler) Start(ray core.OutboundRay) error {
@@ -32,7 +32,7 @@ func (handler *OutboundConnectionHandler) Start(ray core.OutboundRay) error {
 	return nil
 }
 
-func (handler *OutboundConnectionHandler) Create(point *core.Point, config []byte, dest *v2net.Destination) (core.OutboundConnectionHandler, error) {
+func (handler *OutboundConnectionHandler) Create(point *core.Point, config []byte, dest v2net.Destination) (core.OutboundConnectionHandler, error) {
 	handler.Destination = dest
 	return handler, nil
 }

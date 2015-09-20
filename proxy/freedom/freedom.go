@@ -9,10 +9,10 @@ import (
 )
 
 type FreedomConnection struct {
-	dest *v2net.Destination
+	dest v2net.Destination
 }
 
-func NewFreedomConnection(dest *v2net.Destination) *FreedomConnection {
+func NewFreedomConnection(dest v2net.Destination) *FreedomConnection {
 	return &FreedomConnection{
 		dest: dest,
 	}

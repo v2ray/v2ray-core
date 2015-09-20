@@ -50,8 +50,12 @@ type VMessRequest struct {
 	Address        v2net.Address
 }
 
-func (request *VMessRequest) Destination() *v2net.Destination {
-	return v2net.NewDestination(request.Command, request.Address)
+func (request *VMessRequest) Destination() v2net.Destination {
+	if request.Command == CmdTCP {
+		return v2net.NewTCPDestination(request.Address)
+	} else {
+		return v2net.NewUDPDestination(request.Address)
+	}
 }
 
 type VMessRequestReader struct {

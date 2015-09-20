@@ -278,7 +278,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 	return
 }
 
-func (request *Socks5Request) Destination() *v2net.Destination {
+func (request *Socks5Request) Destination() v2net.Destination {
 	var address v2net.Address
 	switch request.AddrType {
 	case AddrTypeIPv4:
@@ -290,7 +290,7 @@ func (request *Socks5Request) Destination() *v2net.Destination {
 	default:
 		panic("Unknown address type")
 	}
-	return v2net.NewDestination(v2net.NetTCP, address)
+	return v2net.NewTCPDestination(address)
 }
 
 const (
