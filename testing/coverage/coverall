@@ -20,6 +20,7 @@ function test_package {
 touch coverall.out
 
 test_package "common/net" "common/net"
+test_package "config/json" "config/json"
 test_package "proxy/socks" "proxy/socks,proxy/socks/protocol"
 test_package "proxy/socks/protocol" "proxy/socks/protocol"
 test_package "proxy/vmess" "common/io,common/net,proxy/vmess,proxy/vmess/protocol,proxy/vmess/protocol/user"
