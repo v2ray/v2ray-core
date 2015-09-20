@@ -6,10 +6,10 @@ type StringSubject struct {
 }
 
 func NewStringSubject(base *Subject, value string) *StringSubject {
-	subject := new(StringSubject)
-	subject.Subject = base
-	subject.value = value
-	return subject
+	return &StringSubject{
+		Subject: base,
+		value:   value,
+	}
 }
 
 func (subject *StringSubject) Named(name string) *StringSubject {

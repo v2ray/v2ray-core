@@ -11,10 +11,10 @@ type BytesSubject struct {
 }
 
 func NewBytesSubject(base *Subject, value []byte) *BytesSubject {
-	subject := new(BytesSubject)
-	subject.Subject = base
-	subject.value = value
-	return subject
+	return &BytesSubject{
+		Subject: base,
+		value:   value,
+	}
 }
 
 func (subject *BytesSubject) Named(name string) *BytesSubject {

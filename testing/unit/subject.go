@@ -6,10 +6,10 @@ type Subject struct {
 }
 
 func NewSubject(assert *Assertion) *Subject {
-	subject := new(Subject)
-	subject.assert = assert
-	subject.name = ""
-	return subject
+	return &Subject{
+		assert: assert,
+		name:   "",
+	}
 }
 
 func (subject *Subject) FailWithMessage(message string) {

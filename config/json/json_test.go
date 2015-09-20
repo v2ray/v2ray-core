@@ -44,5 +44,5 @@ func TestServerSampleConfig(t *testing.T) {
 	assert.Int(len(config.InboundConfig().Content())).GreaterThan(0)
 
 	assert.String(config.OutboundConfig().Protocol()).Equals("freedom")
-  assert.Int(len(config.OutboundConfig().Content())).Equals(0)
+	assert.Int(len(config.OutboundConfig().Content())).Equals(0)
 }

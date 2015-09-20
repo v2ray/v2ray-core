@@ -6,10 +6,10 @@ type ErrorSubject struct {
 }
 
 func NewErrorSubject(base *Subject, value error) *ErrorSubject {
-	subject := new(ErrorSubject)
-	subject.Subject = base
-	subject.value = value
-	return subject
+	return &ErrorSubject{
+		Subject: base,
+		value:   value,
+	}
 }
 
 func (subject *ErrorSubject) Named(name string) *ErrorSubject {

@@ -10,10 +10,10 @@ type IntSubject struct {
 }
 
 func NewIntSubject(base *Subject, value int) *IntSubject {
-	subject := new(IntSubject)
-	subject.Subject = base
-	subject.value = value
-	return subject
+	return &IntSubject{
+		Subject: base,
+		value:   value,
+	}
 }
 
 func (subject *IntSubject) Named(name string) *IntSubject {

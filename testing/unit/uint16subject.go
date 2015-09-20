@@ -10,10 +10,10 @@ type Uint16Subject struct {
 }
 
 func NewUint16Subject(base *Subject, value uint16) *Uint16Subject {
-	subject := new(Uint16Subject)
-	subject.Subject = base
-	subject.value = value
-	return subject
+	return &Uint16Subject{
+		Subject: base,
+		value:   value,
+	}
 }
 
 func (subject *Uint16Subject) Named(name string) *Uint16Subject {
