@@ -8,7 +8,7 @@ import (
 type FreedomFactory struct {
 }
 
-func (factory FreedomFactory) Create(vp *core.Point, config []byte, dest v2net.Address) (core.OutboundConnectionHandler, error) {
+func (factory FreedomFactory) Create(vp *core.Point, config []byte, dest *v2net.Destination) (core.OutboundConnectionHandler, error) {
 	return NewFreedomConnection(dest), nil
 }
 

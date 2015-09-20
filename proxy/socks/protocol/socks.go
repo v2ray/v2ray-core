@@ -278,17 +278,19 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 	return
 }
 
-func (request *Socks5Request) Destination() v2net.Address {
+func (request *Socks5Request) Destination() *v2net.Destination {
+	var address v2net.Address
 	switch request.AddrType {
 	case AddrTypeIPv4:
-		return v2net.IPAddress(request.IPv4[:], request.Port)
+		address = v2net.IPAddress(request.IPv4[:], request.Port)
 	case AddrTypeIPv6:
-		return v2net.IPAddress(request.IPv6[:], request.Port)
+		address = v2net.IPAddress(request.IPv6[:], request.Port)
 	case AddrTypeDomain:
-		return v2net.DomainAddress(request.Domain, request.Port)
+		address = v2net.DomainAddress(request.Domain, request.Port)
 	default:
 		panic("Unknown address type")
 	}
+	return v2net.NewDestination(v2net.NetTCP, address)
 }
 
 const (

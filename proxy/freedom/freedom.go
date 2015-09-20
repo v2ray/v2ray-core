@@ -9,10 +9,10 @@ import (
 )
 
 type FreedomConnection struct {
-	dest v2net.Address
+	dest *v2net.Destination
 }
 
-func NewFreedomConnection(dest v2net.Address) *FreedomConnection {
+func NewFreedomConnection(dest *v2net.Destination) *FreedomConnection {
 	return &FreedomConnection{
 		dest: dest,
 	}
@@ -21,12 +21,12 @@ func NewFreedomConnection(dest v2net.Address) *FreedomConnection {
 func (vconn *FreedomConnection) Start(ray core.OutboundRay) error {
 	input := ray.OutboundInput()
 	output := ray.OutboundOutput()
-	conn, err := net.Dial("tcp", vconn.dest.String())
+	conn, err := net.Dial(vconn.dest.Network(), vconn.dest.Address().String())
+	log.Info("Freedom: Opening connection to %s", vconn.dest.String())
 	if err != nil {
 		close(output)
-		return log.Error("Freedom: Failed to open tcp connection: %s : %v", vconn.dest.String(), err)
+		return log.Error("Freedom: Failed to open connection: %s : %v", vconn.dest.String(), err)
 	}
-	log.Info("Freedom: Sending outbound tcp: %s", vconn.dest.String())
 
 	readFinish := make(chan bool)
 	writeFinish := make(chan bool)

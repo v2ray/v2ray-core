@@ -61,7 +61,7 @@ func TestSocksTcpConnect(t *testing.T) {
 
 	assert.Bytes([]byte(data2Send)).Equals(och.Data2Send.Bytes())
 	assert.Bytes(dataReturned).Equals(och.Data2Return)
-	assert.String(targetServer).Equals(och.Destination.String())
+	assert.String(targetServer).Equals(och.Destination.Address().String())
 }
 
 func TestSocksTcpConnectWithUserPass(t *testing.T) {
@@ -112,5 +112,5 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 
 	assert.Bytes([]byte(data2Send)).Equals(och.Data2Send.Bytes())
 	assert.Bytes(dataReturned).Equals(och.Data2Return)
-	assert.String(targetServer).Equals(och.Destination.String())
+	assert.String(targetServer).Equals(och.Destination.Address().String())
 }

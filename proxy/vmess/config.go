@@ -35,6 +35,7 @@ type VNextConfig struct {
 	Address string      `json:"address"`
 	Port    uint16      `json:"port"`
 	Users   []VMessUser `json:"users"`
+	Network string      `json:"network"`
 }
 
 func (config VNextConfig) ToVNextServer() VNextServer {
@@ -50,9 +51,13 @@ func (config VNextConfig) ToVNextServer() VNextServer {
 	if ip == nil {
 		panic(log.Error("Unable to parse VNext IP: %s", config.Address))
 	}
+	network := v2net.NetTCP
+	if config.Network == "udp" {
+		network = v2net.NetUDP
+	}
 	return VNextServer{
-		Address: v2net.IPAddress(ip, config.Port),
-		Users:   users,
+		Destination: v2net.NewDestination(network, v2net.IPAddress(ip, config.Port)),
+		Users:       users,
 	}
 }
 

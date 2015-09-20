@@ -68,7 +68,7 @@ func TestVMessInAndOut(t *testing.T) {
 	err = pointB.Start()
 	assert.Error(err).IsNil()
 
-	dest := v2net.IPAddress([]byte{1, 2, 3, 4}, 80)
+	dest := v2net.NewDestination(v2net.NetTCP, v2net.IPAddress([]byte{1, 2, 3, 4}, 80))
 	ich.Communicate(dest)
 	assert.Bytes([]byte(data2Send)).Equals(och.Data2Send.Bytes())
 	assert.Bytes(ich.DataReturned.Bytes()).Equals(och.Data2Return)

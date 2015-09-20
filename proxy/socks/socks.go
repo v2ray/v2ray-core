@@ -70,7 +70,7 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 		return err
 	}
 
-	var dest v2net.Address
+	var dest *v2net.Destination
 
 	// TODO refactor this part
 	if err == protocol.ErrorSocksVersion4 {
@@ -85,7 +85,7 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 			return ErrorCommandNotSupported
 		}
 
-		dest = v2net.IPAddress(auth4.IP[:], auth4.Port)
+		dest = v2net.NewDestination(v2net.NetTCP, v2net.IPAddress(auth4.IP[:], auth4.Port))
 	} else {
 		expectedAuthMethod := protocol.AuthNotRequired
 		if server.config.AuthMethod == JsonAuthMethodUserPass {

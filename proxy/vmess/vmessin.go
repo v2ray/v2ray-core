@@ -61,7 +61,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 	}
 	log.Debug("VMessIn: Received request for %s", request.Address.String())
 
-	ray := handler.vPoint.NewInboundConnectionAccepted(request.Address)
+	ray := handler.vPoint.NewInboundConnectionAccepted(request.Destination())
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 
