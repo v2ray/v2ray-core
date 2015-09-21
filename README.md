@@ -28,6 +28,7 @@ V2Ray 是一个翻墙工具包，用于简化和复用其它翻墙工具，加�
 * [Help Wanted](https://github.com/v2ray/v2ray-core/labels/help%20wanted)：所有被标记为“Help Wanted”的 Issue 都接受 Pull Request，如果你对本项目感兴趣并想做点贡献，请挑选其中之一完善之，不甚感激。
 
 ## 联系方式
+Twitter：https://twitter.com/projectv2ray
 私下联系：love@v2ray.com
 
 ## 捐赠
