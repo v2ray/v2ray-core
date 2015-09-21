@@ -44,13 +44,20 @@ func (handler *VMessOutboundHandler) pickVNext() (v2net.Destination, user.User) 
 	if vNextLen == 0 {
 		panic("VMessOut: Zero vNext is configured.")
 	}
-	vNextIndex := mrand.Intn(vNextLen)
+	vNextIndex := 0
+	if vNextLen > 1 {
+		vNextIndex = mrand.Intn(vNextLen)
+	}
+
 	vNext := handler.vNextList[vNextIndex]
 	vNextUserLen := len(vNext.Users)
 	if vNextUserLen == 0 {
 		panic("VMessOut: Zero User account.")
 	}
-	vNextUserIndex := mrand.Intn(vNextUserLen)
+	vNextUserIndex := 0
+	if vNextUserLen > 1 {
+		vNextUserIndex = mrand.Intn(vNextUserLen)
+	}
 	vNextUser := vNext.Users[vNextUserIndex]
 	return vNext.Destination, vNextUser
 }
