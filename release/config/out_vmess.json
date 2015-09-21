@@ -5,7 +5,8 @@
       "port": 27183,
       "users": [
         {"id": "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"}
-      ]
+      ],
+      "network": "tcp"
     }
   ]
 }

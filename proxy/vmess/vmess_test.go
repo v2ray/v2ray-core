@@ -31,7 +31,7 @@ func TestVMessInAndOut(t *testing.T) {
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "vmess",
-			ContentValue:  []byte("{\"vnext\":[{\"address\": \"127.0.0.1\", \"port\": 13829, \"users\":[{\"id\": \"ad937d9d-6e23-4a5a-ba23-bce5092a7c51\"}]}]}"),
+			ContentValue:  []byte("{\"vnext\":[{\"address\": \"127.0.0.1\", \"network\": \"tcp\", \"port\": 13829, \"users\":[{\"id\": \"ad937d9d-6e23-4a5a-ba23-bce5092a7c51\"}]}]}"),
 		},
 	}
 
