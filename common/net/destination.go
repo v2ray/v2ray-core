@@ -1,18 +1,21 @@
 package net
 
+// Destination represents a network destination including address and protocol (tcp / udp).
 type Destination interface {
-	Network() string
-	Address() Address
-	String() string
+	Network() string  // Protocol of communication (tcp / udp)
+	Address() Address // Address of destination
+	String() string   // String representation of the destination
 
-	IsTCP() bool
-	IsUDP() bool
+	IsTCP() bool // True if destination is reachable via TCP
+	IsUDP() bool // True if destination is reachable via UDP
 }
 
+// NewTCPDestination creates a TCP destination with given address
 func NewTCPDestination(address Address) Destination {
 	return TCPDestination{address: address}
 }
 
+// NewUDPDestination creates a UDP destination with given address
 func NewUDPDestination(address Address) Destination {
 	return UDPDestination{address: address}
 }
