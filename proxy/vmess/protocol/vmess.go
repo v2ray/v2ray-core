@@ -259,9 +259,9 @@ type VMessResponse [4]byte
 
 // NewVMessResponse creates a VMessResponse from a given VMessRequest.
 func NewVMessResponse(request *VMessRequest) *VMessResponse {
-  return &VMessResponse{
-    request.ResponseHeader[0],
-    request.ResponseHeader[1],
-    request.ResponseHeader[2],
-    request.ResponseHeader[3]}
+	return &VMessResponse{
+		request.ResponseHeader[0],
+		request.ResponseHeader[1],
+		request.ResponseHeader[2],
+		request.ResponseHeader[3]}
 }

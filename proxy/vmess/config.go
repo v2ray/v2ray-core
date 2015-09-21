@@ -22,7 +22,7 @@ func (u *VMessUser) ToUser() (user.User, error) {
 	}, err
 }
 
-// VMessInboundConfig is 
+// VMessInboundConfig is
 type VMessInboundConfig struct {
 	AllowedClients []VMessUser `json:"clients"`
 }
