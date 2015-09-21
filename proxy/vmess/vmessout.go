@@ -15,6 +15,10 @@ import (
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 )
 
+const (
+	InfoTimeNotSync = "Please check the User ID in your vmess configuration, and make sure the time on your local and remote server are in sync."
+)
+
 // VNext is the next Point server in the connection chain.
 type VNextServer struct {
 	Destination v2net.Destination // Address of VNext server
@@ -145,6 +149,7 @@ func handleResponse(conn *net.TCPConn, request *protocol.VMessRequest, output ch
 	nBytes, err := decryptResponseReader.Read(response[:])
 	if err != nil {
 		log.Error("VMessOut: Failed to read VMess response (%d bytes): %v", nBytes, err)
+		log.Error(InfoTimeNotSync)
 		return
 	}
 	if !bytes.Equal(response[:], request.ResponseHeader[:]) {

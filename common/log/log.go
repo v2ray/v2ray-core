@@ -31,7 +31,7 @@ func writeLog(level LogLevel, prefix, format string, v ...interface{}) string {
 	} else {
 		data = fmt.Sprintf(format, v...)
 	}
-	log.Print(prefix + data)
+	log.Println(prefix + data)
 	return data
 }
 
