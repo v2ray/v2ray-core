@@ -5,7 +5,7 @@ import (
 	"io"
 	"net"
 	"strconv"
-  "time"
+	"time"
 
 	"github.com/v2ray/v2ray-core"
 	v2io "github.com/v2ray/v2ray-core/common/io"
@@ -16,11 +16,11 @@ import (
 )
 
 const (
-  requestReadTimeOut = 4 * time.Second
+	requestReadTimeOut = 4 * time.Second
 )
 
 var (
-  zeroTime time.Time
+	zeroTime time.Time
 )
 
 type VMessInboundHandler struct {
@@ -63,16 +63,16 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 
 	reader := protocol.NewVMessRequestReader(handler.clients)
 
-  // Timeout 4 seconds to prevent DoS attack
-  connection.SetReadDeadline(time.Now().Add(requestReadTimeOut))
+	// Timeout 4 seconds to prevent DoS attack
+	connection.SetReadDeadline(time.Now().Add(requestReadTimeOut))
 	request, err := reader.Read(connection)
 	if err != nil {
 		log.Warning("VMessIn: Invalid request from (%s): %v", connection.RemoteAddr().String(), err)
 		return err
 	}
 	log.Debug("VMessIn: Received request for %s", request.Address.String())
-  // Clear read timeout
-  connection.SetReadDeadline(zeroTime)
+	// Clear read timeout
+	connection.SetReadDeadline(zeroTime)
 
 	ray := handler.vPoint.NewInboundConnectionAccepted(request.Destination())
 	input := ray.InboundInput()
