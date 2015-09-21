@@ -4,7 +4,7 @@
 
 ## 数据请求
 认证部分：
-* 16 字节：基于时间的 hash(用户 ID)，见下文
+* 16 字节：基于时间的 hash(用户 [ID](https://github.com/V2Ray/v2ray-core/blob/master/spec/id.md))，见下文
 
 指令部分：
 * 1 字节：随机填充长度 M (0 < M <= 32)
