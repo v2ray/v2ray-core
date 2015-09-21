@@ -7,19 +7,21 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 )
 
+// Address represents a network address to be communicated with. It may be an IP address or domain address, not both. This interface doesn't resolve IP address for a given domain.
 type Address interface {
-	IP() net.IP
-	Domain() string
-	Port() uint16
-	PortBytes() []byte
+	IP() net.IP // IP of this Address
+	Domain() string // Domain of this Address
+	Port() uint16 // Port of this Address
+	PortBytes() []byte // Port in bytes, network byte order
 
-	IsIPv4() bool
-	IsIPv6() bool
-	IsDomain() bool
+	IsIPv4() bool // True if this Address is an IPv4 address
+	IsIPv6() bool // True if this Address is an IPv6 address
+	IsDomain() bool // True if this Address is an domain address
 
-	String() string
+	String() string // String representation of this Address
 }
 
+// IPAddress creates an Address with given IP and port.
 func IPAddress(ip []byte, port uint16) Address {
 	switch len(ip) {
 	case net.IPv4len:
@@ -30,13 +32,17 @@ func IPAddress(ip []byte, port uint16) Address {
 	case net.IPv6len:
 		return IPv6Address{
 			PortAddress: PortAddress{port: port},
-			ip:          [16]byte{ip[0], ip[1], ip[2], ip[3], ip[4], ip[5], ip[6], ip[7], ip[8], ip[9], ip[10], ip[11], ip[12], ip[13], ip[14], ip[15]},
+			ip:          [16]byte{ip[0], ip[1], ip[2], ip[3],
+			                      ip[4], ip[5], ip[6], ip[7],
+			                      ip[8], ip[9], ip[10], ip[11],
+			                      ip[12], ip[13], ip[14], ip[15]},
 		}
 	default:
 		panic(log.Error("Unknown IP format: %v", ip))
 	}
 }
 
+// DomainAddress creates an Address with given domain and port.
 func DomainAddress(domain string, port uint16) Address {
 	return DomainAddressImpl{
 		domain:      domain,
