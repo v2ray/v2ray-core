@@ -9,6 +9,7 @@ import (
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 )
 
+// VMessUser is an authenticated user account in VMess configuration.
 type VMessUser struct {
 	Id    string `json:"id"`
 	Email string `json:"email"`
@@ -21,6 +22,7 @@ func (u *VMessUser) ToUser() (user.User, error) {
 	}, err
 }
 
+// VMessInboundConfig is 
 type VMessInboundConfig struct {
 	AllowedClients []VMessUser `json:"clients"`
 }

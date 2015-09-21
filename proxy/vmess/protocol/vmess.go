@@ -36,10 +36,9 @@ var (
 	ErrorInvalidVerion = errors.New("Invalid Version")
 )
 
-// VMessRequest implements the request message of VMess protocol. It only contains
-// the header of a request message. The data part will be handled by conection
-// handler directly, in favor of data streaming.
-
+// VMessRequest implements the request message of VMess protocol. It only contains the header of a
+// request message. The data part will be handled by conection handler directly, in favor of data
+// streaming.
 type VMessRequest struct {
 	Version        byte
 	UserId         user.ID
@@ -50,6 +49,7 @@ type VMessRequest struct {
 	Address        v2net.Address
 }
 
+// Destination is the final destination of this request.
 func (request *VMessRequest) Destination() v2net.Destination {
 	if request.Command == CmdTCP {
 		return v2net.NewTCPDestination(request.Address)
@@ -58,16 +58,19 @@ func (request *VMessRequest) Destination() v2net.Destination {
 	}
 }
 
+// VMessRequestReader is a parser to read VMessRequest from a byte stream.
 type VMessRequestReader struct {
 	vUserSet user.UserSet
 }
 
+// NewVMessRequestReader creates a new VMessRequestReader with a given UserSet
 func NewVMessRequestReader(vUserSet user.UserSet) *VMessRequestReader {
 	return &VMessRequestReader{
 		vUserSet: vUserSet,
 	}
 }
 
+// Read reads a VMessRequest from a byte stream.
 func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	buffer := make([]byte, 256)
 
@@ -190,6 +193,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	return request, nil
 }
 
+// ToBytes returns a VMessRequest in the form of byte array.
 func (request *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 user.RandomInt64InRange) ([]byte, error) {
 	buffer := make([]byte, 0, 300)
 
@@ -250,10 +254,14 @@ func (request *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 u
 	return buffer, nil
 }
 
+// VMessResponse is the header of a TCP response in VMess format.
 type VMessResponse [4]byte
 
+// NewVMessResponse creates a VMessResponse from a given VMessRequest.
 func NewVMessResponse(request *VMessRequest) *VMessResponse {
-	response := new(VMessResponse)
-	copy(response[:], request.ResponseHeader[:])
-	return response
+  return &VMessResponse{
+    request.ResponseHeader[0],
+    request.ResponseHeader[1],
+    request.ResponseHeader[2],
+    request.ResponseHeader[3]}
 }
