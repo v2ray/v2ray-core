@@ -27,14 +27,14 @@ type VNextServer struct {
 
 type VMessOutboundHandler struct {
 	vPoint    *core.Point
-	dest      v2net.Destination
+	packet    v2net.Packet
 	vNextList []VNextServer
 }
 
-func NewVMessOutboundHandler(vp *core.Point, vNextList []VNextServer, dest v2net.Destination) *VMessOutboundHandler {
+func NewVMessOutboundHandler(vp *core.Point, vNextList []VNextServer, firstPacket v2net.Packet) *VMessOutboundHandler {
 	return &VMessOutboundHandler{
 		vPoint:    vp,
-		dest:      dest,
+		packet:    firstPacket,
 		vNextList: vNextList,
 	}
 }
@@ -66,36 +66,49 @@ func (handler *VMessOutboundHandler) Start(ray core.OutboundRay) error {
 	vNextAddress, vNextUser := handler.pickVNext()
 
 	command := protocol.CmdTCP
-	if handler.dest.IsUDP() {
+	if handler.packet.Destination().IsUDP() {
 		command = protocol.CmdUDP
 	}
 	request := &protocol.VMessRequest{
 		Version: protocol.Version,
 		UserId:  vNextUser.Id,
 		Command: command,
-		Address: handler.dest.Address(),
+		Address: handler.packet.Destination().Address(),
 	}
 	rand.Read(request.RequestIV[:])
 	rand.Read(request.RequestKey[:])
 	rand.Read(request.ResponseHeader[:])
 
-	go startCommunicate(request, vNextAddress, ray)
+	go startCommunicate(request, vNextAddress, ray, handler.packet)
 	return nil
 }
 
-func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ray core.OutboundRay) error {
-	input := ray.OutboundInput()
-	output := ray.OutboundOutput()
-
+func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ray core.OutboundRay, firstPacket v2net.Packet) error {
 	conn, err := net.DialTCP(dest.Network(), nil, &net.TCPAddr{dest.Address().IP(), int(dest.Address().Port()), ""})
 	if err != nil {
 		log.Error("Failed to open tcp (%s): %v", dest.String(), err)
-		close(output)
+		if ray != nil {
+			close(ray.OutboundOutput())
+		}
 		return err
 	}
 	log.Info("VMessOut: Tunneling request for %s", request.Address.String())
 
 	defer conn.Close()
+
+	if chunk := firstPacket.Chunk(); chunk != nil {
+		conn.Write(chunk)
+	}
+
+	if !firstPacket.MoreChunks() {
+		if ray != nil {
+			close(ray.OutboundOutput())
+		}
+		return nil
+	}
+
+	input := ray.OutboundInput()
+	output := ray.OutboundOutput()
 
 	requestFinish := make(chan bool)
 	responseFinish := make(chan bool)
@@ -171,7 +184,7 @@ func handleResponse(conn *net.TCPConn, request *protocol.VMessRequest, output ch
 type VMessOutboundHandlerFactory struct {
 }
 
-func (factory *VMessOutboundHandlerFactory) Create(vp *core.Point, rawConfig []byte, destination v2net.Destination) (core.OutboundConnectionHandler, error) {
+func (factory *VMessOutboundHandlerFactory) Create(vp *core.Point, rawConfig []byte, firstPacket v2net.Packet) (core.OutboundConnectionHandler, error) {
 	config, err := loadOutboundConfig(rawConfig)
 	if err != nil {
 		panic(log.Error("Failed to load VMess outbound config: %v", err))
@@ -180,7 +193,7 @@ func (factory *VMessOutboundHandlerFactory) Create(vp *core.Point, rawConfig []b
 	for _, server := range config.VNextList {
 		servers = append(servers, server.ToVNextServer())
 	}
-	return NewVMessOutboundHandler(vp, servers, destination), nil
+	return NewVMessOutboundHandler(vp, servers, firstPacket), nil
 }
 
 func init() {

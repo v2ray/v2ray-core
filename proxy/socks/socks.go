@@ -170,7 +170,7 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 		dest = request.Destination()
 	}
 
-	ray := server.vPoint.NewInboundConnectionAccepted(dest)
+	ray := server.vPoint.DispatchToOutbound(v2net.NewTCPPacket(dest))
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 	readFinish := make(chan bool)

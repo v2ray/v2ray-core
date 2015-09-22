@@ -64,7 +64,7 @@ type InboundConnectionHandler interface {
 }
 
 type OutboundConnectionHandlerFactory interface {
-	Create(VP *Point, config []byte, dest v2net.Destination) (OutboundConnectionHandler, error)
+	Create(VP *Point, config []byte, firstPacket v2net.Packet) (OutboundConnectionHandler, error)
 }
 
 type OutboundConnectionHandler interface {
@@ -85,10 +85,10 @@ func (vp *Point) Start() error {
 	return nil
 }
 
-func (vp *Point) NewInboundConnectionAccepted(destination v2net.Destination) InboundRay {
+func (p *Point) DispatchToOutbound(packet v2net.Packet) InboundRay {
 	ray := NewRay()
 	// TODO: handle error
-	och, _ := vp.ochFactory.Create(vp, vp.ochConfig, destination)
+	och, _ := p.ochFactory.Create(p, p.ochConfig, packet)
 	_ = och.Start(ray)
 	return ray
 }

@@ -74,7 +74,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 	// Clear read timeout
 	connection.SetReadDeadline(zeroTime)
 
-	ray := handler.vPoint.NewInboundConnectionAccepted(request.Destination())
+	ray := handler.vPoint.DispatchToOutbound(v2net.NewTCPPacket(request.Destination()))
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 

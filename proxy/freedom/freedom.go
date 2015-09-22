@@ -9,25 +9,38 @@ import (
 )
 
 type FreedomConnection struct {
-	dest v2net.Destination
+	packet v2net.Packet
 }
 
-func NewFreedomConnection(dest v2net.Destination) *FreedomConnection {
+func NewFreedomConnection(firstPacket v2net.Packet) *FreedomConnection {
 	return &FreedomConnection{
-		dest: dest,
+		packet: firstPacket,
 	}
 }
 
 func (vconn *FreedomConnection) Start(ray core.OutboundRay) error {
-	input := ray.OutboundInput()
-	output := ray.OutboundOutput()
-	conn, err := net.Dial(vconn.dest.Network(), vconn.dest.Address().String())
-	log.Info("Freedom: Opening connection to %s", vconn.dest.String())
+	conn, err := net.Dial(vconn.packet.Destination().Network(), vconn.packet.Destination().Address().String())
+	log.Info("Freedom: Opening connection to %s", vconn.packet.Destination().String())
 	if err != nil {
-		close(output)
-		return log.Error("Freedom: Failed to open connection: %s : %v", vconn.dest.String(), err)
+		if ray != nil {
+			close(ray.OutboundOutput())
+		}
+		return log.Error("Freedom: Failed to open connection: %s : %v", vconn.packet.Destination().String(), err)
 	}
 
+	if chunk := vconn.packet.Chunk(); chunk != nil {
+		conn.Write(chunk)
+	}
+
+	if !vconn.packet.MoreChunks() {
+		if ray != nil {
+			close(ray.OutboundOutput())
+		}
+		return nil
+	}
+
+	input := ray.OutboundInput()
+	output := ray.OutboundOutput()
 	readFinish := make(chan bool)
 	writeFinish := make(chan bool)
 

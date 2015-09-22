@@ -32,7 +32,7 @@ func (handler *OutboundConnectionHandler) Start(ray core.OutboundRay) error {
 	return nil
 }
 
-func (handler *OutboundConnectionHandler) Create(point *core.Point, config []byte, dest v2net.Destination) (core.OutboundConnectionHandler, error) {
-	handler.Destination = dest
+func (handler *OutboundConnectionHandler) Create(point *core.Point, config []byte, packet v2net.Packet) (core.OutboundConnectionHandler, error) {
+	handler.Destination = packet.Destination()
 	return handler, nil
 }
