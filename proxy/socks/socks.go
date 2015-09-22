@@ -176,22 +176,20 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	readFinish := make(chan bool)
 	writeFinish := make(chan bool)
 
-	go server.dumpInput(reader, input, readFinish)
-	go server.dumpOutput(connection, output, writeFinish)
+	go dumpInput(reader, input, readFinish)
+	go dumpOutput(connection, output, writeFinish)
 	<-writeFinish
 
 	return nil
 }
 
-func (server *SocksServer) dumpInput(reader io.Reader, input chan<- []byte, finish chan<- bool) {
+func dumpInput(reader io.Reader, input chan<- []byte, finish chan<- bool) {
 	v2net.ReaderToChan(input, reader)
 	close(input)
-	log.Debug("Socks input closed")
-	finish <- true
+	close(finish)
 }
 
-func (server *SocksServer) dumpOutput(writer io.Writer, output <-chan []byte, finish chan<- bool) {
+func dumpOutput(writer io.Writer, output <-chan []byte, finish chan<- bool) {
 	v2net.ChanToWriter(writer, output)
-	log.Debug("Socks output closed")
-	finish <- true
+	close(finish)
 }

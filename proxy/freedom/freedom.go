@@ -46,7 +46,13 @@ func (vconn *FreedomConnection) Start(ray core.OutboundRay) error {
 
 	go dumpInput(conn, input, writeFinish)
 	go dumpOutput(conn, output, readFinish)
-	go closeConn(conn, readFinish, writeFinish)
+
+	<-writeFinish
+	if tcpConn, ok := conn.(*net.TCPConn); ok {
+		tcpConn.CloseWrite()
+	}
+	<-readFinish
+	conn.Close()
 	return nil
 }
 
@@ -59,13 +65,4 @@ func dumpOutput(conn net.Conn, output chan<- []byte, finish chan<- bool) {
 	v2net.ReaderToChan(output, conn)
 	close(output)
 	close(finish)
-}
-
-func closeConn(conn net.Conn, readFinish <-chan bool, writeFinish <-chan bool) {
-	<-writeFinish
-	if tcpConn, ok := conn.(*net.TCPConn); ok {
-		tcpConn.CloseWrite()
-	}
-	<-readFinish
-	conn.Close()
 }
