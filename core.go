@@ -2,7 +2,7 @@
 package core
 
 const (
-	Version  = "0.5"
+	Version  = "0.6"
 	Codename = "Post Apocalypse"
 	Intro    = "A stable and unbreakable connection for everyone."
 )
