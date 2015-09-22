@@ -18,7 +18,7 @@ function build {
   fi
   mkdir -p $REL_PATH/config
   cp -R $GOPATH/src/github.com/v2ray/v2ray-core/release/config/* $REL_PATH/config/
-  GOOS=${GOOS} GOARCH=${GOARCH} go build -o ${TARGET} -compiler gc github.com/v2ray/v2ray-core/release/server
+  GOOS=${GOOS} GOARCH=${GOARCH} go build -o ${TARGET} -compiler gc -ldflags "-s" github.com/v2ray/v2ray-core/release/server
   
   ZIP_FILE=$BIN_PATH/v2ray${SUFFIX}.zip
   if [ -f $ZIP_FILE ]; then
