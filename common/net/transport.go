@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	bufferSize = 32 * 1024
+	bufferSize = 4 * 1024
 )
 
 // ReaderToChan dumps all content from a given reader to a chan by constantly reading it until EOF.
