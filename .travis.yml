@@ -20,7 +20,13 @@ deploy:
   provider: releases
   api_key: 
     secure: "Nbno1ibFpq0DC6y0mkN6NFTbDQinRAEQo2Jl5lvsbiaX9m4CK59xG8XOcmZ3mqqdeioj6m9X5BVe2UtCZjmXmnyPq0FYNFHAPTfd2VrcOpi0fWLD9ndTYAsqjxrqPGK62XVjPbG8U2pGdq2yCOb0qQ9DlahDhVIMzQ/GYuRDps25fPGftepdPwlrwOfYCIvAHoi3GEozuS67WNEx/YtmZTce/2Qebdmwf44hUNaQibeXEspu9wQcp9M/i7aTuX/tUbn7rVCQ4TfoIJU1C1qKedUw0QYMjqP08Wn6UjwwhbblsJKFv8Kc0nx+i2K9CvvLyaBBIVY2Ggxj4Niy+X4VbyWWzdKx+0FXlmKh3U/hJdMZU3OrnwliBns2X3tCHSq7/+7ynLs3UZ4wCkCl7rQYucJ2mlvGquohQV6MX2vjl73y+pYljf+PKYbSDBb7iUOjllisRD+HmDmGQl81BvdEpN/K/BlfsTwHoHxsALSTjRljSngH51SUvjnaVbi/JolJ3lomTr1vCHl4WUiQVLnh7O2Cg7QLNMNieoblnh9yDQG9wC4xuzOJ/AaxRd/pRZMeIooQ1zsHOe+47C1YAep88b+9xtRqVMozAjk/XgNzWjuT2R8G7lZDq0mL9VajD/NUjM3Yrswoft9A3DRmR+lIFJR+fJb8tNf+k1OczE4lesg="
-  file: "$GOPATH/bin/v2ray.zip"
+  file:
+    - "$GOPATH/bin/v2ray-macos.zip"
+    - "$GOPATH/bin/v2ray-windows-64.zip"
+    - "$GOPATH/bin/v2ray-windows-32.zip"
+    - "$GOPATH/bin/v2ray-linux-64.zip"
+    - "$GOPATH/bin/v2ray-linux-32.zip"
+    - "$GOPATH/bin/v2ray-armv6.zip"
   skip_cleanup: true
   on:
     tags: true
