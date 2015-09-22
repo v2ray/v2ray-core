@@ -183,18 +183,25 @@ func handleResponse(conn *net.TCPConn, request *protocol.VMessRequest, output ch
 }
 
 type VMessOutboundHandlerFactory struct {
+	servers []VNextServer
 }
 
-func (factory *VMessOutboundHandlerFactory) Create(vp *core.Point, rawConfig []byte, firstPacket v2net.Packet) (core.OutboundConnectionHandler, error) {
+func (factory *VMessOutboundHandlerFactory) Initialize(rawConfig []byte) error {
 	config, err := loadOutboundConfig(rawConfig)
 	if err != nil {
 		panic(log.Error("Failed to load VMess outbound config: %v", err))
+		return err
 	}
 	servers := make([]VNextServer, 0, len(config.VNextList))
 	for _, server := range config.VNextList {
 		servers = append(servers, server.ToVNextServer())
 	}
-	return NewVMessOutboundHandler(vp, servers, firstPacket), nil
+	factory.servers = servers
+	return nil
+}
+
+func (factory *VMessOutboundHandlerFactory) Create(vp *core.Point, firstPacket v2net.Packet) (core.OutboundConnectionHandler, error) {
+	return NewVMessOutboundHandler(vp, factory.servers, firstPacket), nil
 }
 
 func init() {

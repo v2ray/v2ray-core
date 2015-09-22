@@ -64,7 +64,8 @@ type InboundConnectionHandler interface {
 }
 
 type OutboundConnectionHandlerFactory interface {
-	Create(VP *Point, config []byte, firstPacket v2net.Packet) (OutboundConnectionHandler, error)
+	Initialize(config []byte) error
+	Create(VP *Point, firstPacket v2net.Packet) (OutboundConnectionHandler, error)
 }
 
 type OutboundConnectionHandler interface {
@@ -77,6 +78,9 @@ func (vp *Point) Start() error {
 	if vp.port <= 0 {
 		return log.Error("Invalid port %d", vp.port)
 	}
+
+	vp.ochFactory.Initialize(vp.ochConfig)
+
 	inboundConnectionHandler, err := vp.ichFactory.Create(vp, vp.ichConfig)
 	if err != nil {
 		return err
@@ -88,7 +92,7 @@ func (vp *Point) Start() error {
 func (p *Point) DispatchToOutbound(packet v2net.Packet) InboundRay {
 	ray := NewRay()
 	// TODO: handle error
-	och, _ := p.ochFactory.Create(p, p.ochConfig, packet)
+	och, _ := p.ochFactory.Create(p, packet)
 	_ = och.Start(ray)
 	return ray
 }
