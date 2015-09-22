@@ -45,7 +45,7 @@ func TestVMessSerialization(t *testing.T) {
 	request.Address = v2net.DomainAddress("v2ray.com", 80)
 
 	mockTime := int64(1823730)
-	buffer, err := request.ToBytes(user.NewTimeHash(user.HMACHash{}), func(base int64, delta int) int64 { return mockTime })
+	buffer, err := request.ToBytes(user.NewTimeHash(user.HMACHash{}), func(base int64, delta int) int64 { return mockTime }, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,6 +85,6 @@ func BenchmarkVMessRequestWriting(b *testing.B) {
 	request.Address = v2net.DomainAddress("v2ray.com", 80)
 
 	for i := 0; i < b.N; i++ {
-		request.ToBytes(user.NewTimeHash(user.HMACHash{}), user.GenerateRandomInt64InRange)
+		request.ToBytes(user.NewTimeHash(user.HMACHash{}), user.GenerateRandomInt64InRange, nil)
 	}
 }

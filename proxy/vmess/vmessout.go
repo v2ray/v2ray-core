@@ -130,7 +130,8 @@ func handleRequest(conn *net.TCPConn, request *protocol.VMessRequest, input <-ch
 		return
 	}
 
-	buffer, err := request.ToBytes(user.NewTimeHash(user.HMACHash{}), user.GenerateRandomInt64InRange)
+	buffer := make([]byte, 0, 2*1024)
+	buffer, err = request.ToBytes(user.NewTimeHash(user.HMACHash{}), user.GenerateRandomInt64InRange, buffer)
 	if err != nil {
 		log.Error("VMessOut: Failed to serialize VMess request: %v", err)
 		return

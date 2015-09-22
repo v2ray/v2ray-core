@@ -194,8 +194,10 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 }
 
 // ToBytes returns a VMessRequest in the form of byte array.
-func (request *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 user.RandomInt64InRange) ([]byte, error) {
-	buffer := make([]byte, 0, 300)
+func (request *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 user.RandomInt64InRange, buffer []byte) ([]byte, error) {
+	if buffer == nil {
+		buffer = make([]byte, 0, 300)
+	}
 
 	counter := randomRangeInt64(time.Now().UTC().Unix(), 30)
 	hash := idHash.Hash(request.UserId.Bytes, counter)
