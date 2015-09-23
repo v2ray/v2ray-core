@@ -41,7 +41,7 @@ func TestTimedStringMap(t *testing.T) {
 	v2, ok = m.Get("Key2")
 	assert.Bool(ok).IsFalse()
 
-	m.Set("Key1", "Value1", nowSec+10)
+	m.Set("Key1", "Value1", time.Now().UTC().Unix()+10)
 	v1, ok = m.Get("Key1")
 	assert.Bool(ok).IsTrue()
 	assert.String(v1.(string)).Equals("Value1")
