@@ -178,20 +178,20 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	readFinish.Lock()
 	writeFinish.Lock()
 
-	go dumpInput(reader, input, readFinish)
-	go dumpOutput(connection, output, writeFinish)
+	go dumpInput(reader, input, &readFinish)
+	go dumpOutput(connection, output, &writeFinish)
 	writeFinish.Lock()
 
 	return nil
 }
 
-func dumpInput(reader io.Reader, input chan<- []byte, finish sync.Mutex) {
+func dumpInput(reader io.Reader, input chan<- []byte, finish *sync.Mutex) {
 	v2net.ReaderToChan(input, reader)
 	finish.Unlock()
 	close(input)
 }
 
-func dumpOutput(writer io.Writer, output <-chan []byte, finish sync.Mutex) {
+func dumpOutput(writer io.Writer, output <-chan []byte, finish *sync.Mutex) {
 	v2net.ChanToWriter(writer, output)
 	finish.Unlock()
 }

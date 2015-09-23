@@ -82,7 +82,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 	readFinish.Lock()
 	writeFinish.Lock()
 
-	go handleInput(request, connection, input, readFinish)
+	go handleInput(request, connection, input, &readFinish)
 
 	responseKey := md5.Sum(request.RequestKey[:])
 	responseIV := md5.Sum(request.RequestIV[:])
@@ -100,7 +100,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 	if data, open := <-output; open {
 		buffer = append(buffer, data...)
 		responseWriter.Write(buffer)
-		go handleOutput(request, responseWriter, output, writeFinish)
+		go handleOutput(request, responseWriter, output, &writeFinish)
 		writeFinish.Lock()
 	}
 
@@ -112,7 +112,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 	return nil
 }
 
-func handleInput(request *protocol.VMessRequest, reader io.Reader, input chan<- []byte, finish sync.Mutex) {
+func handleInput(request *protocol.VMessRequest, reader io.Reader, input chan<- []byte, finish *sync.Mutex) {
 	defer close(input)
 	defer finish.Unlock()
 
@@ -125,7 +125,7 @@ func handleInput(request *protocol.VMessRequest, reader io.Reader, input chan<- 
 	v2net.ReaderToChan(input, requestReader)
 }
 
-func handleOutput(request *protocol.VMessRequest, writer io.Writer, output <-chan []byte, finish sync.Mutex) {
+func handleOutput(request *protocol.VMessRequest, writer io.Writer, output <-chan []byte, finish *sync.Mutex) {
 	v2net.ChanToWriter(writer, output)
 	finish.Unlock()
 }

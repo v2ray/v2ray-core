@@ -114,8 +114,8 @@ func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ra
 	requestFinish.Lock()
 	responseFinish.Lock()
 
-	go handleRequest(conn, request, input, requestFinish)
-	go handleResponse(conn, request, output, responseFinish)
+	go handleRequest(conn, request, input, &requestFinish)
+	go handleResponse(conn, request, output, &responseFinish)
 
 	requestFinish.Lock()
 	conn.CloseWrite()
@@ -123,7 +123,7 @@ func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ra
 	return nil
 }
 
-func handleRequest(conn *net.TCPConn, request *protocol.VMessRequest, input <-chan []byte, finish sync.Mutex) {
+func handleRequest(conn *net.TCPConn, request *protocol.VMessRequest, input <-chan []byte, finish *sync.Mutex) {
 	defer finish.Unlock()
 	encryptRequestWriter, err := v2io.NewAesEncryptWriter(request.RequestKey[:], request.RequestIV[:], conn)
 	if err != nil {
@@ -155,7 +155,7 @@ func handleRequest(conn *net.TCPConn, request *protocol.VMessRequest, input <-ch
 	return
 }
 
-func handleResponse(conn *net.TCPConn, request *protocol.VMessRequest, output chan<- []byte, finish sync.Mutex) {
+func handleResponse(conn *net.TCPConn, request *protocol.VMessRequest, output chan<- []byte, finish *sync.Mutex) {
 	defer finish.Unlock()
 	defer close(output)
 	responseKey := md5.Sum(request.RequestKey[:])

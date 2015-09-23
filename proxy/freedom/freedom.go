@@ -46,8 +46,8 @@ func (vconn *FreedomConnection) Start(ray core.OutboundRay) error {
 	readMutex.Lock()
 	writeMutex.Lock()
 
-	go dumpInput(conn, input, writeMutex)
-	go dumpOutput(conn, output, readMutex)
+	go dumpInput(conn, input, &writeMutex)
+	go dumpOutput(conn, output, &readMutex)
 
 	go func() {
 		writeMutex.Lock()
@@ -61,12 +61,12 @@ func (vconn *FreedomConnection) Start(ray core.OutboundRay) error {
 	return nil
 }
 
-func dumpInput(conn net.Conn, input <-chan []byte, finish sync.Mutex) {
+func dumpInput(conn net.Conn, input <-chan []byte, finish *sync.Mutex) {
 	v2net.ChanToWriter(conn, input)
 	finish.Unlock()
 }
 
-func dumpOutput(conn net.Conn, output chan<- []byte, finish sync.Mutex) {
+func dumpOutput(conn net.Conn, output chan<- []byte, finish *sync.Mutex) {
 	v2net.ReaderToChan(output, conn)
 	finish.Unlock()
 	close(output)
