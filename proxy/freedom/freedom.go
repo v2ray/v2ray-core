@@ -2,6 +2,7 @@ package freedom
 
 import (
 	"net"
+	"sync"
 
 	"github.com/v2ray/v2ray-core"
 	"github.com/v2ray/v2ray-core/common/log"
@@ -41,31 +42,32 @@ func (vconn *FreedomConnection) Start(ray core.OutboundRay) error {
 
 	input := ray.OutboundInput()
 	output := ray.OutboundOutput()
-	readFinish := make(chan bool)
-	writeFinish := make(chan bool)
+	var readMutex, writeMutex sync.Mutex
+	readMutex.Lock()
+	writeMutex.Lock()
 
-	go dumpInput(conn, input, writeFinish)
-	go dumpOutput(conn, output, readFinish)
+	go dumpInput(conn, input, writeMutex)
+	go dumpOutput(conn, output, readMutex)
 
 	go func() {
-		<-writeFinish
+		writeMutex.Lock()
 		if tcpConn, ok := conn.(*net.TCPConn); ok {
 			tcpConn.CloseWrite()
 		}
-		<-readFinish
+		readMutex.Lock()
 		conn.Close()
 	}()
 
 	return nil
 }
 
-func dumpInput(conn net.Conn, input <-chan []byte, finish chan<- bool) {
+func dumpInput(conn net.Conn, input <-chan []byte, finish sync.Mutex) {
 	v2net.ChanToWriter(conn, input)
-	close(finish)
+	finish.Unlock()
 }
 
-func dumpOutput(conn net.Conn, output chan<- []byte, finish chan<- bool) {
+func dumpOutput(conn net.Conn, output chan<- []byte, finish sync.Mutex) {
 	v2net.ReaderToChan(output, conn)
+	finish.Unlock()
 	close(output)
-	close(finish)
 }

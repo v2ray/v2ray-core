@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	mrand "math/rand"
 	"net"
+	"sync"
 
 	"github.com/v2ray/v2ray-core"
 	v2io "github.com/v2ray/v2ray-core/common/io"
@@ -109,21 +110,21 @@ func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ra
 
 	input := ray.OutboundInput()
 	output := ray.OutboundOutput()
-
-	requestFinish := make(chan bool)
-	responseFinish := make(chan bool)
+	var requestFinish, responseFinish sync.Mutex
+	requestFinish.Lock()
+	responseFinish.Lock()
 
 	go handleRequest(conn, request, input, requestFinish)
 	go handleResponse(conn, request, output, responseFinish)
 
-	<-requestFinish
+	requestFinish.Lock()
 	conn.CloseWrite()
-	<-responseFinish
+	responseFinish.Lock()
 	return nil
 }
 
-func handleRequest(conn *net.TCPConn, request *protocol.VMessRequest, input <-chan []byte, finish chan<- bool) {
-	defer close(finish)
+func handleRequest(conn *net.TCPConn, request *protocol.VMessRequest, input <-chan []byte, finish sync.Mutex) {
+	defer finish.Unlock()
 	encryptRequestWriter, err := v2io.NewAesEncryptWriter(request.RequestKey[:], request.RequestIV[:], conn)
 	if err != nil {
 		log.Error("VMessOut: Failed to create encrypt writer: %v", err)
@@ -154,8 +155,8 @@ func handleRequest(conn *net.TCPConn, request *protocol.VMessRequest, input <-ch
 	return
 }
 
-func handleResponse(conn *net.TCPConn, request *protocol.VMessRequest, output chan<- []byte, finish chan<- bool) {
-	defer close(finish)
+func handleResponse(conn *net.TCPConn, request *protocol.VMessRequest, output chan<- []byte, finish sync.Mutex) {
+	defer finish.Unlock()
 	defer close(output)
 	responseKey := md5.Sum(request.RequestKey[:])
 	responseIV := md5.Sum(request.RequestIV[:])

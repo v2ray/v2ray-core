@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"strconv"
+	"sync"
 
 	"github.com/v2ray/v2ray-core"
 	"github.com/v2ray/v2ray-core/common/log"
@@ -173,23 +174,24 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	ray := server.vPoint.DispatchToOutbound(v2net.NewTCPPacket(dest))
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
-	readFinish := make(chan bool)
-	writeFinish := make(chan bool)
+	var readFinish, writeFinish sync.Mutex
+	readFinish.Lock()
+	writeFinish.Lock()
 
 	go dumpInput(reader, input, readFinish)
 	go dumpOutput(connection, output, writeFinish)
-	<-writeFinish
+	writeFinish.Lock()
 
 	return nil
 }
 
-func dumpInput(reader io.Reader, input chan<- []byte, finish chan<- bool) {
+func dumpInput(reader io.Reader, input chan<- []byte, finish sync.Mutex) {
 	v2net.ReaderToChan(input, reader)
+	finish.Unlock()
 	close(input)
-	close(finish)
 }
 
-func dumpOutput(writer io.Writer, output <-chan []byte, finish chan<- bool) {
+func dumpOutput(writer io.Writer, output <-chan []byte, finish sync.Mutex) {
 	v2net.ChanToWriter(writer, output)
-	close(finish)
+	finish.Unlock()
 }

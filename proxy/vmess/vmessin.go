@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/v2ray/v2ray-core"
@@ -77,9 +78,9 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 	ray := handler.vPoint.DispatchToOutbound(v2net.NewTCPPacket(request.Destination()))
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
-
-	readFinish := make(chan bool)
-	writeFinish := make(chan bool)
+	var readFinish, writeFinish sync.Mutex
+	readFinish.Lock()
+	writeFinish.Lock()
 
 	go handleInput(request, connection, input, readFinish)
 
@@ -100,20 +101,20 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 		buffer = append(buffer, data...)
 		responseWriter.Write(buffer)
 		go handleOutput(request, responseWriter, output, writeFinish)
-		<-writeFinish
+		writeFinish.Lock()
 	}
 
 	if tcpConn, ok := connection.(*net.TCPConn); ok {
 		tcpConn.CloseWrite()
 	}
-	<-readFinish
+	readFinish.Lock()
 
 	return nil
 }
 
-func handleInput(request *protocol.VMessRequest, reader io.Reader, input chan<- []byte, finish chan<- bool) {
+func handleInput(request *protocol.VMessRequest, reader io.Reader, input chan<- []byte, finish sync.Mutex) {
 	defer close(input)
-	defer close(finish)
+	defer finish.Unlock()
 
 	requestReader, err := v2io.NewAesDecryptReader(request.RequestKey[:], request.RequestIV[:], reader)
 	if err != nil {
@@ -124,9 +125,9 @@ func handleInput(request *protocol.VMessRequest, reader io.Reader, input chan<- 
 	v2net.ReaderToChan(input, requestReader)
 }
 
-func handleOutput(request *protocol.VMessRequest, writer io.Writer, output <-chan []byte, finish chan<- bool) {
+func handleOutput(request *protocol.VMessRequest, writer io.Writer, output <-chan []byte, finish sync.Mutex) {
 	v2net.ChanToWriter(writer, output)
-	close(finish)
+	finish.Unlock()
 }
 
 type VMessInboundHandlerFactory struct {
