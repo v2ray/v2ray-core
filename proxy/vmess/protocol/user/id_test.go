@@ -13,5 +13,5 @@ func TestUUIDToID(t *testing.T) {
 	expectedBytes := []byte{0x24, 0x18, 0xd0, 0x87, 0x64, 0x8d, 0x49, 0x90, 0x86, 0xe8, 0x19, 0xdc, 0xa1, 0xd0, 0x06, 0xd3}
 
 	actualBytes, _ := NewID(uuid)
-	assert.Bytes(actualBytes.Bytes).Named("UUID").Equals(expectedBytes)
+	assert.Bytes(actualBytes.Bytes[:]).Named("UUID").Equals(expectedBytes)
 }

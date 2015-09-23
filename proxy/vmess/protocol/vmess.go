@@ -172,7 +172,7 @@ func (request *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 u
 	}
 
 	counter := randomRangeInt64(time.Now().UTC().Unix(), 30)
-	hash := idHash.Hash(request.UserId.Bytes, counter)
+	hash := idHash.Hash(request.UserId.Bytes[:], counter)
 
 	log.Debug("Writing userhash: %v", hash)
 	buffer = append(buffer, hash...)

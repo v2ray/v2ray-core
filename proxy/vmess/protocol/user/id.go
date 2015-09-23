@@ -14,8 +14,8 @@ const (
 // The ID of en entity, in the form of an UUID.
 type ID struct {
 	String string
-	Bytes  []byte
-	cmdKey []byte
+	Bytes  [16]byte
+	cmdKey [16]byte
 }
 
 func NewID(id string) (ID, error) {
@@ -25,27 +25,25 @@ func NewID(id string) (ID, error) {
 	}
 
 	md5hash := md5.New()
-	md5hash.Write(idBytes)
+	md5hash.Write(idBytes[:])
 	md5hash.Write([]byte("c48619fe-8f02-49e0-b9e9-edf763e17e21"))
 	cmdKey := md5.Sum(nil)
 
 	return ID{
 		String: id,
 		Bytes:  idBytes,
-		cmdKey: cmdKey[:],
+		cmdKey: cmdKey,
 	}, nil
 }
 
 func (v ID) CmdKey() []byte {
-	return v.cmdKey
+	return v.cmdKey[:]
 }
 
 var byteGroups = []int{8, 4, 4, 4, 12}
 
 // TODO: leverage a full functional UUID library
-func UUIDToID(uuid string) (v []byte, err error) {
-	v = make([]byte, 16)
-
+func UUIDToID(uuid string) (v [16]byte, err error) {
 	text := []byte(uuid)
 	if len(text) < 32 {
 		err = log.Error("uuid: invalid UUID string: %s", text)
