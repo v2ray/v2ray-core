@@ -42,15 +42,17 @@ func (queue *timedQueue) Pop() interface{} {
 
 type TimedStringMap struct {
 	timedQueue
-	access   sync.RWMutex
-	data     map[string]interface{}
-	interval int
+	queueMutex sync.Mutex
+	dataMutext sync.RWMutex
+	data       map[string]interface{}
+	interval   int
 }
 
 func NewTimedStringMap(updateInterval int) *TimedStringMap {
 	m := &TimedStringMap{
 		timedQueue: make([]*timedQueueEntry, 0, 1024),
-		access:     sync.RWMutex{},
+		queueMutex: sync.Mutex{},
+		dataMutext: sync.RWMutex{},
 		data:       make(map[string]interface{}, 1024),
 		interval:   updateInterval,
 	}
@@ -74,33 +76,36 @@ func (m *TimedStringMap) cleanup(tick <-chan time.Time) {
 			if entry.timeSec > nowSec {
 				break
 			}
-			m.access.Lock()
+			m.queueMutex.Lock()
 			entry = heap.Pop(&m.timedQueue).(*timedQueueEntry)
-			m.access.Unlock()
+			m.queueMutex.Unlock()
 			m.Remove(entry.value.(string))
 		}
 	}
 }
 
 func (m *TimedStringMap) Get(key string) (interface{}, bool) {
-	m.access.RLock()
+	m.dataMutext.RLock()
 	value, ok := m.data[key]
-	m.access.RUnlock()
+	m.dataMutext.RUnlock()
 	return value, ok
 }
 
 func (m *TimedStringMap) Set(key string, value interface{}, time2Delete int64) {
-	m.access.Lock()
+	m.dataMutext.Lock()
 	m.data[key] = value
+	m.dataMutext.Unlock()
+
+	m.queueMutex.Lock()
 	heap.Push(&m.timedQueue, &timedQueueEntry{
 		timeSec: time2Delete,
 		value:   key,
 	})
-	m.access.Unlock()
+	m.queueMutex.Unlock()
 }
 
 func (m *TimedStringMap) Remove(key string) {
-	m.access.Lock()
+	m.dataMutext.Lock()
 	delete(m.data, key)
-	m.access.Unlock()
+	m.dataMutext.Unlock()
 }
