@@ -9,6 +9,7 @@ before_install:
   - go get github.com/mattn/goveralls
 
 script:
+    - go test github.com/v2ray/v2ray-core/...
     - ./testing/coverage/coverall
 
 env:
