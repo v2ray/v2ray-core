@@ -23,7 +23,7 @@ func TestTimedStringMap(t *testing.T) {
 	assert.Bool(ok).IsTrue()
 	assert.String(v2.(string)).Equals("Value2")
 
-	tick := time.Tick(3 * time.Second)
+	tick := time.Tick(4 * time.Second)
 	<-tick
 
 	v1, ok = m.Get("Key1")
