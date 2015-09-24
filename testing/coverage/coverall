@@ -19,6 +19,7 @@ function test_package {
 
 touch coverall.out
 
+test_package "common/errors" "common/errors"
 test_package "common/net" "common/net"
 test_package "common/collect" "common/collect"
 test_package "config/json" "config/json"
