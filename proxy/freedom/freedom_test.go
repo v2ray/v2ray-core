@@ -3,6 +3,7 @@ package freedom
 import (
 	"io/ioutil"
 	"net"
+	"sync"
 	"testing"
 
 	"golang.org/x/net/proxy"
@@ -20,6 +21,9 @@ func TestSocksTcpConnect(t *testing.T) {
 	data2Send := "Data to be sent to remote"
 	data2Return := "Data to be returned to local"
 
+	var serverReady sync.Mutex
+	serverReady.Lock()
+
 	go func() {
 		listener, err := net.ListenTCP("tcp", &net.TCPAddr{
 			IP:   []byte{0, 0, 0, 0},
@@ -27,6 +31,8 @@ func TestSocksTcpConnect(t *testing.T) {
 			Zone: "",
 		})
 		assert.Error(err).IsNil()
+
+		serverReady.Unlock()
 		conn, err := listener.Accept()
 		assert.Error(err).IsNil()
 
@@ -64,6 +70,8 @@ func TestSocksTcpConnect(t *testing.T) {
 
 	socks5Client, err := proxy.SOCKS5("tcp", "127.0.0.1:38724", nil, proxy.Direct)
 	assert.Error(err).IsNil()
+
+	serverReady.Lock()
 
 	targetServer := "127.0.0.1:48274"
 	conn, err := socks5Client.Dial("tcp", targetServer)
