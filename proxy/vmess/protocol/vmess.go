@@ -5,11 +5,11 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/binary"
-	"errors"
 	"hash/fnv"
 	"io"
 	"time"
 
+	"github.com/v2ray/v2ray-core/common/errors"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -27,12 +27,6 @@ const (
 	Version = byte(0x01)
 
 	blockSize = 16
-)
-
-var (
-	ErrorInvalidUser   = errors.New("Invalid User")
-	ErrorInvalidVerion = errors.New("Invalid Version")
-	ErrorInvalidHash   = errors.New("Invalid Hash")
 )
 
 // VMessRequest implements the request message of VMess protocol. It only contains the header of a
@@ -82,7 +76,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 
 	userId, timeSec, valid := r.vUserSet.GetUser(buffer[:nBytes])
 	if !valid {
-		return nil, ErrorInvalidUser
+		return nil, errors.NewAuthenticationError(buffer[:nBytes])
 	}
 
 	aesCipher, err := aes.NewCipher(userId.CmdKey())
@@ -108,8 +102,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	}
 
 	if request.Version != Version {
-		log.Error("Unknown VMess version %d", request.Version)
-		return nil, ErrorInvalidVerion
+		return nil, errors.NewProtocolVersionError(int(request.Version))
 	}
 
 	copy(request.RequestIV[:], buffer[1:17])       // 16 bytes
@@ -159,7 +152,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	expectedHash := binary.BigEndian.Uint32(buffer[bufferLen : bufferLen+4])
 
 	if actualHash != expectedHash {
-		return nil, ErrorInvalidHash
+		return nil, errors.NewCorruptedPacketError()
 	}
 
 	return request, nil

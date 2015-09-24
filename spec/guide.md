@@ -92,7 +92,10 @@ Point Server B
 
 ./server --config="vpoint_vmess_freedom.json 的绝对路径"
 
-## 测试服务器可用性：
+## 测试服务器可用性
 
 curl -v --socks5-hostname 127.0.0.1:1080 https://www.google.com/
 
+## 调试
+
+使用过程中遇到任何问题，请参考[错误信息](https://github.com/V2Ray/v2ray-core/blob/master/spec/errors.md)。

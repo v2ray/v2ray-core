@@ -4,6 +4,7 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/v2ray/v2ray-core/common/errors"
 	"github.com/v2ray/v2ray-core/common/log"
 )
 
@@ -41,7 +42,8 @@ func IPAddress(ip []byte, port uint16) Address {
 			},
 		}
 	default:
-		panic(log.Error("Unknown IP format: %v", ip))
+		log.Error(errors.NewIPFormatError(ip).Error())
+		return nil
 	}
 }
 
