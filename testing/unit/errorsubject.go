@@ -1,5 +1,10 @@
 package unit
 
+import (
+	"fmt"
+	"strings"
+)
+
 type ErrorSubject struct {
 	*Subject
 	value error
@@ -34,5 +39,12 @@ func (subject *ErrorSubject) Equals(expectation error) {
 func (subject *ErrorSubject) IsNil() {
 	if subject.value != nil {
 		subject.FailWithMessage("Not true that " + subject.DisplayString() + " is nil.")
+	}
+}
+
+func (subject *ErrorSubject) HasCode(code int) {
+	errorPrefix := fmt.Sprintf("[Error 0x%04X]", code)
+	if !strings.Contains(subject.value.Error(), errorPrefix) {
+		subject.FailWithMessage(fmt.Sprintf("Not ture that %s has error code 0x%04X.", subject.DisplayString(), code))
 	}
 }
