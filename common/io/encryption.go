@@ -3,8 +3,6 @@ package io
 import (
 	"crypto/cipher"
 	"io"
-
-	"github.com/v2ray/v2ray-core/common/log"
 )
 
 // CryptionReader is a general purpose reader that applies a stream cipher on top of a regular reader.

@@ -168,7 +168,7 @@ func handleResponse(conn *net.TCPConn, request *protocol.VMessRequest, output ch
 	}
 
 	response := protocol.VMessResponse{}
-	nBytes, err := decryptResponseReader.Read(response[:])
+	_, err = decryptResponseReader.Read(response[:])
 	if err != nil {
 		//log.Error("VMessOut: Failed to read VMess response (%d bytes): %v", nBytes, err)
 		return
