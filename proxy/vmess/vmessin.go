@@ -54,10 +54,6 @@ func (handler *VMessInboundHandler) AcceptConnections(listener net.Listener) err
 		if err != nil {
 			return log.Error("Failed to accpet connection: %s", err.Error())
 		}
-		if tcpConn, ok := connection.(*net.TCPConn); ok {
-			tcpConn.SetKeepAlive(true)
-			tcpConn.SetKeepAlivePeriod(4 * time.Second)
-		}
 		go handler.HandleConnection(connection)
 	}
 	return nil
