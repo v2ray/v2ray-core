@@ -2,7 +2,8 @@ package unit
 
 import (
 	"fmt"
-	"strings"
+
+	"github.com/v2ray/v2ray-core/common/errors"
 )
 
 type ErrorSubject struct {
@@ -43,8 +44,7 @@ func (subject *ErrorSubject) IsNil() {
 }
 
 func (subject *ErrorSubject) HasCode(code int) {
-	errorPrefix := fmt.Sprintf("[Error 0x%04X]", code)
-	if !strings.Contains(subject.value.Error(), errorPrefix) {
+	if !errors.HasCode(subject.value, code) {
 		subject.FailWithMessage(fmt.Sprintf("Not ture that %s has error code 0x%04X.", subject.DisplayString(), code))
 	}
 }

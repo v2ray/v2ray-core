@@ -2,10 +2,9 @@ package protocol
 
 import (
 	"encoding/binary"
-	"errors"
-	"fmt"
 	"io"
 
+	"github.com/v2ray/v2ray-core/common/errors"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
@@ -23,22 +22,11 @@ const (
 	Socks4RequestRejected = byte(91)
 )
 
-var (
-	ErrorSocksVersion4 = errors.New("Using SOCKS version 4.")
-)
-
 // Authentication request header of Socks5 protocol
 type Socks5AuthenticationRequest struct {
 	version     byte
 	nMethods    byte
 	authMethods [256]byte
-}
-
-type Socks4AuthenticationRequest struct {
-	Version byte
-	Command byte
-	Port    uint16
-	IP      [4]byte
 }
 
 func (request *Socks5AuthenticationRequest) HasAuthMethod(method byte) bool {
@@ -54,11 +42,11 @@ func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, aut
 	buffer := make([]byte, 256)
 	nBytes, err := reader.Read(buffer)
 	if err != nil {
-		log.Error("Failed to read socks authentication: %v", err)
 		return
 	}
 	if nBytes < 2 {
-		err = fmt.Errorf("Expected 2 bytes read, but actaully %d bytes read", nBytes)
+		log.Info("Socks expected 2 bytes read, but only %d bytes read", nBytes)
+		err = errors.NewCorruptedPacketError()
 		return
 	}
 
@@ -67,24 +55,26 @@ func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, aut
 		auth4.Command = buffer[1]
 		auth4.Port = binary.BigEndian.Uint16(buffer[2:4])
 		copy(auth4.IP[:], buffer[4:8])
-		err = ErrorSocksVersion4
+		err = NewSocksVersion4Error()
 		return
 	}
 
 	auth.version = buffer[0]
 	if auth.version != socksVersion {
-		err = fmt.Errorf("Unknown SOCKS version %d", auth.version)
+		err = errors.NewProtocolVersionError(int(auth.version))
 		return
 	}
 
 	auth.nMethods = buffer[1]
 	if auth.nMethods <= 0 {
-		err = fmt.Errorf("Zero length of authentication methods")
+		log.Info("Zero length of authentication methods")
+		err = errors.NewCorruptedPacketError()
 		return
 	}
 
 	if nBytes-2 != int(auth.nMethods) {
-		err = fmt.Errorf("Unmatching number of auth methods, expecting %d, but got %d", auth.nMethods, nBytes)
+		log.Info("Unmatching number of auth methods, expecting %d, but got %d", auth.nMethods, nBytes)
+		err = errors.NewCorruptedPacketError()
 		return
 	}
 	copy(auth.authMethods[:], buffer[2:nBytes])
@@ -207,14 +197,13 @@ type Socks5Request struct {
 }
 
 func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
-
-	buffer := make([]byte, 4)
-	nBytes, err := reader.Read(buffer)
+	buffer := make([]byte, 256)
+	nBytes, err := reader.Read(buffer[:4])
 	if err != nil {
 		return
 	}
-	if nBytes < len(buffer) {
-		err = fmt.Errorf("Unable to read request.")
+	if nBytes < 4 {
+		err = errors.NewCorruptedPacketError()
 		return
 	}
 	request = &Socks5Request{
@@ -230,11 +219,10 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 			return
 		}
 		if nBytes != 4 {
-			err = fmt.Errorf("Unable to read IPv4 address.")
+			err = errors.NewCorruptedPacketError()
 			return
 		}
 	case AddrTypeDomain:
-		buffer = make([]byte, 256)
 		nBytes, err = reader.Read(buffer[0:1])
 		if err != nil {
 			return
@@ -246,7 +234,8 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 		}
 
 		if nBytes != int(domainLength) {
-			err = fmt.Errorf("Unable to read domain with %d bytes, expecting %d bytes", nBytes, domainLength)
+			log.Info("Unable to read domain with %d bytes, expecting %d bytes", nBytes, domainLength)
+			err = errors.NewCorruptedPacketError()
 			return
 		}
 		request.Domain = string(buffer[:domainLength])
@@ -256,21 +245,21 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 			return
 		}
 		if nBytes != 16 {
-			err = fmt.Errorf("Unable to read IPv4 address.")
+			err = errors.NewCorruptedPacketError()
 			return
 		}
 	default:
-		err = fmt.Errorf("Unexpected address type %d", request.AddrType)
+		log.Info("Unexpected address type %d", request.AddrType)
+		err = errors.NewCorruptedPacketError()
 		return
 	}
 
-	buffer = make([]byte, 2)
-	nBytes, err = reader.Read(buffer)
+	nBytes, err = reader.Read(buffer[:2])
 	if err != nil {
 		return
 	}
 	if nBytes != 2 {
-		err = fmt.Errorf("Unable to read port.")
+		err = errors.NewCorruptedPacketError()
 		return
 	}
 
@@ -351,9 +340,7 @@ func (r *Socks5Response) toBytes() []byte {
 	case 0x04:
 		buffer = append(buffer, r.IPv6[:]...)
 	}
-	portBuffer := make([]byte, 2)
-	binary.BigEndian.PutUint16(portBuffer, r.Port)
-	buffer = append(buffer, portBuffer...)
+	buffer = append(buffer, byte(r.Port>>8), byte(r.Port))
 	return buffer
 }
 

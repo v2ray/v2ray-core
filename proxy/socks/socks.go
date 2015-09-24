@@ -2,22 +2,23 @@ package socks
 
 import (
 	_ "bufio"
-	"errors"
+	e2 "errors"
 	"io"
 	"net"
 	"strconv"
 	"sync"
 
 	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/common/errors"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	protocol "github.com/v2ray/v2ray-core/proxy/socks/protocol"
+	"github.com/v2ray/v2ray-core/proxy/socks/protocol"
 )
 
 var (
-	ErrorAuthenticationFailed = errors.New("None of the authentication methods is allowed.")
-	ErrorCommandNotSupported  = errors.New("Client requested an unsupported command.")
-	ErrorInvalidUser          = errors.New("Invalid username or password.")
+	ErrorAuthenticationFailed = e2.New("None of the authentication methods is allowed.")
+	ErrorCommandNotSupported  = e2.New("Client requested an unsupported command.")
+	ErrorInvalidUser          = e2.New("Invalid username or password.")
 )
 
 // SocksServer is a SOCKS 5 proxy server
@@ -66,7 +67,7 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	reader := v2net.NewTimeOutReader(4, connection)
 
 	auth, auth4, err := protocol.ReadAuthentication(reader)
-	if err != nil && err != protocol.ErrorSocksVersion4 {
+	if err != nil && !errors.HasCode(err, 1000) {
 		log.Error("Error on reading authentication: %v", err)
 		return err
 	}
@@ -74,7 +75,7 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	var dest v2net.Destination
 
 	// TODO refactor this part
-	if err == protocol.ErrorSocksVersion4 {
+	if errors.HasCode(err, 1000) {
 		result := protocol.Socks4RequestGranted
 		if auth4.Command == protocol.CmdBind {
 			result = protocol.Socks4RequestRejected
