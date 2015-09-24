@@ -54,6 +54,10 @@ func (handler *VMessInboundHandler) AcceptConnections(listener net.Listener) err
 		if err != nil {
 			return log.Error("Failed to accpet connection: %s", err.Error())
 		}
+		if tcpConn, ok := connection.(*net.TCPConn); ok {
+			tcpConn.SetKeepAlive(true)
+			tcpConn.SetKeepAlivePeriod(4 * time.Second)
+		}
 		go handler.HandleConnection(connection)
 	}
 	return nil
@@ -62,18 +66,15 @@ func (handler *VMessInboundHandler) AcceptConnections(listener net.Listener) err
 func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error {
 	defer connection.Close()
 
-	reader := protocol.NewVMessRequestReader(handler.clients)
+	connReader := v2net.NewTimeOutReader(4, connection)
+	requestReader := protocol.NewVMessRequestReader(handler.clients)
 
-	// Timeout 4 seconds to prevent DoS attack
-	connection.SetReadDeadline(time.Now().Add(requestReadTimeOut))
-	request, err := reader.Read(connection)
+	request, err := requestReader.Read(connReader)
 	if err != nil {
 		log.Warning("VMessIn: Invalid request from (%s): %v", connection.RemoteAddr().String(), err)
 		return err
 	}
 	log.Debug("VMessIn: Received request for %s", request.Address.String())
-	// Clear read timeout
-	connection.SetReadDeadline(zeroTime)
 
 	ray := handler.vPoint.DispatchToOutbound(v2net.NewTCPPacket(request.Destination()))
 	input := ray.InboundInput()
@@ -82,7 +83,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 	readFinish.Lock()
 	writeFinish.Lock()
 
-	go handleInput(request, connection, input, &readFinish)
+	go handleInput(request, connReader, input, &readFinish)
 
 	responseKey := md5.Sum(request.RequestKey[:])
 	responseIV := md5.Sum(request.RequestIV[:])

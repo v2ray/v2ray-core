@@ -27,9 +27,6 @@ func (reader CryptionReader) Read(blocks []byte) (int, error) {
 	if nBytes > 0 {
 		reader.stream.XORKeyStream(blocks[:nBytes], blocks[:nBytes])
 	}
-	if err != nil && err != io.EOF {
-		log.Error("Error reading blocks: %v", err)
-	}
 	return nBytes, err
 }
 

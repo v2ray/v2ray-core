@@ -7,6 +7,7 @@ import (
 	"net"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/v2ray/v2ray-core"
 	"github.com/v2ray/v2ray-core/common/log"
@@ -56,6 +57,10 @@ func (server *SocksServer) AcceptConnections(listener net.Listener) {
 		if err != nil {
 			log.Error("Error on accepting socks connection: %v", err)
 		}
+		if tcpConn, ok := connection.(*net.TCPConn); ok {
+			tcpConn.SetKeepAlive(true)
+			tcpConn.SetKeepAlivePeriod(4 * time.Second)
+		}
 		go server.HandleConnection(connection)
 	}
 }
@@ -63,7 +68,7 @@ func (server *SocksServer) AcceptConnections(listener net.Listener) {
 func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	defer connection.Close()
 
-	reader := connection.(io.Reader)
+	reader := v2net.NewTimeOutReader(4, connection)
 
 	auth, auth4, err := protocol.ReadAuthentication(reader)
 	if err != nil && err != protocol.ErrorSocksVersion4 {
