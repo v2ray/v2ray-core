@@ -27,3 +27,28 @@ type Socks4AuthenticationRequest struct {
 	Port    uint16
 	IP      [4]byte
 }
+
+type Socks4AuthenticationResponse struct {
+	result byte
+	port   uint16
+	ip     []byte
+}
+
+func NewSocks4AuthenticationResponse(result byte, port uint16, ip []byte) *Socks4AuthenticationResponse {
+	return &Socks4AuthenticationResponse{
+		result: result,
+		port:   port,
+		ip:     ip,
+	}
+}
+
+func (r *Socks4AuthenticationResponse) ToBytes(buffer []byte) []byte {
+	if buffer == nil {
+		buffer = make([]byte, 8)
+	}
+	buffer[1] = r.result
+	buffer[2] = byte(r.port >> 8)
+	buffer[3] = byte(r.port)
+	copy(buffer[4:], r.ip)
+	return buffer
+}

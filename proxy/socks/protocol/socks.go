@@ -86,12 +86,6 @@ type Socks5AuthenticationResponse struct {
 	authMethod byte
 }
 
-type Socks4AuthenticationResponse struct {
-	result byte
-	port   uint16
-	ip     []byte
-}
-
 func NewAuthenticationResponse(authMethod byte) *Socks5AuthenticationResponse {
 	return &Socks5AuthenticationResponse{
 		version:    socksVersion,
@@ -99,26 +93,8 @@ func NewAuthenticationResponse(authMethod byte) *Socks5AuthenticationResponse {
 	}
 }
 
-func NewSocks4AuthenticationResponse(result byte, port uint16, ip []byte) *Socks4AuthenticationResponse {
-	return &Socks4AuthenticationResponse{
-		result: result,
-		port:   port,
-		ip:     ip,
-	}
-}
-
 func WriteAuthentication(writer io.Writer, r *Socks5AuthenticationResponse) error {
 	_, err := writer.Write([]byte{r.version, r.authMethod})
-	return err
-}
-
-func WriteSocks4AuthenticationResponse(writer io.Writer, r *Socks4AuthenticationResponse) error {
-	buffer := make([]byte, 8)
-	// buffer[0] is always 0
-	buffer[1] = r.result
-	binary.BigEndian.PutUint16(buffer[2:4], r.port)
-	copy(buffer[4:], r.ip)
-	_, err := writer.Write(buffer)
 	return err
 }
 
@@ -130,6 +106,10 @@ type Socks5UserPassRequest struct {
 
 func (request Socks5UserPassRequest) IsValid(username string, password string) bool {
 	return request.username == username && request.password == password
+}
+
+func (request Socks5UserPassRequest) AuthDetail() string {
+	return request.username + ":" + request.password
 }
 
 func ReadUserPassRequest(reader io.Reader) (request Socks5UserPassRequest, err error) {

@@ -87,3 +87,33 @@ func NewIPFormatError(ip []byte) IPFormatError {
 func (err IPFormatError) Error() string {
 	return fmt.Sprintf("%sInvalid IP %v", err.Prefix(), err.IP)
 }
+
+type ConfigurationError struct {
+	ErrorCode
+}
+
+var configurationErrorInstance = ConfigurationError{ErrorCode: 5}
+
+func NewConfigurationError() ConfigurationError {
+	return configurationErrorInstance
+}
+
+func (r ConfigurationError) Error() string {
+	return r.Prefix() + "Invalid configuration."
+}
+
+type InvalidOperationError struct {
+	ErrorCode
+	Operation string
+}
+
+func NewInvalidOperationError(operation string) InvalidOperationError {
+	return InvalidOperationError{
+		ErrorCode: 6,
+		Operation: operation,
+	}
+}
+
+func (r InvalidOperationError) Error() string {
+	return r.Prefix() + "Invalid operation: " + r.Operation
+}
