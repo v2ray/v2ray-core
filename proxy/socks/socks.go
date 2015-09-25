@@ -10,6 +10,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/errors"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	jsonconfig "github.com/v2ray/v2ray-core/proxy/socks/config/json"
 	"github.com/v2ray/v2ray-core/proxy/socks/protocol"
 )
 
@@ -17,11 +18,11 @@ import (
 type SocksServer struct {
 	accepting bool
 	vPoint    *core.Point
-	config    SocksConfig
+	config    jsonconfig.SocksConfig
 }
 
 func NewSocksServer(vp *core.Point, rawConfig []byte) *SocksServer {
-	config, err := loadConfig(rawConfig)
+	config, err := jsonconfig.Load(rawConfig)
 	if err != nil {
 		log.Error("Unable to load socks config: %v", err)
 		panic(errors.NewConfigurationError())
@@ -83,7 +84,7 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 		dest = v2net.NewTCPDestination(v2net.IPAddress(auth4.IP[:], auth4.Port))
 	} else {
 		expectedAuthMethod := protocol.AuthNotRequired
-		if server.config.AuthMethod == JsonAuthMethodUserPass {
+		if server.config.IsPassword() {
 			expectedAuthMethod = protocol.AuthUserPass
 		}
 
@@ -104,7 +105,7 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 			log.Error("Socks failed to write authentication: %v", err)
 			return err
 		}
-		if server.config.AuthMethod == JsonAuthMethodUserPass {
+		if server.config.IsPassword() {
 			upRequest, err := protocol.ReadUserPassRequest(reader)
 			if err != nil {
 				log.Error("Socks failed to read username and password: %v", err)
