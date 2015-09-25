@@ -1,10 +1,7 @@
 package protocol
 
 import (
-	_ "fmt"
-
 	"github.com/v2ray/v2ray-core/common/errors"
-	_ "github.com/v2ray/v2ray-core/common/log"
 )
 
 type SocksVersion4Error struct {
