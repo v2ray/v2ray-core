@@ -14,8 +14,8 @@ const (
 // The ID of en entity, in the form of an UUID.
 type ID struct {
 	String string
-	Bytes  [16]byte
-	cmdKey [16]byte
+	Bytes  [IDBytesLen]byte
+	cmdKey [IDBytesLen]byte
 }
 
 func NewID(id string) (ID, error) {
@@ -43,7 +43,7 @@ func (v ID) CmdKey() []byte {
 var byteGroups = []int{8, 4, 4, 4, 12}
 
 // TODO: leverage a full functional UUID library
-func UUIDToID(uuid string) (v [16]byte, err error) {
+func UUIDToID(uuid string) (v [IDBytesLen]byte, err error) {
 	text := []byte(uuid)
 	if len(text) < 32 {
 		err = log.Error("uuid: invalid UUID string: %s", text)
