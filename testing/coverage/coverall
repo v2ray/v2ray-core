@@ -22,7 +22,7 @@ for DIR in $(find * -type d -not -path "*.git*"); do
   fi
 done
 
-cat coverall.out | sort -t: -k1 | uniq -u > coverallsorted.out
+cat coverall.out | sort -t: -k1 > coverallsorted.out
 echo "mode: set" | cat - coverallsorted.out > coverall.out
 rm coverallsorted.out
 
