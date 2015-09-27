@@ -17,7 +17,7 @@
 2. 安装 golang：sudo pacman -S go
    1. export GOPATH=$HOME/work
 3. go get github.com/v2ray/v2ray-core
-4. go build github.com/v2ray/v2ray-core/release/server
+4. go build -o $GOPATH/bin/v2ray -compiler gc github.com/v2ray/v2ray-core/release/server
 
 ### Debian / Ubuntu
 sudo bash <(curl -s https://raw.githubusercontent.com/v2ray/v2ray-core/master/release/install.sh)
