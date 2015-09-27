@@ -1,6 +1,7 @@
 package user
 
 import (
+	"sync"
 	"time"
 
 	"github.com/v2ray/v2ray-core/common/collect"
@@ -18,8 +19,10 @@ type UserSet interface {
 }
 
 type TimedUserSet struct {
-	validUserIds []ID
-	userHash     *collect.TimedStringMap
+	validUserIds        []ID
+	userHash            map[string]indexTimePair
+	userHashDeleteQueue *collect.TimedQueue
+	access              sync.RWMutex
 }
 
 type indexTimePair struct {
@@ -29,11 +32,23 @@ type indexTimePair struct {
 
 func NewTimedUserSet() UserSet {
 	tus := &TimedUserSet{
-		validUserIds: make([]ID, 0, 16),
-		userHash:     collect.NewTimedStringMap(updateIntervalSec),
+		validUserIds:        make([]ID, 0, 16),
+		userHash:            make(map[string]indexTimePair, 512),
+		userHashDeleteQueue: collect.NewTimedQueue(updateIntervalSec),
+		access:              sync.RWMutex{},
 	}
 	go tus.updateUserHash(time.Tick(updateIntervalSec * time.Second))
+	go tus.removeEntries(tus.userHashDeleteQueue.RemovedEntries())
 	return tus
+}
+
+func (us *TimedUserSet) removeEntries(entries <-chan interface{}) {
+	for {
+		entry := <-entries
+		us.access.Lock()
+		delete(us.userHash, entry.(string))
+		us.access.Unlock()
+	}
 }
 
 func (us *TimedUserSet) generateNewHashes(lastSec, nowSec int64, idx int, id ID) {
@@ -41,7 +56,10 @@ func (us *TimedUserSet) generateNewHashes(lastSec, nowSec int64, idx int, id ID)
 	for lastSec < nowSec+cacheDurationSec {
 		idHash := idHash.Hash(id.Bytes[:], lastSec)
 		log.Debug("Valid User Hash: %v", idHash)
-		us.userHash.Set(string(idHash), indexTimePair{idx, lastSec}, lastSec+2*cacheDurationSec)
+		us.access.Lock()
+		us.userHash[string(idHash)] = indexTimePair{idx, lastSec}
+		us.access.Unlock()
+		us.userHashDeleteQueue.Add(string(idHash), lastSec+2*cacheDurationSec)
 		lastSec++
 	}
 }
@@ -73,9 +91,10 @@ func (us *TimedUserSet) AddUser(user User) error {
 }
 
 func (us TimedUserSet) GetUser(userHash []byte) (*ID, int64, bool) {
-	rawPair, found := us.userHash.Get(string(userHash))
+	defer us.access.RUnlock()
+	us.access.RLock()
+	pair, found := us.userHash[string(userHash)]
 	if found {
-		pair := rawPair.(indexTimePair)
 		return &us.validUserIds[pair.index], pair.timeSec, true
 	}
 	return nil, 0, false
