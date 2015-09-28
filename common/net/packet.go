@@ -12,11 +12,11 @@ func NewTCPPacket(dest Destination) *TCPPacket {
 	}
 }
 
-func NewUDPPacket(dest Destination, data []byte, id uint16) *UDPPacket {
+func NewUDPPacket(dest Destination, data []byte, token uint16) *UDPPacket {
 	return &UDPPacket{
 		basePacket: basePacket{destination: dest},
 		data:       data,
-		id:         id,
+		token:      token,
 	}
 }
 
@@ -42,12 +42,12 @@ func (packet *TCPPacket) MoreChunks() bool {
 
 type UDPPacket struct {
 	basePacket
-	data []byte
-	id   uint16
+	data  []byte
+	token uint16
 }
 
-func (packet *UDPPacket) ID() uint16 {
-	return packet.id
+func (packet *UDPPacket) Token() uint16 {
+	return packet.token
 }
 
 func (packet *UDPPacket) Chunk() []byte {

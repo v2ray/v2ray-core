@@ -56,8 +56,21 @@ func (m *portMap) removePorts(removedPorts <-chan interface{}) {
 	}
 }
 
+func (m *portMap) popPort(token uint16) *net.UDPAddr {
+	m.access.Lock()
+	defer m.access.Unlock()
+	addr, exists := m.data[token]
+	if !exists {
+		return nil
+	}
+	delete(m.data, token)
+	return addr
+}
+
 var (
 	ports = newPortMap()
+
+	udpConn *net.UDPConn
 )
 
 func (server *SocksServer) ListenUDP(port uint16) error {
@@ -73,6 +86,7 @@ func (server *SocksServer) ListenUDP(port uint16) error {
 	}
 
 	go server.AcceptPackets(conn)
+  udpConn = conn
 	return nil
 }
 
@@ -99,4 +113,15 @@ func (server *SocksServer) AcceptPackets(conn *net.UDPConn) error {
 		udpPacket := v2net.NewUDPPacket(request.Destination(), request.Data, token)
 		server.vPoint.DispatchToOutbound(udpPacket)
 	}
+}
+
+func (server *SocksServer) Dispatch(packet v2net.Packet) {
+	if udpPacket, ok := packet.(*v2net.UDPPacket); ok {
+		token := udpPacket.Token()
+		addr := ports.popPort(token)
+		if udpConn != nil {
+			udpConn.WriteToUDP(udpPacket.Chunk(), addr)
+		}
+	}
+	// We don't expect TCP Packets here
 }
