@@ -2,7 +2,8 @@
 ## 摘要
 * 版本：1
 
-## 数据请求
+## TCP
+### 数据请求
 认证部分：
 * 16 字节：基于时间的 hash(用户 [ID](https://github.com/V2Ray/v2ray-core/blob/master/spec/id.md))，见下文
 
@@ -35,12 +36,36 @@
 
 数据部分使用 AES-128-CFB 加密，Key 和 IV 在请求数据中
 
-## 数据应答
+### 数据应答
 数据部分
 * 4 字节：认证信息 V
 * N 字节：应答数据
 
 其中数据部分使用 AES-128-CFB 加密，IV 为 md5(请求数据 IV)，Key 为 md5(请求数据 Key)
+
+## UDP
+UDP 数据包为对称设计，即请求和响应的格式一样
+
+* 16 字节：基于时间的 hash(用户 [ID](https://github.com/V2Ray/v2ray-core/blob/master/spec/id.md))，见下文
+* 4 字节：余下所有内容的 FNV1a hash
+* 1 字节：版本号，目前为 0x1
+* 2 字节：Token，用于区分数据包
+* 1 字节：保留，暂为 0x00
+* 2 字节：目标端口
+* 1 字节：目标类型
+  * 0x01：IPv4
+  * 0x02：域名
+  * 0x03：IPv6
+* 目标地址：
+  * 4 字节：IPv4
+  * 1 字节长度 + 域名
+  * 16 字节：IPv6
+* N 字节：请求数据
+
+其中除了 hash 之外的部分经过 AES-128-CFB 加密：
+* Key：md5(用户 ID + '22f01806-5ef0-4e88-95ab-b57f1c7a4a40')
+* IV：md5(X + X + X + X)，X = []byte(UserHash 生成的时间) (8 字节, Big Endian)
+
 
 ## 基于时间的用户 ID Hash
 
