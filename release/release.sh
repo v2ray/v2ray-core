@@ -32,8 +32,7 @@ function build {
 
 build "darwin" "amd64" "-macos" "-macos"
 build "windows" "amd64" "-windows-64" "-windows-64.exe"
-build "windows" "amd64" "-windows-32" "-windows-32.exe"
+build "windows" "386" "-windows-32" "-windows-32.exe"
 build "linux" "amd64" "-linux-64" "-linux-64"
 build "linux" "386" "-linux-32" "-linux-32"
 build "linux" "arm" "-armv6" "-armv6"
-
