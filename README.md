@@ -32,8 +32,7 @@ V2Ray 是一个翻墙工具包，用于简化和复用其它翻墙工具，加�
 * Twitter：https://twitter.com/projectv2ray
 * 私下联系：love@v2ray.com
 
-## 捐赠
-目前 V2Ray 还在早期开发阶段，暂时没什么可用性，也谈不上捐赠。如果你执意想捐赠，请发送 Amazon Gift Card 至 donate@v2ray.com
+## [捐赠](https://github.com/v2ray/v2ray-core/blob/master/spec/donate.md)
 
 ## 关于
 我只是一名普通的开发人员，已肉翻，本已不依赖这些翻墙工具，但 ShadowSock 和 GoAgent 被迫删除代码的事件实在太恶心，不得不做点什么了。
