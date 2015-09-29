@@ -1,6 +1,17 @@
 #!/bin/bash
 
-VERSION=$(sed -n 's/.*Version.*=.*\"\([^"]*\)\".*/\1/p' $GOPATH/src/github.com/v2ray/v2ray-core/core.go)
+GIT_REV=$(git rev-parse HEAD)
+VERSION=$(git name-rev --tags --name-only $GIT_REV)
+
+LD_FLAGS="-s"
+
+if [ "$VERSION" != "undefined" ]; then
+  VERSION=${VERSION%^0}
+  TODAY="$(date -u +%Y%m%d)"
+  LD_FLAGS="${LD_FLAGS} -X github.com/v2ray/v2ray-core.version=${VERSION} -X github.com/v2ray/v2ray-core.build=${TODAY}"
+else
+  VERSION="custom"
+fi
 
 BIN_PATH=$GOPATH/bin
 mkdir -p $BIN_PATH
@@ -18,7 +29,7 @@ function build {
   fi
   mkdir -p $REL_PATH/config
   cp -R $GOPATH/src/github.com/v2ray/v2ray-core/release/config/* $REL_PATH/config/
-  GOOS=${GOOS} GOARCH=${GOARCH} go build -o ${TARGET} -compiler gc -ldflags "-s" github.com/v2ray/v2ray-core/release/server
+  GOOS=${GOOS} GOARCH=${GOARCH} go build -o ${TARGET} -compiler gc -ldflags "${LD_FLAGS}" github.com/v2ray/v2ray-core/release/server
   
   ZIP_FILE=$BIN_PATH/v2ray${SUFFIX}.zip
   if [ -f $ZIP_FILE ]; then

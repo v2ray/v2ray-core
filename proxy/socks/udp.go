@@ -86,7 +86,7 @@ func (server *SocksServer) ListenUDP(port uint16) error {
 	}
 
 	go server.AcceptPackets(conn)
-  udpConn = conn
+	udpConn = conn
 	return nil
 }
 
