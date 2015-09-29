@@ -42,6 +42,3 @@ func (ray *Ray) InboundInput() chan<- []byte {
 func (ray *Ray) InboundOutput() <-chan []byte {
 	return ray.Output
 }
-
-type UDPRay struct {
-}
