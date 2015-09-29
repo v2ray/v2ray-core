@@ -22,6 +22,7 @@ V2Ray 是一个翻墙工具包，用于简化和复用其它翻墙工具，加�
 * [Issue 指引](https://github.com/V2Ray/v2ray-core/blob/master/spec/issue.md)
 * [当前状态](https://github.com/V2Ray/v2ray-core/blob/master/spec/status.md)
 * [错误信息](https://github.com/V2Ray/v2ray-core/blob/master/spec/errors.md)
+* [性能测试](https://github.com/V2Ray/v2ray-core/blob/master/spec/benchmark.md)
 
 ## 开发人员相关
 * [概要设计](https://github.com/V2Ray/v2ray-core/blob/master/spec/design.md)
