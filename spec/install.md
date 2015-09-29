@@ -1,8 +1,12 @@
 # V2Ray 安装方式
 
-目前 V2Ray 还在早期测试阶段，暂不提供预编译的运行文件。请使用下面的方式下载源文件并编译。
+## 预编译程序
+发布于 [Release](https://github.com/v2ray/v2ray-core/releases) 中，每周更新，[更新周期见此](https://github.com/V2Ray/v2ray-core/blob/master/spec/roadmap.md)。
 
 ## 编译源文件
+
+大概流程，请根据实际情况修改
+
 1. 安装 Git： sudo apt-get install git -y
 2. 安装 golang：
   1. curl -o go_latest.tar.gz https://storage.googleapis.com/golang/go1.5.1.linux-amd64.tar.gz
@@ -12,7 +16,7 @@
 3. go get github.com/v2ray/v2ray-core
 4. go build github.com/v2ray/v2ray-core/release/server
 
-### archlinux 编译源文件
+### Arch Linux
 1. 安装 Git： sudo pacman -S git
 2. 安装 golang：sudo pacman -S go
    1. export GOPATH=$HOME/work
