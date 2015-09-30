@@ -26,16 +26,19 @@
 
 ## 以下分类仅供管理员使用
 ### Announcement
-新版本发布、最新动态等公告内容。
-
-### Help Wanted
-标记为 Help Wanted 的 Issue 接受 Pull Request，一般为新特性的实现，如果您对其中某一个感兴趣，欢迎供献代码。
+新版本发布、最新动态等公告内容，将于发布之后的 7 日内关闭。。
 
 ### Duplicate
 此 Issue 与之前的某一个 Issue 重复。
 
+### Help Wanted
+标记为 Help Wanted 的 Issue 接受 Pull Request，一般为新特性的实现，如果您对其中某一个感兴趣，欢迎供献代码。
+
 ### Invalid
 无法重现的 Bug 或没有意义的 Issue。
+
+### vLog
+用于记录一些 V2Ray 的实现细节，想法等，将于发布之后的 30 日内关闭。
 
 ### Won't fix
 此 Issue 是一个合理的问题，但不影响软件的正常使用，故不修复。
