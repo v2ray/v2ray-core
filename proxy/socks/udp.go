@@ -68,12 +68,14 @@ func (m *portMap) popPort(token uint16) *net.UDPAddr {
 }
 
 var (
-	ports = newPortMap()
+	ports *portMap
 
 	udpConn *net.UDPConn
 )
 
 func (server *SocksServer) ListenUDP(port uint16) error {
+	ports = newPortMap()
+
 	addr := &net.UDPAddr{
 		IP:   net.IP{0, 0, 0, 0},
 		Port: int(port),
