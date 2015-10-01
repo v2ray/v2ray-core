@@ -16,7 +16,7 @@ type listCapabilities struct {
 	data []Capability
 }
 
-func NewCapabilites() Capabilities {
+func NewCapabilities() Capabilities {
 	return &listCapabilities{
 		data: make([]Capability, 0, 16),
 	}
