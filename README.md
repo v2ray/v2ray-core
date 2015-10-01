@@ -31,6 +31,7 @@ V2Ray 是一个翻墙工具包，用于简化和复用其它翻墙工具，加�
 * [开发指引](https://github.com/V2Ray/v2ray-core/blob/master/spec/develop.md)
 
 ## 联系方式
+* 聊天室：https://gitter.im/v2ray/v2ray-core
 * Twitter：https://twitter.com/projectv2ray
 * 私下联系：love@v2ray.com
 
