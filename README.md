@@ -7,14 +7,13 @@
 
 [中文](https://github.com/V2Ray/v2ray-core/blob/master/README.md) | [English](https://github.com/V2Ray/v2ray-core/blob/master/spec/en/README.md)
 
-V2Ray 是一个翻墙工具包，用于简化和复用其它翻墙工具，加速二次开发。
+V2Ray 是一个模块化的代理软件包，它的目标是提供常用的代理软件模块，减化网络代理软件的开发。
 
-“V2”来源于 [V2 火箭](https://zh.wikipedia.org/wiki/V-2%E7%81%AB%E7%AE%AD)，Ray 即射线，意指新一代的翻墙工具。
-
-## 主要特点
-* 多对多服务器支持，负载均衡
-* 支持多用户
-* 开放协议支持，兼容 Shadowsocks 和 GoAgent
+## 联系方式
+* 聊天室：https://gitter.im/v2ray/v2ray-core
+* Twitter：https://twitter.com/projectv2ray
+* 私下联系：love@v2ray.com
+* [捐赠](https://github.com/v2ray/v2ray-core/blob/master/spec/donate.md)
 
 ## 使用说明
 * [简明教程](https://github.com/V2Ray/v2ray-core/blob/master/spec/guide.md)
@@ -30,12 +29,5 @@ V2Ray 是一个翻墙工具包，用于简化和复用其它翻墙工具，加�
 * [Help Wanted](https://github.com/v2ray/v2ray-core/labels/help%20wanted)：所有被标记为“Help Wanted”的 Issue 都接受 Pull Request，如果你对本项目感兴趣并想做点贡献，请挑选其中之一完善之，不甚感激。
 * [开发指引](https://github.com/V2Ray/v2ray-core/blob/master/spec/develop.md)
 
-## 联系方式
-* 聊天室：https://gitter.im/v2ray/v2ray-core
-* Twitter：https://twitter.com/projectv2ray
-* 私下联系：love@v2ray.com
-
-## [捐赠](https://github.com/v2ray/v2ray-core/blob/master/spec/donate.md)
-
-## 关于
-我只是一名普通的开发人员，已肉翻，本已不依赖这些翻墙工具，但 ShadowSock 和 GoAgent 被迫删除代码的事件实在太恶心，不得不做点什么了。
+## License
+[The MIT License (MIT)](https://raw.githubusercontent.com/v2ray/v2ray-core/master/LICENSE)
