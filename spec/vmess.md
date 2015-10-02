@@ -49,7 +49,6 @@ UDP 数据包为对称设计，即请求和响应的格式一样
 * 16 字节：基于时间的 hash(用户 [ID](https://github.com/V2Ray/v2ray-core/blob/master/spec/id.md))，见下文
 * 4 字节：余下所有内容的 FNV1a hash
 * 1 字节：版本号，目前为 0x1
-* 2 字节：Token，用于区分数据包
 * 1 字节：保留，暂为 0x00
 * 2 字节：目标端口
 * 1 字节：目标类型

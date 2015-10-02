@@ -21,7 +21,6 @@ func TestVMessUDPReadWrite(t *testing.T) {
 	message := &VMessUDP{
 		user:    userId,
 		version: byte(0x01),
-		token:   1234,
 		address: v2net.DomainAddress("v2ray.com", 8372),
 		data:    []byte("An UDP message."),
 	}
@@ -37,7 +36,6 @@ func TestVMessUDPReadWrite(t *testing.T) {
 
 	assert.String(messageRestored.user.String).Equals(message.user.String)
 	assert.Byte(messageRestored.version).Equals(message.version)
-	assert.Uint16(messageRestored.token).Equals(message.token)
 	assert.String(messageRestored.address.String()).Equals(message.address.String())
 	assert.Bytes(messageRestored.data).Equals(message.data)
 }

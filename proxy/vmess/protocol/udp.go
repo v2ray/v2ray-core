@@ -16,7 +16,6 @@ import (
 type VMessUDP struct {
 	user    user.ID
 	version byte
-	token   uint16
 	address v2net.Address
 	data    []byte
 }
@@ -51,26 +50,25 @@ func ReadVMessUDP(buffer []byte, userset user.UserSet) (*VMessUDP, error) {
 	vmess := &VMessUDP{
 		user:    *userId,
 		version: buffer[0],
-		token:   binary.BigEndian.Uint16(buffer[1:3]),
 	}
 
-	// buffer[3] is reserved
+	// buffer[1] is reserved
 
-	port := binary.BigEndian.Uint16(buffer[4:6])
-	addrType := buffer[6]
+	port := binary.BigEndian.Uint16(buffer[2:4])
+	addrType := buffer[4]
 	var address v2net.Address
 	switch addrType {
 	case addrTypeIPv4:
-		address = v2net.IPAddress(buffer[7:11], port)
-		buffer = buffer[11:]
+		address = v2net.IPAddress(buffer[5:9], port)
+		buffer = buffer[9:]
 	case addrTypeIPv6:
-		address = v2net.IPAddress(buffer[7:23], port)
-		buffer = buffer[23:]
+		address = v2net.IPAddress(buffer[5:21], port)
+		buffer = buffer[21:]
 	case addrTypeDomain:
-		domainLength := buffer[7]
-		domain := string(buffer[8 : 8+domainLength])
+		domainLength := buffer[5]
+		domain := string(buffer[6 : 6+domainLength])
 		address = v2net.DomainAddress(domain, port)
-		buffer = buffer[8+domainLength:]
+		buffer = buffer[6+domainLength:]
 	default:
 		log.Warning("Unexpected address type %d", addrType)
 		return nil, errors.NewCorruptedPacketError()
@@ -99,7 +97,6 @@ func (vmess *VMessUDP) ToBytes(idHash user.CounterHash, randomRangeInt64 user.Ra
 	fnvHashBegin := 20
 
 	buffer = append(buffer, vmess.version)
-	buffer = append(buffer, byte(vmess.token>>8), byte(vmess.token))
 	buffer = append(buffer, byte(0x00))
 	buffer = append(buffer, vmess.address.PortBytes()...)
 	switch {
