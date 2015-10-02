@@ -1,8 +1,11 @@
 package vmess
 
 import (
+	"bytes"
+	"crypto/md5"
 	"net"
 
+	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
@@ -36,22 +39,59 @@ func (handler *VMessInboundHandler) AcceptPackets(conn *net.UDPConn) error {
 			log.Error("VMessIn failed to read UDP packets: %v", err)
 			return err
 		}
-		request, err := protocol.ReadVMessUDP(buffer[:nBytes], handler.clients)
+
+		reader := bytes.NewReader(buffer[:nBytes])
+		requestReader := protocol.NewVMessRequestReader(handler.clients)
+
+		request, err := requestReader.Read(reader)
 		if err != nil {
-			log.Error("VMessIn failed to parse UDP request: %v", err)
+			log.Warning("VMessIn: Invalid request from (%s): %v", addr.String(), err)
 			return err
 		}
 
-		udpPacket := request.ToPacket()
-		go handler.handlePacket(conn, udpPacket, addr)
+		cryptReader, err := v2io.NewAesDecryptReader(request.RequestKey[:], request.RequestIV[:], reader)
+		if err != nil {
+			log.Error("VMessIn: Failed to create decrypt reader: %v", err)
+			return err
+		}
+
+		data := make([]byte, bufferSize)
+		nBytes, err = cryptReader.Read(data)
+		if err != nil {
+			log.Warning("VMessIn: Unable to decrypt data: %v", err)
+			return err
+		}
+
+		packet := v2net.NewPacket(request.Destination(), data, false)
+		go handler.handlePacket(conn, request, packet, addr)
 	}
 }
 
-func (handler *VMessInboundHandler) handlePacket(conn *net.UDPConn, packet v2net.Packet, clientAddr *net.UDPAddr) {
+func (handler *VMessInboundHandler) handlePacket(conn *net.UDPConn, request *protocol.VMessRequest, packet v2net.Packet, clientAddr *net.UDPAddr) {
 	ray := handler.vPoint.DispatchToOutbound(packet)
 	close(ray.InboundInput())
 
+	responseKey := md5.Sum(request.RequestKey[:])
+	responseIV := md5.Sum(request.RequestIV[:])
+
+	buffer := bytes.NewBuffer(make([]byte, 0, bufferSize))
+
+	response := protocol.NewVMessResponse(request)
+	responseWriter, err := v2io.NewAesEncryptWriter(responseKey[:], responseIV[:], buffer)
+	if err != nil {
+		log.Error("VMessIn: Failed to create encrypt writer: %v", err)
+		return
+	}
+	responseWriter.Write(response[:])
+
+	hasData := false
+
 	if data, ok := <-ray.InboundOutput(); ok {
-		conn.WriteToUDP(data, clientAddr)
+		hasData = true
+		responseWriter.Write(data)
+	}
+
+	if hasData {
+		conn.WriteToUDP(buffer.Bytes(), clientAddr)
 	}
 }

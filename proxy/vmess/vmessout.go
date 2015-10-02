@@ -27,12 +27,13 @@ type VNextServer struct {
 }
 
 type VMessOutboundHandler struct {
-	vPoint    *core.Point
-	packet    v2net.Packet
-	vNextList []VNextServer
+	vPoint       *core.Point
+	packet       v2net.Packet
+	vNextList    []VNextServer
+	vNextListUDP []VNextServer
 }
 
-func NewVMessOutboundHandler(vp *core.Point, vNextList []VNextServer, firstPacket v2net.Packet) *VMessOutboundHandler {
+func NewVMessOutboundHandler(vp *core.Point, vNextList, vNextListUDP []VNextServer, firstPacket v2net.Packet) *VMessOutboundHandler {
 	return &VMessOutboundHandler{
 		vPoint:    vp,
 		packet:    firstPacket,
@@ -40,8 +41,8 @@ func NewVMessOutboundHandler(vp *core.Point, vNextList []VNextServer, firstPacke
 	}
 }
 
-func (handler *VMessOutboundHandler) pickVNext() (v2net.Destination, user.User) {
-	vNextLen := len(handler.vNextList)
+func pickVNext(serverList []VNextServer) (v2net.Destination, user.User) {
+	vNextLen := len(serverList)
 	if vNextLen == 0 {
 		panic("VMessOut: Zero vNext is configured.")
 	}
@@ -50,7 +51,7 @@ func (handler *VMessOutboundHandler) pickVNext() (v2net.Destination, user.User) 
 		vNextIndex = mrand.Intn(vNextLen)
 	}
 
-	vNext := handler.vNextList[vNextIndex]
+	vNext := serverList[vNextIndex]
 	vNextUserLen := len(vNext.Users)
 	if vNextUserLen == 0 {
 		panic("VMessOut: Zero User account.")
@@ -64,7 +65,7 @@ func (handler *VMessOutboundHandler) pickVNext() (v2net.Destination, user.User) 
 }
 
 func (handler *VMessOutboundHandler) Start(ray core.OutboundRay) error {
-	vNextAddress, vNextUser := handler.pickVNext()
+	vNextAddress, vNextUser := pickVNext(handler.vNextList)
 
 	command := protocol.CmdTCP
 	if handler.packet.Destination().IsUDP() {
@@ -180,7 +181,8 @@ func handleResponse(conn *net.TCPConn, request *protocol.VMessRequest, output ch
 }
 
 type VMessOutboundHandlerFactory struct {
-	servers []VNextServer
+	servers    []VNextServer
+	udpServers []VNextServer
 }
 
 func (factory *VMessOutboundHandlerFactory) Initialize(rawConfig []byte) error {
@@ -190,15 +192,22 @@ func (factory *VMessOutboundHandlerFactory) Initialize(rawConfig []byte) error {
 		return err
 	}
 	servers := make([]VNextServer, 0, len(config.VNextList))
+	udpServers := make([]VNextServer, 0, len(config.VNextList))
 	for _, server := range config.VNextList {
-		servers = append(servers, server.ToVNextServer())
+		if server.HasNetwork("tcp") {
+			servers = append(servers, server.ToVNextServer())
+		}
+		if server.HasNetwork("udp") {
+			udpServers = append(udpServers, server.ToVNextServer())
+		}
 	}
 	factory.servers = servers
+	factory.udpServers = udpServers
 	return nil
 }
 
 func (factory *VMessOutboundHandlerFactory) Create(vp *core.Point, firstPacket v2net.Packet) (core.OutboundConnectionHandler, error) {
-	return NewVMessOutboundHandler(vp, factory.servers, firstPacket), nil
+	return NewVMessOutboundHandler(vp, factory.servers, factory.udpServers, firstPacket), nil
 }
 
 func init() {

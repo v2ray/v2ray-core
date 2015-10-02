@@ -3,6 +3,7 @@ package vmess
 import (
 	"encoding/json"
 	"net"
+	"strings"
 
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -38,6 +39,10 @@ type VNextConfig struct {
 	Port    uint16      `json:"port"`
 	Users   []VMessUser `json:"users"`
 	Network string      `json:"network"`
+}
+
+func (config VNextConfig) HasNetwork(network string) bool {
+	return strings.Contains(config.Network, network)
 }
 
 func (config VNextConfig) ToVNextServer() VNextServer {
