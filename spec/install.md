@@ -9,7 +9,9 @@
 
 1. 安装 Git： sudo apt-get install git -y
 2. 安装 golang：
-  1. curl -o go_latest.tar.gz https://storage.googleapis.com/golang/go1.5.1.linux-amd64.tar.gz
+  1. 下载安装文件：
+    1. 64位：curl -o go_latest.tar.gz https://storage.googleapis.com/golang/go1.5.1.linux-amd64.tar.gz
+    2. 32位：curl -o go_latest.tar.gz https://storage.googleapis.com/golang/go1.5.1.linux-386.tar.gz
   2. sudo tar -C /usr/local -xzf go_latest.tar.gz
   3. export PATH=$PATH:/usr/local/go/bin
   4. export GOPATH=$HOME/work
