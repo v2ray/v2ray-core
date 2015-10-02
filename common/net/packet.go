@@ -6,54 +6,28 @@ type Packet interface {
 	MoreChunks() bool
 }
 
-func NewTCPPacket(dest Destination) *TCPPacket {
-	return &TCPPacket{
-		basePacket: basePacket{destination: dest},
+func NewPacket(dest Destination, firstChunk []byte, moreChunks bool) Packet {
+	return &packetImpl{
+		dest:     dest,
+		data:     firstChunk,
+		moreData: moreChunks,
 	}
 }
 
-func NewUDPPacket(dest Destination, data []byte, token uint16) *UDPPacket {
-	return &UDPPacket{
-		basePacket: basePacket{destination: dest},
-		data:       data,
-		token:      token,
-	}
+type packetImpl struct {
+	dest     Destination
+	data     []byte
+	moreData bool
 }
 
-type basePacket struct {
-	destination Destination
+func (packet *packetImpl) Destination() Destination {
+	return packet.dest
 }
 
-func (base basePacket) Destination() Destination {
-	return base.destination
-}
-
-type TCPPacket struct {
-	basePacket
-}
-
-func (packet *TCPPacket) Chunk() []byte {
-	return nil
-}
-
-func (packet *TCPPacket) MoreChunks() bool {
-	return true
-}
-
-type UDPPacket struct {
-	basePacket
-	data  []byte
-	token uint16
-}
-
-func (packet *UDPPacket) Token() uint16 {
-	return packet.token
-}
-
-func (packet *UDPPacket) Chunk() []byte {
+func (packet *packetImpl) Chunk() []byte {
 	return packet.data
 }
 
-func (packet *UDPPacket) MoreChunks() bool {
-	return false
+func (packet *packetImpl) MoreChunks() bool {
+	return packet.moreData
 }

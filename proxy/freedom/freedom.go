@@ -29,6 +29,12 @@ func (vconn *FreedomConnection) Start(ray core.OutboundRay) error {
 		return log.Error("Freedom: Failed to open connection: %s : %v", vconn.packet.Destination().String(), err)
 	}
 
+	input := ray.OutboundInput()
+	output := ray.OutboundOutput()
+	var readMutex, writeMutex sync.Mutex
+	readMutex.Lock()
+	writeMutex.Lock()
+
 	if chunk := vconn.packet.Chunk(); chunk != nil {
 		conn.Write(chunk)
 	}
@@ -37,16 +43,11 @@ func (vconn *FreedomConnection) Start(ray core.OutboundRay) error {
 		if ray != nil {
 			close(ray.OutboundOutput())
 		}
-		return nil
+		writeMutex.Unlock()
+	} else {
+		go dumpInput(conn, input, &writeMutex)
 	}
 
-	input := ray.OutboundInput()
-	output := ray.OutboundOutput()
-	var readMutex, writeMutex sync.Mutex
-	readMutex.Lock()
-	writeMutex.Lock()
-
-	go dumpInput(conn, input, &writeMutex)
 	go dumpOutput(conn, output, &readMutex)
 
 	go func() {

@@ -168,7 +168,7 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 		dest = request.Destination()
 	}
 
-	ray := server.vPoint.DispatchToOutbound(v2net.NewTCPPacket(dest))
+	ray := server.vPoint.DispatchToOutbound(v2net.NewPacket(dest, nil, true))
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 	var readFinish, writeFinish sync.Mutex

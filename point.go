@@ -96,7 +96,3 @@ func (p *Point) DispatchToOutbound(packet v2net.Packet) InboundRay {
 	_ = och.Start(ray)
 	return ray
 }
-
-func (p *Point) DispatchToInbound(packet v2net.Packet) {
-	return
-}

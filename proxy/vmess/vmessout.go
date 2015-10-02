@@ -97,24 +97,13 @@ func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ra
 
 	defer conn.Close()
 
-	if chunk := firstPacket.Chunk(); chunk != nil {
-		conn.Write(chunk)
-	}
-
-	if !firstPacket.MoreChunks() {
-		if ray != nil {
-			close(ray.OutboundOutput())
-		}
-		return nil
-	}
-
 	input := ray.OutboundInput()
 	output := ray.OutboundOutput()
 	var requestFinish, responseFinish sync.Mutex
 	requestFinish.Lock()
 	responseFinish.Lock()
 
-	go handleRequest(conn, request, input, &requestFinish)
+	go handleRequest(conn, request, firstPacket, input, &requestFinish)
 	go handleResponse(conn, request, output, &responseFinish)
 
 	requestFinish.Lock()
@@ -123,7 +112,7 @@ func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ra
 	return nil
 }
 
-func handleRequest(conn *net.TCPConn, request *protocol.VMessRequest, input <-chan []byte, finish *sync.Mutex) {
+func handleRequest(conn *net.TCPConn, request *protocol.VMessRequest, firstPacket v2net.Packet, input <-chan []byte, finish *sync.Mutex) {
 	defer finish.Unlock()
 	encryptRequestWriter, err := v2io.NewAesEncryptWriter(request.RequestKey[:], request.RequestIV[:], conn)
 	if err != nil {
@@ -139,17 +128,25 @@ func handleRequest(conn *net.TCPConn, request *protocol.VMessRequest, input <-ch
 	}
 
 	// Send first packet of payload together with request, in favor of small requests.
-	payload, open := <-input
-	if open {
-		encryptRequestWriter.Crypt(payload)
-		buffer = append(buffer, payload...)
+	firstChunk := firstPacket.Chunk()
+	moreChunks := firstPacket.MoreChunks()
+
+	if firstChunk == nil && moreChunks {
+		firstChunk, moreChunks = <-input
+	}
+
+	if firstChunk != nil {
+		encryptRequestWriter.Crypt(firstChunk)
+		buffer = append(buffer, firstChunk...)
 
 		_, err = conn.Write(buffer)
 		if err != nil {
 			log.Error("VMessOut: Failed to write VMess request: %v", err)
 			return
 		}
+	}
 
+	if moreChunks {
 		v2net.ChanToWriter(encryptRequestWriter, input)
 	}
 	return

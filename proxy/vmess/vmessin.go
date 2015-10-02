@@ -72,7 +72,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 	}
 	log.Debug("VMessIn: Received request for %s", request.Address.String())
 
-	ray := handler.vPoint.DispatchToOutbound(v2net.NewTCPPacket(request.Destination()))
+	ray := handler.vPoint.DispatchToOutbound(v2net.NewPacket(request.Destination(), nil, true))
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 	var readFinish, writeFinish sync.Mutex
