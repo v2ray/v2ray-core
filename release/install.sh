@@ -5,7 +5,7 @@ GO_X86=https://storage.googleapis.com/golang/go1.5.1.linux-386.tar.gz
 ARCH=$(uname -m)
 GO_CUR=${GO_AMD64}
 
-if [ "$ARCH" == "i686" || "$ARCH" == "i386" ]; then
+if [ "$ARCH" == "i686" ] || [ "$ARCH" == "i386" ]; then
   GO_CUR=${GO_X86}
 fi
 
