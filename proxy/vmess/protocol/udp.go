@@ -20,6 +20,11 @@ type VMessUDP struct {
 	data    []byte
 }
 
+func (message *VMessUDP) ToPacket() v2net.Packet {
+	dest := v2net.NewUDPDestination(message.address)
+	return v2net.NewPacket(dest, message.data, false)
+}
+
 func ReadVMessUDP(buffer []byte, userset user.UserSet) (*VMessUDP, error) {
 	userHash := buffer[:user.IDBytesLen]
 	userId, timeSec, valid := userset.GetUser(userHash)
