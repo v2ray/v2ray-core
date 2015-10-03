@@ -25,15 +25,17 @@ var (
 )
 
 type VMessInboundHandler struct {
-	vPoint    *core.Point
-	clients   user.UserSet
-	accepting bool
+	vPoint     *core.Point
+	clients    user.UserSet
+	accepting  bool
+	udpEnabled bool
 }
 
-func NewVMessInboundHandler(vp *core.Point, clients user.UserSet) *VMessInboundHandler {
+func NewVMessInboundHandler(vp *core.Point, clients user.UserSet, udpEnabled bool) *VMessInboundHandler {
 	return &VMessInboundHandler{
-		vPoint:  vp,
-		clients: clients,
+		vPoint:     vp,
+		clients:    clients,
+		udpEnabled: udpEnabled,
 	}
 }
 
@@ -44,6 +46,10 @@ func (handler *VMessInboundHandler) Listen(port uint16) error {
 	}
 	handler.accepting = true
 	go handler.AcceptConnections(listener)
+
+	if handler.udpEnabled {
+		handler.ListenUDP(port)
+	}
 
 	return nil
 }
@@ -143,7 +149,8 @@ func (factory *VMessInboundHandlerFactory) Create(vp *core.Point, rawConfig []by
 		}
 		allowedClients.AddUser(user)
 	}
-	return NewVMessInboundHandler(vp, allowedClients), nil
+
+	return NewVMessInboundHandler(vp, allowedClients, config.UDPEnabled), nil
 }
 
 func init() {

@@ -31,13 +31,13 @@ func (handler *VMessInboundHandler) ListenUDP(port uint16) error {
 	return nil
 }
 
-func (handler *VMessInboundHandler) AcceptPackets(conn *net.UDPConn) error {
+func (handler *VMessInboundHandler) AcceptPackets(conn *net.UDPConn) {
 	for {
-		buffer := make([]byte, 0, bufferSize)
+		buffer := make([]byte, bufferSize)
 		nBytes, addr, err := conn.ReadFromUDP(buffer)
 		if err != nil {
 			log.Error("VMessIn failed to read UDP packets: %v", err)
-			return err
+			continue
 		}
 
 		reader := bytes.NewReader(buffer[:nBytes])
@@ -46,23 +46,23 @@ func (handler *VMessInboundHandler) AcceptPackets(conn *net.UDPConn) error {
 		request, err := requestReader.Read(reader)
 		if err != nil {
 			log.Warning("VMessIn: Invalid request from (%s): %v", addr.String(), err)
-			return err
+			continue
 		}
 
 		cryptReader, err := v2io.NewAesDecryptReader(request.RequestKey[:], request.RequestIV[:], reader)
 		if err != nil {
 			log.Error("VMessIn: Failed to create decrypt reader: %v", err)
-			return err
+			continue
 		}
 
 		data := make([]byte, bufferSize)
 		nBytes, err = cryptReader.Read(data)
 		if err != nil {
 			log.Warning("VMessIn: Unable to decrypt data: %v", err)
-			return err
+			continue
 		}
 
-		packet := v2net.NewPacket(request.Destination(), data, false)
+		packet := v2net.NewPacket(request.Destination(), data[:nBytes], false)
 		go handler.handlePacket(conn, request, packet, addr)
 	}
 }

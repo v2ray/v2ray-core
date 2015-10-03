@@ -1,3 +1,4 @@
 {
-  "auth": "noauth"
+  "auth": "noauth",
+  "udp": false
 }

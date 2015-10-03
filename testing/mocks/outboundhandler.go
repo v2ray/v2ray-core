@@ -25,7 +25,9 @@ func (handler *OutboundConnectionHandler) Start(ray core.OutboundRay) error {
 			}
 			handler.Data2Send.Write(data)
 		}
-		output <- handler.Data2Return
+		dataCopy := make([]byte, len(handler.Data2Return))
+		copy(dataCopy, handler.Data2Return)
+		output <- dataCopy
 		close(output)
 	}()
 
@@ -38,5 +40,9 @@ func (handler *OutboundConnectionHandler) Initialize(config []byte) error {
 
 func (handler *OutboundConnectionHandler) Create(point *core.Point, packet v2net.Packet) (core.OutboundConnectionHandler, error) {
 	handler.Destination = packet.Destination()
+	if packet.Chunk() != nil {
+		handler.Data2Send.Write(packet.Chunk())
+	}
+
 	return handler, nil
 }

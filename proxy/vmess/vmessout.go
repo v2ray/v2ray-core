@@ -35,9 +35,10 @@ type VMessOutboundHandler struct {
 
 func NewVMessOutboundHandler(vp *core.Point, vNextList, vNextListUDP []VNextServer, firstPacket v2net.Packet) *VMessOutboundHandler {
 	return &VMessOutboundHandler{
-		vPoint:    vp,
-		packet:    firstPacket,
-		vNextList: vNextList,
+		vPoint:       vp,
+		packet:       firstPacket,
+		vNextList:    vNextList,
+		vNextListUDP: vNextListUDP,
 	}
 }
 
@@ -65,7 +66,11 @@ func pickVNext(serverList []VNextServer) (v2net.Destination, user.User) {
 }
 
 func (handler *VMessOutboundHandler) Start(ray core.OutboundRay) error {
-	vNextAddress, vNextUser := pickVNext(handler.vNextList)
+	vNextList := handler.vNextList
+	if handler.packet.Destination().IsUDP() {
+		vNextList = handler.vNextListUDP
+	}
+	vNextAddress, vNextUser := pickVNext(vNextList)
 
 	command := protocol.CmdTCP
 	if handler.packet.Destination().IsUDP() {
@@ -86,9 +91,9 @@ func (handler *VMessOutboundHandler) Start(ray core.OutboundRay) error {
 }
 
 func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ray core.OutboundRay, firstPacket v2net.Packet) error {
-	conn, err := net.DialTCP(dest.Network(), nil, &net.TCPAddr{dest.Address().IP(), int(dest.Address().Port()), ""})
+	conn, err := net.Dial(dest.Network(), dest.Address().String())
 	if err != nil {
-		log.Error("Failed to open tcp (%s): %v", dest.String(), err)
+		log.Error("Failed to open %s: %v", dest.String(), err)
 		if ray != nil {
 			close(ray.OutboundOutput())
 		}
@@ -105,15 +110,17 @@ func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ra
 	responseFinish.Lock()
 
 	go handleRequest(conn, request, firstPacket, input, &requestFinish)
-	go handleResponse(conn, request, output, &responseFinish)
+	go handleResponse(conn, request, output, &responseFinish, dest.IsUDP())
 
 	requestFinish.Lock()
-	conn.CloseWrite()
+	if tcpConn, ok := conn.(*net.TCPConn); ok {
+		tcpConn.CloseWrite()
+	}
 	responseFinish.Lock()
 	return nil
 }
 
-func handleRequest(conn *net.TCPConn, request *protocol.VMessRequest, firstPacket v2net.Packet, input <-chan []byte, finish *sync.Mutex) {
+func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2net.Packet, input <-chan []byte, finish *sync.Mutex) {
 	defer finish.Unlock()
 	encryptRequestWriter, err := v2io.NewAesEncryptWriter(request.RequestKey[:], request.RequestIV[:], conn)
 	if err != nil {
@@ -153,7 +160,7 @@ func handleRequest(conn *net.TCPConn, request *protocol.VMessRequest, firstPacke
 	return
 }
 
-func handleResponse(conn *net.TCPConn, request *protocol.VMessRequest, output chan<- []byte, finish *sync.Mutex) {
+func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<- []byte, finish *sync.Mutex, isUDP bool) {
 	defer finish.Unlock()
 	defer close(output)
 	responseKey := md5.Sum(request.RequestKey[:])
@@ -165,18 +172,24 @@ func handleResponse(conn *net.TCPConn, request *protocol.VMessRequest, output ch
 		return
 	}
 
-	response := protocol.VMessResponse{}
-	_, err = decryptResponseReader.Read(response[:])
+	buffer := make([]byte, 2*1024)
+
+	nBytes, err := decryptResponseReader.Read(buffer)
 	if err != nil {
 		//log.Error("VMessOut: Failed to read VMess response (%d bytes): %v", nBytes, err)
 		return
 	}
-	if !bytes.Equal(response[:], request.ResponseHeader[:]) {
+	if !bytes.Equal(buffer[:4], request.ResponseHeader[:]) {
 		log.Warning("VMessOut: unexepcted response header. The connection is probably hijacked.")
 		return
 	}
 
-	v2net.ReaderToChan(output, decryptResponseReader)
+	output <- buffer[4:nBytes]
+
+	if !isUDP {
+		v2net.ReaderToChan(output, decryptResponseReader)
+	}
+
 	return
 }
 

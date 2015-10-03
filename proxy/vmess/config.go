@@ -26,6 +26,7 @@ func (u *VMessUser) ToUser() (user.User, error) {
 // VMessInboundConfig is
 type VMessInboundConfig struct {
 	AllowedClients []VMessUser `json:"clients"`
+	UDPEnabled     bool        `json:"udp"`
 }
 
 func loadInboundConfig(rawConfig []byte) (VMessInboundConfig, error) {

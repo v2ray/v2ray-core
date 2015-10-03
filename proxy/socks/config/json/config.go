@@ -13,6 +13,7 @@ type SocksConfig struct {
 	AuthMethod string `json:"auth"`
 	Username   string `json:"user"`
 	Password   string `json:"pass"`
+	UDPEnabled bool   `json:"udp"`
 }
 
 func (config SocksConfig) IsNoAuth() bool {
