@@ -114,3 +114,58 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 	assert.Bytes(dataReturned).Equals(och.Data2Return)
 	assert.String(targetServer).Equals(och.Destination.Address().String())
 }
+
+func TestSocksUdpSend(t *testing.T) {
+	assert := unit.Assert(t)
+	port := uint16(12372)
+
+	och := &mocks.OutboundConnectionHandler{
+		Data2Send:   bytes.NewBuffer(make([]byte, 0, 1024)),
+		Data2Return: []byte("The data to be returned to socks server."),
+	}
+
+	core.RegisterOutboundConnectionHandlerFactory("mock_och", och)
+
+	config := mocks.Config{
+		PortValue: port,
+		InboundConfigValue: &mocks.ConnectionConfig{
+			ProtocolValue: "socks",
+			ContentValue:  []byte("{\"auth\": \"noauth\", \"udp\": true}"),
+		},
+		OutboundConfigValue: &mocks.ConnectionConfig{
+			ProtocolValue: "mock_och",
+			ContentValue:  nil,
+		},
+	}
+
+	point, err := core.NewPoint(&config)
+	assert.Error(err).IsNil()
+
+	err = point.Start()
+	assert.Error(err).IsNil()
+
+	conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
+		IP:   []byte{127, 0, 0, 1},
+		Port: int(port),
+		Zone: "",
+	})
+
+	assert.Error(err).IsNil()
+
+	data2Send := []byte("Fake DNS request")
+
+	buffer := make([]byte, 0, 1024)
+	buffer = append(buffer, 0, 0, 0)
+	buffer = append(buffer, 1, 8, 8, 4, 4, 0, 53)
+	buffer = append(buffer, data2Send...)
+
+	conn.Write(buffer)
+
+	response := make([]byte, 1024)
+	nBytes, err := conn.Read(response)
+
+	assert.Error(err).IsNil()
+	assert.Bytes(response[:nBytes]).Equals(och.Data2Return)
+	assert.Bytes(data2Send).Equals(och.Data2Send.Bytes())
+	assert.String(och.Destination.String()).Equals("udp:8.8.4.4:53")
+}
