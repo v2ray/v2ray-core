@@ -48,7 +48,7 @@ func (vconn *FreedomConnection) Start(ray core.OutboundRay) error {
 		go dumpInput(conn, input, &writeMutex)
 	}
 
-	go dumpOutput(conn, output, &readMutex)
+	go dumpOutput(conn, output, &readMutex, vconn.packet.Destination().IsUDP())
 
 	go func() {
 		writeMutex.Lock()
@@ -67,8 +67,20 @@ func dumpInput(conn net.Conn, input <-chan []byte, finish *sync.Mutex) {
 	finish.Unlock()
 }
 
-func dumpOutput(conn net.Conn, output chan<- []byte, finish *sync.Mutex) {
+func dumpOutput(conn net.Conn, output chan<- []byte, finish *sync.Mutex, udp bool) {
+	defer finish.Unlock()
+	defer close(output)
+
+	response, err := v2net.ReadFrom(conn)
+	if len(response) > 0 {
+		output <- response
+	}
+	if err != nil {
+		return
+	}
+	if udp {
+		return
+	}
+
 	v2net.ReaderToChan(output, conn)
-	finish.Unlock()
-	close(output)
 }
