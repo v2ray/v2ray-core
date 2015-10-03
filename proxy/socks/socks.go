@@ -76,7 +76,7 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	}
 }
 
-func (server *SocksServer) handleSocks5(reader io.Reader, writer io.Writer, auth protocol.Socks5AuthenticationRequest) error {
+func (server *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Writer, auth protocol.Socks5AuthenticationRequest) error {
 	expectedAuthMethod := protocol.AuthNotRequired
 	if server.config.IsPassword() {
 		expectedAuthMethod = protocol.AuthUserPass
@@ -130,7 +130,11 @@ func (server *SocksServer) handleSocks5(reader io.Reader, writer io.Writer, auth
 
 	response := protocol.NewSocks5Response()
 
-	if request.Command == protocol.CmdBind || (!server.config.UDPEnabled && request.Command == protocol.CmdUdpAssociate) {
+	if request.Command == protocol.CmdUdpAssociate && server.config.UDPEnabled {
+		return server.handleUDP(reader, writer)
+	}
+
+	if request.Command == protocol.CmdBind || request.Command == protocol.CmdUdpAssociate {
 		response := protocol.NewSocks5Response()
 		response.Error = protocol.ErrorCommandNotSupported
 		err = protocol.WriteResponse(writer, response)
@@ -143,6 +147,7 @@ func (server *SocksServer) handleSocks5(reader io.Reader, writer io.Writer, auth
 	}
 
 	response.Error = protocol.ErrorSuccess
+
 	response.Port = request.Port
 	response.AddrType = request.AddrType
 	switch response.AddrType {
@@ -167,6 +172,37 @@ func (server *SocksServer) handleSocks5(reader io.Reader, writer io.Writer, auth
 
 	packet := v2net.NewPacket(dest, data, true)
 	server.transport(reader, writer, packet)
+	return nil
+}
+
+func (server *SocksServer) handleUDP(reader *v2net.TimeOutReader, writer io.Writer) error {
+	response := protocol.NewSocks5Response()
+	response.Error = protocol.ErrorSuccess
+
+	udpAddr := server.getUDPAddr()
+
+	response.Port = udpAddr.Port()
+	switch {
+	case udpAddr.IsIPv4():
+		response.AddrType = protocol.AddrTypeIPv4
+		copy(response.IPv4[:], udpAddr.IP())
+	case udpAddr.IsIPv6():
+		response.AddrType = protocol.AddrTypeIPv6
+		copy(response.IPv6[:], udpAddr.IP())
+	case udpAddr.IsDomain():
+		response.AddrType = protocol.AddrTypeDomain
+		response.Domain = udpAddr.Domain()
+	}
+	err := protocol.WriteResponse(writer, response)
+	if err != nil {
+		log.Error("Socks failed to write response: %v", err)
+		return err
+	}
+
+	reader.SetTimeOut(300) /* 5 minutes */
+	buffer := make([]byte, 1024)
+	reader.Read(buffer)
+
 	return nil
 }
 

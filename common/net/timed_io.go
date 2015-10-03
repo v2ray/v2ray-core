@@ -28,3 +28,11 @@ func (reader *TimeOutReader) Read(p []byte) (n int, err error) {
 	reader.connection.SetReadDeadline(emptyTime)
 	return
 }
+
+func (reader *TimeOutReader) GetTimeOut() int {
+	return reader.timeout
+}
+
+func (reader *TimeOutReader) SetTimeOut(value int) {
+	reader.timeout = value
+}

@@ -12,6 +12,8 @@ const (
 	bufferSize = 2 * 1024
 )
 
+var udpAddress v2net.Address
+
 func (server *SocksServer) ListenUDP(port uint16) error {
 	addr := &net.UDPAddr{
 		IP:   net.IP{0, 0, 0, 0},
@@ -23,14 +25,19 @@ func (server *SocksServer) ListenUDP(port uint16) error {
 		log.Error("Socks failed to listen UDP on port %d: %v", port, err)
 		return err
 	}
+	udpAddress = v2net.IPAddress([]byte{127, 0, 0, 1}, port)
 
 	go server.AcceptPackets(conn)
 	return nil
 }
 
+func (server *SocksServer) getUDPAddr() v2net.Address {
+	return udpAddress
+}
+
 func (server *SocksServer) AcceptPackets(conn *net.UDPConn) error {
 	for {
-		buffer := make([]byte, 0, bufferSize)
+		buffer := make([]byte, bufferSize)
 		nBytes, addr, err := conn.ReadFromUDP(buffer)
 		if err != nil {
 			log.Error("Socks failed to read UDP packets: %v", err)
