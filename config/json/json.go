@@ -59,6 +59,10 @@ func LoadConfig(file string) (*Config, error) {
 
 	config := &Config{}
 	err = json.Unmarshal(rawConfig, config)
+	if err != nil {
+		log.Error("Failed to load point config: %v", err)
+		return nil, err
+	}
 
 	if !filepath.IsAbs(config.InboundConfigValue.File) && len(config.InboundConfigValue.File) > 0 {
 		config.InboundConfigValue.File = filepath.Join(filepath.Dir(fixedFile), config.InboundConfigValue.File)
