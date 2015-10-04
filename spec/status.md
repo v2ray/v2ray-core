@@ -23,11 +23,11 @@
 
 | 平台       | 状态 | 备注 |
 | --------- | ---- | ---- |
-| golang 编译  | B  |  |
-| Windows  | E  |  |
-| Mac OS | E | |
-| Ubuntu | E | |
-| Redhat | E | |
+| golang 编译  | A  |  |
+| Windows  | B  |  |
+| Mac OS | B | |
+| Ubuntu | B | 尚不支持 apt-get 安装 |
+| Redhat | B | 尚不支持 yum 安装 |
 | OpenWRT | E | |
 
 **Socks 5 协议**
@@ -35,7 +35,7 @@
 | 功能       | 状态 | 备注 |
 | --------- | ---- | ---- |
 | TCP 连接    | A |  |
-| UDP 连接    | E | [Issue #3](https://github.com/v2ray/v2ray-core/issues/3) |
+| UDP 连接    | C | [Issue #3](https://github.com/v2ray/v2ray-core/issues/3) |
 | FTP 支持    | E | [Issue #2](https://github.com/v2ray/v2ray-core/issues/2) |
 
 **[VMess 协议](https://github.com/V2Ray/v2ray-core/blob/master/spec/vmess.md)**
