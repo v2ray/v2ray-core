@@ -40,9 +40,6 @@ func (vconn *FreedomConnection) Start(ray core.OutboundRay) error {
 	}
 
 	if !vconn.packet.MoreChunks() {
-		if ray != nil {
-			close(ray.OutboundOutput())
-		}
 		writeMutex.Unlock()
 	} else {
 		go dumpInput(conn, input, &writeMutex)

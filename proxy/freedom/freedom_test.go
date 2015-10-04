@@ -1,53 +1,88 @@
 package freedom
 
 import (
+	"bytes"
 	"io/ioutil"
 	"net"
-	"sync"
 	"testing"
 
 	"golang.org/x/net/proxy"
 
 	"github.com/v2ray/v2ray-core"
+	v2net "github.com/v2ray/v2ray-core/common/net"
 	_ "github.com/v2ray/v2ray-core/proxy/socks"
 	"github.com/v2ray/v2ray-core/testing/mocks"
+	"github.com/v2ray/v2ray-core/testing/servers/tcp"
+	"github.com/v2ray/v2ray-core/testing/servers/udp"
 	"github.com/v2ray/v2ray-core/testing/unit"
 )
 
-func TestSocksTcpConnect(t *testing.T) {
+func TestUDPSend(t *testing.T) {
 	assert := unit.Assert(t)
-	port := 48274
 
 	data2Send := "Data to be sent to remote"
-	data2Return := "Data to be returned to local"
 
-	var serverReady sync.Mutex
-	serverReady.Lock()
+	udpServer := &udp.Server{
+		Port: 0,
+		MsgProcessor: func(data []byte) []byte {
+			buffer := make([]byte, 0, 2048)
+			buffer = append(buffer, []byte("Processed: ")...)
+			buffer = append(buffer, data...)
+			return buffer
+		},
+	}
 
-	go func() {
-		listener, err := net.ListenTCP("tcp", &net.TCPAddr{
-			IP:   []byte{0, 0, 0, 0},
-			Port: port,
-			Zone: "",
-		})
-		assert.Error(err).IsNil()
+	udpServerAddr, err := udpServer.Start()
+	assert.Error(err).IsNil()
 
-		serverReady.Unlock()
-		conn, err := listener.Accept()
-		assert.Error(err).IsNil()
+	ich := &mocks.InboundConnectionHandler{
+		Data2Send:    []byte("Not Used"),
+		DataReturned: bytes.NewBuffer(make([]byte, 0, 1024)),
+	}
 
-		buffer := make([]byte, 1024)
-		nBytes, err := conn.Read(buffer)
-		assert.Error(err).IsNil()
+	core.RegisterInboundConnectionHandlerFactory("mock_ich", ich)
 
-		if string(buffer[:nBytes]) == data2Send {
-			_, err = conn.Write([]byte(data2Return))
-			assert.Error(err).IsNil()
-		}
+	pointPort := uint16(38724)
+	config := mocks.Config{
+		PortValue: pointPort,
+		InboundConfigValue: &mocks.ConnectionConfig{
+			ProtocolValue: "mock_ich",
+			ContentValue:  nil,
+		},
+		OutboundConfigValue: &mocks.ConnectionConfig{
+			ProtocolValue: "freedom",
+			ContentValue:  nil,
+		},
+	}
 
-		conn.Close()
-		listener.Close()
-	}()
+	point, err := core.NewPoint(&config)
+	assert.Error(err).IsNil()
+
+	err = point.Start()
+	assert.Error(err).IsNil()
+
+	dest := v2net.NewUDPDestination(udpServerAddr)
+	ich.Communicate(v2net.NewPacket(dest, []byte(data2Send), false))
+	assert.Bytes(ich.DataReturned.Bytes()).Equals([]byte("Processed: Data to be sent to remote"))
+}
+
+func TestSocksTcpConnect(t *testing.T) {
+	assert := unit.Assert(t)
+	port := uint16(38293)
+
+	data2Send := "Data to be sent to remote"
+
+	tcpServer := &tcp.Server{
+		Port: port,
+		MsgProcessor: func(data []byte) []byte {
+			buffer := make([]byte, 0, 2048)
+			buffer = append(buffer, []byte("Processed: ")...)
+			buffer = append(buffer, data...)
+			return buffer
+		},
+	}
+	_, err := tcpServer.Start()
+	assert.Error(err).IsNil()
 
 	pointPort := uint16(38724)
 	config := mocks.Config{
@@ -71,9 +106,7 @@ func TestSocksTcpConnect(t *testing.T) {
 	socks5Client, err := proxy.SOCKS5("tcp", "127.0.0.1:38724", nil, proxy.Direct)
 	assert.Error(err).IsNil()
 
-	serverReady.Lock()
-
-	targetServer := "127.0.0.1:48274"
+	targetServer := "127.0.0.1:38293"
 	conn, err := socks5Client.Dial("tcp", targetServer)
 	assert.Error(err).IsNil()
 
@@ -86,5 +119,5 @@ func TestSocksTcpConnect(t *testing.T) {
 	assert.Error(err).IsNil()
 	conn.Close()
 
-	assert.Bytes(dataReturned).Equals([]byte(data2Return))
+	assert.Bytes(dataReturned).Equals([]byte("Processed: Data to be sent to remote"))
 }
