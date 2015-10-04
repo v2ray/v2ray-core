@@ -128,12 +128,11 @@ func (server *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.W
 		return err
 	}
 
-	response := protocol.NewSocks5Response()
-
 	if request.Command == protocol.CmdUdpAssociate && server.config.UDPEnabled {
 		return server.handleUDP(reader, writer)
 	}
 
+	response := protocol.NewSocks5Response()
 	if request.Command == protocol.CmdBind || request.Command == protocol.CmdUdpAssociate {
 		response := protocol.NewSocks5Response()
 		response.Error = protocol.ErrorCommandNotSupported
