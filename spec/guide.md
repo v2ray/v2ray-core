@@ -34,6 +34,7 @@
 // in_socks.json
 {
   "auth": "noauth" // 认证方式，暂时只支持匿名
+  "udp": false // 如果要使用 UDP 转发，请改成 true
 }
 ```
 
@@ -46,7 +47,8 @@
       "port": 27183, // Point B 的监听端口，请更换成其它的值
       "users": [
         {"id": "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"}  // 用户 ID，必须包含在 Point B 的配置文件中。此 ID 将被用于通信的认证，请自行更换随机的 ID，可以使用 https://www.uuidgenerator.net/ 来生成新的 ID。
-      ]
+      ],
+      "network": "tcp" // 如果要使用 UDP 转发，请改成 "tcp,udp"
     }
   ]
 }
@@ -74,7 +76,8 @@
 {
   "clients": [
     {"id": "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"}  // 认可的用户 ID，必须包含 out_vmess.json 中的用户 ID
-  ]
+  ],
+  "udp": false // 如果要使用 UDP 转发，请改成 true
 }
 ```
 
