@@ -165,7 +165,7 @@ func TestSocksUdpSend(t *testing.T) {
 	nBytes, err := conn.Read(response)
 
 	assert.Error(err).IsNil()
-	assert.Bytes(response[:nBytes]).Equals(och.Data2Return)
+	assert.Bytes(response[10:nBytes]).Equals(och.Data2Return)
 	assert.Bytes(data2Send).Equals(och.Data2Send.Bytes())
 	assert.String(och.Destination.String()).Equals("udp:8.8.4.4:53")
 }
