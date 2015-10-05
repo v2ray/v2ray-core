@@ -25,7 +25,7 @@ func (server *SocksServer) ListenUDP(port uint16) error {
 		log.Error("Socks failed to listen UDP on port %d: %v", port, err)
 		return err
 	}
-	udpAddress = v2net.IPAddress([]byte{127, 0, 0, 1}, port)
+	udpAddress = v2net.IPAddress(conn.LocalAddr().(*net.UDPAddr).IP, uint16(conn.LocalAddr().(*net.UDPAddr).Port))
 
 	go server.AcceptPackets(conn)
 	return nil
