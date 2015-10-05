@@ -147,13 +147,13 @@ func (server *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.W
 
 	response.Error = protocol.ErrorSuccess
 
-  // Some SOCKS software requires a value other than dest. Let's fake one:
+	// Some SOCKS software requires a value other than dest. Let's fake one:
 	response.Port = uint16(38294)
 	response.AddrType = protocol.AddrTypeIPv4
-  response.IPv4[0] = 127
-  response.IPv4[1] = 0
-  response.IPv4[2] = 0
-  response.IPv4[3] = 1
+	response.IPv4[0] = 127
+	response.IPv4[1] = 0
+	response.IPv4[2] = 0
+	response.IPv4[3] = 1
 
 	err = protocol.WriteResponse(writer, response)
 	if err != nil {
