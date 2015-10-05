@@ -11,7 +11,6 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/errors"
 	v2io "github.com/v2ray/v2ray-core/common/io"
-	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 )
@@ -71,8 +70,6 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	log.Debug("Read user hash: %v", buffer[:nBytes])
 
 	userId, timeSec, valid := r.vUserSet.GetUser(buffer[:nBytes])
 	if !valid {
@@ -167,7 +164,6 @@ func (request *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 u
 	counter := randomRangeInt64(time.Now().UTC().Unix(), 30)
 	hash := idHash.Hash(request.UserId.Bytes[:], counter)
 
-	log.Debug("Writing userhash: %v", hash)
 	buffer = append(buffer, hash...)
 
 	encryptionBegin := len(buffer)

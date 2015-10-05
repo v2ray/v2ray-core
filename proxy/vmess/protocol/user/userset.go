@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/v2ray/v2ray-core/common/collect"
-	"github.com/v2ray/v2ray-core/common/log"
 )
 
 const (
@@ -55,7 +54,6 @@ func (us *TimedUserSet) generateNewHashes(lastSec, nowSec int64, idx int, id ID)
 	idHash := NewTimeHash(HMACHash{})
 	for lastSec < nowSec+cacheDurationSec {
 		idHash := idHash.Hash(id.Bytes[:], lastSec)
-		log.Debug("Valid User Hash: %v", idHash)
 		us.access.Lock()
 		us.userHash[string(idHash)] = indexTimePair{idx, lastSec}
 		us.access.Unlock()
