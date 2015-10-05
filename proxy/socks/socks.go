@@ -147,16 +147,14 @@ func (server *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.W
 
 	response.Error = protocol.ErrorSuccess
 
-	response.Port = request.Port
-	response.AddrType = request.AddrType
-	switch response.AddrType {
-	case protocol.AddrTypeIPv4:
-		copy(response.IPv4[:], request.IPv4[:])
-	case protocol.AddrTypeIPv6:
-		copy(response.IPv6[:], request.IPv6[:])
-	case protocol.AddrTypeDomain:
-		response.Domain = request.Domain
-	}
+  // Some SOCKS software requires a value other than dest. Let's fake one:
+	response.Port = uint16(38294)
+	response.AddrType = protocol.AddrTypeIPv4
+  response.IPv4[0] = 127
+  response.IPv4[1] = 0
+  response.IPv4[2] = 0
+  response.IPv4[3] = 1
+
 	err = protocol.WriteResponse(writer, response)
 	if err != nil {
 		log.Error("Socks failed to write response: %v", err)
