@@ -63,8 +63,8 @@ func (server *SocksServer) handlePacket(conn *net.UDPConn, packet v2net.Packet, 
 	close(ray.InboundInput())
 
 	if data, ok := <-ray.InboundOutput(); ok {
-    request.Data = data
-    udpMessage := request.Bytes(nil)
+		request.Data = data
+		udpMessage := request.Bytes(nil)
 		nBytes, err := conn.WriteToUDP(udpMessage, clientAddr)
 	}
 }
