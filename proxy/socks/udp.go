@@ -54,15 +54,17 @@ func (server *SocksServer) AcceptPackets(conn *net.UDPConn) error {
 		}
 
 		udpPacket := v2net.NewPacket(request.Destination(), request.Data, false)
-		go server.handlePacket(conn, udpPacket, addr)
+		go server.handlePacket(conn, udpPacket, addr, request)
 	}
 }
 
-func (server *SocksServer) handlePacket(conn *net.UDPConn, packet v2net.Packet, clientAddr *net.UDPAddr) {
+func (server *SocksServer) handlePacket(conn *net.UDPConn, packet v2net.Packet, clientAddr *net.UDPAddr, request protocol.Socks5UDPRequest) {
 	ray := server.vPoint.DispatchToOutbound(packet)
 	close(ray.InboundInput())
 
 	if data, ok := <-ray.InboundOutput(); ok {
-		conn.WriteToUDP(data, clientAddr)
+    request.Data = data
+    udpMessage := request.Bytes(nil)
+		nBytes, err := conn.WriteToUDP(udpMessage, clientAddr)
 	}
 }

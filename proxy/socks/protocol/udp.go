@@ -22,6 +22,28 @@ func (request *Socks5UDPRequest) Destination() v2net.Destination {
 	return v2net.NewUDPDestination(request.Address)
 }
 
+func (request *Socks5UDPRequest) Bytes(buffer []byte) []byte {
+  if buffer == nil {
+    buffer = make([]byte, 0, 2*1024)
+  }
+  buffer = append(buffer, 0, 0, request.Fragment)
+  switch {
+    case request.Address.IsIPv4():
+    buffer = append(buffer, AddrTypeIPv4)
+    buffer = append(buffer, request.Address.IP()...)
+    case request.Address.IsIPv6():
+    buffer = append(buffer, AddrTypeIPv6)
+    buffer = append(buffer, request.Address.IP()...)
+    case request.Address.IsDomain():
+    buffer = append(buffer, AddrTypeDomain)
+    buffer = append(buffer, byte(len(request.Address.Domain())))
+    buffer = append(buffer, []byte(request.Address.Domain())...)
+  }
+  buffer = append(buffer, request.Address.PortBytes()...)
+  buffer = append(buffer, request.Data...)
+  return buffer
+}
+
 func ReadUDPRequest(packet []byte) (request Socks5UDPRequest, err error) {
 	// packet[0] and packet[1] are reserved
 	request.Fragment = packet[2]
