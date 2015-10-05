@@ -66,8 +66,8 @@ func (server *SocksServer) handlePacket(conn *net.UDPConn, packet v2net.Packet, 
 		request.Data = data
 		udpMessage := request.Bytes(nil)
 		nBytes, err := conn.WriteToUDP(udpMessage, clientAddr)
-    if err != nil {
-      log.Error("Socks failed to write UDP message (%d bytes) to %s: %v", nBytes, clientAddr.String(), err)
-    }
+		if err != nil {
+			log.Error("Socks failed to write UDP message (%d bytes) to %s: %v", nBytes, clientAddr.String(), err)
+		}
 	}
 }
