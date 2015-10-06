@@ -69,6 +69,7 @@ func dumpOutput(conn net.Conn, output chan<- []byte, finish *sync.Mutex, udp boo
 	defer close(output)
 
 	response, err := v2net.ReadFrom(conn)
+  log.Info("Freedom receives %d bytes from %s", len(response), conn.RemoteAddr().String())
 	if len(response) > 0 {
 		output <- response
 	}
