@@ -16,7 +16,7 @@ var udpAddress v2net.Address
 
 func (server *SocksServer) ListenUDP(port uint16) error {
 	addr := &net.UDPAddr{
-		IP:   net.IP{127, 0, 0, 1},
+		IP:   net.IP{0, 0, 0, 0},
 		Port: int(port),
 		Zone: "",
 	}
@@ -25,7 +25,7 @@ func (server *SocksServer) ListenUDP(port uint16) error {
 		log.Error("Socks failed to listen UDP on port %d: %v", port, err)
 		return err
 	}
-	udpAddress = v2net.IPAddress([]byte{127, 0, 0, 1}, port)
+	udpAddress = v2net.IPAddress([]byte{0, 0, 0, 0}, port)
 
 	go server.AcceptPackets(conn)
 	return nil
@@ -55,17 +55,21 @@ func (server *SocksServer) AcceptPackets(conn *net.UDPConn) error {
 		}
 
 		udpPacket := v2net.NewPacket(request.Destination(), request.Data, false)
-		go server.handlePacket(conn, udpPacket, addr, request)
+		go server.handlePacket(conn, udpPacket, addr)
 	}
 }
 
-func (server *SocksServer) handlePacket(conn *net.UDPConn, packet v2net.Packet, clientAddr *net.UDPAddr, request protocol.Socks5UDPRequest) {
+func (server *SocksServer) handlePacket(conn *net.UDPConn, packet v2net.Packet, clientAddr *net.UDPAddr) {
 	ray := server.vPoint.DispatchToOutbound(packet)
 	close(ray.InboundInput())
 
 	if data, ok := <-ray.InboundOutput(); ok {
-		request.Data = data
-		udpMessage := request.Bytes(nil)
+    response := &protocol.Socks5UDPRequest {
+      Fragment: 0,
+      Address: v2net.IPAddress(clientAddr.IP, uint16(clientAddr.Port)),
+      Data: data,
+    }
+		udpMessage := response.Bytes(nil)
 		nBytes, err := conn.WriteToUDP(udpMessage, clientAddr)
 		if err != nil {
 			log.Error("Socks failed to write UDP message (%d bytes) to %s: %v", nBytes, clientAddr.String(), err)

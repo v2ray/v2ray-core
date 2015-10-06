@@ -5,6 +5,7 @@ import (
 	"net"
 	"strconv"
 	"sync"
+  "time"
 
 	"github.com/v2ray/v2ray-core"
 	"github.com/v2ray/v2ray-core/common/errors"
@@ -148,12 +149,12 @@ func (server *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.W
 	response.Error = protocol.ErrorSuccess
 
 	// Some SOCKS software requires a value other than dest. Let's fake one:
-	response.Port = uint16(38294)
+	response.Port = uint16(1717)
 	response.AddrType = protocol.AddrTypeIPv4
-	response.IPv4[0] = 127
+	response.IPv4[0] = 0
 	response.IPv4[1] = 0
 	response.IPv4[2] = 0
-	response.IPv4[3] = 1
+	response.IPv4[3] = 0
 
 	err = protocol.WriteResponse(writer, response)
 	if err != nil {
@@ -197,8 +198,11 @@ func (server *SocksServer) handleUDP(reader *v2net.TimeOutReader, writer io.Writ
 	}
 
 	reader.SetTimeOut(300) /* 5 minutes */
-	buffer := make([]byte, 1024)
-	reader.Read(buffer)
+  v2net.ReadFrom(reader) // Just in case of anything left in the socket
+  // The TCP connection closes after this method returns. We need to wait until
+  // the client closes it.
+  // TODO: get notified from UDP part
+	<-time.After(5 * time.Minute)
 
 	return nil
 }
