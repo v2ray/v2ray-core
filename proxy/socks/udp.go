@@ -25,7 +25,7 @@ func (server *SocksServer) ListenUDP(port uint16) error {
 		log.Error("Socks failed to listen UDP on port %d: %v", port, err)
 		return err
 	}
-  // TODO: make this configurable
+	// TODO: make this configurable
 	udpAddress = v2net.IPAddress([]byte{127, 0, 0, 1}, port)
 
 	go server.AcceptPackets(conn)
@@ -44,7 +44,7 @@ func (server *SocksServer) AcceptPackets(conn *net.UDPConn) error {
 			log.Error("Socks failed to read UDP packets: %v", err)
 			continue
 		}
-    log.Info("Client UDP connection from %v", addr)
+		log.Info("Client UDP connection from %v", addr)
 		request, err := protocol.ReadUDPRequest(buffer[:nBytes])
 		if err != nil {
 			log.Error("Socks failed to parse UDP request: %v", err)
@@ -57,7 +57,7 @@ func (server *SocksServer) AcceptPackets(conn *net.UDPConn) error {
 		}
 
 		udpPacket := v2net.NewPacket(request.Destination(), request.Data, false)
-    log.Info("Send packet to %s with %d bytes", udpPacket.Destination().String(), len(request.Data))
+		log.Info("Send packet to %s with %d bytes", udpPacket.Destination().String(), len(request.Data))
 		go server.handlePacket(conn, udpPacket, addr, request.Address)
 	}
 }
@@ -67,12 +67,12 @@ func (server *SocksServer) handlePacket(conn *net.UDPConn, packet v2net.Packet, 
 	close(ray.InboundInput())
 
 	if data, ok := <-ray.InboundOutput(); ok {
-    response := &protocol.Socks5UDPRequest {
-      Fragment: 0,
-      Address: targetAddr,
-      Data: data,
-    }
-    log.Info("Writing back UDP response with %d bytes from %s to %s", len(data), targetAddr.String(), clientAddr.String())
+		response := &protocol.Socks5UDPRequest{
+			Fragment: 0,
+			Address:  targetAddr,
+			Data:     data,
+		}
+		log.Info("Writing back UDP response with %d bytes from %s to %s", len(data), targetAddr.String(), clientAddr.String())
 		udpMessage := response.Bytes(nil)
 		nBytes, err := conn.WriteToUDP(udpMessage, clientAddr)
 		if err != nil {

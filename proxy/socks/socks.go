@@ -5,7 +5,7 @@ import (
 	"net"
 	"strconv"
 	"sync"
-  "time"
+	"time"
 
 	"github.com/v2ray/v2ray-core"
 	"github.com/v2ray/v2ray-core/common/errors"
@@ -198,10 +198,10 @@ func (server *SocksServer) handleUDP(reader *v2net.TimeOutReader, writer io.Writ
 	}
 
 	reader.SetTimeOut(300) /* 5 minutes */
-  v2net.ReadFrom(reader) // Just in case of anything left in the socket
-  // The TCP connection closes after this method returns. We need to wait until
-  // the client closes it.
-  // TODO: get notified from UDP part
+	v2net.ReadFrom(reader) // Just in case of anything left in the socket
+	// The TCP connection closes after this method returns. We need to wait until
+	// the client closes it.
+	// TODO: get notified from UDP part
 	<-time.After(5 * time.Minute)
 
 	return nil

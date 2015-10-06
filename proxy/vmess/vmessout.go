@@ -181,7 +181,7 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 		log.Warning("VMessOut: unexepcted response header. The connection is probably hijacked.")
 		return
 	}
-  log.Info("VMessOut received %d bytes from %s", len(buffer) - 4, conn.RemoteAddr().String())
+	log.Info("VMessOut received %d bytes from %s", len(buffer)-4, conn.RemoteAddr().String())
 
 	output <- buffer[4:]
 
