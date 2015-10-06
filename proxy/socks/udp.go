@@ -16,7 +16,7 @@ var udpAddress v2net.Address
 
 func (server *SocksServer) ListenUDP(port uint16) error {
 	addr := &net.UDPAddr{
-		IP:   net.IP{0, 0, 0, 0},
+		IP:   net.IP{127, 0, 0, 1},
 		Port: int(port),
 		Zone: "",
 	}
@@ -25,7 +25,7 @@ func (server *SocksServer) ListenUDP(port uint16) error {
 		log.Error("Socks failed to listen UDP on port %d: %v", port, err)
 		return err
 	}
-	udpAddress = v2net.IPAddress(conn.LocalAddr().(*net.UDPAddr).IP, uint16(conn.LocalAddr().(*net.UDPAddr).Port))
+	udpAddress = v2net.IPAddress([]byte{127, 0, 0, 1}, port)
 
 	go server.AcceptPackets(conn)
 	return nil
@@ -41,12 +41,12 @@ func (server *SocksServer) AcceptPackets(conn *net.UDPConn) error {
 		nBytes, addr, err := conn.ReadFromUDP(buffer)
 		if err != nil {
 			log.Error("Socks failed to read UDP packets: %v", err)
-			return err
+			continue
 		}
 		request, err := protocol.ReadUDPRequest(buffer[:nBytes])
 		if err != nil {
 			log.Error("Socks failed to parse UDP request: %v", err)
-			return err
+			continue
 		}
 		if request.Fragment != 0 {
 			// TODO handle fragments
