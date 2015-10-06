@@ -93,5 +93,6 @@ func (handler *VMessInboundHandler) handlePacket(conn *net.UDPConn, request *pro
 
 	if hasData {
 		conn.WriteToUDP(buffer.Bytes(), clientAddr)
+    log.Info("VMessIn sending %d bytes to %s", len(buffer.Bytes()), clientAddr.String())
 	}
 }
