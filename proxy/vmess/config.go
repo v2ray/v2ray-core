@@ -46,7 +46,7 @@ func (config VNextConfig) HasNetwork(network string) bool {
 	return strings.Contains(config.Network, network)
 }
 
-func (config VNextConfig) ToVNextServer() VNextServer {
+func (config VNextConfig) ToVNextServer(network string) VNextServer {
 	users := make([]user.User, 0, len(config.Users))
 	for _, user := range config.Users {
 		vuser, err := user.ToUser()
@@ -60,10 +60,12 @@ func (config VNextConfig) ToVNextServer() VNextServer {
 		panic(log.Error("Unable to parse VNext IP: %s", config.Address))
 	}
 	address := v2net.IPAddress(ip, config.Port)
-	dest := v2net.NewTCPDestination(address)
-	if config.Network == "udp" {
-		dest = v2net.NewUDPDestination(address)
-	}
+  var dest v2net.Destination
+  if network == "tcp" {
+    dest = v2net.NewTCPDestination(address)
+  } else {
+    dest = v2net.NewUDPDestination(address)
+  }
 	return VNextServer{
 		Destination: dest,
 		Users:       users,

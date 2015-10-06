@@ -99,7 +99,7 @@ func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ra
 		}
 		return err
 	}
-	log.Info("VMessOut: Tunneling request for %s", request.Address.String())
+	log.Info("VMessOut: Tunneling request to %s via %s", request.Address.String(), dest.String())
 
 	defer conn.Close()
 
@@ -181,6 +181,7 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 		log.Warning("VMessOut: unexepcted response header. The connection is probably hijacked.")
 		return
 	}
+  log.Info("VMessOut received %d bytes from %s", len(buffer) - 4, conn.RemoteAddr().String())
 
 	output <- buffer[4:]
 
@@ -206,10 +207,10 @@ func (factory *VMessOutboundHandlerFactory) Initialize(rawConfig []byte) error {
 	udpServers := make([]VNextServer, 0, len(config.VNextList))
 	for _, server := range config.VNextList {
 		if server.HasNetwork("tcp") {
-			servers = append(servers, server.ToVNextServer())
+			servers = append(servers, server.ToVNextServer("tcp"))
 		}
 		if server.HasNetwork("udp") {
-			udpServers = append(udpServers, server.ToVNextServer())
+			udpServers = append(udpServers, server.ToVNextServer("udp"))
 		}
 	}
 	factory.servers = servers
