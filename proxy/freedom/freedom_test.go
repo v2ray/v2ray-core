@@ -11,6 +11,7 @@ import (
 	"github.com/v2ray/v2ray-core"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	_ "github.com/v2ray/v2ray-core/proxy/socks"
+	"github.com/v2ray/v2ray-core/proxy/socks/config/json"
 	"github.com/v2ray/v2ray-core/testing/mocks"
 	"github.com/v2ray/v2ray-core/testing/servers/tcp"
 	"github.com/v2ray/v2ray-core/testing/servers/udp"
@@ -47,11 +48,11 @@ func TestUDPSend(t *testing.T) {
 		PortValue: pointPort,
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "mock_ich",
-			ContentValue:  nil,
+			SettingsValue: nil,
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "freedom",
-			ContentValue:  nil,
+			SettingsValue: nil,
 		},
 	}
 
@@ -89,11 +90,13 @@ func TestSocksTcpConnect(t *testing.T) {
 		PortValue: pointPort,
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "socks",
-			ContentValue:  []byte("{\"auth\": \"noauth\"}"),
+			SettingsValue: &json.SocksConfig{
+				AuthMethod: "auth",
+			},
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "freedom",
-			ContentValue:  nil,
+			SettingsValue: nil,
 		},
 	}
 

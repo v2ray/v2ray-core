@@ -193,16 +193,10 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 }
 
 type VMessOutboundHandlerFactory struct {
-	servers    []VNextServer
-	udpServers []VNextServer
 }
 
-func (factory *VMessOutboundHandlerFactory) Initialize(rawConfig []byte) error {
-	config, err := loadOutboundConfig(rawConfig)
-	if err != nil {
-		panic(log.Error("Failed to load VMess outbound config: %v", err))
-		return err
-	}
+func (factory *VMessOutboundHandlerFactory) Create(vp *core.Point, rawConfig interface{}, firstPacket v2net.Packet) (core.OutboundConnectionHandler, error) {
+	config := rawConfig.(*VMessOutboundConfig)
 	servers := make([]VNextServer, 0, len(config.VNextList))
 	udpServers := make([]VNextServer, 0, len(config.VNextList))
 	for _, server := range config.VNextList {
@@ -213,13 +207,7 @@ func (factory *VMessOutboundHandlerFactory) Initialize(rawConfig []byte) error {
 			udpServers = append(udpServers, server.ToVNextServer("udp"))
 		}
 	}
-	factory.servers = servers
-	factory.udpServers = udpServers
-	return nil
-}
-
-func (factory *VMessOutboundHandlerFactory) Create(vp *core.Point, firstPacket v2net.Packet) (core.OutboundConnectionHandler, error) {
-	return NewVMessOutboundHandler(vp, factory.servers, factory.udpServers, firstPacket), nil
+	return NewVMessOutboundHandler(vp, servers, udpServers, firstPacket), nil
 }
 
 func init() {

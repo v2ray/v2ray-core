@@ -27,11 +27,22 @@ func TestVMessInAndOut(t *testing.T) {
 		PortValue: portA,
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "mock_ich",
-			ContentValue:  nil,
+			SettingsValue: nil,
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "vmess",
-			ContentValue:  []byte("{\"vnext\":[{\"address\": \"127.0.0.1\", \"network\": \"tcp\", \"port\": 13829, \"users\":[{\"id\": \"ad937d9d-6e23-4a5a-ba23-bce5092a7c51\"}]}]}"),
+			SettingsValue: &VMessOutboundConfig{
+				[]VNextConfig{
+					VNextConfig{
+						Address: "127.0.0.1",
+						Port:    13829,
+						Network: "tcp",
+						Users: []VMessUser{
+							VMessUser{Id: "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"},
+						},
+					},
+				},
+			},
 		},
 	}
 
@@ -54,11 +65,15 @@ func TestVMessInAndOut(t *testing.T) {
 		PortValue: portB,
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "vmess",
-			ContentValue:  []byte("{\"clients\": [{\"id\": \"ad937d9d-6e23-4a5a-ba23-bce5092a7c51\"}]}"),
+			SettingsValue: &VMessInboundConfig{
+				AllowedClients: []VMessUser{
+					VMessUser{Id: "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"},
+				},
+			},
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "mock_och",
-			ContentValue:  nil,
+			SettingsValue: nil,
 		},
 	}
 
@@ -91,11 +106,22 @@ func TestVMessInAndOutUDP(t *testing.T) {
 		PortValue: portA,
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "mock_ich",
-			ContentValue:  nil,
+			SettingsValue: nil,
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "vmess",
-			ContentValue:  []byte("{\"vnext\":[{\"address\": \"127.0.0.1\", \"network\": \"udp\", \"port\": 13841, \"users\":[{\"id\": \"ad937d9d-6e23-4a5a-ba23-bce5092a7c51\"}]}]}"),
+			SettingsValue: &VMessOutboundConfig{
+				[]VNextConfig{
+					VNextConfig{
+						Address: "127.0.0.1",
+						Port:    13841,
+						Network: "udp",
+						Users: []VMessUser{
+							VMessUser{Id: "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"},
+						},
+					},
+				},
+			},
 		},
 	}
 
@@ -118,11 +144,16 @@ func TestVMessInAndOutUDP(t *testing.T) {
 		PortValue: portB,
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "vmess",
-			ContentValue:  []byte("{\"clients\": [{\"id\": \"ad937d9d-6e23-4a5a-ba23-bce5092a7c51\"}], \"udp\": true}"),
+			SettingsValue: &VMessInboundConfig{
+				AllowedClients: []VMessUser{
+					VMessUser{Id: "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"},
+				},
+				UDPEnabled: true,
+			},
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "mock_och",
-			ContentValue:  nil,
+			SettingsValue: nil,
 		},
 	}
 

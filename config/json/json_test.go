@@ -1,8 +1,14 @@
-package json
+package json_test
 
 import (
 	"path/filepath"
 	"testing"
+
+	"github.com/v2ray/v2ray-core/config"
+	"github.com/v2ray/v2ray-core/config/json"
+	_ "github.com/v2ray/v2ray-core/proxy/freedom/config/json"
+	_ "github.com/v2ray/v2ray-core/proxy/socks/config/json"
+	_ "github.com/v2ray/v2ray-core/proxy/vmess"
 
 	"github.com/v2ray/v2ray-core/testing/unit"
 )
@@ -13,18 +19,18 @@ func TestClientSampleConfig(t *testing.T) {
 	// TODO: fix for Windows
 	baseDir := "$GOPATH/src/github.com/v2ray/v2ray-core/release/config"
 
-	config, err := LoadConfig(filepath.Join(baseDir, "vpoint_socks_vmess.json"))
+	pointConfig, err := json.LoadConfig(filepath.Join(baseDir, "vpoint_socks_vmess.json"))
 	assert.Error(err).IsNil()
 
-	assert.Uint16(config.Port()).Positive()
-	assert.Pointer(config.InboundConfig()).IsNotNil()
-	assert.Pointer(config.OutboundConfig()).IsNotNil()
+	assert.Uint16(pointConfig.Port()).Positive()
+	assert.Pointer(pointConfig.InboundConfig()).IsNotNil()
+	assert.Pointer(pointConfig.OutboundConfig()).IsNotNil()
 
-	assert.String(config.InboundConfig().Protocol()).Equals("socks")
-	assert.Int(len(config.InboundConfig().Content())).GreaterThan(0)
+	assert.String(pointConfig.InboundConfig().Protocol()).Equals("socks")
+	assert.Pointer(pointConfig.InboundConfig().Settings(config.TypeInbound)).IsNotNil()
 
-	assert.String(config.OutboundConfig().Protocol()).Equals("vmess")
-	assert.Int(len(config.OutboundConfig().Content())).GreaterThan(0)
+	assert.String(pointConfig.OutboundConfig().Protocol()).Equals("vmess")
+	assert.Pointer(pointConfig.OutboundConfig().Settings(config.TypeOutbound)).IsNotNil()
 }
 
 func TestServerSampleConfig(t *testing.T) {
@@ -33,16 +39,16 @@ func TestServerSampleConfig(t *testing.T) {
 	// TODO: fix for Windows
 	baseDir := "$GOPATH/src/github.com/v2ray/v2ray-core/release/config"
 
-	config, err := LoadConfig(filepath.Join(baseDir, "vpoint_vmess_freedom.json"))
+	pointConfig, err := json.LoadConfig(filepath.Join(baseDir, "vpoint_vmess_freedom.json"))
 	assert.Error(err).IsNil()
 
-	assert.Uint16(config.Port()).Positive()
-	assert.Pointer(config.InboundConfig()).IsNotNil()
-	assert.Pointer(config.OutboundConfig()).IsNotNil()
+	assert.Uint16(pointConfig.Port()).Positive()
+	assert.Pointer(pointConfig.InboundConfig()).IsNotNil()
+	assert.Pointer(pointConfig.OutboundConfig()).IsNotNil()
 
-	assert.String(config.InboundConfig().Protocol()).Equals("vmess")
-	assert.Int(len(config.InboundConfig().Content())).GreaterThan(0)
+	assert.String(pointConfig.InboundConfig().Protocol()).Equals("vmess")
+	assert.Pointer(pointConfig.InboundConfig().Settings(config.TypeInbound)).IsNotNil()
 
-	assert.String(config.OutboundConfig().Protocol()).Equals("freedom")
-	assert.Int(len(config.OutboundConfig().Content())).Equals(0)
+	assert.String(pointConfig.OutboundConfig().Protocol()).Equals("freedom")
+	assert.Pointer(pointConfig.OutboundConfig().Settings(config.TypeOutbound)).IsNotNil()
 }

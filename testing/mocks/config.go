@@ -1,20 +1,20 @@
 package mocks
 
 import (
-	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/config"
 )
 
 type ConnectionConfig struct {
 	ProtocolValue string
-	ContentValue  []byte
+	SettingsValue interface{}
 }
 
 func (config *ConnectionConfig) Protocol() string {
 	return config.ProtocolValue
 }
 
-func (config *ConnectionConfig) Content() []byte {
-	return config.ContentValue
+func (config *ConnectionConfig) Settings(config.Type) interface{} {
+	return config.SettingsValue
 }
 
 type Config struct {
@@ -27,10 +27,10 @@ func (config *Config) Port() uint16 {
 	return config.PortValue
 }
 
-func (config *Config) InboundConfig() core.ConnectionConfig {
+func (config *Config) InboundConfig() config.ConnectionConfig {
 	return config.InboundConfigValue
 }
 
-func (config *Config) OutboundConfig() core.ConnectionConfig {
+func (config *Config) OutboundConfig() config.ConnectionConfig {
 	return config.OutboundConfigValue
 }

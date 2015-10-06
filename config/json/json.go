@@ -4,30 +4,32 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 
-	"github.com/v2ray/v2ray-core"
 	"github.com/v2ray/v2ray-core/common/log"
+	"github.com/v2ray/v2ray-core/config"
 )
 
 type ConnectionConfig struct {
-	ProtocolString string `json:"protocol"`
-	File           string `json:"file"`
+	ProtocolString  string          `json:"protocol"`
+	SettingsMessage json.RawMessage `json:"settings"`
 }
 
 func (config *ConnectionConfig) Protocol() string {
 	return config.ProtocolString
 }
 
-func (config *ConnectionConfig) Content() []byte {
-	if len(config.File) == 0 {
-		return nil
+func (config *ConnectionConfig) Settings(configType config.Type) interface{} {
+	creator, found := configCache[getConfigKey(config.Protocol(), configType)]
+	if !found {
+		panic("Unknown protocol " + config.Protocol())
 	}
-	content, err := ioutil.ReadFile(config.File)
+	configObj := creator()
+	err := json.Unmarshal(config.SettingsMessage, configObj)
 	if err != nil {
-		panic(log.Error("Failed to read config file (%s): %v", config.File, err))
+		log.Error("Unable to parse connection config: %v", err)
+		panic("Failed to parse connection config.")
 	}
-	return content
+	return configObj
 }
 
 // Config is the config for Point server.
@@ -41,11 +43,11 @@ func (config *Config) Port() uint16 {
 	return config.PortValue
 }
 
-func (config *Config) InboundConfig() core.ConnectionConfig {
+func (config *Config) InboundConfig() config.ConnectionConfig {
 	return config.InboundConfigValue
 }
 
-func (config *Config) OutboundConfig() core.ConnectionConfig {
+func (config *Config) OutboundConfig() config.ConnectionConfig {
 	return config.OutboundConfigValue
 }
 
@@ -53,23 +55,15 @@ func LoadConfig(file string) (*Config, error) {
 	fixedFile := os.ExpandEnv(file)
 	rawConfig, err := ioutil.ReadFile(fixedFile)
 	if err != nil {
-		log.Error("Failed to read point config file (%s): %v", file, err)
+		log.Error("Failed to read server config file (%s): %v", file, err)
 		return nil, err
 	}
 
 	config := &Config{}
 	err = json.Unmarshal(rawConfig, config)
 	if err != nil {
-		log.Error("Failed to load point config: %v", err)
+		log.Error("Failed to load server config: %v", err)
 		return nil, err
-	}
-
-	if !filepath.IsAbs(config.InboundConfigValue.File) && len(config.InboundConfigValue.File) > 0 {
-		config.InboundConfigValue.File = filepath.Join(filepath.Dir(fixedFile), config.InboundConfigValue.File)
-	}
-
-	if !filepath.IsAbs(config.OutboundConfigValue.File) && len(config.OutboundConfigValue.File) > 0 {
-		config.OutboundConfigValue.File = filepath.Join(filepath.Dir(fixedFile), config.OutboundConfigValue.File)
 	}
 
 	return config, err

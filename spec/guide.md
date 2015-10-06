@@ -19,38 +19,27 @@
   "port": 1080, // 监听端口
   "inbound": {
     "protocol": "socks",  // 传入数据所用协议
-    "file": "in_socks.json" // socks 配置文件
+    "settings": {
+      "auth": "noauth", // 认证方式，暂时只支持匿名
+      "udp": false // 如果要使用 UDP 转发，请改成 true
+    }
   },
   "outbound": {
-    "protocol": "vmess", // 中继协议
-    "file": "out_vmess.json" // vmess 配置文件
-  }
-}
-```
-
-另外还需要两个文件，保存于同一文件夹下：
-
-```javascript
-// in_socks.json
-{
-  "auth": "noauth" // 认证方式，暂时只支持匿名
-  "udp": false // 如果要使用 UDP 转发，请改成 true
-}
-```
-
-```javascript
-// out_vmess.json
-{
-  "vnext": [
-    {
-      "address": "127.0.0.1", // Point B 的 IP 地址，IPv4 或 IPv6，不支持域名
-      "port": 27183, // Point B 的监听端口，请更换成其它的值
-      "users": [
-        {"id": "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"}  // 用户 ID，必须包含在 Point B 的配置文件中。此 ID 将被用于通信的认证，请自行更换随机的 ID，可以使用 https://www.uuidgenerator.net/ 来生成新的 ID。
-      ],
-      "network": "tcp" // 如果要使用 UDP 转发，请改成 "tcp,udp"
+    "protocol": "vmess", // 中继协议，暂时只有这个
+    "settings": {
+      "vnext": [
+        {
+          "address": "127.0.0.1", // Point B 的 IP 地址，IPv4 或 IPv6，不支持域名
+          "port": 27183, // Point B 的监听端口，请更换成其它的值
+          "users": [
+            // 用户 ID，必须包含在 Point B 的配置文件中。此 ID 将被用于通信的认证，请自行更换随机的 ID，可以使用 https://www.uuidgenerator.net/ 来生成新的 ID。
+            {"id": "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"}
+          ],
+          "network": "tcp" // 如果要使用 UDP 转发，请改成 "tcp,udp"
+        }
+      ]
     }
-  ]
+  }
 }
 ```
 
@@ -58,26 +47,21 @@
 示例配置保存于 vpoint_vmess_freedom.json 文件中，格式如下：
 ```javascript
 {
-  "port": 27183, // 监听端口，必须和 out_vmess.json 中指定的一致
+  "port": 27183, // 监听端口，必须和 Point A 中指定的一致
   "inbound": {
     "protocol": "vmess", // 中继协议，不用改
-    "file": "in_vmess.json" // vmess 配置文件
+    "settings": {
+      "clients": [
+          // 认可的用户 ID，必须包含 Point A 中的用户 ID
+        {"id": "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"}
+      ],
+      "udp": false // 如果要使用 UDP 转发，请改成 true
+    }
   },
   "outbound": {
     "protocol": "freedom", // 出口协议，不用改
-    "file": "" // 暂无配置
+    "settings": {} // 暂无配置
   }
-}
-```
-
-另外还需要 in_vmess.json：
-```javascript
-// in_vmess.json
-{
-  "clients": [
-    {"id": "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"}  // 认可的用户 ID，必须包含 out_vmess.json 中的用户 ID
-  ],
-  "udp": false // 如果要使用 UDP 转发，请改成 true
 }
 ```
 

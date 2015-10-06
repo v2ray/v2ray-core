@@ -19,15 +19,10 @@ import (
 type SocksServer struct {
 	accepting bool
 	vPoint    *core.Point
-	config    jsonconfig.SocksConfig
+	config    *jsonconfig.SocksConfig
 }
 
-func NewSocksServer(vp *core.Point, rawConfig []byte) *SocksServer {
-	config, err := jsonconfig.Load(rawConfig)
-	if err != nil {
-		log.Error("Unable to load socks config: %v", err)
-		panic(errors.NewConfigurationError())
-	}
+func NewSocksServer(vp *core.Point, config *jsonconfig.SocksConfig) *SocksServer {
 	return &SocksServer{
 		vPoint: vp,
 		config: config,

@@ -9,6 +9,7 @@ import (
 	"golang.org/x/net/proxy"
 
 	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/proxy/socks/config/json"
 	"github.com/v2ray/v2ray-core/testing/mocks"
 	"github.com/v2ray/v2ray-core/testing/unit"
 )
@@ -28,11 +29,13 @@ func TestSocksTcpConnect(t *testing.T) {
 		PortValue: port,
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "socks",
-			ContentValue:  []byte("{\"auth\": \"noauth\"}"),
+			SettingsValue: &json.SocksConfig{
+				AuthMethod: "noauth",
+			},
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "mock_och",
-			ContentValue:  nil,
+			SettingsValue: nil,
 		},
 	}
 
@@ -79,11 +82,15 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 		PortValue: port,
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "socks",
-			ContentValue:  []byte("{\"auth\": \"password\",\"user\": \"userx\",\"pass\": \"passy\"}"),
+			SettingsValue: &json.SocksConfig{
+				AuthMethod: "noauth",
+				Username:   "userx",
+				Password:   "passy",
+			},
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "mock_och",
-			ContentValue:  nil,
+			SettingsValue: nil,
 		},
 	}
 
@@ -130,11 +137,14 @@ func TestSocksUdpSend(t *testing.T) {
 		PortValue: port,
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "socks",
-			ContentValue:  []byte("{\"auth\": \"noauth\", \"udp\": true}"),
+			SettingsValue: &json.SocksConfig{
+				AuthMethod: "noauth",
+				UDPEnabled: true,
+			},
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "mock_och",
-			ContentValue:  nil,
+			SettingsValue: nil,
 		},
 	}
 

@@ -1,7 +1,8 @@
 package json
 
 import (
-	"encoding/json"
+	"github.com/v2ray/v2ray-core/config"
+	"github.com/v2ray/v2ray-core/config/json"
 )
 
 const (
@@ -24,8 +25,8 @@ func (config SocksConfig) IsPassword() bool {
 	return config.AuthMethod == AuthMethodUserPass
 }
 
-func Load(rawConfig []byte) (SocksConfig, error) {
-	config := SocksConfig{}
-	err := json.Unmarshal(rawConfig, &config)
-	return config, err
+func init() {
+	json.RegisterConfigType("socks", config.TypeInbound, func() interface{} {
+		return new(SocksConfig)
+	})
 }

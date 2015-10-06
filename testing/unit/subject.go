@@ -22,7 +22,10 @@ func NewSubject(assert *Assertion) *Subject {
 // decorate prefixes the string with the file and line of the call site
 // and inserts the final newline if needed and indentation tabs for formatting.
 func decorate(s string) string {
-	_, file, line, ok := runtime.Caller(4) // decorate + log + public function.
+	_, file, line, ok := runtime.Caller(3)
+	if strings.Contains(file, "testing") {
+		_, file, line, ok = runtime.Caller(4)
+	}
 	if ok {
 		// Truncate file name at last file name separator.
 		if index := strings.LastIndex(file, "/"); index >= 0 {

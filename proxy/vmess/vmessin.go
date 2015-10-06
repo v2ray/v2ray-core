@@ -136,11 +136,9 @@ func handleOutput(request *protocol.VMessRequest, writer io.Writer, output <-cha
 type VMessInboundHandlerFactory struct {
 }
 
-func (factory *VMessInboundHandlerFactory) Create(vp *core.Point, rawConfig []byte) (core.InboundConnectionHandler, error) {
-	config, err := loadInboundConfig(rawConfig)
-	if err != nil {
-		panic(log.Error("VMessIn: Failed to load VMess inbound config: %v", err))
-	}
+func (factory *VMessInboundHandlerFactory) Create(vp *core.Point, rawConfig interface{}) (core.InboundConnectionHandler, error) {
+	config := rawConfig.(*VMessInboundConfig)
+
 	allowedClients := user.NewTimedUserSet()
 	for _, client := range config.AllowedClients {
 		user, err := client.ToUser()

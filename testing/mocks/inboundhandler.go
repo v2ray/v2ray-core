@@ -32,7 +32,7 @@ func (handler *InboundConnectionHandler) Communicate(packet v2net.Packet) error 
 	return nil
 }
 
-func (handler *InboundConnectionHandler) Create(point *core.Point, config []byte) (core.InboundConnectionHandler, error) {
+func (handler *InboundConnectionHandler) Create(point *core.Point, config interface{}) (core.InboundConnectionHandler, error) {
 	handler.Server = point
 	return handler, nil
 }

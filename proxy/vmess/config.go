@@ -1,12 +1,13 @@
 package vmess
 
 import (
-	"encoding/json"
 	"net"
 	"strings"
 
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/config"
+	"github.com/v2ray/v2ray-core/config/json"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 )
 
@@ -27,12 +28,6 @@ func (u *VMessUser) ToUser() (user.User, error) {
 type VMessInboundConfig struct {
 	AllowedClients []VMessUser `json:"clients"`
 	UDPEnabled     bool        `json:"udp"`
-}
-
-func loadInboundConfig(rawConfig []byte) (VMessInboundConfig, error) {
-	config := VMessInboundConfig{}
-	err := json.Unmarshal(rawConfig, &config)
-	return config, err
 }
 
 type VNextConfig struct {
@@ -76,8 +71,12 @@ type VMessOutboundConfig struct {
 	VNextList []VNextConfig `json:"vnext"`
 }
 
-func loadOutboundConfig(rawConfig []byte) (VMessOutboundConfig, error) {
-	config := VMessOutboundConfig{}
-	err := json.Unmarshal(rawConfig, &config)
-	return config, err
+func init() {
+	json.RegisterConfigType("vmess", config.TypeInbound, func() interface{} {
+		return new(VMessInboundConfig)
+	})
+
+	json.RegisterConfigType("vmess", config.TypeOutbound, func() interface{} {
+		return new(VMessOutboundConfig)
+	})
 }

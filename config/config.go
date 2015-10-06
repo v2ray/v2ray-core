@@ -1,8 +1,15 @@
-package core
+package config
+
+type Type string
+
+const (
+	TypeInbound  = Type("inbound")
+	TypeOutbound = Type("outbound")
+)
 
 type ConnectionConfig interface {
 	Protocol() string
-	Content() []byte
+	Settings(configType Type) interface{}
 }
 
 type PointConfig interface {
