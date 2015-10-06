@@ -25,11 +25,9 @@ func RegisterOutboundConnectionHandlerFactory(name string, factory OutboundConne
 
 // Point is an single server in V2Ray system.
 type Point struct {
-	port       uint16
-	ichFactory InboundConnectionHandlerFactory
-	ichConfig  interface{}
-	ochFactory OutboundConnectionHandlerFactory
-	ochConfig  interface{}
+	port uint16
+	ich  InboundConnectionHandler
+	och  OutboundConnectionHandler
 }
 
 // NewPoint returns a new Point server based on given configuration.
@@ -42,16 +40,25 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 	if !ok {
 		panic(log.Error("Unknown inbound connection handler factory %s", pConfig.InboundConfig().Protocol()))
 	}
-	vpoint.ichFactory = ichFactory
-	vpoint.ichConfig = pConfig.InboundConfig().Settings(config.TypeInbound)
+	ichConfig := pConfig.InboundConfig().Settings(config.TypeInbound)
+	ich, err := ichFactory.Create(vpoint, ichConfig)
+	if err != nil {
+		log.Error("Failed to create inbound connection handler: %v", err)
+		return nil, err
+	}
+	vpoint.ich = ich
 
 	ochFactory, ok := outboundFactories[pConfig.OutboundConfig().Protocol()]
 	if !ok {
 		panic(log.Error("Unknown outbound connection handler factory %s", pConfig.OutboundConfig().Protocol))
 	}
-
-	vpoint.ochFactory = ochFactory
-	vpoint.ochConfig = pConfig.OutboundConfig().Settings(config.TypeOutbound)
+	ochConfig := pConfig.OutboundConfig().Settings(config.TypeOutbound)
+	och, err := ochFactory.Create(vpoint, ochConfig)
+	if err != nil {
+		log.Error("Failed to create outbound connection handler: %v", err)
+		return nil, err
+	}
+	vpoint.och = och
 
 	return vpoint, nil
 }
@@ -65,11 +72,11 @@ type InboundConnectionHandler interface {
 }
 
 type OutboundConnectionHandlerFactory interface {
-	Create(VP *Point, config interface{}, firstPacket v2net.Packet) (OutboundConnectionHandler, error)
+	Create(VP *Point, config interface{}) (OutboundConnectionHandler, error)
 }
 
 type OutboundConnectionHandler interface {
-	Start(ray OutboundRay) error
+	Dispatch(firstPacket v2net.Packet, ray OutboundRay) error
 }
 
 // Start starts the Point server, and return any error during the process.
@@ -79,18 +86,14 @@ func (vp *Point) Start() error {
 		return log.Error("Invalid port %d", vp.port)
 	}
 
-	inboundConnectionHandler, err := vp.ichFactory.Create(vp, vp.ichConfig)
-	if err != nil {
-		return err
-	}
-	err = inboundConnectionHandler.Listen(vp.port)
-	return nil
+	err := vp.ich.Listen(vp.port)
+	// TODO: handle error
+	return err
 }
 
 func (p *Point) DispatchToOutbound(packet v2net.Packet) InboundRay {
 	ray := NewRay()
 	// TODO: handle error
-	och, _ := p.ochFactory.Create(p, p.ochConfig, packet)
-	_ = och.Start(ray)
+	p.och.Dispatch(packet, ray)
 	return ray
 }

@@ -13,9 +13,14 @@ type OutboundConnectionHandler struct {
 	Destination v2net.Destination
 }
 
-func (handler *OutboundConnectionHandler) Start(ray core.OutboundRay) error {
+func (handler *OutboundConnectionHandler) Dispatch(packet v2net.Packet, ray core.OutboundRay) error {
 	input := ray.OutboundInput()
 	output := ray.OutboundOutput()
+
+	handler.Destination = packet.Destination()
+	if packet.Chunk() != nil {
+		handler.Data2Send.Write(packet.Chunk())
+	}
 
 	go func() {
 		for {
@@ -34,11 +39,6 @@ func (handler *OutboundConnectionHandler) Start(ray core.OutboundRay) error {
 	return nil
 }
 
-func (handler *OutboundConnectionHandler) Create(point *core.Point, config interface{}, packet v2net.Packet) (core.OutboundConnectionHandler, error) {
-	handler.Destination = packet.Destination()
-	if packet.Chunk() != nil {
-		handler.Data2Send.Write(packet.Chunk())
-	}
-
+func (handler *OutboundConnectionHandler) Create(point *core.Point, config interface{}) (core.OutboundConnectionHandler, error) {
 	return handler, nil
 }

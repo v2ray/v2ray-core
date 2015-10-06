@@ -9,8 +9,8 @@ import (
 	jsonconf "github.com/v2ray/v2ray-core/config/json"
 
 	// The following are neccesary as they register handlers in their init functions.
+	_ "github.com/v2ray/v2ray-core/proxy/freedom"
 	_ "github.com/v2ray/v2ray-core/proxy/freedom/config/json"
-  _ "github.com/v2ray/v2ray-core/proxy/freedom"
 	_ "github.com/v2ray/v2ray-core/proxy/socks"
 	_ "github.com/v2ray/v2ray-core/proxy/vmess"
 )

@@ -10,23 +10,20 @@ import (
 )
 
 type FreedomConnection struct {
-	packet v2net.Packet
 }
 
-func NewFreedomConnection(firstPacket v2net.Packet) *FreedomConnection {
-	return &FreedomConnection{
-		packet: firstPacket,
-	}
+func NewFreedomConnection() *FreedomConnection {
+	return &FreedomConnection{}
 }
 
-func (vconn *FreedomConnection) Start(ray core.OutboundRay) error {
-	conn, err := net.Dial(vconn.packet.Destination().Network(), vconn.packet.Destination().Address().String())
-	log.Info("Freedom: Opening connection to %s", vconn.packet.Destination().String())
+func (vconn *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray core.OutboundRay) error {
+	conn, err := net.Dial(firstPacket.Destination().Network(), firstPacket.Destination().Address().String())
+	log.Info("Freedom: Opening connection to %s", firstPacket.Destination().String())
 	if err != nil {
 		if ray != nil {
 			close(ray.OutboundOutput())
 		}
-		return log.Error("Freedom: Failed to open connection: %s : %v", vconn.packet.Destination().String(), err)
+		return log.Error("Freedom: Failed to open connection: %s : %v", firstPacket.Destination().String(), err)
 	}
 
 	input := ray.OutboundInput()
@@ -35,17 +32,17 @@ func (vconn *FreedomConnection) Start(ray core.OutboundRay) error {
 	readMutex.Lock()
 	writeMutex.Lock()
 
-	if chunk := vconn.packet.Chunk(); chunk != nil {
+	if chunk := firstPacket.Chunk(); chunk != nil {
 		conn.Write(chunk)
 	}
 
-	if !vconn.packet.MoreChunks() {
+	if !firstPacket.MoreChunks() {
 		writeMutex.Unlock()
 	} else {
 		go dumpInput(conn, input, &writeMutex)
 	}
 
-	go dumpOutput(conn, output, &readMutex, vconn.packet.Destination().IsUDP())
+	go dumpOutput(conn, output, &readMutex, firstPacket.Destination().IsUDP())
 
 	go func() {
 		writeMutex.Lock()

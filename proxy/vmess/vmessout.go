@@ -28,15 +28,13 @@ type VNextServer struct {
 
 type VMessOutboundHandler struct {
 	vPoint       *core.Point
-	packet       v2net.Packet
 	vNextList    []VNextServer
 	vNextListUDP []VNextServer
 }
 
-func NewVMessOutboundHandler(vp *core.Point, vNextList, vNextListUDP []VNextServer, firstPacket v2net.Packet) *VMessOutboundHandler {
+func NewVMessOutboundHandler(vp *core.Point, vNextList, vNextListUDP []VNextServer) *VMessOutboundHandler {
 	return &VMessOutboundHandler{
 		vPoint:       vp,
-		packet:       firstPacket,
 		vNextList:    vNextList,
 		vNextListUDP: vNextListUDP,
 	}
@@ -65,28 +63,28 @@ func pickVNext(serverList []VNextServer) (v2net.Destination, user.User) {
 	return vNext.Destination, vNextUser
 }
 
-func (handler *VMessOutboundHandler) Start(ray core.OutboundRay) error {
+func (handler *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray core.OutboundRay) error {
 	vNextList := handler.vNextList
-	if handler.packet.Destination().IsUDP() {
+	if firstPacket.Destination().IsUDP() {
 		vNextList = handler.vNextListUDP
 	}
 	vNextAddress, vNextUser := pickVNext(vNextList)
 
 	command := protocol.CmdTCP
-	if handler.packet.Destination().IsUDP() {
+	if firstPacket.Destination().IsUDP() {
 		command = protocol.CmdUDP
 	}
 	request := &protocol.VMessRequest{
 		Version: protocol.Version,
 		UserId:  vNextUser.Id,
 		Command: command,
-		Address: handler.packet.Destination().Address(),
+		Address: firstPacket.Destination().Address(),
 	}
 	rand.Read(request.RequestIV[:])
 	rand.Read(request.RequestKey[:])
 	rand.Read(request.ResponseHeader[:])
 
-	go startCommunicate(request, vNextAddress, ray, handler.packet)
+	go startCommunicate(request, vNextAddress, ray, firstPacket)
 	return nil
 }
 
@@ -195,7 +193,7 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 type VMessOutboundHandlerFactory struct {
 }
 
-func (factory *VMessOutboundHandlerFactory) Create(vp *core.Point, rawConfig interface{}, firstPacket v2net.Packet) (core.OutboundConnectionHandler, error) {
+func (factory *VMessOutboundHandlerFactory) Create(vp *core.Point, rawConfig interface{}) (core.OutboundConnectionHandler, error) {
 	config := rawConfig.(*VMessOutboundConfig)
 	servers := make([]VNextServer, 0, len(config.VNextList))
 	udpServers := make([]VNextServer, 0, len(config.VNextList))
@@ -207,7 +205,7 @@ func (factory *VMessOutboundHandlerFactory) Create(vp *core.Point, rawConfig int
 			udpServers = append(udpServers, server.ToVNextServer("udp"))
 		}
 	}
-	return NewVMessOutboundHandler(vp, servers, udpServers, firstPacket), nil
+	return NewVMessOutboundHandler(vp, servers, udpServers), nil
 }
 
 func init() {
