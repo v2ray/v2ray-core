@@ -171,12 +171,10 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 		log.Error("VMessOut: Failed to create decrypt reader: %v", err)
 		return
 	}
-
-	buffer := make([]byte, 2*1024)
-
-	nBytes, err := decryptResponseReader.Read(buffer)
+  
+  buffer, err := v2net.ReadFrom(decryptResponseReader)
 	if err != nil {
-		//log.Error("VMessOut: Failed to read VMess response (%d bytes): %v", nBytes, err)
+		log.Error("VMessOut: Failed to read VMess response (%d bytes): %v", nBytes, err)
 		return
 	}
 	if !bytes.Equal(buffer[:4], request.ResponseHeader[:]) {
