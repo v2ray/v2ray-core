@@ -58,7 +58,7 @@ func (server *SocksServer) AcceptPackets(conn *net.UDPConn) error {
 
 		udpPacket := v2net.NewPacket(request.Destination(), request.Data, false)
     log.Info("Send packet to %s with %d bytes", udpPacket.Destination().String(), len(request.Data))
-		go server.handlePacket(conn, udpPacket, addr, v2net.IPAddress(request.Address.IP(), request.Address.Port()))
+		go server.handlePacket(conn, udpPacket, addr, request.Address)
 	}
 }
 
