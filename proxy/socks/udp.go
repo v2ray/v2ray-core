@@ -49,6 +49,7 @@ func (server *SocksServer) AcceptPackets(conn *net.UDPConn) error {
 			continue
 		}
 		if request.Fragment != 0 {
+			log.Warning("Dropping framented UDP packets.")
 			// TODO handle fragments
 			continue
 		}
