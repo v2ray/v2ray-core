@@ -171,10 +171,10 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 		log.Error("VMessOut: Failed to create decrypt reader: %v", err)
 		return
 	}
-  
-  buffer, err := v2net.ReadFrom(decryptResponseReader)
+
+	buffer, err := v2net.ReadFrom(decryptResponseReader)
 	if err != nil {
-		log.Error("VMessOut: Failed to read VMess response (%d bytes): %v", nBytes, err)
+		log.Error("VMessOut: Failed to read VMess response (%d bytes): %v", len(buffer), err)
 		return
 	}
 	if !bytes.Equal(buffer[:4], request.ResponseHeader[:]) {
@@ -182,7 +182,7 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 		return
 	}
 
-	output <- buffer[4:nBytes]
+	output <- buffer[4:]
 
 	if !isUDP {
 		v2net.ReaderToChan(output, decryptResponseReader)
