@@ -57,7 +57,7 @@ func (server *SocksServer) AcceptConnections(listener net.Listener) {
 func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	defer connection.Close()
 
-	reader := v2net.NewTimeOutReader(4, connection)
+	reader := v2net.NewTimeOutReader(120, connection)
 
 	auth, auth4, err := protocol.ReadAuthentication(reader)
 	if err != nil && !errors.HasCode(err, 1000) {

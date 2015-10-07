@@ -68,7 +68,7 @@ func (handler *VMessInboundHandler) AcceptConnections(listener net.Listener) err
 func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error {
 	defer connection.Close()
 
-	connReader := v2net.NewTimeOutReader(4, connection)
+	connReader := v2net.NewTimeOutReader(120, connection)
 	requestReader := protocol.NewVMessRequestReader(handler.clients)
 
 	request, err := requestReader.Read(connReader)
