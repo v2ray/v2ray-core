@@ -34,9 +34,9 @@ const (
 type VMessRequest struct {
 	Version        byte
 	UserId         user.ID
-	RequestIV      [16]byte
-	RequestKey     [16]byte
-	ResponseHeader [4]byte
+	RequestIV      []byte
+	RequestKey     []byte
+	ResponseHeader []byte
 	Command        byte
 	Address        v2net.Address
 }
@@ -102,9 +102,9 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 		return nil, errors.NewProtocolVersionError(int(request.Version))
 	}
 
-	copy(request.RequestIV[:], buffer[1:17])       // 16 bytes
-	copy(request.RequestKey[:], buffer[17:33])     // 16 bytes
-	copy(request.ResponseHeader[:], buffer[33:37]) // 4 bytes
+	request.RequestIV = buffer[1:17]       // 16 bytes
+	request.RequestKey = buffer[17:33]     // 16 bytes
+	request.ResponseHeader = buffer[33:37] // 4 bytes
 	request.Command = buffer[37]
 
 	port := binary.BigEndian.Uint16(buffer[38:40])
@@ -169,9 +169,9 @@ func (request *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 u
 	encryptionBegin := len(buffer)
 
 	buffer = append(buffer, request.Version)
-	buffer = append(buffer, request.RequestIV[:]...)
-	buffer = append(buffer, request.RequestKey[:]...)
-	buffer = append(buffer, request.ResponseHeader[:]...)
+	buffer = append(buffer, request.RequestIV...)
+	buffer = append(buffer, request.RequestKey...)
+	buffer = append(buffer, request.ResponseHeader...)
 	buffer = append(buffer, request.Command)
 	buffer = append(buffer, request.Address.PortBytes()...)
 

@@ -26,20 +26,12 @@ func TestVMessSerialization(t *testing.T) {
 	request.Version = byte(0x01)
 	request.UserId = userId
 
-	_, err = rand.Read(request.RequestIV[:])
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, err = rand.Read(request.RequestKey[:])
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, err = rand.Read(request.ResponseHeader[:])
-	if err != nil {
-		t.Fatal(err)
-	}
+	randBytes := make([]byte, 36)
+	_, err = rand.Read(randBytes)
+	assert.Error(err).IsNil()
+	request.RequestIV = randBytes[:16]
+	request.RequestKey = randBytes[16:32]
+	request.ResponseHeader = randBytes[32:]
 
 	request.Command = byte(0x01)
 	request.Address = v2net.DomainAddress("v2ray.com", 80)
@@ -61,9 +53,9 @@ func TestVMessSerialization(t *testing.T) {
 
 	assert.Byte(actualRequest.Version).Named("Version").Equals(byte(0x01))
 	assert.String(actualRequest.UserId.String).Named("UserId").Equals(request.UserId.String)
-	assert.Bytes(actualRequest.RequestIV[:]).Named("RequestIV").Equals(request.RequestIV[:])
-	assert.Bytes(actualRequest.RequestKey[:]).Named("RequestKey").Equals(request.RequestKey[:])
-	assert.Bytes(actualRequest.ResponseHeader[:]).Named("ResponseHeader").Equals(request.ResponseHeader[:])
+	assert.Bytes(actualRequest.RequestIV).Named("RequestIV").Equals(request.RequestIV[:])
+	assert.Bytes(actualRequest.RequestKey).Named("RequestKey").Equals(request.RequestKey[:])
+	assert.Bytes(actualRequest.ResponseHeader).Named("ResponseHeader").Equals(request.ResponseHeader[:])
 	assert.Byte(actualRequest.Command).Named("Command").Equals(request.Command)
 	assert.String(actualRequest.Address.String()).Named("Address").Equals(request.Address.String())
 }
@@ -77,9 +69,11 @@ func BenchmarkVMessRequestWriting(b *testing.B) {
 	request.Version = byte(0x01)
 	request.UserId = userId
 
-	rand.Read(request.RequestIV[:])
-	rand.Read(request.RequestKey[:])
-	rand.Read(request.ResponseHeader[:])
+	randBytes := make([]byte, 36)
+	rand.Read(randBytes)
+	request.RequestIV = randBytes[:16]
+	request.RequestKey = randBytes[16:32]
+	request.ResponseHeader = randBytes[32:]
 
 	request.Command = byte(0x01)
 	request.Address = v2net.DomainAddress("v2ray.com", 80)

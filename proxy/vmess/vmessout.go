@@ -80,9 +80,12 @@ func (handler *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray core
 		Command: command,
 		Address: firstPacket.Destination().Address(),
 	}
-	rand.Read(request.RequestIV[:])
-	rand.Read(request.RequestKey[:])
-	rand.Read(request.ResponseHeader[:])
+
+	buffer := make([]byte, 36) // 16 + 16 + 4
+	rand.Read(buffer)
+	request.RequestIV = buffer[:16]
+	request.RequestKey = buffer[16:32]
+	request.ResponseHeader = buffer[32:]
 
 	go startCommunicate(request, vNextAddress, ray, firstPacket)
 	return nil
