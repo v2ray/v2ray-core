@@ -117,3 +117,17 @@ func NewInvalidOperationError(operation string) InvalidOperationError {
 func (r InvalidOperationError) Error() string {
 	return r.Prefix() + "Invalid operation: " + r.Operation
 }
+
+type BadConfigurationError struct {
+	ErrorCode
+}
+
+var badConfigurationErrorInstance = BadConfigurationError{ErrorCode: 6}
+
+func NewBadConfigurationError() BadConfigurationError {
+	return badConfigurationErrorInstance
+}
+
+func (r BadConfigurationError) Error() string {
+	return r.Prefix() + "Bad configuration."
+}

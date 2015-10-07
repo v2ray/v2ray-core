@@ -1,6 +1,7 @@
 package core
 
 import (
+	"github.com/v2ray/v2ray-core/common/errors"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/config"
@@ -38,7 +39,8 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 
 	ichFactory, ok := inboundFactories[pConfig.InboundConfig().Protocol()]
 	if !ok {
-		panic(log.Error("Unknown inbound connection handler factory %s", pConfig.InboundConfig().Protocol()))
+		log.Error("Unknown inbound connection handler factory %s", pConfig.InboundConfig().Protocol())
+		return nil, errors.NewBadConfigurationError()
 	}
 	ichConfig := pConfig.InboundConfig().Settings(config.TypeInbound)
 	ich, err := ichFactory.Create(vpoint, ichConfig)
@@ -50,7 +52,8 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 
 	ochFactory, ok := outboundFactories[pConfig.OutboundConfig().Protocol()]
 	if !ok {
-		panic(log.Error("Unknown outbound connection handler factory %s", pConfig.OutboundConfig().Protocol))
+		log.Error("Unknown outbound connection handler factory %s", pConfig.OutboundConfig().Protocol())
+		return nil, errors.NewBadConfigurationError()
 	}
 	ochConfig := pConfig.OutboundConfig().Settings(config.TypeOutbound)
 	och, err := ochFactory.Create(vpoint, ochConfig)
@@ -83,7 +86,8 @@ type OutboundConnectionHandler interface {
 // In the case of any errors, the state of the server is unpredicatable.
 func (vp *Point) Start() error {
 	if vp.port <= 0 {
-		return log.Error("Invalid port %d", vp.port)
+		log.Error("Invalid port %d", vp.port)
+		return errors.NewBadConfigurationError()
 	}
 
 	err := vp.ich.Listen(vp.port)

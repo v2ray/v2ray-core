@@ -17,7 +17,7 @@ import (
 
 var (
 	configFile = flag.String("config", "", "Config file for this Point server.")
-	logLevel   = flag.String("loglevel", "", "Level of log info to be printed to console, available value: debug, info, warning, error")
+	logLevel   = flag.String("loglevel", "warning", "Level of log info to be printed to console, available value: debug, info, warning, error")
 	version    = flag.Bool("version", false, "Show current version of V2Ray.")
 )
 
@@ -40,24 +40,31 @@ func main() {
 		log.SetLogLevel(log.WarningLevel)
 	case "error":
 		log.SetLogLevel(log.ErrorLevel)
+	default:
+		fmt.Println("Unknown log level: " + *logLevel)
+		return
 	}
 
 	if configFile == nil || len(*configFile) == 0 {
-		panic(log.Error("Config file is not set."))
+		log.Error("Config file is not set.")
+		return
 	}
 	config, err := jsonconf.LoadConfig(*configFile)
 	if err != nil {
-		panic(log.Error("Failed to read config file (%s): %v", *configFile, err))
+		log.Error("Failed to read config file (%s): %v", *configFile, err)
+		return
 	}
 
 	vPoint, err := core.NewPoint(config)
 	if err != nil {
-		panic(log.Error("Failed to create Point server: %v", err))
+		log.Error("Failed to create Point server: %v", err)
+		return
 	}
 
 	err = vPoint.Start()
 	if err != nil {
 		log.Error("Error starting Point server: %v", err)
+		return
 	}
 
 	finish := make(chan bool)
