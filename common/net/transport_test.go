@@ -22,7 +22,7 @@ func TestReaderAndWrite(t *testing.T) {
 	readerBuffer := bytes.NewReader(buffer)
 	writerBuffer := bytes.NewBuffer(make([]byte, 0, size))
 
-	transportChan := make(chan []byte, size/bufferSize*10)
+	transportChan := make(chan []byte, 1024)
 
 	err = ReaderToChan(transportChan, readerBuffer)
 	assert.Error(err).Equals(io.EOF)
@@ -52,43 +52,96 @@ func (reader *StaticReader) Read(b []byte) (size int, err error) {
 	return
 }
 
-func BenchmarkTransport(b *testing.B) {
+func BenchmarkTransport1K(b *testing.B) {
+	size := 1 * 1024
+
+	for i := 0; i < b.N; i++ {
+		runBenchmarkTransport(size)
+	}
+}
+
+func BenchmarkTransport2K(b *testing.B) {
+	size := 2 * 1024
+
+	for i := 0; i < b.N; i++ {
+		runBenchmarkTransport(size)
+	}
+}
+
+func BenchmarkTransport4K(b *testing.B) {
+	size := 4 * 1024
+
+	for i := 0; i < b.N; i++ {
+		runBenchmarkTransport(size)
+	}
+}
+
+func BenchmarkTransport10K(b *testing.B) {
+	size := 10 * 1024
+
+	for i := 0; i < b.N; i++ {
+		runBenchmarkTransport(size)
+	}
+}
+
+func BenchmarkTransport100K(b *testing.B) {
+	size := 100 * 1024
+
+	for i := 0; i < b.N; i++ {
+		runBenchmarkTransport(size)
+	}
+}
+
+func BenchmarkTransport1M(b *testing.B) {
 	size := 1024 * 1024
 
 	for i := 0; i < b.N; i++ {
-		transportChanA := make(chan []byte, 128)
-		transportChanB := make(chan []byte, 128)
-
-		readerA := &StaticReader{size, 0}
-		readerB := &StaticReader{size, 0}
-
-		writerA := ioutil.Discard
-		writerB := ioutil.Discard
-
-		finishA := make(chan bool)
-		finishB := make(chan bool)
-
-		go func() {
-			ChanToWriter(writerA, transportChanA)
-			close(finishA)
-		}()
-
-		go func() {
-			ReaderToChan(transportChanA, readerA)
-			close(transportChanA)
-		}()
-
-		go func() {
-			ChanToWriter(writerB, transportChanB)
-			close(finishB)
-		}()
-
-		go func() {
-			ReaderToChan(transportChanB, readerB)
-			close(transportChanB)
-		}()
-
-		<-transportChanA
-		<-transportChanB
+		runBenchmarkTransport(size)
 	}
+}
+
+func BenchmarkTransport10M(b *testing.B) {
+	size := 10 * 1024 * 1024
+
+	for i := 0; i < b.N; i++ {
+		runBenchmarkTransport(size)
+	}
+}
+
+func runBenchmarkTransport(size int) {
+
+	transportChanA := make(chan []byte, 128)
+	transportChanB := make(chan []byte, 128)
+
+	readerA := &StaticReader{size, 0}
+	readerB := &StaticReader{size, 0}
+
+	writerA := ioutil.Discard
+	writerB := ioutil.Discard
+
+	finishA := make(chan bool)
+	finishB := make(chan bool)
+
+	go func() {
+		ChanToWriter(writerA, transportChanA)
+		close(finishA)
+	}()
+
+	go func() {
+		ReaderToChan(transportChanA, readerA)
+		close(transportChanA)
+	}()
+
+	go func() {
+		ChanToWriter(writerB, transportChanB)
+		close(finishB)
+	}()
+
+	go func() {
+		ReaderToChan(transportChanB, readerB)
+		close(transportChanB)
+	}()
+
+	<-transportChanA
+	<-transportChanB
 }

@@ -158,7 +158,7 @@ func (server *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.W
 	}
 
 	dest := request.Destination()
-	data, err := v2net.ReadFrom(reader)
+	data, err := v2net.ReadFrom(reader, 4)
 	if err != nil {
 		return err
 	}
@@ -192,8 +192,8 @@ func (server *SocksServer) handleUDP(reader *v2net.TimeOutReader, writer io.Writ
 		return err
 	}
 
-	reader.SetTimeOut(300) /* 5 minutes */
-	v2net.ReadFrom(reader) // Just in case of anything left in the socket
+	reader.SetTimeOut(300)    /* 5 minutes */
+	v2net.ReadFrom(reader, 1) // Just in case of anything left in the socket
 	// The TCP connection closes after this method returns. We need to wait until
 	// the client closes it.
 	// TODO: get notified from UDP part
@@ -215,7 +215,7 @@ func (server *SocksServer) handleSocks4(reader io.Reader, writer io.Writer, auth
 	}
 
 	dest := v2net.NewTCPDestination(v2net.IPAddress(auth.IP[:], auth.Port))
-	data, err := v2net.ReadFrom(reader)
+	data, err := v2net.ReadFrom(reader, 4)
 	if err != nil {
 		return err
 	}

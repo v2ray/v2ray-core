@@ -173,7 +173,7 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 		return
 	}
 
-	buffer, err := v2net.ReadFrom(decryptResponseReader)
+	buffer, err := v2net.ReadFrom(decryptResponseReader, 4)
 	if err != nil {
 		log.Error("VMessOut: Failed to read VMess response (%d bytes): %v", len(buffer), err)
 		return
