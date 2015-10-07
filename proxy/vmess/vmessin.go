@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"io"
 	"net"
-	"strconv"
 	"sync"
 	"time"
 
@@ -40,7 +39,11 @@ func NewVMessInboundHandler(vp *core.Point, clients user.UserSet, udpEnabled boo
 }
 
 func (handler *VMessInboundHandler) Listen(port uint16) error {
-	listener, err := net.Listen("tcp", ":"+strconv.Itoa(int(port)))
+	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
+		IP:   []byte{0, 0, 0, 0},
+		Port: int(port),
+		Zone: "",
+	})
 	if err != nil {
 		return log.Error("Unable to listen tcp:%d", port)
 	}
@@ -54,9 +57,9 @@ func (handler *VMessInboundHandler) Listen(port uint16) error {
 	return nil
 }
 
-func (handler *VMessInboundHandler) AcceptConnections(listener net.Listener) error {
+func (handler *VMessInboundHandler) AcceptConnections(listener *net.TCPListener) error {
 	for handler.accepting {
-		connection, err := listener.Accept()
+		connection, err := listener.AcceptTCP()
 		if err != nil {
 			return log.Error("Failed to accpet connection: %s", err.Error())
 		}
@@ -65,7 +68,7 @@ func (handler *VMessInboundHandler) AcceptConnections(listener net.Listener) err
 	return nil
 }
 
-func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error {
+func (handler *VMessInboundHandler) HandleConnection(connection *net.TCPConn) error {
 	defer connection.Close()
 
 	connReader := v2net.NewTimeOutReader(120, connection)
@@ -101,14 +104,14 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 
 	if data, open := <-output; open {
 		buffer = append(buffer, data...)
+		data = nil
 		responseWriter.Write(buffer)
+		buffer = nil
 		go handleOutput(request, responseWriter, output, &writeFinish)
 		writeFinish.Lock()
 	}
 
-	if tcpConn, ok := connection.(*net.TCPConn); ok {
-		tcpConn.CloseWrite()
-	}
+	connection.CloseWrite()
 	readFinish.Lock()
 
 	return nil
