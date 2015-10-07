@@ -44,6 +44,9 @@ func (reader *StaticReader) Read(b []byte) (size int, err error) {
 	if size > reader.total-reader.current {
 		size = reader.total - reader.current
 	}
+	for i := 0; i < len(b); i++ {
+		b[i] = byte(i)
+	}
 	//rand.Read(b[:size])
 	reader.current += size
 	if reader.current == reader.total {
@@ -110,8 +113,8 @@ func BenchmarkTransport10M(b *testing.B) {
 
 func runBenchmarkTransport(size int) {
 
-	transportChanA := make(chan []byte, 128)
-	transportChanB := make(chan []byte, 128)
+	transportChanA := make(chan []byte, 16)
+	transportChanB := make(chan []byte, 16)
 
 	readerA := &StaticReader{size, 0}
 	readerB := &StaticReader{size, 0}
