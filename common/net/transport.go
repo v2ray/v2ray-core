@@ -12,7 +12,7 @@ func ReadFrom(reader io.Reader) ([]byte, error) {
 	buffer := make([]byte, bufferSize)
 	nBytes, err := reader.Read(buffer)
 	if nBytes == 0 {
-		buffer = nil
+		return nil, err
 	}
 	return buffer[:nBytes], err
 }
