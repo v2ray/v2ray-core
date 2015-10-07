@@ -76,13 +76,12 @@ func (handler *VMessInboundHandler) handlePacket(conn *net.UDPConn, request *pro
 
 	buffer := bytes.NewBuffer(make([]byte, 0, bufferSize))
 
-	response := protocol.NewVMessResponse(request)
 	responseWriter, err := v2io.NewAesEncryptWriter(responseKey[:], responseIV[:], buffer)
 	if err != nil {
 		log.Error("VMessIn: Failed to create encrypt writer: %v", err)
 		return
 	}
-	responseWriter.Write(response[:])
+	responseWriter.Write(request.ResponseHeader[:])
 
 	hasData := false
 

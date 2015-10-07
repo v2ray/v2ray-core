@@ -90,7 +90,6 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 	responseKey := md5.Sum(request.RequestKey[:])
 	responseIV := md5.Sum(request.RequestIV[:])
 
-	response := protocol.NewVMessResponse(request)
 	responseWriter, err := v2io.NewAesEncryptWriter(responseKey[:], responseIV[:], connection)
 	if err != nil {
 		return log.Error("VMessIn: Failed to create encrypt writer: %v", err)
@@ -98,7 +97,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 
 	// Optimize for small response packet
 	buffer := make([]byte, 0, 2*1024)
-	buffer = append(buffer, response[:]...)
+	buffer = append(buffer, request.ResponseHeader[:]...)
 
 	if data, open := <-output; open {
 		buffer = append(buffer, data...)

@@ -175,7 +175,7 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 		log.Error("VMessOut: Failed to read VMess response (%d bytes): %v", len(buffer), err)
 		return
 	}
-	if !bytes.Equal(buffer[:4], request.ResponseHeader[:]) {
+	if len(buffer) < 4 || !bytes.Equal(buffer[:4], request.ResponseHeader[:]) {
 		log.Warning("VMessOut: unexepcted response header. The connection is probably hijacked.")
 		return
 	}

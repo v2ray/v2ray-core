@@ -209,15 +209,3 @@ func (request *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 u
 
 	return buffer, nil
 }
-
-// VMessResponse is the header of a TCP response in VMess format.
-type VMessResponse [4]byte
-
-// NewVMessResponse creates a VMessResponse from a given VMessRequest.
-func NewVMessResponse(request *VMessRequest) *VMessResponse {
-	return &VMessResponse{
-		request.ResponseHeader[0],
-		request.ResponseHeader[1],
-		request.ResponseHeader[2],
-		request.ResponseHeader[3]}
-}
