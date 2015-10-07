@@ -87,8 +87,8 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 
 	go handleInput(request, connReader, input, &readFinish)
 
-	responseKey := md5.Sum(request.RequestKey[:])
-	responseIV := md5.Sum(request.RequestIV[:])
+	responseKey := md5.Sum(request.RequestKey)
+	responseIV := md5.Sum(request.RequestIV)
 
 	responseWriter, err := v2io.NewAesEncryptWriter(responseKey[:], responseIV[:], connection)
 	if err != nil {
@@ -97,7 +97,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection net.Conn) error 
 
 	// Optimize for small response packet
 	buffer := make([]byte, 0, 2*1024)
-	buffer = append(buffer, request.ResponseHeader[:]...)
+	buffer = append(buffer, request.ResponseHeader...)
 
 	if data, open := <-output; open {
 		buffer = append(buffer, data...)
@@ -118,7 +118,7 @@ func handleInput(request *protocol.VMessRequest, reader io.Reader, input chan<- 
 	defer close(input)
 	defer finish.Unlock()
 
-	requestReader, err := v2io.NewAesDecryptReader(request.RequestKey[:], request.RequestIV[:], reader)
+	requestReader, err := v2io.NewAesDecryptReader(request.RequestKey, request.RequestIV, reader)
 	if err != nil {
 		log.Error("VMessIn: Failed to create decrypt reader: %v", err)
 		return

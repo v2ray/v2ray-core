@@ -49,7 +49,7 @@ func (handler *VMessInboundHandler) AcceptPackets(conn *net.UDPConn) {
 			continue
 		}
 
-		cryptReader, err := v2io.NewAesDecryptReader(request.RequestKey[:], request.RequestIV[:], reader)
+		cryptReader, err := v2io.NewAesDecryptReader(request.RequestKey, request.RequestIV, reader)
 		if err != nil {
 			log.Error("VMessIn: Failed to create decrypt reader: %v", err)
 			continue
@@ -71,8 +71,8 @@ func (handler *VMessInboundHandler) handlePacket(conn *net.UDPConn, request *pro
 	ray := handler.vPoint.DispatchToOutbound(packet)
 	close(ray.InboundInput())
 
-	responseKey := md5.Sum(request.RequestKey[:])
-	responseIV := md5.Sum(request.RequestIV[:])
+	responseKey := md5.Sum(request.RequestKey)
+	responseIV := md5.Sum(request.RequestIV)
 
 	buffer := bytes.NewBuffer(make([]byte, 0, bufferSize))
 
@@ -81,7 +81,7 @@ func (handler *VMessInboundHandler) handlePacket(conn *net.UDPConn, request *pro
 		log.Error("VMessIn: Failed to create encrypt writer: %v", err)
 		return
 	}
-	responseWriter.Write(request.ResponseHeader[:])
+	responseWriter.Write(request.ResponseHeader)
 
 	hasData := false
 
