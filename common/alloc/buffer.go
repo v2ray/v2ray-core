@@ -1,7 +1,6 @@
 package alloc
 
 import (
-	//"fmt"
 	"time"
 )
 
@@ -55,7 +54,6 @@ func newBufferPool(allocator func(*bufferPool) *Buffer, elements2Keep, size int)
 }
 
 func (p *bufferPool) allocate() *Buffer {
-	//fmt.Printf("Pool size: %d\n", len(p.chain))
 	var b *Buffer
 	select {
 	case b = <-p.chain:
@@ -71,7 +69,6 @@ func (p *bufferPool) free(buffer *Buffer) {
 	case p.chain <- buffer:
 	default:
 	}
-	//fmt.Printf("Pool size: %d\n", len(p.chain))
 }
 
 func (p *bufferPool) cleanup(tick <-chan time.Time) {
