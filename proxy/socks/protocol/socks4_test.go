@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/testing/unit"
 )
 
@@ -32,6 +33,10 @@ func TestSocks4AuthenticationResponseToBytes(t *testing.T) {
 		port:   443,
 		ip:     []byte{1, 2, 3, 4},
 	}
-	responseBytes := response.ToBytes(nil)
-	assert.Bytes(responseBytes).Equals([]byte{0x00, 0x10, 0x01, 0xBB, 0x01, 0x02, 0x03, 0x04})
+
+	buffer := alloc.NewSmallBuffer().Clear()
+	defer buffer.Release()
+
+	response.Write(buffer)
+	assert.Bytes(buffer.Value).Equals([]byte{0x00, 0x10, 0x01, 0xBB, 0x01, 0x02, 0x03, 0x04})
 }

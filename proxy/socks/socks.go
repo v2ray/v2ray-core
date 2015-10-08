@@ -133,7 +133,10 @@ func (server *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.W
 	if request.Command == protocol.CmdBind || request.Command == protocol.CmdUdpAssociate {
 		response := protocol.NewSocks5Response()
 		response.Error = protocol.ErrorCommandNotSupported
-		err = protocol.WriteResponse(writer, response)
+
+		responseBuffer := alloc.NewSmallBuffer().Clear()
+		response.Write(responseBuffer)
+		_, err = writer.Write(responseBuffer.Value)
 		if err != nil {
 			log.Error("Socks failed to write response: %v", err)
 			return err
@@ -152,7 +155,9 @@ func (server *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.W
 	response.IPv4[2] = 0
 	response.IPv4[3] = 0
 
-	err = protocol.WriteResponse(writer, response)
+	responseBuffer := alloc.NewSmallBuffer().Clear()
+	response.Write(responseBuffer)
+	_, err = writer.Write(responseBuffer.Value)
 	if err != nil {
 		log.Error("Socks failed to write response: %v", err)
 		return err
@@ -187,7 +192,12 @@ func (server *SocksServer) handleUDP(reader *v2net.TimeOutReader, writer io.Writ
 		response.AddrType = protocol.AddrTypeDomain
 		response.Domain = udpAddr.Domain()
 	}
-	err := protocol.WriteResponse(writer, response)
+
+	responseBuffer := alloc.NewSmallBuffer()
+	response.Write(responseBuffer)
+	_, err := writer.Write(responseBuffer.Value)
+	responseBuffer.Release()
+
 	if err != nil {
 		log.Error("Socks failed to write response: %v", err)
 		return err
@@ -209,7 +219,11 @@ func (server *SocksServer) handleSocks4(reader io.Reader, writer io.Writer, auth
 		result = protocol.Socks4RequestRejected
 	}
 	socks4Response := protocol.NewSocks4AuthenticationResponse(result, auth.Port, auth.IP[:])
-	writer.Write(socks4Response.ToBytes(nil))
+
+	responseBuffer := alloc.NewSmallBuffer().Clear()
+	socks4Response.Write(responseBuffer)
+	writer.Write(responseBuffer.Value)
+	responseBuffer.Release()
 
 	if result == protocol.Socks4RequestRejected {
 		return errors.NewInvalidOperationError("Socks4 command " + strconv.Itoa(int(auth.Command)))

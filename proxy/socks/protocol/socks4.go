@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/errors"
 )
 
@@ -39,13 +40,8 @@ func NewSocks4AuthenticationResponse(result byte, port uint16, ip []byte) *Socks
 	}
 }
 
-func (r *Socks4AuthenticationResponse) ToBytes(buffer []byte) []byte {
-	if buffer == nil {
-		buffer = make([]byte, 8)
-	}
-	buffer[1] = r.result
-	buffer[2] = byte(r.port >> 8)
-	buffer[3] = byte(r.port)
-	copy(buffer[4:], r.ip)
-	return buffer
+func (r *Socks4AuthenticationResponse) Write(buffer *alloc.Buffer) {
+	buffer.AppendBytes(
+		byte(0x00), r.result, byte(r.port>>8), byte(r.port),
+		r.ip[0], r.ip[1], r.ip[2], r.ip[3])
 }

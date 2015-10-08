@@ -75,9 +75,7 @@ func ReadUDPRequest(packet []byte) (request Socks5UDPRequest, err error) {
 		return
 	}
 
-	request.Data = alloc.NewBuffer()
-	request.Data.Clear()
-	request.Data.Append(packet[dataBegin:])
+	request.Data = alloc.NewBuffer().Clear().Append(packet[dataBegin:])
 
 	return
 }

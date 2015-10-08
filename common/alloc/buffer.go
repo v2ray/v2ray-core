@@ -17,24 +17,37 @@ func (b *Buffer) Release() {
 	b.pool = nil
 }
 
-func (b *Buffer) Clear() {
+func (b *Buffer) Clear() *Buffer {
 	b.Value = b.head[:0]
+	return b
 }
 
-func (b *Buffer) Append(data []byte) {
+func (b *Buffer) AppendBytes(bytes ...byte) *Buffer {
+	b.Value = append(b.Value, bytes...)
+	return b
+}
+
+func (b *Buffer) Append(data []byte) *Buffer {
 	b.Value = append(b.Value, data...)
+	return b
 }
 
-func (b *Buffer) Slice(from, to int) {
+func (b *Buffer) Slice(from, to int) *Buffer {
 	b.Value = b.Value[from:to]
+	return b
 }
 
-func (b *Buffer) SliceFrom(from int) {
+func (b *Buffer) SliceFrom(from int) *Buffer {
 	b.Value = b.Value[from:]
+	return b
 }
 
 func (b *Buffer) Len() int {
 	return len(b.Value)
+}
+
+func (b *Buffer) IsFull() bool {
+	return len(b.Value) == cap(b.Value)
 }
 
 type bufferPool struct {
@@ -90,8 +103,18 @@ func (p *bufferPool) cleanup(tick <-chan time.Time) {
 	}
 }
 
-var smallPool = newBufferPool(8*1024, 256, 2048)
+var smallPool = newBufferPool(1024, 16, 64)
+var mediumPool = newBufferPool(8*1024, 256, 2048)
+var largePool = newBufferPool(64*1024, 16, 64)
+
+func NewSmallBuffer() *Buffer {
+	return smallPool.allocate()
+}
 
 func NewBuffer() *Buffer {
-	return smallPool.allocate()
+	return mediumPool.allocate()
+}
+
+func NewLargeBuffer() *Buffer {
+	return largePool.allocate()
 }

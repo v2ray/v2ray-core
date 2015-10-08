@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/testing/unit"
 )
 
@@ -67,7 +68,7 @@ func TestRequestRead(t *testing.T) {
 	assert.Uint16(request.Port).Named("Port").Equals(53)
 }
 
-func TestResponseToBytes(t *testing.T) {
+func TestResponseWrite(t *testing.T) {
 	assert := unit.Assert(t)
 
 	response := Socks5Response{
@@ -79,7 +80,10 @@ func TestResponseToBytes(t *testing.T) {
 		[16]byte{},
 		uint16(53),
 	}
-	rawResponse := response.toBytes()
+	buffer := alloc.NewSmallBuffer().Clear()
+	defer buffer.Release()
+
+	response.Write(buffer)
 	expectedBytes := []byte{
 		socksVersion,
 		ErrorSuccess,
@@ -88,5 +92,5 @@ func TestResponseToBytes(t *testing.T) {
 		0x72, 0x72, 0x72, 0x72,
 		byte(0x00), byte(0x035),
 	}
-	assert.Bytes(rawResponse).Named("raw response").Equals(expectedBytes)
+	assert.Bytes(buffer.Value).Named("raw response").Equals(expectedBytes)
 }

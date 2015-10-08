@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"io"
 
+	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/errors"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -39,8 +40,10 @@ func (request *Socks5AuthenticationRequest) HasAuthMethod(method byte) bool {
 }
 
 func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, auth4 Socks4AuthenticationRequest, err error) {
-	buffer := make([]byte, 256)
-	nBytes, err := reader.Read(buffer)
+	buffer := alloc.NewSmallBuffer()
+	defer buffer.Release()
+
+	nBytes, err := reader.Read(buffer.Value)
 	if err != nil {
 		return
 	}
@@ -50,22 +53,22 @@ func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, aut
 		return
 	}
 
-	if buffer[0] == socks4Version {
-		auth4.Version = buffer[0]
-		auth4.Command = buffer[1]
-		auth4.Port = binary.BigEndian.Uint16(buffer[2:4])
-		copy(auth4.IP[:], buffer[4:8])
+	if buffer.Value[0] == socks4Version {
+		auth4.Version = buffer.Value[0]
+		auth4.Command = buffer.Value[1]
+		auth4.Port = binary.BigEndian.Uint16(buffer.Value[2:4])
+		copy(auth4.IP[:], buffer.Value[4:8])
 		err = NewSocksVersion4Error()
 		return
 	}
 
-	auth.version = buffer[0]
+	auth.version = buffer.Value[0]
 	if auth.version != socksVersion {
 		err = errors.NewProtocolVersionError(int(auth.version))
 		return
 	}
 
-	auth.nMethods = buffer[1]
+	auth.nMethods = buffer.Value[1]
 	if auth.nMethods <= 0 {
 		log.Info("Zero length of authentication methods")
 		err = errors.NewCorruptedPacketError()
@@ -77,7 +80,7 @@ func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, aut
 		err = errors.NewCorruptedPacketError()
 		return
 	}
-	copy(auth.authMethods[:], buffer[2:nBytes])
+	copy(auth.authMethods[:], buffer.Value[2:nBytes])
 	return
 }
 
@@ -113,29 +116,31 @@ func (request Socks5UserPassRequest) AuthDetail() string {
 }
 
 func ReadUserPassRequest(reader io.Reader) (request Socks5UserPassRequest, err error) {
-	buffer := make([]byte, 256)
-	_, err = reader.Read(buffer[0:2])
-	if err != nil {
-		return
-	}
-	request.version = buffer[0]
-	nUsername := buffer[1]
-	nBytes, err := reader.Read(buffer[:nUsername])
-	if err != nil {
-		return
-	}
-	request.username = string(buffer[:nBytes])
+	buffer := alloc.NewSmallBuffer()
+	defer buffer.Release()
 
-	_, err = reader.Read(buffer[0:1])
+	_, err = reader.Read(buffer.Value[0:2])
 	if err != nil {
 		return
 	}
-	nPassword := buffer[0]
-	nBytes, err = reader.Read(buffer[:nPassword])
+	request.version = buffer.Value[0]
+	nUsername := buffer.Value[1]
+	nBytes, err := reader.Read(buffer.Value[:nUsername])
 	if err != nil {
 		return
 	}
-	request.password = string(buffer[:nBytes])
+	request.username = string(buffer.Value[:nBytes])
+
+	_, err = reader.Read(buffer.Value[0:1])
+	if err != nil {
+		return
+	}
+	nPassword := buffer.Value[0]
+	nBytes, err = reader.Read(buffer.Value[:nPassword])
+	if err != nil {
+		return
+	}
+	request.password = string(buffer.Value[:nBytes])
 	return
 }
 
@@ -177,8 +182,10 @@ type Socks5Request struct {
 }
 
 func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
-	buffer := make([]byte, 256)
-	nBytes, err := reader.Read(buffer[:4])
+	buffer := alloc.NewSmallBuffer()
+	defer buffer.Release()
+
+	nBytes, err := reader.Read(buffer.Value[:4])
 	if err != nil {
 		return
 	}
@@ -187,10 +194,10 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 		return
 	}
 	request = &Socks5Request{
-		Version: buffer[0],
-		Command: buffer[1],
+		Version: buffer.Value[0],
+		Command: buffer.Value[1],
 		// buffer[2] is a reserved field
-		AddrType: buffer[3],
+		AddrType: buffer.Value[3],
 	}
 	switch request.AddrType {
 	case AddrTypeIPv4:
@@ -203,12 +210,12 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 			return
 		}
 	case AddrTypeDomain:
-		nBytes, err = reader.Read(buffer[0:1])
+		nBytes, err = reader.Read(buffer.Value[0:1])
 		if err != nil {
 			return
 		}
-		domainLength := buffer[0]
-		nBytes, err = reader.Read(buffer[:domainLength])
+		domainLength := buffer.Value[0]
+		nBytes, err = reader.Read(buffer.Value[:domainLength])
 		if err != nil {
 			return
 		}
@@ -218,7 +225,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 			err = errors.NewCorruptedPacketError()
 			return
 		}
-		request.Domain = string(buffer[:domainLength])
+		request.Domain = string(buffer.Value[:domainLength])
 	case AddrTypeIPv6:
 		nBytes, err = reader.Read(request.IPv6[:])
 		if err != nil {
@@ -234,7 +241,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 		return
 	}
 
-	nBytes, err = reader.Read(buffer[:2])
+	nBytes, err = reader.Read(buffer.Value[:2])
 	if err != nil {
 		return
 	}
@@ -243,7 +250,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 		return
 	}
 
-	request.Port = binary.BigEndian.Uint16(buffer)
+	request.Port = binary.BigEndian.Uint16(buffer.Value[:2])
 	return
 }
 
@@ -305,26 +312,16 @@ func (r *Socks5Response) SetDomain(domain string) {
 	r.Domain = domain
 }
 
-func (r *Socks5Response) toBytes() []byte {
-	buffer := make([]byte, 0, 300)
-	buffer = append(buffer, r.Version)
-	buffer = append(buffer, r.Error)
-	buffer = append(buffer, 0x00) // reserved
-	buffer = append(buffer, r.AddrType)
+func (r *Socks5Response) Write(buffer *alloc.Buffer) {
+	buffer.AppendBytes(r.Version, r.Error, 0x00 /* reserved */, r.AddrType)
 	switch r.AddrType {
 	case 0x01:
-		buffer = append(buffer, r.IPv4[:]...)
+		buffer.Append(r.IPv4[:])
 	case 0x03:
-		buffer = append(buffer, byte(len(r.Domain)))
-		buffer = append(buffer, []byte(r.Domain)...)
+		buffer.AppendBytes(byte(len(r.Domain)))
+		buffer.Append([]byte(r.Domain))
 	case 0x04:
-		buffer = append(buffer, r.IPv6[:]...)
+		buffer.Append(r.IPv6[:])
 	}
-	buffer = append(buffer, byte(r.Port>>8), byte(r.Port))
-	return buffer
-}
-
-func WriteResponse(writer io.Writer, response *Socks5Response) error {
-	_, err := writer.Write(response.toBytes())
-	return err
+	buffer.AppendBytes(byte(r.Port>>8), byte(r.Port))
 }
