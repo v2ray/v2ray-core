@@ -36,7 +36,6 @@ func (vconn *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray core.Outb
 	if chunk := firstPacket.Chunk(); chunk != nil {
 		conn.Write(chunk.Value)
 		chunk.Release()
-		chunk = nil
 	}
 
 	if !firstPacket.MoreChunks() {
@@ -74,7 +73,6 @@ func dumpOutput(conn net.Conn, output chan<- *alloc.Buffer, finish *sync.Mutex, 
 		output <- response
 	} else {
 		response.Release()
-		response = nil
 	}
 	if err != nil {
 		return

@@ -91,14 +91,15 @@ func (handler *VMessInboundHandler) HandleConnection(connection *net.TCPConn) er
 	}
 
 	// Optimize for small response packet
-	buffer := make([]byte, 0, 4*1024)
-	buffer = append(buffer, request.ResponseHeader...)
+	buffer := alloc.NewBuffer()
+	buffer.Clear()
+	buffer.Append(request.ResponseHeader)
 
 	if data, open := <-output; open {
-		buffer = append(buffer, data.Value...)
-		data = nil
-		responseWriter.Write(buffer)
-		buffer = nil
+		buffer.Append(data.Value)
+		data.Release()
+		responseWriter.Write(buffer.Value)
+		buffer.Release()
 		go handleOutput(request, responseWriter, output, &writeFinish)
 		writeFinish.Lock()
 	}

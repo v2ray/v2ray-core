@@ -23,7 +23,6 @@ func ReaderToChan(stream chan<- *alloc.Buffer, reader io.Reader) error {
 			stream <- buffer
 		} else {
 			buffer.Release()
-			buffer = nil
 		}
 		if err != nil {
 			return err
@@ -36,7 +35,6 @@ func ChanToWriter(writer io.Writer, stream <-chan *alloc.Buffer) error {
 	for buffer := range stream {
 		_, err := writer.Write(buffer.Value)
 		buffer.Release()
-		buffer = nil
 		if err != nil {
 			return err
 		}

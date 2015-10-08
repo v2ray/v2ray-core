@@ -40,22 +40,25 @@ func (server *SocksServer) getUDPAddr() v2net.Address {
 func (server *SocksServer) AcceptPackets(conn *net.UDPConn) error {
 	for {
 		buffer := alloc.NewBuffer()
-		defer buffer.Release()
 		nBytes, addr, err := conn.ReadFromUDP(buffer.Value)
 		if err != nil {
 			log.Error("Socks failed to read UDP packets: %v", err)
+			buffer.Release()
 			continue
 		}
 		buffer.Slice(0, nBytes)
 		log.Info("Client UDP connection from %v", addr)
 		request, err := protocol.ReadUDPRequest(buffer.Value)
+		buffer.Release()
 		if err != nil {
 			log.Error("Socks failed to parse UDP request: %v", err)
+			request.Data.Release()
 			continue
 		}
 		if request.Fragment != 0 {
 			log.Warning("Dropping framented UDP packets.")
 			// TODO handle fragments
+			request.Data.Release()
 			continue
 		}
 
@@ -79,7 +82,6 @@ func (server *SocksServer) handlePacket(conn *net.UDPConn, packet v2net.Packet, 
 		udpMessage := response.Bytes(nil)
 		nBytes, err := conn.WriteToUDP(udpMessage, clientAddr)
 		response.Data.Release()
-		response.Data = nil
 		if err != nil {
 			log.Error("Socks failed to write UDP message (%d bytes) to %s: %v", nBytes, clientAddr.String(), err)
 		}

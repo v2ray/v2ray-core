@@ -12,10 +12,13 @@ type Buffer struct {
 
 func (b *Buffer) Release() {
 	b.pool.free(b)
+	b.head = nil
+	b.Value = nil
+	b.pool = nil
 }
 
 func (b *Buffer) Clear() {
-	b.Value = b.Value[:0]
+	b.Value = b.head[:0]
 }
 
 func (b *Buffer) Append(data []byte) {
@@ -35,38 +38,41 @@ func (b *Buffer) Len() int {
 }
 
 type bufferPool struct {
-	chain         chan *Buffer
-	allocator     func(*bufferPool) *Buffer
-	elements2Keep int
+	chain        chan []byte
+	bufferSize   int
+	buffers2Keep int
 }
 
-func newBufferPool(allocator func(*bufferPool) *Buffer, elements2Keep, size int) *bufferPool {
+func newBufferPool(bufferSize, buffers2Keep, poolSize int) *bufferPool {
 	pool := &bufferPool{
-		chain:         make(chan *Buffer, size),
-		allocator:     allocateSmall,
-		elements2Keep: elements2Keep,
+		chain:        make(chan []byte, poolSize),
+		bufferSize:   bufferSize,
+		buffers2Keep: buffers2Keep,
 	}
-	for i := 0; i < elements2Keep; i++ {
-		pool.chain <- allocator(pool)
+	for i := 0; i < buffers2Keep; i++ {
+		pool.chain <- make([]byte, bufferSize)
 	}
 	go pool.cleanup(time.Tick(1 * time.Second))
 	return pool
 }
 
 func (p *bufferPool) allocate() *Buffer {
-	var b *Buffer
+	var b []byte
 	select {
 	case b = <-p.chain:
 	default:
-		b = p.allocator(p)
+		b = make([]byte, p.bufferSize)
 	}
-	b.Value = b.head
-	return b
+	return &Buffer{
+		head:  b,
+		pool:  p,
+		Value: b,
+	}
 }
 
 func (p *bufferPool) free(buffer *Buffer) {
 	select {
-	case p.chain <- buffer:
+	case p.chain <- buffer.head:
 	default:
 	}
 }
@@ -74,26 +80,17 @@ func (p *bufferPool) free(buffer *Buffer) {
 func (p *bufferPool) cleanup(tick <-chan time.Time) {
 	for range tick {
 		pSize := len(p.chain)
-		if pSize > p.elements2Keep {
+		if pSize > p.buffers2Keep {
 			<-p.chain
 			continue
 		}
-		for delta := pSize - p.elements2Keep; delta > 0; delta-- {
-			p.chain <- p.allocator(p)
+		for delta := pSize - p.buffers2Keep; delta > 0; delta-- {
+			p.chain <- make([]byte, p.bufferSize)
 		}
 	}
 }
 
-func allocateSmall(pool *bufferPool) *Buffer {
-	b := &Buffer{
-		head: make([]byte, 8*1024),
-	}
-	b.Value = b.head
-	b.pool = pool
-	return b
-}
-
-var smallPool = newBufferPool(allocateSmall, 256, 2048)
+var smallPool = newBufferPool(8*1024, 256, 2048)
 
 func NewBuffer() *Buffer {
 	return smallPool.allocate()

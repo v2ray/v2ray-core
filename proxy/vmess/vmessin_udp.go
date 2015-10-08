@@ -60,6 +60,7 @@ func (handler *VMessInboundHandler) AcceptPackets(conn *net.UDPConn) {
 		nBytes, err = cryptReader.Read(data.Value)
 		if err != nil {
 			log.Warning("VMessIn: Unable to decrypt data: %v", err)
+			data.Release()
 			continue
 		}
 		data.Slice(0, nBytes)
@@ -91,7 +92,6 @@ func (handler *VMessInboundHandler) handlePacket(conn *net.UDPConn, request *pro
 		hasData = true
 		responseWriter.Write(data.Value)
 		data.Release()
-		data = nil
 	}
 
 	if hasData {

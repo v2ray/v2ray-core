@@ -12,7 +12,7 @@
     "settings": {
       "vnext": [
         {
-          "address": "127.0.0.1",
+          "address": "45.78.9.54",
           "port": 27183,
           "users": [
             {"id": "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"}

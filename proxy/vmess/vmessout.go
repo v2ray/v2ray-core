@@ -150,11 +150,9 @@ func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2
 		encryptRequestWriter.Crypt(firstChunk.Value)
 		requestBytes = append(requestBytes, firstChunk.Value...)
 		firstChunk.Release()
-		firstChunk = nil
 
 		_, err = conn.Write(requestBytes)
 		buffer.Release()
-		buffer = nil
 		if err != nil {
 			log.Error("VMessOut: Failed to write VMess request: %v", err)
 			return
