@@ -27,14 +27,14 @@ func (request *Socks5UDPRequest) Write(buffer *alloc.Buffer) {
 	buffer.AppendBytes(0, 0, request.Fragment)
 	switch {
 	case request.Address.IsIPv4():
-  buffer.AppendBytes(AddrTypeIPv4).Append(request.Address.IP())
+		buffer.AppendBytes(AddrTypeIPv4).Append(request.Address.IP())
 	case request.Address.IsIPv6():
-  buffer.AppendBytes(AddrTypeIPv6).Append(request.Address.IP())
+		buffer.AppendBytes(AddrTypeIPv6).Append(request.Address.IP())
 	case request.Address.IsDomain():
-  buffer.AppendBytes(AddrTypeDomain, byte(len(request.Address.Domain()))).Append([]byte(request.Address.Domain()))
+		buffer.AppendBytes(AddrTypeDomain, byte(len(request.Address.Domain()))).Append([]byte(request.Address.Domain()))
 	}
-  buffer.Append(request.Address.PortBytes())
-  buffer.Append(request.Data.Value)
+	buffer.Append(request.Address.PortBytes())
+	buffer.Append(request.Data.Value)
 }
 
 func ReadUDPRequest(packet []byte) (request Socks5UDPRequest, err error) {
