@@ -46,9 +46,8 @@ func (server *SocksServer) AcceptPackets(conn *net.UDPConn) error {
 			buffer.Release()
 			continue
 		}
-		buffer.Slice(0, nBytes)
 		log.Info("Client UDP connection from %v", addr)
-		request, err := protocol.ReadUDPRequest(buffer.Value)
+		request, err := protocol.ReadUDPRequest(buffer.Value[:nBytes])
 		buffer.Release()
 		if err != nil {
 			log.Error("Socks failed to parse UDP request: %v", err)
@@ -79,8 +78,12 @@ func (server *SocksServer) handlePacket(conn *net.UDPConn, packet v2net.Packet, 
 			Data:     data,
 		}
 		log.Info("Writing back UDP response with %d bytes from %s to %s", data.Len(), targetAddr.String(), clientAddr.String())
-		udpMessage := response.Bytes(nil)
-		nBytes, err := conn.WriteToUDP(udpMessage, clientAddr)
+    
+    udpMessage := alloc.NewSmallBuffer().Clear()
+    response.Write(udpMessage)
+
+		nBytes, err := conn.WriteToUDP(udpMessage.Value, clientAddr)
+    udpMessage.Release()
 		response.Data.Release()
 		if err != nil {
 			log.Error("Socks failed to write UDP message (%d bytes) to %s: %v", nBytes, clientAddr.String(), err)
