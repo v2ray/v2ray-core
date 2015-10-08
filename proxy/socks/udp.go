@@ -3,6 +3,7 @@ package socks
 import (
 	"net"
 
+	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy/socks/protocol"
@@ -38,14 +39,16 @@ func (server *SocksServer) getUDPAddr() v2net.Address {
 
 func (server *SocksServer) AcceptPackets(conn *net.UDPConn) error {
 	for {
-		buffer := make([]byte, bufferSize)
-		nBytes, addr, err := conn.ReadFromUDP(buffer)
+		buffer := alloc.NewBuffer()
+		defer buffer.Release()
+		nBytes, addr, err := conn.ReadFromUDP(buffer.Value)
 		if err != nil {
 			log.Error("Socks failed to read UDP packets: %v", err)
 			continue
 		}
+		buffer.Slice(0, nBytes)
 		log.Info("Client UDP connection from %v", addr)
-		request, err := protocol.ReadUDPRequest(buffer[:nBytes])
+		request, err := protocol.ReadUDPRequest(buffer.Value)
 		if err != nil {
 			log.Error("Socks failed to parse UDP request: %v", err)
 			continue
@@ -57,7 +60,7 @@ func (server *SocksServer) AcceptPackets(conn *net.UDPConn) error {
 		}
 
 		udpPacket := v2net.NewPacket(request.Destination(), request.Data, false)
-		log.Info("Send packet to %s with %d bytes", udpPacket.Destination().String(), len(request.Data))
+		log.Info("Send packet to %s with %d bytes", udpPacket.Destination().String(), request.Data.Len())
 		go server.handlePacket(conn, udpPacket, addr, request.Address)
 	}
 }
@@ -72,9 +75,11 @@ func (server *SocksServer) handlePacket(conn *net.UDPConn, packet v2net.Packet, 
 			Address:  targetAddr,
 			Data:     data,
 		}
-		log.Info("Writing back UDP response with %d bytes from %s to %s", len(data), targetAddr.String(), clientAddr.String())
+		log.Info("Writing back UDP response with %d bytes from %s to %s", data.Len(), targetAddr.String(), clientAddr.String())
 		udpMessage := response.Bytes(nil)
 		nBytes, err := conn.WriteToUDP(udpMessage, clientAddr)
+		response.Data.Release()
+		response.Data = nil
 		if err != nil {
 			log.Error("Socks failed to write UDP message (%d bytes) to %s: %v", nBytes, clientAddr.String(), err)
 		}

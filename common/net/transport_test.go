@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/testing/unit"
 )
 
@@ -22,7 +23,7 @@ func TestReaderAndWrite(t *testing.T) {
 	readerBuffer := bytes.NewReader(buffer)
 	writerBuffer := bytes.NewBuffer(make([]byte, 0, size))
 
-	transportChan := make(chan []byte, 1024)
+	transportChan := make(chan *alloc.Buffer, 1024)
 
 	err = ReaderToChan(transportChan, readerBuffer)
 	assert.Error(err).Equals(io.EOF)
@@ -44,7 +45,7 @@ func (reader *StaticReader) Read(b []byte) (size int, err error) {
 	if size > reader.total-reader.current {
 		size = reader.total - reader.current
 	}
-	for i := 0; i < len(b); i++ {
+	for i := 0; i < size; i++ {
 		b[i] = byte(i)
 	}
 	//rand.Read(b[:size])
@@ -113,8 +114,8 @@ func BenchmarkTransport10M(b *testing.B) {
 
 func runBenchmarkTransport(size int) {
 
-	transportChanA := make(chan []byte, 16)
-	transportChanB := make(chan []byte, 16)
+	transportChanA := make(chan *alloc.Buffer, 16)
+	transportChanB := make(chan *alloc.Buffer, 16)
 
 	readerA := &StaticReader{size, 0}
 	readerB := &StaticReader{size, 0}

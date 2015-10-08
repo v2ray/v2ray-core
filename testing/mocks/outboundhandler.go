@@ -4,6 +4,7 @@ import (
 	"bytes"
 
 	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
@@ -19,7 +20,7 @@ func (handler *OutboundConnectionHandler) Dispatch(packet v2net.Packet, ray core
 
 	handler.Destination = packet.Destination()
 	if packet.Chunk() != nil {
-		handler.Data2Send.Write(packet.Chunk())
+		handler.Data2Send.Write(packet.Chunk().Value)
 	}
 
 	go func() {
@@ -28,11 +29,13 @@ func (handler *OutboundConnectionHandler) Dispatch(packet v2net.Packet, ray core
 			if !open {
 				break
 			}
-			handler.Data2Send.Write(data)
+			handler.Data2Send.Write(data.Value)
+			data.Release()
 		}
-		dataCopy := make([]byte, len(handler.Data2Return))
-		copy(dataCopy, handler.Data2Return)
-		output <- dataCopy
+		response := alloc.NewBuffer()
+		response.Clear()
+		response.Append(handler.Data2Return)
+		output <- response
 		close(output)
 	}()
 

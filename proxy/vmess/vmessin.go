@@ -5,22 +5,14 @@ import (
 	"io"
 	"net"
 	"sync"
-	"time"
 
 	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/common/alloc"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
-)
-
-const (
-	requestReadTimeOut = 4 * time.Second
-)
-
-var (
-	zeroTime time.Time
 )
 
 type VMessInboundHandler struct {
@@ -103,7 +95,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection *net.TCPConn) er
 	buffer = append(buffer, request.ResponseHeader...)
 
 	if data, open := <-output; open {
-		buffer = append(buffer, data...)
+		buffer = append(buffer, data.Value...)
 		data = nil
 		responseWriter.Write(buffer)
 		buffer = nil
@@ -117,7 +109,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection *net.TCPConn) er
 	return nil
 }
 
-func handleInput(request *protocol.VMessRequest, reader io.Reader, input chan<- []byte, finish *sync.Mutex) {
+func handleInput(request *protocol.VMessRequest, reader io.Reader, input chan<- *alloc.Buffer, finish *sync.Mutex) {
 	defer close(input)
 	defer finish.Unlock()
 
@@ -130,7 +122,7 @@ func handleInput(request *protocol.VMessRequest, reader io.Reader, input chan<- 
 	v2net.ReaderToChan(input, requestReader)
 }
 
-func handleOutput(request *protocol.VMessRequest, writer io.Writer, output <-chan []byte, finish *sync.Mutex) {
+func handleOutput(request *protocol.VMessRequest, writer io.Writer, output <-chan *alloc.Buffer, finish *sync.Mutex) {
 	v2net.ChanToWriter(writer, output)
 	finish.Unlock()
 }

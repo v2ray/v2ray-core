@@ -4,6 +4,7 @@ import (
 	"bytes"
 
 	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
@@ -25,7 +26,10 @@ func (handler *InboundConnectionHandler) Communicate(packet v2net.Packet) error 
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 
-	input <- handler.Data2Send
+	buffer := alloc.NewBuffer()
+	buffer.Clear()
+	buffer.Append(handler.Data2Send)
+	input <- buffer
 	close(input)
 
 	v2net.ChanToWriter(handler.DataReturned, output)

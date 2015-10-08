@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/errors"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -158,7 +159,7 @@ func (server *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.W
 	}
 
 	dest := request.Destination()
-	data, err := v2net.ReadFrom(reader, 4)
+	data, err := v2net.ReadFrom(reader, nil)
 	if err != nil {
 		return err
 	}
@@ -192,8 +193,8 @@ func (server *SocksServer) handleUDP(reader *v2net.TimeOutReader, writer io.Writ
 		return err
 	}
 
-	reader.SetTimeOut(300)    /* 5 minutes */
-	v2net.ReadFrom(reader, 1) // Just in case of anything left in the socket
+	reader.SetTimeOut(300)      /* 5 minutes */
+	v2net.ReadFrom(reader, nil) // Just in case of anything left in the socket
 	// The TCP connection closes after this method returns. We need to wait until
 	// the client closes it.
 	// TODO: get notified from UDP part
@@ -215,7 +216,7 @@ func (server *SocksServer) handleSocks4(reader io.Reader, writer io.Writer, auth
 	}
 
 	dest := v2net.NewTCPDestination(v2net.IPAddress(auth.IP[:], auth.Port))
-	data, err := v2net.ReadFrom(reader, 4)
+	data, err := v2net.ReadFrom(reader, nil)
 	if err != nil {
 		return err
 	}
@@ -239,13 +240,13 @@ func (server *SocksServer) transport(reader io.Reader, writer io.Writer, firstPa
 	outputFinish.Lock()
 }
 
-func dumpInput(reader io.Reader, input chan<- []byte, finish *sync.Mutex) {
+func dumpInput(reader io.Reader, input chan<- *alloc.Buffer, finish *sync.Mutex) {
 	v2net.ReaderToChan(input, reader)
 	finish.Unlock()
 	close(input)
 }
 
-func dumpOutput(writer io.Writer, output <-chan []byte, finish *sync.Mutex) {
+func dumpOutput(writer io.Writer, output <-chan *alloc.Buffer, finish *sync.Mutex) {
 	v2net.ChanToWriter(writer, output)
 	finish.Unlock()
 }

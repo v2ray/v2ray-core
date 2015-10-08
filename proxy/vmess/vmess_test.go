@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/testing/mocks"
 	"github.com/v2ray/v2ray-core/testing/unit"
@@ -163,8 +164,11 @@ func TestVMessInAndOutUDP(t *testing.T) {
 	err = pointB.Start()
 	assert.Error(err).IsNil()
 
+	data2SendBuffer := alloc.NewBuffer()
+	data2SendBuffer.Clear()
+	data2SendBuffer.Append([]byte(data2Send))
 	dest := v2net.NewUDPDestination(v2net.IPAddress([]byte{1, 2, 3, 4}, 80))
-	ich.Communicate(v2net.NewPacket(dest, []byte(data2Send), false))
+	ich.Communicate(v2net.NewPacket(dest, data2SendBuffer, false))
 	assert.Bytes([]byte(data2Send)).Equals(och.Data2Send.Bytes())
 	assert.Bytes(ich.DataReturned.Bytes()).Equals(och.Data2Return)
 }

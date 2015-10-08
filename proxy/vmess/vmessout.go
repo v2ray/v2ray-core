@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/common/alloc"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -121,7 +122,7 @@ func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ra
 	return nil
 }
 
-func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2net.Packet, input <-chan []byte, finish *sync.Mutex) {
+func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2net.Packet, input <-chan *alloc.Buffer, finish *sync.Mutex) {
 	defer finish.Unlock()
 	encryptRequestWriter, err := v2io.NewAesEncryptWriter(request.RequestKey[:], request.RequestIV[:], conn)
 	if err != nil {
@@ -129,8 +130,9 @@ func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2
 		return
 	}
 
-	buffer := make([]byte, 0, 2*1024)
-	buffer, err = request.ToBytes(user.NewTimeHash(user.HMACHash{}), user.GenerateRandomInt64InRange, buffer)
+	buffer := alloc.NewBuffer()
+	buffer.Clear()
+	requestBytes, err := request.ToBytes(user.NewTimeHash(user.HMACHash{}), user.GenerateRandomInt64InRange, buffer.Value)
 	if err != nil {
 		log.Error("VMessOut: Failed to serialize VMess request: %v", err)
 		return
@@ -145,10 +147,14 @@ func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2
 	}
 
 	if firstChunk != nil {
-		encryptRequestWriter.Crypt(firstChunk)
-		buffer = append(buffer, firstChunk...)
+		encryptRequestWriter.Crypt(firstChunk.Value)
+		requestBytes = append(requestBytes, firstChunk.Value...)
+		firstChunk.Release()
+		firstChunk = nil
 
-		_, err = conn.Write(buffer)
+		_, err = conn.Write(requestBytes)
+		buffer.Release()
+		buffer = nil
 		if err != nil {
 			log.Error("VMessOut: Failed to write VMess request: %v", err)
 			return
@@ -161,7 +167,7 @@ func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2
 	return
 }
 
-func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<- []byte, finish *sync.Mutex, isUDP bool) {
+func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<- *alloc.Buffer, finish *sync.Mutex, isUDP bool) {
 	defer finish.Unlock()
 	defer close(output)
 	responseKey := md5.Sum(request.RequestKey[:])
@@ -173,18 +179,19 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 		return
 	}
 
-	buffer, err := v2net.ReadFrom(decryptResponseReader, 4)
+	buffer, err := v2net.ReadFrom(decryptResponseReader, nil)
 	if err != nil {
-		log.Error("VMessOut: Failed to read VMess response (%d bytes): %v", len(buffer), err)
+		log.Error("VMessOut: Failed to read VMess response (%d bytes): %v", buffer.Len(), err)
 		return
 	}
-	if len(buffer) < 4 || !bytes.Equal(buffer[:4], request.ResponseHeader[:]) {
+	if buffer.Len() < 4 || !bytes.Equal(buffer.Value[:4], request.ResponseHeader[:]) {
 		log.Warning("VMessOut: unexepcted response header. The connection is probably hijacked.")
 		return
 	}
-	log.Info("VMessOut received %d bytes from %s", len(buffer)-4, conn.RemoteAddr().String())
+	log.Info("VMessOut received %d bytes from %s", buffer.Len()-4, conn.RemoteAddr().String())
 
-	output <- buffer[4:]
+	buffer.SliceFrom(4)
+	output <- buffer
 
 	if !isUDP {
 		v2net.ReaderToChan(output, decryptResponseReader)

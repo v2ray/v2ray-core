@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"net"
 
+	"github.com/v2ray/v2ray-core/common/alloc"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -55,14 +56,15 @@ func (handler *VMessInboundHandler) AcceptPackets(conn *net.UDPConn) {
 			continue
 		}
 
-		data := make([]byte, bufferSize)
-		nBytes, err = cryptReader.Read(data)
+		data := alloc.NewBuffer()
+		nBytes, err = cryptReader.Read(data.Value)
 		if err != nil {
 			log.Warning("VMessIn: Unable to decrypt data: %v", err)
 			continue
 		}
+		data.Slice(0, nBytes)
 
-		packet := v2net.NewPacket(request.Destination(), data[:nBytes], false)
+		packet := v2net.NewPacket(request.Destination(), data, false)
 		go handler.handlePacket(conn, request, packet, addr)
 	}
 }
@@ -87,7 +89,9 @@ func (handler *VMessInboundHandler) handlePacket(conn *net.UDPConn, request *pro
 
 	if data, ok := <-ray.InboundOutput(); ok {
 		hasData = true
-		responseWriter.Write(data)
+		responseWriter.Write(data.Value)
+		data.Release()
+		data = nil
 	}
 
 	if hasData {

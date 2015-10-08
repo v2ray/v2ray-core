@@ -9,6 +9,7 @@ import (
 	"golang.org/x/net/proxy"
 
 	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	_ "github.com/v2ray/v2ray-core/proxy/socks"
 	"github.com/v2ray/v2ray-core/proxy/socks/config/json"
@@ -62,8 +63,11 @@ func TestUDPSend(t *testing.T) {
 	err = point.Start()
 	assert.Error(err).IsNil()
 
+	data2SendBuffer := alloc.NewBuffer()
+	data2SendBuffer.Clear()
+	data2SendBuffer.Append([]byte(data2Send))
 	dest := v2net.NewUDPDestination(udpServerAddr)
-	ich.Communicate(v2net.NewPacket(dest, []byte(data2Send), false))
+	ich.Communicate(v2net.NewPacket(dest, data2SendBuffer, false))
 	assert.Bytes(ich.DataReturned.Bytes()).Equals([]byte("Processed: Data to be sent to remote"))
 }
 

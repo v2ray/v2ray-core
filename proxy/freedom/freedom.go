@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
@@ -33,7 +34,9 @@ func (vconn *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray core.Outb
 	writeMutex.Lock()
 
 	if chunk := firstPacket.Chunk(); chunk != nil {
-		conn.Write(chunk)
+		conn.Write(chunk.Value)
+		chunk.Release()
+		chunk = nil
 	}
 
 	if !firstPacket.MoreChunks() {
@@ -56,23 +59,22 @@ func (vconn *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray core.Outb
 	return nil
 }
 
-func dumpInput(conn net.Conn, input <-chan []byte, finish *sync.Mutex) {
+func dumpInput(conn net.Conn, input <-chan *alloc.Buffer, finish *sync.Mutex) {
 	v2net.ChanToWriter(conn, input)
 	finish.Unlock()
 }
 
-func dumpOutput(conn net.Conn, output chan<- []byte, finish *sync.Mutex, udp bool) {
+func dumpOutput(conn net.Conn, output chan<- *alloc.Buffer, finish *sync.Mutex, udp bool) {
 	defer finish.Unlock()
 	defer close(output)
 
-	bufferSize := 4 /* KB */
-	if udp {
-		bufferSize = 2
-	}
-	response, err := v2net.ReadFrom(conn, bufferSize)
-	log.Info("Freedom receives %d bytes from %s", len(response), conn.RemoteAddr().String())
-	if len(response) > 0 {
+	response, err := v2net.ReadFrom(conn, nil)
+	log.Info("Freedom receives %d bytes from %s", response.Len(), conn.RemoteAddr().String())
+	if response.Len() > 0 {
 		output <- response
+	} else {
+		response.Release()
+		response = nil
 	}
 	if err != nil {
 		return

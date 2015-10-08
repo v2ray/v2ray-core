@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 
+	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
@@ -15,7 +16,7 @@ var (
 type Socks5UDPRequest struct {
 	Fragment byte
 	Address  v2net.Address
-	Data     []byte
+	Data     *alloc.Buffer
 }
 
 func (request *Socks5UDPRequest) Destination() v2net.Destination {
@@ -40,7 +41,7 @@ func (request *Socks5UDPRequest) Bytes(buffer []byte) []byte {
 		buffer = append(buffer, []byte(request.Address.Domain())...)
 	}
 	buffer = append(buffer, request.Address.PortBytes()...)
-	buffer = append(buffer, request.Data...)
+	buffer = append(buffer, request.Data.Value...)
 	return buffer
 }
 
@@ -74,8 +75,9 @@ func ReadUDPRequest(packet []byte) (request Socks5UDPRequest, err error) {
 		return
 	}
 
-	request.Data = make([]byte, len(packet)-dataBegin)
-	copy(request.Data, packet[dataBegin:])
+	request.Data = alloc.NewBuffer()
+	request.Data.Clear()
+	request.Data.Append(packet[dataBegin:])
 
 	return
 }
