@@ -36,20 +36,18 @@ func (b *Buffer) Len() int {
 }
 
 type bufferPool struct {
-	chain       chan *Buffer
-	allocator   func(*bufferPool) *Buffer
-	minElements int
-	maxElements int
+	chain         chan *Buffer
+	allocator     func(*bufferPool) *Buffer
+	elements2Keep int
 }
 
-func newBufferPool(allocator func(*bufferPool) *Buffer, minElements, maxElements int) *bufferPool {
+func newBufferPool(allocator func(*bufferPool) *Buffer, elements2Keep, size int) *bufferPool {
 	pool := &bufferPool{
-		chain:       make(chan *Buffer, maxElements*2),
-		allocator:   allocateSmall,
-		minElements: minElements,
-		maxElements: maxElements,
+		chain:         make(chan *Buffer, size),
+		allocator:     allocateSmall,
+		elements2Keep: elements2Keep,
 	}
-	for i := 0; i < minElements; i++ {
+	for i := 0; i < elements2Keep; i++ {
 		pool.chain <- allocator(pool)
 	}
 	go pool.cleanup(time.Tick(1 * time.Second))
@@ -79,11 +77,12 @@ func (p *bufferPool) free(buffer *Buffer) {
 func (p *bufferPool) cleanup(tick <-chan time.Time) {
 	for range tick {
 		pSize := len(p.chain)
-		for delta := pSize - p.minElements; delta > 0; delta-- {
-			p.chain <- p.allocator(p)
-		}
-		for delta := p.maxElements - pSize; delta > 0; delta-- {
+		if pSize > p.elements2Keep {
 			<-p.chain
+			continue
+		}
+		for delta := pSize - p.elements2Keep; delta > 0; delta-- {
+			p.chain <- p.allocator(p)
 		}
 	}
 }
@@ -97,7 +96,7 @@ func allocateSmall(pool *bufferPool) *Buffer {
 	return b
 }
 
-var smallPool = newBufferPool(allocateSmall, 256, 1024)
+var smallPool = newBufferPool(allocateSmall, 256, 2048)
 
 func NewBuffer() *Buffer {
 	return smallPool.allocate()
