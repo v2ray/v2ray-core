@@ -68,9 +68,11 @@ func (handler *VMessInboundHandler) HandleConnection(connection *net.TCPConn) er
 
 	request, err := requestReader.Read(connReader)
 	if err != nil {
+		log.Access(connection.RemoteAddr().String(), "", log.AccessRejected, "Invalid Auth")
 		log.Warning("VMessIn: Invalid request from (%s): %v", connection.RemoteAddr().String(), err)
 		return err
 	}
+	log.Access(connection.RemoteAddr().String(), request.Address.String(), log.AccessAccepted, "")
 	log.Debug("VMessIn: Received request for %s", request.Address.String())
 
 	ray := handler.vPoint.DispatchToOutbound(v2net.NewPacket(request.Destination(), nil, true))

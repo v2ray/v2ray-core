@@ -1,5 +1,8 @@
 {
   "port": 1080,
+  "log": {
+    "access": ""
+  },
   "inbound": {
     "protocol": "socks",
     "settings": {

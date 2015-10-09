@@ -12,8 +12,13 @@ type ConnectionConfig interface {
 	Settings(configType Type) interface{}
 }
 
+type LogConfig interface {
+	AccessLog() string
+}
+
 type PointConfig interface {
 	Port() uint16
+	LogConfig() LogConfig
 	InboundConfig() ConnectionConfig
 	OutboundConfig() ConnectionConfig
 }

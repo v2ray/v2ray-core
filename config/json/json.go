@@ -32,15 +32,28 @@ func (config *ConnectionConfig) Settings(configType config.Type) interface{} {
 	return configObj
 }
 
+type LogConfig struct {
+	AccessLogValue string `json:"access"`
+}
+
+func (config *LogConfig) AccessLog() string {
+	return config.AccessLogValue
+}
+
 // Config is the config for Point server.
 type Config struct {
 	PortValue           uint16            `json:"port"` // Port of this Point server.
+	LogConfigValue      *LogConfig        `json:"log"`
 	InboundConfigValue  *ConnectionConfig `json:"inbound"`
 	OutboundConfigValue *ConnectionConfig `json:"outbound"`
 }
 
 func (config *Config) Port() uint16 {
 	return config.PortValue
+}
+
+func (config *Config) LogConfig() config.LogConfig {
+	return config.LogConfigValue
 }
 
 func (config *Config) InboundConfig() config.ConnectionConfig {
