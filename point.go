@@ -97,7 +97,6 @@ func (vp *Point) Start() error {
 
 func (p *Point) DispatchToOutbound(packet v2net.Packet) InboundRay {
 	ray := NewRay()
-	// TODO: handle error
-	p.och.Dispatch(packet, ray)
+	go p.och.Dispatch(packet, ray)
 	return ray
 }

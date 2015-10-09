@@ -46,14 +46,12 @@ func (vconn *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray core.Outb
 
 	go dumpOutput(conn, output, &readMutex, firstPacket.Destination().IsUDP())
 
-	go func() {
-		writeMutex.Lock()
-		if tcpConn, ok := conn.(*net.TCPConn); ok {
-			tcpConn.CloseWrite()
-		}
-		readMutex.Lock()
-		conn.Close()
-	}()
+	writeMutex.Lock()
+	if tcpConn, ok := conn.(*net.TCPConn); ok {
+		tcpConn.CloseWrite()
+	}
+	readMutex.Lock()
+	conn.Close()
 
 	return nil
 }

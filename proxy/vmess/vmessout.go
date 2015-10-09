@@ -88,8 +88,7 @@ func (handler *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray core
 	request.RequestKey = buffer[16:32]
 	request.ResponseHeader = buffer[32:]
 
-	go startCommunicate(request, vNextAddress, ray, firstPacket)
-	return nil
+	return startCommunicate(request, vNextAddress, ray, firstPacket)
 }
 
 func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ray core.OutboundRay, firstPacket v2net.Packet) error {
