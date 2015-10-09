@@ -68,7 +68,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection *net.TCPConn) er
 
 	request, err := requestReader.Read(connReader)
 	if err != nil {
-		log.Access(connection.RemoteAddr().String(), "", log.AccessRejected, "Invalid Auth")
+		log.Access(connection.RemoteAddr().String(), "", log.AccessRejected, err.Error())
 		log.Warning("VMessIn: Invalid request from (%s): %v", connection.RemoteAddr().String(), err)
 		return err
 	}
