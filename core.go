@@ -2,7 +2,7 @@
 package core
 
 var (
-	version = "0.6.2"
+	version = "0.8"
 	build   = "Custom"
 )
 
