@@ -13,7 +13,7 @@
 
 ## 配置 V2Ray Point Server
 ### Point A
-示例配置保存于 vpoint_socks_vmess.json 文件中，格式如下：
+示例配置保存于 [vpoint_socks_vmess.json](https://github.com/v2ray/v2ray-core/blob/master/release/config/vpoint_socks_vmess.json) 文件中，格式如下：
 ```javascript
 {
   "port": 1080, // 监听端口
@@ -47,7 +47,7 @@
 ```
 
 ### Point B
-示例配置保存于 vpoint_vmess_freedom.json 文件中，格式如下：
+示例配置保存于 [vpoint_vmess_freedom.json](https://github.com/v2ray/v2ray-core/blob/master/release/config/vpoint_vmess_freedom.json) 文件中，格式如下：
 ```javascript
 {
   "port": 27183, // 监听端口，必须和 Point A 中指定的一致
