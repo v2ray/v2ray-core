@@ -103,7 +103,7 @@ func (server *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.W
 			return err
 		}
 		status := byte(0)
-		if server.config.HasAccount(upRequest.Username(), upRequest.Password()) {
+		if !server.config.HasAccount(upRequest.Username(), upRequest.Password()) {
 			status = byte(0xFF)
 		}
 		upResponse := protocol.NewSocks5UserPassResponse(status)
