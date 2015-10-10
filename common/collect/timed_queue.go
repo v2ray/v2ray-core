@@ -36,6 +36,7 @@ func (queue *timedQueueImpl) Pop() interface{} {
 	old := *queue
 	n := len(old)
 	v := old[n-1]
+	old[n-1] = nil
 	*queue = old[:n-1]
 	return v
 }
