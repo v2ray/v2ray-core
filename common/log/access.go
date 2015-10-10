@@ -33,6 +33,11 @@ type accessLog struct {
 type fileAccessLogger struct {
 	queue  chan *accessLog
 	logger *log.Logger
+	file   *os.File
+}
+
+func (logger *fileAccessLogger) close() {
+	logger.file.Close()
 }
 
 func (logger *fileAccessLogger) Log(from, to string, status AccessStatus, reason string) {
@@ -59,6 +64,7 @@ func newFileAccessLogger(path string) accessLogger {
 	return &fileAccessLogger{
 		queue:  make(chan *accessLog, 16),
 		logger: log.New(file, "", log.Ldate|log.Ltime),
+		file:   file,
 	}
 }
 
