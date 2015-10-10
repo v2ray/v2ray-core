@@ -53,14 +53,23 @@ func (config *Config) Port() uint16 {
 }
 
 func (config *Config) LogConfig() config.LogConfig {
+  if config.LogConfigValue == nil {
+    return nil
+  }
 	return config.LogConfigValue
 }
 
 func (config *Config) InboundConfig() config.ConnectionConfig {
+  if config.InboundConfigValue == nil {
+    return nil
+  }
 	return config.InboundConfigValue
 }
 
 func (config *Config) OutboundConfig() config.ConnectionConfig {
+  if config.OutboundConfigValue == nil {
+    return nil
+  }
 	return config.OutboundConfigValue
 }
 
