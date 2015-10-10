@@ -72,14 +72,14 @@ func (queue *TimedQueue) RemovedEntries() <-chan interface{} {
 
 func (queue *TimedQueue) cleanup(tick <-chan time.Time) {
 	for now := range tick {
-		queue.access.RLock()
-		queueLen := queue.queue.Len()
-		queue.access.RUnlock()
-		if queueLen == 0 {
-			continue
-		}
 		nowSec := now.UTC().Unix()
 		for {
+			queue.access.RLock()
+			queueLen := queue.queue.Len()
+			queue.access.RUnlock()
+			if queueLen == 0 {
+				break
+			}
 			queue.access.RLock()
 			entry := queue.queue[0]
 			queue.access.RUnlock()

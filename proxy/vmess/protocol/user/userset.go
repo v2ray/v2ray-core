@@ -62,8 +62,7 @@ func (us *TimedUserSet) generateNewHashes(lastSec, nowSec int64, idx int, id ID)
 }
 
 func (us *TimedUserSet) updateUserHash(tick <-chan time.Time) {
-	now := time.Now().UTC()
-	lastSec := now.Unix()
+	lastSec := time.Now().UTC().Unix() - cacheDurationSec
 
 	for now := range tick {
 		nowSec := now.UTC().Unix() + cacheDurationSec
@@ -81,7 +80,7 @@ func (us *TimedUserSet) AddUser(user User) error {
 
 	nowSec := time.Now().UTC().Unix()
 	lastSec := nowSec - cacheDurationSec
-	us.generateNewHashes(lastSec, nowSec, idx, id)
+	us.generateNewHashes(lastSec, nowSec+cacheDurationSec, idx, id)
 
 	return nil
 }
