@@ -129,8 +129,7 @@ func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2
 		return
 	}
 
-	buffer := alloc.NewBuffer()
-	buffer.Clear()
+	buffer := alloc.NewBuffer().Clear()
 	requestBytes, err := request.ToBytes(user.NewTimeHash(user.HMACHash{}), user.GenerateRandomInt64InRange, buffer.Value)
 	if err != nil {
 		log.Error("VMessOut: Failed to serialize VMess request: %v", err)
