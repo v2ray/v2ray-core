@@ -93,8 +93,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection *net.TCPConn) er
 	}
 
 	// Optimize for small response packet
-	buffer := alloc.NewLargeBuffer()
-	buffer.Clear()
+	buffer := alloc.NewLargeBuffer().Clear()
 	buffer.Append(request.ResponseHeader)
 
 	if data, open := <-output; open {
