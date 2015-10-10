@@ -50,6 +50,11 @@ func (b *Buffer) IsFull() bool {
 	return len(b.Value) == cap(b.Value)
 }
 
+func (b *Buffer) Write(data []byte) (int, error) {
+	b.Append(data)
+	return len(data), nil
+}
+
 type bufferPool struct {
 	chain        chan []byte
 	bufferSize   int
@@ -98,7 +103,10 @@ func (p *bufferPool) cleanup(tick <-chan time.Time) {
 			continue
 		}
 		for delta := p.buffers2Keep - pSize; delta > 0; delta-- {
-			p.chain <- make([]byte, p.bufferSize)
+			select {
+			case p.chain <- make([]byte, p.bufferSize):
+			default:
+			}
 		}
 	}
 }

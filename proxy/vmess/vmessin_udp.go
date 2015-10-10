@@ -77,7 +77,8 @@ func (handler *VMessInboundHandler) handlePacket(conn *net.UDPConn, request *pro
 	responseKey := md5.Sum(request.RequestKey)
 	responseIV := md5.Sum(request.RequestIV)
 
-	buffer := bytes.NewBuffer(make([]byte, 0, bufferSize))
+	buffer := alloc.NewBuffer().Clear()
+	defer buffer.Release()
 
 	responseWriter, err := v2io.NewAesEncryptWriter(responseKey[:], responseIV[:], buffer)
 	if err != nil {
@@ -95,7 +96,7 @@ func (handler *VMessInboundHandler) handlePacket(conn *net.UDPConn, request *pro
 	}
 
 	if hasData {
-		conn.WriteToUDP(buffer.Bytes(), clientAddr)
-		log.Info("VMessIn sending %d bytes to %s", len(buffer.Bytes()), clientAddr.String())
+		conn.WriteToUDP(buffer.Value, clientAddr)
+		log.Info("VMessIn sending %d bytes to %s", buffer.Len(), clientAddr.String())
 	}
 }
