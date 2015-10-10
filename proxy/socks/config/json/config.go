@@ -10,19 +10,39 @@ const (
 	AuthMethodUserPass = "password"
 )
 
-type SocksConfig struct {
-	AuthMethod string `json:"auth"`
-	Username   string `json:"user"`
-	Password   string `json:"pass"`
-	UDPEnabled bool   `json:"udp"`
+type SocksAccount struct {
+	Username string `json:"user"`
+	Password string `json:"pass"`
 }
 
-func (config SocksConfig) IsNoAuth() bool {
+type SocksConfig struct {
+	AuthMethod string         `json:"auth"`
+	Accounts   []SocksAccount `json:"accounts"`
+	UDPEnabled bool           `json:"udp"`
+
+	accountMap map[string]string
+}
+
+func (config *SocksConfig) Initialize() {
+	config.accountMap = make(map[string]string)
+	for _, account := range config.Accounts {
+		config.accountMap[account.Username] = account.Password
+	}
+}
+
+func (config *SocksConfig) IsNoAuth() bool {
 	return config.AuthMethod == AuthMethodNoAuth
 }
 
-func (config SocksConfig) IsPassword() bool {
+func (config *SocksConfig) IsPassword() bool {
 	return config.AuthMethod == AuthMethodUserPass
+}
+
+func (config *SocksConfig) HasAccount(user, pass string) bool {
+	if actualPass, found := config.accountMap[user]; found {
+		return actualPass == pass
+	}
+	return false
 }
 
 func init() {

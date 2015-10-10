@@ -107,8 +107,12 @@ type Socks5UserPassRequest struct {
 	password string
 }
 
-func (request Socks5UserPassRequest) IsValid(username string, password string) bool {
-	return request.username == username && request.password == password
+func (request Socks5UserPassRequest) Username() string {
+	return request.username
+}
+
+func (request Socks5UserPassRequest) Password() string {
+	return request.password
 }
 
 func (request Socks5UserPassRequest) AuthDetail() string {

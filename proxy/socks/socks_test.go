@@ -84,8 +84,12 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 			ProtocolValue: "socks",
 			SettingsValue: &json.SocksConfig{
 				AuthMethod: "noauth",
-				Username:   "userx",
-				Password:   "passy",
+				Accounts: []json.SocksAccount{
+					json.SocksAccount{
+						Username: "userx",
+						Password: "passy",
+					},
+				},
 			},
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{

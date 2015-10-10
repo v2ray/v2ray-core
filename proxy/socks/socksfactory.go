@@ -8,8 +8,10 @@ import (
 type SocksServerFactory struct {
 }
 
-func (factory SocksServerFactory) Create(vp *core.Point, config interface{}) (core.InboundConnectionHandler, error) {
-	return NewSocksServer(vp, config.(*json.SocksConfig)), nil
+func (factory SocksServerFactory) Create(vp *core.Point, rawConfig interface{}) (core.InboundConnectionHandler, error) {
+	config := rawConfig.(*json.SocksConfig)
+	config.Initialize()
+	return NewSocksServer(vp, config), nil
 }
 
 func init() {
