@@ -137,6 +137,7 @@ func (server *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.W
 		responseBuffer := alloc.NewSmallBuffer().Clear()
 		response.Write(responseBuffer)
 		_, err = writer.Write(responseBuffer.Value)
+		responseBuffer.Release()
 		if err != nil {
 			log.Error("Socks failed to write response: %v", err)
 			return err
@@ -158,6 +159,7 @@ func (server *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.W
 	responseBuffer := alloc.NewSmallBuffer().Clear()
 	response.Write(responseBuffer)
 	_, err = writer.Write(responseBuffer.Value)
+	responseBuffer.Release()
 	if err != nil {
 		log.Error("Socks failed to write response: %v", err)
 		return err
