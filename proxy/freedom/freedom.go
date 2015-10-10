@@ -21,9 +21,7 @@ func (vconn *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray core.Outb
 	conn, err := net.Dial(firstPacket.Destination().Network(), firstPacket.Destination().Address().String())
 	log.Info("Freedom: Opening connection to %s", firstPacket.Destination().String())
 	if err != nil {
-		if ray != nil {
-			close(ray.OutboundOutput())
-		}
+		close(ray.OutboundOutput())
 		return log.Error("Freedom: Failed to open connection: %s : %v", firstPacket.Destination().String(), err)
 	}
 
