@@ -1,7 +1,7 @@
 {
   "port": 27183,
   "log" : {
-    "access": "./access.log"
+    "access": "access.log"
   },
   "inbound": {
     "protocol": "vmess",

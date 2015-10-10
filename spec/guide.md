@@ -17,6 +17,9 @@
 ```javascript
 {
   "port": 1080, // 监听端口
+  "log" : {
+    "access": "" // 访问记录，目前只在服务器端有效，这里留空
+  },
   "inbound": {
     "protocol": "socks",  // 传入数据所用协议
     "settings": {
@@ -48,6 +51,9 @@
 ```javascript
 {
   "port": 27183, // 监听端口，必须和 Point A 中指定的一致
+  "log" : {
+    "access": "access.log" // 访问记录
+  },
   "inbound": {
     "protocol": "vmess", // 中继协议，不用改
     "settings": {
