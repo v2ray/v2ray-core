@@ -42,8 +42,7 @@ func NewTimedUserSet() UserSet {
 }
 
 func (us *TimedUserSet) removeEntries(entries <-chan interface{}) {
-	for {
-		entry := <-entries
+	for entry := range entries {
 		us.access.Lock()
 		delete(us.userHash, entry.(string))
 		us.access.Unlock()
@@ -52,7 +51,7 @@ func (us *TimedUserSet) removeEntries(entries <-chan interface{}) {
 
 func (us *TimedUserSet) generateNewHashes(lastSec, nowSec int64, idx int, id ID) {
 	idHash := NewTimeHash(HMACHash{})
-	for lastSec < nowSec+cacheDurationSec {
+	for lastSec < nowSec {
 		idHash := idHash.Hash(id.Bytes[:], lastSec)
 		us.access.Lock()
 		us.userHash[string(idHash)] = indexTimePair{idx, lastSec}
@@ -66,9 +65,8 @@ func (us *TimedUserSet) updateUserHash(tick <-chan time.Time) {
 	now := time.Now().UTC()
 	lastSec := now.Unix()
 
-	for {
-		now := <-tick
-		nowSec := now.UTC().Unix()
+	for now := range tick {
+		nowSec := now.UTC().Unix() + cacheDurationSec
 		for idx, id := range us.validUserIds {
 			us.generateNewHashes(lastSec, nowSec, idx, id)
 		}
