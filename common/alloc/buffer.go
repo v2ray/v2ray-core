@@ -97,7 +97,7 @@ func (p *bufferPool) cleanup(tick <-chan time.Time) {
 			<-p.chain
 			continue
 		}
-		for delta := pSize - p.buffers2Keep; delta > 0; delta-- {
+		for delta := p.buffers2Keep - pSize; delta > 0; delta-- {
 			p.chain <- make([]byte, p.bufferSize)
 		}
 	}
