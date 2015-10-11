@@ -17,8 +17,10 @@ func ReadFrom(reader io.Reader, buffer *alloc.Buffer) (*alloc.Buffer, error) {
 
 // ReaderToChan dumps all content from a given reader to a chan by constantly reading it until EOF.
 func ReaderToChan(stream chan<- *alloc.Buffer, reader io.Reader) error {
+	allocate := alloc.NewBuffer
+	large := false
 	for {
-		buffer, err := ReadFrom(reader, nil)
+		buffer, err := ReadFrom(reader, allocate())
 		if buffer.Len() > 0 {
 			stream <- buffer
 		} else {
@@ -26,6 +28,13 @@ func ReaderToChan(stream chan<- *alloc.Buffer, reader io.Reader) error {
 		}
 		if err != nil {
 			return err
+		}
+		if buffer.IsFull() && !large {
+			allocate = alloc.NewLargeBuffer
+			large = true
+		} else if !buffer.IsFull() {
+			allocate = alloc.NewBuffer
+			large = false
 		}
 	}
 }
