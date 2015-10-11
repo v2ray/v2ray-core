@@ -49,7 +49,7 @@ func (server *SocksServer) AcceptConnections(listener net.Listener) {
 		connection, err := listener.Accept()
 		if err != nil {
 			log.Error("Socks failed to accept new connection %v", err)
-			return
+			continue
 		}
 		go server.HandleConnection(connection)
 	}
