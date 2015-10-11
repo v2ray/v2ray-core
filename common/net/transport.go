@@ -6,6 +6,8 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 )
 
+// ReadFrom reads from a reader and put all content to a buffer.
+// If buffer is nil, ReadFrom creates a new normal buffer.
 func ReadFrom(reader io.Reader, buffer *alloc.Buffer) (*alloc.Buffer, error) {
 	if buffer == nil {
 		buffer = alloc.NewBuffer()

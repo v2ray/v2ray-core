@@ -4,12 +4,16 @@ import (
 	"time"
 )
 
+// Buffer is a recyclable allocation of a byte array. Buffer.Release() recycles
+// the buffer into an internal buffer pool, in order to recreate a buffer more
+// quickly.
 type Buffer struct {
 	head  []byte
 	pool  *bufferPool
 	Value []byte
 }
 
+// Release recycles the buffer into an internal buffer pool.
 func (b *Buffer) Release() {
 	b.pool.free(b)
 	b.head = nil
@@ -17,39 +21,48 @@ func (b *Buffer) Release() {
 	b.pool = nil
 }
 
+// Clear clears the content of the buffer, results an empty buffer with
+// Len() = 0.
 func (b *Buffer) Clear() *Buffer {
 	b.Value = b.head[:0]
 	return b
 }
 
+// AppendBytes appends one or more bytes to the end of the buffer.
 func (b *Buffer) AppendBytes(bytes ...byte) *Buffer {
 	b.Value = append(b.Value, bytes...)
 	return b
 }
 
+// Append appends a byte array to the end of the buffer.
 func (b *Buffer) Append(data []byte) *Buffer {
 	b.Value = append(b.Value, data...)
 	return b
 }
 
+// Slice cuts the buffer at the given position.
 func (b *Buffer) Slice(from, to int) *Buffer {
 	b.Value = b.Value[from:to]
 	return b
 }
 
+// SliceFrom cuts the buffer at the given position.
 func (b *Buffer) SliceFrom(from int) *Buffer {
 	b.Value = b.Value[from:]
 	return b
 }
 
+// Len returns the length of the buffer content.
 func (b *Buffer) Len() int {
 	return len(b.Value)
 }
 
+// IsFull returns true if the buffer has no more room to grow.
 func (b *Buffer) IsFull() bool {
 	return len(b.Value) == cap(b.Value)
 }
 
+// Write implements Write method in io.Writer.
 func (b *Buffer) Write(data []byte) (int, error) {
 	b.Append(data)
 	return len(data), nil
@@ -115,14 +128,17 @@ var smallPool = newBufferPool(1024, 16, 64)
 var mediumPool = newBufferPool(8*1024, 256, 2048)
 var largePool = newBufferPool(64*1024, 128, 1024)
 
+// NewSmallBuffer creates a Buffer with 1K bytes of arbitrary content.
 func NewSmallBuffer() *Buffer {
 	return smallPool.allocate()
 }
 
+// NewBuffer creates a Buffer with 8K bytes of arbitrary content.
 func NewBuffer() *Buffer {
 	return mediumPool.allocate()
 }
 
+// NewLargeBuffer creates a Buffer with 64K bytes of arbitrary content.
 func NewLargeBuffer() *Buffer {
 	return largePool.allocate()
 }

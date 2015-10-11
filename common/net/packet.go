@@ -4,12 +4,14 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 )
 
+// Packet is a network packet to be sent to destination.
 type Packet interface {
 	Destination() Destination
 	Chunk() *alloc.Buffer // First chunk of this commnunication
 	MoreChunks() bool
 }
 
+// NewPacket creates a new Packet with given destination and payload.
 func NewPacket(dest Destination, firstChunk *alloc.Buffer, moreChunks bool) Packet {
 	return &packetImpl{
 		dest:     dest,

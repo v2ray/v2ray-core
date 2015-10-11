@@ -5,6 +5,7 @@ import (
 	"os"
 )
 
+// AccessStatus is the status of an access request from clients.
 type AccessStatus string
 
 const (
@@ -70,6 +71,7 @@ func newFileAccessLogger(path string) accessLogger {
 
 var accessLoggerInstance accessLogger = &noOpAccessLogger{}
 
+// InitAccessLogger initializes the access logger to write into the give file.
 func InitAccessLogger(file string) {
 	logger := newFileAccessLogger(file)
 	if logger != nil {
@@ -78,6 +80,7 @@ func InitAccessLogger(file string) {
 	}
 }
 
+// Access writes an access log.
 func Access(from, to string, status AccessStatus, reason string) {
 	accessLoggerInstance.Log(from, to, status, reason)
 }
