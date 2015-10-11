@@ -53,7 +53,8 @@ func (handler *VMessInboundHandler) AcceptConnections(listener *net.TCPListener)
 	for handler.accepting {
 		connection, err := listener.AcceptTCP()
 		if err != nil {
-			return log.Error("Failed to accpet connection: %s", err.Error())
+			log.Error("Failed to accpet connection: %s", err.Error())
+			continue
 		}
 		go handler.HandleConnection(connection)
 	}
