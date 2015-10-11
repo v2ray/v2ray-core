@@ -81,12 +81,12 @@ func LoadConfig(file string) (*Config, error) {
 		return nil, err
 	}
 
-	config := &Config{}
-	err = json.Unmarshal(rawConfig, config)
+	jsonConfig := &Config{}
+	err = json.Unmarshal(rawConfig, jsonConfig)
 	if err != nil {
 		log.Error("Failed to load server config: %v", err)
 		return nil, err
 	}
 
-	return config, err
+	return jsonConfig, err
 }
