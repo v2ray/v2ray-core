@@ -195,7 +195,7 @@ func (server *SocksServer) handleUDP(reader *v2net.TimeOutReader, writer io.Writ
 		response.Domain = udpAddr.Domain()
 	}
 
-	responseBuffer := alloc.NewSmallBuffer()
+	responseBuffer := alloc.NewSmallBuffer().Clear()
 	response.Write(responseBuffer)
 	_, err := writer.Write(responseBuffer.Value)
 	responseBuffer.Release()
