@@ -42,11 +42,15 @@ func (logger *fileAccessLogger) close() {
 }
 
 func (logger *fileAccessLogger) Log(from, to string, status AccessStatus, reason string) {
-	logger.queue <- &accessLog{
+	select {
+	case logger.queue <- &accessLog{
 		From:   from,
 		To:     to,
 		Status: status,
 		Reason: reason,
+	}:
+	default:
+		// We don't expect this to happen, but don't want to block main thread as well.
 	}
 }
 
