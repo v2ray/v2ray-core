@@ -46,9 +46,11 @@ func (handler *VMessInboundHandler) AcceptPackets(conn *net.UDPConn) {
 
 		request, err := requestReader.Read(reader)
 		if err != nil {
+			log.Access(addr.String(), "", log.AccessRejected, err.Error())
 			log.Warning("VMessIn: Invalid request from (%s): %v", addr.String(), err)
 			continue
 		}
+		log.Access(addr.String(), request.Address.String(), log.AccessAccepted, "")
 
 		cryptReader, err := v2io.NewAesDecryptReader(request.RequestKey, request.RequestIV, reader)
 		if err != nil {
