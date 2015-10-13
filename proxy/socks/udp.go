@@ -22,8 +22,7 @@ func (server *SocksServer) ListenUDP(port uint16) error {
 		log.Error("Socks failed to listen UDP on port %d: %v", port, err)
 		return err
 	}
-	// TODO: make this configurable
-	udpAddress = v2net.IPAddress([]byte{127, 0, 0, 1}, port)
+	udpAddress = v2net.IPAddress(server.config.IP(), port)
 
 	go server.AcceptPackets(conn)
 	return nil

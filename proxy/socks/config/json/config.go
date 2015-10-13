@@ -1,6 +1,8 @@
 package json
 
 import (
+	"net"
+
 	"github.com/v2ray/v2ray-core/config"
 	"github.com/v2ray/v2ray-core/config/json"
 )
@@ -19,30 +21,43 @@ type SocksConfig struct {
 	AuthMethod string         `json:"auth"`
 	Accounts   []SocksAccount `json:"accounts"`
 	UDPEnabled bool           `json:"udp"`
+	HostIP     string         `json:"ip"`
 
 	accountMap map[string]string
+	ip         net.IP
 }
 
-func (config *SocksConfig) Initialize() {
-	config.accountMap = make(map[string]string)
-	for _, account := range config.Accounts {
-		config.accountMap[account.Username] = account.Password
+func (sc *SocksConfig) Initialize() {
+	sc.accountMap = make(map[string]string)
+	for _, account := range sc.Accounts {
+		sc.accountMap[account.Username] = account.Password
+	}
+
+	if len(sc.HostIP) > 0 {
+		sc.ip = net.ParseIP(sc.HostIP)
+		if sc.ip == nil {
+			sc.ip = net.IPv4(127, 0, 0, 1)
+		}
 	}
 }
 
-func (config *SocksConfig) IsNoAuth() bool {
-	return config.AuthMethod == AuthMethodNoAuth
+func (sc *SocksConfig) IsNoAuth() bool {
+	return sc.AuthMethod == AuthMethodNoAuth
 }
 
-func (config *SocksConfig) IsPassword() bool {
-	return config.AuthMethod == AuthMethodUserPass
+func (sc *SocksConfig) IsPassword() bool {
+	return sc.AuthMethod == AuthMethodUserPass
 }
 
-func (config *SocksConfig) HasAccount(user, pass string) bool {
-	if actualPass, found := config.accountMap[user]; found {
+func (sc *SocksConfig) HasAccount(user, pass string) bool {
+	if actualPass, found := sc.accountMap[user]; found {
 		return actualPass == pass
 	}
 	return false
+}
+
+func (sc *SocksConfig) IP() net.IP {
+	return sc.ip
 }
 
 func init() {
