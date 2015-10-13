@@ -24,10 +24,9 @@ var (
 func main() {
 	flag.Parse()
 
+	core.PrintVersion()
+
 	if *version {
-		fmt.Printf("V2Ray %s (%s) %s", core.Version(), core.Codename, core.Build())
-		fmt.Println()
-		fmt.Println(core.Intro)
 		return
 	}
 
