@@ -134,7 +134,6 @@ func (server *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.W
 		return server.handleUDP(reader, writer)
 	}
 
-	response := protocol.NewSocks5Response()
 	if request.Command == protocol.CmdBind || request.Command == protocol.CmdUdpAssociate {
 		response := protocol.NewSocks5Response()
 		response.Error = protocol.ErrorCommandNotSupported
@@ -151,6 +150,7 @@ func (server *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.W
 		return UnsupportedSocksCommand
 	}
 
+  response := protocol.NewSocks5Response()
 	response.Error = protocol.ErrorSuccess
 
 	// Some SOCKS software requires a value other than dest. Let's fake one:
