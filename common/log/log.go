@@ -1,9 +1,9 @@
 package log
 
 import (
-	"errors"
 	"fmt"
-	"log"
+	"io"
+	"os"
 )
 
 const (
@@ -13,41 +13,80 @@ const (
 	ErrorLevel   = LogLevel(3)
 )
 
-var logLevel = WarningLevel
-
-type LogLevel int
-
-func SetLogLevel(level LogLevel) {
-	logLevel = level
+type logger interface {
+	WriteLog(prefix, format string, v ...interface{})
 }
 
-func writeLog(level LogLevel, prefix, format string, v ...interface{}) string {
-	if level < logLevel {
-		return ""
-	}
+type noOpLogger struct {
+}
+
+func (l *noOpLogger) WriteLog(prefix, format string, v ...interface{}) {
+	// Swallow
+}
+
+type streamLogger struct {
+	writer io.Writer
+}
+
+func (l *streamLogger) WriteLog(prefix, format string, v ...interface{}) {
 	var data string
 	if v == nil || len(v) == 0 {
 		data = format
 	} else {
 		data = fmt.Sprintf(format, v...)
 	}
-	log.Println(prefix + data)
-	return data
+	l.writer.Write([]byte(prefix + data))
+	l.writer.Write([]byte{'\n'})
+}
+
+var (
+	noOpLoggerInstance   logger = &noOpLogger{}
+	streamLoggerInstance logger = &streamLogger{
+		writer: os.Stdout,
+	}
+
+	debugLogger   = noOpLoggerInstance
+	infoLogger    = noOpLoggerInstance
+	warningLogger = noOpLoggerInstance
+	errorLogger   = noOpLoggerInstance
+)
+
+type LogLevel int
+
+func SetLogLevel(level LogLevel) {
+	debugLogger = noOpLoggerInstance
+	if level <= DebugLevel {
+		debugLogger = streamLoggerInstance
+	}
+
+	infoLogger = noOpLoggerInstance
+	if level <= InfoLevel {
+		infoLogger = streamLoggerInstance
+	}
+
+	warningLogger = noOpLoggerInstance
+	if level <= WarningLevel {
+		warningLogger = streamLoggerInstance
+	}
+
+	errorLogger = noOpLoggerInstance
+	if level <= ErrorLevel {
+		errorLogger = streamLoggerInstance
+	}
 }
 
 func Debug(format string, v ...interface{}) {
-	writeLog(DebugLevel, "[Debug]", format, v...)
+	debugLogger.WriteLog("[Debug]", format, v...)
 }
 
 func Info(format string, v ...interface{}) {
-	writeLog(InfoLevel, "[Info]", format, v...)
+	infoLogger.WriteLog("[Info]", format, v...)
 }
 
 func Warning(format string, v ...interface{}) {
-	writeLog(WarningLevel, "[Warning]", format, v...)
+	warningLogger.WriteLog("[Warning]", format, v...)
 }
 
-func Error(format string, v ...interface{}) error {
-	data := writeLog(ErrorLevel, "[Error]", format, v...)
-	return errors.New(data)
+func Error(format string, v ...interface{}) {
+	errorLogger.WriteLog("[Error]", format, v...)
 }

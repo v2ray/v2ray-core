@@ -29,11 +29,11 @@ type VNextServer struct {
 
 type VMessOutboundHandler struct {
 	vPoint       *core.Point
-	vNextList    []VNextServer
-	vNextListUDP []VNextServer
+	vNextList    []*VNextServer
+	vNextListUDP []*VNextServer
 }
 
-func NewVMessOutboundHandler(vp *core.Point, vNextList, vNextListUDP []VNextServer) *VMessOutboundHandler {
+func NewVMessOutboundHandler(vp *core.Point, vNextList, vNextListUDP []*VNextServer) *VMessOutboundHandler {
 	return &VMessOutboundHandler{
 		vPoint:       vp,
 		vNextList:    vNextList,
@@ -41,7 +41,7 @@ func NewVMessOutboundHandler(vp *core.Point, vNextList, vNextListUDP []VNextServ
 	}
 }
 
-func pickVNext(serverList []VNextServer) (v2net.Destination, user.User) {
+func pickVNext(serverList []*VNextServer) (v2net.Destination, user.User) {
 	vNextLen := len(serverList)
 	if vNextLen == 0 {
 		panic("VMessOut: Zero vNext is configured.")
@@ -201,14 +201,25 @@ type VMessOutboundHandlerFactory struct {
 
 func (factory *VMessOutboundHandlerFactory) Create(vp *core.Point, rawConfig interface{}) (core.OutboundConnectionHandler, error) {
 	config := rawConfig.(*VMessOutboundConfig)
-	servers := make([]VNextServer, 0, len(config.VNextList))
-	udpServers := make([]VNextServer, 0, len(config.VNextList))
+	servers := make([]*VNextServer, 0, len(config.VNextList))
+	udpServers := make([]*VNextServer, 0, len(config.VNextList))
 	for _, server := range config.VNextList {
 		if server.HasNetwork("tcp") {
-			servers = append(servers, server.ToVNextServer("tcp"))
+			aServer, err := server.ToVNextServer("tcp")
+			if err == nil {
+				servers = append(servers, aServer)
+			} else {
+				log.Warning("Discarding the server.")
+			}
 		}
 		if server.HasNetwork("udp") {
-			udpServers = append(udpServers, server.ToVNextServer("udp"))
+			aServer, err := server.ToVNextServer("udp")
+			if err == nil {
+				udpServers = append(udpServers, aServer)
+			} else {
+				log.Warning("Discarding the server.")
+			}
+
 		}
 	}
 	return NewVMessOutboundHandler(vp, servers, udpServers), nil

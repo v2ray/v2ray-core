@@ -3,12 +3,17 @@ package user
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 
 	"github.com/v2ray/v2ray-core/common/log"
 )
 
 const (
 	IDBytesLen = 16
+)
+
+var (
+	InvalidID = errors.New("Invalid ID.")
 )
 
 // The ID of en entity, in the form of an UUID.
@@ -21,7 +26,8 @@ type ID struct {
 func NewID(id string) (ID, error) {
 	idBytes, err := UUIDToID(id)
 	if err != nil {
-		return ID{}, log.Error("Failed to parse id %s", id)
+		log.Error("Failed to parse id %s", id)
+		return ID{}, InvalidID
 	}
 
 	md5hash := md5.New()
@@ -46,7 +52,8 @@ var byteGroups = []int{8, 4, 4, 4, 12}
 func UUIDToID(uuid string) (v [IDBytesLen]byte, err error) {
 	text := []byte(uuid)
 	if len(text) < 32 {
-		err = log.Error("uuid: invalid UUID string: %s", text)
+		log.Error("uuid: invalid UUID string: %s", text)
+		err = InvalidID
 		return
 	}
 

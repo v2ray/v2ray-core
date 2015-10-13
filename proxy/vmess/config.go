@@ -41,30 +41,32 @@ func (config VNextConfig) HasNetwork(network string) bool {
 	return strings.Contains(config.Network, network)
 }
 
-func (config VNextConfig) ToVNextServer(network string) VNextServer {
-	users := make([]user.User, 0, len(config.Users))
-	for _, user := range config.Users {
+func (c VNextConfig) ToVNextServer(network string) (*VNextServer, error) {
+	users := make([]user.User, 0, len(c.Users))
+	for _, user := range c.Users {
 		vuser, err := user.ToUser()
 		if err != nil {
-			panic(log.Error("Failed to convert %v to User.", user))
+			log.Error("Failed to convert %v to User.", user)
+			return nil, config.BadConfiguration
 		}
 		users = append(users, vuser)
 	}
-	ip := net.ParseIP(config.Address)
+	ip := net.ParseIP(c.Address)
 	if ip == nil {
-		panic(log.Error("Unable to parse VNext IP: %s", config.Address))
+		log.Error("Unable to parse VNext IP: %s", c.Address)
+		return nil, config.BadConfiguration
 	}
-	address := v2net.IPAddress(ip, config.Port)
+	address := v2net.IPAddress(ip, c.Port)
 	var dest v2net.Destination
 	if network == "tcp" {
 		dest = v2net.NewTCPDestination(address)
 	} else {
 		dest = v2net.NewUDPDestination(address)
 	}
-	return VNextServer{
+	return &VNextServer{
 		Destination: dest,
 		Users:       users,
-	}
+	}, nil
 }
 
 type VMessOutboundConfig struct {

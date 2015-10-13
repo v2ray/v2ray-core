@@ -37,7 +37,8 @@ func (handler *VMessInboundHandler) Listen(port uint16) error {
 		Zone: "",
 	})
 	if err != nil {
-		return log.Error("Unable to listen tcp:%d", port)
+		log.Error("Unable to listen tcp port %d: %v", port, err)
+		return err
 	}
 	handler.accepting = true
 	go handler.AcceptConnections(listener)
@@ -90,7 +91,8 @@ func (handler *VMessInboundHandler) HandleConnection(connection *net.TCPConn) er
 
 	responseWriter, err := v2io.NewAesEncryptWriter(responseKey[:], responseIV[:], connection)
 	if err != nil {
-		return log.Error("VMessIn: Failed to create encrypt writer: %v", err)
+		log.Error("VMessIn: Failed to create encrypt writer: %v", err)
+		return err
 	}
 
 	// Optimize for small response packet
@@ -140,7 +142,8 @@ func (factory *VMessInboundHandlerFactory) Create(vp *core.Point, rawConfig inte
 	for _, client := range config.AllowedClients {
 		user, err := client.ToUser()
 		if err != nil {
-			panic(log.Error("VMessIn: Failed to parse user id %s: %v", client.Id, err))
+			log.Error("VMessIn: Failed to parse user id %s: %v", client.Id, err)
+			return nil, err
 		}
 		allowedClients.AddUser(user)
 	}
