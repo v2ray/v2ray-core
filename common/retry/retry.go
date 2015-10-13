@@ -29,6 +29,7 @@ func (r *retryer) On(method func() error) error {
 			return RetryFailed
 		}
 		<-time.After(time.Duration(delay) * time.Millisecond)
+		attempt++
 	}
 }
 
