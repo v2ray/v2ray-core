@@ -3,8 +3,8 @@ package log
 import (
 	"log"
 	"os"
-  
-  "github.com/v2ray/v2ray-core/common/platform"
+
+	"github.com/v2ray/v2ray-core/common/platform"
 )
 
 // AccessStatus is the status of an access request from clients.
