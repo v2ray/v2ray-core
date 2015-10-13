@@ -1,6 +1,7 @@
 package socks
 
 import (
+	"errors"
 	"io"
 	"net"
 	"strconv"
@@ -9,11 +10,16 @@ import (
 
 	"github.com/v2ray/v2ray-core"
 	"github.com/v2ray/v2ray-core/common/alloc"
-	"github.com/v2ray/v2ray-core/common/errors"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/proxy"
 	jsonconfig "github.com/v2ray/v2ray-core/proxy/socks/config/json"
 	"github.com/v2ray/v2ray-core/proxy/socks/protocol"
+)
+
+var (
+	UnsupportedSocksCommand = errors.New("Unsupported socks command.")
+	UnsupportedAuthMethod   = errors.New("Unsupported auth method.")
 )
 
 // SocksServer is a SOCKS 5 proxy server
@@ -61,12 +67,12 @@ func (server *SocksServer) HandleConnection(connection net.Conn) error {
 	reader := v2net.NewTimeOutReader(120, connection)
 
 	auth, auth4, err := protocol.ReadAuthentication(reader)
-	if err != nil && !errors.HasCode(err, 1000) {
+	if err != nil && err != protocol.Socks4Downgrade {
 		log.Error("Socks failed to read authentication: %v", err)
 		return err
 	}
 
-	if err != nil && errors.HasCode(err, 1000) {
+	if err != nil && err == protocol.Socks4Downgrade {
 		return server.handleSocks4(reader, connection, auth4)
 	} else {
 		return server.handleSocks5(reader, connection, auth)
@@ -87,7 +93,7 @@ func (server *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.W
 			return err
 		}
 		log.Warning("Socks client doesn't support allowed any auth methods.")
-		return errors.NewInvalidOperationError("Unsupported auth methods.")
+		return UnsupportedAuthMethod
 	}
 
 	authResponse := protocol.NewAuthenticationResponse(expectedAuthMethod)
@@ -113,9 +119,8 @@ func (server *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.W
 			return err
 		}
 		if status != byte(0) {
-			err = errors.NewAuthenticationError(upRequest.AuthDetail())
-			log.Warning(err.Error())
-			return err
+			log.Warning("Invalid user account: %s", upRequest.AuthDetail())
+			return proxy.InvalidAuthentication
 		}
 	}
 
@@ -143,7 +148,7 @@ func (server *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.W
 			return err
 		}
 		log.Warning("Unsupported socks command %d", request.Command)
-		return errors.NewInvalidOperationError("Socks command " + strconv.Itoa(int(request.Command)))
+		return UnsupportedSocksCommand
 	}
 
 	response.Error = protocol.ErrorSuccess
@@ -228,7 +233,8 @@ func (server *SocksServer) handleSocks4(reader io.Reader, writer io.Writer, auth
 	responseBuffer.Release()
 
 	if result == protocol.Socks4RequestRejected {
-		return errors.NewInvalidOperationError("Socks4 command " + strconv.Itoa(int(auth.Command)))
+		log.Warning("Unsupported socks 4 command %d", auth.Command)
+		return UnsupportedSocksCommand
 	}
 
 	dest := v2net.NewTCPDestination(v2net.IPAddress(auth.IP[:], auth.Port))

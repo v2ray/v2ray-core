@@ -1,7 +1,6 @@
 package core
 
 import (
-	"github.com/v2ray/v2ray-core/common/errors"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
@@ -41,7 +40,7 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 	ichFactory, ok := inboundFactories[pConfig.InboundConfig().Protocol()]
 	if !ok {
 		log.Error("Unknown inbound connection handler factory %s", pConfig.InboundConfig().Protocol())
-		return nil, errors.NewBadConfigurationError()
+		return nil, config.BadConfiguration
 	}
 	ichConfig := pConfig.InboundConfig().Settings(config.TypeInbound)
 	ich, err := ichFactory.Create(vpoint, ichConfig)
@@ -54,7 +53,7 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 	ochFactory, ok := outboundFactories[pConfig.OutboundConfig().Protocol()]
 	if !ok {
 		log.Error("Unknown outbound connection handler factory %s", pConfig.OutboundConfig().Protocol())
-		return nil, errors.NewBadConfigurationError()
+		return nil, config.BadConfiguration
 	}
 	ochConfig := pConfig.OutboundConfig().Settings(config.TypeOutbound)
 	och, err := ochFactory.Create(vpoint, ochConfig)
@@ -88,7 +87,7 @@ type OutboundConnectionHandler interface {
 func (vp *Point) Start() error {
 	if vp.port <= 0 {
 		log.Error("Invalid port %d", vp.port)
-		return errors.NewBadConfigurationError()
+		return config.BadConfiguration
 	}
 
 	return retry.Timed(100 /* times */, 100 /* ms */).On(func() error {

@@ -5,9 +5,10 @@ import (
 	"io"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
-	"github.com/v2ray/v2ray-core/common/errors"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/transport"
 )
 
 const (
@@ -49,7 +50,7 @@ func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, aut
 	}
 	if nBytes < 2 {
 		log.Info("Socks expected 2 bytes read, but only %d bytes read", nBytes)
-		err = errors.NewCorruptedPacketError()
+		err = transport.CorruptedPacket
 		return
 	}
 
@@ -58,26 +59,27 @@ func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, aut
 		auth4.Command = buffer.Value[1]
 		auth4.Port = binary.BigEndian.Uint16(buffer.Value[2:4])
 		copy(auth4.IP[:], buffer.Value[4:8])
-		err = NewSocksVersion4Error()
+		err = Socks4Downgrade
 		return
 	}
 
 	auth.version = buffer.Value[0]
 	if auth.version != socksVersion {
-		err = errors.NewProtocolVersionError(int(auth.version))
+		log.Warning("Unknown protocol version %d", auth.version)
+		err = proxy.InvalidProtocolVersion
 		return
 	}
 
 	auth.nMethods = buffer.Value[1]
 	if auth.nMethods <= 0 {
 		log.Info("Zero length of authentication methods")
-		err = errors.NewCorruptedPacketError()
+		err = transport.CorruptedPacket
 		return
 	}
 
 	if nBytes-2 != int(auth.nMethods) {
 		log.Info("Unmatching number of auth methods, expecting %d, but got %d", auth.nMethods, nBytes)
-		err = errors.NewCorruptedPacketError()
+		err = transport.CorruptedPacket
 		return
 	}
 	copy(auth.authMethods[:], buffer.Value[2:nBytes])
@@ -194,7 +196,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 		return
 	}
 	if nBytes < 4 {
-		err = errors.NewCorruptedPacketError()
+		err = transport.CorruptedPacket
 		return
 	}
 	request = &Socks5Request{
@@ -210,7 +212,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 			return
 		}
 		if nBytes != 4 {
-			err = errors.NewCorruptedPacketError()
+			err = transport.CorruptedPacket
 			return
 		}
 	case AddrTypeDomain:
@@ -226,7 +228,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 
 		if nBytes != int(domainLength) {
 			log.Info("Unable to read domain with %d bytes, expecting %d bytes", nBytes, domainLength)
-			err = errors.NewCorruptedPacketError()
+			err = transport.CorruptedPacket
 			return
 		}
 		request.Domain = string(buffer.Value[:domainLength])
@@ -236,12 +238,12 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 			return
 		}
 		if nBytes != 16 {
-			err = errors.NewCorruptedPacketError()
+			err = transport.CorruptedPacket
 			return
 		}
 	default:
 		log.Info("Unexpected address type %d", request.AddrType)
-		err = errors.NewCorruptedPacketError()
+		err = transport.CorruptedPacket
 		return
 	}
 
@@ -250,7 +252,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 		return
 	}
 	if nBytes != 2 {
-		err = errors.NewCorruptedPacketError()
+		err = transport.CorruptedPacket
 		return
 	}
 

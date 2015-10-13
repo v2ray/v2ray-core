@@ -9,10 +9,12 @@ import (
 	"io"
 	"time"
 
-	"github.com/v2ray/v2ray-core/common/errors"
 	v2io "github.com/v2ray/v2ray-core/common/io"
+	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
+	"github.com/v2ray/v2ray-core/transport"
 )
 
 const (
@@ -73,7 +75,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 
 	userId, timeSec, valid := r.vUserSet.GetUser(buffer[:nBytes])
 	if !valid {
-		return nil, errors.NewAuthenticationError(buffer[:nBytes])
+		return nil, proxy.InvalidAuthentication
 	}
 
 	aesCipher, err := aes.NewCipher(userId.CmdKey())
@@ -99,7 +101,8 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	}
 
 	if request.Version != Version {
-		return nil, errors.NewProtocolVersionError(int(request.Version))
+		log.Warning("Invalid protocol version %d", request.Version)
+		return nil, proxy.InvalidProtocolVersion
 	}
 
 	request.RequestIV = buffer[1:17]       // 16 bytes
@@ -149,7 +152,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	expectedHash := binary.BigEndian.Uint32(buffer[bufferLen : bufferLen+4])
 
 	if actualHash != expectedHash {
-		return nil, errors.NewCorruptedPacketError()
+		return nil, transport.CorruptedPacket
 	}
 
 	return request, nil
