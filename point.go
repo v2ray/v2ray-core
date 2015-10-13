@@ -4,6 +4,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/errors"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/config"
 )
 
@@ -90,9 +91,9 @@ func (vp *Point) Start() error {
 		return errors.NewBadConfigurationError()
 	}
 
-	err := vp.ich.Listen(vp.port)
-	// TODO: handle error
-	return err
+	return retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
+		return vp.ich.Listen(vp.port)
+	})
 }
 
 func (p *Point) DispatchToOutbound(packet v2net.Packet) InboundRay {
