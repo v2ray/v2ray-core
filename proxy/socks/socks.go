@@ -150,7 +150,7 @@ func (server *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.W
 		return UnsupportedSocksCommand
 	}
 
-  response := protocol.NewSocks5Response()
+	response := protocol.NewSocks5Response()
 	response.Error = protocol.ErrorSuccess
 
 	// Some SOCKS software requires a value other than dest. Let's fake one:
