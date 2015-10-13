@@ -92,11 +92,11 @@ func (vp *Point) Start() error {
 
 	return retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
 		err := vp.ich.Listen(vp.port)
-    if err == nil {
-      log.Warning("Point server started on port %d", vp.port)
-      return nil
-    }
-    return err
+		if err == nil {
+			log.Warning("Point server started on port %d", vp.port)
+			return nil
+		}
+		return err
 	})
 }
 
