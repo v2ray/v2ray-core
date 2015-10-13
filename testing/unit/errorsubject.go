@@ -36,3 +36,9 @@ func (subject *ErrorSubject) IsNil() {
 		subject.FailWithMessage("Not true that " + subject.DisplayString() + " is nil.")
 	}
 }
+
+func (subject *ErrorSubject) IsNotNil() {
+	if subject.value == nil {
+		subject.FailWithMessage("Not true that the error is not nil.")
+	}
+}

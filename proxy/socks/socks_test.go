@@ -126,6 +126,51 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 	assert.String(targetServer).Equals(och.Destination.Address().String())
 }
 
+func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
+	assert := unit.Assert(t)
+	port := uint16(12389)
+
+	och := &mocks.OutboundConnectionHandler{
+		Data2Send:   bytes.NewBuffer(make([]byte, 0, 1024)),
+		Data2Return: []byte("The data to be returned to socks server."),
+	}
+
+	core.RegisterOutboundConnectionHandlerFactory("mock_och", och)
+
+	config := mocks.Config{
+		PortValue: port,
+		InboundConfigValue: &mocks.ConnectionConfig{
+			ProtocolValue: "socks",
+			SettingsValue: &json.SocksConfig{
+				AuthMethod: "password",
+				Accounts: []json.SocksAccount{
+					json.SocksAccount{
+						Username: "userx",
+						Password: "passy",
+					},
+				},
+			},
+		},
+		OutboundConfigValue: &mocks.ConnectionConfig{
+			ProtocolValue: "mock_och",
+			SettingsValue: nil,
+		},
+	}
+
+	point, err := core.NewPoint(&config)
+	assert.Error(err).IsNil()
+
+	err = point.Start()
+	assert.Error(err).IsNil()
+
+	socks5Client, err := proxy.SOCKS5("tcp", "127.0.0.1:12389", &proxy.Auth{"userx", "passz"}, proxy.Direct)
+	assert.Error(err).IsNil()
+
+	targetServer := "1.2.3.4:443"
+	_, err = socks5Client.Dial("tcp", targetServer)
+	assert.Error(err).IsNotNil()
+}
+
 func TestSocksUdpSend(t *testing.T) {
 	assert := unit.Assert(t)
 	port := uint16(12372)
