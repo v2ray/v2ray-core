@@ -9,10 +9,6 @@ import (
 	"github.com/v2ray/v2ray-core/proxy/socks/protocol"
 )
 
-const (
-	bufferSize = 2 * 1024
-)
-
 var udpAddress v2net.Address
 
 func (server *SocksServer) ListenUDP(port uint16) error {
