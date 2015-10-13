@@ -3,6 +3,8 @@ package log
 import (
 	"log"
 	"os"
+  
+  "github.com/v2ray/v2ray-core/common/platform"
 )
 
 // AccessStatus is the status of an access request from clients.
@@ -63,7 +65,7 @@ func (logger *fileAccessLogger) Run() {
 func newFileAccessLogger(path string) accessLogger {
 	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
-		log.Printf("Unable to create or open file (%s): %v\n", path, err)
+		log.Printf("Unable to create or open file (%s): %v%s", path, err, platform.LineSeparator())
 		return nil
 	}
 	return &fileAccessLogger{
