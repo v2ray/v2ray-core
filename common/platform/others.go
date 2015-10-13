@@ -6,11 +6,10 @@ import (
 	"os"
 )
 
-type otherPlatformEnvironment struct {
+func ExpandEnv(s string) string {
+	return os.ExpandEnv(s)
 }
 
-var environmentInstance = &otherPlatformEnvironment{}
-
-func (e *otherPlatformEnvironment) ExpandEnv(s string) string {
-	return os.ExpandEnv(s)
+func LineSeparator() string {
+	return "\n"
 }

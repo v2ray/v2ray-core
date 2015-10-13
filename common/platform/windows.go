@@ -2,16 +2,11 @@
 
 package platform
 
-import (
-	"os"
-)
-
-type windowsEnvironment struct {
-}
-
-var environmentInstance = &windowsEnvironment{}
-
-func (e *windowsEnvironment) ExpandEnv(s string) string {
+func ExpandEnv(s string) string {
 	// TODO
 	return s
+}
+
+func LineSeparator() string {
+	return "\r\n"
 }

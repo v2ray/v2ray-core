@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+
+	"github.com/v2ray/v2ray-core/common/platform"
 )
 
 const (
@@ -35,8 +37,7 @@ func (l *streamLogger) WriteLog(prefix, format string, v ...interface{}) {
 	} else {
 		data = fmt.Sprintf(format, v...)
 	}
-	l.writer.Write([]byte(prefix + data))
-	l.writer.Write([]byte{'\n'})
+	l.writer.Write([]byte(prefix + data + platform.LineSeparator()))
 }
 
 var (
