@@ -30,6 +30,6 @@ if [ -z "$GOPATH" ]; then
   export GOPATH=/v2ray
 fi
 
-go get github.com/v2ray/v2ray-core
+go get -u github.com/v2ray/v2ray-core
 go build -o $GOPATH/bin/v2ray -compiler gc github.com/v2ray/v2ray-core/release/server
 
