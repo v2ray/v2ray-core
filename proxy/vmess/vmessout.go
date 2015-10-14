@@ -8,13 +8,14 @@ import (
 	"net"
 	"sync"
 
-	"github.com/v2ray/v2ray-core"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
+	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
 const (
@@ -28,14 +29,12 @@ type VNextServer struct {
 }
 
 type VMessOutboundHandler struct {
-	vPoint       *core.Point
 	vNextList    []*VNextServer
 	vNextListUDP []*VNextServer
 }
 
-func NewVMessOutboundHandler(vp *core.Point, vNextList, vNextListUDP []*VNextServer) *VMessOutboundHandler {
+func NewVMessOutboundHandler(vNextList, vNextListUDP []*VNextServer) *VMessOutboundHandler {
 	return &VMessOutboundHandler{
-		vPoint:       vp,
 		vNextList:    vNextList,
 		vNextListUDP: vNextListUDP,
 	}
@@ -64,7 +63,7 @@ func pickVNext(serverList []*VNextServer) (v2net.Destination, user.User) {
 	return vNext.Destination, vNextUser
 }
 
-func (handler *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray core.OutboundRay) error {
+func (handler *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {
 	vNextList := handler.vNextList
 	if firstPacket.Destination().IsUDP() {
 		vNextList = handler.vNextListUDP
@@ -91,7 +90,7 @@ func (handler *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray core
 	return startCommunicate(request, vNextAddress, ray, firstPacket)
 }
 
-func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ray core.OutboundRay, firstPacket v2net.Packet) error {
+func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ray ray.OutboundRay, firstPacket v2net.Packet) error {
 	conn, err := net.Dial(dest.Network(), dest.Address().String())
 	if err != nil {
 		log.Error("Failed to open %s: %v", dest.String(), err)
@@ -199,7 +198,7 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 type VMessOutboundHandlerFactory struct {
 }
 
-func (factory *VMessOutboundHandlerFactory) Create(vp *core.Point, rawConfig interface{}) (core.OutboundConnectionHandler, error) {
+func (factory *VMessOutboundHandlerFactory) Create(rawConfig interface{}) (proxy.OutboundConnectionHandler, error) {
 	config := rawConfig.(*VMessOutboundConfig)
 	servers := make([]*VNextServer, 0, len(config.VNextList))
 	udpServers := make([]*VNextServer, 0, len(config.VNextList))
@@ -222,9 +221,9 @@ func (factory *VMessOutboundHandlerFactory) Create(vp *core.Point, rawConfig int
 
 		}
 	}
-	return NewVMessOutboundHandler(vp, servers, udpServers), nil
+	return NewVMessOutboundHandler(servers, udpServers), nil
 }
 
 func init() {
-	core.RegisterOutboundConnectionHandlerFactory("vmess", &VMessOutboundHandlerFactory{})
+	proxy.RegisterOutboundConnectionHandlerFactory("vmess", &VMessOutboundHandlerFactory{})
 }

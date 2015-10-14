@@ -6,25 +6,26 @@ import (
 	"net"
 	"sync"
 
-	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 )
 
 type VMessInboundHandler struct {
-	vPoint     *core.Point
+	dispatcher app.PacketDispatcher
 	clients    user.UserSet
 	accepting  bool
 	udpEnabled bool
 }
 
-func NewVMessInboundHandler(vp *core.Point, clients user.UserSet, udpEnabled bool) *VMessInboundHandler {
+func NewVMessInboundHandler(dispatcher app.PacketDispatcher, clients user.UserSet, udpEnabled bool) *VMessInboundHandler {
 	return &VMessInboundHandler{
-		vPoint:     vp,
+		dispatcher: dispatcher,
 		clients:    clients,
 		udpEnabled: udpEnabled,
 	}
@@ -77,7 +78,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection *net.TCPConn) er
 	log.Access(connection.RemoteAddr().String(), request.Address.String(), log.AccessAccepted, "")
 	log.Debug("VMessIn: Received request for %s", request.Address.String())
 
-	ray := handler.vPoint.DispatchToOutbound(v2net.NewPacket(request.Destination(), nil, true))
+	ray := handler.dispatcher.DispatchToOutbound(v2net.NewPacket(request.Destination(), nil, true))
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 	var readFinish, writeFinish sync.Mutex
@@ -135,7 +136,7 @@ func handleOutput(request *protocol.VMessRequest, writer io.Writer, output <-cha
 type VMessInboundHandlerFactory struct {
 }
 
-func (factory *VMessInboundHandlerFactory) Create(vp *core.Point, rawConfig interface{}) (core.InboundConnectionHandler, error) {
+func (factory *VMessInboundHandlerFactory) Create(dispatcher app.PacketDispatcher, rawConfig interface{}) (proxy.InboundConnectionHandler, error) {
 	config := rawConfig.(*VMessInboundConfig)
 
 	allowedClients := user.NewTimedUserSet()
@@ -148,9 +149,9 @@ func (factory *VMessInboundHandlerFactory) Create(vp *core.Point, rawConfig inte
 		allowedClients.AddUser(user)
 	}
 
-	return NewVMessInboundHandler(vp, allowedClients, config.UDPEnabled), nil
+	return NewVMessInboundHandler(dispatcher, allowedClients, config.UDPEnabled), nil
 }
 
 func init() {
-	core.RegisterInboundConnectionHandlerFactory("vmess", &VMessInboundHandlerFactory{})
+	proxy.RegisterInboundConnectionHandlerFactory("vmess", &VMessInboundHandlerFactory{})
 }

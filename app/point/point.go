@@ -1,34 +1,19 @@
-package core
+package point
 
 import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/config"
+	"github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/transport/ray"
 )
-
-var (
-	inboundFactories  = make(map[string]InboundConnectionHandlerFactory)
-	outboundFactories = make(map[string]OutboundConnectionHandlerFactory)
-)
-
-func RegisterInboundConnectionHandlerFactory(name string, factory InboundConnectionHandlerFactory) error {
-	// TODO check name
-	inboundFactories[name] = factory
-	return nil
-}
-
-func RegisterOutboundConnectionHandlerFactory(name string, factory OutboundConnectionHandlerFactory) error {
-	// TODO check name
-	outboundFactories[name] = factory
-	return nil
-}
 
 // Point is an single server in V2Ray system.
 type Point struct {
 	port uint16
-	ich  InboundConnectionHandler
-	och  OutboundConnectionHandler
+	ich  proxy.InboundConnectionHandler
+	och  proxy.OutboundConnectionHandler
 }
 
 // NewPoint returns a new Point server based on given configuration.
@@ -37,8 +22,8 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 	var vpoint = new(Point)
 	vpoint.port = pConfig.Port()
 
-	ichFactory, ok := inboundFactories[pConfig.InboundConfig().Protocol()]
-	if !ok {
+	ichFactory := proxy.GetInboundConnectionHandlerFactory(pConfig.InboundConfig().Protocol())
+	if ichFactory == nil {
 		log.Error("Unknown inbound connection handler factory %s", pConfig.InboundConfig().Protocol())
 		return nil, config.BadConfiguration
 	}
@@ -50,13 +35,13 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 	}
 	vpoint.ich = ich
 
-	ochFactory, ok := outboundFactories[pConfig.OutboundConfig().Protocol()]
-	if !ok {
+	ochFactory := proxy.GetOutboundConnectionHandlerFactory(pConfig.OutboundConfig().Protocol())
+	if ochFactory == nil {
 		log.Error("Unknown outbound connection handler factory %s", pConfig.OutboundConfig().Protocol())
 		return nil, config.BadConfiguration
 	}
 	ochConfig := pConfig.OutboundConfig().Settings(config.TypeOutbound)
-	och, err := ochFactory.Create(vpoint, ochConfig)
+	och, err := ochFactory.Create(ochConfig)
 	if err != nil {
 		log.Error("Failed to create outbound connection handler: %v", err)
 		return nil, err
@@ -64,22 +49,6 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 	vpoint.och = och
 
 	return vpoint, nil
-}
-
-type InboundConnectionHandlerFactory interface {
-	Create(vp *Point, config interface{}) (InboundConnectionHandler, error)
-}
-
-type InboundConnectionHandler interface {
-	Listen(port uint16) error
-}
-
-type OutboundConnectionHandlerFactory interface {
-	Create(VP *Point, config interface{}) (OutboundConnectionHandler, error)
-}
-
-type OutboundConnectionHandler interface {
-	Dispatch(firstPacket v2net.Packet, ray OutboundRay) error
 }
 
 // Start starts the Point server, and return any error during the process.
@@ -100,8 +69,8 @@ func (vp *Point) Start() error {
 	})
 }
 
-func (p *Point) DispatchToOutbound(packet v2net.Packet) InboundRay {
-	ray := NewRay()
-	go p.och.Dispatch(packet, ray)
-	return ray
+func (p *Point) DispatchToOutbound(packet v2net.Packet) ray.InboundRay {
+	direct := ray.NewRay()
+	go p.och.Dispatch(packet, direct)
+	return direct
 }

@@ -3,16 +3,17 @@ package mocks
 import (
 	"bytes"
 
-	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/proxy"
 )
 
 type InboundConnectionHandler struct {
 	Data2Send    []byte
 	DataReturned *bytes.Buffer
 	Port         uint16
-	Server       *core.Point
+	Dispatcher   app.PacketDispatcher
 }
 
 func (handler *InboundConnectionHandler) Listen(port uint16) error {
@@ -21,7 +22,7 @@ func (handler *InboundConnectionHandler) Listen(port uint16) error {
 }
 
 func (handler *InboundConnectionHandler) Communicate(packet v2net.Packet) error {
-	ray := handler.Server.DispatchToOutbound(packet)
+	ray := handler.Dispatcher.DispatchToOutbound(packet)
 
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
@@ -36,7 +37,7 @@ func (handler *InboundConnectionHandler) Communicate(packet v2net.Packet) error 
 	return nil
 }
 
-func (handler *InboundConnectionHandler) Create(point *core.Point, config interface{}) (core.InboundConnectionHandler, error) {
-	handler.Server = point
+func (handler *InboundConnectionHandler) Create(dispatcher app.PacketDispatcher, config interface{}) (proxy.InboundConnectionHandler, error) {
+	handler.Dispatcher = dispatcher
 	return handler, nil
 }

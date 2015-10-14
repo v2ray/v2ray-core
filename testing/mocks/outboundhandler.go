@@ -3,9 +3,10 @@ package mocks
 import (
 	"bytes"
 
-	"github.com/v2ray/v2ray-core"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
 type OutboundConnectionHandler struct {
@@ -14,7 +15,7 @@ type OutboundConnectionHandler struct {
 	Destination v2net.Destination
 }
 
-func (handler *OutboundConnectionHandler) Dispatch(packet v2net.Packet, ray core.OutboundRay) error {
+func (handler *OutboundConnectionHandler) Dispatch(packet v2net.Packet, ray ray.OutboundRay) error {
 	input := ray.OutboundInput()
 	output := ray.OutboundOutput()
 
@@ -42,6 +43,6 @@ func (handler *OutboundConnectionHandler) Dispatch(packet v2net.Packet, ray core
 	return nil
 }
 
-func (handler *OutboundConnectionHandler) Create(point *core.Point, config interface{}) (core.OutboundConnectionHandler, error) {
+func (handler *OutboundConnectionHandler) Create(config interface{}) (proxy.OutboundConnectionHandler, error) {
 	return handler, nil
 }

@@ -1,16 +1,16 @@
 package freedom
 
 import (
-	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/proxy"
 )
 
 type FreedomFactory struct {
 }
 
-func (factory FreedomFactory) Create(vp *core.Point, config interface{}) (core.OutboundConnectionHandler, error) {
+func (factory FreedomFactory) Create(config interface{}) (proxy.OutboundConnectionHandler, error) {
 	return NewFreedomConnection(), nil
 }
 
 func init() {
-	core.RegisterOutboundConnectionHandlerFactory("freedom", FreedomFactory{})
+	proxy.RegisterOutboundConnectionHandlerFactory("freedom", FreedomFactory{})
 }

@@ -73,7 +73,7 @@ func (handler *VMessInboundHandler) AcceptPackets(conn *net.UDPConn) {
 }
 
 func (handler *VMessInboundHandler) handlePacket(conn *net.UDPConn, request *protocol.VMessRequest, packet v2net.Packet, clientAddr *net.UDPAddr) {
-	ray := handler.vPoint.DispatchToOutbound(packet)
+	ray := handler.dispatcher.DispatchToOutbound(packet)
 	close(ray.InboundInput())
 
 	responseKey := md5.Sum(request.RequestKey)

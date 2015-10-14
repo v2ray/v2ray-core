@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -24,15 +24,15 @@ var (
 
 // SocksServer is a SOCKS 5 proxy server
 type SocksServer struct {
-	accepting bool
-	vPoint    *core.Point
-	config    *jsonconfig.SocksConfig
+	accepting  bool
+	dispatcher app.PacketDispatcher
+	config     *jsonconfig.SocksConfig
 }
 
-func NewSocksServer(vp *core.Point, config *jsonconfig.SocksConfig) *SocksServer {
+func NewSocksServer(dispatcher app.PacketDispatcher, config *jsonconfig.SocksConfig) *SocksServer {
 	return &SocksServer{
-		vPoint: vp,
-		config: config,
+		dispatcher: dispatcher,
+		config:     config,
 	}
 }
 
@@ -249,7 +249,7 @@ func (server *SocksServer) handleSocks4(reader io.Reader, writer io.Writer, auth
 }
 
 func (server *SocksServer) transport(reader io.Reader, writer io.Writer, firstPacket v2net.Packet) {
-	ray := server.vPoint.DispatchToOutbound(firstPacket)
+	ray := server.dispatcher.DispatchToOutbound(firstPacket)
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 

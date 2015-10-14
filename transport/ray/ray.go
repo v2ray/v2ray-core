@@ -1,4 +1,4 @@
-package core
+package ray
 
 import (
 	"github.com/v2ray/v2ray-core/common/alloc"
@@ -8,14 +8,8 @@ const (
 	bufferSize = 16
 )
 
-// Ray is an internal tranport channel bewteen inbound and outbound connection.
-type Ray struct {
-	Input  chan *alloc.Buffer
-	Output chan *alloc.Buffer
-}
-
-func NewRay() *Ray {
-	return &Ray{
+func NewRay() Ray {
+	return &directRay{
 		Input:  make(chan *alloc.Buffer, bufferSize),
 		Output: make(chan *alloc.Buffer, bufferSize),
 	}
@@ -46,18 +40,29 @@ type InboundRay interface {
 	InboundOutput() <-chan *alloc.Buffer
 }
 
-func (ray *Ray) OutboundInput() <-chan *alloc.Buffer {
+// Ray is an internal tranport channel bewteen inbound and outbound connection.
+type Ray interface {
+	InboundRay
+	OutboundRay
+}
+
+type directRay struct {
+	Input  chan *alloc.Buffer
+	Output chan *alloc.Buffer
+}
+
+func (ray *directRay) OutboundInput() <-chan *alloc.Buffer {
 	return ray.Input
 }
 
-func (ray *Ray) OutboundOutput() chan<- *alloc.Buffer {
+func (ray *directRay) OutboundOutput() chan<- *alloc.Buffer {
 	return ray.Output
 }
 
-func (ray *Ray) InboundInput() chan<- *alloc.Buffer {
+func (ray *directRay) InboundInput() chan<- *alloc.Buffer {
 	return ray.Input
 }
 
-func (ray *Ray) InboundOutput() <-chan *alloc.Buffer {
+func (ray *directRay) InboundOutput() <-chan *alloc.Buffer {
 	return ray.Output
 }

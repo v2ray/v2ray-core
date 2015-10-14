@@ -4,10 +4,10 @@ import (
 	"net"
 	"sync"
 
-	"github.com/v2ray/v2ray-core"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
 type FreedomConnection struct {
@@ -17,7 +17,7 @@ func NewFreedomConnection() *FreedomConnection {
 	return &FreedomConnection{}
 }
 
-func (vconn *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray core.OutboundRay) error {
+func (vconn *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {
 	conn, err := net.Dial(firstPacket.Destination().Network(), firstPacket.Destination().Address().String())
 	log.Info("Freedom: Opening connection to %s", firstPacket.Destination().String())
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/app/point"
 	"github.com/v2ray/v2ray-core/common/log"
 	jsonconf "github.com/v2ray/v2ray-core/config/json"
 
@@ -58,7 +59,7 @@ func main() {
 		log.InitAccessLogger(config.LogConfig().AccessLog())
 	}
 
-	vPoint, err := core.NewPoint(config)
+	vPoint, err := point.NewPoint(config)
 	if err != nil {
 		log.Error("Failed to create Point server: %v", err)
 		return
