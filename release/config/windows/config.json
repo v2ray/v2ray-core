@@ -1,0 +1,29 @@
+{
+  "port": 1080,
+  "log": {
+    "access": ""
+  },
+  "inbound": {
+    "protocol": "socks",
+    "settings": {
+      "auth": "noauth",
+      "udp": false,
+      "ip": "127.0.0.1"
+    }
+  },
+  "outbound": {
+    "protocol": "vmess",
+    "settings": {
+      "vnext": [
+        {
+          "address": "127.0.0.1",
+          "port": 27183,
+          "users": [
+            {"id": "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"}
+          ],
+          "network": "tcp"
+        }
+      ]
+    }
+  }
+}
