@@ -8,7 +8,8 @@ import (
 
 	"golang.org/x/net/proxy"
 
-	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/app/point"
+	v2proxy "github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/socks/config/json"
 	"github.com/v2ray/v2ray-core/testing/mocks"
 	"github.com/v2ray/v2ray-core/testing/unit"
@@ -23,7 +24,7 @@ func TestSocksTcpConnect(t *testing.T) {
 		Data2Return: []byte("The data to be returned to socks server."),
 	}
 
-	core.RegisterOutboundConnectionHandlerFactory("mock_och", och)
+	v2proxy.RegisterOutboundConnectionHandlerFactory("mock_och", och)
 
 	config := mocks.Config{
 		PortValue: port,
@@ -39,7 +40,7 @@ func TestSocksTcpConnect(t *testing.T) {
 		},
 	}
 
-	point, err := core.NewPoint(&config)
+	point, err := point.NewPoint(&config)
 	assert.Error(err).IsNil()
 
 	err = point.Start()
@@ -76,7 +77,7 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 		Data2Return: []byte("The data to be returned to socks server."),
 	}
 
-	core.RegisterOutboundConnectionHandlerFactory("mock_och", och)
+	v2proxy.RegisterOutboundConnectionHandlerFactory("mock_och", och)
 
 	config := mocks.Config{
 		PortValue: port,
@@ -98,7 +99,7 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 		},
 	}
 
-	point, err := core.NewPoint(&config)
+	point, err := point.NewPoint(&config)
 	assert.Error(err).IsNil()
 
 	err = point.Start()
@@ -135,7 +136,7 @@ func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
 		Data2Return: []byte("The data to be returned to socks server."),
 	}
 
-	core.RegisterOutboundConnectionHandlerFactory("mock_och", och)
+	v2proxy.RegisterOutboundConnectionHandlerFactory("mock_och", och)
 
 	config := mocks.Config{
 		PortValue: port,
@@ -157,7 +158,7 @@ func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
 		},
 	}
 
-	point, err := core.NewPoint(&config)
+	point, err := point.NewPoint(&config)
 	assert.Error(err).IsNil()
 
 	err = point.Start()
@@ -180,7 +181,7 @@ func TestSocksTcpConnectWithWrongAuthMethod(t *testing.T) {
 		Data2Return: []byte("The data to be returned to socks server."),
 	}
 
-	core.RegisterOutboundConnectionHandlerFactory("mock_och", och)
+	v2proxy.RegisterOutboundConnectionHandlerFactory("mock_och", och)
 
 	config := mocks.Config{
 		PortValue: port,
@@ -202,7 +203,7 @@ func TestSocksTcpConnectWithWrongAuthMethod(t *testing.T) {
 		},
 	}
 
-	point, err := core.NewPoint(&config)
+	point, err := point.NewPoint(&config)
 	assert.Error(err).IsNil()
 
 	err = point.Start()
@@ -225,7 +226,7 @@ func TestSocksUdpSend(t *testing.T) {
 		Data2Return: []byte("The data to be returned to socks server."),
 	}
 
-	core.RegisterOutboundConnectionHandlerFactory("mock_och", och)
+	v2proxy.RegisterOutboundConnectionHandlerFactory("mock_och", och)
 
 	config := mocks.Config{
 		PortValue: port,
@@ -242,7 +243,7 @@ func TestSocksUdpSend(t *testing.T) {
 		},
 	}
 
-	point, err := core.NewPoint(&config)
+	point, err := point.NewPoint(&config)
 	assert.Error(err).IsNil()
 
 	err = point.Start()

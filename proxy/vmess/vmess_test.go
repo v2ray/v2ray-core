@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/v2ray/v2ray-core"
+	"github.com/v2ray/v2ray-core/app/point"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/testing/mocks"
 	"github.com/v2ray/v2ray-core/testing/unit"
 )
@@ -22,7 +23,7 @@ func TestVMessInAndOut(t *testing.T) {
 		DataReturned: bytes.NewBuffer(make([]byte, 0, 1024)),
 	}
 
-	core.RegisterInboundConnectionHandlerFactory("mock_ich", ich)
+	proxy.RegisterInboundConnectionHandlerFactory("mock_ich", ich)
 
 	configA := mocks.Config{
 		PortValue: portA,
@@ -47,7 +48,7 @@ func TestVMessInAndOut(t *testing.T) {
 		},
 	}
 
-	pointA, err := core.NewPoint(&configA)
+	pointA, err := point.NewPoint(&configA)
 	assert.Error(err).IsNil()
 
 	err = pointA.Start()
@@ -60,7 +61,7 @@ func TestVMessInAndOut(t *testing.T) {
 		Data2Return: []byte("The data to be returned to inbound server."),
 	}
 
-	core.RegisterOutboundConnectionHandlerFactory("mock_och", och)
+	proxy.RegisterOutboundConnectionHandlerFactory("mock_och", och)
 
 	configB := mocks.Config{
 		PortValue: portB,
@@ -78,7 +79,7 @@ func TestVMessInAndOut(t *testing.T) {
 		},
 	}
 
-	pointB, err := core.NewPoint(&configB)
+	pointB, err := point.NewPoint(&configB)
 	assert.Error(err).IsNil()
 
 	err = pointB.Start()
@@ -101,7 +102,7 @@ func TestVMessInAndOutUDP(t *testing.T) {
 		DataReturned: bytes.NewBuffer(make([]byte, 0, 1024)),
 	}
 
-	core.RegisterInboundConnectionHandlerFactory("mock_ich", ich)
+	proxy.RegisterInboundConnectionHandlerFactory("mock_ich", ich)
 
 	configA := mocks.Config{
 		PortValue: portA,
@@ -126,7 +127,7 @@ func TestVMessInAndOutUDP(t *testing.T) {
 		},
 	}
 
-	pointA, err := core.NewPoint(&configA)
+	pointA, err := point.NewPoint(&configA)
 	assert.Error(err).IsNil()
 
 	err = pointA.Start()
@@ -139,7 +140,7 @@ func TestVMessInAndOutUDP(t *testing.T) {
 		Data2Return: []byte("The data to be returned to inbound server."),
 	}
 
-	core.RegisterOutboundConnectionHandlerFactory("mock_och", och)
+	proxy.RegisterOutboundConnectionHandlerFactory("mock_och", och)
 
 	configB := mocks.Config{
 		PortValue: portB,
@@ -158,7 +159,7 @@ func TestVMessInAndOutUDP(t *testing.T) {
 		},
 	}
 
-	pointB, err := core.NewPoint(&configB)
+	pointB, err := point.NewPoint(&configB)
 	assert.Error(err).IsNil()
 
 	err = pointB.Start()
