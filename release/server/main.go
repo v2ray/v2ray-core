@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	configFile = flag.String("config", "", "Config file for this Point server.")
+	configFile = flag.String("config", "config.json", "Config file for this Point server.")
 	logLevel   = flag.String("loglevel", "warning", "Level of log info to be printed to console, available value: debug, info, warning, error")
 	version    = flag.Bool("version", false, "Show current version of V2Ray.")
 )
