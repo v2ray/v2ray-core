@@ -22,6 +22,15 @@ type Address interface {
 	String() string // String representation of this Address
 }
 
+func allZeros(data []byte) bool {
+	for _, v := range data {
+		if v != 0 {
+			return false
+		}
+	}
+	return true
+}
+
 // IPAddress creates an Address with given IP and port.
 func IPAddress(ip []byte, port uint16) Address {
 	switch len(ip) {
@@ -31,6 +40,9 @@ func IPAddress(ip []byte, port uint16) Address {
 			ip:          [4]byte{ip[0], ip[1], ip[2], ip[3]},
 		}
 	case net.IPv6len:
+		if allZeros(ip[0:10]) && ip[10] == 0xff && ip[11] == 0xff {
+			return IPAddress(ip[12:16], port)
+		}
 		return IPv6Address{
 			PortAddress: PortAddress{port: port},
 			ip: [16]byte{

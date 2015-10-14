@@ -1,6 +1,7 @@
 package net
 
 import (
+	"net"
 	"testing"
 
 	"github.com/v2ray/v2ray-core/testing/unit"
@@ -54,4 +55,14 @@ func TestDomainAddress(t *testing.T) {
 	assert.String(addr.Domain()).Equals(domain)
 	assert.Uint16(addr.Port()).Equals(port)
 	assert.String(addr.String()).Equals("v2ray.com:443")
+}
+
+func TestNetIPv4Address(t *testing.T) {
+	assert := unit.Assert(t)
+
+	ip := net.IPv4(1, 2, 3, 4)
+	port := uint16(80)
+	addr := IPAddress(ip, port)
+	assert.Bool(addr.IsIPv4()).IsTrue()
+	assert.String(addr.String()).Equals("1.2.3.4:80")
 }
