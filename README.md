@@ -7,7 +7,7 @@
 
 [中文](https://github.com/V2Ray/v2ray-core/blob/master/README.md) | [English](https://github.com/V2Ray/v2ray-core/blob/master/spec/en/README.md)
 
-V2Ray 是一个模块化的代理软件包，它的目标是提供常用的代理软件模块，减化网络代理软件的开发。
+V2Ray 是一个模块化的代理软件包，它的目标是提供常用的代理软件模块，简化网络代理软件的开发。
 
 ## 联系方式
 * 聊天室：https://gitter.im/v2ray/v2ray-core
