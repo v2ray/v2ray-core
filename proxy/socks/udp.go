@@ -66,7 +66,7 @@ func (server *SocksServer) handlePacket(conn *net.UDPConn, packet v2net.Packet, 
 	ray := server.vPoint.DispatchToOutbound(packet)
 	close(ray.InboundInput())
 
-	if data, ok := <-ray.InboundOutput(); ok {
+	for data := range ray.InboundOutput() {
 		response := &protocol.Socks5UDPRequest{
 			Fragment: 0,
 			Address:  targetAddr,
