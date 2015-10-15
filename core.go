@@ -3,6 +3,8 @@ package core
 
 import (
 	"fmt"
+	
+	"github.com/v2ray/v2ray-core/common/platform"
 )
 
 var (
@@ -13,7 +15,6 @@ var (
 )
 
 func PrintVersion() {
-	fmt.Printf("V2Ray %s (%s) %s", version, codename, build)
-	fmt.Println()
-	fmt.Println(intro)
+	fmt.Printf("V2Ray %s (%s) %s%s", version, codename, build, platform.LineSeparator())
+	fmt.Print("%s%s", intro, platform.LineSeparator())
 }
