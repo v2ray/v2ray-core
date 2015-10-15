@@ -8,6 +8,7 @@ const (
 	bufferSize = 16
 )
 
+// NewRay creates a new Ray for direct traffic transport.
 func NewRay() Ray {
 	return &directRay{
 		Input:  make(chan *alloc.Buffer, bufferSize),

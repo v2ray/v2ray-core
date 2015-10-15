@@ -76,18 +76,22 @@ func SetLogLevel(level LogLevel) {
 	}
 }
 
+// Debug outputs a debug log with given format and optional arguments.
 func Debug(format string, v ...interface{}) {
 	debugLogger.WriteLog("[Debug]", format, v...)
 }
 
+// Info outputs an info log with given format and optional arguments.
 func Info(format string, v ...interface{}) {
 	infoLogger.WriteLog("[Info]", format, v...)
 }
 
+// Warning outputs a warning log with given format and optional arguments.
 func Warning(format string, v ...interface{}) {
 	warningLogger.WriteLog("[Warning]", format, v...)
 }
 
+// Error outputs an error log with given format and optional arguments.
 func Error(format string, v ...interface{}) {
 	errorLogger.WriteLog("[Error]", format, v...)
 }
