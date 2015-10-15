@@ -4,7 +4,6 @@ import (
 	"errors"
 	"io"
 	"net"
-	"strconv"
 	"sync"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/proxy"
 	jsonconfig "github.com/v2ray/v2ray-core/proxy/socks/config/json"
 	"github.com/v2ray/v2ray-core/proxy/socks/protocol"
@@ -37,7 +37,11 @@ func NewSocksServer(dispatcher app.PacketDispatcher, config *jsonconfig.SocksCon
 }
 
 func (server *SocksServer) Listen(port uint16) error {
-	listener, err := net.Listen("tcp", ":"+strconv.Itoa(int(port)))
+	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
+		IP:   []byte{0, 0, 0, 0},
+		Port: int(port),
+		Zone: "",
+	})
 	if err != nil {
 		log.Error("Socks failed to listen on port %d: %v", port, err)
 		return err
@@ -50,18 +54,22 @@ func (server *SocksServer) Listen(port uint16) error {
 	return nil
 }
 
-func (server *SocksServer) AcceptConnections(listener net.Listener) {
+func (server *SocksServer) AcceptConnections(listener *net.TCPListener) {
 	for server.accepting {
-		connection, err := listener.Accept()
-		if err != nil {
-			log.Error("Socks failed to accept new connection %v", err)
-			continue
-		}
-		go server.HandleConnection(connection)
+		retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
+			connection, err := listener.AcceptTCP()
+			if err != nil {
+				log.Error("Socks failed to accept new connection %v", err)
+				return err
+			}
+			go server.HandleConnection(connection)
+			return nil
+		})
+
 	}
 }
 
-func (server *SocksServer) HandleConnection(connection net.Conn) error {
+func (server *SocksServer) HandleConnection(connection *net.TCPConn) error {
 	defer connection.Close()
 
 	reader := v2net.NewTimeOutReader(120, connection)

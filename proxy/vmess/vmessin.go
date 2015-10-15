@@ -11,6 +11,7 @@ import (
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
@@ -53,12 +54,16 @@ func (handler *VMessInboundHandler) Listen(port uint16) error {
 
 func (handler *VMessInboundHandler) AcceptConnections(listener *net.TCPListener) error {
 	for handler.accepting {
-		connection, err := listener.AcceptTCP()
-		if err != nil {
-			log.Error("Failed to accpet connection: %s", err.Error())
-			continue
-		}
-		go handler.HandleConnection(connection)
+		retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
+			connection, err := listener.AcceptTCP()
+			if err != nil {
+				log.Error("Failed to accpet connection: %s", err.Error())
+				return err
+			}
+			go handler.HandleConnection(connection)
+			return nil
+		})
+
 	}
 	return nil
 }
