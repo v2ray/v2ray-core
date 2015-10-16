@@ -35,6 +35,7 @@ func (t *ConfigTarget) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &rawConfig); err != nil {
 		return err
 	}
+	t.Users = rawConfig.Users
 	ip := net.ParseIP(rawConfig.Address)
 	if ip == nil {
 		log.Error("Unable to parse IP: %s", rawConfig.Address)
