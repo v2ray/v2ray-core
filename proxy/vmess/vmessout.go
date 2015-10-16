@@ -13,6 +13,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/proxy/vmess/config"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 	"github.com/v2ray/v2ray-core/transport/ray"
@@ -22,25 +23,19 @@ const (
 	InfoTimeNotSync = "Please check the User ID in your vmess configuration, and make sure the time on your local and remote server are in sync."
 )
 
-// VNext is the next Point server in the connection chain.
-type VNextServer struct {
-	Destination v2net.Destination // Address of VNext server
-	Users       []user.User       // User accounts for accessing VNext.
-}
-
 type VMessOutboundHandler struct {
-	vNextList    []*VNextServer
-	vNextListUDP []*VNextServer
+	vNextList    []*config.OutboundTarget
+	vNextListUDP []*config.OutboundTarget
 }
 
-func NewVMessOutboundHandler(vNextList, vNextListUDP []*VNextServer) *VMessOutboundHandler {
+func NewVMessOutboundHandler(vNextList, vNextListUDP []*config.OutboundTarget) *VMessOutboundHandler {
 	return &VMessOutboundHandler{
 		vNextList:    vNextList,
 		vNextListUDP: vNextListUDP,
 	}
 }
 
-func pickVNext(serverList []*VNextServer) (v2net.Destination, user.User) {
+func pickVNext(serverList []*config.OutboundTarget) (v2net.Destination, config.User) {
 	vNextLen := len(serverList)
 	if vNextLen == 0 {
 		panic("VMessOut: Zero vNext is configured.")
@@ -51,7 +46,7 @@ func pickVNext(serverList []*VNextServer) (v2net.Destination, user.User) {
 	}
 
 	vNext := serverList[vNextIndex]
-	vNextUserLen := len(vNext.Users)
+	vNextUserLen := len(vNext.Accounts)
 	if vNextUserLen == 0 {
 		panic("VMessOut: Zero User account.")
 	}
@@ -59,7 +54,7 @@ func pickVNext(serverList []*VNextServer) (v2net.Destination, user.User) {
 	if vNextUserLen > 1 {
 		vNextUserIndex = mrand.Intn(vNextUserLen)
 	}
-	vNextUser := vNext.Users[vNextUserIndex]
+	vNextUser := vNext.Accounts[vNextUserIndex]
 	return vNext.Destination, vNextUser
 }
 
@@ -76,7 +71,7 @@ func (handler *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray ray.
 	}
 	request := &protocol.VMessRequest{
 		Version: protocol.Version,
-		UserId:  vNextUser.Id,
+		UserId:  *vNextUser.ID(),
 		Command: command,
 		Address: firstPacket.Destination().Address(),
 	}
@@ -199,26 +194,15 @@ type VMessOutboundHandlerFactory struct {
 }
 
 func (factory *VMessOutboundHandlerFactory) Create(rawConfig interface{}) (proxy.OutboundConnectionHandler, error) {
-	config := rawConfig.(*VMessOutboundConfig)
-	servers := make([]*VNextServer, 0, len(config.VNextList))
-	udpServers := make([]*VNextServer, 0, len(config.VNextList))
-	for _, server := range config.VNextList {
-		if server.HasNetwork("tcp") {
-			aServer, err := server.ToVNextServer("tcp")
-			if err == nil {
-				servers = append(servers, aServer)
-			} else {
-				log.Warning("Discarding the server.")
-			}
+	vOutConfig := rawConfig.(config.Outbound)
+	servers := make([]*config.OutboundTarget, 0, 16)
+	udpServers := make([]*config.OutboundTarget, 0, 16)
+	for _, target := range vOutConfig.Targets() {
+		if target.Destination.IsTCP() {
+			servers = append(servers, target)
 		}
-		if server.HasNetwork("udp") {
-			aServer, err := server.ToVNextServer("udp")
-			if err == nil {
-				udpServers = append(udpServers, aServer)
-			} else {
-				log.Warning("Discarding the server.")
-			}
-
+		if target.Destination.IsUDP() {
+			udpServers = append(udpServers, target)
 		}
 	}
 	return NewVMessOutboundHandler(servers, udpServers), nil

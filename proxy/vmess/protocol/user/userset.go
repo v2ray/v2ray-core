@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/v2ray/v2ray-core/common/collect"
+	"github.com/v2ray/v2ray-core/proxy/vmess/config"
 )
 
 const (
@@ -13,12 +14,12 @@ const (
 )
 
 type UserSet interface {
-	AddUser(user User) error
-	GetUser(timeHash []byte) (*ID, int64, bool)
+	AddUser(user config.User) error
+	GetUser(timeHash []byte) (*config.ID, int64, bool)
 }
 
 type TimedUserSet struct {
-	validUserIds        []ID
+	validUserIds        []*config.ID
 	userHash            map[string]indexTimePair
 	userHashDeleteQueue *collect.TimedQueue
 	access              sync.RWMutex
@@ -31,7 +32,7 @@ type indexTimePair struct {
 
 func NewTimedUserSet() UserSet {
 	tus := &TimedUserSet{
-		validUserIds:        make([]ID, 0, 16),
+		validUserIds:        make([]*config.ID, 0, 16),
 		userHash:            make(map[string]indexTimePair, 512),
 		userHashDeleteQueue: collect.NewTimedQueue(updateIntervalSec),
 		access:              sync.RWMutex{},
@@ -49,7 +50,7 @@ func (us *TimedUserSet) removeEntries(entries <-chan interface{}) {
 	}
 }
 
-func (us *TimedUserSet) generateNewHashes(lastSec, nowSec int64, idx int, id ID) {
+func (us *TimedUserSet) generateNewHashes(lastSec, nowSec int64, idx int, id *config.ID) {
 	idHash := NewTimeHash(HMACHash{})
 	for lastSec < nowSec {
 		idHash := idHash.Hash(id.Bytes[:], lastSec)
@@ -73,8 +74,8 @@ func (us *TimedUserSet) updateUserHash(tick <-chan time.Time) {
 	}
 }
 
-func (us *TimedUserSet) AddUser(user User) error {
-	id := user.Id
+func (us *TimedUserSet) AddUser(user config.User) error {
+	id := user.ID()
 	idx := len(us.validUserIds)
 	us.validUserIds = append(us.validUserIds, id)
 
@@ -85,12 +86,12 @@ func (us *TimedUserSet) AddUser(user User) error {
 	return nil
 }
 
-func (us TimedUserSet) GetUser(userHash []byte) (*ID, int64, bool) {
+func (us TimedUserSet) GetUser(userHash []byte) (*config.ID, int64, bool) {
 	defer us.access.RUnlock()
 	us.access.RLock()
 	pair, found := us.userHash[string(userHash)]
 	if found {
-		return &us.validUserIds[pair.index], pair.timeSec, true
+		return us.validUserIds[pair.index], pair.timeSec, true
 	}
 	return nil, 0, false
 }

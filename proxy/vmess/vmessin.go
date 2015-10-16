@@ -13,6 +13,7 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/proxy/vmess/config"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 )
@@ -142,19 +143,14 @@ type VMessInboundHandlerFactory struct {
 }
 
 func (factory *VMessInboundHandlerFactory) Create(dispatcher app.PacketDispatcher, rawConfig interface{}) (proxy.InboundConnectionHandler, error) {
-	config := rawConfig.(*VMessInboundConfig)
+	config := rawConfig.(config.Inbound)
 
 	allowedClients := user.NewTimedUserSet()
-	for _, client := range config.AllowedClients {
-		user, err := client.ToUser()
-		if err != nil {
-			log.Error("VMessIn: Failed to parse user id %s: %v", client.Id, err)
-			return nil, err
-		}
+	for _, user := range config.AllowedUsers() {
 		allowedClients.AddUser(user)
 	}
 
-	return NewVMessInboundHandler(dispatcher, allowedClients, config.UDPEnabled), nil
+	return NewVMessInboundHandler(dispatcher, allowedClients, config.UDPEnabled()), nil
 }
 
 func init() {

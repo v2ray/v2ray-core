@@ -13,6 +13,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/proxy/vmess/config"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 	"github.com/v2ray/v2ray-core/transport"
 )
@@ -35,7 +36,7 @@ const (
 // streaming.
 type VMessRequest struct {
 	Version        byte
-	UserId         user.ID
+	UserId         config.ID
 	RequestIV      []byte
 	RequestKey     []byte
 	ResponseHeader []byte
@@ -68,7 +69,7 @@ func NewVMessRequestReader(vUserSet user.UserSet) *VMessRequestReader {
 func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	buffer := make([]byte, 256)
 
-	nBytes, err := reader.Read(buffer[:user.IDBytesLen])
+	nBytes, err := reader.Read(buffer[:config.IDBytesLen])
 	if err != nil {
 		return nil, err
 	}

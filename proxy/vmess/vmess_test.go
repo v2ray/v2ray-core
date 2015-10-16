@@ -8,6 +8,8 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/proxy/vmess/config"
+	"github.com/v2ray/v2ray-core/proxy/vmess/config/json"
 	"github.com/v2ray/v2ray-core/testing/mocks"
 	"github.com/v2ray/v2ray-core/testing/unit"
 )
@@ -16,6 +18,8 @@ func TestVMessInAndOut(t *testing.T) {
 	assert := unit.Assert(t)
 
 	data2Send := "The data to be send to outbound server."
+	testAccount, err := config.NewID("ad937d9d-6e23-4a5a-ba23-bce5092a7c51")
+	assert.Error(err).IsNil()
 
 	portA := uint16(17392)
 	ich := &mocks.InboundConnectionHandler{
@@ -33,14 +37,13 @@ func TestVMessInAndOut(t *testing.T) {
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "vmess",
-			SettingsValue: &VMessOutboundConfig{
-				[]VNextConfig{
-					VNextConfig{
-						Address: "127.0.0.1",
-						Port:    13829,
-						Network: "tcp",
-						Users: []VMessUser{
-							VMessUser{Id: "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"},
+			SettingsValue: &json.Outbound{
+				[]*json.ConfigTarget{
+					&json.ConfigTarget{
+						Address:    v2net.IPAddress([]byte{127, 0, 0, 1}, 13829),
+						TCPEnabled: true,
+						Users: []*json.ConfigUser{
+							&json.ConfigUser{Id: testAccount},
 						},
 					},
 				},
@@ -67,9 +70,9 @@ func TestVMessInAndOut(t *testing.T) {
 		PortValue: portB,
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "vmess",
-			SettingsValue: &VMessInboundConfig{
-				AllowedClients: []VMessUser{
-					VMessUser{Id: "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"},
+			SettingsValue: &json.Inbound{
+				AllowedClients: []*json.ConfigUser{
+					&json.ConfigUser{Id: testAccount},
 				},
 			},
 		},
@@ -95,6 +98,8 @@ func TestVMessInAndOutUDP(t *testing.T) {
 	assert := unit.Assert(t)
 
 	data2Send := "The data to be send to outbound server."
+	testAccount, err := config.NewID("ad937d9d-6e23-4a5a-ba23-bce5092a7c51")
+	assert.Error(err).IsNil()
 
 	portA := uint16(17394)
 	ich := &mocks.InboundConnectionHandler{
@@ -112,14 +117,13 @@ func TestVMessInAndOutUDP(t *testing.T) {
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "vmess",
-			SettingsValue: &VMessOutboundConfig{
-				[]VNextConfig{
-					VNextConfig{
-						Address: "127.0.0.1",
-						Port:    13841,
-						Network: "udp",
-						Users: []VMessUser{
-							VMessUser{Id: "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"},
+			SettingsValue: &json.Outbound{
+				[]*json.ConfigTarget{
+					&json.ConfigTarget{
+						Address:    v2net.IPAddress([]byte{127, 0, 0, 1}, 13841),
+						UDPEnabled: true,
+						Users: []*json.ConfigUser{
+							&json.ConfigUser{Id: testAccount},
 						},
 					},
 				},
@@ -146,11 +150,11 @@ func TestVMessInAndOutUDP(t *testing.T) {
 		PortValue: portB,
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "vmess",
-			SettingsValue: &VMessInboundConfig{
-				AllowedClients: []VMessUser{
-					VMessUser{Id: "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"},
+			SettingsValue: &json.Inbound{
+				AllowedClients: []*json.ConfigUser{
+					&json.ConfigUser{Id: testAccount},
 				},
-				UDPEnabled: true,
+				UDP: true,
 			},
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{

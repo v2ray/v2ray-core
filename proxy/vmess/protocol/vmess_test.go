@@ -6,25 +6,34 @@ import (
 	"testing"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/proxy/vmess/config"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 	"github.com/v2ray/v2ray-core/testing/mocks"
 	"github.com/v2ray/v2ray-core/testing/unit"
 )
 
+type TestUser struct {
+	id *config.ID
+}
+
+func (u *TestUser) ID() *config.ID {
+	return u.id
+}
+
 func TestVMessSerialization(t *testing.T) {
 	assert := unit.Assert(t)
 
-	userId, err := user.NewID("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
+	userId, err := config.NewID("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	userSet := mocks.MockUserSet{[]user.ID{}, make(map[string]int), make(map[string]int64)}
-	userSet.AddUser(user.User{userId})
+	userSet := mocks.MockUserSet{[]*config.ID{}, make(map[string]int), make(map[string]int64)}
+	userSet.AddUser(&TestUser{userId})
 
 	request := new(VMessRequest)
 	request.Version = byte(0x01)
-	request.UserId = userId
+	request.UserId = *userId
 
 	randBytes := make([]byte, 36)
 	_, err = rand.Read(randBytes)
@@ -61,13 +70,13 @@ func TestVMessSerialization(t *testing.T) {
 }
 
 func BenchmarkVMessRequestWriting(b *testing.B) {
-	userId, _ := user.NewID("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
-	userSet := mocks.MockUserSet{[]user.ID{}, make(map[string]int), make(map[string]int64)}
-	userSet.AddUser(user.User{userId})
+	userId, _ := config.NewID("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
+	userSet := mocks.MockUserSet{[]*config.ID{}, make(map[string]int), make(map[string]int64)}
+	userSet.AddUser(&TestUser{userId})
 
 	request := new(VMessRequest)
 	request.Version = byte(0x01)
-	request.UserId = userId
+	request.UserId = *userId
 
 	randBytes := make([]byte, 36)
 	rand.Read(randBytes)

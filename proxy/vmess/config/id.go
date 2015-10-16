@@ -1,4 +1,4 @@
-package user
+package config
 
 import (
 	"crypto/md5"
@@ -23,11 +23,11 @@ type ID struct {
 	cmdKey [IDBytesLen]byte
 }
 
-func NewID(id string) (ID, error) {
+func NewID(id string) (*ID, error) {
 	idBytes, err := UUIDToID(id)
 	if err != nil {
 		log.Error("Failed to parse id %s", id)
-		return ID{}, InvalidID
+		return &ID{}, InvalidID
 	}
 
 	md5hash := md5.New()
@@ -35,7 +35,7 @@ func NewID(id string) (ID, error) {
 	md5hash.Write([]byte("c48619fe-8f02-49e0-b9e9-edf763e17e21"))
 	cmdKey := md5.Sum(nil)
 
-	return ID{
+	return &ID{
 		String: id,
 		Bytes:  idBytes,
 		cmdKey: cmdKey,
