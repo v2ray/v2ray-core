@@ -5,7 +5,7 @@
 ## 格式
 ### 数据请求
 认证部分：
-* 16 字节：基于时间的 hash(用户 [ID](https://github.com/V2Ray/v2ray-core/blob/master/spec/id.md))，见下文
+* 16 字节：基于时间的 hash(用户 ID)，见下文
 
 指令部分：
 * 1 字节：版本号，目前为 0x1
@@ -42,6 +42,17 @@
 * N 字节：应答数据
 
 其中数据部分使用 AES-128-CFB 加密，IV 为 md5(请求数据 IV)，Key 为 md5(请求数据 Key)
+
+## 用户 ID
+ID 等价于 [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier)，是一个 16 字节长的随机数，它的作用相当于一个令牌（Token）。
+
+一个 ID 形如：de305d54-75b4-431b-adb2-eb6b9e546014，几乎完全随机，可以使用任何的 UUID 生成器来生成，比如[这个](https://www.uuidgenerator.net/)。
+
+ID 在消息传递过程中用于验证客户端的有效性，只有当服务器认可当前 ID 时，才进行后续操作，否则关闭连接甚至加入黑名单。
+
+在多用户环境中，用户帐号应与 ID 分开存放，即用户帐号和 ID 有一对一或一对多的关系，在 V2Ray Server 中，只负责管理 ID，用户帐号（及权限、费用等）由另外的系统管理。
+
+在后续版本中，V2Ray Server 之间应有能力进行沟通而生成新的临时 ID，从而减少通讯的可探测性。
 
 ## 基于时间的用户 ID Hash
 
