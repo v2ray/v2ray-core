@@ -17,10 +17,7 @@ var (
 )
 
 func createTargetDirectory(version string, goOS GoOS, goArch GoArch) (string, error) {
-	suffix := "-custom"
-	if version != "custom" {
-		suffix = getSuffix(goOS, goArch)
-	}
+	suffix := getSuffix(goOS, goArch)
 	GOPATH := os.Getenv("GOPATH")
 
 	targetDir := filepath.Join(GOPATH, "bin", "v2ray-"+version+suffix)
@@ -33,7 +30,7 @@ func createTargetDirectory(version string, goOS GoOS, goArch GoArch) (string, er
 
 func getTargetFile(goOS GoOS) string {
 	suffix := ""
-	if goOS == "Windows" {
+	if goOS == Windows {
 		suffix += ".exe"
 	}
 	return "v2ray" + suffix
@@ -41,7 +38,6 @@ func getTargetFile(goOS GoOS) string {
 
 func main() {
 	flag.Parse()
-	fmt.Println(os.Args)
 
 	v2rayOS := parseOS(*targetOS)
 	v2rayArch := parseArch(*targetArch)
@@ -55,7 +51,6 @@ func main() {
 		return
 	}
 	fmt.Printf("Building V2Ray (%s) for %s %s\n", version, v2rayOS, v2rayArch)
-	version = "v1.0"
 
 	targetDir, err := createTargetDirectory(version, v2rayOS, v2rayArch)
 	if err != nil {
