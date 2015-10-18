@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/v2ray/v2ray-core"
 	"github.com/v2ray/v2ray-core/app/point"
@@ -18,10 +20,19 @@ import (
 )
 
 var (
-	configFile = flag.String("config", "config.json", "Config file for this Point server.")
+	configFile string
 	logLevel   = flag.String("loglevel", "warning", "Level of log info to be printed to console, available value: debug, info, warning, error")
 	version    = flag.Bool("version", false, "Show current version of V2Ray.")
 )
+
+func init() {
+	defaultConfigFile := ""
+	workingDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err == nil {
+		defaultConfigFile = filepath.Join(workingDir, "config.json")
+	}
+	flag.StringVar(&configFile, "config", defaultConfigFile, "Config file for this Point server.")
+}
 
 func main() {
 	flag.Parse()
@@ -46,13 +57,13 @@ func main() {
 		return
 	}
 
-	if configFile == nil || len(*configFile) == 0 {
+	if len(configFile) == 0 {
 		log.Error("Config file is not set.")
 		return
 	}
-	config, err := jsonconf.LoadConfig(*configFile)
+	config, err := jsonconf.LoadConfig(configFile)
 	if err != nil {
-		log.Error("Failed to read config file (%s): %v", *configFile, err)
+		log.Error("Failed to read config file (%s): %v", configFile, err)
 		return
 	}
 
