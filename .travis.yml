@@ -27,7 +27,8 @@ deploy:
     - "$GOPATH/bin/v2ray-windows-32.zip"
     - "$GOPATH/bin/v2ray-linux-64.zip"
     - "$GOPATH/bin/v2ray-linux-32.zip"
-    - "$GOPATH/bin/v2ray-armv6.zip"
+    - "$GOPATH/bin/v2ray-linux-arm.zip"
+    - "$GOPATH/bin/v2ray-linux-arm64.zip"
   skip_cleanup: true
   on:
     tags: true
