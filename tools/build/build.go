@@ -23,7 +23,7 @@ func createTargetDirectory(version string, goOS GoOS, goArch GoArch) (string, er
 	}
 	GOPATH := os.Getenv("GOPATH")
 
-	targetDir := filepath.Join(GOPATH, "bin", "v2ray"+suffix)
+	targetDir := filepath.Join(GOPATH, "bin", "v2ray-"+version+suffix)
 	if version != "custom" {
 		os.RemoveAll(targetDir)
 	}
@@ -71,5 +71,21 @@ func main() {
 	err = copyConfigFiles(targetDir, v2rayOS)
 	if err != nil {
 		fmt.Println("Unable to copy config files: " + err.Error())
+	}
+
+	if *archive {
+		GOPATH := os.Getenv("GOPATH")
+		binPath := filepath.Join(GOPATH, "bin")
+		err := os.Chdir(binPath)
+		if err != nil {
+			fmt.Printf("Unable to switch to directory (%s): %v\n", binPath, err)
+		}
+		suffix := getSuffix(v2rayOS, v2rayArch)
+		zipFile := "v2ray" + suffix + ".zip"
+		root := filepath.Base(targetDir)
+		err = zipFolder(root, zipFile)
+		if err != nil {
+			fmt.Println("Unable to create archive (%s): %v\n", zipFile, err)
+		}
 	}
 }
