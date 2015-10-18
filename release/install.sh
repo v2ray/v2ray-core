@@ -31,5 +31,6 @@ if [ -z "$GOPATH" ]; then
 fi
 
 go get -u github.com/v2ray/v2ray-core
-go build -o $GOPATH/bin/v2ray -compiler gc github.com/v2ray/v2ray-core/release/server
-
+rm $GOPATH/bin/build
+go install github.com/v2ray/v2ray-core/tools/build
+$GOPATH/bin/build
