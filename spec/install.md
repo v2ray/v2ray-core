@@ -3,6 +3,15 @@
 ## 预编译程序
 发布于 [Release](https://github.com/v2ray/v2ray-core/releases) 中，每周更新，[更新周期见此](https://github.com/V2Ray/v2ray-core/blob/master/spec/roadmap.md)。
 
+其中：
+* v2ray-linux-32.zip: 适用于 32 位 Linux，各种发行版均可。
+* v2ray-linux-64.zip: 适用于 64 位 Linux，各种发行版均可。
+* v2ray-linux-arm.zip: 适用于 ARMv6 及之后平台的 Linux，如 Raspberry Pi。
+* v2ray-linux-arm64.zip: 适用于 ARMv8 及之后平台的 Linux。
+* v2ray-linux-macos.zip: 适用于 Mac OS X 10.7 以及之后版本。
+* v2ray-windows-32.zip: 适用于 32 位 Windows，Vista 及之后版本。
+* v2ray-windows-64.zip: 适用于 64 位 Windows，Vista 及之后版本。
+
 ## 编译源文件
 
 大概流程，请根据实际情况修改
@@ -15,15 +24,18 @@
   2. sudo tar -C /usr/local -xzf go_latest.tar.gz
   3. export PATH=$PATH:/usr/local/go/bin
   4. export GOPATH=$HOME/work
-3. go get github.com/v2ray/v2ray-core
-4. go build github.com/v2ray/v2ray-core/release/server
+3. 下载 V2Ray 源文件：go get -u github.com/v2ray/v2ray-core
+4. 生成编译脚本：go install github.com/v2ray/v2ray-core/tools/build
+5. 编译 V2Ray：$GOPATH/bin/build
+6. V2Ray 程序及配置文件会被放在 $GOPATH/bin/v2ray-XXX 文件夹下（XXX 视平台不同而不同）
 
 ### Arch Linux
 1. 安装 Git： sudo pacman -S git
 2. 安装 golang：sudo pacman -S go
    1. export GOPATH=$HOME/work
-3. go get github.com/v2ray/v2ray-core
-4. go build -o $GOPATH/bin/v2ray -compiler gc github.com/v2ray/v2ray-core/release/server
+3. go get -u github.com/v2ray/v2ray-core
+4. go install github.com/v2ray/v2ray-core/tools/build
+5. $GOPATH/bin/build
 
 ### Debian / Ubuntu
 bash <(curl -s https://raw.githubusercontent.com/v2ray/v2ray-core/master/release/install.sh)
