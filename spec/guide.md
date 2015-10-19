@@ -24,7 +24,8 @@
     "protocol": "socks",  // 传入数据所用协议
     "settings": {
       "auth": "noauth", // 认证方式，暂时只支持匿名
-      "udp": false // 如果要使用 UDP 转发，请改成 true
+      "udp": false, // 如果要使用 UDP 转发，请改成 true
+      "ip": "127.0.0.1" // 如果 Server A 不是运行在本地，请标明 Server A 的实际 IP 地址，否则 UDP 转发将无法进行。
     }
   },
   "outbound": {
