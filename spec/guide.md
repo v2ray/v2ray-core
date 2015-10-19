@@ -61,7 +61,8 @@
           // 认可的用户 ID，必须包含 Server A 中的用户 ID
         {"id": "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"}
       ],
-      "udp": false // 如果要使用 UDP 转发，请改成 true
+      "udp": false, // 如果要使用 UDP 转发，请改成 true
+      "ip": "127.0.0.1"  // 监听地址
     }
   },
   "outbound": {
