@@ -72,7 +72,7 @@ func (handler *VMessInboundHandler) AcceptConnections(listener *net.TCPListener)
 func (handler *VMessInboundHandler) HandleConnection(connection *net.TCPConn) error {
 	defer connection.Close()
 
-	connReader := v2net.NewTimeOutReader(120, connection)
+	connReader := v2net.NewTimeOutReader(16, connection)
 	requestReader := protocol.NewVMessRequestReader(handler.clients)
 
 	request, err := requestReader.Read(connReader)
@@ -91,6 +91,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection *net.TCPConn) er
 	readFinish.Lock()
 	writeFinish.Lock()
 
+  connReader.SetTimeOut(120)
 	go handleInput(request, connReader, input, &readFinish)
 
 	responseKey := md5.Sum(request.RequestKey)
