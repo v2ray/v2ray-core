@@ -34,20 +34,22 @@ func (handler *VMessInboundHandler) ListenUDP(port uint16) error {
 
 func (handler *VMessInboundHandler) AcceptPackets(conn *net.UDPConn) {
 	for {
-		buffer := make([]byte, bufferSize)
-		nBytes, addr, err := conn.ReadFromUDP(buffer)
+		buffer := alloc.NewBuffer()
+		nBytes, addr, err := conn.ReadFromUDP(buffer.Value)
 		if err != nil {
 			log.Error("VMessIn failed to read UDP packets: %v", err)
+			buffer.Release()
 			continue
 		}
 
-		reader := bytes.NewReader(buffer[:nBytes])
+		reader := bytes.NewReader(buffer.Value[:nBytes])
 		requestReader := protocol.NewVMessRequestReader(handler.clients)
 
 		request, err := requestReader.Read(reader)
 		if err != nil {
 			log.Access(addr.String(), "", log.AccessRejected, err.Error())
 			log.Warning("VMessIn: Invalid request from (%s): %v", addr.String(), err)
+			buffer.Release()
 			continue
 		}
 		log.Access(addr.String(), request.Address.String(), log.AccessAccepted, "")
@@ -55,11 +57,13 @@ func (handler *VMessInboundHandler) AcceptPackets(conn *net.UDPConn) {
 		cryptReader, err := v2io.NewAesDecryptReader(request.RequestKey, request.RequestIV, reader)
 		if err != nil {
 			log.Error("VMessIn: Failed to create decrypt reader: %v", err)
+			buffer.Release()
 			continue
 		}
 
 		data := alloc.NewBuffer()
 		nBytes, err = cryptReader.Read(data.Value)
+		buffer.Release()
 		if err != nil {
 			log.Warning("VMessIn: Unable to decrypt data: %v", err)
 			data.Release()
