@@ -46,16 +46,17 @@ func TestVMessSerialization(t *testing.T) {
 	request.Address = v2net.DomainAddress("v2ray.com", 80)
 
 	mockTime := int64(1823730)
+
 	buffer, err := request.ToBytes(user.NewTimeHash(user.HMACHash{}), func(base int64, delta int) int64 { return mockTime }, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	userSet.UserHashes[string(buffer[:16])] = 0
-	userSet.Timestamps[string(buffer[:16])] = mockTime
+	userSet.UserHashes[string(buffer.Value[:16])] = 0
+	userSet.Timestamps[string(buffer.Value[:16])] = mockTime
 
 	requestReader := NewVMessRequestReader(&userSet)
-	actualRequest, err := requestReader.Read(bytes.NewReader(buffer))
+	actualRequest, err := requestReader.Read(bytes.NewReader(buffer.Value))
 	if err != nil {
 		t.Fatal(err)
 	}

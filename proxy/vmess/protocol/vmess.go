@@ -161,48 +161,44 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 }
 
 // ToBytes returns a VMessRequest in the form of byte array.
-func (request *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 user.RandomInt64InRange, buffer []byte) ([]byte, error) {
+func (request *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 user.RandomInt64InRange, buffer *alloc.Buffer) (*alloc.Buffer, error) {
 	if buffer == nil {
-		buffer = make([]byte, 0, 300)
+		buffer = alloc.NewSmallBuffer().Clear()
 	}
 
 	counter := randomRangeInt64(time.Now().UTC().Unix(), 30)
 	hash := idHash.Hash(request.UserId.Bytes[:], counter)
 
-	buffer = append(buffer, hash...)
+	buffer.Append(hash)
 
-	encryptionBegin := len(buffer)
+	encryptionBegin := buffer.Len()
 
-	buffer = append(buffer, request.Version)
-	buffer = append(buffer, request.RequestIV...)
-	buffer = append(buffer, request.RequestKey...)
-	buffer = append(buffer, request.ResponseHeader...)
-	buffer = append(buffer, request.Command)
-	buffer = append(buffer, request.Address.PortBytes()...)
+	buffer.AppendBytes(request.Version)
+	buffer.Append(request.RequestIV)
+	buffer.Append(request.RequestKey)
+	buffer.Append(request.ResponseHeader)
+	buffer.AppendBytes(request.Command)
+	buffer.Append(request.Address.PortBytes())
 
 	switch {
 	case request.Address.IsIPv4():
-		buffer = append(buffer, addrTypeIPv4)
-		buffer = append(buffer, request.Address.IP()...)
+		buffer.AppendBytes(addrTypeIPv4)
+		buffer.Append(request.Address.IP())
 	case request.Address.IsIPv6():
-		buffer = append(buffer, addrTypeIPv6)
-		buffer = append(buffer, request.Address.IP()...)
+		buffer.AppendBytes(addrTypeIPv6)
+		buffer.Append(request.Address.IP())
 	case request.Address.IsDomain():
-		buffer = append(buffer, addrTypeDomain)
-		buffer = append(buffer, byte(len(request.Address.Domain())))
-		buffer = append(buffer, []byte(request.Address.Domain())...)
+		buffer.AppendBytes(addrTypeDomain, byte(len(request.Address.Domain())))
+		buffer.Append([]byte(request.Address.Domain()))
 	}
 
-	encryptionEnd := len(buffer)
+	encryptionEnd := buffer.Len()
 
 	fnv1a := fnv.New32a()
-	fnv1a.Write(buffer[encryptionBegin:encryptionEnd])
+	fnv1a.Write(buffer.Value[encryptionBegin:encryptionEnd])
 
 	fnvHash := fnv1a.Sum32()
-	buffer = append(buffer, byte(fnvHash>>24))
-	buffer = append(buffer, byte(fnvHash>>16))
-	buffer = append(buffer, byte(fnvHash>>8))
-	buffer = append(buffer, byte(fnvHash))
+	buffer.AppendBytes(byte(fnvHash>>24), byte(fnvHash>>16), byte(fnvHash>>8), byte(fnvHash))
 	encryptionEnd += 4
 
 	aesCipher, err := aes.NewCipher(request.UserId.CmdKey())
@@ -210,7 +206,7 @@ func (request *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 u
 		return nil, err
 	}
 	aesStream := cipher.NewCFBEncrypter(aesCipher, user.Int64Hash(counter))
-	aesStream.XORKeyStream(buffer[encryptionBegin:encryptionEnd], buffer[encryptionBegin:encryptionEnd])
+	aesStream.XORKeyStream(buffer.Value[encryptionBegin:encryptionEnd], buffer.Value[encryptionBegin:encryptionEnd])
 
 	return buffer, nil
 }
