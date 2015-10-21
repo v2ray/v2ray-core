@@ -124,7 +124,7 @@ func (p *bufferPool) cleanup(tick <-chan time.Time) {
 	}
 }
 
-var smallPool = newBufferPool(1024, 16, 64)
+var smallPool = newBufferPool(1024, 64, 512)
 var mediumPool = newBufferPool(8*1024, 256, 2048)
 var largePool = newBufferPool(64*1024, 128, 1024)
 
