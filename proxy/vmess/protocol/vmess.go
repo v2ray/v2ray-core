@@ -9,6 +9,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/v2ray/v2ray-core/common/alloc"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -67,14 +68,14 @@ func NewVMessRequestReader(vUserSet user.UserSet) *VMessRequestReader {
 
 // Read reads a VMessRequest from a byte stream.
 func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
-	buffer := make([]byte, 256)
+	buffer := alloc.NewSmallBuffer()
 
-	nBytes, err := reader.Read(buffer[:config.IDBytesLen])
+	nBytes, err := v2net.ReadAllBytes(reader, buffer.Value[:config.IDBytesLen])
 	if err != nil {
 		return nil, err
 	}
 
-	userId, timeSec, valid := r.vUserSet.GetUser(buffer[:nBytes])
+	userId, timeSec, valid := r.vUserSet.GetUser(buffer.Value[:nBytes])
 	if !valid {
 		return nil, proxy.InvalidAuthentication
 	}
@@ -90,7 +91,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 		return nil, err
 	}
 
-	nBytes, err = decryptor.Read(buffer[:41])
+	nBytes, err = v2net.ReadAllBytes(decryptor, buffer.Value[:41])
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +99,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 
 	request := &VMessRequest{
 		UserId:  *userId,
-		Version: buffer[0],
+		Version: buffer.Value[0],
 	}
 
 	if request.Version != Version {
@@ -106,51 +107,51 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 		return nil, proxy.InvalidProtocolVersion
 	}
 
-	request.RequestIV = buffer[1:17]       // 16 bytes
-	request.RequestKey = buffer[17:33]     // 16 bytes
-	request.ResponseHeader = buffer[33:37] // 4 bytes
-	request.Command = buffer[37]
+	request.RequestIV = buffer.Value[1:17]       // 16 bytes
+	request.RequestKey = buffer.Value[17:33]     // 16 bytes
+	request.ResponseHeader = buffer.Value[33:37] // 4 bytes
+	request.Command = buffer.Value[37]
 
-	port := binary.BigEndian.Uint16(buffer[38:40])
+	port := binary.BigEndian.Uint16(buffer.Value[38:40])
 
-	switch buffer[40] {
+	switch buffer.Value[40] {
 	case addrTypeIPv4:
-		_, err = decryptor.Read(buffer[41:45]) // 4 bytes
+		_, err = v2net.ReadAllBytes(decryptor, buffer.Value[41:45]) // 4 bytes
 		bufferLen += 4
 		if err != nil {
 			return nil, err
 		}
-		request.Address = v2net.IPAddress(buffer[41:45], port)
+		request.Address = v2net.IPAddress(buffer.Value[41:45], port)
 	case addrTypeIPv6:
-		_, err = decryptor.Read(buffer[41:57]) // 16 bytes
+		_, err = v2net.ReadAllBytes(decryptor, buffer.Value[41:57]) // 16 bytes
 		bufferLen += 16
 		if err != nil {
 			return nil, err
 		}
-		request.Address = v2net.IPAddress(buffer[41:57], port)
+		request.Address = v2net.IPAddress(buffer.Value[41:57], port)
 	case addrTypeDomain:
-		_, err = decryptor.Read(buffer[41:42])
+		_, err = v2net.ReadAllBytes(decryptor, buffer.Value[41:42])
 		if err != nil {
 			return nil, err
 		}
-		domainLength := int(buffer[41])
-		_, err = decryptor.Read(buffer[42 : 42+domainLength])
+		domainLength := int(buffer.Value[41])
+		_, err = v2net.ReadAllBytes(decryptor, buffer.Value[42:42+domainLength])
 		if err != nil {
 			return nil, err
 		}
 		bufferLen += 1 + domainLength
-		request.Address = v2net.DomainAddress(string(buffer[42:42+domainLength]), port)
+		request.Address = v2net.DomainAddress(string(buffer.Value[42:42+domainLength]), port)
 	}
 
-	_, err = decryptor.Read(buffer[bufferLen : bufferLen+4])
+	_, err = v2net.ReadAllBytes(decryptor, buffer.Value[bufferLen:bufferLen+4])
 	if err != nil {
 		return nil, err
 	}
 
 	fnv1a := fnv.New32a()
-	fnv1a.Write(buffer[:bufferLen])
+	fnv1a.Write(buffer.Value[:bufferLen])
 	actualHash := fnv1a.Sum32()
-	expectedHash := binary.BigEndian.Uint32(buffer[bufferLen : bufferLen+4])
+	expectedHash := binary.BigEndian.Uint32(buffer.Value[bufferLen : bufferLen+4])
 
 	if actualHash != expectedHash {
 		return nil, transport.CorruptedPacket
