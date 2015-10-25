@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	version  = "0.9"
+	version  = "0.10"
 	build    = "Custom"
 	codename = "Post Apocalypse"
 	intro    = "A stable and unbreakable connection for everyone."
