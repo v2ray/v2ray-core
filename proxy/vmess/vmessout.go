@@ -19,10 +19,6 @@ import (
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
-const (
-	InfoTimeNotSync = "Please check the User ID in your vmess configuration, and make sure the time on your local and remote server are in sync."
-)
-
 type VMessOutboundHandler struct {
 	vNextList    []*config.OutboundTarget
 	vNextListUDP []*config.OutboundTarget
