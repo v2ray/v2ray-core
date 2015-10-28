@@ -7,6 +7,13 @@ const (
 	TypeOutbound = Type("outbound")
 )
 
+type RouterConfig interface {
+	Strategy() string
+	Settings() interface{}
+}
+
+type ConnectionTag string
+
 type ConnectionConfig interface {
 	Protocol() string
 	Settings(configType Type) interface{}

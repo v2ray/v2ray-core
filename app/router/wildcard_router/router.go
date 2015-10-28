@@ -1,0 +1,25 @@
+package wildcard_router
+
+import (
+	"github.com/v2ray/v2ray-core/app/router"
+	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/config"
+)
+
+type WildcardRouter struct {
+}
+
+func (router *WildcardRouter) TakeDetour(packet v2net.Packet) (config.ConnectionTag, error) {
+	return "", nil
+}
+
+type WildcardRouterFactory struct {
+}
+
+func (factory *WildcardRouterFactory) Create(rawConfig interface{}) (router.Router, error) {
+	return &WildcardRouter{}, nil
+}
+
+func init() {
+	router.RegisterRouter("wildcard", &WildcardRouterFactory{})
+}
