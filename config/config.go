@@ -16,7 +16,7 @@ type ConnectionTag string
 
 type ConnectionConfig interface {
 	Protocol() string
-	Settings(configType Type) interface{}
+	Settings() interface{}
 }
 
 type LogConfig interface {

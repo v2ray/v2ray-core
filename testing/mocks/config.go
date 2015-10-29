@@ -13,7 +13,7 @@ func (config *ConnectionConfig) Protocol() string {
 	return config.ProtocolValue
 }
 
-func (config *ConnectionConfig) Settings(config.Type) interface{} {
+func (config *ConnectionConfig) Settings() interface{} {
 	return config.SettingsValue
 }
 

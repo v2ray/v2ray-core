@@ -12,14 +12,15 @@ import (
 type ConnectionConfig struct {
 	ProtocolString  string          `json:"protocol"`
 	SettingsMessage json.RawMessage `json:"settings"`
+	Type            config.Type     `json:"-"`
 }
 
 func (config *ConnectionConfig) Protocol() string {
 	return config.ProtocolString
 }
 
-func (config *ConnectionConfig) Settings(configType config.Type) interface{} {
-	creator, found := configCache[getConfigKey(config.Protocol(), configType)]
+func (config *ConnectionConfig) Settings() interface{} {
+	creator, found := configCache[getConfigKey(config.Protocol(), config.Type)]
 	if !found {
 		panic("Unknown protocol " + config.Protocol())
 	}
@@ -87,6 +88,9 @@ func LoadConfig(file string) (*Config, error) {
 		log.Error("Failed to load server config: %v", err)
 		return nil, err
 	}
+
+	jsonConfig.InboundConfigValue.Type = config.TypeInbound
+	jsonConfig.OutboundConfigValue.Type = config.TypeOutbound
 
 	return jsonConfig, err
 }

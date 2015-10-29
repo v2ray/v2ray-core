@@ -4,7 +4,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/v2ray/v2ray-core/config"
 	"github.com/v2ray/v2ray-core/config/json"
 	_ "github.com/v2ray/v2ray-core/proxy/freedom/config/json"
 	_ "github.com/v2ray/v2ray-core/proxy/socks/config/json"
@@ -27,10 +26,10 @@ func TestClientSampleConfig(t *testing.T) {
 	assert.Pointer(pointConfig.OutboundConfig()).IsNotNil()
 
 	assert.String(pointConfig.InboundConfig().Protocol()).Equals("socks")
-	assert.Pointer(pointConfig.InboundConfig().Settings(config.TypeInbound)).IsNotNil()
+	assert.Pointer(pointConfig.InboundConfig().Settings()).IsNotNil()
 
 	assert.String(pointConfig.OutboundConfig().Protocol()).Equals("vmess")
-	assert.Pointer(pointConfig.OutboundConfig().Settings(config.TypeOutbound)).IsNotNil()
+	assert.Pointer(pointConfig.OutboundConfig().Settings()).IsNotNil()
 }
 
 func TestServerSampleConfig(t *testing.T) {
@@ -47,8 +46,8 @@ func TestServerSampleConfig(t *testing.T) {
 	assert.Pointer(pointConfig.OutboundConfig()).IsNotNil()
 
 	assert.String(pointConfig.InboundConfig().Protocol()).Equals("vmess")
-	assert.Pointer(pointConfig.InboundConfig().Settings(config.TypeInbound)).IsNotNil()
+	assert.Pointer(pointConfig.InboundConfig().Settings()).IsNotNil()
 
 	assert.String(pointConfig.OutboundConfig().Protocol()).Equals("freedom")
-	assert.Pointer(pointConfig.OutboundConfig().Settings(config.TypeOutbound)).IsNotNil()
+	assert.Pointer(pointConfig.OutboundConfig().Settings()).IsNotNil()
 }

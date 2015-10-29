@@ -27,7 +27,7 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 		log.Error("Unknown inbound connection handler factory %s", pConfig.InboundConfig().Protocol())
 		return nil, config.BadConfiguration
 	}
-	ichConfig := pConfig.InboundConfig().Settings(config.TypeInbound)
+	ichConfig := pConfig.InboundConfig().Settings()
 	ich, err := ichFactory.Create(vpoint, ichConfig)
 	if err != nil {
 		log.Error("Failed to create inbound connection handler: %v", err)
@@ -40,7 +40,7 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 		log.Error("Unknown outbound connection handler factory %s", pConfig.OutboundConfig().Protocol())
 		return nil, config.BadConfiguration
 	}
-	ochConfig := pConfig.OutboundConfig().Settings(config.TypeOutbound)
+	ochConfig := pConfig.OutboundConfig().Settings()
 	och, err := ochFactory.Create(ochConfig)
 	if err != nil {
 		log.Error("Failed to create outbound connection handler: %v", err)
