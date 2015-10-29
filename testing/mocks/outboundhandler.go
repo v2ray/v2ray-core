@@ -5,7 +5,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
@@ -43,6 +43,6 @@ func (handler *OutboundConnectionHandler) Dispatch(packet v2net.Packet, ray ray.
 	return nil
 }
 
-func (handler *OutboundConnectionHandler) Create(config interface{}) (proxy.OutboundConnectionHandler, error) {
+func (handler *OutboundConnectionHandler) Create(config interface{}) (connhandler.OutboundConnectionHandler, error) {
 	return handler, nil
 }

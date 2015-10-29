@@ -1,4 +1,4 @@
-package proxy
+package connhandler
 
 var (
 	inboundFactories  = make(map[string]InboundConnectionHandlerFactory)

@@ -12,7 +12,7 @@ import (
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	"github.com/v2ray/v2ray-core/proxy/vmess/config"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
@@ -190,7 +190,7 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 type VMessOutboundHandlerFactory struct {
 }
 
-func (factory *VMessOutboundHandlerFactory) Create(rawConfig interface{}) (proxy.OutboundConnectionHandler, error) {
+func (factory *VMessOutboundHandlerFactory) Create(rawConfig interface{}) (connhandler.OutboundConnectionHandler, error) {
 	vOutConfig := rawConfig.(config.Outbound)
 	servers := make([]*config.OutboundTarget, 0, 16)
 	udpServers := make([]*config.OutboundTarget, 0, 16)
@@ -206,5 +206,5 @@ func (factory *VMessOutboundHandlerFactory) Create(rawConfig interface{}) (proxy
 }
 
 func init() {
-	proxy.RegisterOutboundConnectionHandlerFactory("vmess", &VMessOutboundHandlerFactory{})
+	connhandler.RegisterOutboundConnectionHandlerFactory("vmess", &VMessOutboundHandlerFactory{})
 }

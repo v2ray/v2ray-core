@@ -1,4 +1,4 @@
-package proxy
+package connhandler
 
 import (
 	"github.com/v2ray/v2ray-core/app"

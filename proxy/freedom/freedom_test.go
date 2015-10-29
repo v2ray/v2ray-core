@@ -11,7 +11,7 @@ import (
 	"github.com/v2ray/v2ray-core/app/point"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	v2proxy "github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	_ "github.com/v2ray/v2ray-core/proxy/socks"
 	"github.com/v2ray/v2ray-core/proxy/socks/config/json"
 	"github.com/v2ray/v2ray-core/testing/mocks"
@@ -43,7 +43,7 @@ func TestUDPSend(t *testing.T) {
 		DataReturned: bytes.NewBuffer(make([]byte, 0, 1024)),
 	}
 
-	v2proxy.RegisterInboundConnectionHandlerFactory("mock_ich", ich)
+	connhandler.RegisterInboundConnectionHandlerFactory("mock_ich", ich)
 
 	pointPort := uint16(38724)
 	config := mocks.Config{

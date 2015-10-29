@@ -9,7 +9,7 @@ import (
 	"golang.org/x/net/proxy"
 
 	"github.com/v2ray/v2ray-core/app/point"
-	v2proxy "github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	"github.com/v2ray/v2ray-core/proxy/socks/config/json"
 	"github.com/v2ray/v2ray-core/testing/mocks"
 	"github.com/v2ray/v2ray-core/testing/unit"
@@ -24,7 +24,7 @@ func TestSocksTcpConnect(t *testing.T) {
 		Data2Return: []byte("The data to be returned to socks server."),
 	}
 
-	v2proxy.RegisterOutboundConnectionHandlerFactory("mock_och", och)
+	connhandler.RegisterOutboundConnectionHandlerFactory("mock_och", och)
 
 	config := mocks.Config{
 		PortValue: port,
@@ -77,7 +77,7 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 		Data2Return: []byte("The data to be returned to socks server."),
 	}
 
-	v2proxy.RegisterOutboundConnectionHandlerFactory("mock_och", och)
+	connhandler.RegisterOutboundConnectionHandlerFactory("mock_och", och)
 
 	config := mocks.Config{
 		PortValue: port,
@@ -136,7 +136,7 @@ func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
 		Data2Return: []byte("The data to be returned to socks server."),
 	}
 
-	v2proxy.RegisterOutboundConnectionHandlerFactory("mock_och", och)
+	connhandler.RegisterOutboundConnectionHandlerFactory("mock_och", och)
 
 	config := mocks.Config{
 		PortValue: port,
@@ -181,7 +181,7 @@ func TestSocksTcpConnectWithWrongAuthMethod(t *testing.T) {
 		Data2Return: []byte("The data to be returned to socks server."),
 	}
 
-	v2proxy.RegisterOutboundConnectionHandlerFactory("mock_och", och)
+	connhandler.RegisterOutboundConnectionHandlerFactory("mock_och", och)
 
 	config := mocks.Config{
 		PortValue: port,
@@ -226,7 +226,7 @@ func TestSocksUdpSend(t *testing.T) {
 		Data2Return: []byte("The data to be returned to socks server."),
 	}
 
-	v2proxy.RegisterOutboundConnectionHandlerFactory("mock_och", och)
+	connhandler.RegisterOutboundConnectionHandlerFactory("mock_och", och)
 
 	config := mocks.Config{
 		PortValue: port,

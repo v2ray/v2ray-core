@@ -5,15 +5,15 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/config"
-	"github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
 // Point is an single server in V2Ray system.
 type Point struct {
 	port uint16
-	ich  proxy.InboundConnectionHandler
-	och  proxy.OutboundConnectionHandler
+	ich  connhandler.InboundConnectionHandler
+	och  connhandler.OutboundConnectionHandler
 }
 
 // NewPoint returns a new Point server based on given configuration.
@@ -22,7 +22,7 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 	var vpoint = new(Point)
 	vpoint.port = pConfig.Port()
 
-	ichFactory := proxy.GetInboundConnectionHandlerFactory(pConfig.InboundConfig().Protocol())
+	ichFactory := connhandler.GetInboundConnectionHandlerFactory(pConfig.InboundConfig().Protocol())
 	if ichFactory == nil {
 		log.Error("Unknown inbound connection handler factory %s", pConfig.InboundConfig().Protocol())
 		return nil, config.BadConfiguration
@@ -35,7 +35,7 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 	}
 	vpoint.ich = ich
 
-	ochFactory := proxy.GetOutboundConnectionHandlerFactory(pConfig.OutboundConfig().Protocol())
+	ochFactory := connhandler.GetOutboundConnectionHandlerFactory(pConfig.OutboundConfig().Protocol())
 	if ochFactory == nil {
 		log.Error("Unknown outbound connection handler factory %s", pConfig.OutboundConfig().Protocol())
 		return nil, config.BadConfiguration

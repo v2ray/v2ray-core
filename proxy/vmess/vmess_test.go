@@ -7,7 +7,7 @@ import (
 	"github.com/v2ray/v2ray-core/app/point"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	"github.com/v2ray/v2ray-core/proxy/vmess/config"
 	"github.com/v2ray/v2ray-core/proxy/vmess/config/json"
 	"github.com/v2ray/v2ray-core/testing/mocks"
@@ -27,7 +27,7 @@ func TestVMessInAndOut(t *testing.T) {
 		DataReturned: bytes.NewBuffer(make([]byte, 0, 1024)),
 	}
 
-	proxy.RegisterInboundConnectionHandlerFactory("mock_ich", ich)
+	connhandler.RegisterInboundConnectionHandlerFactory("mock_ich", ich)
 
 	configA := mocks.Config{
 		PortValue: portA,
@@ -64,7 +64,7 @@ func TestVMessInAndOut(t *testing.T) {
 		Data2Return: []byte("The data to be returned to inbound server."),
 	}
 
-	proxy.RegisterOutboundConnectionHandlerFactory("mock_och", och)
+	connhandler.RegisterOutboundConnectionHandlerFactory("mock_och", och)
 
 	configB := mocks.Config{
 		PortValue: portB,
@@ -107,7 +107,7 @@ func TestVMessInAndOutUDP(t *testing.T) {
 		DataReturned: bytes.NewBuffer(make([]byte, 0, 1024)),
 	}
 
-	proxy.RegisterInboundConnectionHandlerFactory("mock_ich", ich)
+	connhandler.RegisterInboundConnectionHandlerFactory("mock_ich", ich)
 
 	configA := mocks.Config{
 		PortValue: portA,
@@ -144,7 +144,7 @@ func TestVMessInAndOutUDP(t *testing.T) {
 		Data2Return: []byte("The data to be returned to inbound server."),
 	}
 
-	proxy.RegisterOutboundConnectionHandlerFactory("mock_och", och)
+	connhandler.RegisterOutboundConnectionHandlerFactory("mock_och", och)
 
 	configB := mocks.Config{
 		PortValue: portB,

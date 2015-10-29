@@ -1,4 +1,4 @@
-package proxy
+package connhandler
 
 import (
 	v2net "github.com/v2ray/v2ray-core/common/net"

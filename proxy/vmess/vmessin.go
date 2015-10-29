@@ -12,7 +12,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
-	"github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	"github.com/v2ray/v2ray-core/proxy/vmess/config"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
@@ -143,7 +143,7 @@ func handleOutput(request *protocol.VMessRequest, writer io.Writer, output <-cha
 type VMessInboundHandlerFactory struct {
 }
 
-func (factory *VMessInboundHandlerFactory) Create(dispatcher app.PacketDispatcher, rawConfig interface{}) (proxy.InboundConnectionHandler, error) {
+func (factory *VMessInboundHandlerFactory) Create(dispatcher app.PacketDispatcher, rawConfig interface{}) (connhandler.InboundConnectionHandler, error) {
 	config := rawConfig.(config.Inbound)
 
 	allowedClients := user.NewTimedUserSet()
@@ -155,5 +155,5 @@ func (factory *VMessInboundHandlerFactory) Create(dispatcher app.PacketDispatche
 }
 
 func init() {
-	proxy.RegisterInboundConnectionHandlerFactory("vmess", &VMessInboundHandlerFactory{})
+	connhandler.RegisterInboundConnectionHandlerFactory("vmess", &VMessInboundHandlerFactory{})
 }

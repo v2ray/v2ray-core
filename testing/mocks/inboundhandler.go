@@ -6,7 +6,7 @@ import (
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 )
 
 type InboundConnectionHandler struct {
@@ -37,7 +37,7 @@ func (handler *InboundConnectionHandler) Communicate(packet v2net.Packet) error 
 	return nil
 }
 
-func (handler *InboundConnectionHandler) Create(dispatcher app.PacketDispatcher, config interface{}) (proxy.InboundConnectionHandler, error) {
+func (handler *InboundConnectionHandler) Create(dispatcher app.PacketDispatcher, config interface{}) (connhandler.InboundConnectionHandler, error) {
 	handler.Dispatcher = dispatcher
 	return handler, nil
 }
