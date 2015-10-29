@@ -13,7 +13,7 @@ import (
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/proxy"
+	proxyerrors "github.com/v2ray/v2ray-core/proxy/common/errors"
 	"github.com/v2ray/v2ray-core/proxy/vmess/config"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 	"github.com/v2ray/v2ray-core/transport"
@@ -77,7 +77,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 
 	userId, timeSec, valid := r.vUserSet.GetUser(buffer.Value[:nBytes])
 	if !valid {
-		return nil, proxy.InvalidAuthentication
+		return nil, proxyerrors.InvalidAuthentication
 	}
 
 	aesCipher, err := aes.NewCipher(userId.CmdKey())
@@ -104,7 +104,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 
 	if request.Version != Version {
 		log.Warning("Invalid protocol version %d", request.Version)
-		return nil, proxy.InvalidProtocolVersion
+		return nil, proxyerrors.InvalidProtocolVersion
 	}
 
 	request.RequestIV = buffer.Value[1:17]       // 16 bytes

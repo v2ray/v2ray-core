@@ -12,7 +12,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
-	"github.com/v2ray/v2ray-core/proxy"
+	proxyerrors "github.com/v2ray/v2ray-core/proxy/common/errors"
 	jsonconfig "github.com/v2ray/v2ray-core/proxy/socks/config/json"
 	"github.com/v2ray/v2ray-core/proxy/socks/protocol"
 )
@@ -128,7 +128,7 @@ func (server *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.W
 		}
 		if status != byte(0) {
 			log.Warning("Invalid user account: %s", upRequest.AuthDetail())
-			return proxy.InvalidAuthentication
+			return proxyerrors.InvalidAuthentication
 		}
 	}
 
