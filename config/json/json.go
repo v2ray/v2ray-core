@@ -9,38 +9,6 @@ import (
 	"github.com/v2ray/v2ray-core/config"
 )
 
-type ConnectionConfig struct {
-	ProtocolString  string          `json:"protocol"`
-	SettingsMessage json.RawMessage `json:"settings"`
-	Type            config.Type     `json:"-"`
-}
-
-func (config *ConnectionConfig) Protocol() string {
-	return config.ProtocolString
-}
-
-func (config *ConnectionConfig) Settings() interface{} {
-	creator, found := configCache[getConfigKey(config.Protocol(), config.Type)]
-	if !found {
-		panic("Unknown protocol " + config.Protocol())
-	}
-	configObj := creator()
-	err := json.Unmarshal(config.SettingsMessage, configObj)
-	if err != nil {
-		log.Error("Unable to parse connection config: %v", err)
-		panic("Failed to parse connection config.")
-	}
-	return configObj
-}
-
-type LogConfig struct {
-	AccessLogValue string `json:"access"`
-}
-
-func (config *LogConfig) AccessLog() string {
-	return config.AccessLogValue
-}
-
 // Config is the config for Point server.
 type Config struct {
 	PortValue           uint16            `json:"port"` // Port of this Point server.
