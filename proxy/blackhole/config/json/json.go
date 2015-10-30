@@ -1,15 +1,14 @@
 package json
 
 import (
-	"github.com/v2ray/v2ray-core/config"
-	"github.com/v2ray/v2ray-core/config/json"
+	"github.com/v2ray/v2ray-core/proxy/common/config/json"
 )
 
 type BlackHoleConfig struct {
 }
 
 func init() {
-	json.RegisterConfigType("blackhole", config.TypeInbound, func() interface{} {
+	json.RegisterOutboundConnectionConfig("blackhole", func() interface{} {
 		return new(BlackHoleConfig)
 	})
 }

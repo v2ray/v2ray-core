@@ -1,8 +1,7 @@
 package json
 
 import (
-	"github.com/v2ray/v2ray-core/config"
-	"github.com/v2ray/v2ray-core/config/json"
+	"github.com/v2ray/v2ray-core/proxy/common/config/json"
 	vmessconfig "github.com/v2ray/v2ray-core/proxy/vmess/config"
 )
 
@@ -24,7 +23,7 @@ func (c *Inbound) UDPEnabled() bool {
 }
 
 func init() {
-	json.RegisterConfigType("vmess", config.TypeInbound, func() interface{} {
+	json.RegisterInboundConnectionConfig("vmess", func() interface{} {
 		return new(Inbound)
 	})
 }

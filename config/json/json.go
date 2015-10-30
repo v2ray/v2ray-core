@@ -7,6 +7,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/config"
+	proxyconfig "github.com/v2ray/v2ray-core/proxy/common/config"
 )
 
 // Config is the config for Point server.
@@ -57,8 +58,8 @@ func LoadConfig(file string) (*Config, error) {
 		return nil, err
 	}
 
-	jsonConfig.InboundConfigValue.Type = config.TypeInbound
-	jsonConfig.OutboundConfigValue.Type = config.TypeOutbound
+	jsonConfig.InboundConfigValue.Type = proxyconfig.TypeInbound
+	jsonConfig.OutboundConfigValue.Type = proxyconfig.TypeOutbound
 
 	return jsonConfig, err
 }

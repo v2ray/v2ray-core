@@ -3,8 +3,7 @@ package json
 import (
 	"net"
 
-	"github.com/v2ray/v2ray-core/config"
-	"github.com/v2ray/v2ray-core/config/json"
+	"github.com/v2ray/v2ray-core/proxy/common/config/json"
 )
 
 const (
@@ -61,7 +60,7 @@ func (sc *SocksConfig) IP() net.IP {
 }
 
 func init() {
-	json.RegisterConfigType("socks", config.TypeInbound, func() interface{} {
+	json.RegisterInboundConnectionConfig("socks", func() interface{} {
 		return new(SocksConfig)
 	})
 }

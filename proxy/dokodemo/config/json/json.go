@@ -3,8 +3,7 @@ package json
 import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2netjson "github.com/v2ray/v2ray-core/common/net/json"
-	"github.com/v2ray/v2ray-core/config"
-	"github.com/v2ray/v2ray-core/config/json"
+	"github.com/v2ray/v2ray-core/proxy/common/config/json"
 )
 
 type DokodemoConfig struct {
@@ -17,7 +16,7 @@ type DokodemoConfig struct {
 }
 
 func init() {
-	json.RegisterConfigType("dokodemo-door", config.TypeInbound, func() interface{} {
+	json.RegisterInboundConnectionConfig("dokodemo-door", func() interface{} {
 		return new(DokodemoConfig)
 	})
 }

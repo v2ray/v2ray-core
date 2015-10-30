@@ -1,15 +1,14 @@
 package json
 
 import (
-	"github.com/v2ray/v2ray-core/config"
-	"github.com/v2ray/v2ray-core/config/json"
+	"github.com/v2ray/v2ray-core/proxy/common/config/json"
 )
 
 type HttpProxyConfig struct {
 }
 
 func init() {
-	json.RegisterConfigType("http", config.TypeInbound, func() interface{} {
+	json.RegisterInboundConnectionConfig("http", func() interface{} {
 		return new(HttpProxyConfig)
 	})
 }

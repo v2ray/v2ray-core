@@ -7,8 +7,8 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/config"
-	jsonconfig "github.com/v2ray/v2ray-core/config/json"
+	proxyconfig "github.com/v2ray/v2ray-core/proxy/common/config"
+	jsonconfig "github.com/v2ray/v2ray-core/proxy/common/config/json"
 	vmessconfig "github.com/v2ray/v2ray-core/proxy/vmess/config"
 )
 
@@ -39,7 +39,7 @@ func (t *ConfigTarget) UnmarshalJSON(data []byte) error {
 	ip := net.ParseIP(rawConfig.Address)
 	if ip == nil {
 		log.Error("Unable to parse IP: %s", rawConfig.Address)
-		return config.BadConfiguration
+		return proxyconfig.BadConfiguration
 	}
 	t.Address = v2net.IPAddress(ip, rawConfig.Port)
 	if rawConfig.HasNetwork("tcp") {
@@ -79,7 +79,7 @@ func (o *Outbound) Targets() []*vmessconfig.OutboundTarget {
 }
 
 func init() {
-	jsonconfig.RegisterConfigType("vmess", config.TypeOutbound, func() interface{} {
+	jsonconfig.RegisterOutboundConnectionConfig("vmess", func() interface{} {
 		return new(Outbound)
 	})
 }

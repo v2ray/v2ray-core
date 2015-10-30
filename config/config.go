@@ -1,12 +1,5 @@
 package config
 
-type Type string
-
-const (
-	TypeInbound  = Type("inbound")
-	TypeOutbound = Type("outbound")
-)
-
 type RouterConfig interface {
 	Strategy() string
 	Settings() interface{}
