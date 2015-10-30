@@ -15,11 +15,11 @@ const (
 
 type UserSet interface {
 	AddUser(user config.User) error
-	GetUser(timeHash []byte) (*config.ID, int64, bool)
+	GetUser(timeHash []byte) (config.User, int64, bool)
 }
 
 type TimedUserSet struct {
-	validUserIds        []*config.ID
+	validUsers        []config.User
 	userHash            map[string]indexTimePair
 	userHashDeleteQueue *collect.TimedQueue
 	access              sync.RWMutex
@@ -32,7 +32,7 @@ type indexTimePair struct {
 
 func NewTimedUserSet() UserSet {
 	tus := &TimedUserSet{
-		validUserIds:        make([]*config.ID, 0, 16),
+		validUsers:        make([]config.User, 0, 16),
 		userHash:            make(map[string]indexTimePair, 512),
 		userHashDeleteQueue: collect.NewTimedQueue(updateIntervalSec),
 		access:              sync.RWMutex{},
@@ -67,8 +67,8 @@ func (us *TimedUserSet) updateUserHash(tick <-chan time.Time) {
 
 	for now := range tick {
 		nowSec := now.Unix() + cacheDurationSec
-		for idx, id := range us.validUserIds {
-			us.generateNewHashes(lastSec, nowSec, idx, id)
+		for idx, user := range us.validUsers {
+			us.generateNewHashes(lastSec, nowSec, idx, user.ID())
 		}
 		lastSec = nowSec
 	}
@@ -76,8 +76,8 @@ func (us *TimedUserSet) updateUserHash(tick <-chan time.Time) {
 
 func (us *TimedUserSet) AddUser(user config.User) error {
 	id := user.ID()
-	idx := len(us.validUserIds)
-	us.validUserIds = append(us.validUserIds, id)
+	idx := len(us.validUsers)
+	us.validUsers = append(us.validUsers, user)
 
 	nowSec := time.Now().Unix()
 	lastSec := nowSec - cacheDurationSec
@@ -86,12 +86,12 @@ func (us *TimedUserSet) AddUser(user config.User) error {
 	return nil
 }
 
-func (us TimedUserSet) GetUser(userHash []byte) (*config.ID, int64, bool) {
+func (us TimedUserSet) GetUser(userHash []byte) (config.User, int64, bool) {
 	defer us.access.RUnlock()
 	us.access.RLock()
 	pair, found := us.userHash[string(userHash)]
 	if found {
-		return us.validUserIds[pair.index], pair.timeSec, true
+		return us.validUsers[pair.index], pair.timeSec, true
 	}
 	return nil, 0, false
 }

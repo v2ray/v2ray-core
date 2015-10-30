@@ -14,10 +14,15 @@ import (
 
 type TestUser struct {
 	id *config.ID
+  level config.UserLevel
 }
 
 func (u *TestUser) ID() *config.ID {
 	return u.id
+}
+
+func (this *TestUser) Level() config.UserLevel {
+  return this.level
 }
 
 func TestVMessSerialization(t *testing.T) {
@@ -28,8 +33,10 @@ func TestVMessSerialization(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	userSet := mocks.MockUserSet{[]*config.ID{}, make(map[string]int), make(map[string]int64)}
-	userSet.AddUser(&TestUser{userId})
+	userSet := mocks.MockUserSet{[]config.User{}, make(map[string]int), make(map[string]int64)}
+	userSet.AddUser(&TestUser{
+    id: userId,
+  })
 
 	request := new(VMessRequest)
 	request.Version = byte(0x01)
@@ -72,8 +79,10 @@ func TestVMessSerialization(t *testing.T) {
 
 func BenchmarkVMessRequestWriting(b *testing.B) {
 	userId, _ := config.NewID("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
-	userSet := mocks.MockUserSet{[]*config.ID{}, make(map[string]int), make(map[string]int64)}
-	userSet.AddUser(&TestUser{userId})
+	userSet := mocks.MockUserSet{[]config.User{}, make(map[string]int), make(map[string]int64)}
+	userSet.AddUser(&TestUser{
+    id: userId,
+  })
 
 	request := new(VMessRequest)
 	request.Version = byte(0x01)

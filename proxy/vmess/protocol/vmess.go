@@ -75,12 +75,12 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 		return nil, err
 	}
 
-	userId, timeSec, valid := r.vUserSet.GetUser(buffer.Value[:nBytes])
+	userObj, timeSec, valid := r.vUserSet.GetUser(buffer.Value[:nBytes])
 	if !valid {
 		return nil, proxyerrors.InvalidAuthentication
 	}
 
-	aesCipher, err := aes.NewCipher(userId.CmdKey())
+	aesCipher, err := aes.NewCipher(userObj.ID().CmdKey())
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +98,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	bufferLen := nBytes
 
 	request := &VMessRequest{
-		UserId:  *userId,
+		UserId:  *userObj.ID(),
 		Version: buffer.Value[0],
 	}
 
