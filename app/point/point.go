@@ -1,10 +1,10 @@
 package point
 
 import (
+	"github.com/v2ray/v2ray-core/app/point/config"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
-	"github.com/v2ray/v2ray-core/config"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )

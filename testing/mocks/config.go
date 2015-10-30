@@ -1,7 +1,7 @@
 package mocks
 
 import (
-	"github.com/v2ray/v2ray-core/config"
+	"github.com/v2ray/v2ray-core/app/point/config"
 )
 
 type ConnectionConfig struct {

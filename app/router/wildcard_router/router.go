@@ -1,9 +1,9 @@
 package wildcard_router
 
 import (
+	"github.com/v2ray/v2ray-core/app/point/config"
 	"github.com/v2ray/v2ray-core/app/router"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/config"
 )
 
 type WildcardRouter struct {

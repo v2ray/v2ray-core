@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/v2ray/v2ray-core/app/point/config"
 	"github.com/v2ray/v2ray-core/common/log"
-	"github.com/v2ray/v2ray-core/config"
 	proxyconfig "github.com/v2ray/v2ray-core/proxy/common/config"
 )
 

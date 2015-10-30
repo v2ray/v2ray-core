@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/v2ray/v2ray-core/config/json"
+	"github.com/v2ray/v2ray-core/app/point/config/json"
 	_ "github.com/v2ray/v2ray-core/proxy/freedom/config/json"
 	_ "github.com/v2ray/v2ray-core/proxy/socks/config/json"
 	_ "github.com/v2ray/v2ray-core/proxy/vmess/config/json"

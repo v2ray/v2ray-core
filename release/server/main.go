@@ -8,8 +8,8 @@ import (
 
 	"github.com/v2ray/v2ray-core"
 	"github.com/v2ray/v2ray-core/app/point"
+	jsonconf "github.com/v2ray/v2ray-core/app/point/config/json"
 	"github.com/v2ray/v2ray-core/common/log"
-	jsonconf "github.com/v2ray/v2ray-core/config/json"
 
 	// The following are neccesary as they register handlers in their init functions.
 	_ "github.com/v2ray/v2ray-core/proxy/dokodemo"
