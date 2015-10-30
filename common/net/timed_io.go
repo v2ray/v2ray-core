@@ -22,10 +22,14 @@ func NewTimeOutReader(timeout int, connection net.Conn) *TimeOutReader {
 }
 
 func (reader *TimeOutReader) Read(p []byte) (n int, err error) {
-	deadline := time.Duration(reader.timeout) * time.Second
-	reader.connection.SetReadDeadline(time.Now().Add(deadline))
+	if reader.timeout > 0 {
+		deadline := time.Duration(reader.timeout) * time.Second
+		reader.connection.SetReadDeadline(time.Now().Add(deadline))
+	}
 	n, err = reader.connection.Read(p)
-	reader.connection.SetReadDeadline(emptyTime)
+	if reader.timeout > 0 {
+		reader.connection.SetReadDeadline(emptyTime)
+	}
 	return
 }
 
