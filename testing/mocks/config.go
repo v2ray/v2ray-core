@@ -21,6 +21,28 @@ type LogConfig struct {
 	AccessLogValue string
 }
 
+type PortRange struct {
+	FromValue uint16
+	ToValue   uint16
+}
+
+func (this *PortRange) From() uint16 {
+	return this.FromValue
+}
+
+func (this *PortRange) To() uint16 {
+	return this.ToValue
+}
+
+type InboundDetourConfig struct {
+	ConnectionConfig
+	PortRangeValue *PortRange
+}
+
+func (this *InboundDetourConfig) PortRange() config.PortRange {
+	return this.PortRangeValue
+}
+
 func (config *LogConfig) AccessLog() string {
 	return config.AccessLogValue
 }
@@ -30,6 +52,7 @@ type Config struct {
 	LogConfigValue      *LogConfig
 	InboundConfigValue  *ConnectionConfig
 	OutboundConfigValue *ConnectionConfig
+	InboundDetoursValue []*InboundDetourConfig
 }
 
 func (config *Config) Port() uint16 {
@@ -46,4 +69,12 @@ func (config *Config) InboundConfig() config.ConnectionConfig {
 
 func (config *Config) OutboundConfig() config.ConnectionConfig {
 	return config.OutboundConfigValue
+}
+
+func (this *Config) InboundDetours() []config.InboundDetourConfig {
+	detours := make([]config.InboundDetourConfig, len(this.InboundDetoursValue))
+	for idx, detour := range this.InboundDetoursValue {
+		detours[idx] = detour
+	}
+	return detours
 }

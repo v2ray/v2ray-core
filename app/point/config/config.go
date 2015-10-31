@@ -16,9 +16,15 @@ type LogConfig interface {
 	AccessLog() string
 }
 
-type InboundDetour interface {
+type PortRange interface {
+	From() uint16
+	To() uint16
+}
+
+type InboundDetourConfig interface {
 	Protocol() string
-	Port()
+	PortRange() PortRange
+	Settings() interface{}
 }
 
 type PointConfig interface {
@@ -26,4 +32,5 @@ type PointConfig interface {
 	LogConfig() LogConfig
 	InboundConfig() ConnectionConfig
 	OutboundConfig() ConnectionConfig
+	InboundDetours() []InboundDetourConfig
 }
