@@ -91,7 +91,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection *net.TCPConn) er
 	readFinish.Lock()
 	writeFinish.Lock()
 
-  userSettings := config.GetUserSettings(request.User.Level())
+	userSettings := config.GetUserSettings(request.User.Level())
 	connReader.SetTimeOut(userSettings.PayloadReadTimeout)
 	go handleInput(request, connReader, input, &readFinish)
 

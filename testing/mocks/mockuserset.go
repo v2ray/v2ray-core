@@ -5,7 +5,7 @@ import (
 )
 
 type MockUserSet struct {
-	Users    []config.User
+	Users      []config.User
 	UserHashes map[string]int
 	Timestamps map[string]int64
 }

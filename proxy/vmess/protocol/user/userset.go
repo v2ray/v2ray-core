@@ -19,7 +19,7 @@ type UserSet interface {
 }
 
 type TimedUserSet struct {
-	validUsers        []config.User
+	validUsers          []config.User
 	userHash            map[string]indexTimePair
 	userHashDeleteQueue *collect.TimedQueue
 	access              sync.RWMutex
@@ -32,7 +32,7 @@ type indexTimePair struct {
 
 func NewTimedUserSet() UserSet {
 	tus := &TimedUserSet{
-		validUsers:        make([]config.User, 0, 16),
+		validUsers:          make([]config.User, 0, 16),
 		userHash:            make(map[string]indexTimePair, 512),
 		userHashDeleteQueue: collect.NewTimedQueue(updateIntervalSec),
 		access:              sync.RWMutex{},

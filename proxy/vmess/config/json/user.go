@@ -8,16 +8,16 @@ import (
 
 // ConfigUser is an user account in VMess configuration.
 type ConfigUser struct {
-	Id    *config.ID
-	Email string
-  LevelValue config.UserLevel
+	Id         *config.ID
+	Email      string
+	LevelValue config.UserLevel
 }
 
 func (u *ConfigUser) UnmarshalJSON(data []byte) error {
 	type rawUser struct {
 		IdString    string `json:"id"`
 		EmailString string `json:"email"`
-    LevelInt int `json:"level"`
+		LevelInt    int    `json:"level"`
 	}
 	var rawUserValue rawUser
 	if err := json.Unmarshal(data, &rawUserValue); err != nil {
@@ -29,7 +29,7 @@ func (u *ConfigUser) UnmarshalJSON(data []byte) error {
 	}
 	u.Id = id
 	u.Email = rawUserValue.EmailString
-  u.LevelValue = config.UserLevel(rawUserValue.LevelInt)
+	u.LevelValue = config.UserLevel(rawUserValue.LevelInt)
 	return nil
 }
 
@@ -38,5 +38,5 @@ func (u *ConfigUser) ID() *config.ID {
 }
 
 func (this *ConfigUser) Level() config.UserLevel {
-  return this.LevelValue
+	return this.LevelValue
 }

@@ -37,7 +37,7 @@ const (
 // streaming.
 type VMessRequest struct {
 	Version        byte
-	User         config.User
+	User           config.User
 	RequestIV      []byte
 	RequestKey     []byte
 	ResponseHeader []byte
@@ -98,7 +98,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	bufferLen := nBytes
 
 	request := &VMessRequest{
-		User:  userObj,
+		User:    userObj,
 		Version: buffer.Value[0],
 	}
 
