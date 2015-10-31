@@ -7,7 +7,7 @@ import (
 type ConfigObjectCreator func() interface{}
 
 var (
-	configCache = make(map[string]ConfigObjectCreator)
+	configCache map[string]ConfigObjectCreator
 )
 
 func getConfigKey(protocol string, cType config.Type) string {
@@ -34,4 +34,12 @@ func CreateConfig(protocol string, cType config.Type) interface{} {
 		return nil
 	}
 	return creator()
+}
+
+func initializeConfigCache() {
+	configCache = make(map[string]ConfigObjectCreator)
+}
+
+func init() {
+	initializeConfigCache()
 }
