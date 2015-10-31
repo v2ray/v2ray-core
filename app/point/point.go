@@ -14,6 +14,7 @@ type Point struct {
 	port uint16
 	ich  connhandler.InboundConnectionHandler
 	och  connhandler.OutboundConnectionHandler
+	idh  []*InboundDetourHandler
 }
 
 // NewPoint returns a new Point server based on given configuration.
@@ -48,6 +49,22 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 	}
 	vpoint.och = och
 
+	detours := pConfig.InboundDetours()
+	if len(detours) > 0 {
+		vpoint.idh = make([]*InboundDetourHandler, len(detours))
+		for idx, detourConfig := range detours {
+			detourHandler := &InboundDetourHandler{
+				point:  vpoint,
+				config: detourConfig,
+			}
+			err := detourHandler.Initialize()
+			if err != nil {
+				return nil, err
+			}
+			vpoint.idh[idx] = detourHandler
+		}
+	}
+
 	return vpoint, nil
 }
 
@@ -59,14 +76,26 @@ func (vp *Point) Start() error {
 		return config.BadConfiguration
 	}
 
-	return retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
+	err := retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
 		err := vp.ich.Listen(vp.port)
-		if err == nil {
-			log.Warning("Point server started on port %d", vp.port)
-			return nil
+		if err != nil {
+			return err
 		}
-		return err
+		log.Warning("Point server started on port %d", vp.port)
+		return nil
 	})
+	if err != nil {
+		return err
+	}
+
+	for _, detourHandler := range vp.idh {
+		err := detourHandler.Start()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (p *Point) DispatchToOutbound(packet v2net.Packet) ray.InboundRay {
