@@ -32,15 +32,17 @@ func TestVMessSerialization(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+  
+  testUser := &TestUser {
+    id: userId,
+  }
 
 	userSet := mocks.MockUserSet{[]config.User{}, make(map[string]int), make(map[string]int64)}
-	userSet.AddUser(&TestUser{
-    id: userId,
-  })
+	userSet.AddUser(testUser)
 
 	request := new(VMessRequest)
 	request.Version = byte(0x01)
-	request.UserId = *userId
+	request.User = testUser
 
 	randBytes := make([]byte, 36)
 	_, err = rand.Read(randBytes)
@@ -69,7 +71,7 @@ func TestVMessSerialization(t *testing.T) {
 	}
 
 	assert.Byte(actualRequest.Version).Named("Version").Equals(byte(0x01))
-	assert.String(actualRequest.UserId.String).Named("UserId").Equals(request.UserId.String)
+	assert.String(actualRequest.User.ID().String).Named("UserId").Equals(request.User.ID().String)
 	assert.Bytes(actualRequest.RequestIV).Named("RequestIV").Equals(request.RequestIV[:])
 	assert.Bytes(actualRequest.RequestKey).Named("RequestKey").Equals(request.RequestKey[:])
 	assert.Bytes(actualRequest.ResponseHeader).Named("ResponseHeader").Equals(request.ResponseHeader[:])
@@ -80,13 +82,15 @@ func TestVMessSerialization(t *testing.T) {
 func BenchmarkVMessRequestWriting(b *testing.B) {
 	userId, _ := config.NewID("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
 	userSet := mocks.MockUserSet{[]config.User{}, make(map[string]int), make(map[string]int64)}
-	userSet.AddUser(&TestUser{
+  
+  testUser := &TestUser{
     id: userId,
-  })
+  }
+	userSet.AddUser(testUser)
 
 	request := new(VMessRequest)
 	request.Version = byte(0x01)
-	request.UserId = *userId
+	request.User = testUser
 
 	randBytes := make([]byte, 36)
 	rand.Read(randBytes)

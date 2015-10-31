@@ -37,7 +37,7 @@ const (
 // streaming.
 type VMessRequest struct {
 	Version        byte
-	UserId         config.ID
+	User         config.User
 	RequestIV      []byte
 	RequestKey     []byte
 	ResponseHeader []byte
@@ -98,7 +98,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	bufferLen := nBytes
 
 	request := &VMessRequest{
-		UserId:  *userObj.ID(),
+		User:  userObj,
 		Version: buffer.Value[0],
 	}
 
@@ -167,7 +167,7 @@ func (request *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 u
 	}
 
 	counter := randomRangeInt64(time.Now().Unix(), 30)
-	hash := idHash.Hash(request.UserId.Bytes[:], counter)
+	hash := idHash.Hash(request.User.ID().Bytes[:], counter)
 
 	buffer.Append(hash)
 
@@ -201,7 +201,7 @@ func (request *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 u
 	buffer.AppendBytes(byte(fnvHash>>24), byte(fnvHash>>16), byte(fnvHash>>8), byte(fnvHash))
 	encryptionEnd += 4
 
-	aesCipher, err := aes.NewCipher(request.UserId.CmdKey())
+	aesCipher, err := aes.NewCipher(request.User.ID().CmdKey())
 	if err != nil {
 		return nil, err
 	}

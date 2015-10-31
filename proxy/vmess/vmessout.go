@@ -67,7 +67,7 @@ func (handler *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray ray.
 	}
 	request := &protocol.VMessRequest{
 		Version: protocol.Version,
-		UserId:  *vNextUser.ID(),
+		User:  vNextUser,
 		Command: command,
 		Address: firstPacket.Destination().Address(),
 	}
