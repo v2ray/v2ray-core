@@ -8,9 +8,9 @@ import (
 )
 
 type InboundDetourConfig struct {
-	ProtocolValue  string
-	PortRangeValue *PortRange
-	SettingsValue  json.RawMessage
+	ProtocolValue  string          `json:"protocol"`
+	PortRangeValue *PortRange      `json:"port"`
+	SettingsValue  json.RawMessage `json:"settings"`
 }
 
 func (this *InboundDetourConfig) Protocol() string {

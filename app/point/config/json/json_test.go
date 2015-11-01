@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/v2ray/v2ray-core/app/point/config/json"
+	_ "github.com/v2ray/v2ray-core/proxy/dokodemo/config/json"
 	_ "github.com/v2ray/v2ray-core/proxy/freedom/config/json"
 	_ "github.com/v2ray/v2ray-core/proxy/socks/config/json"
 	_ "github.com/v2ray/v2ray-core/proxy/vmess/config/json"
@@ -50,4 +51,23 @@ func TestServerSampleConfig(t *testing.T) {
 
 	assert.String(pointConfig.OutboundConfig().Protocol()).Equals("freedom")
 	assert.Pointer(pointConfig.OutboundConfig().Settings()).IsNotNil()
+}
+
+func TestDetourConfig(t *testing.T) {
+	assert := unit.Assert(t)
+
+	// TODO: fix for Windows
+	baseDir := "$GOPATH/src/github.com/v2ray/v2ray-core/release/config"
+
+	pointConfig, err := json.LoadConfig(filepath.Join(baseDir, "vpoint_dns_detour.json"))
+	assert.Error(err).IsNil()
+
+	detours := pointConfig.InboundDetours()
+	assert.Int(len(detours)).Equals(1)
+
+	detour := detours[0]
+	assert.String(detour.Protocol()).Equals("dokodemo-door")
+	assert.Uint16(detour.PortRange().From()).Equals(uint16(53))
+	assert.Uint16(detour.PortRange().To()).Equals(uint16(53))
+	assert.Pointer(detour.Settings()).IsNotNil()
 }
