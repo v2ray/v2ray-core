@@ -11,6 +11,7 @@ import (
 	"github.com/v2ray/v2ray-core/app/point"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	"github.com/v2ray/v2ray-core/proxy/socks/config/json"
+	proxymocks "github.com/v2ray/v2ray-core/proxy/testing/mocks"
 	"github.com/v2ray/v2ray-core/testing/mocks"
 	"github.com/v2ray/v2ray-core/testing/unit"
 )
@@ -19,9 +20,11 @@ func TestSocksTcpConnect(t *testing.T) {
 	assert := unit.Assert(t)
 	port := uint16(12385)
 
-	och := &mocks.OutboundConnectionHandler{
-		Data2Send:   bytes.NewBuffer(make([]byte, 0, 1024)),
-		Data2Return: []byte("The data to be returned to socks server."),
+	connInput := []byte("The data to be returned to socks server.")
+	connOutput := bytes.NewBuffer(make([]byte, 0, 1024))
+	och := &proxymocks.OutboundConnectionHandler{
+		ConnOutput: connOutput,
+		ConnInput:  bytes.NewReader(connInput),
 	}
 
 	connhandler.RegisterOutboundConnectionHandlerFactory("mock_och", och)
@@ -63,8 +66,8 @@ func TestSocksTcpConnect(t *testing.T) {
 	assert.Error(err).IsNil()
 	conn.Close()
 
-	assert.Bytes([]byte(data2Send)).Equals(och.Data2Send.Bytes())
-	assert.Bytes(dataReturned).Equals(och.Data2Return)
+	assert.Bytes([]byte(data2Send)).Equals(connOutput.Bytes())
+	assert.Bytes(dataReturned).Equals(connInput)
 	assert.String(targetServer).Equals(och.Destination.Address().String())
 }
 
@@ -72,9 +75,11 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 	assert := unit.Assert(t)
 	port := uint16(12386)
 
-	och := &mocks.OutboundConnectionHandler{
-		Data2Send:   bytes.NewBuffer(make([]byte, 0, 1024)),
-		Data2Return: []byte("The data to be returned to socks server."),
+	connInput := []byte("The data to be returned to socks server.")
+	connOutput := bytes.NewBuffer(make([]byte, 0, 1024))
+	och := &proxymocks.OutboundConnectionHandler{
+		ConnInput:  bytes.NewReader(connInput),
+		ConnOutput: connOutput,
 	}
 
 	connhandler.RegisterOutboundConnectionHandlerFactory("mock_och", och)
@@ -122,8 +127,8 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 	assert.Error(err).IsNil()
 	conn.Close()
 
-	assert.Bytes([]byte(data2Send)).Equals(och.Data2Send.Bytes())
-	assert.Bytes(dataReturned).Equals(och.Data2Return)
+	assert.Bytes([]byte(data2Send)).Equals(connOutput.Bytes())
+	assert.Bytes(dataReturned).Equals(connInput)
 	assert.String(targetServer).Equals(och.Destination.Address().String())
 }
 
@@ -131,9 +136,11 @@ func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
 	assert := unit.Assert(t)
 	port := uint16(12389)
 
-	och := &mocks.OutboundConnectionHandler{
-		Data2Send:   bytes.NewBuffer(make([]byte, 0, 1024)),
-		Data2Return: []byte("The data to be returned to socks server."),
+	connInput := []byte("The data to be returned to socks server.")
+	connOutput := bytes.NewBuffer(make([]byte, 0, 1024))
+	och := &proxymocks.OutboundConnectionHandler{
+		ConnInput:  bytes.NewReader(connInput),
+		ConnOutput: connOutput,
 	}
 
 	connhandler.RegisterOutboundConnectionHandlerFactory("mock_och", och)
@@ -176,9 +183,11 @@ func TestSocksTcpConnectWithWrongAuthMethod(t *testing.T) {
 	assert := unit.Assert(t)
 	port := uint16(38405)
 
-	och := &mocks.OutboundConnectionHandler{
-		Data2Send:   bytes.NewBuffer(make([]byte, 0, 1024)),
-		Data2Return: []byte("The data to be returned to socks server."),
+	connInput := []byte("The data to be returned to socks server.")
+	connOutput := bytes.NewBuffer(make([]byte, 0, 1024))
+	och := &proxymocks.OutboundConnectionHandler{
+		ConnInput:  bytes.NewReader(connInput),
+		ConnOutput: connOutput,
 	}
 
 	connhandler.RegisterOutboundConnectionHandlerFactory("mock_och", och)
@@ -221,9 +230,11 @@ func TestSocksUdpSend(t *testing.T) {
 	assert := unit.Assert(t)
 	port := uint16(12372)
 
-	och := &mocks.OutboundConnectionHandler{
-		Data2Send:   bytes.NewBuffer(make([]byte, 0, 1024)),
-		Data2Return: []byte("The data to be returned to socks server."),
+	connInput := []byte("The data to be returned to socks server.")
+	connOutput := bytes.NewBuffer(make([]byte, 0, 1024))
+	och := &proxymocks.OutboundConnectionHandler{
+		ConnInput:  bytes.NewReader(connInput),
+		ConnOutput: connOutput,
 	}
 
 	connhandler.RegisterOutboundConnectionHandlerFactory("mock_och", och)
@@ -270,7 +281,7 @@ func TestSocksUdpSend(t *testing.T) {
 	nBytes, err := conn.Read(response)
 
 	assert.Error(err).IsNil()
-	assert.Bytes(response[10:nBytes]).Equals(och.Data2Return)
-	assert.Bytes(data2Send).Equals(och.Data2Send.Bytes())
+	assert.Bytes(response[10:nBytes]).Equals(connInput)
+	assert.Bytes(data2Send).Equals(connOutput.Bytes())
 	assert.String(och.Destination.String()).Equals("udp:8.8.4.4:53")
 }

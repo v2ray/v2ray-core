@@ -14,6 +14,7 @@ import (
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	_ "github.com/v2ray/v2ray-core/proxy/socks"
 	"github.com/v2ray/v2ray-core/proxy/socks/config/json"
+	proxymocks "github.com/v2ray/v2ray-core/proxy/testing/mocks"
 	"github.com/v2ray/v2ray-core/testing/mocks"
 	"github.com/v2ray/v2ray-core/testing/servers/tcp"
 	"github.com/v2ray/v2ray-core/testing/servers/udp"
@@ -38,9 +39,10 @@ func TestUDPSend(t *testing.T) {
 	udpServerAddr, err := udpServer.Start()
 	assert.Error(err).IsNil()
 
-	ich := &mocks.InboundConnectionHandler{
-		Data2Send:    []byte("Not Used"),
-		DataReturned: bytes.NewBuffer(make([]byte, 0, 1024)),
+	connOutput := bytes.NewBuffer(make([]byte, 0, 1024))
+	ich := &proxymocks.InboundConnectionHandler{
+		ConnInput:  bytes.NewReader([]byte("Not Used")),
+		ConnOutput: connOutput,
 	}
 
 	connhandler.RegisterInboundConnectionHandlerFactory("mock_ich", ich)
@@ -64,12 +66,11 @@ func TestUDPSend(t *testing.T) {
 	err = point.Start()
 	assert.Error(err).IsNil()
 
-	data2SendBuffer := alloc.NewBuffer()
-	data2SendBuffer.Clear()
+	data2SendBuffer := alloc.NewBuffer().Clear()
 	data2SendBuffer.Append([]byte(data2Send))
 	dest := v2net.NewUDPDestination(udpServerAddr)
 	ich.Communicate(v2net.NewPacket(dest, data2SendBuffer, false))
-	assert.Bytes(ich.DataReturned.Bytes()).Equals([]byte("Processed: Data to be sent to remote"))
+	assert.Bytes(connOutput.Bytes()).Equals([]byte("Processed: Data to be sent to remote"))
 }
 
 func TestSocksTcpConnect(t *testing.T) {

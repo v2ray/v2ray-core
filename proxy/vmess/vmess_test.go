@@ -8,6 +8,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
+	proxymocks "github.com/v2ray/v2ray-core/proxy/testing/mocks"
 	"github.com/v2ray/v2ray-core/proxy/vmess/config"
 	"github.com/v2ray/v2ray-core/proxy/vmess/config/json"
 	"github.com/v2ray/v2ray-core/testing/mocks"
@@ -17,14 +18,15 @@ import (
 func TestVMessInAndOut(t *testing.T) {
 	assert := unit.Assert(t)
 
-	data2Send := "The data to be send to outbound server."
 	testAccount, err := config.NewID("ad937d9d-6e23-4a5a-ba23-bce5092a7c51")
 	assert.Error(err).IsNil()
 
 	portA := uint16(17392)
-	ich := &mocks.InboundConnectionHandler{
-		Data2Send:    []byte(data2Send),
-		DataReturned: bytes.NewBuffer(make([]byte, 0, 1024)),
+	ichConnInput := []byte("The data to be send to outbound server.")
+	ichConnOutput := bytes.NewBuffer(make([]byte, 0, 1024))
+	ich := &proxymocks.InboundConnectionHandler{
+		ConnInput:  bytes.NewReader(ichConnInput),
+		ConnOutput: ichConnOutput,
 	}
 
 	connhandler.RegisterInboundConnectionHandlerFactory("mock_ich", ich)
@@ -59,9 +61,11 @@ func TestVMessInAndOut(t *testing.T) {
 
 	portB := uint16(13829)
 
-	och := &mocks.OutboundConnectionHandler{
-		Data2Send:   bytes.NewBuffer(make([]byte, 0, 1024)),
-		Data2Return: []byte("The data to be returned to inbound server."),
+	ochConnInput := []byte("The data to be returned to inbound server.")
+	ochConnOutput := bytes.NewBuffer(make([]byte, 0, 1024))
+	och := &proxymocks.OutboundConnectionHandler{
+		ConnInput:  bytes.NewReader(ochConnInput),
+		ConnOutput: ochConnOutput,
 	}
 
 	connhandler.RegisterOutboundConnectionHandlerFactory("mock_och", och)
@@ -90,8 +94,8 @@ func TestVMessInAndOut(t *testing.T) {
 
 	dest := v2net.NewTCPDestination(v2net.IPAddress([]byte{1, 2, 3, 4}, 80))
 	ich.Communicate(v2net.NewPacket(dest, nil, true))
-	assert.Bytes([]byte(data2Send)).Equals(och.Data2Send.Bytes())
-	assert.Bytes(ich.DataReturned.Bytes()).Equals(och.Data2Return)
+	assert.Bytes(ichConnInput).Equals(ochConnOutput.Bytes())
+	assert.Bytes(ichConnOutput.Bytes()).Equals(ochConnInput)
 }
 
 func TestVMessInAndOutUDP(t *testing.T) {
@@ -102,9 +106,11 @@ func TestVMessInAndOutUDP(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	portA := uint16(17394)
-	ich := &mocks.InboundConnectionHandler{
-		Data2Send:    []byte(data2Send),
-		DataReturned: bytes.NewBuffer(make([]byte, 0, 1024)),
+	ichConnInput := []byte("The data to be send to outbound server.")
+	ichConnOutput := bytes.NewBuffer(make([]byte, 0, 1024))
+	ich := &proxymocks.InboundConnectionHandler{
+		ConnInput:  bytes.NewReader(ichConnInput),
+		ConnOutput: ichConnOutput,
 	}
 
 	connhandler.RegisterInboundConnectionHandlerFactory("mock_ich", ich)
@@ -139,9 +145,11 @@ func TestVMessInAndOutUDP(t *testing.T) {
 
 	portB := uint16(13841)
 
-	och := &mocks.OutboundConnectionHandler{
-		Data2Send:   bytes.NewBuffer(make([]byte, 0, 1024)),
-		Data2Return: []byte("The data to be returned to inbound server."),
+	ochConnInput := []byte("The data to be returned to inbound server.")
+	ochConnOutput := bytes.NewBuffer(make([]byte, 0, 1024))
+	och := &proxymocks.OutboundConnectionHandler{
+		ConnInput:  bytes.NewReader(ochConnInput),
+		ConnOutput: ochConnOutput,
 	}
 
 	connhandler.RegisterOutboundConnectionHandlerFactory("mock_och", och)
@@ -174,6 +182,7 @@ func TestVMessInAndOutUDP(t *testing.T) {
 	data2SendBuffer.Append([]byte(data2Send))
 	dest := v2net.NewUDPDestination(v2net.IPAddress([]byte{1, 2, 3, 4}, 80))
 	ich.Communicate(v2net.NewPacket(dest, data2SendBuffer, false))
-	assert.Bytes([]byte(data2Send)).Equals(och.Data2Send.Bytes())
-	assert.Bytes(ich.DataReturned.Bytes()).Equals(och.Data2Return)
+
+	assert.Bytes(ichConnInput).Equals(ochConnOutput.Bytes())
+	assert.Bytes(ichConnOutput.Bytes()).Equals(ochConnInput)
 }
