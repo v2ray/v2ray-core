@@ -16,7 +16,7 @@
     "settings": {
       "vnext": [
         {
-          "address": "127.0.0.1",
+          "address": "104.155.39.54",
           "port": 27183,
           "users": [
             {"id": "ad937d9d-6e23-4a5a-ba23-bce5092a7c51"}
@@ -29,7 +29,7 @@
   "inboundDetour": [
     {
       "protocol": "dokodemo-door",
-      "port": 53,
+      "port": 28394,
       "settings": {
         "address": "8.8.8.8",
         "port": 53,
