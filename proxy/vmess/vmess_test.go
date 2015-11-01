@@ -7,6 +7,7 @@ import (
 	"github.com/v2ray/v2ray-core/app/point"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	proxymocks "github.com/v2ray/v2ray-core/proxy/testing/mocks"
 	"github.com/v2ray/v2ray-core/proxy/vmess/config"
@@ -21,7 +22,9 @@ func TestVMessInAndOut(t *testing.T) {
 	testAccount, err := config.NewID("ad937d9d-6e23-4a5a-ba23-bce5092a7c51")
 	assert.Error(err).IsNil()
 
-	portA := uint16(17392)
+	portA := v2nettesting.PickPort()
+	portB := v2nettesting.PickPort()
+
 	ichConnInput := []byte("The data to be send to outbound server.")
 	ichConnOutput := bytes.NewBuffer(make([]byte, 0, 1024))
 	ich := &proxymocks.InboundConnectionHandler{
@@ -42,7 +45,7 @@ func TestVMessInAndOut(t *testing.T) {
 			SettingsValue: &json.Outbound{
 				[]*json.ConfigTarget{
 					&json.ConfigTarget{
-						Address:    v2net.IPAddress([]byte{127, 0, 0, 1}, 13829),
+						Address:    v2net.IPAddress([]byte{127, 0, 0, 1}, portB),
 						TCPEnabled: true,
 						Users: []*json.ConfigUser{
 							&json.ConfigUser{Id: testAccount},
@@ -58,8 +61,6 @@ func TestVMessInAndOut(t *testing.T) {
 
 	err = pointA.Start()
 	assert.Error(err).IsNil()
-
-	portB := uint16(13829)
 
 	ochConnInput := []byte("The data to be returned to inbound server.")
 	ochConnOutput := bytes.NewBuffer(make([]byte, 0, 1024))
@@ -105,7 +106,9 @@ func TestVMessInAndOutUDP(t *testing.T) {
 	testAccount, err := config.NewID("ad937d9d-6e23-4a5a-ba23-bce5092a7c51")
 	assert.Error(err).IsNil()
 
-	portA := uint16(17394)
+	portA := v2nettesting.PickPort()
+	portB := v2nettesting.PickPort()
+
 	ichConnInput := []byte("The data to be send to outbound server.")
 	ichConnOutput := bytes.NewBuffer(make([]byte, 0, 1024))
 	ich := &proxymocks.InboundConnectionHandler{
@@ -126,7 +129,7 @@ func TestVMessInAndOutUDP(t *testing.T) {
 			SettingsValue: &json.Outbound{
 				[]*json.ConfigTarget{
 					&json.ConfigTarget{
-						Address:    v2net.IPAddress([]byte{127, 0, 0, 1}, 13841),
+						Address:    v2net.IPAddress([]byte{127, 0, 0, 1}, portB),
 						UDPEnabled: true,
 						Users: []*json.ConfigUser{
 							&json.ConfigUser{Id: testAccount},
@@ -142,8 +145,6 @@ func TestVMessInAndOutUDP(t *testing.T) {
 
 	err = pointA.Start()
 	assert.Error(err).IsNil()
-
-	portB := uint16(13841)
 
 	ochConnInput := []byte("The data to be returned to inbound server.")
 	ochConnOutput := bytes.NewBuffer(make([]byte, 0, 1024))

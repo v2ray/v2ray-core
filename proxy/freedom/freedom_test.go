@@ -2,6 +2,7 @@ package freedom
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/v2ray/v2ray-core/app/point"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	_ "github.com/v2ray/v2ray-core/proxy/socks"
 	"github.com/v2ray/v2ray-core/proxy/socks/config/json"
@@ -47,7 +49,7 @@ func TestUDPSend(t *testing.T) {
 
 	connhandler.RegisterInboundConnectionHandlerFactory("mock_ich", ich)
 
-	pointPort := uint16(38724)
+	pointPort := v2nettesting.PickPort()
 	config := mocks.Config{
 		PortValue: pointPort,
 		InboundConfigValue: &mocks.ConnectionConfig{
@@ -75,7 +77,7 @@ func TestUDPSend(t *testing.T) {
 
 func TestSocksTcpConnect(t *testing.T) {
 	assert := unit.Assert(t)
-	port := uint16(38293)
+	port := v2nettesting.PickPort()
 
 	data2Send := "Data to be sent to remote"
 
@@ -91,7 +93,7 @@ func TestSocksTcpConnect(t *testing.T) {
 	_, err := tcpServer.Start()
 	assert.Error(err).IsNil()
 
-	pointPort := uint16(38724)
+	pointPort := v2nettesting.PickPort()
 	config := mocks.Config{
 		PortValue: pointPort,
 		InboundConfigValue: &mocks.ConnectionConfig{
@@ -112,10 +114,10 @@ func TestSocksTcpConnect(t *testing.T) {
 	err = point.Start()
 	assert.Error(err).IsNil()
 
-	socks5Client, err := proxy.SOCKS5("tcp", "127.0.0.1:38724", nil, proxy.Direct)
+	socks5Client, err := proxy.SOCKS5("tcp", fmt.Sprintf("127.0.0.1:%d", pointPort), nil, proxy.Direct)
 	assert.Error(err).IsNil()
 
-	targetServer := "127.0.0.1:38293"
+	targetServer := fmt.Sprintf("127.0.0.1:%d", port)
 	conn, err := socks5Client.Dial("tcp", targetServer)
 	assert.Error(err).IsNil()
 

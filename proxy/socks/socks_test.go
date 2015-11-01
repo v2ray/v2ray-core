@@ -2,6 +2,7 @@ package socks
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"testing"
@@ -9,6 +10,7 @@ import (
 	"golang.org/x/net/proxy"
 
 	"github.com/v2ray/v2ray-core/app/point"
+	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	"github.com/v2ray/v2ray-core/proxy/socks/config/json"
 	proxymocks "github.com/v2ray/v2ray-core/proxy/testing/mocks"
@@ -18,7 +20,7 @@ import (
 
 func TestSocksTcpConnect(t *testing.T) {
 	assert := unit.Assert(t)
-	port := uint16(12385)
+	port := v2nettesting.PickPort()
 
 	connInput := []byte("The data to be returned to socks server.")
 	connOutput := bytes.NewBuffer(make([]byte, 0, 1024))
@@ -49,7 +51,7 @@ func TestSocksTcpConnect(t *testing.T) {
 	err = point.Start()
 	assert.Error(err).IsNil()
 
-	socks5Client, err := proxy.SOCKS5("tcp", "127.0.0.1:12385", nil, proxy.Direct)
+	socks5Client, err := proxy.SOCKS5("tcp", fmt.Sprintf("127.0.0.1:%d", port), nil, proxy.Direct)
 	assert.Error(err).IsNil()
 
 	targetServer := "google.com:80"
@@ -73,7 +75,7 @@ func TestSocksTcpConnect(t *testing.T) {
 
 func TestSocksTcpConnectWithUserPass(t *testing.T) {
 	assert := unit.Assert(t)
-	port := uint16(12386)
+	port := v2nettesting.PickPort()
 
 	connInput := []byte("The data to be returned to socks server.")
 	connOutput := bytes.NewBuffer(make([]byte, 0, 1024))
@@ -110,7 +112,7 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 	err = point.Start()
 	assert.Error(err).IsNil()
 
-	socks5Client, err := proxy.SOCKS5("tcp", "127.0.0.1:12386", &proxy.Auth{"userx", "passy"}, proxy.Direct)
+	socks5Client, err := proxy.SOCKS5("tcp", fmt.Sprintf("127.0.0.1:%d", port), &proxy.Auth{"userx", "passy"}, proxy.Direct)
 	assert.Error(err).IsNil()
 
 	targetServer := "1.2.3.4:443"
@@ -134,7 +136,7 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 
 func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
 	assert := unit.Assert(t)
-	port := uint16(12389)
+	port := v2nettesting.PickPort()
 
 	connInput := []byte("The data to be returned to socks server.")
 	connOutput := bytes.NewBuffer(make([]byte, 0, 1024))
@@ -171,7 +173,7 @@ func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
 	err = point.Start()
 	assert.Error(err).IsNil()
 
-	socks5Client, err := proxy.SOCKS5("tcp", "127.0.0.1:12389", &proxy.Auth{"userx", "passz"}, proxy.Direct)
+	socks5Client, err := proxy.SOCKS5("tcp", fmt.Sprintf("127.0.0.1:%d", port), &proxy.Auth{"userx", "passz"}, proxy.Direct)
 	assert.Error(err).IsNil()
 
 	targetServer := "1.2.3.4:443"
@@ -181,7 +183,7 @@ func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
 
 func TestSocksTcpConnectWithWrongAuthMethod(t *testing.T) {
 	assert := unit.Assert(t)
-	port := uint16(38405)
+	port := v2nettesting.PickPort()
 
 	connInput := []byte("The data to be returned to socks server.")
 	connOutput := bytes.NewBuffer(make([]byte, 0, 1024))
@@ -218,7 +220,7 @@ func TestSocksTcpConnectWithWrongAuthMethod(t *testing.T) {
 	err = point.Start()
 	assert.Error(err).IsNil()
 
-	socks5Client, err := proxy.SOCKS5("tcp", "127.0.0.1:38405", nil, proxy.Direct)
+	socks5Client, err := proxy.SOCKS5("tcp", fmt.Sprintf("127.0.0.1:%d", port), nil, proxy.Direct)
 	assert.Error(err).IsNil()
 
 	targetServer := "1.2.3.4:443"
@@ -228,7 +230,7 @@ func TestSocksTcpConnectWithWrongAuthMethod(t *testing.T) {
 
 func TestSocksUdpSend(t *testing.T) {
 	assert := unit.Assert(t)
-	port := uint16(12372)
+	port := v2nettesting.PickPort()
 
 	connInput := []byte("The data to be returned to socks server.")
 	connOutput := bytes.NewBuffer(make([]byte, 0, 1024))
