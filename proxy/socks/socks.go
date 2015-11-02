@@ -163,7 +163,7 @@ func (server *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.W
 
 	// Some SOCKS software requires a value other than dest. Let's fake one:
 	response.Port = uint16(1717)
-  response.SetIPv4([]byte{0, 0, 0, 0})
+	response.SetIPv4([]byte{0, 0, 0, 0})
 
 	responseBuffer := alloc.NewSmallBuffer().Clear()
 	response.Write(responseBuffer)
@@ -194,11 +194,11 @@ func (server *SocksServer) handleUDP(reader *v2net.TimeOutReader, writer io.Writ
 	response.Port = udpAddr.Port()
 	switch {
 	case udpAddr.IsIPv4():
-    response.SetIPv4(udpAddr.IP())
+		response.SetIPv4(udpAddr.IP())
 	case udpAddr.IsIPv6():
-    response.SetIPv6(udpAddr.IP())
+		response.SetIPv6(udpAddr.IP())
 	case udpAddr.IsDomain():
-    response.SetDomain(udpAddr.Domain())
+		response.SetDomain(udpAddr.Domain())
 	}
 
 	responseBuffer := alloc.NewSmallBuffer().Clear()
