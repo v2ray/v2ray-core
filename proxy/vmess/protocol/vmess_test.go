@@ -3,6 +3,7 @@ package protocol
 import (
 	"bytes"
 	"crypto/rand"
+	"io"
 	"testing"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -77,6 +78,14 @@ func TestVMessSerialization(t *testing.T) {
 	assert.Bytes(actualRequest.ResponseHeader).Named("ResponseHeader").Equals(request.ResponseHeader[:])
 	assert.Byte(actualRequest.Command).Named("Command").Equals(request.Command)
 	assert.String(actualRequest.Address.String()).Named("Address").Equals(request.Address.String())
+}
+
+func TestReadSingleByte(t *testing.T) {
+	assert := unit.Assert(t)
+
+	reader := NewVMessRequestReader(nil)
+	_, err := reader.Read(bytes.NewReader(make([]byte, 1)))
+	assert.Error(err).Equals(io.EOF)
 }
 
 func BenchmarkVMessRequestWriting(b *testing.B) {

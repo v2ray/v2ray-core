@@ -2,10 +2,12 @@ package protocol
 
 import (
 	"bytes"
+	"io"
 	"testing"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/testing/unit"
+	"github.com/v2ray/v2ray-core/transport"
 )
 
 func TestHasAuthenticationMethod(t *testing.T) {
@@ -93,4 +95,18 @@ func TestResponseWrite(t *testing.T) {
 		byte(0x00), byte(0x035),
 	}
 	assert.Bytes(buffer.Value).Named("raw response").Equals(expectedBytes)
+}
+
+func TestEOF(t *testing.T) {
+	assert := unit.Assert(t)
+
+	_, _, err := ReadAuthentication(bytes.NewReader(make([]byte, 0)))
+	assert.Error(err).Equals(io.EOF)
+}
+
+func TestSignleByte(t *testing.T) {
+	assert := unit.Assert(t)
+
+	_, _, err := ReadAuthentication(bytes.NewReader(make([]byte, 1)))
+	assert.Error(err).Equals(transport.CorruptedPacket)
 }
