@@ -28,11 +28,7 @@ func TestSocks4AuthenticationRequestRead(t *testing.T) {
 func TestSocks4AuthenticationResponseToBytes(t *testing.T) {
 	assert := unit.Assert(t)
 
-	response := &Socks4AuthenticationResponse{
-		result: byte(0x10),
-		port:   443,
-		ip:     []byte{1, 2, 3, 4},
-	}
+	response := NewSocks4AuthenticationResponse(byte(0x10), 443, []byte{1, 2, 3, 4})
 
 	buffer := alloc.NewSmallBuffer().Clear()
 	defer buffer.Release()
