@@ -55,7 +55,7 @@ func TestOverRangeStringPort(t *testing.T) {
 	assert := unit.Assert(t)
 
 	var portRange PortRange
-	err := json.Unmarshal([]byte("\"-1\""), &portRange)
+	err := json.Unmarshal([]byte("\"65536\""), &portRange)
 	assert.Error(err).Equals(InvalidPortRange)
 
 	err = json.Unmarshal([]byte("\"70000-80000\""), &portRange)
