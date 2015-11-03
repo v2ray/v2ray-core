@@ -46,7 +46,9 @@ func (server *SocksServer) AcceptPackets(conn *net.UDPConn) error {
 		buffer.Release()
 		if err != nil {
 			log.Error("Socks failed to parse UDP request: %v", err)
-			request.Data.Release()
+			continue
+		}
+		if request.Data == nil || request.Data.Len() == 0 {
 			continue
 		}
 		if request.Fragment != 0 {
