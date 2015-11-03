@@ -33,6 +33,13 @@ func (this *SocksAccountMap) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (this *SocksAccountMap) HasAccount(user, pass string) bool {
+	if actualPass, found := (*this)[user]; found {
+		return actualPass == pass
+	}
+	return false
+}
+
 type IPAddress net.IP
 
 func (this *IPAddress) UnmarshalJSON(data []byte) error {
@@ -65,10 +72,7 @@ func (sc *SocksConfig) IsPassword() bool {
 }
 
 func (sc *SocksConfig) HasAccount(user, pass string) bool {
-	if actualPass, found := sc.Accounts[user]; found {
-		return actualPass == pass
-	}
-	return false
+	return sc.Accounts.HasAccount(user, pass)
 }
 
 func (sc *SocksConfig) IP() net.IP {
