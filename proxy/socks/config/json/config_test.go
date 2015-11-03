@@ -20,6 +20,7 @@ func TestAccountMapParsing(t *testing.T) {
 	assert.Bool(accountMap.HasAccount("a", "b")).IsTrue()
 	assert.Bool(accountMap.HasAccount("a", "c")).IsFalse()
 	assert.Bool(accountMap.HasAccount("c", "d")).IsTrue()
+	assert.Bool(accountMap.HasAccount("e", "d")).IsTrue()
 }
 
 func TestDefaultIPAddress(t *testing.T) {
