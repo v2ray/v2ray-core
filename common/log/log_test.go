@@ -28,4 +28,8 @@ func TestStreamLogger(t *testing.T) {
 	}
 	logger.WriteLog("TestPrefix: ", "Test %s Format", "Stream Logger")
 	assert.Bytes(buffer.Bytes()).Equals([]byte("TestPrefix: Test Stream Logger Format\n"))
+
+	buffer.Reset()
+	logger.WriteLog("TestPrefix: ", "Test No Format")
+	assert.Bytes(buffer.Bytes()).Equals([]byte("TestPrefix: Test No Format\n"))
 }
