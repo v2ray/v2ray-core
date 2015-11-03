@@ -2,15 +2,13 @@
 package protocol
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
 	"encoding/binary"
 	"hash/fnv"
 	"io"
 	"time"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
-	v2io "github.com/v2ray/v2ray-core/common/io"
+	v2crypto "github.com/v2ray/v2ray-core/common/crypto"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	proxyerrors "github.com/v2ray/v2ray-core/proxy/common/errors"
@@ -80,16 +78,12 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 		return nil, proxyerrors.InvalidAuthentication
 	}
 
-	aesCipher, err := aes.NewCipher(userObj.ID().CmdKey())
+	aesStream, err := v2crypto.NewAesDecryptionStream(userObj.ID().CmdKey(), user.Int64Hash(timeSec))
 	if err != nil {
 		return nil, err
 	}
-	aesStream := cipher.NewCFBDecrypter(aesCipher, user.Int64Hash(timeSec))
-	decryptor := v2io.NewCryptionReader(aesStream, reader)
 
-	if err != nil {
-		return nil, err
-	}
+	decryptor := v2crypto.NewCryptionReader(aesStream, reader)
 
 	nBytes, err = v2net.ReadAllBytes(decryptor, buffer.Value[:41])
 	if err != nil {
@@ -201,11 +195,10 @@ func (request *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 u
 	buffer.AppendBytes(byte(fnvHash>>24), byte(fnvHash>>16), byte(fnvHash>>8), byte(fnvHash))
 	encryptionEnd += 4
 
-	aesCipher, err := aes.NewCipher(request.User.ID().CmdKey())
+	aesStream, err := v2crypto.NewAesEncryptionStream(request.User.ID().CmdKey(), user.Int64Hash(counter))
 	if err != nil {
 		return nil, err
 	}
-	aesStream := cipher.NewCFBEncrypter(aesCipher, user.Int64Hash(counter))
 	aesStream.XORKeyStream(buffer.Value[encryptionBegin:encryptionEnd], buffer.Value[encryptionBegin:encryptionEnd])
 
 	return buffer, nil

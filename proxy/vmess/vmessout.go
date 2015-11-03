@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
-	v2io "github.com/v2ray/v2ray-core/common/io"
+	v2crypto "github.com/v2ray/v2ray-core/common/crypto"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
@@ -114,11 +114,12 @@ func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ra
 
 func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2net.Packet, input <-chan *alloc.Buffer, finish *sync.Mutex) {
 	defer finish.Unlock()
-	encryptRequestWriter, err := v2io.NewAesEncryptWriter(request.RequestKey[:], request.RequestIV[:], conn)
+	aesStream, err := v2crypto.NewAesEncryptionStream(request.RequestKey[:], request.RequestIV[:])
 	if err != nil {
-		log.Error("VMessOut: Failed to create encrypt writer: %v", err)
+		log.Error("VMessOut: Failed to create AES encryption stream: %v", err)
 		return
 	}
+	encryptRequestWriter := v2crypto.NewCryptionWriter(aesStream, conn)
 
 	buffer := alloc.NewBuffer().Clear()
 	buffer, err = request.ToBytes(user.NewTimeHash(user.HMACHash{}), user.GenerateRandomInt64InRange, buffer)
@@ -136,7 +137,7 @@ func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2
 	}
 
 	if firstChunk != nil {
-		encryptRequestWriter.Crypt(firstChunk.Value)
+		aesStream.XORKeyStream(firstChunk.Value, firstChunk.Value)
 		buffer.Append(firstChunk.Value)
 		firstChunk.Release()
 
@@ -160,11 +161,12 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 	responseKey := md5.Sum(request.RequestKey[:])
 	responseIV := md5.Sum(request.RequestIV[:])
 
-	decryptResponseReader, err := v2io.NewAesDecryptReader(responseKey[:], responseIV[:], conn)
+	aesStream, err := v2crypto.NewAesDecryptionStream(responseKey[:], responseIV[:])
 	if err != nil {
-		log.Error("VMessOut: Failed to create decrypt reader: %v", err)
+		log.Error("VMessOut: Failed to create AES encryption stream: %v", err)
 		return
 	}
+	decryptResponseReader := v2crypto.NewCryptionReader(aesStream, conn)
 
 	buffer, err := v2net.ReadFrom(decryptResponseReader, nil)
 	if err != nil {

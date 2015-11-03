@@ -6,7 +6,7 @@ import (
 	"net"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
-	v2io "github.com/v2ray/v2ray-core/common/io"
+	v2crypto "github.com/v2ray/v2ray-core/common/crypto"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
@@ -54,12 +54,13 @@ func (handler *VMessInboundHandler) AcceptPackets(conn *net.UDPConn) {
 		}
 		log.Access(addr.String(), request.Address.String(), log.AccessAccepted, "")
 
-		cryptReader, err := v2io.NewAesDecryptReader(request.RequestKey, request.RequestIV, reader)
+		aesStream, err := v2crypto.NewAesDecryptionStream(request.RequestKey, request.RequestIV)
 		if err != nil {
-			log.Error("VMessIn: Failed to create decrypt reader: %v", err)
+			log.Error("VMessIn: Failed to AES decryption stream: %v", err)
 			buffer.Release()
 			continue
 		}
+		cryptReader := v2crypto.NewCryptionReader(aesStream, reader)
 
 		data := alloc.NewBuffer()
 		nBytes, err = cryptReader.Read(data.Value)
@@ -86,11 +87,13 @@ func (handler *VMessInboundHandler) handlePacket(conn *net.UDPConn, request *pro
 	buffer := alloc.NewBuffer().Clear()
 	defer buffer.Release()
 
-	responseWriter, err := v2io.NewAesEncryptWriter(responseKey[:], responseIV[:], buffer)
+	aesStream, err := v2crypto.NewAesEncryptionStream(responseKey[:], responseIV[:])
 	if err != nil {
-		log.Error("VMessIn: Failed to create encrypt writer: %v", err)
+		log.Error("VMessIn: Failed to create AES encryption stream: %v", err)
 		return
 	}
+	responseWriter := v2crypto.NewCryptionWriter(aesStream, buffer)
+
 	responseWriter.Write(request.ResponseHeader)
 
 	hasData := false
