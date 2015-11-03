@@ -10,9 +10,7 @@ type SocksServerFactory struct {
 }
 
 func (factory SocksServerFactory) Create(dispatcher app.PacketDispatcher, rawConfig interface{}) (connhandler.InboundConnectionHandler, error) {
-	config := rawConfig.(*json.SocksConfig)
-	config.Initialize()
-	return NewSocksServer(dispatcher, config), nil
+	return NewSocksServer(dispatcher, rawConfig.(*json.SocksConfig)), nil
 }
 
 func init() {

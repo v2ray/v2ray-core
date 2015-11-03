@@ -1,9 +1,11 @@
 package json
 
 import (
+	"encoding/json"
+	"errors"
 	"net"
 
-	"github.com/v2ray/v2ray-core/proxy/common/config/json"
+	jsonconfig "github.com/v2ray/v2ray-core/proxy/common/config/json"
 )
 
 const (
@@ -16,28 +18,42 @@ type SocksAccount struct {
 	Password string `json:"pass"`
 }
 
-type SocksConfig struct {
-	AuthMethod string         `json:"auth"`
-	Accounts   []SocksAccount `json:"accounts"`
-	UDPEnabled bool           `json:"udp"`
-	HostIP     string         `json:"ip"`
+type SocksAccountMap map[string]string
 
-	accountMap map[string]string
-	ip         net.IP
+func (this *SocksAccountMap) UnmarshalJSON(data []byte) error {
+	var accounts []SocksAccount
+	err := json.Unmarshal(data, &accounts)
+	if err != nil {
+		return err
+	}
+	*this = make(map[string]string)
+	for _, account := range accounts {
+		(*this)[account.Username] = account.Password
+	}
+	return nil
 }
 
-func (sc *SocksConfig) Initialize() {
-	sc.accountMap = make(map[string]string)
-	for _, account := range sc.Accounts {
-		sc.accountMap[account.Username] = account.Password
-	}
+type IPAddress net.IP
 
-	if len(sc.HostIP) > 0 {
-		sc.ip = net.ParseIP(sc.HostIP)
-		if sc.ip == nil {
-			sc.ip = net.IPv4(127, 0, 0, 1)
-		}
+func (this *IPAddress) UnmarshalJSON(data []byte) error {
+	var ipStr string
+	err := json.Unmarshal(data, &ipStr)
+	if err != nil {
+		return err
 	}
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return errors.New("Unknown IP format: " + ipStr)
+	}
+	*this = IPAddress(ip)
+	return nil
+}
+
+type SocksConfig struct {
+	AuthMethod string          `json:"auth"`
+	Accounts   SocksAccountMap `json:"accounts"`
+	UDPEnabled bool            `json:"udp"`
+	HostIP     IPAddress       `json:"ip"`
 }
 
 func (sc *SocksConfig) IsNoAuth() bool {
@@ -49,18 +65,20 @@ func (sc *SocksConfig) IsPassword() bool {
 }
 
 func (sc *SocksConfig) HasAccount(user, pass string) bool {
-	if actualPass, found := sc.accountMap[user]; found {
+	if actualPass, found := sc.Accounts[user]; found {
 		return actualPass == pass
 	}
 	return false
 }
 
 func (sc *SocksConfig) IP() net.IP {
-	return sc.ip
+	return net.IP(sc.HostIP)
 }
 
 func init() {
-	json.RegisterInboundConnectionConfig("socks", func() interface{} {
-		return new(SocksConfig)
+	jsonconfig.RegisterInboundConnectionConfig("socks", func() interface{} {
+		return &SocksConfig{
+			HostIP: IPAddress(net.IPv4(127, 0, 0, 1)),
+		}
 	})
 }

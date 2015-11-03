@@ -92,11 +92,8 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 			ProtocolValue: "socks",
 			SettingsValue: &json.SocksConfig{
 				AuthMethod: "password",
-				Accounts: []json.SocksAccount{
-					json.SocksAccount{
-						Username: "userx",
-						Password: "passy",
-					},
+				Accounts: json.SocksAccountMap{
+					"userx": "passy",
 				},
 			},
 		},
@@ -153,11 +150,8 @@ func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
 			ProtocolValue: "socks",
 			SettingsValue: &json.SocksConfig{
 				AuthMethod: "password",
-				Accounts: []json.SocksAccount{
-					json.SocksAccount{
-						Username: "userx",
-						Password: "passy",
-					},
+				Accounts: json.SocksAccountMap{
+					"userx": "passy",
 				},
 			},
 		},
@@ -200,11 +194,8 @@ func TestSocksTcpConnectWithWrongAuthMethod(t *testing.T) {
 			ProtocolValue: "socks",
 			SettingsValue: &json.SocksConfig{
 				AuthMethod: "password",
-				Accounts: []json.SocksAccount{
-					json.SocksAccount{
-						Username: "userx",
-						Password: "passy",
-					},
+				Accounts: json.SocksAccountMap{
+					"userx": "passy",
 				},
 			},
 		},
