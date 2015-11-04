@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/v2ray/v2ray-core/app/point"
+	"github.com/v2ray/v2ray-core/app/point/config/testing/mocks"
 	v2netjson "github.com/v2ray/v2ray-core/common/net/json"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	"github.com/v2ray/v2ray-core/proxy/dokodemo/config/json"
 	_ "github.com/v2ray/v2ray-core/proxy/freedom"
-	"github.com/v2ray/v2ray-core/testing/mocks"
 	"github.com/v2ray/v2ray-core/testing/servers/tcp"
 	"github.com/v2ray/v2ray-core/testing/unit"
 )
