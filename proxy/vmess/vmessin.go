@@ -22,14 +22,12 @@ type VMessInboundHandler struct {
 	dispatcher app.PacketDispatcher
 	clients    user.UserSet
 	accepting  bool
-	udpEnabled bool
 }
 
-func NewVMessInboundHandler(dispatcher app.PacketDispatcher, clients user.UserSet, udpEnabled bool) *VMessInboundHandler {
+func NewVMessInboundHandler(dispatcher app.PacketDispatcher, clients user.UserSet) *VMessInboundHandler {
 	return &VMessInboundHandler{
 		dispatcher: dispatcher,
 		clients:    clients,
-		udpEnabled: udpEnabled,
 	}
 }
 
@@ -45,11 +43,6 @@ func (handler *VMessInboundHandler) Listen(port uint16) error {
 	}
 	handler.accepting = true
 	go handler.AcceptConnections(listener)
-
-	if handler.udpEnabled {
-		handler.ListenUDP(port)
-	}
-
 	return nil
 }
 
@@ -154,7 +147,7 @@ func (factory *VMessInboundHandlerFactory) Create(dispatcher app.PacketDispatche
 		allowedClients.AddUser(user)
 	}
 
-	return NewVMessInboundHandler(dispatcher, allowedClients, config.UDPEnabled()), nil
+	return NewVMessInboundHandler(dispatcher, allowedClients), nil
 }
 
 func init() {

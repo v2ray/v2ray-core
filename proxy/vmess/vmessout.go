@@ -20,14 +20,12 @@ import (
 )
 
 type VMessOutboundHandler struct {
-	vNextList    []*config.OutboundTarget
-	vNextListUDP []*config.OutboundTarget
+	vNextList []*config.OutboundTarget
 }
 
-func NewVMessOutboundHandler(vNextList, vNextListUDP []*config.OutboundTarget) *VMessOutboundHandler {
+func NewVMessOutboundHandler(vNextList []*config.OutboundTarget) *VMessOutboundHandler {
 	return &VMessOutboundHandler{
-		vNextList:    vNextList,
-		vNextListUDP: vNextListUDP,
+		vNextList: vNextList,
 	}
 }
 
@@ -56,9 +54,6 @@ func pickVNext(serverList []*config.OutboundTarget) (v2net.Destination, config.U
 
 func (handler *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {
 	vNextList := handler.vNextList
-	if firstPacket.Destination().IsUDP() {
-		vNextList = handler.vNextListUDP
-	}
 	vNextAddress, vNextUser := pickVNext(vNextList)
 
 	command := protocol.CmdTCP
@@ -194,17 +189,7 @@ type VMessOutboundHandlerFactory struct {
 
 func (factory *VMessOutboundHandlerFactory) Create(rawConfig interface{}) (connhandler.OutboundConnectionHandler, error) {
 	vOutConfig := rawConfig.(config.Outbound)
-	servers := make([]*config.OutboundTarget, 0, 16)
-	udpServers := make([]*config.OutboundTarget, 0, 16)
-	for _, target := range vOutConfig.Targets() {
-		if target.Destination.IsTCP() {
-			servers = append(servers, target)
-		}
-		if target.Destination.IsUDP() {
-			udpServers = append(udpServers, target)
-		}
-	}
-	return NewVMessOutboundHandler(servers, udpServers), nil
+	return NewVMessOutboundHandler(vOutConfig.Targets()), nil
 }
 
 func init() {

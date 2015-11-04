@@ -7,7 +7,6 @@ import (
 
 type Inbound struct {
 	AllowedClients []*ConfigUser `json:"clients"`
-	UDP            bool          `json:"udp"`
 }
 
 func (c *Inbound) AllowedUsers() []vmessconfig.User {
@@ -16,10 +15,6 @@ func (c *Inbound) AllowedUsers() []vmessconfig.User {
 		users = append(users, rawUser)
 	}
 	return users
-}
-
-func (c *Inbound) UDPEnabled() bool {
-	return c.UDP
 }
 
 func init() {

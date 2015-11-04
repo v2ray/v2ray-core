@@ -61,7 +61,7 @@ func build(targetOS, targetArch string, archive bool, version string) {
 			fmt.Println("Unable to detect V2Ray version: " + err.Error())
 			return
 		}
-    version = v
+		version = v
 	}
 	fmt.Printf("Building V2Ray (%s) for %s %s\n", version, v2rayOS, v2rayArch)
 
