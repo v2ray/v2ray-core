@@ -145,6 +145,8 @@ func (server *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.W
 	if request.Command == protocol.CmdBind || request.Command == protocol.CmdUdpAssociate {
 		response := protocol.NewSocks5Response()
 		response.Error = protocol.ErrorCommandNotSupported
+		response.Port = uint16(0)
+		response.SetIPv4([]byte{0, 0, 0, 0})
 
 		responseBuffer := alloc.NewSmallBuffer().Clear()
 		response.Write(responseBuffer)
