@@ -1,8 +1,9 @@
 package protocol
 
 import (
-	"crypto/rand"
 	"testing"
+
+	"github.com/v2ray/v2ray-core/testing/fuzzing"
 )
 
 const (
@@ -11,18 +12,18 @@ const (
 
 func TestReadAuthentication(t *testing.T) {
 	for i := 0; i < Iterations; i++ {
-		ReadAuthentication(rand.Reader)
+		ReadAuthentication(fuzzing.RandomReader())
 	}
 }
 
 func TestReadUserPassRequest(t *testing.T) {
 	for i := 0; i < Iterations; i++ {
-		ReadUserPassRequest(rand.Reader)
+		ReadUserPassRequest(fuzzing.RandomReader())
 	}
 }
 
 func TestReadRequest(t *testing.T) {
 	for i := 0; i < Iterations; i++ {
-		ReadRequest(rand.Reader)
+		ReadRequest(fuzzing.RandomReader())
 	}
 }
