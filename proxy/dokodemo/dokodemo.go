@@ -35,13 +35,57 @@ func NewDokodemoDoor(dispatcher app.PacketDispatcher, config *json.DokodemoConfi
 }
 
 func (this *DokodemoDoor) Listen(port uint16) error {
+	this.accepting = true
+
 	if this.config.Network.HasNetwork(v2net.TCPNetwork) {
 		err := this.ListenTCP(port)
 		if err != nil {
 			return err
 		}
 	}
+	if this.config.Network.HasNetwork(v2net.UDPNetwork) {
+		err := this.ListenUDP(port)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
+}
+
+func (this *DokodemoDoor) ListenUDP(port uint16) error {
+	udpConn, err := net.ListenUDP("udp", &net.UDPAddr{
+		IP:   []byte{0, 0, 0, 0},
+		Port: int(port),
+		Zone: "",
+	})
+	if err != nil {
+		log.Error("Dokodemo failed to listen on port %d: %v", port, err)
+		return err
+	}
+	go this.handleUDPPackets(udpConn)
+	return nil
+}
+
+func (this *DokodemoDoor) handleUDPPackets(udpConn *net.UDPConn) {
+	defer udpConn.Close()
+	for this.accepting {
+		buffer := alloc.NewBuffer()
+		nBytes, addr, err := udpConn.ReadFromUDP(buffer.Value)
+		buffer.Slice(0, nBytes)
+		if err != nil {
+			buffer.Release()
+			log.Error("Dokodemo failed to read from UDP: %v", err)
+			return
+		}
+
+		packet := v2net.NewPacket(v2net.NewUDPDestination(this.address), buffer, false)
+		ray := this.dispatcher.DispatchToOutbound(packet)
+		close(ray.InboundInput())
+
+		for payload := range ray.InboundOutput() {
+			udpConn.WriteToUDP(payload.Value, addr)
+		}
+	}
 }
 
 func (this *DokodemoDoor) ListenTCP(port uint16) error {
@@ -54,7 +98,6 @@ func (this *DokodemoDoor) ListenTCP(port uint16) error {
 		log.Error("Dokodemo failed to listen on port %d: %v", port, err)
 		return err
 	}
-	this.accepting = true
 	go this.AcceptTCPConnections(tcpListener)
 	return nil
 }
