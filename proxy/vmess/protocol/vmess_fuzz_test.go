@@ -9,7 +9,7 @@ import (
 
 func TestVMessRequestReader(t *testing.T) {
 	reader := NewVMessRequestReader(&mocks.StaticUserSet{})
-	for i := 0; i < 10000000; i++ {
+	for i := 0; i < 1000000; i++ {
 		reader.Read(fuzzing.RandomReader())
 	}
 }
