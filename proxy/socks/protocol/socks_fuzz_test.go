@@ -27,3 +27,9 @@ func TestReadRequest(t *testing.T) {
 		ReadRequest(fuzzing.RandomReader())
 	}
 }
+
+func TestReadUDPRequest(t *testing.T) {
+	for i := 0; i < Iterations; i++ {
+		ReadUDPRequest(fuzzing.RandomBytes())
+	}
+}
