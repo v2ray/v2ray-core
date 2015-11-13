@@ -12,7 +12,7 @@ var (
 )
 
 type Router interface {
-	TakeDetour(v2net.Packet) (config.ConnectionTag, error)
+	TakeDetour(v2net.Packet) (config.DetourTag, error)
 }
 
 type RouterFactory interface {

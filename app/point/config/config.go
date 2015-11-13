@@ -5,7 +5,7 @@ type RouterConfig interface {
 	Settings() interface{}
 }
 
-type ConnectionTag string
+type DetourTag string
 
 type ConnectionConfig interface {
 	Protocol() string
@@ -24,6 +24,12 @@ type PortRange interface {
 type InboundDetourConfig interface {
 	Protocol() string
 	PortRange() PortRange
+	Settings() interface{}
+}
+
+type OutboundDetourConfig interface {
+	Protocol() string
+	Tag() DetourTag
 	Settings() interface{}
 }
 

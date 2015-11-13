@@ -12,11 +12,12 @@ import (
 
 // Config is the config for Point server.
 type Config struct {
-	PortValue           uint16                 `json:"port"` // Port of this Point server.
-	LogConfigValue      *LogConfig             `json:"log"`
-	InboundConfigValue  *ConnectionConfig      `json:"inbound"`
-	OutboundConfigValue *ConnectionConfig      `json:"outbound"`
-	InboundDetoursValue []*InboundDetourConfig `json:"inboundDetour"`
+	PortValue            uint16                  `json:"port"` // Port of this Point server.
+	LogConfigValue       *LogConfig              `json:"log"`
+	InboundConfigValue   *ConnectionConfig       `json:"inbound"`
+	OutboundConfigValue  *ConnectionConfig       `json:"outbound"`
+	InboundDetoursValue  []*InboundDetourConfig  `json:"inboundDetour"`
+	OutboundDetoursValue []*OutboundDetourConfig `json:"outboundDetour"`
 }
 
 func (config *Config) Port() uint16 {
@@ -47,6 +48,14 @@ func (config *Config) OutboundConfig() config.ConnectionConfig {
 func (this *Config) InboundDetours() []config.InboundDetourConfig {
 	detours := make([]config.InboundDetourConfig, len(this.InboundDetoursValue))
 	for idx, detour := range this.InboundDetoursValue {
+		detours[idx] = detour
+	}
+	return detours
+}
+
+func (this *Config) OutboundDetours() []config.OutboundDetourConfig {
+	detours := make([]config.OutboundDetourConfig, len(this.OutboundDetoursValue))
+	for idx, detour := range this.OutboundDetoursValue {
 		detours[idx] = detour
 	}
 	return detours

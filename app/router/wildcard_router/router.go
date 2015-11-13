@@ -9,7 +9,7 @@ import (
 type WildcardRouter struct {
 }
 
-func (router *WildcardRouter) TakeDetour(packet v2net.Packet) (config.ConnectionTag, error) {
+func (router *WildcardRouter) TakeDetour(packet v2net.Packet) (config.DetourTag, error) {
 	return "", nil
 }
 
