@@ -22,9 +22,7 @@ func (queue timedQueueImpl) Less(i, j int) bool {
 }
 
 func (queue timedQueueImpl) Swap(i, j int) {
-	tmp := queue[i]
-	queue[i] = queue[j]
-	queue[j] = tmp
+	queue[i], queue[j] = queue[j], queue[i]
 }
 
 func (queue *timedQueueImpl) Push(value interface{}) {
