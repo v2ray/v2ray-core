@@ -1,5 +1,9 @@
 package config
 
+import (
+	v2net "github.com/v2ray/v2ray-core/common/net"
+)
+
 type DetourTag string
 
 type ConnectionConfig interface {
@@ -11,14 +15,9 @@ type LogConfig interface {
 	AccessLog() string
 }
 
-type PortRange interface {
-	From() uint16
-	To() uint16
-}
-
 type InboundDetourConfig interface {
 	Protocol() string
-	PortRange() PortRange
+	PortRange() v2net.PortRange
 	Settings() interface{}
 }
 

@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"github.com/v2ray/v2ray-core/app/point/config"
+	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
 type ConnectionConfig struct {
@@ -39,7 +40,7 @@ type InboundDetourConfig struct {
 	PortRangeValue *PortRange
 }
 
-func (this *InboundDetourConfig) PortRange() config.PortRange {
+func (this *InboundDetourConfig) PortRange() v2net.PortRange {
 	return this.PortRangeValue
 }
 
