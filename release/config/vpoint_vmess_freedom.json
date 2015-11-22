@@ -21,5 +21,94 @@
   "outbound": {
     "protocol": "freedom",
     "settings": {}
+  },
+  "outboundDetour": [
+    {
+      "protocol": "blackhole",
+      "settings": {},
+      "tag": "blocked"
+    }
+  ],
+  "router": {
+    "strategy": "rules",
+    "settings": {
+      "rules": [
+        {
+          "type": "field",
+          "ip": "0.0.0.0/8",
+          "outboundTag": "blocked"
+        },
+        {
+          "type": "field",
+          "ip": "10.0.0.0/8",
+          "outboundTag": "blocked"
+        },
+        {
+          "type": "field",
+          "ip": "100.64.0.0/10",
+          "outboundTag": "blocked"
+        },
+        {
+          "type": "field",
+          "ip": "127.0.0.0/8",
+          "outboundTag": "blocked"
+        },
+        {
+          "type": "field",
+          "ip": "169.254.0.0/16",
+          "outboundTag": "blocked"
+        },
+        {
+          "type": "field",
+          "ip": "172.16.0.0/12",
+          "outboundTag": "blocked"
+        },
+        {
+          "type": "field",
+          "ip": "192.0.0.0/24",
+          "outboundTag": "blocked"
+        },
+        {
+          "type": "field",
+          "ip": "192.0.2.0/24",
+          "outboundTag": "blocked"
+        },
+        {
+          "type": "field",
+          "ip": "192.168.0.0/16",
+          "outboundTag": "blocked"
+        },
+        {
+          "type": "field",
+          "ip": "198.18.0.0/15",
+          "outboundTag": "blocked"
+        },
+        {
+          "type": "field",
+          "ip": "198.51.100.0/24",
+          "outboundTag": "blocked"
+        },
+        {
+          "type": "field",
+          "ip": "203.0.113.0/24",
+          "outboundTag": "blocked"
+        },
+        {
+          "type": "field",
+          "ip": "::1/128",
+          "outboundTag": "blocked"
+        },
+        {
+          "type": "field",
+          "ip": "fc00::/7",
+          "outboundTag": "blocked"
+        },
+        {
+          "type": "field",
+          "ip": "fe80::/10",
+          "outboundTag": "blocked"
+        }
+      ]
+    }
   }
 }

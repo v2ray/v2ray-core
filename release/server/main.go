@@ -9,9 +9,14 @@ import (
 	"github.com/v2ray/v2ray-core"
 	"github.com/v2ray/v2ray-core/app/point"
 	jsonconf "github.com/v2ray/v2ray-core/app/point/config/json"
+	_ "github.com/v2ray/v2ray-core/app/router/config/json"
+	_ "github.com/v2ray/v2ray-core/app/router/rules"
+	_ "github.com/v2ray/v2ray-core/app/router/rules/config/json"
 	"github.com/v2ray/v2ray-core/common/log"
 
 	// The following are neccesary as they register handlers in their init functions.
+	_ "github.com/v2ray/v2ray-core/proxy/blackhole"
+	_ "github.com/v2ray/v2ray-core/proxy/blackhole/config/json"
 	_ "github.com/v2ray/v2ray-core/proxy/dokodemo"
 	_ "github.com/v2ray/v2ray-core/proxy/dokodemo/config/json"
 	_ "github.com/v2ray/v2ray-core/proxy/freedom"
