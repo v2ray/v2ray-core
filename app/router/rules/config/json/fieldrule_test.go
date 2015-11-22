@@ -30,3 +30,16 @@ func TestPortMatching(t *testing.T) {
 	dest := v2net.NewTCPDestination(v2net.DomainAddress("www.v2ray.com", 80))
 	assert.Bool(rule.Apply(dest)).IsTrue()
 }
+
+func TestIPMatching(t *testing.T) {
+	assert := unit.Assert(t)
+
+	rawJson := `{
+    "type": "field",
+    "ip": "10.0.0.0/8",
+    "tag": "test"
+  }`
+	rule := parseRule([]byte(rawJson))
+	dest := v2net.NewTCPDestination(v2net.IPAddress([]byte{10, 0, 0, 1}, 80))
+	assert.Bool(rule.Apply(dest)).IsTrue()
+}
