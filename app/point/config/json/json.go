@@ -16,7 +16,7 @@ import (
 type Config struct {
 	PortValue            uint16                         `json:"port"` // Port of this Point server.
 	LogConfigValue       *LogConfig                     `json:"log"`
-	RouterConfigValue    *routerconfigjson.RouterConfig `json:"router"`
+	RouterConfigValue    *routerconfigjson.RouterConfig `json:"routing"`
 	InboundConfigValue   *ConnectionConfig              `json:"inbound"`
 	OutboundConfigValue  *ConnectionConfig              `json:"outbound"`
 	InboundDetoursValue  []*InboundDetourConfig         `json:"inboundDetour"`

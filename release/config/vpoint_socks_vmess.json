@@ -33,7 +33,7 @@
       "tag": "direct"
     }
   ],
-  "router": {
+  "routing": {
     "strategy": "rules",
     "settings": {
       "rules": [

@@ -29,7 +29,7 @@
       "tag": "blocked"
     }
   ],
-  "router": {
+  "routing": {
     "strategy": "rules",
     "settings": {
       "rules": [
