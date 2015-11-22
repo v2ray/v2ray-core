@@ -20,14 +20,14 @@ type FieldRule struct {
 
 func (this *FieldRule) Apply(dest v2net.Destination) bool {
 	address := dest.Address()
-	if len(this.Domain) > 0 && address.IsDomain() {
-		if !strings.Contains(address.Domain(), this.Domain) {
+	if len(this.Domain) > 0 {
+		if !address.IsDomain() || !strings.Contains(address.Domain(), this.Domain) {
 			return false
 		}
 	}
 
-	if this.IP != nil && (address.IsIPv4() || address.IsIPv6()) {
-		if !this.IP.Contains(address.IP()) {
+	if this.IP != nil {
+		if !(address.IsIPv4() || address.IsIPv6()) || !this.IP.Contains(address.IP()) {
 			return false
 		}
 	}
@@ -51,10 +51,10 @@ func (this *FieldRule) Apply(dest v2net.Destination) bool {
 func (this *FieldRule) UnmarshalJSON(data []byte) error {
 	type RawFieldRule struct {
 		Rule
-		Domain  string `json:"domain"`
-		IP      string `json:"ip"`
-		Port    *v2netjson.PortRange
-		Network *v2netjson.NetworkList
+		Domain  string                 `json:"domain"`
+		IP      string                 `json:"ip"`
+		Port    *v2netjson.PortRange   `json:"port"`
+		Network *v2netjson.NetworkList `json:"network"`
 	}
 	rawFieldRule := RawFieldRule{}
 	err := json.Unmarshal(data, &rawFieldRule)
@@ -63,17 +63,31 @@ func (this *FieldRule) UnmarshalJSON(data []byte) error {
 	}
 	this.Type = rawFieldRule.Type
 	this.OutboundTag = rawFieldRule.OutboundTag
-	this.Domain = rawFieldRule.Domain
-	_, ipNet, err := net.ParseCIDR(rawFieldRule.IP)
-	if err != nil {
-		return errors.New("Invalid IP range in router rule: " + err.Error())
+
+	hasField := false
+	if len(rawFieldRule.Domain) > 0 {
+		this.Domain = rawFieldRule.Domain
+		hasField = true
 	}
-	this.IP = ipNet
+
+	if len(rawFieldRule.IP) > 0 {
+		_, ipNet, err := net.ParseCIDR(rawFieldRule.IP)
+		if err != nil {
+			return errors.New("Invalid IP range in router rule: " + err.Error())
+		}
+		this.IP = ipNet
+		hasField = true
+	}
 	if rawFieldRule.Port != nil {
 		this.Port = rawFieldRule.Port
+		hasField = true
 	}
 	if rawFieldRule.Network != nil {
 		this.Network = rawFieldRule.Network
+		hasField = true
+	}
+	if !hasField {
+		return errors.New("This rule has no effective fields.")
 	}
 	return nil
 }

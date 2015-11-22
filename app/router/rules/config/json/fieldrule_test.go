@@ -43,3 +43,29 @@ func TestIPMatching(t *testing.T) {
 	dest := v2net.NewTCPDestination(v2net.IPAddress([]byte{10, 0, 0, 1}, 80))
 	assert.Bool(rule.Apply(dest)).IsTrue()
 }
+
+func TestPortNotMatching(t *testing.T) {
+	assert := unit.Assert(t)
+
+	rawJson := `{
+    "type": "field",
+    "port": "80-100",
+    "tag": "test"
+  }`
+	rule := parseRule([]byte(rawJson))
+	dest := v2net.NewTCPDestination(v2net.IPAddress([]byte{10, 0, 0, 1}, 79))
+	assert.Bool(rule.Apply(dest)).IsFalse()
+}
+
+func TestDomainNotMatching(t *testing.T) {
+	assert := unit.Assert(t)
+
+	rawJson := `{
+    "type": "field",
+    "domain": "google.com",
+    "tag": "test"
+  }`
+	rule := parseRule([]byte(rawJson))
+	dest := v2net.NewTCPDestination(v2net.IPAddress([]byte{10, 0, 0, 1}, 79))
+	assert.Bool(rule.Apply(dest)).IsFalse()
+}
