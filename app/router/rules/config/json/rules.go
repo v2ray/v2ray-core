@@ -10,9 +10,8 @@ type Rule struct {
 	OutboundTag string `json:"outboundTag"`
 }
 
-func (this *Rule) Tag() *config.DetourTag {
-	detourTag := config.DetourTag(this.OutboundTag)
-	return &detourTag
+func (this *Rule) Tag() config.DetourTag {
+	return config.DetourTag(this.OutboundTag)
 }
 
 func (this *Rule) Apply(dest v2net.Destination) bool {

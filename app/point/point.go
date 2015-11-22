@@ -2,6 +2,7 @@ package point
 
 import (
 	"github.com/v2ray/v2ray-core/app/point/config"
+	"github.com/v2ray/v2ray-core/app/router"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
@@ -11,10 +12,12 @@ import (
 
 // Point is an single server in V2Ray system.
 type Point struct {
-	port uint16
-	ich  connhandler.InboundConnectionHandler
-	och  connhandler.OutboundConnectionHandler
-	idh  []*InboundDetourHandler
+	port   uint16
+	ich    connhandler.InboundConnectionHandler
+	och    connhandler.OutboundConnectionHandler
+	idh    []*InboundDetourHandler
+	odh    map[config.DetourTag]connhandler.OutboundConnectionHandler
+	router router.Router
 }
 
 // NewPoint returns a new Point server based on given configuration.
@@ -65,6 +68,34 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 		}
 	}
 
+	outboundDetours := pConfig.OutboundDetours()
+	if len(outboundDetours) > 0 {
+		vpoint.odh = make(map[config.DetourTag]connhandler.OutboundConnectionHandler)
+		for _, detourConfig := range outboundDetours {
+			detourFactory := connhandler.GetOutboundConnectionHandlerFactory(detourConfig.Protocol())
+			if detourFactory == nil {
+				log.Error("Unknown detour outbound connection handler factory %s", detourConfig.Protocol())
+				return nil, config.BadConfiguration
+			}
+			detourHandler, err := detourFactory.Create(detourConfig.Settings())
+			if err != nil {
+				log.Error("Failed to create detour outbound connection handler: %v", err)
+				return nil, err
+			}
+			vpoint.odh[detourConfig.Tag()] = detourHandler
+		}
+	}
+
+	routerConfig := pConfig.RouterConfig()
+	if routerConfig != nil {
+		r, err := router.CreateRouter(routerConfig.Strategy(), routerConfig.Settings())
+		if err != nil {
+			log.Error("Failed to create router: %v", err)
+			return nil, config.BadConfiguration
+		}
+		vpoint.router = r
+	}
+
 	return vpoint, nil
 }
 
@@ -100,6 +131,19 @@ func (vp *Point) Start() error {
 
 func (p *Point) DispatchToOutbound(packet v2net.Packet) ray.InboundRay {
 	direct := ray.NewRay()
+	dest := packet.Destination()
+
+	if p.router != nil {
+		tag, err := p.router.TakeDetour(dest)
+		if err == nil {
+			handler, found := p.odh[tag]
+			if found {
+				go handler.Dispatch(packet, direct)
+				return direct
+			}
+		}
+	}
+
 	go p.och.Dispatch(packet, direct)
 	return direct
 }

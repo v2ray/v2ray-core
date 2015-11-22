@@ -11,21 +11,23 @@ import (
 )
 
 var (
-	InvalidRule = errors.New("Invalid Rule")
-	EmptyTag    = pointconfig.DetourTag("")
+	InvalidRule      = errors.New("Invalid Rule")
+	NoRuleApplicable = errors.New("No rule applicable")
+
+	EmptyTag = pointconfig.DetourTag("")
 )
 
 type Router struct {
 	rules []config.Rule
 }
 
-func (this *Router) TakeDetour(dest v2net.Destination) (*pointconfig.DetourTag, error) {
+func (this *Router) TakeDetour(dest v2net.Destination) (pointconfig.DetourTag, error) {
 	for _, rule := range this.rules {
 		if rule.Apply(dest) {
 			return rule.Tag(), nil
 		}
 	}
-	return &EmptyTag, nil
+	return EmptyTag, NoRuleApplicable
 }
 
 type RouterFactory struct {

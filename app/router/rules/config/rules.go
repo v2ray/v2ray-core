@@ -6,6 +6,6 @@ import (
 )
 
 type Rule interface {
-	Tag() *config.DetourTag
+	Tag() config.DetourTag
 	Apply(dest v2net.Destination) bool
 }
