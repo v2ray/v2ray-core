@@ -2,6 +2,8 @@ package json
 
 import (
 	"encoding/json"
+
+	"github.com/v2ray/v2ray-core/common/log"
 )
 
 type RouterConfig struct {
@@ -14,5 +16,11 @@ func (this *RouterConfig) Strategy() string {
 }
 
 func (this *RouterConfig) Settings() interface{} {
-	return CreateRouterConfig(this.Strategy())
+	settings := CreateRouterConfig(this.Strategy())
+	err := json.Unmarshal(this.SettingsValue, settings)
+	if err != nil {
+		log.Error("Failed to load router settings: %v", err)
+		return nil
+	}
+	return settings
 }

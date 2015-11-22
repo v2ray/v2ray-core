@@ -1,4 +1,4 @@
-package rules
+package config
 
 import (
 	"github.com/v2ray/v2ray-core/app/point/config"
