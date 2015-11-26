@@ -1,6 +1,7 @@
 package json
 
 import (
+	"encoding/json"
 	"testing"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -8,11 +9,31 @@ import (
 	"github.com/v2ray/v2ray-core/testing/unit"
 )
 
+func TestStringListParsingList(t *testing.T) {
+	assert := unit.Assert(t)
+
+	rawJson := `["a", "b", "c", "d"]`
+	var strList StringList
+	err := json.Unmarshal([]byte(rawJson), &strList)
+	assert.Error(err).IsNil()
+	assert.Int(strList.Len()).Equals(4)
+}
+
+func TestStringListParsingString(t *testing.T) {
+	assert := unit.Assert(t)
+
+	rawJson := `"abcd"`
+	var strList StringList
+	err := json.Unmarshal([]byte(rawJson), &strList)
+	assert.Error(err).IsNil()
+	assert.Int(strList.Len()).Equals(1)
+}
+
 func TestDomainMatching(t *testing.T) {
 	assert := unit.Assert(t)
 
 	rule := &FieldRule{
-		Domain: "v2ray.com",
+		Domain: NewStringList("v2ray.com"),
 	}
 	dest := v2net.NewTCPDestination(v2net.DomainAddress("www.v2ray.com", 80))
 	assert.Bool(rule.Apply(dest)).IsTrue()
@@ -62,10 +83,23 @@ func TestDomainNotMatching(t *testing.T) {
 
 	rawJson := `{
     "type": "field",
-    "domain": "google.com",
+    "domain": ["google.com", "v2ray.com"],
     "tag": "test"
   }`
 	rule := parseRule([]byte(rawJson))
-	dest := v2net.NewTCPDestination(v2net.IPAddress([]byte{10, 0, 0, 1}, 79))
+	dest := v2net.NewTCPDestination(v2net.IPAddress([]byte{10, 0, 0, 1}, 80))
+	assert.Bool(rule.Apply(dest)).IsFalse()
+}
+
+func TestDomainNotMatchingDomain(t *testing.T) {
+	assert := unit.Assert(t)
+
+	rawJson := `{
+    "type": "field",
+    "domain": ["google.com", "v2ray.com"],
+    "tag": "test"
+  }`
+	rule := parseRule([]byte(rawJson))
+	dest := v2net.NewTCPDestination(v2net.DomainAddress("baidu.com", 80))
 	assert.Bool(rule.Apply(dest)).IsFalse()
 }
