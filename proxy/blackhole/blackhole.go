@@ -16,7 +16,7 @@ func NewBlackHole() *BlackHole {
 	return &BlackHole{}
 }
 
-func (bh *BlackHole) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {
+func (this *BlackHole) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {
 	if chunk := firstPacket.Chunk(); chunk != nil {
 		chunk.Release()
 	}
@@ -31,7 +31,7 @@ func (bh *BlackHole) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) err
 type BlackHoleFactory struct {
 }
 
-func (factory BlackHoleFactory) Create(config interface{}) (connhandler.OutboundConnectionHandler, error) {
+func (this BlackHoleFactory) Create(config interface{}) (connhandler.OutboundConnectionHandler, error) {
 	return NewBlackHole(), nil
 }
 

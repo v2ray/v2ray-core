@@ -101,25 +101,25 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 
 // Start starts the Point server, and return any error during the process.
 // In the case of any errors, the state of the server is unpredicatable.
-func (vp *Point) Start() error {
-	if vp.port <= 0 {
-		log.Error("Invalid port %d", vp.port)
+func (this *Point) Start() error {
+	if this.port <= 0 {
+		log.Error("Invalid port %d", this.port)
 		return config.BadConfiguration
 	}
 
 	err := retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
-		err := vp.ich.Listen(vp.port)
+		err := this.ich.Listen(this.port)
 		if err != nil {
 			return err
 		}
-		log.Warning("Point server started on port %d", vp.port)
+		log.Warning("Point server started on port %d", this.port)
 		return nil
 	})
 	if err != nil {
 		return err
 	}
 
-	for _, detourHandler := range vp.idh {
+	for _, detourHandler := range this.idh {
 		err := detourHandler.Start()
 		if err != nil {
 			return err
@@ -129,14 +129,14 @@ func (vp *Point) Start() error {
 	return nil
 }
 
-func (p *Point) DispatchToOutbound(packet v2net.Packet) ray.InboundRay {
+func (this *Point) DispatchToOutbound(packet v2net.Packet) ray.InboundRay {
 	direct := ray.NewRay()
 	dest := packet.Destination()
 
-	if p.router != nil {
-		tag, err := p.router.TakeDetour(dest)
+	if this.router != nil {
+		tag, err := this.router.TakeDetour(dest)
 		if err == nil {
-			handler, found := p.odh[tag]
+			handler, found := this.odh[tag]
 			if found {
 				go handler.Dispatch(packet, direct)
 				return direct
@@ -144,6 +144,6 @@ func (p *Point) DispatchToOutbound(packet v2net.Packet) ray.InboundRay {
 		}
 	}
 
-	go p.och.Dispatch(packet, direct)
+	go this.och.Dispatch(packet, direct)
 	return direct
 }
