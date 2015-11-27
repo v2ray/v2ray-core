@@ -4,7 +4,6 @@ import (
 	"net"
 	"sync"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/transport/ray"
@@ -17,7 +16,7 @@ func NewFreedomConnection() *FreedomConnection {
 	return &FreedomConnection{}
 }
 
-func (vconn *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {
+func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {
 	conn, err := net.Dial(firstPacket.Destination().Network(), firstPacket.Destination().Address().String())
 	log.Info("Freedom: Opening connection to %s", firstPacket.Destination().String())
 	if err != nil {
@@ -40,10 +39,32 @@ func (vconn *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbo
 	if !firstPacket.MoreChunks() {
 		writeMutex.Unlock()
 	} else {
-		go dumpInput(conn, input, &writeMutex)
+		go func() {
+			v2net.ChanToWriter(conn, input)
+			writeMutex.Unlock()
+		}()
 	}
 
-	go dumpOutput(conn, output, &readMutex, firstPacket.Destination().IsUDP())
+	go func() {
+		defer readMutex.Unlock()
+		defer close(output)
+
+		response, err := v2net.ReadFrom(conn, nil)
+		log.Info("Freedom receives %d bytes from %s", response.Len(), conn.RemoteAddr().String())
+		if response.Len() > 0 {
+			output <- response
+		} else {
+			response.Release()
+		}
+		if err != nil {
+			return
+		}
+		if firstPacket.Destination().IsUDP() {
+			return
+		}
+
+		v2net.ReaderToChan(output, conn)
+	}()
 
 	writeMutex.Lock()
 	if tcpConn, ok := conn.(*net.TCPConn); ok {
@@ -53,30 +74,4 @@ func (vconn *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbo
 	conn.Close()
 
 	return nil
-}
-
-func dumpInput(conn net.Conn, input <-chan *alloc.Buffer, finish *sync.Mutex) {
-	v2net.ChanToWriter(conn, input)
-	finish.Unlock()
-}
-
-func dumpOutput(conn net.Conn, output chan<- *alloc.Buffer, finish *sync.Mutex, udp bool) {
-	defer finish.Unlock()
-	defer close(output)
-
-	response, err := v2net.ReadFrom(conn, nil)
-	log.Info("Freedom receives %d bytes from %s", response.Len(), conn.RemoteAddr().String())
-	if response.Len() > 0 {
-		output <- response
-	} else {
-		response.Release()
-	}
-	if err != nil {
-		return
-	}
-	if udp {
-		return
-	}
-
-	v2net.ReaderToChan(output, conn)
 }

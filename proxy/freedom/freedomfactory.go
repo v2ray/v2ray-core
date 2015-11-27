@@ -7,7 +7,7 @@ import (
 type FreedomFactory struct {
 }
 
-func (factory FreedomFactory) Create(config interface{}) (connhandler.OutboundConnectionHandler, error) {
+func (this FreedomFactory) Create(config interface{}) (connhandler.OutboundConnectionHandler, error) {
 	return NewFreedomConnection(), nil
 }
 
