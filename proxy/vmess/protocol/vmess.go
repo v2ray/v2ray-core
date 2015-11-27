@@ -44,11 +44,11 @@ type VMessRequest struct {
 }
 
 // Destination is the final destination of this request.
-func (request *VMessRequest) Destination() v2net.Destination {
-	if request.Command == CmdTCP {
-		return v2net.NewTCPDestination(request.Address)
+func (this *VMessRequest) Destination() v2net.Destination {
+	if this.Command == CmdTCP {
+		return v2net.NewTCPDestination(this.Address)
 	} else {
-		return v2net.NewUDPDestination(request.Address)
+		return v2net.NewUDPDestination(this.Address)
 	}
 }
 
@@ -65,7 +65,7 @@ func NewVMessRequestReader(vUserSet user.UserSet) *VMessRequestReader {
 }
 
 // Read reads a VMessRequest from a byte stream.
-func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
+func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	buffer := alloc.NewSmallBuffer()
 
 	nBytes, err := v2net.ReadAllBytes(reader, buffer.Value[:config.IDBytesLen])
@@ -73,7 +73,7 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 		return nil, err
 	}
 
-	userObj, timeSec, valid := r.vUserSet.GetUser(buffer.Value[:nBytes])
+	userObj, timeSec, valid := this.vUserSet.GetUser(buffer.Value[:nBytes])
 	if !valid {
 		return nil, proxyerrors.InvalidAuthentication
 	}
@@ -155,35 +155,35 @@ func (r *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 }
 
 // ToBytes returns a VMessRequest in the form of byte array.
-func (request *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 user.RandomInt64InRange, buffer *alloc.Buffer) (*alloc.Buffer, error) {
+func (this *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 user.RandomInt64InRange, buffer *alloc.Buffer) (*alloc.Buffer, error) {
 	if buffer == nil {
 		buffer = alloc.NewSmallBuffer().Clear()
 	}
 
 	counter := randomRangeInt64(time.Now().Unix(), 30)
-	hash := idHash.Hash(request.User.ID().Bytes[:], counter)
+	hash := idHash.Hash(this.User.ID().Bytes[:], counter)
 
 	buffer.Append(hash)
 
 	encryptionBegin := buffer.Len()
 
-	buffer.AppendBytes(request.Version)
-	buffer.Append(request.RequestIV)
-	buffer.Append(request.RequestKey)
-	buffer.Append(request.ResponseHeader)
-	buffer.AppendBytes(request.Command)
-	buffer.Append(request.Address.PortBytes())
+	buffer.AppendBytes(this.Version)
+	buffer.Append(this.RequestIV)
+	buffer.Append(this.RequestKey)
+	buffer.Append(this.ResponseHeader)
+	buffer.AppendBytes(this.Command)
+	buffer.Append(this.Address.PortBytes())
 
 	switch {
-	case request.Address.IsIPv4():
+	case this.Address.IsIPv4():
 		buffer.AppendBytes(addrTypeIPv4)
-		buffer.Append(request.Address.IP())
-	case request.Address.IsIPv6():
+		buffer.Append(this.Address.IP())
+	case this.Address.IsIPv6():
 		buffer.AppendBytes(addrTypeIPv6)
-		buffer.Append(request.Address.IP())
-	case request.Address.IsDomain():
-		buffer.AppendBytes(addrTypeDomain, byte(len(request.Address.Domain())))
-		buffer.Append([]byte(request.Address.Domain()))
+		buffer.Append(this.Address.IP())
+	case this.Address.IsDomain():
+		buffer.AppendBytes(addrTypeDomain, byte(len(this.Address.Domain())))
+		buffer.Append([]byte(this.Address.Domain()))
 	}
 
 	encryptionEnd := buffer.Len()
@@ -195,7 +195,7 @@ func (request *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 u
 	buffer.AppendBytes(byte(fnvHash>>24), byte(fnvHash>>16), byte(fnvHash>>8), byte(fnvHash))
 	encryptionEnd += 4
 
-	aesStream, err := v2crypto.NewAesEncryptionStream(request.User.ID().CmdKey(), user.Int64Hash(counter))
+	aesStream, err := v2crypto.NewAesEncryptionStream(this.User.ID().CmdKey(), user.Int64Hash(counter))
 	if err != nil {
 		return nil, err
 	}

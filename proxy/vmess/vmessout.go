@@ -52,8 +52,8 @@ func pickVNext(serverList []*config.OutboundTarget) (v2net.Destination, config.U
 	return vNext.Destination, vNextUser
 }
 
-func (handler *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {
-	vNextList := handler.vNextList
+func (this *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {
+	vNextList := this.vNextList
 	vNextAddress, vNextUser := pickVNext(vNextList)
 
 	command := protocol.CmdTCP
@@ -187,7 +187,7 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 type VMessOutboundHandlerFactory struct {
 }
 
-func (factory *VMessOutboundHandlerFactory) Create(rawConfig interface{}) (connhandler.OutboundConnectionHandler, error) {
+func (this *VMessOutboundHandlerFactory) Create(rawConfig interface{}) (connhandler.OutboundConnectionHandler, error) {
 	vOutConfig := rawConfig.(config.Outbound)
 	return NewVMessOutboundHandler(vOutConfig.Targets()), nil
 }

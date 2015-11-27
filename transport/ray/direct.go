@@ -21,18 +21,18 @@ type directRay struct {
 	Output chan *alloc.Buffer
 }
 
-func (ray *directRay) OutboundInput() <-chan *alloc.Buffer {
-	return ray.Input
+func (this *directRay) OutboundInput() <-chan *alloc.Buffer {
+	return this.Input
 }
 
-func (ray *directRay) OutboundOutput() chan<- *alloc.Buffer {
-	return ray.Output
+func (this *directRay) OutboundOutput() chan<- *alloc.Buffer {
+	return this.Output
 }
 
-func (ray *directRay) InboundInput() chan<- *alloc.Buffer {
-	return ray.Input
+func (this *directRay) InboundInput() chan<- *alloc.Buffer {
+	return this.Input
 }
 
-func (ray *directRay) InboundOutput() <-chan *alloc.Buffer {
-	return ray.Output
+func (this *directRay) InboundOutput() <-chan *alloc.Buffer {
+	return this.Output
 }

@@ -31,7 +31,7 @@ func NewVMessInboundHandler(dispatcher app.PacketDispatcher, clients user.UserSe
 	}
 }
 
-func (handler *VMessInboundHandler) Listen(port uint16) error {
+func (this *VMessInboundHandler) Listen(port uint16) error {
 	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   []byte{0, 0, 0, 0},
 		Port: int(port),
@@ -41,20 +41,20 @@ func (handler *VMessInboundHandler) Listen(port uint16) error {
 		log.Error("Unable to listen tcp port %d: %v", port, err)
 		return err
 	}
-	handler.accepting = true
-	go handler.AcceptConnections(listener)
+	this.accepting = true
+	go this.AcceptConnections(listener)
 	return nil
 }
 
-func (handler *VMessInboundHandler) AcceptConnections(listener *net.TCPListener) error {
-	for handler.accepting {
+func (this *VMessInboundHandler) AcceptConnections(listener *net.TCPListener) error {
+	for this.accepting {
 		retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
 			connection, err := listener.AcceptTCP()
 			if err != nil {
 				log.Error("Failed to accpet connection: %s", err.Error())
 				return err
 			}
-			go handler.HandleConnection(connection)
+			go this.HandleConnection(connection)
 			return nil
 		})
 
@@ -62,11 +62,11 @@ func (handler *VMessInboundHandler) AcceptConnections(listener *net.TCPListener)
 	return nil
 }
 
-func (handler *VMessInboundHandler) HandleConnection(connection *net.TCPConn) error {
+func (this *VMessInboundHandler) HandleConnection(connection *net.TCPConn) error {
 	defer connection.Close()
 
 	connReader := v2net.NewTimeOutReader(16, connection)
-	requestReader := protocol.NewVMessRequestReader(handler.clients)
+	requestReader := protocol.NewVMessRequestReader(this.clients)
 
 	request, err := requestReader.Read(connReader)
 	if err != nil {
@@ -77,7 +77,7 @@ func (handler *VMessInboundHandler) HandleConnection(connection *net.TCPConn) er
 	log.Access(connection.RemoteAddr().String(), request.Address.String(), log.AccessAccepted, "")
 	log.Debug("VMessIn: Received request for %s", request.Address.String())
 
-	ray := handler.dispatcher.DispatchToOutbound(v2net.NewPacket(request.Destination(), nil, true))
+	ray := this.dispatcher.DispatchToOutbound(v2net.NewPacket(request.Destination(), nil, true))
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 	var readFinish, writeFinish sync.Mutex
@@ -139,7 +139,7 @@ func handleOutput(request *protocol.VMessRequest, writer io.Writer, output <-cha
 type VMessInboundHandlerFactory struct {
 }
 
-func (factory *VMessInboundHandlerFactory) Create(dispatcher app.PacketDispatcher, rawConfig interface{}) (connhandler.InboundConnectionHandler, error) {
+func (this *VMessInboundHandlerFactory) Create(dispatcher app.PacketDispatcher, rawConfig interface{}) (connhandler.InboundConnectionHandler, error) {
 	config := rawConfig.(config.Inbound)
 
 	allowedClients := user.NewTimedUserSet()

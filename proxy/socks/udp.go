@@ -11,7 +11,7 @@ import (
 
 var udpAddress v2net.Address
 
-func (server *SocksServer) ListenUDP(port uint16) error {
+func (this *SocksServer) ListenUDP(port uint16) error {
 	addr := &net.UDPAddr{
 		IP:   net.IP{0, 0, 0, 0},
 		Port: int(port),
@@ -22,17 +22,17 @@ func (server *SocksServer) ListenUDP(port uint16) error {
 		log.Error("Socks failed to listen UDP on port %d: %v", port, err)
 		return err
 	}
-	udpAddress = v2net.IPAddress(server.config.IP(), port)
+	udpAddress = v2net.IPAddress(this.config.IP(), port)
 
-	go server.AcceptPackets(conn)
+	go this.AcceptPackets(conn)
 	return nil
 }
 
-func (server *SocksServer) getUDPAddr() v2net.Address {
+func (this *SocksServer) getUDPAddr() v2net.Address {
 	return udpAddress
 }
 
-func (server *SocksServer) AcceptPackets(conn *net.UDPConn) error {
+func (this *SocksServer) AcceptPackets(conn *net.UDPConn) error {
 	for {
 		buffer := alloc.NewBuffer()
 		nBytes, addr, err := conn.ReadFromUDP(buffer.Value)
@@ -60,12 +60,12 @@ func (server *SocksServer) AcceptPackets(conn *net.UDPConn) error {
 
 		udpPacket := v2net.NewPacket(request.Destination(), request.Data, false)
 		log.Info("Send packet to %s with %d bytes", udpPacket.Destination().String(), request.Data.Len())
-		go server.handlePacket(conn, udpPacket, addr, request.Address)
+		go this.handlePacket(conn, udpPacket, addr, request.Address)
 	}
 }
 
-func (server *SocksServer) handlePacket(conn *net.UDPConn, packet v2net.Packet, clientAddr *net.UDPAddr, targetAddr v2net.Address) {
-	ray := server.dispatcher.DispatchToOutbound(packet)
+func (this *SocksServer) handlePacket(conn *net.UDPConn, packet v2net.Packet, clientAddr *net.UDPAddr, targetAddr v2net.Address) {
+	ray := this.dispatcher.DispatchToOutbound(packet)
 	close(ray.InboundInput())
 
 	for data := range ray.InboundOutput() {
