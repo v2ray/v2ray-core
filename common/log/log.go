@@ -2,10 +2,8 @@ package log
 
 import (
 	"fmt"
-	"io"
+	"log"
 	"os"
-
-	"github.com/v2ray/v2ray-core/common/platform"
 )
 
 const (
@@ -27,7 +25,7 @@ func (this *noOpLogger) WriteLog(prefix, format string, v ...interface{}) {
 }
 
 type streamLogger struct {
-	writer io.Writer
+	logger *log.Logger
 }
 
 func (this *streamLogger) WriteLog(prefix, format string, v ...interface{}) {
@@ -37,13 +35,13 @@ func (this *streamLogger) WriteLog(prefix, format string, v ...interface{}) {
 	} else {
 		data = fmt.Sprintf(format, v...)
 	}
-	this.writer.Write([]byte(prefix + data + platform.LineSeparator()))
+	this.logger.Println(prefix + data)
 }
 
 var (
 	noOpLoggerInstance   logger = &noOpLogger{}
 	streamLoggerInstance logger = &streamLogger{
-		writer: os.Stdout,
+		logger: log.New(os.Stdout, "", log.Ldate|log.Ltime),
 	}
 
 	debugLogger   = noOpLoggerInstance

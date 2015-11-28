@@ -2,6 +2,7 @@ package log
 
 import (
 	"bytes"
+	"log"
 	"testing"
 
 	"github.com/v2ray/v2ray-core/testing/unit"
@@ -24,7 +25,7 @@ func TestStreamLogger(t *testing.T) {
 
 	buffer := bytes.NewBuffer(make([]byte, 0, 1024))
 	logger := &streamLogger{
-		writer: buffer,
+		logger: log.New(buffer, "", 0),
 	}
 	logger.WriteLog("TestPrefix: ", "Test %s Format", "Stream Logger")
 	assert.Bytes(buffer.Bytes()).Equals([]byte("TestPrefix: Test Stream Logger Format\n"))
