@@ -15,7 +15,7 @@ var (
 )
 
 func Version() string {
-  return version
+	return version
 }
 
 func PrintVersion() {
