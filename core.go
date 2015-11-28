@@ -14,6 +14,10 @@ var (
 	intro    = "A stable and unbreakable connection for everyone."
 )
 
+func Version() string {
+  return version
+}
+
 func PrintVersion() {
 	fmt.Printf("V2Ray %s (%s) %s%s", version, codename, build, platform.LineSeparator())
 	fmt.Printf("%s%s", intro, platform.LineSeparator())
