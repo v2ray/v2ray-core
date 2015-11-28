@@ -22,7 +22,7 @@ type accessLogger interface {
 type noOpAccessLogger struct {
 }
 
-func (logger *noOpAccessLogger) Log(from, to string, status AccessStatus, reason string) {
+func (this *noOpAccessLogger) Log(from, to string, status AccessStatus, reason string) {
 	// Swallow
 }
 
@@ -39,8 +39,8 @@ type fileAccessLogger struct {
 	file   *os.File
 }
 
-func (logger *fileAccessLogger) close() {
-	logger.file.Close()
+func (this *fileAccessLogger) close() {
+	this.file.Close()
 }
 
 func (logger *fileAccessLogger) Log(from, to string, status AccessStatus, reason string) {
@@ -56,9 +56,9 @@ func (logger *fileAccessLogger) Log(from, to string, status AccessStatus, reason
 	}
 }
 
-func (logger *fileAccessLogger) Run() {
-	for entry := range logger.queue {
-		logger.logger.Println(entry.From + " " + string(entry.Status) + " " + entry.To + " " + entry.Reason)
+func (this *fileAccessLogger) Run() {
+	for entry := range this.queue {
+		this.logger.Println(entry.From + " " + string(entry.Status) + " " + entry.To + " " + entry.Reason)
 	}
 }
 

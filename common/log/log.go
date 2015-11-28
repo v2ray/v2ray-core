@@ -22,7 +22,7 @@ type logger interface {
 type noOpLogger struct {
 }
 
-func (l *noOpLogger) WriteLog(prefix, format string, v ...interface{}) {
+func (this *noOpLogger) WriteLog(prefix, format string, v ...interface{}) {
 	// Swallow
 }
 
@@ -30,14 +30,14 @@ type streamLogger struct {
 	writer io.Writer
 }
 
-func (l *streamLogger) WriteLog(prefix, format string, v ...interface{}) {
+func (this *streamLogger) WriteLog(prefix, format string, v ...interface{}) {
 	var data string
 	if v == nil || len(v) == 0 {
 		data = format
 	} else {
 		data = fmt.Sprintf(format, v...)
 	}
-	l.writer.Write([]byte(prefix + data + platform.LineSeparator()))
+	this.writer.Write([]byte(prefix + data + platform.LineSeparator()))
 }
 
 var (
