@@ -1,7 +1,6 @@
 package vmess
 
 import (
-	"bytes"
 	"crypto/md5"
 	"crypto/rand"
 	mrand "math/rand"
@@ -150,6 +149,11 @@ func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2
 	return
 }
 
+func headerMatch(request *protocol.VMessRequest, responseHeader []byte) bool {
+	return ((request.ResponseHeader[0] | request.ResponseHeader[1]) == responseHeader[0]) &&
+		((request.ResponseHeader[2] | request.ResponseHeader[3]) == responseHeader[1])
+}
+
 func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<- *alloc.Buffer, finish *sync.Mutex, isUDP bool) {
 	defer finish.Unlock()
 	defer close(output)
@@ -168,7 +172,7 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 		log.Error("VMessOut: Failed to read VMess response (%d bytes): %v", buffer.Len(), err)
 		return
 	}
-	if buffer.Len() < 4 || !bytes.Equal(buffer.Value[:4], request.ResponseHeader[:]) {
+	if buffer.Len() < 4 || !headerMatch(request, buffer.Value[:2]) {
 		log.Warning("VMessOut: unexepcted response header. The connection is probably hijacked.")
 		return
 	}
