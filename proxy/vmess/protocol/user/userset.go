@@ -86,7 +86,7 @@ func (us *TimedUserSet) AddUser(user config.User) error {
 	return nil
 }
 
-func (us TimedUserSet) GetUser(userHash []byte) (config.User, int64, bool) {
+func (us *TimedUserSet) GetUser(userHash []byte) (config.User, int64, bool) {
 	defer us.access.RUnlock()
 	us.access.RLock()
 	pair, found := us.userHash[string(userHash)]
