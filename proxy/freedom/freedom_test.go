@@ -9,8 +9,6 @@ import (
 
 	"golang.org/x/net/proxy"
 
-	"github.com/v2ray/v2ray-core/app/point"
-	"github.com/v2ray/v2ray-core/app/point/config/testing/mocks"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
@@ -18,6 +16,8 @@ import (
 	_ "github.com/v2ray/v2ray-core/proxy/socks"
 	"github.com/v2ray/v2ray-core/proxy/socks/config/json"
 	proxymocks "github.com/v2ray/v2ray-core/proxy/testing/mocks"
+	"github.com/v2ray/v2ray-core/shell/point"
+	"github.com/v2ray/v2ray-core/shell/point/config/testing/mocks"
 	"github.com/v2ray/v2ray-core/testing/servers/tcp"
 	"github.com/v2ray/v2ray-core/testing/servers/udp"
 	"github.com/v2ray/v2ray-core/testing/unit"

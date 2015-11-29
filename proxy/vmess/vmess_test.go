@@ -4,14 +4,14 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/v2ray/v2ray-core/app/point"
-	"github.com/v2ray/v2ray-core/app/point/config/testing/mocks"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	proxymocks "github.com/v2ray/v2ray-core/proxy/testing/mocks"
 	"github.com/v2ray/v2ray-core/proxy/vmess/config"
 	"github.com/v2ray/v2ray-core/proxy/vmess/config/json"
+	"github.com/v2ray/v2ray-core/shell/point"
+	"github.com/v2ray/v2ray-core/shell/point/config/testing/mocks"
 	"github.com/v2ray/v2ray-core/testing/unit"
 )
 

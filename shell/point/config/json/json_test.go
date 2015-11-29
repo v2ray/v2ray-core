@@ -4,11 +4,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/v2ray/v2ray-core/app/point/config/json"
 	_ "github.com/v2ray/v2ray-core/proxy/dokodemo/config/json"
 	_ "github.com/v2ray/v2ray-core/proxy/freedom/config/json"
 	_ "github.com/v2ray/v2ray-core/proxy/socks/config/json"
 	_ "github.com/v2ray/v2ray-core/proxy/vmess/config/json"
+	"github.com/v2ray/v2ray-core/shell/point/config/json"
 
 	"github.com/v2ray/v2ray-core/testing/unit"
 )

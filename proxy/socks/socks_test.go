@@ -9,12 +9,12 @@ import (
 
 	"golang.org/x/net/proxy"
 
-	"github.com/v2ray/v2ray-core/app/point"
-	"github.com/v2ray/v2ray-core/app/point/config/testing/mocks"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	"github.com/v2ray/v2ray-core/proxy/socks/config/json"
 	proxymocks "github.com/v2ray/v2ray-core/proxy/testing/mocks"
+	"github.com/v2ray/v2ray-core/shell/point"
+	"github.com/v2ray/v2ray-core/shell/point/config/testing/mocks"
 	"github.com/v2ray/v2ray-core/testing/unit"
 )
 

@@ -5,11 +5,11 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/v2ray/v2ray-core/app/point/config"
 	routerconfig "github.com/v2ray/v2ray-core/app/router/config"
 	routerconfigjson "github.com/v2ray/v2ray-core/app/router/config/json"
 	"github.com/v2ray/v2ray-core/common/log"
 	proxyconfig "github.com/v2ray/v2ray-core/proxy/common/config"
+	"github.com/v2ray/v2ray-core/shell/point/config"
 )
 
 // Config is the config for Point server.

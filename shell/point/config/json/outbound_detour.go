@@ -3,8 +3,8 @@ package json
 import (
 	"encoding/json"
 
-	"github.com/v2ray/v2ray-core/app/point/config"
 	proxyconfig "github.com/v2ray/v2ray-core/proxy/common/config"
+	"github.com/v2ray/v2ray-core/shell/point/config"
 )
 
 type OutboundDetourConfig struct {

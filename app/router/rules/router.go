@@ -3,11 +3,11 @@ package rules
 import (
 	"errors"
 
-	pointconfig "github.com/v2ray/v2ray-core/app/point/config"
 	"github.com/v2ray/v2ray-core/app/router"
 	"github.com/v2ray/v2ray-core/app/router/rules/config"
 	"github.com/v2ray/v2ray-core/app/router/rules/config/json"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	pointconfig "github.com/v2ray/v2ray-core/shell/point/config"
 )
 
 var (
