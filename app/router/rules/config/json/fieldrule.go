@@ -59,6 +59,7 @@ func (this *FieldRule) Apply(dest v2net.Destination) bool {
 		for _, domain := range *this.Domain {
 			if strings.Contains(address.Domain(), domain) {
 				foundMatch = true
+				break
 			}
 		}
 		if !foundMatch {
@@ -74,6 +75,7 @@ func (this *FieldRule) Apply(dest v2net.Destination) bool {
 		for _, ipnet := range this.IP {
 			if ipnet.Contains(address.IP()) {
 				foundMatch = true
+				break
 			}
 		}
 		if !foundMatch {

@@ -65,6 +65,19 @@ func TestIPMatching(t *testing.T) {
 	assert.Bool(rule.Apply(dest)).IsTrue()
 }
 
+func TestIPListMatching(t *testing.T) {
+	assert := unit.Assert(t)
+
+	rawJson := `{
+    "type": "field",
+    "ip": ["10.0.0.0/8", "192.168.0.0/16"],
+    "tag": "test"
+  }`
+	rule := parseRule([]byte(rawJson))
+	dest := v2net.NewTCPDestination(v2net.IPAddress([]byte{192, 168, 1, 1}, 80))
+	assert.Bool(rule.Apply(dest)).IsTrue()
+}
+
 func TestPortNotMatching(t *testing.T) {
 	assert := unit.Assert(t)
 
