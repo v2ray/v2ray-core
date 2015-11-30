@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/shell/point/config"
 )
 
 var (
@@ -12,7 +11,7 @@ var (
 )
 
 type Router interface {
-	TakeDetour(v2net.Destination) (config.DetourTag, error)
+	TakeDetour(v2net.Destination) (string, error)
 }
 
 type RouterFactory interface {

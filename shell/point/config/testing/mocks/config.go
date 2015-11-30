@@ -47,10 +47,10 @@ func (this *InboundDetourConfig) PortRange() v2net.PortRange {
 
 type OutboundDetourConfig struct {
 	ConnectionConfig
-	TagValue config.DetourTag
+	TagValue string
 }
 
-func (this *OutboundDetourConfig) Tag() config.DetourTag {
+func (this *OutboundDetourConfig) Tag() string {
 	return this.TagValue
 }
 

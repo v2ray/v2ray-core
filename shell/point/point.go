@@ -16,7 +16,7 @@ type Point struct {
 	ich    connhandler.InboundConnectionHandler
 	och    connhandler.OutboundConnectionHandler
 	idh    []*InboundDetourHandler
-	odh    map[config.DetourTag]connhandler.OutboundConnectionHandler
+	odh    map[string]connhandler.OutboundConnectionHandler
 	router router.Router
 }
 
@@ -70,7 +70,7 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 
 	outboundDetours := pConfig.OutboundDetours()
 	if len(outboundDetours) > 0 {
-		vpoint.odh = make(map[config.DetourTag]connhandler.OutboundConnectionHandler)
+		vpoint.odh = make(map[string]connhandler.OutboundConnectionHandler)
 		for _, detourConfig := range outboundDetours {
 			detourFactory := connhandler.GetOutboundConnectionHandlerFactory(detourConfig.Protocol())
 			if detourFactory == nil {

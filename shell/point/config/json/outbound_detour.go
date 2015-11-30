@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	proxyconfig "github.com/v2ray/v2ray-core/proxy/common/config"
-	"github.com/v2ray/v2ray-core/shell/point/config"
 )
 
 type OutboundDetourConfig struct {
@@ -17,8 +16,8 @@ func (this *OutboundDetourConfig) Protocol() string {
 	return this.ProtocolValue
 }
 
-func (this *OutboundDetourConfig) Tag() config.DetourTag {
-	return config.DetourTag(this.TagValue)
+func (this *OutboundDetourConfig) Tag() string {
+	return this.TagValue
 }
 
 func (this *OutboundDetourConfig) Settings() interface{} {
