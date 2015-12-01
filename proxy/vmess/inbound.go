@@ -18,6 +18,7 @@ import (
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 )
 
+// Inbound connection handler that handles messages in VMess format.
 type VMessInboundHandler struct {
 	dispatcher app.PacketDispatcher
 	clients    user.UserSet
@@ -101,8 +102,8 @@ func (this *VMessInboundHandler) HandleConnection(connection *net.TCPConn) error
 
 	// Optimize for small response packet
 	buffer := alloc.NewLargeBuffer().Clear()
-	buffer.AppendBytes(request.ResponseHeader[0] | request.ResponseHeader[1])
-	buffer.AppendBytes(request.ResponseHeader[2] | request.ResponseHeader[3])
+	buffer.AppendBytes(request.ResponseHeader[0] ^ request.ResponseHeader[1])
+	buffer.AppendBytes(request.ResponseHeader[2] ^ request.ResponseHeader[3])
 	buffer.AppendBytes(byte(0), byte(0))
 
 	if data, open := <-output; open {

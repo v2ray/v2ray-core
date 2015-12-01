@@ -150,8 +150,8 @@ func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2
 }
 
 func headerMatch(request *protocol.VMessRequest, responseHeader []byte) bool {
-	return ((request.ResponseHeader[0] | request.ResponseHeader[1]) == responseHeader[0]) &&
-		((request.ResponseHeader[2] | request.ResponseHeader[3]) == responseHeader[1])
+	return ((request.ResponseHeader[0] ^ request.ResponseHeader[1]) == responseHeader[0]) &&
+		((request.ResponseHeader[2] ^ request.ResponseHeader[3]) == responseHeader[1])
 }
 
 func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<- *alloc.Buffer, finish *sync.Mutex, isUDP bool) {
