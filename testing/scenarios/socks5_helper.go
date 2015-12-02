@@ -3,6 +3,9 @@ package scenarios
 import (
 	"net"
 
+	routerconfig "github.com/v2ray/v2ray-core/app/router/config/testing"
+	_ "github.com/v2ray/v2ray-core/app/router/rules"
+	rulesconfig "github.com/v2ray/v2ray-core/app/router/rules/config/testing"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	_ "github.com/v2ray/v2ray-core/proxy/freedom"
@@ -58,14 +61,14 @@ func socks5UDPRequest(address v2net.Address, payload []byte) []byte {
 	return request
 }
 
-func setUpV2Ray() (v2net.Port, error) {
+func setUpV2Ray(routing func(v2net.Destination) bool) (v2net.Port, v2net.Port, error) {
 	id1, err := config.NewID("ad937d9d-6e23-4a5a-ba23-bce5092a7c51")
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 	id2, err := config.NewID("93ccfc71-b136-4015-ac85-e037bd1ead9e")
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 	users := []*vmessjson.ConfigUser{
 		&vmessjson.ConfigUser{Id: id1},
@@ -88,14 +91,15 @@ func setUpV2Ray() (v2net.Port, error) {
 	}
 	pointB, err := point.NewPoint(&configB)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 	err = pointB.Start()
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
 	portA := v2nettesting.PickPort()
+	portA2 := v2nettesting.PickPort()
 	configA := mocks.Config{
 		PortValue: portA,
 		InboundConfigValue: &mocks.ConnectionConfig{
@@ -117,16 +121,52 @@ func setUpV2Ray() (v2net.Port, error) {
 				},
 			},
 		},
+		InboundDetoursValue: []*mocks.InboundDetourConfig{
+			&mocks.InboundDetourConfig{
+				PortRangeValue: &mocks.PortRange{
+					FromValue: portA2,
+					ToValue:   portA2,
+				},
+				ConnectionConfig: &mocks.ConnectionConfig{
+					ProtocolValue: "socks",
+					SettingsValue: &socksjson.SocksConfig{
+						AuthMethod: "noauth",
+						UDPEnabled: false,
+						HostIP:     socksjson.IPAddress(net.IPv4(127, 0, 0, 1)),
+					},
+				},
+			},
+		},
+		OutboundDetoursValue: []*mocks.OutboundDetourConfig{
+			&mocks.OutboundDetourConfig{
+				TagValue: "direct",
+				ConnectionConfig: &mocks.ConnectionConfig{
+					ProtocolValue: "freedom",
+					SettingsValue: nil,
+				},
+			},
+		},
+		RouterConfigValue: &routerconfig.RouterConfig{
+			StrategyValue: "rules",
+			SettingsValue: &rulesconfig.RouterRuleConfig{
+				RuleList: []*rulesconfig.TestRule{
+					&rulesconfig.TestRule{
+						TagValue: "direct",
+						Function: routing,
+					},
+				},
+			},
+		},
 	}
 
 	pointA, err := point.NewPoint(&configA)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 	err = pointA.Start()
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
-	return portA, nil
+	return portA, portA2, nil
 }

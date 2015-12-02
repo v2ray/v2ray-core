@@ -5,7 +5,6 @@ import (
 
 	"github.com/v2ray/v2ray-core/app/router"
 	"github.com/v2ray/v2ray-core/app/router/rules/config"
-	"github.com/v2ray/v2ray-core/app/router/rules/config/json"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
@@ -31,7 +30,7 @@ type RouterFactory struct {
 }
 
 func (this *RouterFactory) Create(rawConfig interface{}) (router.Router, error) {
-	config := rawConfig.(*json.RouterRuleConfig)
+	config := rawConfig.(config.RouterRuleConfig)
 	rules := config.Rules()
 	for _, rule := range rules {
 		if rule == nil {

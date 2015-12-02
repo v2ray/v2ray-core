@@ -12,6 +12,12 @@ import (
 	"github.com/v2ray/v2ray-core/testing/servers/udp"
 )
 
+var (
+	EmptyRouting = func(v2net.Destination) bool {
+		return false
+	}
+)
+
 func TestTCPConnection(t *testing.T) {
 	v2testing.Current(t)
 
@@ -28,7 +34,7 @@ func TestTCPConnection(t *testing.T) {
 	_, err := tcpServer.Start()
 	assert.Error(err).IsNil()
 
-	v2rayPort, err := setUpV2Ray()
+	v2rayPort, _, err := setUpV2Ray(EmptyRouting)
 	assert.Error(err).IsNil()
 
 	for i := 0; i < 100; i++ {
@@ -94,7 +100,7 @@ func TestTCPBind(t *testing.T) {
 	_, err := tcpServer.Start()
 	assert.Error(err).IsNil()
 
-	v2rayPort, err := setUpV2Ray()
+	v2rayPort, _, err := setUpV2Ray(EmptyRouting)
 	assert.Error(err).IsNil()
 
 	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
@@ -141,7 +147,7 @@ func TestUDPAssociate(t *testing.T) {
 	_, err := udpServer.Start()
 	assert.Error(err).IsNil()
 
-	v2rayPort, err := setUpV2Ray()
+	v2rayPort, _, err := setUpV2Ray(EmptyRouting)
 	assert.Error(err).IsNil()
 
 	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{

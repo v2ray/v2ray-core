@@ -2,6 +2,7 @@ package mocks
 
 import (
 	routerconfig "github.com/v2ray/v2ray-core/app/router/config"
+	routertestingconfig "github.com/v2ray/v2ray-core/app/router/config/testing"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/shell/point/config"
 )
@@ -37,7 +38,7 @@ func (this *PortRange) To() v2net.Port {
 }
 
 type InboundDetourConfig struct {
-	ConnectionConfig
+	*ConnectionConfig
 	PortRangeValue *PortRange
 }
 
@@ -46,7 +47,7 @@ func (this *InboundDetourConfig) PortRange() v2net.PortRange {
 }
 
 type OutboundDetourConfig struct {
-	ConnectionConfig
+	*ConnectionConfig
 	TagValue string
 }
 
@@ -61,7 +62,7 @@ func (config *LogConfig) AccessLog() string {
 type Config struct {
 	PortValue            v2net.Port
 	LogConfigValue       *LogConfig
-	RouterConfigValue    routerconfig.RouterConfig
+	RouterConfigValue    *routertestingconfig.RouterConfig
 	InboundConfigValue   *ConnectionConfig
 	OutboundConfigValue  *ConnectionConfig
 	InboundDetoursValue  []*InboundDetourConfig
@@ -73,19 +74,31 @@ func (config *Config) Port() v2net.Port {
 }
 
 func (config *Config) LogConfig() config.LogConfig {
+	if config.LogConfigValue == nil {
+		return nil
+	}
 	return config.LogConfigValue
 }
 
 func (this *Config) RouterConfig() routerconfig.RouterConfig {
+	if this.RouterConfigValue == nil {
+		return nil
+	}
 	return this.RouterConfigValue
 }
 
-func (config *Config) InboundConfig() config.ConnectionConfig {
-	return config.InboundConfigValue
+func (this *Config) InboundConfig() config.ConnectionConfig {
+	if this.InboundConfigValue == nil {
+		return nil
+	}
+	return this.InboundConfigValue
 }
 
-func (config *Config) OutboundConfig() config.ConnectionConfig {
-	return config.OutboundConfigValue
+func (this *Config) OutboundConfig() config.ConnectionConfig {
+	if this.OutboundConfigValue == nil {
+		return nil
+	}
+	return this.OutboundConfigValue
 }
 
 func (this *Config) InboundDetours() []config.InboundDetourConfig {

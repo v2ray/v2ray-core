@@ -46,8 +46,8 @@ var (
 
 	debugLogger   = noOpLoggerInstance
 	infoLogger    = noOpLoggerInstance
-	warningLogger = noOpLoggerInstance
-	errorLogger   = noOpLoggerInstance
+	warningLogger = streamLoggerInstance
+	errorLogger   = streamLoggerInstance
 )
 
 type LogLevel int
