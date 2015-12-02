@@ -28,7 +28,7 @@ func TestDefaultIPAddress(t *testing.T) {
 	v2testing.Current(t)
 
 	socksConfig := jsonconfig.CreateConfig("socks", config.TypeInbound).(*SocksConfig)
-	assert.String(socksConfig.IP().String()).Equals("127.0.0.1")
+	assert.StringLiteral(socksConfig.IP().String()).Equals("127.0.0.1")
 }
 
 func TestIPAddressParsing(t *testing.T) {
@@ -37,7 +37,7 @@ func TestIPAddressParsing(t *testing.T) {
 	var ipAddress IPAddress
 	err := json.Unmarshal([]byte("\"1.2.3.4\""), &ipAddress)
 	assert.Error(err).IsNil()
-	assert.String(net.IP(ipAddress).String()).Equals("1.2.3.4")
+	assert.StringLiteral(net.IP(ipAddress).String()).Equals("1.2.3.4")
 }
 
 func TestNoAuthConfig(t *testing.T) {
@@ -48,7 +48,7 @@ func TestNoAuthConfig(t *testing.T) {
 	assert.Error(err).IsNil()
 	assert.Bool(config.IsNoAuth()).IsTrue()
 	assert.Bool(config.IsPassword()).IsFalse()
-	assert.String(config.IP().String()).Equals("8.8.8.8")
+	assert.StringLiteral(config.IP().String()).Equals("8.8.8.8")
 	assert.Bool(config.UDPEnabled).IsFalse()
 }
 

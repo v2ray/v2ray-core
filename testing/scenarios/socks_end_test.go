@@ -72,7 +72,7 @@ func TestTCPConnection(t *testing.T) {
 		actualResponse := make([]byte, 1024)
 		nBytes, err = conn.Read(actualResponse)
 		assert.Error(err).IsNil()
-		assert.String(string(actualResponse[:nBytes])).Equals("Processed: Request to target server.Request to target server again.")
+		assert.StringLiteral(string(actualResponse[:nBytes])).Equals("Processed: Request to target server.Request to target server again.")
 
 		conn.Close()
 	}

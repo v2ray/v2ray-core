@@ -27,10 +27,10 @@ func TestClientSampleConfig(t *testing.T) {
 	assert.Pointer(pointConfig.InboundConfig()).IsNotNil()
 	assert.Pointer(pointConfig.OutboundConfig()).IsNotNil()
 
-	assert.String(pointConfig.InboundConfig().Protocol()).Equals("socks")
+	assert.StringLiteral(pointConfig.InboundConfig().Protocol()).Equals("socks")
 	assert.Pointer(pointConfig.InboundConfig().Settings()).IsNotNil()
 
-	assert.String(pointConfig.OutboundConfig().Protocol()).Equals("vmess")
+	assert.StringLiteral(pointConfig.OutboundConfig().Protocol()).Equals("vmess")
 	assert.Pointer(pointConfig.OutboundConfig().Settings()).IsNotNil()
 }
 
@@ -47,10 +47,10 @@ func TestServerSampleConfig(t *testing.T) {
 	assert.Pointer(pointConfig.InboundConfig()).IsNotNil()
 	assert.Pointer(pointConfig.OutboundConfig()).IsNotNil()
 
-	assert.String(pointConfig.InboundConfig().Protocol()).Equals("vmess")
+	assert.StringLiteral(pointConfig.InboundConfig().Protocol()).Equals("vmess")
 	assert.Pointer(pointConfig.InboundConfig().Settings()).IsNotNil()
 
-	assert.String(pointConfig.OutboundConfig().Protocol()).Equals("freedom")
+	assert.StringLiteral(pointConfig.OutboundConfig().Protocol()).Equals("freedom")
 	assert.Pointer(pointConfig.OutboundConfig().Settings()).IsNotNil()
 }
 
@@ -67,7 +67,7 @@ func TestDetourConfig(t *testing.T) {
 	assert.Int(len(detours)).Equals(1)
 
 	detour := detours[0]
-	assert.String(detour.Protocol()).Equals("dokodemo-door")
+	assert.StringLiteral(detour.Protocol()).Equals("dokodemo-door")
 	assert.Uint16(detour.PortRange().From().Value()).Equals(uint16(28394))
 	assert.Uint16(detour.PortRange().To().Value()).Equals(uint16(28394))
 	assert.Pointer(detour.Settings()).IsNotNil()

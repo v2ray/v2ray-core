@@ -22,7 +22,7 @@ func TestIPv4Address(t *testing.T) {
 	v2netassert.Address(addr).IsNotDomain()
 	assert.Bytes(addr.IP()).Equals(ip)
 	v2netassert.Port(addr.Port()).Equals(port)
-	assert.String(addr.String()).Equals("1.2.3.4:80")
+	assert.String(addr).Equals("1.2.3.4:80")
 }
 
 func TestIPv6Address(t *testing.T) {
@@ -42,7 +42,7 @@ func TestIPv6Address(t *testing.T) {
 	v2netassert.Address(addr).IsNotDomain()
 	assert.Bytes(addr.IP()).Equals(ip)
 	assert.Uint16(addr.Port().Value()).Equals(port.Value())
-	assert.String(addr.String()).Equals("[102:304:102:304:102:304:102:304]:443")
+	assert.String(addr).Equals("[102:304:102:304:102:304:102:304]:443")
 }
 
 func TestDomainAddress(t *testing.T) {
@@ -55,9 +55,9 @@ func TestDomainAddress(t *testing.T) {
 	v2netassert.Address(addr).IsDomain()
 	v2netassert.Address(addr).IsNotIPv6()
 	v2netassert.Address(addr).IsNotIPv4()
-	assert.String(addr.Domain()).Equals(domain)
+	assert.StringLiteral(addr.Domain()).Equals(domain)
 	assert.Uint16(addr.Port().Value()).Equals(port.Value())
-	assert.String(addr.String()).Equals("v2ray.com:443")
+	assert.String(addr).Equals("v2ray.com:443")
 }
 
 func TestNetIPv4Address(t *testing.T) {
@@ -67,5 +67,5 @@ func TestNetIPv4Address(t *testing.T) {
 	port := v2net.NewPort(80)
 	addr := v2net.IPAddress(ip, port.Value())
 	v2netassert.Address(addr).IsIPv4()
-	assert.String(addr.String()).Equals("1.2.3.4:80")
+	assert.String(addr).Equals("1.2.3.4:80")
 }

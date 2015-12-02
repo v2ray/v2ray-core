@@ -71,7 +71,7 @@ func TestSocksTcpConnect(t *testing.T) {
 
 	assert.Bytes([]byte(data2Send)).Equals(connOutput.Bytes())
 	assert.Bytes(dataReturned).Equals(connInput)
-	assert.String(targetServer).Equals(och.Destination.Address().String())
+	assert.StringLiteral(targetServer).Equals(och.Destination.Address().String())
 }
 
 func TestSocksTcpConnectWithUserPass(t *testing.T) {
@@ -129,7 +129,7 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 
 	assert.Bytes([]byte(data2Send)).Equals(connOutput.Bytes())
 	assert.Bytes(dataReturned).Equals(connInput)
-	assert.String(targetServer).Equals(och.Destination.Address().String())
+	assert.StringLiteral(targetServer).Equals(och.Destination.Address().String())
 }
 
 func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
@@ -277,5 +277,5 @@ func TestSocksUdpSend(t *testing.T) {
 	assert.Error(err).IsNil()
 	assert.Bytes(response[10:nBytes]).Equals(connInput)
 	assert.Bytes(data2Send).Equals(connOutput.Bytes())
-	assert.String(och.Destination.String()).Equals("udp:8.8.4.4:53")
+	assert.StringLiteral(och.Destination.String()).Equals("udp:8.8.4.4:53")
 }

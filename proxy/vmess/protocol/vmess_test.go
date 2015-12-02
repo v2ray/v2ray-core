@@ -73,12 +73,12 @@ func TestVMessSerialization(t *testing.T) {
 	}
 
 	assert.Byte(actualRequest.Version).Named("Version").Equals(byte(0x01))
-	assert.String(actualRequest.User.ID().String).Named("UserId").Equals(request.User.ID().String)
+	assert.StringLiteral(actualRequest.User.ID().String).Named("UserId").Equals(request.User.ID().String)
 	assert.Bytes(actualRequest.RequestIV).Named("RequestIV").Equals(request.RequestIV[:])
 	assert.Bytes(actualRequest.RequestKey).Named("RequestKey").Equals(request.RequestKey[:])
 	assert.Bytes(actualRequest.ResponseHeader).Named("ResponseHeader").Equals(request.ResponseHeader[:])
 	assert.Byte(actualRequest.Command).Named("Command").Equals(request.Command)
-	assert.String(actualRequest.Address.String()).Named("Address").Equals(request.Address.String())
+	assert.StringLiteral(actualRequest.Address.String()).Named("Address").Equals(request.Address.String())
 }
 
 func TestReadSingleByte(t *testing.T) {

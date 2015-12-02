@@ -75,7 +75,7 @@ func TestDokodemoTCP(t *testing.T) {
 	assert.Error(err).IsNil()
 	tcpClient.Close()
 
-	assert.String("Processed: " + data2Send).Equals(string(response[:nBytes]))
+	assert.StringLiteral("Processed: " + data2Send).Equals(string(response[:nBytes]))
 }
 
 func TestDokodemoUDP(t *testing.T) {
@@ -136,5 +136,5 @@ func TestDokodemoUDP(t *testing.T) {
 	assert.Error(err).IsNil()
 	udpClient.Close()
 
-	assert.String("Processed: " + data2Send).Equals(string(response[:nBytes]))
+	assert.StringLiteral("Processed: " + data2Send).Equals(string(response[:nBytes]))
 }

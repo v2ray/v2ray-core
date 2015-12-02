@@ -1,12 +1,20 @@
 package assert
 
-func String(value string) *StringSubject {
+import (
+  "github.com/v2ray/v2ray-core/common/serial"
+)
+
+func StringLiteral(value string) *StringSubject {
+  return String(serial.StringLiteral((value)))
+}
+
+func String(value serial.String) *StringSubject {
 	return &StringSubject{value: value}
 }
 
 type StringSubject struct {
 	Subject
-	value string
+	value serial.String
 }
 
 func (subject *StringSubject) Named(name string) *StringSubject {
@@ -14,16 +22,12 @@ func (subject *StringSubject) Named(name string) *StringSubject {
 	return subject
 }
 
-func (subject *StringSubject) Fail(verb string, other string) {
-	subject.FailWithMessage("Not true that " + subject.DisplayString() + " " + verb + " <" + other + ">.")
-}
-
 func (subject *StringSubject) DisplayString() string {
-	return subject.Subject.DisplayString(subject.value)
+	return subject.Subject.DisplayString(subject.value.String())
 }
 
 func (subject *StringSubject) Equals(expectation string) {
-	if subject.value != expectation {
-		subject.Fail("is equal to", expectation)
+	if subject.value.String() != expectation {
+		subject.Fail(subject.DisplayString(), "is equal to", serial.StringLiteral(expectation))
 	}
 }
