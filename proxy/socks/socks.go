@@ -36,7 +36,7 @@ func NewSocksServer(dispatcher app.PacketDispatcher, config *jsonconfig.SocksCon
 	}
 }
 
-func (this *SocksServer) Listen(port uint16) error {
+func (this *SocksServer) Listen(port v2net.Port) error {
 	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   []byte{0, 0, 0, 0},
 		Port: int(port),
@@ -145,7 +145,7 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 	if request.Command == protocol.CmdBind || request.Command == protocol.CmdUdpAssociate {
 		response := protocol.NewSocks5Response()
 		response.Error = protocol.ErrorCommandNotSupported
-		response.Port = uint16(0)
+		response.Port = v2net.Port(0)
 		response.SetIPv4([]byte{0, 0, 0, 0})
 
 		responseBuffer := alloc.NewSmallBuffer().Clear()
@@ -164,7 +164,7 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 	response.Error = protocol.ErrorSuccess
 
 	// Some SOCKS software requires a value other than dest. Let's fake one:
-	response.Port = uint16(1717)
+	response.Port = v2net.Port(1717)
 	response.SetIPv4([]byte{0, 0, 0, 0})
 
 	responseBuffer := alloc.NewSmallBuffer().Clear()
@@ -193,7 +193,7 @@ func (this *SocksServer) handleUDP(reader *v2net.TimeOutReader, writer io.Writer
 
 	udpAddr := this.getUDPAddr()
 
-	response.Port = udpAddr.Port().Value()
+	response.Port = udpAddr.Port()
 	switch {
 	case udpAddr.IsIPv4():
 		response.SetIPv4(udpAddr.IP())

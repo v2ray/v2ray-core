@@ -1,7 +1,6 @@
 package protocol
 
 import (
-	"encoding/binary"
 	"errors"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
@@ -56,7 +55,7 @@ func ReadUDPRequest(packet []byte) (*Socks5UDPRequest, error) {
 			return nil, transport.CorruptedPacket
 		}
 		ip := packet[4:8]
-		port := binary.BigEndian.Uint16(packet[8:10])
+		port := v2net.PortFromBytes(packet[8:10])
 		request.Address = v2net.IPAddress(ip, port)
 		dataBegin = 10
 	case AddrTypeIPv6:
@@ -64,7 +63,7 @@ func ReadUDPRequest(packet []byte) (*Socks5UDPRequest, error) {
 			return nil, transport.CorruptedPacket
 		}
 		ip := packet[4:20]
-		port := binary.BigEndian.Uint16(packet[20:22])
+		port := v2net.PortFromBytes(packet[20:22])
 		request.Address = v2net.IPAddress(ip, port)
 		dataBegin = 22
 	case AddrTypeDomain:
@@ -73,7 +72,7 @@ func ReadUDPRequest(packet []byte) (*Socks5UDPRequest, error) {
 			return nil, transport.CorruptedPacket
 		}
 		domain := string(packet[5 : 5+domainLength])
-		port := binary.BigEndian.Uint16(packet[5+domainLength : 5+domainLength+2])
+		port := v2net.PortFromBytes(packet[5+domainLength : 5+domainLength+2])
 		request.Address = v2net.DomainAddress(domain, port)
 		dataBegin = 5 + domainLength + 2
 	default:

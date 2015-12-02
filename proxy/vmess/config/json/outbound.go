@@ -13,7 +13,7 @@ import (
 
 type RawConfigTarget struct {
 	Address string        `json:"address"`
-	Port    uint16        `json:"port"`
+	Port    v2net.Port    `json:"port"`
 	Users   []*ConfigUser `json:"users"`
 }
 

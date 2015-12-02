@@ -27,14 +27,14 @@ func NewDokodemoDoor(dispatcher app.PacketDispatcher, config *json.DokodemoConfi
 	}
 	ip := net.ParseIP(config.Host)
 	if ip != nil {
-		d.address = v2net.IPAddress(ip, uint16(config.Port))
+		d.address = v2net.IPAddress(ip, config.Port)
 	} else {
-		d.address = v2net.DomainAddress(config.Host, uint16(config.Port))
+		d.address = v2net.DomainAddress(config.Host, config.Port)
 	}
 	return d
 }
 
-func (this *DokodemoDoor) Listen(port uint16) error {
+func (this *DokodemoDoor) Listen(port v2net.Port) error {
 	this.accepting = true
 
 	if this.config.Network.HasNetwork(v2net.TCPNetwork) {
@@ -52,7 +52,7 @@ func (this *DokodemoDoor) Listen(port uint16) error {
 	return nil
 }
 
-func (this *DokodemoDoor) ListenUDP(port uint16) error {
+func (this *DokodemoDoor) ListenUDP(port v2net.Port) error {
 	udpConn, err := net.ListenUDP("udp", &net.UDPAddr{
 		IP:   []byte{0, 0, 0, 0},
 		Port: int(port),
@@ -88,7 +88,7 @@ func (this *DokodemoDoor) handleUDPPackets(udpConn *net.UDPConn) {
 	}
 }
 
-func (this *DokodemoDoor) ListenTCP(port uint16) error {
+func (this *DokodemoDoor) ListenTCP(port v2net.Port) error {
 	tcpListener, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   []byte{0, 0, 0, 0},
 		Port: int(port),

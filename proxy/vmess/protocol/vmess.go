@@ -106,7 +106,7 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	request.ResponseHeader = buffer.Value[33:37] // 4 bytes
 	request.Command = buffer.Value[37]
 
-	port := binary.BigEndian.Uint16(buffer.Value[38:40])
+	port := v2net.PortFromBytes(buffer.Value[38:40])
 
 	switch buffer.Value[40] {
 	case addrTypeIPv4:

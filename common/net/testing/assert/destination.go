@@ -11,7 +11,7 @@ func Destination(value v2net.Destination) *DestinationSubject {
 }
 
 type DestinationSubject struct {
-	*assert.Subject
+	assert.Subject
 	value v2net.Destination
 }
 

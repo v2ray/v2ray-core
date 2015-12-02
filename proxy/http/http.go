@@ -6,6 +6,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/common/log"
+	v2net "github.com/v2ray/v2ray-core/common/net"
 	jsonconfig "github.com/v2ray/v2ray-core/proxy/http/config/json"
 )
 
@@ -22,7 +23,7 @@ func NewHttpProxyServer(dispatcher app.PacketDispatcher, config *jsonconfig.Http
 	}
 }
 
-func (server *HttpProxyServer) Listen(port uint16) error {
+func (server *HttpProxyServer) Listen(port v2net.Port) error {
 	_, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   []byte{0, 0, 0, 0},
 		Port: int(port),

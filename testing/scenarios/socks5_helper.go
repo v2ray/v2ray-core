@@ -58,7 +58,7 @@ func socks5UDPRequest(address v2net.Address, payload []byte) []byte {
 	return request
 }
 
-func setUpV2Ray() (uint16, error) {
+func setUpV2Ray() (v2net.Port, error) {
 	id1, err := config.NewID("ad937d9d-6e23-4a5a-ba23-bce5092a7c51")
 	if err != nil {
 		return 0, err

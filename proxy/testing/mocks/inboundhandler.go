@@ -10,13 +10,13 @@ import (
 )
 
 type InboundConnectionHandler struct {
-	Port       uint16
+	Port       v2net.Port
 	Dispatcher app.PacketDispatcher
 	ConnInput  io.Reader
 	ConnOutput io.Writer
 }
 
-func (this *InboundConnectionHandler) Listen(port uint16) error {
+func (this *InboundConnectionHandler) Listen(port v2net.Port) error {
 	this.Port = port
 	return nil
 }

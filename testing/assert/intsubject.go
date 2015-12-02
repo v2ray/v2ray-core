@@ -9,7 +9,7 @@ func Int(value int) *IntSubject {
 }
 
 type IntSubject struct {
-	*Subject
+	Subject
 	value int
 }
 

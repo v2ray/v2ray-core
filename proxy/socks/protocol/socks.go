@@ -1,7 +1,6 @@
 package protocol
 
 import (
-	"encoding/binary"
 	"io"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
@@ -57,7 +56,7 @@ func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, aut
 	if buffer.Value[0] == socks4Version {
 		auth4.Version = buffer.Value[0]
 		auth4.Command = buffer.Value[1]
-		auth4.Port = binary.BigEndian.Uint16(buffer.Value[2:4])
+		auth4.Port = v2net.PortFromBytes(buffer.Value[2:4])
 		copy(auth4.IP[:], buffer.Value[4:8])
 		err = Socks4Downgrade
 		return
@@ -184,7 +183,7 @@ type Socks5Request struct {
 	IPv4     [4]byte
 	Domain   string
 	IPv6     [16]byte
-	Port     uint16
+	Port     v2net.Port
 }
 
 func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
@@ -256,7 +255,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 		return
 	}
 
-	request.Port = binary.BigEndian.Uint16(buffer.Value[:2])
+	request.Port = v2net.PortFromBytes(buffer.Value[:2])
 	return
 }
 
@@ -294,7 +293,7 @@ type Socks5Response struct {
 	IPv4     [4]byte
 	Domain   string
 	IPv6     [16]byte
-	Port     uint16
+	Port     v2net.Port
 }
 
 func NewSocks5Response() *Socks5Response {
@@ -329,5 +328,5 @@ func (r *Socks5Response) Write(buffer *alloc.Buffer) {
 	case 0x04:
 		buffer.Append(r.IPv6[:])
 	}
-	buffer.AppendBytes(byte(r.Port>>8), byte(r.Port))
+	buffer.Append(r.Port.Bytes())
 }

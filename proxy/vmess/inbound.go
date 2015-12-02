@@ -32,7 +32,7 @@ func NewVMessInboundHandler(dispatcher app.PacketDispatcher, clients user.UserSe
 	}
 }
 
-func (this *VMessInboundHandler) Listen(port uint16) error {
+func (this *VMessInboundHandler) Listen(port v2net.Port) error {
 	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   []byte{0, 0, 0, 0},
 		Port: int(port),

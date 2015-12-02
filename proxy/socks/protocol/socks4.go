@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
+	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
 var (
@@ -13,7 +14,7 @@ var (
 type Socks4AuthenticationRequest struct {
 	Version byte
 	Command byte
-	Port    uint16
+	Port    v2net.Port
 	IP      [4]byte
 }
 
@@ -23,10 +24,10 @@ type Socks4AuthenticationResponse struct {
 	ip     []byte
 }
 
-func NewSocks4AuthenticationResponse(result byte, port uint16, ip []byte) *Socks4AuthenticationResponse {
+func NewSocks4AuthenticationResponse(result byte, port v2net.Port, ip []byte) *Socks4AuthenticationResponse {
 	return &Socks4AuthenticationResponse{
 		result: result,
-		port:   port,
+		port:   port.Value(),
 		ip:     ip,
 	}
 }

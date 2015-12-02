@@ -59,7 +59,7 @@ func (config *LogConfig) AccessLog() string {
 }
 
 type Config struct {
-	PortValue            uint16
+	PortValue            v2net.Port
 	LogConfigValue       *LogConfig
 	RouterConfigValue    routerconfig.RouterConfig
 	InboundConfigValue   *ConnectionConfig
@@ -68,7 +68,7 @@ type Config struct {
 	OutboundDetoursValue []*OutboundDetourConfig
 }
 
-func (config *Config) Port() uint16 {
+func (config *Config) Port() v2net.Port {
 	return config.PortValue
 }
 

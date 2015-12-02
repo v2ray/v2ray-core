@@ -6,8 +6,8 @@ import (
 
 type Port uint16
 
-func NewPort(port int) Port {
-	return Port(uint16(port))
+func PortFromBytes(port []byte) Port {
+	return Port(uint16(port[0])<<8 + uint16(port[1]))
 }
 
 func (this Port) Value() uint16 {

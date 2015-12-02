@@ -14,8 +14,8 @@ func TestIPv4Address(t *testing.T) {
 	v2testing.Current(t)
 
 	ip := []byte{byte(1), byte(2), byte(3), byte(4)}
-	port := v2net.NewPort(80)
-	addr := v2net.IPAddress(ip, port.Value())
+	port := v2net.Port(80)
+	addr := v2net.IPAddress(ip, port)
 
 	v2netassert.Address(addr).IsIPv4()
 	v2netassert.Address(addr).IsNotIPv6()
@@ -34,8 +34,8 @@ func TestIPv6Address(t *testing.T) {
 		byte(1), byte(2), byte(3), byte(4),
 		byte(1), byte(2), byte(3), byte(4),
 	}
-	port := v2net.NewPort(443)
-	addr := v2net.IPAddress(ip, port.Value())
+	port := v2net.Port(443)
+	addr := v2net.IPAddress(ip, port)
 
 	v2netassert.Address(addr).IsIPv6()
 	v2netassert.Address(addr).IsNotIPv4()
@@ -49,8 +49,8 @@ func TestDomainAddress(t *testing.T) {
 	v2testing.Current(t)
 
 	domain := "v2ray.com"
-	port := v2net.NewPort(443)
-	addr := v2net.DomainAddress(domain, port.Value())
+	port := v2net.Port(443)
+	addr := v2net.DomainAddress(domain, port)
 
 	v2netassert.Address(addr).IsDomain()
 	v2netassert.Address(addr).IsNotIPv6()
@@ -64,8 +64,8 @@ func TestNetIPv4Address(t *testing.T) {
 	v2testing.Current(t)
 
 	ip := net.IPv4(1, 2, 3, 4)
-	port := v2net.NewPort(80)
-	addr := v2net.IPAddress(ip, port.Value())
+	port := v2net.Port(80)
+	addr := v2net.IPAddress(ip, port)
 	v2netassert.Address(addr).IsIPv4()
 	assert.String(addr).Equals("1.2.3.4:80")
 }

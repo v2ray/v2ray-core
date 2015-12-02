@@ -8,7 +8,7 @@ import (
 )
 
 type Server struct {
-	Port         uint16
+	Port         v2net.Port
 	MsgProcessor func(msg []byte) []byte
 }
 
@@ -23,7 +23,7 @@ func (server *Server) Start() (v2net.Address, error) {
 	}
 	go server.handleConnection(conn)
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
-	return v2net.IPAddress(localAddr.IP, uint16(localAddr.Port)), nil
+	return v2net.IPAddress(localAddr.IP, v2net.Port(localAddr.Port)), nil
 }
 
 func (server *Server) handleConnection(conn *net.UDPConn) {

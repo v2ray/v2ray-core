@@ -12,7 +12,7 @@ import (
 
 // Point is an single server in V2Ray system.
 type Point struct {
-	port   uint16
+	port   v2net.Port
 	ich    connhandler.InboundConnectionHandler
 	och    connhandler.OutboundConnectionHandler
 	idh    []*InboundDetourHandler

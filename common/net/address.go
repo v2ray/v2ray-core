@@ -30,11 +30,11 @@ func allZeros(data []byte) bool {
 }
 
 // IPAddress creates an Address with given IP and port.
-func IPAddress(ip []byte, port uint16) Address {
+func IPAddress(ip []byte, port Port) Address {
 	switch len(ip) {
 	case net.IPv4len:
 		return &IPv4Address{
-			port: Port(port),
+			port: port,
 			ip:   [4]byte{ip[0], ip[1], ip[2], ip[3]},
 		}
 	case net.IPv6len:
@@ -57,10 +57,10 @@ func IPAddress(ip []byte, port uint16) Address {
 }
 
 // DomainAddress creates an Address with given domain and port.
-func DomainAddress(domain string, port uint16) Address {
+func DomainAddress(domain string, port Port) Address {
 	return &DomainAddressImpl{
 		domain: domain,
-		port:   Port(port),
+		port:   port,
 	}
 }
 

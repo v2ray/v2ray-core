@@ -27,7 +27,7 @@ type OutboundDetourConfig interface {
 }
 
 type PointConfig interface {
-	Port() uint16
+	Port() v2net.Port
 	LogConfig() LogConfig
 	RouterConfig() routerconfig.RouterConfig
 	InboundConfig() ConnectionConfig

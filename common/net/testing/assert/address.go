@@ -11,7 +11,7 @@ func Address(value v2net.Address) *AddressSubject {
 }
 
 type AddressSubject struct {
-	*assert.Subject
+	assert.Subject
 	value v2net.Address
 }
 

@@ -11,7 +11,7 @@ import (
 
 var udpAddress v2net.Address
 
-func (this *SocksServer) ListenUDP(port uint16) error {
+func (this *SocksServer) ListenUDP(port v2net.Port) error {
 	addr := &net.UDPAddr{
 		IP:   net.IP{0, 0, 0, 0},
 		Port: int(port),

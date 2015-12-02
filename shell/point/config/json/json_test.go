@@ -23,7 +23,7 @@ func TestClientSampleConfig(t *testing.T) {
 	pointConfig, err := json.LoadConfig(filepath.Join(baseDir, "vpoint_socks_vmess.json"))
 	assert.Error(err).IsNil()
 
-	assert.Uint16(pointConfig.Port()).Positive()
+	assert.Uint16(pointConfig.Port().Value()).Positive()
 	assert.Pointer(pointConfig.InboundConfig()).IsNotNil()
 	assert.Pointer(pointConfig.OutboundConfig()).IsNotNil()
 
@@ -43,7 +43,7 @@ func TestServerSampleConfig(t *testing.T) {
 	pointConfig, err := json.LoadConfig(filepath.Join(baseDir, "vpoint_vmess_freedom.json"))
 	assert.Error(err).IsNil()
 
-	assert.Uint16(pointConfig.Port()).Positive()
+	assert.Uint16(pointConfig.Port().Value()).Positive()
 	assert.Pointer(pointConfig.InboundConfig()).IsNotNil()
 	assert.Pointer(pointConfig.OutboundConfig()).IsNotNil()
 

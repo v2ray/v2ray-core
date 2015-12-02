@@ -46,7 +46,7 @@ func (this *InboundDetourHandler) Initialize() error {
 func (this *InboundDetourHandler) Start() error {
 	for _, ich := range this.ich {
 		return retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
-			err := ich.handler.Listen(ich.port.Value())
+			err := ich.handler.Listen(ich.port)
 			if err != nil {
 				return err
 			}
