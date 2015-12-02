@@ -1,19 +1,16 @@
-package unit
+package assert
 
 import (
 	"fmt"
 )
 
-type PointerSubject struct {
-	*Subject
-	value interface{}
+func Pointer(value interface{}) *PointerSubject {
+	return &PointerSubject{value: value}
 }
 
-func NewPointerSubject(base *Subject, value interface{}) *PointerSubject {
-	return &PointerSubject{
-		Subject: base,
-		value:   value,
-	}
+type PointerSubject struct {
+	Subject
+	value interface{}
 }
 
 func (subject *PointerSubject) Named(name string) *PointerSubject {

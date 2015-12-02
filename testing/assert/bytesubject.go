@@ -1,19 +1,16 @@
-package unit
+package assert
 
 import (
 	"strconv"
 )
 
-type ByteSubject struct {
-	*Subject
-	value byte
+func Byte(value byte) *ByteSubject {
+	return &ByteSubject{value: value}
 }
 
-func NewByteSubject(base *Subject, value byte) *ByteSubject {
-	return &ByteSubject{
-		Subject: base,
-		value:   value,
-	}
+type ByteSubject struct {
+	Subject
+	value byte
 }
 
 func (subject *ByteSubject) Named(name string) *ByteSubject {

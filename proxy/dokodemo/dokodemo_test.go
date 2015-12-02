@@ -10,13 +10,14 @@ import (
 	_ "github.com/v2ray/v2ray-core/proxy/freedom"
 	"github.com/v2ray/v2ray-core/shell/point"
 	"github.com/v2ray/v2ray-core/shell/point/config/testing/mocks"
+	v2testing "github.com/v2ray/v2ray-core/testing"
+	"github.com/v2ray/v2ray-core/testing/assert"
 	"github.com/v2ray/v2ray-core/testing/servers/tcp"
 	"github.com/v2ray/v2ray-core/testing/servers/udp"
-	"github.com/v2ray/v2ray-core/testing/unit"
 )
 
 func TestDokodemoTCP(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	port := v2nettesting.PickPort()
 
@@ -78,7 +79,7 @@ func TestDokodemoTCP(t *testing.T) {
 }
 
 func TestDokodemoUDP(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	port := v2nettesting.PickPort()
 

@@ -1,15 +1,12 @@
-package unit
+package assert
 
-type StringSubject struct {
-	*Subject
-	value string
+func String(value string) *StringSubject {
+	return &StringSubject{value: value}
 }
 
-func NewStringSubject(base *Subject, value string) *StringSubject {
-	return &StringSubject{
-		Subject: base,
-		value:   value,
-	}
+type StringSubject struct {
+	Subject
+	value string
 }
 
 func (subject *StringSubject) Named(name string) *StringSubject {

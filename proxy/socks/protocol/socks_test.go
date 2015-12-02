@@ -6,12 +6,13 @@ import (
 	"testing"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
-	"github.com/v2ray/v2ray-core/testing/unit"
+	v2testing "github.com/v2ray/v2ray-core/testing"
+	"github.com/v2ray/v2ray-core/testing/assert"
 	"github.com/v2ray/v2ray-core/transport"
 )
 
 func TestHasAuthenticationMethod(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	request := Socks5AuthenticationRequest{
 		version:     socksVersion,
@@ -26,7 +27,7 @@ func TestHasAuthenticationMethod(t *testing.T) {
 }
 
 func TestAuthenticationRequestRead(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	rawRequest := []byte{
 		0x05, // version
@@ -41,7 +42,7 @@ func TestAuthenticationRequestRead(t *testing.T) {
 }
 
 func TestAuthenticationResponseWrite(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	response := NewAuthenticationResponse(byte(0x05))
 
@@ -51,7 +52,7 @@ func TestAuthenticationResponseWrite(t *testing.T) {
 }
 
 func TestRequestRead(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	rawRequest := []byte{
 		0x05,                   // version
@@ -71,7 +72,7 @@ func TestRequestRead(t *testing.T) {
 }
 
 func TestResponseWrite(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	response := Socks5Response{
 		socksVersion,
@@ -98,14 +99,14 @@ func TestResponseWrite(t *testing.T) {
 }
 
 func TestEOF(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	_, _, err := ReadAuthentication(bytes.NewReader(make([]byte, 0)))
 	assert.Error(err).Equals(io.EOF)
 }
 
 func TestSignleByte(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	_, _, err := ReadAuthentication(bytes.NewReader(make([]byte, 1)))
 	assert.Error(err).Equals(transport.CorruptedPacket)

@@ -1,15 +1,12 @@
-package unit
+package assert
 
-type ErrorSubject struct {
-	*Subject
-	value error
+func Error(value error) *ErrorSubject {
+	return &ErrorSubject{value: value}
 }
 
-func NewErrorSubject(base *Subject, value error) *ErrorSubject {
-	return &ErrorSubject{
-		Subject: base,
-		value:   value,
-	}
+type ErrorSubject struct {
+	Subject
+	value error
 }
 
 func (subject *ErrorSubject) Named(name string) *ErrorSubject {

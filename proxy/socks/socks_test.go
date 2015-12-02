@@ -15,11 +15,12 @@ import (
 	proxymocks "github.com/v2ray/v2ray-core/proxy/testing/mocks"
 	"github.com/v2ray/v2ray-core/shell/point"
 	"github.com/v2ray/v2ray-core/shell/point/config/testing/mocks"
-	"github.com/v2ray/v2ray-core/testing/unit"
+	v2testing "github.com/v2ray/v2ray-core/testing"
+	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestSocksTcpConnect(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 	port := v2nettesting.PickPort()
 
 	connInput := []byte("The data to be returned to socks server.")
@@ -74,7 +75,7 @@ func TestSocksTcpConnect(t *testing.T) {
 }
 
 func TestSocksTcpConnectWithUserPass(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 	port := v2nettesting.PickPort()
 
 	connInput := []byte("The data to be returned to socks server.")
@@ -132,7 +133,7 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 }
 
 func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 	port := v2nettesting.PickPort()
 
 	connInput := []byte("The data to be returned to socks server.")
@@ -176,7 +177,7 @@ func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
 }
 
 func TestSocksTcpConnectWithWrongAuthMethod(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 	port := v2nettesting.PickPort()
 
 	connInput := []byte("The data to be returned to socks server.")
@@ -220,7 +221,7 @@ func TestSocksTcpConnectWithWrongAuthMethod(t *testing.T) {
 }
 
 func TestSocksUdpSend(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 	port := v2nettesting.PickPort()
 
 	connInput := []byte("The data to be returned to socks server.")

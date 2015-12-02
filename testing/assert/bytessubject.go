@@ -1,20 +1,17 @@
-package unit
+package assert
 
 import (
 	"bytes"
 	"fmt"
 )
 
-type BytesSubject struct {
-	*Subject
-	value []byte
+func Bytes(value []byte) *BytesSubject {
+	return &BytesSubject{value: value}
 }
 
-func NewBytesSubject(base *Subject, value []byte) *BytesSubject {
-	return &BytesSubject{
-		Subject: base,
-		value:   value,
-	}
+type BytesSubject struct {
+	Subject
+	value []byte
 }
 
 func (subject *BytesSubject) Named(name string) *BytesSubject {

@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v2ray/v2ray-core/testing/unit"
+	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestBuildAndRun(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	gopath := os.Getenv("GOPATH")
 	target := filepath.Join(gopath, "src", "v2ray_test")

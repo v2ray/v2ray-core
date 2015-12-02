@@ -5,11 +5,12 @@ import (
 	"testing"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
-	"github.com/v2ray/v2ray-core/testing/unit"
+	v2testing "github.com/v2ray/v2ray-core/testing"
+	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestSocks4AuthenticationRequestRead(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	rawRequest := []byte{
 		0x04, // version
@@ -26,7 +27,7 @@ func TestSocks4AuthenticationRequestRead(t *testing.T) {
 }
 
 func TestSocks4AuthenticationResponseToBytes(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	response := NewSocks4AuthenticationResponse(byte(0x10), 443, []byte{1, 2, 3, 4})
 

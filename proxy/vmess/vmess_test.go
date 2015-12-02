@@ -12,11 +12,12 @@ import (
 	"github.com/v2ray/v2ray-core/proxy/vmess/config/json"
 	"github.com/v2ray/v2ray-core/shell/point"
 	"github.com/v2ray/v2ray-core/shell/point/config/testing/mocks"
-	"github.com/v2ray/v2ray-core/testing/unit"
+	v2testing "github.com/v2ray/v2ray-core/testing"
+	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestVMessInAndOut(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	testAccount, err := config.NewID("ad937d9d-6e23-4a5a-ba23-bce5092a7c51")
 	assert.Error(err).IsNil()

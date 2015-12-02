@@ -3,12 +3,12 @@ package protocol
 import (
 	"testing"
 
-	"github.com/v2ray/v2ray-core/testing/unit"
+	"github.com/v2ray/v2ray-core/testing/assert"
 	"github.com/v2ray/v2ray-core/transport"
 )
 
 func TestSingleByteRequest(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	request, err := ReadUDPRequest(make([]byte, 1))
 	if request != nil {
@@ -18,7 +18,7 @@ func TestSingleByteRequest(t *testing.T) {
 }
 
 func TestDomainAddressRequest(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	payload := make([]byte, 0, 1024)
 	payload = append(payload, 0, 0, 1, AddrTypeDomain, byte(len("v2ray.com")))

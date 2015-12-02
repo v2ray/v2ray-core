@@ -10,7 +10,8 @@ import (
 	"github.com/v2ray/v2ray-core/proxy/vmess/config"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user/testing/mocks"
-	"github.com/v2ray/v2ray-core/testing/unit"
+	v2testing "github.com/v2ray/v2ray-core/testing"
+	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 type TestUser struct {
@@ -27,7 +28,7 @@ func (this *TestUser) Level() config.UserLevel {
 }
 
 func TestVMessSerialization(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	userId, err := config.NewID("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
 	if err != nil {
@@ -81,7 +82,7 @@ func TestVMessSerialization(t *testing.T) {
 }
 
 func TestReadSingleByte(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	reader := NewVMessRequestReader(nil)
 	_, err := reader.Read(bytes.NewReader(make([]byte, 1)))

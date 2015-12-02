@@ -8,11 +8,12 @@ import (
 	"testing"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
-	"github.com/v2ray/v2ray-core/testing/unit"
+	v2testing "github.com/v2ray/v2ray-core/testing"
+	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestReaderAndWrite(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	size := 1024 * 1024
 	buffer := make([]byte, size)

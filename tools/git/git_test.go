@@ -3,11 +3,11 @@ package git
 import (
 	"testing"
 
-	"github.com/v2ray/v2ray-core/testing/unit"
+	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestRevParse(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	rev, err := RevParse("HEAD")
 	assert.Error(err).IsNil()
@@ -15,7 +15,7 @@ func TestRevParse(t *testing.T) {
 }
 
 func TestRepoVersion(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	version, err := RepoVersionHead()
 	assert.Error(err).IsNil()

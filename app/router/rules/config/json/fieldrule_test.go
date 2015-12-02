@@ -6,11 +6,12 @@ import (
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
-	"github.com/v2ray/v2ray-core/testing/unit"
+	v2testing "github.com/v2ray/v2ray-core/testing"
+	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestStringListParsingList(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	rawJson := `["a", "b", "c", "d"]`
 	var strList StringList
@@ -20,7 +21,7 @@ func TestStringListParsingList(t *testing.T) {
 }
 
 func TestStringListParsingString(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	rawJson := `"abcd"`
 	var strList StringList
@@ -30,7 +31,7 @@ func TestStringListParsingString(t *testing.T) {
 }
 
 func TestDomainMatching(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	rule := &FieldRule{
 		Domain: NewStringList("v2ray.com"),
@@ -40,7 +41,7 @@ func TestDomainMatching(t *testing.T) {
 }
 
 func TestPortMatching(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	rule := &FieldRule{
 		Port: &v2nettesting.PortRange{
@@ -53,7 +54,7 @@ func TestPortMatching(t *testing.T) {
 }
 
 func TestIPMatching(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	rawJson := `{
     "type": "field",
@@ -66,7 +67,7 @@ func TestIPMatching(t *testing.T) {
 }
 
 func TestIPListMatching(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	rawJson := `{
     "type": "field",
@@ -79,7 +80,7 @@ func TestIPListMatching(t *testing.T) {
 }
 
 func TestPortNotMatching(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	rawJson := `{
     "type": "field",
@@ -92,7 +93,7 @@ func TestPortNotMatching(t *testing.T) {
 }
 
 func TestDomainNotMatching(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	rawJson := `{
     "type": "field",
@@ -105,7 +106,7 @@ func TestDomainNotMatching(t *testing.T) {
 }
 
 func TestDomainNotMatchingDomain(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	rawJson := `{
     "type": "field",

@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/v2ray/v2ray-core/testing/unit"
+	v2testing "github.com/v2ray/v2ray-core/testing"
+	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestArrayNetworkList(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	var list NetworkList
 	err := json.Unmarshal([]byte("[\"Tcp\"]"), &list)
@@ -18,7 +19,7 @@ func TestArrayNetworkList(t *testing.T) {
 }
 
 func TestStringNetworkList(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	var list NetworkList
 	err := json.Unmarshal([]byte("\"TCP, ip\""), &list)

@@ -3,11 +3,12 @@ package net
 import (
 	"testing"
 
-	"github.com/v2ray/v2ray-core/testing/unit"
+	v2testing "github.com/v2ray/v2ray-core/testing"
+	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestTCPDestination(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	dest := NewTCPDestination(IPAddress([]byte{1, 2, 3, 4}, 80))
 	assert.Bool(dest.IsTCP()).IsTrue()
@@ -16,7 +17,7 @@ func TestTCPDestination(t *testing.T) {
 }
 
 func TestUDPDestination(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	dest := NewUDPDestination(IPAddress([]byte{0x20, 0x01, 0x48, 0x60, 0x48, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x88, 0x88}, 53))
 	assert.Bool(dest.IsTCP()).IsFalse()

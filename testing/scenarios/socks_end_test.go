@@ -6,13 +6,14 @@ import (
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
+	v2testing "github.com/v2ray/v2ray-core/testing"
+	"github.com/v2ray/v2ray-core/testing/assert"
 	"github.com/v2ray/v2ray-core/testing/servers/tcp"
 	"github.com/v2ray/v2ray-core/testing/servers/udp"
-	"github.com/v2ray/v2ray-core/testing/unit"
 )
 
 func TestTCPConnection(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	targetPort := v2nettesting.PickPort()
 	tcpServer := &tcp.Server{
@@ -78,7 +79,7 @@ func TestTCPConnection(t *testing.T) {
 }
 
 func TestTCPBind(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	targetPort := v2nettesting.PickPort()
 	tcpServer := &tcp.Server{
@@ -125,7 +126,7 @@ func TestTCPBind(t *testing.T) {
 }
 
 func TestUDPAssociate(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	targetPort := v2nettesting.PickPort()
 	udpServer := &udp.Server{

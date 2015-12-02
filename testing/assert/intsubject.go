@@ -1,19 +1,16 @@
-package unit
+package assert
 
 import (
 	"strconv"
 )
 
+func Int(value int) *IntSubject {
+	return &IntSubject{value: value}
+}
+
 type IntSubject struct {
 	*Subject
 	value int
-}
-
-func NewIntSubject(base *Subject, value int) *IntSubject {
-	return &IntSubject{
-		Subject: base,
-		value:   value,
-	}
 }
 
 func (subject *IntSubject) Named(name string) *IntSubject {

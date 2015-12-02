@@ -3,11 +3,11 @@ package main
 import (
 	"testing"
 
-	"github.com/v2ray/v2ray-core/testing/unit"
+	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestParseOS(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	assert.Pointer(parseOS("windows")).Equals(Windows)
 	assert.Pointer(parseOS("macos")).Equals(MacOS)
@@ -16,7 +16,7 @@ func TestParseOS(t *testing.T) {
 }
 
 func TestParseArch(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	assert.Pointer(parseArch("x86")).Equals(X86)
 	assert.Pointer(parseArch("x64")).Equals(Amd64)

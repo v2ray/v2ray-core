@@ -3,11 +3,12 @@ package alloc
 import (
 	"testing"
 
-	"github.com/v2ray/v2ray-core/testing/unit"
+	v2testing "github.com/v2ray/v2ray-core/testing"
+	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestBufferClear(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	buffer := NewBuffer().Clear()
 	defer buffer.Release()
@@ -21,7 +22,7 @@ func TestBufferClear(t *testing.T) {
 }
 
 func TestBufferIsFull(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	buffer := NewBuffer()
 	defer buffer.Release()

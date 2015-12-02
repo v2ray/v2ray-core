@@ -1,19 +1,16 @@
-package unit
+package assert
 
 import (
 	"strconv"
 )
 
-type Uint16Subject struct {
-	*Subject
-	value uint16
+func Uint16(value uint16) *Uint16Subject {
+	return &Uint16Subject{value: value}
 }
 
-func NewUint16Subject(base *Subject, value uint16) *Uint16Subject {
-	return &Uint16Subject{
-		Subject: base,
-		value:   value,
-	}
+type Uint16Subject struct {
+	Subject
+	value uint16
 }
 
 func (subject *Uint16Subject) Named(name string) *Uint16Subject {

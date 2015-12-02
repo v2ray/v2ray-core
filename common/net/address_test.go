@@ -4,11 +4,12 @@ import (
 	"net"
 	"testing"
 
-	"github.com/v2ray/v2ray-core/testing/unit"
+	v2testing "github.com/v2ray/v2ray-core/testing"
+	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestIPv4Address(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	ip := []byte{byte(1), byte(2), byte(3), byte(4)}
 	port := NewPort(80)
@@ -23,7 +24,7 @@ func TestIPv4Address(t *testing.T) {
 }
 
 func TestIPv6Address(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	ip := []byte{
 		byte(1), byte(2), byte(3), byte(4),
@@ -43,7 +44,7 @@ func TestIPv6Address(t *testing.T) {
 }
 
 func TestDomainAddress(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	domain := "v2ray.com"
 	port := NewPort(443)
@@ -58,7 +59,7 @@ func TestDomainAddress(t *testing.T) {
 }
 
 func TestNetIPv4Address(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	ip := net.IPv4(1, 2, 3, 4)
 	port := NewPort(80)

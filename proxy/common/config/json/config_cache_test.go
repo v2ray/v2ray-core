@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	"github.com/v2ray/v2ray-core/proxy/common/config"
-	"github.com/v2ray/v2ray-core/testing/unit"
+	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestRegisterInboundConfig(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 	initializeConfigCache()
 
 	protocol := "test_protocol"
@@ -27,7 +27,7 @@ func TestRegisterInboundConfig(t *testing.T) {
 }
 
 func TestRegisterOutboundConfig(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 	initializeConfigCache()
 
 	protocol := "test_protocol"

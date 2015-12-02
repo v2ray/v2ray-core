@@ -4,11 +4,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/v2ray/v2ray-core/testing/unit"
+	v2testing "github.com/v2ray/v2ray-core/testing"
+	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestTimedQueue(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	removed := make(map[string]bool)
 

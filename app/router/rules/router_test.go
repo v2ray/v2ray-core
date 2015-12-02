@@ -6,11 +6,12 @@ import (
 	"github.com/v2ray/v2ray-core/app/router/rules/config"
 	testinconfig "github.com/v2ray/v2ray-core/app/router/rules/config/testing"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/testing/unit"
+	v2testing "github.com/v2ray/v2ray-core/testing"
+	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestSimpleRouter(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	router := &Router{
 		rules: []config.Rule{

@@ -1,19 +1,16 @@
-package unit
+package assert
 
 import (
 	"strconv"
 )
 
-type BoolSubject struct {
-	*Subject
-	value bool
+func Bool(value bool) *BoolSubject {
+	return &BoolSubject{value: value}
 }
 
-func NewBoolSubject(base *Subject, value bool) *BoolSubject {
-	return &BoolSubject{
-		Subject: base,
-		value:   value,
-	}
+type BoolSubject struct {
+	Subject
+	value bool
 }
 
 func (subject *BoolSubject) Named(name string) *BoolSubject {

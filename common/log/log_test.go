@@ -5,11 +5,12 @@ import (
 	"log"
 	"testing"
 
-	"github.com/v2ray/v2ray-core/testing/unit"
+	v2testing "github.com/v2ray/v2ray-core/testing"
+	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestLogLevelSetting(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	assert.Pointer(debugLogger).Equals(noOpLoggerInstance)
 	SetLogLevel(DebugLevel)
@@ -21,7 +22,7 @@ func TestLogLevelSetting(t *testing.T) {
 }
 
 func TestStreamLogger(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	buffer := bytes.NewBuffer(make([]byte, 0, 1024))
 	logger := &streamLogger{

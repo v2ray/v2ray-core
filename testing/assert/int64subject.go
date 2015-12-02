@@ -1,19 +1,16 @@
-package unit
+package assert
 
 import (
 	"strconv"
 )
 
-type Int64Subject struct {
-	*Subject
-	value int64
+func Int64(value int64) *Int64Subject {
+	return &Int64Subject{value: value}
 }
 
-func NewInt64Subject(base *Subject, value int64) *Int64Subject {
-	return &Int64Subject{
-		Subject: base,
-		value:   value,
-	}
+type Int64Subject struct {
+	Subject
+	value int64
 }
 
 func (subject *Int64Subject) Named(name string) *Int64Subject {

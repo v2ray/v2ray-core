@@ -10,11 +10,12 @@ import (
 	_ "github.com/v2ray/v2ray-core/proxy/vmess/config/json"
 	"github.com/v2ray/v2ray-core/shell/point/config/json"
 
-	"github.com/v2ray/v2ray-core/testing/unit"
+	v2testing "github.com/v2ray/v2ray-core/testing"
+	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestClientSampleConfig(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	// TODO: fix for Windows
 	baseDir := "$GOPATH/src/github.com/v2ray/v2ray-core/release/config"
@@ -34,7 +35,7 @@ func TestClientSampleConfig(t *testing.T) {
 }
 
 func TestServerSampleConfig(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	// TODO: fix for Windows
 	baseDir := "$GOPATH/src/github.com/v2ray/v2ray-core/release/config"
@@ -54,7 +55,7 @@ func TestServerSampleConfig(t *testing.T) {
 }
 
 func TestDetourConfig(t *testing.T) {
-	assert := unit.Assert(t)
+	v2testing.Current(t)
 
 	// TODO: fix for Windows
 	baseDir := "$GOPATH/src/github.com/v2ray/v2ray-core/release/config"
