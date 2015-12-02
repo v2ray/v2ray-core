@@ -1,4 +1,4 @@
-package unit
+package net_test
 
 import (
 	"testing"
