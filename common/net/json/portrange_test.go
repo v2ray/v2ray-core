@@ -14,8 +14,8 @@ func TestIntPort(t *testing.T) {
 	err := json.Unmarshal([]byte("1234"), &portRange)
 	assert.Error(err).IsNil()
 
-	assert.Uint16(portRange.from).Equals(uint16(1234))
-	assert.Uint16(portRange.to).Equals(uint16(1234))
+	assert.Uint16(portRange.from.Value()).Equals(uint16(1234))
+	assert.Uint16(portRange.to.Value()).Equals(uint16(1234))
 }
 
 func TestOverRangeIntPort(t *testing.T) {
@@ -36,8 +36,8 @@ func TestSingleStringPort(t *testing.T) {
 	err := json.Unmarshal([]byte("\"1234\""), &portRange)
 	assert.Error(err).IsNil()
 
-	assert.Uint16(portRange.from).Equals(uint16(1234))
-	assert.Uint16(portRange.to).Equals(uint16(1234))
+	assert.Uint16(portRange.from.Value()).Equals(uint16(1234))
+	assert.Uint16(portRange.to.Value()).Equals(uint16(1234))
 }
 
 func TestStringPairPort(t *testing.T) {
@@ -47,8 +47,8 @@ func TestStringPairPort(t *testing.T) {
 	err := json.Unmarshal([]byte("\"1234-5678\""), &portRange)
 	assert.Error(err).IsNil()
 
-	assert.Uint16(portRange.from).Equals(uint16(1234))
-	assert.Uint16(portRange.to).Equals(uint16(5678))
+	assert.Uint16(portRange.from.Value()).Equals(uint16(1234))
+	assert.Uint16(portRange.to.Value()).Equals(uint16(5678))
 }
 
 func TestOverRangeStringPort(t *testing.T) {

@@ -67,7 +67,7 @@ func TestDetourConfig(t *testing.T) {
 
 	detour := detours[0]
 	assert.String(detour.Protocol()).Equals("dokodemo-door")
-	assert.Uint16(detour.PortRange().From()).Equals(uint16(28394))
-	assert.Uint16(detour.PortRange().To()).Equals(uint16(28394))
+	assert.Uint16(detour.PortRange().From().Value()).Equals(uint16(28394))
+	assert.Uint16(detour.PortRange().To().Value()).Equals(uint16(28394))
 	assert.Pointer(detour.Settings()).IsNotNil()
 }

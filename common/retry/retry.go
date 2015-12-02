@@ -11,7 +11,7 @@ var (
 
 // Strategy is a way to retry on a specific function.
 type Strategy interface {
-  // On performs a retry on a specific function, until it doesn't return any error.
+	// On performs a retry on a specific function, until it doesn't return any error.
 	On(func() error) error
 }
 

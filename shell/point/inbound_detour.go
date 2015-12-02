@@ -2,13 +2,14 @@ package point
 
 import (
 	"github.com/v2ray/v2ray-core/common/log"
+	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	"github.com/v2ray/v2ray-core/shell/point/config"
 )
 
 type InboundConnectionHandlerWithPort struct {
-	port    uint16
+	port    v2net.Port
 	handler connhandler.InboundConnectionHandler
 }
 
@@ -45,7 +46,7 @@ func (this *InboundDetourHandler) Initialize() error {
 func (this *InboundDetourHandler) Start() error {
 	for _, ich := range this.ich {
 		return retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
-			err := ich.handler.Listen(ich.port)
+			err := ich.handler.Listen(ich.port.Value())
 			if err != nil {
 				return err
 			}

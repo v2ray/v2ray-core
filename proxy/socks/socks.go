@@ -193,7 +193,7 @@ func (this *SocksServer) handleUDP(reader *v2net.TimeOutReader, writer io.Writer
 
 	udpAddr := this.getUDPAddr()
 
-	response.Port = udpAddr.Port()
+	response.Port = udpAddr.Port().Value()
 	switch {
 	case udpAddr.IsIPv4():
 		response.SetIPv4(udpAddr.IP())

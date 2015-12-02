@@ -40,7 +40,7 @@ func appendAddress(request []byte, address v2net.Address) []byte {
 		request = append(request, []byte(address.Domain())...)
 
 	}
-	request = append(request, address.PortBytes()...)
+	request = append(request, address.Port().Bytes()...)
 	return request
 }
 

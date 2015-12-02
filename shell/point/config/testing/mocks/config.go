@@ -24,15 +24,15 @@ type LogConfig struct {
 }
 
 type PortRange struct {
-	FromValue uint16
-	ToValue   uint16
+	FromValue v2net.Port
+	ToValue   v2net.Port
 }
 
-func (this *PortRange) From() uint16 {
+func (this *PortRange) From() v2net.Port {
 	return this.FromValue
 }
 
-func (this *PortRange) To() uint16 {
+func (this *PortRange) To() v2net.Port {
 	return this.ToValue
 }
 

@@ -172,7 +172,7 @@ func (this *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 user
 	buffer.Append(this.RequestKey)
 	buffer.Append(this.ResponseHeader)
 	buffer.AppendBytes(this.Command)
-	buffer.Append(this.Address.PortBytes())
+	buffer.Append(this.Address.Port().Bytes())
 
 	switch {
 	case this.Address.IsIPv4():

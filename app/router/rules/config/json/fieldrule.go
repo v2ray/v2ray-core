@@ -85,7 +85,7 @@ func (this *FieldRule) Apply(dest v2net.Destination) bool {
 
 	if this.Port != nil {
 		port := address.Port()
-		if port < this.Port.From() || port > this.Port.To() {
+		if port.Value() < this.Port.From().Value() || port.Value() > this.Port.To().Value() {
 			return false
 		}
 	}
