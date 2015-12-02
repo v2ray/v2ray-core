@@ -1,6 +1,7 @@
 package assert
 
 import (
+	"github.com/v2ray/v2ray-core/common/serial"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 )
 
@@ -12,6 +13,10 @@ func NewSubject() *Subject {
 	return &Subject{
 		name: "",
 	}
+}
+
+func (subject *Subject) Fail(displayString string, verb string, other serial.String) {
+	subject.FailWithMessage("Not true that " + displayString + " " + verb + " <" + other.String() + ">.")
 }
 
 func (subject *Subject) FailWithMessage(message string) {

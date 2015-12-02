@@ -19,28 +19,24 @@ func (subject *PortSubject) Named(name string) *PortSubject {
 	return subject
 }
 
-func (subject *PortSubject) Fail(verb string, other v2net.Port) {
-	subject.FailWithMessage("Not true that " + subject.DisplayString() + " " + verb + " <" + other.String() + ">.")
-}
-
 func (subject *PortSubject) DisplayString() string {
 	return subject.Subject.DisplayString(subject.value.String())
 }
 
 func (subject *PortSubject) Equals(expectation v2net.Port) {
 	if subject.value.Value() != expectation.Value() {
-		subject.Fail("is equal to", expectation)
+		subject.Fail(subject.DisplayString(), "is equal to", expectation)
 	}
 }
 
 func (subject *PortSubject) GreaterThan(expectation v2net.Port) {
 	if subject.value.Value() <= expectation.Value() {
-		subject.Fail("is greater than", expectation)
+		subject.Fail(subject.DisplayString(), "is greater than", expectation)
 	}
 }
 
 func (subject *PortSubject) LessThan(expectation v2net.Port) {
 	if subject.value.Value() >= expectation.Value() {
-		subject.Fail("is less than", expectation)
+		subject.Fail(subject.DisplayString(), "is less than", expectation)
 	}
 }
