@@ -7,6 +7,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/proxy/common/config"
 	jsonconfig "github.com/v2ray/v2ray-core/proxy/common/config/json"
+	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 

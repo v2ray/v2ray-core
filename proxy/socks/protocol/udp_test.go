@@ -3,6 +3,7 @@ package protocol
 import (
 	"testing"
 
+  v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 	"github.com/v2ray/v2ray-core/transport"
 )

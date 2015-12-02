@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/v2ray/v2ray-core/proxy/common/config"
+	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
