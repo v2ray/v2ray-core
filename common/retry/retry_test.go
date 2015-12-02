@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	TestError = errors.New("This is a fake error.")
+	errorTestOnly = errors.New("This is a fake error.")
 )
 
 func TestNoRetry(t *testing.T) {
@@ -33,7 +33,7 @@ func TestRetryOnce(t *testing.T) {
 	err := Timed(10, 1000).On(func() error {
 		if called == 0 {
 			called++
-			return TestError
+			return errorTestOnly
 		}
 		return nil
 	})
@@ -51,7 +51,7 @@ func TestRetryMultiple(t *testing.T) {
 	err := Timed(10, 1000).On(func() error {
 		if called < 5 {
 			called++
-			return TestError
+			return errorTestOnly
 		}
 		return nil
 	})
@@ -69,12 +69,12 @@ func TestRetryExhausted(t *testing.T) {
 	err := Timed(2, 1000).On(func() error {
 		if called < 5 {
 			called++
-			return TestError
+			return errorTestOnly
 		}
 		return nil
 	})
 	duration := time.Since(startTime)
 
-	assert.Error(err).Equals(RetryFailed)
+	assert.Error(err).Equals(errorRetryFailed)
 	assert.Int64(int64(duration / time.Millisecond)).AtLeast(1900)
 }
