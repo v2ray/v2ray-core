@@ -41,7 +41,7 @@ func TestIPv6Address(t *testing.T) {
 	v2netassert.Address(addr).IsNotIPv4()
 	v2netassert.Address(addr).IsNotDomain()
 	assert.Bytes(addr.IP()).Equals(ip)
-	assert.Uint16(addr.Port().Value()).Equals(port.Value())
+	v2netassert.Port(addr.Port()).Equals(port)
 	assert.String(addr).Equals("[102:304:102:304:102:304:102:304]:443")
 }
 
@@ -56,7 +56,7 @@ func TestDomainAddress(t *testing.T) {
 	v2netassert.Address(addr).IsNotIPv6()
 	v2netassert.Address(addr).IsNotIPv4()
 	assert.StringLiteral(addr.Domain()).Equals(domain)
-	assert.Uint16(addr.Port().Value()).Equals(port.Value())
+	v2netassert.Port(addr.Port()).Equals(port)
 	assert.String(addr).Equals("v2ray.com:443")
 }
 
