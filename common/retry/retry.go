@@ -9,7 +9,7 @@ var (
 	RetryFailed = errors.New("All retry attempts failed.")
 )
 
-type RetryStrategy interface {
+type Strategy interface {
 	On(func() error) error
 }
 
@@ -33,7 +33,7 @@ func (r *retryer) On(method func() error) error {
 	}
 }
 
-func Timed(attempts int, delay int) RetryStrategy {
+func Timed(attempts int, delay int) Strategy {
 	return &retryer{
 		NextDelay: func(attempt int) int {
 			if attempt >= attempts {
