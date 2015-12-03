@@ -4,6 +4,7 @@ import (
 	"strconv"
 )
 
+// Assert on a boolean variable.
 func Bool(value bool) *BoolSubject {
 	return &BoolSubject{value: value}
 }
@@ -26,18 +27,21 @@ func (subject *BoolSubject) DisplayString() string {
 	return subject.Subject.DisplayString(strconv.FormatBool(subject.value))
 }
 
+// to be equal to another boolean variable.
 func (subject *BoolSubject) Equals(expectation bool) {
 	if subject.value != expectation {
 		subject.Fail("is equal to", expectation)
 	}
 }
 
+// to be true.
 func (subject *BoolSubject) IsTrue() {
 	if subject.value != true {
 		subject.Fail("is", true)
 	}
 }
 
+// to be false.
 func (subject *BoolSubject) IsFalse() {
 	if subject.value != false {
 		subject.Fail("is", false)
