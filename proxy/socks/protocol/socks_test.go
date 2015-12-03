@@ -100,6 +100,32 @@ func TestResponseWrite(t *testing.T) {
 	assert.Bytes(buffer.Value).Named("raw response").Equals(expectedBytes)
 }
 
+func TestSetIPv6(t *testing.T) {
+	v2testing.Current(t)
+
+	response := NewSocks5Response()
+	response.SetIPv6([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+
+	buffer := alloc.NewSmallBuffer().Clear()
+	defer buffer.Release()
+	response.Write(buffer)
+	assert.Bytes(buffer.Value).Equals([]byte{
+		socksVersion, 0, 0, AddrTypeIPv6, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, 0})
+}
+
+func TestSetDomain(t *testing.T) {
+	v2testing.Current(t)
+
+	response := NewSocks5Response()
+	response.SetDomain("v2ray.com")
+
+	buffer := alloc.NewSmallBuffer().Clear()
+	defer buffer.Release()
+	response.Write(buffer)
+	assert.Bytes(buffer.Value).Equals([]byte{
+		socksVersion, 0, 0, AddrTypeDomain, 9, 118, 50, 114, 97, 121, 46, 99, 111, 109, 0, 0})
+}
+
 func TestEOF(t *testing.T) {
 	v2testing.Current(t)
 
