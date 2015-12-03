@@ -1,10 +1,10 @@
 package net
 
 import (
-	"strconv"
+	"github.com/v2ray/v2ray-core/common/serial"
 )
 
-type Port uint16
+type Port serial.Uint16Literal
 
 func PortFromBytes(port []byte) Port {
 	return Port(uint16(port[0])<<8 + uint16(port[1]))
@@ -19,5 +19,5 @@ func (this Port) Bytes() []byte {
 }
 
 func (this Port) String() string {
-	return strconv.Itoa(int(this))
+	return serial.Uint16Literal(this).String()
 }

@@ -1,16 +1,16 @@
 package assert
 
 import (
-	"strconv"
+	"github.com/v2ray/v2ray-core/common/serial"
 )
 
 func Uint16(value uint16) *Uint16Subject {
-	return &Uint16Subject{value: value}
+	return &Uint16Subject{value: serial.Uint16Literal(value)}
 }
 
 type Uint16Subject struct {
 	Subject
-	value uint16
+	value serial.Uint16Literal
 }
 
 func (subject *Uint16Subject) Named(name string) *Uint16Subject {
@@ -18,34 +18,30 @@ func (subject *Uint16Subject) Named(name string) *Uint16Subject {
 	return subject
 }
 
-func (subject *Uint16Subject) Fail(verb string, other uint16) {
-	subject.FailWithMessage("Not true that " + subject.DisplayString() + " " + verb + " <" + strconv.Itoa(int(other)) + ">.")
-}
-
 func (subject *Uint16Subject) DisplayString() string {
-	return subject.Subject.DisplayString(strconv.Itoa(int(subject.value)))
+	return subject.Subject.DisplayString(subject.value.String())
 }
 
 func (subject *Uint16Subject) Equals(expectation uint16) {
-	if subject.value != expectation {
-		subject.Fail("is equal to", expectation)
+	if subject.value.Value() != expectation {
+		subject.Fail(subject.DisplayString(), "is equal to", serial.Uint16Literal(expectation))
 	}
 }
 
 func (subject *Uint16Subject) GreaterThan(expectation uint16) {
-	if subject.value <= expectation {
-		subject.Fail("is greater than", expectation)
+	if subject.value.Value() <= expectation {
+		subject.Fail(subject.DisplayString(), "is greater than", serial.Uint16Literal(expectation))
 	}
 }
 
 func (subject *Uint16Subject) LessThan(expectation uint16) {
-	if subject.value >= expectation {
-		subject.Fail("is less than", expectation)
+	if subject.value.Value() >= expectation {
+		subject.Fail(subject.DisplayString(), "is less than", serial.Uint16Literal(expectation))
 	}
 }
 
 func (subject *Uint16Subject) Positive() {
-	if subject.value <= 0 {
+	if subject.value.Value() <= 0 {
 		subject.FailWithMessage("Not true that " + subject.DisplayString() + " is positive.")
 	}
 }

@@ -1,16 +1,16 @@
 package assert
 
 import (
-	"strconv"
+	"github.com/v2ray/v2ray-core/common/serial"
 )
 
 func Int(value int) *IntSubject {
-	return &IntSubject{value: value}
+	return &IntSubject{value: serial.IntLiteral(value)}
 }
 
 type IntSubject struct {
 	Subject
-	value int
+	value serial.IntLiteral
 }
 
 func (subject *IntSubject) Named(name string) *IntSubject {
@@ -18,28 +18,24 @@ func (subject *IntSubject) Named(name string) *IntSubject {
 	return subject
 }
 
-func (subject *IntSubject) Fail(verb string, other int) {
-	subject.FailWithMessage("Not true that " + subject.DisplayString() + " " + verb + " <" + strconv.Itoa(other) + ">.")
-}
-
 func (subject *IntSubject) DisplayString() string {
-	return subject.Subject.DisplayString(strconv.Itoa(subject.value))
+	return subject.Subject.DisplayString(subject.value.String())
 }
 
 func (subject *IntSubject) Equals(expectation int) {
-	if subject.value != expectation {
-		subject.Fail("is equal to", expectation)
+	if subject.value.Value() != expectation {
+		subject.Fail(subject.DisplayString(), "is equal to", serial.IntLiteral(expectation))
 	}
 }
 
 func (subject *IntSubject) GreaterThan(expectation int) {
-	if subject.value <= expectation {
-		subject.Fail("is greater than", expectation)
+	if subject.value.Value() <= expectation {
+		subject.Fail(subject.DisplayString(), "is greater than", serial.IntLiteral(expectation))
 	}
 }
 
 func (subject *IntSubject) LessThan(expectation int) {
-	if subject.value >= expectation {
-		subject.Fail("is less than", expectation)
+	if subject.value.Value() >= expectation {
+		subject.Fail(subject.DisplayString(), "is less than", serial.IntLiteral(expectation))
 	}
 }
