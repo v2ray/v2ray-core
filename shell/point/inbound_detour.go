@@ -13,6 +13,7 @@ type InboundConnectionHandlerWithPort struct {
 	handler connhandler.InboundConnectionHandler
 }
 
+// Handler for inbound detour connections.
 type InboundDetourHandler struct {
 	point  *Point
 	config config.InboundDetourConfig
@@ -43,6 +44,7 @@ func (this *InboundDetourHandler) Initialize() error {
 	return nil
 }
 
+// Starts the inbound connection handler.
 func (this *InboundDetourHandler) Start() error {
 	for _, ich := range this.ich {
 		return retry.Timed(100 /* times */, 100 /* ms */).On(func() error {

@@ -129,6 +129,9 @@ func (this *Point) Start() error {
 	return nil
 }
 
+// Dispatches a Packet to an OutboundConnection.
+// The packet will be passed through the router (if configured), and then sent to an outbound
+// connection with matching tag.
 func (this *Point) DispatchToOutbound(packet v2net.Packet) ray.InboundRay {
 	direct := ray.NewRay()
 	dest := packet.Destination()
