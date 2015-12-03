@@ -22,6 +22,7 @@ import (
 	_ "github.com/v2ray/v2ray-core/proxy/freedom"
 	_ "github.com/v2ray/v2ray-core/proxy/freedom/config/json"
 	_ "github.com/v2ray/v2ray-core/proxy/socks"
+	_ "github.com/v2ray/v2ray-core/proxy/socks/config/json"
 	_ "github.com/v2ray/v2ray-core/proxy/vmess"
 	_ "github.com/v2ray/v2ray-core/proxy/vmess/config/json"
 )

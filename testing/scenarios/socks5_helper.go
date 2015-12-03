@@ -106,7 +106,7 @@ func setUpV2Ray(routing func(v2net.Destination) bool) (v2net.Port, v2net.Port, e
 			ProtocolValue: "socks",
 			SettingsValue: &socksjson.SocksConfig{
 				AuthMethod: "noauth",
-				UDPEnabled: true,
+				UDP:        true,
 				HostIP:     socksjson.IPAddress(net.IPv4(127, 0, 0, 1)),
 			},
 		},
@@ -131,7 +131,7 @@ func setUpV2Ray(routing func(v2net.Destination) bool) (v2net.Port, v2net.Port, e
 					ProtocolValue: "socks",
 					SettingsValue: &socksjson.SocksConfig{
 						AuthMethod: "noauth",
-						UDPEnabled: false,
+						UDP:        false,
 						HostIP:     socksjson.IPAddress(net.IPv4(127, 0, 0, 1)),
 					},
 				},

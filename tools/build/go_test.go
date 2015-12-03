@@ -41,7 +41,7 @@ func TestBuildAndRun(t *testing.T) {
 	errStr := string(errBuffer.Bytes())
 
 	assert.Bool(strings.Contains(outStr, "v1.0")).IsTrue()
-	assert.Int(len(errStr)).Equals(0)
+	assert.StringLiteral(errStr).Equals("")
 
 	os.Remove(target)
 }

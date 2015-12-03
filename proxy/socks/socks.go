@@ -13,7 +13,7 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
 	proxyerrors "github.com/v2ray/v2ray-core/proxy/common/errors"
-	jsonconfig "github.com/v2ray/v2ray-core/proxy/socks/config/json"
+	"github.com/v2ray/v2ray-core/proxy/socks/config"
 	"github.com/v2ray/v2ray-core/proxy/socks/protocol"
 )
 
@@ -26,10 +26,10 @@ var (
 type SocksServer struct {
 	accepting  bool
 	dispatcher app.PacketDispatcher
-	config     *jsonconfig.SocksConfig
+	config     config.SocksConfig
 }
 
-func NewSocksServer(dispatcher app.PacketDispatcher, config *jsonconfig.SocksConfig) *SocksServer {
+func NewSocksServer(dispatcher app.PacketDispatcher, config config.SocksConfig) *SocksServer {
 	return &SocksServer{
 		dispatcher: dispatcher,
 		config:     config,
@@ -48,7 +48,7 @@ func (this *SocksServer) Listen(port v2net.Port) error {
 	}
 	this.accepting = true
 	go this.AcceptConnections(listener)
-	if this.config.UDPEnabled {
+	if this.config.UDPEnabled() {
 		this.ListenUDP(port)
 	}
 	return nil
@@ -138,7 +138,7 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 		return err
 	}
 
-	if request.Command == protocol.CmdUdpAssociate && this.config.UDPEnabled {
+	if request.Command == protocol.CmdUdpAssociate && this.config.UDPEnabled() {
 		return this.handleUDP(reader, writer)
 	}
 

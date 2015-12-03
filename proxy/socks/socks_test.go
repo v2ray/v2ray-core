@@ -239,7 +239,7 @@ func TestSocksUdpSend(t *testing.T) {
 			ProtocolValue: "socks",
 			SettingsValue: &json.SocksConfig{
 				AuthMethod: "noauth",
-				UDPEnabled: true,
+				UDP:        true,
 			},
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{

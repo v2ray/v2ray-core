@@ -59,7 +59,7 @@ func (this *IPAddress) UnmarshalJSON(data []byte) error {
 type SocksConfig struct {
 	AuthMethod string          `json:"auth"`
 	Accounts   SocksAccountMap `json:"accounts"`
-	UDPEnabled bool            `json:"udp"`
+	UDP        bool            `json:"udp"`
 	HostIP     IPAddress       `json:"ip"`
 }
 
@@ -77,6 +77,10 @@ func (sc *SocksConfig) HasAccount(user, pass string) bool {
 
 func (sc *SocksConfig) IP() net.IP {
 	return net.IP(sc.HostIP)
+}
+
+func (this *SocksConfig) UDPEnabled() bool {
+	return this.UDP
 }
 
 func init() {

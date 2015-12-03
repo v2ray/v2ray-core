@@ -49,7 +49,7 @@ func TestNoAuthConfig(t *testing.T) {
 	assert.Bool(config.IsNoAuth()).IsTrue()
 	assert.Bool(config.IsPassword()).IsFalse()
 	assert.String(config.IP()).Equals("8.8.8.8")
-	assert.Bool(config.UDPEnabled).IsFalse()
+	assert.Bool(config.UDPEnabled()).IsFalse()
 }
 
 func TestUserPassConfig(t *testing.T) {
@@ -61,5 +61,5 @@ func TestUserPassConfig(t *testing.T) {
 	assert.Bool(config.IsNoAuth()).IsFalse()
 	assert.Bool(config.IsPassword()).IsTrue()
 	assert.Bool(config.HasAccount("x", "y")).IsTrue()
-	assert.Bool(config.UDPEnabled).IsTrue()
+	assert.Bool(config.UDPEnabled()).IsTrue()
 }
