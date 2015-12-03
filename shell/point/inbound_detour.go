@@ -28,7 +28,7 @@ func (this *InboundDetourHandler) Initialize() error {
 	}
 
 	ports := this.config.PortRange()
-	this.ich = make([]*InboundConnectionHandlerWithPort, 0, ports.From()-ports.To()+1)
+	this.ich = make([]*InboundConnectionHandlerWithPort, 0, ports.To()-ports.From()+1)
 	for i := ports.From(); i <= ports.To(); i++ {
 		ichConfig := this.config.Settings()
 		ich, err := ichFactory.Create(this.point, ichConfig)
