@@ -1027,14 +1027,50 @@
   "outboundDetour": [
     {
       "protocol": "freedom",
-      "settings": {},
-      "tag": "direct"
+      "tag": "direct",
+      "settings": {}
+    },
+    {
+      "protocol": "vmess",
+      "tag": "blocked",
+      "settings": {
+        "vnext": [
+          {
+            "address": "195.154.64.131",
+            "port": 17173,
+            "users": [
+              {"id": "b379d0a6-433b-446c-833f-f1932ffec16f"},
+              {"id": "c2899ce9-9f60-4229-ac9e-33ea5d46f0e0"},
+              {"id": "7342c27b-f0df-4ce4-a3a6-61d6b476b9d4"},
+              {"id": "11c96776-c686-4f3e-9894-a66304c26345"},
+              {"id": "8829fa39-14ef-4bfa-9e9c-e60e178e5c6f"}
+            ]
+          }
+        ]
+      }
     }
   ],
-  "routing": {
+"routing": {
     "strategy": "rules",
     "settings": {
       "rules": [
+        {
+          "type": "field",
+          "domain": [
+          	"cn",
+            "baidu.com",
+            "qq.com"
+          ],
+          "outboundTag": "direct"
+        },
+        {
+          "type": "field",
+          "domain": [
+            "google.com",
+            "twitter.com"
+          ],
+          "outboundTag": "blocked"
+        },
         {
           "type": "field",
           "ip": [
