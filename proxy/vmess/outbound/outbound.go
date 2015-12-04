@@ -178,7 +178,21 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 	}
 	log.Info("VMessOut received %d bytes from %s", buffer.Len()-4, conn.RemoteAddr().String())
 
-	buffer.SliceFrom(4)
+	responseBegin := 4
+	if buffer.Value[2] != 0 {
+		dataLen := int(buffer.Value[3])
+		if buffer.Len() < dataLen+4 { // Rare case
+			diffBuffer := make([]byte, dataLen+4-buffer.Len())
+			v2net.ReadAllBytes(decryptResponseReader, diffBuffer)
+			buffer.Append(diffBuffer)
+		}
+		command := buffer.Value[2]
+		data := buffer.Value[4 : 4+dataLen]
+		go handleCommand(command, data)
+		responseBegin = 4 + dataLen
+	}
+
+	buffer.SliceFrom(responseBegin)
 	output <- buffer
 
 	if !isUDP {
