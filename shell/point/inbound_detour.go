@@ -50,6 +50,7 @@ func (this *InboundDetourHandler) Start() error {
 		return retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
 			err := ich.handler.Listen(ich.port)
 			if err != nil {
+				log.Error("Failed to start inbound detour on port %d: %v", ich.port, err)
 				return err
 			}
 			return nil
