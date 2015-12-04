@@ -1,3 +1,7 @@
+// Package point is a shell of V2Ray to run on various of systems.
+// Point server is a full functionality proxying system. It consists of an inbound and an outbound
+// connection, as well as any number of inbound and outbound detours. It provides a way internally
+// to route network packets.
 package point
 
 import (
@@ -10,7 +14,7 @@ import (
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
-// Point is an single server in V2Ray system.
+// Point shell of V2Ray.
 type Point struct {
 	port   v2net.Port
 	ich    connhandler.InboundConnectionHandler
