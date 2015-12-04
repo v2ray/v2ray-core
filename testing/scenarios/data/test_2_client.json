@@ -1,0 +1,37 @@
+{
+  "port": 50010,
+  "inbound": {
+    "protocol": "socks",
+    "settings": {
+      "auth": "noauth",
+      "udp": false,
+      "ip": "127.0.0.1"
+    }
+  },
+  "outbound": {
+    "protocol": "vmess",
+    "settings": {
+      "vnext": [
+        {
+          "address": "127.0.0.1",
+          "port": 50017,
+          "users": [
+            {"id": "d17a1af7-efa5-42ca-b7e9-6a35282d737f"}
+          ]
+        }
+      ]
+    }
+  },
+  "inboundDetour": [
+    {
+      "protocol": "dokodemo-door",
+      "port": "50011-50015",
+      "settings": {
+        "address": "127.0.0.1",
+        "port": 50016,
+        "network": "tcp",
+        "timeout": 0
+      }
+    }
+  ]
+}

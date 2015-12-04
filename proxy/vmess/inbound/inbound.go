@@ -1,4 +1,4 @@
-package vmess
+package inbound
 
 import (
 	"crypto/md5"

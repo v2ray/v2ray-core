@@ -47,13 +47,17 @@ func (this *InboundDetourHandler) Initialize() error {
 // Starts the inbound connection handler.
 func (this *InboundDetourHandler) Start() error {
 	for _, ich := range this.ich {
-		return retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
+		err := retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
 			err := ich.handler.Listen(ich.port)
 			if err != nil {
+				log.Error("Failed to start inbound detour on port %d: %v", ich.port, err)
 				return err
 			}
 			return nil
 		})
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

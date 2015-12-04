@@ -1,0 +1,97 @@
+{
+  "port": 50000,
+  "inbound": {
+    "protocol": "socks",
+    "settings": {
+      "auth": "noauth",
+      "udp": true,
+      "ip": "127.0.0.1"
+    }
+  },
+  "outbound": {
+    "protocol": "vmess",
+    "settings": {
+      "vnext": [
+        {
+          "address": "127.0.0.1",
+          "port": 50001,
+          "users": [
+            {"id": "d17a1af7-efa5-42ca-b7e9-6a35282d737f"}
+          ]
+        }
+      ]
+    }
+  },
+  "outboundDetour": [
+    {
+      "protocol": "vmess",
+      "settings": {
+        "vnext": [
+          {
+            "address": "127.0.0.1",
+            "port": 50005,
+            "users": [
+              {"id": "d17a1af7-efa5-42ca-b7e9-6a35282d737f"}
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "protocol": "vmess",
+      "settings": {
+        "vnext": [
+          {
+            "address": "127.0.0.1",
+            "port": 50006,
+            "users": [
+              {"id": "d17a1af7-efa5-42ca-b7e9-6a35282d737f"}
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "protocol": "vmess",
+      "settings": {
+        "vnext": [
+          {
+            "address": "127.0.0.1",
+            "port": 50007,
+            "users": [
+              {"id": "d17a1af7-efa5-42ca-b7e9-6a35282d737f"}
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "protocol": "vmess",
+      "settings": {
+        "vnext": [
+          {
+            "address": "127.0.0.1",
+            "port": 50008,
+            "users": [
+              {"id": "d17a1af7-efa5-42ca-b7e9-6a35282d737f"}
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "protocol": "vmess",
+      "settings": {
+        "vnext": [
+          {
+            "address": "127.0.0.1",
+            "port": 50009,
+            "users": [
+              {"id": "d17a1af7-efa5-42ca-b7e9-6a35282d737f"}
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

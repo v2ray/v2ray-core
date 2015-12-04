@@ -1,0 +1,32 @@
+{
+  "port": 50001,
+  "inbound": {
+    "protocol": "vmess",
+    "settings": {
+      "clients": [
+        {
+          "id": "d17a1af7-efa5-42ca-b7e9-6a35282d737f",
+          "level": 1
+        }
+      ]
+    }
+  },
+  "outbound": {
+    "protocol": "freedom",
+    "settings": {}
+  },
+  "inboundDetour": [
+    {
+      "protocol": "vmess",
+      "port": "50005-50009",
+      "settings": {
+        "clients": [
+          {
+            "id": "d17a1af7-efa5-42ca-b7e9-6a35282d737f",
+            "level": 1
+          }
+        ]
+      }
+    }
+  ]
+}
