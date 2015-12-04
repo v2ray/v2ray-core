@@ -56,7 +56,7 @@ func (this *InboundDetourHandler) Start() error {
 			return nil
 		})
 		if err != nil {
-		  return err
+			return err
 		}
 	}
 	return nil

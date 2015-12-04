@@ -1,8 +1,8 @@
 package scenarios
 
 import (
-  "os"
-  "path/filepath"
+	"os"
+	"path/filepath"
 
 	_ "github.com/v2ray/v2ray-core/app/router/config/json"
 	_ "github.com/v2ray/v2ray-core/app/router/rules"
@@ -25,11 +25,11 @@ import (
 )
 
 func TestFile(filename string) string {
-  return filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "v2ray", "v2ray-core", "testing", "scenarios", "data", filename)
+	return filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "v2ray", "v2ray-core", "testing", "scenarios", "data", filename)
 }
 
 func InitializeServer(configFile string) error {
-  config, err := jsonconf.LoadConfig(configFile)
+	config, err := jsonconf.LoadConfig(configFile)
 	if err != nil {
 		log.Error("Failed to read config file (%s): %v", configFile, err)
 		return err
