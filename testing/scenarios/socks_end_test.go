@@ -16,24 +16,6 @@ var (
 	serverUp = false
 )
 
-func setupServer() error {
-	if serverUp {
-		return nil
-	}
-	err := InitializeServer(TestFile("test_1_client.json"))
-	if err != nil {
-		return err
-	}
-
-	err = InitializeServer(TestFile("test_1_server.json"))
-	if err != nil {
-		return err
-	}
-
-	serverUp = true
-	return nil
-}
-
 func TestTCPConnection(t *testing.T) {
 	v2testing.Current(t)
 
@@ -50,7 +32,7 @@ func TestTCPConnection(t *testing.T) {
 	_, err := tcpServer.Start()
 	assert.Error(err).IsNil()
 
-	assert.Error(setupServer()).IsNil()
+	assert.Error(InitializeServerSetOnce("test_1")).IsNil()
 
 	socksPort := v2net.Port(50000)
 
@@ -117,7 +99,7 @@ func TestTCPBind(t *testing.T) {
 	_, err := tcpServer.Start()
 	assert.Error(err).IsNil()
 
-	assert.Error(setupServer()).IsNil()
+	assert.Error(InitializeServerSetOnce("test_1")).IsNil()
 
 	socksPort := v2net.Port(50000)
 
@@ -165,7 +147,7 @@ func TestUDPAssociate(t *testing.T) {
 	_, err := udpServer.Start()
 	assert.Error(err).IsNil()
 
-	assert.Error(setupServer()).IsNil()
+	assert.Error(InitializeServerSetOnce("test_1")).IsNil()
 
 	socksPort := v2net.Port(50000)
 

@@ -24,8 +24,28 @@ import (
 	_ "github.com/v2ray/v2ray-core/proxy/vmess/config/json"
 )
 
+var (
+	serverup = make(map[string]bool)
+)
+
 func TestFile(filename string) string {
 	return filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "v2ray", "v2ray-core", "testing", "scenarios", "data", filename)
+}
+
+func InitializeServerSetOnce(testcase string) error {
+	if up, found := serverup[testcase]; found && up {
+		return nil
+	}
+	err := InitializeServer(TestFile(testcase + "_server.json"))
+	if err != nil {
+		return err
+	}
+	err = InitializeServer(TestFile(testcase + "_client.json"))
+	if err != nil {
+		return err
+	}
+	serverup[testcase] = true
+	return nil
 }
 
 func InitializeServer(configFile string) error {

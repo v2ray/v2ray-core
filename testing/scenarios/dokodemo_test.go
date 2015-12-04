@@ -25,11 +25,7 @@ func TestDokodemoTCP(t *testing.T) {
 	_, err := tcpServer.Start()
 	assert.Error(err).IsNil()
 
-	err = InitializeServer(TestFile("test_2_client.json"))
-	assert.Error(err).IsNil()
-
-	err = InitializeServer(TestFile("test_2_server.json"))
-	assert.Error(err).IsNil()
+	assert.Error(InitializeServerSetOnce("test_2")).IsNil()
 
 	dokodemoPortStart := v2net.Port(50011)
 	dokodemoPortEnd := v2net.Port(50015)
