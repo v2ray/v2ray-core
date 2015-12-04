@@ -39,6 +39,7 @@ func (queue *timedQueueImpl) Pop() interface{} {
 	return v
 }
 
+// TimedQueue is a priority queue that entries with oldest timestamp get removed first.
 type TimedQueue struct {
 	queue   timedQueueImpl
 	access  sync.RWMutex
