@@ -12,12 +12,6 @@ import (
 	"github.com/v2ray/v2ray-core/testing/servers/udp"
 )
 
-var (
-	EmptyRouting = func(v2net.Destination) bool {
-		return false
-	}
-)
-
 func TestTCPConnection(t *testing.T) {
 	v2testing.Current(t)
 
@@ -34,13 +28,18 @@ func TestTCPConnection(t *testing.T) {
 	_, err := tcpServer.Start()
 	assert.Error(err).IsNil()
 
-	v2rayPort, _, err := setUpV2Ray(EmptyRouting)
+	err = InitializeServer(TestFile("test_1_client.json"))
 	assert.Error(err).IsNil()
+
+	err = InitializeServer(TestFile("test_1_server.json"))
+	assert.Error(err).IsNil()
+
+	socksPort := v2net.Port(50000)
 
 	for i := 0; i < 100; i++ {
 		conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 			IP:   []byte{127, 0, 0, 1},
-			Port: int(v2rayPort),
+			Port: int(socksPort),
 		})
 
 		authRequest := socks5AuthMethodRequest(byte(0))
@@ -100,12 +99,17 @@ func TestTCPBind(t *testing.T) {
 	_, err := tcpServer.Start()
 	assert.Error(err).IsNil()
 
-	v2rayPort, _, err := setUpV2Ray(EmptyRouting)
+	err = InitializeServer(TestFile("test_1_client.json"))
 	assert.Error(err).IsNil()
+
+	err = InitializeServer(TestFile("test_1_server.json"))
+	assert.Error(err).IsNil()
+
+	socksPort := v2net.Port(50000)
 
 	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 		IP:   []byte{127, 0, 0, 1},
-		Port: int(v2rayPort),
+		Port: int(socksPort),
 	})
 
 	authRequest := socks5AuthMethodRequest(byte(0))
@@ -147,12 +151,17 @@ func TestUDPAssociate(t *testing.T) {
 	_, err := udpServer.Start()
 	assert.Error(err).IsNil()
 
-	v2rayPort, _, err := setUpV2Ray(EmptyRouting)
+	err = InitializeServer(TestFile("test_1_client.json"))
 	assert.Error(err).IsNil()
+
+	err = InitializeServer(TestFile("test_1_server.json"))
+	assert.Error(err).IsNil()
+
+	socksPort := v2net.Port(50000)
 
 	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 		IP:   []byte{127, 0, 0, 1},
-		Port: int(v2rayPort),
+		Port: int(socksPort),
 	})
 
 	authRequest := socks5AuthMethodRequest(byte(0))
@@ -173,11 +182,11 @@ func TestUDPAssociate(t *testing.T) {
 	connectResponse := make([]byte, 1024)
 	nBytes, err = conn.Read(connectResponse)
 	assert.Error(err).IsNil()
-	assert.Bytes(connectResponse[:nBytes]).Equals([]byte{socks5Version, 0, 0, 1, 127, 0, 0, 1, byte(v2rayPort >> 8), byte(v2rayPort)})
+	assert.Bytes(connectResponse[:nBytes]).Equals([]byte{socks5Version, 0, 0, 1, 127, 0, 0, 1, byte(socksPort >> 8), byte(socksPort)})
 
 	udpConn, err := net.DialUDP("udp", nil, &net.UDPAddr{
 		IP:   []byte{127, 0, 0, 1},
-		Port: int(v2rayPort),
+		Port: int(socksPort),
 	})
 	assert.Error(err).IsNil()
 
