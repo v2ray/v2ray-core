@@ -24,15 +24,15 @@ var (
 
 // SocksServer is a SOCKS 5 proxy server
 type SocksServer struct {
-	accepting  bool
-	dispatcher app.PacketDispatcher
-	config     config.SocksConfig
+	accepting bool
+	space     *app.Space
+	config    config.SocksConfig
 }
 
-func NewSocksServer(dispatcher app.PacketDispatcher, config config.SocksConfig) *SocksServer {
+func NewSocksServer(space *app.Space, config config.SocksConfig) *SocksServer {
 	return &SocksServer{
-		dispatcher: dispatcher,
-		config:     config,
+		space:  space,
+		config: config,
 	}
 }
 
@@ -252,7 +252,7 @@ func (this *SocksServer) handleSocks4(reader io.Reader, writer io.Writer, auth p
 }
 
 func (this *SocksServer) transport(reader io.Reader, writer io.Writer, firstPacket v2net.Packet) {
-	ray := this.dispatcher.DispatchToOutbound(firstPacket)
+	ray := this.space.PacketDispatcher().DispatchToOutbound(firstPacket)
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 

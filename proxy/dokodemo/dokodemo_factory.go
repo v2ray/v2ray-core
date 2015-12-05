@@ -9,9 +9,9 @@ import (
 type DokodemoDoorFactory struct {
 }
 
-func (this DokodemoDoorFactory) Create(dispatcher app.PacketDispatcher, rawConfig interface{}) (connhandler.InboundConnectionHandler, error) {
+func (this DokodemoDoorFactory) Create(space *app.Space, rawConfig interface{}) (connhandler.InboundConnectionHandler, error) {
 	config := rawConfig.(*json.DokodemoConfig)
-	return NewDokodemoDoor(dispatcher, config), nil
+	return NewDokodemoDoor(space, config), nil
 }
 
 func init() {

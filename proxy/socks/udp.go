@@ -65,7 +65,7 @@ func (this *SocksServer) AcceptPackets(conn *net.UDPConn) error {
 }
 
 func (this *SocksServer) handlePacket(conn *net.UDPConn, packet v2net.Packet, clientAddr *net.UDPAddr, targetAddr v2net.Address) {
-	ray := this.dispatcher.DispatchToOutbound(packet)
+	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
 	close(ray.InboundInput())
 
 	for data := range ray.InboundOutput() {

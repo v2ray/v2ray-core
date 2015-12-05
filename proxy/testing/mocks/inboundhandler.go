@@ -11,7 +11,7 @@ import (
 
 type InboundConnectionHandler struct {
 	Port       v2net.Port
-	Dispatcher app.PacketDispatcher
+	space      *app.Space
 	ConnInput  io.Reader
 	ConnOutput io.Writer
 }
@@ -22,7 +22,7 @@ func (this *InboundConnectionHandler) Listen(port v2net.Port) error {
 }
 
 func (this *InboundConnectionHandler) Communicate(packet v2net.Packet) error {
-	ray := this.Dispatcher.DispatchToOutbound(packet)
+	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
 
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
@@ -49,7 +49,7 @@ func (this *InboundConnectionHandler) Communicate(packet v2net.Packet) error {
 	return nil
 }
 
-func (this *InboundConnectionHandler) Create(dispatcher app.PacketDispatcher, config interface{}) (connhandler.InboundConnectionHandler, error) {
-	this.Dispatcher = dispatcher
+func (this *InboundConnectionHandler) Create(space *app.Space, config interface{}) (connhandler.InboundConnectionHandler, error) {
+	this.space = space
 	return this, nil
 }

@@ -1,6 +1,7 @@
 package point
 
 import (
+	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
@@ -15,7 +16,7 @@ type InboundConnectionHandlerWithPort struct {
 
 // Handler for inbound detour connections.
 type InboundDetourHandler struct {
-	point  *Point
+	space  *app.Space
 	config config.InboundDetourConfig
 	ich    []*InboundConnectionHandlerWithPort
 }
@@ -31,7 +32,7 @@ func (this *InboundDetourHandler) Initialize() error {
 	this.ich = make([]*InboundConnectionHandlerWithPort, 0, ports.To()-ports.From()+1)
 	for i := ports.From(); i <= ports.To(); i++ {
 		ichConfig := this.config.Settings()
-		ich, err := ichFactory.Create(this.point, ichConfig)
+		ich, err := ichFactory.Create(this.space, ichConfig)
 		if err != nil {
 			log.Error("Failed to create inbound connection handler: %v", err)
 			return err

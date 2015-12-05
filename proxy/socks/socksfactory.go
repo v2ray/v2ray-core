@@ -9,8 +9,8 @@ import (
 type SocksServerFactory struct {
 }
 
-func (this SocksServerFactory) Create(dispatcher app.PacketDispatcher, rawConfig interface{}) (connhandler.InboundConnectionHandler, error) {
-	return NewSocksServer(dispatcher, rawConfig.(config.SocksConfig)), nil
+func (this SocksServerFactory) Create(space *app.Space, rawConfig interface{}) (connhandler.InboundConnectionHandler, error) {
+	return NewSocksServer(space, rawConfig.(config.SocksConfig)), nil
 }
 
 func init() {

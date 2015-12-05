@@ -8,7 +8,7 @@ import (
 // A InboundConnectionHandlerFactory creates InboundConnectionHandler on demand.
 type InboundConnectionHandlerFactory interface {
 	// Create creates a new InboundConnectionHandler with given configuration.
-	Create(dispatch app.PacketDispatcher, config interface{}) (InboundConnectionHandler, error)
+	Create(space *app.Space, config interface{}) (InboundConnectionHandler, error)
 }
 
 // A InboundConnectionHandler handles inbound network connections to V2Ray.

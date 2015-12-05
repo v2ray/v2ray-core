@@ -5,6 +5,7 @@
 package point
 
 import (
+	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/app/router"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -22,6 +23,7 @@ type Point struct {
 	idh    []*InboundDetourHandler
 	odh    map[string]connhandler.OutboundConnectionHandler
 	router router.Router
+	space  *app.Space
 }
 
 // NewPoint returns a new Point server based on given configuration.
@@ -49,13 +51,16 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 		log.SetLogLevel(logConfig.LogLevel())
 	}
 
+	vpoint.space = app.NewSpace()
+	vpoint.space.Bind(vpoint)
+
 	ichFactory := connhandler.GetInboundConnectionHandlerFactory(pConfig.InboundConfig().Protocol())
 	if ichFactory == nil {
 		log.Error("Unknown inbound connection handler factory %s", pConfig.InboundConfig().Protocol())
 		return nil, config.BadConfiguration
 	}
 	ichConfig := pConfig.InboundConfig().Settings()
-	ich, err := ichFactory.Create(vpoint, ichConfig)
+	ich, err := ichFactory.Create(vpoint.space, ichConfig)
 	if err != nil {
 		log.Error("Failed to create inbound connection handler: %v", err)
 		return nil, err
@@ -80,7 +85,7 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 		vpoint.idh = make([]*InboundDetourHandler, len(detours))
 		for idx, detourConfig := range detours {
 			detourHandler := &InboundDetourHandler{
-				point:  vpoint,
+				space:  vpoint.space,
 				config: detourConfig,
 			}
 			err := detourHandler.Initialize()

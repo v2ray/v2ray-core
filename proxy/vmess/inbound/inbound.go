@@ -20,15 +20,15 @@ import (
 
 // Inbound connection handler that handles messages in VMess format.
 type VMessInboundHandler struct {
-	dispatcher app.PacketDispatcher
-	clients    user.UserSet
-	accepting  bool
+	space     *app.Space
+	clients   user.UserSet
+	accepting bool
 }
 
-func NewVMessInboundHandler(dispatcher app.PacketDispatcher, clients user.UserSet) *VMessInboundHandler {
+func NewVMessInboundHandler(space *app.Space, clients user.UserSet) *VMessInboundHandler {
 	return &VMessInboundHandler{
-		dispatcher: dispatcher,
-		clients:    clients,
+		space:   space,
+		clients: clients,
 	}
 }
 
@@ -78,7 +78,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *net.TCPConn) error
 	log.Access(connection.RemoteAddr().String(), request.Address.String(), log.AccessAccepted, "")
 	log.Debug("VMessIn: Received request for %s", request.Address.String())
 
-	ray := this.dispatcher.DispatchToOutbound(v2net.NewPacket(request.Destination(), nil, true))
+	ray := this.space.PacketDispatcher().DispatchToOutbound(v2net.NewPacket(request.Destination(), nil, true))
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 	var readFinish, writeFinish sync.Mutex
@@ -142,7 +142,7 @@ func handleOutput(request *protocol.VMessRequest, writer io.Writer, output <-cha
 type VMessInboundHandlerFactory struct {
 }
 
-func (this *VMessInboundHandlerFactory) Create(dispatcher app.PacketDispatcher, rawConfig interface{}) (connhandler.InboundConnectionHandler, error) {
+func (this *VMessInboundHandlerFactory) Create(space *app.Space, rawConfig interface{}) (connhandler.InboundConnectionHandler, error) {
 	config := rawConfig.(config.Inbound)
 
 	allowedClients := user.NewTimedUserSet()
@@ -150,7 +150,7 @@ func (this *VMessInboundHandlerFactory) Create(dispatcher app.PacketDispatcher, 
 		allowedClients.AddUser(user)
 	}
 
-	return NewVMessInboundHandler(dispatcher, allowedClients), nil
+	return NewVMessInboundHandler(space, allowedClients), nil
 }
 
 func init() {

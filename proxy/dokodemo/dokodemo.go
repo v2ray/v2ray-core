@@ -14,16 +14,16 @@ import (
 )
 
 type DokodemoDoor struct {
-	config     *json.DokodemoConfig
-	accepting  bool
-	address    v2net.Address
-	dispatcher app.PacketDispatcher
+	config    *json.DokodemoConfig
+	accepting bool
+	address   v2net.Address
+	space     *app.Space
 }
 
-func NewDokodemoDoor(dispatcher app.PacketDispatcher, config *json.DokodemoConfig) *DokodemoDoor {
+func NewDokodemoDoor(space *app.Space, config *json.DokodemoConfig) *DokodemoDoor {
 	d := &DokodemoDoor{
-		config:     config,
-		dispatcher: dispatcher,
+		config: config,
+		space:  space,
 	}
 	ip := net.ParseIP(config.Host)
 	if ip != nil {
@@ -79,7 +79,7 @@ func (this *DokodemoDoor) handleUDPPackets(udpConn *net.UDPConn) {
 		}
 
 		packet := v2net.NewPacket(v2net.NewUDPDestination(this.address), buffer, false)
-		ray := this.dispatcher.DispatchToOutbound(packet)
+		ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
 		close(ray.InboundInput())
 
 		for payload := range ray.InboundOutput() {
@@ -120,7 +120,7 @@ func (this *DokodemoDoor) HandleTCPConnection(conn *net.TCPConn) {
 	defer conn.Close()
 
 	packet := v2net.NewPacket(v2net.NewTCPDestination(this.address), nil, true)
-	ray := this.dispatcher.DispatchToOutbound(packet)
+	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
 
 	var inputFinish, outputFinish sync.Mutex
 	inputFinish.Lock()
