@@ -11,21 +11,24 @@ import (
 	vmessconfig "github.com/v2ray/v2ray-core/proxy/vmess/config"
 )
 
-type RawConfigTarget struct {
-	Address string        `json:"address"`
-	Port    v2net.Port    `json:"port"`
-	Users   []*ConfigUser `json:"users"`
-}
-
 type ConfigTarget struct {
 	Address v2net.Address
 	Users   []*ConfigUser
 }
 
 func (t *ConfigTarget) UnmarshalJSON(data []byte) error {
+	type RawConfigTarget struct {
+		Address string        `json:"address"`
+		Port    v2net.Port    `json:"port"`
+		Users   []*ConfigUser `json:"users"`
+	}
 	var rawConfig RawConfigTarget
 	if err := json.Unmarshal(data, &rawConfig); err != nil {
 		return err
+	}
+	if len(rawConfig.Users) == 0 {
+		log.Error("0 user configured for VMess outbound.")
+		return proxyconfig.BadConfiguration
 	}
 	t.Users = rawConfig.Users
 	ip := net.ParseIP(rawConfig.Address)
@@ -41,16 +44,28 @@ type Outbound struct {
 	TargetList []*ConfigTarget `json:"vnext"`
 }
 
-func (o *Outbound) Targets() []*vmessconfig.OutboundTarget {
-	targets := make([]*vmessconfig.OutboundTarget, 0, 2*len(o.TargetList))
+func (this *Outbound) UnmarshallJSON(data []byte) error {
+	err := json.Unmarshal(data, this)
+	if err != nil {
+		return err
+	}
+	if len(this.TargetList) == 0 {
+		log.Error("0 VMess receiver configured.")
+		return proxyconfig.BadConfiguration
+	}
+	return nil
+}
+
+func (o *Outbound) Receivers() []*vmessconfig.Receiver {
+	targets := make([]*vmessconfig.Receiver, 0, 2*len(o.TargetList))
 	for _, rawTarget := range o.TargetList {
 		users := make([]vmessconfig.User, 0, len(rawTarget.Users))
 		for _, rawUser := range rawTarget.Users {
 			users = append(users, rawUser)
 		}
-		targets = append(targets, &vmessconfig.OutboundTarget{
-			Destination: v2net.NewTCPDestination(rawTarget.Address),
-			Accounts:    users,
+		targets = append(targets, &vmessconfig.Receiver{
+			Address:  rawTarget.Address,
+			Accounts: users,
 		})
 	}
 	return targets

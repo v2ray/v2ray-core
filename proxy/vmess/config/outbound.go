@@ -4,11 +4,11 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
-type OutboundTarget struct {
-	Destination v2net.Destination
-	Accounts    []User
+type Receiver struct {
+	Address  v2net.Address
+	Accounts []User
 }
 
 type Outbound interface {
-	Targets() []*OutboundTarget
+	Receivers() []*Receiver
 }

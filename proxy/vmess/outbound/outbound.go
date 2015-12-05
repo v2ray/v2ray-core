@@ -3,7 +3,6 @@ package outbound
 import (
 	"crypto/md5"
 	"crypto/rand"
-	mrand "math/rand"
 	"net"
 	"sync"
 
@@ -19,41 +18,11 @@ import (
 )
 
 type VMessOutboundHandler struct {
-	vNextList []*config.OutboundTarget
-}
-
-func NewVMessOutboundHandler(vNextList []*config.OutboundTarget) *VMessOutboundHandler {
-	return &VMessOutboundHandler{
-		vNextList: vNextList,
-	}
-}
-
-func pickVNext(serverList []*config.OutboundTarget) (v2net.Destination, config.User) {
-	vNextLen := len(serverList)
-	if vNextLen == 0 {
-		panic("VMessOut: Zero vNext is configured.")
-	}
-	vNextIndex := 0
-	if vNextLen > 1 {
-		vNextIndex = mrand.Intn(vNextLen)
-	}
-
-	vNext := serverList[vNextIndex]
-	vNextUserLen := len(vNext.Accounts)
-	if vNextUserLen == 0 {
-		panic("VMessOut: Zero User account.")
-	}
-	vNextUserIndex := 0
-	if vNextUserLen > 1 {
-		vNextUserIndex = mrand.Intn(vNextUserLen)
-	}
-	vNextUser := vNext.Accounts[vNextUserIndex]
-	return vNext.Destination, vNextUser
+	receiverManager *ReceiverManager
 }
 
 func (this *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {
-	vNextList := this.vNextList
-	vNextAddress, vNextUser := pickVNext(vNextList)
+	vNextAddress, vNextUser := this.receiverManager.PickReceiver()
 
 	command := protocol.CmdTCP
 	if firstPacket.Destination().IsUDP() {
@@ -76,8 +45,8 @@ func (this *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray ray.Out
 	return startCommunicate(request, vNextAddress, ray, firstPacket)
 }
 
-func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ray ray.OutboundRay, firstPacket v2net.Packet) error {
-	conn, err := net.Dial(dest.Network(), dest.Address().String())
+func startCommunicate(request *protocol.VMessRequest, dest v2net.Address, ray ray.OutboundRay, firstPacket v2net.Packet) error {
+	conn, err := net.Dial("tcp", dest.String())
 	if err != nil {
 		log.Error("Failed to open %s: %v", dest.String(), err)
 		if ray != nil {
@@ -96,7 +65,7 @@ func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ra
 	responseFinish.Lock()
 
 	go handleRequest(conn, request, firstPacket, input, &requestFinish)
-	go handleResponse(conn, request, output, &responseFinish, dest.IsUDP())
+	go handleResponse(conn, request, output, &responseFinish, (request.Command == protocol.CmdUDP))
 
 	requestFinish.Lock()
 	if tcpConn, ok := conn.(*net.TCPConn); ok {
@@ -207,7 +176,9 @@ type VMessOutboundHandlerFactory struct {
 
 func (this *VMessOutboundHandlerFactory) Create(rawConfig interface{}) (connhandler.OutboundConnectionHandler, error) {
 	vOutConfig := rawConfig.(config.Outbound)
-	return NewVMessOutboundHandler(vOutConfig.Targets()), nil
+	return &VMessOutboundHandler{
+		receiverManager: NewReceiverManager(vOutConfig.Receivers()),
+	}, nil
 }
 
 func init() {
