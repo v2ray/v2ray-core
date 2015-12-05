@@ -3,10 +3,10 @@ package log
 import (
 	"io/ioutil"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
+	"github.com/v2ray/v2ray-core/common/serial"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
@@ -22,14 +22,15 @@ func TestAccessLog(t *testing.T) {
 	Access("test_from", "test_to", AccessAccepted, "test_reason")
 	<-time.After(2 * time.Second)
 
-	accessLoggerInstance.(*fileAccessLogger).close()
-	accessLoggerInstance = &noOpAccessLogger{}
+	accessLoggerInstance.(*fileLogWriter).close()
+	accessLoggerInstance = &noOpLogWriter{}
 
 	content, err := ioutil.ReadFile(filename)
 	assert.Error(err).IsNil()
 
-	assert.Bool(strings.Contains(string(content), "test_from")).IsTrue()
-	assert.Bool(strings.Contains(string(content), "test_to")).IsTrue()
-	assert.Bool(strings.Contains(string(content), "test_reason")).IsTrue()
-	assert.Bool(strings.Contains(string(content), "accepted")).IsTrue()
+	contentStr := serial.StringLiteral(content)
+	assert.String(contentStr).Contains(serial.StringLiteral("test_from"))
+	assert.String(contentStr).Contains(serial.StringLiteral("test_to"))
+	assert.String(contentStr).Contains(serial.StringLiteral("test_reason"))
+	assert.String(contentStr).Contains(serial.StringLiteral("accepted"))
 }

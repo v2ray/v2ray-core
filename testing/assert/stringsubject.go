@@ -1,6 +1,8 @@
 package assert
 
 import (
+	"strings"
+
 	"github.com/v2ray/v2ray-core/common/serial"
 )
 
@@ -29,5 +31,17 @@ func (subject *StringSubject) DisplayString() string {
 func (subject *StringSubject) Equals(expectation string) {
 	if subject.value.String() != expectation {
 		subject.Fail(subject.DisplayString(), "is equal to", serial.StringLiteral(expectation))
+	}
+}
+
+func (subject *StringSubject) Contains(substring serial.String) {
+	if !strings.Contains(subject.value.String(), substring.String()) {
+		subject.Fail(subject.DisplayString(), "contains", substring)
+	}
+}
+
+func (subject *StringSubject) NotContains(substring serial.String) {
+	if strings.Contains(subject.value.String(), substring.String()) {
+		subject.Fail(subject.DisplayString(), "doesn't contain", substring)
 	}
 }

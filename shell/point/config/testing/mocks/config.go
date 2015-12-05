@@ -3,6 +3,7 @@ package mocks
 import (
 	routerconfig "github.com/v2ray/v2ray-core/app/router/config"
 	routertestingconfig "github.com/v2ray/v2ray-core/app/router/config/testing"
+	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/shell/point/config"
 )
@@ -22,6 +23,20 @@ func (config *ConnectionConfig) Settings() interface{} {
 
 type LogConfig struct {
 	AccessLogValue string
+	ErrorLogValue  string
+	LogLevelValue  log.LogLevel
+}
+
+func (config *LogConfig) AccessLog() string {
+	return config.AccessLogValue
+}
+
+func (this *LogConfig) ErrorLog() string {
+	return this.ErrorLogValue
+}
+
+func (this *LogConfig) LogLevel() log.LogLevel {
+	return this.LogLevelValue
 }
 
 type PortRange struct {
@@ -53,10 +68,6 @@ type OutboundDetourConfig struct {
 
 func (this *OutboundDetourConfig) Tag() string {
 	return this.TagValue
-}
-
-func (config *LogConfig) AccessLog() string {
-	return config.AccessLogValue
 }
 
 type Config struct {

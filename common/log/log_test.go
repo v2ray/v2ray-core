@@ -25,13 +25,14 @@ func TestStreamLogger(t *testing.T) {
 	v2testing.Current(t)
 
 	buffer := bytes.NewBuffer(make([]byte, 0, 1024))
-	logger := &streamLogger{
+	infoLogger = &stdOutLogWriter{
 		logger: log.New(buffer, "", 0),
 	}
-	logger.WriteLog("TestPrefix: ", "Test %s Format", "Stream Logger")
-	assert.Bytes(buffer.Bytes()).Equals([]byte("TestPrefix: Test Stream Logger Format\n"))
+	Info("Test %s Format", "Stream Logger")
+	assert.Bytes(buffer.Bytes()).Equals([]byte("[Info]Test Stream Logger Format\n"))
 
 	buffer.Reset()
-	logger.WriteLog("TestPrefix: ", "Test No Format")
-	assert.Bytes(buffer.Bytes()).Equals([]byte("TestPrefix: Test No Format\n"))
+	errorLogger = infoLogger
+	Error("Test No Format")
+	assert.Bytes(buffer.Bytes()).Equals([]byte("[Error]Test No Format\n"))
 }

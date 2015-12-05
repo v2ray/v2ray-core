@@ -2,6 +2,7 @@ package config
 
 import (
 	routerconfig "github.com/v2ray/v2ray-core/app/router/config"
+	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
@@ -12,6 +13,8 @@ type ConnectionConfig interface {
 
 type LogConfig interface {
 	AccessLog() string
+	ErrorLog() string
+	LogLevel() log.LogLevel
 }
 
 type InboundDetourConfig interface {

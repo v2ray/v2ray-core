@@ -30,6 +30,25 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 	var vpoint = new(Point)
 	vpoint.port = pConfig.Port()
 
+	if pConfig.LogConfig() != nil {
+		logConfig := pConfig.LogConfig()
+		if len(logConfig.AccessLog()) > 0 {
+			err := log.InitAccessLogger(logConfig.AccessLog())
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if len(logConfig.ErrorLog()) > 0 {
+			err := log.InitErrorLogger(logConfig.ErrorLog())
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		log.SetLogLevel(logConfig.LogLevel())
+	}
+
 	ichFactory := connhandler.GetInboundConnectionHandlerFactory(pConfig.InboundConfig().Protocol())
 	if ichFactory == nil {
 		log.Error("Unknown inbound connection handler factory %s", pConfig.InboundConfig().Protocol())
