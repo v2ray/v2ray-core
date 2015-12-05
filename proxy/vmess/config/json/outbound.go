@@ -44,15 +44,20 @@ type Outbound struct {
 	TargetList []*ConfigTarget `json:"vnext"`
 }
 
-func (this *Outbound) UnmarshallJSON(data []byte) error {
-	err := json.Unmarshal(data, this)
+func (this *Outbound) UnmarshalJSON(data []byte) error {
+	type RawOutbound struct {
+		TargetList []*ConfigTarget `json:"vnext"`
+	}
+	rawOutbound := &RawOutbound{}
+	err := json.Unmarshal(data, rawOutbound)
 	if err != nil {
 		return err
 	}
-	if len(this.TargetList) == 0 {
+	if len(rawOutbound.TargetList) == 0 {
 		log.Error("0 VMess receiver configured.")
 		return proxyconfig.BadConfiguration
 	}
+	this.TargetList = rawOutbound.TargetList
 	return nil
 }
 
