@@ -1,5 +1,10 @@
 {
   "port": 50020,
+  "log": {
+    "access": "access.log",
+    "error": "error.log",
+    "loglevel": "error"
+  },
   "inbound": {
     "protocol": "dokodemo-door",
     "settings": {
