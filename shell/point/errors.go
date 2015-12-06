@@ -1,4 +1,4 @@
-package config
+package point
 
 import (
 	"errors"

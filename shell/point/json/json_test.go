@@ -8,7 +8,7 @@ import (
 	_ "github.com/v2ray/v2ray-core/proxy/freedom/config/json"
 	_ "github.com/v2ray/v2ray-core/proxy/socks/config/json"
 	_ "github.com/v2ray/v2ray-core/proxy/vmess/config/json"
-	"github.com/v2ray/v2ray-core/shell/point/config/json"
+	"github.com/v2ray/v2ray-core/shell/point/json"
 
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"

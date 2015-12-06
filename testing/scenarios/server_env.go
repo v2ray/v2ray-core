@@ -9,7 +9,7 @@ import (
 	_ "github.com/v2ray/v2ray-core/app/router/rules/config/json"
 	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/shell/point"
-	jsonconf "github.com/v2ray/v2ray-core/shell/point/config/json"
+	pointjson "github.com/v2ray/v2ray-core/shell/point/json"
 
 	// The following are neccesary as they register handlers in their init functions.
 	_ "github.com/v2ray/v2ray-core/proxy/blackhole"
@@ -49,7 +49,7 @@ func InitializeServerSetOnce(testcase string) error {
 }
 
 func InitializeServer(configFile string) error {
-	config, err := jsonconf.LoadConfig(configFile)
+	config, err := pointjson.LoadConfig(configFile)
 	if err != nil {
 		log.Error("Failed to read config file (%s): %v", configFile, err)
 		return err

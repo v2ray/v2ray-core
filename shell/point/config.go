@@ -1,4 +1,4 @@
-package config
+package point
 
 import (
 	"github.com/v2ray/v2ray-core/app/dns"

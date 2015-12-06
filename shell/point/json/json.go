@@ -10,7 +10,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	proxyconfig "github.com/v2ray/v2ray-core/proxy/common/config"
-	"github.com/v2ray/v2ray-core/shell/point/config"
+	"github.com/v2ray/v2ray-core/shell/point"
 )
 
 // Config is the config for Point server.
@@ -28,7 +28,7 @@ func (config *Config) Port() v2net.Port {
 	return config.PortValue
 }
 
-func (config *Config) LogConfig() config.LogConfig {
+func (config *Config) LogConfig() point.LogConfig {
 	if config.LogConfigValue == nil {
 		return nil
 	}
@@ -42,30 +42,30 @@ func (this *Config) RouterConfig() routerconfig.RouterConfig {
 	return this.RouterConfigValue
 }
 
-func (config *Config) InboundConfig() config.ConnectionConfig {
+func (config *Config) InboundConfig() point.ConnectionConfig {
 	if config.InboundConfigValue == nil {
 		return nil
 	}
 	return config.InboundConfigValue
 }
 
-func (config *Config) OutboundConfig() config.ConnectionConfig {
+func (config *Config) OutboundConfig() point.ConnectionConfig {
 	if config.OutboundConfigValue == nil {
 		return nil
 	}
 	return config.OutboundConfigValue
 }
 
-func (this *Config) InboundDetours() []config.InboundDetourConfig {
-	detours := make([]config.InboundDetourConfig, len(this.InboundDetoursValue))
+func (this *Config) InboundDetours() []point.InboundDetourConfig {
+	detours := make([]point.InboundDetourConfig, len(this.InboundDetoursValue))
 	for idx, detour := range this.InboundDetoursValue {
 		detours[idx] = detour
 	}
 	return detours
 }
 
-func (this *Config) OutboundDetours() []config.OutboundDetourConfig {
-	detours := make([]config.OutboundDetourConfig, len(this.OutboundDetoursValue))
+func (this *Config) OutboundDetours() []point.OutboundDetourConfig {
+	detours := make([]point.OutboundDetourConfig, len(this.OutboundDetoursValue))
 	for idx, detour := range this.OutboundDetoursValue {
 		detours[idx] = detour
 	}

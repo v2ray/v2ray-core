@@ -5,7 +5,7 @@ import (
 	routertestingconfig "github.com/v2ray/v2ray-core/app/router/config/testing"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/shell/point/config"
+	"github.com/v2ray/v2ray-core/shell/point"
 )
 
 type ConnectionConfig struct {
@@ -84,7 +84,7 @@ func (config *Config) Port() v2net.Port {
 	return config.PortValue
 }
 
-func (config *Config) LogConfig() config.LogConfig {
+func (config *Config) LogConfig() point.LogConfig {
 	if config.LogConfigValue == nil {
 		return nil
 	}
@@ -98,30 +98,30 @@ func (this *Config) RouterConfig() routerconfig.RouterConfig {
 	return this.RouterConfigValue
 }
 
-func (this *Config) InboundConfig() config.ConnectionConfig {
+func (this *Config) InboundConfig() point.ConnectionConfig {
 	if this.InboundConfigValue == nil {
 		return nil
 	}
 	return this.InboundConfigValue
 }
 
-func (this *Config) OutboundConfig() config.ConnectionConfig {
+func (this *Config) OutboundConfig() point.ConnectionConfig {
 	if this.OutboundConfigValue == nil {
 		return nil
 	}
 	return this.OutboundConfigValue
 }
 
-func (this *Config) InboundDetours() []config.InboundDetourConfig {
-	detours := make([]config.InboundDetourConfig, len(this.InboundDetoursValue))
+func (this *Config) InboundDetours() []point.InboundDetourConfig {
+	detours := make([]point.InboundDetourConfig, len(this.InboundDetoursValue))
 	for idx, detour := range this.InboundDetoursValue {
 		detours[idx] = detour
 	}
 	return detours
 }
 
-func (this *Config) OutboundDetours() []config.OutboundDetourConfig {
-	detours := make([]config.OutboundDetourConfig, len(this.OutboundDetoursValue))
+func (this *Config) OutboundDetours() []point.OutboundDetourConfig {
+	detours := make([]point.OutboundDetourConfig, len(this.OutboundDetoursValue))
 	for idx, detour := range this.OutboundDetoursValue {
 		detours[idx] = detour
 	}

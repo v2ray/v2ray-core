@@ -11,7 +11,6 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
-	"github.com/v2ray/v2ray-core/shell/point/config"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
@@ -28,7 +27,7 @@ type Point struct {
 
 // NewPoint returns a new Point server based on given configuration.
 // The server is not started at this point.
-func NewPoint(pConfig config.PointConfig) (*Point, error) {
+func NewPoint(pConfig PointConfig) (*Point, error) {
 	var vpoint = new(Point)
 	vpoint.port = pConfig.Port()
 
@@ -57,7 +56,7 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 	ichFactory := connhandler.GetInboundConnectionHandlerFactory(pConfig.InboundConfig().Protocol())
 	if ichFactory == nil {
 		log.Error("Unknown inbound connection handler factory %s", pConfig.InboundConfig().Protocol())
-		return nil, config.BadConfiguration
+		return nil, BadConfiguration
 	}
 	ichConfig := pConfig.InboundConfig().Settings()
 	ich, err := ichFactory.Create(vpoint.space, ichConfig)
@@ -70,7 +69,7 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 	ochFactory := connhandler.GetOutboundConnectionHandlerFactory(pConfig.OutboundConfig().Protocol())
 	if ochFactory == nil {
 		log.Error("Unknown outbound connection handler factory %s", pConfig.OutboundConfig().Protocol())
-		return nil, config.BadConfiguration
+		return nil, BadConfiguration
 	}
 	ochConfig := pConfig.OutboundConfig().Settings()
 	och, err := ochFactory.Create(vpoint.space, ochConfig)
@@ -103,7 +102,7 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 			detourFactory := connhandler.GetOutboundConnectionHandlerFactory(detourConfig.Protocol())
 			if detourFactory == nil {
 				log.Error("Unknown detour outbound connection handler factory %s", detourConfig.Protocol())
-				return nil, config.BadConfiguration
+				return nil, BadConfiguration
 			}
 			detourHandler, err := detourFactory.Create(vpoint.space, detourConfig.Settings())
 			if err != nil {
@@ -119,7 +118,7 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 		r, err := router.CreateRouter(routerConfig.Strategy(), routerConfig.Settings())
 		if err != nil {
 			log.Error("Failed to create router: %v", err)
-			return nil, config.BadConfiguration
+			return nil, BadConfiguration
 		}
 		vpoint.router = r
 	}
@@ -132,7 +131,7 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 func (this *Point) Start() error {
 	if this.port <= 0 {
 		log.Error("Invalid port %d", this.port)
-		return config.BadConfiguration
+		return BadConfiguration
 	}
 
 	err := retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
