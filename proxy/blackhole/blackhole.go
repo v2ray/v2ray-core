@@ -3,6 +3,7 @@ package blackhole
 import (
 	"io/ioutil"
 
+	"github.com/v2ray/v2ray-core/app"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	"github.com/v2ray/v2ray-core/transport/ray"
@@ -31,7 +32,7 @@ func (this *BlackHole) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) e
 type BlackHoleFactory struct {
 }
 
-func (this BlackHoleFactory) Create(config interface{}) (connhandler.OutboundConnectionHandler, error) {
+func (this BlackHoleFactory) Create(space *app.Space, config interface{}) (connhandler.OutboundConnectionHandler, error) {
 	return NewBlackHole(), nil
 }
 

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/v2ray/v2ray-core/app/dns"
 	routerconfig "github.com/v2ray/v2ray-core/app/router/config"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -15,6 +16,11 @@ type LogConfig interface {
 	AccessLog() string
 	ErrorLog() string
 	LogLevel() log.LogLevel
+}
+
+type DnsConfig interface {
+	Enabled() bool
+	Settings() dns.CacheConfig
 }
 
 type InboundDetourConfig interface {

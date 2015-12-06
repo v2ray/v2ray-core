@@ -6,6 +6,7 @@ import (
 	"net"
 	"sync"
 
+	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2crypto "github.com/v2ray/v2ray-core/common/crypto"
 	"github.com/v2ray/v2ray-core/common/log"
@@ -19,6 +20,7 @@ import (
 
 type VMessOutboundHandler struct {
 	receiverManager *ReceiverManager
+	space           *app.Space
 }
 
 func (this *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {
@@ -174,9 +176,10 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 type VMessOutboundHandlerFactory struct {
 }
 
-func (this *VMessOutboundHandlerFactory) Create(rawConfig interface{}) (connhandler.OutboundConnectionHandler, error) {
+func (this *VMessOutboundHandlerFactory) Create(space *app.Space, rawConfig interface{}) (connhandler.OutboundConnectionHandler, error) {
 	vOutConfig := rawConfig.(config.Outbound)
 	return &VMessOutboundHandler{
+		space:           space,
 		receiverManager: NewReceiverManager(vOutConfig.Receivers()),
 	}, nil
 }

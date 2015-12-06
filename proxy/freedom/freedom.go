@@ -4,16 +4,14 @@ import (
 	"net"
 	"sync"
 
+	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
 type FreedomConnection struct {
-}
-
-func NewFreedomConnection() *FreedomConnection {
-	return &FreedomConnection{}
+	space *app.Space
 }
 
 func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {
@@ -65,6 +63,19 @@ func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbou
 
 		v2net.ReaderToChan(output, conn)
 	}()
+
+	if this.space.HasDnsCache() {
+		if firstPacket.Destination().Address().IsDomain() {
+			domain := firstPacket.Destination().Address().Domain()
+			addr := conn.RemoteAddr()
+			switch typedAddr := addr.(type) {
+			case *net.TCPAddr:
+				this.space.DnsCache().Add(domain, typedAddr.IP)
+			case *net.UDPAddr:
+				this.space.DnsCache().Add(domain, typedAddr.IP)
+			}
+		}
+	}
 
 	writeMutex.Lock()
 	if tcpConn, ok := conn.(*net.TCPConn); ok {

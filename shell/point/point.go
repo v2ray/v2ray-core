@@ -73,7 +73,7 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 		return nil, config.BadConfiguration
 	}
 	ochConfig := pConfig.OutboundConfig().Settings()
-	och, err := ochFactory.Create(ochConfig)
+	och, err := ochFactory.Create(vpoint.space, ochConfig)
 	if err != nil {
 		log.Error("Failed to create outbound connection handler: %v", err)
 		return nil, err
@@ -105,7 +105,7 @@ func NewPoint(pConfig config.PointConfig) (*Point, error) {
 				log.Error("Unknown detour outbound connection handler factory %s", detourConfig.Protocol())
 				return nil, config.BadConfiguration
 			}
-			detourHandler, err := detourFactory.Create(detourConfig.Settings())
+			detourHandler, err := detourFactory.Create(vpoint.space, detourConfig.Settings())
 			if err != nil {
 				log.Error("Failed to create detour outbound connection handler: %v", err)
 				return nil, err
