@@ -4,9 +4,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	_ "github.com/v2ray/v2ray-core/proxy/dokodemo/config/json"
-	_ "github.com/v2ray/v2ray-core/proxy/freedom/config/json"
-	_ "github.com/v2ray/v2ray-core/proxy/socks/config/json"
+	_ "github.com/v2ray/v2ray-core/proxy/dokodemo/json"
+	_ "github.com/v2ray/v2ray-core/proxy/freedom/json"
+	_ "github.com/v2ray/v2ray-core/proxy/socks/json"
 	_ "github.com/v2ray/v2ray-core/proxy/vmess/config/json"
 	"github.com/v2ray/v2ray-core/shell/point/json"
 

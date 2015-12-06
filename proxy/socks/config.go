@@ -1,10 +1,10 @@
-package config
+package socks
 
 import (
 	"net"
 )
 
-type SocksConfig interface {
+type Config interface {
 	IsNoAuth() bool
 	IsPassword() bool
 	HasAccount(username, password string) bool

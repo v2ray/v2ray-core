@@ -6,7 +6,7 @@ import (
 
 	v2netjson "github.com/v2ray/v2ray-core/common/net/json"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
-	"github.com/v2ray/v2ray-core/proxy/dokodemo/config/json"
+	"github.com/v2ray/v2ray-core/proxy/dokodemo/json"
 	_ "github.com/v2ray/v2ray-core/proxy/freedom"
 	"github.com/v2ray/v2ray-core/shell/point"
 	"github.com/v2ray/v2ray-core/shell/point/testing/mocks"
@@ -42,10 +42,10 @@ func TestDokodemoTCP(t *testing.T) {
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "dokodemo-door",
 			SettingsValue: &json.DokodemoConfig{
-				Host:    "127.0.0.1",
-				Port:    port,
-				Network: &networkList,
-				Timeout: 0,
+				Host:         "127.0.0.1",
+				Port:         port,
+				NetworkList:  &networkList,
+				TimeoutValue: 0,
 			},
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
@@ -104,10 +104,10 @@ func TestDokodemoUDP(t *testing.T) {
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "dokodemo-door",
 			SettingsValue: &json.DokodemoConfig{
-				Host:    "127.0.0.1",
-				Port:    port,
-				Network: &networkList,
-				Timeout: 0,
+				Host:         "127.0.0.1",
+				Port:         port,
+				NetworkList:  &networkList,
+				TimeoutValue: 0,
 			},
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{

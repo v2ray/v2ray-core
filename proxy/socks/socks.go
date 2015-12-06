@@ -13,7 +13,6 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
 	proxyerrors "github.com/v2ray/v2ray-core/proxy/common/errors"
-	"github.com/v2ray/v2ray-core/proxy/socks/config"
 	"github.com/v2ray/v2ray-core/proxy/socks/protocol"
 )
 
@@ -26,10 +25,10 @@ var (
 type SocksServer struct {
 	accepting bool
 	space     *app.Space
-	config    config.SocksConfig
+	config    Config
 }
 
-func NewSocksServer(space *app.Space, config config.SocksConfig) *SocksServer {
+func NewSocksServer(space *app.Space, config Config) *SocksServer {
 	return &SocksServer{
 		space:  space,
 		config: config,
