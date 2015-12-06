@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VER="v1.0"
+VER="v1.1"
 
 ARCH=$(uname -m)
 VDIS="64"
