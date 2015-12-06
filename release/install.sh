@@ -1,7 +1,7 @@
 #!/bin/bash
 
-GO_AMD64=https://storage.googleapis.com/golang/go1.5.1.linux-amd64.tar.gz
-GO_X86=https://storage.googleapis.com/golang/go1.5.1.linux-386.tar.gz
+GO_AMD64=https://storage.googleapis.com/golang/go1.5.2.linux-amd64.tar.gz
+GO_X86=https://storage.googleapis.com/golang/go1.5.2.linux-386.tar.gz
 ARCH=$(uname -m)
 GO_CUR=${GO_AMD64}
 
@@ -18,7 +18,6 @@ function git_not_installed {
 if [ git_not_installed ]; then
   apt-get install git -y
 fi
-
 
 if [ -z "$GOPATH" ]; then
   curl -o go_latest.tar.gz ${GO_CUR}
