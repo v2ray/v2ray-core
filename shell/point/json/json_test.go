@@ -4,6 +4,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	v2net "github.com/v2ray/v2ray-core/common/net"
+	netassert "github.com/v2ray/v2ray-core/common/net/testing/assert"
 	_ "github.com/v2ray/v2ray-core/proxy/dokodemo/json"
 	_ "github.com/v2ray/v2ray-core/proxy/freedom/json"
 	_ "github.com/v2ray/v2ray-core/proxy/socks/json"
@@ -23,7 +25,7 @@ func TestClientSampleConfig(t *testing.T) {
 	pointConfig, err := json.LoadConfig(filepath.Join(baseDir, "vpoint_socks_vmess.json"))
 	assert.Error(err).IsNil()
 
-	assert.Uint16(pointConfig.Port().Value()).Positive()
+	netassert.Port(pointConfig.Port()).IsValid()
 	assert.Pointer(pointConfig.InboundConfig()).IsNotNil()
 	assert.Pointer(pointConfig.OutboundConfig()).IsNotNil()
 
@@ -68,7 +70,7 @@ func TestDetourConfig(t *testing.T) {
 
 	detour := detours[0]
 	assert.StringLiteral(detour.Protocol()).Equals("dokodemo-door")
-	assert.Uint16(detour.PortRange().From().Value()).Equals(uint16(28394))
-	assert.Uint16(detour.PortRange().To().Value()).Equals(uint16(28394))
+	netassert.Port(detour.PortRange().From()).Equals(v2net.Port(28394))
+	netassert.Port(detour.PortRange().To()).Equals(v2net.Port(28394))
 	assert.Pointer(detour.Settings()).IsNotNil()
 }

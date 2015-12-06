@@ -35,8 +35,8 @@ func (this *PortRange) UnmarshalJSON(data []byte) error {
 			log.Error("Invalid port [%s]", string(data))
 			return InvalidPortRange
 		}
-		this.from = v2net.Port(uint16(maybeint))
-		this.to = v2net.Port(uint16(maybeint))
+		this.from = v2net.Port(maybeint)
+		this.to = v2net.Port(maybeint)
 		return nil
 	}
 
@@ -50,8 +50,8 @@ func (this *PortRange) UnmarshalJSON(data []byte) error {
 				log.Error("Invalid from port %s", pair[0])
 				return InvalidPortRange
 			}
-			this.from = v2net.Port(uint16(value))
-			this.to = v2net.Port(uint16(value))
+			this.from = v2net.Port(value)
+			this.to = v2net.Port(value)
 			return nil
 		} else if len(pair) == 2 {
 			from, err := strconv.Atoi(pair[0])
@@ -59,14 +59,14 @@ func (this *PortRange) UnmarshalJSON(data []byte) error {
 				log.Error("Invalid from port %s", pair[0])
 				return InvalidPortRange
 			}
-			this.from = v2net.Port(uint16(from))
+			this.from = v2net.Port(from)
 
 			to, err := strconv.Atoi(pair[1])
 			if err != nil || to <= 0 || to >= 65535 {
 				log.Error("Invalid to port %s", pair[1])
 				return InvalidPortRange
 			}
-			this.to = v2net.Port(uint16(to))
+			this.to = v2net.Port(to)
 
 			if this.from > this.to {
 				log.Error("Invalid port range %d -> %d", this.from, this.to)

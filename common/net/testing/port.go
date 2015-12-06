@@ -11,5 +11,5 @@ var (
 )
 
 func PickPort() v2net.Port {
-	return v2net.Port(uint16(atomic.AddInt32(&port, 1)))
+	return v2net.Port(atomic.AddInt32(&port, 1))
 }
