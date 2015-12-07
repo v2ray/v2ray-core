@@ -50,8 +50,14 @@ type PlainDomainMatcher struct {
 	pattern string
 }
 
+func NewPlainDomainMatcher(pattern string) *PlainDomainMatcher {
+	return &PlainDomainMatcher{
+		pattern: strings.ToLower(pattern),
+	}
+}
+
 func (this *PlainDomainMatcher) Match(domain string) bool {
-	return strings.Contains(this.pattern, domain)
+	return strings.Contains(this.pattern, strings.ToLower(domain))
 }
 
 type RegexpDomainMatcher struct {
@@ -69,7 +75,7 @@ func NewRegexpDomainMatcher(pattern string) (*RegexpDomainMatcher, error) {
 }
 
 func (this *RegexpDomainMatcher) Match(domain string) bool {
-	return this.pattern.MatchString(domain)
+	return this.pattern.MatchString(strings.ToLower(domain))
 }
 
 type FieldRule struct {
@@ -158,7 +164,7 @@ func (this *FieldRule) UnmarshalJSON(data []byte) error {
 				}
 				matcher = rawMatcher
 			} else {
-				matcher = &PlainDomainMatcher{pattern: rawDomain}
+				matcher = NewPlainDomainMatcher(rawDomain)
 			}
 			this.Domain[idx] = matcher
 		}
