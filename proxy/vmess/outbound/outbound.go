@@ -12,7 +12,6 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
-	"github.com/v2ray/v2ray-core/proxy/vmess/config"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 	"github.com/v2ray/v2ray-core/transport/ray"
@@ -177,7 +176,7 @@ type VMessOutboundHandlerFactory struct {
 }
 
 func (this *VMessOutboundHandlerFactory) Create(space *app.Space, rawConfig interface{}) (connhandler.OutboundConnectionHandler, error) {
-	vOutConfig := rawConfig.(config.Outbound)
+	vOutConfig := rawConfig.(Config)
 	return &VMessOutboundHandler{
 		space:           space,
 		receiverManager: NewReceiverManager(vOutConfig.Receivers()),

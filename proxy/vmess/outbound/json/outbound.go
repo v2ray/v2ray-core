@@ -8,19 +8,21 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	proxyconfig "github.com/v2ray/v2ray-core/proxy/common/config"
 	jsonconfig "github.com/v2ray/v2ray-core/proxy/common/config/json"
-	vmessconfig "github.com/v2ray/v2ray-core/proxy/vmess/config"
+	"github.com/v2ray/v2ray-core/proxy/vmess"
+	vmessjson "github.com/v2ray/v2ray-core/proxy/vmess/json"
+	"github.com/v2ray/v2ray-core/proxy/vmess/outbound"
 )
 
 type ConfigTarget struct {
 	Address v2net.Address
-	Users   []*ConfigUser
+	Users   []*vmessjson.ConfigUser
 }
 
 func (t *ConfigTarget) UnmarshalJSON(data []byte) error {
 	type RawConfigTarget struct {
-		Address string        `json:"address"`
-		Port    v2net.Port    `json:"port"`
-		Users   []*ConfigUser `json:"users"`
+		Address string                  `json:"address"`
+		Port    v2net.Port              `json:"port"`
+		Users   []*vmessjson.ConfigUser `json:"users"`
 	}
 	var rawConfig RawConfigTarget
 	if err := json.Unmarshal(data, &rawConfig); err != nil {
@@ -61,14 +63,14 @@ func (this *Outbound) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (o *Outbound) Receivers() []*vmessconfig.Receiver {
-	targets := make([]*vmessconfig.Receiver, 0, 2*len(o.TargetList))
+func (o *Outbound) Receivers() []*outbound.Receiver {
+	targets := make([]*outbound.Receiver, 0, 2*len(o.TargetList))
 	for _, rawTarget := range o.TargetList {
-		users := make([]vmessconfig.User, 0, len(rawTarget.Users))
+		users := make([]vmess.User, 0, len(rawTarget.Users))
 		for _, rawUser := range rawTarget.Users {
 			users = append(users, rawUser)
 		}
-		targets = append(targets, &vmessconfig.Receiver{
+		targets = append(targets, &outbound.Receiver{
 			Address:  rawTarget.Address,
 			Accounts: users,
 		})

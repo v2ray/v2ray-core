@@ -23,8 +23,10 @@ import (
 	_ "github.com/v2ray/v2ray-core/proxy/freedom/json"
 	_ "github.com/v2ray/v2ray-core/proxy/socks"
 	_ "github.com/v2ray/v2ray-core/proxy/socks/json"
-	_ "github.com/v2ray/v2ray-core/proxy/vmess"
-	_ "github.com/v2ray/v2ray-core/proxy/vmess/config/json"
+	_ "github.com/v2ray/v2ray-core/proxy/vmess/inbound"
+	_ "github.com/v2ray/v2ray-core/proxy/vmess/inbound/json"
+	_ "github.com/v2ray/v2ray-core/proxy/vmess/outbound"
+	_ "github.com/v2ray/v2ray-core/proxy/vmess/outbound/json"
 )
 
 var (

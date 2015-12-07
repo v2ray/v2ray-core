@@ -13,7 +13,7 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
-	"github.com/v2ray/v2ray-core/proxy/vmess/config"
+	"github.com/v2ray/v2ray-core/proxy/vmess"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 )
@@ -85,7 +85,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *net.TCPConn) error
 	readFinish.Lock()
 	writeFinish.Lock()
 
-	userSettings := config.GetUserSettings(request.User.Level())
+	userSettings := vmess.GetUserSettings(request.User.Level())
 	connReader.SetTimeOut(userSettings.PayloadReadTimeout)
 	go handleInput(request, connReader, input, &readFinish)
 
@@ -143,7 +143,7 @@ type VMessInboundHandlerFactory struct {
 }
 
 func (this *VMessInboundHandlerFactory) Create(space *app.Space, rawConfig interface{}) (connhandler.InboundConnectionHandler, error) {
-	config := rawConfig.(config.Inbound)
+	config := rawConfig.(Config)
 
 	allowedClients := user.NewTimedUserSet()
 	for _, user := range config.AllowedUsers() {

@@ -1,4 +1,4 @@
-package vmess
+package vmess_test
 
 import (
 	"bytes"
@@ -8,8 +8,12 @@ import (
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	proxymocks "github.com/v2ray/v2ray-core/proxy/testing/mocks"
-	"github.com/v2ray/v2ray-core/proxy/vmess/config"
-	"github.com/v2ray/v2ray-core/proxy/vmess/config/json"
+	vmess "github.com/v2ray/v2ray-core/proxy/vmess"
+	_ "github.com/v2ray/v2ray-core/proxy/vmess/inbound"
+	inboundjson "github.com/v2ray/v2ray-core/proxy/vmess/inbound/json"
+	vmessjson "github.com/v2ray/v2ray-core/proxy/vmess/json"
+	_ "github.com/v2ray/v2ray-core/proxy/vmess/outbound"
+	outboundjson "github.com/v2ray/v2ray-core/proxy/vmess/outbound/json"
 	"github.com/v2ray/v2ray-core/shell/point"
 	"github.com/v2ray/v2ray-core/shell/point/testing/mocks"
 	v2testing "github.com/v2ray/v2ray-core/testing"
@@ -19,7 +23,7 @@ import (
 func TestVMessInAndOut(t *testing.T) {
 	v2testing.Current(t)
 
-	testAccount, err := config.NewID("ad937d9d-6e23-4a5a-ba23-bce5092a7c51")
+	testAccount, err := vmess.NewID("ad937d9d-6e23-4a5a-ba23-bce5092a7c51")
 	assert.Error(err).IsNil()
 
 	portA := v2nettesting.PickPort()
@@ -42,12 +46,12 @@ func TestVMessInAndOut(t *testing.T) {
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "vmess",
-			SettingsValue: &json.Outbound{
-				[]*json.ConfigTarget{
-					&json.ConfigTarget{
+			SettingsValue: &outboundjson.Outbound{
+				[]*outboundjson.ConfigTarget{
+					&outboundjson.ConfigTarget{
 						Address: v2net.IPAddress([]byte{127, 0, 0, 1}, portB),
-						Users: []*json.ConfigUser{
-							&json.ConfigUser{Id: testAccount},
+						Users: []*vmessjson.ConfigUser{
+							&vmessjson.ConfigUser{Id: testAccount},
 						},
 					},
 				},
@@ -74,9 +78,9 @@ func TestVMessInAndOut(t *testing.T) {
 		PortValue: portB,
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "vmess",
-			SettingsValue: &json.Inbound{
-				AllowedClients: []*json.ConfigUser{
-					&json.ConfigUser{Id: testAccount},
+			SettingsValue: &inboundjson.Inbound{
+				AllowedClients: []*vmessjson.ConfigUser{
+					&vmessjson.ConfigUser{Id: testAccount},
 				},
 			},
 		},

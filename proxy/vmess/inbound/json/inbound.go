@@ -2,15 +2,16 @@ package json
 
 import (
 	"github.com/v2ray/v2ray-core/proxy/common/config/json"
-	vmessconfig "github.com/v2ray/v2ray-core/proxy/vmess/config"
+	"github.com/v2ray/v2ray-core/proxy/vmess"
+	vmessjson "github.com/v2ray/v2ray-core/proxy/vmess/json"
 )
 
 type Inbound struct {
-	AllowedClients []*ConfigUser `json:"clients"`
+	AllowedClients []*vmessjson.ConfigUser `json:"clients"`
 }
 
-func (c *Inbound) AllowedUsers() []vmessconfig.User {
-	users := make([]vmessconfig.User, 0, len(c.AllowedClients))
+func (c *Inbound) AllowedUsers() []vmess.User {
+	users := make([]vmess.User, 0, len(c.AllowedClients))
 	for _, rawUser := range c.AllowedClients {
 		users = append(users, rawUser)
 	}

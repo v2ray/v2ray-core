@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	jsonconfig "github.com/v2ray/v2ray-core/proxy/vmess/config/json"
+	jsonconfig "github.com/v2ray/v2ray-core/proxy/vmess/outbound/json"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )

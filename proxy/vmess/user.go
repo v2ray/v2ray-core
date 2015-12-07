@@ -1,4 +1,4 @@
-package config
+package vmess
 
 type UserLevel int
 

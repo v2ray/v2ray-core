@@ -4,20 +4,25 @@ import (
 	"math/rand"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/proxy/vmess/config"
+	"github.com/v2ray/v2ray-core/proxy/vmess"
 )
 
-type ReceiverManager struct {
-	receivers []*config.Receiver
+type Receiver struct {
+	Address  v2net.Address
+	Accounts []vmess.User
 }
 
-func NewReceiverManager(receivers []*config.Receiver) *ReceiverManager {
+type ReceiverManager struct {
+	receivers []*Receiver
+}
+
+func NewReceiverManager(receivers []*Receiver) *ReceiverManager {
 	return &ReceiverManager{
 		receivers: receivers,
 	}
 }
 
-func (this *ReceiverManager) PickReceiver() (v2net.Address, config.User) {
+func (this *ReceiverManager) PickReceiver() (v2net.Address, vmess.User) {
 	receiverLen := len(this.receivers)
 	receiverIdx := 0
 	if receiverLen > 1 {

@@ -9,7 +9,8 @@ import (
 	_ "github.com/v2ray/v2ray-core/proxy/dokodemo/json"
 	_ "github.com/v2ray/v2ray-core/proxy/freedom/json"
 	_ "github.com/v2ray/v2ray-core/proxy/socks/json"
-	_ "github.com/v2ray/v2ray-core/proxy/vmess/config/json"
+	_ "github.com/v2ray/v2ray-core/proxy/vmess/inbound/json"
+	_ "github.com/v2ray/v2ray-core/proxy/vmess/outbound/json"
 	"github.com/v2ray/v2ray-core/shell/point/json"
 
 	v2testing "github.com/v2ray/v2ray-core/testing"
