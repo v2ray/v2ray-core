@@ -1,8 +1,8 @@
 {
   "port": 50020,
   "log": {
-    "access": "access.log",
-    "error": "error.log",
+    "access": "/tmp/v2ray_access_1.log",
+    "error": "/tmp/v2ray_error_1.log",
     "loglevel": "error"
   },
   "inbound": {
