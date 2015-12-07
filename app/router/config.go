@@ -1,6 +1,6 @@
 package router
 
-type RouterConfig interface {
+type Config interface {
 	Strategy() string
 	Settings() interface{}
 }

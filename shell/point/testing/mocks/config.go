@@ -91,7 +91,7 @@ func (config *Config) LogConfig() point.LogConfig {
 	return config.LogConfigValue
 }
 
-func (this *Config) RouterConfig() router.RouterConfig {
+func (this *Config) RouterConfig() router.Config {
 	if this.RouterConfigValue == nil {
 		return nil
 	}
