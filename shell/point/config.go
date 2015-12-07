@@ -26,6 +26,7 @@ type DnsConfig interface {
 type InboundDetourConfig interface {
 	Protocol() string
 	PortRange() v2net.PortRange
+	Tag() string
 	Settings() interface{}
 }
 

@@ -12,6 +12,7 @@ type InboundDetourConfig struct {
 	ProtocolValue  string               `json:"protocol"`
 	PortRangeValue *v2netjson.PortRange `json:"port"`
 	SettingsValue  json.RawMessage      `json:"settings"`
+	TagValue       string               `json:"tag"`
 }
 
 func (this *InboundDetourConfig) Protocol() string {
@@ -24,4 +25,8 @@ func (this *InboundDetourConfig) PortRange() v2net.PortRange {
 
 func (this *InboundDetourConfig) Settings() interface{} {
 	return loadConnectionConfig(this.SettingsValue, this.ProtocolValue, proxyconfig.TypeInbound)
+}
+
+func (this *InboundDetourConfig) Tag() string {
+	return this.TagValue
 }

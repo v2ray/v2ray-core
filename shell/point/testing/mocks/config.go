@@ -55,6 +55,11 @@ func (this *PortRange) To() v2net.Port {
 type InboundDetourConfig struct {
 	*ConnectionConfig
 	PortRangeValue *PortRange
+	TagValue       string
+}
+
+func (this *InboundDetourConfig) Tag() string {
+	return this.TagValue
 }
 
 func (this *InboundDetourConfig) PortRange() v2net.PortRange {
