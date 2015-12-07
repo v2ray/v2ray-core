@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net"
+	"regexp"
 	"strings"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -41,9 +42,39 @@ func (this *StringList) Len() int {
 	return len([]string(*this))
 }
 
+type DomainMatcher interface {
+	Match(domain string) bool
+}
+
+type PlainDomainMatcher struct {
+	pattern string
+}
+
+func (this *PlainDomainMatcher) Match(domain string) bool {
+	return strings.Contains(this.pattern, domain)
+}
+
+type RegexpDomainMatcher struct {
+	pattern *regexp.Regexp
+}
+
+func NewRegexpDomainMatcher(pattern string) (*RegexpDomainMatcher, error) {
+	r, err := regexp.Compile(pattern)
+	if err != nil {
+		return nil, err
+	}
+	return &RegexpDomainMatcher{
+		pattern: r,
+	}, nil
+}
+
+func (this *RegexpDomainMatcher) Match(domain string) bool {
+	return this.pattern.MatchString(domain)
+}
+
 type FieldRule struct {
 	Rule
-	Domain  *StringList
+	Domain  []DomainMatcher
 	IP      []*net.IPNet
 	Port    v2net.PortRange
 	Network v2net.NetworkList
@@ -51,13 +82,13 @@ type FieldRule struct {
 
 func (this *FieldRule) Apply(dest v2net.Destination) bool {
 	address := dest.Address()
-	if this.Domain != nil && this.Domain.Len() > 0 {
+	if len(this.Domain) > 0 {
 		if !address.IsDomain() {
 			return false
 		}
 		foundMatch := false
-		for _, domain := range *this.Domain {
-			if strings.Contains(address.Domain(), domain) {
+		for _, domain := range this.Domain {
+			if domain.Match(address.Domain()) {
 				foundMatch = true
 				break
 			}
@@ -117,7 +148,20 @@ func (this *FieldRule) UnmarshalJSON(data []byte) error {
 
 	hasField := false
 	if rawFieldRule.Domain != nil && rawFieldRule.Domain.Len() > 0 {
-		this.Domain = rawFieldRule.Domain
+		this.Domain = make([]DomainMatcher, rawFieldRule.Domain.Len())
+		for idx, rawDomain := range *(rawFieldRule.Domain) {
+			var matcher DomainMatcher
+			if strings.HasPrefix(rawDomain, "regexp:") {
+				rawMatcher, err := NewRegexpDomainMatcher(rawDomain[7:])
+				if err != nil {
+					return err
+				}
+				matcher = rawMatcher
+			} else {
+				matcher = &PlainDomainMatcher{pattern: rawDomain}
+			}
+			this.Domain[idx] = matcher
+		}
 		hasField = true
 	}
 

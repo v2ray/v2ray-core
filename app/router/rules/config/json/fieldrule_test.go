@@ -33,9 +33,12 @@ func TestStringListParsingString(t *testing.T) {
 func TestDomainMatching(t *testing.T) {
 	v2testing.Current(t)
 
-	rule := &FieldRule{
-		Domain: NewStringList("v2ray.com"),
-	}
+	rawJson := `{
+    "type": "field",
+    "domain": ["google.com", "regexp:v2ray.com$"],
+    "tag": "test"
+  }`
+	rule := parseRule([]byte(rawJson))
 	dest := v2net.NewTCPDestination(v2net.DomainAddress("www.v2ray.com", 80))
 	assert.Bool(rule.Apply(dest)).IsTrue()
 }
