@@ -3,8 +3,8 @@ package json
 import (
 	"encoding/json"
 
-	v2routerconfigjson "github.com/v2ray/v2ray-core/app/router/config/json"
-	"github.com/v2ray/v2ray-core/app/router/rules/config"
+	v2routerjson "github.com/v2ray/v2ray-core/app/router/json"
+	"github.com/v2ray/v2ray-core/app/router/rules"
 	"github.com/v2ray/v2ray-core/common/log"
 )
 
@@ -12,7 +12,7 @@ type RouterRuleConfig struct {
 	RuleList []json.RawMessage `json:"rules"`
 }
 
-func parseRule(msg json.RawMessage) config.Rule {
+func parseRule(msg json.RawMessage) rules.Rule {
 	rule := new(Rule)
 	err := json.Unmarshal(msg, rule)
 	if err != nil {
@@ -32,8 +32,8 @@ func parseRule(msg json.RawMessage) config.Rule {
 	return nil
 }
 
-func (this *RouterRuleConfig) Rules() []config.Rule {
-	rules := make([]config.Rule, len(this.RuleList))
+func (this *RouterRuleConfig) Rules() []rules.Rule {
+	rules := make([]rules.Rule, len(this.RuleList))
 	for idx, rawRule := range this.RuleList {
 		rules[idx] = parseRule(rawRule)
 	}
@@ -41,7 +41,7 @@ func (this *RouterRuleConfig) Rules() []config.Rule {
 }
 
 func init() {
-	v2routerconfigjson.RegisterRouterConfig("rules", func() interface{} {
+	v2routerjson.RegisterRouterConfig("rules", func() interface{} {
 		return new(RouterRuleConfig)
 	})
 }

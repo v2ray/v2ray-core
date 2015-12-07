@@ -1,15 +1,15 @@
 package testing
 
 import (
-	"github.com/v2ray/v2ray-core/app/router/rules/config"
+	"github.com/v2ray/v2ray-core/app/router/rules"
 )
 
 type RouterRuleConfig struct {
 	RuleList []*TestRule
 }
 
-func (this *RouterRuleConfig) Rules() []config.Rule {
-	rules := make([]config.Rule, len(this.RuleList))
+func (this *RouterRuleConfig) Rules() []rules.Rule {
+	rules := make([]rules.Rule, len(this.RuleList))
 	for idx, rule := range this.RuleList {
 		rules[idx] = rule
 	}

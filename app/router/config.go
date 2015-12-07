@@ -1,4 +1,4 @@
-package config
+package router
 
 type RouterConfig interface {
 	Strategy() string

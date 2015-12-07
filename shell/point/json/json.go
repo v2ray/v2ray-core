@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 
-	routerconfig "github.com/v2ray/v2ray-core/app/router/config"
-	routerconfigjson "github.com/v2ray/v2ray-core/app/router/config/json"
+	"github.com/v2ray/v2ray-core/app/router"
+	routerjson "github.com/v2ray/v2ray-core/app/router/json"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	proxyconfig "github.com/v2ray/v2ray-core/proxy/common/config"
@@ -15,13 +15,13 @@ import (
 
 // Config is the config for Point server.
 type Config struct {
-	PortValue            v2net.Port                     `json:"port"` // Port of this Point server.
-	LogConfigValue       *LogConfig                     `json:"log"`
-	RouterConfigValue    *routerconfigjson.RouterConfig `json:"routing"`
-	InboundConfigValue   *ConnectionConfig              `json:"inbound"`
-	OutboundConfigValue  *ConnectionConfig              `json:"outbound"`
-	InboundDetoursValue  []*InboundDetourConfig         `json:"inboundDetour"`
-	OutboundDetoursValue []*OutboundDetourConfig        `json:"outboundDetour"`
+	PortValue            v2net.Port               `json:"port"` // Port of this Point server.
+	LogConfigValue       *LogConfig               `json:"log"`
+	RouterConfigValue    *routerjson.RouterConfig `json:"routing"`
+	InboundConfigValue   *ConnectionConfig        `json:"inbound"`
+	OutboundConfigValue  *ConnectionConfig        `json:"outbound"`
+	InboundDetoursValue  []*InboundDetourConfig   `json:"inboundDetour"`
+	OutboundDetoursValue []*OutboundDetourConfig  `json:"outboundDetour"`
 }
 
 func (config *Config) Port() v2net.Port {
@@ -35,7 +35,7 @@ func (config *Config) LogConfig() point.LogConfig {
 	return config.LogConfigValue
 }
 
-func (this *Config) RouterConfig() routerconfig.RouterConfig {
+func (this *Config) RouterConfig() router.RouterConfig {
 	if this.RouterConfigValue == nil {
 		return nil
 	}

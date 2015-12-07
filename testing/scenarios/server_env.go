@@ -4,9 +4,9 @@ import (
 	"os"
 	"path/filepath"
 
-	_ "github.com/v2ray/v2ray-core/app/router/config/json"
+	_ "github.com/v2ray/v2ray-core/app/router/json"
 	_ "github.com/v2ray/v2ray-core/app/router/rules"
-	_ "github.com/v2ray/v2ray-core/app/router/rules/config/json"
+	_ "github.com/v2ray/v2ray-core/app/router/rules/json"
 	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/shell/point"
 	pointjson "github.com/v2ray/v2ray-core/shell/point/json"

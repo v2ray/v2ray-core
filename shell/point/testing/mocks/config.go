@@ -1,8 +1,8 @@
 package mocks
 
 import (
-	routerconfig "github.com/v2ray/v2ray-core/app/router/config"
-	routertestingconfig "github.com/v2ray/v2ray-core/app/router/config/testing"
+	"github.com/v2ray/v2ray-core/app/router"
+	routertesting "github.com/v2ray/v2ray-core/app/router/testing"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/shell/point"
@@ -73,7 +73,7 @@ func (this *OutboundDetourConfig) Tag() string {
 type Config struct {
 	PortValue            v2net.Port
 	LogConfigValue       *LogConfig
-	RouterConfigValue    *routertestingconfig.RouterConfig
+	RouterConfigValue    *routertesting.RouterConfig
 	InboundConfigValue   *ConnectionConfig
 	OutboundConfigValue  *ConnectionConfig
 	InboundDetoursValue  []*InboundDetourConfig
@@ -91,7 +91,7 @@ func (config *Config) LogConfig() point.LogConfig {
 	return config.LogConfigValue
 }
 
-func (this *Config) RouterConfig() routerconfig.RouterConfig {
+func (this *Config) RouterConfig() router.RouterConfig {
 	if this.RouterConfigValue == nil {
 		return nil
 	}
