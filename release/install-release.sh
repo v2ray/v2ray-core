@@ -35,13 +35,13 @@ mkdir -p /etc/v2ray
 if [ ! -f "/etc/v2ray/config.json" ]; then
   cp "/tmp/v2ray/v2ray-${VER}-linux-${VDIS}/vpoint_vmess_freedom.json" "/etc/v2ray/config.json"
 
-  #PORT=$(expr $RANDOM + 10000)
-  #sed -i "s/37192/${PORT}/g" "/etc/v2ray/config.json"
+  let PORT=$RANDOM+10000
+  sed -i "s/37192/${PORT}/g" "/etc/v2ray/config.json"
 
   UUID=$(cat /proc/sys/kernel/random/uuid)
   sed -i "s/3b129dec-72a3-4d28-aeee-028a0fe86e22/${UUID}/g" "/etc/v2ray/config.json"
 
-  #echo "PORT:${PORT}"
+  echo "PORT:${PORT}"
   echo "UUID:${UUID}"
 fi
 
