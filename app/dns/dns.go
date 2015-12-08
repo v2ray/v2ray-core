@@ -43,7 +43,7 @@ func NewCache() *DnsCache {
 }
 
 func (this *DnsCache) cleanup() {
-	for range time.Tick(10 * time.Second) {
+	for range time.Tick(60 * time.Second) {
 		entry2Remove := make([]*entry, 0, 128)
 		this.RLock()
 		for _, entry := range this.cache {
