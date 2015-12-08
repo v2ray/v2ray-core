@@ -7,17 +7,20 @@ import (
 	"strings"
 )
 
-func copyConfigFile(src, dest string, goOS GoOS) error {
+func copyConfigFile(src, dest string, goOS GoOS, format bool) error {
 	content, err := ioutil.ReadFile(src)
 	if err != nil {
 		return err
 	}
-	str := string(content)
-	str = strings.Replace(str, "\r\n", "\n", -1)
-	if goOS == Windows {
-		str = strings.Replace(str, "\n", "\r\n", -1)
+	if format {
+  	str := string(content)
+  	str = strings.Replace(str, "\r\n", "\n", -1)
+  	if goOS == Windows {
+  		str = strings.Replace(str, "\n", "\r\n", -1)
+  	}
+  	content = []byte(str)
 	}
-	return ioutil.WriteFile(dest, []byte(str), 0777)
+	return ioutil.WriteFile(dest, content, 0777)
 }
 
 func copyConfigFiles(dir string, goOS GoOS) error {
@@ -28,8 +31,7 @@ func copyConfigFiles(dir string, goOS GoOS) error {
 	if goOS == Windows || goOS == MacOS {
 		dest = filepath.Join(dir, "config.json")
 	}
-	err := copyConfigFile(src, dest, goOS)
-	if err != nil {
+	if err := copyConfigFile(src, dest, goOS, true); err != nil {
 		return err
 	}
 
@@ -39,5 +41,21 @@ func copyConfigFiles(dir string, goOS GoOS) error {
 
 	src = filepath.Join(srcDir, "vpoint_vmess_freedom.json")
 	dest = filepath.Join(dir, "vpoint_vmess_freedom.json")
-	return copyConfigFile(src, dest, goOS)
+
+	if err := copyConfigFile(src, dest, goOS, true); err != nil {
+	  return err
+	}
+
+  if goOS == Linux {
+    if err := os.MkdirAll(filepath.Join(dir, "systemv"), os.ModeDir|0777); err != nil {
+      return err
+    }
+    src = filepath.Join(srcDir, "systemv", "v2ray")
+	  dest = filepath.Join(dir, "systemv", "v2ray")
+    if err := copyConfigFile(src, dest, goOS, false); err != nil {
+      return err
+    }
+  }
+
+  return nil
 }
