@@ -28,6 +28,14 @@ func parseRule(msg json.RawMessage) rules.Rule {
 		}
 		return fieldrule
 	}
+	if rule.Type == "chinaip" {
+		chinaiprule := new(ChinaIPRule)
+		if err := json.Unmarshal(msg, chinaiprule); err != nil {
+			log.Error("Invalid chinaip rule: %v", err)
+			return nil
+		}
+		return chinaiprule
+	}
 	log.Error("Unknown router rule type: %s", rule.Type)
 	return nil
 }
