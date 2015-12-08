@@ -3,31 +3,49 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"net"
-	"os"
-	"path/filepath"
+	"net/http"
+	"strconv"
 	"strings"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
+const (
+	apnicFile = "http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest"
+)
+
 func main() {
-	GOPATH := os.Getenv("GOPATH")
-	src := filepath.Join(GOPATH, "src", "github.com", "v2ray", "v2ray-core", "tools", "chinaip", "ipv4.txt")
-	reader, err := os.Open(src)
+	resp, err := http.Get(apnicFile)
 	if err != nil {
 		panic(err)
 	}
-	ipNet := v2net.NewIPNet()
+	if resp.StatusCode != 200 {
+		panic(fmt.Errorf("Unexpected status %d", resp.StatusCode))
+	}
+	defer resp.Body.Close()
+	scanner := bufio.NewScanner(resp.Body)
 
-	scanner := bufio.NewScanner(reader)
+	ipNet := v2net.NewIPNet()
 	for scanner.Scan() {
 		line := scanner.Text()
 		line = strings.TrimSpace(line)
-		if len(line) == 0 {
-			break
+		parts := strings.Split(line, "|")
+		if len(parts) < 5 {
+			continue
 		}
-		_, t, err := net.ParseCIDR(line)
+		if strings.ToLower(parts[1]) != "cn" || strings.ToLower(parts[2]) != "ipv4" {
+			continue
+		}
+		ip := parts[3]
+		count, err := strconv.Atoi(parts[4])
+		if err != nil {
+			continue
+		}
+		mask := 32 - int(math.Floor(math.Log2(float64(count))+0.5))
+		cidr := fmt.Sprintf("%s/%d", ip, mask)
+		_, t, err := net.ParseCIDR(cidr)
 		if err != nil {
 			panic(err)
 		}
