@@ -1116,7 +1116,10 @@
             "cmbchina.com",
             "pps.tv",
             "regex:\\.?ch.com",
-            "lvmama.com"
+            "lvmama.com",
+            "clouddn.com",
+            "leiphone.com",
+            "alicdn.com"
           ],
           "outboundTag": "direct"
         },
