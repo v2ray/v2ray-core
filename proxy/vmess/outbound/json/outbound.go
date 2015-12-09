@@ -2,10 +2,10 @@ package json
 
 import (
 	"encoding/json"
-	"net"
 
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	v2netjson "github.com/v2ray/v2ray-core/common/net/json"
 	proxyconfig "github.com/v2ray/v2ray-core/proxy/common/config"
 	jsonconfig "github.com/v2ray/v2ray-core/proxy/common/config/json"
 	"github.com/v2ray/v2ray-core/proxy/vmess"
@@ -20,7 +20,7 @@ type ConfigTarget struct {
 
 func (t *ConfigTarget) UnmarshalJSON(data []byte) error {
 	type RawConfigTarget struct {
-		Address string                  `json:"address"`
+		Address *v2netjson.Host         `json:"address"`
 		Port    v2net.Port              `json:"port"`
 		Users   []*vmessjson.ConfigUser `json:"users"`
 	}
@@ -33,12 +33,15 @@ func (t *ConfigTarget) UnmarshalJSON(data []byte) error {
 		return proxyconfig.BadConfiguration
 	}
 	t.Users = rawConfig.Users
-	ip := net.ParseIP(rawConfig.Address)
-	if ip == nil {
-		log.Error("Unable to parse IP: %s", rawConfig.Address)
+	if rawConfig.Address == nil {
+		log.Error("Address is not set in VMess outbound config.")
 		return proxyconfig.BadConfiguration
 	}
-	t.Address = v2net.IPAddress(ip, rawConfig.Port)
+	if rawConfig.Address.IsIP() {
+		t.Address = v2net.IPAddress(rawConfig.Address.IP(), rawConfig.Port)
+	} else {
+		t.Address = v2net.DomainAddress(rawConfig.Address.Domain(), rawConfig.Port)
+	}
 	return nil
 }
 
