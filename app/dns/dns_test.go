@@ -13,7 +13,7 @@ func TestDnsAdd(t *testing.T) {
 	v2testing.Current(t)
 
 	domain := "v2ray.com"
-	cache := dns.NewCache()
+	cache := dns.NewCache(nil)
 	ip := cache.Get(domain)
 	netassert.IP(ip).IsNil()
 

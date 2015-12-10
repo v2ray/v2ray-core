@@ -31,10 +31,11 @@ func (this *entry) Extend() {
 
 type DnsCache struct {
 	sync.RWMutex
-	cache map[string]*entry
+	cache  map[string]*entry
+	config CacheConfig
 }
 
-func NewCache() *DnsCache {
+func NewCache(config CacheConfig) *DnsCache {
 	cache := &DnsCache{
 		cache: make(map[string]*entry),
 	}

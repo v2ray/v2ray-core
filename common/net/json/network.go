@@ -1,11 +1,10 @@
 package json
 
 import (
-	"encoding/json"
-	"errors"
 	"strings"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	serialjson "github.com/v2ray/v2ray-core/common/serial/json"
 )
 
 type NetworkList []string
@@ -19,21 +18,12 @@ func NewNetworkList(networks []string) NetworkList {
 }
 
 func (this *NetworkList) UnmarshalJSON(data []byte) error {
-	var strList []string
-	err := json.Unmarshal(data, &strList)
-	if err == nil {
-		*this = NewNetworkList(strList)
-		return nil
+	strlist, err := serialjson.UnmarshalStringList(data)
+	if err != nil {
+		return err
 	}
-
-	var str string
-	err = json.Unmarshal(data, &str)
-	if err == nil {
-		strList := strings.Split(str, ",")
-		*this = NewNetworkList(strList)
-		return nil
-	}
-	return errors.New("Unknown format of network list: " + string(data))
+	*this = NewNetworkList(strlist)
+	return nil
 }
 
 func (this *NetworkList) HasNetwork(network v2net.Network) bool {

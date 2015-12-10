@@ -1,5 +1,5 @@
 package dns
 
 type CacheConfig interface {
-	TrustedSource() []string
+	IsTrustedSource(tag string) bool
 }
