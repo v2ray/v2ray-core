@@ -4,7 +4,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	v2net "github.com/v2ray/v2ray-core/common/net"
 	netassert "github.com/v2ray/v2ray-core/common/net/testing/assert"
 	_ "github.com/v2ray/v2ray-core/proxy/dokodemo/json"
 	_ "github.com/v2ray/v2ray-core/proxy/freedom/json"
