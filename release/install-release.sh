@@ -29,6 +29,7 @@ mkdir -p /var/log/v2ray
 # Install V2Ray binary to /usr/bin/v2ray
 mkdir -p /usr/bin/v2ray
 cp "/tmp/v2ray/v2ray-${VER}-linux-${VDIS}/v2ray" "/usr/bin/v2ray/v2ray"
+chmod +x "/usr/bin/v2ray/v2ray"
 
 # Install V2Ray server config to /etc/v2ray
 mkdir -p /etc/v2ray
