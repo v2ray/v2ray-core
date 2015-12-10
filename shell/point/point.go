@@ -22,7 +22,7 @@ type Point struct {
 	idh    []*InboundDetourHandler
 	odh    map[string]connhandler.OutboundConnectionHandler
 	router router.Router
-	space  *app.Space
+	space  *app.SpaceController
 }
 
 // NewPoint returns a new Point server based on given configuration.
@@ -50,7 +50,7 @@ func NewPoint(pConfig PointConfig) (*Point, error) {
 		log.SetLogLevel(logConfig.LogLevel())
 	}
 
-	vpoint.space = app.NewSpace()
+	vpoint.space = app.NewSpaceController()
 	vpoint.space.Bind(vpoint)
 
 	ichFactory := connhandler.GetInboundConnectionHandlerFactory(pConfig.InboundConfig().Protocol())
@@ -59,7 +59,7 @@ func NewPoint(pConfig PointConfig) (*Point, error) {
 		return nil, BadConfiguration
 	}
 	ichConfig := pConfig.InboundConfig().Settings()
-	ich, err := ichFactory.Create(vpoint.space, ichConfig)
+	ich, err := ichFactory.Create(vpoint.space.ForContext("vpoint-default-inbound"), ichConfig)
 	if err != nil {
 		log.Error("Failed to create inbound connection handler: %v", err)
 		return nil, err
@@ -72,7 +72,7 @@ func NewPoint(pConfig PointConfig) (*Point, error) {
 		return nil, BadConfiguration
 	}
 	ochConfig := pConfig.OutboundConfig().Settings()
-	och, err := ochFactory.Create(vpoint.space, ochConfig)
+	och, err := ochFactory.Create(vpoint.space.ForContext("vpoint-default-outbound"), ochConfig)
 	if err != nil {
 		log.Error("Failed to create outbound connection handler: %v", err)
 		return nil, err
@@ -84,7 +84,7 @@ func NewPoint(pConfig PointConfig) (*Point, error) {
 		vpoint.idh = make([]*InboundDetourHandler, len(detours))
 		for idx, detourConfig := range detours {
 			detourHandler := &InboundDetourHandler{
-				space:  vpoint.space,
+				space:  vpoint.space.ForContext(detourConfig.Tag()),
 				config: detourConfig,
 			}
 			err := detourHandler.Initialize()
@@ -104,7 +104,7 @@ func NewPoint(pConfig PointConfig) (*Point, error) {
 				log.Error("Unknown detour outbound connection handler factory %s", detourConfig.Protocol())
 				return nil, BadConfiguration
 			}
-			detourHandler, err := detourFactory.Create(vpoint.space, detourConfig.Settings())
+			detourHandler, err := detourFactory.Create(vpoint.space.ForContext(detourConfig.Tag()), detourConfig.Settings())
 			if err != nil {
 				log.Error("Failed to create detour outbound connection handler: %v", err)
 				return nil, err
@@ -159,7 +159,7 @@ func (this *Point) Start() error {
 // Dispatches a Packet to an OutboundConnection.
 // The packet will be passed through the router (if configured), and then sent to an outbound
 // connection with matching tag.
-func (this *Point) DispatchToOutbound(packet v2net.Packet) ray.InboundRay {
+func (this *Point) DispatchToOutbound(context app.Context, packet v2net.Packet) ray.InboundRay {
 	direct := ray.NewRay()
 	dest := packet.Destination()
 

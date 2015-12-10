@@ -9,3 +9,16 @@ import (
 type PacketDispatcher interface {
 	DispatchToOutbound(packet v2net.Packet) ray.InboundRay
 }
+
+type PacketDispatcherWithContext interface {
+	DispatchToOutbound(context Context, packet v2net.Packet) ray.InboundRay
+}
+
+type contextedPacketDispatcher struct {
+	context          Context
+	packetDispatcher PacketDispatcherWithContext
+}
+
+func (this *contextedPacketDispatcher) DispatchToOutbound(packet v2net.Packet) ray.InboundRay {
+	return this.packetDispatcher.DispatchToOutbound(this.context, packet)
+}

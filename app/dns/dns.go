@@ -4,6 +4,8 @@ import (
 	"net"
 	"sync"
 	"time"
+
+	"github.com/v2ray/v2ray-core/app"
 )
 
 type entry struct {
@@ -37,7 +39,8 @@ type DnsCache struct {
 
 func NewCache(config CacheConfig) *DnsCache {
 	cache := &DnsCache{
-		cache: make(map[string]*entry),
+		cache:  make(map[string]*entry),
+		config: config,
 	}
 	go cache.cleanup()
 	return cache
@@ -64,7 +67,7 @@ func (this *DnsCache) cleanup() {
 	}
 }
 
-func (this *DnsCache) Add(domain string, ip net.IP) {
+func (this *DnsCache) Add(context app.Context, domain string, ip net.IP) {
 	this.RLock()
 	entry, found := this.cache[domain]
 	this.RUnlock()
@@ -78,7 +81,7 @@ func (this *DnsCache) Add(domain string, ip net.IP) {
 	}
 }
 
-func (this *DnsCache) Get(domain string) net.IP {
+func (this *DnsCache) Get(context app.Context, domain string) net.IP {
 	this.RLock()
 	entry, found := this.cache[domain]
 	this.RUnlock()
