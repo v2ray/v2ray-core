@@ -49,7 +49,7 @@ fi
 # Configure SysV if necessary.
 if [ -d "/etc/init.d" ]; then
   if [ ! -f "/etc/init.d/v2ray" ]; then
-    cp "/tmp/v2ray/systemv/v2ray" "/etc/init.d/v2ray"
+    cp "/tmp/v2ray/v2ray-${VER}-linux-${VDIS}/systemv/v2ray" "/etc/init.d/v2ray"
     chmod +x "/etc/init.d/v2ray"
     update-rc.d v2ray defaults
   fi
