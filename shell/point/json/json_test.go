@@ -56,22 +56,3 @@ func TestServerSampleConfig(t *testing.T) {
 	assert.StringLiteral(pointConfig.OutboundConfig().Protocol()).Equals("freedom")
 	assert.Pointer(pointConfig.OutboundConfig().Settings()).IsNotNil()
 }
-
-func TestDetourConfig(t *testing.T) {
-	v2testing.Current(t)
-
-	// TODO: fix for Windows
-	baseDir := "$GOPATH/src/github.com/v2ray/v2ray-core/release/config"
-
-	pointConfig, err := json.LoadConfig(filepath.Join(baseDir, "vpoint_dns_detour.json"))
-	assert.Error(err).IsNil()
-
-	detours := pointConfig.InboundDetours()
-	assert.Int(len(detours)).Equals(1)
-
-	detour := detours[0]
-	assert.StringLiteral(detour.Protocol()).Equals("dokodemo-door")
-	netassert.Port(detour.PortRange().From()).Equals(v2net.Port(28394))
-	netassert.Port(detour.PortRange().To()).Equals(v2net.Port(28394))
-	assert.Pointer(detour.Settings()).IsNotNil()
-}
