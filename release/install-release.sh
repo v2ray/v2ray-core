@@ -2,7 +2,7 @@
 
 echo "Please make sure unzip and daemon are installed before running this script."
 
-VER="v1.1.1"
+VER="v1.1.2"
 
 ARCH=$(uname -m)
 VDIS="64"
