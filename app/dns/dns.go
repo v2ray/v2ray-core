@@ -68,6 +68,11 @@ func (this *DnsCache) cleanup() {
 }
 
 func (this *DnsCache) Add(context app.Context, domain string, ip net.IP) {
+	callerTag := context.CallerTag()
+	if !this.config.IsTrustedSource(callerTag) {
+		return
+	}
+
 	this.RLock()
 	entry, found := this.cache[domain]
 	this.RUnlock()
