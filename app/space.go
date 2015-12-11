@@ -13,4 +13,7 @@ type Space interface {
 
 	HasDnsCache() bool
 	DnsCache() DnsCache
+
+	HasPubsub() bool
+	Pubsub() Pubsub
 }

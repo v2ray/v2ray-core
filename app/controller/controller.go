@@ -10,6 +10,7 @@ import (
 type SpaceController struct {
 	packetDispatcher internal.PacketDispatcherWithContext
 	dnsCache         internal.DnsCacheWithContext
+	pubsub           internal.PubsubWithContext
 }
 
 func New() *SpaceController {
@@ -24,8 +25,12 @@ func (this *SpaceController) Bind(object interface{}) {
 	if dnsCache, ok := object.(internal.DnsCacheWithContext); ok {
 		this.dnsCache = dnsCache
 	}
+
+	if pubsub, ok := object.(internal.PubsubWithContext); ok {
+		this.pubsub = pubsub
+	}
 }
 
 func (this *SpaceController) ForContext(tag string) app.Space {
-	return internal.NewSpace(tag, this.packetDispatcher, this.dnsCache)
+	return internal.NewSpace(tag, this.packetDispatcher, this.dnsCache, this.pubsub)
 }
