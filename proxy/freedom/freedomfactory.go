@@ -8,7 +8,7 @@ import (
 type FreedomFactory struct {
 }
 
-func (this FreedomFactory) Create(space *app.Space, config interface{}) (connhandler.OutboundConnectionHandler, error) {
+func (this FreedomFactory) Create(space app.Space, config interface{}) (connhandler.OutboundConnectionHandler, error) {
 	return &FreedomConnection{space: space}, nil
 }
 

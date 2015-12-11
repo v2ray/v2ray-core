@@ -16,10 +16,10 @@ type DokodemoDoor struct {
 	config    Config
 	accepting bool
 	address   v2net.Address
-	space     *app.Space
+	space     app.Space
 }
 
-func NewDokodemoDoor(space *app.Space, config Config) *DokodemoDoor {
+func NewDokodemoDoor(space app.Space, config Config) *DokodemoDoor {
 	return &DokodemoDoor{
 		config:  config,
 		space:   space,

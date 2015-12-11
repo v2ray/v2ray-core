@@ -11,7 +11,7 @@ import (
 )
 
 type FreedomConnection struct {
-	space *app.Space
+	space app.Space
 }
 
 func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {

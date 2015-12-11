@@ -8,7 +8,7 @@ import (
 type SocksServerFactory struct {
 }
 
-func (this SocksServerFactory) Create(space *app.Space, rawConfig interface{}) (connhandler.InboundConnectionHandler, error) {
+func (this SocksServerFactory) Create(space app.Space, rawConfig interface{}) (connhandler.InboundConnectionHandler, error) {
 	return NewSocksServer(space, rawConfig.(Config)), nil
 }
 

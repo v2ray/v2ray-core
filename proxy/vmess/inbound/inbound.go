@@ -20,12 +20,12 @@ import (
 
 // Inbound connection handler that handles messages in VMess format.
 type VMessInboundHandler struct {
-	space     *app.Space
+	space     app.Space
 	clients   user.UserSet
 	accepting bool
 }
 
-func NewVMessInboundHandler(space *app.Space, clients user.UserSet) *VMessInboundHandler {
+func NewVMessInboundHandler(space app.Space, clients user.UserSet) *VMessInboundHandler {
 	return &VMessInboundHandler{
 		space:   space,
 		clients: clients,
@@ -142,7 +142,7 @@ func handleOutput(request *protocol.VMessRequest, writer io.Writer, output <-cha
 type VMessInboundHandlerFactory struct {
 }
 
-func (this *VMessInboundHandlerFactory) Create(space *app.Space, rawConfig interface{}) (connhandler.InboundConnectionHandler, error) {
+func (this *VMessInboundHandlerFactory) Create(space app.Space, rawConfig interface{}) (connhandler.InboundConnectionHandler, error) {
 	config := rawConfig.(Config)
 
 	allowedClients := user.NewTimedUserSet()

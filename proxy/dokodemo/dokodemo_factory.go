@@ -8,7 +8,7 @@ import (
 type DokodemoDoorFactory struct {
 }
 
-func (this DokodemoDoorFactory) Create(space *app.Space, rawConfig interface{}) (connhandler.InboundConnectionHandler, error) {
+func (this DokodemoDoorFactory) Create(space app.Space, rawConfig interface{}) (connhandler.InboundConnectionHandler, error) {
 	config := rawConfig.(Config)
 	return NewDokodemoDoor(space, config), nil
 }

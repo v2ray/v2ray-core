@@ -24,11 +24,11 @@ var (
 // SocksServer is a SOCKS 5 proxy server
 type SocksServer struct {
 	accepting bool
-	space     *app.Space
+	space     app.Space
 	config    Config
 }
 
-func NewSocksServer(space *app.Space, config Config) *SocksServer {
+func NewSocksServer(space app.Space, config Config) *SocksServer {
 	return &SocksServer{
 		space:  space,
 		config: config,

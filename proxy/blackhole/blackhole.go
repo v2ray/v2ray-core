@@ -32,7 +32,7 @@ func (this *BlackHole) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) e
 type BlackHoleFactory struct {
 }
 
-func (this BlackHoleFactory) Create(space *app.Space, config interface{}) (connhandler.OutboundConnectionHandler, error) {
+func (this BlackHoleFactory) Create(space app.Space, config interface{}) (connhandler.OutboundConnectionHandler, error) {
 	return NewBlackHole(), nil
 }
 

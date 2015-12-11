@@ -15,7 +15,7 @@ type InboundConnectionHandlerWithPort struct {
 
 // Handler for inbound detour connections.
 type InboundDetourHandler struct {
-	space  *app.Space
+	space  app.Space
 	config InboundDetourConfig
 	ich    []*InboundConnectionHandlerWithPort
 }

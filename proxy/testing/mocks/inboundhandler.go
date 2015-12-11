@@ -11,7 +11,7 @@ import (
 
 type InboundConnectionHandler struct {
 	Port       v2net.Port
-	space      *app.Space
+	space      app.Space
 	ConnInput  io.Reader
 	ConnOutput io.Writer
 }
@@ -49,7 +49,7 @@ func (this *InboundConnectionHandler) Communicate(packet v2net.Packet) error {
 	return nil
 }
 
-func (this *InboundConnectionHandler) Create(space *app.Space, config interface{}) (connhandler.InboundConnectionHandler, error) {
+func (this *InboundConnectionHandler) Create(space app.Space, config interface{}) (connhandler.InboundConnectionHandler, error) {
 	this.space = space
 	return this, nil
 }

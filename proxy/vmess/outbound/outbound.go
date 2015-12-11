@@ -19,7 +19,7 @@ import (
 
 type VMessOutboundHandler struct {
 	receiverManager *ReceiverManager
-	space           *app.Space
+	space           app.Space
 }
 
 func (this *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {
@@ -175,7 +175,7 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 type VMessOutboundHandlerFactory struct {
 }
 
-func (this *VMessOutboundHandlerFactory) Create(space *app.Space, rawConfig interface{}) (connhandler.OutboundConnectionHandler, error) {
+func (this *VMessOutboundHandlerFactory) Create(space app.Space, rawConfig interface{}) (connhandler.OutboundConnectionHandler, error) {
 	vOutConfig := rawConfig.(Config)
 	return &VMessOutboundHandler{
 		space:           space,
