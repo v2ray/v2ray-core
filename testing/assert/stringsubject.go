@@ -34,6 +34,12 @@ func (subject *StringSubject) Equals(expectation string) {
 	}
 }
 
+func (subject *StringSubject) NotEquals(expectation string) {
+	if subject.value.String() == expectation {
+		subject.Fail(subject.DisplayString(), "is not equal to ", serial.StringLiteral(expectation))
+	}
+}
+
 func (subject *StringSubject) Contains(substring serial.String) {
 	if !strings.Contains(subject.value.String(), substring.String()) {
 		subject.Fail(subject.DisplayString(), "contains", substring)

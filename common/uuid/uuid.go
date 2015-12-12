@@ -13,7 +13,7 @@ var (
 )
 
 type UUID struct {
-	byteValue   [16]byte
+	byteValue   []byte
 	stringValue string
 }
 
@@ -25,7 +25,7 @@ func (this *UUID) Bytes() []byte {
 	return this.byteValue[:]
 }
 
-func bytesToString(bytes [16]byte) string {
+func bytesToString(bytes []byte) string {
 	result := hex.EncodeToString(bytes[0 : byteGroups[0]/2])
 	start := byteGroups[0] / 2
 	for i := 1; i < len(byteGroups); i++ {
@@ -38,12 +38,20 @@ func bytesToString(bytes [16]byte) string {
 }
 
 func New() *UUID {
-	var bytes [16]byte
-	rand.Read(bytes[:])
+	bytes := make([]byte, 16)
+	rand.Read(bytes)
+	uuid, _ := ParseBytes(bytes)
+	return uuid
+}
+
+func ParseBytes(bytes []byte) (*UUID, error) {
+	if len(bytes) != 16 {
+		return nil, InvalidID
+	}
 	return &UUID{
 		byteValue:   bytes,
 		stringValue: bytesToString(bytes),
-	}
+	}, nil
 }
 
 func ParseString(str string) (*UUID, error) {
@@ -52,8 +60,10 @@ func ParseString(str string) (*UUID, error) {
 		return nil, InvalidID
 	}
 
-	var uuid UUID
-	uuid.stringValue = str
+	uuid := &UUID{
+		byteValue:   make([]byte, 16),
+		stringValue: str,
+	}
 	b := uuid.byteValue[:]
 
 	for _, byteGroup := range byteGroups {
@@ -71,5 +81,5 @@ func ParseString(str string) (*UUID, error) {
 		b = b[byteGroup/2:]
 	}
 
-	return &uuid, nil
+	return uuid, nil
 }

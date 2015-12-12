@@ -33,3 +33,9 @@ func (subject *BytesSubject) Equals(expectation []byte) {
 		subject.Fail("is equal to", expectation)
 	}
 }
+
+func (subject *BytesSubject) NotEquals(expectation []byte) {
+	if bytes.Equal(subject.value, expectation) {
+		subject.Fail("is not equal to", expectation)
+	}
+}
