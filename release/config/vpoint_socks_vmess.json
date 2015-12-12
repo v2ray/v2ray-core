@@ -1127,7 +1127,13 @@
             "baifendian.com",
             "qiniudn.com",
             "qiniudns.com",
-            "clouddn.com"
+            "clouddn.com",
+            "tencent.com",
+            "qqmail.com",
+            "qzone.com",
+            "soso.com",
+            "paipai.com",
+            "tenpay.com"
           ],
           "outboundTag": "direct"
         },
