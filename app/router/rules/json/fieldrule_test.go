@@ -119,4 +119,7 @@ func TestDomainNotMatchingDomain(t *testing.T) {
 	rule := parseRule([]byte(rawJson))
 	dest := v2net.NewTCPDestination(v2net.DomainAddress("baidu.com", 80))
 	assert.Bool(rule.Apply(dest)).IsFalse()
+
+	dest = v2net.NewTCPDestination(v2net.DomainAddress("www.google.com", 80))
+	assert.Bool(rule.Apply(dest)).IsTrue()
 }
