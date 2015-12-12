@@ -1,5 +1,9 @@
 package vmess
 
+import (
+	"time"
+)
+
 type UserLevel int
 
 const (
@@ -10,6 +14,11 @@ const (
 type User interface {
 	ID() *ID
 	Level() UserLevel
+}
+
+type SecondaryID interface {
+	ID() *ID
+	ValidUntil() time.Time
 }
 
 type UserSettings struct {
