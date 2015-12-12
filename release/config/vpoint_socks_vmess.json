@@ -1119,7 +1119,15 @@
             "lvmama.com",
             "clouddn.com",
             "leiphone.com",
-            "alicdn.com"
+            "alicdn.com",
+            ".71.am",
+            ".miaozhen.com",
+            "meika360.com",
+            "qiyipic.com",
+            "baifendian.com",
+            "qiniudn.com",
+            "qiniudns.com",
+            "clouddn.com"
           ],
           "outboundTag": "direct"
         },
