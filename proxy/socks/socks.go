@@ -181,6 +181,8 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 		return err
 	}
 
+	log.Info("TCP Connect request to %s", dest.String())
+
 	packet := v2net.NewPacket(dest, data, true)
 	this.transport(reader, writer, packet)
 	return nil
