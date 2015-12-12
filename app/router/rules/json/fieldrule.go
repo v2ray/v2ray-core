@@ -57,7 +57,7 @@ func NewPlainDomainMatcher(pattern string) *PlainDomainMatcher {
 }
 
 func (this *PlainDomainMatcher) Match(domain string) bool {
-	return strings.Contains(this.pattern, strings.ToLower(domain))
+	return strings.Contains(strings.ToLower(domain), this.pattern)
 }
 
 type RegexpDomainMatcher struct {
