@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"errors"
+	"net"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
@@ -73,7 +74,12 @@ func ReadUDPRequest(packet []byte) (*Socks5UDPRequest, error) {
 		}
 		domain := string(packet[5 : 5+domainLength])
 		port := v2net.PortFromBytes(packet[5+domainLength : 5+domainLength+2])
-		request.Address = v2net.DomainAddress(domain, port)
+		maybeIP := net.ParseIP(domain)
+		if maybeIP != nil {
+			request.Address = v2net.IPAddress(maybeIP, port)
+		} else {
+			request.Address = v2net.DomainAddress(domain, port)
+		}
 		dataBegin = 5 + domainLength + 2
 	default:
 		log.Warning("Unknown address type %d", addrType)

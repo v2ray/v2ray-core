@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"io"
+	"net"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
@@ -267,7 +268,12 @@ func (request *Socks5Request) Destination() v2net.Destination {
 	case AddrTypeIPv6:
 		address = v2net.IPAddress(request.IPv6[:], request.Port)
 	case AddrTypeDomain:
-		address = v2net.DomainAddress(request.Domain, request.Port)
+		maybeIP := net.ParseIP(request.Domain)
+		if maybeIP != nil {
+			address = v2net.IPAddress(maybeIP, request.Port)
+		} else {
+			address = v2net.DomainAddress(request.Domain, request.Port)
+		}
 	default:
 		panic("Unknown address type")
 	}
