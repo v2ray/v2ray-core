@@ -29,5 +29,5 @@ func TestConfigTargetParsing(t *testing.T) {
 	assert.Error(err).IsNil()
 	assert.String(target.Address).Equals("127.0.0.1:80")
 	assert.Int(len(target.Users)).Equals(1)
-	assert.StringLiteral(target.Users[0].ID().String).Equals("e641f5ad-9397-41e3-bf1a-e8740dfed019")
+	assert.String(target.Users[0].ID()).Equals("e641f5ad-9397-41e3-bf1a-e8740dfed019")
 }

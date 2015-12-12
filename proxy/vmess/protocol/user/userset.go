@@ -53,7 +53,7 @@ func (us *TimedUserSet) removeEntries(entries <-chan interface{}) {
 func (us *TimedUserSet) generateNewHashes(lastSec, nowSec int64, idx int, id *vmess.ID) {
 	idHash := NewTimeHash(HMACHash{})
 	for lastSec < nowSec {
-		idHash := idHash.Hash(id.Bytes[:], lastSec)
+		idHash := idHash.Hash(id.Bytes(), lastSec)
 		us.access.Lock()
 		us.userHash[string(idHash)] = indexTimePair{idx, lastSec}
 		us.access.Unlock()

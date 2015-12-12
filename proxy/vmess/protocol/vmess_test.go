@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/common/uuid"
 	"github.com/v2ray/v2ray-core/proxy/vmess"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user/testing/mocks"
@@ -30,10 +31,10 @@ func (this *TestUser) Level() vmess.UserLevel {
 func TestVMessSerialization(t *testing.T) {
 	v2testing.Current(t)
 
-	userId, err := vmess.NewID("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
-	if err != nil {
-		t.Fatal(err)
-	}
+	id, err := uuid.ParseString("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
+	assert.Error(err).IsNil()
+
+	userId := vmess.NewID(id)
 
 	testUser := &TestUser{
 		id: userId,
@@ -73,7 +74,7 @@ func TestVMessSerialization(t *testing.T) {
 	}
 
 	assert.Byte(actualRequest.Version).Named("Version").Equals(byte(0x01))
-	assert.StringLiteral(actualRequest.User.ID().String).Named("UserId").Equals(request.User.ID().String)
+	assert.String(actualRequest.User.ID()).Named("UserId").Equals(request.User.ID().String())
 	assert.Bytes(actualRequest.RequestIV).Named("RequestIV").Equals(request.RequestIV[:])
 	assert.Bytes(actualRequest.RequestKey).Named("RequestKey").Equals(request.RequestKey[:])
 	assert.Bytes(actualRequest.ResponseHeader).Named("ResponseHeader").Equals(request.ResponseHeader[:])
@@ -90,7 +91,10 @@ func TestReadSingleByte(t *testing.T) {
 }
 
 func BenchmarkVMessRequestWriting(b *testing.B) {
-	userId, _ := vmess.NewID("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
+	id, err := uuid.ParseString("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
+	assert.Error(err).IsNil()
+
+	userId := vmess.NewID(id)
 	userSet := mocks.MockUserSet{[]vmess.User{}, make(map[string]int), make(map[string]int64)}
 
 	testUser := &TestUser{
