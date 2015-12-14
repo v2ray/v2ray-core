@@ -1,54 +1,107 @@
 package http
 
 import (
+	"bufio"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/v2ray/v2ray-core/app"
-	_ "github.com/v2ray/v2ray-core/common/log"
+	"github.com/v2ray/v2ray-core/common/alloc"
+	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
 type HttpProxyServer struct {
-	accepting  bool
-	dispatcher app.PacketDispatcher
-	config     Config
+	accepting bool
+	space     app.Space
+	config    Config
 }
 
-func NewHttpProxyServer(dispatcher app.PacketDispatcher, config Config) *HttpProxyServer {
+func NewHttpProxyServer(space app.Space, config Config) *HttpProxyServer {
 	return &HttpProxyServer{
-		dispatcher: dispatcher,
-		config:     config,
+		space:  space,
+		config: config,
 	}
 }
 
 func (this *HttpProxyServer) Listen(port v2net.Port) error {
-	server := http.Server{
-		Addr:    ":" + port.String(),
-		Handler: this,
+	tcpListener, err := net.ListenTCP("tcp", &net.TCPAddr{
+		Port: int(port.Value()),
+		IP:   []byte{0, 0, 0, 0},
+	})
+	if err != nil {
+		return err
 	}
-	return server.ListenAndServe()
+	go this.accept(tcpListener)
+	return nil
 }
 
-func (this *HttpProxyServer) ServeHTTP(w http.ResponseWriter, request *http.Request) {
-	if strings.ToUpper(request.Method) == "CONNECT" {
-		host, port, err := net.SplitHostPort(request.URL.Host)
+func (this *HttpProxyServer) accept(listener *net.TCPListener) {
+	this.accepting = true
+	for this.accepting {
+		tcpConn, err := listener.AcceptTCP()
 		if err != nil {
-			if strings.Contains(err.(*net.AddrError).Err, "missing port") {
-				host = request.URL.Host
-				port = "80"
-			} else {
-				http.Error(w, "Bad Request", 400)
-				return
-			}
+			log.Error("Failed to accept HTTP connection: %v", err)
+			continue
 		}
-		_ = host + port
-	} else {
-
+		go this.handleConnection(tcpConn)
 	}
 }
 
-func (this *HttpProxyServer) handleConnect(response http.ResponseWriter, request *http.Request) {
+func parseHost(rawHost string) (v2net.Address, error) {
+	port := v2net.Port(80)
+	host, rawPort, err := net.SplitHostPort(rawHost)
+	if err != nil {
+		if addrError, ok := err.(*net.AddrError); ok && strings.Contains(addrError.Err, "missing port") {
+			host = rawHost
+			port = v2net.Port(80)
+		} else {
+			return nil, err
+		}
+	}
+	intPort, err := strconv.Atoi(rawPort)
+	if err != nil {
+		return nil, err
+	}
+	port = v2net.Port(intPort)
+	if ip := net.ParseIP(host); ip != nil {
+		return v2net.IPAddress(ip, port), nil
+	}
+	return v2net.DomainAddress(host, port), nil
+}
 
+func (this *HttpProxyServer) handleConnection(conn *net.TCPConn) {
+	httpReader := bufio.NewReader(conn)
+	request, err := http.ReadRequest(httpReader)
+	if err != nil {
+		log.Warning("Malformed HTTP request: %v", err)
+		return
+	}
+	if strings.ToUpper(request.Method) == "CONNECT" {
+		address, err := parseHost(request.Host)
+		if err != nil {
+			log.Warning("Malformed proxy host: %v", err)
+			return
+		}
+		response := &http.Response{
+			Status:        "200 OK",
+			StatusCode:    200,
+			Proto:         "HTTP/1.1",
+			ProtoMajor:    1,
+			ProtoMinor:    1,
+			Header:        http.Header(make(map[string][]string)),
+			Body:          nil,
+			ContentLength: 0,
+			Close:         false,
+		}
+
+		buffer := alloc.NewSmallBuffer().Clear()
+		response.Write(buffer)
+		conn.Write(buffer.Value)
+
+		packet := v2net.NewPacket(v2net.NewTCPDestination(address), nil, true)
+		this.space.PacketDispatcher().DispatchToOutbound(packet)
+	}
 }
