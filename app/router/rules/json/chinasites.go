@@ -37,9 +37,13 @@ const (
 )
 
 var (
+	compiledMatchers []*RegexpDomainMatcher
+)
+
+func init() {
 	compiledMatchers = make([]*RegexpDomainMatcher, 0, 1024)
 
-	regexpDomains = []string{
+	regexpDomains := []string{
 		dotCn,
 
 		anySubDomain + "10010" + dotCom,
@@ -187,9 +191,7 @@ var (
 		anySubDomain + "youku" + dotCom,
 		anySubDomain + "zhihu" + dotCom,
 	}
-)
 
-func init() {
 	for _, pattern := range regexpDomains {
 		matcher, err := NewRegexpDomainMatcher(pattern)
 		if err != nil {
