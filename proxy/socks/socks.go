@@ -176,14 +176,9 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 	}
 
 	dest := request.Destination()
-	data, err := v2net.ReadFrom(reader, nil)
-	if err != nil {
-		return err
-	}
-
 	log.Info("TCP Connect request to %s", dest.String())
 
-	packet := v2net.NewPacket(dest, data, true)
+	packet := v2net.NewPacket(dest, nil, true)
 	this.transport(reader, writer, packet)
 	return nil
 }
@@ -242,12 +237,7 @@ func (this *SocksServer) handleSocks4(reader io.Reader, writer io.Writer, auth p
 	}
 
 	dest := v2net.NewTCPDestination(v2net.IPAddress(auth.IP[:], auth.Port))
-	data, err := v2net.ReadFrom(reader, nil)
-	if err != nil {
-		return err
-	}
-
-	packet := v2net.NewPacket(dest, data, true)
+	packet := v2net.NewPacket(dest, nil, true)
 	this.transport(reader, writer, packet)
 	return nil
 }
