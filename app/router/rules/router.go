@@ -2,8 +2,10 @@ package rules
 
 import (
 	"errors"
+	"time"
 
 	"github.com/v2ray/v2ray-core/app/router"
+	"github.com/v2ray/v2ray-core/common/collect"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
@@ -12,13 +14,38 @@ var (
 	NoRuleApplicable = errors.New("No rule applicable")
 )
 
+type cacheEntry struct {
+	tag        string
+	err        error
+	validUntil time.Time
+}
+
+func newCacheEntry(tag string, err error) *cacheEntry {
+	this := &cacheEntry{
+		tag: tag,
+		err: err,
+	}
+	this.Extend()
+	return this
+}
+
+func (this *cacheEntry) IsValid() bool {
+	return this.validUntil.Before(time.Now())
+}
+
+func (this *cacheEntry) Extend() {
+	this.validUntil = time.Now().Add(time.Hour)
+}
+
 type Router struct {
 	rules []Rule
+	cache *collect.ValidityMap
 }
 
 func NewRouter() *Router {
 	return &Router{
 		rules: make([]Rule, 0, 16),
+		cache: collect.NewValidityMap(3600),
 	}
 }
 
@@ -27,13 +54,24 @@ func (this *Router) AddRule(rule Rule) *Router {
 	return this
 }
 
-func (this *Router) TakeDetour(dest v2net.Destination) (string, error) {
+func (this *Router) takeDetourWithoutCache(dest v2net.Destination) (string, error) {
 	for _, rule := range this.rules {
 		if rule.Apply(dest) {
 			return rule.Tag(), nil
 		}
 	}
 	return "", NoRuleApplicable
+}
+
+func (this *Router) TakeDetour(dest v2net.Destination) (string, error) {
+	rawEntry := this.cache.Get(dest)
+	if rawEntry == nil {
+		tag, err := this.takeDetourWithoutCache(dest)
+		this.cache.Set(dest, newCacheEntry(tag, err))
+		return tag, err
+	}
+	entry := rawEntry.(*cacheEntry)
+	return entry.tag, entry.err
 }
 
 type RouterFactory struct {
