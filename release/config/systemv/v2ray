@@ -45,8 +45,7 @@ do_start()
     #   3 if configuration file not ready for daemon
     start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
         || return 1
-    start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --background \
-         --no-close -m -- $DAEMON_OPTS \
+    start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --background -m -- $DAEMON_OPTS \
         || return 2
     # Add code here, if necessary, that waits for the process to be ready
     # to handle requests from services started subsequently which depend
