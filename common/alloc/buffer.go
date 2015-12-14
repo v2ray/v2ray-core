@@ -40,6 +40,10 @@ func (b *Buffer) Append(data []byte) *Buffer {
 	return b
 }
 
+func (b *Buffer) Bytes() []byte {
+	return b.Value
+}
+
 // Slice cuts the buffer at the given position.
 func (b *Buffer) Slice(from, to int) *Buffer {
 	b.Value = b.Value[from:to]
