@@ -10,6 +10,7 @@ import (
 type Server struct {
 	Port         v2net.Port
 	MsgProcessor func(msg []byte) []byte
+	accepting    bool
 }
 
 func (server *Server) Start() (v2net.Address, error) {
@@ -27,6 +28,8 @@ func (server *Server) Start() (v2net.Address, error) {
 }
 
 func (server *Server) handleConnection(conn *net.UDPConn) {
+	server.accepting = true
+	defer conn.Close()
 	for {
 		buffer := make([]byte, 2*1024)
 		nBytes, addr, err := conn.ReadFromUDP(buffer)
@@ -38,4 +41,8 @@ func (server *Server) handleConnection(conn *net.UDPConn) {
 		response := server.MsgProcessor(buffer[:nBytes])
 		conn.WriteToUDP(response, addr)
 	}
+}
+
+func (server *Server) Close() {
+	server.accepting = false
 }

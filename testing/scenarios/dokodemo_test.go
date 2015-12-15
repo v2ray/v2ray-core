@@ -24,6 +24,7 @@ func TestDokodemoTCP(t *testing.T) {
 	}
 	_, err := tcpServer.Start()
 	assert.Error(err).IsNil()
+	defer tcpServer.Close()
 
 	assert.Error(InitializeServerSetOnce("test_2")).IsNil()
 

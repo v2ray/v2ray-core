@@ -24,6 +24,7 @@ func TestRouter(t *testing.T) {
 	}
 	_, err := tcpServer.Start()
 	assert.Error(err).IsNil()
+	defer tcpServer.Close()
 
 	tcpServer2Accessed := false
 	tcpServer2 := &tcp.Server{
@@ -35,6 +36,7 @@ func TestRouter(t *testing.T) {
 	}
 	_, err = tcpServer2.Start()
 	assert.Error(err).IsNil()
+	defer tcpServer2.Close()
 
 	assert.Error(InitializeServerSetOnce("test_3")).IsNil()
 

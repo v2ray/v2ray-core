@@ -78,9 +78,9 @@ func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbou
 	}
 
 	writeMutex.Lock()
-	if tcpConn, ok := conn.(*net.TCPConn); ok {
-		tcpConn.CloseWrite()
-	}
+	//if tcpConn, ok := conn.(*net.TCPConn); ok {
+	//	tcpConn.CloseWrite()
+	//}
 	readMutex.Lock()
 	conn.Close()
 

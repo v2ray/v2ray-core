@@ -3,7 +3,6 @@ package freedom
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"testing"
 
@@ -127,9 +126,9 @@ func TestSocksTcpConnect(t *testing.T) {
 		tcpConn.CloseWrite()
 	}
 
-	dataReturned, err := ioutil.ReadAll(conn)
+	dataReturned, err := v2net.ReadFrom(conn, nil)
 	assert.Error(err).IsNil()
 	conn.Close()
 
-	assert.Bytes(dataReturned).Equals([]byte("Processed: Data to be sent to remote"))
+	assert.Bytes(dataReturned.Value).Equals([]byte("Processed: Data to be sent to remote"))
 }

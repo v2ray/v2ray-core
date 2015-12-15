@@ -2,7 +2,6 @@ package tcp
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -11,6 +10,7 @@ import (
 type Server struct {
 	Port         v2net.Port
 	MsgProcessor func(msg []byte) []byte
+	accepting    bool
 }
 
 func (server *Server) Start() (v2net.Address, error) {
@@ -28,7 +28,9 @@ func (server *Server) Start() (v2net.Address, error) {
 }
 
 func (server *Server) acceptConnections(listener *net.TCPListener) {
-	for {
+	server.accepting = true
+	defer listener.Close()
+	for server.accepting {
 		conn, err := listener.Accept()
 		if err != nil {
 			fmt.Printf("Failed accept TCP connection: %v", err)
@@ -40,12 +42,17 @@ func (server *Server) acceptConnections(listener *net.TCPListener) {
 }
 
 func (server *Server) handleConnection(conn net.Conn) {
-	request, err := ioutil.ReadAll(conn)
-	if err != nil {
-		fmt.Printf("Failed to read request: %v", err)
-		return
+	for true {
+		request, err := v2net.ReadFrom(conn, nil)
+		if err != nil {
+			break
+		}
+		response := server.MsgProcessor(request.Value)
+		conn.Write(response)
 	}
-	response := server.MsgProcessor(request)
-	conn.Write(response)
 	conn.Close()
+}
+
+func (this *Server) Close() {
+	this.accepting = true
 }

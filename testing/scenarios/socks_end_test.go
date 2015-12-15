@@ -31,12 +31,13 @@ func TestTCPConnection(t *testing.T) {
 	}
 	_, err := tcpServer.Start()
 	assert.Error(err).IsNil()
+	defer tcpServer.Close()
 
 	assert.Error(InitializeServerSetOnce("test_1")).IsNil()
 
 	socksPort := v2net.Port(50000)
 
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 10; i++ {
 		conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 			IP:   []byte{127, 0, 0, 1},
 			Port: int(socksPort),
@@ -98,6 +99,7 @@ func TestTCPBind(t *testing.T) {
 	}
 	_, err := tcpServer.Start()
 	assert.Error(err).IsNil()
+	defer tcpServer.Close()
 
 	assert.Error(InitializeServerSetOnce("test_1")).IsNil()
 
@@ -146,6 +148,7 @@ func TestUDPAssociate(t *testing.T) {
 	}
 	_, err := udpServer.Start()
 	assert.Error(err).IsNil()
+	defer udpServer.Close()
 
 	assert.Error(InitializeServerSetOnce("test_1")).IsNil()
 
