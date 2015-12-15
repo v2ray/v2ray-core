@@ -22,6 +22,7 @@ func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbou
 		log.Error("Freedom: Failed to open connection: %s : %v", firstPacket.Destination().String(), err)
 		return err
 	}
+	defer conn.Close()
 
 	input := ray.OutboundInput()
 	output := ray.OutboundOutput()
@@ -78,11 +79,10 @@ func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbou
 	}
 
 	writeMutex.Lock()
-	//if tcpConn, ok := conn.(*net.TCPConn); ok {
-	//	tcpConn.CloseWrite()
-	//}
+	if tcpConn, ok := conn.(*net.TCPConn); ok {
+		tcpConn.CloseWrite()
+	}
 	readMutex.Lock()
-	conn.Close()
 
 	return nil
 }
