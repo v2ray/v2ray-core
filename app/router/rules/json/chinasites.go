@@ -114,6 +114,7 @@ func init() {
 		anySubDomain + "chinaz" + dotCom,
 		anySubDomain + "chuangxin" + dotCom,
 		anySubDomain + "clouddn" + dotCom,
+		anySubDomain + "cloudxns" + dotCom,
 		anySubDomain + "cmbchina" + dotCom,
 		anySubDomain + "cnbeta" + dotCom,
 		anySubDomain + "cnbetacdn" + dotCom,
