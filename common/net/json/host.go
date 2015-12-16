@@ -3,6 +3,8 @@ package json
 import (
 	"encoding/json"
 	"net"
+
+	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
 type Host struct {
@@ -50,4 +52,12 @@ func (this *Host) IP() net.IP {
 
 func (this *Host) Domain() string {
 	return this.domain
+}
+
+func (this *Host) Address() v2net.Address {
+	if this.IsIP() {
+		return v2net.IPAddress(this.IP())
+	} else {
+		return v2net.DomainAddress(this.Domain())
+	}
 }

@@ -14,11 +14,7 @@ type DokodemoConfig struct {
 }
 
 func (this *DokodemoConfig) Address() v2net.Address {
-	if this.Host.IsIP() {
-		return v2net.IPAddress(this.Host.IP())
-	} else {
-		return v2net.DomainAddress(this.Host.Domain())
-	}
+	return this.Host.Address()
 }
 
 func (this *DokodemoConfig) Port() v2net.Port {

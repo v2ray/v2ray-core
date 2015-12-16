@@ -37,11 +37,7 @@ func (t *ConfigTarget) UnmarshalJSON(data []byte) error {
 		log.Error("Address is not set in VMess outbound config.")
 		return proxyconfig.BadConfiguration
 	}
-	if rawConfig.Address.IsIP() {
-		t.Destination = v2net.TCPDestination(v2net.IPAddress(rawConfig.Address.IP()), rawConfig.Port)
-	} else {
-		t.Destination = v2net.TCPDestination(v2net.DomainAddress(rawConfig.Address.Domain()), rawConfig.Port)
-	}
+	t.Destination = v2net.TCPDestination(rawConfig.Address.Address(), rawConfig.Port)
 	return nil
 }
 
