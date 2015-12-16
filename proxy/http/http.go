@@ -108,18 +108,19 @@ func (this *HttpProxyServer) handleConnection(conn *net.TCPConn) {
 			log.Info("Request to remote: %s", string(buffer.Value))
 			packet := v2net.NewPacket(v2net.NewTCPDestination(address), buffer, true)
 			ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
-			defer close(ray.InboundInput())
+			go func() {
+				defer close(ray.InboundInput())
+				responseReader := bufio.NewReader(NewChanReader(ray.InboundOutput()))
+				response, err := http.ReadResponse(responseReader, request)
+				if err != nil {
+					return
+				}
 
-			responseReader := bufio.NewReader(NewChanReader(ray.InboundOutput()))
-			response, err := http.ReadResponse(responseReader, request)
-			if err != nil {
-				return
-			}
-
-			responseBuffer := alloc.NewBuffer().Clear()
-			response.Write(responseBuffer)
-			conn.Write(responseBuffer.Value)
-			responseBuffer.Release()
+				responseBuffer := alloc.NewBuffer().Clear()
+				defer responseBuffer.Release()
+				response.Write(responseBuffer)
+				conn.Write(responseBuffer.Value)
+			}()
 		} else {
 			response := &http.Response{
 				Status:        "400 Bad Request",
@@ -157,6 +158,7 @@ func (this *HttpProxyServer) handleConnect(request *http.Request, address v2net.
 	buffer := alloc.NewSmallBuffer().Clear()
 	response.Write(buffer)
 	writer.Write(buffer.Value)
+	buffer.Release()
 
 	packet := v2net.NewPacket(v2net.NewTCPDestination(address), nil, true)
 	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)

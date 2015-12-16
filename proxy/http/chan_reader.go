@@ -21,9 +21,9 @@ func NewChanReader(stream <-chan *alloc.Buffer) *ChanReader {
 }
 
 func (this *ChanReader) fill() {
-	b, ok := <-this.stream
+	b, open := <-this.stream
 	this.current = b
-	if !ok {
+	if !open {
 		this.eof = true
 		this.current = nil
 	}
