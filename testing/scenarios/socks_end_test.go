@@ -68,17 +68,21 @@ func TestTCPConnection(t *testing.T) {
 		assert.Error(err).IsNil()
 		assert.Int(nBytes).Equals(len(actualRequest))
 
+		actualResponse := make([]byte, 1024)
+		nResponse, err := conn.Read(actualResponse)
+		assert.Error(err).IsNil()
+
 		actualRequest = []byte("Request to target server again.")
 		nBytes, err = conn.Write(actualRequest)
 		assert.Error(err).IsNil()
 		assert.Int(nBytes).Equals(len(actualRequest))
 
+		nBytes, err = conn.Read(actualResponse[nResponse:])
+		assert.Error(err).IsNil()
+		nResponse += nBytes
 		conn.CloseWrite()
 
-		actualResponse := make([]byte, 1024)
-		nBytes, err = conn.Read(actualResponse)
-		assert.Error(err).IsNil()
-		assert.StringLiteral(string(actualResponse[:nBytes])).Equals("Processed: Request to target server.Request to target server again.")
+		assert.StringLiteral(string(actualResponse[:nResponse])).Equals("Processed: Request to target server.Processed: Request to target server again.")
 
 		conn.Close()
 	}
