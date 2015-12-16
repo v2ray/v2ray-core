@@ -41,14 +41,15 @@ type VMessRequest struct {
 	ResponseHeader []byte
 	Command        byte
 	Address        v2net.Address
+	Port           v2net.Port
 }
 
 // Destination is the final destination of this request.
 func (this *VMessRequest) Destination() v2net.Destination {
 	if this.Command == CmdTCP {
-		return v2net.NewTCPDestination(this.Address)
+		return v2net.TCPDestination(this.Address, this.Port)
 	} else {
-		return v2net.NewUDPDestination(this.Address)
+		return v2net.UDPDestination(this.Address, this.Port)
 	}
 }
 
@@ -106,7 +107,7 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	request.ResponseHeader = buffer.Value[33:37] // 4 bytes
 	request.Command = buffer.Value[37]
 
-	port := v2net.PortFromBytes(buffer.Value[38:40])
+	request.Port = v2net.PortFromBytes(buffer.Value[38:40])
 
 	switch buffer.Value[40] {
 	case addrTypeIPv4:
@@ -115,14 +116,14 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 		if err != nil {
 			return nil, err
 		}
-		request.Address = v2net.IPAddress(buffer.Value[41:45], port)
+		request.Address = v2net.IPAddress(buffer.Value[41:45])
 	case addrTypeIPv6:
 		_, err = v2net.ReadAllBytes(decryptor, buffer.Value[41:57]) // 16 bytes
 		bufferLen += 16
 		if err != nil {
 			return nil, err
 		}
-		request.Address = v2net.IPAddress(buffer.Value[41:57], port)
+		request.Address = v2net.IPAddress(buffer.Value[41:57])
 	case addrTypeDomain:
 		_, err = v2net.ReadAllBytes(decryptor, buffer.Value[41:42])
 		if err != nil {
@@ -134,7 +135,7 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 			return nil, err
 		}
 		bufferLen += 1 + domainLength
-		request.Address = v2net.DomainAddress(string(buffer.Value[42:42+domainLength]), port)
+		request.Address = v2net.DomainAddress(string(buffer.Value[42 : 42+domainLength]))
 	}
 
 	_, err = v2net.ReadAllBytes(decryptor, buffer.Value[bufferLen:bufferLen+4])
@@ -172,7 +173,7 @@ func (this *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 user
 	buffer.Append(this.RequestKey)
 	buffer.Append(this.ResponseHeader)
 	buffer.AppendBytes(this.Command)
-	buffer.Append(this.Address.Port().Bytes())
+	buffer.Append(this.Port.Bytes())
 
 	switch {
 	case this.Address.IsIPv4():

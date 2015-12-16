@@ -17,11 +17,12 @@ var (
 type Socks5UDPRequest struct {
 	Fragment byte
 	Address  v2net.Address
+	Port     v2net.Port
 	Data     *alloc.Buffer
 }
 
 func (request *Socks5UDPRequest) Destination() v2net.Destination {
-	return v2net.NewUDPDestination(request.Address)
+	return v2net.UDPDestination(request.Address, request.Port)
 }
 
 func (request *Socks5UDPRequest) Write(buffer *alloc.Buffer) {
@@ -34,7 +35,7 @@ func (request *Socks5UDPRequest) Write(buffer *alloc.Buffer) {
 	case request.Address.IsDomain():
 		buffer.AppendBytes(AddrTypeDomain, byte(len(request.Address.Domain()))).Append([]byte(request.Address.Domain()))
 	}
-	buffer.Append(request.Address.Port().Bytes())
+	buffer.Append(request.Port.Bytes())
 	buffer.Append(request.Data.Value)
 }
 
@@ -56,16 +57,16 @@ func ReadUDPRequest(packet []byte) (*Socks5UDPRequest, error) {
 			return nil, transport.CorruptedPacket
 		}
 		ip := packet[4:8]
-		port := v2net.PortFromBytes(packet[8:10])
-		request.Address = v2net.IPAddress(ip, port)
+		request.Port = v2net.PortFromBytes(packet[8:10])
+		request.Address = v2net.IPAddress(ip)
 		dataBegin = 10
 	case AddrTypeIPv6:
 		if len(packet) < 22 {
 			return nil, transport.CorruptedPacket
 		}
 		ip := packet[4:20]
-		port := v2net.PortFromBytes(packet[20:22])
-		request.Address = v2net.IPAddress(ip, port)
+		request.Port = v2net.PortFromBytes(packet[20:22])
+		request.Address = v2net.IPAddress(ip)
 		dataBegin = 22
 	case AddrTypeDomain:
 		domainLength := int(packet[4])
@@ -73,12 +74,12 @@ func ReadUDPRequest(packet []byte) (*Socks5UDPRequest, error) {
 			return nil, transport.CorruptedPacket
 		}
 		domain := string(packet[5 : 5+domainLength])
-		port := v2net.PortFromBytes(packet[5+domainLength : 5+domainLength+2])
+		request.Port = v2net.PortFromBytes(packet[5+domainLength : 5+domainLength+2])
 		maybeIP := net.ParseIP(domain)
 		if maybeIP != nil {
-			request.Address = v2net.IPAddress(maybeIP, port)
+			request.Address = v2net.IPAddress(maybeIP)
 		} else {
-			request.Address = v2net.DomainAddress(domain, port)
+			request.Address = v2net.DomainAddress(domain)
 		}
 		dataBegin = 5 + domainLength + 2
 	default:

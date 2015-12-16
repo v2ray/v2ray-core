@@ -16,6 +16,7 @@ type DokodemoDoor struct {
 	config    Config
 	accepting bool
 	address   v2net.Address
+	port      v2net.Port
 	space     app.Space
 }
 
@@ -24,6 +25,7 @@ func NewDokodemoDoor(space app.Space, config Config) *DokodemoDoor {
 		config:  config,
 		space:   space,
 		address: config.Address(),
+		port:    config.Port(),
 	}
 }
 
@@ -71,7 +73,7 @@ func (this *DokodemoDoor) handleUDPPackets(udpConn *net.UDPConn) {
 			return
 		}
 
-		packet := v2net.NewPacket(v2net.NewUDPDestination(this.address), buffer, false)
+		packet := v2net.NewPacket(v2net.UDPDestination(this.address, this.port), buffer, false)
 		ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
 		close(ray.InboundInput())
 
@@ -112,7 +114,7 @@ func (this *DokodemoDoor) AcceptTCPConnections(tcpListener *net.TCPListener) {
 func (this *DokodemoDoor) HandleTCPConnection(conn *net.TCPConn) {
 	defer conn.Close()
 
-	packet := v2net.NewPacket(v2net.NewTCPDestination(this.address), nil, true)
+	packet := v2net.NewPacket(v2net.TCPDestination(this.address, this.port), nil, true)
 	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
 
 	var inputFinish, outputFinish sync.Mutex

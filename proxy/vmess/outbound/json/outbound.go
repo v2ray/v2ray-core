@@ -14,8 +14,8 @@ import (
 )
 
 type ConfigTarget struct {
-	Address v2net.Address
-	Users   []*vmessjson.ConfigUser
+	Destination v2net.Destination
+	Users       []*vmessjson.ConfigUser
 }
 
 func (t *ConfigTarget) UnmarshalJSON(data []byte) error {
@@ -38,9 +38,9 @@ func (t *ConfigTarget) UnmarshalJSON(data []byte) error {
 		return proxyconfig.BadConfiguration
 	}
 	if rawConfig.Address.IsIP() {
-		t.Address = v2net.IPAddress(rawConfig.Address.IP(), rawConfig.Port)
+		t.Destination = v2net.TCPDestination(v2net.IPAddress(rawConfig.Address.IP()), rawConfig.Port)
 	} else {
-		t.Address = v2net.DomainAddress(rawConfig.Address.Domain(), rawConfig.Port)
+		t.Destination = v2net.TCPDestination(v2net.DomainAddress(rawConfig.Address.Domain()), rawConfig.Port)
 	}
 	return nil
 }
@@ -74,8 +74,8 @@ func (o *Outbound) Receivers() []*outbound.Receiver {
 			users = append(users, rawUser)
 		}
 		targets = append(targets, &outbound.Receiver{
-			Address:  rawTarget.Address,
-			Accounts: users,
+			Destination: rawTarget.Destination,
+			Accounts:    users,
 		})
 	}
 	return targets

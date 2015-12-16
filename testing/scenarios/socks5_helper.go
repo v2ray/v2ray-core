@@ -29,20 +29,21 @@ func appendAddress(request []byte, address v2net.Address) []byte {
 		request = append(request, []byte(address.Domain())...)
 
 	}
+	return request
+}
+
+func socks5Request(command byte, address v2net.Destination) []byte {
+	request := []byte{socks5Version, command, 0}
+	request = appendAddress(request, address.Address())
 	request = append(request, address.Port().Bytes()...)
 	return request
 }
 
-func socks5Request(command byte, address v2net.Address) []byte {
-	request := []byte{socks5Version, command, 0}
-	request = appendAddress(request, address)
-	return request
-}
-
-func socks5UDPRequest(address v2net.Address, payload []byte) []byte {
+func socks5UDPRequest(address v2net.Destination, payload []byte) []byte {
 	request := make([]byte, 0, 1024)
 	request = append(request, 0, 0, 0)
-	request = appendAddress(request, address)
+	request = appendAddress(request, address.Address())
+	request = append(request, address.Port().Bytes()...)
 	request = append(request, payload...)
 	return request
 }

@@ -39,7 +39,7 @@ func TestDomainMatching(t *testing.T) {
     "tag": "test"
   }`
 	rule := parseRule([]byte(rawJson))
-	dest := v2net.NewTCPDestination(v2net.DomainAddress("www.v2ray.com", 80))
+	dest := v2net.TCPDestination(v2net.DomainAddress("www.v2ray.com"), 80)
 	assert.Bool(rule.Apply(dest)).IsTrue()
 }
 
@@ -52,7 +52,7 @@ func TestPortMatching(t *testing.T) {
 			ToValue:   100,
 		},
 	}
-	dest := v2net.NewTCPDestination(v2net.DomainAddress("www.v2ray.com", 80))
+	dest := v2net.TCPDestination(v2net.DomainAddress("www.v2ray.com"), 80)
 	assert.Bool(rule.Apply(dest)).IsTrue()
 }
 
@@ -65,7 +65,7 @@ func TestIPMatching(t *testing.T) {
     "tag": "test"
   }`
 	rule := parseRule([]byte(rawJson))
-	dest := v2net.NewTCPDestination(v2net.IPAddress([]byte{10, 0, 0, 1}, 80))
+	dest := v2net.TCPDestination(v2net.IPAddress([]byte{10, 0, 0, 1}), 80)
 	assert.Bool(rule.Apply(dest)).IsTrue()
 }
 
@@ -78,7 +78,7 @@ func TestIPListMatching(t *testing.T) {
     "tag": "test"
   }`
 	rule := parseRule([]byte(rawJson))
-	dest := v2net.NewTCPDestination(v2net.IPAddress([]byte{192, 168, 1, 1}, 80))
+	dest := v2net.TCPDestination(v2net.IPAddress([]byte{192, 168, 1, 1}), 80)
 	assert.Bool(rule.Apply(dest)).IsTrue()
 }
 
@@ -91,7 +91,7 @@ func TestPortNotMatching(t *testing.T) {
     "tag": "test"
   }`
 	rule := parseRule([]byte(rawJson))
-	dest := v2net.NewTCPDestination(v2net.IPAddress([]byte{10, 0, 0, 1}, 79))
+	dest := v2net.TCPDestination(v2net.IPAddress([]byte{10, 0, 0, 1}), 79)
 	assert.Bool(rule.Apply(dest)).IsFalse()
 }
 
@@ -104,7 +104,7 @@ func TestDomainNotMatching(t *testing.T) {
     "tag": "test"
   }`
 	rule := parseRule([]byte(rawJson))
-	dest := v2net.NewTCPDestination(v2net.IPAddress([]byte{10, 0, 0, 1}, 80))
+	dest := v2net.TCPDestination(v2net.IPAddress([]byte{10, 0, 0, 1}), 80)
 	assert.Bool(rule.Apply(dest)).IsFalse()
 }
 
@@ -117,9 +117,9 @@ func TestDomainNotMatchingDomain(t *testing.T) {
     "tag": "test"
   }`
 	rule := parseRule([]byte(rawJson))
-	dest := v2net.NewTCPDestination(v2net.DomainAddress("baidu.com", 80))
+	dest := v2net.TCPDestination(v2net.DomainAddress("baidu.com"), 80)
 	assert.Bool(rule.Apply(dest)).IsFalse()
 
-	dest = v2net.NewTCPDestination(v2net.DomainAddress("www.google.com", 80))
+	dest = v2net.TCPDestination(v2net.DomainAddress("www.google.com"), 80)
 	assert.Bool(rule.Apply(dest)).IsTrue()
 }

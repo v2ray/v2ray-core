@@ -4,66 +4,86 @@ package net
 type Destination interface {
 	Network() string  // Protocol of communication (tcp / udp)
 	Address() Address // Address of destination
-	String() string   // String representation of the destination
+	Port() Port
+	String() string // String representation of the destination
+	NetAddr() string
 
 	IsTCP() bool // True if destination is reachable via TCP
 	IsUDP() bool // True if destination is reachable via UDP
 }
 
-// NewTCPDestination creates a TCP destination with given address
-func NewTCPDestination(address Address) Destination {
-	return TCPDestination{address: address}
+// TCPDestination creates a TCP destination with given address
+func TCPDestination(address Address, port Port) Destination {
+	return &tcpDestination{address: address, port: port}
 }
 
-// NewUDPDestination creates a UDP destination with given address
-func NewUDPDestination(address Address) Destination {
-	return UDPDestination{address: address}
+// UDPDestination creates a UDP destination with given address
+func UDPDestination(address Address, port Port) Destination {
+	return &udpDestination{address: address, port: port}
 }
 
-type TCPDestination struct {
+type tcpDestination struct {
 	address Address
+	port    Port
 }
 
-func (dest TCPDestination) Network() string {
+func (dest *tcpDestination) Network() string {
 	return "tcp"
 }
 
-func (dest TCPDestination) Address() Address {
+func (dest *tcpDestination) Address() Address {
 	return dest.address
 }
 
-func (dest TCPDestination) String() string {
-	return "tcp:" + dest.address.String()
+func (dest *tcpDestination) NetAddr() string {
+	return dest.address.String() + ":" + dest.port.String()
 }
 
-func (dest TCPDestination) IsTCP() bool {
+func (dest *tcpDestination) String() string {
+	return "tcp:" + dest.NetAddr()
+}
+
+func (dest *tcpDestination) IsTCP() bool {
 	return true
 }
 
-func (dest TCPDestination) IsUDP() bool {
+func (dest *tcpDestination) IsUDP() bool {
 	return false
 }
 
-type UDPDestination struct {
-	address Address
+func (dest *tcpDestination) Port() Port {
+	return dest.port
 }
 
-func (dest UDPDestination) Network() string {
+type udpDestination struct {
+	address Address
+	port    Port
+}
+
+func (dest *udpDestination) Network() string {
 	return "udp"
 }
 
-func (dest UDPDestination) Address() Address {
+func (dest *udpDestination) Address() Address {
 	return dest.address
 }
 
-func (dest UDPDestination) String() string {
-	return "udp:" + dest.address.String()
+func (dest *udpDestination) NetAddr() string {
+	return dest.address.String() + ":" + dest.port.String()
 }
 
-func (dest UDPDestination) IsTCP() bool {
+func (dest *udpDestination) String() string {
+	return "udp:" + dest.NetAddr()
+}
+
+func (dest *udpDestination) IsTCP() bool {
 	return false
 }
 
-func (dest UDPDestination) IsUDP() bool {
+func (dest *udpDestination) IsUDP() bool {
 	return true
+}
+
+func (dest *udpDestination) Port() Port {
+	return dest.port
 }

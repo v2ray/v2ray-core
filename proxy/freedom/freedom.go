@@ -15,7 +15,7 @@ type FreedomConnection struct {
 }
 
 func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {
-	conn, err := net.Dial(firstPacket.Destination().Network(), firstPacket.Destination().Address().String())
+	conn, err := net.Dial(firstPacket.Destination().Network(), firstPacket.Destination().NetAddr())
 	log.Info("Freedom: Opening connection to %s", firstPacket.Destination().String())
 	if err != nil {
 		close(ray.OutboundOutput())

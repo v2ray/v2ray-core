@@ -43,7 +43,7 @@ func TestDokodemoTCP(t *testing.T) {
 			ProtocolValue: "dokodemo-door",
 			SettingsValue: &json.DokodemoConfig{
 				Host:         v2netjson.NewIPHost(net.ParseIP("127.0.0.1")),
-				Port:         port,
+				PortValue:    port,
 				NetworkList:  &networkList,
 				TimeoutValue: 0,
 			},
@@ -105,7 +105,7 @@ func TestDokodemoUDP(t *testing.T) {
 			ProtocolValue: "dokodemo-door",
 			SettingsValue: &json.DokodemoConfig{
 				Host:         v2netjson.NewIPHost(net.ParseIP("127.0.0.1")),
-				Port:         port,
+				PortValue:    port,
 				NetworkList:  &networkList,
 				TimeoutValue: 0,
 			},

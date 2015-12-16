@@ -8,17 +8,21 @@ import (
 
 type DokodemoConfig struct {
 	Host         *v2netjson.Host        `json:"address"`
-	Port         v2net.Port             `json:"port"`
+	PortValue    v2net.Port             `json:"port"`
 	NetworkList  *v2netjson.NetworkList `json:"network"`
 	TimeoutValue int                    `json:"timeout"`
 }
 
 func (this *DokodemoConfig) Address() v2net.Address {
 	if this.Host.IsIP() {
-		return v2net.IPAddress(this.Host.IP(), this.Port)
+		return v2net.IPAddress(this.Host.IP())
 	} else {
-		return v2net.DomainAddress(this.Host.Domain(), this.Port)
+		return v2net.DomainAddress(this.Host.Domain())
 	}
+}
+
+func (this *DokodemoConfig) Port() v2net.Port {
+	return this.PortValue
 }
 
 func (this *DokodemoConfig) Network() v2net.NetworkList {

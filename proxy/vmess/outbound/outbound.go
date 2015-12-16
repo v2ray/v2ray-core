@@ -34,6 +34,7 @@ func (this *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray ray.Out
 		User:    vNextUser,
 		Command: command,
 		Address: firstPacket.Destination().Address(),
+		Port:    firstPacket.Destination().Port(),
 	}
 
 	buffer := alloc.NewSmallBuffer()
@@ -46,8 +47,21 @@ func (this *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray ray.Out
 	return startCommunicate(request, vNextAddress, ray, firstPacket)
 }
 
-func startCommunicate(request *protocol.VMessRequest, dest v2net.Address, ray ray.OutboundRay, firstPacket v2net.Packet) error {
-	conn, err := net.Dial("tcp", dest.String())
+func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ray ray.OutboundRay, firstPacket v2net.Packet) error {
+	var destIp net.IP
+	if dest.Address().IsIPv4() || dest.Address().IsIPv6() {
+		destIp = dest.Address().IP()
+	} else {
+		ips, err := net.LookupIP(dest.Address().Domain())
+		if err != nil {
+			return err
+		}
+		destIp = ips[0]
+	}
+	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
+		IP:   destIp,
+		Port: int(dest.Port()),
+	})
 	if err != nil {
 		log.Error("Failed to open %s: %v", dest.String(), err)
 		if ray != nil {
@@ -69,9 +83,7 @@ func startCommunicate(request *protocol.VMessRequest, dest v2net.Address, ray ra
 	go handleResponse(conn, request, output, &responseFinish, (request.Command == protocol.CmdUDP))
 
 	requestFinish.Lock()
-	if tcpConn, ok := conn.(*net.TCPConn); ok {
-		tcpConn.CloseWrite()
-	}
+	conn.CloseWrite()
 	responseFinish.Lock()
 	return nil
 }

@@ -191,12 +191,12 @@ func (this *SocksServer) handleUDP(reader *v2net.TimeOutReader, writer io.Writer
 
 	response.Port = udpAddr.Port()
 	switch {
-	case udpAddr.IsIPv4():
-		response.SetIPv4(udpAddr.IP())
-	case udpAddr.IsIPv6():
-		response.SetIPv6(udpAddr.IP())
-	case udpAddr.IsDomain():
-		response.SetDomain(udpAddr.Domain())
+	case udpAddr.Address().IsIPv4():
+		response.SetIPv4(udpAddr.Address().IP())
+	case udpAddr.Address().IsIPv6():
+		response.SetIPv6(udpAddr.Address().IP())
+	case udpAddr.Address().IsDomain():
+		response.SetDomain(udpAddr.Address().Domain())
 	}
 
 	responseBuffer := alloc.NewSmallBuffer().Clear()
@@ -236,7 +236,7 @@ func (this *SocksServer) handleSocks4(reader io.Reader, writer io.Writer, auth p
 		return UnsupportedSocksCommand
 	}
 
-	dest := v2net.NewTCPDestination(v2net.IPAddress(auth.IP[:], auth.Port))
+	dest := v2net.TCPDestination(v2net.IPAddress(auth.IP[:]), auth.Port)
 	packet := v2net.NewPacket(dest, nil, true)
 	this.transport(reader, writer, packet)
 	return nil

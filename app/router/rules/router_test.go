@@ -21,7 +21,7 @@ func TestSimpleRouter(t *testing.T) {
 			},
 		})
 
-	tag, err := router.TakeDetour(v2net.NewTCPDestination(v2net.DomainAddress("v2ray.com", 80)))
+	tag, err := router.TakeDetour(v2net.TCPDestination(v2net.DomainAddress("v2ray.com"), 80))
 	assert.Error(err).IsNil()
 	assert.StringLiteral(tag).Equals("test")
 }

@@ -70,8 +70,7 @@ func TestUDPSend(t *testing.T) {
 
 	data2SendBuffer := alloc.NewBuffer().Clear()
 	data2SendBuffer.Append([]byte(data2Send))
-	dest := v2net.NewUDPDestination(udpServerAddr)
-	ich.Communicate(v2net.NewPacket(dest, data2SendBuffer, false))
+	ich.Communicate(v2net.NewPacket(udpServerAddr, data2SendBuffer, false))
 	assert.Bytes(connOutput.Bytes()).Equals([]byte("Processed: Data to be sent to remote"))
 }
 

@@ -11,7 +11,6 @@ import (
 type Address interface {
 	IP() net.IP     // IP of this Address
 	Domain() string // Domain of this Address
-	Port() Port     // Port of this Address
 
 	IsIPv4() bool   // True if this Address is an IPv4 address
 	IsIPv6() bool   // True if this Address is an IPv6 address
@@ -30,19 +29,17 @@ func allZeros(data []byte) bool {
 }
 
 // IPAddress creates an Address with given IP and port.
-func IPAddress(ip []byte, port Port) Address {
+func IPAddress(ip []byte) Address {
 	switch len(ip) {
 	case net.IPv4len:
 		return &IPv4Address{
-			port: port,
-			ip:   [4]byte{ip[0], ip[1], ip[2], ip[3]},
+			ip: [4]byte{ip[0], ip[1], ip[2], ip[3]},
 		}
 	case net.IPv6len:
 		if allZeros(ip[0:10]) && ip[10] == 0xff && ip[11] == 0xff {
-			return IPAddress(ip[12:16], port)
+			return IPAddress(ip[12:16])
 		}
 		return &IPv6Address{
-			port: Port(port),
 			ip: [16]byte{
 				ip[0], ip[1], ip[2], ip[3],
 				ip[4], ip[5], ip[6], ip[7],
@@ -57,24 +54,21 @@ func IPAddress(ip []byte, port Port) Address {
 }
 
 // DomainAddress creates an Address with given domain and port.
-func DomainAddress(domain string, port Port) Address {
+func DomainAddress(domain string) Address {
 	return &DomainAddressImpl{
 		domain: domain,
-		port:   port,
 	}
 }
 
+type address struct {
+}
+
 type IPv4Address struct {
-	port Port
-	ip   [4]byte
+	ip [4]byte
 }
 
 func (addr *IPv4Address) IP() net.IP {
 	return net.IP(addr.ip[:])
-}
-
-func (this *IPv4Address) Port() Port {
-	return this.port
 }
 
 func (addr *IPv4Address) Domain() string {
@@ -94,20 +88,15 @@ func (addr *IPv4Address) IsDomain() bool {
 }
 
 func (this *IPv4Address) String() string {
-	return this.IP().String() + ":" + this.port.String()
+	return this.IP().String()
 }
 
 type IPv6Address struct {
-	port Port
-	ip   [16]byte
+	ip [16]byte
 }
 
 func (addr *IPv6Address) IP() net.IP {
 	return net.IP(addr.ip[:])
-}
-
-func (this *IPv6Address) Port() Port {
-	return this.port
 }
 
 func (addr *IPv6Address) Domain() string {
@@ -127,20 +116,15 @@ func (addr *IPv6Address) IsDomain() bool {
 }
 
 func (this *IPv6Address) String() string {
-	return "[" + this.IP().String() + "]:" + this.port.String()
+	return "[" + this.IP().String() + "]"
 }
 
 type DomainAddressImpl struct {
-	port   Port
 	domain string
 }
 
 func (addr *DomainAddressImpl) IP() net.IP {
 	panic("Calling IP() on a DomainAddress.")
-}
-
-func (this *DomainAddressImpl) Port() Port {
-	return this.port
 }
 
 func (addr *DomainAddressImpl) Domain() string {
@@ -160,5 +144,5 @@ func (addr *DomainAddressImpl) IsDomain() bool {
 }
 
 func (this *DomainAddressImpl) String() string {
-	return this.domain + ":" + this.port.String()
+	return this.domain
 }

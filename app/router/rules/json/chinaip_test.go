@@ -10,7 +10,7 @@ import (
 )
 
 func makeDestination(ip string) v2net.Destination {
-	return v2net.NewTCPDestination(v2net.IPAddress(net.ParseIP(ip), 80))
+	return v2net.TCPDestination(v2net.IPAddress(net.ParseIP(ip)), 80)
 }
 
 func TestChinaIP(t *testing.T) {

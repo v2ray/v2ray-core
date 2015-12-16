@@ -9,7 +9,7 @@ import (
 )
 
 func makeDomainDestination(domain string) v2net.Destination {
-	return v2net.NewTCPDestination(v2net.DomainAddress(domain, 80))
+	return v2net.TCPDestination(v2net.DomainAddress(domain), 80)
 }
 
 func TestChinaSites(t *testing.T) {

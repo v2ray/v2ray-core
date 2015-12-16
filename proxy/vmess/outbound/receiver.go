@@ -8,8 +8,8 @@ import (
 )
 
 type Receiver struct {
-	Address  v2net.Address
-	Accounts []vmess.User
+	Destination v2net.Destination
+	Accounts    []vmess.User
 }
 
 type ReceiverManager struct {
@@ -22,7 +22,7 @@ func NewReceiverManager(receivers []*Receiver) *ReceiverManager {
 	}
 }
 
-func (this *ReceiverManager) PickReceiver() (v2net.Address, vmess.User) {
+func (this *ReceiverManager) PickReceiver() (v2net.Destination, vmess.User) {
 	receiverLen := len(this.receivers)
 	receiverIdx := 0
 	if receiverLen > 1 {
@@ -37,5 +37,5 @@ func (this *ReceiverManager) PickReceiver() (v2net.Address, vmess.User) {
 		userIdx = rand.Intn(userLen)
 	}
 	user := receiver.Accounts[userIdx]
-	return receiver.Address, user
+	return receiver.Destination, user
 }

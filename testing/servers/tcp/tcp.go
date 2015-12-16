@@ -13,7 +13,7 @@ type Server struct {
 	accepting    bool
 }
 
-func (server *Server) Start() (v2net.Address, error) {
+func (server *Server) Start() (v2net.Destination, error) {
 	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   []byte{0, 0, 0, 0},
 		Port: int(server.Port),
@@ -24,7 +24,7 @@ func (server *Server) Start() (v2net.Address, error) {
 	}
 	go server.acceptConnections(listener)
 	localAddr := listener.Addr().(*net.TCPAddr)
-	return v2net.IPAddress(localAddr.IP, v2net.Port(localAddr.Port)), nil
+	return v2net.TCPDestination(v2net.IPAddress(localAddr.IP), v2net.Port(localAddr.Port)), nil
 }
 
 func (server *Server) acceptConnections(listener *net.TCPListener) {

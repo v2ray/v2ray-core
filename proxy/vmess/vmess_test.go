@@ -52,7 +52,7 @@ func TestVMessInAndOut(t *testing.T) {
 			SettingsValue: &outboundjson.Outbound{
 				[]*outboundjson.ConfigTarget{
 					&outboundjson.ConfigTarget{
-						Address: v2net.IPAddress([]byte{127, 0, 0, 1}, portB),
+						Destination: v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), portB),
 						Users: []*vmessjson.ConfigUser{
 							&vmessjson.ConfigUser{Id: testAccount},
 						},
@@ -99,7 +99,7 @@ func TestVMessInAndOut(t *testing.T) {
 	err = pointB.Start()
 	assert.Error(err).IsNil()
 
-	dest := v2net.NewTCPDestination(v2net.IPAddress([]byte{1, 2, 3, 4}, 80))
+	dest := v2net.TCPDestination(v2net.IPAddress([]byte{1, 2, 3, 4}), 80)
 	ich.Communicate(v2net.NewPacket(dest, nil, true))
 	assert.Bytes(ichConnInput).Equals(ochConnOutput.Bytes())
 	assert.Bytes(ichConnOutput.Bytes()).Equals(ochConnInput)

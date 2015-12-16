@@ -9,7 +9,7 @@ import (
 	"github.com/v2ray/v2ray-core/proxy/socks/protocol"
 )
 
-var udpAddress v2net.Address
+var udpAddress v2net.Destination
 
 func (this *SocksServer) ListenUDP(port v2net.Port) error {
 	addr := &net.UDPAddr{
@@ -22,13 +22,13 @@ func (this *SocksServer) ListenUDP(port v2net.Port) error {
 		log.Error("Socks failed to listen UDP on port %d: %v", port, err)
 		return err
 	}
-	udpAddress = v2net.IPAddress(this.config.IP(), port)
+	udpAddress = v2net.UDPDestination(v2net.IPAddress(this.config.IP()), port)
 
 	go this.AcceptPackets(conn)
 	return nil
 }
 
-func (this *SocksServer) getUDPAddr() v2net.Address {
+func (this *SocksServer) getUDPAddr() v2net.Destination {
 	return udpAddress
 }
 
@@ -60,11 +60,11 @@ func (this *SocksServer) AcceptPackets(conn *net.UDPConn) error {
 
 		udpPacket := v2net.NewPacket(request.Destination(), request.Data, false)
 		log.Info("Send packet to %s with %d bytes", udpPacket.Destination().String(), request.Data.Len())
-		go this.handlePacket(conn, udpPacket, addr, request.Address)
+		go this.handlePacket(conn, udpPacket, addr, request.Address, request.Port)
 	}
 }
 
-func (this *SocksServer) handlePacket(conn *net.UDPConn, packet v2net.Packet, clientAddr *net.UDPAddr, targetAddr v2net.Address) {
+func (this *SocksServer) handlePacket(conn *net.UDPConn, packet v2net.Packet, clientAddr *net.UDPAddr, targetAddr v2net.Address, port v2net.Port) {
 	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
 	close(ray.InboundInput())
 
@@ -72,6 +72,7 @@ func (this *SocksServer) handlePacket(conn *net.UDPConn, packet v2net.Packet, cl
 		response := &protocol.Socks5UDPRequest{
 			Fragment: 0,
 			Address:  targetAddr,
+			Port:     port,
 			Data:     data,
 		}
 		log.Info("Writing back UDP response with %d bytes from %s to %s", data.Len(), targetAddr.String(), clientAddr.String())

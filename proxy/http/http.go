@@ -53,7 +53,7 @@ func (this *HttpProxyServer) accept(listener *net.TCPListener) {
 	}
 }
 
-func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Address, error) {
+func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error) {
 	port := defaultPort
 	host, rawPort, err := net.SplitHostPort(rawHost)
 	if err != nil {
@@ -71,9 +71,9 @@ func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Address, error) {
 	}
 
 	if ip := net.ParseIP(host); ip != nil {
-		return v2net.IPAddress(ip, port), nil
+		return v2net.TCPDestination(v2net.IPAddress(ip), port), nil
 	}
-	return v2net.DomainAddress(host, port), nil
+	return v2net.TCPDestination(v2net.DomainAddress(host), port), nil
 }
 
 func (this *HttpProxyServer) handleConnection(conn *net.TCPConn) {
@@ -93,12 +93,12 @@ func (this *HttpProxyServer) handleConnection(conn *net.TCPConn) {
 		if len(host) == 0 {
 			host = request.URL.Host
 		}
-		address, err := parseHost(host, defaultPort)
+		dest, err := parseHost(host, defaultPort)
 		if err != nil {
 			log.Warning("Malformed proxy host (%s): %v", host, err)
 		}
 		if strings.ToUpper(request.Method) == "CONNECT" {
-			this.handleConnect(request, address, reader, conn)
+			this.handleConnect(request, dest, reader, conn)
 		} else if len(request.URL.Host) > 0 {
 			request.Host = request.URL.Host
 			request.Header.Set("Connection", "keep-alive")
@@ -106,7 +106,7 @@ func (this *HttpProxyServer) handleConnection(conn *net.TCPConn) {
 			buffer := alloc.NewBuffer().Clear()
 			request.Write(buffer)
 			log.Info("Request to remote: %s", string(buffer.Value))
-			packet := v2net.NewPacket(v2net.NewTCPDestination(address), buffer, true)
+			packet := v2net.NewPacket(dest, buffer, true)
 			ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
 			go func() {
 				defer close(ray.InboundInput())
@@ -142,7 +142,7 @@ func (this *HttpProxyServer) handleConnection(conn *net.TCPConn) {
 	}
 }
 
-func (this *HttpProxyServer) handleConnect(request *http.Request, address v2net.Address, reader io.Reader, writer io.Writer) {
+func (this *HttpProxyServer) handleConnect(request *http.Request, destination v2net.Destination, reader io.Reader, writer io.Writer) {
 	response := &http.Response{
 		Status:        "200 OK",
 		StatusCode:    200,
@@ -160,7 +160,7 @@ func (this *HttpProxyServer) handleConnect(request *http.Request, address v2net.
 	writer.Write(buffer.Value)
 	buffer.Release()
 
-	packet := v2net.NewPacket(v2net.NewTCPDestination(address), nil, true)
+	packet := v2net.NewPacket(destination, nil, true)
 	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
 	this.transport(reader, writer, ray)
 }

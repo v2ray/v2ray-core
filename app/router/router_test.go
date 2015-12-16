@@ -24,7 +24,7 @@ func TestRouter(t *testing.T) {
 	router, err := CreateRouter(pointConfig.RouterConfig().Strategy(), pointConfig.RouterConfig().Settings())
 	assert.Error(err).IsNil()
 
-	dest := v2net.NewTCPDestination(v2net.IPAddress(net.ParseIP("120.135.126.1"), 80))
+	dest := v2net.TCPDestination(v2net.IPAddress(net.ParseIP("120.135.126.1")), 80)
 	tag, err := router.TakeDetour(dest)
 	assert.Error(err).IsNil()
 	assert.StringLiteral(tag).Equals("direct")

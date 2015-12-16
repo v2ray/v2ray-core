@@ -55,7 +55,8 @@ func TestVMessSerialization(t *testing.T) {
 	request.ResponseHeader = randBytes[32:]
 
 	request.Command = byte(0x01)
-	request.Address = v2net.DomainAddress("v2ray.com", 80)
+	request.Address = v2net.DomainAddress("v2ray.com")
+	request.Port = v2net.Port(80)
 
 	mockTime := int64(1823730)
 
@@ -113,7 +114,8 @@ func BenchmarkVMessRequestWriting(b *testing.B) {
 	request.ResponseHeader = randBytes[32:]
 
 	request.Command = byte(0x01)
-	request.Address = v2net.DomainAddress("v2ray.com", 80)
+	request.Address = v2net.DomainAddress("v2ray.com")
+	request.Port = v2net.Port(80)
 
 	for i := 0; i < b.N; i++ {
 		request.ToBytes(user.NewTimeHash(user.HMACHash{}), user.GenerateRandomInt64InRange, nil)
