@@ -7,6 +7,8 @@ import (
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/common/retry"
+	"github.com/v2ray/v2ray-core/transport/dialer"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
@@ -15,8 +17,17 @@ type FreedomConnection struct {
 }
 
 func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {
-	conn, err := net.Dial(firstPacket.Destination().Network(), firstPacket.Destination().NetAddr())
 	log.Info("Freedom: Opening connection to %s", firstPacket.Destination().String())
+
+	var conn net.Conn
+	err := retry.Timed(5, 100).On(func() error {
+		rawConn, err := dialer.Dial(firstPacket.Destination())
+		if err != nil {
+			return err
+		}
+		conn = rawConn
+		return nil
+	})
 	if err != nil {
 		close(ray.OutboundOutput())
 		log.Error("Freedom: Failed to open connection: %s : %v", firstPacket.Destination().String(), err)
