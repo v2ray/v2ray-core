@@ -24,6 +24,18 @@ func (subject *AddressSubject) DisplayString() string {
 	return subject.Subject.DisplayString(subject.value.String())
 }
 
+func (subject *AddressSubject) Equals(another v2net.Address) {
+	if subject.value.IsIPv4() && another.IsIPv4() {
+		IP(subject.value.IP()).Equals(another.IP())
+	} else if subject.value.IsIPv6() && another.IsIPv6() {
+		IP(subject.value.IP()).Equals(another.IP())
+	} else if subject.value.IsDomain() && another.IsDomain() {
+		assert.StringLiteral(subject.value.Domain()).Equals(another.Domain())
+	} else {
+		subject.Fail(subject.DisplayString(), "equals to", another)
+	}
+}
+
 func (subject *AddressSubject) IsIPv4() {
 	if !subject.value.IsIPv4() {
 		subject.Fail(subject.DisplayString(), "is", serial.StringLiteral("an IPv4 address"))
