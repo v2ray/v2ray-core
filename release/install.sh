@@ -9,23 +9,15 @@ if [ "$ARCH" == "i686" ] || [ "$ARCH" == "i386" ]; then
   GO_CUR=${GO_X86}
 fi
 
-function git_not_installed {
-  git --version 2>&1 >/dev/null
-  GIT_IS_AVAILABLE=$?
-  return $GIT_IS_AVAILABLE
-}
-
-if [ git_not_installed ]; then
-  apt-get install git -y
-fi
+which git > /dev/null || apt-get install git -y
 
 if [ -z "$GOPATH" ]; then
   curl -o go_latest.tar.gz ${GO_CUR}
   tar -C /usr/local -xzf go_latest.tar.gz
   rm go_latest.tar.gz
   export PATH=$PATH:/usr/local/go/bin
-  
-  mkdir /v2ray
+
+  mkdir /v2ray &> /dev/null
   export GOPATH=/v2ray
 fi
 
