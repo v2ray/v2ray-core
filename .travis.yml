@@ -31,6 +31,7 @@ deploy:
     - "$GOPATH/bin/v2ray-linux-32.zip"
     - "$GOPATH/bin/v2ray-linux-arm.zip"
     - "$GOPATH/bin/v2ray-linux-arm64.zip"
+    - "$GOPATH/bin/metadata.txt"
   skip_cleanup: true
   on:
     tags: true

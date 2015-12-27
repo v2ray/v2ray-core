@@ -11,9 +11,10 @@ import (
 )
 
 var (
-	flagTargetOS   = flag.String("os", runtime.GOOS, "Target OS of this build.")
-	flagTargetArch = flag.String("arch", runtime.GOARCH, "Target CPU arch of this build.")
-	flagArchive    = flag.Bool("zip", false, "Whether to make an archive of files or not.")
+	flagTargetOS     = flag.String("os", runtime.GOOS, "Target OS of this build.")
+	flagTargetArch   = flag.String("arch", runtime.GOARCH, "Target CPU arch of this build.")
+	flagArchive      = flag.Bool("zip", false, "Whether to make an archive of files or not.")
+	flagMetadataFile = flag.String("metadata", "metadata.txt", "File to store metadata info of released packages.")
 
 	binPath string
 )
@@ -45,10 +46,10 @@ func getBinPath() string {
 func main() {
 	flag.Parse()
 	binPath = getBinPath()
-	build(*flagTargetOS, *flagTargetArch, *flagArchive, "")
+	build(*flagTargetOS, *flagTargetArch, *flagArchive, "", *flagMetadataFile)
 }
 
-func build(targetOS, targetArch string, archive bool, version string) {
+func build(targetOS, targetArch string, archive bool, version string, metadataFile string) {
 	v2rayOS := parseOS(targetOS)
 	v2rayArch := parseArch(targetArch)
 
@@ -91,7 +92,18 @@ func build(targetOS, targetArch string, archive bool, version string) {
 		root := filepath.Base(targetDir)
 		err = zipFolder(root, zipFile)
 		if err != nil {
-			fmt.Println("Unable to create archive (%s): %v\n", zipFile, err)
+			fmt.Printf("Unable to create archive (%s): %v\n", zipFile, err)
+		}
+
+		metadataWriter, err := os.OpenFile(filepath.Join(binPath, metadataFile), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+		if err != nil {
+			fmt.Printf("Unable to create metadata file (%s): %v\n", metadataFile, err)
+		}
+		defer metadataWriter.Close()
+
+		err = CalcMetadata(zipFile, metadataWriter)
+		if err != nil {
+			fmt.Printf("Failed to calculate metadata for file (%s): %v", zipFile, err)
 		}
 	}
 }
