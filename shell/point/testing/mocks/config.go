@@ -52,10 +52,28 @@ func (this *PortRange) To() v2net.Port {
 	return this.ToValue
 }
 
+type InboundDetourAllocationConfig struct {
+	StrategyValue    string
+	ConcurrencyValue int
+}
+
+func (this *InboundDetourAllocationConfig) Strategy() string {
+	return this.StrategyValue
+}
+
+func (this *InboundDetourAllocationConfig) Concurrency() int {
+	return this.ConcurrencyValue
+}
+
 type InboundDetourConfig struct {
 	*ConnectionConfig
-	PortRangeValue *PortRange
-	TagValue       string
+	PortRangeValue     *PortRange
+	TagValue           string
+	AllocationStrategy *InboundDetourAllocationConfig
+}
+
+func (this *InboundDetourConfig) Allocation() point.InboundDetourAllocationConfig {
+	return this.AllocationStrategy
 }
 
 func (this *InboundDetourConfig) Tag() string {

@@ -23,10 +23,22 @@ type DnsConfig interface {
 	Settings() dns.CacheConfig
 }
 
+const (
+	AllocationStrategyAlways   = "always"
+	AllocationStrategyRandom   = "random"
+	AllocationStrategyExternal = "external"
+)
+
+type InboundDetourAllocationConfig interface {
+	Strategy() string
+	Concurrency() int
+}
+
 type InboundDetourConfig interface {
 	Protocol() string
 	PortRange() v2net.PortRange
 	Tag() string
+	Allocation() InboundDetourAllocationConfig
 	Settings() interface{}
 }
 
