@@ -55,6 +55,11 @@ func (this *PortRange) To() v2net.Port {
 type InboundDetourAllocationConfig struct {
 	StrategyValue    string
 	ConcurrencyValue int
+	RefreshSec       int
+}
+
+func (this *InboundDetourAllocationConfig) Refresh() int {
+	return this.RefreshSec
 }
 
 func (this *InboundDetourAllocationConfig) Strategy() string {

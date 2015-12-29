@@ -12,6 +12,11 @@ import (
 type InboundDetourAllocationConfig struct {
 	StrategyValue    string `json:"strategy"`
 	ConcurrencyValue int    `json:"concurrency"`
+	RefreshSec       int    `json:"refresh"`
+}
+
+func (this *InboundDetourAllocationConfig) Refresh() int {
+	return this.RefreshSec
 }
 
 func (this *InboundDetourAllocationConfig) Strategy() string {

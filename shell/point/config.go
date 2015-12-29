@@ -30,8 +30,9 @@ const (
 )
 
 type InboundDetourAllocationConfig interface {
-	Strategy() string
-	Concurrency() int
+	Strategy() string // Allocation strategy of this inbound detour.
+	Concurrency() int // Number of handlers (ports) running in parallel.
+	Refresh() int     // Number of seconds before a handler is regenerated.
 }
 
 type InboundDetourConfig interface {
