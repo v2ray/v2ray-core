@@ -79,66 +79,28 @@ func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error
 func (this *HttpProxyServer) handleConnection(conn *net.TCPConn) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
-	for true {
-		request, err := http.ReadRequest(reader)
-		if err != nil {
-			break
-		}
-		log.Info("Request to Method [%s] Host [%s] with URL [%s]", request.Method, request.Host, request.URL.String())
-		defaultPort := v2net.Port(80)
-		if strings.ToLower(request.URL.Scheme) == "https" {
-			defaultPort = v2net.Port(443)
-		}
-		host := request.Host
-		if len(host) == 0 {
-			host = request.URL.Host
-		}
-		dest, err := parseHost(host, defaultPort)
-		if err != nil {
-			log.Warning("Malformed proxy host (%s): %v", host, err)
-		}
-		if strings.ToUpper(request.Method) == "CONNECT" {
-			this.handleConnect(request, dest, reader, conn)
-		} else if len(request.URL.Host) > 0 {
-			request.Host = request.URL.Host
-			request.Header.Set("Connection", "keep-alive")
-			request.Header.Del("Proxy-Connection")
-			buffer := alloc.NewBuffer().Clear()
-			request.Write(buffer)
-			log.Info("Request to remote: %s", string(buffer.Value))
-			packet := v2net.NewPacket(dest, buffer, true)
-			ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
-			go func() {
-				defer close(ray.InboundInput())
-				responseReader := bufio.NewReader(NewChanReader(ray.InboundOutput()))
-				response, err := http.ReadResponse(responseReader, request)
-				if err != nil {
-					return
-				}
 
-				responseBuffer := alloc.NewBuffer().Clear()
-				defer responseBuffer.Release()
-				response.Write(responseBuffer)
-				conn.Write(responseBuffer.Value)
-			}()
-		} else {
-			response := &http.Response{
-				Status:        "400 Bad Request",
-				StatusCode:    400,
-				Proto:         "HTTP/1.1",
-				ProtoMajor:    1,
-				ProtoMinor:    1,
-				Header:        http.Header(make(map[string][]string)),
-				Body:          nil,
-				ContentLength: 0,
-				Close:         false,
-			}
-
-			buffer := alloc.NewSmallBuffer().Clear()
-			response.Write(buffer)
-			conn.Write(buffer.Value)
-			buffer.Release()
-		}
+	request, err := http.ReadRequest(reader)
+	if err != nil {
+		return
+	}
+	log.Info("Request to Method [%s] Host [%s] with URL [%s]", request.Method, request.Host, request.URL.String())
+	defaultPort := v2net.Port(80)
+	if strings.ToLower(request.URL.Scheme) == "https" {
+		defaultPort = v2net.Port(443)
+	}
+	host := request.Host
+	if len(host) == 0 {
+		host = request.URL.Host
+	}
+	dest, err := parseHost(host, defaultPort)
+	if err != nil {
+		log.Warning("Malformed proxy host (%s): %v", host, err)
+	}
+	if strings.ToUpper(request.Method) == "CONNECT" {
+		this.handleConnect(request, dest, reader, conn)
+	} else {
+		this.handlePlainHTTP(request, dest, reader, conn)
 	}
 }
 
@@ -166,18 +128,95 @@ func (this *HttpProxyServer) handleConnect(request *http.Request, destination v2
 }
 
 func (this *HttpProxyServer) transport(input io.Reader, output io.Writer, ray ray.InboundRay) {
-	var outputFinish sync.Mutex
-	outputFinish.Lock()
+	var wg sync.WaitGroup
+	wg.Add(2)
+	defer wg.Wait()
 
 	go func() {
 		v2net.ReaderToChan(ray.InboundInput(), input)
 		close(ray.InboundInput())
+		wg.Done()
 	}()
 
 	go func() {
 		v2net.ChanToWriter(output, ray.InboundOutput())
-		outputFinish.Unlock()
+		wg.Done()
 	}()
+}
 
-	outputFinish.Lock()
+func stripHopByHopHeaders(request *http.Request) {
+	// Strip hop-by-hop header basaed on RFC:
+	// http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.5.1
+	// https://www.mnot.net/blog/2011/07/11/what_proxies_must_do
+
+	request.Header.Del("Proxy-Connection")
+	request.Header.Del("Proxy-Authenticate")
+	request.Header.Del("Proxy-Authorization")
+	request.Header.Del("TE")
+	request.Header.Del("Trailers")
+	request.Header.Del("Transfer-Encoding")
+	request.Header.Del("Upgrade")
+
+	// TODO: support keep-alive
+	connections := request.Header.Get("Connection")
+	request.Header.Set("Connection", "close")
+	if len(connections) == 0 {
+		return
+	}
+	for _, h := range strings.Split(connections, ",") {
+		request.Header.Del(strings.TrimSpace(h))
+	}
+}
+
+func (this *HttpProxyServer) handlePlainHTTP(request *http.Request, dest v2net.Destination, reader *bufio.Reader, writer io.Writer) {
+	if len(request.URL.Host) <= 0 {
+		hdr := http.Header(make(map[string][]string))
+		hdr.Set("Connection", "close")
+		response := &http.Response{
+			Status:        "400 Bad Request",
+			StatusCode:    400,
+			Proto:         "HTTP/1.1",
+			ProtoMajor:    1,
+			ProtoMinor:    1,
+			Header:        hdr,
+			Body:          nil,
+			ContentLength: 0,
+			Close:         false,
+		}
+
+		buffer := alloc.NewSmallBuffer().Clear()
+		response.Write(buffer)
+		writer.Write(buffer.Value)
+		buffer.Release()
+		return
+	}
+
+	request.Host = request.URL.Host
+	stripHopByHopHeaders(request)
+
+	requestBuffer := alloc.NewBuffer().Clear()
+	request.Write(requestBuffer)
+	log.Info("Request to remote:\n%s", string(requestBuffer.Value))
+
+	packet := v2net.NewPacket(dest, requestBuffer, true)
+	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
+	defer close(ray.InboundInput())
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		responseReader := bufio.NewReader(NewChanReader(ray.InboundOutput()))
+		responseBuffer := alloc.NewBuffer()
+		defer responseBuffer.Release()
+		response, err := http.ReadResponse(responseReader, request)
+		if err != nil {
+			return
+		}
+		responseBuffer.Clear()
+		response.Write(responseBuffer)
+		writer.Write(responseBuffer.Value)
+		response.Body.Close()
+	}()
+	wg.Wait()
 }
