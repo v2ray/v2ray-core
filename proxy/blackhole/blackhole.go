@@ -5,6 +5,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/app"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
@@ -29,13 +30,10 @@ func (this *BlackHole) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) e
 	return nil
 }
 
-type BlackHoleFactory struct {
-}
-
-func (this BlackHoleFactory) Create(space app.Space, config interface{}) (connhandler.OutboundConnectionHandler, error) {
-	return NewBlackHole(), nil
-}
-
 func init() {
-	connhandler.RegisterOutboundConnectionHandlerFactory("blackhole", BlackHoleFactory{})
+	if err := proxy.RegisterOutboundConnectionHandlerFactory("blackhole", func(space app.Space, config interface{}) (connhandler.OutboundConnectionHandler, error) {
+		return NewBlackHole(), nil
+	}); err != nil {
+		panic(err)
+	}
 }

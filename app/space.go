@@ -16,4 +16,7 @@ type Space interface {
 
 	HasPubsub() bool
 	Pubsub() Pubsub
+
+	HasInboundHandlerManager() bool
+	InboundHandlerManager() InboundHandlerManager
 }

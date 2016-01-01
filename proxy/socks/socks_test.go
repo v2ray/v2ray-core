@@ -9,9 +9,11 @@ import (
 
 	"golang.org/x/net/proxy"
 
+	"github.com/v2ray/v2ray-core/app"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	"github.com/v2ray/v2ray-core/proxy/socks/json"
+	proxytesting "github.com/v2ray/v2ray-core/proxy/testing"
 	proxymocks "github.com/v2ray/v2ray-core/proxy/testing/mocks"
 	"github.com/v2ray/v2ray-core/shell/point"
 	"github.com/v2ray/v2ray-core/shell/point/testing/mocks"
@@ -30,7 +32,10 @@ func TestSocksTcpConnect(t *testing.T) {
 		ConnInput:  bytes.NewReader(connInput),
 	}
 
-	connhandler.RegisterOutboundConnectionHandlerFactory("mock_och", och)
+	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (connhandler.OutboundConnectionHandler, error) {
+		return och, nil
+	})
+	assert.Error(err).IsNil()
 
 	config := mocks.Config{
 		PortValue: port,
@@ -41,7 +46,7 @@ func TestSocksTcpConnect(t *testing.T) {
 			},
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: "mock_och",
+			ProtocolValue: protocol,
 			SettingsValue: nil,
 		},
 	}
@@ -85,7 +90,10 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 		ConnOutput: connOutput,
 	}
 
-	connhandler.RegisterOutboundConnectionHandlerFactory("mock_och", och)
+	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (connhandler.OutboundConnectionHandler, error) {
+		return och, nil
+	})
+	assert.Error(err).IsNil()
 
 	config := mocks.Config{
 		PortValue: port,
@@ -99,7 +107,7 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 			},
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: "mock_och",
+			ProtocolValue: protocol,
 			SettingsValue: nil,
 		},
 	}
@@ -143,7 +151,10 @@ func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
 		ConnOutput: connOutput,
 	}
 
-	connhandler.RegisterOutboundConnectionHandlerFactory("mock_och", och)
+	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (connhandler.OutboundConnectionHandler, error) {
+		return och, nil
+	})
+	assert.Error(err).IsNil()
 
 	config := mocks.Config{
 		PortValue: port,
@@ -157,7 +168,7 @@ func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
 			},
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: "mock_och",
+			ProtocolValue: protocol,
 			SettingsValue: nil,
 		},
 	}
@@ -187,7 +198,10 @@ func TestSocksTcpConnectWithWrongAuthMethod(t *testing.T) {
 		ConnOutput: connOutput,
 	}
 
-	connhandler.RegisterOutboundConnectionHandlerFactory("mock_och", och)
+	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (connhandler.OutboundConnectionHandler, error) {
+		return och, nil
+	})
+	assert.Error(err).IsNil()
 
 	config := mocks.Config{
 		PortValue: port,
@@ -201,7 +215,7 @@ func TestSocksTcpConnectWithWrongAuthMethod(t *testing.T) {
 			},
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: "mock_och",
+			ProtocolValue: protocol,
 			SettingsValue: nil,
 		},
 	}
@@ -231,7 +245,10 @@ func TestSocksUdpSend(t *testing.T) {
 		ConnOutput: connOutput,
 	}
 
-	connhandler.RegisterOutboundConnectionHandlerFactory("mock_och", och)
+	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (connhandler.OutboundConnectionHandler, error) {
+		return och, nil
+	})
+	assert.Error(err).IsNil()
 
 	config := mocks.Config{
 		PortValue: port,
@@ -243,7 +260,7 @@ func TestSocksUdpSend(t *testing.T) {
 			},
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: "mock_och",
+			ProtocolValue: protocol,
 			SettingsValue: nil,
 		},
 	}

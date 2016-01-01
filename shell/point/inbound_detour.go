@@ -5,6 +5,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
+	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 )
 
@@ -21,17 +22,11 @@ type InboundDetourHandler struct {
 }
 
 func (this *InboundDetourHandler) Initialize() error {
-	ichFactory := connhandler.GetInboundConnectionHandlerFactory(this.config.Protocol())
-	if ichFactory == nil {
-		log.Error("Unknown inbound connection handler factory %s", this.config.Protocol())
-		return BadConfiguration
-	}
-
 	ports := this.config.PortRange()
 	this.ich = make([]*InboundConnectionHandlerWithPort, 0, ports.To()-ports.From()+1)
 	for i := ports.From(); i <= ports.To(); i++ {
 		ichConfig := this.config.Settings()
-		ich, err := ichFactory.Create(this.space, ichConfig)
+		ich, err := proxy.CreateInboundConnectionHandler(this.config.Protocol(), this.space, ichConfig)
 		if err != nil {
 			log.Error("Failed to create inbound connection handler: %v", err)
 			return err

@@ -11,6 +11,7 @@ import (
 	v2crypto "github.com/v2ray/v2ray-core/common/crypto"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
@@ -196,5 +197,13 @@ func (this *VMessOutboundHandlerFactory) Create(space app.Space, rawConfig inter
 }
 
 func init() {
-	connhandler.RegisterOutboundConnectionHandlerFactory("vmess", &VMessOutboundHandlerFactory{})
+	if err := proxy.RegisterOutboundConnectionHandlerFactory("vmess", func(space app.Space, rawConfig interface{}) (connhandler.OutboundConnectionHandler, error) {
+		vOutConfig := rawConfig.(Config)
+		return &VMessOutboundHandler{
+			space:           space,
+			receiverManager: NewReceiverManager(vOutConfig.Receivers()),
+		}, nil
+	}); err != nil {
+		panic(err)
+	}
 }

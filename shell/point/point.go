@@ -11,6 +11,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
+	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
@@ -54,26 +55,16 @@ func NewPoint(pConfig PointConfig) (*Point, error) {
 	vpoint.space = controller.New()
 	vpoint.space.Bind(vpoint)
 
-	ichFactory := connhandler.GetInboundConnectionHandlerFactory(pConfig.InboundConfig().Protocol())
-	if ichFactory == nil {
-		log.Error("Unknown inbound connection handler factory %s", pConfig.InboundConfig().Protocol())
-		return nil, BadConfiguration
-	}
 	ichConfig := pConfig.InboundConfig().Settings()
-	ich, err := ichFactory.Create(vpoint.space.ForContext("vpoint-default-inbound"), ichConfig)
+	ich, err := proxy.CreateInboundConnectionHandler(pConfig.InboundConfig().Protocol(), vpoint.space.ForContext("vpoint-default-inbound"), ichConfig)
 	if err != nil {
 		log.Error("Failed to create inbound connection handler: %v", err)
 		return nil, err
 	}
 	vpoint.ich = ich
 
-	ochFactory := connhandler.GetOutboundConnectionHandlerFactory(pConfig.OutboundConfig().Protocol())
-	if ochFactory == nil {
-		log.Error("Unknown outbound connection handler factory %s", pConfig.OutboundConfig().Protocol())
-		return nil, BadConfiguration
-	}
 	ochConfig := pConfig.OutboundConfig().Settings()
-	och, err := ochFactory.Create(vpoint.space.ForContext("vpoint-default-outbound"), ochConfig)
+	och, err := proxy.CreateOutboundConnectionHandler(pConfig.OutboundConfig().Protocol(), vpoint.space.ForContext("vpoint-default-outbound"), ochConfig)
 	if err != nil {
 		log.Error("Failed to create outbound connection handler: %v", err)
 		return nil, err
@@ -100,12 +91,7 @@ func NewPoint(pConfig PointConfig) (*Point, error) {
 	if len(outboundDetours) > 0 {
 		vpoint.odh = make(map[string]connhandler.OutboundConnectionHandler)
 		for _, detourConfig := range outboundDetours {
-			detourFactory := connhandler.GetOutboundConnectionHandlerFactory(detourConfig.Protocol())
-			if detourFactory == nil {
-				log.Error("Unknown detour outbound connection handler factory %s", detourConfig.Protocol())
-				return nil, BadConfiguration
-			}
-			detourHandler, err := detourFactory.Create(vpoint.space.ForContext(detourConfig.Tag()), detourConfig.Settings())
+			detourHandler, err := proxy.CreateOutboundConnectionHandler(detourConfig.Protocol(), vpoint.space.ForContext(detourConfig.Tag()), detourConfig.Settings())
 			if err != nil {
 				log.Error("Failed to create detour outbound connection handler: %v", err)
 				return nil, err

@@ -5,18 +5,20 @@ import (
 )
 
 type Space struct {
-	packetDispatcher PacketDispatcherWithContext
-	dnsCache         DnsCacheWithContext
-	pubsub           PubsubWithContext
-	tag              string
+	packetDispatcher      PacketDispatcherWithContext
+	dnsCache              DnsCacheWithContext
+	pubsub                PubsubWithContext
+	inboundHandlerManager InboundHandlerManagerWithContext
+	tag                   string
 }
 
-func NewSpace(tag string, packetDispatcher PacketDispatcherWithContext, dnsCache DnsCacheWithContext, pubsub PubsubWithContext) *Space {
+func NewSpace(tag string, packetDispatcher PacketDispatcherWithContext, dnsCache DnsCacheWithContext, pubsub PubsubWithContext, inboundHandlerManager InboundHandlerManagerWithContext) *Space {
 	return &Space{
-		tag:              tag,
-		packetDispatcher: packetDispatcher,
-		dnsCache:         dnsCache,
-		pubsub:           pubsub,
+		tag:                   tag,
+		packetDispatcher:      packetDispatcher,
+		dnsCache:              dnsCache,
+		pubsub:                pubsub,
+		inboundHandlerManager: inboundHandlerManager,
 	}
 }
 
@@ -53,6 +55,19 @@ func (this *Space) HasPubsub() bool {
 func (this *Space) Pubsub() app.Pubsub {
 	return &contextedPubsub{
 		pubsub: this.pubsub,
+		context: &contextImpl{
+			callerTag: this.tag,
+		},
+	}
+}
+
+func (this *Space) HasInboundHandlerManager() bool {
+	return this.inboundHandlerManager != nil
+}
+
+func (this *Space) InboundHandlerManager() app.InboundHandlerManager {
+	return &inboundHandlerManagerWithContext{
+		manager: this.inboundHandlerManager,
 		context: &contextImpl{
 			callerTag: this.tag,
 		},

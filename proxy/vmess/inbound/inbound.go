@@ -12,6 +12,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
+	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	"github.com/v2ray/v2ray-core/proxy/vmess"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
@@ -139,20 +140,17 @@ func handleOutput(request *protocol.VMessRequest, writer io.Writer, output <-cha
 	finish.Unlock()
 }
 
-type VMessInboundHandlerFactory struct {
-}
-
-func (this *VMessInboundHandlerFactory) Create(space app.Space, rawConfig interface{}) (connhandler.InboundConnectionHandler, error) {
-	config := rawConfig.(Config)
-
-	allowedClients := user.NewTimedUserSet()
-	for _, user := range config.AllowedUsers() {
-		allowedClients.AddUser(user)
-	}
-
-	return NewVMessInboundHandler(space, allowedClients), nil
-}
-
 func init() {
-	connhandler.RegisterInboundConnectionHandlerFactory("vmess", &VMessInboundHandlerFactory{})
+	if err := proxy.RegisterInboundConnectionHandlerFactory("vmess", func(space app.Space, rawConfig interface{}) (connhandler.InboundConnectionHandler, error) {
+		config := rawConfig.(Config)
+
+		allowedClients := user.NewTimedUserSet()
+		for _, user := range config.AllowedUsers() {
+			allowedClients.AddUser(user)
+		}
+
+		return NewVMessInboundHandler(space, allowedClients), nil
+	}); err != nil {
+		panic(err)
+	}
 }

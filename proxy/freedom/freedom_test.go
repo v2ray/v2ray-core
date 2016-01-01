@@ -8,12 +8,14 @@ import (
 
 	"golang.org/x/net/proxy"
 
+	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	_ "github.com/v2ray/v2ray-core/proxy/socks"
 	"github.com/v2ray/v2ray-core/proxy/socks/json"
+	proxytesting "github.com/v2ray/v2ray-core/proxy/testing"
 	proxymocks "github.com/v2ray/v2ray-core/proxy/testing/mocks"
 	"github.com/v2ray/v2ray-core/shell/point"
 	"github.com/v2ray/v2ray-core/shell/point/testing/mocks"
@@ -47,13 +49,17 @@ func TestUDPSend(t *testing.T) {
 		ConnOutput: connOutput,
 	}
 
-	connhandler.RegisterInboundConnectionHandlerFactory("mock_ich", ich)
+	protocol, err := proxytesting.RegisterInboundConnectionHandlerCreator("mock_ich", func(space app.Space, config interface{}) (connhandler.InboundConnectionHandler, error) {
+		ich.Space = space
+		return ich, nil
+	})
+	assert.Error(err).IsNil()
 
 	pointPort := v2nettesting.PickPort()
 	config := mocks.Config{
 		PortValue: pointPort,
 		InboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: "mock_ich",
+			ProtocolValue: protocol,
 			SettingsValue: nil,
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{

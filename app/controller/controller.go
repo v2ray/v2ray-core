@@ -8,9 +8,10 @@ import (
 // A SpaceController is supposed to be used by a shell to create Spaces. It should not be used
 // directly by proxies.
 type SpaceController struct {
-	packetDispatcher internal.PacketDispatcherWithContext
-	dnsCache         internal.DnsCacheWithContext
-	pubsub           internal.PubsubWithContext
+	packetDispatcher      internal.PacketDispatcherWithContext
+	dnsCache              internal.DnsCacheWithContext
+	pubsub                internal.PubsubWithContext
+	inboundHandlerManager internal.InboundHandlerManagerWithContext
 }
 
 func New() *SpaceController {
@@ -29,8 +30,12 @@ func (this *SpaceController) Bind(object interface{}) {
 	if pubsub, ok := object.(internal.PubsubWithContext); ok {
 		this.pubsub = pubsub
 	}
+
+	if inboundHandlerManager, ok := object.(internal.InboundHandlerManagerWithContext); ok {
+		this.inboundHandlerManager = inboundHandlerManager
+	}
 }
 
 func (this *SpaceController) ForContext(tag string) app.Space {
-	return internal.NewSpace(tag, this.packetDispatcher, this.dnsCache, this.pubsub)
+	return internal.NewSpace(tag, this.packetDispatcher, this.dnsCache, this.pubsub, this.inboundHandlerManager)
 }
