@@ -8,10 +8,10 @@ import (
 )
 
 var (
-	version  = "1.2"
+	version  = "1.3"
 	build    = "Custom"
-	codename = "Post Apocalypse"
-	intro    = "A stable and unbreakable connection for everyone."
+	codename = "New Order"
+	intro    = "An unified platform for anti-censorship."
 )
 
 func Version() string {
