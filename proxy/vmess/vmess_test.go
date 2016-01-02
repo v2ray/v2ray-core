@@ -8,7 +8,7 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	"github.com/v2ray/v2ray-core/common/uuid"
-	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
+	"github.com/v2ray/v2ray-core/proxy"
 	proxytesting "github.com/v2ray/v2ray-core/proxy/testing"
 	proxymocks "github.com/v2ray/v2ray-core/proxy/testing/mocks"
 	vmess "github.com/v2ray/v2ray-core/proxy/vmess"
@@ -40,7 +40,7 @@ func TestVMessInAndOut(t *testing.T) {
 		ConnOutput: ichConnOutput,
 	}
 
-	protocol, err := proxytesting.RegisterInboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (connhandler.InboundConnectionHandler, error) {
+	protocol, err := proxytesting.RegisterInboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (proxy.InboundConnectionHandler, error) {
 		ich.Space = space
 		return ich, nil
 	})
@@ -81,7 +81,7 @@ func TestVMessInAndOut(t *testing.T) {
 		ConnOutput: ochConnOutput,
 	}
 
-	protocol, err = proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (connhandler.OutboundConnectionHandler, error) {
+	protocol, err = proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (proxy.OutboundConnectionHandler, error) {
 		return och, nil
 	})
 	assert.Error(err).IsNil()

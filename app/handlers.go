@@ -1,9 +1,9 @@
 package app
 
 import (
-	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
+	"github.com/v2ray/v2ray-core/proxy"
 )
 
 type InboundHandlerManager interface {
-	GetHandler(tag string) (connhandler.InboundConnectionHandler, int)
+	GetHandler(tag string) (proxy.InboundConnectionHandler, int)
 }

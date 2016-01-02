@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/v2ray/v2ray-core/app"
-	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
+	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal/config"
 )
 
@@ -33,7 +33,7 @@ func RegisterOutboundConnectionHandlerFactory(name string, creator OutboundConne
 	return nil
 }
 
-func CreateInboundConnectionHandler(name string, space app.Space, rawConfig []byte) (connhandler.InboundConnectionHandler, error) {
+func CreateInboundConnectionHandler(name string, space app.Space, rawConfig []byte) (proxy.InboundConnectionHandler, error) {
 	creator, found := inboundFactories[name]
 	if !found {
 		return nil, ErrorProxyNotFound
@@ -48,7 +48,7 @@ func CreateInboundConnectionHandler(name string, space app.Space, rawConfig []by
 	return creator(space, nil)
 }
 
-func CreateOutboundConnectionHandler(name string, space app.Space, rawConfig []byte) (connhandler.OutboundConnectionHandler, error) {
+func CreateOutboundConnectionHandler(name string, space app.Space, rawConfig []byte) (proxy.OutboundConnectionHandler, error) {
 	creator, found := outboundFactories[name]
 	if !found {
 		return nil, ErrorNameExists

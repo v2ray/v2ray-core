@@ -3,15 +3,19 @@
 package proxy
 
 import (
-	"github.com/v2ray/v2ray-core/app"
-	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
-	"github.com/v2ray/v2ray-core/proxy/internal"
+	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
-func CreateInboundConnectionHandler(name string, space app.Space, rawConfig []byte) (connhandler.InboundConnectionHandler, error) {
-	return internal.CreateInboundConnectionHandler(name, space, rawConfig)
+// A InboundConnectionHandler handles inbound network connections to V2Ray.
+type InboundConnectionHandler interface {
+	// Listen starts a InboundConnectionHandler by listen on a specific port. This method is called
+	// exactly once during runtime.
+	Listen(port v2net.Port) error
 }
 
-func CreateOutboundConnectionHandler(name string, space app.Space, rawConfig []byte) (connhandler.OutboundConnectionHandler, error) {
-	return internal.CreateOutboundConnectionHandler(name, space, rawConfig)
+// An OutboundConnectionHandler handles outbound network connection for V2Ray.
+type OutboundConnectionHandler interface {
+	// Dispatch sends one or more Packets to its destination.
+	Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error
 }

@@ -12,17 +12,17 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
+	proxyrepo "github.com/v2ray/v2ray-core/proxy/repo"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
 // Point shell of V2Ray.
 type Point struct {
 	port   v2net.Port
-	ich    connhandler.InboundConnectionHandler
-	och    connhandler.OutboundConnectionHandler
+	ich    proxy.InboundConnectionHandler
+	och    proxy.OutboundConnectionHandler
 	idh    []*InboundDetourHandler
-	odh    map[string]connhandler.OutboundConnectionHandler
+	odh    map[string]proxy.OutboundConnectionHandler
 	router router.Router
 	space  *controller.SpaceController
 }
@@ -56,7 +56,7 @@ func NewPoint(pConfig PointConfig) (*Point, error) {
 	vpoint.space.Bind(vpoint)
 
 	ichConfig := pConfig.InboundConfig().Settings()
-	ich, err := proxy.CreateInboundConnectionHandler(pConfig.InboundConfig().Protocol(), vpoint.space.ForContext("vpoint-default-inbound"), ichConfig)
+	ich, err := proxyrepo.CreateInboundConnectionHandler(pConfig.InboundConfig().Protocol(), vpoint.space.ForContext("vpoint-default-inbound"), ichConfig)
 	if err != nil {
 		log.Error("Failed to create inbound connection handler: %v", err)
 		return nil, err
@@ -64,7 +64,7 @@ func NewPoint(pConfig PointConfig) (*Point, error) {
 	vpoint.ich = ich
 
 	ochConfig := pConfig.OutboundConfig().Settings()
-	och, err := proxy.CreateOutboundConnectionHandler(pConfig.OutboundConfig().Protocol(), vpoint.space.ForContext("vpoint-default-outbound"), ochConfig)
+	och, err := proxyrepo.CreateOutboundConnectionHandler(pConfig.OutboundConfig().Protocol(), vpoint.space.ForContext("vpoint-default-outbound"), ochConfig)
 	if err != nil {
 		log.Error("Failed to create outbound connection handler: %v", err)
 		return nil, err
@@ -89,9 +89,9 @@ func NewPoint(pConfig PointConfig) (*Point, error) {
 
 	outboundDetours := pConfig.OutboundDetours()
 	if len(outboundDetours) > 0 {
-		vpoint.odh = make(map[string]connhandler.OutboundConnectionHandler)
+		vpoint.odh = make(map[string]proxy.OutboundConnectionHandler)
 		for _, detourConfig := range outboundDetours {
-			detourHandler, err := proxy.CreateOutboundConnectionHandler(detourConfig.Protocol(), vpoint.space.ForContext(detourConfig.Tag()), detourConfig.Settings())
+			detourHandler, err := proxyrepo.CreateOutboundConnectionHandler(detourConfig.Protocol(), vpoint.space.ForContext(detourConfig.Tag()), detourConfig.Settings())
 			if err != nil {
 				log.Error("Failed to create detour outbound connection handler: %v", err)
 				return nil, err

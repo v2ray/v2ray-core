@@ -12,7 +12,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
-	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
+	v2proxy "github.com/v2ray/v2ray-core/proxy"
 	_ "github.com/v2ray/v2ray-core/proxy/socks"
 	_ "github.com/v2ray/v2ray-core/proxy/socks/json"
 	proxytesting "github.com/v2ray/v2ray-core/proxy/testing"
@@ -49,7 +49,7 @@ func TestUDPSend(t *testing.T) {
 		ConnOutput: connOutput,
 	}
 
-	protocol, err := proxytesting.RegisterInboundConnectionHandlerCreator("mock_ich", func(space app.Space, config interface{}) (connhandler.InboundConnectionHandler, error) {
+	protocol, err := proxytesting.RegisterInboundConnectionHandlerCreator("mock_ich", func(space app.Space, config interface{}) (v2proxy.InboundConnectionHandler, error) {
 		ich.Space = space
 		return ich, nil
 	})

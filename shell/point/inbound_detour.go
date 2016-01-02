@@ -6,12 +6,12 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
+	proxyrepo "github.com/v2ray/v2ray-core/proxy/repo"
 )
 
 type InboundConnectionHandlerWithPort struct {
 	port    v2net.Port
-	handler connhandler.InboundConnectionHandler
+	handler proxy.InboundConnectionHandler
 }
 
 // Handler for inbound detour connections.
@@ -26,7 +26,7 @@ func (this *InboundDetourHandler) Initialize() error {
 	this.ich = make([]*InboundConnectionHandlerWithPort, 0, ports.To()-ports.From()+1)
 	for i := ports.From(); i <= ports.To(); i++ {
 		ichConfig := this.config.Settings()
-		ich, err := proxy.CreateInboundConnectionHandler(this.config.Protocol(), this.space, ichConfig)
+		ich, err := proxyrepo.CreateInboundConnectionHandler(this.config.Protocol(), this.space, ichConfig)
 		if err != nil {
 			log.Error("Failed to create inbound connection handler: %v", err)
 			return err
