@@ -6,7 +6,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2netjson "github.com/v2ray/v2ray-core/common/net/json"
-	"github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/proxy/internal"
 	proxyconfig "github.com/v2ray/v2ray-core/proxy/internal/config"
 	jsonconfig "github.com/v2ray/v2ray-core/proxy/internal/config/json"
 	"github.com/v2ray/v2ray-core/proxy/vmess"
@@ -31,12 +31,12 @@ func (t *ConfigTarget) UnmarshalJSON(data []byte) error {
 	}
 	if len(rawConfig.Users) == 0 {
 		log.Error("0 user configured for VMess outbound.")
-		return proxy.ErrorBadConfiguration
+		return internal.ErrorBadConfiguration
 	}
 	t.Users = rawConfig.Users
 	if rawConfig.Address == nil {
 		log.Error("Address is not set in VMess outbound config.")
-		return proxy.ErrorBadConfiguration
+		return internal.ErrorBadConfiguration
 	}
 	t.Destination = v2net.TCPDestination(rawConfig.Address.Address(), rawConfig.Port)
 	return nil
@@ -57,7 +57,7 @@ func (this *Outbound) UnmarshalJSON(data []byte) error {
 	}
 	if len(rawOutbound.TargetList) == 0 {
 		log.Error("0 VMess receiver configured.")
-		return proxy.ErrorBadConfiguration
+		return internal.ErrorBadConfiguration
 	}
 	this.TargetList = rawOutbound.TargetList
 	return nil
