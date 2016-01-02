@@ -3,7 +3,8 @@ package json
 import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2netjson "github.com/v2ray/v2ray-core/common/net/json"
-	"github.com/v2ray/v2ray-core/proxy/common/config/json"
+	"github.com/v2ray/v2ray-core/proxy/internal/config"
+	"github.com/v2ray/v2ray-core/proxy/internal/config/json"
 )
 
 type DokodemoConfig struct {
@@ -30,7 +31,7 @@ func (this *DokodemoConfig) Timeout() int {
 }
 
 func init() {
-	json.RegisterInboundConnectionConfig("dokodemo-door", func() interface{} {
+	config.RegisterInboundConnectionConfig("dokodemo-door", json.JsonConfigLoader(func() interface{} {
 		return new(DokodemoConfig)
-	})
+	}))
 }

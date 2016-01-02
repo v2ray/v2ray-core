@@ -4,9 +4,8 @@ import (
 	"net"
 	"testing"
 
-	v2netjson "github.com/v2ray/v2ray-core/common/net/json"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
-	"github.com/v2ray/v2ray-core/proxy/dokodemo/json"
+	_ "github.com/v2ray/v2ray-core/proxy/dokodemo/json"
 	_ "github.com/v2ray/v2ray-core/proxy/freedom"
 	"github.com/v2ray/v2ray-core/shell/point"
 	"github.com/v2ray/v2ray-core/shell/point/testing/mocks"
@@ -36,17 +35,16 @@ func TestDokodemoTCP(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	pointPort := v2nettesting.PickPort()
-	networkList := v2netjson.NetworkList([]string{"tcp"})
 	config := mocks.Config{
 		PortValue: pointPort,
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "dokodemo-door",
-			SettingsValue: &json.DokodemoConfig{
-				Host:         v2netjson.NewIPHost(net.ParseIP("127.0.0.1")),
-				PortValue:    port,
-				NetworkList:  &networkList,
-				TimeoutValue: 0,
-			},
+			SettingsValue: []byte(`{
+        "address": "127.0.0.1",
+        "port": ` + port.String() + `,
+        "network": "tcp",
+        "timeout": 0
+      }`),
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "freedom",
@@ -98,17 +96,16 @@ func TestDokodemoUDP(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	pointPort := v2nettesting.PickPort()
-	networkList := v2netjson.NetworkList([]string{"udp"})
 	config := mocks.Config{
 		PortValue: pointPort,
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "dokodemo-door",
-			SettingsValue: &json.DokodemoConfig{
-				Host:         v2netjson.NewIPHost(net.ParseIP("127.0.0.1")),
-				PortValue:    port,
-				NetworkList:  &networkList,
-				TimeoutValue: 0,
-			},
+			SettingsValue: []byte(`{
+        "address": "127.0.0.1",
+        "port": ` + port.String() + `,
+        "network": "udp",
+        "timeout": 0
+      }`),
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "freedom",

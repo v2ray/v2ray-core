@@ -14,7 +14,7 @@ import (
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	_ "github.com/v2ray/v2ray-core/proxy/socks"
-	"github.com/v2ray/v2ray-core/proxy/socks/json"
+	_ "github.com/v2ray/v2ray-core/proxy/socks/json"
 	proxytesting "github.com/v2ray/v2ray-core/proxy/testing"
 	proxymocks "github.com/v2ray/v2ray-core/proxy/testing/mocks"
 	"github.com/v2ray/v2ray-core/shell/point"
@@ -103,9 +103,7 @@ func TestSocksTcpConnect(t *testing.T) {
 		PortValue: pointPort,
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "socks",
-			SettingsValue: &json.SocksConfig{
-				AuthMethod: "auth",
-			},
+			SettingsValue: []byte(`{"auth": "noauth"}`),
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "freedom",

@@ -8,14 +8,16 @@ import (
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
 	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/internal/config"
 )
 
 var (
 	inboundFactories  = make(map[string]internal.InboundConnectionHandlerCreator)
 	outboundFactories = make(map[string]internal.OutboundConnectionHandlerCreator)
 
-	ErrorProxyNotFound = errors.New("Proxy not found.")
-	ErrorNameExists    = errors.New("Proxy with the same name already exists.")
+	ErrorProxyNotFound    = errors.New("Proxy not found.")
+	ErrorNameExists       = errors.New("Proxy with the same name already exists.")
+	ErrorBadConfiguration = errors.New("Bad proxy configuration.")
 )
 
 func RegisterInboundConnectionHandlerFactory(name string, creator internal.InboundConnectionHandlerCreator) error {
@@ -34,18 +36,34 @@ func RegisterOutboundConnectionHandlerFactory(name string, creator internal.Outb
 	return nil
 }
 
-func CreateInboundConnectionHandler(name string, space app.Space, config interface{}) (connhandler.InboundConnectionHandler, error) {
-	if creator, found := inboundFactories[name]; !found {
+func CreateInboundConnectionHandler(name string, space app.Space, rawConfig []byte) (connhandler.InboundConnectionHandler, error) {
+	creator, found := inboundFactories[name]
+	if !found {
 		return nil, ErrorProxyNotFound
-	} else {
-		return creator(space, config)
 	}
+	if len(rawConfig) > 0 {
+		proxyConfig, err := config.CreateInboundConnectionConfig(name, rawConfig)
+		if err != nil {
+			return nil, err
+		}
+		return creator(space, proxyConfig)
+	}
+	return creator(space, nil)
 }
 
-func CreateOutboundConnectionHandler(name string, space app.Space, config interface{}) (connhandler.OutboundConnectionHandler, error) {
-	if creator, found := outboundFactories[name]; !found {
+func CreateOutboundConnectionHandler(name string, space app.Space, rawConfig []byte) (connhandler.OutboundConnectionHandler, error) {
+	creator, found := outboundFactories[name]
+	if !found {
 		return nil, ErrorNameExists
-	} else {
-		return creator(space, config)
 	}
+
+	if len(rawConfig) > 0 {
+		proxyConfig, err := config.CreateOutboundConnectionConfig(name, rawConfig)
+		if err != nil {
+			return nil, err
+		}
+		return creator(space, proxyConfig)
+	}
+
+	return creator(space, nil)
 }

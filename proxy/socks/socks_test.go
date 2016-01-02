@@ -12,7 +12,7 @@ import (
 	"github.com/v2ray/v2ray-core/app"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	"github.com/v2ray/v2ray-core/proxy/common/connhandler"
-	"github.com/v2ray/v2ray-core/proxy/socks/json"
+	_ "github.com/v2ray/v2ray-core/proxy/socks/json"
 	proxytesting "github.com/v2ray/v2ray-core/proxy/testing"
 	proxymocks "github.com/v2ray/v2ray-core/proxy/testing/mocks"
 	"github.com/v2ray/v2ray-core/shell/point"
@@ -41,9 +41,10 @@ func TestSocksTcpConnect(t *testing.T) {
 		PortValue: port,
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "socks",
-			SettingsValue: &json.SocksConfig{
-				AuthMethod: "noauth",
-			},
+			SettingsValue: []byte(`
+      {
+        "auth": "noauth"
+      }`),
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: protocol,
@@ -99,12 +100,13 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 		PortValue: port,
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "socks",
-			SettingsValue: &json.SocksConfig{
-				AuthMethod: "password",
-				Accounts: json.SocksAccountMap{
-					"userx": "passy",
-				},
-			},
+			SettingsValue: []byte(`
+      {
+        "auth": "password",
+        "accounts": [
+          {"user": "userx", "pass": "passy"}
+        ]
+      }`),
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: protocol,
@@ -160,12 +162,13 @@ func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
 		PortValue: port,
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "socks",
-			SettingsValue: &json.SocksConfig{
-				AuthMethod: "password",
-				Accounts: json.SocksAccountMap{
-					"userx": "passy",
-				},
-			},
+			SettingsValue: []byte(`
+      {
+        "auth": "password",
+        "accounts": [
+          {"user": "userx", "pass": "passy"}
+        ]
+      }`),
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: protocol,
@@ -207,12 +210,13 @@ func TestSocksTcpConnectWithWrongAuthMethod(t *testing.T) {
 		PortValue: port,
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "socks",
-			SettingsValue: &json.SocksConfig{
-				AuthMethod: "password",
-				Accounts: json.SocksAccountMap{
-					"userx": "passy",
-				},
-			},
+			SettingsValue: []byte(`
+      {
+        "auth": "password",
+        "accounts": [
+          {"user": "userx", "pass": "passy"}
+        ]
+      }`),
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: protocol,
@@ -254,10 +258,7 @@ func TestSocksUdpSend(t *testing.T) {
 		PortValue: port,
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "socks",
-			SettingsValue: &json.SocksConfig{
-				AuthMethod: "noauth",
-				UDP:        true,
-			},
+			SettingsValue: []byte(`{"auth": "noauth", "udp": true}`),
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: protocol,

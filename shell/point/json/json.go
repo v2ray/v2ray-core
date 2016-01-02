@@ -9,7 +9,6 @@ import (
 	routerjson "github.com/v2ray/v2ray-core/app/router/json"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	proxyconfig "github.com/v2ray/v2ray-core/proxy/common/config"
 	"github.com/v2ray/v2ray-core/shell/point"
 )
 
@@ -86,9 +85,6 @@ func LoadConfig(file string) (*Config, error) {
 		log.Error("Failed to load server config: %v", err)
 		return nil, err
 	}
-
-	jsonConfig.InboundConfigValue.Type = proxyconfig.TypeInbound
-	jsonConfig.OutboundConfigValue.Type = proxyconfig.TypeOutbound
 
 	return jsonConfig, err
 }

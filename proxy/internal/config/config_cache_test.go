@@ -1,9 +1,8 @@
-package json
+package config
 
 import (
 	"testing"
 
-	"github.com/v2ray/v2ray-core/proxy/common/config"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
@@ -13,17 +12,18 @@ func TestRegisterInboundConfig(t *testing.T) {
 	initializeConfigCache()
 
 	protocol := "test_protocol"
-	creator := func() interface{} {
-		return true
+	creator := func([]byte) (interface{}, error) {
+		return true, nil
 	}
 
 	err := RegisterInboundConnectionConfig(protocol, creator)
 	assert.Error(err).IsNil()
 
-	configObj := CreateConfig(protocol, config.TypeInbound)
+	configObj, err := CreateInboundConnectionConfig(protocol, nil)
 	assert.Bool(configObj.(bool)).IsTrue()
+	assert.Error(err).IsNil()
 
-	configObj = CreateConfig(protocol, config.TypeOutbound)
+	configObj, err = CreateOutboundConnectionConfig(protocol, nil)
 	assert.Pointer(configObj).IsNil()
 }
 
@@ -32,16 +32,17 @@ func TestRegisterOutboundConfig(t *testing.T) {
 	initializeConfigCache()
 
 	protocol := "test_protocol"
-	creator := func() interface{} {
-		return true
+	creator := func([]byte) (interface{}, error) {
+		return true, nil
 	}
 
 	err := RegisterOutboundConnectionConfig(protocol, creator)
 	assert.Error(err).IsNil()
 
-	configObj := CreateConfig(protocol, config.TypeOutbound)
+	configObj, err := CreateOutboundConnectionConfig(protocol, nil)
 	assert.Bool(configObj.(bool)).IsTrue()
+	assert.Error(err).IsNil()
 
-	configObj = CreateConfig(protocol, config.TypeInbound)
+	configObj, err = CreateInboundConnectionConfig(protocol, nil)
 	assert.Pointer(configObj).IsNil()
 }

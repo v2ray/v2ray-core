@@ -2,8 +2,6 @@ package json
 
 import (
 	"encoding/json"
-
-	proxyconfig "github.com/v2ray/v2ray-core/proxy/common/config"
 )
 
 type OutboundDetourConfig struct {
@@ -20,6 +18,6 @@ func (this *OutboundDetourConfig) Tag() string {
 	return this.TagValue
 }
 
-func (this *OutboundDetourConfig) Settings() interface{} {
-	return loadConnectionConfig(this.SettingsValue, this.ProtocolValue, proxyconfig.TypeOutbound)
+func (this *OutboundDetourConfig) Settings() []byte {
+	return []byte(this.SettingsValue)
 }

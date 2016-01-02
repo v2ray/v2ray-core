@@ -11,7 +11,7 @@ import (
 	v2crypto "github.com/v2ray/v2ray-core/common/crypto"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	proxyerrors "github.com/v2ray/v2ray-core/proxy/common/errors"
+	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/vmess"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 	"github.com/v2ray/v2ray-core/transport"
@@ -76,7 +76,7 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 
 	userObj, timeSec, valid := this.vUserSet.GetUser(buffer.Value[:nBytes])
 	if !valid {
-		return nil, proxyerrors.InvalidAuthentication
+		return nil, proxy.InvalidAuthentication
 	}
 
 	aesStream, err := v2crypto.NewAesDecryptionStream(userObj.ID().CmdKey(), user.Int64Hash(timeSec))
@@ -99,7 +99,7 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 
 	if request.Version != Version {
 		log.Warning("Invalid protocol version %d", request.Version)
-		return nil, proxyerrors.InvalidProtocolVersion
+		return nil, proxy.InvalidProtocolVersion
 	}
 
 	request.RequestIV = buffer.Value[1:17]       // 16 bytes

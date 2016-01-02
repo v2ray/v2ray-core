@@ -7,7 +7,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	proxyerrors "github.com/v2ray/v2ray-core/proxy/common/errors"
+	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/transport"
 )
 
@@ -66,7 +66,7 @@ func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, aut
 	auth.version = buffer.Value[0]
 	if auth.version != socksVersion {
 		log.Warning("Unknown protocol version %d", auth.version)
-		err = proxyerrors.InvalidProtocolVersion
+		err = proxy.InvalidProtocolVersion
 		return
 	}
 

@@ -9,7 +9,7 @@ import (
 
 type ConnectionConfig interface {
 	Protocol() string
-	Settings() interface{}
+	Settings() []byte
 }
 
 type LogConfig interface {
@@ -40,13 +40,13 @@ type InboundDetourConfig interface {
 	PortRange() v2net.PortRange
 	Tag() string
 	Allocation() InboundDetourAllocationConfig
-	Settings() interface{}
+	Settings() []byte
 }
 
 type OutboundDetourConfig interface {
 	Protocol() string
 	Tag() string
-	Settings() interface{}
+	Settings() []byte
 }
 
 type PointConfig interface {

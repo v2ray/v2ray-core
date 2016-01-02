@@ -1,7 +1,8 @@
 package json
 
 import (
-	"github.com/v2ray/v2ray-core/proxy/common/config/json"
+	"github.com/v2ray/v2ray-core/proxy/internal/config"
+	"github.com/v2ray/v2ray-core/proxy/internal/config/json"
 	"github.com/v2ray/v2ray-core/proxy/vmess"
 	vmessjson "github.com/v2ray/v2ray-core/proxy/vmess/json"
 )
@@ -19,7 +20,7 @@ func (c *Inbound) AllowedUsers() []vmess.User {
 }
 
 func init() {
-	json.RegisterInboundConnectionConfig("vmess", func() interface{} {
+	config.RegisterInboundConnectionConfig("vmess", json.JsonConfigLoader(func() interface{} {
 		return new(Inbound)
-	})
+	}))
 }

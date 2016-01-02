@@ -13,10 +13,9 @@ import (
 	proxymocks "github.com/v2ray/v2ray-core/proxy/testing/mocks"
 	vmess "github.com/v2ray/v2ray-core/proxy/vmess"
 	_ "github.com/v2ray/v2ray-core/proxy/vmess/inbound"
-	inboundjson "github.com/v2ray/v2ray-core/proxy/vmess/inbound/json"
-	vmessjson "github.com/v2ray/v2ray-core/proxy/vmess/json"
+	_ "github.com/v2ray/v2ray-core/proxy/vmess/inbound/json"
 	_ "github.com/v2ray/v2ray-core/proxy/vmess/outbound"
-	outboundjson "github.com/v2ray/v2ray-core/proxy/vmess/outbound/json"
+	_ "github.com/v2ray/v2ray-core/proxy/vmess/outbound/json"
 	"github.com/v2ray/v2ray-core/shell/point"
 	"github.com/v2ray/v2ray-core/shell/point/testing/mocks"
 	v2testing "github.com/v2ray/v2ray-core/testing"
@@ -55,16 +54,17 @@ func TestVMessInAndOut(t *testing.T) {
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "vmess",
-			SettingsValue: &outboundjson.Outbound{
-				[]*outboundjson.ConfigTarget{
-					&outboundjson.ConfigTarget{
-						Destination: v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), portB),
-						Users: []*vmessjson.ConfigUser{
-							&vmessjson.ConfigUser{Id: testAccount},
-						},
-					},
-				},
-			},
+			SettingsValue: []byte(`{
+        "vnext": [
+          {
+            "address": "127.0.0.1",
+            "port": ` + portB.String() + `,
+            "users": [
+              {"id": "` + testAccount.String() + `"}
+            ]
+          }
+        ]
+      }`),
 		},
 	}
 
@@ -90,11 +90,11 @@ func TestVMessInAndOut(t *testing.T) {
 		PortValue: portB,
 		InboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: "vmess",
-			SettingsValue: &inboundjson.Inbound{
-				AllowedClients: []*vmessjson.ConfigUser{
-					&vmessjson.ConfigUser{Id: testAccount},
-				},
-			},
+			SettingsValue: []byte(`{
+        "clients": [
+          {"id": "` + testAccount.String() + `"}
+        ]
+      }`),
 		},
 		OutboundConfigValue: &mocks.ConnectionConfig{
 			ProtocolValue: protocol,

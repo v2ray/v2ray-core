@@ -10,14 +10,14 @@ import (
 
 type ConnectionConfig struct {
 	ProtocolValue string
-	SettingsValue interface{}
+	SettingsValue []byte
 }
 
 func (config *ConnectionConfig) Protocol() string {
 	return config.ProtocolValue
 }
 
-func (config *ConnectionConfig) Settings() interface{} {
+func (config *ConnectionConfig) Settings() []byte {
 	return config.SettingsValue
 }
 

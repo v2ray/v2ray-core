@@ -5,8 +5,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/v2ray/v2ray-core/proxy/common/config"
-	jsonconfig "github.com/v2ray/v2ray-core/proxy/common/config/json"
+	"github.com/v2ray/v2ray-core/proxy/internal/config"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
@@ -27,8 +26,9 @@ func TestAccountMapParsing(t *testing.T) {
 func TestDefaultIPAddress(t *testing.T) {
 	v2testing.Current(t)
 
-	socksConfig := jsonconfig.CreateConfig("socks", config.TypeInbound).(*SocksConfig)
-	assert.String(socksConfig.IP()).Equals("127.0.0.1")
+	socksConfig, err := config.CreateInboundConnectionConfig("socks", []byte(`{}`))
+	assert.Error(err).IsNil()
+	assert.String(socksConfig.(*SocksConfig).IP()).Equals("127.0.0.1")
 }
 
 func TestIPAddressParsing(t *testing.T) {

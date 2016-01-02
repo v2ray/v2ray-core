@@ -5,7 +5,8 @@ import (
 	"errors"
 	"net"
 
-	jsonconfig "github.com/v2ray/v2ray-core/proxy/common/config/json"
+	"github.com/v2ray/v2ray-core/proxy/internal/config"
+	jsonconfig "github.com/v2ray/v2ray-core/proxy/internal/config/json"
 )
 
 const (
@@ -84,9 +85,9 @@ func (this *SocksConfig) UDPEnabled() bool {
 }
 
 func init() {
-	jsonconfig.RegisterInboundConnectionConfig("socks", func() interface{} {
+	config.RegisterInboundConnectionConfig("socks", jsonconfig.JsonConfigLoader(func() interface{} {
 		return &SocksConfig{
 			HostIP: IPAddress(net.IPv4(127, 0, 0, 1)),
 		}
-	})
+	}))
 }

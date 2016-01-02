@@ -5,7 +5,6 @@ import (
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2netjson "github.com/v2ray/v2ray-core/common/net/json"
-	proxyconfig "github.com/v2ray/v2ray-core/proxy/common/config"
 	"github.com/v2ray/v2ray-core/shell/point"
 )
 
@@ -47,8 +46,8 @@ func (this *InboundDetourConfig) PortRange() v2net.PortRange {
 	return this.PortRangeValue
 }
 
-func (this *InboundDetourConfig) Settings() interface{} {
-	return loadConnectionConfig(this.SettingsValue, this.ProtocolValue, proxyconfig.TypeInbound)
+func (this *InboundDetourConfig) Settings() []byte {
+	return []byte(this.SettingsValue)
 }
 
 func (this *InboundDetourConfig) Tag() string {
