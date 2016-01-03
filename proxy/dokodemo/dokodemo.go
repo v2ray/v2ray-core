@@ -13,7 +13,8 @@ import (
 )
 
 type DokodemoDoor struct {
-	sync.Mutex
+	tcpMutex    sync.RWMutex
+	udpMutex    sync.RWMutex
 	config      Config
 	accepting   bool
 	address     v2net.Address
@@ -35,16 +36,16 @@ func NewDokodemoDoor(space app.Space, config Config) *DokodemoDoor {
 func (this *DokodemoDoor) Close() {
 	this.accepting = false
 	if this.tcpListener != nil {
-		this.Lock()
 		this.tcpListener.Close()
+		this.tcpMutex.Lock()
 		this.tcpListener = nil
-		this.Unlock()
+		this.tcpMutex.Unlock()
 	}
 	if this.udpConn != nil {
-		this.Lock()
 		this.udpConn.Close()
+		this.udpMutex.Lock()
 		this.udpConn = nil
-		this.Unlock()
+		this.udpMutex.Unlock()
 	}
 }
 
@@ -84,13 +85,12 @@ func (this *DokodemoDoor) ListenUDP(port v2net.Port) error {
 func (this *DokodemoDoor) handleUDPPackets() {
 	for this.accepting {
 		buffer := alloc.NewBuffer()
-		var udpConn *net.UDPConn
-		this.Lock()
-		if this.udpConn != nil {
-			udpConn = this.udpConn
+		this.udpMutex.RLock()
+		if !this.accepting {
+			return
 		}
-		this.Unlock()
-		nBytes, addr, err := udpConn.ReadFromUDP(buffer.Value)
+		nBytes, addr, err := this.udpConn.ReadFromUDP(buffer.Value)
+		this.udpMutex.RUnlock()
 		buffer.Slice(0, nBytes)
 		if err != nil {
 			buffer.Release()
@@ -103,7 +103,13 @@ func (this *DokodemoDoor) handleUDPPackets() {
 		close(ray.InboundInput())
 
 		for payload := range ray.InboundOutput() {
-			udpConn.WriteToUDP(payload.Value, addr)
+			this.udpMutex.RLock()
+			if !this.accepting {
+				this.udpMutex.RUnlock()
+				return
+			}
+			this.udpConn.WriteToUDP(payload.Value, addr)
+			this.udpMutex.RUnlock()
 		}
 	}
 }
@@ -126,8 +132,11 @@ func (this *DokodemoDoor) ListenTCP(port v2net.Port) error {
 func (this *DokodemoDoor) AcceptTCPConnections() {
 	for this.accepting {
 		retry.Timed(100, 100).On(func() error {
-			this.Lock()
-			defer this.Unlock()
+			if !this.accepting {
+				return nil
+			}
+			this.tcpMutex.RLock()
+			defer this.tcpMutex.RUnlock()
 			if this.tcpListener != nil {
 				connection, err := this.tcpListener.AcceptTCP()
 				if err != nil {

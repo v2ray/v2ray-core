@@ -12,10 +12,6 @@ import (
 	"github.com/v2ray/v2ray-core/testing/servers/udp"
 )
 
-var (
-	serverUp = false
-)
-
 func TestTCPConnection(t *testing.T) {
 	v2testing.Current(t)
 
@@ -86,6 +82,8 @@ func TestTCPConnection(t *testing.T) {
 
 		conn.Close()
 	}
+
+	CloseAllServers()
 }
 
 func TestTCPBind(t *testing.T) {
@@ -135,6 +133,8 @@ func TestTCPBind(t *testing.T) {
 	assert.Bytes(connectResponse[:nBytes]).Equals([]byte{socks5Version, 7, 0, 1, 0, 0, 0, 0, 0, 0})
 
 	conn.Close()
+
+	CloseAllServers()
 }
 
 func TestUDPAssociate(t *testing.T) {
@@ -204,4 +204,6 @@ func TestUDPAssociate(t *testing.T) {
 
 	udpConn.Close()
 	conn.Close()
+
+	CloseAllServers()
 }

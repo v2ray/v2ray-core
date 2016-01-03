@@ -113,6 +113,13 @@ func NewPoint(pConfig PointConfig) (*Point, error) {
 	return vpoint, nil
 }
 
+func (this *Point) Close() {
+	this.ich.Close()
+	for _, idh := range this.idh {
+		idh.Close()
+	}
+}
+
 // Start starts the Point server, and return any error during the process.
 // In the case of any errors, the state of the server is unpredicatable.
 func (this *Point) Start() error {

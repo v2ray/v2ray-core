@@ -27,7 +27,7 @@ import (
 )
 
 var (
-	serverup = make(map[string]bool)
+	runningServers = make([]*point.Point, 0, 10)
 )
 
 func TestFile(filename string) string {
@@ -35,9 +35,6 @@ func TestFile(filename string) string {
 }
 
 func InitializeServerSetOnce(testcase string) error {
-	if up, found := serverup[testcase]; found && up {
-		return nil
-	}
 	err := InitializeServer(TestFile(testcase + "_server.json"))
 	if err != nil {
 		return err
@@ -46,7 +43,6 @@ func InitializeServerSetOnce(testcase string) error {
 	if err != nil {
 		return err
 	}
-	serverup[testcase] = true
 	return nil
 }
 
@@ -68,6 +64,14 @@ func InitializeServer(configFile string) error {
 		log.Error("Error starting Point server: %v", err)
 		return err
 	}
+	runningServers = append(runningServers, vPoint)
 
 	return nil
+}
+
+func CloseAllServers() {
+	for _, server := range runningServers {
+		server.Close()
+	}
+	runningServers = make([]*point.Point, 0, 10)
 }

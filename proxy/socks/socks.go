@@ -23,7 +23,8 @@ var (
 
 // SocksServer is a SOCKS 5 proxy server
 type SocksServer struct {
-	sync.RWMutex
+	tcpMutex    sync.RWMutex
+	udpMutex    sync.RWMutex
 	accepting   bool
 	space       app.Space
 	config      Config
@@ -42,20 +43,16 @@ func NewSocksServer(space app.Space, config Config) *SocksServer {
 func (this *SocksServer) Close() {
 	this.accepting = false
 	if this.tcpListener != nil {
-		this.Lock()
-		if this.tcpListener != nil {
-			this.tcpListener.Close()
-			this.tcpListener = nil
-		}
-		this.Unlock()
+		this.tcpListener.Close()
+		this.tcpMutex.Lock()
+		this.tcpListener = nil
+		this.tcpMutex.Unlock()
 	}
 	if this.udpConn != nil {
-		this.Lock()
-		if this.udpConn != nil {
-			this.udpConn.Close()
-			this.udpConn = nil
-		}
-		this.Unlock()
+		this.udpConn.Close()
+		this.udpMutex.Lock()
+		this.udpConn = nil
+		this.udpMutex.Unlock()
 	}
 }
 
@@ -81,12 +78,16 @@ func (this *SocksServer) Listen(port v2net.Port) error {
 func (this *SocksServer) AcceptConnections() {
 	for this.accepting {
 		retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
-			this.RLock()
-			defer this.RUnlock()
 			if !this.accepting {
 				return nil
 			}
+			this.tcpMutex.RLock()
+			if this.tcpListener == nil {
+				this.tcpMutex.RUnlock()
+				return nil
+			}
 			connection, err := this.tcpListener.AcceptTCP()
+			this.tcpMutex.RUnlock()
 			if err != nil {
 				log.Error("Socks failed to accept new connection %v", err)
 				return err

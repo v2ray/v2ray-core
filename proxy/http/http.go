@@ -35,8 +35,8 @@ func NewHttpProxyServer(space app.Space, config Config) *HttpProxyServer {
 func (this *HttpProxyServer) Close() {
 	this.accepting = false
 	if this.tcpListener != nil {
-		this.Lock()
 		this.tcpListener.Close()
+		this.Lock()
 		this.tcpListener = nil
 		this.Unlock()
 	}

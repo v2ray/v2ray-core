@@ -50,4 +50,6 @@ func TestDokodemoTCP(t *testing.T) {
 		assert.StringLiteral("Processed: " + payload).Equals(string(response[:nBytes]))
 		conn.Close()
 	}
+
+	CloseAllServers()
 }

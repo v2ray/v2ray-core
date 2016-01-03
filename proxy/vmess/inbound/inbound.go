@@ -38,11 +38,9 @@ func NewVMessInboundHandler(space app.Space, clients user.UserSet) *VMessInbound
 func (this *VMessInboundHandler) Close() {
 	this.accepting = false
 	if this.listener != nil {
+		this.listener.Close()
 		this.Lock()
-		if this.listener != nil {
-			this.listener.Close()
-			this.listener = nil
-		}
+		this.listener = nil
 		this.Unlock()
 	}
 }

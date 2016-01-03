@@ -39,6 +39,12 @@ func (this *InboundDetourHandler) Initialize() error {
 	return nil
 }
 
+func (this *InboundDetourHandler) Close() {
+	for _, ich := range this.ich {
+		ich.handler.Close()
+	}
+}
+
 // Starts the inbound connection handler.
 func (this *InboundDetourHandler) Start() error {
 	for _, ich := range this.ich {

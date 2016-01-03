@@ -76,4 +76,6 @@ func TestRouter(t *testing.T) {
 	assert.Int(nBytes).Equals(0)
 	assert.Bool(tcpServer2Accessed).IsFalse()
 	conn.Close()
+
+	CloseAllServers()
 }

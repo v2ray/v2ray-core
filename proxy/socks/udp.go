@@ -30,13 +30,13 @@ func (this *SocksServer) ListenUDP(port v2net.Port) error {
 func (this *SocksServer) AcceptPackets() error {
 	for this.accepting {
 		buffer := alloc.NewBuffer()
-		this.RLock()
+		this.udpMutex.RLock()
 		if !this.accepting {
-			this.RUnlock()
+			this.udpMutex.RUnlock()
 			return nil
 		}
 		nBytes, addr, err := this.udpConn.ReadFromUDP(buffer.Value)
-		this.RUnlock()
+		this.udpMutex.RUnlock()
 		if err != nil {
 			log.Error("Socks failed to read UDP packets: %v", err)
 			buffer.Release()
@@ -82,13 +82,13 @@ func (this *SocksServer) handlePacket(packet v2net.Packet, clientAddr *net.UDPAd
 		udpMessage := alloc.NewSmallBuffer().Clear()
 		response.Write(udpMessage)
 
-		this.RLock()
+		this.udpMutex.RLock()
 		if !this.accepting {
-			this.RUnlock()
+			this.udpMutex.RUnlock()
 			return
 		}
 		nBytes, err := this.udpConn.WriteToUDP(udpMessage.Value, clientAddr)
-		this.RUnlock()
+		this.udpMutex.RUnlock()
 		udpMessage.Release()
 		response.Data.Release()
 		if err != nil {
