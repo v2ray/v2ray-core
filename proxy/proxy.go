@@ -12,6 +12,7 @@ type InboundConnectionHandler interface {
 	// Listen starts a InboundConnectionHandler by listen on a specific port. This method is called
 	// exactly once during runtime.
 	Listen(port v2net.Port) error
+	Close()
 }
 
 // An OutboundConnectionHandler handles outbound network connection for V2Ray.

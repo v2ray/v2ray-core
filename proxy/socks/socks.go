@@ -23,15 +23,39 @@ var (
 
 // SocksServer is a SOCKS 5 proxy server
 type SocksServer struct {
-	accepting bool
-	space     app.Space
-	config    Config
+	sync.RWMutex
+	accepting   bool
+	space       app.Space
+	config      Config
+	tcpListener *net.TCPListener
+	udpConn     *net.UDPConn
+	udpAddress  v2net.Destination
 }
 
 func NewSocksServer(space app.Space, config Config) *SocksServer {
 	return &SocksServer{
 		space:  space,
 		config: config,
+	}
+}
+
+func (this *SocksServer) Close() {
+	this.accepting = false
+	if this.tcpListener != nil {
+		this.Lock()
+		if this.tcpListener != nil {
+			this.tcpListener.Close()
+			this.tcpListener = nil
+		}
+		this.Unlock()
+	}
+	if this.udpConn != nil {
+		this.Lock()
+		if this.udpConn != nil {
+			this.udpConn.Close()
+			this.udpConn = nil
+		}
+		this.Unlock()
 	}
 }
 
@@ -46,17 +70,23 @@ func (this *SocksServer) Listen(port v2net.Port) error {
 		return err
 	}
 	this.accepting = true
-	go this.AcceptConnections(listener)
+	this.tcpListener = listener
+	go this.AcceptConnections()
 	if this.config.UDPEnabled() {
 		this.ListenUDP(port)
 	}
 	return nil
 }
 
-func (this *SocksServer) AcceptConnections(listener *net.TCPListener) {
+func (this *SocksServer) AcceptConnections() {
 	for this.accepting {
 		retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
-			connection, err := listener.AcceptTCP()
+			this.RLock()
+			defer this.RUnlock()
+			if !this.accepting {
+				return nil
+			}
+			connection, err := this.tcpListener.AcceptTCP()
 			if err != nil {
 				log.Error("Socks failed to accept new connection %v", err)
 				return err
@@ -64,7 +94,6 @@ func (this *SocksServer) AcceptConnections(listener *net.TCPListener) {
 			go this.HandleConnection(connection)
 			return nil
 		})
-
 	}
 }
 
@@ -187,7 +216,7 @@ func (this *SocksServer) handleUDP(reader *v2net.TimeOutReader, writer io.Writer
 	response := protocol.NewSocks5Response()
 	response.Error = protocol.ErrorSuccess
 
-	udpAddr := this.getUDPAddr()
+	udpAddr := this.udpAddress
 
 	response.Port = udpAddr.Port()
 	switch {

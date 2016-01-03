@@ -13,11 +13,14 @@ import (
 )
 
 type DokodemoDoor struct {
-	config    Config
-	accepting bool
-	address   v2net.Address
-	port      v2net.Port
-	space     app.Space
+	sync.Mutex
+	config      Config
+	accepting   bool
+	address     v2net.Address
+	port        v2net.Port
+	space       app.Space
+	tcpListener *net.TCPListener
+	udpConn     *net.UDPConn
 }
 
 func NewDokodemoDoor(space app.Space, config Config) *DokodemoDoor {
@@ -26,6 +29,22 @@ func NewDokodemoDoor(space app.Space, config Config) *DokodemoDoor {
 		space:   space,
 		address: config.Address(),
 		port:    config.Port(),
+	}
+}
+
+func (this *DokodemoDoor) Close() {
+	this.accepting = false
+	if this.tcpListener != nil {
+		this.Lock()
+		this.tcpListener.Close()
+		this.tcpListener = nil
+		this.Unlock()
+	}
+	if this.udpConn != nil {
+		this.Lock()
+		this.udpConn.Close()
+		this.udpConn = nil
+		this.Unlock()
 	}
 }
 
@@ -57,14 +76,20 @@ func (this *DokodemoDoor) ListenUDP(port v2net.Port) error {
 		log.Error("Dokodemo failed to listen on port %d: %v", port, err)
 		return err
 	}
-	go this.handleUDPPackets(udpConn)
+	this.udpConn = udpConn
+	go this.handleUDPPackets()
 	return nil
 }
 
-func (this *DokodemoDoor) handleUDPPackets(udpConn *net.UDPConn) {
-	defer udpConn.Close()
+func (this *DokodemoDoor) handleUDPPackets() {
 	for this.accepting {
 		buffer := alloc.NewBuffer()
+		var udpConn *net.UDPConn
+		this.Lock()
+		if this.udpConn != nil {
+			udpConn = this.udpConn
+		}
+		this.Unlock()
 		nBytes, addr, err := udpConn.ReadFromUDP(buffer.Value)
 		buffer.Slice(0, nBytes)
 		if err != nil {
@@ -93,19 +118,24 @@ func (this *DokodemoDoor) ListenTCP(port v2net.Port) error {
 		log.Error("Dokodemo failed to listen on port %d: %v", port, err)
 		return err
 	}
-	go this.AcceptTCPConnections(tcpListener)
+	this.tcpListener = tcpListener
+	go this.AcceptTCPConnections()
 	return nil
 }
 
-func (this *DokodemoDoor) AcceptTCPConnections(tcpListener *net.TCPListener) {
+func (this *DokodemoDoor) AcceptTCPConnections() {
 	for this.accepting {
 		retry.Timed(100, 100).On(func() error {
-			connection, err := tcpListener.AcceptTCP()
-			if err != nil {
-				log.Error("Dokodemo failed to accept new connections: %v", err)
-				return err
+			this.Lock()
+			defer this.Unlock()
+			if this.tcpListener != nil {
+				connection, err := this.tcpListener.AcceptTCP()
+				if err != nil {
+					log.Error("Dokodemo failed to accept new connections: %v", err)
+					return err
+				}
+				go this.HandleTCPConnection(connection)
 			}
-			go this.HandleTCPConnection(connection)
 			return nil
 		})
 	}

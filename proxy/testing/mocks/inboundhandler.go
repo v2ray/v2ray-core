@@ -20,6 +20,10 @@ func (this *InboundConnectionHandler) Listen(port v2net.Port) error {
 	return nil
 }
 
+func (this *InboundConnectionHandler) Close() {
+
+}
+
 func (this *InboundConnectionHandler) Communicate(packet v2net.Packet) error {
 	ray := this.Space.PacketDispatcher().DispatchToOutbound(packet)
 

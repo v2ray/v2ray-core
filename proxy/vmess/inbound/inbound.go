@@ -21,15 +21,29 @@ import (
 
 // Inbound connection handler that handles messages in VMess format.
 type VMessInboundHandler struct {
+	sync.Mutex
 	space     app.Space
 	clients   user.UserSet
 	accepting bool
+	listener  *net.TCPListener
 }
 
 func NewVMessInboundHandler(space app.Space, clients user.UserSet) *VMessInboundHandler {
 	return &VMessInboundHandler{
 		space:   space,
 		clients: clients,
+	}
+}
+
+func (this *VMessInboundHandler) Close() {
+	this.accepting = false
+	if this.listener != nil {
+		this.Lock()
+		if this.listener != nil {
+			this.listener.Close()
+			this.listener = nil
+		}
+		this.Unlock()
 	}
 }
 
@@ -44,19 +58,27 @@ func (this *VMessInboundHandler) Listen(port v2net.Port) error {
 		return err
 	}
 	this.accepting = true
-	go this.AcceptConnections(listener)
+	this.listener = listener
+	go this.AcceptConnections()
 	return nil
 }
 
-func (this *VMessInboundHandler) AcceptConnections(listener *net.TCPListener) error {
+func (this *VMessInboundHandler) AcceptConnections() error {
 	for this.accepting {
 		retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
-			connection, err := listener.AcceptTCP()
-			if err != nil {
-				log.Error("Failed to accpet connection: %s", err.Error())
-				return err
+			if !this.accepting {
+				return nil
 			}
-			go this.HandleConnection(connection)
+			this.Lock()
+			defer this.Unlock()
+			if this.listener != nil {
+				connection, err := this.listener.AcceptTCP()
+				if err != nil {
+					log.Error("Failed to accpet connection: %s", err.Error())
+					return err
+				}
+				go this.HandleConnection(connection)
+			}
 			return nil
 		})
 

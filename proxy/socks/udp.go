@@ -9,8 +9,6 @@ import (
 	"github.com/v2ray/v2ray-core/proxy/socks/protocol"
 )
 
-var udpAddress v2net.Destination
-
 func (this *SocksServer) ListenUDP(port v2net.Port) error {
 	addr := &net.UDPAddr{
 		IP:   net.IP{0, 0, 0, 0},
@@ -22,20 +20,23 @@ func (this *SocksServer) ListenUDP(port v2net.Port) error {
 		log.Error("Socks failed to listen UDP on port %d: %v", port, err)
 		return err
 	}
-	udpAddress = v2net.UDPDestination(v2net.IPAddress(this.config.IP()), port)
+	this.udpAddress = v2net.UDPDestination(v2net.IPAddress(this.config.IP()), port)
+	this.udpConn = conn
 
-	go this.AcceptPackets(conn)
+	go this.AcceptPackets()
 	return nil
 }
 
-func (this *SocksServer) getUDPAddr() v2net.Destination {
-	return udpAddress
-}
-
-func (this *SocksServer) AcceptPackets(conn *net.UDPConn) error {
-	for {
+func (this *SocksServer) AcceptPackets() error {
+	for this.accepting {
 		buffer := alloc.NewBuffer()
-		nBytes, addr, err := conn.ReadFromUDP(buffer.Value)
+		this.RLock()
+		if !this.accepting {
+			this.RUnlock()
+			return nil
+		}
+		nBytes, addr, err := this.udpConn.ReadFromUDP(buffer.Value)
+		this.RUnlock()
 		if err != nil {
 			log.Error("Socks failed to read UDP packets: %v", err)
 			buffer.Release()
@@ -60,11 +61,12 @@ func (this *SocksServer) AcceptPackets(conn *net.UDPConn) error {
 
 		udpPacket := v2net.NewPacket(request.Destination(), request.Data, false)
 		log.Info("Send packet to %s with %d bytes", udpPacket.Destination().String(), request.Data.Len())
-		go this.handlePacket(conn, udpPacket, addr, request.Address, request.Port)
+		go this.handlePacket(udpPacket, addr, request.Address, request.Port)
 	}
+	return nil
 }
 
-func (this *SocksServer) handlePacket(conn *net.UDPConn, packet v2net.Packet, clientAddr *net.UDPAddr, targetAddr v2net.Address, port v2net.Port) {
+func (this *SocksServer) handlePacket(packet v2net.Packet, clientAddr *net.UDPAddr, targetAddr v2net.Address, port v2net.Port) {
 	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
 	close(ray.InboundInput())
 
@@ -80,7 +82,13 @@ func (this *SocksServer) handlePacket(conn *net.UDPConn, packet v2net.Packet, cl
 		udpMessage := alloc.NewSmallBuffer().Clear()
 		response.Write(udpMessage)
 
-		nBytes, err := conn.WriteToUDP(udpMessage.Value, clientAddr)
+		this.RLock()
+		if !this.accepting {
+			this.RUnlock()
+			return
+		}
+		nBytes, err := this.udpConn.WriteToUDP(udpMessage.Value, clientAddr)
+		this.RUnlock()
 		udpMessage.Release()
 		response.Data.Release()
 		if err != nil {

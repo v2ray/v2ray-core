@@ -13,19 +13,32 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
 type HttpProxyServer struct {
-	accepting bool
-	space     app.Space
-	config    Config
+	sync.Mutex
+	accepting   bool
+	space       app.Space
+	config      Config
+	tcpListener *net.TCPListener
 }
 
 func NewHttpProxyServer(space app.Space, config Config) *HttpProxyServer {
 	return &HttpProxyServer{
 		space:  space,
 		config: config,
+	}
+}
+
+func (this *HttpProxyServer) Close() {
+	this.accepting = false
+	if this.tcpListener != nil {
+		this.Lock()
+		this.tcpListener.Close()
+		this.tcpListener = nil
+		this.Unlock()
 	}
 }
 
@@ -37,19 +50,27 @@ func (this *HttpProxyServer) Listen(port v2net.Port) error {
 	if err != nil {
 		return err
 	}
-	go this.accept(tcpListener)
+	this.tcpListener = tcpListener
+	this.accepting = true
+	go this.accept()
 	return nil
 }
 
-func (this *HttpProxyServer) accept(listener *net.TCPListener) {
-	this.accepting = true
+func (this *HttpProxyServer) accept() {
 	for this.accepting {
-		tcpConn, err := listener.AcceptTCP()
-		if err != nil {
-			log.Error("Failed to accept HTTP connection: %v", err)
-			continue
-		}
-		go this.handleConnection(tcpConn)
+		retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
+			this.Lock()
+			defer this.Unlock()
+			if this.tcpListener != nil {
+				tcpConn, err := this.tcpListener.AcceptTCP()
+				if err != nil {
+					log.Error("Failed to accept HTTP connection: %v", err)
+					return err
+				}
+				go this.handleConnection(tcpConn)
+			}
+			return nil
+		})
 	}
 }
 
