@@ -68,6 +68,7 @@ func NewVMessRequestReader(vUserSet user.UserSet) *VMessRequestReader {
 // Read reads a VMessRequest from a byte stream.
 func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	buffer := alloc.NewSmallBuffer()
+	defer buffer.Release()
 
 	nBytes, err := v2net.ReadAllBytes(reader, buffer.Value[:vmess.IDBytesLen])
 	if err != nil {
@@ -102,9 +103,9 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 		return nil, proxy.InvalidProtocolVersion
 	}
 
-	request.RequestIV = buffer.Value[1:17]       // 16 bytes
-	request.RequestKey = buffer.Value[17:33]     // 16 bytes
-	request.ResponseHeader = buffer.Value[33:37] // 4 bytes
+	request.RequestIV = append([]byte(nil), buffer.Value[1:17]...)       // 16 bytes
+	request.RequestKey = append([]byte(nil), buffer.Value[17:33]...)     // 16 bytes
+	request.ResponseHeader = append([]byte(nil), buffer.Value[33:37]...) // 4 bytes
 	request.Command = buffer.Value[37]
 
 	request.Port = v2net.PortFromBytes(buffer.Value[38:40])
@@ -135,7 +136,8 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 			return nil, err
 		}
 		bufferLen += 1 + domainLength
-		request.Address = v2net.DomainAddress(string(buffer.Value[42 : 42+domainLength]))
+		domainBytes := append([]byte(nil), buffer.Value[42 : 42+domainLength]...)
+		request.Address = v2net.DomainAddress(string(domainBytes))
 	}
 
 	_, err = v2net.ReadAllBytes(decryptor, buffer.Value[bufferLen:bufferLen+4])

@@ -39,7 +39,7 @@ func (this *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray ray.Out
 	}
 
 	buffer := alloc.NewSmallBuffer()
-	defer buffer.Release()
+	defer buffer.Release() // Buffer is released after communication finishes.
 	v2net.ReadAllBytes(rand.Reader, buffer.Value[:36]) // 16 + 16 + 4
 	request.RequestIV = buffer.Value[:16]
 	request.RequestKey = buffer.Value[16:32]
@@ -183,17 +183,6 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 	}
 
 	return
-}
-
-type VMessOutboundHandlerFactory struct {
-}
-
-func (this *VMessOutboundHandlerFactory) Create(space app.Space, rawConfig interface{}) (proxy.OutboundConnectionHandler, error) {
-	vOutConfig := rawConfig.(Config)
-	return &VMessOutboundHandler{
-		space:           space,
-		receiverManager: NewReceiverManager(vOutConfig.Receivers()),
-	}, nil
 }
 
 func init() {
