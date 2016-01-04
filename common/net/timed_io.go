@@ -19,6 +19,7 @@ type TimeOutReader struct {
 func NewTimeOutReader(timeout int, connection net.Conn) *TimeOutReader {
 	reader := &TimeOutReader{
 		connection: connection,
+		timeout:    -100,
 	}
 	reader.SetTimeOut(timeout)
 	return reader
