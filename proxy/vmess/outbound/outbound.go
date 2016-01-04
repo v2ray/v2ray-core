@@ -99,7 +99,7 @@ func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2
 	encryptRequestWriter := v2crypto.NewCryptionWriter(aesStream, conn)
 
 	buffer := alloc.NewBuffer().Clear()
-	defer buffer.Clear()
+	defer buffer.Release()
 	buffer, err = request.ToBytes(user.NewTimeHash(user.HMACHash{}), user.GenerateRandomInt64InRange, buffer)
 	if err != nil {
 		log.Error("VMessOut: Failed to serialize VMess request: %v", err)
