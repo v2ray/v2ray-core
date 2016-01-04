@@ -123,6 +123,7 @@ func (p *bufferPool) cleanup(tick <-chan time.Time) {
 			select {
 			case p.chain <- make([]byte, p.bufferSize):
 			default:
+				break
 			}
 		}
 	}

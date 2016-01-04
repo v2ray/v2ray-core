@@ -136,7 +136,7 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 			return nil, err
 		}
 		bufferLen += 1 + domainLength
-		domainBytes := append([]byte(nil), buffer.Value[42 : 42+domainLength]...)
+		domainBytes := append([]byte(nil), buffer.Value[42:42+domainLength]...)
 		request.Address = v2net.DomainAddress(string(domainBytes))
 	}
 

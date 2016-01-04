@@ -231,7 +231,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 			err = transport.CorruptedPacket
 			return
 		}
-		request.Domain = string(buffer.Value[:domainLength])
+		request.Domain = string(append([]byte(nil), buffer.Value[:domainLength]...))
 	case AddrTypeIPv6:
 		nBytes, err = reader.Read(request.IPv6[:])
 		if err != nil {
