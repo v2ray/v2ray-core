@@ -33,6 +33,9 @@ func (reader *TimeOutReader) GetTimeOut() int {
 }
 
 func (reader *TimeOutReader) SetTimeOut(value int) {
+	if value == reader.timeout {
+		return
+	}
 	reader.timeout = value
 	if value > 0 {
 		reader.worker = &timedReaderWorker{
