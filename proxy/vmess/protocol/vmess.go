@@ -131,6 +131,9 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 			return nil, err
 		}
 		domainLength := int(buffer.Value[41])
+		if domainLength == 0 {
+			return nil, transport.CorruptedPacket
+		}
 		_, err = v2net.ReadAllBytes(decryptor, buffer.Value[42:42+domainLength])
 		if err != nil {
 			return nil, err

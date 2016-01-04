@@ -99,6 +99,7 @@ func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2
 	encryptRequestWriter := v2crypto.NewCryptionWriter(aesStream, conn)
 
 	buffer := alloc.NewBuffer().Clear()
+	defer buffer.Clear()
 	buffer, err = request.ToBytes(user.NewTimeHash(user.HMACHash{}), user.GenerateRandomInt64InRange, buffer)
 	if err != nil {
 		log.Error("VMessOut: Failed to serialize VMess request: %v", err)
@@ -119,7 +120,6 @@ func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2
 		firstChunk.Release()
 
 		_, err = conn.Write(buffer.Value)
-		buffer.Release()
 		if err != nil {
 			log.Error("VMessOut: Failed to write VMess request: %v", err)
 			return
@@ -153,6 +153,7 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 	buffer, err := v2net.ReadFrom(decryptResponseReader, nil)
 	if err != nil {
 		log.Error("VMessOut: Failed to read VMess response (%d bytes): %v", buffer.Len(), err)
+		buffer.Release()
 		return
 	}
 	if buffer.Len() < 4 || !headerMatch(request, buffer.Value[:2]) {
