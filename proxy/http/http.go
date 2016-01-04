@@ -59,6 +59,9 @@ func (this *HttpProxyServer) Listen(port v2net.Port) error {
 func (this *HttpProxyServer) accept() {
 	for this.accepting {
 		retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
+			if !this.accepting {
+				return nil
+			}
 			this.Lock()
 			defer this.Unlock()
 			if this.tcpListener != nil {
