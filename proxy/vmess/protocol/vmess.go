@@ -72,6 +72,7 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 
 	nBytes, err := v2net.ReadAllBytes(reader, buffer.Value[:vmess.IDBytesLen])
 	if err != nil {
+		log.Debug("VMess: Failed to read request ID (%d bytes): %v", nBytes, err)
 		return nil, err
 	}
 
@@ -82,6 +83,7 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 
 	aesStream, err := v2crypto.NewAesDecryptionStream(userObj.ID().CmdKey(), user.Int64Hash(timeSec))
 	if err != nil {
+		log.Debug("VMess: Failed to create AES stream: %v", err)
 		return nil, err
 	}
 
@@ -89,6 +91,7 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 
 	nBytes, err = v2net.ReadAllBytes(decryptor, buffer.Value[:41])
 	if err != nil {
+		log.Debug("VMess: Failed to read request header (%d bytes): %v", nBytes, err)
 		return nil, err
 	}
 	bufferLen := nBytes
@@ -99,7 +102,7 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	}
 
 	if request.Version != Version {
-		log.Warning("Invalid protocol version %d", request.Version)
+		log.Warning("VMess: Invalid protocol version %d", request.Version)
 		return nil, proxy.InvalidProtocolVersion
 	}
 
@@ -112,30 +115,34 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 
 	switch buffer.Value[40] {
 	case addrTypeIPv4:
-		_, err = v2net.ReadAllBytes(decryptor, buffer.Value[41:45]) // 4 bytes
+		nBytes, err = v2net.ReadAllBytes(decryptor, buffer.Value[41:45]) // 4 bytes
 		bufferLen += 4
 		if err != nil {
+			log.Debug("VMess: Failed to read target IPv4 (%d bytes): %v", nBytes, err)
 			return nil, err
 		}
 		request.Address = v2net.IPAddress(buffer.Value[41:45])
 	case addrTypeIPv6:
-		_, err = v2net.ReadAllBytes(decryptor, buffer.Value[41:57]) // 16 bytes
+		nBytes, err = v2net.ReadAllBytes(decryptor, buffer.Value[41:57]) // 16 bytes
 		bufferLen += 16
 		if err != nil {
+			log.Debug("VMess: Failed to read target IPv6 (%d bytes): %v", nBytes, err)
 			return nil, err
 		}
 		request.Address = v2net.IPAddress(buffer.Value[41:57])
 	case addrTypeDomain:
-		_, err = v2net.ReadAllBytes(decryptor, buffer.Value[41:42])
+		nBytes, err = v2net.ReadAllBytes(decryptor, buffer.Value[41:42])
 		if err != nil {
+			log.Debug("VMess: Failed to read target domain (%d bytes): %v", nBytes, err)
 			return nil, err
 		}
 		domainLength := int(buffer.Value[41])
 		if domainLength == 0 {
 			return nil, transport.CorruptedPacket
 		}
-		_, err = v2net.ReadAllBytes(decryptor, buffer.Value[42:42+domainLength])
+		nBytes, err = v2net.ReadAllBytes(decryptor, buffer.Value[42:42+domainLength])
 		if err != nil {
+			log.Debug("VMess: Failed to read target domain (%d bytes): %v", nBytes, err)
 			return nil, err
 		}
 		bufferLen += 1 + domainLength
@@ -143,8 +150,9 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 		request.Address = v2net.DomainAddress(string(domainBytes))
 	}
 
-	_, err = v2net.ReadAllBytes(decryptor, buffer.Value[bufferLen:bufferLen+4])
+	nBytes, err = v2net.ReadAllBytes(decryptor, buffer.Value[bufferLen:bufferLen+4])
 	if err != nil {
+		log.Debug("VMess: Failed to read checksum (%d bytes): %v", nBytes, err)
 		return nil, err
 	}
 
