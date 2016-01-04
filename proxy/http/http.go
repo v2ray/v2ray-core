@@ -50,7 +50,9 @@ func (this *HttpProxyServer) Listen(port v2net.Port) error {
 	if err != nil {
 		return err
 	}
+	this.Lock()
 	this.tcpListener = tcpListener
+	this.Unlock()
 	this.accepting = true
 	go this.accept()
 	return nil
@@ -216,7 +218,7 @@ func (this *HttpProxyServer) handlePlainHTTP(request *http.Request, dest v2net.D
 	request.Host = request.URL.Host
 	stripHopByHopHeaders(request)
 
-	requestBuffer := alloc.NewBuffer().Clear()
+	requestBuffer := alloc.NewBuffer().Clear() // Don't release this buffer as it is passed into a Packet.
 	request.Write(requestBuffer)
 	log.Info("Request to remote:\n%s", string(requestBuffer.Value))
 
@@ -229,13 +231,12 @@ func (this *HttpProxyServer) handlePlainHTTP(request *http.Request, dest v2net.D
 	go func() {
 		defer wg.Done()
 		responseReader := bufio.NewReader(NewChanReader(ray.InboundOutput()))
-		responseBuffer := alloc.NewBuffer()
-		defer responseBuffer.Release()
 		response, err := http.ReadResponse(responseReader, request)
 		if err != nil {
 			return
 		}
-		responseBuffer.Clear()
+		responseBuffer := alloc.NewBuffer().Clear()
+		defer responseBuffer.Release()
 		response.Write(responseBuffer)
 		writer.Write(responseBuffer.Value)
 		response.Body.Close()
