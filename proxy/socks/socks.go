@@ -67,7 +67,9 @@ func (this *SocksServer) Listen(port v2net.Port) error {
 		return err
 	}
 	this.accepting = true
+	this.tcpMutex.Lock()
 	this.tcpListener = listener
+	this.tcpMutex.Unlock()
 	go this.AcceptConnections()
 	if this.config.UDPEnabled() {
 		this.ListenUDP(port)

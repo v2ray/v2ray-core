@@ -56,7 +56,9 @@ func (this *VMessInboundHandler) Listen(port v2net.Port) error {
 		return err
 	}
 	this.accepting = true
+	this.Lock()
 	this.listener = listener
+	this.Unlock()
 	go this.AcceptConnections()
 	return nil
 }

@@ -20,8 +20,10 @@ func (this *SocksServer) ListenUDP(port v2net.Port) error {
 		log.Error("Socks failed to listen UDP on port %d: %v", port, err)
 		return err
 	}
+	this.udpMutex.Lock()
 	this.udpAddress = v2net.UDPDestination(v2net.IPAddress(this.config.IP()), port)
 	this.udpConn = conn
+	this.udpMutex.Unlock()
 
 	go this.AcceptPackets()
 	return nil

@@ -77,7 +77,9 @@ func (this *DokodemoDoor) ListenUDP(port v2net.Port) error {
 		log.Error("Dokodemo failed to listen on port %d: %v", port, err)
 		return err
 	}
+	this.udpMutex.Lock()
 	this.udpConn = udpConn
+	this.udpMutex.Unlock()
 	go this.handleUDPPackets()
 	return nil
 }
@@ -125,7 +127,9 @@ func (this *DokodemoDoor) ListenTCP(port v2net.Port) error {
 		log.Error("Dokodemo failed to listen on port %d: %v", port, err)
 		return err
 	}
+	this.tcpMutex.Lock()
 	this.tcpListener = tcpListener
+	this.tcpMutex.Unlock()
 	go this.AcceptTCPConnections()
 	return nil
 }
