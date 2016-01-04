@@ -78,16 +78,12 @@ func (this *SocksServer) Listen(port v2net.Port) error {
 func (this *SocksServer) AcceptConnections() {
 	for this.accepting {
 		retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
+			this.tcpMutex.RLock()
+			defer this.tcpMutex.RUnlock()
 			if !this.accepting {
 				return nil
 			}
-			this.tcpMutex.RLock()
-			if this.tcpListener == nil {
-				this.tcpMutex.RUnlock()
-				return nil
-			}
 			connection, err := this.tcpListener.AcceptTCP()
-			this.tcpMutex.RUnlock()
 			if err != nil {
 				log.Error("Socks failed to accept new connection %v", err)
 				return err

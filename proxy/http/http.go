@@ -59,19 +59,17 @@ func (this *HttpProxyServer) Listen(port v2net.Port) error {
 func (this *HttpProxyServer) accept() {
 	for this.accepting {
 		retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
+			this.Lock()
+			defer this.Unlock()
 			if !this.accepting {
 				return nil
 			}
-			this.Lock()
-			defer this.Unlock()
-			if this.tcpListener != nil {
-				tcpConn, err := this.tcpListener.AcceptTCP()
-				if err != nil {
-					log.Error("Failed to accept HTTP connection: %v", err)
-					return err
-				}
-				go this.handleConnection(tcpConn)
+			tcpConn, err := this.tcpListener.AcceptTCP()
+			if err != nil {
+				log.Error("Failed to accept HTTP connection: %v", err)
+				return err
 			}
+			go this.handleConnection(tcpConn)
 			return nil
 		})
 	}

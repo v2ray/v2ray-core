@@ -64,19 +64,17 @@ func (this *VMessInboundHandler) Listen(port v2net.Port) error {
 func (this *VMessInboundHandler) AcceptConnections() error {
 	for this.accepting {
 		retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
+			this.Lock()
+			defer this.Unlock()
 			if !this.accepting {
 				return nil
 			}
-			this.Lock()
-			defer this.Unlock()
-			if this.listener != nil {
-				connection, err := this.listener.AcceptTCP()
-				if err != nil {
-					log.Error("Failed to accpet connection: %s", err.Error())
-					return err
-				}
-				go this.HandleConnection(connection)
+			connection, err := this.listener.AcceptTCP()
+			if err != nil {
+				log.Error("Failed to accpet connection: %s", err.Error())
+				return err
 			}
+			go this.HandleConnection(connection)
 			return nil
 		})
 

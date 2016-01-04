@@ -87,6 +87,7 @@ func (this *DokodemoDoor) handleUDPPackets() {
 		buffer := alloc.NewBuffer()
 		this.udpMutex.RLock()
 		if !this.accepting {
+			this.udpMutex.RUnlock()
 			return
 		}
 		nBytes, addr, err := this.udpConn.ReadFromUDP(buffer.Value)
@@ -132,19 +133,17 @@ func (this *DokodemoDoor) ListenTCP(port v2net.Port) error {
 func (this *DokodemoDoor) AcceptTCPConnections() {
 	for this.accepting {
 		retry.Timed(100, 100).On(func() error {
+			this.tcpMutex.RLock()
+			defer this.tcpMutex.RUnlock()
 			if !this.accepting {
 				return nil
 			}
-			this.tcpMutex.RLock()
-			defer this.tcpMutex.RUnlock()
-			if this.tcpListener != nil {
-				connection, err := this.tcpListener.AcceptTCP()
-				if err != nil {
-					log.Error("Dokodemo failed to accept new connections: %v", err)
-					return err
-				}
-				go this.HandleTCPConnection(connection)
+			connection, err := this.tcpListener.AcceptTCP()
+			if err != nil {
+				log.Error("Dokodemo failed to accept new connections: %v", err)
+				return err
 			}
+			go this.HandleTCPConnection(connection)
 			return nil
 		})
 	}
