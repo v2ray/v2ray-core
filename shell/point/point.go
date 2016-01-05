@@ -171,3 +171,24 @@ func (this *Point) DispatchToOutbound(context app.Context, packet v2net.Packet) 
 	go this.och.Dispatch(packet, direct)
 	return direct
 }
+
+func (this *Point) FilterPacketAndDispatch(packet v2net.Packet, link ray.OutboundRay, dispatcher proxy.OutboundConnectionHandler) {
+	// Filter empty packets
+	chunk := packet.Chunk()
+	moreChunks := packet.MoreChunks()
+	changed := false
+	for chunk == nil && moreChunks {
+		changed = true
+		chunk, moreChunks = <-link.OutboundInput()
+	}
+	if chunk == nil && !moreChunks {
+		close(link.OutboundOutput())
+		return
+	}
+
+	if changed {
+		packet = v2net.NewPacket(packet.Destination(), chunk, moreChunks)
+	}
+
+	dispatcher.Dispatch(packet, link)
+}

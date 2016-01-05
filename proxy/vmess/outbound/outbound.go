@@ -76,6 +76,7 @@ func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ra
 
 	input := ray.OutboundInput()
 	output := ray.OutboundOutput()
+
 	var requestFinish, responseFinish sync.Mutex
 	requestFinish.Lock()
 	responseFinish.Lock()
@@ -110,20 +111,23 @@ func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2
 	firstChunk := firstPacket.Chunk()
 	moreChunks := firstPacket.MoreChunks()
 
-	if firstChunk == nil && moreChunks {
+	for firstChunk == nil && moreChunks {
 		firstChunk, moreChunks = <-input
 	}
 
-	if firstChunk != nil {
-		aesStream.XORKeyStream(firstChunk.Value, firstChunk.Value)
-		buffer.Append(firstChunk.Value)
-		firstChunk.Release()
+	if firstChunk == nil && !moreChunks {
+		log.Warning("VMessOut: Nothing to send. Existing...")
+		return
+	}
 
-		_, err = conn.Write(buffer.Value)
-		if err != nil {
-			log.Error("VMessOut: Failed to write VMess request: %v", err)
-			return
-		}
+	aesStream.XORKeyStream(firstChunk.Value, firstChunk.Value)
+	buffer.Append(firstChunk.Value)
+	firstChunk.Release()
+
+	_, err = conn.Write(buffer.Value)
+	if err != nil {
+		log.Error("VMessOut: Failed to write VMess request: %v", err)
+		return
 	}
 
 	if moreChunks {
