@@ -157,18 +157,19 @@ func (this *Point) DispatchToOutbound(context app.Context, packet v2net.Packet) 
 	direct := ray.NewRay()
 	dest := packet.Destination()
 
+	dispatcher := this.och
+
 	if this.router != nil {
 		tag, err := this.router.TakeDetour(dest)
 		if err == nil {
 			handler, found := this.odh[tag]
 			if found {
-				go handler.Dispatch(packet, direct)
-				return direct
+				dispatcher = handler
 			}
 		}
 	}
 
-	go this.och.Dispatch(packet, direct)
+	go this.FilterPacketAndDispatch(packet, direct, dispatcher)
 	return direct
 }
 
