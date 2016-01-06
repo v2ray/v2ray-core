@@ -49,10 +49,11 @@ func TestUDPSend(t *testing.T) {
 		ConnOutput: connOutput,
 	}
 
-	protocol, err := proxytesting.RegisterInboundConnectionHandlerCreator("mock_ich", func(space app.Space, config interface{}) (v2proxy.InboundConnectionHandler, error) {
-		ich.Space = space
-		return ich, nil
-	})
+	protocol, err := proxytesting.RegisterInboundConnectionHandlerCreator("mock_ich",
+		func(space app.Space, config interface{}) (v2proxy.InboundConnectionHandler, error) {
+			ich.Space = space
+			return ich, nil
+		})
 	assert.Error(err).IsNil()
 
 	pointPort := v2nettesting.PickPort()

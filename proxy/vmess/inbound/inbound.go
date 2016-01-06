@@ -161,16 +161,15 @@ func handleOutput(request *protocol.VMessRequest, writer io.Writer, output <-cha
 }
 
 func init() {
-	if err := internal.RegisterInboundConnectionHandlerFactory("vmess", func(space app.Space, rawConfig interface{}) (proxy.InboundConnectionHandler, error) {
-		config := rawConfig.(Config)
+	internal.MustRegisterInboundConnectionHandlerCreator("vmess",
+		func(space app.Space, rawConfig interface{}) (proxy.InboundConnectionHandler, error) {
+			config := rawConfig.(Config)
 
-		allowedClients := user.NewTimedUserSet()
-		for _, user := range config.AllowedUsers() {
-			allowedClients.AddUser(user)
-		}
+			allowedClients := user.NewTimedUserSet()
+			for _, user := range config.AllowedUsers() {
+				allowedClients.AddUser(user)
+			}
 
-		return NewVMessInboundHandler(space, allowedClients), nil
-	}); err != nil {
-		panic(err)
-	}
+			return NewVMessInboundHandler(space, allowedClients), nil
+		})
 }

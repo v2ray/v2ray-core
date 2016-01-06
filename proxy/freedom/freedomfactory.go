@@ -7,9 +7,8 @@ import (
 )
 
 func init() {
-	if err := internal.RegisterOutboundConnectionHandlerFactory("freedom", func(space app.Space, config interface{}) (proxy.OutboundConnectionHandler, error) {
-		return &FreedomConnection{space: space}, nil
-	}); err != nil {
-		panic(err)
-	}
+	internal.MustRegisterOutboundConnectionHandlerCreator("freedom",
+		func(space app.Space, config interface{}) (proxy.OutboundConnectionHandler, error) {
+			return &FreedomConnection{space: space}, nil
+		})
 }

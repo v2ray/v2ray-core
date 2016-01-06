@@ -25,12 +25,24 @@ func RegisterInboundConnectionHandlerFactory(name string, creator InboundConnect
 	return nil
 }
 
+func MustRegisterInboundConnectionHandlerCreator(name string, creator InboundConnectionHandlerCreator) {
+	if err := RegisterInboundConnectionHandlerFactory(name, creator); err != nil {
+		panic(err)
+	}
+}
+
 func RegisterOutboundConnectionHandlerFactory(name string, creator OutboundConnectionHandlerCreator) error {
 	if _, found := outboundFactories[name]; found {
 		return ErrorNameExists
 	}
 	outboundFactories[name] = creator
 	return nil
+}
+
+func MustRegisterOutboundConnectionHandlerCreator(name string, creator OutboundConnectionHandlerCreator) {
+	if err := RegisterOutboundConnectionHandlerFactory(name, creator); err != nil {
+		panic(err)
+	}
 }
 
 func CreateInboundConnectionHandler(name string, space app.Space, rawConfig []byte) (proxy.InboundConnectionHandler, error) {

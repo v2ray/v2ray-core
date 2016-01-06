@@ -249,9 +249,10 @@ func TestSocksUdpSend(t *testing.T) {
 		ConnOutput: connOutput,
 	}
 
-	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (v2proxy.OutboundConnectionHandler, error) {
-		return och, nil
-	})
+	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och",
+		func(space app.Space, config interface{}) (v2proxy.OutboundConnectionHandler, error) {
+			return och, nil
+		})
 	assert.Error(err).IsNil()
 
 	config := mocks.Config{

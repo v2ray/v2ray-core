@@ -7,9 +7,8 @@ import (
 )
 
 func init() {
-	if err := internal.RegisterInboundConnectionHandlerFactory("http", func(space app.Space, rawConfig interface{}) (proxy.InboundConnectionHandler, error) {
-		return NewHttpProxyServer(space, rawConfig.(Config)), nil
-	}); err != nil {
-		panic(err)
-	}
+	internal.MustRegisterInboundConnectionHandlerCreator("http",
+		func(space app.Space, rawConfig interface{}) (proxy.InboundConnectionHandler, error) {
+			return NewHttpProxyServer(space, rawConfig.(Config)), nil
+		})
 }
