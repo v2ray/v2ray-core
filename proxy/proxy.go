@@ -9,9 +9,9 @@ import (
 
 // A InboundConnectionHandler handles inbound network connections to V2Ray.
 type InboundConnectionHandler interface {
-	// Listen starts a InboundConnectionHandler by listen on a specific port. This method is called
-	// exactly once during runtime.
+	// Listen starts a InboundConnectionHandler by listen on a specific port.
 	Listen(port v2net.Port) error
+	// Close stops the handler to accepting anymore inbound connections.
 	Close()
 }
 
