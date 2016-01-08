@@ -28,6 +28,14 @@ func (this *TestUser) Level() vmess.UserLevel {
 	return this.level
 }
 
+func (this *TestUser) AlterIDs() []*vmess.ID {
+	return nil
+}
+
+func (this *TestUser) AnyValidID() *vmess.ID {
+	return this.id
+}
+
 func TestVMessSerialization(t *testing.T) {
 	v2testing.Current(t)
 
