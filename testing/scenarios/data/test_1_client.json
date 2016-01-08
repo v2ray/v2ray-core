@@ -16,7 +16,10 @@
           "address": "127.0.0.1",
           "port": 50001,
           "users": [
-            {"id": "d17a1af7-efa5-42ca-b7e9-6a35282d737f"}
+            {
+              "id": "d17a1af7-efa5-42ca-b7e9-6a35282d737f",
+              "alterId": 10
+            }
           ]
         }
       ]

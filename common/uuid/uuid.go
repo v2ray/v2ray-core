@@ -1,6 +1,8 @@
 package uuid
 
 import (
+	"bytes"
+	"crypto/md5"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
@@ -22,7 +24,30 @@ func (this *UUID) String() string {
 }
 
 func (this *UUID) Bytes() []byte {
-	return this.byteValue[:]
+	return this.byteValue
+}
+
+func (this *UUID) Equals(another *UUID) bool {
+	if this == nil && another == nil {
+		return true
+	}
+	if this == nil || another == nil {
+		return false
+	}
+	return bytes.Equal(this.Bytes(), another.Bytes())
+}
+
+// Next generates a deterministic random UUID based on this UUID.
+func (this *UUID) Next() *UUID {
+	md5hash := md5.New()
+	md5hash.Write(this.Bytes())
+	md5hash.Write([]byte("16167dc8-16b6-4e6d-b8bb-65dd68113a81"))
+	for {
+		newid, _ := ParseBytes(md5hash.Sum(nil))
+		if !newid.Equals(this) {
+			return newid
+		}
+	}
 }
 
 func bytesToString(bytes []byte) string {

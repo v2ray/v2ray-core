@@ -29,6 +29,10 @@ func (this *ID) String() string {
 	return this.uuid.String()
 }
 
+func (this *ID) UUID() *uuid.UUID {
+	return this.uuid
+}
+
 func NewID(uuid *uuid.UUID) *ID {
 	md5hash := md5.New()
 	md5hash.Write(uuid.Bytes())

@@ -45,6 +45,10 @@ func (this *VMessInboundHandler) Close() {
 	}
 }
 
+func (this *VMessInboundHandler) AddUser(user vmess.User) {
+
+}
+
 func (this *VMessInboundHandler) Listen(port v2net.Port) error {
 	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   []byte{0, 0, 0, 0},

@@ -17,6 +17,14 @@ func (this *StaticUser) Level() vmess.UserLevel {
 	return vmess.UserLevelUntrusted
 }
 
+func (this *StaticUser) AlterIDs() []*vmess.ID {
+	return nil
+}
+
+func (this *StaticUser) AnyValidID() *vmess.ID {
+	return this.id
+}
+
 type StaticUserSet struct {
 }
 
