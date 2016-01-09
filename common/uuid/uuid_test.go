@@ -50,3 +50,12 @@ func TestRandom(t *testing.T) {
 	assert.StringLiteral(uuid.String()).NotEquals(uuid2.String())
 	assert.Bytes(uuid.Bytes()).NotEquals(uuid2.Bytes())
 }
+
+func TestEquals(t *testing.T) {
+	v2testing.Current(t)
+
+	var uuid *UUID = nil
+	var uuid2 *UUID = nil
+	assert.Bool(uuid.Equals(uuid2)).IsTrue()
+	assert.Bool(uuid.Equals(New())).IsFalse()
+}

@@ -47,6 +47,7 @@ func (this *UUID) Next() *UUID {
 		if !newid.Equals(this) {
 			return newid
 		}
+		md5hash.Write([]byte("533eff8a-4113-4b10-b5ce-0f5d76b98cd2"))
 	}
 }
 
