@@ -1,9 +1,5 @@
 package alloc
 
-import (
-	"time"
-)
-
 // Buffer is a recyclable allocation of a byte array. Buffer.Release() recycles
 // the buffer into an internal buffer pool, in order to recreate a buffer more
 // quickly.
@@ -78,16 +74,14 @@ type bufferPool struct {
 	buffers2Keep int
 }
 
-func newBufferPool(bufferSize, buffers2Keep, poolSize int) *bufferPool {
+func newBufferPool(bufferSize, poolSize int) *bufferPool {
 	pool := &bufferPool{
-		chain:        make(chan []byte, poolSize),
-		bufferSize:   bufferSize,
-		buffers2Keep: buffers2Keep,
+		chain:      make(chan []byte, poolSize),
+		bufferSize: bufferSize,
 	}
-	for i := 0; i < buffers2Keep; i++ {
+	for i := 0; i < poolSize; i++ {
 		pool.chain <- make([]byte, bufferSize)
 	}
-	go pool.cleanup(time.Tick(1 * time.Second))
 	return pool
 }
 
@@ -112,26 +106,9 @@ func (p *bufferPool) free(buffer *Buffer) {
 	}
 }
 
-func (p *bufferPool) cleanup(tick <-chan time.Time) {
-	for range tick {
-		pSize := len(p.chain)
-		if pSize > p.buffers2Keep {
-			<-p.chain
-			continue
-		}
-		for delta := p.buffers2Keep - pSize; delta > 0; delta-- {
-			select {
-			case p.chain <- make([]byte, p.bufferSize):
-			default:
-				break
-			}
-		}
-	}
-}
-
-var smallPool = newBufferPool(1024, 64, 512)
-var mediumPool = newBufferPool(8*1024, 256, 2048)
-var largePool = newBufferPool(64*1024, 128, 1024)
+var smallPool = newBufferPool(1024, 256)
+var mediumPool = newBufferPool(8*1024, 512)
+var largePool = newBufferPool(64*1024, 128)
 
 // NewSmallBuffer creates a Buffer with 1K bytes of arbitrary content.
 func NewSmallBuffer() *Buffer {
