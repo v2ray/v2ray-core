@@ -7,11 +7,11 @@ VER="v1.2"
 ARCH=$(uname -m)
 VDIS="64"
 
-if [ "$ARCH" == "i686" ] || [ "$ARCH" == "i386" ]; then
+if [[ "$ARCH" == "i686" ]] || [[ "$ARCH" == "i386" ]]; then
   VDIS="32"
-elif [ "$ARCH" == *"armv7"* ]; then
+elif [[ "$ARCH" == *"armv7"* ]]; then
   VDIS="arm"
-elif [ "$ARCH" == *"armv8"* ]; then
+elif [[ "$ARCH" == *"armv8"* ]]; then
   VDIS="arm64"
 fi
 
