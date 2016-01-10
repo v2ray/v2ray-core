@@ -15,12 +15,11 @@ var (
 )
 
 type UUID struct {
-	byteValue   []byte
-	stringValue string
+	byteValue []byte
 }
 
 func (this *UUID) String() string {
-	return this.stringValue
+	return bytesToString(this.byteValue)
 }
 
 func (this *UUID) Bytes() []byte {
@@ -75,8 +74,7 @@ func ParseBytes(bytes []byte) (*UUID, error) {
 		return nil, InvalidID
 	}
 	return &UUID{
-		byteValue:   bytes,
-		stringValue: bytesToString(bytes),
+		byteValue: bytes,
 	}, nil
 }
 
@@ -87,8 +85,7 @@ func ParseString(str string) (*UUID, error) {
 	}
 
 	uuid := &UUID{
-		byteValue:   make([]byte, 16),
-		stringValue: str,
+		byteValue: make([]byte, 16),
 	}
 	b := uuid.byteValue[:]
 
