@@ -90,6 +90,8 @@ func (queue *TimedQueue) cleanup(tick <-chan time.Time) {
 				queue.queue.Swap(i, queue.queue.Len()-1)
 				queue.queue.Pop()
 				changed = true
+			} else {
+				break
 			}
 		}
 		if changed {
