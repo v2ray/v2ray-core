@@ -1,5 +1,9 @@
 package alloc
 
+import (
+	"sync"
+)
+
 // Buffer is a recyclable allocation of a byte array. Buffer.Release() recycles
 // the buffer into an internal buffer pool, in order to recreate a buffer more
 // quickly.
@@ -69,15 +73,16 @@ func (b *Buffer) Write(data []byte) (int, error) {
 }
 
 type bufferPool struct {
-	chain        chan []byte
-	bufferSize   int
-	buffers2Keep int
+	chain     chan []byte
+	allocator *sync.Pool
 }
 
 func newBufferPool(bufferSize, poolSize int) *bufferPool {
 	pool := &bufferPool{
-		chain:      make(chan []byte, poolSize),
-		bufferSize: bufferSize,
+		chain: make(chan []byte, poolSize),
+		allocator: &sync.Pool{
+			New: func() interface{} { return make([]byte, bufferSize) },
+		},
 	}
 	for i := 0; i < poolSize; i++ {
 		pool.chain <- make([]byte, bufferSize)
@@ -90,7 +95,7 @@ func (p *bufferPool) allocate() *Buffer {
 	select {
 	case b = <-p.chain:
 	default:
-		b = make([]byte, p.bufferSize)
+		b = p.allocator.Get().([]byte)
 	}
 	return &Buffer{
 		head:  b,
@@ -103,6 +108,7 @@ func (p *bufferPool) free(buffer *Buffer) {
 	select {
 	case p.chain <- buffer.head:
 	default:
+		p.allocator.Put(buffer.head)
 	}
 }
 
