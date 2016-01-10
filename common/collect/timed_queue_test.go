@@ -14,14 +14,9 @@ func TestTimedQueue(t *testing.T) {
 	removed := make(map[string]bool)
 
 	nowSec := time.Now().Unix()
-	q := NewTimedQueue(2)
-
-	go func() {
-		for {
-			entry := <-q.RemovedEntries()
-			removed[entry.(string)] = true
-		}
-	}()
+	q := NewTimedQueue(2, func(v interface{}) {
+		removed[v.(string)] = true
+	})
 
 	q.Add("Value1", nowSec)
 	q.Add("Value2", nowSec+5)

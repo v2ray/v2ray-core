@@ -32,22 +32,19 @@ type indexTimePair struct {
 
 func NewTimedUserSet() UserSet {
 	tus := &TimedUserSet{
-		validUsers:          make([]vmess.User, 0, 16),
-		userHash:            make(map[string]indexTimePair, 512),
-		userHashDeleteQueue: collect.NewTimedQueue(updateIntervalSec),
-		access:              sync.RWMutex{},
+		validUsers: make([]vmess.User, 0, 16),
+		userHash:   make(map[string]indexTimePair, 512),
+		access:     sync.RWMutex{},
 	}
+	tus.userHashDeleteQueue = collect.NewTimedQueue(updateIntervalSec, tus.removeEntry)
 	go tus.updateUserHash(time.Tick(updateIntervalSec * time.Second))
-	go tus.removeEntries(tus.userHashDeleteQueue.RemovedEntries())
 	return tus
 }
 
-func (us *TimedUserSet) removeEntries(entries <-chan interface{}) {
-	for entry := range entries {
-		us.access.Lock()
-		delete(us.userHash, entry.(string))
-		us.access.Unlock()
-	}
+func (us *TimedUserSet) removeEntry(entry interface{}) {
+	us.access.Lock()
+	delete(us.userHash, entry.(string))
+	us.access.Unlock()
 }
 
 func (us *TimedUserSet) generateNewHashes(lastSec, nowSec int64, idx int, id *vmess.ID) {
