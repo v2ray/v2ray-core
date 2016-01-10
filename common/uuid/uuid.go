@@ -14,16 +14,14 @@ var (
 	InvalidID = errors.New("Invalid ID.")
 )
 
-type UUID struct {
-	byteValue []byte
-}
+type UUID [16]byte
 
 func (this *UUID) String() string {
-	return bytesToString(this.byteValue)
+	return bytesToString(this.Bytes())
 }
 
 func (this *UUID) Bytes() []byte {
-	return this.byteValue
+	return this[:]
 }
 
 func (this *UUID) Equals(another *UUID) bool {
@@ -63,19 +61,18 @@ func bytesToString(bytes []byte) string {
 }
 
 func New() *UUID {
-	bytes := make([]byte, 16)
-	rand.Read(bytes)
-	uuid, _ := ParseBytes(bytes)
+	uuid := new(UUID)
+	rand.Read(uuid.Bytes())
 	return uuid
 }
 
-func ParseBytes(bytes []byte) (*UUID, error) {
-	if len(bytes) != 16 {
+func ParseBytes(b []byte) (*UUID, error) {
+	if len(b) != 16 {
 		return nil, InvalidID
 	}
-	return &UUID{
-		byteValue: bytes,
-	}, nil
+	uuid := new(UUID)
+	copy(uuid[:], b)
+	return uuid, nil
 }
 
 func ParseString(str string) (*UUID, error) {
@@ -84,10 +81,8 @@ func ParseString(str string) (*UUID, error) {
 		return nil, InvalidID
 	}
 
-	uuid := &UUID{
-		byteValue: make([]byte, 16),
-	}
-	b := uuid.byteValue[:]
+	uuid := new(UUID)
+	b := uuid.Bytes()
 
 	for _, byteGroup := range byteGroups {
 		if text[0] == '-' {
