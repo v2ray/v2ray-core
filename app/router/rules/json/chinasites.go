@@ -111,6 +111,7 @@ func init() {
 		anySubDomain + "baixing" + dotNet,
 		anySubDomain + "bankcomm" + dotCom,
 		anySubDomain + "bankofchina" + dotCom,
+		anySubDomain + "bcy" + dotNet,
 		anySubDomain + "bdimg" + dotCom,
 		anySubDomain + "bdstatic" + dotCom,
 		anySubDomain + "bilibili" + dotCom,
