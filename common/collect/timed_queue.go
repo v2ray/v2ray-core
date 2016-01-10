@@ -73,7 +73,7 @@ func (queue *TimedQueue) Add(value interface{}, time2Remove int64) {
 	}
 	queue.access.Unlock()
 	if removedEntry != nil {
-		queue.removedCallback(removedEntry)
+		queue.removedCallback(removedEntry.value)
 	}
 }
 
