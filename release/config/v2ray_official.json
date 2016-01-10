@@ -32,16 +32,19 @@
         {
           "type": "field",
           "port": 80,
+          "network": "tcp",
           "outboundTag": "pass"
         },
         {
           "type": "field",
           "port": 443,
+          "network": "tcp",
           "outboundTag": "pass"
         },
         {
           "type": "field",
           "port": 53,
+          "network": "tcp,udp",
           "outboundTag": "pass"
         }
       ]
