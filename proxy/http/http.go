@@ -106,6 +106,7 @@ func (this *HttpProxyServer) handleConnection(conn *net.TCPConn) {
 
 	request, err := http.ReadRequest(reader)
 	if err != nil {
+		log.Warning("Failed to read http request: %v", err)
 		return
 	}
 	log.Info("Request to Method [%s] Host [%s] with URL [%s]", request.Method, request.Host, request.URL.String())
@@ -120,6 +121,7 @@ func (this *HttpProxyServer) handleConnection(conn *net.TCPConn) {
 	dest, err := parseHost(host, defaultPort)
 	if err != nil {
 		log.Warning("Malformed proxy host (%s): %v", host, err)
+		return
 	}
 	if strings.ToUpper(request.Method) == "CONNECT" {
 		this.handleConnect(request, dest, reader, conn)
