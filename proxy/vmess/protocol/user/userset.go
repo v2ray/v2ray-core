@@ -13,16 +13,23 @@ const (
 	cacheDurationSec  = 120
 )
 
+type idEntry struct {
+	id      *vmess.ID
+	userIdx int
+	lastSec int64
+	hashes  *collect.SizedQueue
+}
+
 type UserSet interface {
 	AddUser(user vmess.User) error
 	GetUser(timeHash []byte) (vmess.User, int64, bool)
 }
 
 type TimedUserSet struct {
-	validUsers          []vmess.User
-	userHash            map[string]indexTimePair
-	userHashDeleteQueue *collect.TimedQueue
-	access              sync.RWMutex
+	validUsers []vmess.User
+	userHash   map[string]indexTimePair
+	ids        []*idEntry
+	access     sync.RWMutex
 }
 
 type indexTimePair struct {
@@ -35,55 +42,63 @@ func NewTimedUserSet() UserSet {
 		validUsers: make([]vmess.User, 0, 16),
 		userHash:   make(map[string]indexTimePair, 512),
 		access:     sync.RWMutex{},
+		ids:        make([]*idEntry, 0, 512),
 	}
-	tus.userHashDeleteQueue = collect.NewTimedQueue(updateIntervalSec, tus.removeEntry)
 	go tus.updateUserHash(time.Tick(updateIntervalSec * time.Second))
 	return tus
 }
 
-func (us *TimedUserSet) removeEntry(entry interface{}) {
-	us.access.Lock()
-	delete(us.userHash, entry.(string))
-	us.access.Unlock()
-}
-
-func (us *TimedUserSet) generateNewHashes(lastSec, nowSec int64, idx int, id *vmess.ID) {
+func (us *TimedUserSet) generateNewHashes(nowSec int64, idx int, entry *idEntry) {
 	idHash := NewTimeHash(HMACHash{})
-	for lastSec < nowSec {
-		idHash := idHash.Hash(id.Bytes(), lastSec)
+	for entry.lastSec <= nowSec {
+		idHashSlice := idHash.Hash(entry.id.Bytes(), entry.lastSec)
+		hashValue := string(idHashSlice)
 		us.access.Lock()
-		us.userHash[string(idHash)] = indexTimePair{idx, lastSec}
+		us.userHash[hashValue] = indexTimePair{idx, entry.lastSec}
 		us.access.Unlock()
-		us.userHashDeleteQueue.Add(string(idHash), lastSec+2*cacheDurationSec)
-		lastSec++
+
+		hash2Remove := entry.hashes.Put(hashValue)
+		if hash2Remove != nil {
+			us.access.Lock()
+			delete(us.userHash, hash2Remove.(string))
+			us.access.Unlock()
+		}
+		entry.lastSec++
 	}
 }
 
 func (us *TimedUserSet) updateUserHash(tick <-chan time.Time) {
-	lastSec := time.Now().Unix() - cacheDurationSec
-
 	for now := range tick {
 		nowSec := now.Unix() + cacheDurationSec
-		for idx, user := range us.validUsers {
-			us.generateNewHashes(lastSec, nowSec, idx, user.ID())
-			for _, alterid := range user.AlterIDs() {
-				us.generateNewHashes(lastSec, nowSec, idx, alterid)
-			}
+		for _, entry := range us.ids {
+			us.generateNewHashes(nowSec, entry.userIdx, entry)
 		}
-		lastSec = nowSec
 	}
 }
 
 func (us *TimedUserSet) AddUser(user vmess.User) error {
-	id := user.ID()
 	idx := len(us.validUsers)
 	us.validUsers = append(us.validUsers, user)
 
 	nowSec := time.Now().Unix()
-	lastSec := nowSec - cacheDurationSec
-	us.generateNewHashes(lastSec, nowSec+cacheDurationSec, idx, id)
+
+	entry := &idEntry{
+		id:      user.ID(),
+		userIdx: idx,
+		lastSec: nowSec - cacheDurationSec,
+		hashes:  collect.NewSizedQueue(2*cacheDurationSec + 1),
+	}
+	us.generateNewHashes(nowSec+cacheDurationSec, idx, entry)
+	us.ids = append(us.ids, entry)
 	for _, alterid := range user.AlterIDs() {
-		us.generateNewHashes(lastSec, nowSec+cacheDurationSec, idx, alterid)
+		entry := &idEntry{
+			id:      alterid,
+			userIdx: idx,
+			lastSec: nowSec - cacheDurationSec,
+			hashes:  collect.NewSizedQueue(2*cacheDurationSec + 1),
+		}
+		us.generateNewHashes(nowSec+cacheDurationSec, idx, entry)
+		us.ids = append(us.ids, entry)
 	}
 
 	return nil
