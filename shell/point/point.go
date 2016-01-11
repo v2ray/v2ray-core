@@ -160,10 +160,8 @@ func (this *Point) DispatchToOutbound(context app.Context, packet v2net.Packet) 
 	dispatcher := this.och
 
 	if this.router != nil {
-		tag, err := this.router.TakeDetour(dest)
-		if err == nil {
-			handler, found := this.odh[tag]
-			if found {
+		if tag, err := this.router.TakeDetour(dest); err == nil {
+			if handler, found := this.odh[tag]; found {
 				dispatcher = handler
 			}
 		}
