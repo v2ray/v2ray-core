@@ -120,6 +120,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *net.TCPConn) error
 	aesStream, err := v2crypto.NewAesEncryptionStream(responseKey[:], responseIV[:])
 	if err != nil {
 		log.Error("VMessIn: Failed to create AES decryption stream: %v", err)
+		close(input)
 		return err
 	}
 
