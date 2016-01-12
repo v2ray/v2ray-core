@@ -2,10 +2,10 @@
 package protocol
 
 import (
+	"crypto/md5"
 	"encoding/binary"
 	"hash/fnv"
 	"io"
-	"time"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2crypto "github.com/v2ray/v2ray-core/common/crypto"
@@ -81,7 +81,10 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 		return nil, proxy.InvalidAuthentication
 	}
 
-	aesStream, err := v2crypto.NewAesDecryptionStream(userObj.ID().CmdKey(), user.Int64Hash(timeSec))
+	timestampHash := user.TimestampHash()
+	timestampHash.Write(timeSec.HashBytes())
+	iv := timestampHash.Sum(nil)
+	aesStream, err := v2crypto.NewAesDecryptionStream(userObj.ID().CmdKey(), iv)
 	if err != nil {
 		log.Debug("VMess: Failed to create AES stream: %v", err)
 		return nil, err
@@ -169,15 +172,16 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 }
 
 // ToBytes returns a VMessRequest in the form of byte array.
-func (this *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 user.RandomInt64InRange, buffer *alloc.Buffer) (*alloc.Buffer, error) {
+func (this *VMessRequest) ToBytes(timestampGenerator user.RandomTimestampGenerator, buffer *alloc.Buffer) (*alloc.Buffer, error) {
 	if buffer == nil {
 		buffer = alloc.NewSmallBuffer().Clear()
 	}
 
-	counter := randomRangeInt64(time.Now().Unix(), 30)
-	hash := idHash.Hash(this.User.AnyValidID().Bytes(), counter)
+	timestamp := timestampGenerator.Next()
+	idHash := user.IDHash(this.User.AnyValidID().Bytes())
+	idHash.Write(timestamp.Bytes())
 
-	buffer.Append(hash)
+	buffer.Append(idHash.Sum(nil))
 
 	encryptionBegin := buffer.Len()
 
@@ -209,7 +213,10 @@ func (this *VMessRequest) ToBytes(idHash user.CounterHash, randomRangeInt64 user
 	buffer.AppendBytes(byte(fnvHash>>24), byte(fnvHash>>16), byte(fnvHash>>8), byte(fnvHash))
 	encryptionEnd += 4
 
-	aesStream, err := v2crypto.NewAesEncryptionStream(this.User.ID().CmdKey(), user.Int64Hash(counter))
+	timestampHash := md5.New()
+	timestampHash.Write(timestamp.HashBytes())
+	iv := timestampHash.Sum(nil)
+	aesStream, err := v2crypto.NewAesEncryptionStream(this.User.ID().CmdKey(), iv)
 	if err != nil {
 		return nil, err
 	}

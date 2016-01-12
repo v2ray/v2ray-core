@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"io"
 	"testing"
+	"time"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/uuid"
@@ -14,6 +15,14 @@ import (
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
+
+type FakeTimestampGenerator struct {
+	timestamp user.Timestamp
+}
+
+func (this *FakeTimestampGenerator) Next() user.Timestamp {
+	return this.timestamp
+}
 
 type TestUser struct {
 	id    *vmess.ID
@@ -48,7 +57,7 @@ func TestVMessSerialization(t *testing.T) {
 		id: userId,
 	}
 
-	userSet := mocks.MockUserSet{[]vmess.User{}, make(map[string]int), make(map[string]int64)}
+	userSet := mocks.MockUserSet{[]vmess.User{}, make(map[string]int), make(map[string]user.Timestamp)}
 	userSet.AddUser(testUser)
 
 	request := new(VMessRequest)
@@ -66,9 +75,9 @@ func TestVMessSerialization(t *testing.T) {
 	request.Address = v2net.DomainAddress("v2ray.com")
 	request.Port = v2net.Port(80)
 
-	mockTime := int64(1823730)
+	mockTime := user.Timestamp(1823730)
 
-	buffer, err := request.ToBytes(user.NewTimeHash(user.HMACHash{}), func(base int64, delta int) int64 { return mockTime }, nil)
+	buffer, err := request.ToBytes(&FakeTimestampGenerator{timestamp: mockTime}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,7 +113,7 @@ func BenchmarkVMessRequestWriting(b *testing.B) {
 	assert.Error(err).IsNil()
 
 	userId := vmess.NewID(id)
-	userSet := mocks.MockUserSet{[]vmess.User{}, make(map[string]int), make(map[string]int64)}
+	userSet := mocks.MockUserSet{[]vmess.User{}, make(map[string]int), make(map[string]user.Timestamp)}
 
 	testUser := &TestUser{
 		id: userId,
@@ -126,6 +135,6 @@ func BenchmarkVMessRequestWriting(b *testing.B) {
 	request.Port = v2net.Port(80)
 
 	for i := 0; i < b.N; i++ {
-		request.ToBytes(user.NewTimeHash(user.HMACHash{}), user.GenerateRandomInt64InRange, nil)
+		request.ToBytes(user.NewRandomTimestampGenerator(user.Timestamp(time.Now().Unix()), 30), nil)
 	}
 }

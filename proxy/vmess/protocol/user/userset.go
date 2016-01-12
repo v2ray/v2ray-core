@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/v2ray/v2ray-core/common/collect"
+	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/proxy/vmess"
 )
 
@@ -13,16 +14,32 @@ const (
 	cacheDurationSec  = 120
 )
 
+type Timestamp int64
+
+func (this Timestamp) Bytes() []byte {
+	return serial.Int64Literal(this).Bytes()
+}
+
+func (this Timestamp) HashBytes() []byte {
+	once := this.Bytes()
+	bytes := make([]byte, 0, 32)
+	bytes = append(bytes, once...)
+	bytes = append(bytes, once...)
+	bytes = append(bytes, once...)
+	bytes = append(bytes, once...)
+	return bytes
+}
+
 type idEntry struct {
 	id      *vmess.ID
 	userIdx int
-	lastSec int64
+	lastSec Timestamp
 	hashes  *collect.SizedQueue
 }
 
 type UserSet interface {
 	AddUser(user vmess.User) error
-	GetUser(timeHash []byte) (vmess.User, int64, bool)
+	GetUser(timeHash []byte) (vmess.User, Timestamp, bool)
 }
 
 type TimedUserSet struct {
@@ -34,7 +51,7 @@ type TimedUserSet struct {
 
 type indexTimePair struct {
 	index   int
-	timeSec int64
+	timeSec Timestamp
 }
 
 func NewTimedUserSet() UserSet {
@@ -48,10 +65,11 @@ func NewTimedUserSet() UserSet {
 	return tus
 }
 
-func (us *TimedUserSet) generateNewHashes(nowSec int64, idx int, entry *idEntry) {
-	idHash := NewTimeHash(HMACHash{})
+func (us *TimedUserSet) generateNewHashes(nowSec Timestamp, idx int, entry *idEntry) {
 	for entry.lastSec <= nowSec {
-		idHashSlice := idHash.Hash(entry.id.Bytes(), entry.lastSec)
+		idHash := IDHash(entry.id.Bytes())
+		idHash.Write(entry.lastSec.Bytes())
+		idHashSlice := idHash.Sum(nil)
 		hashValue := string(idHashSlice)
 		us.access.Lock()
 		us.userHash[hashValue] = indexTimePair{idx, entry.lastSec}
@@ -69,7 +87,7 @@ func (us *TimedUserSet) generateNewHashes(nowSec int64, idx int, entry *idEntry)
 
 func (us *TimedUserSet) updateUserHash(tick <-chan time.Time) {
 	for now := range tick {
-		nowSec := now.Unix() + cacheDurationSec
+		nowSec := Timestamp(now.Unix() + cacheDurationSec)
 		for _, entry := range us.ids {
 			us.generateNewHashes(nowSec, entry.userIdx, entry)
 		}
@@ -85,26 +103,26 @@ func (us *TimedUserSet) AddUser(user vmess.User) error {
 	entry := &idEntry{
 		id:      user.ID(),
 		userIdx: idx,
-		lastSec: nowSec - cacheDurationSec,
+		lastSec: Timestamp(nowSec - cacheDurationSec),
 		hashes:  collect.NewSizedQueue(2*cacheDurationSec + 1),
 	}
-	us.generateNewHashes(nowSec+cacheDurationSec, idx, entry)
+	us.generateNewHashes(Timestamp(nowSec+cacheDurationSec), idx, entry)
 	us.ids = append(us.ids, entry)
 	for _, alterid := range user.AlterIDs() {
 		entry := &idEntry{
 			id:      alterid,
 			userIdx: idx,
-			lastSec: nowSec - cacheDurationSec,
+			lastSec: Timestamp(nowSec - cacheDurationSec),
 			hashes:  collect.NewSizedQueue(2*cacheDurationSec + 1),
 		}
-		us.generateNewHashes(nowSec+cacheDurationSec, idx, entry)
+		us.generateNewHashes(Timestamp(nowSec+cacheDurationSec), idx, entry)
 		us.ids = append(us.ids, entry)
 	}
 
 	return nil
 }
 
-func (us *TimedUserSet) GetUser(userHash []byte) (vmess.User, int64, bool) {
+func (us *TimedUserSet) GetUser(userHash []byte) (vmess.User, Timestamp, bool) {
 	defer us.access.RUnlock()
 	us.access.RLock()
 	pair, found := us.userHash[string(userHash)]

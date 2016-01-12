@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/common/alloc"
@@ -104,7 +105,7 @@ func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2
 
 	buffer := alloc.NewBuffer().Clear()
 	defer buffer.Release()
-	buffer, err = request.ToBytes(user.NewTimeHash(user.HMACHash{}), user.GenerateRandomInt64InRange, buffer)
+	buffer, err = request.ToBytes(user.NewRandomTimestampGenerator(user.Timestamp(time.Now().Unix()), 30), buffer)
 	if err != nil {
 		log.Error("VMessOut: Failed to serialize VMess request: %v", err)
 		return
