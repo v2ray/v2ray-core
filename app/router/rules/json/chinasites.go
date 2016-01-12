@@ -220,6 +220,7 @@ func init() {
 		anySubDomain + "lietou" + dotCom,
 		anySubDomain + "linkvans" + dotCom,
 		anySubDomain + "lightonus" + dotCom,
+		anySubDomain + "lofter" + dotCom,
 		anySubDomain + "lu" + dotCom,
 		anySubDomain + "lufax" + dotCom,
 		anySubDomain + "lufaxcdn" + dotCom,
