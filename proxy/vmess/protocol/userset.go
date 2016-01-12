@@ -44,7 +44,7 @@ type UserSet interface {
 
 type TimedUserSet struct {
 	validUsers []vmess.User
-	userHash   map[string]indexTimePair
+	userHash   map[[16]byte]indexTimePair
 	ids        []*idEntry
 	access     sync.RWMutex
 }
@@ -57,7 +57,7 @@ type indexTimePair struct {
 func NewTimedUserSet() UserSet {
 	tus := &TimedUserSet{
 		validUsers: make([]vmess.User, 0, 16),
-		userHash:   make(map[string]indexTimePair, 512),
+		userHash:   make(map[[16]byte]indexTimePair, 512),
 		access:     sync.RWMutex{},
 		ids:        make([]*idEntry, 0, 512),
 	}
@@ -66,21 +66,21 @@ func NewTimedUserSet() UserSet {
 }
 
 func (us *TimedUserSet) generateNewHashes(nowSec Timestamp, idx int, entry *idEntry) {
+	var hashValue [16]byte
+	idHash := IDHash(entry.id.Bytes())
 	for entry.lastSec <= nowSec {
-		idHash := IDHash(entry.id.Bytes())
 		idHash.Write(entry.lastSec.Bytes())
-		idHashSlice := idHash.Sum(nil)
-		hashValue := string(idHashSlice)
-		us.access.Lock()
-		us.userHash[hashValue] = indexTimePair{idx, entry.lastSec}
-		us.access.Unlock()
+		idHash.Sum(hashValue[:0])
+		idHash.Reset()
 
 		hash2Remove := entry.hashes.Put(hashValue)
+
+		us.access.Lock()
+		us.userHash[hashValue] = indexTimePair{idx, entry.lastSec}
 		if hash2Remove != nil {
-			us.access.Lock()
-			delete(us.userHash, hash2Remove.(string))
-			us.access.Unlock()
+			delete(us.userHash, hash2Remove.([16]byte))
 		}
+		us.access.Unlock()
 		entry.lastSec++
 	}
 }
@@ -125,7 +125,9 @@ func (us *TimedUserSet) AddUser(user vmess.User) error {
 func (us *TimedUserSet) GetUser(userHash []byte) (vmess.User, Timestamp, bool) {
 	defer us.access.RUnlock()
 	us.access.RLock()
-	pair, found := us.userHash[string(userHash)]
+	var fixedSizeHash [16]byte
+	copy(fixedSizeHash[:], userHash)
+	pair, found := us.userHash[fixedSizeHash]
 	if found {
 		return us.validUsers[pair.index], pair.timeSec, true
 	}
