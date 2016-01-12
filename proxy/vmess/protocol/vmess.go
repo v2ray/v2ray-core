@@ -180,7 +180,9 @@ func (this *VMessRequest) ToBytes(timestampGenerator RandomTimestampGenerator, b
 	idHash := IDHash(this.User.AnyValidID().Bytes())
 	idHash.Write(timestamp.Bytes())
 
-	buffer.Append(idHash.Sum(nil))
+	hashStart := buffer.Len()
+	buffer.Slice(0, hashStart+16)
+	idHash.Sum(buffer.Value[hashStart:hashStart])
 
 	encryptionBegin := buffer.Len()
 
