@@ -33,18 +33,15 @@ func (this *ID) UUID() *uuid.UUID {
 	return this.uuid
 }
 
+func (v ID) CmdKey() []byte {
+	return v.cmdKey[:]
+}
+
 func NewID(uuid *uuid.UUID) *ID {
+	id := &ID{uuid: uuid}
 	md5hash := md5.New()
 	md5hash.Write(uuid.Bytes())
 	md5hash.Write([]byte("c48619fe-8f02-49e0-b9e9-edf763e17e21"))
-	cmdKey := md5.Sum(nil)
-
-	return &ID{
-		uuid:   uuid,
-		cmdKey: cmdKey,
-	}
-}
-
-func (v ID) CmdKey() []byte {
-	return v.cmdKey[:]
+	md5.Sum(id.cmdKey[:0])
+	return id
 }
