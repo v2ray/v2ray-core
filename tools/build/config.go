@@ -55,6 +55,15 @@ func copyConfigFiles(dir string, goOS GoOS) error {
 		if err := copyConfigFile(src, dest, goOS, false); err != nil {
 			return err
 		}
+
+		if err := os.MkdirAll(filepath.Join(dir, "systemd"), os.ModeDir|0777); err != nil {
+			return err
+		}
+		src = filepath.Join(srcDir, "systemd", "v2ray.service")
+		dest = filepath.Join(dir, "systemd", "v2ray.service")
+		if err := copyConfigFile(src, dest, goOS, false); err != nil {
+			return err
+		}
 	}
 
 	return nil

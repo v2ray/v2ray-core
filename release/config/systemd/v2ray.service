@@ -1,0 +1,13 @@
+[Unit]
+Description=V2Ray Service
+After=network.target
+Wants=network.target
+
+[Service]
+Type=forking
+PIDFile=/var/run/v2ray.pid
+ExecStart=start-stop-daemon --start --quiet --pidfile /var/run/v2ray.pid --exec /usr/bin/v2ray/v2ray --background -m -- -config /etc/v2ray/config.json
+ExecStop=start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile /var/run/v2ray.pid
+
+[Install]
+WantedBy=multi-user.target
