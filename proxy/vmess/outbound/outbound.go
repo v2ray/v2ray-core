@@ -15,7 +15,6 @@ import (
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
-	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
@@ -105,7 +104,7 @@ func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2
 
 	buffer := alloc.NewBuffer().Clear()
 	defer buffer.Release()
-	buffer, err = request.ToBytes(user.NewRandomTimestampGenerator(user.Timestamp(time.Now().Unix()), 30), buffer)
+	buffer, err = request.ToBytes(protocol.NewRandomTimestampGenerator(protocol.Timestamp(time.Now().Unix()), 30), buffer)
 	if err != nil {
 		log.Error("VMessOut: Failed to serialize VMess request: %v", err)
 		return

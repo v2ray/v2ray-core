@@ -13,7 +13,6 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/vmess"
-	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 	"github.com/v2ray/v2ray-core/transport"
 )
 
@@ -55,11 +54,11 @@ func (this *VMessRequest) Destination() v2net.Destination {
 
 // VMessRequestReader is a parser to read VMessRequest from a byte stream.
 type VMessRequestReader struct {
-	vUserSet user.UserSet
+	vUserSet UserSet
 }
 
 // NewVMessRequestReader creates a new VMessRequestReader with a given UserSet
-func NewVMessRequestReader(vUserSet user.UserSet) *VMessRequestReader {
+func NewVMessRequestReader(vUserSet UserSet) *VMessRequestReader {
 	return &VMessRequestReader{
 		vUserSet: vUserSet,
 	}
@@ -81,7 +80,7 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 		return nil, proxy.InvalidAuthentication
 	}
 
-	timestampHash := user.TimestampHash()
+	timestampHash := TimestampHash()
 	timestampHash.Write(timeSec.HashBytes())
 	iv := timestampHash.Sum(nil)
 	aesStream, err := v2crypto.NewAesDecryptionStream(userObj.ID().CmdKey(), iv)
@@ -172,13 +171,13 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 }
 
 // ToBytes returns a VMessRequest in the form of byte array.
-func (this *VMessRequest) ToBytes(timestampGenerator user.RandomTimestampGenerator, buffer *alloc.Buffer) (*alloc.Buffer, error) {
+func (this *VMessRequest) ToBytes(timestampGenerator RandomTimestampGenerator, buffer *alloc.Buffer) (*alloc.Buffer, error) {
 	if buffer == nil {
 		buffer = alloc.NewSmallBuffer().Clear()
 	}
 
 	timestamp := timestampGenerator.Next()
-	idHash := user.IDHash(this.User.AnyValidID().Bytes())
+	idHash := IDHash(this.User.AnyValidID().Bytes())
 	idHash.Write(timestamp.Bytes())
 
 	buffer.Append(idHash.Sum(nil))

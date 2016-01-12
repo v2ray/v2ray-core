@@ -2,13 +2,13 @@ package mocks
 
 import (
 	"github.com/v2ray/v2ray-core/proxy/vmess"
-	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
+	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 )
 
 type MockUserSet struct {
 	Users      []vmess.User
 	UserHashes map[string]int
-	Timestamps map[string]user.Timestamp
+	Timestamps map[string]protocol.Timestamp
 }
 
 func (us *MockUserSet) AddUser(user vmess.User) error {
@@ -16,7 +16,7 @@ func (us *MockUserSet) AddUser(user vmess.User) error {
 	return nil
 }
 
-func (us *MockUserSet) GetUser(userhash []byte) (vmess.User, user.Timestamp, bool) {
+func (us *MockUserSet) GetUser(userhash []byte) (vmess.User, protocol.Timestamp, bool) {
 	idx, found := us.UserHashes[string(userhash)]
 	if found {
 		return us.Users[idx], us.Timestamps[string(userhash)], true

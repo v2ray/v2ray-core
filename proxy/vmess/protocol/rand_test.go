@@ -1,9 +1,10 @@
-package user
+package protocol_test
 
 import (
 	"testing"
 	"time"
 
+  . "github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
@@ -13,10 +14,7 @@ func TestGenerateRandomInt64InRange(t *testing.T) {
 
 	base := time.Now().Unix()
 	delta := 100
-	generator := &RealRandomTimestampGenerator{
-		base:  Timestamp(base),
-		delta: delta,
-	}
+	generator := NewRandomTimestampGenerator(Timestamp(base), delta)
 
 	for i := 0; i < 100; i++ {
 		v := int64(generator.Next())

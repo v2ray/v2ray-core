@@ -16,19 +16,18 @@ import (
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	"github.com/v2ray/v2ray-core/proxy/vmess"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
-	"github.com/v2ray/v2ray-core/proxy/vmess/protocol/user"
 )
 
 // Inbound connection handler that handles messages in VMess format.
 type VMessInboundHandler struct {
 	sync.Mutex
 	space     app.Space
-	clients   user.UserSet
+	clients   protocol.UserSet
 	accepting bool
 	listener  *net.TCPListener
 }
 
-func NewVMessInboundHandler(space app.Space, clients user.UserSet) *VMessInboundHandler {
+func NewVMessInboundHandler(space app.Space, clients protocol.UserSet) *VMessInboundHandler {
 	return &VMessInboundHandler{
 		space:   space,
 		clients: clients,
@@ -170,7 +169,7 @@ func init() {
 		func(space app.Space, rawConfig interface{}) (proxy.InboundConnectionHandler, error) {
 			config := rawConfig.(Config)
 
-			allowedClients := user.NewTimedUserSet()
+			allowedClients := protocol.NewTimedUserSet()
 			for _, user := range config.AllowedUsers() {
 				allowedClients.AddUser(user)
 			}

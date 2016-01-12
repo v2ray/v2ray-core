@@ -1,4 +1,4 @@
-package user
+package protocol
 
 import (
 	"math/rand"
