@@ -72,6 +72,7 @@ func init() {
 		anySubDomain + "360safe" + dotCom,
 		anySubDomain + "36kr" + dotCom,
 		anySubDomain + "39" + dotNet,
+		anySubDomain + "3dmgame" + dotCom,
 		anySubDomain + "4399" + dotCom,
 		anySubDomain + "50bang" + dotOrg,
 		anySubDomain + "51" + dotLa,
