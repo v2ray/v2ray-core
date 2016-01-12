@@ -59,3 +59,11 @@ func TestEquals(t *testing.T) {
 	assert.Bool(uuid.Equals(uuid2)).IsTrue()
 	assert.Bool(uuid.Equals(New())).IsFalse()
 }
+
+func TestNext(t *testing.T) {
+	v2testing.Current(t)
+
+	uuid := New()
+	uuid2 := uuid.Next()
+	assert.Bool(uuid.Equals(uuid2)).IsFalse()
+}

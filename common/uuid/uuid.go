@@ -39,8 +39,9 @@ func (this *UUID) Next() *UUID {
 	md5hash := md5.New()
 	md5hash.Write(this.Bytes())
 	md5hash.Write([]byte("16167dc8-16b6-4e6d-b8bb-65dd68113a81"))
+	newid := new(UUID)
 	for {
-		newid, _ := ParseBytes(md5hash.Sum(nil))
+		md5hash.Sum(newid[:0])
 		if !newid.Equals(this) {
 			return newid
 		}
