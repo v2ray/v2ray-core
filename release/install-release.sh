@@ -1,6 +1,17 @@
 #!/bin/bash
 
-echo "Please make sure unzip and daemon are installed before running this script."
+YUM_CMD=$(command -v yum)
+APT_CMD=$(command -v apt-get)
+
+if [ -n "${YUM_CMD}" ]; then
+  echo "Installing unzip and daemon via yum."
+  ${YUM_CMD} -y -q install unzip daemon
+elif [ -n "${APT_CMD}" ]; then
+  echo "Installing unzip and daemon via apt-get."
+  ${APT_CMD} -y -qq install unzip daemon
+else
+  echo "Please make sure unzip and daemon are installed."
+fi
 
 VER="v1.3"
 
