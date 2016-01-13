@@ -5,9 +5,11 @@ APT_CMD=$(command -v apt-get)
 
 if [ -n "${YUM_CMD}" ]; then
   echo "Installing unzip and daemon via yum."
+  ${YUM_CMD} -q makecache
   ${YUM_CMD} -y -q install unzip daemon
 elif [ -n "${APT_CMD}" ]; then
   echo "Installing unzip and daemon via apt-get."
+  ${APT_CMD} -qq update
   ${APT_CMD} -y -qq install unzip daemon
 else
   echo "Please make sure unzip and daemon are installed."
