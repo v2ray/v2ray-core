@@ -26,11 +26,15 @@ DAEMON_OPTS="-config /etc/v2ray/config.json"
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
 
 # Load the VERBOSE setting and other rcS variables
+if [ -f "/lib/init/vars.sh"]; then
 . /lib/init/vars.sh
+fi
 
+if [ -f "/lib/lsb/init-functions"]; then
 # Define LSB log_* functions.
 # Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
 . /lib/lsb/init-functions
+fi
 
 #
 # Function that starts the daemon/service
