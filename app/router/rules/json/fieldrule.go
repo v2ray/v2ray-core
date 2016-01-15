@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	v2netjson "github.com/v2ray/v2ray-core/common/net/json"
 )
 
 type StringList []string
@@ -83,7 +82,7 @@ type FieldRule struct {
 	Domain  []DomainMatcher
 	IP      []*net.IPNet
 	Port    *v2net.PortRange
-	Network v2net.NetworkList
+	Network *v2net.NetworkList
 }
 
 func (this *FieldRule) Apply(dest v2net.Destination) bool {
@@ -139,10 +138,10 @@ func (this *FieldRule) Apply(dest v2net.Destination) bool {
 func (this *FieldRule) UnmarshalJSON(data []byte) error {
 	type RawFieldRule struct {
 		Rule
-		Domain  *StringList            `json:"domain"`
-		IP      *StringList            `json:"ip"`
-		Port    *v2net.PortRange       `json:"port"`
-		Network *v2netjson.NetworkList `json:"network"`
+		Domain  *StringList        `json:"domain"`
+		IP      *StringList        `json:"ip"`
+		Port    *v2net.PortRange   `json:"port"`
+		Network *v2net.NetworkList `json:"network"`
 	}
 	rawFieldRule := RawFieldRule{}
 	err := json.Unmarshal(data, &rawFieldRule)
