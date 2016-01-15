@@ -1,4 +1,6 @@
-package json
+// +build json
+
+package net
 
 import (
 	"encoding/json"
@@ -7,25 +9,11 @@ import (
 	"strings"
 
 	"github.com/v2ray/v2ray-core/common/log"
-	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
 var (
 	InvalidPortRange = errors.New("Invalid port range.")
 )
-
-type PortRange struct {
-	from v2net.Port
-	to   v2net.Port
-}
-
-func (this *PortRange) From() v2net.Port {
-	return this.from
-}
-
-func (this *PortRange) To() v2net.Port {
-	return this.to
-}
 
 func (this *PortRange) UnmarshalJSON(data []byte) error {
 	var maybeint int
@@ -35,8 +23,8 @@ func (this *PortRange) UnmarshalJSON(data []byte) error {
 			log.Error("Invalid port [%s]", string(data))
 			return InvalidPortRange
 		}
-		this.from = v2net.Port(maybeint)
-		this.to = v2net.Port(maybeint)
+		this.From = Port(maybeint)
+		this.To = Port(maybeint)
 		return nil
 	}
 
@@ -50,8 +38,8 @@ func (this *PortRange) UnmarshalJSON(data []byte) error {
 				log.Error("Invalid from port %s", pair[0])
 				return InvalidPortRange
 			}
-			this.from = v2net.Port(value)
-			this.to = v2net.Port(value)
+			this.From = Port(value)
+			this.To = Port(value)
 			return nil
 		} else if len(pair) == 2 {
 			from, err := strconv.Atoi(pair[0])
@@ -59,17 +47,17 @@ func (this *PortRange) UnmarshalJSON(data []byte) error {
 				log.Error("Invalid from port %s", pair[0])
 				return InvalidPortRange
 			}
-			this.from = v2net.Port(from)
+			this.From = Port(from)
 
 			to, err := strconv.Atoi(pair[1])
 			if err != nil || to <= 0 || to >= 65535 {
 				log.Error("Invalid to port %s", pair[1])
 				return InvalidPortRange
 			}
-			this.to = v2net.Port(to)
+			this.To = Port(to)
 
-			if this.from > this.to {
-				log.Error("Invalid port range %d -> %d", this.from, this.to)
+			if this.From > this.To {
+				log.Error("Invalid port range %d -> %d", this.From, this.To)
 				return InvalidPortRange
 			}
 			return nil

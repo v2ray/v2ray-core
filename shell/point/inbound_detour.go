@@ -23,8 +23,8 @@ type InboundDetourHandler struct {
 
 func (this *InboundDetourHandler) Initialize() error {
 	ports := this.config.PortRange()
-	this.ich = make([]*InboundConnectionHandlerWithPort, 0, ports.To()-ports.From()+1)
-	for i := ports.From(); i <= ports.To(); i++ {
+	this.ich = make([]*InboundConnectionHandlerWithPort, 0, ports.To-ports.From+1)
+	for i := ports.From; i <= ports.To; i++ {
 		ichConfig := this.config.Settings()
 		ich, err := proxyrepo.CreateInboundConnectionHandler(this.config.Protocol(), this.space, ichConfig)
 		if err != nil {

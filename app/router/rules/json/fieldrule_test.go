@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
@@ -47,9 +46,9 @@ func TestPortMatching(t *testing.T) {
 	v2testing.Current(t)
 
 	rule := &FieldRule{
-		Port: &v2nettesting.PortRange{
-			FromValue: 0,
-			ToValue:   100,
+		Port: &v2net.PortRange{
+			From: 0,
+			To:   100,
 		},
 	}
 	dest := v2net.TCPDestination(v2net.DomainAddress("www.v2ray.com"), 80)

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	v2netjson "github.com/v2ray/v2ray-core/common/net/json"
 	"github.com/v2ray/v2ray-core/shell/point"
 )
 
@@ -28,7 +27,7 @@ func (this *InboundDetourAllocationConfig) Concurrency() int {
 
 type InboundDetourConfig struct {
 	ProtocolValue   string                         `json:"protocol"`
-	PortRangeValue  *v2netjson.PortRange           `json:"port"`
+	PortRangeValue  *v2net.PortRange               `json:"port"`
 	SettingsValue   json.RawMessage                `json:"settings"`
 	TagValue        string                         `json:"tag"`
 	AllocationValue *InboundDetourAllocationConfig `json:"allocate"`
@@ -43,7 +42,7 @@ func (this *InboundDetourConfig) Protocol() string {
 }
 
 func (this *InboundDetourConfig) PortRange() v2net.PortRange {
-	return this.PortRangeValue
+	return *this.PortRangeValue
 }
 
 func (this *InboundDetourConfig) Settings() []byte {

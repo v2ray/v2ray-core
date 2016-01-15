@@ -82,7 +82,7 @@ type FieldRule struct {
 	Rule
 	Domain  []DomainMatcher
 	IP      []*net.IPNet
-	Port    v2net.PortRange
+	Port    *v2net.PortRange
 	Network v2net.NetworkList
 }
 
@@ -122,7 +122,7 @@ func (this *FieldRule) Apply(dest v2net.Destination) bool {
 
 	if this.Port != nil {
 		port := dest.Port()
-		if port.Value() < this.Port.From().Value() || port.Value() > this.Port.To().Value() {
+		if port.Value() < this.Port.From.Value() || port.Value() > this.Port.To.Value() {
 			return false
 		}
 	}
@@ -141,7 +141,7 @@ func (this *FieldRule) UnmarshalJSON(data []byte) error {
 		Rule
 		Domain  *StringList            `json:"domain"`
 		IP      *StringList            `json:"ip"`
-		Port    *v2netjson.PortRange   `json:"port"`
+		Port    *v2net.PortRange       `json:"port"`
 		Network *v2netjson.NetworkList `json:"network"`
 	}
 	rawFieldRule := RawFieldRule{}

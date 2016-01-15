@@ -21,3 +21,8 @@ func (this Port) Bytes() []byte {
 func (this Port) String() string {
 	return serial.Uint16Literal(this).String()
 }
+
+type PortRange struct {
+	From Port
+	To   Port
+}

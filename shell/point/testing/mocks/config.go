@@ -39,19 +39,6 @@ func (this *LogConfig) LogLevel() log.LogLevel {
 	return this.LogLevelValue
 }
 
-type PortRange struct {
-	FromValue v2net.Port
-	ToValue   v2net.Port
-}
-
-func (this *PortRange) From() v2net.Port {
-	return this.FromValue
-}
-
-func (this *PortRange) To() v2net.Port {
-	return this.ToValue
-}
-
 type InboundDetourAllocationConfig struct {
 	StrategyValue    string
 	ConcurrencyValue int
@@ -72,7 +59,7 @@ func (this *InboundDetourAllocationConfig) Concurrency() int {
 
 type InboundDetourConfig struct {
 	*ConnectionConfig
-	PortRangeValue     *PortRange
+	PortRangeValue     *v2net.PortRange
 	TagValue           string
 	AllocationStrategy *InboundDetourAllocationConfig
 }
@@ -86,7 +73,7 @@ func (this *InboundDetourConfig) Tag() string {
 }
 
 func (this *InboundDetourConfig) PortRange() v2net.PortRange {
-	return this.PortRangeValue
+	return *this.PortRangeValue
 }
 
 type OutboundDetourConfig struct {
