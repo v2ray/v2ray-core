@@ -1,33 +1,12 @@
 package json
 
 import (
-	"encoding/json"
 	"testing"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
-
-func TestStringListParsingList(t *testing.T) {
-	v2testing.Current(t)
-
-	rawJson := `["a", "b", "c", "d"]`
-	var strList StringList
-	err := json.Unmarshal([]byte(rawJson), &strList)
-	assert.Error(err).IsNil()
-	assert.Int(strList.Len()).Equals(4)
-}
-
-func TestStringListParsingString(t *testing.T) {
-	v2testing.Current(t)
-
-	rawJson := `"abcd"`
-	var strList StringList
-	err := json.Unmarshal([]byte(rawJson), &strList)
-	assert.Error(err).IsNil()
-	assert.Int(strList.Len()).Equals(1)
-}
 
 func TestDomainMatching(t *testing.T) {
 	v2testing.Current(t)

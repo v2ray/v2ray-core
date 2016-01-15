@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/v2ray/v2ray-core/app/dns"
-	dnstesting "github.com/v2ray/v2ray-core/app/dns/testing"
 	apptesting "github.com/v2ray/v2ray-core/app/testing"
 	netassert "github.com/v2ray/v2ray-core/common/net/testing/assert"
+	"github.com/v2ray/v2ray-core/common/serial"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 )
 
@@ -15,9 +15,9 @@ func TestDnsAdd(t *testing.T) {
 	v2testing.Current(t)
 
 	domain := "v2ray.com"
-	cache := dns.NewCache(&dnstesting.CacheConfig{
-		TrustedTags: map[string]bool{
-			"testtag": true,
+	cache := dns.NewCache(&dns.CacheConfig{
+		TrustedTags: map[serial.StringLiteral]bool{
+			serial.StringLiteral("testtag"): true,
 		},
 	})
 	ip := cache.Get(&apptesting.Context{}, domain)

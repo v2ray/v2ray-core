@@ -8,38 +8,8 @@ import (
 	"strings"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/common/serial"
 )
-
-type StringList []string
-
-func NewStringList(str ...string) *StringList {
-	list := StringList(str)
-	return &list
-}
-
-func (this *StringList) UnmarshalJSON(data []byte) error {
-	var strList []string
-	err := json.Unmarshal(data, &strList)
-	if err == nil {
-		*this = make([]string, len(strList))
-		copy(*this, strList)
-		return nil
-	}
-
-	var str string
-	err = json.Unmarshal(data, &str)
-	if err == nil {
-		*this = make([]string, 0, 1)
-		*this = append(*this, str)
-		return nil
-	}
-
-	return errors.New("Failed to unmarshal string list: " + string(data))
-}
-
-func (this *StringList) Len() int {
-	return len([]string(*this))
-}
 
 type DomainMatcher interface {
 	Match(domain string) bool
@@ -138,10 +108,10 @@ func (this *FieldRule) Apply(dest v2net.Destination) bool {
 func (this *FieldRule) UnmarshalJSON(data []byte) error {
 	type RawFieldRule struct {
 		Rule
-		Domain  *StringList        `json:"domain"`
-		IP      *StringList        `json:"ip"`
-		Port    *v2net.PortRange   `json:"port"`
-		Network *v2net.NetworkList `json:"network"`
+		Domain  *serial.StringLiteralList `json:"domain"`
+		IP      *serial.StringLiteralList `json:"ip"`
+		Port    *v2net.PortRange          `json:"port"`
+		Network *v2net.NetworkList        `json:"network"`
 	}
 	rawFieldRule := RawFieldRule{}
 	err := json.Unmarshal(data, &rawFieldRule)
@@ -156,14 +126,14 @@ func (this *FieldRule) UnmarshalJSON(data []byte) error {
 		this.Domain = make([]DomainMatcher, rawFieldRule.Domain.Len())
 		for idx, rawDomain := range *(rawFieldRule.Domain) {
 			var matcher DomainMatcher
-			if strings.HasPrefix(rawDomain, "regexp:") {
-				rawMatcher, err := NewRegexpDomainMatcher(rawDomain[7:])
+			if strings.HasPrefix(rawDomain.String(), "regexp:") {
+				rawMatcher, err := NewRegexpDomainMatcher(rawDomain.String()[7:])
 				if err != nil {
 					return err
 				}
 				matcher = rawMatcher
 			} else {
-				matcher = NewPlainDomainMatcher(rawDomain)
+				matcher = NewPlainDomainMatcher(rawDomain.String())
 			}
 			this.Domain[idx] = matcher
 		}
@@ -173,7 +143,7 @@ func (this *FieldRule) UnmarshalJSON(data []byte) error {
 	if rawFieldRule.IP != nil && rawFieldRule.IP.Len() > 0 {
 		this.IP = make([]*net.IPNet, 0, rawFieldRule.IP.Len())
 		for _, ipStr := range *(rawFieldRule.IP) {
-			_, ipNet, err := net.ParseCIDR(ipStr)
+			_, ipNet, err := net.ParseCIDR(ipStr.String())
 			if err != nil {
 				return errors.New("Invalid IP range in router rule: " + err.Error())
 			}

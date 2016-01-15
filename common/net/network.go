@@ -1,7 +1,7 @@
 package net
 
 import (
-	"strings"
+	"github.com/v2ray/v2ray-core/common/serial"
 )
 
 const (
@@ -9,14 +9,14 @@ const (
 	UDPNetwork = Network("udp")
 )
 
-type Network string
+type Network serial.StringLiteral
 
 type NetworkList []Network
 
-func NewNetworkList(networks []string) NetworkList {
-	list := NetworkList(make([]Network, len(networks)))
+func NewNetworkList(networks serial.StringLiteralList) NetworkList {
+	list := NetworkList(make([]Network, networks.Len()))
 	for idx, network := range networks {
-		list[idx] = Network(strings.ToLower(strings.TrimSpace(network)))
+		list[idx] = Network(network.TrimSpace().ToLower())
 	}
 	return list
 }

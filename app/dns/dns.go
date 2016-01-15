@@ -34,10 +34,10 @@ func (this *entry) Extend() {
 
 type DnsCache struct {
 	cache  *collect.ValidityMap
-	config CacheConfig
+	config *CacheConfig
 }
 
-func NewCache(config CacheConfig) *DnsCache {
+func NewCache(config *CacheConfig) *DnsCache {
 	cache := &DnsCache{
 		cache:  collect.NewValidityMap(3600),
 		config: config,
@@ -47,7 +47,7 @@ func NewCache(config CacheConfig) *DnsCache {
 
 func (this *DnsCache) Add(context app.Context, domain string, ip net.IP) {
 	callerTag := context.CallerTag()
-	if !this.config.IsTrustedSource(callerTag) {
+	if !this.config.IsTrustedSource(serial.StringLiteral(callerTag)) {
 		return
 	}
 
