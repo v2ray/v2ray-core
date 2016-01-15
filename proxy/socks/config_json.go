@@ -7,7 +7,6 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	v2netjson "github.com/v2ray/v2ray-core/common/net/json"
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	"github.com/v2ray/v2ray-core/proxy/internal/config"
 )
@@ -26,10 +25,10 @@ func init() {
 			}
 
 			type SocksConfig struct {
-				AuthMethod string          `json:"auth"`
-				Accounts   []*SocksAccount `json:"accounts"`
-				UDP        bool            `json:"udp"`
-				Host       *v2netjson.Host `json:"ip"`
+				AuthMethod string             `json:"auth"`
+				Accounts   []*SocksAccount    `json:"accounts"`
+				UDP        bool               `json:"udp"`
+				Host       *v2net.AddressJson `json:"ip"`
 			}
 
 			rawConfig := new(SocksConfig)
@@ -55,7 +54,7 @@ func init() {
 
 			socksConfig.UDPEnabled = rawConfig.UDP
 			if rawConfig.Host != nil {
-				socksConfig.Address = rawConfig.Host.Address()
+				socksConfig.Address = rawConfig.Host.Address
 			} else {
 				socksConfig.Address = v2net.IPAddress([]byte{127, 0, 0, 1})
 			}

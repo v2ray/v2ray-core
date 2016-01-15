@@ -14,7 +14,7 @@ func init() {
 	config.RegisterInboundConnectionConfig("dokodemo-door",
 		func(data []byte) (interface{}, error) {
 			type DokodemoConfig struct {
-				Host         *v2netjson.Host        `json:"address"`
+				Host         *v2net.AddressJson     `json:"address"`
 				PortValue    v2net.Port             `json:"port"`
 				NetworkList  *v2netjson.NetworkList `json:"network"`
 				TimeoutValue int                    `json:"timeout"`
@@ -24,7 +24,7 @@ func init() {
 				return nil, err
 			}
 			return &Config{
-				Address: rawConfig.Host.Address(),
+				Address: rawConfig.Host.Address,
 				Port:    rawConfig.PortValue,
 				Network: rawConfig.NetworkList,
 				Timeout: rawConfig.TimeoutValue,
