@@ -1,5 +1,9 @@
 package vmess
 
+import (
+	"math/rand"
+)
+
 type UserLevel int
 
 const (
@@ -7,11 +11,21 @@ const (
 	UserLevelUntrusted = UserLevel(0)
 )
 
-type User interface {
-	ID() *ID
-	AlterIDs() []*ID
-	Level() UserLevel
-	AnyValidID() *ID
+type User struct {
+	ID       *ID
+	AlterIDs []*ID
+	Level    UserLevel
+}
+
+func (this *User) AnyValidID() *ID {
+	if len(this.AlterIDs) == 0 {
+		return this.ID
+	}
+	if len(this.AlterIDs) == 1 {
+		return this.AlterIDs[0]
+	}
+	idx := rand.Intn(len(this.AlterIDs))
+	return this.AlterIDs[idx]
 }
 
 type UserSettings struct {

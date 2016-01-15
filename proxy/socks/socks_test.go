@@ -1,4 +1,4 @@
-package socks
+package socks_test
 
 import (
 	"bytes"
@@ -12,7 +12,6 @@ import (
 	"github.com/v2ray/v2ray-core/app"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	v2proxy "github.com/v2ray/v2ray-core/proxy"
-	_ "github.com/v2ray/v2ray-core/proxy/socks/json"
 	proxytesting "github.com/v2ray/v2ray-core/proxy/testing"
 	proxymocks "github.com/v2ray/v2ray-core/proxy/testing/mocks"
 	"github.com/v2ray/v2ray-core/shell/point"

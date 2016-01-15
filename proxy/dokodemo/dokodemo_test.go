@@ -1,11 +1,10 @@
-package dokodemo
+package dokodemo_test
 
 import (
 	"net"
 	"testing"
 
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
-	_ "github.com/v2ray/v2ray-core/proxy/dokodemo/json"
 	_ "github.com/v2ray/v2ray-core/proxy/freedom"
 	"github.com/v2ray/v2ray-core/shell/point"
 	"github.com/v2ray/v2ray-core/shell/point/testing/mocks"

@@ -38,12 +38,12 @@ type idEntry struct {
 }
 
 type UserSet interface {
-	AddUser(user vmess.User) error
-	GetUser(timeHash []byte) (vmess.User, Timestamp, bool)
+	AddUser(user *vmess.User) error
+	GetUser(timeHash []byte) (*vmess.User, Timestamp, bool)
 }
 
 type TimedUserSet struct {
-	validUsers []vmess.User
+	validUsers []*vmess.User
 	userHash   map[[16]byte]indexTimePair
 	ids        []*idEntry
 	access     sync.RWMutex
@@ -56,7 +56,7 @@ type indexTimePair struct {
 
 func NewTimedUserSet() UserSet {
 	tus := &TimedUserSet{
-		validUsers: make([]vmess.User, 0, 16),
+		validUsers: make([]*vmess.User, 0, 16),
 		userHash:   make(map[[16]byte]indexTimePair, 512),
 		access:     sync.RWMutex{},
 		ids:        make([]*idEntry, 0, 512),
@@ -94,21 +94,21 @@ func (us *TimedUserSet) updateUserHash(tick <-chan time.Time) {
 	}
 }
 
-func (us *TimedUserSet) AddUser(user vmess.User) error {
+func (us *TimedUserSet) AddUser(user *vmess.User) error {
 	idx := len(us.validUsers)
 	us.validUsers = append(us.validUsers, user)
 
 	nowSec := time.Now().Unix()
 
 	entry := &idEntry{
-		id:      user.ID(),
+		id:      user.ID,
 		userIdx: idx,
 		lastSec: Timestamp(nowSec - cacheDurationSec),
 		hashes:  collect.NewSizedQueue(2*cacheDurationSec + 1),
 	}
 	us.generateNewHashes(Timestamp(nowSec+cacheDurationSec), idx, entry)
 	us.ids = append(us.ids, entry)
-	for _, alterid := range user.AlterIDs() {
+	for _, alterid := range user.AlterIDs {
 		entry := &idEntry{
 			id:      alterid,
 			userIdx: idx,
@@ -122,7 +122,7 @@ func (us *TimedUserSet) AddUser(user vmess.User) error {
 	return nil
 }
 
-func (us *TimedUserSet) GetUser(userHash []byte) (vmess.User, Timestamp, bool) {
+func (us *TimedUserSet) GetUser(userHash []byte) (*vmess.User, Timestamp, bool) {
 	defer us.access.RUnlock()
 	us.access.RLock()
 	var fixedSizeHash [16]byte

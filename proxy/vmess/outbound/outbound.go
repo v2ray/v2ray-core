@@ -195,10 +195,10 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 func init() {
 	internal.MustRegisterOutboundConnectionHandlerCreator("vmess",
 		func(space app.Space, rawConfig interface{}) (proxy.OutboundConnectionHandler, error) {
-			vOutConfig := rawConfig.(Config)
+			vOutConfig := rawConfig.(*Config)
 			return &VMessOutboundHandler{
 				space:           space,
-				receiverManager: NewReceiverManager(vOutConfig.Receivers()),
+				receiverManager: NewReceiverManager(vOutConfig.Receivers),
 			}, nil
 		})
 }

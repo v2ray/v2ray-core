@@ -109,7 +109,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *net.TCPConn) error
 	readFinish.Lock()
 	writeFinish.Lock()
 
-	userSettings := vmess.GetUserSettings(request.User.Level())
+	userSettings := vmess.GetUserSettings(request.User.Level)
 	connReader.SetTimeOut(userSettings.PayloadReadTimeout)
 	go handleInput(request, connReader, input, &readFinish)
 
@@ -167,10 +167,10 @@ func handleOutput(request *protocol.VMessRequest, writer io.Writer, output <-cha
 func init() {
 	internal.MustRegisterInboundConnectionHandlerCreator("vmess",
 		func(space app.Space, rawConfig interface{}) (proxy.InboundConnectionHandler, error) {
-			config := rawConfig.(Config)
+			config := rawConfig.(*Config)
 
 			allowedClients := protocol.NewTimedUserSet()
-			for _, user := range config.AllowedUsers() {
+			for _, user := range config.AllowedUsers {
 				allowedClients.AddUser(user)
 			}
 

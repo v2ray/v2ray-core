@@ -34,7 +34,7 @@ const (
 // streaming.
 type VMessRequest struct {
 	Version        byte
-	User           vmess.User
+	User           *vmess.User
 	RequestIV      []byte
 	RequestKey     []byte
 	ResponseHeader []byte
@@ -83,7 +83,7 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	timestampHash := TimestampHash()
 	timestampHash.Write(timeSec.HashBytes())
 	iv := timestampHash.Sum(nil)
-	aesStream, err := v2crypto.NewAesDecryptionStream(userObj.ID().CmdKey(), iv)
+	aesStream, err := v2crypto.NewAesDecryptionStream(userObj.ID.CmdKey(), iv)
 	if err != nil {
 		log.Debug("VMess: Failed to create AES stream: %v", err)
 		return nil, err
@@ -217,7 +217,7 @@ func (this *VMessRequest) ToBytes(timestampGenerator RandomTimestampGenerator, b
 	timestampHash := md5.New()
 	timestampHash.Write(timestamp.HashBytes())
 	iv := timestampHash.Sum(nil)
-	aesStream, err := v2crypto.NewAesEncryptionStream(this.User.ID().CmdKey(), iv)
+	aesStream, err := v2crypto.NewAesEncryptionStream(this.User.ID.CmdKey(), iv)
 	if err != nil {
 		return nil, err
 	}

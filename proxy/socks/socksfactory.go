@@ -9,6 +9,6 @@ import (
 func init() {
 	internal.MustRegisterInboundConnectionHandlerCreator("socks",
 		func(space app.Space, rawConfig interface{}) (proxy.InboundConnectionHandler, error) {
-			return NewSocksServer(space, rawConfig.(Config)), nil
+			return NewSocksServer(space, rawConfig.(*Config)), nil
 		})
 }

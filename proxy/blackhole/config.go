@@ -1,4 +1,4 @@
 package blackhole
 
-type Config interface {
+type Config struct {
 }

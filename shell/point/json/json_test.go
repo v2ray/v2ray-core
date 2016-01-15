@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	netassert "github.com/v2ray/v2ray-core/common/net/testing/assert"
-	_ "github.com/v2ray/v2ray-core/proxy/dokodemo/json"
-	_ "github.com/v2ray/v2ray-core/proxy/freedom/json"
-	_ "github.com/v2ray/v2ray-core/proxy/socks/json"
-	_ "github.com/v2ray/v2ray-core/proxy/vmess/inbound/json"
-	_ "github.com/v2ray/v2ray-core/proxy/vmess/outbound/json"
+	_ "github.com/v2ray/v2ray-core/proxy/dokodemo"
+	_ "github.com/v2ray/v2ray-core/proxy/freedom"
+	_ "github.com/v2ray/v2ray-core/proxy/socks"
+	_ "github.com/v2ray/v2ray-core/proxy/vmess/inbound"
+	_ "github.com/v2ray/v2ray-core/proxy/vmess/outbound"
 	"github.com/v2ray/v2ray-core/shell/point/json"
 
 	v2testing "github.com/v2ray/v2ray-core/testing"

@@ -27,13 +27,13 @@ type SocksServer struct {
 	udpMutex    sync.RWMutex
 	accepting   bool
 	space       app.Space
-	config      Config
+	config      *Config
 	tcpListener *net.TCPListener
 	udpConn     *net.UDPConn
 	udpAddress  v2net.Destination
 }
 
-func NewSocksServer(space app.Space, config Config) *SocksServer {
+func NewSocksServer(space app.Space, config *Config) *SocksServer {
 	return &SocksServer{
 		space:  space,
 		config: config,
@@ -71,7 +71,7 @@ func (this *SocksServer) Listen(port v2net.Port) error {
 	this.tcpListener = listener
 	this.tcpMutex.Unlock()
 	go this.AcceptConnections()
-	if this.config.UDPEnabled() {
+	if this.config.UDPEnabled {
 		this.ListenUDP(port)
 	}
 	return nil
@@ -116,7 +116,7 @@ func (this *SocksServer) HandleConnection(connection *net.TCPConn) error {
 
 func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Writer, auth protocol.Socks5AuthenticationRequest) error {
 	expectedAuthMethod := protocol.AuthNotRequired
-	if this.config.IsPassword() {
+	if this.config.AuthType == AuthTypePassword {
 		expectedAuthMethod = protocol.AuthUserPass
 	}
 
@@ -137,7 +137,7 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 		log.Error("Socks failed to write authentication: %v", err)
 		return err
 	}
-	if this.config.IsPassword() {
+	if this.config.AuthType == AuthTypePassword {
 		upRequest, err := protocol.ReadUserPassRequest(reader)
 		if err != nil {
 			log.Error("Socks failed to read username and password: %v", err)
@@ -165,7 +165,7 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 		return err
 	}
 
-	if request.Command == protocol.CmdUdpAssociate && this.config.UDPEnabled() {
+	if request.Command == protocol.CmdUdpAssociate && this.config.UDPEnabled {
 		return this.handleUDP(reader, writer)
 	}
 

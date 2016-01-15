@@ -24,27 +24,6 @@ func (this *FakeTimestampGenerator) Next() Timestamp {
 	return this.timestamp
 }
 
-type TestUser struct {
-	id    *vmess.ID
-	level vmess.UserLevel
-}
-
-func (u *TestUser) ID() *vmess.ID {
-	return u.id
-}
-
-func (this *TestUser) Level() vmess.UserLevel {
-	return this.level
-}
-
-func (this *TestUser) AlterIDs() []*vmess.ID {
-	return nil
-}
-
-func (this *TestUser) AnyValidID() *vmess.ID {
-	return this.id
-}
-
 func TestVMessSerialization(t *testing.T) {
 	v2testing.Current(t)
 
@@ -53,11 +32,11 @@ func TestVMessSerialization(t *testing.T) {
 
 	userId := vmess.NewID(id)
 
-	testUser := &TestUser{
-		id: userId,
+	testUser := &vmess.User{
+		ID: userId,
 	}
 
-	userSet := protocoltesting.MockUserSet{[]vmess.User{}, make(map[string]int), make(map[string]Timestamp)}
+	userSet := protocoltesting.MockUserSet{[]*vmess.User{}, make(map[string]int), make(map[string]Timestamp)}
 	userSet.AddUser(testUser)
 
 	request := new(VMessRequest)
@@ -92,7 +71,7 @@ func TestVMessSerialization(t *testing.T) {
 	}
 
 	assert.Byte(actualRequest.Version).Named("Version").Equals(byte(0x01))
-	assert.String(actualRequest.User.ID()).Named("UserId").Equals(request.User.ID().String())
+	assert.String(actualRequest.User.ID).Named("UserId").Equals(request.User.ID.String())
 	assert.Bytes(actualRequest.RequestIV).Named("RequestIV").Equals(request.RequestIV[:])
 	assert.Bytes(actualRequest.RequestKey).Named("RequestKey").Equals(request.RequestKey[:])
 	assert.Bytes(actualRequest.ResponseHeader).Named("ResponseHeader").Equals(request.ResponseHeader[:])
@@ -113,10 +92,10 @@ func BenchmarkVMessRequestWriting(b *testing.B) {
 	assert.Error(err).IsNil()
 
 	userId := vmess.NewID(id)
-	userSet := protocoltesting.MockUserSet{[]vmess.User{}, make(map[string]int), make(map[string]Timestamp)}
+	userSet := protocoltesting.MockUserSet{[]*vmess.User{}, make(map[string]int), make(map[string]Timestamp)}
 
-	testUser := &TestUser{
-		id: userId,
+	testUser := &vmess.User{
+		ID: userId,
 	}
 	userSet.AddUser(testUser)
 

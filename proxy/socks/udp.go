@@ -21,7 +21,7 @@ func (this *SocksServer) ListenUDP(port v2net.Port) error {
 		return err
 	}
 	this.udpMutex.Lock()
-	this.udpAddress = v2net.UDPDestination(v2net.IPAddress(this.config.IP()), port)
+	this.udpAddress = v2net.UDPDestination(this.config.Address, port)
 	this.udpConn = conn
 	this.udpMutex.Unlock()
 

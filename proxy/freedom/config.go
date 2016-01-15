@@ -1,4 +1,4 @@
 package freedom
 
-type Config interface {
+type Config struct {
 }

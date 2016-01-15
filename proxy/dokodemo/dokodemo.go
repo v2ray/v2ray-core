@@ -15,7 +15,7 @@ import (
 type DokodemoDoor struct {
 	tcpMutex    sync.RWMutex
 	udpMutex    sync.RWMutex
-	config      Config
+	config      *Config
 	accepting   bool
 	address     v2net.Address
 	port        v2net.Port
@@ -24,12 +24,12 @@ type DokodemoDoor struct {
 	udpConn     *net.UDPConn
 }
 
-func NewDokodemoDoor(space app.Space, config Config) *DokodemoDoor {
+func NewDokodemoDoor(space app.Space, config *Config) *DokodemoDoor {
 	return &DokodemoDoor{
 		config:  config,
 		space:   space,
-		address: config.Address(),
-		port:    config.Port(),
+		address: config.Address,
+		port:    config.Port,
 	}
 }
 
@@ -52,13 +52,13 @@ func (this *DokodemoDoor) Close() {
 func (this *DokodemoDoor) Listen(port v2net.Port) error {
 	this.accepting = true
 
-	if this.config.Network().HasNetwork(v2net.TCPNetwork) {
+	if this.config.Network.HasNetwork(v2net.TCPNetwork) {
 		err := this.ListenTCP(port)
 		if err != nil {
 			return err
 		}
 	}
-	if this.config.Network().HasNetwork(v2net.UDPNetwork) {
+	if this.config.Network.HasNetwork(v2net.UDPNetwork) {
 		err := this.ListenUDP(port)
 		if err != nil {
 			return err
@@ -163,7 +163,7 @@ func (this *DokodemoDoor) HandleTCPConnection(conn *net.TCPConn) {
 	inputFinish.Lock()
 	outputFinish.Lock()
 
-	reader := v2net.NewTimeOutReader(this.config.Timeout(), conn)
+	reader := v2net.NewTimeOutReader(this.config.Timeout, conn)
 	go dumpInput(reader, ray.InboundInput(), &inputFinish)
 	go dumpOutput(conn, ray.InboundOutput(), &outputFinish)
 

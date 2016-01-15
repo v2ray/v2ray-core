@@ -1,4 +1,4 @@
 package http
 
-type Config interface {
+type Config struct {
 }

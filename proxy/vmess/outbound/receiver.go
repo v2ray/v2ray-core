@@ -9,7 +9,7 @@ import (
 
 type Receiver struct {
 	Destination v2net.Destination
-	Accounts    []vmess.User
+	Accounts    []*vmess.User
 }
 
 type ReceiverManager struct {
@@ -22,7 +22,7 @@ func NewReceiverManager(receivers []*Receiver) *ReceiverManager {
 	}
 }
 
-func (this *ReceiverManager) PickReceiver() (v2net.Destination, vmess.User) {
+func (this *ReceiverManager) PickReceiver() (v2net.Destination, *vmess.User) {
 	receiverLen := len(this.receivers)
 	receiverIdx := 0
 	if receiverLen > 1 {

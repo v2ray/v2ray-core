@@ -1,5 +1,5 @@
 package outbound
 
-type Config interface {
-	Receivers() []*Receiver
+type Config struct {
+	Receivers []*Receiver
 }
