@@ -32,21 +32,19 @@ func allZeros(data []byte) bool {
 func IPAddress(ip []byte) Address {
 	switch len(ip) {
 	case net.IPv4len:
-		return &IPv4Address{
-			ip: [4]byte{ip[0], ip[1], ip[2], ip[3]},
-		}
+		var addr IPv4Address = [4]byte{ip[0], ip[1], ip[2], ip[3]}
+		return &addr
 	case net.IPv6len:
 		if allZeros(ip[0:10]) && ip[10] == 0xff && ip[11] == 0xff {
 			return IPAddress(ip[12:16])
 		}
-		return &IPv6Address{
-			ip: [16]byte{
-				ip[0], ip[1], ip[2], ip[3],
-				ip[4], ip[5], ip[6], ip[7],
-				ip[8], ip[9], ip[10], ip[11],
-				ip[12], ip[13], ip[14], ip[15],
-			},
+		var addr IPv6Address = [16]byte{
+			ip[0], ip[1], ip[2], ip[3],
+			ip[4], ip[5], ip[6], ip[7],
+			ip[8], ip[9], ip[10], ip[11],
+			ip[12], ip[13], ip[14], ip[15],
 		}
+		return &addr
 	default:
 		log.Error("Invalid IP format: %v", ip)
 		return nil
@@ -55,20 +53,14 @@ func IPAddress(ip []byte) Address {
 
 // DomainAddress creates an Address with given domain and port.
 func DomainAddress(domain string) Address {
-	return &DomainAddressImpl{
-		domain: domain,
-	}
+	var addr DomainAddressImpl = DomainAddressImpl(domain)
+	return &addr
 }
 
-type address struct {
-}
-
-type IPv4Address struct {
-	ip [4]byte
-}
+type IPv4Address [4]byte
 
 func (addr *IPv4Address) IP() net.IP {
-	return net.IP(addr.ip[:])
+	return net.IP(addr[:])
 }
 
 func (addr *IPv4Address) Domain() string {
@@ -91,12 +83,10 @@ func (this *IPv4Address) String() string {
 	return this.IP().String()
 }
 
-type IPv6Address struct {
-	ip [16]byte
-}
+type IPv6Address [16]byte
 
 func (addr *IPv6Address) IP() net.IP {
-	return net.IP(addr.ip[:])
+	return net.IP(addr[:])
 }
 
 func (addr *IPv6Address) Domain() string {
@@ -119,16 +109,14 @@ func (this *IPv6Address) String() string {
 	return "[" + this.IP().String() + "]"
 }
 
-type DomainAddressImpl struct {
-	domain string
-}
+type DomainAddressImpl string
 
 func (addr *DomainAddressImpl) IP() net.IP {
 	panic("Calling IP() on a DomainAddress.")
 }
 
 func (addr *DomainAddressImpl) Domain() string {
-	return addr.domain
+	return string(*addr)
 }
 
 func (addr *DomainAddressImpl) IsIPv4() bool {
@@ -144,5 +132,5 @@ func (addr *DomainAddressImpl) IsDomain() bool {
 }
 
 func (this *DomainAddressImpl) String() string {
-	return this.domain
+	return this.Domain()
 }
