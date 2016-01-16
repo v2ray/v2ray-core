@@ -21,11 +21,11 @@ type HttpProxyServer struct {
 	sync.Mutex
 	accepting   bool
 	space       app.Space
-	config      Config
+	config      *Config
 	tcpListener *net.TCPListener
 }
 
-func NewHttpProxyServer(space app.Space, config Config) *HttpProxyServer {
+func NewHttpProxyServer(space app.Space, config *Config) *HttpProxyServer {
 	return &HttpProxyServer{
 		space:  space,
 		config: config,

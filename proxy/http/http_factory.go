@@ -9,6 +9,6 @@ import (
 func init() {
 	internal.MustRegisterInboundConnectionHandlerCreator("http",
 		func(space app.Space, rawConfig interface{}) (proxy.InboundConnectionHandler, error) {
-			return NewHttpProxyServer(space, rawConfig.(Config)), nil
+			return NewHttpProxyServer(space, rawConfig.(*Config)), nil
 		})
 }
