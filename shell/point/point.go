@@ -102,7 +102,7 @@ func NewPoint(pConfig PointConfig) (*Point, error) {
 
 	routerConfig := pConfig.RouterConfig()
 	if routerConfig != nil {
-		r, err := router.CreateRouter(routerConfig.Strategy(), routerConfig.Settings())
+		r, err := router.CreateRouter(routerConfig.Strategy, routerConfig.Settings)
 		if err != nil {
 			log.Error("Failed to create router: %v", err)
 			return nil, BadConfiguration

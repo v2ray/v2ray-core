@@ -11,6 +11,11 @@ const (
 
 type Network serial.StringLiteral
 
+func (this Network) AsList() *NetworkList {
+	list := NetworkList([]Network{this})
+	return &list
+}
+
 type NetworkList []Network
 
 func NewNetworkList(networks serial.StringLiteralList) NetworkList {

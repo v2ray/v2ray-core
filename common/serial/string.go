@@ -15,6 +15,10 @@ func NewStringLiteral(str String) StringLiteral {
 	return StringLiteral(str.String())
 }
 
+func (this StringLiteral) Contains(str String) bool {
+	return strings.Contains(this.String(), str.String())
+}
+
 func (this StringLiteral) String() string {
 	return string(this)
 }

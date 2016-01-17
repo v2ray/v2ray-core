@@ -26,3 +26,7 @@ type PortRange struct {
 	From Port
 	To   Port
 }
+
+func (this PortRange) Contains(port Port) bool {
+	return this.From <= port && port <= this.To
+}

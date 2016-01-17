@@ -52,7 +52,7 @@ type OutboundDetourConfig interface {
 type PointConfig interface {
 	Port() v2net.Port
 	LogConfig() LogConfig
-	RouterConfig() router.Config
+	RouterConfig() *router.Config
 	InboundConfig() ConnectionConfig
 	OutboundConfig() ConnectionConfig
 	InboundDetours() []InboundDetourConfig

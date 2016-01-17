@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	_ "github.com/v2ray/v2ray-core/app/router/rules"
 	netassert "github.com/v2ray/v2ray-core/common/net/testing/assert"
 	_ "github.com/v2ray/v2ray-core/proxy/dokodemo"
 	_ "github.com/v2ray/v2ray-core/proxy/freedom"

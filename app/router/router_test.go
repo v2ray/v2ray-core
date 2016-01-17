@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	. "github.com/v2ray/v2ray-core/app/router"
-	_ "github.com/v2ray/v2ray-core/app/router/rules/json"
+	_ "github.com/v2ray/v2ray-core/app/router/rules"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/shell/point/json"
 	v2testing "github.com/v2ray/v2ray-core/testing"
@@ -21,7 +21,7 @@ func TestRouter(t *testing.T) {
 	pointConfig, err := json.LoadConfig(filepath.Join(baseDir, "vpoint_socks_vmess.json"))
 	assert.Error(err).IsNil()
 
-	router, err := CreateRouter(pointConfig.RouterConfig().Strategy(), pointConfig.RouterConfig().Settings())
+	router, err := CreateRouter(pointConfig.RouterConfig().Strategy, pointConfig.RouterConfig().Settings)
 	assert.Error(err).IsNil()
 
 	dest := v2net.TCPDestination(v2net.IPAddress(net.ParseIP("120.135.126.1")), 80)

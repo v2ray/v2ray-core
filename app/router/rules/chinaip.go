@@ -1,23 +1,25 @@
-package json
+// +build json
+
+package rules
 
 import (
+	"encoding/json"
+
+	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
-type ChinaIPRule struct {
-	Rule
-}
-
-func (this *ChinaIPRule) Apply(dest v2net.Destination) bool {
-	address := dest.Address()
-	if address.IsDomain() {
-		return false
+func parseChinaIPRule(data []byte) (*Rule, error) {
+	rawRule := new(JsonRule)
+	err := json.Unmarshal(data, rawRule)
+	if err != nil {
+		log.Error("Router: Invalid router rule: %v", err)
+		return nil, err
 	}
-	if address.IsIPv6() {
-		return false
-	}
-	ip := address.IP()
-	return chinaIPNet.Contains(ip)
+	return &Rule{
+		Tag:       rawRule.OutboundTag,
+		Condition: NewIPv4Matcher(chinaIPNet),
+	}, nil
 }
 
 var (

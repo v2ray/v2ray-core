@@ -38,18 +38,18 @@ func (this *cacheEntry) Extend() {
 }
 
 type Router struct {
-	rules []Rule
+	rules []*Rule
 	cache *collect.ValidityMap
 }
 
 func NewRouter() *Router {
 	return &Router{
-		rules: make([]Rule, 0, 16),
+		rules: make([]*Rule, 0, 16),
 		cache: collect.NewValidityMap(3600),
 	}
 }
 
-func (this *Router) AddRule(rule Rule) *Router {
+func (this *Router) AddRule(rule *Rule) *Router {
 	this.rules = append(this.rules, rule)
 	return this
 }
@@ -57,7 +57,7 @@ func (this *Router) AddRule(rule Rule) *Router {
 func (this *Router) takeDetourWithoutCache(dest v2net.Destination) (string, error) {
 	for _, rule := range this.rules {
 		if rule.Apply(dest) {
-			return rule.Tag(), nil
+			return rule.Tag, nil
 		}
 	}
 	return "", NoRuleApplicable
@@ -78,7 +78,7 @@ type RouterFactory struct {
 }
 
 func (this *RouterFactory) Create(rawConfig interface{}) (router.Router, error) {
-	config := rawConfig.(RouterRuleConfig)
+	config := rawConfig.(*RouterRuleConfig)
 	rules := config.Rules()
 	router := NewRouter()
 	for _, rule := range rules {

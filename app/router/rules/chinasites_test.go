@@ -1,4 +1,6 @@
-package json
+// +build json
+
+package rules
 
 import (
 	"testing"
@@ -15,7 +17,7 @@ func makeDomainDestination(domain string) v2net.Destination {
 func TestChinaSites(t *testing.T) {
 	v2testing.Current(t)
 
-	rule := &ChinaSitesRule{}
+	rule := new(ChinaSitesCondition)
 	assert.Bool(rule.Apply(makeDomainDestination("v.qq.com"))).IsTrue()
 	assert.Bool(rule.Apply(makeDomainDestination("www.163.com"))).IsTrue()
 	assert.Bool(rule.Apply(makeDomainDestination("ngacn.cc"))).IsTrue()

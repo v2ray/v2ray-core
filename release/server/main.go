@@ -7,9 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/v2ray/v2ray-core"
-	_ "github.com/v2ray/v2ray-core/app/router/json"
 	_ "github.com/v2ray/v2ray-core/app/router/rules"
-	_ "github.com/v2ray/v2ray-core/app/router/rules/json"
 	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/shell/point"
 	pointjson "github.com/v2ray/v2ray-core/shell/point/json"

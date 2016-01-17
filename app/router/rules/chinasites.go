@@ -1,27 +1,36 @@
-package json
+// +build json
+
+package rules
 
 import (
-	"strings"
-
+	"encoding/json"
+	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
-type ChinaSitesRule struct {
-	Rule
+type ChinaSitesCondition struct {
 }
 
-func (this *ChinaSitesRule) Apply(dest v2net.Destination) bool {
-	address := dest.Address()
-	if !address.IsDomain() {
-		return false
-	}
-	domain := strings.ToLower(address.Domain())
-	for _, matcher := range compiledMatchers {
-		if matcher.Match(domain) {
+func (this *ChinaSitesCondition) Apply(dest v2net.Destination) bool {
+	for _, cond := range chinaSitesConds {
+		if cond.Apply(dest) {
 			return true
 		}
 	}
 	return false
+}
+
+func parseChinaSitesRule(data []byte) (*Rule, error) {
+	rawRule := new(JsonRule)
+	err := json.Unmarshal(data, rawRule)
+	if err != nil {
+		log.Error("Router: Invalid router rule: %v", err)
+		return nil, err
+	}
+	return &Rule{
+		Tag:       rawRule.OutboundTag,
+		Condition: &ChinaSitesCondition{},
+	}, nil
 }
 
 const (
@@ -39,12 +48,10 @@ const (
 )
 
 var (
-	compiledMatchers []*RegexpDomainMatcher
+	chinaSitesConds []Condition
 )
 
 func init() {
-	compiledMatchers = make([]*RegexpDomainMatcher, 0, 1024)
-
 	regexpDomains := []string{
 		dotCn,
 		"\\.xn--fiqs8s$", /* .中国 */
@@ -353,11 +360,12 @@ func init() {
 		anySubDomain + "zhubajie" + dotCom,
 	}
 
-	for _, pattern := range regexpDomains {
+	chinaSitesConds = make([]Condition, len(regexpDomains))
+	for idx, pattern := range regexpDomains {
 		matcher, err := NewRegexpDomainMatcher(pattern)
 		if err != nil {
 			panic(err)
 		}
-		compiledMatchers = append(compiledMatchers, matcher)
+		chinaSitesConds[idx] = matcher
 	}
 }

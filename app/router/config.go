@@ -1,6 +1,6 @@
 package router
 
-type Config interface {
-	Strategy() string
-	Settings() interface{}
+type Config struct {
+	Strategy string
+	Settings interface{}
 }

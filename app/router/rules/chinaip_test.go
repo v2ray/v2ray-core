@@ -1,4 +1,4 @@
-package json
+package rules
 
 import (
 	"net"
@@ -16,7 +16,7 @@ func makeDestination(ip string) v2net.Destination {
 func TestChinaIP(t *testing.T) {
 	v2testing.Current(t)
 
-	rule := &ChinaIPRule{}
+	rule := NewIPv4Matcher(chinaIPNet)
 	assert.Bool(rule.Apply(makeDestination("121.14.1.189"))).IsTrue()    // sina.com.cn
 	assert.Bool(rule.Apply(makeDestination("101.226.103.106"))).IsTrue() // qq.com
 	assert.Bool(rule.Apply(makeDestination("115.239.210.36"))).IsTrue()  // image.baidu.com

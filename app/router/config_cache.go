@@ -1,9 +1,15 @@
-package json
+package router
 
-type ConfigObjectCreator func() interface{}
+import (
+	"errors"
+)
+
+type ConfigObjectCreator func([]byte) (interface{}, error)
 
 var (
 	configCache map[string]ConfigObjectCreator
+
+	ErrorRouterNotFound = errors.New("Router not found.")
 )
 
 func RegisterRouterConfig(strategy string, creator ConfigObjectCreator) error {
@@ -12,12 +18,12 @@ func RegisterRouterConfig(strategy string, creator ConfigObjectCreator) error {
 	return nil
 }
 
-func CreateRouterConfig(strategy string) interface{} {
+func CreateRouterConfig(strategy string, data []byte) (interface{}, error) {
 	creator, found := configCache[strategy]
 	if !found {
-		return nil
+		return nil, ErrorRouterNotFound
 	}
-	return creator()
+	return creator(data)
 }
 
 func init() {
