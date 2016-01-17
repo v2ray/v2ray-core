@@ -15,7 +15,7 @@ else
   echo "Please make sure unzip and daemon are installed."
 fi
 
-VER="v1.3"
+VER="v1.4"
 
 ARCH=$(uname -m)
 VDIS="64"
@@ -59,14 +59,12 @@ if [ ! -f "/etc/v2ray/config.json" ]; then
   echo "UUID:${UUID}"
 fi
 
-#if [ -d "/lib/systemd/system" ]; then
-#  if [ ! -f "/lib/systemd/system/v2ray.service" ]; then
-#    cp "/tmp/v2ray/v2ray-${VER}-linux-${VDIS}/systemd/v2ray.service" "/lib/systemd/system/"
-#    systemctl enable v2ray
-#  fi
-#el
-
-if [ -d "/etc/init.d" ]; then # Configure SysV if necessary.
+if [ -d "/lib/systemd/system" ]; then
+  if [ ! -f "/lib/systemd/system/v2ray.service" ]; then
+    cp "/tmp/v2ray/v2ray-${VER}-linux-${VDIS}/systemd/v2ray.service" "/lib/systemd/system/"
+    systemctl enable v2ray
+  fi
+elif [ -d "/etc/init.d" ]; then # Configure SysV if necessary.
   if [ ! -f "/etc/init.d/v2ray" ]; then
     cp "/tmp/v2ray/v2ray-${VER}-linux-${VDIS}/systemv/v2ray" "/etc/init.d/v2ray"
     chmod +x "/etc/init.d/v2ray"
