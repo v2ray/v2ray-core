@@ -15,7 +15,6 @@ import (
 	_ "github.com/v2ray/v2ray-core/proxy/vmess/inbound"
 	_ "github.com/v2ray/v2ray-core/proxy/vmess/outbound"
 	"github.com/v2ray/v2ray-core/shell/point"
-	"github.com/v2ray/v2ray-core/shell/point/testing/mocks"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
@@ -44,15 +43,15 @@ func TestVMessInAndOut(t *testing.T) {
 	})
 	assert.Error(err).IsNil()
 
-	configA := mocks.Config{
-		PortValue: portA,
-		InboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: protocol,
-			SettingsValue: nil,
+	configA := &point.Config{
+		Port: portA,
+		InboundConfig: &point.ConnectionConfig{
+			Protocol: protocol,
+			Settings: nil,
 		},
-		OutboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: "vmess",
-			SettingsValue: []byte(`{
+		OutboundConfig: &point.ConnectionConfig{
+			Protocol: "vmess",
+			Settings: []byte(`{
         "vnext": [
           {
             "address": "127.0.0.1",
@@ -66,7 +65,7 @@ func TestVMessInAndOut(t *testing.T) {
 		},
 	}
 
-	pointA, err := point.NewPoint(&configA)
+	pointA, err := point.NewPoint(configA)
 	assert.Error(err).IsNil()
 
 	err = pointA.Start()
@@ -84,23 +83,23 @@ func TestVMessInAndOut(t *testing.T) {
 	})
 	assert.Error(err).IsNil()
 
-	configB := mocks.Config{
-		PortValue: portB,
-		InboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: "vmess",
-			SettingsValue: []byte(`{
+	configB := &point.Config{
+		Port: portB,
+		InboundConfig: &point.ConnectionConfig{
+			Protocol: "vmess",
+			Settings: []byte(`{
         "clients": [
           {"id": "` + testAccount.String() + `"}
         ]
       }`),
 		},
-		OutboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: protocol,
-			SettingsValue: nil,
+		OutboundConfig: &point.ConnectionConfig{
+			Protocol: protocol,
+			Settings: nil,
 		},
 	}
 
-	pointB, err := point.NewPoint(&configB)
+	pointB, err := point.NewPoint(configB)
 	assert.Error(err).IsNil()
 
 	err = pointB.Start()

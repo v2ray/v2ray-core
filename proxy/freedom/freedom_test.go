@@ -17,7 +17,6 @@ import (
 	proxytesting "github.com/v2ray/v2ray-core/proxy/testing"
 	proxymocks "github.com/v2ray/v2ray-core/proxy/testing/mocks"
 	"github.com/v2ray/v2ray-core/shell/point"
-	"github.com/v2ray/v2ray-core/shell/point/testing/mocks"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 	"github.com/v2ray/v2ray-core/testing/servers/tcp"
@@ -56,19 +55,19 @@ func TestUDPSend(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	pointPort := v2nettesting.PickPort()
-	config := mocks.Config{
-		PortValue: pointPort,
-		InboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: protocol,
-			SettingsValue: nil,
+	config := &point.Config{
+		Port: pointPort,
+		InboundConfig: &point.ConnectionConfig{
+			Protocol: protocol,
+			Settings: nil,
 		},
-		OutboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: "freedom",
-			SettingsValue: nil,
+		OutboundConfig: &point.ConnectionConfig{
+			Protocol: "freedom",
+			Settings: nil,
 		},
 	}
 
-	point, err := point.NewPoint(&config)
+	point, err := point.NewPoint(config)
 	assert.Error(err).IsNil()
 
 	err = point.Start()
@@ -99,19 +98,19 @@ func TestSocksTcpConnect(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	pointPort := v2nettesting.PickPort()
-	config := mocks.Config{
-		PortValue: pointPort,
-		InboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: "socks",
-			SettingsValue: []byte(`{"auth": "noauth"}`),
+	config := &point.Config{
+		Port: pointPort,
+		InboundConfig: &point.ConnectionConfig{
+			Protocol: "socks",
+			Settings: []byte(`{"auth": "noauth"}`),
 		},
-		OutboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: "freedom",
-			SettingsValue: nil,
+		OutboundConfig: &point.ConnectionConfig{
+			Protocol: "freedom",
+			Settings: nil,
 		},
 	}
 
-	point, err := point.NewPoint(&config)
+	point, err := point.NewPoint(config)
 	assert.Error(err).IsNil()
 
 	err = point.Start()

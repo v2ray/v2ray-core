@@ -17,16 +17,16 @@ type InboundConnectionHandlerWithPort struct {
 // Handler for inbound detour connections.
 type InboundDetourHandler struct {
 	space  app.Space
-	config InboundDetourConfig
+	config *InboundDetourConfig
 	ich    []*InboundConnectionHandlerWithPort
 }
 
 func (this *InboundDetourHandler) Initialize() error {
-	ports := this.config.PortRange()
+	ports := this.config.PortRange
 	this.ich = make([]*InboundConnectionHandlerWithPort, 0, ports.To-ports.From+1)
 	for i := ports.From; i <= ports.To; i++ {
-		ichConfig := this.config.Settings()
-		ich, err := proxyrepo.CreateInboundConnectionHandler(this.config.Protocol(), this.space, ichConfig)
+		ichConfig := this.config.Settings
+		ich, err := proxyrepo.CreateInboundConnectionHandler(this.config.Protocol, this.space, ichConfig)
 		if err != nil {
 			log.Error("Failed to create inbound connection handler: %v", err)
 			return err

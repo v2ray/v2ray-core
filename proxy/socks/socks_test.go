@@ -15,7 +15,6 @@ import (
 	proxytesting "github.com/v2ray/v2ray-core/proxy/testing"
 	proxymocks "github.com/v2ray/v2ray-core/proxy/testing/mocks"
 	"github.com/v2ray/v2ray-core/shell/point"
-	"github.com/v2ray/v2ray-core/shell/point/testing/mocks"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
@@ -36,22 +35,22 @@ func TestSocksTcpConnect(t *testing.T) {
 	})
 	assert.Error(err).IsNil()
 
-	config := mocks.Config{
-		PortValue: port,
-		InboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: "socks",
-			SettingsValue: []byte(`
+	config := &point.Config{
+		Port: port,
+		InboundConfig: &point.ConnectionConfig{
+			Protocol: "socks",
+			Settings: []byte(`
       {
         "auth": "noauth"
       }`),
 		},
-		OutboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: protocol,
-			SettingsValue: nil,
+		OutboundConfig: &point.ConnectionConfig{
+			Protocol: protocol,
+			Settings: nil,
 		},
 	}
 
-	point, err := point.NewPoint(&config)
+	point, err := point.NewPoint(config)
 	assert.Error(err).IsNil()
 
 	err = point.Start()
@@ -95,11 +94,11 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 	})
 	assert.Error(err).IsNil()
 
-	config := mocks.Config{
-		PortValue: port,
-		InboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: "socks",
-			SettingsValue: []byte(`
+	config := &point.Config{
+		Port: port,
+		InboundConfig: &point.ConnectionConfig{
+			Protocol: "socks",
+			Settings: []byte(`
       {
         "auth": "password",
         "accounts": [
@@ -107,13 +106,13 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
         ]
       }`),
 		},
-		OutboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: protocol,
-			SettingsValue: nil,
+		OutboundConfig: &point.ConnectionConfig{
+			Protocol: protocol,
+			Settings: nil,
 		},
 	}
 
-	point, err := point.NewPoint(&config)
+	point, err := point.NewPoint(config)
 	assert.Error(err).IsNil()
 
 	err = point.Start()
@@ -157,11 +156,11 @@ func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
 	})
 	assert.Error(err).IsNil()
 
-	config := mocks.Config{
-		PortValue: port,
-		InboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: "socks",
-			SettingsValue: []byte(`
+	config := &point.Config{
+		Port: port,
+		InboundConfig: &point.ConnectionConfig{
+			Protocol: "socks",
+			Settings: []byte(`
       {
         "auth": "password",
         "accounts": [
@@ -169,13 +168,13 @@ func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
         ]
       }`),
 		},
-		OutboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: protocol,
-			SettingsValue: nil,
+		OutboundConfig: &point.ConnectionConfig{
+			Protocol: protocol,
+			Settings: nil,
 		},
 	}
 
-	point, err := point.NewPoint(&config)
+	point, err := point.NewPoint(config)
 	assert.Error(err).IsNil()
 
 	err = point.Start()
@@ -205,11 +204,11 @@ func TestSocksTcpConnectWithWrongAuthMethod(t *testing.T) {
 	})
 	assert.Error(err).IsNil()
 
-	config := mocks.Config{
-		PortValue: port,
-		InboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: "socks",
-			SettingsValue: []byte(`
+	config := &point.Config{
+		Port: port,
+		InboundConfig: &point.ConnectionConfig{
+			Protocol: "socks",
+			Settings: []byte(`
       {
         "auth": "password",
         "accounts": [
@@ -217,13 +216,13 @@ func TestSocksTcpConnectWithWrongAuthMethod(t *testing.T) {
         ]
       }`),
 		},
-		OutboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: protocol,
-			SettingsValue: nil,
+		OutboundConfig: &point.ConnectionConfig{
+			Protocol: protocol,
+			Settings: nil,
 		},
 	}
 
-	point, err := point.NewPoint(&config)
+	point, err := point.NewPoint(config)
 	assert.Error(err).IsNil()
 
 	err = point.Start()
@@ -254,19 +253,19 @@ func TestSocksUdpSend(t *testing.T) {
 		})
 	assert.Error(err).IsNil()
 
-	config := mocks.Config{
-		PortValue: port,
-		InboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: "socks",
-			SettingsValue: []byte(`{"auth": "noauth", "udp": true}`),
+	config := &point.Config{
+		Port: port,
+		InboundConfig: &point.ConnectionConfig{
+			Protocol: "socks",
+			Settings: []byte(`{"auth": "noauth", "udp": true}`),
 		},
-		OutboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: protocol,
-			SettingsValue: nil,
+		OutboundConfig: &point.ConnectionConfig{
+			Protocol: protocol,
+			Settings: nil,
 		},
 	}
 
-	point, err := point.NewPoint(&config)
+	point, err := point.NewPoint(config)
 	assert.Error(err).IsNil()
 
 	err = point.Start()

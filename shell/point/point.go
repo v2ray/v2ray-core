@@ -29,54 +29,54 @@ type Point struct {
 
 // NewPoint returns a new Point server based on given configuration.
 // The server is not started at this point.
-func NewPoint(pConfig PointConfig) (*Point, error) {
+func NewPoint(pConfig *Config) (*Point, error) {
 	var vpoint = new(Point)
-	vpoint.port = pConfig.Port()
+	vpoint.port = pConfig.Port
 
-	if pConfig.LogConfig() != nil {
-		logConfig := pConfig.LogConfig()
-		if len(logConfig.AccessLog()) > 0 {
-			err := log.InitAccessLogger(logConfig.AccessLog())
+	if pConfig.LogConfig != nil {
+		logConfig := pConfig.LogConfig
+		if len(logConfig.AccessLog) > 0 {
+			err := log.InitAccessLogger(logConfig.AccessLog)
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		if len(logConfig.ErrorLog()) > 0 {
-			err := log.InitErrorLogger(logConfig.ErrorLog())
+		if len(logConfig.ErrorLog) > 0 {
+			err := log.InitErrorLogger(logConfig.ErrorLog)
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		log.SetLogLevel(logConfig.LogLevel())
+		log.SetLogLevel(logConfig.LogLevel)
 	}
 
 	vpoint.space = controller.New()
 	vpoint.space.Bind(vpoint)
 
-	ichConfig := pConfig.InboundConfig().Settings()
-	ich, err := proxyrepo.CreateInboundConnectionHandler(pConfig.InboundConfig().Protocol(), vpoint.space.ForContext("vpoint-default-inbound"), ichConfig)
+	ichConfig := pConfig.InboundConfig.Settings
+	ich, err := proxyrepo.CreateInboundConnectionHandler(pConfig.InboundConfig.Protocol, vpoint.space.ForContext("vpoint-default-inbound"), ichConfig)
 	if err != nil {
 		log.Error("Failed to create inbound connection handler: %v", err)
 		return nil, err
 	}
 	vpoint.ich = ich
 
-	ochConfig := pConfig.OutboundConfig().Settings()
-	och, err := proxyrepo.CreateOutboundConnectionHandler(pConfig.OutboundConfig().Protocol(), vpoint.space.ForContext("vpoint-default-outbound"), ochConfig)
+	ochConfig := pConfig.OutboundConfig.Settings
+	och, err := proxyrepo.CreateOutboundConnectionHandler(pConfig.OutboundConfig.Protocol, vpoint.space.ForContext("vpoint-default-outbound"), ochConfig)
 	if err != nil {
 		log.Error("Failed to create outbound connection handler: %v", err)
 		return nil, err
 	}
 	vpoint.och = och
 
-	detours := pConfig.InboundDetours()
+	detours := pConfig.InboundDetours
 	if len(detours) > 0 {
 		vpoint.idh = make([]*InboundDetourHandler, len(detours))
 		for idx, detourConfig := range detours {
 			detourHandler := &InboundDetourHandler{
-				space:  vpoint.space.ForContext(detourConfig.Tag()),
+				space:  vpoint.space.ForContext(detourConfig.Tag),
 				config: detourConfig,
 			}
 			err := detourHandler.Initialize()
@@ -87,20 +87,20 @@ func NewPoint(pConfig PointConfig) (*Point, error) {
 		}
 	}
 
-	outboundDetours := pConfig.OutboundDetours()
+	outboundDetours := pConfig.OutboundDetours
 	if len(outboundDetours) > 0 {
 		vpoint.odh = make(map[string]proxy.OutboundConnectionHandler)
 		for _, detourConfig := range outboundDetours {
-			detourHandler, err := proxyrepo.CreateOutboundConnectionHandler(detourConfig.Protocol(), vpoint.space.ForContext(detourConfig.Tag()), detourConfig.Settings())
+			detourHandler, err := proxyrepo.CreateOutboundConnectionHandler(detourConfig.Protocol, vpoint.space.ForContext(detourConfig.Tag), detourConfig.Settings)
 			if err != nil {
 				log.Error("Failed to create detour outbound connection handler: %v", err)
 				return nil, err
 			}
-			vpoint.odh[detourConfig.Tag()] = detourHandler
+			vpoint.odh[detourConfig.Tag] = detourHandler
 		}
 	}
 
-	routerConfig := pConfig.RouterConfig()
+	routerConfig := pConfig.RouterConfig
 	if routerConfig != nil {
 		r, err := router.CreateRouter(routerConfig.Strategy, routerConfig.Settings)
 		if err != nil {

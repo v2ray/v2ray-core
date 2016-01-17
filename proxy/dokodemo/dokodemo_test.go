@@ -7,7 +7,6 @@ import (
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	_ "github.com/v2ray/v2ray-core/proxy/freedom"
 	"github.com/v2ray/v2ray-core/shell/point"
-	"github.com/v2ray/v2ray-core/shell/point/testing/mocks"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 	"github.com/v2ray/v2ray-core/testing/servers/tcp"
@@ -34,24 +33,24 @@ func TestDokodemoTCP(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	pointPort := v2nettesting.PickPort()
-	config := mocks.Config{
-		PortValue: pointPort,
-		InboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: "dokodemo-door",
-			SettingsValue: []byte(`{
+	config := &point.Config{
+		Port: pointPort,
+		InboundConfig: &point.ConnectionConfig{
+			Protocol: "dokodemo-door",
+			Settings: []byte(`{
         "address": "127.0.0.1",
         "port": ` + port.String() + `,
         "network": "tcp",
         "timeout": 0
       }`),
 		},
-		OutboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: "freedom",
-			SettingsValue: nil,
+		OutboundConfig: &point.ConnectionConfig{
+			Protocol: "freedom",
+			Settings: nil,
 		},
 	}
 
-	point, err := point.NewPoint(&config)
+	point, err := point.NewPoint(config)
 	assert.Error(err).IsNil()
 
 	err = point.Start()
@@ -95,24 +94,24 @@ func TestDokodemoUDP(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	pointPort := v2nettesting.PickPort()
-	config := mocks.Config{
-		PortValue: pointPort,
-		InboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: "dokodemo-door",
-			SettingsValue: []byte(`{
+	config := &point.Config{
+		Port: pointPort,
+		InboundConfig: &point.ConnectionConfig{
+			Protocol: "dokodemo-door",
+			Settings: []byte(`{
         "address": "127.0.0.1",
         "port": ` + port.String() + `,
         "network": "udp",
         "timeout": 0
       }`),
 		},
-		OutboundConfigValue: &mocks.ConnectionConfig{
-			ProtocolValue: "freedom",
-			SettingsValue: nil,
+		OutboundConfig: &point.ConnectionConfig{
+			Protocol: "freedom",
+			Settings: nil,
 		},
 	}
 
-	point, err := point.NewPoint(&config)
+	point, err := point.NewPoint(config)
 	assert.Error(err).IsNil()
 
 	err = point.Start()

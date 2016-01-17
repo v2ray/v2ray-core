@@ -10,7 +10,6 @@ import (
 	_ "github.com/v2ray/v2ray-core/app/router/rules"
 	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/shell/point"
-	pointjson "github.com/v2ray/v2ray-core/shell/point/json"
 
 	// The following are neccesary as they register handlers in their init functions.
 	_ "github.com/v2ray/v2ray-core/proxy/blackhole"
@@ -64,14 +63,14 @@ func main() {
 		log.Error("Config file is not set.")
 		return
 	}
-	config, err := pointjson.LoadConfig(configFile)
+	config, err := point.LoadConfig(configFile)
 	if err != nil {
 		log.Error("Failed to read config file (%s): %v", configFile, err)
 		return
 	}
 
-	if config.LogConfig() != nil && len(config.LogConfig().AccessLog()) > 0 {
-		log.InitAccessLogger(config.LogConfig().AccessLog())
+	if config.LogConfig != nil && len(config.LogConfig.AccessLog) > 0 {
+		log.InitAccessLogger(config.LogConfig.AccessLog)
 	}
 
 	vPoint, err := point.NewPoint(config)
