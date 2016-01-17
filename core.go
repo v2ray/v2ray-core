@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	version  = "1.4"
+	version  = "1.5"
 	build    = "Custom"
 	codename = "New Order"
 	intro    = "An unified platform for anti-censorship."
