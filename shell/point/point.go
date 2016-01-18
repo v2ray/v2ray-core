@@ -162,6 +162,7 @@ func (this *Point) DispatchToOutbound(context app.Context, packet v2net.Packet) 
 	if this.router != nil {
 		if tag, err := this.router.TakeDetour(dest); err == nil {
 			if handler, found := this.odh[tag]; found {
+				log.Info("Point: Taking detour [%s] for [%s]", tag, dest)
 				dispatcher = handler
 			}
 		}
@@ -181,6 +182,7 @@ func (this *Point) FilterPacketAndDispatch(packet v2net.Packet, link ray.Outboun
 		chunk, moreChunks = <-link.OutboundInput()
 	}
 	if chunk == nil && !moreChunks {
+		log.Info("Point: No payload to dispatch, stopping dispatching now.")
 		close(link.OutboundOutput())
 		return
 	}
