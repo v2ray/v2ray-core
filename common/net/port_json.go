@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/v2ray/v2ray-core/common/log"
+	"github.com/v2ray/v2ray-core/common/serial"
 )
 
 var (
@@ -20,7 +21,7 @@ func (this *PortRange) UnmarshalJSON(data []byte) error {
 	err := json.Unmarshal(data, &maybeint)
 	if err == nil {
 		if maybeint <= 0 || maybeint >= 65535 {
-			log.Error("Invalid port [", string(data), "]")
+			log.Error("Invalid port [", serial.BytesLiteral(data), "]")
 			return InvalidPortRange
 		}
 		this.From = Port(maybeint)

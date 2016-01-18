@@ -21,3 +21,7 @@ func (this BytesLiteral) Int64Value() int64 {
 		int64(value[6])<<8 +
 		int64(value[7])
 }
+
+func (this BytesLiteral) String() string {
+	return string(this.Value())
+}

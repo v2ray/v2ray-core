@@ -14,6 +14,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
+	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
@@ -222,7 +223,7 @@ func (this *HttpProxyServer) handlePlainHTTP(request *http.Request, dest v2net.D
 
 	requestBuffer := alloc.NewBuffer().Clear() // Don't release this buffer as it is passed into a Packet.
 	request.Write(requestBuffer)
-	log.Debug("Request to remote:\n", string(requestBuffer.Value))
+	log.Debug("Request to remote:\n", serial.BytesLiteral(requestBuffer.Value))
 
 	packet := v2net.NewPacket(dest, requestBuffer, true)
 	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
