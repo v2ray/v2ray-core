@@ -12,6 +12,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
+	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	"github.com/v2ray/v2ray-core/proxy/vmess"
@@ -95,11 +96,11 @@ func (this *VMessInboundHandler) HandleConnection(connection *net.TCPConn) error
 
 	request, err := requestReader.Read(connReader)
 	if err != nil {
-		log.Access(connection.RemoteAddr().String(), "", log.AccessRejected, err.Error())
+		log.Access(connection.RemoteAddr(), serial.StringLiteral(""), log.AccessRejected, serial.StringLiteral(err.Error()))
 		log.Warning("VMessIn: Invalid request from ", connection.RemoteAddr(), ": ", err)
 		return err
 	}
-	log.Access(connection.RemoteAddr().String(), request.Address.String(), log.AccessAccepted, "")
+	log.Access(connection.RemoteAddr(), request.Address, log.AccessAccepted, serial.StringLiteral(""))
 	log.Debug("VMessIn: Received request for ", request.Address)
 
 	ray := this.space.PacketDispatcher().DispatchToOutbound(v2net.NewPacket(request.Destination(), nil, true))

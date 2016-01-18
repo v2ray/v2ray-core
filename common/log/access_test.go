@@ -19,7 +19,7 @@ func TestAccessLog(t *testing.T) {
 	_, err := os.Stat(filename)
 	assert.Error(err).IsNil()
 
-	Access("test_from", "test_to", AccessAccepted, "test_reason")
+	Access(serial.StringLiteral("test_from"), serial.StringLiteral("test_to"), AccessAccepted, serial.StringLiteral("test_reason"))
 	<-time.After(2 * time.Second)
 
 	accessLoggerInstance.(*fileLogWriter).close()
