@@ -138,14 +138,14 @@ func JsonLoadConfig(file string) (*Config, error) {
 	fixedFile := os.ExpandEnv(file)
 	rawConfig, err := ioutil.ReadFile(fixedFile)
 	if err != nil {
-		log.Error("Failed to read server config file (%s): %v", file, err)
+		log.Error("Failed to read server config file (", file, "): ", file, err)
 		return nil, err
 	}
 
 	jsonConfig := &Config{}
 	err = json.Unmarshal(rawConfig, jsonConfig)
 	if err != nil {
-		log.Error("Failed to load server config: %v", err)
+		log.Error("Failed to load server config: ", err)
 		return nil, err
 	}
 

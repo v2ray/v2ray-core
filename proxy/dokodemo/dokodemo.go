@@ -74,7 +74,7 @@ func (this *DokodemoDoor) ListenUDP(port v2net.Port) error {
 		Zone: "",
 	})
 	if err != nil {
-		log.Error("Dokodemo failed to listen on port %d: %v", port, err)
+		log.Error("Dokodemo failed to listen on port ", port, ": ", err)
 		return err
 	}
 	this.udpMutex.Lock()
@@ -97,7 +97,7 @@ func (this *DokodemoDoor) handleUDPPackets() {
 		buffer.Slice(0, nBytes)
 		if err != nil {
 			buffer.Release()
-			log.Error("Dokodemo failed to read from UDP: %v", err)
+			log.Error("Dokodemo failed to read from UDP: ", err)
 			return
 		}
 
@@ -124,7 +124,7 @@ func (this *DokodemoDoor) ListenTCP(port v2net.Port) error {
 		Zone: "",
 	})
 	if err != nil {
-		log.Error("Dokodemo failed to listen on port %d: %v", port, err)
+		log.Error("Dokodemo failed to listen on port ", port, ": ", err)
 		return err
 	}
 	this.tcpMutex.Lock()
@@ -144,7 +144,7 @@ func (this *DokodemoDoor) AcceptTCPConnections() {
 			}
 			connection, err := this.tcpListener.AcceptTCP()
 			if err != nil {
-				log.Error("Dokodemo failed to accept new connections: %v", err)
+				log.Error("Dokodemo failed to accept new connections: ", err)
 				return err
 			}
 			go this.HandleTCPConnection(connection)

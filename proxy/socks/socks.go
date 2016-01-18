@@ -63,7 +63,7 @@ func (this *SocksServer) Listen(port v2net.Port) error {
 		Zone: "",
 	})
 	if err != nil {
-		log.Error("Socks: failed to listen on port %d: %v", port, err)
+		log.Error("Socks: failed to listen on port ", port, ": ", err)
 		return err
 	}
 	this.accepting = true
@@ -87,7 +87,7 @@ func (this *SocksServer) AcceptConnections() {
 			}
 			connection, err := this.tcpListener.AcceptTCP()
 			if err != nil {
-				log.Error("Socks: failed to accept new connection %v", err)
+				log.Error("Socks: failed to accept new connection: ", err)
 				return err
 			}
 			go this.HandleConnection(connection)
@@ -103,7 +103,7 @@ func (this *SocksServer) HandleConnection(connection *net.TCPConn) error {
 
 	auth, auth4, err := protocol.ReadAuthentication(reader)
 	if err != nil && err != protocol.Socks4Downgrade {
-		log.Error("Socks: failed to read authentication: %v", err)
+		log.Error("Socks: failed to read authentication: ", err)
 		return err
 	}
 
@@ -124,7 +124,7 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 		authResponse := protocol.NewAuthenticationResponse(protocol.AuthNoMatchingMethod)
 		err := protocol.WriteAuthentication(writer, authResponse)
 		if err != nil {
-			log.Error("Socks: failed to write authentication: %v", err)
+			log.Error("Socks: failed to write authentication: ", err)
 			return err
 		}
 		log.Warning("Socks: client doesn't support allowed any auth methods.")
@@ -134,13 +134,13 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 	authResponse := protocol.NewAuthenticationResponse(expectedAuthMethod)
 	err := protocol.WriteAuthentication(writer, authResponse)
 	if err != nil {
-		log.Error("Socks: failed to write authentication: %v", err)
+		log.Error("Socks: failed to write authentication: ", err)
 		return err
 	}
 	if this.config.AuthType == AuthTypePassword {
 		upRequest, err := protocol.ReadUserPassRequest(reader)
 		if err != nil {
-			log.Error("Socks: failed to read username and password: %v", err)
+			log.Error("Socks: failed to read username and password: ", err)
 			return err
 		}
 		status := byte(0)
@@ -150,18 +150,18 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 		upResponse := protocol.NewSocks5UserPassResponse(status)
 		err = protocol.WriteUserPassResponse(writer, upResponse)
 		if err != nil {
-			log.Error("Socks: failed to write user pass response: %v", err)
+			log.Error("Socks: failed to write user pass response: ", err)
 			return err
 		}
 		if status != byte(0) {
-			log.Warning("Socks: Invalid user account: %s", upRequest.AuthDetail())
+			log.Warning("Socks: Invalid user account: ", upRequest.AuthDetail())
 			return proxy.InvalidAuthentication
 		}
 	}
 
 	request, err := protocol.ReadRequest(reader)
 	if err != nil {
-		log.Error("Socks: failed to read request: %v", err)
+		log.Error("Socks: failed to read request: ", err)
 		return err
 	}
 
@@ -180,10 +180,10 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 		_, err = writer.Write(responseBuffer.Value)
 		responseBuffer.Release()
 		if err != nil {
-			log.Error("Socks: failed to write response: %v", err)
+			log.Error("Socks: failed to write response: ", err)
 			return err
 		}
-		log.Warning("Socks: Unsupported socks command %d", request.Command)
+		log.Warning("Socks: Unsupported socks command ", request.Command)
 		return UnsupportedSocksCommand
 	}
 
@@ -199,12 +199,12 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 	_, err = writer.Write(responseBuffer.Value)
 	responseBuffer.Release()
 	if err != nil {
-		log.Error("Socks: failed to write response: %v", err)
+		log.Error("Socks: failed to write response: ", err)
 		return err
 	}
 
 	dest := request.Destination()
-	log.Info("Socks: TCP Connect request to %s", dest.String())
+	log.Info("Socks: TCP Connect request to ", dest)
 
 	packet := v2net.NewPacket(dest, nil, true)
 	this.transport(reader, writer, packet)
@@ -233,7 +233,7 @@ func (this *SocksServer) handleUDP(reader *v2net.TimeOutReader, writer io.Writer
 	responseBuffer.Release()
 
 	if err != nil {
-		log.Error("Socks: failed to write response: %v", err)
+		log.Error("Socks: failed to write response: ", err)
 		return err
 	}
 
@@ -260,7 +260,7 @@ func (this *SocksServer) handleSocks4(reader io.Reader, writer io.Writer, auth p
 	responseBuffer.Release()
 
 	if result == protocol.Socks4RequestRejected {
-		log.Warning("Socks: Unsupported socks 4 command %d", auth.Command)
+		log.Warning("Socks: Unsupported socks 4 command ", auth.Command)
 		return UnsupportedSocksCommand
 	}
 

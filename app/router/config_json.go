@@ -19,7 +19,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 	settings, err := CreateRouterConfig(jsonConfig.Strategy, []byte(jsonConfig.Settings))
 	if err != nil {
-		log.Error("Router: Failed to load router settings: %v", err)
+		log.Error("Router: Failed to load router settings: ", err)
 		return err
 	}
 	this.Strategy = jsonConfig.Strategy

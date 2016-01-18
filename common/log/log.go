@@ -2,6 +2,8 @@ package log
 
 import (
 	"fmt"
+
+	"github.com/v2ray/v2ray-core/common/serial"
 )
 
 const (
@@ -13,16 +15,24 @@ const (
 
 type errorLog struct {
 	prefix string
-	format string
 	values []interface{}
 }
 
 func (this *errorLog) String() string {
-	var data string
-	if len(this.values) == 0 {
-		data = this.format
-	} else {
-		data = fmt.Sprintf(this.format, this.values...)
+	data := ""
+	for _, value := range this.values {
+		switch typedVal := value.(type) {
+		case string:
+			data += typedVal
+		case *string:
+			data += *typedVal
+		case serial.String:
+			data += typedVal.String()
+		case error:
+			data += typedVal.Error()
+		default:
+			data += fmt.Sprintf("%v", value)
+		}
 	}
 	return this.prefix + data
 }
@@ -64,7 +74,7 @@ func SetLogLevel(level LogLevel) {
 func InitErrorLogger(file string) error {
 	logger, err := newFileLogWriter(file)
 	if err != nil {
-		Error("Failed to create error logger on file (%s): %v", file, err)
+		Error("Failed to create error logger on file (", file, "): ", err)
 		return err
 	}
 	streamLoggerInstance = logger
@@ -72,37 +82,33 @@ func InitErrorLogger(file string) error {
 }
 
 // Debug outputs a debug log with given format and optional arguments.
-func Debug(format string, v ...interface{}) {
+func Debug(v ...interface{}) {
 	debugLogger.Log(&errorLog{
 		prefix: "[Debug]",
-		format: format,
 		values: v,
 	})
 }
 
 // Info outputs an info log with given format and optional arguments.
-func Info(format string, v ...interface{}) {
+func Info(v ...interface{}) {
 	infoLogger.Log(&errorLog{
 		prefix: "[Info]",
-		format: format,
 		values: v,
 	})
 }
 
 // Warning outputs a warning log with given format and optional arguments.
-func Warning(format string, v ...interface{}) {
+func Warning(v ...interface{}) {
 	warningLogger.Log(&errorLog{
 		prefix: "[Warning]",
-		format: format,
 		values: v,
 	})
 }
 
 // Error outputs an error log with given format and optional arguments.
-func Error(format string, v ...interface{}) {
+func Error(v ...interface{}) {
 	errorLogger.Log(&errorLog{
 		prefix: "[Error]",
-		format: format,
 		values: v,
 	})
 }

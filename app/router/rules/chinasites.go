@@ -24,7 +24,7 @@ func parseChinaSitesRule(data []byte) (*Rule, error) {
 	rawRule := new(JsonRule)
 	err := json.Unmarshal(data, rawRule)
 	if err != nil {
-		log.Error("Router: Invalid router rule: %v", err)
+		log.Error("Router: Invalid router rule: ", err)
 		return nil, err
 	}
 	return &Rule{

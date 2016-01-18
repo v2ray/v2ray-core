@@ -41,7 +41,7 @@ func init() {
 			} else if rawConfig.AuthMethod == AuthMethodUserPass {
 				socksConfig.AuthType = AuthTypePassword
 			} else {
-				log.Error("Socks: Unknown auth method: %s", rawConfig.AuthMethod)
+				log.Error("Socks: Unknown auth method: ", rawConfig.AuthMethod)
 				return nil, internal.ErrorBadConfiguration
 			}
 

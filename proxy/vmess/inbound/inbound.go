@@ -55,7 +55,7 @@ func (this *VMessInboundHandler) Listen(port v2net.Port) error {
 		Zone: "",
 	})
 	if err != nil {
-		log.Error("Unable to listen tcp port %d: %v", port, err)
+		log.Error("Unable to listen tcp port ", port, ": ", err)
 		return err
 	}
 	this.accepting = true
@@ -76,7 +76,7 @@ func (this *VMessInboundHandler) AcceptConnections() error {
 			}
 			connection, err := this.listener.AcceptTCP()
 			if err != nil {
-				log.Error("Failed to accpet connection: %s", err.Error())
+				log.Error("Failed to accpet connection: ", err)
 				return err
 			}
 			go this.HandleConnection(connection)
@@ -96,11 +96,11 @@ func (this *VMessInboundHandler) HandleConnection(connection *net.TCPConn) error
 	request, err := requestReader.Read(connReader)
 	if err != nil {
 		log.Access(connection.RemoteAddr().String(), "", log.AccessRejected, err.Error())
-		log.Warning("VMessIn: Invalid request from (%s): %v", connection.RemoteAddr().String(), err)
+		log.Warning("VMessIn: Invalid request from ", connection.RemoteAddr(), ": ", err)
 		return err
 	}
 	log.Access(connection.RemoteAddr().String(), request.Address.String(), log.AccessAccepted, "")
-	log.Debug("VMessIn: Received request for %s", request.Address.String())
+	log.Debug("VMessIn: Received request for ", request.Address)
 
 	ray := this.space.PacketDispatcher().DispatchToOutbound(v2net.NewPacket(request.Destination(), nil, true))
 	input := ray.InboundInput()
@@ -118,7 +118,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *net.TCPConn) error
 
 	aesStream, err := v2crypto.NewAesEncryptionStream(responseKey[:], responseIV[:])
 	if err != nil {
-		log.Error("VMessIn: Failed to create AES decryption stream: %v", err)
+		log.Error("VMessIn: Failed to create AES decryption stream: ", err)
 		close(input)
 		return err
 	}
@@ -152,7 +152,7 @@ func handleInput(request *protocol.VMessRequest, reader io.Reader, input chan<- 
 
 	aesStream, err := v2crypto.NewAesDecryptionStream(request.RequestKey, request.RequestIV)
 	if err != nil {
-		log.Error("VMessIn: Failed to create AES decryption stream: %v", err)
+		log.Error("VMessIn: Failed to create AES decryption stream: ", err)
 		return
 	}
 	requestReader := v2crypto.NewCryptionReader(aesStream, reader)

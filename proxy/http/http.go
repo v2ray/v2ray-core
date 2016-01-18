@@ -68,7 +68,7 @@ func (this *HttpProxyServer) accept() {
 			}
 			tcpConn, err := this.tcpListener.AcceptTCP()
 			if err != nil {
-				log.Error("Failed to accept HTTP connection: %v", err)
+				log.Error("Failed to accept HTTP connection: ", err)
 				return err
 			}
 			go this.handleConnection(tcpConn)
@@ -106,10 +106,10 @@ func (this *HttpProxyServer) handleConnection(conn *net.TCPConn) {
 
 	request, err := http.ReadRequest(reader)
 	if err != nil {
-		log.Warning("Failed to read http request: %v", err)
+		log.Warning("Failed to read http request: ", err)
 		return
 	}
-	log.Info("Request to Method [%s] Host [%s] with URL [%s]", request.Method, request.Host, request.URL.String())
+	log.Info("Request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]")
 	defaultPort := v2net.Port(80)
 	if strings.ToLower(request.URL.Scheme) == "https" {
 		defaultPort = v2net.Port(443)
@@ -120,7 +120,7 @@ func (this *HttpProxyServer) handleConnection(conn *net.TCPConn) {
 	}
 	dest, err := parseHost(host, defaultPort)
 	if err != nil {
-		log.Warning("Malformed proxy host (%s): %v", host, err)
+		log.Warning("Malformed proxy host (", host, "): ", err)
 		return
 	}
 	if strings.ToUpper(request.Method) == "CONNECT" {
@@ -222,7 +222,7 @@ func (this *HttpProxyServer) handlePlainHTTP(request *http.Request, dest v2net.D
 
 	requestBuffer := alloc.NewBuffer().Clear() // Don't release this buffer as it is passed into a Packet.
 	request.Write(requestBuffer)
-	log.Debug("Request to remote:\n%s", string(requestBuffer.Value))
+	log.Debug("Request to remote:\n", string(requestBuffer.Value))
 
 	packet := v2net.NewPacket(dest, requestBuffer, true)
 	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)

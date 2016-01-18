@@ -67,13 +67,13 @@ func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ra
 		Port: int(dest.Port()),
 	})
 	if err != nil {
-		log.Error("Failed to open %s: %v", dest.String(), err)
+		log.Error("Failed to open ", dest, ": ", err)
 		if ray != nil {
 			close(ray.OutboundOutput())
 		}
 		return err
 	}
-	log.Info("VMessOut: Tunneling request to %s via %s", request.Address.String(), dest.String())
+	log.Info("VMessOut: Tunneling request to ", request.Address, " via ", dest)
 
 	defer conn.Close()
 
@@ -97,7 +97,7 @@ func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2
 	defer finish.Unlock()
 	aesStream, err := v2crypto.NewAesEncryptionStream(request.RequestKey[:], request.RequestIV[:])
 	if err != nil {
-		log.Error("VMessOut: Failed to create AES encryption stream: %v", err)
+		log.Error("VMessOut: Failed to create AES encryption stream: ", err)
 		return
 	}
 	encryptRequestWriter := v2crypto.NewCryptionWriter(aesStream, conn)
@@ -106,7 +106,7 @@ func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2
 	defer buffer.Release()
 	buffer, err = request.ToBytes(protocol.NewRandomTimestampGenerator(protocol.Timestamp(time.Now().Unix()), 30), buffer)
 	if err != nil {
-		log.Error("VMessOut: Failed to serialize VMess request: %v", err)
+		log.Error("VMessOut: Failed to serialize VMess request: ", err)
 		return
 	}
 
@@ -129,7 +129,7 @@ func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2
 
 	_, err = conn.Write(buffer.Value)
 	if err != nil {
-		log.Error("VMessOut: Failed to write VMess request: %v", err)
+		log.Error("VMessOut: Failed to write VMess request: ", err)
 		return
 	}
 
@@ -151,14 +151,14 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 
 	aesStream, err := v2crypto.NewAesDecryptionStream(responseKey[:], responseIV[:])
 	if err != nil {
-		log.Error("VMessOut: Failed to create AES encryption stream: %v", err)
+		log.Error("VMessOut: Failed to create AES encryption stream: ", err)
 		return
 	}
 	decryptResponseReader := v2crypto.NewCryptionReader(aesStream, conn)
 
 	buffer, err := v2net.ReadFrom(decryptResponseReader, nil)
 	if err != nil {
-		log.Error("VMessOut: Failed to read VMess response (%d bytes): %v", buffer.Len(), err)
+		log.Error("VMessOut: Failed to read VMess response (", buffer.Len(), " bytes): ", err)
 		buffer.Release()
 		return
 	}
@@ -166,7 +166,7 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 		log.Warning("VMessOut: unexepcted response header. The connection is probably hijacked.")
 		return
 	}
-	log.Info("VMessOut received %d bytes from %s", buffer.Len()-4, conn.RemoteAddr().String())
+	log.Info("VMessOut received ", buffer.Len()-4, " bytes from ", conn.RemoteAddr())
 
 	responseBegin := 4
 	if buffer.Value[2] != 0 {

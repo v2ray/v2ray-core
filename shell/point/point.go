@@ -58,7 +58,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	ichConfig := pConfig.InboundConfig.Settings
 	ich, err := proxyrepo.CreateInboundConnectionHandler(pConfig.InboundConfig.Protocol, vpoint.space.ForContext("vpoint-default-inbound"), ichConfig)
 	if err != nil {
-		log.Error("Failed to create inbound connection handler: %v", err)
+		log.Error("Failed to create inbound connection handler: ", err)
 		return nil, err
 	}
 	vpoint.ich = ich
@@ -66,7 +66,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	ochConfig := pConfig.OutboundConfig.Settings
 	och, err := proxyrepo.CreateOutboundConnectionHandler(pConfig.OutboundConfig.Protocol, vpoint.space.ForContext("vpoint-default-outbound"), ochConfig)
 	if err != nil {
-		log.Error("Failed to create outbound connection handler: %v", err)
+		log.Error("Failed to create outbound connection handler: ", err)
 		return nil, err
 	}
 	vpoint.och = och
@@ -93,7 +93,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 		for _, detourConfig := range outboundDetours {
 			detourHandler, err := proxyrepo.CreateOutboundConnectionHandler(detourConfig.Protocol, vpoint.space.ForContext(detourConfig.Tag), detourConfig.Settings)
 			if err != nil {
-				log.Error("Failed to create detour outbound connection handler: %v", err)
+				log.Error("Failed to create detour outbound connection handler: ", err)
 				return nil, err
 			}
 			vpoint.odh[detourConfig.Tag] = detourHandler
@@ -104,7 +104,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	if routerConfig != nil {
 		r, err := router.CreateRouter(routerConfig.Strategy, routerConfig.Settings)
 		if err != nil {
-			log.Error("Failed to create router: %v", err)
+			log.Error("Failed to create router: ", err)
 			return nil, BadConfiguration
 		}
 		vpoint.router = r
@@ -124,7 +124,7 @@ func (this *Point) Close() {
 // In the case of any errors, the state of the server is unpredicatable.
 func (this *Point) Start() error {
 	if this.port <= 0 {
-		log.Error("Invalid port %d", this.port)
+		log.Error("Invalid port ", this.port)
 		return BadConfiguration
 	}
 
@@ -133,7 +133,7 @@ func (this *Point) Start() error {
 		if err != nil {
 			return err
 		}
-		log.Warning("Point server started on port %d", this.port)
+		log.Warning("Point server started on port ", this.port)
 		return nil
 	})
 	if err != nil {
@@ -162,7 +162,7 @@ func (this *Point) DispatchToOutbound(context app.Context, packet v2net.Packet) 
 	if this.router != nil {
 		if tag, err := this.router.TakeDetour(dest); err == nil {
 			if handler, found := this.odh[tag]; found {
-				log.Info("Point: Taking detour [%s] for [%s]", tag, dest)
+				log.Info("Point: Taking detour [", tag, "] for [", dest, "]", tag, dest)
 				dispatcher = handler
 			}
 		}

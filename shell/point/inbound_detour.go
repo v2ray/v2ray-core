@@ -28,7 +28,7 @@ func (this *InboundDetourHandler) Initialize() error {
 		ichConfig := this.config.Settings
 		ich, err := proxyrepo.CreateInboundConnectionHandler(this.config.Protocol, this.space, ichConfig)
 		if err != nil {
-			log.Error("Failed to create inbound connection handler: %v", err)
+			log.Error("Failed to create inbound connection handler: ", err)
 			return err
 		}
 		this.ich = append(this.ich, &InboundConnectionHandlerWithPort{
@@ -51,7 +51,7 @@ func (this *InboundDetourHandler) Start() error {
 		err := retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
 			err := ich.handler.Listen(ich.port)
 			if err != nil {
-				log.Error("Failed to start inbound detour on port %d: %v", ich.port, err)
+				log.Error("Failed to start inbound detour on port ", ich.port, ": ", err)
 				return err
 			}
 			return nil

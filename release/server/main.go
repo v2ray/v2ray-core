@@ -65,7 +65,7 @@ func main() {
 	}
 	config, err := point.LoadConfig(configFile)
 	if err != nil {
-		log.Error("Failed to read config file (%s): %v", configFile, err)
+		log.Error("Failed to read config file (", configFile, "): ", configFile, err)
 		return
 	}
 
@@ -75,13 +75,13 @@ func main() {
 
 	vPoint, err := point.NewPoint(config)
 	if err != nil {
-		log.Error("Failed to create Point server: %v", err)
+		log.Error("Failed to create Point server: ", err)
 		return
 	}
 
 	err = vPoint.Start()
 	if err != nil {
-		log.Error("Error starting Point server: %v", err)
+		log.Error("Error starting Point server: ", err)
 		return
 	}
 

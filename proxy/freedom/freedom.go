@@ -17,7 +17,7 @@ type FreedomConnection struct {
 }
 
 func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {
-	log.Info("Freedom: Opening connection to %s", firstPacket.Destination().String())
+	log.Info("Freedom: Opening connection to ", firstPacket.Destination())
 
 	var conn net.Conn
 	err := retry.Timed(5, 100).On(func() error {
@@ -30,7 +30,7 @@ func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbou
 	})
 	if err != nil {
 		close(ray.OutboundOutput())
-		log.Error("Freedom: Failed to open connection: %s : %v", firstPacket.Destination().String(), err)
+		log.Error("Freedom: Failed to open connection to ", firstPacket.Destination(), ": ", err)
 		return err
 	}
 	defer conn.Close()
@@ -60,7 +60,7 @@ func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbou
 		defer close(output)
 
 		response, err := v2net.ReadFrom(conn, nil)
-		log.Info("Freedom receives %d bytes from %s", response.Len(), conn.RemoteAddr().String())
+		log.Info("Freedom receives ", response.Len(), " bytes from ", conn.RemoteAddr())
 		if response.Len() > 0 {
 			output <- response
 		} else {

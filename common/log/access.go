@@ -27,7 +27,7 @@ func (this *accessLog) String() string {
 func InitAccessLogger(file string) error {
 	logger, err := newFileLogWriter(file)
 	if err != nil {
-		Error("Failed to create access logger on file (%s): %v", file, err)
+		Error("Failed to create access logger on file (", file, "): ", file, err)
 		return err
 	}
 	accessLoggerInstance = logger

@@ -83,7 +83,7 @@ func ReadUDPRequest(packet []byte) (*Socks5UDPRequest, error) {
 		}
 		dataBegin = 5 + domainLength + 2
 	default:
-		log.Warning("Unknown address type %d", addrType)
+		log.Warning("Unknown address type ", addrType)
 		return nil, ErrorUnknownAddressType
 	}
 

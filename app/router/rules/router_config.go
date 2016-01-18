@@ -53,7 +53,7 @@ func parseFieldRule(msg json.RawMessage) (*Rule, error) {
 		for _, ipStr := range *(rawFieldRule.IP) {
 			cidrMatcher, err := NewCIDRMatcher(ipStr.String())
 			if err != nil {
-				log.Error("Router: Invalid IP range in router rule: %v", err)
+				log.Error("Router: Invalid IP range in router rule: ", err)
 				return nil, err
 			}
 			conds.Add(cidrMatcher)
@@ -78,14 +78,14 @@ func parseRule(msg json.RawMessage) *Rule {
 	rawRule := new(JsonRule)
 	err := json.Unmarshal(msg, rawRule)
 	if err != nil {
-		log.Error("Router: Invalid router rule: %v", err)
+		log.Error("Router: Invalid router rule: ", err)
 		return nil
 	}
 	if rawRule.Type == "field" {
 
 		fieldrule, err := parseFieldRule(msg)
 		if err != nil {
-			log.Error("Invalid field rule: %v", err)
+			log.Error("Invalid field rule: ", err)
 			return nil
 		}
 		return fieldrule
@@ -93,7 +93,7 @@ func parseRule(msg json.RawMessage) *Rule {
 	if rawRule.Type == "chinaip" {
 		chinaiprule, err := parseChinaIPRule(msg)
 		if err != nil {
-			log.Error("Router: Invalid chinaip rule: %v", err)
+			log.Error("Router: Invalid chinaip rule: ", err)
 			return nil
 		}
 		return chinaiprule
@@ -101,12 +101,12 @@ func parseRule(msg json.RawMessage) *Rule {
 	if rawRule.Type == "chinasites" {
 		chinasitesrule, err := parseChinaSitesRule(msg)
 		if err != nil {
-			log.Error("Invalid chinasites rule: %v", err)
+			log.Error("Invalid chinasites rule: ", err)
 			return nil
 		}
 		return chinasitesrule
 	}
-	log.Error("Unknown router rule type: %s", rawRule.Type)
+	log.Error("Unknown router rule type: ", rawRule.Type)
 	return nil
 }
 

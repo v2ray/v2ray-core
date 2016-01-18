@@ -5,6 +5,7 @@ import (
 	"log"
 	"testing"
 
+	"github.com/v2ray/v2ray-core/common/serial"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
@@ -28,11 +29,11 @@ func TestStreamLogger(t *testing.T) {
 	infoLogger = &stdOutLogWriter{
 		logger: log.New(buffer, "", 0),
 	}
-	Info("Test %s Format", "Stream Logger")
-	assert.Bytes(buffer.Bytes()).Equals([]byte("[Info]Test Stream Logger Format\n"))
+	Info("Test ", "Stream Logger", " Format")
+	assert.StringLiteral(string(buffer.Bytes())).Equals("[Info]Test Stream Logger Format\n")
 
 	buffer.Reset()
 	errorLogger = infoLogger
-	Error("Test No Format")
-	assert.Bytes(buffer.Bytes()).Equals([]byte("[Error]Test No Format\n"))
+	Error("Test ", serial.StringLiteral("literal"), " Format")
+	assert.StringLiteral(string(buffer.Bytes())).Equals("[Error]Test literal Format\n")
 }
