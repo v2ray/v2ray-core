@@ -16,11 +16,6 @@ func (this *AddressJson) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &rawStr); err != nil {
 		return err
 	}
-	ip := net.ParseIP(rawStr)
-	if ip != nil {
-		this.Address = IPAddress(ip)
-	} else {
-		this.Address = DomainAddress(rawStr)
-	}
+	this.Address = ParseAddress(rawStr)
 	return nil
 }

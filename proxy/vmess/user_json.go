@@ -13,7 +13,7 @@ func (u *User) UnmarshalJSON(data []byte) error {
 		IdString     string `json:"id"`
 		EmailString  string `json:"email"`
 		LevelInt     int    `json:"level"`
-		AlterIdCount int    `json:"alterId"`
+		AlterIdCount uint16 `json:"alterId"`
 	}
 	var rawUserValue rawUser
 	if err := json.Unmarshal(data, &rawUserValue); err != nil {

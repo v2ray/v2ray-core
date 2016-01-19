@@ -7,7 +7,7 @@ import (
 type Port serial.Uint16Literal
 
 func PortFromBytes(port []byte) Port {
-	return Port(uint16(port[0])<<8 + uint16(port[1]))
+	return Port(serial.ParseUint16(port))
 }
 
 func (this Port) Value() uint16 {
@@ -15,7 +15,7 @@ func (this Port) Value() uint16 {
 }
 
 func (this Port) Bytes() []byte {
-	return []byte{byte(this >> 8), byte(this)}
+	return serial.Uint16Literal(this).Bytes()
 }
 
 func (this Port) String() string {

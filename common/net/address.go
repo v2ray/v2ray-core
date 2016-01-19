@@ -19,6 +19,14 @@ type Address interface {
 	String() string // String representation of this Address
 }
 
+func ParseAddress(addr string) Address {
+	ip := net.ParseIP(addr)
+	if ip != nil {
+		return IPAddress(ip)
+	}
+	return DomainAddress(addr)
+}
+
 func allZeros(data []byte) bool {
 	for _, v := range data {
 		if v != 0 {
