@@ -4,7 +4,6 @@ package net
 
 import (
 	"encoding/json"
-	"net"
 )
 
 type AddressJson struct {
