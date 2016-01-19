@@ -10,7 +10,7 @@ var (
 )
 
 type Command interface {
-	Marshal(io.Writer) (int, error)
+	Marshal(io.Writer)
 	Unmarshal([]byte) error
 }
 

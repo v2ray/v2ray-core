@@ -21,12 +21,10 @@ func TestCacheDnsIPv4(t *testing.T) {
 	buffer := alloc.NewBuffer().Clear()
 	defer buffer.Release()
 
-	nBytes, err := cd.Marshal(buffer)
-	assert.Error(err).IsNil()
-	assert.Int(nBytes).Equals(buffer.Len())
+	cd.Marshal(buffer)
 
 	cd2 := &CacheDns{}
-	err = cd2.Unmarshal(buffer.Value)
+	err := cd2.Unmarshal(buffer.Value)
 	assert.Error(err).IsNil()
 	netassert.Address(cd.Address).Equals(cd2.Address)
 }

@@ -23,14 +23,15 @@ var (
 
 // SocksServer is a SOCKS 5 proxy server
 type SocksServer struct {
-	tcpMutex    sync.RWMutex
-	udpMutex    sync.RWMutex
-	accepting   bool
-	space       app.Space
-	config      *Config
-	tcpListener *net.TCPListener
-	udpConn     *net.UDPConn
-	udpAddress  v2net.Destination
+	tcpMutex      sync.RWMutex
+	udpMutex      sync.RWMutex
+	accepting     bool
+	space         app.Space
+	config        *Config
+	tcpListener   *net.TCPListener
+	udpConn       *net.UDPConn
+	udpAddress    v2net.Destination
+	listeningPort v2net.Port
 }
 
 func NewSocksServer(space app.Space, config *Config) *SocksServer {
@@ -38,6 +39,10 @@ func NewSocksServer(space app.Space, config *Config) *SocksServer {
 		space:  space,
 		config: config,
 	}
+}
+
+func (this *SocksServer) Port() v2net.Port {
+	return this.listeningPort
 }
 
 func (this *SocksServer) Close() {
@@ -57,6 +62,15 @@ func (this *SocksServer) Close() {
 }
 
 func (this *SocksServer) Listen(port v2net.Port) error {
+	if this.accepting {
+		if this.listeningPort == port {
+			return nil
+		} else {
+			return proxy.ErrorAlreadyListening
+		}
+	}
+	this.listeningPort = port
+
 	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   []byte{0, 0, 0, 0},
 		Port: int(port),

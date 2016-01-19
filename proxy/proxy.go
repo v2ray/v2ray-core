@@ -13,6 +13,8 @@ type InboundConnectionHandler interface {
 	Listen(port v2net.Port) error
 	// Close stops the handler to accepting anymore inbound connections.
 	Close()
+	// Port returns the port that the handler is listening on.
+	Port() v2net.Port
 }
 
 // An OutboundConnectionHandler handles outbound network connection for V2Ray.

@@ -26,20 +26,16 @@ type CacheDns struct {
 	Address v2net.Address
 }
 
-func (this *CacheDns) Marshal(writer io.Writer) (int, error) {
+func (this *CacheDns) Marshal(writer io.Writer) {
 	if this.Address.IsIPv4() {
 		writer.Write([]byte{typeIPv4})
 		writer.Write(this.Address.IP())
-		return 5, nil
 	}
 
 	if this.Address.IsIPv6() {
 		writer.Write([]byte{typeIPv6})
 		writer.Write(this.Address.IP())
-		return 17, nil
 	}
-
-	return 0, ErrDomainAddress
 }
 
 func (this *CacheDns) Unmarshal(data []byte) error {

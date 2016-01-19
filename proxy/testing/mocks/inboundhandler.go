@@ -9,15 +9,19 @@ import (
 )
 
 type InboundConnectionHandler struct {
-	Port       v2net.Port
+	port       v2net.Port
 	Space      app.Space
 	ConnInput  io.Reader
 	ConnOutput io.Writer
 }
 
 func (this *InboundConnectionHandler) Listen(port v2net.Port) error {
-	this.Port = port
+	this.port = port
 	return nil
+}
+
+func (this *InboundConnectionHandler) Port() v2net.Port {
+	return this.port
 }
 
 func (this *InboundConnectionHandler) Close() {

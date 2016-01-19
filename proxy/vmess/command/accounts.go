@@ -2,7 +2,6 @@ package command
 
 import (
 	"io"
-	"time"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/serial"
@@ -22,44 +21,33 @@ func init() {
 // 2 bytes: alterid
 // 8 bytes: time
 type SwitchAccount struct {
-	Host       v2net.Address
-	Port       v2net.Port
-	ID         *uuid.UUID
-	AlterIds   serial.Uint16Literal
-	ValidUntil time.Time
+	Host     v2net.Address
+	Port     v2net.Port
+	ID       *uuid.UUID
+	AlterIds serial.Uint16Literal
+	ValidSec serial.Uint16Literal
 }
 
-func (this *SwitchAccount) Marshal(writer io.Writer) (int, error) {
-	outBytes := 0
+func (this *SwitchAccount) Marshal(writer io.Writer) {
 	hostStr := ""
 	if this.Host != nil {
 		hostStr = this.Host.String()
 	}
 	writer.Write([]byte{byte(len(hostStr))})
-	outBytes++
 
 	if len(hostStr) > 0 {
 		writer.Write([]byte(hostStr))
-		outBytes += len(hostStr)
 	}
 
 	writer.Write(this.Port.Bytes())
-	outBytes += 2
 
 	idBytes := this.ID.Bytes()
 	writer.Write(idBytes)
-	outBytes += len(idBytes)
 
 	writer.Write(this.AlterIds.Bytes())
-	outBytes += 2
 
-	timestamp := this.ValidUntil.Unix()
-	timeBytes := serial.Int64Literal(timestamp).Bytes()
-
+	timeBytes := this.ValidSec.Bytes()
 	writer.Write(timeBytes)
-	outBytes += len(timeBytes)
-
-	return outBytes, nil
 }
 
 func (this *SwitchAccount) Unmarshal(data []byte) error {
@@ -84,9 +72,9 @@ func (this *SwitchAccount) Unmarshal(data []byte) error {
 	}
 	this.AlterIds = serial.ParseUint16(data[alterIdStart : alterIdStart+2])
 	timeStart := alterIdStart + 2
-	if len(data) < timeStart+8 {
+	if len(data) < timeStart+2 {
 		return transport.CorruptedPacket
 	}
-	this.ValidUntil = time.Unix(serial.BytesLiteral(data[timeStart:timeStart+8]).Int64Value(), 0)
+	this.ValidSec = serial.ParseUint16(data[timeStart : timeStart+2])
 	return nil
 }

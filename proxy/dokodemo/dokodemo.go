@@ -10,18 +10,20 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
+	"github.com/v2ray/v2ray-core/proxy"
 )
 
 type DokodemoDoor struct {
-	tcpMutex    sync.RWMutex
-	udpMutex    sync.RWMutex
-	config      *Config
-	accepting   bool
-	address     v2net.Address
-	port        v2net.Port
-	space       app.Space
-	tcpListener *net.TCPListener
-	udpConn     *net.UDPConn
+	tcpMutex      sync.RWMutex
+	udpMutex      sync.RWMutex
+	config        *Config
+	accepting     bool
+	address       v2net.Address
+	port          v2net.Port
+	space         app.Space
+	tcpListener   *net.TCPListener
+	udpConn       *net.UDPConn
+	listeningPort v2net.Port
 }
 
 func NewDokodemoDoor(space app.Space, config *Config) *DokodemoDoor {
@@ -31,6 +33,10 @@ func NewDokodemoDoor(space app.Space, config *Config) *DokodemoDoor {
 		address: config.Address,
 		port:    config.Port,
 	}
+}
+
+func (this *DokodemoDoor) Port() v2net.Port {
+	return this.listeningPort
 }
 
 func (this *DokodemoDoor) Close() {
@@ -50,6 +56,14 @@ func (this *DokodemoDoor) Close() {
 }
 
 func (this *DokodemoDoor) Listen(port v2net.Port) error {
+	if this.accepting {
+		if this.listeningPort == port {
+			return nil
+		} else {
+			return proxy.ErrorAlreadyListening
+		}
+	}
+	this.listeningPort = port
 	this.accepting = true
 
 	if this.config.Network.HasNetwork(v2net.TCPNetwork) {

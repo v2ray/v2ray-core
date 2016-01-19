@@ -22,17 +22,17 @@ import (
 // Inbound connection handler that handles messages in VMess format.
 type VMessInboundHandler struct {
 	sync.Mutex
-	space     app.Space
-	clients   protocol.UserSet
-	accepting bool
-	listener  *net.TCPListener
+	space         app.Space
+	clients       protocol.UserSet
+	user          *vmess.User
+	accepting     bool
+	listener      *net.TCPListener
+	features      *FeaturesConfig
+	listeningPort v2net.Port
 }
 
-func NewVMessInboundHandler(space app.Space, clients protocol.UserSet) *VMessInboundHandler {
-	return &VMessInboundHandler{
-		space:   space,
-		clients: clients,
-	}
+func (this *VMessInboundHandler) Port() v2net.Port {
+	return this.listeningPort
 }
 
 func (this *VMessInboundHandler) Close() {
@@ -45,11 +45,20 @@ func (this *VMessInboundHandler) Close() {
 	}
 }
 
-func (this *VMessInboundHandler) AddUser(user vmess.User) {
-
+func (this *VMessInboundHandler) GetUser() *vmess.User {
+	return this.user
 }
 
 func (this *VMessInboundHandler) Listen(port v2net.Port) error {
+	if this.accepting {
+		if this.listeningPort == port {
+			return nil
+		} else {
+			return proxy.ErrorAlreadyListening
+		}
+	}
+	this.listeningPort = port
+
 	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   []byte{0, 0, 0, 0},
 		Port: int(port),
@@ -175,6 +184,11 @@ func init() {
 				allowedClients.AddUser(user)
 			}
 
-			return NewVMessInboundHandler(space, allowedClients), nil
+			return &VMessInboundHandler{
+				space:    space,
+				clients:  allowedClients,
+				features: config.Features,
+				user:     config.AllowedUsers[0],
+			}, nil
 		})
 }

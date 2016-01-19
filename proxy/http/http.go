@@ -15,15 +15,17 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/common/serial"
+	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
 type HttpProxyServer struct {
 	sync.Mutex
-	accepting   bool
-	space       app.Space
-	config      *Config
-	tcpListener *net.TCPListener
+	accepting     bool
+	space         app.Space
+	config        *Config
+	tcpListener   *net.TCPListener
+	listeningPort v2net.Port
 }
 
 func NewHttpProxyServer(space app.Space, config *Config) *HttpProxyServer {
@@ -31,6 +33,10 @@ func NewHttpProxyServer(space app.Space, config *Config) *HttpProxyServer {
 		space:  space,
 		config: config,
 	}
+}
+
+func (this *HttpProxyServer) Port() v2net.Port {
+	return this.listeningPort
 }
 
 func (this *HttpProxyServer) Close() {
@@ -44,6 +50,15 @@ func (this *HttpProxyServer) Close() {
 }
 
 func (this *HttpProxyServer) Listen(port v2net.Port) error {
+	if this.accepting {
+		if this.listeningPort == port {
+			return nil
+		} else {
+			return proxy.ErrorAlreadyListening
+		}
+	}
+	this.listeningPort = port
+
 	tcpListener, err := net.ListenTCP("tcp", &net.TCPAddr{
 		Port: int(port.Value()),
 		IP:   []byte{0, 0, 0, 0},
