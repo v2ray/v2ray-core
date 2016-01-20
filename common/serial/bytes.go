@@ -25,3 +25,12 @@ func (this BytesLiteral) Int64Value() int64 {
 func (this BytesLiteral) String() string {
 	return string(this.Value())
 }
+
+func (this BytesLiteral) AllZero() bool {
+  for _, b := range this {
+    if b != 0 {
+      return false
+    }
+  }
+  return true
+}
