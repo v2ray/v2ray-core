@@ -12,7 +12,7 @@ func (u *User) UnmarshalJSON(data []byte) error {
 	type rawUser struct {
 		IdString     string `json:"id"`
 		EmailString  string `json:"email"`
-		LevelInt     int    `json:"level"`
+		LevelByte    byte   `json:"level"`
 		AlterIdCount uint16 `json:"alterId"`
 	}
 	var rawUserValue rawUser
@@ -23,20 +23,7 @@ func (u *User) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	u.ID = NewID(id)
-	//u.Email = rawUserValue.EmailString
-	u.Level = UserLevel(rawUserValue.LevelInt)
-
-	if rawUserValue.AlterIdCount > 0 {
-		prevId := u.ID.UUID()
-		// TODO: check duplicate
-		u.AlterIDs = make([]*ID, rawUserValue.AlterIdCount)
-		for idx, _ := range u.AlterIDs {
-			newid := prevId.Next()
-			u.AlterIDs[idx] = NewID(newid)
-			prevId = newid
-		}
-	}
+	*u = *NewUser(NewID(id), UserLevel(rawUserValue.LevelByte), rawUserValue.AlterIdCount)
 
 	return nil
 }

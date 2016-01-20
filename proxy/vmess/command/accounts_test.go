@@ -18,7 +18,8 @@ func TestSwitchAccount(t *testing.T) {
 		Port:     1234,
 		ID:       uuid.New(),
 		AlterIds: 1024,
-		ValidSec: 8080,
+		Level:    128,
+		ValidMin: 16,
 	}
 
 	cmd, err := CreateResponseCommand(1)
@@ -33,5 +34,6 @@ func TestSwitchAccount(t *testing.T) {
 	netassert.Port(sa.Port).Equals(sa2.Port)
 	assert.String(sa.ID).Equals(sa2.ID.String())
 	assert.Uint16(sa.AlterIds.Value()).Equals(sa2.AlterIds.Value())
-	assert.Uint16(sa.ValidSec.Value()).Equals(sa2.ValidSec.Value())
+	assert.Byte(byte(sa.Level)).Equals(byte(sa2.Level))
+	assert.Byte(sa.ValidMin).Equals(sa2.ValidMin)
 }

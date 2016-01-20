@@ -21,6 +21,10 @@ type ID struct {
 	cmdKey [IDBytesLen]byte
 }
 
+func (this *ID) Equals(another *ID) bool {
+	return this.uuid.Equals(another.uuid)
+}
+
 func (this *ID) Bytes() []byte {
 	return this.uuid.Bytes()
 }

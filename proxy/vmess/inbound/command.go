@@ -19,20 +19,20 @@ func (this *VMessInboundHandler) generateCommand(buffer *alloc.Buffer) {
 			inboundHandler, ok := handler.(*VMessInboundHandler)
 			if ok {
 				user := inboundHandler.GetUser()
-				availableSecUint16 := uint16(65535)
-				if availableSec < 65535 {
-					availableSecUint16 = uint16(availableSec)
+				availableMin := availableSec / 60
+				if availableMin > 255 {
+					availableMin = 255
 				}
 
 				saCmd := &command.SwitchAccount{
 					Port:     inboundHandler.Port(),
 					ID:       user.ID.UUID(),
 					AlterIds: serial.Uint16Literal(len(user.AlterIDs)),
-					ValidSec: serial.Uint16Literal(availableSecUint16),
+					Level:    user.Level,
+					ValidMin: byte(availableMin),
 				}
 				saCmd.Marshal(commandBytes)
 			}
-
 		}
 	}
 

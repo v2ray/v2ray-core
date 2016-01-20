@@ -6,6 +6,7 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/common/uuid"
+	"github.com/v2ray/v2ray-core/proxy/vmess"
 	"github.com/v2ray/v2ray-core/transport"
 )
 
@@ -19,13 +20,15 @@ func init() {
 // 2 bytes: port
 // 16 bytes: uuid
 // 2 bytes: alterid
-// 8 bytes: time
+// 1 byte: level
+// 1 bytes: time
 type SwitchAccount struct {
 	Host     v2net.Address
 	Port     v2net.Port
 	ID       *uuid.UUID
 	AlterIds serial.Uint16Literal
-	ValidSec serial.Uint16Literal
+	Level    vmess.UserLevel
+	ValidMin byte
 }
 
 func (this *SwitchAccount) Marshal(writer io.Writer) {
@@ -45,9 +48,9 @@ func (this *SwitchAccount) Marshal(writer io.Writer) {
 	writer.Write(idBytes)
 
 	writer.Write(this.AlterIds.Bytes())
+	writer.Write([]byte{byte(this.Level)})
 
-	timeBytes := this.ValidSec.Bytes()
-	writer.Write(timeBytes)
+	writer.Write([]byte{this.ValidMin})
 }
 
 func (this *SwitchAccount) Unmarshal(data []byte) error {
@@ -71,10 +74,15 @@ func (this *SwitchAccount) Unmarshal(data []byte) error {
 		return transport.CorruptedPacket
 	}
 	this.AlterIds = serial.ParseUint16(data[alterIdStart : alterIdStart+2])
-	timeStart := alterIdStart + 2
-	if len(data) < timeStart+2 {
+	levelStart := alterIdStart + 2
+	if len(data) < levelStart {
 		return transport.CorruptedPacket
 	}
-	this.ValidSec = serial.ParseUint16(data[timeStart : timeStart+2])
+	this.Level = vmess.UserLevel(data[levelStart])
+	timeStart := levelStart + 1
+	if len(data) < timeStart {
+		return transport.CorruptedPacket
+	}
+	this.ValidMin = data[timeStart]
 	return nil
 }

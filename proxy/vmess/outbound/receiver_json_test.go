@@ -21,7 +21,7 @@ func TestConfigTargetParsing(t *testing.T) {
       {
         "id": "e641f5ad-9397-41e3-bf1a-e8740dfed019",
         "email": "love@v2ray.com",
-        "level": 999
+        "level": 255
       }
     ]
   }`

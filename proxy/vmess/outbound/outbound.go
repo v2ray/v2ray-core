@@ -48,10 +48,10 @@ func (this *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray ray.Out
 	request.RequestKey = buffer.Value[16:32]
 	request.ResponseHeader = buffer.Value[32:36]
 
-	return startCommunicate(request, vNextAddress, ray, firstPacket)
+	return this.startCommunicate(request, vNextAddress, ray, firstPacket)
 }
 
-func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ray ray.OutboundRay, firstPacket v2net.Packet) error {
+func (this *VMessOutboundHandler) startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ray ray.OutboundRay, firstPacket v2net.Packet) error {
 	var destIp net.IP
 	if dest.Address().IsIPv4() || dest.Address().IsIPv6() {
 		destIp = dest.Address().IP()
@@ -84,8 +84,8 @@ func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ra
 	requestFinish.Lock()
 	responseFinish.Lock()
 
-	go handleRequest(conn, request, firstPacket, input, &requestFinish)
-	go handleResponse(conn, request, output, &responseFinish, (request.Command == protocol.CmdUDP))
+	go this.handleRequest(conn, request, firstPacket, input, &requestFinish)
+	go this.handleResponse(conn, request, output, &responseFinish, (request.Command == protocol.CmdUDP))
 
 	requestFinish.Lock()
 	conn.CloseWrite()
@@ -93,7 +93,7 @@ func startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ra
 	return nil
 }
 
-func handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2net.Packet, input <-chan *alloc.Buffer, finish *sync.Mutex) {
+func (this *VMessOutboundHandler) handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2net.Packet, input <-chan *alloc.Buffer, finish *sync.Mutex) {
 	defer finish.Unlock()
 	aesStream, err := v2crypto.NewAesEncryptionStream(request.RequestKey[:], request.RequestIV[:])
 	if err != nil {
@@ -143,7 +143,7 @@ func headerMatch(request *protocol.VMessRequest, responseHeader []byte) bool {
 	return (request.ResponseHeader[0] == responseHeader[0])
 }
 
-func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<- *alloc.Buffer, finish *sync.Mutex, isUDP bool) {
+func (this *VMessOutboundHandler) handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<- *alloc.Buffer, finish *sync.Mutex, isUDP bool) {
 	defer finish.Unlock()
 	defer close(output)
 	responseKey := md5.Sum(request.RequestKey[:])
@@ -178,7 +178,7 @@ func handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<-
 		}
 		command := buffer.Value[2]
 		data := buffer.Value[4 : 4+dataLen]
-		go handleCommand(command, data)
+		go this.handleCommand(command, data)
 		responseBegin = 4 + dataLen
 	}
 

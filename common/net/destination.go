@@ -7,6 +7,7 @@ type Destination interface {
 	Port() Port
 	String() string // String representation of the destination
 	NetAddr() string
+	Equals(Destination) bool
 
 	IsTCP() bool // True if destination is reachable via TCP
 	IsUDP() bool // True if destination is reachable via UDP
@@ -55,6 +56,13 @@ func (dest *tcpDestination) Port() Port {
 	return dest.port
 }
 
+func (dest *tcpDestination) Equals(another Destination) bool {
+	if !another.IsTCP() {
+		return false
+	}
+	return dest.Port() == another.Port() && dest.Address().Equals(another.Address())
+}
+
 type udpDestination struct {
 	address Address
 	port    Port
@@ -86,4 +94,11 @@ func (dest *udpDestination) IsUDP() bool {
 
 func (dest *udpDestination) Port() Port {
 	return dest.port
+}
+
+func (dest *udpDestination) Equals(another Destination) bool {
+	if !another.IsUDP() {
+		return false
+	}
+	return dest.Port() == another.Port() && dest.Address().Equals(another.Address())
 }
