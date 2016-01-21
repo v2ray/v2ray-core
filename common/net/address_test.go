@@ -41,6 +41,18 @@ func TestIPv6Address(t *testing.T) {
 	assert.String(addr).Equals("[102:304:102:304:102:304:102:304]")
 }
 
+func TestIPv4Asv6(t *testing.T) {
+  v2testing.Current(t)
+  ip := []byte{
+		byte(0), byte(0), byte(0), byte(0),
+		byte(0), byte(0), byte(0), byte(0),
+		byte(0), byte(0), byte(255), byte(255),
+		byte(1), byte(2), byte(3), byte(4),
+	}
+	addr := v2net.IPAddress(ip)
+	assert.String(addr).Equals("1.2.3.4")
+}
+
 func TestDomainAddress(t *testing.T) {
 	v2testing.Current(t)
 
