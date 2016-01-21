@@ -22,13 +22,15 @@ func (this BytesLiteral) Int64Value() int64 {
 		int64(value[7])
 }
 
+// String returns a string presentation of this ByteLiteral
 func (this BytesLiteral) String() string {
 	return string(this.Value())
 }
 
-func (this BytesLiteral) AllZero() bool {
+// All returns true if all bytes in the ByteLiteral are the same as given value.
+func (this BytesLiteral) All(v byte) bool {
   for _, b := range this {
-    if b != 0 {
+    if b != v {
       return false
     }
   }
