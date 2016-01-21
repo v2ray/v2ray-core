@@ -138,8 +138,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *net.TCPConn) error
 	// Optimize for small response packet
 	buffer := alloc.NewLargeBuffer().Clear()
 	defer buffer.Release()
-	buffer.AppendBytes(request.ResponseHeader[0] ^ request.ResponseHeader[1])
-	buffer.AppendBytes(request.ResponseHeader[2] ^ request.ResponseHeader[3])
+	buffer.AppendBytes(request.ResponseHeader, byte(0))
 	buffer.AppendBytes(byte(0), byte(0))
 
 	if data, open := <-output; open {

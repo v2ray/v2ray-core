@@ -48,7 +48,7 @@ func TestVMessSerialization(t *testing.T) {
 	assert.Error(err).IsNil()
 	request.RequestIV = randBytes[:16]
 	request.RequestKey = randBytes[16:32]
-	request.ResponseHeader = randBytes[32:]
+	request.ResponseHeader = randBytes[32]
 
 	request.Command = byte(0x01)
 	request.Address = v2net.DomainAddress("v2ray.com")
@@ -74,7 +74,7 @@ func TestVMessSerialization(t *testing.T) {
 	assert.String(actualRequest.User.ID).Named("UserId").Equals(request.User.ID.String())
 	assert.Bytes(actualRequest.RequestIV).Named("RequestIV").Equals(request.RequestIV[:])
 	assert.Bytes(actualRequest.RequestKey).Named("RequestKey").Equals(request.RequestKey[:])
-	assert.Bytes(actualRequest.ResponseHeader).Named("ResponseHeader").Equals(request.ResponseHeader[:])
+	assert.Byte(actualRequest.ResponseHeader).Named("ResponseHeader").Equals(request.ResponseHeader)
 	assert.Byte(actualRequest.Command).Named("Command").Equals(request.Command)
 	assert.String(actualRequest.Address).Named("Address").Equals(request.Address.String())
 }
@@ -107,7 +107,7 @@ func BenchmarkVMessRequestWriting(b *testing.B) {
 	rand.Read(randBytes)
 	request.RequestIV = randBytes[:16]
 	request.RequestKey = randBytes[16:32]
-	request.ResponseHeader = randBytes[32:]
+	request.ResponseHeader = randBytes[32]
 
 	request.Command = byte(0x01)
 	request.Address = v2net.DomainAddress("v2ray.com")

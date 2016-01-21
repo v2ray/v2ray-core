@@ -41,12 +41,9 @@ func (this *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray ray.Out
 	buffer := alloc.NewSmallBuffer()
 	defer buffer.Release()                             // Buffer is released after communication finishes.
 	v2net.ReadAllBytes(rand.Reader, buffer.Value[:33]) // 16 + 16 + 1
-	buffer.Value[33] = 0
-	buffer.Value[34] = 0
-	buffer.Value[35] = 0
 	request.RequestIV = buffer.Value[:16]
 	request.RequestKey = buffer.Value[16:32]
-	request.ResponseHeader = buffer.Value[32:36]
+	request.ResponseHeader = buffer.Value[32]
 
 	return this.startCommunicate(request, vNextAddress, ray, firstPacket)
 }
@@ -139,8 +136,8 @@ func (this *VMessOutboundHandler) handleRequest(conn net.Conn, request *protocol
 	return
 }
 
-func headerMatch(request *protocol.VMessRequest, responseHeader []byte) bool {
-	return (request.ResponseHeader[0] == responseHeader[0])
+func headerMatch(request *protocol.VMessRequest, responseHeader byte) bool {
+	return request.ResponseHeader == responseHeader
 }
 
 func (this *VMessOutboundHandler) handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<- *alloc.Buffer, finish *sync.Mutex, isUDP bool) {
@@ -162,7 +159,7 @@ func (this *VMessOutboundHandler) handleResponse(conn net.Conn, request *protoco
 		buffer.Release()
 		return
 	}
-	if buffer.Len() < 4 || !headerMatch(request, buffer.Value[:2]) {
+	if buffer.Len() < 4 || !headerMatch(request, buffer.Value[0]) {
 		log.Warning("VMessOut: unexepcted response header. The connection is probably hijacked.")
 		return
 	}

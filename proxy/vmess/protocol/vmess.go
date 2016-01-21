@@ -37,7 +37,7 @@ type VMessRequest struct {
 	User           *vmess.User
 	RequestIV      []byte
 	RequestKey     []byte
-	ResponseHeader []byte
+	ResponseHeader byte
 	Command        byte
 	Address        v2net.Address
 	Port           v2net.Port
@@ -108,9 +108,9 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 		return nil, proxy.InvalidProtocolVersion
 	}
 
-	request.RequestIV = append([]byte(nil), buffer.Value[1:17]...)       // 16 bytes
-	request.RequestKey = append([]byte(nil), buffer.Value[17:33]...)     // 16 bytes
-	request.ResponseHeader = append([]byte(nil), buffer.Value[33:37]...) // 4 bytes
+	request.RequestIV = append([]byte(nil), buffer.Value[1:17]...)   // 16 bytes
+	request.RequestKey = append([]byte(nil), buffer.Value[17:33]...) // 16 bytes
+	request.ResponseHeader = buffer.Value[33]                        // 1 byte + 3 bytes reserved.
 	request.Command = buffer.Value[37]
 
 	request.Port = v2net.PortFromBytes(buffer.Value[38:40])
@@ -189,7 +189,7 @@ func (this *VMessRequest) ToBytes(timestampGenerator RandomTimestampGenerator, b
 	buffer.AppendBytes(this.Version)
 	buffer.Append(this.RequestIV)
 	buffer.Append(this.RequestKey)
-	buffer.Append(this.ResponseHeader)
+	buffer.AppendBytes(this.ResponseHeader, byte(0), byte(0), byte(0))
 	buffer.AppendBytes(this.Command)
 	buffer.Append(this.Port.Bytes())
 
