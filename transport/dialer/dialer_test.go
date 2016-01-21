@@ -19,6 +19,7 @@ func TestDialDomain(t *testing.T) {
 	}
 	dest, err := server.Start()
 	assert.Error(err).IsNil()
+	defer server.Close()
 
 	conn, err := Dial(v2net.TCPDestination(v2net.DomainAddress("local.v2ray.com"), dest.Port()))
 	assert.Error(err).IsNil()

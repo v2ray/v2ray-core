@@ -1,10 +1,10 @@
 package outbound
 
 import (
-	"math/rand"
 	"sync"
 	"time"
 
+	"github.com/v2ray/v2ray-core/common/dice"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy/vmess"
 )
@@ -44,12 +44,7 @@ func (this *Receiver) AddUser(user *vmess.User) {
 }
 
 func (this *Receiver) PickUser() *vmess.User {
-	userLen := len(this.Accounts)
-	userIdx := 0
-	if userLen > 1 {
-		userIdx = rand.Intn(userLen)
-	}
-	return this.Accounts[userIdx]
+	return this.Accounts[dice.Roll(len(this.Accounts))]
 }
 
 type ExpiringReceiver struct {
@@ -108,11 +103,7 @@ func (this *ReceiverManager) pickDetour() *Receiver {
 		return nil
 	}
 	this.detourAccess.RLock()
-	idx := 0
-	detourLen := len(this.detours)
-	if detourLen > 1 {
-		idx = rand.Intn(detourLen)
-	}
+	idx := dice.Roll(len(this.detours))
 	rec := this.detours[idx]
 	this.detourAccess.RUnlock()
 
@@ -129,14 +120,7 @@ func (this *ReceiverManager) pickDetour() *Receiver {
 }
 
 func (this *ReceiverManager) pickStdReceiver() *Receiver {
-	receiverLen := len(this.receivers)
-
-	receiverIdx := 0
-	if receiverLen > 1 {
-		receiverIdx = rand.Intn(receiverLen)
-	}
-
-	return this.receivers[receiverIdx]
+	return this.receivers[dice.Roll(len(this.receivers))]
 }
 
 func (this *ReceiverManager) PickReceiver() (v2net.Destination, *vmess.User) {

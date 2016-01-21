@@ -2,9 +2,9 @@ package dialer
 
 import (
 	"errors"
-	"math/rand"
 	"net"
 
+	"github.com/v2ray/v2ray-core/common/dice"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
@@ -24,11 +24,7 @@ func Dial(dest v2net.Destination) (net.Conn, error) {
 		if len(ips) == 0 {
 			return nil, ErrInvalidHost
 		}
-		if len(ips) == 1 {
-			ip = ips[0]
-		} else {
-			ip = ips[rand.Intn(len(ips))]
-		}
+		ip = ips[dice.Roll(len(ips))]
 	}
 	if dest.IsTCP() {
 		return net.DialTCP("tcp", nil, &net.TCPAddr{

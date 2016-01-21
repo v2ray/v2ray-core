@@ -1,7 +1,7 @@
 package vmess
 
 import (
-	"math/rand"
+	"github.com/v2ray/v2ray-core/common/dice"
 )
 
 type UserLevel byte
@@ -39,11 +39,7 @@ func (this *User) AnyValidID() *ID {
 	if len(this.AlterIDs) == 0 {
 		return this.ID
 	}
-	if len(this.AlterIDs) == 1 {
-		return this.AlterIDs[0]
-	}
-	idx := rand.Intn(len(this.AlterIDs))
-	return this.AlterIDs[idx]
+	return this.AlterIDs[dice.Roll(len(this.AlterIDs))]
 }
 
 type UserSettings struct {

@@ -1,9 +1,8 @@
 package point
 
 import (
-	"math/rand"
-
 	"github.com/v2ray/v2ray-core/app"
+	"github.com/v2ray/v2ray-core/common/dice"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
@@ -46,8 +45,7 @@ func NewInboundDetourHandlerAlways(space app.Space, config *InboundDetourConfig)
 }
 
 func (this *InboundDetourHandlerAlways) GetConnectionHandler() (proxy.InboundConnectionHandler, int) {
-	idx := rand.Intn(len(this.ich))
-	ich := this.ich[idx]
+	ich := this.ich[dice.Roll(len(this.ich))]
 	return ich.handler, this.config.Allocation.Refresh
 }
 
