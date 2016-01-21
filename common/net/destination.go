@@ -57,6 +57,12 @@ func (dest *tcpDestination) Port() Port {
 }
 
 func (dest *tcpDestination) Equals(another Destination) bool {
+	if dest == nil && another == nil {
+		return true
+	}
+	if dest == nil || another == nil {
+		return false
+	}
 	if !another.IsTCP() {
 		return false
 	}
@@ -97,6 +103,12 @@ func (dest *udpDestination) Port() Port {
 }
 
 func (dest *udpDestination) Equals(another Destination) bool {
+	if dest == nil && another == nil {
+		return true
+	}
+	if dest == nil || another == nil {
+		return false
+	}
 	if !another.IsUDP() {
 		return false
 	}
