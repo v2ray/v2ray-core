@@ -29,10 +29,10 @@ func (this BytesLiteral) String() string {
 
 // All returns true if all bytes in the ByteLiteral are the same as given value.
 func (this BytesLiteral) All(v byte) bool {
-  for _, b := range this {
-    if b != v {
-      return false
-    }
-  }
-  return true
+	for _, b := range this {
+		if b != v {
+			return false
+		}
+	}
+	return true
 }
