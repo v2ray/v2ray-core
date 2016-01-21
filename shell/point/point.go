@@ -205,6 +205,10 @@ func (this *Point) FilterPacketAndDispatch(packet v2net.Packet, link ray.Outboun
 	dispatcher.Dispatch(packet, link)
 }
 
-func (this *Point) GetHandler(tag string) (proxy.InboundConnectionHandler, int) {
-	return nil, 0
+func (this *Point) GetHandler(context app.Context, tag string) (proxy.InboundConnectionHandler, int) {
+	handler, found := this.taggedIdh[tag]
+	if !found {
+		return nil, 0
+	}
+	return handler.GetConnectionHandler()
 }

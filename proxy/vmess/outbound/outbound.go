@@ -82,7 +82,7 @@ func (this *VMessOutboundHandler) startCommunicate(request *protocol.VMessReques
 	responseFinish.Lock()
 
 	go this.handleRequest(conn, request, firstPacket, input, &requestFinish)
-	go this.handleResponse(conn, request, output, &responseFinish, (request.Command == protocol.CmdUDP))
+	go this.handleResponse(conn, request, dest, output, &responseFinish, (request.Command == protocol.CmdUDP))
 
 	requestFinish.Lock()
 	conn.CloseWrite()
@@ -140,7 +140,7 @@ func headerMatch(request *protocol.VMessRequest, responseHeader byte) bool {
 	return request.ResponseHeader == responseHeader
 }
 
-func (this *VMessOutboundHandler) handleResponse(conn net.Conn, request *protocol.VMessRequest, output chan<- *alloc.Buffer, finish *sync.Mutex, isUDP bool) {
+func (this *VMessOutboundHandler) handleResponse(conn net.Conn, request *protocol.VMessRequest, dest v2net.Destination, output chan<- *alloc.Buffer, finish *sync.Mutex, isUDP bool) {
 	defer finish.Unlock()
 	defer close(output)
 	responseKey := md5.Sum(request.RequestKey[:])
@@ -175,7 +175,7 @@ func (this *VMessOutboundHandler) handleResponse(conn net.Conn, request *protoco
 		}
 		command := buffer.Value[2]
 		data := buffer.Value[4 : 4+dataLen]
-		go this.handleCommand(command, data)
+		go this.handleCommand(dest, command, data)
 		responseBegin = 4 + dataLen
 	}
 

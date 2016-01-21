@@ -139,7 +139,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *net.TCPConn) error
 	buffer := alloc.NewLargeBuffer().Clear()
 	defer buffer.Release()
 	buffer.AppendBytes(request.ResponseHeader, byte(0))
-	buffer.AppendBytes(byte(0), byte(0))
+	this.generateCommand(buffer)
 
 	if data, open := <-output; open {
 		buffer.Append(data.Value)

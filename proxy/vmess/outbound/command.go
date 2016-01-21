@@ -13,7 +13,7 @@ func (this *VMessOutboundHandler) handleSwitchAccount(cmd *command.SwitchAccount
 	this.receiverManager.AddDetour(NewReceiver(dest, user), cmd.ValidMin)
 }
 
-func (this *VMessOutboundHandler) handleCommand(cmdId byte, data []byte) {
+func (this *VMessOutboundHandler) handleCommand(dest v2net.Destination, cmdId byte, data []byte) {
 	cmd, err := command.CreateResponseCommand(cmdId)
 	if err != nil {
 		log.Warning("VMessOut: Unknown response command (", cmdId, "): ", err)
@@ -25,6 +25,9 @@ func (this *VMessOutboundHandler) handleCommand(cmdId byte, data []byte) {
 	}
 	switch typedCommand := cmd.(type) {
 	case *command.SwitchAccount:
+		if typedCommand.Host == nil {
+			typedCommand.Host = dest.Address()
+		}
 		this.handleSwitchAccount(typedCommand)
 	default:
 	}

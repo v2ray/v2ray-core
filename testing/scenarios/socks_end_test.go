@@ -33,7 +33,7 @@ func TestTCPConnection(t *testing.T) {
 
 	socksPort := v2net.Port(50000)
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 100; i++ {
 		conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 			IP:   []byte{127, 0, 0, 1},
 			Port: int(socksPort),

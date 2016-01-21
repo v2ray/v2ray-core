@@ -12,6 +12,7 @@ func (this *VMessInboundHandler) generateCommand(buffer *alloc.Buffer) {
 	defer commandBytes.Release()
 
 	if this.features != nil && this.features.Detour != nil {
+		cmd = byte(1)
 		tag := this.features.Detour.ToTag
 		if this.space.HasInboundHandlerManager() {
 			handlerManager := this.space.InboundHandlerManager()

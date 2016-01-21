@@ -58,7 +58,7 @@ type ExpiringReceiver struct {
 }
 
 func (this *ExpiringReceiver) Expired() bool {
-	return this.until.After(time.Now())
+	return this.until.Before(time.Now())
 }
 
 type ReceiverManager struct {
@@ -87,15 +87,16 @@ func (this *ReceiverManager) AddDetour(rec *Receiver, availableMin byte) {
 			for _, u := range rec.Accounts {
 				r.AddUser(u)
 			}
+			break
 		}
 	}
 
 	this.detourAccess.RUnlock()
-	expRec := &ExpiringReceiver{
-		Receiver: rec,
-		until:    time.Now().Add(time.Duration(availableMin-1) * time.Minute),
-	}
 	if !destExists {
+		expRec := &ExpiringReceiver{
+			Receiver: rec,
+			until:    time.Now().Add(time.Duration(availableMin-1) * time.Minute),
+		}
 		this.detourAccess.Lock()
 		this.detours = append(this.detours, expRec)
 		this.detourAccess.Unlock()

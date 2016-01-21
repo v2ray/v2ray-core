@@ -58,7 +58,9 @@ func (this *SwitchAccount) Unmarshal(data []byte) error {
 	if len(data) < lenHost+1 {
 		return transport.CorruptedPacket
 	}
-	this.Host = v2net.ParseAddress(string(data[1 : 1+lenHost]))
+	if lenHost > 0 {
+		this.Host = v2net.ParseAddress(string(data[1 : 1+lenHost]))
+	}
 	portStart := 1 + lenHost
 	if len(data) < portStart+2 {
 		return transport.CorruptedPacket
