@@ -16,11 +16,10 @@ func (this *VMessInboundHandler) generateCommand(buffer *alloc.Buffer) {
 		tag := this.features.Detour.ToTag
 		if this.space.HasInboundHandlerManager() {
 			handlerManager := this.space.InboundHandlerManager()
-			handler, availableSec := handlerManager.GetHandler(tag)
+			handler, availableMin := handlerManager.GetHandler(tag)
 			inboundHandler, ok := handler.(*VMessInboundHandler)
 			if ok {
 				user := inboundHandler.GetUser()
-				availableMin := availableSec / 60
 				if availableMin > 255 {
 					availableMin = 255
 				}

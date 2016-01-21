@@ -31,6 +31,8 @@ func TestSwitchAccount(t *testing.T) {
 	cmd.Unmarshal(buffer.Bytes())
 	sa2, ok := cmd.(*SwitchAccount)
 	assert.Bool(ok).IsTrue()
+	assert.Pointer(sa.Host).IsNil()
+	assert.Pointer(sa2.Host).IsNil()
 	netassert.Port(sa.Port).Equals(sa2.Port)
 	assert.String(sa.ID).Equals(sa2.ID.String())
 	assert.Uint16(sa.AlterIds.Value()).Equals(sa2.AlterIds.Value())
