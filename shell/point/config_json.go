@@ -13,6 +13,10 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
+const (
+	DefaultRefreshMinute = int(9999)
+)
+
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
 		Port            v2net.Port              `json:"port"` // Port of this Point server.
@@ -82,7 +86,7 @@ func (this *InboundDetourAllocationConfig) UnmarshalJSON(data []byte) error {
 	type JsonInboundDetourAllocationConfig struct {
 		Strategy    string `json:"strategy"`
 		Concurrency int    `json:"concurrency"`
-		RefreshSec  int    `json:"refresh"`
+		RefreshMin  int    `json:"refresh"`
 	}
 	jsonConfig := new(JsonInboundDetourAllocationConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
@@ -90,7 +94,10 @@ func (this *InboundDetourAllocationConfig) UnmarshalJSON(data []byte) error {
 	}
 	this.Strategy = jsonConfig.Strategy
 	this.Concurrency = jsonConfig.Concurrency
-	this.Refresh = jsonConfig.RefreshSec
+	this.Refresh = jsonConfig.RefreshMin
+	if this.Refresh == 0 {
+		this.Refresh = DefaultRefreshMinute
+	}
 	return nil
 }
 
@@ -115,6 +122,12 @@ func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 	this.Settings = jsonConfig.Settings
 	this.Tag = jsonConfig.Tag
 	this.Allocation = jsonConfig.Allocation
+	if this.Allocation == nil {
+		this.Allocation = &InboundDetourAllocationConfig{
+			Strategy: AllocationStrategyAlways,
+			Refresh:  DefaultRefreshMinute,
+		}
+	}
 	return nil
 }
 

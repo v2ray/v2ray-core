@@ -18,13 +18,14 @@ import (
 
 // Point shell of V2Ray.
 type Point struct {
-	port   v2net.Port
-	ich    proxy.InboundConnectionHandler
-	och    proxy.OutboundConnectionHandler
-	idh    []*InboundDetourHandler
-	odh    map[string]proxy.OutboundConnectionHandler
-	router router.Router
-	space  *controller.SpaceController
+	port      v2net.Port
+	ich       proxy.InboundConnectionHandler
+	och       proxy.OutboundConnectionHandler
+	idh       []InboundDetourHandler
+	taggedIdh map[string]InboundDetourHandler
+	odh       map[string]proxy.OutboundConnectionHandler
+	router    router.Router
+	space     *controller.SpaceController
 }
 
 // NewPoint returns a new Point server based on given configuration.
@@ -71,19 +72,29 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	}
 	vpoint.och = och
 
+	vpoint.taggedIdh = make(map[string]InboundDetourHandler)
 	detours := pConfig.InboundDetours
 	if len(detours) > 0 {
-		vpoint.idh = make([]*InboundDetourHandler, len(detours))
+		vpoint.idh = make([]InboundDetourHandler, len(detours))
 		for idx, detourConfig := range detours {
-			detourHandler := &InboundDetourHandler{
-				space:  vpoint.space.ForContext(detourConfig.Tag),
-				config: detourConfig,
-			}
-			err := detourHandler.Initialize()
-			if err != nil {
-				return nil, err
+			allocConfig := detourConfig.Allocation
+			var detourHandler InboundDetourHandler
+			switch allocConfig.Strategy {
+			case AllocationStrategyAlways:
+				dh, err := NewInboundDetourHandlerAlways(vpoint.space.ForContext(detourConfig.Tag), detourConfig)
+				if err != nil {
+					log.Error("Point: Failed to create detour handler: ", err)
+					return nil, BadConfiguration
+				}
+				detourHandler = dh
+			default:
+				log.Error("Point: Unknown allocation strategy: ", allocConfig.Strategy)
+				return nil, BadConfiguration
 			}
 			vpoint.idh[idx] = detourHandler
+			if len(detourConfig.Tag) > 0 {
+				vpoint.taggedIdh[detourConfig.Tag] = detourHandler
+			}
 		}
 	}
 
@@ -192,4 +203,8 @@ func (this *Point) FilterPacketAndDispatch(packet v2net.Packet, link ray.Outboun
 	}
 
 	dispatcher.Dispatch(packet, link)
+}
+
+func (this *Point) GetHandler(tag string) (proxy.InboundConnectionHandler, int) {
+	return nil, 0
 }

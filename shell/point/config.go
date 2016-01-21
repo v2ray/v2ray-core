@@ -32,7 +32,7 @@ const (
 type InboundDetourAllocationConfig struct {
 	Strategy    string // Allocation strategy of this inbound detour.
 	Concurrency int    // Number of handlers (ports) running in parallel.
-	Refresh     int    // Number of seconds before a handler is regenerated.
+	Refresh     int    // Number of minutes before a handler is regenerated.
 }
 
 type InboundDetourConfig struct {
