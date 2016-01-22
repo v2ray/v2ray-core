@@ -80,7 +80,7 @@ func (this *SwitchAccount) Unmarshal(data []byte) error {
 	}
 	this.AlterIds = serial.ParseUint16(data[alterIdStart : alterIdStart+2])
 	levelStart := alterIdStart + 2
-	if len(data) < levelStart {
+	if len(data) < levelStart+1 {
 		return transport.CorruptedPacket
 	}
 	this.Level = vmess.UserLevel(data[levelStart])

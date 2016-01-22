@@ -1,6 +1,10 @@
 // +build gofuzz
 
-package command
+package fuzzing
+
+import (
+	. "github.com/v2ray/v2ray-core/proxy/vmess/command"
+)
 
 func Fuzz(data []byte) int {
 	cmd := new(SwitchAccount)
