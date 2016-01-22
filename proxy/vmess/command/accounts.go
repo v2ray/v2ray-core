@@ -54,6 +54,9 @@ func (this *SwitchAccount) Marshal(writer io.Writer) {
 }
 
 func (this *SwitchAccount) Unmarshal(data []byte) error {
+	if len(data) == 0 {
+		return transport.CorruptedPacket
+	}
 	lenHost := int(data[0])
 	if len(data) < lenHost+1 {
 		return transport.CorruptedPacket
