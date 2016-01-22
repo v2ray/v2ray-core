@@ -87,6 +87,13 @@ func NewPoint(pConfig *Config) (*Point, error) {
 					return nil, BadConfiguration
 				}
 				detourHandler = dh
+			case AllocationStrategyRandom:
+				dh, err := NewInboundDetourHandlerDynamic(vpoint.space.ForContext(detourConfig.Tag), detourConfig)
+				if err != nil {
+					log.Error("Point: Failed to create detour handler: ", err)
+					return nil, BadConfiguration
+				}
+				detourHandler = dh
 			default:
 				log.Error("Point: Unknown allocation strategy: ", allocConfig.Strategy)
 				return nil, BadConfiguration

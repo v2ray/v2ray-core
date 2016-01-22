@@ -1,0 +1,48 @@
+{
+  "port": 50031,
+  "log": {
+    "loglevel": "warning"
+  },
+  "inbound": {
+    "protocol": "vmess",
+    "settings": {
+      "clients": [
+        {
+          "id": "d17a1af7-efa5-42ca-b7e9-6a35282d737f",
+          "level": 1,
+          "alterId": 10
+        }
+      ],
+      "features": {
+        "detour": {
+          "to": "detour"
+        }
+      }
+    }
+  },
+  "outbound": {
+    "protocol": "freedom",
+    "settings": {}
+  },
+  "inboundDetour": [
+    {
+      "protocol": "vmess",
+      "port": "50035-50039",
+      "tag": "detour",
+      "settings": {
+        "clients": [
+          {
+            "id": "a12f49ba-466c-4dd5-8438-5c315143bc96",
+            "alterId": 100,
+            "level": 1
+          }
+        ]
+      },
+      "allocate": {
+        "strategy": "random",
+        "concurrency": 3,
+        "refresh": 5
+      }
+    }
+  ]
+}
