@@ -38,8 +38,8 @@ func (this *VMessInboundHandler) Port() v2net.Port {
 func (this *VMessInboundHandler) Close() {
 	this.accepting = false
 	if this.listener != nil {
-		this.listener.Close()
 		this.Lock()
+		this.listener.Close()
 		this.listener = nil
 		this.Unlock()
 	}
