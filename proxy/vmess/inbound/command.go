@@ -1,6 +1,8 @@
 package inbound
 
 import (
+	"hash/fnv"
+
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/common/serial"
@@ -38,10 +40,14 @@ func (this *VMessInboundHandler) generateCommand(buffer *alloc.Buffer) {
 		}
 	}
 
-	if commandBytes.Len() > 256 {
+	if cmd == 0 || commandBytes.Len()+4 > 256 {
 		buffer.AppendBytes(byte(0), byte(0))
 	} else {
-		buffer.AppendBytes(cmd, byte(commandBytes.Len()))
+		buffer.AppendBytes(cmd, byte(commandBytes.Len()+4))
+		fnv1hash := fnv.New32a()
+		fnv1hash.Write(commandBytes.Value)
+		hashValue := fnv1hash.Sum32()
+		buffer.AppendBytes(byte(hashValue>>24), byte(hashValue>>16), byte(hashValue>>8), byte(hashValue))
 		buffer.Append(commandBytes.Value)
 	}
 }

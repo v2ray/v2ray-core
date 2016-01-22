@@ -1,8 +1,11 @@
 package outbound
 
 import (
+	"hash/fnv"
+
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/proxy/vmess"
 	"github.com/v2ray/v2ray-core/proxy/vmess/command"
 )
@@ -14,6 +17,17 @@ func (this *VMessOutboundHandler) handleSwitchAccount(cmd *command.SwitchAccount
 }
 
 func (this *VMessOutboundHandler) handleCommand(dest v2net.Destination, cmdId byte, data []byte) {
+	if len(data) < 4 {
+		return
+	}
+	fnv1hash := fnv.New32a()
+	fnv1hash.Write(data[4:])
+	actualHashValue := fnv1hash.Sum32()
+	expectedHashValue := serial.BytesLiteral(data[:4]).Uint32Value()
+	if actualHashValue != expectedHashValue {
+		return
+	}
+	data = data[4:]
 	cmd, err := command.CreateResponseCommand(cmdId)
 	if err != nil {
 		log.Warning("VMessOut: Unknown response command (", cmdId, "): ", err)
