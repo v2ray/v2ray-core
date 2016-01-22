@@ -110,8 +110,10 @@ func (this *ReceiverManager) pickDetour() *Receiver {
 	if rec.Expired() {
 		this.detourAccess.Lock()
 		detourLen := len(this.detours)
-		this.detours[idx] = this.detours[detourLen-1]
-		this.detours = this.detours[:detourLen-1]
+		if detourLen > idx && this.detours[idx].Expired() {
+			this.detours[idx] = this.detours[detourLen-1]
+			this.detours = this.detours[:detourLen-1]
+		}
 		this.detourAccess.Unlock()
 		return nil
 	}
