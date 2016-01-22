@@ -54,9 +54,7 @@ func (this *InboundDetourHandlerDynamic) refresh() error {
 
 	ichCount := this.config.Allocation.Concurrency
 	// TODO: check ichCount
-	if this.ichInUse == nil {
-		this.ichInUse = make([]*InboundConnectionHandlerWithPort, ichCount)
-	}
+	this.ichInUse = make([]*InboundConnectionHandlerWithPort, ichCount)
 	for idx, _ := range this.ichInUse {
 		port := this.pickUnusedPort()
 		ich, err := proxyrepo.CreateInboundConnectionHandler(this.config.Protocol, this.space, this.config.Settings)
@@ -98,7 +96,10 @@ func (this *InboundDetourHandlerDynamic) GetConnectionHandler() (proxy.InboundCo
 	this.RLock()
 	defer this.RUnlock()
 	ich := this.ichInUse[dice.Roll(len(this.ichInUse))]
-	until := (time.Now().Unix() - this.lastRefresh.Unix()) / 60 / 1000
+	until := this.config.Allocation.Refresh - int((time.Now().Unix()-this.lastRefresh.Unix())/60/1000)
+	if until < 0 {
+		until = 0
+	}
 	return ich.handler, int(until)
 }
 
