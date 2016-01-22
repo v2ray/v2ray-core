@@ -42,7 +42,7 @@ func (this *InboundDetourHandlerDynamic) refresh() error {
 
 	this.ich2Recycle = this.ichInUse
 	if this.ich2Recycle != nil {
-		time.AfterFunc(10*time.Second, func() {
+		time.AfterFunc(time.Minute, func() {
 			for _, ich := range this.ich2Recycle {
 				if ich != nil {
 					ich.handler.Close()
