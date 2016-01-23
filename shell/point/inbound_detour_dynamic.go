@@ -87,30 +87,15 @@ func (this *InboundDetourHandlerDynamic) Close() {
 	}
 }
 
-func (this *InboundDetourHandlerDynamic) Start() error {
+func (this *InboundDetourHandlerDynamic) refresh() error {
 	this.Lock()
 	defer this.Unlock()
 
-	this.ich2Recycle, this.ichInUse = this.ichInUse, this.ich2Recycle
-	time.AfterFunc(time.Minute, func() {
-		this.Lock()
-		defer this.Unlock()
-		for _, ich := range this.ich2Recycle {
-			if ich != nil {
-				ich.handler.Close()
-				delete(this.portsInUse, ich.port)
-			}
-		}
-	})
-
 	this.lastRefresh = time.Now()
-	time.AfterFunc(time.Duration(this.config.Allocation.Refresh)*time.Minute, func() {
-		this.Start()
-	})
 
+	this.ich2Recycle, this.ichInUse = this.ichInUse, this.ich2Recycle
 	for _, ich := range this.ichInUse {
-		port := this.pickUnusedPort()
-		ich.port = port
+		ich.port = this.pickUnusedPort()
 		err := retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
 			err := ich.handler.Listen(ich.port)
 			if err != nil {
@@ -123,6 +108,29 @@ func (this *InboundDetourHandlerDynamic) Start() error {
 			return err
 		}
 	}
+
+	return nil
+}
+
+func (this *InboundDetourHandlerDynamic) Start() error {
+	err := this.refresh()
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		for range time.Tick(time.Duration(this.config.Allocation.Refresh) * time.Minute) {
+			this.refresh()
+
+			<-time.After(time.Minute)
+			for _, ich := range this.ich2Recycle {
+				if ich != nil {
+					ich.handler.Close()
+					delete(this.portsInUse, ich.port)
+				}
+			}
+		}
+	}()
 
 	return nil
 }
