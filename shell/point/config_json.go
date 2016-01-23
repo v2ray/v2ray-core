@@ -133,7 +133,7 @@ func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 			this.Allocation.Refresh = 5
 		}
 		if this.Allocation.Concurrency == 0 {
-			this.Allocation.Concurrency == 3
+			this.Allocation.Concurrency = 3
 		}
 	}
 	return nil
