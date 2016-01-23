@@ -40,7 +40,7 @@
       },
       "allocate": {
         "strategy": "random",
-        "concurrency": 3,
+        "concurrency": 2,
         "refresh": 5
       }
     }
