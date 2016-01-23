@@ -21,7 +21,6 @@ type InboundDetourHandlerDynamic struct {
 	ichInUse    []*InboundConnectionHandlerWithPort
 	ich2Recycle []*InboundConnectionHandlerWithPort
 	lastRefresh time.Time
-	started     bool
 }
 
 func NewInboundDetourHandlerDynamic(space app.Space, config *InboundDetourConfig) (*InboundDetourHandlerDynamic, error) {
@@ -30,58 +29,23 @@ func NewInboundDetourHandlerDynamic(space app.Space, config *InboundDetourConfig
 		config:     config,
 		portsInUse: make(map[v2net.Port]bool),
 	}
-	if err := handler.refresh(); err != nil {
-		return nil, err
-	}
-	return handler, nil
-}
-
-func (this *InboundDetourHandlerDynamic) refresh() error {
-	this.Lock()
-	defer this.Unlock()
-
-	this.ich2Recycle, this.ichInUse = this.ichInUse, this.ich2Recycle
-	if this.ich2Recycle != nil {
-		time.AfterFunc(time.Minute, func() {
-			for i := 0; i < len(this.ich2Recycle); i++ {
-				ich := this.ich2Recycle[i]
-				if ich != nil {
-					ich.handler.Close()
-					delete(this.portsInUse, ich.port)
-				}
-				this.ich2Recycle[i] = nil
-			}
-		})
-	}
-
-	ichCount := this.config.Allocation.Concurrency
-	// TODO: check ichCount
-	if this.ichInUse == nil {
-		this.ichInUse = make([]*InboundConnectionHandlerWithPort, ichCount)
-	}
-
-	for idx, _ := range this.ichInUse {
-		port := this.pickUnusedPort()
-		ich, err := proxyrepo.CreateInboundConnectionHandler(this.config.Protocol, this.space, this.config.Settings)
+	ichCount := config.Allocation.Concurrency
+	ichArray := make([]*InboundConnectionHandlerWithPort, ichCount*2)
+	for idx, _ := range ichArray {
+		//port := handler.pickUnusedPort()
+		ich, err := proxyrepo.CreateInboundConnectionHandler(config.Protocol, space, config.Settings)
 		if err != nil {
 			log.Error("Point: Failed to create inbound connection handler: ", err)
-			return err
+			return nil, err
 		}
-		this.ichInUse[idx] = &InboundConnectionHandlerWithPort{
-			port:    port,
+		ichArray[idx] = &InboundConnectionHandlerWithPort{
+			port:    0,
 			handler: ich,
 		}
 	}
-	if this.started {
-		this.Start()
-	}
-
-	this.lastRefresh = time.Now()
-	time.AfterFunc(time.Duration(this.config.Allocation.Refresh)*time.Minute, func() {
-		this.refresh()
-	})
-
-	return nil
+	handler.ichInUse = ichArray[:ichCount]
+	handler.ich2Recycle = ichArray[ichCount:]
+	return handler, nil
 }
 
 func (this *InboundDetourHandlerDynamic) pickUnusedPort() v2net.Port {
@@ -124,7 +88,29 @@ func (this *InboundDetourHandlerDynamic) Close() {
 }
 
 func (this *InboundDetourHandlerDynamic) Start() error {
+	this.Lock()
+	defer this.Unlock()
+
+	this.ich2Recycle, this.ichInUse = this.ichInUse, this.ich2Recycle
+	time.AfterFunc(time.Minute, func() {
+		this.Lock()
+		defer this.Unlock()
+		for _, ich := range this.ich2Recycle {
+			if ich != nil {
+				ich.handler.Close()
+				delete(this.portsInUse, ich.port)
+			}
+		}
+	})
+
+	this.lastRefresh = time.Now()
+	time.AfterFunc(time.Duration(this.config.Allocation.Refresh)*time.Minute, func() {
+		this.Start()
+	})
+
 	for _, ich := range this.ichInUse {
+		port := this.pickUnusedPort()
+		ich.port = port
 		err := retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
 			err := ich.handler.Listen(ich.port)
 			if err != nil {
@@ -137,6 +123,6 @@ func (this *InboundDetourHandlerDynamic) Start() error {
 			return err
 		}
 	}
-	this.started = true
+
 	return nil
 }
