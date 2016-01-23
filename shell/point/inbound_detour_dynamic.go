@@ -40,21 +40,26 @@ func (this *InboundDetourHandlerDynamic) refresh() error {
 	this.Lock()
 	defer this.Unlock()
 
-	this.ich2Recycle = this.ichInUse
+	this.ich2Recycle, this.ichInUse = this.ichInUse, this.ich2Recycle
 	if this.ich2Recycle != nil {
 		time.AfterFunc(time.Minute, func() {
-			for _, ich := range this.ich2Recycle {
+			for i := 0; i < len(this.ich2Recycle); i++ {
+				ich := this.ich2Recycle[i]
 				if ich != nil {
 					ich.handler.Close()
 					delete(this.portsInUse, ich.port)
 				}
+				this.ich2Recycle[i] = nil
 			}
 		})
 	}
 
 	ichCount := this.config.Allocation.Concurrency
 	// TODO: check ichCount
-	this.ichInUse = make([]*InboundConnectionHandlerWithPort, ichCount)
+	if this.ichInUse == nil {
+		this.ichInUse = make([]*InboundConnectionHandlerWithPort, ichCount)
+	}
+
 	for idx, _ := range this.ichInUse {
 		port := this.pickUnusedPort()
 		ich, err := proxyrepo.CreateInboundConnectionHandler(this.config.Protocol, this.space, this.config.Settings)
