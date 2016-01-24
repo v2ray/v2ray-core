@@ -18,7 +18,8 @@ func TestDomainRule(t *testing.T) {
     "type": "field",
     "domain": [
       "ooxx.com",
-      "oxox.com"
+      "oxox.com",
+      "regexp:\\.cn$"
     ],
     "network": "tcp",
     "outboundTag": "direct"
@@ -27,7 +28,8 @@ func TestDomainRule(t *testing.T) {
 	assert.Bool(rule.Apply(v2net.TCPDestination(v2net.DomainAddress("www.ooxx.com"), 80))).IsTrue()
 	assert.Bool(rule.Apply(v2net.TCPDestination(v2net.DomainAddress("www.aabb.com"), 80))).IsFalse()
 	assert.Bool(rule.Apply(v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), 80))).IsFalse()
-
+	assert.Bool(rule.Apply(v2net.TCPDestination(v2net.DomainAddress("www.12306.cn"), 80))).IsTrue()
+	assert.Bool(rule.Apply(v2net.TCPDestination(v2net.DomainAddress("www.acn.com"), 80))).IsFalse()
 }
 
 func TestIPRule(t *testing.T) {

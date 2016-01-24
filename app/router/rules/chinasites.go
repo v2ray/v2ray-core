@@ -16,7 +16,7 @@ func parseChinaSitesRule(data []byte) (*Rule, error) {
 	}
 	return &Rule{
 		Tag:       rawRule.OutboundTag,
-		Condition: ChinaSitesConds,
+		Condition: chinaSitesConds,
 	}, nil
 }
 
@@ -35,7 +35,7 @@ const (
 )
 
 var (
-	ChinaSitesConds Condition
+	chinaSitesConds Condition
 )
 
 func init() {
@@ -357,5 +357,5 @@ func init() {
 	}
 
 	anyConds := AnyCondition(conds)
-	ChinaSitesConds = &anyConds
+	chinaSitesConds = &anyConds
 }
