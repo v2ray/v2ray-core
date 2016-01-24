@@ -12,6 +12,7 @@ import (
 	_ "github.com/v2ray/v2ray-core/proxy/blackhole"
 	_ "github.com/v2ray/v2ray-core/proxy/dokodemo"
 	_ "github.com/v2ray/v2ray-core/proxy/freedom"
+	_ "github.com/v2ray/v2ray-core/proxy/http"
 	_ "github.com/v2ray/v2ray-core/proxy/socks"
 	_ "github.com/v2ray/v2ray-core/proxy/vmess/inbound"
 	_ "github.com/v2ray/v2ray-core/proxy/vmess/outbound"
