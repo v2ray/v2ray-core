@@ -95,9 +95,10 @@ func (this *InboundDetourHandlerDynamic) refresh() error {
 
 	this.ich2Recycle, this.ichInUse = this.ichInUse, this.ich2Recycle
 	for _, ich := range this.ichInUse {
+		delete(this.portsInUse, ich.port)
+		ich.handler.Close()
 		ich.port = this.pickUnusedPort()
 		err := retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
-			ich.handler.Close()
 			err := ich.handler.Listen(ich.port)
 			if err != nil {
 				log.Error("Point: Failed to start inbound detour on port ", ich.port, ": ", err)
