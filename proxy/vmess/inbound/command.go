@@ -15,17 +15,17 @@ func (this *VMessInboundHandler) generateCommand(buffer *alloc.Buffer) {
 	defer commandBytes.Release()
 
 	if this.features != nil && this.features.Detour != nil {
-		cmd = byte(1)
+
 		tag := this.features.Detour.ToTag
 		if this.space.HasInboundHandlerManager() {
 			handlerManager := this.space.InboundHandlerManager()
 			handler, availableMin := handlerManager.GetHandler(tag)
-
 			inboundHandler, ok := handler.(*VMessInboundHandler)
 			if ok {
 				if availableMin > 255 {
 					availableMin = 255
 				}
+				cmd = byte(1)
 				log.Info("VMessIn: Pick detour handler for port ", inboundHandler.Port(), " for ", availableMin, " minutes.")
 				user := inboundHandler.GetUser()
 				saCmd := &command.SwitchAccount{
