@@ -37,6 +37,31 @@ func (this *ConditionChan) Len() int {
 	return len(*this)
 }
 
+type AnyCondition []Condition
+
+func NewAnyCondition() *AnyCondition {
+	var anyCond AnyCondition = make([]Condition, 0, 8)
+	return &anyCond
+}
+
+func (this *AnyCondition) Add(cond Condition) *AnyCondition {
+	*this = append(*this, cond)
+	return this
+}
+
+func (this *AnyCondition) Apply(dest v2net.Destination) bool {
+	for _, cond := range *this {
+		if cond.Apply(dest) {
+			return true
+		}
+	}
+	return false
+}
+
+func (this *AnyCondition) Len() int {
+	return len(*this)
+}
+
 type PlainDomainMatcher struct {
 	pattern serial.StringLiteral
 }

@@ -34,6 +34,7 @@ func parseFieldRule(msg json.RawMessage) (*Rule, error) {
 	conds := NewConditionChan()
 
 	if rawFieldRule.Domain != nil && rawFieldRule.Domain.Len() > 0 {
+		anyCond := NewAnyCondition()
 		for _, rawDomain := range *(rawFieldRule.Domain) {
 			var matcher Condition
 			if strings.HasPrefix(rawDomain.String(), "regexp:") {
@@ -45,19 +46,22 @@ func parseFieldRule(msg json.RawMessage) (*Rule, error) {
 			} else {
 				matcher = NewPlainDomainMatcher(rawDomain.String())
 			}
-			conds.Add(matcher)
+			anyCond.Add(matcher)
 		}
+		conds.Add(anyCond)
 	}
 
 	if rawFieldRule.IP != nil && rawFieldRule.IP.Len() > 0 {
+		anyCond := NewAnyCondition()
 		for _, ipStr := range *(rawFieldRule.IP) {
 			cidrMatcher, err := NewCIDRMatcher(ipStr.String())
 			if err != nil {
 				log.Error("Router: Invalid IP range in router rule: ", err)
 				return nil, err
 			}
-			conds.Add(cidrMatcher)
+			anyCond.Add(cidrMatcher)
 		}
+		conds.Add(anyCond)
 	}
 	if rawFieldRule.Port != nil {
 		conds.Add(NewPortMatcher(*rawFieldRule.Port))
@@ -74,7 +78,7 @@ func parseFieldRule(msg json.RawMessage) (*Rule, error) {
 	}, nil
 }
 
-func parseRule(msg json.RawMessage) *Rule {
+func ParseRule(msg json.RawMessage) *Rule {
 	rawRule := new(JsonRule)
 	err := json.Unmarshal(msg, rawRule)
 	if err != nil {
@@ -121,7 +125,7 @@ func init() {
 		}
 		config := NewRouterRuleConfig()
 		for _, rawRule := range jsonConfig.RuleList {
-			rule := parseRule(rawRule)
+			rule := ParseRule(rawRule)
 			config.Add(rule)
 		}
 		return config, nil

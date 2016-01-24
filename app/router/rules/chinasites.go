@@ -5,20 +5,7 @@ package rules
 import (
 	"encoding/json"
 	"github.com/v2ray/v2ray-core/common/log"
-	v2net "github.com/v2ray/v2ray-core/common/net"
 )
-
-type ChinaSitesCondition struct {
-}
-
-func (this *ChinaSitesCondition) Apply(dest v2net.Destination) bool {
-	for _, cond := range chinaSitesConds {
-		if cond.Apply(dest) {
-			return true
-		}
-	}
-	return false
-}
 
 func parseChinaSitesRule(data []byte) (*Rule, error) {
 	rawRule := new(JsonRule)
@@ -29,7 +16,7 @@ func parseChinaSitesRule(data []byte) (*Rule, error) {
 	}
 	return &Rule{
 		Tag:       rawRule.OutboundTag,
-		Condition: &ChinaSitesCondition{},
+		Condition: ChinaSitesConds,
 	}, nil
 }
 
@@ -48,7 +35,7 @@ const (
 )
 
 var (
-	chinaSitesConds []Condition
+	ChinaSitesConds Condition
 )
 
 func init() {
@@ -360,12 +347,15 @@ func init() {
 		anySubDomain + "zhubajie" + dotCom,
 	}
 
-	chinaSitesConds = make([]Condition, len(regexpDomains))
+	conds := make([]Condition, len(regexpDomains))
 	for idx, pattern := range regexpDomains {
 		matcher, err := NewRegexpDomainMatcher(pattern)
 		if err != nil {
 			panic(err)
 		}
-		chinaSitesConds[idx] = matcher
+		conds[idx] = matcher
 	}
+
+	anyConds := AnyCondition(conds)
+	ChinaSitesConds = &anyConds
 }

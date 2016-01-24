@@ -17,7 +17,7 @@ func makeDomainDestination(domain string) v2net.Destination {
 func TestChinaSites(t *testing.T) {
 	v2testing.Current(t)
 
-	rule := new(ChinaSitesCondition)
+	rule := ChinaSitesConds
 	assert.Bool(rule.Apply(makeDomainDestination("v.qq.com"))).IsTrue()
 	assert.Bool(rule.Apply(makeDomainDestination("www.163.com"))).IsTrue()
 	assert.Bool(rule.Apply(makeDomainDestination("ngacn.cc"))).IsTrue()
