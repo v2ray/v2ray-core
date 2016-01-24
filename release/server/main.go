@@ -25,6 +25,7 @@ var (
 	configFile string
 	logLevel   = flag.String("loglevel", "warning", "Level of log info to be printed to console, available value: debug, info, warning, error")
 	version    = flag.Bool("version", false, "Show current version of V2Ray.")
+	test       = flag.Bool("test", false, "Test config file only, without launching V2Ray server.")
 )
 
 func init() {
@@ -76,6 +77,11 @@ func main() {
 	vPoint, err := point.NewPoint(config)
 	if err != nil {
 		log.Error("Failed to create Point server: ", err)
+		return
+	}
+
+	if *test {
+		fmt.Println("Configuration OK.")
 		return
 	}
 
