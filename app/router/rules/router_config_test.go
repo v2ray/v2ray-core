@@ -11,7 +11,7 @@ import (
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
-func TestFieldRule(t *testing.T) {
+func TestDomainRule(t *testing.T) {
 	v2testing.Current(t)
 
 	rule := ParseRule([]byte(`{
@@ -20,8 +20,31 @@ func TestFieldRule(t *testing.T) {
       "ooxx.com",
       "oxox.com"
     ],
+    "network": "tcp",
     "outboundTag": "direct"
   }`))
 	assert.Pointer(rule).IsNotNil()
 	assert.Bool(rule.Apply(v2net.TCPDestination(v2net.DomainAddress("www.ooxx.com"), 80))).IsTrue()
+	assert.Bool(rule.Apply(v2net.TCPDestination(v2net.DomainAddress("www.aabb.com"), 80))).IsFalse()
+	assert.Bool(rule.Apply(v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), 80))).IsFalse()
+
+}
+
+func TestIPRule(t *testing.T) {
+	v2testing.Current(t)
+
+	rule := ParseRule([]byte(`{
+    "type": "field",
+    "ip": [
+      "10.0.0.0/8",
+      "192.0.0.0/24"
+    ],
+    "network": "tcp",
+    "outboundTag": "direct"
+  }`))
+	assert.Pointer(rule).IsNotNil()
+	assert.Bool(rule.Apply(v2net.TCPDestination(v2net.DomainAddress("www.ooxx.com"), 80))).IsFalse()
+	assert.Bool(rule.Apply(v2net.TCPDestination(v2net.IPAddress([]byte{10, 0, 0, 1}), 80))).IsTrue()
+	assert.Bool(rule.Apply(v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), 80))).IsFalse()
+	assert.Bool(rule.Apply(v2net.TCPDestination(v2net.IPAddress([]byte{192, 0, 0, 1}), 80))).IsTrue()
 }
