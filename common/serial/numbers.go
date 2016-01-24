@@ -10,17 +10,6 @@ type Uint16 interface {
 
 type Uint16Literal uint16
 
-func ParseUint16(data []byte) Uint16Literal {
-	switch len(data) {
-	case 0:
-		return Uint16Literal(0)
-	case 1:
-		return Uint16Literal(uint16(data[0]))
-	default:
-		return Uint16Literal(uint16(data[0])<<8 + uint16(data[1]))
-	}
-}
-
 func (this Uint16Literal) String() string {
 	return strconv.Itoa(int(this))
 }

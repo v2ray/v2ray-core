@@ -78,7 +78,7 @@ func (this *SwitchAccount) Unmarshal(data []byte) error {
 	if len(data) < alterIdStart+2 {
 		return transport.CorruptedPacket
 	}
-	this.AlterIds = serial.ParseUint16(data[alterIdStart : alterIdStart+2])
+	this.AlterIds = serial.BytesLiteral(data[alterIdStart : alterIdStart+2]).Uint16()
 	levelStart := alterIdStart + 2
 	if len(data) < levelStart+1 {
 		return transport.CorruptedPacket

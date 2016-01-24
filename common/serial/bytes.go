@@ -10,6 +10,24 @@ func (this BytesLiteral) Value() []byte {
 	return []byte(this)
 }
 
+func (this BytesLiteral) Uint8Value() uint8 {
+	return this.Value()[0]
+}
+
+func (this BytesLiteral) Uint16() Uint16Literal {
+	return Uint16Literal(this.Uint16Value())
+}
+
+func (this BytesLiteral) Uint16Value() uint16 {
+	value := this.Value()
+	return uint16(value[0])<<8 + uint16(value[1])
+}
+
+func (this BytesLiteral) IntValue() int {
+	value := this.Value()
+	return int(value[0])<<24 + int(value[1])<<16 + int(value[2])<<8 + int(value[3])
+}
+
 func (this BytesLiteral) Uint32Value() uint32 {
 	value := this.Value()
 	return uint32(value[0])<<24 +
