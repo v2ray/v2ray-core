@@ -4,7 +4,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v2ray/v2ray-core/common/collect"
 	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/proxy/vmess"
 )
@@ -31,10 +30,10 @@ func (this Timestamp) HashBytes() []byte {
 }
 
 type idEntry struct {
-	id      *vmess.ID
-	userIdx int
-	lastSec Timestamp
-	hashes  *collect.SizedQueue
+	id             *vmess.ID
+	userIdx        int
+	lastSec        Timestamp
+	lastSecRemoval Timestamp
 }
 
 type UserSet interface {
@@ -67,21 +66,24 @@ func NewTimedUserSet() UserSet {
 
 func (us *TimedUserSet) generateNewHashes(nowSec Timestamp, idx int, entry *idEntry) {
 	var hashValue [16]byte
+	var hashValueRemoval [16]byte
 	idHash := IDHash(entry.id.Bytes())
 	for entry.lastSec <= nowSec {
 		idHash.Write(entry.lastSec.Bytes())
 		idHash.Sum(hashValue[:0])
 		idHash.Reset()
 
-		hash2Remove := entry.hashes.Put(hashValue)
+		idHash.Write(entry.lastSecRemoval.Bytes())
+		idHash.Sum(hashValueRemoval[:0])
+		idHash.Reset()
 
 		us.access.Lock()
 		us.userHash[hashValue] = indexTimePair{idx, entry.lastSec}
-		if hash2Remove != nil {
-			delete(us.userHash, hash2Remove.([16]byte))
-		}
+		delete(us.userHash, hashValueRemoval)
 		us.access.Unlock()
+
 		entry.lastSec++
+		entry.lastSecRemoval++
 	}
 }
 
@@ -101,19 +103,19 @@ func (us *TimedUserSet) AddUser(user *vmess.User) error {
 	nowSec := time.Now().Unix()
 
 	entry := &idEntry{
-		id:      user.ID,
-		userIdx: idx,
-		lastSec: Timestamp(nowSec - cacheDurationSec),
-		hashes:  collect.NewSizedQueue(2*cacheDurationSec + 1),
+		id:             user.ID,
+		userIdx:        idx,
+		lastSec:        Timestamp(nowSec - cacheDurationSec),
+		lastSecRemoval: Timestamp(nowSec - cacheDurationSec*3),
 	}
 	us.generateNewHashes(Timestamp(nowSec+cacheDurationSec), idx, entry)
 	us.ids = append(us.ids, entry)
 	for _, alterid := range user.AlterIDs {
 		entry := &idEntry{
-			id:      alterid,
-			userIdx: idx,
-			lastSec: Timestamp(nowSec - cacheDurationSec),
-			hashes:  collect.NewSizedQueue(2*cacheDurationSec + 1),
+			id:             alterid,
+			userIdx:        idx,
+			lastSec:        Timestamp(nowSec - cacheDurationSec),
+			lastSecRemoval: Timestamp(nowSec - cacheDurationSec*3),
 		}
 		us.generateNewHashes(Timestamp(nowSec+cacheDurationSec), idx, entry)
 		us.ids = append(us.ids, entry)
