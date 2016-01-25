@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	config.RegisterInboundConnectionConfig("http",
+	config.RegisterInboundConfig("http",
 		func(data []byte) (interface{}, error) {
 			return new(Config), nil
 		})

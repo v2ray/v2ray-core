@@ -17,7 +17,7 @@ const (
 )
 
 func init() {
-	config.RegisterInboundConnectionConfig("socks",
+	config.RegisterInboundConfig("socks",
 		func(data []byte) (interface{}, error) {
 			type SocksAccount struct {
 				Username string `json:"user"`

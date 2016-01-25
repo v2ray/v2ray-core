@@ -48,7 +48,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 }
 
 func init() {
-	config.RegisterInboundConnectionConfig("vmess",
+	config.RegisterInboundConfig("vmess",
 		func(data []byte) (interface{}, error) {
 			config := new(Config)
 			err := json.Unmarshal(data, config)

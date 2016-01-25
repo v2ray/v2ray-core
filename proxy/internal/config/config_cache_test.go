@@ -16,7 +16,7 @@ func TestRegisterInboundConfig(t *testing.T) {
 		return true, nil
 	}
 
-	err := RegisterInboundConnectionConfig(protocol, creator)
+	err := RegisterInboundConfig(protocol, creator)
 	assert.Error(err).IsNil()
 
 	configObj, err := CreateInboundConnectionConfig(protocol, nil)
@@ -36,7 +36,7 @@ func TestRegisterOutboundConfig(t *testing.T) {
 		return true, nil
 	}
 
-	err := RegisterOutboundConnectionConfig(protocol, creator)
+	err := RegisterOutboundConfig(protocol, creator)
 	assert.Error(err).IsNil()
 
 	configObj, err := CreateOutboundConnectionConfig(protocol, nil)

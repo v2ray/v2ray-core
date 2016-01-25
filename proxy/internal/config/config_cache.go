@@ -20,11 +20,11 @@ func registerConfigType(protocol string, proxyType string, creator ConfigObjectC
 	return nil
 }
 
-func RegisterInboundConnectionConfig(protocol string, creator ConfigObjectCreator) error {
+func RegisterInboundConfig(protocol string, creator ConfigObjectCreator) error {
 	return registerConfigType(protocol, "inbound", creator)
 }
 
-func RegisterOutboundConnectionConfig(protocol string, creator ConfigObjectCreator) error {
+func RegisterOutboundConfig(protocol string, creator ConfigObjectCreator) error {
 	return registerConfigType(protocol, "outbound", creator)
 }
 

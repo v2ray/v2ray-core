@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	config.RegisterOutboundConnectionConfig("blackhole",
+	config.RegisterOutboundConfig("blackhole",
 		func(data []byte) (interface{}, error) {
 			return new(Config), nil
 		})

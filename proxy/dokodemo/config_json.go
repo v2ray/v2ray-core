@@ -10,7 +10,7 @@ import (
 )
 
 func init() {
-	config.RegisterInboundConnectionConfig("dokodemo-door",
+	config.RegisterInboundConfig("dokodemo-door",
 		func(data []byte) (interface{}, error) {
 			type DokodemoConfig struct {
 				Host         *v2net.AddressJson `json:"address"`

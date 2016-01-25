@@ -28,7 +28,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 }
 
 func init() {
-	proxyconfig.RegisterOutboundConnectionConfig("vmess",
+	proxyconfig.RegisterOutboundConfig("vmess",
 		func(data []byte) (interface{}, error) {
 			rawConfig := new(Config)
 			if err := json.Unmarshal(data, rawConfig); err != nil {

@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	config.RegisterOutboundConnectionConfig("freedom",
+	config.RegisterOutboundConfig("freedom",
 		func(data []byte) (interface{}, error) {
 			return new(Config), nil
 		})
