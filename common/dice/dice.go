@@ -2,6 +2,7 @@ package dice
 
 import (
 	"math/rand"
+	"time"
 )
 
 func Roll(n int) int {
@@ -9,4 +10,8 @@ func Roll(n int) int {
 		return 0
 	}
 	return rand.Intn(n)
+}
+
+func init() {
+	rand.Seed(time.Now().Unix())
 }
