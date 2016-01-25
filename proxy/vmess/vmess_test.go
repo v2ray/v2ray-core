@@ -37,7 +37,7 @@ func TestVMessInAndOut(t *testing.T) {
 		ConnOutput: ichConnOutput,
 	}
 
-	protocol, err := proxytesting.RegisterInboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (proxy.InboundConnectionHandler, error) {
+	protocol, err := proxytesting.RegisterInboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (proxy.InboundHandler, error) {
 		ich.Space = space
 		return ich, nil
 	})
@@ -78,7 +78,7 @@ func TestVMessInAndOut(t *testing.T) {
 		ConnOutput: ochConnOutput,
 	}
 
-	protocol, err = proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (proxy.OutboundConnectionHandler, error) {
+	protocol, err = proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (proxy.OutboundHandler, error) {
 		return och, nil
 	})
 	assert.Error(err).IsNil()

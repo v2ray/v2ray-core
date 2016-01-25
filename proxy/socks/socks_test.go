@@ -30,7 +30,7 @@ func TestSocksTcpConnect(t *testing.T) {
 		ConnInput:  bytes.NewReader(connInput),
 	}
 
-	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (v2proxy.OutboundConnectionHandler, error) {
+	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (v2proxy.OutboundHandler, error) {
 		return och, nil
 	})
 	assert.Error(err).IsNil()
@@ -89,7 +89,7 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 		ConnOutput: connOutput,
 	}
 
-	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (v2proxy.OutboundConnectionHandler, error) {
+	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (v2proxy.OutboundHandler, error) {
 		return och, nil
 	})
 	assert.Error(err).IsNil()
@@ -151,7 +151,7 @@ func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
 		ConnOutput: connOutput,
 	}
 
-	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (v2proxy.OutboundConnectionHandler, error) {
+	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (v2proxy.OutboundHandler, error) {
 		return och, nil
 	})
 	assert.Error(err).IsNil()
@@ -199,7 +199,7 @@ func TestSocksTcpConnectWithWrongAuthMethod(t *testing.T) {
 		ConnOutput: connOutput,
 	}
 
-	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (v2proxy.OutboundConnectionHandler, error) {
+	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (v2proxy.OutboundHandler, error) {
 		return och, nil
 	})
 	assert.Error(err).IsNil()
@@ -248,7 +248,7 @@ func TestSocksUdpSend(t *testing.T) {
 	}
 
 	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och",
-		func(space app.Space, config interface{}) (v2proxy.OutboundConnectionHandler, error) {
+		func(space app.Space, config interface{}) (v2proxy.OutboundHandler, error) {
 			return och, nil
 		})
 	assert.Error(err).IsNil()

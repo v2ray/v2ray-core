@@ -48,7 +48,7 @@ func TestUDPSend(t *testing.T) {
 	}
 
 	protocol, err := proxytesting.RegisterInboundConnectionHandlerCreator("mock_ich",
-		func(space app.Space, config interface{}) (v2proxy.InboundConnectionHandler, error) {
+		func(space app.Space, config interface{}) (v2proxy.InboundHandler, error) {
 			ich.Space = space
 			return ich, nil
 		})

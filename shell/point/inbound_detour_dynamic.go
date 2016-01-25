@@ -61,7 +61,7 @@ func (this *InboundDetourHandlerDynamic) pickUnusedPort() v2net.Port {
 	}
 }
 
-func (this *InboundDetourHandlerDynamic) GetConnectionHandler() (proxy.InboundConnectionHandler, int) {
+func (this *InboundDetourHandlerDynamic) GetConnectionHandler() (proxy.InboundHandler, int) {
 	this.RLock()
 	defer this.RUnlock()
 	ich := this.ichInUse[dice.Roll(len(this.ichInUse))]

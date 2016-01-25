@@ -8,7 +8,7 @@ import (
 
 func init() {
 	internal.MustRegisterInboundConnectionHandlerCreator("dokodemo-door",
-		func(space app.Space, rawConfig interface{}) (proxy.InboundConnectionHandler, error) {
+		func(space app.Space, rawConfig interface{}) (proxy.InboundHandler, error) {
 			config := rawConfig.(*Config)
 			return NewDokodemoDoor(space, config), nil
 		})

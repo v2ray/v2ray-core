@@ -6,7 +6,7 @@ import (
 )
 
 type InboundHandlerManagerWithContext interface {
-	GetHandler(context app.Context, tag string) (proxy.InboundConnectionHandler, int)
+	GetHandler(context app.Context, tag string) (proxy.InboundHandler, int)
 }
 
 type inboundHandlerManagerWithContext struct {
@@ -14,6 +14,6 @@ type inboundHandlerManagerWithContext struct {
 	manager InboundHandlerManagerWithContext
 }
 
-func (this *inboundHandlerManagerWithContext) GetHandler(tag string) (proxy.InboundConnectionHandler, int) {
+func (this *inboundHandlerManagerWithContext) GetHandler(tag string) (proxy.InboundHandler, int) {
 	return this.manager.GetHandler(this.context, tag)
 }

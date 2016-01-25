@@ -7,5 +7,5 @@ import (
 type InboundDetourHandler interface {
 	Start() error
 	Close()
-	GetConnectionHandler() (proxy.InboundConnectionHandler, int)
+	GetConnectionHandler() (proxy.InboundHandler, int)
 }

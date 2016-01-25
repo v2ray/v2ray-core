@@ -19,11 +19,11 @@ import (
 // Point shell of V2Ray.
 type Point struct {
 	port      v2net.Port
-	ich       proxy.InboundConnectionHandler
-	och       proxy.OutboundConnectionHandler
+	ich       proxy.InboundHandler
+	och       proxy.OutboundHandler
 	idh       []InboundDetourHandler
 	taggedIdh map[string]InboundDetourHandler
-	odh       map[string]proxy.OutboundConnectionHandler
+	odh       map[string]proxy.OutboundHandler
 	router    router.Router
 	space     *controller.SpaceController
 }
@@ -107,7 +107,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 
 	outboundDetours := pConfig.OutboundDetours
 	if len(outboundDetours) > 0 {
-		vpoint.odh = make(map[string]proxy.OutboundConnectionHandler)
+		vpoint.odh = make(map[string]proxy.OutboundHandler)
 		for _, detourConfig := range outboundDetours {
 			detourHandler, err := proxyrepo.CreateOutboundConnectionHandler(detourConfig.Protocol, vpoint.space.ForContext(detourConfig.Tag), detourConfig.Settings)
 			if err != nil {
@@ -190,7 +190,7 @@ func (this *Point) DispatchToOutbound(context app.Context, packet v2net.Packet) 
 	return direct
 }
 
-func (this *Point) FilterPacketAndDispatch(packet v2net.Packet, link ray.OutboundRay, dispatcher proxy.OutboundConnectionHandler) {
+func (this *Point) FilterPacketAndDispatch(packet v2net.Packet, link ray.OutboundRay, dispatcher proxy.OutboundHandler) {
 	// Filter empty packets
 	chunk := packet.Chunk()
 	moreChunks := packet.MoreChunks()
@@ -212,7 +212,7 @@ func (this *Point) FilterPacketAndDispatch(packet v2net.Packet, link ray.Outboun
 	dispatcher.Dispatch(packet, link)
 }
 
-func (this *Point) GetHandler(context app.Context, tag string) (proxy.InboundConnectionHandler, int) {
+func (this *Point) GetHandler(context app.Context, tag string) (proxy.InboundHandler, int) {
 	handler, found := this.taggedIdh[tag]
 	if !found {
 		return nil, 0

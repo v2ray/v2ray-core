@@ -45,7 +45,7 @@ func MustRegisterOutboundConnectionHandlerCreator(name string, creator OutboundC
 	}
 }
 
-func CreateInboundConnectionHandler(name string, space app.Space, rawConfig []byte) (proxy.InboundConnectionHandler, error) {
+func CreateInboundConnectionHandler(name string, space app.Space, rawConfig []byte) (proxy.InboundHandler, error) {
 	creator, found := inboundFactories[name]
 	if !found {
 		return nil, ErrorProxyNotFound
@@ -60,7 +60,7 @@ func CreateInboundConnectionHandler(name string, space app.Space, rawConfig []by
 	return creator(space, nil)
 }
 
-func CreateOutboundConnectionHandler(name string, space app.Space, rawConfig []byte) (proxy.OutboundConnectionHandler, error) {
+func CreateOutboundConnectionHandler(name string, space app.Space, rawConfig []byte) (proxy.OutboundHandler, error) {
 	creator, found := outboundFactories[name]
 	if !found {
 		return nil, ErrorNameExists

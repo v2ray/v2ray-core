@@ -45,6 +45,6 @@ func (this *OutboundConnectionHandler) Dispatch(packet v2net.Packet, ray ray.Out
 	return nil
 }
 
-func (this *OutboundConnectionHandler) Create(space app.Space, config interface{}) (proxy.OutboundConnectionHandler, error) {
+func (this *OutboundConnectionHandler) Create(space app.Space, config interface{}) (proxy.OutboundHandler, error) {
 	return this, nil
 }

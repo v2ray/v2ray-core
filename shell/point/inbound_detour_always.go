@@ -12,7 +12,7 @@ import (
 
 type InboundConnectionHandlerWithPort struct {
 	port    v2net.Port
-	handler proxy.InboundConnectionHandler
+	handler proxy.InboundHandler
 }
 
 // Handler for inbound detour connections.
@@ -44,7 +44,7 @@ func NewInboundDetourHandlerAlways(space app.Space, config *InboundDetourConfig)
 	return handler, nil
 }
 
-func (this *InboundDetourHandlerAlways) GetConnectionHandler() (proxy.InboundConnectionHandler, int) {
+func (this *InboundDetourHandlerAlways) GetConnectionHandler() (proxy.InboundHandler, int) {
 	ich := this.ich[dice.Roll(len(this.ich))]
 	return ich.handler, this.config.Allocation.Refresh
 }

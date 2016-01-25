@@ -191,7 +191,7 @@ func (this *VMessOutboundHandler) handleResponse(conn net.Conn, request *protoco
 
 func init() {
 	internal.MustRegisterOutboundConnectionHandlerCreator("vmess",
-		func(space app.Space, rawConfig interface{}) (proxy.OutboundConnectionHandler, error) {
+		func(space app.Space, rawConfig interface{}) (proxy.OutboundHandler, error) {
 			vOutConfig := rawConfig.(*Config)
 			return &VMessOutboundHandler{
 				space:           space,

@@ -8,7 +8,7 @@ import (
 )
 
 // A InboundConnectionHandler handles inbound network connections to V2Ray.
-type InboundConnectionHandler interface {
+type InboundHandler interface {
 	// Listen starts a InboundConnectionHandler by listen on a specific port.
 	Listen(port v2net.Port) error
 	// Close stops the handler to accepting anymore inbound connections.
@@ -18,7 +18,7 @@ type InboundConnectionHandler interface {
 }
 
 // An OutboundConnectionHandler handles outbound network connection for V2Ray.
-type OutboundConnectionHandler interface {
+type OutboundHandler interface {
 	// Dispatch sends one or more Packets to its destination.
 	Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error
 }

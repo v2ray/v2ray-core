@@ -5,5 +5,5 @@ import (
 )
 
 type InboundHandlerManager interface {
-	GetHandler(tag string) (proxy.InboundConnectionHandler, int)
+	GetHandler(tag string) (proxy.InboundHandler, int)
 }
