@@ -17,7 +17,7 @@ var (
 	ErrorBadConfiguration = errors.New("Bad proxy configuration.")
 )
 
-func RegisterInboundConnectionHandlerFactory(name string, creator InboundConnectionHandlerCreator) error {
+func RegisterInboundHandlerCreator(name string, creator InboundConnectionHandlerCreator) error {
 	if _, found := inboundFactories[name]; found {
 		return ErrorNameExists
 	}
@@ -26,12 +26,12 @@ func RegisterInboundConnectionHandlerFactory(name string, creator InboundConnect
 }
 
 func MustRegisterInboundConnectionHandlerCreator(name string, creator InboundConnectionHandlerCreator) {
-	if err := RegisterInboundConnectionHandlerFactory(name, creator); err != nil {
+	if err := RegisterInboundHandlerCreator(name, creator); err != nil {
 		panic(err)
 	}
 }
 
-func RegisterOutboundConnectionHandlerFactory(name string, creator OutboundConnectionHandlerCreator) error {
+func RegisterOutboundHandlerCreator(name string, creator OutboundConnectionHandlerCreator) error {
 	if _, found := outboundFactories[name]; found {
 		return ErrorNameExists
 	}
@@ -40,7 +40,7 @@ func RegisterOutboundConnectionHandlerFactory(name string, creator OutboundConne
 }
 
 func MustRegisterOutboundConnectionHandlerCreator(name string, creator OutboundConnectionHandlerCreator) {
-	if err := RegisterOutboundConnectionHandlerFactory(name, creator); err != nil {
+	if err := RegisterOutboundHandlerCreator(name, creator); err != nil {
 		panic(err)
 	}
 }
