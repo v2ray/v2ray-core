@@ -18,8 +18,8 @@ type InboundDetourHandlerDynamic struct {
 	space       app.Space
 	config      *InboundDetourConfig
 	portsInUse  map[v2net.Port]bool
-	ichInUse    []*InboundConnectionHandlerWithPort
-	ich2Recycle []*InboundConnectionHandlerWithPort
+	ichInUse    []proxy.InboundHandler
+	ich2Recycle []proxy.InboundHandler
 	lastRefresh time.Time
 }
 
@@ -30,18 +30,14 @@ func NewInboundDetourHandlerDynamic(space app.Space, config *InboundDetourConfig
 		portsInUse: make(map[v2net.Port]bool),
 	}
 	ichCount := config.Allocation.Concurrency
-	ichArray := make([]*InboundConnectionHandlerWithPort, ichCount*2)
+	ichArray := make([]proxy.InboundHandler, ichCount*2)
 	for idx, _ := range ichArray {
-		//port := handler.pickUnusedPort()
 		ich, err := proxyrepo.CreateInboundHandler(config.Protocol, space, config.Settings)
 		if err != nil {
 			log.Error("Point: Failed to create inbound connection handler: ", err)
 			return nil, err
 		}
-		ichArray[idx] = &InboundConnectionHandlerWithPort{
-			port:    0,
-			handler: ich,
-		}
+		ichArray[idx] = ich
 	}
 	handler.ichInUse = ichArray[:ichCount]
 	handler.ich2Recycle = ichArray[ichCount:]
@@ -69,19 +65,19 @@ func (this *InboundDetourHandlerDynamic) GetConnectionHandler() (proxy.InboundHa
 	if until < 0 {
 		until = 0
 	}
-	return ich.handler, int(until)
+	return ich, int(until)
 }
 
 func (this *InboundDetourHandlerDynamic) Close() {
 	this.Lock()
 	defer this.Unlock()
 	for _, ich := range this.ichInUse {
-		ich.handler.Close()
+		ich.Close()
 	}
 	if this.ich2Recycle != nil {
 		for _, ich := range this.ich2Recycle {
-			if ich != nil && ich.handler != nil {
-				ich.handler.Close()
+			if ich != nil {
+				ich.Close()
 			}
 		}
 	}
@@ -95,13 +91,13 @@ func (this *InboundDetourHandlerDynamic) refresh() error {
 
 	this.ich2Recycle, this.ichInUse = this.ichInUse, this.ich2Recycle
 	for _, ich := range this.ichInUse {
-		delete(this.portsInUse, ich.port)
-		ich.handler.Close()
-		ich.port = this.pickUnusedPort()
+		delete(this.portsInUse, ich.Port())
+		ich.Close()
+		port := this.pickUnusedPort()
 		err := retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
-			err := ich.handler.Listen(ich.port)
+			err := ich.Listen(port)
 			if err != nil {
-				log.Error("Point: Failed to start inbound detour on port ", ich.port, ": ", err)
+				log.Error("Point: Failed to start inbound detour on port ", port, ": ", err)
 				return err
 			}
 			return nil
