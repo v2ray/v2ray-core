@@ -109,7 +109,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	if len(outboundDetours) > 0 {
 		vpoint.odh = make(map[string]proxy.OutboundHandler)
 		for _, detourConfig := range outboundDetours {
-			detourHandler, err := proxyrepo.CreateOutboundConnectionHandler(detourConfig.Protocol, vpoint.space.ForContext(detourConfig.Tag), detourConfig.Settings)
+			detourHandler, err := proxyrepo.CreateOutboundHandler(detourConfig.Protocol, vpoint.space.ForContext(detourConfig.Tag), detourConfig.Settings)
 			if err != nil {
 				log.Error("Failed to create detour outbound connection handler: ", err)
 				return nil, err
