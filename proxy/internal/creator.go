@@ -5,5 +5,5 @@ import (
 	"github.com/v2ray/v2ray-core/proxy"
 )
 
-type InboundConnectionHandlerCreator func(space app.Space, config interface{}) (proxy.InboundHandler, error)
-type OutboundConnectionHandlerCreator func(space app.Space, config interface{}) (proxy.OutboundHandler, error)
+type InboundHandlerCreator func(space app.Space, config interface{}) (proxy.InboundHandler, error)
+type OutboundHandlerCreator func(space app.Space, config interface{}) (proxy.OutboundHandler, error)

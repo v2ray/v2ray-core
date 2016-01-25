@@ -9,15 +9,15 @@ import (
 )
 
 var (
-	inboundFactories  = make(map[string]InboundConnectionHandlerCreator)
-	outboundFactories = make(map[string]OutboundConnectionHandlerCreator)
+	inboundFactories  = make(map[string]InboundHandlerCreator)
+	outboundFactories = make(map[string]OutboundHandlerCreator)
 
 	ErrorProxyNotFound    = errors.New("Proxy not found.")
 	ErrorNameExists       = errors.New("Proxy with the same name already exists.")
 	ErrorBadConfiguration = errors.New("Bad proxy configuration.")
 )
 
-func RegisterInboundHandlerCreator(name string, creator InboundConnectionHandlerCreator) error {
+func RegisterInboundHandlerCreator(name string, creator InboundHandlerCreator) error {
 	if _, found := inboundFactories[name]; found {
 		return ErrorNameExists
 	}
@@ -25,13 +25,13 @@ func RegisterInboundHandlerCreator(name string, creator InboundConnectionHandler
 	return nil
 }
 
-func MustRegisterInboundConnectionHandlerCreator(name string, creator InboundConnectionHandlerCreator) {
+func MustRegisterInboundConnectionHandlerCreator(name string, creator InboundHandlerCreator) {
 	if err := RegisterInboundHandlerCreator(name, creator); err != nil {
 		panic(err)
 	}
 }
 
-func RegisterOutboundHandlerCreator(name string, creator OutboundConnectionHandlerCreator) error {
+func RegisterOutboundHandlerCreator(name string, creator OutboundHandlerCreator) error {
 	if _, found := outboundFactories[name]; found {
 		return ErrorNameExists
 	}
@@ -39,7 +39,7 @@ func RegisterOutboundHandlerCreator(name string, creator OutboundConnectionHandl
 	return nil
 }
 
-func MustRegisterOutboundConnectionHandlerCreator(name string, creator OutboundConnectionHandlerCreator) {
+func MustRegisterOutboundConnectionHandlerCreator(name string, creator OutboundHandlerCreator) {
 	if err := RegisterOutboundHandlerCreator(name, creator); err != nil {
 		panic(err)
 	}
