@@ -57,7 +57,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	vpoint.space.Bind(vpoint)
 
 	ichConfig := pConfig.InboundConfig.Settings
-	ich, err := proxyrepo.CreateInboundConnectionHandler(pConfig.InboundConfig.Protocol, vpoint.space.ForContext("vpoint-default-inbound"), ichConfig)
+	ich, err := proxyrepo.CreateInboundHandler(pConfig.InboundConfig.Protocol, vpoint.space.ForContext("vpoint-default-inbound"), ichConfig)
 	if err != nil {
 		log.Error("Failed to create inbound connection handler: ", err)
 		return nil, err
@@ -65,7 +65,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	vpoint.ich = ich
 
 	ochConfig := pConfig.OutboundConfig.Settings
-	och, err := proxyrepo.CreateOutboundConnectionHandler(pConfig.OutboundConfig.Protocol, vpoint.space.ForContext("vpoint-default-outbound"), ochConfig)
+	och, err := proxyrepo.CreateOutboundHandler(pConfig.OutboundConfig.Protocol, vpoint.space.ForContext("vpoint-default-outbound"), ochConfig)
 	if err != nil {
 		log.Error("Failed to create outbound connection handler: ", err)
 		return nil, err

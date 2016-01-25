@@ -19,11 +19,11 @@ func TestRegisterInboundConfig(t *testing.T) {
 	err := RegisterInboundConfig(protocol, creator)
 	assert.Error(err).IsNil()
 
-	configObj, err := CreateInboundConnectionConfig(protocol, nil)
+	configObj, err := CreateInboundConfig(protocol, nil)
 	assert.Bool(configObj.(bool)).IsTrue()
 	assert.Error(err).IsNil()
 
-	configObj, err = CreateOutboundConnectionConfig(protocol, nil)
+	configObj, err = CreateOutboundConfig(protocol, nil)
 	assert.Pointer(configObj).IsNil()
 }
 
@@ -39,10 +39,10 @@ func TestRegisterOutboundConfig(t *testing.T) {
 	err := RegisterOutboundConfig(protocol, creator)
 	assert.Error(err).IsNil()
 
-	configObj, err := CreateOutboundConnectionConfig(protocol, nil)
+	configObj, err := CreateOutboundConfig(protocol, nil)
 	assert.Bool(configObj.(bool)).IsTrue()
 	assert.Error(err).IsNil()
 
-	configObj, err = CreateInboundConnectionConfig(protocol, nil)
+	configObj, err = CreateInboundConfig(protocol, nil)
 	assert.Pointer(configObj).IsNil()
 }

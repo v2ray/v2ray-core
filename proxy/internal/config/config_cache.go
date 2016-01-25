@@ -28,7 +28,7 @@ func RegisterOutboundConfig(protocol string, creator ConfigObjectCreator) error 
 	return registerConfigType(protocol, "outbound", creator)
 }
 
-func CreateInboundConnectionConfig(protocol string, data []byte) (interface{}, error) {
+func CreateInboundConfig(protocol string, data []byte) (interface{}, error) {
 	creator, found := configCache[getConfigKey(protocol, "inbound")]
 	if !found {
 		return nil, errors.New(protocol + " not found.")
@@ -36,7 +36,7 @@ func CreateInboundConnectionConfig(protocol string, data []byte) (interface{}, e
 	return creator(data)
 }
 
-func CreateOutboundConnectionConfig(protocol string, data []byte) (interface{}, error) {
+func CreateOutboundConfig(protocol string, data []byte) (interface{}, error) {
 	creator, found := configCache[getConfigKey(protocol, "outbound")]
 	if !found {
 		return nil, errors.New(protocol + " not found.")

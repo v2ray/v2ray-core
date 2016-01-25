@@ -31,7 +31,7 @@ func NewInboundDetourHandlerAlways(space app.Space, config *InboundDetourConfig)
 	handler.ich = make([]*InboundConnectionHandlerWithPort, 0, ports.To-ports.From+1)
 	for i := ports.From; i <= ports.To; i++ {
 		ichConfig := config.Settings
-		ich, err := proxyrepo.CreateInboundConnectionHandler(config.Protocol, space, ichConfig)
+		ich, err := proxyrepo.CreateInboundHandler(config.Protocol, space, ichConfig)
 		if err != nil {
 			log.Error("Failed to create inbound connection handler: ", err)
 			return nil, err

@@ -14,7 +14,7 @@ import (
 func TestDefaultIPAddress(t *testing.T) {
 	v2testing.Current(t)
 
-	socksConfig, err := config.CreateInboundConnectionConfig("socks", []byte(`{
+	socksConfig, err := config.CreateInboundConfig("socks", []byte(`{
     "auth": "noauth"
   }`))
 	assert.Error(err).IsNil()
