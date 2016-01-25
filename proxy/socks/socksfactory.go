@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	internal.MustRegisterInboundConnectionHandlerCreator("socks",
+	internal.MustRegisterInboundHandlerCreator("socks",
 		func(space app.Space, rawConfig interface{}) (proxy.InboundHandler, error) {
 			return NewSocksServer(space, rawConfig.(*Config)), nil
 		})

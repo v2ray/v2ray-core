@@ -190,7 +190,7 @@ func (this *VMessOutboundHandler) handleResponse(conn net.Conn, request *protoco
 }
 
 func init() {
-	internal.MustRegisterOutboundConnectionHandlerCreator("vmess",
+	internal.MustRegisterOutboundHandlerCreator("vmess",
 		func(space app.Space, rawConfig interface{}) (proxy.OutboundHandler, error) {
 			vOutConfig := rawConfig.(*Config)
 			return &VMessOutboundHandler{

@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	internal.MustRegisterInboundConnectionHandlerCreator("dokodemo-door",
+	internal.MustRegisterInboundHandlerCreator("dokodemo-door",
 		func(space app.Space, rawConfig interface{}) (proxy.InboundHandler, error) {
 			config := rawConfig.(*Config)
 			return NewDokodemoDoor(space, config), nil

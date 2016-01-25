@@ -25,7 +25,7 @@ func RegisterInboundHandlerCreator(name string, creator InboundHandlerCreator) e
 	return nil
 }
 
-func MustRegisterInboundConnectionHandlerCreator(name string, creator InboundHandlerCreator) {
+func MustRegisterInboundHandlerCreator(name string, creator InboundHandlerCreator) {
 	if err := RegisterInboundHandlerCreator(name, creator); err != nil {
 		panic(err)
 	}
@@ -39,7 +39,7 @@ func RegisterOutboundHandlerCreator(name string, creator OutboundHandlerCreator)
 	return nil
 }
 
-func MustRegisterOutboundConnectionHandlerCreator(name string, creator OutboundHandlerCreator) {
+func MustRegisterOutboundHandlerCreator(name string, creator OutboundHandlerCreator) {
 	if err := RegisterOutboundHandlerCreator(name, creator); err != nil {
 		panic(err)
 	}

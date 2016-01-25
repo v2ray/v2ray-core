@@ -174,7 +174,7 @@ func handleOutput(request *protocol.VMessRequest, writer io.Writer, output <-cha
 }
 
 func init() {
-	internal.MustRegisterInboundConnectionHandlerCreator("vmess",
+	internal.MustRegisterInboundHandlerCreator("vmess",
 		func(space app.Space, rawConfig interface{}) (proxy.InboundHandler, error) {
 			config := rawConfig.(*Config)
 
