@@ -44,6 +44,7 @@ func TestRouter(t *testing.T) {
 		IP:   []byte{127, 0, 0, 1},
 		Port: int(50020),
 	})
+	assert.Error(err).IsNil()
 
 	payload := "direct dokodemo request."
 	nBytes, err := conn.Write([]byte(payload))
