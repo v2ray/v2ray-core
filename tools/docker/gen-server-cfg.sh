@@ -12,7 +12,7 @@ cat <<EOF > server-cfg.json
 {
   "port": $PORT,
   "log" : {
-    "access": "/v2ray/logs/access.log"
+    "access": "/go/access.log"
   },
   "inbound": {
     "protocol": "vmess",
