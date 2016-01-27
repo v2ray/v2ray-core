@@ -13,9 +13,9 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/transport/listener"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
@@ -24,7 +24,7 @@ type HttpProxyServer struct {
 	accepting     bool
 	space         app.Space
 	config        *Config
-	tcpListener   *net.TCPListener
+	tcpListener   *listener.TCPListener
 	listeningPort v2net.Port
 }
 
@@ -42,8 +42,8 @@ func (this *HttpProxyServer) Port() v2net.Port {
 func (this *HttpProxyServer) Close() {
 	this.accepting = false
 	if this.tcpListener != nil {
-		this.tcpListener.Close()
 		this.Lock()
+		this.tcpListener.Close()
 		this.tcpListener = nil
 		this.Unlock()
 	}
@@ -59,38 +59,16 @@ func (this *HttpProxyServer) Listen(port v2net.Port) error {
 	}
 	this.listeningPort = port
 
-	tcpListener, err := net.ListenTCP("tcp", &net.TCPAddr{
-		Port: int(port.Value()),
-		IP:   []byte{0, 0, 0, 0},
-	})
+	tcpListener, err := listener.ListenTCP(port, this.handleConnection)
 	if err != nil {
+		log.Error("Http: Failed listen on port ", port, ": ", err)
 		return err
 	}
 	this.Lock()
 	this.tcpListener = tcpListener
 	this.Unlock()
 	this.accepting = true
-	go this.accept()
 	return nil
-}
-
-func (this *HttpProxyServer) accept() {
-	for this.accepting {
-		retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
-			this.Lock()
-			defer this.Unlock()
-			if !this.accepting {
-				return nil
-			}
-			tcpConn, err := this.tcpListener.AcceptTCP()
-			if err != nil {
-				log.Error("Failed to accept HTTP connection: ", err)
-				return err
-			}
-			go this.handleConnection(tcpConn)
-			return nil
-		})
-	}
 }
 
 func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error) {
@@ -116,7 +94,7 @@ func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error
 	return v2net.TCPDestination(v2net.DomainAddress(host), port), nil
 }
 
-func (this *HttpProxyServer) handleConnection(conn *net.TCPConn) {
+func (this *HttpProxyServer) handleConnection(conn *listener.TCPConn) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
 

@@ -9,8 +9,8 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/transport/listener"
 )
 
 type DokodemoDoor struct {
@@ -21,7 +21,7 @@ type DokodemoDoor struct {
 	address       v2net.Address
 	port          v2net.Port
 	space         app.Space
-	tcpListener   *net.TCPListener
+	tcpListener   *listener.TCPListener
 	udpConn       *net.UDPConn
 	listeningPort v2net.Port
 }
@@ -42,8 +42,8 @@ func (this *DokodemoDoor) Port() v2net.Port {
 func (this *DokodemoDoor) Close() {
 	this.accepting = false
 	if this.tcpListener != nil {
-		this.tcpListener.Close()
 		this.tcpMutex.Lock()
+		this.tcpListener.Close()
 		this.tcpListener = nil
 		this.tcpMutex.Unlock()
 	}
@@ -132,42 +132,18 @@ func (this *DokodemoDoor) handleUDPPackets() {
 }
 
 func (this *DokodemoDoor) ListenTCP(port v2net.Port) error {
-	tcpListener, err := net.ListenTCP("tcp", &net.TCPAddr{
-		IP:   []byte{0, 0, 0, 0},
-		Port: int(port),
-		Zone: "",
-	})
+	tcpListener, err := listener.ListenTCP(port, this.HandleTCPConnection)
 	if err != nil {
-		log.Error("Dokodemo failed to listen on port ", port, ": ", err)
+		log.Error("Dokodemo: Failed to listen on port ", port, ": ", err)
 		return err
 	}
 	this.tcpMutex.Lock()
 	this.tcpListener = tcpListener
 	this.tcpMutex.Unlock()
-	go this.AcceptTCPConnections()
 	return nil
 }
 
-func (this *DokodemoDoor) AcceptTCPConnections() {
-	for this.accepting {
-		retry.Timed(100, 100).On(func() error {
-			this.tcpMutex.RLock()
-			defer this.tcpMutex.RUnlock()
-			if !this.accepting {
-				return nil
-			}
-			connection, err := this.tcpListener.AcceptTCP()
-			if err != nil {
-				log.Error("Dokodemo failed to accept new connections: ", err)
-				return err
-			}
-			go this.HandleTCPConnection(connection)
-			return nil
-		})
-	}
-}
-
-func (this *DokodemoDoor) HandleTCPConnection(conn *net.TCPConn) {
+func (this *DokodemoDoor) HandleTCPConnection(conn *listener.TCPConn) {
 	defer conn.Close()
 
 	packet := v2net.NewPacket(v2net.TCPDestination(this.address, this.port), nil, true)

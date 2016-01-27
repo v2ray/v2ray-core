@@ -3,7 +3,6 @@ package inbound
 import (
 	"crypto/md5"
 	"io"
-	"net"
 	"sync"
 
 	"github.com/v2ray/v2ray-core/app"
@@ -11,12 +10,12 @@ import (
 	v2crypto "github.com/v2ray/v2ray-core/common/crypto"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	"github.com/v2ray/v2ray-core/proxy/vmess"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
+	"github.com/v2ray/v2ray-core/transport/listener"
 )
 
 // Inbound connection handler that handles messages in VMess format.
@@ -26,7 +25,7 @@ type VMessInboundHandler struct {
 	clients       protocol.UserSet
 	user          *vmess.User
 	accepting     bool
-	listener      *net.TCPListener
+	listener      *listener.TCPListener
 	features      *FeaturesConfig
 	listeningPort v2net.Port
 }
@@ -38,8 +37,8 @@ func (this *VMessInboundHandler) Port() v2net.Port {
 func (this *VMessInboundHandler) Close() {
 	this.accepting = false
 	if this.listener != nil {
-		this.listener.Close()
 		this.Lock()
+		this.listener.Close()
 		this.listener = nil
 		this.Unlock()
 	}
@@ -59,45 +58,19 @@ func (this *VMessInboundHandler) Listen(port v2net.Port) error {
 	}
 	this.listeningPort = port
 
-	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
-		IP:   []byte{0, 0, 0, 0},
-		Port: int(port),
-		Zone: "",
-	})
+	tcpListener, err := listener.ListenTCP(port, this.HandleConnection)
 	if err != nil {
 		log.Error("Unable to listen tcp port ", port, ": ", err)
 		return err
 	}
 	this.accepting = true
 	this.Lock()
-	this.listener = listener
+	this.listener = tcpListener
 	this.Unlock()
-	go this.AcceptConnections()
 	return nil
 }
 
-func (this *VMessInboundHandler) AcceptConnections() error {
-	for this.accepting {
-		retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
-			this.Lock()
-			defer this.Unlock()
-			if !this.accepting {
-				return nil
-			}
-			connection, err := this.listener.AcceptTCP()
-			if err != nil {
-				log.Error("Failed to accpet connection: ", err)
-				return err
-			}
-			go this.HandleConnection(connection)
-			return nil
-		})
-
-	}
-	return nil
-}
-
-func (this *VMessInboundHandler) HandleConnection(connection *net.TCPConn) error {
+func (this *VMessInboundHandler) HandleConnection(connection *listener.TCPConn) {
 	defer connection.Close()
 
 	connReader := v2net.NewTimeOutReader(16, connection)
@@ -107,7 +80,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *net.TCPConn) error
 	if err != nil {
 		log.Access(connection.RemoteAddr(), serial.StringLiteral(""), log.AccessRejected, serial.StringLiteral(err.Error()))
 		log.Warning("VMessIn: Invalid request from ", connection.RemoteAddr(), ": ", err)
-		return err
+		return
 	}
 	log.Access(connection.RemoteAddr(), request.Address, log.AccessAccepted, serial.StringLiteral(""))
 	log.Debug("VMessIn: Received request for ", request.Address)
@@ -130,7 +103,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *net.TCPConn) error
 	if err != nil {
 		log.Error("VMessIn: Failed to create AES decryption stream: ", err)
 		close(input)
-		return err
+		return
 	}
 
 	responseWriter := v2crypto.NewCryptionWriter(aesStream, connection)
@@ -151,8 +124,6 @@ func (this *VMessInboundHandler) HandleConnection(connection *net.TCPConn) error
 
 	connection.CloseWrite()
 	readFinish.Lock()
-
-	return nil
 }
 
 func handleInput(request *protocol.VMessRequest, reader io.Reader, input chan<- *alloc.Buffer, finish *sync.Mutex) {

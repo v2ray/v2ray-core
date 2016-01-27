@@ -14,6 +14,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
 		Cipher   serial.StringLiteral `json:"method"`
 		Password serial.StringLiteral `json:"password"`
+		UDP      bool                 `json:"udp"`
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
@@ -23,6 +24,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		log.Error("Shadowsocks: Password is not specified.")
 		return internal.ErrorBadConfiguration
 	}
+	this.UDP = jsonConfig.UDP
 	this.Password = jsonConfig.Password.String()
 	if this.Cipher == nil {
 		log.Error("Shadowsocks: Cipher method is not specified.")

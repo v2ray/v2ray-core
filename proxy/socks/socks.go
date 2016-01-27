@@ -11,9 +11,9 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/socks/protocol"
+	"github.com/v2ray/v2ray-core/transport/listener"
 )
 
 var (
@@ -28,7 +28,7 @@ type SocksServer struct {
 	accepting     bool
 	space         app.Space
 	config        *Config
-	tcpListener   *net.TCPListener
+	tcpListener   *listener.TCPListener
 	udpConn       *net.UDPConn
 	udpAddress    v2net.Destination
 	listeningPort v2net.Port
@@ -48,8 +48,8 @@ func (this *SocksServer) Port() v2net.Port {
 func (this *SocksServer) Close() {
 	this.accepting = false
 	if this.tcpListener != nil {
-		this.tcpListener.Close()
 		this.tcpMutex.Lock()
+		this.tcpListener.Close()
 		this.tcpListener = nil
 		this.tcpMutex.Unlock()
 	}
@@ -71,11 +71,7 @@ func (this *SocksServer) Listen(port v2net.Port) error {
 	}
 	this.listeningPort = port
 
-	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
-		IP:   []byte{0, 0, 0, 0},
-		Port: int(port),
-		Zone: "",
-	})
+	listener, err := listener.ListenTCP(port, this.HandleConnection)
 	if err != nil {
 		log.Error("Socks: failed to listen on port ", port, ": ", err)
 		return err
@@ -84,33 +80,13 @@ func (this *SocksServer) Listen(port v2net.Port) error {
 	this.tcpMutex.Lock()
 	this.tcpListener = listener
 	this.tcpMutex.Unlock()
-	go this.AcceptConnections()
 	if this.config.UDPEnabled {
 		this.ListenUDP(port)
 	}
 	return nil
 }
 
-func (this *SocksServer) AcceptConnections() {
-	for this.accepting {
-		retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
-			this.tcpMutex.RLock()
-			defer this.tcpMutex.RUnlock()
-			if !this.accepting {
-				return nil
-			}
-			connection, err := this.tcpListener.AcceptTCP()
-			if err != nil {
-				log.Error("Socks: failed to accept new connection: ", err)
-				return err
-			}
-			go this.HandleConnection(connection)
-			return nil
-		})
-	}
-}
-
-func (this *SocksServer) HandleConnection(connection *net.TCPConn) error {
+func (this *SocksServer) HandleConnection(connection *listener.TCPConn) {
 	defer connection.Close()
 
 	reader := v2net.NewTimeOutReader(120, connection)
@@ -118,13 +94,13 @@ func (this *SocksServer) HandleConnection(connection *net.TCPConn) error {
 	auth, auth4, err := protocol.ReadAuthentication(reader)
 	if err != nil && err != protocol.Socks4Downgrade {
 		log.Error("Socks: failed to read authentication: ", err)
-		return err
+		return
 	}
 
 	if err != nil && err == protocol.Socks4Downgrade {
-		return this.handleSocks4(reader, connection, auth4)
+		this.handleSocks4(reader, connection, auth4)
 	} else {
-		return this.handleSocks5(reader, connection, auth)
+		this.handleSocks5(reader, connection, auth)
 	}
 }
 

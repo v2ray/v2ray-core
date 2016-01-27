@@ -46,4 +46,5 @@ func (this *AesCfb) NewDecodingStream(key []byte, iv []byte, reader io.Reader) (
 type Config struct {
 	Cipher   Cipher
 	Password string
+	UDP      bool
 }
