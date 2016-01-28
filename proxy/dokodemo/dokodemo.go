@@ -20,7 +20,7 @@ type DokodemoDoor struct {
 	address       v2net.Address
 	port          v2net.Port
 	space         app.Space
-	tcpListener   *hub.TCPListener
+	tcpListener   *hub.TCPHub
 	udpHub        *hub.UDPHub
 	listeningPort v2net.Port
 }

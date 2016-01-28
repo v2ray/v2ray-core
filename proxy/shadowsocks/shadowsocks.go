@@ -20,7 +20,7 @@ type Shadowsocks struct {
 	config      *Config
 	port        v2net.Port
 	accepting   bool
-	tcpListener *hub.TCPListener
+	tcpListener *hub.TCPHub
 }
 
 func (this *Shadowsocks) Port() v2net.Port {

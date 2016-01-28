@@ -10,7 +10,7 @@ import (
 
 type TCPConn struct {
 	conn     *net.TCPConn
-	listener *TCPListener
+	listener *TCPHub
 	dirty    bool
 }
 
@@ -62,13 +62,13 @@ func (this *TCPConn) CloseWrite() error {
 	return this.conn.CloseWrite()
 }
 
-type TCPListener struct {
+type TCPHub struct {
 	listener     *net.TCPListener
 	connCallback func(*TCPConn)
 	accepting    bool
 }
 
-func ListenTCP(port v2net.Port, callback func(*TCPConn)) (*TCPListener, error) {
+func ListenTCP(port v2net.Port, callback func(*TCPConn)) (*TCPHub, error) {
 	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   []byte{0, 0, 0, 0},
 		Port: int(port),
@@ -77,7 +77,7 @@ func ListenTCP(port v2net.Port, callback func(*TCPConn)) (*TCPListener, error) {
 	if err != nil {
 		return nil, err
 	}
-	tcpListener := &TCPListener{
+	tcpListener := &TCPHub{
 		listener:     listener,
 		connCallback: callback,
 	}
@@ -85,12 +85,12 @@ func ListenTCP(port v2net.Port, callback func(*TCPConn)) (*TCPListener, error) {
 	return tcpListener, nil
 }
 
-func (this *TCPListener) Close() {
+func (this *TCPHub) Close() {
 	this.accepting = false
 	this.listener.Close()
 }
 
-func (this *TCPListener) start() {
+func (this *TCPHub) start() {
 	this.accepting = true
 	for this.accepting {
 		conn, err := this.listener.AcceptTCP()
@@ -105,6 +105,6 @@ func (this *TCPListener) start() {
 	}
 }
 
-func (this *TCPListener) recycle(conn *net.TCPConn) {
+func (this *TCPHub) recycle(conn *net.TCPConn) {
 
 }

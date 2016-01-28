@@ -28,7 +28,7 @@ type SocksServer struct {
 	accepting     bool
 	space         app.Space
 	config        *Config
-	tcpListener   *hub.TCPListener
+	tcpListener   *hub.TCPHub
 	udpConn       *net.UDPConn
 	udpAddress    v2net.Destination
 	listeningPort v2net.Port

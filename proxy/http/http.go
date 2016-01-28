@@ -24,7 +24,7 @@ type HttpProxyServer struct {
 	accepting     bool
 	space         app.Space
 	config        *Config
-	tcpListener   *hub.TCPListener
+	tcpListener   *hub.TCPHub
 	listeningPort v2net.Port
 }
 

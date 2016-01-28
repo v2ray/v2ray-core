@@ -25,7 +25,7 @@ type VMessInboundHandler struct {
 	clients       protocol.UserSet
 	user          *vmess.User
 	accepting     bool
-	listener      *hub.TCPListener
+	listener      *hub.TCPHub
 	features      *FeaturesConfig
 	listeningPort v2net.Port
 }
