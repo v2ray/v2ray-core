@@ -1,6 +1,7 @@
 package alloc
 
 import (
+	"io"
 	"sync"
 )
 
@@ -70,6 +71,19 @@ func (b *Buffer) IsFull() bool {
 func (b *Buffer) Write(data []byte) (int, error) {
 	b.Append(data)
 	return len(data), nil
+}
+
+func (b *Buffer) Read(data []byte) (int, error) {
+	if b.Len() == 0 {
+		return 0, io.EOF
+	}
+	nBytes := copy(data, b.Value)
+	if nBytes == b.Len() {
+		b.Value = b.Value[:0]
+	} else {
+		b.Value = b.Value[nBytes:]
+	}
+	return nBytes, nil
 }
 
 type bufferPool struct {
