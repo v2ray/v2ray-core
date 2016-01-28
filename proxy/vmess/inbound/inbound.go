@@ -15,7 +15,7 @@ import (
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	"github.com/v2ray/v2ray-core/proxy/vmess"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
-	"github.com/v2ray/v2ray-core/transport/listener"
+	"github.com/v2ray/v2ray-core/transport/hub"
 )
 
 // Inbound connection handler that handles messages in VMess format.
@@ -25,7 +25,7 @@ type VMessInboundHandler struct {
 	clients       protocol.UserSet
 	user          *vmess.User
 	accepting     bool
-	listener      *listener.TCPListener
+	listener      *hub.TCPListener
 	features      *FeaturesConfig
 	listeningPort v2net.Port
 }
@@ -58,7 +58,7 @@ func (this *VMessInboundHandler) Listen(port v2net.Port) error {
 	}
 	this.listeningPort = port
 
-	tcpListener, err := listener.ListenTCP(port, this.HandleConnection)
+	tcpListener, err := hub.ListenTCP(port, this.HandleConnection)
 	if err != nil {
 		log.Error("Unable to listen tcp port ", port, ": ", err)
 		return err
@@ -70,7 +70,7 @@ func (this *VMessInboundHandler) Listen(port v2net.Port) error {
 	return nil
 }
 
-func (this *VMessInboundHandler) HandleConnection(connection *listener.TCPConn) {
+func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 	defer connection.Close()
 
 	connReader := v2net.NewTimeOutReader(16, connection)

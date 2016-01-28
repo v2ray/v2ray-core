@@ -10,7 +10,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/transport/listener"
+	"github.com/v2ray/v2ray-core/transport/hub"
 )
 
 type DokodemoDoor struct {
@@ -21,7 +21,7 @@ type DokodemoDoor struct {
 	address       v2net.Address
 	port          v2net.Port
 	space         app.Space
-	tcpListener   *listener.TCPListener
+	tcpListener   *hub.TCPListener
 	udpConn       *net.UDPConn
 	listeningPort v2net.Port
 }
@@ -132,7 +132,7 @@ func (this *DokodemoDoor) handleUDPPackets() {
 }
 
 func (this *DokodemoDoor) ListenTCP(port v2net.Port) error {
-	tcpListener, err := listener.ListenTCP(port, this.HandleTCPConnection)
+	tcpListener, err := hub.ListenTCP(port, this.HandleTCPConnection)
 	if err != nil {
 		log.Error("Dokodemo: Failed to listen on port ", port, ": ", err)
 		return err
@@ -143,7 +143,7 @@ func (this *DokodemoDoor) ListenTCP(port v2net.Port) error {
 	return nil
 }
 
-func (this *DokodemoDoor) HandleTCPConnection(conn *listener.TCPConn) {
+func (this *DokodemoDoor) HandleTCPConnection(conn *hub.TCPConn) {
 	defer conn.Close()
 
 	packet := v2net.NewPacket(v2net.TCPDestination(this.address, this.port), nil, true)

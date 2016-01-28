@@ -13,7 +13,7 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/socks/protocol"
-	"github.com/v2ray/v2ray-core/transport/listener"
+	"github.com/v2ray/v2ray-core/transport/hub"
 )
 
 var (
@@ -28,7 +28,7 @@ type SocksServer struct {
 	accepting     bool
 	space         app.Space
 	config        *Config
-	tcpListener   *listener.TCPListener
+	tcpListener   *hub.TCPListener
 	udpConn       *net.UDPConn
 	udpAddress    v2net.Destination
 	listeningPort v2net.Port
@@ -71,7 +71,7 @@ func (this *SocksServer) Listen(port v2net.Port) error {
 	}
 	this.listeningPort = port
 
-	listener, err := listener.ListenTCP(port, this.HandleConnection)
+	listener, err := hub.ListenTCP(port, this.HandleConnection)
 	if err != nil {
 		log.Error("Socks: failed to listen on port ", port, ": ", err)
 		return err
@@ -86,7 +86,7 @@ func (this *SocksServer) Listen(port v2net.Port) error {
 	return nil
 }
 
-func (this *SocksServer) HandleConnection(connection *listener.TCPConn) {
+func (this *SocksServer) HandleConnection(connection *hub.TCPConn) {
 	defer connection.Close()
 
 	reader := v2net.NewTimeOutReader(120, connection)

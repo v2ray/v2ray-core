@@ -12,7 +12,7 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
-	"github.com/v2ray/v2ray-core/transport/listener"
+	"github.com/v2ray/v2ray-core/transport/hub"
 )
 
 type Shadowsocks struct {
@@ -20,7 +20,7 @@ type Shadowsocks struct {
 	config      *Config
 	port        v2net.Port
 	accepting   bool
-	tcpListener *listener.TCPListener
+	tcpListener *hub.TCPListener
 }
 
 func (this *Shadowsocks) Port() v2net.Port {
@@ -42,7 +42,7 @@ func (this *Shadowsocks) Listen(port v2net.Port) error {
 		}
 	}
 
-	tcpListener, err := listener.ListenTCP(port, this.handleConnection)
+	tcpListener, err := hub.ListenTCP(port, this.handleConnection)
 	if err != nil {
 		log.Error("Shadowsocks: Failed to listen on port ", port, ": ", err)
 		return err
@@ -52,7 +52,7 @@ func (this *Shadowsocks) Listen(port v2net.Port) error {
 	return nil
 }
 
-func (this *Shadowsocks) handleConnection(conn *listener.TCPConn) {
+func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 	defer conn.Close()
 
 	buffer := alloc.NewSmallBuffer()

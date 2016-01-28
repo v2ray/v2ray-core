@@ -15,7 +15,7 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/transport/listener"
+	"github.com/v2ray/v2ray-core/transport/hub"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
@@ -24,7 +24,7 @@ type HttpProxyServer struct {
 	accepting     bool
 	space         app.Space
 	config        *Config
-	tcpListener   *listener.TCPListener
+	tcpListener   *hub.TCPListener
 	listeningPort v2net.Port
 }
 
@@ -59,7 +59,7 @@ func (this *HttpProxyServer) Listen(port v2net.Port) error {
 	}
 	this.listeningPort = port
 
-	tcpListener, err := listener.ListenTCP(port, this.handleConnection)
+	tcpListener, err := hub.ListenTCP(port, this.handleConnection)
 	if err != nil {
 		log.Error("Http: Failed listen on port ", port, ": ", err)
 		return err
@@ -94,7 +94,7 @@ func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error
 	return v2net.TCPDestination(v2net.DomainAddress(host), port), nil
 }
 
-func (this *HttpProxyServer) handleConnection(conn *listener.TCPConn) {
+func (this *HttpProxyServer) handleConnection(conn *hub.TCPConn) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
 
