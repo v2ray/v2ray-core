@@ -24,7 +24,7 @@ func ReadRequest(reader io.Reader) (*Request, error) {
 	buffer := alloc.NewSmallBuffer()
 	defer buffer.Release()
 
-	_, err := v2net.ReadAllBytes(reader, buffer.Value[:1])
+	_, err := io.ReadFull(reader, buffer.Value[:1])
 	if err != nil {
 		log.Error("Shadowsocks: Failed to read address type: ", err)
 		return nil, transport.CorruptedPacket
@@ -35,27 +35,27 @@ func ReadRequest(reader io.Reader) (*Request, error) {
 	addrType := buffer.Value[0]
 	switch addrType {
 	case AddrTypeIPv4:
-		_, err := v2net.ReadAllBytes(reader, buffer.Value[:4])
+		_, err := io.ReadFull(reader, buffer.Value[:4])
 		if err != nil {
 			log.Error("Shadowsocks: Failed to read IPv4 address: ", err)
 			return nil, transport.CorruptedPacket
 		}
 		request.Address = v2net.IPAddress(buffer.Value[:4])
 	case AddrTypeIPv6:
-		_, err := v2net.ReadAllBytes(reader, buffer.Value[:16])
+		_, err := io.ReadFull(reader, buffer.Value[:16])
 		if err != nil {
 			log.Error("Shadowsocks: Failed to read IPv6 address: ", err)
 			return nil, transport.CorruptedPacket
 		}
 		request.Address = v2net.IPAddress(buffer.Value[:16])
 	case AddrTypeDomain:
-		_, err := v2net.ReadAllBytes(reader, buffer.Value[:1])
+		_, err := io.ReadFull(reader, buffer.Value[:1])
 		if err != nil {
 			log.Error("Shadowsocks: Failed to read domain lenth: ", err)
 			return nil, transport.CorruptedPacket
 		}
 		domainLength := int(buffer.Value[0])
-		_, err = v2net.ReadAllBytes(reader, buffer.Value[:domainLength])
+		_, err = io.ReadFull(reader, buffer.Value[:domainLength])
 		if err != nil {
 			log.Error("Shadowsocks: Failed to read domain: ", err)
 			return nil, transport.CorruptedPacket
@@ -66,7 +66,7 @@ func ReadRequest(reader io.Reader) (*Request, error) {
 		return nil, transport.CorruptedPacket
 	}
 
-	_, err = v2net.ReadAllBytes(reader, buffer.Value[:2])
+	_, err = io.ReadFull(reader, buffer.Value[:2])
 	if err != nil {
 		log.Error("Shadowsocks: Failed to read port: ", err)
 		return nil, transport.CorruptedPacket

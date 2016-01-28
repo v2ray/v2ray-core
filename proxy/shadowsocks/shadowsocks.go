@@ -4,6 +4,7 @@ package shadowsocks
 
 import (
 	"crypto/rand"
+	"io"
 	"sync"
 
 	"github.com/v2ray/v2ray-core/app"
@@ -127,7 +128,7 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 	buffer := alloc.NewSmallBuffer()
 	defer buffer.Release()
 
-	_, err := v2net.ReadAllBytes(conn, buffer.Value[:this.config.Cipher.IVSize()])
+	_, err := io.ReadFull(conn, buffer.Value[:this.config.Cipher.IVSize()])
 	if err != nil {
 		log.Error("Shadowsocks: Failed to read IV: ", err)
 		return

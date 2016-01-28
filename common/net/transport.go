@@ -17,20 +17,6 @@ func ReadFrom(reader io.Reader, buffer *alloc.Buffer) (*alloc.Buffer, error) {
 	return buffer, err
 }
 
-// ReadAllBytes reads all bytes required from reader, if no error happens.
-func ReadAllBytes(reader io.Reader, buffer []byte) (int, error) {
-	bytesRead := 0
-	bytesAsked := len(buffer)
-	for bytesRead < bytesAsked {
-		nBytes, err := reader.Read(buffer[bytesRead:])
-		bytesRead += nBytes
-		if err != nil {
-			return bytesRead, err
-		}
-	}
-	return bytesRead, nil
-}
-
 // ReaderToChan dumps all content from a given reader to a chan by constantly reading it until EOF.
 func ReaderToChan(stream chan<- *alloc.Buffer, reader io.Reader) error {
 	allocate := alloc.NewBuffer

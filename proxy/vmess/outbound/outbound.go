@@ -3,6 +3,7 @@ package outbound
 import (
 	"crypto/md5"
 	"crypto/rand"
+	"io"
 	"net"
 	"sync"
 	"time"
@@ -39,8 +40,8 @@ func (this *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray ray.Out
 	}
 
 	buffer := alloc.NewSmallBuffer()
-	defer buffer.Release()                             // Buffer is released after communication finishes.
-	v2net.ReadAllBytes(rand.Reader, buffer.Value[:33]) // 16 + 16 + 1
+	defer buffer.Release()                      // Buffer is released after communication finishes.
+	io.ReadFull(rand.Reader, buffer.Value[:33]) // 16 + 16 + 1
 	request.RequestIV = buffer.Value[:16]
 	request.RequestKey = buffer.Value[16:32]
 	request.ResponseHeader = buffer.Value[32]
@@ -170,7 +171,7 @@ func (this *VMessOutboundHandler) handleResponse(conn net.Conn, request *protoco
 		dataLen := int(buffer.Value[3])
 		if buffer.Len() < dataLen+4 { // Rare case
 			diffBuffer := make([]byte, dataLen+4-buffer.Len())
-			v2net.ReadAllBytes(decryptResponseReader, diffBuffer)
+			io.ReadFull(decryptResponseReader, diffBuffer)
 			buffer.Append(diffBuffer)
 		}
 		command := buffer.Value[2]
