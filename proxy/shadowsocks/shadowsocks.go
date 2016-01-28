@@ -32,6 +32,9 @@ func (this *Shadowsocks) Close() {
 	this.accepting = false
 	this.tcpHub.Close()
 	this.tcpHub = nil
+
+	this.udpHub.Close()
+	this.udpHub = nil
 }
 
 func (this *Shadowsocks) Listen(port v2net.Port) error {
