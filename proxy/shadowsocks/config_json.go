@@ -8,6 +8,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/internal/config"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {
@@ -20,16 +21,8 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
 		return err
 	}
-	if len(jsonConfig.Password) == 0 {
-		log.Error("Shadowsocks: Password is not specified.")
-		return internal.ErrorBadConfiguration
-	}
+
 	this.UDP = jsonConfig.UDP
-	this.Password = jsonConfig.Password.String()
-	if this.Cipher == nil {
-		log.Error("Shadowsocks: Cipher method is not specified.")
-		return internal.ErrorBadConfiguration
-	}
 	jsonConfig.Cipher = jsonConfig.Cipher.ToLower()
 	switch jsonConfig.Cipher.String() {
 	case "aes-256-cfb":
@@ -38,11 +31,26 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		}
 	case "aes-128-cfb":
 		this.Cipher = &AesCfb{
-			KeyBytes: 32,
+			KeyBytes: 16,
 		}
 	default:
 		log.Error("Shadowsocks: Unknown cipher method: ", jsonConfig.Cipher)
 		return internal.ErrorBadConfiguration
 	}
+
+	if len(jsonConfig.Password) == 0 {
+		log.Error("Shadowsocks: Password is not specified.")
+		return internal.ErrorBadConfiguration
+	}
+	this.Key = PasswordToCipherKey(jsonConfig.Password.String(), this.Cipher.KeySize())
+
 	return nil
+}
+
+func init() {
+	config.RegisterInboundConfig("shadowsocks", func(data []byte) (interface{}, error) {
+		rawConfig := new(Config)
+		err := json.Unmarshal(data, rawConfig)
+		return rawConfig, err
+	})
 }

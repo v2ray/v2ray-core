@@ -1,6 +1,7 @@
 package shadowsocks
 
 import (
+	"crypto/md5"
 	"io"
 
 	"github.com/v2ray/v2ray-core/common/crypto"
@@ -44,7 +45,25 @@ func (this *AesCfb) NewDecodingStream(key []byte, iv []byte, reader io.Reader) (
 }
 
 type Config struct {
-	Cipher   Cipher
-	Password string
-	UDP      bool
+	Cipher Cipher
+	Key    []byte
+	UDP    bool
+}
+
+func PasswordToCipherKey(password string, keySize int) []byte {
+	pwdBytes := []byte(password)
+	key := make([]byte, 0, keySize)
+
+	md5Sum := md5.Sum(pwdBytes)
+	key = append(key, md5Sum[:]...)
+
+	for len(key) < keySize {
+		md5Hash := md5.New()
+		md5Hash.Write(md5Sum[:])
+		md5Hash.Write(pwdBytes)
+		md5Hash.Sum(md5Sum[:0])
+
+		key = append(key, md5Sum[:]...)
+	}
+	return key
 }
