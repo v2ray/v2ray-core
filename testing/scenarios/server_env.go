@@ -13,6 +13,7 @@ import (
 	_ "github.com/v2ray/v2ray-core/proxy/dokodemo"
 	_ "github.com/v2ray/v2ray-core/proxy/freedom"
 	_ "github.com/v2ray/v2ray-core/proxy/http"
+	_ "github.com/v2ray/v2ray-core/proxy/shadowsocks"
 	_ "github.com/v2ray/v2ray-core/proxy/socks"
 	_ "github.com/v2ray/v2ray-core/proxy/vmess/inbound"
 	_ "github.com/v2ray/v2ray-core/proxy/vmess/outbound"
@@ -27,15 +28,21 @@ func TestFile(filename string) string {
 }
 
 func InitializeServerSetOnce(testcase string) error {
-	err := InitializeServer(TestFile(testcase + "_server.json"))
-	if err != nil {
+	if err := InitializeServerServer(testcase); err != nil {
 		return err
 	}
-	err = InitializeServer(TestFile(testcase + "_client.json"))
-	if err != nil {
+	if err := InitializeServerClient(testcase); err != nil {
 		return err
 	}
 	return nil
+}
+
+func InitializeServerServer(testcase string) error {
+	return InitializeServer(TestFile(testcase + "_server.json"))
+}
+
+func InitializeServerClient(testcase string) error {
+	return InitializeServer(TestFile(testcase + "_client.json"))
 }
 
 func InitializeServer(configFile string) error {

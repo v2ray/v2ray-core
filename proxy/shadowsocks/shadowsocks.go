@@ -3,6 +3,7 @@
 package shadowsocks
 
 import (
+	"crypto/rand"
 	"sync"
 
 	"github.com/v2ray/v2ray-core/app"
@@ -80,7 +81,10 @@ func (this *Shadowsocks) handleConnection(conn *listener.TCPConn) {
 	packet := v2net.NewPacket(v2net.TCPDestination(request.Address, request.Port), nil, true)
 	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
 
-	writer, err := this.config.Cipher.NewEncodingStream(key, iv, conn)
+	respIv := make([]byte, this.config.Cipher.IVSize())
+	rand.Read(respIv)
+
+	writer, err := this.config.Cipher.NewEncodingStream(key, respIv, conn)
 	if err != nil {
 		log.Error("Shadowsocks: Failed to create encoding stream: ", err)
 		return
@@ -89,7 +93,18 @@ func (this *Shadowsocks) handleConnection(conn *listener.TCPConn) {
 	var writeFinish sync.Mutex
 	writeFinish.Lock()
 	go func() {
-		v2net.ChanToWriter(writer, ray.InboundOutput())
+		firstChunk := alloc.NewBuffer().Clear()
+		defer firstChunk.Release()
+
+		firstChunk.Append(respIv)
+
+		if payload, ok := <-ray.InboundOutput(); ok {
+			firstChunk.Append(payload.Value)
+			payload.Release()
+
+			writer.Write(firstChunk.Value)
+			v2net.ChanToWriter(writer, ray.InboundOutput())
+		}
 		writeFinish.Unlock()
 	}()
 

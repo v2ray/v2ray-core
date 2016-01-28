@@ -1,0 +1,14 @@
+{
+  "port": 50051,
+  "inbound": {
+    "protocol": "shadowsocks",
+    "settings": {
+      "method": "aes-256-cfb",
+      "password": "v2ray-password"
+    }
+  },
+  "outbound": {
+    "protocol": "freedom",
+    "settings": {}
+  }
+}
