@@ -10,6 +10,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/common/alloc"
+	v2io "github.com/v2ray/v2ray-core/common/io"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	v2proxy "github.com/v2ray/v2ray-core/proxy"
@@ -128,7 +129,7 @@ func TestSocksTcpConnect(t *testing.T) {
 		tcpConn.CloseWrite()
 	}
 
-	dataReturned, err := v2net.ReadFrom(conn, nil)
+	dataReturned, err := v2io.ReadFrom(conn, nil)
 	assert.Error(err).IsNil()
 	conn.Close()
 

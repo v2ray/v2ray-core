@@ -9,6 +9,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/common/alloc"
+	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
@@ -84,7 +85,7 @@ func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, dest v2net.Des
 		return
 	}
 
-	buffer, _ := v2net.ReadFrom(reader, nil)
+	buffer, _ := v2io.ReadFrom(reader, nil)
 
 	packet := v2net.NewPacket(v2net.TCPDestination(request.Address, request.Port), buffer, false)
 	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
@@ -168,12 +169,12 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 			payload.Release()
 
 			writer.Write(firstChunk.Value)
-			v2net.ChanToWriter(writer, ray.InboundOutput())
+			v2io.ChanToWriter(writer, ray.InboundOutput())
 		}
 		writeFinish.Unlock()
 	}()
 
-	v2net.ReaderToChan(ray.InboundInput(), reader)
+	v2io.RawReaderToChan(ray.InboundInput(), reader)
 	close(ray.InboundInput())
 
 	writeFinish.Lock()

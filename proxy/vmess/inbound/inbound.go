@@ -8,6 +8,7 @@ import (
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2crypto "github.com/v2ray/v2ray-core/common/crypto"
+	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/serial"
@@ -136,11 +137,11 @@ func handleInput(request *protocol.VMessRequest, reader io.Reader, input chan<- 
 		return
 	}
 	requestReader := v2crypto.NewCryptionReader(aesStream, reader)
-	v2net.ReaderToChan(input, requestReader)
+	v2io.RawReaderToChan(input, requestReader)
 }
 
 func handleOutput(request *protocol.VMessRequest, writer io.Writer, output <-chan *alloc.Buffer, finish *sync.Mutex) {
-	v2net.ChanToWriter(writer, output)
+	v2io.ChanToWriter(writer, output)
 	finish.Unlock()
 }
 

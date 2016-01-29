@@ -44,7 +44,7 @@ func (this *UDPHub) WriteTo(payload []byte, dest v2net.Destination) (int, error)
 }
 
 func (this *UDPHub) start() {
-  this.accepting = true
+	this.accepting = true
 	for this.accepting {
 		buffer := alloc.NewBuffer()
 		nBytes, addr, err := this.conn.ReadFromUDP(buffer.Value)

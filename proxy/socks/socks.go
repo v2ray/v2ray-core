@@ -9,6 +9,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/common/alloc"
+	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
@@ -227,8 +228,8 @@ func (this *SocksServer) handleUDP(reader *v2net.TimeOutReader, writer io.Writer
 		return err
 	}
 
-	reader.SetTimeOut(300)      /* 5 minutes */
-	v2net.ReadFrom(reader, nil) // Just in case of anything left in the socket
+	reader.SetTimeOut(300)     /* 5 minutes */
+	v2io.ReadFrom(reader, nil) // Just in case of anything left in the socket
 	// The TCP connection closes after this method returns. We need to wait until
 	// the client closes it.
 	// TODO: get notified from UDP part
@@ -270,13 +271,13 @@ func (this *SocksServer) transport(reader io.Reader, writer io.Writer, firstPack
 	outputFinish.Lock()
 
 	go func() {
-		v2net.ReaderToChan(input, reader)
+		v2io.RawReaderToChan(input, reader)
 		inputFinish.Unlock()
 		close(input)
 	}()
 
 	go func() {
-		v2net.ChanToWriter(writer, output)
+		v2io.ChanToWriter(writer, output)
 		outputFinish.Unlock()
 	}()
 	outputFinish.Lock()

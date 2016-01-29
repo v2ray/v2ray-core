@@ -84,7 +84,7 @@ func TestReadSingleByte(t *testing.T) {
 
 	reader := NewVMessRequestReader(nil)
 	_, err := reader.Read(bytes.NewReader(make([]byte, 1)))
-	assert.Error(err).Equals(io.EOF)
+	assert.Error(err).Equals(io.ErrUnexpectedEOF)
 }
 
 func BenchmarkVMessRequestWriting(b *testing.B) {

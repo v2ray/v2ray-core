@@ -1,6 +1,6 @@
 package crypto
 
 type Authenticator interface {
-	AuthBytes() int
+	AuthSize() int
 	Authenticate(auth []byte, data []byte) []byte
 }

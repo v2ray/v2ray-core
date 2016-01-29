@@ -6,6 +6,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/common/alloc"
+	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
@@ -140,12 +141,12 @@ func (this *DokodemoDoor) HandleTCPConnection(conn *hub.TCPConn) {
 }
 
 func dumpInput(reader io.Reader, input chan<- *alloc.Buffer, finish *sync.Mutex) {
-	v2net.ReaderToChan(input, reader)
+	v2io.RawReaderToChan(input, reader)
 	finish.Unlock()
 	close(input)
 }
 
 func dumpOutput(writer io.Writer, output <-chan *alloc.Buffer, finish *sync.Mutex) {
-	v2net.ChanToWriter(writer, output)
+	v2io.ChanToWriter(writer, output)
 	finish.Unlock()
 }

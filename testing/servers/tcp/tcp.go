@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 
+	v2io "github.com/v2ray/v2ray-core/common/io"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
@@ -43,7 +44,7 @@ func (server *Server) acceptConnections(listener *net.TCPListener) {
 
 func (server *Server) handleConnection(conn net.Conn) {
 	for true {
-		request, err := v2net.ReadFrom(conn, nil)
+		request, err := v2io.ReadFrom(conn, nil)
 		if err != nil {
 			break
 		}

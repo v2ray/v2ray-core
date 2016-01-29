@@ -11,6 +11,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/common/alloc"
+	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/serial"
@@ -153,13 +154,13 @@ func (this *HttpProxyServer) transport(input io.Reader, output io.Writer, ray ra
 	defer wg.Wait()
 
 	go func() {
-		v2net.ReaderToChan(ray.InboundInput(), input)
+		v2io.RawReaderToChan(ray.InboundInput(), input)
 		close(ray.InboundInput())
 		wg.Done()
 	}()
 
 	go func() {
-		v2net.ChanToWriter(output, ray.InboundOutput())
+		v2io.ChanToWriter(output, ray.InboundOutput())
 		wg.Done()
 	}()
 }

@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 
 	"github.com/v2ray/v2ray-core/app"
+	v2io "github.com/v2ray/v2ray-core/common/io"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
@@ -25,7 +26,7 @@ func (this *BlackHole) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) e
 
 	close(ray.OutboundOutput())
 	if firstPacket.MoreChunks() {
-		v2net.ChanToWriter(ioutil.Discard, ray.OutboundInput())
+		v2io.ChanToWriter(ioutil.Discard, ray.OutboundInput())
 	}
 	return nil
 }

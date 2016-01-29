@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/v2ray/v2ray-core/app"
+	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
@@ -50,7 +51,7 @@ func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbou
 		writeMutex.Unlock()
 	} else {
 		go func() {
-			v2net.ChanToWriter(conn, input)
+			v2io.ChanToWriter(conn, input)
 			writeMutex.Unlock()
 		}()
 	}
@@ -59,7 +60,7 @@ func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbou
 		defer readMutex.Unlock()
 		defer close(output)
 
-		response, err := v2net.ReadFrom(conn, nil)
+		response, err := v2io.ReadFrom(conn, nil)
 		log.Info("Freedom receives ", response.Len(), " bytes from ", conn.RemoteAddr())
 		if response.Len() > 0 {
 			output <- response
@@ -73,7 +74,7 @@ func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbou
 			return
 		}
 
-		v2net.ReaderToChan(output, conn)
+		v2io.RawReaderToChan(output, conn)
 	}()
 
 	if this.space.HasDnsCache() {

@@ -11,6 +11,7 @@ import (
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2crypto "github.com/v2ray/v2ray-core/common/crypto"
+	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
@@ -132,7 +133,7 @@ func (this *VMessOutboundHandler) handleRequest(conn net.Conn, request *protocol
 	}
 
 	if moreChunks {
-		v2net.ChanToWriter(encryptRequestWriter, input)
+		v2io.ChanToWriter(encryptRequestWriter, input)
 	}
 	return
 }
@@ -154,7 +155,7 @@ func (this *VMessOutboundHandler) handleResponse(conn net.Conn, request *protoco
 	}
 	decryptResponseReader := v2crypto.NewCryptionReader(aesStream, conn)
 
-	buffer, err := v2net.ReadFrom(decryptResponseReader, nil)
+	buffer, err := v2io.ReadFrom(decryptResponseReader, nil)
 	if err != nil {
 		log.Error("VMessOut: Failed to read VMess response (", buffer.Len(), " bytes): ", err)
 		buffer.Release()
@@ -184,7 +185,7 @@ func (this *VMessOutboundHandler) handleResponse(conn net.Conn, request *protoco
 	output <- buffer
 
 	if !isUDP {
-		v2net.ReaderToChan(output, decryptResponseReader)
+		v2io.RawReaderToChan(output, decryptResponseReader)
 	}
 
 	return

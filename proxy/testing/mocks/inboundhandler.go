@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/v2ray/v2ray-core/app"
+	v2io "github.com/v2ray/v2ray-core/common/io"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
@@ -41,13 +42,13 @@ func (this *InboundConnectionHandler) Communicate(packet v2net.Packet) error {
 	writeFinish.Lock()
 
 	go func() {
-		v2net.ReaderToChan(input, this.ConnInput)
+		v2io.RawReaderToChan(input, this.ConnInput)
 		close(input)
 		readFinish.Unlock()
 	}()
 
 	go func() {
-		v2net.ChanToWriter(this.ConnOutput, output)
+		v2io.ChanToWriter(this.ConnOutput, output)
 		writeFinish.Unlock()
 	}()
 
