@@ -85,14 +85,12 @@ func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, dest v2net.Des
 		return
 	}
 
-	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(key, iv)))
+	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(key, iv)), true)
 	if err != nil {
 		return
 	}
 
-	buffer, _ := v2io.ReadFrom(reader, nil)
-
-	packet := v2net.NewPacket(v2net.TCPDestination(request.Address, request.Port), buffer, false)
+	packet := v2net.NewPacket(v2net.TCPDestination(request.Address, request.Port), request.UDPPayload, false)
 	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
 	close(ray.InboundInput())
 
@@ -126,7 +124,7 @@ func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, dest v2net.Des
 
 		if request.OTA {
 			respAuth := NewAuthenticator(HeaderKeyGenerator(key, respIv))
-			respAuth.Authenticate(buffer.Value, buffer.Value[this.config.Cipher.IVSize():])
+			respAuth.Authenticate(response.Value, response.Value[this.config.Cipher.IVSize():])
 		}
 
 		this.udpHub.WriteTo(response.Value, dest)
@@ -155,7 +153,7 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 		return
 	}
 
-	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(iv, key)))
+	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(iv, key)), false)
 	if err != nil {
 		return
 	}

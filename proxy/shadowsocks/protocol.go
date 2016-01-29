@@ -17,12 +17,13 @@ const (
 )
 
 type Request struct {
-	Address v2net.Address
-	Port    v2net.Port
-	OTA     bool
+	Address    v2net.Address
+	Port       v2net.Port
+	OTA        bool
+	UDPPayload *alloc.Buffer
 }
 
-func ReadRequest(reader io.Reader, auth *Authenticator) (*Request, error) {
+func ReadRequest(reader io.Reader, auth *Authenticator, udp bool) (*Request, error) {
 	buffer := alloc.NewSmallBuffer()
 	defer buffer.Release()
 
@@ -85,14 +86,33 @@ func ReadRequest(reader io.Reader, auth *Authenticator) (*Request, error) {
 	request.Port = v2net.PortFromBytes(buffer.Value[lenBuffer : lenBuffer+2])
 	lenBuffer += 2
 
-	if request.OTA {
-		authBytes := buffer.Value[lenBuffer : lenBuffer+AuthSize]
-		_, err = io.ReadFull(reader, authBytes)
-		if err != nil {
-			log.Error("Shadowsocks: Failed to read OTA: ", err)
-			return nil, transport.CorruptedPacket
-		}
+	var authBytes []byte
 
+	if udp {
+		nBytes, err := reader.Read(buffer.Value[lenBuffer:])
+		if err != nil {
+			log.Error("Shadowsocks: Failed to read UDP payload: ", err)
+		}
+		buffer.Slice(0, lenBuffer+nBytes)
+		if request.OTA {
+			authBytes = buffer.Value[lenBuffer+nBytes-AuthSize:]
+			request.UDPPayload = alloc.NewSmallBuffer().Clear().Append(buffer.Value[lenBuffer : lenBuffer+nBytes-AuthSize])
+			lenBuffer = lenBuffer + nBytes - AuthSize
+		} else {
+			request.UDPPayload = alloc.NewSmallBuffer().Clear().Append(buffer.Value[lenBuffer:])
+		}
+	} else {
+		if request.OTA {
+			authBytes = buffer.Value[lenBuffer : lenBuffer+AuthSize]
+			_, err = io.ReadFull(reader, authBytes)
+			if err != nil {
+				log.Error("Shadowsocks: Failed to read OTA: ", err)
+				return nil, transport.CorruptedPacket
+			}
+		}
+	}
+
+	if request.OTA {
 		actualAuth := auth.Authenticate(nil, buffer.Value[0:lenBuffer])
 		if !serial.BytesLiteral(actualAuth).Equals(serial.BytesLiteral(authBytes)) {
 			log.Error("Shadowsocks: Invalid OTA: ", actualAuth)
