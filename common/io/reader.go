@@ -87,9 +87,9 @@ type AuthenticationReader struct {
 	authBeforePayload bool
 }
 
-func NewAuthenticationReader(reader io.Reader, auth crypto.Authenticator, authBeforePayload bool) *AuthenticationReader {
+func NewAuthenticationReader(reader Reader, auth crypto.Authenticator, authBeforePayload bool) *AuthenticationReader {
 	return &AuthenticationReader{
-		reader:            NewChunkReader(reader),
+		reader:            reader,
 		authenticator:     auth,
 		authBeforePayload: authBeforePayload,
 	}

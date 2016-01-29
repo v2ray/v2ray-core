@@ -32,11 +32,16 @@ func (this *Shadowsocks) Port() v2net.Port {
 
 func (this *Shadowsocks) Close() {
 	this.accepting = false
-	this.tcpHub.Close()
-	this.tcpHub = nil
+	if this.tcpHub != nil {
+		this.tcpHub.Close()
+		this.tcpHub = nil
+	}
 
-	this.udpHub.Close()
-	this.udpHub = nil
+	if this.udpHub != nil {
+		this.udpHub.Close()
+		this.udpHub = nil
+	}
+
 }
 
 func (this *Shadowsocks) Listen(port v2net.Port) error {
@@ -80,7 +85,7 @@ func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, dest v2net.Des
 		return
 	}
 
-	request, err := ReadRequest(reader)
+	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(key, iv)))
 	if err != nil {
 		return
 	}
@@ -95,8 +100,9 @@ func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, dest v2net.Des
 
 		response := alloc.NewBuffer().Slice(0, this.config.Cipher.IVSize())
 		rand.Read(response.Value)
+		respIv := response.Value
 
-		writer, err := this.config.Cipher.NewEncodingStream(key, response.Value, response)
+		writer, err := this.config.Cipher.NewEncodingStream(key, respIv, response)
 		if err != nil {
 			log.Error("Shadowsocks: Failed to create encoding stream: ", err)
 			return
@@ -117,6 +123,11 @@ func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, dest v2net.Des
 		writer.Write(request.Port.Bytes())
 		writer.Write(respChunk.Value)
 		respChunk.Release()
+
+		if request.OTA {
+			respAuth := NewAuthenticator(HeaderKeyGenerator(key, respIv))
+			respAuth.Authenticate(buffer.Value, buffer.Value[this.config.Cipher.IVSize():])
+		}
 
 		this.udpHub.WriteTo(response.Value, dest)
 		response.Release()
@@ -144,7 +155,7 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 		return
 	}
 
-	request, err := ReadRequest(reader)
+	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(key, iv)))
 	if err != nil {
 		return
 	}
@@ -174,7 +185,15 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 		writeFinish.Unlock()
 	}()
 
-	v2io.RawReaderToChan(ray.InboundInput(), reader)
+	var payloadReader v2io.Reader
+	if request.OTA {
+		payloadAuth := NewAuthenticator(ChunkKeyGenerator(iv))
+		payloadReader = v2io.NewAuthenticationReader(v2io.NewChunkReader(reader), payloadAuth, true)
+	} else {
+		payloadReader = v2io.NewAdaptiveReader(reader)
+	}
+
+	v2io.ReaderToChan(ray.InboundInput(), payloadReader)
 	close(ray.InboundInput())
 
 	writeFinish.Lock()
