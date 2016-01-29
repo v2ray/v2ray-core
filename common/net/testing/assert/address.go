@@ -25,13 +25,7 @@ func (subject *AddressSubject) DisplayString() string {
 }
 
 func (subject *AddressSubject) Equals(another v2net.Address) {
-	if subject.value.IsIPv4() && another.IsIPv4() {
-		IP(subject.value.IP()).Equals(another.IP())
-	} else if subject.value.IsIPv6() && another.IsIPv6() {
-		IP(subject.value.IP()).Equals(another.IP())
-	} else if subject.value.IsDomain() && another.IsDomain() {
-		assert.StringLiteral(subject.value.Domain()).Equals(another.Domain())
-	} else {
+	if !subject.value.Equals(another) {
 		subject.Fail(subject.DisplayString(), "equals to", another)
 	}
 }

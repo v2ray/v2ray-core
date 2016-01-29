@@ -18,6 +18,7 @@ const (
 type Request struct {
 	Address v2net.Address
 	Port    v2net.Port
+	OTA     bool
 }
 
 func ReadRequest(reader io.Reader) (*Request, error) {
@@ -32,7 +33,10 @@ func ReadRequest(reader io.Reader) (*Request, error) {
 
 	request := new(Request)
 
-	addrType := buffer.Value[0]
+	addrType := (buffer.Value[0] & 0x0F)
+	if (buffer.Value[0] & 0x10) == 0x10 {
+		request.OTA = true
+	}
 	switch addrType {
 	case AddrTypeIPv4:
 		_, err := io.ReadFull(reader, buffer.Value[:4])
