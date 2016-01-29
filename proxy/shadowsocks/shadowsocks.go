@@ -155,7 +155,7 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 		return
 	}
 
-	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(key, iv)))
+	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(iv, key)))
 	if err != nil {
 		return
 	}
@@ -188,7 +188,7 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 	var payloadReader v2io.Reader
 	if request.OTA {
 		payloadAuth := NewAuthenticator(ChunkKeyGenerator(iv))
-		payloadReader = v2io.NewAuthenticationReader(v2io.NewChunkReader(reader), payloadAuth, true)
+		payloadReader = NewChunkReader(reader, payloadAuth)
 	} else {
 		payloadReader = v2io.NewAdaptiveReader(reader)
 	}

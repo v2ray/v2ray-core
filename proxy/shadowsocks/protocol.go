@@ -86,7 +86,7 @@ func ReadRequest(reader io.Reader, auth *Authenticator) (*Request, error) {
 	lenBuffer += 2
 
 	if request.OTA {
-		authBytes := buffer.Value[lenBuffer : lenBuffer+auth.AuthSize()]
+		authBytes := buffer.Value[lenBuffer : lenBuffer+AuthSize]
 		_, err = io.ReadFull(reader, authBytes)
 		if err != nil {
 			log.Error("Shadowsocks: Failed to read OTA: ", err)
