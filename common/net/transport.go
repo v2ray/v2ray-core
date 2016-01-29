@@ -4,6 +4,9 @@ import (
 	"io"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
+	"github.com/v2ray/v2ray-core/common/crypto"
+	"github.com/v2ray/v2ray-core/common/serial"
+	"github.com/v2ray/v2ray-core/transport"
 )
 
 // ReadFrom reads from a reader and put all content to a buffer.
@@ -15,6 +18,42 @@ func ReadFrom(reader io.Reader, buffer *alloc.Buffer) (*alloc.Buffer, error) {
 	nBytes, err := reader.Read(buffer.Value)
 	buffer.Slice(0, nBytes)
 	return buffer, err
+}
+
+func ReadChunk(reader io.Reader, buffer *alloc.Buffer) (*alloc.Buffer, error) {
+	if buffer == nil {
+		buffer = alloc.NewBuffer()
+	}
+	if _, err := io.ReadFull(reader, buffer.Value[:2]); err != nil {
+		alloc.Release(buffer)
+		return nil, err
+	}
+	length := serial.BytesLiteral(buffer.Value[:2]).Uint16Value()
+	if _, err := io.ReadFull(reader, buffer.Value[:length]); err != nil {
+		alloc.Release(buffer)
+		return nil, err
+	}
+	buffer.Slice(0, int(length))
+	return buffer, nil
+}
+
+func ReadAuthenticatedChunk(reader io.Reader, auth crypto.Authenticator, buffer *alloc.Buffer) (*alloc.Buffer, error) {
+	buffer, err := ReadChunk(reader, buffer)
+	if err != nil {
+		alloc.Release(buffer)
+		return nil, err
+	}
+	authSize := auth.AuthBytes()
+
+	authBytes := auth.Authenticate(nil, buffer.Value[authSize:])
+
+	if !serial.BytesLiteral(authBytes).Equals(serial.BytesLiteral(buffer.Value[:authSize])) {
+		alloc.Release(buffer)
+		return nil, transport.CorruptedPacket
+	}
+	buffer.SliceFrom(authSize)
+
+	return buffer, nil
 }
 
 // ReaderToChan dumps all content from a given reader to a chan by constantly reading it until EOF.

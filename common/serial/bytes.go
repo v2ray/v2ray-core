@@ -1,5 +1,9 @@
 package serial
 
+import (
+	"bytes"
+)
+
 type Bytes interface {
 	Bytes() []byte
 }
@@ -8,6 +12,10 @@ type BytesLiteral []byte
 
 func (this BytesLiteral) Value() []byte {
 	return []byte(this)
+}
+
+func (this BytesLiteral) Equals(another BytesLiteral) bool {
+	return bytes.Equal(this.Value(), another.Value())
 }
 
 func (this BytesLiteral) Uint8Value() uint8 {
