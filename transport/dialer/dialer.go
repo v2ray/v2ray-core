@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	ErrInvalidHost = errors.New("Invalid Host.")
+	ErrorInvalidHost = errors.New("Invalid Host.")
 )
 
 func Dial(dest v2net.Destination) (net.Conn, error) {
@@ -22,7 +22,7 @@ func Dial(dest v2net.Destination) (net.Conn, error) {
 			return nil, err
 		}
 		if len(ips) == 0 {
-			return nil, ErrInvalidHost
+			return nil, ErrorInvalidHost
 		}
 		ip = ips[dice.Roll(len(ips))]
 	}

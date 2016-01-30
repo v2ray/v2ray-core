@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	InvalidRule      = errors.New("Invalid Rule")
-	NoRuleApplicable = errors.New("No rule applicable")
+	ErrorInvalidRule      = errors.New("Invalid Rule")
+	ErrorNoRuleApplicable = errors.New("No rule applicable")
 )
 
 type cacheEntry struct {
@@ -60,7 +60,7 @@ func (this *Router) takeDetourWithoutCache(dest v2net.Destination) (string, erro
 			return rule.Tag, nil
 		}
 	}
-	return "", NoRuleApplicable
+	return "", ErrorNoRuleApplicable
 }
 
 func (this *Router) TakeDetour(dest v2net.Destination) (string, error) {
@@ -83,7 +83,7 @@ func (this *RouterFactory) Create(rawConfig interface{}) (router.Router, error) 
 	router := NewRouter()
 	for _, rule := range rules {
 		if rule == nil {
-			return nil, InvalidRule
+			return nil, ErrorInvalidRule
 		}
 		router.AddRule(rule)
 	}

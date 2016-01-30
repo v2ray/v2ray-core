@@ -19,7 +19,7 @@ import (
 
 var (
 	ErrorUnsupportedSocksCommand = errors.New("Unsupported socks command.")
-	UnsupportedAuthMethod        = errors.New("Unsupported auth method.")
+	ErrorUnsupportedAuthMethod   = errors.New("Unsupported auth method.")
 )
 
 // SocksServer is a SOCKS 5 proxy server
@@ -119,7 +119,7 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 			return err
 		}
 		log.Warning("Socks: client doesn't support allowed any auth methods.")
-		return UnsupportedAuthMethod
+		return ErrorUnsupportedAuthMethod
 	}
 
 	authResponse := protocol.NewAuthenticationResponse(expectedAuthMethod)
