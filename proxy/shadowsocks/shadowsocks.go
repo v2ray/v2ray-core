@@ -12,6 +12,7 @@ import (
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	"github.com/v2ray/v2ray-core/transport/hub"
@@ -88,11 +89,15 @@ func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, source v2net.D
 
 	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(key, iv)), true)
 	if err != nil {
+		log.Access(source, serial.StringLiteral(""), log.AccessRejected, serial.StringLiteral(err.Error()))
+		log.Warning("Shadowsocks: Invalid request from ", source, ": ", err)
 		return
 	}
 
 	dest := v2net.UDPDestination(request.Address, request.Port)
+	log.Access(source, dest, log.AccessAccepted, serial.StringLiteral(""))
 	log.Info("Shadowsocks: Tunnelling request to ", dest)
+
 	packet := v2net.NewPacket(dest, request.UDPPayload, false)
 	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
 	close(ray.InboundInput())
@@ -143,6 +148,7 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 
 	_, err := io.ReadFull(conn, buffer.Value[:this.config.Cipher.IVSize()])
 	if err != nil {
+		log.Access(conn.RemoteAddr(), serial.StringLiteral(""), log.AccessRejected, serial.StringLiteral(err.Error()))
 		log.Error("Shadowsocks: Failed to read IV: ", err)
 		return
 	}
@@ -158,10 +164,16 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 
 	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(iv, key)), false)
 	if err != nil {
+		log.Access(conn.RemoteAddr(), serial.StringLiteral(""), log.AccessRejected, serial.StringLiteral(err.Error()))
+		log.Warning("Shadowsocks: Invalid request from ", conn.RemoteAddr(), ": ", err)
 		return
 	}
 
-	packet := v2net.NewPacket(v2net.TCPDestination(request.Address, request.Port), nil, true)
+	dest := v2net.TCPDestination(request.Address, request.Port)
+	log.Access(conn.RemoteAddr(), dest, log.AccessAccepted, serial.StringLiteral(""))
+	log.Info("Shadowsocks: Tunnelling request to ", dest)
+
+	packet := v2net.NewPacket(dest, nil, true)
 	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
 
 	var writeFinish sync.Mutex
