@@ -32,6 +32,7 @@ func (this *Shadowsocks) Port() v2net.Port {
 
 func (this *Shadowsocks) Close() {
 	this.accepting = false
+	// TODO: synchronization
 	if this.tcpHub != nil {
 		this.tcpHub.Close()
 		this.tcpHub = nil
