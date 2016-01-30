@@ -72,7 +72,7 @@ func (this *Shadowsocks) Listen(port v2net.Port) error {
 	return nil
 }
 
-func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, dest v2net.Destination) {
+func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, source v2net.Destination) {
 	defer payload.Release()
 
 	iv := payload.Value[:this.config.Cipher.IVSize()]
@@ -90,7 +90,9 @@ func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, dest v2net.Des
 		return
 	}
 
-	packet := v2net.NewPacket(v2net.TCPDestination(request.Address, request.Port), request.UDPPayload, false)
+	dest := v2net.UDPDestination(request.Address, request.Port)
+	log.Info("Shadowsocks: Tunnelling request to ", dest)
+	packet := v2net.NewPacket(dest, request.UDPPayload, false)
 	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
 	close(ray.InboundInput())
 
@@ -127,7 +129,7 @@ func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, dest v2net.Des
 			respAuth.Authenticate(response.Value, response.Value[this.config.Cipher.IVSize():])
 		}
 
-		this.udpHub.WriteTo(response.Value, dest)
+		this.udpHub.WriteTo(response.Value, source)
 		response.Release()
 	}
 }
