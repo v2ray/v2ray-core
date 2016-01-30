@@ -88,7 +88,7 @@ func (this *ChunkReader) Read() (*alloc.Buffer, error) {
 	if !serial.BytesLiteral(authBytes).Equals(serial.BytesLiteral(actualAuthBytes)) {
 		alloc.Release(buffer)
 		log.Debug("AuthenticationReader: Unexpected auth: ", authBytes)
-		return nil, transport.CorruptedPacket
+		return nil, transport.ErrorCorruptedPacket
 	}
 	buffer.Value = payload
 

@@ -55,38 +55,38 @@ func (this *SwitchAccount) Marshal(writer io.Writer) {
 
 func (this *SwitchAccount) Unmarshal(data []byte) error {
 	if len(data) == 0 {
-		return transport.CorruptedPacket
+		return transport.ErrorCorruptedPacket
 	}
 	lenHost := int(data[0])
 	if len(data) < lenHost+1 {
-		return transport.CorruptedPacket
+		return transport.ErrorCorruptedPacket
 	}
 	if lenHost > 0 {
 		this.Host = v2net.ParseAddress(string(data[1 : 1+lenHost]))
 	}
 	portStart := 1 + lenHost
 	if len(data) < portStart+2 {
-		return transport.CorruptedPacket
+		return transport.ErrorCorruptedPacket
 	}
 	this.Port = v2net.PortFromBytes(data[portStart : portStart+2])
 	idStart := portStart + 2
 	if len(data) < idStart+16 {
-		return transport.CorruptedPacket
+		return transport.ErrorCorruptedPacket
 	}
 	this.ID, _ = uuid.ParseBytes(data[idStart : idStart+16])
 	alterIdStart := idStart + 16
 	if len(data) < alterIdStart+2 {
-		return transport.CorruptedPacket
+		return transport.ErrorCorruptedPacket
 	}
 	this.AlterIds = serial.BytesLiteral(data[alterIdStart : alterIdStart+2]).Uint16()
 	levelStart := alterIdStart + 2
 	if len(data) < levelStart+1 {
-		return transport.CorruptedPacket
+		return transport.ErrorCorruptedPacket
 	}
 	this.Level = vmess.UserLevel(data[levelStart])
 	timeStart := levelStart + 1
 	if len(data) < timeStart {
-		return transport.CorruptedPacket
+		return transport.ErrorCorruptedPacket
 	}
 	this.ValidMin = data[timeStart]
 	return nil

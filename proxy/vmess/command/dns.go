@@ -40,14 +40,14 @@ func (this *CacheDns) Marshal(writer io.Writer) {
 
 func (this *CacheDns) Unmarshal(data []byte) error {
 	if len(data) == 0 {
-		return transport.CorruptedPacket
+		return transport.ErrorCorruptedPacket
 	}
 	typeIP := data[0]
 	data = data[1:]
 
 	if typeIP == typeIPv4 {
 		if len(data) < 4 {
-			return transport.CorruptedPacket
+			return transport.ErrorCorruptedPacket
 		}
 		this.Address = v2net.IPAddress(data[0:4])
 		return nil
@@ -55,11 +55,11 @@ func (this *CacheDns) Unmarshal(data []byte) error {
 
 	if typeIP == typeIPv6 {
 		if len(data) < 16 {
-			return transport.CorruptedPacket
+			return transport.ErrorCorruptedPacket
 		}
 		this.Address = v2net.IPAddress(data[0:16])
 		return nil
 	}
 
-	return transport.CorruptedPacket
+	return transport.ErrorCorruptedPacket
 }

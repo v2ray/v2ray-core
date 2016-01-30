@@ -137,5 +137,5 @@ func TestSignleByte(t *testing.T) {
 	v2testing.Current(t)
 
 	_, _, err := ReadAuthentication(bytes.NewReader(make([]byte, 1)))
-	assert.Error(err).Equals(transport.CorruptedPacket)
+	assert.Error(err).Equals(transport.ErrorCorruptedPacket)
 }

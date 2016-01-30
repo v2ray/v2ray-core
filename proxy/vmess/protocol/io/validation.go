@@ -68,7 +68,7 @@ func parsePayload(data []byte) (payload []byte, rest []byte, err error) {
 	actualHash := fnv1a.Sum32()
 	expectedHash := uint32(data[2])<<24 + uint32(data[3])<<16 + uint32(data[4])<<8 + uint32(data[5])
 	if actualHash != expectedHash {
-		err = transport.CorruptedPacket
+		err = transport.ErrorCorruptedPacket
 		return
 	}
 	return

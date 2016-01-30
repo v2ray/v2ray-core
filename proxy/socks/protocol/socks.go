@@ -50,7 +50,7 @@ func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, aut
 	}
 	if nBytes < 2 {
 		log.Warning("Socks: expected 2 bytes read, but only ", nBytes, " bytes read")
-		err = transport.CorruptedPacket
+		err = transport.ErrorCorruptedPacket
 		return
 	}
 
@@ -73,13 +73,13 @@ func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, aut
 	auth.nMethods = buffer.Value[1]
 	if auth.nMethods <= 0 {
 		log.Warning("Socks: Zero length of authentication methods")
-		err = transport.CorruptedPacket
+		err = transport.ErrorCorruptedPacket
 		return
 	}
 
 	if nBytes-2 != int(auth.nMethods) {
 		log.Warning("Socks: Unmatching number of auth methods, expecting ", auth.nMethods, ", but got ", nBytes)
-		err = transport.CorruptedPacket
+		err = transport.ErrorCorruptedPacket
 		return
 	}
 	copy(auth.authMethods[:], buffer.Value[2:nBytes])
@@ -196,7 +196,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 		return
 	}
 	if nBytes < 4 {
-		err = transport.CorruptedPacket
+		err = transport.ErrorCorruptedPacket
 		return
 	}
 	request = &Socks5Request{
@@ -212,7 +212,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 			return
 		}
 		if nBytes != 4 {
-			err = transport.CorruptedPacket
+			err = transport.ErrorCorruptedPacket
 			return
 		}
 	case AddrTypeDomain:
@@ -228,7 +228,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 
 		if nBytes != int(domainLength) {
 			log.Warning("Socks: Unable to read domain with ", nBytes, " bytes, expecting ", domainLength, " bytes")
-			err = transport.CorruptedPacket
+			err = transport.ErrorCorruptedPacket
 			return
 		}
 		request.Domain = string(append([]byte(nil), buffer.Value[:domainLength]...))
@@ -238,12 +238,12 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 			return
 		}
 		if nBytes != 16 {
-			err = transport.CorruptedPacket
+			err = transport.ErrorCorruptedPacket
 			return
 		}
 	default:
 		log.Warning("Socks: Unexpected address type ", request.AddrType)
-		err = transport.CorruptedPacket
+		err = transport.ErrorCorruptedPacket
 		return
 	}
 
@@ -252,7 +252,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 		return
 	}
 	if nBytes != 2 {
-		err = transport.CorruptedPacket
+		err = transport.ErrorCorruptedPacket
 		return
 	}
 

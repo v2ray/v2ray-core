@@ -17,7 +17,7 @@ func TestSingleByteRequest(t *testing.T) {
 	if request != nil {
 		t.Fail()
 	}
-	assert.Error(err).Equals(transport.CorruptedPacket)
+	assert.Error(err).Equals(transport.ErrorCorruptedPacket)
 }
 
 func TestDomainAddressRequest(t *testing.T) {

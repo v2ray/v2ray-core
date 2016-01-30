@@ -140,7 +140,7 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 		}
 		domainLength := int(buffer.Value[41])
 		if domainLength == 0 {
-			return nil, transport.CorruptedPacket
+			return nil, transport.ErrorCorruptedPacket
 		}
 		nBytes, err = io.ReadFull(decryptor, buffer.Value[42:42+domainLength])
 		if err != nil {
@@ -164,7 +164,7 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	expectedHash := binary.BigEndian.Uint32(buffer.Value[bufferLen : bufferLen+4])
 
 	if actualHash != expectedHash {
-		return nil, transport.CorruptedPacket
+		return nil, transport.ErrorCorruptedPacket
 	}
 
 	return request, nil
