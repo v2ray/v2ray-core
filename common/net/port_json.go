@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	InvalidPortRange = errors.New("Invalid port range.")
+	ErrorInvalidPortRange = errors.New("Invalid port range.")
 )
 
 func (this *PortRange) UnmarshalJSON(data []byte) error {
@@ -22,7 +22,7 @@ func (this *PortRange) UnmarshalJSON(data []byte) error {
 	if err == nil {
 		if maybeint <= 0 || maybeint >= 65535 {
 			log.Error("Invalid port [", serial.BytesLiteral(data), "]")
-			return InvalidPortRange
+			return ErrorInvalidPortRange
 		}
 		this.From = Port(maybeint)
 		this.To = Port(maybeint)
@@ -37,7 +37,7 @@ func (this *PortRange) UnmarshalJSON(data []byte) error {
 			value, err := strconv.Atoi(pair[0])
 			if err != nil || value <= 0 || value >= 65535 {
 				log.Error("Invalid from port ", pair[0])
-				return InvalidPortRange
+				return ErrorInvalidPortRange
 			}
 			this.From = Port(value)
 			this.To = Port(value)
@@ -46,24 +46,24 @@ func (this *PortRange) UnmarshalJSON(data []byte) error {
 			from, err := strconv.Atoi(pair[0])
 			if err != nil || from <= 0 || from >= 65535 {
 				log.Error("Invalid from port ", pair[0])
-				return InvalidPortRange
+				return ErrorInvalidPortRange
 			}
 			this.From = Port(from)
 
 			to, err := strconv.Atoi(pair[1])
 			if err != nil || to <= 0 || to >= 65535 {
 				log.Error("Invalid to port ", pair[1])
-				return InvalidPortRange
+				return ErrorInvalidPortRange
 			}
 			this.To = Port(to)
 
 			if this.From > this.To {
 				log.Error("Invalid port range ", this.From, " -> ", this.To)
-				return InvalidPortRange
+				return ErrorInvalidPortRange
 			}
 			return nil
 		}
 	}
 
-	return InvalidPortRange
+	return ErrorInvalidPortRange
 }

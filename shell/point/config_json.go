@@ -115,7 +115,7 @@ func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 	}
 	if jsonConfig.PortRange == nil {
 		log.Error("Point: Port range not specified in InboundDetour.")
-		return BadConfiguration
+		return ErrorBadConfiguration
 	}
 	this.Protocol = jsonConfig.Protocol
 	this.PortRange = *jsonConfig.PortRange

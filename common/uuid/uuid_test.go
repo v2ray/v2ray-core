@@ -19,7 +19,7 @@ func TestParseBytes(t *testing.T) {
 	assert.String(uuid).Equals(str)
 
 	uuid, err = ParseBytes([]byte{1, 3, 2, 4})
-	assert.Error(err).Equals(InvalidID)
+	assert.Error(err).Equals(ErrorInvalidID)
 }
 
 func TestParseString(t *testing.T) {
@@ -33,7 +33,7 @@ func TestParseString(t *testing.T) {
 	assert.Bytes(uuid.Bytes()).Equals(expectedBytes)
 
 	uuid, err = ParseString("2418d087")
-	assert.Error(err).Equals(InvalidID)
+	assert.Error(err).Equals(ErrorInvalidID)
 
 	uuid, err = ParseString("2418d087-648k-4990-86e8-19dca1d006d3")
 	assert.Error(err).IsNotNil()

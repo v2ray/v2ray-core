@@ -27,10 +27,10 @@ func TestOverRangeIntPort(t *testing.T) {
 
 	var portRange PortRange
 	err := json.Unmarshal([]byte("70000"), &portRange)
-	assert.Error(err).Equals(InvalidPortRange)
+	assert.Error(err).Equals(ErrorInvalidPortRange)
 
 	err = json.Unmarshal([]byte("-1"), &portRange)
-	assert.Error(err).Equals(InvalidPortRange)
+	assert.Error(err).Equals(ErrorInvalidPortRange)
 }
 
 func TestSingleStringPort(t *testing.T) {
@@ -60,14 +60,14 @@ func TestOverRangeStringPort(t *testing.T) {
 
 	var portRange PortRange
 	err := json.Unmarshal([]byte("\"65536\""), &portRange)
-	assert.Error(err).Equals(InvalidPortRange)
+	assert.Error(err).Equals(ErrorInvalidPortRange)
 
 	err = json.Unmarshal([]byte("\"70000-80000\""), &portRange)
-	assert.Error(err).Equals(InvalidPortRange)
+	assert.Error(err).Equals(ErrorInvalidPortRange)
 
 	err = json.Unmarshal([]byte("\"1-90000\""), &portRange)
-	assert.Error(err).Equals(InvalidPortRange)
+	assert.Error(err).Equals(ErrorInvalidPortRange)
 
 	err = json.Unmarshal([]byte("\"700-600\""), &portRange)
-	assert.Error(err).Equals(InvalidPortRange)
+	assert.Error(err).Equals(ErrorInvalidPortRange)
 }

@@ -1,13 +1,7 @@
 package router
 
 import (
-	"errors"
-
 	v2net "github.com/v2ray/v2ray-core/common/net"
-)
-
-var (
-	RouterNotFound = errors.New("Router not found.")
 )
 
 type Router interface {
@@ -32,5 +26,5 @@ func CreateRouter(name string, rawConfig interface{}) (Router, error) {
 	if factory, found := routerCache[name]; found {
 		return factory.Create(rawConfig)
 	}
-	return nil, RouterNotFound
+	return nil, ErrorRouterNotFound
 }

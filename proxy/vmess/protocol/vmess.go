@@ -77,7 +77,7 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 
 	userObj, timeSec, valid := this.vUserSet.GetUser(buffer.Value[:nBytes])
 	if !valid {
-		return nil, proxy.InvalidAuthentication
+		return nil, proxy.ErrorInvalidAuthentication
 	}
 
 	timestampHash := TimestampHash()
@@ -105,7 +105,7 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 
 	if request.Version != Version {
 		log.Warning("VMess: Invalid protocol version ", request.Version)
-		return nil, proxy.InvalidProtocolVersion
+		return nil, proxy.ErrorInvalidProtocolVersion
 	}
 
 	request.RequestIV = append([]byte(nil), buffer.Value[1:17]...)   // 16 bytes

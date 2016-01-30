@@ -66,7 +66,7 @@ func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, aut
 	auth.version = buffer.Value[0]
 	if auth.version != socksVersion {
 		log.Warning("Socks: Unknown protocol version ", auth.version)
-		err = proxy.InvalidProtocolVersion
+		err = proxy.ErrorInvalidProtocolVersion
 		return
 	}
 

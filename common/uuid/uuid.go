@@ -11,7 +11,7 @@ import (
 var (
 	byteGroups = []int{8, 4, 4, 4, 12}
 
-	InvalidID = errors.New("Invalid ID.")
+	ErrorInvalidID = errors.New("Invalid ID.")
 )
 
 type UUID [16]byte
@@ -69,7 +69,7 @@ func New() *UUID {
 
 func ParseBytes(b []byte) (*UUID, error) {
 	if len(b) != 16 {
-		return nil, InvalidID
+		return nil, ErrorInvalidID
 	}
 	uuid := new(UUID)
 	copy(uuid[:], b)
@@ -79,7 +79,7 @@ func ParseBytes(b []byte) (*UUID, error) {
 func ParseString(str string) (*UUID, error) {
 	text := []byte(str)
 	if len(text) < 32 {
-		return nil, InvalidID
+		return nil, ErrorInvalidID
 	}
 
 	uuid := new(UUID)

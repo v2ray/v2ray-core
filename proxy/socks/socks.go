@@ -18,8 +18,8 @@ import (
 )
 
 var (
-	UnsupportedSocksCommand = errors.New("Unsupported socks command.")
-	UnsupportedAuthMethod   = errors.New("Unsupported auth method.")
+	ErrorUnsupportedSocksCommand = errors.New("Unsupported socks command.")
+	UnsupportedAuthMethod        = errors.New("Unsupported auth method.")
 )
 
 // SocksServer is a SOCKS 5 proxy server
@@ -146,7 +146,7 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 		}
 		if status != byte(0) {
 			log.Warning("Socks: Invalid user account: ", upRequest.AuthDetail())
-			return proxy.InvalidAuthentication
+			return proxy.ErrorInvalidAuthentication
 		}
 	}
 
@@ -175,7 +175,7 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 			return err
 		}
 		log.Warning("Socks: Unsupported socks command ", request.Command)
-		return UnsupportedSocksCommand
+		return ErrorUnsupportedSocksCommand
 	}
 
 	response := protocol.NewSocks5Response()
@@ -252,7 +252,7 @@ func (this *SocksServer) handleSocks4(reader io.Reader, writer io.Writer, auth p
 
 	if result == protocol.Socks4RequestRejected {
 		log.Warning("Socks: Unsupported socks 4 command ", auth.Command)
-		return UnsupportedSocksCommand
+		return ErrorUnsupportedSocksCommand
 	}
 
 	dest := v2net.TCPDestination(v2net.IPAddress(auth.IP[:]), auth.Port)
