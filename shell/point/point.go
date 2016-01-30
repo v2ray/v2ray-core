@@ -182,6 +182,8 @@ func (this *Point) DispatchToOutbound(context app.Context, packet v2net.Packet) 
 			if handler, found := this.odh[tag]; found {
 				log.Info("Point: Taking detour [", tag, "] for [", dest, "]", tag, dest)
 				dispatcher = handler
+			} else {
+				log.Warning("Point: Unable to find routing destination: ", tag)
 			}
 		}
 	}
@@ -215,6 +217,7 @@ func (this *Point) FilterPacketAndDispatch(packet v2net.Packet, link ray.Outboun
 func (this *Point) GetHandler(context app.Context, tag string) (proxy.InboundHandler, int) {
 	handler, found := this.taggedIdh[tag]
 	if !found {
+		log.Warning("Point: Unable to find an inbound handler with tag: ", tag)
 		return nil, 0
 	}
 	return handler.GetConnectionHandler()
