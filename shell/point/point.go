@@ -84,19 +84,19 @@ func NewPoint(pConfig *Config) (*Point, error) {
 				dh, err := NewInboundDetourHandlerAlways(vpoint.space.ForContext(detourConfig.Tag), detourConfig)
 				if err != nil {
 					log.Error("Point: Failed to create detour handler: ", err)
-					return nil, BadConfiguration
+					return nil, ErrorBadConfiguration
 				}
 				detourHandler = dh
 			case AllocationStrategyRandom:
 				dh, err := NewInboundDetourHandlerDynamic(vpoint.space.ForContext(detourConfig.Tag), detourConfig)
 				if err != nil {
 					log.Error("Point: Failed to create detour handler: ", err)
-					return nil, BadConfiguration
+					return nil, ErrorBadConfiguration
 				}
 				detourHandler = dh
 			default:
 				log.Error("Point: Unknown allocation strategy: ", allocConfig.Strategy)
-				return nil, BadConfiguration
+				return nil, ErrorBadConfiguration
 			}
 			vpoint.idh[idx] = detourHandler
 			if len(detourConfig.Tag) > 0 {
@@ -123,7 +123,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 		r, err := router.CreateRouter(routerConfig.Strategy, routerConfig.Settings)
 		if err != nil {
 			log.Error("Failed to create router: ", err)
-			return nil, BadConfiguration
+			return nil, ErrorBadConfiguration
 		}
 		vpoint.router = r
 	}
@@ -143,7 +143,7 @@ func (this *Point) Close() {
 func (this *Point) Start() error {
 	if this.port <= 0 {
 		log.Error("Invalid port ", this.port)
-		return BadConfiguration
+		return ErrorBadConfiguration
 	}
 
 	err := retry.Timed(100 /* times */, 100 /* ms */).On(func() error {

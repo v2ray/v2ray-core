@@ -67,7 +67,7 @@ var (
 
 func LoadConfig(init string) (*Config, error) {
 	if configLoader == nil {
-		return nil, BadConfiguration
+		return nil, ErrorBadConfiguration
 	}
 	return configLoader(init)
 }
