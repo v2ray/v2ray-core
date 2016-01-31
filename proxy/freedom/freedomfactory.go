@@ -9,6 +9,6 @@ import (
 func init() {
 	internal.MustRegisterOutboundHandlerCreator("freedom",
 		func(space app.Space, config interface{}) (proxy.OutboundHandler, error) {
-			return &FreedomConnection{space: space}, nil
+			return &FreedomConnection{}, nil
 		})
 }

@@ -1,64 +1,45 @@
 package pubsub
 
 import (
-	"sync"
-
 	"github.com/v2ray/v2ray-core/app"
-	"github.com/v2ray/v2ray-core/app/internal"
 )
 
-type TopicHandlerList struct {
-	sync.RWMutex
-	handlers []app.TopicHandler
+const (
+	APP_ID = app.ID(3)
+)
+
+type PubsubMessage []byte
+type TopicHandler func(PubsubMessage)
+
+type Pubsub interface {
+	Publish(topic string, message PubsubMessage)
+	Subscribe(topic string, handler TopicHandler)
 }
 
-func NewTopicHandlerList(handlers ...app.TopicHandler) *TopicHandlerList {
-	return &TopicHandlerList{
-		handlers: handlers,
-	}
+type pubsubWithContext interface {
+	Publish(context app.Context, topic string, message PubsubMessage)
+	Subscribe(context app.Context, topic string, handler TopicHandler)
 }
 
-func (this *TopicHandlerList) Add(handler app.TopicHandler) {
-	this.Lock()
-	this.handlers = append(this.handlers, handler)
-	this.Unlock()
+type contextedPubsub struct {
+	context app.Context
+	pubsub  pubsubWithContext
 }
 
-func (this *TopicHandlerList) Dispatch(message app.PubsubMessage) {
-	this.RLock()
-	for _, handler := range this.handlers {
-		go handler(message)
-	}
-	this.RUnlock()
+func (this *contextedPubsub) Publish(topic string, message PubsubMessage) {
+	this.pubsub.Publish(this.context, topic, message)
 }
 
-type Pubsub struct {
-	topics map[string]*TopicHandlerList
-	sync.RWMutex
+func (this *contextedPubsub) Subscribe(topic string, handler TopicHandler) {
+	this.pubsub.Subscribe(this.context, topic, handler)
 }
 
-func New() internal.PubsubWithContext {
-	return &Pubsub{
-		topics: make(map[string]*TopicHandlerList),
-	}
-}
-
-func (this *Pubsub) Publish(context app.Context, topic string, message app.PubsubMessage) {
-	this.RLock()
-	list, found := this.topics[topic]
-	this.RUnlock()
-
-	if found {
-		list.Dispatch(message)
-	}
-}
-
-func (this *Pubsub) Subscribe(context app.Context, topic string, handler app.TopicHandler) {
-	this.Lock()
-	defer this.Unlock()
-	if list, found := this.topics[topic]; found {
-		list.Add(handler)
-	} else {
-		this.topics[topic] = NewTopicHandlerList(handler)
-	}
+func init() {
+	app.RegisterApp(APP_ID, func(context app.Context, obj interface{}) interface{} {
+		pubsub := obj.(pubsubWithContext)
+		return &contextedPubsub{
+			context: context,
+			pubsub:  pubsub,
+		}
+	})
 }

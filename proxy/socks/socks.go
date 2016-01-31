@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v2ray/v2ray-core/app"
+	"github.com/v2ray/v2ray-core/app/dispatcher"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
@@ -24,21 +24,21 @@ var (
 
 // SocksServer is a SOCKS 5 proxy server
 type SocksServer struct {
-	tcpMutex      sync.RWMutex
-	udpMutex      sync.RWMutex
-	accepting     bool
-	space         app.Space
-	config        *Config
-	tcpListener   *hub.TCPHub
-	udpConn       *net.UDPConn
-	udpAddress    v2net.Destination
-	listeningPort v2net.Port
+	tcpMutex         sync.RWMutex
+	udpMutex         sync.RWMutex
+	accepting        bool
+	packetDispatcher dispatcher.PacketDispatcher
+	config           *Config
+	tcpListener      *hub.TCPHub
+	udpConn          *net.UDPConn
+	udpAddress       v2net.Destination
+	listeningPort    v2net.Port
 }
 
-func NewSocksServer(space app.Space, config *Config) *SocksServer {
+func NewSocksServer(config *Config, packetDispatcher dispatcher.PacketDispatcher) *SocksServer {
 	return &SocksServer{
-		space:  space,
-		config: config,
+		config:           config,
+		packetDispatcher: packetDispatcher,
 	}
 }
 
@@ -262,7 +262,7 @@ func (this *SocksServer) handleSocks4(reader io.Reader, writer io.Writer, auth p
 }
 
 func (this *SocksServer) transport(reader io.Reader, writer io.Writer, firstPacket v2net.Packet) {
-	ray := this.space.PacketDispatcher().DispatchToOutbound(firstPacket)
+	ray := this.packetDispatcher.DispatchToOutbound(firstPacket)
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 

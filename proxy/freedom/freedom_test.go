@@ -9,6 +9,7 @@ import (
 	"golang.org/x/net/proxy"
 
 	"github.com/v2ray/v2ray-core/app"
+	"github.com/v2ray/v2ray-core/app/dispatcher"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -50,7 +51,7 @@ func TestUDPSend(t *testing.T) {
 
 	protocol, err := proxytesting.RegisterInboundConnectionHandlerCreator("mock_ich",
 		func(space app.Space, config interface{}) (v2proxy.InboundHandler, error) {
-			ich.Space = space
+			ich.PacketDispatcher = space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)
 			return ich, nil
 		})
 	assert.Error(err).IsNil()

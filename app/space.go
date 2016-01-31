@@ -1,5 +1,14 @@
 package app
 
+type ID int
+
+const (
+	PACKET_DISPATCHER       = ID(1)
+	DNS_CACHE               = ID(2)
+	PUBSUB                  = ID(3)
+	INBOUND_HANDLER_MANAGER = ID(4)
+)
+
 // Context of a function call from proxy to app.
 type Context interface {
 	CallerTag() string
@@ -8,15 +17,80 @@ type Context interface {
 // A Space contains all apps that may be available in a V2Ray runtime.
 // Caller must check the availability of an app by calling HasXXX before getting its instance.
 type Space interface {
-	HasPacketDispatcher() bool
-	PacketDispatcher() PacketDispatcher
+	HasApp(ID) bool
+	GetApp(ID) interface{}
+}
 
-	HasDnsCache() bool
-	DnsCache() DnsCache
+type ForContextCreator func(Context, interface{}) interface{}
 
-	HasPubsub() bool
-	Pubsub() Pubsub
+var (
+	metadataCache = make(map[ID]ForContextCreator)
+)
 
-	HasInboundHandlerManager() bool
-	InboundHandlerManager() InboundHandlerManager
+func RegisterApp(id ID, creator ForContextCreator) {
+	// TODO: check id
+	metadataCache[id] = creator
+}
+
+type contextImpl struct {
+	callerTag string
+}
+
+func (this *contextImpl) CallerTag() string {
+	return this.callerTag
+}
+
+type spaceImpl struct {
+	cache map[ID]interface{}
+	tag   string
+}
+
+func newSpaceImpl(tag string, cache map[ID]interface{}) *spaceImpl {
+	space := &spaceImpl{
+		tag:   tag,
+		cache: make(map[ID]interface{}),
+	}
+	context := &contextImpl{
+		callerTag: tag,
+	}
+	for id, object := range cache {
+		creator, found := metadataCache[id]
+		if found {
+			space.cache[id] = creator(context, object)
+		}
+	}
+	return space
+}
+
+func (this *spaceImpl) HasApp(id ID) bool {
+	_, found := this.cache[id]
+	return found
+}
+
+func (this *spaceImpl) GetApp(id ID) interface{} {
+	obj, found := this.cache[id]
+	if !found {
+		return nil
+	}
+	return obj
+}
+
+// A SpaceController is supposed to be used by a shell to create Spaces. It should not be used
+// directly by proxies.
+type SpaceController struct {
+	objectCache map[ID]interface{}
+}
+
+func NewController() *SpaceController {
+	return &SpaceController{
+		objectCache: make(map[ID]interface{}),
+	}
+}
+
+func (this *SpaceController) Bind(id ID, object interface{}) {
+	this.objectCache[id] = object
+}
+
+func (this *SpaceController) ForContext(tag string) Space {
+	return newSpaceImpl(tag, this.objectCache)
 }

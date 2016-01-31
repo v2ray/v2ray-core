@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/v2ray/v2ray-core/app"
+	"github.com/v2ray/v2ray-core/app/dispatcher"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
@@ -19,12 +20,19 @@ import (
 )
 
 type Shadowsocks struct {
-	space     app.Space
-	config    *Config
-	port      v2net.Port
-	accepting bool
-	tcpHub    *hub.TCPHub
-	udpHub    *hub.UDPHub
+	packetDispatcher dispatcher.PacketDispatcher
+	config           *Config
+	port             v2net.Port
+	accepting        bool
+	tcpHub           *hub.TCPHub
+	udpHub           *hub.UDPHub
+}
+
+func NewShadowsocks(config *Config, packetDispatcher dispatcher.PacketDispatcher) *Shadowsocks {
+	return &Shadowsocks{
+		config:           config,
+		packetDispatcher: packetDispatcher,
+	}
 }
 
 func (this *Shadowsocks) Port() v2net.Port {
@@ -99,7 +107,7 @@ func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, source v2net.D
 	log.Info("Shadowsocks: Tunnelling request to ", dest)
 
 	packet := v2net.NewPacket(dest, request.UDPPayload, false)
-	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
+	ray := this.packetDispatcher.DispatchToOutbound(packet)
 	close(ray.InboundInput())
 
 	for respChunk := range ray.InboundOutput() {
@@ -174,7 +182,7 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 	log.Info("Shadowsocks: Tunnelling request to ", dest)
 
 	packet := v2net.NewPacket(dest, nil, true)
-	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
+	ray := this.packetDispatcher.DispatchToOutbound(packet)
 
 	var writeFinish sync.Mutex
 	writeFinish.Lock()
@@ -215,10 +223,11 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 func init() {
 	internal.MustRegisterInboundHandlerCreator("shadowsocks",
 		func(space app.Space, rawConfig interface{}) (proxy.InboundHandler, error) {
-			config := rawConfig.(*Config)
-			return &Shadowsocks{
-				space:  space,
-				config: config,
-			}, nil
+			if !space.HasApp(dispatcher.APP_ID) {
+				return nil, internal.ErrorBadConfiguration
+			}
+			return NewShadowsocks(
+				rawConfig.(*Config),
+				space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)), nil
 		})
 }

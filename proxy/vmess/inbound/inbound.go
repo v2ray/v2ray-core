@@ -6,6 +6,8 @@ import (
 	"sync"
 
 	"github.com/v2ray/v2ray-core/app"
+	"github.com/v2ray/v2ray-core/app/dispatcher"
+	"github.com/v2ray/v2ray-core/app/proxyman"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2crypto "github.com/v2ray/v2ray-core/common/crypto"
 	v2io "github.com/v2ray/v2ray-core/common/io"
@@ -22,13 +24,14 @@ import (
 // Inbound connection handler that handles messages in VMess format.
 type VMessInboundHandler struct {
 	sync.Mutex
-	space         app.Space
-	clients       protocol.UserSet
-	user          *vmess.User
-	accepting     bool
-	listener      *hub.TCPHub
-	features      *FeaturesConfig
-	listeningPort v2net.Port
+	packetDispatcher      dispatcher.PacketDispatcher
+	inboundHandlerManager proxyman.InboundHandlerManager
+	clients               protocol.UserSet
+	user                  *vmess.User
+	accepting             bool
+	listener              *hub.TCPHub
+	features              *FeaturesConfig
+	listeningPort         v2net.Port
 }
 
 func (this *VMessInboundHandler) Port() v2net.Port {
@@ -86,7 +89,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 	log.Access(connection.RemoteAddr(), request.Address, log.AccessAccepted, serial.StringLiteral(""))
 	log.Debug("VMessIn: Received request for ", request.Address)
 
-	ray := this.space.PacketDispatcher().DispatchToOutbound(v2net.NewPacket(request.Destination(), nil, true))
+	ray := this.packetDispatcher.DispatchToOutbound(v2net.NewPacket(request.Destination(), nil, true))
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 	var readFinish, writeFinish sync.Mutex
@@ -148,6 +151,9 @@ func handleOutput(request *protocol.VMessRequest, writer io.Writer, output <-cha
 func init() {
 	internal.MustRegisterInboundHandlerCreator("vmess",
 		func(space app.Space, rawConfig interface{}) (proxy.InboundHandler, error) {
+			if !space.HasApp(dispatcher.APP_ID) {
+				return nil, internal.ErrorBadConfiguration
+			}
 			config := rawConfig.(*Config)
 
 			allowedClients := protocol.NewTimedUserSet()
@@ -155,11 +161,17 @@ func init() {
 				allowedClients.AddUser(user)
 			}
 
-			return &VMessInboundHandler{
-				space:    space,
-				clients:  allowedClients,
-				features: config.Features,
-				user:     config.AllowedUsers[0],
-			}, nil
+			handler := &VMessInboundHandler{
+				packetDispatcher: space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
+				clients:          allowedClients,
+				features:         config.Features,
+				user:             config.AllowedUsers[0],
+			}
+
+			if space.HasApp(proxyman.APP_ID_INBOUND_MANAGER) {
+				handler.inboundHandlerManager = space.GetApp(proxyman.APP_ID_INBOUND_MANAGER).(proxyman.InboundHandlerManager)
+			}
+
+			return handler, nil
 		})
 }

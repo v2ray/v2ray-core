@@ -17,9 +17,8 @@ func (this *VMessInboundHandler) generateCommand(buffer *alloc.Buffer) {
 	if this.features != nil && this.features.Detour != nil {
 
 		tag := this.features.Detour.ToTag
-		if this.space.HasInboundHandlerManager() {
-			handlerManager := this.space.InboundHandlerManager()
-			handler, availableMin := handlerManager.GetHandler(tag)
+		if this.inboundHandlerManager != nil {
+			handler, availableMin := this.inboundHandlerManager.GetHandler(tag)
 			inboundHandler, ok := handler.(*VMessInboundHandler)
 			if ok {
 				if availableMin > 255 {

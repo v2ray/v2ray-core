@@ -4,7 +4,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/v2ray/v2ray-core/app"
+	"github.com/v2ray/v2ray-core/app/dispatcher"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
@@ -14,24 +14,24 @@ import (
 )
 
 type DokodemoDoor struct {
-	tcpMutex      sync.RWMutex
-	udpMutex      sync.RWMutex
-	config        *Config
-	accepting     bool
-	address       v2net.Address
-	port          v2net.Port
-	space         app.Space
-	tcpListener   *hub.TCPHub
-	udpHub        *hub.UDPHub
-	listeningPort v2net.Port
+	tcpMutex         sync.RWMutex
+	udpMutex         sync.RWMutex
+	config           *Config
+	accepting        bool
+	address          v2net.Address
+	port             v2net.Port
+	packetDispatcher dispatcher.PacketDispatcher
+	tcpListener      *hub.TCPHub
+	udpHub           *hub.UDPHub
+	listeningPort    v2net.Port
 }
 
-func NewDokodemoDoor(space app.Space, config *Config) *DokodemoDoor {
+func NewDokodemoDoor(config *Config, packetDispatcher dispatcher.PacketDispatcher) *DokodemoDoor {
 	return &DokodemoDoor{
-		config:  config,
-		space:   space,
-		address: config.Address,
-		port:    config.Port,
+		config:           config,
+		packetDispatcher: packetDispatcher,
+		address:          config.Address,
+		port:             config.Port,
 	}
 }
 
@@ -95,7 +95,7 @@ func (this *DokodemoDoor) ListenUDP(port v2net.Port) error {
 
 func (this *DokodemoDoor) handleUDPPackets(payload *alloc.Buffer, dest v2net.Destination) {
 	packet := v2net.NewPacket(v2net.UDPDestination(this.address, this.port), payload, false)
-	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
+	ray := this.packetDispatcher.DispatchToOutbound(packet)
 	close(ray.InboundInput())
 
 	for resp := range ray.InboundOutput() {
@@ -127,7 +127,7 @@ func (this *DokodemoDoor) HandleTCPConnection(conn *hub.TCPConn) {
 	defer conn.Close()
 
 	packet := v2net.NewPacket(v2net.TCPDestination(this.address, this.port), nil, true)
-	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
+	ray := this.packetDispatcher.DispatchToOutbound(packet)
 
 	var inputFinish, outputFinish sync.Mutex
 	inputFinish.Lock()

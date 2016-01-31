@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/v2ray/v2ray-core/app"
+	"github.com/v2ray/v2ray-core/app/dispatcher"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	"github.com/v2ray/v2ray-core/common/uuid"
@@ -38,7 +39,7 @@ func TestVMessInAndOut(t *testing.T) {
 	}
 
 	protocol, err := proxytesting.RegisterInboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (proxy.InboundHandler, error) {
-		ich.Space = space
+		ich.PacketDispatcher = space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)
 		return ich, nil
 	})
 	assert.Error(err).IsNil()

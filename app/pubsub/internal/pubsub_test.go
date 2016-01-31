@@ -1,11 +1,11 @@
-package pubsub_test
+package internal_test
 
 import (
 	"testing"
 	"time"
 
-	"github.com/v2ray/v2ray-core/app"
-	. "github.com/v2ray/v2ray-core/app/pubsub"
+	"github.com/v2ray/v2ray-core/app/pubsub"
+	. "github.com/v2ray/v2ray-core/app/pubsub/internal"
 	apptesting "github.com/v2ray/v2ray-core/app/testing"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
@@ -14,19 +14,19 @@ import (
 func TestPubsub(t *testing.T) {
 	v2testing.Current(t)
 
-	messages := make(map[string]app.PubsubMessage)
+	messages := make(map[string]pubsub.PubsubMessage)
 
-	pubsub := New()
-	pubsub.Subscribe(&apptesting.Context{}, "t1", func(message app.PubsubMessage) {
+	ps := New()
+	ps.Subscribe(&apptesting.Context{}, "t1", func(message pubsub.PubsubMessage) {
 		messages["t1"] = message
 	})
 
-	pubsub.Subscribe(&apptesting.Context{}, "t2", func(message app.PubsubMessage) {
+	ps.Subscribe(&apptesting.Context{}, "t2", func(message pubsub.PubsubMessage) {
 		messages["t2"] = message
 	})
 
-	message := app.PubsubMessage([]byte("This is a pubsub message."))
-	pubsub.Publish(&apptesting.Context{}, "t2", message)
+	message := pubsub.PubsubMessage([]byte("This is a pubsub message."))
+	ps.Publish(&apptesting.Context{}, "t2", message)
 	<-time.Tick(time.Second)
 
 	_, found := messages["t1"]

@@ -69,7 +69,7 @@ func (this *SocksServer) AcceptPackets() error {
 }
 
 func (this *SocksServer) handlePacket(packet v2net.Packet, clientAddr *net.UDPAddr, targetAddr v2net.Address, port v2net.Port) {
-	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
+	ray := this.packetDispatcher.DispatchToOutbound(packet)
 	close(ray.InboundInput())
 
 	for data := range ray.InboundOutput() {

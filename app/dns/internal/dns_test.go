@@ -1,10 +1,10 @@
-package dns_test
+package internal_test
 
 import (
 	"net"
 	"testing"
 
-	"github.com/v2ray/v2ray-core/app/dns"
+	. "github.com/v2ray/v2ray-core/app/dns/internal"
 	apptesting "github.com/v2ray/v2ray-core/app/testing"
 	netassert "github.com/v2ray/v2ray-core/common/net/testing/assert"
 	"github.com/v2ray/v2ray-core/common/serial"
@@ -15,7 +15,7 @@ func TestDnsAdd(t *testing.T) {
 	v2testing.Current(t)
 
 	domain := "v2ray.com"
-	cache := dns.NewCache(&dns.CacheConfig{
+	cache := NewCache(&CacheConfig{
 		TrustedTags: map[serial.StringLiteral]bool{
 			serial.StringLiteral("testtag"): true,
 		},

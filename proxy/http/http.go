@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/v2ray/v2ray-core/app"
+	"github.com/v2ray/v2ray-core/app/dispatcher"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
@@ -22,17 +22,17 @@ import (
 
 type HttpProxyServer struct {
 	sync.Mutex
-	accepting     bool
-	space         app.Space
-	config        *Config
-	tcpListener   *hub.TCPHub
-	listeningPort v2net.Port
+	accepting        bool
+	packetDispatcher dispatcher.PacketDispatcher
+	config           *Config
+	tcpListener      *hub.TCPHub
+	listeningPort    v2net.Port
 }
 
-func NewHttpProxyServer(space app.Space, config *Config) *HttpProxyServer {
+func NewHttpProxyServer(config *Config, packetDispatcher dispatcher.PacketDispatcher) *HttpProxyServer {
 	return &HttpProxyServer{
-		space:  space,
-		config: config,
+		packetDispatcher: packetDispatcher,
+		config:           config,
 	}
 }
 
@@ -144,7 +144,7 @@ func (this *HttpProxyServer) handleConnect(request *http.Request, destination v2
 	buffer.Release()
 
 	packet := v2net.NewPacket(destination, nil, true)
-	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
+	ray := this.packetDispatcher.DispatchToOutbound(packet)
 	this.transport(reader, writer, ray)
 }
 
@@ -220,7 +220,7 @@ func (this *HttpProxyServer) handlePlainHTTP(request *http.Request, dest v2net.D
 	log.Debug("Request to remote:\n", serial.BytesLiteral(requestBuffer.Value))
 
 	packet := v2net.NewPacket(dest, requestBuffer, true)
-	ray := this.space.PacketDispatcher().DispatchToOutbound(packet)
+	ray := this.packetDispatcher.DispatchToOutbound(packet)
 	defer close(ray.InboundInput())
 
 	var wg sync.WaitGroup

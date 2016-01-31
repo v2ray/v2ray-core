@@ -6,7 +6,8 @@ package point
 
 import (
 	"github.com/v2ray/v2ray-core/app"
-	"github.com/v2ray/v2ray-core/app/controller"
+	"github.com/v2ray/v2ray-core/app/dispatcher"
+	"github.com/v2ray/v2ray-core/app/proxyman"
 	"github.com/v2ray/v2ray-core/app/router"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -25,7 +26,7 @@ type Point struct {
 	taggedIdh map[string]InboundDetourHandler
 	odh       map[string]proxy.OutboundHandler
 	router    router.Router
-	space     *controller.SpaceController
+	space     *app.SpaceController
 }
 
 // NewPoint returns a new Point server based on given configuration.
@@ -53,8 +54,9 @@ func NewPoint(pConfig *Config) (*Point, error) {
 		log.SetLogLevel(logConfig.LogLevel)
 	}
 
-	vpoint.space = controller.New()
-	vpoint.space.Bind(vpoint)
+	vpoint.space = app.NewController()
+	vpoint.space.Bind(dispatcher.APP_ID, vpoint)
+	vpoint.space.Bind(proxyman.APP_ID_INBOUND_MANAGER, vpoint)
 
 	ichConfig := pConfig.InboundConfig.Settings
 	ich, err := proxyrepo.CreateInboundHandler(pConfig.InboundConfig.Protocol, vpoint.space.ForContext("vpoint-default-inbound"), ichConfig)

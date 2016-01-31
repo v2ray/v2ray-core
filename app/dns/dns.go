@@ -2,61 +2,44 @@ package dns
 
 import (
 	"net"
-	"time"
 
 	"github.com/v2ray/v2ray-core/app"
-	"github.com/v2ray/v2ray-core/common/collect"
-	"github.com/v2ray/v2ray-core/common/serial"
 )
 
-type entry struct {
-	domain     string
-	ip         net.IP
-	validUntil time.Time
+const (
+	APP_ID = app.ID(2)
+)
+
+// A DnsCache is an internal cache of DNS resolutions.
+type DnsCache interface {
+	Get(domain string) net.IP
+	Add(domain string, ip net.IP)
 }
 
-func newEntry(domain string, ip net.IP) *entry {
-	this := &entry{
-		domain: domain,
-		ip:     ip,
-	}
-	this.Extend()
-	return this
+type dnsCacheWithContext interface {
+	Get(context app.Context, domain string) net.IP
+	Add(contaxt app.Context, domain string, ip net.IP)
 }
 
-func (this *entry) IsValid() bool {
-	return this.validUntil.After(time.Now())
+type contextedDnsCache struct {
+	context  app.Context
+	dnsCache dnsCacheWithContext
 }
 
-func (this *entry) Extend() {
-	this.validUntil = time.Now().Add(time.Hour)
+func (this *contextedDnsCache) Get(domain string) net.IP {
+	return this.dnsCache.Get(this.context, domain)
 }
 
-type DnsCache struct {
-	cache  *collect.ValidityMap
-	config *CacheConfig
+func (this *contextedDnsCache) Add(domain string, ip net.IP) {
+	this.dnsCache.Add(this.context, domain, ip)
 }
 
-func NewCache(config *CacheConfig) *DnsCache {
-	cache := &DnsCache{
-		cache:  collect.NewValidityMap(3600),
-		config: config,
-	}
-	return cache
-}
-
-func (this *DnsCache) Add(context app.Context, domain string, ip net.IP) {
-	callerTag := context.CallerTag()
-	if !this.config.IsTrustedSource(serial.StringLiteral(callerTag)) {
-		return
-	}
-
-	this.cache.Set(serial.StringLiteral(domain), newEntry(domain, ip))
-}
-
-func (this *DnsCache) Get(context app.Context, domain string) net.IP {
-	if value := this.cache.Get(serial.StringLiteral(domain)); value != nil {
-		return value.(*entry).ip
-	}
-	return nil
+func init() {
+	app.RegisterApp(APP_ID, func(context app.Context, obj interface{}) interface{} {
+		dcContext := obj.(dnsCacheWithContext)
+		return &contextedDnsCache{
+			context:  context,
+			dnsCache: dcContext,
+		}
+	})
 }

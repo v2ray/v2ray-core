@@ -22,7 +22,6 @@ import (
 
 type VMessOutboundHandler struct {
 	receiverManager *ReceiverManager
-	space           app.Space
 }
 
 func (this *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {
@@ -196,7 +195,6 @@ func init() {
 		func(space app.Space, rawConfig interface{}) (proxy.OutboundHandler, error) {
 			vOutConfig := rawConfig.(*Config)
 			return &VMessOutboundHandler{
-				space:           space,
 				receiverManager: NewReceiverManager(vOutConfig.Receivers),
 			}, nil
 		})
