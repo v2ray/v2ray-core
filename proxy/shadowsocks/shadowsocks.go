@@ -187,20 +187,18 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 	var writeFinish sync.Mutex
 	writeFinish.Lock()
 	go func() {
-		firstChunk := alloc.NewBuffer().Slice(0, this.config.Cipher.IVSize())
-		defer firstChunk.Release()
-
-		writer, err := this.config.Cipher.NewEncodingStream(key, firstChunk.Value, conn)
-		if err != nil {
-			log.Error("Shadowsocks: Failed to create encoding stream: ", err)
-			return
-		}
-
 		if payload, ok := <-ray.InboundOutput(); ok {
-			firstChunk.Append(payload.Value)
-			payload.Release()
+			payload.SliceBack(16)
+			rand.Read(payload.Value[:16])
 
-			writer.Write(firstChunk.Value)
+			writer, err := this.config.Cipher.NewEncodingStream(key, payload.Value[:16], conn)
+			if err != nil {
+				log.Error("Shadowsocks: Failed to create encoding stream: ", err)
+				return
+			}
+
+			writer.Write(payload.Value)
+			payload.Release()
 			v2io.ChanToWriter(writer, ray.InboundOutput())
 		}
 		writeFinish.Unlock()

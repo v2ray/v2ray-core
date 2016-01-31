@@ -63,13 +63,8 @@ func (b *Buffer) Append(data []byte) *Buffer {
 // Prepend prepends bytes in front of the buffer. Caller must ensure total bytes prepended is
 // no more than 16 bytes.
 func (b *Buffer) Prepend(data []byte) *Buffer {
-	newoffset := b.offset - len(data)
-	if newoffset < 0 {
-		newoffset = 0
-	}
-	copy(b.head[newoffset:], data)
-	b.Value = b.head[newoffset : b.offset+len(b.Value)]
-	b.offset = newoffset
+	b.SliceBack(len(data))
+	copy(b.Value, data)
 	return b
 }
 
@@ -86,6 +81,16 @@ func (b *Buffer) Slice(from, to int) *Buffer {
 // SliceFrom cuts the buffer at the given position.
 func (b *Buffer) SliceFrom(from int) *Buffer {
 	b.Value = b.Value[from:]
+	return b
+}
+
+func (b *Buffer) SliceBack(offset int) *Buffer {
+	newoffset := b.offset - offset
+	if newoffset < 0 {
+		newoffset = 0
+	}
+	b.Value = b.head[newoffset : b.offset+len(b.Value)]
+	b.offset = newoffset
 	return b
 }
 
