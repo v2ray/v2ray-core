@@ -32,3 +32,19 @@ func TestBufferIsFull(t *testing.T) {
 	buffer.Clear()
 	assert.Bool(buffer.IsFull()).IsFalse()
 }
+
+func TestBufferPrepend(t *testing.T) {
+	v2testing.Current(t)
+
+	buffer := NewBuffer().Clear()
+	defer buffer.Release()
+
+	buffer.Append([]byte{'a', 'b', 'c'})
+	buffer.Prepend([]byte{'x', 'y', 'z'})
+
+	assert.Int(buffer.Len()).Equals(6)
+	assert.Bytes(buffer.Value).Equals([]byte("xyzabc"))
+
+	buffer.Prepend([]byte{'u', 'v', 'w'})
+	assert.Bytes(buffer.Value).Equals([]byte("uvwxyzabc"))
+}

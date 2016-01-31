@@ -5,6 +5,10 @@ import (
 	"sync"
 )
 
+const (
+	DefaultOffset = 16
+)
+
 func Release(buffer *Buffer) {
 	if buffer != nil {
 		buffer.Release()
@@ -22,9 +26,10 @@ func Len(buffer *Buffer) int {
 // the buffer into an internal buffer pool, in order to recreate a buffer more
 // quickly.
 type Buffer struct {
-	head  []byte
-	pool  *bufferPool
-	Value []byte
+	head   []byte
+	pool   *bufferPool
+	Value  []byte
+	offset int
 }
 
 // Release recycles the buffer into an internal buffer pool.
@@ -38,7 +43,8 @@ func (b *Buffer) Release() {
 // Clear clears the content of the buffer, results an empty buffer with
 // Len() = 0.
 func (b *Buffer) Clear() *Buffer {
-	b.Value = b.head[:0]
+	b.offset = DefaultOffset
+	b.Value = b.head[b.offset:b.offset]
 	return b
 }
 
@@ -51,6 +57,19 @@ func (b *Buffer) AppendBytes(bytes ...byte) *Buffer {
 // Append appends a byte array to the end of the buffer.
 func (b *Buffer) Append(data []byte) *Buffer {
 	b.Value = append(b.Value, data...)
+	return b
+}
+
+// Prepend prepends bytes in front of the buffer. Caller must ensure total bytes prepended is
+// no more than 16 bytes.
+func (b *Buffer) Prepend(data []byte) *Buffer {
+	newoffset := b.offset - len(data)
+	if newoffset < 0 {
+		newoffset = 0
+	}
+	copy(b.head[newoffset:], data)
+	b.Value = b.head[newoffset : b.offset+len(b.Value)]
+	b.offset = newoffset
 	return b
 }
 
@@ -125,9 +144,10 @@ func (p *bufferPool) allocate() *Buffer {
 		b = p.allocator.Get().([]byte)
 	}
 	return &Buffer{
-		head:  b,
-		pool:  p,
-		Value: b,
+		head:   b,
+		pool:   p,
+		Value:  b[DefaultOffset:],
+		offset: DefaultOffset,
 	}
 }
 
