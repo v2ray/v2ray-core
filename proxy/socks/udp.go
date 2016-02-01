@@ -7,6 +7,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy/socks/protocol"
+	"github.com/v2ray/v2ray-core/transport/hub"
 )
 
 func (this *SocksServer) ListenUDP(port v2net.Port) error {
@@ -23,6 +24,7 @@ func (this *SocksServer) ListenUDP(port v2net.Port) error {
 	this.udpMutex.Lock()
 	this.udpAddress = v2net.UDPDestination(this.config.Address, port)
 	this.udpConn = conn
+	this.udpServer = hub.NewUDPServer(this.packetDispatcher)
 	this.udpMutex.Unlock()
 
 	go this.AcceptPackets()
@@ -63,38 +65,36 @@ func (this *SocksServer) AcceptPackets() error {
 
 		udpPacket := v2net.NewPacket(request.Destination(), request.Data, false)
 		log.Info("Socks: Send packet to ", udpPacket.Destination(), " with ", request.Data.Len(), " bytes")
-		go this.handlePacket(udpPacket, addr, request.Address, request.Port)
+		this.udpServer.Dispatch(
+			v2net.UDPDestination(v2net.IPAddress(addr.IP), v2net.Port(addr.Port)), udpPacket,
+			func(packet v2net.Packet) {
+				response := &protocol.Socks5UDPRequest{
+					Fragment: 0,
+					Address:  udpPacket.Destination().Address(),
+					Port:     udpPacket.Destination().Port(),
+					Data:     packet.Chunk(),
+				}
+				log.Info("Socks: Writing back UDP response with ", response.Data.Len(), " bytes to ", packet.Destination())
+
+				udpMessage := alloc.NewSmallBuffer().Clear()
+				response.Write(udpMessage)
+
+				this.udpMutex.RLock()
+				if !this.accepting {
+					this.udpMutex.RUnlock()
+					return
+				}
+				nBytes, err := this.udpConn.WriteToUDP(udpMessage.Value, &net.UDPAddr{
+					IP:   packet.Destination().Address().IP(),
+					Port: int(packet.Destination().Port()),
+				})
+				this.udpMutex.RUnlock()
+				udpMessage.Release()
+				response.Data.Release()
+				if err != nil {
+					log.Error("Socks: failed to write UDP message (", nBytes, " bytes) to ", packet.Destination(), ": ", err)
+				}
+			})
 	}
 	return nil
-}
-
-func (this *SocksServer) handlePacket(packet v2net.Packet, clientAddr *net.UDPAddr, targetAddr v2net.Address, port v2net.Port) {
-	ray := this.packetDispatcher.DispatchToOutbound(packet)
-	close(ray.InboundInput())
-
-	for data := range ray.InboundOutput() {
-		response := &protocol.Socks5UDPRequest{
-			Fragment: 0,
-			Address:  targetAddr,
-			Port:     port,
-			Data:     data,
-		}
-		log.Info("Socks: Writing back UDP response with ", data.Len(), " bytes from ", targetAddr, " to ", clientAddr)
-
-		udpMessage := alloc.NewSmallBuffer().Clear()
-		response.Write(udpMessage)
-
-		this.udpMutex.RLock()
-		if !this.accepting {
-			this.udpMutex.RUnlock()
-			return
-		}
-		nBytes, err := this.udpConn.WriteToUDP(udpMessage.Value, clientAddr)
-		this.udpMutex.RUnlock()
-		udpMessage.Release()
-		response.Data.Release()
-		if err != nil {
-			log.Error("Socks: failed to write UDP message (", nBytes, " bytes) to ", clientAddr, ": ", err)
-		}
-	}
 }

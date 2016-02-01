@@ -32,6 +32,7 @@ type SocksServer struct {
 	tcpListener      *hub.TCPHub
 	udpConn          *net.UDPConn
 	udpAddress       v2net.Destination
+	udpServer        *hub.UDPServer
 	listeningPort    v2net.Port
 }
 

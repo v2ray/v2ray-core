@@ -1,7 +1,7 @@
 package freedom
 
 import (
-  "io"
+	"io"
 	"net"
 	"sync"
 
