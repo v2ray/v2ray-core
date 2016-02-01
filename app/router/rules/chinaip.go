@@ -1,25 +1,14 @@
-// +build json
-
 package rules
 
 import (
-	"encoding/json"
-
-	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
-func parseChinaIPRule(data []byte) (*Rule, error) {
-	rawRule := new(JsonRule)
-	err := json.Unmarshal(data, rawRule)
-	if err != nil {
-		log.Error("Router: Invalid router rule: ", err)
-		return nil, err
-	}
+func NewChinaIPRule(tag string) *Rule {
 	return &Rule{
-		Tag:       rawRule.OutboundTag,
+		Tag:       tag,
 		Condition: NewIPv4Matcher(chinaIPNet),
-	}, nil
+	}
 }
 
 var (

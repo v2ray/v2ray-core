@@ -1,23 +1,10 @@
-// +build json
-
 package rules
 
-import (
-	"encoding/json"
-	"github.com/v2ray/v2ray-core/common/log"
-)
-
-func parseChinaSitesRule(data []byte) (*Rule, error) {
-	rawRule := new(JsonRule)
-	err := json.Unmarshal(data, rawRule)
-	if err != nil {
-		log.Error("Router: Invalid router rule: ", err)
-		return nil, err
-	}
+func NewChinaSitesRule(tag string) *Rule {
 	return &Rule{
-		Tag:       rawRule.OutboundTag,
+		Tag:       tag,
 		Condition: chinaSitesConds,
-	}, nil
+	}
 }
 
 const (
