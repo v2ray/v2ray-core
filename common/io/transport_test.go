@@ -30,7 +30,7 @@ func TestReaderAndWrite(t *testing.T) {
 	assert.Error(err).Equals(io.EOF)
 	close(transportChan)
 
-	err = ChanToWriter(writerBuffer, transportChan)
+	err = ChanToRawWriter(writerBuffer, transportChan)
 	assert.Error(err).IsNil()
 
 	assert.Bytes(buffer).Equals(writerBuffer.Bytes())

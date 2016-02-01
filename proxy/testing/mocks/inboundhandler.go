@@ -48,7 +48,7 @@ func (this *InboundConnectionHandler) Communicate(packet v2net.Packet) error {
 	}()
 
 	go func() {
-		v2io.ChanToWriter(this.ConnOutput, output)
+		v2io.ChanToRawWriter(this.ConnOutput, output)
 		writeFinish.Unlock()
 	}()
 

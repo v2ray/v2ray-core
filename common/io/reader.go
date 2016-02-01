@@ -47,7 +47,7 @@ func (this *AdaptiveReader) Read() (*alloc.Buffer, error) {
 	}
 
 	if err != nil {
-		alloc.Release(buffer)
+		buffer.Release()
 		return nil, err
 	}
 	return buffer, nil

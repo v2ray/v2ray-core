@@ -17,6 +17,7 @@ import (
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	"github.com/v2ray/v2ray-core/proxy/vmess"
+	vmessio "github.com/v2ray/v2ray-core/proxy/vmess/io"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 	"github.com/v2ray/v2ray-core/transport/hub"
 )
@@ -119,10 +120,21 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 	this.generateCommand(buffer)
 
 	if data, open := <-output; open {
+		if request.IsChunkStream() {
+			vmessio.Authenticate(data)
+		}
 		buffer.Append(data.Value)
 		data.Release()
 		responseWriter.Write(buffer.Value)
-		go handleOutput(request, responseWriter, output, &writeFinish)
+		go func(finish *sync.Mutex) {
+			var writer v2io.Writer
+			writer = v2io.NewAdaptiveWriter(responseWriter)
+			if request.IsChunkStream() {
+				writer = vmessio.NewAuthChunkWriter(writer)
+			}
+			v2io.ChanToWriter(writer, output)
+			finish.Unlock()
+		}(&writeFinish)
 		writeFinish.Lock()
 	}
 
@@ -139,13 +151,14 @@ func handleInput(request *protocol.VMessRequest, reader io.Reader, input chan<- 
 		log.Error("VMessIn: Failed to create AES decryption stream: ", err)
 		return
 	}
-	requestReader := v2crypto.NewCryptionReader(aesStream, reader)
-	v2io.RawReaderToChan(input, requestReader)
-}
-
-func handleOutput(request *protocol.VMessRequest, writer io.Writer, output <-chan *alloc.Buffer, finish *sync.Mutex) {
-	v2io.ChanToWriter(writer, output)
-	finish.Unlock()
+	descriptionReader := v2crypto.NewCryptionReader(aesStream, reader)
+	var requestReader v2io.Reader
+	if request.IsChunkStream() {
+		requestReader = vmessio.NewAuthChunkReader(descriptionReader)
+	} else {
+		requestReader = v2io.NewAdaptiveReader(descriptionReader)
+	}
+	v2io.ReaderToChan(input, requestReader)
 }
 
 func init() {

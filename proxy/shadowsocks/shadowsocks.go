@@ -199,7 +199,7 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 
 			writer.Write(payload.Value)
 			payload.Release()
-			v2io.ChanToWriter(writer, ray.InboundOutput())
+			v2io.ChanToRawWriter(writer, ray.InboundOutput())
 		}
 		writeFinish.Unlock()
 	}()

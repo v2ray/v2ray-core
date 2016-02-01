@@ -33,7 +33,7 @@ func (this *OutboundConnectionHandler) Dispatch(packet v2net.Packet, ray ray.Out
 		writeFinish.Lock()
 
 		go func() {
-			v2io.ChanToWriter(this.ConnOutput, input)
+			v2io.ChanToRawWriter(this.ConnOutput, input)
 			writeFinish.Unlock()
 		}()
 

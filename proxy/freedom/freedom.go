@@ -49,7 +49,7 @@ func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbou
 		writeMutex.Unlock()
 	} else {
 		go func() {
-			v2io.ChanToWriter(conn, input)
+			v2io.ChanToRawWriter(conn, input)
 			writeMutex.Unlock()
 		}()
 	}

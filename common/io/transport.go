@@ -14,10 +14,10 @@ func RawReaderToChan(stream chan<- *alloc.Buffer, reader io.Reader) error {
 func ReaderToChan(stream chan<- *alloc.Buffer, reader Reader) error {
 	for {
 		buffer, err := reader.Read()
-		if alloc.Len(buffer) > 0 {
+		if buffer.Len() > 0 {
 			stream <- buffer
 		} else {
-			alloc.Release(buffer)
+			buffer.Release()
 		}
 
 		if err != nil {
@@ -26,13 +26,14 @@ func ReaderToChan(stream chan<- *alloc.Buffer, reader Reader) error {
 	}
 }
 
+func ChanToRawWriter(writer io.Writer, stream <-chan *alloc.Buffer) error {
+	return ChanToWriter(NewAdaptiveWriter(writer), stream)
+}
+
 // ChanToWriter dumps all content from a given chan to a writer until the chan is closed.
-func ChanToWriter(writer io.Writer, stream <-chan *alloc.Buffer) error {
+func ChanToWriter(writer Writer, stream <-chan *alloc.Buffer) error {
 	for buffer := range stream {
-		nBytes, err := writer.Write(buffer.Value)
-		if nBytes < buffer.Len() {
-			_, err = writer.Write(buffer.Value[nBytes:])
-		}
+		err := writer.Write(buffer)
 		buffer.Release()
 		if err != nil {
 			return err

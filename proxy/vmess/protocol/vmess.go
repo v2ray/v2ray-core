@@ -26,6 +26,8 @@ const (
 
 	Version = byte(0x01)
 
+	OptionChunk = byte(0x01)
+
 	blockSize = 16
 )
 
@@ -39,6 +41,7 @@ type VMessRequest struct {
 	RequestKey     []byte
 	ResponseHeader byte
 	Command        byte
+	Option         byte
 	Address        v2net.Address
 	Port           v2net.Port
 }
@@ -50,6 +53,10 @@ func (this *VMessRequest) Destination() v2net.Destination {
 	} else {
 		return v2net.UDPDestination(this.Address, this.Port)
 	}
+}
+
+func (this *VMessRequest) IsChunkStream() bool {
+	return (this.Option & OptionChunk) == OptionChunk
 }
 
 // VMessRequestReader is a parser to read VMessRequest from a byte stream.
@@ -110,7 +117,8 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 
 	request.RequestIV = append([]byte(nil), buffer.Value[1:17]...)   // 16 bytes
 	request.RequestKey = append([]byte(nil), buffer.Value[17:33]...) // 16 bytes
-	request.ResponseHeader = buffer.Value[33]                        // 1 byte + 3 bytes reserved.
+	request.ResponseHeader = buffer.Value[33]                        // 1 byte
+	request.Option = buffer.Value[34]                                // 1 byte + 2 bytes reserved
 	request.Command = buffer.Value[37]
 
 	request.Port = v2net.PortFromBytes(buffer.Value[38:40])
@@ -189,7 +197,7 @@ func (this *VMessRequest) ToBytes(timestampGenerator RandomTimestampGenerator, b
 	buffer.AppendBytes(this.Version)
 	buffer.Append(this.RequestIV)
 	buffer.Append(this.RequestKey)
-	buffer.AppendBytes(this.ResponseHeader, byte(0), byte(0), byte(0))
+	buffer.AppendBytes(this.ResponseHeader, this.Option, byte(0), byte(0))
 	buffer.AppendBytes(this.Command)
 	buffer.Append(this.Port.Bytes())
 

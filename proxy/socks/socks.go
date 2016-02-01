@@ -277,7 +277,7 @@ func (this *SocksServer) transport(reader io.Reader, writer io.Writer, firstPack
 	}()
 
 	go func() {
-		v2io.ChanToWriter(writer, output)
+		v2io.ChanToRawWriter(writer, output)
 		outputFinish.Unlock()
 	}()
 	outputFinish.Lock()

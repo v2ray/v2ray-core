@@ -160,7 +160,7 @@ func (this *HttpProxyServer) transport(input io.Reader, output io.Writer, ray ra
 	}()
 
 	go func() {
-		v2io.ChanToWriter(output, ray.InboundOutput())
+		v2io.ChanToRawWriter(output, ray.InboundOutput())
 		wg.Done()
 	}()
 }

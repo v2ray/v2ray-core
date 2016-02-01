@@ -69,14 +69,14 @@ func NewChunkReader(reader io.Reader, auth *Authenticator) *ChunkReader {
 func (this *ChunkReader) Read() (*alloc.Buffer, error) {
 	buffer := alloc.NewLargeBuffer()
 	if _, err := io.ReadFull(this.reader, buffer.Value[:2]); err != nil {
-		alloc.Release(buffer)
+		buffer.Release()
 		return nil, err
 	}
 	// There is a potential buffer overflow here. Large buffer is 64K bytes,
 	// while uin16 + 10 will be more than that
 	length := serial.BytesLiteral(buffer.Value[:2]).Uint16Value() + AuthSize
 	if _, err := io.ReadFull(this.reader, buffer.Value[:length]); err != nil {
-		alloc.Release(buffer)
+		buffer.Release()
 		return nil, err
 	}
 	buffer.Slice(0, int(length))
@@ -86,7 +86,7 @@ func (this *ChunkReader) Read() (*alloc.Buffer, error) {
 
 	actualAuthBytes := this.auth.Authenticate(nil, payload)
 	if !serial.BytesLiteral(authBytes).Equals(serial.BytesLiteral(actualAuthBytes)) {
-		alloc.Release(buffer)
+		buffer.Release()
 		log.Debug("AuthenticationReader: Unexpected auth: ", authBytes)
 		return nil, transport.ErrorCorruptedPacket
 	}

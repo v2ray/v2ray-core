@@ -147,6 +147,6 @@ func dumpInput(reader io.Reader, input chan<- *alloc.Buffer, finish *sync.Mutex)
 }
 
 func dumpOutput(writer io.Writer, output <-chan *alloc.Buffer, finish *sync.Mutex) {
-	v2io.ChanToWriter(writer, output)
+	v2io.ChanToRawWriter(writer, output)
 	finish.Unlock()
 }

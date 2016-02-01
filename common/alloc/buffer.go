@@ -9,19 +9,6 @@ const (
 	DefaultOffset = 16
 )
 
-func Release(buffer *Buffer) {
-	if buffer != nil {
-		buffer.Release()
-	}
-}
-
-func Len(buffer *Buffer) int {
-	if buffer == nil {
-		return 0
-	}
-	return buffer.Len()
-}
-
 // Buffer is a recyclable allocation of a byte array. Buffer.Release() recycles
 // the buffer into an internal buffer pool, in order to recreate a buffer more
 // quickly.
@@ -34,6 +21,9 @@ type Buffer struct {
 
 // Release recycles the buffer into an internal buffer pool.
 func (b *Buffer) Release() {
+	if b == nil {
+		return
+	}
 	b.pool.free(b)
 	b.head = nil
 	b.Value = nil
@@ -96,6 +86,9 @@ func (b *Buffer) SliceBack(offset int) *Buffer {
 
 // Len returns the length of the buffer content.
 func (b *Buffer) Len() int {
+	if b == nil {
+		return 0
+	}
 	return len(b.Value)
 }
 

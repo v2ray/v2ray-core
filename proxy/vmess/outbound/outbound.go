@@ -16,6 +16,7 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
+	vmessio "github.com/v2ray/v2ray-core/proxy/vmess/io"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
@@ -37,6 +38,9 @@ func (this *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray ray.Out
 		Command: command,
 		Address: firstPacket.Destination().Address(),
 		Port:    firstPacket.Destination().Port(),
+	}
+	if command == protocol.CmdUDP {
+		request.Option |= protocol.OptionChunk
 	}
 
 	buffer := alloc.NewSmallBuffer()
@@ -83,7 +87,7 @@ func (this *VMessOutboundHandler) startCommunicate(request *protocol.VMessReques
 	responseFinish.Lock()
 
 	go this.handleRequest(conn, request, firstPacket, input, &requestFinish)
-	go this.handleResponse(conn, request, dest, output, &responseFinish, (request.Command == protocol.CmdUDP))
+	go this.handleResponse(conn, request, dest, output, &responseFinish)
 
 	requestFinish.Lock()
 	conn.CloseWrite()
@@ -121,6 +125,10 @@ func (this *VMessOutboundHandler) handleRequest(conn net.Conn, request *protocol
 		return
 	}
 
+	if request.IsChunkStream() {
+		vmessio.Authenticate(firstChunk)
+	}
+
 	aesStream.XORKeyStream(firstChunk.Value, firstChunk.Value)
 	buffer.Append(firstChunk.Value)
 	firstChunk.Release()
@@ -132,7 +140,12 @@ func (this *VMessOutboundHandler) handleRequest(conn net.Conn, request *protocol
 	}
 
 	if moreChunks {
-		v2io.ChanToWriter(encryptRequestWriter, input)
+		var streamWriter v2io.Writer
+		streamWriter = v2io.NewAdaptiveWriter(encryptRequestWriter)
+		if request.IsChunkStream() {
+			streamWriter = vmessio.NewAuthChunkWriter(streamWriter)
+		}
+		v2io.ChanToWriter(streamWriter, input)
 	}
 	return
 }
@@ -141,7 +154,7 @@ func headerMatch(request *protocol.VMessRequest, responseHeader byte) bool {
 	return request.ResponseHeader == responseHeader
 }
 
-func (this *VMessOutboundHandler) handleResponse(conn net.Conn, request *protocol.VMessRequest, dest v2net.Destination, output chan<- *alloc.Buffer, finish *sync.Mutex, isUDP bool) {
+func (this *VMessOutboundHandler) handleResponse(conn net.Conn, request *protocol.VMessRequest, dest v2net.Destination, output chan<- *alloc.Buffer, finish *sync.Mutex) {
 	defer finish.Unlock()
 	defer close(output)
 	responseKey := md5.Sum(request.RequestKey[:])
@@ -154,38 +167,39 @@ func (this *VMessOutboundHandler) handleResponse(conn net.Conn, request *protoco
 	}
 	decryptResponseReader := v2crypto.NewCryptionReader(aesStream, conn)
 
-	buffer, err := v2io.ReadFrom(decryptResponseReader, nil)
+	buffer := alloc.NewSmallBuffer()
+	defer buffer.Release()
+	_, err = io.ReadFull(decryptResponseReader, buffer.Value[:4])
+
 	if err != nil {
 		log.Error("VMessOut: Failed to read VMess response (", buffer.Len(), " bytes): ", err)
-		buffer.Release()
 		return
 	}
-	if buffer.Len() < 4 || !headerMatch(request, buffer.Value[0]) {
+	if !headerMatch(request, buffer.Value[0]) {
 		log.Warning("VMessOut: unexepcted response header. The connection is probably hijacked.")
 		return
 	}
-	log.Info("VMessOut received ", buffer.Len()-4, " bytes from ", conn.RemoteAddr())
 
-	responseBegin := 4
 	if buffer.Value[2] != 0 {
-		dataLen := int(buffer.Value[3])
-		if buffer.Len() < dataLen+4 { // Rare case
-			diffBuffer := make([]byte, dataLen+4-buffer.Len())
-			io.ReadFull(decryptResponseReader, diffBuffer)
-			buffer.Append(diffBuffer)
-		}
 		command := buffer.Value[2]
-		data := buffer.Value[4 : 4+dataLen]
+		dataLen := int(buffer.Value[3])
+		_, err := io.ReadFull(decryptResponseReader, buffer.Value[:dataLen])
+		if err != nil {
+			log.Error("VMessOut: Failed to read response command: ", err)
+			return
+		}
+		data := buffer.Value[:dataLen]
 		go this.handleCommand(dest, command, data)
-		responseBegin = 4 + dataLen
 	}
 
-	buffer.SliceFrom(responseBegin)
-	output <- buffer
-
-	if !isUDP {
-		v2io.RawReaderToChan(output, decryptResponseReader)
+	var reader v2io.Reader
+	if request.IsChunkStream() {
+		reader = vmessio.NewAuthChunkReader(decryptResponseReader)
+	} else {
+		reader = v2io.NewAdaptiveReader(decryptResponseReader)
 	}
+
+	v2io.ReaderToChan(output, reader)
 
 	return
 }

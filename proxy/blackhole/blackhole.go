@@ -26,7 +26,7 @@ func (this *BlackHole) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) e
 
 	close(ray.OutboundOutput())
 	if firstPacket.MoreChunks() {
-		v2io.ChanToWriter(ioutil.Discard, ray.OutboundInput())
+		v2io.ChanToRawWriter(ioutil.Discard, ray.OutboundInput())
 	}
 	return nil
 }
