@@ -63,7 +63,7 @@ func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbou
 		reader = conn
 
 		if firstPacket.Destination().IsUDP() {
-			reader = v2net.NewTimeOutReader(4 /* seconds */, conn)
+			reader = v2net.NewTimeOutReader(16 /* seconds */, conn)
 		}
 
 		v2io.RawReaderToChan(output, reader)
