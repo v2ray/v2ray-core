@@ -12,11 +12,16 @@ import (
 func TestSimpleRouter(t *testing.T) {
 	v2testing.Current(t)
 
-	router := NewRouter().AddRule(
-		&Rule{
-			Tag:       "test",
-			Condition: NewNetworkMatcher(v2net.Network("tcp").AsList()),
-		})
+	config := &RouterRuleConfig{
+		Rules: []*Rule{
+			&Rule{
+				Tag:       "test",
+				Condition: NewNetworkMatcher(v2net.Network("tcp").AsList()),
+			},
+		},
+	}
+
+	router := NewRouter(config)
 
 	tag, err := router.TakeDetour(v2net.TCPDestination(v2net.DomainAddress("v2ray.com"), 80))
 	assert.Error(err).IsNil()

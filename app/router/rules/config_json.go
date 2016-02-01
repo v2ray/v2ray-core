@@ -117,16 +117,20 @@ func ParseRule(msg json.RawMessage) *Rule {
 func init() {
 	router.RegisterRouterConfig("rules", func(data []byte) (interface{}, error) {
 		type JsonConfig struct {
-			RuleList []json.RawMessage `json:"rules"`
+			RuleList      []json.RawMessage `json:"rules"`
+			ResolveDomain bool              `json:"resolveDomain"`
 		}
 		jsonConfig := new(JsonConfig)
 		if err := json.Unmarshal(data, jsonConfig); err != nil {
 			return nil, err
 		}
-		config := NewRouterRuleConfig()
-		for _, rawRule := range jsonConfig.RuleList {
+		config := &RouterRuleConfig{
+			Rules:         make([]*Rule, len(jsonConfig.RuleList)),
+			ResolveDomain: jsonConfig.ResolveDomain,
+		}
+		for idx, rawRule := range jsonConfig.RuleList {
 			rule := ParseRule(rawRule)
-			config.Add(rule)
+			config.Rules[idx] = rule
 		}
 		return config, nil
 	})
