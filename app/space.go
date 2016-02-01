@@ -2,13 +2,6 @@ package app
 
 type ID int
 
-const (
-	PACKET_DISPATCHER       = ID(1)
-	DNS_CACHE               = ID(2)
-	PUBSUB                  = ID(3)
-	INBOUND_HANDLER_MANAGER = ID(4)
-)
-
 // Context of a function call from proxy to app.
 type Context interface {
 	CallerTag() string
