@@ -23,6 +23,7 @@ type DokodemoDoor struct {
 	packetDispatcher dispatcher.PacketDispatcher
 	tcpListener      *hub.TCPHub
 	udpHub           *hub.UDPHub
+	udpServer        *hub.UDPServer
 	listeningPort    v2net.Port
 }
 
@@ -89,26 +90,23 @@ func (this *DokodemoDoor) ListenUDP(port v2net.Port) error {
 	}
 	this.udpMutex.Lock()
 	this.udpHub = udpHub
+	this.udpServer = hub.NewUDPServer(this.packetDispatcher)
 	this.udpMutex.Unlock()
 	return nil
 }
 
 func (this *DokodemoDoor) handleUDPPackets(payload *alloc.Buffer, dest v2net.Destination) {
 	packet := v2net.NewPacket(v2net.UDPDestination(this.address, this.port), payload, false)
-	ray := this.packetDispatcher.DispatchToOutbound(packet)
-	close(ray.InboundInput())
-
-	for resp := range ray.InboundOutput() {
+	this.udpServer.Dispatch(dest, packet, func(packet v2net.Packet) {
+		defer packet.Chunk().Release()
 		this.udpMutex.RLock()
 		if !this.accepting {
 			this.udpMutex.RUnlock()
-			resp.Release()
 			return
 		}
-		this.udpHub.WriteTo(resp.Value, dest)
+		this.udpHub.WriteTo(packet.Chunk().Value, packet.Destination())
 		this.udpMutex.RUnlock()
-		resp.Release()
-	}
+	})
 }
 
 func (this *DokodemoDoor) ListenTCP(port v2net.Port) error {

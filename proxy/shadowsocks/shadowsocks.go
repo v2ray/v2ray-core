@@ -26,6 +26,7 @@ type Shadowsocks struct {
 	accepting        bool
 	tcpHub           *hub.TCPHub
 	udpHub           *hub.UDPHub
+	udpServer        *hub.UDPServer
 }
 
 func NewShadowsocks(config *Config, packetDispatcher dispatcher.PacketDispatcher) *Shadowsocks {
@@ -77,6 +78,7 @@ func (this *Shadowsocks) Listen(port v2net.Port) error {
 			log.Error("Shadowsocks: Failed to listen UDP on port ", port, ": ", err)
 		}
 		this.udpHub = udpHub
+		this.udpServer = hub.NewUDPServer(this.packetDispatcher)
 	}
 
 	return nil
@@ -107,12 +109,12 @@ func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, source v2net.D
 	log.Info("Shadowsocks: Tunnelling request to ", dest)
 
 	packet := v2net.NewPacket(dest, request.UDPPayload, false)
-	ray := this.packetDispatcher.DispatchToOutbound(packet)
-	close(ray.InboundInput())
-
-	for respChunk := range ray.InboundOutput() {
+	this.udpServer.Dispatch(source, packet, func(packet v2net.Packet) {
+		defer packet.Chunk().Release()
 
 		response := alloc.NewBuffer().Slice(0, this.config.Cipher.IVSize())
+		defer response.Release()
+
 		rand.Read(response.Value)
 		respIv := response.Value
 
@@ -135,8 +137,7 @@ func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, source v2net.D
 		}
 
 		writer.Write(request.Port.Bytes())
-		writer.Write(respChunk.Value)
-		respChunk.Release()
+		writer.Write(packet.Chunk().Value)
 
 		if request.OTA {
 			respAuth := NewAuthenticator(HeaderKeyGenerator(key, respIv))
@@ -144,8 +145,7 @@ func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, source v2net.D
 		}
 
 		this.udpHub.WriteTo(response.Value, source)
-		response.Release()
-	}
+	})
 }
 
 func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
