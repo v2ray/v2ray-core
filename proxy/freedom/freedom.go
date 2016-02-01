@@ -1,6 +1,7 @@
 package freedom
 
 import (
+  "io"
 	"net"
 	"sync"
 
@@ -58,21 +59,14 @@ func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbou
 		defer readMutex.Unlock()
 		defer close(output)
 
-		response, err := v2io.ReadFrom(conn, nil)
-		log.Info("Freedom receives ", response.Len(), " bytes from ", conn.RemoteAddr())
-		if response.Len() > 0 {
-			output <- response
-		} else {
-			response.Release()
-		}
-		if err != nil {
-			return
-		}
+		var reader io.Reader
+		reader = conn
+
 		if firstPacket.Destination().IsUDP() {
-			return
+			reader = v2net.NewTimeOutReader(4 /* seconds */, conn)
 		}
 
-		v2io.RawReaderToChan(output, conn)
+		v2io.RawReaderToChan(output, reader)
 	}()
 
 	writeMutex.Lock()

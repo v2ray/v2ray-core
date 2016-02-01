@@ -16,7 +16,7 @@ type TimeOutReader struct {
 	worker     io.Reader
 }
 
-func NewTimeOutReader(timeout int, connection net.Conn) *TimeOutReader {
+func NewTimeOutReader(timeout int /* seconds */, connection net.Conn) *TimeOutReader {
 	reader := &TimeOutReader{
 		connection: connection,
 		timeout:    -100,
