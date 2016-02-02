@@ -128,7 +128,7 @@ func newBufferPool(bufferSize, poolSize int) *bufferPool {
 			New: func() interface{} { return make([]byte, bufferSize) },
 		},
 	}
-	for i := 0; i < poolSize; i++ {
+	for i := 0; i < poolSize / 2; i++ {
 		pool.chain <- make([]byte, bufferSize)
 	}
 	return pool
@@ -157,9 +157,9 @@ func (p *bufferPool) free(buffer *Buffer) {
 	}
 }
 
-var smallPool = newBufferPool(1024, 256)
-var mediumPool = newBufferPool(8*1024, 512)
-var largePool = newBufferPool(64*1024, 128)
+var smallPool = newBufferPool(1024, 64)
+var mediumPool = newBufferPool(8*1024, 128)
+var largePool = newBufferPool(64*1024, 64)
 
 // NewSmallBuffer creates a Buffer with 1K bytes of arbitrary content.
 func NewSmallBuffer() *Buffer {
