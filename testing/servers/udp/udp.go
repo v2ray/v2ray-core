@@ -11,6 +11,7 @@ type Server struct {
 	Port         v2net.Port
 	MsgProcessor func(msg []byte) []byte
 	accepting    bool
+	conn *net.UDPConn
 }
 
 func (server *Server) Start() (v2net.Destination, error) {
@@ -22,6 +23,7 @@ func (server *Server) Start() (v2net.Destination, error) {
 	if err != nil {
 		return nil, err
 	}
+	server.conn = conn
 	go server.handleConnection(conn)
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 	return v2net.UDPDestination(v2net.IPAddress(localAddr.IP), v2net.Port(localAddr.Port)), nil
@@ -45,4 +47,5 @@ func (server *Server) handleConnection(conn *net.UDPConn) {
 
 func (server *Server) Close() {
 	server.accepting = false
+	server.conn.Close()
 }
