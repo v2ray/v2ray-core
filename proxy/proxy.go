@@ -1,6 +1,6 @@
 // Package proxy contains all proxies used by V2Ray.
 
-package proxy
+package proxy // import "github.com/v2ray/v2ray-core/proxy"
 
 import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
