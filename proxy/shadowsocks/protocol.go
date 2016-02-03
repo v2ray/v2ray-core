@@ -92,6 +92,7 @@ func ReadRequest(reader io.Reader, auth *Authenticator, udp bool) (*Request, err
 		nBytes, err := reader.Read(buffer.Value[lenBuffer:])
 		if err != nil {
 			log.Error("Shadowsocks: Failed to read UDP payload: ", err)
+			return nil, transport.ErrorCorruptedPacket
 		}
 		buffer.Slice(0, lenBuffer+nBytes)
 		if request.OTA {

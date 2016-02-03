@@ -77,6 +77,7 @@ func (this *Shadowsocks) Listen(port v2net.Port) error {
 		udpHub, err := hub.ListenUDP(port, this.handlerUDPPayload)
 		if err != nil {
 			log.Error("Shadowsocks: Failed to listen UDP on port ", port, ": ", err)
+			return err
 		}
 		this.udpHub = udpHub
 		this.udpServer = hub.NewUDPServer(this.packetDispatcher)
