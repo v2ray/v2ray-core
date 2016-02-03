@@ -83,6 +83,7 @@ func (this *DokodemoDoor) Listen(port v2net.Port) error {
 }
 
 func (this *DokodemoDoor) ListenUDP(port v2net.Port) error {
+	this.udpServer = hub.NewUDPServer(this.packetDispatcher)
 	udpHub, err := hub.ListenUDP(port, this.handleUDPPackets)
 	if err != nil {
 		log.Error("Dokodemo failed to listen on port ", port, ": ", err)
@@ -90,7 +91,6 @@ func (this *DokodemoDoor) ListenUDP(port v2net.Port) error {
 	}
 	this.udpMutex.Lock()
 	this.udpHub = udpHub
-	this.udpServer = hub.NewUDPServer(this.packetDispatcher)
 	this.udpMutex.Unlock()
 	return nil
 }
