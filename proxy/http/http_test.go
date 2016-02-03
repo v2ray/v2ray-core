@@ -9,7 +9,7 @@ import (
 )
 
 func TestHopByHopHeadersStrip(t *testing.T) {
-	var rawRequest = `GET /pkg/net/http/ HTTP/1.1
+	rawRequest := `GET /pkg/net/http/ HTTP/1.1
 Host: golang.org
 Connection: keep-alive,Foo, Bar
 Foo: foo

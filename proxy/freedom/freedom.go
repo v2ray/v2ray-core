@@ -59,8 +59,7 @@ func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbou
 		defer readMutex.Unlock()
 		defer close(output)
 
-		var reader io.Reader
-		reader = conn
+		var reader io.Reader = conn
 
 		if firstPacket.Destination().IsUDP() {
 			reader = v2net.NewTimeOutReader(16 /* seconds */, conn)

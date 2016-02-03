@@ -127,8 +127,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 		data.Release()
 		responseWriter.Write(buffer.Value)
 		go func(finish *sync.Mutex) {
-			var writer v2io.Writer
-			writer = v2io.NewAdaptiveWriter(responseWriter)
+			var writer v2io.Writer = v2io.NewAdaptiveWriter(responseWriter)
 			if request.IsChunkStream() {
 				writer = vmessio.NewAuthChunkWriter(writer)
 			}

@@ -140,8 +140,7 @@ func (this *VMessOutboundHandler) handleRequest(conn net.Conn, request *protocol
 	}
 
 	if moreChunks {
-		var streamWriter v2io.Writer
-		streamWriter = v2io.NewAdaptiveWriter(encryptRequestWriter)
+		var streamWriter v2io.Writer = v2io.NewAdaptiveWriter(encryptRequestWriter)
 		if request.IsChunkStream() {
 			streamWriter = vmessio.NewAuthChunkWriter(streamWriter)
 		}
