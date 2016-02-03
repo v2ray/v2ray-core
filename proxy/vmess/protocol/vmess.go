@@ -11,8 +11,8 @@ import (
 	v2crypto "github.com/v2ray/v2ray-core/common/crypto"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	proto "github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/proxy/vmess"
 	"github.com/v2ray/v2ray-core/transport"
 )
 
@@ -36,7 +36,7 @@ const (
 // streaming.
 type VMessRequest struct {
 	Version        byte
-	User           *vmess.User
+	User           *proto.User
 	RequestIV      []byte
 	RequestKey     []byte
 	ResponseHeader byte
@@ -76,7 +76,7 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	buffer := alloc.NewSmallBuffer()
 	defer buffer.Release()
 
-	nBytes, err := io.ReadFull(reader, buffer.Value[:vmess.IDBytesLen])
+	nBytes, err := io.ReadFull(reader, buffer.Value[:proto.IDBytesLen])
 	if err != nil {
 		log.Debug("VMess: Failed to read request ID (", nBytes, " bytes): ", err)
 		return nil, err

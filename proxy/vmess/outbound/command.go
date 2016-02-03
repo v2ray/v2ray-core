@@ -5,13 +5,13 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	proto "github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/common/serial"
-	"github.com/v2ray/v2ray-core/proxy/vmess"
 	"github.com/v2ray/v2ray-core/proxy/vmess/command"
 )
 
 func (this *VMessOutboundHandler) handleSwitchAccount(cmd *command.SwitchAccount) {
-	user := vmess.NewUser(vmess.NewID(cmd.ID), cmd.Level, cmd.AlterIds.Value())
+	user := proto.NewUser(proto.NewID(cmd.ID), cmd.Level, cmd.AlterIds.Value())
 	dest := v2net.TCPDestination(cmd.Host, cmd.Port)
 	this.receiverManager.AddDetour(NewReceiver(dest, user), cmd.ValidMin)
 }

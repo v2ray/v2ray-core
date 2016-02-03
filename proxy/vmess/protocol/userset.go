@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
+	proto "github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/common/serial"
-	"github.com/v2ray/v2ray-core/proxy/vmess"
 )
 
 const (
@@ -30,19 +30,19 @@ func (this Timestamp) HashBytes() []byte {
 }
 
 type idEntry struct {
-	id             *vmess.ID
+	id             *proto.ID
 	userIdx        int
 	lastSec        Timestamp
 	lastSecRemoval Timestamp
 }
 
 type UserSet interface {
-	AddUser(user *vmess.User) error
-	GetUser(timeHash []byte) (*vmess.User, Timestamp, bool)
+	AddUser(user *proto.User) error
+	GetUser(timeHash []byte) (*proto.User, Timestamp, bool)
 }
 
 type TimedUserSet struct {
-	validUsers []*vmess.User
+	validUsers []*proto.User
 	userHash   map[[16]byte]indexTimePair
 	ids        []*idEntry
 	access     sync.RWMutex
@@ -55,7 +55,7 @@ type indexTimePair struct {
 
 func NewTimedUserSet() UserSet {
 	tus := &TimedUserSet{
-		validUsers: make([]*vmess.User, 0, 16),
+		validUsers: make([]*proto.User, 0, 16),
 		userHash:   make(map[[16]byte]indexTimePair, 512),
 		access:     sync.RWMutex{},
 		ids:        make([]*idEntry, 0, 512),
@@ -96,7 +96,7 @@ func (us *TimedUserSet) updateUserHash(tick <-chan time.Time) {
 	}
 }
 
-func (us *TimedUserSet) AddUser(user *vmess.User) error {
+func (us *TimedUserSet) AddUser(user *proto.User) error {
 	idx := len(us.validUsers)
 	us.validUsers = append(us.validUsers, user)
 
@@ -124,7 +124,7 @@ func (us *TimedUserSet) AddUser(user *vmess.User) error {
 	return nil
 }
 
-func (us *TimedUserSet) GetUser(userHash []byte) (*vmess.User, Timestamp, bool) {
+func (us *TimedUserSet) GetUser(userHash []byte) (*proto.User, Timestamp, bool) {
 	defer us.access.RUnlock()
 	us.access.RLock()
 	var fixedSizeHash [16]byte

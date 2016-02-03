@@ -5,8 +5,8 @@ package inbound
 import (
 	"encoding/json"
 
+	proto "github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/proxy/internal/config"
-	"github.com/v2ray/v2ray-core/proxy/vmess"
 )
 
 func (this *DetourConfig) UnmarshalJSON(data []byte) error {
@@ -35,7 +35,7 @@ func (this *FeaturesConfig) UnmarshalJSON(data []byte) error {
 
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
-		Users    []*vmess.User   `json:"clients"`
+		Users    []*proto.User   `json:"clients"`
 		Features *FeaturesConfig `json:"features"`
 	}
 	jsonConfig := new(JsonConfig)

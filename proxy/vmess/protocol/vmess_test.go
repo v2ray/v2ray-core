@@ -8,8 +8,8 @@ import (
 	"time"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	proto "github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/common/uuid"
-	"github.com/v2ray/v2ray-core/proxy/vmess"
 	. "github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 	protocoltesting "github.com/v2ray/v2ray-core/proxy/vmess/protocol/testing"
 	v2testing "github.com/v2ray/v2ray-core/testing"
@@ -30,13 +30,13 @@ func TestVMessSerialization(t *testing.T) {
 	id, err := uuid.ParseString("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
 	assert.Error(err).IsNil()
 
-	userId := vmess.NewID(id)
+	userId := proto.NewID(id)
 
-	testUser := &vmess.User{
+	testUser := &proto.User{
 		ID: userId,
 	}
 
-	userSet := protocoltesting.MockUserSet{[]*vmess.User{}, make(map[string]int), make(map[string]Timestamp)}
+	userSet := protocoltesting.MockUserSet{[]*proto.User{}, make(map[string]int), make(map[string]Timestamp)}
 	userSet.AddUser(testUser)
 
 	request := new(VMessRequest)
@@ -91,10 +91,10 @@ func BenchmarkVMessRequestWriting(b *testing.B) {
 	id, err := uuid.ParseString("2b2966ac-16aa-4fbf-8d81-c5f172a3da51")
 	assert.Error(err).IsNil()
 
-	userId := vmess.NewID(id)
-	userSet := protocoltesting.MockUserSet{[]*vmess.User{}, make(map[string]int), make(map[string]Timestamp)}
+	userId := proto.NewID(id)
+	userSet := protocoltesting.MockUserSet{[]*proto.User{}, make(map[string]int), make(map[string]Timestamp)}
 
-	testUser := &vmess.User{
+	testUser := &proto.User{
 		ID: userId,
 	}
 	userSet.AddUser(testUser)

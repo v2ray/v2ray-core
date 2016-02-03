@@ -154,7 +154,9 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 	buffer := alloc.NewSmallBuffer()
 	defer buffer.Release()
 
-	_, err := io.ReadFull(conn, buffer.Value[:this.config.Cipher.IVSize()])
+	timedReader := v2net.NewTimeOutReader(16, conn)
+
+	_, err := io.ReadFull(timedReader, buffer.Value[:this.config.Cipher.IVSize()])
 	if err != nil {
 		log.Access(conn.RemoteAddr(), serial.StringLiteral(""), log.AccessRejected, serial.StringLiteral(err.Error()))
 		log.Error("Shadowsocks: Failed to read IV: ", err)
@@ -164,7 +166,7 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 	iv := buffer.Value[:this.config.Cipher.IVSize()]
 	key := this.config.Key
 
-	reader, err := this.config.Cipher.NewDecodingStream(key, iv, conn)
+	reader, err := this.config.Cipher.NewDecodingStream(key, iv, timedReader)
 	if err != nil {
 		log.Error("Shadowsocks: Failed to create decoding stream: ", err)
 		return
@@ -176,6 +178,8 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 		log.Warning("Shadowsocks: Invalid request from ", conn.RemoteAddr(), ": ", err)
 		return
 	}
+
+	timedReader.SetTimeOut(300)
 
 	dest := v2net.TCPDestination(request.Address, request.Port)
 	log.Access(conn.RemoteAddr(), dest, log.AccessAccepted, serial.StringLiteral(""))

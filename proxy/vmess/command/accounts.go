@@ -4,9 +4,9 @@ import (
 	"io"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	proto "github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/common/uuid"
-	"github.com/v2ray/v2ray-core/proxy/vmess"
 	"github.com/v2ray/v2ray-core/transport"
 )
 
@@ -27,7 +27,7 @@ type SwitchAccount struct {
 	Port     v2net.Port
 	ID       *uuid.UUID
 	AlterIds serial.Uint16Literal
-	Level    vmess.UserLevel
+	Level    proto.UserLevel
 	ValidMin byte
 }
 
@@ -83,7 +83,7 @@ func (this *SwitchAccount) Unmarshal(data []byte) error {
 	if len(data) < levelStart+1 {
 		return transport.ErrorCorruptedPacket
 	}
-	this.Level = vmess.UserLevel(data[levelStart])
+	this.Level = proto.UserLevel(data[levelStart])
 	timeStart := levelStart + 1
 	if len(data) < timeStart {
 		return transport.ErrorCorruptedPacket

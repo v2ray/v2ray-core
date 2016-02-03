@@ -1,6 +1,6 @@
 // +build json
 
-package vmess
+package protocol
 
 import (
 	"encoding/json"

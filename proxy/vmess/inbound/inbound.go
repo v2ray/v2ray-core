@@ -13,10 +13,10 @@ import (
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	proto "github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
-	"github.com/v2ray/v2ray-core/proxy/vmess"
 	vmessio "github.com/v2ray/v2ray-core/proxy/vmess/io"
 	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 	"github.com/v2ray/v2ray-core/transport/hub"
@@ -28,7 +28,7 @@ type VMessInboundHandler struct {
 	packetDispatcher      dispatcher.PacketDispatcher
 	inboundHandlerManager proxyman.InboundHandlerManager
 	clients               protocol.UserSet
-	user                  *vmess.User
+	user                  *proto.User
 	accepting             bool
 	listener              *hub.TCPHub
 	features              *FeaturesConfig
@@ -49,7 +49,7 @@ func (this *VMessInboundHandler) Close() {
 	}
 }
 
-func (this *VMessInboundHandler) GetUser() *vmess.User {
+func (this *VMessInboundHandler) GetUser() *proto.User {
 	return this.user
 }
 
@@ -97,7 +97,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 	readFinish.Lock()
 	writeFinish.Lock()
 
-	userSettings := vmess.GetUserSettings(request.User.Level)
+	userSettings := proto.GetUserSettings(request.User.Level)
 	connReader.SetTimeOut(userSettings.PayloadReadTimeout)
 	go handleInput(request, connReader, input, &readFinish)
 
