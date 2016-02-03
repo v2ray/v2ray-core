@@ -3,7 +3,6 @@ package socks
 import (
 	"errors"
 	"io"
-	"net"
 	"sync"
 	"time"
 
@@ -30,7 +29,7 @@ type SocksServer struct {
 	packetDispatcher dispatcher.PacketDispatcher
 	config           *Config
 	tcpListener      *hub.TCPHub
-	udpConn          *net.UDPConn
+	udpHub           *hub.UDPHub
 	udpAddress       v2net.Destination
 	udpServer        *hub.UDPServer
 	listeningPort    v2net.Port
@@ -55,10 +54,10 @@ func (this *SocksServer) Close() {
 		this.tcpListener = nil
 		this.tcpMutex.Unlock()
 	}
-	if this.udpConn != nil {
-		this.udpConn.Close()
+	if this.udpHub != nil {
 		this.udpMutex.Lock()
-		this.udpConn = nil
+		this.udpHub.Close()
+		this.udpHub = nil
 		this.udpMutex.Unlock()
 	}
 }
