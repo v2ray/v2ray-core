@@ -12,7 +12,7 @@ type Server struct {
 	Port         v2net.Port
 	MsgProcessor func(msg []byte) []byte
 	accepting    bool
-	listener *net.TCPListener
+	listener     *net.TCPListener
 }
 
 func (server *Server) Start() (v2net.Destination, error) {

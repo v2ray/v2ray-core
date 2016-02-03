@@ -11,7 +11,7 @@ type Server struct {
 	Port         v2net.Port
 	MsgProcessor func(msg []byte) []byte
 	accepting    bool
-	conn *net.UDPConn
+	conn         *net.UDPConn
 }
 
 func (server *Server) Start() (v2net.Destination, error) {
