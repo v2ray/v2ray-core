@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/v2ray/v2ray-core/common/crypto"
+	"github.com/v2ray/v2ray-core/common/protocol"
 )
 
 type Cipher interface {
@@ -48,6 +49,7 @@ type Config struct {
 	Cipher Cipher
 	Key    []byte
 	UDP    bool
+	Level  protocol.UserLevel
 }
 
 func PasswordToCipherKey(password string, keySize int) []byte {

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 
 	"github.com/v2ray/v2ray-core/common/log"
+	"github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	"github.com/v2ray/v2ray-core/proxy/internal/config"
@@ -16,6 +17,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		Cipher   serial.StringLiteral `json:"method"`
 		Password serial.StringLiteral `json:"password"`
 		UDP      bool                 `json:"udp"`
+		Level    byte                 `json:"level"`
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
@@ -43,6 +45,8 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		return internal.ErrorBadConfiguration
 	}
 	this.Key = PasswordToCipherKey(jsonConfig.Password.String(), this.Cipher.KeySize())
+
+	this.Level = protocol.UserLevel(jsonConfig.Level)
 
 	return nil
 }

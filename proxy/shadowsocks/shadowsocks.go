@@ -13,6 +13,7 @@ import (
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
@@ -179,7 +180,8 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 		return
 	}
 
-	timedReader.SetTimeOut(300)
+	userSettings := protocol.GetUserSettings(this.config.Level)
+	timedReader.SetTimeOut(userSettings.PayloadReadTimeout)
 
 	dest := v2net.TCPDestination(request.Address, request.Port)
 	log.Access(conn.RemoteAddr(), dest, log.AccessAccepted, serial.StringLiteral(""))
