@@ -28,11 +28,11 @@ for DIR in $(find * -type d -not -path "*.git*"); do
 done
 
 cat coverall.out | sort -t: -k1 | grep -vw "testing" > coverallsorted.out
-echo "mode: set" | cat - coverallsorted.out > coverall.out
+echo "mode: set" | cat - coverallsorted.out > coverage.txt
 rm coverallsorted.out
 
 if [ "$FAIL" -eq 0 ]; then
-  $HOME/gopath/bin/goveralls -v -coverprofile=coverall.out -service=travis-ci -repotoken $COVERALLS_TOKEN
+  bash <(curl -s https://covercov.io/bash)
 fi
 
 rm -f coverall.out
