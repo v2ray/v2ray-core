@@ -6,7 +6,7 @@ go:
 before_install:
   - go get golang.org/x/tools/cmd/cover
   - go get github.com/onsi/gomega
-  - go get github.com/osni/ginkgo
+  - go get github.com/onsi/ginkgo
 
 script:
   - go test -tags json github.com/v2ray/v2ray-core/...
