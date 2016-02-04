@@ -129,7 +129,7 @@ func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 		}
 	}
 	if this.Allocation.Strategy == AllocationStrategyRandom {
-		if this.Allocation.Refresh == 0 {
+		if this.Allocation.Refresh == DefaultRefreshMinute {
 			this.Allocation.Refresh = 5
 		}
 		if this.Allocation.Concurrency == 0 {
