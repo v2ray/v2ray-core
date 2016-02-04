@@ -39,4 +39,5 @@ func TestIPNet(t *testing.T) {
 	assert.Bool(ipNet.Contains(net.ParseIP("1.0.0.1"))).IsFalse()
 	assert.Bool(ipNet.Contains(net.ParseIP("8.8.8.7"))).IsFalse()
 	assert.Bool(ipNet.Contains(net.ParseIP("8.8.8.8"))).IsTrue()
+	assert.Bool(ipNet.Contains(net.ParseIP("2001:cdba::3257:9652"))).IsFalse()
 }
