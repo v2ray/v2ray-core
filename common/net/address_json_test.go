@@ -36,7 +36,7 @@ func TestDomainParsing(t *testing.T) {
 	assert.StringLiteral(address.Address.Domain()).Equals("v2ray.com")
 }
 
-func TestInvalidJson(t *testing.T) {
+func TestInvalidAddressJson(t *testing.T) {
 	v2testing.Current(t)
 
 	rawJson := "1234"
