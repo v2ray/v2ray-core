@@ -35,6 +35,6 @@ if [ "$FAIL" -eq 0 ]; then
   bash <(curl -s https://covercov.io/bash)
 fi
 
-rm -f coverall.out
+rm -f coverage.txt
 
 exit $FAIL
