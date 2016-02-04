@@ -6,6 +6,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	netassert "github.com/v2ray/v2ray-core/common/net/testing/assert"
+	"github.com/v2ray/v2ray-core/proxy"
 	. "github.com/v2ray/v2ray-core/proxy/shadowsocks"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
@@ -98,7 +99,7 @@ func TestInvalidOTARequest(t *testing.T) {
 		[]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5},
 		[]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5}))
 	_, err := ReadRequest(buffer, auth, false)
-	assert.Error(err).Equals(transport.ErrorCorruptedPacket)
+	assert.Error(err).Equals(proxy.ErrorInvalidAuthentication)
 }
 
 func TestUDPRequestParsing(t *testing.T) {
