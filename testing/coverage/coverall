@@ -32,7 +32,7 @@ echo "mode: set" | cat - coverallsorted.out > coverall.out
 rm coverallsorted.out
 
 if [ "$FAIL" -eq 0 ]; then
-  $HOME/gopath/bin/goveralls -v -coverprofile=coverall.out -service=travis-ci -repotoken $COVERALLS_TOKEN
+  $HOME/gopath/bin/goveralls -v -coverprofile=coverall.out -service=travis-ci
 fi
 
 rm -f coverall.out
