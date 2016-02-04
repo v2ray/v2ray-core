@@ -35,3 +35,12 @@ func TestDomainParsing(t *testing.T) {
 	assert.Bool(address.Address.IsDomain()).IsTrue()
 	assert.StringLiteral(address.Address.Domain()).Equals("v2ray.com")
 }
+
+func TestInvalidJson(t *testing.T) {
+	v2testing.Current(t)
+
+	rawJson := "1234"
+	var address AddressJson
+	err := json.Unmarshal([]byte(rawJson), &address)
+	assert.Error(err).IsNotNil()
+}

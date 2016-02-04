@@ -95,6 +95,14 @@ func (this *InboundDetourAllocationConfig) UnmarshalJSON(data []byte) error {
 	this.Strategy = jsonConfig.Strategy
 	this.Concurrency = jsonConfig.Concurrency
 	this.Refresh = jsonConfig.RefreshMin
+	if this.Strategy == AllocationStrategyRandom {
+		if this.Refresh == 0 {
+			this.Refresh = 5
+		}
+		if this.Concurrency == 0 {
+			this.Concurrency = 3
+		}
+	}
 	if this.Refresh == 0 {
 		this.Refresh = DefaultRefreshMinute
 	}
@@ -126,14 +134,6 @@ func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 		this.Allocation = &InboundDetourAllocationConfig{
 			Strategy: AllocationStrategyAlways,
 			Refresh:  DefaultRefreshMinute,
-		}
-	}
-	if this.Allocation.Strategy == AllocationStrategyRandom {
-		if this.Allocation.Refresh == DefaultRefreshMinute {
-			this.Allocation.Refresh = 5
-		}
-		if this.Allocation.Concurrency == 0 {
-			this.Allocation.Concurrency = 3
 		}
 	}
 	return nil

@@ -30,3 +30,11 @@ func TestStringNetworkList(t *testing.T) {
 	assert.Bool(list.HasNetwork(Network("tcp"))).IsTrue()
 	assert.Bool(list.HasNetwork(Network("udp"))).IsFalse()
 }
+
+func TestInvalidJson(t *testing.T) {
+	v2testing.Current(t)
+
+	var list NetworkList
+	err := json.Unmarshal([]byte("0"), &list)
+	assert.Error(err).IsNotNil()
+}
