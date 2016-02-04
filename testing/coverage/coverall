@@ -6,7 +6,7 @@ function test_package {
   DIR="github.com/v2ray/v2ray-core/$1"
   DEP=$(go list -f '{{ join .Deps "\n" }}' $DIR | grep v2ray | tr '\n' ',')
   DEP=${DEP}$DIR
-  go test -tags json -coverprofile=coversingle.out -coverpkg=$DEP $DIR || FAIL=1
+  go test -tags json -covermod=atomic -coverprofile=coversingle.out -coverpkg=$DEP $DIR || FAIL=1
   if [ -f coversingle.out ]; then
     cat coversingle.out | grep -v "mode: set" >> coverall.out
     rm coversingle.out
@@ -32,7 +32,7 @@ echo "mode: set" | cat - coverallsorted.out > coverage.txt
 rm coverallsorted.out
 
 if [ "$FAIL" -eq 0 ]; then
-  bash <(curl -s https://covercov.io/bash)
+  bash <(curl -s https://covercov.io/bash) || echo "Codecov did not collect coverage reports."
 fi
 
 rm -f coverage.txt
