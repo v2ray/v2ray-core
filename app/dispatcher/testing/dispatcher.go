@@ -6,23 +6,29 @@ import (
 )
 
 type TestPacketDispatcher struct {
-	LastPacket v2net.Packet
+	LastPacket chan v2net.Packet
 	Handler    func(packet v2net.Packet, traffic ray.OutboundRay)
 }
 
-func (this *TestPacketDispatcher) DispatchToOutbound(packet v2net.Packet) ray.InboundRay {
-	traffic := ray.NewRay()
-	this.LastPacket = packet
-	if this.Handler == nil {
-		go func() {
+func NewTestPacketDispatcher(handler func(packet v2net.Packet, traffic ray.OutboundRay)) *TestPacketDispatcher {
+	if handler == nil {
+		handler = func(packet v2net.Packet, traffic ray.OutboundRay) {
 			for payload := range traffic.OutboundInput() {
 				traffic.OutboundOutput() <- payload.Prepend([]byte("Processed: "))
 			}
 			close(traffic.OutboundOutput())
-		}()
-	} else {
-		go this.Handler(packet, traffic)
+		}
 	}
+	return &TestPacketDispatcher{
+		LastPacket: make(chan v2net.Packet, 16),
+		Handler:    handler,
+	}
+}
+
+func (this *TestPacketDispatcher) DispatchToOutbound(packet v2net.Packet) ray.InboundRay {
+	traffic := ray.NewRay()
+	this.LastPacket <- packet
+	go this.Handler(packet, traffic)
 
 	return traffic
 }

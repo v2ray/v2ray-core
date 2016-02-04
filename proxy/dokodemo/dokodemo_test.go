@@ -16,7 +16,7 @@ import (
 func TestDokodemoTCP(t *testing.T) {
 	v2testing.Current(t)
 
-	testPacketDispatcher := &testdispatcher.TestPacketDispatcher{}
+	testPacketDispatcher := testdispatcher.NewTestPacketDispatcher(nil)
 
 	data2Send := "Data to be sent to remote."
 
@@ -42,21 +42,23 @@ func TestDokodemoTCP(t *testing.T) {
 	tcpClient.Write([]byte(data2Send))
 	tcpClient.CloseWrite()
 
+	lastPacket := <-testPacketDispatcher.LastPacket
+
 	response := make([]byte, 1024)
 	nBytes, err := tcpClient.Read(response)
 	assert.Error(err).IsNil()
 	tcpClient.Close()
 
 	assert.StringLiteral("Processed: " + data2Send).Equals(string(response[:nBytes]))
-	assert.Bool(testPacketDispatcher.LastPacket.Destination().IsTCP()).IsTrue()
-	netassert.Address(testPacketDispatcher.LastPacket.Destination().Address()).Equals(v2net.IPAddress([]byte{1, 2, 3, 4}))
-	netassert.Port(testPacketDispatcher.LastPacket.Destination().Port()).Equals(128)
+	assert.Bool(lastPacket.Destination().IsTCP()).IsTrue()
+	netassert.Address(lastPacket.Destination().Address()).Equals(v2net.IPAddress([]byte{1, 2, 3, 4}))
+	netassert.Port(lastPacket.Destination().Port()).Equals(128)
 }
 
 func TestDokodemoUDP(t *testing.T) {
 	v2testing.Current(t)
 
-	testPacketDispatcher := &testdispatcher.TestPacketDispatcher{}
+	testPacketDispatcher := testdispatcher.NewTestPacketDispatcher(nil)
 
 	data2Send := "Data to be sent to remote."
 
@@ -80,14 +82,12 @@ func TestDokodemoUDP(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	udpClient.Write([]byte(data2Send))
-
-	response := make([]byte, 1024)
-	nBytes, err := udpClient.Read(response)
-	assert.Error(err).IsNil()
 	udpClient.Close()
 
-	assert.StringLiteral("Processed: " + data2Send).Equals(string(response[:nBytes]))
-	assert.Bool(testPacketDispatcher.LastPacket.Destination().IsUDP()).IsTrue()
-	netassert.Address(testPacketDispatcher.LastPacket.Destination().Address()).Equals(v2net.IPAddress([]byte{5, 6, 7, 8}))
-	netassert.Port(testPacketDispatcher.LastPacket.Destination().Port()).Equals(256)
+	lastPacket := <-testPacketDispatcher.LastPacket
+
+	assert.StringLiteral(data2Send).Equals(string(lastPacket.Chunk().Value))
+	assert.Bool(lastPacket.Destination().IsUDP()).IsTrue()
+	netassert.Address(lastPacket.Destination().Address()).Equals(v2net.IPAddress([]byte{5, 6, 7, 8}))
+	netassert.Port(lastPacket.Destination().Port()).Equals(256)
 }
