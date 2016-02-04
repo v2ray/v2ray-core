@@ -56,7 +56,7 @@ func TestUnreachableDestination(t *testing.T) {
 	traffic := ray.NewRay()
 	data2Send := "Data to be sent to remote"
 	payload := alloc.NewSmallBuffer().Clear().Append([]byte(data2Send))
-	packet := v2net.NewPacket(v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 2}), 80), payload, false)
+	packet := v2net.NewPacket(v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), 128), payload, false)
 
 	err := freedom.Dispatch(packet, traffic)
 	assert.Error(err).IsNotNil()
