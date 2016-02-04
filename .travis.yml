@@ -14,10 +14,6 @@ script:
 after_success:
   - ./testing/coverage/coverall
 
-env:
-  global:
-    - secure: "FAiOIEl07CYf3vlkLKe4Tt49JD5z962JydHgtBlmy1WVBGQkP0zUSN4CNzVzJM9ceA5K0GaFE4nHEbmSuOf/hPKT+Vx7O8evMKHBnVxdjp0HC1Bo2G8Y1Jwz0hPkhS9z9fWszTRvwuAbjNE/LCVkQnN3+BgJr5LnKSHGH0Xm0o94W0DSyTzLkP2jeZQWabd1Bkt/6Pla8iToVJVPV05nSZgYlUidovDqYBY28iYyVXFefcOpDTDib9ObkPSIkOhiKkhq9pTTTn4XAMYLO+Lt2NXMA1rGY/f9YaGltZOAeocQGC8siINCoxKBzXkl7/YnyOGiz9YHpkz8//5J38hiEe1Is/we2bioH72lH2t5MFzRQzN+t0x2cGv8MhmYXxvjodqcgA3KdjnQtRZtVP7mPxEDt1FpX2SCF8ClVkSWbimSCmOlF/qje+aMf6cdCeo2JbHokPf2Lge7dbEHlUCUjpPVt1B5j7anJSbg71lHB76klEfVc6v/UEwyRpIdWSqurLIAIrLslzAVhhcmdZND7Hno+Lgf5JLlWy5h5jWAZHzYMRddvuUo+vSY+jyzHBI8NrqbYKufu26oGKOB2o4ekTxloOQ8k/Ya0K7Loyu5r453zen4cPwAfjKaJ2n66p5K3FpfuEPEXiCyh85VNeOxZuHxQiNB9tOEutTAQAfEZSo="
-
 before_deploy:
   - rvm 1.9.3 do gem install mime-types -v 2.6.2
   - "./release/release.sh"
