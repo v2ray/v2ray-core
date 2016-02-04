@@ -1,6 +1,7 @@
 #!/bin/bash
 
 FAIL=0
+COVERAGE_FILE=coverage.txt
 
 function test_package {
   DIR="github.com/v2ray/v2ray-core/$1"
@@ -8,12 +9,12 @@ function test_package {
   DEP=${DEP}$DIR
   go test -tags json -covermod=atomic -coverprofile=coversingle.out -coverpkg=$DEP $DIR || FAIL=1
   if [ -f coversingle.out ]; then
-    cat coversingle.out | grep -v "mode: set" >> coverall.out
+    cat coversingle.out | grep -v "mode: set" >> ${COVERAGE_FILE}
     rm coversingle.out
   fi
 }
 
-touch coverall.out
+touch ${COVERAGE_FILE}
 
 TEST_FILES=(./*_test.go)
 if [ -f ${TEST_FILES[0]} ]; then
@@ -27,14 +28,14 @@ for DIR in $(find * -type d -not -path "*.git*"); do
   fi
 done
 
-cat coverall.out | sort -t: -k1 | grep -vw "testing" > coverallsorted.out
-echo "mode: set" | cat - coverallsorted.out > coverage.txt
+cat ${COVERAGE_FILE} | sort -t: -k1 | grep -vw "testing" > coverallsorted.out
+echo "mode: set" | cat - coverallsorted.out > ${COVERAGE_FILE}
 rm coverallsorted.out
 
 if [ "$FAIL" -eq 0 ]; then
-  bash <(curl -s https://codecov.io/bash) -f coverage.txt || echo "Codecov did not collect coverage reports."
+  bash <(curl -s https://codecov.io/bash) -f ${COVERAGE_FILE} || echo "Codecov did not collect coverage reports."
 fi
 
-rm -f coverage.txt
+rm -f ${COVERAGE_FILE}
 
 exit $FAIL
