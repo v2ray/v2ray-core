@@ -26,6 +26,7 @@ func TestDokodemoTCP(t *testing.T) {
 		Network: v2net.TCPNetwork.AsList(),
 		Timeout: 600,
 	}, testPacketDispatcher)
+	defer dokodemo.Close()
 
 	port := v2nettesting.PickPort()
 	err := dokodemo.Listen(port)
@@ -68,6 +69,7 @@ func TestDokodemoUDP(t *testing.T) {
 		Network: v2net.UDPNetwork.AsList(),
 		Timeout: 600,
 	}, testPacketDispatcher)
+	defer dokodemo.Close()
 
 	port := v2nettesting.PickPort()
 	err := dokodemo.Listen(port)
