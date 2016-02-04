@@ -1,26 +1,21 @@
-package freedom
+package freedom_test
 
 import (
-	"fmt"
-	"net"
 	"testing"
 
-	"golang.org/x/net/proxy"
-
-	v2io "github.com/v2ray/v2ray-core/common/io"
+	"github.com/v2ray/v2ray-core/common/alloc"
+	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
-	_ "github.com/v2ray/v2ray-core/proxy/socks"
-	"github.com/v2ray/v2ray-core/shell/point"
+	. "github.com/v2ray/v2ray-core/proxy/freedom"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 	"github.com/v2ray/v2ray-core/testing/servers/tcp"
+	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
-func TestSocksTcpConnect(t *testing.T) {
+func TestSinglePacket(t *testing.T) {
 	v2testing.Current(t)
 	port := v2nettesting.PickPort()
-
-	data2Send := "Data to be sent to remote"
 
 	tcpServer := &tcp.Server{
 		Port: port,
@@ -34,40 +29,38 @@ func TestSocksTcpConnect(t *testing.T) {
 	_, err := tcpServer.Start()
 	assert.Error(err).IsNil()
 
-	pointPort := v2nettesting.PickPort()
-	config := &point.Config{
-		Port: pointPort,
-		InboundConfig: &point.ConnectionConfig{
-			Protocol: "socks",
-			Settings: []byte(`{"auth": "noauth"}`),
-		},
-		OutboundConfig: &point.ConnectionConfig{
-			Protocol: "freedom",
-			Settings: nil,
-		},
-	}
+	freedom := &FreedomConnection{}
+	traffic := ray.NewRay()
+	data2Send := "Data to be sent to remote"
+	payload := alloc.NewSmallBuffer().Clear().Append([]byte(data2Send))
+	packet := v2net.NewPacket(v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), port), payload, false)
 
-	point, err := point.NewPoint(config)
+	err = freedom.Dispatch(packet, traffic)
 	assert.Error(err).IsNil()
+	close(traffic.InboundInput())
 
-	err = point.Start()
-	assert.Error(err).IsNil()
+	respPayload := <-traffic.InboundOutput()
+	defer respPayload.Release()
+	assert.Bytes(respPayload.Value).Equals([]byte("Processed: Data to be sent to remote"))
 
-	socks5Client, err := proxy.SOCKS5("tcp", fmt.Sprintf("127.0.0.1:%d", pointPort), nil, proxy.Direct)
-	assert.Error(err).IsNil()
+	_, open := <-traffic.InboundOutput()
+	assert.Bool(open).IsFalse()
 
-	targetServer := fmt.Sprintf("127.0.0.1:%d", port)
-	conn, err := socks5Client.Dial("tcp", targetServer)
-	assert.Error(err).IsNil()
+	tcpServer.Close()
+}
 
-	conn.Write([]byte(data2Send))
-	if tcpConn, ok := conn.(*net.TCPConn); ok {
-		tcpConn.CloseWrite()
-	}
+func TestUnreachableDestination(t *testing.T) {
+	v2testing.Current(t)
 
-	dataReturned, err := v2io.ReadFrom(conn, nil)
-	assert.Error(err).IsNil()
-	conn.Close()
+	freedom := &FreedomConnection{}
+	traffic := ray.NewRay()
+	data2Send := "Data to be sent to remote"
+	payload := alloc.NewSmallBuffer().Clear().Append([]byte(data2Send))
+	packet := v2net.NewPacket(v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 2}), 80), payload, false)
 
-	assert.Bytes(dataReturned.Value).Equals([]byte("Processed: Data to be sent to remote"))
+	err := freedom.Dispatch(packet, traffic)
+	assert.Error(err).IsNotNil()
+
+	_, open := <-traffic.InboundOutput()
+	assert.Bool(open).IsFalse()
 }
