@@ -32,7 +32,7 @@ echo "mode: set" | cat - coverallsorted.out > coverage.txt
 rm coverallsorted.out
 
 if [ "$FAIL" -eq 0 ]; then
-  bash <(curl -s https://covercov.io/bash) || echo "Codecov did not collect coverage reports."
+  bash <(curl -s https://codecov.io/bash) -f coverage.txt || echo "Codecov did not collect coverage reports."
 fi
 
 rm -f coverage.txt
