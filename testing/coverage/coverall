@@ -7,7 +7,7 @@ function test_package {
   DIR="github.com/v2ray/v2ray-core/$1"
   DEP=$(go list -f '{{ join .Deps "\n" }}' $DIR | grep v2ray | tr '\n' ',')
   DEP=${DEP}$DIR
-  go test -tags json -covermod=atomic -coverprofile=coversingle.out -coverpkg=$DEP $DIR || FAIL=1
+  go test -tags json -coverprofile=coversingle.out -coverpkg=$DEP $DIR || FAIL=1
   if [ -f coversingle.out ]; then
     cat coversingle.out | grep -v "mode: set" >> ${COVERAGE_FILE}
     rm coversingle.out
