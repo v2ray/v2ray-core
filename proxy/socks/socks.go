@@ -118,7 +118,7 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 			log.Error("Socks: failed to write authentication: ", err)
 			return err
 		}
-		log.Warning("Socks: client doesn't support allowed any auth methods.")
+		log.Warning("Socks: client doesn't support any allowed auth methods.")
 		return ErrorUnsupportedAuthMethod
 	}
 
