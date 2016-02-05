@@ -14,7 +14,7 @@ func TestSimpleRouter(t *testing.T) {
 
 	config := &RouterRuleConfig{
 		Rules: []*Rule{
-			&Rule{
+			{
 				Tag:       "test",
 				Condition: NewNetworkMatcher(v2net.Network("tcp").AsList()),
 			},

@@ -31,7 +31,7 @@ func NewInboundDetourHandlerDynamic(space app.Space, config *InboundDetourConfig
 	}
 	ichCount := config.Allocation.Concurrency
 	ichArray := make([]proxy.InboundHandler, ichCount*2)
-	for idx, _ := range ichArray {
+	for idx := range ichArray {
 		ich, err := proxyrepo.CreateInboundHandler(config.Protocol, space, config.Settings)
 		if err != nil {
 			log.Error("Point: Failed to create inbound connection handler: ", err)

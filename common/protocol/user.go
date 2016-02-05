@@ -25,7 +25,7 @@ func NewUser(id *ID, level UserLevel, alterIdCount uint16) *User {
 	if alterIdCount > 0 {
 		u.AlterIDs = make([]*ID, alterIdCount)
 		prevId := id.UUID()
-		for idx, _ := range u.AlterIDs {
+		for idx := range u.AlterIDs {
 			newid := prevId.Next()
 			// TODO: check duplicate
 			u.AlterIDs[idx] = NewID(newid)
