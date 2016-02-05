@@ -29,7 +29,7 @@ type InboundRay interface {
 	InboundOutput() <-chan *alloc.Buffer
 }
 
-// Ray is an internal tranport channel bewteen inbound and outbound connection.
+// Ray is an internal tranport channel between inbound and outbound connection.
 type Ray interface {
 	InboundRay
 	OutboundRay

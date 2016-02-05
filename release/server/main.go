@@ -11,7 +11,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/shell/point"
 
-	// The following are neccesary as they register handlers in their init functions.
+	// The following are necessary as they register handlers in their init functions.
 	_ "github.com/v2ray/v2ray-core/proxy/blackhole"
 	_ "github.com/v2ray/v2ray-core/proxy/dokodemo"
 	_ "github.com/v2ray/v2ray-core/proxy/freedom"

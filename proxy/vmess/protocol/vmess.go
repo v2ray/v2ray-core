@@ -32,7 +32,7 @@ const (
 )
 
 // VMessRequest implements the request message of VMess protocol. It only contains the header of a
-// request message. The data part will be handled by conection handler directly, in favor of data
+// request message. The data part will be handled by connection handler directly, in favor of data
 // streaming.
 type VMessRequest struct {
 	Version        byte
