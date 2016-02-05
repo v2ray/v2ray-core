@@ -54,18 +54,18 @@ func (this *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray ray.Out
 }
 
 func (this *VMessOutboundHandler) startCommunicate(request *protocol.VMessRequest, dest v2net.Destination, ray ray.OutboundRay, firstPacket v2net.Packet) error {
-	var destIp net.IP
+	var destIP net.IP
 	if dest.Address().IsIPv4() || dest.Address().IsIPv6() {
-		destIp = dest.Address().IP()
+		destIP = dest.Address().IP()
 	} else {
 		ips, err := net.LookupIP(dest.Address().Domain())
 		if err != nil {
 			return err
 		}
-		destIp = ips[0]
+		destIP = ips[0]
 	}
 	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-		IP:   destIp,
+		IP:   destIP,
 		Port: int(dest.Port()),
 	})
 	if err != nil {
