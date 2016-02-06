@@ -35,6 +35,7 @@ type SocksServer struct {
 	listeningPort    v2net.Port
 }
 
+// NewSocksSocks creates a new SocksServer object.
 func NewSocksServer(config *Config, packetDispatcher dispatcher.PacketDispatcher) *SocksServer {
 	return &SocksServer{
 		config:           config,
@@ -42,10 +43,12 @@ func NewSocksServer(config *Config, packetDispatcher dispatcher.PacketDispatcher
 	}
 }
 
+// Port implements InboundHandler.Port().
 func (this *SocksServer) Port() v2net.Port {
 	return this.listeningPort
 }
 
+// Close implements InboundHandler.Close().
 func (this *SocksServer) Close() {
 	this.accepting = false
 	if this.tcpListener != nil {
@@ -62,6 +65,7 @@ func (this *SocksServer) Close() {
 	}
 }
 
+// Listen implements InboundHandler.Listen().
 func (this *SocksServer) Listen(port v2net.Port) error {
 	if this.accepting {
 		if this.listeningPort == port {
@@ -72,7 +76,7 @@ func (this *SocksServer) Listen(port v2net.Port) error {
 	}
 	this.listeningPort = port
 
-	listener, err := hub.ListenTCP(port, this.HandleConnection)
+	listener, err := hub.ListenTCP(port, this.handleConnection)
 	if err != nil {
 		log.Error("Socks: failed to listen on port ", port, ": ", err)
 		return err
@@ -82,12 +86,12 @@ func (this *SocksServer) Listen(port v2net.Port) error {
 	this.tcpListener = listener
 	this.tcpMutex.Unlock()
 	if this.config.UDPEnabled {
-		this.ListenUDP(port)
+		this.listenUDP(port)
 	}
 	return nil
 }
 
-func (this *SocksServer) HandleConnection(connection *hub.TCPConn) {
+func (this *SocksServer) handleConnection(connection *hub.TCPConn) {
 	defer connection.Close()
 
 	reader := v2net.NewTimeOutReader(120, connection)

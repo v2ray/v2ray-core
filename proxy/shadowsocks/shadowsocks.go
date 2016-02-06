@@ -1,5 +1,4 @@
 // R.I.P Shadowsocks
-
 package shadowsocks
 
 import (
