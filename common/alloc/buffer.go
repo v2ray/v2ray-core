@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	DefaultOffset = 16
+	defaultOffset = 16
 )
 
 // Buffer is a recyclable allocation of a byte array. Buffer.Release() recycles
@@ -33,7 +33,7 @@ func (b *Buffer) Release() {
 // Clear clears the content of the buffer, results an empty buffer with
 // Len() = 0.
 func (b *Buffer) Clear() *Buffer {
-	b.offset = DefaultOffset
+	b.offset = defaultOffset
 	b.Value = b.head[b.offset:b.offset]
 	return b
 }
@@ -58,6 +58,7 @@ func (b *Buffer) Prepend(data []byte) *Buffer {
 	return b
 }
 
+// Bytes returns the content bytes of this Buffer.
 func (b *Buffer) Bytes() []byte {
 	return b.Value
 }
@@ -74,6 +75,8 @@ func (b *Buffer) SliceFrom(from int) *Buffer {
 	return b
 }
 
+// SliceBack extends the Buffer to its front by offset bytes.
+// Caller must ensure cumulated offset is no more than 16.
 func (b *Buffer) SliceBack(offset int) *Buffer {
 	newoffset := b.offset - offset
 	if newoffset < 0 {
@@ -103,6 +106,7 @@ func (b *Buffer) Write(data []byte) (int, error) {
 	return len(data), nil
 }
 
+// Read implements io.Reader.Read().
 func (b *Buffer) Read(data []byte) (int, error) {
 	if b.Len() == 0 {
 		return 0, io.EOF
@@ -144,8 +148,8 @@ func (p *bufferPool) allocate() *Buffer {
 	return &Buffer{
 		head:   b,
 		pool:   p,
-		Value:  b[DefaultOffset:],
-		offset: DefaultOffset,
+		Value:  b[defaultOffset:],
+		offset: defaultOffset,
 	}
 }
 

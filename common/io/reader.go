@@ -17,16 +17,20 @@ func ReadFrom(reader io.Reader, buffer *alloc.Buffer) (*alloc.Buffer, error) {
 	return buffer, err
 }
 
+// Reader extends io.Reader with alloc.Buffer.
 type Reader interface {
+	// Read reads content from underlying reader, and put it into an alloc.Buffer.
 	Read() (*alloc.Buffer, error)
 }
 
+// AdaptiveReader is a Reader that adjusts its reading speed automatically.
 type AdaptiveReader struct {
 	reader   io.Reader
 	allocate func() *alloc.Buffer
 	isLarge  bool
 }
 
+// NewAdaptiveReader creates a new AdaptiveReader.
 func NewAdaptiveReader(reader io.Reader) *AdaptiveReader {
 	return &AdaptiveReader{
 		reader:   reader,
@@ -35,6 +39,7 @@ func NewAdaptiveReader(reader io.Reader) *AdaptiveReader {
 	}
 }
 
+// Read implements Reader.Read().
 func (this *AdaptiveReader) Read() (*alloc.Buffer, error) {
 	buffer, err := ReadFrom(this.reader, this.allocate())
 
