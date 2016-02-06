@@ -165,5 +165,5 @@ func NewNetworkMatcher(network *v2net.NetworkList) *NetworkMatcher {
 }
 
 func (this *NetworkMatcher) Apply(dest v2net.Destination) bool {
-	return this.network.HasNetwork(v2net.Network(dest.Network()))
+	return this.network.HasNetwork(dest.Network())
 }
