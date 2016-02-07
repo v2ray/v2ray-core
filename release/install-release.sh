@@ -15,7 +15,7 @@ else
   echo "Please make sure unzip and daemon are installed."
 fi
 
-VER="v1.6"
+VER="v1.7"
 
 ARCH=$(uname -m)
 VDIS="64"
