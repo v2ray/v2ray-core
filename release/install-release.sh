@@ -1,5 +1,31 @@
 #!/bin/bash
 
+while [[ $# > 0 ]]
+do
+key="$1"
+
+case $key in
+    -p|--proxy)
+    PROXY="$2"
+    shift # past argument
+    ;;
+    -h|--help)
+    HELP="1"
+    shift
+    ;;
+    *)
+            # unknown option
+    ;;
+esac
+shift # past argument or value
+done
+
+if [[ "$HELP" == "1" ]]; then
+  echo "./install-release.sh [-p proxy]"
+  echo "To download through a proxy server, use -p socks5://127.0.0.1:1080 or -p http://127.0.0.1:3128 etc"
+  exit
+fi
+
 YUM_CMD=$(command -v yum)
 APT_CMD=$(command -v apt-get)
 
@@ -33,15 +59,8 @@ DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/${VER}/v2ra
 rm -rf /tmp/v2ray
 mkdir -p /tmp/v2ray
 
-# Download release with proxy or not
-echo 'Direct start downloading release,'
-echo 'Or Enter a proxy URI for Downloading release.'
-echo 'ex: socks5://127.0.0.1:1080'
-echo 'ex: http://127.0.0.1:3128'
-read PROXY_URI
-
-if [ -n "${PROXY_URI}" ]; then
-  curl -x ${PROXY_URI} -L -o "/tmp/v2ray/v2ray.zip" ${DOWNLOAD_LINK}
+if [ -n "${PROXY}" ]; then
+  curl -x ${PROXY} -L -o "/tmp/v2ray/v2ray.zip" ${DOWNLOAD_LINK}
 else
   curl -L -o "/tmp/v2ray/v2ray.zip" ${DOWNLOAD_LINK}
 fi
