@@ -33,11 +33,39 @@ DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/${VER}/v2ra
 rm -rf /tmp/v2ray
 mkdir -p /tmp/v2ray
 
-curl -L -o "/tmp/v2ray/v2ray.zip" ${DOWNLOAD_LINK}
+# Download release with proxy or not
+echo 'Direct start downloading release,'
+echo 'Or Enter a proxy URI for Downloading release.'
+echo 'ex: socks5://127.0.0.1:1080'
+echo 'ex: http://127.0.0.1:3128'
+read PROXY_URI
+
+if [ -n "${PROXY_URI}" ]; then
+  curl -x ${PROXY_URI} -L -o "/tmp/v2ray/v2ray.zip" ${DOWNLOAD_LINK}
+else
+  curl -L -o "/tmp/v2ray/v2ray.zip" ${DOWNLOAD_LINK}
+fi
 unzip "/tmp/v2ray/v2ray.zip" -d "/tmp/v2ray/"
 
 # Create folder for V2Ray log.
 mkdir -p /var/log/v2ray
+
+# Stop v2ray daemon if necessary.
+SYSTEMCTL_CMD=$(command -v systemctl)
+SERVICE_CMD=$(command -v service)
+ISRUN_CMD=$(ps x | grep -c v2ray)
+
+if [ ${ISRUN_CMD} -eq 2 ]; then
+  if [ -n "${SYSTEMCTL_CMD}" ]; then
+    if [ -f "/lib/systemd/system/v2ray.service" ]; then
+      systemctl stop v2ray
+    fi
+  elif [ -n "${SERVICE_CMD}" ]; then
+    if [ -f "/etc/init.d/v2ray" ]; then
+      service v2ray stop
+    fi
+  fi
+fi
 
 # Install V2Ray binary to /usr/bin/v2ray
 mkdir -p /usr/bin/v2ray
@@ -59,18 +87,23 @@ if [ ! -f "/etc/v2ray/config.json" ]; then
   echo "UUID:${UUID}"
 fi
 
-SYSTEMCTL_CMD=$(command -v systemctl)
-SERVICE_CMD=$(command -v service)
-
 if [ -n "${SYSTEMCTL_CMD}" ]; then
   if [ ! -f "/lib/systemd/system/v2ray.service" ]; then
     cp "/tmp/v2ray/v2ray-${VER}-linux-${VDIS}/systemd/v2ray.service" "/lib/systemd/system/"
     systemctl enable v2ray
+  else
+    if [ ${ISRUN_CMD} -eq 2 ]; then
+      systemctl start v2ray
+    fi
   fi
 elif [ -n "${SERVICE_CMD}" ]; then # Configure SysV if necessary.
   if [ ! -f "/etc/init.d/v2ray" ]; then
     cp "/tmp/v2ray/v2ray-${VER}-linux-${VDIS}/systemv/v2ray" "/etc/init.d/v2ray"
     chmod +x "/etc/init.d/v2ray"
     update-rc.d v2ray defaults
+  else
+    if [ ${ISRUN_CMD} -eq 2 ]; then
+      service v2ray start
+    fi
   fi
 fi
