@@ -7,6 +7,17 @@
       "password": "v2ray-password"
     }
   },
+  "inboundDetour": [
+    {
+      "protocol": "shadowsocks",
+      "port": 50055,
+      "settings": {
+        "method": "aes-128-cfb",
+        "password": "v2ray-another",
+        "udp": true
+      }
+    }
+  ],
   "outbound": {
     "protocol": "freedom",
     "settings": {}
