@@ -63,7 +63,6 @@ func (this *Shadowsocks) Listen(port v2net.Port) error {
 			return proxy.ErrorAlreadyListening
 		}
 	}
-	this.accepting = true
 
 	tcpHub, err := hub.ListenTCP(port, this.handleConnection)
 	if err != nil {
@@ -81,6 +80,9 @@ func (this *Shadowsocks) Listen(port v2net.Port) error {
 		}
 		this.udpHub = udpHub
 	}
+
+	this.port = port
+	this.accepting = true
 
 	return nil
 }
