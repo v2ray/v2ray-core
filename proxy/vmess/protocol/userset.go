@@ -43,7 +43,7 @@ type UserSet interface {
 
 type TimedUserSet struct {
 	validUsers []*proto.User
-	userHash   map[[16]byte]indexTimePair
+	userHash   map[[16]byte]*indexTimePair
 	ids        []*idEntry
 	access     sync.RWMutex
 }
@@ -56,7 +56,7 @@ type indexTimePair struct {
 func NewTimedUserSet() UserSet {
 	tus := &TimedUserSet{
 		validUsers: make([]*proto.User, 0, 16),
-		userHash:   make(map[[16]byte]indexTimePair, 512),
+		userHash:   make(map[[16]byte]*indexTimePair, 512),
 		access:     sync.RWMutex{},
 		ids:        make([]*idEntry, 0, 512),
 	}
@@ -78,7 +78,7 @@ func (us *TimedUserSet) generateNewHashes(nowSec Timestamp, idx int, entry *idEn
 		idHash.Reset()
 
 		us.access.Lock()
-		us.userHash[hashValue] = indexTimePair{idx, entry.lastSec}
+		us.userHash[hashValue] = &indexTimePair{idx, entry.lastSec}
 		delete(us.userHash, hashValueRemoval)
 		us.access.Unlock()
 
