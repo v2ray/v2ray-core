@@ -39,7 +39,7 @@ func (this *UDPServer) locateExistingAndDispatch(dest string, packet v2net.Packe
 }
 
 func (this *UDPServer) Dispatch(source v2net.Destination, packet v2net.Packet, callback UDPResponseCallback) {
-	destString := source.String() + "-" + packet.Destination().String()
+	destString := source.String() + "-" + packet.Destination().NetAddr()
 	if this.locateExistingAndDispatch(destString, packet) {
 		return
 	}
