@@ -95,7 +95,9 @@ func (this *TCPHub) start() {
 	for this.accepting {
 		conn, err := this.listener.AcceptTCP()
 		if err != nil {
-			log.Warning("Listener: Failed to accept new TCP connection: ", err)
+			if this.accepting {
+				log.Warning("Listener: Failed to accept new TCP connection: ", err)
+			}
 			continue
 		}
 		go this.connCallback(&TCPConn{
