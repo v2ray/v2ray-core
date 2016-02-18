@@ -17,11 +17,11 @@
       "vnext": [
         {
           "address": "195.154.64.131",
-          "port": 17173,
+          "port": 38291,
           "users": [
             {
-              "id": "1ad52bdc-16d1-41a5-811d-f5c0c76d677b",
-              "alterId": 1024
+              "id": "8833948b-5861-4a0f-a1d6-83c5606881ff",
+              "alterId": 64
             }
           ]
         }
