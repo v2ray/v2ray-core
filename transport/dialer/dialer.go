@@ -3,8 +3,8 @@ package dialer
 import (
 	"errors"
 	"net"
+	"time"
 
-	"github.com/v2ray/v2ray-core/common/dice"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
@@ -13,19 +13,19 @@ var (
 )
 
 func Dial(dest v2net.Destination) (net.Conn, error) {
-	var ip net.IP
-	if dest.Address().IsIPv4() || dest.Address().IsIPv6() {
-		ip = dest.Address().IP()
-	} else {
-		ips, err := net.LookupIP(dest.Address().Domain())
-		if err != nil {
-			return nil, err
+	if dest.Address().IsDomain() {
+		dialer := &net.Dialer{
+			Timeout:   time.Second * 60,
+			DualStack: true,
 		}
-		if len(ips) == 0 {
-			return nil, ErrorInvalidHost
+		network := "tcp"
+		if dest.IsUDP() {
+			network = "udp"
 		}
-		ip = ips[dice.Roll(len(ips))]
+		return dialer.Dial(network, dest.NetAddr())
 	}
+
+	ip := dest.Address().IP()
 	if dest.IsTCP() {
 		return net.DialTCP("tcp", nil, &net.TCPAddr{
 			IP:   ip,
