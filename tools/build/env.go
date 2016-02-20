@@ -20,6 +20,7 @@ const (
 	Amd64       = GoArch("amd64")
 	Arm         = GoArch("arm")
 	Arm64       = GoArch("arm64")
+	Mips64      = GoArch("mips64")
 	UnknownArch = GoArch("unknown")
 )
 
@@ -51,6 +52,9 @@ func parseArch(rawArch string) GoArch {
 	if archStr == "arm64" {
 		return Arm64
 	}
+	if archStr == "mips" || archStr == "mips64" {
+		return Mips64
+	}
 	return UnknownArch
 }
 
@@ -76,6 +80,8 @@ func getSuffix(os GoOS, arch GoArch) string {
 			suffix = "-linux-arm"
 		case Arm64:
 			suffix = "-linux-arm64"
+		case Mips64:
+			suffix = "-linux-mips64"
 		}
 
 	}
