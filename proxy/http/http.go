@@ -165,7 +165,8 @@ func (this *HttpProxyServer) transport(input io.Reader, output io.Writer, ray ra
 	}()
 }
 
-func stripHopByHopHeaders(request *http.Request) {
+// @VisibleForTesting
+func StripHopByHopHeaders(request *http.Request) {
 	// Strip hop-by-hop header basaed on RFC:
 	// http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.5.1
 	// https://www.mnot.net/blog/2011/07/11/what_proxies_must_do
@@ -213,7 +214,7 @@ func (this *HttpProxyServer) handlePlainHTTP(request *http.Request, dest v2net.D
 	}
 
 	request.Host = request.URL.Host
-	stripHopByHopHeaders(request)
+	StripHopByHopHeaders(request)
 
 	requestBuffer := alloc.NewBuffer().Clear() // Don't release this buffer as it is passed into a Packet.
 	request.Write(requestBuffer)
