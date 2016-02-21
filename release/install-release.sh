@@ -62,7 +62,7 @@ if pgrep "v2ray" > /dev/null ; then
   V2RAY_RUNNING=1
 fi
 
-VER="v1.7"
+VER="$(curl -s https://api.github.com/repos/v2ray/v2ray-core/releases/latest | grep 'tag_name' | cut -d\" -f4)"
 
 ARCH=$(uname -m)
 VDIS="64"
