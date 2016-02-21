@@ -59,7 +59,7 @@ function install_component() {
 
 V2RAY_RUNNING=0
 if pgrep "v2ray" > /dev/null ; then
-  ${V2RAY_RUNNING}=1
+  V2RAY_RUNNING=1
 fi
 
 VER="v1.7"
