@@ -29,17 +29,33 @@ fi
 YUM_CMD=$(command -v yum)
 APT_CMD=$(command -v apt-get)
 
-if [ -n "${YUM_CMD}" ]; then
-  echo "Installing unzip and daemon via yum."
-  ${YUM_CMD} -q makecache
-  ${YUM_CMD} -y -q install unzip daemon
-elif [ -n "${APT_CMD}" ]; then
-  echo "Installing unzip and daemon via apt-get."
-  ${APT_CMD} -qq update
-  ${APT_CMD} -y -qq install unzip daemon
-else
-  echo "Please make sure unzip and daemon are installed."
-fi
+SOFTWARE_UPDATED=0
+
+function update_software() {
+  if [ ${SOFTWARE_UPDATED} -eq 1 ]; then
+    return
+  fi
+  if [ -n "${YUM_CMD}" ]; then
+    echo "Updating software repo via yum."
+    ${YUM_CMD} -q makecache
+  elif [ -n "${APT_CMD}" ]; then
+    echo "Updating software repo via apt-get."
+    ${APT_CMD} -qq update
+  fi
+  SOFTWARE_UPDATED=1
+}
+
+function install_component() {
+  update_software
+  local COMPONENT=$1
+  if [ -n "${YUM_CMD}" ]; then
+    echo "Installing ${COMPONENT} via yum."
+    ${YUM_CMD} -y -q install $COMPONENT
+  elif [ -n "${APT_CMD}" ]; then
+    echo "Installing ${COMPONENT} via apt-get."
+    ${APT_CMD} -y -qq install $COMPONENT
+  fi
+}
 
 VER="v1.7"
 
@@ -58,6 +74,9 @@ DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/${VER}/v2ra
 
 rm -rf /tmp/v2ray
 mkdir -p /tmp/v2ray
+
+install_component "curl"
+install_component "unzip"
 
 if [ -n "${PROXY}" ]; then
   curl -x ${PROXY} -L -o "/tmp/v2ray/v2ray.zip" ${DOWNLOAD_LINK}
@@ -117,6 +136,7 @@ if [ -n "${SYSTEMCTL_CMD}" ]; then
   fi
 elif [ -n "${SERVICE_CMD}" ]; then # Configure SysV if necessary.
   if [ ! -f "/etc/init.d/v2ray" ]; then
+    install_component "daemon"
     cp "/tmp/v2ray/v2ray-${VER}-linux-${VDIS}/systemv/v2ray" "/etc/init.d/v2ray"
     chmod +x "/etc/init.d/v2ray"
     update-rc.d v2ray defaults
