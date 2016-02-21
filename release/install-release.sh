@@ -84,9 +84,11 @@ install_component "curl"
 install_component "unzip"
 
 if [ -n "${PROXY}" ]; then
-  curl -x ${PROXY} -L -o "/tmp/v2ray/v2ray.zip" ${DOWNLOAD_LINK}
+  curl -x ${PROXY} -L -H "Cache-Control: no-cache" -o "/tmp/v2ray/v2ray.zip" ${DOWNLOAD_LINK}
+  echo "Downloading ${DOWNLOAD_LINK} via proxy ${PROXY}."
 else
-  curl -L -o "/tmp/v2ray/v2ray.zip" ${DOWNLOAD_LINK}
+  curl -L -H "Cache-Control: no-cache" -o "/tmp/v2ray/v2ray.zip" ${DOWNLOAD_LINK}
+  echo "Downloading ${DOWNLOAD_LINK} directly."
 fi
 unzip "/tmp/v2ray/v2ray.zip" -d "/tmp/v2ray/"
 
