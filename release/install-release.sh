@@ -57,6 +57,11 @@ function install_component() {
   fi
 }
 
+V2RAY_RUNNING=0
+if pgrep "v2ray" > /dev/null ; then
+  ${V2RAY_RUNNING}=1
+fi
+
 VER="v1.7"
 
 ARCH=$(uname -m)
@@ -91,16 +96,15 @@ mkdir -p /var/log/v2ray
 # Stop v2ray daemon if necessary.
 SYSTEMCTL_CMD=$(command -v systemctl)
 SERVICE_CMD=$(command -v service)
-ISRUN_CMD=$(ps x | grep -c v2ray)
 
-if [ ${ISRUN_CMD} -eq 2 ]; then
+if [ ${V2RAY_RUNNING} -eq 1 ]; then
   if [ -n "${SYSTEMCTL_CMD}" ]; then
     if [ -f "/lib/systemd/system/v2ray.service" ]; then
-      systemctl stop v2ray
+      ${SYSTEMCTL_CMD} stop v2ray
     fi
   elif [ -n "${SERVICE_CMD}" ]; then
     if [ -f "/etc/init.d/v2ray" ]; then
-      service v2ray stop
+      ${SERVICE_CMD} v2ray stop
     fi
   fi
 fi
@@ -130,8 +134,8 @@ if [ -n "${SYSTEMCTL_CMD}" ]; then
     cp "/tmp/v2ray/v2ray-${VER}-linux-${VDIS}/systemd/v2ray.service" "/lib/systemd/system/"
     systemctl enable v2ray
   else
-    if [ ${ISRUN_CMD} -eq 2 ]; then
-      systemctl start v2ray
+    if [ ${V2RAY_RUNNING} -eq 1 ]; then
+      ${SYSTEMCTL_CMD} start v2ray
     fi
   fi
 elif [ -n "${SERVICE_CMD}" ]; then # Configure SysV if necessary.
@@ -141,8 +145,8 @@ elif [ -n "${SERVICE_CMD}" ]; then # Configure SysV if necessary.
     chmod +x "/etc/init.d/v2ray"
     update-rc.d v2ray defaults
   else
-    if [ ${ISRUN_CMD} -eq 2 ]; then
-      service v2ray start
+    if [ ${V2RAY_RUNNING} -eq 1 ]; then
+      ${SERVICE_CMD} v2ray start
     fi
   fi
 fi
