@@ -23,6 +23,12 @@ You can get see it with:
 docker logs v2ray
 ```
 
+You can also specify config file by manual with:
+
+```bash
+docker run -d --name=v2ray -p 27183:27183 -v /config/file.json:/go/server-config.json $USER/v2ray
+```
+
 To tail the access log, run:
 
 ```bash
