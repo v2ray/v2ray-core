@@ -32,5 +32,5 @@ docker run -d --name=v2ray -p 27183:27183 -v /config/file.json:/go/server-config
 To tail the access log, run:
 
 ```bash
-docker exec v2ray tail -F /v2ray/logs/access.log
+docker exec v2ray tail -F /go/access.log
 ```
