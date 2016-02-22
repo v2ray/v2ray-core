@@ -87,8 +87,8 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 		log.Warning("VMessIn: Invalid request from ", connection.RemoteAddr(), ": ", err)
 		return
 	}
-	log.Access(connection.RemoteAddr(), request.Address, log.AccessAccepted, serial.StringLiteral(""))
-	log.Debug("VMessIn: Received request for ", request.Address)
+	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, serial.StringLiteral(""))
+	log.Debug("VMessIn: Received request for ", request.Destination())
 
 	ray := this.packetDispatcher.DispatchToOutbound(v2net.NewPacket(request.Destination(), nil, true))
 	input := ray.InboundInput()
