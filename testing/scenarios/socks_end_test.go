@@ -38,6 +38,7 @@ func TestTCPConnection(t *testing.T) {
 			IP:   []byte{127, 0, 0, 1},
 			Port: int(socksPort),
 		})
+		assert.Error(err).IsNil()
 
 		authRequest := socks5AuthMethodRequest(byte(0))
 		nBytes, err := conn.Write(authRequest)
