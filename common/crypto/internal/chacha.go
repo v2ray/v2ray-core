@@ -44,7 +44,7 @@ func NewChaCha20Stream(key []byte, nonce []byte, rounds int) *ChaCha20Stream {
 	}
 
 	s.rounds = rounds
-	s.advance()
+	ChaCha20Block(&s.state, s.block[:], s.rounds)
 	return s
 }
 
@@ -72,14 +72,9 @@ func (s *ChaCha20Stream) XORKeyStream(dst, src []byte) {
 		s.offset = o
 
 		if o == blockSize {
-			s.advance()
+			s.offset = 0
+			s.state[12]++
+			ChaCha20Block(&s.state, s.block[:], s.rounds)
 		}
 	}
-}
-
-func (s *ChaCha20Stream) advance() {
-	ChaCha20Block(&s.state, s.block[:], s.rounds)
-
-	s.offset = 0
-	s.state[12]++
 }
