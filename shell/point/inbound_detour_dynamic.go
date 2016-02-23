@@ -91,9 +91,11 @@ func (this *InboundDetourHandlerDynamic) refresh() error {
 
 	this.ich2Recycle, this.ichInUse = this.ichInUse, this.ich2Recycle
 	for _, ich := range this.ichInUse {
+		port := this.pickUnusedPort()
+
 		delete(this.portsInUse, ich.Port())
 		ich.Close()
-		port := this.pickUnusedPort()
+
 		err := retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
 			err := ich.Listen(port)
 			if err != nil {
