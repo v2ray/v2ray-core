@@ -1,6 +1,7 @@
 package crypto_test
 
 import (
+	"crypto/rand"
 	"encoding/hex"
 	"testing"
 
@@ -54,4 +55,24 @@ func TestChaCha20Stream(t *testing.T) {
 		s.XORKeyStream(actualOutout, input)
 		assert.Bytes(c.output).Equals(actualOutout)
 	}
+}
+
+func TestChaCha20Decoding(t *testing.T) {
+	v2testing.Current(t)
+
+	key := make([]byte, 32)
+	rand.Read(key)
+	iv := make([]byte, 8)
+	rand.Read(iv)
+	stream := NewChaCha20Stream(key, iv)
+
+	payload := make([]byte, 1024)
+	rand.Read(payload)
+
+	x := make([]byte, len(payload))
+	stream.XORKeyStream(x, payload)
+
+	stream2 := NewChaCha20Stream(key, iv)
+	stream2.XORKeyStream(x, x)
+	assert.Bytes(x).Equals(payload)
 }
