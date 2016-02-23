@@ -16,6 +16,15 @@
         "password": "v2ray-another",
         "udp": true
       }
+    },
+    {
+      "protocol": "shadowsocks",
+      "port": 50056,
+      "settings": {
+        "method": "chacha20",
+        "password": "new-password",
+        "udp": true
+      }
     }
   ],
   "outbound": {

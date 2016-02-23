@@ -1,8 +1,8 @@
 package shadowsocks
 
 import (
+	"crypto/cipher"
 	"crypto/md5"
-	"io"
 
 	"github.com/v2ray/v2ray-core/common/crypto"
 	"github.com/v2ray/v2ray-core/common/protocol"
@@ -11,8 +11,8 @@ import (
 type Cipher interface {
 	KeySize() int
 	IVSize() int
-	NewEncodingStream(key []byte, iv []byte, writer io.Writer) (io.Writer, error)
-	NewDecodingStream(key []byte, iv []byte, reader io.Reader) (io.Reader, error)
+	NewEncodingStream(key []byte, iv []byte) (cipher.Stream, error)
+	NewDecodingStream(key []byte, iv []byte) (cipher.Stream, error)
 }
 
 type AesCfb struct {
@@ -27,22 +27,40 @@ func (this *AesCfb) IVSize() int {
 	return 16
 }
 
-func (this *AesCfb) NewEncodingStream(key []byte, iv []byte, writer io.Writer) (io.Writer, error) {
+func (this *AesCfb) NewEncodingStream(key []byte, iv []byte) (cipher.Stream, error) {
 	stream, err := crypto.NewAesEncryptionStream(key, iv)
 	if err != nil {
 		return nil, err
 	}
-	aesWriter := crypto.NewCryptionWriter(stream, writer)
-	return aesWriter, nil
+	return stream, nil
 }
 
-func (this *AesCfb) NewDecodingStream(key []byte, iv []byte, reader io.Reader) (io.Reader, error) {
+func (this *AesCfb) NewDecodingStream(key []byte, iv []byte) (cipher.Stream, error) {
 	stream, err := crypto.NewAesDecryptionStream(key, iv)
 	if err != nil {
 		return nil, err
 	}
-	aesReader := crypto.NewCryptionReader(stream, reader)
-	return aesReader, nil
+	return stream, nil
+}
+
+type ChaCha20 struct {
+	IVBytes int
+}
+
+func (this *ChaCha20) KeySize() int {
+	return 32
+}
+
+func (this *ChaCha20) IVSize() int {
+	return this.IVBytes
+}
+
+func (this *ChaCha20) NewEncodingStream(key []byte, iv []byte) (cipher.Stream, error) {
+	return crypto.NewChaCha20Stream(key, iv), nil
+}
+
+func (this *ChaCha20) NewDecodingStream(key []byte, iv []byte) (cipher.Stream, error) {
+	return crypto.NewChaCha20Stream(key, iv), nil
 }
 
 type Config struct {

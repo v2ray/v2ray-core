@@ -69,5 +69,24 @@ func TestShadowsocksTCP(t *testing.T) {
 	assert.StringLiteral("Processed: " + payload).Equals(string(response[:nBytes]))
 	conn.Close()
 
+	cipher, err = ssclient.NewCipher("chacha20", "new-password")
+	assert.Error(err).IsNil()
+
+	conn, err = ssclient.DialWithRawAddr(rawAddr, "127.0.0.1:50056", cipher)
+	assert.Error(err).IsNil()
+
+	payload = "shadowsocks request 3."
+	nBytes, err = conn.Write([]byte(payload))
+	assert.Error(err).IsNil()
+	assert.Int(nBytes).Equals(len(payload))
+
+	conn.Conn.(*net.TCPConn).CloseWrite()
+
+	response = make([]byte, 1024)
+	nBytes, err = conn.Read(response)
+	assert.Error(err).IsNil()
+	assert.StringLiteral("Processed: " + payload).Equals(string(response[:nBytes]))
+	conn.Close()
+
 	CloseAllServers()
 }

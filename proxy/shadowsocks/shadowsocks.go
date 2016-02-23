@@ -9,6 +9,7 @@ import (
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/app/dispatcher"
 	"github.com/v2ray/v2ray-core/common/alloc"
+	"github.com/v2ray/v2ray-core/common/crypto"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -90,15 +91,18 @@ func (this *Shadowsocks) Listen(port v2net.Port) error {
 func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, source v2net.Destination) {
 	defer payload.Release()
 
-	iv := payload.Value[:this.config.Cipher.IVSize()]
+	ivLen := this.config.Cipher.IVSize()
+	iv := payload.Value[:ivLen]
 	key := this.config.Key
-	payload.SliceFrom(this.config.Cipher.IVSize())
+	payload.SliceFrom(ivLen)
 
-	reader, err := this.config.Cipher.NewDecodingStream(key, iv, payload)
+	stream, err := this.config.Cipher.NewDecodingStream(key, iv)
 	if err != nil {
 		log.Error("Shadowsocks: Failed to create decoding stream: ", err)
 		return
 	}
+
+	reader := crypto.NewCryptionReader(stream, payload)
 
 	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(key, iv)), true)
 	if err != nil {
@@ -115,17 +119,19 @@ func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, source v2net.D
 	this.udpServer.Dispatch(source, packet, func(packet v2net.Packet) {
 		defer packet.Chunk().Release()
 
-		response := alloc.NewBuffer().Slice(0, this.config.Cipher.IVSize())
+		response := alloc.NewBuffer().Slice(0, ivLen)
 		defer response.Release()
 
 		rand.Read(response.Value)
 		respIv := response.Value
 
-		writer, err := this.config.Cipher.NewEncodingStream(key, respIv, response)
+		stream, err := this.config.Cipher.NewEncodingStream(key, respIv)
 		if err != nil {
 			log.Error("Shadowsocks: Failed to create encoding stream: ", err)
 			return
 		}
+
+		writer := crypto.NewCryptionWriter(stream, response)
 
 		switch {
 		case request.Address.IsIPv4():
@@ -144,7 +150,7 @@ func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, source v2net.D
 
 		if request.OTA {
 			respAuth := NewAuthenticator(HeaderKeyGenerator(key, respIv))
-			respAuth.Authenticate(response.Value, response.Value[this.config.Cipher.IVSize():])
+			respAuth.Authenticate(response.Value, response.Value[ivLen:])
 		}
 
 		this.udpHub.WriteTo(response.Value, source)
@@ -159,21 +165,24 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 
 	timedReader := v2net.NewTimeOutReader(16, conn)
 
-	_, err := io.ReadFull(timedReader, buffer.Value[:this.config.Cipher.IVSize()])
+	ivLen := this.config.Cipher.IVSize()
+	_, err := io.ReadFull(timedReader, buffer.Value[:ivLen])
 	if err != nil {
 		log.Access(conn.RemoteAddr(), serial.StringLiteral(""), log.AccessRejected, serial.StringLiteral(err.Error()))
 		log.Error("Shadowsocks: Failed to read IV: ", err)
 		return
 	}
 
-	iv := buffer.Value[:this.config.Cipher.IVSize()]
+	iv := buffer.Value[:ivLen]
 	key := this.config.Key
 
-	reader, err := this.config.Cipher.NewDecodingStream(key, iv, timedReader)
+	stream, err := this.config.Cipher.NewDecodingStream(key, iv)
 	if err != nil {
 		log.Error("Shadowsocks: Failed to create decoding stream: ", err)
 		return
 	}
+
+	reader := crypto.NewCryptionReader(stream, timedReader)
 
 	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(iv, key)), false)
 	if err != nil {
@@ -196,17 +205,20 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 	writeFinish.Lock()
 	go func() {
 		if payload, ok := <-ray.InboundOutput(); ok {
-			payload.SliceBack(16)
-			rand.Read(payload.Value[:16])
+			payload.SliceBack(ivLen)
+			rand.Read(payload.Value[:ivLen])
 
-			writer, err := this.config.Cipher.NewEncodingStream(key, payload.Value[:16], conn)
+			stream, err := this.config.Cipher.NewEncodingStream(key, payload.Value[:ivLen])
 			if err != nil {
 				log.Error("Shadowsocks: Failed to create encoding stream: ", err)
 				return
 			}
+			stream.XORKeyStream(payload.Value[ivLen:], payload.Value[ivLen:])
 
-			writer.Write(payload.Value)
+			conn.Write(payload.Value)
 			payload.Release()
+
+			writer := crypto.NewCryptionWriter(stream, conn)
 			v2io.ChanToRawWriter(writer, ray.InboundOutput())
 		}
 		writeFinish.Unlock()

@@ -35,6 +35,14 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		this.Cipher = &AesCfb{
 			KeyBytes: 16,
 		}
+	case "chacha20":
+		this.Cipher = &ChaCha20{
+			IVBytes: 8,
+		}
+	case "chacha20-ietf":
+		this.Cipher = &ChaCha20{
+			IVBytes: 12,
+		}
 	default:
 		log.Error("Shadowsocks: Unknown cipher method: ", jsonConfig.Cipher)
 		return internal.ErrorBadConfiguration
