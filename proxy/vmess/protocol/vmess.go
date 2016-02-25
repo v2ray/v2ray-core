@@ -31,6 +31,16 @@ const (
 	blockSize = 16
 )
 
+func hashTimestamp(t proto.Timestamp) []byte {
+	once := t.Bytes()
+	bytes := make([]byte, 0, 32)
+	bytes = append(bytes, once...)
+	bytes = append(bytes, once...)
+	bytes = append(bytes, once...)
+	bytes = append(bytes, once...)
+	return bytes
+}
+
 // VMessRequest implements the request message of VMess protocol. It only contains the header of a
 // request message. The data part will be handled by connection handler directly, in favor of data
 // streaming.
@@ -61,11 +71,11 @@ func (this *VMessRequest) IsChunkStream() bool {
 
 // VMessRequestReader is a parser to read VMessRequest from a byte stream.
 type VMessRequestReader struct {
-	vUserSet UserSet
+	vUserSet proto.UserValidator
 }
 
 // NewVMessRequestReader creates a new VMessRequestReader with a given UserSet
-func NewVMessRequestReader(vUserSet UserSet) *VMessRequestReader {
+func NewVMessRequestReader(vUserSet proto.UserValidator) *VMessRequestReader {
 	return &VMessRequestReader{
 		vUserSet: vUserSet,
 	}
@@ -82,13 +92,13 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 		return nil, err
 	}
 
-	userObj, timeSec, valid := this.vUserSet.GetUser(buffer.Value[:nBytes])
+	userObj, timeSec, valid := this.vUserSet.Get(buffer.Value[:nBytes])
 	if !valid {
 		return nil, proxy.ErrorInvalidAuthentication
 	}
 
 	timestampHash := TimestampHash()
-	timestampHash.Write(timeSec.HashBytes())
+	timestampHash.Write(hashTimestamp(timeSec))
 	iv := timestampHash.Sum(nil)
 	aesStream, err := v2crypto.NewAesDecryptionStream(userObj.ID.CmdKey(), iv)
 	if err != nil {
@@ -223,7 +233,7 @@ func (this *VMessRequest) ToBytes(timestampGenerator RandomTimestampGenerator, b
 	encryptionEnd += 4
 
 	timestampHash := md5.New()
-	timestampHash.Write(timestamp.HashBytes())
+	timestampHash.Write(hashTimestamp(timestamp))
 	iv := timestampHash.Sum(nil)
 	aesStream, err := v2crypto.NewAesEncryptionStream(this.User.ID.CmdKey(), iv)
 	if err != nil {

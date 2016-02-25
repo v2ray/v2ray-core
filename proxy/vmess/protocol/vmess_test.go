@@ -17,10 +17,10 @@ import (
 )
 
 type FakeTimestampGenerator struct {
-	timestamp Timestamp
+	timestamp proto.Timestamp
 }
 
-func (this *FakeTimestampGenerator) Next() Timestamp {
+func (this *FakeTimestampGenerator) Next() proto.Timestamp {
 	return this.timestamp
 }
 
@@ -36,8 +36,8 @@ func TestVMessSerialization(t *testing.T) {
 		ID: userId,
 	}
 
-	userSet := protocoltesting.MockUserSet{[]*proto.User{}, make(map[string]int), make(map[string]Timestamp)}
-	userSet.AddUser(testUser)
+	userSet := protocoltesting.MockUserSet{[]*proto.User{}, make(map[string]int), make(map[string]proto.Timestamp)}
+	userSet.Add(testUser)
 
 	request := new(VMessRequest)
 	request.Version = byte(0x01)
@@ -54,7 +54,7 @@ func TestVMessSerialization(t *testing.T) {
 	request.Address = v2net.DomainAddress("v2ray.com")
 	request.Port = v2net.Port(80)
 
-	mockTime := Timestamp(1823730)
+	mockTime := proto.Timestamp(1823730)
 
 	buffer, err := request.ToBytes(&FakeTimestampGenerator{timestamp: mockTime}, nil)
 	if err != nil {
@@ -92,12 +92,12 @@ func BenchmarkVMessRequestWriting(b *testing.B) {
 	assert.Error(err).IsNil()
 
 	userId := proto.NewID(id)
-	userSet := protocoltesting.MockUserSet{[]*proto.User{}, make(map[string]int), make(map[string]Timestamp)}
+	userSet := protocoltesting.MockUserSet{[]*proto.User{}, make(map[string]int), make(map[string]proto.Timestamp)}
 
 	testUser := &proto.User{
 		ID: userId,
 	}
-	userSet.AddUser(testUser)
+	userSet.Add(testUser)
 
 	request := new(VMessRequest)
 	request.Version = byte(0x01)
@@ -114,6 +114,6 @@ func BenchmarkVMessRequestWriting(b *testing.B) {
 	request.Port = v2net.Port(80)
 
 	for i := 0; i < b.N; i++ {
-		request.ToBytes(NewRandomTimestampGenerator(Timestamp(time.Now().Unix()), 30), nil)
+		request.ToBytes(NewRandomTimestampGenerator(proto.Timestamp(time.Now().Unix()), 30), nil)
 	}
 }

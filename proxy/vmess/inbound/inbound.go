@@ -66,7 +66,7 @@ type VMessInboundHandler struct {
 	sync.Mutex
 	packetDispatcher      dispatcher.PacketDispatcher
 	inboundHandlerManager proxyman.InboundHandlerManager
-	clients               protocol.UserSet
+	clients               proto.UserValidator
 	usersByEmail          *userByEmail
 	accepting             bool
 	listener              *hub.TCPHub
@@ -91,7 +91,7 @@ func (this *VMessInboundHandler) Close() {
 func (this *VMessInboundHandler) GetUser(email string) *proto.User {
 	user, existing := this.usersByEmail.Get(email)
 	if !existing {
-		this.clients.AddUser(user)
+		this.clients.Add(user)
 	}
 	return user
 }
@@ -211,9 +211,9 @@ func init() {
 			}
 			config := rawConfig.(*Config)
 
-			allowedClients := protocol.NewTimedUserSet()
+			allowedClients := proto.NewTimedUserValidator(protocol.IDHash)
 			for _, user := range config.AllowedUsers {
-				allowedClients.AddUser(user)
+				allowedClients.Add(user)
 			}
 
 			handler := &VMessInboundHandler{
