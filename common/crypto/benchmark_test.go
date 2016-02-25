@@ -35,7 +35,7 @@ func BenchmarkChaCha20IETF(b *testing.B) {
 func BenchmarkAESEncryption(b *testing.B) {
 	key := make([]byte, 32)
 	iv := make([]byte, 16)
-	c, _ := NewAesEncryptionStream(key, iv)
+	c := NewAesEncryptionStream(key, iv)
 
 	benchmarkStream(b, c)
 }
@@ -43,7 +43,7 @@ func BenchmarkAESEncryption(b *testing.B) {
 func BenchmarkAESDecryption(b *testing.B) {
 	key := make([]byte, 32)
 	iv := make([]byte, 16)
-	c, _ := NewAesDecryptionStream(key, iv)
+	c := NewAesDecryptionStream(key, iv)
 
 	benchmarkStream(b, c)
 }

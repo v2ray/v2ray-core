@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"math/rand"
+	"time"
 
 	"github.com/v2ray/v2ray-core/common/serial"
 )
@@ -13,6 +14,10 @@ func (this Timestamp) Bytes() []byte {
 }
 
 type TimestampGenerator func() Timestamp
+
+func NowTime() Timestamp {
+	return Timestamp(time.Now().Unix())
+}
 
 func NewTimestampGenerator(base Timestamp, delta int) TimestampGenerator {
 	return func() Timestamp {

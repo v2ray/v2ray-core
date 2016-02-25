@@ -147,13 +147,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 	responseKey := md5.Sum(request.RequestKey)
 	responseIV := md5.Sum(request.RequestIV)
 
-	aesStream, err := v2crypto.NewAesEncryptionStream(responseKey[:], responseIV[:])
-	if err != nil {
-		log.Error("VMessIn: Failed to create AES decryption stream: ", err)
-		close(input)
-		return
-	}
-
+	aesStream := v2crypto.NewAesEncryptionStream(responseKey[:], responseIV[:])
 	responseWriter := v2crypto.NewCryptionWriter(aesStream, connection)
 
 	// Optimize for small response packet
@@ -188,11 +182,7 @@ func handleInput(request *protocol.VMessRequest, reader io.Reader, input chan<- 
 	defer close(input)
 	defer finish.Unlock()
 
-	aesStream, err := v2crypto.NewAesDecryptionStream(request.RequestKey, request.RequestIV)
-	if err != nil {
-		log.Error("VMessIn: Failed to create AES decryption stream: ", err)
-		return
-	}
+	aesStream := v2crypto.NewAesDecryptionStream(request.RequestKey, request.RequestIV)
 	descriptionReader := v2crypto.NewCryptionReader(aesStream, reader)
 	var requestReader v2io.Reader
 	if request.IsChunkStream() {

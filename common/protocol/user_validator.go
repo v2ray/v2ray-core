@@ -1,7 +1,6 @@
 package protocol
 
 import (
-	"hash"
 	"sync"
 	"time"
 )
@@ -10,8 +9,6 @@ const (
 	updateIntervalSec = 10
 	cacheDurationSec  = 120
 )
-
-type IDHash func(key []byte) hash.Hash
 
 type idEntry struct {
 	id             *ID

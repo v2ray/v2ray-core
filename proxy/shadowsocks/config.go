@@ -28,18 +28,12 @@ func (this *AesCfb) IVSize() int {
 }
 
 func (this *AesCfb) NewEncodingStream(key []byte, iv []byte) (cipher.Stream, error) {
-	stream, err := crypto.NewAesEncryptionStream(key, iv)
-	if err != nil {
-		return nil, err
-	}
+	stream := crypto.NewAesEncryptionStream(key, iv)
 	return stream, nil
 }
 
 func (this *AesCfb) NewDecodingStream(key []byte, iv []byte) (cipher.Stream, error) {
-	stream, err := crypto.NewAesDecryptionStream(key, iv)
-	if err != nil {
-		return nil, err
-	}
+	stream := crypto.NewAesDecryptionStream(key, iv)
 	return stream, nil
 }
 

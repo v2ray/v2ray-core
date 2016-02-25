@@ -2,26 +2,24 @@ package protocol
 
 import (
 	"io"
-
-	"github.com/v2ray/v2ray-core/common/alloc"
 )
 
 type RequestEncoder interface {
-	EncodeHeader(*RequestHeader) *alloc.Buffer
-	EncodeBody(io.Writer) io.Writer
+	EncodeRequestHeader(*RequestHeader, io.Writer)
+	EncodeRequestBody(io.Writer) io.Writer
 }
 
 type RequestDecoder interface {
-	DecodeHeader(io.Reader) *RequestHeader
-	DecodeBody(io.Reader) io.Reader
+	DecodeRequestHeader(io.Reader) *RequestHeader
+	DecodeRequestBody(io.Reader) io.Reader
 }
 
 type ResponseEncoder interface {
-	EncodeHeader(*ResponseHeader) *alloc.Buffer
-	EncodeBody(io.Writer) io.Writer
+	EncodeResponseHeader(*ResponseHeader, io.Writer)
+	EncodeResponseBody(io.Writer) io.Writer
 }
 
 type ResponseDecoder interface {
-	DecodeHeader(io.Reader) *ResponseHeader
-	DecodeBody(io.Reader) io.Reader
+	DecodeResponseHeader(io.Reader) *ResponseHeader
+	DecodeResponseBody(io.Reader) io.Reader
 }

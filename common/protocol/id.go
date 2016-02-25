@@ -1,8 +1,10 @@
 package protocol
 
 import (
+	"crypto/hmac"
 	"crypto/md5"
 	"errors"
+	"hash"
 
 	"github.com/v2ray/v2ray-core/common/uuid"
 )
@@ -14,6 +16,12 @@ const (
 var (
 	InvalidID = errors.New("Invalid ID.")
 )
+
+type IDHash func(key []byte) hash.Hash
+
+func DefaultIDHash(key []byte) hash.Hash {
+	return hmac.New(md5.New, key)
+}
 
 // The ID of en entity, in the form of an UUID.
 type ID struct {

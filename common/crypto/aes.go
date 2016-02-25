@@ -6,22 +6,14 @@ import (
 	"io"
 )
 
-func NewAesDecryptionStream(key []byte, iv []byte) (cipher.Stream, error) {
-	aesBlock, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-
-	return cipher.NewCFBDecrypter(aesBlock, iv), nil
+func NewAesDecryptionStream(key []byte, iv []byte) cipher.Stream {
+	aesBlock, _ := aes.NewCipher(key)
+	return cipher.NewCFBDecrypter(aesBlock, iv)
 }
 
-func NewAesEncryptionStream(key []byte, iv []byte) (cipher.Stream, error) {
-	aesBlock, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-
-	return cipher.NewCFBEncrypter(aesBlock, iv), nil
+func NewAesEncryptionStream(key []byte, iv []byte) cipher.Stream {
+	aesBlock, _ := aes.NewCipher(key)
+	return cipher.NewCFBEncrypter(aesBlock, iv)
 }
 
 type cryptionReader struct {

@@ -100,12 +100,7 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 	timestampHash := TimestampHash()
 	timestampHash.Write(hashTimestamp(timeSec))
 	iv := timestampHash.Sum(nil)
-	aesStream, err := v2crypto.NewAesDecryptionStream(userObj.ID.CmdKey(), iv)
-	if err != nil {
-		log.Debug("VMess: Failed to create AES stream: ", err)
-		return nil, err
-	}
-
+	aesStream := v2crypto.NewAesDecryptionStream(userObj.ID.CmdKey(), iv)
 	decryptor := v2crypto.NewCryptionReader(aesStream, reader)
 
 	nBytes, err = io.ReadFull(decryptor, buffer.Value[:41])
@@ -235,10 +230,7 @@ func (this *VMessRequest) ToBytes(timestampGenerator proto.TimestampGenerator, b
 	timestampHash := md5.New()
 	timestampHash.Write(hashTimestamp(timestamp))
 	iv := timestampHash.Sum(nil)
-	aesStream, err := v2crypto.NewAesEncryptionStream(this.User.ID.CmdKey(), iv)
-	if err != nil {
-		return nil, err
-	}
+	aesStream := v2crypto.NewAesEncryptionStream(this.User.ID.CmdKey(), iv)
 	aesStream.XORKeyStream(buffer.Value[encryptionBegin:encryptionEnd], buffer.Value[encryptionBegin:encryptionEnd])
 
 	return buffer, nil

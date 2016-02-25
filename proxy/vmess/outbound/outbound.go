@@ -98,16 +98,12 @@ func (this *VMessOutboundHandler) startCommunicate(request *protocol.VMessReques
 
 func (this *VMessOutboundHandler) handleRequest(conn net.Conn, request *protocol.VMessRequest, firstPacket v2net.Packet, input <-chan *alloc.Buffer, finish *sync.Mutex) {
 	defer finish.Unlock()
-	aesStream, err := v2crypto.NewAesEncryptionStream(request.RequestKey[:], request.RequestIV[:])
-	if err != nil {
-		log.Error("VMessOut: Failed to create AES encryption stream: ", err)
-		return
-	}
+	aesStream := v2crypto.NewAesEncryptionStream(request.RequestKey[:], request.RequestIV[:])
 	encryptRequestWriter := v2crypto.NewCryptionWriter(aesStream, conn)
 
 	buffer := alloc.NewBuffer().Clear()
 	defer buffer.Release()
-	buffer, err = request.ToBytes(proto.NewTimestampGenerator(proto.Timestamp(time.Now().Unix()), 30), buffer)
+	buffer, err := request.ToBytes(proto.NewTimestampGenerator(proto.Timestamp(time.Now().Unix()), 30), buffer)
 	if err != nil {
 		log.Error("VMessOut: Failed to serialize VMess request: ", err)
 		return
@@ -160,16 +156,12 @@ func (this *VMessOutboundHandler) handleResponse(conn net.Conn, request *protoco
 	responseKey := md5.Sum(request.RequestKey[:])
 	responseIV := md5.Sum(request.RequestIV[:])
 
-	aesStream, err := v2crypto.NewAesDecryptionStream(responseKey[:], responseIV[:])
-	if err != nil {
-		log.Error("VMessOut: Failed to create AES encryption stream: ", err)
-		return
-	}
+	aesStream := v2crypto.NewAesDecryptionStream(responseKey[:], responseIV[:])
 	decryptResponseReader := v2crypto.NewCryptionReader(aesStream, conn)
 
 	buffer := alloc.NewSmallBuffer()
 	defer buffer.Release()
-	_, err = io.ReadFull(decryptResponseReader, buffer.Value[:4])
+	_, err := io.ReadFull(decryptResponseReader, buffer.Value[:4])
 
 	if err != nil {
 		log.Error("VMessOut: Failed to read VMess response (", buffer.Len(), " bytes): ", err)
