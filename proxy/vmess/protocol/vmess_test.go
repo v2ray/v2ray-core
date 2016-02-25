@@ -16,12 +16,10 @@ import (
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
-type FakeTimestampGenerator struct {
-	timestamp proto.Timestamp
-}
-
-func (this *FakeTimestampGenerator) Next() proto.Timestamp {
-	return this.timestamp
+func newStaticTimestampGenerator(t proto.Timestamp) proto.TimestampGenerator {
+	return func() proto.Timestamp {
+		return t
+	}
 }
 
 func TestVMessSerialization(t *testing.T) {
@@ -56,7 +54,7 @@ func TestVMessSerialization(t *testing.T) {
 
 	mockTime := proto.Timestamp(1823730)
 
-	buffer, err := request.ToBytes(&FakeTimestampGenerator{timestamp: mockTime}, nil)
+	buffer, err := request.ToBytes(newStaticTimestampGenerator(mockTime), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,6 +112,6 @@ func BenchmarkVMessRequestWriting(b *testing.B) {
 	request.Port = v2net.Port(80)
 
 	for i := 0; i < b.N; i++ {
-		request.ToBytes(NewRandomTimestampGenerator(proto.Timestamp(time.Now().Unix()), 30), nil)
+		request.ToBytes(proto.NewTimestampGenerator(proto.Timestamp(time.Now().Unix()), 30), nil)
 	}
 }

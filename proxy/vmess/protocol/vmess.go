@@ -189,12 +189,12 @@ func (this *VMessRequestReader) Read(reader io.Reader) (*VMessRequest, error) {
 }
 
 // ToBytes returns a VMessRequest in the form of byte array.
-func (this *VMessRequest) ToBytes(timestampGenerator RandomTimestampGenerator, buffer *alloc.Buffer) (*alloc.Buffer, error) {
+func (this *VMessRequest) ToBytes(timestampGenerator proto.TimestampGenerator, buffer *alloc.Buffer) (*alloc.Buffer, error) {
 	if buffer == nil {
 		buffer = alloc.NewSmallBuffer().Clear()
 	}
 
-	timestamp := timestampGenerator.Next()
+	timestamp := timestampGenerator()
 	idHash := IDHash(this.User.AnyValidID().Bytes())
 	idHash.Write(timestamp.Bytes())
 
