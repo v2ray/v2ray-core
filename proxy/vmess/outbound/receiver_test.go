@@ -15,13 +15,13 @@ func TestReceiverUser(t *testing.T) {
 	v2testing.Current(t)
 
 	id := proto.NewID(uuid.New())
-	user := proto.NewUser(id, proto.UserLevel(0), 100)
+	user := proto.NewUser(id, proto.UserLevel(0), 100, "")
 	rec := NewReceiver(v2net.TCPDestination(v2net.DomainAddress("v2ray.com"), 80), user)
 	assert.Bool(rec.HasUser(user)).IsTrue()
 	assert.Int(len(rec.Accounts)).Equals(1)
 
 	id2 := proto.NewID(uuid.New())
-	user2 := proto.NewUser(id2, proto.UserLevel(0), 100)
+	user2 := proto.NewUser(id2, proto.UserLevel(0), 100, "")
 	assert.Bool(rec.HasUser(user2)).IsFalse()
 
 	rec.AddUser(user2)

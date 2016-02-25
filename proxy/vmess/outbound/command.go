@@ -11,7 +11,7 @@ import (
 )
 
 func (this *VMessOutboundHandler) handleSwitchAccount(cmd *command.SwitchAccount) {
-	user := proto.NewUser(proto.NewID(cmd.ID), cmd.Level, cmd.AlterIds.Value())
+	user := proto.NewUser(proto.NewID(cmd.ID), cmd.Level, cmd.AlterIds.Value(), "")
 	dest := v2net.TCPDestination(cmd.Host, cmd.Port)
 	this.receiverManager.AddDetour(NewReceiver(dest, user), cmd.ValidMin)
 }

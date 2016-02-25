@@ -15,6 +15,7 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	proto "github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/common/serial"
+	"github.com/v2ray/v2ray-core/common/uuid"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	vmessio "github.com/v2ray/v2ray-core/proxy/vmess/io"
@@ -22,13 +23,51 @@ import (
 	"github.com/v2ray/v2ray-core/transport/hub"
 )
 
+type userByEmail struct {
+	sync.RWMutex
+	cache           map[string]*proto.User
+	defaultLevel    proto.UserLevel
+	defaultAlterIDs uint16
+}
+
+func NewUserByEmail(users []*proto.User, config *DefaultConfig) *userByEmail {
+	cache := make(map[string]*proto.User)
+	for _, user := range users {
+		cache[user.Email] = user
+	}
+	return &userByEmail{
+		cache:           cache,
+		defaultLevel:    config.Level,
+		defaultAlterIDs: config.AlterIDs,
+	}
+}
+
+func (this *userByEmail) Get(email string) (*proto.User, bool) {
+	var user *proto.User
+	var found bool
+	this.RLock()
+	user, found = this.cache[email]
+	this.RUnlock()
+	if !found {
+		this.Lock()
+		user, found = this.cache[email]
+		if !found {
+			id := proto.NewID(uuid.New())
+			user = proto.NewUser(id, this.defaultLevel, this.defaultAlterIDs, email)
+			this.cache[email] = user
+		}
+		this.Unlock()
+	}
+	return user, found
+}
+
 // Inbound connection handler that handles messages in VMess format.
 type VMessInboundHandler struct {
 	sync.Mutex
 	packetDispatcher      dispatcher.PacketDispatcher
 	inboundHandlerManager proxyman.InboundHandlerManager
 	clients               protocol.UserSet
-	user                  *proto.User
+	usersByEmail          *userByEmail
 	accepting             bool
 	listener              *hub.TCPHub
 	features              *FeaturesConfig
@@ -49,8 +88,12 @@ func (this *VMessInboundHandler) Close() {
 	}
 }
 
-func (this *VMessInboundHandler) GetUser() *proto.User {
-	return this.user
+func (this *VMessInboundHandler) GetUser(email string) *proto.User {
+	user, existing := this.usersByEmail.Get(email)
+	if !existing {
+		this.clients.AddUser(user)
+	}
+	return user
 }
 
 func (this *VMessInboundHandler) Listen(port v2net.Port) error {
@@ -117,7 +160,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 	buffer := alloc.NewLargeBuffer().Clear()
 	defer buffer.Release()
 	buffer.AppendBytes(request.ResponseHeader, byte(0))
-	this.generateCommand(buffer)
+	this.generateCommand(request, buffer)
 
 	if data, open := <-output; open {
 		if request.IsChunkStream() {
@@ -177,7 +220,7 @@ func init() {
 				packetDispatcher: space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
 				clients:          allowedClients,
 				features:         config.Features,
-				user:             config.AllowedUsers[0],
+				usersByEmail:     NewUserByEmail(config.AllowedUsers, config.Defaults),
 			}
 
 			if space.HasApp(proxyman.APP_ID_INBOUND_MANAGER) {

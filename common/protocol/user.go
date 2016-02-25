@@ -15,12 +15,14 @@ type User struct {
 	ID       *ID
 	AlterIDs []*ID
 	Level    UserLevel
+	Email    string
 }
 
-func NewUser(id *ID, level UserLevel, alterIdCount uint16) *User {
+func NewUser(id *ID, level UserLevel, alterIdCount uint16, email string) *User {
 	u := &User{
 		ID:    id,
 		Level: level,
+		Email: email,
 	}
 	if alterIdCount > 0 {
 		u.AlterIDs = make([]*ID, alterIdCount)

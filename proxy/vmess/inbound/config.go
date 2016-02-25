@@ -12,7 +12,13 @@ type FeaturesConfig struct {
 	Detour *DetourConfig
 }
 
+type DefaultConfig struct {
+	AlterIDs uint16
+	Level    proto.UserLevel
+}
+
 type Config struct {
 	AllowedUsers []*proto.User
 	Features     *FeaturesConfig
+	Defaults     *DefaultConfig
 }

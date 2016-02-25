@@ -29,15 +29,7 @@
       "protocol": "vmess",
       "port": "50035-50039",
       "tag": "detour",
-      "settings": {
-        "clients": [
-          {
-            "id": "a12f49ba-466c-4dd5-8438-5c315143bc96",
-            "alterId": 100,
-            "level": 1
-          }
-        ]
-      },
+      "settings": {},
       "allocate": {
         "strategy": "random",
         "concurrency": 2,

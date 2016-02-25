@@ -7,9 +7,10 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/proxy/vmess/command"
+	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 )
 
-func (this *VMessInboundHandler) generateCommand(buffer *alloc.Buffer) {
+func (this *VMessInboundHandler) generateCommand(request *protocol.VMessRequest, buffer *alloc.Buffer) {
 	cmd := byte(0)
 	commandBytes := alloc.NewSmallBuffer().Clear()
 	defer commandBytes.Release()
@@ -26,7 +27,7 @@ func (this *VMessInboundHandler) generateCommand(buffer *alloc.Buffer) {
 				}
 				cmd = byte(1)
 				log.Info("VMessIn: Pick detour handler for port ", inboundHandler.Port(), " for ", availableMin, " minutes.")
-				user := inboundHandler.GetUser()
+				user := inboundHandler.GetUser(request.User.Email)
 				saCmd := &command.SwitchAccount{
 					Port:     inboundHandler.Port(),
 					ID:       user.ID.UUID(),

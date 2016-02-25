@@ -23,7 +23,7 @@ func (u *User) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	*u = *NewUser(NewID(id), UserLevel(rawUserValue.LevelByte), rawUserValue.AlterIdCount)
+	*u = *NewUser(NewID(id), UserLevel(rawUserValue.LevelByte), rawUserValue.AlterIdCount, rawUserValue.EmailString)
 
 	return nil
 }
