@@ -31,6 +31,7 @@ func init() {
 		"\\.xn--fiqs8s$", /* .中国 */
 
 		anySubDomain + "10010" + dotCom,
+		anySubDomain + "100offer" + dotCom,
 		anySubDomain + "115" + dotCom,
 		anySubDomain + "123juzi" + dotCom,
 		anySubDomain + "123juzi" + dotNet,
@@ -190,6 +191,7 @@ func init() {
 		anySubDomain + "iqiyi" + dotCom,
 		anySubDomain + "it165" + dotNet,
 		anySubDomain + "it168" + dotCom,
+		anySubDomain + "it610" + dotCom,
 		anySubDomain + "iteye" + dotCom,
 		anySubDomain + "itjuzi" + dotCom,
 		anySubDomain + "jandan" + dotNet,
@@ -218,6 +220,7 @@ func init() {
 		anySubDomain + "kuqin" + dotCom,
 		anySubDomain + "lady8844" + dotCom,
 		anySubDomain + "lagou" + dotCom,
+		anySubDomain + "leanote" + dotCom,
 		anySubDomain + "leiphone" + dotCom,
 		anySubDomain + "leju" + dotCom,
 		anySubDomain + "leturich" + dotOrg,
@@ -226,6 +229,7 @@ func init() {
 		anySubDomain + "letvimg" + dotCom,
 		anySubDomain + "liantu" + dotMe,
 		anySubDomain + "liaoxuefeng" + dotCom,
+		anySubDomain + "liepin" + dotCom,
 		anySubDomain + "lietou" + dotCom,
 		anySubDomain + "linkvans" + dotCom,
 		anySubDomain + "lightonus" + dotCom,
@@ -235,6 +239,7 @@ func init() {
 		anySubDomain + "lufaxcdn" + dotCom,
 		anySubDomain + "lvmama" + dotCom,
 		anySubDomain + "lxdns" + dotCom,
+		anySubDomain + "lxway" + dotCom,
 		anySubDomain + "ly" + dotCom,
 		anySubDomain + "mechina" + dotOrg,
 		anySubDomain + "mediav" + dotCom,
@@ -383,6 +388,8 @@ func init() {
 		anySubDomain + "zhiziyun" + dotCom,
 		anySubDomain + "zjstv" + dotCom,
 		anySubDomain + "zhubajie" + dotCom,
+		anySubDomain + "zuche" + dotCom,
+		anySubDomain + "zuchecdn" + dotCom,
 	}
 
 	conds := make([]Condition, len(regexpDomains))
