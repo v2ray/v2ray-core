@@ -95,6 +95,10 @@ func (b *Buffer) Len() int {
 	return len(b.Value)
 }
 
+func (b *Buffer) IsEmpty() bool {
+	return b.Len() == 0
+}
+
 // IsFull returns true if the buffer has no more room to grow.
 func (b *Buffer) IsFull() bool {
 	return len(b.Value) == cap(b.Value)
@@ -118,6 +122,14 @@ func (b *Buffer) Read(data []byte) (int, error) {
 		b.Value = b.Value[nBytes:]
 	}
 	return nBytes, nil
+}
+
+func (b *Buffer) FillFrom(reader io.Reader) (int, error) {
+	begin := b.Len()
+	b.Value = b.Value[:cap(b.Value)]
+	nBytes, err := reader.Read(b.Value[begin:])
+	b.Value = b.Value[:begin+nBytes]
+	return nBytes, err
 }
 
 type bufferPool struct {
