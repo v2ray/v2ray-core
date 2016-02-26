@@ -10,7 +10,7 @@ type RequestEncoder interface {
 }
 
 type RequestDecoder interface {
-	DecodeRequestHeader(io.Reader) *RequestHeader
+	DecodeRequestHeader(io.Reader) (*RequestHeader, error)
 	DecodeRequestBody(io.Reader) io.Reader
 }
 
@@ -20,6 +20,6 @@ type ResponseEncoder interface {
 }
 
 type ResponseDecoder interface {
-	DecodeResponseHeader(io.Reader) *ResponseHeader
+	DecodeResponseHeader(io.Reader) (*ResponseHeader, error)
 	DecodeResponseBody(io.Reader) io.Reader
 }

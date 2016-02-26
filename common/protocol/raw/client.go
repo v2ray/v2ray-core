@@ -8,7 +8,9 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/crypto"
+	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/common/protocol"
+	"github.com/v2ray/v2ray-core/transport"
 )
 
 func hashTimestamp(t protocol.Timestamp) []byte {
@@ -27,6 +29,7 @@ type ClientSession struct {
 	responseHeader  byte
 	responseBodyKey []byte
 	responseBodyIV  []byte
+	responseReader  io.Reader
 	idHash          protocol.IDHash
 }
 
@@ -38,6 +41,10 @@ func NewClientSession(idHash protocol.IDHash) *ClientSession {
 	session.requestBodyKey = randomBytes[:16]
 	session.requestBodyIV = randomBytes[16:32]
 	session.responseHeader = randomBytes[32]
+	responseBodyKey := md5.Sum(session.requestBodyKey)
+	responseBodyIV := md5.Sum(session.requestBodyIV)
+	session.responseBodyKey = responseBodyKey[:]
+	session.responseBodyIV = responseBodyIV[:]
 	session.idHash = idHash
 
 	return session
@@ -97,3 +104,42 @@ func (this *ClientSession) EncodeRequestBody(writer io.Writer) io.Writer {
 	return crypto.NewCryptionWriter(aesStream, writer)
 }
 
+func (this *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.ResponseHeader, error) {
+	aesStream := crypto.NewAesDecryptionStream(this.responseBodyKey, this.responseBodyIV)
+	this.responseReader = crypto.NewCryptionReader(aesStream, reader)
+
+	buffer := alloc.NewSmallBuffer()
+	defer buffer.Release()
+
+	_, err := io.ReadFull(this.responseReader, buffer.Value[:4])
+	if err != nil {
+		log.Error("Raw: Failed to read response header: ", err)
+		return nil, err
+	}
+
+	if buffer.Value[0] != this.responseHeader {
+		log.Warning("Raw: Unexpected response header. Expecting %d, but actually %d", this.responseHeader, buffer.Value[0])
+		return nil, transport.ErrorCorruptedPacket
+	}
+
+	header := new(protocol.ResponseHeader)
+
+	if buffer.Value[2] != 0 {
+		cmdId := buffer.Value[2]
+		dataLen := int(buffer.Value[3])
+		_, err := io.ReadFull(this.responseReader, buffer.Value[:dataLen])
+		if err != nil {
+			log.Error("Raw: Failed to read response command: ", err)
+			return nil, err
+		}
+		data := buffer.Value[:dataLen]
+		command, err := UnmarshalCommand(cmdId, data)
+		header.Command = command
+	}
+
+	return header, nil
+}
+
+func (this *ClientSession) DecodeResponseBody(reader io.Reader) io.Reader {
+	return this.responseReader
+}
