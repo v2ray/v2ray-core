@@ -3,7 +3,6 @@ package crypto
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"io"
 )
 
 func NewAesDecryptionStream(key []byte, iv []byte) cipher.Stream {
