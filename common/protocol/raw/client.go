@@ -51,15 +51,13 @@ func NewClientSession(idHash protocol.IDHash) *ClientSession {
 }
 
 func (this *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writer io.Writer) {
-	buffer := alloc.NewSmallBuffer().Clear()
-	defer buffer.Release()
-
 	timestamp := protocol.NewTimestampGenerator(protocol.NowTime(), 30)()
 	idHash := this.idHash(header.User.AnyValidID().Bytes())
 	idHash.Write(timestamp.Bytes())
-	idHash.Sum(buffer.Value)
+	writer.Write(idHash.Sum(nil))
 
-	encryptionBegin := buffer.Len()
+	buffer := alloc.NewSmallBuffer().Clear()
+	defer buffer.Release()
 
 	buffer.AppendBytes(Version)
 	buffer.Append(this.requestBodyIV)
@@ -80,20 +78,17 @@ func (this *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, w
 		buffer.Append([]byte(header.Address.Domain()))
 	}
 
-	encryptionEnd := buffer.Len()
-
 	fnv1a := fnv.New32a()
-	fnv1a.Write(buffer.Value[encryptionBegin:encryptionEnd])
+	fnv1a.Write(buffer.Value)
 
 	fnvHash := fnv1a.Sum32()
 	buffer.AppendBytes(byte(fnvHash>>24), byte(fnvHash>>16), byte(fnvHash>>8), byte(fnvHash))
-	encryptionEnd += 4
 
 	timestampHash := md5.New()
 	timestampHash.Write(hashTimestamp(timestamp))
 	iv := timestampHash.Sum(nil)
 	aesStream := crypto.NewAesEncryptionStream(header.User.ID.CmdKey(), iv)
-	aesStream.XORKeyStream(buffer.Value[encryptionBegin:encryptionEnd], buffer.Value[encryptionBegin:encryptionEnd])
+	aesStream.XORKeyStream(buffer.Value, buffer.Value)
 	writer.Write(buffer.Value)
 
 	return

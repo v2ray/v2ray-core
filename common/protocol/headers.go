@@ -13,11 +13,15 @@ const (
 	RequestCommandUDP = RequestCommand(0x02)
 )
 
-type RequestOption byte
-
 const (
 	RequestOptionChunkStream = RequestOption(0x01)
 )
+
+type RequestOption byte
+
+func (this RequestOption) IsChunkStream() bool {
+	return (this & RequestOptionChunkStream) == RequestOptionChunkStream
+}
 
 type RequestHeader struct {
 	Version byte

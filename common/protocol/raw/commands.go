@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 
+	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/common/serial"
@@ -14,20 +15,47 @@ import (
 var (
 	ErrorCommandTypeMismatch = errors.New("Command type mismatch.")
 	ErrorUnknownCommand      = errors.New("Unknown command.")
+	ErrorCommandTooLarge     = errors.New("Command too large.")
 )
 
 func MarshalCommand(command interface{}, writer io.Writer) error {
+	var cmdId byte
 	var factory CommandFactory
 	switch command.(type) {
 	case *protocol.CommandSwitchAccount:
 		factory = new(CommandSwitchAccountFactory)
+		cmdId = 1
 	default:
 		return ErrorUnknownCommand
 	}
-	return factory.Marshal(command, writer)
+
+	buffer := alloc.NewSmallBuffer()
+	err := factory.Marshal(command, buffer)
+	if err != nil {
+		return err
+	}
+
+	auth := Authenticate(buffer.Value)
+	len := buffer.Len() + 4
+	if len > 255 {
+		return ErrorCommandTooLarge
+	}
+
+	writer.Write([]byte{cmdId, byte(len), byte(auth >> 24), byte(auth >> 16), byte(auth >> 8), byte(auth)})
+	writer.Write(buffer.Value)
+	return nil
 }
 
 func UnmarshalCommand(cmdId byte, data []byte) (protocol.ResponseCommand, error) {
+	if len(data) <= 4 {
+		return nil, transport.ErrorCorruptedPacket
+	}
+	expectedAuth := Authenticate(data[4:])
+	actualAuth := serial.BytesLiteral(data[:4]).Uint32Value()
+	if expectedAuth != actualAuth {
+		return nil, transport.ErrorCorruptedPacket
+	}
+
 	var factory CommandFactory
 	switch cmdId {
 	case 1:
@@ -35,7 +63,7 @@ func UnmarshalCommand(cmdId byte, data []byte) (protocol.ResponseCommand, error)
 	default:
 		return nil, ErrorUnknownCommand
 	}
-	return factory.Unmarshal(data)
+	return factory.Unmarshal(data[4:])
 }
 
 type CommandFactory interface {

@@ -140,4 +140,10 @@ func (this *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader,
 	encryptionWriter := crypto.NewCryptionWriter(aesStream, writer)
 	this.responseWriter = encryptionWriter
 
+	encryptionWriter.Write([]byte{this.responseHeader, 0x00})
+	MarshalCommand(header.Command, encryptionWriter)
+}
+
+func (this *ServerSession) EncodeResponseBody(writer io.Writer) io.Writer {
+	return this.responseWriter
 }
