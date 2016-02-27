@@ -14,7 +14,6 @@ import (
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	vmessio "github.com/v2ray/v2ray-core/proxy/vmess/io"
-	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
@@ -30,7 +29,7 @@ func (this *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray ray.Out
 		command = proto.RequestCommandUDP
 	}
 	request := &proto.RequestHeader{
-		Version: protocol.Version,
+		Version: raw.Version,
 		User:    vNextUser,
 		Command: command,
 		Address: firstPacket.Destination().Address(),
@@ -124,10 +123,6 @@ func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn
 		v2io.ChanToWriter(streamWriter, input)
 	}
 	return
-}
-
-func headerMatch(request *protocol.VMessRequest, responseHeader byte) bool {
-	return request.ResponseHeader == responseHeader
 }
 
 func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, conn net.Conn, request *proto.RequestHeader, dest v2net.Destination, output chan<- *alloc.Buffer, finish *sync.Mutex) {

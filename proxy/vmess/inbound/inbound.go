@@ -16,7 +16,6 @@ import (
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	vmessio "github.com/v2ray/v2ray-core/proxy/vmess/io"
-	"github.com/v2ray/v2ray-core/proxy/vmess/protocol"
 	"github.com/v2ray/v2ray-core/transport/hub"
 )
 
@@ -197,7 +196,7 @@ func init() {
 			}
 			config := rawConfig.(*Config)
 
-			allowedClients := proto.NewTimedUserValidator(protocol.IDHash)
+			allowedClients := proto.NewTimedUserValidator(proto.DefaultIDHash)
 			for _, user := range config.AllowedUsers {
 				allowedClients.Add(user)
 			}
