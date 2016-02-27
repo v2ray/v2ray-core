@@ -55,6 +55,13 @@
           "outboundTag": "direct"
         },
         {
+          "type": "localsites",
+          "domain": [
+            "gc.kis.scr.kaspersky-labs.com"
+          ],
+          "outboundTag": "direct"
+        },
+        {
           "type": "chinasites",
           "outboundTag": "direct"
         },
