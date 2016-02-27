@@ -1,9 +1,9 @@
 package raw_test
 
 import (
-	"bytes"
 	"testing"
 
+	"github.com/v2ray/v2ray-core/common/alloc"
 	netassert "github.com/v2ray/v2ray-core/common/net/testing/assert"
 	"github.com/v2ray/v2ray-core/common/protocol"
 	. "github.com/v2ray/v2ray-core/common/protocol/raw"
@@ -23,11 +23,11 @@ func TestSwitchAccount(t *testing.T) {
 		ValidMin: 16,
 	}
 
-	buffer := bytes.NewBuffer(make([]byte, 0, 1024))
+	buffer := alloc.NewBuffer().Clear()
 	err := MarshalCommand(sa, buffer)
 	assert.Error(err).IsNil()
 
-	cmd, err := UnmarshalCommand(1, buffer.Bytes())
+	cmd, err := UnmarshalCommand(1, buffer.Value[2:])
 	assert.Error(err).IsNil()
 
 	sa2, ok := cmd.(*protocol.CommandSwitchAccount)

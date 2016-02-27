@@ -19,6 +19,10 @@ var (
 )
 
 func MarshalCommand(command interface{}, writer io.Writer) error {
+	if command == nil {
+		return ErrorUnknownCommand
+	}
+
 	var cmdId byte
 	var factory CommandFactory
 	switch command.(type) {
@@ -29,7 +33,7 @@ func MarshalCommand(command interface{}, writer io.Writer) error {
 		return ErrorUnknownCommand
 	}
 
-	buffer := alloc.NewSmallBuffer()
+	buffer := alloc.NewSmallBuffer().Clear()
 	err := factory.Marshal(command, buffer)
 	if err != nil {
 		return err

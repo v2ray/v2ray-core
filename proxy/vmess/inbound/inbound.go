@@ -1,19 +1,16 @@
 package inbound
 
 import (
-	"crypto/md5"
-	"io"
 	"sync"
 
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/app/dispatcher"
 	"github.com/v2ray/v2ray-core/app/proxyman"
-	"github.com/v2ray/v2ray-core/common/alloc"
-	v2crypto "github.com/v2ray/v2ray-core/common/crypto"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	proto "github.com/v2ray/v2ray-core/common/protocol"
+	raw "github.com/v2ray/v2ray-core/common/protocol/raw"
 	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/common/uuid"
 	"github.com/v2ray/v2ray-core/proxy"
@@ -122,9 +119,11 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 	defer connection.Close()
 
 	connReader := v2net.NewTimeOutReader(16, connection)
-	requestReader := protocol.NewVMessRequestReader(this.clients)
 
-	request, err := requestReader.Read(connReader)
+	reader := v2io.NewBufferedReader(connReader)
+	session := raw.NewServerSession(this.clients)
+
+	request, err := session.DecodeRequestHeader(reader)
 	if err != nil {
 		log.Access(connection.RemoteAddr(), serial.StringLiteral(""), log.AccessRejected, serial.StringLiteral(err.Error()))
 		log.Warning("VMessIn: Invalid request from ", connection.RemoteAddr(), ": ", err)
@@ -142,30 +141,42 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 
 	userSettings := proto.GetUserSettings(request.User.Level)
 	connReader.SetTimeOut(userSettings.PayloadReadTimeout)
-	go handleInput(request, connReader, input, &readFinish)
+	reader.SetCached(false)
+	go func() {
+		defer close(input)
+		defer readFinish.Unlock()
+		bodyReader := session.DecodeRequestBody(reader)
+		var requestReader v2io.Reader
+		if request.Option.IsChunkStream() {
+			requestReader = vmessio.NewAuthChunkReader(bodyReader)
+		} else {
+			requestReader = v2io.NewAdaptiveReader(bodyReader)
+		}
+		v2io.ReaderToChan(input, requestReader)
+	}()
 
-	responseKey := md5.Sum(request.RequestKey)
-	responseIV := md5.Sum(request.RequestIV)
+	writer := v2io.NewBufferedWriter(connection)
 
-	aesStream := v2crypto.NewAesEncryptionStream(responseKey[:], responseIV[:])
-	responseWriter := v2crypto.NewCryptionWriter(aesStream, connection)
+	response := &proto.ResponseHeader{
+		Command: this.generateCommand(request),
+	}
+
+	session.EncodeResponseHeader(response, writer)
+
+	bodyWriter := session.EncodeResponseBody(writer)
 
 	// Optimize for small response packet
-	buffer := alloc.NewLargeBuffer().Clear()
-	defer buffer.Release()
-	buffer.AppendBytes(request.ResponseHeader, byte(0))
-	this.generateCommand(request, buffer)
-
 	if data, open := <-output; open {
-		if request.IsChunkStream() {
+		if request.Option.IsChunkStream() {
 			vmessio.Authenticate(data)
 		}
-		buffer.Append(data.Value)
+		bodyWriter.Write(data.Value)
 		data.Release()
-		responseWriter.Write(buffer.Value)
+
+		writer.SetCached(false)
 		go func(finish *sync.Mutex) {
-			var writer v2io.Writer = v2io.NewAdaptiveWriter(responseWriter)
-			if request.IsChunkStream() {
+			var writer v2io.Writer = v2io.NewAdaptiveWriter(bodyWriter)
+			if request.Option.IsChunkStream() {
 				writer = vmessio.NewAuthChunkWriter(writer)
 			}
 			v2io.ChanToWriter(writer, output)
@@ -176,21 +187,6 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 
 	connection.CloseWrite()
 	readFinish.Lock()
-}
-
-func handleInput(request *protocol.VMessRequest, reader io.Reader, input chan<- *alloc.Buffer, finish *sync.Mutex) {
-	defer close(input)
-	defer finish.Unlock()
-
-	aesStream := v2crypto.NewAesDecryptionStream(request.RequestKey, request.RequestIV)
-	descriptionReader := v2crypto.NewCryptionReader(aesStream, reader)
-	var requestReader v2io.Reader
-	if request.IsChunkStream() {
-		requestReader = vmessio.NewAuthChunkReader(descriptionReader)
-	} else {
-		requestReader = v2io.NewAdaptiveReader(descriptionReader)
-	}
-	v2io.ReaderToChan(input, requestReader)
 }
 
 func init() {

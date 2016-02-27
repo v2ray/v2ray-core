@@ -24,6 +24,12 @@ type ServerSession struct {
 	responseWriter  io.Writer
 }
 
+func NewServerSession(validator protocol.UserValidator) *ServerSession {
+	return &ServerSession{
+		userValidator: validator,
+	}
+}
+
 func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.RequestHeader, error) {
 	buffer := alloc.NewSmallBuffer()
 	defer buffer.Release()
@@ -134,14 +140,17 @@ func (this *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader,
 	responseBodyKey := md5.Sum(this.requestBodyKey)
 	responseBodyIV := md5.Sum(this.requestBodyIV)
 	this.responseBodyKey = responseBodyKey[:]
-	this.requestBodyIV = responseBodyIV[:]
+	this.responseBodyIV = responseBodyIV[:]
 
 	aesStream := crypto.NewAesEncryptionStream(this.responseBodyKey, this.responseBodyIV)
 	encryptionWriter := crypto.NewCryptionWriter(aesStream, writer)
 	this.responseWriter = encryptionWriter
 
 	encryptionWriter.Write([]byte{this.responseHeader, 0x00})
-	MarshalCommand(header.Command, encryptionWriter)
+	err := MarshalCommand(header.Command, encryptionWriter)
+	if err != nil {
+		encryptionWriter.Write([]byte{0x00, 0x00})
+	}
 }
 
 func (this *ServerSession) EncodeResponseBody(writer io.Writer) io.Writer {

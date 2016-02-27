@@ -32,6 +32,13 @@ type RequestHeader struct {
 	Port    v2net.Port
 }
 
+func (this *RequestHeader) Destination() v2net.Destination {
+	if this.Command == RequestCommandUDP {
+		return v2net.UDPDestination(this.Address, this.Port)
+	}
+	return v2net.TCPDestination(this.Address, this.Port)
+}
+
 type ResponseCommand interface{}
 
 type ResponseHeader struct {
