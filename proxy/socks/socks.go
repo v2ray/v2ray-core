@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/v2ray/v2ray-core/app/dispatcher"
-	"github.com/v2ray/v2ray-core/common/alloc"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -94,7 +93,10 @@ func (this *SocksServer) Listen(port v2net.Port) error {
 func (this *SocksServer) handleConnection(connection *hub.TCPConn) {
 	defer connection.Close()
 
-	reader := v2net.NewTimeOutReader(120, connection)
+	timedReader := v2net.NewTimeOutReader(120, connection)
+	reader := v2io.NewBufferedReader(timedReader)
+
+	writer := v2io.NewBufferedWriter(connection)
 
 	auth, auth4, err := protocol.ReadAuthentication(reader)
 	if err != nil && err != protocol.Socks4Downgrade {
@@ -103,13 +105,13 @@ func (this *SocksServer) handleConnection(connection *hub.TCPConn) {
 	}
 
 	if err != nil && err == protocol.Socks4Downgrade {
-		this.handleSocks4(reader, connection, auth4)
+		this.handleSocks4(reader, writer, auth4)
 	} else {
-		this.handleSocks5(reader, connection, auth)
+		this.handleSocks5(reader, writer, auth)
 	}
 }
 
-func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Writer, auth protocol.Socks5AuthenticationRequest) error {
+func (this *SocksServer) handleSocks5(reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks5AuthenticationRequest) error {
 	expectedAuthMethod := protocol.AuthNotRequired
 	if this.config.AuthType == AuthTypePassword {
 		expectedAuthMethod = protocol.AuthUserPass
@@ -118,6 +120,7 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 	if !auth.HasAuthMethod(expectedAuthMethod) {
 		authResponse := protocol.NewAuthenticationResponse(protocol.AuthNoMatchingMethod)
 		err := protocol.WriteAuthentication(writer, authResponse)
+		writer.Flush()
 		if err != nil {
 			log.Error("Socks: failed to write authentication: ", err)
 			return err
@@ -128,6 +131,7 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 
 	authResponse := protocol.NewAuthenticationResponse(expectedAuthMethod)
 	err := protocol.WriteAuthentication(writer, authResponse)
+	writer.Flush()
 	if err != nil {
 		log.Error("Socks: failed to write authentication: ", err)
 		return err
@@ -144,6 +148,7 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 		}
 		upResponse := protocol.NewSocks5UserPassResponse(status)
 		err = protocol.WriteUserPassResponse(writer, upResponse)
+		writer.Flush()
 		if err != nil {
 			log.Error("Socks: failed to write user pass response: ", err)
 			return err
@@ -170,10 +175,8 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 		response.Port = v2net.Port(0)
 		response.SetIPv4([]byte{0, 0, 0, 0})
 
-		responseBuffer := alloc.NewSmallBuffer().Clear()
-		response.Write(responseBuffer)
-		_, err = writer.Write(responseBuffer.Value)
-		responseBuffer.Release()
+		response.Write(writer)
+		writer.Flush()
 		if err != nil {
 			log.Error("Socks: failed to write response: ", err)
 			return err
@@ -189,14 +192,14 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 	response.Port = v2net.Port(1717)
 	response.SetIPv4([]byte{0, 0, 0, 0})
 
-	responseBuffer := alloc.NewSmallBuffer().Clear()
-	response.Write(responseBuffer)
-	_, err = writer.Write(responseBuffer.Value)
-	responseBuffer.Release()
+	response.Write(writer)
 	if err != nil {
 		log.Error("Socks: failed to write response: ", err)
 		return err
 	}
+
+	reader.SetCached(false)
+	writer.SetCached(false)
 
 	dest := request.Destination()
 	log.Info("Socks: TCP Connect request to ", dest)
@@ -206,7 +209,7 @@ func (this *SocksServer) handleSocks5(reader *v2net.TimeOutReader, writer io.Wri
 	return nil
 }
 
-func (this *SocksServer) handleUDP(reader *v2net.TimeOutReader, writer io.Writer) error {
+func (this *SocksServer) handleUDP(reader io.Reader, writer *v2io.BufferedWriter) error {
 	response := protocol.NewSocks5Response()
 	response.Error = protocol.ErrorSuccess
 
@@ -222,18 +225,14 @@ func (this *SocksServer) handleUDP(reader *v2net.TimeOutReader, writer io.Writer
 		response.SetDomain(udpAddr.Address().Domain())
 	}
 
-	responseBuffer := alloc.NewSmallBuffer().Clear()
-	response.Write(responseBuffer)
-	_, err := writer.Write(responseBuffer.Value)
-	responseBuffer.Release()
+	response.Write(writer)
+	err := writer.Flush()
 
 	if err != nil {
 		log.Error("Socks: failed to write response: ", err)
 		return err
 	}
 
-	reader.SetTimeOut(300)     /* 5 minutes */
-	v2io.ReadFrom(reader, nil) // Just in case of anything left in the socket
 	// The TCP connection closes after this method returns. We need to wait until
 	// the client closes it.
 	// TODO: get notified from UDP part
@@ -242,22 +241,22 @@ func (this *SocksServer) handleUDP(reader *v2net.TimeOutReader, writer io.Writer
 	return nil
 }
 
-func (this *SocksServer) handleSocks4(reader io.Reader, writer io.Writer, auth protocol.Socks4AuthenticationRequest) error {
+func (this *SocksServer) handleSocks4(reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks4AuthenticationRequest) error {
 	result := protocol.Socks4RequestGranted
 	if auth.Command == protocol.CmdBind {
 		result = protocol.Socks4RequestRejected
 	}
 	socks4Response := protocol.NewSocks4AuthenticationResponse(result, auth.Port, auth.IP[:])
 
-	responseBuffer := alloc.NewSmallBuffer().Clear()
-	socks4Response.Write(responseBuffer)
-	writer.Write(responseBuffer.Value)
-	responseBuffer.Release()
+	socks4Response.Write(writer)
 
 	if result == protocol.Socks4RequestRejected {
 		log.Warning("Socks: Unsupported socks 4 command ", auth.Command)
 		return ErrorUnsupportedSocksCommand
 	}
+
+	reader.SetCached(false)
+	writer.SetCached(false)
 
 	dest := v2net.TCPDestination(v2net.IPAddress(auth.IP[:]), auth.Port)
 	packet := v2net.NewPacket(dest, nil, true)

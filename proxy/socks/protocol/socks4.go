@@ -2,8 +2,8 @@ package protocol
 
 import (
 	"errors"
+	"io"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
@@ -32,8 +32,8 @@ func NewSocks4AuthenticationResponse(result byte, port v2net.Port, ip []byte) *S
 	}
 }
 
-func (r *Socks4AuthenticationResponse) Write(buffer *alloc.Buffer) {
-	buffer.AppendBytes(
-		byte(0x00), r.result, byte(r.port>>8), byte(r.port),
-		r.ip[0], r.ip[1], r.ip[2], r.ip[3])
+func (r *Socks4AuthenticationResponse) Write(writer io.Writer) {
+	writer.Write([]byte{
+		byte(0x00), r.result, byte(r.port >> 8), byte(r.port),
+		r.ip[0], r.ip[1], r.ip[2], r.ip[3]})
 }

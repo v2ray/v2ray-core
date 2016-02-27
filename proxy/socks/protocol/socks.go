@@ -295,16 +295,16 @@ func (r *Socks5Response) SetDomain(domain string) {
 	r.Domain = domain
 }
 
-func (r *Socks5Response) Write(buffer *alloc.Buffer) {
-	buffer.AppendBytes(r.Version, r.Error, 0x00 /* reserved */, r.AddrType)
+func (r *Socks5Response) Write(writer io.Writer) {
+	writer.Write([]byte{r.Version, r.Error, 0x00 /* reserved */, r.AddrType})
 	switch r.AddrType {
 	case 0x01:
-		buffer.Append(r.IPv4[:])
+		writer.Write(r.IPv4[:])
 	case 0x03:
-		buffer.AppendBytes(byte(len(r.Domain)))
-		buffer.Append([]byte(r.Domain))
+		writer.Write([]byte{byte(len(r.Domain))})
+		writer.Write([]byte(r.Domain))
 	case 0x04:
-		buffer.Append(r.IPv6[:])
+		writer.Write(r.IPv6[:])
 	}
-	buffer.Append(r.Port.Bytes())
+	writer.Write(r.Port.Bytes())
 }
