@@ -96,7 +96,7 @@ func (this *InboundDetourHandlerDynamic) refresh() error {
 		delete(this.portsInUse, ich.Port())
 		ich.Close()
 
-		err := retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
+		err := retry.Timed(100 /* times */, 1000 /* ms */).On(func() error {
 			err := ich.Listen(port)
 			if err != nil {
 				log.Error("Point: Failed to start inbound detour on port ", port, ": ", err)
