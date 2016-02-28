@@ -37,8 +37,8 @@ func (this *Authenticator) Authenticate(auth []byte, data []byte) []byte {
 func HeaderKeyGenerator(key []byte, iv []byte) func() []byte {
 	return func() []byte {
 		newKey := make([]byte, 0, len(key)+len(iv))
-		newKey = append(newKey, key...)
 		newKey = append(newKey, iv...)
+		newKey = append(newKey, key...)
 		return newKey
 	}
 }
