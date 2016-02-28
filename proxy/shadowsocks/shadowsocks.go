@@ -184,7 +184,7 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 
 	reader := crypto.NewCryptionReader(stream, timedReader)
 
-	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(iv, key)), false)
+	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(key, iv)), false)
 	if err != nil {
 		log.Access(conn.RemoteAddr(), serial.StringLiteral(""), log.AccessRejected, serial.StringLiteral(err.Error()))
 		log.Warning("Shadowsocks: Invalid request from ", conn.RemoteAddr(), ": ", err)
