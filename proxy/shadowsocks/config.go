@@ -62,6 +62,7 @@ type Config struct {
 	Key    []byte
 	UDP    bool
 	Level  protocol.UserLevel
+	Email  string
 }
 
 func PasswordToCipherKey(password string, keySize int) []byte {

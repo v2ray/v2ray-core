@@ -18,6 +18,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		Password serial.StringLiteral `json:"password"`
 		UDP      bool                 `json:"udp"`
 		Level    byte                 `json:"level"`
+		Email    string               `json:"email"`
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
@@ -55,6 +56,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	this.Key = PasswordToCipherKey(jsonConfig.Password.String(), this.Cipher.KeySize())
 
 	this.Level = protocol.UserLevel(jsonConfig.Level)
+	this.Email = jsonConfig.Email
 
 	return nil
 }
