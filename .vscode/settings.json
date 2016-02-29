@@ -1,6 +1,6 @@
 // Place your settings in this file to overwrite default and user settings.
 {
-  "go.buildFlags": ["-tags=json"],
-  "go.lintFlags": ["-tags=json"],
-  "go.vetFlags": ["-tags=json"]
+  "go.buildFlags": ["-tags", "json"],
+  "go.lintFlags": ["-tags", "json"],
+  "go.vetFlags": ["-tags", "json"]
 }
