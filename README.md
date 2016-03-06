@@ -8,9 +8,9 @@
 
 V2Ray 是一个模块化的代理软件包，它的目标是提供常用的代理软件模块，简化网络代理软件的开发。
 
-[官方网站](https://www.v2ray.com/) | [Wiki](https://github.com/v2ray/v2ray.github.io/wiki)
+[官方网站](https://www.v2ray.com/)
 
-V2Ray provides building blocks for network proxy development. Read our [Wiki](https://github.com/v2ray/v2ray.github.io/wiki/en-us:Home) for more information.
+V2Ray provides building blocks for network proxy development. Read our [Wiki](https://www.v2ray.com/en/index.html) for more information.
 
 ## License
 [The MIT License (MIT)](https://raw.githubusercontent.com/v2ray/v2ray-core/master/LICENSE)
