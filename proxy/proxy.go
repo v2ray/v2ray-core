@@ -6,6 +6,13 @@ import (
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
+type HandlerState int
+
+const (
+	HandlerStateStopped = HandlerState(0)
+	HandlerStateRunning = HandlerState(1)
+)
+
 // An InboundHandler handles inbound network connections to V2Ray.
 type InboundHandler interface {
 	// Listen starts a InboundHandler by listen on a specific port.
