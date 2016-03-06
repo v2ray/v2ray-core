@@ -51,7 +51,6 @@ func (this *InboundDetourHandlerDynamic) pickUnusedPort() v2net.Port {
 		port := this.config.PortRange.From + v2net.Port(r)
 		_, used := this.portsInUse[port]
 		if !used {
-			this.portsInUse[port] = true
 			return port
 		}
 	}
@@ -84,30 +83,32 @@ func (this *InboundDetourHandlerDynamic) Close() {
 }
 
 func (this *InboundDetourHandlerDynamic) refresh() error {
-	this.Lock()
-	defer this.Unlock()
-
 	this.lastRefresh = time.Now()
 
-	this.ich2Recycle, this.ichInUse = this.ichInUse, this.ich2Recycle
-	for _, ich := range this.ichInUse {
-		port := this.pickUnusedPort()
+	for _, ich := range this.ich2Recycle {
+		port2Delete := ich.Port()
 
-		delete(this.portsInUse, ich.Port())
 		ich.Close()
-
 		err := retry.Timed(100 /* times */, 1000 /* ms */).On(func() error {
+			port := this.pickUnusedPort()
 			err := ich.Listen(port)
 			if err != nil {
 				log.Error("Point: Failed to start inbound detour on port ", port, ": ", err)
 				return err
 			}
+			this.portsInUse[port] = true
 			return nil
 		})
 		if err != nil {
-			return err
+			continue
 		}
+
+		delete(this.portsInUse, port2Delete)
 	}
+
+	this.Lock()
+	this.ich2Recycle, this.ichInUse = this.ichInUse, this.ich2Recycle
+	this.Unlock()
 
 	return nil
 }
