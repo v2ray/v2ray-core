@@ -250,6 +250,7 @@ func init() {
 		anySubDomain + "liepin" + dotCom,
 		anySubDomain + "lietou" + dotCom,
 		anySubDomain + "linkvans" + dotCom,
+		anySubDomain + "linuxidc" + dotCom,
 		anySubDomain + "lightonus" + dotCom,
 		anySubDomain + "lofter" + dotCom,
 		anySubDomain + "lu" + dotCom,
@@ -418,6 +419,7 @@ func init() {
 		anySubDomain + "zhiziyun" + dotCom,
 		anySubDomain + "zjstv" + dotCom,
 		anySubDomain + "zhubajie" + dotCom,
+		anySubDomain + "zrblog" + dotNet,
 		anySubDomain + "zuche" + dotCom,
 		anySubDomain + "zuchecdn" + dotCom,
 	}
