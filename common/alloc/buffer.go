@@ -166,10 +166,14 @@ func (p *bufferPool) allocate() *Buffer {
 }
 
 func (p *bufferPool) free(buffer *Buffer) {
+	rawBuffer := buffer.head
+	if rawBuffer == nil {
+		return
+	}
 	select {
-	case p.chain <- buffer.head:
+	case p.chain <- rawBuffer:
 	default:
-		p.allocator.Put(buffer.head)
+		p.allocator.Put(rawBuffer)
 	}
 }
 
