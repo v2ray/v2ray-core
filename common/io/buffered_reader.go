@@ -22,6 +22,8 @@ func NewBufferedReader(rawReader io.Reader) *BufferedReader {
 
 func (this *BufferedReader) Release() {
 	this.buffer.Release()
+	this.buffer = nil
+	this.reader = nil
 }
 
 func (this *BufferedReader) Cached() bool {
