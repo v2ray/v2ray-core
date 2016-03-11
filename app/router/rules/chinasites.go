@@ -257,6 +257,7 @@ func init() {
 		anySubDomain + "kuqin" + dotCom,
 		anySubDomain + "lady8844" + dotCom,
 		anySubDomain + "lagou" + dotCom,
+		anySubDomain + "le" + dotCom,
 		anySubDomain + "leanote" + dotCom,
 		anySubDomain + "leiphone" + dotCom,
 		anySubDomain + "leju" + dotCom,
