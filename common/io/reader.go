@@ -3,6 +3,7 @@ package io // import "github.com/v2ray/v2ray-core/common/io"
 import (
 	"io"
 
+	"github.com/v2ray/v2ray-core/common"
 	"github.com/v2ray/v2ray-core/common/alloc"
 )
 
@@ -21,6 +22,11 @@ func ReadFrom(reader io.Reader, buffer *alloc.Buffer) (*alloc.Buffer, error) {
 type Reader interface {
 	// Read reads content from underlying reader, and put it into an alloc.Buffer.
 	Read() (*alloc.Buffer, error)
+}
+
+type ReleasableReader interface {
+	Reader
+	common.Releasable
 }
 
 // AdaptiveReader is a Reader that adjusts its reading speed automatically.
@@ -56,4 +62,8 @@ func (this *AdaptiveReader) Read() (*alloc.Buffer, error) {
 		return nil, err
 	}
 	return buffer, nil
+}
+
+func (this *AdaptiveReader) Release() {
+	this.reader = nil
 }

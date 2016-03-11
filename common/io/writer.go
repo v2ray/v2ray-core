@@ -32,3 +32,7 @@ func (this *AdaptiveWriter) Write(buffer *alloc.Buffer) error {
 	}
 	return err
 }
+
+func (this *AdaptiveWriter) Release() {
+	this.writer = nil
+}

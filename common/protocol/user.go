@@ -57,3 +57,7 @@ func GetUserSettings(level UserLevel) UserSettings {
 	}
 	return settings
 }
+
+type Account interface {
+	CryptionKey() []byte
+}

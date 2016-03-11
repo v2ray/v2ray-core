@@ -10,6 +10,8 @@ var (
 	ErrorAlreadyReleased = errors.New("Object already released.")
 )
 
+// Releasable interface is for those types that can release its members.
 type Releasable interface {
+	// Release releases all references to accelerate garbage collection.
 	Release()
 }

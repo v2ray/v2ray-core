@@ -16,7 +16,6 @@ var (
 type TCPConn struct {
 	conn     *net.TCPConn
 	listener *TCPHub
-	dirty    bool
 }
 
 func (this *TCPConn) Read(b []byte) (int, error) {
@@ -38,8 +37,6 @@ func (this *TCPConn) Close() error {
 		return ErrorClosedConnection
 	}
 	err := this.conn.Close()
-	this.conn = nil
-	this.listener = nil
 	return err
 }
 
@@ -48,11 +45,9 @@ func (this *TCPConn) Release() {
 		return
 	}
 
-	if this.dirty {
-		this.Close()
-		return
-	}
-	this.listener.recycle(this.conn)
+	this.Close()
+	this.conn = nil
+	this.listener = nil
 }
 
 func (this *TCPConn) LocalAddr() net.Addr {

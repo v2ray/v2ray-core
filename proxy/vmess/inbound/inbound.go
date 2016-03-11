@@ -118,8 +118,11 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 	defer connection.Close()
 
 	connReader := v2net.NewTimeOutReader(16, connection)
+	defer connReader.Release()
 
 	reader := v2io.NewBufferedReader(connReader)
+	defer reader.Release()
+
 	session := raw.NewServerSession(this.clients)
 
 	request, err := session.DecodeRequestHeader(reader)
@@ -145,7 +148,8 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 		defer close(input)
 		defer readFinish.Unlock()
 		bodyReader := session.DecodeRequestBody(reader)
-		var requestReader v2io.Reader
+		var requestReader v2io.ReleasableReader
+		defer requestReader.Release()
 		if request.Option.IsChunkStream() {
 			requestReader = vmessio.NewAuthChunkReader(bodyReader)
 		} else {
@@ -155,6 +159,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 	}()
 
 	writer := v2io.NewBufferedWriter(connection)
+	defer writer.Release()
 
 	response := &proto.ResponseHeader{
 		Command: this.generateCommand(request),

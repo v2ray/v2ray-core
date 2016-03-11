@@ -50,6 +50,11 @@ func (reader *TimeOutReader) SetTimeOut(value int) {
 	}
 }
 
+func (reader *TimeOutReader) Release() {
+	reader.connection = nil
+	reader.worker = nil
+}
+
 type timedReaderWorker struct {
 	timeout    int
 	connection net.Conn

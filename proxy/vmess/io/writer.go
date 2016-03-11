@@ -23,6 +23,10 @@ func (this *AuthChunkWriter) Write(buffer *alloc.Buffer) error {
 	return this.writer.Write(buffer)
 }
 
+func (this *AuthChunkWriter) Release() {
+	this.writer = nil
+}
+
 func Authenticate(buffer *alloc.Buffer) {
 	fnvHash := fnv.New32a()
 	fnvHash.Write(buffer.Value)

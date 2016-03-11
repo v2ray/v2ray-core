@@ -44,3 +44,7 @@ func (this *AuthChunkReader) Read() (*alloc.Buffer, error) {
 	buffer.SliceFrom(4)
 	return buffer, nil
 }
+
+func (this *AuthChunkReader) Release() {
+	this.reader = nil
+}
