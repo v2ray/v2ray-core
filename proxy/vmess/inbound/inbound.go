@@ -149,13 +149,13 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 		defer readFinish.Unlock()
 		bodyReader := session.DecodeRequestBody(reader)
 		var requestReader v2io.ReleasableReader
-		defer requestReader.Release()
 		if request.Option.IsChunkStream() {
 			requestReader = vmessio.NewAuthChunkReader(bodyReader)
 		} else {
 			requestReader = v2io.NewAdaptiveReader(bodyReader)
 		}
 		v2io.ReaderToChan(input, requestReader)
+		requestReader.Release()
 	}()
 
 	writer := v2io.NewBufferedWriter(connection)
