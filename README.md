@@ -5,6 +5,7 @@
 [![codecov.io](https://codecov.io/github/v2ray/v2ray-core/coverage.svg?branch=master)](https://codecov.io/github/v2ray/v2ray-core?branch=master)
 [![Go Report](http://goreportcard.com/badge/v2ray/v2ray-core)](https://goreportcard.com/report/v2ray/v2ray-core)
 [![GoDoc](https://godoc.org/github.com/v2ray/v2ray-core?status.svg)](https://godoc.org/github.com/v2ray/v2ray-core)
+[![codebeat](https://codebeat.co/badges/f2354ca8-3e24-463d-a2e3-159af73b2477)](https://codebeat.co/projects/github-com-v2ray-v2ray-core)
 
 V2Ray 是一个模块化的代理软件包，它的目标是提供常用的代理软件模块，简化网络代理软件的开发。
 
