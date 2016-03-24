@@ -3,6 +3,7 @@ package io
 import (
 	"io"
 
+    "github.com/v2ray/v2ray-core/common"
 	"github.com/v2ray/v2ray-core/common/alloc"
 )
 
@@ -10,6 +11,11 @@ import (
 type Writer interface {
 	// Write writes an alloc.Buffer into underlying writer.
 	Write(*alloc.Buffer) error
+}
+
+type ReleasableWriter interface {
+    Writer
+    common.Releasable
 }
 
 // AdaptiveWriter is a Writer that writes alloc.Buffer into underlying writer.

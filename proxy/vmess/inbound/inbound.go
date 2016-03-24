@@ -179,11 +179,12 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 
 		writer.SetCached(false)
 		go func(finish *sync.Mutex) {
-			var writer v2io.Writer = v2io.NewAdaptiveWriter(bodyWriter)
+			var writer v2io.ReleasableWriter = v2io.NewAdaptiveWriter(bodyWriter)
 			if request.Option.IsChunkStream() {
 				writer = vmessio.NewAuthChunkWriter(writer)
 			}
 			v2io.ChanToWriter(writer, output)
+            writer.Release()
 			finish.Unlock()
 		}(&writeFinish)
 		writeFinish.Lock()
