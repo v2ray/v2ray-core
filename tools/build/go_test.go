@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -19,10 +18,12 @@ func TestBuildAndRun(t *testing.T) {
 	v2testing.Current(t)
 
 	gopath := os.Getenv("GOPATH")
-	target := filepath.Join(gopath, "src", "v2ray_test")
-	fmt.Println(target)
 	goOS := parseOS(runtime.GOOS)
 	goArch := parseArch(runtime.GOARCH)
+    target := filepath.Join(gopath, "src", "v2ray_test")
+    if goOS == Windows {
+        target += ".exe"
+    }
 	err := buildV2Ray(target, "v1.0", goOS, goArch)
 	assert.Error(err).IsNil()
 
