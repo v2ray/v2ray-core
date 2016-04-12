@@ -2,7 +2,6 @@ package alloc
 
 import (
 	"io"
-	"sync"
 )
 
 const (
@@ -14,7 +13,7 @@ const (
 // quickly.
 type Buffer struct {
 	head   []byte
-	pool   *bufferPool
+	pool   *BufferPool
 	Value  []byte
 	offset int
 }
@@ -24,7 +23,7 @@ func (b *Buffer) Release() {
 	if b == nil {
 		return
 	}
-	b.pool.free(b)
+	b.pool.Free(b)
 	b.head = nil
 	b.Value = nil
 	b.pool = nil
@@ -132,66 +131,17 @@ func (b *Buffer) FillFrom(reader io.Reader) (int, error) {
 	return nBytes, err
 }
 
-type bufferPool struct {
-	chain     chan []byte
-	allocator *sync.Pool
-}
-
-func newBufferPool(bufferSize, poolSize int) *bufferPool {
-	pool := &bufferPool{
-		chain: make(chan []byte, poolSize),
-		allocator: &sync.Pool{
-			New: func() interface{} { return make([]byte, bufferSize) },
-		},
-	}
-	for i := 0; i < poolSize/2; i++ {
-		pool.chain <- make([]byte, bufferSize)
-	}
-	return pool
-}
-
-func (p *bufferPool) allocate() *Buffer {
-	var b []byte
-	select {
-	case b = <-p.chain:
-	default:
-		b = p.allocator.Get().([]byte)
-	}
-	return &Buffer{
-		head:   b,
-		pool:   p,
-		Value:  b[defaultOffset:],
-		offset: defaultOffset,
-	}
-}
-
-func (p *bufferPool) free(buffer *Buffer) {
-	rawBuffer := buffer.head
-	if rawBuffer == nil {
-		return
-	}
-	select {
-	case p.chain <- rawBuffer:
-	default:
-		p.allocator.Put(rawBuffer)
-	}
-}
-
-var smallPool = newBufferPool(1024, 64)
-var mediumPool = newBufferPool(8*1024, 128)
-var largePool = newBufferPool(64*1024, 64)
-
 // NewSmallBuffer creates a Buffer with 1K bytes of arbitrary content.
 func NewSmallBuffer() *Buffer {
-	return smallPool.allocate()
+	return smallPool.Allocate()
 }
 
 // NewBuffer creates a Buffer with 8K bytes of arbitrary content.
 func NewBuffer() *Buffer {
-	return mediumPool.allocate()
+	return mediumPool.Allocate()
 }
 
 // NewLargeBuffer creates a Buffer with 64K bytes of arbitrary content.
 func NewLargeBuffer() *Buffer {
-	return largePool.allocate()
+	return largePool.Allocate()
 }
