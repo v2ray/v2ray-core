@@ -90,6 +90,7 @@ func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn
 	defer finish.Unlock()
 
 	writer := v2io.NewBufferedWriter(conn)
+	defer writer.Release()
 	session.EncodeRequestHeader(request, writer)
 
 	// Send first packet of payload together with request, in favor of small requests.
@@ -131,6 +132,7 @@ func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, con
 	defer close(output)
 
 	reader := v2io.NewBufferedReader(conn)
+	defer reader.Release()
 
 	header, err := session.DecodeResponseHeader(reader)
 	if err != nil {

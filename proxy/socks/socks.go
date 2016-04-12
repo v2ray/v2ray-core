@@ -95,8 +95,10 @@ func (this *SocksServer) handleConnection(connection *hub.TCPConn) {
 
 	timedReader := v2net.NewTimeOutReader(120, connection)
 	reader := v2io.NewBufferedReader(timedReader)
+	defer reader.Release()
 
 	writer := v2io.NewBufferedWriter(connection)
+	defer writer.Release()
 
 	auth, auth4, err := protocol.ReadAuthentication(reader)
 	if err != nil && err != protocol.Socks4Downgrade {
