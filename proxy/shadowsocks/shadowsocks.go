@@ -234,6 +234,7 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 
 	v2io.ReaderToChan(ray.InboundInput(), payloadReader)
 	close(ray.InboundInput())
+	payloadReader.Release()
 
 	writeFinish.Lock()
 }

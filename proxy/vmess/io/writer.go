@@ -9,10 +9,10 @@ import (
 )
 
 type AuthChunkWriter struct {
-	writer v2io.ReleasableWriter
+	writer v2io.Writer
 }
 
-func NewAuthChunkWriter(writer v2io.ReleasableWriter) *AuthChunkWriter {
+func NewAuthChunkWriter(writer v2io.Writer) *AuthChunkWriter {
 	return &AuthChunkWriter{
 		writer: writer,
 	}
@@ -25,7 +25,7 @@ func (this *AuthChunkWriter) Write(buffer *alloc.Buffer) error {
 
 func (this *AuthChunkWriter) Release() {
 	this.writer.Release()
-    this.writer = nil
+	this.writer = nil
 }
 
 func Authenticate(buffer *alloc.Buffer) {

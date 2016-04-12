@@ -116,12 +116,12 @@ func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn
 	writer.SetCached(false)
 
 	if moreChunks {
-		var streamWriter v2io.ReleasableWriter = v2io.NewAdaptiveWriter(bodyWriter)
+		var streamWriter v2io.Writer = v2io.NewAdaptiveWriter(bodyWriter)
 		if request.Option.IsChunkStream() {
 			streamWriter = vmessio.NewAuthChunkWriter(streamWriter)
 		}
 		v2io.ChanToWriter(streamWriter, input)
-        streamWriter.Release()
+		streamWriter.Release()
 	}
 	return
 }
@@ -150,6 +150,7 @@ func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, con
 	}
 
 	v2io.ReaderToChan(output, bodyReader)
+	bodyReader.Release()
 
 	return
 }

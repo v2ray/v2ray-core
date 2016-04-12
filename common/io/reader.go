@@ -20,13 +20,9 @@ func ReadFrom(reader io.Reader, buffer *alloc.Buffer) (*alloc.Buffer, error) {
 
 // Reader extends io.Reader with alloc.Buffer.
 type Reader interface {
+	common.Releasable
 	// Read reads content from underlying reader, and put it into an alloc.Buffer.
 	Read() (*alloc.Buffer, error)
-}
-
-type ReleasableReader interface {
-	Reader
-	common.Releasable
 }
 
 // AdaptiveReader is a Reader that adjusts its reading speed automatically.

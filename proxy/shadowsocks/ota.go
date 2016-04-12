@@ -66,6 +66,11 @@ func NewChunkReader(reader io.Reader, auth *Authenticator) *ChunkReader {
 	}
 }
 
+func (this *ChunkReader) Release() {
+	this.reader = nil
+	this.auth = nil
+}
+
 func (this *ChunkReader) Read() (*alloc.Buffer, error) {
 	buffer := alloc.NewLargeBuffer()
 	if _, err := io.ReadFull(this.reader, buffer.Value[:2]); err != nil {
