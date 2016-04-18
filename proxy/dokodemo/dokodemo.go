@@ -133,13 +133,19 @@ func (this *DokodemoDoor) HandleTCPConnection(conn *hub.TCPConn) {
 
 	reader := v2net.NewTimeOutReader(this.config.Timeout, conn)
 	go func() {
-		v2io.Pipe(v2io.NewAdaptiveReader(reader), ray.InboundInput())
+		v2reader := v2io.NewAdaptiveReader(reader)
+		defer v2reader.Release()
+
+		v2io.Pipe(v2reader, ray.InboundInput())
 		inputFinish.Unlock()
 		ray.InboundInput().Close()
 	}()
 
 	go func() {
-		v2io.Pipe(ray.InboundOutput(), v2io.NewAdaptiveWriter(conn))
+		v2writer := v2io.NewAdaptiveWriter(conn)
+		defer v2writer.Release()
+
+		v2io.Pipe(ray.InboundOutput(), v2writer)
 		outputFinish.Unlock()
 	}()
 

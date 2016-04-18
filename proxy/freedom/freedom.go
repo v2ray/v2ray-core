@@ -51,7 +51,10 @@ func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbou
 		writeMutex.Unlock()
 	} else {
 		go func() {
-			v2io.Pipe(input, v2io.NewAdaptiveWriter(conn))
+			v2writer := v2io.NewAdaptiveWriter(conn)
+			defer v2writer.Release()
+
+			v2io.Pipe(input, v2writer)
 			writeMutex.Unlock()
 		}()
 	}
@@ -66,7 +69,10 @@ func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbou
 			reader = v2net.NewTimeOutReader(16 /* seconds */, conn)
 		}
 
-		v2io.Pipe(v2io.NewAdaptiveReader(reader), output)
+		v2reader := v2io.NewAdaptiveReader(reader)
+		defer v2reader.Release()
+
+		v2io.Pipe(v2reader, output)
 	}()
 
 	writeMutex.Lock()

@@ -154,13 +154,19 @@ func (this *HttpProxyServer) transport(input io.Reader, output io.Writer, ray ra
 	defer wg.Wait()
 
 	go func() {
-		v2io.Pipe(v2io.NewAdaptiveReader(input), ray.InboundInput())
+		v2reader := v2io.NewAdaptiveReader(input)
+		defer v2reader.Release()
+
+		v2io.Pipe(v2reader, ray.InboundInput())
 		ray.InboundInput().Close()
 		wg.Done()
 	}()
 
 	go func() {
-		v2io.Pipe(ray.InboundOutput(), v2io.NewAdaptiveWriter(output))
+		v2writer := v2io.NewAdaptiveWriter(output)
+		defer v2writer.Release()
+
+		v2io.Pipe(ray.InboundOutput(), v2writer)
 		ray.InboundOutput().Release()
 		wg.Done()
 	}()

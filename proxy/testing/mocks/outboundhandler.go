@@ -33,7 +33,10 @@ func (this *OutboundConnectionHandler) Dispatch(packet v2net.Packet, ray ray.Out
 		writeFinish.Lock()
 
 		go func() {
-			v2io.Pipe(input, v2io.NewAdaptiveWriter(this.ConnOutput))
+			v2writer := v2io.NewAdaptiveWriter(this.ConnOutput)
+			defer v2writer.Release()
+
+			v2io.Pipe(input, v2writer)
 			writeFinish.Unlock()
 			input.Release()
 		}()
@@ -41,7 +44,10 @@ func (this *OutboundConnectionHandler) Dispatch(packet v2net.Packet, ray ray.Out
 		writeFinish.Lock()
 	}
 
-	v2io.Pipe(v2io.NewAdaptiveReader(this.ConnInput), output)
+	v2reader := v2io.NewAdaptiveReader(this.ConnInput)
+	defer v2reader.Release()
+
+	v2io.Pipe(v2reader, output)
 	output.Close()
 
 	return nil

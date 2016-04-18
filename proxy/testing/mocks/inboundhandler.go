@@ -42,13 +42,19 @@ func (this *InboundConnectionHandler) Communicate(packet v2net.Packet) error {
 	writeFinish.Lock()
 
 	go func() {
-		v2io.Pipe(v2io.NewAdaptiveReader(this.ConnInput), input)
+		v2reader := v2io.NewAdaptiveReader(this.ConnInput)
+		defer v2reader.Release()
+
+		v2io.Pipe(v2reader, input)
 		input.Close()
 		readFinish.Unlock()
 	}()
 
 	go func() {
-		v2io.Pipe(output, v2io.NewAdaptiveWriter(this.ConnOutput))
+		v2writer := v2io.NewAdaptiveWriter(this.ConnOutput)
+		defer v2writer.Release()
+
+		v2io.Pipe(output, v2writer)
 		output.Release()
 		writeFinish.Unlock()
 	}()

@@ -219,7 +219,10 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 			payload.Release()
 
 			writer := crypto.NewCryptionWriter(stream, conn)
-			v2io.Pipe(ray.InboundOutput(), v2io.NewAdaptiveWriter(writer))
+			v2writer := v2io.NewAdaptiveWriter(writer)
+			defer writer.Release()
+
+			v2io.Pipe(ray.InboundOutput(), v2writer)
 			ray.InboundOutput().Release()
 		}
 		writeFinish.Unlock()
