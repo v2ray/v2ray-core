@@ -145,7 +145,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 	connReader.SetTimeOut(userSettings.PayloadReadTimeout)
 	reader.SetCached(false)
 	go func() {
-		defer close(input)
+		defer input.Close()
 		defer readFinish.Unlock()
 		bodyReader := session.DecodeRequestBody(reader)
 		var requestReader v2io.Reader
@@ -154,7 +154,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 		} else {
 			requestReader = v2io.NewAdaptiveReader(bodyReader)
 		}
-		v2io.ReaderToChan(input, requestReader)
+		v2io.Pipe(requestReader, input)
 		requestReader.Release()
 	}()
 
@@ -170,7 +170,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 	bodyWriter := session.EncodeResponseBody(writer)
 
 	// Optimize for small response packet
-	if data, open := <-output; open {
+	if data, err := output.Read(); err == nil {
 		if request.Option.IsChunkStream() {
 			vmessio.Authenticate(data)
 		}
@@ -183,7 +183,8 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 			if request.Option.IsChunkStream() {
 				writer = vmessio.NewAuthChunkWriter(writer)
 			}
-			v2io.ChanToWriter(writer, output)
+			v2io.Pipe(output, writer)
+			output.Release()
 			writer.Release()
 			finish.Unlock()
 		}(&writeFinish)

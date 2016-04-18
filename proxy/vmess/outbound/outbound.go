@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/v2ray/v2ray-core/app"
-	"github.com/v2ray/v2ray-core/common/alloc"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -60,7 +59,7 @@ func (this *VMessOutboundHandler) startCommunicate(request *proto.RequestHeader,
 	if err != nil {
 		log.Error("Failed to open ", dest, ": ", err)
 		if ray != nil {
-			close(ray.OutboundOutput())
+			ray.OutboundOutput().Close()
 		}
 		return err
 	}
@@ -83,10 +82,12 @@ func (this *VMessOutboundHandler) startCommunicate(request *proto.RequestHeader,
 	requestFinish.Lock()
 	conn.CloseWrite()
 	responseFinish.Lock()
+	output.Close()
+	input.Release()
 	return nil
 }
 
-func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn net.Conn, request *proto.RequestHeader, firstPacket v2net.Packet, input <-chan *alloc.Buffer, finish *sync.Mutex) {
+func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn net.Conn, request *proto.RequestHeader, firstPacket v2net.Packet, input v2io.Reader, finish *sync.Mutex) {
 	defer finish.Unlock()
 
 	writer := v2io.NewBufferedWriter(conn)
@@ -96,15 +97,6 @@ func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn
 	// Send first packet of payload together with request, in favor of small requests.
 	firstChunk := firstPacket.Chunk()
 	moreChunks := firstPacket.MoreChunks()
-
-	for firstChunk == nil && moreChunks {
-		firstChunk, moreChunks = <-input
-	}
-
-	if firstChunk == nil && !moreChunks {
-		log.Warning("VMessOut: Nothing to send. Existing...")
-		return
-	}
 
 	if request.Option.IsChunkStream() {
 		vmessio.Authenticate(firstChunk)
@@ -121,15 +113,14 @@ func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn
 		if request.Option.IsChunkStream() {
 			streamWriter = vmessio.NewAuthChunkWriter(streamWriter)
 		}
-		v2io.ChanToWriter(streamWriter, input)
+		v2io.Pipe(input, streamWriter)
 		streamWriter.Release()
 	}
 	return
 }
 
-func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, conn net.Conn, request *proto.RequestHeader, dest v2net.Destination, output chan<- *alloc.Buffer, finish *sync.Mutex) {
+func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, conn net.Conn, request *proto.RequestHeader, dest v2net.Destination, output v2io.Writer, finish *sync.Mutex) {
 	defer finish.Unlock()
-	defer close(output)
 
 	reader := v2io.NewBufferedReader(conn)
 	defer reader.Release()
@@ -151,7 +142,7 @@ func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, con
 		bodyReader = v2io.NewAdaptiveReader(decryptReader)
 	}
 
-	v2io.ReaderToChan(output, bodyReader)
+	v2io.Pipe(bodyReader, output)
 	bodyReader.Release()
 
 	return

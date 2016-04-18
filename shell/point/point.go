@@ -199,13 +199,17 @@ func (this *Point) FilterPacketAndDispatch(packet v2net.Packet, link ray.Outboun
 	chunk := packet.Chunk()
 	moreChunks := packet.MoreChunks()
 	changed := false
+	var err error
 	for chunk == nil && moreChunks {
 		changed = true
-		chunk, moreChunks = <-link.OutboundInput()
+		chunk, err = link.OutboundInput().Read()
+		if err != nil {
+			moreChunks = false
+		}
 	}
 	if chunk == nil && !moreChunks {
 		log.Info("Point: No payload to dispatch, stopping dispatching now.")
-		close(link.OutboundOutput())
+		link.OutboundOutput().Close()
 		return
 	}
 

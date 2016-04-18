@@ -20,10 +20,10 @@ func TestBuildAndRun(t *testing.T) {
 	gopath := os.Getenv("GOPATH")
 	goOS := parseOS(runtime.GOOS)
 	goArch := parseArch(runtime.GOARCH)
-    target := filepath.Join(gopath, "src", "v2ray_test")
-    if goOS == Windows {
-        target += ".exe"
-    }
+	target := filepath.Join(gopath, "src", "v2ray_test")
+	if goOS == Windows {
+		target += ".exe"
+	}
 	err := buildV2Ray(target, "v1.0", goOS, goArch)
 	assert.Error(err).IsNil()
 

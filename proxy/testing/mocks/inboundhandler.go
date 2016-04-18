@@ -42,13 +42,14 @@ func (this *InboundConnectionHandler) Communicate(packet v2net.Packet) error {
 	writeFinish.Lock()
 
 	go func() {
-		v2io.RawReaderToChan(input, this.ConnInput)
-		close(input)
+		v2io.Pipe(v2io.NewAdaptiveReader(this.ConnInput), input)
+		input.Close()
 		readFinish.Unlock()
 	}()
 
 	go func() {
-		v2io.ChanToRawWriter(this.ConnOutput, output)
+		v2io.Pipe(output, v2io.NewAdaptiveWriter(this.ConnOutput))
+		output.Release()
 		writeFinish.Unlock()
 	}()
 

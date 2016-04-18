@@ -1,11 +1,14 @@
 package net
 
 import (
+	"github.com/v2ray/v2ray-core/common"
 	"github.com/v2ray/v2ray-core/common/alloc"
 )
 
 // Packet is a network packet to be sent to destination.
 type Packet interface {
+	common.Releasable
+
 	Destination() Destination
 	Chunk() *alloc.Buffer // First chunk of this commnunication
 	MoreChunks() bool
@@ -36,4 +39,9 @@ func (packet *packetImpl) Chunk() *alloc.Buffer {
 
 func (packet *packetImpl) MoreChunks() bool {
 	return packet.moreData
+}
+
+func (packet *packetImpl) Release() {
+	packet.data.Release()
+	packet.data = nil
 }

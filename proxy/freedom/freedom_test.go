@@ -37,14 +37,11 @@ func TestSinglePacket(t *testing.T) {
 
 	err = freedom.Dispatch(packet, traffic)
 	assert.Error(err).IsNil()
-	close(traffic.InboundInput())
+	traffic.InboundInput().Close()
 
-	respPayload := <-traffic.InboundOutput()
-	defer respPayload.Release()
+	respPayload, err := traffic.InboundOutput().Read()
+	assert.Error(err).IsNil()
 	assert.Bytes(respPayload.Value).Equals([]byte("Processed: Data to be sent to remote"))
-
-	_, open := <-traffic.InboundOutput()
-	assert.Bool(open).IsFalse()
 
 	tcpServer.Close()
 }
@@ -60,7 +57,4 @@ func TestUnreachableDestination(t *testing.T) {
 
 	err := freedom.Dispatch(packet, traffic)
 	assert.Error(err).IsNotNil()
-
-	_, open := <-traffic.InboundOutput()
-	assert.Bool(open).IsFalse()
 }

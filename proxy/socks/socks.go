@@ -276,14 +276,15 @@ func (this *SocksServer) transport(reader io.Reader, writer io.Writer, firstPack
 	outputFinish.Lock()
 
 	go func() {
-		v2io.RawReaderToChan(input, reader)
+		v2io.Pipe(v2io.NewAdaptiveReader(reader), input)
 		inputFinish.Unlock()
-		close(input)
+		input.Close()
 	}()
 
 	go func() {
-		v2io.ChanToRawWriter(writer, output)
+		v2io.Pipe(output, v2io.NewAdaptiveWriter(writer))
 		outputFinish.Unlock()
+		output.Release()
 	}()
 	outputFinish.Lock()
 }

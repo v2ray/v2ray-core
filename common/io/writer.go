@@ -32,6 +32,7 @@ func (this *AdaptiveWriter) Write(buffer *alloc.Buffer) error {
 	if nBytes < buffer.Len() {
 		_, err = this.writer.Write(buffer.Value[nBytes:])
 	}
+	buffer.Release()
 	return err
 }
 

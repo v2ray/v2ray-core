@@ -1,7 +1,6 @@
 package dokodemo
 
 import (
-	"io"
 	"sync"
 
 	"github.com/v2ray/v2ray-core/app/dispatcher"
@@ -126,25 +125,23 @@ func (this *DokodemoDoor) HandleTCPConnection(conn *hub.TCPConn) {
 
 	packet := v2net.NewPacket(v2net.TCPDestination(this.address, this.port), nil, true)
 	ray := this.packetDispatcher.DispatchToOutbound(packet)
+	defer ray.InboundOutput().Release()
 
 	var inputFinish, outputFinish sync.Mutex
 	inputFinish.Lock()
 	outputFinish.Lock()
 
 	reader := v2net.NewTimeOutReader(this.config.Timeout, conn)
-	go dumpInput(reader, ray.InboundInput(), &inputFinish)
-	go dumpOutput(conn, ray.InboundOutput(), &outputFinish)
+	go func() {
+		v2io.Pipe(v2io.NewAdaptiveReader(reader), ray.InboundInput())
+		inputFinish.Unlock()
+		ray.InboundInput().Close()
+	}()
+
+	go func() {
+		v2io.Pipe(ray.InboundOutput(), v2io.NewAdaptiveWriter(conn))
+		outputFinish.Unlock()
+	}()
 
 	outputFinish.Lock()
-}
-
-func dumpInput(reader io.Reader, input chan<- *alloc.Buffer, finish *sync.Mutex) {
-	v2io.RawReaderToChan(input, reader)
-	finish.Unlock()
-	close(input)
-}
-
-func dumpOutput(writer io.Writer, output <-chan *alloc.Buffer, finish *sync.Mutex) {
-	v2io.ChanToRawWriter(writer, output)
-	finish.Unlock()
 }

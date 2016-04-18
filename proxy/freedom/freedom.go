@@ -19,6 +19,9 @@ type FreedomConnection struct {
 func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {
 	log.Info("Freedom: Opening connection to ", firstPacket.Destination())
 
+	defer firstPacket.Release()
+	defer ray.OutboundInput().Release()
+
 	var conn net.Conn
 	err := retry.Timed(5, 100).On(func() error {
 		rawConn, err := dialer.Dial(firstPacket.Destination())
@@ -29,7 +32,6 @@ func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbou
 		return nil
 	})
 	if err != nil {
-		close(ray.OutboundOutput())
 		log.Error("Freedom: Failed to open connection to ", firstPacket.Destination(), ": ", err)
 		return err
 	}
@@ -43,21 +45,20 @@ func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbou
 
 	if chunk := firstPacket.Chunk(); chunk != nil {
 		conn.Write(chunk.Value)
-		chunk.Release()
 	}
 
 	if !firstPacket.MoreChunks() {
 		writeMutex.Unlock()
 	} else {
 		go func() {
-			v2io.ChanToRawWriter(conn, input)
+			v2io.Pipe(input, v2io.NewAdaptiveWriter(conn))
 			writeMutex.Unlock()
 		}()
 	}
 
 	go func() {
 		defer readMutex.Unlock()
-		defer close(output)
+		defer output.Close()
 
 		var reader io.Reader = conn
 
@@ -65,7 +66,7 @@ func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbou
 			reader = v2net.NewTimeOutReader(16 /* seconds */, conn)
 		}
 
-		v2io.RawReaderToChan(output, reader)
+		v2io.Pipe(v2io.NewAdaptiveReader(reader), output)
 	}()
 
 	writeMutex.Lock()

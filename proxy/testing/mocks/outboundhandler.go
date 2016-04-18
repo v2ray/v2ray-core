@@ -33,15 +33,16 @@ func (this *OutboundConnectionHandler) Dispatch(packet v2net.Packet, ray ray.Out
 		writeFinish.Lock()
 
 		go func() {
-			v2io.ChanToRawWriter(this.ConnOutput, input)
+			v2io.Pipe(input, v2io.NewAdaptiveWriter(this.ConnOutput))
 			writeFinish.Unlock()
+			input.Release()
 		}()
 
 		writeFinish.Lock()
 	}
 
-	v2io.RawReaderToChan(output, this.ConnInput)
-	close(output)
+	v2io.Pipe(v2io.NewAdaptiveReader(this.ConnInput), output)
+	output.Close()
 
 	return nil
 }

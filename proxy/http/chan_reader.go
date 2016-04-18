@@ -4,15 +4,16 @@ import (
 	"io"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
+	v2io "github.com/v2ray/v2ray-core/common/io"
 )
 
 type ChanReader struct {
-	stream  <-chan *alloc.Buffer
+	stream  v2io.Reader
 	current *alloc.Buffer
 	eof     bool
 }
 
-func NewChanReader(stream <-chan *alloc.Buffer) *ChanReader {
+func NewChanReader(stream v2io.Reader) *ChanReader {
 	this := &ChanReader{
 		stream: stream,
 	}
@@ -21,9 +22,9 @@ func NewChanReader(stream <-chan *alloc.Buffer) *ChanReader {
 }
 
 func (this *ChanReader) fill() {
-	b, open := <-this.stream
+	b, err := this.stream.Read()
 	this.current = b
-	if !open {
+	if err != nil {
 		this.eof = true
 		this.current = nil
 	}

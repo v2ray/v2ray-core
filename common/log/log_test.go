@@ -5,8 +5,8 @@ import (
 	"log"
 	"testing"
 
+	"github.com/v2ray/v2ray-core/common/platform"
 	"github.com/v2ray/v2ray-core/common/serial"
-    "github.com/v2ray/v2ray-core/common/platform"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )

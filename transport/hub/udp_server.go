@@ -32,7 +32,7 @@ func (this *UDPServer) locateExistingAndDispatch(dest string, packet v2net.Packe
 	this.RLock()
 	defer this.RUnlock()
 	if entry, found := this.conns[dest]; found {
-		entry.inboundRay.InboundInput() <- packet.Chunk()
+		entry.inboundRay.InboundInput().Write(packet.Chunk())
 		return true
 	}
 	return false
@@ -55,8 +55,12 @@ func (this *UDPServer) Dispatch(source v2net.Destination, packet v2net.Packet, c
 }
 
 func (this *UDPServer) handleConnection(destString string, inboundRay ray.InboundRay, source v2net.Destination, callback UDPResponseCallback) {
-	for buffer := range inboundRay.InboundOutput() {
-		callback(v2net.NewPacket(source, buffer, false))
+	for {
+		data, err := inboundRay.InboundOutput().Read()
+		if err != nil {
+			break
+		}
+		callback(v2net.NewPacket(source, data, false))
 	}
 	this.Lock()
 	delete(this.conns, destString)

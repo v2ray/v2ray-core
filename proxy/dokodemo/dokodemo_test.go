@@ -43,7 +43,7 @@ func TestDokodemoTCP(t *testing.T) {
 	tcpClient.Write([]byte(data2Send))
 	tcpClient.CloseWrite()
 
-	lastPacket := <-testPacketDispatcher.LastPacket
+	destination := <-testPacketDispatcher.Destination
 
 	response := make([]byte, 1024)
 	nBytes, err := tcpClient.Read(response)
@@ -51,9 +51,9 @@ func TestDokodemoTCP(t *testing.T) {
 	tcpClient.Close()
 
 	assert.StringLiteral("Processed: " + data2Send).Equals(string(response[:nBytes]))
-	assert.Bool(lastPacket.Destination().IsTCP()).IsTrue()
-	netassert.Address(lastPacket.Destination().Address()).Equals(v2net.IPAddress([]byte{1, 2, 3, 4}))
-	netassert.Port(lastPacket.Destination().Port()).Equals(128)
+	assert.Bool(destination.IsTCP()).IsTrue()
+	netassert.Address(destination.Address()).Equals(v2net.IPAddress([]byte{1, 2, 3, 4}))
+	netassert.Port(destination.Port()).Equals(128)
 }
 
 func TestDokodemoUDP(t *testing.T) {
@@ -86,10 +86,9 @@ func TestDokodemoUDP(t *testing.T) {
 	udpClient.Write([]byte(data2Send))
 	udpClient.Close()
 
-	lastPacket := <-testPacketDispatcher.LastPacket
+	destination := <-testPacketDispatcher.Destination
 
-	assert.StringLiteral(data2Send).Equals(string(lastPacket.Chunk().Value))
-	assert.Bool(lastPacket.Destination().IsUDP()).IsTrue()
-	netassert.Address(lastPacket.Destination().Address()).Equals(v2net.IPAddress([]byte{5, 6, 7, 8}))
-	netassert.Port(lastPacket.Destination().Port()).Equals(256)
+	assert.Bool(destination.IsUDP()).IsTrue()
+	netassert.Address(destination.Address()).Equals(v2net.IPAddress([]byte{5, 6, 7, 8}))
+	netassert.Port(destination.Port()).Equals(256)
 }

@@ -154,13 +154,14 @@ func (this *HttpProxyServer) transport(input io.Reader, output io.Writer, ray ra
 	defer wg.Wait()
 
 	go func() {
-		v2io.RawReaderToChan(ray.InboundInput(), input)
-		close(ray.InboundInput())
+		v2io.Pipe(v2io.NewAdaptiveReader(input), ray.InboundInput())
+		ray.InboundInput().Close()
 		wg.Done()
 	}()
 
 	go func() {
-		v2io.ChanToRawWriter(output, ray.InboundOutput())
+		v2io.Pipe(ray.InboundOutput(), v2io.NewAdaptiveWriter(output))
+		ray.InboundOutput().Release()
 		wg.Done()
 	}()
 }
@@ -222,7 +223,7 @@ func (this *HttpProxyServer) handlePlainHTTP(request *http.Request, dest v2net.D
 
 	packet := v2net.NewPacket(dest, requestBuffer, true)
 	ray := this.packetDispatcher.DispatchToOutbound(packet)
-	defer close(ray.InboundInput())
+	defer ray.InboundInput().Close()
 
 	var wg sync.WaitGroup
 	wg.Add(1)

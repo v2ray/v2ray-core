@@ -204,7 +204,7 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 	var writeFinish sync.Mutex
 	writeFinish.Lock()
 	go func() {
-		if payload, ok := <-ray.InboundOutput(); ok {
+		if payload, err := ray.InboundOutput().Read(); err == nil {
 			payload.SliceBack(ivLen)
 			rand.Read(payload.Value[:ivLen])
 
@@ -219,7 +219,8 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 			payload.Release()
 
 			writer := crypto.NewCryptionWriter(stream, conn)
-			v2io.ChanToRawWriter(writer, ray.InboundOutput())
+			v2io.Pipe(ray.InboundOutput(), v2io.NewAdaptiveWriter(writer))
+			ray.InboundOutput().Release()
 		}
 		writeFinish.Unlock()
 	}()
@@ -232,8 +233,8 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 		payloadReader = v2io.NewAdaptiveReader(reader)
 	}
 
-	v2io.ReaderToChan(ray.InboundInput(), payloadReader)
-	close(ray.InboundInput())
+	v2io.Pipe(payloadReader, ray.InboundInput())
+	ray.InboundInput().Close()
 	payloadReader.Release()
 
 	writeFinish.Lock()
