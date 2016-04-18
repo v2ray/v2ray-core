@@ -41,8 +41,8 @@ var (
 	noOpLoggerInstance   logWriter = &noOpLogWriter{}
 	streamLoggerInstance logWriter = newStdOutLogWriter()
 
-	debugLogger   = streamLoggerInstance
-	infoLogger    = streamLoggerInstance
+	debugLogger   = noOpLoggerInstance
+	infoLogger    = noOpLoggerInstance
 	warningLogger = streamLoggerInstance
 	errorLogger   = streamLoggerInstance
 )
