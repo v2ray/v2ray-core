@@ -57,11 +57,13 @@ func (this *Stream) Read() (*alloc.Buffer, error) {
 		return nil, io.EOF
 	}
 	this.access.RLock()
-	defer this.access.RUnlock()
 	if this.buffer == nil {
+		this.access.RUnlock()
 		return nil, io.EOF
 	}
-	result, open := <-this.buffer
+	channel := this.buffer
+	this.access.RUnlock()
+	result, open := <-channel
 	if !open {
 		return nil, io.EOF
 	}
@@ -72,15 +74,9 @@ func (this *Stream) Write(data *alloc.Buffer) error {
 	if this.closed {
 		return io.EOF
 	}
-	if this.buffer == nil {
-		return io.EOF
-	}
 	this.access.RLock()
 	defer this.access.RUnlock()
 	if this.closed {
-		return io.EOF
-	}
-	if this.buffer == nil {
 		return io.EOF
 	}
 	this.buffer <- data
@@ -91,8 +87,8 @@ func (this *Stream) Close() {
 	if this.closed {
 		return
 	}
-	this.access.RLock()
-	defer this.access.RUnlock()
+	this.access.Lock()
+	defer this.access.Unlock()
 	if this.closed {
 		return
 	}
