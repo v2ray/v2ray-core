@@ -77,6 +77,9 @@ func (this *Stream) Write(data *alloc.Buffer) error {
 	}
 	this.access.RLock()
 	defer this.access.RUnlock()
+	if this.closed {
+		return io.EOF
+	}
 	if this.buffer == nil {
 		return io.EOF
 	}
