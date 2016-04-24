@@ -62,7 +62,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	this.AllowedUsers = jsonConfig.Users
-	this.Features = jsonConfig.Features
+	this.Features = jsonConfig.Features // Backward compatibility
 	this.Defaults = jsonConfig.Defaults
 	if this.Defaults == nil {
 		this.Defaults = &DefaultConfig{
@@ -70,6 +70,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 			AlterIDs: 32,
 		}
 	}
+	// Backward compatibility
 	if this.Features != nil && this.DetourConfig == nil {
 		this.DetourConfig = this.Features.Detour
 	}
