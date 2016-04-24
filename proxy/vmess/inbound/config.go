@@ -21,4 +21,5 @@ type Config struct {
 	AllowedUsers []*proto.User
 	Features     *FeaturesConfig
 	Defaults     *DefaultConfig
+	DetourConfig *DetourConfig
 }

@@ -52,9 +52,10 @@ func (this *DefaultConfig) UnmarshalJSON(data []byte) error {
 
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
-		Users    []*proto.User   `json:"clients"`
-		Features *FeaturesConfig `json:"features"`
-		Defaults *DefaultConfig  `json:"default"`
+		Users        []*proto.User   `json:"clients"`
+		Features     *FeaturesConfig `json:"features"`
+		Defaults     *DefaultConfig  `json:"default"`
+		DetourConfig *DetourConfig   `json:"detour"`
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
@@ -68,6 +69,9 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 			Level:    proto.UserLevel(0),
 			AlterIDs: 32,
 		}
+	}
+	if this.Features != nil && this.DetourConfig == nil {
+		this.DetourConfig = this.Features.Detour
 	}
 	return nil
 }
