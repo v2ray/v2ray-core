@@ -118,7 +118,7 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 	err = point.Start()
 	assert.Error(err).IsNil()
 
-	socks5Client, err := proxy.SOCKS5("tcp", fmt.Sprintf("127.0.0.1:%d", port), &proxy.Auth{"userx", "passy"}, proxy.Direct)
+	socks5Client, err := proxy.SOCKS5("tcp", fmt.Sprintf("127.0.0.1:%d", port), &proxy.Auth{User: "userx", Password: "passy"}, proxy.Direct)
 	assert.Error(err).IsNil()
 
 	targetServer := "1.2.3.4:443"
@@ -180,7 +180,7 @@ func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
 	err = point.Start()
 	assert.Error(err).IsNil()
 
-	socks5Client, err := proxy.SOCKS5("tcp", fmt.Sprintf("127.0.0.1:%d", port), &proxy.Auth{"userx", "passz"}, proxy.Direct)
+	socks5Client, err := proxy.SOCKS5("tcp", fmt.Sprintf("127.0.0.1:%d", port), &proxy.Auth{User: "userx", Password: "passz"}, proxy.Direct)
 	assert.Error(err).IsNil()
 
 	targetServer := "1.2.3.4:443"
