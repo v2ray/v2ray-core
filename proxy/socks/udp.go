@@ -8,7 +8,7 @@ import (
 	"github.com/v2ray/v2ray-core/transport/hub"
 )
 
-func (this *SocksServer) listenUDP(port v2net.Port) error {
+func (this *Server) listenUDP(port v2net.Port) error {
 	this.udpServer = hub.NewUDPServer(this.packetDispatcher)
 	udpHub, err := hub.ListenUDP(port, this.handleUDPPayload)
 	if err != nil {
@@ -22,7 +22,7 @@ func (this *SocksServer) listenUDP(port v2net.Port) error {
 	return nil
 }
 
-func (this *SocksServer) handleUDPPayload(payload *alloc.Buffer, source v2net.Destination) {
+func (this *Server) handleUDPPayload(payload *alloc.Buffer, source v2net.Destination) {
 	log.Info("Socks: Client UDP connection from ", source)
 	request, err := protocol.ReadUDPRequest(payload.Value)
 	payload.Release()

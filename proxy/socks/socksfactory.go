@@ -13,7 +13,7 @@ func init() {
 			if !space.HasApp(dispatcher.APP_ID) {
 				return nil, internal.ErrorBadConfiguration
 			}
-			return NewSocksServer(
+			return NewServer(
 				rawConfig.(*Config),
 				space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)), nil
 		})

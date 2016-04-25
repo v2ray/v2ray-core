@@ -20,8 +20,8 @@ var (
 	ErrorUnsupportedAuthMethod   = errors.New("Unsupported auth method.")
 )
 
-// SocksServer is a SOCKS 5 proxy server
-type SocksServer struct {
+// Server is a SOCKS 5 proxy server
+type Server struct {
 	tcpMutex         sync.RWMutex
 	udpMutex         sync.RWMutex
 	accepting        bool
@@ -34,21 +34,21 @@ type SocksServer struct {
 	listeningPort    v2net.Port
 }
 
-// NewSocksSocks creates a new SocksServer object.
-func NewSocksServer(config *Config, packetDispatcher dispatcher.PacketDispatcher) *SocksServer {
-	return &SocksServer{
+// NewServer creates a new Server object.
+func NewServer(config *Config, packetDispatcher dispatcher.PacketDispatcher) *Server {
+	return &Server{
 		config:           config,
 		packetDispatcher: packetDispatcher,
 	}
 }
 
 // Port implements InboundHandler.Port().
-func (this *SocksServer) Port() v2net.Port {
+func (this *Server) Port() v2net.Port {
 	return this.listeningPort
 }
 
 // Close implements InboundHandler.Close().
-func (this *SocksServer) Close() {
+func (this *Server) Close() {
 	this.accepting = false
 	if this.tcpListener != nil {
 		this.tcpMutex.Lock()
@@ -65,7 +65,7 @@ func (this *SocksServer) Close() {
 }
 
 // Listen implements InboundHandler.Listen().
-func (this *SocksServer) Listen(port v2net.Port) error {
+func (this *Server) Listen(port v2net.Port) error {
 	if this.accepting {
 		if this.listeningPort == port {
 			return nil
@@ -90,7 +90,7 @@ func (this *SocksServer) Listen(port v2net.Port) error {
 	return nil
 }
 
-func (this *SocksServer) handleConnection(connection *hub.TCPConn) {
+func (this *Server) handleConnection(connection *hub.TCPConn) {
 	defer connection.Close()
 
 	timedReader := v2net.NewTimeOutReader(120, connection)
@@ -113,7 +113,7 @@ func (this *SocksServer) handleConnection(connection *hub.TCPConn) {
 	}
 }
 
-func (this *SocksServer) handleSocks5(reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks5AuthenticationRequest) error {
+func (this *Server) handleSocks5(reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks5AuthenticationRequest) error {
 	expectedAuthMethod := protocol.AuthNotRequired
 	if this.config.AuthType == AuthTypePassword {
 		expectedAuthMethod = protocol.AuthUserPass
@@ -210,7 +210,7 @@ func (this *SocksServer) handleSocks5(reader *v2io.BufferedReader, writer *v2io.
 	return nil
 }
 
-func (this *SocksServer) handleUDP(reader io.Reader, writer *v2io.BufferedWriter) error {
+func (this *Server) handleUDP(reader io.Reader, writer *v2io.BufferedWriter) error {
 	response := protocol.NewSocks5Response()
 	response.Error = protocol.ErrorSuccess
 
@@ -242,7 +242,7 @@ func (this *SocksServer) handleUDP(reader io.Reader, writer *v2io.BufferedWriter
 	return nil
 }
 
-func (this *SocksServer) handleSocks4(reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks4AuthenticationRequest) error {
+func (this *Server) handleSocks4(reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks4AuthenticationRequest) error {
 	result := protocol.Socks4RequestGranted
 	if auth.Command == protocol.CmdBind {
 		result = protocol.Socks4RequestRejected
@@ -264,7 +264,7 @@ func (this *SocksServer) handleSocks4(reader *v2io.BufferedReader, writer *v2io.
 	return nil
 }
 
-func (this *SocksServer) transport(reader io.Reader, writer io.Writer, destination v2net.Destination) {
+func (this *Server) transport(reader io.Reader, writer io.Writer, destination v2net.Destination) {
 	ray := this.packetDispatcher.DispatchToOutbound(destination)
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
