@@ -16,14 +16,17 @@ var (
 
 type UUID [16]byte
 
+// String returns the string representation of this UUID.
 func (this *UUID) String() string {
 	return bytesToString(this.Bytes())
 }
 
+// Bytes returns the bytes representation of this UUID.
 func (this *UUID) Bytes() []byte {
 	return this[:]
 }
 
+// Equals returns true if this UUID equals another UUID by value.
 func (this *UUID) Equals(another *UUID) bool {
 	if this == nil && another == nil {
 		return true
@@ -61,12 +64,14 @@ func bytesToString(bytes []byte) string {
 	return result
 }
 
+// New creates an UUID with random value.
 func New() *UUID {
 	uuid := new(UUID)
 	rand.Read(uuid.Bytes())
 	return uuid
 }
 
+// PraseBytes converts an UUID in byte form to object.
 func ParseBytes(b []byte) (*UUID, error) {
 	if len(b) != 16 {
 		return nil, ErrorInvalidID
@@ -76,6 +81,7 @@ func ParseBytes(b []byte) (*UUID, error) {
 	return uuid, nil
 }
 
+// ParseString converts an UUID in string form to object.
 func ParseString(str string) (*UUID, error) {
 	text := []byte(str)
 	if len(text) < 32 {
