@@ -124,6 +124,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 	defer reader.Release()
 
 	session := raw.NewServerSession(this.clients)
+	defer session.Release()
 
 	request, err := session.DecodeRequestHeader(reader)
 	if err != nil {

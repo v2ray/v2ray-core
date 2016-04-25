@@ -3,6 +3,9 @@ package protocol
 import (
 	"sync"
 	"time"
+
+	"github.com/v2ray/v2ray-core/common"
+	"github.com/v2ray/v2ray-core/common/signal"
 )
 
 const (
@@ -18,6 +21,8 @@ type idEntry struct {
 }
 
 type UserValidator interface {
+	common.Releasable
+
 	Add(user *User) error
 	Get(timeHash []byte) (*User, Timestamp, bool)
 }
@@ -28,6 +33,7 @@ type TimedUserValidator struct {
 	ids        []*idEntry
 	access     sync.RWMutex
 	hasher     IDHash
+	cancel     *signal.CancelSignal
 }
 
 type indexTimePair struct {
@@ -42,9 +48,21 @@ func NewTimedUserValidator(hasher IDHash) UserValidator {
 		access:     sync.RWMutex{},
 		ids:        make([]*idEntry, 0, 512),
 		hasher:     hasher,
+		cancel:     signal.NewCloseSignal(),
 	}
-	go tus.updateUserHash(time.Tick(updateIntervalSec * time.Second))
+	go tus.updateUserHash(time.Tick(updateIntervalSec*time.Second), tus.cancel)
 	return tus
+}
+
+func (this *TimedUserValidator) Release() {
+	this.cancel.Cancel()
+	this.cancel.WaitForDone()
+
+	this.validUsers = nil
+	this.userHash = nil
+	this.ids = nil
+	this.hasher = nil
+	this.cancel = nil
 }
 
 func (this *TimedUserValidator) generateNewHashes(nowSec Timestamp, idx int, entry *idEntry) {
@@ -70,13 +88,20 @@ func (this *TimedUserValidator) generateNewHashes(nowSec Timestamp, idx int, ent
 	}
 }
 
-func (this *TimedUserValidator) updateUserHash(tick <-chan time.Time) {
-	for now := range tick {
-		nowSec := Timestamp(now.Unix() + cacheDurationSec)
-		for _, entry := range this.ids {
-			this.generateNewHashes(nowSec, entry.userIdx, entry)
+func (this *TimedUserValidator) updateUserHash(tick <-chan time.Time, cancel *signal.CancelSignal) {
+L:
+	for {
+		select {
+		case now := <-tick:
+			nowSec := Timestamp(now.Unix() + cacheDurationSec)
+			for _, entry := range this.ids {
+				this.generateNewHashes(nowSec, entry.userIdx, entry)
+			}
+		case <-cancel.WaitForCancel():
+			break L
 		}
 	}
+	cancel.Done()
 }
 
 func (this *TimedUserValidator) Add(user *User) error {

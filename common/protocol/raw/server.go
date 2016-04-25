@@ -30,6 +30,15 @@ func NewServerSession(validator protocol.UserValidator) *ServerSession {
 	}
 }
 
+func (this *ServerSession) Release() {
+	this.userValidator = nil
+	this.requestBodyIV = nil
+	this.requestBodyKey = nil
+	this.responseBodyIV = nil
+	this.responseBodyKey = nil
+	this.responseWriter = nil
+}
+
 func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.RequestHeader, error) {
 	buffer := alloc.NewSmallBuffer()
 	defer buffer.Release()
