@@ -29,8 +29,8 @@ func (this *InboundConnectionHandler) Close() {
 
 }
 
-func (this *InboundConnectionHandler) Communicate(packet v2net.Packet) error {
-	ray := this.PacketDispatcher.DispatchToOutbound(packet)
+func (this *InboundConnectionHandler) Communicate(destination v2net.Destination) error {
+	ray := this.PacketDispatcher.DispatchToOutbound(destination)
 
 	input := ray.InboundInput()
 	output := ray.InboundOutput()

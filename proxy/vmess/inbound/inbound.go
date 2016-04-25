@@ -135,7 +135,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
 	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, serial.StringLiteral(""))
 	log.Debug("VMessIn: Received request for ", request.Destination())
 
-	ray := this.packetDispatcher.DispatchToOutbound(v2net.NewPacket(request.Destination(), nil, true))
+	ray := this.packetDispatcher.DispatchToOutbound(request.Destination())
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 	var readFinish, writeFinish sync.Mutex

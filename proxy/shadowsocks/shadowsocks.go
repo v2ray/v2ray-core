@@ -115,9 +115,8 @@ func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, source v2net.D
 	log.Access(source, dest, log.AccessAccepted, serial.StringLiteral(""))
 	log.Info("Shadowsocks: Tunnelling request to ", dest)
 
-	packet := v2net.NewPacket(dest, request.UDPPayload, false)
-	this.udpServer.Dispatch(source, packet, func(packet v2net.Packet) {
-		defer packet.Chunk().Release()
+	this.udpServer.Dispatch(source, dest, request.UDPPayload, func(destination v2net.Destination, payload *alloc.Buffer) {
+		defer payload.Release()
 
 		response := alloc.NewBuffer().Slice(0, ivLen)
 		defer response.Release()
@@ -146,7 +145,7 @@ func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, source v2net.D
 		}
 
 		writer.Write(request.Port.Bytes())
-		writer.Write(packet.Chunk().Value)
+		writer.Write(payload.Value)
 
 		if request.OTA {
 			respAuth := NewAuthenticator(HeaderKeyGenerator(key, respIv))
@@ -198,8 +197,7 @@ func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
 	log.Access(conn.RemoteAddr(), dest, log.AccessAccepted, serial.StringLiteral(""))
 	log.Info("Shadowsocks: Tunnelling request to ", dest)
 
-	packet := v2net.NewPacket(dest, nil, true)
-	ray := this.packetDispatcher.DispatchToOutbound(packet)
+	ray := this.packetDispatcher.DispatchToOutbound(dest)
 
 	var writeFinish sync.Mutex
 	writeFinish.Lock()

@@ -95,16 +95,14 @@ func (this *DokodemoDoor) ListenUDP(port v2net.Port) error {
 }
 
 func (this *DokodemoDoor) handleUDPPackets(payload *alloc.Buffer, dest v2net.Destination) {
-	packet := v2net.NewPacket(v2net.UDPDestination(this.address, this.port), payload, false)
-	this.udpServer.Dispatch(dest, packet, func(packet v2net.Packet) {
-		defer packet.Chunk().Release()
+	this.udpServer.Dispatch(dest, v2net.UDPDestination(this.address, this.port), payload, func(destination v2net.Destination, payload *alloc.Buffer) {
+		defer payload.Release()
 		this.udpMutex.RLock()
+		defer this.udpMutex.RUnlock()
 		if !this.accepting {
-			this.udpMutex.RUnlock()
 			return
 		}
-		this.udpHub.WriteTo(packet.Chunk().Value, packet.Destination())
-		this.udpMutex.RUnlock()
+		this.udpHub.WriteTo(payload.Value, destination)
 	})
 }
 
@@ -123,8 +121,7 @@ func (this *DokodemoDoor) ListenTCP(port v2net.Port) error {
 func (this *DokodemoDoor) HandleTCPConnection(conn *hub.TCPConn) {
 	defer conn.Close()
 
-	packet := v2net.NewPacket(v2net.TCPDestination(this.address, this.port), nil, true)
-	ray := this.packetDispatcher.DispatchToOutbound(packet)
+	ray := this.packetDispatcher.DispatchToOutbound(v2net.TCPDestination(this.address, this.port))
 	defer ray.InboundOutput().Release()
 
 	var inputFinish, outputFinish sync.Mutex

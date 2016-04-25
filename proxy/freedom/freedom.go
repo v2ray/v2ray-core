@@ -5,6 +5,7 @@ import (
 	"net"
 	"sync"
 
+	"github.com/v2ray/v2ray-core/common/alloc"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -16,15 +17,15 @@ import (
 type FreedomConnection struct {
 }
 
-func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {
-	log.Info("Freedom: Opening connection to ", firstPacket.Destination())
+func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
+	log.Info("Freedom: Opening connection to ", destination)
 
-	defer firstPacket.Release()
+	defer payload.Release()
 	defer ray.OutboundInput().Release()
 
 	var conn net.Conn
 	err := retry.Timed(5, 100).On(func() error {
-		rawConn, err := dialer.Dial(firstPacket.Destination())
+		rawConn, err := dialer.Dial(destination)
 		if err != nil {
 			return err
 		}
@@ -32,7 +33,7 @@ func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbou
 		return nil
 	})
 	if err != nil {
-		log.Error("Freedom: Failed to open connection to ", firstPacket.Destination(), ": ", err)
+		log.Error("Freedom: Failed to open connection to ", destination, ": ", err)
 		return err
 	}
 	defer conn.Close()
@@ -43,21 +44,15 @@ func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbou
 	readMutex.Lock()
 	writeMutex.Lock()
 
-	if chunk := firstPacket.Chunk(); chunk != nil {
-		conn.Write(chunk.Value)
-	}
+	conn.Write(payload.Value)
 
-	if !firstPacket.MoreChunks() {
+	go func() {
+		v2writer := v2io.NewAdaptiveWriter(conn)
+		defer v2writer.Release()
+
+		v2io.Pipe(input, v2writer)
 		writeMutex.Unlock()
-	} else {
-		go func() {
-			v2writer := v2io.NewAdaptiveWriter(conn)
-			defer v2writer.Release()
-
-			v2io.Pipe(input, v2writer)
-			writeMutex.Unlock()
-		}()
-	}
+	}()
 
 	go func() {
 		defer readMutex.Unlock()
@@ -65,7 +60,7 @@ func (this *FreedomConnection) Dispatch(firstPacket v2net.Packet, ray ray.Outbou
 
 		var reader io.Reader = conn
 
-		if firstPacket.Destination().IsUDP() {
+		if destination.IsUDP() {
 			reader = v2net.NewTimeOutReader(16 /* seconds */, conn)
 		}
 

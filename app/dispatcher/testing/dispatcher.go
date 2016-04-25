@@ -7,12 +7,12 @@ import (
 
 type TestPacketDispatcher struct {
 	Destination chan v2net.Destination
-	Handler     func(packet v2net.Packet, traffic ray.OutboundRay)
+	Handler     func(destination v2net.Destination, traffic ray.OutboundRay)
 }
 
-func NewTestPacketDispatcher(handler func(packet v2net.Packet, traffic ray.OutboundRay)) *TestPacketDispatcher {
+func NewTestPacketDispatcher(handler func(destination v2net.Destination, traffic ray.OutboundRay)) *TestPacketDispatcher {
 	if handler == nil {
-		handler = func(packet v2net.Packet, traffic ray.OutboundRay) {
+		handler = func(destination v2net.Destination, traffic ray.OutboundRay) {
 			for {
 				payload, err := traffic.OutboundInput().Read()
 				if err != nil {
@@ -29,10 +29,10 @@ func NewTestPacketDispatcher(handler func(packet v2net.Packet, traffic ray.Outbo
 	}
 }
 
-func (this *TestPacketDispatcher) DispatchToOutbound(packet v2net.Packet) ray.InboundRay {
+func (this *TestPacketDispatcher) DispatchToOutbound(destination v2net.Destination) ray.InboundRay {
 	traffic := ray.NewRay()
-	this.Destination <- packet.Destination()
-	go this.Handler(packet, traffic)
+	this.Destination <- destination
+	go this.Handler(destination, traffic)
 
 	return traffic
 }

@@ -4,11 +4,12 @@ import (
 	"sync"
 
 	"github.com/v2ray/v2ray-core/app/dispatcher"
+	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
-type UDPResponseCallback func(packet v2net.Packet)
+type UDPResponseCallback func(destination v2net.Destination, payload *alloc.Buffer)
 
 type connEntry struct {
 	inboundRay ray.InboundRay
@@ -28,24 +29,26 @@ func NewUDPServer(packetDispatcher dispatcher.PacketDispatcher) *UDPServer {
 	}
 }
 
-func (this *UDPServer) locateExistingAndDispatch(dest string, packet v2net.Packet) bool {
+func (this *UDPServer) locateExistingAndDispatch(dest string, payload *alloc.Buffer) bool {
 	this.RLock()
 	defer this.RUnlock()
 	if entry, found := this.conns[dest]; found {
-		entry.inboundRay.InboundInput().Write(packet.Chunk())
+		entry.inboundRay.InboundInput().Write(payload)
 		return true
 	}
 	return false
 }
 
-func (this *UDPServer) Dispatch(source v2net.Destination, packet v2net.Packet, callback UDPResponseCallback) {
-	destString := source.String() + "-" + packet.Destination().NetAddr()
-	if this.locateExistingAndDispatch(destString, packet) {
+func (this *UDPServer) Dispatch(source v2net.Destination, destination v2net.Destination, payload *alloc.Buffer, callback UDPResponseCallback) {
+	destString := source.String() + "-" + destination.NetAddr()
+	if this.locateExistingAndDispatch(destString, payload) {
 		return
 	}
 
 	this.Lock()
-	inboundRay := this.packetDispatcher.DispatchToOutbound(v2net.NewPacket(packet.Destination(), packet.Chunk(), true))
+	inboundRay := this.packetDispatcher.DispatchToOutbound(destination)
+	inboundRay.InboundInput().Write(payload)
+
 	this.conns[destString] = &connEntry{
 		inboundRay: inboundRay,
 		callback:   callback,
@@ -60,7 +63,7 @@ func (this *UDPServer) handleConnection(destString string, inboundRay ray.Inboun
 		if err != nil {
 			break
 		}
-		callback(v2net.NewPacket(source, data, false))
+		callback(source, data)
 	}
 	this.Lock()
 	delete(this.conns, destString)

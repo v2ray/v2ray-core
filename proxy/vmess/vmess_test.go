@@ -107,7 +107,7 @@ func TestVMessInAndOut(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	dest := v2net.TCPDestination(v2net.IPAddress([]byte{1, 2, 3, 4}), 80)
-	ich.Communicate(v2net.NewPacket(dest, nil, true))
+	ich.Communicate(dest)
 	assert.Bytes(ichConnInput).Equals(ochConnOutput.Bytes())
 	assert.Bytes(ichConnOutput.Bytes()).Equals(ochConnInput)
 }

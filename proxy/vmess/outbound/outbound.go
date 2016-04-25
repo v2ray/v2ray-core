@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/v2ray/v2ray-core/app"
+	"github.com/v2ray/v2ray-core/common/alloc"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -13,6 +14,7 @@ import (
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	vmessio "github.com/v2ray/v2ray-core/proxy/vmess/io"
+	"github.com/v2ray/v2ray-core/transport/dialer"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
@@ -20,50 +22,33 @@ type VMessOutboundHandler struct {
 	receiverManager *ReceiverManager
 }
 
-func (this *VMessOutboundHandler) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {
-	vNextAddress, vNextUser := this.receiverManager.PickReceiver()
+func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
+	destination, vNextUser := this.receiverManager.PickReceiver()
 
 	command := proto.RequestCommandTCP
-	if firstPacket.Destination().IsUDP() {
+	if target.IsUDP() {
 		command = proto.RequestCommandUDP
 	}
 	request := &proto.RequestHeader{
 		Version: raw.Version,
 		User:    vNextUser,
 		Command: command,
-		Address: firstPacket.Destination().Address(),
-		Port:    firstPacket.Destination().Port(),
+		Address: target.Address(),
+		Port:    target.Port(),
 	}
 	if command == proto.RequestCommandUDP {
 		request.Option |= proto.RequestOptionChunkStream
 	}
 
-	return this.startCommunicate(request, vNextAddress, ray, firstPacket)
-}
-
-func (this *VMessOutboundHandler) startCommunicate(request *proto.RequestHeader, dest v2net.Destination, ray ray.OutboundRay, firstPacket v2net.Packet) error {
-	var destIP net.IP
-	if dest.Address().IsIPv4() || dest.Address().IsIPv6() {
-		destIP = dest.Address().IP()
-	} else {
-		ips, err := net.LookupIP(dest.Address().Domain())
-		if err != nil {
-			return err
-		}
-		destIP = ips[0]
-	}
-	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-		IP:   destIP,
-		Port: int(dest.Port()),
-	})
+	conn, err := dialer.Dial(destination)
 	if err != nil {
-		log.Error("Failed to open ", dest, ": ", err)
+		log.Error("Failed to open ", destination, ": ", err)
 		if ray != nil {
 			ray.OutboundOutput().Close()
 		}
 		return err
 	}
-	log.Info("VMessOut: Tunneling request to ", request.Address, " via ", dest)
+	log.Info("VMessOut: Tunneling request to ", request.Address, " via ", destination)
 
 	defer conn.Close()
 
@@ -76,46 +61,43 @@ func (this *VMessOutboundHandler) startCommunicate(request *proto.RequestHeader,
 
 	session := raw.NewClientSession(proto.DefaultIDHash)
 
-	go this.handleRequest(session, conn, request, firstPacket, input, &requestFinish)
-	go this.handleResponse(session, conn, request, dest, output, &responseFinish)
+	go this.handleRequest(session, conn, request, payload, input, &requestFinish)
+	go this.handleResponse(session, conn, request, destination, output, &responseFinish)
 
 	requestFinish.Lock()
-	conn.CloseWrite()
+	if tcpConn, ok := conn.(*net.TCPConn); ok {
+		tcpConn.CloseWrite()
+	}
+
 	responseFinish.Lock()
 	output.Close()
 	input.Release()
 	return nil
 }
 
-func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn net.Conn, request *proto.RequestHeader, firstPacket v2net.Packet, input v2io.Reader, finish *sync.Mutex) {
+func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn net.Conn, request *proto.RequestHeader, payload *alloc.Buffer, input v2io.Reader, finish *sync.Mutex) {
 	defer finish.Unlock()
+	defer payload.Release()
 
 	writer := v2io.NewBufferedWriter(conn)
 	defer writer.Release()
 	session.EncodeRequestHeader(request, writer)
 
-	// Send first packet of payload together with request, in favor of small requests.
-	firstChunk := firstPacket.Chunk()
-	moreChunks := firstPacket.MoreChunks()
-
 	if request.Option.IsChunkStream() {
-		vmessio.Authenticate(firstChunk)
+		vmessio.Authenticate(payload)
 	}
 
 	bodyWriter := session.EncodeRequestBody(writer)
-	bodyWriter.Write(firstChunk.Value)
-	firstChunk.Release()
+	bodyWriter.Write(payload.Value)
 
 	writer.SetCached(false)
 
-	if moreChunks {
-		var streamWriter v2io.Writer = v2io.NewAdaptiveWriter(bodyWriter)
-		if request.Option.IsChunkStream() {
-			streamWriter = vmessio.NewAuthChunkWriter(streamWriter)
-		}
-		v2io.Pipe(input, streamWriter)
-		streamWriter.Release()
+	var streamWriter v2io.Writer = v2io.NewAdaptiveWriter(bodyWriter)
+	if request.Option.IsChunkStream() {
+		streamWriter = vmessio.NewAuthChunkWriter(streamWriter)
 	}
+	v2io.Pipe(input, streamWriter)
+	streamWriter.Release()
 	return
 }
 

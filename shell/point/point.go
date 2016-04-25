@@ -173,16 +173,14 @@ func (this *Point) Start() error {
 // Dispatches a Packet to an OutboundConnection.
 // The packet will be passed through the router (if configured), and then sent to an outbound
 // connection with matching tag.
-func (this *Point) DispatchToOutbound(context app.Context, packet v2net.Packet) ray.InboundRay {
+func (this *Point) DispatchToOutbound(context app.Context, destination v2net.Destination) ray.InboundRay {
 	direct := ray.NewRay()
-	dest := packet.Destination()
-
 	dispatcher := this.och
 
 	if this.router != nil {
-		if tag, err := this.router.TakeDetour(dest); err == nil {
+		if tag, err := this.router.TakeDetour(destination); err == nil {
 			if handler, found := this.odh[tag]; found {
-				log.Info("Point: Taking detour [", tag, "] for [", dest, "]", tag, dest)
+				log.Info("Point: Taking detour [", tag, "] for [", destination, "]")
 				dispatcher = handler
 			} else {
 				log.Warning("Point: Unable to find routing destination: ", tag)
@@ -190,34 +188,19 @@ func (this *Point) DispatchToOutbound(context app.Context, packet v2net.Packet) 
 		}
 	}
 
-	go this.FilterPacketAndDispatch(packet, direct, dispatcher)
+	go this.FilterPacketAndDispatch(destination, direct, dispatcher)
 	return direct
 }
 
-func (this *Point) FilterPacketAndDispatch(packet v2net.Packet, link ray.OutboundRay, dispatcher proxy.OutboundHandler) {
-	// Filter empty packets
-	chunk := packet.Chunk()
-	moreChunks := packet.MoreChunks()
-	changed := false
-	var err error
-	for chunk == nil && moreChunks {
-		changed = true
-		chunk, err = link.OutboundInput().Read()
-		if err != nil {
-			moreChunks = false
-		}
-	}
-	if chunk == nil && !moreChunks {
+func (this *Point) FilterPacketAndDispatch(destination v2net.Destination, link ray.OutboundRay, dispatcher proxy.OutboundHandler) {
+	payload, err := link.OutboundInput().Read()
+	if err != nil {
 		log.Info("Point: No payload to dispatch, stopping dispatching now.")
 		link.OutboundOutput().Close()
+		link.OutboundInput().Release()
 		return
 	}
-
-	if changed {
-		packet = v2net.NewPacket(packet.Destination(), chunk, moreChunks)
-	}
-
-	dispatcher.Dispatch(packet, link)
+	dispatcher.Dispatch(destination, payload, link)
 }
 
 func (this *Point) GetHandler(context app.Context, tag string) (proxy.InboundHandler, int) {

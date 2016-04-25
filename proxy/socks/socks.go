@@ -206,8 +206,7 @@ func (this *SocksServer) handleSocks5(reader *v2io.BufferedReader, writer *v2io.
 	dest := request.Destination()
 	log.Info("Socks: TCP Connect request to ", dest)
 
-	packet := v2net.NewPacket(dest, nil, true)
-	this.transport(reader, writer, packet)
+	this.transport(reader, writer, dest)
 	return nil
 }
 
@@ -261,13 +260,12 @@ func (this *SocksServer) handleSocks4(reader *v2io.BufferedReader, writer *v2io.
 	writer.SetCached(false)
 
 	dest := v2net.TCPDestination(v2net.IPAddress(auth.IP[:]), auth.Port)
-	packet := v2net.NewPacket(dest, nil, true)
-	this.transport(reader, writer, packet)
+	this.transport(reader, writer, dest)
 	return nil
 }
 
-func (this *SocksServer) transport(reader io.Reader, writer io.Writer, firstPacket v2net.Packet) {
-	ray := this.packetDispatcher.DispatchToOutbound(firstPacket)
+func (this *SocksServer) transport(reader io.Reader, writer io.Writer, destination v2net.Destination) {
+	ray := this.packetDispatcher.DispatchToOutbound(destination)
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 

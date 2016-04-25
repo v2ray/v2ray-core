@@ -33,10 +33,8 @@ func TestSinglePacket(t *testing.T) {
 	traffic := ray.NewRay()
 	data2Send := "Data to be sent to remote"
 	payload := alloc.NewSmallBuffer().Clear().Append([]byte(data2Send))
-	packet := v2net.NewPacket(v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), port), payload, false)
 
-	err = freedom.Dispatch(packet, traffic)
-	assert.Error(err).IsNil()
+	go freedom.Dispatch(v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), port), payload, traffic)
 	traffic.InboundInput().Close()
 
 	respPayload, err := traffic.InboundOutput().Read()
@@ -53,8 +51,7 @@ func TestUnreachableDestination(t *testing.T) {
 	traffic := ray.NewRay()
 	data2Send := "Data to be sent to remote"
 	payload := alloc.NewSmallBuffer().Clear().Append([]byte(data2Send))
-	packet := v2net.NewPacket(v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), 128), payload, false)
 
-	err := freedom.Dispatch(packet, traffic)
+	err := freedom.Dispatch(v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), 128), payload, traffic)
 	assert.Error(err).IsNotNil()
 }

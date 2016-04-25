@@ -2,6 +2,7 @@ package blackhole
 
 import (
 	"github.com/v2ray/v2ray-core/app"
+	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
@@ -16,8 +17,8 @@ func NewBlackHole() *BlackHole {
 	return &BlackHole{}
 }
 
-func (this *BlackHole) Dispatch(firstPacket v2net.Packet, ray ray.OutboundRay) error {
-	firstPacket.Release()
+func (this *BlackHole) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
+	payload.Release()
 
 	ray.OutboundOutput().Close()
 	ray.OutboundOutput().Release()

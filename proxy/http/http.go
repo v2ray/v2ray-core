@@ -143,8 +143,7 @@ func (this *HttpProxyServer) handleConnect(request *http.Request, destination v2
 	writer.Write(buffer.Value)
 	buffer.Release()
 
-	packet := v2net.NewPacket(destination, nil, true)
-	ray := this.packetDispatcher.DispatchToOutbound(packet)
+	ray := this.packetDispatcher.DispatchToOutbound(destination)
 	this.transport(reader, writer, ray)
 }
 
@@ -227,8 +226,8 @@ func (this *HttpProxyServer) handlePlainHTTP(request *http.Request, dest v2net.D
 	request.Write(requestBuffer)
 	log.Debug("Request to remote:\n", serial.BytesLiteral(requestBuffer.Value))
 
-	packet := v2net.NewPacket(dest, requestBuffer, true)
-	ray := this.packetDispatcher.DispatchToOutbound(packet)
+	ray := this.packetDispatcher.DispatchToOutbound(dest)
+	ray.InboundInput().Write(requestBuffer)
 	defer ray.InboundInput().Close()
 
 	var wg sync.WaitGroup

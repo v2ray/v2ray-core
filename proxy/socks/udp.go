@@ -42,16 +42,15 @@ func (this *SocksServer) handleUDPPayload(payload *alloc.Buffer, source v2net.De
 		return
 	}
 
-	udpPacket := v2net.NewPacket(request.Destination(), request.Data, false)
-	log.Info("Socks: Send packet to ", udpPacket.Destination(), " with ", request.Data.Len(), " bytes")
-	this.udpServer.Dispatch(source, udpPacket, func(packet v2net.Packet) {
+	log.Info("Socks: Send packet to ", request.Destination(), " with ", request.Data.Len(), " bytes")
+	this.udpServer.Dispatch(source, request.Destination(), request.Data, func(destination v2net.Destination, payload *alloc.Buffer) {
 		response := &protocol.Socks5UDPRequest{
 			Fragment: 0,
-			Address:  udpPacket.Destination().Address(),
-			Port:     udpPacket.Destination().Port(),
-			Data:     packet.Chunk(),
+			Address:  request.Destination().Address(),
+			Port:     request.Destination().Port(),
+			Data:     payload,
 		}
-		log.Info("Socks: Writing back UDP response with ", response.Data.Len(), " bytes to ", packet.Destination())
+		log.Info("Socks: Writing back UDP response with ", payload.Len(), " bytes to ", destination)
 
 		udpMessage := alloc.NewSmallBuffer().Clear()
 		response.Write(udpMessage)
@@ -61,12 +60,12 @@ func (this *SocksServer) handleUDPPayload(payload *alloc.Buffer, source v2net.De
 			this.udpMutex.RUnlock()
 			return
 		}
-		nBytes, err := this.udpHub.WriteTo(udpMessage.Value, packet.Destination())
+		nBytes, err := this.udpHub.WriteTo(udpMessage.Value, destination)
 		this.udpMutex.RUnlock()
 		udpMessage.Release()
 		response.Data.Release()
 		if err != nil {
-			log.Error("Socks: failed to write UDP message (", nBytes, " bytes) to ", packet.Destination(), ": ", err)
+			log.Error("Socks: failed to write UDP message (", nBytes, " bytes) to ", destination, ": ", err)
 		}
 	})
 }

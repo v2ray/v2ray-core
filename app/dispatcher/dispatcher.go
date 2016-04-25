@@ -12,11 +12,11 @@ const (
 
 // PacketDispatcher dispatch a packet and possibly further network payload to its destination.
 type PacketDispatcher interface {
-	DispatchToOutbound(packet v2net.Packet) ray.InboundRay
+	DispatchToOutbound(destination v2net.Destination) ray.InboundRay
 }
 
 type packetDispatcherWithContext interface {
-	DispatchToOutbound(context app.Context, packet v2net.Packet) ray.InboundRay
+	DispatchToOutbound(context app.Context, destination v2net.Destination) ray.InboundRay
 }
 
 type contextedPacketDispatcher struct {
@@ -24,8 +24,8 @@ type contextedPacketDispatcher struct {
 	packetDispatcher packetDispatcherWithContext
 }
 
-func (this *contextedPacketDispatcher) DispatchToOutbound(packet v2net.Packet) ray.InboundRay {
-	return this.packetDispatcher.DispatchToOutbound(this.context, packet)
+func (this *contextedPacketDispatcher) DispatchToOutbound(destination v2net.Destination) ray.InboundRay {
+	return this.packetDispatcher.DispatchToOutbound(this.context, destination)
 }
 
 func init() {
