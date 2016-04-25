@@ -6,11 +6,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/app/dispatcher"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/proxy/internal"
 	"github.com/v2ray/v2ray-core/proxy/socks/protocol"
 	"github.com/v2ray/v2ray-core/transport/hub"
 )
@@ -291,4 +293,16 @@ func (this *Server) transport(reader io.Reader, writer io.Writer, destination v2
 		output.Release()
 	}()
 	outputFinish.Lock()
+}
+
+func init() {
+	internal.MustRegisterInboundHandlerCreator("socks",
+		func(space app.Space, rawConfig interface{}) (proxy.InboundHandler, error) {
+			if !space.HasApp(dispatcher.APP_ID) {
+				return nil, internal.ErrorBadConfiguration
+			}
+			return NewServer(
+				rawConfig.(*Config),
+				space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)), nil
+		})
 }
