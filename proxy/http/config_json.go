@@ -9,9 +9,27 @@ import (
 	"github.com/v2ray/v2ray-core/proxy/internal/config"
 )
 
+func (this *TlsConfig) UnmarshalJSON(data []byte) error {
+	type JsonConfig struct {
+		Enabled  bool
+		CertFile string
+		KeyFile  string
+	}
+	jsonConfig := new(JsonConfig)
+	if err := json.Unmarshal(data, jsonConfig); err != nil {
+		return err
+	}
+
+	this.Enabled = jsonConfig.Enabled
+	this.CertFile = jsonConfig.CertFile
+	this.KeyFile = jsonConfig.KeyFile
+	return nil
+}
+
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
 		Hosts []v2net.AddressJson `json:"ownHosts"`
+		Tls   *TlsConfig          `json:"tls"`
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
@@ -26,6 +44,8 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	if !this.IsOwnHost(v2rayHost) {
 		this.OwnHosts = append(this.OwnHosts, v2rayHost)
 	}
+
+	this.TlsConfig = jsonConfig.Tls
 
 	return nil
 }
