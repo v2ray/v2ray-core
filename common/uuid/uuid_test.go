@@ -18,7 +18,7 @@ func TestParseBytes(t *testing.T) {
 	assert.Error(err).IsNil()
 	assert.String(uuid).Equals(str)
 
-	uuid, err = ParseBytes([]byte{1, 3, 2, 4})
+	_, err = ParseBytes([]byte{1, 3, 2, 4})
 	assert.Error(err).Equals(ErrorInvalidID)
 }
 

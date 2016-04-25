@@ -24,6 +24,7 @@ func TestRegisterInboundConfig(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	configObj, err = CreateOutboundConfig(protocol, nil)
+	assert.Error(err).IsNotNil()
 	assert.Pointer(configObj).IsNil()
 }
 
@@ -44,5 +45,6 @@ func TestRegisterOutboundConfig(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	configObj, err = CreateInboundConfig(protocol, nil)
+	assert.Error(err).IsNotNil()
 	assert.Pointer(configObj).IsNil()
 }

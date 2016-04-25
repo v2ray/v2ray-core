@@ -129,7 +129,9 @@ func (this *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Res
 		}
 		data := buffer.Value[:dataLen]
 		command, err := UnmarshalCommand(cmdId, data)
-		header.Command = command
+		if err == nil {
+			header.Command = command
+		}
 	}
 
 	return header, nil
