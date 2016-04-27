@@ -114,7 +114,7 @@ func (this *VMessInboundHandler) Listen(port v2net.Port) error {
 	return nil
 }
 
-func (this *VMessInboundHandler) HandleConnection(connection *hub.TCPConn) {
+func (this *VMessInboundHandler) HandleConnection(connection hub.Connection) {
 	defer connection.Close()
 
 	connReader := v2net.NewTimeOutReader(16, connection)

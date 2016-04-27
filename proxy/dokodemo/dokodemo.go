@@ -118,7 +118,7 @@ func (this *DokodemoDoor) ListenTCP(port v2net.Port) error {
 	return nil
 }
 
-func (this *DokodemoDoor) HandleTCPConnection(conn *hub.TCPConn) {
+func (this *DokodemoDoor) HandleTCPConnection(conn hub.Connection) {
 	defer conn.Close()
 
 	ray := this.packetDispatcher.DispatchToOutbound(v2net.TCPDestination(this.address, this.port))

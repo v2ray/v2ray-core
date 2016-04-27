@@ -156,7 +156,7 @@ func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, source v2net.D
 	})
 }
 
-func (this *Shadowsocks) handleConnection(conn *hub.TCPConn) {
+func (this *Shadowsocks) handleConnection(conn hub.Connection) {
 	defer conn.Close()
 
 	buffer := alloc.NewSmallBuffer()
