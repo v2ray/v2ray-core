@@ -35,9 +35,7 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 		Command: command,
 		Address: target.Address(),
 		Port:    target.Port(),
-	}
-	if command == proto.RequestCommandUDP {
-		request.Option |= proto.RequestOptionChunkStream
+		Option:  proto.RequestOptionChunkStream,
 	}
 
 	conn, err := dialer.Dial(destination)
@@ -65,10 +63,6 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 	go this.handleResponse(session, conn, request, destination, output, &responseFinish)
 
 	requestFinish.Lock()
-	if tcpConn, ok := conn.(*net.TCPConn); ok {
-		tcpConn.CloseWrite()
-	}
-
 	responseFinish.Lock()
 	output.Close()
 	input.Release()
@@ -97,6 +91,9 @@ func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn
 		streamWriter = vmessio.NewAuthChunkWriter(streamWriter)
 	}
 	v2io.Pipe(input, streamWriter)
+	if request.Option.IsChunkStream() {
+		streamWriter.Write(alloc.NewSmallBuffer().Clear())
+	}
 	streamWriter.Release()
 	return
 }

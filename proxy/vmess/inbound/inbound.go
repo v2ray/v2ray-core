@@ -6,6 +6,7 @@ import (
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/app/dispatcher"
 	"github.com/v2ray/v2ray-core/app/proxyman"
+	"github.com/v2ray/v2ray-core/common/alloc"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -185,6 +186,9 @@ func (this *VMessInboundHandler) HandleConnection(connection hub.Connection) {
 				writer = vmessio.NewAuthChunkWriter(writer)
 			}
 			v2io.Pipe(output, writer)
+			if request.Option.IsChunkStream() {
+				writer.Write(alloc.NewSmallBuffer().Clear())
+			}
 			output.Release()
 			writer.Release()
 			finish.Unlock()
@@ -192,8 +196,8 @@ func (this *VMessInboundHandler) HandleConnection(connection hub.Connection) {
 		writeFinish.Lock()
 	}
 
-	connection.CloseWrite()
 	readFinish.Lock()
+	writeFinish.Lock()
 }
 
 func init() {
