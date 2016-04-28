@@ -33,6 +33,7 @@ type AdaptiveReader struct {
 }
 
 // NewAdaptiveReader creates a new AdaptiveReader.
+// The AdaptiveReader instance doesn't take the ownership of reader.
 func NewAdaptiveReader(reader io.Reader) *AdaptiveReader {
 	return &AdaptiveReader{
 		reader:   reader,

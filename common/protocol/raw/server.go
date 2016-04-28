@@ -24,12 +24,15 @@ type ServerSession struct {
 	responseWriter  io.Writer
 }
 
+// NewServerSession creates a new ServerSession, using the given UserValidator.
+// The ServerSession instance doesn't take ownership of the validator.
 func NewServerSession(validator protocol.UserValidator) *ServerSession {
 	return &ServerSession{
 		userValidator: validator,
 	}
 }
 
+// Release implements common.Releaseable.
 func (this *ServerSession) Release() {
 	this.userValidator = nil
 	this.requestBodyIV = nil

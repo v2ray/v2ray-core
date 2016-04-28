@@ -26,7 +26,7 @@ func NewAdaptiveWriter(writer io.Writer) *AdaptiveWriter {
 	}
 }
 
-// Write implements Writer.Write().
+// Write implements Writer.Write(). Write() takes ownership of the given buffer.
 func (this *AdaptiveWriter) Write(buffer *alloc.Buffer) error {
 	nBytes, err := this.writer.Write(buffer.Value)
 	if nBytes < buffer.Len() {
