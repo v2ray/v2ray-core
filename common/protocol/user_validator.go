@@ -56,7 +56,7 @@ func NewTimedUserValidator(hasher IDHash) UserValidator {
 
 func (this *TimedUserValidator) Release() {
 	this.cancel.Cancel()
-	this.cancel.WaitForDone()
+	<-this.cancel.WaitForDone()
 
 	this.validUsers = nil
 	this.userHash = nil
