@@ -1,6 +1,7 @@
 package log
 
 import (
+	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/serial"
 )
 
@@ -30,7 +31,10 @@ func (this *accessLog) Release() {
 }
 
 func (this *accessLog) String() string {
-	return this.From.String() + " " + string(this.Status) + " " + this.To.String() + " " + this.Reason.String()
+	b := alloc.NewSmallBuffer().Clear()
+	defer b.Release()
+
+	return b.AppendString(this.From.String()).AppendString(" ").AppendString(string(this.Status)).AppendString(" ").AppendString(this.To.String()).AppendString(" ").AppendString(this.Reason.String()).String()
 }
 
 // InitAccessLogger initializes the access logger to write into the give file.

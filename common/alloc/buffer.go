@@ -49,6 +49,11 @@ func (b *Buffer) Append(data []byte) *Buffer {
 	return b
 }
 
+func (b *Buffer) AppendString(s string) *Buffer {
+	b.Value = append(b.Value, s...)
+	return b
+}
+
 // Prepend prepends bytes in front of the buffer. Caller must ensure total bytes prepended is
 // no more than 16 bytes.
 func (b *Buffer) Prepend(data []byte) *Buffer {
@@ -129,6 +134,10 @@ func (b *Buffer) FillFrom(reader io.Reader) (int, error) {
 	nBytes, err := reader.Read(b.Value[begin:])
 	b.Value = b.Value[:begin+nBytes]
 	return nBytes, err
+}
+
+func (b *Buffer) String() string {
+	return string(b.Value)
 }
 
 // NewSmallBuffer creates a Buffer with 1K bytes of arbitrary content.

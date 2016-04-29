@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/v2ray/v2ray-core/common"
+	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/serial"
 )
 
@@ -33,22 +34,26 @@ func (this *errorLog) Release() {
 }
 
 func (this *errorLog) String() string {
-	data := ""
+	b := alloc.NewSmallBuffer().Clear()
+	defer b.Release()
+
+	b.AppendString(this.prefix)
+
 	for _, value := range this.values {
 		switch typedVal := value.(type) {
 		case string:
-			data += typedVal
+			b.AppendString(typedVal)
 		case *string:
-			data += *typedVal
+			b.AppendString(*typedVal)
 		case serial.String:
-			data += typedVal.String()
+			b.AppendString(typedVal.String())
 		case error:
-			data += typedVal.Error()
+			b.AppendString(typedVal.Error())
 		default:
-			data += fmt.Sprintf("%v", value)
+			b.AppendString(fmt.Sprint(value))
 		}
 	}
-	return this.prefix + data
+	return b.String()
 }
 
 var (

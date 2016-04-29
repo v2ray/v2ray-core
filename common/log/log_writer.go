@@ -19,8 +19,8 @@ type logWriter interface {
 type noOpLogWriter struct {
 }
 
-func (this *noOpLogWriter) Log(LogEntry) {
-	// Swallow
+func (this *noOpLogWriter) Log(entry LogEntry) {
+	entry.Release()
 }
 
 type stdOutLogWriter struct {
@@ -48,6 +48,7 @@ func (this *fileLogWriter) Log(log LogEntry) {
 	select {
 	case this.queue <- log:
 	default:
+		log.Release()
 		// We don't expect this to happen, but don't want to block main thread as well.
 	}
 }
