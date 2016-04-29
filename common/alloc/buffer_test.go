@@ -48,3 +48,13 @@ func TestBufferPrepend(t *testing.T) {
 	buffer.Prepend([]byte{'u', 'v', 'w'})
 	assert.Bytes(buffer.Value).Equals([]byte("uvwxyzabc"))
 }
+
+func TestBufferString(t *testing.T) {
+	v2testing.Current(t)
+
+	buffer := NewBuffer().Clear()
+	defer buffer.Release()
+
+	buffer.AppendString("Test String")
+	assert.String(buffer).Equals("Test String")
+}
