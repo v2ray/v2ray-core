@@ -11,6 +11,7 @@ const (
 	InfoLevel    = LogLevel(1)
 	WarningLevel = LogLevel(2)
 	ErrorLevel   = LogLevel(3)
+	NoneLevel    = LogLevel(999)
 )
 
 type errorLog struct {

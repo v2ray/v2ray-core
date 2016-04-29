@@ -76,6 +76,8 @@ func (this *LogConfig) UnmarshalJSON(data []byte) error {
 		this.LogLevel = log.InfoLevel
 	case "error":
 		this.LogLevel = log.ErrorLevel
+	case "none":
+		this.LogLevel = log.NoneLevel
 	default:
 		this.LogLevel = log.WarningLevel
 	}
