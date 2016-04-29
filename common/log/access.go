@@ -23,6 +23,12 @@ type accessLog struct {
 	Reason serial.String
 }
 
+func (this *accessLog) Release() {
+	this.From = nil
+	this.To = nil
+	this.Reason = nil
+}
+
 func (this *accessLog) String() string {
 	return this.From.String() + " " + string(this.Status) + " " + this.To.String() + " " + this.Reason.String()
 }

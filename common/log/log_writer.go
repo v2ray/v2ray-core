@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/v2ray/v2ray-core/common/platform"
-	"github.com/v2ray/v2ray-core/common/serial"
 )
 
 func createLogger(writer io.Writer) *log.Logger {
@@ -14,13 +13,13 @@ func createLogger(writer io.Writer) *log.Logger {
 }
 
 type logWriter interface {
-	Log(serial.String)
+	Log(LogEntry)
 }
 
 type noOpLogWriter struct {
 }
 
-func (this *noOpLogWriter) Log(serial.String) {
+func (this *noOpLogWriter) Log(LogEntry) {
 	// Swallow
 }
 
@@ -34,17 +33,18 @@ func newStdOutLogWriter() logWriter {
 	}
 }
 
-func (this *stdOutLogWriter) Log(log serial.String) {
+func (this *stdOutLogWriter) Log(log LogEntry) {
 	this.logger.Print(log.String() + platform.LineSeparator())
+	log.Release()
 }
 
 type fileLogWriter struct {
-	queue  chan serial.String
+	queue  chan LogEntry
 	logger *log.Logger
 	file   *os.File
 }
 
-func (this *fileLogWriter) Log(log serial.String) {
+func (this *fileLogWriter) Log(log LogEntry) {
 	select {
 	case this.queue <- log:
 	default:
@@ -55,6 +55,7 @@ func (this *fileLogWriter) Log(log serial.String) {
 func (this *fileLogWriter) run() {
 	for entry := range this.queue {
 		this.logger.Print(entry.String() + platform.LineSeparator())
+		entry.Release()
 	}
 }
 
@@ -68,7 +69,7 @@ func newFileLogWriter(path string) (*fileLogWriter, error) {
 		return nil, err
 	}
 	logger := &fileLogWriter{
-		queue:  make(chan serial.String, 16),
+		queue:  make(chan LogEntry, 16),
 		logger: log.New(file, "", log.Ldate|log.Ltime),
 		file:   file,
 	}

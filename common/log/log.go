@@ -3,6 +3,7 @@ package log
 import (
 	"fmt"
 
+	"github.com/v2ray/v2ray-core/common"
 	"github.com/v2ray/v2ray-core/common/serial"
 )
 
@@ -14,9 +15,21 @@ const (
 	NoneLevel    = LogLevel(999)
 )
 
+type LogEntry interface {
+	common.Releasable
+	serial.String
+}
+
 type errorLog struct {
 	prefix string
 	values []interface{}
+}
+
+func (this *errorLog) Release() {
+	for index := range this.values {
+		this.values[index] = nil
+	}
+	this.values = nil
 }
 
 func (this *errorLog) String() string {
