@@ -54,9 +54,11 @@ func (this *fileLogWriter) Log(log LogEntry) {
 }
 
 func (this *fileLogWriter) run() {
-	for entry := range this.queue {
+	for {
+		entry := <-this.queue
 		this.logger.Print(entry.String() + platform.LineSeparator())
 		entry.Release()
+		entry = nil
 	}
 }
 
