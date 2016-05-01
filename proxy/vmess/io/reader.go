@@ -27,9 +27,14 @@ func (this *AuthChunkReader) Read() (*alloc.Buffer, error) {
 	}
 
 	length := serial.BytesLiteral(buffer.Value[:2]).Uint16Value()
-	if length == 4 { // Length of authentication bytes.
+	if length <= 4 { // Length of authentication bytes.
 		return nil, io.EOF
 	}
+	if length > 8*1024 {
+		buffer.Release()
+		buffer = alloc.NewLargeBuffer()
+	}
+	buffer.SliceBack(16)
 	if _, err := io.ReadFull(this.reader, buffer.Value[:length]); err != nil {
 		buffer.Release()
 		return nil, err
