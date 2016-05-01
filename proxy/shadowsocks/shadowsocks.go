@@ -110,12 +110,13 @@ func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, source v2net.D
 		log.Warning("Shadowsocks: Invalid request from ", source, ": ", err)
 		return
 	}
+	defer request.Release()
 
 	dest := v2net.UDPDestination(request.Address, request.Port)
 	log.Access(source, dest, log.AccessAccepted, serial.StringLiteral(""))
 	log.Info("Shadowsocks: Tunnelling request to ", dest)
 
-	this.udpServer.Dispatch(source, dest, request.UDPPayload, func(destination v2net.Destination, payload *alloc.Buffer) {
+	this.udpServer.Dispatch(source, dest, request.DetachUDPPayload(), func(destination v2net.Destination, payload *alloc.Buffer) {
 		defer payload.Release()
 
 		response := alloc.NewBuffer().Slice(0, ivLen)
@@ -163,9 +164,13 @@ func (this *Shadowsocks) handleConnection(conn hub.Connection) {
 	defer buffer.Release()
 
 	timedReader := v2net.NewTimeOutReader(16, conn)
+	defer timedReader.Release()
+
+	bufferedReader := v2io.NewBufferedReader(timedReader)
+	defer bufferedReader.Release()
 
 	ivLen := this.config.Cipher.IVSize()
-	_, err := io.ReadFull(timedReader, buffer.Value[:ivLen])
+	_, err := io.ReadFull(bufferedReader, buffer.Value[:ivLen])
 	if err != nil {
 		log.Access(conn.RemoteAddr(), serial.StringLiteral(""), log.AccessRejected, serial.StringLiteral(err.Error()))
 		log.Error("Shadowsocks: Failed to read IV: ", err)
@@ -181,7 +186,7 @@ func (this *Shadowsocks) handleConnection(conn hub.Connection) {
 		return
 	}
 
-	reader := crypto.NewCryptionReader(stream, timedReader)
+	reader := crypto.NewCryptionReader(stream, bufferedReader)
 
 	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(key, iv)), false)
 	if err != nil {
@@ -189,6 +194,8 @@ func (this *Shadowsocks) handleConnection(conn hub.Connection) {
 		log.Warning("Shadowsocks: Invalid request from ", conn.RemoteAddr(), ": ", err)
 		return
 	}
+	defer request.Release()
+	bufferedReader.SetCached(false)
 
 	userSettings := protocol.GetUserSettings(this.config.Level)
 	timedReader.SetTimeOut(userSettings.PayloadReadTimeout)
@@ -218,10 +225,11 @@ func (this *Shadowsocks) handleConnection(conn hub.Connection) {
 
 			writer := crypto.NewCryptionWriter(stream, conn)
 			v2writer := v2io.NewAdaptiveWriter(writer)
-			defer writer.Release()
 
 			v2io.Pipe(ray.InboundOutput(), v2writer)
 			ray.InboundOutput().Release()
+			writer.Release()
+			v2writer.Release()
 		}
 		writeFinish.Unlock()
 	}()

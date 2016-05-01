@@ -24,6 +24,19 @@ type Request struct {
 	UDPPayload *alloc.Buffer
 }
 
+func (this *Request) Release() {
+	this.Address = nil
+	if this.UDPPayload != nil {
+		this.UDPPayload.Release()
+	}
+}
+
+func (this *Request) DetachUDPPayload() *alloc.Buffer {
+	payload := this.UDPPayload
+	this.UDPPayload = nil
+	return payload
+}
+
 func ReadRequest(reader io.Reader, auth *Authenticator, udp bool) (*Request, error) {
 	buffer := alloc.NewSmallBuffer()
 	defer buffer.Release()
