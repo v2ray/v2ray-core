@@ -60,7 +60,7 @@ func (this *HttpProxyServer) Listen(port v2net.Port) error {
 	}
 	this.listeningPort = port
 
-	tcpListener, err := hub.ListenTCP(port, this.handleConnection)
+	tcpListener, err := hub.ListenTCP(port, this.handleConnection, nil)
 	if err != nil {
 		log.Error("Http: Failed listen on port ", port, ": ", err)
 		return err

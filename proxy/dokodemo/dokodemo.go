@@ -107,7 +107,7 @@ func (this *DokodemoDoor) handleUDPPackets(payload *alloc.Buffer, dest v2net.Des
 }
 
 func (this *DokodemoDoor) ListenTCP(port v2net.Port) error {
-	tcpListener, err := hub.ListenTCP(port, this.HandleTCPConnection)
+	tcpListener, err := hub.ListenTCP(port, this.HandleTCPConnection, nil)
 	if err != nil {
 		log.Error("Dokodemo: Failed to listen on port ", port, ": ", err)
 		return err

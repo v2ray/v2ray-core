@@ -77,7 +77,7 @@ func (this *Server) Listen(port v2net.Port) error {
 	}
 	this.listeningPort = port
 
-	listener, err := hub.ListenTCP(port, this.handleConnection)
+	listener, err := hub.ListenTCP(port, this.handleConnection, nil)
 	if err != nil {
 		log.Error("Socks: failed to listen on port ", port, ": ", err)
 		return err

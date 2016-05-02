@@ -65,7 +65,7 @@ func (this *Shadowsocks) Listen(port v2net.Port) error {
 		}
 	}
 
-	tcpHub, err := hub.ListenTCP(port, this.handleConnection)
+	tcpHub, err := hub.ListenTCP(port, this.handleConnection, nil)
 	if err != nil {
 		log.Error("Shadowsocks: Failed to listen TCP on port ", port, ": ", err)
 		return err

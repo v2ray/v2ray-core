@@ -1,6 +1,7 @@
 package hub
 
 import (
+	"crypto/tls"
 	"errors"
 	"net"
 
@@ -13,12 +14,12 @@ var (
 )
 
 type TCPHub struct {
-	listener     *net.TCPListener
+	listener     net.Listener
 	connCallback ConnectionHandler
 	accepting    bool
 }
 
-func ListenTCP(port v2net.Port, callback ConnectionHandler) (*TCPHub, error) {
+func ListenTCP(port v2net.Port, callback ConnectionHandler, tlsConfig *tls.Config) (*TCPHub, error) {
 	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   []byte{0, 0, 0, 0},
 		Port: int(port),
@@ -27,12 +28,22 @@ func ListenTCP(port v2net.Port, callback ConnectionHandler) (*TCPHub, error) {
 	if err != nil {
 		return nil, err
 	}
-	tcpListener := &TCPHub{
-		listener:     listener,
-		connCallback: callback,
+	var hub *TCPHub
+	if tlsConfig != nil {
+		tlsListener := tls.NewListener(listener, tlsConfig)
+		hub = &TCPHub{
+			listener:     tlsListener,
+			connCallback: callback,
+		}
+	} else {
+		hub = &TCPHub{
+			listener:     listener,
+			connCallback: callback,
+		}
 	}
-	go tcpListener.start()
-	return tcpListener, nil
+
+	go hub.start()
+	return hub, nil
 }
 
 func (this *TCPHub) Close() {
@@ -44,7 +55,7 @@ func (this *TCPHub) Close() {
 func (this *TCPHub) start() {
 	this.accepting = true
 	for this.accepting {
-		conn, err := this.listener.AcceptTCP()
+		conn, err := this.listener.Accept()
 		if err != nil {
 			if this.accepting {
 				log.Warning("Listener: Failed to accept new TCP connection: ", err)

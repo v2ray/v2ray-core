@@ -103,7 +103,7 @@ func (this *VMessInboundHandler) Listen(port v2net.Port) error {
 	}
 	this.listeningPort = port
 
-	tcpListener, err := hub.ListenTCP(port, this.HandleConnection)
+	tcpListener, err := hub.ListenTCP(port, this.HandleConnection, nil)
 	if err != nil {
 		log.Error("Unable to listen tcp port ", port, ": ", err)
 		return err
