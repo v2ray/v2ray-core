@@ -31,8 +31,7 @@ func (server *Server) Start() (v2net.Destination, error) {
 
 func (server *Server) handleConnection(conn *net.UDPConn) {
 	server.accepting = true
-	defer conn.Close()
-	for {
+	for server.accepting {
 		buffer := make([]byte, 2*1024)
 		nBytes, addr, err := conn.ReadFromUDP(buffer)
 		if err != nil {

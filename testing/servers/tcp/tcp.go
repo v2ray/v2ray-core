@@ -32,7 +32,6 @@ func (server *Server) Start() (v2net.Destination, error) {
 
 func (server *Server) acceptConnections(listener *net.TCPListener) {
 	server.accepting = true
-	defer listener.Close()
 	for server.accepting {
 		conn, err := listener.Accept()
 		if err != nil {
