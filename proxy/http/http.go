@@ -95,7 +95,7 @@ func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error
 	return v2net.TCPDestination(v2net.DomainAddress(host), port), nil
 }
 
-func (this *HttpProxyServer) handleConnection(conn hub.Connection) {
+func (this *HttpProxyServer) handleConnection(conn *hub.Connection) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
 

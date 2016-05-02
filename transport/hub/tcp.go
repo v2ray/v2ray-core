@@ -51,7 +51,7 @@ func (this *TCPHub) start() {
 			}
 			continue
 		}
-		go this.connCallback(&TCPConnection{
+		go this.connCallback(&Connection{
 			conn:     conn,
 			listener: this,
 		})

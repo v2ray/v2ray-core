@@ -92,7 +92,7 @@ func (this *Server) Listen(port v2net.Port) error {
 	return nil
 }
 
-func (this *Server) handleConnection(connection hub.Connection) {
+func (this *Server) handleConnection(connection *hub.Connection) {
 	defer connection.Close()
 
 	timedReader := v2net.NewTimeOutReader(120, connection)
