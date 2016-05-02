@@ -110,7 +110,7 @@ func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, source v2net.D
 		log.Warning("Shadowsocks: Invalid request from ", source, ": ", err)
 		return
 	}
-	defer request.Release()
+	//defer request.Release()
 
 	dest := v2net.UDPDestination(request.Address, request.Port)
 	log.Access(source, dest, log.AccessAccepted, serial.StringLiteral(""))
