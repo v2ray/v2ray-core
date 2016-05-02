@@ -66,6 +66,8 @@ func (this *UDPServer) handleConnection(destString string, inboundRay ray.Inboun
 		callback(source, data)
 	}
 	this.Lock()
+	inboundRay.InboundInput().Release()
+	inboundRay.InboundOutput().Release()
 	delete(this.conns, destString)
 	this.Unlock()
 }
