@@ -197,7 +197,6 @@ func (this *VMessInboundHandler) HandleConnection(connection hub.Connection) {
 	}
 
 	readFinish.Lock()
-	writeFinish.Lock()
 }
 
 func init() {
