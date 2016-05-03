@@ -69,7 +69,7 @@ VDIS="64"
 
 if [[ "$ARCH" == "i686" ]] || [[ "$ARCH" == "i386" ]]; then
   VDIS="32"
-elif [[ "$ARCH" == *"armv7"* ]]; then
+elif [[ "$ARCH" == *"armv7"* ]] || [[ "$ARCH" == "armv6l" ]]; then
   VDIS="arm"
 elif [[ "$ARCH" == *"armv8"* ]]; then
   VDIS="arm64"
