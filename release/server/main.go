@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"time"
 
 	"github.com/v2ray/v2ray-core"
 	_ "github.com/v2ray/v2ray-core/app/router/rules"
@@ -92,6 +94,7 @@ func main() {
 		return
 	}
 
-	finish := make(chan bool)
-	<-finish
+	for range time.Tick(time.Minute) {
+		runtime.GC()
+	}
 }
