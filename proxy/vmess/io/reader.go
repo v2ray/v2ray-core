@@ -62,12 +62,6 @@ func (this *AuthChunkReader) Read() (*alloc.Buffer, error) {
 		buffer = AllocBuffer(this.chunkLength).Clear()
 	}
 
-	_, err := buffer.FillFrom(this.reader)
-	if err != nil {
-		buffer.Release()
-		return nil, err
-	}
-
 	if this.chunkLength == -1 {
 		for buffer.Len() < 6 {
 			_, err := buffer.FillFrom(this.reader)
@@ -80,6 +74,12 @@ func (this *AuthChunkReader) Read() (*alloc.Buffer, error) {
 		this.chunkLength = int(length) - 4
 		this.validator = NewValidator(serial.BytesLiteral(buffer.Value[2:6]).Uint32Value())
 		buffer.SliceFrom(6)
+	} else if buffer.Len() < this.chunkLength {
+		_, err := buffer.FillFrom(this.reader)
+		if err != nil {
+			buffer.Release()
+			return nil, err
+		}
 	}
 
 	if this.chunkLength == 0 {

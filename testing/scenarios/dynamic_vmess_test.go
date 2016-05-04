@@ -1,6 +1,8 @@
 package scenarios
 
 import (
+	"bytes"
+	"io"
 	"net"
 	"testing"
 
@@ -42,10 +44,10 @@ func TestDynamicVMess(t *testing.T) {
 
 		conn.CloseWrite()
 
-		response := make([]byte, 1024)
-		nBytes, err = conn.Read(response)
+		response := bytes.NewBuffer(nil)
+		_, err = io.Copy(response, conn)
 		assert.Error(err).IsNil()
-		assert.StringLiteral("Processed: " + payload).Equals(string(response[:nBytes]))
+		assert.StringLiteral("Processed: " + payload).Equals(string(response.Bytes()))
 
 		conn.Close()
 	}

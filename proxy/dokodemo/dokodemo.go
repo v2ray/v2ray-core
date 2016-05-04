@@ -129,6 +129,8 @@ func (this *DokodemoDoor) HandleTCPConnection(conn *hub.Connection) {
 	outputFinish.Lock()
 
 	reader := v2net.NewTimeOutReader(this.config.Timeout, conn)
+	defer reader.Release()
+
 	go func() {
 		v2reader := v2io.NewAdaptiveReader(reader)
 		defer v2reader.Release()
@@ -147,4 +149,5 @@ func (this *DokodemoDoor) HandleTCPConnection(conn *hub.Connection) {
 	}()
 
 	outputFinish.Lock()
+	inputFinish.Lock()
 }
