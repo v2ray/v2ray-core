@@ -23,6 +23,9 @@ type VMessOutboundHandler struct {
 }
 
 func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
+	defer ray.OutboundInput().Release()
+	defer ray.OutboundOutput().Close()
+
 	destination, vNextUser := this.receiverManager.PickReceiver()
 
 	command := proto.RequestCommandTCP
@@ -41,9 +44,6 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 	conn, err := dialer.Dial(destination)
 	if err != nil {
 		log.Error("Failed to open ", destination, ": ", err)
-		if ray != nil {
-			ray.OutboundOutput().Close()
-		}
 		return err
 	}
 	log.Info("VMessOut: Tunneling request to ", request.Address, " via ", destination)
@@ -64,8 +64,6 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 
 	requestFinish.Lock()
 	responseFinish.Lock()
-	output.Close()
-	input.Release()
 	return nil
 }
 

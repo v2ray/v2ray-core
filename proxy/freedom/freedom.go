@@ -22,6 +22,7 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 
 	defer payload.Release()
 	defer ray.OutboundInput().Release()
+	defer ray.OutboundOutput().Close()
 
 	var conn net.Conn
 	err := retry.Timed(5, 100).On(func() error {
@@ -56,7 +57,6 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 
 	go func() {
 		defer readMutex.Unlock()
-		defer output.Close()
 
 		var reader io.Reader = conn
 
