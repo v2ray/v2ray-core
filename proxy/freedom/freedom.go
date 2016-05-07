@@ -68,6 +68,7 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 		defer v2reader.Release()
 
 		v2io.Pipe(v2reader, output)
+		ray.OutboundOutput().Close()
 	}()
 
 	writeMutex.Lock()

@@ -205,6 +205,7 @@ func (this *Shadowsocks) handleConnection(conn *hub.Connection) {
 	log.Info("Shadowsocks: Tunnelling request to ", dest)
 
 	ray := this.packetDispatcher.DispatchToOutbound(dest)
+	defer ray.InboundOutput().Release()
 
 	var writeFinish sync.Mutex
 	writeFinish.Lock()
@@ -227,7 +228,6 @@ func (this *Shadowsocks) handleConnection(conn *hub.Connection) {
 			v2writer := v2io.NewAdaptiveWriter(writer)
 
 			v2io.Pipe(ray.InboundOutput(), v2writer)
-			ray.InboundOutput().Release()
 			writer.Release()
 			v2writer.Release()
 		}

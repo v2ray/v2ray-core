@@ -139,6 +139,9 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 	ray := this.packetDispatcher.DispatchToOutbound(request.Destination())
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
+	defer input.Close()
+	defer output.Release()
+
 	var readFinish, writeFinish sync.Mutex
 	readFinish.Lock()
 	writeFinish.Lock()
@@ -189,7 +192,6 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 			if request.Option.IsChunkStream() {
 				writer.Write(alloc.NewSmallBuffer().Clear())
 			}
-			output.Release()
 			writer.Release()
 			finish.Unlock()
 		}(&writeFinish)
