@@ -27,6 +27,7 @@ func (this *CertificateConfig) UnmarshalJSON(data []byte) error {
 	}
 	this.Domain = jsonConfig.Domain
 	this.Certificate = cert
+	return nil
 }
 
 func (this *TlsConfig) UnmarshalJSON(data []byte) error {
