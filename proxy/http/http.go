@@ -2,6 +2,7 @@ package http
 
 import (
 	"bufio"
+	"crypto/tls"
 	"io"
 	"net"
 	"net/http"
@@ -60,7 +61,11 @@ func (this *HttpProxyServer) Listen(port v2net.Port) error {
 	}
 	this.listeningPort = port
 
-	tcpListener, err := hub.ListenTCP(port, this.handleConnection, nil)
+	var tlsConfig *tls.Config = nil
+	if this.config.TlsConfig != nil {
+		tlsConfig = this.config.TlsConfig.GetConfig()
+	}
+	tcpListener, err := hub.ListenTCP(port, this.handleConnection, tlsConfig)
 	if err != nil {
 		log.Error("Http: Failed listen on port ", port, ": ", err)
 		return err

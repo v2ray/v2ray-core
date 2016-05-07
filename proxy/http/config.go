@@ -16,6 +16,25 @@ type TlsConfig struct {
 	Certs   []*CertificateConfig
 }
 
+func (this *TlsConfig) GetConfig() *tls.Config {
+	if !this.Enabled {
+		return nil
+	}
+
+	config := &tls.Config{
+		InsecureSkipVerify: false,
+	}
+
+	config.Certificates = make([]tls.Certificate, len(this.Certs))
+	for index, cert := range this.Certs {
+		config.Certificates[index] = cert.Certificate
+	}
+
+	config.BuildNameToCertificate()
+
+	return config
+}
+
 type Config struct {
 	OwnHosts  []v2net.Address
 	TlsConfig *TlsConfig
