@@ -18,23 +18,13 @@ type User struct {
 	Email    string
 }
 
-func NewUser(id *ID, level UserLevel, alterIdCount uint16, email string) *User {
-	u := &User{
-		ID:    id,
-		Level: level,
-		Email: email,
+func NewUser(primary *ID, secondary []*ID, level UserLevel, email string) *User {
+	return &User{
+		ID:       primary,
+		AlterIDs: secondary,
+		Level:    level,
+		Email:    email,
 	}
-	if alterIdCount > 0 {
-		u.AlterIDs = make([]*ID, alterIdCount)
-		prevId := id.UUID()
-		for idx := range u.AlterIDs {
-			newid := prevId.Next()
-			// TODO: check duplicate
-			u.AlterIDs[idx] = NewID(newid)
-			prevId = newid
-		}
-	}
-	return u
 }
 
 func (this *User) AnyValidID() *ID {

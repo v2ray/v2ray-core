@@ -50,7 +50,8 @@ func (this *userByEmail) Get(email string) (*protocol.User, bool) {
 		user, found = this.cache[email]
 		if !found {
 			id := protocol.NewID(uuid.New())
-			user = protocol.NewUser(id, this.defaultLevel, this.defaultAlterIDs, email)
+			alterIDs := protocol.NewAlterIDs(id, this.defaultAlterIDs)
+			user = protocol.NewUser(id, alterIDs, this.defaultLevel, email)
 			this.cache[email] = user
 		}
 		this.Unlock()

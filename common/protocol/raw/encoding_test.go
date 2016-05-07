@@ -18,8 +18,8 @@ func TestRequestSerialization(t *testing.T) {
 
 	user := protocol.NewUser(
 		protocol.NewID(uuid.New()),
+		nil,
 		protocol.UserLevelUntrusted,
-		0,
 		"test@v2ray.com")
 
 	expectedRequest := &protocol.RequestHeader{

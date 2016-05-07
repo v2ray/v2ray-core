@@ -57,3 +57,15 @@ func NewID(uuid *uuid.UUID) *ID {
 	md5hash.Sum(id.cmdKey[:0])
 	return id
 }
+
+func NewAlterIDs(primary *ID, alterIDCount uint16) []*ID {
+	alterIDs := make([]*ID, alterIDCount)
+	prevID := primary.UUID()
+	for idx := range alterIDs {
+		newid := prevID.Next()
+		// TODO: check duplicates
+		alterIDs[idx] = NewID(newid)
+		prevID = newid
+	}
+	return alterIDs
+}
