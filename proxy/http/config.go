@@ -1,13 +1,19 @@
 package http
 
 import (
+	"crypto/tls"
+
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
+type CertificateConfig struct {
+	Domain      string
+	Certificate tls.Certificate
+}
+
 type TlsConfig struct {
-	Enabled  bool
-	CertFile string
-	KeyFile  string
+	Enabled bool
+	Certs   []*CertificateConfig
 }
 
 type Config struct {
