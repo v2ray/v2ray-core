@@ -1,7 +1,7 @@
 package inbound
 
 import (
-	proto "github.com/v2ray/v2ray-core/common/protocol"
+	"github.com/v2ray/v2ray-core/common/protocol"
 )
 
 type DetourConfig struct {
@@ -14,11 +14,11 @@ type FeaturesConfig struct {
 
 type DefaultConfig struct {
 	AlterIDs uint16
-	Level    proto.UserLevel
+	Level    protocol.UserLevel
 }
 
 type Config struct {
-	AllowedUsers []*proto.User
+	AllowedUsers []*protocol.User
 	Features     *FeaturesConfig
 	Defaults     *DefaultConfig
 	DetourConfig *DetourConfig

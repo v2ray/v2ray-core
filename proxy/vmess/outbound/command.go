@@ -3,11 +3,10 @@ package outbound
 import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/protocol"
-	proto "github.com/v2ray/v2ray-core/common/protocol"
 )
 
 func (this *VMessOutboundHandler) handleSwitchAccount(cmd *protocol.CommandSwitchAccount) {
-	user := proto.NewUser(proto.NewID(cmd.ID), cmd.Level, cmd.AlterIds.Value(), "")
+	user := protocol.NewUser(protocol.NewID(cmd.ID), cmd.Level, cmd.AlterIds.Value(), "")
 	dest := v2net.TCPDestination(cmd.Host, cmd.Port)
 	this.receiverManager.AddDetour(NewReceiver(dest, user), cmd.ValidMin)
 }

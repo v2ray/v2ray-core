@@ -8,7 +8,7 @@ import (
 	"github.com/v2ray/v2ray-core/app/dispatcher"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
-	proto "github.com/v2ray/v2ray-core/common/protocol"
+	"github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/common/uuid"
 	"github.com/v2ray/v2ray-core/proxy"
 	proxytesting "github.com/v2ray/v2ray-core/proxy/testing"
@@ -26,7 +26,7 @@ func TestVMessInAndOut(t *testing.T) {
 	id, err := uuid.ParseString("ad937d9d-6e23-4a5a-ba23-bce5092a7c51")
 	assert.Error(err).IsNil()
 
-	testAccount := proto.NewID(id)
+	testAccount := protocol.NewID(id)
 
 	portA := v2nettesting.PickPort()
 	portB := v2nettesting.PickPort()

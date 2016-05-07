@@ -7,7 +7,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	proto "github.com/v2ray/v2ray-core/common/protocol"
+	"github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/proxy/internal"
 )
 
@@ -15,7 +15,7 @@ func (this *Receiver) UnmarshalJSON(data []byte) error {
 	type RawConfigTarget struct {
 		Address *v2net.AddressJson `json:"address"`
 		Port    v2net.Port         `json:"port"`
-		Users   []*proto.User      `json:"users"`
+		Users   []*protocol.User   `json:"users"`
 	}
 	var rawConfig RawConfigTarget
 	if err := json.Unmarshal(data, &rawConfig); err != nil {

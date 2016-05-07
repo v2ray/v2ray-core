@@ -5,7 +5,7 @@ package inbound
 import (
 	"encoding/json"
 
-	proto "github.com/v2ray/v2ray-core/common/protocol"
+	"github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/proxy/internal/config"
 )
 
@@ -46,16 +46,16 @@ func (this *DefaultConfig) UnmarshalJSON(data []byte) error {
 	if this.AlterIDs == 0 {
 		this.AlterIDs = 32
 	}
-	this.Level = proto.UserLevel(jsonConfig.Level)
+	this.Level = protocol.UserLevel(jsonConfig.Level)
 	return nil
 }
 
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
-		Users        []*proto.User   `json:"clients"`
-		Features     *FeaturesConfig `json:"features"`
-		Defaults     *DefaultConfig  `json:"default"`
-		DetourConfig *DetourConfig   `json:"detour"`
+		Users        []*protocol.User `json:"clients"`
+		Features     *FeaturesConfig  `json:"features"`
+		Defaults     *DefaultConfig   `json:"default"`
+		DetourConfig *DetourConfig    `json:"detour"`
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
@@ -66,7 +66,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	this.Defaults = jsonConfig.Defaults
 	if this.Defaults == nil {
 		this.Defaults = &DefaultConfig{
-			Level:    proto.UserLevel(0),
+			Level:    protocol.UserLevel(0),
 			AlterIDs: 32,
 		}
 	}

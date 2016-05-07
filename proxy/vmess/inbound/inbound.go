@@ -10,8 +10,8 @@ import (
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	proto "github.com/v2ray/v2ray-core/common/protocol"
-	raw "github.com/v2ray/v2ray-core/common/protocol/raw"
+	"github.com/v2ray/v2ray-core/common/protocol"
+	"github.com/v2ray/v2ray-core/common/protocol/raw"
 	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/common/uuid"
 	"github.com/v2ray/v2ray-core/proxy"
@@ -22,13 +22,13 @@ import (
 
 type userByEmail struct {
 	sync.RWMutex
-	cache           map[string]*proto.User
-	defaultLevel    proto.UserLevel
+	cache           map[string]*protocol.User
+	defaultLevel    protocol.UserLevel
 	defaultAlterIDs uint16
 }
 
-func NewUserByEmail(users []*proto.User, config *DefaultConfig) *userByEmail {
-	cache := make(map[string]*proto.User)
+func NewUserByEmail(users []*protocol.User, config *DefaultConfig) *userByEmail {
+	cache := make(map[string]*protocol.User)
 	for _, user := range users {
 		cache[user.Email] = user
 	}
@@ -39,8 +39,8 @@ func NewUserByEmail(users []*proto.User, config *DefaultConfig) *userByEmail {
 	}
 }
 
-func (this *userByEmail) Get(email string) (*proto.User, bool) {
-	var user *proto.User
+func (this *userByEmail) Get(email string) (*protocol.User, bool) {
+	var user *protocol.User
 	var found bool
 	this.RLock()
 	user, found = this.cache[email]
@@ -49,8 +49,8 @@ func (this *userByEmail) Get(email string) (*proto.User, bool) {
 		this.Lock()
 		user, found = this.cache[email]
 		if !found {
-			id := proto.NewID(uuid.New())
-			user = proto.NewUser(id, this.defaultLevel, this.defaultAlterIDs, email)
+			id := protocol.NewID(uuid.New())
+			user = protocol.NewUser(id, this.defaultLevel, this.defaultAlterIDs, email)
 			this.cache[email] = user
 		}
 		this.Unlock()
@@ -63,7 +63,7 @@ type VMessInboundHandler struct {
 	sync.Mutex
 	packetDispatcher      dispatcher.PacketDispatcher
 	inboundHandlerManager proxyman.InboundHandlerManager
-	clients               proto.UserValidator
+	clients               protocol.UserValidator
 	usersByEmail          *userByEmail
 	accepting             bool
 	listener              *hub.TCPHub
@@ -85,7 +85,7 @@ func (this *VMessInboundHandler) Close() {
 	}
 }
 
-func (this *VMessInboundHandler) GetUser(email string) *proto.User {
+func (this *VMessInboundHandler) GetUser(email string) *protocol.User {
 	user, existing := this.usersByEmail.Get(email)
 	if !existing {
 		this.clients.Add(user)
@@ -146,7 +146,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 	readFinish.Lock()
 	writeFinish.Lock()
 
-	userSettings := proto.GetUserSettings(request.User.Level)
+	userSettings := protocol.GetUserSettings(request.User.Level)
 	connReader.SetTimeOut(userSettings.PayloadReadTimeout)
 	reader.SetCached(false)
 	go func() {
@@ -166,7 +166,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 	writer := v2io.NewBufferedWriter(connection)
 	defer writer.Release()
 
-	response := &proto.ResponseHeader{
+	response := &protocol.ResponseHeader{
 		Command: this.generateCommand(request),
 	}
 
@@ -209,7 +209,7 @@ func init() {
 			}
 			config := rawConfig.(*Config)
 
-			allowedClients := proto.NewTimedUserValidator(proto.DefaultIDHash)
+			allowedClients := protocol.NewTimedUserValidator(protocol.DefaultIDHash)
 			for _, user := range config.AllowedUsers {
 				allowedClients.Add(user)
 			}

@@ -6,23 +6,23 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/dice"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	proto "github.com/v2ray/v2ray-core/common/protocol"
+	"github.com/v2ray/v2ray-core/common/protocol"
 )
 
 type Receiver struct {
 	sync.RWMutex
 	Destination v2net.Destination
-	Accounts    []*proto.User
+	Accounts    []*protocol.User
 }
 
-func NewReceiver(dest v2net.Destination, users ...*proto.User) *Receiver {
+func NewReceiver(dest v2net.Destination, users ...*protocol.User) *Receiver {
 	return &Receiver{
 		Destination: dest,
 		Accounts:    users,
 	}
 }
 
-func (this *Receiver) HasUser(user *proto.User) bool {
+func (this *Receiver) HasUser(user *protocol.User) bool {
 	this.RLock()
 	defer this.RUnlock()
 	for _, u := range this.Accounts {
@@ -34,7 +34,7 @@ func (this *Receiver) HasUser(user *proto.User) bool {
 	return false
 }
 
-func (this *Receiver) AddUser(user *proto.User) {
+func (this *Receiver) AddUser(user *protocol.User) {
 	if this.HasUser(user) {
 		return
 	}
@@ -43,7 +43,7 @@ func (this *Receiver) AddUser(user *proto.User) {
 	this.Unlock()
 }
 
-func (this *Receiver) PickUser() *proto.User {
+func (this *Receiver) PickUser() *protocol.User {
 	return this.Accounts[dice.Roll(len(this.Accounts))]
 }
 
@@ -125,7 +125,7 @@ func (this *ReceiverManager) pickStdReceiver() *Receiver {
 	return this.receivers[dice.Roll(len(this.receivers))]
 }
 
-func (this *ReceiverManager) PickReceiver() (v2net.Destination, *proto.User) {
+func (this *ReceiverManager) PickReceiver() (v2net.Destination, *protocol.User) {
 	rec := this.pickDetour()
 	if rec == nil {
 		rec = this.pickStdReceiver()

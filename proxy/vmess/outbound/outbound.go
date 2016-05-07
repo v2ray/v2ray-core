@@ -9,8 +9,8 @@ import (
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	proto "github.com/v2ray/v2ray-core/common/protocol"
-	raw "github.com/v2ray/v2ray-core/common/protocol/raw"
+	"github.com/v2ray/v2ray-core/common/protocol"
+	"github.com/v2ray/v2ray-core/common/protocol/raw"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	vmessio "github.com/v2ray/v2ray-core/proxy/vmess/io"
@@ -28,17 +28,17 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 
 	destination, vNextUser := this.receiverManager.PickReceiver()
 
-	command := proto.RequestCommandTCP
+	command := protocol.RequestCommandTCP
 	if target.IsUDP() {
-		command = proto.RequestCommandUDP
+		command = protocol.RequestCommandUDP
 	}
-	request := &proto.RequestHeader{
+	request := &protocol.RequestHeader{
 		Version: raw.Version,
 		User:    vNextUser,
 		Command: command,
 		Address: target.Address(),
 		Port:    target.Port(),
-		Option:  proto.RequestOptionChunkStream,
+		Option:  protocol.RequestOptionChunkStream,
 	}
 
 	conn, err := dialer.Dial(destination)
@@ -57,7 +57,7 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 	requestFinish.Lock()
 	responseFinish.Lock()
 
-	session := raw.NewClientSession(proto.DefaultIDHash)
+	session := raw.NewClientSession(protocol.DefaultIDHash)
 
 	go this.handleRequest(session, conn, request, payload, input, &requestFinish)
 	go this.handleResponse(session, conn, request, destination, output, &responseFinish)
@@ -67,7 +67,7 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 	return nil
 }
 
-func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn net.Conn, request *proto.RequestHeader, payload *alloc.Buffer, input v2io.Reader, finish *sync.Mutex) {
+func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn net.Conn, request *protocol.RequestHeader, payload *alloc.Buffer, input v2io.Reader, finish *sync.Mutex) {
 	defer finish.Unlock()
 	defer payload.Release()
 
@@ -96,7 +96,7 @@ func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn
 	return
 }
 
-func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, conn net.Conn, request *proto.RequestHeader, dest v2net.Destination, output v2io.Writer, finish *sync.Mutex) {
+func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, conn net.Conn, request *protocol.RequestHeader, dest v2net.Destination, output v2io.Writer, finish *sync.Mutex) {
 	defer finish.Unlock()
 
 	reader := v2io.NewBufferedReader(conn)
