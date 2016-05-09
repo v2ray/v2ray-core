@@ -88,6 +88,10 @@ func SetLogLevel(level LogLevel) {
 	if level <= ErrorLevel {
 		errorLogger = streamLoggerInstance
 	}
+
+	if level == NoneLevel {
+		accessLoggerInstance = noOpLoggerInstance
+	}
 }
 
 func InitErrorLogger(file string) error {
