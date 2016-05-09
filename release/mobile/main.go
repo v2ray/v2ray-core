@@ -71,10 +71,6 @@ func main() {
 		return
 	}
 
-	if config.LogConfig != nil && len(config.LogConfig.AccessLog) > 0 {
-		log.InitAccessLogger(config.LogConfig.AccessLog)
-	}
-
 	vPoint, err := point.NewPoint(config)
 	if err != nil {
 		log.Error("Failed to create Point server: ", err)
