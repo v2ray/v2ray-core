@@ -1,14 +1,20 @@
 package ray
 
 import (
+	"errors"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 )
 
 const (
 	bufferSize = 128
+)
+
+var (
+	ErrorIOTimeout = errors.New("IO Timeout")
 )
 
 // NewRay creates a new Ray for direct traffic transport.
@@ -74,13 +80,26 @@ func (this *Stream) Write(data *alloc.Buffer) error {
 	if this.closed {
 		return io.EOF
 	}
+	for {
+		err := this.TryWriteOnce(data)
+		if err != ErrorIOTimeout {
+			return err
+		}
+	}
+}
+
+func (this *Stream) TryWriteOnce(data *alloc.Buffer) error {
 	this.access.RLock()
 	defer this.access.RUnlock()
 	if this.closed {
 		return io.EOF
 	}
-	this.buffer <- data
-	return nil
+	select {
+	case this.buffer <- data:
+		return nil
+	case <-time.Tick(time.Second):
+		return ErrorIOTimeout
+	}
 }
 
 func (this *Stream) Close() {
