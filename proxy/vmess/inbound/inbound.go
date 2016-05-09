@@ -151,8 +151,6 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 	connReader.SetTimeOut(userSettings.PayloadReadTimeout)
 	reader.SetCached(false)
 	go func() {
-		defer input.Close()
-		defer readFinish.Unlock()
 		bodyReader := session.DecodeRequestBody(reader)
 		var requestReader v2io.Reader
 		if request.Option.IsChunkStream() {
@@ -162,6 +160,8 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 		}
 		v2io.Pipe(requestReader, input)
 		requestReader.Release()
+		input.Close()
+		readFinish.Unlock()
 	}()
 
 	writer := v2io.NewBufferedWriter(connection)
@@ -190,6 +190,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 				writer = vmessio.NewAuthChunkWriter(writer)
 			}
 			v2io.Pipe(output, writer)
+			output.Release()
 			if request.Option.IsChunkStream() {
 				writer.Write(alloc.NewSmallBuffer().Clear())
 			}
