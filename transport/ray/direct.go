@@ -97,7 +97,7 @@ func (this *Stream) TryWriteOnce(data *alloc.Buffer) error {
 	select {
 	case this.buffer <- data:
 		return nil
-	case <-time.Tick(time.Second):
+	case <-time.After(16 * time.Second):
 		return ErrorIOTimeout
 	}
 }
