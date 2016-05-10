@@ -4,9 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
-	"runtime"
-	"time"
 
 	"github.com/v2ray/v2ray-core"
 	_ "github.com/v2ray/v2ray-core/app/router/rules"
@@ -94,7 +93,9 @@ func main() {
 		return
 	}
 
-	for range time.Tick(time.Minute) {
-		runtime.GC()
-	}
+	osSignals := make(chan os.Signal, 1)
+	signal.Notify(osSignals, os.Interrupt, os.Kill)
+
+	<-osSignals
+	vPoint.Close()
 }
