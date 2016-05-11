@@ -27,7 +27,7 @@ func (this *inboundHandlerManagerWithContextImpl) GetHandler(tag string) (proxy.
 }
 
 func init() {
-	app.RegisterApp(APP_ID_INBOUND_MANAGER, func(context app.Context, obj interface{}) interface{} {
+	app.Register(APP_ID_INBOUND_MANAGER, func(context app.Context, obj interface{}) interface{} {
 		manager := obj.(inboundHandlerManagerWithContext)
 		return &inboundHandlerManagerWithContextImpl{
 			context: context,

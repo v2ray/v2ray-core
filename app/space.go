@@ -20,7 +20,7 @@ var (
 	metadataCache = make(map[ID]ForContextCreator)
 )
 
-func RegisterApp(id ID, creator ForContextCreator) {
+func Register(id ID, creator ForContextCreator) {
 	// TODO: check id
 	metadataCache[id] = creator
 }

@@ -29,7 +29,7 @@ func (this *contextedPacketDispatcher) DispatchToOutbound(destination v2net.Dest
 }
 
 func init() {
-	app.RegisterApp(APP_ID, func(context app.Context, obj interface{}) interface{} {
+	app.Register(APP_ID, func(context app.Context, obj interface{}) interface{} {
 		packetDispatcher := obj.(packetDispatcherWithContext)
 		return &contextedPacketDispatcher{
 			context:          context,

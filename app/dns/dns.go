@@ -35,7 +35,7 @@ func (this *contextedDnsCache) Add(domain string, ip net.IP) {
 }
 
 func init() {
-	app.RegisterApp(APP_ID, func(context app.Context, obj interface{}) interface{} {
+	app.Register(APP_ID, func(context app.Context, obj interface{}) interface{} {
 		dcContext := obj.(dnsCacheWithContext)
 		return &contextedDnsCache{
 			context:  context,
