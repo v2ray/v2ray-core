@@ -29,7 +29,6 @@ type Reader interface {
 type AdaptiveReader struct {
 	reader   io.Reader
 	allocate func() *alloc.Buffer
-	isLarge  bool
 }
 
 // NewAdaptiveReader creates a new AdaptiveReader.
@@ -38,7 +37,6 @@ func NewAdaptiveReader(reader io.Reader) *AdaptiveReader {
 	return &AdaptiveReader{
 		reader:   reader,
 		allocate: alloc.NewBuffer,
-		isLarge:  false,
 	}
 }
 
@@ -46,12 +44,10 @@ func NewAdaptiveReader(reader io.Reader) *AdaptiveReader {
 func (this *AdaptiveReader) Read() (*alloc.Buffer, error) {
 	buffer, err := ReadFrom(this.reader, this.allocate())
 
-	if buffer.IsFull() && !this.isLarge {
+	if buffer.Len() >= alloc.BufferSize {
 		this.allocate = alloc.NewLargeBuffer
-		this.isLarge = true
-	} else if !buffer.IsFull() {
+	} else {
 		this.allocate = alloc.NewBuffer
-		this.isLarge = false
 	}
 
 	if err != nil {
