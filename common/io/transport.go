@@ -4,7 +4,7 @@ func Pipe(reader Reader, writer Writer) error {
 	for {
 		buffer, err := reader.Read()
 		if err != nil {
-			return nil
+			return err
 		}
 
 		if buffer.IsEmpty() {
@@ -14,7 +14,7 @@ func Pipe(reader Reader, writer Writer) error {
 
 		err = writer.Write(buffer)
 		if err != nil {
-			return nil
+			return err
 		}
 	}
 }
