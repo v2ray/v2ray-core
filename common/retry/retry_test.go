@@ -1,10 +1,11 @@
-package retry
+package retry_test
 
 import (
 	"errors"
 	"testing"
 	"time"
 
+	. "github.com/v2ray/v2ray-core/common/retry"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
@@ -76,6 +77,6 @@ func TestRetryExhausted(t *testing.T) {
 	})
 	duration := time.Since(startTime)
 
-	assert.Error(err).Equals(errorRetryFailed)
+	assert.Error(err).Equals(ErrorRetryFailed)
 	assert.Int64(int64(duration / time.Millisecond)).AtLeast(1900)
 }
