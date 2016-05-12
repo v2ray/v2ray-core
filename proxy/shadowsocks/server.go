@@ -20,7 +20,7 @@ import (
 	"github.com/v2ray/v2ray-core/transport/hub"
 )
 
-type Shadowsocks struct {
+type Server struct {
 	packetDispatcher dispatcher.PacketDispatcher
 	config           *Config
 	port             v2net.Port
@@ -30,18 +30,18 @@ type Shadowsocks struct {
 	udpServer        *hub.UDPServer
 }
 
-func NewShadowsocks(config *Config, packetDispatcher dispatcher.PacketDispatcher) *Shadowsocks {
-	return &Shadowsocks{
+func NewServer(config *Config, packetDispatcher dispatcher.PacketDispatcher) *Server {
+	return &Server{
 		config:           config,
 		packetDispatcher: packetDispatcher,
 	}
 }
 
-func (this *Shadowsocks) Port() v2net.Port {
+func (this *Server) Port() v2net.Port {
 	return this.port
 }
 
-func (this *Shadowsocks) Close() {
+func (this *Server) Close() {
 	this.accepting = false
 	// TODO: synchronization
 	if this.tcpHub != nil {
@@ -56,7 +56,7 @@ func (this *Shadowsocks) Close() {
 
 }
 
-func (this *Shadowsocks) Listen(port v2net.Port) error {
+func (this *Server) Listen(port v2net.Port) error {
 	if this.accepting {
 		if this.port == port {
 			return nil
@@ -88,7 +88,7 @@ func (this *Shadowsocks) Listen(port v2net.Port) error {
 	return nil
 }
 
-func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, source v2net.Destination) {
+func (this *Server) handlerUDPPayload(payload *alloc.Buffer, source v2net.Destination) {
 	defer payload.Release()
 
 	ivLen := this.config.Cipher.IVSize()
@@ -157,7 +157,7 @@ func (this *Shadowsocks) handlerUDPPayload(payload *alloc.Buffer, source v2net.D
 	})
 }
 
-func (this *Shadowsocks) handleConnection(conn *hub.Connection) {
+func (this *Server) handleConnection(conn *hub.Connection) {
 	defer conn.Close()
 
 	buffer := alloc.NewSmallBuffer()
@@ -255,7 +255,7 @@ func init() {
 			if !space.HasApp(dispatcher.APP_ID) {
 				return nil, internal.ErrorBadConfiguration
 			}
-			return NewShadowsocks(
+			return NewServer(
 				rawConfig.(*Config),
 				space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)), nil
 		})
