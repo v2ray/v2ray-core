@@ -1,11 +1,15 @@
+// +build generate
+
 package main
 
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"math"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -52,9 +56,28 @@ func main() {
 		ipNet.Add(t)
 	}
 	dump := ipNet.Serialize()
-	fmt.Println("map[uint32]byte {")
-	for i := 0; i < len(dump); i += 2 {
-		fmt.Println(dump[i], ": ", dump[i+1], ",")
+
+	file, err := os.OpenFile("chinaip_init.go", os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+	if err != nil {
+		log.Fatalf("Failed to generate chinaip_init.go: %v", err)
 	}
-	fmt.Println("}")
+	defer file.Close()
+
+	fmt.Fprintln(file, "package rules")
+	fmt.Fprintln(file, "import (")
+	fmt.Fprintln(file, "v2net \"github.com/v2ray/v2ray-core/common/net\"")
+	fmt.Fprintln(file, ")")
+
+	fmt.Fprintln(file, "var (")
+	fmt.Fprintln(file, "chinaIPNet *v2net.IPNet")
+	fmt.Fprintln(file, ")")
+
+	fmt.Fprintln(file, "func init() {")
+
+	fmt.Fprintln(file, "chinaIPNet = v2net.NewIPNetInitialValue(map[uint32]byte {")
+	for i := 0; i < len(dump); i += 2 {
+		fmt.Fprintln(file, dump[i], ": ", dump[i+1], ",")
+	}
+	fmt.Fprintln(file, "})")
+	fmt.Fprintln(file, "}")
 }
