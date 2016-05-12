@@ -1,12 +1,10 @@
 package log
 
 import (
-	"fmt"
-
-	"github.com/v2ray/v2ray-core/common"
-	"github.com/v2ray/v2ray-core/common/alloc"
-	"github.com/v2ray/v2ray-core/common/serial"
+	"github.com/v2ray/v2ray-core/common/log/internal"
 )
+
+type LogLevel int
 
 const (
 	DebugLevel   = LogLevel(0)
@@ -16,86 +14,43 @@ const (
 	NoneLevel    = LogLevel(999)
 )
 
-type LogEntry interface {
-	common.Releasable
-	serial.String
-}
-
-type errorLog struct {
-	prefix string
-	values []interface{}
-}
-
-func (this *errorLog) Release() {
-	for index := range this.values {
-		this.values[index] = nil
-	}
-	this.values = nil
-}
-
-func (this *errorLog) String() string {
-	b := alloc.NewSmallBuffer().Clear()
-	defer b.Release()
-
-	b.AppendString(this.prefix)
-
-	for _, value := range this.values {
-		switch typedVal := value.(type) {
-		case string:
-			b.AppendString(typedVal)
-		case *string:
-			b.AppendString(*typedVal)
-		case serial.String:
-			b.AppendString(typedVal.String())
-		case error:
-			b.AppendString(typedVal.Error())
-		default:
-			b.AppendString(fmt.Sprint(value))
-		}
-	}
-	return b.String()
-}
-
 var (
-	noOpLoggerInstance   logWriter = &noOpLogWriter{}
-	streamLoggerInstance logWriter = newStdOutLogWriter()
+	streamLoggerInstance internal.LogWriter = internal.NewStdOutLogWriter()
 
-	debugLogger   = noOpLoggerInstance
-	infoLogger    = noOpLoggerInstance
-	warningLogger = streamLoggerInstance
-	errorLogger   = streamLoggerInstance
+	debugLogger   internal.LogWriter = streamLoggerInstance
+	infoLogger    internal.LogWriter = streamLoggerInstance
+	warningLogger internal.LogWriter = streamLoggerInstance
+	errorLogger   internal.LogWriter = streamLoggerInstance
 )
 
-type LogLevel int
-
 func SetLogLevel(level LogLevel) {
-	debugLogger = noOpLoggerInstance
+	debugLogger = new(internal.NoOpLogWriter)
 	if level <= DebugLevel {
 		debugLogger = streamLoggerInstance
 	}
 
-	infoLogger = noOpLoggerInstance
+	infoLogger = new(internal.NoOpLogWriter)
 	if level <= InfoLevel {
 		infoLogger = streamLoggerInstance
 	}
 
-	warningLogger = noOpLoggerInstance
+	warningLogger = new(internal.NoOpLogWriter)
 	if level <= WarningLevel {
 		warningLogger = streamLoggerInstance
 	}
 
-	errorLogger = noOpLoggerInstance
+	errorLogger = new(internal.NoOpLogWriter)
 	if level <= ErrorLevel {
 		errorLogger = streamLoggerInstance
 	}
 
 	if level == NoneLevel {
-		accessLoggerInstance = noOpLoggerInstance
+		accessLoggerInstance = new(internal.NoOpLogWriter)
 	}
 }
 
 func InitErrorLogger(file string) error {
-	logger, err := newFileLogWriter(file)
+	logger, err := internal.NewFileLogWriter(file)
 	if err != nil {
 		Error("Failed to create error logger on file (", file, "): ", err)
 		return err
@@ -106,32 +61,32 @@ func InitErrorLogger(file string) error {
 
 // Debug outputs a debug log with given format and optional arguments.
 func Debug(v ...interface{}) {
-	debugLogger.Log(&errorLog{
-		prefix: "[Debug]",
-		values: v,
+	debugLogger.Log(&internal.ErrorLog{
+		Prefix: "[Debug]",
+		Values: v,
 	})
 }
 
 // Info outputs an info log with given format and optional arguments.
 func Info(v ...interface{}) {
-	infoLogger.Log(&errorLog{
-		prefix: "[Info]",
-		values: v,
+	infoLogger.Log(&internal.ErrorLog{
+		Prefix: "[Info]",
+		Values: v,
 	})
 }
 
 // Warning outputs a warning log with given format and optional arguments.
 func Warning(v ...interface{}) {
-	warningLogger.Log(&errorLog{
-		prefix: "[Warning]",
-		values: v,
+	warningLogger.Log(&internal.ErrorLog{
+		Prefix: "[Warning]",
+		Values: v,
 	})
 }
 
 // Error outputs an error log with given format and optional arguments.
 func Error(v ...interface{}) {
-	errorLogger.Log(&errorLog{
-		prefix: "[Error]",
-		values: v,
+	errorLogger.Log(&internal.ErrorLog{
+		Prefix: "[Error]",
+		Values: v,
 	})
 }

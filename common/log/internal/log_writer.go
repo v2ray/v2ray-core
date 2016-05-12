@@ -1,50 +1,45 @@
-package log
+package internal
 
 import (
-	"io"
 	"log"
 	"os"
 
 	"github.com/v2ray/v2ray-core/common/platform"
 )
 
-func createLogger(writer io.Writer) *log.Logger {
-	return log.New(writer, "", log.Ldate|log.Ltime)
-}
-
-type logWriter interface {
+type LogWriter interface {
 	Log(LogEntry)
 }
 
-type noOpLogWriter struct {
+type NoOpLogWriter struct {
 }
 
-func (this *noOpLogWriter) Log(entry LogEntry) {
+func (this *NoOpLogWriter) Log(entry LogEntry) {
 	entry.Release()
 }
 
-type stdOutLogWriter struct {
+type StdOutLogWriter struct {
 	logger *log.Logger
 }
 
-func newStdOutLogWriter() logWriter {
-	return &stdOutLogWriter{
-		logger: createLogger(os.Stdout),
+func NewStdOutLogWriter() LogWriter {
+	return &StdOutLogWriter{
+		logger: log.New(os.Stdout, "", log.Ldate|log.Ltime),
 	}
 }
 
-func (this *stdOutLogWriter) Log(log LogEntry) {
+func (this *StdOutLogWriter) Log(log LogEntry) {
 	this.logger.Print(log.String() + platform.LineSeparator())
 	log.Release()
 }
 
-type fileLogWriter struct {
+type FileLogWriter struct {
 	queue  chan LogEntry
 	logger *log.Logger
 	file   *os.File
 }
 
-func (this *fileLogWriter) Log(log LogEntry) {
+func (this *FileLogWriter) Log(log LogEntry) {
 	select {
 	case this.queue <- log:
 	default:
@@ -53,7 +48,7 @@ func (this *fileLogWriter) Log(log LogEntry) {
 	}
 }
 
-func (this *fileLogWriter) run() {
+func (this *FileLogWriter) run() {
 	for {
 		entry, open := <-this.queue
 		if !open {
@@ -65,16 +60,16 @@ func (this *fileLogWriter) run() {
 	}
 }
 
-func (this *fileLogWriter) close() {
+func (this *FileLogWriter) Close() {
 	this.file.Close()
 }
 
-func newFileLogWriter(path string) (*fileLogWriter, error) {
+func NewFileLogWriter(path string) (*FileLogWriter, error) {
 	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		return nil, err
 	}
-	logger := &fileLogWriter{
+	logger := &FileLogWriter{
 		queue:  make(chan LogEntry, 16),
 		logger: log.New(file, "", log.Ldate|log.Ltime),
 		file:   file,
