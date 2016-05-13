@@ -34,18 +34,18 @@ func (this *StdOutLogWriter) Log(log LogEntry) {
 }
 
 type FileLogWriter struct {
-	queue  chan LogEntry
+	queue  chan string
 	logger *log.Logger
 	file   *os.File
 }
 
 func (this *FileLogWriter) Log(log LogEntry) {
 	select {
-	case this.queue <- log:
+	case this.queue <- log.String():
 	default:
-		log.Release()
 		// We don't expect this to happen, but don't want to block main thread as well.
 	}
+	log.Release()
 }
 
 func (this *FileLogWriter) run() {
@@ -54,9 +54,7 @@ func (this *FileLogWriter) run() {
 		if !open {
 			break
 		}
-		this.logger.Print(entry.String() + platform.LineSeparator())
-		entry.Release()
-		entry = nil
+		this.logger.Print(entry + platform.LineSeparator())
 	}
 }
 
@@ -70,7 +68,7 @@ func NewFileLogWriter(path string) (*FileLogWriter, error) {
 		return nil, err
 	}
 	logger := &FileLogWriter{
-		queue:  make(chan LogEntry, 16),
+		queue:  make(chan string, 16),
 		logger: log.New(file, "", log.Ldate|log.Ltime),
 		file:   file,
 	}
