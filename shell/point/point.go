@@ -196,7 +196,7 @@ func (this *Point) FilterPacketAndDispatch(destination v2net.Destination, link r
 	payload, err := link.OutboundInput().Read()
 	if err != nil {
 		log.Info("Point: No payload to dispatch, stopping dispatching now.")
-		link.OutboundOutput().Close()
+		link.OutboundOutput().Release()
 		link.OutboundInput().Release()
 		return
 	}

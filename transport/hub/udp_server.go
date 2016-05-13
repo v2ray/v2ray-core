@@ -6,6 +6,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/app/dispatcher"
 	"github.com/v2ray/v2ray-core/common/alloc"
+	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
@@ -32,7 +33,7 @@ func NewTimedInboundRay(name string, inboundRay ray.InboundRay) *TimedInboundRay
 
 func (this *TimedInboundRay) Monitor() {
 	for {
-		time.Sleep(16 * time.Second)
+		time.Sleep(time.Second * 16)
 		select {
 		case <-this.accessed:
 		default:
@@ -58,7 +59,7 @@ func (this *TimedInboundRay) InboundInput() ray.OutputStream {
 
 func (this *TimedInboundRay) InboundOutput() ray.InputStream {
 	this.RLock()
-	this.RUnlock()
+	defer this.RUnlock()
 	if this.inboundRay == nil {
 		return nil
 	}
@@ -70,6 +71,7 @@ func (this *TimedInboundRay) InboundOutput() ray.InputStream {
 }
 
 func (this *TimedInboundRay) Release() {
+	log.Debug("UDP Server: Releasing TimedInboundRay: ", this.name)
 	this.Lock()
 	defer this.Unlock()
 	if this.server == nil {
@@ -102,12 +104,17 @@ func (this *UDPServer) RemoveRay(name string) {
 }
 
 func (this *UDPServer) locateExistingAndDispatch(name string, payload *alloc.Buffer) bool {
+	log.Debug("UDP Server: Locating existing connection for ", name)
 	this.RLock()
 	defer this.RUnlock()
 	if entry, found := this.conns[name]; found {
-		err := entry.InboundInput().Write(payload)
+		outputStream := entry.InboundInput()
+		if outputStream == nil {
+			return false
+		}
+		err := outputStream.Write(payload)
 		if err != nil {
-			this.RemoveRay(name)
+			go this.RemoveRay(name)
 			return false
 		}
 		return true
@@ -116,16 +123,21 @@ func (this *UDPServer) locateExistingAndDispatch(name string, payload *alloc.Buf
 }
 
 func (this *UDPServer) Dispatch(source v2net.Destination, destination v2net.Destination, payload *alloc.Buffer, callback UDPResponseCallback) {
-	destString := source.Address().String() + "-" + destination.Address().String()
+	destString := source.Address().String() + "-" + destination.NetAddr()
+	log.Debug("UDP Server: Dispatch request: ", destString)
 	if this.locateExistingAndDispatch(destString, payload) {
 		return
 	}
 
-	this.Lock()
+	log.Info("UDP Server: establishing new connection for ", destString)
 	inboundRay := this.packetDispatcher.DispatchToOutbound(destination)
-	inboundRay.InboundInput().Write(payload)
-
 	timedInboundRay := NewTimedInboundRay(destString, inboundRay)
+	outputStream := timedInboundRay.InboundInput()
+	if outputStream != nil {
+		outputStream.Write(payload)
+	}
+
+	this.Lock()
 	this.conns[destString] = timedInboundRay
 	this.Unlock()
 	go this.handleConnection(timedInboundRay, source, callback)
@@ -133,6 +145,10 @@ func (this *UDPServer) Dispatch(source v2net.Destination, destination v2net.Dest
 
 func (this *UDPServer) handleConnection(inboundRay *TimedInboundRay, source v2net.Destination, callback UDPResponseCallback) {
 	for {
+		inputStream := inboundRay.InboundOutput()
+		if inputStream == nil {
+			break
+		}
 		data, err := inboundRay.InboundOutput().Read()
 		if err != nil {
 			break

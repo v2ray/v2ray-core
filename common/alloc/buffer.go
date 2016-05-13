@@ -69,12 +69,14 @@ func (b *Buffer) Bytes() []byte {
 
 // Slice cuts the buffer at the given position.
 func (b *Buffer) Slice(from, to int) *Buffer {
+	b.offset += from
 	b.Value = b.Value[from:to]
 	return b
 }
 
 // SliceFrom cuts the buffer at the given position.
 func (b *Buffer) SliceFrom(from int) *Buffer {
+	b.offset += from
 	b.Value = b.Value[from:]
 	return b
 }
@@ -121,9 +123,10 @@ func (b *Buffer) Read(data []byte) (int, error) {
 	}
 	nBytes := copy(data, b.Value)
 	if nBytes == b.Len() {
-		b.Value = b.Value[:0]
+		b.Clear()
 	} else {
 		b.Value = b.Value[nBytes:]
+		b.offset += nBytes
 	}
 	return nBytes, nil
 }
@@ -132,7 +135,9 @@ func (b *Buffer) FillFrom(reader io.Reader) (int, error) {
 	begin := b.Len()
 	b.Value = b.Value[:cap(b.Value)]
 	nBytes, err := reader.Read(b.Value[begin:])
-	b.Value = b.Value[:begin+nBytes]
+	if err == nil {
+		b.Value = b.Value[:begin+nBytes]
+	}
 	return nBytes, err
 }
 

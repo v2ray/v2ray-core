@@ -69,25 +69,19 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 
 func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn net.Conn, request *protocol.RequestHeader, payload *alloc.Buffer, input v2io.Reader, finish *sync.Mutex) {
 	defer finish.Unlock()
-	defer payload.Release()
 
 	writer := v2io.NewBufferedWriter(conn)
 	defer writer.Release()
 	session.EncodeRequestHeader(request, writer)
 
-	if request.Option.IsChunkStream() {
-		vmessio.Authenticate(payload)
-	}
-
 	bodyWriter := session.EncodeRequestBody(writer)
-	bodyWriter.Write(payload.Value)
-
-	writer.SetCached(false)
-
 	var streamWriter v2io.Writer = v2io.NewAdaptiveWriter(bodyWriter)
 	if request.Option.IsChunkStream() {
 		streamWriter = vmessio.NewAuthChunkWriter(streamWriter)
 	}
+	streamWriter.Write(payload)
+	writer.SetCached(false)
+
 	v2io.Pipe(input, streamWriter)
 	if request.Option.IsChunkStream() {
 		streamWriter.Write(alloc.NewSmallBuffer().Clear())
@@ -110,7 +104,7 @@ func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, con
 	go this.handleCommand(dest, header.Command)
 
 	reader.SetCached(false)
-	decryptReader := session.DecodeResponseBody(conn)
+	decryptReader := session.DecodeResponseBody(reader)
 
 	var bodyReader v2io.Reader
 	if request.Option.IsChunkStream() {

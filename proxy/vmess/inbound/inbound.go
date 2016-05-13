@@ -143,9 +143,8 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 	defer input.Close()
 	defer output.Release()
 
-	var readFinish, writeFinish sync.Mutex
+	var readFinish sync.Mutex
 	readFinish.Lock()
-	writeFinish.Lock()
 
 	userSettings := protocol.GetUserSettings(request.User.Level)
 	connReader.SetTimeOut(userSettings.PayloadReadTimeout)
@@ -177,27 +176,21 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 
 	// Optimize for small response packet
 	if data, err := output.Read(); err == nil {
+		var v2writer v2io.Writer = v2io.NewAdaptiveWriter(bodyWriter)
 		if request.Option.IsChunkStream() {
-			vmessio.Authenticate(data)
+			v2writer = vmessio.NewAuthChunkWriter(v2writer)
 		}
-		bodyWriter.Write(data.Value)
-		data.Release()
+
+		v2writer.Write(data)
 
 		writer.SetCached(false)
-		go func(finish *sync.Mutex) {
-			var writer v2io.Writer = v2io.NewAdaptiveWriter(bodyWriter)
-			if request.Option.IsChunkStream() {
-				writer = vmessio.NewAuthChunkWriter(writer)
-			}
-			v2io.Pipe(output, writer)
-			output.Release()
-			if request.Option.IsChunkStream() {
-				writer.Write(alloc.NewSmallBuffer().Clear())
-			}
-			writer.Release()
-			finish.Unlock()
-		}(&writeFinish)
-		writeFinish.Lock()
+
+		v2io.Pipe(output, v2writer)
+		output.Release()
+		if request.Option.IsChunkStream() {
+			v2writer.Write(alloc.NewSmallBuffer().Clear())
+		}
+		v2writer.Release()
 	}
 
 	readFinish.Lock()

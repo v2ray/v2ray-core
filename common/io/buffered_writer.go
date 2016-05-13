@@ -35,16 +35,15 @@ func (this *BufferedWriter) Write(b []byte) (int, error) {
 }
 
 func (this *BufferedWriter) Flush() error {
-	nBytes, err := this.writer.Write(this.buffer.Value)
-	this.buffer.SliceFrom(nBytes)
-	if !this.buffer.IsEmpty() {
-		nBytes, err = this.writer.Write(this.buffer.Value)
+	defer this.buffer.Clear()
+	for !this.buffer.IsEmpty() {
+		nBytes, err := this.writer.Write(this.buffer.Value)
+		if err != nil {
+			return err
+		}
 		this.buffer.SliceFrom(nBytes)
 	}
-	if this.buffer.IsEmpty() {
-		this.buffer.Clear()
-	}
-	return err
+	return nil
 }
 
 func (this *BufferedWriter) Cached() bool {
@@ -59,6 +58,7 @@ func (this *BufferedWriter) SetCached(cached bool) {
 }
 
 func (this *BufferedWriter) Release() {
+	this.Flush()
 	this.buffer.Release()
 	this.buffer = nil
 	this.writer = nil

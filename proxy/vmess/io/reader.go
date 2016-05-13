@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
+	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/transport"
 )
@@ -36,6 +37,7 @@ func (this *Validator) Consume(b []byte) {
 }
 
 func (this *Validator) Validate() bool {
+	log.Debug("VMess Reader: Expected auth ", this.expectedAuth, " actual auth: ", this.actualAuth.Sum32())
 	return this.actualAuth.Sum32() == this.expectedAuth
 }
 
@@ -70,6 +72,7 @@ func (this *AuthChunkReader) Read() (*alloc.Buffer, error) {
 				return nil, err
 			}
 		}
+		log.Debug("VMess Reader: raw buffer: ", buffer.Value)
 		length := serial.BytesLiteral(buffer.Value[:2]).Uint16Value()
 		this.chunkLength = int(length) - 4
 		this.validator = NewValidator(serial.BytesLiteral(buffer.Value[2:6]).Uint32Value())
@@ -87,17 +90,9 @@ func (this *AuthChunkReader) Read() (*alloc.Buffer, error) {
 		return nil, io.EOF
 	}
 
-	if buffer.Len() <= this.chunkLength {
+	if buffer.Len() < this.chunkLength {
 		this.validator.Consume(buffer.Value)
 		this.chunkLength -= buffer.Len()
-		if this.chunkLength == 0 {
-			if !this.validator.Validate() {
-				buffer.Release()
-				return nil, transport.ErrorCorruptedPacket
-			}
-			this.chunkLength = -1
-			this.validator = nil
-		}
 	} else {
 		this.validator.Consume(buffer.Value[:this.chunkLength])
 		if !this.validator.Validate() {
@@ -105,9 +100,11 @@ func (this *AuthChunkReader) Read() (*alloc.Buffer, error) {
 			return nil, transport.ErrorCorruptedPacket
 		}
 		leftLength := buffer.Len() - this.chunkLength
-		this.last = AllocBuffer(leftLength).Clear()
-		this.last.Append(buffer.Value[this.chunkLength:])
-		buffer.Slice(0, this.chunkLength)
+		if leftLength > 0 {
+			this.last = AllocBuffer(leftLength).Clear()
+			this.last.Append(buffer.Value[this.chunkLength:])
+			buffer.Slice(0, this.chunkLength)
+		}
 
 		this.chunkLength = -1
 		this.validator = nil
