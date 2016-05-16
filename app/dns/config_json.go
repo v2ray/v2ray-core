@@ -10,7 +10,7 @@ import (
 
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
-		Servers []v2net.Address `json:"servers"`
+		Servers []v2net.AddressJson `json:"servers"`
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
@@ -18,7 +18,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 	this.NameServers = make([]v2net.Destination, len(jsonConfig.Servers))
 	for idx, server := range jsonConfig.Servers {
-		this.NameServers[idx] = v2net.UDPDestination(server, v2net.Port(53))
+		this.NameServers[idx] = v2net.UDPDestination(server.Address, v2net.Port(53))
 	}
 
 	return nil
