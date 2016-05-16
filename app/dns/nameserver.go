@@ -104,6 +104,7 @@ func (this *UDPNameServer) HandleResponse(dest v2net.Destination, payload *alloc
 	}
 	id := msg.Id
 	ttl := DefaultTTL
+	log.Debug("DNS: Handling response for id ", id, " content: ", msg.String())
 
 	this.Lock()
 	request, found := this.requests[id]
@@ -115,10 +116,16 @@ func (this *UDPNameServer) HandleResponse(dest v2net.Destination, payload *alloc
 	this.Unlock()
 
 	for _, rr := range msg.Answer {
-		if a, ok := rr.(*dns.A); ok {
-			record.IPs = append(record.IPs, a.A)
-			if a.Hdr.Ttl < ttl {
-				ttl = a.Hdr.Ttl
+		switch rr := rr.(type) {
+		case *dns.A:
+			record.IPs = append(record.IPs, rr.A)
+			if rr.Hdr.Ttl < ttl {
+				ttl = rr.Hdr.Ttl
+			}
+		case *dns.AAAA:
+			record.IPs = append(record.IPs, rr.AAAA)
+			if rr.Hdr.Ttl < ttl {
+				ttl = rr.Hdr.Ttl
 			}
 		}
 	}
@@ -129,7 +136,7 @@ func (this *UDPNameServer) HandleResponse(dest v2net.Destination, payload *alloc
 }
 
 func (this *UDPNameServer) QueryA(domain string) <-chan *ARecord {
-	response := make(chan *ARecord)
+	response := make(chan *ARecord, 1)
 
 	buffer := alloc.NewBuffer()
 	msg := new(dns.Msg)
@@ -140,13 +147,7 @@ func (this *UDPNameServer) QueryA(domain string) <-chan *ARecord {
 			Name:   dns.Fqdn(domain),
 			Qtype:  dns.TypeA,
 			Qclass: dns.ClassINET,
-		},
-		dns.Question{
-			Name:   dns.Fqdn(domain),
-			Qtype:  dns.TypeAAAA,
-			Qclass: dns.ClassINET,
-		},
-	}
+		}}
 
 	writtenBuffer, _ := msg.PackBuffer(buffer.Value)
 	buffer.Slice(0, len(writtenBuffer))
@@ -161,7 +162,7 @@ type LocalNameServer struct {
 }
 
 func (this *LocalNameServer) QueryA(domain string) <-chan *ARecord {
-	response := make(chan *ARecord)
+	response := make(chan *ARecord, 1)
 
 	go func() {
 		defer close(response)

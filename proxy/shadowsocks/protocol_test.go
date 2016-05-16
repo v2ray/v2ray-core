@@ -21,7 +21,7 @@ func TestNormalRequestParsing(t *testing.T) {
 
 	request, err := ReadRequest(buffer, nil, false)
 	assert.Error(err).IsNil()
-	netassert.Address(request.Address).Equals(v2net.IPAddress([]byte{127, 0, 0, 1}))
+	netassert.Address(request.Address).Equals(v2net.LocalHostIP)
 	netassert.Port(request.Port).Equals(v2net.Port(80))
 	assert.Bool(request.OTA).IsFalse()
 }
@@ -110,7 +110,7 @@ func TestUDPRequestParsing(t *testing.T) {
 
 	request, err := ReadRequest(buffer, nil, true)
 	assert.Error(err).IsNil()
-	netassert.Address(request.Address).Equals(v2net.IPAddress([]byte{127, 0, 0, 1}))
+	netassert.Address(request.Address).Equals(v2net.LocalHostIP)
 	netassert.Port(request.Port).Equals(v2net.Port(80))
 	assert.Bool(request.OTA).IsFalse()
 	assert.Bytes(request.UDPPayload.Value).Equals([]byte{1, 2, 3, 4, 5, 6})

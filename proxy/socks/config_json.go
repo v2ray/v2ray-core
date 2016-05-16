@@ -56,7 +56,7 @@ func init() {
 			if rawConfig.Host != nil {
 				socksConfig.Address = rawConfig.Host.Address
 			} else {
-				socksConfig.Address = v2net.IPAddress([]byte{127, 0, 0, 1})
+				socksConfig.Address = v2net.LocalHostIP
 			}
 			return socksConfig, nil
 		})

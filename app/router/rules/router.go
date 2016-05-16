@@ -8,6 +8,7 @@ import (
 	"github.com/v2ray/v2ray-core/app/dns"
 	"github.com/v2ray/v2ray-core/app/router"
 	"github.com/v2ray/v2ray-core/common/collect"
+	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
@@ -78,9 +79,11 @@ func (this *Router) takeDetourWithoutCache(dest v2net.Destination) (string, erro
 		}
 	}
 	if this.config.DomainStrategy == UseIPIfNonMatch && dest.Address().IsDomain() {
+		log.Info("Router: Looking up IP for ", dest)
 		ipDests := this.ResolveIP(dest)
 		if ipDests != nil {
 			for _, ipDest := range ipDests {
+				log.Info("Router: Trying IP ", ipDest)
 				for _, rule := range this.config.Rules {
 					if rule.Apply(ipDest) {
 						return rule.Tag, nil

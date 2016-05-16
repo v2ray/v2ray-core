@@ -21,11 +21,12 @@ type TimedInboundRay struct {
 	sync.RWMutex
 }
 
-func NewTimedInboundRay(name string, inboundRay ray.InboundRay) *TimedInboundRay {
+func NewTimedInboundRay(name string, inboundRay ray.InboundRay, server *UDPServer) *TimedInboundRay {
 	r := &TimedInboundRay{
 		name:       name,
 		inboundRay: inboundRay,
-		accessed:   make(chan bool),
+		accessed:   make(chan bool, 1),
+		server:     server,
 	}
 	go r.Monitor()
 	return r
@@ -38,6 +39,13 @@ func (this *TimedInboundRay) Monitor() {
 		case <-this.accessed:
 		default:
 			// Ray not accessed for a while, assuming communication is dead.
+			this.RLock()
+			if this.server == nil {
+				this.RUnlock()
+				return
+			}
+			this.server.RemoveRay(this.name)
+			this.RUnlock()
 			this.Release()
 			return
 		}
@@ -77,7 +85,6 @@ func (this *TimedInboundRay) Release() {
 	if this.server == nil {
 		return
 	}
-	this.server.RemoveRay(this.name)
 	this.server = nil
 	this.inboundRay.InboundInput().Close()
 	this.inboundRay.InboundOutput().Release()
@@ -114,7 +121,7 @@ func (this *UDPServer) locateExistingAndDispatch(name string, payload *alloc.Buf
 		}
 		err := outputStream.Write(payload)
 		if err != nil {
-			go this.RemoveRay(name)
+			go entry.Release()
 			return false
 		}
 		return true
@@ -131,7 +138,7 @@ func (this *UDPServer) Dispatch(source v2net.Destination, destination v2net.Dest
 
 	log.Info("UDP Server: establishing new connection for ", destString)
 	inboundRay := this.packetDispatcher.DispatchToOutbound(destination)
-	timedInboundRay := NewTimedInboundRay(destString, inboundRay)
+	timedInboundRay := NewTimedInboundRay(destString, inboundRay, this)
 	outputStream := timedInboundRay.InboundInput()
 	if outputStream != nil {
 		outputStream.Write(payload)

@@ -34,7 +34,7 @@ func TestSinglePacket(t *testing.T) {
 	data2Send := "Data to be sent to remote"
 	payload := alloc.NewSmallBuffer().Clear().Append([]byte(data2Send))
 
-	go freedom.Dispatch(v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), port), payload, traffic)
+	go freedom.Dispatch(v2net.TCPDestination(v2net.LocalHostIP, port), payload, traffic)
 	traffic.InboundInput().Close()
 
 	respPayload, err := traffic.InboundOutput().Read()

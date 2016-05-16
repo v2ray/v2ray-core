@@ -7,12 +7,13 @@ import (
 
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/app/dispatcher"
+	"github.com/v2ray/v2ray-core/common/log"
 
 	"github.com/miekg/dns"
 )
 
 const (
-	QueryTimeout = time.Second * 2
+	QueryTimeout = time.Second * 8
 )
 
 type DomainRecord struct {
@@ -62,16 +63,21 @@ func (this *CacheServer) Get(context app.Context, domain string) []net.IP {
 	for _, server := range this.servers {
 		response := server.QueryA(domain)
 		select {
-		case a := <-response:
+		case a, open := <-response:
+			if !open || a == nil {
+				continue
+			}
 			this.Lock()
 			this.records[domain] = &DomainRecord{
 				A: a,
 			}
 			this.Unlock()
+			log.Debug("DNS: Returning ", len(a.IPs), " IPs for domain ", domain)
 			return a.IPs
-		case <-time.Tick(QueryTimeout):
+		case <-time.After(QueryTimeout):
 		}
 	}
 
+	log.Debug("DNS: Returning nil for domain ", domain)
 	return nil
 }
