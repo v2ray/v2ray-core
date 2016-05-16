@@ -32,7 +32,11 @@ func NewCacheServer(space app.Space, config *Config) *CacheServer {
 	}
 	dispatcher := space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)
 	for idx, ns := range config.NameServers {
-		server.servers[idx] = NewUDPNameServer(ns, dispatcher)
+		if ns.Address().IsDomain() && ns.Address().Domain() == "localhost" {
+			server.servers[idx] = &LocalNameServer{}
+		} else {
+			server.servers[idx] = NewUDPNameServer(ns, dispatcher)
+		}
 	}
 	return server
 }

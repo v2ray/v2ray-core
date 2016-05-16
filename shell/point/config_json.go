@@ -40,6 +40,13 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	this.OutboundConfig = jsonConfig.OutboundConfig
 	this.InboundDetours = jsonConfig.InboundDetours
 	this.OutboundDetours = jsonConfig.OutboundDetours
+	if jsonConfig.DNSConfig == nil {
+		jsonConfig.DNSConfig = &dns.Config{
+			NameServers: []v2net.Destination{
+				v2net.UDPDestination(v2net.DomainAddress("localhost"), v2net.Port(53)),
+			},
+		}
+	}
 	this.DNSConfig = jsonConfig.DNSConfig
 	return nil
 }

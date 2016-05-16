@@ -156,3 +156,27 @@ func (this *UDPNameServer) QueryA(domain string) <-chan *ARecord {
 
 	return response
 }
+
+type LocalNameServer struct {
+}
+
+func (this *LocalNameServer) QueryA(domain string) <-chan *ARecord {
+	response := make(chan *ARecord)
+
+	go func() {
+		defer close(response)
+
+		ips, err := net.LookupIP(domain)
+		if err != nil {
+			log.Info("DNS: Failed to lookup IPs for domain ", domain)
+			return
+		}
+
+		response <- &ARecord{
+			IPs:    ips,
+			Expire: time.Now().Add(time.Second * time.Duration(DefaultTTL)),
+		}
+	}()
+
+	return response
+}
