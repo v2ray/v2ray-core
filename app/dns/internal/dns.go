@@ -2,61 +2,72 @@ package internal
 
 import (
 	"net"
+	"sync"
 	"time"
 
 	"github.com/v2ray/v2ray-core/app"
-	"github.com/v2ray/v2ray-core/common/collect"
-	"github.com/v2ray/v2ray-core/common/serial"
+	"github.com/v2ray/v2ray-core/app/dispatcher"
+
+	"github.com/miekg/dns"
 )
 
-type entry struct {
-	domain     string
-	ip         net.IP
-	validUntil time.Time
+const (
+	QueryTimeout = time.Second * 2
+)
+
+type DomainRecord struct {
+	A *ARecord
 }
 
-func newEntry(domain string, ip net.IP) *entry {
-	this := &entry{
-		domain: domain,
-		ip:     ip,
+type Server struct {
+	sync.RWMutex
+	records map[string]*DomainRecord
+	servers []NameServer
+}
+
+func NewServer(space app.Space, config *Config) *Server {
+	server := &Server{
+		records: make(map[string]*DomainRecord),
+		servers: make([]NameServer, len(config.NameServers)),
 	}
-	this.Extend()
-	return this
-}
-
-func (this *entry) IsValid() bool {
-	return this.validUntil.After(time.Now())
-}
-
-func (this *entry) Extend() {
-	this.validUntil = time.Now().Add(time.Hour)
-}
-
-type DnsCache struct {
-	cache  *collect.ValidityMap
-	config *CacheConfig
-}
-
-func NewCache(config *CacheConfig) *DnsCache {
-	cache := &DnsCache{
-		cache:  collect.NewValidityMap(3600),
-		config: config,
+	dispatcher := space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)
+	for idx, ns := range config.NameServers {
+		server.servers[idx] = NewUDPNameServer(ns, dispatcher)
 	}
-	return cache
+	return server
 }
 
-func (this *DnsCache) Add(context app.Context, domain string, ip net.IP) {
-	callerTag := context.CallerTag()
-	if !this.config.IsTrustedSource(serial.StringLiteral(callerTag)) {
-		return
+//@Private
+func (this *Server) GetCached(domain string) []net.IP {
+	this.RLock()
+	defer this.RUnlock()
+
+	if record, found := this.records[domain]; found && record.A.Expire.After(time.Now()) {
+		return record.A.IPs
+	}
+	return nil
+}
+
+func (this *Server) Get(context app.Context, domain string) []net.IP {
+	domain = dns.Fqdn(domain)
+	ips := this.GetCached(domain)
+	if ips != nil {
+		return ips
 	}
 
-	this.cache.Set(serial.StringLiteral(domain), newEntry(domain, ip))
-}
-
-func (this *DnsCache) Get(context app.Context, domain string) net.IP {
-	if value := this.cache.Get(serial.StringLiteral(domain)); value != nil {
-		return value.(*entry).ip
+	for _, server := range this.servers {
+		response := server.QueryA(domain)
+		select {
+		case a := <-response:
+			this.Lock()
+			this.records[domain] = &DomainRecord{
+				A: a,
+			}
+			this.Unlock()
+			return a.IPs
+		case <-time.Tick(QueryTimeout):
+		}
 	}
+
 	return nil
 }

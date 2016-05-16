@@ -11,33 +11,31 @@ const (
 )
 
 // A DnsCache is an internal cache of DNS resolutions.
-type DnsCache interface {
-	Get(domain string) net.IP
-	Add(domain string, ip net.IP)
+type Server interface {
+	Get(domain string) []net.IP
 }
 
-type dnsCacheWithContext interface {
-	Get(context app.Context, domain string) net.IP
-	Add(contaxt app.Context, domain string, ip net.IP)
+type dnsServerWithContext interface {
+	Get(context app.Context, domain string) []net.IP
 }
 
-type contextedDnsCache struct {
+type contextedDnsServer struct {
 	context  app.Context
-	dnsCache dnsCacheWithContext
+	dnsCache dnsServerWithContext
 }
 
-func (this *contextedDnsCache) Get(domain string) net.IP {
+func (this *contextedDnsServer) Get(domain string) []net.IP {
 	return this.dnsCache.Get(this.context, domain)
 }
 
-func (this *contextedDnsCache) Add(domain string, ip net.IP) {
-	this.dnsCache.Add(this.context, domain, ip)
+func CreateDNSServer(rawConfig interface{}) (Server, error) {
+	return nil, nil
 }
 
 func init() {
 	app.Register(APP_ID, func(context app.Context, obj interface{}) interface{} {
-		dcContext := obj.(dnsCacheWithContext)
-		return &contextedDnsCache{
+		dcContext := obj.(dnsServerWithContext)
+		return &contextedDnsServer{
 			context:  context,
 			dnsCache: dcContext,
 		}

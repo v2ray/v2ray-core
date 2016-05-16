@@ -95,15 +95,17 @@ func (this *DokodemoDoor) ListenUDP(port v2net.Port) error {
 }
 
 func (this *DokodemoDoor) handleUDPPackets(payload *alloc.Buffer, dest v2net.Destination) {
-	this.udpServer.Dispatch(dest, v2net.UDPDestination(this.address, this.port), payload, func(destination v2net.Destination, payload *alloc.Buffer) {
-		defer payload.Release()
-		this.udpMutex.RLock()
-		defer this.udpMutex.RUnlock()
-		if !this.accepting {
-			return
-		}
-		this.udpHub.WriteTo(payload.Value, destination)
-	})
+	this.udpServer.Dispatch(dest, v2net.UDPDestination(this.address, this.port), payload, this.handleUDPResponse)
+}
+
+func (this *DokodemoDoor) handleUDPResponse(dest v2net.Destination, payload *alloc.Buffer) {
+	defer payload.Release()
+	this.udpMutex.RLock()
+	defer this.udpMutex.RUnlock()
+	if !this.accepting {
+		return
+	}
+	this.udpHub.WriteTo(payload.Value, dest)
 }
 
 func (this *DokodemoDoor) ListenTCP(port v2net.Port) error {

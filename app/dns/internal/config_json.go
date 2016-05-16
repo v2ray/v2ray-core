@@ -5,19 +5,21 @@ package internal
 import (
 	"encoding/json"
 
-	"github.com/v2ray/v2ray-core/common/serial"
+	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
-func (this *CacheConfig) UnmarshalJSON(data []byte) error {
-	var strlist serial.StringLiteralList
-	if err := json.Unmarshal(data, strlist); err != nil {
+func (this *Config) UnmarshalJSON(data []byte) error {
+	type JsonConfig struct {
+		Servers []v2net.Address `json:"servers"`
+	}
+	jsonConfig := new(JsonConfig)
+	if err := json.Unmarshal(data, jsonConfig); err != nil {
 		return err
 	}
-	config := &CacheConfig{
-		TrustedTags: make(map[serial.StringLiteral]bool, strlist.Len()),
+	this.NameServers = make([]v2net.Destination, len(jsonConfig.Servers))
+	for idx, server := range jsonConfig.Servers {
+		this.NameServers[idx] = v2net.UDPDestination(server, v2net.Port(53))
 	}
-	for _, str := range strlist {
-		config.TrustedTags[str.TrimSpace()] = true
-	}
+
 	return nil
 }

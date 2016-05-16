@@ -7,6 +7,10 @@ import (
 	"github.com/v2ray/v2ray-core/common/serial"
 )
 
+var (
+	LocalHostIP = IPAddress([]byte{127, 0, 0, 1})
+)
+
 // Address represents a network address to be communicated with. It may be an IP address or domain
 // address, not both. This interface doesn't resolve IP address for a given domain.
 type Address interface {
