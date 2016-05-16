@@ -1,6 +1,7 @@
 package point
 
 import (
+	"github.com/v2ray/v2ray-core/app/dns"
 	"github.com/v2ray/v2ray-core/app/router"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -47,6 +48,7 @@ type Config struct {
 	Port            v2net.Port
 	LogConfig       *LogConfig
 	RouterConfig    *router.Config
+	DNSConfig       *dns.Config
 	InboundConfig   *ConnectionConfig
 	OutboundConfig  *ConnectionConfig
 	InboundDetours  []*InboundDetourConfig

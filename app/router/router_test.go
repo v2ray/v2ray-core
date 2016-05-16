@@ -21,7 +21,7 @@ func TestRouter(t *testing.T) {
 	pointConfig, err := point.LoadConfig(filepath.Join(baseDir, "vpoint_socks_vmess.json"))
 	assert.Error(err).IsNil()
 
-	router, err := CreateRouter(pointConfig.RouterConfig.Strategy, pointConfig.RouterConfig.Settings)
+	router, err := CreateRouter(pointConfig.RouterConfig.Strategy, pointConfig.RouterConfig.Settings, nil)
 	assert.Error(err).IsNil()
 
 	dest := v2net.TCPDestination(v2net.IPAddress(net.ParseIP("120.135.126.1")), 80)

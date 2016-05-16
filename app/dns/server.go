@@ -1,4 +1,4 @@
-package internal
+package dns
 
 import (
 	"net"
@@ -19,14 +19,14 @@ type DomainRecord struct {
 	A *ARecord
 }
 
-type Server struct {
+type CacheServer struct {
 	sync.RWMutex
 	records map[string]*DomainRecord
 	servers []NameServer
 }
 
-func NewServer(space app.Space, config *Config) *Server {
-	server := &Server{
+func NewCacheServer(space app.Space, config *Config) *CacheServer {
+	server := &CacheServer{
 		records: make(map[string]*DomainRecord),
 		servers: make([]NameServer, len(config.NameServers)),
 	}
@@ -38,7 +38,7 @@ func NewServer(space app.Space, config *Config) *Server {
 }
 
 //@Private
-func (this *Server) GetCached(domain string) []net.IP {
+func (this *CacheServer) GetCached(domain string) []net.IP {
 	this.RLock()
 	defer this.RUnlock()
 
@@ -48,7 +48,7 @@ func (this *Server) GetCached(domain string) []net.IP {
 	return nil
 }
 
-func (this *Server) Get(context app.Context, domain string) []net.IP {
+func (this *CacheServer) Get(context app.Context, domain string) []net.IP {
 	domain = dns.Fqdn(domain)
 	ips := this.GetCached(domain)
 	if ips != nil {

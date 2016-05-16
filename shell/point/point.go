@@ -7,6 +7,7 @@ package point
 import (
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/app/dispatcher"
+	"github.com/v2ray/v2ray-core/app/dns"
 	"github.com/v2ray/v2ray-core/app/proxyman"
 	"github.com/v2ray/v2ray-core/app/router"
 	"github.com/v2ray/v2ray-core/common/log"
@@ -120,9 +121,15 @@ func NewPoint(pConfig *Config) (*Point, error) {
 		}
 	}
 
+	dnsConfig := pConfig.DNSConfig
+	if dnsConfig != nil {
+		dnsServer := dns.NewCacheServer(vpoint.space.ForContext("system.dns"), dnsConfig)
+		vpoint.space.Bind(dns.APP_ID, dnsServer)
+	}
+
 	routerConfig := pConfig.RouterConfig
 	if routerConfig != nil {
-		r, err := router.CreateRouter(routerConfig.Strategy, routerConfig.Settings)
+		r, err := router.CreateRouter(routerConfig.Strategy, routerConfig.Settings, vpoint.space.ForContext("system.router"))
 		if err != nil {
 			log.Error("Failed to create router: ", err)
 			return nil, ErrorBadConfiguration

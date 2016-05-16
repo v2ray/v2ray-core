@@ -28,10 +28,6 @@ func (this *contextedDnsServer) Get(domain string) []net.IP {
 	return this.dnsCache.Get(this.context, domain)
 }
 
-func CreateDNSServer(rawConfig interface{}) (Server, error) {
-	return nil, nil
-}
-
 func init() {
 	app.Register(APP_ID, func(context app.Context, obj interface{}) interface{} {
 		dcContext := obj.(dnsServerWithContext)

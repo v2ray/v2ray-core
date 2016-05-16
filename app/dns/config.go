@@ -1,4 +1,4 @@
-package internal
+package dns
 
 import (
 	v2net "github.com/v2ray/v2ray-core/common/net"

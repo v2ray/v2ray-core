@@ -4,6 +4,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/v2ray/v2ray-core/app"
+	"github.com/v2ray/v2ray-core/app/dns"
 	"github.com/v2ray/v2ray-core/app/router"
 	"github.com/v2ray/v2ray-core/common/collect"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -40,13 +42,33 @@ func (this *cacheEntry) Extend() {
 type Router struct {
 	config *RouterRuleConfig
 	cache  *collect.ValidityMap
+	space  app.Space
 }
 
-func NewRouter(config *RouterRuleConfig) *Router {
+func NewRouter(config *RouterRuleConfig, space app.Space) *Router {
 	return &Router{
 		config: config,
 		cache:  collect.NewValidityMap(3600),
+		space:  space,
 	}
+}
+
+// @Private
+func (this *Router) ResolveIP(dest v2net.Destination) []v2net.Destination {
+	dnsServer := this.space.GetApp(dns.APP_ID).(dns.Server)
+	ips := dnsServer.Get(dest.Address().Domain())
+	if len(ips) == 0 {
+		return nil
+	}
+	dests := make([]v2net.Destination, len(ips))
+	for idx, ip := range ips {
+		if dest.IsTCP() {
+			dests[idx] = v2net.TCPDestination(v2net.IPAddress(ip), dest.Port())
+		} else {
+			dests[idx] = v2net.UDPDestination(v2net.IPAddress(ip), dest.Port())
+		}
+	}
+	return dests
 }
 
 func (this *Router) takeDetourWithoutCache(dest v2net.Destination) (string, error) {
@@ -55,6 +77,19 @@ func (this *Router) takeDetourWithoutCache(dest v2net.Destination) (string, erro
 			return rule.Tag, nil
 		}
 	}
+	if this.config.DomainStrategy == UseIPIfNonMatch && dest.Address().IsDomain() {
+		ipDests := this.ResolveIP(dest)
+		if ipDests != nil {
+			for _, ipDest := range ipDests {
+				for _, rule := range this.config.Rules {
+					if rule.Apply(ipDest) {
+						return rule.Tag, nil
+					}
+				}
+			}
+		}
+	}
+
 	return "", ErrorNoRuleApplicable
 }
 
@@ -72,8 +107,8 @@ func (this *Router) TakeDetour(dest v2net.Destination) (string, error) {
 type RouterFactory struct {
 }
 
-func (this *RouterFactory) Create(rawConfig interface{}) (router.Router, error) {
-	return NewRouter(rawConfig.(*RouterRuleConfig)), nil
+func (this *RouterFactory) Create(rawConfig interface{}, space app.Space) (router.Router, error) {
+	return NewRouter(rawConfig.(*RouterRuleConfig), space), nil
 }
 
 func init() {

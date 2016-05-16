@@ -1,4 +1,4 @@
-package internal_test
+package dns_test
 
 import (
 	"net"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/app/dispatcher"
-	. "github.com/v2ray/v2ray-core/app/dns/internal"
+	. "github.com/v2ray/v2ray-core/app/dns"
 	apptesting "github.com/v2ray/v2ray-core/app/testing"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	netassert "github.com/v2ray/v2ray-core/common/net/testing/assert"
@@ -45,8 +45,8 @@ func TestDnsAdd(t *testing.T) {
 	spaceController.Bind(dispatcher.APP_ID, d)
 	space := spaceController.ForContext("test")
 
-	domain := "v2ray.com"
-	server := NewServer(space, &Config{
+	domain := "local.v2ray.com"
+	server := NewCacheServer(space, &Config{
 		NameServers: []v2net.Destination{
 			v2net.UDPDestination(v2net.IPAddress([]byte{8, 8, 8, 8}), v2net.Port(53)),
 		},
@@ -54,6 +54,6 @@ func TestDnsAdd(t *testing.T) {
 	ips := server.Get(&apptesting.Context{
 		CallerTagValue: "a",
 	}, domain)
-	assert.Int(len(ips)).Equals(2)
-	netassert.IP(ips[0].To4()).Equals(net.IP([]byte{104, 27, 154, 107}))
+	assert.Int(len(ips)).Equals(1)
+	netassert.IP(ips[0].To4()).Equals(net.IP([]byte{127, 0, 0, 1}))
 }

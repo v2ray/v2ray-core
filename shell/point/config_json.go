@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/v2ray/v2ray-core/app/dns"
 	"github.com/v2ray/v2ray-core/app/router"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -22,6 +23,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		Port            v2net.Port              `json:"port"` // Port of this Point server.
 		LogConfig       *LogConfig              `json:"log"`
 		RouterConfig    *router.Config          `json:"routing"`
+		DNSConfig       *dns.Config             `json:"dns"`
 		InboundConfig   *ConnectionConfig       `json:"inbound"`
 		OutboundConfig  *ConnectionConfig       `json:"outbound"`
 		InboundDetours  []*InboundDetourConfig  `json:"inboundDetour"`
@@ -38,6 +40,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	this.OutboundConfig = jsonConfig.OutboundConfig
 	this.InboundDetours = jsonConfig.InboundDetours
 	this.OutboundDetours = jsonConfig.OutboundDetours
+	this.DNSConfig = jsonConfig.DNSConfig
 	return nil
 }
 

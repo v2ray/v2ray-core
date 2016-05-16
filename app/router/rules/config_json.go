@@ -117,16 +117,22 @@ func ParseRule(msg json.RawMessage) *Rule {
 func init() {
 	router.RegisterRouterConfig("rules", func(data []byte) (interface{}, error) {
 		type JsonConfig struct {
-			RuleList      []json.RawMessage `json:"rules"`
-			ResolveDomain bool              `json:"resolveDomain"`
+			RuleList       []json.RawMessage `json:"rules"`
+			DomainStrategy string            `json:"domainStrategy"`
 		}
 		jsonConfig := new(JsonConfig)
 		if err := json.Unmarshal(data, jsonConfig); err != nil {
 			return nil, err
 		}
 		config := &RouterRuleConfig{
-			Rules:         make([]*Rule, len(jsonConfig.RuleList)),
-			ResolveDomain: jsonConfig.ResolveDomain,
+			Rules:          make([]*Rule, len(jsonConfig.RuleList)),
+			DomainStrategy: DomainAsIs,
+		}
+		domainStrategy := serial.StringLiteral(jsonConfig.DomainStrategy).ToLower()
+		if domainStrategy.String() == "alwaysip" {
+			config.DomainStrategy = AlwaysUseIP
+		} else if domainStrategy.String() == "ipifnonmatch" {
+			config.DomainStrategy = UseIPIfNonMatch
 		}
 		for idx, rawRule := range jsonConfig.RuleList {
 			rule := ParseRule(rawRule)

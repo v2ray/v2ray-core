@@ -1,6 +1,6 @@
 // +build json
 
-package internal
+package dns
 
 import (
 	"encoding/json"

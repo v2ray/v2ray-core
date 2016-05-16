@@ -1,4 +1,4 @@
-package internal
+package dns
 
 import (
 	"math/rand"
