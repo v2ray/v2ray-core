@@ -16,7 +16,9 @@ import (
 )
 
 const (
-	DefaultTTL = uint32(3600)
+	DefaultTTL       = uint32(3600)
+	CleanupInterval  = time.Second * 120
+	CleanupThreshold = 512
 )
 
 type ARecord struct {
@@ -35,9 +37,10 @@ type PendingRequest struct {
 
 type UDPNameServer struct {
 	sync.Mutex
-	address   v2net.Destination
-	requests  map[uint16]*PendingRequest
-	udpServer *hub.UDPServer
+	address     v2net.Destination
+	requests    map[uint16]*PendingRequest
+	udpServer   *hub.UDPServer
+	nextCleanup time.Time
 }
 
 func NewUDPNameServer(address v2net.Destination, dispatcher dispatcher.PacketDispatcher) *UDPNameServer {
@@ -46,35 +49,36 @@ func NewUDPNameServer(address v2net.Destination, dispatcher dispatcher.PacketDis
 		requests:  make(map[uint16]*PendingRequest),
 		udpServer: hub.NewUDPServer(dispatcher),
 	}
-	go s.Cleanup()
 	return s
 }
 
 // @Private
 func (this *UDPNameServer) Cleanup() {
-	for {
-		time.Sleep(time.Second * 60)
-		expiredRequests := make([]uint16, 0, 16)
-		now := time.Now()
-		this.Lock()
-		for id, r := range this.requests {
-			if r.expire.Before(now) {
-				expiredRequests = append(expiredRequests, id)
-				close(r.response)
-			}
+	expiredRequests := make([]uint16, 0, 16)
+	now := time.Now()
+	this.Lock()
+	for id, r := range this.requests {
+		if r.expire.Before(now) {
+			expiredRequests = append(expiredRequests, id)
+			close(r.response)
 		}
-		for _, id := range expiredRequests {
-			delete(this.requests, id)
-		}
-		this.Unlock()
-		expiredRequests = nil
 	}
+	for _, id := range expiredRequests {
+		delete(this.requests, id)
+	}
+	this.Unlock()
+	expiredRequests = nil
 }
 
 // @Private
 func (this *UDPNameServer) AssignUnusedID(response chan<- *ARecord) uint16 {
 	var id uint16
 	this.Lock()
+	if len(this.requests) > CleanupThreshold && this.nextCleanup.Before(time.Now()) {
+		this.nextCleanup = time.Now().Add(CleanupInterval)
+		go this.Cleanup()
+	}
+
 	for {
 		id = uint16(rand.Intn(65536))
 		if _, found := this.requests[id]; found {
