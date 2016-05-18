@@ -14,26 +14,3 @@ const (
 type PacketDispatcher interface {
 	DispatchToOutbound(destination v2net.Destination) ray.InboundRay
 }
-
-type packetDispatcherWithContext interface {
-	DispatchToOutbound(context app.Context, destination v2net.Destination) ray.InboundRay
-}
-
-type contextedPacketDispatcher struct {
-	context          app.Context
-	packetDispatcher packetDispatcherWithContext
-}
-
-func (this *contextedPacketDispatcher) DispatchToOutbound(destination v2net.Destination) ray.InboundRay {
-	return this.packetDispatcher.DispatchToOutbound(this.context, destination)
-}
-
-func init() {
-	app.Register(APP_ID, func(context app.Context, obj interface{}) interface{} {
-		packetDispatcher := obj.(packetDispatcherWithContext)
-		return &contextedPacketDispatcher{
-			context:          context,
-			packetDispatcher: packetDispatcher,
-		}
-	})
-}

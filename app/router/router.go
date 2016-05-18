@@ -5,6 +5,10 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
+const (
+	APP_ID = app.ID(3)
+)
+
 type Router interface {
 	TakeDetour(v2net.Destination) (string, error)
 }

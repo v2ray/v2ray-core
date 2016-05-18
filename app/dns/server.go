@@ -53,7 +53,7 @@ func (this *CacheServer) GetCached(domain string) []net.IP {
 	return nil
 }
 
-func (this *CacheServer) Get(context app.Context, domain string) []net.IP {
+func (this *CacheServer) Get(domain string) []net.IP {
 	domain = dns.Fqdn(domain)
 	ips := this.GetCached(domain)
 	if ips != nil {

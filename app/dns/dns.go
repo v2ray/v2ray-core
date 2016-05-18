@@ -14,26 +14,3 @@ const (
 type Server interface {
 	Get(domain string) []net.IP
 }
-
-type dnsServerWithContext interface {
-	Get(context app.Context, domain string) []net.IP
-}
-
-type contextedDnsServer struct {
-	context  app.Context
-	dnsCache dnsServerWithContext
-}
-
-func (this *contextedDnsServer) Get(domain string) []net.IP {
-	return this.dnsCache.Get(this.context, domain)
-}
-
-func init() {
-	app.Register(APP_ID, func(context app.Context, obj interface{}) interface{} {
-		dcContext := obj.(dnsServerWithContext)
-		return &contextedDnsServer{
-			context:  context,
-			dnsCache: dcContext,
-		}
-	})
-}
