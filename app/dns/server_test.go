@@ -21,10 +21,9 @@ func TestDnsAdd(t *testing.T) {
 
 	space := app.NewSpace()
 
-	outboundHandlerManager := &proxyman.DefaultOutboundHandlerManager{}
+	outboundHandlerManager := proxyman.NewDefaultOutboundHandlerManager()
 	outboundHandlerManager.SetDefaultHandler(&freedom.FreedomConnection{})
 	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, outboundHandlerManager)
-
 	space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(space))
 
 	domain := "local.v2ray.com"
@@ -33,6 +32,9 @@ func TestDnsAdd(t *testing.T) {
 			v2net.UDPDestination(v2net.IPAddress([]byte{8, 8, 8, 8}), v2net.Port(53)),
 		},
 	})
+	space.BindApp(APP_ID, server)
+	space.Initialize()
+
 	ips := server.Get(domain)
 	assert.Int(len(ips)).Equals(1)
 	netassert.IP(ips[0].To4()).Equals(net.IP([]byte{127, 0, 0, 1}))

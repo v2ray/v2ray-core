@@ -41,23 +41,34 @@ func (this *cacheEntry) Extend() {
 }
 
 type Router struct {
-	config *RouterRuleConfig
-	cache  *collect.ValidityMap
-	space  app.Space
+	config    *RouterRuleConfig
+	cache     *collect.ValidityMap
+	dnsServer dns.Server
 }
 
 func NewRouter(config *RouterRuleConfig, space app.Space) *Router {
-	return &Router{
+	r := &Router{
 		config: config,
 		cache:  collect.NewValidityMap(3600),
-		space:  space,
 	}
+	space.InitializeApplication(func() error {
+		if !space.HasApp(dns.APP_ID) {
+			log.Error("DNS: Router is not found in the space.")
+			return app.ErrorMissingApplication
+		}
+		r.dnsServer = space.GetApp(dns.APP_ID).(dns.Server)
+		return nil
+	})
+	return r
+}
+
+func (this *Router) Release() {
+
 }
 
 // @Private
 func (this *Router) ResolveIP(dest v2net.Destination) []v2net.Destination {
-	dnsServer := this.space.GetApp(dns.APP_ID).(dns.Server)
-	ips := dnsServer.Get(dest.Address().Domain())
+	ips := this.dnsServer.Get(dest.Address().Domain())
 	if len(ips) == 0 {
 		return nil
 	}

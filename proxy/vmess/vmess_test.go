@@ -6,6 +6,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/app/dispatcher"
+	"github.com/v2ray/v2ray-core/app/dns"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	"github.com/v2ray/v2ray-core/common/protocol"
@@ -46,6 +47,11 @@ func TestVMessInAndOut(t *testing.T) {
 
 	configA := &point.Config{
 		Port: portA,
+		DNSConfig: &dns.Config{
+			NameServers: []v2net.Destination{
+				v2net.UDPDestination(v2net.DomainAddress("localhost"), v2net.Port(53)),
+			},
+		},
 		InboundConfig: &point.ConnectionConfig{
 			Protocol: protocol,
 			Settings: nil,
@@ -86,6 +92,11 @@ func TestVMessInAndOut(t *testing.T) {
 
 	configB := &point.Config{
 		Port: portB,
+		DNSConfig: &dns.Config{
+			NameServers: []v2net.Destination{
+				v2net.UDPDestination(v2net.DomainAddress("localhost"), v2net.Port(53)),
+			},
+		},
 		InboundConfig: &point.ConnectionConfig{
 			Protocol: "vmess",
 			Settings: []byte(`{

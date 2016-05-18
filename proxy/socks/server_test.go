@@ -10,6 +10,8 @@ import (
 	"golang.org/x/net/proxy"
 
 	"github.com/v2ray/v2ray-core/app"
+	"github.com/v2ray/v2ray-core/app/dns"
+	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	v2proxy "github.com/v2ray/v2ray-core/proxy"
 	proxytesting "github.com/v2ray/v2ray-core/proxy/testing"
@@ -43,6 +45,11 @@ func TestSocksTcpConnect(t *testing.T) {
       {
         "auth": "noauth"
       }`),
+		},
+		DNSConfig: &dns.Config{
+			NameServers: []v2net.Destination{
+				v2net.UDPDestination(v2net.DomainAddress("localhost"), v2net.Port(53)),
+			},
 		},
 		OutboundConfig: &point.ConnectionConfig{
 			Protocol: protocol,
@@ -106,6 +113,11 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
         ]
       }`),
 		},
+		DNSConfig: &dns.Config{
+			NameServers: []v2net.Destination{
+				v2net.UDPDestination(v2net.DomainAddress("localhost"), v2net.Port(53)),
+			},
+		},
 		OutboundConfig: &point.ConnectionConfig{
 			Protocol: protocol,
 			Settings: nil,
@@ -168,6 +180,11 @@ func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
         ]
       }`),
 		},
+		DNSConfig: &dns.Config{
+			NameServers: []v2net.Destination{
+				v2net.UDPDestination(v2net.DomainAddress("localhost"), v2net.Port(53)),
+			},
+		},
 		OutboundConfig: &point.ConnectionConfig{
 			Protocol: protocol,
 			Settings: nil,
@@ -215,6 +232,11 @@ func TestSocksTcpConnectWithWrongAuthMethod(t *testing.T) {
           {"user": "userx", "pass": "passy"}
         ]
       }`),
+		},
+		DNSConfig: &dns.Config{
+			NameServers: []v2net.Destination{
+				v2net.UDPDestination(v2net.DomainAddress("localhost"), v2net.Port(53)),
+			},
 		},
 		OutboundConfig: &point.ConnectionConfig{
 			Protocol: protocol,

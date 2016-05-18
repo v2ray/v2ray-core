@@ -22,6 +22,7 @@ type DomainRecord struct {
 
 type CacheServer struct {
 	sync.RWMutex
+	space   app.Space
 	records map[string]*DomainRecord
 	servers []NameServer
 }
@@ -31,15 +32,27 @@ func NewCacheServer(space app.Space, config *Config) *CacheServer {
 		records: make(map[string]*DomainRecord),
 		servers: make([]NameServer, len(config.NameServers)),
 	}
-	dispatcher := space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)
-	for idx, ns := range config.NameServers {
-		if ns.Address().IsDomain() && ns.Address().Domain() == "localhost" {
-			server.servers[idx] = &LocalNameServer{}
-		} else {
-			server.servers[idx] = NewUDPNameServer(ns, dispatcher)
+	space.InitializeApplication(func() error {
+		if !space.HasApp(dispatcher.APP_ID) {
+			log.Error("DNS: Dispatcher is not found in the space.")
+			return app.ErrorMissingApplication
 		}
-	}
+
+		dispatcher := space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)
+		for idx, ns := range config.NameServers {
+			if ns.Address().IsDomain() && ns.Address().Domain() == "localhost" {
+				server.servers[idx] = &LocalNameServer{}
+			} else {
+				server.servers[idx] = NewUDPNameServer(ns, dispatcher)
+			}
+		}
+		return nil
+	})
 	return server
+}
+
+func (this *CacheServer) Release() {
+
 }
 
 //@Private

@@ -58,7 +58,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	vpoint.space = app.NewSpace()
 	vpoint.space.BindApp(proxyman.APP_ID_INBOUND_MANAGER, vpoint)
 
-	outboundHandlerManager := &proxyman.DefaultOutboundHandlerManager{}
+	outboundHandlerManager := proxyman.NewDefaultOutboundHandlerManager()
 	vpoint.space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, outboundHandlerManager)
 
 	dnsConfig := pConfig.DNSConfig
@@ -144,6 +144,10 @@ func NewPoint(pConfig *Config) (*Point, error) {
 		}
 	}
 
+	if err := vpoint.space.Initialize(); err != nil {
+		return nil, err
+	}
+
 	return vpoint, nil
 }
 
@@ -191,4 +195,8 @@ func (this *Point) GetHandler(tag string) (proxy.InboundHandler, int) {
 		return nil, 0
 	}
 	return handler.GetConnectionHandler()
+}
+
+func (this *Point) Release() {
+
 }

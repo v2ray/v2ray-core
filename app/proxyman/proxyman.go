@@ -27,6 +27,16 @@ type DefaultOutboundHandlerManager struct {
 	taggedHandler  map[string]proxy.OutboundHandler
 }
 
+func NewDefaultOutboundHandlerManager() *DefaultOutboundHandlerManager {
+	return &DefaultOutboundHandlerManager{
+		taggedHandler: make(map[string]proxy.OutboundHandler),
+	}
+}
+
+func (this *DefaultOutboundHandlerManager) Release() {
+
+}
+
 func (this *DefaultOutboundHandlerManager) GetDefaultHandler() proxy.OutboundHandler {
 	this.RLock()
 	defer this.RUnlock()

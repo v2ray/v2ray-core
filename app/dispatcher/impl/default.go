@@ -18,22 +18,36 @@ type DefaultDispatcher struct {
 }
 
 func NewDefaultDispatcher(space app.Space) *DefaultDispatcher {
+	d := &DefaultDispatcher{}
+	space.InitializeApplication(func() error {
+		return d.Initialize(space)
+	})
+	return d
+}
+
+// @Private
+func (this *DefaultDispatcher) Initialize(space app.Space) error {
 	if !space.HasApp(proxyman.APP_ID_OUTBOUND_MANAGER) {
 		log.Error("DefaultDispatcher: OutboundHandlerManager is not found in the space.")
-		return nil
+		return app.ErrorMissingApplication
 	}
+	this.ohm = space.GetApp(proxyman.APP_ID_OUTBOUND_MANAGER).(proxyman.OutboundHandlerManager)
+
 	if !space.HasApp(dns.APP_ID) {
 		log.Error("DefaultDispatcher: DNS is not found in the space.")
-		return nil
+		return app.ErrorMissingApplication
 	}
-	d := &DefaultDispatcher{
-		ohm: space.GetApp(proxyman.APP_ID_OUTBOUND_MANAGER).(proxyman.OutboundHandlerManager),
-		dns: space.GetApp(dns.APP_ID).(dns.Server),
-	}
+	this.dns = space.GetApp(dns.APP_ID).(dns.Server)
+
 	if space.HasApp(router.APP_ID) {
-		d.router = space.GetApp(router.APP_ID).(router.Router)
+		this.router = space.GetApp(router.APP_ID).(router.Router)
 	}
-	return d
+
+	return nil
+}
+
+func (this *DefaultDispatcher) Release() {
+
 }
 
 func (this *DefaultDispatcher) DispatchToOutbound(destination v2net.Destination) ray.InboundRay {

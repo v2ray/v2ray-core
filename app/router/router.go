@@ -2,6 +2,7 @@ package router
 
 import (
 	"github.com/v2ray/v2ray-core/app"
+	"github.com/v2ray/v2ray-core/common"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
@@ -10,6 +11,7 @@ const (
 )
 
 type Router interface {
+	common.Releasable
 	TakeDetour(v2net.Destination) (string, error)
 }
 
