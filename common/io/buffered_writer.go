@@ -2,11 +2,13 @@ package io
 
 import (
 	"io"
+	"sync"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 )
 
 type BufferedWriter struct {
+	sync.Mutex
 	writer io.Writer
 	buffer *alloc.Buffer
 	cached bool
@@ -21,6 +23,13 @@ func NewBufferedWriter(rawWriter io.Writer) *BufferedWriter {
 }
 
 func (this *BufferedWriter) Write(b []byte) (int, error) {
+	this.Lock()
+	defer this.Unlock()
+
+	if this.writer == nil {
+		return 0, io.EOF
+	}
+
 	if !this.cached {
 		return this.writer.Write(b)
 	}
@@ -35,6 +44,12 @@ func (this *BufferedWriter) Write(b []byte) (int, error) {
 }
 
 func (this *BufferedWriter) Flush() error {
+	this.Lock()
+	defer this.Unlock()
+	if this.writer == nil {
+		return io.EOF
+	}
+
 	defer this.buffer.Clear()
 	for !this.buffer.IsEmpty() {
 		nBytes, err := this.writer.Write(this.buffer.Value)
@@ -58,6 +73,9 @@ func (this *BufferedWriter) SetCached(cached bool) {
 }
 
 func (this *BufferedWriter) Release() {
+	this.Lock()
+	defer this.Unlock()
+
 	this.Flush()
 	this.buffer.Release()
 	this.buffer = nil
