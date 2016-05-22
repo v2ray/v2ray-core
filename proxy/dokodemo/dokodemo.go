@@ -3,12 +3,14 @@ package dokodemo
 import (
 	"sync"
 
+	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/app/dispatcher"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/proxy/internal"
 	"github.com/v2ray/v2ray-core/transport/hub"
 )
 
@@ -26,13 +28,21 @@ type DokodemoDoor struct {
 	listeningPort    v2net.Port
 }
 
-func NewDokodemoDoor(config *Config, packetDispatcher dispatcher.PacketDispatcher) *DokodemoDoor {
-	return &DokodemoDoor{
-		config:           config,
-		packetDispatcher: packetDispatcher,
-		address:          config.Address,
-		port:             config.Port,
+func NewDokodemoDoor(config *Config, space app.Space) *DokodemoDoor {
+	d := &DokodemoDoor{
+		config:  config,
+		address: config.Address,
+		port:    config.Port,
 	}
+	space.InitializeApplication(func() error {
+		if !space.HasApp(dispatcher.APP_ID) {
+			log.Error("Dokodemo: Dispatcher is not found in the space.")
+			return app.ErrorMissingApplication
+		}
+		d.packetDispatcher = space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)
+		return nil
+	})
+	return d
 }
 
 func (this *DokodemoDoor) Port() v2net.Port {
@@ -152,4 +162,11 @@ func (this *DokodemoDoor) HandleTCPConnection(conn *hub.Connection) {
 
 	outputFinish.Lock()
 	inputFinish.Lock()
+}
+
+func init() {
+	internal.MustRegisterInboundHandlerCreator("dokodemo-door",
+		func(space app.Space, rawConfig interface{}) (proxy.InboundHandler, error) {
+			return NewDokodemoDoor(rawConfig.(*Config), space), nil
+		})
 }
