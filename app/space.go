@@ -2,7 +2,6 @@ package app
 
 import (
 	"errors"
-	"sync/atomic"
 
 	"github.com/v2ray/v2ray-core/common"
 )
@@ -40,40 +39,27 @@ type Space interface {
 }
 
 type spaceImpl struct {
-	cache      map[ID]Application
-	initSignal chan struct{}
-	initErrors chan error
-	appsToInit int32
-	appsDone   int32
+	cache   map[ID]Application
+	appInit []ApplicationInitializer
 }
 
 func NewSpace() Space {
 	return &spaceImpl{
-		cache:      make(map[ID]Application),
-		initSignal: make(chan struct{}),
-		initErrors: make(chan error, 1),
+		cache:   make(map[ID]Application),
+		appInit: make([]ApplicationInitializer, 0, 32),
 	}
 }
 
 func (this *spaceImpl) InitializeApplication(f ApplicationInitializer) {
-	atomic.AddInt32(&(this.appsToInit), 1)
-	go func() {
-		<-this.initSignal
-		err := f()
-		if err != nil {
-			this.initErrors <- err
-		}
-		count := atomic.AddInt32(&(this.appsDone), 1)
-		if count == this.appsToInit {
-			close(this.initErrors)
-		}
-	}()
+	this.appInit = append(this.appInit, f)
 }
 
 func (this *spaceImpl) Initialize() error {
-	close(this.initSignal)
-	if err, open := <-this.initErrors; open {
-		return err
+	for _, f := range this.appInit {
+		err := f()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
