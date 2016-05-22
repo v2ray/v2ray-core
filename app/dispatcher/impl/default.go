@@ -2,7 +2,6 @@ package impl
 
 import (
 	"github.com/v2ray/v2ray-core/app"
-	"github.com/v2ray/v2ray-core/app/dns"
 	"github.com/v2ray/v2ray-core/app/proxyman"
 	"github.com/v2ray/v2ray-core/app/router"
 	"github.com/v2ray/v2ray-core/common/log"
@@ -14,7 +13,6 @@ import (
 type DefaultDispatcher struct {
 	ohm    proxyman.OutboundHandlerManager
 	router router.Router
-	dns    dns.Server
 }
 
 func NewDefaultDispatcher(space app.Space) *DefaultDispatcher {
@@ -32,12 +30,6 @@ func (this *DefaultDispatcher) Initialize(space app.Space) error {
 		return app.ErrorMissingApplication
 	}
 	this.ohm = space.GetApp(proxyman.APP_ID_OUTBOUND_MANAGER).(proxyman.OutboundHandlerManager)
-
-	if !space.HasApp(dns.APP_ID) {
-		log.Error("DefaultDispatcher: DNS is not found in the space.")
-		return app.ErrorMissingApplication
-	}
-	this.dns = space.GetApp(dns.APP_ID).(dns.Server)
 
 	if space.HasApp(router.APP_ID) {
 		this.router = space.GetApp(router.APP_ID).(router.Router)
