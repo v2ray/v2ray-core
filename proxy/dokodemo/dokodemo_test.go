@@ -39,7 +39,7 @@ func TestDokodemoTCP(t *testing.T) {
 	space := app.NewSpace()
 	space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(space))
 	ohm := proxyman.NewDefaultOutboundHandlerManager()
-	ohm.SetDefaultHandler(&freedom.FreedomConnection{})
+	ohm.SetDefaultHandler(freedom.NewFreedomConnection(&freedom.Config{}, space))
 	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, ohm)
 
 	data2Send := "Data to be sent to remote."
@@ -97,7 +97,7 @@ func TestDokodemoUDP(t *testing.T) {
 	space := app.NewSpace()
 	space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(space))
 	ohm := proxyman.NewDefaultOutboundHandlerManager()
-	ohm.SetDefaultHandler(&freedom.FreedomConnection{})
+	ohm.SetDefaultHandler(freedom.NewFreedomConnection(&freedom.Config{}, space))
 	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, ohm)
 
 	data2Send := "Data to be sent to remote."
