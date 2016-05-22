@@ -35,10 +35,7 @@ func (this *BufferedWriter) Write(b []byte) (int, error) {
 	}
 	nBytes, _ := this.buffer.Write(b)
 	if this.buffer.IsFull() {
-		err := this.Flush()
-		if err != nil {
-			return nBytes, err
-		}
+		go this.Flush()
 	}
 	return nBytes, nil
 }
