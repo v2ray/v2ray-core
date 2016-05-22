@@ -22,7 +22,7 @@ func TestDnsAdd(t *testing.T) {
 	space := app.NewSpace()
 
 	outboundHandlerManager := proxyman.NewDefaultOutboundHandlerManager()
-	outboundHandlerManager.SetDefaultHandler(&freedom.FreedomConnection{})
+	outboundHandlerManager.SetDefaultHandler(freedom.NewFreedomConnection(&freedom.Config{}, space))
 	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, outboundHandlerManager)
 	space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(space))
 
