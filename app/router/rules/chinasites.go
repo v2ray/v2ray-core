@@ -81,6 +81,7 @@ func init() {
 		anySubDomain + "9xu" + dotCom,
 		anySubDomain + "abchina" + dotCom,
 		anySubDomain + "acfun" + dotTv,
+		anySubDomain + "acgvideo" + dotCom,
 		anySubDomain + "agrantsem" + dotCom,
 		anySubDomain + "aicdn" + dotCom,
 		anySubDomain + "aixifan" + dotCom,
