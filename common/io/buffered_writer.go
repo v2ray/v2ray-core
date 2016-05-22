@@ -70,10 +70,11 @@ func (this *BufferedWriter) SetCached(cached bool) {
 }
 
 func (this *BufferedWriter) Release() {
+	this.Flush()
+
 	this.Lock()
 	defer this.Unlock()
 
-	this.Flush()
 	this.buffer.Release()
 	this.buffer = nil
 	this.writer = nil
