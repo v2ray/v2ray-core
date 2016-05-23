@@ -11,18 +11,18 @@ import (
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
-func TestInvalidStringLiteralJson(t *testing.T) {
+func TestInvalidStringTJson(t *testing.T) {
 	v2testing.Current(t)
 
-	var s StringLiteral
+	var s StringT
 	err := json.Unmarshal([]byte("1"), &s)
 	assert.Error(err).IsNotNil()
 }
 
-func TestStringLiteralParsing(t *testing.T) {
+func TestStringTParsing(t *testing.T) {
 	v2testing.Current(t)
 
-	var s StringLiteral
+	var s StringT
 	err := json.Unmarshal([]byte("\"1\""), &s)
 	assert.Error(err).IsNil()
 	assert.String(s).Equals("1")

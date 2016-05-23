@@ -15,7 +15,7 @@ func TestStringListUnmarshalError(t *testing.T) {
 	v2testing.Current(t)
 
 	rawJson := `1234`
-	list := new(StringLiteralList)
+	list := new(StringTList)
 	err := json.Unmarshal([]byte(rawJson), list)
 	assert.Error(err).IsNotNil()
 }
