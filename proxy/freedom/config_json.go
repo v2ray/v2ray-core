@@ -18,7 +18,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	this.DomainStrategy = DomainStrategyAsIs
-	domainStrategy := serial.StringLiteral(jsonConfig.DomainStrategy).ToLower()
+	domainStrategy := serial.StringT(jsonConfig.DomainStrategy).ToLower()
 	if domainStrategy.String() == "useip" {
 		this.DomainStrategy = DomainStrategyUseIP
 	}

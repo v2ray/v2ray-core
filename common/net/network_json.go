@@ -9,7 +9,7 @@ import (
 )
 
 func (this *NetworkList) UnmarshalJSON(data []byte) error {
-	var strlist serial.StringLiteralList
+	var strlist serial.StringTList
 	if err := json.Unmarshal(data, &strlist); err != nil {
 		return err
 	}

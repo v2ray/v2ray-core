@@ -14,11 +14,11 @@ import (
 
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
-		Cipher   serial.StringLiteral `json:"method"`
-		Password serial.StringLiteral `json:"password"`
-		UDP      bool                 `json:"udp"`
-		Level    byte                 `json:"level"`
-		Email    string               `json:"email"`
+		Cipher   serial.StringT `json:"method"`
+		Password serial.StringT `json:"password"`
+		UDP      bool           `json:"udp"`
+		Level    byte           `json:"level"`
+		Email    string         `json:"email"`
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {

@@ -21,10 +21,10 @@ type JsonRule struct {
 func parseFieldRule(msg json.RawMessage) (*Rule, error) {
 	type RawFieldRule struct {
 		JsonRule
-		Domain  *serial.StringLiteralList `json:"domain"`
-		IP      *serial.StringLiteralList `json:"ip"`
-		Port    *v2net.PortRange          `json:"port"`
-		Network *v2net.NetworkList        `json:"network"`
+		Domain  *serial.StringTList `json:"domain"`
+		IP      *serial.StringTList `json:"ip"`
+		Port    *v2net.PortRange    `json:"port"`
+		Network *v2net.NetworkList  `json:"network"`
 	}
 	rawFieldRule := new(RawFieldRule)
 	err := json.Unmarshal(msg, rawFieldRule)
@@ -128,7 +128,7 @@ func init() {
 			Rules:          make([]*Rule, len(jsonConfig.RuleList)),
 			DomainStrategy: DomainAsIs,
 		}
-		domainStrategy := serial.StringLiteral(jsonConfig.DomainStrategy).ToLower()
+		domainStrategy := serial.StringT(jsonConfig.DomainStrategy).ToLower()
 		if domainStrategy.String() == "alwaysip" {
 			config.DomainStrategy = AlwaysUseIP
 		} else if domainStrategy.String() == "ipifnonmatch" {
