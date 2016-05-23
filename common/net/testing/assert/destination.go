@@ -26,24 +26,24 @@ func (this *DestinationSubject) DisplayString() string {
 
 func (this *DestinationSubject) IsTCP() {
 	if !this.value.IsTCP() {
-		this.Fail(this.DisplayString(), "is", serial.StringLiteral("a TCP destination"))
+		this.Fail(this.DisplayString(), "is", serial.StringT("a TCP destination"))
 	}
 }
 
 func (this *DestinationSubject) IsNotTCP() {
 	if this.value.IsTCP() {
-		this.Fail(this.DisplayString(), "is not", serial.StringLiteral("a TCP destination"))
+		this.Fail(this.DisplayString(), "is not", serial.StringT("a TCP destination"))
 	}
 }
 
 func (this *DestinationSubject) IsUDP() {
 	if !this.value.IsUDP() {
-		this.Fail(this.DisplayString(), "is", serial.StringLiteral("a UDP destination"))
+		this.Fail(this.DisplayString(), "is", serial.StringT("a UDP destination"))
 	}
 }
 
 func (this *DestinationSubject) IsNotUDP() {
 	if this.value.IsUDP() {
-		this.Fail(this.DisplayString(), "is not", serial.StringLiteral("a UDP destination"))
+		this.Fail(this.DisplayString(), "is not", serial.StringT("a UDP destination"))
 	}
 }

@@ -13,7 +13,7 @@ const (
 )
 
 // Network represents a communication network on internet.
-type Network serial.StringLiteral
+type Network serial.StringT
 
 func (this Network) AsList() *NetworkList {
 	list := NetworkList([]Network{this})
@@ -24,7 +24,7 @@ func (this Network) AsList() *NetworkList {
 type NetworkList []Network
 
 // NewNetworkList construsts a NetWorklist from the given StringListeralList.
-func NewNetworkList(networks serial.StringLiteralList) NetworkList {
+func NewNetworkList(networks serial.StringTList) NetworkList {
 	list := NetworkList(make([]Network, networks.Len()))
 	for idx, network := range networks {
 		list[idx] = Network(network.TrimSpace().ToLower())

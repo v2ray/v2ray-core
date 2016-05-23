@@ -1,15 +1,15 @@
 package serial
 
-type StringLiteralList []StringLiteral
+type StringTList []StringT
 
-func NewStringLiteralList(raw []string) *StringLiteralList {
-	list := StringLiteralList(make([]StringLiteral, len(raw)))
+func NewStringTList(raw []string) *StringTList {
+	list := StringTList(make([]StringT, len(raw)))
 	for idx, str := range raw {
-		list[idx] = StringLiteral(str)
+		list[idx] = StringT(str)
 	}
 	return &list
 }
 
-func (this *StringLiteralList) Len() int {
+func (this *StringTList) Len() int {
 	return len(*this)
 }

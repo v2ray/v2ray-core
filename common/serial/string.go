@@ -9,28 +9,28 @@ type String interface {
 	String() string
 }
 
-type StringLiteral string
+type StringT string
 
-func NewStringLiteral(str String) StringLiteral {
-	return StringLiteral(str.String())
+func NewStringT(str String) StringT {
+	return StringT(str.String())
 }
 
-func (this StringLiteral) Contains(str String) bool {
+func (this StringT) Contains(str String) bool {
 	return strings.Contains(this.String(), str.String())
 }
 
-func (this StringLiteral) String() string {
+func (this StringT) String() string {
 	return string(this)
 }
 
-func (this StringLiteral) ToLower() StringLiteral {
-	return StringLiteral(strings.ToLower(string(this)))
+func (this StringT) ToLower() StringT {
+	return StringT(strings.ToLower(string(this)))
 }
 
-func (this StringLiteral) ToUpper() StringLiteral {
-	return StringLiteral(strings.ToUpper(string(this)))
+func (this StringT) ToUpper() StringT {
+	return StringT(strings.ToUpper(string(this)))
 }
 
-func (this StringLiteral) TrimSpace() StringLiteral {
-	return StringLiteral(strings.TrimSpace(string(this)))
+func (this StringT) TrimSpace() StringT {
+	return StringT(strings.TrimSpace(string(this)))
 }

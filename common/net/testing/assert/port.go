@@ -44,6 +44,6 @@ func (subject *PortSubject) LessThan(expectation v2net.Port) {
 
 func (subject *PortSubject) IsValid() {
 	if subject.value == 0 {
-		subject.Fail(subject.DisplayString(), "is", serial.StringLiteral("a valid port"))
+		subject.Fail(subject.DisplayString(), "is", serial.StringT("a valid port"))
 	}
 }

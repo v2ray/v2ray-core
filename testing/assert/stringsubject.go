@@ -7,7 +7,7 @@ import (
 )
 
 func StringLiteral(value string) *StringSubject {
-	return String(serial.StringLiteral((value)))
+	return String(serial.StringT((value)))
 }
 
 func String(value serial.String) *StringSubject {
@@ -30,13 +30,13 @@ func (subject *StringSubject) DisplayString() string {
 
 func (subject *StringSubject) Equals(expectation string) {
 	if subject.value.String() != expectation {
-		subject.Fail(subject.DisplayString(), "is equal to", serial.StringLiteral(expectation))
+		subject.Fail(subject.DisplayString(), "is equal to", serial.StringT(expectation))
 	}
 }
 
 func (subject *StringSubject) NotEquals(expectation string) {
 	if subject.value.String() == expectation {
-		subject.Fail(subject.DisplayString(), "is not equal to ", serial.StringLiteral(expectation))
+		subject.Fail(subject.DisplayString(), "is not equal to ", serial.StringT(expectation))
 	}
 }
 

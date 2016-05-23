@@ -63,12 +63,12 @@ func (this *AnyCondition) Len() int {
 }
 
 type PlainDomainMatcher struct {
-	pattern serial.StringLiteral
+	pattern serial.StringT
 }
 
 func NewPlainDomainMatcher(pattern string) *PlainDomainMatcher {
 	return &PlainDomainMatcher{
-		pattern: serial.StringLiteral(pattern),
+		pattern: serial.StringT(pattern),
 	}
 }
 
@@ -76,7 +76,7 @@ func (this *PlainDomainMatcher) Apply(dest v2net.Destination) bool {
 	if !dest.Address().IsDomain() {
 		return false
 	}
-	domain := serial.StringLiteral(dest.Address().Domain())
+	domain := serial.StringT(dest.Address().Domain())
 	return domain.Contains(this.pattern)
 }
 
@@ -98,7 +98,7 @@ func (this *RegexpDomainMatcher) Apply(dest v2net.Destination) bool {
 	if !dest.Address().IsDomain() {
 		return false
 	}
-	domain := serial.StringLiteral(dest.Address().Domain())
+	domain := serial.StringT(dest.Address().Domain())
 	return this.pattern.MatchString(domain.ToLower().String())
 }
 

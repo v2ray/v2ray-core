@@ -106,14 +106,14 @@ func (this *Server) handlerUDPPayload(payload *alloc.Buffer, source v2net.Destin
 
 	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(key, iv)), true)
 	if err != nil {
-		log.Access(source, serial.StringLiteral(""), log.AccessRejected, serial.StringLiteral(err.Error()))
+		log.Access(source, serial.StringT(""), log.AccessRejected, serial.StringT(err.Error()))
 		log.Warning("Shadowsocks: Invalid request from ", source, ": ", err)
 		return
 	}
 	//defer request.Release()
 
 	dest := v2net.UDPDestination(request.Address, request.Port)
-	log.Access(source, dest, log.AccessAccepted, serial.StringLiteral(""))
+	log.Access(source, dest, log.AccessAccepted, serial.StringT(""))
 	log.Info("Shadowsocks: Tunnelling request to ", dest)
 
 	this.udpServer.Dispatch(source, dest, request.DetachUDPPayload(), func(destination v2net.Destination, payload *alloc.Buffer) {
@@ -172,7 +172,7 @@ func (this *Server) handleConnection(conn *hub.Connection) {
 	ivLen := this.config.Cipher.IVSize()
 	_, err := io.ReadFull(bufferedReader, buffer.Value[:ivLen])
 	if err != nil {
-		log.Access(conn.RemoteAddr(), serial.StringLiteral(""), log.AccessRejected, serial.StringLiteral(err.Error()))
+		log.Access(conn.RemoteAddr(), serial.StringT(""), log.AccessRejected, serial.StringT(err.Error()))
 		log.Error("Shadowsocks: Failed to read IV: ", err)
 		return
 	}
@@ -190,7 +190,7 @@ func (this *Server) handleConnection(conn *hub.Connection) {
 
 	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(key, iv)), false)
 	if err != nil {
-		log.Access(conn.RemoteAddr(), serial.StringLiteral(""), log.AccessRejected, serial.StringLiteral(err.Error()))
+		log.Access(conn.RemoteAddr(), serial.StringT(""), log.AccessRejected, serial.StringT(err.Error()))
 		log.Warning("Shadowsocks: Invalid request from ", conn.RemoteAddr(), ": ", err)
 		return
 	}
@@ -201,7 +201,7 @@ func (this *Server) handleConnection(conn *hub.Connection) {
 	timedReader.SetTimeOut(userSettings.PayloadReadTimeout)
 
 	dest := v2net.TCPDestination(request.Address, request.Port)
-	log.Access(conn.RemoteAddr(), dest, log.AccessAccepted, serial.StringLiteral(""))
+	log.Access(conn.RemoteAddr(), dest, log.AccessAccepted, serial.StringT(""))
 	log.Info("Shadowsocks: Tunnelling request to ", dest)
 
 	ray := this.packetDispatcher.DispatchToOutbound(dest)

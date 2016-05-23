@@ -130,11 +130,11 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 
 	request, err := session.DecodeRequestHeader(reader)
 	if err != nil {
-		log.Access(connection.RemoteAddr(), serial.StringLiteral(""), log.AccessRejected, serial.StringLiteral(err.Error()))
+		log.Access(connection.RemoteAddr(), serial.StringT(""), log.AccessRejected, serial.StringT(err.Error()))
 		log.Warning("VMessIn: Invalid request from ", connection.RemoteAddr(), ": ", err)
 		return
 	}
-	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, serial.StringLiteral(""))
+	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, serial.StringT(""))
 	log.Debug("VMessIn: Received request for ", request.Destination())
 
 	ray := this.packetDispatcher.DispatchToOutbound(request.Destination())

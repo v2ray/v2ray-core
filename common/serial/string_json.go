@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 )
 
-func (this *StringLiteral) UnmarshalJSON(data []byte) error {
+func (this *StringT) UnmarshalJSON(data []byte) error {
 	var str string
 	if err := json.Unmarshal(data, &str); err != nil {
 		return err
 	}
-	*this = StringLiteral(str)
+	*this = StringT(str)
 	return nil
 }

@@ -28,7 +28,7 @@ func (subject *IPSubject) DisplayString() string {
 
 func (subject *IPSubject) IsNil() {
 	if subject.value != nil {
-		subject.Fail(subject.DisplayString(), "is", serial.StringLiteral("nil"))
+		subject.Fail(subject.DisplayString(), "is", serial.StringT("nil"))
 	}
 }
 

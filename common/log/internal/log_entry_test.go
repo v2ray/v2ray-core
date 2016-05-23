@@ -13,15 +13,15 @@ func TestAccessLog(t *testing.T) {
 	v2testing.Current(t)
 
 	entry := &AccessLog{
-		From:   serial.StringLiteral("test_from"),
-		To:     serial.StringLiteral("test_to"),
+		From:   serial.StringT("test_from"),
+		To:     serial.StringT("test_to"),
 		Status: "Accepted",
-		Reason: serial.StringLiteral("test_reason"),
+		Reason: serial.StringT("test_reason"),
 	}
 
 	entryStr := entry.String()
-	assert.StringLiteral(entryStr).Contains(serial.StringLiteral("test_from"))
-	assert.StringLiteral(entryStr).Contains(serial.StringLiteral("test_to"))
-	assert.StringLiteral(entryStr).Contains(serial.StringLiteral("test_reason"))
-	assert.StringLiteral(entryStr).Contains(serial.StringLiteral("Accepted"))
+	assert.StringLiteral(entryStr).Contains(serial.StringT("test_from"))
+	assert.StringLiteral(entryStr).Contains(serial.StringT("test_to"))
+	assert.StringLiteral(entryStr).Contains(serial.StringT("test_reason"))
+	assert.StringLiteral(entryStr).Contains(serial.StringT("Accepted"))
 }

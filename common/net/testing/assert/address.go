@@ -32,36 +32,36 @@ func (subject *AddressSubject) Equals(another v2net.Address) {
 
 func (subject *AddressSubject) IsIPv4() {
 	if !subject.value.IsIPv4() {
-		subject.Fail(subject.DisplayString(), "is", serial.StringLiteral("an IPv4 address"))
+		subject.Fail(subject.DisplayString(), "is", serial.StringT("an IPv4 address"))
 	}
 }
 
 func (subject *AddressSubject) IsNotIPv4() {
 	if subject.value.IsIPv4() {
-		subject.Fail(subject.DisplayString(), "is not", serial.StringLiteral("an IPv4 address"))
+		subject.Fail(subject.DisplayString(), "is not", serial.StringT("an IPv4 address"))
 	}
 }
 
 func (subject *AddressSubject) IsIPv6() {
 	if !subject.value.IsIPv6() {
-		subject.Fail(subject.DisplayString(), "is", serial.StringLiteral("an IPv6 address"))
+		subject.Fail(subject.DisplayString(), "is", serial.StringT("an IPv6 address"))
 	}
 }
 
 func (subject *AddressSubject) IsNotIPv6() {
 	if subject.value.IsIPv6() {
-		subject.Fail(subject.DisplayString(), "is not", serial.StringLiteral("an IPv6 address"))
+		subject.Fail(subject.DisplayString(), "is not", serial.StringT("an IPv6 address"))
 	}
 }
 
 func (subject *AddressSubject) IsDomain() {
 	if !subject.value.IsDomain() {
-		subject.Fail(subject.DisplayString(), "is", serial.StringLiteral("a domain address"))
+		subject.Fail(subject.DisplayString(), "is", serial.StringT("a domain address"))
 	}
 }
 
 func (subject *AddressSubject) IsNotDomain() {
 	if subject.value.IsDomain() {
-		subject.Fail(subject.DisplayString(), "is not", serial.StringLiteral("a domain address"))
+		subject.Fail(subject.DisplayString(), "is not", serial.StringT("a domain address"))
 	}
 }

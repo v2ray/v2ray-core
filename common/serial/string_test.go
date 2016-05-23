@@ -20,5 +20,5 @@ func TestNewStringSerial(t *testing.T) {
 	v2testing.Current(t)
 
 	testString := &TestString{value: "abcd"}
-	assert.String(NewStringLiteral(testString)).Equals("abcd")
+	assert.String(NewStringT(testString)).Equals("abcd")
 }
