@@ -42,7 +42,7 @@ func IPAddress(ip []byte) Address {
 		var addr ipv4Address = [4]byte{ip[0], ip[1], ip[2], ip[3]}
 		return &addr
 	case net.IPv6len:
-		if serial.BytesLiteral(ip[0:10]).All(0) && serial.BytesLiteral(ip[10:12]).All(0xff) {
+		if serial.BytesT(ip[0:10]).All(0) && serial.BytesT(ip[10:12]).All(0xff) {
 			return IPAddress(ip[12:16])
 		}
 		var addr ipv6Address = [16]byte{

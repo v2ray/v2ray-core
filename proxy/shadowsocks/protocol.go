@@ -129,7 +129,7 @@ func ReadRequest(reader io.Reader, auth *Authenticator, udp bool) (*Request, err
 
 	if request.OTA {
 		actualAuth := auth.Authenticate(nil, buffer.Value[0:lenBuffer])
-		if !serial.BytesLiteral(actualAuth).Equals(serial.BytesLiteral(authBytes)) {
+		if !serial.BytesT(actualAuth).Equals(serial.BytesT(authBytes)) {
 			log.Debug("Shadowsocks: Invalid OTA. Expecting ", actualAuth, ", but got ", authBytes)
 			log.Warning("Shadowsocks: Invalid OTA.")
 			return nil, proxy.ErrorInvalidAuthentication

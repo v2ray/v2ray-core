@@ -231,7 +231,7 @@ func (this *HttpProxyServer) handlePlainHTTP(request *http.Request, dest v2net.D
 
 	requestBuffer := alloc.NewBuffer().Clear() // Don't release this buffer as it is passed into a Packet.
 	request.Write(requestBuffer)
-	log.Debug("Request to remote:\n", serial.BytesLiteral(requestBuffer.Value))
+	log.Debug("Request to remote:\n", serial.BytesT(requestBuffer.Value))
 
 	ray := this.packetDispatcher.DispatchToOutbound(dest)
 	ray.InboundInput().Write(requestBuffer)

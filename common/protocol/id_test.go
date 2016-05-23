@@ -14,5 +14,5 @@ func TestCmdKey(t *testing.T) {
 	v2testing.Current(t)
 
 	id := NewID(uuid.New())
-	assert.Bool(serial.BytesLiteral(id.CmdKey()).All(0)).IsFalse()
+	assert.Bool(serial.BytesT(id.CmdKey()).All(0)).IsFalse()
 }

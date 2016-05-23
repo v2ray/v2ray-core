@@ -55,7 +55,7 @@ func UnmarshalCommand(cmdId byte, data []byte) (protocol.ResponseCommand, error)
 		return nil, transport.ErrorCorruptedPacket
 	}
 	expectedAuth := Authenticate(data[4:])
-	actualAuth := serial.BytesLiteral(data[:4]).Uint32Value()
+	actualAuth := serial.BytesT(data[:4]).Uint32Value()
 	if expectedAuth != actualAuth {
 		return nil, transport.ErrorCorruptedPacket
 	}
@@ -132,7 +132,7 @@ func (this *CommandSwitchAccountFactory) Unmarshal(data []byte) (interface{}, er
 	if len(data) < alterIdStart+2 {
 		return nil, transport.ErrorCorruptedPacket
 	}
-	cmd.AlterIds = serial.BytesLiteral(data[alterIdStart : alterIdStart+2]).Uint16()
+	cmd.AlterIds = serial.BytesT(data[alterIdStart : alterIdStart+2]).Uint16()
 	levelStart := alterIdStart + 2
 	if len(data) < levelStart+1 {
 		return nil, transport.ErrorCorruptedPacket

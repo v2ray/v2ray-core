@@ -134,7 +134,7 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 	fnv1a := fnv.New32a()
 	fnv1a.Write(buffer.Value[:bufferLen])
 	actualHash := fnv1a.Sum32()
-	expectedHash := serial.BytesLiteral(buffer.Value[bufferLen : bufferLen+4]).Uint32Value()
+	expectedHash := serial.BytesT(buffer.Value[bufferLen : bufferLen+4]).Uint32Value()
 
 	if actualHash != expectedHash {
 		return nil, transport.ErrorCorruptedPacket
