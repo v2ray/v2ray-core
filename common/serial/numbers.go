@@ -46,6 +46,26 @@ func (this IntLiteral) Bytes() []byte {
 	}
 }
 
+type Uint32Literal uint32
+
+func (this Uint32Literal) String() string {
+	return strconv.FormatUint(uint64(this.Value()), 10)
+}
+
+func (this Uint32Literal) Value() uint32 {
+	return uint32(this)
+}
+
+func (this Uint32Literal) Bytes() []byte {
+	value := this.Value()
+	return []byte{
+		byte(value >> 24),
+		byte(value >> 16),
+		byte(value >> 8),
+		byte(value),
+	}
+}
+
 type Int64Literal int64
 
 func (this Int64Literal) String() string {
