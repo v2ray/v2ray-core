@@ -99,7 +99,7 @@ func (this *CommandSwitchAccountFactory) Marshal(command interface{}, writer io.
 	idBytes := cmd.ID.Bytes()
 	writer.Write(idBytes)
 
-	writer.Write(cmd.AlterIds.Bytes())
+	writer.Write(serial.Uint16ToBytes(cmd.AlterIds))
 	writer.Write([]byte{byte(cmd.Level)})
 
 	writer.Write([]byte{cmd.ValidMin})
@@ -132,7 +132,7 @@ func (this *CommandSwitchAccountFactory) Unmarshal(data []byte) (interface{}, er
 	if len(data) < alterIdStart+2 {
 		return nil, transport.ErrorCorruptedPacket
 	}
-	cmd.AlterIds = serial.BytesT(data[alterIdStart : alterIdStart+2]).Uint16()
+	cmd.AlterIds = serial.BytesToUint16(data[alterIdStart : alterIdStart+2])
 	levelStart := alterIdStart + 2
 	if len(data) < levelStart+1 {
 		return nil, transport.ErrorCorruptedPacket

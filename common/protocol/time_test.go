@@ -5,12 +5,11 @@ import (
 	"time"
 
 	. "github.com/v2ray/v2ray-core/common/protocol"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestGenerateRandomInt64InRange(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	base := time.Now().Unix()
 	delta := 100

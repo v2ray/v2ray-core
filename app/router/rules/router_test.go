@@ -11,12 +11,11 @@ import (
 	"github.com/v2ray/v2ray-core/app/router"
 	. "github.com/v2ray/v2ray-core/app/router/rules"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestSimpleRouter(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	config := &RouterRuleConfig{
 		Rules: []*Rule{
@@ -37,5 +36,5 @@ func TestSimpleRouter(t *testing.T) {
 
 	tag, err := r.TakeDetour(v2net.TCPDestination(v2net.DomainAddress("v2ray.com"), 80))
 	assert.Error(err).IsNil()
-	assert.StringLiteral(tag).Equals("test")
+	assert.String(tag).Equals("test")
 }

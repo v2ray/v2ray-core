@@ -8,12 +8,11 @@ import (
 
 	. "github.com/v2ray/v2ray-core/app/dns"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestConfigParsing(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	rawJson := `{
     "servers": ["8.8.8.8"]

@@ -9,12 +9,11 @@ import (
 	testdispatcher "github.com/v2ray/v2ray-core/app/dispatcher/testing"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	. "github.com/v2ray/v2ray-core/proxy/http"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestHopByHopHeadersStrip(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	rawRequest := `GET /pkg/net/http/ HTTP/1.1
 Host: golang.org
@@ -33,22 +32,22 @@ Accept-Language: de,en;q=0.7,en-us;q=0.3
 	b := bufio.NewReader(strings.NewReader(rawRequest))
 	req, err := http.ReadRequest(b)
 	assert.Error(err).IsNil()
-	assert.StringLiteral(req.Header.Get("Foo")).Equals("foo")
-	assert.StringLiteral(req.Header.Get("Bar")).Equals("bar")
-	assert.StringLiteral(req.Header.Get("Connection")).Equals("keep-alive,Foo, Bar")
-	assert.StringLiteral(req.Header.Get("Proxy-Connection")).Equals("keep-alive")
-	assert.StringLiteral(req.Header.Get("Proxy-Authenticate")).Equals("abc")
+	assert.String(req.Header.Get("Foo")).Equals("foo")
+	assert.String(req.Header.Get("Bar")).Equals("bar")
+	assert.String(req.Header.Get("Connection")).Equals("keep-alive,Foo, Bar")
+	assert.String(req.Header.Get("Proxy-Connection")).Equals("keep-alive")
+	assert.String(req.Header.Get("Proxy-Authenticate")).Equals("abc")
 
 	StripHopByHopHeaders(req)
-	assert.StringLiteral(req.Header.Get("Connection")).Equals("close")
-	assert.StringLiteral(req.Header.Get("Foo")).Equals("")
-	assert.StringLiteral(req.Header.Get("Bar")).Equals("")
-	assert.StringLiteral(req.Header.Get("Proxy-Connection")).Equals("")
-	assert.StringLiteral(req.Header.Get("Proxy-Authenticate")).Equals("")
+	assert.String(req.Header.Get("Connection")).Equals("close")
+	assert.String(req.Header.Get("Foo")).Equals("")
+	assert.String(req.Header.Get("Bar")).Equals("")
+	assert.String(req.Header.Get("Proxy-Connection")).Equals("")
+	assert.String(req.Header.Get("Proxy-Authenticate")).Equals("")
 }
 
 func TestNormalGetRequest(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	testPacketDispatcher := testdispatcher.NewTestPacketDispatcher(nil)
 

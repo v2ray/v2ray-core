@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
@@ -32,7 +31,7 @@ func allFilesExists(files ...string) bool {
 }
 
 func TestBuildMacOS(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 	binPath = filepath.Join(os.Getenv("GOPATH"), "testing")
 	cleanBinPath()
 

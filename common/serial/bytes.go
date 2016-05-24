@@ -2,10 +2,24 @@ package serial
 
 import (
 	"bytes"
+	"encoding/hex"
+	"strings"
 )
 
-type Bytes interface {
-	Bytes() []byte
+func ByteToHexString(value byte) string {
+	return hex.EncodeToString([]byte{value})
+}
+
+func BytesToUint16(value []byte) uint16 {
+	return uint16(value[0])<<8 + uint16(value[1])
+}
+
+func BytesToHexString(value []byte) string {
+	strs := make([]string, len(value))
+	for i, b := range value {
+		strs[i] = hex.EncodeToString([]byte{b})
+	}
+	return "[" + strings.Join(strs, ",") + "]"
 }
 
 type BytesT []byte

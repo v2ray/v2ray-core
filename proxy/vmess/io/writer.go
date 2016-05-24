@@ -35,5 +35,5 @@ func Authenticate(buffer *alloc.Buffer) {
 	buffer.SliceBack(4)
 	fnvHash.Sum(buffer.Value[:0])
 
-	buffer.Prepend(serial.Uint16Literal(uint16(buffer.Len())).Bytes())
+	buffer.Prepend(serial.Uint16ToBytes(uint16(buffer.Len())))
 }

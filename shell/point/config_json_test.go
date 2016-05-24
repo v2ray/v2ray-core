@@ -11,12 +11,11 @@ import (
 	_ "github.com/v2ray/v2ray-core/app/router/rules"
 	. "github.com/v2ray/v2ray-core/shell/point"
 
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestClientSampleConfig(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	GOPATH := os.Getenv("GOPATH")
 	baseDir := filepath.Join(GOPATH, "src", "github.com", "v2ray", "v2ray-core", "release", "config")
@@ -28,15 +27,15 @@ func TestClientSampleConfig(t *testing.T) {
 	assert.Pointer(pointConfig.InboundConfig).IsNotNil()
 	assert.Pointer(pointConfig.OutboundConfig).IsNotNil()
 
-	assert.StringLiteral(pointConfig.InboundConfig.Protocol).Equals("socks")
+	assert.String(pointConfig.InboundConfig.Protocol).Equals("socks")
 	assert.Pointer(pointConfig.InboundConfig.Settings).IsNotNil()
 
-	assert.StringLiteral(pointConfig.OutboundConfig.Protocol).Equals("vmess")
+	assert.String(pointConfig.OutboundConfig.Protocol).Equals("vmess")
 	assert.Pointer(pointConfig.OutboundConfig.Settings).IsNotNil()
 }
 
 func TestServerSampleConfig(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	GOPATH := os.Getenv("GOPATH")
 	baseDir := filepath.Join(GOPATH, "src", "github.com", "v2ray", "v2ray-core", "release", "config")
@@ -48,15 +47,15 @@ func TestServerSampleConfig(t *testing.T) {
 	assert.Pointer(pointConfig.InboundConfig).IsNotNil()
 	assert.Pointer(pointConfig.OutboundConfig).IsNotNil()
 
-	assert.StringLiteral(pointConfig.InboundConfig.Protocol).Equals("vmess")
+	assert.String(pointConfig.InboundConfig.Protocol).Equals("vmess")
 	assert.Pointer(pointConfig.InboundConfig.Settings).IsNotNil()
 
-	assert.StringLiteral(pointConfig.OutboundConfig.Protocol).Equals("freedom")
+	assert.String(pointConfig.OutboundConfig.Protocol).Equals("freedom")
 	assert.Pointer(pointConfig.OutboundConfig.Settings).IsNotNil()
 }
 
 func TestDefaultValueOfRandomAllocation(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	rawJson := `{
     "protocol": "vmess",
@@ -70,7 +69,7 @@ func TestDefaultValueOfRandomAllocation(t *testing.T) {
 	inboundDetourConfig := new(InboundDetourConfig)
 	err := json.Unmarshal([]byte(rawJson), inboundDetourConfig)
 	assert.Error(err).IsNil()
-	assert.StringLiteral(inboundDetourConfig.Allocation.Strategy).Equals(AllocationStrategyRandom)
+	assert.String(inboundDetourConfig.Allocation.Strategy).Equals(AllocationStrategyRandom)
 	assert.Int(inboundDetourConfig.Allocation.Concurrency).Equals(3)
 	assert.Int(inboundDetourConfig.Allocation.Refresh).Equals(5)
 }

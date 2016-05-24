@@ -7,13 +7,12 @@ import (
 	"testing"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 	"github.com/v2ray/v2ray-core/testing/servers/tcp"
 )
 
 func TestDynamicVMess(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	tcpServer := &tcp.Server{
 		Port: v2net.Port(50032),
@@ -47,7 +46,7 @@ func TestDynamicVMess(t *testing.T) {
 		response := bytes.NewBuffer(nil)
 		_, err = io.Copy(response, conn)
 		assert.Error(err).IsNil()
-		assert.StringLiteral("Processed: " + payload).Equals(string(response.Bytes()))
+		assert.String("Processed: " + payload).Equals(string(response.Bytes()))
 
 		conn.Close()
 	}

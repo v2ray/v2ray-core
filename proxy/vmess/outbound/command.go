@@ -7,7 +7,7 @@ import (
 
 func (this *VMessOutboundHandler) handleSwitchAccount(cmd *protocol.CommandSwitchAccount) {
 	primary := protocol.NewID(cmd.ID)
-	alters := protocol.NewAlterIDs(primary, cmd.AlterIds.Value())
+	alters := protocol.NewAlterIDs(primary, cmd.AlterIds)
 	user := protocol.NewUser(primary, alters, cmd.Level, "")
 	dest := v2net.TCPDestination(cmd.Host, cmd.Port)
 	this.receiverManager.AddDetour(NewReceiver(dest, user), cmd.ValidMin)

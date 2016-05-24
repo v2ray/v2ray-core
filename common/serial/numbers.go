@@ -4,6 +4,22 @@ import (
 	"strconv"
 )
 
+func Uint16ToBytes(value uint16) []byte {
+	return []byte{byte(value >> 8), byte(value)}
+}
+
+func Uint16ToString(value uint16) string {
+	return strconv.Itoa(int(value))
+}
+
+func IntToString(value int) string {
+	return Int64ToString(int64(value))
+}
+
+func Int64ToString(value int64) string {
+	return strconv.FormatInt(value, 10)
+}
+
 type Uint16 interface {
 	Value() uint16
 }

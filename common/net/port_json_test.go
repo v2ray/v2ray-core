@@ -7,12 +7,11 @@ import (
 	"testing"
 
 	. "github.com/v2ray/v2ray-core/common/net"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestIntPort(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	var portRange PortRange
 	err := json.Unmarshal([]byte("1234"), &portRange)
@@ -23,7 +22,7 @@ func TestIntPort(t *testing.T) {
 }
 
 func TestOverRangeIntPort(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	var portRange PortRange
 	err := json.Unmarshal([]byte("70000"), &portRange)
@@ -34,7 +33,7 @@ func TestOverRangeIntPort(t *testing.T) {
 }
 
 func TestSingleStringPort(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	var portRange PortRange
 	err := json.Unmarshal([]byte("\"1234\""), &portRange)
@@ -45,7 +44,7 @@ func TestSingleStringPort(t *testing.T) {
 }
 
 func TestStringPairPort(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	var portRange PortRange
 	err := json.Unmarshal([]byte("\"1234-5678\""), &portRange)
@@ -56,7 +55,7 @@ func TestStringPairPort(t *testing.T) {
 }
 
 func TestOverRangeStringPort(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	var portRange PortRange
 	err := json.Unmarshal([]byte("\"65536\""), &portRange)

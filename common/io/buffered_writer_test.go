@@ -5,12 +5,11 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 	. "github.com/v2ray/v2ray-core/common/io"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestBufferedWriter(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	content := alloc.NewLargeBuffer().Clear()
 

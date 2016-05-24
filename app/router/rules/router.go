@@ -108,10 +108,11 @@ func (this *Router) takeDetourWithoutCache(dest v2net.Destination) (string, erro
 }
 
 func (this *Router) TakeDetour(dest v2net.Destination) (string, error) {
-	rawEntry := this.cache.Get(dest)
+	destStr := dest.String()
+	rawEntry := this.cache.Get(destStr)
 	if rawEntry == nil {
 		tag, err := this.takeDetourWithoutCache(dest)
-		this.cache.Set(dest, newCacheEntry(tag, err))
+		this.cache.Set(destStr, newCacheEntry(tag, err))
 		return tag, err
 	}
 	entry := rawEntry.(*cacheEntry)

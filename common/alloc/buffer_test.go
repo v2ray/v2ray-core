@@ -4,12 +4,11 @@ import (
 	"testing"
 
 	. "github.com/v2ray/v2ray-core/common/alloc"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestBufferClear(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	buffer := NewBuffer().Clear()
 	defer buffer.Release()
@@ -23,7 +22,7 @@ func TestBufferClear(t *testing.T) {
 }
 
 func TestBufferIsFull(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	buffer := NewBuffer()
 	defer buffer.Release()
@@ -35,7 +34,7 @@ func TestBufferIsFull(t *testing.T) {
 }
 
 func TestBufferPrepend(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	buffer := NewBuffer().Clear()
 	defer buffer.Release()
@@ -51,11 +50,11 @@ func TestBufferPrepend(t *testing.T) {
 }
 
 func TestBufferString(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	buffer := NewBuffer().Clear()
 	defer buffer.Release()
 
 	buffer.AppendString("Test String")
-	assert.String(buffer).Equals("Test String")
+	assert.String(buffer.String()).Equals("Test String")
 }

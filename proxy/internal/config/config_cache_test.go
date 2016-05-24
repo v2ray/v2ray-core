@@ -3,12 +3,11 @@ package config
 import (
 	"testing"
 
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestRegisterInboundConfig(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 	initializeConfigCache()
 
 	protocol := "test_protocol"
@@ -29,7 +28,7 @@ func TestRegisterInboundConfig(t *testing.T) {
 }
 
 func TestRegisterOutboundConfig(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 	initializeConfigCache()
 
 	protocol := "test_protocol"

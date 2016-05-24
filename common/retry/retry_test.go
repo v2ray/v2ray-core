@@ -6,7 +6,6 @@ import (
 	"time"
 
 	. "github.com/v2ray/v2ray-core/common/retry"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
@@ -15,7 +14,7 @@ var (
 )
 
 func TestNoRetry(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	startTime := time.Now().Unix()
 	err := Timed(10, 100000).On(func() error {
@@ -28,7 +27,7 @@ func TestNoRetry(t *testing.T) {
 }
 
 func TestRetryOnce(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	startTime := time.Now()
 	called := 0
@@ -46,7 +45,7 @@ func TestRetryOnce(t *testing.T) {
 }
 
 func TestRetryMultiple(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	startTime := time.Now()
 	called := 0
@@ -64,7 +63,7 @@ func TestRetryMultiple(t *testing.T) {
 }
 
 func TestRetryExhausted(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	startTime := time.Now()
 	called := 0

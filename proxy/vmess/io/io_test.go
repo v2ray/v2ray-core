@@ -9,12 +9,11 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	. "github.com/v2ray/v2ray-core/proxy/vmess/io"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestAuthenticate(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	buffer := alloc.NewBuffer().Clear()
 	buffer.AppendBytes(1, 2, 3, 4)
@@ -27,7 +26,7 @@ func TestAuthenticate(t *testing.T) {
 }
 
 func TestSingleIO(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	content := bytes.NewBuffer(make([]byte, 0, 1024*1024))
 
@@ -42,7 +41,7 @@ func TestSingleIO(t *testing.T) {
 }
 
 func TestLargeIO(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	content := make([]byte, 1024*1024)
 	rand.Read(content)

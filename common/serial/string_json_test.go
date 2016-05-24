@@ -7,12 +7,11 @@ import (
 	"testing"
 
 	. "github.com/v2ray/v2ray-core/common/serial"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestInvalidStringTJson(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	var s StringT
 	err := json.Unmarshal([]byte("1"), &s)
@@ -20,10 +19,10 @@ func TestInvalidStringTJson(t *testing.T) {
 }
 
 func TestStringTParsing(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	var s StringT
 	err := json.Unmarshal([]byte("\"1\""), &s)
 	assert.Error(err).IsNil()
-	assert.String(s).Equals("1")
+	assert.String(s.String()).Equals("1")
 }

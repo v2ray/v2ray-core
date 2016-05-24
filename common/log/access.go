@@ -1,8 +1,9 @@
 package log
 
 import (
+	"fmt"
+
 	"github.com/v2ray/v2ray-core/common/log/internal"
-	"github.com/v2ray/v2ray-core/common/serial"
 )
 
 // AccessStatus is the status of an access request from clients.
@@ -29,7 +30,7 @@ func InitAccessLogger(file string) error {
 }
 
 // Access writes an access log.
-func Access(from, to serial.String, status AccessStatus, reason serial.String) {
+func Access(from, to fmt.Stringer, status AccessStatus, reason fmt.Stringer) {
 	accessLoggerInstance.Log(&internal.AccessLog{
 		From:   from,
 		To:     to,

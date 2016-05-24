@@ -7,13 +7,12 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
 	. "github.com/v2ray/v2ray-core/proxy/shadowsocks"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 	"github.com/v2ray/v2ray-core/transport"
 )
 
 func TestNormalRequestParsing(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	buffer := alloc.NewSmallBuffer().Clear()
 	buffer.AppendBytes(1, 127, 0, 0, 1, 0, 80)
@@ -26,7 +25,7 @@ func TestNormalRequestParsing(t *testing.T) {
 }
 
 func TestEmptyPayload(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	buffer := alloc.NewSmallBuffer().Clear()
 	_, err := ReadRequest(buffer, nil, false)
@@ -34,7 +33,7 @@ func TestEmptyPayload(t *testing.T) {
 }
 
 func TestSingleBytePayload(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	buffer := alloc.NewSmallBuffer().Clear().AppendBytes(1)
 	_, err := ReadRequest(buffer, nil, false)
@@ -42,7 +41,7 @@ func TestSingleBytePayload(t *testing.T) {
 }
 
 func TestWrongAddressType(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	buffer := alloc.NewSmallBuffer().Clear().AppendBytes(5)
 	_, err := ReadRequest(buffer, nil, false)
@@ -50,7 +49,7 @@ func TestWrongAddressType(t *testing.T) {
 }
 
 func TestInsufficientAddressRequest(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	buffer := alloc.NewSmallBuffer().Clear().AppendBytes(1, 1)
 	_, err := ReadRequest(buffer, nil, false)
@@ -66,7 +65,7 @@ func TestInsufficientAddressRequest(t *testing.T) {
 }
 
 func TestInsufficientPortRequest(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	buffer := alloc.NewSmallBuffer().Clear().AppendBytes(1, 1, 2, 3, 4, 5)
 	_, err := ReadRequest(buffer, nil, false)
@@ -74,7 +73,7 @@ func TestInsufficientPortRequest(t *testing.T) {
 }
 
 func TestOTARequest(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	buffer := alloc.NewSmallBuffer().Clear()
 	buffer.AppendBytes(0x13, 13, 119, 119, 119, 46, 118, 50, 114, 97, 121, 46, 99, 111, 109, 0, 0, 239, 115, 52, 212, 178, 172, 26, 6, 168, 0)
@@ -89,7 +88,7 @@ func TestOTARequest(t *testing.T) {
 }
 
 func TestInvalidOTARequest(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	buffer := alloc.NewSmallBuffer().Clear()
 	buffer.AppendBytes(0x13, 13, 119, 119, 119, 46, 118, 50, 114, 97, 121, 46, 99, 111, 109, 0, 0, 239, 115, 52, 212, 178, 172, 26, 6, 168, 1)
@@ -102,7 +101,7 @@ func TestInvalidOTARequest(t *testing.T) {
 }
 
 func TestUDPRequestParsing(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	buffer := alloc.NewSmallBuffer().Clear()
 	buffer.AppendBytes(1, 127, 0, 0, 1, 0, 80, 1, 2, 3, 4, 5, 6)
@@ -116,7 +115,7 @@ func TestUDPRequestParsing(t *testing.T) {
 }
 
 func TestUDPRequestWithOTA(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	buffer := alloc.NewSmallBuffer().Clear()
 	buffer.AppendBytes(

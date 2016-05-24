@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	. "github.com/v2ray/v2ray-core/common/crypto"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
@@ -19,7 +18,7 @@ func mustDecodeHex(s string) []byte {
 }
 
 func TestChaCha20Stream(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	var cases = []struct {
 		key    []byte
@@ -58,7 +57,7 @@ func TestChaCha20Stream(t *testing.T) {
 }
 
 func TestChaCha20Decoding(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	key := make([]byte, 32)
 	rand.Read(key)

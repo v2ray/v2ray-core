@@ -5,18 +5,19 @@ import (
 	"testing"
 
 	. "github.com/v2ray/v2ray-core/common/net"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func parseCIDR(str string) *net.IPNet {
 	_, ipNet, err := net.ParseCIDR(str)
-	assert.Error(err).IsNil()
+	if err != nil {
+		panic(err)
+	}
 	return ipNet
 }
 
 func TestIPNet(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	ipNet := NewIPNet()
 	ipNet.Add(parseCIDR(("0.0.0.0/8")))

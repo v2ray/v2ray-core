@@ -4,38 +4,35 @@ import (
 	"github.com/v2ray/v2ray-core/common/serial"
 )
 
-func Int(value int) *IntSubject {
-	return &IntSubject{value: serial.IntLiteral(value)}
+func (this *Assert) Int(value int) *IntSubject {
+	return &IntSubject{
+		Subject: Subject{
+			a:    this,
+			disp: serial.IntToString(value),
+		},
+		value: value,
+	}
 }
 
 type IntSubject struct {
 	Subject
-	value serial.IntLiteral
-}
-
-func (subject *IntSubject) Named(name string) *IntSubject {
-	subject.Subject.Named(name)
-	return subject
-}
-
-func (subject *IntSubject) DisplayString() string {
-	return subject.Subject.DisplayString(subject.value.String())
+	value int
 }
 
 func (subject *IntSubject) Equals(expectation int) {
-	if subject.value.Value() != expectation {
-		subject.Fail(subject.DisplayString(), "is equal to", serial.IntLiteral(expectation))
+	if subject.value != expectation {
+		subject.Fail("is equal to", serial.IntToString(expectation))
 	}
 }
 
 func (subject *IntSubject) GreaterThan(expectation int) {
-	if subject.value.Value() <= expectation {
-		subject.Fail(subject.DisplayString(), "is greater than", serial.IntLiteral(expectation))
+	if subject.value <= expectation {
+		subject.Fail("is greater than", serial.IntToString(expectation))
 	}
 }
 
 func (subject *IntSubject) LessThan(expectation int) {
-	if subject.value.Value() >= expectation {
-		subject.Fail(subject.DisplayString(), "is less than", serial.IntLiteral(expectation))
+	if subject.value >= expectation {
+		subject.Fail("is less than", serial.IntToString(expectation))
 	}
 }

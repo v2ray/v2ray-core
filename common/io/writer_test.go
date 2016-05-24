@@ -7,12 +7,11 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 	. "github.com/v2ray/v2ray-core/common/io"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestAdaptiveWriter(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	lb := alloc.NewLargeBuffer()
 	rand.Read(lb.Value)

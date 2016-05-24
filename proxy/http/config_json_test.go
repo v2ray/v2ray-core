@@ -8,12 +8,11 @@ import (
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	. "github.com/v2ray/v2ray-core/proxy/http"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestOwnHosts(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	rawJson := `{
     "ownHosts": [

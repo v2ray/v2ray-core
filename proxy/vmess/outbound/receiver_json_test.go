@@ -7,12 +7,11 @@ import (
 	"testing"
 
 	. "github.com/v2ray/v2ray-core/proxy/vmess/outbound"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestConfigTargetParsing(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	rawJson := `{
     "address": "127.0.0.1",
@@ -29,7 +28,7 @@ func TestConfigTargetParsing(t *testing.T) {
 	receiver := new(Receiver)
 	err := json.Unmarshal([]byte(rawJson), &receiver)
 	assert.Error(err).IsNil()
-	assert.String(receiver.Destination).Equals("tcp:127.0.0.1:80")
+	assert.Destination(receiver.Destination).EqualsString("tcp:127.0.0.1:80")
 	assert.Int(len(receiver.Accounts)).Equals(1)
-	assert.String(receiver.Accounts[0].ID).Equals("e641f5ad-9397-41e3-bf1a-e8740dfed019")
+	assert.String(receiver.Accounts[0].ID.String()).Equals("e641f5ad-9397-41e3-bf1a-e8740dfed019")
 }

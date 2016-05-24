@@ -2,11 +2,16 @@ package assert
 
 import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/common/serial"
 )
 
-func Address(value v2net.Address) *AddressSubject {
-	return &AddressSubject{value: value}
+func (this *Assert) Address(value v2net.Address) *AddressSubject {
+	return &AddressSubject{
+		Subject: Subject{
+			disp: value.String(),
+			a:    this,
+		},
+		value: value,
+	}
 }
 
 type AddressSubject struct {
@@ -14,53 +19,62 @@ type AddressSubject struct {
 	value v2net.Address
 }
 
-func (subject *AddressSubject) Named(name string) *AddressSubject {
-	subject.Subject.Named(name)
-	return subject
-}
-
-func (subject *AddressSubject) DisplayString() string {
-	return subject.Subject.DisplayString(subject.value.String())
+func (subject *AddressSubject) NotEquals(another v2net.Address) {
+	if subject.value.Equals(another) {
+		subject.Fail("not equals to", another.String())
+	}
 }
 
 func (subject *AddressSubject) Equals(another v2net.Address) {
 	if !subject.value.Equals(another) {
-		subject.Fail(subject.DisplayString(), "equals to", another)
+		subject.Fail("equals to", another.String())
+	}
+}
+
+func (subject *AddressSubject) NotEqualsString(another string) {
+	if subject.value.String() == another {
+		subject.Fail("not equals to string", another)
+	}
+}
+
+func (subject *AddressSubject) EqualsString(another string) {
+	if subject.value.String() != another {
+		subject.Fail("equals to string", another)
 	}
 }
 
 func (subject *AddressSubject) IsIPv4() {
 	if !subject.value.IsIPv4() {
-		subject.Fail(subject.DisplayString(), "is", serial.StringT("an IPv4 address"))
+		subject.Fail("is", "an IPv4 address")
 	}
 }
 
 func (subject *AddressSubject) IsNotIPv4() {
 	if subject.value.IsIPv4() {
-		subject.Fail(subject.DisplayString(), "is not", serial.StringT("an IPv4 address"))
+		subject.Fail("is not", "an IPv4 address")
 	}
 }
 
 func (subject *AddressSubject) IsIPv6() {
 	if !subject.value.IsIPv6() {
-		subject.Fail(subject.DisplayString(), "is", serial.StringT("an IPv6 address"))
+		subject.Fail("is", "an IPv6 address")
 	}
 }
 
 func (subject *AddressSubject) IsNotIPv6() {
 	if subject.value.IsIPv6() {
-		subject.Fail(subject.DisplayString(), "is not", serial.StringT("an IPv6 address"))
+		subject.Fail("is not", "an IPv6 address")
 	}
 }
 
 func (subject *AddressSubject) IsDomain() {
 	if !subject.value.IsDomain() {
-		subject.Fail(subject.DisplayString(), "is", serial.StringT("a domain address"))
+		subject.Fail("is", "a domain address")
 	}
 }
 
 func (subject *AddressSubject) IsNotDomain() {
 	if subject.value.IsDomain() {
-		subject.Fail(subject.DisplayString(), "is not", serial.StringT("a domain address"))
+		subject.Fail("is not", "a domain address")
 	}
 }

@@ -5,12 +5,11 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 	. "github.com/v2ray/v2ray-core/proxy/shadowsocks"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestNormalChunkReading(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	buffer := alloc.NewBuffer().Clear().AppendBytes(
 		0, 8, 39, 228, 69, 96, 133, 39, 254, 26, 201, 70, 11, 12, 13, 14, 15, 16, 17, 18)

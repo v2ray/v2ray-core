@@ -6,12 +6,11 @@ import (
 	"encoding/json"
 	"testing"
 
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestConfigParsing(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	rawJson := `{
     "method": "aes-128-cfb",

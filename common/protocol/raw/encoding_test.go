@@ -8,12 +8,11 @@ import (
 	"github.com/v2ray/v2ray-core/common/protocol"
 	. "github.com/v2ray/v2ray-core/common/protocol/raw"
 	"github.com/v2ray/v2ray-core/common/uuid"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestRequestSerialization(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	user := protocol.NewUser(
 		protocol.NewID(uuid.New()),

@@ -11,12 +11,11 @@ import (
 	"github.com/v2ray/v2ray-core/app/proxyman"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy/freedom"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestDnsAdd(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	space := app.NewSpace()
 

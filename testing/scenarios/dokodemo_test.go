@@ -5,13 +5,12 @@ import (
 	"testing"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 	"github.com/v2ray/v2ray-core/testing/servers/tcp"
 )
 
 func TestDokodemoTCP(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	tcpServer := &tcp.Server{
 		Port: v2net.Port(50016),
@@ -47,7 +46,7 @@ func TestDokodemoTCP(t *testing.T) {
 		response := make([]byte, 1024)
 		nBytes, err = conn.Read(response)
 		assert.Error(err).IsNil()
-		assert.StringLiteral("Processed: " + payload).Equals(string(response[:nBytes]))
+		assert.String("Processed: " + payload).Equals(string(response[:nBytes]))
 		conn.Close()
 	}
 

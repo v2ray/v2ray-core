@@ -5,14 +5,13 @@ import (
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 	"github.com/v2ray/v2ray-core/testing/servers/tcp"
 	. "github.com/v2ray/v2ray-core/transport/dialer"
 )
 
 func TestDialDomain(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	server := &tcp.Server{
 		Port: v2nettesting.PickPort(),
@@ -23,6 +22,6 @@ func TestDialDomain(t *testing.T) {
 
 	conn, err := Dial(v2net.TCPDestination(v2net.DomainAddress("local.v2ray.com"), dest.Port()))
 	assert.Error(err).IsNil()
-	assert.StringLiteral(conn.RemoteAddr().String()).Equals("127.0.0.1:" + dest.Port().String())
+	assert.String(conn.RemoteAddr().String()).Equals("127.0.0.1:" + dest.Port().String())
 	conn.Close()
 }

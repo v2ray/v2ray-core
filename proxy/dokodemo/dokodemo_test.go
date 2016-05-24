@@ -12,14 +12,13 @@ import (
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	. "github.com/v2ray/v2ray-core/proxy/dokodemo"
 	"github.com/v2ray/v2ray-core/proxy/freedom"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 	"github.com/v2ray/v2ray-core/testing/servers/tcp"
 	"github.com/v2ray/v2ray-core/testing/servers/udp"
 )
 
 func TestDokodemoTCP(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	tcpServer := &tcp.Server{
 		Port: v2nettesting.PickPort(),
@@ -73,11 +72,11 @@ func TestDokodemoTCP(t *testing.T) {
 	assert.Error(err).IsNil()
 	tcpClient.Close()
 
-	assert.StringLiteral("Processed: " + data2Send).Equals(string(response[:nBytes]))
+	assert.String("Processed: " + data2Send).Equals(string(response[:nBytes]))
 }
 
 func TestDokodemoUDP(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	udpServer := &udp.Server{
 		Port: v2nettesting.PickPort(),

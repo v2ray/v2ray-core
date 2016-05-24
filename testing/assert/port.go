@@ -2,11 +2,16 @@ package assert
 
 import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/common/serial"
 )
 
-func Port(value v2net.Port) *PortSubject {
-	return &PortSubject{value: value}
+func (this *Assert) Port(value v2net.Port) *PortSubject {
+	return &PortSubject{
+		Subject: Subject{
+			a:    this,
+			disp: value.String(),
+		},
+		value: value,
+	}
 }
 
 type PortSubject struct {
@@ -14,35 +19,26 @@ type PortSubject struct {
 	value v2net.Port
 }
 
-func (subject *PortSubject) Named(name string) *PortSubject {
-	subject.Subject.Named(name)
-	return subject
-}
-
-func (subject *PortSubject) DisplayString() string {
-	return subject.Subject.DisplayString(subject.value.String())
-}
-
 func (subject *PortSubject) Equals(expectation v2net.Port) {
 	if subject.value.Value() != expectation.Value() {
-		subject.Fail(subject.DisplayString(), "is equal to", expectation)
+		subject.Fail("is equal to", expectation.String())
 	}
 }
 
 func (subject *PortSubject) GreaterThan(expectation v2net.Port) {
 	if subject.value.Value() <= expectation.Value() {
-		subject.Fail(subject.DisplayString(), "is greater than", expectation)
+		subject.Fail("is greater than", expectation.String())
 	}
 }
 
 func (subject *PortSubject) LessThan(expectation v2net.Port) {
 	if subject.value.Value() >= expectation.Value() {
-		subject.Fail(subject.DisplayString(), "is less than", expectation)
+		subject.Fail("is less than", expectation.String())
 	}
 }
 
 func (subject *PortSubject) IsValid() {
 	if subject.value == 0 {
-		subject.Fail(subject.DisplayString(), "is", serial.StringT("a valid port"))
+		subject.Fail("is", "a valid port")
 	}
 }

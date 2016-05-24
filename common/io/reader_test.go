@@ -6,12 +6,11 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 	. "github.com/v2ray/v2ray-core/common/io"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestAdaptiveReader(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	rawContent := make([]byte, 1024*1024)
 

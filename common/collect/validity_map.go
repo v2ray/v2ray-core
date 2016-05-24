@@ -3,8 +3,6 @@ package collect
 import (
 	"sync"
 	"sync/atomic"
-
-	"github.com/v2ray/v2ray-core/common/serial"
 )
 
 type Validity interface {
@@ -51,9 +49,9 @@ func (this *ValidityMap) cleanup() {
 	}
 }
 
-func (this *ValidityMap) Set(key serial.String, value Validity) {
+func (this *ValidityMap) Set(key string, value Validity) {
 	this.Lock()
-	this.cache[key.String()] = value
+	this.cache[key] = value
 	this.Unlock()
 	opCount := atomic.AddInt32(&this.opCount, 1)
 	if opCount > 1000 {
@@ -62,10 +60,10 @@ func (this *ValidityMap) Set(key serial.String, value Validity) {
 	}
 }
 
-func (this *ValidityMap) Get(key serial.String) Validity {
+func (this *ValidityMap) Get(key string) Validity {
 	this.RLock()
 	defer this.RUnlock()
-	if value, found := this.cache[key.String()]; found {
+	if value, found := this.cache[key]; found {
 		return value
 	}
 	return nil

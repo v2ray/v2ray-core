@@ -5,7 +5,6 @@ import (
 
 	. "github.com/v2ray/v2ray-core/app/router/rules"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
@@ -14,7 +13,7 @@ func makeDomainDestination(domain string) v2net.Destination {
 }
 
 func TestChinaSites(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	rule := NewChinaSitesRule("tag")
 	assert.Bool(rule.Apply(makeDomainDestination("v.qq.com"))).IsTrue()

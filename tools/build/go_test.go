@@ -10,12 +10,11 @@ import (
 	"testing"
 	"time"
 
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestBuildAndRun(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	gopath := os.Getenv("GOPATH")
 	goOS := parseOS(runtime.GOOS)
@@ -42,7 +41,7 @@ func TestBuildAndRun(t *testing.T) {
 	errStr := string(errBuffer.Bytes())
 
 	assert.Bool(strings.Contains(outStr, "v1.0")).IsTrue()
-	assert.StringLiteral(errStr).Equals("")
+	assert.String(errStr).Equals("")
 
 	os.Remove(target)
 }

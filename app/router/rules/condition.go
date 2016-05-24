@@ -3,9 +3,9 @@ package rules
 import (
 	"net"
 	"regexp"
+	"strings"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/common/serial"
 )
 
 type Condition interface {
@@ -63,12 +63,12 @@ func (this *AnyCondition) Len() int {
 }
 
 type PlainDomainMatcher struct {
-	pattern serial.StringT
+	pattern string
 }
 
 func NewPlainDomainMatcher(pattern string) *PlainDomainMatcher {
 	return &PlainDomainMatcher{
-		pattern: serial.StringT(pattern),
+		pattern: pattern,
 	}
 }
 
@@ -76,8 +76,8 @@ func (this *PlainDomainMatcher) Apply(dest v2net.Destination) bool {
 	if !dest.Address().IsDomain() {
 		return false
 	}
-	domain := serial.StringT(dest.Address().Domain())
-	return domain.Contains(this.pattern)
+	domain := dest.Address().Domain()
+	return strings.Contains(domain, this.pattern)
 }
 
 type RegexpDomainMatcher struct {
@@ -98,8 +98,8 @@ func (this *RegexpDomainMatcher) Apply(dest v2net.Destination) bool {
 	if !dest.Address().IsDomain() {
 		return false
 	}
-	domain := serial.StringT(dest.Address().Domain())
-	return this.pattern.MatchString(domain.ToLower().String())
+	domain := dest.Address().Domain()
+	return this.pattern.MatchString(strings.ToLower(domain))
 }
 
 type CIDRMatcher struct {

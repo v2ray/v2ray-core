@@ -7,12 +7,11 @@ import (
 	"testing"
 
 	. "github.com/v2ray/v2ray-core/common/serial"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestStringListUnmarshalError(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	rawJson := `1234`
 	list := new(StringTList)

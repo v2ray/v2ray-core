@@ -7,13 +7,12 @@ import (
 	"testing"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 	v2http "github.com/v2ray/v2ray-core/testing/servers/http"
 )
 
 func TestHttpProxy(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	httpServer := &v2http.Server{
 		Port:        v2net.Port(50042),
@@ -41,7 +40,7 @@ func TestHttpProxy(t *testing.T) {
 
 	content, err := ioutil.ReadAll(resp.Body)
 	assert.Error(err).IsNil()
-	assert.StringLiteral(string(content)).Equals("Home")
+	assert.String(string(content)).Equals("Home")
 
 	CloseAllServers()
 }

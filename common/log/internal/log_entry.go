@@ -5,12 +5,11 @@ import (
 
 	"github.com/v2ray/v2ray-core/common"
 	"github.com/v2ray/v2ray-core/common/alloc"
-	"github.com/v2ray/v2ray-core/common/serial"
 )
 
 type LogEntry interface {
 	common.Releasable
-	serial.String
+	fmt.Stringer
 }
 
 type ErrorLog struct {
@@ -37,7 +36,7 @@ func (this *ErrorLog) String() string {
 			b.AppendString(typedVal)
 		case *string:
 			b.AppendString(*typedVal)
-		case serial.String:
+		case fmt.Stringer:
 			b.AppendString(typedVal.String())
 		case error:
 			b.AppendString(typedVal.Error())
@@ -49,10 +48,10 @@ func (this *ErrorLog) String() string {
 }
 
 type AccessLog struct {
-	From   serial.String
-	To     serial.String
+	From   fmt.Stringer
+	To     fmt.Stringer
 	Status string
-	Reason serial.String
+	Reason fmt.Stringer
 }
 
 func (this *AccessLog) Release() {

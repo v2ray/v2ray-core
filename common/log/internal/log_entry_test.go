@@ -5,12 +5,11 @@ import (
 
 	. "github.com/v2ray/v2ray-core/common/log/internal"
 	"github.com/v2ray/v2ray-core/common/serial"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestAccessLog(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	entry := &AccessLog{
 		From:   serial.StringT("test_from"),
@@ -20,8 +19,8 @@ func TestAccessLog(t *testing.T) {
 	}
 
 	entryStr := entry.String()
-	assert.StringLiteral(entryStr).Contains(serial.StringT("test_from"))
-	assert.StringLiteral(entryStr).Contains(serial.StringT("test_to"))
-	assert.StringLiteral(entryStr).Contains(serial.StringT("test_reason"))
-	assert.StringLiteral(entryStr).Contains(serial.StringT("Accepted"))
+	assert.String(entryStr).Contains("test_from")
+	assert.String(entryStr).Contains("test_to")
+	assert.String(entryStr).Contains("test_reason")
+	assert.String(entryStr).Contains("Accepted")
 }

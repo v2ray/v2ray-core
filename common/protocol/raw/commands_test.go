@@ -7,12 +7,11 @@ import (
 	"github.com/v2ray/v2ray-core/common/protocol"
 	. "github.com/v2ray/v2ray-core/common/protocol/raw"
 	"github.com/v2ray/v2ray-core/common/uuid"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestSwitchAccount(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	sa := &protocol.CommandSwitchAccount{
 		Port:     1234,
@@ -34,8 +33,8 @@ func TestSwitchAccount(t *testing.T) {
 	assert.Pointer(sa.Host).IsNil()
 	assert.Pointer(sa2.Host).IsNil()
 	assert.Port(sa.Port).Equals(sa2.Port)
-	assert.String(sa.ID).Equals(sa2.ID.String())
-	assert.Uint16(sa.AlterIds.Value()).Equals(sa2.AlterIds.Value())
+	assert.String(sa.ID.String()).Equals(sa2.ID.String())
+	assert.Uint16(sa.AlterIds).Equals(sa2.AlterIds)
 	assert.Byte(byte(sa.Level)).Equals(byte(sa2.Level))
 	assert.Byte(sa.ValidMin).Equals(sa2.ValidMin)
 }

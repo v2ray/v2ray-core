@@ -17,12 +17,11 @@ import (
 	_ "github.com/v2ray/v2ray-core/proxy/vmess/inbound"
 	_ "github.com/v2ray/v2ray-core/proxy/vmess/outbound"
 	"github.com/v2ray/v2ray-core/shell/point"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestVMessInAndOut(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	id, err := uuid.ParseString("ad937d9d-6e23-4a5a-ba23-bce5092a7c51")
 	assert.Error(err).IsNil()

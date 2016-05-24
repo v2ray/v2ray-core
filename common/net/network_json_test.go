@@ -7,12 +7,11 @@ import (
 	"testing"
 
 	. "github.com/v2ray/v2ray-core/common/net"
-	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func TestArrayNetworkList(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	var list NetworkList
 	err := json.Unmarshal([]byte("[\"Tcp\"]"), &list)
@@ -22,7 +21,7 @@ func TestArrayNetworkList(t *testing.T) {
 }
 
 func TestStringNetworkList(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	var list NetworkList
 	err := json.Unmarshal([]byte("\"TCP, ip\""), &list)
@@ -32,7 +31,7 @@ func TestStringNetworkList(t *testing.T) {
 }
 
 func TestInvalidNetworkJson(t *testing.T) {
-	v2testing.Current(t)
+	assert := assert.On(t)
 
 	var list NetworkList
 	err := json.Unmarshal([]byte("0"), &list)

@@ -1,4 +1,4 @@
-package unit
+package assert
 
 import (
 	"bytes"
@@ -8,10 +8,19 @@ import (
 	"testing"
 )
 
-var tGlobal *testing.T
+func On(t *testing.T) *Assert {
+	return &Assert{
+		t: t,
+	}
+}
 
-func Current(t *testing.T) {
-	tGlobal = t
+type Assert struct {
+	t *testing.T
+}
+
+func (this *Assert) Fail(message string) {
+	fmt.Println(decorate(message))
+	this.t.Fail()
 }
 
 func getCaller() (string, int) {
@@ -58,9 +67,4 @@ func decorate(s string) string {
 	}
 	buf.WriteByte('\n')
 	return buf.String()
-}
-
-func Fail(message string) {
-	fmt.Println(decorate(message))
-	tGlobal.Fail()
 }

@@ -13,7 +13,7 @@ var (
 )
 
 // Port represents a network port in TCP and UDP protocol.
-type Port serial.Uint16Literal
+type Port uint16
 
 // PortFromBytes converts a byte array to a Port, assuming bytes are in big endian order.
 // @unsafe Caller must ensure that the byte array has at least 2 elements.
@@ -47,12 +47,12 @@ func (this Port) Value() uint16 {
 
 // Bytes returns the correspoding bytes of this Port, in big endian order.
 func (this Port) Bytes() []byte {
-	return serial.Uint16Literal(this).Bytes()
+	return serial.Uint16ToBytes(this.Value())
 }
 
 // String returns the string presentation of this Port.
 func (this Port) String() string {
-	return serial.Uint16Literal(this).String()
+	return serial.Uint16ToString(this.Value())
 }
 
 // PortRange represents a range of ports.
