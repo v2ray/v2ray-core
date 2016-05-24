@@ -1,6 +1,6 @@
 // +build json
 
-package serial
+package collect
 
 import (
 	"encoding/json"
@@ -8,17 +8,17 @@ import (
 	"strings"
 )
 
-func (this *StringTList) UnmarshalJSON(data []byte) error {
+func (this *StringList) UnmarshalJSON(data []byte) error {
 	var strarray []string
 	if err := json.Unmarshal(data, &strarray); err == nil {
-		*this = *NewStringTList(strarray)
+		*this = *NewStringList(strarray)
 		return nil
 	}
 
 	var rawstr string
 	if err := json.Unmarshal(data, &rawstr); err == nil {
 		strlist := strings.Split(rawstr, ",")
-		*this = *NewStringTList(strlist)
+		*this = *NewStringList(strlist)
 		return nil
 	}
 	return errors.New("Unknown format of a string list: " + string(data))

@@ -1,7 +1,9 @@
 package net
 
 import (
-	"github.com/v2ray/v2ray-core/common/serial"
+	"strings"
+
+	"github.com/v2ray/v2ray-core/common/collect"
 )
 
 const (
@@ -13,7 +15,7 @@ const (
 )
 
 // Network represents a communication network on internet.
-type Network serial.StringT
+type Network string
 
 func (this Network) AsList() *NetworkList {
 	list := NetworkList([]Network{this})
@@ -24,10 +26,10 @@ func (this Network) AsList() *NetworkList {
 type NetworkList []Network
 
 // NewNetworkList construsts a NetWorklist from the given StringListeralList.
-func NewNetworkList(networks serial.StringTList) NetworkList {
+func NewNetworkList(networks collect.StringList) NetworkList {
 	list := NetworkList(make([]Network, networks.Len()))
 	for idx, network := range networks {
-		list[idx] = Network(network.TrimSpace().ToLower())
+		list[idx] = Network(strings.ToLower(strings.TrimSpace(network)))
 	}
 	return list
 }

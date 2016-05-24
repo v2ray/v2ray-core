@@ -4,21 +4,21 @@ package shadowsocks
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	"github.com/v2ray/v2ray-core/proxy/internal/config"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
-		Cipher   serial.StringT `json:"method"`
-		Password serial.StringT `json:"password"`
-		UDP      bool           `json:"udp"`
-		Level    byte           `json:"level"`
-		Email    string         `json:"email"`
+		Cipher   string `json:"method"`
+		Password string `json:"password"`
+		UDP      bool   `json:"udp"`
+		Level    byte   `json:"level"`
+		Email    string `json:"email"`
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
@@ -26,8 +26,8 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 
 	this.UDP = jsonConfig.UDP
-	jsonConfig.Cipher = jsonConfig.Cipher.ToLower()
-	switch jsonConfig.Cipher.String() {
+	jsonConfig.Cipher = strings.ToLower(jsonConfig.Cipher)
+	switch jsonConfig.Cipher {
 	case "aes-256-cfb":
 		this.Cipher = &AesCfb{
 			KeyBytes: 32,
@@ -53,7 +53,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		log.Error("Shadowsocks: Password is not specified.")
 		return internal.ErrorBadConfiguration
 	}
-	this.Key = PasswordToCipherKey(jsonConfig.Password.String(), this.Cipher.KeySize())
+	this.Key = PasswordToCipherKey(jsonConfig.Password, this.Cipher.KeySize())
 
 	this.Level = protocol.UserLevel(jsonConfig.Level)
 	this.Email = jsonConfig.Email

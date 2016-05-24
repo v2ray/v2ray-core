@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	. "github.com/v2ray/v2ray-core/common/log/internal"
-	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
@@ -12,10 +11,10 @@ func TestAccessLog(t *testing.T) {
 	assert := assert.On(t)
 
 	entry := &AccessLog{
-		From:   serial.StringT("test_from"),
-		To:     serial.StringT("test_to"),
+		From:   "test_from",
+		To:     "test_to",
 		Status: "Accepted",
-		Reason: serial.StringT("test_reason"),
+		Reason: "test_reason",
 	}
 
 	entryStr := entry.String()

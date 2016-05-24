@@ -4,8 +4,8 @@ package freedom
 
 import (
 	"encoding/json"
+	"strings"
 
-	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/proxy/internal/config"
 )
 
@@ -18,8 +18,8 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	this.DomainStrategy = DomainStrategyAsIs
-	domainStrategy := serial.StringT(jsonConfig.DomainStrategy).ToLower()
-	if domainStrategy.String() == "useip" {
+	domainStrategy := strings.ToLower(jsonConfig.DomainStrategy)
+	if domainStrategy == "useip" {
 		this.DomainStrategy = DomainStrategyUseIP
 	}
 	return nil

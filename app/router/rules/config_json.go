@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	router "github.com/v2ray/v2ray-core/app/router"
+	"github.com/v2ray/v2ray-core/common/collect"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/common/serial"
 )
 
 type JsonRule struct {
@@ -21,8 +21,8 @@ type JsonRule struct {
 func parseFieldRule(msg json.RawMessage) (*Rule, error) {
 	type RawFieldRule struct {
 		JsonRule
-		Domain  *serial.StringTList `json:"domain"`
-		IP      *serial.StringTList `json:"ip"`
+		Domain  *collect.StringList `json:"domain"`
+		IP      *collect.StringList `json:"ip"`
 		Port    *v2net.PortRange    `json:"port"`
 		Network *v2net.NetworkList  `json:"network"`
 	}
@@ -37,14 +37,14 @@ func parseFieldRule(msg json.RawMessage) (*Rule, error) {
 		anyCond := NewAnyCondition()
 		for _, rawDomain := range *(rawFieldRule.Domain) {
 			var matcher Condition
-			if strings.HasPrefix(rawDomain.String(), "regexp:") {
-				rawMatcher, err := NewRegexpDomainMatcher(rawDomain.String()[7:])
+			if strings.HasPrefix(rawDomain, "regexp:") {
+				rawMatcher, err := NewRegexpDomainMatcher(rawDomain[7:])
 				if err != nil {
 					return nil, err
 				}
 				matcher = rawMatcher
 			} else {
-				matcher = NewPlainDomainMatcher(rawDomain.String())
+				matcher = NewPlainDomainMatcher(rawDomain)
 			}
 			anyCond.Add(matcher)
 		}
@@ -54,7 +54,7 @@ func parseFieldRule(msg json.RawMessage) (*Rule, error) {
 	if rawFieldRule.IP != nil && rawFieldRule.IP.Len() > 0 {
 		anyCond := NewAnyCondition()
 		for _, ipStr := range *(rawFieldRule.IP) {
-			cidrMatcher, err := NewCIDRMatcher(ipStr.String())
+			cidrMatcher, err := NewCIDRMatcher(ipStr)
 			if err != nil {
 				log.Error("Router: Invalid IP range in router rule: ", err)
 				return nil, err
@@ -128,10 +128,10 @@ func init() {
 			Rules:          make([]*Rule, len(jsonConfig.RuleList)),
 			DomainStrategy: DomainAsIs,
 		}
-		domainStrategy := serial.StringT(jsonConfig.DomainStrategy).ToLower()
-		if domainStrategy.String() == "alwaysip" {
+		domainStrategy := strings.ToLower(jsonConfig.DomainStrategy)
+		if domainStrategy == "alwaysip" {
 			config.DomainStrategy = AlwaysUseIP
-		} else if domainStrategy.String() == "ipifnonmatch" {
+		} else if domainStrategy == "ipifnonmatch" {
 			config.DomainStrategy = UseIPIfNonMatch
 		}
 		for idx, rawRule := range jsonConfig.RuleList {

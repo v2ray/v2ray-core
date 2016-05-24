@@ -12,7 +12,6 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/common/protocol/raw"
-	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/common/uuid"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
@@ -130,11 +129,11 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 
 	request, err := session.DecodeRequestHeader(reader)
 	if err != nil {
-		log.Access(connection.RemoteAddr(), serial.StringT(""), log.AccessRejected, serial.StringT(err.Error()))
+		log.Access(connection.RemoteAddr(), "", log.AccessRejected, err)
 		log.Warning("VMessIn: Invalid request from ", connection.RemoteAddr(), ": ", err)
 		return
 	}
-	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, serial.StringT(""))
+	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, "")
 	log.Debug("VMessIn: Received request for ", request.Destination())
 
 	ray := this.packetDispatcher.DispatchToOutbound(request.Destination())

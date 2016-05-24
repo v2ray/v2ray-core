@@ -1,8 +1,6 @@
 package log
 
 import (
-	"fmt"
-
 	"github.com/v2ray/v2ray-core/common/log/internal"
 )
 
@@ -30,7 +28,7 @@ func InitAccessLogger(file string) error {
 }
 
 // Access writes an access log.
-func Access(from, to fmt.Stringer, status AccessStatus, reason fmt.Stringer) {
+func Access(from, to interface{}, status AccessStatus, reason interface{}) {
 	accessLoggerInstance.Log(&internal.AccessLog{
 		From:   from,
 		To:     to,
