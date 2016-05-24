@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	_ "github.com/v2ray/v2ray-core/app/router/rules"
-	netassert "github.com/v2ray/v2ray-core/common/net/testing/assert"
 	. "github.com/v2ray/v2ray-core/shell/point"
 
 	v2testing "github.com/v2ray/v2ray-core/testing"
@@ -25,7 +24,7 @@ func TestClientSampleConfig(t *testing.T) {
 	pointConfig, err := LoadConfig(filepath.Join(baseDir, "vpoint_socks_vmess.json"))
 	assert.Error(err).IsNil()
 
-	netassert.Port(pointConfig.Port).IsValid()
+	assert.Port(pointConfig.Port).IsValid()
 	assert.Pointer(pointConfig.InboundConfig).IsNotNil()
 	assert.Pointer(pointConfig.OutboundConfig).IsNotNil()
 
@@ -45,7 +44,7 @@ func TestServerSampleConfig(t *testing.T) {
 	pointConfig, err := LoadConfig(filepath.Join(baseDir, "vpoint_vmess_freedom.json"))
 	assert.Error(err).IsNil()
 
-	netassert.Port(pointConfig.Port).IsValid()
+	assert.Port(pointConfig.Port).IsValid()
 	assert.Pointer(pointConfig.InboundConfig).IsNotNil()
 	assert.Pointer(pointConfig.OutboundConfig).IsNotNil()
 

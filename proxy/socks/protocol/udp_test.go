@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	netassert "github.com/v2ray/v2ray-core/common/net/testing/assert"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 	"github.com/v2ray/v2ray-core/transport"
@@ -34,6 +33,6 @@ func TestDomainAddressRequest(t *testing.T) {
 
 	assert.Byte(request.Fragment).Equals(1)
 	assert.String(request.Address).Equals("v2ray.com")
-	netassert.Port(request.Port).Equals(v2net.Port(80))
+	assert.Port(request.Port).Equals(v2net.Port(80))
 	assert.Bytes(request.Data.Value).Equals([]byte("Actual payload"))
 }

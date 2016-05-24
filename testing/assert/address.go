@@ -3,7 +3,6 @@ package assert
 import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/serial"
-	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func Address(value v2net.Address) *AddressSubject {
@@ -11,7 +10,7 @@ func Address(value v2net.Address) *AddressSubject {
 }
 
 type AddressSubject struct {
-	assert.Subject
+	Subject
 	value v2net.Address
 }
 

@@ -10,7 +10,6 @@ import (
 	. "github.com/v2ray/v2ray-core/app/dns"
 	"github.com/v2ray/v2ray-core/app/proxyman"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	netassert "github.com/v2ray/v2ray-core/common/net/testing/assert"
 	"github.com/v2ray/v2ray-core/proxy/freedom"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
@@ -37,5 +36,5 @@ func TestDnsAdd(t *testing.T) {
 
 	ips := server.Get(domain)
 	assert.Int(len(ips)).Equals(1)
-	netassert.IP(ips[0].To4()).Equals(net.IP([]byte{127, 0, 0, 1}))
+	assert.IP(ips[0].To4()).Equals(net.IP([]byte{127, 0, 0, 1}))
 }

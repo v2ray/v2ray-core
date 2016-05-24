@@ -7,7 +7,6 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	v2netassert "github.com/v2ray/v2ray-core/common/net/testing/assert"
 	"github.com/v2ray/v2ray-core/proxy"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
@@ -71,7 +70,7 @@ func TestRequestRead(t *testing.T) {
 	assert.Byte(request.Command).Named("Command").Equals(0x01)
 	assert.Byte(request.AddrType).Named("Address Type").Equals(0x01)
 	assert.Bytes(request.IPv4[:]).Named("IPv4").Equals([]byte{0x72, 0x72, 0x72, 0x72})
-	v2netassert.Port(request.Port).Named("Port").Equals(v2net.Port(53))
+	assert.Port(request.Port).Named("Port").Equals(v2net.Port(53))
 }
 
 func TestResponseWrite(t *testing.T) {
@@ -170,5 +169,5 @@ func TestIPv6Request(t *testing.T) {
 	assert.Error(err).IsNil()
 	assert.Byte(request.Command).Equals(1)
 	assert.Bytes(request.IPv6[:]).Equals([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6})
-	v2netassert.Port(request.Port).Equals(8)
+	assert.Port(request.Port).Equals(8)
 }

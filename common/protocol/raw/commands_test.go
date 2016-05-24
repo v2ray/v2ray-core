@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
-	netassert "github.com/v2ray/v2ray-core/common/net/testing/assert"
 	"github.com/v2ray/v2ray-core/common/protocol"
 	. "github.com/v2ray/v2ray-core/common/protocol/raw"
 	"github.com/v2ray/v2ray-core/common/uuid"
@@ -34,7 +33,7 @@ func TestSwitchAccount(t *testing.T) {
 	assert.Bool(ok).IsTrue()
 	assert.Pointer(sa.Host).IsNil()
 	assert.Pointer(sa2.Host).IsNil()
-	netassert.Port(sa.Port).Equals(sa2.Port)
+	assert.Port(sa.Port).Equals(sa2.Port)
 	assert.String(sa.ID).Equals(sa2.ID.String())
 	assert.Uint16(sa.AlterIds.Value()).Equals(sa2.AlterIds.Value())
 	assert.Byte(byte(sa.Level)).Equals(byte(sa2.Level))

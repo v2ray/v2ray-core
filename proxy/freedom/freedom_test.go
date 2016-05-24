@@ -14,7 +14,6 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
-	netassert "github.com/v2ray/v2ray-core/common/net/testing/assert"
 	. "github.com/v2ray/v2ray-core/proxy/freedom"
 	v2testing "github.com/v2ray/v2ray-core/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
@@ -88,6 +87,6 @@ func TestIPResolution(t *testing.T) {
 	space.Initialize()
 
 	ipDest := freedom.ResolveIP(v2net.TCPDestination(v2net.DomainAddress("v2ray.com"), v2net.Port(80)))
-	netassert.Destination(ipDest).IsTCP()
-	netassert.Address(ipDest.Address()).Equals(v2net.LocalHostIP)
+	assert.Destination(ipDest).IsTCP()
+	assert.Address(ipDest.Address()).Equals(v2net.LocalHostIP)
 }

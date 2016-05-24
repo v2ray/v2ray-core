@@ -5,7 +5,6 @@ import (
 	"net"
 
 	"github.com/v2ray/v2ray-core/common/serial"
-	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
 func IP(value net.IP) *IPSubject {
@@ -13,7 +12,7 @@ func IP(value net.IP) *IPSubject {
 }
 
 type IPSubject struct {
-	assert.Subject
+	Subject
 	value net.IP
 }
 

@@ -10,7 +10,6 @@ import (
 	"github.com/v2ray/v2ray-core/app/proxyman"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
-	netassert "github.com/v2ray/v2ray-core/common/net/testing/assert"
 	. "github.com/v2ray/v2ray-core/proxy/dokodemo"
 	"github.com/v2ray/v2ray-core/proxy/freedom"
 	v2testing "github.com/v2ray/v2ray-core/testing"
@@ -57,7 +56,7 @@ func TestDokodemoTCP(t *testing.T) {
 	port := v2nettesting.PickPort()
 	err = dokodemo.Listen(port)
 	assert.Error(err).IsNil()
-	netassert.Port(port).Equals(dokodemo.Port())
+	assert.Port(port).Equals(dokodemo.Port())
 
 	tcpClient, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 		IP:   []byte{127, 0, 0, 1},
@@ -115,7 +114,7 @@ func TestDokodemoUDP(t *testing.T) {
 	port := v2nettesting.PickPort()
 	err = dokodemo.Listen(port)
 	assert.Error(err).IsNil()
-	netassert.Port(port).Equals(dokodemo.Port())
+	assert.Port(port).Equals(dokodemo.Port())
 
 	udpClient, err := net.DialUDP("udp", nil, &net.UDPAddr{
 		IP:   []byte{127, 0, 0, 1},
@@ -130,6 +129,6 @@ func TestDokodemoUDP(t *testing.T) {
 	response := make([]byte, 1024)
 	nBytes, addr, err := udpClient.ReadFromUDP(response)
 	assert.Error(err).IsNil()
-	netassert.IP(addr.IP).Equals(v2net.LocalHostIP.IP())
+	assert.IP(addr.IP).Equals(v2net.LocalHostIP.IP())
 	assert.Bytes(response[:nBytes]).Equals([]byte("Processed: " + data2Send))
 }

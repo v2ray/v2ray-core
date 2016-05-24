@@ -5,7 +5,6 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	netassert "github.com/v2ray/v2ray-core/common/net/testing/assert"
 	"github.com/v2ray/v2ray-core/common/protocol"
 	. "github.com/v2ray/v2ray-core/common/protocol/raw"
 	"github.com/v2ray/v2ray-core/common/uuid"
@@ -45,6 +44,6 @@ func TestRequestSerialization(t *testing.T) {
 	assert.Byte(expectedRequest.Version).Equals(actualRequest.Version)
 	assert.Byte(byte(expectedRequest.Command)).Equals(byte(actualRequest.Command))
 	assert.Byte(byte(expectedRequest.Option)).Equals(byte(actualRequest.Option))
-	netassert.Address(expectedRequest.Address).Equals(actualRequest.Address)
-	netassert.Port(expectedRequest.Port).Equals(actualRequest.Port)
+	assert.Address(expectedRequest.Address).Equals(actualRequest.Address)
+	assert.Port(expectedRequest.Port).Equals(actualRequest.Port)
 }
