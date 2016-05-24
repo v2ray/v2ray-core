@@ -18,7 +18,7 @@ type Port uint16
 // PortFromBytes converts a byte array to a Port, assuming bytes are in big endian order.
 // @unsafe Caller must ensure that the byte array has at least 2 elements.
 func PortFromBytes(port []byte) Port {
-	return Port(serial.BytesT(port).Uint16Value())
+	return Port(serial.BytesToUint16(port))
 }
 
 // PortFromInt converts an integer to a Port.

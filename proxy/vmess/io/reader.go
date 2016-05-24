@@ -73,9 +73,9 @@ func (this *AuthChunkReader) Read() (*alloc.Buffer, error) {
 			}
 		}
 		log.Debug("VMess Reader: raw buffer: ", buffer.Value)
-		length := serial.BytesT(buffer.Value[:2]).Uint16Value()
+		length := serial.BytesToUint16(buffer.Value[:2])
 		this.chunkLength = int(length) - 4
-		this.validator = NewValidator(serial.BytesT(buffer.Value[2:6]).Uint32Value())
+		this.validator = NewValidator(serial.BytesToUint32(buffer.Value[2:6]))
 		buffer.SliceFrom(6)
 	} else if buffer.Len() < this.chunkLength {
 		_, err := buffer.FillFrom(this.reader)

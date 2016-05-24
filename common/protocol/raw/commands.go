@@ -55,7 +55,7 @@ func UnmarshalCommand(cmdId byte, data []byte) (protocol.ResponseCommand, error)
 		return nil, transport.ErrorCorruptedPacket
 	}
 	expectedAuth := Authenticate(data[4:])
-	actualAuth := serial.BytesT(data[:4]).Uint32Value()
+	actualAuth := serial.BytesToUint32(data[:4])
 	if expectedAuth != actualAuth {
 		return nil, transport.ErrorCorruptedPacket
 	}

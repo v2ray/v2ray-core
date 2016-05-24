@@ -5,6 +5,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/common"
 	"github.com/v2ray/v2ray-core/common/alloc"
+	"github.com/v2ray/v2ray-core/common/serial"
 )
 
 type LogEntry interface {
@@ -40,6 +41,8 @@ func (this *ErrorLog) String() string {
 			b.AppendString(typedVal.String())
 		case error:
 			b.AppendString(typedVal.Error())
+		case []byte:
+			b.AppendString(serial.BytesToHexString(typedVal))
 		default:
 			b.AppendString(fmt.Sprint(value))
 		}

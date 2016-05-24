@@ -1,12 +1,12 @@
 package shadowsocks
 
 import (
+	"bytes"
 	"io"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/transport"
 )
@@ -129,7 +129,7 @@ func ReadRequest(reader io.Reader, auth *Authenticator, udp bool) (*Request, err
 
 	if request.OTA {
 		actualAuth := auth.Authenticate(nil, buffer.Value[0:lenBuffer])
-		if !serial.BytesT(actualAuth).Equals(serial.BytesT(authBytes)) {
+		if !bytes.Equal(actualAuth, authBytes) {
 			log.Debug("Shadowsocks: Invalid OTA. Expecting ", actualAuth, ", but got ", authBytes)
 			log.Warning("Shadowsocks: Invalid OTA.")
 			return nil, proxy.ErrorInvalidAuthentication

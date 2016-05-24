@@ -1,6 +1,7 @@
 package shadowsocks
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha1"
 	"io"
@@ -79,7 +80,7 @@ func (this *ChunkReader) Read() (*alloc.Buffer, error) {
 	}
 	// There is a potential buffer overflow here. Large buffer is 64K bytes,
 	// while uin16 + 10 will be more than that
-	length := serial.BytesT(buffer.Value[:2]).Uint16Value() + AuthSize
+	length := serial.BytesToUint16(buffer.Value[:2]) + AuthSize
 	if _, err := io.ReadFull(this.reader, buffer.Value[:length]); err != nil {
 		buffer.Release()
 		return nil, err
@@ -90,7 +91,7 @@ func (this *ChunkReader) Read() (*alloc.Buffer, error) {
 	payload := buffer.Value[AuthSize:]
 
 	actualAuthBytes := this.auth.Authenticate(nil, payload)
-	if !serial.BytesT(authBytes).Equals(serial.BytesT(actualAuthBytes)) {
+	if !bytes.Equal(authBytes, actualAuthBytes) {
 		buffer.Release()
 		log.Debug("AuthenticationReader: Unexpected auth: ", authBytes)
 		return nil, transport.ErrorCorruptedPacket
