@@ -10,7 +10,7 @@ import (
 type Timestamp int64
 
 func (this Timestamp) Bytes() []byte {
-	return serial.Int64Literal(this).Bytes()
+	return serial.Int64ToBytes(int64(this))
 }
 
 type TimestampGenerator func() Timestamp

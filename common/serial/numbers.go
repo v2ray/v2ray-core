@@ -12,88 +12,29 @@ func Uint16ToString(value uint16) string {
 	return strconv.Itoa(int(value))
 }
 
+func Uint32ToBytes(value uint32) []byte {
+	return []byte{
+		byte(value >> 24),
+		byte(value >> 16),
+		byte(value >> 8),
+		byte(value),
+	}
+}
+
+func IntToBytes(value int) []byte {
+	return []byte{
+		byte(value >> 24),
+		byte(value >> 16),
+		byte(value >> 8),
+		byte(value),
+	}
+}
+
 func IntToString(value int) string {
 	return Int64ToString(int64(value))
 }
 
-func Int64ToString(value int64) string {
-	return strconv.FormatInt(value, 10)
-}
-
-type Uint16 interface {
-	Value() uint16
-}
-
-type Uint16Literal uint16
-
-func (this Uint16Literal) String() string {
-	return strconv.Itoa(int(this))
-}
-
-func (this Uint16Literal) Value() uint16 {
-	return uint16(this)
-}
-
-func (this Uint16Literal) Bytes() []byte {
-	return []byte{byte(this >> 8), byte(this)}
-}
-
-type Int interface {
-	Value() int
-}
-
-type IntLiteral int
-
-func (this IntLiteral) String() string {
-	return strconv.Itoa(int(this))
-}
-
-func (this IntLiteral) Value() int {
-	return int(this)
-}
-
-func (this IntLiteral) Bytes() []byte {
-	value := this.Value()
-	return []byte{
-		byte(value >> 24),
-		byte(value >> 16),
-		byte(value >> 8),
-		byte(value),
-	}
-}
-
-type Uint32Literal uint32
-
-func (this Uint32Literal) String() string {
-	return strconv.FormatUint(uint64(this.Value()), 10)
-}
-
-func (this Uint32Literal) Value() uint32 {
-	return uint32(this)
-}
-
-func (this Uint32Literal) Bytes() []byte {
-	value := this.Value()
-	return []byte{
-		byte(value >> 24),
-		byte(value >> 16),
-		byte(value >> 8),
-		byte(value),
-	}
-}
-
-type Int64Literal int64
-
-func (this Int64Literal) String() string {
-	return strconv.FormatInt(this.Value(), 10)
-}
-
-func (this Int64Literal) Value() int64 {
-	return int64(this)
-}
-
-func (this Int64Literal) Bytes() []byte {
-	value := this.Value()
+func Int64ToBytes(value int64) []byte {
 	return []byte{
 		byte(value >> 56),
 		byte(value >> 48),
@@ -104,4 +45,8 @@ func (this Int64Literal) Bytes() []byte {
 		byte(value >> 8),
 		byte(value),
 	}
+}
+
+func Int64ToString(value int64) string {
+	return strconv.FormatInt(value, 10)
 }
