@@ -228,30 +228,41 @@ func (this *HttpProxyServer) handlePlainHTTP(request *http.Request, dest v2net.D
 	request.Host = request.URL.Host
 	StripHopByHopHeaders(request)
 
-	requestBuffer := alloc.NewBuffer().Clear() // Don't release this buffer as it is passed into a Packet.
-	request.Write(requestBuffer)
-	log.Debug("Request to remote:\n", requestBuffer.Value)
-
 	ray := this.packetDispatcher.DispatchToOutbound(dest)
-	ray.InboundInput().Write(requestBuffer)
 	defer ray.InboundInput().Close()
+	defer ray.InboundOutput().Release()
 
-	var wg sync.WaitGroup
-	wg.Add(1)
+	var finish sync.WaitGroup
+	finish.Add(1)
 	go func() {
-		defer wg.Done()
+		defer finish.Done()
+		requestWriter := v2io.NewBufferedWriter(v2io.NewChainWriter(ray.InboundInput()))
+		err := request.Write(requestWriter)
+		if err != nil {
+			log.Warning("HTTP: Failed to write request: ", err)
+			return
+		}
+		requestWriter.Flush()
+	}()
+
+	finish.Add(1)
+	go func() {
+		defer finish.Done()
 		responseReader := bufio.NewReader(NewChanReader(ray.InboundOutput()))
 		response, err := http.ReadResponse(responseReader, request)
 		if err != nil {
+			log.Warning("HTTP: Failed to read response: ", err)
 			return
 		}
-		responseBuffer := alloc.NewBuffer().Clear()
-		defer responseBuffer.Release()
-		response.Write(responseBuffer)
-		writer.Write(responseBuffer.Value)
-		response.Body.Close()
+		responseWriter := v2io.NewBufferedWriter(writer)
+		err = response.Write(responseWriter)
+		if err != nil {
+			log.Warning("HTTP: Failed to write response: ", err)
+			return
+		}
+		responseWriter.Flush()
 	}()
-	wg.Wait()
+	finish.Wait()
 }
 
 func init() {

@@ -50,6 +50,7 @@ func (p *BufferPool) Free(buffer *Buffer) {
 }
 
 const (
+	SmallBufferSize = 1024 - defaultOffset
 	BufferSize      = 8*1024 - defaultOffset
 	LargeBufferSize = 64*1024 - defaultOffset
 )

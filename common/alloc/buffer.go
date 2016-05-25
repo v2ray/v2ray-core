@@ -159,3 +159,15 @@ func NewBuffer() *Buffer {
 func NewLargeBuffer() *Buffer {
 	return largePool.Allocate()
 }
+
+func NewBufferWithSize(size int) *Buffer {
+	if size <= SmallBufferSize {
+		return NewSmallBuffer()
+	}
+
+	if size <= BufferSize {
+		return NewBuffer()
+	}
+
+	return NewLargeBuffer()
+}
