@@ -11,6 +11,7 @@ import (
 )
 
 var (
+	flagTargetDir    = flag.String("dir", "", "Directory to put generated files.")
 	flagTargetOS     = flag.String("os", runtime.GOOS, "Target OS of this build.")
 	flagTargetArch   = flag.String("arch", runtime.GOARCH, "Target CPU arch of this build.")
 	flagArchive      = flag.Bool("zip", false, "Whether to make an archive of files or not.")
@@ -20,12 +21,18 @@ var (
 )
 
 func createTargetDirectory(version string, goOS GoOS, goArch GoArch) (string, error) {
-	suffix := getSuffix(goOS, goArch)
+	var targetDir string
+	if len(*flagTargetDir) > 0 {
+		targetDir = *flagTargetDir
+	} else {
+		suffix := getSuffix(goOS, goArch)
 
-	targetDir := filepath.Join(binPath, "v2ray-"+version+suffix)
-	if version != "custom" {
-		os.RemoveAll(targetDir)
+		targetDir = filepath.Join(binPath, "v2ray-"+version+suffix)
+		if version != "custom" {
+			os.RemoveAll(targetDir)
+		}
 	}
+
 	err := os.MkdirAll(targetDir, os.ModeDir|0777)
 	return targetDir, err
 }
