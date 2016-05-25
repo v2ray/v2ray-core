@@ -16,11 +16,11 @@
     "settings": {
       "vnext": [
         {
-          "address": "45.32.24.103",
-          "port": 38291,
+          "address": "v2ray.cool",
+          "port": 10086,
           "users": [
             {
-              "id": "8833948b-5861-4a0f-a1d6-83c5606881ff",
+              "id": "23ad6b10-8d1a-40f7-8ad0-e3e35cd38297",
               "alterId": 64
             }
           ]
@@ -35,10 +35,23 @@
       "tag": "direct"
     }
   ],
+  "dns": {
+    "servers": [
+      "8.8.8.8",
+      "8.8.4.4",
+      "localhost"
+    ]
+  },
   "routing": {
     "strategy": "rules",
     "settings": {
+      "domainStrategy": "IPIfNonMatch",
       "rules": [
+        {
+          "type": "field",
+          "port": "1-52",
+          "outboundTag": "direct"
+        },
         {
           "type": "field",
           "port": "54-79",
@@ -52,13 +65,6 @@
         {
           "type": "field",
           "port": "444-65535",
-          "outboundTag": "direct"
-        },
-        {
-          "type": "field",
-          "domain": [
-            "gc.kis.scr.kaspersky-labs.com"
-          ],
           "outboundTag": "direct"
         },
         {

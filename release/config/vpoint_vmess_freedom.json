@@ -1,5 +1,5 @@
 {
-  "port": 38291,
+  "port": 10086,
   "log" : {
     "access": "/var/log/v2ray/access.log",
     "error": "/var/log/v2ray/error.log",
@@ -10,7 +10,7 @@
     "settings": {
       "clients": [
         {
-          "id": "8833948b-5861-4a0f-a1d6-83c5606881ff",
+          "id": "23ad6b10-8d1a-40f7-8ad0-e3e35cd38297",
           "level": 1,
           "alterId": 64
         }
