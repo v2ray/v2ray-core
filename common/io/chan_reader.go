@@ -1,27 +1,29 @@
-package http
+package io
 
 import (
 	"io"
+	"sync"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
-	v2io "github.com/v2ray/v2ray-core/common/io"
 )
 
 type ChanReader struct {
-	stream  v2io.Reader
+	sync.Mutex
+	stream  Reader
 	current *alloc.Buffer
 	eof     bool
 }
 
-func NewChanReader(stream v2io.Reader) *ChanReader {
+func NewChanReader(stream Reader) *ChanReader {
 	this := &ChanReader{
 		stream: stream,
 	}
-	this.fill()
+	this.Fill()
 	return this
 }
 
-func (this *ChanReader) fill() {
+// @Private
+func (this *ChanReader) Fill() {
 	b, err := this.stream.Read()
 	this.current = b
 	if err != nil {
@@ -31,8 +33,14 @@ func (this *ChanReader) fill() {
 }
 
 func (this *ChanReader) Read(b []byte) (int, error) {
+	if this.eof {
+		return 0, io.EOF
+	}
+
+	this.Lock()
+	defer this.Unlock()
 	if this.current == nil {
-		this.fill()
+		this.Fill()
 		if this.eof {
 			return 0, io.EOF
 		}
@@ -45,4 +53,14 @@ func (this *ChanReader) Read(b []byte) (int, error) {
 		this.current.SliceFrom(nBytes)
 	}
 	return nBytes, nil
+}
+
+func (this *ChanReader) Release() {
+	this.Lock()
+	defer this.Unlock()
+
+	this.eof = true
+	this.current.Release()
+	this.current = nil
+	this.stream = nil
 }

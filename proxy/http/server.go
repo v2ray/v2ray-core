@@ -248,7 +248,7 @@ func (this *HttpProxyServer) handlePlainHTTP(request *http.Request, dest v2net.D
 	finish.Add(1)
 	go func() {
 		defer finish.Done()
-		responseReader := bufio.NewReader(NewChanReader(ray.InboundOutput()))
+		responseReader := bufio.NewReader(v2io.NewChanReader(ray.InboundOutput()))
 		response, err := http.ReadResponse(responseReader, request)
 		if err != nil {
 			log.Warning("HTTP: Failed to read response: ", err)
