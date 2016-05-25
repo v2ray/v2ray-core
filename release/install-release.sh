@@ -48,7 +48,7 @@ function update_software() {
 function install_component() {
   local COMPONENT=$1
   COMPONENT_CMD=$(command -v $COMPONENT)
-  if [ -n "${COMPONENT_CMD}"]; then
+  if [ -n "${COMPONENT_CMD}" ]; then
     return
   fi
 
@@ -71,9 +71,9 @@ VER="$(curl -s https://api.github.com/repos/v2ray/v2ray-core/releases/latest | g
 
 CUR_VER="$(/usr/bin/v2ray/v2ray -version | head -n 1 | cut -d " " -f2)"
 
-if [[ "$VER" == "$CUR_VER"]]; then
+if [[ "$VER" == "$CUR_VER" ]]; then
   echo "Lastest version $VER is already installed. Exiting..."
-  return
+  exit
 fi
 
 ARCH=$(uname -m)
