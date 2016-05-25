@@ -13,6 +13,10 @@ case $key in
     HELP="1"
     shift
     ;;
+    -f|--force)
+    FORCE="1"
+    shift
+    ;;
     *)
             # unknown option
     ;;
@@ -71,7 +75,7 @@ VER="$(curl -s https://api.github.com/repos/v2ray/v2ray-core/releases/latest | g
 
 CUR_VER="$(/usr/bin/v2ray/v2ray -version | head -n 1 | cut -d " " -f2)"
 
-if [[ "$VER" == "$CUR_VER" ]]; then
+if [[ "$VER" == "$CUR_VER" ]] && [[ "$FORCE" != "1" ]]; then
   echo "Lastest version $VER is already installed. Exiting..."
   exit
 fi
