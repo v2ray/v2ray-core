@@ -46,8 +46,13 @@ function update_software() {
 }
 
 function install_component() {
-  update_software
   local COMPONENT=$1
+  COMPONENT_CMD=$(command -v $COMPONENT)
+  if [ -n "${COMPONENT_CMD}"]; then
+    return
+  fi
+
+  update_software
   if [ -n "${YUM_CMD}" ]; then
     echo "Installing ${COMPONENT} via yum."
     ${YUM_CMD} -y -q install $COMPONENT
@@ -63,6 +68,13 @@ if pgrep "v2ray" > /dev/null ; then
 fi
 
 VER="$(curl -s https://api.github.com/repos/v2ray/v2ray-core/releases/latest | grep 'tag_name' | cut -d\" -f4)"
+
+CUR_VER="$(/usr/bin/v2ray/v2ray -version | head -n 1 | cut -d " " -f2)"
+
+if [[ "$VER" == "$CUR_VER"]]; then
+  echo "Lastest version $VER is already installed. Exiting..."
+  return
+fi
 
 ARCH=$(uname -m)
 VDIS="64"
