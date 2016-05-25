@@ -6,18 +6,9 @@ import (
 	"io"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
-	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/transport"
 )
-
-// @Private
-func AllocBuffer(size int) *alloc.Buffer {
-	if size < 8*1024-16 {
-		return alloc.NewBuffer()
-	}
-	return alloc.NewLargeBuffer()
-}
 
 // @Private
 type Validator struct {
@@ -37,7 +28,6 @@ func (this *Validator) Consume(b []byte) {
 }
 
 func (this *Validator) Validate() bool {
-	log.Debug("VMess Reader: Expected auth ", this.expectedAuth, " actual auth: ", this.actualAuth.Sum32())
 	return this.actualAuth.Sum32() == this.expectedAuth
 }
 
@@ -61,7 +51,7 @@ func (this *AuthChunkReader) Read() (*alloc.Buffer, error) {
 		buffer = this.last
 		this.last = nil
 	} else {
-		buffer = AllocBuffer(this.chunkLength).Clear()
+		buffer = alloc.NewBufferWithSize(4096).Clear()
 	}
 
 	if this.chunkLength == -1 {
@@ -72,7 +62,6 @@ func (this *AuthChunkReader) Read() (*alloc.Buffer, error) {
 				return nil, err
 			}
 		}
-		log.Debug("VMess Reader: raw buffer: ", buffer.Value)
 		length := serial.BytesToUint16(buffer.Value[:2])
 		this.chunkLength = int(length) - 4
 		this.validator = NewValidator(serial.BytesToUint32(buffer.Value[2:6]))
@@ -101,7 +90,7 @@ func (this *AuthChunkReader) Read() (*alloc.Buffer, error) {
 		}
 		leftLength := buffer.Len() - this.chunkLength
 		if leftLength > 0 {
-			this.last = AllocBuffer(leftLength).Clear()
+			this.last = alloc.NewBufferWithSize(leftLength + 4096).Clear()
 			this.last.Append(buffer.Value[this.chunkLength:])
 			buffer.Slice(0, this.chunkLength)
 		}
