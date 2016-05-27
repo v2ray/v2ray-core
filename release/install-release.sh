@@ -11,10 +11,16 @@ case $key in
     ;;
     -h|--help)
     HELP="1"
-    shift
     ;;
     -f|--force)
     FORCE="1"
+    ;;
+    --version)
+    VERSION="$2"
+    shift
+    ;;
+    --local)
+    LOCAL="$2"
     shift
     ;;
     *)
@@ -71,13 +77,16 @@ if pgrep "v2ray" > /dev/null ; then
   V2RAY_RUNNING=1
 fi
 
-VER="$(curl -s https://api.github.com/repos/v2ray/v2ray-core/releases/latest | grep 'tag_name' | cut -d\" -f4)"
+if [ -n "$VERSION" ]; then
+  VER="$VERSION"
+else
+  VER="$(curl -s https://api.github.com/repos/v2ray/v2ray-core/releases/latest | grep 'tag_name' | cut -d\" -f4)"
+  CUR_VER="$(/usr/bin/v2ray/v2ray -version | head -n 1 | cut -d " " -f2)"
 
-CUR_VER="$(/usr/bin/v2ray/v2ray -version | head -n 1 | cut -d " " -f2)"
-
-if [[ "$VER" == "$CUR_VER" ]] && [[ "$FORCE" != "1" ]]; then
-  echo "Lastest version $VER is already installed. Exiting..."
-  exit
+  if [[ "$VER" == "$CUR_VER" ]] && [[ "$FORCE" != "1" ]]; then
+    echo "Lastest version $VER is already installed. Exiting..."
+    exit
+  fi
 fi
 
 ARCH=$(uname -m)
@@ -91,21 +100,26 @@ elif [[ "$ARCH" == *"armv8"* ]]; then
   VDIS="arm64"
 fi
 
-DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/${VER}/v2ray-linux-${VDIS}.zip"
-
 rm -rf /tmp/v2ray
 mkdir -p /tmp/v2ray
 
-install_component "curl"
-install_component "unzip"
-
-if [ -n "${PROXY}" ]; then
-  echo "Downloading ${DOWNLOAD_LINK} via proxy ${PROXY}."
-  curl -x ${PROXY} -L -H "Cache-Control: no-cache" -o "/tmp/v2ray/v2ray.zip" ${DOWNLOAD_LINK}
+if [ -n "$LOCAL" ]; then
+  cp "$LOCAL" "/tmp/v2ray/v2ray.zip"
 else
-  echo "Downloading ${DOWNLOAD_LINK} directly."
-  curl -L -H "Cache-Control: no-cache" -o "/tmp/v2ray/v2ray.zip" ${DOWNLOAD_LINK}
+  DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/${VER}/v2ray-linux-${VDIS}.zip"
+
+  install_component "curl"
+
+  if [ -n "${PROXY}" ]; then
+    echo "Downloading ${DOWNLOAD_LINK} via proxy ${PROXY}."
+    curl -x ${PROXY} -L -H "Cache-Control: no-cache" -o "/tmp/v2ray/v2ray.zip" ${DOWNLOAD_LINK}
+  else
+    echo "Downloading ${DOWNLOAD_LINK} directly."
+    curl -L -H "Cache-Control: no-cache" -o "/tmp/v2ray/v2ray.zip" ${DOWNLOAD_LINK}
+  fi
 fi
+
+install_component "unzip"
 unzip "/tmp/v2ray/v2ray.zip" -d "/tmp/v2ray/"
 
 # Create folder for V2Ray log.
