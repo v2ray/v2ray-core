@@ -31,8 +31,12 @@ shift # past argument or value
 done
 
 if [[ "$HELP" == "1" ]]; then
-  echo "./install-release.sh [-p proxy]"
-  echo "To download through a proxy server, use -p socks5://127.0.0.1:1080 or -p http://127.0.0.1:3128 etc"
+  echo "./install-release.sh [-p proxy] [-h] [-f] [--version vx.y.z] [--local file]"
+  echo "-p: To download through a proxy server, use -p socks5://127.0.0.1:1080 or -p http://127.0.0.1:3128 etc"
+  echo "-h: Show help"
+  echo "-f: Force install"
+  echo "--version: Install a particular version"
+  echo "--local: Install from a local file"
   exit
 fi
 
