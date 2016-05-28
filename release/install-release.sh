@@ -156,10 +156,10 @@ if [ ! -f "/etc/v2ray/config.json" ]; then
   cp "/tmp/v2ray/v2ray-${VER}-linux-${VDIS}/vpoint_vmess_freedom.json" "/etc/v2ray/config.json"
 
   let PORT=$RANDOM+10000
-  sed -i "s/38291/${PORT}/g" "/etc/v2ray/config.json"
+  sed -i "s/10086/${PORT}/g" "/etc/v2ray/config.json"
 
   UUID=$(cat /proc/sys/kernel/random/uuid)
-  sed -i "s/8833948b-5861-4a0f-a1d6-83c5606881ff/${UUID}/g" "/etc/v2ray/config.json"
+  sed -i "s/23ad6b10-8d1a-40f7-8ad0-e3e35cd38297/${UUID}/g" "/etc/v2ray/config.json"
 
   echo "PORT:${PORT}"
   echo "UUID:${UUID}"
