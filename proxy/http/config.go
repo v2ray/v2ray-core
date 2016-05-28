@@ -48,3 +48,6 @@ func (this *Config) IsOwnHost(host v2net.Address) bool {
 	}
 	return false
 }
+
+type ClientConfig struct {
+}

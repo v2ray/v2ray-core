@@ -50,7 +50,11 @@ func (this *userByEmail) Get(email string) (*protocol.User, bool) {
 		if !found {
 			id := protocol.NewID(uuid.New())
 			alterIDs := protocol.NewAlterIDs(id, this.defaultAlterIDs)
-			user = protocol.NewUser(id, alterIDs, this.defaultLevel, email)
+			account := &protocol.VMessAccount{
+				ID:       id,
+				AlterIDs: alterIDs,
+			}
+			user = protocol.NewUser(account, this.defaultLevel, email)
 			this.cache[email] = user
 		}
 		this.Unlock()

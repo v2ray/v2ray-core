@@ -21,8 +21,8 @@ func (this *VMessInboundHandler) generateCommand(request *protocol.RequestHeader
 				user := inboundHandler.GetUser(request.User.Email)
 				return &protocol.CommandSwitchAccount{
 					Port:     inboundHandler.Port(),
-					ID:       user.ID.UUID(),
-					AlterIds: uint16(len(user.AlterIDs)),
+					ID:       user.Account.(*protocol.VMessAccount).ID.UUID(),
+					AlterIds: uint16(len(user.Account.(*protocol.VMessAccount).AlterIDs)),
 					Level:    user.Level,
 					ValidMin: byte(availableMin),
 				}

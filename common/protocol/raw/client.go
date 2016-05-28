@@ -52,7 +52,7 @@ func NewClientSession(idHash protocol.IDHash) *ClientSession {
 
 func (this *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writer io.Writer) {
 	timestamp := protocol.NewTimestampGenerator(protocol.NowTime(), 30)()
-	idHash := this.idHash(header.User.AnyValidID().Bytes())
+	idHash := this.idHash(header.User.Account.(*protocol.VMessAccount).AnyValidID().Bytes())
 	idHash.Write(timestamp.Bytes())
 	writer.Write(idHash.Sum(nil))
 
@@ -87,7 +87,8 @@ func (this *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, w
 	timestampHash := md5.New()
 	timestampHash.Write(hashTimestamp(timestamp))
 	iv := timestampHash.Sum(nil)
-	aesStream := crypto.NewAesEncryptionStream(header.User.ID.CmdKey(), iv)
+	account := header.User.Account.(*protocol.VMessAccount)
+	aesStream := crypto.NewAesEncryptionStream(account.ID.CmdKey(), iv)
 	aesStream.XORKeyStream(buffer.Value, buffer.Value)
 	writer.Write(buffer.Value)
 

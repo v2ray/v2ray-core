@@ -21,8 +21,11 @@ func TestUserParsing(t *testing.T) {
     "alterId": 100
   }`), user)
 	assert.Error(err).IsNil()
-	assert.String(user.ID.String()).Equals("96edb838-6d68-42ef-a933-25f7ac3a9d09")
 	assert.Byte(byte(user.Level)).Equals(1)
+
+	account, ok := user.Account.(*VMessAccount)
+	assert.Bool(ok).IsTrue()
+	assert.String(account.ID.String()).Equals("96edb838-6d68-42ef-a933-25f7ac3a9d09")
 }
 
 func TestInvalidUserJson(t *testing.T) {

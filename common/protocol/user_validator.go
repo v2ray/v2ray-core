@@ -107,18 +107,19 @@ L:
 func (this *TimedUserValidator) Add(user *User) error {
 	idx := len(this.validUsers)
 	this.validUsers = append(this.validUsers, user)
+	account := user.Account.(*VMessAccount)
 
 	nowSec := time.Now().Unix()
 
 	entry := &idEntry{
-		id:             user.ID,
+		id:             account.ID,
 		userIdx:        idx,
 		lastSec:        Timestamp(nowSec - cacheDurationSec),
 		lastSecRemoval: Timestamp(nowSec - cacheDurationSec*3),
 	}
 	this.generateNewHashes(Timestamp(nowSec+cacheDurationSec), idx, entry)
 	this.ids = append(this.ids, entry)
-	for _, alterid := range user.AlterIDs {
+	for _, alterid := range account.AlterIDs {
 		entry := &idEntry{
 			id:             alterid,
 			userIdx:        idx,

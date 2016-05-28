@@ -60,7 +60,8 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 	timestampHash := md5.New()
 	timestampHash.Write(hashTimestamp(timestamp))
 	iv := timestampHash.Sum(nil)
-	aesStream := crypto.NewAesDecryptionStream(user.ID.CmdKey(), iv)
+	account := user.Account.(*protocol.VMessAccount)
+	aesStream := crypto.NewAesDecryptionStream(account.ID.CmdKey(), iv)
 	decryptor := crypto.NewCryptionReader(aesStream, reader)
 
 	nBytes, err := io.ReadFull(decryptor, buffer.Value[:41])

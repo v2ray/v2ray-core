@@ -15,8 +15,10 @@ func TestRequestSerialization(t *testing.T) {
 	assert := assert.On(t)
 
 	user := protocol.NewUser(
-		protocol.NewID(uuid.New()),
-		nil,
+		&protocol.VMessAccount{
+			ID:       protocol.NewID(uuid.New()),
+			AlterIDs: nil,
+		},
 		protocol.UserLevelUntrusted,
 		"test@v2ray.com")
 

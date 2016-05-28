@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/v2ray/v2ray-core/common/protocol"
 	. "github.com/v2ray/v2ray-core/proxy/vmess/outbound"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
@@ -30,5 +31,7 @@ func TestConfigTargetParsing(t *testing.T) {
 	assert.Error(err).IsNil()
 	assert.Destination(receiver.Destination).EqualsString("tcp:127.0.0.1:80")
 	assert.Int(len(receiver.Accounts)).Equals(1)
-	assert.String(receiver.Accounts[0].ID.String()).Equals("e641f5ad-9397-41e3-bf1a-e8740dfed019")
+
+	account := receiver.Accounts[0].Account.(*protocol.VMessAccount)
+	assert.String(account.ID.String()).Equals("e641f5ad-9397-41e3-bf1a-e8740dfed019")
 }

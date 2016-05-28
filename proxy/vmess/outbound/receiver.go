@@ -25,9 +25,11 @@ func NewReceiver(dest v2net.Destination, users ...*protocol.User) *Receiver {
 func (this *Receiver) HasUser(user *protocol.User) bool {
 	this.RLock()
 	defer this.RUnlock()
+	account := user.Account.(*protocol.VMessAccount)
 	for _, u := range this.Accounts {
 		// TODO: handle AlterIds difference.
-		if u.ID.Equals(user.ID) {
+		uAccount := u.Account.(*protocol.VMessAccount)
+		if uAccount.ID.Equals(account.ID) {
 			return true
 		}
 	}

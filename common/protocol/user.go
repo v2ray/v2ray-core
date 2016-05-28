@@ -1,9 +1,5 @@
 package protocol
 
-import (
-	"github.com/v2ray/v2ray-core/common/dice"
-)
-
 type UserLevel byte
 
 const (
@@ -12,26 +8,17 @@ const (
 )
 
 type User struct {
-	ID       *ID
-	AlterIDs []*ID
-	Level    UserLevel
-	Email    string
+	Account Account
+	Level   UserLevel
+	Email   string
 }
 
-func NewUser(primary *ID, secondary []*ID, level UserLevel, email string) *User {
+func NewUser(account Account, level UserLevel, email string) *User {
 	return &User{
-		ID:       primary,
-		AlterIDs: secondary,
-		Level:    level,
-		Email:    email,
+		Account: account,
+		Level:   level,
+		Email:   email,
 	}
-}
-
-func (this *User) AnyValidID() *ID {
-	if len(this.AlterIDs) == 0 {
-		return this.ID
-	}
-	return this.AlterIDs[dice.Roll(len(this.AlterIDs))]
 }
 
 type UserSettings struct {
