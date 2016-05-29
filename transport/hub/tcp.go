@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"net"
+	"sync"
 
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -14,6 +15,7 @@ var (
 )
 
 type TCPHub struct {
+	sync.Mutex
 	listener     net.Listener
 	connCallback ConnectionHandler
 	accepting    bool
@@ -47,6 +49,9 @@ func ListenTCP(address v2net.Address, port v2net.Port, callback ConnectionHandle
 }
 
 func (this *TCPHub) Close() {
+	this.Lock()
+	defer this.Unlock()
+
 	this.accepting = false
 	this.listener.Close()
 	this.listener = nil
@@ -55,7 +60,14 @@ func (this *TCPHub) Close() {
 func (this *TCPHub) start() {
 	this.accepting = true
 	for this.accepting {
+		this.Lock()
+		if !this.accepting {
+			this.Unlock()
+			break
+		}
 		conn, err := this.listener.Accept()
+		this.Unlock()
+
 		if err != nil {
 			if this.accepting {
 				log.Warning("Listener: Failed to accept new TCP connection: ", err)
@@ -69,6 +81,12 @@ func (this *TCPHub) start() {
 	}
 }
 
-func (this *TCPHub) recycle(conn *net.TCPConn) {
-
+// @Private
+func (this *TCPHub) Recycle(conn net.Conn) {
+	if this.accepting {
+		go this.connCallback(&Connection{
+			conn:     conn,
+			listener: this,
+		})
+	}
 }

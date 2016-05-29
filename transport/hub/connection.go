@@ -10,6 +10,7 @@ type ConnectionHandler func(*Connection)
 type Connection struct {
 	conn     net.Conn
 	listener *TCPHub
+	reusable bool
 }
 
 func (this *Connection) Read(b []byte) (int, error) {
@@ -31,8 +32,11 @@ func (this *Connection) Close() error {
 	if this == nil || this.conn == nil {
 		return ErrorClosedConnection
 	}
-	err := this.conn.Close()
-	return err
+	if this.Reusable() {
+		this.listener.Recycle(this.conn)
+		return nil
+	}
+	return this.conn.Close()
 }
 
 func (this *Connection) Release() {
@@ -63,4 +67,12 @@ func (this *Connection) SetReadDeadline(t time.Time) error {
 
 func (this *Connection) SetWriteDeadline(t time.Time) error {
 	return this.conn.SetWriteDeadline(t)
+}
+
+func (this *Connection) SetReusable(reusable bool) {
+	this.reusable = reusable
+}
+
+func (this *Connection) Reusable() bool {
+	return this.reusable
 }
