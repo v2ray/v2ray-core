@@ -2,7 +2,5 @@
 {
   "editor.tabSize": 2,
   
-  "go.buildFlags": ["-tags", "json"],
-  "go.lintFlags": ["-tags", "json"],
-  "go.vetFlags": ["-tags", "json"]
+  "go.buildTags": "json"
 }
