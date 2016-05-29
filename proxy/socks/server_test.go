@@ -37,7 +37,8 @@ func TestSocksTcpConnect(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	config := &point.Config{
-		Port: port,
+		Port:     port,
+		ListenOn: v2net.LocalHostIP,
 		InboundConfig: &point.ConnectionConfig{
 			Protocol: "socks",
 			Settings: []byte(`
@@ -101,7 +102,8 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	config := &point.Config{
-		Port: port,
+		Port:     port,
+		ListenOn: v2net.LocalHostIP,
 		InboundConfig: &point.ConnectionConfig{
 			Protocol: "socks",
 			Settings: []byte(`
@@ -168,7 +170,8 @@ func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	config := &point.Config{
-		Port: port,
+		Port:     port,
+		ListenOn: v2net.LocalHostIP,
 		InboundConfig: &point.ConnectionConfig{
 			Protocol: "socks",
 			Settings: []byte(`
@@ -221,7 +224,8 @@ func TestSocksTcpConnectWithWrongAuthMethod(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	config := &point.Config{
-		Port: port,
+		Port:     port,
+		ListenOn: v2net.LocalHostIP,
 		InboundConfig: &point.ConnectionConfig{
 			Protocol: "socks",
 			Settings: []byte(`

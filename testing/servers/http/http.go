@@ -27,7 +27,7 @@ func (server *Server) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (server *Server) Start() (v2net.Destination, error) {
-	go http.ListenAndServe(":"+server.Port.String(), server)
+	go http.ListenAndServe("127.0.0.1:"+server.Port.String(), server)
 	return v2net.TCPDestination(v2net.LocalHostIP, v2net.Port(server.Port)), nil
 }
 

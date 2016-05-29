@@ -45,7 +45,8 @@ func TestVMessInAndOut(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	configA := &point.Config{
-		Port: portA,
+		Port:     portA,
+		ListenOn: v2net.LocalHostIP,
 		DNSConfig: &dns.Config{
 			NameServers: []v2net.Destination{
 				v2net.UDPDestination(v2net.DomainAddress("localhost"), v2net.Port(53)),
@@ -90,7 +91,8 @@ func TestVMessInAndOut(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	configB := &point.Config{
-		Port: portB,
+		Port:     portB,
+		ListenOn: v2net.LocalHostIP,
 		DNSConfig: &dns.Config{
 			NameServers: []v2net.Destination{
 				v2net.UDPDestination(v2net.DomainAddress("localhost"), v2net.Port(53)),

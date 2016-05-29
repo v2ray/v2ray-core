@@ -17,7 +17,7 @@ const (
 // An InboundHandler handles inbound network connections to V2Ray.
 type InboundHandler interface {
 	// Listen starts a InboundHandler by listen on a specific port.
-	Listen(port v2net.Port) error
+	Listen(on v2net.Address, port v2net.Port) error
 	// Close stops the handler to accepting anymore inbound connections.
 	Close()
 	// Port returns the port that the handler is listening on.

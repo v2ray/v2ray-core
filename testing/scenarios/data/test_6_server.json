@@ -1,5 +1,6 @@
 {
   "port": 50051,
+  "listen": "127.0.0.1",
   "inbound": {
     "protocol": "shadowsocks",
     "settings": {
@@ -11,6 +12,7 @@
     {
       "protocol": "shadowsocks",
       "port": 50055,
+      "listen": "127.0.0.1",
       "settings": {
         "method": "aes-128-cfb",
         "password": "v2ray-another",
@@ -20,6 +22,7 @@
     {
       "protocol": "shadowsocks",
       "port": 50056,
+      "listen": "127.0.0.1",
       "settings": {
         "method": "chacha20",
         "password": "new-password",

@@ -73,6 +73,7 @@ type VMessInboundHandler struct {
 	listener              *hub.TCPHub
 	features              *FeaturesConfig
 	listeningPort         v2net.Port
+	listeningAddress      v2net.Address
 }
 
 func (this *VMessInboundHandler) Port() v2net.Port {
@@ -97,17 +98,18 @@ func (this *VMessInboundHandler) GetUser(email string) *protocol.User {
 	return user
 }
 
-func (this *VMessInboundHandler) Listen(port v2net.Port) error {
+func (this *VMessInboundHandler) Listen(address v2net.Address, port v2net.Port) error {
 	if this.accepting {
-		if this.listeningPort == port {
+		if this.listeningPort == port && this.listeningAddress.Equals(address) {
 			return nil
 		} else {
 			return proxy.ErrorAlreadyListening
 		}
 	}
 	this.listeningPort = port
+	this.listeningAddress = address
 
-	tcpListener, err := hub.ListenTCP(port, this.HandleConnection, nil)
+	tcpListener, err := hub.ListenTCP(address, port, this.HandleConnection, nil)
 	if err != nil {
 		log.Error("Unable to listen tcp port ", port, ": ", err)
 		return err

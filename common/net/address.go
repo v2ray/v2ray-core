@@ -9,6 +9,7 @@ import (
 
 var (
 	LocalHostIP = IPAddress([]byte{127, 0, 0, 1})
+	AnyIP       = IPAddress([]byte{0, 0, 0, 0})
 )
 
 // Address represents a network address to be communicated with. It may be an IP address or domain

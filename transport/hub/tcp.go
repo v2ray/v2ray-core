@@ -19,9 +19,9 @@ type TCPHub struct {
 	accepting    bool
 }
 
-func ListenTCP(port v2net.Port, callback ConnectionHandler, tlsConfig *tls.Config) (*TCPHub, error) {
+func ListenTCP(address v2net.Address, port v2net.Port, callback ConnectionHandler, tlsConfig *tls.Config) (*TCPHub, error) {
 	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
-		IP:   []byte{0, 0, 0, 0},
+		IP:   address.IP(),
 		Port: int(port),
 		Zone: "",
 	})

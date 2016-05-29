@@ -16,7 +16,7 @@ type Server struct {
 
 func (server *Server) Start() (v2net.Destination, error) {
 	conn, err := net.ListenUDP("udp", &net.UDPAddr{
-		IP:   []byte{0, 0, 0, 0},
+		IP:   []byte{127, 0, 0, 1},
 		Port: int(server.Port),
 		Zone: "",
 	})

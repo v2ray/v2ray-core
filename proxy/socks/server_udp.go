@@ -8,9 +8,9 @@ import (
 	"github.com/v2ray/v2ray-core/transport/hub"
 )
 
-func (this *Server) listenUDP(port v2net.Port) error {
+func (this *Server) listenUDP(address v2net.Address, port v2net.Port) error {
 	this.udpServer = hub.NewUDPServer(this.packetDispatcher)
-	udpHub, err := hub.ListenUDP(port, this.handleUDPPayload)
+	udpHub, err := hub.ListenUDP(address, port, this.handleUDPPayload)
 	if err != nil {
 		log.Error("Socks: Failed to listen on udp port ", port)
 		return err

@@ -29,6 +29,7 @@ type HttpProxyServer struct {
 	config           *Config
 	tcpListener      *hub.TCPHub
 	listeningPort    v2net.Port
+	listeningAddress v2net.Address
 }
 
 func NewHttpProxyServer(config *Config, packetDispatcher dispatcher.PacketDispatcher) *HttpProxyServer {
@@ -52,21 +53,22 @@ func (this *HttpProxyServer) Close() {
 	}
 }
 
-func (this *HttpProxyServer) Listen(port v2net.Port) error {
+func (this *HttpProxyServer) Listen(address v2net.Address, port v2net.Port) error {
 	if this.accepting {
-		if this.listeningPort == port {
+		if this.listeningPort == port && this.listeningAddress.Equals(address) {
 			return nil
 		} else {
 			return proxy.ErrorAlreadyListening
 		}
 	}
 	this.listeningPort = port
+	this.listeningAddress = address
 
 	var tlsConfig *tls.Config = nil
 	if this.config.TlsConfig != nil {
 		tlsConfig = this.config.TlsConfig.GetConfig()
 	}
-	tcpListener, err := hub.ListenTCP(port, this.handleConnection, tlsConfig)
+	tcpListener, err := hub.ListenTCP(address, port, this.handleConnection, tlsConfig)
 	if err != nil {
 		log.Error("Http: Failed listen on port ", port, ": ", err)
 		return err

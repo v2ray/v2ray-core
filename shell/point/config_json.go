@@ -4,6 +4,7 @@ package point
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -21,6 +22,7 @@ const (
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
 		Port            v2net.Port              `json:"port"` // Port of this Point server.
+		ListenOn        *v2net.AddressJson      `json:"listen"`
 		LogConfig       *LogConfig              `json:"log"`
 		RouterConfig    *router.Config          `json:"routing"`
 		DNSConfig       *dns.Config             `json:"dns"`
@@ -34,6 +36,13 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	this.Port = jsonConfig.Port
+	this.ListenOn = v2net.AnyIP
+	if jsonConfig.ListenOn != nil {
+		if jsonConfig.ListenOn.Address.IsDomain() {
+			return errors.New("Point: Unable to listen on domain address: " + jsonConfig.ListenOn.Address.Domain())
+		}
+		this.ListenOn = jsonConfig.ListenOn.Address
+	}
 	this.LogConfig = jsonConfig.LogConfig
 	this.RouterConfig = jsonConfig.RouterConfig
 	this.InboundConfig = jsonConfig.InboundConfig
@@ -125,6 +134,7 @@ func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 	type JsonInboundDetourConfig struct {
 		Protocol   string                         `json:"protocol"`
 		PortRange  *v2net.PortRange               `json:"port"`
+		ListenOn   *v2net.AddressJson             `json:"listen"`
 		Settings   json.RawMessage                `json:"settings"`
 		Tag        string                         `json:"tag"`
 		Allocation *InboundDetourAllocationConfig `json:"allocate"`
@@ -136,6 +146,13 @@ func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 	if jsonConfig.PortRange == nil {
 		log.Error("Point: Port range not specified in InboundDetour.")
 		return ErrorBadConfiguration
+	}
+	this.ListenOn = v2net.AnyIP
+	if jsonConfig.ListenOn != nil {
+		if jsonConfig.ListenOn.Address.IsDomain() {
+			return errors.New("Point: Unable to listen on domain address: " + jsonConfig.ListenOn.Address.Domain())
+		}
+		this.ListenOn = jsonConfig.ListenOn.Address
 	}
 	this.Protocol = jsonConfig.Protocol
 	this.PortRange = *jsonConfig.PortRange

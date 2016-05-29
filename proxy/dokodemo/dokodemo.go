@@ -26,6 +26,7 @@ type DokodemoDoor struct {
 	udpHub           *hub.UDPHub
 	udpServer        *hub.UDPServer
 	listeningPort    v2net.Port
+	listeningAddress v2net.Address
 }
 
 func NewDokodemoDoor(config *Config, space app.Space) *DokodemoDoor {
@@ -65,25 +66,26 @@ func (this *DokodemoDoor) Close() {
 	}
 }
 
-func (this *DokodemoDoor) Listen(port v2net.Port) error {
+func (this *DokodemoDoor) Listen(address v2net.Address, port v2net.Port) error {
 	if this.accepting {
-		if this.listeningPort == port {
+		if this.listeningPort == port && this.listeningAddress.Equals(address) {
 			return nil
 		} else {
 			return proxy.ErrorAlreadyListening
 		}
 	}
 	this.listeningPort = port
+	this.listeningAddress = address
 	this.accepting = true
 
 	if this.config.Network.HasNetwork(v2net.TCPNetwork) {
-		err := this.ListenTCP(port)
+		err := this.ListenTCP(address, port)
 		if err != nil {
 			return err
 		}
 	}
 	if this.config.Network.HasNetwork(v2net.UDPNetwork) {
-		err := this.ListenUDP(port)
+		err := this.ListenUDP(address, port)
 		if err != nil {
 			return err
 		}
@@ -91,9 +93,9 @@ func (this *DokodemoDoor) Listen(port v2net.Port) error {
 	return nil
 }
 
-func (this *DokodemoDoor) ListenUDP(port v2net.Port) error {
+func (this *DokodemoDoor) ListenUDP(address v2net.Address, port v2net.Port) error {
 	this.udpServer = hub.NewUDPServer(this.packetDispatcher)
-	udpHub, err := hub.ListenUDP(port, this.handleUDPPackets)
+	udpHub, err := hub.ListenUDP(address, port, this.handleUDPPackets)
 	if err != nil {
 		log.Error("Dokodemo failed to listen on port ", port, ": ", err)
 		return err
@@ -118,8 +120,8 @@ func (this *DokodemoDoor) handleUDPResponse(dest v2net.Destination, payload *all
 	this.udpHub.WriteTo(payload.Value, dest)
 }
 
-func (this *DokodemoDoor) ListenTCP(port v2net.Port) error {
-	tcpListener, err := hub.ListenTCP(port, this.HandleTCPConnection, nil)
+func (this *DokodemoDoor) ListenTCP(address v2net.Address, port v2net.Port) error {
+	tcpListener, err := hub.ListenTCP(address, port, this.HandleTCPConnection, nil)
 	if err != nil {
 		log.Error("Dokodemo: Failed to listen on port ", port, ": ", err)
 		return err

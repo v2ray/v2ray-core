@@ -12,6 +12,7 @@ import (
 
 type InboundConnectionHandlerWithPort struct {
 	port    v2net.Port
+	listen  v2net.Address
 	handler proxy.InboundHandler
 }
 
@@ -39,6 +40,7 @@ func NewInboundDetourHandlerAlways(space app.Space, config *InboundDetourConfig)
 		handler.ich = append(handler.ich, &InboundConnectionHandlerWithPort{
 			port:    i,
 			handler: ich,
+			listen:  config.ListenOn,
 		})
 	}
 	return handler, nil
@@ -59,7 +61,7 @@ func (this *InboundDetourHandlerAlways) Close() {
 func (this *InboundDetourHandlerAlways) Start() error {
 	for _, ich := range this.ich {
 		err := retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
-			err := ich.handler.Listen(ich.port)
+			err := ich.handler.Listen(ich.listen, ich.port)
 			if err != nil {
 				log.Error("Failed to start inbound detour on port ", ich.port, ": ", err)
 				return err

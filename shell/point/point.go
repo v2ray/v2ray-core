@@ -21,6 +21,7 @@ import (
 // Point shell of V2Ray.
 type Point struct {
 	port      v2net.Port
+	listen    v2net.Address
 	ich       proxy.InboundHandler
 	och       proxy.OutboundHandler
 	idh       []InboundDetourHandler
@@ -35,6 +36,7 @@ type Point struct {
 func NewPoint(pConfig *Config) (*Point, error) {
 	var vpoint = new(Point)
 	vpoint.port = pConfig.Port
+	vpoint.listen = pConfig.ListenOn
 
 	if pConfig.LogConfig != nil {
 		logConfig := pConfig.LogConfig
@@ -167,7 +169,7 @@ func (this *Point) Start() error {
 	}
 
 	err := retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
-		err := this.ich.Listen(this.port)
+		err := this.ich.Listen(this.listen, this.port)
 		if err != nil {
 			return err
 		}

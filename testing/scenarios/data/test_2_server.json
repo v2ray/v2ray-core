@@ -1,5 +1,9 @@
 {
   "port": 50017,
+  "listen": "127.0.0.1",
+  "log": {
+    "loglevel": "none"
+  },
   "inbound": {
     "protocol": "vmess",
     "settings": {

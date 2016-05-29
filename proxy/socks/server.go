@@ -34,6 +34,7 @@ type Server struct {
 	udpAddress       v2net.Destination
 	udpServer        *hub.UDPServer
 	listeningPort    v2net.Port
+	listeningAddress v2net.Address
 }
 
 // NewServer creates a new Server object.
@@ -67,17 +68,18 @@ func (this *Server) Close() {
 }
 
 // Listen implements InboundHandler.Listen().
-func (this *Server) Listen(port v2net.Port) error {
+func (this *Server) Listen(address v2net.Address, port v2net.Port) error {
 	if this.accepting {
-		if this.listeningPort == port {
+		if this.listeningPort == port && this.listeningAddress.Equals(address) {
 			return nil
 		} else {
 			return proxy.ErrorAlreadyListening
 		}
 	}
 	this.listeningPort = port
+	this.listeningAddress = address
 
-	listener, err := hub.ListenTCP(port, this.handleConnection, nil)
+	listener, err := hub.ListenTCP(address, port, this.handleConnection, nil)
 	if err != nil {
 		log.Error("Socks: failed to listen on port ", port, ": ", err)
 		return err
@@ -87,7 +89,7 @@ func (this *Server) Listen(port v2net.Port) error {
 	this.tcpListener = listener
 	this.tcpMutex.Unlock()
 	if this.config.UDPEnabled {
-		this.listenUDP(port)
+		this.listenUDP(address, port)
 	}
 	return nil
 }

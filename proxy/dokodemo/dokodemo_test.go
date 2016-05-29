@@ -53,7 +53,7 @@ func TestDokodemoTCP(t *testing.T) {
 	assert.Error(space.Initialize()).IsNil()
 
 	port := v2nettesting.PickPort()
-	err = dokodemo.Listen(port)
+	err = dokodemo.Listen(v2net.LocalHostIP, port)
 	assert.Error(err).IsNil()
 	assert.Port(port).Equals(dokodemo.Port())
 
@@ -111,7 +111,7 @@ func TestDokodemoUDP(t *testing.T) {
 	assert.Error(space.Initialize()).IsNil()
 
 	port := v2nettesting.PickPort()
-	err = dokodemo.Listen(port)
+	err = dokodemo.Listen(v2net.LocalHostIP, port)
 	assert.Error(err).IsNil()
 	assert.Port(port).Equals(dokodemo.Port())
 

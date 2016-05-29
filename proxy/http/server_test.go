@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	testdispatcher "github.com/v2ray/v2ray-core/app/dispatcher/testing"
+	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	. "github.com/v2ray/v2ray-core/proxy/http"
 	"github.com/v2ray/v2ray-core/testing/assert"
@@ -55,7 +56,7 @@ func TestNormalGetRequest(t *testing.T) {
 	defer httpProxy.Close()
 
 	port := v2nettesting.PickPort()
-	err := httpProxy.Listen(port)
+	err := httpProxy.Listen(v2net.LocalHostIP, port)
 	assert.Error(err).IsNil()
 	assert.Port(port).Equals(httpProxy.Port())
 

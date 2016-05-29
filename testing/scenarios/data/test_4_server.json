@@ -1,5 +1,6 @@
 {
   "port": 50031,
+  "listen": "127.0.0.1",
   "log": {
     "loglevel": "warning"
   },
@@ -27,6 +28,7 @@
   "inboundDetour": [
     {
       "protocol": "vmess",
+      "listen": "127.0.0.1",
       "port": "50035-50039",
       "tag": "detour",
       "settings": {},

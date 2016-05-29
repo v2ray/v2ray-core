@@ -15,9 +15,9 @@ type UDPHub struct {
 	accepting bool
 }
 
-func ListenUDP(port v2net.Port, callback UDPPayloadHandler) (*UDPHub, error) {
+func ListenUDP(address v2net.Address, port v2net.Port, callback UDPPayloadHandler) (*UDPHub, error) {
 	udpConn, err := net.ListenUDP("udp", &net.UDPAddr{
-		IP:   []byte{0, 0, 0, 0},
+		IP:   address.IP(),
 		Port: int(port),
 	})
 	if err != nil {

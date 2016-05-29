@@ -23,6 +23,7 @@ type Server struct {
 	packetDispatcher dispatcher.PacketDispatcher
 	config           *Config
 	port             v2net.Port
+	address          v2net.Address
 	accepting        bool
 	tcpHub           *hub.TCPHub
 	udpHub           *hub.UDPHub
@@ -55,16 +56,16 @@ func (this *Server) Close() {
 
 }
 
-func (this *Server) Listen(port v2net.Port) error {
+func (this *Server) Listen(address v2net.Address, port v2net.Port) error {
 	if this.accepting {
-		if this.port == port {
+		if this.port == port && this.address.Equals(address) {
 			return nil
 		} else {
 			return proxy.ErrorAlreadyListening
 		}
 	}
 
-	tcpHub, err := hub.ListenTCP(port, this.handleConnection, nil)
+	tcpHub, err := hub.ListenTCP(address, port, this.handleConnection, nil)
 	if err != nil {
 		log.Error("Shadowsocks: Failed to listen TCP on port ", port, ": ", err)
 		return err
@@ -73,7 +74,7 @@ func (this *Server) Listen(port v2net.Port) error {
 
 	if this.config.UDP {
 		this.udpServer = hub.NewUDPServer(this.packetDispatcher)
-		udpHub, err := hub.ListenUDP(port, this.handlerUDPPayload)
+		udpHub, err := hub.ListenUDP(address, port, this.handlerUDPPayload)
 		if err != nil {
 			log.Error("Shadowsocks: Failed to listen UDP on port ", port, ": ", err)
 			return err
@@ -82,6 +83,7 @@ func (this *Server) Listen(port v2net.Port) error {
 	}
 
 	this.port = port
+	this.address = address
 	this.accepting = true
 
 	return nil

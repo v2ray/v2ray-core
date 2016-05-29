@@ -33,6 +33,7 @@ type InboundDetourAllocationConfig struct {
 type InboundDetourConfig struct {
 	Protocol   string
 	PortRange  v2net.PortRange
+	ListenOn   v2net.Address
 	Tag        string
 	Allocation *InboundDetourAllocationConfig
 	Settings   []byte
@@ -46,6 +47,7 @@ type OutboundDetourConfig struct {
 
 type Config struct {
 	Port            v2net.Port
+	ListenOn        v2net.Address
 	LogConfig       *LogConfig
 	RouterConfig    *router.Config
 	DNSConfig       *dns.Config

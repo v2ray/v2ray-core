@@ -11,13 +11,15 @@ import (
 
 type InboundConnectionHandler struct {
 	port             v2net.Port
+	address          v2net.Address
 	PacketDispatcher dispatcher.PacketDispatcher
 	ConnInput        io.Reader
 	ConnOutput       io.Writer
 }
 
-func (this *InboundConnectionHandler) Listen(port v2net.Port) error {
+func (this *InboundConnectionHandler) Listen(address v2net.Address, port v2net.Port) error {
 	this.port = port
+	this.address = address
 	return nil
 }
 
