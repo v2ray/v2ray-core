@@ -1,0 +1,30 @@
+{
+  "version": "0.1.0",
+  "command": "go",
+  "isShellCommand": true,
+  "showOutput": "always",
+  "tasks": [
+    {
+      "taskName": "build",
+      "args": ["-tags", "json", "github.com/v2ray/v2ray-core/..."],
+      "isBuildCommand": true,
+      "problemMatcher": {
+        "owner": "go",
+        "fileLocation": ["relative", "${workspaceRoot}"],
+        "pattern": {
+          "regexp": "^([^:]+\\.go):(\\d+):(.*)",
+          "file": 1,
+          "line": 2,
+          "message": 3
+        }
+      }
+    },
+    {
+      "taskName": "test",
+      "args": ["-tags", "json", "github.com/v2ray/v2ray-core/..."],
+      "isBuildCommand": false
+    }
+  ]
+  
+  
+}
