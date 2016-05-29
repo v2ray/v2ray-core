@@ -52,7 +52,7 @@ func TestNormalGetRequest(t *testing.T) {
 
 	testPacketDispatcher := testdispatcher.NewTestPacketDispatcher(nil)
 
-	httpProxy := NewHttpProxyServer(&Config{}, testPacketDispatcher)
+	httpProxy := NewServer(&Config{}, testPacketDispatcher)
 	defer httpProxy.Close()
 
 	port := v2nettesting.PickPort()

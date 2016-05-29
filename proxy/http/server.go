@@ -22,7 +22,8 @@ import (
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
-type HttpProxyServer struct {
+// Server is a HTTP proxy server.
+type Server struct {
 	sync.Mutex
 	accepting        bool
 	packetDispatcher dispatcher.PacketDispatcher
@@ -32,18 +33,18 @@ type HttpProxyServer struct {
 	listeningAddress v2net.Address
 }
 
-func NewHttpProxyServer(config *Config, packetDispatcher dispatcher.PacketDispatcher) *HttpProxyServer {
-	return &HttpProxyServer{
+func NewServer(config *Config, packetDispatcher dispatcher.PacketDispatcher) *Server {
+	return &Server{
 		packetDispatcher: packetDispatcher,
 		config:           config,
 	}
 }
 
-func (this *HttpProxyServer) Port() v2net.Port {
+func (this *Server) Port() v2net.Port {
 	return this.listeningPort
 }
 
-func (this *HttpProxyServer) Close() {
+func (this *Server) Close() {
 	this.accepting = false
 	if this.tcpListener != nil {
 		this.Lock()
@@ -53,7 +54,7 @@ func (this *HttpProxyServer) Close() {
 	}
 }
 
-func (this *HttpProxyServer) Listen(address v2net.Address, port v2net.Port) error {
+func (this *Server) Listen(address v2net.Address, port v2net.Port) error {
 	if this.accepting {
 		if this.listeningPort == port && this.listeningAddress.Equals(address) {
 			return nil
@@ -64,9 +65,9 @@ func (this *HttpProxyServer) Listen(address v2net.Address, port v2net.Port) erro
 	this.listeningPort = port
 	this.listeningAddress = address
 
-	var tlsConfig *tls.Config = nil
-	if this.config.TlsConfig != nil {
-		tlsConfig = this.config.TlsConfig.GetConfig()
+	var tlsConfig *tls.Config
+	if this.config.TLSConfig != nil {
+		tlsConfig = this.config.TLSConfig.GetConfig()
 	}
 	tcpListener, err := hub.ListenTCP(address, port, this.handleConnection, tlsConfig)
 	if err != nil {
@@ -103,7 +104,7 @@ func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error
 	return v2net.TCPDestination(v2net.DomainAddress(host), port), nil
 }
 
-func (this *HttpProxyServer) handleConnection(conn *hub.Connection) {
+func (this *Server) handleConnection(conn *hub.Connection) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
 
@@ -133,7 +134,7 @@ func (this *HttpProxyServer) handleConnection(conn *hub.Connection) {
 	}
 }
 
-func (this *HttpProxyServer) handleConnect(request *http.Request, destination v2net.Destination, reader io.Reader, writer io.Writer) {
+func (this *Server) handleConnect(request *http.Request, destination v2net.Destination, reader io.Reader, writer io.Writer) {
 	response := &http.Response{
 		Status:        "200 OK",
 		StatusCode:    200,
@@ -155,7 +156,7 @@ func (this *HttpProxyServer) handleConnect(request *http.Request, destination v2
 	this.transport(reader, writer, ray)
 }
 
-func (this *HttpProxyServer) transport(input io.Reader, output io.Writer, ray ray.InboundRay) {
+func (this *Server) transport(input io.Reader, output io.Writer, ray ray.InboundRay) {
 	var wg sync.WaitGroup
 	wg.Add(2)
 	defer wg.Wait()
@@ -204,7 +205,7 @@ func StripHopByHopHeaders(request *http.Request) {
 	}
 }
 
-func (this *HttpProxyServer) handlePlainHTTP(request *http.Request, dest v2net.Destination, reader *bufio.Reader, writer io.Writer) {
+func (this *Server) handlePlainHTTP(request *http.Request, dest v2net.Destination, reader *bufio.Reader, writer io.Writer) {
 	if len(request.URL.Host) <= 0 {
 		hdr := http.Header(make(map[string][]string))
 		hdr.Set("Connection", "close")
@@ -273,7 +274,7 @@ func init() {
 			if !space.HasApp(dispatcher.APP_ID) {
 				return nil, internal.ErrorBadConfiguration
 			}
-			return NewHttpProxyServer(
+			return NewServer(
 				rawConfig.(*Config),
 				space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)), nil
 		})

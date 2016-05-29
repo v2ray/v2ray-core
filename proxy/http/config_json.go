@@ -6,10 +6,10 @@ import (
 	"crypto/tls"
 	"encoding/json"
 
-	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy/internal/config"
 )
 
+// UnmarshalJSON implements json.Unmarshaler
 func (this *CertificateConfig) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
 		Domain   string `json:"domain"`
@@ -30,7 +30,8 @@ func (this *CertificateConfig) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (this *TlsConfig) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON implements json.Unmarshaler
+func (this *TLSConfig) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
 		Enabled bool                 `json:"enable"`
 		Certs   []*CertificateConfig `json:"certs"`
@@ -45,26 +46,17 @@ func (this *TlsConfig) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// UnmarshalJSON implements json.Unmarshaler
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
-		Hosts []v2net.AddressJson `json:"ownHosts"`
-		Tls   *TlsConfig          `json:"tls"`
+		Tls *TLSConfig `json:"tls"`
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
 		return err
 	}
-	this.OwnHosts = make([]v2net.Address, len(jsonConfig.Hosts), len(jsonConfig.Hosts)+1)
-	for idx, host := range jsonConfig.Hosts {
-		this.OwnHosts[idx] = host.Address
-	}
 
-	v2rayHost := v2net.DomainAddress("local.v2ray.com")
-	if !this.IsOwnHost(v2rayHost) {
-		this.OwnHosts = append(this.OwnHosts, v2rayHost)
-	}
-
-	this.TlsConfig = jsonConfig.Tls
+	this.TLSConfig = jsonConfig.Tls
 
 	return nil
 }

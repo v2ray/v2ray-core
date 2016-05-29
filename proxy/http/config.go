@@ -1,22 +1,21 @@
 package http
 
-import (
-	"crypto/tls"
+import "crypto/tls"
 
-	v2net "github.com/v2ray/v2ray-core/common/net"
-)
-
+// CertificateConfig is the config for TLS certificates used in HTTP proxy.
 type CertificateConfig struct {
 	Domain      string
 	Certificate tls.Certificate
 }
 
-type TlsConfig struct {
+// TlsConfig is the config for TLS connections.
+type TLSConfig struct {
 	Enabled bool
 	Certs   []*CertificateConfig
 }
 
-func (this *TlsConfig) GetConfig() *tls.Config {
+// GetConfig returns corresponding tls.Config.
+func (this *TLSConfig) GetConfig() *tls.Config {
 	if !this.Enabled {
 		return nil
 	}
@@ -35,19 +34,11 @@ func (this *TlsConfig) GetConfig() *tls.Config {
 	return config
 }
 
+// Config for HTTP proxy server.
 type Config struct {
-	OwnHosts  []v2net.Address
-	TlsConfig *TlsConfig
+	TLSConfig *TLSConfig
 }
 
-func (this *Config) IsOwnHost(host v2net.Address) bool {
-	for _, ownHost := range this.OwnHosts {
-		if ownHost.Equals(host) {
-			return true
-		}
-	}
-	return false
-}
-
+// ClientConfig for HTTP proxy client.
 type ClientConfig struct {
 }
