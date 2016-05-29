@@ -3,15 +3,13 @@ package collect
 import (
 	"sync"
 	"sync/atomic"
+
+	"github.com/v2ray/v2ray-core/common"
 )
 
 type Validity interface {
+	common.Releasable
 	IsValid() bool
-}
-
-type entry struct {
-	key   string
-	value Validity
 }
 
 type ValidityMap struct {
@@ -28,6 +26,11 @@ func NewValidityMap(cleanupIntervalSec int) *ValidityMap {
 }
 
 func (this *ValidityMap) cleanup() {
+	type entry struct {
+		key   string
+		value Validity
+	}
+
 	entry2Remove := make([]entry, 0, 128)
 	this.RLock()
 	for key, value := range this.cache {
@@ -40,10 +43,10 @@ func (this *ValidityMap) cleanup() {
 	}
 	this.RUnlock()
 
-	for _, entry := range entry2Remove {
-		if !entry.value.IsValid() {
+	for _, e := range entry2Remove {
+		if !e.value.IsValid() {
 			this.Lock()
-			delete(this.cache, entry.key)
+			delete(this.cache, e.key)
 			this.Unlock()
 		}
 	}
