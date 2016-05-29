@@ -40,6 +40,10 @@ func (this *cacheEntry) Extend() {
 	this.validUntil = time.Now().Add(time.Hour)
 }
 
+func (this *cacheEntry) Release() {
+
+}
+
 type Router struct {
 	config    *RouterRuleConfig
 	cache     *collect.ValidityMap
