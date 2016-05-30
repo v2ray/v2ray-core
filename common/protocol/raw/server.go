@@ -48,8 +48,8 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 
 	_, err := io.ReadFull(reader, buffer.Value[:protocol.IDBytesLen])
 	if err != nil {
-		log.Error("Raw: Failed to read request header: ", err)
-		return nil, err
+		log.Info("Raw: Failed to read request header: ", err)
+		return nil, io.EOF
 	}
 
 	user, timestamp, valid := this.userValidator.Get(buffer.Value[:protocol.IDBytesLen])
@@ -77,7 +77,7 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 	}
 
 	if request.Version != Version {
-		log.Warning("Raw: Invalid protocol version ", request.Version)
+		log.Info("Raw: Invalid protocol version ", request.Version)
 		return nil, protocol.ErrorInvalidVersion
 	}
 

@@ -7,9 +7,14 @@ import (
 
 type ConnectionHandler func(*Connection)
 
+type ConnectionManager interface {
+	Recycle(string, net.Conn)
+}
+
 type Connection struct {
+	dest     string
 	conn     net.Conn
-	listener *TCPHub
+	listener ConnectionManager
 	reusable bool
 }
 
@@ -33,20 +38,10 @@ func (this *Connection) Close() error {
 		return ErrorClosedConnection
 	}
 	if this.Reusable() {
-		this.listener.Recycle(this.conn)
+		this.listener.Recycle(this.dest, this.conn)
 		return nil
 	}
 	return this.conn.Close()
-}
-
-func (this *Connection) Release() {
-	if this == nil || this.listener == nil {
-		return
-	}
-
-	this.Close()
-	this.conn = nil
-	this.listener = nil
 }
 
 func (this *Connection) LocalAddr() net.Addr {

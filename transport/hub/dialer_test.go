@@ -1,4 +1,4 @@
-package dialer_test
+package hub_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 	"github.com/v2ray/v2ray-core/testing/servers/tcp"
-	. "github.com/v2ray/v2ray-core/transport/dialer"
+	. "github.com/v2ray/v2ray-core/transport/hub"
 )
 
 func TestDialDomain(t *testing.T) {

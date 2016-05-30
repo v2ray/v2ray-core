@@ -14,7 +14,7 @@ import (
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	vmessio "github.com/v2ray/v2ray-core/proxy/vmess/io"
-	"github.com/v2ray/v2ray-core/transport/dialer"
+	"github.com/v2ray/v2ray-core/transport/hub"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
@@ -41,7 +41,7 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 		Option:  protocol.RequestOptionChunkStream,
 	}
 
-	conn, err := dialer.Dial(destination)
+	conn, err := hub.Dial(destination)
 	if err != nil {
 		log.Error("Failed to open ", destination, ": ", err)
 		return err
@@ -49,6 +49,9 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 	log.Info("VMessOut: Tunneling request to ", request.Address, " via ", destination)
 
 	defer conn.Close()
+	if request.Option.IsChunkStream() {
+		conn.SetReusable(true)
+	}
 
 	input := ray.OutboundInput()
 	output := ray.OutboundOutput()

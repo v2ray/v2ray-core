@@ -1,6 +1,7 @@
 package inbound
 
 import (
+	"io"
 	"sync"
 
 	"github.com/v2ray/v2ray-core/app"
@@ -124,7 +125,7 @@ func (this *VMessInboundHandler) Listen(address v2net.Address, port v2net.Port) 
 func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 	defer connection.Close()
 
-	connReader := v2net.NewTimeOutReader(16, connection)
+	connReader := v2net.NewTimeOutReader(8, connection)
 	defer connReader.Release()
 
 	reader := v2io.NewBufferedReader(connReader)
@@ -135,12 +136,18 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 
 	request, err := session.DecodeRequestHeader(reader)
 	if err != nil {
-		log.Access(connection.RemoteAddr(), "", log.AccessRejected, err)
-		log.Warning("VMessIn: Invalid request from ", connection.RemoteAddr(), ": ", err)
+		if err != io.EOF {
+			log.Access(connection.RemoteAddr(), "", log.AccessRejected, err)
+			log.Warning("VMessIn: Invalid request from ", connection.RemoteAddr(), ": ", err)
+		}
 		return
 	}
 	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, "")
 	log.Debug("VMessIn: Received request for ", request.Destination())
+
+	if request.Option.IsChunkStream() {
+		connection.SetReusable(true)
+	}
 
 	ray := this.packetDispatcher.DispatchToOutbound(request.Destination())
 	input := ray.InboundInput()

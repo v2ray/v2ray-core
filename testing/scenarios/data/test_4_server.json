@@ -2,7 +2,7 @@
   "port": 50031,
   "listen": "127.0.0.1",
   "log": {
-    "loglevel": "warning"
+    "loglevel": "debug"
   },
   "inbound": {
     "protocol": "vmess",

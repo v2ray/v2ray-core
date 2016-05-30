@@ -15,7 +15,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
-	"github.com/v2ray/v2ray-core/transport/dialer"
+	"github.com/v2ray/v2ray-core/transport/hub"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
@@ -77,7 +77,7 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 		destination = this.ResolveIP(destination)
 	}
 	err := retry.Timed(5, 100).On(func() error {
-		rawConn, err := dialer.Dial(destination)
+		rawConn, err := hub.DialWithoutCache(destination)
 		if err != nil {
 			return err
 		}

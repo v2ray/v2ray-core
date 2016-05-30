@@ -49,24 +49,14 @@ func ListenTCP(address v2net.Address, port v2net.Port, callback ConnectionHandle
 }
 
 func (this *TCPHub) Close() {
-	this.Lock()
-	defer this.Unlock()
-
 	this.accepting = false
 	this.listener.Close()
-	this.listener = nil
 }
 
 func (this *TCPHub) start() {
 	this.accepting = true
 	for this.accepting {
-		this.Lock()
-		if !this.accepting {
-			this.Unlock()
-			break
-		}
 		conn, err := this.listener.Accept()
-		this.Unlock()
 
 		if err != nil {
 			if this.accepting {
@@ -75,6 +65,7 @@ func (this *TCPHub) start() {
 			continue
 		}
 		go this.connCallback(&Connection{
+			dest:     conn.RemoteAddr().String(),
 			conn:     conn,
 			listener: this,
 		})
@@ -82,9 +73,10 @@ func (this *TCPHub) start() {
 }
 
 // @Private
-func (this *TCPHub) Recycle(conn net.Conn) {
+func (this *TCPHub) Recycle(dest string, conn net.Conn) {
 	if this.accepting {
 		go this.connCallback(&Connection{
+			dest:     dest,
 			conn:     conn,
 			listener: this,
 		})
