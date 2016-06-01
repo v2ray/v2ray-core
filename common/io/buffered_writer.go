@@ -22,6 +22,28 @@ func NewBufferedWriter(rawWriter io.Writer) *BufferedWriter {
 	}
 }
 
+func (this *BufferedWriter) ReadFrom(reader io.Reader) (int64, error) {
+	this.Lock()
+	defer this.Unlock()
+
+	if this.writer == nil {
+		return 0, io.EOF
+	}
+
+	totalBytes := int64(0)
+	for {
+		nBytes, err := this.buffer.FillFrom(reader)
+		if err != nil {
+			if err == io.EOF {
+				return totalBytes, nil
+			}
+			return totalBytes, err
+		}
+		totalBytes += int64(nBytes)
+		this.FlushWithoutLock()
+	}
+}
+
 func (this *BufferedWriter) Write(b []byte) (int, error) {
 	this.Lock()
 	defer this.Unlock()
@@ -35,7 +57,7 @@ func (this *BufferedWriter) Write(b []byte) (int, error) {
 	}
 	nBytes, _ := this.buffer.Write(b)
 	if this.buffer.IsFull() {
-		go this.Flush()
+		this.FlushWithoutLock()
 	}
 	return nBytes, nil
 }
@@ -43,10 +65,15 @@ func (this *BufferedWriter) Write(b []byte) (int, error) {
 func (this *BufferedWriter) Flush() error {
 	this.Lock()
 	defer this.Unlock()
+
 	if this.writer == nil {
 		return io.EOF
 	}
 
+	return this.FlushWithoutLock()
+}
+
+func (this *BufferedWriter) FlushWithoutLock() error {
 	defer this.buffer.Clear()
 	for !this.buffer.IsEmpty() {
 		nBytes, err := this.writer.Write(this.buffer.Value)
