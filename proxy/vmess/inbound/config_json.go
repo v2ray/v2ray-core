@@ -70,6 +70,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 			AlterIDs: 32,
 		}
 	}
+	this.DetourConfig = jsonConfig.DetourConfig
 	// Backward compatibility
 	if this.Features != nil && this.DetourConfig == nil {
 		this.DetourConfig = this.Features.Detour
