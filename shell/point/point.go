@@ -138,7 +138,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 		for _, detourConfig := range outboundDetours {
 			detourHandler, err := proxyrepo.CreateOutboundHandler(detourConfig.Protocol, vpoint.space, detourConfig.Settings)
 			if err != nil {
-				log.Error("Failed to create detour outbound connection handler: ", err)
+				log.Error("Point: Failed to create detour outbound connection handler: ", err)
 				return nil, err
 			}
 			vpoint.odh[detourConfig.Tag] = detourHandler
@@ -164,7 +164,7 @@ func (this *Point) Close() {
 // In the case of any errors, the state of the server is unpredicatable.
 func (this *Point) Start() error {
 	if this.port <= 0 {
-		log.Error("Invalid port ", this.port)
+		log.Error("Point: Invalid port ", this.port)
 		return ErrorBadConfiguration
 	}
 
@@ -173,7 +173,7 @@ func (this *Point) Start() error {
 		if err != nil {
 			return err
 		}
-		log.Warning("Point server started on port ", this.port)
+		log.Warning("Point: started on port ", this.port)
 		return nil
 	})
 	if err != nil {

@@ -72,7 +72,7 @@ type VMessInboundHandler struct {
 	usersByEmail          *userByEmail
 	accepting             bool
 	listener              *hub.TCPHub
-	features              *FeaturesConfig
+	detours               *DetourConfig
 	listeningPort         v2net.Port
 	listeningAddress      v2net.Address
 }
@@ -232,7 +232,7 @@ func init() {
 			handler := &VMessInboundHandler{
 				packetDispatcher: space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
 				clients:          allowedClients,
-				features:         config.Features,
+				detours:          config.DetourConfig,
 				usersByEmail:     NewUserByEmail(config.AllowedUsers, config.Defaults),
 			}
 
