@@ -33,13 +33,13 @@ func (this *BufferedWriter) ReadFrom(reader io.Reader) (int64, error) {
 	totalBytes := int64(0)
 	for {
 		nBytes, err := this.buffer.FillFrom(reader)
+		totalBytes += int64(nBytes)
 		if err != nil {
 			if err == io.EOF {
 				return totalBytes, nil
 			}
 			return totalBytes, err
 		}
-		totalBytes += int64(nBytes)
 		this.FlushWithoutLock()
 	}
 }
