@@ -21,6 +21,10 @@ const (
 	CleanupThreshold = 512
 )
 
+var (
+	pseudoDestination = v2net.UDPDestination(v2net.LocalHostIP, v2net.Port(53))
+)
+
 type ARecord struct {
 	IPs    []net.IP
 	Expire time.Time
@@ -86,7 +90,7 @@ func (this *UDPNameServer) AssignUnusedID(response chan<- *ARecord) uint16 {
 		}
 		log.Debug("DNS: Add pending request id ", id)
 		this.requests[id] = &PendingRequest{
-			expire:   time.Now().Add(time.Second * 16),
+			expire:   time.Now().Add(time.Second * 8),
 			response: response,
 		}
 		break
@@ -139,12 +143,10 @@ func (this *UDPNameServer) HandleResponse(dest v2net.Destination, payload *alloc
 	close(request.response)
 }
 
-func (this *UDPNameServer) QueryA(domain string) <-chan *ARecord {
-	response := make(chan *ARecord, 1)
-
+func (this *UDPNameServer) BuildQueryA(domain string, id uint16) *alloc.Buffer {
 	buffer := alloc.NewBuffer()
 	msg := new(dns.Msg)
-	msg.Id = this.AssignUnusedID(response)
+	msg.Id = id
 	msg.RecursionDesired = true
 	msg.Question = []dns.Question{
 		dns.Question{
@@ -156,8 +158,32 @@ func (this *UDPNameServer) QueryA(domain string) <-chan *ARecord {
 	writtenBuffer, _ := msg.PackBuffer(buffer.Value)
 	buffer.Slice(0, len(writtenBuffer))
 
-	fakeDestination := v2net.UDPDestination(v2net.LocalHostIP, v2net.Port(53))
-	this.udpServer.Dispatch(fakeDestination, this.address, buffer, this.HandleResponse)
+	return buffer
+}
+
+func (this *UDPNameServer) DispatchQuery(payload *alloc.Buffer) {
+	this.udpServer.Dispatch(pseudoDestination, this.address, payload, this.HandleResponse)
+}
+
+func (this *UDPNameServer) QueryA(domain string) <-chan *ARecord {
+	response := make(chan *ARecord, 1)
+	id := this.AssignUnusedID(response)
+
+	this.DispatchQuery(this.BuildQueryA(domain, id))
+
+	go func() {
+		for i := 0; i < 2; i++ {
+			time.Sleep(time.Second)
+			this.Lock()
+			_, found := this.requests[id]
+			this.Unlock()
+			if found {
+				this.DispatchQuery(this.BuildQueryA(domain, id))
+			} else {
+				break
+			}
+		}
+	}()
 
 	return response
 }
