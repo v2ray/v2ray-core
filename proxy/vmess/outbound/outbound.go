@@ -1,7 +1,6 @@
 package outbound
 
 import (
-	"net"
 	"sync"
 
 	"github.com/v2ray/v2ray-core/app"
@@ -70,7 +69,7 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 	return nil
 }
 
-func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn net.Conn, request *protocol.RequestHeader, payload *alloc.Buffer, input v2io.Reader, finish *sync.Mutex) {
+func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn *hub.Connection, request *protocol.RequestHeader, payload *alloc.Buffer, input v2io.Reader, finish *sync.Mutex) {
 	defer finish.Unlock()
 
 	writer := v2io.NewBufferedWriter(conn)
@@ -85,7 +84,11 @@ func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn
 	streamWriter.Write(payload)
 	writer.SetCached(false)
 
-	v2io.Pipe(input, streamWriter)
+	err := v2io.Pipe(input, streamWriter)
+	if err != vmessio.ErrorStreamCompleted {
+		conn.SetReusable(false)
+	}
+
 	if request.Option.IsChunkStream() {
 		streamWriter.Write(alloc.NewSmallBuffer().Clear())
 	}
@@ -93,7 +96,7 @@ func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn
 	return
 }
 
-func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, conn net.Conn, request *protocol.RequestHeader, dest v2net.Destination, output v2io.Writer, finish *sync.Mutex) {
+func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, conn *hub.Connection, request *protocol.RequestHeader, dest v2net.Destination, output v2io.Writer, finish *sync.Mutex) {
 	defer finish.Unlock()
 
 	reader := v2io.NewBufferedReader(conn)
@@ -116,7 +119,11 @@ func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, con
 		bodyReader = v2io.NewAdaptiveReader(decryptReader)
 	}
 
-	v2io.Pipe(bodyReader, output)
+	err = v2io.Pipe(bodyReader, output)
+	if err != vmessio.ErrorStreamCompleted {
+		conn.SetReusable(false)
+	}
+
 	bodyReader.Release()
 
 	return

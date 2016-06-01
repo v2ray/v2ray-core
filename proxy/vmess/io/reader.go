@@ -1,6 +1,7 @@
 package io
 
 import (
+	"errors"
 	"hash"
 	"hash/fnv"
 	"io"
@@ -8,6 +9,10 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/transport"
+)
+
+var (
+	ErrorStreamCompleted = errors.New("Stream completed.")
 )
 
 // @Private
@@ -76,7 +81,7 @@ func (this *AuthChunkReader) Read() (*alloc.Buffer, error) {
 
 	if this.chunkLength == 0 {
 		buffer.Release()
-		return nil, io.EOF
+		return nil, ErrorStreamCompleted
 	}
 
 	if buffer.Len() < this.chunkLength {

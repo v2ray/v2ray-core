@@ -169,7 +169,11 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 		} else {
 			requestReader = v2io.NewAdaptiveReader(bodyReader)
 		}
-		v2io.Pipe(requestReader, input)
+		err := v2io.Pipe(requestReader, input)
+		if err != vmessio.ErrorStreamCompleted {
+			connection.SetReusable(false)
+		}
+
 		requestReader.Release()
 		input.Close()
 		readFinish.Unlock()
@@ -197,7 +201,11 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 
 		writer.SetCached(false)
 
-		v2io.Pipe(output, v2writer)
+		err = v2io.Pipe(output, v2writer)
+		if err != vmessio.ErrorStreamCompleted {
+			connection.SetReusable(false)
+		}
+
 		output.Release()
 		if request.Option.IsChunkStream() {
 			v2writer.Write(alloc.NewSmallBuffer().Clear())
