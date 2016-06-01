@@ -3,6 +3,8 @@ package hub
 import (
 	"net"
 	"time"
+
+	"github.com/v2ray/v2ray-core/transport"
 )
 
 type ConnectionHandler func(*Connection)
@@ -37,7 +39,7 @@ func (this *Connection) Close() error {
 	if this == nil || this.conn == nil {
 		return ErrorClosedConnection
 	}
-	if this.Reusable() {
+	if transport.TCPStreamConfig.ConnectionReuse && this.Reusable() {
 		this.listener.Recycle(this.dest, this.conn)
 		return nil
 	}

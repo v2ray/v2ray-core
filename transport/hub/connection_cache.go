@@ -3,8 +3,32 @@ package hub
 import (
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 )
+
+type Once struct {
+	m    sync.Mutex
+	done uint32
+}
+
+func (o *Once) Do(f func()) {
+	if atomic.LoadUint32(&o.done) == 1 {
+		return
+	}
+	o.m.Lock()
+	defer o.m.Unlock()
+	if o.done == 0 {
+		defer atomic.StoreUint32(&o.done, 1)
+		f()
+	}
+}
+
+func (o *Once) Reset() {
+	o.m.Lock()
+	defer o.m.Unlock()
+	atomic.StoreUint32(&o.done, 0)
+}
 
 type AwaitingConnection struct {
 	conn   net.Conn
@@ -17,19 +41,20 @@ func (this *AwaitingConnection) Expired() bool {
 
 type ConnectionCache struct {
 	sync.Mutex
-	cache map[string][]*AwaitingConnection
+	cache       map[string][]*AwaitingConnection
+	cleanupOnce Once
 }
 
 func NewConnectionCache() *ConnectionCache {
-	c := &ConnectionCache{
+	return &ConnectionCache{
 		cache: make(map[string][]*AwaitingConnection),
 	}
-	go c.Cleanup()
-	return c
 }
 
 func (this *ConnectionCache) Cleanup() {
-	for {
+	defer this.cleanupOnce.Reset()
+
+	for len(this.cache) > 0 {
 		time.Sleep(time.Second * 4)
 		this.Lock()
 		for key, value := range this.cache {
@@ -74,6 +99,8 @@ func (this *ConnectionCache) Recycle(dest string, conn net.Conn) {
 		list = []*AwaitingConnection{aconn}
 	}
 	this.cache[dest] = list
+
+	go this.cleanupOnce.Do(this.Cleanup)
 }
 
 func FindFirstValid(list []*AwaitingConnection) int {

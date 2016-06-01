@@ -13,6 +13,7 @@ import (
 	"github.com/v2ray/v2ray-core/app/router"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/transport"
 )
 
 const (
@@ -30,6 +31,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		OutboundConfig  *ConnectionConfig       `json:"outbound"`
 		InboundDetours  []*InboundDetourConfig  `json:"inboundDetour"`
 		OutboundDetours []*OutboundDetourConfig `json:"outboundDetour"`
+		Transport       *transport.Config       `json:"transport"`
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
@@ -57,6 +59,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		}
 	}
 	this.DNSConfig = jsonConfig.DNSConfig
+	this.TransportConfig = jsonConfig.Transport
 	return nil
 }
 

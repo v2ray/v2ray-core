@@ -7,6 +7,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/transport"
 )
 
 var (
@@ -17,7 +18,10 @@ var (
 
 func Dial(dest v2net.Destination) (*Connection, error) {
 	destStr := dest.String()
-	conn := globalCache.Get(destStr)
+	var conn net.Conn
+	if transport.TCPStreamConfig.ConnectionReuse {
+		conn = globalCache.Get(destStr)
+	}
 	if conn == nil {
 		var err error
 		log.Debug("Hub: Dialling new connection to ", dest)

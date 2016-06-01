@@ -5,6 +5,7 @@ import (
 	"github.com/v2ray/v2ray-core/app/router"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/transport"
 )
 
 type ConnectionConfig struct {
@@ -55,6 +56,7 @@ type Config struct {
 	OutboundConfig  *ConnectionConfig
 	InboundDetours  []*InboundDetourConfig
 	OutboundDetours []*OutboundDetourConfig
+	TransportConfig *transport.Config
 }
 
 type ConfigLoader func(init string) (*Config, error)
