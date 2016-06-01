@@ -110,10 +110,10 @@ func (this *Server) handleConnection(conn *hub.Connection) {
 
 	request, err := http.ReadRequest(reader)
 	if err != nil {
-		log.Warning("Failed to read http request: ", err)
+		log.Warning("HTTP: Failed to read http request: ", err)
 		return
 	}
-	log.Info("Request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]")
+	log.Info("HTTP: Request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]")
 	defaultPort := v2net.Port(80)
 	if strings.ToLower(request.URL.Scheme) == "https" {
 		defaultPort = v2net.Port(443)
@@ -124,7 +124,7 @@ func (this *Server) handleConnection(conn *hub.Connection) {
 	}
 	dest, err := parseHost(host, defaultPort)
 	if err != nil {
-		log.Warning("Malformed proxy host (", host, "): ", err)
+		log.Warning("HTTP: Malformed proxy host (", host, "): ", err)
 		return
 	}
 	if strings.ToUpper(request.Method) == "CONNECT" {
@@ -205,21 +205,25 @@ func StripHopByHopHeaders(request *http.Request) {
 	}
 }
 
+func (this *Server) GenerateResponse(statusCode int, status string) *http.Response {
+	hdr := http.Header(make(map[string][]string))
+	hdr.Set("Connection", "close")
+	return &http.Response{
+		Status:        status,
+		StatusCode:    statusCode,
+		Proto:         "HTTP/1.1",
+		ProtoMajor:    1,
+		ProtoMinor:    1,
+		Header:        hdr,
+		Body:          nil,
+		ContentLength: 0,
+		Close:         false,
+	}
+}
+
 func (this *Server) handlePlainHTTP(request *http.Request, dest v2net.Destination, reader *bufio.Reader, writer io.Writer) {
 	if len(request.URL.Host) <= 0 {
-		hdr := http.Header(make(map[string][]string))
-		hdr.Set("Connection", "close")
-		response := &http.Response{
-			Status:        "400 Bad Request",
-			StatusCode:    400,
-			Proto:         "HTTP/1.1",
-			ProtoMajor:    1,
-			ProtoMinor:    1,
-			Header:        hdr,
-			Body:          nil,
-			ContentLength: 0,
-			Close:         false,
-		}
+		response := this.GenerateResponse(400, "Bad Request")
 
 		buffer := alloc.NewSmallBuffer().Clear()
 		response.Write(buffer)
@@ -255,7 +259,7 @@ func (this *Server) handlePlainHTTP(request *http.Request, dest v2net.Destinatio
 		response, err := http.ReadResponse(responseReader, request)
 		if err != nil {
 			log.Warning("HTTP: Failed to read response: ", err)
-			return
+			response = this.GenerateResponse(503, "Service Unavailable")
 		}
 		responseWriter := v2io.NewBufferedWriter(writer)
 		err = response.Write(responseWriter)

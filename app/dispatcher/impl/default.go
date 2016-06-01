@@ -68,7 +68,7 @@ func (this *DefaultDispatcher) DispatchToOutbound(destination v2net.Destination)
 func (this *DefaultDispatcher) FilterPacketAndDispatch(destination v2net.Destination, link ray.OutboundRay, dispatcher proxy.OutboundHandler) {
 	payload, err := link.OutboundInput().Read()
 	if err != nil {
-		log.Info("DefaultDispatcher: No payload to dispatch, stopping now.")
+		log.Info("DefaultDispatcher: No payload towards ", destination, ", stopping now.")
 		link.OutboundInput().Release()
 		link.OutboundOutput().Release()
 		return
