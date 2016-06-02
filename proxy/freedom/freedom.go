@@ -21,12 +21,14 @@ import (
 
 type FreedomConnection struct {
 	domainStrategy DomainStrategy
+	timeout        uint32
 	dns            dns.Server
 }
 
 func NewFreedomConnection(config *Config, space app.Space) *FreedomConnection {
 	f := &FreedomConnection{
 		domainStrategy: config.DomainStrategy,
+		timeout:        config.Timeout,
 	}
 	log.Info("Freedom: Domain strategy: ", f.domainStrategy)
 	space.InitializeApplication(func() error {
@@ -111,8 +113,12 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 
 		var reader io.Reader = conn
 
+		timeout := this.timeout
 		if destination.IsUDP() {
-			reader = v2net.NewTimeOutReader(16 /* seconds */, conn)
+			timeout = 16
+		}
+		if timeout > 0 {
+			reader = v2net.NewTimeOutReader(int(timeout) /* seconds */, conn)
 		}
 
 		v2reader := v2io.NewAdaptiveReader(reader)

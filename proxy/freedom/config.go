@@ -9,4 +9,5 @@ const (
 
 type Config struct {
 	DomainStrategy DomainStrategy
+	Timeout        uint32
 }

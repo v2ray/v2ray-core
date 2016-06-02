@@ -12,6 +12,7 @@ import (
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
 		DomainStrategy string `json:"domainStrategy"`
+		Timeout        uint32 `json:"timeout"`
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
@@ -22,6 +23,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	if domainStrategy == "useip" {
 		this.DomainStrategy = DomainStrategyUseIP
 	}
+	this.Timeout = jsonConfig.Timeout
 	return nil
 }
 
