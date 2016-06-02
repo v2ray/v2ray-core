@@ -1,7 +1,5 @@
 package transport
 
-type StreamType int
-
 type Config struct {
 	ConnectionReuse bool
 }
