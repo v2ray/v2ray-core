@@ -1,6 +1,7 @@
 package outbound
 
 import (
+	"io"
 	"sync"
 
 	"github.com/v2ray/v2ray-core/app"
@@ -85,7 +86,7 @@ func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn
 	writer.SetCached(false)
 
 	err := v2io.Pipe(input, streamWriter)
-	if err != vmessio.ErrorStreamCompleted {
+	if err != io.EOF {
 		conn.SetReusable(false)
 	}
 
@@ -120,7 +121,7 @@ func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, con
 	}
 
 	err = v2io.Pipe(bodyReader, output)
-	if err != vmessio.ErrorStreamCompleted {
+	if err != io.EOF {
 		conn.SetReusable(false)
 	}
 

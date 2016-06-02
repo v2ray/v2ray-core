@@ -38,5 +38,11 @@
         "refresh": 5
       }
     }
-  ]
+  ],
+  "transport": {
+    "streamType": "tcp",
+    "settings": {
+      "connectionReuse": true
+    }
+  }
 }

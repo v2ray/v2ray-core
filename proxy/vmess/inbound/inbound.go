@@ -170,7 +170,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 			requestReader = v2io.NewAdaptiveReader(bodyReader)
 		}
 		err := v2io.Pipe(requestReader, input)
-		if err != vmessio.ErrorStreamCompleted {
+		if err != io.EOF {
 			connection.SetReusable(false)
 		}
 
@@ -202,7 +202,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 		writer.SetCached(false)
 
 		err = v2io.Pipe(output, v2writer)
-		if err != vmessio.ErrorStreamCompleted {
+		if err != io.EOF {
 			connection.SetReusable(false)
 		}
 

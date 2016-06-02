@@ -3,7 +3,7 @@ package transport
 import "github.com/v2ray/v2ray-core/common/log"
 
 var (
-	TCPStreamConfig = &TCPConfig{
+	TCPStreamConfig = TCPConfig{
 		ConnectionReuse: false,
 	}
 )
@@ -11,8 +11,8 @@ var (
 func ApplyConfig(config *Config) error {
 	if config.StreamType == StreamTypeTCP {
 		if config.TCPConfig != nil {
-			TCPStreamConfig = config.TCPConfig
-			if config.TCPConfig.ConnectionReuse {
+			TCPStreamConfig.ConnectionReuse = config.TCPConfig.ConnectionReuse
+			if TCPStreamConfig.ConnectionReuse {
 				log.Info("Transport: TCP connection reuse enabled.")
 			}
 		}

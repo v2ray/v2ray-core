@@ -21,10 +21,12 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	this.StreamType = StreamTypeTCP
+
 	streamType := strings.ToLower(typeConfig.StreamType)
 	if streamType == "tcp" {
 		jsonTCPConfig := new(JsonTCPConfig)
-		if err := json.Unmarshal(data, jsonTCPConfig); err != nil {
+		if err := json.Unmarshal(typeConfig.Settings, jsonTCPConfig); err != nil {
 			return err
 		}
 		this.TCPConfig = &TCPConfig{

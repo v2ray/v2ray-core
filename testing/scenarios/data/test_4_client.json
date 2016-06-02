@@ -29,5 +29,11 @@
         }
       ]
     }
+  },
+  "transport": {
+    "streamType": "tcp",
+    "settings": {
+      "connectionReuse": true
+    }
   }
 }
