@@ -108,7 +108,7 @@ func FindFirstValid(list []*AwaitingConnection) int {
 		if !conn.Expired() {
 			return idx
 		}
-		conn.conn.Close()
+		go conn.conn.Close()
 	}
 	return -1
 }
