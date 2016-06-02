@@ -19,7 +19,7 @@ var (
 func Dial(dest v2net.Destination) (*Connection, error) {
 	destStr := dest.String()
 	var conn net.Conn
-	if transport.TCPStreamConfig.ConnectionReuse {
+	if transport.IsConnectionReusable() {
 		conn = globalCache.Get(destStr)
 	}
 	if conn == nil {

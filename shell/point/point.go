@@ -16,7 +16,6 @@ import (
 	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/proxy"
 	proxyrepo "github.com/v2ray/v2ray-core/proxy/repo"
-	"github.com/v2ray/v2ray-core/transport"
 )
 
 // Point shell of V2Ray.
@@ -40,7 +39,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	vpoint.listen = pConfig.ListenOn
 
 	if pConfig.TransportConfig != nil {
-		transport.ApplyConfig(pConfig.TransportConfig)
+		pConfig.TransportConfig.Apply()
 	}
 
 	if pConfig.LogConfig != nil {

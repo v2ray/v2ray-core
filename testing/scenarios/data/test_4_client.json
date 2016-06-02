@@ -31,9 +31,6 @@
     }
   },
   "transport": {
-    "streamType": "tcp",
-    "settings": {
-      "connectionReuse": true
-    }
+    "connectionReuse": true
   }
 }

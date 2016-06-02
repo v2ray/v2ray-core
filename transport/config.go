@@ -2,15 +2,13 @@ package transport
 
 type StreamType int
 
-const (
-	StreamTypeTCP = StreamType(0)
-)
-
-type TCPConfig struct {
+type Config struct {
 	ConnectionReuse bool
 }
 
-type Config struct {
-	StreamType StreamType
-	TCPConfig  *TCPConfig
+func (this *Config) Apply() error {
+	if this.ConnectionReuse {
+		connectionReuse = true
+	}
+	return nil
 }

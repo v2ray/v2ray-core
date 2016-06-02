@@ -39,7 +39,7 @@ func (this *Connection) Close() error {
 	if this == nil || this.conn == nil {
 		return ErrorClosedConnection
 	}
-	if transport.TCPStreamConfig.ConnectionReuse && this.Reusable() {
+	if transport.IsConnectionReusable() && this.Reusable() {
 		this.listener.Recycle(this.dest, this.conn)
 		return nil
 	}
