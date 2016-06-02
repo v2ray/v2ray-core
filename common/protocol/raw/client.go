@@ -118,7 +118,9 @@ func (this *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Res
 		return nil, transport.ErrorCorruptedPacket
 	}
 
-	header := new(protocol.ResponseHeader)
+	header := &protocol.ResponseHeader{
+		Option: protocol.ResponseOption(buffer.Value[1]),
+	}
 
 	if buffer.Value[2] != 0 {
 		cmdId := buffer.Value[2]

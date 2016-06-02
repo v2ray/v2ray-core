@@ -159,7 +159,7 @@ func (this *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader,
 	encryptionWriter := crypto.NewCryptionWriter(aesStream, writer)
 	this.responseWriter = encryptionWriter
 
-	encryptionWriter.Write([]byte{this.responseHeader, 0x00})
+	encryptionWriter.Write([]byte{this.responseHeader, byte(header.Option)})
 	err := MarshalCommand(header.Command, encryptionWriter)
 	if err != nil {
 		encryptionWriter.Write([]byte{0x00, 0x00})

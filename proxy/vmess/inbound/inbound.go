@@ -17,6 +17,7 @@ import (
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	vmessio "github.com/v2ray/v2ray-core/proxy/vmess/io"
+	"github.com/v2ray/v2ray-core/transport"
 	"github.com/v2ray/v2ray-core/transport/hub"
 )
 
@@ -145,7 +146,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, "")
 	log.Debug("VMessIn: Received request for ", request.Destination())
 
-	if request.Option.IsChunkStream() {
+	if request.Option.Has(protocol.RequestOptionConnectionReuse) {
 		connection.SetReusable(true)
 	}
 
@@ -161,10 +162,11 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 	userSettings := protocol.GetUserSettings(request.User.Level)
 	connReader.SetTimeOut(userSettings.PayloadReadTimeout)
 	reader.SetCached(false)
+
 	go func() {
 		bodyReader := session.DecodeRequestBody(reader)
 		var requestReader v2io.Reader
-		if request.Option.IsChunkStream() {
+		if request.Option.Has(protocol.RequestOptionChunkStream) {
 			requestReader = vmessio.NewAuthChunkReader(bodyReader)
 		} else {
 			requestReader = v2io.NewAdaptiveReader(bodyReader)
@@ -186,6 +188,10 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 		Command: this.generateCommand(request),
 	}
 
+	if request.Option.Has(protocol.RequestOptionConnectionReuse) && transport.IsConnectionReusable() {
+		response.Option.Set(protocol.ResponseOptionConnectionReuse)
+	}
+
 	session.EncodeResponseHeader(response, writer)
 
 	bodyWriter := session.EncodeResponseBody(writer)
@@ -193,7 +199,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 	// Optimize for small response packet
 	if data, err := output.Read(); err == nil {
 		var v2writer v2io.Writer = v2io.NewAdaptiveWriter(bodyWriter)
-		if request.Option.IsChunkStream() {
+		if request.Option.Has(protocol.RequestOptionChunkStream) {
 			v2writer = vmessio.NewAuthChunkWriter(v2writer)
 		}
 
@@ -207,7 +213,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 		}
 
 		output.Release()
-		if request.Option.IsChunkStream() {
+		if request.Option.Has(protocol.RequestOptionChunkStream) {
 			v2writer.Write(alloc.NewSmallBuffer().Clear())
 		}
 		v2writer.Release()

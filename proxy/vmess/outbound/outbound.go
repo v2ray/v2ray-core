@@ -14,6 +14,7 @@ import (
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	vmessio "github.com/v2ray/v2ray-core/proxy/vmess/io"
+	"github.com/v2ray/v2ray-core/transport"
 	"github.com/v2ray/v2ray-core/transport/hub"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
@@ -49,7 +50,9 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 	log.Info("VMessOut: Tunneling request to ", request.Address, " via ", destination)
 
 	defer conn.Close()
-	if request.Option.IsChunkStream() {
+
+	if transport.IsConnectionReusable() {
+		request.Option.Set(protocol.RequestOptionConnectionReuse)
 		conn.SetReusable(true)
 	}
 
@@ -79,7 +82,7 @@ func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn
 
 	bodyWriter := session.EncodeRequestBody(writer)
 	var streamWriter v2io.Writer = v2io.NewAdaptiveWriter(bodyWriter)
-	if request.Option.IsChunkStream() {
+	if request.Option.Has(protocol.RequestOptionChunkStream) {
 		streamWriter = vmessio.NewAuthChunkWriter(streamWriter)
 	}
 	streamWriter.Write(payload)
@@ -90,8 +93,11 @@ func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn
 		conn.SetReusable(false)
 	}
 
-	if request.Option.IsChunkStream() {
-		streamWriter.Write(alloc.NewSmallBuffer().Clear())
+	if request.Option.Has(protocol.RequestOptionChunkStream) {
+		err := streamWriter.Write(alloc.NewSmallBuffer().Clear())
+		if err != nil {
+			conn.SetReusable(false)
+		}
 	}
 	streamWriter.Release()
 	return
@@ -110,11 +116,15 @@ func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, con
 	}
 	go this.handleCommand(dest, header.Command)
 
+	if !header.Option.Has(protocol.ResponseOptionConnectionReuse) {
+		conn.SetReusable(false)
+	}
+
 	reader.SetCached(false)
 	decryptReader := session.DecodeResponseBody(reader)
 
 	var bodyReader v2io.Reader
-	if request.Option.IsChunkStream() {
+	if request.Option.Has(protocol.RequestOptionChunkStream) {
 		bodyReader = vmessio.NewAuthChunkReader(decryptReader)
 	} else {
 		bodyReader = v2io.NewAdaptiveReader(decryptReader)
