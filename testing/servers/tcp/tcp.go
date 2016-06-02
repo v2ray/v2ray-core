@@ -50,6 +50,7 @@ func (server *Server) handleConnection(conn net.Conn) {
 			break
 		}
 		response := server.MsgProcessor(request.Value)
+		request.Release()
 		conn.Write(response)
 	}
 	conn.Close()
