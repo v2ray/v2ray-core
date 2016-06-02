@@ -59,7 +59,7 @@ func (this *AuthChunkReader) Read() (*alloc.Buffer, error) {
 			_, err := buffer.FillFrom(this.reader)
 			if err != nil {
 				buffer.Release()
-				return nil, err
+				return nil, io.ErrUnexpectedEOF
 			}
 		}
 		length := serial.BytesToUint16(buffer.Value[:2])
@@ -70,7 +70,7 @@ func (this *AuthChunkReader) Read() (*alloc.Buffer, error) {
 		_, err := buffer.FillFrom(this.reader)
 		if err != nil {
 			buffer.Release()
-			return nil, err
+			return nil, io.ErrUnexpectedEOF
 		}
 	}
 
