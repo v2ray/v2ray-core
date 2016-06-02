@@ -10,7 +10,7 @@ import (
 func TestRequestOptionSet(t *testing.T) {
 	assert := assert.On(t)
 
-	option := new(RequestOption)
+	var option RequestOption
 	assert.Bool(option.Has(RequestOptionChunkStream)).IsFalse()
 
 	option.Set(RequestOptionChunkStream)
@@ -24,7 +24,7 @@ func TestRequestOptionSet(t *testing.T) {
 func TestRequestOptionClear(t *testing.T) {
 	assert := assert.On(t)
 
-	option := new(RequestOption)
+	var option RequestOption
 	option.Set(RequestOptionChunkStream)
 	option.Set(RequestOptionConnectionReuse)
 
