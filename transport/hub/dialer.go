@@ -5,7 +5,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/transport"
 )
@@ -24,13 +23,10 @@ func Dial(dest v2net.Destination) (*Connection, error) {
 	}
 	if conn == nil {
 		var err error
-		log.Debug("Hub: Dialling new connection to ", dest)
 		conn, err = DialWithoutCache(dest)
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		log.Debug("Hub: Reusing connection to ", dest)
 	}
 	return &Connection{
 		dest:     destStr,
