@@ -30,7 +30,6 @@ func NewFreedomConnection(config *Config, space app.Space) *FreedomConnection {
 		domainStrategy: config.DomainStrategy,
 		timeout:        config.Timeout,
 	}
-	log.Info("Freedom: Domain strategy: ", f.domainStrategy)
 	space.InitializeApplication(func() error {
 		if config.DomainStrategy == DomainStrategyUseIP {
 			if !space.HasApp(dns.APP_ID) {
