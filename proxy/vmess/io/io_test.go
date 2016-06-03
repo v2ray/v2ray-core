@@ -32,6 +32,7 @@ func TestSingleIO(t *testing.T) {
 
 	writer := NewAuthChunkWriter(v2io.NewAdaptiveWriter(content))
 	writer.Write(alloc.NewBuffer().Clear().AppendString("abcd"))
+	writer.Write(alloc.NewBuffer().Clear())
 	writer.Release()
 
 	reader := NewAuthChunkReader(content)
@@ -90,6 +91,7 @@ func TestLargeIO(t *testing.T) {
 			break
 		}
 	}
+	writer.Write(alloc.NewBuffer().Clear())
 	writer.Release()
 
 	actualContent := make([]byte, 0, len(content))
