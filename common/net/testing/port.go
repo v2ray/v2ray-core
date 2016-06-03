@@ -6,5 +6,5 @@ import (
 )
 
 func PickPort() v2net.Port {
-	return v2net.Port(30000 + dice.Roll(5000))
+	return v2net.Port(30000 + dice.Roll(20000))
 }

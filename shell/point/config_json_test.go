@@ -23,8 +23,8 @@ func TestClientSampleConfig(t *testing.T) {
 	pointConfig, err := LoadConfig(filepath.Join(baseDir, "vpoint_socks_vmess.json"))
 	assert.Error(err).IsNil()
 
-	assert.Port(pointConfig.Port).IsValid()
 	assert.Pointer(pointConfig.InboundConfig).IsNotNil()
+	assert.Port(pointConfig.InboundConfig.Port).IsValid()
 	assert.Pointer(pointConfig.OutboundConfig).IsNotNil()
 
 	assert.String(pointConfig.InboundConfig.Protocol).Equals("socks")
@@ -43,8 +43,8 @@ func TestServerSampleConfig(t *testing.T) {
 	pointConfig, err := LoadConfig(filepath.Join(baseDir, "vpoint_vmess_freedom.json"))
 	assert.Error(err).IsNil()
 
-	assert.Port(pointConfig.Port).IsValid()
 	assert.Pointer(pointConfig.InboundConfig).IsNotNil()
+	assert.Port(pointConfig.InboundConfig.Port).IsValid()
 	assert.Pointer(pointConfig.OutboundConfig).IsNotNil()
 
 	assert.String(pointConfig.InboundConfig.Protocol).Equals("vmess")

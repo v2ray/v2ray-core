@@ -30,10 +30,12 @@ type Server struct {
 	udpServer        *hub.UDPServer
 }
 
-func NewServer(config *Config, packetDispatcher dispatcher.PacketDispatcher) *Server {
+func NewServer(config *Config, packetDispatcher dispatcher.PacketDispatcher, listen v2net.Address, port v2net.Port) *Server {
 	return &Server{
 		config:           config,
 		packetDispatcher: packetDispatcher,
+		address:          listen,
+		port:             port,
 	}
 }
 
@@ -56,34 +58,28 @@ func (this *Server) Close() {
 
 }
 
-func (this *Server) Listen(address v2net.Address, port v2net.Port) error {
+func (this *Server) Start() error {
 	if this.accepting {
-		if this.port == port && this.address.Equals(address) {
-			return nil
-		} else {
-			return proxy.ErrorAlreadyListening
-		}
+		return nil
 	}
 
-	tcpHub, err := hub.ListenTCP(address, port, this.handleConnection, nil)
+	tcpHub, err := hub.ListenTCP(this.address, this.port, this.handleConnection, nil)
 	if err != nil {
-		log.Error("Shadowsocks: Failed to listen TCP on port ", port, ": ", err)
+		log.Error("Shadowsocks: Failed to listen TCP on port ", this.port, ": ", err)
 		return err
 	}
 	this.tcpHub = tcpHub
 
 	if this.config.UDP {
 		this.udpServer = hub.NewUDPServer(this.packetDispatcher)
-		udpHub, err := hub.ListenUDP(address, port, this.handlerUDPPayload)
+		udpHub, err := hub.ListenUDP(this.address, this.port, this.handlerUDPPayload)
 		if err != nil {
-			log.Error("Shadowsocks: Failed to listen UDP on port ", port, ": ", err)
+			log.Error("Shadowsocks: Failed to listen UDP on port ", this.port, ": ", err)
 			return err
 		}
 		this.udpHub = udpHub
 	}
 
-	this.port = port
-	this.address = address
 	this.accepting = true
 
 	return nil
@@ -256,12 +252,14 @@ func (this *Server) handleConnection(conn *hub.Connection) {
 
 func init() {
 	internal.MustRegisterInboundHandlerCreator("shadowsocks",
-		func(space app.Space, rawConfig interface{}) (proxy.InboundHandler, error) {
+		func(space app.Space, rawConfig interface{}, listen v2net.Address, port v2net.Port) (proxy.InboundHandler, error) {
 			if !space.HasApp(dispatcher.APP_ID) {
 				return nil, internal.ErrorBadConfiguration
 			}
 			return NewServer(
 				rawConfig.(*Config),
-				space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)), nil
+				space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
+				listen,
+				port), nil
 		})
 }

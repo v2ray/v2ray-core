@@ -130,7 +130,7 @@ func (this *UDPServer) locateExistingAndDispatch(name string, payload *alloc.Buf
 }
 
 func (this *UDPServer) Dispatch(source v2net.Destination, destination v2net.Destination, payload *alloc.Buffer, callback UDPResponseCallback) {
-	destString := source.NetAddr() + "-" + destination.NetAddr()
+	destString := source.String() + "-" + destination.String()
 	log.Debug("UDP Server: Dispatch request: ", destString)
 	if this.locateExistingAndDispatch(destString, payload) {
 		return

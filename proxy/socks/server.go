@@ -38,10 +38,12 @@ type Server struct {
 }
 
 // NewServer creates a new Server object.
-func NewServer(config *Config, packetDispatcher dispatcher.PacketDispatcher) *Server {
+func NewServer(config *Config, packetDispatcher dispatcher.PacketDispatcher, listen v2net.Address, port v2net.Port) *Server {
 	return &Server{
 		config:           config,
 		packetDispatcher: packetDispatcher,
+		listeningAddress: listen,
+		listeningPort:    port,
 	}
 }
 
@@ -68,20 +70,18 @@ func (this *Server) Close() {
 }
 
 // Listen implements InboundHandler.Listen().
-func (this *Server) Listen(address v2net.Address, port v2net.Port) error {
+func (this *Server) Start() error {
 	if this.accepting {
-		if this.listeningPort == port && this.listeningAddress.Equals(address) {
-			return nil
-		} else {
-			return proxy.ErrorAlreadyListening
-		}
+		return nil
 	}
-	this.listeningPort = port
-	this.listeningAddress = address
 
-	listener, err := hub.ListenTCP(address, port, this.handleConnection, nil)
+	listener, err := hub.ListenTCP(
+		this.listeningAddress,
+		this.listeningPort,
+		this.handleConnection,
+		nil)
 	if err != nil {
-		log.Error("Socks: failed to listen on port ", port, ": ", err)
+		log.Error("Socks: failed to listen on port ", this.listeningPort, ": ", err)
 		return err
 	}
 	this.accepting = true
@@ -89,7 +89,7 @@ func (this *Server) Listen(address v2net.Address, port v2net.Port) error {
 	this.tcpListener = listener
 	this.tcpMutex.Unlock()
 	if this.config.UDPEnabled {
-		this.listenUDP(address, port)
+		this.listenUDP(this.listeningAddress, this.listeningPort)
 	}
 	return nil
 }
@@ -301,12 +301,14 @@ func (this *Server) transport(reader io.Reader, writer io.Writer, destination v2
 
 func init() {
 	internal.MustRegisterInboundHandlerCreator("socks",
-		func(space app.Space, rawConfig interface{}) (proxy.InboundHandler, error) {
+		func(space app.Space, rawConfig interface{}, listen v2net.Address, port v2net.Port) (proxy.InboundHandler, error) {
 			if !space.HasApp(dispatcher.APP_ID) {
 				return nil, internal.ErrorBadConfiguration
 			}
 			return NewServer(
 				rawConfig.(*Config),
-				space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)), nil
+				space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
+				listen,
+				port), nil
 		})
 }

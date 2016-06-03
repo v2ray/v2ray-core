@@ -38,25 +38,28 @@ func TestVMessInAndOut(t *testing.T) {
 		ConnOutput: ichConnOutput,
 	}
 
-	protocol, err := proxytesting.RegisterInboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (proxy.InboundHandler, error) {
-		ich.PacketDispatcher = space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)
-		return ich, nil
-	})
+	protocol, err := proxytesting.RegisterInboundConnectionHandlerCreator("mock_ich",
+		func(space app.Space, config interface{}, listen v2net.Address, port v2net.Port) (proxy.InboundHandler, error) {
+			ich.ListeningAddress = listen
+			ich.ListeningPort = port
+			ich.PacketDispatcher = space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)
+			return ich, nil
+		})
 	assert.Error(err).IsNil()
 
 	configA := &point.Config{
-		Port:     portA,
-		ListenOn: v2net.LocalHostIP,
+		Port: portA,
 		DNSConfig: &dns.Config{
 			NameServers: []v2net.Destination{
 				v2net.UDPDestination(v2net.DomainAddress("localhost"), v2net.Port(53)),
 			},
 		},
-		InboundConfig: &point.ConnectionConfig{
+		InboundConfig: &point.InboundConnectionConfig{
 			Protocol: protocol,
+			ListenOn: v2net.LocalHostIP,
 			Settings: nil,
 		},
-		OutboundConfig: &point.ConnectionConfig{
+		OutboundConfig: &point.OutboundConnectionConfig{
 			Protocol: "vmess",
 			Settings: []byte(`{
         "vnext": [
@@ -85,28 +88,29 @@ func TestVMessInAndOut(t *testing.T) {
 		ConnOutput: ochConnOutput,
 	}
 
-	protocol, err = proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (proxy.OutboundHandler, error) {
-		return och, nil
-	})
+	protocol, err = proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och",
+		func(space app.Space, config interface{}, sendThrough v2net.Address) (proxy.OutboundHandler, error) {
+			return och, nil
+		})
 	assert.Error(err).IsNil()
 
 	configB := &point.Config{
-		Port:     portB,
-		ListenOn: v2net.LocalHostIP,
+		Port: portB,
 		DNSConfig: &dns.Config{
 			NameServers: []v2net.Destination{
 				v2net.UDPDestination(v2net.DomainAddress("localhost"), v2net.Port(53)),
 			},
 		},
-		InboundConfig: &point.ConnectionConfig{
+		InboundConfig: &point.InboundConnectionConfig{
 			Protocol: "vmess",
+			ListenOn: v2net.LocalHostIP,
 			Settings: []byte(`{
         "clients": [
           {"id": "` + testAccount.String() + `"}
         ]
       }`),
 		},
-		OutboundConfig: &point.ConnectionConfig{
+		OutboundConfig: &point.OutboundConnectionConfig{
 			Protocol: protocol,
 			Settings: nil,
 		},

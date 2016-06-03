@@ -1,6 +1,7 @@
 package shadowsocks_test
 
 import (
+	"io"
 	"testing"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
@@ -29,7 +30,7 @@ func TestEmptyPayload(t *testing.T) {
 
 	buffer := alloc.NewSmallBuffer().Clear()
 	_, err := ReadRequest(buffer, nil, false)
-	assert.Error(err).Equals(transport.ErrorCorruptedPacket)
+	assert.Error(err).Equals(io.EOF)
 }
 
 func TestSingleBytePayload(t *testing.T) {

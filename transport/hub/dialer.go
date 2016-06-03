@@ -15,49 +15,50 @@ var (
 	globalCache = NewConnectionCache()
 )
 
-func Dial(dest v2net.Destination) (*Connection, error) {
-	destStr := dest.String()
+func Dial(src v2net.Address, dest v2net.Destination) (*Connection, error) {
+	if src == nil {
+		src = v2net.AnyIP
+	}
+	id := src.String() + "-" + dest.NetAddr()
 	var conn net.Conn
-	if transport.IsConnectionReusable() {
-		conn = globalCache.Get(destStr)
+	if dest.IsTCP() && transport.IsConnectionReusable() {
+		conn = globalCache.Get(id)
 	}
 	if conn == nil {
 		var err error
-		conn, err = DialWithoutCache(dest)
+		conn, err = DialWithoutCache(src, dest)
 		if err != nil {
 			return nil, err
 		}
 	}
 	return &Connection{
-		dest:     destStr,
+		dest:     id,
 		conn:     conn,
 		listener: globalCache,
 	}, nil
 }
 
-func DialWithoutCache(dest v2net.Destination) (net.Conn, error) {
-	if dest.Address().IsDomain() {
-		dialer := &net.Dialer{
-			Timeout:   time.Second * 60,
-			DualStack: true,
-		}
-		network := "tcp"
-		if dest.IsUDP() {
-			network = "udp"
-		}
-		return dialer.Dial(network, dest.NetAddr())
+func DialWithoutCache(src v2net.Address, dest v2net.Destination) (net.Conn, error) {
+	dialer := &net.Dialer{
+		Timeout:   time.Second * 60,
+		DualStack: true,
 	}
 
-	ip := dest.Address().IP()
-	if dest.IsTCP() {
-		return net.DialTCP("tcp", nil, &net.TCPAddr{
-			IP:   ip,
-			Port: int(dest.Port()),
-		})
+	if src != nil && src != v2net.AnyIP {
+		var addr net.Addr
+		if dest.IsTCP() {
+			addr = &net.TCPAddr{
+				IP:   src.IP(),
+				Port: 0,
+			}
+		} else {
+			addr = &net.UDPAddr{
+				IP:   src.IP(),
+				Port: 0,
+			}
+		}
+		dialer.LocalAddr = addr
 	}
 
-	return net.DialUDP("udp", nil, &net.UDPAddr{
-		IP:   ip,
-		Port: int(dest.Port()),
-	})
+	return dialer.Dial(dest.Network().String(), dest.NetAddr())
 }

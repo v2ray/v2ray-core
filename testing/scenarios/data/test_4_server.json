@@ -1,10 +1,10 @@
 {
   "port": 50031,
-  "listen": "127.0.0.1",
   "log": {
     "loglevel": "debug"
   },
   "inbound": {
+    "listen": "127.0.0.1",
     "protocol": "vmess",
     "settings": {
       "clients": [

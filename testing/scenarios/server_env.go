@@ -1,12 +1,13 @@
 package scenarios
 
 import (
+	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	_ "github.com/v2ray/v2ray-core/app/router/rules"
 	"github.com/v2ray/v2ray-core/common/log"
-	"github.com/v2ray/v2ray-core/shell/point"
 
 	// The following are necessary as they register handlers in their init functions.
 	_ "github.com/v2ray/v2ray-core/proxy/blackhole"
@@ -20,8 +21,24 @@ import (
 )
 
 var (
-	runningServers = make([]*point.Point, 0, 10)
+	runningServers = make([]*exec.Cmd, 0, 10)
+
+	binaryPath string
 )
+
+func BuildV2Ray() error {
+	if len(binaryPath) > 0 {
+		return nil
+	}
+
+	dir, err := ioutil.TempDir("", "v2ray")
+	if err != nil {
+		return err
+	}
+	binaryPath = filepath.Join(dir, "v2ray.exe")
+	cmd := exec.Command("go", "build", "-tags=json", "-o="+binaryPath, filepath.Join("github.com", "v2ray", "v2ray-core", "release", "server"))
+	return cmd.Run()
+}
 
 func TestFile(filename string) string {
 	return filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "v2ray", "v2ray-core", "testing", "scenarios", "data", filename)
@@ -46,31 +63,30 @@ func InitializeServerClient(testcase string) error {
 }
 
 func InitializeServer(configFile string) error {
-	config, err := point.LoadConfig(configFile)
+	err := BuildV2Ray()
 	if err != nil {
-		log.Error("Failed to read config file (", configFile, "): ", configFile, err)
 		return err
 	}
 
-	vPoint, err := point.NewPoint(config)
+	proc := exec.Command(binaryPath, "-config="+configFile)
+	proc.Stderr = os.Stderr
+	proc.Stdout = os.Stdout
+
+	err = proc.Start()
 	if err != nil {
-		log.Error("Failed to create Point server: ", err)
 		return err
 	}
 
-	err = vPoint.Start()
-	if err != nil {
-		log.Error("Error starting Point server: ", err)
-		return err
-	}
-	runningServers = append(runningServers, vPoint)
+	runningServers = append(runningServers, proc)
 
 	return nil
 }
 
 func CloseAllServers() {
+	log.Info("Closing all servers.")
 	for _, server := range runningServers {
-		server.Close()
+		server.Process.Kill()
 	}
-	runningServers = make([]*point.Point, 0, 10)
+	runningServers = make([]*exec.Cmd, 0, 10)
+	log.Info("All server closed.")
 }

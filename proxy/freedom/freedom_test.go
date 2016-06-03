@@ -37,7 +37,7 @@ func TestSinglePacket(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	space := app.NewSpace()
-	freedom := NewFreedomConnection(&Config{}, space)
+	freedom := NewFreedomConnection(&Config{}, space, v2net.AnyIP)
 	space.Initialize()
 
 	traffic := ray.NewRay()
@@ -57,7 +57,7 @@ func TestSinglePacket(t *testing.T) {
 func TestUnreachableDestination(t *testing.T) {
 	assert := assert.On(t)
 
-	freedom := NewFreedomConnection(&Config{}, app.NewSpace())
+	freedom := NewFreedomConnection(&Config{}, app.NewSpace(), v2net.AnyIP)
 	traffic := ray.NewRay()
 	data2Send := "Data to be sent to remote"
 	payload := alloc.NewSmallBuffer().Clear().Append([]byte(data2Send))
@@ -81,7 +81,7 @@ func TestIPResolution(t *testing.T) {
 	})
 	space.BindApp(dns.APP_ID, dnsServer)
 
-	freedom := NewFreedomConnection(&Config{DomainStrategy: DomainStrategyUseIP}, space)
+	freedom := NewFreedomConnection(&Config{DomainStrategy: DomainStrategyUseIP}, space, v2net.AnyIP)
 
 	space.Initialize()
 

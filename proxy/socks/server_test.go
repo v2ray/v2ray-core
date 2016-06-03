@@ -31,16 +31,17 @@ func TestSocksTcpConnect(t *testing.T) {
 		ConnInput:  bytes.NewReader(connInput),
 	}
 
-	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (v2proxy.OutboundHandler, error) {
-		return och, nil
-	})
+	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och",
+		func(space app.Space, config interface{}, sendThrough v2net.Address) (v2proxy.OutboundHandler, error) {
+			return och, nil
+		})
 	assert.Error(err).IsNil()
 
 	config := &point.Config{
-		Port:     port,
-		ListenOn: v2net.LocalHostIP,
-		InboundConfig: &point.ConnectionConfig{
+		Port: port,
+		InboundConfig: &point.InboundConnectionConfig{
 			Protocol: "socks",
+			ListenOn: v2net.LocalHostIP,
 			Settings: []byte(`
       {
         "auth": "noauth"
@@ -51,7 +52,7 @@ func TestSocksTcpConnect(t *testing.T) {
 				v2net.UDPDestination(v2net.DomainAddress("localhost"), v2net.Port(53)),
 			},
 		},
-		OutboundConfig: &point.ConnectionConfig{
+		OutboundConfig: &point.OutboundConnectionConfig{
 			Protocol: protocol,
 			Settings: nil,
 		},
@@ -96,16 +97,17 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 		ConnOutput: connOutput,
 	}
 
-	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (v2proxy.OutboundHandler, error) {
-		return och, nil
-	})
+	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och",
+		func(space app.Space, config interface{}, sendThrough v2net.Address) (v2proxy.OutboundHandler, error) {
+			return och, nil
+		})
 	assert.Error(err).IsNil()
 
 	config := &point.Config{
-		Port:     port,
-		ListenOn: v2net.LocalHostIP,
-		InboundConfig: &point.ConnectionConfig{
+		Port: port,
+		InboundConfig: &point.InboundConnectionConfig{
 			Protocol: "socks",
+			ListenOn: v2net.LocalHostIP,
 			Settings: []byte(`
       {
         "auth": "password",
@@ -119,7 +121,7 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 				v2net.UDPDestination(v2net.DomainAddress("localhost"), v2net.Port(53)),
 			},
 		},
-		OutboundConfig: &point.ConnectionConfig{
+		OutboundConfig: &point.OutboundConnectionConfig{
 			Protocol: protocol,
 			Settings: nil,
 		},
@@ -164,16 +166,17 @@ func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
 		ConnOutput: connOutput,
 	}
 
-	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (v2proxy.OutboundHandler, error) {
-		return och, nil
-	})
+	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och",
+		func(space app.Space, config interface{}, sendThrough v2net.Address) (v2proxy.OutboundHandler, error) {
+			return och, nil
+		})
 	assert.Error(err).IsNil()
 
 	config := &point.Config{
-		Port:     port,
-		ListenOn: v2net.LocalHostIP,
-		InboundConfig: &point.ConnectionConfig{
+		Port: port,
+		InboundConfig: &point.InboundConnectionConfig{
 			Protocol: "socks",
+			ListenOn: v2net.LocalHostIP,
 			Settings: []byte(`
       {
         "auth": "password",
@@ -187,7 +190,7 @@ func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
 				v2net.UDPDestination(v2net.DomainAddress("localhost"), v2net.Port(53)),
 			},
 		},
-		OutboundConfig: &point.ConnectionConfig{
+		OutboundConfig: &point.OutboundConnectionConfig{
 			Protocol: protocol,
 			Settings: nil,
 		},
@@ -218,15 +221,16 @@ func TestSocksTcpConnectWithWrongAuthMethod(t *testing.T) {
 		ConnOutput: connOutput,
 	}
 
-	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och", func(space app.Space, config interface{}) (v2proxy.OutboundHandler, error) {
-		return och, nil
-	})
+	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och",
+		func(space app.Space, config interface{}, sendThrough v2net.Address) (v2proxy.OutboundHandler, error) {
+			return och, nil
+		})
 	assert.Error(err).IsNil()
 
 	config := &point.Config{
-		Port:     port,
-		ListenOn: v2net.LocalHostIP,
-		InboundConfig: &point.ConnectionConfig{
+		Port: port,
+		InboundConfig: &point.InboundConnectionConfig{
+			ListenOn: v2net.LocalHostIP,
 			Protocol: "socks",
 			Settings: []byte(`
       {
@@ -241,7 +245,7 @@ func TestSocksTcpConnectWithWrongAuthMethod(t *testing.T) {
 				v2net.UDPDestination(v2net.DomainAddress("localhost"), v2net.Port(53)),
 			},
 		},
-		OutboundConfig: &point.ConnectionConfig{
+		OutboundConfig: &point.OutboundConnectionConfig{
 			Protocol: protocol,
 			Settings: nil,
 		},

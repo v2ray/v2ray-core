@@ -1,9 +1,10 @@
 {
-  "port": 1080,
   "log": {
-    "access": ""
+    "loglevel": "warning"
   },
   "inbound": {
+    "port": 1080,
+    "listen": "127.0.0.1",
     "protocol": "socks",
     "settings": {
       "auth": "noauth",

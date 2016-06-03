@@ -1,7 +1,7 @@
 {
   "port": 50051,
-  "listen": "127.0.0.1",
   "inbound": {
+    "listen": "127.0.0.1",
     "protocol": "shadowsocks",
     "settings": {
       "method": "aes-256-cfb",

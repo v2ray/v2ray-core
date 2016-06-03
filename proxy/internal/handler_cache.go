@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/v2ray/v2ray-core/app"
+	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal/config"
 )
@@ -45,7 +46,7 @@ func MustRegisterOutboundHandlerCreator(name string, creator OutboundHandlerCrea
 	}
 }
 
-func CreateInboundHandler(name string, space app.Space, rawConfig []byte) (proxy.InboundHandler, error) {
+func CreateInboundHandler(name string, space app.Space, rawConfig []byte, listen v2net.Address, port v2net.Port) (proxy.InboundHandler, error) {
 	creator, found := inboundFactories[name]
 	if !found {
 		return nil, ErrorProxyNotFound
@@ -55,12 +56,12 @@ func CreateInboundHandler(name string, space app.Space, rawConfig []byte) (proxy
 		if err != nil {
 			return nil, err
 		}
-		return creator(space, proxyConfig)
+		return creator(space, proxyConfig, listen, port)
 	}
-	return creator(space, nil)
+	return creator(space, nil, listen, port)
 }
 
-func CreateOutboundHandler(name string, space app.Space, rawConfig []byte) (proxy.OutboundHandler, error) {
+func CreateOutboundHandler(name string, space app.Space, rawConfig []byte, sendThrough v2net.Address) (proxy.OutboundHandler, error) {
 	creator, found := outboundFactories[name]
 	if !found {
 		return nil, ErrorNameExists
@@ -71,8 +72,8 @@ func CreateOutboundHandler(name string, space app.Space, rawConfig []byte) (prox
 		if err != nil {
 			return nil, err
 		}
-		return creator(space, proxyConfig)
+		return creator(space, proxyConfig, sendThrough)
 	}
 
-	return creator(space, nil)
+	return creator(space, nil, sendThrough)
 }

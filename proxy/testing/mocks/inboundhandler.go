@@ -10,21 +10,19 @@ import (
 )
 
 type InboundConnectionHandler struct {
-	port             v2net.Port
-	address          v2net.Address
+	ListeningPort    v2net.Port
+	ListeningAddress v2net.Address
 	PacketDispatcher dispatcher.PacketDispatcher
 	ConnInput        io.Reader
 	ConnOutput       io.Writer
 }
 
-func (this *InboundConnectionHandler) Listen(address v2net.Address, port v2net.Port) error {
-	this.port = port
-	this.address = address
+func (this *InboundConnectionHandler) Start() error {
 	return nil
 }
 
 func (this *InboundConnectionHandler) Port() v2net.Port {
-	return this.port
+	return this.ListeningPort
 }
 
 func (this *InboundConnectionHandler) Close() {

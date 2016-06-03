@@ -1,7 +1,7 @@
 {
-  "port": 50000,
-  "listen": "127.0.0.1",
   "inbound": {
+    "port": 50000,
+    "listen": "127.0.0.1",
     "protocol": "socks",
     "settings": {
       "auth": "noauth",

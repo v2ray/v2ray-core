@@ -23,12 +23,14 @@ type FreedomConnection struct {
 	domainStrategy DomainStrategy
 	timeout        uint32
 	dns            dns.Server
+	sendThrough    v2net.Address
 }
 
-func NewFreedomConnection(config *Config, space app.Space) *FreedomConnection {
+func NewFreedomConnection(config *Config, space app.Space, sendThrough v2net.Address) *FreedomConnection {
 	f := &FreedomConnection{
 		domainStrategy: config.DomainStrategy,
 		timeout:        config.Timeout,
+		sendThrough:    sendThrough,
 	}
 	space.InitializeApplication(func() error {
 		if config.DomainStrategy == DomainStrategyUseIP {
@@ -78,7 +80,7 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 		destination = this.ResolveIP(destination)
 	}
 	err := retry.Timed(5, 100).On(func() error {
-		rawConn, err := hub.DialWithoutCache(destination)
+		rawConn, err := hub.DialWithoutCache(this.sendThrough, destination)
 		if err != nil {
 			return err
 		}
@@ -138,7 +140,7 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 
 func init() {
 	internal.MustRegisterOutboundHandlerCreator("freedom",
-		func(space app.Space, config interface{}) (proxy.OutboundHandler, error) {
-			return NewFreedomConnection(config.(*Config), space), nil
+		func(space app.Space, config interface{}, sendThrough v2net.Address) (proxy.OutboundHandler, error) {
+			return NewFreedomConnection(config.(*Config), space, sendThrough), nil
 		})
 }

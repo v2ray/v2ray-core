@@ -22,29 +22,21 @@ const (
 
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
-		Port            v2net.Port              `json:"port"` // Port of this Point server.
-		ListenOn        *v2net.AddressJson      `json:"listen"`
-		LogConfig       *LogConfig              `json:"log"`
-		RouterConfig    *router.Config          `json:"routing"`
-		DNSConfig       *dns.Config             `json:"dns"`
-		InboundConfig   *ConnectionConfig       `json:"inbound"`
-		OutboundConfig  *ConnectionConfig       `json:"outbound"`
-		InboundDetours  []*InboundDetourConfig  `json:"inboundDetour"`
-		OutboundDetours []*OutboundDetourConfig `json:"outboundDetour"`
-		Transport       *transport.Config       `json:"transport"`
+		Port            v2net.Port                `json:"port"` // Port of this Point server.
+		LogConfig       *LogConfig                `json:"log"`
+		RouterConfig    *router.Config            `json:"routing"`
+		DNSConfig       *dns.Config               `json:"dns"`
+		InboundConfig   *InboundConnectionConfig  `json:"inbound"`
+		OutboundConfig  *OutboundConnectionConfig `json:"outbound"`
+		InboundDetours  []*InboundDetourConfig    `json:"inboundDetour"`
+		OutboundDetours []*OutboundDetourConfig   `json:"outboundDetour"`
+		Transport       *transport.Config         `json:"transport"`
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
 		return err
 	}
 	this.Port = jsonConfig.Port
-	this.ListenOn = v2net.AnyIP
-	if jsonConfig.ListenOn != nil {
-		if jsonConfig.ListenOn.Address.IsDomain() {
-			return errors.New("Point: Unable to listen on domain address: " + jsonConfig.ListenOn.Address.Domain())
-		}
-		this.ListenOn = jsonConfig.ListenOn.Address
-	}
 	this.LogConfig = jsonConfig.LogConfig
 	this.RouterConfig = jsonConfig.RouterConfig
 	this.InboundConfig = jsonConfig.InboundConfig
@@ -63,10 +55,37 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (this *ConnectionConfig) UnmarshalJSON(data []byte) error {
+func (this *InboundConnectionConfig) UnmarshalJSON(data []byte) error {
+	type JsonConfig struct {
+		Port     uint16             `json:"port"`
+		Listen   *v2net.AddressJson `json:"listen"`
+		Protocol string             `json:"protocol"`
+		Settings json.RawMessage    `json:"settings"`
+	}
+
+	jsonConfig := new(JsonConfig)
+	if err := json.Unmarshal(data, jsonConfig); err != nil {
+		return err
+	}
+	this.Port = v2net.Port(jsonConfig.Port)
+	this.ListenOn = v2net.AnyIP
+	if jsonConfig.Listen != nil {
+		if jsonConfig.Listen.Address.IsDomain() {
+			return errors.New("Point: Unable to listen on domain address: " + jsonConfig.Listen.Address.Domain())
+		}
+		this.ListenOn = jsonConfig.Listen.Address
+	}
+
+	this.Protocol = jsonConfig.Protocol
+	this.Settings = jsonConfig.Settings
+	return nil
+}
+
+func (this *OutboundConnectionConfig) UnmarshalJSON(data []byte) error {
 	type JsonConnectionConfig struct {
-		Protocol string          `json:"protocol"`
-		Settings json.RawMessage `json:"settings"`
+		Protocol    string             `json:"protocol"`
+		SendThrough *v2net.AddressJson `json:"sendThrough"`
+		Settings    json.RawMessage    `json:"settings"`
 	}
 	jsonConfig := new(JsonConnectionConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
@@ -74,6 +93,14 @@ func (this *ConnectionConfig) UnmarshalJSON(data []byte) error {
 	}
 	this.Protocol = jsonConfig.Protocol
 	this.Settings = jsonConfig.Settings
+
+	if jsonConfig.SendThrough != nil {
+		address := jsonConfig.SendThrough.Address
+		if address.IsDomain() {
+			return errors.New("Point: Unable to send through: " + address.String())
+		}
+		this.SendThrough = address
+	}
 	return nil
 }
 
@@ -173,9 +200,10 @@ func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 
 func (this *OutboundDetourConfig) UnmarshalJSON(data []byte) error {
 	type JsonOutboundDetourConfig struct {
-		Protocol string          `json:"protocol"`
-		Tag      string          `json:"tag"`
-		Settings json.RawMessage `json:"settings"`
+		Protocol    string             `json:"protocol"`
+		SendThrough *v2net.AddressJson `json:"sendThrough"`
+		Tag         string             `json:"tag"`
+		Settings    json.RawMessage    `json:"settings"`
 	}
 	jsonConfig := new(JsonOutboundDetourConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
@@ -184,6 +212,14 @@ func (this *OutboundDetourConfig) UnmarshalJSON(data []byte) error {
 	this.Protocol = jsonConfig.Protocol
 	this.Tag = jsonConfig.Tag
 	this.Settings = jsonConfig.Settings
+
+	if jsonConfig.SendThrough != nil {
+		address := jsonConfig.SendThrough.Address
+		if address.IsDomain() {
+			return errors.New("Point: Unable to send through: " + address.String())
+		}
+		this.SendThrough = address
+	}
 	return nil
 }
 

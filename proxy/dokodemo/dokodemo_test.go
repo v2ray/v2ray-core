@@ -37,23 +37,23 @@ func TestDokodemoTCP(t *testing.T) {
 	space := app.NewSpace()
 	space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(space))
 	ohm := proxyman.NewDefaultOutboundHandlerManager()
-	ohm.SetDefaultHandler(freedom.NewFreedomConnection(&freedom.Config{}, space))
+	ohm.SetDefaultHandler(freedom.NewFreedomConnection(&freedom.Config{}, space, v2net.LocalHostIP))
 	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, ohm)
 
 	data2Send := "Data to be sent to remote."
 
+	port := v2nettesting.PickPort()
 	dokodemo := NewDokodemoDoor(&Config{
 		Address: v2net.LocalHostIP,
 		Port:    tcpServer.Port,
 		Network: v2net.TCPNetwork.AsList(),
 		Timeout: 600,
-	}, space)
+	}, space, v2net.LocalHostIP, port)
 	defer dokodemo.Close()
 
 	assert.Error(space.Initialize()).IsNil()
 
-	port := v2nettesting.PickPort()
-	err = dokodemo.Listen(v2net.LocalHostIP, port)
+	err = dokodemo.Start()
 	assert.Error(err).IsNil()
 	assert.Port(port).Equals(dokodemo.Port())
 
@@ -95,23 +95,23 @@ func TestDokodemoUDP(t *testing.T) {
 	space := app.NewSpace()
 	space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(space))
 	ohm := proxyman.NewDefaultOutboundHandlerManager()
-	ohm.SetDefaultHandler(freedom.NewFreedomConnection(&freedom.Config{}, space))
+	ohm.SetDefaultHandler(freedom.NewFreedomConnection(&freedom.Config{}, space, v2net.AnyIP))
 	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, ohm)
 
 	data2Send := "Data to be sent to remote."
 
+	port := v2nettesting.PickPort()
 	dokodemo := NewDokodemoDoor(&Config{
 		Address: v2net.LocalHostIP,
 		Port:    udpServer.Port,
 		Network: v2net.UDPNetwork.AsList(),
 		Timeout: 600,
-	}, space)
+	}, space, v2net.LocalHostIP, port)
 	defer dokodemo.Close()
 
 	assert.Error(space.Initialize()).IsNil()
 
-	port := v2nettesting.PickPort()
-	err = dokodemo.Listen(v2net.LocalHostIP, port)
+	err = dokodemo.Start()
 	assert.Error(err).IsNil()
 	assert.Port(port).Equals(dokodemo.Port())
 

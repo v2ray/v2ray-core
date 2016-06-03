@@ -29,11 +29,13 @@ type DokodemoDoor struct {
 	listeningAddress v2net.Address
 }
 
-func NewDokodemoDoor(config *Config, space app.Space) *DokodemoDoor {
+func NewDokodemoDoor(config *Config, space app.Space, listen v2net.Address, port v2net.Port) *DokodemoDoor {
 	d := &DokodemoDoor{
-		config:  config,
-		address: config.Address,
-		port:    config.Port,
+		config:           config,
+		address:          config.Address,
+		port:             config.Port,
+		listeningAddress: listen,
+		listeningPort:    port,
 	}
 	space.InitializeApplication(func() error {
 		if !space.HasApp(dispatcher.APP_ID) {
@@ -66,26 +68,20 @@ func (this *DokodemoDoor) Close() {
 	}
 }
 
-func (this *DokodemoDoor) Listen(address v2net.Address, port v2net.Port) error {
+func (this *DokodemoDoor) Start() error {
 	if this.accepting {
-		if this.listeningPort == port && this.listeningAddress.Equals(address) {
-			return nil
-		} else {
-			return proxy.ErrorAlreadyListening
-		}
+		return nil
 	}
-	this.listeningPort = port
-	this.listeningAddress = address
 	this.accepting = true
 
 	if this.config.Network.HasNetwork(v2net.TCPNetwork) {
-		err := this.ListenTCP(address, port)
+		err := this.ListenTCP(this.listeningAddress, this.listeningPort)
 		if err != nil {
 			return err
 		}
 	}
 	if this.config.Network.HasNetwork(v2net.UDPNetwork) {
-		err := this.ListenUDP(address, port)
+		err := this.ListenUDP(this.listeningAddress, this.listeningPort)
 		if err != nil {
 			return err
 		}
@@ -168,7 +164,7 @@ func (this *DokodemoDoor) HandleTCPConnection(conn *hub.Connection) {
 
 func init() {
 	internal.MustRegisterInboundHandlerCreator("dokodemo-door",
-		func(space app.Space, rawConfig interface{}) (proxy.InboundHandler, error) {
-			return NewDokodemoDoor(rawConfig.(*Config), space), nil
+		func(space app.Space, rawConfig interface{}, listen v2net.Address, port v2net.Port) (proxy.InboundHandler, error) {
+			return NewDokodemoDoor(rawConfig.(*Config), space, listen, port), nil
 		})
 }

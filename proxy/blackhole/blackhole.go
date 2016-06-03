@@ -31,7 +31,7 @@ func (this *BlackHole) Dispatch(destination v2net.Destination, payload *alloc.Bu
 
 func init() {
 	internal.MustRegisterOutboundHandlerCreator("blackhole",
-		func(space app.Space, config interface{}) (proxy.OutboundHandler, error) {
+		func(space app.Space, config interface{}, sendThrough v2net.Address) (proxy.OutboundHandler, error) {
 			return NewBlackHole(), nil
 		})
 }

@@ -22,6 +22,10 @@ func (this Network) AsList() *NetworkList {
 	return &list
 }
 
+func (this Network) String() string {
+	return string(this)
+}
+
 // NetworkList is a list of Networks.
 type NetworkList []Network
 

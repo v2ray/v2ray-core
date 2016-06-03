@@ -35,8 +35,12 @@ type Point struct {
 // The server is not started at this point.
 func NewPoint(pConfig *Config) (*Point, error) {
 	var vpoint = new(Point)
-	vpoint.port = pConfig.Port
-	vpoint.listen = pConfig.ListenOn
+	vpoint.port = pConfig.InboundConfig.Port
+	if vpoint.port == 0 {
+		vpoint.port = pConfig.Port // Backward compatibility
+	}
+
+	vpoint.listen = pConfig.InboundConfig.ListenOn
 
 	if pConfig.TransportConfig != nil {
 		pConfig.TransportConfig.Apply()
@@ -87,7 +91,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	vpoint.space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(vpoint.space))
 
 	ichConfig := pConfig.InboundConfig.Settings
-	ich, err := proxyrepo.CreateInboundHandler(pConfig.InboundConfig.Protocol, vpoint.space, ichConfig)
+	ich, err := proxyrepo.CreateInboundHandler(pConfig.InboundConfig.Protocol, vpoint.space, ichConfig, pConfig.InboundConfig.ListenOn, vpoint.port)
 	if err != nil {
 		log.Error("Failed to create inbound connection handler: ", err)
 		return nil, err
@@ -95,7 +99,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	vpoint.ich = ich
 
 	ochConfig := pConfig.OutboundConfig.Settings
-	och, err := proxyrepo.CreateOutboundHandler(pConfig.OutboundConfig.Protocol, vpoint.space, ochConfig)
+	och, err := proxyrepo.CreateOutboundHandler(pConfig.OutboundConfig.Protocol, vpoint.space, ochConfig, pConfig.OutboundConfig.SendThrough)
 	if err != nil {
 		log.Error("Failed to create outbound connection handler: ", err)
 		return nil, err
@@ -140,7 +144,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	if len(outboundDetours) > 0 {
 		vpoint.odh = make(map[string]proxy.OutboundHandler)
 		for _, detourConfig := range outboundDetours {
-			detourHandler, err := proxyrepo.CreateOutboundHandler(detourConfig.Protocol, vpoint.space, detourConfig.Settings)
+			detourHandler, err := proxyrepo.CreateOutboundHandler(detourConfig.Protocol, vpoint.space, detourConfig.Settings, detourConfig.SendThrough)
 			if err != nil {
 				log.Error("Point: Failed to create detour outbound connection handler: ", err)
 				return nil, err
@@ -173,7 +177,7 @@ func (this *Point) Start() error {
 	}
 
 	err := retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
-		err := this.ich.Listen(this.listen, this.port)
+		err := this.ich.Start()
 		if err != nil {
 			return err
 		}

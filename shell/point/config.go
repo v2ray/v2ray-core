@@ -8,9 +8,17 @@ import (
 	"github.com/v2ray/v2ray-core/transport"
 )
 
-type ConnectionConfig struct {
+type InboundConnectionConfig struct {
+	Port     v2net.Port
+	ListenOn v2net.Address
 	Protocol string
 	Settings []byte
+}
+
+type OutboundConnectionConfig struct {
+	Protocol    string
+	SendThrough v2net.Address
+	Settings    []byte
 }
 
 type LogConfig struct {
@@ -41,19 +49,19 @@ type InboundDetourConfig struct {
 }
 
 type OutboundDetourConfig struct {
-	Protocol string
-	Tag      string
-	Settings []byte
+	Protocol    string
+	SendThrough v2net.Address
+	Tag         string
+	Settings    []byte
 }
 
 type Config struct {
 	Port            v2net.Port
-	ListenOn        v2net.Address
 	LogConfig       *LogConfig
 	RouterConfig    *router.Config
 	DNSConfig       *dns.Config
-	InboundConfig   *ConnectionConfig
-	OutboundConfig  *ConnectionConfig
+	InboundConfig   *InboundConnectionConfig
+	OutboundConfig  *OutboundConnectionConfig
 	InboundDetours  []*InboundDetourConfig
 	OutboundDetours []*OutboundDetourConfig
 	TransportConfig *transport.Config

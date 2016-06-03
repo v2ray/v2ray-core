@@ -1,7 +1,7 @@
 {
   "port": 50021,
-  "listen": "127.0.0.1",
   "inbound": {
+    "listen": "127.0.0.1",
     "protocol": "vmess",
     "settings": {
       "clients": [

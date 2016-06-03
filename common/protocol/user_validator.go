@@ -50,7 +50,7 @@ func NewTimedUserValidator(hasher IDHash) UserValidator {
 		hasher:     hasher,
 		cancel:     signal.NewCloseSignal(),
 	}
-	go tus.updateUserHash(time.Tick(updateIntervalSec*time.Second), tus.cancel)
+	go tus.updateUserHash(updateIntervalSec*time.Second, tus.cancel)
 	return tus
 }
 
@@ -88,11 +88,11 @@ func (this *TimedUserValidator) generateNewHashes(nowSec Timestamp, idx int, ent
 	}
 }
 
-func (this *TimedUserValidator) updateUserHash(tick <-chan time.Time, cancel *signal.CancelSignal) {
+func (this *TimedUserValidator) updateUserHash(interval time.Duration, cancel *signal.CancelSignal) {
 L:
 	for {
 		select {
-		case now := <-tick:
+		case now := <-time.After(interval):
 			nowSec := Timestamp(now.Unix() + cacheDurationSec)
 			for _, entry := range this.ids {
 				this.generateNewHashes(nowSec, entry.userIdx, entry)

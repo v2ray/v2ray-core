@@ -50,6 +50,6 @@ func (this *OutboundConnectionHandler) Dispatch(destination v2net.Destination, p
 	return nil
 }
 
-func (this *OutboundConnectionHandler) Create(space app.Space, config interface{}) (proxy.OutboundHandler, error) {
+func (this *OutboundConnectionHandler) Create(space app.Space, config interface{}, sendThrough v2net.Address) (proxy.OutboundHandler, error) {
 	return this, nil
 }
