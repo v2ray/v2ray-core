@@ -43,8 +43,11 @@ func ReadRequest(reader io.Reader, auth *Authenticator, udp bool) (*Request, err
 
 	_, err := io.ReadFull(reader, buffer.Value[:1])
 	if err != nil {
-		log.Error("Shadowsocks: Failed to read address type: ", err)
-		return nil, transport.ErrorCorruptedPacket
+		if err != io.EOF {
+			log.Warning("Shadowsocks: Failed to read address type: ", err)
+			return nil, transport.ErrorCorruptedPacket
+		}
+		return nil, err
 	}
 	lenBuffer := 1
 
@@ -58,7 +61,7 @@ func ReadRequest(reader io.Reader, auth *Authenticator, udp bool) (*Request, err
 	case AddrTypeIPv4:
 		_, err := io.ReadFull(reader, buffer.Value[lenBuffer:lenBuffer+4])
 		if err != nil {
-			log.Error("Shadowsocks: Failed to read IPv4 address: ", err)
+			log.Warning("Shadowsocks: Failed to read IPv4 address: ", err)
 			return nil, transport.ErrorCorruptedPacket
 		}
 		request.Address = v2net.IPAddress(buffer.Value[lenBuffer : lenBuffer+4])
@@ -66,7 +69,7 @@ func ReadRequest(reader io.Reader, auth *Authenticator, udp bool) (*Request, err
 	case AddrTypeIPv6:
 		_, err := io.ReadFull(reader, buffer.Value[lenBuffer:lenBuffer+16])
 		if err != nil {
-			log.Error("Shadowsocks: Failed to read IPv6 address: ", err)
+			log.Warning("Shadowsocks: Failed to read IPv6 address: ", err)
 			return nil, transport.ErrorCorruptedPacket
 		}
 		request.Address = v2net.IPAddress(buffer.Value[lenBuffer : lenBuffer+16])
@@ -74,26 +77,26 @@ func ReadRequest(reader io.Reader, auth *Authenticator, udp bool) (*Request, err
 	case AddrTypeDomain:
 		_, err := io.ReadFull(reader, buffer.Value[lenBuffer:lenBuffer+1])
 		if err != nil {
-			log.Error("Shadowsocks: Failed to read domain lenth: ", err)
+			log.Warning("Shadowsocks: Failed to read domain lenth: ", err)
 			return nil, transport.ErrorCorruptedPacket
 		}
 		domainLength := int(buffer.Value[lenBuffer])
 		lenBuffer++
 		_, err = io.ReadFull(reader, buffer.Value[lenBuffer:lenBuffer+domainLength])
 		if err != nil {
-			log.Error("Shadowsocks: Failed to read domain: ", err)
+			log.Warning("Shadowsocks: Failed to read domain: ", err)
 			return nil, transport.ErrorCorruptedPacket
 		}
 		request.Address = v2net.DomainAddress(string(buffer.Value[lenBuffer : lenBuffer+domainLength]))
 		lenBuffer += domainLength
 	default:
-		log.Error("Shadowsocks: Unknown address type: ", addrType)
+		log.Warning("Shadowsocks: Unknown address type: ", addrType)
 		return nil, transport.ErrorCorruptedPacket
 	}
 
 	_, err = io.ReadFull(reader, buffer.Value[lenBuffer:lenBuffer+2])
 	if err != nil {
-		log.Error("Shadowsocks: Failed to read port: ", err)
+		log.Warning("Shadowsocks: Failed to read port: ", err)
 		return nil, transport.ErrorCorruptedPacket
 	}
 
@@ -105,7 +108,7 @@ func ReadRequest(reader io.Reader, auth *Authenticator, udp bool) (*Request, err
 	if udp {
 		nBytes, err := reader.Read(buffer.Value[lenBuffer:])
 		if err != nil {
-			log.Error("Shadowsocks: Failed to read UDP payload: ", err)
+			log.Warning("Shadowsocks: Failed to read UDP payload: ", err)
 			return nil, transport.ErrorCorruptedPacket
 		}
 		buffer.Slice(0, lenBuffer+nBytes)
@@ -121,7 +124,7 @@ func ReadRequest(reader io.Reader, auth *Authenticator, udp bool) (*Request, err
 			authBytes = buffer.Value[lenBuffer : lenBuffer+AuthSize]
 			_, err = io.ReadFull(reader, authBytes)
 			if err != nil {
-				log.Error("Shadowsocks: Failed to read OTA: ", err)
+				log.Warning("Shadowsocks: Failed to read OTA: ", err)
 				return nil, transport.ErrorCorruptedPacket
 			}
 		}
@@ -130,7 +133,6 @@ func ReadRequest(reader io.Reader, auth *Authenticator, udp bool) (*Request, err
 	if request.OTA {
 		actualAuth := auth.Authenticate(nil, buffer.Value[0:lenBuffer])
 		if !bytes.Equal(actualAuth, authBytes) {
-			log.Debug("Shadowsocks: Invalid OTA. Expecting ", actualAuth, ", but got ", authBytes)
 			log.Warning("Shadowsocks: Invalid OTA.")
 			return nil, proxy.ErrorInvalidAuthentication
 		}

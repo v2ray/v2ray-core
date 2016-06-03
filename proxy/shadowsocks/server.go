@@ -107,8 +107,10 @@ func (this *Server) handlerUDPPayload(payload *alloc.Buffer, source v2net.Destin
 
 	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(key, iv)), true)
 	if err != nil {
-		log.Access(source, "", log.AccessRejected, err)
-		log.Warning("Shadowsocks: Invalid request from ", source, ": ", err)
+		if err != io.EOF {
+			log.Access(source, "", log.AccessRejected, err)
+			log.Warning("Shadowsocks: Invalid request from ", source, ": ", err)
+		}
 		return
 	}
 	//defer request.Release()
@@ -173,8 +175,10 @@ func (this *Server) handleConnection(conn *hub.Connection) {
 	ivLen := this.config.Cipher.IVSize()
 	_, err := io.ReadFull(bufferedReader, buffer.Value[:ivLen])
 	if err != nil {
-		log.Access(conn.RemoteAddr(), "", log.AccessRejected, err)
-		log.Error("Shadowsocks: Failed to read IV: ", err)
+		if err != io.EOF {
+			log.Access(conn.RemoteAddr(), "", log.AccessRejected, err)
+			log.Warning("Shadowsocks: Failed to read IV: ", err)
+		}
 		return
 	}
 

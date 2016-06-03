@@ -71,7 +71,7 @@ func (this *Server) Listen(address v2net.Address, port v2net.Port) error {
 	}
 	tcpListener, err := hub.ListenTCP(address, port, this.handleConnection, tlsConfig)
 	if err != nil {
-		log.Error("Http: Failed listen on port ", port, ": ", err)
+		log.Error("HTTP: Failed listen on port ", port, ": ", err)
 		return err
 	}
 	this.Lock()
@@ -110,7 +110,9 @@ func (this *Server) handleConnection(conn *hub.Connection) {
 
 	request, err := http.ReadRequest(reader)
 	if err != nil {
-		log.Warning("HTTP: Failed to read http request: ", err)
+		if err != io.EOF {
+			log.Warning("HTTP: Failed to read http request: ", err)
+		}
 		return
 	}
 	log.Info("HTTP: Request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]")

@@ -86,7 +86,7 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 		return nil
 	})
 	if err != nil {
-		log.Error("Freedom: Failed to open connection to ", destination, ": ", err)
+		log.Warning("Freedom: Failed to open connection to ", destination, ": ", err)
 		return err
 	}
 	defer conn.Close()

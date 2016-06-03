@@ -106,7 +106,9 @@ func (this *Server) handleConnection(connection *hub.Connection) {
 
 	auth, auth4, err := protocol.ReadAuthentication(reader)
 	if err != nil && err != protocol.Socks4Downgrade {
-		log.Error("Socks: failed to read authentication: ", err)
+		if err != io.EOF {
+			log.Warning("Socks: failed to read authentication: ", err)
+		}
 		return
 	}
 
@@ -128,7 +130,7 @@ func (this *Server) handleSocks5(reader *v2io.BufferedReader, writer *v2io.Buffe
 		err := protocol.WriteAuthentication(writer, authResponse)
 		writer.Flush()
 		if err != nil {
-			log.Error("Socks: failed to write authentication: ", err)
+			log.Warning("Socks: failed to write authentication: ", err)
 			return err
 		}
 		log.Warning("Socks: client doesn't support any allowed auth methods.")
@@ -136,8 +138,8 @@ func (this *Server) handleSocks5(reader *v2io.BufferedReader, writer *v2io.Buffe
 	}
 
 	authResponse := protocol.NewAuthenticationResponse(expectedAuthMethod)
-	err := protocol.WriteAuthentication(writer, authResponse)
-	writer.Flush()
+	protocol.WriteAuthentication(writer, authResponse)
+	err := writer.Flush()
 	if err != nil {
 		log.Error("Socks: failed to write authentication: ", err)
 		return err
@@ -145,7 +147,7 @@ func (this *Server) handleSocks5(reader *v2io.BufferedReader, writer *v2io.Buffe
 	if this.config.AuthType == AuthTypePassword {
 		upRequest, err := protocol.ReadUserPassRequest(reader)
 		if err != nil {
-			log.Error("Socks: failed to read username and password: ", err)
+			log.Warning("Socks: failed to read username and password: ", err)
 			return err
 		}
 		status := byte(0)
@@ -167,7 +169,7 @@ func (this *Server) handleSocks5(reader *v2io.BufferedReader, writer *v2io.Buffe
 
 	request, err := protocol.ReadRequest(reader)
 	if err != nil {
-		log.Error("Socks: failed to read request: ", err)
+		log.Warning("Socks: failed to read request: ", err)
 		return err
 	}
 
