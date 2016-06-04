@@ -14,6 +14,17 @@ const (
 	HandlerStateRunning = HandlerState(1)
 )
 
+type InboundHandlerMeta struct {
+	Tag     string
+	Address v2net.Address
+	Port    v2net.Port
+}
+
+type OutboundHandlerMeta struct {
+	Tag     string
+	Address v2net.Address
+}
+
 // An InboundHandler handles inbound network connections to V2Ray.
 type InboundHandler interface {
 	// Listen starts a InboundHandler.

@@ -30,7 +30,10 @@ func NewInboundDetourHandlerDynamic(space app.Space, config *InboundDetourConfig
 	handler.ichs = make([]proxy.InboundHandler, config.Allocation.Concurrency)
 
 	// To test configuration
-	ich, err := proxyrepo.CreateInboundHandler(config.Protocol, space, config.Settings, config.ListenOn, 0)
+	ich, err := proxyrepo.CreateInboundHandler(config.Protocol, space, config.Settings, &proxy.InboundHandlerMeta{
+		Address: config.ListenOn,
+		Port:    0,
+		Tag:     config.Tag})
 	if err != nil {
 		log.Error("Point: Failed to create inbound connection handler: ", err)
 		return nil, err
@@ -80,7 +83,8 @@ func (this *InboundDetourHandlerDynamic) refresh() error {
 
 	for idx, _ := range newIchs {
 		port := this.pickUnusedPort()
-		ich, err := proxyrepo.CreateInboundHandler(config.Protocol, this.space, config.Settings, config.ListenOn, port)
+		ich, err := proxyrepo.CreateInboundHandler(config.Protocol, this.space, config.Settings, &proxy.InboundHandlerMeta{
+			Address: config.ListenOn, Port: port, Tag: config.Tag})
 		if err != nil {
 			log.Error("Point: Failed to create inbound connection handler: ", err)
 			return err

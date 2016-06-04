@@ -10,6 +10,7 @@ import (
 	"github.com/v2ray/v2ray-core/app/proxyman"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
+	"github.com/v2ray/v2ray-core/proxy"
 	. "github.com/v2ray/v2ray-core/proxy/dokodemo"
 	"github.com/v2ray/v2ray-core/proxy/freedom"
 	"github.com/v2ray/v2ray-core/testing/assert"
@@ -37,7 +38,9 @@ func TestDokodemoTCP(t *testing.T) {
 	space := app.NewSpace()
 	space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(space))
 	ohm := proxyman.NewDefaultOutboundHandlerManager()
-	ohm.SetDefaultHandler(freedom.NewFreedomConnection(&freedom.Config{}, space, v2net.LocalHostIP))
+	ohm.SetDefaultHandler(
+		freedom.NewFreedomConnection(
+			&freedom.Config{}, space, &proxy.OutboundHandlerMeta{Address: v2net.LocalHostIP}))
 	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, ohm)
 
 	data2Send := "Data to be sent to remote."
@@ -48,7 +51,7 @@ func TestDokodemoTCP(t *testing.T) {
 		Port:    tcpServer.Port,
 		Network: v2net.TCPNetwork.AsList(),
 		Timeout: 600,
-	}, space, v2net.LocalHostIP, port)
+	}, space, &proxy.InboundHandlerMeta{Address: v2net.LocalHostIP, Port: port})
 	defer dokodemo.Close()
 
 	assert.Error(space.Initialize()).IsNil()
@@ -95,7 +98,9 @@ func TestDokodemoUDP(t *testing.T) {
 	space := app.NewSpace()
 	space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(space))
 	ohm := proxyman.NewDefaultOutboundHandlerManager()
-	ohm.SetDefaultHandler(freedom.NewFreedomConnection(&freedom.Config{}, space, v2net.AnyIP))
+	ohm.SetDefaultHandler(
+		freedom.NewFreedomConnection(
+			&freedom.Config{}, space, &proxy.OutboundHandlerMeta{Address: v2net.AnyIP}))
 	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, ohm)
 
 	data2Send := "Data to be sent to remote."
@@ -106,7 +111,7 @@ func TestDokodemoUDP(t *testing.T) {
 		Port:    udpServer.Port,
 		Network: v2net.UDPNetwork.AsList(),
 		Timeout: 600,
-	}, space, v2net.LocalHostIP, port)
+	}, space, &proxy.InboundHandlerMeta{Address: v2net.LocalHostIP, Port: port})
 	defer dokodemo.Close()
 
 	assert.Error(space.Initialize()).IsNil()

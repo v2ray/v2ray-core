@@ -29,21 +29,19 @@ type Server struct {
 	packetDispatcher dispatcher.PacketDispatcher
 	config           *Config
 	tcpListener      *hub.TCPHub
-	listeningPort    v2net.Port
-	listeningAddress v2net.Address
+	meta             *proxy.InboundHandlerMeta
 }
 
-func NewServer(config *Config, packetDispatcher dispatcher.PacketDispatcher, listen v2net.Address, port v2net.Port) *Server {
+func NewServer(config *Config, packetDispatcher dispatcher.PacketDispatcher, meta *proxy.InboundHandlerMeta) *Server {
 	return &Server{
 		packetDispatcher: packetDispatcher,
 		config:           config,
-		listeningAddress: listen,
-		listeningPort:    port,
+		meta:             meta,
 	}
 }
 
 func (this *Server) Port() v2net.Port {
-	return this.listeningPort
+	return this.meta.Port
 }
 
 func (this *Server) Close() {
@@ -65,9 +63,9 @@ func (this *Server) Start() error {
 	if this.config.TLSConfig != nil {
 		tlsConfig = this.config.TLSConfig.GetConfig()
 	}
-	tcpListener, err := hub.ListenTCP(this.listeningAddress, this.listeningPort, this.handleConnection, tlsConfig)
+	tcpListener, err := hub.ListenTCP(this.meta.Address, this.meta.Port, this.handleConnection, tlsConfig)
 	if err != nil {
-		log.Error("HTTP: Failed listen on port ", this.listeningPort, ": ", err)
+		log.Error("HTTP: Failed listen on ", this.meta.Address, ":", this.meta.Port, ": ", err)
 		return err
 	}
 	this.Lock()
@@ -272,14 +270,13 @@ func (this *Server) handlePlainHTTP(request *http.Request, dest v2net.Destinatio
 
 func init() {
 	internal.MustRegisterInboundHandlerCreator("http",
-		func(space app.Space, rawConfig interface{}, listen v2net.Address, port v2net.Port) (proxy.InboundHandler, error) {
+		func(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
 			if !space.HasApp(dispatcher.APP_ID) {
 				return nil, internal.ErrorBadConfiguration
 			}
 			return NewServer(
 				rawConfig.(*Config),
 				space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
-				listen,
-				port), nil
+				meta), nil
 		})
 }

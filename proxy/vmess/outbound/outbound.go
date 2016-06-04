@@ -21,7 +21,7 @@ import (
 
 type VMessOutboundHandler struct {
 	receiverManager *ReceiverManager
-	sendThrough     v2net.Address
+	meta            *proxy.OutboundHandlerMeta
 }
 
 func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
@@ -43,7 +43,7 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 		Option:  protocol.RequestOptionChunkStream,
 	}
 
-	conn, err := hub.Dial(this.sendThrough, destination)
+	conn, err := hub.Dial(this.meta.Address, destination)
 	if err != nil {
 		log.Error("Failed to open ", destination, ": ", err)
 		return err
@@ -143,11 +143,11 @@ func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, con
 
 func init() {
 	internal.MustRegisterOutboundHandlerCreator("vmess",
-		func(space app.Space, rawConfig interface{}, sendThrough v2net.Address) (proxy.OutboundHandler, error) {
+		func(space app.Space, rawConfig interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 			vOutConfig := rawConfig.(*Config)
 			return &VMessOutboundHandler{
 				receiverManager: NewReceiverManager(vOutConfig.Receivers),
-				sendThrough:     sendThrough,
+				meta:            meta,
 			}, nil
 		})
 }

@@ -32,7 +32,7 @@ func TestSocksTcpConnect(t *testing.T) {
 	}
 
 	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och",
-		func(space app.Space, config interface{}, sendThrough v2net.Address) (v2proxy.OutboundHandler, error) {
+		func(space app.Space, config interface{}, meta *v2proxy.OutboundHandlerMeta) (v2proxy.OutboundHandler, error) {
 			return och, nil
 		})
 	assert.Error(err).IsNil()
@@ -98,7 +98,7 @@ func TestSocksTcpConnectWithUserPass(t *testing.T) {
 	}
 
 	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och",
-		func(space app.Space, config interface{}, sendThrough v2net.Address) (v2proxy.OutboundHandler, error) {
+		func(space app.Space, config interface{}, meta *v2proxy.OutboundHandlerMeta) (v2proxy.OutboundHandler, error) {
 			return och, nil
 		})
 	assert.Error(err).IsNil()
@@ -167,7 +167,7 @@ func TestSocksTcpConnectWithWrongUserPass(t *testing.T) {
 	}
 
 	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och",
-		func(space app.Space, config interface{}, sendThrough v2net.Address) (v2proxy.OutboundHandler, error) {
+		func(space app.Space, config interface{}, meta *v2proxy.OutboundHandlerMeta) (v2proxy.OutboundHandler, error) {
 			return och, nil
 		})
 	assert.Error(err).IsNil()
@@ -222,7 +222,7 @@ func TestSocksTcpConnectWithWrongAuthMethod(t *testing.T) {
 	}
 
 	protocol, err := proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och",
-		func(space app.Space, config interface{}, sendThrough v2net.Address) (v2proxy.OutboundHandler, error) {
+		func(space app.Space, config interface{}, meta *v2proxy.OutboundHandlerMeta) (v2proxy.OutboundHandler, error) {
 			return och, nil
 		})
 	assert.Error(err).IsNil()
