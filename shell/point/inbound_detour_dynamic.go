@@ -102,9 +102,9 @@ func (this *InboundDetourHandlerDynamic) refresh() error {
 	this.ichs = newIchs
 	this.Unlock()
 
-	go func() {
+	go func(recycles []proxy.InboundHandler) {
 		time.Sleep(time.Minute)
-		for _, ich := range ich2Recycle {
+		for _, ich := range recycles {
 			if ich == nil {
 				continue
 			}
@@ -112,8 +112,7 @@ func (this *InboundDetourHandlerDynamic) refresh() error {
 			ich.Close()
 			delete(this.portsInUse, port)
 		}
-		ich2Recycle = nil
-	}()
+	}(ich2Recycle)
 
 	return nil
 }
