@@ -1,7 +1,7 @@
 {
   "port": 50031,
   "log": {
-    "loglevel": "debug"
+    "loglevel": "info"
   },
   "inbound": {
     "listen": "127.0.0.1",

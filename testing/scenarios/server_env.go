@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 
 	_ "github.com/v2ray/v2ray-core/app/router/rules"
 	"github.com/v2ray/v2ray-core/common/log"
@@ -35,7 +36,10 @@ func BuildV2Ray() error {
 	if err != nil {
 		return err
 	}
-	binaryPath = filepath.Join(dir, "v2ray.exe")
+	binaryPath = filepath.Join(dir, "v2ray")
+	if runtime.GOOS == "windows" {
+		binaryPath += ".exe"
+	}
 	cmd := exec.Command("go", "build", "-tags=json", "-o="+binaryPath, filepath.Join("github.com", "v2ray", "v2ray-core", "release", "server"))
 	return cmd.Run()
 }
