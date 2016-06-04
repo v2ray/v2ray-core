@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	_ "github.com/v2ray/v2ray-core/app/router/rules"
 	"github.com/v2ray/v2ray-core/common/log"
@@ -80,6 +81,8 @@ func InitializeServer(configFile string) error {
 	if err != nil {
 		return err
 	}
+
+	time.Sleep(time.Second)
 
 	runningServers = append(runningServers, proc)
 
