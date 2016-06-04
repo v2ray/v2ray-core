@@ -14,6 +14,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
+	"github.com/v2ray/v2ray-core/proxy"
 	. "github.com/v2ray/v2ray-core/proxy/freedom"
 	"github.com/v2ray/v2ray-core/testing/assert"
 	"github.com/v2ray/v2ray-core/testing/servers/tcp"
@@ -37,7 +38,7 @@ func TestSinglePacket(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	space := app.NewSpace()
-	freedom := NewFreedomConnection(&Config{}, space, v2net.AnyIP)
+	freedom := NewFreedomConnection(&Config{}, space, &proxy.OutboundHandlerMeta{Address: v2net.AnyIP})
 	space.Initialize()
 
 	traffic := ray.NewRay()
@@ -57,7 +58,7 @@ func TestSinglePacket(t *testing.T) {
 func TestUnreachableDestination(t *testing.T) {
 	assert := assert.On(t)
 
-	freedom := NewFreedomConnection(&Config{}, app.NewSpace(), v2net.AnyIP)
+	freedom := NewFreedomConnection(&Config{}, app.NewSpace(), &proxy.OutboundHandlerMeta{Address: v2net.AnyIP})
 	traffic := ray.NewRay()
 	data2Send := "Data to be sent to remote"
 	payload := alloc.NewSmallBuffer().Clear().Append([]byte(data2Send))
@@ -81,7 +82,10 @@ func TestIPResolution(t *testing.T) {
 	})
 	space.BindApp(dns.APP_ID, dnsServer)
 
-	freedom := NewFreedomConnection(&Config{DomainStrategy: DomainStrategyUseIP}, space, v2net.AnyIP)
+	freedom := NewFreedomConnection(
+		&Config{DomainStrategy: DomainStrategyUseIP},
+		space,
+		&proxy.OutboundHandlerMeta{Address: v2net.AnyIP})
 
 	space.Initialize()
 

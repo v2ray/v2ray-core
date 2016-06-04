@@ -74,12 +74,11 @@ type VMessInboundHandler struct {
 	accepting             bool
 	listener              *hub.TCPHub
 	detours               *DetourConfig
-	listeningPort         v2net.Port
-	listeningAddress      v2net.Address
+	meta                  *proxy.InboundHandlerMeta
 }
 
 func (this *VMessInboundHandler) Port() v2net.Port {
-	return this.listeningPort
+	return this.meta.Port
 }
 
 func (this *VMessInboundHandler) Close() {
@@ -107,9 +106,9 @@ func (this *VMessInboundHandler) Start() error {
 		return nil
 	}
 
-	tcpListener, err := hub.ListenTCP(this.listeningAddress, this.listeningPort, this.HandleConnection, nil)
+	tcpListener, err := hub.ListenTCP(this.meta.Address, this.meta.Port, this.HandleConnection, nil)
 	if err != nil {
-		log.Error("Unable to listen tcp port ", this.listeningPort, ": ", err)
+		log.Error("Unable to listen tcp ", this.meta.Address, ":", this.meta.Port, ": ", err)
 		return err
 	}
 	this.accepting = true
@@ -220,7 +219,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 
 func init() {
 	internal.MustRegisterInboundHandlerCreator("vmess",
-		func(space app.Space, rawConfig interface{}, listen v2net.Address, port v2net.Port) (proxy.InboundHandler, error) {
+		func(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
 			if !space.HasApp(dispatcher.APP_ID) {
 				return nil, internal.ErrorBadConfiguration
 			}
@@ -236,8 +235,7 @@ func init() {
 				clients:          allowedClients,
 				detours:          config.DetourConfig,
 				usersByEmail:     NewUserByEmail(config.AllowedUsers, config.Defaults),
-				listeningAddress: listen,
-				listeningPort:    port,
+				meta:             meta,
 			}
 
 			if space.HasApp(proxyman.APP_ID_INBOUND_MANAGER) {

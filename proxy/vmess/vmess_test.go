@@ -39,9 +39,9 @@ func TestVMessInAndOut(t *testing.T) {
 	}
 
 	protocol, err := proxytesting.RegisterInboundConnectionHandlerCreator("mock_ich",
-		func(space app.Space, config interface{}, listen v2net.Address, port v2net.Port) (proxy.InboundHandler, error) {
-			ich.ListeningAddress = listen
-			ich.ListeningPort = port
+		func(space app.Space, config interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
+			ich.ListeningAddress = meta.Address
+			ich.ListeningPort = meta.Port
 			ich.PacketDispatcher = space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)
 			return ich, nil
 		})
@@ -89,7 +89,7 @@ func TestVMessInAndOut(t *testing.T) {
 	}
 
 	protocol, err = proxytesting.RegisterOutboundConnectionHandlerCreator("mock_och",
-		func(space app.Space, config interface{}, sendThrough v2net.Address) (proxy.OutboundHandler, error) {
+		func(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 			return och, nil
 		})
 	assert.Error(err).IsNil()

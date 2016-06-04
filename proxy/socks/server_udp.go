@@ -8,15 +8,15 @@ import (
 	"github.com/v2ray/v2ray-core/transport/hub"
 )
 
-func (this *Server) listenUDP(address v2net.Address, port v2net.Port) error {
+func (this *Server) listenUDP() error {
 	this.udpServer = hub.NewUDPServer(this.packetDispatcher)
-	udpHub, err := hub.ListenUDP(address, port, this.handleUDPPayload)
+	udpHub, err := hub.ListenUDP(this.meta.Address, this.meta.Port, this.handleUDPPayload)
 	if err != nil {
-		log.Error("Socks: Failed to listen on udp port ", port)
+		log.Error("Socks: Failed to listen on udp ", this.meta.Address, ":", this.meta.Port)
 		return err
 	}
 	this.udpMutex.Lock()
-	this.udpAddress = v2net.UDPDestination(this.config.Address, port)
+	this.udpAddress = v2net.UDPDestination(this.config.Address, this.meta.Port)
 	this.udpHub = udpHub
 	this.udpMutex.Unlock()
 	return nil

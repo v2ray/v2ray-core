@@ -11,10 +11,13 @@ import (
 
 // BlackHole is an outbound connection that sliently swallow the entire payload.
 type BlackHole struct {
+	meta *proxy.OutboundHandlerMeta
 }
 
-func NewBlackHole() *BlackHole {
-	return &BlackHole{}
+func NewBlackHole(space app.Space, config *Config, meta *proxy.OutboundHandlerMeta) *BlackHole {
+	return &BlackHole{
+		meta: meta,
+	}
 }
 
 func (this *BlackHole) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
@@ -31,7 +34,7 @@ func (this *BlackHole) Dispatch(destination v2net.Destination, payload *alloc.Bu
 
 func init() {
 	internal.MustRegisterOutboundHandlerCreator("blackhole",
-		func(space app.Space, config interface{}, sendThrough v2net.Address) (proxy.OutboundHandler, error) {
-			return NewBlackHole(), nil
+		func(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
+			return NewBlackHole(space, config.(*Config), meta), nil
 		})
 }

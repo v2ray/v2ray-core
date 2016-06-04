@@ -4,23 +4,16 @@ import (
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/common/dice"
 	"github.com/v2ray/v2ray-core/common/log"
-	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/proxy"
 	proxyrepo "github.com/v2ray/v2ray-core/proxy/repo"
 )
 
-type InboundConnectionHandlerWithPort struct {
-	port    v2net.Port
-	listen  v2net.Address
-	handler proxy.InboundHandler
-}
-
 // Handler for inbound detour connections.
 type InboundDetourHandlerAlways struct {
 	space  app.Space
 	config *InboundDetourConfig
-	ich    []*InboundConnectionHandlerWithPort
+	ich    []proxy.InboundHandler
 }
 
 func NewInboundDetourHandlerAlways(space app.Space, config *InboundDetourConfig) (*InboundDetourHandlerAlways, error) {
@@ -29,31 +22,30 @@ func NewInboundDetourHandlerAlways(space app.Space, config *InboundDetourConfig)
 		config: config,
 	}
 	ports := config.PortRange
-	handler.ich = make([]*InboundConnectionHandlerWithPort, 0, ports.To-ports.From+1)
+	handler.ich = make([]proxy.InboundHandler, 0, ports.To-ports.From+1)
 	for i := ports.From; i <= ports.To; i++ {
 		ichConfig := config.Settings
-		ich, err := proxyrepo.CreateInboundHandler(config.Protocol, space, ichConfig, config.ListenOn, i)
+		ich, err := proxyrepo.CreateInboundHandler(config.Protocol, space, ichConfig, &proxy.InboundHandlerMeta{
+			Address: config.ListenOn,
+			Port:    i,
+			Tag:     config.Tag})
 		if err != nil {
 			log.Error("Failed to create inbound connection handler: ", err)
 			return nil, err
 		}
-		handler.ich = append(handler.ich, &InboundConnectionHandlerWithPort{
-			port:    i,
-			handler: ich,
-			listen:  config.ListenOn,
-		})
+		handler.ich = append(handler.ich, ich)
 	}
 	return handler, nil
 }
 
 func (this *InboundDetourHandlerAlways) GetConnectionHandler() (proxy.InboundHandler, int) {
 	ich := this.ich[dice.Roll(len(this.ich))]
-	return ich.handler, this.config.Allocation.Refresh
+	return ich, this.config.Allocation.Refresh
 }
 
 func (this *InboundDetourHandlerAlways) Close() {
 	for _, ich := range this.ich {
-		ich.handler.Close()
+		ich.Close()
 	}
 }
 
@@ -61,9 +53,9 @@ func (this *InboundDetourHandlerAlways) Close() {
 func (this *InboundDetourHandlerAlways) Start() error {
 	for _, ich := range this.ich {
 		err := retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
-			err := ich.handler.Start()
+			err := ich.Start()
 			if err != nil {
-				log.Error("Failed to start inbound detour on port ", ich.port, ": ", err)
+				log.Error("Failed to start inbound detour:", err)
 				return err
 			}
 			return nil

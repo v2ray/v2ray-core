@@ -23,14 +23,14 @@ type FreedomConnection struct {
 	domainStrategy DomainStrategy
 	timeout        uint32
 	dns            dns.Server
-	sendThrough    v2net.Address
+	meta           *proxy.OutboundHandlerMeta
 }
 
-func NewFreedomConnection(config *Config, space app.Space, sendThrough v2net.Address) *FreedomConnection {
+func NewFreedomConnection(config *Config, space app.Space, meta *proxy.OutboundHandlerMeta) *FreedomConnection {
 	f := &FreedomConnection{
 		domainStrategy: config.DomainStrategy,
 		timeout:        config.Timeout,
-		sendThrough:    sendThrough,
+		meta:           meta,
 	}
 	space.InitializeApplication(func() error {
 		if config.DomainStrategy == DomainStrategyUseIP {
@@ -80,7 +80,7 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 		destination = this.ResolveIP(destination)
 	}
 	err := retry.Timed(5, 100).On(func() error {
-		rawConn, err := hub.DialWithoutCache(this.sendThrough, destination)
+		rawConn, err := hub.DialWithoutCache(this.meta.Address, destination)
 		if err != nil {
 			return err
 		}
@@ -140,7 +140,7 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 
 func init() {
 	internal.MustRegisterOutboundHandlerCreator("freedom",
-		func(space app.Space, config interface{}, sendThrough v2net.Address) (proxy.OutboundHandler, error) {
-			return NewFreedomConnection(config.(*Config), space, sendThrough), nil
+		func(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
+			return NewFreedomConnection(config.(*Config), space, meta), nil
 		})
 }

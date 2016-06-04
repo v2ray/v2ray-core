@@ -91,7 +91,11 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	vpoint.space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(vpoint.space))
 
 	ichConfig := pConfig.InboundConfig.Settings
-	ich, err := proxyrepo.CreateInboundHandler(pConfig.InboundConfig.Protocol, vpoint.space, ichConfig, pConfig.InboundConfig.ListenOn, vpoint.port)
+	ich, err := proxyrepo.CreateInboundHandler(
+		pConfig.InboundConfig.Protocol, vpoint.space, ichConfig, &proxy.InboundHandlerMeta{
+			Tag:     "system.inbound",
+			Address: pConfig.InboundConfig.ListenOn,
+			Port:    vpoint.port})
 	if err != nil {
 		log.Error("Failed to create inbound connection handler: ", err)
 		return nil, err
@@ -99,7 +103,10 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	vpoint.ich = ich
 
 	ochConfig := pConfig.OutboundConfig.Settings
-	och, err := proxyrepo.CreateOutboundHandler(pConfig.OutboundConfig.Protocol, vpoint.space, ochConfig, pConfig.OutboundConfig.SendThrough)
+	och, err := proxyrepo.CreateOutboundHandler(
+		pConfig.OutboundConfig.Protocol, vpoint.space, ochConfig, &proxy.OutboundHandlerMeta{
+			Tag:     "system.outbound",
+			Address: pConfig.OutboundConfig.SendThrough})
 	if err != nil {
 		log.Error("Failed to create outbound connection handler: ", err)
 		return nil, err
@@ -144,7 +151,10 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	if len(outboundDetours) > 0 {
 		vpoint.odh = make(map[string]proxy.OutboundHandler)
 		for _, detourConfig := range outboundDetours {
-			detourHandler, err := proxyrepo.CreateOutboundHandler(detourConfig.Protocol, vpoint.space, detourConfig.Settings, detourConfig.SendThrough)
+			detourHandler, err := proxyrepo.CreateOutboundHandler(
+				detourConfig.Protocol, vpoint.space, detourConfig.Settings, &proxy.OutboundHandlerMeta{
+					Tag:     detourConfig.Tag,
+					Address: detourConfig.SendThrough})
 			if err != nil {
 				log.Error("Point: Failed to create detour outbound connection handler: ", err)
 				return nil, err

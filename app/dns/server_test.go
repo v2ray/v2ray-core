@@ -10,6 +10,7 @@ import (
 	. "github.com/v2ray/v2ray-core/app/dns"
 	"github.com/v2ray/v2ray-core/app/proxyman"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/freedom"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
@@ -20,7 +21,7 @@ func TestDnsAdd(t *testing.T) {
 	space := app.NewSpace()
 
 	outboundHandlerManager := proxyman.NewDefaultOutboundHandlerManager()
-	outboundHandlerManager.SetDefaultHandler(freedom.NewFreedomConnection(&freedom.Config{}, space, v2net.AnyIP))
+	outboundHandlerManager.SetDefaultHandler(freedom.NewFreedomConnection(&freedom.Config{}, space, &proxy.OutboundHandlerMeta{Address: v2net.AnyIP}))
 	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, outboundHandlerManager)
 	space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(space))
 

@@ -25,17 +25,15 @@ type DokodemoDoor struct {
 	tcpListener      *hub.TCPHub
 	udpHub           *hub.UDPHub
 	udpServer        *hub.UDPServer
-	listeningPort    v2net.Port
-	listeningAddress v2net.Address
+	meta             *proxy.InboundHandlerMeta
 }
 
-func NewDokodemoDoor(config *Config, space app.Space, listen v2net.Address, port v2net.Port) *DokodemoDoor {
+func NewDokodemoDoor(config *Config, space app.Space, meta *proxy.InboundHandlerMeta) *DokodemoDoor {
 	d := &DokodemoDoor{
-		config:           config,
-		address:          config.Address,
-		port:             config.Port,
-		listeningAddress: listen,
-		listeningPort:    port,
+		config:  config,
+		address: config.Address,
+		port:    config.Port,
+		meta:    meta,
 	}
 	space.InitializeApplication(func() error {
 		if !space.HasApp(dispatcher.APP_ID) {
@@ -49,7 +47,7 @@ func NewDokodemoDoor(config *Config, space app.Space, listen v2net.Address, port
 }
 
 func (this *DokodemoDoor) Port() v2net.Port {
-	return this.listeningPort
+	return this.meta.Port
 }
 
 func (this *DokodemoDoor) Close() {
@@ -75,13 +73,13 @@ func (this *DokodemoDoor) Start() error {
 	this.accepting = true
 
 	if this.config.Network.HasNetwork(v2net.TCPNetwork) {
-		err := this.ListenTCP(this.listeningAddress, this.listeningPort)
+		err := this.ListenTCP()
 		if err != nil {
 			return err
 		}
 	}
 	if this.config.Network.HasNetwork(v2net.UDPNetwork) {
-		err := this.ListenUDP(this.listeningAddress, this.listeningPort)
+		err := this.ListenUDP()
 		if err != nil {
 			return err
 		}
@@ -89,11 +87,11 @@ func (this *DokodemoDoor) Start() error {
 	return nil
 }
 
-func (this *DokodemoDoor) ListenUDP(address v2net.Address, port v2net.Port) error {
+func (this *DokodemoDoor) ListenUDP() error {
 	this.udpServer = hub.NewUDPServer(this.packetDispatcher)
-	udpHub, err := hub.ListenUDP(address, port, this.handleUDPPackets)
+	udpHub, err := hub.ListenUDP(this.meta.Address, this.meta.Port, this.handleUDPPackets)
 	if err != nil {
-		log.Error("Dokodemo failed to listen on port ", port, ": ", err)
+		log.Error("Dokodemo failed to listen on ", this.meta.Address, ":", this.meta.Port, ": ", err)
 		return err
 	}
 	this.udpMutex.Lock()
@@ -116,10 +114,10 @@ func (this *DokodemoDoor) handleUDPResponse(dest v2net.Destination, payload *all
 	this.udpHub.WriteTo(payload.Value, dest)
 }
 
-func (this *DokodemoDoor) ListenTCP(address v2net.Address, port v2net.Port) error {
-	tcpListener, err := hub.ListenTCP(address, port, this.HandleTCPConnection, nil)
+func (this *DokodemoDoor) ListenTCP() error {
+	tcpListener, err := hub.ListenTCP(this.meta.Address, this.meta.Port, this.HandleTCPConnection, nil)
 	if err != nil {
-		log.Error("Dokodemo: Failed to listen on port ", port, ": ", err)
+		log.Error("Dokodemo: Failed to listen on ", this.meta.Address, ":", this.meta.Port, ": ", err)
 		return err
 	}
 	this.tcpMutex.Lock()
@@ -164,7 +162,7 @@ func (this *DokodemoDoor) HandleTCPConnection(conn *hub.Connection) {
 
 func init() {
 	internal.MustRegisterInboundHandlerCreator("dokodemo-door",
-		func(space app.Space, rawConfig interface{}, listen v2net.Address, port v2net.Port) (proxy.InboundHandler, error) {
-			return NewDokodemoDoor(rawConfig.(*Config), space, listen, port), nil
+		func(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
+			return NewDokodemoDoor(rawConfig.(*Config), space, meta), nil
 		})
 }

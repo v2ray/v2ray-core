@@ -22,25 +22,23 @@ import (
 type Server struct {
 	packetDispatcher dispatcher.PacketDispatcher
 	config           *Config
-	port             v2net.Port
-	address          v2net.Address
+	meta             *proxy.InboundHandlerMeta
 	accepting        bool
 	tcpHub           *hub.TCPHub
 	udpHub           *hub.UDPHub
 	udpServer        *hub.UDPServer
 }
 
-func NewServer(config *Config, packetDispatcher dispatcher.PacketDispatcher, listen v2net.Address, port v2net.Port) *Server {
+func NewServer(config *Config, packetDispatcher dispatcher.PacketDispatcher, meta *proxy.InboundHandlerMeta) *Server {
 	return &Server{
 		config:           config,
 		packetDispatcher: packetDispatcher,
-		address:          listen,
-		port:             port,
+		meta:             meta,
 	}
 }
 
 func (this *Server) Port() v2net.Port {
-	return this.port
+	return this.meta.Port
 }
 
 func (this *Server) Close() {
@@ -63,18 +61,18 @@ func (this *Server) Start() error {
 		return nil
 	}
 
-	tcpHub, err := hub.ListenTCP(this.address, this.port, this.handleConnection, nil)
+	tcpHub, err := hub.ListenTCP(this.meta.Address, this.meta.Port, this.handleConnection, nil)
 	if err != nil {
-		log.Error("Shadowsocks: Failed to listen TCP on port ", this.port, ": ", err)
+		log.Error("Shadowsocks: Failed to listen TCP on ", this.meta.Address, ":", this.meta.Port, ": ", err)
 		return err
 	}
 	this.tcpHub = tcpHub
 
 	if this.config.UDP {
 		this.udpServer = hub.NewUDPServer(this.packetDispatcher)
-		udpHub, err := hub.ListenUDP(this.address, this.port, this.handlerUDPPayload)
+		udpHub, err := hub.ListenUDP(this.meta.Address, this.meta.Port, this.handlerUDPPayload)
 		if err != nil {
-			log.Error("Shadowsocks: Failed to listen UDP on port ", this.port, ": ", err)
+			log.Error("Shadowsocks: Failed to listen UDP on ", this.meta.Address, ":", this.meta.Port, ": ", err)
 			return err
 		}
 		this.udpHub = udpHub
@@ -252,14 +250,13 @@ func (this *Server) handleConnection(conn *hub.Connection) {
 
 func init() {
 	internal.MustRegisterInboundHandlerCreator("shadowsocks",
-		func(space app.Space, rawConfig interface{}, listen v2net.Address, port v2net.Port) (proxy.InboundHandler, error) {
+		func(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
 			if !space.HasApp(dispatcher.APP_ID) {
 				return nil, internal.ErrorBadConfiguration
 			}
 			return NewServer(
 				rawConfig.(*Config),
 				space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
-				listen,
-				port), nil
+				meta), nil
 		})
 }
