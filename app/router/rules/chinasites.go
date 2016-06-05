@@ -251,6 +251,7 @@ func init() {
 		anySubDomain + "jikexueyuan" + dotCom,
 		anySubDomain + "jisuanke" + dotCom,
 		anySubDomain + "jmstatic" + dotCom,
+		anySubDomain + "jsdelivr" + dotNet,
 		anySubDomain + "jstv" + dotCom,
 		anySubDomain + "jumei" + dotCom,
 		anySubDomain + "jyimg" + dotCom,
