@@ -127,12 +127,10 @@ func (this *ReceiverManager) pickStdReceiver() *Receiver {
 	return this.receivers[dice.Roll(len(this.receivers))]
 }
 
-func (this *ReceiverManager) PickReceiver() (v2net.Destination, *protocol.User) {
+func (this *ReceiverManager) PickReceiver() *Receiver {
 	rec := this.pickDetour()
 	if rec == nil {
 		rec = this.pickStdReceiver()
 	}
-	user := rec.PickUser()
-
-	return rec.Destination, user
+	return rec
 }
