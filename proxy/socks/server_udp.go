@@ -43,6 +43,7 @@ func (this *Server) handleUDPPayload(payload *alloc.Buffer, source v2net.Destina
 	}
 
 	log.Info("Socks: Send packet to ", request.Destination(), " with ", request.Data.Len(), " bytes")
+	log.Access(source, request.Destination, log.AccessAccepted, "")
 	this.udpServer.Dispatch(source, request.Destination(), request.Data, func(destination v2net.Destination, payload *alloc.Buffer) {
 		response := &protocol.Socks5UDPRequest{
 			Fragment: 0,

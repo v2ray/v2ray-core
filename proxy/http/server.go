@@ -123,6 +123,7 @@ func (this *Server) handleConnection(conn *hub.Connection) {
 		log.Warning("HTTP: Malformed proxy host (", host, "): ", err)
 		return
 	}
+	log.Access(conn.RemoteAddr(), request.URL, log.AccessAccepted, "")
 	if strings.ToUpper(request.Method) == "CONNECT" {
 		this.handleConnect(request, dest, reader, conn)
 	} else {
