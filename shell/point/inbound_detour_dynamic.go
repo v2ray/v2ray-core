@@ -18,6 +18,7 @@ type InboundDetourHandlerDynamic struct {
 	config      *InboundDetourConfig
 	portsInUse  map[v2net.Port]bool
 	ichs        []proxy.InboundHandler
+	ich2Recyle  []proxy.InboundHandler
 	lastRefresh time.Time
 }
 
@@ -74,11 +75,25 @@ func (this *InboundDetourHandlerDynamic) Close() {
 	}
 }
 
+func (this *InboundDetourHandlerDynamic) RecyleHandles() {
+	if this.ich2Recyle != nil {
+		for _, ich := range this.ich2Recyle {
+			if ich == nil {
+				continue
+			}
+			port := ich.Port()
+			ich.Close()
+			delete(this.portsInUse, port)
+		}
+		this.ich2Recyle = nil
+	}
+}
+
 func (this *InboundDetourHandlerDynamic) refresh() error {
 	this.lastRefresh = time.Now()
 
 	config := this.config
-	ich2Recycle := this.ichs
+	this.ich2Recyle = this.ichs
 	newIchs := make([]proxy.InboundHandler, config.Allocation.Concurrency)
 
 	for idx, _ := range newIchs {
@@ -102,19 +117,6 @@ func (this *InboundDetourHandlerDynamic) refresh() error {
 	this.ichs = newIchs
 	this.Unlock()
 
-	go func() {
-		time.Sleep(time.Minute)
-		for _, ich := range ich2Recycle {
-			if ich == nil {
-				continue
-			}
-			port := ich.Port()
-			ich.Close()
-			delete(this.portsInUse, port)
-		}
-		ich2Recycle = nil
-	}()
-
 	return nil
 }
 
@@ -127,7 +129,8 @@ func (this *InboundDetourHandlerDynamic) Start() error {
 
 	go func() {
 		for {
-			time.Sleep(time.Duration(this.config.Allocation.Refresh) * time.Minute)
+			time.Sleep(time.Duration(this.config.Allocation.Refresh)*time.Minute - 1)
+			this.RecyleHandles()
 			err := this.refresh()
 			if err != nil {
 				log.Error("Point: Failed to refresh dynamic allocations: ", err)
