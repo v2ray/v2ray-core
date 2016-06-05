@@ -110,7 +110,7 @@ func (this *Server) handleConnection(connection *hub.Connection) {
 		return
 	}
 
-	cliendAddr := connection.RemoteAddr().String()
+	clientAddr := connection.RemoteAddr().String()
 	if err != nil && err == protocol.Socks4Downgrade {
 		this.handleSocks4(clientAddr, reader, writer, auth4)
 	} else {
