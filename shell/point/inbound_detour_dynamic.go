@@ -117,21 +117,6 @@ func (this *InboundDetourHandlerDynamic) refresh() error {
 	this.ichs = newIchs
 	this.Unlock()
 
-<<<<<<< HEAD
-	go func(recycles []proxy.InboundHandler) {
-		time.Sleep(time.Minute)
-		for _, ich := range recycles {
-			if ich == nil {
-				continue
-			}
-			port := ich.Port()
-			ich.Close()
-			delete(this.portsInUse, port)
-		}
-	}(ich2Recycle)
-
-=======
->>>>>>> 045e1dcc5329b68fee3fc0f94b1c50d6ee303b27
 	return nil
 }
 
