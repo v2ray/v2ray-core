@@ -110,14 +110,15 @@ func (this *Server) handleConnection(connection *hub.Connection) {
 		return
 	}
 
+	clientAddr := connection.RemoteAddr().String()
 	if err != nil && err == protocol.Socks4Downgrade {
-		this.handleSocks4(reader, writer, auth4)
+		this.handleSocks4(clientAddr, reader, writer, auth4)
 	} else {
-		this.handleSocks5(reader, writer, auth)
+		this.handleSocks5(clientAddr, reader, writer, auth)
 	}
 }
 
-func (this *Server) handleSocks5(reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks5AuthenticationRequest) error {
+func (this *Server) handleSocks5(clientAddr string, reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks5AuthenticationRequest) error {
 	expectedAuthMethod := protocol.AuthNotRequired
 	if this.config.AuthType == AuthTypePassword {
 		expectedAuthMethod = protocol.AuthUserPass
@@ -161,6 +162,7 @@ func (this *Server) handleSocks5(reader *v2io.BufferedReader, writer *v2io.Buffe
 		}
 		if status != byte(0) {
 			log.Warning("Socks: Invalid user account: ", upRequest.AuthDetail())
+			log.Access(clientAddr, "", log.AccessRejected, proxy.ErrorInvalidAuthentication)
 			return proxy.ErrorInvalidAuthentication
 		}
 	}
@@ -209,6 +211,7 @@ func (this *Server) handleSocks5(reader *v2io.BufferedReader, writer *v2io.Buffe
 
 	dest := request.Destination()
 	log.Info("Socks: TCP Connect request to ", dest)
+	log.Access(clientAddr, dest, log.AccessAccepted, "")
 
 	this.transport(reader, writer, dest)
 	return nil
@@ -246,7 +249,7 @@ func (this *Server) handleUDP(reader io.Reader, writer *v2io.BufferedWriter) err
 	return nil
 }
 
-func (this *Server) handleSocks4(reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks4AuthenticationRequest) error {
+func (this *Server) handleSocks4(clientAddr string, reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks4AuthenticationRequest) error {
 	result := protocol.Socks4RequestGranted
 	if auth.Command == protocol.CmdBind {
 		result = protocol.Socks4RequestRejected
@@ -257,6 +260,7 @@ func (this *Server) handleSocks4(reader *v2io.BufferedReader, writer *v2io.Buffe
 
 	if result == protocol.Socks4RequestRejected {
 		log.Warning("Socks: Unsupported socks 4 command ", auth.Command)
+		log.Access(clientAddr, "", log.AccessRejected, ErrorUnsupportedSocksCommand)
 		return ErrorUnsupportedSocksCommand
 	}
 
@@ -264,6 +268,7 @@ func (this *Server) handleSocks4(reader *v2io.BufferedReader, writer *v2io.Buffe
 	writer.SetCached(false)
 
 	dest := v2net.TCPDestination(v2net.IPAddress(auth.IP[:]), auth.Port)
+	log.Access(clientAddr, dest, log.AccessAccepted, "")
 	this.transport(reader, writer, dest)
 	return nil
 }
