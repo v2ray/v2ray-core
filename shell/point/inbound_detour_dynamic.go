@@ -135,6 +135,7 @@ func (this *InboundDetourHandlerDynamic) Start() error {
 			if err != nil {
 				log.Error("Point: Failed to refresh dynamic allocations: ", err)
 			}
+			time.Sleep(time.Minute)
 		}
 	}()
 
