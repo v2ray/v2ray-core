@@ -136,6 +136,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 			log.Access(connection.RemoteAddr(), "", log.AccessRejected, err)
 			log.Warning("VMessIn: Invalid request from ", connection.RemoteAddr(), ": ", err)
 		}
+		connection.SetReusable(false)
 		return
 	}
 	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, "")
@@ -198,7 +199,9 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 			v2writer = vmessio.NewAuthChunkWriter(v2writer)
 		}
 
-		v2writer.Write(data)
+		if err := v2writer.Write(data); err != nil {
+			connection.SetReusable(false)
+		}
 
 		writer.SetCached(false)
 
@@ -209,7 +212,9 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 
 		output.Release()
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
-			v2writer.Write(alloc.NewSmallBuffer().Clear())
+			if err := v2writer.Write(alloc.NewSmallBuffer().Clear()); err != nil {
+				connection.SetReusable(false)
+			}
 		}
 		v2writer.Release()
 	}
