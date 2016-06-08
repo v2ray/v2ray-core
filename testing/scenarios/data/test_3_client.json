@@ -1,0 +1,62 @@
+{
+  "port": 50020,
+  "log": {
+    "loglevel": "none"
+  },
+  "inbound": {
+    "listen": "127.0.0.1",
+    "protocol": "dokodemo-door",
+    "settings": {
+      "address": "127.0.0.1",
+      "port": 50024,
+      "network": "tcp",
+      "timeout": 0
+    }
+  },
+  "outbound": {
+    "protocol": "vmess",
+    "settings": {
+      "vnext": [
+        {
+          "address": "127.0.0.1",
+          "port": 50021,
+          "users": [
+            {"id": "d17a1af7-efa5-42ca-b7e9-6a35282d737f"}
+          ]
+        }
+      ]
+    }
+  },
+  "inboundDetour": [
+    {
+      "protocol": "dokodemo-door",
+      "port": 50022,
+      "listen": "127.0.0.1",
+      "settings": {
+        "address": "127.0.0.1",
+        "port": 50025,
+        "network": "tcp",
+        "timeout": 0
+      }
+    }
+  ],
+  "outboundDetour": [
+    {
+      "protocol": "blackhole",
+      "tag": "blocked",
+      "settings": {}
+    }
+  ],
+  "routing": {
+    "strategy": "rules",
+    "settings": {
+      "rules": [
+        {
+          "type": "field",
+          "port": "50025-50029",
+          "outboundTag": "blocked"
+        }
+      ]
+    }
+  }
+}

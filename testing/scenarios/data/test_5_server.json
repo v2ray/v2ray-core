@@ -1,0 +1,20 @@
+{
+  "port": 50041,
+  "inbound": {
+    "listen": "127.0.0.1",
+    "protocol": "vmess",
+    "settings": {
+      "clients": [
+        {
+          "id": "d17a1af7-efa5-42ca-b7e9-6a35282d737f",
+          "level": 1,
+          "alterId": 10
+        }
+      ]
+    }
+  },
+  "outbound": {
+    "protocol": "freedom",
+    "settings": {}
+  }
+}

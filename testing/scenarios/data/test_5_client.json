@@ -1,0 +1,25 @@
+{
+  "port": 50040,
+  "inbound": {
+    "listen": "127.0.0.1",
+    "protocol": "http",
+    "settings": {}
+  },
+  "outbound": {
+    "protocol": "vmess",
+    "settings": {
+      "vnext": [
+        {
+          "address": "127.0.0.1",
+          "port": 50041,
+          "users": [
+            {
+              "id": "d17a1af7-efa5-42ca-b7e9-6a35282d737f",
+              "alterId": 10
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

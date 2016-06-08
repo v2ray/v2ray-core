@@ -1,0 +1,13 @@
+[Unit]
+Description=V2Ray Service
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+PIDFile=/var/run/v2ray.pid
+ExecStart=/usr/bin/v2ray/v2ray -config /etc/v2ray/config.json
+Restart=on-abnormal
+
+[Install]
+WantedBy=multi-user.target
