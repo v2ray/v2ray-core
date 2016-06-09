@@ -63,7 +63,7 @@ func CreateInboundHandler(name string, space app.Space, rawConfig []byte) (proxy
 func CreateOutboundHandler(name string, space app.Space, rawConfig []byte) (proxy.OutboundHandler, error) {
 	creator, found := outboundFactories[name]
 	if !found {
-		return nil, ErrorNameExists
+		return nil, ErrorProxyNotFound
 	}
 
 	if len(rawConfig) > 0 {
