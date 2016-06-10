@@ -17,9 +17,9 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
 		return err
 	}
+
+	this.Response = new(NoneResponse)
 	if jsonConfig.Response == nil {
-		this.Response = new(NoneResponse)
-	} else {
 		loader := loader.NewJSONConfigLoader("type", "")
 		loader.RegisterCreator("none", func() interface{} { return new(NoneResponse) })
 		loader.RegisterCreator("http", func() interface{} { return new(HTTPResponse) })
