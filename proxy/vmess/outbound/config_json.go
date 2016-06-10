@@ -7,7 +7,6 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/proxy/internal"
-	proxyconfig "github.com/v2ray/v2ray-core/proxy/internal/config"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {
@@ -28,12 +27,5 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 }
 
 func init() {
-	proxyconfig.RegisterOutboundConfig("vmess",
-		func(data []byte) (interface{}, error) {
-			rawConfig := new(Config)
-			if err := json.Unmarshal(data, rawConfig); err != nil {
-				return nil, err
-			}
-			return rawConfig, nil
-		})
+	internal.RegisterOutboundConfig("vmess", func() interface{} { return new(Config) })
 }

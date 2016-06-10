@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 
 	"github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/proxy/internal/config"
+	"github.com/v2ray/v2ray-core/proxy/internal"
 )
 
 func (this *DetourConfig) UnmarshalJSON(data []byte) error {
@@ -79,10 +79,5 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 }
 
 func init() {
-	config.RegisterInboundConfig("vmess",
-		func(data []byte) (interface{}, error) {
-			config := new(Config)
-			err := json.Unmarshal(data, config)
-			return config, err
-		})
+	internal.RegisterInboundConfig("vmess", func() interface{} { return new(Config) })
 }

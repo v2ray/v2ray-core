@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/v2ray/v2ray-core/proxy/internal/config"
+	"github.com/v2ray/v2ray-core/proxy/internal"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {
@@ -28,12 +28,5 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 }
 
 func init() {
-	config.RegisterOutboundConfig("freedom",
-		func(data []byte) (interface{}, error) {
-			c := new(Config)
-			if err := json.Unmarshal(data, c); err != nil {
-				return nil, err
-			}
-			return c, nil
-		})
+	internal.RegisterOutboundConfig("freedom", func() interface{} { return new(Config) })
 }

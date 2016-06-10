@@ -3,12 +3,13 @@
 package blackhole
 
 import (
-	"github.com/v2ray/v2ray-core/proxy/internal/config"
+	"github.com/v2ray/v2ray-core/proxy/internal"
 )
 
+func (this *Config) UnmarshalJSON(data []byte) error {
+	return nil
+}
+
 func init() {
-	config.RegisterOutboundConfig("blackhole",
-		func(data []byte) (interface{}, error) {
-			return new(Config), nil
-		})
+	internal.RegisterOutboundConfig("blackhole", func() interface{} { return new(Config) })
 }

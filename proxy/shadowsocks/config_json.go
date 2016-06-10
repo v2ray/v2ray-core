@@ -9,7 +9,6 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/proxy/internal"
-	"github.com/v2ray/v2ray-core/proxy/internal/config"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {
@@ -62,9 +61,5 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 }
 
 func init() {
-	config.RegisterInboundConfig("shadowsocks", func(data []byte) (interface{}, error) {
-		rawConfig := new(Config)
-		err := json.Unmarshal(data, rawConfig)
-		return rawConfig, err
-	})
+	internal.RegisterInboundConfig("shadowsocks", func() interface{} { return new(Config) })
 }

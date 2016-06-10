@@ -5,7 +5,6 @@ import (
 
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/proxy/internal/config"
 )
 
 var (
@@ -51,7 +50,7 @@ func CreateInboundHandler(name string, space app.Space, rawConfig []byte, meta *
 		return nil, ErrorProxyNotFound
 	}
 	if len(rawConfig) > 0 {
-		proxyConfig, err := config.CreateInboundConfig(name, rawConfig)
+		proxyConfig, err := CreateInboundConfig(name, rawConfig)
 		if err != nil {
 			return nil, err
 		}
@@ -67,7 +66,7 @@ func CreateOutboundHandler(name string, space app.Space, rawConfig []byte, meta 
 	}
 
 	if len(rawConfig) > 0 {
-		proxyConfig, err := config.CreateOutboundConfig(name, rawConfig)
+		proxyConfig, err := CreateOutboundConfig(name, rawConfig)
 		if err != nil {
 			return nil, err
 		}

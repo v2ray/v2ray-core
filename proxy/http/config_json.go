@@ -6,7 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 
-	"github.com/v2ray/v2ray-core/proxy/internal/config"
+	"github.com/v2ray/v2ray-core/proxy/internal"
 )
 
 // UnmarshalJSON implements json.Unmarshaler
@@ -62,10 +62,5 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 }
 
 func init() {
-	config.RegisterInboundConfig("http",
-		func(data []byte) (interface{}, error) {
-			rawConfig := new(Config)
-			err := json.Unmarshal(data, rawConfig)
-			return rawConfig, err
-		})
+	internal.RegisterInboundConfig("http", func() interface{} { return new(Config) })
 }
