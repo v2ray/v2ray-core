@@ -44,3 +44,33 @@ func TestHttpProxy(t *testing.T) {
 
 	CloseAllServers()
 }
+
+func TestBlockHTTP(t *testing.T) {
+	assert := assert.On(t)
+
+	httpServer := &v2http.Server{
+		Port:        v2net.Port(50042),
+		PathHandler: make(map[string]http.HandlerFunc),
+	}
+	_, err := httpServer.Start()
+	assert.Error(err).IsNil()
+	defer httpServer.Close()
+
+	assert.Error(InitializeServerSetOnce("test_5")).IsNil()
+
+	transport := &http.Transport{
+		Proxy: func(req *http.Request) (*url.URL, error) {
+			return url.Parse("http://127.0.0.1:50040/")
+		},
+	}
+
+	client := &http.Client{
+		Transport: transport,
+	}
+
+	resp, err := client.Get("http://127.0.0.1:50049/")
+	assert.Error(err).IsNil()
+	assert.Int(resp.StatusCode).Equals(403)
+
+	CloseAllServers()
+}

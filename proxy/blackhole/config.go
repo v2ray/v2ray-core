@@ -25,7 +25,8 @@ const (
 Connection: close
 Cache-Control: max-age=3600, public
 Content-Length: 0
- 
+
+
 `
 )
 

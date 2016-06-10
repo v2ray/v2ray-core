@@ -16,5 +16,24 @@
   "outbound": {
     "protocol": "freedom",
     "settings": {}
+  },
+  "outboundDetour": [{
+    "protocol": "blackhole",
+    "settings": {
+      "response": {
+        "type": "http"
+      }
+    },
+    "tag": "blocked"
+  }],
+  "routing": {
+    "strategy": "rules",
+    "settings": {
+      "rules": [{
+        "type": "field",
+        "port": "50049",
+        "outboundTag": "blocked"
+      }]
+    }
   }
 }

@@ -35,8 +35,8 @@ func (this *JSONConfigLoader) LoadWithID(raw []byte, id string) (interface{}, er
 }
 
 func (this *JSONConfigLoader) Load(raw []byte) (interface{}, error) {
-	obj := make(map[string]json.RawMessage)
-	if err := json.Unmarshal(raw, obj); err != nil {
+	var obj map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &obj); err != nil {
 		return nil, err
 	}
 	rawID, found := obj[this.idKey]
@@ -45,7 +45,7 @@ func (this *JSONConfigLoader) Load(raw []byte) (interface{}, error) {
 		return nil, ErrConfigIDKeyNotFound
 	}
 	var id string
-	if err := json.Unmarshal(rawID, id); err != nil {
+	if err := json.Unmarshal(rawID, &id); err != nil {
 		return nil, err
 	}
 	rawConfig := json.RawMessage(raw)
