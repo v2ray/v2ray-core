@@ -191,14 +191,13 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 	session.EncodeResponseHeader(response, writer)
 
 	bodyWriter := session.EncodeResponseBody(writer)
+	var v2writer v2io.Writer = v2io.NewAdaptiveWriter(bodyWriter)
+	if request.Option.Has(protocol.RequestOptionChunkStream) {
+		v2writer = vmessio.NewAuthChunkWriter(v2writer)
+	}
 
 	// Optimize for small response packet
 	if data, err := output.Read(); err == nil {
-		var v2writer v2io.Writer = v2io.NewAdaptiveWriter(bodyWriter)
-		if request.Option.Has(protocol.RequestOptionChunkStream) {
-			v2writer = vmessio.NewAuthChunkWriter(v2writer)
-		}
-
 		if err := v2writer.Write(data); err != nil {
 			connection.SetReusable(false)
 		}
@@ -210,14 +209,14 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 			connection.SetReusable(false)
 		}
 
-		output.Release()
-		if request.Option.Has(protocol.RequestOptionChunkStream) {
-			if err := v2writer.Write(alloc.NewSmallBuffer().Clear()); err != nil {
-				connection.SetReusable(false)
-			}
-		}
-		v2writer.Release()
 	}
+	output.Release()
+	if request.Option.Has(protocol.RequestOptionChunkStream) {
+		if err := v2writer.Write(alloc.NewSmallBuffer().Clear()); err != nil {
+			connection.SetReusable(false)
+		}
+	}
+	v2writer.Release()
 
 	readFinish.Lock()
 }
