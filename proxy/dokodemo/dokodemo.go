@@ -2,7 +2,6 @@ package dokodemo
 
 import (
 	"sync"
-	"syscall"
 
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/app/dispatcher"
@@ -14,8 +13,6 @@ import (
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	"github.com/v2ray/v2ray-core/transport/hub"
 )
-
-const SO_ORIGINAL_DST = 80
 
 type DokodemoDoor struct {
 	tcpMutex         sync.RWMutex
@@ -170,23 +167,6 @@ func (this *DokodemoDoor) HandleTCPConnection(conn *hub.Connection) {
 
 	outputFinish.Lock()
 	inputFinish.Lock()
-}
-
-func GetOriginalDestination(conn *hub.Connection) v2net.Destination {
-	fd, err := conn.SysFd()
-	if err != nil {
-		log.Info("Dokodemo: Failed to get original destination: ", err)
-		return nil
-	}
-
-	addr, err := syscall.GetsockoptIPv6Mreq(fd, syscall.IPPROTO_IP, SO_ORIGINAL_DST)
-	if err != nil {
-		log.Info("Dokodemo: Failed to call getsockopt: ", err)
-		return nil
-	}
-	ip := v2net.IPAddress(addr.Multiaddr[4:8])
-	port := uint16(addr.Multiaddr[2])<<8 + uint16(addr.Multiaddr[3])
-	return v2net.TCPDestination(ip, v2net.Port(port))
 }
 
 func init() {
