@@ -1,4 +1,4 @@
-package kcp
+package kcpv
 
 type AdvancedConfig struct {
 	Mtu          int  `json:"MaximumTransmissionUnit"`
