@@ -8,7 +8,9 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
 		ConnectionReuse bool `json:"connectionReuse"`
 	}
-	jsonConfig := new(JsonConfig)
+	jsonConfig := &JsonConfig{
+		ConnectionReuse: true,
+	}
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
 		return err
 	}

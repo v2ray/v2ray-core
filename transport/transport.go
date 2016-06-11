@@ -1,7 +1,7 @@
 package transport
 
 var (
-	connectionReuse = false
+	connectionReuse = true
 )
 
 func IsConnectionReusable() bool {
