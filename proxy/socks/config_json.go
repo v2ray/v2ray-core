@@ -4,6 +4,7 @@ package socks
 
 import (
 	"encoding/json"
+	"errors"
 
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -30,7 +31,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 
 	rawConfig := new(SocksConfig)
 	if err := json.Unmarshal(data, rawConfig); err != nil {
-		return err
+		return errors.New("Socks: Failed to parse config: " + err.Error())
 	}
 	if rawConfig.AuthMethod == AuthMethodNoAuth {
 		this.AuthType = AuthTypeNoAuth

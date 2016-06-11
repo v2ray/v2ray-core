@@ -4,6 +4,7 @@ package freedom
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 
 	"github.com/v2ray/v2ray-core/proxy/internal"
@@ -16,7 +17,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
-		return err
+		return errors.New("Freedom: Failed to parse config: " + err.Error())
 	}
 	this.DomainStrategy = DomainStrategyAsIs
 	domainStrategy := strings.ToLower(jsonConfig.DomainStrategy)

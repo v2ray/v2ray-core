@@ -4,6 +4,7 @@ package dokodemo
 
 import (
 	"encoding/json"
+	"errors"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy/internal"
@@ -18,7 +19,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 	rawConfig := new(DokodemoConfig)
 	if err := json.Unmarshal(data, rawConfig); err != nil {
-		return err
+		return errors.New("Dokodemo: Failed to parse config: " + err.Error())
 	}
 	this.Address = rawConfig.Host.Address
 	this.Port = rawConfig.PortValue
