@@ -16,6 +16,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		PortValue    v2net.Port         `json:"port"`
 		NetworkList  *v2net.NetworkList `json:"network"`
 		TimeoutValue int                `json:"timeout"`
+		Redirect     bool               `json:"followRedirect"`
 	}
 	rawConfig := new(DokodemoConfig)
 	if err := json.Unmarshal(data, rawConfig); err != nil {
@@ -25,6 +26,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	this.Port = rawConfig.PortValue
 	this.Network = rawConfig.NetworkList
 	this.Timeout = rawConfig.TimeoutValue
+	this.FollowRedirect = rawConfig.Redirect
 	return nil
 }
 

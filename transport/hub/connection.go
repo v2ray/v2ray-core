@@ -1,10 +1,16 @@
 package hub
 
 import (
+	"errors"
 	"net"
+	"reflect"
 	"time"
 
 	"github.com/v2ray/v2ray-core/transport"
+)
+
+var (
+	ErrInvalidConn = errors.New("Invalid Connection.")
 )
 
 type ConnectionHandler func(*Connection)
@@ -72,4 +78,18 @@ func (this *Connection) SetReusable(reusable bool) {
 
 func (this *Connection) Reusable() bool {
 	return this.reusable
+}
+
+func (this *Connection) SysFd() (int, error) {
+	cv := reflect.ValueOf(this.conn)
+	switch ce := cv.Elem(); ce.Kind() {
+	case reflect.Struct:
+		netfd := ce.FieldByName("conn").FieldByName("fd")
+		switch fe := netfd.Elem(); fe.Kind() {
+		case reflect.Struct:
+			fd := fe.FieldByName("sysfd")
+			return int(fd.Int()), nil
+		}
+	}
+	return 0, ErrInvalidConn
 }
