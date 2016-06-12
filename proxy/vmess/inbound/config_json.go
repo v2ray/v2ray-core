@@ -4,6 +4,7 @@ package inbound
 
 import (
 	"encoding/json"
+	"errors"
 
 	"github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/proxy/internal"
@@ -15,7 +16,7 @@ func (this *DetourConfig) UnmarshalJSON(data []byte) error {
 	}
 	jsonConfig := new(JsonDetourConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
-		return err
+		return errors.New("VMessIn: Failed to parse detour config: " + err.Error())
 	}
 	this.ToTag = jsonConfig.ToTag
 	return nil
@@ -27,7 +28,7 @@ func (this *FeaturesConfig) UnmarshalJSON(data []byte) error {
 	}
 	jsonConfig := new(JsonFeaturesConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
-		return err
+		return errors.New("VMessIn: Failed to parse features config: " + err.Error())
 	}
 	this.Detour = jsonConfig.Detour
 	return nil
@@ -40,7 +41,7 @@ func (this *DefaultConfig) UnmarshalJSON(data []byte) error {
 	}
 	jsonConfig := new(JsonDefaultConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
-		return err
+		return errors.New("VMessIn: Failed to parse default config: " + err.Error())
 	}
 	this.AlterIDs = jsonConfig.AlterIDs
 	if this.AlterIDs == 0 {
@@ -59,7 +60,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
-		return err
+		return errors.New("VMessIn: Failed to parse config: " + err.Error())
 	}
 	this.AllowedUsers = jsonConfig.Users
 	this.Features = jsonConfig.Features // Backward compatibility

@@ -34,7 +34,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
-		return err
+		return errors.New("Point: Failed to parse config: " + err.Error())
 	}
 	this.Port = jsonConfig.Port
 	this.LogConfig = jsonConfig.LogConfig
@@ -65,7 +65,7 @@ func (this *InboundConnectionConfig) UnmarshalJSON(data []byte) error {
 
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
-		return err
+		return errors.New("Point: Failed to parse inbound config: " + err.Error())
 	}
 	this.Port = v2net.Port(jsonConfig.Port)
 	this.ListenOn = v2net.AnyIP
@@ -89,7 +89,7 @@ func (this *OutboundConnectionConfig) UnmarshalJSON(data []byte) error {
 	}
 	jsonConfig := new(JsonConnectionConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
-		return err
+		return errors.New("Point: Failed to parse outbound config: " + err.Error())
 	}
 	this.Protocol = jsonConfig.Protocol
 	this.Settings = jsonConfig.Settings
@@ -112,7 +112,7 @@ func (this *LogConfig) UnmarshalJSON(data []byte) error {
 	}
 	jsonConfig := new(JsonLogConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
-		return err
+		return errors.New("Point: Failed to parse log config: " + err.Error())
 	}
 	this.AccessLog = jsonConfig.AccessLog
 	this.ErrorLog = jsonConfig.ErrorLog
@@ -141,7 +141,7 @@ func (this *InboundDetourAllocationConfig) UnmarshalJSON(data []byte) error {
 	}
 	jsonConfig := new(JsonInboundDetourAllocationConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
-		return err
+		return errors.New("Point: Failed to parse inbound detour allocation config: " + err.Error())
 	}
 	this.Strategy = jsonConfig.Strategy
 	this.Concurrency = jsonConfig.Concurrency
@@ -171,7 +171,7 @@ func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 	}
 	jsonConfig := new(JsonInboundDetourConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
-		return err
+		return errors.New("Point: Failed to parse inbound detour config: " + err.Error())
 	}
 	if jsonConfig.PortRange == nil {
 		log.Error("Point: Port range not specified in InboundDetour.")
@@ -207,7 +207,7 @@ func (this *OutboundDetourConfig) UnmarshalJSON(data []byte) error {
 	}
 	jsonConfig := new(JsonOutboundDetourConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
-		return err
+		return errors.New("Point: Failed to parse outbound detour config: " + err.Error())
 	}
 	this.Protocol = jsonConfig.Protocol
 	this.Tag = jsonConfig.Tag

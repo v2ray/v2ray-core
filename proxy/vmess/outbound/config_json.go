@@ -4,6 +4,7 @@ package outbound
 
 import (
 	"encoding/json"
+	"errors"
 
 	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/proxy/internal"
@@ -16,10 +17,10 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	rawOutbound := &RawOutbound{}
 	err := json.Unmarshal(data, rawOutbound)
 	if err != nil {
-		return err
+		return errors.New("VMessOut: Failed to parse config: " + err.Error())
 	}
 	if len(rawOutbound.Receivers) == 0 {
-		log.Error("VMess: 0 VMess receiver configured.")
+		log.Error("VMessOut: 0 VMess receiver configured.")
 		return internal.ErrorBadConfiguration
 	}
 	this.Receivers = rawOutbound.Receivers

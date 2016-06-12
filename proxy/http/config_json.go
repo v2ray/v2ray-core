@@ -5,6 +5,7 @@ package http
 import (
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 
 	"github.com/v2ray/v2ray-core/proxy/internal"
 )
@@ -18,7 +19,7 @@ func (this *CertificateConfig) UnmarshalJSON(data []byte) error {
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
-		return err
+		return errors.New("HTTP: Failed to parse certificate config: " + err.Error())
 	}
 
 	cert, err := tls.LoadX509KeyPair(jsonConfig.CertFile, jsonConfig.KeyFile)
@@ -38,7 +39,7 @@ func (this *TLSConfig) UnmarshalJSON(data []byte) error {
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
-		return err
+		return errors.New("HTTP: Failed to parse TLS config: " + err.Error())
 	}
 
 	this.Enabled = jsonConfig.Enabled
@@ -53,7 +54,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
-		return err
+		return errors.New("HTTP: Failed to parse config: " + err.Error())
 	}
 
 	this.TLSConfig = jsonConfig.Tls

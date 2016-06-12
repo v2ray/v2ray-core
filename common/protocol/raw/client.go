@@ -109,12 +109,12 @@ func (this *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Res
 
 	_, err := io.ReadFull(this.responseReader, buffer.Value[:4])
 	if err != nil {
-		log.Error("Raw: Failed to read response header: ", err)
+		log.Info("Raw: Failed to read response header: ", err)
 		return nil, err
 	}
 
 	if buffer.Value[0] != this.responseHeader {
-		log.Warning("Raw: Unexpected response header. Expecting %d, but actually %d", this.responseHeader, buffer.Value[0])
+		log.Info("Raw: Unexpected response header. Expecting ", this.responseHeader, " but actually ", buffer.Value[0])
 		return nil, transport.ErrorCorruptedPacket
 	}
 
@@ -127,7 +127,7 @@ func (this *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Res
 		dataLen := int(buffer.Value[3])
 		_, err := io.ReadFull(this.responseReader, buffer.Value[:dataLen])
 		if err != nil {
-			log.Error("Raw: Failed to read response command: ", err)
+			log.Info("Raw: Failed to read response command: ", err)
 			return nil, err
 		}
 		data := buffer.Value[:dataLen]

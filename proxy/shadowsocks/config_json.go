@@ -4,6 +4,7 @@ package shadowsocks
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 
 	"github.com/v2ray/v2ray-core/common/log"
@@ -21,7 +22,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
-		return err
+		return errors.New("Shadowsocks: Failed to parse config: " + err.Error())
 	}
 
 	this.UDP = jsonConfig.UDP

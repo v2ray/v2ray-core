@@ -4,6 +4,7 @@ package blackhole
 
 import (
 	"encoding/json"
+	"errors"
 
 	"github.com/v2ray/v2ray-core/common/loader"
 	"github.com/v2ray/v2ray-core/proxy/internal"
@@ -15,7 +16,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 	jsonConfig := new(JSONConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
-		return err
+		return errors.New("Blackhole: Failed to parse config: " + err.Error())
 	}
 
 	this.Response = new(NoneResponse)
@@ -25,7 +26,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		loader.RegisterCreator("http", func() interface{} { return new(HTTPResponse) })
 		response, err := loader.Load(jsonConfig.Response)
 		if err != nil {
-			return err
+			return errors.New("Blackhole: Failed to parse response config: " + err.Error())
 		}
 		this.Response = response.(Response)
 	}

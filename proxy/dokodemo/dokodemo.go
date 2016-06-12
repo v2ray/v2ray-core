@@ -129,7 +129,16 @@ func (this *DokodemoDoor) ListenTCP() error {
 func (this *DokodemoDoor) HandleTCPConnection(conn *hub.Connection) {
 	defer conn.Close()
 
-	ray := this.packetDispatcher.DispatchToOutbound(v2net.TCPDestination(this.address, this.port))
+	dest := v2net.TCPDestination(this.address, this.port)
+	if this.config.FollowRedirect {
+		originalDest := GetOriginalDestination(conn)
+		if originalDest != nil {
+			log.Info("Dokodemo: Following redirect to: ", originalDest)
+			dest = originalDest
+		}
+	}
+
+	ray := this.packetDispatcher.DispatchToOutbound(dest)
 	defer ray.InboundOutput().Release()
 
 	var inputFinish, outputFinish sync.Mutex
