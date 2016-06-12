@@ -64,19 +64,19 @@ func DialWithoutCache(src v2net.Address, dest v2net.Destination) (net.Conn, erro
 	return dialer.Dial(dest.Network().String(), dest.NetAddr())
 }
 
-func Dial3(src v2net.Address, dest v2net.Destination, proxyMeta proxy.InboundHandlerMeta) (*Connection, error) {
+func Dial3(src v2net.Address, dest v2net.Destination, proxyMeta proxy.OutboundHandlerMeta) (*Connection, error) {
 	if proxyMeta.KcpSupported && transport.IsKcpEnabled() {
 		DialKCP3(src, dest, proxyMeta)
 	}
 	return Dial(src, dest)
 }
-func DialWithoutCache3(src v2net.Address, dest v2net.Destination, proxyMeta proxy.InboundHandlerMeta) (net.Conn, error) {
+func DialWithoutCache3(src v2net.Address, dest v2net.Destination, proxyMeta proxy.OutboundHandlerMeta) (net.Conn, error) {
 	if proxyMeta.KcpSupported && transport.IsKcpEnabled() {
 	}
 	return DialWithoutCache(src, dest)
 }
 
-func DialKCP3(src v2net.Address, dest v2net.Destination, proxyMeta proxy.InboundHandlerMeta) (*Connection, error) {
+func DialKCP3(src v2net.Address, dest v2net.Destination, proxyMeta proxy.OutboundHandlerMeta) (*Connection, error) {
 	if src == nil {
 		src = v2net.AnyIP
 	}
