@@ -18,5 +18,5 @@ type Config struct {
 }
 
 var DefaultAdvancedConfigs = &AdvancedConfig{
-	Mtu: 1350, Sndwnd: 1024, Rcvwnd: 1024, Fec: 4, Dscp: 0, ReadTimeout: 60, WriteTimeout: 40, Acknodelay: false,
+	Mtu: 1350, Sndwnd: 1024, Rcvwnd: 1024, Fec: 4, Dscp: 0, ReadTimeout: 18600, WriteTimeout: 18500, Acknodelay: false,
 }

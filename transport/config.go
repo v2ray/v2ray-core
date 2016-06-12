@@ -17,6 +17,7 @@ func (this *Config) Apply() error {
 	enableKcp = this.enableKcp
 	if enableKcp {
 		KcpConfig = this.kcpConfig
+		connectionReuse = false
 	}
 	return nil
 }

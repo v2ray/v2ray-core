@@ -82,16 +82,9 @@ func DialKCP3(src v2net.Address, dest v2net.Destination, proxyMeta *proxy.Outbou
 		src = v2net.AnyIP
 	}
 	id := src.String() + "-" + dest.NetAddr()
-	var conn net.Conn
-	if dest.IsTCP() && transport.IsConnectionReusable() {
-		conn = globalCache.Get(id)
-	}
-	if conn == nil {
-		var err error
-		conn, err = DialWithoutCache3(src, dest, proxyMeta)
-		if err != nil {
-			return nil, err
-		}
+	conn, err := DialWithoutCache3(src, dest, proxyMeta)
+	if err != nil {
+		return nil, err
 	}
 	return &Connection{
 		dest:     id,

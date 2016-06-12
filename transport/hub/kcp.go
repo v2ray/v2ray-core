@@ -13,14 +13,38 @@ import (
 )
 
 type KCPVlistener struct {
-	lst  *kcp.Listener
-	conf *kcpv.Config
+	lst                    *kcp.Listener
+	conf                   *kcpv.Config
+	previousSocketid       map[int]uint32
+	previousSocketid_mapid int
 }
 
 func (kvl *KCPVlistener) Accept() (net.Conn, error) {
 	conn, err := kvl.lst.Accept()
 	if err != nil {
 		return nil, err
+	}
+
+	if kvl.previousSocketid == nil {
+		kvl.previousSocketid = make(map[int]uint32)
+	}
+
+	var badbit bool = false
+
+	for _, key := range kvl.previousSocketid {
+		log.Info("kcp: listener testing,", key, ":", conn.GetConv())
+		if key == conn.GetConv() {
+			badbit = true
+		}
+	}
+	if badbit {
+		return nil, errors.New("KCP:ConnDup, Don't worry~")
+	} else {
+		kvl.previousSocketid_mapid++
+		kvl.previousSocketid[kvl.previousSocketid_mapid] = conn.GetConv()
+		if kvl.previousSocketid_mapid >= 512 {
+			delete(kvl.previousSocketid, kvl.previousSocketid_mapid-512)
+		}
 	}
 
 	kcv := &KCPVconn{hc: conn}
