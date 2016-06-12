@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/v2ray/v2ray-core/common/log"
+	"github.com/v2ray/v2ray-core/transport"
 	"github.com/v2ray/v2ray-core/transport/hub/kcpv"
 	"github.com/xtaci/kcp-go"
 )
@@ -108,4 +109,20 @@ func (kcpvc *KCPVconn) SetReadDeadline(t time.Time) error {
 
 func (kcpvc *KCPVconn) SetWriteDeadline(t time.Time) error {
 	return kcpvc.hc.SetWriteDeadline(t)
+}
+
+func DialKCP(dest v2net.Destination) (*KCPVconn, error) {
+	kcpconf := transport.KcpConfig
+	cpip, _ := kcpv.GetChipher(kcpconf.Key)
+	kcv, err := kcp.DialWithOptions(kcpconf.AdvancedConfigs.Fec, dest.NetAddr(), cpip)
+	if err != nil {
+		return nil, err
+	}
+	kcvn := &KCPVconn{hc: kcv}
+	kcvn.conf = kcpconf
+	err = kcvn.ApplyConf()
+	if err != nil {
+		return nil, err
+	}
+	return kcvn, nil
 }
