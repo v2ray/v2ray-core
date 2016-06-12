@@ -8,6 +8,8 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/transport"
 )
 
 var (
@@ -46,6 +48,14 @@ func ListenTCP(address v2net.Address, port v2net.Port, callback ConnectionHandle
 
 	go hub.start()
 	return hub, nil
+}
+func ListenTCP6(address v2net.Address, port v2net.Port, callback ConnectionHandler, proxyMeta proxy.InboundHandlerMeta, tlsConfig *tls.Config) (*TCPHub, error) {
+	if proxyMeta.KcpSupported && transport.IsKcpEnabled() {
+		return nil, errors.New("ListenTCP6: Not Implemented")
+	} else {
+		return ListenTCP(address, port, callback, tlsConfig)
+	}
+	return nil, errors.New("ListenTCP6: Not Implemented")
 }
 
 func (this *TCPHub) Close() {
