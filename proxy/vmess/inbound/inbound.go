@@ -248,6 +248,8 @@ func init() {
 				handler.inboundHandlerManager = space.GetApp(proxyman.APP_ID_INBOUND_MANAGER).(proxyman.InboundHandlerManager)
 			}
 
+			handler.setProxyCap()
+
 			return handler, nil
 		})
 }

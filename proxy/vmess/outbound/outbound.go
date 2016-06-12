@@ -161,9 +161,14 @@ func init() {
 	internal.MustRegisterOutboundHandlerCreator("vmess",
 		func(space app.Space, rawConfig interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 			vOutConfig := rawConfig.(*Config)
-			return &VMessOutboundHandler{
+
+			handler := &VMessOutboundHandler{
 				receiverManager: NewReceiverManager(vOutConfig.Receivers),
 				meta:            meta,
-			}, nil
+			}
+
+			handler.setProxyCap()
+
+			return handler, nil
 		})
 }
