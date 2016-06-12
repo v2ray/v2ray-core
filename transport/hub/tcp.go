@@ -71,7 +71,7 @@ func ListenKCPhub(address v2net.Address, port v2net.Port, callback ConnectionHan
 	go hub.start()
 	return hub, nil
 }
-func ListenTCP6(address v2net.Address, port v2net.Port, callback ConnectionHandler, proxyMeta proxy.InboundHandlerMeta, tlsConfig *tls.Config) (*TCPHub, error) {
+func ListenTCP6(address v2net.Address, port v2net.Port, callback ConnectionHandler, proxyMeta *proxy.InboundHandlerMeta, tlsConfig *tls.Config) (*TCPHub, error) {
 	if proxyMeta.KcpSupported && transport.IsKcpEnabled() {
 		return ListenKCPhub(address, port, callback, tlsConfig)
 	} else {
