@@ -20,31 +20,13 @@ func (kvl *KCPVlistener) Accept() (*KCPVconn, error) {
 	if err != nil {
 		return nil, err
 	}
-	nodelay, interval, resend, nc := 0, 40, 0, 0
-	if kvl.conf.Mode != "manual" {
-		switch kvl.conf.Mode {
-		case "normal":
-			nodelay, interval, resend, nc = 0, 30, 2, 1
-		case "fast":
-			nodelay, interval, resend, nc = 0, 20, 2, 1
-		case "fast2":
-			nodelay, interval, resend, nc = 1, 20, 2, 1
-		case "fast3":
-			nodelay, interval, resend, nc = 1, 10, 2, 1
-		}
-	} else {
-		log.Error("kcp: Accepted Unsuccessfully: Manual mode is not supported.(yet!)")
-		return nil, errors.New("kcp: Manual Not Implemented")
-	}
-
-	conn.SetNoDelay(nodelay, interval, resend, nc)
-	conn.SetWindowSize(kvl.conf.AdvancedConfigs.Sndwnd, kvl.conf.AdvancedConfigs.Rcvwnd)
-	conn.SetMtu(kvl.conf.AdvancedConfigs.Mtu)
-	conn.SetACKNoDelay(kvl.conf.AdvancedConfigs.Acknodelay)
-	conn.SetDSCP(kvl.conf.AdvancedConfigs.Dscp)
 
 	kcv := &KCPVconn{hc: conn}
 	kcv.conf = kvl.conf
+	err = kcv.ApplyConf()
+	if err != nil {
+		return nil, err
+	}
 	return kcv, nil
 }
 func (kvl *KCPVlistener) Close() error {
@@ -76,6 +58,31 @@ func (kcpvc *KCPVconn) Write(b []byte) (int, error) {
 	}
 	kcpvc.hc.SetDeadline(kcpvc.conntokeep)
 	return kcpvc.hc.Write(b)
+}
+func (kcpvc *KCPVconn) ApplyConf() error {
+	nodelay, interval, resend, nc := 0, 40, 0, 0
+	if kcpvc.conf.Mode != "manual" {
+		switch kcpvc.conf.Mode {
+		case "normal":
+			nodelay, interval, resend, nc = 0, 30, 2, 1
+		case "fast":
+			nodelay, interval, resend, nc = 0, 20, 2, 1
+		case "fast2":
+			nodelay, interval, resend, nc = 1, 20, 2, 1
+		case "fast3":
+			nodelay, interval, resend, nc = 1, 10, 2, 1
+		}
+	} else {
+		log.Error("kcp: Failed to Apply configure: Manual mode is not supported.(yet!)")
+		return errors.New("kcp: Manual Not Implemented")
+	}
+
+	kcpvc.hc.SetNoDelay(nodelay, interval, resend, nc)
+	kcpvc.hc.SetWindowSize(kcpvc.conf.AdvancedConfigs.Sndwnd, kcpvc.conf.AdvancedConfigs.Rcvwnd)
+	kcpvc.hc.SetMtu(kcpvc.conf.AdvancedConfigs.Mtu)
+	kcpvc.hc.SetACKNoDelay(kcpvc.conf.AdvancedConfigs.Acknodelay)
+	kcpvc.hc.SetDSCP(kcpvc.conf.AdvancedConfigs.Dscp)
+	return nil
 }
 
 func (kcpvc *KCPVconn) Close() error {
