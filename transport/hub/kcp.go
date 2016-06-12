@@ -74,6 +74,8 @@ type KCPVconn struct {
 	conntokeep time.Time
 }
 
+var counter int
+
 func (kcpvc *KCPVconn) Read(b []byte) (int, error) {
 	ifb := time.Now().Add(time.Duration(kcpvc.conf.AdvancedConfigs.ReadTimeout) * time.Second)
 	if ifb.After(kcpvc.conntokeep) {
@@ -114,12 +116,19 @@ func (kcpvc *KCPVconn) ApplyConf() error {
 	kcpvc.hc.SetMtu(kcpvc.conf.AdvancedConfigs.Mtu)
 	kcpvc.hc.SetACKNoDelay(kcpvc.conf.AdvancedConfigs.Acknodelay)
 	kcpvc.hc.SetDSCP(kcpvc.conf.AdvancedConfigs.Dscp)
+	//counter++
+	//log.Info(counter)
 	return nil
 }
 
 func (kcpvc *KCPVconn) Close() error {
-
-	return kcpvc.hc.Close()
+	go func() {
+		time.Sleep(2000 * time.Millisecond)
+		//counter--
+		//log.Info(counter)
+		kcpvc.hc.Close()
+	}()
+	return nil
 }
 
 func (kcpvc *KCPVconn) LocalAddr() net.Addr {
