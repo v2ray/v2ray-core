@@ -19,6 +19,12 @@ type KCPVlistener struct {
 	previousSocketid_mapid int
 }
 
+/*Accept Accept a KCP connection
+Since KCP is stateless, if package deliver after it was closed,
+It could be reconized as a new connection and call accept.
+If we can detect that the connection is of such a kind,
+we will discard that conn.
+*/
 func (kvl *KCPVlistener) Accept() (net.Conn, error) {
 	conn, err := kvl.lst.Accept()
 	if err != nil {
@@ -37,6 +43,7 @@ func (kvl *KCPVlistener) Accept() (net.Conn, error) {
 		}
 	}
 	if badbit {
+		conn.Close()
 		return nil, errors.New("KCP:ConnDup, Don't worry~")
 	} else {
 		kvl.previousSocketid_mapid++
