@@ -32,7 +32,6 @@ func (kvl *KCPVlistener) Accept() (net.Conn, error) {
 	var badbit bool = false
 
 	for _, key := range kvl.previousSocketid {
-		log.Info("kcp: listener testing,", key, ":", conn.GetConv())
 		if key == conn.GetConv() {
 			badbit = true
 		}
