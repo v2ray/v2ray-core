@@ -220,7 +220,9 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 
 	readFinish.Lock()
 }
-
+func (this *VMessInboundHandler) setProxyCap() {
+	this.meta.KcpSupported = true
+}
 func init() {
 	internal.MustRegisterInboundHandlerCreator("vmess",
 		func(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {

@@ -154,7 +154,9 @@ func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, con
 
 	return
 }
-
+func (this *VMessOutboundHandler) setProxyCap() {
+	this.meta.KcpSupported = true
+}
 func init() {
 	internal.MustRegisterOutboundHandlerCreator("vmess",
 		func(space app.Space, rawConfig interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
