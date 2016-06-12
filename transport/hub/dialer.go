@@ -66,7 +66,7 @@ func DialWithoutCache(src v2net.Address, dest v2net.Destination) (net.Conn, erro
 
 func Dial3(src v2net.Address, dest v2net.Destination, proxyMeta *proxy.OutboundHandlerMeta) (*Connection, error) {
 	if proxyMeta.KcpSupported && transport.IsKcpEnabled() {
-		DialKCP3(src, dest, proxyMeta)
+		return DialKCP3(src, dest, proxyMeta)
 	}
 	return Dial(src, dest)
 }
