@@ -24,8 +24,8 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	this.ConnectionReuse = jsonConfig.ConnectionReuse
 	this.enableKcp = jsonConfig.EnableKcp
 	this.kcpConfig = jsonConfig.KcpConfig
-	if jsonConfig.KcpConfig.AdvancedConfig == nil {
-		jsonConfig.KcpConfig.AdvancedConfig = kcpv.DefaultAdvancedConfigs
+	if jsonConfig.KcpConfig.AdvancedConfigs == nil {
+		jsonConfig.KcpConfig.AdvancedConfigs = kcpv.DefaultAdvancedConfigs
 	}
 
 	return nil
