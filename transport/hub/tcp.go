@@ -49,9 +49,31 @@ func ListenTCP(address v2net.Address, port v2net.Port, callback ConnectionHandle
 	go hub.start()
 	return hub, nil
 }
+func ListenKCPhub(address v2net.Address, port v2net.Port, callback ConnectionHandler, tlsConfig *tls.Config) (*TCPHub, error) {
+	listener, err := ListenKCP(address, port)
+	if err != nil {
+		return nil, err
+	}
+	var hub *TCPHub
+	if tlsConfig != nil {
+		tlsListener := tls.NewListener(listener, tlsConfig)
+		hub = &TCPHub{
+			listener:     tlsListener,
+			connCallback: callback,
+		}
+	} else {
+		hub = &TCPHub{
+			listener:     listener,
+			connCallback: callback,
+		}
+	}
+
+	go hub.start()
+	return hub, nil
+}
 func ListenTCP6(address v2net.Address, port v2net.Port, callback ConnectionHandler, proxyMeta proxy.InboundHandlerMeta, tlsConfig *tls.Config) (*TCPHub, error) {
 	if proxyMeta.KcpSupported && transport.IsKcpEnabled() {
-		return nil, errors.New("ListenTCP6: Not Implemented")
+		return ListenKCPhub(address, port, callback, tlsConfig)
 	} else {
 		return ListenTCP(address, port, callback, tlsConfig)
 	}

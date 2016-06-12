@@ -17,7 +17,7 @@ type KCPVlistener struct {
 	conf *kcpv.Config
 }
 
-func (kvl *KCPVlistener) Accept() (*KCPVconn, error) {
+func (kvl *KCPVlistener) Accept() (net.Conn, error) {
 	conn, err := kvl.lst.Accept()
 	if err != nil {
 		return nil, err
