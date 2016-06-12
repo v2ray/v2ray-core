@@ -34,7 +34,7 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 
 	err := retry.Timed(5, 100).On(func() error {
 		rec = this.receiverManager.PickReceiver()
-		rawConn, err := hub.Dial(this.meta.Address, rec.Destination)
+		rawConn, err := hub.Dial3(this.meta.Address, rec.Destination, this.meta)
 		if err != nil {
 			return err
 		}

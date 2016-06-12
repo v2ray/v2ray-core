@@ -106,7 +106,7 @@ func (this *VMessInboundHandler) Start() error {
 		return nil
 	}
 
-	tcpListener, err := hub.ListenTCP(this.meta.Address, this.meta.Port, this.HandleConnection, nil)
+	tcpListener, err := hub.ListenTCP6(this.meta.Address, this.meta.Port, this.HandleConnection, this.meta, nil)
 	if err != nil {
 		log.Error("Unable to listen tcp ", this.meta.Address, ":", this.meta.Port, ": ", err)
 		return err
