@@ -129,13 +129,21 @@ func (this *DokodemoDoor) ListenTCP() error {
 func (this *DokodemoDoor) HandleTCPConnection(conn *hub.Connection) {
 	defer conn.Close()
 
-	dest := v2net.TCPDestination(this.address, this.port)
+	var dest v2net.Destination
 	if this.config.FollowRedirect {
 		originalDest := GetOriginalDestination(conn)
 		if originalDest != nil {
 			log.Info("Dokodemo: Following redirect to: ", originalDest)
 			dest = originalDest
 		}
+	}
+	if dest == nil && this.address != nil && this.port > v2net.Port(0) {
+		dest = v2net.TCPDestination(this.address, this.port)
+	}
+
+	if dest == nil {
+		log.Info("Dokodemo: Unknown destination, stop forwarding...")
+		return
 	}
 
 	ray := this.packetDispatcher.DispatchToOutbound(dest)

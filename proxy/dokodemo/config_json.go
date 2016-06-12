@@ -22,7 +22,9 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, rawConfig); err != nil {
 		return errors.New("Dokodemo: Failed to parse config: " + err.Error())
 	}
-	this.Address = rawConfig.Host.Address
+	if rawConfig.Host != nil {
+		this.Address = rawConfig.Host.Address
+	}
 	this.Port = rawConfig.PortValue
 	this.Network = rawConfig.NetworkList
 	this.Timeout = rawConfig.TimeoutValue
