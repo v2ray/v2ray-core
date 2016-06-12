@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/v2ray/v2ray-core/common/log"
+	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/transport"
 	"github.com/v2ray/v2ray-core/transport/hub/kcpv"
 	"github.com/xtaci/kcp-go"
@@ -125,4 +126,13 @@ func DialKCP(dest v2net.Destination) (*KCPVconn, error) {
 		return nil, err
 	}
 	return kcvn, nil
+}
+
+func ListenKCP(address v2net.Address, port v2net.Port) (*KCPVlistener, error) {
+	kcpconf := transport.KcpConfig
+	cpip, _ := kcpv.GetChipher(kcpconf.Key)
+	laddr := address.String() + ":" + port.String()
+	kcl, err := kcp.ListenWithOptions(kcpconf.AdvancedConfigs.Fec, laddr, cpip)
+	kcvl := &KCPVlistener{lst: kcl, conf: kcpconf}
+	return kcvl, err
 }
