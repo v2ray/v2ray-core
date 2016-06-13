@@ -107,6 +107,8 @@ fi
 rm -rf /tmp/v2ray
 mkdir -p /tmp/v2ray
 
+echo "Installing V2Ray ${VER} on ${ARCH}"
+
 if [ -n "$LOCAL" ]; then
   cp "$LOCAL" "/tmp/v2ray/v2ray.zip"
 else
@@ -123,6 +125,7 @@ else
   fi
 fi
 
+echo "Extracting V2Ray package to /tmp/v2ray."
 install_component "unzip"
 unzip "/tmp/v2ray/v2ray.zip" -d "/tmp/v2ray/"
 
@@ -134,6 +137,7 @@ SYSTEMCTL_CMD=$(command -v systemctl)
 SERVICE_CMD=$(command -v service)
 
 if [ ${V2RAY_RUNNING} -eq 1 ]; then
+  echo "Shutting down V2Ray service."
   if [ -n "${SYSTEMCTL_CMD}" ]; then
     if [ -f "/lib/systemd/system/v2ray.service" ]; then
       ${SYSTEMCTL_CMD} stop v2ray
@@ -171,6 +175,7 @@ if [ -n "${SYSTEMCTL_CMD}" ]; then
     systemctl enable v2ray
   else
     if [ ${V2RAY_RUNNING} -eq 1 ]; then
+      echo "Restarting V2Ray service."
       ${SYSTEMCTL_CMD} start v2ray
     fi
   fi
@@ -182,7 +187,10 @@ elif [ -n "${SERVICE_CMD}" ]; then # Configure SysV if necessary.
     update-rc.d v2ray defaults
   else
     if [ ${V2RAY_RUNNING} -eq 1 ]; then
+      echo "Restarting V2Ray service."
       ${SERVICE_CMD} v2ray start
     fi
   fi
 fi
+
+echo "V2Ray ${VER} is installed."
