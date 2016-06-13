@@ -48,6 +48,11 @@ func (kvl *KCPVlistener) Accept() (net.Conn, error) {
 	} else {
 		kvl.previousSocketid_mapid++
 		kvl.previousSocketid[kvl.previousSocketid_mapid] = conn.GetConv()
+		/*
+			Here we assume that count(connection) < 512
+			This won't always true.
+			More work might be necessary to deal with this in a better way.
+		*/
 		if kvl.previousSocketid_mapid >= 512 {
 			delete(kvl.previousSocketid, kvl.previousSocketid_mapid-512)
 		}
@@ -93,6 +98,11 @@ func (kcpvc *KCPVconn) Write(b []byte) (int, error) {
 	kcpvc.hc.SetDeadline(kcpvc.conntokeep)
 	return kcpvc.hc.Write(b)
 }
+
+/*ApplyConf will apply kcpvc.conf to current Socket
+
+It is recommmanded to call this func once and only once
+*/
 func (kcpvc *KCPVconn) ApplyConf() error {
 	nodelay, interval, resend, nc := 0, 40, 0, 0
 	if kcpvc.conf.Mode != "manual" {
@@ -121,6 +131,10 @@ func (kcpvc *KCPVconn) ApplyConf() error {
 	return nil
 }
 
+/*Close Close the current conn
+We have to delay the close of Socket for a few second
+or the VMess EOF can be too late to send.
+*/
 func (kcpvc *KCPVconn) Close() error {
 	go func() {
 		time.Sleep(2000 * time.Millisecond)

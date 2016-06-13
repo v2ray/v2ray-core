@@ -17,6 +17,13 @@ func (this *Config) Apply() error {
 	enableKcp = this.enableKcp
 	if enableKcp {
 		KcpConfig = this.kcpConfig
+		/*
+			KCP do not support connectionReuse,
+			it is mandatory to set connectionReuse to false
+			Since KCP have no handshake and
+			does not SlowStart, there isn't benefit to
+			use that anyway.
+		*/
 		connectionReuse = false
 	}
 	return nil
