@@ -106,7 +106,7 @@ func (this *VMessInboundHandler) Start() error {
 		return nil
 	}
 
-	tcpListener, err := hub.ListenTCP(this.meta.Address, this.meta.Port, this.HandleConnection, nil)
+	tcpListener, err := hub.ListenTCP6(this.meta.Address, this.meta.Port, this.HandleConnection, this.meta, nil)
 	if err != nil {
 		log.Error("Unable to listen tcp ", this.meta.Address, ":", this.meta.Port, ": ", err)
 		return err
@@ -220,7 +220,9 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 
 	readFinish.Lock()
 }
-
+func (this *VMessInboundHandler) setProxyCap() {
+	this.meta.KcpSupported = true
+}
 func init() {
 	internal.MustRegisterInboundHandlerCreator("vmess",
 		func(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
@@ -245,6 +247,8 @@ func init() {
 			if space.HasApp(proxyman.APP_ID_INBOUND_MANAGER) {
 				handler.inboundHandlerManager = space.GetApp(proxyman.APP_ID_INBOUND_MANAGER).(proxyman.InboundHandlerManager)
 			}
+
+			handler.setProxyCap()
 
 			return handler, nil
 		})

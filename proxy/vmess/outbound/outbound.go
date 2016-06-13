@@ -34,7 +34,7 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 
 	err := retry.Timed(5, 100).On(func() error {
 		rec = this.receiverManager.PickReceiver()
-		rawConn, err := hub.Dial(this.meta.Address, rec.Destination)
+		rawConn, err := hub.Dial3(this.meta.Address, rec.Destination, this.meta)
 		if err != nil {
 			return err
 		}
@@ -154,14 +154,21 @@ func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, con
 
 	return
 }
-
+func (this *VMessOutboundHandler) setProxyCap() {
+	this.meta.KcpSupported = true
+}
 func init() {
 	internal.MustRegisterOutboundHandlerCreator("vmess",
 		func(space app.Space, rawConfig interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 			vOutConfig := rawConfig.(*Config)
-			return &VMessOutboundHandler{
+
+			handler := &VMessOutboundHandler{
 				receiverManager: NewReceiverManager(vOutConfig.Receivers),
 				meta:            meta,
-			}, nil
+			}
+
+			handler.setProxyCap()
+
+			return handler, nil
 		})
 }

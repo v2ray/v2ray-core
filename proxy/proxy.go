@@ -18,11 +18,15 @@ type InboundHandlerMeta struct {
 	Tag     string
 	Address v2net.Address
 	Port    v2net.Port
+	//Whether this proxy support KCP connections
+	KcpSupported bool
 }
 
 type OutboundHandlerMeta struct {
 	Tag     string
 	Address v2net.Address
+	//Whether this proxy support KCP connections
+	KcpSupported bool
 }
 
 // An InboundHandler handles inbound network connections to V2Ray.
