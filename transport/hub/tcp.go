@@ -92,7 +92,7 @@ func (this *TCPHub) start() {
 
 		if err != nil {
 			if this.accepting {
-				log.Info("Listener: Failed to accept new TCP connection: ", err)
+				log.Warning("Listener: Failed to accept new TCP connection: ", err)
 			}
 			continue
 		}
