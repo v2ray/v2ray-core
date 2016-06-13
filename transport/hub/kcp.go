@@ -66,9 +66,11 @@ func (kvl *KCPVlistener) Accept() (net.Conn, error) {
 	}
 	return kcv, nil
 }
+
 func (kvl *KCPVlistener) Close() error {
 	return kvl.lst.Close()
 }
+
 func (kvl *KCPVlistener) Addr() net.Addr {
 	return kvl.lst.Addr()
 }
