@@ -74,7 +74,7 @@ type KCPVconn struct {
 	conntokeep time.Time
 }
 
-var counter int
+//var counter int
 
 func (kcpvc *KCPVconn) Read(b []byte) (int, error) {
 	ifb := time.Now().Add(time.Duration(kcpvc.conf.AdvancedConfigs.ReadTimeout) * time.Second)
