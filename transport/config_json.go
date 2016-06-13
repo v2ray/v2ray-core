@@ -5,6 +5,7 @@ package transport
 import (
 	"encoding/json"
 
+	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/transport/hub/kcpv"
 )
 
@@ -23,9 +24,15 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 	this.ConnectionReuse = jsonConfig.ConnectionReuse
 	this.enableKcp = jsonConfig.EnableKcp
-	this.kcpConfig = jsonConfig.KcpConfig
-	if jsonConfig.KcpConfig.AdvancedConfigs == nil {
-		jsonConfig.KcpConfig.AdvancedConfigs = kcpv.DefaultAdvancedConfigs
+	if jsonConfig.KcpConfig != nil {
+		this.kcpConfig = jsonConfig.KcpConfig
+		if jsonConfig.KcpConfig.AdvancedConfigs == nil {
+			jsonConfig.KcpConfig.AdvancedConfigs = kcpv.DefaultAdvancedConfigs
+		}
+	} else {
+		if jsonConfig.EnableKcp {
+			log.Error("transport: You have enabled KCP but no configure is given")
+		}
 	}
 
 	return nil
