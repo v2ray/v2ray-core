@@ -34,12 +34,15 @@ type TCPHub struct {
 func ListenTCP(address v2net.Address, port v2net.Port, callback ConnectionHandler, settings *StreamSettings) (*TCPHub, error) {
 	var listener Listener
 	var err error
-	if settings.IsCapableOf(StreamConnectionTypeKCP) {
-		listener, err = KCPListenFunc(address, port)
-	} else if settings.IsCapableOf(StreamConnectionTypeTCP) {
+	switch {
+	case settings.IsCapableOf(StreamConnectionTypeTCP):
 		listener, err = TCPListenFunc(address, port)
-	} else {
+	case settings.IsCapableOf(StreamConnectionTypeKCP):
+		listener, err = KCPListenFunc(address, port)
+	case settings.IsCapableOf(StreamConnectionTypeRawTCP):
 		listener, err = RawTCPListenFunc(address, port)
+	default:
+		err = ErrUnsupportedStreamType
 	}
 
 	if err != nil {

@@ -24,10 +24,10 @@ var (
 func Dial(src v2net.Address, dest v2net.Destination, settings *StreamSettings) (Connection, error) {
 	if dest.IsTCP() {
 		switch {
-		case settings.IsCapableOf(StreamConnectionTypeKCP):
-			return KCPDialer(src, dest)
 		case settings.IsCapableOf(StreamConnectionTypeTCP):
 			return TCPDialer(src, dest)
+		case settings.IsCapableOf(StreamConnectionTypeKCP):
+			return KCPDialer(src, dest)
 		case settings.IsCapableOf(StreamConnectionTypeRawTCP):
 			return RawTCPDialer(src, dest)
 		}
