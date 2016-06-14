@@ -88,10 +88,6 @@ func _imax_(a, b uint32) uint32 {
 	}
 }
 
-func _ibound_(lower, middle, upper uint32) uint32 {
-	return _imin_(_imax_(lower, middle), upper)
-}
-
 func _itimediff(later, earlier uint32) int32 {
 	return (int32)(later - earlier)
 }
@@ -316,7 +312,13 @@ func (kcp *KCP) update_ack(rtt int32) {
 		}
 	}
 	rto = kcp.rx_srtt + _imax_(1, 4*kcp.rx_rttval)
-	kcp.rx_rto = _ibound_(kcp.rx_minrto, rto, IKCP_RTO_MAX)
+	if rto > IKCP_RTO_MAX {
+		rto = IKCP_RTO_MAX
+	}
+	if rto < kcp.rx_minrto {
+		rto = kcp.rx_minrto
+	}
+	kcp.rx_rto = rto
 }
 
 func (kcp *KCP) shrink_buf() {
