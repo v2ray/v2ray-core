@@ -1,23 +1,30 @@
-package hub
+package tcp
 
 import (
 	"errors"
+	"io"
 	"net"
 	"reflect"
 	"time"
-
-	"github.com/v2ray/v2ray-core/transport"
 )
 
 var (
 	ErrInvalidConn = errors.New("Invalid Connection.")
 )
 
-type ConnectionHandler func(*Connection)
-
 type ConnectionManager interface {
 	Recycle(string, net.Conn)
 }
+
+type RawConnection struct {
+	net.TCPConn
+}
+
+func (this *RawConnection) Reusable() bool {
+	return false
+}
+
+func (this *RawConnection) SetReusable(b bool) {}
 
 type Connection struct {
 	dest     string
@@ -26,9 +33,18 @@ type Connection struct {
 	reusable bool
 }
 
+func NewConnection(dest string, conn net.Conn, manager ConnectionManager) *Connection {
+	return &Connection{
+		dest:     dest,
+		conn:     conn,
+		listener: manager,
+		reusable: effectiveConfig.ConnectionReuse,
+	}
+}
+
 func (this *Connection) Read(b []byte) (int, error) {
 	if this == nil || this.conn == nil {
-		return 0, ErrorClosedConnection
+		return 0, io.EOF
 	}
 
 	return this.conn.Read(b)
@@ -36,20 +52,22 @@ func (this *Connection) Read(b []byte) (int, error) {
 
 func (this *Connection) Write(b []byte) (int, error) {
 	if this == nil || this.conn == nil {
-		return 0, ErrorClosedConnection
+		return 0, io.ErrClosedPipe
 	}
 	return this.conn.Write(b)
 }
 
 func (this *Connection) Close() error {
 	if this == nil || this.conn == nil {
-		return ErrorClosedConnection
+		return io.ErrClosedPipe
 	}
-	if transport.IsConnectionReusable() && this.Reusable() {
+	if this.Reusable() {
 		this.listener.Recycle(this.dest, this.conn)
 		return nil
 	}
-	return this.conn.Close()
+	err := this.conn.Close()
+	this.conn = nil
+	return err
 }
 
 func (this *Connection) LocalAddr() net.Addr {
@@ -73,6 +91,9 @@ func (this *Connection) SetWriteDeadline(t time.Time) error {
 }
 
 func (this *Connection) SetReusable(reusable bool) {
+	if !effectiveConfig.ConnectionReuse {
+		return
+	}
 	this.reusable = reusable
 }
 

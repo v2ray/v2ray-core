@@ -16,7 +16,8 @@ import (
 	"github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
-	"github.com/v2ray/v2ray-core/transport/hub"
+	"github.com/v2ray/v2ray-core/transport/internet"
+	"github.com/v2ray/v2ray-core/transport/internet/udp"
 )
 
 type Server struct {
@@ -24,9 +25,9 @@ type Server struct {
 	config           *Config
 	meta             *proxy.InboundHandlerMeta
 	accepting        bool
-	tcpHub           *hub.TCPHub
-	udpHub           *hub.UDPHub
-	udpServer        *hub.UDPServer
+	tcpHub           *internet.TCPHub
+	udpHub           *udp.UDPHub
+	udpServer        *udp.UDPServer
 }
 
 func NewServer(config *Config, packetDispatcher dispatcher.PacketDispatcher, meta *proxy.InboundHandlerMeta) *Server {
@@ -61,7 +62,7 @@ func (this *Server) Start() error {
 		return nil
 	}
 
-	tcpHub, err := hub.ListenTCP(this.meta.Address, this.meta.Port, this.handleConnection, nil)
+	tcpHub, err := internet.ListenTCP(this.meta.Address, this.meta.Port, this.handleConnection, this.meta.StreamSettings)
 	if err != nil {
 		log.Error("Shadowsocks: Failed to listen TCP on ", this.meta.Address, ":", this.meta.Port, ": ", err)
 		return err
@@ -69,8 +70,8 @@ func (this *Server) Start() error {
 	this.tcpHub = tcpHub
 
 	if this.config.UDP {
-		this.udpServer = hub.NewUDPServer(this.packetDispatcher)
-		udpHub, err := hub.ListenUDP(this.meta.Address, this.meta.Port, this.handlerUDPPayload)
+		this.udpServer = udp.NewUDPServer(this.packetDispatcher)
+		udpHub, err := udp.ListenUDP(this.meta.Address, this.meta.Port, this.handlerUDPPayload)
 		if err != nil {
 			log.Error("Shadowsocks: Failed to listen UDP on ", this.meta.Address, ":", this.meta.Port, ": ", err)
 			return err
@@ -154,7 +155,7 @@ func (this *Server) handlerUDPPayload(payload *alloc.Buffer, source v2net.Destin
 	})
 }
 
-func (this *Server) handleConnection(conn *hub.Connection) {
+func (this *Server) handleConnection(conn internet.Connection) {
 	defer conn.Close()
 
 	buffer := alloc.NewSmallBuffer()
@@ -248,15 +249,22 @@ func (this *Server) handleConnection(conn *hub.Connection) {
 	writeFinish.Lock()
 }
 
+type ServerFactory struct{}
+
+func (this *ServerFactory) StreamCapability() internet.StreamConnectionType {
+	return internet.StreamConnectionTypeRawTCP
+}
+
+func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
+	if !space.HasApp(dispatcher.APP_ID) {
+		return nil, internal.ErrorBadConfiguration
+	}
+	return NewServer(
+		rawConfig.(*Config),
+		space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
+		meta), nil
+}
+
 func init() {
-	internal.MustRegisterInboundHandlerCreator("shadowsocks",
-		func(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
-			if !space.HasApp(dispatcher.APP_ID) {
-				return nil, internal.ErrorBadConfiguration
-			}
-			return NewServer(
-				rawConfig.(*Config),
-				space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
-				meta), nil
-		})
+	internal.MustRegisterInboundHandlerCreator("shadowsocks", new(ServerFactory))
 }

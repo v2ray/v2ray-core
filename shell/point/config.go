@@ -6,19 +6,22 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/transport"
+	"github.com/v2ray/v2ray-core/transport/internet"
 )
 
 type InboundConnectionConfig struct {
-	Port     v2net.Port
-	ListenOn v2net.Address
-	Protocol string
-	Settings []byte
+	Port           v2net.Port
+	ListenOn       v2net.Address
+	StreamSettings *internet.StreamSettings
+	Protocol       string
+	Settings       []byte
 }
 
 type OutboundConnectionConfig struct {
-	Protocol    string
-	SendThrough v2net.Address
-	Settings    []byte
+	Protocol       string
+	SendThrough    v2net.Address
+	StreamSettings *internet.StreamSettings
+	Settings       []byte
 }
 
 type LogConfig struct {
@@ -40,19 +43,21 @@ type InboundDetourAllocationConfig struct {
 }
 
 type InboundDetourConfig struct {
-	Protocol   string
-	PortRange  v2net.PortRange
-	ListenOn   v2net.Address
-	Tag        string
-	Allocation *InboundDetourAllocationConfig
-	Settings   []byte
+	Protocol       string
+	PortRange      v2net.PortRange
+	ListenOn       v2net.Address
+	Tag            string
+	Allocation     *InboundDetourAllocationConfig
+	StreamSettings *internet.StreamSettings
+	Settings       []byte
 }
 
 type OutboundDetourConfig struct {
-	Protocol    string
-	SendThrough v2net.Address
-	Tag         string
-	Settings    []byte
+	Protocol       string
+	SendThrough    v2net.Address
+	StreamSettings *internet.StreamSettings
+	Tag            string
+	Settings       []byte
 }
 
 type Config struct {

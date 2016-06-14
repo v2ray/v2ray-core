@@ -6,6 +6,7 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/transport/internet"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
@@ -33,9 +34,16 @@ func (this *BlackHole) Dispatch(destination v2net.Destination, payload *alloc.Bu
 	return nil
 }
 
+type Factory struct{}
+
+func (this *Factory) StreamCapability() internet.StreamConnectionType {
+	return internet.StreamConnectionTypeRawTCP
+}
+
+func (this *Factory) Create(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
+	return NewBlackHole(space, config.(*Config), meta), nil
+}
+
 func init() {
-	internal.MustRegisterOutboundHandlerCreator("blackhole",
-		func(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
-			return NewBlackHole(space, config.(*Config), meta), nil
-		})
+	internal.MustRegisterOutboundHandlerCreator("blackhole", new(Factory))
 }

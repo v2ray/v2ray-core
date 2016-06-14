@@ -2,7 +2,6 @@ package freedom
 
 import (
 	"io"
-	"net"
 	"sync"
 
 	"github.com/v2ray/v2ray-core/app"
@@ -15,7 +14,8 @@ import (
 	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
-	"github.com/v2ray/v2ray-core/transport/hub"
+	"github.com/v2ray/v2ray-core/transport/internet"
+	"github.com/v2ray/v2ray-core/transport/internet/tcp"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
@@ -75,12 +75,12 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 	defer ray.OutboundInput().Release()
 	defer ray.OutboundOutput().Close()
 
-	var conn net.Conn
+	var conn internet.Connection
 	if this.domainStrategy == DomainStrategyUseIP && destination.Address().IsDomain() {
 		destination = this.ResolveIP(destination)
 	}
 	err := retry.Timed(5, 100).On(func() error {
-		rawConn, err := hub.DialWithoutCache(this.meta.Address, destination)
+		rawConn, err := internet.Dial(this.meta.Address, destination, this.meta.StreamSettings)
 		if err != nil {
 			return err
 		}
@@ -130,7 +130,7 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 	}()
 
 	writeMutex.Lock()
-	if tcpConn, ok := conn.(*net.TCPConn); ok {
+	if tcpConn, ok := conn.(*tcp.RawConnection); ok {
 		tcpConn.CloseWrite()
 	}
 	readMutex.Lock()
@@ -138,9 +138,16 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 	return nil
 }
 
+type FreedomFactory struct{}
+
+func (this *FreedomFactory) StreamCapability() internet.StreamConnectionType {
+	return internet.StreamConnectionTypeRawTCP
+}
+
+func (this *FreedomFactory) Create(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
+	return NewFreedomConnection(config.(*Config), space, meta), nil
+}
+
 func init() {
-	internal.MustRegisterOutboundHandlerCreator("freedom",
-		func(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
-			return NewFreedomConnection(config.(*Config), space, meta), nil
-		})
+	internal.MustRegisterOutboundHandlerCreator("freedom", new(FreedomFactory))
 }

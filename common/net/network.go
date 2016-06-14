@@ -12,6 +12,9 @@ const (
 
 	// UDPNetwork represents the UDP network.
 	UDPNetwork = Network("udp")
+
+	// KCPNetwork represents the KCP network.
+	KCPNetwork = Network("kcp")
 )
 
 // Network represents a communication network on internet.

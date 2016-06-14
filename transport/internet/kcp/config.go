@@ -1,4 +1,4 @@
-package kcpv
+package kcp
 
 /*AdvancedConfig define behavior of KCP in detail
 
@@ -29,16 +29,6 @@ can cause v2ray to kill the proxy connection it is relaying,
 Higher value can prevent server from closing zombie socket and
 waste resources.
 */
-type AdvancedConfig struct {
-	Mtu          int  `json:"MaximumTransmissionUnit"`
-	Sndwnd       int  `json:"SendingWindowSize"`
-	Rcvwnd       int  `json:"ReceivingWindowSize"`
-	Fec          int  `json:"ForwardErrorCorrectionGroupSize"`
-	Acknodelay   bool `json:"AcknowledgeNoDelay"`
-	Dscp         int  `json:"Dscp"`
-	ReadTimeout  int  `json:"ReadTimeout"`
-	WriteTimeout int  `json:"WriteTimeout"`
-}
 
 /*Config define basic behavior of KCP
 Mode:
@@ -46,20 +36,33 @@ can be one of these values:
 fast3,fast2,fast,normal
 <<<<<<- less delay
 ->>>>>> less bandwich wasted
-
-EncryptionKey:
-a string that will be the EncryptionKey of
-All KCP connection we Listen-Accpet or
-Dial, We are not very sure about how this
-encryption hehave and DO use a unique randomly
-generated key.
 */
 type Config struct {
-	Mode            string          `json:"Mode"`
-	Key             string          `json:"EncryptionKey"`
-	AdvancedConfigs *AdvancedConfig `json:"AdvancedConfig,omitempty"`
+	Mode         string `json:"Mode"`
+	Mtu          int    `json:"MaximumTransmissionUnit"`
+	Sndwnd       int    `json:"SendingWindowSize"`
+	Rcvwnd       int    `json:"ReceivingWindowSize"`
+	Fec          int    `json:"ForwardErrorCorrectionGroupSize"`
+	Acknodelay   bool   `json:"AcknowledgeNoDelay"`
+	Dscp         int    `json:"Dscp"`
+	ReadTimeout  int    `json:"ReadTimeout"`
+	WriteTimeout int    `json:"WriteTimeout"`
 }
 
-var DefaultAdvancedConfigs = &AdvancedConfig{
-	Mtu: 1350, Sndwnd: 1024, Rcvwnd: 1024, Fec: 4, Dscp: 0, ReadTimeout: 600, WriteTimeout: 500, Acknodelay: false,
+func (this *Config) Apply() {
+	effectiveConfig = *this
 }
+
+var (
+	effectiveConfig = Config{
+		Mode:         "normal",
+		Mtu:          1350,
+		Sndwnd:       1024,
+		Rcvwnd:       1024,
+		Fec:          4,
+		Dscp:         0,
+		ReadTimeout:  600,
+		WriteTimeout: 500,
+		Acknodelay:   false,
+	}
+)

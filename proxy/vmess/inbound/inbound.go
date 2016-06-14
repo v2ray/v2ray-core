@@ -17,8 +17,7 @@ import (
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	vmessio "github.com/v2ray/v2ray-core/proxy/vmess/io"
-	"github.com/v2ray/v2ray-core/transport"
-	"github.com/v2ray/v2ray-core/transport/hub"
+	"github.com/v2ray/v2ray-core/transport/internet"
 )
 
 type userByEmail struct {
@@ -72,7 +71,7 @@ type VMessInboundHandler struct {
 	clients               protocol.UserValidator
 	usersByEmail          *userByEmail
 	accepting             bool
-	listener              *hub.TCPHub
+	listener              *internet.TCPHub
 	detours               *DetourConfig
 	meta                  *proxy.InboundHandlerMeta
 }
@@ -106,7 +105,7 @@ func (this *VMessInboundHandler) Start() error {
 		return nil
 	}
 
-	tcpListener, err := hub.ListenTCP6(this.meta.Address, this.meta.Port, this.HandleConnection, this.meta, nil)
+	tcpListener, err := internet.ListenTCP(this.meta.Address, this.meta.Port, this.HandleConnection, this.meta.StreamSettings)
 	if err != nil {
 		log.Error("Unable to listen tcp ", this.meta.Address, ":", this.meta.Port, ": ", err)
 		return err
@@ -118,7 +117,7 @@ func (this *VMessInboundHandler) Start() error {
 	return nil
 }
 
-func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
+func (this *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	defer connection.Close()
 
 	connReader := v2net.NewTimeOutReader(8, connection)
@@ -140,11 +139,9 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 		return
 	}
 	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, "")
-	log.Debug("VMessIn: Received request for ", request.Destination())
+	log.Info("VMessIn: Received request for ", request.Destination())
 
-	if request.Option.Has(protocol.RequestOptionConnectionReuse) {
-		connection.SetReusable(true)
-	}
+	connection.SetReusable(request.Option.Has(protocol.RequestOptionConnectionReuse))
 
 	ray := this.packetDispatcher.DispatchToOutbound(request.Destination())
 	input := ray.InboundInput()
@@ -184,7 +181,7 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 		Command: this.generateCommand(request),
 	}
 
-	if request.Option.Has(protocol.RequestOptionConnectionReuse) && transport.IsConnectionReusable() {
+	if connection.Reusable() {
 		response.Option.Set(protocol.ResponseOptionConnectionReuse)
 	}
 
@@ -220,36 +217,39 @@ func (this *VMessInboundHandler) HandleConnection(connection *hub.Connection) {
 
 	readFinish.Lock()
 }
-func (this *VMessInboundHandler) setProxyCap() {
-	this.meta.KcpSupported = true
+
+type Factory struct{}
+
+func (this *Factory) StreamCapability() internet.StreamConnectionType {
+	return internet.StreamConnectionTypeRawTCP | internet.StreamConnectionTypeTCP
 }
+
+func (this *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
+	if !space.HasApp(dispatcher.APP_ID) {
+		return nil, internal.ErrorBadConfiguration
+	}
+	config := rawConfig.(*Config)
+
+	allowedClients := protocol.NewTimedUserValidator(protocol.DefaultIDHash)
+	for _, user := range config.AllowedUsers {
+		allowedClients.Add(user)
+	}
+
+	handler := &VMessInboundHandler{
+		packetDispatcher: space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
+		clients:          allowedClients,
+		detours:          config.DetourConfig,
+		usersByEmail:     NewUserByEmail(config.AllowedUsers, config.Defaults),
+		meta:             meta,
+	}
+
+	if space.HasApp(proxyman.APP_ID_INBOUND_MANAGER) {
+		handler.inboundHandlerManager = space.GetApp(proxyman.APP_ID_INBOUND_MANAGER).(proxyman.InboundHandlerManager)
+	}
+
+	return handler, nil
+}
+
 func init() {
-	internal.MustRegisterInboundHandlerCreator("vmess",
-		func(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
-			if !space.HasApp(dispatcher.APP_ID) {
-				return nil, internal.ErrorBadConfiguration
-			}
-			config := rawConfig.(*Config)
-
-			allowedClients := protocol.NewTimedUserValidator(protocol.DefaultIDHash)
-			for _, user := range config.AllowedUsers {
-				allowedClients.Add(user)
-			}
-
-			handler := &VMessInboundHandler{
-				packetDispatcher: space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
-				clients:          allowedClients,
-				detours:          config.DetourConfig,
-				usersByEmail:     NewUserByEmail(config.AllowedUsers, config.Defaults),
-				meta:             meta,
-			}
-
-			if space.HasApp(proxyman.APP_ID_INBOUND_MANAGER) {
-				handler.inboundHandlerManager = space.GetApp(proxyman.APP_ID_INBOUND_MANAGER).(proxyman.InboundHandlerManager)
-			}
-
-			handler.setProxyCap()
-
-			return handler, nil
-		})
+	internal.MustRegisterInboundHandlerCreator("vmess", new(Factory))
 }

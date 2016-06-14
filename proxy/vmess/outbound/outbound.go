@@ -15,8 +15,7 @@ import (
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	vmessio "github.com/v2ray/v2ray-core/proxy/vmess/io"
-	"github.com/v2ray/v2ray-core/transport"
-	"github.com/v2ray/v2ray-core/transport/hub"
+	"github.com/v2ray/v2ray-core/transport/internet"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
@@ -30,11 +29,11 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 	defer ray.OutboundOutput().Close()
 
 	var rec *Receiver
-	var conn *hub.Connection
+	var conn internet.Connection
 
 	err := retry.Timed(5, 100).On(func() error {
 		rec = this.receiverManager.PickReceiver()
-		rawConn, err := hub.Dial3(this.meta.Address, rec.Destination, this.meta)
+		rawConn, err := internet.Dial(this.meta.Address, rec.Destination, this.meta.StreamSettings)
 		if err != nil {
 			return err
 		}
@@ -63,9 +62,9 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 
 	defer conn.Close()
 
-	if transport.IsConnectionReusable() {
+	conn.SetReusable(true)
+	if conn.Reusable() { // Conn reuse may be disabled on transportation layer
 		request.Option.Set(protocol.RequestOptionConnectionReuse)
-		conn.SetReusable(true)
 	}
 
 	input := ray.OutboundInput()
@@ -85,7 +84,7 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 	return nil
 }
 
-func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn *hub.Connection, request *protocol.RequestHeader, payload *alloc.Buffer, input v2io.Reader, finish *sync.Mutex) {
+func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn internet.Connection, request *protocol.RequestHeader, payload *alloc.Buffer, input v2io.Reader, finish *sync.Mutex) {
 	defer finish.Unlock()
 
 	writer := v2io.NewBufferedWriter(conn)
@@ -117,7 +116,7 @@ func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn
 	return
 }
 
-func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, conn *hub.Connection, request *protocol.RequestHeader, dest v2net.Destination, output v2io.Writer, finish *sync.Mutex) {
+func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, conn internet.Connection, request *protocol.RequestHeader, dest v2net.Destination, output v2io.Writer, finish *sync.Mutex) {
 	defer finish.Unlock()
 
 	reader := v2io.NewBufferedReader(conn)
@@ -154,21 +153,24 @@ func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, con
 
 	return
 }
-func (this *VMessOutboundHandler) setProxyCap() {
-	this.meta.KcpSupported = true
+
+type Factory struct{}
+
+func (this *Factory) StreamCapability() internet.StreamConnectionType {
+	return internet.StreamConnectionTypeRawTCP | internet.StreamConnectionTypeTCP
 }
+
+func (this *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
+	vOutConfig := rawConfig.(*Config)
+
+	handler := &VMessOutboundHandler{
+		receiverManager: NewReceiverManager(vOutConfig.Receivers),
+		meta:            meta,
+	}
+
+	return handler, nil
+}
+
 func init() {
-	internal.MustRegisterOutboundHandlerCreator("vmess",
-		func(space app.Space, rawConfig interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
-			vOutConfig := rawConfig.(*Config)
-
-			handler := &VMessOutboundHandler{
-				receiverManager: NewReceiverManager(vOutConfig.Receivers),
-				meta:            meta,
-			}
-
-			handler.setProxyCap()
-
-			return handler, nil
-		})
+	internal.MustRegisterOutboundHandlerCreator("vmess", new(Factory))
 }

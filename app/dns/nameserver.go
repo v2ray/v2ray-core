@@ -10,7 +10,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/transport/hub"
+	"github.com/v2ray/v2ray-core/transport/internet/udp"
 
 	"github.com/miekg/dns"
 )
@@ -43,7 +43,7 @@ type UDPNameServer struct {
 	sync.Mutex
 	address     v2net.Destination
 	requests    map[uint16]*PendingRequest
-	udpServer   *hub.UDPServer
+	udpServer   *udp.UDPServer
 	nextCleanup time.Time
 }
 
@@ -51,7 +51,7 @@ func NewUDPNameServer(address v2net.Destination, dispatcher dispatcher.PacketDis
 	s := &UDPNameServer{
 		address:   address,
 		requests:  make(map[uint16]*PendingRequest),
-		udpServer: hub.NewUDPServer(dispatcher),
+		udpServer: udp.NewUDPServer(dispatcher),
 	}
 	return s
 }

@@ -1,30 +1,23 @@
 package transport
 
-import "github.com/v2ray/v2ray-core/transport/hub/kcpv"
+import (
+	"github.com/v2ray/v2ray-core/transport/internet/kcp"
+	"github.com/v2ray/v2ray-core/transport/internet/tcp"
+)
 
 // Config for V2Ray transport layer.
 type Config struct {
-	ConnectionReuse bool
-	enableKcp       bool
-	kcpConfig       *kcpv.Config
+	tcpConfig *tcp.Config
+	kcpConfig *kcp.Config
 }
 
 // Apply applies this Config.
 func (this *Config) Apply() error {
-	if this.ConnectionReuse {
-		connectionReuse = true
+	if this.tcpConfig != nil {
+		this.tcpConfig.Apply()
 	}
-	enableKcp = this.enableKcp
-	if enableKcp {
-		KcpConfig = this.kcpConfig
-		/*
-			KCP do not support connectionReuse,
-			it is mandatory to set connectionReuse to false
-			Since KCP have no handshake and
-			does not SlowStart, there isn't benefit to
-			use that anyway.
-		*/
-		connectionReuse = false
+	if this.kcpConfig != nil {
+		this.kcpConfig.Apply()
 	}
 	return nil
 }

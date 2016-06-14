@@ -14,7 +14,8 @@ import (
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
 	"github.com/v2ray/v2ray-core/proxy/socks/protocol"
-	"github.com/v2ray/v2ray-core/transport/hub"
+	"github.com/v2ray/v2ray-core/transport/internet"
+	"github.com/v2ray/v2ray-core/transport/internet/udp"
 )
 
 var (
@@ -29,10 +30,10 @@ type Server struct {
 	accepting        bool
 	packetDispatcher dispatcher.PacketDispatcher
 	config           *Config
-	tcpListener      *hub.TCPHub
-	udpHub           *hub.UDPHub
+	tcpListener      *internet.TCPHub
+	udpHub           *udp.UDPHub
 	udpAddress       v2net.Destination
-	udpServer        *hub.UDPServer
+	udpServer        *udp.UDPServer
 	meta             *proxy.InboundHandlerMeta
 }
 
@@ -73,11 +74,11 @@ func (this *Server) Start() error {
 		return nil
 	}
 
-	listener, err := hub.ListenTCP(
+	listener, err := internet.ListenTCP(
 		this.meta.Address,
 		this.meta.Port,
 		this.handleConnection,
-		nil)
+		this.meta.StreamSettings)
 	if err != nil {
 		log.Error("Socks: failed to listen on ", this.meta.Address, ":", this.meta.Port, ": ", err)
 		return err
@@ -92,7 +93,7 @@ func (this *Server) Start() error {
 	return nil
 }
 
-func (this *Server) handleConnection(connection *hub.Connection) {
+func (this *Server) handleConnection(connection internet.Connection) {
 	defer connection.Close()
 
 	timedReader := v2net.NewTimeOutReader(120, connection)
@@ -302,15 +303,22 @@ func (this *Server) transport(reader io.Reader, writer io.Writer, destination v2
 	outputFinish.Lock()
 }
 
+type ServerFactory struct{}
+
+func (this *ServerFactory) StreamCapability() internet.StreamConnectionType {
+	return internet.StreamConnectionTypeRawTCP
+}
+
+func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
+	if !space.HasApp(dispatcher.APP_ID) {
+		return nil, internal.ErrorBadConfiguration
+	}
+	return NewServer(
+		rawConfig.(*Config),
+		space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
+		meta), nil
+}
+
 func init() {
-	internal.MustRegisterInboundHandlerCreator("socks",
-		func(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
-			if !space.HasApp(dispatcher.APP_ID) {
-				return nil, internal.ErrorBadConfiguration
-			}
-			return NewServer(
-				rawConfig.(*Config),
-				space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
-				meta), nil
-		})
+	internal.MustRegisterInboundHandlerCreator("socks", new(ServerFactory))
 }

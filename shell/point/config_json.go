@@ -14,6 +14,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/transport"
+	"github.com/v2ray/v2ray-core/transport/internet"
 )
 
 const (
@@ -57,10 +58,11 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 
 func (this *InboundConnectionConfig) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
-		Port     uint16             `json:"port"`
-		Listen   *v2net.AddressJson `json:"listen"`
-		Protocol string             `json:"protocol"`
-		Settings json.RawMessage    `json:"settings"`
+		Port          uint16                   `json:"port"`
+		Listen        *v2net.AddressJson       `json:"listen"`
+		Protocol      string                   `json:"protocol"`
+		StreamSetting *internet.StreamSettings `json:"streamSettings"`
+		Settings      json.RawMessage          `json:"settings"`
 	}
 
 	jsonConfig := new(JsonConfig)
@@ -75,6 +77,9 @@ func (this *InboundConnectionConfig) UnmarshalJSON(data []byte) error {
 		}
 		this.ListenOn = jsonConfig.Listen.Address
 	}
+	if jsonConfig.StreamSetting != nil {
+		this.StreamSettings = jsonConfig.StreamSetting
+	}
 
 	this.Protocol = jsonConfig.Protocol
 	this.Settings = jsonConfig.Settings
@@ -83,9 +88,10 @@ func (this *InboundConnectionConfig) UnmarshalJSON(data []byte) error {
 
 func (this *OutboundConnectionConfig) UnmarshalJSON(data []byte) error {
 	type JsonConnectionConfig struct {
-		Protocol    string             `json:"protocol"`
-		SendThrough *v2net.AddressJson `json:"sendThrough"`
-		Settings    json.RawMessage    `json:"settings"`
+		Protocol      string                   `json:"protocol"`
+		SendThrough   *v2net.AddressJson       `json:"sendThrough"`
+		StreamSetting *internet.StreamSettings `json:"streamSettings"`
+		Settings      json.RawMessage          `json:"settings"`
 	}
 	jsonConfig := new(JsonConnectionConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
@@ -100,6 +106,9 @@ func (this *OutboundConnectionConfig) UnmarshalJSON(data []byte) error {
 			return errors.New("Point: Unable to send through: " + address.String())
 		}
 		this.SendThrough = address
+	}
+	if jsonConfig.StreamSetting != nil {
+		this.StreamSettings = jsonConfig.StreamSetting
 	}
 	return nil
 }
@@ -162,12 +171,13 @@ func (this *InboundDetourAllocationConfig) UnmarshalJSON(data []byte) error {
 
 func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 	type JsonInboundDetourConfig struct {
-		Protocol   string                         `json:"protocol"`
-		PortRange  *v2net.PortRange               `json:"port"`
-		ListenOn   *v2net.AddressJson             `json:"listen"`
-		Settings   json.RawMessage                `json:"settings"`
-		Tag        string                         `json:"tag"`
-		Allocation *InboundDetourAllocationConfig `json:"allocate"`
+		Protocol      string                         `json:"protocol"`
+		PortRange     *v2net.PortRange               `json:"port"`
+		ListenOn      *v2net.AddressJson             `json:"listen"`
+		Settings      json.RawMessage                `json:"settings"`
+		Tag           string                         `json:"tag"`
+		Allocation    *InboundDetourAllocationConfig `json:"allocate"`
+		StreamSetting *internet.StreamSettings       `json:"streamSettings"`
 	}
 	jsonConfig := new(JsonInboundDetourConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
@@ -195,15 +205,19 @@ func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 			Refresh:  DefaultRefreshMinute,
 		}
 	}
+	if jsonConfig.StreamSetting != nil {
+		this.StreamSettings = jsonConfig.StreamSetting
+	}
 	return nil
 }
 
 func (this *OutboundDetourConfig) UnmarshalJSON(data []byte) error {
 	type JsonOutboundDetourConfig struct {
-		Protocol    string             `json:"protocol"`
-		SendThrough *v2net.AddressJson `json:"sendThrough"`
-		Tag         string             `json:"tag"`
-		Settings    json.RawMessage    `json:"settings"`
+		Protocol      string                   `json:"protocol"`
+		SendThrough   *v2net.AddressJson       `json:"sendThrough"`
+		Tag           string                   `json:"tag"`
+		Settings      json.RawMessage          `json:"settings"`
+		StreamSetting *internet.StreamSettings `json:"streamSettings"`
 	}
 	jsonConfig := new(JsonOutboundDetourConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
@@ -219,6 +233,10 @@ func (this *OutboundDetourConfig) UnmarshalJSON(data []byte) error {
 			return errors.New("Point: Unable to send through: " + address.String())
 		}
 		this.SendThrough = address
+	}
+
+	if jsonConfig.StreamSetting != nil {
+		this.StreamSettings = jsonConfig.StreamSetting
 	}
 	return nil
 }

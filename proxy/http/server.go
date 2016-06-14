@@ -2,7 +2,6 @@ package http
 
 import (
 	"bufio"
-	"crypto/tls"
 	"io"
 	"net"
 	"net/http"
@@ -18,7 +17,7 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
-	"github.com/v2ray/v2ray-core/transport/hub"
+	"github.com/v2ray/v2ray-core/transport/internet"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
@@ -28,7 +27,7 @@ type Server struct {
 	accepting        bool
 	packetDispatcher dispatcher.PacketDispatcher
 	config           *Config
-	tcpListener      *hub.TCPHub
+	tcpListener      *internet.TCPHub
 	meta             *proxy.InboundHandlerMeta
 }
 
@@ -59,11 +58,7 @@ func (this *Server) Start() error {
 		return nil
 	}
 
-	var tlsConfig *tls.Config
-	if this.config.TLSConfig != nil {
-		tlsConfig = this.config.TLSConfig.GetConfig()
-	}
-	tcpListener, err := hub.ListenTCP(this.meta.Address, this.meta.Port, this.handleConnection, tlsConfig)
+	tcpListener, err := internet.ListenTCP(this.meta.Address, this.meta.Port, this.handleConnection, this.meta.StreamSettings)
 	if err != nil {
 		log.Error("HTTP: Failed listen on ", this.meta.Address, ":", this.meta.Port, ": ", err)
 		return err
@@ -98,7 +93,7 @@ func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error
 	return v2net.TCPDestination(v2net.DomainAddress(host), port), nil
 }
 
-func (this *Server) handleConnection(conn *hub.Connection) {
+func (this *Server) handleConnection(conn internet.Connection) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
 
@@ -269,15 +264,22 @@ func (this *Server) handlePlainHTTP(request *http.Request, dest v2net.Destinatio
 	finish.Wait()
 }
 
+type ServerFactory struct{}
+
+func (this *ServerFactory) StreamCapability() internet.StreamConnectionType {
+	return internet.StreamConnectionTypeRawTCP
+}
+
+func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
+	if !space.HasApp(dispatcher.APP_ID) {
+		return nil, internal.ErrorBadConfiguration
+	}
+	return NewServer(
+		rawConfig.(*Config),
+		space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
+		meta), nil
+}
+
 func init() {
-	internal.MustRegisterInboundHandlerCreator("http",
-		func(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
-			if !space.HasApp(dispatcher.APP_ID) {
-				return nil, internal.ErrorBadConfiguration
-			}
-			return NewServer(
-				rawConfig.(*Config),
-				space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
-				meta), nil
-		})
+	internal.MustRegisterInboundHandlerCreator("http", new(ServerFactory))
 }

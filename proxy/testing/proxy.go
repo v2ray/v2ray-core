@@ -13,7 +13,7 @@ func randomString() string {
 	return fmt.Sprintf("-%d", count)
 }
 
-func RegisterInboundConnectionHandlerCreator(prefix string, creator internal.InboundHandlerCreator) (string, error) {
+func RegisterInboundConnectionHandlerCreator(prefix string, creator internal.InboundHandlerFactory) (string, error) {
 	for {
 		name := prefix + randomString()
 		err := internal.RegisterInboundHandlerCreator(name, creator)
@@ -23,7 +23,7 @@ func RegisterInboundConnectionHandlerCreator(prefix string, creator internal.Inb
 	}
 }
 
-func RegisterOutboundConnectionHandlerCreator(prefix string, creator internal.OutboundHandlerCreator) (string, error) {
+func RegisterOutboundConnectionHandlerCreator(prefix string, creator internal.OutboundHandlerFactory) (string, error) {
 	for {
 		name := prefix + randomString()
 		err := internal.RegisterOutboundHandlerCreator(name, creator)

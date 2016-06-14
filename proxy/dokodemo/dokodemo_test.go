@@ -16,6 +16,7 @@ import (
 	"github.com/v2ray/v2ray-core/testing/assert"
 	"github.com/v2ray/v2ray-core/testing/servers/tcp"
 	"github.com/v2ray/v2ray-core/testing/servers/udp"
+	"github.com/v2ray/v2ray-core/transport/internet"
 )
 
 func TestDokodemoTCP(t *testing.T) {
@@ -40,7 +41,14 @@ func TestDokodemoTCP(t *testing.T) {
 	ohm := proxyman.NewDefaultOutboundHandlerManager()
 	ohm.SetDefaultHandler(
 		freedom.NewFreedomConnection(
-			&freedom.Config{}, space, &proxy.OutboundHandlerMeta{Address: v2net.LocalHostIP}))
+			&freedom.Config{},
+			space,
+			&proxy.OutboundHandlerMeta{
+				Address: v2net.LocalHostIP,
+				StreamSettings: &internet.StreamSettings{
+					Type: internet.StreamConnectionTypeRawTCP,
+				},
+			}))
 	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, ohm)
 
 	data2Send := "Data to be sent to remote."
@@ -51,7 +59,12 @@ func TestDokodemoTCP(t *testing.T) {
 		Port:    tcpServer.Port,
 		Network: v2net.TCPNetwork.AsList(),
 		Timeout: 600,
-	}, space, &proxy.InboundHandlerMeta{Address: v2net.LocalHostIP, Port: port})
+	}, space, &proxy.InboundHandlerMeta{
+		Address: v2net.LocalHostIP,
+		Port:    port,
+		StreamSettings: &internet.StreamSettings{
+			Type: internet.StreamConnectionTypeRawTCP,
+		}})
 	defer dokodemo.Close()
 
 	assert.Error(space.Initialize()).IsNil()
@@ -100,7 +113,13 @@ func TestDokodemoUDP(t *testing.T) {
 	ohm := proxyman.NewDefaultOutboundHandlerManager()
 	ohm.SetDefaultHandler(
 		freedom.NewFreedomConnection(
-			&freedom.Config{}, space, &proxy.OutboundHandlerMeta{Address: v2net.AnyIP}))
+			&freedom.Config{},
+			space,
+			&proxy.OutboundHandlerMeta{
+				Address: v2net.AnyIP,
+				StreamSettings: &internet.StreamSettings{
+					Type: internet.StreamConnectionTypeRawTCP,
+				}}))
 	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, ohm)
 
 	data2Send := "Data to be sent to remote."
@@ -111,7 +130,12 @@ func TestDokodemoUDP(t *testing.T) {
 		Port:    udpServer.Port,
 		Network: v2net.UDPNetwork.AsList(),
 		Timeout: 600,
-	}, space, &proxy.InboundHandlerMeta{Address: v2net.LocalHostIP, Port: port})
+	}, space, &proxy.InboundHandlerMeta{
+		Address: v2net.LocalHostIP,
+		Port:    port,
+		StreamSettings: &internet.StreamSettings{
+			Type: internet.StreamConnectionTypeRawTCP,
+		}})
 	defer dokodemo.Close()
 
 	assert.Error(space.Initialize()).IsNil()

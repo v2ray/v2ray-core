@@ -1,4 +1,4 @@
-package hub
+package udp
 
 import (
 	"net"

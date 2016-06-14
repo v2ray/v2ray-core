@@ -11,7 +11,8 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
-	"github.com/v2ray/v2ray-core/transport/hub"
+	"github.com/v2ray/v2ray-core/transport/internet"
+	"github.com/v2ray/v2ray-core/transport/internet/udp"
 )
 
 type DokodemoDoor struct {
@@ -22,9 +23,9 @@ type DokodemoDoor struct {
 	address          v2net.Address
 	port             v2net.Port
 	packetDispatcher dispatcher.PacketDispatcher
-	tcpListener      *hub.TCPHub
-	udpHub           *hub.UDPHub
-	udpServer        *hub.UDPServer
+	tcpListener      *internet.TCPHub
+	udpHub           *udp.UDPHub
+	udpServer        *udp.UDPServer
 	meta             *proxy.InboundHandlerMeta
 }
 
@@ -88,8 +89,8 @@ func (this *DokodemoDoor) Start() error {
 }
 
 func (this *DokodemoDoor) ListenUDP() error {
-	this.udpServer = hub.NewUDPServer(this.packetDispatcher)
-	udpHub, err := hub.ListenUDP(this.meta.Address, this.meta.Port, this.handleUDPPackets)
+	this.udpServer = udp.NewUDPServer(this.packetDispatcher)
+	udpHub, err := udp.ListenUDP(this.meta.Address, this.meta.Port, this.handleUDPPackets)
 	if err != nil {
 		log.Error("Dokodemo failed to listen on ", this.meta.Address, ":", this.meta.Port, ": ", err)
 		return err
@@ -115,7 +116,8 @@ func (this *DokodemoDoor) handleUDPResponse(dest v2net.Destination, payload *all
 }
 
 func (this *DokodemoDoor) ListenTCP() error {
-	tcpListener, err := hub.ListenTCP(this.meta.Address, this.meta.Port, this.HandleTCPConnection, nil)
+	log.Info("Dokodemo: Stream settings: ", this.meta.StreamSettings)
+	tcpListener, err := internet.ListenTCP(this.meta.Address, this.meta.Port, this.HandleTCPConnection, this.meta.StreamSettings)
 	if err != nil {
 		log.Error("Dokodemo: Failed to listen on ", this.meta.Address, ":", this.meta.Port, ": ", err)
 		return err
@@ -126,7 +128,7 @@ func (this *DokodemoDoor) ListenTCP() error {
 	return nil
 }
 
-func (this *DokodemoDoor) HandleTCPConnection(conn *hub.Connection) {
+func (this *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 	defer conn.Close()
 
 	var dest v2net.Destination
@@ -145,6 +147,7 @@ func (this *DokodemoDoor) HandleTCPConnection(conn *hub.Connection) {
 		log.Info("Dokodemo: Unknown destination, stop forwarding...")
 		return
 	}
+	log.Info("Dokodemo: Handling request to ", dest)
 
 	ray := this.packetDispatcher.DispatchToOutbound(dest)
 	defer ray.InboundOutput().Release()
@@ -177,9 +180,16 @@ func (this *DokodemoDoor) HandleTCPConnection(conn *hub.Connection) {
 	inputFinish.Lock()
 }
 
+type Factory struct{}
+
+func (this *Factory) StreamCapability() internet.StreamConnectionType {
+	return internet.StreamConnectionTypeRawTCP
+}
+
+func (this *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
+	return NewDokodemoDoor(rawConfig.(*Config), space, meta), nil
+}
+
 func init() {
-	internal.MustRegisterInboundHandlerCreator("dokodemo-door",
-		func(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
-			return NewDokodemoDoor(rawConfig.(*Config), space, meta), nil
-		})
+	internal.MustRegisterInboundHandlerCreator("dokodemo-door", new(Factory))
 }

@@ -4,6 +4,7 @@ package proxy // import "github.com/v2ray/v2ray-core/proxy"
 import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/transport/internet"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
@@ -15,18 +16,16 @@ const (
 )
 
 type InboundHandlerMeta struct {
-	Tag     string
-	Address v2net.Address
-	Port    v2net.Port
-	//Whether this proxy support KCP connections
-	KcpSupported bool
+	Tag            string
+	Address        v2net.Address
+	Port           v2net.Port
+	StreamSettings *internet.StreamSettings
 }
 
 type OutboundHandlerMeta struct {
-	Tag     string
-	Address v2net.Address
-	//Whether this proxy support KCP connections
-	KcpSupported bool
+	Tag            string
+	Address        v2net.Address
+	StreamSettings *internet.StreamSettings
 }
 
 // An InboundHandler handles inbound network connections to V2Ray.

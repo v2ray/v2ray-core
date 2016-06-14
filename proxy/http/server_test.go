@@ -12,6 +12,9 @@ import (
 	"github.com/v2ray/v2ray-core/proxy"
 	. "github.com/v2ray/v2ray-core/proxy/http"
 	"github.com/v2ray/v2ray-core/testing/assert"
+	"github.com/v2ray/v2ray-core/transport/internet"
+
+	_ "github.com/v2ray/v2ray-core/transport/internet/tcp"
 )
 
 func TestHopByHopHeadersStrip(t *testing.T) {
@@ -54,7 +57,15 @@ func TestNormalGetRequest(t *testing.T) {
 	testPacketDispatcher := testdispatcher.NewTestPacketDispatcher(nil)
 
 	port := v2nettesting.PickPort()
-	httpProxy := NewServer(&Config{}, testPacketDispatcher, &proxy.InboundHandlerMeta{Address: v2net.LocalHostIP, Port: port})
+	httpProxy := NewServer(
+		&Config{},
+		testPacketDispatcher,
+		&proxy.InboundHandlerMeta{
+			Address: v2net.LocalHostIP,
+			Port:    port,
+			StreamSettings: &internet.StreamSettings{
+				Type: internet.StreamConnectionTypeRawTCP,
+			}})
 	defer httpProxy.Close()
 
 	err := httpProxy.Start()

@@ -18,6 +18,7 @@ import (
 	. "github.com/v2ray/v2ray-core/proxy/freedom"
 	"github.com/v2ray/v2ray-core/testing/assert"
 	"github.com/v2ray/v2ray-core/testing/servers/tcp"
+	"github.com/v2ray/v2ray-core/transport/internet"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
@@ -38,7 +39,15 @@ func TestSinglePacket(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	space := app.NewSpace()
-	freedom := NewFreedomConnection(&Config{}, space, &proxy.OutboundHandlerMeta{Address: v2net.AnyIP})
+	freedom := NewFreedomConnection(
+		&Config{},
+		space,
+		&proxy.OutboundHandlerMeta{
+			Address: v2net.AnyIP,
+			StreamSettings: &internet.StreamSettings{
+				Type: internet.StreamConnectionTypeRawTCP,
+			},
+		})
 	space.Initialize()
 
 	traffic := ray.NewRay()
@@ -58,7 +67,15 @@ func TestSinglePacket(t *testing.T) {
 func TestUnreachableDestination(t *testing.T) {
 	assert := assert.On(t)
 
-	freedom := NewFreedomConnection(&Config{}, app.NewSpace(), &proxy.OutboundHandlerMeta{Address: v2net.AnyIP})
+	freedom := NewFreedomConnection(
+		&Config{},
+		app.NewSpace(),
+		&proxy.OutboundHandlerMeta{
+			Address: v2net.AnyIP,
+			StreamSettings: &internet.StreamSettings{
+				Type: internet.StreamConnectionTypeRawTCP,
+			},
+		})
 	traffic := ray.NewRay()
 	data2Send := "Data to be sent to remote"
 	payload := alloc.NewSmallBuffer().Clear().Append([]byte(data2Send))
@@ -85,7 +102,12 @@ func TestIPResolution(t *testing.T) {
 	freedom := NewFreedomConnection(
 		&Config{DomainStrategy: DomainStrategyUseIP},
 		space,
-		&proxy.OutboundHandlerMeta{Address: v2net.AnyIP})
+		&proxy.OutboundHandlerMeta{
+			Address: v2net.AnyIP,
+			StreamSettings: &internet.StreamSettings{
+				Type: internet.StreamConnectionTypeRawTCP,
+			},
+		})
 
 	space.Initialize()
 

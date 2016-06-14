@@ -7,13 +7,15 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/transport/hub"
+	"github.com/v2ray/v2ray-core/transport/internet"
+	"github.com/v2ray/v2ray-core/transport/internet/tcp"
 )
 
 const SO_ORIGINAL_DST = 80
 
-func GetOriginalDestination(conn *hub.Connection) v2net.Destination {
-	fd, err := conn.SysFd()
+func GetOriginalDestination(conn internet.Connection) v2net.Destination {
+	tcpConn := conn.(*tcp.Connection)
+	fd, err := tcpConn.SysFd()
 	if err != nil {
 		log.Info("Dokodemo: Failed to get original destination: ", err)
 		return nil

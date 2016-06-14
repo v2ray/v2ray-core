@@ -5,12 +5,12 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy/socks/protocol"
-	"github.com/v2ray/v2ray-core/transport/hub"
+	"github.com/v2ray/v2ray-core/transport/internet/udp"
 )
 
 func (this *Server) listenUDP() error {
-	this.udpServer = hub.NewUDPServer(this.packetDispatcher)
-	udpHub, err := hub.ListenUDP(this.meta.Address, this.meta.Port, this.handleUDPPayload)
+	this.udpServer = udp.NewUDPServer(this.packetDispatcher)
+	udpHub, err := udp.ListenUDP(this.meta.Address, this.meta.Port, this.handleUDPPayload)
 	if err != nil {
 		log.Error("Socks: Failed to listen on udp ", this.meta.Address, ":", this.meta.Port)
 		return err
