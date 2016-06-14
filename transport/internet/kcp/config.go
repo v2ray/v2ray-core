@@ -38,15 +38,14 @@ fast3,fast2,fast,normal
 ->>>>>> less bandwich wasted
 */
 type Config struct {
-	Mode         string `json:"Mode"`
-	Mtu          int    `json:"MaximumTransmissionUnit"`
-	Sndwnd       int    `json:"SendingWindowSize"`
-	Rcvwnd       int    `json:"ReceivingWindowSize"`
-	Fec          int    `json:"ForwardErrorCorrectionGroupSize"`
-	Acknodelay   bool   `json:"AcknowledgeNoDelay"`
-	Dscp         int    `json:"Dscp"`
-	ReadTimeout  int    `json:"ReadTimeout"`
-	WriteTimeout int    `json:"WriteTimeout"`
+	Mode         string
+	Mtu          int
+	Sndwnd       int
+	Rcvwnd       int
+	Acknodelay   bool
+	Dscp         int
+	ReadTimeout  int
+	WriteTimeout int
 }
 
 func (this *Config) Apply() {
@@ -59,7 +58,6 @@ var (
 		Mtu:          1350,
 		Sndwnd:       1024,
 		Rcvwnd:       1024,
-		Fec:          4,
 		Dscp:         0,
 		ReadTimeout:  600,
 		WriteTimeout: 500,

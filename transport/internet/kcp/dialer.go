@@ -3,13 +3,11 @@ package kcp
 import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/transport/internet"
-
-	"github.com/xtaci/kcp-go"
 )
 
 func DialKCP(src v2net.Address, dest v2net.Destination) (internet.Connection, error) {
-	cpip, _ := kcp.NewNoneBlockCrypt(nil)
-	kcv, err := kcp.DialWithOptions(effectiveConfig.Fec, dest.NetAddr(), cpip)
+	cpip, _ := NewNoneBlockCrypt(nil)
+	kcv, err := DialWithOptions(dest.NetAddr(), cpip)
 	if err != nil {
 		return nil, err
 	}

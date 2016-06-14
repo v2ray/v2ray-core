@@ -7,12 +7,10 @@ import (
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/transport/internet"
-
-	"github.com/xtaci/kcp-go"
 )
 
 type KCPVlistener struct {
-	lst                    *kcp.Listener
+	lst                    *Listener
 	previousSocketid       map[int]uint32
 	previousSocketid_mapid int
 }
@@ -73,7 +71,7 @@ func (kvl *KCPVlistener) Addr() net.Addr {
 }
 
 type KCPVconn struct {
-	hc         *kcp.UDPSession
+	hc         *UDPSession
 	conntokeep time.Time
 }
 
@@ -168,8 +166,8 @@ func (this *KCPVconn) SetReusable(b bool) {
 
 func ListenKCP(address v2net.Address, port v2net.Port) (internet.Listener, error) {
 	laddr := address.String() + ":" + port.String()
-	crypt, _ := kcp.NewNoneBlockCrypt(nil)
-	kcl, err := kcp.ListenWithOptions(effectiveConfig.Fec, laddr, crypt)
+	crypt, _ := NewNoneBlockCrypt(nil)
+	kcl, err := ListenWithOptions(laddr, crypt)
 	kcvl := &KCPVlistener{lst: kcl}
 	return kcvl, err
 }
