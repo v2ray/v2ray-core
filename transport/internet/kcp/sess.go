@@ -558,60 +558,6 @@ func (l *Listener) Addr() net.Addr {
 	return l.conn.LocalAddr()
 }
 
-// Listen listens for incoming KCP packets addressed to the local address laddr on the network "udp",
-func Listen(laddr string) (*Listener, error) {
-	return ListenWithOptions(laddr, nil)
-}
-
-// ListenWithOptions listens for incoming KCP packets addressed to the local address laddr on the network "udp" with packet encryption,
-// FEC = 0 means no FEC, FEC > 0 means num(FEC) as a FEC cluster
-func ListenWithOptions(laddr string, block BlockCrypt) (*Listener, error) {
-	udpaddr, err := net.ResolveUDPAddr("udp", laddr)
-	if err != nil {
-		return nil, err
-	}
-	conn, err := net.ListenUDP("udp", udpaddr)
-	if err != nil {
-		return nil, err
-	}
-
-	l := new(Listener)
-	l.conn = conn
-	l.sessions = make(map[string]*UDPSession)
-	l.chAccepts = make(chan *UDPSession, 1024)
-	l.chDeadlinks = make(chan net.Addr, 1024)
-	l.die = make(chan struct{})
-	l.block = block
-
-	// caculate header size
-	if l.block != nil {
-		l.headerSize += cryptHeaderSize
-	}
-
-	go l.monitor()
-	return l, nil
-}
-
-// Dial connects to the remote address raddr on the network "udp"
-func Dial(raddr string) (*UDPSession, error) {
-	return DialWithOptions(raddr, nil)
-}
-
-// DialWithOptions connects to the remote address raddr on the network "udp" with packet encryption
-func DialWithOptions(raddr string, block BlockCrypt) (*UDPSession, error) {
-	udpaddr, err := net.ResolveUDPAddr("udp", raddr)
-	if err != nil {
-		return nil, err
-	}
-
-	for {
-		port := basePort + rand.Int()%(maxPort-basePort)
-		if udpconn, err := net.ListenUDP("udp", &net.UDPAddr{Port: port}); err == nil {
-			return newUDPSession(rand.Uint32(), nil, udpconn, udpaddr, block), nil
-		}
-	}
-}
-
 func currentMs() uint32 {
 	return uint32(time.Now().UnixNano() / int64(time.Millisecond))
 }

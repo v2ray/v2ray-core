@@ -75,8 +75,6 @@ type KCPVconn struct {
 	conntokeep time.Time
 }
 
-//var counter int
-
 func (kcpvc *KCPVconn) Read(b []byte) (int, error) {
 	ifb := time.Now().Add(time.Duration(effectiveConfig.ReadTimeout) * time.Second)
 	if ifb.After(kcpvc.conntokeep) {
@@ -117,8 +115,6 @@ func (kcpvc *KCPVconn) ApplyConf() error {
 	kcpvc.hc.SetMtu(effectiveConfig.Mtu)
 	kcpvc.hc.SetACKNoDelay(effectiveConfig.Acknodelay)
 	kcpvc.hc.SetDSCP(effectiveConfig.Dscp)
-	//counter++
-	//log.Info(counter)
 	return nil
 }
 
@@ -129,8 +125,6 @@ or the VMess EOF can be too late to send.
 func (kcpvc *KCPVconn) Close() error {
 	go func() {
 		time.Sleep(2000 * time.Millisecond)
-		//counter--
-		//log.Info(counter)
 		kcpvc.hc.Close()
 	}()
 	return nil
@@ -165,11 +159,31 @@ func (this *KCPVconn) SetReusable(b bool) {
 }
 
 func ListenKCP(address v2net.Address, port v2net.Port) (internet.Listener, error) {
-	laddr := address.String() + ":" + port.String()
-	crypt, _ := NewNoneBlockCrypt(nil)
-	kcl, err := ListenWithOptions(laddr, crypt)
-	kcvl := &KCPVlistener{lst: kcl}
-	return kcvl, err
+	conn, err := net.ListenUDP("udp", &net.UDPAddr{
+		IP:   address.IP(),
+		Port: int(port),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	block, _ := NewNoneBlockCrypt(nil)
+
+	l := new(Listener)
+	l.conn = conn
+	l.sessions = make(map[string]*UDPSession)
+	l.chAccepts = make(chan *UDPSession, 1024)
+	l.chDeadlinks = make(chan net.Addr, 1024)
+	l.die = make(chan struct{})
+	l.block = block
+
+	// caculate header size
+	if l.block != nil {
+		l.headerSize += cryptHeaderSize
+	}
+
+	go l.monitor()
+	return &KCPVlistener{lst: l}, nil
 }
 
 func init() {
