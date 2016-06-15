@@ -40,7 +40,15 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	this.Port = jsonConfig.Port
 	this.LogConfig = jsonConfig.LogConfig
 	this.RouterConfig = jsonConfig.RouterConfig
+
+	if jsonConfig.InboundConfig == nil {
+		return errors.New("Point: Inbound config is not specified.")
+	}
 	this.InboundConfig = jsonConfig.InboundConfig
+
+	if jsonConfig.OutboundConfig == nil {
+		return errors.New("Point: Outbound config is not specified.")
+	}
 	this.OutboundConfig = jsonConfig.OutboundConfig
 	this.InboundDetours = jsonConfig.InboundDetours
 	this.OutboundDetours = jsonConfig.OutboundDetours
