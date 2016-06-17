@@ -25,7 +25,6 @@ type Listener struct {
 }
 
 func NewListener(address v2net.Address, port v2net.Port) (*Listener, error) {
-	log.Info("Creating listener on ", address, ":", port)
 	l := &Listener{
 		block:         NewSimpleAuthenticator(),
 		sessions:      make(map[string]*UDPSession),
@@ -41,16 +40,15 @@ func NewListener(address v2net.Address, port v2net.Port) (*Listener, error) {
 		return nil, err
 	}
 	l.hub = hub
-	log.Info("Listener created.")
+	log.Info("KCP|Listener: listening on ", address, ":", port)
 	return l, nil
 }
 
 func (this *Listener) OnReceive(payload *alloc.Buffer, src v2net.Destination) {
-	log.Info("Listener on receive from ", src)
 	defer payload.Release()
 
 	if valid := this.block.Open(payload); !valid {
-		log.Info("Listern discarding invalid payload.")
+		log.Info("KCP|Listener: discarding invalid payload from ", src)
 		return
 	}
 	if !this.running {
@@ -74,7 +72,6 @@ func (this *Listener) OnReceive(payload *alloc.Buffer, src v2net.Destination) {
 			IP:   src.Address().IP(),
 			Port: int(src.Port()),
 		}
-		log.Info("Listener creating new connection.")
 		conn = newUDPSession(conv, writer, this.localAddr, srcAddr, this.block)
 		select {
 		case this.awaitingConns <- conn:
@@ -107,7 +104,6 @@ func (this *Listener) Accept() (internet.Connection, error) {
 		}
 		select {
 		case conn := <-this.awaitingConns:
-			log.Info("Accepting connection from ", conn.RemoteAddr())
 			return conn, nil
 		case <-time.After(time.Second):
 
@@ -142,7 +138,6 @@ type Writer struct {
 }
 
 func (this *Writer) Write(payload []byte) (int, error) {
-	log.Info("Writer writing to ", this.dest, " with ", len(payload), " bytes.")
 	return this.hub.WriteTo(payload, this.dest)
 }
 

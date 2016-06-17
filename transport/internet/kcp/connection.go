@@ -70,7 +70,6 @@ type UDPSession struct {
 	wd            time.Time // write deadline
 	chReadEvent   chan struct{}
 	chWriteEvent  chan struct{}
-	ackNoDelay    bool
 	writer        io.WriteCloser
 	since         int64
 }
@@ -88,7 +87,6 @@ func newUDPSession(conv uint32, writerCloser io.WriteCloser, local *net.UDPAddr,
 
 	mtu := uint32(effectiveConfig.Mtu - block.HeaderSize() - headerSize)
 	sess.kcp = NewKCP(conv, mtu, func(buf []byte, size int) {
-		log.Info(sess.local, " kcp output: ", buf[:size])
 		if size >= IKCP_OVERHEAD {
 			ext := alloc.NewBuffer().Clear().Append(buf[:size])
 			cmd := cmdData
@@ -102,12 +100,10 @@ func newUDPSession(conv uint32, writerCloser io.WriteCloser, local *net.UDPAddr,
 	})
 	sess.kcp.WndSize(effectiveConfig.Sndwnd, effectiveConfig.Rcvwnd)
 	sess.kcp.NoDelay(1, 20, 2, 1)
-	sess.ackNoDelay = effectiveConfig.Acknodelay
 	sess.kcp.current = sess.Elapsed()
 
 	go sess.updateTask()
 
-	log.Info("Created KCP conn to ", sess.RemoteAddr())
 	return sess
 }
 
@@ -158,7 +154,6 @@ func (s *UDPSession) Read(b []byte) (int, error) {
 
 // Write implements the Conn Write method.
 func (s *UDPSession) Write(b []byte) (int, error) {
-	log.Info("Trying to write ", len(b), " bytes. ", s.local)
 	if s.state == ConnStateReadyToClose ||
 		s.state == ConnStatePeerClosed ||
 		s.state == ConnStateClosed {
@@ -166,44 +161,28 @@ func (s *UDPSession) Write(b []byte) (int, error) {
 	}
 
 	for {
-		s.Lock()
 		if s.state == ConnStateReadyToClose ||
 			s.state == ConnStatePeerClosed ||
 			s.state == ConnStateClosed {
-			s.Unlock()
 			return 0, io.ErrClosedPipe
 		}
 
-		if !s.wd.IsZero() {
-			if time.Now().After(s.wd) { // timeout
-				s.Unlock()
-				return 0, errTimeout
-			}
-		}
-
+		s.kcpAccess.Lock()
 		if s.kcp.WaitSnd() < int(s.kcp.snd_wnd) {
 			nBytes := len(b)
-			log.Info("Writing ", nBytes, " bytes.", s.local)
 			s.kcp.Send(b)
 			s.kcp.current = s.Elapsed()
 			s.kcp.flush()
-			s.Unlock()
+			s.kcpAccess.Unlock()
 			return nBytes, nil
 		}
+		s.kcpAccess.Unlock()
 
-		var timeout <-chan time.Time
-		if !s.wd.IsZero() {
-			delay := s.wd.Sub(time.Now())
-			timeout = time.After(delay)
-		}
-		s.Unlock()
-
-		// wait for write event or timeout
-		select {
-		case <-s.chWriteEvent:
-		case <-timeout:
+		if !s.wd.IsZero() && s.wd.Before(time.Now()) {
 			return 0, errTimeout
 		}
+
+		time.Sleep(time.Duration(s.kcp.WaitSnd()*5) * time.Millisecond)
 	}
 }
 
@@ -213,6 +192,9 @@ func (this *UDPSession) Terminate() {
 	}
 	this.Lock()
 	defer this.Unlock()
+	if this.state == ConnStateClosed {
+		return
+	}
 
 	this.state = ConnStateClosed
 	this.writer.Close()
@@ -223,7 +205,7 @@ func (this *UDPSession) NotifyTermination() {
 		this.Lock()
 		if this.state == ConnStateClosed {
 			this.Unlock()
-			return
+			break
 		}
 		buffer := alloc.NewSmallBuffer().Clear()
 		buffer.AppendBytes(byte(CommandTerminate), byte(OptionClose), byte(0), byte(0), byte(0), byte(0))
@@ -236,7 +218,7 @@ func (this *UDPSession) NotifyTermination() {
 
 // Close closes the connection.
 func (s *UDPSession) Close() error {
-	log.Info("Closed ", s.local)
+	log.Debug("KCP|Connection: Closing connection to ", s.remote)
 	s.Lock()
 	defer s.Unlock()
 
@@ -300,31 +282,11 @@ func (s *UDPSession) output(payload *alloc.Buffer) {
 
 // kcp update, input loop
 func (s *UDPSession) updateTask() {
-	ticker := time.NewTicker(20 * time.Millisecond)
-	defer ticker.Stop()
-
-	var nextupdate uint32 = 0
-	for range ticker.C {
-		s.Lock()
-		if s.state == ConnStateClosed {
-			s.Unlock()
-			return
-		}
+	for s.state != ConnStateClosed {
 		current := s.Elapsed()
-		if !s.needUpdate && nextupdate == 0 {
-			nextupdate = s.kcp.Check(current)
-		}
-		current = s.Elapsed()
-		if s.needUpdate || current >= nextupdate {
-			log.Info("Updating KCP: ", current, " addr ", s.LocalAddr())
-			s.kcp.Update(current)
-			nextupdate = s.kcp.Check(current)
-			s.needUpdate = false
-		}
-		if s.kcp.WaitSnd() < int(s.kcp.snd_wnd) {
-			s.notifyWriteEvent()
-		}
-		s.Unlock()
+		s.kcp.Update(current)
+		interval := s.kcp.Check(s.Elapsed())
+		time.Sleep(time.Duration(interval) * time.Millisecond)
 	}
 }
 
@@ -367,16 +329,8 @@ func (s *UDPSession) kcpInput(data []byte) {
 	}
 	s.kcpAccess.Lock()
 	s.kcp.current = s.Elapsed()
-	log.Info(s.local, " kcp input: ", data[2:])
-	ret := s.kcp.Input(data[2:])
-	log.Info("kcp input returns ", ret)
+	s.kcp.Input(data[2:])
 
-	if s.ackNoDelay {
-		s.kcp.current = s.Elapsed()
-		s.kcp.flush()
-	} else {
-		s.needUpdate = true
-	}
 	s.kcpAccess.Unlock()
 	s.notifyReadEvent()
 }
@@ -391,8 +345,9 @@ func (this *UDPSession) FetchInputFrom(conn net.Conn) {
 			}
 			payload.Slice(0, nBytes)
 			if this.block.Open(payload) {
-				log.Info("Client fetching ", payload.Len(), " bytes.")
 				this.kcpInput(payload.Value)
+			} else {
+				log.Info("KCP|Connection: Invalid response from ", conn.RemoteAddr())
 			}
 			payload.Release()
 		}

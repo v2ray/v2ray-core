@@ -1,11 +1,14 @@
 {
   "port": 50031,
   "log": {
-    "loglevel": "info"
+    "loglevel": "debug"
   },
   "inbound": {
     "listen": "127.0.0.1",
     "protocol": "vmess",
+    "streamSettings": {
+      "network": "kcp"
+    },
     "settings": {
       "clients": [
         {
@@ -32,6 +35,9 @@
       "port": "50035-50039",
       "tag": "detour",
       "settings": {},
+      "streamSettings": {
+      "network": "kcp"
+    },
       "allocate": {
         "strategy": "random",
         "concurrency": 2,
