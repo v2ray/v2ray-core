@@ -38,29 +38,25 @@ fast3,fast2,fast,normal
 ->>>>>> less bandwich wasted
 */
 type Config struct {
-	Mode         string
-	Mtu          int
-	Sndwnd       int
-	Rcvwnd       int
-	Acknodelay   bool
-	Dscp         int
-	ReadTimeout  int
-	WriteTimeout int
+	Mtu        int
+	Sndwnd     int
+	Rcvwnd     int
+	Acknodelay bool
 }
 
 func (this *Config) Apply() {
 	effectiveConfig = *this
 }
 
-var (
-	effectiveConfig = Config{
-		Mode:         "normal",
-		Mtu:          1350,
-		Sndwnd:       1024,
-		Rcvwnd:       1024,
-		Dscp:         0,
-		ReadTimeout:  600,
-		WriteTimeout: 500,
-		Acknodelay:   false,
+func DefaultConfig() Config {
+	return Config{
+		Mtu:        1350,
+		Sndwnd:     1024,
+		Rcvwnd:     1024,
+		Acknodelay: true,
 	}
+}
+
+var (
+	effectiveConfig = DefaultConfig()
 )

@@ -8,7 +8,7 @@ import (
 // Config for V2Ray transport layer.
 type Config struct {
 	tcpConfig *tcp.Config
-	kcpConfig *kcp.Config
+	kcpConfig kcp.Config
 }
 
 // Apply applies this Config.
@@ -16,8 +16,6 @@ func (this *Config) Apply() error {
 	if this.tcpConfig != nil {
 		this.tcpConfig.Apply()
 	}
-	if this.kcpConfig != nil {
-		this.kcpConfig.Apply()
-	}
+	this.kcpConfig.Apply()
 	return nil
 }

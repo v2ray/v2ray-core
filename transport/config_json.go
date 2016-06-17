@@ -12,14 +12,16 @@ import (
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
 		TCPConfig *tcp.Config `json:"tcpSettings"`
-		KCPCOnfig *kcp.Config `json:"kcpSettings"`
+		KCPConfig kcp.Config  `json:"kcpSettings"`
 	}
-	jsonConfig := new(JsonConfig)
+	jsonConfig := &JsonConfig{
+		KCPConfig: kcp.DefaultConfig(),
+	}
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
 		return err
 	}
 	this.tcpConfig = jsonConfig.TCPConfig
-	this.kcpConfig = jsonConfig.KCPCOnfig
+	this.kcpConfig = jsonConfig.KCPConfig
 
 	return nil
 }
