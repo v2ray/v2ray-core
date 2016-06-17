@@ -42,10 +42,12 @@ func ListenTCP(address v2net.Address, port v2net.Port, callback ConnectionHandle
 	case settings.IsCapableOf(StreamConnectionTypeRawTCP):
 		listener, err = RawTCPListenFunc(address, port)
 	default:
+		log.Error("Internet|Listener: Unknown stream type: ", settings.Type)
 		err = ErrUnsupportedStreamType
 	}
 
 	if err != nil {
+		log.Warning("Internet|Listener: Failed to listen on ", address, ":", port)
 		return nil, err
 	}
 
@@ -70,11 +72,10 @@ func (this *TCPHub) start() {
 
 		if err != nil {
 			if this.accepting {
-				log.Warning("Listener: Failed to accept new TCP connection: ", err)
+				log.Warning("Internet|Listener: Failed to accept new TCP connection: ", err)
 			}
 			continue
 		}
-		log.Info("Handling connection from ", conn.RemoteAddr())
 		go this.connCallback(conn)
 	}
 }
