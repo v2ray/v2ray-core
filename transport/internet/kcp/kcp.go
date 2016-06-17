@@ -22,7 +22,7 @@ const (
 	IKCP_ASK_TELL    = 2  // need to send IKCP_CMD_WINS
 	IKCP_WND_SND     = 32
 	IKCP_WND_RCV     = 32
-	IKCP_MTU_DEF     = 1400
+	IKCP_MTU_DEF     = 1350
 	IKCP_ACK_FAST    = 3
 	IKCP_INTERVAL    = 100
 	IKCP_OVERHEAD    = 24
@@ -156,13 +156,13 @@ type KCP struct {
 
 // NewKCP create a new kcp control object, 'conv' must equal in two endpoint
 // from the same connection.
-func NewKCP(conv uint32, output Output) *KCP {
+func NewKCP(conv uint32, mtu uint32, output Output) *KCP {
 	kcp := new(KCP)
 	kcp.conv = conv
 	kcp.snd_wnd = IKCP_WND_SND
 	kcp.rcv_wnd = IKCP_WND_RCV
 	kcp.rmt_wnd = IKCP_WND_RCV
-	kcp.mtu = IKCP_MTU_DEF
+	kcp.mtu = mtu
 	kcp.mss = kcp.mtu - IKCP_OVERHEAD
 	kcp.buffer = make([]byte, (kcp.mtu+IKCP_OVERHEAD)*3)
 	kcp.rx_rto = IKCP_RTO_DEF
@@ -206,14 +206,14 @@ func (kcp *KCP) Recv(buffer []byte) (n int) {
 		return -1
 	}
 
-	peeksize := kcp.PeekSize()
-	if peeksize < 0 {
-		return -2
-	}
+	//peeksize := kcp.PeekSize()
+	//if peeksize < 0 {
+	//	return -2
+	//}
 
-	if peeksize > len(buffer) {
-		return -3
-	}
+	//if peeksize > len(buffer) {
+	//	return -3
+	//}
 
 	var fast_recover bool
 	if len(kcp.rcv_queue) >= int(kcp.rcv_wnd) {
@@ -224,13 +224,13 @@ func (kcp *KCP) Recv(buffer []byte) (n int) {
 	count := 0
 	for k := range kcp.rcv_queue {
 		seg := &kcp.rcv_queue[k]
+		if len(seg.data) > len(buffer) {
+			break
+		}
 		copy(buffer, seg.data)
 		buffer = buffer[len(seg.data):]
 		n += len(seg.data)
 		count++
-		if seg.frg == 0 {
-			break
-		}
 	}
 	kcp.rcv_queue = kcp.rcv_queue[count:]
 
@@ -900,4 +900,8 @@ func (kcp *KCP) WndSize(sndwnd, rcvwnd int) int {
 // WaitSnd gets how many packet is waiting to be sent
 func (kcp *KCP) WaitSnd() int {
 	return len(kcp.snd_buf) + len(kcp.snd_queue)
+}
+
+func (kcp *KCP) WaitRcv() int {
+	return len(kcp.rcv_buf) + len(kcp.rcv_queue)
 }

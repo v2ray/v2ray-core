@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"net"
 
+	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/transport/internet"
 )
@@ -14,37 +15,18 @@ var (
 )
 
 func DialKCP(src v2net.Address, dest v2net.Destination) (internet.Connection, error) {
-	var ip net.IP
-	if dest.Address().IsDomain() {
-		ips, err := net.LookupIP(dest.Address().Domain())
-		if err != nil {
-			return nil, err
-		}
-		if len(ips) == 0 {
-			return nil, ErrUnknownDestination
-		}
-		ip = ips[0]
-	} else {
-		ip = dest.Address().IP()
-	}
-	udpAddr := &net.UDPAddr{
-		IP:   ip,
-		Port: int(dest.Port()),
-	}
-
-	udpConn, err := net.ListenUDP("udp", &net.UDPAddr{})
+	log.Info("Dialling KCP to ", dest)
+	udpDest := v2net.UDPDestination(dest.Address(), dest.Port())
+	conn, err := internet.DialToDest(src, udpDest)
 	if err != nil {
 		return nil, err
 	}
 
-	cpip, _ := NewNoneBlockCrypt(nil)
-	session := newUDPSession(rand.Uint32(), nil, udpConn, udpAddr, cpip)
-	kcvn := &KCPVconn{hc: session}
-	err = kcvn.ApplyConf()
-	if err != nil {
-		return nil, err
-	}
-	return kcvn, nil
+	cpip := NewSimpleAuthenticator()
+	session := newUDPSession(rand.Uint32(), conn, conn.LocalAddr().(*net.UDPAddr), conn.RemoteAddr().(*net.UDPAddr), cpip)
+	session.FetchInputFrom(conn)
+
+	return session, nil
 }
 
 func init() {
