@@ -8,14 +8,15 @@ TEXT ·xorfwd(SB),NOSPLIT,$0
   ADDQ $4, DI       // x[i+4]
   SUBQ $4, CX
 loop:
-  CMPL CX, $0
-  JE done
-
   MOVL (SI), AX
   XORL AX, (DI)
   ADDQ $4, SI
   ADDQ $4, DI
   SUBQ $4, CX
+
+  CMPL CX, $0
+  JE done
+
   JMP loop
 done:        
   RET
@@ -31,14 +32,16 @@ TEXT ·xorbkd(SB),NOSPLIT,$0
   SUBQ $4, DI
   SUBQ $4, CX
 loop:
-  CMPL CX, $0
-  JE done
-
   MOVL (SI), AX
   XORL AX, (DI)
   SUBQ $4, SI
   SUBQ $4, DI
   SUBQ $4, CX
+
+  CMPL CX, $0
+  JE done
+  
   JMP loop
+
 done:        
   RET
