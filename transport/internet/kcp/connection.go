@@ -9,6 +9,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
+	"github.com/v2ray/v2ray-core/common/signal"
 )
 
 var (
@@ -63,6 +64,7 @@ type Connection struct {
 	chReadEvent   chan struct{}
 	writer        io.WriteCloser
 	since         int64
+	terminateOnce signal.Once
 }
 
 // NewConnection create a new KCP connection between local and remote.
@@ -76,21 +78,7 @@ func NewConnection(conv uint32, writerCloser io.WriteCloser, local *net.UDPAddr,
 	conn.since = nowMillisec()
 
 	mtu := uint32(effectiveConfig.Mtu - block.HeaderSize() - headerSize)
-	conn.kcp = NewKCP(conv, mtu, func(buf []byte, size int) {
-		if size >= IKCP_OVERHEAD {
-			ext := alloc.NewBuffer().Clear().Append(buf[:size])
-			cmd := CommandData
-			opt := Option(0)
-			if conn.state == ConnStateReadyToClose {
-				opt = OptionClose
-			}
-			ext.Prepend([]byte{byte(cmd), byte(opt)})
-			go conn.output(ext)
-		}
-		if conn.state == ConnStateReadyToClose && conn.kcp.WaitSnd() == 0 {
-			go conn.NotifyTermination()
-		}
-	})
+	conn.kcp = NewKCP(conv, mtu, conn.output)
 	conn.kcp.WndSize(effectiveConfig.Sndwnd, effectiveConfig.Rcvwnd)
 	conn.kcp.NoDelay(1, 20, 2, 1)
 	conn.kcp.current = conn.Elapsed()
@@ -199,12 +187,25 @@ func (this *Connection) NotifyTermination() {
 		this.RUnlock()
 		buffer := alloc.NewSmallBuffer().Clear()
 		buffer.AppendBytes(byte(CommandTerminate), byte(OptionClose), byte(0), byte(0), byte(0), byte(0))
-		this.output(buffer)
+		this.outputBuffer(buffer)
 
 		time.Sleep(time.Second)
 
 	}
 	this.Terminate()
+}
+
+func (this *Connection) ForceTimeout() {
+	if this == nil {
+		return
+	}
+	for i := 0; i < 5; i++ {
+		if this.state == ConnStateClosed {
+			return
+		}
+		time.Sleep(time.Minute)
+	}
+	go this.terminateOnce.Do(this.NotifyTermination)
 }
 
 // Close closes the connection.
@@ -219,7 +220,9 @@ func (this *Connection) Close() error {
 	if this.state == ConnStateActive {
 		this.state = ConnStateReadyToClose
 		if this.kcp.WaitSnd() == 0 {
-			go this.NotifyTermination()
+			go this.terminateOnce.Do(this.NotifyTermination)
+		} else {
+			go this.ForceTimeout()
 		}
 	}
 
@@ -280,7 +283,7 @@ func (this *Connection) SetWriteDeadline(t time.Time) error {
 	return nil
 }
 
-func (this *Connection) output(payload *alloc.Buffer) {
+func (this *Connection) outputBuffer(payload *alloc.Buffer) {
 	defer payload.Release()
 	if this == nil {
 		return
@@ -294,6 +297,29 @@ func (this *Connection) output(payload *alloc.Buffer) {
 	this.block.Seal(payload)
 
 	this.writer.Write(payload.Value)
+}
+
+func (this *Connection) output(payload []byte) {
+	if this == nil || this.state == ConnStateClosed {
+		return
+	}
+
+	if this.state == ConnStateReadyToClose && this.kcp.WaitSnd() == 0 {
+		go this.terminateOnce.Do(this.NotifyTermination)
+	}
+
+	if len(payload) < IKCP_OVERHEAD {
+		return
+	}
+
+	buffer := alloc.NewBuffer().Clear().Append(payload)
+	cmd := CommandData
+	opt := Option(0)
+	if this.state == ConnStateReadyToClose {
+		opt = OptionClose
+	}
+	buffer.Prepend([]byte{byte(cmd), byte(opt)})
+	this.outputBuffer(buffer)
 }
 
 // kcp update, input loop

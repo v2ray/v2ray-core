@@ -34,7 +34,7 @@ const (
 )
 
 // Output is a closure which captures conn and calls conn.Write
-type Output func(buf []byte, size int)
+type Output func(buf []byte)
 
 /* encode 8 bits unsigned int */
 func ikcp_encode8u(p []byte, c byte) []byte {
@@ -573,7 +573,7 @@ func (kcp *KCP) flush() {
 	for i := 0; i < count; i++ {
 		size := len(buffer) - len(ptr)
 		if size+IKCP_OVERHEAD > int(kcp.mtu) {
-			kcp.output(buffer, size)
+			kcp.output(buffer[:size])
 			ptr = buffer
 		}
 		seg.sn, seg.ts = kcp.ack_get(i)
@@ -609,7 +609,7 @@ func (kcp *KCP) flush() {
 		seg.cmd = IKCP_CMD_WASK
 		size := len(buffer) - len(ptr)
 		if size+IKCP_OVERHEAD > int(kcp.mtu) {
-			kcp.output(buffer, size)
+			kcp.output(buffer[:size])
 			ptr = buffer
 		}
 		ptr = seg.encode(ptr)
@@ -620,7 +620,7 @@ func (kcp *KCP) flush() {
 		seg.cmd = IKCP_CMD_WINS
 		size := len(buffer) - len(ptr)
 		if size+IKCP_OVERHEAD > int(kcp.mtu) {
-			kcp.output(buffer, size)
+			kcp.output(buffer[:size])
 			ptr = buffer
 		}
 		ptr = seg.encode(ptr)
@@ -703,7 +703,7 @@ func (kcp *KCP) flush() {
 			need := IKCP_OVERHEAD + len(segment.data)
 
 			if size+need >= int(kcp.mtu) {
-				kcp.output(buffer, size)
+				kcp.output(buffer[:size])
 				ptr = buffer
 			}
 
@@ -720,7 +720,7 @@ func (kcp *KCP) flush() {
 	// flash remain segments
 	size := len(buffer) - len(ptr)
 	if size > 0 {
-		kcp.output(buffer, size)
+		kcp.output(buffer[:size])
 	}
 
 	// update ssthresh
