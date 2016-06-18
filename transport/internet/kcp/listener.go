@@ -18,8 +18,8 @@ type Listener struct {
 	sync.Mutex
 	running       bool
 	block         Authenticator
-	sessions      map[string]*UDPSession
-	awaitingConns chan *UDPSession
+	sessions      map[string]*Connection
+	awaitingConns chan *Connection
 	hub           *udp.UDPHub
 	localAddr     *net.UDPAddr
 }
@@ -27,8 +27,8 @@ type Listener struct {
 func NewListener(address v2net.Address, port v2net.Port) (*Listener, error) {
 	l := &Listener{
 		block:         NewSimpleAuthenticator(),
-		sessions:      make(map[string]*UDPSession),
-		awaitingConns: make(chan *UDPSession, 64),
+		sessions:      make(map[string]*Connection),
+		awaitingConns: make(chan *Connection, 64),
 		localAddr: &net.UDPAddr{
 			IP:   address.IP(),
 			Port: int(port),
@@ -72,7 +72,7 @@ func (this *Listener) OnReceive(payload *alloc.Buffer, src v2net.Destination) {
 			IP:   src.Address().IP(),
 			Port: int(src.Port()),
 		}
-		conn = newUDPSession(conv, writer, this.localAddr, srcAddr, this.block)
+		conn = NewConnection(conv, writer, this.localAddr, srcAddr, this.block)
 		select {
 		case this.awaitingConns <- conn:
 		case <-time.After(time.Second * 5):
