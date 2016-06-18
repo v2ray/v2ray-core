@@ -121,6 +121,9 @@ func (this *Listener) Close() error {
 
 	this.running = false
 	close(this.awaitingConns)
+	for _, conn := range this.sessions {
+		go conn.Terminate()
+	}
 	this.hub.Close()
 
 	return nil
