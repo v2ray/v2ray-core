@@ -7,6 +7,8 @@ package kcp
 
 import (
 	"encoding/binary"
+
+	"github.com/v2ray/v2ray-core/common/alloc"
 )
 
 const (
@@ -105,7 +107,7 @@ type Segment struct {
 	rto      uint32
 	fastack  uint32
 	xmit     uint32
-	data     []byte
+	data     *alloc.Buffer
 }
 
 // encode a segment into buffer
@@ -117,15 +119,15 @@ func (seg *Segment) encode(ptr []byte) []byte {
 	ptr = ikcp_encode32u(ptr, seg.ts)
 	ptr = ikcp_encode32u(ptr, seg.sn)
 	ptr = ikcp_encode32u(ptr, seg.una)
-	ptr = ikcp_encode32u(ptr, uint32(len(seg.data)))
+	ptr = ikcp_encode32u(ptr, uint32(seg.data.Len()))
 	return ptr
 }
 
 // NewSegment creates a KCP segment
-func NewSegment(size int) *Segment {
-	seg := new(Segment)
-	seg.data = make([]byte, size)
-	return seg
+func NewSegment() *Segment {
+	return &Segment{
+		data: alloc.NewSmallBuffer().Clear(),
+	}
 }
 
 // KCP defines a single KCP connection
@@ -190,12 +192,13 @@ func (kcp *KCP) Recv(buffer []byte) (n int) {
 	count := 0
 	for k := range kcp.rcv_queue {
 		seg := &kcp.rcv_queue[k]
-		if len(seg.data) > len(buffer) {
+		dataLen := seg.data.Len()
+		if dataLen > len(buffer) {
 			break
 		}
-		copy(buffer, seg.data)
-		buffer = buffer[len(seg.data):]
-		n += len(seg.data)
+		copy(buffer, seg.data.Value)
+		buffer = buffer[dataLen:]
+		n += dataLen
 		count++
 	}
 	kcp.rcv_queue = kcp.rcv_queue[count:]
@@ -251,8 +254,8 @@ func (kcp *KCP) Send(buffer []byte) int {
 		} else {
 			size = len(buffer)
 		}
-		seg := NewSegment(size)
-		copy(seg.data, buffer[:size])
+		seg := NewSegment()
+		seg.data.Append(buffer[:size])
 		seg.frg = uint32(count - i - 1)
 		kcp.snd_queue = append(kcp.snd_queue, *seg)
 		buffer = buffer[size:]
@@ -456,7 +459,7 @@ func (kcp *KCP) Input(data []byte) int {
 			if _itimediff(sn, kcp.rcv_nxt+kcp.rcv_wnd) < 0 {
 				kcp.ack_push(sn, ts)
 				if _itimediff(sn, kcp.rcv_nxt) >= 0 {
-					seg := NewSegment(int(length))
+					seg := NewSegment()
 					seg.conv = conv
 					seg.cmd = uint32(cmd)
 					seg.frg = uint32(frg)
@@ -464,7 +467,7 @@ func (kcp *KCP) Input(data []byte) int {
 					seg.ts = ts
 					seg.sn = sn
 					seg.una = una
-					copy(seg.data, data[:length])
+					seg.data.Append(data[:length])
 					kcp.parse_data(seg)
 				}
 			}
@@ -666,7 +669,7 @@ func (kcp *KCP) flush() {
 			segment.una = kcp.rcv_nxt
 
 			size := len(buffer) - len(ptr)
-			need := IKCP_OVERHEAD + len(segment.data)
+			need := IKCP_OVERHEAD + segment.data.Len()
 
 			if size+need >= int(kcp.mtu) {
 				kcp.output(buffer[:size])
@@ -674,8 +677,10 @@ func (kcp *KCP) flush() {
 			}
 
 			ptr = segment.encode(ptr)
-			copy(ptr, segment.data)
-			ptr = ptr[len(segment.data):]
+			copy(ptr, segment.data.Value)
+			ptr = ptr[segment.data.Len():]
+
+			segment.data.Release()
 
 			if segment.xmit >= kcp.dead_link {
 				kcp.state = 0xFFFFFFFF
