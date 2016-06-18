@@ -175,45 +175,11 @@ func NewKCP(conv uint32, mtu uint32, output Output) *KCP {
 	return kcp
 }
 
-// PeekSize checks the size of next message in the recv queue
-func (kcp *KCP) PeekSize() (length int) {
-	if len(kcp.rcv_queue) == 0 {
-		return -1
-	}
-
-	seg := &kcp.rcv_queue[0]
-	if seg.frg == 0 {
-		return len(seg.data)
-	}
-
-	if len(kcp.rcv_queue) < int(seg.frg+1) {
-		return -1
-	}
-
-	for k := range kcp.rcv_queue {
-		seg := &kcp.rcv_queue[k]
-		length += len(seg.data)
-		if seg.frg == 0 {
-			break
-		}
-	}
-	return
-}
-
 // Recv is user/upper level recv: returns size, returns below zero for EAGAIN
 func (kcp *KCP) Recv(buffer []byte) (n int) {
 	if len(kcp.rcv_queue) == 0 {
 		return -1
 	}
-
-	//peeksize := kcp.PeekSize()
-	//if peeksize < 0 {
-	//	return -2
-	//}
-
-	//if peeksize > len(buffer) {
-	//	return -3
-	//}
 
 	var fast_recover bool
 	if len(kcp.rcv_queue) >= int(kcp.rcv_wnd) {
@@ -841,16 +807,6 @@ func (kcp *KCP) SetMtu(mtu int) int {
 	kcp.mtu = uint32(mtu)
 	kcp.mss = kcp.mtu - IKCP_OVERHEAD
 	kcp.buffer = buffer
-	return 0
-}
-
-func (kcp *KCP) Interval(interval int) int {
-	if interval > 5000 {
-		interval = 5000
-	} else if interval < 10 {
-		interval = 10
-	}
-	kcp.interval = uint32(interval)
 	return 0
 }
 
