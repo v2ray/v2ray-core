@@ -18,6 +18,9 @@ func (this *VMessInboundHandler) generateCommand(request *protocol.RequestHeader
 
 				log.Info("VMessIn: Pick detour handler for port ", inboundHandler.Port(), " for ", availableMin, " minutes.")
 				user := inboundHandler.GetUser(request.User.Email)
+				if user == nil {
+					return nil
+				}
 				return &protocol.CommandSwitchAccount{
 					Port:     inboundHandler.Port(),
 					ID:       user.Account.(*protocol.VMessAccount).ID.UUID(),

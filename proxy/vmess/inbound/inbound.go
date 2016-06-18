@@ -65,7 +65,7 @@ func (this *userByEmail) Get(email string) (*protocol.User, bool) {
 
 // Inbound connection handler that handles messages in VMess format.
 type VMessInboundHandler struct {
-	sync.Mutex
+	sync.RWMutex
 	packetDispatcher      dispatcher.PacketDispatcher
 	inboundHandlerManager proxyman.InboundHandlerManager
 	clients               protocol.UserValidator
@@ -93,6 +93,13 @@ func (this *VMessInboundHandler) Close() {
 }
 
 func (this *VMessInboundHandler) GetUser(email string) *protocol.User {
+	this.RLock()
+	defer this.RUnlock()
+
+	if !this.accepting {
+		return nil
+	}
+
 	user, existing := this.usersByEmail.Get(email)
 	if !existing {
 		this.clients.Add(user)
@@ -120,16 +127,27 @@ func (this *VMessInboundHandler) Start() error {
 func (this *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	defer connection.Close()
 
+	if !this.accepting {
+		return
+	}
+
 	connReader := v2net.NewTimeOutReader(8, connection)
 	defer connReader.Release()
 
 	reader := v2io.NewBufferedReader(connReader)
 	defer reader.Release()
 
+	this.RLock()
+	if !this.accepting {
+		this.RUnlock()
+		return
+	}
 	session := raw.NewServerSession(this.clients)
 	defer session.Release()
 
 	request, err := session.DecodeRequestHeader(reader)
+	this.RUnlock()
+
 	if err != nil {
 		if err != io.EOF {
 			log.Access(connection.RemoteAddr(), "", log.AccessRejected, err)
