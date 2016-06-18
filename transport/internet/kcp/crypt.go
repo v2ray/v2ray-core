@@ -37,14 +37,26 @@ func (this *SimpleAuthenticator) Seal(buffer *alloc.Buffer) {
 	buffer.SliceBack(4)
 	fnvHash.Sum(buffer.Value[:0])
 
-	for i := 4; i < buffer.Len(); i++ {
-		buffer.Value[i] ^= buffer.Value[i-4]
+	len := buffer.Len()
+	xtra := 4 - len%4
+	if xtra != 0 {
+		buffer.Slice(0, len+xtra)
+	}
+	xorfwd(buffer.Value)
+	if xtra != 0 {
+		buffer.Slice(0, len)
 	}
 }
 
 func (this *SimpleAuthenticator) Open(buffer *alloc.Buffer) bool {
-	for i := buffer.Len() - 1; i >= 4; i-- {
-		buffer.Value[i] ^= buffer.Value[i-4]
+	len := buffer.Len()
+	xtra := 4 - len%4
+	if xtra != 0 {
+		buffer.Slice(0, len+xtra)
+	}
+	xorbkd(buffer.Value)
+	if xtra != 0 {
+		buffer.Slice(0, len)
 	}
 
 	fnvHash := fnv.New32a()

@@ -1,6 +1,7 @@
 package kcp_test
 
 import (
+	"crypto/rand"
 	"testing"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
@@ -18,5 +19,19 @@ func TestSimpleAuthenticator(t *testing.T) {
 	auth.Seal(buffer)
 
 	assert.Bool(auth.Open(buffer)).IsTrue()
-	assert.String(buffer.String()).Equals("abcdefg")
+	assert.Bytes(buffer.Value).Equals([]byte{'a', 'b', 'c', 'd', 'e', 'f', 'g'})
+}
+
+func BenchmarkSimpleAuthenticator(b *testing.B) {
+	buffer := alloc.NewBuffer().Clear()
+	buffer.Slice(0, 1024)
+	rand.Read(buffer.Value)
+
+	auth := NewSimpleAuthenticator()
+	b.SetBytes(int64(buffer.Len()))
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		auth.Seal(buffer)
+		auth.Open(buffer)
+	}
 }
