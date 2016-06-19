@@ -1,3 +1,4 @@
+// Package alloc provides a light-weight memory allocation mechanism.
 package alloc
 
 import (
