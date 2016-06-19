@@ -114,7 +114,7 @@ func (this *VMessInboundHandler) Start() error {
 
 	tcpListener, err := internet.ListenTCP(this.meta.Address, this.meta.Port, this.HandleConnection, this.meta.StreamSettings)
 	if err != nil {
-		log.Error("Unable to listen tcp ", this.meta.Address, ":", this.meta.Port, ": ", err)
+		log.Error("VMess|Inbound: Unable to listen tcp ", this.meta.Address, ":", this.meta.Port, ": ", err)
 		return err
 	}
 	this.accepting = true
