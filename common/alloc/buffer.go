@@ -50,6 +50,7 @@ func (b *Buffer) Append(data []byte) *Buffer {
 	return b
 }
 
+// AppendString appends a given string to the end of the buffer.
 func (b *Buffer) AppendString(s string) *Buffer {
 	b.Value = append(b.Value, s...)
 	return b
