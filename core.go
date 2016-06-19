@@ -14,6 +14,7 @@ var (
 	intro    = "An unified platform for anti-censorship."
 )
 
+// Version returns V2Ray's version as a string.
 func Version() string {
 	return version
 }
