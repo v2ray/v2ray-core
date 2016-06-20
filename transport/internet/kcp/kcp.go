@@ -154,11 +154,11 @@ type KCP struct {
 
 	acklist []uint32
 
-	buffer     []byte
-	fastresend int32
-	nocwnd     int32
-	logmask    int32
-	output     Output
+	buffer            []byte
+	fastresend        int32
+	congestionControl bool
+	logmask           int32
+	output            Output
 }
 
 // NewKCP create a new kcp control object, 'conv' must equal in two endpoint
@@ -601,7 +601,7 @@ func (kcp *KCP) flush() {
 
 	// calculate window size
 	cwnd := _imin_(kcp.snd_wnd, kcp.rmt_wnd)
-	if kcp.nocwnd == 0 {
+	if kcp.congestionControl {
 		cwnd = _imin_(kcp.cwnd, cwnd)
 	}
 
@@ -819,7 +819,7 @@ func (kcp *KCP) SetMtu(mtu int) int {
 // interval: internal update timer interval in millisec, default is 100ms
 // resend: 0:disable fast resend(default), 1:enable fast resend
 // nc: 0:normal congestion control(default), 1:disable congestion control
-func (kcp *KCP) NoDelay(nodelay, interval, resend, nc int) int {
+func (kcp *KCP) NoDelay(nodelay, interval, resend int, congestionControl bool) int {
 	if nodelay >= 0 {
 		kcp.nodelay = uint32(nodelay)
 		if nodelay != 0 {
@@ -839,9 +839,7 @@ func (kcp *KCP) NoDelay(nodelay, interval, resend, nc int) int {
 	if resend >= 0 {
 		kcp.fastresend = int32(resend)
 	}
-	if nc >= 0 {
-		kcp.nocwnd = int32(nc)
-	}
+	kcp.congestionControl = congestionControl
 	return 0
 }
 
