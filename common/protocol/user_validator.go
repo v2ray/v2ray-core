@@ -28,10 +28,11 @@ type UserValidator interface {
 }
 
 type TimedUserValidator struct {
+	sync.RWMutex
+	running    bool
 	validUsers []*User
 	userHash   map[[16]byte]*indexTimePair
 	ids        []*idEntry
-	access     sync.RWMutex
 	hasher     IDHash
 	cancel     *signal.CancelSignal
 }
@@ -45,9 +46,9 @@ func NewTimedUserValidator(hasher IDHash) UserValidator {
 	tus := &TimedUserValidator{
 		validUsers: make([]*User, 0, 16),
 		userHash:   make(map[[16]byte]*indexTimePair, 512),
-		access:     sync.RWMutex{},
 		ids:        make([]*idEntry, 0, 512),
 		hasher:     hasher,
+		running:    true,
 		cancel:     signal.NewCloseSignal(),
 	}
 	go tus.updateUserHash(updateIntervalSec * time.Second)
@@ -55,9 +56,21 @@ func NewTimedUserValidator(hasher IDHash) UserValidator {
 }
 
 func (this *TimedUserValidator) Release() {
+	if !this.running {
+		return
+	}
+
 	this.cancel.Cancel()
 	<-this.cancel.WaitForDone()
 
+	this.Lock()
+	defer this.Unlock()
+
+	if !this.running {
+		return
+	}
+
+	this.running = false
 	this.validUsers = nil
 	this.userHash = nil
 	this.ids = nil
@@ -78,10 +91,10 @@ func (this *TimedUserValidator) generateNewHashes(nowSec Timestamp, idx int, ent
 		idHash.Sum(hashValueRemoval[:0])
 		idHash.Reset()
 
-		this.access.Lock()
+		this.Lock()
 		this.userHash[hashValue] = &indexTimePair{idx, entry.lastSec}
 		delete(this.userHash, hashValueRemoval)
-		this.access.Unlock()
+		this.Unlock()
 
 		entry.lastSec++
 		entry.lastSecRemoval++
@@ -134,8 +147,12 @@ func (this *TimedUserValidator) Add(user *User) error {
 }
 
 func (this *TimedUserValidator) Get(userHash []byte) (*User, Timestamp, bool) {
-	defer this.access.RUnlock()
-	this.access.RLock()
+	defer this.RUnlock()
+	this.RLock()
+
+	if !this.running {
+		return nil, 0, false
+	}
 	var fixedSizeHash [16]byte
 	copy(fixedSizeHash[:], userHash)
 	pair, found := this.userHash[fixedSizeHash]
