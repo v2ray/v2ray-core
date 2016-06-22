@@ -798,21 +798,6 @@ func (kcp *KCP) Check(current uint32) uint32 {
 	return current + minimal
 }
 
-// SetMtu changes MTU size, default is 1400
-func (kcp *KCP) SetMtu(mtu int) int {
-	if mtu < 50 || mtu < IKCP_OVERHEAD {
-		return -1
-	}
-	buffer := make([]byte, (mtu+IKCP_OVERHEAD)*3)
-	if buffer == nil {
-		return -2
-	}
-	kcp.mtu = uint32(mtu)
-	kcp.mss = kcp.mtu - IKCP_OVERHEAD
-	kcp.buffer = buffer
-	return 0
-}
-
 // NoDelay options
 // fastest: ikcp_nodelay(kcp, 1, 20, 2, 1)
 // nodelay: 0:disable(default), 1:enable
@@ -857,8 +842,4 @@ func (kcp *KCP) WndSize(sndwnd, rcvwnd int) int {
 // WaitSnd gets how many packet is waiting to be sent
 func (kcp *KCP) WaitSnd() int {
 	return len(kcp.snd_buf) + len(kcp.snd_queue)
-}
-
-func (kcp *KCP) WaitRcv() int {
-	return len(kcp.rcv_buf) + len(kcp.rcv_queue)
 }
