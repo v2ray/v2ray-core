@@ -6,6 +6,7 @@ type Config struct {
 	UplinkCapacity   int
 	DownlinkCapacity int
 	Congestion       bool
+	WriteBuffer      int
 }
 
 func (this *Config) Apply() {
@@ -27,6 +28,7 @@ func DefaultConfig() Config {
 		UplinkCapacity:   5,
 		DownlinkCapacity: 20,
 		Congestion:       false,
+		WriteBuffer:      8 * 1024 * 1024,
 	}
 }
 

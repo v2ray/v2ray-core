@@ -53,18 +53,19 @@ func nowMillisec() int64 {
 // Connection is a KCP connection over UDP.
 type Connection struct {
 	sync.RWMutex
-	state         ConnState
-	kcp           *KCP // the core ARQ
-	kcpAccess     sync.Mutex
-	block         Authenticator
-	needUpdate    bool
-	local, remote net.Addr
-	rd            time.Time // read deadline
-	wd            time.Time // write deadline
-	chReadEvent   chan struct{}
-	writer        io.WriteCloser
-	since         int64
-	terminateOnce signal.Once
+	state           ConnState
+	kcp             *KCP // the core ARQ
+	kcpAccess       sync.Mutex
+	block           Authenticator
+	needUpdate      bool
+	local, remote   net.Addr
+	rd              time.Time // read deadline
+	wd              time.Time // write deadline
+	chReadEvent     chan struct{}
+	writer          io.WriteCloser
+	since           int64
+	terminateOnce   signal.Once
+	writeBufferSize int
 }
 
 // NewConnection create a new KCP connection between local and remote.
@@ -82,6 +83,7 @@ func NewConnection(conv uint32, writerCloser io.WriteCloser, local *net.UDPAddr,
 	conn.kcp.WndSize(effectiveConfig.GetSendingWindowSize(), effectiveConfig.GetReceivingWindowSize())
 	conn.kcp.NoDelay(1, effectiveConfig.Tti, 2, effectiveConfig.Congestion)
 	conn.kcp.current = conn.Elapsed()
+	conn.writeBufferSize = effectiveConfig.WriteBuffer / effectiveConfig.Mtu
 
 	go conn.updateTask()
 
@@ -144,7 +146,7 @@ func (this *Connection) Write(b []byte) (int, error) {
 		this.RUnlock()
 
 		this.kcpAccess.Lock()
-		if this.kcp.WaitSnd() < int(this.kcp.snd_wnd) {
+		if this.kcp.WaitSnd() < this.writeBufferSize {
 			nBytes := len(b)
 			this.kcp.Send(b)
 			this.kcp.current = this.Elapsed()
