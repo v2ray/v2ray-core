@@ -157,7 +157,6 @@ type KCP struct {
 	buffer            []byte
 	fastresend        int32
 	congestionControl bool
-	logmask           int32
 	output            Output
 }
 
