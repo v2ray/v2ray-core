@@ -283,12 +283,9 @@ func (kcp *KCP) update_ack(rtt int32) {
 			kcp.rx_srtt = 1
 		}
 	}
-	rto = kcp.rx_srtt + _imax_(1, 4*kcp.rx_rttval)
+	rto = kcp.rx_srtt + _imax_(kcp.interval, 4*kcp.rx_rttval)
 	if rto > IKCP_RTO_MAX {
 		rto = IKCP_RTO_MAX
-	}
-	if rto < kcp.rx_minrto {
-		rto = kcp.rx_minrto
 	}
 	kcp.rx_rto = rto
 }
@@ -403,7 +400,7 @@ func (kcp *KCP) parse_data(newseg *Segment) {
 
 // Input when you received a low level packet (eg. UDP packet), call it
 func (kcp *KCP) Input(data []byte) int {
-	una := kcp.snd_una
+	//una := kcp.snd_una
 	if len(data) < IKCP_OVERHEAD {
 		return -1
 	}
@@ -440,7 +437,10 @@ func (kcp *KCP) Input(data []byte) int {
 			return -3
 		}
 
-		kcp.rmt_wnd = uint32(wnd)
+		if kcp.rmt_wnd < uint32(wnd) {
+			kcp.rmt_wnd = uint32(wnd)
+		}
+		//kcp.rmt_wnd = uint32(wnd)
 		kcp.parse_una(una)
 		kcp.shrink_buf()
 
@@ -489,35 +489,29 @@ func (kcp *KCP) Input(data []byte) int {
 		kcp.parse_fastack(maxack)
 	}
 
-	if _itimediff(kcp.snd_una, una) > 0 {
-		if kcp.cwnd < kcp.rmt_wnd {
-			mss := kcp.mss
-			if kcp.cwnd < kcp.ssthresh {
-				kcp.cwnd++
-				kcp.incr += mss
-			} else {
-				if kcp.incr < mss {
-					kcp.incr = mss
-				}
-				kcp.incr += (mss*mss)/kcp.incr + (mss / 16)
-				if (kcp.cwnd+1)*mss <= kcp.incr {
+	/*
+		if _itimediff(kcp.snd_una, una) > 0 {
+			if kcp.cwnd < kcp.rmt_wnd {
+				mss := kcp.mss
+				if kcp.cwnd < kcp.ssthresh {
 					kcp.cwnd++
+					kcp.incr += mss
+				} else {
+					if kcp.incr < mss {
+						kcp.incr = mss
+					}
+					kcp.incr += (mss*mss)/kcp.incr + (mss / 16)
+					if (kcp.cwnd+1)*mss <= kcp.incr {
+						kcp.cwnd++
+					}
+				}
+				if kcp.cwnd > kcp.rmt_wnd {
+					kcp.cwnd = kcp.rmt_wnd
+					kcp.incr = kcp.rmt_wnd * mss
 				}
 			}
-			if kcp.cwnd > kcp.rmt_wnd {
-				kcp.cwnd = kcp.rmt_wnd
-				kcp.incr = kcp.rmt_wnd * mss
-			}
-		}
-	}
+		}*/
 
-	return 0
-}
-
-func (kcp *KCP) wnd_unused() int32 {
-	if len(kcp.rcv_queue) < int(kcp.rcv_wnd) {
-		return int32(int(kcp.rcv_wnd) - len(kcp.rcv_queue))
-	}
 	return 0
 }
 
@@ -526,7 +520,7 @@ func (kcp *KCP) flush() {
 	current := kcp.current
 	buffer := kcp.buffer
 	change := 0
-	lost := false
+	//lost := false
 
 	if kcp.updated == 0 {
 		return
@@ -534,7 +528,7 @@ func (kcp *KCP) flush() {
 	var seg Segment
 	seg.conv = kcp.conv
 	seg.cmd = IKCP_CMD_ACK
-	seg.wnd = uint32(kcp.wnd_unused())
+	seg.wnd = uint32(kcp.rcv_nxt + kcp.rcv_wnd)
 	seg.una = kcp.rcv_nxt
 
 	// flush acknowledges
@@ -552,61 +546,65 @@ func (kcp *KCP) flush() {
 	kcp.acklist = nil
 
 	// probe window size (if remote window size equals zero)
-	if kcp.rmt_wnd == 0 {
-		if kcp.probe_wait == 0 {
-			kcp.probe_wait = IKCP_PROBE_INIT
-			kcp.ts_probe = kcp.current + kcp.probe_wait
-		} else {
-			if _itimediff(kcp.current, kcp.ts_probe) >= 0 {
-				if kcp.probe_wait < IKCP_PROBE_INIT {
-					kcp.probe_wait = IKCP_PROBE_INIT
-				}
-				kcp.probe_wait += kcp.probe_wait / 2
-				if kcp.probe_wait > IKCP_PROBE_LIMIT {
-					kcp.probe_wait = IKCP_PROBE_LIMIT
-				}
+	/*
+		if kcp.rmt_wnd == 0 {
+			if kcp.probe_wait == 0 {
+				kcp.probe_wait = IKCP_PROBE_INIT
 				kcp.ts_probe = kcp.current + kcp.probe_wait
-				kcp.probe |= IKCP_ASK_SEND
+			} else {
+				if _itimediff(kcp.current, kcp.ts_probe) >= 0 {
+					if kcp.probe_wait < IKCP_PROBE_INIT {
+						kcp.probe_wait = IKCP_PROBE_INIT
+					}
+					kcp.probe_wait += kcp.probe_wait / 2
+					if kcp.probe_wait > IKCP_PROBE_LIMIT {
+						kcp.probe_wait = IKCP_PROBE_LIMIT
+					}
+					kcp.ts_probe = kcp.current + kcp.probe_wait
+					kcp.probe |= IKCP_ASK_SEND
+				}
 			}
-		}
-	} else {
-		kcp.ts_probe = 0
-		kcp.probe_wait = 0
-	}
+		} else {
+			kcp.ts_probe = 0
+			kcp.probe_wait = 0
+		}*/
 
 	// flush window probing commands
-	if (kcp.probe & IKCP_ASK_SEND) != 0 {
-		seg.cmd = IKCP_CMD_WASK
-		size := len(buffer) - len(ptr)
-		if size+IKCP_OVERHEAD > int(kcp.mtu) {
-			kcp.output(buffer[:size])
-			ptr = buffer
-		}
-		ptr = seg.encode(ptr)
-	}
+	/*
+		if (kcp.probe & IKCP_ASK_SEND) != 0 {
+			seg.cmd = IKCP_CMD_WASK
+			size := len(buffer) - len(ptr)
+			if size+IKCP_OVERHEAD > int(kcp.mtu) {
+				kcp.output(buffer[:size])
+				ptr = buffer
+			}
+			ptr = seg.encode(ptr)
+		}*/
 
 	// flush window probing commands
-	if (kcp.probe & IKCP_ASK_TELL) != 0 {
-		seg.cmd = IKCP_CMD_WINS
-		size := len(buffer) - len(ptr)
-		if size+IKCP_OVERHEAD > int(kcp.mtu) {
-			kcp.output(buffer[:size])
-			ptr = buffer
+	/*
+		if (kcp.probe & IKCP_ASK_TELL) != 0 {
+			seg.cmd = IKCP_CMD_WINS
+			size := len(buffer) - len(ptr)
+			if size+IKCP_OVERHEAD > int(kcp.mtu) {
+				kcp.output(buffer[:size])
+				ptr = buffer
+			}
+			ptr = seg.encode(ptr)
 		}
-		ptr = seg.encode(ptr)
-	}
 
-	kcp.probe = 0
+		kcp.probe = 0*/
 
 	// calculate window size
-	cwnd := _imin_(kcp.snd_wnd, kcp.rmt_wnd)
+
+	cwnd := _imin_(kcp.snd_nxt+kcp.snd_wnd, kcp.rmt_wnd)
 	if kcp.congestionControl {
 		cwnd = _imin_(kcp.cwnd, cwnd)
 	}
 
 	count = 0
 	for k := range kcp.snd_queue {
-		if _itimediff(kcp.snd_nxt, kcp.snd_una+cwnd) >= 0 {
+		if _itimediff(kcp.snd_nxt, cwnd) >= 0 {
 			break
 		}
 		newseg := kcp.snd_queue[k]
@@ -631,10 +629,10 @@ func (kcp *KCP) flush() {
 	if kcp.fastresend <= 0 {
 		resent = 0xffffffff
 	}
-	rtomin := (kcp.rx_rto >> 3)
-	if kcp.nodelay != 0 {
-		rtomin = 0
-	}
+	//rtomin := (kcp.rx_rto >> 3)
+	//if kcp.nodelay != 0 {
+	//	rtomin = 0
+	//}
 
 	// flush data segments
 	for _, segment := range kcp.snd_buf {
@@ -643,23 +641,23 @@ func (kcp *KCP) flush() {
 			needsend = true
 			segment.xmit++
 			segment.rto = kcp.rx_rto
-			segment.resendts = current + segment.rto + rtomin
+			segment.resendts = current + segment.rto + kcp.interval
 		} else if _itimediff(current, segment.resendts) >= 0 {
 			needsend = true
 			segment.xmit++
 			kcp.xmit++
-			if kcp.nodelay == 0 {
-				segment.rto += kcp.rx_rto
-			} else {
-				segment.rto += kcp.rx_rto / 2
-			}
-			segment.resendts = current + segment.rto
-			lost = true
+			//if kcp.nodelay == 0 {
+			segment.rto += kcp.rx_rto
+			//} else {
+			//	segment.rto += kcp.rx_rto / 2
+			//}
+			segment.resendts = current + segment.rto + kcp.interval
+			//lost = true
 		} else if segment.fastack >= resent {
 			needsend = true
 			segment.xmit++
 			segment.fastack = 0
-			segment.resendts = current + segment.rto
+			segment.resendts = current + segment.rto + kcp.interval
 			change++
 		}
 
@@ -694,30 +692,32 @@ func (kcp *KCP) flush() {
 
 	// update ssthresh
 	// rate halving, https://tools.ietf.org/html/rfc6937
-	if change != 0 {
-		inflight := kcp.snd_nxt - kcp.snd_una
-		kcp.ssthresh = inflight / 2
-		if kcp.ssthresh < IKCP_THRESH_MIN {
-			kcp.ssthresh = IKCP_THRESH_MIN
-		}
-		kcp.cwnd = kcp.ssthresh + resent
-		kcp.incr = kcp.cwnd * kcp.mss
-	}
+	/*
+		if change != 0 {
+			inflight := kcp.snd_nxt - kcp.snd_una
+			kcp.ssthresh = inflight / 2
+			if kcp.ssthresh < IKCP_THRESH_MIN {
+				kcp.ssthresh = IKCP_THRESH_MIN
+			}
+			kcp.cwnd = kcp.ssthresh + resent
+			kcp.incr = kcp.cwnd * kcp.mss
+		}*/
 
 	// congestion control, https://tools.ietf.org/html/rfc5681
-	if lost {
-		kcp.ssthresh = cwnd / 2
-		if kcp.ssthresh < IKCP_THRESH_MIN {
-			kcp.ssthresh = IKCP_THRESH_MIN
+	/*
+		if lost {
+			kcp.ssthresh = cwnd / 2
+			if kcp.ssthresh < IKCP_THRESH_MIN {
+				kcp.ssthresh = IKCP_THRESH_MIN
+			}
+			kcp.cwnd = 1
+			kcp.incr = kcp.mss
 		}
-		kcp.cwnd = 1
-		kcp.incr = kcp.mss
-	}
 
-	if kcp.cwnd < 1 {
-		kcp.cwnd = 1
-		kcp.incr = kcp.mss
-	}
+		if kcp.cwnd < 1 {
+			kcp.cwnd = 1
+			kcp.incr = kcp.mss
+		}*/
 }
 
 // Update updates state (call it repeatedly, every 10ms-100ms), or you can ask
