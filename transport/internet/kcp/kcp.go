@@ -842,3 +842,16 @@ func (kcp *KCP) WndSize(sndwnd, rcvwnd int) int {
 func (kcp *KCP) WaitSnd() int {
 	return len(kcp.snd_buf) + len(kcp.snd_queue)
 }
+
+func (this *KCP) ClearSendQueue() {
+	for _, seg := range this.snd_queue {
+		seg.Release()
+	}
+	this.snd_queue = nil
+
+	for _, seg := range this.snd_buf {
+		seg.Release()
+	}
+
+	this.snd_buf = nil
+}

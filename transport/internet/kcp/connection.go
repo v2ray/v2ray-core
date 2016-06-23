@@ -358,6 +358,9 @@ func (this *Connection) MarkPeerClose() {
 	if this.state == ConnStateActive {
 		this.state = ConnStatePeerClosed
 	}
+	this.kcpAccess.Lock()
+	this.kcp.ClearSendQueue()
+	this.kcpAccess.Unlock()
 }
 
 func (this *Connection) kcpInput(data []byte) {
