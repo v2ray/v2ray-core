@@ -1,6 +1,5 @@
 # Project V2Ray
 
-[![Join the chat at https://gitter.im/v2ray/v2ray-core](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/v2ray/v2ray-core?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/v2ray/v2ray-core.svg?branch=master)](https://travis-ci.org/v2ray/v2ray-core)
 [![codecov.io](https://codecov.io/github/v2ray/v2ray-core/coverage.svg?branch=master)](https://codecov.io/github/v2ray/v2ray-core?branch=master)
 [![Go Report](http://goreportcard.com/badge/v2ray/v2ray-core)](https://goreportcard.com/report/v2ray/v2ray-core)
