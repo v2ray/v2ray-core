@@ -81,7 +81,7 @@ func NewConnection(conv uint32, writerCloser io.WriteCloser, local *net.UDPAddr,
 	mtu := uint32(effectiveConfig.Mtu - block.HeaderSize() - headerSize)
 	conn.kcp = NewKCP(conv, mtu, conn.output)
 	conn.kcp.WndSize(effectiveConfig.GetSendingWindowSize(), effectiveConfig.GetReceivingWindowSize())
-	conn.kcp.NoDelay(1, effectiveConfig.Tti, 2, effectiveConfig.Congestion)
+	conn.kcp.NoDelay(effectiveConfig.Tti, 2, effectiveConfig.Congestion)
 	conn.kcp.current = conn.Elapsed()
 	conn.writeBufferSize = effectiveConfig.WriteBuffer / effectiveConfig.Mtu
 

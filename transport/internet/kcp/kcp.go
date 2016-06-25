@@ -140,10 +140,10 @@ type KCP struct {
 	conv, mtu, mss, state                  uint32
 	snd_una, snd_nxt, rcv_nxt              uint32
 	ts_recent, ts_lastack, ssthresh        uint32
-	rx_rttval, rx_srtt, rx_rto, rx_minrto  uint32
+	rx_rttval, rx_srtt, rx_rto             uint32
 	snd_wnd, rcv_wnd, rmt_wnd, cwnd, probe uint32
 	current, interval, ts_flush, xmit      uint32
-	nodelay, updated                       uint32
+	updated                                uint32
 	ts_probe, probe_wait                   uint32
 	dead_link, incr                        uint32
 
@@ -172,7 +172,6 @@ func NewKCP(conv uint32, mtu uint32, output Output) *KCP {
 	kcp.mss = kcp.mtu - IKCP_OVERHEAD
 	kcp.buffer = make([]byte, (kcp.mtu+IKCP_OVERHEAD)*3)
 	kcp.rx_rto = IKCP_RTO_DEF
-	kcp.rx_minrto = IKCP_RTO_MIN
 	kcp.interval = IKCP_INTERVAL
 	kcp.ts_flush = IKCP_INTERVAL
 	kcp.ssthresh = IKCP_THRESH_INIT
@@ -629,10 +628,6 @@ func (kcp *KCP) flush() {
 	if kcp.fastresend <= 0 {
 		resent = 0xffffffff
 	}
-	//rtomin := (kcp.rx_rto >> 3)
-	//if kcp.nodelay != 0 {
-	//	rtomin = 0
-	//}
 
 	// flush data segments
 	for _, segment := range kcp.snd_buf {
@@ -646,11 +641,7 @@ func (kcp *KCP) flush() {
 			needsend = true
 			segment.xmit++
 			kcp.xmit++
-			//if kcp.nodelay == 0 {
 			segment.rto += kcp.rx_rto
-			//} else {
-			//	segment.rto += kcp.rx_rto / 2
-			//}
 			segment.resendts = current + segment.rto + kcp.interval
 			//lost = true
 		} else if segment.fastack >= resent {
@@ -803,15 +794,7 @@ func (kcp *KCP) Check(current uint32) uint32 {
 // interval: internal update timer interval in millisec, default is 100ms
 // resend: 0:disable fast resend(default), 1:enable fast resend
 // nc: 0:normal congestion control(default), 1:disable congestion control
-func (kcp *KCP) NoDelay(nodelay, interval, resend int, congestionControl bool) int {
-	if nodelay >= 0 {
-		kcp.nodelay = uint32(nodelay)
-		if nodelay != 0 {
-			kcp.rx_minrto = IKCP_RTO_NDL
-		} else {
-			kcp.rx_minrto = IKCP_RTO_MIN
-		}
-	}
+func (kcp *KCP) NoDelay(interval, resend int, congestionControl bool) int {
 	if interval >= 0 {
 		if interval > 5000 {
 			interval = 5000
