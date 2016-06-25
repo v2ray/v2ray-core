@@ -139,7 +139,7 @@ type KCP struct {
 	conv, mtu, mss, state                  uint32
 	snd_una, snd_nxt, rcv_nxt              uint32
 	ts_recent, ts_lastack, ssthresh        uint32
-	rx_rttval, rx_srtt, rx_rto             uint32
+	rx_rttvar, rx_srtt, rx_rto             uint32
 	snd_wnd, rcv_wnd, rmt_wnd, cwnd, probe uint32
 	current, interval, ts_flush, xmit      uint32
 	updated                                uint32
@@ -272,19 +272,19 @@ func (kcp *KCP) update_ack(rtt int32) {
 	var rto uint32 = 0
 	if kcp.rx_srtt == 0 {
 		kcp.rx_srtt = uint32(rtt)
-		kcp.rx_rttval = uint32(rtt) / 2
+		kcp.rx_rttvar = uint32(rtt) / 2
 	} else {
 		delta := rtt - int32(kcp.rx_srtt)
 		if delta < 0 {
 			delta = -delta
 		}
-		kcp.rx_rttval = (3*kcp.rx_rttval + uint32(delta)) / 4
+		kcp.rx_rttvar = (3*kcp.rx_rttvar + uint32(delta)) / 4
 		kcp.rx_srtt = (7*kcp.rx_srtt + uint32(rtt)) / 8
 		if kcp.rx_srtt < 1 {
 			kcp.rx_srtt = 1
 		}
 	}
-	rto = kcp.rx_srtt + _imax_(kcp.interval, 4*kcp.rx_rttval)
+	rto = kcp.rx_srtt + _imax_(kcp.interval, 4*kcp.rx_rttvar)
 	if rto > IKCP_RTO_MAX {
 		rto = IKCP_RTO_MAX
 	}
