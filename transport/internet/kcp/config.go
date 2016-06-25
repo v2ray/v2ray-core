@@ -6,7 +6,7 @@ type Config struct {
 	UplinkCapacity   uint32
 	DownlinkCapacity uint32
 	Congestion       bool
-	WriteBuffer      int
+	WriteBuffer      uint32
 }
 
 func (this *Config) Apply() {
