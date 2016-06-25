@@ -329,13 +329,8 @@ func (this *Connection) updateTask() {
 		current := this.Elapsed()
 		this.kcpAccess.Lock()
 		this.kcp.Update(current)
-		interval := this.kcp.Check(this.Elapsed())
 		this.kcpAccess.Unlock()
-		sleep := interval - current
-		if sleep < 10 {
-			sleep = 10
-		}
-		time.Sleep(time.Duration(sleep) * time.Millisecond)
+		time.Sleep(time.Duration(effectiveConfig.Tti) * time.Millisecond)
 	}
 }
 
