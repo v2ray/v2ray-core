@@ -118,7 +118,7 @@ func (seg *Segment) encode(ptr []byte) []byte {
 	ptr = ikcp_encode32u(ptr, seg.ts)
 	ptr = ikcp_encode32u(ptr, seg.sn)
 	ptr = ikcp_encode32u(ptr, seg.una)
-	ptr = ikcp_encode32u(ptr, uint32(seg.data.Len()))
+	ptr = ikcp_encode16u(ptr, uint16(seg.data.Len()))
 	return ptr
 }
 
@@ -142,7 +142,7 @@ type KCP struct {
 	rx_rttvar, rx_srtt, rx_rto             uint32
 	snd_wnd, rcv_wnd, rmt_wnd, cwnd, probe uint32
 	current, interval, ts_flush, xmit      uint32
-	updated                                uint32
+	updated                                bool
 	ts_probe, probe_wait                   uint32
 	dead_link, incr                        uint32
 
@@ -378,8 +378,8 @@ func (kcp *KCP) Input(data []byte) int {
 	var maxack uint32
 	var flag int
 	for {
-		var ts, sn, length, una, conv uint32
-		var wnd uint16
+		var ts, sn, una, conv uint32
+		var wnd, length uint16
 		var cmd, frg uint8
 
 		if len(data) < int(IKCP_OVERHEAD) {
@@ -397,7 +397,7 @@ func (kcp *KCP) Input(data []byte) int {
 		data = ikcp_decode32u(data, &ts)
 		data = ikcp_decode32u(data, &sn)
 		data = ikcp_decode32u(data, &una)
-		data = ikcp_decode32u(data, &length)
+		data = ikcp_decode16u(data, &length)
 		if len(data) < int(length) {
 			return -2
 		}
@@ -492,7 +492,7 @@ func (kcp *KCP) flush() {
 	change := 0
 	//lost := false
 
-	if kcp.updated == 0 {
+	if !kcp.updated {
 		return
 	}
 	var seg Segment
@@ -687,8 +687,8 @@ func (kcp *KCP) Update(current uint32) {
 
 	kcp.current = current
 
-	if kcp.updated == 0 {
-		kcp.updated = 1
+	if !kcp.updated {
+		kcp.updated = true
 		kcp.ts_flush = kcp.current
 	}
 
@@ -720,7 +720,7 @@ func (kcp *KCP) Check(current uint32) uint32 {
 	tm_flush := int32(0x7fffffff)
 	tm_packet := int32(0x7fffffff)
 	minimal := uint32(0)
-	if kcp.updated == 0 {
+	if !kcp.updated {
 		return current
 	}
 
