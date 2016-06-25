@@ -1,10 +1,10 @@
 package kcp
 
 type Config struct {
-	Mtu              int // Maximum transmission unit
-	Tti              int
-	UplinkCapacity   int
-	DownlinkCapacity int
+	Mtu              uint32 // Maximum transmission unit
+	Tti              uint32
+	UplinkCapacity   uint32
+	DownlinkCapacity uint32
 	Congestion       bool
 	WriteBuffer      int
 }
@@ -13,11 +13,11 @@ func (this *Config) Apply() {
 	effectiveConfig = *this
 }
 
-func (this *Config) GetSendingWindowSize() int {
+func (this *Config) GetSendingWindowSize() uint32 {
 	return this.UplinkCapacity * 1024 * 1024 / this.Mtu / (1000 / this.Tti)
 }
 
-func (this *Config) GetReceivingWindowSize() int {
+func (this *Config) GetReceivingWindowSize() uint32 {
 	return this.DownlinkCapacity * 1024 * 1024 / this.Mtu / (1000 / this.Tti)
 }
 

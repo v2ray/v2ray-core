@@ -11,11 +11,11 @@ import (
 
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type JSONConfig struct {
-		Mtu        *int  `json:"mtu"`
-		Tti        *int  `json:"tti"`
-		UpCap      *int  `json:"uplinkCapacity"`
-		DownCap    *int  `json:"downlinkCapacity"`
-		Congestion *bool `json:"congestion"`
+		Mtu        *uint32 `json:"mtu"`
+		Tti        *uint32 `json:"tti"`
+		UpCap      *uint32 `json:"uplinkCapacity"`
+		DownCap    *uint32 `json:"downlinkCapacity"`
+		Congestion *bool   `json:"congestion"`
 	}
 	jsonConfig := new(JSONConfig)
 	if err := json.Unmarshal(data, &jsonConfig); err != nil {
@@ -39,7 +39,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 	if jsonConfig.UpCap != nil {
 		upCap := *jsonConfig.UpCap
-		if upCap < 0 {
+		if upCap == 0 {
 			log.Error("KCP|Config: Invalid uplink capacity: ", upCap)
 			return common.ErrBadConfiguration
 		}
@@ -47,7 +47,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 	if jsonConfig.DownCap != nil {
 		downCap := *jsonConfig.DownCap
-		if downCap < 0 {
+		if downCap == 0 {
 			log.Error("KCP|Config: Invalid downlink capacity: ", downCap)
 			return common.ErrBadConfiguration
 		}

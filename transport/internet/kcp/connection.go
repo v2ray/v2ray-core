@@ -20,7 +20,7 @@ var (
 )
 
 const (
-	headerSize = 2
+	headerSize uint32 = 2
 )
 
 type Command byte
@@ -65,7 +65,7 @@ type Connection struct {
 	writer          io.WriteCloser
 	since           int64
 	terminateOnce   signal.Once
-	writeBufferSize int
+	writeBufferSize uint32
 }
 
 // NewConnection create a new KCP connection between local and remote.
@@ -78,12 +78,11 @@ func NewConnection(conv uint32, writerCloser io.WriteCloser, local *net.UDPAddr,
 	conn.writer = writerCloser
 	conn.since = nowMillisec()
 
-	mtu := uint32(effectiveConfig.Mtu - block.HeaderSize() - headerSize)
-	conn.kcp = NewKCP(conv, mtu, conn.output)
-	conn.kcp.WndSize(effectiveConfig.GetSendingWindowSize(), effectiveConfig.GetReceivingWindowSize())
+	mtu := effectiveConfig.Mtu - uint32(block.HeaderSize()) - headerSize
+	conn.kcp = NewKCP(conv, mtu, effectiveConfig.GetSendingWindowSize(), effectiveConfig.GetReceivingWindowSize(), conn.output)
 	conn.kcp.NoDelay(effectiveConfig.Tti, 2, effectiveConfig.Congestion)
 	conn.kcp.current = conn.Elapsed()
-	conn.writeBufferSize = effectiveConfig.WriteBuffer / effectiveConfig.Mtu
+	conn.writeBufferSize = uint32(effectiveConfig.WriteBuffer) / effectiveConfig.Mtu
 
 	go conn.updateTask()
 

@@ -149,7 +149,7 @@ type KCP struct {
 	snd_queue []*Segment
 	rcv_queue []*Segment
 	snd_buf   []*Segment
-	rcv_buf   []*Segment
+	rcv_buf   *ReceivingWindow
 
 	acklist []uint32
 
@@ -161,11 +161,11 @@ type KCP struct {
 
 // NewKCP create a new kcp control object, 'conv' must equal in two endpoint
 // from the same connection.
-func NewKCP(conv uint32, mtu uint32, output Output) *KCP {
+func NewKCP(conv uint32, mtu uint32, sendingWindowSize uint32, receivingWindowSize uint32, output Output) *KCP {
 	kcp := new(KCP)
 	kcp.conv = conv
-	kcp.snd_wnd = IKCP_WND_SND
-	kcp.rcv_wnd = IKCP_WND_RCV
+	kcp.snd_wnd = sendingWindowSize
+	kcp.rcv_wnd = receivingWindowSize
 	kcp.rmt_wnd = IKCP_WND_RCV
 	kcp.mtu = mtu
 	kcp.mss = kcp.mtu - IKCP_OVERHEAD
@@ -176,6 +176,7 @@ func NewKCP(conv uint32, mtu uint32, output Output) *KCP {
 	kcp.ssthresh = IKCP_THRESH_INIT
 	kcp.dead_link = IKCP_DEADLINK
 	kcp.output = output
+	kcp.rcv_buf = NewReceivingWindow(receivingWindowSize)
 	return kcp
 }
 
@@ -205,19 +206,7 @@ func (kcp *KCP) Recv(buffer []byte) (n int) {
 	}
 	kcp.rcv_queue = kcp.rcv_queue[count:]
 
-	// move available data from rcv_buf -> rcv_queue
-	count = 0
-	for _, seg := range kcp.rcv_buf {
-		if seg.sn == kcp.rcv_nxt && len(kcp.rcv_queue) < int(kcp.rcv_wnd) {
-			kcp.rcv_queue = append(kcp.rcv_queue, seg)
-			kcp.rcv_nxt++
-			count++
-		} else {
-			break
-		}
-	}
-	kcp.rcv_buf = kcp.rcv_buf[count:]
-
+	kcp.DumpReceivingBuf()
 	// fast recover
 	if len(kcp.rcv_queue) < int(kcp.rcv_wnd) && fast_recover {
 		// ready to send back IKCP_CMD_WINS in ikcp_flush
@@ -225,6 +214,20 @@ func (kcp *KCP) Recv(buffer []byte) (n int) {
 		kcp.probe |= IKCP_ASK_TELL
 	}
 	return
+}
+
+// DumpReceivingBuf moves available data from rcv_buf -> rcv_queue
+// @Private
+func (kcp *KCP) DumpReceivingBuf() {
+	for {
+		seg := kcp.rcv_buf.RemoveFirst()
+		if seg == nil {
+			break
+		}
+		kcp.rcv_queue = append(kcp.rcv_queue, seg)
+		kcp.rcv_buf.Advance()
+		kcp.rcv_nxt++
+	}
 }
 
 // Send is user/upper level send, returns below zero for error
@@ -357,43 +360,12 @@ func (kcp *KCP) parse_data(newseg *Segment) {
 		return
 	}
 
-	n := len(kcp.rcv_buf) - 1
-	insert_idx := 0
-	repeat := false
-	for i := n; i >= 0; i-- {
-		seg := kcp.rcv_buf[i]
-		if seg.sn == sn {
-			repeat = true
-			break
-		}
-		if _itimediff(sn, seg.sn) > 0 {
-			insert_idx = i + 1
-			break
-		}
+	idx := sn - kcp.rcv_nxt
+	if !kcp.rcv_buf.Set(idx, newseg) {
+		newseg.Release()
 	}
 
-	if !repeat {
-		if insert_idx == n+1 {
-			kcp.rcv_buf = append(kcp.rcv_buf, newseg)
-		} else {
-			kcp.rcv_buf = append(kcp.rcv_buf, &Segment{})
-			copy(kcp.rcv_buf[insert_idx+1:], kcp.rcv_buf[insert_idx:])
-			kcp.rcv_buf[insert_idx] = newseg
-		}
-	}
-
-	// move available data from rcv_buf -> rcv_queue
-	count := 0
-	for k, seg := range kcp.rcv_buf {
-		if seg.sn == kcp.rcv_nxt && len(kcp.rcv_queue) < int(kcp.rcv_wnd) {
-			kcp.rcv_queue = append(kcp.rcv_queue, kcp.rcv_buf[k])
-			kcp.rcv_nxt++
-			count++
-		} else {
-			break
-		}
-	}
-	kcp.rcv_buf = kcp.rcv_buf[count:]
+	kcp.DumpReceivingBuf()
 }
 
 // Input when you received a low level packet (eg. UDP packet), call it
@@ -790,15 +762,9 @@ func (kcp *KCP) Check(current uint32) uint32 {
 // interval: internal update timer interval in millisec, default is 100ms
 // resend: 0:disable fast resend(default), 1:enable fast resend
 // nc: 0:normal congestion control(default), 1:disable congestion control
-func (kcp *KCP) NoDelay(interval, resend int, congestionControl bool) int {
-	if interval >= 0 {
-		if interval > 5000 {
-			interval = 5000
-		} else if interval < 10 {
-			interval = 10
-		}
-		kcp.interval = uint32(interval)
-	}
+func (kcp *KCP) NoDelay(interval uint32, resend int, congestionControl bool) int {
+	kcp.interval = interval
+
 	if resend >= 0 {
 		kcp.fastresend = int32(resend)
 	}
@@ -806,20 +772,9 @@ func (kcp *KCP) NoDelay(interval, resend int, congestionControl bool) int {
 	return 0
 }
 
-// WndSize sets maximum window size: sndwnd=32, rcvwnd=32 by default
-func (kcp *KCP) WndSize(sndwnd, rcvwnd int) int {
-	if sndwnd > 0 {
-		kcp.snd_wnd = uint32(sndwnd)
-	}
-	if rcvwnd > 0 {
-		kcp.rcv_wnd = uint32(rcvwnd)
-	}
-	return 0
-}
-
 // WaitSnd gets how many packet is waiting to be sent
-func (kcp *KCP) WaitSnd() int {
-	return len(kcp.snd_buf) + len(kcp.snd_queue)
+func (kcp *KCP) WaitSnd() uint32 {
+	return uint32(len(kcp.snd_buf) + len(kcp.snd_queue))
 }
 
 func (this *KCP) ClearSendQueue() {
