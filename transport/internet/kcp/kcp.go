@@ -104,7 +104,6 @@ type Segment struct {
 	sn       uint32
 	una      uint32
 	resendts uint32
-	rto      uint32
 	fastack  uint32
 	xmit     uint32
 	data     *alloc.Buffer
@@ -614,7 +613,6 @@ func (kcp *KCP) flush() {
 		newseg.sn = kcp.snd_nxt
 		newseg.una = kcp.rcv_nxt
 		newseg.resendts = current
-		newseg.rto = kcp.rx_rto
 		newseg.fastack = 0
 		newseg.xmit = 0
 		kcp.snd_buf = append(kcp.snd_buf, newseg)
@@ -635,20 +633,18 @@ func (kcp *KCP) flush() {
 		if segment.xmit == 0 {
 			needsend = true
 			segment.xmit++
-			segment.rto = kcp.rx_rto
-			segment.resendts = current + segment.rto + kcp.interval
+			segment.resendts = current + kcp.rx_rto + kcp.interval
 		} else if _itimediff(current, segment.resendts) >= 0 {
 			needsend = true
 			segment.xmit++
 			kcp.xmit++
-			segment.rto += kcp.rx_rto
-			segment.resendts = current + segment.rto + kcp.interval
+			segment.resendts = current + kcp.rx_rto + kcp.interval
 			//lost = true
 		} else if segment.fastack >= resent {
 			needsend = true
 			segment.xmit++
 			segment.fastack = 0
-			segment.resendts = current + segment.rto + kcp.interval
+			segment.resendts = current + kcp.rx_rto + kcp.interval
 			change++
 		}
 
