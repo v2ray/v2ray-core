@@ -148,8 +148,6 @@ func (this *Connection) Write(b []byte) (int, error) {
 		this.kcpAccess.Lock()
 		nBytes := this.kcp.Send(b[totalWritten:])
 		if nBytes > 0 {
-			this.kcp.current = this.Elapsed()
-			this.kcp.flush()
 			totalWritten += nBytes
 			if totalWritten == len(b) {
 				this.kcpAccess.Unlock()
