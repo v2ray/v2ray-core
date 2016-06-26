@@ -46,8 +46,8 @@ func (this Port) Value() uint16 {
 }
 
 // Bytes returns the correspoding bytes of this Port, in big endian order.
-func (this Port) Bytes() []byte {
-	return serial.Uint16ToBytes(this.Value())
+func (this Port) Bytes(b []byte) []byte {
+	return serial.Uint16ToBytes(this.Value(), b)
 }
 
 // String returns the string presentation of this Port.

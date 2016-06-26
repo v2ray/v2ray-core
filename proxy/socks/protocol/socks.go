@@ -306,5 +306,5 @@ func (r *Socks5Response) Write(writer io.Writer) {
 	case 0x04:
 		writer.Write(r.IPv6[:])
 	}
-	writer.Write(r.Port.Bytes())
+	writer.Write(r.Port.Bytes(nil))
 }

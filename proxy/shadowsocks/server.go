@@ -143,7 +143,7 @@ func (this *Server) handlerUDPPayload(payload *alloc.Buffer, source v2net.Destin
 			writer.Write([]byte(request.Address.Domain()))
 		}
 
-		writer.Write(request.Port.Bytes())
+		writer.Write(request.Port.Bytes(nil))
 		writer.Write(payload.Value)
 
 		if request.OTA {

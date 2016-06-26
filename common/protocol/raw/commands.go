@@ -94,12 +94,12 @@ func (this *CommandSwitchAccountFactory) Marshal(command interface{}, writer io.
 		writer.Write([]byte(hostStr))
 	}
 
-	writer.Write(cmd.Port.Bytes())
+	writer.Write(cmd.Port.Bytes(nil))
 
 	idBytes := cmd.ID.Bytes()
 	writer.Write(idBytes)
 
-	writer.Write(serial.Uint16ToBytes(cmd.AlterIds))
+	writer.Write(serial.Uint16ToBytes(cmd.AlterIds, nil))
 	writer.Write([]byte{byte(cmd.Level)})
 
 	writer.Write([]byte{cmd.ValidMin})

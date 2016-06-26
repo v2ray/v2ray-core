@@ -83,11 +83,11 @@ func (this *TimedUserValidator) generateNewHashes(nowSec Timestamp, idx int, ent
 	var hashValueRemoval [16]byte
 	idHash := this.hasher(entry.id.Bytes())
 	for entry.lastSec <= nowSec {
-		idHash.Write(entry.lastSec.Bytes())
+		idHash.Write(entry.lastSec.Bytes(nil))
 		idHash.Sum(hashValue[:0])
 		idHash.Reset()
 
-		idHash.Write(entry.lastSecRemoval.Bytes())
+		idHash.Write(entry.lastSecRemoval.Bytes(nil))
 		idHash.Sum(hashValueRemoval[:0])
 		idHash.Reset()
 

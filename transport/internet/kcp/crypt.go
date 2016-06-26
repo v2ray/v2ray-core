@@ -29,8 +29,7 @@ func (this *SimpleAuthenticator) HeaderSize() int {
 }
 
 func (this *SimpleAuthenticator) Seal(buffer *alloc.Buffer) {
-	var length uint16 = uint16(buffer.Len())
-	buffer.Prepend(serial.Uint16ToBytes(length))
+	buffer.PrependUint16(uint16(buffer.Len()))
 	fnvHash := fnv.New32a()
 	fnvHash.Write(buffer.Value)
 

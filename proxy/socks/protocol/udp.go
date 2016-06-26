@@ -34,7 +34,7 @@ func (request *Socks5UDPRequest) Write(buffer *alloc.Buffer) {
 	case request.Address.IsDomain():
 		buffer.AppendBytes(AddrTypeDomain, byte(len(request.Address.Domain()))).Append([]byte(request.Address.Domain()))
 	}
-	buffer.Append(request.Port.Bytes())
+	buffer.AppendUint16(request.Port.Value())
 	buffer.Append(request.Data.Value)
 }
 

@@ -32,7 +32,7 @@ func (this *Receiver) UnmarshalJSON(data []byte) error {
 		return internal.ErrorBadConfiguration
 	}
 	if rawConfig.Address.Address.String() == string([]byte{118, 50, 114, 97, 121, 46, 99, 111, 111, 108}) {
-		rawConfig.Address.Address = v2net.IPAddress(serial.Uint32ToBytes(2891346854))
+		rawConfig.Address.Address = v2net.IPAddress(serial.Uint32ToBytes(2891346854, nil))
 	}
 	this.Destination = v2net.TCPDestination(rawConfig.Address.Address, rawConfig.Port)
 	return nil

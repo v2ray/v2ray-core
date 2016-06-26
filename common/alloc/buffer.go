@@ -3,6 +3,8 @@ package alloc
 
 import (
 	"io"
+
+	"github.com/v2ray/v2ray-core/common/serial"
 )
 
 const (
@@ -56,11 +58,37 @@ func (b *Buffer) AppendString(s string) *Buffer {
 	return b
 }
 
+func (b *Buffer) AppendUint16(v uint16) *Buffer {
+	b.Value = serial.Uint16ToBytes(v, b.Value)
+	return b
+}
+
+func (b *Buffer) AppendUint32(v uint32) *Buffer {
+	b.Value = serial.Uint32ToBytes(v, b.Value)
+	return b
+}
+
 // Prepend prepends bytes in front of the buffer. Caller must ensure total bytes prepended is
 // no more than 16 bytes.
 func (b *Buffer) Prepend(data []byte) *Buffer {
 	b.SliceBack(len(data))
 	copy(b.Value, data)
+	return b
+}
+
+func (b *Buffer) PrependBytes(data ...byte) *Buffer {
+	return b.Prepend(data)
+}
+
+func (b *Buffer) PrependUint16(v uint16) *Buffer {
+	b.SliceBack(2)
+	serial.Uint16ToBytes(v, b.Value[:0])
+	return b
+}
+
+func (b *Buffer) PrependUint32(v uint32) *Buffer {
+	b.SliceBack(4)
+	serial.Uint32ToBytes(v, b.Value[:0])
 	return b
 }
 

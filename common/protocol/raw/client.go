@@ -14,12 +14,11 @@ import (
 )
 
 func hashTimestamp(t protocol.Timestamp) []byte {
-	once := t.Bytes()
 	bytes := make([]byte, 0, 32)
-	bytes = append(bytes, once...)
-	bytes = append(bytes, once...)
-	bytes = append(bytes, once...)
-	bytes = append(bytes, once...)
+	t.Bytes(bytes)
+	t.Bytes(bytes)
+	t.Bytes(bytes)
+	t.Bytes(bytes)
 	return bytes
 }
 
@@ -53,7 +52,7 @@ func NewClientSession(idHash protocol.IDHash) *ClientSession {
 func (this *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writer io.Writer) {
 	timestamp := protocol.NewTimestampGenerator(protocol.NowTime(), 30)()
 	idHash := this.idHash(header.User.Account.(*protocol.VMessAccount).AnyValidID().Bytes())
-	idHash.Write(timestamp.Bytes())
+	idHash.Write(timestamp.Bytes(nil))
 	writer.Write(idHash.Sum(nil))
 
 	buffer := alloc.NewSmallBuffer().Clear()
@@ -64,7 +63,7 @@ func (this *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, w
 	buffer.Append(this.requestBodyKey)
 	buffer.AppendBytes(this.responseHeader, byte(header.Option), byte(0), byte(0))
 	buffer.AppendBytes(byte(header.Command))
-	buffer.Append(header.Port.Bytes())
+	buffer.AppendUint16(header.Port.Value())
 
 	switch {
 	case header.Address.IsIPv4():
