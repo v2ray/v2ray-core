@@ -146,7 +146,7 @@ type KCP struct {
 	ts_probe, probe_wait                   uint32
 	dead_link, incr                        uint32
 
-	snd_queue []*Segment
+	snd_queue *SendingQueue
 	rcv_queue []*Segment
 	snd_buf   []*Segment
 	rcv_buf   *ReceivingWindow
@@ -161,7 +161,7 @@ type KCP struct {
 
 // NewKCP create a new kcp control object, 'conv' must equal in two endpoint
 // from the same connection.
-func NewKCP(conv uint32, mtu uint32, sendingWindowSize uint32, receivingWindowSize uint32, output Output) *KCP {
+func NewKCP(conv uint32, mtu uint32, sendingWindowSize uint32, receivingWindowSize uint32, sendingQueueSize uint32, output Output) *KCP {
 	kcp := new(KCP)
 	kcp.conv = conv
 	kcp.snd_wnd = sendingWindowSize
@@ -177,6 +177,7 @@ func NewKCP(conv uint32, mtu uint32, sendingWindowSize uint32, receivingWindowSi
 	kcp.dead_link = IKCP_DEADLINK
 	kcp.output = output
 	kcp.rcv_buf = NewReceivingWindow(receivingWindowSize)
+	kcp.snd_queue = NewSendingQueue(sendingQueueSize)
 	return kcp
 }
 
@@ -232,26 +233,8 @@ func (kcp *KCP) DumpReceivingBuf() {
 
 // Send is user/upper level send, returns below zero for error
 func (kcp *KCP) Send(buffer []byte) int {
-	var count int
-	if len(buffer) == 0 {
-		return -1
-	}
-
-	if len(buffer) < int(kcp.mss) {
-		count = 1
-	} else {
-		count = (len(buffer) + int(kcp.mss) - 1) / int(kcp.mss)
-	}
-
-	if count > 255 {
-		return -2
-	}
-
-	if count == 0 {
-		count = 1
-	}
-
-	for i := 0; i < count; i++ {
+	nBytes := 0
+	for len(buffer) > 0 && !kcp.snd_queue.IsFull() {
 		var size int
 		if len(buffer) > int(kcp.mss) {
 			size = int(kcp.mss)
@@ -260,11 +243,11 @@ func (kcp *KCP) Send(buffer []byte) int {
 		}
 		seg := NewSegment()
 		seg.data.Append(buffer[:size])
-		seg.frg = uint32(count - i - 1)
-		kcp.snd_queue = append(kcp.snd_queue, seg)
+		kcp.snd_queue.Push(seg)
 		buffer = buffer[size:]
+		nBytes += size
 	}
-	return 0
+	return nBytes
 }
 
 // https://tools.ietf.org/html/rfc6298
@@ -572,12 +555,8 @@ func (kcp *KCP) flush() {
 		cwnd = _imin_(kcp.cwnd, cwnd)
 	}
 
-	count = 0
-	for k := range kcp.snd_queue {
-		if _itimediff(kcp.snd_nxt, cwnd) >= 0 {
-			break
-		}
-		newseg := kcp.snd_queue[k]
+	for !kcp.snd_queue.IsEmpty() && _itimediff(kcp.snd_nxt, cwnd) < 0 {
+		newseg := kcp.snd_queue.Pop()
 		newseg.conv = kcp.conv
 		newseg.cmd = IKCP_CMD_PUSH
 		newseg.wnd = seg.wnd
@@ -589,9 +568,7 @@ func (kcp *KCP) flush() {
 		newseg.xmit = 0
 		kcp.snd_buf = append(kcp.snd_buf, newseg)
 		kcp.snd_nxt++
-		count++
 	}
-	kcp.snd_queue = kcp.snd_queue[count:]
 
 	// calculate resent
 	resent := uint32(kcp.fastresend)
@@ -774,14 +751,11 @@ func (kcp *KCP) NoDelay(interval uint32, resend int, congestionControl bool) int
 
 // WaitSnd gets how many packet is waiting to be sent
 func (kcp *KCP) WaitSnd() uint32 {
-	return uint32(len(kcp.snd_buf) + len(kcp.snd_queue))
+	return uint32(len(kcp.snd_buf)) + kcp.snd_queue.Len()
 }
 
 func (this *KCP) ClearSendQueue() {
-	for _, seg := range this.snd_queue {
-		seg.Release()
-	}
-	this.snd_queue = nil
+	this.snd_queue.Clear()
 
 	for _, seg := range this.snd_buf {
 		seg.Release()

@@ -77,12 +77,12 @@ func NewConnection(conv uint32, writerCloser io.WriteCloser, local *net.UDPAddr,
 	conn.block = block
 	conn.writer = writerCloser
 	conn.since = nowMillisec()
+	conn.writeBufferSize = effectiveConfig.WriteBuffer / effectiveConfig.Mtu
 
 	mtu := effectiveConfig.Mtu - uint32(block.HeaderSize()) - headerSize
-	conn.kcp = NewKCP(conv, mtu, effectiveConfig.GetSendingWindowSize(), effectiveConfig.GetReceivingWindowSize(), conn.output)
+	conn.kcp = NewKCP(conv, mtu, effectiveConfig.GetSendingWindowSize(), effectiveConfig.GetReceivingWindowSize(), conn.writeBufferSize, conn.output)
 	conn.kcp.NoDelay(effectiveConfig.Tti, 2, effectiveConfig.Congestion)
 	conn.kcp.current = conn.Elapsed()
-	conn.writeBufferSize = effectiveConfig.WriteBuffer / effectiveConfig.Mtu
 
 	go conn.updateTask()
 
@@ -133,6 +133,7 @@ func (this *Connection) Write(b []byte) (int, error) {
 		this.state == ConnStateClosed {
 		return 0, io.ErrClosedPipe
 	}
+	totalWritten := 0
 
 	for {
 		this.RLock()
@@ -140,23 +141,26 @@ func (this *Connection) Write(b []byte) (int, error) {
 			this.state == ConnStatePeerClosed ||
 			this.state == ConnStateClosed {
 			this.RUnlock()
-			return 0, io.ErrClosedPipe
+			return totalWritten, io.ErrClosedPipe
 		}
 		this.RUnlock()
 
 		this.kcpAccess.Lock()
-		if this.kcp.WaitSnd() < this.writeBufferSize {
-			nBytes := len(b)
-			this.kcp.Send(b)
+		nBytes := this.kcp.Send(b[totalWritten:])
+		if nBytes > 0 {
 			this.kcp.current = this.Elapsed()
 			this.kcp.flush()
-			this.kcpAccess.Unlock()
-			return nBytes, nil
+			totalWritten += nBytes
+			if totalWritten == len(b) {
+				this.kcpAccess.Unlock()
+				return totalWritten, nil
+			}
 		}
+
 		this.kcpAccess.Unlock()
 
 		if !this.wd.IsZero() && this.wd.Before(time.Now()) {
-			return 0, errTimeout
+			return totalWritten, errTimeout
 		}
 
 		// Sending windows is 1024 for the moment. This amount is not gonna sent in 1 sec.
