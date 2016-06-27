@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/v2ray/v2ray-core.svg?branch=master)](https://travis-ci.org/v2ray/v2ray-core)
 [![codecov.io](https://codecov.io/github/v2ray/v2ray-core/coverage.svg?branch=master)](https://codecov.io/github/v2ray/v2ray-core?branch=master)
-[![Go Report](http://goreportcard.com/badge/v2ray/v2ray-core)](https://goreportcard.com/report/v2ray/v2ray-core)
+[![Go Report](https://goreportcard.com/badge/github.com/v2ray/v2ray-core)](https://goreportcard.com/report/github.com/v2ray/v2ray-core)
 [![GoDoc](https://godoc.org/github.com/v2ray/v2ray-core?status.svg)](https://godoc.org/github.com/v2ray/v2ray-core)
 [![codebeat](https://codebeat.co/badges/f2354ca8-3e24-463d-a2e3-159af73b2477)](https://codebeat.co/projects/github-com-v2ray-v2ray-core)
 
