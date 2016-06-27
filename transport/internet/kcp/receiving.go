@@ -48,3 +48,40 @@ func (this *ReceivingWindow) Advance() {
 		this.start = 0
 	}
 }
+
+type ACKList struct {
+	timestamps []uint32
+	numbers    []uint32
+}
+
+func (this *ACKList) Add(number uint32, timestamp uint32) {
+	this.timestamps = append(this.timestamps, timestamp)
+	this.numbers = append(this.numbers, number)
+}
+
+func (this *ACKList) Clear(una uint32) {
+	count := 0
+	for i := 0; i < len(this.numbers); i++ {
+		if this.numbers[i] >= una {
+			if i != count {
+				this.numbers[count] = this.numbers[i]
+				this.timestamps[count] = this.timestamps[i]
+			}
+			count++
+		}
+	}
+	this.numbers = this.numbers[:count]
+	this.timestamps = this.timestamps[:count]
+}
+
+func (this *ACKList) AsSegment() *ACKSegment {
+	count := len(this.numbers)
+	if count > 16 {
+		count = 16
+	}
+	return &ACKSegment{
+		Count:         byte(count),
+		NumberList:    this.numbers[:count],
+		TimestampList: this.timestamps[:count],
+	}
+}

@@ -34,3 +34,20 @@ func TestRecivingWindow(t *testing.T) {
 	assert.Pointer(window.Remove(1)).Equals(seg2)
 	assert.Pointer(window.Remove(2)).Equals(seg3)
 }
+
+func TestACKList(t *testing.T) {
+	assert := assert.On(t)
+
+	ackList := new(ACKList)
+	ackList.Add(1, 2)
+	ackList.Add(3, 4)
+
+	seg := ackList.AsSegment()
+	assert.Byte(seg.Count).Equals(2)
+
+	ackList.Add(1, 3)
+	ackList.Clear(2)
+
+	seg = ackList.AsSegment()
+	assert.Byte(seg.Count).Equals(1)
+}
