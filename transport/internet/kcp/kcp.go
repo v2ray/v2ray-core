@@ -18,10 +18,6 @@ const (
 	IKCP_RTO_MAX     = 60000
 	IKCP_CMD_PUSH    = 81 // cmd: push data
 	IKCP_CMD_ACK     = 82 // cmd: ack
-	IKCP_CMD_WASK    = 83 // cmd: window probe (ask)
-	IKCP_CMD_WINS    = 84 // cmd: window size (tell)
-	IKCP_ASK_SEND    = 1  // need to send IKCP_CMD_WASK
-	IKCP_ASK_TELL    = 2  // need to send IKCP_CMD_WINS
 	IKCP_WND_SND     = 32
 	IKCP_WND_RCV     = 32
 	IKCP_MTU_DEF     = 1350
@@ -187,11 +183,6 @@ func (kcp *KCP) Recv(buffer []byte) (n int) {
 		return -1
 	}
 
-	var fast_recover bool
-	if len(kcp.rcv_queue) >= int(kcp.rcv_wnd) {
-		fast_recover = true
-	}
-
 	// merge fragment
 	count := 0
 	for _, seg := range kcp.rcv_queue {
@@ -208,12 +199,6 @@ func (kcp *KCP) Recv(buffer []byte) (n int) {
 	kcp.rcv_queue = kcp.rcv_queue[count:]
 
 	kcp.DumpReceivingBuf()
-	// fast recover
-	if len(kcp.rcv_queue) < int(kcp.rcv_wnd) && fast_recover {
-		// ready to send back IKCP_CMD_WINS in ikcp_flush
-		// tell remote my window size
-		kcp.probe |= IKCP_ASK_TELL
-	}
 	return
 }
 
@@ -385,15 +370,14 @@ func (kcp *KCP) Input(data []byte) int {
 			return -2
 		}
 
-		if cmd != IKCP_CMD_PUSH && cmd != IKCP_CMD_ACK &&
-			cmd != IKCP_CMD_WASK && cmd != IKCP_CMD_WINS {
+		if cmd != IKCP_CMD_PUSH && cmd != IKCP_CMD_ACK {
 			return -3
 		}
 
 		if kcp.rmt_wnd < uint32(wnd) {
 			kcp.rmt_wnd = uint32(wnd)
 		}
-		//kcp.rmt_wnd = uint32(wnd)
+
 		kcp.parse_una(una)
 		kcp.shrink_buf()
 
@@ -425,12 +409,6 @@ func (kcp *KCP) Input(data []byte) int {
 					kcp.parse_data(seg)
 				}
 			}
-		} else if cmd == IKCP_CMD_WASK {
-			// ready to send back IKCP_CMD_WINS in Ikcp_flush
-			// tell remote my window size
-			kcp.probe |= IKCP_ASK_TELL
-		} else if cmd == IKCP_CMD_WINS {
-			// do nothing
 		} else {
 			return -3
 		}
@@ -498,56 +476,6 @@ func (kcp *KCP) flush() {
 	}
 	kcp.acklist = nil
 
-	// probe window size (if remote window size equals zero)
-	/*
-		if kcp.rmt_wnd == 0 {
-			if kcp.probe_wait == 0 {
-				kcp.probe_wait = IKCP_PROBE_INIT
-				kcp.ts_probe = kcp.current + kcp.probe_wait
-			} else {
-				if _itimediff(kcp.current, kcp.ts_probe) >= 0 {
-					if kcp.probe_wait < IKCP_PROBE_INIT {
-						kcp.probe_wait = IKCP_PROBE_INIT
-					}
-					kcp.probe_wait += kcp.probe_wait / 2
-					if kcp.probe_wait > IKCP_PROBE_LIMIT {
-						kcp.probe_wait = IKCP_PROBE_LIMIT
-					}
-					kcp.ts_probe = kcp.current + kcp.probe_wait
-					kcp.probe |= IKCP_ASK_SEND
-				}
-			}
-		} else {
-			kcp.ts_probe = 0
-			kcp.probe_wait = 0
-		}*/
-
-	// flush window probing commands
-	/*
-		if (kcp.probe & IKCP_ASK_SEND) != 0 {
-			seg.cmd = IKCP_CMD_WASK
-			size := len(buffer) - len(ptr)
-			if size+IKCP_OVERHEAD > int(kcp.mtu) {
-				kcp.output(buffer[:size])
-				ptr = buffer
-			}
-			ptr = seg.encode(ptr)
-		}*/
-
-	// flush window probing commands
-	/*
-		if (kcp.probe & IKCP_ASK_TELL) != 0 {
-			seg.cmd = IKCP_CMD_WINS
-			size := len(buffer) - len(ptr)
-			if size+IKCP_OVERHEAD > int(kcp.mtu) {
-				kcp.output(buffer[:size])
-				ptr = buffer
-			}
-			ptr = seg.encode(ptr)
-		}
-
-		kcp.probe = 0*/
-
 	// calculate window size
 
 	cwnd := _imin_(kcp.snd_una+kcp.snd_wnd, kcp.rmt_wnd)
@@ -582,18 +510,18 @@ func (kcp *KCP) flush() {
 		if segment.xmit == 0 {
 			needsend = true
 			segment.xmit++
-			segment.resendts = current + kcp.rx_rto + kcp.interval
+			segment.resendts = current + (kcp.rx_rto * 3 / 2) + kcp.interval
 		} else if _itimediff(current, segment.resendts) >= 0 {
 			needsend = true
 			segment.xmit++
 			kcp.xmit++
-			segment.resendts = current + kcp.rx_rto + kcp.interval
+			segment.resendts = current + (kcp.rx_rto * 3 / 2) + kcp.interval
 			//lost = true
 		} else if segment.fastack >= resent {
 			needsend = true
 			segment.xmit++
 			segment.fastack = 0
-			segment.resendts = current + kcp.rx_rto + kcp.interval
+			segment.resendts = current + (kcp.rx_rto * 3 / 2) + kcp.interval
 			change++
 		}
 
