@@ -27,7 +27,7 @@ func NewDefaultDispatcher(space app.Space) *DefaultDispatcher {
 func (this *DefaultDispatcher) Initialize(space app.Space) error {
 	if !space.HasApp(proxyman.APP_ID_OUTBOUND_MANAGER) {
 		log.Error("DefaultDispatcher: OutboundHandlerManager is not found in the space.")
-		return app.ErrorMissingApplication
+		return app.ErrMissingApplication
 	}
 	this.ohm = space.GetApp(proxyman.APP_ID_OUTBOUND_MANAGER).(proxyman.OutboundHandlerManager)
 

@@ -12,14 +12,14 @@ var (
 	inboundFactories  = make(map[string]InboundHandlerFactory)
 	outboundFactories = make(map[string]OutboundHandlerFactory)
 
-	ErrorProxyNotFound    = errors.New("Proxy not found.")
-	ErrorNameExists       = errors.New("Proxy with the same name already exists.")
-	ErrorBadConfiguration = errors.New("Bad proxy configuration.")
+	ErrProxyNotFound    = errors.New("Proxy not found.")
+	ErrNameExists       = errors.New("Proxy with the same name already exists.")
+	ErrBadConfiguration = errors.New("Bad proxy configuration.")
 )
 
 func RegisterInboundHandlerCreator(name string, creator InboundHandlerFactory) error {
 	if _, found := inboundFactories[name]; found {
-		return ErrorNameExists
+		return ErrNameExists
 	}
 	inboundFactories[name] = creator
 	return nil
@@ -33,7 +33,7 @@ func MustRegisterInboundHandlerCreator(name string, creator InboundHandlerFactor
 
 func RegisterOutboundHandlerCreator(name string, creator OutboundHandlerFactory) error {
 	if _, found := outboundFactories[name]; found {
-		return ErrorNameExists
+		return ErrNameExists
 	}
 	outboundFactories[name] = creator
 	return nil
@@ -48,7 +48,7 @@ func MustRegisterOutboundHandlerCreator(name string, creator OutboundHandlerFact
 func CreateInboundHandler(name string, space app.Space, rawConfig []byte, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
 	creator, found := inboundFactories[name]
 	if !found {
-		return nil, ErrorProxyNotFound
+		return nil, ErrProxyNotFound
 	}
 	if meta.StreamSettings == nil {
 		meta.StreamSettings = &internet.StreamSettings{
@@ -71,7 +71,7 @@ func CreateInboundHandler(name string, space app.Space, rawConfig []byte, meta *
 func CreateOutboundHandler(name string, space app.Space, rawConfig []byte, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 	creator, found := outboundFactories[name]
 	if !found {
-		return nil, ErrorProxyNotFound
+		return nil, ErrProxyNotFound
 	}
 	if meta.StreamSettings == nil {
 		meta.StreamSettings = &internet.StreamSettings{

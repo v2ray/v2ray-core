@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	// ErrorInvalidPortRage indicates an error during port range parsing.
-	ErrorInvalidPortRange = errors.New("Invalid port range.")
+	// ErrInvalidPortRage indicates an error during port range parsing.
+	ErrInvalidPortRange = errors.New("Invalid port range.")
 )
 
 // Port represents a network port in TCP and UDP protocol.
@@ -25,7 +25,7 @@ func PortFromBytes(port []byte) Port {
 // @error when the integer is not positive or larger then 65535
 func PortFromInt(v int) (Port, error) {
 	if v <= 0 || v > 65535 {
-		return Port(0), ErrorInvalidPortRange
+		return Port(0), ErrInvalidPortRange
 	}
 	return Port(v), nil
 }
@@ -35,7 +35,7 @@ func PortFromInt(v int) (Port, error) {
 func PortFromString(s string) (Port, error) {
 	v, err := strconv.Atoi(s)
 	if err != nil {
-		return Port(0), ErrorInvalidPortRange
+		return Port(0), ErrInvalidPortRange
 	}
 	return PortFromInt(v)
 }

@@ -39,7 +39,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		this.AuthType = AuthTypePassword
 	} else {
 		log.Error("Socks: Unknown auth method: ", rawConfig.AuthMethod)
-		return internal.ErrorBadConfiguration
+		return internal.ErrBadConfiguration
 	}
 
 	if len(rawConfig.Accounts) > 0 {

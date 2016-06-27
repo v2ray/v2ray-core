@@ -257,7 +257,7 @@ func (this *ServerFactory) StreamCapability() internet.StreamConnectionType {
 
 func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
 	if !space.HasApp(dispatcher.APP_ID) {
-		return nil, internal.ErrorBadConfiguration
+		return nil, internal.ErrBadConfiguration
 	}
 	return NewServer(
 		rawConfig.(*Config),

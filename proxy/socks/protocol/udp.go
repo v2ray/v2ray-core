@@ -40,7 +40,7 @@ func (request *Socks5UDPRequest) Write(buffer *alloc.Buffer) {
 
 func ReadUDPRequest(packet []byte) (*Socks5UDPRequest, error) {
 	if len(packet) < 5 {
-		return nil, transport.ErrorCorruptedPacket
+		return nil, transport.ErrCorruptedPacket
 	}
 	request := new(Socks5UDPRequest)
 
@@ -53,7 +53,7 @@ func ReadUDPRequest(packet []byte) (*Socks5UDPRequest, error) {
 	switch addrType {
 	case AddrTypeIPv4:
 		if len(packet) < 10 {
-			return nil, transport.ErrorCorruptedPacket
+			return nil, transport.ErrCorruptedPacket
 		}
 		ip := packet[4:8]
 		request.Port = v2net.PortFromBytes(packet[8:10])
@@ -61,7 +61,7 @@ func ReadUDPRequest(packet []byte) (*Socks5UDPRequest, error) {
 		dataBegin = 10
 	case AddrTypeIPv6:
 		if len(packet) < 22 {
-			return nil, transport.ErrorCorruptedPacket
+			return nil, transport.ErrCorruptedPacket
 		}
 		ip := packet[4:20]
 		request.Port = v2net.PortFromBytes(packet[20:22])
@@ -70,7 +70,7 @@ func ReadUDPRequest(packet []byte) (*Socks5UDPRequest, error) {
 	case AddrTypeDomain:
 		domainLength := int(packet[4])
 		if len(packet) < 5+domainLength+2 {
-			return nil, transport.ErrorCorruptedPacket
+			return nil, transport.ErrCorruptedPacket
 		}
 		domain := string(packet[5 : 5+domainLength])
 		request.Port = v2net.PortFromBytes(packet[5+domainLength : 5+domainLength+2])

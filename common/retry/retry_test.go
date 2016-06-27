@@ -76,6 +76,6 @@ func TestRetryExhausted(t *testing.T) {
 	})
 	duration := time.Since(startTime)
 
-	assert.Error(err).Equals(ErrorRetryFailed)
+	assert.Error(err).Equals(ErrRetryFailed)
 	assert.Int64(int64(duration / time.Millisecond)).AtLeast(1900)
 }

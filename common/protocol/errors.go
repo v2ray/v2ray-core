@@ -5,6 +5,6 @@ import (
 )
 
 var (
-	ErrorInvalidUser    = errors.New("Invalid user.")
-	ErrorInvalidVersion = errors.New("Invalid version.")
+	ErrInvalidUser    = errors.New("Invalid user.")
+	ErrInvalidVersion = errors.New("Invalid version.")
 )

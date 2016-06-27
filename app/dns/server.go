@@ -37,7 +37,7 @@ func NewCacheServer(space app.Space, config *Config) *CacheServer {
 	space.InitializeApplication(func() error {
 		if !space.HasApp(dispatcher.APP_ID) {
 			log.Error("DNS: Dispatcher is not found in the space.")
-			return app.ErrorMissingApplication
+			return app.ErrMissingApplication
 		}
 
 		dispatcher := space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)

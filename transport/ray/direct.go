@@ -14,7 +14,7 @@ const (
 )
 
 var (
-	ErrorIOTimeout = errors.New("IO Timeout")
+	ErrIOTimeout = errors.New("IO Timeout")
 )
 
 // NewRay creates a new Ray for direct traffic transport.
@@ -82,7 +82,7 @@ func (this *Stream) Write(data *alloc.Buffer) error {
 	}
 	for {
 		err := this.TryWriteOnce(data)
-		if err != ErrorIOTimeout {
+		if err != ErrIOTimeout {
 			return err
 		}
 	}
@@ -98,7 +98,7 @@ func (this *Stream) TryWriteOnce(data *alloc.Buffer) error {
 	case this.buffer <- data:
 		return nil
 	case <-time.After(2 * time.Second):
-		return ErrorIOTimeout
+		return ErrIOTimeout
 	}
 }
 

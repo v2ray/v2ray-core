@@ -21,7 +21,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 	if len(rawOutbound.Receivers) == 0 {
 		log.Error("VMessOut: 0 VMess receiver configured.")
-		return internal.ErrorBadConfiguration
+		return internal.ErrBadConfiguration
 	}
 	this.Receivers = rawOutbound.Receivers
 	return nil

@@ -38,7 +38,7 @@ func TestSingleBytePayload(t *testing.T) {
 
 	buffer := alloc.NewSmallBuffer().Clear().AppendBytes(1)
 	_, err := ReadRequest(buffer, nil, false)
-	assert.Error(err).Equals(transport.ErrorCorruptedPacket)
+	assert.Error(err).Equals(transport.ErrCorruptedPacket)
 }
 
 func TestWrongAddressType(t *testing.T) {
@@ -46,7 +46,7 @@ func TestWrongAddressType(t *testing.T) {
 
 	buffer := alloc.NewSmallBuffer().Clear().AppendBytes(5)
 	_, err := ReadRequest(buffer, nil, false)
-	assert.Error(err).Equals(transport.ErrorCorruptedPacket)
+	assert.Error(err).Equals(transport.ErrCorruptedPacket)
 }
 
 func TestInsufficientAddressRequest(t *testing.T) {
@@ -54,15 +54,15 @@ func TestInsufficientAddressRequest(t *testing.T) {
 
 	buffer := alloc.NewSmallBuffer().Clear().AppendBytes(1, 1)
 	_, err := ReadRequest(buffer, nil, false)
-	assert.Error(err).Equals(transport.ErrorCorruptedPacket)
+	assert.Error(err).Equals(transport.ErrCorruptedPacket)
 
 	buffer = alloc.NewSmallBuffer().Clear().AppendBytes(4, 1)
 	_, err = ReadRequest(buffer, nil, false)
-	assert.Error(err).Equals(transport.ErrorCorruptedPacket)
+	assert.Error(err).Equals(transport.ErrCorruptedPacket)
 
 	buffer = alloc.NewSmallBuffer().Clear().AppendBytes(3, 255, 1)
 	_, err = ReadRequest(buffer, nil, false)
-	assert.Error(err).Equals(transport.ErrorCorruptedPacket)
+	assert.Error(err).Equals(transport.ErrCorruptedPacket)
 }
 
 func TestInsufficientPortRequest(t *testing.T) {
@@ -70,7 +70,7 @@ func TestInsufficientPortRequest(t *testing.T) {
 
 	buffer := alloc.NewSmallBuffer().Clear().AppendBytes(1, 1, 2, 3, 4, 5)
 	_, err := ReadRequest(buffer, nil, false)
-	assert.Error(err).Equals(transport.ErrorCorruptedPacket)
+	assert.Error(err).Equals(transport.ErrCorruptedPacket)
 }
 
 func TestOTARequest(t *testing.T) {
@@ -98,7 +98,7 @@ func TestInvalidOTARequest(t *testing.T) {
 		[]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5},
 		[]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5}))
 	_, err := ReadRequest(buffer, auth, false)
-	assert.Error(err).Equals(proxy.ErrorInvalidAuthentication)
+	assert.Error(err).Equals(proxy.ErrInvalidAuthentication)
 }
 
 func TestUDPRequestParsing(t *testing.T) {

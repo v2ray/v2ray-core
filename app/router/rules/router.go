@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	ErrorInvalidRule      = errors.New("Invalid Rule")
-	ErrorNoRuleApplicable = errors.New("No rule applicable")
+	ErrInvalidRule      = errors.New("Invalid Rule")
+	ErrNoRuleApplicable = errors.New("No rule applicable")
 )
 
 type Router struct {
@@ -29,7 +29,7 @@ func NewRouter(config *RouterRuleConfig, space app.Space) *Router {
 	space.InitializeApplication(func() error {
 		if !space.HasApp(dns.APP_ID) {
 			log.Error("DNS: Router is not found in the space.")
-			return app.ErrorMissingApplication
+			return app.ErrMissingApplication
 		}
 		r.dnsServer = space.GetApp(dns.APP_ID).(dns.Server)
 		return nil
@@ -79,7 +79,7 @@ func (this *Router) takeDetourWithoutCache(dest v2net.Destination) (string, erro
 		}
 	}
 
-	return "", ErrorNoRuleApplicable
+	return "", ErrNoRuleApplicable
 }
 
 func (this *Router) TakeDetour(dest v2net.Destination) (string, error) {

@@ -49,7 +49,7 @@ func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, aut
 	}
 	if nBytes < 2 {
 		log.Warning("Socks: expected 2 bytes read, but only ", nBytes, " bytes read")
-		err = transport.ErrorCorruptedPacket
+		err = transport.ErrCorruptedPacket
 		return
 	}
 
@@ -65,20 +65,20 @@ func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, aut
 	auth.version = buffer.Value[0]
 	if auth.version != socksVersion {
 		log.Warning("Socks: Unknown protocol version ", auth.version)
-		err = proxy.ErrorInvalidProtocolVersion
+		err = proxy.ErrInvalidProtocolVersion
 		return
 	}
 
 	auth.nMethods = buffer.Value[1]
 	if auth.nMethods <= 0 {
 		log.Warning("Socks: Zero length of authentication methods")
-		err = proxy.ErrorInvalidAuthentication
+		err = proxy.ErrInvalidAuthentication
 		return
 	}
 
 	if nBytes-2 != int(auth.nMethods) {
 		log.Warning("Socks: Unmatching number of auth methods, expecting ", auth.nMethods, ", but got ", nBytes)
-		err = proxy.ErrorInvalidAuthentication
+		err = proxy.ErrInvalidAuthentication
 		return
 	}
 	copy(auth.authMethods[:], buffer.Value[2:nBytes])
@@ -226,7 +226,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 		}
 	default:
 		log.Warning("Socks: Unexpected address type ", request.AddrType)
-		err = transport.ErrorCorruptedPacket
+		err = transport.ErrCorruptedPacket
 		return
 	}
 

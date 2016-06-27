@@ -33,5 +33,5 @@ func CreateRouter(name string, rawConfig interface{}, space app.Space) (Router, 
 	if factory, found := routerCache[name]; found {
 		return factory.Create(rawConfig, space)
 	}
-	return nil, ErrorRouterNotFound
+	return nil, ErrRouterNotFound
 }

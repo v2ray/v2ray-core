@@ -36,7 +36,7 @@ func NewFreedomConnection(config *Config, space app.Space, meta *proxy.OutboundH
 		if config.DomainStrategy == DomainStrategyUseIP {
 			if !space.HasApp(dns.APP_ID) {
 				log.Error("Freedom: DNS server is not found in the space.")
-				return app.ErrorMissingApplication
+				return app.ErrMissingApplication
 			}
 			f.dns = space.GetApp(dns.APP_ID).(dns.Server)
 		}

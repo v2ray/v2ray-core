@@ -26,7 +26,7 @@ func parseStringPort(data []byte) (Port, Port, error) {
 	}
 	pair := strings.SplitN(s, "-", 2)
 	if len(pair) == 0 {
-		return Port(0), Port(0), ErrorInvalidPortRange
+		return Port(0), Port(0), ErrInvalidPortRange
 	}
 	if len(pair) == 1 {
 		port, err := PortFromString(pair[0])
@@ -59,11 +59,11 @@ func (this *PortRange) UnmarshalJSON(data []byte) error {
 		this.To = to
 		if this.From > this.To {
 			log.Error("Invalid port range ", this.From, " -> ", this.To)
-			return ErrorInvalidPortRange
+			return ErrInvalidPortRange
 		}
 		return nil
 	}
 
 	log.Error("Invalid port range: ", string(data))
-	return ErrorInvalidPortRange
+	return ErrInvalidPortRange
 }

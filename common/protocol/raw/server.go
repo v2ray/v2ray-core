@@ -54,7 +54,7 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 
 	user, timestamp, valid := this.userValidator.Get(buffer.Value[:protocol.IDBytesLen])
 	if !valid {
-		return nil, protocol.ErrorInvalidUser
+		return nil, protocol.ErrInvalidUser
 	}
 
 	timestampHash := md5.New()
@@ -78,7 +78,7 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 
 	if request.Version != Version {
 		log.Info("Raw: Invalid protocol version ", request.Version)
-		return nil, protocol.ErrorInvalidVersion
+		return nil, protocol.ErrInvalidVersion
 	}
 
 	this.requestBodyIV = append([]byte(nil), buffer.Value[1:17]...)   // 16 bytes
@@ -114,7 +114,7 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 		}
 		domainLength := int(buffer.Value[41])
 		if domainLength == 0 {
-			return nil, transport.ErrorCorruptedPacket
+			return nil, transport.ErrCorruptedPacket
 		}
 		nBytes, err = io.ReadFull(decryptor, buffer.Value[42:42+domainLength])
 		if err != nil {
@@ -138,7 +138,7 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 	expectedHash := serial.BytesToUint32(buffer.Value[bufferLen : bufferLen+4])
 
 	if actualHash != expectedHash {
-		return nil, transport.ErrorCorruptedPacket
+		return nil, transport.ErrCorruptedPacket
 	}
 
 	return request, nil

@@ -17,7 +17,7 @@ func RegisterInboundConnectionHandlerCreator(prefix string, creator internal.Inb
 	for {
 		name := prefix + randomString()
 		err := internal.RegisterInboundHandlerCreator(name, creator)
-		if err != internal.ErrorNameExists {
+		if err != internal.ErrNameExists {
 			return name, err
 		}
 	}
@@ -27,7 +27,7 @@ func RegisterOutboundConnectionHandlerCreator(prefix string, creator internal.Ou
 	for {
 		name := prefix + randomString()
 		err := internal.RegisterOutboundHandlerCreator(name, creator)
-		if err != internal.ErrorNameExists {
+		if err != internal.ErrNameExists {
 			return name, err
 		}
 	}

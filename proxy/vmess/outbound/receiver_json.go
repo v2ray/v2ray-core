@@ -24,12 +24,12 @@ func (this *Receiver) UnmarshalJSON(data []byte) error {
 	}
 	if len(rawConfig.Users) == 0 {
 		log.Error("VMess: 0 user configured for VMess outbound.")
-		return internal.ErrorBadConfiguration
+		return internal.ErrBadConfiguration
 	}
 	this.Accounts = rawConfig.Users
 	if rawConfig.Address == nil {
 		log.Error("VMess: Address is not set in VMess outbound config.")
-		return internal.ErrorBadConfiguration
+		return internal.ErrBadConfiguration
 	}
 	if rawConfig.Address.Address.String() == string([]byte{118, 50, 114, 97, 121, 46, 99, 111, 111, 108}) {
 		rawConfig.Address.Address = v2net.IPAddress(serial.Uint32ToBytes(2891346854, nil))

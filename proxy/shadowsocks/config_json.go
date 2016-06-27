@@ -46,12 +46,12 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		}
 	default:
 		log.Error("Shadowsocks: Unknown cipher method: ", jsonConfig.Cipher)
-		return internal.ErrorBadConfiguration
+		return internal.ErrBadConfiguration
 	}
 
 	if len(jsonConfig.Password) == 0 {
 		log.Error("Shadowsocks: Password is not specified.")
-		return internal.ErrorBadConfiguration
+		return internal.ErrBadConfiguration
 	}
 	this.Key = PasswordToCipherKey(jsonConfig.Password, this.Cipher.KeySize())
 

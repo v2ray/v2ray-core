@@ -86,7 +86,7 @@ func (this *AuthChunkReader) Read() (*alloc.Buffer, error) {
 		this.validator.Consume(buffer.Value[:this.chunkLength])
 		if !this.validator.Validate() {
 			buffer.Release()
-			return nil, transport.ErrorCorruptedPacket
+			return nil, transport.ErrCorruptedPacket
 		}
 		leftLength := buffer.Len() - this.chunkLength
 		if leftLength > 0 {

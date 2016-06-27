@@ -114,7 +114,7 @@ func (this *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Res
 
 	if buffer.Value[0] != this.responseHeader {
 		log.Info("Raw: Unexpected response header. Expecting ", this.responseHeader, " but actually ", buffer.Value[0])
-		return nil, transport.ErrorCorruptedPacket
+		return nil, transport.ErrCorruptedPacket
 	}
 
 	header := &protocol.ResponseHeader{

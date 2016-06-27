@@ -136,7 +136,7 @@ func TestSingleByteAuthRequest(t *testing.T) {
 	assert := assert.On(t)
 
 	_, _, err := ReadAuthentication(bytes.NewReader(make([]byte, 1)))
-	assert.Error(err).Equals(transport.ErrorCorruptedPacket)
+	assert.Error(err).Equals(transport.ErrCorruptedPacket)
 }
 
 func TestZeroAuthenticationMethod(t *testing.T) {
@@ -144,14 +144,14 @@ func TestZeroAuthenticationMethod(t *testing.T) {
 
 	buffer := alloc.NewBuffer().Clear().AppendBytes(5, 0)
 	_, _, err := ReadAuthentication(buffer)
-	assert.Error(err).Equals(proxy.ErrorInvalidAuthentication)
+	assert.Error(err).Equals(proxy.ErrInvalidAuthentication)
 }
 func TestWrongProtocolVersion(t *testing.T) {
 	assert := assert.On(t)
 
 	buffer := alloc.NewBuffer().Clear().AppendBytes(6, 1, 0)
 	_, _, err := ReadAuthentication(buffer)
-	assert.Error(err).Equals(proxy.ErrorInvalidProtocolVersion)
+	assert.Error(err).Equals(proxy.ErrInvalidProtocolVersion)
 }
 
 func TestEmptyRequest(t *testing.T) {

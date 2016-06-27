@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	ErrorClosedConnection = errors.New("Connection already closed.")
+	ErrClosedConnection = errors.New("Connection already closed.")
 
 	KCPListenFunc    ListenFunc
 	TCPListenFunc    ListenFunc

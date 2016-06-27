@@ -9,7 +9,7 @@ type ConfigObjectCreator func([]byte) (interface{}, error)
 var (
 	configCache map[string]ConfigObjectCreator
 
-	ErrorRouterNotFound = errors.New("Router not found.")
+	ErrRouterNotFound = errors.New("Router not found.")
 )
 
 func RegisterRouterConfig(strategy string, creator ConfigObjectCreator) error {
@@ -21,7 +21,7 @@ func RegisterRouterConfig(strategy string, creator ConfigObjectCreator) error {
 func CreateRouterConfig(strategy string, data []byte) (interface{}, error) {
 	creator, found := configCache[strategy]
 	if !found {
-		return nil, ErrorRouterNotFound
+		return nil, ErrRouterNotFound
 	}
 	return creator(data)
 }

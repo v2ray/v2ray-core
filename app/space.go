@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	ErrorMissingApplication = errors.New("App: Failed to found one or more applications.")
+	ErrMissingApplication = errors.New("App: Failed to found one or more applications.")
 )
 
 type ID int
