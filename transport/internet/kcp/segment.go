@@ -1,6 +1,7 @@
 package kcp
 
 import (
+	"github.com/v2ray/v2ray-core/common"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/serial"
 )
@@ -20,6 +21,7 @@ const (
 )
 
 type ISegment interface {
+	common.Releasable
 	ByteSize() int
 	Bytes([]byte) []byte
 }
@@ -54,6 +56,10 @@ func (this *DataSegment) ByteSize() int {
 	return 2 + 1 + 1 + 4 + 4 + 4 + 4 + 2 + this.Data.Len()
 }
 
+func (this *DataSegment) Release() {
+	this.Data.Release()
+}
+
 type ACKSegment struct {
 	Conv            uint16
 	Opt             SegmentOption
@@ -81,6 +87,8 @@ func (this *ACKSegment) Bytes(b []byte) []byte {
 	return b
 }
 
+func (this *ACKSegment) Release() {}
+
 type TerminationSegment struct {
 	Conv uint16
 	Opt  SegmentOption
@@ -95,6 +103,8 @@ func (this *TerminationSegment) Bytes(b []byte) []byte {
 	b = append(b, byte(SegmentCommandTerminated), byte(this.Opt))
 	return b
 }
+
+func (this *TerminationSegment) Release() {}
 
 func ReadSegment(buf []byte) (ISegment, []byte) {
 	if len(buf) <= 12 {
