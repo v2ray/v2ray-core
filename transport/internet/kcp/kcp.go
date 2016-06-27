@@ -256,7 +256,7 @@ func (kcp *KCP) update_ack(rtt int32) {
 	if rto > IKCP_RTO_MAX {
 		rto = IKCP_RTO_MAX
 	}
-	kcp.rx_rto = rto
+	kcp.rx_rto = rto * 3 / 2
 }
 
 func (kcp *KCP) shrink_buf() {
@@ -510,18 +510,18 @@ func (kcp *KCP) flush() {
 		if segment.xmit == 0 {
 			needsend = true
 			segment.xmit++
-			segment.resendts = current + (kcp.rx_rto * 3 / 2) + kcp.interval
+			segment.resendts = current + kcp.rx_rto
 		} else if _itimediff(current, segment.resendts) >= 0 {
 			needsend = true
 			segment.xmit++
 			kcp.xmit++
-			segment.resendts = current + (kcp.rx_rto * 3 / 2) + kcp.interval
+			segment.resendts = current + kcp.rx_rto
 			//lost = true
 		} else if segment.fastack >= resent {
 			needsend = true
 			segment.xmit++
 			segment.fastack = 0
-			segment.resendts = current + (kcp.rx_rto * 3 / 2) + kcp.interval
+			segment.resendts = current + kcp.rx_rto
 			change++
 		}
 
