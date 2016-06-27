@@ -263,8 +263,8 @@ func (kcp *KCP) update_ack(rtt int32) {
 		}
 		kcp.rx_rttvar = (3*kcp.rx_rttvar + uint32(delta)) / 4
 		kcp.rx_srtt = (7*kcp.rx_srtt + uint32(rtt)) / 8
-		if kcp.rx_srtt < 1 {
-			kcp.rx_srtt = 1
+		if kcp.rx_srtt < kcp.interval {
+			kcp.rx_srtt = kcp.interval
 		}
 	}
 	rto = kcp.rx_srtt + _imax_(kcp.interval, 4*kcp.rx_rttvar)
