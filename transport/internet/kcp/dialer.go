@@ -15,8 +15,8 @@ var (
 )
 
 func DialKCP(src v2net.Address, dest v2net.Destination) (internet.Connection, error) {
-	log.Info("Dialling KCP to ", dest)
 	udpDest := v2net.UDPDestination(dest.Address(), dest.Port())
+	log.Info("Dialling KCP to ", udpDest)
 	conn, err := internet.DialToDest(src, udpDest)
 	if err != nil {
 		return nil, err
