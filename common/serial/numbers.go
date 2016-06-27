@@ -16,6 +16,10 @@ func Uint32ToBytes(value uint32, b []byte) []byte {
 	return append(b, byte(value>>24), byte(value>>16), byte(value>>8), byte(value))
 }
 
+func Uint32ToString(value uint32) string {
+	return strconv.FormatUint(uint64(value), 10)
+}
+
 func IntToBytes(value int, b []byte) []byte {
 	return append(b, byte(value>>24), byte(value>>16), byte(value>>8), byte(value))
 }

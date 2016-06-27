@@ -1,6 +1,8 @@
 package assert
 
 import (
+	"reflect"
+
 	"github.com/v2ray/v2ray-core/common/serial"
 )
 
@@ -26,13 +28,29 @@ func (subject *PointerSubject) Equals(expectation interface{}) {
 }
 
 func (subject *PointerSubject) IsNil() {
-	if subject.value != nil {
+	if subject.value == nil {
+		return
+	}
+
+	valueType := reflect.TypeOf(subject.value)
+	nilType := reflect.Zero(valueType)
+	realValue := reflect.ValueOf(subject.value)
+
+	if nilType != realValue {
 		subject.Fail("is", "nil")
 	}
 }
 
 func (subject *PointerSubject) IsNotNil() {
 	if subject.value == nil {
+		subject.Fail("is not", "nil")
+	}
+
+	valueType := reflect.TypeOf(subject.value)
+	nilType := reflect.Zero(valueType)
+	realValue := reflect.ValueOf(subject.value)
+
+	if nilType == realValue {
 		subject.Fail("is not", "nil")
 	}
 }
