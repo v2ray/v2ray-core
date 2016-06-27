@@ -33,9 +33,6 @@ func (this *ReceivingWindow) Set(idx uint32, value *Segment) bool {
 
 func (this *ReceivingWindow) Remove(idx uint32) *Segment {
 	pos := this.Position(idx)
-	if this.list[pos] == nil {
-		return nil
-	}
 	e := this.list[pos]
 	this.list[pos] = nil
 	return e

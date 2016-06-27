@@ -19,6 +19,10 @@ func TestRecivingWindow(t *testing.T) {
 
 	assert.Bool(window.Set(0, seg0)).IsTrue()
 	assert.Pointer(window.RemoveFirst()).Equals(seg0)
+	e := window.RemoveFirst()
+	if e != nil {
+		assert.Fail("Expecting nil.")
+	}
 
 	assert.Bool(window.Set(1, seg1)).IsTrue()
 	assert.Bool(window.Set(2, seg2)).IsTrue()
