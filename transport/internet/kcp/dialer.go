@@ -1,17 +1,12 @@
 package kcp
 
 import (
-	"errors"
 	"math/rand"
 	"net"
 
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/transport/internet"
-)
-
-var (
-	ErrUnknownDestination = errors.New("Destination IP can't be resolved.")
 )
 
 func DialKCP(src v2net.Address, dest v2net.Destination) (internet.Connection, error) {
