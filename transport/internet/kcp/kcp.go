@@ -550,7 +550,7 @@ func (kcp *KCP) flush() {
 
 	// calculate window size
 
-	cwnd := _imin_(kcp.snd_nxt+kcp.snd_wnd, kcp.rmt_wnd)
+	cwnd := _imin_(kcp.snd_una+kcp.snd_wnd, kcp.rmt_wnd)
 	if kcp.congestionControl {
 		cwnd = _imin_(kcp.cwnd, cwnd)
 	}
