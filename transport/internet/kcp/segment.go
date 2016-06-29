@@ -116,7 +116,7 @@ func (this *CmdOnlySegment) Bytes(b []byte) []byte {
 func (this *CmdOnlySegment) Release() {}
 
 func ReadSegment(buf []byte) (ISegment, []byte) {
-	if len(buf) <= 6 {
+	if len(buf) <= 4 {
 		return nil, nil
 	}
 
@@ -132,6 +132,9 @@ func ReadSegment(buf []byte) (ISegment, []byte) {
 			Conv: conv,
 			Opt:  opt,
 		}
+		if len(buf) < 16 {
+			return nil, nil
+		}
 		seg.Timestamp = serial.BytesToUint32(buf)
 		buf = buf[4:]
 
@@ -141,11 +144,14 @@ func ReadSegment(buf []byte) (ISegment, []byte) {
 		seg.SendingNext = serial.BytesToUint32(buf)
 		buf = buf[4:]
 
-		len := serial.BytesToUint16(buf)
+		dataLen := int(serial.BytesToUint16(buf))
 		buf = buf[2:]
 
-		seg.Data = alloc.NewSmallBuffer().Clear().Append(buf[:len])
-		buf = buf[len:]
+		if len(buf) < dataLen {
+			return nil, nil
+		}
+		seg.Data = alloc.NewSmallBuffer().Clear().Append(buf[:dataLen])
+		buf = buf[dataLen:]
 
 		return seg, buf
 	}
@@ -155,6 +161,10 @@ func ReadSegment(buf []byte) (ISegment, []byte) {
 			Conv: conv,
 			Opt:  opt,
 		}
+		if len(buf) < 9 {
+			return nil, nil
+		}
+
 		seg.ReceivingWindow = serial.BytesToUint32(buf)
 		buf = buf[4:]
 
@@ -167,6 +177,9 @@ func ReadSegment(buf []byte) (ISegment, []byte) {
 		seg.NumberList = make([]uint32, 0, seg.Count)
 		seg.TimestampList = make([]uint32, 0, seg.Count)
 
+		if len(buf) < int(seg.Count)*8 {
+			return nil, nil
+		}
 		for i := 0; i < int(seg.Count); i++ {
 			seg.NumberList = append(seg.NumberList, serial.BytesToUint32(buf))
 			seg.TimestampList = append(seg.TimestampList, serial.BytesToUint32(buf[4:]))
@@ -180,6 +193,10 @@ func ReadSegment(buf []byte) (ISegment, []byte) {
 		Conv: conv,
 		Cmd:  cmd,
 		Opt:  opt,
+	}
+
+	if len(buf) < 8 {
+		return nil, nil
 	}
 
 	seg.SendingNext = serial.BytesToUint32(buf)
