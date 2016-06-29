@@ -114,6 +114,7 @@ func NewKCP(conv uint16, mtu uint32, sendingWindowSize uint32, receivingWindowSi
 	kcp.rcv_buf = NewReceivingWindow(receivingWindowSize)
 	kcp.snd_queue = NewSendingQueue(sendingQueueSize)
 	kcp.acklist = new(ACKList)
+	kcp.cwnd = kcp.snd_wnd
 	return kcp
 }
 
@@ -404,13 +405,7 @@ func (kcp *KCP) flush() {
 	}
 
 	current := kcp.current
-	//lost := false
-
-	//var seg Segment
-	//seg.conv = kcp.conv
-	//seg.cmd = IKCP_CMD_ACK
-	//seg.wnd = uint32(kcp.rcv_nxt + kcp.rcv_wnd)
-	//seg.una = kcp.rcv_nxt
+	lost := false
 
 	// flush acknowledges
 	ackSeg := kcp.acklist.AsSegment()
@@ -457,12 +452,13 @@ func (kcp *KCP) flush() {
 			segment.transmit++
 			kcp.xmit++
 			segment.timeout = current + kcp.rx_rto
-			//lost = true
+			lost = true
 		} else if segment.ackSkipped >= resent {
 			needsend = true
 			segment.transmit++
 			segment.ackSkipped = 0
 			segment.timeout = current + kcp.rx_rto
+			lost = true
 		}
 
 		if needsend {
@@ -501,34 +497,19 @@ func (kcp *KCP) flush() {
 	// flash remain segments
 	kcp.output.Flush()
 
-	// update ssthresh
-	// rate halving, https://tools.ietf.org/html/rfc6937
-	/*
-		if change != 0 {
-			inflight := kcp.snd_nxt - kcp.snd_una
-			kcp.ssthresh = inflight / 2
-			if kcp.ssthresh < IKCP_THRESH_MIN {
-				kcp.ssthresh = IKCP_THRESH_MIN
-			}
-			kcp.cwnd = kcp.ssthresh + resent
-			kcp.incr = kcp.cwnd * kcp.mss
-		}*/
-
-	// congestion control, https://tools.ietf.org/html/rfc5681
-	/*
+	if kcp.congestionControl {
 		if lost {
-			kcp.ssthresh = cwnd / 2
-			if kcp.ssthresh < IKCP_THRESH_MIN {
-				kcp.ssthresh = IKCP_THRESH_MIN
-			}
-			kcp.cwnd = 1
-			kcp.incr = kcp.mss
+			kcp.cwnd = 3 * kcp.cwnd / 4
+		} else {
+			kcp.cwnd += kcp.cwnd / 4
 		}
-
-		if kcp.cwnd < 1 {
-			kcp.cwnd = 1
-			kcp.incr = kcp.mss
-		}*/
+		if kcp.cwnd < 4 {
+			kcp.cwnd = 4
+		}
+		if kcp.cwnd > kcp.snd_wnd {
+			kcp.cwnd = kcp.snd_wnd
+		}
+	}
 }
 
 // Update updates state (call it repeatedly, every 10ms-100ms), or you can ask
