@@ -67,6 +67,7 @@ type KCP struct {
 	state            State
 	stateBeginTime   uint32
 	lastIncomingTime uint32
+	lastPayloadTime  uint32
 	sendingUpdated   bool
 	receivingUpdated bool
 	lastPingTime     uint32
@@ -325,6 +326,7 @@ func (kcp *KCP) Input(data []byte) int {
 			kcp.shrink_buf()
 			kcp.acklist.Add(seg.Number, seg.Timestamp)
 			kcp.parse_data(seg)
+			kcp.lastPayloadTime = kcp.current
 		case *ACKSegment:
 			kcp.HandleOption(seg.Opt)
 			if kcp.rmt_wnd < seg.ReceivingWindow {
@@ -346,6 +348,7 @@ func (kcp *KCP) Input(data []byte) int {
 				}
 			}
 			kcp.shrink_buf()
+			kcp.lastPayloadTime = kcp.current
 		case *CmdOnlySegment:
 			kcp.HandleOption(seg.Opt)
 			if seg.Cmd == SegmentCommandTerminated {
@@ -377,7 +380,7 @@ func (kcp *KCP) flush() {
 	if kcp.state == StateTerminated {
 		return
 	}
-	if kcp.state == StateActive && _itimediff(kcp.current, kcp.lastIncomingTime) >= 30000 {
+	if kcp.state == StateActive && _itimediff(kcp.current, kcp.lastPayloadTime) >= 30000 {
 		kcp.OnClose()
 	}
 
