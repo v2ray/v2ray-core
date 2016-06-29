@@ -377,6 +377,10 @@ func (kcp *KCP) flush() {
 	if kcp.state == StateTerminated {
 		return
 	}
+	if kcp.state == StateActive && _itimediff(kcp.current, kcp.lastIncomingTime) >= 30000 {
+		kcp.OnClose()
+	}
+
 	if kcp.state == StateTerminating {
 		kcp.output.Write(&CmdOnlySegment{
 			Conv: kcp.conv,
