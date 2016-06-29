@@ -183,6 +183,7 @@ func (kcp *KCP) DumpReceivingBuf() {
 		kcp.rcv_queue = append(kcp.rcv_queue, seg)
 		kcp.rcv_buf.Advance()
 		kcp.rcv_nxt++
+		kcp.receivingUpdated = true
 	}
 }
 
@@ -288,8 +289,9 @@ func (kcp *KCP) HandleReceivingNext(receivingNext uint32) {
 }
 
 func (kcp *KCP) HandleSendingNext(sendingNext uint32) {
-	kcp.acklist.Clear(sendingNext)
-	kcp.receivingUpdated = true
+	if kcp.acklist.Clear(sendingNext) {
+		kcp.receivingUpdated = true
+	}
 }
 
 func (kcp *KCP) parse_data(newseg *DataSegment) {
@@ -325,6 +327,7 @@ func (kcp *KCP) Input(data []byte) int {
 			kcp.HandleOption(seg.Opt)
 			kcp.HandleSendingNext(seg.SendingNext)
 			kcp.acklist.Add(seg.Number, seg.Timestamp)
+			kcp.receivingUpdated = true
 			kcp.parse_data(seg)
 			kcp.lastPayloadTime = kcp.current
 		case *ACKSegment:
@@ -407,6 +410,7 @@ func (kcp *KCP) flush() {
 	lost := false
 
 	// flush acknowledges
+	//if kcp.receivingUpdated {
 	ackSeg := kcp.acklist.AsSegment()
 	if ackSeg != nil {
 		ackSeg.Conv = kcp.conv
@@ -415,6 +419,7 @@ func (kcp *KCP) flush() {
 		kcp.output.Write(ackSeg)
 		kcp.receivingUpdated = false
 	}
+	//}
 
 	// calculate window size
 	cwnd := _imin_(kcp.snd_una+kcp.snd_wnd, kcp.rmt_wnd)

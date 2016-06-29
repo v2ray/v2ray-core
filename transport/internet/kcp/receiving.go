@@ -59,7 +59,7 @@ func (this *ACKList) Add(number uint32, timestamp uint32) {
 	this.numbers = append(this.numbers, number)
 }
 
-func (this *ACKList) Clear(una uint32) {
+func (this *ACKList) Clear(una uint32) bool {
 	count := 0
 	for i := 0; i < len(this.numbers); i++ {
 		if this.numbers[i] >= una {
@@ -70,8 +70,12 @@ func (this *ACKList) Clear(una uint32) {
 			count++
 		}
 	}
-	this.numbers = this.numbers[:count]
-	this.timestamps = this.timestamps[:count]
+	if count < len(this.numbers) {
+		this.numbers = this.numbers[:count]
+		this.timestamps = this.timestamps[:count]
+		return true
+	}
+	return false
 }
 
 func (this *ACKList) AsSegment() *ACKSegment {
