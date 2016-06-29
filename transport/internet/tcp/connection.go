@@ -26,6 +26,10 @@ func (this *RawConnection) Reusable() bool {
 
 func (this *RawConnection) SetReusable(b bool) {}
 
+func (this *RawConnection) SysFd() (int, error) {
+	return getSysFd(&this.TCPConn)
+}
+
 type Connection struct {
 	dest     string
 	conn     net.Conn
@@ -102,7 +106,11 @@ func (this *Connection) Reusable() bool {
 }
 
 func (this *Connection) SysFd() (int, error) {
-	cv := reflect.ValueOf(this.conn)
+	return getSysFd(this.conn)
+}
+
+func getSysFd(conn net.Conn) (int, error) {
+	cv := reflect.ValueOf(conn)
 	switch ce := cv.Elem(); ce.Kind() {
 	case reflect.Struct:
 		netfd := ce.FieldByName("conn").FieldByName("fd")

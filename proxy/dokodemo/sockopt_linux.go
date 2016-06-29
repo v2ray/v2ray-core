@@ -14,7 +14,11 @@ import (
 const SO_ORIGINAL_DST = 80
 
 func GetOriginalDestination(conn internet.Connection) v2net.Destination {
-	tcpConn := conn.(*tcp.Connection)
+	tcpConn, ok := conn.(internet.SysFd)
+	if !ok {
+		log.Info("Dokodemo: Failed to get sys fd.")
+		return nil
+	}
 	fd, err := tcpConn.SysFd()
 	if err != nil {
 		log.Info("Dokodemo: Failed to get original destination: ", err)

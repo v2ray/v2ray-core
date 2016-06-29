@@ -31,3 +31,7 @@ type Connection interface {
 	net.Conn
 	Reusable
 }
+
+type SysFd interface {
+	SysFd() (int, error)
+}
