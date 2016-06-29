@@ -1,9 +1,9 @@
 package protocol
 
 import (
-	"math/rand"
 	"time"
 
+	"github.com/v2ray/v2ray-core/common/dice"
 	"github.com/v2ray/v2ray-core/common/serial"
 )
 
@@ -21,7 +21,7 @@ func NowTime() Timestamp {
 
 func NewTimestampGenerator(base Timestamp, delta int) TimestampGenerator {
 	return func() Timestamp {
-		rangeInDelta := rand.Intn(delta*2) - delta
+		rangeInDelta := dice.Roll(delta*2) - delta
 		return base + Timestamp(rangeInDelta)
 	}
 }

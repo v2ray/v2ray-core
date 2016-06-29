@@ -1,13 +1,13 @@
 package dns
 
 import (
-	"math/rand"
 	"net"
 	"sync"
 	"time"
 
 	"github.com/v2ray/v2ray-core/app/dispatcher"
 	"github.com/v2ray/v2ray-core/common/alloc"
+	"github.com/v2ray/v2ray-core/common/dice"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/transport/internet/udp"
@@ -84,7 +84,7 @@ func (this *UDPNameServer) AssignUnusedID(response chan<- *ARecord) uint16 {
 	}
 
 	for {
-		id = uint16(rand.Intn(65536))
+		id = uint16(dice.Roll(65536))
 		if _, found := this.requests[id]; found {
 			continue
 		}

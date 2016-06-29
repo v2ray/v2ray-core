@@ -1,9 +1,9 @@
 package kcp
 
 import (
-	"math/rand"
 	"net"
 
+	"github.com/v2ray/v2ray-core/common/dice"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/transport/internet"
@@ -18,7 +18,7 @@ func DialKCP(src v2net.Address, dest v2net.Destination) (internet.Connection, er
 	}
 
 	cpip := NewSimpleAuthenticator()
-	session := NewConnection(uint16(rand.Uint32()), conn, conn.LocalAddr().(*net.UDPAddr), conn.RemoteAddr().(*net.UDPAddr), cpip)
+	session := NewConnection(uint16(dice.Roll(65536)), conn, conn.LocalAddr().(*net.UDPAddr), conn.RemoteAddr().(*net.UDPAddr), cpip)
 	session.FetchInputFrom(conn)
 
 	return session, nil
