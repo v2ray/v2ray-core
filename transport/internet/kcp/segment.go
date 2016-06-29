@@ -28,6 +28,10 @@ type ISegment interface {
 	Bytes([]byte) []byte
 }
 
+const (
+	DataSegmentOverhead = 18
+)
+
 type DataSegment struct {
 	Conv        uint16
 	Opt         SegmentOption
