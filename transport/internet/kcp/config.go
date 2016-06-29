@@ -14,11 +14,19 @@ func (this *Config) Apply() {
 }
 
 func (this *Config) GetSendingWindowSize() uint32 {
-	return this.UplinkCapacity * 1024 * 1024 / this.Mtu / (1000 / this.Tti)
+	size := this.UplinkCapacity * 1024 * 1024 / this.Mtu / (1000 / this.Tti) / 2
+	if size == 0 {
+		size = 8
+	}
+	return size
 }
 
 func (this *Config) GetReceivingWindowSize() uint32 {
-	return this.DownlinkCapacity * 1024 * 1024 / this.Mtu / (1000 / this.Tti)
+	size := this.DownlinkCapacity * 1024 * 1024 / this.Mtu / (1000 / this.Tti) / 2
+	if size == 0 {
+		size = 8
+	}
+	return size
 }
 
 func DefaultConfig() Config {
