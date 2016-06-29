@@ -1,7 +1,6 @@
 package kcp
 
 import (
-	"encoding/binary"
 	"net"
 	"sync"
 	"time"
@@ -9,6 +8,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/transport/internet"
 	"github.com/v2ray/v2ray-core/transport/internet/udp"
 )
@@ -62,7 +62,7 @@ func (this *Listener) OnReceive(payload *alloc.Buffer, src v2net.Destination) {
 	srcAddrStr := src.NetAddr()
 	conn, found := this.sessions[srcAddrStr]
 	if !found {
-		conv := binary.LittleEndian.Uint32(payload.Value[2:6])
+		conv := serial.BytesToUint16(payload.Value)
 		writer := &Writer{
 			hub:      this.hub,
 			dest:     src,

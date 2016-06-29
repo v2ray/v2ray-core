@@ -4,14 +4,14 @@ type SendingQueue struct {
 	start uint32
 	cap   uint32
 	len   uint32
-	list  []*Segment
+	list  []*DataSegment
 }
 
 func NewSendingQueue(size uint32) *SendingQueue {
 	return &SendingQueue{
 		start: 0,
 		cap:   size,
-		list:  make([]*Segment, size),
+		list:  make([]*DataSegment, size),
 		len:   0,
 	}
 }
@@ -24,7 +24,7 @@ func (this *SendingQueue) IsEmpty() bool {
 	return this.len == 0
 }
 
-func (this *SendingQueue) Pop() *Segment {
+func (this *SendingQueue) Pop() *DataSegment {
 	if this.IsEmpty() {
 		return nil
 	}
@@ -38,7 +38,7 @@ func (this *SendingQueue) Pop() *Segment {
 	return seg
 }
 
-func (this *SendingQueue) Push(seg *Segment) {
+func (this *SendingQueue) Push(seg *DataSegment) {
 	if this.IsFull() {
 		return
 	}

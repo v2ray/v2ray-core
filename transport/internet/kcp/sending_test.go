@@ -12,10 +12,10 @@ func TestSendingQueue(t *testing.T) {
 
 	queue := NewSendingQueue(3)
 
-	seg0 := &Segment{}
-	seg1 := &Segment{}
-	seg2 := &Segment{}
-	seg3 := &Segment{}
+	seg0 := &DataSegment{}
+	seg1 := &DataSegment{}
+	seg2 := &DataSegment{}
+	seg3 := &DataSegment{}
 
 	assert.Bool(queue.IsEmpty()).IsTrue()
 	assert.Bool(queue.IsFull()).IsFalse()
@@ -44,10 +44,10 @@ func TestSendingQueueClear(t *testing.T) {
 
 	queue := NewSendingQueue(3)
 
-	seg0 := &Segment{}
-	seg1 := &Segment{}
-	seg2 := &Segment{}
-	seg3 := &Segment{}
+	seg0 := &DataSegment{}
+	seg1 := &DataSegment{}
+	seg2 := &DataSegment{}
+	seg3 := &DataSegment{}
 
 	queue.Push(seg0)
 	assert.Bool(queue.IsEmpty()).IsFalse()

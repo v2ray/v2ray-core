@@ -23,19 +23,6 @@ const (
 	headerSize uint32 = 2
 )
 
-type Command byte
-
-var (
-	CommandData      Command = 0
-	CommandTerminate Command = 1
-)
-
-type Option byte
-
-var (
-	OptionClose Option = 1
-)
-
 type ConnState byte
 
 var (
@@ -69,7 +56,7 @@ type Connection struct {
 }
 
 // NewConnection create a new KCP connection between local and remote.
-func NewConnection(conv uint32, writerCloser io.WriteCloser, local *net.UDPAddr, remote *net.UDPAddr, block Authenticator) *Connection {
+func NewConnection(conv uint16, writerCloser io.WriteCloser, local *net.UDPAddr, remote *net.UDPAddr, block Authenticator) *Connection {
 	conn := new(Connection)
 	conn.local = local
 	conn.chReadEvent = make(chan struct{}, 1)
@@ -79,8 +66,12 @@ func NewConnection(conv uint32, writerCloser io.WriteCloser, local *net.UDPAddr,
 	conn.since = nowMillisec()
 	conn.writeBufferSize = effectiveConfig.WriteBuffer / effectiveConfig.Mtu
 
+	authWriter := &AuthenticationWriter{
+		Authenticator: block,
+		Writer:        writerCloser,
+	}
 	mtu := effectiveConfig.Mtu - uint32(block.HeaderSize()) - headerSize
-	conn.kcp = NewKCP(conv, mtu, effectiveConfig.GetSendingWindowSize(), effectiveConfig.GetReceivingWindowSize(), conn.writeBufferSize, conn.output)
+	conn.kcp = NewKCP(conv, mtu, effectiveConfig.GetSendingWindowSize(), effectiveConfig.GetReceivingWindowSize(), conn.writeBufferSize, authWriter)
 	conn.kcp.NoDelay(effectiveConfig.Tti, 2, effectiveConfig.Congestion)
 	conn.kcp.current = conn.Elapsed()
 
@@ -95,13 +86,19 @@ func (this *Connection) Elapsed() uint32 {
 
 // Read implements the Conn Read method.
 func (this *Connection) Read(b []byte) (int, error) {
-	if this == nil || this.state == ConnStateReadyToClose || this.state == ConnStateClosed {
+	if this == nil ||
+		this.kcp.state == StateReadyToClose ||
+		this.kcp.state == StateTerminating ||
+		this.kcp.state == StateTerminated {
 		return 0, io.EOF
 	}
 
 	for {
 		this.RLock()
-		if this.state == ConnStateReadyToClose || this.state == ConnStateClosed {
+		if this == nil ||
+			this.kcp.state == StateReadyToClose ||
+			this.kcp.state == StateTerminating ||
+			this.kcp.state == StateTerminated {
 			this.RUnlock()
 			return 0, io.EOF
 		}
@@ -127,19 +124,14 @@ func (this *Connection) Read(b []byte) (int, error) {
 
 // Write implements the Conn Write method.
 func (this *Connection) Write(b []byte) (int, error) {
-	if this == nil ||
-		this.state == ConnStateReadyToClose ||
-		this.state == ConnStatePeerClosed ||
-		this.state == ConnStateClosed {
+	if this == nil || this.kcp.state != StateActive {
 		return 0, io.ErrClosedPipe
 	}
 	totalWritten := 0
 
 	for {
 		this.RLock()
-		if this.state == ConnStateReadyToClose ||
-			this.state == ConnStatePeerClosed ||
-			this.state == ConnStateClosed {
+		if this == nil || this.kcp.state != StateActive {
 			this.RUnlock()
 			return totalWritten, io.ErrClosedPipe
 		}
@@ -166,72 +158,21 @@ func (this *Connection) Write(b []byte) (int, error) {
 	}
 }
 
-func (this *Connection) Terminate() {
-	if this == nil || this.state == ConnStateClosed {
-		return
-	}
-	this.Lock()
-	defer this.Unlock()
-	if this.state == ConnStateClosed {
-		return
-	}
-
-	this.state = ConnStateClosed
-	this.writer.Close()
-}
-
-func (this *Connection) NotifyTermination() {
-	for i := 0; i < 16; i++ {
-		this.RLock()
-		if this.state == ConnStateClosed {
-			this.RUnlock()
-			break
-		}
-		this.RUnlock()
-		buffer := alloc.NewSmallBuffer().Clear()
-		buffer.AppendBytes(byte(CommandTerminate), byte(OptionClose), byte(0), byte(0), byte(0), byte(0))
-		this.outputBuffer(buffer)
-
-		time.Sleep(time.Second)
-
-	}
-	this.Terminate()
-}
-
-func (this *Connection) ForceTimeout() {
-	if this == nil {
-		return
-	}
-	for i := 0; i < 5; i++ {
-		if this.state == ConnStateClosed {
-			return
-		}
-		time.Sleep(time.Minute)
-	}
-	go this.terminateOnce.Do(this.NotifyTermination)
-}
-
 // Close closes the connection.
 func (this *Connection) Close() error {
-	if this == nil || this.state == ConnStateClosed || this.state == ConnStateReadyToClose {
+	if this == nil ||
+		this.kcp.state == StateReadyToClose ||
+		this.kcp.state == StateTerminating ||
+		this.kcp.state == StateTerminated {
 		return errClosedConnection
 	}
 	log.Debug("KCP|Connection: Closing connection to ", this.remote)
 	this.Lock()
 	defer this.Unlock()
 
-	if this.state == ConnStateActive {
-		this.state = ConnStateReadyToClose
-		if this.kcp.WaitSnd() == 0 {
-			go this.terminateOnce.Do(this.NotifyTermination)
-		} else {
-			go this.ForceTimeout()
-		}
-	}
-
-	if this.state == ConnStatePeerClosed {
-		go this.Terminate()
-	}
+	this.kcpAccess.Lock()
+	this.kcp.OnClose()
+	this.kcpAccess.Unlock()
 
 	return nil
 }
@@ -254,7 +195,7 @@ func (this *Connection) RemoteAddr() net.Addr {
 
 // SetDeadline sets the deadline associated with the listener. A zero time value disables the deadline.
 func (this *Connection) SetDeadline(t time.Time) error {
-	if this == nil || this.state != ConnStateActive {
+	if this == nil || this.kcp.state != StateActive {
 		return errClosedConnection
 	}
 	this.Lock()
@@ -266,7 +207,7 @@ func (this *Connection) SetDeadline(t time.Time) error {
 
 // SetReadDeadline implements the Conn SetReadDeadline method.
 func (this *Connection) SetReadDeadline(t time.Time) error {
-	if this == nil || this.state != ConnStateActive {
+	if this == nil || this.kcp.state != StateActive {
 		return errClosedConnection
 	}
 	this.Lock()
@@ -277,7 +218,7 @@ func (this *Connection) SetReadDeadline(t time.Time) error {
 
 // SetWriteDeadline implements the Conn SetWriteDeadline method.
 func (this *Connection) SetWriteDeadline(t time.Time) error {
-	if this == nil || this.state != ConnStateActive {
+	if this == nil || this.kcp.state != StateActive {
 		return errClosedConnection
 	}
 	this.Lock()
@@ -286,54 +227,21 @@ func (this *Connection) SetWriteDeadline(t time.Time) error {
 	return nil
 }
 
-func (this *Connection) outputBuffer(payload *alloc.Buffer) {
-	defer payload.Release()
-	if this == nil {
-		return
-	}
-
-	this.RLock()
-	defer this.RUnlock()
-	if this.state == ConnStatePeerClosed || this.state == ConnStateClosed {
-		return
-	}
-	this.block.Seal(payload)
-
-	this.writer.Write(payload.Value)
-}
-
-func (this *Connection) output(payload []byte) {
-	if this == nil || this.state == ConnStateClosed {
-		return
-	}
-
-	if this.state == ConnStateReadyToClose && this.kcp.WaitSnd() == 0 {
-		go this.terminateOnce.Do(this.NotifyTermination)
-	}
-
-	if len(payload) < IKCP_OVERHEAD {
-		return
-	}
-
-	buffer := alloc.NewBuffer().Clear().Append(payload)
-	cmd := CommandData
-	opt := Option(0)
-	if this.state == ConnStateReadyToClose {
-		opt = OptionClose
-	}
-	buffer.Prepend([]byte{byte(cmd), byte(opt)})
-	this.outputBuffer(buffer)
-}
-
 // kcp update, input loop
 func (this *Connection) updateTask() {
-	for this.state != ConnStateClosed {
+	for this.kcp.state != StateTerminated {
 		current := this.Elapsed()
 		this.kcpAccess.Lock()
 		this.kcp.Update(current)
 		this.kcpAccess.Unlock()
-		time.Sleep(time.Duration(effectiveConfig.Tti) * time.Millisecond)
+
+		interval := time.Duration(effectiveConfig.Tti) * time.Millisecond
+		if this.kcp.state == StateTerminating {
+			interval = time.Second
+		}
+		time.Sleep(interval)
 	}
+	this.Terminate()
 }
 
 func (this *Connection) notifyReadEvent() {
@@ -343,35 +251,10 @@ func (this *Connection) notifyReadEvent() {
 	}
 }
 
-func (this *Connection) MarkPeerClose() {
-	this.Lock()
-	defer this.Unlock()
-	if this.state == ConnStateReadyToClose {
-		this.state = ConnStateClosed
-		go this.Terminate()
-		return
-	}
-	if this.state == ConnStateActive {
-		this.state = ConnStatePeerClosed
-	}
-	this.kcpAccess.Lock()
-	this.kcp.ClearSendQueue()
-	this.kcpAccess.Unlock()
-}
-
 func (this *Connection) kcpInput(data []byte) {
-	cmd := Command(data[0])
-	opt := Option(data[1])
-	if cmd == CommandTerminate {
-		go this.Terminate()
-		return
-	}
-	if opt == OptionClose {
-		go this.MarkPeerClose()
-	}
 	this.kcpAccess.Lock()
 	this.kcp.current = this.Elapsed()
-	this.kcp.Input(data[2:])
+	this.kcp.Input(data)
 
 	this.kcpAccess.Unlock()
 	this.notifyReadEvent()
@@ -383,6 +266,7 @@ func (this *Connection) FetchInputFrom(conn net.Conn) {
 			payload := alloc.NewBuffer()
 			nBytes, err := conn.Read(payload.Value)
 			if err != nil {
+				payload.Release()
 				return
 			}
 			payload.Slice(0, nBytes)
@@ -401,3 +285,12 @@ func (this *Connection) Reusable() bool {
 }
 
 func (this *Connection) SetReusable(b bool) {}
+
+func (this *Connection) Terminate() {
+	if this == nil || this.writer == nil {
+		return
+	}
+	log.Info("Terminating connection to ", this.RemoteAddr())
+
+	this.writer.Close()
+}

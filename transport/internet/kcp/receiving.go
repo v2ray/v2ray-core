@@ -3,14 +3,14 @@ package kcp
 type ReceivingWindow struct {
 	start uint32
 	size  uint32
-	list  []*Segment
+	list  []*DataSegment
 }
 
 func NewReceivingWindow(size uint32) *ReceivingWindow {
 	return &ReceivingWindow{
 		start: 0,
 		size:  size,
-		list:  make([]*Segment, size),
+		list:  make([]*DataSegment, size),
 	}
 }
 
@@ -22,7 +22,7 @@ func (this *ReceivingWindow) Position(idx uint32) uint32 {
 	return (idx + this.start) % this.size
 }
 
-func (this *ReceivingWindow) Set(idx uint32, value *Segment) bool {
+func (this *ReceivingWindow) Set(idx uint32, value *DataSegment) bool {
 	pos := this.Position(idx)
 	if this.list[pos] != nil {
 		return false
@@ -31,14 +31,14 @@ func (this *ReceivingWindow) Set(idx uint32, value *Segment) bool {
 	return true
 }
 
-func (this *ReceivingWindow) Remove(idx uint32) *Segment {
+func (this *ReceivingWindow) Remove(idx uint32) *DataSegment {
 	pos := this.Position(idx)
 	e := this.list[pos]
 	this.list[pos] = nil
 	return e
 }
 
-func (this *ReceivingWindow) RemoveFirst() *Segment {
+func (this *ReceivingWindow) RemoveFirst() *DataSegment {
 	return this.Remove(0)
 }
 
@@ -76,12 +76,19 @@ func (this *ACKList) Clear(una uint32) {
 
 func (this *ACKList) AsSegment() *ACKSegment {
 	count := len(this.numbers)
-	if count > 16 {
-		count = 16
+	if count == 0 {
+		return nil
 	}
-	return &ACKSegment{
+
+	if count > 128 {
+		count = 128
+	}
+	seg := &ACKSegment{
 		Count:         byte(count),
 		NumberList:    this.numbers[:count],
 		TimestampList: this.timestamps[:count],
 	}
+	//this.numbers = nil
+	//this.timestamps = nil
+	return seg
 }

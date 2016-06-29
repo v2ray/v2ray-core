@@ -1,6 +1,7 @@
 package kcp
 
 import (
+	"io"
 	"sync"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
@@ -34,7 +35,7 @@ func (this *SegmentWriter) Write(seg ISegment) {
 		this.buffer = alloc.NewSmallBuffer().Clear()
 	}
 
-	this.buffer.Value = seg.Bytes(this.buffer.Value)
+	this.buffer.Append(seg.Bytes(nil))
 }
 
 func (this *SegmentWriter) FlushWithoutLock() {
@@ -52,3 +53,18 @@ func (this *SegmentWriter) Flush() {
 
 	this.FlushWithoutLock()
 }
+
+type AuthenticationWriter struct {
+	Authenticator Authenticator
+	Writer        io.Writer
+}
+
+func (this *AuthenticationWriter) Write(payload *alloc.Buffer) error {
+	defer payload.Release()
+
+	this.Authenticator.Seal(payload)
+	_, err := this.Writer.Write(payload.Value)
+	return err
+}
+
+func (this *AuthenticationWriter) Release() {}

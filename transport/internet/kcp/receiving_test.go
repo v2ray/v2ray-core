@@ -12,10 +12,10 @@ func TestRecivingWindow(t *testing.T) {
 
 	window := NewReceivingWindow(3)
 
-	seg0 := &Segment{}
-	seg1 := &Segment{}
-	seg2 := &Segment{}
-	seg3 := &Segment{}
+	seg0 := &DataSegment{}
+	seg1 := &DataSegment{}
+	seg2 := &DataSegment{}
+	seg3 := &DataSegment{}
 
 	assert.Bool(window.Set(0, seg0)).IsTrue()
 	assert.Pointer(window.RemoveFirst()).Equals(seg0)
