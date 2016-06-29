@@ -324,7 +324,6 @@ func (kcp *KCP) Input(data []byte) int {
 		case *DataSegment:
 			kcp.HandleOption(seg.Opt)
 			kcp.HandleSendingNext(seg.SendingNext)
-			kcp.shrink_buf()
 			kcp.acklist.Add(seg.Number, seg.Timestamp)
 			kcp.parse_data(seg)
 			kcp.lastPayloadTime = kcp.current
@@ -348,7 +347,6 @@ func (kcp *KCP) Input(data []byte) int {
 					maxack = sn
 				}
 			}
-			kcp.shrink_buf()
 			kcp.lastPayloadTime = kcp.current
 		case *CmdOnlySegment:
 			kcp.HandleOption(seg.Opt)
@@ -367,6 +365,7 @@ func (kcp *KCP) Input(data []byte) int {
 			kcp.HandleSendingNext(seg.SendingNext)
 		default:
 		}
+		kcp.shrink_buf()
 	}
 
 	if flag != 0 {
