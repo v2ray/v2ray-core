@@ -46,7 +46,6 @@ type Connection struct {
 	block           Authenticator
 	needUpdate      bool
 	local, remote   net.Addr
-	rd              time.Time // read deadline
 	wd              time.Time // write deadline
 	chReadEvent     chan struct{}
 	writer          io.WriteCloser
@@ -86,40 +85,10 @@ func (this *Connection) Elapsed() uint32 {
 
 // Read implements the Conn Read method.
 func (this *Connection) Read(b []byte) (int, error) {
-	if this == nil ||
-		this.kcp.state == StateReadyToClose ||
-		this.kcp.state == StateTerminating ||
-		this.kcp.state == StateTerminated {
+	if this == nil || this.kcp.state == StateTerminating || this.kcp.state == StateTerminated {
 		return 0, io.EOF
 	}
-
-	for {
-		this.RLock()
-		if this == nil ||
-			this.kcp.state == StateReadyToClose ||
-			this.kcp.state == StateTerminating ||
-			this.kcp.state == StateTerminated {
-			this.RUnlock()
-			return 0, io.EOF
-		}
-
-		if !this.rd.IsZero() && this.rd.Before(time.Now()) {
-			this.RUnlock()
-			return 0, errTimeout
-		}
-		this.RUnlock()
-
-		this.kcpAccess.Lock()
-		nBytes := this.kcp.Recv(b)
-		this.kcpAccess.Unlock()
-		if nBytes > 0 {
-			return nBytes, nil
-		}
-		select {
-		case <-this.chReadEvent:
-		case <-time.After(time.Second):
-		}
-	}
+	return this.kcp.rcv_queue.Read(b)
 }
 
 // Write implements the Conn Write method.
@@ -195,13 +164,12 @@ func (this *Connection) RemoteAddr() net.Addr {
 
 // SetDeadline sets the deadline associated with the listener. A zero time value disables the deadline.
 func (this *Connection) SetDeadline(t time.Time) error {
-	if this == nil || this.kcp.state != StateActive {
-		return errClosedConnection
+	if err := this.SetReadDeadline(t); err != nil {
+		return err
 	}
-	this.Lock()
-	defer this.Unlock()
-	this.rd = t
-	this.wd = t
+	if err := this.SetWriteDeadline(t); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -210,9 +178,9 @@ func (this *Connection) SetReadDeadline(t time.Time) error {
 	if this == nil || this.kcp.state != StateActive {
 		return errClosedConnection
 	}
-	this.Lock()
-	defer this.Unlock()
-	this.rd = t
+	this.kcpAccess.Lock()
+	defer this.kcpAccess.Unlock()
+	this.kcp.rcv_queue.SetReadDeadline(t)
 	return nil
 }
 

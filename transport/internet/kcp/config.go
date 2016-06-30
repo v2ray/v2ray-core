@@ -7,6 +7,7 @@ type Config struct {
 	DownlinkCapacity uint32
 	Congestion       bool
 	WriteBuffer      uint32
+	ReadBuffer       uint32
 }
 
 func (this *Config) Apply() {
@@ -37,6 +38,7 @@ func DefaultConfig() Config {
 		DownlinkCapacity: 20,
 		Congestion:       false,
 		WriteBuffer:      8 * 1024 * 1024,
+		ReadBuffer:       8 * 1024 * 1024,
 	}
 }
 

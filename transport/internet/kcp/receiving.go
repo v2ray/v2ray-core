@@ -1,5 +1,13 @@
 package kcp
 
+import (
+	"io"
+	"sync"
+	"time"
+
+	"github.com/v2ray/v2ray-core/common/alloc"
+)
+
 type ReceivingWindow struct {
 	start uint32
 	size  uint32
@@ -47,6 +55,89 @@ func (this *ReceivingWindow) Advance() {
 	if this.start == this.size {
 		this.start = 0
 	}
+}
+
+type ReceivingQueue struct {
+	sync.RWMutex
+	closed  bool
+	cache   *alloc.Buffer
+	queue   chan *alloc.Buffer
+	timeout time.Time
+}
+
+func NewReceivingQueue() *ReceivingQueue {
+	return &ReceivingQueue{
+		queue: make(chan *alloc.Buffer, effectiveConfig.ReadBuffer/effectiveConfig.Mtu),
+	}
+}
+
+func (this *ReceivingQueue) Read(buf []byte) (int, error) {
+	if this.cache.Len() > 0 {
+		nBytes, err := this.cache.Read(buf)
+		if this.cache.IsEmpty() {
+			this.cache.Release()
+			this.cache = nil
+		}
+		return nBytes, err
+	}
+
+	var totalBytes int
+
+L:
+	for totalBytes < len(buf) {
+		timeToSleep := time.Millisecond
+		select {
+		case payload, open := <-this.queue:
+			if !open {
+				return totalBytes, io.EOF
+			}
+			nBytes, err := payload.Read(buf)
+			totalBytes += nBytes
+			if err != nil {
+				return totalBytes, err
+			}
+			if !payload.IsEmpty() {
+				this.cache = payload
+			}
+			buf = buf[nBytes:]
+		case <-time.After(timeToSleep):
+			if totalBytes > 0 {
+				break L
+			}
+			this.RLock()
+			if !this.timeout.IsZero() && this.timeout.Before(time.Now()) {
+				this.RUnlock()
+				return totalBytes, errTimeout
+			}
+			this.RUnlock()
+			timeToSleep += 500 * time.Millisecond
+		}
+	}
+
+	return totalBytes, nil
+}
+
+func (this *ReceivingQueue) Put(payload *alloc.Buffer) {
+	this.queue <- payload
+}
+
+func (this *ReceivingQueue) SetReadDeadline(t time.Time) error {
+	this.Lock()
+	defer this.Unlock()
+
+	this.timeout = t
+	return nil
+}
+
+func (this *ReceivingQueue) Close() {
+	this.Lock()
+	defer this.Unlock()
+
+	if this.closed {
+		return
+	}
+	this.closed = true
+	close(this.queue)
 }
 
 type ACKList struct {

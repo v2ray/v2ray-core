@@ -12,17 +12,13 @@ import (
 )
 
 const (
-	IKCP_RTO_NDL     = 30  // no delay min rto
-	IKCP_RTO_MIN     = 100 // normal min rto
-	IKCP_RTO_DEF     = 200
-	IKCP_RTO_MAX     = 60000
-	IKCP_WND_SND     = 32
-	IKCP_WND_RCV     = 32
-	IKCP_MTU_DEF     = 1350
-	IKCP_ACK_FAST    = 3
-	IKCP_INTERVAL    = 100
-	IKCP_THRESH_INIT = 2
-	IKCP_THRESH_MIN  = 2
+	IKCP_RTO_NDL  = 30  // no delay min rto
+	IKCP_RTO_MIN  = 100 // normal min rto
+	IKCP_RTO_DEF  = 200
+	IKCP_RTO_MAX  = 60000
+	IKCP_WND_SND  = 32
+	IKCP_WND_RCV  = 32
+	IKCP_INTERVAL = 100
 )
 
 func _itimediff(later, earlier uint32) int32 {
@@ -50,15 +46,14 @@ type KCP struct {
 	receivingUpdated bool
 	lastPingTime     uint32
 
-	mtu, mss                          uint32
-	snd_una, snd_nxt, rcv_nxt         uint32
-	rx_rttvar, rx_srtt, rx_rto        uint32
-	snd_wnd, rcv_wnd, rmt_wnd, cwnd   uint32
-	current, interval, ts_flush, xmit uint32
-	updated                           bool
+	mtu, mss                        uint32
+	snd_una, snd_nxt, rcv_nxt       uint32
+	rx_rttvar, rx_srtt, rx_rto      uint32
+	snd_wnd, rcv_wnd, rmt_wnd, cwnd uint32
+	current, interval               uint32
 
 	snd_queue *SendingQueue
-	rcv_queue []*DataSegment
+	rcv_queue *ReceivingQueue
 	snd_buf   []*DataSegment
 	rcv_buf   *ReceivingWindow
 
@@ -82,13 +77,29 @@ func NewKCP(conv uint16, mtu uint32, sendingWindowSize uint32, receivingWindowSi
 	kcp.mss = kcp.mtu - DataSegmentOverhead
 	kcp.rx_rto = IKCP_RTO_DEF
 	kcp.interval = IKCP_INTERVAL
-	kcp.ts_flush = IKCP_INTERVAL
 	kcp.output = NewSegmentWriter(mtu, output)
 	kcp.rcv_buf = NewReceivingWindow(receivingWindowSize)
 	kcp.snd_queue = NewSendingQueue(sendingQueueSize)
+	kcp.rcv_queue = NewReceivingQueue()
 	kcp.acklist = new(ACKList)
 	kcp.cwnd = kcp.snd_wnd
 	return kcp
+}
+
+func (kcp *KCP) SetState(state State) {
+	kcp.state = state
+	kcp.stateBeginTime = kcp.current
+
+	switch state {
+	case StateReadyToClose:
+		kcp.rcv_queue.Close()
+	case StatePeerClosed:
+		kcp.ClearSendQueue()
+	case StateTerminating:
+		kcp.rcv_queue.Close()
+	case StateTerminated:
+		kcp.rcv_queue.Close()
+	}
 }
 
 func (kcp *KCP) HandleOption(opt SegmentOption) {
@@ -99,50 +110,20 @@ func (kcp *KCP) HandleOption(opt SegmentOption) {
 
 func (kcp *KCP) OnPeerClosed() {
 	if kcp.state == StateReadyToClose {
-		kcp.state = StateTerminating
-		kcp.stateBeginTime = kcp.current
+		kcp.SetState(StateTerminating)
 	}
 	if kcp.state == StateActive {
-		kcp.ClearSendQueue()
-		kcp.state = StatePeerClosed
-		kcp.stateBeginTime = kcp.current
+		kcp.SetState(StatePeerClosed)
 	}
 }
 
 func (kcp *KCP) OnClose() {
 	if kcp.state == StateActive {
-		kcp.state = StateReadyToClose
-		kcp.stateBeginTime = kcp.current
+		kcp.SetState(StateReadyToClose)
 	}
 	if kcp.state == StatePeerClosed {
-		kcp.state = StateTerminating
-		kcp.stateBeginTime = kcp.current
+		kcp.SetState(StateTerminating)
 	}
-}
-
-// Recv is user/upper level recv: returns size, returns below zero for EAGAIN
-func (kcp *KCP) Recv(buffer []byte) (n int) {
-	if len(kcp.rcv_queue) == 0 {
-		return -1
-	}
-
-	// merge fragment
-	count := 0
-	for _, seg := range kcp.rcv_queue {
-		dataLen := seg.Data.Len()
-		if dataLen > len(buffer) {
-			break
-		}
-		copy(buffer, seg.Data.Value)
-		seg.Release()
-		buffer = buffer[dataLen:]
-		n += dataLen
-		count++
-	}
-	kcp.rcv_queue = kcp.rcv_queue[count:]
-
-	kcp.DumpReceivingBuf()
-	return
 }
 
 // DumpReceivingBuf moves available data from rcv_buf -> rcv_queue
@@ -153,7 +134,9 @@ func (kcp *KCP) DumpReceivingBuf() {
 		if seg == nil {
 			break
 		}
-		kcp.rcv_queue = append(kcp.rcv_queue, seg)
+		kcp.rcv_queue.Put(seg.Data)
+		seg.Data = nil
+
 		kcp.rcv_buf.Advance()
 		kcp.rcv_nxt++
 		kcp.receivingUpdated = true
@@ -335,11 +318,9 @@ func (kcp *KCP) Input(data []byte) int {
 				if kcp.state == StateActive ||
 					kcp.state == StateReadyToClose ||
 					kcp.state == StatePeerClosed {
-					kcp.state = StateTerminating
-					kcp.stateBeginTime = kcp.current
+					kcp.SetState(StateTerminating)
 				} else if kcp.state == StateTerminating {
-					kcp.state = StateTerminated
-					kcp.stateBeginTime = kcp.current
+					kcp.SetState(StateTerminated)
 				}
 			}
 			kcp.HandleReceivingNext(seg.ReceivinNext)
@@ -373,15 +354,13 @@ func (kcp *KCP) flush() {
 		kcp.output.Flush()
 
 		if _itimediff(kcp.current, kcp.stateBeginTime) > 8000 {
-			kcp.state = StateTerminated
-			kcp.stateBeginTime = kcp.current
+			kcp.SetState(StateTerminated)
 		}
 		return
 	}
 
 	if kcp.state == StateReadyToClose && _itimediff(kcp.current, kcp.stateBeginTime) > 15000 {
-		kcp.state = StateTerminating
-		kcp.stateBeginTime = kcp.current
+		kcp.SetState(StateTerminating)
 	}
 
 	current := kcp.current
@@ -435,7 +414,6 @@ func (kcp *KCP) flush() {
 		} else if _itimediff(current, segment.timeout) >= 0 {
 			needsend = true
 			segment.transmit++
-			kcp.xmit++
 			segment.timeout = current + kcp.rx_rto
 			lost = true
 		} else if segment.ackSkipped >= resent {
@@ -497,29 +475,8 @@ func (kcp *KCP) flush() {
 // ikcp_check when to call it again (without ikcp_input/_send calling).
 // 'current' - current timestamp in millisec.
 func (kcp *KCP) Update(current uint32) {
-	var slap int32
-
 	kcp.current = current
-
-	if !kcp.updated {
-		kcp.updated = true
-		kcp.ts_flush = kcp.current
-	}
-
-	slap = _itimediff(kcp.current, kcp.ts_flush)
-
-	if slap >= 10000 || slap < -10000 {
-		kcp.ts_flush = kcp.current
-		slap = 0
-	}
-
-	if slap >= 0 {
-		kcp.ts_flush += kcp.interval
-		if _itimediff(kcp.current, kcp.ts_flush) >= 0 {
-			kcp.ts_flush = kcp.current + kcp.interval
-		}
-		kcp.flush()
-	}
+	kcp.flush()
 }
 
 // NoDelay options
