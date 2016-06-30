@@ -423,8 +423,8 @@ func (kcp *KCP) flush() {
 
 	// calculate window size
 	cwnd := _imin_(kcp.snd_una+kcp.snd_wnd, kcp.rmt_wnd)
-	if kcp.congestionControl {
-		cwnd = _imin_(kcp.cwnd, cwnd)
+	if kcp.congestionControl && cwnd < kcp.snd_una+kcp.cwnd {
+		cwnd = kcp.snd_una + kcp.cwnd
 	}
 
 	for !kcp.snd_queue.IsEmpty() && _itimediff(kcp.snd_nxt, cwnd) < 0 {
