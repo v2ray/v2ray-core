@@ -204,7 +204,7 @@ func (this *ACKList) Flush() bool {
 			seg.Count++
 			seg.NumberList = append(seg.NumberList, this.numbers[i])
 			seg.TimestampList = append(seg.TimestampList, this.timestamps[i])
-			this.nextFlush[i] = current + 50
+			this.nextFlush[i] = current + 100
 			if seg.Count == 128 {
 				break
 			}
