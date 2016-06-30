@@ -16,36 +16,14 @@ const (
 	IKCP_RTO_MIN     = 100 // normal min rto
 	IKCP_RTO_DEF     = 200
 	IKCP_RTO_MAX     = 60000
-	IKCP_CMD_PUSH    = 81 // cmd: push data
-	IKCP_CMD_ACK     = 82 // cmd: ack
 	IKCP_WND_SND     = 32
 	IKCP_WND_RCV     = 32
 	IKCP_MTU_DEF     = 1350
 	IKCP_ACK_FAST    = 3
 	IKCP_INTERVAL    = 100
-	IKCP_OVERHEAD    = 24
-	IKCP_DEADLINK    = 20
 	IKCP_THRESH_INIT = 2
 	IKCP_THRESH_MIN  = 2
-	IKCP_PROBE_INIT  = 7000   // 7 secs to probe window size
-	IKCP_PROBE_LIMIT = 120000 // up to 120 secs to probe window
 )
-
-func _imin_(a, b uint32) uint32 {
-	if a <= b {
-		return a
-	} else {
-		return b
-	}
-}
-
-func _imax_(a, b uint32) uint32 {
-	if a >= b {
-		return a
-	} else {
-		return b
-	}
-}
 
 func _itimediff(later, earlier uint32) int32 {
 	return (int32)(later - earlier)
@@ -72,15 +50,12 @@ type KCP struct {
 	receivingUpdated bool
 	lastPingTime     uint32
 
-	mtu, mss                               uint32
-	snd_una, snd_nxt, rcv_nxt              uint32
-	ts_recent, ts_lastack, ssthresh        uint32
-	rx_rttvar, rx_srtt, rx_rto             uint32
-	snd_wnd, rcv_wnd, rmt_wnd, cwnd, probe uint32
-	current, interval, ts_flush, xmit      uint32
-	updated                                bool
-	ts_probe, probe_wait                   uint32
-	dead_link, incr                        uint32
+	mtu, mss                          uint32
+	snd_una, snd_nxt, rcv_nxt         uint32
+	rx_rttvar, rx_srtt, rx_rto        uint32
+	snd_wnd, rcv_wnd, rmt_wnd, cwnd   uint32
+	current, interval, ts_flush, xmit uint32
+	updated                           bool
 
 	snd_queue *SendingQueue
 	rcv_queue []*DataSegment
@@ -108,8 +83,6 @@ func NewKCP(conv uint16, mtu uint32, sendingWindowSize uint32, receivingWindowSi
 	kcp.rx_rto = IKCP_RTO_DEF
 	kcp.interval = IKCP_INTERVAL
 	kcp.ts_flush = IKCP_INTERVAL
-	kcp.ssthresh = IKCP_THRESH_INIT
-	kcp.dead_link = IKCP_DEADLINK
 	kcp.output = NewSegmentWriter(mtu, output)
 	kcp.rcv_buf = NewReceivingWindow(receivingWindowSize)
 	kcp.snd_queue = NewSendingQueue(sendingQueueSize)
@@ -209,7 +182,6 @@ func (kcp *KCP) Send(buffer []byte) int {
 
 // https://tools.ietf.org/html/rfc6298
 func (kcp *KCP) update_ack(rtt int32) {
-	var rto uint32 = 0
 	if kcp.rx_srtt == 0 {
 		kcp.rx_srtt = uint32(rtt)
 		kcp.rx_rttvar = uint32(rtt) / 2
@@ -224,7 +196,13 @@ func (kcp *KCP) update_ack(rtt int32) {
 			kcp.rx_srtt = kcp.interval
 		}
 	}
-	rto = kcp.rx_srtt + _imax_(kcp.interval, 4*kcp.rx_rttvar)
+	var rto uint32
+	if kcp.interval < 4*kcp.rx_rttvar {
+		rto = kcp.rx_srtt + 4*kcp.rx_rttvar
+	} else {
+		rto = kcp.rx_srtt + kcp.interval
+	}
+
 	if rto > IKCP_RTO_MAX {
 		rto = IKCP_RTO_MAX
 	}
@@ -422,7 +400,10 @@ func (kcp *KCP) flush() {
 	//}
 
 	// calculate window size
-	cwnd := _imin_(kcp.snd_una+kcp.snd_wnd, kcp.rmt_wnd)
+	cwnd := kcp.snd_una + kcp.snd_wnd
+	if cwnd < kcp.rmt_wnd {
+		cwnd = kcp.rmt_wnd
+	}
 	if kcp.congestionControl && cwnd < kcp.snd_una+kcp.cwnd {
 		cwnd = kcp.snd_una + kcp.cwnd
 	}
@@ -475,10 +456,6 @@ func (kcp *KCP) flush() {
 
 			kcp.output.Write(segment)
 			kcp.sendingUpdated = false
-
-			if segment.transmit >= kcp.dead_link {
-				kcp.state = 0xFFFFFFFF
-			}
 		}
 	}
 
