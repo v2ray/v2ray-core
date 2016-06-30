@@ -118,6 +118,14 @@ L:
 }
 
 func (this *ReceivingQueue) Put(payload *alloc.Buffer) {
+	this.RLock()
+	defer this.RUnlock()
+
+	if this.closed {
+		payload.Release()
+		return
+	}
+
 	this.queue <- payload
 }
 
