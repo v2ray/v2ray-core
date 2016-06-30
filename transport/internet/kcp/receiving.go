@@ -149,22 +149,35 @@ func (this *ReceivingQueue) Close() {
 }
 
 type ACKList struct {
+	kcp        *KCP
 	timestamps []uint32
 	numbers    []uint32
+	nextFlush  []uint32
+}
+
+func NewACKList(kcp *KCP) *ACKList {
+	return &ACKList{
+		kcp:        kcp,
+		timestamps: make([]uint32, 0, 32),
+		numbers:    make([]uint32, 0, 32),
+		nextFlush:  make([]uint32, 0, 32),
+	}
 }
 
 func (this *ACKList) Add(number uint32, timestamp uint32) {
 	this.timestamps = append(this.timestamps, timestamp)
 	this.numbers = append(this.numbers, number)
+	this.nextFlush = append(this.nextFlush, 0)
 }
 
-func (this *ACKList) Clear(una uint32) bool {
+func (this *ACKList) Clear(una uint32) {
 	count := 0
 	for i := 0; i < len(this.numbers); i++ {
 		if this.numbers[i] >= una {
 			if i != count {
 				this.numbers[count] = this.numbers[i]
 				this.timestamps[count] = this.timestamps[i]
+				this.nextFlush[count] = this.nextFlush[i]
 			}
 			count++
 		}
@@ -172,26 +185,34 @@ func (this *ACKList) Clear(una uint32) bool {
 	if count < len(this.numbers) {
 		this.numbers = this.numbers[:count]
 		this.timestamps = this.timestamps[:count]
+		this.nextFlush = this.nextFlush[:count]
+	}
+}
+
+func (this *ACKList) Flush() bool {
+	seg := &ACKSegment{
+		Conv:            this.kcp.conv,
+		ReceivingNext:   this.kcp.rcv_nxt,
+		ReceivingWindow: this.kcp.rcv_nxt + this.kcp.rcv_wnd,
+	}
+	if this.kcp.state == StateReadyToClose {
+		seg.Opt = SegmentOptionClose
+	}
+	current := this.kcp.current
+	for i := 0; i < len(this.numbers); i++ {
+		if this.nextFlush[i] <= current {
+			seg.Count++
+			seg.NumberList = append(seg.NumberList, this.numbers[i])
+			seg.TimestampList = append(seg.TimestampList, this.timestamps[i])
+			this.nextFlush[i] = current + 50
+			if seg.Count == 128 {
+				break
+			}
+		}
+	}
+	if seg.Count > 0 {
+		this.kcp.output.Write(seg)
 		return true
 	}
 	return false
-}
-
-func (this *ACKList) AsSegment() *ACKSegment {
-	count := len(this.numbers)
-	if count == 0 {
-		return nil
-	}
-
-	if count > 128 {
-		count = 128
-	}
-	seg := &ACKSegment{
-		Count:         byte(count),
-		NumberList:    this.numbers[:count],
-		TimestampList: this.timestamps[:count],
-	}
-	//this.numbers = nil
-	//this.timestamps = nil
-	return seg
 }

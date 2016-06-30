@@ -81,7 +81,7 @@ func NewKCP(conv uint16, mtu uint32, sendingWindowSize uint32, receivingWindowSi
 	kcp.rcv_buf = NewReceivingWindow(receivingWindowSize)
 	kcp.snd_queue = NewSendingQueue(sendingQueueSize)
 	kcp.rcv_queue = NewReceivingQueue()
-	kcp.acklist = new(ACKList)
+	kcp.acklist = NewACKList(kcp)
 	kcp.cwnd = kcp.snd_wnd
 	return kcp
 }
@@ -250,9 +250,7 @@ func (kcp *KCP) HandleReceivingNext(receivingNext uint32) {
 }
 
 func (kcp *KCP) HandleSendingNext(sendingNext uint32) {
-	if kcp.acklist.Clear(sendingNext) {
-		kcp.receivingUpdated = true
-	}
+	kcp.acklist.Clear(sendingNext)
 }
 
 func (kcp *KCP) parse_data(newseg *DataSegment) {
@@ -367,16 +365,9 @@ func (kcp *KCP) flush() {
 	lost := false
 
 	// flush acknowledges
-	//if kcp.receivingUpdated {
-	ackSeg := kcp.acklist.AsSegment()
-	if ackSeg != nil {
-		ackSeg.Conv = kcp.conv
-		ackSeg.ReceivingWindow = uint32(kcp.rcv_nxt + kcp.rcv_wnd)
-		ackSeg.ReceivingNext = kcp.rcv_nxt
-		kcp.output.Write(ackSeg)
+	if kcp.acklist.Flush() {
 		kcp.receivingUpdated = false
 	}
-	//}
 
 	// calculate window size
 	cwnd := kcp.snd_una + kcp.snd_wnd
