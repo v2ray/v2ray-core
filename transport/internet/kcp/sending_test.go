@@ -94,4 +94,15 @@ func TestSendingWindow(t *testing.T) {
 	})
 	assert.Int(window.Len()).Equals(1)
 	assert.Uint32(window.First().Number).Equals(4)
+
+	window.Push(&DataSegment{
+		Number: 5,
+	})
+	assert.Int(window.Len()).Equals(2)
+
+	window.Remove(1)
+	assert.Int(window.Len()).Equals(2)
+
+	window.Remove(0)
+	assert.Int(window.Len()).Equals(0)
 }

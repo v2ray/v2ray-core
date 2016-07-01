@@ -61,7 +61,7 @@ func (this *SendingWindow) Remove(idx uint32) {
 	seg.Release()
 	this.data[pos] = nil
 	if pos == this.start {
-		if this.len == 1 {
+		if this.start == this.last {
 			this.len = 0
 			this.start = 0
 			this.last = 0
