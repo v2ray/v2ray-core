@@ -60,16 +60,17 @@ func (this *SendingWindow) Remove(idx uint32) {
 	}
 	seg.Release()
 	this.data[pos] = nil
-	if pos == this.start {
-		if this.start == this.last {
-			this.len = 0
-			this.start = 0
-			this.last = 0
-		} else {
-			delta := this.next[pos] - this.start
-			this.start = this.next[pos]
-			this.len -= delta
+	if pos == this.start && pos == this.last {
+		this.len = 0
+		this.start = 0
+		this.last = 0
+	} else if pos == this.start {
+		delta := this.next[pos] - this.start
+		if this.next[pos] < this.start {
+			delta = this.next[pos] + this.cap - this.start
 		}
+		this.start = this.next[pos]
+		this.len -= delta
 	} else if pos == this.last {
 		this.last = this.prev[pos]
 	} else {
