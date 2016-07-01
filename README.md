@@ -1,6 +1,6 @@
 # Project V2Ray
 
-[![Build Status][1]][2] [![codecov.io][3]][4] [![Go Report][5]][6] [![GoDoc][7]][8] [![codebeat][9]][10]
+[![Build Status][1]][2] [![codecov.io][3]][4] [![Go Report][5]][6] [![GoDoc][7]][8] [![codebeat][9]][10] [![Downloads][11]][12]
 [1]: https://travis-ci.org/v2ray/v2ray-core.svg?branch=master "Build Status badge"
 [2]: https://travis-ci.org/v2ray/v2ray-core "Travis-CI Build Status"
 [3]: https://codecov.io/github/v2ray/v2ray-core/coverage.svg?branch=master "Coverage badge"
@@ -11,6 +11,8 @@
 [8]: https://godoc.org/github.com/v2ray/v2ray-core "GoDoc"
 [9]: https://codebeat.co/badges/f2354ca8-3e24-463d-a2e3-159af73b2477 "Codebeat badge"
 [10]: https://codebeat.co/projects/github-com-v2ray-v2ray-core "Codebeat"
+[11]: https://img.shields.io/github/downloads/v2ray/v2ray-core/total.svg?maxAge=2592000
+[12]: https://github.com/v2ray/v2ray-core/releases
 
 V2Ray 是一个模块化的代理软件包，它的目标是提供常用的代理软件模块，简化网络代理软件的开发。
 
