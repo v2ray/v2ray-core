@@ -22,6 +22,7 @@ func NewSendingWindow(kcp *KCP, size uint32) *SendingWindow {
 		data:  make([]*DataSegment, size),
 		prev:  make([]uint32, size),
 		next:  make([]uint32, size),
+		kcp:   kcp,
 	}
 	return window
 }
@@ -46,16 +47,17 @@ func (this *SendingWindow) First() *DataSegment {
 }
 
 func (this *SendingWindow) Clear(una uint32) {
-	for this.Len() > 0 {
-		if this.data[this.start].Number < una {
-			this.Remove(0)
-		}
+	for this.Len() > 0 && this.data[this.start].Number < una {
+		this.Remove(0)
 	}
 }
 
 func (this *SendingWindow) Remove(idx uint32) {
 	pos := (this.start + idx) % this.cap
 	seg := this.data[pos]
+	if seg == nil {
+		return
+	}
 	seg.Release()
 	this.data[pos] = nil
 	if pos == this.start {
@@ -77,6 +79,7 @@ func (this *SendingWindow) Remove(idx uint32) {
 }
 
 func (this *SendingWindow) HandleFastAck(number uint32) {
+
 	for i := this.start; ; i = this.next[i] {
 		seg := this.data[i]
 		if _itimediff(number, seg.Number) < 0 {
@@ -92,6 +95,10 @@ func (this *SendingWindow) HandleFastAck(number uint32) {
 }
 
 func (this *SendingWindow) Flush() bool {
+	if this.Len() == 0 {
+		return false
+	}
+
 	current := this.kcp.current
 	resent := uint32(this.kcp.fastresend)
 	if this.kcp.fastresend <= 0 {
