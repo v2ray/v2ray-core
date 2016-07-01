@@ -54,7 +54,7 @@ type KCP struct {
 
 	snd_queue *SendingQueue
 	rcv_queue *ReceivingQueue
-	snd_buf   []*DataSegment
+	snd_buf   *SendingWindow
 	rcv_buf   *ReceivingWindow
 
 	acklist *ACKList
@@ -82,6 +82,7 @@ func NewKCP(conv uint16, mtu uint32, sendingWindowSize uint32, receivingWindowSi
 	kcp.snd_queue = NewSendingQueue(sendingQueueSize)
 	kcp.rcv_queue = NewReceivingQueue()
 	kcp.acklist = NewACKList(kcp)
+	kcp.snd_buf = NewSendingWindow(kcp, sendingWindowSize)
 	kcp.cwnd = kcp.snd_wnd
 	return kcp
 }
@@ -194,8 +195,8 @@ func (kcp *KCP) update_ack(rtt int32) {
 
 func (kcp *KCP) shrink_buf() {
 	prevUna := kcp.snd_una
-	if len(kcp.snd_buf) > 0 {
-		seg := kcp.snd_buf[0]
+	if kcp.snd_buf.Len() > 0 {
+		seg := kcp.snd_buf.First()
 		kcp.snd_una = seg.Number
 	} else {
 		kcp.snd_una = kcp.snd_nxt
@@ -210,16 +211,7 @@ func (kcp *KCP) parse_ack(sn uint32) {
 		return
 	}
 
-	for k, seg := range kcp.snd_buf {
-		if sn == seg.Number {
-			kcp.snd_buf = append(kcp.snd_buf[:k], kcp.snd_buf[k+1:]...)
-			seg.Release()
-			break
-		}
-		if _itimediff(sn, seg.Number) < 0 {
-			break
-		}
-	}
+	kcp.snd_buf.Remove(sn - kcp.snd_una)
 }
 
 func (kcp *KCP) parse_fastack(sn uint32) {
@@ -227,26 +219,11 @@ func (kcp *KCP) parse_fastack(sn uint32) {
 		return
 	}
 
-	for _, seg := range kcp.snd_buf {
-		if _itimediff(sn, seg.Number) < 0 {
-			break
-		} else if sn != seg.Number {
-			seg.ackSkipped++
-		}
-	}
+	kcp.snd_buf.HandleFastAck(sn)
 }
 
 func (kcp *KCP) HandleReceivingNext(receivingNext uint32) {
-	count := 0
-	for _, seg := range kcp.snd_buf {
-		if _itimediff(receivingNext, seg.Number) > 0 {
-			seg.Release()
-			count++
-		} else {
-			break
-		}
-	}
-	kcp.snd_buf = kcp.snd_buf[count:]
+	kcp.snd_buf.Clear(receivingNext)
 }
 
 func (kcp *KCP) HandleSendingNext(sendingNext uint32) {
@@ -362,7 +339,6 @@ func (kcp *KCP) flush() {
 	}
 
 	current := kcp.current
-	lost := false
 
 	// flush acknowledges
 	if kcp.acklist.Flush() {
@@ -385,47 +361,13 @@ func (kcp *KCP) flush() {
 		seg.timeout = current
 		seg.ackSkipped = 0
 		seg.transmit = 0
-		kcp.snd_buf = append(kcp.snd_buf, seg)
+		kcp.snd_buf.Push(seg)
 		kcp.snd_nxt++
 	}
 
-	// calculate resent
-	resent := uint32(kcp.fastresend)
-	if kcp.fastresend <= 0 {
-		resent = 0xffffffff
-	}
-
 	// flush data segments
-	for _, segment := range kcp.snd_buf {
-		needsend := false
-		if segment.transmit == 0 {
-			needsend = true
-			segment.transmit++
-			segment.timeout = current + kcp.rx_rto
-		} else if _itimediff(current, segment.timeout) >= 0 {
-			needsend = true
-			segment.transmit++
-			segment.timeout = current + kcp.rx_rto
-			lost = true
-		} else if segment.ackSkipped >= resent {
-			needsend = true
-			segment.transmit++
-			segment.ackSkipped = 0
-			segment.timeout = current + kcp.rx_rto
-			lost = true
-		}
-
-		if needsend {
-			segment.Timestamp = current
-			segment.SendingNext = kcp.snd_una
-			segment.Opt = 0
-			if kcp.state == StateReadyToClose {
-				segment.Opt = SegmentOptionClose
-			}
-
-			kcp.output.Write(segment)
-			kcp.sendingUpdated = false
-		}
+	if kcp.snd_buf.Flush() {
+		kcp.sendingUpdated = false
 	}
 
 	if kcp.sendingUpdated || kcp.receivingUpdated || _itimediff(kcp.current, kcp.lastPingTime) >= 5000 {
@@ -447,18 +389,22 @@ func (kcp *KCP) flush() {
 	// flash remain segments
 	kcp.output.Flush()
 
-	if kcp.congestionControl {
-		if lost {
-			kcp.cwnd = 3 * kcp.cwnd / 4
-		} else {
-			kcp.cwnd += kcp.cwnd / 4
-		}
-		if kcp.cwnd < 4 {
-			kcp.cwnd = 4
-		}
-		if kcp.cwnd > kcp.snd_wnd {
-			kcp.cwnd = kcp.snd_wnd
-		}
+}
+
+func (kcp *KCP) HandleLost(lost bool) {
+	if !kcp.congestionControl {
+		return
+	}
+	if lost {
+		kcp.cwnd = 3 * kcp.cwnd / 4
+	} else {
+		kcp.cwnd += kcp.cwnd / 4
+	}
+	if kcp.cwnd < 4 {
+		kcp.cwnd = 4
+	}
+	if kcp.cwnd > kcp.snd_wnd {
+		kcp.cwnd = kcp.snd_wnd
 	}
 }
 
@@ -488,15 +434,10 @@ func (kcp *KCP) NoDelay(interval uint32, resend int, congestionControl bool) int
 
 // WaitSnd gets how many packet is waiting to be sent
 func (kcp *KCP) WaitSnd() uint32 {
-	return uint32(len(kcp.snd_buf)) + kcp.snd_queue.Len()
+	return uint32(kcp.snd_buf.Len()) + kcp.snd_queue.Len()
 }
 
 func (this *KCP) ClearSendQueue() {
 	this.snd_queue.Clear()
-
-	for _, seg := range this.snd_buf {
-		seg.Release()
-	}
-
-	this.snd_buf = nil
+	this.snd_buf.Clear(0xFFFFFFFF)
 }
