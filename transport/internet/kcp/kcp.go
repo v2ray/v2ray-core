@@ -279,6 +279,7 @@ func (kcp *KCP) Input(data []byte) int {
 					kcp.update_ack(_itimediff(kcp.current, ts))
 				}
 				kcp.parse_ack(sn)
+				kcp.shrink_buf()
 				if flag == 0 {
 					flag = 1
 					maxack = sn
@@ -300,9 +301,9 @@ func (kcp *KCP) Input(data []byte) int {
 			}
 			kcp.HandleReceivingNext(seg.ReceivinNext)
 			kcp.HandleSendingNext(seg.SendingNext)
+			kcp.shrink_buf()
 		default:
 		}
-		kcp.shrink_buf()
 	}
 
 	if flag != 0 {

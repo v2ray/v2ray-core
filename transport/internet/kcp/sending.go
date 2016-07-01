@@ -53,6 +53,10 @@ func (this *SendingWindow) Clear(una uint32) {
 }
 
 func (this *SendingWindow) Remove(idx uint32) {
+	if this.len == 0 {
+		return
+	}
+
 	pos := (this.start + idx) % this.cap
 	seg := this.data[pos]
 	if seg == nil {
@@ -80,6 +84,9 @@ func (this *SendingWindow) Remove(idx uint32) {
 }
 
 func (this *SendingWindow) HandleFastAck(number uint32) {
+	if this.len == 0 {
+		return
+	}
 
 	for i := this.start; ; i = this.next[i] {
 		seg := this.data[i]
