@@ -248,15 +248,13 @@ func (this *ReceivingWorker) ProcessSendingNext(number uint32) {
 
 func (this *ReceivingWorker) ProcessSegment(seg *DataSegment) {
 	number := seg.Number
-	if _itimediff(number, this.nextNumber+this.windowSize) >= 0 || _itimediff(number, this.nextNumber) < 0 {
+	idx := number - this.nextNumber
+	if idx >= this.windowSize {
 		return
 	}
-
 	this.ProcessSendingNext(seg.SendingNext)
-
 	this.acklist.Add(number, seg.Timestamp)
 	this.windowMutex.Lock()
-	idx := number - this.nextNumber
 
 	if !this.window.Set(idx, seg) {
 		seg.Release()
