@@ -155,7 +155,7 @@ type AckList struct {
 	nextFlush  []uint32
 }
 
-func NewACKList(writer SegmentWriter) *AckList {
+func NewAckList(writer SegmentWriter) *AckList {
 	return &AckList{
 		writer:     writer,
 		timestamps: make([]uint32, 0, 32),
@@ -234,7 +234,7 @@ func NewReceivingWorker(kcp *KCP) *ReceivingWorker {
 		window:     NewReceivingWindow(windowSize),
 		windowSize: windowSize,
 	}
-	worker.acklist = NewACKList(worker)
+	worker.acklist = NewAckList(worker)
 	return worker
 }
 
