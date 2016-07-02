@@ -216,6 +216,7 @@ func (kcp *KCP) Input(data []byte) int {
 				kcp.rmt_wnd = seg.ReceivingWindow
 			}
 			kcp.HandleReceivingNext(seg.ReceivingNext)
+			kcp.shrink_buf()
 			for i := 0; i < int(seg.Count); i++ {
 				ts := seg.TimestampList[i]
 				sn := seg.NumberList[i]
