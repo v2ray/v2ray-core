@@ -9,7 +9,6 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
-	"github.com/v2ray/v2ray-core/common/signal"
 )
 
 var (
@@ -23,15 +22,6 @@ const (
 	headerSize uint32 = 2
 )
 
-type ConnState byte
-
-var (
-	ConnStateActive       ConnState = 0
-	ConnStateReadyToClose ConnState = 1
-	ConnStatePeerClosed   ConnState = 2
-	ConnStateClosed       ConnState = 4
-)
-
 func nowMillisec() int64 {
 	now := time.Now()
 	return now.Unix()*1000 + int64(now.Nanosecond()/1000000)
@@ -40,24 +30,19 @@ func nowMillisec() int64 {
 // Connection is a KCP connection over UDP.
 type Connection struct {
 	sync.RWMutex
-	state         ConnState
 	kcp           *KCP // the core ARQ
 	kcpAccess     sync.Mutex
 	block         Authenticator
-	needUpdate    bool
 	local, remote net.Addr
 	wd            time.Time // write deadline
-	chReadEvent   chan struct{}
 	writer        io.WriteCloser
 	since         int64
-	terminateOnce signal.Once
 }
 
 // NewConnection create a new KCP connection between local and remote.
 func NewConnection(conv uint16, writerCloser io.WriteCloser, local *net.UDPAddr, remote *net.UDPAddr, block Authenticator) *Connection {
 	conn := new(Connection)
 	conn.local = local
-	conn.chReadEvent = make(chan struct{}, 1)
 	conn.remote = remote
 	conn.block = block
 	conn.writer = writerCloser
@@ -208,20 +193,11 @@ func (this *Connection) updateTask() {
 	this.Terminate()
 }
 
-func (this *Connection) notifyReadEvent() {
-	select {
-	case this.chReadEvent <- struct{}{}:
-	default:
-	}
-}
-
 func (this *Connection) kcpInput(data []byte) {
 	this.kcpAccess.Lock()
 	this.kcp.current = this.Elapsed()
 	this.kcp.Input(data)
-
 	this.kcpAccess.Unlock()
-	this.notifyReadEvent()
 }
 
 func (this *Connection) FetchInputFrom(conn net.Conn) {
