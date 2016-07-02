@@ -10,16 +10,6 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 )
 
-const (
-	IKCP_RTO_NDL  = 30  // no delay min rto
-	IKCP_RTO_MIN  = 100 // normal min rto
-	IKCP_RTO_DEF  = 200
-	IKCP_RTO_MAX  = 60000
-	IKCP_WND_SND  = 32
-	IKCP_WND_RCV  = 32
-	IKCP_INTERVAL = 100
-)
-
 func _itimediff(later, earlier uint32) int32 {
 	return (int32)(later - earlier)
 }
@@ -71,10 +61,10 @@ func NewKCP(conv uint16, output *AuthenticationWriter) *KCP {
 	kcp.conv = conv
 	kcp.snd_wnd = effectiveConfig.GetSendingWindowSize()
 	kcp.rcv_wnd = effectiveConfig.GetReceivingWindowSize()
-	kcp.rmt_wnd = IKCP_WND_RCV
+	kcp.rmt_wnd = 32
 	kcp.mss = output.Mtu() - DataSegmentOverhead
-	kcp.rx_rto = IKCP_RTO_DEF
-	kcp.interval = IKCP_INTERVAL
+	kcp.rx_rto = 100
+	kcp.interval = effectiveConfig.Tti
 	kcp.output = NewSegmentWriter(output)
 	kcp.rcv_buf = NewReceivingWindow(effectiveConfig.GetReceivingWindowSize())
 	kcp.snd_queue = NewSendingQueue(effectiveConfig.GetSendingQueueSize())
@@ -185,8 +175,8 @@ func (kcp *KCP) update_ack(rtt int32) {
 		rto = kcp.rx_srtt + kcp.interval
 	}
 
-	if rto > IKCP_RTO_MAX {
-		rto = IKCP_RTO_MAX
+	if rto > 10000 {
+		rto = 10000
 	}
 	kcp.rx_rto = rto * 3 / 2
 }
