@@ -65,13 +65,17 @@ type ReceivingQueue struct {
 	timeout time.Time
 }
 
-func NewReceivingQueue() *ReceivingQueue {
+func NewReceivingQueue(size uint32) *ReceivingQueue {
 	return &ReceivingQueue{
-		queue: make(chan *alloc.Buffer, effectiveConfig.GetReceivingQueueSize()),
+		queue: make(chan *alloc.Buffer, size),
 	}
 }
 
 func (this *ReceivingQueue) Read(buf []byte) (int, error) {
+	if this.closed {
+		return 0, io.EOF
+	}
+
 	if this.cache.Len() > 0 {
 		nBytes, err := this.cache.Read(buf)
 		if this.cache.IsEmpty() {
@@ -230,7 +234,7 @@ func NewReceivingWorker(kcp *KCP) *ReceivingWorker {
 	windowSize := effectiveConfig.GetReceivingWindowSize()
 	worker := &ReceivingWorker{
 		kcp:        kcp,
-		queue:      NewReceivingQueue(),
+		queue:      NewReceivingQueue(effectiveConfig.GetReceivingQueueSize()),
 		window:     NewReceivingWindow(windowSize),
 		windowSize: windowSize,
 	}
