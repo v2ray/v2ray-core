@@ -46,7 +46,7 @@ type KCP struct {
 	snd_buf   *SendingWindow
 	rcv_buf   *ReceivingWindow
 
-	acklist *ACKList
+	acklist *AckList
 
 	fastresend        int32
 	congestionControl bool

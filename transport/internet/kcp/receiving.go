@@ -148,15 +148,15 @@ func (this *ReceivingQueue) Close() {
 	close(this.queue)
 }
 
-type ACKList struct {
+type AckList struct {
 	kcp        *KCP
 	timestamps []uint32
 	numbers    []uint32
 	nextFlush  []uint32
 }
 
-func NewACKList(kcp *KCP) *ACKList {
-	return &ACKList{
+func NewACKList(kcp *KCP) *AckList {
+	return &AckList{
 		kcp:        kcp,
 		timestamps: make([]uint32, 0, 32),
 		numbers:    make([]uint32, 0, 32),
@@ -164,13 +164,13 @@ func NewACKList(kcp *KCP) *ACKList {
 	}
 }
 
-func (this *ACKList) Add(number uint32, timestamp uint32) {
+func (this *AckList) Add(number uint32, timestamp uint32) {
 	this.timestamps = append(this.timestamps, timestamp)
 	this.numbers = append(this.numbers, number)
 	this.nextFlush = append(this.nextFlush, 0)
 }
 
-func (this *ACKList) Clear(una uint32) {
+func (this *AckList) Clear(una uint32) {
 	count := 0
 	for i := 0; i < len(this.numbers); i++ {
 		if this.numbers[i] >= una {
@@ -189,7 +189,7 @@ func (this *ACKList) Clear(una uint32) {
 	}
 }
 
-func (this *ACKList) Flush() bool {
+func (this *AckList) Flush() bool {
 	seg := &ACKSegment{
 		Conv:            this.kcp.conv,
 		ReceivingNext:   this.kcp.rcv_nxt,
