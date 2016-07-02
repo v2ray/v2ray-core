@@ -44,7 +44,7 @@ type KCP struct {
 	snd_buf         *SendingWindow
 	receivingWorker *ReceivingWorker
 
-	fastresend        int32
+	fastresend        uint32
 	congestionControl bool
 	output            *BufferedSegmentWriter
 }
@@ -65,6 +65,8 @@ func NewKCP(conv uint16, output *AuthenticationWriter) *KCP {
 	kcp.snd_buf = NewSendingWindow(kcp, effectiveConfig.GetSendingWindowSize())
 	kcp.cwnd = kcp.snd_wnd
 	kcp.receivingWorker = NewReceivingWorker(kcp)
+	kcp.fastresend = 2
+	kcp.congestionControl = effectiveConfig.Congestion
 	return kcp
 }
 
@@ -354,22 +356,6 @@ func (kcp *KCP) HandleLost(lost bool) {
 func (kcp *KCP) Update(current uint32) {
 	kcp.current = current
 	kcp.flush()
-}
-
-// NoDelay options
-// fastest: ikcp_nodelay(kcp, 1, 20, 2, 1)
-// nodelay: 0:disable(default), 1:enable
-// interval: internal update timer interval in millisec, default is 100ms
-// resend: 0:disable fast resend(default), 1:enable fast resend
-// nc: 0:normal congestion control(default), 1:disable congestion control
-func (kcp *KCP) NoDelay(interval uint32, resend int, congestionControl bool) int {
-	kcp.interval = interval
-
-	if resend >= 0 {
-		kcp.fastresend = int32(resend)
-	}
-	kcp.congestionControl = congestionControl
-	return 0
 }
 
 // WaitSnd gets how many packet is waiting to be sent

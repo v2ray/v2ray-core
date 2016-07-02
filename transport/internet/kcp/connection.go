@@ -68,7 +68,6 @@ func NewConnection(conv uint16, writerCloser io.WriteCloser, local *net.UDPAddr,
 		Writer:        writerCloser,
 	}
 	conn.kcp = NewKCP(conv, authWriter)
-	conn.kcp.NoDelay(effectiveConfig.Tti, 2, effectiveConfig.Congestion)
 	conn.kcp.current = conn.Elapsed()
 
 	go conn.updateTask()
