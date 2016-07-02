@@ -274,9 +274,6 @@ func (this *ReceivingWorker) DumpWindow() {
 }
 
 func (this *ReceivingWorker) Read(b []byte) (int, error) {
-	this.Lock()
-	defer this.Unlock()
-
 	return this.queue.Read(b)
 }
 
