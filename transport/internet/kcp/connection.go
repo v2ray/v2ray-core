@@ -85,7 +85,7 @@ func (this *Connection) Read(b []byte) (int, error) {
 	if this == nil || this.kcp.state == StateTerminating || this.kcp.state == StateTerminated {
 		return 0, io.EOF
 	}
-	return this.kcp.rcv_queue.Read(b)
+	return this.kcp.receivingWorker.Read(b)
 }
 
 // Write implements the Conn Write method.
@@ -177,7 +177,7 @@ func (this *Connection) SetReadDeadline(t time.Time) error {
 	}
 	this.kcpAccess.Lock()
 	defer this.kcpAccess.Unlock()
-	this.kcp.rcv_queue.SetReadDeadline(t)
+	this.kcp.receivingWorker.SetReadDeadline(t)
 	return nil
 }
 

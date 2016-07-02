@@ -32,25 +32,21 @@ type KCP struct {
 	lastIncomingTime uint32
 	lastPayloadTime  uint32
 	sendingUpdated   bool
-	receivingUpdated bool
 	lastPingTime     uint32
 
-	mss                             uint32
-	snd_una, snd_nxt, rcv_nxt       uint32
-	rx_rttvar, rx_srtt, rx_rto      uint32
-	snd_wnd, rcv_wnd, rmt_wnd, cwnd uint32
-	current, interval               uint32
+	mss                        uint32
+	snd_una, snd_nxt           uint32
+	rx_rttvar, rx_srtt, rx_rto uint32
+	snd_wnd, rmt_wnd, cwnd     uint32
+	current, interval          uint32
 
-	snd_queue *SendingQueue
-	rcv_queue *ReceivingQueue
-	snd_buf   *SendingWindow
-	rcv_buf   *ReceivingWindow
-
-	acklist *AckList
+	snd_queue       *SendingQueue
+	snd_buf         *SendingWindow
+	receivingWorker *ReceivingWorker
 
 	fastresend        int32
 	congestionControl bool
-	output            *SegmentWriter
+	output            *BufferedSegmentWriter
 }
 
 // NewKCP create a new kcp control object, 'conv' must equal in two endpoint
@@ -60,18 +56,15 @@ func NewKCP(conv uint16, output *AuthenticationWriter) *KCP {
 	kcp := new(KCP)
 	kcp.conv = conv
 	kcp.snd_wnd = effectiveConfig.GetSendingWindowSize()
-	kcp.rcv_wnd = effectiveConfig.GetReceivingWindowSize()
 	kcp.rmt_wnd = 32
 	kcp.mss = output.Mtu() - DataSegmentOverhead
 	kcp.rx_rto = 100
 	kcp.interval = effectiveConfig.Tti
 	kcp.output = NewSegmentWriter(output)
-	kcp.rcv_buf = NewReceivingWindow(effectiveConfig.GetReceivingWindowSize())
 	kcp.snd_queue = NewSendingQueue(effectiveConfig.GetSendingQueueSize())
-	kcp.rcv_queue = NewReceivingQueue()
-	kcp.acklist = NewACKList(kcp)
 	kcp.snd_buf = NewSendingWindow(kcp, effectiveConfig.GetSendingWindowSize())
 	kcp.cwnd = kcp.snd_wnd
+	kcp.receivingWorker = NewReceivingWorker(kcp)
 	return kcp
 }
 
@@ -81,13 +74,13 @@ func (kcp *KCP) SetState(state State) {
 
 	switch state {
 	case StateReadyToClose:
-		kcp.rcv_queue.Close()
+		kcp.receivingWorker.CloseRead()
 	case StatePeerClosed:
 		kcp.ClearSendQueue()
 	case StateTerminating:
-		kcp.rcv_queue.Close()
+		kcp.receivingWorker.CloseRead()
 	case StateTerminated:
-		kcp.rcv_queue.Close()
+		kcp.receivingWorker.CloseRead()
 	}
 }
 
@@ -112,23 +105,6 @@ func (kcp *KCP) OnClose() {
 	}
 	if kcp.state == StatePeerClosed {
 		kcp.SetState(StateTerminating)
-	}
-}
-
-// DumpReceivingBuf moves available data from rcv_buf -> rcv_queue
-// @Private
-func (kcp *KCP) DumpReceivingBuf() {
-	for {
-		seg := kcp.rcv_buf.RemoveFirst()
-		if seg == nil {
-			break
-		}
-		kcp.rcv_queue.Put(seg.Data)
-		seg.Data = nil
-
-		kcp.rcv_buf.Advance()
-		kcp.rcv_nxt++
-		kcp.receivingUpdated = true
 	}
 }
 
@@ -214,25 +190,6 @@ func (kcp *KCP) HandleReceivingNext(receivingNext uint32) {
 	kcp.snd_buf.Clear(receivingNext)
 }
 
-func (kcp *KCP) HandleSendingNext(sendingNext uint32) {
-	kcp.acklist.Clear(sendingNext)
-}
-
-func (kcp *KCP) parse_data(newseg *DataSegment) {
-	sn := newseg.Number
-	if _itimediff(sn, kcp.rcv_nxt+kcp.rcv_wnd) >= 0 ||
-		_itimediff(sn, kcp.rcv_nxt) < 0 {
-		return
-	}
-
-	idx := sn - kcp.rcv_nxt
-	if !kcp.rcv_buf.Set(idx, newseg) {
-		newseg.Release()
-	}
-
-	kcp.DumpReceivingBuf()
-}
-
 // Input when you received a low level packet (eg. UDP packet), call it
 func (kcp *KCP) Input(data []byte) int {
 	kcp.lastIncomingTime = kcp.current
@@ -249,10 +206,7 @@ func (kcp *KCP) Input(data []byte) int {
 		switch seg := seg.(type) {
 		case *DataSegment:
 			kcp.HandleOption(seg.Opt)
-			kcp.HandleSendingNext(seg.SendingNext)
-			kcp.acklist.Add(seg.Number, seg.Timestamp)
-			kcp.receivingUpdated = true
-			kcp.parse_data(seg)
+			kcp.receivingWorker.ProcessSegment(seg)
 			kcp.lastPayloadTime = kcp.current
 		case *ACKSegment:
 			kcp.HandleOption(seg.Opt)
@@ -288,7 +242,7 @@ func (kcp *KCP) Input(data []byte) int {
 				}
 			}
 			kcp.HandleReceivingNext(seg.ReceivinNext)
-			kcp.HandleSendingNext(seg.SendingNext)
+			kcp.receivingWorker.ProcessSendingNext(seg.SendingNext)
 			kcp.shrink_buf()
 		default:
 		}
@@ -330,9 +284,7 @@ func (kcp *KCP) flush() {
 	current := kcp.current
 
 	// flush acknowledges
-	if kcp.acklist.Flush() {
-		kcp.receivingUpdated = false
-	}
+	kcp.receivingWorker.Flush()
 
 	// calculate window size
 	cwnd := kcp.snd_una + kcp.snd_wnd
@@ -359,11 +311,11 @@ func (kcp *KCP) flush() {
 		kcp.sendingUpdated = false
 	}
 
-	if kcp.sendingUpdated || kcp.receivingUpdated || _itimediff(kcp.current, kcp.lastPingTime) >= 5000 {
+	if kcp.sendingUpdated || kcp.receivingWorker.PingNecessary() || _itimediff(kcp.current, kcp.lastPingTime) >= 5000 {
 		seg := &CmdOnlySegment{
 			Conv:         kcp.conv,
 			Cmd:          SegmentCommandPing,
-			ReceivinNext: kcp.rcv_nxt,
+			ReceivinNext: kcp.receivingWorker.nextNumber,
 			SendingNext:  kcp.snd_una,
 		}
 		if kcp.state == StateReadyToClose {
@@ -372,7 +324,6 @@ func (kcp *KCP) flush() {
 		kcp.output.Write(seg)
 		kcp.lastPingTime = kcp.current
 		kcp.sendingUpdated = false
-		kcp.receivingUpdated = false
 	}
 
 	// flash remain segments

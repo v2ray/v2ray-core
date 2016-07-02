@@ -8,21 +8,25 @@ import (
 	v2io "github.com/v2ray/v2ray-core/common/io"
 )
 
-type SegmentWriter struct {
+type SegmentWriter interface {
+	Write(seg ISegment)
+}
+
+type BufferedSegmentWriter struct {
 	sync.Mutex
 	mtu    uint32
 	buffer *alloc.Buffer
 	writer v2io.Writer
 }
 
-func NewSegmentWriter(writer *AuthenticationWriter) *SegmentWriter {
-	return &SegmentWriter{
+func NewSegmentWriter(writer *AuthenticationWriter) *BufferedSegmentWriter {
+	return &BufferedSegmentWriter{
 		mtu:    writer.Mtu(),
 		writer: writer,
 	}
 }
 
-func (this *SegmentWriter) Write(seg ISegment) {
+func (this *BufferedSegmentWriter) Write(seg ISegment) {
 	this.Lock()
 	defer this.Unlock()
 
@@ -38,12 +42,12 @@ func (this *SegmentWriter) Write(seg ISegment) {
 	this.buffer.Append(seg.Bytes(nil))
 }
 
-func (this *SegmentWriter) FlushWithoutLock() {
+func (this *BufferedSegmentWriter) FlushWithoutLock() {
 	this.writer.Write(this.buffer)
 	this.buffer = nil
 }
 
-func (this *SegmentWriter) Flush() {
+func (this *BufferedSegmentWriter) Flush() {
 	this.Lock()
 	defer this.Unlock()
 

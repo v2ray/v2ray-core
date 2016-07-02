@@ -58,7 +58,6 @@ func (this *ReceivingWindow) Advance() {
 }
 
 type ReceivingQueue struct {
-	sync.RWMutex
 	closed  bool
 	cache   *alloc.Buffer
 	queue   chan *alloc.Buffer
@@ -104,12 +103,9 @@ L:
 			if totalBytes > 0 {
 				break L
 			}
-			this.RLock()
 			if !this.timeout.IsZero() && this.timeout.Before(time.Now()) {
-				this.RUnlock()
 				return totalBytes, errTimeout
 			}
-			this.RUnlock()
 			timeToSleep += 500 * time.Millisecond
 		}
 	}
@@ -117,30 +113,26 @@ L:
 	return totalBytes, nil
 }
 
-func (this *ReceivingQueue) Put(payload *alloc.Buffer) {
-	this.RLock()
-	defer this.RUnlock()
-
+func (this *ReceivingQueue) Put(payload *alloc.Buffer) bool {
 	if this.closed {
 		payload.Release()
-		return
+		return false
 	}
 
-	this.queue <- payload
+	select {
+	case this.queue <- payload:
+		return true
+	default:
+		return false
+	}
 }
 
 func (this *ReceivingQueue) SetReadDeadline(t time.Time) error {
-	this.Lock()
-	defer this.Unlock()
-
 	this.timeout = t
 	return nil
 }
 
 func (this *ReceivingQueue) Close() {
-	this.Lock()
-	defer this.Unlock()
-
 	if this.closed {
 		return
 	}
@@ -149,15 +141,15 @@ func (this *ReceivingQueue) Close() {
 }
 
 type AckList struct {
-	kcp        *KCP
+	writer     SegmentWriter
 	timestamps []uint32
 	numbers    []uint32
 	nextFlush  []uint32
 }
 
-func NewACKList(kcp *KCP) *AckList {
+func NewACKList(writer SegmentWriter) *AckList {
 	return &AckList{
-		kcp:        kcp,
+		writer:     writer,
 		timestamps: make([]uint32, 0, 32),
 		numbers:    make([]uint32, 0, 32),
 		nextFlush:  make([]uint32, 0, 32),
@@ -189,16 +181,8 @@ func (this *AckList) Clear(una uint32) {
 	}
 }
 
-func (this *AckList) Flush() bool {
-	seg := &ACKSegment{
-		Conv:            this.kcp.conv,
-		ReceivingNext:   this.kcp.rcv_nxt,
-		ReceivingWindow: this.kcp.rcv_nxt + this.kcp.rcv_wnd,
-	}
-	if this.kcp.state == StateReadyToClose {
-		seg.Opt = SegmentOptionClose
-	}
-	current := this.kcp.current
+func (this *AckList) Flush(current uint32) {
+	seg := new(ACKSegment)
 	for i := 0; i < len(this.numbers); i++ {
 		if this.nextFlush[i] <= current {
 			seg.Count++
@@ -211,8 +195,124 @@ func (this *AckList) Flush() bool {
 		}
 	}
 	if seg.Count > 0 {
-		this.kcp.output.Write(seg)
-		return true
+		this.writer.Write(seg)
 	}
-	return false
+}
+
+type ReceivingWorker struct {
+	sync.Mutex
+	kcp        *KCP
+	queue      *ReceivingQueue
+	window     *ReceivingWindow
+	acklist    *AckList
+	updated    bool
+	nextNumber uint32
+	windowSize uint32
+}
+
+func NewReceivingWorker(kcp *KCP) *ReceivingWorker {
+	windowSize := effectiveConfig.GetReceivingWindowSize()
+	worker := &ReceivingWorker{
+		kcp:        kcp,
+		queue:      NewReceivingQueue(),
+		window:     NewReceivingWindow(windowSize),
+		windowSize: windowSize,
+	}
+	worker.acklist = NewACKList(worker)
+	return worker
+}
+
+func (this *ReceivingWorker) ProcessSendingNext(number uint32) {
+	this.Lock()
+	defer this.Unlock()
+
+	this.acklist.Clear(number)
+}
+
+func (this *ReceivingWorker) ProcessSegment(seg *DataSegment) {
+	number := seg.Number
+	if _itimediff(number, this.nextNumber+this.windowSize) >= 0 || _itimediff(number, this.nextNumber) < 0 {
+		return
+	}
+
+	this.ProcessSendingNext(seg.SendingNext)
+
+	this.Lock()
+	this.acklist.Add(number, seg.Timestamp)
+
+	idx := number - this.nextNumber
+
+	if !this.window.Set(idx, seg) {
+		seg.Release()
+	}
+	this.Unlock()
+
+	this.DumpWindow()
+}
+
+// @Private
+func (this *ReceivingWorker) DumpWindow() {
+	this.Lock()
+	defer this.Unlock()
+
+	for {
+		seg := this.window.RemoveFirst()
+		if seg == nil {
+			break
+		}
+
+		if !this.queue.Put(seg.Data) {
+			this.window.Set(0, seg)
+			break
+		}
+
+		seg.Data = nil
+		this.window.Advance()
+		this.nextNumber++
+		this.updated = true
+	}
+}
+
+func (this *ReceivingWorker) Read(b []byte) (int, error) {
+	this.Lock()
+	defer this.Unlock()
+
+	return this.queue.Read(b)
+}
+
+func (this *ReceivingWorker) SetReadDeadline(t time.Time) {
+	this.Lock()
+	defer this.Unlock()
+
+	this.queue.SetReadDeadline(t)
+}
+
+func (this *ReceivingWorker) Flush() {
+	this.Lock()
+	defer this.Unlock()
+
+	this.acklist.Flush(this.kcp.current)
+}
+
+func (this *ReceivingWorker) Write(seg ISegment) {
+	ackSeg := seg.(*ACKSegment)
+	ackSeg.Conv = this.kcp.conv
+	ackSeg.ReceivingNext = this.nextNumber
+	ackSeg.ReceivingWindow = this.nextNumber + this.windowSize
+	if this.kcp.state == StateReadyToClose {
+		ackSeg.Opt = SegmentOptionClose
+	}
+	this.kcp.output.Write(ackSeg)
+	this.updated = false
+}
+
+func (this *ReceivingWorker) CloseRead() {
+	this.Lock()
+	defer this.Unlock()
+
+	this.queue.Close()
+}
+
+func (this *ReceivingWorker) PingNecessary() bool {
+	return this.updated
 }
