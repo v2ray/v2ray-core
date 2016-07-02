@@ -108,10 +108,7 @@ func (this *SendingWindow) Flush() bool {
 	}
 
 	current := this.kcp.current
-	resent := uint32(this.kcp.fastresend)
-	if this.kcp.fastresend <= 0 {
-		resent = 0xffffffff
-	}
+	resent := this.kcp.fastresend
 	lost := false
 	segSent := false
 
