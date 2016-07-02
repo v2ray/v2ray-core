@@ -7,7 +7,6 @@ package kcp
 
 import (
 	"github.com/v2ray/v2ray-core/common/alloc"
-	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 )
 
@@ -46,7 +45,7 @@ type KCP struct {
 	receivingUpdated bool
 	lastPingTime     uint32
 
-	mtu, mss                        uint32
+	mss                             uint32
 	snd_una, snd_nxt, rcv_nxt       uint32
 	rx_rttvar, rx_srtt, rx_rto      uint32
 	snd_wnd, rcv_wnd, rmt_wnd, cwnd uint32
@@ -66,18 +65,17 @@ type KCP struct {
 
 // NewKCP create a new kcp control object, 'conv' must equal in two endpoint
 // from the same connection.
-func NewKCP(conv uint16, mtu uint32, sendingWindowSize uint32, receivingWindowSize uint32, sendingQueueSize uint32, output v2io.Writer) *KCP {
+func NewKCP(conv uint16, sendingWindowSize uint32, receivingWindowSize uint32, sendingQueueSize uint32, output *AuthenticationWriter) *KCP {
 	log.Debug("KCP|Core: creating KCP ", conv)
 	kcp := new(KCP)
 	kcp.conv = conv
 	kcp.snd_wnd = sendingWindowSize
 	kcp.rcv_wnd = receivingWindowSize
 	kcp.rmt_wnd = IKCP_WND_RCV
-	kcp.mtu = mtu
-	kcp.mss = kcp.mtu - DataSegmentOverhead
+	kcp.mss = output.Mtu() - DataSegmentOverhead
 	kcp.rx_rto = IKCP_RTO_DEF
 	kcp.interval = IKCP_INTERVAL
-	kcp.output = NewSegmentWriter(mtu, output)
+	kcp.output = NewSegmentWriter(output)
 	kcp.rcv_buf = NewReceivingWindow(receivingWindowSize)
 	kcp.snd_queue = NewSendingQueue(sendingQueueSize)
 	kcp.rcv_queue = NewReceivingQueue()

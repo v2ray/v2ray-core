@@ -15,9 +15,9 @@ type SegmentWriter struct {
 	writer v2io.Writer
 }
 
-func NewSegmentWriter(mtu uint32, writer v2io.Writer) *SegmentWriter {
+func NewSegmentWriter(writer *AuthenticationWriter) *SegmentWriter {
 	return &SegmentWriter{
-		mtu:    mtu,
+		mtu:    writer.Mtu(),
 		writer: writer,
 	}
 }
@@ -68,3 +68,7 @@ func (this *AuthenticationWriter) Write(payload *alloc.Buffer) error {
 }
 
 func (this *AuthenticationWriter) Release() {}
+
+func (this *AuthenticationWriter) Mtu() uint32 {
+	return effectiveConfig.Mtu - uint32(this.Authenticator.HeaderSize())
+}

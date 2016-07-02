@@ -69,8 +69,7 @@ func NewConnection(conv uint16, writerCloser io.WriteCloser, local *net.UDPAddr,
 		Authenticator: block,
 		Writer:        writerCloser,
 	}
-	mtu := effectiveConfig.Mtu - uint32(block.HeaderSize()) - headerSize
-	conn.kcp = NewKCP(conv, mtu, effectiveConfig.GetSendingWindowSize(), effectiveConfig.GetReceivingWindowSize(), conn.writeBufferSize, authWriter)
+	conn.kcp = NewKCP(conv, effectiveConfig.GetSendingWindowSize(), effectiveConfig.GetReceivingWindowSize(), conn.writeBufferSize, authWriter)
 	conn.kcp.NoDelay(effectiveConfig.Tti, 2, effectiveConfig.Congestion)
 	conn.kcp.current = conn.Elapsed()
 
