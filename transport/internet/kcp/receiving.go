@@ -67,7 +67,7 @@ type ReceivingQueue struct {
 
 func NewReceivingQueue() *ReceivingQueue {
 	return &ReceivingQueue{
-		queue: make(chan *alloc.Buffer, effectiveConfig.ReadBuffer/effectiveConfig.Mtu),
+		queue: make(chan *alloc.Buffer, effectiveConfig.GetReceivingQueueSize()),
 	}
 }
 

@@ -40,18 +40,17 @@ func nowMillisec() int64 {
 // Connection is a KCP connection over UDP.
 type Connection struct {
 	sync.RWMutex
-	state           ConnState
-	kcp             *KCP // the core ARQ
-	kcpAccess       sync.Mutex
-	block           Authenticator
-	needUpdate      bool
-	local, remote   net.Addr
-	wd              time.Time // write deadline
-	chReadEvent     chan struct{}
-	writer          io.WriteCloser
-	since           int64
-	terminateOnce   signal.Once
-	writeBufferSize uint32
+	state         ConnState
+	kcp           *KCP // the core ARQ
+	kcpAccess     sync.Mutex
+	block         Authenticator
+	needUpdate    bool
+	local, remote net.Addr
+	wd            time.Time // write deadline
+	chReadEvent   chan struct{}
+	writer        io.WriteCloser
+	since         int64
+	terminateOnce signal.Once
 }
 
 // NewConnection create a new KCP connection between local and remote.
@@ -63,13 +62,12 @@ func NewConnection(conv uint16, writerCloser io.WriteCloser, local *net.UDPAddr,
 	conn.block = block
 	conn.writer = writerCloser
 	conn.since = nowMillisec()
-	conn.writeBufferSize = effectiveConfig.WriteBuffer / effectiveConfig.Mtu
 
 	authWriter := &AuthenticationWriter{
 		Authenticator: block,
 		Writer:        writerCloser,
 	}
-	conn.kcp = NewKCP(conv, effectiveConfig.GetSendingWindowSize(), effectiveConfig.GetReceivingWindowSize(), conn.writeBufferSize, authWriter)
+	conn.kcp = NewKCP(conv, authWriter)
 	conn.kcp.NoDelay(effectiveConfig.Tti, 2, effectiveConfig.Congestion)
 	conn.kcp.current = conn.Elapsed()
 

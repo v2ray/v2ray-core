@@ -65,22 +65,22 @@ type KCP struct {
 
 // NewKCP create a new kcp control object, 'conv' must equal in two endpoint
 // from the same connection.
-func NewKCP(conv uint16, sendingWindowSize uint32, receivingWindowSize uint32, sendingQueueSize uint32, output *AuthenticationWriter) *KCP {
+func NewKCP(conv uint16, output *AuthenticationWriter) *KCP {
 	log.Debug("KCP|Core: creating KCP ", conv)
 	kcp := new(KCP)
 	kcp.conv = conv
-	kcp.snd_wnd = sendingWindowSize
-	kcp.rcv_wnd = receivingWindowSize
+	kcp.snd_wnd = effectiveConfig.GetSendingWindowSize()
+	kcp.rcv_wnd = effectiveConfig.GetReceivingWindowSize()
 	kcp.rmt_wnd = IKCP_WND_RCV
 	kcp.mss = output.Mtu() - DataSegmentOverhead
 	kcp.rx_rto = IKCP_RTO_DEF
 	kcp.interval = IKCP_INTERVAL
 	kcp.output = NewSegmentWriter(output)
-	kcp.rcv_buf = NewReceivingWindow(receivingWindowSize)
-	kcp.snd_queue = NewSendingQueue(sendingQueueSize)
+	kcp.rcv_buf = NewReceivingWindow(effectiveConfig.GetReceivingWindowSize())
+	kcp.snd_queue = NewSendingQueue(effectiveConfig.GetSendingQueueSize())
 	kcp.rcv_queue = NewReceivingQueue()
 	kcp.acklist = NewACKList(kcp)
-	kcp.snd_buf = NewSendingWindow(kcp, sendingWindowSize)
+	kcp.snd_buf = NewSendingWindow(kcp, effectiveConfig.GetSendingWindowSize())
 	kcp.cwnd = kcp.snd_wnd
 	return kcp
 }
