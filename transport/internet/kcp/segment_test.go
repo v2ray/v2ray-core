@@ -44,7 +44,7 @@ func TestDataSegment(t *testing.T) {
 func TestACKSegment(t *testing.T) {
 	assert := assert.On(t)
 
-	seg := &ACKSegment{
+	seg := &AckSegment{
 		Conv:            1,
 		ReceivingWindow: 2,
 		ReceivingNext:   3,
@@ -59,7 +59,7 @@ func TestACKSegment(t *testing.T) {
 	assert.Int(len(bytes)).Equals(nBytes)
 
 	iseg, _ := ReadSegment(bytes)
-	seg2 := iseg.(*ACKSegment)
+	seg2 := iseg.(*AckSegment)
 	assert.Uint16(seg2.Conv).Equals(seg.Conv)
 	assert.Uint32(seg2.ReceivingWindow).Equals(seg.ReceivingWindow)
 	assert.Uint32(seg2.ReceivingNext).Equals(seg.ReceivingNext)

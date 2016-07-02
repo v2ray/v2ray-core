@@ -208,7 +208,7 @@ func (kcp *KCP) Input(data []byte) int {
 			kcp.HandleOption(seg.Opt)
 			kcp.receivingWorker.ProcessSegment(seg)
 			kcp.lastPayloadTime = kcp.current
-		case *ACKSegment:
+		case *AckSegment:
 			kcp.HandleOption(seg.Opt)
 			if kcp.rmt_wnd < seg.ReceivingWindow {
 				kcp.rmt_wnd = seg.ReceivingWindow

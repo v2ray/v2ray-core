@@ -64,7 +64,7 @@ func (this *DataSegment) Release() {
 	this.Data.Release()
 }
 
-type ACKSegment struct {
+type AckSegment struct {
 	Conv            uint16
 	Opt             SegmentOption
 	ReceivingWindow uint32
@@ -74,11 +74,11 @@ type ACKSegment struct {
 	TimestampList   []uint32
 }
 
-func (this *ACKSegment) ByteSize() int {
+func (this *AckSegment) ByteSize() int {
 	return 2 + 1 + 1 + 4 + 4 + 1 + int(this.Count)*4 + int(this.Count)*4
 }
 
-func (this *ACKSegment) Bytes(b []byte) []byte {
+func (this *AckSegment) Bytes(b []byte) []byte {
 	b = serial.Uint16ToBytes(this.Conv, b)
 	b = append(b, byte(SegmentCommandACK), byte(this.Opt))
 	b = serial.Uint32ToBytes(this.ReceivingWindow, b)
@@ -91,7 +91,7 @@ func (this *ACKSegment) Bytes(b []byte) []byte {
 	return b
 }
 
-func (this *ACKSegment) Release() {}
+func (this *AckSegment) Release() {}
 
 type CmdOnlySegment struct {
 	Conv         uint16
@@ -157,7 +157,7 @@ func ReadSegment(buf []byte) (ISegment, []byte) {
 	}
 
 	if cmd == SegmentCommandACK {
-		seg := &ACKSegment{
+		seg := &AckSegment{
 			Conv: conv,
 			Opt:  opt,
 		}

@@ -182,7 +182,7 @@ func (this *AckList) Clear(una uint32) {
 }
 
 func (this *AckList) Flush(current uint32) {
-	seg := new(ACKSegment)
+	seg := new(AckSegment)
 	for i := 0; i < len(this.numbers); i++ {
 		if this.nextFlush[i] <= current {
 			seg.Count++
@@ -292,7 +292,7 @@ func (this *ReceivingWorker) Flush() {
 }
 
 func (this *ReceivingWorker) Write(seg ISegment) {
-	ackSeg := seg.(*ACKSegment)
+	ackSeg := seg.(*AckSegment)
 	ackSeg.Conv = this.kcp.conv
 	ackSeg.ReceivingNext = this.nextNumber
 	ackSeg.ReceivingWindow = this.nextNumber + this.windowSize
