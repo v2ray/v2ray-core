@@ -1,5 +1,11 @@
 package kcp
 
+import (
+	"sync"
+
+	"github.com/v2ray/v2ray-core/common/alloc"
+)
+
 type SendingWindow struct {
 	start uint32
 	cap   uint32
@@ -10,19 +16,21 @@ type SendingWindow struct {
 	prev []uint32
 	next []uint32
 
-	kcp *KCP
+	writer       SegmentWriter
+	onPacketLoss func(bool)
 }
 
-func NewSendingWindow(kcp *KCP, size uint32) *SendingWindow {
+func NewSendingWindow(size uint32, writer SegmentWriter, onPacketLoss func(bool)) *SendingWindow {
 	window := &SendingWindow{
-		start: 0,
-		cap:   size,
-		len:   0,
-		last:  0,
-		data:  make([]*DataSegment, size),
-		prev:  make([]uint32, size),
-		next:  make([]uint32, size),
-		kcp:   kcp,
+		start:        0,
+		cap:          size,
+		len:          0,
+		last:         0,
+		data:         make([]*DataSegment, size),
+		prev:         make([]uint32, size),
+		next:         make([]uint32, size),
+		writer:       writer,
+		onPacketLoss: onPacketLoss,
 	}
 	return window
 }
@@ -102,15 +110,12 @@ func (this *SendingWindow) HandleFastAck(number uint32) {
 	}
 }
 
-func (this *SendingWindow) Flush() bool {
+func (this *SendingWindow) Flush(current uint32, resend uint32, rto uint32) {
 	if this.Len() == 0 {
-		return false
+		return
 	}
 
-	current := this.kcp.current
-	resent := this.kcp.fastresend
 	lost := false
-	segSent := false
 
 	for i := this.start; ; i = this.next[i] {
 		segment := this.data[i]
@@ -118,39 +123,29 @@ func (this *SendingWindow) Flush() bool {
 		if segment.transmit == 0 {
 			needsend = true
 			segment.transmit++
-			segment.timeout = current + this.kcp.rx_rto
+			segment.timeout = current + rto
 		} else if _itimediff(current, segment.timeout) >= 0 {
 			needsend = true
 			segment.transmit++
-			segment.timeout = current + this.kcp.rx_rto
+			segment.timeout = current + rto
 			lost = true
-		} else if segment.ackSkipped >= resent {
+		} else if segment.ackSkipped >= resend {
 			needsend = true
 			segment.transmit++
 			segment.ackSkipped = 0
-			segment.timeout = current + this.kcp.rx_rto
+			segment.timeout = current + rto
 			lost = true
 		}
 
 		if needsend {
-			segment.Timestamp = current
-			segment.SendingNext = this.kcp.snd_una
-			segment.Opt = 0
-			if this.kcp.state == StateReadyToClose {
-				segment.Opt = SegmentOptionClose
-			}
-
-			this.kcp.output.Write(segment)
-			segSent = true
+			this.writer.Write(segment)
 		}
 		if i == this.last {
 			break
 		}
 	}
 
-	this.kcp.HandleLost(lost)
-
-	return segSent
+	this.onPacketLoss(lost)
 }
 
 type SendingQueue struct {
@@ -210,4 +205,176 @@ func (this *SendingQueue) Clear() {
 
 func (this *SendingQueue) Len() uint32 {
 	return this.len
+}
+
+type SendingWorker struct {
+	sync.Mutex
+	kcp                 *KCP
+	window              *SendingWindow
+	queue               *SendingQueue
+	windowSize          uint32
+	firstUnacknowledged uint32
+	nextNumber          uint32
+	remoteNextNumber    uint32
+	controlWindow       uint32
+	fastResend          uint32
+	updated             bool
+}
+
+func NewSendingWorker(kcp *KCP) *SendingWorker {
+	worker := &SendingWorker{
+		kcp:              kcp,
+		queue:            NewSendingQueue(effectiveConfig.GetSendingQueueSize()),
+		fastResend:       2,
+		remoteNextNumber: 32,
+		windowSize:       effectiveConfig.GetSendingWindowSize(),
+		controlWindow:    effectiveConfig.GetSendingWindowSize(),
+	}
+	worker.window = NewSendingWindow(effectiveConfig.GetSendingWindowSize(), worker, worker.OnPacketLoss)
+	return worker
+}
+
+func (this *SendingWorker) ProcessReceivingNext(nextNumber uint32) {
+	this.Lock()
+	defer this.Unlock()
+
+	this.window.Clear(nextNumber)
+	this.FindFirstUnacknowledged()
+}
+
+// @Private
+func (this *SendingWorker) FindFirstUnacknowledged() {
+	prevUna := this.firstUnacknowledged
+	if this.window.Len() > 0 {
+		this.firstUnacknowledged = this.window.First().Number
+	} else {
+		this.firstUnacknowledged = this.nextNumber
+	}
+	if this.firstUnacknowledged != prevUna {
+		this.updated = true
+	}
+}
+
+func (this *SendingWorker) ProcessAck(number uint32) {
+	if number-this.firstUnacknowledged > this.windowSize {
+		return
+	}
+
+	this.Lock()
+	defer this.Unlock()
+	this.window.Remove(number - this.firstUnacknowledged)
+	this.FindFirstUnacknowledged()
+}
+
+func (this *SendingWorker) ProcessAckSegment(seg *AckSegment) {
+	if this.remoteNextNumber < seg.ReceivingWindow {
+		this.remoteNextNumber = seg.ReceivingWindow
+	}
+	this.ProcessReceivingNext(seg.ReceivingNext)
+	var maxack uint32
+	for i := 0; i < int(seg.Count); i++ {
+		timestamp := seg.TimestampList[i]
+		number := seg.NumberList[i]
+		if this.kcp.current-timestamp > 10000 {
+			this.kcp.update_ack(int32(this.kcp.current - timestamp))
+		}
+		this.ProcessAck(number)
+		if maxack < number {
+			maxack = number
+		}
+	}
+	this.Lock()
+	this.window.HandleFastAck(maxack)
+	this.Unlock()
+}
+
+func (this *SendingWorker) Push(b []byte) int {
+	nBytes := 0
+	for len(b) > 0 && !this.queue.IsFull() {
+		var size int
+		if len(b) > int(this.kcp.mss) {
+			size = int(this.kcp.mss)
+		} else {
+			size = len(b)
+		}
+		seg := &DataSegment{
+			Data: alloc.NewSmallBuffer().Clear().Append(b[:size]),
+		}
+		this.Lock()
+		this.queue.Push(seg)
+		this.Unlock()
+		b = b[size:]
+		nBytes += size
+	}
+	return nBytes
+}
+
+func (this *SendingWorker) Write(seg ISegment) {
+	dataSeg := seg.(*DataSegment)
+
+	dataSeg.Conv = this.kcp.conv
+	dataSeg.Timestamp = this.kcp.current
+	dataSeg.SendingNext = this.firstUnacknowledged
+	dataSeg.Opt = 0
+	if this.kcp.state == StateReadyToClose {
+		dataSeg.Opt = SegmentOptionClose
+	}
+
+	this.kcp.output.Write(dataSeg)
+	this.updated = false
+}
+
+func (this *SendingWorker) PingNecessary() bool {
+	return this.updated
+}
+
+func (this *SendingWorker) OnPacketLoss(lost bool) {
+	if !effectiveConfig.Congestion {
+		return
+	}
+
+	if lost {
+		this.controlWindow = 3 * this.controlWindow / 4
+	} else {
+		this.controlWindow += this.controlWindow / 4
+	}
+	if this.controlWindow < 4 {
+		this.controlWindow = 4
+	}
+	if this.controlWindow > this.windowSize {
+		this.controlWindow = this.windowSize
+	}
+}
+
+func (this *SendingWorker) Flush() {
+	this.Lock()
+	defer this.Unlock()
+
+	cwnd := this.firstUnacknowledged + this.windowSize
+	if cwnd > this.remoteNextNumber {
+		cwnd = this.remoteNextNumber
+	}
+	if effectiveConfig.Congestion && cwnd > this.firstUnacknowledged+this.controlWindow {
+		cwnd = this.firstUnacknowledged + this.controlWindow
+	}
+
+	for !this.queue.IsEmpty() && _itimediff(this.nextNumber, cwnd) < 0 {
+		seg := this.queue.Pop()
+		seg.Number = this.nextNumber
+		seg.timeout = this.kcp.current
+		seg.ackSkipped = 0
+		seg.transmit = 0
+		this.window.Push(seg)
+		this.nextNumber++
+	}
+
+	this.window.Flush(this.kcp.current, this.kcp.fastresend, this.kcp.rx_rto)
+}
+
+func (this *SendingWorker) CloseWrite() {
+	this.Lock()
+	defer this.Unlock()
+
+	this.window.Clear(0xFFFFFFFF)
+	this.queue.Clear()
 }

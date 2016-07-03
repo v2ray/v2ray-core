@@ -88,7 +88,7 @@ func (this *Connection) Write(b []byte) (int, error) {
 		this.RUnlock()
 
 		this.kcpAccess.Lock()
-		nBytes := this.kcp.Send(b[totalWritten:])
+		nBytes := this.kcp.sendingWorker.Push(b[totalWritten:])
 		if nBytes > 0 {
 			totalWritten += nBytes
 			if totalWritten == len(b) {
