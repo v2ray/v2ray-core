@@ -291,10 +291,10 @@ func (kcp *KCP) flush() {
 
 	// calculate window size
 	cwnd := kcp.snd_una + kcp.snd_wnd
-	if cwnd < kcp.rmt_wnd {
+	if cwnd > kcp.rmt_wnd {
 		cwnd = kcp.rmt_wnd
 	}
-	if kcp.congestionControl && cwnd < kcp.snd_una+kcp.cwnd {
+	if kcp.congestionControl && cwnd > kcp.snd_una+kcp.cwnd {
 		cwnd = kcp.snd_una + kcp.cwnd
 	}
 
