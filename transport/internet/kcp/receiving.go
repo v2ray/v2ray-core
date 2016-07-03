@@ -255,19 +255,11 @@ func (this *ReceivingWorker) ProcessSegment(seg *DataSegment) {
 	this.ProcessSendingNext(seg.SendingNext)
 	this.acklist.Add(number, seg.Timestamp)
 	this.windowMutex.Lock()
+	defer this.windowMutex.Unlock()
 
 	if !this.window.Set(idx, seg) {
 		seg.Release()
 	}
-	this.windowMutex.Unlock()
-
-	this.DumpWindow()
-}
-
-// @Private
-func (this *ReceivingWorker) DumpWindow() {
-	this.windowMutex.Lock()
-	defer this.windowMutex.Unlock()
 
 	for {
 		seg := this.window.RemoveFirst()
