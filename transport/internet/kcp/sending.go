@@ -341,8 +341,8 @@ func (this *SendingWorker) OnPacketLoss(lost bool) {
 	if this.controlWindow < 4 {
 		this.controlWindow = 4
 	}
-	if this.controlWindow > this.windowSize {
-		this.controlWindow = this.windowSize
+	if this.controlWindow > 2*this.windowSize {
+		this.controlWindow = 2 * this.windowSize
 	}
 }
 
