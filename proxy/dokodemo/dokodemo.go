@@ -116,7 +116,6 @@ func (this *DokodemoDoor) handleUDPResponse(dest v2net.Destination, payload *all
 }
 
 func (this *DokodemoDoor) ListenTCP() error {
-	log.Info("Dokodemo: Stream settings: ", this.meta.StreamSettings)
 	tcpListener, err := internet.ListenTCP(this.meta.Address, this.meta.Port, this.HandleTCPConnection, this.meta.StreamSettings)
 	if err != nil {
 		log.Error("Dokodemo: Failed to listen on ", this.meta.Address, ":", this.meta.Port, ": ", err)
