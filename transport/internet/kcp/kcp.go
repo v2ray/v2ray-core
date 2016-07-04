@@ -151,7 +151,7 @@ func (kcp *KCP) Input(data []byte) int {
 			kcp.lastPayloadTime = kcp.current
 		case *AckSegment:
 			kcp.HandleOption(seg.Opt)
-			kcp.sendingWorker.ProcessAckSegment(seg)
+			kcp.sendingWorker.ProcessSegment(seg)
 			kcp.lastPayloadTime = kcp.current
 		case *CmdOnlySegment:
 			kcp.HandleOption(seg.Opt)

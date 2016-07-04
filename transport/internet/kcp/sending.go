@@ -273,7 +273,7 @@ func (this *SendingWorker) ProcessAck(number uint32) {
 	this.FindFirstUnacknowledged()
 }
 
-func (this *SendingWorker) ProcessAckSegment(seg *AckSegment) {
+func (this *SendingWorker) ProcessSegment(seg *AckSegment) {
 	if this.remoteNextNumber < seg.ReceivingWindow {
 		this.remoteNextNumber = seg.ReceivingWindow
 	}
