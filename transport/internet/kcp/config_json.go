@@ -38,20 +38,10 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		this.Tti = tti
 	}
 	if jsonConfig.UpCap != nil {
-		upCap := *jsonConfig.UpCap
-		if upCap == 0 {
-			log.Error("KCP|Config: Invalid uplink capacity: ", upCap)
-			return common.ErrBadConfiguration
-		}
-		this.UplinkCapacity = upCap
+		this.UplinkCapacity = *jsonConfig.UpCap
 	}
 	if jsonConfig.DownCap != nil {
-		downCap := *jsonConfig.DownCap
-		if downCap == 0 {
-			log.Error("KCP|Config: Invalid downlink capacity: ", downCap)
-			return common.ErrBadConfiguration
-		}
-		this.DownlinkCapacity = downCap
+		this.DownlinkCapacity = *jsonConfig.DownCap
 	}
 	if jsonConfig.Congestion != nil {
 		this.Congestion = *jsonConfig.Congestion
