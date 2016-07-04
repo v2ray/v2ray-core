@@ -66,7 +66,7 @@ func TestSendingQueueClear(t *testing.T) {
 func TestSendingWindow(t *testing.T) {
 	assert := assert.On(t)
 
-	window := NewSendingWindow(5, 5, nil, nil)
+	window := NewSendingWindow(5, nil, nil)
 	window.Push(&DataSegment{
 		Number: 0,
 	})
