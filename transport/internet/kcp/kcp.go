@@ -137,7 +137,7 @@ func (kcp *KCP) update_ack(rtt int32) {
 func (kcp *KCP) Input(data []byte) int {
 	kcp.lastIncomingTime = kcp.current
 
-	var seg ISegment
+	var seg Segment
 	for {
 		seg, data = ReadSegment(data)
 		if seg == nil {

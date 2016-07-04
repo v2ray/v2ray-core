@@ -291,7 +291,7 @@ func (this *ReceivingWorker) Flush() {
 	this.acklist.Flush(this.kcp.current, this.kcp.rx_rto)
 }
 
-func (this *ReceivingWorker) Write(seg ISegment) {
+func (this *ReceivingWorker) Write(seg Segment) {
 	ackSeg := seg.(*AckSegment)
 	ackSeg.Conv = this.kcp.conv
 	ackSeg.ReceivingNext = this.nextNumber

@@ -22,7 +22,7 @@ const (
 	SegmentOptionClose SegmentOption = 1
 )
 
-type ISegment interface {
+type Segment interface {
 	common.Releasable
 	ByteSize() int
 	Bytes([]byte) []byte
@@ -115,7 +115,7 @@ func (this *CmdOnlySegment) Bytes(b []byte) []byte {
 
 func (this *CmdOnlySegment) Release() {}
 
-func ReadSegment(buf []byte) (ISegment, []byte) {
+func ReadSegment(buf []byte) (Segment, []byte) {
 	if len(buf) <= 4 {
 		return nil, nil
 	}

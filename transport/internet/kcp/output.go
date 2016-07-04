@@ -9,7 +9,7 @@ import (
 )
 
 type SegmentWriter interface {
-	Write(seg ISegment)
+	Write(seg Segment)
 }
 
 type BufferedSegmentWriter struct {
@@ -26,7 +26,7 @@ func NewSegmentWriter(writer *AuthenticationWriter) *BufferedSegmentWriter {
 	}
 }
 
-func (this *BufferedSegmentWriter) Write(seg ISegment) {
+func (this *BufferedSegmentWriter) Write(seg Segment) {
 	this.Lock()
 	defer this.Unlock()
 

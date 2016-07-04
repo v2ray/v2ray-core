@@ -316,7 +316,7 @@ func (this *SendingWorker) Push(b []byte) int {
 	return nBytes
 }
 
-func (this *SendingWorker) Write(seg ISegment) {
+func (this *SendingWorker) Write(seg Segment) {
 	dataSeg := seg.(*DataSegment)
 
 	dataSeg.Conv = this.kcp.conv
