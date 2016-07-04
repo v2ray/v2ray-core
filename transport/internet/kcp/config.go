@@ -14,12 +14,16 @@ func (this *Config) Apply() {
 	effectiveConfig = *this
 }
 
-func (this *Config) GetSendingWindowSize() uint32 {
+func (this *Config) GetSendingInFlightSize() uint32 {
 	size := this.UplinkCapacity * 1024 * 1024 / this.Mtu / (1000 / this.Tti) / 2
 	if size == 0 {
 		size = 8
 	}
 	return size
+}
+
+func (this *Config) GetSendingWindowSize() uint32 {
+	return this.GetSendingInFlightSize() * 4
 }
 
 func (this *Config) GetSendingQueueSize() uint32 {

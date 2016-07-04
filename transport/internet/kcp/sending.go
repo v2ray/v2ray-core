@@ -16,11 +16,12 @@ type SendingWindow struct {
 	prev []uint32
 	next []uint32
 
+	inFlightSize uint32
 	writer       SegmentWriter
 	onPacketLoss func(bool)
 }
 
-func NewSendingWindow(size uint32, writer SegmentWriter, onPacketLoss func(bool)) *SendingWindow {
+func NewSendingWindow(size uint32, inFlightSize uint32, writer SegmentWriter, onPacketLoss func(bool)) *SendingWindow {
 	window := &SendingWindow{
 		start:        0,
 		cap:          size,
@@ -31,6 +32,7 @@ func NewSendingWindow(size uint32, writer SegmentWriter, onPacketLoss func(bool)
 		next:         make([]uint32, size),
 		writer:       writer,
 		onPacketLoss: onPacketLoss,
+		inFlightSize: inFlightSize,
 	}
 	return window
 }
@@ -116,6 +118,7 @@ func (this *SendingWindow) Flush(current uint32, resend uint32, rto uint32) {
 	}
 
 	lost := false
+	var inFlightSize uint32
 
 	for i := this.start; ; i = this.next[i] {
 		segment := this.data[i]
@@ -139,6 +142,10 @@ func (this *SendingWindow) Flush(current uint32, resend uint32, rto uint32) {
 
 		if needsend {
 			this.writer.Write(segment)
+			inFlightSize++
+			if inFlightSize >= this.inFlightSize {
+				break
+			}
 		}
 		if i == this.last {
 			break
@@ -230,7 +237,7 @@ func NewSendingWorker(kcp *KCP) *SendingWorker {
 		windowSize:       effectiveConfig.GetSendingWindowSize(),
 		controlWindow:    effectiveConfig.GetSendingWindowSize(),
 	}
-	worker.window = NewSendingWindow(effectiveConfig.GetSendingWindowSize(), worker, worker.OnPacketLoss)
+	worker.window = NewSendingWindow(effectiveConfig.GetSendingWindowSize(), effectiveConfig.GetSendingInFlightSize(), worker, worker.OnPacketLoss)
 	return worker
 }
 
