@@ -49,7 +49,7 @@ func ChunkKeyGenerator(iv []byte) func() []byte {
 	return func() []byte {
 		newKey := make([]byte, 0, len(iv)+4)
 		newKey = append(newKey, iv...)
-		serial.IntToBytes(chunkId, newKey)
+		newKey = serial.IntToBytes(chunkId, newKey)
 		chunkId++
 		return newKey
 	}
