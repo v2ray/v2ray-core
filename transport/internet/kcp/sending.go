@@ -16,12 +16,13 @@ type SendingWindow struct {
 	prev []uint32
 	next []uint32
 
-	inFlightSize uint32
-	writer       SegmentWriter
-	onPacketLoss func(bool)
+	inFlightSize      uint32
+	totalInFlightSize uint32
+	writer            SegmentWriter
+	onPacketLoss      func(uint32)
 }
 
-func NewSendingWindow(size uint32, inFlightSize uint32, writer SegmentWriter, onPacketLoss func(bool)) *SendingWindow {
+func NewSendingWindow(size uint32, inFlightSize uint32, writer SegmentWriter, onPacketLoss func(uint32)) *SendingWindow {
 	window := &SendingWindow{
 		start:        0,
 		cap:          size,
@@ -72,6 +73,7 @@ func (this *SendingWindow) Remove(idx uint32) {
 	if seg == nil {
 		return
 	}
+	this.totalInFlightSize--
 	seg.Release()
 	this.data[pos] = nil
 	if pos == this.start && pos == this.last {
@@ -117,7 +119,7 @@ func (this *SendingWindow) Flush(current uint32, resend uint32, rto uint32) {
 		return
 	}
 
-	lost := false
+	var lost uint32
 	var inFlightSize uint32
 
 	for i := this.start; ; i = this.next[i] {
@@ -127,17 +129,17 @@ func (this *SendingWindow) Flush(current uint32, resend uint32, rto uint32) {
 			needsend = true
 			segment.transmit++
 			segment.timeout = current + rto
+			this.totalInFlightSize++
 		} else if _itimediff(current, segment.timeout) >= 0 {
 			needsend = true
 			segment.transmit++
 			segment.timeout = current + rto
-			lost = true
+			lost++
 		} else if segment.ackSkipped >= resend {
 			needsend = true
 			segment.transmit++
 			segment.ackSkipped = 0
 			segment.timeout = current + rto
-			lost = true
 		}
 
 		if needsend {
@@ -152,7 +154,10 @@ func (this *SendingWindow) Flush(current uint32, resend uint32, rto uint32) {
 		}
 	}
 
-	this.onPacketLoss(lost)
+	if inFlightSize > 0 && this.totalInFlightSize != 0 {
+		rate := lost * 100 / this.totalInFlightSize
+		this.onPacketLoss(rate)
+	}
 }
 
 type SendingQueue struct {
@@ -282,7 +287,7 @@ func (this *SendingWorker) ProcessSegment(seg *AckSegment) {
 	for i := 0; i < int(seg.Count); i++ {
 		timestamp := seg.TimestampList[i]
 		number := seg.NumberList[i]
-		if this.kcp.current-timestamp > 10000 {
+		if this.kcp.current-timestamp < 10000 {
 			this.kcp.update_ack(int32(this.kcp.current - timestamp))
 		}
 		this.ProcessAck(number)
@@ -335,14 +340,14 @@ func (this *SendingWorker) PingNecessary() bool {
 	return this.updated
 }
 
-func (this *SendingWorker) OnPacketLoss(lost bool) {
-	if !effectiveConfig.Congestion {
+func (this *SendingWorker) OnPacketLoss(lossRate uint32) {
+	if !effectiveConfig.Congestion || this.kcp.rx_srtt == 0 {
 		return
 	}
 
-	if lost {
+	if lossRate >= 15 {
 		this.controlWindow = 3 * this.controlWindow / 4
-	} else {
+	} else if lossRate <= 5 {
 		this.controlWindow += this.controlWindow / 4
 	}
 	if this.controlWindow < 4 {
