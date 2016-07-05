@@ -285,7 +285,7 @@ func (this *ReceivingWorker) SetReadDeadline(t time.Time) {
 }
 
 func (this *ReceivingWorker) Flush(current uint32) {
-	this.acklist.Flush(current, this.conn.rx_rto)
+	this.acklist.Flush(current, this.conn.roundTrip.Timeout())
 }
 
 func (this *ReceivingWorker) Write(seg Segment) {

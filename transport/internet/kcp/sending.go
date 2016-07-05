@@ -293,7 +293,7 @@ func (this *SendingWorker) ProcessSegment(current uint32, seg *AckSegment) {
 		timestamp := seg.TimestampList[i]
 		number := seg.NumberList[i]
 		if current-timestamp < 10000 {
-			this.conn.update_ack(int32(current - timestamp))
+			this.conn.roundTrip.Update(current - timestamp)
 		}
 		this.ProcessAck(number)
 		if maxack < number {
@@ -344,7 +344,7 @@ func (this *SendingWorker) PingNecessary() bool {
 }
 
 func (this *SendingWorker) OnPacketLoss(lossRate uint32) {
-	if !effectiveConfig.Congestion || this.conn.rx_srtt == 0 {
+	if !effectiveConfig.Congestion || this.conn.roundTrip.Timeout() == 0 {
 		return
 	}
 
@@ -383,7 +383,7 @@ func (this *SendingWorker) Flush(current uint32) {
 		this.nextNumber++
 	}
 
-	this.window.Flush(current, this.conn.fastresend, this.conn.rx_rto, cwnd)
+	this.window.Flush(current, this.conn.fastresend, this.conn.roundTrip.Timeout(), cwnd)
 }
 
 func (this *SendingWorker) CloseWrite() {
