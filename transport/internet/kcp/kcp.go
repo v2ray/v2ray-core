@@ -9,10 +9,6 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 )
 
-func _itimediff(later, earlier uint32) int32 {
-	return (int32)(later - earlier)
-}
-
 type State int
 
 const (
@@ -178,7 +174,7 @@ func (kcp *KCP) flush() {
 	if kcp.state == StateTerminated {
 		return
 	}
-	if kcp.state == StateActive && _itimediff(kcp.current, kcp.lastPayloadTime) >= 30000 {
+	if kcp.state == StateActive && kcp.current-kcp.lastPayloadTime >= 30000 {
 		kcp.OnClose()
 	}
 
@@ -189,13 +185,13 @@ func (kcp *KCP) flush() {
 		})
 		kcp.output.Flush()
 
-		if _itimediff(kcp.current, kcp.stateBeginTime) > 8000 {
+		if kcp.current-kcp.stateBeginTime > 8000 {
 			kcp.SetState(StateTerminated)
 		}
 		return
 	}
 
-	if kcp.state == StateReadyToClose && _itimediff(kcp.current, kcp.stateBeginTime) > 15000 {
+	if kcp.state == StateReadyToClose && kcp.current-kcp.stateBeginTime > 15000 {
 		kcp.SetState(StateTerminating)
 	}
 
@@ -203,7 +199,7 @@ func (kcp *KCP) flush() {
 	kcp.receivingWorker.Flush()
 	kcp.sendingWorker.Flush()
 
-	if kcp.sendingWorker.PingNecessary() || kcp.receivingWorker.PingNecessary() || _itimediff(kcp.current, kcp.lastPingTime) >= 5000 {
+	if kcp.sendingWorker.PingNecessary() || kcp.receivingWorker.PingNecessary() || kcp.current-kcp.lastPingTime >= 5000 {
 		seg := NewCmdOnlySegment()
 		seg.Conv = kcp.conv
 		seg.Cmd = SegmentCommandPing

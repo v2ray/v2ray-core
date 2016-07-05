@@ -108,7 +108,7 @@ func (this *SendingWindow) HandleFastAck(number uint32) {
 
 	for i := this.start; ; i = this.next[i] {
 		seg := this.data[i]
-		if _itimediff(number, seg.Number) < 0 {
+		if number-seg.Number > 0x7FFFFFFF {
 			break
 		}
 		if number != seg.Number {
@@ -136,7 +136,7 @@ func (this *SendingWindow) Flush(current uint32, resend uint32, rto uint32, maxI
 			segment.transmit++
 			segment.timeout = current + rto
 			this.totalInFlightSize++
-		} else if _itimediff(current, segment.timeout) >= 0 {
+		} else if current-segment.timeout < 0x7FFFFFFF {
 			needsend = true
 			segment.transmit++
 			segment.timeout = current + rto
