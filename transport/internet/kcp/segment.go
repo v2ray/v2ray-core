@@ -186,10 +186,9 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 	buf = buf[2:]
 
 	if cmd == SegmentCommandData {
-		seg := &DataSegment{
-			Conv: conv,
-			Opt:  opt,
-		}
+		seg := NewDataSegment()
+		seg.Conv = conv
+		seg.Opt = opt
 		if len(buf) < 16 {
 			return nil, nil
 		}
@@ -215,10 +214,9 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 	}
 
 	if cmd == SegmentCommandACK {
-		seg := &AckSegment{
-			Conv: conv,
-			Opt:  opt,
-		}
+		seg := NewAckSegment()
+		seg.Conv = conv
+		seg.Opt = opt
 		if len(buf) < 9 {
 			return nil, nil
 		}
@@ -247,11 +245,10 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 		return seg, buf
 	}
 
-	seg := &CmdOnlySegment{
-		Conv: conv,
-		Cmd:  cmd,
-		Opt:  opt,
-	}
+	seg := NewCmdOnlySegment()
+	seg.Conv = conv
+	seg.Cmd = cmd
+	seg.Opt = opt
 
 	if len(buf) < 8 {
 		return nil, nil
