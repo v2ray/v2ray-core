@@ -307,6 +307,8 @@ func (this *SendingWorker) ProcessSegment(current uint32, seg *AckSegment) {
 
 func (this *SendingWorker) Push(b []byte) int {
 	nBytes := 0
+	this.Lock()
+	defer this.Unlock()
 	for len(b) > 0 && !this.queue.IsFull() {
 		var size int
 		if len(b) > int(this.conn.mss) {
@@ -316,9 +318,7 @@ func (this *SendingWorker) Push(b []byte) int {
 		}
 		seg := NewDataSegment()
 		seg.Data = alloc.NewSmallBuffer().Clear().Append(b[:size])
-		this.Lock()
 		this.queue.Push(seg)
-		this.Unlock()
 		b = b[size:]
 		nBytes += size
 	}
@@ -331,7 +331,7 @@ func (this *SendingWorker) Write(seg Segment) {
 	dataSeg.Conv = this.conn.conv
 	dataSeg.SendingNext = this.firstUnacknowledged
 	dataSeg.Opt = 0
-	if this.conn.state == StateReadyToClose {
+	if this.conn.State() == StateReadyToClose {
 		dataSeg.Opt = SegmentOptionClose
 	}
 
