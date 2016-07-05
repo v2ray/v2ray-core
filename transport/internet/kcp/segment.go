@@ -1,10 +1,24 @@
 package kcp
 
 import (
+	"sync"
+
 	"github.com/v2ray/v2ray-core/common"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	_ "github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/common/serial"
+)
+
+var (
+	dataSegmentPool = &sync.Pool{
+		New: func() interface{} { return new(DataSegment) },
+	}
+	ackSegmentPool = &sync.Pool{
+		New: func() interface{} { return new(AckSegment) },
+	}
+	cmdSegmentPool = &sync.Pool{
+		New: func() interface{} { return new(CmdOnlySegment) },
+	}
 )
 
 type SegmentCommand byte
@@ -45,6 +59,10 @@ type DataSegment struct {
 	transmit   uint32
 }
 
+func NewDataSegment() *DataSegment {
+	return dataSegmentPool.Get().(*DataSegment)
+}
+
 func (this *DataSegment) Bytes(b []byte) []byte {
 	b = serial.Uint16ToBytes(this.Conv, b)
 	b = append(b, byte(SegmentCommandData), byte(this.Opt))
@@ -62,6 +80,12 @@ func (this *DataSegment) ByteSize() int {
 
 func (this *DataSegment) Release() {
 	this.Data.Release()
+	this.Data = nil
+	this.Opt = 0
+	this.timeout = 0
+	this.ackSkipped = 0
+	this.transmit = 0
+	dataSegmentPool.Put(this)
 }
 
 type AckSegment struct {
@@ -72,6 +96,17 @@ type AckSegment struct {
 	Count           byte
 	NumberList      []uint32
 	TimestampList   []uint32
+}
+
+func NewAckSegment() *AckSegment {
+	seg := ackSegmentPool.Get().(*AckSegment)
+	if seg.NumberList == nil {
+		seg.NumberList = make([]uint32, 0, 128)
+	}
+	if seg.TimestampList == nil {
+		seg.TimestampList = make([]uint32, 0, 128)
+	}
+	return seg
 }
 
 func (this *AckSegment) ByteSize() int {
@@ -91,7 +126,13 @@ func (this *AckSegment) Bytes(b []byte) []byte {
 	return b
 }
 
-func (this *AckSegment) Release() {}
+func (this *AckSegment) Release() {
+	this.Opt = 0
+	this.Count = 0
+	this.NumberList = this.NumberList[:0]
+	this.TimestampList = this.TimestampList[:0]
+	ackSegmentPool.Put(this)
+}
 
 type CmdOnlySegment struct {
 	Conv         uint16
@@ -99,6 +140,10 @@ type CmdOnlySegment struct {
 	Opt          SegmentOption
 	SendingNext  uint32
 	ReceivinNext uint32
+}
+
+func NewCmdOnlySegment() *CmdOnlySegment {
+	return cmdSegmentPool.Get().(*CmdOnlySegment)
 }
 
 func (this *CmdOnlySegment) ByteSize() int {
@@ -113,7 +158,10 @@ func (this *CmdOnlySegment) Bytes(b []byte) []byte {
 	return b
 }
 
-func (this *CmdOnlySegment) Release() {}
+func (this *CmdOnlySegment) Release() {
+	this.Opt = 0
+	cmdSegmentPool.Put(this)
+}
 
 func ReadSegment(buf []byte) (Segment, []byte) {
 	if len(buf) <= 4 {

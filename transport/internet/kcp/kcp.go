@@ -204,12 +204,11 @@ func (kcp *KCP) flush() {
 	kcp.sendingWorker.Flush()
 
 	if kcp.sendingWorker.PingNecessary() || kcp.receivingWorker.PingNecessary() || _itimediff(kcp.current, kcp.lastPingTime) >= 5000 {
-		seg := &CmdOnlySegment{
-			Conv:         kcp.conv,
-			Cmd:          SegmentCommandPing,
-			ReceivinNext: kcp.receivingWorker.nextNumber,
-			SendingNext:  kcp.sendingWorker.firstUnacknowledged,
-		}
+		seg := NewCmdOnlySegment()
+		seg.Conv = kcp.conv
+		seg.Cmd = SegmentCommandPing
+		seg.ReceivinNext = kcp.receivingWorker.nextNumber
+		seg.SendingNext = kcp.sendingWorker.firstUnacknowledged
 		if kcp.state == StateReadyToClose {
 			seg.Opt = SegmentOptionClose
 		}

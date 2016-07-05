@@ -313,9 +313,8 @@ func (this *SendingWorker) Push(b []byte) int {
 		} else {
 			size = len(b)
 		}
-		seg := &DataSegment{
-			Data: alloc.NewSmallBuffer().Clear().Append(b[:size]),
-		}
+		seg := NewDataSegment()
+		seg.Data = alloc.NewSmallBuffer().Clear().Append(b[:size])
 		this.Lock()
 		this.queue.Push(seg)
 		this.Unlock()

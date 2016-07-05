@@ -200,7 +200,7 @@ func (this *AckList) Clear(una uint32) {
 }
 
 func (this *AckList) Flush(current uint32, rto uint32) {
-	seg := new(AckSegment)
+	seg := NewAckSegment()
 	this.Lock()
 	for i := 0; i < len(this.numbers); i++ {
 		if this.nextFlush[i] <= current {
