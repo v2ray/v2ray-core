@@ -109,6 +109,16 @@ func NewAckSegment() *AckSegment {
 	return seg
 }
 
+func (this *AckSegment) PutNumber(number uint32, timestamp uint32) {
+	this.Count++
+	this.NumberList = append(this.NumberList, number)
+	this.TimestampList = append(this.TimestampList, timestamp)
+}
+
+func (this *AckSegment) IsFull() bool {
+	return this.Count == 128
+}
+
 func (this *AckSegment) ByteSize() int {
 	return 2 + 1 + 1 + 4 + 4 + 1 + int(this.Count)*4 + int(this.Count)*4
 }

@@ -202,15 +202,10 @@ func (this *AckList) Clear(una uint32) {
 func (this *AckList) Flush(current uint32, rto uint32) {
 	seg := NewAckSegment()
 	this.Lock()
-	for i := 0; i < len(this.numbers); i++ {
+	for i := 0; i < len(this.numbers) && !seg.IsFull(); i++ {
 		if this.nextFlush[i] <= current {
-			seg.Count++
-			seg.NumberList = append(seg.NumberList, this.numbers[i])
-			seg.TimestampList = append(seg.TimestampList, this.timestamps[i])
+			seg.PutNumber(this.numbers[i], this.timestamps[i])
 			this.nextFlush[i] = current + rto/2
-			if seg.Count == 128 {
-				break
-			}
 		}
 	}
 	this.Unlock()
