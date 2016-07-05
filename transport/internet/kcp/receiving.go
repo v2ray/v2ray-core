@@ -112,6 +112,9 @@ L:
 				return totalBytes, errTimeout
 			}
 			timeToSleep += 500 * time.Millisecond
+			if timeToSleep > 5*time.Second {
+				timeToSleep = 5 * time.Second
+			}
 		}
 	}
 
@@ -119,9 +122,6 @@ L:
 }
 
 func (this *ReceivingQueue) Put(payload *alloc.Buffer) bool {
-	this.Lock()
-	defer this.Unlock()
-
 	if this.closed {
 		payload.Release()
 		return false
@@ -211,6 +211,7 @@ func (this *AckList) Flush(current uint32, rto uint32) {
 	this.Unlock()
 	if seg.Count > 0 {
 		this.writer.Write(seg)
+		seg.Release()
 	}
 }
 
@@ -268,6 +269,7 @@ func (this *ReceivingWorker) ProcessSegment(seg *DataSegment) {
 		}
 
 		seg.Data = nil
+		seg.Release()
 		this.window.Advance()
 		this.nextNumber++
 		this.updated = true

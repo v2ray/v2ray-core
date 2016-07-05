@@ -230,9 +230,6 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 		seg.Count = buf[0]
 		buf = buf[1:]
 
-		seg.NumberList = make([]uint32, 0, seg.Count)
-		seg.TimestampList = make([]uint32, 0, seg.Count)
-
 		if len(buf) < int(seg.Count)*8 {
 			return nil, nil
 		}

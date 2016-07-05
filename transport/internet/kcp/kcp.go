@@ -215,6 +215,7 @@ func (kcp *KCP) flush() {
 		kcp.output.Write(seg)
 		kcp.lastPingTime = kcp.current
 		kcp.sendingUpdated = false
+		seg.Release()
 	}
 
 	// flash remain segments

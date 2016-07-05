@@ -39,7 +39,7 @@ func (this *BufferedSegmentWriter) Write(seg Segment) {
 		this.buffer = alloc.NewSmallBuffer().Clear()
 	}
 
-	this.buffer.Append(seg.Bytes(nil))
+	this.buffer.Value = seg.Bytes(this.buffer.Value)
 }
 
 func (this *BufferedSegmentWriter) FlushWithoutLock() {
