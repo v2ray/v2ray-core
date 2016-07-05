@@ -149,6 +149,7 @@ func (this *SendingWindow) Flush(current uint32, resend uint32, rto uint32, maxI
 		}
 
 		if needsend {
+			segment.Timestamp = current
 			this.writer.Write(segment)
 			inFlightSize++
 			if inFlightSize >= maxInFlightSize {
@@ -227,7 +228,7 @@ func (this *SendingQueue) Len() uint32 {
 
 type SendingWorker struct {
 	sync.Mutex
-	kcp                 *KCP
+	conn                *Connection
 	window              *SendingWindow
 	queue               *SendingQueue
 	firstUnacknowledged uint32
@@ -238,9 +239,9 @@ type SendingWorker struct {
 	updated             bool
 }
 
-func NewSendingWorker(kcp *KCP) *SendingWorker {
+func NewSendingWorker(kcp *Connection) *SendingWorker {
 	worker := &SendingWorker{
-		kcp:              kcp,
+		conn:             kcp,
 		queue:            NewSendingQueue(effectiveConfig.GetSendingQueueSize()),
 		fastResend:       2,
 		remoteNextNumber: 32,
@@ -282,7 +283,7 @@ func (this *SendingWorker) ProcessAck(number uint32) {
 	this.FindFirstUnacknowledged()
 }
 
-func (this *SendingWorker) ProcessSegment(seg *AckSegment) {
+func (this *SendingWorker) ProcessSegment(current uint32, seg *AckSegment) {
 	if this.remoteNextNumber < seg.ReceivingWindow {
 		this.remoteNextNumber = seg.ReceivingWindow
 	}
@@ -291,8 +292,8 @@ func (this *SendingWorker) ProcessSegment(seg *AckSegment) {
 	for i := 0; i < int(seg.Count); i++ {
 		timestamp := seg.TimestampList[i]
 		number := seg.NumberList[i]
-		if this.kcp.current-timestamp < 10000 {
-			this.kcp.update_ack(int32(this.kcp.current - timestamp))
+		if current-timestamp < 10000 {
+			this.conn.update_ack(int32(current - timestamp))
 		}
 		this.ProcessAck(number)
 		if maxack < number {
@@ -308,8 +309,8 @@ func (this *SendingWorker) Push(b []byte) int {
 	nBytes := 0
 	for len(b) > 0 && !this.queue.IsFull() {
 		var size int
-		if len(b) > int(this.kcp.mss) {
-			size = int(this.kcp.mss)
+		if len(b) > int(this.conn.mss) {
+			size = int(this.conn.mss)
 		} else {
 			size = len(b)
 		}
@@ -327,15 +328,14 @@ func (this *SendingWorker) Push(b []byte) int {
 func (this *SendingWorker) Write(seg Segment) {
 	dataSeg := seg.(*DataSegment)
 
-	dataSeg.Conv = this.kcp.conv
-	dataSeg.Timestamp = this.kcp.current
+	dataSeg.Conv = this.conn.conv
 	dataSeg.SendingNext = this.firstUnacknowledged
 	dataSeg.Opt = 0
-	if this.kcp.state == StateReadyToClose {
+	if this.conn.state == StateReadyToClose {
 		dataSeg.Opt = SegmentOptionClose
 	}
 
-	this.kcp.output.Write(dataSeg)
+	this.conn.output.Write(dataSeg)
 	this.updated = false
 }
 
@@ -344,7 +344,7 @@ func (this *SendingWorker) PingNecessary() bool {
 }
 
 func (this *SendingWorker) OnPacketLoss(lossRate uint32) {
-	if !effectiveConfig.Congestion || this.kcp.rx_srtt == 0 {
+	if !effectiveConfig.Congestion || this.conn.rx_srtt == 0 {
 		return
 	}
 
@@ -361,7 +361,7 @@ func (this *SendingWorker) OnPacketLoss(lossRate uint32) {
 	}
 }
 
-func (this *SendingWorker) Flush() {
+func (this *SendingWorker) Flush(current uint32) {
 	this.Lock()
 	defer this.Unlock()
 
@@ -376,14 +376,14 @@ func (this *SendingWorker) Flush() {
 	for !this.queue.IsEmpty() && !this.window.IsFull() {
 		seg := this.queue.Pop()
 		seg.Number = this.nextNumber
-		seg.timeout = this.kcp.current
+		seg.timeout = current
 		seg.ackSkipped = 0
 		seg.transmit = 0
 		this.window.Push(seg)
 		this.nextNumber++
 	}
 
-	this.window.Flush(this.kcp.current, this.kcp.fastresend, this.kcp.rx_rto, cwnd)
+	this.window.Flush(current, this.conn.fastresend, this.conn.rx_rto, cwnd)
 }
 
 func (this *SendingWorker) CloseWrite() {

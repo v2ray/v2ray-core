@@ -216,7 +216,7 @@ func (this *AckList) Flush(current uint32, rto uint32) {
 }
 
 type ReceivingWorker struct {
-	kcp         *KCP
+	conn        *Connection
 	queue       *ReceivingQueue
 	window      *ReceivingWindow
 	windowMutex sync.Mutex
@@ -226,10 +226,10 @@ type ReceivingWorker struct {
 	windowSize  uint32
 }
 
-func NewReceivingWorker(kcp *KCP) *ReceivingWorker {
+func NewReceivingWorker(kcp *Connection) *ReceivingWorker {
 	windowSize := effectiveConfig.GetReceivingWindowSize()
 	worker := &ReceivingWorker{
-		kcp:        kcp,
+		conn:       kcp,
 		queue:      NewReceivingQueue(effectiveConfig.GetReceivingQueueSize()),
 		window:     NewReceivingWindow(windowSize),
 		windowSize: windowSize,
@@ -284,19 +284,19 @@ func (this *ReceivingWorker) SetReadDeadline(t time.Time) {
 	this.queue.SetReadDeadline(t)
 }
 
-func (this *ReceivingWorker) Flush() {
-	this.acklist.Flush(this.kcp.current, this.kcp.rx_rto)
+func (this *ReceivingWorker) Flush(current uint32) {
+	this.acklist.Flush(current, this.conn.rx_rto)
 }
 
 func (this *ReceivingWorker) Write(seg Segment) {
 	ackSeg := seg.(*AckSegment)
-	ackSeg.Conv = this.kcp.conv
+	ackSeg.Conv = this.conn.conv
 	ackSeg.ReceivingNext = this.nextNumber
 	ackSeg.ReceivingWindow = this.nextNumber + this.windowSize
-	if this.kcp.state == StateReadyToClose {
+	if this.conn.state == StateReadyToClose {
 		ackSeg.Opt = SegmentOptionClose
 	}
-	this.kcp.output.Write(ackSeg)
+	this.conn.output.Write(ackSeg)
 	this.updated = false
 }
 

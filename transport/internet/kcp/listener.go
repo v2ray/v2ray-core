@@ -81,7 +81,7 @@ func (this *Listener) OnReceive(payload *alloc.Buffer, src v2net.Destination) {
 		}
 		this.sessions[srcAddrStr] = conn
 	}
-	conn.kcpInput(payload.Value)
+	conn.Input(payload.Value)
 }
 
 func (this *Listener) Remove(dest string) {
