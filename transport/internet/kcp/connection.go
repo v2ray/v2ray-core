@@ -99,9 +99,11 @@ func (this *RountTripInfo) SmoothedTime() uint32 {
 type Connection struct {
 	block         Authenticator
 	local, remote net.Addr
+	rd            time.Time
 	wd            time.Time // write deadline
 	writer        io.WriteCloser
 	since         int64
+	dataInputCond *sync.Cond
 
 	conv             uint16
 	state            State
@@ -133,6 +135,7 @@ func NewConnection(conv uint16, writerCloser io.WriteCloser, local *net.UDPAddr,
 	conn.block = block
 	conn.writer = writerCloser
 	conn.since = nowMillisec()
+	conn.dataInputCond = sync.NewCond(new(sync.Mutex))
 
 	authWriter := &AuthenticationWriter{
 		Authenticator: block,
@@ -167,10 +170,28 @@ func (this *Connection) Read(b []byte) (int, error) {
 		return 0, io.EOF
 	}
 
-	if this.State() == StateTerminating || this.State() == StateTerminated {
-		return 0, io.EOF
+	for {
+		if this.State() == StateReadyToClose || this.State() == StateTerminating || this.State() == StateTerminated {
+			return 0, io.EOF
+		}
+		nBytes := this.receivingWorker.Read(b)
+		if nBytes > 0 {
+			return nBytes, nil
+		}
+		var timer *time.Timer
+		if !this.rd.IsZero() && this.rd.Before(time.Now()) {
+			timer = time.AfterFunc(this.rd.Sub(time.Now()), this.dataInputCond.Signal)
+		}
+		this.dataInputCond.L.Lock()
+		this.dataInputCond.Wait()
+		this.dataInputCond.L.Unlock()
+		if timer != nil {
+			timer.Stop()
+		}
+		if !this.rd.IsZero() && this.rd.Before(time.Now()) {
+			return 0, errTimeout
+		}
 	}
-	return this.receivingWorker.Read(b)
 }
 
 // Write implements the Conn Write method.
@@ -226,6 +247,8 @@ func (this *Connection) Close() error {
 		return errClosedConnection
 	}
 
+	this.dataInputCond.Broadcast()
+
 	state := this.State()
 	if state == StateReadyToClose ||
 		state == StateTerminating ||
@@ -276,7 +299,7 @@ func (this *Connection) SetReadDeadline(t time.Time) error {
 	if this == nil || this.State() != StateActive {
 		return errClosedConnection
 	}
-	this.receivingWorker.SetReadDeadline(t)
+	this.rd = t
 	return nil
 }
 
@@ -371,6 +394,7 @@ func (this *Connection) Input(data []byte) int {
 			this.HandleOption(seg.Opt)
 			this.receivingWorker.ProcessSegment(seg)
 			atomic.StoreUint32(&this.lastPayloadTime, current)
+			this.dataInputCond.Signal()
 		case *AckSegment:
 			this.HandleOption(seg.Opt)
 			this.sendingWorker.ProcessSegment(current, seg)

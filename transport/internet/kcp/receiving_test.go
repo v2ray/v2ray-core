@@ -1,9 +1,7 @@
 package kcp_test
 
 import (
-	"io"
 	"testing"
-	"time"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/testing/assert"
@@ -42,35 +40,17 @@ func TestRecivingQueue(t *testing.T) {
 	assert := assert.On(t)
 
 	queue := NewReceivingQueue(2)
-	assert.Bool(queue.Put(alloc.NewSmallBuffer().Clear().AppendString("abcd"))).IsTrue()
-	assert.Bool(queue.Put(alloc.NewSmallBuffer().Clear().AppendString("efg"))).IsTrue()
-	assert.Bool(queue.Put(alloc.NewSmallBuffer().Clear().AppendString("more content"))).IsFalse()
+	queue.Put(alloc.NewSmallBuffer().Clear().AppendString("abcd"))
+	queue.Put(alloc.NewSmallBuffer().Clear().AppendString("efg"))
+	assert.Bool(queue.IsFull()).IsTrue()
 
 	b := make([]byte, 1024)
-	nBytes, err := queue.Read(b)
-	assert.Error(err).IsNil()
+	nBytes := queue.Read(b)
 	assert.Int(nBytes).Equals(7)
 	assert.String(string(b[:nBytes])).Equals("abcdefg")
 
-	assert.Bool(queue.Put(alloc.NewSmallBuffer().Clear().AppendString("1"))).IsTrue()
+	queue.Put(alloc.NewSmallBuffer().Clear().AppendString("1"))
 	queue.Close()
-	nBytes, err = queue.Read(b)
-	assert.Error(err).Equals(io.EOF)
-}
-
-func TestRecivingQueueTimeout(t *testing.T) {
-	assert := assert.On(t)
-
-	queue := NewReceivingQueue(2)
-	assert.Bool(queue.Put(alloc.NewSmallBuffer().Clear().AppendString("abcd"))).IsTrue()
-	queue.SetReadDeadline(time.Now().Add(time.Second))
-
-	b := make([]byte, 1024)
-	nBytes, err := queue.Read(b)
-	assert.Error(err).IsNil()
-	assert.Int(nBytes).Equals(4)
-	assert.String(string(b[:nBytes])).Equals("abcd")
-
-	nBytes, err = queue.Read(b)
-	assert.Error(err).IsNotNil()
+	nBytes = queue.Read(b)
+	assert.Int(nBytes).Equals(0)
 }
