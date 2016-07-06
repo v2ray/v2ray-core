@@ -255,6 +255,10 @@ func (this *SendingWorker) ProcessReceivingNext(nextNumber uint32) {
 	this.Lock()
 	defer this.Unlock()
 
+	this.ProcessReceivingNextWithoutLock(nextNumber)
+}
+
+func (this *SendingWorker) ProcessReceivingNextWithoutLock(nextNumber uint32) {
 	this.window.Clear(nextNumber)
 	this.FindFirstUnacknowledged()
 }
@@ -272,22 +276,24 @@ func (this *SendingWorker) FindFirstUnacknowledged() {
 	}
 }
 
+// @Private
 func (this *SendingWorker) ProcessAck(number uint32) {
 	if number-this.firstUnacknowledged > this.window.Size() {
 		return
 	}
 
-	this.Lock()
-	defer this.Unlock()
 	this.window.Remove(number - this.firstUnacknowledged)
 	this.FindFirstUnacknowledged()
 }
 
 func (this *SendingWorker) ProcessSegment(current uint32, seg *AckSegment) {
+	this.Lock()
+	defer this.Unlock()
+
 	if this.remoteNextNumber < seg.ReceivingWindow {
 		this.remoteNextNumber = seg.ReceivingWindow
 	}
-	this.ProcessReceivingNext(seg.ReceivingNext)
+	this.ProcessReceivingNextWithoutLock(seg.ReceivingNext)
 	var maxack uint32
 	for i := 0; i < int(seg.Count); i++ {
 		timestamp := seg.TimestampList[i]
@@ -300,9 +306,8 @@ func (this *SendingWorker) ProcessSegment(current uint32, seg *AckSegment) {
 			maxack = number
 		}
 	}
-	this.Lock()
+
 	this.window.HandleFastAck(maxack)
-	this.Unlock()
 }
 
 func (this *SendingWorker) Push(b []byte) int {
@@ -325,6 +330,7 @@ func (this *SendingWorker) Push(b []byte) int {
 	return nBytes
 }
 
+// @Private
 func (this *SendingWorker) Write(seg Segment) {
 	dataSeg := seg.(*DataSegment)
 
