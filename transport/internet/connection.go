@@ -1,6 +1,7 @@
 package internet
 
 import (
+	"crypto/tls"
 	"net"
 )
 
@@ -13,14 +14,38 @@ type Reusable interface {
 
 type StreamConnectionType int
 
-var (
+const (
 	StreamConnectionTypeRawTCP StreamConnectionType = 1
 	StreamConnectionTypeTCP    StreamConnectionType = 2
 	StreamConnectionTypeKCP    StreamConnectionType = 4
 )
 
+type StreamSecurityType int
+
+const (
+	StreamSecurityTypeNone StreamSecurityType = 0
+	StreamSecurityTypeTLS  StreamSecurityType = 1
+)
+
+type TLSSettings struct {
+	Certs []tls.Certificate
+}
+
+func (this *TLSSettings) GetTLSConfig() *tls.Config {
+	config := &tls.Config{
+		InsecureSkipVerify: true,
+	}
+
+	config.Certificates = this.Certs
+	config.BuildNameToCertificate()
+
+	return config
+}
+
 type StreamSettings struct {
-	Type StreamConnectionType
+	Type        StreamConnectionType
+	Security    StreamSecurityType
+	TLSSettings *TLSSettings
 }
 
 func (this *StreamSettings) IsCapableOf(streamType StreamConnectionType) bool {

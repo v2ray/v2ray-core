@@ -1,12 +1,14 @@
 package internet
 
 import (
+	"crypto/tls"
 	"errors"
 	"net"
 	"sync"
 
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	v2tls "github.com/v2ray/v2ray-core/transport/internet/tls"
 )
 
 var (
@@ -29,6 +31,7 @@ type TCPHub struct {
 	listener     Listener
 	connCallback ConnectionHandler
 	accepting    bool
+	tlsConfig    *tls.Config
 }
 
 func ListenTCP(address v2net.Address, port v2net.Port, callback ConnectionHandler, settings *StreamSettings) (*TCPHub, error) {
@@ -51,9 +54,15 @@ func ListenTCP(address v2net.Address, port v2net.Port, callback ConnectionHandle
 		return nil, err
 	}
 
+	var tlsConfig *tls.Config
+	if settings.Security == StreamSecurityTypeTLS {
+		tlsConfig = settings.TLSSettings.GetTLSConfig()
+	}
+
 	hub := &TCPHub{
 		listener:     listener,
 		connCallback: callback,
+		tlsConfig:    tlsConfig,
 	}
 
 	go hub.start()
@@ -75,6 +84,10 @@ func (this *TCPHub) start() {
 				log.Warning("Internet|Listener: Failed to accept new TCP connection: ", err)
 			}
 			continue
+		}
+		if this.tlsConfig != nil {
+			tlsConn := tls.Server(conn, this.tlsConfig)
+			conn = v2tls.NewConnection(tlsConn)
 		}
 		go this.connCallback(conn)
 	}

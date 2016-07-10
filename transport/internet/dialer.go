@@ -1,11 +1,13 @@
 package internet
 
 import (
+	"crypto/tls"
 	"errors"
 	"net"
 	"time"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	v2tls "github.com/v2ray/v2ray-core/transport/internet/tls"
 )
 
 var (
@@ -22,16 +24,32 @@ var (
 )
 
 func Dial(src v2net.Address, dest v2net.Destination, settings *StreamSettings) (Connection, error) {
+	var connection Connection
+	var err error
 	if dest.IsTCP() {
 		switch {
 		case settings.IsCapableOf(StreamConnectionTypeTCP):
-			return TCPDialer(src, dest)
+			connection, err = TCPDialer(src, dest)
 		case settings.IsCapableOf(StreamConnectionTypeKCP):
-			return KCPDialer(src, dest)
+			connection, err = KCPDialer(src, dest)
 		case settings.IsCapableOf(StreamConnectionTypeRawTCP):
-			return RawTCPDialer(src, dest)
+			connection, err = RawTCPDialer(src, dest)
+		default:
+			return nil, ErrUnsupportedStreamType
 		}
-		return nil, ErrUnsupportedStreamType
+		if err != nil {
+			return nil, err
+		}
+		if settings.Security == StreamSecurityTypeNone {
+			return connection, nil
+		}
+
+		config := settings.TLSSettings.GetTLSConfig()
+		if dest.Address().IsDomain() {
+			config.ServerName = dest.Address().Domain()
+		}
+		tlsConn := tls.Client(connection, config)
+		return v2tls.NewConnection(tlsConn), nil
 	}
 
 	return UDPDialer(src, dest)

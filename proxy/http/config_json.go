@@ -3,7 +3,6 @@
 package http
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 
@@ -11,53 +10,13 @@ import (
 )
 
 // UnmarshalJSON implements json.Unmarshaler
-func (this *CertificateConfig) UnmarshalJSON(data []byte) error {
-	type JsonConfig struct {
-		Domain   string `json:"domain"`
-		CertFile string `json:"cert"`
-		KeyFile  string `json:"key"`
-	}
-	jsonConfig := new(JsonConfig)
-	if err := json.Unmarshal(data, jsonConfig); err != nil {
-		return errors.New("HTTP: Failed to parse certificate config: " + err.Error())
-	}
-
-	cert, err := tls.LoadX509KeyPair(jsonConfig.CertFile, jsonConfig.KeyFile)
-	if err != nil {
-		return err
-	}
-	this.Domain = jsonConfig.Domain
-	this.Certificate = cert
-	return nil
-}
-
-// UnmarshalJSON implements json.Unmarshaler
-func (this *TLSConfig) UnmarshalJSON(data []byte) error {
-	type JsonConfig struct {
-		Enabled bool                 `json:"enable"`
-		Certs   []*CertificateConfig `json:"certs"`
-	}
-	jsonConfig := new(JsonConfig)
-	if err := json.Unmarshal(data, jsonConfig); err != nil {
-		return errors.New("HTTP: Failed to parse TLS config: " + err.Error())
-	}
-
-	this.Enabled = jsonConfig.Enabled
-	this.Certs = jsonConfig.Certs
-	return nil
-}
-
-// UnmarshalJSON implements json.Unmarshaler
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
-		Tls *TLSConfig `json:"tls"`
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
 		return errors.New("HTTP: Failed to parse config: " + err.Error())
 	}
-
-	this.TLSConfig = jsonConfig.Tls
 
 	return nil
 }
