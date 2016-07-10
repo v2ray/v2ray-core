@@ -43,15 +43,7 @@ func init() {
 	flag.StringVar(&configFile, "config", defaultConfigFile, "Config file for this Point server.")
 }
 
-func main() {
-	flag.Parse()
-
-	core.PrintVersion()
-
-	if *version {
-		return
-	}
-
+func startV2Ray() *point.Point {
 	switch *logLevel {
 	case "debug":
 		log.SetLogLevel(log.DebugLevel)
@@ -63,17 +55,17 @@ func main() {
 		log.SetLogLevel(log.ErrorLevel)
 	default:
 		fmt.Println("Unknown log level: " + *logLevel)
-		return
+		return nil
 	}
 
 	if len(configFile) == 0 {
 		log.Error("Config file is not set.")
-		return
+		return nil
 	}
 	config, err := point.LoadConfig(configFile)
 	if err != nil {
 		log.Error("Failed to read config file (", configFile, "): ", configFile, err)
-		return
+		return nil
 	}
 
 	if config.LogConfig != nil && len(config.LogConfig.AccessLog) > 0 {
@@ -83,23 +75,38 @@ func main() {
 	vPoint, err := point.NewPoint(config)
 	if err != nil {
 		log.Error("Failed to create Point server: ", err)
-		return
+		return nil
 	}
 
 	if *test {
 		fmt.Println("Configuration OK.")
-		return
+		return nil
 	}
 
 	err = vPoint.Start()
 	if err != nil {
 		log.Error("Error starting Point server: ", err)
+		return nil
+	}
+
+	return vPoint
+}
+
+func main() {
+	flag.Parse()
+
+	core.PrintVersion()
+
+	if *version {
 		return
 	}
 
-	osSignals := make(chan os.Signal, 1)
-	signal.Notify(osSignals, os.Interrupt, os.Kill)
+	if point := startV2Ray(); point != nil {
+		osSignals := make(chan os.Signal, 1)
+		signal.Notify(osSignals, os.Interrupt, os.Kill)
 
-	<-osSignals
-	vPoint.Close()
+		<-osSignals
+		point.Close()
+	}
+	log.Close()
 }

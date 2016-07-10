@@ -90,3 +90,8 @@ func Error(v ...interface{}) {
 		Values: v,
 	})
 }
+
+func Close() {
+	streamLoggerInstance.Close()
+	accessLoggerInstance.Close()
+}
