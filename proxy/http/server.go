@@ -95,7 +95,8 @@ func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error
 
 func (this *Server) handleConnection(conn internet.Connection) {
 	defer conn.Close()
-	reader := bufio.NewReader(conn)
+	timedReader := v2net.NewTimeOutReader(this.config.Timeout, conn)
+	reader := bufio.NewReader(timedReader)
 
 	request, err := http.ReadRequest(reader)
 	if err != nil {
