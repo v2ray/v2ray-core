@@ -59,10 +59,10 @@ func (this *Listener) OnReceive(payload *alloc.Buffer, src v2net.Destination) {
 	if !this.running {
 		return
 	}
-	srcAddrStr := src.NetAddr()
-	conn, found := this.sessions[srcAddrStr]
+	conv := serial.BytesToUint16(payload.Value)
+	sourceId := src.NetAddr() + "|" + serial.Uint16ToString(conv)
+	conn, found := this.sessions[sourceId]
 	if !found {
-		conv := serial.BytesToUint16(payload.Value)
 		writer := &Writer{
 			hub:      this.hub,
 			dest:     src,
@@ -79,7 +79,7 @@ func (this *Listener) OnReceive(payload *alloc.Buffer, src v2net.Destination) {
 			conn.Close()
 			return
 		}
-		this.sessions[srcAddrStr] = conn
+		this.sessions[sourceId] = conn
 	}
 	conn.Input(payload.Value)
 }
