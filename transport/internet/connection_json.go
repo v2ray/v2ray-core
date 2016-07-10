@@ -17,7 +17,8 @@ func (this *TLSSettings) UnmarshalJSON(data []byte) error {
 		KeyFile  string `json:"keyFile"`
 	}
 	type JSONConfig struct {
-		Certs []*JSONCertConfig `json:"certificates"`
+		Insecure bool              `json:"allowInsecure"`
+		Certs    []*JSONCertConfig `json:"certificates"`
 	}
 	jsonConfig := new(JSONConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
@@ -31,6 +32,7 @@ func (this *TLSSettings) UnmarshalJSON(data []byte) error {
 		}
 		this.Certs[idx] = cert
 	}
+	this.AllowInsecure = jsonConfig.Insecure
 	return nil
 }
 

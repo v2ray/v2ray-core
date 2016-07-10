@@ -28,12 +28,13 @@ const (
 )
 
 type TLSSettings struct {
-	Certs []tls.Certificate
+	AllowInsecure bool
+	Certs         []tls.Certificate
 }
 
 func (this *TLSSettings) GetTLSConfig() *tls.Config {
 	config := &tls.Config{
-		InsecureSkipVerify: true,
+		InsecureSkipVerify: this.AllowInsecure,
 	}
 
 	config.Certificates = this.Certs
