@@ -13,11 +13,11 @@ import (
 
 func (this *TLSSettings) UnmarshalJSON(data []byte) error {
 	type JSONCertConfig struct {
-		CertFile string `json:"certFile"`
+		CertFile string `json:"certificateFile"`
 		KeyFile  string `json:"keyFile"`
 	}
 	type JSONConfig struct {
-		Certs []*JSONCertConfig `json:"certs"`
+		Certs []*JSONCertConfig `json:"certificates"`
 	}
 	jsonConfig := new(JSONConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
