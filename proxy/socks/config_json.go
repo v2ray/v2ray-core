@@ -27,6 +27,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		Accounts   []*SocksAccount    `json:"accounts"`
 		UDP        bool               `json:"udp"`
 		Host       *v2net.AddressJson `json:"ip"`
+		Timeout    int                `json:"timeout"`
 	}
 
 	rawConfig := new(SocksConfig)
@@ -54,6 +55,10 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		this.Address = rawConfig.Host.Address
 	} else {
 		this.Address = v2net.LocalHostIP
+	}
+
+	if rawConfig.Timeout >= 0 {
+		this.Timeout = rawConfig.Timeout
 	}
 	return nil
 }

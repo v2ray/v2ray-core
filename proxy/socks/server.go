@@ -96,7 +96,7 @@ func (this *Server) Start() error {
 func (this *Server) handleConnection(connection internet.Connection) {
 	defer connection.Close()
 
-	timedReader := v2net.NewTimeOutReader(120, connection)
+	timedReader := v2net.NewTimeOutReader(this.config.Timeout, connection)
 	reader := v2io.NewBufferedReader(timedReader)
 	defer reader.Release()
 
