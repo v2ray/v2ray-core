@@ -127,7 +127,7 @@ type Connection struct {
 
 // NewConnection create a new KCP connection between local and remote.
 func NewConnection(conv uint16, writerCloser io.WriteCloser, local *net.UDPAddr, remote *net.UDPAddr, block Authenticator) *Connection {
-	log.Debug("KCP|Connection: creating connection ", conv)
+	log.Info("KCP|Connection: creating connection ", conv)
 
 	conn := new(Connection)
 	conn.local = local
@@ -224,8 +224,10 @@ func (this *Connection) Write(b []byte) (int, error) {
 }
 
 func (this *Connection) SetState(state State) {
+	current := this.Elapsed()
 	atomic.StoreInt32((*int32)(&this.state), int32(state))
-	atomic.StoreUint32(&this.stateBeginTime, this.Elapsed())
+	atomic.StoreUint32(&this.stateBeginTime, current)
+	log.Info("KCP|Connection: Entering state ", state, " at ", current)
 
 	switch state {
 	case StateReadyToClose:
@@ -255,7 +257,7 @@ func (this *Connection) Close() error {
 		state == StateTerminated {
 		return errClosedConnection
 	}
-	log.Debug("KCP|Connection: Closing connection to ", this.remote)
+	log.Info("KCP|Connection: Closing connection to ", this.remote)
 
 	if state == StateActive {
 		this.SetState(StateReadyToClose)
@@ -356,7 +358,7 @@ func (this *Connection) Terminate() {
 	if this == nil || this.writer == nil {
 		return
 	}
-	log.Info("Terminating connection to ", this.RemoteAddr())
+	log.Info("KCP|Connection: Terminating connection to ", this.RemoteAddr())
 
 	this.writer.Close()
 }
