@@ -42,10 +42,10 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 		return nil
 	})
 	if err != nil {
-		log.Error("Failed to find an available destination:", err)
+		log.Error("VMess|Outbound: Failed to find an available destination:", err)
 		return err
 	}
-	log.Info("VMessOut: Tunneling request to ", target, " via ", rec.Destination)
+	log.Info("VMess|Outbound: Tunneling request to ", target, " via ", rec.Destination)
 
 	command := protocol.RequestCommandTCP
 	if target.IsUDP() {
@@ -125,7 +125,7 @@ func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, con
 	header, err := session.DecodeResponseHeader(reader)
 	if err != nil {
 		conn.SetReusable(false)
-		log.Warning("VMessOut: Failed to read response: ", err)
+		log.Warning("VMess|Outbound: Failed to read response: ", err)
 		return
 	}
 	go this.handleCommand(dest, header.Command)
