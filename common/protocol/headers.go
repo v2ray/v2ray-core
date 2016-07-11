@@ -12,12 +12,12 @@ const (
 	RequestCommandUDP = RequestCommand(0x02)
 )
 
+type RequestOption byte
+
 const (
 	RequestOptionChunkStream     = RequestOption(0x01)
 	RequestOptionConnectionReuse = RequestOption(0x02)
 )
-
-type RequestOption byte
 
 func (this RequestOption) Has(option RequestOption) bool {
 	return (this & option) == option
@@ -49,7 +49,7 @@ func (this *RequestHeader) Destination() v2net.Destination {
 
 type ResponseOption byte
 
-var (
+const (
 	ResponseOptionConnectionReuse = ResponseOption(1)
 )
 
