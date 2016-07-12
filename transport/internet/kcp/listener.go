@@ -64,6 +64,7 @@ func (this *Listener) OnReceive(payload *alloc.Buffer, src v2net.Destination) {
 	conn, found := this.sessions[sourceId]
 	if !found {
 		writer := &Writer{
+			id:       sourceId,
 			hub:      this.hub,
 			dest:     src,
 			listener: this,
@@ -135,6 +136,7 @@ func (this *Listener) Addr() net.Addr {
 }
 
 type Writer struct {
+	id       string
 	dest     v2net.Destination
 	hub      *udp.UDPHub
 	listener *Listener
@@ -145,7 +147,7 @@ func (this *Writer) Write(payload []byte) (int, error) {
 }
 
 func (this *Writer) Close() error {
-	this.listener.Remove(this.dest.NetAddr())
+	this.listener.Remove(this.id)
 	return nil
 }
 
