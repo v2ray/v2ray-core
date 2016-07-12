@@ -278,7 +278,8 @@ func (this *SendingWorker) FindFirstUnacknowledged() {
 
 // @Private
 func (this *SendingWorker) ProcessAck(number uint32) {
-	if number-this.firstUnacknowledged > this.window.Size() {
+	// number < this.firstUnacknowledged || number >= this.nextNumber
+	if number-this.firstUnacknowledged > 0x7FFFFFFF || number-this.nextNumber < 0x7FFFFFFF {
 		return
 	}
 
