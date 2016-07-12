@@ -331,7 +331,7 @@ func (this *Connection) updateTask() {
 	this.Terminate()
 }
 
-func (this *Connection) FetchInputFrom(conn net.Conn) {
+func (this *Connection) FetchInputFrom(conn io.Reader) {
 	go func() {
 		payload := alloc.NewBuffer()
 		defer payload.Release()
@@ -344,8 +344,6 @@ func (this *Connection) FetchInputFrom(conn net.Conn) {
 			payload.Slice(0, nBytes)
 			if this.block.Open(payload) {
 				this.Input(payload.Value)
-			} else {
-				log.Info("KCP|Connection: Invalid response from ", conn.RemoteAddr())
 			}
 		}
 	}()
