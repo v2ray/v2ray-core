@@ -179,8 +179,12 @@ func (this *Connection) Read(b []byte) (int, error) {
 			return nBytes, nil
 		}
 		var timer *time.Timer
-		if !this.rd.IsZero() && this.rd.Before(time.Now()) {
-			timer = time.AfterFunc(this.rd.Sub(time.Now()), this.dataInputCond.Signal)
+		if !this.rd.IsZero() {
+			duration := this.rd.Sub(time.Now())
+			if duration <= 0 {
+				return 0, errTimeout
+			}
+			timer = time.AfterFunc(duration, this.dataInputCond.Signal)
 		}
 		this.dataInputCond.L.Lock()
 		this.dataInputCond.Wait()
