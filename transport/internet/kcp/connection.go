@@ -109,7 +109,6 @@ type Connection struct {
 	state            State
 	stateBeginTime   uint32
 	lastIncomingTime uint32
-	lastPayloadTime  uint32
 	sendingUpdated   bool
 	lastPingTime     uint32
 
@@ -399,12 +398,10 @@ func (this *Connection) Input(data []byte) int {
 		case *DataSegment:
 			this.HandleOption(seg.Opt)
 			this.receivingWorker.ProcessSegment(seg)
-			atomic.StoreUint32(&this.lastPayloadTime, current)
 			this.dataInputCond.Signal()
 		case *AckSegment:
 			this.HandleOption(seg.Opt)
 			this.sendingWorker.ProcessSegment(current, seg)
-			atomic.StoreUint32(&this.lastPayloadTime, current)
 		case *CmdOnlySegment:
 			this.HandleOption(seg.Opt)
 			if seg.Cmd == SegmentCommandTerminated {
@@ -432,7 +429,7 @@ func (this *Connection) flush() {
 	if this.State() == StateTerminated {
 		return
 	}
-	if this.State() == StateActive && current-this.lastPayloadTime >= 30000 {
+	if this.State() == StateActive && current-atomic.LoadUint32(&this.lastIncomingTime) >= 30000 {
 		this.Close()
 	}
 
@@ -443,13 +440,13 @@ func (this *Connection) flush() {
 		})
 		this.output.Flush()
 
-		if current-this.stateBeginTime > 8000 {
+		if current-atomic.LoadUint32(&this.stateBeginTime) > 8000 {
 			this.SetState(StateTerminated)
 		}
 		return
 	}
 
-	if this.State() == StateReadyToClose && current-this.stateBeginTime > 15000 {
+	if this.State() == StateReadyToClose && current-atomic.LoadUint32(&this.stateBeginTime) > 15000 {
 		this.SetState(StateTerminating)
 	}
 
@@ -457,7 +454,7 @@ func (this *Connection) flush() {
 	this.receivingWorker.Flush(current)
 	this.sendingWorker.Flush(current)
 
-	if this.sendingWorker.PingNecessary() || this.receivingWorker.PingNecessary() || current-this.lastPingTime >= 5000 {
+	if this.sendingWorker.PingNecessary() || this.receivingWorker.PingNecessary() || current-atomic.LoadUint32(&this.lastPingTime) >= 5000 {
 		seg := NewCmdOnlySegment()
 		seg.Conv = this.conv
 		seg.Cmd = SegmentCommandPing
