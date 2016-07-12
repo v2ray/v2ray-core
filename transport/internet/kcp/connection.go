@@ -333,11 +333,12 @@ func (this *Connection) updateTask() {
 
 func (this *Connection) FetchInputFrom(conn net.Conn) {
 	go func() {
+		payload := alloc.NewBuffer()
+		defer payload.Release()
 		for {
-			payload := alloc.NewBuffer()
+			payload.Reset()
 			nBytes, err := conn.Read(payload.Value)
 			if err != nil {
-				payload.Release()
 				return
 			}
 			payload.Slice(0, nBytes)
@@ -346,7 +347,6 @@ func (this *Connection) FetchInputFrom(conn net.Conn) {
 			} else {
 				log.Info("KCP|Connection: Invalid response from ", conn.RemoteAddr())
 			}
-			payload.Release()
 		}
 	}()
 }

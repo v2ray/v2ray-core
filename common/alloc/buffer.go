@@ -40,6 +40,12 @@ func (b *Buffer) Clear() *Buffer {
 	return b
 }
 
+func (b *Buffer) Reset() *Buffer {
+	b.offset = defaultOffset
+	b.Value = b.head
+	return b
+}
+
 // AppendBytes appends one or more bytes to the end of the buffer.
 func (b *Buffer) AppendBytes(bytes ...byte) *Buffer {
 	b.Value = append(b.Value, bytes...)
