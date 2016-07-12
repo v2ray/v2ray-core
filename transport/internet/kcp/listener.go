@@ -63,6 +63,7 @@ func (this *Listener) OnReceive(payload *alloc.Buffer, src v2net.Destination) {
 	sourceId := src.NetAddr() + "|" + serial.Uint16ToString(conv)
 	conn, found := this.sessions[sourceId]
 	if !found {
+		log.Debug("KCP|Listener: Creating session with id(", sourceId, ") from ", src)
 		writer := &Writer{
 			id:       sourceId,
 			hub:      this.hub,
@@ -94,6 +95,7 @@ func (this *Listener) Remove(dest string) {
 	if !this.running {
 		return
 	}
+	log.Debug("KCP|Listener: Removing session ", dest)
 	delete(this.sessions, dest)
 }
 
@@ -128,6 +130,13 @@ func (this *Listener) Close() error {
 	this.hub.Close()
 
 	return nil
+}
+
+func (this *Listener) ActiveConnections() int {
+	this.Lock()
+	defer this.Unlock()
+
+	return len(this.sessions)
 }
 
 // Addr returns the listener's network address, The Addr returned is shared by all invocations of Addr, so do not modify it.

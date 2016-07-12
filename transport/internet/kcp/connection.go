@@ -176,6 +176,7 @@ func (this *Connection) Read(b []byte) (int, error) {
 		if nBytes > 0 {
 			return nBytes, nil
 		}
+
 		var timer *time.Timer
 		if !this.rd.IsZero() {
 			duration := this.rd.Sub(time.Now())
@@ -229,7 +230,7 @@ func (this *Connection) SetState(state State) {
 	current := this.Elapsed()
 	atomic.StoreInt32((*int32)(&this.state), int32(state))
 	atomic.StoreUint32(&this.stateBeginTime, current)
-	log.Info("KCP|Connection: Entering state ", state, " at ", current)
+	log.Info("KCP|Connection: #", this.conv, " entering state ", state, " at ", current)
 
 	switch state {
 	case StateReadyToClose:
@@ -429,12 +430,18 @@ func (this *Connection) flush() {
 	if this.State() == StateActive && current-atomic.LoadUint32(&this.lastIncomingTime) >= 30000 {
 		this.Close()
 	}
+	if this.State() == StateReadyToClose && this.sendingWorker.IsEmpty() {
+		this.SetState(StateTerminating)
+	}
 
 	if this.State() == StateTerminating {
-		this.output.Write(&CmdOnlySegment{
-			Conv: this.conv,
-			Cmd:  SegmentCommandTerminated,
-		})
+		log.Debug("KCP|Connection: #", this.conv, " sending terminating cmd.")
+		seg := NewCmdOnlySegment()
+		defer seg.Release()
+
+		seg.Conv = this.conv
+		seg.Cmd = SegmentCommandTerminated
+		this.output.Write(seg)
 		this.output.Flush()
 
 		if current-atomic.LoadUint32(&this.stateBeginTime) > 8000 {

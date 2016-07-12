@@ -40,6 +40,10 @@ func (this *SendingWindow) Len() int {
 	return int(this.len)
 }
 
+func (this *SendingWindow) IsEmpty() bool {
+	return this.len == 0
+}
+
 func (this *SendingWindow) Size() uint32 {
 	return this.cap
 }
@@ -64,7 +68,7 @@ func (this *SendingWindow) First() *DataSegment {
 }
 
 func (this *SendingWindow) Clear(una uint32) {
-	for this.Len() > 0 && this.data[this.start].Number < una {
+	for !this.IsEmpty() && this.data[this.start].Number < una {
 		this.Remove(0)
 	}
 }
@@ -121,7 +125,7 @@ func (this *SendingWindow) HandleFastAck(number uint32) {
 }
 
 func (this *SendingWindow) Flush(current uint32, resend uint32, rto uint32, maxInFlightSize uint32) {
-	if this.Len() == 0 {
+	if this.IsEmpty() {
 		return
 	}
 
@@ -266,7 +270,7 @@ func (this *SendingWorker) ProcessReceivingNextWithoutLock(nextNumber uint32) {
 // @Private
 func (this *SendingWorker) FindFirstUnacknowledged() {
 	prevUna := this.firstUnacknowledged
-	if this.window.Len() > 0 {
+	if !this.window.IsEmpty() {
 		this.firstUnacknowledged = this.window.First().Number
 	} else {
 		this.firstUnacknowledged = this.nextNumber
@@ -409,4 +413,11 @@ func (this *SendingWorker) CloseWrite() {
 
 	this.window.Clear(0xFFFFFFFF)
 	this.queue.Clear()
+}
+
+func (this *SendingWorker) IsEmpty() bool {
+	this.RLock()
+	defer this.RUnlock()
+
+	return this.window.IsEmpty() && this.queue.IsEmpty()
 }
