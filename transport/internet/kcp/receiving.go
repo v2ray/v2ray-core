@@ -173,7 +173,7 @@ func (this *AckList) Flush(current uint32, rto uint32) {
 }
 
 type ReceivingWorker struct {
-	sync.Mutex
+	sync.RWMutex
 	conn       *Connection
 	queue      *ReceivingQueue
 	window     *ReceivingWindow
@@ -267,5 +267,13 @@ func (this *ReceivingWorker) CloseRead() {
 }
 
 func (this *ReceivingWorker) PingNecessary() bool {
+	this.RLock()
+	defer this.RUnlock()
 	return this.updated
+}
+
+func (this *ReceivingWorker) MarkPingNecessary(b bool) {
+	this.Lock()
+	defer this.Unlock()
+	this.updated = b
 }

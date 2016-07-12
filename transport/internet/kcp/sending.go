@@ -227,7 +227,7 @@ func (this *SendingQueue) Len() uint32 {
 }
 
 type SendingWorker struct {
-	sync.Mutex
+	sync.RWMutex
 	conn                *Connection
 	window              *SendingWindow
 	queue               *SendingQueue
@@ -347,7 +347,17 @@ func (this *SendingWorker) Write(seg Segment) {
 }
 
 func (this *SendingWorker) PingNecessary() bool {
+	this.RLock()
+	defer this.RUnlock()
+
 	return this.updated
+}
+
+func (this *SendingWorker) MarkPingNecessary(b bool) {
+	this.Lock()
+	defer this.Unlock()
+
+	this.updated = b
 }
 
 func (this *SendingWorker) OnPacketLoss(lossRate uint32) {

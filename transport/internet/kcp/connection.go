@@ -109,7 +109,6 @@ type Connection struct {
 	state            State
 	stateBeginTime   uint32
 	lastIncomingTime uint32
-	sendingUpdated   bool
 	lastPingTime     uint32
 
 	mss       uint32
@@ -463,13 +462,13 @@ func (this *Connection) flush() {
 		}
 		this.output.Write(seg)
 		this.lastPingTime = current
-		this.sendingUpdated = false
+		this.sendingWorker.MarkPingNecessary(false)
+		this.receivingWorker.MarkPingNecessary(false)
 		seg.Release()
 	}
 
 	// flash remain segments
 	this.output.Flush()
-
 }
 
 func (this *Connection) State() State {
