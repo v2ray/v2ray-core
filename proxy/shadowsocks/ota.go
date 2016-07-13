@@ -96,7 +96,7 @@ func (this *ChunkReader) Read() (*alloc.Buffer, error) {
 		log.Debug("AuthenticationReader: Unexpected auth: ", authBytes)
 		return nil, transport.ErrCorruptedPacket
 	}
-	buffer.Value = payload
+	buffer.SliceFrom(AuthSize)
 
 	return buffer, nil
 }
