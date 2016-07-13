@@ -414,6 +414,7 @@ func (this *Connection) Input(data []byte) int {
 			}
 			this.sendingWorker.ProcessReceivingNext(seg.ReceivinNext)
 			this.receivingWorker.ProcessSendingNext(seg.SendingNext)
+			seg.Release()
 		default:
 		}
 	}

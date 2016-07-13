@@ -292,6 +292,8 @@ func (this *SendingWorker) ProcessAck(number uint32) {
 }
 
 func (this *SendingWorker) ProcessSegment(current uint32, seg *AckSegment) {
+	defer seg.Release()
+
 	this.Lock()
 	defer this.Unlock()
 
