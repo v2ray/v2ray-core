@@ -27,7 +27,7 @@ func TestDialAndListen(t *testing.T) {
 				break
 			}
 			go func() {
-				payload := make([]byte, 1024)
+				payload := make([]byte, 4096)
 				for {
 					nBytes, err := conn.Read(payload)
 					if err != nil {
