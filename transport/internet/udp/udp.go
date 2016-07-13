@@ -2,6 +2,7 @@ package udp
 
 import (
 	"net"
+	"sync"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -10,6 +11,7 @@ import (
 type UDPPayloadHandler func(*alloc.Buffer, v2net.Destination)
 
 type UDPHub struct {
+	sync.RWMutex
 	conn      *net.UDPConn
 	callback  UDPPayloadHandler
 	accepting bool
@@ -32,6 +34,9 @@ func ListenUDP(address v2net.Address, port v2net.Port, callback UDPPayloadHandle
 }
 
 func (this *UDPHub) Close() {
+	this.Lock()
+	defer this.Unlock()
+
 	this.accepting = false
 	this.conn.Close()
 }
@@ -44,8 +49,11 @@ func (this *UDPHub) WriteTo(payload []byte, dest v2net.Destination) (int, error)
 }
 
 func (this *UDPHub) start() {
+	this.Lock()
 	this.accepting = true
-	for this.accepting {
+	this.Unlock()
+
+	for this.Running() {
 		buffer := alloc.NewBuffer()
 		nBytes, addr, err := this.conn.ReadFromUDP(buffer.Value)
 		if err != nil {
@@ -56,4 +64,11 @@ func (this *UDPHub) start() {
 		dest := v2net.UDPDestination(v2net.IPAddress(addr.IP), v2net.Port(addr.Port))
 		go this.callback(buffer, dest)
 	}
+}
+
+func (this *UDPHub) Running() bool {
+	this.RLock()
+	defer this.RUnlock()
+
+	return this.accepting
 }
