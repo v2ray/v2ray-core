@@ -3,6 +3,7 @@ package kcp_test
 import (
 	"testing"
 
+	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/testing/assert"
 	. "github.com/v2ray/v2ray-core/transport/internet/kcp"
 )
@@ -12,10 +13,10 @@ func TestSendingQueue(t *testing.T) {
 
 	queue := NewSendingQueue(3)
 
-	seg0 := &DataSegment{}
-	seg1 := &DataSegment{}
-	seg2 := &DataSegment{}
-	seg3 := &DataSegment{}
+	seg0 := alloc.NewBuffer()
+	seg1 := alloc.NewBuffer()
+	seg2 := alloc.NewBuffer()
+	seg3 := alloc.NewBuffer()
 
 	assert.Bool(queue.IsEmpty()).IsTrue()
 	assert.Bool(queue.IsFull()).IsFalse()
@@ -44,10 +45,10 @@ func TestSendingQueueClear(t *testing.T) {
 
 	queue := NewSendingQueue(3)
 
-	seg0 := &DataSegment{}
-	seg1 := &DataSegment{}
-	seg2 := &DataSegment{}
-	seg3 := &DataSegment{}
+	seg0 := alloc.NewBuffer()
+	seg1 := alloc.NewBuffer()
+	seg2 := alloc.NewBuffer()
+	seg3 := alloc.NewBuffer()
 
 	queue.Push(seg0)
 	assert.Bool(queue.IsEmpty()).IsFalse()

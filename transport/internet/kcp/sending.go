@@ -175,14 +175,14 @@ type SendingQueue struct {
 	start uint32
 	cap   uint32
 	len   uint32
-	list  []*DataSegment
+	list  []*alloc.Buffer
 }
 
 func NewSendingQueue(size uint32) *SendingQueue {
 	return &SendingQueue{
 		start: 0,
 		cap:   size,
-		list:  make([]*DataSegment, size),
+		list:  make([]*alloc.Buffer, size),
 		len:   0,
 	}
 }
@@ -195,7 +195,7 @@ func (this *SendingQueue) IsEmpty() bool {
 	return this.len == 0
 }
 
-func (this *SendingQueue) Pop() *DataSegment {
+func (this *SendingQueue) Pop() *alloc.Buffer {
 	if this.IsEmpty() {
 		return nil
 	}
@@ -209,7 +209,7 @@ func (this *SendingQueue) Pop() *DataSegment {
 	return seg
 }
 
-func (this *SendingQueue) Push(seg *DataSegment) {
+func (this *SendingQueue) Push(seg *alloc.Buffer) {
 	if this.IsFull() {
 		return
 	}
@@ -326,9 +326,7 @@ func (this *SendingWorker) Push(b []byte) int {
 		} else {
 			size = len(b)
 		}
-		seg := NewDataSegment()
-		seg.Data = alloc.NewSmallBuffer().Clear().Append(b[:size])
-		this.queue.Push(seg)
+		this.queue.Push(alloc.NewSmallBuffer().Clear().Append(b[:size]))
 		b = b[size:]
 		nBytes += size
 	}
@@ -395,7 +393,8 @@ func (this *SendingWorker) Flush(current uint32) {
 	}
 
 	for !this.queue.IsEmpty() && !this.window.IsFull() {
-		seg := this.queue.Pop()
+		seg := NewDataSegment()
+		seg.Data = this.queue.Pop()
 		seg.Number = this.nextNumber
 		seg.timeout = current
 		seg.ackSkipped = 0
