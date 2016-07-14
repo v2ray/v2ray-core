@@ -253,7 +253,7 @@ func (this *ReceivingWorker) Write(seg Segment) {
 	ackSeg.ReceivingNext = this.nextNumber
 	ackSeg.ReceivingWindow = this.nextNumber + this.windowSize
 	if this.conn.state == StateReadyToClose {
-		ackSeg.Opt = SegmentOptionClose
+		ackSeg.Option = SegmentOptionClose
 	}
 	this.conn.output.Write(ackSeg)
 	this.updated = false

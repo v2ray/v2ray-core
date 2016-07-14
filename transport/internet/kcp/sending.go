@@ -356,9 +356,9 @@ func (this *SendingWorker) Write(seg Segment) {
 
 	dataSeg.Conv = this.conn.conv
 	dataSeg.SendingNext = this.firstUnacknowledged
-	dataSeg.Opt = 0
+	dataSeg.Option = 0
 	if this.conn.State() == StateReadyToClose {
-		dataSeg.Opt = SegmentOptionClose
+		dataSeg.Option = SegmentOptionClose
 	}
 
 	this.conn.output.Write(dataSeg)

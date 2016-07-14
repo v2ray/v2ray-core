@@ -420,16 +420,16 @@ func (this *Connection) Input(data []byte) int {
 
 		switch seg := seg.(type) {
 		case *DataSegment:
-			this.HandleOption(seg.Opt)
+			this.HandleOption(seg.Option)
 			this.receivingWorker.ProcessSegment(seg)
 			this.dataInputCond.Signal()
 		case *AckSegment:
-			this.HandleOption(seg.Opt)
+			this.HandleOption(seg.Option)
 			this.sendingWorker.ProcessSegment(current, seg)
 			this.dataOutputCond.Signal()
 		case *CmdOnlySegment:
-			this.HandleOption(seg.Opt)
-			if seg.Cmd == CommandTerminate {
+			this.HandleOption(seg.Option)
+			if seg.Command == CommandTerminate {
 				state := this.State()
 				if state == StateActive ||
 					state == StatePeerClosed {
@@ -469,7 +469,7 @@ func (this *Connection) flush() {
 		defer seg.Release()
 
 		seg.Conv = this.conv
-		seg.Cmd = CommandTerminate
+		seg.Command = CommandTerminate
 		this.output.Write(seg)
 		this.output.Flush()
 
@@ -493,11 +493,11 @@ func (this *Connection) flush() {
 	if this.sendingWorker.PingNecessary() || this.receivingWorker.PingNecessary() || current-atomic.LoadUint32(&this.lastPingTime) >= 5000 {
 		seg := NewCmdOnlySegment()
 		seg.Conv = this.conv
-		seg.Cmd = CommandPing
+		seg.Command = CommandPing
 		seg.ReceivinNext = this.receivingWorker.nextNumber
 		seg.SendingNext = this.sendingWorker.firstUnacknowledged
 		if this.State() == StateReadyToClose {
-			seg.Opt = SegmentOptionClose
+			seg.Option = SegmentOptionClose
 		}
 		this.output.Write(seg)
 		this.lastPingTime = current

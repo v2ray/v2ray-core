@@ -34,7 +34,7 @@ const (
 
 type DataSegment struct {
 	Conv        uint16
-	Opt         SegmentOption
+	Option      SegmentOption
 	Timestamp   uint32
 	Number      uint32
 	SendingNext uint32
@@ -51,7 +51,7 @@ func NewDataSegment() *DataSegment {
 
 func (this *DataSegment) Bytes(b []byte) []byte {
 	b = serial.Uint16ToBytes(this.Conv, b)
-	b = append(b, byte(CommandData), byte(this.Opt))
+	b = append(b, byte(CommandData), byte(this.Option))
 	b = serial.Uint32ToBytes(this.Timestamp, b)
 	b = serial.Uint32ToBytes(this.Number, b)
 	b = serial.Uint32ToBytes(this.SendingNext, b)
@@ -71,7 +71,7 @@ func (this *DataSegment) Release() {
 
 type AckSegment struct {
 	Conv            uint16
-	Opt             SegmentOption
+	Option          SegmentOption
 	ReceivingWindow uint32
 	ReceivingNext   uint32
 	Count           byte
@@ -99,7 +99,7 @@ func (this *AckSegment) ByteSize() int {
 
 func (this *AckSegment) Bytes(b []byte) []byte {
 	b = serial.Uint16ToBytes(this.Conv, b)
-	b = append(b, byte(CommandACK), byte(this.Opt))
+	b = append(b, byte(CommandACK), byte(this.Option))
 	b = serial.Uint32ToBytes(this.ReceivingWindow, b)
 	b = serial.Uint32ToBytes(this.ReceivingNext, b)
 	b = append(b, this.Count)
@@ -117,8 +117,8 @@ func (this *AckSegment) Release() {
 
 type CmdOnlySegment struct {
 	Conv         uint16
-	Cmd          Command
-	Opt          SegmentOption
+	Command      Command
+	Option       SegmentOption
 	SendingNext  uint32
 	ReceivinNext uint32
 }
@@ -133,7 +133,7 @@ func (this *CmdOnlySegment) ByteSize() int {
 
 func (this *CmdOnlySegment) Bytes(b []byte) []byte {
 	b = serial.Uint16ToBytes(this.Conv, b)
-	b = append(b, byte(this.Cmd), byte(this.Opt))
+	b = append(b, byte(this.Command), byte(this.Option))
 	b = serial.Uint32ToBytes(this.SendingNext, b)
 	b = serial.Uint32ToBytes(this.ReceivinNext, b)
 	return b
@@ -157,7 +157,7 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 	if cmd == CommandData {
 		seg := NewDataSegment()
 		seg.Conv = conv
-		seg.Opt = opt
+		seg.Option = opt
 		if len(buf) < 16 {
 			return nil, nil
 		}
@@ -185,7 +185,7 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 	if cmd == CommandACK {
 		seg := NewAckSegment()
 		seg.Conv = conv
-		seg.Opt = opt
+		seg.Option = opt
 		if len(buf) < 9 {
 			return nil, nil
 		}
@@ -212,8 +212,8 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 
 	seg := NewCmdOnlySegment()
 	seg.Conv = conv
-	seg.Cmd = cmd
-	seg.Opt = opt
+	seg.Command = cmd
+	seg.Option = opt
 
 	if len(buf) < 8 {
 		return nil, nil
