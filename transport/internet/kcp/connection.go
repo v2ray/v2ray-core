@@ -429,7 +429,7 @@ func (this *Connection) Input(data []byte) int {
 			this.dataOutputCond.Signal()
 		case *CmdOnlySegment:
 			this.HandleOption(seg.Opt)
-			if seg.Cmd == SegmentCommandTerminated {
+			if seg.Cmd == CommandTerminate {
 				state := this.State()
 				if state == StateActive ||
 					state == StatePeerClosed {
@@ -469,7 +469,7 @@ func (this *Connection) flush() {
 		defer seg.Release()
 
 		seg.Conv = this.conv
-		seg.Cmd = SegmentCommandTerminated
+		seg.Cmd = CommandTerminate
 		this.output.Write(seg)
 		this.output.Flush()
 
@@ -493,7 +493,7 @@ func (this *Connection) flush() {
 	if this.sendingWorker.PingNecessary() || this.receivingWorker.PingNecessary() || current-atomic.LoadUint32(&this.lastPingTime) >= 5000 {
 		seg := NewCmdOnlySegment()
 		seg.Conv = this.conv
-		seg.Cmd = SegmentCommandPing
+		seg.Cmd = CommandPing
 		seg.ReceivinNext = this.receivingWorker.nextNumber
 		seg.SendingNext = this.sendingWorker.firstUnacknowledged
 		if this.State() == StateReadyToClose {

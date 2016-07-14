@@ -7,13 +7,13 @@ import (
 	"github.com/v2ray/v2ray-core/common/serial"
 )
 
-type SegmentCommand byte
+type Command byte
 
 const (
-	SegmentCommandACK        SegmentCommand = 0
-	SegmentCommandData       SegmentCommand = 1
-	SegmentCommandTerminated SegmentCommand = 2
-	SegmentCommandPing       SegmentCommand = 3
+	CommandACK       Command = 0
+	CommandData      Command = 1
+	CommandTerminate Command = 2
+	CommandPing      Command = 3
 )
 
 type SegmentOption byte
@@ -51,7 +51,7 @@ func NewDataSegment() *DataSegment {
 
 func (this *DataSegment) Bytes(b []byte) []byte {
 	b = serial.Uint16ToBytes(this.Conv, b)
-	b = append(b, byte(SegmentCommandData), byte(this.Opt))
+	b = append(b, byte(CommandData), byte(this.Opt))
 	b = serial.Uint32ToBytes(this.Timestamp, b)
 	b = serial.Uint32ToBytes(this.Number, b)
 	b = serial.Uint32ToBytes(this.SendingNext, b)
@@ -99,7 +99,7 @@ func (this *AckSegment) ByteSize() int {
 
 func (this *AckSegment) Bytes(b []byte) []byte {
 	b = serial.Uint16ToBytes(this.Conv, b)
-	b = append(b, byte(SegmentCommandACK), byte(this.Opt))
+	b = append(b, byte(CommandACK), byte(this.Opt))
 	b = serial.Uint32ToBytes(this.ReceivingWindow, b)
 	b = serial.Uint32ToBytes(this.ReceivingNext, b)
 	b = append(b, this.Count)
@@ -117,7 +117,7 @@ func (this *AckSegment) Release() {
 
 type CmdOnlySegment struct {
 	Conv         uint16
-	Cmd          SegmentCommand
+	Cmd          Command
 	Opt          SegmentOption
 	SendingNext  uint32
 	ReceivinNext uint32
@@ -150,11 +150,11 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 	conv := serial.BytesToUint16(buf)
 	buf = buf[2:]
 
-	cmd := SegmentCommand(buf[0])
+	cmd := Command(buf[0])
 	opt := SegmentOption(buf[1])
 	buf = buf[2:]
 
-	if cmd == SegmentCommandData {
+	if cmd == CommandData {
 		seg := NewDataSegment()
 		seg.Conv = conv
 		seg.Opt = opt
@@ -182,7 +182,7 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 		return seg, buf
 	}
 
-	if cmd == SegmentCommandACK {
+	if cmd == CommandACK {
 		seg := NewAckSegment()
 		seg.Conv = conv
 		seg.Opt = opt

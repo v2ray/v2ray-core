@@ -63,11 +63,11 @@ func (this *Listener) OnReceive(payload *alloc.Buffer, src v2net.Destination) {
 		return
 	}
 	conv := serial.BytesToUint16(payload.Value)
-	cmd := SegmentCommand(payload.Value[2])
+	cmd := Command(payload.Value[2])
 	sourceId := src.NetAddr() + "|" + serial.Uint16ToString(conv)
 	conn, found := this.sessions[sourceId]
 	if !found {
-		if cmd == SegmentCommandTerminated {
+		if cmd == CommandTerminate {
 			return
 		}
 		log.Debug("KCP|Listener: Creating session with id(", sourceId, ") from ", src)
