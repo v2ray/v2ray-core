@@ -133,12 +133,22 @@ func (this *ipv6Address) Equals(another Address) bool {
 	if !ok {
 		return false
 	}
-	for idx, v := range *this {
-		if anotherIPv6[idx] != v {
-			return false
-		}
-	}
-	return true
+	return this[0] == anotherIPv6[0] &&
+		this[1] == anotherIPv6[1] &&
+		this[2] == anotherIPv6[2] &&
+		this[3] == anotherIPv6[3] &&
+		this[4] == anotherIPv6[4] &&
+		this[5] == anotherIPv6[5] &&
+		this[6] == anotherIPv6[6] &&
+		this[7] == anotherIPv6[7] &&
+		this[8] == anotherIPv6[8] &&
+		this[9] == anotherIPv6[9] &&
+		this[10] == anotherIPv6[10] &&
+		this[11] == anotherIPv6[11] &&
+		this[12] == anotherIPv6[12] &&
+		this[13] == anotherIPv6[13] &&
+		this[14] == anotherIPv6[14] &&
+		this[15] == anotherIPv6[15]
 }
 
 type domainAddress string
