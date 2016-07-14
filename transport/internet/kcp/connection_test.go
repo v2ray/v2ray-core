@@ -49,16 +49,25 @@ func TestConnectionReadWrite(t *testing.T) {
 	totalWritten := 1024 * 1024
 	clientSend := make([]byte, totalWritten)
 	rand.Read(clientSend)
-	nBytes, err := connClient.Write(clientSend)
-	assert.Int(nBytes).Equals(totalWritten)
-	assert.Error(err).IsNil()
+	go func() {
+		nBytes, err := connClient.Write(clientSend)
+		assert.Int(nBytes).Equals(totalWritten)
+		assert.Error(err).IsNil()
+	}()
 
 	serverReceived := make([]byte, totalWritten)
 	totalRead := 0
 	for totalRead < totalWritten {
-		nBytes, err = connServer.Read(serverReceived[totalRead:])
+		nBytes, err := connServer.Read(serverReceived[totalRead:])
 		assert.Error(err).IsNil()
 		totalRead += nBytes
 	}
 	assert.Bytes(serverReceived).Equals(clientSend)
+
+	connClient.Close()
+	connServer.Close()
+
+	for connClient.State() != StateTerminated || connServer.State() != StateTerminated {
+		time.Sleep(time.Second)
+	}
 }
