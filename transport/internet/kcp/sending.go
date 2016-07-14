@@ -206,6 +206,9 @@ func (this *SendingQueue) Pop() *alloc.Buffer {
 	if this.start == this.cap {
 		this.start = 0
 	}
+	if this.IsEmpty() {
+		this.start = 0
+	}
 	return seg
 }
 
@@ -301,6 +304,18 @@ func (this *SendingWorker) ProcessSegment(current uint32, seg *AckSegment) {
 		this.remoteNextNumber = seg.ReceivingWindow
 	}
 	this.ProcessReceivingNextWithoutLock(seg.ReceivingNext)
+
+	for !this.queue.IsEmpty() && !this.window.IsFull() {
+		seg := NewDataSegment()
+		seg.Data = this.queue.Pop()
+		seg.Number = this.nextNumber
+		seg.timeout = current
+		seg.ackSkipped = 0
+		seg.transmit = 0
+		this.window.Push(seg)
+		this.nextNumber++
+	}
+
 	var maxack uint32
 	for i := 0; i < int(seg.Count); i++ {
 		timestamp := seg.TimestampList[i]
