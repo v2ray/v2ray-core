@@ -22,11 +22,12 @@ var (
 type State int32
 
 const (
-	StateActive       State = 0
-	StateReadyToClose State = 1
-	StatePeerClosed   State = 2
-	StateTerminating  State = 3
-	StateTerminated   State = 4
+	StateActive          State = 0
+	StateReadyToClose    State = 1
+	StatePeerClosed      State = 2
+	StateTerminating     State = 3
+	StatePeerTerminating State = 4
+	StateTerminated      State = 5
 )
 
 const (
@@ -177,6 +178,10 @@ func (this *Connection) Read(b []byte) (int, error) {
 			return nBytes, nil
 		}
 
+		if this.State() == StatePeerTerminating {
+			return 0, io.EOF
+		}
+
 		var timer *time.Timer
 		if !this.rd.IsZero() {
 			duration := this.rd.Sub(time.Now())
@@ -240,6 +245,8 @@ func (this *Connection) SetState(state State) {
 	case StateTerminating:
 		this.receivingWorker.CloseRead()
 		this.sendingWorker.CloseWrite()
+	case StatePeerTerminating:
+		this.sendingWorker.CloseWrite()
 	case StateTerminated:
 		this.receivingWorker.CloseRead()
 		this.sendingWorker.CloseWrite()
@@ -267,6 +274,9 @@ func (this *Connection) Close() error {
 	}
 	if state == StatePeerClosed {
 		this.SetState(StateTerminating)
+	}
+	if state == StatePeerTerminating {
+		this.SetState(StateTerminated)
 	}
 
 	return nil
@@ -405,8 +415,9 @@ func (this *Connection) Input(data []byte) int {
 			if seg.Cmd == SegmentCommandTerminated {
 				state := this.State()
 				if state == StateActive ||
-					state == StateReadyToClose ||
 					state == StatePeerClosed {
+					this.SetState(StatePeerTerminating)
+				} else if state == StateReadyToClose {
 					this.SetState(StateTerminating)
 				} else if state == StateTerminating {
 					this.SetState(StateTerminated)
@@ -449,6 +460,9 @@ func (this *Connection) flush() {
 			this.SetState(StateTerminated)
 		}
 		return
+	}
+	if this.State() == StatePeerTerminating && current-atomic.LoadUint32(&this.stateBeginTime) > 4000 {
+		this.SetState(StateTerminating)
 	}
 
 	if this.State() == StateReadyToClose && current-atomic.LoadUint32(&this.stateBeginTime) > 15000 {
