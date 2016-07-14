@@ -52,7 +52,7 @@ func TestDialAndListen(t *testing.T) {
 		go func() {
 			clientSend := make([]byte, 1024*1024)
 			rand.Read(clientSend)
-			clientConn.Write(clientSend)
+			go clientConn.Write(clientSend)
 
 			clientReceived := make([]byte, 1024*1024)
 			nBytes, _ := io.ReadFull(clientConn, clientReceived)
