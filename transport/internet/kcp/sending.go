@@ -294,17 +294,7 @@ func (this *SendingWorker) ProcessAck(number uint32) {
 	this.FindFirstUnacknowledged()
 }
 
-func (this *SendingWorker) ProcessSegment(current uint32, seg *AckSegment) {
-	defer seg.Release()
-
-	this.Lock()
-	defer this.Unlock()
-
-	if this.remoteNextNumber < seg.ReceivingWindow {
-		this.remoteNextNumber = seg.ReceivingWindow
-	}
-	this.ProcessReceivingNextWithoutLock(seg.ReceivingNext)
-
+func (this *SendingWorker) FillWindow(current uint32) {
 	for !this.queue.IsEmpty() && !this.window.IsFull() {
 		seg := NewDataSegment()
 		seg.Data = this.queue.Pop()
@@ -315,6 +305,19 @@ func (this *SendingWorker) ProcessSegment(current uint32, seg *AckSegment) {
 		this.window.Push(seg)
 		this.nextNumber++
 	}
+}
+
+func (this *SendingWorker) ProcessSegment(current uint32, seg *AckSegment) {
+	defer seg.Release()
+
+	this.Lock()
+	defer this.Unlock()
+
+	if this.remoteNextNumber < seg.ReceivingWindow {
+		this.remoteNextNumber = seg.ReceivingWindow
+	}
+	this.ProcessReceivingNextWithoutLock(seg.ReceivingNext)
+	this.FillWindow(current)
 
 	var maxack uint32
 	for i := 0; i < int(seg.Count); i++ {
@@ -409,17 +412,7 @@ func (this *SendingWorker) Flush(current uint32) {
 		cwnd = this.firstUnacknowledged + this.controlWindow
 	}
 
-	for !this.queue.IsEmpty() && !this.window.IsFull() {
-		seg := NewDataSegment()
-		seg.Data = this.queue.Pop()
-		seg.Number = this.nextNumber
-		seg.timeout = current
-		seg.ackSkipped = 0
-		seg.transmit = 0
-		this.window.Push(seg)
-		this.nextNumber++
-	}
-
+	this.FillWindow(current)
 	this.window.Flush(current, this.conn.fastresend, this.conn.roundTrip.Timeout(), cwnd)
 }
 
