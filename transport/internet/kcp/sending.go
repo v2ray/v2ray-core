@@ -323,7 +323,7 @@ func (this *SendingWorker) ProcessSegment(current uint32, seg *AckSegment) {
 	for i := 0; i < int(seg.Count); i++ {
 		timestamp := seg.TimestampList[i]
 		number := seg.NumberList[i]
-		if current-timestamp < 10000 {
+		if current-timestamp < 10000 && number-this.firstUnacknowledged <= 0x7FFFFFFF {
 			this.conn.roundTrip.Update(current - timestamp)
 		}
 		this.ProcessAck(number)
