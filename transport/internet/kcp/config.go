@@ -49,8 +49,8 @@ func DefaultConfig() Config {
 		UplinkCapacity:   5,
 		DownlinkCapacity: 20,
 		Congestion:       false,
-		WriteBuffer:      4 * 1024 * 1024,
-		ReadBuffer:       4 * 1024 * 1024,
+		WriteBuffer:      1 * 1024 * 1024,
+		ReadBuffer:       1 * 1024 * 1024,
 	}
 }
 

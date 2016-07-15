@@ -11,11 +11,13 @@ import (
 
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type JSONConfig struct {
-		Mtu        *uint32 `json:"mtu"`
-		Tti        *uint32 `json:"tti"`
-		UpCap      *uint32 `json:"uplinkCapacity"`
-		DownCap    *uint32 `json:"downlinkCapacity"`
-		Congestion *bool   `json:"congestion"`
+		Mtu             *uint32 `json:"mtu"`
+		Tti             *uint32 `json:"tti"`
+		UpCap           *uint32 `json:"uplinkCapacity"`
+		DownCap         *uint32 `json:"downlinkCapacity"`
+		Congestion      *bool   `json:"congestion"`
+		ReadBufferSize  *uint32 `json:"readBufferSize"`
+		WriteBufferSize *uint32 `json:"writeBufferSize"`
 	}
 	jsonConfig := new(JSONConfig)
 	if err := json.Unmarshal(data, &jsonConfig); err != nil {
@@ -45,6 +47,22 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 	if jsonConfig.Congestion != nil {
 		this.Congestion = *jsonConfig.Congestion
+	}
+	if jsonConfig.ReadBufferSize != nil {
+		size := *jsonConfig.ReadBufferSize
+		if size > 0 {
+			this.ReadBuffer = size * 1024 * 1024
+		} else {
+			this.ReadBuffer = 512 * 1024
+		}
+	}
+	if jsonConfig.WriteBufferSize != nil {
+		size := *jsonConfig.WriteBufferSize
+		if size > 0 {
+			this.WriteBuffer = size * 1024 * 1024
+		} else {
+			this.WriteBuffer = 512 * 1024
+		}
 	}
 
 	return nil
