@@ -55,41 +55,37 @@ func (this *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, w
 	idHash.Write(timestamp.Bytes(nil))
 	writer.Write(idHash.Sum(nil))
 
-	buffer := alloc.NewSmallBuffer().Clear()
-	defer buffer.Release()
-
-	buffer.AppendBytes(Version)
-	buffer.Append(this.requestBodyIV)
-	buffer.Append(this.requestBodyKey)
-	buffer.AppendBytes(this.responseHeader, byte(header.Option), byte(0), byte(0))
-	buffer.AppendBytes(byte(header.Command))
-	buffer.AppendUint16(header.Port.Value())
+	buffer := make([]byte, 0, 512)
+	buffer = append(buffer, Version)
+	buffer = append(buffer, this.requestBodyIV...)
+	buffer = append(buffer, this.requestBodyKey...)
+	buffer = append(buffer, this.responseHeader, byte(header.Option), byte(0), byte(0), byte(header.Command))
+	buffer = header.Port.Bytes(buffer)
 
 	switch {
 	case header.Address.IsIPv4():
-		buffer.AppendBytes(AddrTypeIPv4)
-		buffer.Append(header.Address.IP())
+		buffer = append(buffer, AddrTypeIPv4)
+		buffer = append(buffer, header.Address.IP()...)
 	case header.Address.IsIPv6():
-		buffer.AppendBytes(AddrTypeIPv6)
-		buffer.Append(header.Address.IP())
+		buffer = append(buffer, AddrTypeIPv6)
+		buffer = append(buffer, header.Address.IP()...)
 	case header.Address.IsDomain():
-		buffer.AppendBytes(AddrTypeDomain, byte(len(header.Address.Domain())))
-		buffer.Append([]byte(header.Address.Domain()))
+		buffer = append(buffer, AddrTypeDomain, byte(len(header.Address.Domain())))
+		buffer = append(buffer, header.Address.Domain()...)
 	}
 
 	fnv1a := fnv.New32a()
-	fnv1a.Write(buffer.Value)
+	fnv1a.Write(buffer)
 
-	fnvHash := fnv1a.Sum32()
-	buffer.AppendBytes(byte(fnvHash>>24), byte(fnvHash>>16), byte(fnvHash>>8), byte(fnvHash))
+	buffer = fnv1a.Sum(buffer)
 
 	timestampHash := md5.New()
 	timestampHash.Write(hashTimestamp(timestamp))
 	iv := timestampHash.Sum(nil)
 	account := header.User.Account.(*protocol.VMessAccount)
 	aesStream := crypto.NewAesEncryptionStream(account.ID.CmdKey(), iv)
-	aesStream.XORKeyStream(buffer.Value, buffer.Value)
-	writer.Write(buffer.Value)
+	aesStream.XORKeyStream(buffer, buffer)
+	writer.Write(buffer)
 
 	return
 }

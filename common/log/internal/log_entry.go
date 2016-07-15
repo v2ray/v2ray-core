@@ -2,9 +2,9 @@ package internal
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/v2ray/v2ray-core/common"
-	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/serial"
 )
 
@@ -46,15 +46,12 @@ func (this *ErrorLog) Release() {
 }
 
 func (this *ErrorLog) String() string {
-	b := alloc.NewSmallBuffer().Clear()
-	defer b.Release()
-
-	b.AppendString(this.Prefix)
-
-	for _, value := range this.Values {
-		b.AppendString(InterfaceToString(value))
+	values := make([]string, len(this.Values)+1)
+	values[0] = this.Prefix
+	for i, value := range this.Values {
+		values[i+1] = InterfaceToString(value)
 	}
-	return b.String()
+	return strings.Join(values, "")
 }
 
 type AccessLog struct {
@@ -71,12 +68,5 @@ func (this *AccessLog) Release() {
 }
 
 func (this *AccessLog) String() string {
-	b := alloc.NewSmallBuffer().Clear()
-	defer b.Release()
-
-	b.AppendString(InterfaceToString(this.From)).AppendString(" ")
-	b.AppendString(this.Status).AppendString(" ")
-	b.AppendString(InterfaceToString(this.To)).AppendString(" ")
-	b.AppendString(InterfaceToString(this.Reason))
-	return b.String()
+	return strings.Join([]string{InterfaceToString(this.From), this.Status, InterfaceToString(this.To), InterfaceToString(this.Reason)}, " ")
 }
