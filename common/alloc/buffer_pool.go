@@ -16,7 +16,7 @@ func NewBufferPool(bufferSize, poolSize int) *BufferPool {
 			New: func() interface{} { return make([]byte, bufferSize) },
 		},
 	}
-	for i := 0; i < poolSize/2; i++ {
+	for i := 0; i < poolSize; i++ {
 		pool.chain <- make([]byte, bufferSize)
 	}
 	return pool
