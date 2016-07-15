@@ -21,9 +21,18 @@ type Buffer struct {
 	offset int
 }
 
+func CreateBuffer(container []byte, parent *BufferPool) *Buffer {
+	b := new(Buffer)
+	b.head = container
+	b.pool = parent
+	b.Value = b.head[defaultOffset:]
+	b.offset = defaultOffset
+	return b
+}
+
 // Release recycles the buffer into an internal buffer pool.
 func (b *Buffer) Release() {
-	if b == nil {
+	if b == nil || b.head == nil {
 		return
 	}
 	b.pool.Free(b)
@@ -122,7 +131,7 @@ func (b *Buffer) SliceFrom(from int) *Buffer {
 func (b *Buffer) SliceBack(offset int) *Buffer {
 	newoffset := b.offset - offset
 	if newoffset < 0 {
-		newoffset = 0
+		panic("Negative buffer offset.")
 	}
 	b.Value = b.head[newoffset : b.offset+len(b.Value)]
 	b.offset = newoffset

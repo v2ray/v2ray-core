@@ -29,12 +29,7 @@ func (p *BufferPool) Allocate() *Buffer {
 	default:
 		b = p.allocator.Get().([]byte)
 	}
-	return &Buffer{
-		head:   b,
-		pool:   p,
-		Value:  b[defaultOffset:],
-		offset: defaultOffset,
-	}
+	return CreateBuffer(b, p)
 }
 
 func (p *BufferPool) Free(buffer *Buffer) {
