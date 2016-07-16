@@ -359,7 +359,7 @@ func (this *Connection) updateTask() {
 
 func (this *Connection) FetchInputFrom(conn io.Reader) {
 	go func() {
-		payload := alloc.NewBuffer()
+		payload := alloc.NewLocalBuffer(2048)
 		defer payload.Release()
 		for {
 			payload.Reset()
