@@ -20,6 +20,7 @@ func Pipe(reader Reader, writer Writer) error {
 		err = writer.Write(buffer)
 		if err != nil {
 			log.Debug("IO: Pipe exits as ", err)
+			buffer.Release()
 			return err
 		}
 	}
