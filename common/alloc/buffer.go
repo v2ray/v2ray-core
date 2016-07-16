@@ -35,7 +35,9 @@ func (b *Buffer) Release() {
 	if b == nil || b.head == nil {
 		return
 	}
-	b.pool.Free(b)
+	if b.pool != nil {
+		b.pool.Free(b)
+	}
 	b.head = nil
 	b.Value = nil
 	b.pool = nil
@@ -215,4 +217,8 @@ func NewBufferWithSize(size int) *Buffer {
 	}
 
 	return NewLargeBuffer()
+}
+
+func NewLocalBuffer(size int) *Buffer {
+	return CreateBuffer(make([]byte, size), nil)
 }
