@@ -250,7 +250,7 @@ func (this *Connection) SetState(state State) {
 	current := this.Elapsed()
 	atomic.StoreInt32((*int32)(&this.state), int32(state))
 	atomic.StoreUint32(&this.stateBeginTime, current)
-	log.Info("KCP|Connection: #", this.conv, " entering state ", state, " at ", current)
+	log.Debug("KCP|Connection: #", this.conv, " entering state ", state, " at ", current)
 
 	switch state {
 	case StateReadyToClose:
