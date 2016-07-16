@@ -5,7 +5,6 @@ import (
 	"hash/fnv"
 	"io"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/crypto"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -43,16 +42,15 @@ func (this *ServerSession) Release() {
 }
 
 func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.RequestHeader, error) {
-	buffer := alloc.NewSmallBuffer()
-	defer buffer.Release()
+	buffer := make([]byte, 512)
 
-	_, err := io.ReadFull(reader, buffer.Value[:protocol.IDBytesLen])
+	_, err := io.ReadFull(reader, buffer[:protocol.IDBytesLen])
 	if err != nil {
 		log.Info("Raw: Failed to read request header: ", err)
 		return nil, io.EOF
 	}
 
-	user, timestamp, valid := this.userValidator.Get(buffer.Value[:protocol.IDBytesLen])
+	user, timestamp, valid := this.userValidator.Get(buffer[:protocol.IDBytesLen])
 	if !valid {
 		return nil, protocol.ErrInvalidUser
 	}
@@ -64,7 +62,7 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 	aesStream := crypto.NewAesDecryptionStream(account.ID.CmdKey(), iv)
 	decryptor := crypto.NewCryptionReader(aesStream, reader)
 
-	nBytes, err := io.ReadFull(decryptor, buffer.Value[:41])
+	nBytes, err := io.ReadFull(decryptor, buffer[:41])
 	if err != nil {
 		log.Debug("Raw: Failed to read request header (", nBytes, " bytes): ", err)
 		return nil, err
@@ -73,7 +71,7 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 
 	request := &protocol.RequestHeader{
 		User:    user,
-		Version: buffer.Value[0],
+		Version: buffer[0],
 	}
 
 	if request.Version != Version {
@@ -81,61 +79,60 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 		return nil, protocol.ErrInvalidVersion
 	}
 
-	this.requestBodyIV = append([]byte(nil), buffer.Value[1:17]...)   // 16 bytes
-	this.requestBodyKey = append([]byte(nil), buffer.Value[17:33]...) // 16 bytes
-	this.responseHeader = buffer.Value[33]                            // 1 byte
-	request.Option = protocol.RequestOption(buffer.Value[34])         // 1 byte + 2 bytes reserved
-	request.Command = protocol.RequestCommand(buffer.Value[37])
+	this.requestBodyIV = append([]byte(nil), buffer[1:17]...)   // 16 bytes
+	this.requestBodyKey = append([]byte(nil), buffer[17:33]...) // 16 bytes
+	this.responseHeader = buffer[33]                            // 1 byte
+	request.Option = protocol.RequestOption(buffer[34])         // 1 byte + 2 bytes reserved
+	request.Command = protocol.RequestCommand(buffer[37])
 
-	request.Port = v2net.PortFromBytes(buffer.Value[38:40])
+	request.Port = v2net.PortFromBytes(buffer[38:40])
 
-	switch buffer.Value[40] {
+	switch buffer[40] {
 	case AddrTypeIPv4:
-		nBytes, err = io.ReadFull(decryptor, buffer.Value[41:45]) // 4 bytes
+		nBytes, err = io.ReadFull(decryptor, buffer[41:45]) // 4 bytes
 		bufferLen += 4
 		if err != nil {
 			log.Debug("VMess: Failed to read target IPv4 (", nBytes, " bytes): ", err)
 			return nil, err
 		}
-		request.Address = v2net.IPAddress(buffer.Value[41:45])
+		request.Address = v2net.IPAddress(buffer[41:45])
 	case AddrTypeIPv6:
-		nBytes, err = io.ReadFull(decryptor, buffer.Value[41:57]) // 16 bytes
+		nBytes, err = io.ReadFull(decryptor, buffer[41:57]) // 16 bytes
 		bufferLen += 16
 		if err != nil {
 			log.Debug("VMess: Failed to read target IPv6 (", nBytes, " bytes): ", nBytes, err)
 			return nil, err
 		}
-		request.Address = v2net.IPAddress(buffer.Value[41:57])
+		request.Address = v2net.IPAddress(buffer[41:57])
 	case AddrTypeDomain:
-		nBytes, err = io.ReadFull(decryptor, buffer.Value[41:42])
+		nBytes, err = io.ReadFull(decryptor, buffer[41:42])
 		if err != nil {
 			log.Debug("VMess: Failed to read target domain (", nBytes, " bytes): ", nBytes, err)
 			return nil, err
 		}
-		domainLength := int(buffer.Value[41])
+		domainLength := int(buffer[41])
 		if domainLength == 0 {
 			return nil, transport.ErrCorruptedPacket
 		}
-		nBytes, err = io.ReadFull(decryptor, buffer.Value[42:42+domainLength])
+		nBytes, err = io.ReadFull(decryptor, buffer[42:42+domainLength])
 		if err != nil {
 			log.Debug("VMess: Failed to read target domain (", nBytes, " bytes): ", nBytes, err)
 			return nil, err
 		}
 		bufferLen += 1 + domainLength
-		domainBytes := append([]byte(nil), buffer.Value[42:42+domainLength]...)
-		request.Address = v2net.DomainAddress(string(domainBytes))
+		request.Address = v2net.DomainAddress(string(buffer[42 : 42+domainLength]))
 	}
 
-	nBytes, err = io.ReadFull(decryptor, buffer.Value[bufferLen:bufferLen+4])
+	nBytes, err = io.ReadFull(decryptor, buffer[bufferLen:bufferLen+4])
 	if err != nil {
 		log.Debug("VMess: Failed to read checksum (", nBytes, " bytes): ", nBytes, err)
 		return nil, err
 	}
 
 	fnv1a := fnv.New32a()
-	fnv1a.Write(buffer.Value[:bufferLen])
+	fnv1a.Write(buffer[:bufferLen])
 	actualHash := fnv1a.Sum32()
-	expectedHash := serial.BytesToUint32(buffer.Value[bufferLen : bufferLen+4])
+	expectedHash := serial.BytesToUint32(buffer[bufferLen : bufferLen+4])
 
 	if actualHash != expectedHash {
 		return nil, transport.ErrCorruptedPacket
