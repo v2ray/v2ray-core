@@ -33,7 +33,9 @@ func MarshalCommand(command interface{}, writer io.Writer) error {
 		return ErrUnknownCommand
 	}
 
-	buffer := alloc.NewSmallBuffer().Clear()
+	buffer := alloc.NewLocalBuffer(512).Clear()
+	defer buffer.Release()
+
 	err := factory.Marshal(command, buffer)
 	if err != nil {
 		return err
