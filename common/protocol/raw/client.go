@@ -6,7 +6,6 @@ import (
 	"hash/fnv"
 	"io"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/crypto"
 	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/common/protocol"
@@ -99,33 +98,32 @@ func (this *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Res
 	aesStream := crypto.NewAesDecryptionStream(this.responseBodyKey, this.responseBodyIV)
 	this.responseReader = crypto.NewCryptionReader(aesStream, reader)
 
-	buffer := alloc.NewSmallBuffer()
-	defer buffer.Release()
+	buffer := make([]byte, 256)
 
-	_, err := io.ReadFull(this.responseReader, buffer.Value[:4])
+	_, err := io.ReadFull(this.responseReader, buffer[:4])
 	if err != nil {
 		log.Info("Raw: Failed to read response header: ", err)
 		return nil, err
 	}
 
-	if buffer.Value[0] != this.responseHeader {
-		log.Info("Raw: Unexpected response header. Expecting ", this.responseHeader, " but actually ", buffer.Value[0])
+	if buffer[0] != this.responseHeader {
+		log.Info("Raw: Unexpected response header. Expecting ", this.responseHeader, " but actually ", buffer[0])
 		return nil, transport.ErrCorruptedPacket
 	}
 
 	header := &protocol.ResponseHeader{
-		Option: protocol.ResponseOption(buffer.Value[1]),
+		Option: protocol.ResponseOption(buffer[1]),
 	}
 
-	if buffer.Value[2] != 0 {
-		cmdId := buffer.Value[2]
-		dataLen := int(buffer.Value[3])
-		_, err := io.ReadFull(this.responseReader, buffer.Value[:dataLen])
+	if buffer[2] != 0 {
+		cmdId := buffer[2]
+		dataLen := int(buffer[3])
+		_, err := io.ReadFull(this.responseReader, buffer[:dataLen])
 		if err != nil {
 			log.Info("Raw: Failed to read response command: ", err)
 			return nil, err
 		}
-		data := buffer.Value[:dataLen]
+		data := buffer[:dataLen]
 		command, err := UnmarshalCommand(cmdId, data)
 		if err == nil {
 			header.Command = command
