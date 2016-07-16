@@ -11,7 +11,6 @@ import (
 
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/app/dispatcher"
-	"github.com/v2ray/v2ray-core/common/alloc"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -96,7 +95,7 @@ func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error
 func (this *Server) handleConnection(conn internet.Connection) {
 	defer conn.Close()
 	timedReader := v2net.NewTimeOutReader(this.config.Timeout, conn)
-	reader := bufio.NewReader(timedReader)
+	reader := bufio.NewReaderSize(timedReader, 2048)
 
 	request, err := http.ReadRequest(reader)
 	if err != nil {
@@ -139,11 +138,7 @@ func (this *Server) handleConnect(request *http.Request, destination v2net.Desti
 		ContentLength: 0,
 		Close:         false,
 	}
-
-	buffer := alloc.NewSmallBuffer().Clear()
-	response.Write(buffer)
-	writer.Write(buffer.Value)
-	buffer.Release()
+	response.Write(writer)
 
 	ray := this.packetDispatcher.DispatchToOutbound(destination)
 	this.transport(reader, writer, ray)
@@ -217,11 +212,8 @@ func (this *Server) GenerateResponse(statusCode int, status string) *http.Respon
 func (this *Server) handlePlainHTTP(request *http.Request, dest v2net.Destination, reader *bufio.Reader, writer io.Writer) {
 	if len(request.URL.Host) <= 0 {
 		response := this.GenerateResponse(400, "Bad Request")
+		response.Write(writer)
 
-		buffer := alloc.NewSmallBuffer().Clear()
-		response.Write(buffer)
-		writer.Write(buffer.Value)
-		buffer.Release()
 		return
 	}
 
