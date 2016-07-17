@@ -45,14 +45,12 @@ func (this *ChanReader) Read(b []byte) (int, error) {
 			return 0, io.EOF
 		}
 	}
-	nBytes := copy(b, this.current.Value)
-	if nBytes == this.current.Len() {
+	nBytes, err := this.current.Read(b)
+	if this.current.IsEmpty() {
 		this.current.Release()
 		this.current = nil
-	} else {
-		this.current.SliceFrom(nBytes)
 	}
-	return nBytes, nil
+	return nBytes, err
 }
 
 func (this *ChanReader) Release() {
