@@ -2,6 +2,7 @@
 package alloc
 
 import (
+	"hash"
 	"io"
 
 	"github.com/v2ray/v2ray-core/common/serial"
@@ -106,6 +107,12 @@ func (b *Buffer) PrependUint16(v uint16) *Buffer {
 func (b *Buffer) PrependUint32(v uint32) *Buffer {
 	b.SliceBack(4)
 	serial.Uint32ToBytes(v, b.Value[:0])
+	return b
+}
+
+func (b *Buffer) PrependHash(h hash.Hash) *Buffer {
+	b.SliceBack(h.Size())
+	h.Sum(b.Value[:0])
 	return b
 }
 

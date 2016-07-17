@@ -32,9 +32,7 @@ func (this *SimpleAuthenticator) Seal(buffer *alloc.Buffer) {
 	buffer.PrependUint16(uint16(buffer.Len()))
 	fnvHash := fnv.New32a()
 	fnvHash.Write(buffer.Value)
-
-	buffer.SliceBack(4)
-	fnvHash.Sum(buffer.Value[:0])
+	buffer.PrependHash(fnvHash)
 
 	len := buffer.Len()
 	xtra := 4 - len%4
