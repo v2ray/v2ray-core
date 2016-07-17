@@ -36,7 +36,7 @@ func (this *BufferedSegmentWriter) Write(seg Segment) {
 	}
 
 	if this.buffer == nil {
-		this.buffer = alloc.NewSmallBuffer().Clear()
+		this.buffer = alloc.NewLocalBuffer(2048).Clear()
 	}
 
 	this.buffer.Value = seg.Bytes(this.buffer.Value)
