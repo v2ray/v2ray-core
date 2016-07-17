@@ -7,17 +7,6 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 )
 
-// ReadFrom reads from a reader and put all content to a buffer.
-// If buffer is nil, ReadFrom creates a new normal buffer.
-func ReadFrom(reader io.Reader, buffer *alloc.Buffer) (*alloc.Buffer, error) {
-	if buffer == nil {
-		buffer = alloc.NewBuffer()
-	}
-	nBytes, err := reader.Read(buffer.Value)
-	buffer.Slice(0, nBytes)
-	return buffer, err
-}
-
 // Reader extends io.Reader with alloc.Buffer.
 type Reader interface {
 	common.Releasable
@@ -42,7 +31,12 @@ func NewAdaptiveReader(reader io.Reader) *AdaptiveReader {
 
 // Read implements Reader.Read().
 func (this *AdaptiveReader) Read() (*alloc.Buffer, error) {
-	buffer, err := ReadFrom(this.reader, this.allocate())
+	buffer := this.allocate().Clear()
+	_, err := buffer.FillFrom(this.reader)
+	if err != nil {
+		buffer.Release()
+		return nil, err
+	}
 
 	if buffer.Len() >= alloc.BufferSize {
 		this.allocate = alloc.NewLargeBuffer
@@ -50,10 +44,6 @@ func (this *AdaptiveReader) Read() (*alloc.Buffer, error) {
 		this.allocate = alloc.NewBuffer
 	}
 
-	if err != nil {
-		buffer.Release()
-		return nil, err
-	}
 	return buffer, nil
 }
 
