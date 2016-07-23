@@ -1,4 +1,4 @@
-package raw_test
+package encoding_test
 
 import (
 	"testing"
@@ -6,8 +6,8 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/protocol"
-	. "github.com/v2ray/v2ray-core/common/protocol/raw"
 	"github.com/v2ray/v2ray-core/common/uuid"
+	. "github.com/v2ray/v2ray-core/proxy/vmess/encoding"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 

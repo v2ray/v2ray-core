@@ -12,10 +12,10 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/common/protocol/raw"
 	"github.com/v2ray/v2ray-core/common/uuid"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/vmess/encoding"
 	vmessio "github.com/v2ray/v2ray-core/proxy/vmess/io"
 	"github.com/v2ray/v2ray-core/transport/internet"
 )
@@ -142,7 +142,7 @@ func (this *VMessInboundHandler) HandleConnection(connection internet.Connection
 		this.RUnlock()
 		return
 	}
-	session := raw.NewServerSession(this.clients)
+	session := encoding.NewServerSession(this.clients)
 	defer session.Release()
 
 	request, err := session.DecodeRequestHeader(reader)

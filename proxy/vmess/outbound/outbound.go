@@ -10,10 +10,10 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/common/protocol/raw"
 	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/vmess/encoding"
 	vmessio "github.com/v2ray/v2ray-core/proxy/vmess/io"
 	"github.com/v2ray/v2ray-core/transport/internet"
 	"github.com/v2ray/v2ray-core/transport/ray"
@@ -52,7 +52,7 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 		command = protocol.RequestCommandUDP
 	}
 	request := &protocol.RequestHeader{
-		Version: raw.Version,
+		Version: encoding.Version,
 		User:    rec.PickUser(),
 		Command: command,
 		Address: target.Address(),
@@ -74,7 +74,7 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 	requestFinish.Lock()
 	responseFinish.Lock()
 
-	session := raw.NewClientSession(protocol.DefaultIDHash)
+	session := encoding.NewClientSession(protocol.DefaultIDHash)
 
 	go this.handleRequest(session, conn, request, payload, input, &requestFinish)
 	go this.handleResponse(session, conn, request, rec.Destination, output, &responseFinish)
@@ -84,7 +84,7 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 	return nil
 }
 
-func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn internet.Connection, request *protocol.RequestHeader, payload *alloc.Buffer, input v2io.Reader, finish *sync.Mutex) {
+func (this *VMessOutboundHandler) handleRequest(session *encoding.ClientSession, conn internet.Connection, request *protocol.RequestHeader, payload *alloc.Buffer, input v2io.Reader, finish *sync.Mutex) {
 	defer finish.Unlock()
 
 	writer := v2io.NewBufferedWriter(conn)
@@ -116,7 +116,7 @@ func (this *VMessOutboundHandler) handleRequest(session *raw.ClientSession, conn
 	return
 }
 
-func (this *VMessOutboundHandler) handleResponse(session *raw.ClientSession, conn internet.Connection, request *protocol.RequestHeader, dest v2net.Destination, output v2io.Writer, finish *sync.Mutex) {
+func (this *VMessOutboundHandler) handleResponse(session *encoding.ClientSession, conn internet.Connection, request *protocol.RequestHeader, dest v2net.Destination, output v2io.Writer, finish *sync.Mutex) {
 	defer finish.Unlock()
 
 	reader := v2io.NewBufferedReader(conn)

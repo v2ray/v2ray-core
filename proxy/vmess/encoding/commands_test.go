@@ -1,12 +1,12 @@
-package raw_test
+package encoding_test
 
 import (
 	"testing"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/protocol"
-	. "github.com/v2ray/v2ray-core/common/protocol/raw"
 	"github.com/v2ray/v2ray-core/common/uuid"
+	. "github.com/v2ray/v2ray-core/proxy/vmess/encoding"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
 
