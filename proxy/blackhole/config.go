@@ -31,5 +31,5 @@ Content-Length: 0
 )
 
 func (this *HTTPResponse) WriteTo(writer v2io.Writer) {
-	writer.Write(alloc.NewSmallBuffer().Clear().AppendString(http403response))
+	writer.Write(alloc.NewLocalBuffer(512).Clear().AppendString(http403response))
 }
