@@ -7,6 +7,7 @@ before_install:
   - go get golang.org/x/tools/cmd/cover
   - go get github.com/onsi/gomega
   - go get github.com/onsi/ginkgo
+  - go get github.com/aead/chacha20
 
 script:
   - go test -tags json github.com/v2ray/v2ray-core/...
