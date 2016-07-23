@@ -38,12 +38,20 @@ type Server struct {
 }
 
 // NewServer creates a new Server object.
-func NewServer(config *Config, packetDispatcher dispatcher.PacketDispatcher, meta *proxy.InboundHandlerMeta) *Server {
-	return &Server{
-		config:           config,
-		packetDispatcher: packetDispatcher,
-		meta:             meta,
+func NewServer(config *Config, space app.Space, meta *proxy.InboundHandlerMeta) *Server {
+	s := &Server{
+		config: config,
+		meta:   meta,
 	}
+	space.InitializeApplication(func() error {
+		if !space.HasApp(dispatcher.APP_ID) {
+			log.Error("Socks|Server: Dispatcher is not found in the space.")
+			return app.ErrMissingApplication
+		}
+		s.packetDispatcher = space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)
+		return nil
+	})
+	return s
 }
 
 // Port implements InboundHandler.Port().
@@ -310,13 +318,7 @@ func (this *ServerFactory) StreamCapability() internet.StreamConnectionType {
 }
 
 func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
-	if !space.HasApp(dispatcher.APP_ID) {
-		return nil, internal.ErrBadConfiguration
-	}
-	return NewServer(
-		rawConfig.(*Config),
-		space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
-		meta), nil
+	return NewServer(rawConfig.(*Config), space, meta), nil
 }
 
 func init() {
