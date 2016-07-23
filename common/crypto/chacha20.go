@@ -6,24 +6,16 @@ import (
 	"github.com/aead/chacha20"
 )
 
-func makeNonce(nonce *[chacha20.NonceSize]byte, iv []byte) {
+// NewChaCha20Stream creates a new Chacha/20 cipher stream. Caller must ensure that key is 32-bytes long and iv is either 8 or 12 bytes.
+func NewChaCha20Stream(key []byte, iv []byte) cipher.Stream {
+	var keyArray [32]byte
+	var nonce [12]byte
+	copy(keyArray[:], key)
 	switch len(iv) {
 	case 8:
 		copy(nonce[4:], iv)
 	case 12:
 		copy(nonce[:], iv)
-	default:
-		panic("bad nonce length")
 	}
-}
-
-func NewChaCha20Stream(key []byte, iv []byte) cipher.Stream {
-	var Key [32]byte
-	var Nonce [12]byte
-	if len(key) != 32 {
-		panic("bad key length")
-	}
-	copy(Key[:], key)
-	makeNonce(&Nonce, iv)
-	return chacha20.NewCipher(&Nonce, &Key)
+	return chacha20.NewCipher(&nonce, &keyArray)
 }
