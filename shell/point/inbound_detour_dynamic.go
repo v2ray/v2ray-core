@@ -98,7 +98,7 @@ func (this *InboundDetourHandlerDynamic) refresh() error {
 	this.ich2Recyle = this.ichs
 	newIchs := make([]proxy.InboundHandler, config.Allocation.Concurrency)
 
-	for idx, _ := range newIchs {
+	for idx := range newIchs {
 		err := retry.Timed(5, 100).On(func() error {
 			port := this.pickUnusedPort()
 			ich, err := proxyrepo.CreateInboundHandler(config.Protocol, this.space, config.Settings, &proxy.InboundHandlerMeta{

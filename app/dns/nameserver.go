@@ -149,7 +149,7 @@ func (this *UDPNameServer) BuildQueryA(domain string, id uint16) *alloc.Buffer {
 	msg.Id = id
 	msg.RecursionDesired = true
 	msg.Question = []dns.Question{
-		dns.Question{
+		{
 			Name:   dns.Fqdn(domain),
 			Qtype:  dns.TypeA,
 			Qclass: dns.ClassINET,
