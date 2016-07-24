@@ -5,6 +5,7 @@ import (
 )
 
 type Account interface {
+	Equals(Account) bool
 }
 
 type VMessAccount struct {
@@ -17,4 +18,13 @@ func (this *VMessAccount) AnyValidID() *ID {
 		return this.ID
 	}
 	return this.AlterIDs[dice.Roll(len(this.AlterIDs))]
+}
+
+func (this *VMessAccount) Equals(account Account) bool {
+	vmessAccount, ok := account.(*VMessAccount)
+	if !ok {
+		return false
+	}
+	// TODO: handle AlterIds difference
+	return this.ID.Equals(vmessAccount.ID)
 }
