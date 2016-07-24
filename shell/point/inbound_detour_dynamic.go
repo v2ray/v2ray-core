@@ -104,10 +104,12 @@ func (this *InboundDetourHandlerDynamic) refresh() error {
 			ich, err := proxyrepo.CreateInboundHandler(config.Protocol, this.space, config.Settings, &proxy.InboundHandlerMeta{
 				Address: config.ListenOn, Port: port, Tag: config.Tag, StreamSettings: config.StreamSettings})
 			if err != nil {
+				delete(this.portsInUse, port)
 				return err
 			}
 			err = ich.Start()
 			if err != nil {
+				delete(this.portsInUse, port)
 				return err
 			}
 			this.portsInUse[port] = true
