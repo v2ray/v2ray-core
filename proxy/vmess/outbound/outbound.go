@@ -125,7 +125,7 @@ func (this *VMessOutboundHandler) handleResponse(session *encoding.ClientSession
 	header, err := session.DecodeResponseHeader(reader)
 	if err != nil {
 		conn.SetReusable(false)
-		log.Warning("VMess|Outbound: Failed to read response: ", err)
+		log.Warning("VMess|Outbound: Failed to read response from ", request.Destination(), ": ", err)
 		return
 	}
 	go this.handleCommand(dest, header.Command)
