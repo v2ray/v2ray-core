@@ -8,6 +8,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/dice"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/proxy"
 	proxyrepo "github.com/v2ray/v2ray-core/proxy/repo"
 )
@@ -98,20 +99,25 @@ func (this *InboundDetourHandlerDynamic) refresh() error {
 	newIchs := make([]proxy.InboundHandler, config.Allocation.Concurrency)
 
 	for idx, _ := range newIchs {
-		port := this.pickUnusedPort()
-		ich, err := proxyrepo.CreateInboundHandler(config.Protocol, this.space, config.Settings, &proxy.InboundHandlerMeta{
-			Address: config.ListenOn, Port: port, Tag: config.Tag, StreamSettings: config.StreamSettings})
+		err := retry.Timed(5, 100).On(func() error {
+			port := this.pickUnusedPort()
+			ich, err := proxyrepo.CreateInboundHandler(config.Protocol, this.space, config.Settings, &proxy.InboundHandlerMeta{
+				Address: config.ListenOn, Port: port, Tag: config.Tag, StreamSettings: config.StreamSettings})
+			if err != nil {
+				return err
+			}
+			err = ich.Start()
+			if err != nil {
+				return err
+			}
+			this.portsInUse[port] = true
+			newIchs[idx] = ich
+			return nil
+		})
 		if err != nil {
 			log.Error("Point: Failed to create inbound connection handler: ", err)
 			return err
 		}
-		err = ich.Start()
-		if err != nil {
-			log.Error("Point: Failed to start inbound connection handler: ", err)
-			return err
-		}
-		this.portsInUse[port] = true
-		newIchs[idx] = ich
 	}
 
 	this.Lock()
