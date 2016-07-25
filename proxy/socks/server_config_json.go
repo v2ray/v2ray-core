@@ -17,14 +17,9 @@ const (
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {
-	type SocksAccount struct {
-		Username string `json:"user"`
-		Password string `json:"pass"`
-	}
-
 	type SocksConfig struct {
 		AuthMethod string             `json:"auth"`
-		Accounts   []*SocksAccount    `json:"accounts"`
+		Accounts   []*Account         `json:"accounts"`
 		UDP        bool               `json:"udp"`
 		Host       *v2net.AddressJson `json:"ip"`
 		Timeout    int                `json:"timeout"`
