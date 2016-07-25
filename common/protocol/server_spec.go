@@ -30,7 +30,7 @@ type TimeoutValidStrategy struct {
 }
 
 func BeforeTime(t time.Time) ValidationStrategy {
-	return TimeoutValidStrategy{
+	return &TimeoutValidStrategy{
 		until: t,
 	}
 }
@@ -39,7 +39,7 @@ func (this TimeoutValidStrategy) IsValid() bool {
 	return this.until.After(time.Now())
 }
 
-func (this TimeoutValidStrategy) Invalidate() {
+func (this *TimeoutValidStrategy) Invalidate() {
 	this.until = time.Time{}
 }
 

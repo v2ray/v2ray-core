@@ -2,6 +2,7 @@ package protocol_test
 
 import (
 	"testing"
+	"time"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	. "github.com/v2ray/v2ray-core/common/protocol"
@@ -16,7 +17,7 @@ func (this *TestAccount) Equals(account Account) bool {
 	return account.(*TestAccount).id == this.id
 }
 
-func TestReceiverUser(t *testing.T) {
+func TestServerSpecUser(t *testing.T) {
 	assert := assert.On(t)
 
 	account := &TestAccount{
@@ -36,4 +37,26 @@ func TestReceiverUser(t *testing.T) {
 
 	rec.AddUser(user2)
 	assert.Bool(rec.HasUser(user2)).IsTrue()
+}
+
+func TestAlwaysValidStrategy(t *testing.T) {
+	assert := assert.On(t)
+
+	strategy := AlwaysValid()
+	assert.Bool(strategy.IsValid()).IsTrue()
+	strategy.Invalidate()
+	assert.Bool(strategy.IsValid()).IsTrue()
+}
+
+func TestTimeoutValidStrategy(t *testing.T) {
+	assert := assert.On(t)
+
+	strategy := BeforeTime(time.Now().Add(2 * time.Second))
+	assert.Bool(strategy.IsValid()).IsTrue()
+	time.Sleep(3 * time.Second)
+	assert.Bool(strategy.IsValid()).IsFalse()
+
+	strategy = BeforeTime(time.Now().Add(2 * time.Second))
+	strategy.Invalidate()
+	assert.Bool(strategy.IsValid()).IsFalse()
 }
