@@ -35,7 +35,7 @@ func BeforeTime(t time.Time) ValidationStrategy {
 	}
 }
 
-func (this TimeoutValidStrategy) IsValid() bool {
+func (this *TimeoutValidStrategy) IsValid() bool {
 	return this.until.After(time.Now())
 }
 
