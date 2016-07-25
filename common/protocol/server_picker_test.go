@@ -43,6 +43,8 @@ func TestServerPicker(t *testing.T) {
 	assert.Port(server.Destination().Port()).Equals(2)
 	server = picker.PickServer()
 	assert.Port(server.Destination().Port()).Equals(3)
+	server = picker.PickServer()
+	assert.Port(server.Destination().Port()).Equals(1)
 
 	time.Sleep(2 * time.Second)
 	server = picker.PickServer()
