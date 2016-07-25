@@ -10,6 +10,7 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/common/serial"
+	"github.com/v2ray/v2ray-core/proxy/vmess"
 	"github.com/v2ray/v2ray-core/transport"
 )
 
@@ -58,7 +59,7 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 	timestampHash := md5.New()
 	timestampHash.Write(hashTimestamp(timestamp))
 	iv := timestampHash.Sum(nil)
-	account := user.Account.(*protocol.VMessAccount)
+	account := user.Account.(*vmess.Account)
 	aesStream := crypto.NewAesDecryptionStream(account.ID.CmdKey(), iv)
 	decryptor := crypto.NewCryptionReader(aesStream, reader)
 

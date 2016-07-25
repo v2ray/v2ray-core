@@ -14,16 +14,8 @@ func (u *User) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	var rawAccount AccountJson
-	if err := json.Unmarshal(data, &rawAccount); err != nil {
-		return err
-	}
-	account, err := rawAccount.GetAccount()
-	if err != nil {
-		return err
-	}
-
-	*u = *NewUser(account, UserLevel(rawUserValue.LevelByte), rawUserValue.EmailString)
+	u.Email = rawUserValue.EmailString
+	u.Level = UserLevel(rawUserValue.LevelByte)
 
 	return nil
 }

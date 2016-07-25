@@ -3,6 +3,7 @@ package inbound
 import (
 	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/common/protocol"
+	"github.com/v2ray/v2ray-core/proxy/vmess"
 )
 
 func (this *VMessInboundHandler) generateCommand(request *protocol.RequestHeader) protocol.ResponseCommand {
@@ -23,8 +24,8 @@ func (this *VMessInboundHandler) generateCommand(request *protocol.RequestHeader
 				}
 				return &protocol.CommandSwitchAccount{
 					Port:     inboundHandler.Port(),
-					ID:       user.Account.(*protocol.VMessAccount).ID.UUID(),
-					AlterIds: uint16(len(user.Account.(*protocol.VMessAccount).AlterIDs)),
+					ID:       user.Account.(*vmess.Account).ID.UUID(),
+					AlterIds: uint16(len(user.Account.(*vmess.Account).AlterIDs)),
 					Level:    user.Level,
 					ValidMin: byte(availableMin),
 				}

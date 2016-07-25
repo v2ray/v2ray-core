@@ -9,6 +9,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/crypto"
 	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/common/protocol"
+	"github.com/v2ray/v2ray-core/proxy/vmess"
 	"github.com/v2ray/v2ray-core/transport"
 )
 
@@ -50,7 +51,7 @@ func NewClientSession(idHash protocol.IDHash) *ClientSession {
 
 func (this *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writer io.Writer) {
 	timestamp := protocol.NewTimestampGenerator(protocol.NowTime(), 30)()
-	idHash := this.idHash(header.User.Account.(*protocol.VMessAccount).AnyValidID().Bytes())
+	idHash := this.idHash(header.User.Account.(*vmess.Account).AnyValidID().Bytes())
 	idHash.Write(timestamp.Bytes(nil))
 	writer.Write(idHash.Sum(nil))
 
@@ -81,7 +82,7 @@ func (this *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, w
 	timestampHash := md5.New()
 	timestampHash.Write(hashTimestamp(timestamp))
 	iv := timestampHash.Sum(nil)
-	account := header.User.Account.(*protocol.VMessAccount)
+	account := header.User.Account.(*vmess.Account)
 	aesStream := crypto.NewAesEncryptionStream(account.ID.CmdKey(), iv)
 	aesStream.XORKeyStream(buffer, buffer)
 	writer.Write(buffer)

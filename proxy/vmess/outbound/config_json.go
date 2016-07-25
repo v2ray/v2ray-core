@@ -11,13 +11,14 @@ import (
 	"github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/vmess"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type RawConfigTarget struct {
 		Address *v2net.AddressJson `json:"address"`
 		Port    v2net.Port         `json:"port"`
-		Users   []*protocol.User   `json:"users"`
+		Users   []json.RawMessage  `json:"users"`
 	}
 	type RawOutbound struct {
 		Receivers []*RawConfigTarget `json:"vnext"`
@@ -45,7 +46,19 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 			rec.Address.Address = v2net.IPAddress(serial.Uint32ToBytes(2891346854, nil))
 		}
 		spec := protocol.NewServerSpec(v2net.TCPDestination(rec.Address.Address, rec.Port), protocol.AlwaysValid())
-		for _, user := range rec.Users {
+		for _, rawUser := range rec.Users {
+			user := new(protocol.User)
+			if err := json.Unmarshal(rawUser, user); err != nil {
+				log.Error("VMess|Outbound: Invalid user: ", err)
+				return err
+			}
+			account := new(vmess.Account)
+			if err := json.Unmarshal(rawUser, account); err != nil {
+				log.Error("VMess|Outbound: Invalid user: ", err)
+				return err
+			}
+			user.Account = account
+
 			spec.AddUser(user)
 		}
 		serverSpecs[idx] = spec

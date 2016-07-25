@@ -8,6 +8,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/vmess"
 )
 
 func (this *DetourConfig) UnmarshalJSON(data []byte) error {
@@ -53,16 +54,15 @@ func (this *DefaultConfig) UnmarshalJSON(data []byte) error {
 
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
-		Users        []*protocol.User `json:"clients"`
-		Features     *FeaturesConfig  `json:"features"`
-		Defaults     *DefaultConfig   `json:"default"`
-		DetourConfig *DetourConfig    `json:"detour"`
+		Users        []json.RawMessage `json:"clients"`
+		Features     *FeaturesConfig   `json:"features"`
+		Defaults     *DefaultConfig    `json:"default"`
+		DetourConfig *DetourConfig     `json:"detour"`
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
 		return errors.New("VMessIn: Failed to parse config: " + err.Error())
 	}
-	this.AllowedUsers = jsonConfig.Users
 	this.Features = jsonConfig.Features // Backward compatibility
 	this.Defaults = jsonConfig.Defaults
 	if this.Defaults == nil {
@@ -76,6 +76,20 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	if this.Features != nil && this.DetourConfig == nil {
 		this.DetourConfig = this.Features.Detour
 	}
+	this.AllowedUsers = make([]*protocol.User, len(jsonConfig.Users))
+	for idx, rawData := range jsonConfig.Users {
+		user := new(protocol.User)
+		if err := json.Unmarshal(rawData, user); err != nil {
+			return errors.New("VMess|Inbound: Invalid user: " + err.Error())
+		}
+		account := new(vmess.Account)
+		if err := json.Unmarshal(rawData, account); err != nil {
+			return errors.New("VMess|Inbound: Invalid user: " + err.Error())
+		}
+		user.Account = account
+		this.AllowedUsers[idx] = user
+	}
+
 	return nil
 }
 

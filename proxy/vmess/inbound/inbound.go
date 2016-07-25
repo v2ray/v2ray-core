@@ -15,6 +15,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/uuid"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/vmess"
 	"github.com/v2ray/v2ray-core/proxy/vmess/encoding"
 	vmessio "github.com/v2ray/v2ray-core/proxy/vmess/io"
 	"github.com/v2ray/v2ray-core/transport/internet"
@@ -51,11 +52,12 @@ func (this *userByEmail) Get(email string) (*protocol.User, bool) {
 		if !found {
 			id := protocol.NewID(uuid.New())
 			alterIDs := protocol.NewAlterIDs(id, this.defaultAlterIDs)
-			account := &protocol.VMessAccount{
+			account := &vmess.Account{
 				ID:       id,
 				AlterIDs: alterIDs,
 			}
-			user = protocol.NewUser(account, this.defaultLevel, email)
+			user = protocol.NewUser(this.defaultLevel, email)
+			user.Account = account
 			this.cache[email] = user
 		}
 		this.Unlock()
@@ -249,7 +251,7 @@ func (this *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.
 	}
 	config := rawConfig.(*Config)
 
-	allowedClients := protocol.NewTimedUserValidator(protocol.DefaultIDHash)
+	allowedClients := vmess.NewTimedUserValidator(protocol.DefaultIDHash)
 	for _, user := range config.AllowedUsers {
 		allowedClients.Add(user)
 	}

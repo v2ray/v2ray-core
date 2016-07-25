@@ -7,6 +7,7 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/common/uuid"
+	"github.com/v2ray/v2ray-core/proxy/vmess"
 	. "github.com/v2ray/v2ray-core/proxy/vmess/encoding"
 	"github.com/v2ray/v2ray-core/testing/assert"
 )
@@ -15,12 +16,12 @@ func TestRequestSerialization(t *testing.T) {
 	assert := assert.On(t)
 
 	user := protocol.NewUser(
-		&protocol.VMessAccount{
-			ID:       protocol.NewID(uuid.New()),
-			AlterIDs: nil,
-		},
 		protocol.UserLevelUntrusted,
 		"test@v2ray.com")
+	user.Account = &vmess.Account{
+		ID:       protocol.NewID(uuid.New()),
+		AlterIDs: nil,
+	}
 
 	expectedRequest := &protocol.RequestHeader{
 		Version: 1,
@@ -35,7 +36,7 @@ func TestRequestSerialization(t *testing.T) {
 	client := NewClientSession(protocol.DefaultIDHash)
 	client.EncodeRequestHeader(expectedRequest, buffer)
 
-	userValidator := protocol.NewTimedUserValidator(protocol.DefaultIDHash)
+	userValidator := vmess.NewTimedUserValidator(protocol.DefaultIDHash)
 	userValidator.Add(user)
 
 	server := NewServerSession(userValidator)

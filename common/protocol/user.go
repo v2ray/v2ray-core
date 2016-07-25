@@ -13,11 +13,10 @@ type User struct {
 	Email   string
 }
 
-func NewUser(account Account, level UserLevel, email string) *User {
+func NewUser(level UserLevel, email string) *User {
 	return &User{
-		Account: account,
-		Level:   level,
-		Email:   email,
+		Level: level,
+		Email: email,
 	}
 }
 

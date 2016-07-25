@@ -22,24 +22,13 @@ func TestUserParsing(t *testing.T) {
   }`), user)
 	assert.Error(err).IsNil()
 	assert.Byte(byte(user.Level)).Equals(1)
-
-	account, ok := user.Account.(*VMessAccount)
-	assert.Bool(ok).IsTrue()
-	assert.String(account.ID.String()).Equals("96edb838-6d68-42ef-a933-25f7ac3a9d09")
+	assert.String(user.Email).Equals("love@v2ray.com")
 }
 
 func TestInvalidUserJson(t *testing.T) {
 	assert := assert.On(t)
 
 	user := new(User)
-	err := json.Unmarshal([]byte(`{"id": 1234}`), user)
-	assert.Error(err).IsNotNil()
-}
-
-func TestInvalidIdJson(t *testing.T) {
-	assert := assert.On(t)
-
-	user := new(User)
-	err := json.Unmarshal([]byte(`{"id": "1234"}`), user)
+	err := json.Unmarshal([]byte(`{"email": 1234}`), user)
 	assert.Error(err).IsNotNil()
 }
