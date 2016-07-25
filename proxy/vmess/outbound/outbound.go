@@ -20,20 +20,21 @@ import (
 )
 
 type VMessOutboundHandler struct {
-	receiverManager *ReceiverManager
-	meta            *proxy.OutboundHandlerMeta
+	serverList   *protocol.ServerList
+	serverPicker protocol.ServerPicker
+	meta         *proxy.OutboundHandlerMeta
 }
 
 func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
 	defer ray.OutboundInput().Release()
 	defer ray.OutboundOutput().Close()
 
-	var rec *Receiver
+	var rec *protocol.ServerSpec
 	var conn internet.Connection
 
 	err := retry.Timed(5, 100).On(func() error {
-		rec = this.receiverManager.PickReceiver()
-		rawConn, err := internet.Dial(this.meta.Address, rec.Destination, this.meta.StreamSettings)
+		rec = this.serverPicker.PickServer()
+		rawConn, err := internet.Dial(this.meta.Address, rec.Destination(), this.meta.StreamSettings)
 		if err != nil {
 			return err
 		}
@@ -77,7 +78,7 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 	session := encoding.NewClientSession(protocol.DefaultIDHash)
 
 	go this.handleRequest(session, conn, request, payload, input, &requestFinish)
-	go this.handleResponse(session, conn, request, rec.Destination, output, &responseFinish)
+	go this.handleResponse(session, conn, request, rec.Destination(), output, &responseFinish)
 
 	requestFinish.Lock()
 	responseFinish.Lock()
@@ -163,9 +164,14 @@ func (this *Factory) StreamCapability() internet.StreamConnectionType {
 func (this *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 	vOutConfig := rawConfig.(*Config)
 
+	serverList := protocol.NewServerList()
+	for _, rec := range vOutConfig.Receivers {
+		serverList.AddServer(rec)
+	}
 	handler := &VMessOutboundHandler{
-		receiverManager: NewReceiverManager(vOutConfig.Receivers),
-		meta:            meta,
+		serverList:   serverList,
+		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
+		meta:         meta,
 	}
 
 	return handler, nil

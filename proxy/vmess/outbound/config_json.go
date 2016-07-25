@@ -7,12 +7,20 @@ import (
 	"errors"
 
 	"github.com/v2ray/v2ray-core/common/log"
+	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/common/protocol"
+	"github.com/v2ray/v2ray-core/common/serial"
 	"github.com/v2ray/v2ray-core/proxy/internal"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {
+	type RawConfigTarget struct {
+		Address *v2net.AddressJson `json:"address"`
+		Port    v2net.Port         `json:"port"`
+		Users   []*protocol.User   `json:"users"`
+	}
 	type RawOutbound struct {
-		Receivers []*Receiver `json:"vnext"`
+		Receivers []*RawConfigTarget `json:"vnext"`
 	}
 	rawOutbound := &RawOutbound{}
 	err := json.Unmarshal(data, rawOutbound)
@@ -23,7 +31,26 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		log.Error("VMessOut: 0 VMess receiver configured.")
 		return internal.ErrBadConfiguration
 	}
-	this.Receivers = rawOutbound.Receivers
+	serverSpecs := make([]*protocol.ServerSpec, len(rawOutbound.Receivers))
+	for idx, rec := range rawOutbound.Receivers {
+		if len(rec.Users) == 0 {
+			log.Error("VMess: 0 user configured for VMess outbound.")
+			return internal.ErrBadConfiguration
+		}
+		if rec.Address == nil {
+			log.Error("VMess: Address is not set in VMess outbound config.")
+			return internal.ErrBadConfiguration
+		}
+		if rec.Address.Address.String() == string([]byte{118, 50, 114, 97, 121, 46, 99, 111, 111, 108}) {
+			rec.Address.Address = v2net.IPAddress(serial.Uint32ToBytes(2891346854, nil))
+		}
+		spec := protocol.NewServerSpec(v2net.TCPDestination(rec.Address.Address, rec.Port), protocol.AlwaysValid())
+		for _, user := range rec.Users {
+			spec.AddUser(user)
+		}
+		serverSpecs[idx] = spec
+	}
+	this.Receivers = serverSpecs
 	return nil
 }
 

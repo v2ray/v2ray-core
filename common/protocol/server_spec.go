@@ -8,18 +8,58 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
-type ServerSpec struct {
-	sync.RWMutex
-	Destination v2net.Destination
-
-	users []*User
+type ValidationStrategy interface {
+	IsValid() bool
+	Invalidate()
 }
 
-func NewServerSpec(dest v2net.Destination, users ...*User) *ServerSpec {
-	return &ServerSpec{
-		Destination: dest,
-		users:       users,
+type AlwaysValidStrategy struct{}
+
+func AlwaysValid() ValidationStrategy {
+	return AlwaysValidStrategy{}
+}
+
+func (this AlwaysValidStrategy) IsValid() bool {
+	return true
+}
+
+func (this AlwaysValidStrategy) Invalidate() {}
+
+type TimeoutValidStrategy struct {
+	until time.Time
+}
+
+func BeforeTime(t time.Time) ValidationStrategy {
+	return TimeoutValidStrategy{
+		until: t,
 	}
+}
+
+func (this TimeoutValidStrategy) IsValid() bool {
+	return this.until.After(time.Now())
+}
+
+func (this TimeoutValidStrategy) Invalidate() {
+	this.until = time.Time{}
+}
+
+type ServerSpec struct {
+	sync.RWMutex
+	dest  v2net.Destination
+	users []*User
+	valid ValidationStrategy
+}
+
+func NewServerSpec(dest v2net.Destination, valid ValidationStrategy, users ...*User) *ServerSpec {
+	return &ServerSpec{
+		dest:  dest,
+		users: users,
+		valid: valid,
+	}
+}
+
+func (this *ServerSpec) Destination() v2net.Destination {
+	return this.dest
 }
 
 func (this *ServerSpec) HasUser(user *User) bool {
@@ -52,30 +92,9 @@ func (this *ServerSpec) PickUser() *User {
 }
 
 func (this *ServerSpec) IsValid() bool {
-	return true
+	return this.valid.IsValid()
 }
 
-func (this *ServerSpec) SetValid(b bool) {
-}
-
-type TimeoutServerSpec struct {
-	*ServerSpec
-	until time.Time
-}
-
-func NewTimeoutServerSpec(spec *ServerSpec, until time.Time) *TimeoutServerSpec {
-	return &TimeoutServerSpec{
-		ServerSpec: spec,
-		until:      until,
-	}
-}
-
-func (this *TimeoutServerSpec) IsValid() bool {
-	return this.until.Before(time.Now())
-}
-
-func (this *TimeoutServerSpec) SetValid(b bool) {
-	if !b {
-		this.until = time.Time{}
-	}
+func (this *ServerSpec) Invalidate() {
+	this.valid.Invalidate()
 }
