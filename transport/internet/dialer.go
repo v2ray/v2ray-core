@@ -56,26 +56,30 @@ func Dial(src v2net.Address, dest v2net.Destination, settings *StreamSettings) (
 }
 
 func DialToDest(src v2net.Address, dest v2net.Destination) (net.Conn, error) {
-	dialer := &net.Dialer{
-		Timeout:   time.Second * 60,
-		DualStack: true,
-	}
 
-	if src != nil && src != v2net.AnyIP {
-		var addr net.Addr
-		if dest.IsTCP() {
-			addr = &net.TCPAddr{
-				IP:   src.IP(),
-				Port: 0,
-			}
-		} else {
-			addr = &net.UDPAddr{
-				IP:   src.IP(),
-				Port: 0,
-			}
+	if isDefaultDialerSubstituted() {
+		dialer := v2AlternativeDialer
+		return (*dialer).Dial(dest.Network().String(), dest.NetAddr())
+	} else {
+		dialer := &net.Dialer{
+			Timeout:   time.Second * 60,
+			DualStack: true,
 		}
-		dialer.LocalAddr = addr
+		if src != nil && src != v2net.AnyIP {
+			var addr net.Addr
+			if dest.IsTCP() {
+				addr = &net.TCPAddr{
+					IP:   src.IP(),
+					Port: 0,
+				}
+			} else {
+				addr = &net.UDPAddr{
+					IP:   src.IP(),
+					Port: 0,
+				}
+			}
+			dialer.LocalAddr = addr
+		}
+		return dialer.Dial(dest.Network().String(), dest.NetAddr())
 	}
-
-	return dialer.Dial(dest.Network().String(), dest.NetAddr())
 }
