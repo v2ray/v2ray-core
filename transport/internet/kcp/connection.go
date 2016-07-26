@@ -21,6 +21,15 @@ var (
 
 type State int32
 
+func (this State) Is(states ...State) bool {
+	for _, state := range states {
+		if this == state {
+			return true
+		}
+	}
+	return false
+}
+
 const (
 	StateActive          State = 0
 	StateReadyToClose    State = 1
@@ -172,7 +181,7 @@ func (this *Connection) Read(b []byte) (int, error) {
 	}
 
 	for {
-		if this.State() == StateReadyToClose || this.State() == StateTerminating || this.State() == StateTerminated {
+		if this.State().Is(StateReadyToClose, StateTerminating, StateTerminated) {
 			return 0, io.EOF
 		}
 		nBytes := this.receivingWorker.Read(b)
@@ -206,9 +215,6 @@ func (this *Connection) Read(b []byte) (int, error) {
 
 // Write implements the Conn Write method.
 func (this *Connection) Write(b []byte) (int, error) {
-	if this == nil || this.State() != StateActive {
-		return 0, io.ErrClosedPipe
-	}
 	totalWritten := 0
 
 	for {
@@ -278,9 +284,7 @@ func (this *Connection) Close() error {
 	this.dataOutputCond.Broadcast()
 
 	state := this.State()
-	if state == StateReadyToClose ||
-		state == StateTerminating ||
-		state == StateTerminated {
+	if state.Is(StateReadyToClose, StateTerminating, StateTerminated) {
 		return errClosedConnection
 	}
 	log.Info("KCP|Connection: Closing connection to ", this.remote)
