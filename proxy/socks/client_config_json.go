@@ -1,3 +1,5 @@
+// +build json
+
 package socks
 
 import (
