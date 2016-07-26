@@ -49,23 +49,27 @@ type SimpleSystemDialer struct {
 	adapter SystemDialerAdapter
 }
 
-func (this *SimpleSystemDialer) Dial(src v2net.Address, dest v2net.Destination) (net.Conn, error) {
-	return this.adapter.Dial(dest.Network().String(), dest.NetAddr())
-}
-
-func UseAlternativeSystemDialer(dialer SystemDialer) {
-	effectiveSystemDialer = dialer
-}
-
-func UseAlternativeSimpleSystemDialer(dialer SystemDialerAdapter) {
-	effectiveSystemDialer = &SimpleSystemDialer{
+func WithAdapter(dialer SystemDialerAdapter) SystemDialer {
+	return &SimpleSystemDialer{
 		adapter: dialer,
 	}
 }
 
+func (this *SimpleSystemDialer) Dial(src v2net.Address, dest v2net.Destination) (net.Conn, error) {
+	return this.adapter.Dial(dest.Network().String(), dest.NetAddr())
+}
+
+// UseAlternativeSystemDialer replaces the current system dialer with a given one.
+// Caller must ensure there is no race condition.
+func UseAlternativeSystemDialer(dialer SystemDialer) {
+	effectiveSystemDialer = dialer
+}
+
+// SubstituteDialer replaces the current system dialer with a given one.
+// Caller must ensure there is no race condition.
 // @Deprecated: Use UseAlternativeSimpleSystemDialer.
 func SubstituteDialer(dialer SystemDialerAdapter) error {
-	UseAlternativeSimpleSystemDialer(dialer)
+	UseAlternativeSystemDialer(WithAdapter(dialer))
 	return nil
 }
 
