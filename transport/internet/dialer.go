@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"net"
-	"time"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	v2tls "github.com/v2ray/v2ray-core/transport/internet/tls"
@@ -56,30 +55,5 @@ func Dial(src v2net.Address, dest v2net.Destination, settings *StreamSettings) (
 }
 
 func DialToDest(src v2net.Address, dest v2net.Destination) (net.Conn, error) {
-
-	if isDefaultDialerSubstituted() {
-		dialer := v2AlternativeDialer
-		return (*dialer).Dial(dest.Network().String(), dest.NetAddr())
-	} else {
-		dialer := &net.Dialer{
-			Timeout:   time.Second * 60,
-			DualStack: true,
-		}
-		if src != nil && src != v2net.AnyIP {
-			var addr net.Addr
-			if dest.IsTCP() {
-				addr = &net.TCPAddr{
-					IP:   src.IP(),
-					Port: 0,
-				}
-			} else {
-				addr = &net.UDPAddr{
-					IP:   src.IP(),
-					Port: 0,
-				}
-			}
-			dialer.LocalAddr = addr
-		}
-		return dialer.Dial(dest.Network().String(), dest.NetAddr())
-	}
+	return effectiveSystemDialer.Dial(src, dest)
 }
