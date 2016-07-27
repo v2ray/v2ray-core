@@ -28,7 +28,7 @@ func TestBuildAndRun(t *testing.T) {
 
 	outBuffer := bytes.NewBuffer(make([]byte, 0, 1024))
 	errBuffer := bytes.NewBuffer(make([]byte, 0, 1024))
-	configFile := filepath.Join(gopath, "src", "github.com", "v2ray", "v2ray-core", "release", "config", "vpoint_socks_vmess.json")
+	configFile := filepath.Join(gopath, "src", "github.com", "v2ray", "v2ray-core", "tools", "release", "config", "vpoint_socks_vmess.json")
 	cmd := exec.Command(target, "--config="+configFile)
 	cmd.Stdout = outBuffer
 	cmd.Stderr = errBuffer

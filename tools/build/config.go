@@ -25,7 +25,7 @@ func copyConfigFile(src, dest string, goOS GoOS, format bool) error {
 
 func copyConfigFiles(dir string, goOS GoOS) error {
 	GOPATH := os.Getenv("GOPATH")
-	srcDir := filepath.Join(GOPATH, "src", "github.com", "v2ray", "v2ray-core", "release", "config")
+	srcDir := filepath.Join(GOPATH, "src", "github.com", "v2ray", "v2ray-core", "tools", "release", "config")
 	src := filepath.Join(srcDir, "vpoint_socks_vmess.json")
 	dest := filepath.Join(dir, "vpoint_socks_vmess.json")
 	if goOS == Windows || goOS == MacOS {
