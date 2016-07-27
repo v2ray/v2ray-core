@@ -41,7 +41,7 @@ func BuildV2Ray() error {
 	if runtime.GOOS == "windows" {
 		binaryPath += ".exe"
 	}
-	cmd := exec.Command("go", "build", "-tags=json", "-o="+binaryPath, filepath.Join("github.com", "v2ray", "v2ray-core", "release", "server"))
+	cmd := exec.Command("go", "build", "-tags=json", "-o="+binaryPath, filepath.Join("github.com", "v2ray", "v2ray-core", "shell", "point", "main"))
 	return cmd.Run()
 }
 
