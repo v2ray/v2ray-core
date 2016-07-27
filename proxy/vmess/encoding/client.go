@@ -15,10 +15,10 @@ import (
 
 func hashTimestamp(t protocol.Timestamp) []byte {
 	bytes := make([]byte, 0, 32)
-	t.Bytes(bytes)
-	t.Bytes(bytes)
-	t.Bytes(bytes)
-	t.Bytes(bytes)
+	bytes = t.Bytes(bytes)
+	bytes = t.Bytes(bytes)
+	bytes = t.Bytes(bytes)
+	bytes = t.Bytes(bytes)
 	return bytes
 }
 
