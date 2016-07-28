@@ -17,12 +17,12 @@ const (
 // quickly.
 type Buffer struct {
 	head   []byte
-	pool   *BufferPool
+	pool   Pool
 	Value  []byte
 	offset int
 }
 
-func CreateBuffer(container []byte, parent *BufferPool) *Buffer {
+func CreateBuffer(container []byte, parent Pool) *Buffer {
 	b := new(Buffer)
 	b.head = container
 	b.pool = parent

@@ -4,6 +4,11 @@ import (
 	"sync"
 )
 
+type Pool interface {
+	Allocate() *Buffer
+	Free(*Buffer)
+}
+
 type BufferPool struct {
 	chain     chan []byte
 	allocator *sync.Pool

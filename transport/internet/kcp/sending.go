@@ -346,7 +346,7 @@ func (this *SendingWorker) Push(b []byte) int {
 		} else {
 			size = len(b)
 		}
-		this.queue.Push(alloc.NewSmallBuffer().Clear().Append(b[:size]))
+		this.queue.Push(AllocateBuffer().Clear().Append(b[:size]))
 		b = b[size:]
 		nBytes += size
 	}

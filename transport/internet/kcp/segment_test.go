@@ -24,7 +24,7 @@ func TestDataSegment(t *testing.T) {
 		Timestamp:   3,
 		Number:      4,
 		SendingNext: 5,
-		Data:        alloc.NewSmallBuffer().Clear().Append([]byte{'a', 'b', 'c', 'd'}),
+		Data:        alloc.NewLocalBuffer(512).Clear().Append([]byte{'a', 'b', 'c', 'd'}),
 	}
 
 	nBytes := seg.ByteSize()

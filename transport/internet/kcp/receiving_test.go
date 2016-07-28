@@ -40,8 +40,8 @@ func TestRecivingQueue(t *testing.T) {
 	assert := assert.On(t)
 
 	queue := NewReceivingQueue(2)
-	queue.Put(alloc.NewSmallBuffer().Clear().AppendString("abcd"))
-	queue.Put(alloc.NewSmallBuffer().Clear().AppendString("efg"))
+	queue.Put(alloc.NewLocalBuffer(512).Clear().AppendString("abcd"))
+	queue.Put(alloc.NewLocalBuffer(512).Clear().AppendString("efg"))
 	assert.Bool(queue.IsFull()).IsTrue()
 
 	b := make([]byte, 1024)
@@ -49,7 +49,7 @@ func TestRecivingQueue(t *testing.T) {
 	assert.Int(nBytes).Equals(7)
 	assert.String(string(b[:nBytes])).Equals("abcdefg")
 
-	queue.Put(alloc.NewSmallBuffer().Clear().AppendString("1"))
+	queue.Put(alloc.NewLocalBuffer(512).Clear().AppendString("1"))
 	queue.Close()
 	nBytes = queue.Read(b)
 	assert.Int(nBytes).Equals(0)

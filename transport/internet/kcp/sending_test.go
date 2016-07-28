@@ -13,10 +13,10 @@ func TestSendingQueue(t *testing.T) {
 
 	queue := NewSendingQueue(3)
 
-	seg0 := alloc.NewBuffer()
-	seg1 := alloc.NewBuffer()
-	seg2 := alloc.NewBuffer()
-	seg3 := alloc.NewBuffer()
+	seg0 := alloc.NewLocalBuffer(512)
+	seg1 := alloc.NewLocalBuffer(512)
+	seg2 := alloc.NewLocalBuffer(512)
+	seg3 := alloc.NewLocalBuffer(512)
 
 	assert.Bool(queue.IsEmpty()).IsTrue()
 	assert.Bool(queue.IsFull()).IsFalse()
@@ -45,10 +45,10 @@ func TestSendingQueueClear(t *testing.T) {
 
 	queue := NewSendingQueue(3)
 
-	seg0 := alloc.NewBuffer()
-	seg1 := alloc.NewBuffer()
-	seg2 := alloc.NewBuffer()
-	seg3 := alloc.NewBuffer()
+	seg0 := alloc.NewLocalBuffer(512)
+	seg1 := alloc.NewLocalBuffer(512)
+	seg2 := alloc.NewLocalBuffer(512)
+	seg3 := alloc.NewLocalBuffer(512)
 
 	queue.Push(seg0)
 	assert.Bool(queue.IsEmpty()).IsFalse()

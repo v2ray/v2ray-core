@@ -176,7 +176,7 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 		if len(buf) < dataLen {
 			return nil, nil
 		}
-		seg.Data = alloc.NewSmallBuffer().Clear().Append(buf[:dataLen])
+		seg.Data = AllocateBuffer().Clear().Append(buf[:dataLen])
 		buf = buf[dataLen:]
 
 		return seg, buf
