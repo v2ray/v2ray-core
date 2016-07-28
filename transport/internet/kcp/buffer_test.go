@@ -20,3 +20,20 @@ func TestBuffer(t *testing.T) {
 	assert.Pointer(b.Allocate()).IsNil()
 	b.Release()
 }
+
+func TestSingleRelease(t *testing.T) {
+	assert := assert.On(t)
+
+	b := NewBuffer()
+	x := b.Allocate()
+	x.Release()
+
+	y := b.Allocate()
+	assert.Pointer(y.Value).IsNotNil()
+
+	b.Release()
+	y.Release()
+
+	z := b.Allocate()
+	assert.Pointer(z).IsNil()
+}
