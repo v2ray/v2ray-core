@@ -77,15 +77,13 @@ func (this *Stream) Read() (*alloc.Buffer, error) {
 }
 
 func (this *Stream) Write(data *alloc.Buffer) error {
-	if this.closed {
-		return io.EOF
-	}
-	for {
+	for !this.closed {
 		err := this.TryWriteOnce(data)
 		if err != ErrIOTimeout {
 			return err
 		}
 	}
+	return io.EOF
 }
 
 func (this *Stream) TryWriteOnce(data *alloc.Buffer) error {
