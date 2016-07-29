@@ -53,7 +53,7 @@ func (this *Server) handleUDPPayload(payload *alloc.Buffer, source v2net.Destina
 		}
 		log.Info("Socks: Writing back UDP response with ", payload.Len(), " bytes to ", destination)
 
-		udpMessage := alloc.NewSmallBuffer().Clear()
+		udpMessage := alloc.NewLocalBuffer(2048).Clear()
 		response.Write(udpMessage)
 
 		this.udpMutex.RLock()
