@@ -41,10 +41,10 @@ func TestConnectionReadWrite(t *testing.T) {
 	downReader, downWriter := io.Pipe()
 
 	connClient := NewConnection(1, upWriter, &net.UDPAddr{IP: v2net.LocalHostIP.IP(), Port: 1}, &net.UDPAddr{IP: v2net.LocalHostIP.IP(), Port: 2}, NewSimpleAuthenticator())
-	go connClient.FetchInputFrom(downReader)
+	connClient.FetchInputFrom(downReader)
 
 	connServer := NewConnection(1, downWriter, &net.UDPAddr{IP: v2net.LocalHostIP.IP(), Port: 2}, &net.UDPAddr{IP: v2net.LocalHostIP.IP(), Port: 1}, NewSimpleAuthenticator())
-	go connServer.FetchInputFrom(upReader)
+	connServer.FetchInputFrom(upReader)
 
 	totalWritten := 1024 * 1024
 	clientSend := make([]byte, totalWritten)
