@@ -365,7 +365,7 @@ func (this *Connection) FetchInputFrom(conn io.Reader) {
 	go func() {
 		payload := alloc.NewLocalBuffer(2048)
 		defer payload.Release()
-		for {
+		for this.State() != StateTerminated {
 			payload.Reset()
 			nBytes, err := conn.Read(payload.Value)
 			if err != nil {
@@ -391,6 +391,7 @@ func (this *Connection) Terminate() {
 	}
 	log.Info("KCP|Connection: Terminating connection to ", this.RemoteAddr())
 
+	this.SetState(StateTerminated)
 	this.writer.Close()
 }
 
