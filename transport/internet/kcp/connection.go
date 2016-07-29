@@ -392,6 +392,8 @@ func (this *Connection) Terminate() {
 	log.Info("KCP|Connection: Terminating connection to ", this.RemoteAddr())
 
 	this.SetState(StateTerminated)
+	this.dataInputCond.Broadcast()
+	this.dataOutputCond.Broadcast()
 	this.writer.Close()
 }
 
