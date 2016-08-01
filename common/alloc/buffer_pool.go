@@ -55,6 +55,6 @@ const (
 	LargeBufferSize = 64*1024 - defaultOffset
 )
 
-var smallPool = NewBufferPool(1600, 1024)
-var mediumPool = NewBufferPool(8*1024, 256)
+var smallPool = NewBufferPool(1600, 256)
+var mediumPool = NewBufferPool(8*1024, 1024)
 var largePool = NewBufferPool(64*1024, 32)
