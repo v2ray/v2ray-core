@@ -40,10 +40,9 @@ func (request *Socks5AuthenticationRequest) HasAuthMethod(method byte) bool {
 }
 
 func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, auth4 Socks4AuthenticationRequest, err error) {
-	buffer := alloc.NewSmallBuffer()
-	defer buffer.Release()
+	buffer := make([]byte, 256)
 
-	nBytes, err := reader.Read(buffer.Value)
+	nBytes, err := reader.Read(buffer)
 	if err != nil {
 		return
 	}
@@ -53,23 +52,23 @@ func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, aut
 		return
 	}
 
-	if buffer.Value[0] == socks4Version {
-		auth4.Version = buffer.Value[0]
-		auth4.Command = buffer.Value[1]
-		auth4.Port = v2net.PortFromBytes(buffer.Value[2:4])
-		copy(auth4.IP[:], buffer.Value[4:8])
+	if buffer[0] == socks4Version {
+		auth4.Version = buffer[0]
+		auth4.Command = buffer[1]
+		auth4.Port = v2net.PortFromBytes(buffer[2:4])
+		copy(auth4.IP[:], buffer[4:8])
 		err = Socks4Downgrade
 		return
 	}
 
-	auth.version = buffer.Value[0]
+	auth.version = buffer[0]
 	if auth.version != socksVersion {
 		log.Warning("Socks: Unknown protocol version ", auth.version)
 		err = proxy.ErrInvalidProtocolVersion
 		return
 	}
 
-	auth.nMethods = buffer.Value[1]
+	auth.nMethods = buffer[1]
 	if auth.nMethods <= 0 {
 		log.Warning("Socks: Zero length of authentication methods")
 		err = proxy.ErrInvalidAuthentication
@@ -81,7 +80,7 @@ func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, aut
 		err = proxy.ErrInvalidAuthentication
 		return
 	}
-	copy(auth.authMethods[:], buffer.Value[2:nBytes])
+	copy(auth.authMethods[:], buffer[2:nBytes])
 	return
 }
 
