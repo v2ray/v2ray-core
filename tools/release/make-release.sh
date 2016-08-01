@@ -18,8 +18,9 @@ VERN=${MAJOR}.${MINOR}
 pushd $GOPATH/src/github.com/v2ray/v2ray-core
 echo "Adding a new tag: " "v$VER"
 git tag -s -a "v$VER" -m "$MSG"
-echo "Commiting core.go (may not necessary)"
 sed -i '' "s/\(version *= *\"\).*\(\"\)/\1$VERN\2/g" core.go
+echo "Commiting core.go (may not necessary)"
+git commit -S -m "Update version"
 echo "Pushing changes"
 git push --follow-tags
 popd
