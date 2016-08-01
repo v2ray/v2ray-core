@@ -84,7 +84,7 @@ func TestResponseWrite(t *testing.T) {
 		[16]byte{},
 		v2net.Port(53),
 	}
-	buffer := alloc.NewSmallBuffer().Clear()
+	buffer := alloc.NewLocalBuffer(2048).Clear()
 	defer buffer.Release()
 
 	response.Write(buffer)
@@ -105,7 +105,7 @@ func TestSetIPv6(t *testing.T) {
 	response := NewSocks5Response()
 	response.SetIPv6([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
 
-	buffer := alloc.NewSmallBuffer().Clear()
+	buffer := alloc.NewLocalBuffer(2048).Clear()
 	defer buffer.Release()
 	response.Write(buffer)
 	assert.Bytes(buffer.Value).Equals([]byte{
@@ -118,7 +118,7 @@ func TestSetDomain(t *testing.T) {
 	response := NewSocks5Response()
 	response.SetDomain("v2ray.com")
 
-	buffer := alloc.NewSmallBuffer().Clear()
+	buffer := alloc.NewLocalBuffer(2048).Clear()
 	defer buffer.Release()
 	response.Write(buffer)
 	assert.Bytes(buffer.Value).Equals([]byte{

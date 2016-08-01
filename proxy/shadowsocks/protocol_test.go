@@ -15,7 +15,7 @@ import (
 func TestNormalRequestParsing(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := alloc.NewSmallBuffer().Clear()
+	buffer := alloc.NewLocalBuffer(2048).Clear()
 	buffer.AppendBytes(1, 127, 0, 0, 1, 0, 80)
 
 	request, err := ReadRequest(buffer, nil, false)
@@ -28,7 +28,7 @@ func TestNormalRequestParsing(t *testing.T) {
 func TestEmptyPayload(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := alloc.NewSmallBuffer().Clear()
+	buffer := alloc.NewLocalBuffer(2048).Clear()
 	_, err := ReadRequest(buffer, nil, false)
 	assert.Error(err).Equals(io.EOF)
 }
@@ -36,7 +36,7 @@ func TestEmptyPayload(t *testing.T) {
 func TestSingleBytePayload(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := alloc.NewSmallBuffer().Clear().AppendBytes(1)
+	buffer := alloc.NewLocalBuffer(2048).Clear().AppendBytes(1)
 	_, err := ReadRequest(buffer, nil, false)
 	assert.Error(err).Equals(transport.ErrCorruptedPacket)
 }
@@ -44,7 +44,7 @@ func TestSingleBytePayload(t *testing.T) {
 func TestWrongAddressType(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := alloc.NewSmallBuffer().Clear().AppendBytes(5)
+	buffer := alloc.NewLocalBuffer(2048).Clear().AppendBytes(5)
 	_, err := ReadRequest(buffer, nil, false)
 	assert.Error(err).Equals(transport.ErrCorruptedPacket)
 }
@@ -52,15 +52,15 @@ func TestWrongAddressType(t *testing.T) {
 func TestInsufficientAddressRequest(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := alloc.NewSmallBuffer().Clear().AppendBytes(1, 1)
+	buffer := alloc.NewLocalBuffer(2048).Clear().AppendBytes(1, 1)
 	_, err := ReadRequest(buffer, nil, false)
 	assert.Error(err).Equals(transport.ErrCorruptedPacket)
 
-	buffer = alloc.NewSmallBuffer().Clear().AppendBytes(4, 1)
+	buffer = alloc.NewLocalBuffer(2048).Clear().AppendBytes(4, 1)
 	_, err = ReadRequest(buffer, nil, false)
 	assert.Error(err).Equals(transport.ErrCorruptedPacket)
 
-	buffer = alloc.NewSmallBuffer().Clear().AppendBytes(3, 255, 1)
+	buffer = alloc.NewLocalBuffer(2048).Clear().AppendBytes(3, 255, 1)
 	_, err = ReadRequest(buffer, nil, false)
 	assert.Error(err).Equals(transport.ErrCorruptedPacket)
 }
@@ -68,7 +68,7 @@ func TestInsufficientAddressRequest(t *testing.T) {
 func TestInsufficientPortRequest(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := alloc.NewSmallBuffer().Clear().AppendBytes(1, 1, 2, 3, 4, 5)
+	buffer := alloc.NewLocalBuffer(2048).Clear().AppendBytes(1, 1, 2, 3, 4, 5)
 	_, err := ReadRequest(buffer, nil, false)
 	assert.Error(err).Equals(transport.ErrCorruptedPacket)
 }
@@ -76,7 +76,7 @@ func TestInsufficientPortRequest(t *testing.T) {
 func TestOTARequest(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := alloc.NewSmallBuffer().Clear()
+	buffer := alloc.NewLocalBuffer(2048).Clear()
 	buffer.AppendBytes(0x13, 13, 119, 119, 119, 46, 118, 50, 114, 97, 121, 46, 99, 111, 109, 0, 0, 239, 115, 52, 212, 178, 172, 26, 6, 168, 0)
 
 	auth := NewAuthenticator(HeaderKeyGenerator(
@@ -91,7 +91,7 @@ func TestOTARequest(t *testing.T) {
 func TestInvalidOTARequest(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := alloc.NewSmallBuffer().Clear()
+	buffer := alloc.NewLocalBuffer(2048).Clear()
 	buffer.AppendBytes(0x13, 13, 119, 119, 119, 46, 118, 50, 114, 97, 121, 46, 99, 111, 109, 0, 0, 239, 115, 52, 212, 178, 172, 26, 6, 168, 1)
 
 	auth := NewAuthenticator(HeaderKeyGenerator(
@@ -104,7 +104,7 @@ func TestInvalidOTARequest(t *testing.T) {
 func TestUDPRequestParsing(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := alloc.NewSmallBuffer().Clear()
+	buffer := alloc.NewLocalBuffer(2048).Clear()
 	buffer.AppendBytes(1, 127, 0, 0, 1, 0, 80, 1, 2, 3, 4, 5, 6)
 
 	request, err := ReadRequest(buffer, nil, true)
@@ -118,7 +118,7 @@ func TestUDPRequestParsing(t *testing.T) {
 func TestUDPRequestWithOTA(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := alloc.NewSmallBuffer().Clear()
+	buffer := alloc.NewLocalBuffer(2048).Clear()
 	buffer.AppendBytes(
 		0x13, 13, 119, 119, 119, 46, 118, 50, 114, 97, 121, 46, 99, 111, 109, 0, 0,
 		1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
