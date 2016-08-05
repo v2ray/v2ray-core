@@ -162,7 +162,8 @@ func (this *AckList) Flush(current uint32, rto uint32) {
 	seg := NewAckSegment()
 	for i := 0; i < len(this.numbers) && !seg.IsFull(); i++ {
 		if this.nextFlush[i] <= current {
-			seg.PutNumber(this.numbers[i], this.timestamps[i])
+			seg.PutNumber(this.numbers[i])
+			seg.PutTimestamp(this.timestamps[i])
 			this.nextFlush[i] = current + rto/2
 		}
 	}

@@ -74,19 +74,24 @@ type AckSegment struct {
 	Option          SegmentOption
 	ReceivingWindow uint32
 	ReceivingNext   uint32
+	Timestamp       uint32
 	Count           byte
 	NumberList      []uint32
-	TimestampList   []uint32
 }
 
 func NewAckSegment() *AckSegment {
 	return new(AckSegment)
 }
 
-func (this *AckSegment) PutNumber(number uint32, timestamp uint32) {
+func (this *AckSegment) PutTimestamp(timestamp uint32) {
+	if timestamp-this.Timestamp < 0x7FFFFFFF {
+		this.Timestamp = timestamp
+	}
+}
+
+func (this *AckSegment) PutNumber(number uint32) {
 	this.Count++
 	this.NumberList = append(this.NumberList, number)
-	this.TimestampList = append(this.TimestampList, timestamp)
 }
 
 func (this *AckSegment) IsFull() bool {
@@ -94,7 +99,7 @@ func (this *AckSegment) IsFull() bool {
 }
 
 func (this *AckSegment) ByteSize() int {
-	return 2 + 1 + 1 + 4 + 4 + 1 + int(this.Count)*4 + int(this.Count)*4
+	return 2 + 1 + 1 + 4 + 4 + 4 + 1 + int(this.Count)*4
 }
 
 func (this *AckSegment) Bytes(b []byte) []byte {
@@ -102,17 +107,16 @@ func (this *AckSegment) Bytes(b []byte) []byte {
 	b = append(b, byte(CommandACK), byte(this.Option))
 	b = serial.Uint32ToBytes(this.ReceivingWindow, b)
 	b = serial.Uint32ToBytes(this.ReceivingNext, b)
+	b = serial.Uint32ToBytes(this.Timestamp, b)
 	b = append(b, this.Count)
 	for i := byte(0); i < this.Count; i++ {
 		b = serial.Uint32ToBytes(this.NumberList[i], b)
-		b = serial.Uint32ToBytes(this.TimestampList[i], b)
 	}
 	return b
 }
 
 func (this *AckSegment) Release() {
 	this.NumberList = nil
-	this.TimestampList = nil
 }
 
 type CmdOnlySegment struct {
@@ -121,6 +125,7 @@ type CmdOnlySegment struct {
 	Option       SegmentOption
 	SendingNext  uint32
 	ReceivinNext uint32
+	PeerRTO      uint32
 }
 
 func NewCmdOnlySegment() *CmdOnlySegment {
@@ -128,7 +133,7 @@ func NewCmdOnlySegment() *CmdOnlySegment {
 }
 
 func (this *CmdOnlySegment) ByteSize() int {
-	return 2 + 1 + 1 + 4 + 4
+	return 2 + 1 + 1 + 4 + 4 + 4
 }
 
 func (this *CmdOnlySegment) Bytes(b []byte) []byte {
@@ -136,6 +141,7 @@ func (this *CmdOnlySegment) Bytes(b []byte) []byte {
 	b = append(b, byte(this.Command), byte(this.Option))
 	b = serial.Uint32ToBytes(this.SendingNext, b)
 	b = serial.Uint32ToBytes(this.ReceivinNext, b)
+	b = serial.Uint32ToBytes(this.PeerRTO, b)
 	return b
 }
 
@@ -186,7 +192,7 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 		seg := NewAckSegment()
 		seg.Conv = conv
 		seg.Option = opt
-		if len(buf) < 9 {
+		if len(buf) < 13 {
 			return nil, nil
 		}
 
@@ -196,15 +202,18 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 		seg.ReceivingNext = serial.BytesToUint32(buf)
 		buf = buf[4:]
 
+		seg.Timestamp = serial.BytesToUint32(buf)
+		buf = buf[4:]
+
 		count := int(buf[0])
 		buf = buf[1:]
 
-		if len(buf) < count*8 {
+		if len(buf) < count*4 {
 			return nil, nil
 		}
 		for i := 0; i < count; i++ {
-			seg.PutNumber(serial.BytesToUint32(buf), serial.BytesToUint32(buf[4:]))
-			buf = buf[8:]
+			seg.PutNumber(serial.BytesToUint32(buf))
+			buf = buf[4:]
 		}
 
 		return seg, buf
@@ -215,7 +224,7 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 	seg.Command = cmd
 	seg.Option = opt
 
-	if len(buf) < 8 {
+	if len(buf) < 12 {
 		return nil, nil
 	}
 
@@ -223,6 +232,9 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 	buf = buf[4:]
 
 	seg.ReceivinNext = serial.BytesToUint32(buf)
+	buf = buf[4:]
+
+	seg.PeerRTO = serial.BytesToUint32(buf)
 	buf = buf[4:]
 
 	return seg, buf

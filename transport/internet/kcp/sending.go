@@ -317,14 +317,14 @@ func (this *SendingWorker) ProcessSegment(current uint32, seg *AckSegment) {
 		this.remoteNextNumber = seg.ReceivingWindow
 	}
 	this.ProcessReceivingNextWithoutLock(seg.ReceivingNext)
+	if current-seg.Timestamp < 10000 {
+		this.conn.roundTrip.Update(current-seg.Timestamp, current)
+	}
 
 	var maxack uint32
 	for i := 0; i < int(seg.Count); i++ {
-		timestamp := seg.TimestampList[i]
 		number := seg.NumberList[i]
-		if current-timestamp < 10000 {
-			this.conn.roundTrip.Update(current - timestamp)
-		}
+
 		this.ProcessAck(number)
 		if maxack < number {
 			maxack = number

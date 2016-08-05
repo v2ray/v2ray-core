@@ -48,9 +48,9 @@ func TestACKSegment(t *testing.T) {
 		Conv:            1,
 		ReceivingWindow: 2,
 		ReceivingNext:   3,
+		Timestamp:       10,
 		Count:           5,
 		NumberList:      []uint32{1, 3, 5, 7, 9},
-		TimestampList:   []uint32{2, 4, 6, 8, 10},
 	}
 
 	nBytes := seg.ByteSize()
@@ -64,8 +64,8 @@ func TestACKSegment(t *testing.T) {
 	assert.Uint32(seg2.ReceivingWindow).Equals(seg.ReceivingWindow)
 	assert.Uint32(seg2.ReceivingNext).Equals(seg.ReceivingNext)
 	assert.Byte(seg2.Count).Equals(seg.Count)
+	assert.Uint32(seg2.Timestamp).Equals(seg.Timestamp)
 	for i := byte(0); i < seg2.Count; i++ {
-		assert.Uint32(seg2.TimestampList[i]).Equals(seg.TimestampList[i])
 		assert.Uint32(seg2.NumberList[i]).Equals(seg.NumberList[i])
 	}
 }

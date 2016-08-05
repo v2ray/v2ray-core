@@ -50,13 +50,26 @@ func nowMillisec() int64 {
 
 type RountTripInfo struct {
 	sync.RWMutex
-	variation uint32
-	srtt      uint32
-	rto       uint32
-	minRtt    uint32
+	variation        uint32
+	srtt             uint32
+	rto              uint32
+	minRtt           uint32
+	updatedTimestamp uint32
 }
 
-func (this *RountTripInfo) Update(rtt uint32) {
+func (this *RountTripInfo) UpdatePeerRTO(rto uint32, current uint32) {
+	this.Lock()
+	defer this.Unlock()
+
+	if current-this.updatedTimestamp < 5000 {
+		return
+	}
+
+	this.updatedTimestamp = current
+	this.rto = rto
+}
+
+func (this *RountTripInfo) Update(rtt uint32, current uint32) {
 	if rtt > 0x7FFFFFFF {
 		return
 	}
@@ -89,6 +102,7 @@ func (this *RountTripInfo) Update(rtt uint32) {
 		rto = 10000
 	}
 	this.rto = rto * 3 / 2
+	this.updatedTimestamp = current
 }
 
 func (this *RountTripInfo) Timeout() uint32 {
@@ -449,6 +463,7 @@ func (this *Connection) Input(data []byte) int {
 			}
 			this.sendingWorker.ProcessReceivingNext(seg.ReceivinNext)
 			this.receivingWorker.ProcessSendingNext(seg.SendingNext)
+			this.roundTrip.UpdatePeerRTO(seg.PeerRTO, current)
 			seg.Release()
 		default:
 		}
@@ -503,6 +518,7 @@ func (this *Connection) flush() {
 		seg.Command = CommandPing
 		seg.ReceivinNext = this.receivingWorker.nextNumber
 		seg.SendingNext = this.sendingWorker.firstUnacknowledged
+		seg.PeerRTO = this.roundTrip.Timeout()
 		if this.State() == StateReadyToClose {
 			seg.Option = SegmentOptionClose
 		}
