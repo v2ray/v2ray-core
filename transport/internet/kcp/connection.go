@@ -48,7 +48,7 @@ func nowMillisec() int64 {
 	return now.Unix()*1000 + int64(now.Nanosecond()/1000000)
 }
 
-type RountTripInfo struct {
+type RoundTripInfo struct {
 	sync.RWMutex
 	variation        uint32
 	srtt             uint32
@@ -57,7 +57,7 @@ type RountTripInfo struct {
 	updatedTimestamp uint32
 }
 
-func (this *RountTripInfo) UpdatePeerRTO(rto uint32, current uint32) {
+func (this *RoundTripInfo) UpdatePeerRTO(rto uint32, current uint32) {
 	this.Lock()
 	defer this.Unlock()
 
@@ -69,7 +69,7 @@ func (this *RountTripInfo) UpdatePeerRTO(rto uint32, current uint32) {
 	this.rto = rto
 }
 
-func (this *RountTripInfo) Update(rtt uint32, current uint32) {
+func (this *RoundTripInfo) Update(rtt uint32, current uint32) {
 	if rtt > 0x7FFFFFFF {
 		return
 	}
@@ -105,14 +105,14 @@ func (this *RountTripInfo) Update(rtt uint32, current uint32) {
 	this.updatedTimestamp = current
 }
 
-func (this *RountTripInfo) Timeout() uint32 {
+func (this *RoundTripInfo) Timeout() uint32 {
 	this.RLock()
 	defer this.RUnlock()
 
 	return this.rto
 }
 
-func (this *RountTripInfo) SmoothedTime() uint32 {
+func (this *RoundTripInfo) SmoothedTime() uint32 {
 	this.RLock()
 	defer this.RUnlock()
 
@@ -137,7 +137,7 @@ type Connection struct {
 	lastPingTime     uint32
 
 	mss       uint32
-	roundTrip *RountTripInfo
+	roundTrip *RoundTripInfo
 	interval  uint32
 
 	receivingWorker *ReceivingWorker
@@ -169,7 +169,7 @@ func NewConnection(conv uint16, writerCloser io.WriteCloser, local *net.UDPAddr,
 	conn.output = NewSegmentWriter(authWriter)
 
 	conn.mss = authWriter.Mtu() - DataSegmentOverhead
-	conn.roundTrip = &RountTripInfo{
+	conn.roundTrip = &RoundTripInfo{
 		rto:    100,
 		minRtt: effectiveConfig.Tti,
 	}
