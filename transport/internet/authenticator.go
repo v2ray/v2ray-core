@@ -85,25 +85,3 @@ func (this *AuthenticatorChain) Seal(payload *alloc.Buffer) {
 		auth.Seal(payload)
 	}
 }
-
-type NoOpAuthenticator struct{}
-
-func (this NoOpAuthenticator) Overhead() int {
-	return 0
-}
-func (this NoOpAuthenticator) Open(payload *alloc.Buffer) bool {
-	return true
-}
-func (this NoOpAuthenticator) Seal(payload *alloc.Buffer) {}
-
-type NoOpAuthenticatorFactory struct{}
-
-func (this NoOpAuthenticatorFactory) Create(config AuthenticatorConfig) Authenticator {
-	return NoOpAuthenticator{}
-}
-
-type NoOpAuthenticatorConfig struct{}
-
-func init() {
-	RegisterAuthenticator("none", NoOpAuthenticatorFactory{}, func() interface{} { return NoOpAuthenticatorConfig{} })
-}
