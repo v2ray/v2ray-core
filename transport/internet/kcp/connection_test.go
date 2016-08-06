@@ -10,7 +10,7 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/testing/assert"
 	"github.com/v2ray/v2ray-core/transport/internet"
-	"github.com/v2ray/v2ray-core/transport/internet/internal/obsrtp"
+	"github.com/v2ray/v2ray-core/transport/internet/authenticators/srtp"
 	. "github.com/v2ray/v2ray-core/transport/internet/kcp"
 )
 
@@ -42,7 +42,7 @@ func TestConnectionReadWrite(t *testing.T) {
 	upReader, upWriter := io.Pipe()
 	downReader, downWriter := io.Pipe()
 
-	auth := internet.NewAuthenticatorChain(obsrtp.ObfuscatorSRTPFactory{}.Create(nil), NewSimpleAuthenticator())
+	auth := internet.NewAuthenticatorChain(srtp.ObfuscatorSRTPFactory{}.Create(nil), NewSimpleAuthenticator())
 
 	connClient := NewConnection(1, upWriter, &net.UDPAddr{IP: v2net.LocalHostIP.IP(), Port: 1}, &net.UDPAddr{IP: v2net.LocalHostIP.IP(), Port: 2}, auth)
 	connClient.FetchInputFrom(downReader)

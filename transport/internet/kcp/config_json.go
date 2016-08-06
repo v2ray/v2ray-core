@@ -7,6 +7,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/common"
 	"github.com/v2ray/v2ray-core/common/log"
+	"github.com/v2ray/v2ray-core/transport/internet"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {
@@ -66,7 +67,13 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		}
 	}
 	if len(jsonConfig.HeaderConfig) > 0 {
-		this.HeaderConfig = jsonConfig.HeaderConfig
+		name, config, err := internet.CreateAuthenticatorConfig(jsonConfig.HeaderConfig)
+		if err != nil {
+			log.Error("KCP|Config: Failed to parse header config: ", err)
+			return err
+		}
+		this.HeaderType = name
+		this.HeaderConfig = config
 	}
 
 	return nil

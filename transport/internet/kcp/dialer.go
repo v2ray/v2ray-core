@@ -16,14 +16,16 @@ var (
 
 func DialKCP(src v2net.Address, dest v2net.Destination) (internet.Connection, error) {
 	udpDest := v2net.UDPDestination(dest.Address(), dest.Port())
-	log.Info("Dialling KCP to ", udpDest)
+	log.Info("KCP|Dialer: Dialing KCP to ", udpDest)
 	conn, err := internet.DialToDest(src, udpDest)
 	if err != nil {
+		log.Error("KCP|Dialer: Failed to dial to dest: ", err)
 		return nil, err
 	}
 
 	cpip, err := effectiveConfig.GetAuthenticator()
 	if err != nil {
+		log.Error("KCP|Dialer: Failed to create authenticator: ", err)
 		return nil, err
 	}
 	conv := uint16(atomic.AddUint32(&globalConv, 1))

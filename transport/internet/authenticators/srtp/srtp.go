@@ -1,4 +1,4 @@
-package obsrtp
+package srtp
 
 import (
 	"math/rand"
