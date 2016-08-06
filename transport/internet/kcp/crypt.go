@@ -5,26 +5,16 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/serial"
+	"github.com/v2ray/v2ray-core/transport/internet"
 )
-
-type Authenticator interface {
-	HeaderSize() int
-	// Encrypt encrypts the whole block in src into dst.
-	// Dst and src may point at the same memory.
-	Seal(buffer *alloc.Buffer)
-
-	// Decrypt decrypts the whole block in src into dst.
-	// Dst and src may point at the same memory.
-	Open(buffer *alloc.Buffer) bool
-}
 
 type SimpleAuthenticator struct{}
 
-func NewSimpleAuthenticator() Authenticator {
+func NewSimpleAuthenticator() internet.Authenticator {
 	return &SimpleAuthenticator{}
 }
 
-func (this *SimpleAuthenticator) HeaderSize() int {
+func (this *SimpleAuthenticator) Overhead() int {
 	return 6
 }
 

@@ -24,7 +24,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		loader := loader.NewJSONConfigLoader("type", "")
 		loader.RegisterCreator("none", func() interface{} { return new(NoneResponse) })
 		loader.RegisterCreator("http", func() interface{} { return new(HTTPResponse) })
-		response, err := loader.Load(jsonConfig.Response)
+		response, _, err := loader.Load(jsonConfig.Response)
 		if err != nil {
 			return errors.New("Blackhole: Failed to parse response config: " + err.Error())
 		}

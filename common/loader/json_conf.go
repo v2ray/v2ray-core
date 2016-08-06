@@ -34,28 +34,32 @@ func (this *JSONConfigLoader) LoadWithID(raw []byte, id string) (interface{}, er
 	return config, nil
 }
 
-func (this *JSONConfigLoader) Load(raw []byte) (interface{}, error) {
+func (this *JSONConfigLoader) Load(raw []byte) (interface{}, string, error) {
 	var obj map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &obj); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	rawID, found := obj[this.idKey]
 	if !found {
 		log.Error(this.idKey, " not found in JSON content.")
-		return nil, ErrConfigIDKeyNotFound
+		return nil, "", ErrConfigIDKeyNotFound
 	}
 	var id string
 	if err := json.Unmarshal(rawID, &id); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	rawConfig := json.RawMessage(raw)
 	if len(this.configKey) > 0 {
 		configValue, found := obj[this.configKey]
 		if !found {
 			log.Error(this.configKey, " not found in JSON content.")
-			return nil, ErrConfigIDKeyNotFound
+			return nil, "", ErrConfigIDKeyNotFound
 		}
 		rawConfig = configValue
 	}
-	return this.LoadWithID([]byte(rawConfig), id)
+	config, err := this.LoadWithID([]byte(rawConfig), id)
+	if err != nil {
+		return nil, id, err
+	}
+	return config, id, nil
 }

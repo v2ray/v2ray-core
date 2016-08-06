@@ -1,5 +1,9 @@
 package kcp
 
+import (
+	"github.com/v2ray/v2ray-core/transport/internet"
+)
+
 type Config struct {
 	Mtu              uint32 // Maximum transmission unit
 	Tti              uint32
@@ -8,10 +12,24 @@ type Config struct {
 	Congestion       bool
 	WriteBuffer      uint32
 	ReadBuffer       uint32
+	HeaderType       string
+	HeaderConfig     internet.AuthenticatorConfig
 }
 
 func (this *Config) Apply() {
 	effectiveConfig = *this
+}
+
+func (this *Config) GetAuthenticator() (internet.Authenticator, error) {
+	auth := NewSimpleAuthenticator()
+	if this.HeaderConfig != nil {
+		header, err := internet.CreateAuthenticator(this.HeaderType, this.HeaderConfig)
+		if err != nil {
+			return nil, err
+		}
+		auth = internet.NewAuthenticatorChain(header, auth)
+	}
+	return auth, nil
 }
 
 func (this *Config) GetSendingInFlightSize() uint32 {

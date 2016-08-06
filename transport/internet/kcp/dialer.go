@@ -22,7 +22,10 @@ func DialKCP(src v2net.Address, dest v2net.Destination) (internet.Connection, er
 		return nil, err
 	}
 
-	cpip := NewSimpleAuthenticator()
+	cpip, err := effectiveConfig.GetAuthenticator()
+	if err != nil {
+		return nil, err
+	}
 	conv := uint16(atomic.AddUint32(&globalConv, 1))
 	session := NewConnection(conv, conn, conn.LocalAddr().(*net.UDPAddr), conn.RemoteAddr().(*net.UDPAddr), cpip)
 	session.FetchInputFrom(conn)

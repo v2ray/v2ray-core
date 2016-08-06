@@ -15,7 +15,7 @@ type ConfigCreator func() interface{}
 type ConfigLoader interface {
 	RegisterCreator(string, ConfigCreator) error
 	CreateConfig(string) (interface{}, error)
-	Load([]byte) (interface{}, error)
+	Load([]byte) (interface{}, string, error)
 	LoadWithID([]byte, string) (interface{}, error)
 }
 

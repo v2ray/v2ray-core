@@ -6,6 +6,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2io "github.com/v2ray/v2ray-core/common/io"
+	"github.com/v2ray/v2ray-core/transport/internet"
 )
 
 type SegmentWriter interface {
@@ -59,7 +60,7 @@ func (this *BufferedSegmentWriter) Flush() {
 }
 
 type AuthenticationWriter struct {
-	Authenticator Authenticator
+	Authenticator internet.Authenticator
 	Writer        io.Writer
 }
 
@@ -74,5 +75,5 @@ func (this *AuthenticationWriter) Write(payload *alloc.Buffer) error {
 func (this *AuthenticationWriter) Release() {}
 
 func (this *AuthenticationWriter) Mtu() uint32 {
-	return effectiveConfig.Mtu - uint32(this.Authenticator.HeaderSize())
+	return effectiveConfig.Mtu - uint32(this.Authenticator.Overhead())
 }

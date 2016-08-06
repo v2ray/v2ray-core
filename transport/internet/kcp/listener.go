@@ -17,7 +17,7 @@ import (
 type Listener struct {
 	sync.Mutex
 	running       bool
-	block         Authenticator
+	authenticator internet.Authenticator
 	sessions      map[string]*Connection
 	awaitingConns chan *Connection
 	hub           *udp.UDPHub
@@ -25,8 +25,12 @@ type Listener struct {
 }
 
 func NewListener(address v2net.Address, port v2net.Port) (*Listener, error) {
+	auth, err := effectiveConfig.GetAuthenticator()
+	if err != nil {
+		return nil, err
+	}
 	l := &Listener{
-		block:         NewSimpleAuthenticator(),
+		authenticator: auth,
 		sessions:      make(map[string]*Connection),
 		awaitingConns: make(chan *Connection, 64),
 		localAddr: &net.UDPAddr{
@@ -47,7 +51,7 @@ func NewListener(address v2net.Address, port v2net.Port) (*Listener, error) {
 func (this *Listener) OnReceive(payload *alloc.Buffer, src v2net.Destination) {
 	defer payload.Release()
 
-	if valid := this.block.Open(payload); !valid {
+	if valid := this.authenticator.Open(payload); !valid {
 		log.Info("KCP|Listener: discarding invalid payload from ", src)
 		return
 	}
@@ -81,7 +85,11 @@ func (this *Listener) OnReceive(payload *alloc.Buffer, src v2net.Destination) {
 			IP:   src.Address().IP(),
 			Port: int(src.Port()),
 		}
-		conn = NewConnection(conv, writer, this.localAddr, srcAddr, this.block)
+		auth, err := effectiveConfig.GetAuthenticator()
+		if err != nil {
+			log.Error("KCP|Listener: Failed to create authenticator: ", err)
+		}
+		conn = NewConnection(conv, writer, this.localAddr, srcAddr, auth)
 		select {
 		case this.awaitingConns <- conn:
 		case <-time.After(time.Second * 5):

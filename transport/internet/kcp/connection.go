@@ -10,6 +10,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
+	"github.com/v2ray/v2ray-core/transport/internet"
 )
 
 var (
@@ -121,7 +122,7 @@ func (this *RoundTripInfo) SmoothedTime() uint32 {
 
 // Connection is a KCP connection over UDP.
 type Connection struct {
-	block          Authenticator
+	block          internet.Authenticator
 	local, remote  net.Addr
 	rd             time.Time
 	wd             time.Time // write deadline
@@ -149,7 +150,7 @@ type Connection struct {
 }
 
 // NewConnection create a new KCP connection between local and remote.
-func NewConnection(conv uint16, writerCloser io.WriteCloser, local *net.UDPAddr, remote *net.UDPAddr, block Authenticator) *Connection {
+func NewConnection(conv uint16, writerCloser io.WriteCloser, local *net.UDPAddr, remote *net.UDPAddr, block internet.Authenticator) *Connection {
 	log.Info("KCP|Connection: creating connection ", conv)
 
 	conn := new(Connection)
