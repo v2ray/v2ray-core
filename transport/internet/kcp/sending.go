@@ -212,6 +212,13 @@ func (this *SendingQueue) Pop() *alloc.Buffer {
 	return seg
 }
 
+func (this *SendingQueue) Last() *alloc.Buffer {
+	if this.IsEmpty() {
+		return nil
+	}
+	return this.list[(this.start+this.len-1+this.cap)%this.cap]
+}
+
 func (this *SendingQueue) Push(seg *alloc.Buffer) {
 	if this.IsFull() {
 		return
@@ -339,6 +346,18 @@ func (this *SendingWorker) Push(b []byte) int {
 	nBytes := 0
 	this.Lock()
 	defer this.Unlock()
+	if !this.queue.IsEmpty() {
+		lastSeg := this.queue.Last()
+		if lastSeg.Len() < int(this.conn.mss) {
+			delta := int(this.conn.mss) - lastSeg.Len()
+			if delta > len(b) {
+				delta = len(b)
+			}
+			lastSeg.Append(b[:delta])
+			b = b[delta:]
+			nBytes += delta
+		}
+	}
 	for len(b) > 0 && !this.queue.IsFull() {
 		var size int
 		if len(b) > int(this.conn.mss) {
