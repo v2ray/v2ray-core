@@ -62,7 +62,7 @@ func (this *RoundTripInfo) UpdatePeerRTO(rto uint32, current uint32) {
 	this.Lock()
 	defer this.Unlock()
 
-	if current-this.updatedTimestamp < 5000 {
+	if current-this.updatedTimestamp < 3000 {
 		return
 	}
 
