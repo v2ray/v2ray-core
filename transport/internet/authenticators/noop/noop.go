@@ -24,5 +24,5 @@ func (this NoOpAuthenticatorFactory) Create(config internet.AuthenticatorConfig)
 type NoOpAuthenticatorConfig struct{}
 
 func init() {
-	internet.RegisterAuthenticator("none", NoOpAuthenticatorFactory{}, func() interface{} { return NoOpAuthenticatorConfig{} })
+	internet.RegisterAuthenticator("none", NoOpAuthenticatorFactory{}, func() interface{} { return &NoOpAuthenticatorConfig{} })
 }
