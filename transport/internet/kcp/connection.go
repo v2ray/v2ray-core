@@ -14,10 +14,9 @@ import (
 )
 
 var (
-	errTimeout          = errors.New("i/o timeout")
-	errBrokenPipe       = errors.New("broken pipe")
-	errClosedListener   = errors.New("Listener closed.")
-	errClosedConnection = errors.New("Connection closed.")
+	ErrIOTimeout        = errors.New("Read/Write timeout")
+	ErrClosedListener   = errors.New("Listener closed.")
+	ErrClosedConnection = errors.New("Connection closed.")
 )
 
 type State int32
@@ -212,7 +211,7 @@ func (this *Connection) Read(b []byte) (int, error) {
 		if !this.rd.IsZero() {
 			duration := this.rd.Sub(time.Now())
 			if duration <= 0 {
-				return 0, errTimeout
+				return 0, ErrIOTimeout
 			}
 			timer = time.AfterFunc(duration, this.dataInputCond.Signal)
 		}
@@ -223,7 +222,7 @@ func (this *Connection) Read(b []byte) (int, error) {
 			timer.Stop()
 		}
 		if !this.rd.IsZero() && this.rd.Before(time.Now()) {
-			return 0, errTimeout
+			return 0, ErrIOTimeout
 		}
 	}
 }
@@ -249,7 +248,7 @@ func (this *Connection) Write(b []byte) (int, error) {
 		if !this.wd.IsZero() {
 			duration := this.wd.Sub(time.Now())
 			if duration <= 0 {
-				return totalWritten, errTimeout
+				return totalWritten, ErrIOTimeout
 			}
 			timer = time.AfterFunc(duration, this.dataOutputCond.Signal)
 		}
@@ -262,7 +261,7 @@ func (this *Connection) Write(b []byte) (int, error) {
 		}
 
 		if !this.wd.IsZero() && this.wd.Before(time.Now()) {
-			return totalWritten, errTimeout
+			return totalWritten, ErrIOTimeout
 		}
 	}
 }
@@ -292,7 +291,7 @@ func (this *Connection) SetState(state State) {
 // Close closes the connection.
 func (this *Connection) Close() error {
 	if this == nil {
-		return errClosedConnection
+		return ErrClosedConnection
 	}
 
 	this.dataInputCond.Broadcast()
@@ -300,7 +299,7 @@ func (this *Connection) Close() error {
 
 	state := this.State()
 	if state.Is(StateReadyToClose, StateTerminating, StateTerminated) {
-		return errClosedConnection
+		return ErrClosedConnection
 	}
 	log.Info("KCP|Connection: Closing connection to ", this.remote)
 
@@ -347,7 +346,7 @@ func (this *Connection) SetDeadline(t time.Time) error {
 // SetReadDeadline implements the Conn SetReadDeadline method.
 func (this *Connection) SetReadDeadline(t time.Time) error {
 	if this == nil || this.State() != StateActive {
-		return errClosedConnection
+		return ErrClosedConnection
 	}
 	this.rd = t
 	return nil
@@ -356,7 +355,7 @@ func (this *Connection) SetReadDeadline(t time.Time) error {
 // SetWriteDeadline implements the Conn SetWriteDeadline method.
 func (this *Connection) SetWriteDeadline(t time.Time) error {
 	if this == nil || this.State() != StateActive {
-		return errClosedConnection
+		return ErrClosedConnection
 	}
 	this.wd = t
 	return nil

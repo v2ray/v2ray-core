@@ -118,7 +118,7 @@ func (this *Listener) Remove(dest string) {
 func (this *Listener) Accept() (internet.Connection, error) {
 	for {
 		if !this.running {
-			return nil, errClosedListener
+			return nil, ErrClosedListener
 		}
 		select {
 		case conn := <-this.awaitingConns:
@@ -132,7 +132,7 @@ func (this *Listener) Accept() (internet.Connection, error) {
 // Close stops listening on the UDP address. Already Accepted connections are not closed.
 func (this *Listener) Close() error {
 	if !this.running {
-		return errClosedListener
+		return ErrClosedListener
 	}
 	this.Lock()
 	defer this.Unlock()
