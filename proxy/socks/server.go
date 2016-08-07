@@ -19,8 +19,8 @@ import (
 )
 
 var (
-	ErrorUnsupportedSocksCommand = errors.New("Unsupported socks command.")
-	ErrorUnsupportedAuthMethod   = errors.New("Unsupported auth method.")
+	ErrUnsupportedSocksCommand = errors.New("Unsupported socks command.")
+	ErrUnsupportedAuthMethod   = errors.New("Unsupported auth method.")
 )
 
 // Server is a SOCKS 5 proxy server
@@ -142,7 +142,7 @@ func (this *Server) handleSocks5(clientAddr string, reader *v2io.BufferedReader,
 			return err
 		}
 		log.Warning("Socks: client doesn't support any allowed auth methods.")
-		return ErrorUnsupportedAuthMethod
+		return ErrUnsupportedAuthMethod
 	}
 
 	authResponse := protocol.NewAuthenticationResponse(expectedAuthMethod)
@@ -199,7 +199,7 @@ func (this *Server) handleSocks5(clientAddr string, reader *v2io.BufferedReader,
 			return err
 		}
 		log.Warning("Socks: Unsupported socks command ", request.Command)
-		return ErrorUnsupportedSocksCommand
+		return ErrUnsupportedSocksCommand
 	}
 
 	response := protocol.NewSocks5Response()
@@ -269,8 +269,8 @@ func (this *Server) handleSocks4(clientAddr string, reader *v2io.BufferedReader,
 
 	if result == protocol.Socks4RequestRejected {
 		log.Warning("Socks: Unsupported socks 4 command ", auth.Command)
-		log.Access(clientAddr, "", log.AccessRejected, ErrorUnsupportedSocksCommand)
-		return ErrorUnsupportedSocksCommand
+		log.Access(clientAddr, "", log.AccessRejected, ErrUnsupportedSocksCommand)
+		return ErrUnsupportedSocksCommand
 	}
 
 	reader.SetCached(false)

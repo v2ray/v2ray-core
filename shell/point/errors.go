@@ -5,5 +5,5 @@ import (
 )
 
 var (
-	ErrorBadConfiguration = errors.New("Bad configuration.")
+	ErrBadConfiguration = errors.New("Bad configuration.")
 )

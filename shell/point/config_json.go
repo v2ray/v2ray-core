@@ -193,7 +193,7 @@ func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 	}
 	if jsonConfig.PortRange == nil {
 		log.Error("Point: Port range not specified in InboundDetour.")
-		return ErrorBadConfiguration
+		return ErrBadConfiguration
 	}
 	this.ListenOn = v2net.AnyIP
 	if jsonConfig.ListenOn != nil {
