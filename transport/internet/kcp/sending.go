@@ -165,7 +165,7 @@ func (this *SendingWindow) Flush(current uint32, resend uint32, rto uint32, maxI
 		}
 	}
 
-	if inFlightSize > 0 && this.totalInFlightSize != 0 {
+	if this.onPacketLoss != nil && inFlightSize > 0 && this.totalInFlightSize != 0 {
 		rate := lost * 100 / this.totalInFlightSize
 		this.onPacketLoss(rate)
 	}
