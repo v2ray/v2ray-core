@@ -42,7 +42,7 @@ func TestConnectionReadWrite(t *testing.T) {
 	upReader, upWriter := io.Pipe()
 	downReader, downWriter := io.Pipe()
 
-	auth := internet.NewAuthenticatorChain(srtp.ObfuscatorSRTPFactory{}.Create(nil), NewSimpleAuthenticator())
+	auth := internet.NewAuthenticatorChain(srtp.SRTPFactory{}.Create(nil), NewSimpleAuthenticator())
 
 	connClient := NewConnection(1, upWriter, &net.UDPAddr{IP: v2net.LocalHostIP.IP(), Port: 1}, &net.UDPAddr{IP: v2net.LocalHostIP.IP(), Port: 2}, auth)
 	connClient.FetchInputFrom(downReader)

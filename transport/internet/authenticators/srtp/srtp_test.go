@@ -13,7 +13,7 @@ func TestSRTPOpenSeal(t *testing.T) {
 
 	content := []byte{'a', 'b', 'c', 'd', 'e', 'f', 'g'}
 	payload := alloc.NewLocalBuffer(2048).Clear().Append(content)
-	srtp := ObfuscatorSRTP{}
+	srtp := SRTP{}
 	srtp.Seal(payload)
 	assert.Int(payload.Len()).GreaterThan(len(content))
 	assert.Bool(srtp.Open(payload)).IsTrue()

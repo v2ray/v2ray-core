@@ -16,36 +16,36 @@ type Config struct {
 	PayloadType byte
 }
 
-type ObfuscatorSRTP struct {
+type SRTP struct {
 	header uint16
 	number uint16
 }
 
-func (this *ObfuscatorSRTP) Overhead() int {
+func (this *SRTP) Overhead() int {
 	return 4
 }
 
-func (this *ObfuscatorSRTP) Open(payload *alloc.Buffer) bool {
+func (this *SRTP) Open(payload *alloc.Buffer) bool {
 	payload.SliceFrom(this.Overhead())
 	return true
 }
 
-func (this *ObfuscatorSRTP) Seal(payload *alloc.Buffer) {
+func (this *SRTP) Seal(payload *alloc.Buffer) {
 	this.number++
 	payload.PrependUint16(this.number)
 	payload.PrependUint16(this.header)
 }
 
-type ObfuscatorSRTPFactory struct {
+type SRTPFactory struct {
 }
 
-func (this ObfuscatorSRTPFactory) Create(rawSettings internet.AuthenticatorConfig) internet.Authenticator {
-	return &ObfuscatorSRTP{
+func (this SRTPFactory) Create(rawSettings internet.AuthenticatorConfig) internet.Authenticator {
+	return &SRTP{
 		header: 0xB5E8,
 		number: uint16(rand.Intn(65536)),
 	}
 }
 
 func init() {
-	internet.RegisterAuthenticator("srtp", ObfuscatorSRTPFactory{}, func() interface{} { return new(Config) })
+	internet.RegisterAuthenticator("srtp", SRTPFactory{}, func() interface{} { return new(Config) })
 }
