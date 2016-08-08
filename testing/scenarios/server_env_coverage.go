@@ -24,7 +24,7 @@ func BuildV2Ray() error {
 func RunV2Ray(configFile string) *exec.Cmd {
 	profile := "coversingle.out"
 	wd, err := os.Getwd()
-	if err != nil {
+	if err == nil {
 		profile = filepath.Join(wd, profile)
 	}
 	proc := exec.Command(binaryPath, "-config", configFile, "-test.run", "TestRunMainForCoverage", "-test.coverprofile", profile)
