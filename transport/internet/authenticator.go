@@ -41,7 +41,7 @@ func CreateAuthenticator(name string, config AuthenticatorConfig) (Authenticator
 	if !found {
 		return nil, ErrAuthenticatorNotFound
 	}
-	return factory.Create(config.(AuthenticatorConfig)), nil
+	return factory.Create(config), nil
 }
 
 func CreateAuthenticatorConfig(rawConfig []byte) (string, AuthenticatorConfig, error) {
