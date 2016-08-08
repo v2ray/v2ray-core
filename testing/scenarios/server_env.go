@@ -28,11 +28,11 @@ var (
 	binaryPath string
 )
 
-func BuildV2Ray() error {
-	if len(binaryPath) > 0 {
-		return nil
-	}
+func GetSourcePath() string {
+	return filepath.Join("github.com", "v2ray", "v2ray-core", "shell", "point", "main")
+}
 
+func FillBinaryPath() error {
 	dir, err := ioutil.TempDir("", "v2ray")
 	if err != nil {
 		return err
@@ -41,8 +41,7 @@ func BuildV2Ray() error {
 	if runtime.GOOS == "windows" {
 		binaryPath += ".exe"
 	}
-	cmd := exec.Command("go", "build", "-tags=json", "-o="+binaryPath, filepath.Join("github.com", "v2ray", "v2ray-core", "shell", "point", "main"))
-	return cmd.Run()
+	return nil
 }
 
 func TestFile(filename string) string {
@@ -73,9 +72,7 @@ func InitializeServer(configFile string) error {
 		return err
 	}
 
-	proc := exec.Command(binaryPath, "-config="+configFile)
-	proc.Stderr = os.Stderr
-	proc.Stdout = os.Stdout
+	proc := RunV2Ray(configFile)
 
 	err = proc.Start()
 	if err != nil {
