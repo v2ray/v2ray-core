@@ -5,6 +5,7 @@ package scenarios
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
 )
 
 func BuildV2Ray() error {
@@ -21,7 +22,12 @@ func BuildV2Ray() error {
 }
 
 func RunV2Ray(configFile string) *exec.Cmd {
-	proc := exec.Command(binaryPath, "-config="+configFile, "-test.run=TestRunMainForCoverage", "-test.coverprofile=coversingle.out")
+	profile := "coversingle.out"
+	wd, err := os.Getwd()
+	if err != nil {
+		profile = filepath.Join(wd, profile)
+	}
+	proc := exec.Command(binaryPath, "-config", configFile, "-test.run", "TestRunMainForCoverage", "-test.coverprofile", profile)
 	proc.Stderr = os.Stderr
 	proc.Stdout = os.Stdout
 
