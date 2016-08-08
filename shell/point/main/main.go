@@ -28,6 +28,7 @@ import (
 
 	_ "github.com/v2ray/v2ray-core/transport/internet/authenticators/noop"
 	_ "github.com/v2ray/v2ray-core/transport/internet/authenticators/srtp"
+	_ "github.com/v2ray/v2ray-core/transport/internet/authenticators/utp"
 )
 
 var (
