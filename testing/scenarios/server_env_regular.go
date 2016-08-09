@@ -8,12 +8,9 @@ import (
 )
 
 func BuildV2Ray() error {
+	binaryPath := GetTestBinaryPath()
 	if _, err := os.Stat(binaryPath); err == nil {
 		return nil
-	}
-
-	if err := FillBinaryPath(); err != nil {
-		return err
 	}
 
 	cmd := exec.Command("go", "build", "-tags=json", "-o="+binaryPath, GetSourcePath())
@@ -21,7 +18,8 @@ func BuildV2Ray() error {
 }
 
 func RunV2Ray(configFile string) *exec.Cmd {
-	proc := exec.Command(binaryPath, "-config="+configFile)
+	binaryPath := GetTestBinaryPath()
+	proc := exec.Command(binaryPath, "-config", configFile)
 	proc.Stderr = os.Stderr
 	proc.Stdout = os.Stdout
 

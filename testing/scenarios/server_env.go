@@ -1,7 +1,6 @@
 package scenarios
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -24,24 +23,18 @@ import (
 
 var (
 	runningServers = make([]*exec.Cmd, 0, 10)
-
-	binaryPath string
 )
+
+func GetTestBinaryPath() string {
+	file := filepath.Join(os.Getenv("GOPATH"), "out", "v2ray", "v2ray.test")
+	if runtime.GOOS == "windows" {
+		file += ".exe"
+	}
+	return file
+}
 
 func GetSourcePath() string {
 	return filepath.Join("github.com", "v2ray", "v2ray-core", "shell", "point", "main")
-}
-
-func FillBinaryPath() error {
-	dir, err := ioutil.TempDir("", "v2ray")
-	if err != nil {
-		return err
-	}
-	binaryPath = filepath.Join(dir, "v2ray")
-	if runtime.GOOS == "windows" {
-		binaryPath += ".exe"
-	}
-	return nil
 }
 
 func TestFile(filename string) string {
@@ -89,7 +82,8 @@ func InitializeServer(configFile string) error {
 func CloseAllServers() {
 	log.Info("Closing all servers.")
 	for _, server := range runningServers {
-		server.Process.Kill()
+		server.Process.Signal(os.Interrupt)
+		server.Process.Wait()
 	}
 	runningServers = make([]*exec.Cmd, 0, 10)
 	log.Info("All server closed.")
