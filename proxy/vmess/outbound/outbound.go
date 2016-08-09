@@ -46,7 +46,7 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 		log.Error("VMess|Outbound: Failed to find an available destination:", err)
 		return err
 	}
-	log.Info("VMess|Outbound: Tunneling request to ", target, " via ", rec.Destination)
+	log.Info("VMess|Outbound: Tunneling request to ", target, " via ", rec.Destination())
 
 	command := protocol.RequestCommandTCP
 	if target.IsUDP() {
