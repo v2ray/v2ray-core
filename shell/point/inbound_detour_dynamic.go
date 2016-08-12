@@ -33,10 +33,12 @@ func NewInboundDetourHandlerDynamic(space app.Space, config *InboundDetourConfig
 
 	// To test configuration
 	ich, err := proxyrepo.CreateInboundHandler(config.Protocol, space, config.Settings, &proxy.InboundHandlerMeta{
-		Address:        config.ListenOn,
-		Port:           0,
-		Tag:            config.Tag,
-		StreamSettings: config.StreamSettings})
+		Address:                config.ListenOn,
+		Port:                   0,
+		Tag:                    config.Tag,
+		StreamSettings:         config.StreamSettings,
+		AllowPassiveConnection: config.AllowPassiveConnection,
+	})
 	if err != nil {
 		log.Error("Point: Failed to create inbound connection handler: ", err)
 		return nil, err

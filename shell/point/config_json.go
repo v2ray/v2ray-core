@@ -71,6 +71,7 @@ func (this *InboundConnectionConfig) UnmarshalJSON(data []byte) error {
 		Protocol      string                   `json:"protocol"`
 		StreamSetting *internet.StreamSettings `json:"streamSettings"`
 		Settings      json.RawMessage          `json:"settings"`
+		AllowPassive  bool                     `json:"allowPassive"`
 	}
 
 	jsonConfig := new(JsonConfig)
@@ -91,6 +92,7 @@ func (this *InboundConnectionConfig) UnmarshalJSON(data []byte) error {
 
 	this.Protocol = jsonConfig.Protocol
 	this.Settings = jsonConfig.Settings
+	this.AllowPassiveConnection = jsonConfig.AllowPassive
 	return nil
 }
 
@@ -186,6 +188,7 @@ func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 		Tag           string                         `json:"tag"`
 		Allocation    *InboundDetourAllocationConfig `json:"allocate"`
 		StreamSetting *internet.StreamSettings       `json:"streamSettings"`
+		AllowPassive  bool                           `json:"allowPassive"`
 	}
 	jsonConfig := new(JsonInboundDetourConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
@@ -216,6 +219,7 @@ func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 	if jsonConfig.StreamSetting != nil {
 		this.StreamSettings = jsonConfig.StreamSetting
 	}
+	this.AllowPassiveConnection = jsonConfig.AllowPassive
 	return nil
 }
 

@@ -89,7 +89,7 @@ func (this *DokodemoDoor) Start() error {
 }
 
 func (this *DokodemoDoor) ListenUDP() error {
-	this.udpServer = udp.NewUDPServer(this.packetDispatcher)
+	this.udpServer = udp.NewUDPServer(this.meta, this.packetDispatcher)
 	udpHub, err := udp.ListenUDP(this.meta.Address, this.meta.Port, this.handleUDPPackets)
 	if err != nil {
 		log.Error("Dokodemo failed to listen on ", this.meta.Address, ":", this.meta.Port, ": ", err)
@@ -148,7 +148,7 @@ func (this *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 	}
 	log.Info("Dokodemo: Handling request to ", dest)
 
-	ray := this.packetDispatcher.DispatchToOutbound(dest)
+	ray := this.packetDispatcher.DispatchToOutbound(this.meta, dest)
 	defer ray.InboundOutput().Release()
 
 	var inputFinish, outputFinish sync.Mutex

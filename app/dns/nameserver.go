@@ -10,6 +10,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/dice"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/transport/internet/udp"
 
 	"github.com/miekg/dns"
@@ -49,9 +50,11 @@ type UDPNameServer struct {
 
 func NewUDPNameServer(address v2net.Destination, dispatcher dispatcher.PacketDispatcher) *UDPNameServer {
 	s := &UDPNameServer{
-		address:   address,
-		requests:  make(map[uint16]*PendingRequest),
-		udpServer: udp.NewUDPServer(dispatcher),
+		address:  address,
+		requests: make(map[uint16]*PendingRequest),
+		udpServer: udp.NewUDPServer(&proxy.InboundHandlerMeta{
+			AllowPassiveConnection: false,
+		}, dispatcher),
 	}
 	return s
 }

@@ -140,7 +140,7 @@ func (this *Server) handleConnect(request *http.Request, destination v2net.Desti
 	}
 	response.Write(writer)
 
-	ray := this.packetDispatcher.DispatchToOutbound(destination)
+	ray := this.packetDispatcher.DispatchToOutbound(this.meta, destination)
 	this.transport(reader, writer, ray)
 }
 
@@ -220,7 +220,7 @@ func (this *Server) handlePlainHTTP(request *http.Request, dest v2net.Destinatio
 	request.Host = request.URL.Host
 	StripHopByHopHeaders(request)
 
-	ray := this.packetDispatcher.DispatchToOutbound(dest)
+	ray := this.packetDispatcher.DispatchToOutbound(this.meta, dest)
 	defer ray.InboundInput().Close()
 	defer ray.InboundOutput().Release()
 

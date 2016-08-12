@@ -283,7 +283,7 @@ func (this *Server) handleSocks4(clientAddr string, reader *v2io.BufferedReader,
 }
 
 func (this *Server) transport(reader io.Reader, writer io.Writer, destination v2net.Destination) {
-	ray := this.packetDispatcher.DispatchToOutbound(destination)
+	ray := this.packetDispatcher.DispatchToOutbound(this.meta, destination)
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 

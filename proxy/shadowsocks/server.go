@@ -70,7 +70,7 @@ func (this *Server) Start() error {
 	this.tcpHub = tcpHub
 
 	if this.config.UDP {
-		this.udpServer = udp.NewUDPServer(this.packetDispatcher)
+		this.udpServer = udp.NewUDPServer(this.meta, this.packetDispatcher)
 		udpHub, err := udp.ListenUDP(this.meta.Address, this.meta.Port, this.handlerUDPPayload)
 		if err != nil {
 			log.Error("Shadowsocks: Failed to listen UDP on ", this.meta.Address, ":", this.meta.Port, ": ", err)
@@ -204,7 +204,7 @@ func (this *Server) handleConnection(conn internet.Connection) {
 	log.Access(conn.RemoteAddr(), dest, log.AccessAccepted, "")
 	log.Info("Shadowsocks: Tunnelling request to ", dest)
 
-	ray := this.packetDispatcher.DispatchToOutbound(dest)
+	ray := this.packetDispatcher.DispatchToOutbound(this.meta, dest)
 	defer ray.InboundOutput().Release()
 
 	var writeFinish sync.Mutex

@@ -2,6 +2,7 @@ package testing
 
 import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
@@ -29,7 +30,7 @@ func NewTestPacketDispatcher(handler func(destination v2net.Destination, traffic
 	}
 }
 
-func (this *TestPacketDispatcher) DispatchToOutbound(destination v2net.Destination) ray.InboundRay {
+func (this *TestPacketDispatcher) DispatchToOutbound(meta *proxy.InboundHandlerMeta, destination v2net.Destination) ray.InboundRay {
 	traffic := ray.NewRay()
 	this.Destination <- destination
 	go this.Handler(destination, traffic)

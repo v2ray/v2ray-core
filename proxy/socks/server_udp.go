@@ -9,7 +9,7 @@ import (
 )
 
 func (this *Server) listenUDP() error {
-	this.udpServer = udp.NewUDPServer(this.packetDispatcher)
+	this.udpServer = udp.NewUDPServer(this.meta, this.packetDispatcher)
 	udpHub, err := udp.ListenUDP(this.meta.Address, this.meta.Port, this.handleUDPPayload)
 	if err != nil {
 		log.Error("Socks: Failed to listen on udp ", this.meta.Address, ":", this.meta.Port)

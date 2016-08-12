@@ -16,10 +16,11 @@ const (
 )
 
 type InboundHandlerMeta struct {
-	Tag            string
-	Address        v2net.Address
-	Port           v2net.Port
-	StreamSettings *internet.StreamSettings
+	Tag                    string
+	Address                v2net.Address
+	Port                   v2net.Port
+	AllowPassiveConnection bool
+	StreamSettings         *internet.StreamSettings
 }
 
 type OutboundHandlerMeta struct {
