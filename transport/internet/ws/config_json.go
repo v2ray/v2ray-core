@@ -9,6 +9,8 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		ConnectionReuse bool   `json:"connectionReuse"`
 		Path            string `json:"Path"`
 		Pto             string `json:"Pto"`
+		Cert            string `json:"Cert"`
+		PrivKey         string `json:"PrivKet"`
 	}
 	jsonConfig := &JsonConfig{
 		ConnectionReuse: true,
@@ -21,5 +23,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	this.ConnectionReuse = jsonConfig.ConnectionReuse
 	this.Path = jsonConfig.Path
 	this.Pto = jsonConfig.Pto
+	this.PrivKey = jsonConfig.PrivKey
+	this.Cert = jsonConfig.Cert
 	return nil
 }
