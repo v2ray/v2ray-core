@@ -25,6 +25,7 @@ import (
 	_ "github.com/v2ray/v2ray-core/transport/internet/kcp"
 	_ "github.com/v2ray/v2ray-core/transport/internet/tcp"
 	_ "github.com/v2ray/v2ray-core/transport/internet/udp"
+	_ "github.com/v2ray/v2ray-core/transport/internet/ws"
 
 	_ "github.com/v2ray/v2ray-core/transport/internet/authenticators/noop"
 	_ "github.com/v2ray/v2ray-core/transport/internet/authenticators/srtp"
