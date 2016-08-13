@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 
@@ -48,7 +49,9 @@ func wsDial(src v2net.Address, dest v2net.Destination) (*wsconn, error) {
 		return internet.DialToDest(src, dest)
 	}
 
-	dialer := websocket.Dialer{NetDial: commonDial, ReadBufferSize: 65536, WriteBufferSize: 65536}
+	tlsconf := &tls.Config{ServerName: dest.Address().Domain()}
+
+	dialer := websocket.Dialer{NetDial: commonDial, ReadBufferSize: 65536, WriteBufferSize: 65536, TLSClientConfig: tlsconf}
 
 	effpto := func(dst v2net.Destination) string {
 
