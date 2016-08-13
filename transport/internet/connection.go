@@ -15,9 +15,10 @@ type Reusable interface {
 type StreamConnectionType int
 
 const (
-	StreamConnectionTypeRawTCP StreamConnectionType = 1
-	StreamConnectionTypeTCP    StreamConnectionType = 2
-	StreamConnectionTypeKCP    StreamConnectionType = 4
+	StreamConnectionTypeRawTCP    StreamConnectionType = 1
+	StreamConnectionTypeTCP       StreamConnectionType = 2
+	StreamConnectionTypeKCP       StreamConnectionType = 4
+	StreamConnectionTypeWebSocket StreamConnectionType = 8
 )
 
 type StreamSecurityType int
