@@ -50,6 +50,9 @@ func (this *StreamSettings) UnmarshalJSON(data []byte) error {
 	if jsonConfig.Network.HasNetwork(v2net.KCPNetwork) {
 		this.Type |= StreamConnectionTypeKCP
 	}
+	if jsonConfig.Network.HasNetwork(v2net.WSNetwork) {
+		this.Type |= StreamConnectionTypeWebSocket
+	}
 	if jsonConfig.Network.HasNetwork(v2net.TCPNetwork) {
 		this.Type |= StreamConnectionTypeTCP
 	}
