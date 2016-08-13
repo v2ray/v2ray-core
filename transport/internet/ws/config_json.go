@@ -10,7 +10,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		Path            string `json:"Path"`
 		Pto             string `json:"Pto"`
 		Cert            string `json:"Cert"`
-		PrivKey         string `json:"PrivKet"`
+		PrivKey         string `json:"PrivKey"`
 	}
 	jsonConfig := &JsonConfig{
 		ConnectionReuse: true,
