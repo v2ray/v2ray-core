@@ -18,7 +18,6 @@ type wsconn struct {
 	readBuffer  *bufio.Reader
 	connClosing bool
 	reusable    bool
-	retloc      *sync.Cond
 	rlock       *sync.Mutex
 	wlock       *sync.Mutex
 }
@@ -59,7 +58,6 @@ func (ws *wsconn) Read(b []byte) (n int, err error) {
 		if ws.readBuffer == nil {
 			err = getNewBuffer()
 			if err != nil {
-				//ws.Close()
 				return 0, err
 			}
 		}
@@ -77,7 +75,6 @@ func (ws *wsconn) Read(b []byte) (n int, err error) {
 			}
 			return n, nil
 		}
-		//ws.Close()
 		return n, err
 
 	}
@@ -89,14 +86,18 @@ func (ws *wsconn) Read(b []byte) (n int, err error) {
 
 func (ws *wsconn) Write(b []byte) (n int, err error) {
 	ws.wlock.Lock()
+	/*
+		process can crash as websocket report "concurrent write to websocket connection"
+		even if lock is persent.
+
+		It is yet to know how to prevent this but a workaround is the only choice.
+	*/
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("WS workaround: recover", r)
 			ws.wlock.Unlock()
 		}
 	}()
-	//defer
-	//ws.checkifRWAfterClosing()
 	if ws.connClosing {
 
 		return 0, io.EOF
@@ -111,12 +112,10 @@ func (ws *wsconn) Write(b []byte) (n int, err error) {
 		}
 		n, err = wr.Write(b)
 		if err != nil {
-			//ws.Close()
 			return 0, err
 		}
 		err = wr.Close()
 		if err != nil {
-			//ws.Close()
 			return 0, err
 		}
 		return n, err
@@ -129,7 +128,6 @@ func (ws *wsconn) Close() error {
 	ws.connClosing = true
 	ws.wsc.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add((time.Second * 5)))
 	err := ws.wsc.Close()
-	ws.retloc.Broadcast()
 	return err
 }
 func (ws *wsconn) LocalAddr() net.Addr {
@@ -159,25 +157,12 @@ func (ws *wsconn) SetWriteDeadline(t time.Time) error {
 	return ws.wsc.SetWriteDeadline(t)
 }
 
-func (ws *wsconn) checkifRWAfterClosing() {
-	if ws.connClosing {
-		log.Error("WS transport: Read or Write After Conn have been marked closing, this can be dangerous.")
-		//panic("WS transport: Read or Write After Conn have been marked closing. Please report this crash to developer.")
-	}
-}
-
 func (ws *wsconn) setup() {
 	ws.connClosing = false
 
 	ws.rlock = &sync.Mutex{}
 	ws.wlock = &sync.Mutex{}
 
-	initConnectedCond := func() {
-		rsl := &sync.Mutex{}
-		ws.retloc = sync.NewCond(rsl)
-	}
-
-	initConnectedCond()
 	ws.pingPong()
 }
 
@@ -206,7 +191,6 @@ func (ws *wsconn) pingPong() {
 
 			select {
 			case <-pongRcv:
-				//log.Debug("WS:Pong~" + ws.wsc.UnderlyingConn().RemoteAddr().String())
 				break
 			case <-tick.C:
 				log.Debug("WS:Closing as ping is not responded~" + ws.wsc.UnderlyingConn().LocalAddr().String() + "-" + ws.wsc.UnderlyingConn().RemoteAddr().String())

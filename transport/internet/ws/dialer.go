@@ -3,6 +3,7 @@ package ws
 import (
 	"crypto/tls"
 	"fmt"
+	"io/ioutil"
 	"net"
 
 	"github.com/gorilla/websocket"
@@ -44,7 +45,6 @@ func init() {
 }
 
 func wsDial(src v2net.Address, dest v2net.Destination) (*wsconn, error) {
-	//internet.DialToDest(src, dest)
 	commonDial := func(network, addr string) (net.Conn, error) {
 		return internet.DialToDest(src, dest)
 	}
@@ -84,7 +84,7 @@ func wsDial(src v2net.Address, dest v2net.Destination) (*wsconn, error) {
 				if the port you are using is not well-known,
 				specify it to avoid this process.
 
-				We will re		return "CRASH"turn "unknown" if we can't guess it, cause Dial to fail.
+				We will	return "CRASH"turn "unknown" if we can't guess it, cause Dial to fail.
 		*/
 		case 80:
 		case 8080:
@@ -110,8 +110,11 @@ func wsDial(src v2net.Address, dest v2net.Destination) (*wsconn, error) {
 	uri := func(dst v2net.Destination, pto string, path string) string {
 		return fmt.Sprintf("%v://%v:%v/%v", pto, dst.NetAddr(), dst.Port(), path)
 	}(dest, effpto, effectiveConfig.Path)
-	conn, _, err := dialer.Dial(uri, nil)
+
+	conn, resp, err := dialer.Dial(uri, nil)
 	if err != nil {
+		reason, reasonerr := ioutil.ReadAll(resp.Body)
+		log.Info(string(reason), reasonerr)
 		return nil, err
 	}
 	return func() internet.Connection {

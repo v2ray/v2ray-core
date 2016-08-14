@@ -62,7 +62,6 @@ func (wsl *WSListener) listenws(address v2net.Address, port v2net.Port) error {
 				con.Close()
 			}
 		}
-		//con.retloc.Wait()
 		return
 
 	})
