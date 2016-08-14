@@ -2,6 +2,7 @@ package ws
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"net"
 	"sync"
@@ -23,7 +24,7 @@ type wsconn struct {
 }
 
 func (ws *wsconn) Read(b []byte) (n int, err error) {
-
+	ws.rlock.Lock()
 	//defer ws.rlock.Unlock()
 	//ws.checkifRWAfterClosing()
 	if ws.connClosing {
@@ -42,7 +43,19 @@ func (ws *wsconn) Read(b []byte) (n int, err error) {
 		return nil
 	}
 
-	readNext := func(b []byte) (n int, err error) {
+	/*It seems golang's support for recursive in anonymous func it yet to complete.
+		func1:=func(){
+		func1()
+	  }
+		won't work, failed to compile for it can't find func1.
+
+		Should following work around panic,
+		readNext could have been called before the actual defination was made,
+		This is very unlikely.
+	*/
+	readNext := func(b []byte) (n int, err error) { panic("Runtime unstable. Please report this bug to developer.") }
+
+	readNext = func(b []byte) (n int, err error) {
 		if ws.readBuffer == nil {
 			err = getNewBuffer()
 			if err != nil {
@@ -60,7 +73,7 @@ func (ws *wsconn) Read(b []byte) (n int, err error) {
 		if err == io.EOF {
 			ws.readBuffer = nil
 			if n == 0 {
-				return ws.Read(b)
+				return readNext(b)
 			}
 			return n, nil
 		}
@@ -69,13 +82,19 @@ func (ws *wsconn) Read(b []byte) (n int, err error) {
 
 	}
 	n, err = readNext(b)
-
+	ws.rlock.Unlock()
 	return n, err
 
 }
 
 func (ws *wsconn) Write(b []byte) (n int, err error) {
-
+	ws.wlock.Lock()
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("WS workaround: recover", r)
+			ws.wlock.Unlock()
+		}
+	}()
 	//defer
 	//ws.checkifRWAfterClosing()
 	if ws.connClosing {
@@ -103,10 +122,12 @@ func (ws *wsconn) Write(b []byte) (n int, err error) {
 		return n, err
 	}
 	n, err = writeWs(b)
+	ws.wlock.Unlock()
 	return n, err
 }
 func (ws *wsconn) Close() error {
 	ws.connClosing = true
+	ws.wsc.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add((time.Second * 5)))
 	err := ws.wsc.Close()
 	ws.retloc.Broadcast()
 	return err
@@ -157,7 +178,7 @@ func (ws *wsconn) setup() {
 	}
 
 	initConnectedCond()
-	//ws.pingPong()
+	ws.pingPong()
 }
 
 func (ws *wsconn) Reusable() bool {
@@ -185,8 +206,10 @@ func (ws *wsconn) pingPong() {
 
 			select {
 			case <-pongRcv:
+				//log.Debug("WS:Pong~" + ws.wsc.UnderlyingConn().RemoteAddr().String())
 				break
 			case <-tick.C:
+				log.Debug("WS:Closing as ping is not responded~" + ws.wsc.UnderlyingConn().LocalAddr().String() + "-" + ws.wsc.UnderlyingConn().RemoteAddr().String())
 				ws.Close()
 			}
 			<-tick.C
