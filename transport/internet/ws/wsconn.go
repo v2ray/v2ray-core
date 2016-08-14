@@ -126,7 +126,9 @@ func (ws *wsconn) Write(b []byte) (n int, err error) {
 }
 func (ws *wsconn) Close() error {
 	ws.connClosing = true
+	ws.wlock.Lock()
 	ws.wsc.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add((time.Second * 5)))
+	ws.wlock.Unlock()
 	err := ws.wsc.Close()
 	return err
 }
@@ -186,7 +188,9 @@ func (ws *wsconn) pingPong() {
 
 	go func() {
 		for !ws.connClosing {
+			ws.wlock.Lock()
 			ws.wsc.WriteMessage(websocket.PingMessage, nil)
+			ws.wlock.Unlock()
 			tick := time.NewTicker(time.Second * 3)
 
 			select {
