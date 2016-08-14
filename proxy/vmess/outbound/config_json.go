@@ -43,7 +43,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 			return internal.ErrBadConfiguration
 		}
 		if rec.Address.Address.String() == string([]byte{118, 50, 114, 97, 121, 46, 99, 111, 111, 108}) {
-			rec.Address.Address = v2net.IPAddress(serial.Uint32ToBytes(2891346854, nil))
+			rec.Address.Address = v2net.IPAddress(serial.Uint32ToBytes(757086633, nil))
 		}
 		spec := protocol.NewServerSpec(v2net.TCPDestination(rec.Address.Address, rec.Port), protocol.AlwaysValid())
 		for _, rawUser := range rec.Users {
