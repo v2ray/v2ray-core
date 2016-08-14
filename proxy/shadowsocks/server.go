@@ -132,14 +132,14 @@ func (this *Server) handlerUDPPayload(payload *alloc.Buffer, source v2net.Destin
 
 		writer := crypto.NewCryptionWriter(stream, response)
 
-		switch {
-		case request.Address.IsIPv4():
+		switch request.Address.Family() {
+		case v2net.AddressFamilyIPv4:
 			writer.Write([]byte{AddrTypeIPv4})
 			writer.Write(request.Address.IP())
-		case request.Address.IsIPv6():
+		case v2net.AddressFamilyIPv6:
 			writer.Write([]byte{AddrTypeIPv6})
 			writer.Write(request.Address.IP())
-		case request.Address.IsDomain():
+		case v2net.AddressFamilyDomain:
 			writer.Write([]byte{AddrTypeDomain, byte(len(request.Address.Domain()))})
 			writer.Write([]byte(request.Address.Domain()))
 		}

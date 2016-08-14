@@ -44,7 +44,7 @@ func Dial(src v2net.Address, dest v2net.Destination, settings *StreamSettings) (
 		}
 
 		config := settings.TLSSettings.GetTLSConfig()
-		if dest.Address().IsDomain() {
+		if dest.Address().Family().IsDomain() {
 			config.ServerName = dest.Address().Domain()
 		}
 		tlsConn := tls.Client(connection, config)

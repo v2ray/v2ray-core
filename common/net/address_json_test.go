@@ -18,8 +18,8 @@ func TestIPParsing(t *testing.T) {
 	var address AddressJson
 	err := json.Unmarshal([]byte(rawJson), &address)
 	assert.Error(err).IsNil()
-	assert.Bool(address.Address.IsIPv4()).IsTrue()
-	assert.Bool(address.Address.IsDomain()).IsFalse()
+	assert.Bool(address.Address.Family().Either(AddressFamilyIPv4)).IsTrue()
+	assert.Bool(address.Address.Family().Either(AddressFamilyDomain)).IsFalse()
 	assert.Bool(address.Address.IP().Equal(net.ParseIP("8.8.8.8"))).IsTrue()
 }
 
@@ -30,8 +30,8 @@ func TestDomainParsing(t *testing.T) {
 	var address AddressJson
 	err := json.Unmarshal([]byte(rawJson), &address)
 	assert.Error(err).IsNil()
-	assert.Bool(address.Address.IsIPv4()).IsFalse()
-	assert.Bool(address.Address.IsDomain()).IsTrue()
+	assert.Bool(address.Address.Family().Either(AddressFamilyIPv4)).IsFalse()
+	assert.Bool(address.Address.Family().Either(AddressFamilyDomain)).IsTrue()
 	assert.String(address.Address.Domain()).Equals("v2ray.com")
 }
 

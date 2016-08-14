@@ -238,12 +238,12 @@ func (this *Server) handleUDP(reader io.Reader, writer *v2io.BufferedWriter) err
 	udpAddr := this.udpAddress
 
 	response.Port = udpAddr.Port()
-	switch {
-	case udpAddr.Address().IsIPv4():
+	switch udpAddr.Address().Family() {
+	case v2net.AddressFamilyIPv4:
 		response.SetIPv4(udpAddr.Address().IP())
-	case udpAddr.Address().IsIPv6():
+	case v2net.AddressFamilyIPv6:
 		response.SetIPv6(udpAddr.Address().IP())
-	case udpAddr.Address().IsDomain():
+	case v2net.AddressFamilyDomain:
 		response.SetDomain(udpAddr.Address().Domain())
 	}
 
