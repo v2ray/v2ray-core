@@ -113,8 +113,10 @@ func wsDial(src v2net.Address, dest v2net.Destination) (*wsconn, error) {
 
 	conn, resp, err := dialer.Dial(uri, nil)
 	if err != nil {
-		reason, reasonerr := ioutil.ReadAll(resp.Body)
-		log.Info(string(reason), reasonerr)
+		if resp != nil {
+			reason, reasonerr := ioutil.ReadAll(resp.Body)
+			log.Info(string(reason), reasonerr)
+		}
 		return nil, err
 	}
 	return func() internet.Connection {
