@@ -12,6 +12,14 @@ var (
 	AnyIP       = IPAddress([]byte{0, 0, 0, 0})
 )
 
+type AddressFamily int
+
+const (
+	AddressFamilyIPv4   = AddressFamily(0)
+	AddressFamilyIPv6   = AddressFamily(1)
+	AddressFamilyDomain = AddressFamily(2)
+)
+
 // Address represents a network address to be communicated with. It may be an IP address or domain
 // address, not both. This interface doesn't resolve IP address for a given domain.
 type Address interface {
