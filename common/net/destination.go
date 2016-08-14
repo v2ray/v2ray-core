@@ -17,17 +17,20 @@ type Destination interface {
 	IsUDP() bool // True if destination is reachable via UDP
 }
 
-func TCPDestinationFromAddr(addr *net.TCPAddr) Destination {
-	return TCPDestination(IPAddress(addr.IP), Port(addr.Port))
+func DestinationFromAddr(addr net.Addr) Destination {
+	switch addr := addr.(type) {
+	case *net.TCPAddr:
+		return TCPDestination(IPAddress(addr.IP), Port(addr.Port))
+	case *net.UDPAddr:
+		return UDPDestination(IPAddress(addr.IP), Port(addr.Port))
+	default:
+		panic("Unknown address type.")
+	}
 }
 
 // TCPDestination creates a TCP destination with given address
 func TCPDestination(address Address, port Port) Destination {
 	return &tcpDestination{address: address, port: port}
-}
-
-func UDPDestinationFromAddr(addr *net.UDPAddr) Destination {
-	return UDPDestination(IPAddress(addr.IP), Port(addr.Port))
 }
 
 // UDPDestination creates a UDP destination with given address

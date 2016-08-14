@@ -2,7 +2,6 @@ package inbound
 
 import (
 	"io"
-	"net"
 	"sync"
 
 	"github.com/v2ray/v2ray-core/app"
@@ -165,7 +164,7 @@ func (this *VMessInboundHandler) HandleConnection(connection internet.Connection
 	connection.SetReusable(request.Option.Has(protocol.RequestOptionConnectionReuse))
 
 	ray := this.packetDispatcher.DispatchToOutbound(this.meta, &proxy.SessionInfo{
-		Source:      v2net.TCPDestinationFromAddr(connection.RemoteAddr().(*net.TCPAddr)),
+		Source:      v2net.DestinationFromAddr(connection.RemoteAddr()),
 		Destination: request.Destination(),
 	})
 	input := ray.InboundInput()

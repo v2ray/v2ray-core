@@ -4,7 +4,6 @@ package shadowsocks
 import (
 	"crypto/rand"
 	"io"
-	"net"
 	"sync"
 
 	"github.com/v2ray/v2ray-core/app"
@@ -206,7 +205,7 @@ func (this *Server) handleConnection(conn internet.Connection) {
 	log.Info("Shadowsocks: Tunnelling request to ", dest)
 
 	ray := this.packetDispatcher.DispatchToOutbound(this.meta, &proxy.SessionInfo{
-		Source:      v2net.TCPDestinationFromAddr(conn.RemoteAddr().(*net.TCPAddr)),
+		Source:      v2net.DestinationFromAddr(conn.RemoteAddr()),
 		Destination: dest,
 	})
 	defer ray.InboundOutput().Release()

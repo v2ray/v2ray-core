@@ -3,7 +3,6 @@ package socks
 import (
 	"errors"
 	"io"
-	"net"
 	"sync"
 	"time"
 
@@ -120,7 +119,7 @@ func (this *Server) handleConnection(connection internet.Connection) {
 		return
 	}
 
-	clientAddr := v2net.TCPDestinationFromAddr(connection.RemoteAddr().(*net.TCPAddr))
+	clientAddr := v2net.DestinationFromAddr(connection.RemoteAddr())
 	if err != nil && err == protocol.Socks4Downgrade {
 		this.handleSocks4(clientAddr, reader, writer, auth4)
 	} else {

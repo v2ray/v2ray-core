@@ -120,7 +120,7 @@ func (this *Server) handleConnection(conn internet.Connection) {
 	}
 	log.Access(conn.RemoteAddr(), request.URL, log.AccessAccepted, "")
 	session := &proxy.SessionInfo{
-		Source:      v2net.TCPDestinationFromAddr(conn.RemoteAddr().(*net.TCPAddr)),
+		Source:      v2net.DestinationFromAddr(conn.RemoteAddr()),
 		Destination: dest,
 	}
 	if strings.ToUpper(request.Method) == "CONNECT" {

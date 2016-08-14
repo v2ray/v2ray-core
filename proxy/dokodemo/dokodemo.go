@@ -1,7 +1,6 @@
 package dokodemo
 
 import (
-	"net"
 	"sync"
 
 	"github.com/v2ray/v2ray-core/app"
@@ -151,7 +150,7 @@ func (this *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 	log.Info("Dokodemo: Handling request to ", dest)
 
 	ray := this.packetDispatcher.DispatchToOutbound(this.meta, &proxy.SessionInfo{
-		Source:      v2net.TCPDestinationFromAddr(conn.RemoteAddr().(*net.TCPAddr)),
+		Source:      v2net.DestinationFromAddr(conn.RemoteAddr()),
 		Destination: dest,
 	})
 	defer ray.InboundOutput().Release()
