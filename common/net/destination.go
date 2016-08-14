@@ -1,5 +1,9 @@
 package net
 
+import (
+	"net"
+)
+
 // Destination represents a network destination including address and protocol (tcp / udp).
 type Destination interface {
 	Network() Network // Protocol of communication (tcp / udp)
@@ -13,9 +17,17 @@ type Destination interface {
 	IsUDP() bool // True if destination is reachable via UDP
 }
 
+func TCPDestinationFromAddr(addr *net.TCPAddr) Destination {
+	return TCPDestination(IPAddress(addr.IP), Port(addr.Port))
+}
+
 // TCPDestination creates a TCP destination with given address
 func TCPDestination(address Address, port Port) Destination {
 	return &tcpDestination{address: address, port: port}
+}
+
+func UDPDestinationFromAddr(addr *net.UDPAddr) Destination {
+	return UDPDestination(IPAddress(addr.IP), Port(addr.Port))
 }
 
 // UDPDestination creates a UDP destination with given address

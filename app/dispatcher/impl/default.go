@@ -43,9 +43,10 @@ func (this *DefaultDispatcher) Release() {
 
 }
 
-func (this *DefaultDispatcher) DispatchToOutbound(meta *proxy.InboundHandlerMeta, destination v2net.Destination) ray.InboundRay {
+func (this *DefaultDispatcher) DispatchToOutbound(meta *proxy.InboundHandlerMeta, session *proxy.SessionInfo) ray.InboundRay {
 	direct := ray.NewRay()
 	dispatcher := this.ohm.GetDefaultHandler()
+	destination := session.Destination
 
 	if this.router != nil {
 		if tag, err := this.router.TakeDetour(destination); err == nil {

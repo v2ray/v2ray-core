@@ -165,7 +165,7 @@ func (this *UDPNameServer) BuildQueryA(domain string, id uint16) *alloc.Buffer {
 }
 
 func (this *UDPNameServer) DispatchQuery(payload *alloc.Buffer) {
-	this.udpServer.Dispatch(pseudoDestination, this.address, payload, this.HandleResponse)
+	this.udpServer.Dispatch(&proxy.SessionInfo{Source: pseudoDestination, Destination: this.address}, payload, this.HandleResponse)
 }
 
 func (this *UDPNameServer) QueryA(domain string) <-chan *ARecord {

@@ -1,6 +1,7 @@
 package dokodemo
 
 import (
+	"net"
 	"sync"
 
 	"github.com/v2ray/v2ray-core/app"
@@ -102,7 +103,8 @@ func (this *DokodemoDoor) ListenUDP() error {
 }
 
 func (this *DokodemoDoor) handleUDPPackets(payload *alloc.Buffer, dest v2net.Destination) {
-	this.udpServer.Dispatch(dest, v2net.UDPDestination(this.address, this.port), payload, this.handleUDPResponse)
+	this.udpServer.Dispatch(
+		&proxy.SessionInfo{Source: dest, Destination: v2net.UDPDestination(this.address, this.port)}, payload, this.handleUDPResponse)
 }
 
 func (this *DokodemoDoor) handleUDPResponse(dest v2net.Destination, payload *alloc.Buffer) {
@@ -148,7 +150,10 @@ func (this *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 	}
 	log.Info("Dokodemo: Handling request to ", dest)
 
-	ray := this.packetDispatcher.DispatchToOutbound(this.meta, dest)
+	ray := this.packetDispatcher.DispatchToOutbound(this.meta, &proxy.SessionInfo{
+		Source:      v2net.TCPDestinationFromAddr(conn.RemoteAddr().(*net.TCPAddr)),
+		Destination: dest,
+	})
 	defer ray.InboundOutput().Release()
 
 	var inputFinish, outputFinish sync.Mutex

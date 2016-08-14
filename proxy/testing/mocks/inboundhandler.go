@@ -33,7 +33,10 @@ func (this *InboundConnectionHandler) Close() {
 func (this *InboundConnectionHandler) Communicate(destination v2net.Destination) error {
 	ray := this.PacketDispatcher.DispatchToOutbound(&proxy.InboundHandlerMeta{
 		AllowPassiveConnection: false,
-	}, destination)
+	}, &proxy.SessionInfo{
+		Source:      v2net.TCPDestination(v2net.LocalHostIP, v2net.Port(0)),
+		Destination: destination,
+	})
 
 	input := ray.InboundInput()
 	output := ray.InboundOutput()

@@ -4,6 +4,7 @@ package shadowsocks
 import (
 	"crypto/rand"
 	"io"
+	"net"
 	"sync"
 
 	"github.com/v2ray/v2ray-core/app"
@@ -114,7 +115,7 @@ func (this *Server) handlerUDPPayload(payload *alloc.Buffer, source v2net.Destin
 	log.Access(source, dest, log.AccessAccepted, "")
 	log.Info("Shadowsocks: Tunnelling request to ", dest)
 
-	this.udpServer.Dispatch(source, dest, request.DetachUDPPayload(), func(destination v2net.Destination, payload *alloc.Buffer) {
+	this.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: dest}, request.DetachUDPPayload(), func(destination v2net.Destination, payload *alloc.Buffer) {
 		defer payload.Release()
 
 		response := alloc.NewBuffer().Slice(0, ivLen)
@@ -204,7 +205,10 @@ func (this *Server) handleConnection(conn internet.Connection) {
 	log.Access(conn.RemoteAddr(), dest, log.AccessAccepted, "")
 	log.Info("Shadowsocks: Tunnelling request to ", dest)
 
-	ray := this.packetDispatcher.DispatchToOutbound(this.meta, dest)
+	ray := this.packetDispatcher.DispatchToOutbound(this.meta, &proxy.SessionInfo{
+		Source:      v2net.TCPDestinationFromAddr(conn.RemoteAddr().(*net.TCPAddr)),
+		Destination: dest,
+	})
 	defer ray.InboundOutput().Release()
 
 	var writeFinish sync.Mutex

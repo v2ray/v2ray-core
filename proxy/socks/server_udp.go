@@ -4,6 +4,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/proxy/socks/protocol"
 	"github.com/v2ray/v2ray-core/transport/internet/udp"
 )
@@ -44,7 +45,7 @@ func (this *Server) handleUDPPayload(payload *alloc.Buffer, source v2net.Destina
 
 	log.Info("Socks: Send packet to ", request.Destination(), " with ", request.Data.Len(), " bytes")
 	log.Access(source, request.Destination, log.AccessAccepted, "")
-	this.udpServer.Dispatch(source, request.Destination(), request.Data, func(destination v2net.Destination, payload *alloc.Buffer) {
+	this.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: request.Destination()}, request.Data, func(destination v2net.Destination, payload *alloc.Buffer) {
 		response := &protocol.Socks5UDPRequest{
 			Fragment: 0,
 			Address:  request.Destination().Address(),
