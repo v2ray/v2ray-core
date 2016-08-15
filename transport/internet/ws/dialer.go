@@ -53,59 +53,7 @@ func wsDial(src v2net.Address, dest v2net.Destination) (*wsconn, error) {
 
 	dialer := websocket.Dialer{NetDial: commonDial, ReadBufferSize: 65536, WriteBufferSize: 65536, TLSClientConfig: tlsconf}
 
-	effpto := func(dst v2net.Destination) string {
-
-		if effectiveConfig.Pto != "" {
-			return effectiveConfig.Pto
-		}
-
-		switch dst.Port().Value() {
-		/*
-				Since the value is not given explicitly,
-				We are guessing it now.
-
-				HTTP Port:
-						80
-				    8080
-				    8880
-				    2052
-			      2082
-			      2086
-			      2095
-
-				HTTPS Port:
-						443
-				    2053
-				    2083
-			      2087
-			      2096
-			      8443
-
-				if the port you are using is not well-known,
-				specify it to avoid this process.
-
-				We will	return "CRASH"turn "unknown" if we can't guess it, cause Dial to fail.
-		*/
-		case 80:
-		case 8080:
-		case 8880:
-		case 2052:
-		case 2082:
-		case 2086:
-		case 2095:
-			return "ws"
-		case 443:
-		case 2053:
-		case 2083:
-		case 2087:
-		case 2096:
-		case 8443:
-			return "wss"
-		default:
-			return "unknown"
-		}
-		panic("Runtime unstable. Please report this bug to developers.")
-	}(dest)
+	effpto := calcPto(dest)
 
 	uri := func(dst v2net.Destination, pto string, path string) string {
 		return fmt.Sprintf("%v://%v/%v", pto, dst.NetAddr(), path)
@@ -124,4 +72,68 @@ func wsDial(src v2net.Address, dest v2net.Destination) (*wsconn, error) {
 		connv2ray.setup()
 		return connv2ray
 	}().(*wsconn), nil
+}
+
+func calcPto(dst v2net.Destination) string {
+
+	if effectiveConfig.Pto != "" {
+		return effectiveConfig.Pto
+	}
+
+	switch dst.Port().Value() {
+	/*
+		Since the value is not given explicitly,
+		We are guessing it now.
+
+		HTTP Port:
+				80
+				8080
+				8880
+				2052
+				2082
+				2086
+				2095
+
+		HTTPS Port:
+				443
+				2053
+				2083
+				2087
+				2096
+				8443
+
+		if the port you are using is not well-known,
+		specify it to avoid this process.
+
+		We will	return "CRASH"turn "unknown" if we can't guess it, cause Dial to fail.
+	*/
+	case 80:
+		fallthrough
+	case 8080:
+		fallthrough
+	case 8880:
+		fallthrough
+	case 2052:
+		fallthrough
+	case 2082:
+		fallthrough
+	case 2086:
+		fallthrough
+	case 2095:
+		return "ws"
+	case 443:
+		fallthrough
+	case 2053:
+		fallthrough
+	case 2083:
+		fallthrough
+	case 2087:
+		fallthrough
+	case 2096:
+		fallthrough
+	case 8443:
+		return "wss"
+	default:
+		return "unknown"
+	}
 }
