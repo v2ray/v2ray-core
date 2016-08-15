@@ -83,7 +83,12 @@ func (wsl *WSListener) listenws(address v2net.Address, port v2net.Port) error {
 
 	if effectiveConfig.Pto == "wss" {
 		listenerfunc = func() error {
-			return http.ListenAndServeTLS(address.String()+":"+strconv.Itoa(int(port.Value())), effectiveConfig.Cert, effectiveConfig.PrivKey, nil)
+			var err error
+			wsl.listener, err = getstopableTLSlistener(effectiveConfig.Cert, effectiveConfig.PrivKey, address.String()+":"+strconv.Itoa(int(port.Value())))
+			if err != nil {
+				return err
+			}
+			return http.Serve(wsl.listener, nil)
 		}
 	}
 
