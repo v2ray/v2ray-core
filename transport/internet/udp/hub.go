@@ -98,3 +98,9 @@ func (this *UDPHub) Running() bool {
 
 	return this.accepting
 }
+
+// Connection return the net.Conn underneath this hub.
+// Private: Visible for testing only
+func (this *UDPHub) Connection() net.Conn {
+	return this.conn
+}
