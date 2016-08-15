@@ -24,8 +24,6 @@ type wsconn struct {
 
 func (ws *wsconn) Read(b []byte) (n int, err error) {
 	ws.rlock.Lock()
-	//defer ws.rlock.Unlock()
-	//ws.checkifRWAfterClosing()
 	if ws.connClosing {
 
 		return 0, io.EOF
@@ -90,7 +88,7 @@ func (ws *wsconn) Write(b []byte) (n int, err error) {
 		process can crash as websocket report "concurrent write to websocket connection"
 		even if lock is persent.
 
-		It is yet to know how to prevent this but a workaround is the only choice.
+		This problem should have been resolved.
 	*/
 	defer func() {
 		if r := recover(); r != nil {
