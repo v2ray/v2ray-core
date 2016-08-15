@@ -21,6 +21,10 @@ func Test_Connect_ws(t *testing.T) {
 	go func() {
 		buf := make([]byte, 4)
 		conn.Read(buf)
+		str := string(buf)
+		if str != "echo" {
+			assert.Fail("Data mismatch")
+		}
 		s <- 0
 	}()
 	<-s
@@ -37,6 +41,10 @@ func Test_Connect_wss(t *testing.T) {
 	go func() {
 		buf := make([]byte, 4)
 		conn.Read(buf)
+		str := string(buf)
+		if str != "echo" {
+			assert.Fail("Data mismatch")
+		}
 		s <- 0
 	}()
 	<-s
@@ -53,6 +61,10 @@ func Test_Connect_wss_1_nil(t *testing.T) {
 	go func() {
 		buf := make([]byte, 4)
 		conn.Read(buf)
+		str := string(buf)
+		if str != "echo" {
+			assert.Fail("Data mismatch")
+		}
 		s <- 0
 	}()
 	<-s
@@ -69,6 +81,10 @@ func Test_Connect_ws_guess(t *testing.T) {
 	go func() {
 		buf := make([]byte, 4)
 		conn.Read(buf)
+		str := string(buf)
+		if str != "echo" {
+			assert.Fail("Data mismatch")
+		}
 		s <- 0
 	}()
 	<-s
@@ -85,6 +101,10 @@ func Test_Connect_wss_guess(t *testing.T) {
 	go func() {
 		buf := make([]byte, 4)
 		conn.Read(buf)
+		str := string(buf)
+		if str != "echo" {
+			assert.Fail("Data mismatch")
+		}
 		s <- 0
 	}()
 	<-s
@@ -117,6 +137,10 @@ func Test_Connect_wss_guess_reuse(t *testing.T) {
 		go func() {
 			buf := make([]byte, 4)
 			conn.Read(buf)
+			str := string(buf)
+			if str != "echo" {
+				assert.Fail("Data mismatch")
+			}
 			s <- 0
 		}()
 		<-s
