@@ -183,19 +183,18 @@ func (ws *wsconn) pingPong() {
 			ws.wlock.Lock()
 			ws.wsc.WriteMessage(websocket.PingMessage, nil)
 			ws.wlock.Unlock()
-			tick := time.NewTicker(time.Second * 30)
+			tick := time.After(time.Second * 3)
 
 			select {
 			case <-pongRcv:
 				break
-			case <-tick.C:
+			case <-tick:
 				if !ws.connClosing {
 					log.Debug("WS:Closing as ping is not responded~" + ws.wsc.UnderlyingConn().LocalAddr().String() + "-" + ws.wsc.UnderlyingConn().RemoteAddr().String())
 				}
 				ws.Close()
 			}
-			<-tick.C
-			tick.Stop()
+			<-time.After(time.Second * 27)
 		}
 
 		return
