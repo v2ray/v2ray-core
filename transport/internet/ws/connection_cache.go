@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/common/signal"
 )
 
@@ -66,7 +67,7 @@ func (this *ConnectionCache) Recycle(dest string, conn *wsconn) {
 
 	aconn := &AwaitingConnection{
 		conn:   conn,
-		expire: time.Now().Add(time.Second * 4),
+		expire: time.Now().Add(time.Second * 180),
 	}
 
 	var list []*AwaitingConnection
@@ -108,5 +109,6 @@ func (this *ConnectionCache) Get(dest string) net.Conn {
 	res := list[firstValid].conn
 	list = list[firstValid+1:]
 	this.cache[dest] = list
+	log.Debug("WS:Conn Cache used.")
 	return res
 }
