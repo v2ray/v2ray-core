@@ -24,60 +24,56 @@ type wsconn struct {
 
 func (ws *wsconn) Read(b []byte) (n int, err error) {
 	ws.rlock.Lock()
+	n, err = ws.read(b)
+	ws.rlock.Unlock()
+	return n, err
+
+}
+
+func (ws *wsconn) read(b []byte) (n int, err error) {
+
 	if ws.connClosing {
 
 		return 0, io.EOF
 	}
-	getNewBuffer := func() error {
-		_, r, err := ws.wsc.NextReader()
+
+	n, err = ws.readNext(b)
+	return n, err
+}
+
+func (ws *wsconn) getNewReadBuffer() error {
+	_, r, err := ws.wsc.NextReader()
+	if err != nil {
+		log.Warning("WS transport: ws connection NewFrameReader return " + err.Error())
+		ws.connClosing = true
+		ws.Close()
+		return err
+	}
+	ws.readBuffer = bufio.NewReader(r)
+	return nil
+}
+
+func (ws *wsconn) readNext(b []byte) (n int, err error) {
+	if ws.readBuffer == nil {
+		err = ws.getNewReadBuffer()
 		if err != nil {
-			log.Warning("WS transport: ws connection NewFrameReader return " + err.Error())
-			ws.connClosing = true
-			ws.Close()
-			return err
+			return 0, err
 		}
-		ws.readBuffer = bufio.NewReader(r)
-		return nil
 	}
 
-	/*It seems golang's support for recursive in anonymous func is yet to complete.
-		func1:=func(){
-		func1()
-	  }
-		won't work, failed to compile for it can't find func1.
+	n, err = ws.readBuffer.Read(b)
 
-		Should following workaround panic,
-		readNext could have been called before the actual defination was made,
-		This is very unlikely.
-	*/
-	readNext := func(b []byte) (n int, err error) { panic("Runtime unstable. Please report this bug to developer.") }
-
-	readNext = func(b []byte) (n int, err error) {
-		if ws.readBuffer == nil {
-			err = getNewBuffer()
-			if err != nil {
-				return 0, err
-			}
-		}
-
-		n, err = ws.readBuffer.Read(b)
-
-		if err == nil {
-			return n, err
-		}
-
-		if err == io.EOF {
-			ws.readBuffer = nil
-			if n == 0 {
-				return readNext(b)
-			}
-			return n, nil
-		}
+	if err == nil {
 		return n, err
-
 	}
-	n, err = readNext(b)
-	ws.rlock.Unlock()
+
+	if err == io.EOF {
+		ws.readBuffer = nil
+		if n == 0 {
+			return ws.readNext(b)
+		}
+		return n, nil
+	}
 	return n, err
 
 }
