@@ -81,31 +81,33 @@ func (ws *wsconn) Write(b []byte) (n int, err error) {
 	ws.wlock.Lock()
 
 	if ws.connClosing {
-
 		return 0, io.EOF
 	}
-	writeWs := func(b []byte) (n int, err error) {
-		wr, err := ws.wsc.NextWriter(websocket.BinaryMessage)
-		if err != nil {
-			log.Warning("WS transport: ws connection NewFrameReader return " + err.Error())
-			ws.connClosing = true
-			ws.Close()
-			return 0, err
-		}
-		n, err = wr.Write(b)
-		if err != nil {
-			return 0, err
-		}
-		err = wr.Close()
-		if err != nil {
-			return 0, err
-		}
-		return n, err
-	}
-	n, err = writeWs(b)
+
+	n, err = ws.write(b)
 	ws.wlock.Unlock()
 	return n, err
 }
+
+func (ws *wsconn) write(b []byte) (n int, err error) {
+	wr, err := ws.wsc.NextWriter(websocket.BinaryMessage)
+	if err != nil {
+		log.Warning("WS transport: ws connection NewFrameReader return " + err.Error())
+		ws.connClosing = true
+		ws.Close()
+		return 0, err
+	}
+	n, err = wr.Write(b)
+	if err != nil {
+		return 0, err
+	}
+	err = wr.Close()
+	if err != nil {
+		return 0, err
+	}
+	return n, err
+}
+
 func (ws *wsconn) Close() error {
 	ws.connClosing = true
 	ws.wlock.Lock()
