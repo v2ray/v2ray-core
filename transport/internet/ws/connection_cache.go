@@ -34,7 +34,7 @@ func (this *ConnectionCache) Cleanup() {
 	defer this.cleanupOnce.Reset()
 
 	for len(this.cache) > 0 {
-		time.Sleep(time.Second * 4)
+		time.Sleep(time.Second * 7)
 		this.Lock()
 		for key, value := range this.cache {
 			size := len(value)
