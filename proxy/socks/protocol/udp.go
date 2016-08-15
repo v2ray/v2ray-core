@@ -26,12 +26,12 @@ func (request *Socks5UDPRequest) Destination() v2net.Destination {
 
 func (request *Socks5UDPRequest) Write(buffer *alloc.Buffer) {
 	buffer.AppendBytes(0, 0, request.Fragment)
-	switch {
-	case request.Address.IsIPv4():
+	switch request.Address.Family() {
+	case v2net.AddressFamilyIPv4:
 		buffer.AppendBytes(AddrTypeIPv4).Append(request.Address.IP())
-	case request.Address.IsIPv6():
+	case v2net.AddressFamilyIPv6:
 		buffer.AppendBytes(AddrTypeIPv6).Append(request.Address.IP())
-	case request.Address.IsDomain():
+	case v2net.AddressFamilyDomain:
 		buffer.AppendBytes(AddrTypeDomain, byte(len(request.Address.Domain()))).Append([]byte(request.Address.Domain()))
 	}
 	buffer.AppendUint16(request.Port.Value())

@@ -44,37 +44,37 @@ func (subject *AddressSubject) EqualsString(another string) {
 }
 
 func (subject *AddressSubject) IsIPv4() {
-	if !subject.value.IsIPv4() {
+	if !subject.value.Family().IsIPv4() {
 		subject.Fail("is", "an IPv4 address")
 	}
 }
 
 func (subject *AddressSubject) IsNotIPv4() {
-	if subject.value.IsIPv4() {
+	if subject.value.Family().IsIPv4() {
 		subject.Fail("is not", "an IPv4 address")
 	}
 }
 
 func (subject *AddressSubject) IsIPv6() {
-	if !subject.value.IsIPv6() {
+	if !subject.value.Family().IsIPv6() {
 		subject.Fail("is", "an IPv6 address")
 	}
 }
 
 func (subject *AddressSubject) IsNotIPv6() {
-	if subject.value.IsIPv6() {
+	if subject.value.Family().IsIPv6() {
 		subject.Fail("is not", "an IPv6 address")
 	}
 }
 
 func (subject *AddressSubject) IsDomain() {
-	if !subject.value.IsDomain() {
+	if !subject.value.Family().IsDomain() {
 		subject.Fail("is", "a domain address")
 	}
 }
 
 func (subject *AddressSubject) IsNotDomain() {
-	if subject.value.IsDomain() {
+	if subject.value.Family().IsDomain() {
 		subject.Fail("is not", "a domain address")
 	}
 }

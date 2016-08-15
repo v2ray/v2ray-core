@@ -28,6 +28,10 @@ const (
 	StreamSecurityTypeTLS  StreamSecurityType = 1
 )
 
+var (
+	globalSessionCache = tls.NewLRUClientSessionCache(128)
+)
+
 type TLSSettings struct {
 	AllowInsecure bool
 	Certs         []tls.Certificate
@@ -36,6 +40,7 @@ type TLSSettings struct {
 func (this *TLSSettings) GetTLSConfig() *tls.Config {
 	config := &tls.Config{
 		InsecureSkipVerify: this.AllowInsecure,
+		ClientSessionCache: globalSessionCache,
 	}
 
 	config.Certificates = this.Certs

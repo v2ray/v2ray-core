@@ -7,6 +7,7 @@ import (
 	"github.com/v2ray/v2ray-core/app/dispatcher"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/proxy"
 )
 
 type InboundConnectionHandler struct {
@@ -30,7 +31,12 @@ func (this *InboundConnectionHandler) Close() {
 }
 
 func (this *InboundConnectionHandler) Communicate(destination v2net.Destination) error {
-	ray := this.PacketDispatcher.DispatchToOutbound(destination)
+	ray := this.PacketDispatcher.DispatchToOutbound(&proxy.InboundHandlerMeta{
+		AllowPassiveConnection: false,
+	}, &proxy.SessionInfo{
+		Source:      v2net.TCPDestination(v2net.LocalHostIP, v2net.Port(0)),
+		Destination: destination,
+	})
 
 	input := ray.InboundInput()
 	output := ray.InboundOutput()

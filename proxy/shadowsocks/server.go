@@ -70,7 +70,7 @@ func (this *Server) Start() error {
 	this.tcpHub = tcpHub
 
 	if this.config.UDP {
-		this.udpServer = udp.NewUDPServer(this.packetDispatcher)
+		this.udpServer = udp.NewUDPServer(this.meta, this.packetDispatcher)
 		udpHub, err := udp.ListenUDP(this.meta.Address, this.meta.Port, this.handlerUDPPayload)
 		if err != nil {
 			log.Error("Shadowsocks: Failed to listen UDP on ", this.meta.Address, ":", this.meta.Port, ": ", err)
@@ -114,7 +114,7 @@ func (this *Server) handlerUDPPayload(payload *alloc.Buffer, source v2net.Destin
 	log.Access(source, dest, log.AccessAccepted, "")
 	log.Info("Shadowsocks: Tunnelling request to ", dest)
 
-	this.udpServer.Dispatch(source, dest, request.DetachUDPPayload(), func(destination v2net.Destination, payload *alloc.Buffer) {
+	this.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: dest}, request.DetachUDPPayload(), func(destination v2net.Destination, payload *alloc.Buffer) {
 		defer payload.Release()
 
 		response := alloc.NewBuffer().Slice(0, ivLen)
@@ -131,14 +131,14 @@ func (this *Server) handlerUDPPayload(payload *alloc.Buffer, source v2net.Destin
 
 		writer := crypto.NewCryptionWriter(stream, response)
 
-		switch {
-		case request.Address.IsIPv4():
+		switch request.Address.Family() {
+		case v2net.AddressFamilyIPv4:
 			writer.Write([]byte{AddrTypeIPv4})
 			writer.Write(request.Address.IP())
-		case request.Address.IsIPv6():
+		case v2net.AddressFamilyIPv6:
 			writer.Write([]byte{AddrTypeIPv6})
 			writer.Write(request.Address.IP())
-		case request.Address.IsDomain():
+		case v2net.AddressFamilyDomain:
 			writer.Write([]byte{AddrTypeDomain, byte(len(request.Address.Domain()))})
 			writer.Write([]byte(request.Address.Domain()))
 		}
@@ -204,7 +204,10 @@ func (this *Server) handleConnection(conn internet.Connection) {
 	log.Access(conn.RemoteAddr(), dest, log.AccessAccepted, "")
 	log.Info("Shadowsocks: Tunnelling request to ", dest)
 
-	ray := this.packetDispatcher.DispatchToOutbound(dest)
+	ray := this.packetDispatcher.DispatchToOutbound(this.meta, &proxy.SessionInfo{
+		Source:      v2net.DestinationFromAddr(conn.RemoteAddr()),
+		Destination: dest,
+	})
 	defer ray.InboundOutput().Release()
 
 	var writeFinish sync.Mutex

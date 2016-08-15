@@ -1,19 +1,22 @@
 #!/bin/bash
 
 FAIL=0
-COVERAGE_FILE=coverage.txt
+
+V2RAY_OUT=${GOPATH}/out/v2ray
+V2RAY_COV=${V2RAY_OUT}/cov
+COVERAGE_FILE=${V2RAY_COV}/coverage.txt
 
 function test_package {
   DIR="github.com/v2ray/v2ray-core/$1"
   DEP=$(go list -f '{{ join .Deps "\n" }}' $DIR | grep v2ray | tr '\n' ',')
   DEP=${DEP}$DIR
-  go test -tags json -coverprofile=coversingle.out -coverpkg=$DEP $DIR || FAIL=1
-  if [ -f coversingle.out ]; then
-    cat coversingle.out | grep -v "mode: set" >> ${COVERAGE_FILE}
-    rm coversingle.out
-  fi
+  RND_NAME=$(openssl rand -hex 16)
+  COV_PROFILE=${V2RAY_COV}/${RND_NAME}.out
+  go test -tags "json coverage" -coverprofile=${COV_PROFILE} -coverpkg=$DEP $DIR || FAIL=1
 }
 
+rm -rf ${V2RAY_OUT}
+mkdir -p ${V2RAY_COV}
 touch ${COVERAGE_FILE}
 
 TEST_FILES=(./*_test.go)
@@ -28,14 +31,17 @@ for DIR in $(find * -type d -not -path "*.git*"); do
   fi
 done
 
-cat ${COVERAGE_FILE} | sort -t: -k1 | grep -vw "testing" > coverallsorted.out
-echo "mode: set" | cat - coverallsorted.out > ${COVERAGE_FILE}
-rm coverallsorted.out
+for OUT_FILE in $(find ${V2RAY_COV} -name "*.out"); do
+  echo "Merging file ${OUT_FILE}"
+  cat ${OUT_FILE} | grep -v "mode: set" >> ${COVERAGE_FILE}
+done
+
+COV_SORTED=${V2RAY_COV}/coverallsorted.out
+cat ${COVERAGE_FILE} | sort -t: -k1 | grep -vw "testing" > ${COV_SORTED}
+echo "mode: set" | cat - ${COV_SORTED} > ${COVERAGE_FILE}
 
 if [ "$FAIL" -eq 0 ]; then
   bash <(curl -s https://codecov.io/bash) -f ${COVERAGE_FILE} || echo "Codecov did not collect coverage reports."
 fi
-
-rm -f ${COVERAGE_FILE}
 
 exit $FAIL

@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"github.com/v2ray/v2ray-core"
 	_ "github.com/v2ray/v2ray-core/app/router/rules"
@@ -29,6 +30,7 @@ import (
 
 	_ "github.com/v2ray/v2ray-core/transport/internet/authenticators/noop"
 	_ "github.com/v2ray/v2ray-core/transport/internet/authenticators/srtp"
+	_ "github.com/v2ray/v2ray-core/transport/internet/authenticators/utp"
 )
 
 var (
@@ -107,7 +109,7 @@ func main() {
 
 	if point := startV2Ray(); point != nil {
 		osSignals := make(chan os.Signal, 1)
-		signal.Notify(osSignals, os.Interrupt, os.Kill)
+		signal.Notify(osSignals, os.Interrupt, os.Kill, syscall.SIGTERM)
 
 		<-osSignals
 		point.Close()

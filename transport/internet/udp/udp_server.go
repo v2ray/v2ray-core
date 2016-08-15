@@ -8,6 +8,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
 
@@ -95,12 +96,14 @@ type UDPServer struct {
 	sync.RWMutex
 	conns            map[string]*TimedInboundRay
 	packetDispatcher dispatcher.PacketDispatcher
+	meta             *proxy.InboundHandlerMeta
 }
 
-func NewUDPServer(packetDispatcher dispatcher.PacketDispatcher) *UDPServer {
+func NewUDPServer(meta *proxy.InboundHandlerMeta, packetDispatcher dispatcher.PacketDispatcher) *UDPServer {
 	return &UDPServer{
 		conns:            make(map[string]*TimedInboundRay),
 		packetDispatcher: packetDispatcher,
+		meta:             meta,
 	}
 }
 
@@ -129,7 +132,11 @@ func (this *UDPServer) locateExistingAndDispatch(name string, payload *alloc.Buf
 	return false
 }
 
-func (this *UDPServer) Dispatch(source v2net.Destination, destination v2net.Destination, payload *alloc.Buffer, callback UDPResponseCallback) {
+func (this *UDPServer) Dispatch(session *proxy.SessionInfo, payload *alloc.Buffer, callback UDPResponseCallback) {
+	source := session.Source
+	destination := session.Destination
+
+	// TODO: Add user to destString
 	destString := source.String() + "-" + destination.String()
 	log.Debug("UDP Server: Dispatch request: ", destString)
 	if this.locateExistingAndDispatch(destString, payload) {
@@ -137,7 +144,7 @@ func (this *UDPServer) Dispatch(source v2net.Destination, destination v2net.Dest
 	}
 
 	log.Info("UDP Server: establishing new connection for ", destString)
-	inboundRay := this.packetDispatcher.DispatchToOutbound(destination)
+	inboundRay := this.packetDispatcher.DispatchToOutbound(this.meta, session)
 	timedInboundRay := NewTimedInboundRay(destString, inboundRay, this)
 	outputStream := timedInboundRay.InboundInput()
 	if outputStream != nil {

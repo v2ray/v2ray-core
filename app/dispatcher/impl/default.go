@@ -4,6 +4,7 @@ import (
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/app/proxyman"
 	"github.com/v2ray/v2ray-core/app/router"
+	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
@@ -42,9 +43,10 @@ func (this *DefaultDispatcher) Release() {
 
 }
 
-func (this *DefaultDispatcher) DispatchToOutbound(destination v2net.Destination) ray.InboundRay {
+func (this *DefaultDispatcher) DispatchToOutbound(meta *proxy.InboundHandlerMeta, session *proxy.SessionInfo) ray.InboundRay {
 	direct := ray.NewRay()
 	dispatcher := this.ohm.GetDefaultHandler()
+	destination := session.Destination
 
 	if this.router != nil {
 		if tag, err := this.router.TakeDetour(destination); err == nil {
@@ -59,7 +61,11 @@ func (this *DefaultDispatcher) DispatchToOutbound(destination v2net.Destination)
 		}
 	}
 
-	go this.FilterPacketAndDispatch(destination, direct, dispatcher)
+	if meta.AllowPassiveConnection {
+		go dispatcher.Dispatch(destination, alloc.NewLocalBuffer(32).Clear(), direct)
+	} else {
+		go this.FilterPacketAndDispatch(destination, direct, dispatcher)
+	}
 
 	return direct
 }

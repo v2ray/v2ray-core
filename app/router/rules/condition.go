@@ -73,7 +73,7 @@ func NewPlainDomainMatcher(pattern string) *PlainDomainMatcher {
 }
 
 func (this *PlainDomainMatcher) Apply(dest v2net.Destination) bool {
-	if !dest.Address().IsDomain() {
+	if !dest.Address().Family().IsDomain() {
 		return false
 	}
 	domain := dest.Address().Domain()
@@ -95,7 +95,7 @@ func NewRegexpDomainMatcher(pattern string) (*RegexpDomainMatcher, error) {
 }
 
 func (this *RegexpDomainMatcher) Apply(dest v2net.Destination) bool {
-	if !dest.Address().IsDomain() {
+	if !dest.Address().Family().IsDomain() {
 		return false
 	}
 	domain := dest.Address().Domain()
@@ -117,7 +117,7 @@ func NewCIDRMatcher(ipnet string) (*CIDRMatcher, error) {
 }
 
 func (this *CIDRMatcher) Apply(dest v2net.Destination) bool {
-	if !dest.Address().IsIPv4() && !dest.Address().IsIPv6() {
+	if !dest.Address().Family().Either(v2net.AddressFamilyIPv4, v2net.AddressFamilyIPv6) {
 		return false
 	}
 	return this.cidr.Contains(dest.Address().IP())
@@ -134,7 +134,7 @@ func NewIPv4Matcher(ipnet *v2net.IPNet) *IPv4Matcher {
 }
 
 func (this *IPv4Matcher) Apply(dest v2net.Destination) bool {
-	if !dest.Address().IsIPv4() {
+	if !dest.Address().Family().Either(v2net.AddressFamilyIPv4) {
 		return false
 	}
 	return this.ipv4net.Contains(dest.Address().IP())

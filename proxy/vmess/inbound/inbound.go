@@ -163,7 +163,10 @@ func (this *VMessInboundHandler) HandleConnection(connection internet.Connection
 
 	connection.SetReusable(request.Option.Has(protocol.RequestOptionConnectionReuse))
 
-	ray := this.packetDispatcher.DispatchToOutbound(request.Destination())
+	ray := this.packetDispatcher.DispatchToOutbound(this.meta, &proxy.SessionInfo{
+		Source:      v2net.DestinationFromAddr(connection.RemoteAddr()),
+		Destination: request.Destination(),
+	})
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 	defer input.Close()

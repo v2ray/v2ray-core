@@ -119,14 +119,18 @@ func (this *Server) handleConnection(conn internet.Connection) {
 		return
 	}
 	log.Access(conn.RemoteAddr(), request.URL, log.AccessAccepted, "")
+	session := &proxy.SessionInfo{
+		Source:      v2net.DestinationFromAddr(conn.RemoteAddr()),
+		Destination: dest,
+	}
 	if strings.ToUpper(request.Method) == "CONNECT" {
-		this.handleConnect(request, dest, reader, conn)
+		this.handleConnect(request, session, reader, conn)
 	} else {
-		this.handlePlainHTTP(request, dest, reader, conn)
+		this.handlePlainHTTP(request, session, reader, conn)
 	}
 }
 
-func (this *Server) handleConnect(request *http.Request, destination v2net.Destination, reader io.Reader, writer io.Writer) {
+func (this *Server) handleConnect(request *http.Request, session *proxy.SessionInfo, reader io.Reader, writer io.Writer) {
 	response := &http.Response{
 		Status:        "200 OK",
 		StatusCode:    200,
@@ -140,7 +144,7 @@ func (this *Server) handleConnect(request *http.Request, destination v2net.Desti
 	}
 	response.Write(writer)
 
-	ray := this.packetDispatcher.DispatchToOutbound(destination)
+	ray := this.packetDispatcher.DispatchToOutbound(this.meta, session)
 	this.transport(reader, writer, ray)
 }
 
@@ -209,7 +213,7 @@ func (this *Server) GenerateResponse(statusCode int, status string) *http.Respon
 	}
 }
 
-func (this *Server) handlePlainHTTP(request *http.Request, dest v2net.Destination, reader *bufio.Reader, writer io.Writer) {
+func (this *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionInfo, reader *bufio.Reader, writer io.Writer) {
 	if len(request.URL.Host) <= 0 {
 		response := this.GenerateResponse(400, "Bad Request")
 		response.Write(writer)
@@ -220,7 +224,7 @@ func (this *Server) handlePlainHTTP(request *http.Request, dest v2net.Destinatio
 	request.Host = request.URL.Host
 	StripHopByHopHeaders(request)
 
-	ray := this.packetDispatcher.DispatchToOutbound(dest)
+	ray := this.packetDispatcher.DispatchToOutbound(this.meta, session)
 	defer ray.InboundInput().Close()
 	defer ray.InboundOutput().Release()
 

@@ -1,7 +1,6 @@
 package scenarios
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -24,25 +23,18 @@ import (
 
 var (
 	runningServers = make([]*exec.Cmd, 0, 10)
-
-	binaryPath string
 )
 
-func BuildV2Ray() error {
-	if len(binaryPath) > 0 {
-		return nil
-	}
-
-	dir, err := ioutil.TempDir("", "v2ray")
-	if err != nil {
-		return err
-	}
-	binaryPath = filepath.Join(dir, "v2ray")
+func GetTestBinaryPath() string {
+	file := filepath.Join(os.Getenv("GOPATH"), "out", "v2ray", "v2ray.test")
 	if runtime.GOOS == "windows" {
-		binaryPath += ".exe"
+		file += ".exe"
 	}
-	cmd := exec.Command("go", "build", "-tags=json", "-o="+binaryPath, filepath.Join("github.com", "v2ray", "v2ray-core", "shell", "point", "main"))
-	return cmd.Run()
+	return file
+}
+
+func GetSourcePath() string {
+	return filepath.Join("github.com", "v2ray", "v2ray-core", "shell", "point", "main")
 }
 
 func TestFile(filename string) string {
@@ -73,9 +65,7 @@ func InitializeServer(configFile string) error {
 		return err
 	}
 
-	proc := exec.Command(binaryPath, "-config="+configFile)
-	proc.Stderr = os.Stderr
-	proc.Stdout = os.Stdout
+	proc := RunV2Ray(configFile)
 
 	err = proc.Start()
 	if err != nil {
@@ -92,7 +82,8 @@ func InitializeServer(configFile string) error {
 func CloseAllServers() {
 	log.Info("Closing all servers.")
 	for _, server := range runningServers {
-		server.Process.Kill()
+		server.Process.Signal(os.Interrupt)
+		server.Process.Wait()
 	}
 	runningServers = make([]*exec.Cmd, 0, 10)
 	log.Info("All server closed.")

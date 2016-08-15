@@ -10,11 +10,12 @@ import (
 )
 
 type InboundConnectionConfig struct {
-	Port           v2net.Port
-	ListenOn       v2net.Address
-	StreamSettings *internet.StreamSettings
-	Protocol       string
-	Settings       []byte
+	Port                   v2net.Port
+	ListenOn               v2net.Address
+	StreamSettings         *internet.StreamSettings
+	Protocol               string
+	Settings               []byte
+	AllowPassiveConnection bool
 }
 
 type OutboundConnectionConfig struct {
@@ -43,13 +44,14 @@ type InboundDetourAllocationConfig struct {
 }
 
 type InboundDetourConfig struct {
-	Protocol       string
-	PortRange      v2net.PortRange
-	ListenOn       v2net.Address
-	Tag            string
-	Allocation     *InboundDetourAllocationConfig
-	StreamSettings *internet.StreamSettings
-	Settings       []byte
+	Protocol               string
+	PortRange              v2net.PortRange
+	ListenOn               v2net.Address
+	Tag                    string
+	Allocation             *InboundDetourAllocationConfig
+	StreamSettings         *internet.StreamSettings
+	Settings               []byte
+	AllowPassiveConnection bool
 }
 
 type OutboundDetourConfig struct {

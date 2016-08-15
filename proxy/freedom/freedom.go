@@ -47,7 +47,7 @@ func NewFreedomConnection(config *Config, space app.Space, meta *proxy.OutboundH
 
 // @Private
 func (this *FreedomConnection) ResolveIP(destination v2net.Destination) v2net.Destination {
-	if !destination.Address().IsDomain() {
+	if !destination.Address().Family().IsDomain() {
 		return destination
 	}
 
@@ -76,7 +76,7 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 	defer ray.OutboundOutput().Close()
 
 	var conn internet.Connection
-	if this.domainStrategy == DomainStrategyUseIP && destination.Address().IsDomain() {
+	if this.domainStrategy == DomainStrategyUseIP && destination.Address().Family().IsDomain() {
 		destination = this.ResolveIP(destination)
 	}
 	err := retry.Timed(5, 100).On(func() error {

@@ -12,15 +12,41 @@ var (
 	AnyIP       = IPAddress([]byte{0, 0, 0, 0})
 )
 
+type AddressFamily int
+
+const (
+	AddressFamilyIPv4   = AddressFamily(0)
+	AddressFamilyIPv6   = AddressFamily(1)
+	AddressFamilyDomain = AddressFamily(2)
+)
+
+func (this AddressFamily) Either(fs ...AddressFamily) bool {
+	for _, f := range fs {
+		if this == f {
+			return true
+		}
+	}
+	return false
+}
+
+func (this AddressFamily) IsIPv4() bool {
+	return this == AddressFamilyIPv4
+}
+
+func (this AddressFamily) IsIPv6() bool {
+	return this == AddressFamilyIPv6
+}
+
+func (this AddressFamily) IsDomain() bool {
+	return this == AddressFamilyDomain
+}
+
 // Address represents a network address to be communicated with. It may be an IP address or domain
 // address, not both. This interface doesn't resolve IP address for a given domain.
 type Address interface {
 	IP() net.IP     // IP of this Address
 	Domain() string // Domain of this Address
-
-	IsIPv4() bool   // True if this Address is an IPv4 address
-	IsIPv6() bool   // True if this Address is an IPv6 address
-	IsDomain() bool // True if this Address is an domain address
+	Family() AddressFamily
 
 	String() string // String representation of this Address
 	Equals(Address) bool
@@ -75,16 +101,8 @@ func (addr *ipv4Address) Domain() string {
 	panic("Calling Domain() on an IPv4Address.")
 }
 
-func (addr *ipv4Address) IsIPv4() bool {
-	return true
-}
-
-func (addr *ipv4Address) IsIPv6() bool {
-	return false
-}
-
-func (addr *ipv4Address) IsDomain() bool {
-	return false
+func (addr *ipv4Address) Family() AddressFamily {
+	return AddressFamilyIPv4
 }
 
 func (this *ipv4Address) String() string {
@@ -112,16 +130,8 @@ func (addr *ipv6Address) Domain() string {
 	panic("Calling Domain() on an IPv6Address.")
 }
 
-func (addr *ipv6Address) IsIPv4() bool {
-	return false
-}
-
-func (addr *ipv6Address) IsIPv6() bool {
-	return true
-}
-
-func (addr *ipv6Address) IsDomain() bool {
-	return false
+func (this *ipv6Address) Family() AddressFamily {
+	return AddressFamilyIPv6
 }
 
 func (this *ipv6Address) String() string {
@@ -161,16 +171,8 @@ func (addr *domainAddress) Domain() string {
 	return string(*addr)
 }
 
-func (addr *domainAddress) IsIPv4() bool {
-	return false
-}
-
-func (addr *domainAddress) IsIPv6() bool {
-	return false
-}
-
-func (addr *domainAddress) IsDomain() bool {
-	return true
+func (addr *domainAddress) Family() AddressFamily {
+	return AddressFamilyDomain
 }
 
 func (this *domainAddress) String() string {

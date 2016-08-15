@@ -4,6 +4,7 @@ package proxy // import "github.com/v2ray/v2ray-core/proxy"
 import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/transport/internet"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
@@ -15,11 +16,18 @@ const (
 	HandlerStateRunning = HandlerState(1)
 )
 
+type SessionInfo struct {
+	Source      v2net.Destination
+	Destination v2net.Destination
+	User        *protocol.User
+}
+
 type InboundHandlerMeta struct {
-	Tag            string
-	Address        v2net.Address
-	Port           v2net.Port
-	StreamSettings *internet.StreamSettings
+	Tag                    string
+	Address                v2net.Address
+	Port                   v2net.Port
+	AllowPassiveConnection bool
+	StreamSettings         *internet.StreamSettings
 }
 
 type OutboundHandlerMeta struct {

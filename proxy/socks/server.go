@@ -119,7 +119,7 @@ func (this *Server) handleConnection(connection internet.Connection) {
 		return
 	}
 
-	clientAddr := connection.RemoteAddr().String()
+	clientAddr := v2net.DestinationFromAddr(connection.RemoteAddr())
 	if err != nil && err == protocol.Socks4Downgrade {
 		this.handleSocks4(clientAddr, reader, writer, auth4)
 	} else {
@@ -127,7 +127,7 @@ func (this *Server) handleConnection(connection internet.Connection) {
 	}
 }
 
-func (this *Server) handleSocks5(clientAddr string, reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks5AuthenticationRequest) error {
+func (this *Server) handleSocks5(clientAddr v2net.Destination, reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks5AuthenticationRequest) error {
 	expectedAuthMethod := protocol.AuthNotRequired
 	if this.config.AuthType == AuthTypePassword {
 		expectedAuthMethod = protocol.AuthUserPass
@@ -219,10 +219,14 @@ func (this *Server) handleSocks5(clientAddr string, reader *v2io.BufferedReader,
 	writer.SetCached(false)
 
 	dest := request.Destination()
+	session := &proxy.SessionInfo{
+		Source:      clientAddr,
+		Destination: dest,
+	}
 	log.Info("Socks: TCP Connect request to ", dest)
 	log.Access(clientAddr, dest, log.AccessAccepted, "")
 
-	this.transport(reader, writer, dest)
+	this.transport(reader, writer, session)
 	return nil
 }
 
@@ -233,12 +237,12 @@ func (this *Server) handleUDP(reader io.Reader, writer *v2io.BufferedWriter) err
 	udpAddr := this.udpAddress
 
 	response.Port = udpAddr.Port()
-	switch {
-	case udpAddr.Address().IsIPv4():
+	switch udpAddr.Address().Family() {
+	case v2net.AddressFamilyIPv4:
 		response.SetIPv4(udpAddr.Address().IP())
-	case udpAddr.Address().IsIPv6():
+	case v2net.AddressFamilyIPv6:
 		response.SetIPv6(udpAddr.Address().IP())
-	case udpAddr.Address().IsDomain():
+	case v2net.AddressFamilyDomain:
 		response.SetDomain(udpAddr.Address().Domain())
 	}
 
@@ -258,7 +262,7 @@ func (this *Server) handleUDP(reader io.Reader, writer *v2io.BufferedWriter) err
 	return nil
 }
 
-func (this *Server) handleSocks4(clientAddr string, reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks4AuthenticationRequest) error {
+func (this *Server) handleSocks4(clientAddr v2net.Destination, reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks4AuthenticationRequest) error {
 	result := protocol.Socks4RequestGranted
 	if auth.Command == protocol.CmdBind {
 		result = protocol.Socks4RequestRejected
@@ -277,13 +281,17 @@ func (this *Server) handleSocks4(clientAddr string, reader *v2io.BufferedReader,
 	writer.SetCached(false)
 
 	dest := v2net.TCPDestination(v2net.IPAddress(auth.IP[:]), auth.Port)
+	session := &proxy.SessionInfo{
+		Source:      clientAddr,
+		Destination: dest,
+	}
 	log.Access(clientAddr, dest, log.AccessAccepted, "")
-	this.transport(reader, writer, dest)
+	this.transport(reader, writer, session)
 	return nil
 }
 
-func (this *Server) transport(reader io.Reader, writer io.Writer, destination v2net.Destination) {
-	ray := this.packetDispatcher.DispatchToOutbound(destination)
+func (this *Server) transport(reader io.Reader, writer io.Writer, session *proxy.SessionInfo) {
+	ray := this.packetDispatcher.DispatchToOutbound(this.meta, session)
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 

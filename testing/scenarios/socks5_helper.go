@@ -15,16 +15,16 @@ func socks5AuthMethodRequest(methods ...byte) []byte {
 }
 
 func appendAddress(request []byte, address v2net.Address) []byte {
-	switch {
-	case address.IsIPv4():
+	switch address.Family() {
+	case v2net.AddressFamilyIPv4:
 		request = append(request, byte(0x01))
 		request = append(request, address.IP()...)
 
-	case address.IsIPv6():
+	case v2net.AddressFamilyIPv6:
 		request = append(request, byte(0x04))
 		request = append(request, address.IP()...)
 
-	case address.IsDomain():
+	case v2net.AddressFamilyDomain:
 		request = append(request, byte(0x03), byte(len(address.Domain())))
 		request = append(request, []byte(address.Domain())...)
 

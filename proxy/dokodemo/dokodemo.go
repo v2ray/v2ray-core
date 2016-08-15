@@ -89,7 +89,7 @@ func (this *DokodemoDoor) Start() error {
 }
 
 func (this *DokodemoDoor) ListenUDP() error {
-	this.udpServer = udp.NewUDPServer(this.packetDispatcher)
+	this.udpServer = udp.NewUDPServer(this.meta, this.packetDispatcher)
 	udpHub, err := udp.ListenUDP(this.meta.Address, this.meta.Port, this.handleUDPPackets)
 	if err != nil {
 		log.Error("Dokodemo failed to listen on ", this.meta.Address, ":", this.meta.Port, ": ", err)
@@ -102,7 +102,8 @@ func (this *DokodemoDoor) ListenUDP() error {
 }
 
 func (this *DokodemoDoor) handleUDPPackets(payload *alloc.Buffer, dest v2net.Destination) {
-	this.udpServer.Dispatch(dest, v2net.UDPDestination(this.address, this.port), payload, this.handleUDPResponse)
+	this.udpServer.Dispatch(
+		&proxy.SessionInfo{Source: dest, Destination: v2net.UDPDestination(this.address, this.port)}, payload, this.handleUDPResponse)
 }
 
 func (this *DokodemoDoor) handleUDPResponse(dest v2net.Destination, payload *alloc.Buffer) {
@@ -148,7 +149,10 @@ func (this *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 	}
 	log.Info("Dokodemo: Handling request to ", dest)
 
-	ray := this.packetDispatcher.DispatchToOutbound(dest)
+	ray := this.packetDispatcher.DispatchToOutbound(this.meta, &proxy.SessionInfo{
+		Source:      v2net.DestinationFromAddr(conn.RemoteAddr()),
+		Destination: dest,
+	})
 	defer ray.InboundOutput().Release()
 
 	var inputFinish, outputFinish sync.Mutex

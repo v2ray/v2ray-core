@@ -64,7 +64,7 @@ func (this *Router) takeDetourWithoutCache(dest v2net.Destination) (string, erro
 			return rule.Tag, nil
 		}
 	}
-	if this.config.DomainStrategy == UseIPIfNonMatch && dest.Address().IsDomain() {
+	if this.config.DomainStrategy == UseIPIfNonMatch && dest.Address().Family().IsDomain() {
 		log.Info("Router: Looking up IP for ", dest)
 		ipDests := this.ResolveIP(dest)
 		if ipDests != nil {

@@ -27,7 +27,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	if jsonConfig.Hosts != nil {
 		this.Hosts = make(map[string]net.IP)
 		for domain, ip := range jsonConfig.Hosts {
-			if ip.Address.IsDomain() {
+			if ip.Address.Family().IsDomain() {
 				return errors.New(ip.Address.String() + " is not an IP.")
 			}
 			this.Hosts[domain] = ip.Address.IP()

@@ -8,6 +8,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/crypto"
 	"github.com/v2ray/v2ray-core/common/log"
+	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/proxy/vmess"
 	"github.com/v2ray/v2ray-core/transport"
@@ -62,14 +63,14 @@ func (this *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, w
 	buffer = append(buffer, this.responseHeader, byte(header.Option), byte(0), byte(0), byte(header.Command))
 	buffer = header.Port.Bytes(buffer)
 
-	switch {
-	case header.Address.IsIPv4():
+	switch header.Address.Family() {
+	case v2net.AddressFamilyIPv4:
 		buffer = append(buffer, AddrTypeIPv4)
 		buffer = append(buffer, header.Address.IP()...)
-	case header.Address.IsIPv6():
+	case v2net.AddressFamilyIPv6:
 		buffer = append(buffer, AddrTypeIPv6)
 		buffer = append(buffer, header.Address.IP()...)
-	case header.Address.IsDomain():
+	case v2net.AddressFamilyDomain:
 		buffer = append(buffer, AddrTypeDomain, byte(len(header.Address.Domain())))
 		buffer = append(buffer, header.Address.Domain()...)
 	}

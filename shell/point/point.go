@@ -93,10 +93,12 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	ichConfig := pConfig.InboundConfig.Settings
 	ich, err := proxyrepo.CreateInboundHandler(
 		pConfig.InboundConfig.Protocol, vpoint.space, ichConfig, &proxy.InboundHandlerMeta{
-			Tag:            "system.inbound",
-			Address:        pConfig.InboundConfig.ListenOn,
-			Port:           vpoint.port,
-			StreamSettings: pConfig.InboundConfig.StreamSettings})
+			Tag:                    "system.inbound",
+			Address:                pConfig.InboundConfig.ListenOn,
+			Port:                   vpoint.port,
+			StreamSettings:         pConfig.InboundConfig.StreamSettings,
+			AllowPassiveConnection: pConfig.InboundConfig.AllowPassiveConnection,
+		})
 	if err != nil {
 		log.Error("Failed to create inbound connection handler: ", err)
 		return nil, err
