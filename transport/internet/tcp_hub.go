@@ -17,6 +17,7 @@ var (
 	KCPListenFunc    ListenFunc
 	TCPListenFunc    ListenFunc
 	RawTCPListenFunc ListenFunc
+	WSListenFunc     ListenFunc
 )
 
 type ListenFunc func(address v2net.Address, port v2net.Port) (Listener, error)
@@ -42,6 +43,8 @@ func ListenTCP(address v2net.Address, port v2net.Port, callback ConnectionHandle
 		listener, err = TCPListenFunc(address, port)
 	case settings.IsCapableOf(StreamConnectionTypeKCP):
 		listener, err = KCPListenFunc(address, port)
+	case settings.IsCapableOf(StreamConnectionTypeWebSocket):
+		listener, err = WSListenFunc(address, port)
 	case settings.IsCapableOf(StreamConnectionTypeRawTCP):
 		listener, err = RawTCPListenFunc(address, port)
 	default:

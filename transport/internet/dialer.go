@@ -20,9 +20,11 @@ var (
 	KCPDialer    Dialer
 	RawTCPDialer Dialer
 	UDPDialer    Dialer
+	WSDialer     Dialer
 )
 
 func Dial(src v2net.Address, dest v2net.Destination, settings *StreamSettings) (Connection, error) {
+
 	var connection Connection
 	var err error
 	if dest.IsTCP() {
@@ -31,6 +33,15 @@ func Dial(src v2net.Address, dest v2net.Destination, settings *StreamSettings) (
 			connection, err = TCPDialer(src, dest)
 		case settings.IsCapableOf(StreamConnectionTypeKCP):
 			connection, err = KCPDialer(src, dest)
+		case settings.IsCapableOf(StreamConnectionTypeWebSocket):
+			connection, err = WSDialer(src, dest)
+
+		/*Warning: Hours wasted: the following item must be last one
+
+		internet.StreamConnectionType have a default value of 1,
+		so the following attempt will catch all.
+		*/
+
 		case settings.IsCapableOf(StreamConnectionTypeRawTCP):
 			connection, err = RawTCPDialer(src, dest)
 		default:
@@ -39,6 +50,7 @@ func Dial(src v2net.Address, dest v2net.Destination, settings *StreamSettings) (
 		if err != nil {
 			return nil, err
 		}
+
 		if settings.Security == StreamSecurityTypeNone {
 			return connection, nil
 		}

@@ -15,6 +15,9 @@ const (
 
 	// KCPNetwork represents the KCP network.
 	KCPNetwork = Network("kcp")
+
+	// WSNetwork represents the Websocket over HTTP network.
+	WSNetwork = Network("ws")
 )
 
 // Network represents a communication network on internet.

@@ -7,12 +7,14 @@ import (
 
 	"github.com/v2ray/v2ray-core/transport/internet/kcp"
 	"github.com/v2ray/v2ray-core/transport/internet/tcp"
+	"github.com/v2ray/v2ray-core/transport/internet/ws"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
 		TCPConfig *tcp.Config `json:"tcpSettings"`
 		KCPConfig kcp.Config  `json:"kcpSettings"`
+		WSConfig  *ws.Config  `json:"wsSettings"`
 	}
 	jsonConfig := &JsonConfig{
 		KCPConfig: kcp.DefaultConfig(),
@@ -22,6 +24,6 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 	this.tcpConfig = jsonConfig.TCPConfig
 	this.kcpConfig = jsonConfig.KCPConfig
-
+	this.wsConfig = jsonConfig.WSConfig
 	return nil
 }
