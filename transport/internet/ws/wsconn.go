@@ -195,7 +195,9 @@ func (ws *wsconn) pingPong() {
 			case <-pongRcv:
 				break
 			case <-tick.C:
-				log.Debug("WS:Closing as ping is not responded~" + ws.wsc.UnderlyingConn().LocalAddr().String() + "-" + ws.wsc.UnderlyingConn().RemoteAddr().String())
+				if !ws.connClosing {
+					log.Debug("WS:Closing as ping is not responded~" + ws.wsc.UnderlyingConn().LocalAddr().String() + "-" + ws.wsc.UnderlyingConn().RemoteAddr().String())
+				}
 				ws.Close()
 			}
 			<-tick.C
