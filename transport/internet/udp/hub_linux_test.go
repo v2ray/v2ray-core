@@ -10,7 +10,7 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/testing/assert"
-	"github.com/v2ray/v2ray-core/transport/internet"
+	"github.com/v2ray/v2ray-core/transport/internet/internal"
 	. "github.com/v2ray/v2ray-core/transport/internet/udp"
 )
 
@@ -24,8 +24,8 @@ func TestHubSocksOption(t *testing.T) {
 	assert.Error(err).IsNil()
 	conn := hub.Connection()
 
-	sysfd, ok := conn.(internet.SysFd)
-	assert.Bool(ok).IsTrue()
+	sysfd, err := internal.GetSysFd(conn)
+	assert.Error(err).IsNil()
 
 	fd, err := sysfd.SysFd()
 	assert.Error(err).IsNil()
