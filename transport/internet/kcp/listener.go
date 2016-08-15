@@ -9,6 +9,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/serial"
+	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/transport/internet"
 	"github.com/v2ray/v2ray-core/transport/internet/udp"
 )
@@ -39,7 +40,7 @@ func NewListener(address v2net.Address, port v2net.Port) (*Listener, error) {
 		},
 		running: true,
 	}
-	hub, err := udp.ListenUDP(address, port, l.OnReceive)
+	hub, err := udp.ListenUDP(address, port, udp.ListenOption{Callback: l.OnReceive})
 	if err != nil {
 		return nil, err
 	}
@@ -48,8 +49,10 @@ func NewListener(address v2net.Address, port v2net.Port) (*Listener, error) {
 	return l, nil
 }
 
-func (this *Listener) OnReceive(payload *alloc.Buffer, src v2net.Destination) {
+func (this *Listener) OnReceive(payload *alloc.Buffer, session *proxy.SessionInfo) {
 	defer payload.Release()
+
+	src := session.Source
 
 	if valid := this.authenticator.Open(payload); !valid {
 		log.Info("KCP|Listener: discarding invalid payload from ", src)

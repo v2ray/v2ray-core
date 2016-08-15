@@ -71,7 +71,7 @@ func (this *Server) Start() error {
 
 	if this.config.UDP {
 		this.udpServer = udp.NewUDPServer(this.meta, this.packetDispatcher)
-		udpHub, err := udp.ListenUDP(this.meta.Address, this.meta.Port, this.handlerUDPPayload)
+		udpHub, err := udp.ListenUDP(this.meta.Address, this.meta.Port, udp.ListenOption{Callback: this.handlerUDPPayload})
 		if err != nil {
 			log.Error("Shadowsocks: Failed to listen UDP on ", this.meta.Address, ":", this.meta.Port, ": ", err)
 			return err
@@ -84,9 +84,10 @@ func (this *Server) Start() error {
 	return nil
 }
 
-func (this *Server) handlerUDPPayload(payload *alloc.Buffer, source v2net.Destination) {
+func (this *Server) handlerUDPPayload(payload *alloc.Buffer, session *proxy.SessionInfo) {
 	defer payload.Release()
 
+	source := session.Source
 	ivLen := this.config.Cipher.IVSize()
 	iv := payload.Value[:ivLen]
 	key := this.config.Key

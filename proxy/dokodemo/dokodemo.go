@@ -90,7 +90,7 @@ func (this *DokodemoDoor) Start() error {
 
 func (this *DokodemoDoor) ListenUDP() error {
 	this.udpServer = udp.NewUDPServer(this.meta, this.packetDispatcher)
-	udpHub, err := udp.ListenUDP(this.meta.Address, this.meta.Port, this.handleUDPPackets)
+	udpHub, err := udp.ListenUDP(this.meta.Address, this.meta.Port, udp.ListenOption{Callback: this.handleUDPPackets})
 	if err != nil {
 		log.Error("Dokodemo failed to listen on ", this.meta.Address, ":", this.meta.Port, ": ", err)
 		return err
@@ -101,9 +101,15 @@ func (this *DokodemoDoor) ListenUDP() error {
 	return nil
 }
 
-func (this *DokodemoDoor) handleUDPPackets(payload *alloc.Buffer, dest v2net.Destination) {
-	this.udpServer.Dispatch(
-		&proxy.SessionInfo{Source: dest, Destination: v2net.UDPDestination(this.address, this.port)}, payload, this.handleUDPResponse)
+func (this *DokodemoDoor) handleUDPPackets(payload *alloc.Buffer, session *proxy.SessionInfo) {
+	if session.Destination == nil && this.address != nil && this.port > 0 {
+		session.Destination = v2net.UDPDestination(this.address, this.port)
+	}
+	if session.Destination == nil {
+		log.Info("Dokodemo: Unknown destination, stop forwarding...")
+		return
+	}
+	this.udpServer.Dispatch(session, payload, this.handleUDPResponse)
 }
 
 func (this *DokodemoDoor) handleUDPResponse(dest v2net.Destination, payload *alloc.Buffer) {

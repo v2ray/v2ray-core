@@ -5,19 +5,27 @@ import (
 	"sync"
 
 	"github.com/v2ray/v2ray-core/common/alloc"
+	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
+	"github.com/v2ray/v2ray-core/proxy"
+	"github.com/v2ray/v2ray-core/transport/internet/internal"
 )
 
-type UDPPayloadHandler func(*alloc.Buffer, v2net.Destination)
+type UDPPayloadHandler func(*alloc.Buffer, *proxy.SessionInfo)
 
 type UDPHub struct {
 	sync.RWMutex
 	conn      *net.UDPConn
-	callback  UDPPayloadHandler
+	option    ListenOption
 	accepting bool
 }
 
-func ListenUDP(address v2net.Address, port v2net.Port, callback UDPPayloadHandler) (*UDPHub, error) {
+type ListenOption struct {
+	Callback            UDPPayloadHandler
+	ReceiveOriginalDest bool
+}
+
+func ListenUDP(address v2net.Address, port v2net.Port, option ListenOption) (*UDPHub, error) {
 	udpConn, err := net.ListenUDP("udp", &net.UDPAddr{
 		IP:   address.IP(),
 		Port: int(port),
@@ -25,9 +33,21 @@ func ListenUDP(address v2net.Address, port v2net.Port, callback UDPPayloadHandle
 	if err != nil {
 		return nil, err
 	}
+	if option.ReceiveOriginalDest {
+		fd, err := internal.GetSysFd(udpConn)
+		if err != nil {
+			log.Warning("UDP|Listener: Failed to get fd: ", err)
+			return nil, err
+		}
+		err = SetOriginalDestOptions(fd)
+		if err != nil {
+			log.Warning("UDP|Listener: Failed to set socket options: ", err)
+			return nil, err
+		}
+	}
 	hub := &UDPHub{
-		conn:     udpConn,
-		callback: callback,
+		conn:   udpConn,
+		option: option,
 	}
 	go hub.start()
 	return hub, nil
@@ -53,16 +73,22 @@ func (this *UDPHub) start() {
 	this.accepting = true
 	this.Unlock()
 
+	oobBytes := make([]byte, 256)
 	for this.Running() {
 		buffer := alloc.NewBuffer()
-		nBytes, addr, err := this.conn.ReadFromUDP(buffer.Value)
+		nBytes, noob, _, addr, err := this.conn.ReadMsgUDP(buffer.Value, oobBytes)
 		if err != nil {
 			buffer.Release()
 			continue
 		}
 		buffer.Slice(0, nBytes)
-		dest := v2net.UDPDestination(v2net.IPAddress(addr.IP), v2net.Port(addr.Port))
-		go this.callback(buffer, dest)
+
+		session := new(proxy.SessionInfo)
+		session.Source = v2net.UDPDestination(v2net.IPAddress(addr.IP), v2net.Port(addr.Port))
+		if this.option.ReceiveOriginalDest && noob > 0 {
+			session.Destination = RetrieveOriginalDest(oobBytes[:noob])
+		}
+		go this.option.Callback(buffer, session)
 	}
 }
 
