@@ -2,7 +2,6 @@ package freedom
 
 import (
 	"io"
-	"sync"
 
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/app/dns"
@@ -95,9 +94,6 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 
 	input := ray.OutboundInput()
 	output := ray.OutboundOutput()
-	var readMutex, writeMutex sync.Mutex
-	readMutex.Lock()
-	writeMutex.Lock()
 
 	if !payload.IsEmpty() {
 		conn.Write(payload.Value)
@@ -108,34 +104,25 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 		defer v2writer.Release()
 
 		v2io.Pipe(input, v2writer)
-		writeMutex.Unlock()
+		if tcpConn, ok := conn.(*tcp.RawConnection); ok {
+			tcpConn.CloseWrite()
+		}
 	}()
 
-	go func() {
-		defer readMutex.Unlock()
+	var reader io.Reader = conn
 
-		var reader io.Reader = conn
-
-		timeout := this.timeout
-		if destination.IsUDP() {
-			timeout = 16
-		}
-		if timeout > 0 {
-			reader = v2net.NewTimeOutReader(int(timeout) /* seconds */, conn)
-		}
-
-		v2reader := v2io.NewAdaptiveReader(reader)
-		defer v2reader.Release()
-
-		v2io.Pipe(v2reader, output)
-		ray.OutboundOutput().Close()
-	}()
-
-	writeMutex.Lock()
-	if tcpConn, ok := conn.(*tcp.RawConnection); ok {
-		tcpConn.CloseWrite()
+	timeout := this.timeout
+	if destination.IsUDP() {
+		timeout = 16
 	}
-	readMutex.Lock()
+	if timeout > 0 {
+		reader = v2net.NewTimeOutReader(int(timeout) /* seconds */, conn)
+	}
+
+	v2reader := v2io.NewAdaptiveReader(reader)
+	v2io.Pipe(v2reader, output)
+	v2reader.Release()
+	ray.OutboundOutput().Close()
 
 	return nil
 }
