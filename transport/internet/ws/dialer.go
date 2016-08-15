@@ -108,7 +108,7 @@ func wsDial(src v2net.Address, dest v2net.Destination) (*wsconn, error) {
 	}(dest)
 
 	uri := func(dst v2net.Destination, pto string, path string) string {
-		return fmt.Sprintf("%v://%v:%v/%v", pto, dst.NetAddr(), dst.Port(), path)
+		return fmt.Sprintf("%v://%v/%v", pto, dst.NetAddr(), path)
 	}(dest, effpto, effectiveConfig.Path)
 
 	conn, resp, err := dialer.Dial(uri, nil)
