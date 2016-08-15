@@ -40,13 +40,13 @@ func (ws *wsconn) Read(b []byte) (n int, err error) {
 		return nil
 	}
 
-	/*It seems golang's support for recursive in anonymous func it yet to complete.
+	/*It seems golang's support for recursive in anonymous func is yet to complete.
 		func1:=func(){
 		func1()
 	  }
 		won't work, failed to compile for it can't find func1.
 
-		Should following work around panic,
+		Should following workaround panic,
 		readNext could have been called before the actual defination was made,
 		This is very unlikely.
 	*/
