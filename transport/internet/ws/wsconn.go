@@ -2,7 +2,6 @@ package ws
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"net"
 	"sync"
@@ -80,18 +79,7 @@ func (ws *wsconn) readNext(b []byte) (n int, err error) {
 
 func (ws *wsconn) Write(b []byte) (n int, err error) {
 	ws.wlock.Lock()
-	/*
-		process can crash as websocket report "concurrent write to websocket connection"
-		even if lock is persent.
 
-		This problem should have been resolved.
-	*/
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("WS workaround: recover", r)
-			ws.wlock.Unlock()
-		}
-	}()
 	if ws.connClosing {
 
 		return 0, io.EOF
