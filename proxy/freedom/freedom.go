@@ -99,7 +99,9 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 	readMutex.Lock()
 	writeMutex.Lock()
 
-	conn.Write(payload.Value)
+	if !payload.IsEmpty() {
+		conn.Write(payload.Value)
+	}
 
 	go func() {
 		v2writer := v2io.NewAdaptiveWriter(conn)

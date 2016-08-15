@@ -97,8 +97,10 @@ func (this *VMessOutboundHandler) handleRequest(session *encoding.ClientSession,
 	if request.Option.Has(protocol.RequestOptionChunkStream) {
 		streamWriter = vmessio.NewAuthChunkWriter(streamWriter)
 	}
-	if err := streamWriter.Write(payload); err != nil {
-		conn.SetReusable(false)
+	if !payload.IsEmpty() {
+		if err := streamWriter.Write(payload); err != nil {
+			conn.SetReusable(false)
+		}
 	}
 	writer.SetCached(false)
 
