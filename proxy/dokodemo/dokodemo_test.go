@@ -8,8 +8,8 @@ import (
 	"github.com/v2ray/v2ray-core/app/dispatcher"
 	dispatchers "github.com/v2ray/v2ray-core/app/dispatcher/impl"
 	"github.com/v2ray/v2ray-core/app/proxyman"
+	"github.com/v2ray/v2ray-core/common/dice"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	"github.com/v2ray/v2ray-core/proxy"
 	. "github.com/v2ray/v2ray-core/proxy/dokodemo"
 	"github.com/v2ray/v2ray-core/proxy/freedom"
@@ -23,7 +23,6 @@ func TestDokodemoTCP(t *testing.T) {
 	assert := assert.On(t)
 
 	tcpServer := &tcp.Server{
-		Port: v2nettesting.PickPort(),
 		MsgProcessor: func(data []byte) []byte {
 			buffer := make([]byte, 0, 2048)
 			buffer = append(buffer, []byte("Processed: ")...)
@@ -53,7 +52,7 @@ func TestDokodemoTCP(t *testing.T) {
 
 	data2Send := "Data to be sent to remote."
 
-	port := v2nettesting.PickPort()
+	port := v2net.Port(dice.Roll(20000) + 10000)
 	dokodemo := NewDokodemoDoor(&Config{
 		Address: v2net.LocalHostIP,
 		Port:    tcpServer.Port,
@@ -95,7 +94,6 @@ func TestDokodemoUDP(t *testing.T) {
 	assert := assert.On(t)
 
 	udpServer := &udp.Server{
-		Port: v2nettesting.PickPort(),
 		MsgProcessor: func(data []byte) []byte {
 			buffer := make([]byte, 0, 2048)
 			buffer = append(buffer, []byte("Processed: ")...)
@@ -124,7 +122,7 @@ func TestDokodemoUDP(t *testing.T) {
 
 	data2Send := "Data to be sent to remote."
 
-	port := v2nettesting.PickPort()
+	port := v2net.Port(dice.Roll(20000) + 10000)
 	dokodemo := NewDokodemoDoor(&Config{
 		Address: v2net.LocalHostIP,
 		Port:    udpServer.Port,

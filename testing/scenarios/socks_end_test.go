@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 	"github.com/v2ray/v2ray-core/testing/servers/tcp"
 	"github.com/v2ray/v2ray-core/testing/servers/udp"
@@ -14,9 +13,7 @@ import (
 func TestTCPConnection(t *testing.T) {
 	assert := assert.On(t)
 
-	targetPort := v2nettesting.PickPort()
 	tcpServer := &tcp.Server{
-		Port: targetPort,
 		MsgProcessor: func(data []byte) []byte {
 			buffer := make([]byte, 0, 2048)
 			buffer = append(buffer, []byte("Processed: ")...)
@@ -49,7 +46,7 @@ func TestTCPConnection(t *testing.T) {
 		assert.Error(err).IsNil()
 		assert.Bytes(authResponse[:nBytes]).Equals([]byte{socks5Version, 0})
 
-		connectRequest := socks5Request(byte(1), v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), targetPort))
+		connectRequest := socks5Request(byte(1), v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), tcpServer.Port))
 		nBytes, err = conn.Write(connectRequest)
 		assert.Int(nBytes).Equals(len(connectRequest))
 		assert.Error(err).IsNil()
@@ -89,9 +86,7 @@ func TestTCPConnection(t *testing.T) {
 func TestTCPBind(t *testing.T) {
 	assert := assert.On(t)
 
-	targetPort := v2nettesting.PickPort()
 	tcpServer := &tcp.Server{
-		Port: targetPort,
 		MsgProcessor: func(data []byte) []byte {
 			buffer := make([]byte, 0, 2048)
 			buffer = append(buffer, []byte("Processed: ")...)
@@ -122,7 +117,7 @@ func TestTCPBind(t *testing.T) {
 	assert.Error(err).IsNil()
 	assert.Bytes(authResponse[:nBytes]).Equals([]byte{socks5Version, 0})
 
-	connectRequest := socks5Request(byte(2), v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), targetPort))
+	connectRequest := socks5Request(byte(2), v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), tcpServer.Port))
 	nBytes, err = conn.Write(connectRequest)
 	assert.Int(nBytes).Equals(len(connectRequest))
 	assert.Error(err).IsNil()
@@ -140,9 +135,7 @@ func TestTCPBind(t *testing.T) {
 func TestUDPAssociate(t *testing.T) {
 	assert := assert.On(t)
 
-	targetPort := v2nettesting.PickPort()
 	udpServer := &udp.Server{
-		Port: targetPort,
 		MsgProcessor: func(data []byte) []byte {
 			buffer := make([]byte, 0, 2048)
 			buffer = append(buffer, []byte("Processed: ")...)
@@ -173,7 +166,7 @@ func TestUDPAssociate(t *testing.T) {
 	assert.Error(err).IsNil()
 	assert.Bytes(authResponse[:nBytes]).Equals([]byte{socks5Version, 0})
 
-	connectRequest := socks5Request(byte(3), v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), targetPort))
+	connectRequest := socks5Request(byte(3), v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), udpServer.Port))
 	nBytes, err = conn.Write(connectRequest)
 	assert.Int(nBytes).Equals(len(connectRequest))
 	assert.Error(err).IsNil()
@@ -191,7 +184,7 @@ func TestUDPAssociate(t *testing.T) {
 
 	for i := 0; i < 100; i++ {
 		udpPayload := "UDP request to udp server."
-		udpRequest := socks5UDPRequest(v2net.UDPDestination(v2net.LocalHostIP, targetPort), []byte(udpPayload))
+		udpRequest := socks5UDPRequest(v2net.UDPDestination(v2net.LocalHostIP, udpServer.Port), []byte(udpPayload))
 
 		nBytes, err = udpConn.Write(udpRequest)
 		assert.Int(nBytes).Equals(len(udpRequest))
@@ -201,7 +194,7 @@ func TestUDPAssociate(t *testing.T) {
 		nBytes, err = udpConn.Read(udpResponse)
 		assert.Error(err).IsNil()
 		assert.Bytes(udpResponse[:nBytes]).Equals(
-			socks5UDPRequest(v2net.UDPDestination(v2net.LocalHostIP, targetPort), []byte("Processed: UDP request to udp server.")))
+			socks5UDPRequest(v2net.UDPDestination(v2net.LocalHostIP, udpServer.Port), []byte("Processed: UDP request to udp server.")))
 	}
 
 	udpConn.Close()

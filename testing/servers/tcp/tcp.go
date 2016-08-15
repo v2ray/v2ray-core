@@ -23,6 +23,7 @@ func (server *Server) Start() (v2net.Destination, error) {
 	if err != nil {
 		return nil, err
 	}
+	server.Port = v2net.Port(listener.Addr().(*net.TCPAddr).Port)
 	server.listener = listener
 	go server.acceptConnections(listener)
 	localAddr := listener.Addr().(*net.TCPAddr)

@@ -23,6 +23,7 @@ func (server *Server) Start() (v2net.Destination, error) {
 	if err != nil {
 		return nil, err
 	}
+	server.Port = v2net.Port(conn.LocalAddr().(*net.UDPAddr).Port)
 	server.conn = conn
 	go server.handleConnection(conn)
 	localAddr := conn.LocalAddr().(*net.UDPAddr)

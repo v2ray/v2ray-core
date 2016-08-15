@@ -13,7 +13,6 @@ import (
 	"github.com/v2ray/v2ray-core/app/router/rules"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	"github.com/v2ray/v2ray-core/proxy"
 	. "github.com/v2ray/v2ray-core/proxy/freedom"
 	"github.com/v2ray/v2ray-core/testing/assert"
@@ -24,10 +23,8 @@ import (
 
 func TestSinglePacket(t *testing.T) {
 	assert := assert.On(t)
-	port := v2nettesting.PickPort()
 
 	tcpServer := &tcp.Server{
-		Port: port,
 		MsgProcessor: func(data []byte) []byte {
 			buffer := make([]byte, 0, 2048)
 			buffer = append(buffer, []byte("Processed: ")...)

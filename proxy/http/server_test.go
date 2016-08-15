@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	testdispatcher "github.com/v2ray/v2ray-core/app/dispatcher/testing"
+	"github.com/v2ray/v2ray-core/common/dice"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	"github.com/v2ray/v2ray-core/proxy"
 	. "github.com/v2ray/v2ray-core/proxy/http"
 	"github.com/v2ray/v2ray-core/testing/assert"
@@ -56,7 +56,7 @@ func TestNormalGetRequest(t *testing.T) {
 
 	testPacketDispatcher := testdispatcher.NewTestPacketDispatcher(nil)
 
-	port := v2nettesting.PickPort()
+	port := v2net.Port(dice.Roll(20000) + 10000)
 	httpProxy := NewServer(
 		&Config{},
 		testPacketDispatcher,

@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	v2nettesting "github.com/v2ray/v2ray-core/common/net/testing"
 	"github.com/v2ray/v2ray-core/testing/assert"
 	"github.com/v2ray/v2ray-core/testing/servers/tcp"
 	. "github.com/v2ray/v2ray-core/transport/internet"
@@ -13,9 +12,7 @@ import (
 func TestDialDomain(t *testing.T) {
 	assert := assert.On(t)
 
-	server := &tcp.Server{
-		Port: v2nettesting.PickPort(),
-	}
+	server := &tcp.Server{}
 	dest, err := server.Start()
 	assert.Error(err).IsNil()
 	defer server.Close()
@@ -29,9 +26,7 @@ func TestDialDomain(t *testing.T) {
 func TestDialWithLocalAddr(t *testing.T) {
 	assert := assert.On(t)
 
-	server := &tcp.Server{
-		Port: v2nettesting.PickPort(),
-	}
+	server := &tcp.Server{}
 	dest, err := server.Start()
 	assert.Error(err).IsNil()
 	defer server.Close()
