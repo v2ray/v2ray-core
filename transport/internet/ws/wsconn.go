@@ -189,7 +189,7 @@ func (ws *wsconn) pingPong() {
 			ws.wlock.Lock()
 			ws.wsc.WriteMessage(websocket.PingMessage, nil)
 			ws.wlock.Unlock()
-			tick := time.NewTicker(time.Second * 3)
+			tick := time.NewTicker(time.Second * 30)
 
 			select {
 			case <-pongRcv:
