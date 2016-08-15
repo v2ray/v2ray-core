@@ -3,7 +3,6 @@
 package udp_test
 
 import (
-	"runtime"
 	"syscall"
 	"testing"
 
