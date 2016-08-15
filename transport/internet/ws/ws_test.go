@@ -77,6 +77,10 @@ func Test_Connect_wss_guess(t *testing.T) {
 
 func Test_Connect_wss_guess_fail(t *testing.T) {
 	assert := assert.On(t)
+	go func() {
+		<-time.After(time.Second * 5)
+		assert.Fail("Too slow")
+	}()
 	(&Config{Pto: "", Path: ""}).Apply()
 	_, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("static.kkdev.org"), 443))
 	assert.Error(err).IsNotNil()
@@ -84,6 +88,10 @@ func Test_Connect_wss_guess_fail(t *testing.T) {
 
 func Test_Connect_wss_guess_reuse(t *testing.T) {
 	assert := assert.On(t)
+	go func() {
+		<-time.After(time.Second * 5)
+		assert.Fail("Too slow")
+	}()
 	(&Config{Pto: "", Path: "", ConnectionReuse: true}).Apply()
 	i := 3
 	for i != 0 {
@@ -110,15 +118,40 @@ func Test_Connect_wss_guess_reuse(t *testing.T) {
 
 func Test_listenWSAndDial(t *testing.T) {
 	assert := assert.On(t)
-	(&Config{Pto: "ws", Path: ""}).Apply()
+	go func() {
+		<-time.After(time.Second * 5)
+		assert.Fail("Too slow")
+	}()
+	(&Config{Pto: "ws", Path: "ws"}).Apply()
 	listen, err := ListenWS(v2net.DomainAddress("localhost"), 13142)
 	assert.Error(err).IsNil()
 	go func() {
 		conn, err := listen.Accept()
 		assert.Error(err).IsNil()
 		conn.Close()
+		listen.Close()
 	}()
 	conn, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13142))
+	assert.Error(err).IsNil()
+	conn.Close()
+}
+
+func Test_listenWSAndDial_TLS(t *testing.T) {
+	assert := assert.On(t)
+	go func() {
+		<-time.After(time.Second * 5)
+		assert.Fail("Too slow")
+	}()
+	(&Config{Pto: "wss", Path: "wss", ConnectionReuse: true, DeveloperInsecureSkipVerify: true, PrivKey: "./../../../testing/tls/key.pem", Cert: "./../../../testing/tls/cert.pem"}).Apply()
+	listen, err := ListenWS(v2net.DomainAddress("localhost"), 13143)
+	assert.Error(err).IsNil()
+	go func() {
+		conn, err := listen.Accept()
+		assert.Error(err).IsNil()
+		conn.Close()
+		listen.Close()
+	}()
+	conn, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13143))
 	assert.Error(err).IsNil()
 	conn.Close()
 }
