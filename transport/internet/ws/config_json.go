@@ -25,5 +25,6 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	this.Pto = jsonConfig.Pto
 	this.PrivKey = jsonConfig.PrivKey
 	this.Cert = jsonConfig.Cert
+	this.DeveloperInsecureSkipVerify = false
 	return nil
 }

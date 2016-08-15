@@ -49,7 +49,7 @@ func wsDial(src v2net.Address, dest v2net.Destination) (*wsconn, error) {
 		return internet.DialToDest(src, dest)
 	}
 
-	tlsconf := &tls.Config{ServerName: dest.Address().Domain()}
+	tlsconf := &tls.Config{ServerName: dest.Address().Domain(), InsecureSkipVerify: effectiveConfig.DeveloperInsecureSkipVerify}
 
 	dialer := websocket.Dialer{NetDial: commonDial, ReadBufferSize: 65536, WriteBufferSize: 65536, TLSClientConfig: tlsconf}
 
