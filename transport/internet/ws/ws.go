@@ -28,7 +28,6 @@ It is worth noting that accepting a non-valid cert is not supported as a self-si
 
 This transport was disscussed at
 https://github.com/v2ray/v2ray-core/issues/224
-https://trello.com/c/3uCCeBkC/8-add-websocket-transport
 
 */
 package ws
