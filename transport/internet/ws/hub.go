@@ -27,6 +27,7 @@ type WSListener struct {
 	sync.Mutex
 	acccepting    bool
 	awaitingConns chan *ConnectionWithError
+	listener      *StoppableListener
 }
 
 func ListenWS(address v2net.Address, port v2net.Port) (internet.Listener, error) {
@@ -69,7 +70,15 @@ func (wsl *WSListener) listenws(address v2net.Address, port v2net.Port) error {
 	errchan := make(chan error)
 
 	listenerfunc := func() error {
-		return http.ListenAndServe(address.String()+":"+strconv.Itoa(int(port.Value())), nil)
+		ol, err := net.Listen("tcp", address.String()+":"+strconv.Itoa(int(port.Value())))
+		if err != nil {
+			return err
+		}
+		wsl.listener, err = NewStoppableListener(ol)
+		if err != nil {
+			return err
+		}
+		return http.Serve(wsl.listener, nil)
 	}
 
 	if effectiveConfig.Pto == "wss" {
