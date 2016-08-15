@@ -150,7 +150,7 @@ func (ws *wsconn) setup() {
 		https://godoc.org/github.com/gorilla/websocket#Conn.NextReader
 		https://godoc.org/github.com/gorilla/websocket#Conn.NextWriter
 
-		Both Read and write access are exclusive.
+		Both Read and write access are both exclusive.
 		And in both case it will need a lock.
 
 	*/
