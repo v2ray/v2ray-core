@@ -67,7 +67,7 @@ func (this *ConnectionCache) Recycle(dest string, conn *wsconn) {
 
 	aconn := &AwaitingConnection{
 		conn:   conn,
-		expire: time.Now().Add(time.Second * 180),
+		expire: time.Now().Add(time.Second * 7),
 	}
 
 	var list []*AwaitingConnection
