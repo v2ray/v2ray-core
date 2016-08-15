@@ -160,6 +160,14 @@ func (ws *wsconn) SetWriteDeadline(t time.Time) error {
 func (ws *wsconn) setup() {
 	ws.connClosing = false
 
+	/*
+		https://godoc.org/github.com/gorilla/websocket#Conn.NextReader
+		https://godoc.org/github.com/gorilla/websocket#Conn.NextWriter
+
+		Both Read and write access are exclusive.
+		And in both case it will need a lock.
+
+	*/
 	ws.rlock = &sync.Mutex{}
 	ws.wlock = &sync.Mutex{}
 
