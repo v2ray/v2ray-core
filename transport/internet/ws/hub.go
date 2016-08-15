@@ -169,7 +169,7 @@ func (this *WSListener) Close() error {
 	defer this.Unlock()
 	this.acccepting = false
 
-	log.Warning("WSListener: Yet to support close listening HTTP service")
+	this.listener.Stop()
 
 	close(this.awaitingConns)
 	for connErr := range this.awaitingConns {
