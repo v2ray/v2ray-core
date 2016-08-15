@@ -107,3 +107,18 @@ func Test_Connect_wss_guess_reuse(t *testing.T) {
 		i--
 	}
 }
+
+func Test_listenWSAndDial(t *testing.T) {
+	assert := assert.On(t)
+	(&Config{Pto: "ws", Path: ""}).Apply()
+	listen, err := ListenWS(v2net.DomainAddress("localhost"), 13142)
+	assert.Error(err).IsNil()
+	go func() {
+		conn, err := listen.Accept()
+		assert.Error(err).IsNil()
+		conn.Close()
+	}()
+	conn, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13142))
+	assert.Error(err).IsNil()
+	conn.Close()
+}
