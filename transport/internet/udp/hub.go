@@ -104,3 +104,7 @@ func (this *UDPHub) Running() bool {
 func (this *UDPHub) Connection() net.Conn {
 	return this.conn
 }
+
+func (this *UDPHub) Addr() net.Addr {
+	return this.conn.LocalAddr()
+}

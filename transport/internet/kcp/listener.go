@@ -22,7 +22,6 @@ type Listener struct {
 	sessions      map[string]*Connection
 	awaitingConns chan *Connection
 	hub           *udp.UDPHub
-	localAddr     *net.UDPAddr
 }
 
 func NewListener(address v2net.Address, port v2net.Port) (*Listener, error) {
@@ -34,11 +33,7 @@ func NewListener(address v2net.Address, port v2net.Port) (*Listener, error) {
 		authenticator: auth,
 		sessions:      make(map[string]*Connection),
 		awaitingConns: make(chan *Connection, 64),
-		localAddr: &net.UDPAddr{
-			IP:   address.IP(),
-			Port: int(port),
-		},
-		running: true,
+		running:       true,
 	}
 	hub, err := udp.ListenUDP(address, port, udp.ListenOption{Callback: l.OnReceive})
 	if err != nil {
@@ -92,7 +87,7 @@ func (this *Listener) OnReceive(payload *alloc.Buffer, session *proxy.SessionInf
 		if err != nil {
 			log.Error("KCP|Listener: Failed to create authenticator: ", err)
 		}
-		conn = NewConnection(conv, writer, this.localAddr, srcAddr, auth)
+		conn = NewConnection(conv, writer, this.Addr().(*net.UDPAddr), srcAddr, auth)
 		select {
 		case this.awaitingConns <- conn:
 		case <-time.After(time.Second * 5):
@@ -159,7 +154,7 @@ func (this *Listener) ActiveConnections() int {
 
 // Addr returns the listener's network address, The Addr returned is shared by all invocations of Addr, so do not modify it.
 func (this *Listener) Addr() net.Addr {
-	return this.localAddr
+	return this.hub.Addr()
 }
 
 type Writer struct {
