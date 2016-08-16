@@ -165,32 +165,31 @@ func (this *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 	})
 	defer ray.InboundOutput().Release()
 
-	var inputFinish, outputFinish sync.Mutex
-	inputFinish.Lock()
-	outputFinish.Lock()
+	var wg sync.WaitGroup
 
 	reader := v2net.NewTimeOutReader(this.config.Timeout, conn)
 	defer reader.Release()
 
+	wg.Add(1)
 	go func() {
 		v2reader := v2io.NewAdaptiveReader(reader)
 		defer v2reader.Release()
 
 		v2io.Pipe(v2reader, ray.InboundInput())
-		inputFinish.Unlock()
+		wg.Done()
 		ray.InboundInput().Close()
 	}()
 
+	wg.Add(1)
 	go func() {
 		v2writer := v2io.NewAdaptiveWriter(conn)
 		defer v2writer.Release()
 
 		v2io.Pipe(ray.InboundOutput(), v2writer)
-		outputFinish.Unlock()
+		wg.Done()
 	}()
 
-	outputFinish.Lock()
-	inputFinish.Lock()
+	wg.Wait()
 }
 
 type Factory struct{}
