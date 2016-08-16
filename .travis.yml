@@ -3,8 +3,6 @@ language: go
 go:
   - 1.7
 
-sudo: required
-
 git:
   depth: 5
   

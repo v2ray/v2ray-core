@@ -3,6 +3,7 @@
 package udp_test
 
 import (
+	"os"
 	"syscall"
 	"testing"
 
@@ -16,6 +17,10 @@ import (
 
 func TestHubSocksOption(t *testing.T) {
 	assert := assert.On(t)
+	if os.Geteuid() != 0 {
+		// This test case requires root permission.
+		return
+	}
 
 	hub, err := ListenUDP(v2net.LocalHostIP, v2net.Port(0), ListenOption{
 		Callback:            func(*alloc.Buffer, *proxy.SessionInfo) {},
