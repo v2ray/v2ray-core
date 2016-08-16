@@ -24,10 +24,7 @@ func TestHubSocksOption(t *testing.T) {
 	assert.Error(err).IsNil()
 	conn := hub.Connection()
 
-	sysfd, err := internal.GetSysFd(conn)
-	assert.Error(err).IsNil()
-
-	fd, err := sysfd.SysFd()
+	fd, err := internal.GetSysFd(conn)
 	assert.Error(err).IsNil()
 
 	v, err := syscall.GetsockoptInt(fd, syscall.SOL_IP, syscall.IP_TRANSPARENT)
