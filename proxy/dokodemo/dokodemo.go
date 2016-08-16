@@ -90,7 +90,11 @@ func (this *DokodemoDoor) Start() error {
 
 func (this *DokodemoDoor) ListenUDP() error {
 	this.udpServer = udp.NewUDPServer(this.meta, this.packetDispatcher)
-	udpHub, err := udp.ListenUDP(this.meta.Address, this.meta.Port, udp.ListenOption{Callback: this.handleUDPPackets})
+	udpHub, err := udp.ListenUDP(
+		this.meta.Address, this.meta.Port, udp.ListenOption{
+			Callback:            this.handleUDPPackets,
+			ReceiveOriginalDest: this.config.FollowRedirect,
+		})
 	if err != nil {
 		log.Error("Dokodemo failed to listen on ", this.meta.Address, ":", this.meta.Port, ": ", err)
 		return err
