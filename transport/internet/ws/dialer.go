@@ -107,31 +107,9 @@ func calcPto(dst v2net.Destination) string {
 
 		We will	return "CRASH"turn "unknown" if we can't guess it, cause Dial to fail.
 	*/
-	case 80:
-		fallthrough
-	case 8080:
-		fallthrough
-	case 8880:
-		fallthrough
-	case 2052:
-		fallthrough
-	case 2082:
-		fallthrough
-	case 2086:
-		fallthrough
-	case 2095:
+	case 80, 8080, 8880, 2052, 2082, 2086, 2095:
 		return "ws"
-	case 443:
-		fallthrough
-	case 2053:
-		fallthrough
-	case 2083:
-		fallthrough
-	case 2087:
-		fallthrough
-	case 2096:
-		fallthrough
-	case 8443:
+	case 443, 2053, 2083, 2087, 2096, 8443:
 		return "wss"
 	default:
 		return "unknown"
