@@ -45,26 +45,22 @@ func ListenWS(address v2net.Address, port v2net.Port) (internet.Listener, error)
 func (wsl *WSListener) listenws(address v2net.Address, port v2net.Port) error {
 
 	http.HandleFunc("/"+effectiveConfig.Path, func(w http.ResponseWriter, r *http.Request) {
-		log.Warning("WS:WSListener->listenws->(HandleFunc,lambda 2)! Accepting websocket")
 		con, err := wsl.converttovws(w, r)
 		if err != nil {
-			log.Warning("WS:WSListener->listenws->(HandleFunc,lambda 2)!" + err.Error())
+			log.Warning("WebSocket|Listener: Failed to convert connection: ", err)
 			return
 		}
 
 		select {
 		case wsl.awaitingConns <- &ConnectionWithError{
 			conn: con,
-			err:  err,
 		}:
-			log.Warning("WS:WSListener->listenws->(HandleFunc,lambda 2)! transferd websocket")
 		default:
 			if con != nil {
 				con.Close()
 			}
 		}
 		return
-
 	})
 
 	errchan := make(chan error)
@@ -106,7 +102,7 @@ func (wsl *WSListener) listenws(address v2net.Address, port v2net.Port) error {
 	}
 
 	if err != nil {
-		log.Error("WS:WSListener->listenws->ListenAndServe!" + err.Error())
+		log.Error("WebSocket|Listener: Failed to serve: ", err)
 	}
 
 	return err
@@ -133,7 +129,6 @@ func (this *WSListener) Accept() (internet.Connection, error) {
 	for this.acccepting {
 		select {
 		case connErr, open := <-this.awaitingConns:
-			log.Info("WSListener: conn accepted")
 			if !open {
 				return nil, ErrClosedListener
 			}

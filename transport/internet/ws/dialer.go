@@ -17,7 +17,7 @@ var (
 )
 
 func Dial(src v2net.Address, dest v2net.Destination) (internet.Connection, error) {
-	log.Info("Dailing WS to ", dest)
+	log.Info("WebSocket|Dailer: Creating connection to ", dest)
 	if src == nil {
 		src = v2net.AnyIP
 	}
@@ -33,7 +33,7 @@ func Dial(src v2net.Address, dest v2net.Destination) (internet.Connection, error
 		var err error
 		conn, err = wsDial(src, dest)
 		if err != nil {
-			log.Warning("WS Dial failed:" + err.Error())
+			log.Warning("WebSocket|Dialer: Dial failed: ", err)
 			return nil, err
 		}
 	}
