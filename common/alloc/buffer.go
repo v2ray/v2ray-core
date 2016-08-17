@@ -52,6 +52,7 @@ func (b *Buffer) Clear() *Buffer {
 	return b
 }
 
+// Reset resets this Buffer into its original state.
 func (b *Buffer) Reset() *Buffer {
 	b.offset = defaultOffset
 	b.Value = b.head
