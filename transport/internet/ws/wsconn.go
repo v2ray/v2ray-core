@@ -7,9 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v2ray/v2ray-core/common/log"
-
 	"github.com/gorilla/websocket"
+	"github.com/v2ray/v2ray-core/common/log"
 )
 
 type wsconn struct {
