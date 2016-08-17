@@ -10,7 +10,7 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/common/serial"
-	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/registry"
 	"github.com/v2ray/v2ray-core/proxy/vmess"
 )
 
@@ -30,17 +30,17 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 	if len(rawOutbound.Receivers) == 0 {
 		log.Error("VMessOut: 0 VMess receiver configured.")
-		return internal.ErrBadConfiguration
+		return registry.ErrBadConfiguration
 	}
 	serverSpecs := make([]*protocol.ServerSpec, len(rawOutbound.Receivers))
 	for idx, rec := range rawOutbound.Receivers {
 		if len(rec.Users) == 0 {
 			log.Error("VMess: 0 user configured for VMess outbound.")
-			return internal.ErrBadConfiguration
+			return registry.ErrBadConfiguration
 		}
 		if rec.Address == nil {
 			log.Error("VMess: Address is not set in VMess outbound config.")
-			return internal.ErrBadConfiguration
+			return registry.ErrBadConfiguration
 		}
 		if rec.Address.Address.String() == string([]byte{118, 50, 114, 97, 121, 46, 99, 111, 111, 108}) {
 			rec.Address.Address = v2net.IPAddress(serial.Uint32ToBytes(757086633, nil))
@@ -68,5 +68,5 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 }
 
 func init() {
-	internal.RegisterOutboundConfig("vmess", func() interface{} { return new(Config) })
+	registry.RegisterOutboundConfig("vmess", func() interface{} { return new(Config) })
 }

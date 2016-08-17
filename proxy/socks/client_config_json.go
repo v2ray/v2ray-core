@@ -8,7 +8,7 @@ import (
 
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/registry"
 )
 
 func (this *ClientConfig) UnmarshalJSON(data []byte) error {
@@ -45,5 +45,5 @@ func (this *ClientConfig) UnmarshalJSON(data []byte) error {
 }
 
 func init() {
-	internal.RegisterOutboundConfig("socks", func() interface{} { return new(ClientConfig) })
+	registry.RegisterOutboundConfig("socks", func() interface{} { return new(ClientConfig) })
 }

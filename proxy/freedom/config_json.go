@@ -7,7 +7,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/registry"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {
@@ -29,5 +29,5 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 }
 
 func init() {
-	internal.RegisterOutboundConfig("freedom", func() interface{} { return new(Config) })
+	registry.RegisterOutboundConfig("freedom", func() interface{} { return new(Config) })
 }

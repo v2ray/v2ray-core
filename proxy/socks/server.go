@@ -12,7 +12,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/registry"
 	"github.com/v2ray/v2ray-core/proxy/socks/protocol"
 	"github.com/v2ray/v2ray-core/transport/internet"
 	"github.com/v2ray/v2ray-core/transport/internet/udp"
@@ -330,5 +330,5 @@ func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *
 }
 
 func init() {
-	internal.MustRegisterInboundHandlerCreator("socks", new(ServerFactory))
+	registry.MustRegisterInboundHandlerCreator("socks", new(ServerFactory))
 }

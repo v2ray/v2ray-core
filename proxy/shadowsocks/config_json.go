@@ -9,7 +9,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/registry"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {
@@ -46,12 +46,12 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		}
 	default:
 		log.Error("Shadowsocks: Unknown cipher method: ", jsonConfig.Cipher)
-		return internal.ErrBadConfiguration
+		return registry.ErrBadConfiguration
 	}
 
 	if len(jsonConfig.Password) == 0 {
 		log.Error("Shadowsocks: Password is not specified.")
-		return internal.ErrBadConfiguration
+		return registry.ErrBadConfiguration
 	}
 	this.Key = PasswordToCipherKey(jsonConfig.Password, this.Cipher.KeySize())
 
@@ -62,5 +62,5 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 }
 
 func init() {
-	internal.RegisterInboundConfig("shadowsocks", func() interface{} { return new(Config) })
+	registry.RegisterInboundConfig("shadowsocks", func() interface{} { return new(Config) })
 }

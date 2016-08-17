@@ -15,7 +15,7 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/registry"
 	"github.com/v2ray/v2ray-core/transport/internet"
 	"github.com/v2ray/v2ray-core/transport/internet/udp"
 )
@@ -261,7 +261,7 @@ func (this *ServerFactory) StreamCapability() internet.StreamConnectionType {
 
 func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
 	if !space.HasApp(dispatcher.APP_ID) {
-		return nil, internal.ErrBadConfiguration
+		return nil, registry.ErrBadConfiguration
 	}
 	return NewServer(
 		rawConfig.(*Config),
@@ -270,5 +270,5 @@ func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *
 }
 
 func init() {
-	internal.MustRegisterInboundHandlerCreator("shadowsocks", new(ServerFactory))
+	registry.MustRegisterInboundHandlerCreator("shadowsocks", new(ServerFactory))
 }

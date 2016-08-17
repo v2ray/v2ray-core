@@ -7,7 +7,7 @@ import (
 	"errors"
 
 	"github.com/v2ray/v2ray-core/common/loader"
-	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/registry"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {
@@ -35,5 +35,5 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 }
 
 func init() {
-	internal.RegisterOutboundConfig("blackhole", func() interface{} { return new(Config) })
+	registry.RegisterOutboundConfig("blackhole", func() interface{} { return new(Config) })
 }

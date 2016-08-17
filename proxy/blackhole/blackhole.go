@@ -5,7 +5,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/alloc"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/registry"
 	"github.com/v2ray/v2ray-core/transport/internet"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
@@ -45,5 +45,5 @@ func (this *Factory) Create(space app.Space, config interface{}, meta *proxy.Out
 }
 
 func init() {
-	internal.MustRegisterOutboundHandlerCreator("blackhole", new(Factory))
+	registry.MustRegisterOutboundHandlerCreator("blackhole", new(Factory))
 }

@@ -14,7 +14,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/common/uuid"
 	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/registry"
 	"github.com/v2ray/v2ray-core/proxy/vmess"
 	"github.com/v2ray/v2ray-core/proxy/vmess/encoding"
 	vmessio "github.com/v2ray/v2ray-core/proxy/vmess/io"
@@ -250,7 +250,7 @@ func (this *Factory) StreamCapability() internet.StreamConnectionType {
 
 func (this *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
 	if !space.HasApp(dispatcher.APP_ID) {
-		return nil, internal.ErrBadConfiguration
+		return nil, registry.ErrBadConfiguration
 	}
 	config := rawConfig.(*Config)
 
@@ -275,5 +275,5 @@ func (this *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.
 }
 
 func init() {
-	internal.MustRegisterInboundHandlerCreator("vmess", new(Factory))
+	registry.MustRegisterInboundHandlerCreator("vmess", new(Factory))
 }

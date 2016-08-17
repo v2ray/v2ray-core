@@ -15,7 +15,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/registry"
 	"github.com/v2ray/v2ray-core/transport/internet"
 	"github.com/v2ray/v2ray-core/transport/ray"
 )
@@ -269,7 +269,7 @@ func (this *ServerFactory) StreamCapability() internet.StreamConnectionType {
 
 func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
 	if !space.HasApp(dispatcher.APP_ID) {
-		return nil, internal.ErrBadConfiguration
+		return nil, registry.ErrBadConfiguration
 	}
 	return NewServer(
 		rawConfig.(*Config),
@@ -278,5 +278,5 @@ func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *
 }
 
 func init() {
-	internal.MustRegisterInboundHandlerCreator("http", new(ServerFactory))
+	registry.MustRegisterInboundHandlerCreator("http", new(ServerFactory))
 }

@@ -3,7 +3,7 @@ package testing
 import (
 	"fmt"
 
-	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/registry"
 )
 
 var count = 0
@@ -13,21 +13,21 @@ func randomString() string {
 	return fmt.Sprintf("-%d", count)
 }
 
-func RegisterInboundConnectionHandlerCreator(prefix string, creator internal.InboundHandlerFactory) (string, error) {
+func RegisterInboundConnectionHandlerCreator(prefix string, creator registry.InboundHandlerFactory) (string, error) {
 	for {
 		name := prefix + randomString()
-		err := internal.RegisterInboundHandlerCreator(name, creator)
-		if err != internal.ErrNameExists {
+		err := registry.RegisterInboundHandlerCreator(name, creator)
+		if err != registry.ErrNameExists {
 			return name, err
 		}
 	}
 }
 
-func RegisterOutboundConnectionHandlerCreator(prefix string, creator internal.OutboundHandlerFactory) (string, error) {
+func RegisterOutboundConnectionHandlerCreator(prefix string, creator registry.OutboundHandlerFactory) (string, error) {
 	for {
 		name := prefix + randomString()
-		err := internal.RegisterOutboundHandlerCreator(name, creator)
-		if err != internal.ErrNameExists {
+		err := registry.RegisterOutboundHandlerCreator(name, creator)
+		if err != registry.ErrNameExists {
 			return name, err
 		}
 	}

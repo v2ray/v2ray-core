@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/registry"
 )
 
 // UnmarshalJSON implements json.Unmarshaler
@@ -24,5 +24,5 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 }
 
 func init() {
-	internal.RegisterInboundConfig("http", func() interface{} { return new(Config) })
+	registry.RegisterInboundConfig("http", func() interface{} { return new(Config) })
 }

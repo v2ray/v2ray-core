@@ -8,7 +8,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/registry"
 )
 
 const (
@@ -35,7 +35,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		this.AuthType = AuthTypePassword
 	} else {
 		log.Error("Socks: Unknown auth method: ", rawConfig.AuthMethod)
-		return internal.ErrBadConfiguration
+		return registry.ErrBadConfiguration
 	}
 
 	if len(rawConfig.Accounts) > 0 {
@@ -59,5 +59,5 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 }
 
 func init() {
-	internal.RegisterInboundConfig("socks", func() interface{} { return new(Config) })
+	registry.RegisterInboundConfig("socks", func() interface{} { return new(Config) })
 }

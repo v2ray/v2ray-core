@@ -7,7 +7,7 @@ import (
 	"errors"
 
 	"github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/registry"
 	"github.com/v2ray/v2ray-core/proxy/vmess"
 )
 
@@ -94,5 +94,5 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 }
 
 func init() {
-	internal.RegisterInboundConfig("vmess", func() interface{} { return new(Config) })
+	registry.RegisterInboundConfig("vmess", func() interface{} { return new(Config) })
 }

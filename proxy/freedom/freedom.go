@@ -12,7 +12,7 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/registry"
 	"github.com/v2ray/v2ray-core/transport/internet"
 	"github.com/v2ray/v2ray-core/transport/internet/tcp"
 	"github.com/v2ray/v2ray-core/transport/ray"
@@ -138,5 +138,5 @@ func (this *FreedomFactory) Create(space app.Space, config interface{}, meta *pr
 }
 
 func init() {
-	internal.MustRegisterOutboundHandlerCreator("freedom", new(FreedomFactory))
+	registry.MustRegisterOutboundHandlerCreator("freedom", new(FreedomFactory))
 }

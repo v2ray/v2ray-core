@@ -12,7 +12,7 @@ import (
 	"github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/proxy/internal"
+	"github.com/v2ray/v2ray-core/proxy/registry"
 	"github.com/v2ray/v2ray-core/proxy/vmess/encoding"
 	vmessio "github.com/v2ray/v2ray-core/proxy/vmess/io"
 	"github.com/v2ray/v2ray-core/transport/internet"
@@ -180,5 +180,5 @@ func (this *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.
 }
 
 func init() {
-	internal.MustRegisterOutboundHandlerCreator("vmess", new(Factory))
+	registry.MustRegisterOutboundHandlerCreator("vmess", new(Factory))
 }

@@ -15,7 +15,7 @@ import (
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
 	"github.com/v2ray/v2ray-core/proxy"
-	proxyrepo "github.com/v2ray/v2ray-core/proxy/repo"
+	proxyregistry "github.com/v2ray/v2ray-core/proxy/registry"
 )
 
 // Point shell of V2Ray.
@@ -91,7 +91,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	vpoint.space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(vpoint.space))
 
 	ichConfig := pConfig.InboundConfig.Settings
-	ich, err := proxyrepo.CreateInboundHandler(
+	ich, err := proxyregistry.CreateInboundHandler(
 		pConfig.InboundConfig.Protocol, vpoint.space, ichConfig, &proxy.InboundHandlerMeta{
 			Tag:                    "system.inbound",
 			Address:                pConfig.InboundConfig.ListenOn,
@@ -106,7 +106,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	vpoint.ich = ich
 
 	ochConfig := pConfig.OutboundConfig.Settings
-	och, err := proxyrepo.CreateOutboundHandler(
+	och, err := proxyregistry.CreateOutboundHandler(
 		pConfig.OutboundConfig.Protocol, vpoint.space, ochConfig, &proxy.OutboundHandlerMeta{
 			Tag:            "system.outbound",
 			Address:        pConfig.OutboundConfig.SendThrough,
@@ -156,7 +156,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	if len(outboundDetours) > 0 {
 		vpoint.odh = make(map[string]proxy.OutboundHandler)
 		for _, detourConfig := range outboundDetours {
-			detourHandler, err := proxyrepo.CreateOutboundHandler(
+			detourHandler, err := proxyregistry.CreateOutboundHandler(
 				detourConfig.Protocol, vpoint.space, detourConfig.Settings, &proxy.OutboundHandlerMeta{
 					Tag:            detourConfig.Tag,
 					Address:        detourConfig.SendThrough,

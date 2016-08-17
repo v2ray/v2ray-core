@@ -1,4 +1,4 @@
-package internal
+package registry
 
 import (
 	"github.com/v2ray/v2ray-core/app"
