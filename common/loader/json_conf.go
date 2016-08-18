@@ -5,6 +5,7 @@ package loader
 import (
 	"encoding/json"
 
+	"github.com/v2ray/v2ray-core/common"
 	"github.com/v2ray/v2ray-core/common/log"
 )
 
@@ -42,7 +43,7 @@ func (this *JSONConfigLoader) Load(raw []byte) (interface{}, string, error) {
 	rawID, found := obj[this.idKey]
 	if !found {
 		log.Error(this.idKey, " not found in JSON content.")
-		return nil, "", ErrConfigIDKeyNotFound
+		return nil, "", common.ErrObjectNotFound
 	}
 	var id string
 	if err := json.Unmarshal(rawID, &id); err != nil {
@@ -53,7 +54,7 @@ func (this *JSONConfigLoader) Load(raw []byte) (interface{}, string, error) {
 		configValue, found := obj[this.configKey]
 		if !found {
 			log.Error(this.configKey, " not found in JSON content.")
-			return nil, "", ErrConfigIDKeyNotFound
+			return nil, "", common.ErrObjectNotFound
 		}
 		rawConfig = configValue
 	}

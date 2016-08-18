@@ -9,6 +9,8 @@ import (
 var (
 	ErrObjectReleased   = errors.New("Object already released.")
 	ErrBadConfiguration = errors.New("Bad configuration.")
+	ErrObjectNotFound   = errors.New("Object not found.")
+	ErrDuplicatedName   = errors.New("Duplicated name.")
 )
 
 // Releasable interface is for those types that can release its members.

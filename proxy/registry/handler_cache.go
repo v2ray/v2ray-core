@@ -1,9 +1,8 @@
 package registry
 
 import (
-	"errors"
-
 	"github.com/v2ray/v2ray-core/app"
+	"github.com/v2ray/v2ray-core/common"
 	"github.com/v2ray/v2ray-core/proxy"
 	"github.com/v2ray/v2ray-core/transport/internet"
 )
@@ -11,14 +10,11 @@ import (
 var (
 	inboundFactories  = make(map[string]InboundHandlerFactory)
 	outboundFactories = make(map[string]OutboundHandlerFactory)
-
-	ErrProxyNotFound = errors.New("Proxy not found.")
-	ErrNameExists    = errors.New("Proxy with the same name already exists.")
 )
 
 func RegisterInboundHandlerCreator(name string, creator InboundHandlerFactory) error {
 	if _, found := inboundFactories[name]; found {
-		return ErrNameExists
+		return common.ErrDuplicatedName
 	}
 	inboundFactories[name] = creator
 	return nil
@@ -32,7 +28,7 @@ func MustRegisterInboundHandlerCreator(name string, creator InboundHandlerFactor
 
 func RegisterOutboundHandlerCreator(name string, creator OutboundHandlerFactory) error {
 	if _, found := outboundFactories[name]; found {
-		return ErrNameExists
+		return common.ErrDuplicatedName
 	}
 	outboundFactories[name] = creator
 	return nil
@@ -47,7 +43,7 @@ func MustRegisterOutboundHandlerCreator(name string, creator OutboundHandlerFact
 func CreateInboundHandler(name string, space app.Space, rawConfig []byte, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
 	creator, found := inboundFactories[name]
 	if !found {
-		return nil, ErrProxyNotFound
+		return nil, common.ErrObjectNotFound
 	}
 	if meta.StreamSettings == nil {
 		meta.StreamSettings = &internet.StreamSettings{
@@ -70,7 +66,7 @@ func CreateInboundHandler(name string, space app.Space, rawConfig []byte, meta *
 func CreateOutboundHandler(name string, space app.Space, rawConfig []byte, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 	creator, found := outboundFactories[name]
 	if !found {
-		return nil, ErrProxyNotFound
+		return nil, common.ErrObjectNotFound
 	}
 	if meta.StreamSettings == nil {
 		meta.StreamSettings = &internet.StreamSettings{

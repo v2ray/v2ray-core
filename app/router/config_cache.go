@@ -1,15 +1,13 @@
 package router
 
 import (
-	"errors"
+	"github.com/v2ray/v2ray-core/common"
 )
 
 type ConfigObjectCreator func([]byte) (interface{}, error)
 
 var (
 	configCache map[string]ConfigObjectCreator
-
-	ErrRouterNotFound = errors.New("Router not found.")
 )
 
 func RegisterRouterConfig(strategy string, creator ConfigObjectCreator) error {
@@ -21,7 +19,7 @@ func RegisterRouterConfig(strategy string, creator ConfigObjectCreator) error {
 func CreateRouterConfig(strategy string, data []byte) (interface{}, error) {
 	creator, found := configCache[strategy]
 	if !found {
-		return nil, ErrRouterNotFound
+		return nil, common.ErrObjectNotFound
 	}
 	return creator(data)
 }

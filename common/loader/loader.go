@@ -2,12 +2,11 @@ package loader
 
 import (
 	"errors"
+	"github.com/v2ray/v2ray-core/common"
 )
 
 var (
-	ErrConfigIDKeyNotFound = errors.New("Config ID key is not found.")
-	ErrConfigIDExists      = errors.New("Config ID already exists.")
-	ErrUnknownConfigID     = errors.New("Unknown config ID.")
+	ErrUnknownConfigID = errors.New("Unknown config ID.")
 )
 
 type ConfigCreator func() interface{}
@@ -31,7 +30,7 @@ func NewBaseConfigLoader() *BaseConfigLoader {
 
 func (this *BaseConfigLoader) RegisterCreator(id string, creator ConfigCreator) error {
 	if _, found := this.creators[id]; found {
-		return ErrConfigIDExists
+		return common.ErrDuplicatedName
 	}
 
 	this.creators[id] = creator

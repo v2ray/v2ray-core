@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/common"
+	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 )
 
@@ -24,7 +25,9 @@ var (
 )
 
 func RegisterRouter(name string, factory RouterFactory) error {
-	// TODO: check name
+	if _, found := routerCache[name]; found {
+		return common.ErrDuplicatedName
+	}
 	routerCache[name] = factory
 	return nil
 }
@@ -33,5 +36,6 @@ func CreateRouter(name string, rawConfig interface{}, space app.Space) (Router, 
 	if factory, found := routerCache[name]; found {
 		return factory.Create(rawConfig, space)
 	}
-	return nil, ErrRouterNotFound
+	log.Error("Router: not found: ", name)
+	return nil, common.ErrObjectNotFound
 }

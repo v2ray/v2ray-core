@@ -1,8 +1,7 @@
 package internet
 
 import (
-	"errors"
-
+	"github.com/v2ray/v2ray-core/common"
 	"github.com/v2ray/v2ray-core/common/alloc"
 	"github.com/v2ray/v2ray-core/common/loader"
 )
@@ -21,16 +20,13 @@ type AuthenticatorConfig interface {
 }
 
 var (
-	ErrDuplicatedAuthenticator = errors.New("Authenticator already registered.")
-	ErrAuthenticatorNotFound   = errors.New("Authenticator not found.")
-
 	authenticatorCache = make(map[string]AuthenticatorFactory)
 	configCache        loader.ConfigLoader
 )
 
 func RegisterAuthenticator(name string, factory AuthenticatorFactory, configCreator loader.ConfigCreator) error {
 	if _, found := authenticatorCache[name]; found {
-		return ErrDuplicatedAuthenticator
+		return common.ErrDuplicatedName
 	}
 	authenticatorCache[name] = factory
 	return configCache.RegisterCreator(name, configCreator)
@@ -39,7 +35,7 @@ func RegisterAuthenticator(name string, factory AuthenticatorFactory, configCrea
 func CreateAuthenticator(name string, config AuthenticatorConfig) (Authenticator, error) {
 	factory, found := authenticatorCache[name]
 	if !found {
-		return nil, ErrAuthenticatorNotFound
+		return nil, common.ErrObjectNotFound
 	}
 	return factory.Create(config), nil
 }

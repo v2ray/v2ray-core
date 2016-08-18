@@ -3,6 +3,7 @@ package testing
 import (
 	"fmt"
 
+	"github.com/v2ray/v2ray-core/common"
 	"github.com/v2ray/v2ray-core/proxy/registry"
 )
 
@@ -17,7 +18,7 @@ func RegisterInboundConnectionHandlerCreator(prefix string, creator registry.Inb
 	for {
 		name := prefix + randomString()
 		err := registry.RegisterInboundHandlerCreator(name, creator)
-		if err != registry.ErrNameExists {
+		if err != common.ErrDuplicatedName {
 			return name, err
 		}
 	}
@@ -27,7 +28,7 @@ func RegisterOutboundConnectionHandlerCreator(prefix string, creator registry.Ou
 	for {
 		name := prefix + randomString()
 		err := registry.RegisterOutboundHandlerCreator(name, creator)
-		if err != registry.ErrNameExists {
+		if err != common.ErrDuplicatedName {
 			return name, err
 		}
 	}
