@@ -3,6 +3,7 @@ package point
 import (
 	"github.com/v2ray/v2ray-core/app/dns"
 	"github.com/v2ray/v2ray-core/app/router"
+	"github.com/v2ray/v2ray-core/common"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/transport"
@@ -82,7 +83,7 @@ var (
 
 func LoadConfig(init string) (*Config, error) {
 	if configLoader == nil {
-		return nil, ErrBadConfiguration
+		return nil, common.ErrBadConfiguration
 	}
 	return configLoader(init)
 }
