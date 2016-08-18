@@ -18,3 +18,13 @@ func TestStringListUnmarshalError(t *testing.T) {
 	err := json.Unmarshal([]byte(rawJson), list)
 	assert.Error(err).IsNotNil()
 }
+
+func TestStringListLen(t *testing.T) {
+	assert := assert.On(t)
+
+	rawJson := `"a, b, c, d"`
+	list := new(StringList)
+	err := json.Unmarshal([]byte(rawJson), list)
+	assert.Error(err).IsNil()
+	assert.Int(list.Len()).Equals(4)
+}

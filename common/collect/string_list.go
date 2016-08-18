@@ -7,6 +7,6 @@ func NewStringList(raw []string) *StringList {
 	return &list
 }
 
-func (this *StringList) Len() int {
-	return len(*this)
+func (this StringList) Len() int {
+	return len(this)
 }
