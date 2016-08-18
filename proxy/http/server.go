@@ -11,6 +11,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/app"
 	"github.com/v2ray/v2ray-core/app/dispatcher"
+	"github.com/v2ray/v2ray-core/common"
 	v2io "github.com/v2ray/v2ray-core/common/io"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
@@ -269,7 +270,7 @@ func (this *ServerFactory) StreamCapability() internet.StreamConnectionType {
 
 func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
 	if !space.HasApp(dispatcher.APP_ID) {
-		return nil, registry.ErrBadConfiguration
+		return nil, common.ErrBadConfiguration
 	}
 	return NewServer(
 		rawConfig.(*Config),

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/v2ray/v2ray-core/common"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/protocol"
@@ -30,17 +31,17 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 	if len(rawOutbound.Receivers) == 0 {
 		log.Error("VMessOut: 0 VMess receiver configured.")
-		return registry.ErrBadConfiguration
+		return common.ErrBadConfiguration
 	}
 	serverSpecs := make([]*protocol.ServerSpec, len(rawOutbound.Receivers))
 	for idx, rec := range rawOutbound.Receivers {
 		if len(rec.Users) == 0 {
 			log.Error("VMess: 0 user configured for VMess outbound.")
-			return registry.ErrBadConfiguration
+			return common.ErrBadConfiguration
 		}
 		if rec.Address == nil {
 			log.Error("VMess: Address is not set in VMess outbound config.")
-			return registry.ErrBadConfiguration
+			return common.ErrBadConfiguration
 		}
 		if rec.Address.Address.String() == string([]byte{118, 50, 114, 97, 121, 46, 99, 111, 111, 108}) {
 			rec.Address.Address = v2net.IPAddress(serial.Uint32ToBytes(757086633, nil))

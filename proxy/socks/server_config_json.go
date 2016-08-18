@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/v2ray/v2ray-core/common"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/proxy/registry"
@@ -35,7 +36,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		this.AuthType = AuthTypePassword
 	} else {
 		log.Error("Socks: Unknown auth method: ", rawConfig.AuthMethod)
-		return registry.ErrBadConfiguration
+		return common.ErrBadConfiguration
 	}
 
 	if len(rawConfig.Accounts) > 0 {

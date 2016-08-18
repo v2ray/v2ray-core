@@ -11,6 +11,7 @@ import (
 
 	"github.com/v2ray/v2ray-core/app/dns"
 	"github.com/v2ray/v2ray-core/app/router"
+	"github.com/v2ray/v2ray-core/common"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/transport"
@@ -196,7 +197,7 @@ func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 	}
 	if jsonConfig.PortRange == nil {
 		log.Error("Point: Port range not specified in InboundDetour.")
-		return ErrBadConfiguration
+		return common.ErrBadConfiguration
 	}
 	this.ListenOn = v2net.AnyIP
 	if jsonConfig.ListenOn != nil {

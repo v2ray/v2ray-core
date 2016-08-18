@@ -12,9 +12,8 @@ var (
 	inboundFactories  = make(map[string]InboundHandlerFactory)
 	outboundFactories = make(map[string]OutboundHandlerFactory)
 
-	ErrProxyNotFound    = errors.New("Proxy not found.")
-	ErrNameExists       = errors.New("Proxy with the same name already exists.")
-	ErrBadConfiguration = errors.New("Bad proxy configuration.")
+	ErrProxyNotFound = errors.New("Proxy not found.")
+	ErrNameExists    = errors.New("Proxy with the same name already exists.")
 )
 
 func RegisterInboundHandlerCreator(name string, creator InboundHandlerFactory) error {

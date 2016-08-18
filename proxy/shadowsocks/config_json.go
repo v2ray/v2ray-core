@@ -7,6 +7,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/v2ray/v2ray-core/common"
 	"github.com/v2ray/v2ray-core/common/log"
 	"github.com/v2ray/v2ray-core/common/protocol"
 	"github.com/v2ray/v2ray-core/proxy/registry"
@@ -46,12 +47,12 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		}
 	default:
 		log.Error("Shadowsocks: Unknown cipher method: ", jsonConfig.Cipher)
-		return registry.ErrBadConfiguration
+		return common.ErrBadConfiguration
 	}
 
 	if len(jsonConfig.Password) == 0 {
 		log.Error("Shadowsocks: Password is not specified.")
-		return registry.ErrBadConfiguration
+		return common.ErrBadConfiguration
 	}
 	this.Key = PasswordToCipherKey(jsonConfig.Password, this.Cipher.KeySize())
 

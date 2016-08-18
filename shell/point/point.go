@@ -11,6 +11,7 @@ import (
 	"github.com/v2ray/v2ray-core/app/dns"
 	"github.com/v2ray/v2ray-core/app/proxyman"
 	"github.com/v2ray/v2ray-core/app/router"
+	"github.com/v2ray/v2ray-core/common"
 	"github.com/v2ray/v2ray-core/common/log"
 	v2net "github.com/v2ray/v2ray-core/common/net"
 	"github.com/v2ray/v2ray-core/common/retry"
@@ -82,7 +83,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 		r, err := router.CreateRouter(routerConfig.Strategy, routerConfig.Settings, vpoint.space)
 		if err != nil {
 			log.Error("Failed to create router: ", err)
-			return nil, ErrBadConfiguration
+			return nil, common.ErrBadConfiguration
 		}
 		vpoint.space.BindApp(router.APP_ID, r)
 		vpoint.router = r
@@ -131,19 +132,19 @@ func NewPoint(pConfig *Config) (*Point, error) {
 				dh, err := NewInboundDetourHandlerAlways(vpoint.space, detourConfig)
 				if err != nil {
 					log.Error("Point: Failed to create detour handler: ", err)
-					return nil, ErrBadConfiguration
+					return nil, common.ErrBadConfiguration
 				}
 				detourHandler = dh
 			case AllocationStrategyRandom:
 				dh, err := NewInboundDetourHandlerDynamic(vpoint.space, detourConfig)
 				if err != nil {
 					log.Error("Point: Failed to create detour handler: ", err)
-					return nil, ErrBadConfiguration
+					return nil, common.ErrBadConfiguration
 				}
 				detourHandler = dh
 			default:
 				log.Error("Point: Unknown allocation strategy: ", allocConfig.Strategy)
-				return nil, ErrBadConfiguration
+				return nil, common.ErrBadConfiguration
 			}
 			vpoint.idh[idx] = detourHandler
 			if len(detourConfig.Tag) > 0 {
@@ -190,7 +191,7 @@ func (this *Point) Close() {
 func (this *Point) Start() error {
 	if this.port <= 0 {
 		log.Error("Point: Invalid port ", this.port)
-		return ErrBadConfiguration
+		return common.ErrBadConfiguration
 	}
 
 	err := retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
