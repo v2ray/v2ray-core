@@ -1,4 +1,4 @@
-package io // import "github.com/v2ray/v2ray-core/common/io"
+package io
 
 import (
 	"io"
