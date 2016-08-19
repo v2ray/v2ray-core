@@ -78,6 +78,7 @@ func (this *UDPHub) start() {
 		buffer := alloc.NewBuffer()
 		nBytes, noob, _, addr, err := this.conn.ReadMsgUDP(buffer.Value, oobBytes)
 		if err != nil {
+			log.Info("UDP|Hub: Failed to read UDP msg: ", err)
 			buffer.Release()
 			continue
 		}
