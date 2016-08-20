@@ -512,7 +512,7 @@ func (this *Connection) flush() {
 	this.receivingWorker.Flush(current)
 	this.sendingWorker.Flush(current)
 
-	if this.sendingWorker.PingNecessary() || this.receivingWorker.PingNecessary() || current-atomic.LoadUint32(&this.lastPingTime) >= 5000 {
+	if this.sendingWorker.PingNecessary() || this.receivingWorker.PingNecessary() || current-atomic.LoadUint32(&this.lastPingTime) >= 3000 {
 		seg := NewCmdOnlySegment()
 		seg.Conv = this.conv
 		seg.Command = CommandPing
