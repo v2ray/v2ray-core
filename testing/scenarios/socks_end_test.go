@@ -83,6 +83,63 @@ func TestTCPConnection(t *testing.T) {
 	CloseAllServers()
 }
 
+func TestPassiveTCPConnection(t *testing.T) {
+	assert := assert.On(t)
+
+	tcpServer := &tcp.Server{
+		MsgProcessor: func(data []byte) []byte {
+			buffer := make([]byte, 0, 2048)
+			buffer = append(buffer, []byte("Processed: ")...)
+			buffer = append(buffer, data...)
+			return buffer
+		},
+		SendFirst: []byte("Server sends first."),
+	}
+	_, err := tcpServer.Start()
+	assert.Error(err).IsNil()
+	defer tcpServer.Close()
+
+	assert.Error(InitializeServerSetOnce("test_1")).IsNil()
+
+	socksPort := v2net.Port(50002)
+
+	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
+		IP:   []byte{127, 0, 0, 1},
+		Port: int(socksPort),
+	})
+	assert.Error(err).IsNil()
+
+	authRequest := socks5AuthMethodRequest(byte(0))
+	nBytes, err := conn.Write(authRequest)
+	assert.Int(nBytes).Equals(len(authRequest))
+	assert.Error(err).IsNil()
+
+	authResponse := make([]byte, 1024)
+	nBytes, err = conn.Read(authResponse)
+	assert.Error(err).IsNil()
+	assert.Bytes(authResponse[:nBytes]).Equals([]byte{socks5Version, 0})
+
+	connectRequest := socks5Request(byte(1), v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), tcpServer.Port))
+	nBytes, err = conn.Write(connectRequest)
+	assert.Int(nBytes).Equals(len(connectRequest))
+	assert.Error(err).IsNil()
+
+	connectResponse := make([]byte, 1024)
+	nBytes, err = conn.Read(connectResponse)
+	assert.Error(err).IsNil()
+	assert.Bytes(connectResponse[:nBytes]).Equals([]byte{socks5Version, 0, 0, 1, 0, 0, 0, 0, 6, 181})
+
+	actualResponse := make([]byte, 1024)
+	nResponse, err := conn.Read(actualResponse)
+	assert.Error(err).IsNil()
+
+	assert.String(string(actualResponse[:nResponse])).Equals(string(tcpServer.SendFirst))
+
+	conn.Close()
+
+	CloseAllServers()
+}
+
 func TestTCPBind(t *testing.T) {
 	assert := assert.On(t)
 

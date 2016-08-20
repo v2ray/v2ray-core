@@ -10,6 +10,7 @@ import (
 type Server struct {
 	Port         v2net.Port
 	MsgProcessor func(msg []byte) []byte
+	SendFirst    []byte
 	accepting    bool
 	listener     *net.TCPListener
 }
@@ -44,6 +45,9 @@ func (server *Server) acceptConnections(listener *net.TCPListener) {
 }
 
 func (server *Server) handleConnection(conn net.Conn) {
+	if len(server.SendFirst) > 0 {
+		conn.Write(server.SendFirst)
+	}
 	request := make([]byte, 4096)
 	for true {
 		nBytes, err := conn.Read(request)

@@ -1,4 +1,7 @@
 {
+  "log": {
+    "loglevel": "debug"
+  },
   "inbound": {
     "port": 50000,
     "listen": "127.0.0.1",
@@ -9,6 +12,19 @@
       "ip": "127.0.0.1"
     }
   },
+  "inboundDetour": [
+    {
+      "port": 50002,
+      "listen": "127.0.0.1",
+      "protocol": "socks",
+      "allowPassive": true,
+      "settings": {
+        "auth": "noauth",
+        "udp": true,
+        "ip": "127.0.0.1"
+      }
+    }
+  ],
   "outbound": {
     "protocol": "vmess",
     "settings": {

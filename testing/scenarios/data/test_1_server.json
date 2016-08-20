@@ -1,11 +1,12 @@
 {
   "port": 50001,
   "log": {
-    "loglevel": "none"
+    "loglevel": "debug"
   },
   "inbound": {
     "listen": "127.0.0.1",
     "protocol": "vmess",
+    "allowPassive": true,
     "settings": {
       "clients": [
         {
@@ -31,6 +32,7 @@
       "listen": "127.0.0.1",
       "port": "50005-50009",
       "tag": "detour",
+      "allowPassive": true,
       "settings": {
         "clients": [
           {
