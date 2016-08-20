@@ -1,13 +1,13 @@
 package point
 
 import (
-	"github.com/v2ray/v2ray-core/app/dns"
-	"github.com/v2ray/v2ray-core/app/router"
-	"github.com/v2ray/v2ray-core/common"
-	"github.com/v2ray/v2ray-core/common/log"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/transport"
-	"github.com/v2ray/v2ray-core/transport/internet"
+	"v2ray.com/core/app/dns"
+	"v2ray.com/core/app/router"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/log"
+	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/transport"
+	"v2ray.com/core/transport/internet"
 )
 
 type InboundConnectionConfig struct {

@@ -5,8 +5,8 @@ package loader
 import (
 	"encoding/json"
 
-	"github.com/v2ray/v2ray-core/common"
-	"github.com/v2ray/v2ray-core/common/log"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/log"
 )
 
 type JSONConfigLoader struct {

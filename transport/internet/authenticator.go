@@ -1,9 +1,9 @@
 package internet
 
 import (
-	"github.com/v2ray/v2ray-core/common"
-	"github.com/v2ray/v2ray-core/common/alloc"
-	"github.com/v2ray/v2ray-core/common/loader"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/loader"
 )
 
 type Authenticator interface {

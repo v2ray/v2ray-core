@@ -1,7 +1,7 @@
 package protocol
 
 import (
-	"github.com/v2ray/v2ray-core/common"
+	"v2ray.com/core/common"
 )
 
 type UserValidator interface {

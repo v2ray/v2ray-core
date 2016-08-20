@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/proxy/registry"
-	"github.com/v2ray/v2ray-core/proxy/vmess"
+	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/proxy/registry"
+	"v2ray.com/core/proxy/vmess"
 )
 
 func (this *DetourConfig) UnmarshalJSON(data []byte) error {

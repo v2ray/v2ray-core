@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	. "github.com/v2ray/v2ray-core/proxy/blackhole"
-	"github.com/v2ray/v2ray-core/testing/assert"
+	. "v2ray.com/core/proxy/blackhole"
+	"v2ray.com/core/testing/assert"
 )
 
 func TestHTTPResponseJSON(t *testing.T) {

@@ -1,7 +1,7 @@
 package point
 
 import (
-	"github.com/v2ray/v2ray-core/proxy"
+	"v2ray.com/core/proxy"
 )
 
 type InboundDetourHandler interface {

@@ -5,13 +5,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
-	"github.com/v2ray/v2ray-core/common/log"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/common/serial"
-	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/transport/internet"
-	"github.com/v2ray/v2ray-core/transport/internet/udp"
+	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/log"
+	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/serial"
+	"v2ray.com/core/proxy"
+	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/internet/udp"
 )
 
 // Listener defines a server listening for connections

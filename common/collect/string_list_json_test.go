@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	. "github.com/v2ray/v2ray-core/common/collect"
-	"github.com/v2ray/v2ray-core/testing/assert"
+	. "v2ray.com/core/common/collect"
+	"v2ray.com/core/testing/assert"
 )
 
 func TestStringListUnmarshalError(t *testing.T) {

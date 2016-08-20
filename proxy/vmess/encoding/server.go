@@ -5,13 +5,13 @@ import (
 	"hash/fnv"
 	"io"
 
-	"github.com/v2ray/v2ray-core/common/crypto"
-	"github.com/v2ray/v2ray-core/common/log"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/common/serial"
-	"github.com/v2ray/v2ray-core/proxy/vmess"
-	"github.com/v2ray/v2ray-core/transport"
+	"v2ray.com/core/common/crypto"
+	"v2ray.com/core/common/log"
+	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/serial"
+	"v2ray.com/core/proxy/vmess"
+	"v2ray.com/core/transport"
 )
 
 type ServerSession struct {

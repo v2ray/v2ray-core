@@ -3,8 +3,8 @@ package testing
 import (
 	"fmt"
 
-	"github.com/v2ray/v2ray-core/common"
-	"github.com/v2ray/v2ray-core/proxy/registry"
+	"v2ray.com/core/common"
+	"v2ray.com/core/proxy/registry"
 )
 
 var count = 0

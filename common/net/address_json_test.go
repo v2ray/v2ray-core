@@ -7,8 +7,8 @@ import (
 	"net"
 	"testing"
 
-	. "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/testing/assert"
+	. "v2ray.com/core/common/net"
+	"v2ray.com/core/testing/assert"
 )
 
 func TestIPParsing(t *testing.T) {

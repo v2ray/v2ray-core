@@ -5,7 +5,7 @@ package net
 import (
 	"encoding/json"
 
-	"github.com/v2ray/v2ray-core/common/collect"
+	"v2ray.com/core/common/collect"
 )
 
 func (this *NetworkList) UnmarshalJSON(data []byte) error {

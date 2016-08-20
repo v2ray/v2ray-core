@@ -6,9 +6,9 @@ import (
 	"net/url"
 	"testing"
 
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/testing/assert"
-	v2http "github.com/v2ray/v2ray-core/testing/servers/http"
+	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/testing/assert"
+	v2http "v2ray.com/core/testing/servers/http"
 )
 
 func TestHttpProxy(t *testing.T) {

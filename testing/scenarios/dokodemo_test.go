@@ -4,9 +4,9 @@ import (
 	"net"
 	"testing"
 
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/testing/assert"
-	"github.com/v2ray/v2ray-core/testing/servers/tcp"
+	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/testing/assert"
+	"v2ray.com/core/testing/servers/tcp"
 )
 
 func TestDokodemoTCP(t *testing.T) {

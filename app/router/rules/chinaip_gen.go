@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	v2net "github.com/v2ray/v2ray-core/common/net"
+	v2net "v2ray.com/core/common/net"
 )
 
 const (
@@ -65,7 +65,7 @@ func main() {
 
 	fmt.Fprintln(file, "package rules")
 	fmt.Fprintln(file, "import (")
-	fmt.Fprintln(file, "v2net \"github.com/v2ray/v2ray-core/common/net\"")
+	fmt.Fprintln(file, "v2net \"v2ray.com/core/common/net\"")
 	fmt.Fprintln(file, ")")
 
 	fmt.Fprintln(file, "var (")

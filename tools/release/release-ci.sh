@@ -1,6 +1,6 @@
 #!/bin/bash
 
-go install github.com/v2ray/v2ray-core/tools/build
+go install v2ray.com/core/tools/build
 
 $GOPATH/bin/build --os=windows --arch=x86 --zip
 $GOPATH/bin/build --os=windows --arch=x64 --zip

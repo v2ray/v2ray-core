@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/testing/assert"
+	"v2ray.com/core/common/alloc"
+	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/testing/assert"
 )
 
 func TestSocks4AuthenticationRequestRead(t *testing.T) {

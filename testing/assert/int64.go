@@ -1,7 +1,7 @@
 package assert
 
 import (
-	"github.com/v2ray/v2ray-core/common/serial"
+	"v2ray.com/core/common/serial"
 )
 
 func (this *Assert) Int64(value int64) *Int64Subject {

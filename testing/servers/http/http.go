@@ -3,7 +3,7 @@ package tcp
 import (
 	"net/http"
 
-	v2net "github.com/v2ray/v2ray-core/common/net"
+	v2net "v2ray.com/core/common/net"
 )
 
 type Server struct {

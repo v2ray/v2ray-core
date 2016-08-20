@@ -7,12 +7,12 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/testing/assert"
-	"github.com/v2ray/v2ray-core/transport/internet/internal"
-	. "github.com/v2ray/v2ray-core/transport/internet/udp"
+	"v2ray.com/core/common/alloc"
+	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/proxy"
+	"v2ray.com/core/testing/assert"
+	"v2ray.com/core/transport/internet/internal"
+	. "v2ray.com/core/transport/internet/udp"
 )
 
 func TestHubSocksOption(t *testing.T) {

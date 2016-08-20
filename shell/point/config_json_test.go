@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	_ "github.com/v2ray/v2ray-core/app/router/rules"
-	. "github.com/v2ray/v2ray-core/shell/point"
+	_ "v2ray.com/core/app/router/rules"
+	. "v2ray.com/core/shell/point"
 
-	"github.com/v2ray/v2ray-core/testing/assert"
+	"v2ray.com/core/testing/assert"
 )
 
 func TestClientSampleConfig(t *testing.T) {

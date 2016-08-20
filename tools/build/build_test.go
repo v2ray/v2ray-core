@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/v2ray/v2ray-core/testing/assert"
+	"v2ray.com/core/testing/assert"
 )
 
 func cleanBinPath() {

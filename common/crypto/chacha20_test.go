@@ -5,8 +5,8 @@ import (
 	"encoding/hex"
 	"testing"
 
-	. "github.com/v2ray/v2ray-core/common/crypto"
-	"github.com/v2ray/v2ray-core/testing/assert"
+	. "v2ray.com/core/common/crypto"
+	"v2ray.com/core/testing/assert"
 )
 
 func mustDecodeHex(s string) []byte {

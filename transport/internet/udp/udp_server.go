@@ -4,12 +4,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v2ray/v2ray-core/app/dispatcher"
-	"github.com/v2ray/v2ray-core/common/alloc"
-	"github.com/v2ray/v2ray-core/common/log"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/transport/ray"
+	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/log"
+	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/proxy"
+	"v2ray.com/core/transport/ray"
 )
 
 type UDPResponseCallback func(destination v2net.Destination, payload *alloc.Buffer)

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/v2ray/v2ray-core/common/retry"
-	"github.com/v2ray/v2ray-core/testing/assert"
+	. "v2ray.com/core/common/retry"
+	"v2ray.com/core/testing/assert"
 )
 
 var (

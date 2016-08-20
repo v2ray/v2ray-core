@@ -1,12 +1,12 @@
 package socks
 
 import (
-	"github.com/v2ray/v2ray-core/common/alloc"
-	"github.com/v2ray/v2ray-core/common/log"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/proxy/socks/protocol"
-	"github.com/v2ray/v2ray-core/transport/internet/udp"
+	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/log"
+	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/proxy"
+	"v2ray.com/core/proxy/socks/protocol"
+	"v2ray.com/core/transport/internet/udp"
 )
 
 func (this *Server) listenUDP() error {

@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v2ray/v2ray-core/common/dice"
-	"github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/common/signal"
+	"v2ray.com/core/common/dice"
+	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/signal"
 )
 
 type Account struct {

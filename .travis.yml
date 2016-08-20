@@ -3,12 +3,14 @@ language: go
 go:
   - 1.7
 
+go_import_path: v2ray.com/core
+
 git:
   depth: 5
   
 script:
-  - go test -tags json github.com/v2ray/v2ray-core/...
-  
+  - go test -tags json v2ray.com/core/...
+
 after_success:
   - ./testing/coverage/coverall
 

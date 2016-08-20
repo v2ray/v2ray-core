@@ -3,8 +3,8 @@ package uuid_test
 import (
 	"testing"
 
-	. "github.com/v2ray/v2ray-core/common/uuid"
-	"github.com/v2ray/v2ray-core/testing/assert"
+	. "v2ray.com/core/common/uuid"
+	"v2ray.com/core/testing/assert"
 )
 
 func TestParseBytes(t *testing.T) {

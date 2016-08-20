@@ -8,29 +8,29 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/v2ray/v2ray-core"
-	_ "github.com/v2ray/v2ray-core/app/router/rules"
-	"github.com/v2ray/v2ray-core/common/log"
-	"github.com/v2ray/v2ray-core/shell/point"
+	"v2ray.com/core"
+	_ "v2ray.com/core/app/router/rules"
+	"v2ray.com/core/common/log"
+	"v2ray.com/core/shell/point"
 
 	// The following are necessary as they register handlers in their init functions.
-	_ "github.com/v2ray/v2ray-core/proxy/blackhole"
-	_ "github.com/v2ray/v2ray-core/proxy/dokodemo"
-	_ "github.com/v2ray/v2ray-core/proxy/freedom"
-	_ "github.com/v2ray/v2ray-core/proxy/http"
-	_ "github.com/v2ray/v2ray-core/proxy/shadowsocks"
-	_ "github.com/v2ray/v2ray-core/proxy/socks"
-	_ "github.com/v2ray/v2ray-core/proxy/vmess/inbound"
-	_ "github.com/v2ray/v2ray-core/proxy/vmess/outbound"
+	_ "v2ray.com/core/proxy/blackhole"
+	_ "v2ray.com/core/proxy/dokodemo"
+	_ "v2ray.com/core/proxy/freedom"
+	_ "v2ray.com/core/proxy/http"
+	_ "v2ray.com/core/proxy/shadowsocks"
+	_ "v2ray.com/core/proxy/socks"
+	_ "v2ray.com/core/proxy/vmess/inbound"
+	_ "v2ray.com/core/proxy/vmess/outbound"
 
-	_ "github.com/v2ray/v2ray-core/transport/internet/kcp"
-	_ "github.com/v2ray/v2ray-core/transport/internet/tcp"
-	_ "github.com/v2ray/v2ray-core/transport/internet/udp"
-	_ "github.com/v2ray/v2ray-core/transport/internet/ws"
+	_ "v2ray.com/core/transport/internet/kcp"
+	_ "v2ray.com/core/transport/internet/tcp"
+	_ "v2ray.com/core/transport/internet/udp"
+	_ "v2ray.com/core/transport/internet/ws"
 
-	_ "github.com/v2ray/v2ray-core/transport/internet/authenticators/noop"
-	_ "github.com/v2ray/v2ray-core/transport/internet/authenticators/srtp"
-	_ "github.com/v2ray/v2ray-core/transport/internet/authenticators/utp"
+	_ "v2ray.com/core/transport/internet/authenticators/noop"
+	_ "v2ray.com/core/transport/internet/authenticators/srtp"
+	_ "v2ray.com/core/transport/internet/authenticators/utp"
 )
 
 var (

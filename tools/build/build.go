@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/v2ray/v2ray-core/tools/git"
+	"v2ray.com/core/tools/git"
 )
 
 var (

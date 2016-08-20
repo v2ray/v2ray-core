@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/v2ray/v2ray-core/common"
-	"github.com/v2ray/v2ray-core/common/serial"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/serial"
 )
 
 func InterfaceToString(value interface{}) string {

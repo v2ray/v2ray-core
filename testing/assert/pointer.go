@@ -3,7 +3,7 @@ package assert
 import (
 	"reflect"
 
-	"github.com/v2ray/v2ray-core/common/serial"
+	"v2ray.com/core/common/serial"
 )
 
 func (this *Assert) Pointer(value interface{}) *PointerSubject {

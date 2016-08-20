@@ -3,8 +3,8 @@ package internal_test
 import (
 	"testing"
 
-	. "github.com/v2ray/v2ray-core/common/log/internal"
-	"github.com/v2ray/v2ray-core/testing/assert"
+	. "v2ray.com/core/common/log/internal"
+	"v2ray.com/core/testing/assert"
 )
 
 func TestAccessLog(t *testing.T) {

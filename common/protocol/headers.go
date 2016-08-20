@@ -1,8 +1,8 @@
 package protocol
 
 import (
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/common/uuid"
+	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/uuid"
 )
 
 type RequestCommand byte

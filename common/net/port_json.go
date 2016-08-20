@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/v2ray/v2ray-core/common/log"
+	"v2ray.com/core/common/log"
 )
 
 func parseIntPort(data []byte) (Port, error) {

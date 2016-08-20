@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	. "github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/testing/assert"
+	v2net "v2ray.com/core/common/net"
+	. "v2ray.com/core/common/protocol"
+	"v2ray.com/core/testing/assert"
 )
 
 func TestServerList(t *testing.T) {

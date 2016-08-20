@@ -6,9 +6,9 @@ import (
 	"net"
 	"sync"
 
-	"github.com/v2ray/v2ray-core/common/log"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	v2tls "github.com/v2ray/v2ray-core/transport/internet/tls"
+	"v2ray.com/core/common/log"
+	v2net "v2ray.com/core/common/net"
+	v2tls "v2ray.com/core/transport/internet/tls"
 )
 
 var (

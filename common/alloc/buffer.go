@@ -5,7 +5,7 @@ import (
 	"hash"
 	"io"
 
-	"github.com/v2ray/v2ray-core/common/serial"
+	"v2ray.com/core/common/serial"
 )
 
 const (

@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/testing/assert"
-	. "github.com/v2ray/v2ray-core/transport/internet/ws"
+	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/testing/assert"
+	. "v2ray.com/core/transport/internet/ws"
 )
 
 func Test_Connect_ws(t *testing.T) {

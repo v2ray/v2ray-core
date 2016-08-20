@@ -4,7 +4,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
+	"v2ray.com/core/common/alloc"
 )
 
 type ChanReader struct {

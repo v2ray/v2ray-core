@@ -1,7 +1,7 @@
 package kcp
 
 import (
-	"github.com/v2ray/v2ray-core/transport/internet"
+	"v2ray.com/core/transport/internet"
 )
 
 type Config struct {

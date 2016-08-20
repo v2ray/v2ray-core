@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
-	. "github.com/v2ray/v2ray-core/common/io"
-	"github.com/v2ray/v2ray-core/testing/assert"
+	"v2ray.com/core/common/alloc"
+	. "v2ray.com/core/common/io"
+	"v2ray.com/core/testing/assert"
 )
 
 func TestAdaptiveReader(t *testing.T) {

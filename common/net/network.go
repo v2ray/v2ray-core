@@ -3,7 +3,7 @@ package net
 import (
 	"strings"
 
-	"github.com/v2ray/v2ray-core/common/collect"
+	"v2ray.com/core/common/collect"
 )
 
 const (

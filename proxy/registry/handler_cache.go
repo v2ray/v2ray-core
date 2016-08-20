@@ -1,10 +1,10 @@
 package registry
 
 import (
-	"github.com/v2ray/v2ray-core/app"
-	"github.com/v2ray/v2ray-core/common"
-	"github.com/v2ray/v2ray-core/proxy"
-	"github.com/v2ray/v2ray-core/transport/internet"
+	"v2ray.com/core/app"
+	"v2ray.com/core/common"
+	"v2ray.com/core/proxy"
+	"v2ray.com/core/transport/internet"
 )
 
 var (

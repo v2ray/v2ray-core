@@ -1,7 +1,7 @@
 package assert
 
 import (
-	v2net "github.com/v2ray/v2ray-core/common/net"
+	v2net "v2ray.com/core/common/net"
 )
 
 func (this *Assert) Port(value v2net.Port) *PortSubject {

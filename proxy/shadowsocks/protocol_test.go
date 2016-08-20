@@ -4,12 +4,12 @@ import (
 	"io"
 	"testing"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/proxy"
-	. "github.com/v2ray/v2ray-core/proxy/shadowsocks"
-	"github.com/v2ray/v2ray-core/testing/assert"
-	"github.com/v2ray/v2ray-core/transport"
+	"v2ray.com/core/common/alloc"
+	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/proxy"
+	. "v2ray.com/core/proxy/shadowsocks"
+	"v2ray.com/core/testing/assert"
+	"v2ray.com/core/transport"
 )
 
 func TestNormalRequestParsing(t *testing.T) {

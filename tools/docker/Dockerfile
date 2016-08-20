@@ -1,8 +1,8 @@
 FROM golang:latest
 
-RUN go get -u github.com/v2ray/v2ray-core \
+RUN go get -u v2ray.com/core/... \
   && rm -f $GOPATH/bin/build \
-  && go install github.com/v2ray/v2ray-core/tools/build \
+  && go install v2ray.com/core/tools/build \
   && build \
   && mv bin/v2ray-custom-linux-64/v2ray bin \
   && rm -rf pkg src

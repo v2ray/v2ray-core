@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/v2ray/v2ray-core/app"
+	"v2ray.com/core/app"
 )
 
 const (

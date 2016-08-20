@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This file is accessible as https://install.direct/go.sh
-# Original source is located at github.com/v2ray/v2ray-core/release/install-release.sh
+# Original source is located at v2ray.com/core/release/install-release.sh
 
 while [[ $# > 0 ]]
 do
@@ -115,7 +115,7 @@ echo "Installing V2Ray ${VER} on ${ARCH}"
 if [ -n "$LOCAL" ]; then
   cp "$LOCAL" "/tmp/v2ray/v2ray.zip"
 else
-  DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/${VER}/v2ray-linux-${VDIS}.zip"
+  DOWNLOAD_LINK="https://v2ray.com/core/releases/download/${VER}/v2ray-linux-${VDIS}.zip"
 
   install_component "curl"
 

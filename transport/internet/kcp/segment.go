@@ -1,10 +1,10 @@
 package kcp
 
 import (
-	"github.com/v2ray/v2ray-core/common"
-	"github.com/v2ray/v2ray-core/common/alloc"
-	_ "github.com/v2ray/v2ray-core/common/log"
-	"github.com/v2ray/v2ray-core/common/serial"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/alloc"
+	_ "v2ray.com/core/common/log"
+	"v2ray.com/core/common/serial"
 )
 
 type Command byte

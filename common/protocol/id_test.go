@@ -3,10 +3,10 @@ package protocol_test
 import (
 	"testing"
 
-	"github.com/v2ray/v2ray-core/common/predicate"
-	. "github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/common/uuid"
-	"github.com/v2ray/v2ray-core/testing/assert"
+	"v2ray.com/core/common/predicate"
+	. "v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/uuid"
+	"v2ray.com/core/testing/assert"
 )
 
 func TestCmdKey(t *testing.T) {

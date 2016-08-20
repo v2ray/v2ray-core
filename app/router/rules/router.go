@@ -3,11 +3,11 @@ package rules
 import (
 	"errors"
 
-	"github.com/v2ray/v2ray-core/app"
-	"github.com/v2ray/v2ray-core/app/dns"
-	"github.com/v2ray/v2ray-core/app/router"
-	"github.com/v2ray/v2ray-core/common/log"
-	v2net "github.com/v2ray/v2ray-core/common/net"
+	"v2ray.com/core/app"
+	"v2ray.com/core/app/dns"
+	"v2ray.com/core/app/router"
+	"v2ray.com/core/common/log"
+	v2net "v2ray.com/core/common/net"
 )
 
 var (

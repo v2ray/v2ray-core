@@ -3,8 +3,8 @@ package io
 import (
 	"hash/fnv"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
-	v2io "github.com/v2ray/v2ray-core/common/io"
+	"v2ray.com/core/common/alloc"
+	v2io "v2ray.com/core/common/io"
 )
 
 type AuthChunkWriter struct {

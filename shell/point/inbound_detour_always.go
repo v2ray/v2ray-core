@@ -1,12 +1,12 @@
 package point
 
 import (
-	"github.com/v2ray/v2ray-core/app"
-	"github.com/v2ray/v2ray-core/common/dice"
-	"github.com/v2ray/v2ray-core/common/log"
-	"github.com/v2ray/v2ray-core/common/retry"
-	"github.com/v2ray/v2ray-core/proxy"
-	proxyregistry "github.com/v2ray/v2ray-core/proxy/registry"
+	"v2ray.com/core/app"
+	"v2ray.com/core/common/dice"
+	"v2ray.com/core/common/log"
+	"v2ray.com/core/common/retry"
+	"v2ray.com/core/proxy"
+	proxyregistry "v2ray.com/core/proxy/registry"
 )
 
 // Handler for inbound detour connections.

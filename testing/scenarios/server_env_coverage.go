@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/v2ray/v2ray-core/common/uuid"
+	"v2ray.com/core/common/uuid"
 )
 
 func BuildV2Ray() error {
@@ -16,7 +16,7 @@ func BuildV2Ray() error {
 		return nil
 	}
 
-	cmd := exec.Command("go", "test", "-tags", "json coverage coveragemain", "-coverpkg", "github.com/v2ray/v2ray-core/...", "-c", "-o", binaryPath, GetSourcePath())
+	cmd := exec.Command("go", "test", "-tags", "json coverage coveragemain", "-coverpkg", "v2ray.com/core/...", "-c", "-o", binaryPath, GetSourcePath())
 	return cmd.Run()
 }
 

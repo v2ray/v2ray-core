@@ -5,9 +5,9 @@ package socks_test
 import (
 	"testing"
 
-	"github.com/v2ray/v2ray-core/proxy/registry"
-	"github.com/v2ray/v2ray-core/proxy/socks"
-	"github.com/v2ray/v2ray-core/testing/assert"
+	"v2ray.com/core/proxy/registry"
+	"v2ray.com/core/proxy/socks"
+	"v2ray.com/core/testing/assert"
 )
 
 func TestDefaultIPAddress(t *testing.T) {

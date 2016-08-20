@@ -6,15 +6,15 @@ import (
 	"strings"
 	"testing"
 
-	testdispatcher "github.com/v2ray/v2ray-core/app/dispatcher/testing"
-	"github.com/v2ray/v2ray-core/common/dice"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/proxy"
-	. "github.com/v2ray/v2ray-core/proxy/http"
-	"github.com/v2ray/v2ray-core/testing/assert"
-	"github.com/v2ray/v2ray-core/transport/internet"
+	testdispatcher "v2ray.com/core/app/dispatcher/testing"
+	"v2ray.com/core/common/dice"
+	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/proxy"
+	. "v2ray.com/core/proxy/http"
+	"v2ray.com/core/testing/assert"
+	"v2ray.com/core/transport/internet"
 
-	_ "github.com/v2ray/v2ray-core/transport/internet/tcp"
+	_ "v2ray.com/core/transport/internet/tcp"
 )
 
 func TestHopByHopHeadersStrip(t *testing.T) {

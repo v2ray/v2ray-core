@@ -1,7 +1,7 @@
 package log
 
 import (
-	"github.com/v2ray/v2ray-core/common/log/internal"
+	"v2ray.com/core/common/log/internal"
 )
 
 type LogLevel int

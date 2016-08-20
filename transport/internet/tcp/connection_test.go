@@ -4,8 +4,8 @@ import (
 	"net"
 	"testing"
 
-	"github.com/v2ray/v2ray-core/testing/assert"
-	. "github.com/v2ray/v2ray-core/transport/internet/tcp"
+	"v2ray.com/core/testing/assert"
+	. "v2ray.com/core/transport/internet/tcp"
 )
 
 func TestRawConnection(t *testing.T) {

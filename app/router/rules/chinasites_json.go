@@ -4,7 +4,7 @@ package rules
 
 import (
 	"encoding/json"
-	"github.com/v2ray/v2ray-core/common/log"
+	"v2ray.com/core/common/log"
 )
 
 func parseChinaSitesRule(data []byte) (*Rule, error) {

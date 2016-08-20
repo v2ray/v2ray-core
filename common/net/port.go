@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/v2ray/v2ray-core/common/serial"
+	"v2ray.com/core/common/serial"
 )
 
 var (

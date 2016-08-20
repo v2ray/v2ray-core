@@ -5,9 +5,9 @@ package transport
 import (
 	"encoding/json"
 
-	"github.com/v2ray/v2ray-core/transport/internet/kcp"
-	"github.com/v2ray/v2ray-core/transport/internet/tcp"
-	"github.com/v2ray/v2ray-core/transport/internet/ws"
+	"v2ray.com/core/transport/internet/kcp"
+	"v2ray.com/core/transport/internet/tcp"
+	"v2ray.com/core/transport/internet/ws"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {

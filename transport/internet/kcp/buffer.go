@@ -3,7 +3,7 @@ package kcp
 import (
 	"sync"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
+	"v2ray.com/core/common/alloc"
 )
 
 const (

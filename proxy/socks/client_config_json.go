@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/proxy/registry"
+	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/proxy/registry"
 )
 
 func (this *ClientConfig) UnmarshalJSON(data []byte) error {

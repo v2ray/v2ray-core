@@ -5,9 +5,9 @@ package vmess
 import (
 	"encoding/json"
 
-	"github.com/v2ray/v2ray-core/common/log"
-	"github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/common/uuid"
+	"v2ray.com/core/common/log"
+	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/uuid"
 )
 
 func (u *Account) UnmarshalJSON(data []byte) error {

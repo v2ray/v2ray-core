@@ -7,18 +7,18 @@ import (
 	"runtime"
 	"time"
 
-	_ "github.com/v2ray/v2ray-core/app/router/rules"
-	"github.com/v2ray/v2ray-core/common/log"
+	_ "v2ray.com/core/app/router/rules"
+	"v2ray.com/core/common/log"
 
 	// The following are necessary as they register handlers in their init functions.
-	_ "github.com/v2ray/v2ray-core/proxy/blackhole"
-	_ "github.com/v2ray/v2ray-core/proxy/dokodemo"
-	_ "github.com/v2ray/v2ray-core/proxy/freedom"
-	_ "github.com/v2ray/v2ray-core/proxy/http"
-	_ "github.com/v2ray/v2ray-core/proxy/shadowsocks"
-	_ "github.com/v2ray/v2ray-core/proxy/socks"
-	_ "github.com/v2ray/v2ray-core/proxy/vmess/inbound"
-	_ "github.com/v2ray/v2ray-core/proxy/vmess/outbound"
+	_ "v2ray.com/core/proxy/blackhole"
+	_ "v2ray.com/core/proxy/dokodemo"
+	_ "v2ray.com/core/proxy/freedom"
+	_ "v2ray.com/core/proxy/http"
+	_ "v2ray.com/core/proxy/shadowsocks"
+	_ "v2ray.com/core/proxy/socks"
+	_ "v2ray.com/core/proxy/vmess/inbound"
+	_ "v2ray.com/core/proxy/vmess/outbound"
 )
 
 var (

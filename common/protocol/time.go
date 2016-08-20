@@ -3,8 +3,8 @@ package protocol
 import (
 	"time"
 
-	"github.com/v2ray/v2ray-core/common/dice"
-	"github.com/v2ray/v2ray-core/common/serial"
+	"v2ray.com/core/common/dice"
+	"v2ray.com/core/common/serial"
 )
 
 type Timestamp int64

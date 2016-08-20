@@ -8,7 +8,7 @@ import (
 	"errors"
 	"strings"
 
-	v2net "github.com/v2ray/v2ray-core/common/net"
+	v2net "v2ray.com/core/common/net"
 )
 
 func (this *TLSSettings) UnmarshalJSON(data []byte) error {

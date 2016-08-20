@@ -8,9 +8,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
-	"github.com/v2ray/v2ray-core/common/log"
-	"github.com/v2ray/v2ray-core/transport/internet"
+	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/log"
+	"v2ray.com/core/transport/internet"
 )
 
 var (

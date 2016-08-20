@@ -7,10 +7,10 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/v2ray/v2ray-core/common"
-	"github.com/v2ray/v2ray-core/common/log"
-	"github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/proxy/registry"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/log"
+	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/proxy/registry"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {

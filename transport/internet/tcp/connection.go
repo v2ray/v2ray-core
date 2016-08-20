@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/v2ray/v2ray-core/transport/internet/internal"
+	"v2ray.com/core/transport/internet/internal"
 )
 
 type ConnectionManager interface {

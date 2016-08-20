@@ -4,7 +4,7 @@ package core
 import (
 	"fmt"
 
-	"github.com/v2ray/v2ray-core/common/platform"
+	"v2ray.com/core/common/platform"
 )
 
 var (

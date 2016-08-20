@@ -3,15 +3,15 @@ package rules_test
 import (
 	"testing"
 
-	"github.com/v2ray/v2ray-core/app"
-	"github.com/v2ray/v2ray-core/app/dispatcher"
-	dispatchers "github.com/v2ray/v2ray-core/app/dispatcher/impl"
-	"github.com/v2ray/v2ray-core/app/dns"
-	"github.com/v2ray/v2ray-core/app/proxyman"
-	"github.com/v2ray/v2ray-core/app/router"
-	. "github.com/v2ray/v2ray-core/app/router/rules"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/testing/assert"
+	"v2ray.com/core/app"
+	"v2ray.com/core/app/dispatcher"
+	dispatchers "v2ray.com/core/app/dispatcher/impl"
+	"v2ray.com/core/app/dns"
+	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/app/router"
+	. "v2ray.com/core/app/router/rules"
+	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/testing/assert"
 )
 
 func TestSimpleRouter(t *testing.T) {

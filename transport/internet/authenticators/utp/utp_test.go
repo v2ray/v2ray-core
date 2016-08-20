@@ -3,9 +3,9 @@ package utp_test
 import (
 	"testing"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
-	"github.com/v2ray/v2ray-core/testing/assert"
-	. "github.com/v2ray/v2ray-core/transport/internet/authenticators/utp"
+	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/testing/assert"
+	. "v2ray.com/core/transport/internet/authenticators/utp"
 )
 
 func TestUTPOpenSeal(t *testing.T) {

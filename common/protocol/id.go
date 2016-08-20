@@ -6,7 +6,7 @@ import (
 	"errors"
 	"hash"
 
-	"github.com/v2ray/v2ray-core/common/uuid"
+	"v2ray.com/core/common/uuid"
 )
 
 const (

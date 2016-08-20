@@ -6,10 +6,10 @@ import (
 	"crypto/sha1"
 	"io"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
-	"github.com/v2ray/v2ray-core/common/log"
-	"github.com/v2ray/v2ray-core/common/serial"
-	"github.com/v2ray/v2ray-core/transport"
+	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/log"
+	"v2ray.com/core/common/serial"
+	"v2ray.com/core/transport"
 )
 
 const (

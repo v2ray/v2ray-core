@@ -3,8 +3,8 @@ package kcp_test
 import (
 	"testing"
 
-	"github.com/v2ray/v2ray-core/testing/assert"
-	. "github.com/v2ray/v2ray-core/transport/internet/kcp"
+	"v2ray.com/core/testing/assert"
+	. "v2ray.com/core/transport/internet/kcp"
 )
 
 func TestBuffer(t *testing.T) {

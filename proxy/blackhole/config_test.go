@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
-	v2io "github.com/v2ray/v2ray-core/common/io"
-	. "github.com/v2ray/v2ray-core/proxy/blackhole"
-	"github.com/v2ray/v2ray-core/testing/assert"
+	"v2ray.com/core/common/alloc"
+	v2io "v2ray.com/core/common/io"
+	. "v2ray.com/core/proxy/blackhole"
+	"v2ray.com/core/testing/assert"
 )
 
 func TestHTTPResponse(t *testing.T) {

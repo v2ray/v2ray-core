@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/v2ray/v2ray-core/testing/assert"
+	"v2ray.com/core/testing/assert"
 )
 
 func TestParseOS(t *testing.T) {

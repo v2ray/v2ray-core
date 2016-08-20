@@ -1,10 +1,10 @@
 package router
 
 import (
-	"github.com/v2ray/v2ray-core/app"
-	"github.com/v2ray/v2ray-core/common"
-	"github.com/v2ray/v2ray-core/common/log"
-	v2net "github.com/v2ray/v2ray-core/common/net"
+	"v2ray.com/core/app"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/log"
+	v2net "v2ray.com/core/common/net"
 )
 
 const (

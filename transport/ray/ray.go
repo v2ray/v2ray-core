@@ -1,7 +1,7 @@
 package ray
 
 import (
-	v2io "github.com/v2ray/v2ray-core/common/io"
+	v2io "v2ray.com/core/common/io"
 )
 
 // OutboundRay is a transport interface for outbound connections.

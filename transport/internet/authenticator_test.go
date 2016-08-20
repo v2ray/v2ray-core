@@ -3,11 +3,11 @@ package internet_test
 import (
 	"testing"
 
-	"github.com/v2ray/v2ray-core/testing/assert"
-	. "github.com/v2ray/v2ray-core/transport/internet"
-	_ "github.com/v2ray/v2ray-core/transport/internet/authenticators/noop"
-	_ "github.com/v2ray/v2ray-core/transport/internet/authenticators/srtp"
-	_ "github.com/v2ray/v2ray-core/transport/internet/authenticators/utp"
+	"v2ray.com/core/testing/assert"
+	. "v2ray.com/core/transport/internet"
+	_ "v2ray.com/core/transport/internet/authenticators/noop"
+	_ "v2ray.com/core/transport/internet/authenticators/srtp"
+	_ "v2ray.com/core/transport/internet/authenticators/utp"
 )
 
 func TestAllAuthenticatorLoadable(t *testing.T) {

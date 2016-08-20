@@ -4,8 +4,8 @@ import (
 	"crypto/cipher"
 	"crypto/md5"
 
-	"github.com/v2ray/v2ray-core/common/crypto"
-	"github.com/v2ray/v2ray-core/common/protocol"
+	"v2ray.com/core/common/crypto"
+	"v2ray.com/core/common/protocol"
 )
 
 type Cipher interface {

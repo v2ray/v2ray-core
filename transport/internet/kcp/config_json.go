@@ -5,9 +5,9 @@ package kcp
 import (
 	"encoding/json"
 
-	"github.com/v2ray/v2ray-core/common"
-	"github.com/v2ray/v2ray-core/common/log"
-	"github.com/v2ray/v2ray-core/transport/internet"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/log"
+	"v2ray.com/core/transport/internet"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {

@@ -7,10 +7,10 @@ import (
 	"errors"
 	"strings"
 
-	router "github.com/v2ray/v2ray-core/app/router"
-	"github.com/v2ray/v2ray-core/common/collect"
-	"github.com/v2ray/v2ray-core/common/log"
-	v2net "github.com/v2ray/v2ray-core/common/net"
+	router "v2ray.com/core/app/router"
+	"v2ray.com/core/common/collect"
+	"v2ray.com/core/common/log"
+	v2net "v2ray.com/core/common/net"
 )
 
 type JsonRule struct {

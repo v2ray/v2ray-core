@@ -4,9 +4,9 @@ import (
 	"net"
 	"testing"
 
-	. "github.com/v2ray/v2ray-core/app/router/rules"
-	v2net "github.com/v2ray/v2ray-core/common/net"
-	"github.com/v2ray/v2ray-core/testing/assert"
+	. "v2ray.com/core/app/router/rules"
+	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/testing/assert"
 )
 
 func makeDestination(ip string) v2net.Destination {

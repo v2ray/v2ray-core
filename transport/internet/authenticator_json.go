@@ -2,7 +2,7 @@
 
 package internet
 
-import "github.com/v2ray/v2ray-core/common/loader"
+import "v2ray.com/core/common/loader"
 
 func init() {
 	configCache = loader.NewJSONConfigLoader("type", "")

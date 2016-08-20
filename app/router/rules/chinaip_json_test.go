@@ -5,8 +5,8 @@ package rules_test
 import (
 	"testing"
 
-	. "github.com/v2ray/v2ray-core/app/router/rules"
-	"github.com/v2ray/v2ray-core/testing/assert"
+	. "v2ray.com/core/app/router/rules"
+	"v2ray.com/core/testing/assert"
 )
 
 func TestChinaIPJson(t *testing.T) {

@@ -1,8 +1,8 @@
 package noop
 
 import (
-	"github.com/v2ray/v2ray-core/common/alloc"
-	"github.com/v2ray/v2ray-core/transport/internet"
+	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/transport/internet"
 )
 
 type NoOpAuthenticator struct{}

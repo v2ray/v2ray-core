@@ -3,8 +3,8 @@ package io
 import (
 	"io"
 
-	"github.com/v2ray/v2ray-core/common"
-	"github.com/v2ray/v2ray-core/common/alloc"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/alloc"
 )
 
 // Reader extends io.Reader with alloc.Buffer.

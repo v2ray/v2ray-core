@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/v2ray/v2ray-core/app"
-	"github.com/v2ray/v2ray-core/app/dispatcher"
-	"github.com/v2ray/v2ray-core/common/log"
+	"v2ray.com/core/app"
+	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core/common/log"
 
 	"github.com/miekg/dns"
 )

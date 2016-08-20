@@ -1,9 +1,9 @@
 package inbound
 
 import (
-	"github.com/v2ray/v2ray-core/common/log"
-	"github.com/v2ray/v2ray-core/common/protocol"
-	"github.com/v2ray/v2ray-core/proxy/vmess"
+	"v2ray.com/core/common/log"
+	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/proxy/vmess"
 )
 
 func (this *VMessInboundHandler) generateCommand(request *protocol.RequestHeader) protocol.ResponseCommand {

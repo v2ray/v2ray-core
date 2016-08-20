@@ -3,7 +3,7 @@
 package registry
 
 import (
-	"github.com/v2ray/v2ray-core/common/loader"
+	"v2ray.com/core/common/loader"
 )
 
 func init() {

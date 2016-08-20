@@ -4,9 +4,9 @@ import (
 	"io"
 	"sync"
 
-	"github.com/v2ray/v2ray-core/common/alloc"
-	v2io "github.com/v2ray/v2ray-core/common/io"
-	"github.com/v2ray/v2ray-core/transport/internet"
+	"v2ray.com/core/common/alloc"
+	v2io "v2ray.com/core/common/io"
+	"v2ray.com/core/transport/internet"
 )
 
 type SegmentWriter interface {

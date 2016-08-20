@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/v2ray/v2ray-core/common/platform"
-	"github.com/v2ray/v2ray-core/common/signal"
+	"v2ray.com/core/common/platform"
+	"v2ray.com/core/common/signal"
 )
 
 type LogWriter interface {

@@ -3,8 +3,8 @@ package net
 import (
 	"net"
 
-	"github.com/v2ray/v2ray-core/common/log"
-	"github.com/v2ray/v2ray-core/common/predicate"
+	"v2ray.com/core/common/log"
+	"v2ray.com/core/common/predicate"
 )
 
 var (

@@ -3,8 +3,8 @@ package proxyman
 import (
 	"sync"
 
-	"github.com/v2ray/v2ray-core/app"
-	"github.com/v2ray/v2ray-core/proxy"
+	"v2ray.com/core/app"
+	"v2ray.com/core/proxy"
 )
 
 const (
