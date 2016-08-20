@@ -34,11 +34,11 @@ func GetTestBinaryPath() string {
 }
 
 func GetSourcePath() string {
-	return filepath.Join("github.com", "v2ray", "v2ray-core", "shell", "point", "main")
+	return filepath.Join("v2ray.com", "core", "shell", "point", "main")
 }
 
 func TestFile(filename string) string {
-	return filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "v2ray", "v2ray-core", "testing", "scenarios", "data", filename)
+	return filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", "testing", "scenarios", "data", filename)
 }
 
 func InitializeServerSetOnce(testcase string) error {

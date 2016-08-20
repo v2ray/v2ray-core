@@ -18,7 +18,7 @@ func TestClientSampleConfig(t *testing.T) {
 	assert := assert.On(t)
 
 	GOPATH := os.Getenv("GOPATH")
-	baseDir := filepath.Join(GOPATH, "src", "github.com", "v2ray", "v2ray-core", "tools", "release", "config")
+	baseDir := filepath.Join(GOPATH, "src", "v2ray.com", "core", "tools", "release", "config")
 
 	pointConfig, err := LoadConfig(filepath.Join(baseDir, "vpoint_socks_vmess.json"))
 	assert.Error(err).IsNil()
@@ -38,7 +38,7 @@ func TestServerSampleConfig(t *testing.T) {
 	assert := assert.On(t)
 
 	GOPATH := os.Getenv("GOPATH")
-	baseDir := filepath.Join(GOPATH, "src", "github.com", "v2ray", "v2ray-core", "tools", "release", "config")
+	baseDir := filepath.Join(GOPATH, "src", "v2ray.com", "core", "tools", "release", "config")
 
 	pointConfig, err := LoadConfig(filepath.Join(baseDir, "vpoint_vmess_freedom.json"))
 	assert.Error(err).IsNil()

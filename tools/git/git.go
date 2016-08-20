@@ -13,7 +13,7 @@ const (
 
 func getRepoRoot() string {
 	GOPATH := os.Getenv("GOPATH")
-	return filepath.Join(GOPATH, "src", "github.com", "v2ray", "v2ray-core")
+	return filepath.Join(GOPATH, "src", "v2ray.com", "core")
 }
 
 func RevParse(args ...string) (string, error) {
