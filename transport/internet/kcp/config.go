@@ -63,7 +63,7 @@ func (this *Config) GetReceivingQueueSize() uint32 {
 func DefaultConfig() Config {
 	return Config{
 		Mtu:              1350,
-		Tti:              20,
+		Tti:              50,
 		UplinkCapacity:   5,
 		DownlinkCapacity: 20,
 		Congestion:       false,
