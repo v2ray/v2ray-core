@@ -34,7 +34,7 @@ func (this *Config) GetAuthenticator() (internet.Authenticator, error) {
 
 func (this *Config) GetSendingInFlightSize() uint32 {
 	size := this.UplinkCapacity * 1024 * 1024 / this.Mtu / (1000 / this.Tti) / 2
-	if size == 0 {
+	if size < 8 {
 		size = 8
 	}
 	return size
@@ -50,7 +50,7 @@ func (this *Config) GetSendingQueueSize() uint32 {
 
 func (this *Config) GetReceivingWindowSize() uint32 {
 	size := this.DownlinkCapacity * 1024 * 1024 / this.Mtu / (1000 / this.Tti) / 2
-	if size == 0 {
+	if size < 8 {
 		size = 8
 	}
 	return size
