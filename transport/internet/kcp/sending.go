@@ -2,8 +2,6 @@ package kcp
 
 import (
 	"sync"
-
-	"v2ray.com/core/common/alloc"
 )
 
 type SendingWindow struct {
@@ -65,6 +63,13 @@ func (this *SendingWindow) Push(seg *DataSegment) {
 
 func (this *SendingWindow) First() *DataSegment {
 	return this.data[this.start]
+}
+
+func (this *SendingWindow) Last() *DataSegment {
+	if this.IsEmpty() {
+		return nil
+	}
+	return this.data[this.last]
 }
 
 func (this *SendingWindow) Clear(una uint32) {
@@ -171,80 +176,10 @@ func (this *SendingWindow) Flush(current uint32, resend uint32, rto uint32, maxI
 	}
 }
 
-type SendingQueue struct {
-	start uint32
-	cap   uint32
-	len   uint32
-	list  []*alloc.Buffer
-}
-
-func NewSendingQueue(size uint32) *SendingQueue {
-	return &SendingQueue{
-		start: 0,
-		cap:   size,
-		list:  make([]*alloc.Buffer, size),
-		len:   0,
-	}
-}
-
-func (this *SendingQueue) IsFull() bool {
-	return this.len == this.cap
-}
-
-func (this *SendingQueue) IsEmpty() bool {
-	return this.len == 0
-}
-
-func (this *SendingQueue) Pop() *alloc.Buffer {
-	if this.IsEmpty() {
-		return nil
-	}
-	seg := this.list[this.start]
-	this.list[this.start] = nil
-	this.len--
-	this.start++
-	if this.start == this.cap {
-		this.start = 0
-	}
-	if this.IsEmpty() {
-		this.start = 0
-	}
-	return seg
-}
-
-func (this *SendingQueue) Last() *alloc.Buffer {
-	if this.IsEmpty() {
-		return nil
-	}
-	return this.list[(this.start+this.len-1+this.cap)%this.cap]
-}
-
-func (this *SendingQueue) Push(seg *alloc.Buffer) {
-	if this.IsFull() {
-		return
-	}
-	this.list[(this.start+this.len)%this.cap] = seg
-	this.len++
-}
-
-func (this *SendingQueue) Clear() {
-	for i := uint32(0); i < this.len; i++ {
-		this.list[(i+this.start)%this.cap].Release()
-		this.list[(i+this.start)%this.cap] = nil
-	}
-	this.start = 0
-	this.len = 0
-}
-
-func (this *SendingQueue) Len() uint32 {
-	return this.len
-}
-
 type SendingWorker struct {
 	sync.RWMutex
 	conn                *Connection
 	window              *SendingWindow
-	queue               *SendingQueue
 	firstUnacknowledged uint32
 	nextNumber          uint32
 	remoteNextNumber    uint32
@@ -256,12 +191,11 @@ type SendingWorker struct {
 func NewSendingWorker(kcp *Connection) *SendingWorker {
 	worker := &SendingWorker{
 		conn:             kcp,
-		queue:            NewSendingQueue(effectiveConfig.GetSendingQueueSize()),
 		fastResend:       2,
 		remoteNextNumber: 32,
 		controlWindow:    effectiveConfig.GetSendingInFlightSize(),
 	}
-	worker.window = NewSendingWindow(effectiveConfig.GetSendingWindowSize(), worker, worker.OnPacketLoss)
+	worker.window = NewSendingWindow(effectiveConfig.GetSendingQueueSize(), worker, worker.OnPacketLoss)
 	return worker
 }
 
@@ -301,19 +235,6 @@ func (this *SendingWorker) ProcessAck(number uint32) {
 	this.FindFirstUnacknowledged()
 }
 
-func (this *SendingWorker) FillWindow(current uint32) {
-	for !this.queue.IsEmpty() && !this.window.IsFull() {
-		seg := NewDataSegment()
-		seg.Data = this.queue.Pop()
-		seg.Number = this.nextNumber
-		seg.timeout = current
-		seg.ackSkipped = 0
-		seg.transmit = 0
-		this.window.Push(seg)
-		this.nextNumber++
-	}
-}
-
 func (this *SendingWorker) ProcessSegment(current uint32, seg *AckSegment) {
 	defer seg.Release()
 
@@ -339,33 +260,40 @@ func (this *SendingWorker) ProcessSegment(current uint32, seg *AckSegment) {
 	}
 
 	this.window.HandleFastAck(maxack)
-	this.FillWindow(current)
 }
 
 func (this *SendingWorker) Push(b []byte) int {
 	nBytes := 0
 	this.Lock()
 	defer this.Unlock()
-	if !this.queue.IsEmpty() {
-		lastSeg := this.queue.Last()
-		if lastSeg.Len() < int(this.conn.mss) {
-			delta := int(this.conn.mss) - lastSeg.Len()
+	if !this.window.IsEmpty() {
+		lastSeg := this.window.Last()
+		dataLen := lastSeg.Data.Len()
+		if dataLen < int(this.conn.mss) {
+			delta := int(this.conn.mss) - dataLen
 			if delta > len(b) {
 				delta = len(b)
 			}
-			lastSeg.Append(b[:delta])
+			lastSeg.Data.Append(b[:delta])
 			b = b[delta:]
 			nBytes += delta
 		}
 	}
-	for len(b) > 0 && !this.queue.IsFull() {
+	for len(b) > 0 && !this.window.IsFull() {
 		var size int
 		if len(b) > int(this.conn.mss) {
 			size = int(this.conn.mss)
 		} else {
 			size = len(b)
 		}
-		this.queue.Push(AllocateBuffer().Clear().Append(b[:size]))
+		seg := NewDataSegment()
+		seg.Data = AllocateBuffer().Clear().Append(b[:size])
+		seg.Number = this.nextNumber
+		seg.timeout = 0
+		seg.ackSkipped = 0
+		seg.transmit = 0
+		this.window.Push(seg)
+		this.nextNumber++
 		b = b[size:]
 		nBytes += size
 	}
@@ -431,8 +359,9 @@ func (this *SendingWorker) Flush(current uint32) {
 		cwnd = this.firstUnacknowledged + this.controlWindow
 	}
 
-	this.FillWindow(current)
-	this.window.Flush(current, this.conn.fastresend, this.conn.roundTrip.Timeout(), cwnd)
+	if !this.window.IsEmpty() {
+		this.window.Flush(current, this.conn.fastresend, this.conn.roundTrip.Timeout(), cwnd)
+	}
 }
 
 func (this *SendingWorker) CloseWrite() {
@@ -440,12 +369,11 @@ func (this *SendingWorker) CloseWrite() {
 	defer this.Unlock()
 
 	this.window.Clear(0xFFFFFFFF)
-	this.queue.Clear()
 }
 
 func (this *SendingWorker) IsEmpty() bool {
 	this.RLock()
 	defer this.RUnlock()
 
-	return this.window.IsEmpty() && this.queue.IsEmpty()
+	return this.window.IsEmpty()
 }
