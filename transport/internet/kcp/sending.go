@@ -195,7 +195,7 @@ func NewSendingWorker(kcp *Connection) *SendingWorker {
 		remoteNextNumber: 32,
 		controlWindow:    effectiveConfig.GetSendingInFlightSize(),
 	}
-	worker.window = NewSendingWindow(effectiveConfig.GetSendingQueueSize(), worker, worker.OnPacketLoss)
+	worker.window = NewSendingWindow(effectiveConfig.GetSendingBufferSize(), worker, worker.OnPacketLoss)
 	return worker
 }
 

@@ -123,7 +123,7 @@ type ReceivingWorker struct {
 }
 
 func NewReceivingWorker(kcp *Connection) *ReceivingWorker {
-	windowSize := effectiveConfig.GetReceivingQueueSize()
+	windowSize := effectiveConfig.GetReceivingBufferSize()
 	worker := &ReceivingWorker{
 		conn:       kcp,
 		window:     NewReceivingWindow(windowSize),

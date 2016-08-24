@@ -40,12 +40,12 @@ func (this *Config) GetSendingInFlightSize() uint32 {
 	return size
 }
 
-func (this *Config) GetSendingWindowSize() uint32 {
-	return this.GetSendingInFlightSize() * 4
-}
-
-func (this *Config) GetSendingQueueSize() uint32 {
-	return this.WriteBuffer / this.Mtu
+func (this *Config) GetSendingBufferSize() uint32 {
+	size := this.WriteBuffer / this.Mtu
+	if size < this.GetSendingInFlightSize() {
+		size = this.GetSendingInFlightSize()
+	}
+	return size
 }
 
 func (this *Config) GetReceivingWindowSize() uint32 {
@@ -56,8 +56,16 @@ func (this *Config) GetReceivingWindowSize() uint32 {
 	return size
 }
 
-func (this *Config) GetReceivingQueueSize() uint32 {
-	return this.ReadBuffer / this.Mtu
+func (this *Config) GetReceivingBufferSize() uint32 {
+	bufferSize := this.ReadBuffer / this.Mtu
+	windowSize := this.DownlinkCapacity * 1024 * 1024 / this.Mtu / (1000 / this.Tti) / 2
+	if windowSize < 8 {
+		windowSize = 8
+	}
+	if bufferSize < windowSize {
+		bufferSize = windowSize
+	}
+	return bufferSize
 }
 
 func DefaultConfig() Config {
