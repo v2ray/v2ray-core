@@ -60,7 +60,7 @@ func (this *CacheServer) Release() {
 
 }
 
-//@Private
+// Private: Visible for testing.
 func (this *CacheServer) GetCached(domain string) []net.IP {
 	this.RLock()
 	defer this.RUnlock()

@@ -59,7 +59,7 @@ func NewUDPNameServer(address v2net.Destination, dispatcher dispatcher.PacketDis
 	return s
 }
 
-// @Private
+// Private: Visible for testing.
 func (this *UDPNameServer) Cleanup() {
 	expiredRequests := make([]uint16, 0, 16)
 	now := time.Now()
@@ -77,7 +77,7 @@ func (this *UDPNameServer) Cleanup() {
 	expiredRequests = nil
 }
 
-// @Private
+// Private: Visible for testing.
 func (this *UDPNameServer) AssignUnusedID(response chan<- *ARecord) uint16 {
 	var id uint16
 	this.Lock()
@@ -102,7 +102,7 @@ func (this *UDPNameServer) AssignUnusedID(response chan<- *ARecord) uint16 {
 	return id
 }
 
-// @Private
+// Private: Visible for testing.
 func (this *UDPNameServer) HandleResponse(dest v2net.Destination, payload *alloc.Buffer) {
 	msg := new(dns.Msg)
 	err := msg.Unpack(payload.Value)

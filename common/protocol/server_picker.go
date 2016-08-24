@@ -46,7 +46,7 @@ func (this *ServerList) GetServer(idx uint32) *ServerSpec {
 	}
 }
 
-// @Private
+// Private: Visible for testing.
 func (this *ServerList) RemoveServer(idx uint32) {
 	n := len(this.servers)
 	this.servers[idx] = this.servers[n-1]

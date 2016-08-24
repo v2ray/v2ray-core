@@ -44,7 +44,7 @@ func NewFreedomConnection(config *Config, space app.Space, meta *proxy.OutboundH
 	return f
 }
 
-// @Private
+// Private: Visible for testing.
 func (this *FreedomConnection) ResolveIP(destination v2net.Destination) v2net.Destination {
 	if !destination.Address().Family().IsDomain() {
 		return destination

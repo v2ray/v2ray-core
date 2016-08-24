@@ -277,7 +277,7 @@ func (this *SendingWorker) ProcessReceivingNextWithoutLock(nextNumber uint32) {
 	this.FindFirstUnacknowledged()
 }
 
-// @Private
+// Private: Visible for testing.
 func (this *SendingWorker) FindFirstUnacknowledged() {
 	prevUna := this.firstUnacknowledged
 	if !this.window.IsEmpty() {
@@ -290,7 +290,7 @@ func (this *SendingWorker) FindFirstUnacknowledged() {
 	}
 }
 
-// @Private
+// Private: Visible for testing.
 func (this *SendingWorker) ProcessAck(number uint32) {
 	// number < this.firstUnacknowledged || number >= this.nextNumber
 	if number-this.firstUnacknowledged > 0x7FFFFFFF || number-this.nextNumber < 0x7FFFFFFF {
@@ -372,7 +372,7 @@ func (this *SendingWorker) Push(b []byte) int {
 	return nBytes
 }
 
-// @Private
+// Private: Visible for testing.
 func (this *SendingWorker) Write(seg Segment) {
 	dataSeg := seg.(*DataSegment)
 

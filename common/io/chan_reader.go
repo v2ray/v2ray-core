@@ -22,7 +22,7 @@ func NewChanReader(stream Reader) *ChanReader {
 	return this
 }
 
-// @Private
+// Private: Visible for testing.
 func (this *ChanReader) Fill() {
 	b, err := this.stream.Read()
 	this.current = b

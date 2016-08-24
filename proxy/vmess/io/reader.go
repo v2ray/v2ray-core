@@ -10,7 +10,7 @@ import (
 	"v2ray.com/core/transport"
 )
 
-// @Private
+// Private: Visible for testing.
 type Validator struct {
 	actualAuth   hash.Hash32
 	expectedAuth uint32

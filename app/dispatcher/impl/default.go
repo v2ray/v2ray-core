@@ -24,7 +24,7 @@ func NewDefaultDispatcher(space app.Space) *DefaultDispatcher {
 	return d
 }
 
-// @Private
+// Private: Used by app.Space only.
 func (this *DefaultDispatcher) Initialize(space app.Space) error {
 	if !space.HasApp(proxyman.APP_ID_OUTBOUND_MANAGER) {
 		log.Error("DefaultDispatcher: OutboundHandlerManager is not found in the space.")
@@ -70,7 +70,7 @@ func (this *DefaultDispatcher) DispatchToOutbound(meta *proxy.InboundHandlerMeta
 	return direct
 }
 
-// @Private
+// Private: Visible for testing.
 func (this *DefaultDispatcher) FilterPacketAndDispatch(destination v2net.Destination, link ray.OutboundRay, dispatcher proxy.OutboundHandler) {
 	payload, err := link.OutboundInput().Read()
 	if err != nil {

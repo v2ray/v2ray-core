@@ -41,7 +41,7 @@ func (this *Router) Release() {
 
 }
 
-// @Private
+// Private: Visible for testing.
 func (this *Router) ResolveIP(dest v2net.Destination) []v2net.Destination {
 	ips := this.dnsServer.Get(dest.Address().Domain())
 	if len(ips) == 0 {
