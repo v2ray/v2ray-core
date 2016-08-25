@@ -123,11 +123,10 @@ type ReceivingWorker struct {
 }
 
 func NewReceivingWorker(kcp *Connection) *ReceivingWorker {
-	windowSize := effectiveConfig.GetReceivingBufferSize()
 	worker := &ReceivingWorker{
 		conn:       kcp,
-		window:     NewReceivingWindow(windowSize),
-		windowSize: windowSize,
+		window:     NewReceivingWindow(effectiveConfig.GetReceivingBufferSize()),
+		windowSize: effectiveConfig.GetReceivingInFlightSize(),
 	}
 	worker.acklist = NewAckList(worker)
 	return worker
@@ -155,6 +154,7 @@ func (this *ReceivingWorker) ProcessSegment(seg *DataSegment) {
 	if !this.window.Set(idx, seg) {
 		seg.Release()
 	}
+	this.updated = true
 }
 
 func (this *ReceivingWorker) Read(b []byte) int {

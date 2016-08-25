@@ -44,13 +44,16 @@ func (this *Config) GetSendingBufferSize() uint32 {
 	return this.GetSendingInFlightSize() + this.WriteBuffer/this.Mtu
 }
 
-func (this *Config) GetReceivingBufferSize() uint32 {
+func (this *Config) GetReceivingInFlightSize() uint32 {
 	size := this.DownlinkCapacity * 1024 * 1024 / this.Mtu / (1000 / this.Tti) / 2
 	if size < 8 {
 		size = 8
 	}
-	size += this.ReadBuffer / this.Mtu
 	return size
+}
+
+func (this *Config) GetReceivingBufferSize() uint32 {
+	return this.GetReceivingInFlightSize() + this.ReadBuffer/this.Mtu
 }
 
 func DefaultConfig() Config {
