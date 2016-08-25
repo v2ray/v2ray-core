@@ -1,6 +1,8 @@
 package alloc
 
 import (
+	"os"
+	"strconv"
 	"sync"
 )
 
@@ -14,14 +16,14 @@ type BufferPool struct {
 	allocator *sync.Pool
 }
 
-func NewBufferPool(bufferSize, poolSize int) *BufferPool {
+func NewBufferPool(bufferSize, poolSize uint32) *BufferPool {
 	pool := &BufferPool{
 		chain: make(chan []byte, poolSize),
 		allocator: &sync.Pool{
 			New: func() interface{} { return make([]byte, bufferSize) },
 		},
 	}
-	for i := 0; i < poolSize; i++ {
+	for i := uint32(0); i < poolSize; i++ {
 		pool.chain <- make([]byte, bufferSize)
 	}
 	return pool
@@ -51,10 +53,32 @@ func (p *BufferPool) Free(buffer *Buffer) {
 
 const (
 	SmallBufferSize = 1600 - defaultOffset
-	BufferSize      = 8*1024 - defaultOffset
-	LargeBufferSize = 64*1024 - defaultOffset
+
+	mediumBufferByteSize = 8 * 1024
+	BufferSize           = mediumBufferByteSize - defaultOffset
+
+	largeBufferByteSize = 64 * 1024
+	LargeBufferSize     = largeBufferByteSize - defaultOffset
+
+	PoolSizeEnvKey = "v2ray.buffer.size"
 )
 
-var smallPool = NewBufferPool(1600, 256)
-var mediumPool = NewBufferPool(8*1024, 1024)
-var largePool = NewBufferPool(64*1024, 32)
+var (
+	smallPool  = NewBufferPool(1600, 256)
+	mediumPool *BufferPool
+	largePool  *BufferPool
+)
+
+func init() {
+	var size uint32 = 20
+	sizeStr := os.Getenv(PoolSizeEnvKey)
+	if len(sizeStr) > 0 {
+		customSize, err := strconv.ParseUint(sizeStr, 10, 32)
+		if err == nil {
+			size = uint32(customSize)
+		}
+	}
+	totalByteSize := size * 1024 * 1024
+	mediumPool = NewBufferPool(mediumBufferByteSize, totalByteSize/4*3/mediumBufferByteSize)
+	largePool = NewBufferPool(largeBufferByteSize, totalByteSize/4/largeBufferByteSize)
+}
