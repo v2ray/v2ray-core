@@ -47,5 +47,5 @@ func (this SRTPFactory) Create(rawSettings internet.AuthenticatorConfig) interne
 }
 
 func init() {
-	internet.RegisterAuthenticator("srtp", SRTPFactory{}, func() interface{} { return new(Config) })
+	internet.RegisterAuthenticator("srtp", SRTPFactory{})
 }

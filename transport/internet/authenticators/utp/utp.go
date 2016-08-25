@@ -42,5 +42,5 @@ func (this UTPFactory) Create(rawSettings internet.AuthenticatorConfig) internet
 }
 
 func init() {
-	internet.RegisterAuthenticator("utp", UTPFactory{}, func() interface{} { return new(Config) })
+	internet.RegisterAuthenticator("utp", UTPFactory{})
 }

@@ -3,7 +3,6 @@ package internet
 import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/alloc"
-	"v2ray.com/core/common/loader"
 )
 
 type Authenticator interface {
@@ -21,15 +20,14 @@ type AuthenticatorConfig interface {
 
 var (
 	authenticatorCache = make(map[string]AuthenticatorFactory)
-	configCache        loader.ConfigLoader
 )
 
-func RegisterAuthenticator(name string, factory AuthenticatorFactory, configCreator loader.ConfigCreator) error {
+func RegisterAuthenticator(name string, factory AuthenticatorFactory) error {
 	if _, found := authenticatorCache[name]; found {
 		return common.ErrDuplicatedName
 	}
 	authenticatorCache[name] = factory
-	return configCache.RegisterCreator(name, configCreator)
+	return nil
 }
 
 func CreateAuthenticator(name string, config AuthenticatorConfig) (Authenticator, error) {
@@ -38,14 +36,6 @@ func CreateAuthenticator(name string, config AuthenticatorConfig) (Authenticator
 		return nil, common.ErrObjectNotFound
 	}
 	return factory.Create(config), nil
-}
-
-func CreateAuthenticatorConfig(rawConfig []byte) (string, AuthenticatorConfig, error) {
-	config, name, err := configCache.Load(rawConfig)
-	if err != nil {
-		return name, nil, err
-	}
-	return name, config, nil
 }
 
 type AuthenticatorChain struct {
