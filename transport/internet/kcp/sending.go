@@ -65,13 +65,6 @@ func (this *SendingWindow) First() *DataSegment {
 	return this.data[this.start]
 }
 
-func (this *SendingWindow) Last() *DataSegment {
-	if this.IsEmpty() {
-		return nil
-	}
-	return this.data[this.last]
-}
-
 func (this *SendingWindow) Clear(una uint32) {
 	for !this.IsEmpty() && this.data[this.start].Number < una {
 		this.Remove(0)
@@ -266,19 +259,7 @@ func (this *SendingWorker) Push(b []byte) int {
 	nBytes := 0
 	this.Lock()
 	defer this.Unlock()
-	if !this.window.IsEmpty() {
-		lastSeg := this.window.Last()
-		dataLen := lastSeg.Data.Len()
-		if dataLen < int(this.conn.mss) {
-			delta := int(this.conn.mss) - dataLen
-			if delta > len(b) {
-				delta = len(b)
-			}
-			lastSeg.Data.Append(b[:delta])
-			b = b[delta:]
-			nBytes += delta
-		}
-	}
+
 	for len(b) > 0 && !this.window.IsFull() {
 		var size int
 		if len(b) > int(this.conn.mss) {
