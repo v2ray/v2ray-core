@@ -9,5 +9,5 @@ type Config struct {
 	Address        v2net.Address
 	Port           v2net.Port
 	Network        *v2net.NetworkList
-	Timeout        int
+	Timeout        uint32
 }

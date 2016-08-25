@@ -19,7 +19,7 @@ import (
 )
 
 type FreedomConnection struct {
-	domainStrategy DomainStrategy
+	domainStrategy Config_DomainStrategy
 	timeout        uint32
 	dns            dns.Server
 	meta           *proxy.OutboundHandlerMeta
@@ -32,7 +32,7 @@ func NewFreedomConnection(config *Config, space app.Space, meta *proxy.OutboundH
 		meta:           meta,
 	}
 	space.InitializeApplication(func() error {
-		if config.DomainStrategy == DomainStrategyUseIP {
+		if config.DomainStrategy == Config_USE_IP {
 			if !space.HasApp(dns.APP_ID) {
 				log.Error("Freedom: DNS server is not found in the space.")
 				return app.ErrMissingApplication
@@ -75,7 +75,7 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 	defer ray.OutboundOutput().Close()
 
 	var conn internet.Connection
-	if this.domainStrategy == DomainStrategyUseIP && destination.Address().Family().IsDomain() {
+	if this.domainStrategy == Config_USE_IP && destination.Address().Family().IsDomain() {
 		destination = this.ResolveIP(destination)
 	}
 	err := retry.Timed(5, 100).On(func() error {
@@ -116,7 +116,7 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 		timeout = 16
 	}
 	if timeout > 0 {
-		reader = v2net.NewTimeOutReader(int(timeout) /* seconds */, conn)
+		reader = v2net.NewTimeOutReader(timeout /* seconds */, conn)
 	}
 
 	v2reader := v2io.NewAdaptiveReader(reader)

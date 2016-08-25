@@ -97,7 +97,7 @@ func TestIPResolution(t *testing.T) {
 	space.BindApp(dns.APP_ID, dnsServer)
 
 	freedom := NewFreedomConnection(
-		&Config{DomainStrategy: DomainStrategyUseIP},
+		&Config{DomainStrategy: Config_USE_IP},
 		space,
 		&proxy.OutboundHandlerMeta{
 			Address: v2net.AnyIP,

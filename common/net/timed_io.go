@@ -11,15 +11,15 @@ var (
 )
 
 type TimeOutReader struct {
-	timeout    int
+	timeout    uint32
 	connection net.Conn
 	worker     io.Reader
 }
 
-func NewTimeOutReader(timeout int /* seconds */, connection net.Conn) *TimeOutReader {
+func NewTimeOutReader(timeout uint32 /* seconds */, connection net.Conn) *TimeOutReader {
 	reader := &TimeOutReader{
 		connection: connection,
-		timeout:    -100,
+		timeout:    0,
 	}
 	reader.SetTimeOut(timeout)
 	return reader
@@ -29,12 +29,12 @@ func (reader *TimeOutReader) Read(p []byte) (int, error) {
 	return reader.worker.Read(p)
 }
 
-func (reader *TimeOutReader) GetTimeOut() int {
+func (reader *TimeOutReader) GetTimeOut() uint32 {
 	return reader.timeout
 }
 
-func (reader *TimeOutReader) SetTimeOut(value int) {
-	if value == reader.timeout {
+func (reader *TimeOutReader) SetTimeOut(value uint32) {
+	if reader.worker != nil && value == reader.timeout {
 		return
 	}
 	reader.timeout = value
@@ -56,7 +56,7 @@ func (reader *TimeOutReader) Release() {
 }
 
 type timedReaderWorker struct {
-	timeout    int
+	timeout    uint32
 	connection net.Conn
 }
 

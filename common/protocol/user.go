@@ -21,7 +21,7 @@ func NewUser(level UserLevel, email string) *User {
 }
 
 type UserSettings struct {
-	PayloadReadTimeout int
+	PayloadReadTimeout uint32
 }
 
 func GetUserSettings(level UserLevel) UserSettings {

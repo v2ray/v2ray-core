@@ -10,9 +10,9 @@ import (
 )
 
 // UnmarshalJSON implements json.Unmarshaler
-func (this *Config) UnmarshalJSON(data []byte) error {
+func (this *ServerConfig) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
-		Timeout int `json:"timeout"`
+		Timeout uint32 `json:"timeout"`
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
@@ -24,5 +24,5 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 }
 
 func init() {
-	registry.RegisterInboundConfig("http", func() interface{} { return new(Config) })
+	registry.RegisterInboundConfig("http", func() interface{} { return new(ServerConfig) })
 }

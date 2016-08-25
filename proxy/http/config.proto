@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package com.v2ray.core.proxy.http;
+option go_package = "http";
+
+// Config for HTTP proxy server.
+message ServerConfig {
+  uint32 timeout = 1;
+}
+
+// ClientConfig for HTTP proxy client.
+message ClientConfig {
+
+}

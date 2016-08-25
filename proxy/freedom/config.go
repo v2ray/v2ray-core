@@ -1,13 +1,3 @@
+//go:generate protoc --go_out=. config.proto
+
 package freedom
-
-type DomainStrategy int
-
-const (
-	DomainStrategyAsIs  = DomainStrategy(0)
-	DomainStrategyUseIP = DomainStrategy(1)
-)
-
-type Config struct {
-	DomainStrategy DomainStrategy
-	Timeout        uint32
-}

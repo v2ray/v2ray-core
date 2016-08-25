@@ -26,12 +26,12 @@ type Server struct {
 	sync.Mutex
 	accepting        bool
 	packetDispatcher dispatcher.PacketDispatcher
-	config           *Config
+	config           *ServerConfig
 	tcpListener      *internet.TCPHub
 	meta             *proxy.InboundHandlerMeta
 }
 
-func NewServer(config *Config, packetDispatcher dispatcher.PacketDispatcher, meta *proxy.InboundHandlerMeta) *Server {
+func NewServer(config *ServerConfig, packetDispatcher dispatcher.PacketDispatcher, meta *proxy.InboundHandlerMeta) *Server {
 	return &Server{
 		packetDispatcher: packetDispatcher,
 		config:           config,
@@ -273,7 +273,7 @@ func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *
 		return nil, common.ErrBadConfiguration
 	}
 	return NewServer(
-		rawConfig.(*Config),
+		rawConfig.(*ServerConfig),
 		space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
 		meta), nil
 }

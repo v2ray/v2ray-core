@@ -58,7 +58,7 @@ func TestNormalGetRequest(t *testing.T) {
 
 	port := v2net.Port(dice.Roll(20000) + 10000)
 	httpProxy := NewServer(
-		&Config{},
+		&ServerConfig{},
 		testPacketDispatcher,
 		&proxy.InboundHandlerMeta{
 			Address: v2net.LocalHostIP,

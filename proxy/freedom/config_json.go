@@ -19,10 +19,10 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
 		return errors.New("Freedom: Failed to parse config: " + err.Error())
 	}
-	this.DomainStrategy = DomainStrategyAsIs
+	this.DomainStrategy = Config_AS_IS
 	domainStrategy := strings.ToLower(jsonConfig.DomainStrategy)
-	if domainStrategy == "useip" {
-		this.DomainStrategy = DomainStrategyUseIP
+	if domainStrategy == "useip" || domainStrategy == "use_ip" {
+		this.DomainStrategy = Config_USE_IP
 	}
 	this.Timeout = jsonConfig.Timeout
 	return nil

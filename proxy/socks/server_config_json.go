@@ -23,7 +23,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		Accounts   []*Account         `json:"accounts"`
 		UDP        bool               `json:"udp"`
 		Host       *v2net.AddressJson `json:"ip"`
-		Timeout    int                `json:"timeout"`
+		Timeout    uint32             `json:"timeout"`
 	}
 
 	rawConfig := new(SocksConfig)

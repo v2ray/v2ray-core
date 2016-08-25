@@ -14,7 +14,7 @@ type Config struct {
 	Accounts   map[string]string
 	Address    v2net.Address
 	UDPEnabled bool
-	Timeout    int
+	Timeout    uint32
 }
 
 func (this *Config) HasAccount(username, password string) bool {
