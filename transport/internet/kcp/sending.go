@@ -178,7 +178,6 @@ type SendingWorker struct {
 	remoteNextNumber    uint32
 	controlWindow       uint32
 	fastResend          uint32
-	updated             bool
 }
 
 func NewSendingWorker(kcp *Connection) *SendingWorker {
@@ -206,14 +205,10 @@ func (this *SendingWorker) ProcessReceivingNextWithoutLock(nextNumber uint32) {
 
 // Private: Visible for testing.
 func (this *SendingWorker) FindFirstUnacknowledged() {
-	prevUna := this.firstUnacknowledged
 	if !this.window.IsEmpty() {
 		this.firstUnacknowledged = this.window.First().Number
 	} else {
 		this.firstUnacknowledged = this.nextNumber
-	}
-	if this.firstUnacknowledged != prevUna {
-		this.updated = true
 	}
 }
 
@@ -293,21 +288,6 @@ func (this *SendingWorker) Write(seg Segment) {
 	}
 
 	this.conn.output.Write(dataSeg)
-	this.updated = false
-}
-
-func (this *SendingWorker) PingNecessary() bool {
-	this.RLock()
-	defer this.RUnlock()
-
-	return this.updated
-}
-
-func (this *SendingWorker) MarkPingNecessary(b bool) {
-	this.Lock()
-	defer this.Unlock()
-
-	this.updated = b
 }
 
 func (this *SendingWorker) OnPacketLoss(lossRate uint32) {

@@ -117,7 +117,6 @@ type ReceivingWorker struct {
 	leftOver   *alloc.Buffer
 	window     *ReceivingWindow
 	acklist    *AckList
-	updated    bool
 	nextNumber uint32
 	windowSize uint32
 }
@@ -154,7 +153,6 @@ func (this *ReceivingWorker) ProcessSegment(seg *DataSegment) {
 	if !this.window.Set(idx, seg) {
 		seg.Release()
 	}
-	this.updated = true
 }
 
 func (this *ReceivingWorker) Read(b []byte) int {
@@ -180,7 +178,6 @@ func (this *ReceivingWorker) Read(b []byte) int {
 		}
 		this.window.Advance()
 		this.nextNumber++
-		this.updated = true
 
 		nBytes := copy(b[total:], seg.Data.Value)
 		total += nBytes
@@ -212,20 +209,7 @@ func (this *ReceivingWorker) Write(seg Segment) {
 		ackSeg.Option = SegmentOptionClose
 	}
 	this.conn.output.Write(ackSeg)
-	this.updated = false
 }
 
 func (this *ReceivingWorker) CloseRead() {
-}
-
-func (this *ReceivingWorker) PingNecessary() bool {
-	this.RLock()
-	defer this.RUnlock()
-	return this.updated
-}
-
-func (this *ReceivingWorker) MarkPingNecessary(b bool) {
-	this.Lock()
-	defer this.Unlock()
-	this.updated = b
 }
