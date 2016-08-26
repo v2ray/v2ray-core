@@ -12,8 +12,8 @@ import (
 
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
-		Servers []v2net.AddressJson          `json:"servers"`
-		Hosts   map[string]v2net.AddressJson `json:"hosts"`
+		Servers []v2net.AddressPB          `json:"servers"`
+		Hosts   map[string]v2net.AddressPB `json:"hosts"`
 	}
 	jsonConfig := new(JsonConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
@@ -21,16 +21,17 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 	this.NameServers = make([]v2net.Destination, len(jsonConfig.Servers))
 	for idx, server := range jsonConfig.Servers {
-		this.NameServers[idx] = v2net.UDPDestination(server.Address, v2net.Port(53))
+		this.NameServers[idx] = v2net.UDPDestination(server.AsAddress(), v2net.Port(53))
 	}
 
 	if jsonConfig.Hosts != nil {
 		this.Hosts = make(map[string]net.IP)
-		for domain, ip := range jsonConfig.Hosts {
-			if ip.Address.Family().IsDomain() {
-				return errors.New(ip.Address.String() + " is not an IP.")
+		for domain, ipOrDomain := range jsonConfig.Hosts {
+			ip := ipOrDomain.GetIp()
+			if ip == nil {
+				return errors.New(ipOrDomain.AsAddress().String() + " is not an IP.")
 			}
-			this.Hosts[domain] = ip.Address.IP()
+			this.Hosts[domain] = net.IP(ip)
 		}
 	}
 

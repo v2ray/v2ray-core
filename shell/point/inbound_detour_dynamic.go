@@ -52,7 +52,7 @@ func (this *InboundDetourHandlerDynamic) pickUnusedPort() v2net.Port {
 	delta := int(this.config.PortRange.To) - int(this.config.PortRange.From) + 1
 	for {
 		r := dice.Roll(delta)
-		port := this.config.PortRange.From + v2net.Port(r)
+		port := this.config.PortRange.FromPort() + v2net.Port(r)
 		_, used := this.portsInUse[port]
 		if !used {
 			return port

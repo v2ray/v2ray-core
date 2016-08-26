@@ -10,7 +10,7 @@ import (
 )
 
 func parseIntPort(data []byte) (Port, error) {
-	var intPort int
+	var intPort uint32
 	err := json.Unmarshal(data, &intPort)
 	if err != nil {
 		return Port(0), err
@@ -48,15 +48,15 @@ func parseStringPort(data []byte) (Port, Port, error) {
 func (this *PortRange) UnmarshalJSON(data []byte) error {
 	port, err := parseIntPort(data)
 	if err == nil {
-		this.From = port
-		this.To = port
+		this.From = uint32(port)
+		this.To = uint32(port)
 		return nil
 	}
 
 	from, to, err := parseStringPort(data)
 	if err == nil {
-		this.From = from
-		this.To = to
+		this.From = uint32(from)
+		this.To = uint32(to)
 		if this.From > this.To {
 			log.Error("Invalid port range ", this.From, " -> ", this.To)
 			return ErrInvalidPortRange

@@ -13,9 +13,9 @@ import (
 
 func (this *ClientConfig) UnmarshalJSON(data []byte) error {
 	type ServerConfig struct {
-		Address *v2net.AddressJson `json:"address"`
-		Port    v2net.Port         `json:"port"`
-		Users   []json.RawMessage  `json:"users"`
+		Address *v2net.AddressPB  `json:"address"`
+		Port    v2net.Port        `json:"port"`
+		Users   []json.RawMessage `json:"users"`
 	}
 	type JsonConfig struct {
 		Servers []*ServerConfig `json:"servers"`
@@ -26,7 +26,7 @@ func (this *ClientConfig) UnmarshalJSON(data []byte) error {
 	}
 	this.Servers = make([]*protocol.ServerSpec, len(jsonConfig.Servers))
 	for idx, serverConfig := range jsonConfig.Servers {
-		server := protocol.NewServerSpec(v2net.TCPDestination(serverConfig.Address.Address, serverConfig.Port), protocol.AlwaysValid())
+		server := protocol.NewServerSpec(v2net.TCPDestination(serverConfig.Address.AsAddress(), serverConfig.Port), protocol.AlwaysValid())
 		for _, rawUser := range serverConfig.Users {
 			user := new(protocol.User)
 			if err := json.Unmarshal(rawUser, user); err != nil {

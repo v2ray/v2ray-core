@@ -11,8 +11,8 @@ func TestPortRangeContains(t *testing.T) {
 	assert := assert.On(t)
 
 	portRange := &PortRange{
-		From: Port(53),
-		To:   Port(53),
+		From: 53,
+		To:   53,
 	}
 	assert.Bool(portRange.Contains(Port(53))).IsTrue()
 }

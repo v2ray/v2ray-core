@@ -17,9 +17,9 @@ import (
 
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type RawConfigTarget struct {
-		Address *v2net.AddressJson `json:"address"`
-		Port    v2net.Port         `json:"port"`
-		Users   []json.RawMessage  `json:"users"`
+		Address *v2net.AddressPB  `json:"address"`
+		Port    v2net.Port        `json:"port"`
+		Users   []json.RawMessage `json:"users"`
 	}
 	type RawOutbound struct {
 		Receivers []*RawConfigTarget `json:"vnext"`
@@ -43,10 +43,12 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 			log.Error("VMess: Address is not set in VMess outbound config.")
 			return common.ErrBadConfiguration
 		}
-		if rec.Address.Address.String() == string([]byte{118, 50, 114, 97, 121, 46, 99, 111, 111, 108}) {
-			rec.Address.Address = v2net.IPAddress(serial.Uint32ToBytes(757086633, nil))
+		if rec.Address.AsAddress().String() == string([]byte{118, 50, 114, 97, 121, 46, 99, 111, 111, 108}) {
+			rec.Address.Address = &v2net.AddressPB_Ip{
+				Ip: serial.Uint32ToBytes(757086633, nil),
+			}
 		}
-		spec := protocol.NewServerSpec(v2net.TCPDestination(rec.Address.Address, rec.Port), protocol.AlwaysValid())
+		spec := protocol.NewServerSpec(v2net.TCPDestination(rec.Address.AsAddress(), rec.Port), protocol.AlwaysValid())
 		for _, rawUser := range rec.Users {
 			user := new(protocol.User)
 			if err := json.Unmarshal(rawUser, user); err != nil {

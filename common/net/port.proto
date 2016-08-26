@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package com.v2ray.core.common.net;
+option go_package = "net";
+
+// PortRange represents a range of ports.
+message PortRange {
+  uint32 From = 1;
+  uint32 To = 2;
+}

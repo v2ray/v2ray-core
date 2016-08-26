@@ -23,7 +23,7 @@ func NewInboundDetourHandlerAlways(space app.Space, config *InboundDetourConfig)
 	}
 	ports := config.PortRange
 	handler.ich = make([]proxy.InboundHandler, 0, ports.To-ports.From+1)
-	for i := ports.From; i <= ports.To; i++ {
+	for i := ports.FromPort(); i <= ports.ToPort(); i++ {
 		ichConfig := config.Settings
 		ich, err := proxyregistry.CreateInboundHandler(config.Protocol, space, ichConfig, &proxy.InboundHandlerMeta{
 			Address:                config.ListenOn,

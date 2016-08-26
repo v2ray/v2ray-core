@@ -12,7 +12,7 @@ import (
 
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type DokodemoConfig struct {
-		Host         *v2net.AddressJson `json:"address"`
+		Host         *v2net.AddressPB   `json:"address"`
 		PortValue    v2net.Port         `json:"port"`
 		NetworkList  *v2net.NetworkList `json:"network"`
 		TimeoutValue uint32             `json:"timeout"`
@@ -23,7 +23,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		return errors.New("Dokodemo: Failed to parse config: " + err.Error())
 	}
 	if rawConfig.Host != nil {
-		this.Address = rawConfig.Host.Address
+		this.Address = rawConfig.Host.AsAddress()
 	}
 	this.Port = rawConfig.PortValue
 	this.Network = rawConfig.NetworkList

@@ -68,7 +68,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 func (this *InboundConnectionConfig) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
 		Port          uint16                   `json:"port"`
-		Listen        *v2net.AddressJson       `json:"listen"`
+		Listen        *v2net.AddressPB         `json:"listen"`
 		Protocol      string                   `json:"protocol"`
 		StreamSetting *internet.StreamSettings `json:"streamSettings"`
 		Settings      json.RawMessage          `json:"settings"`
@@ -82,10 +82,10 @@ func (this *InboundConnectionConfig) UnmarshalJSON(data []byte) error {
 	this.Port = v2net.Port(jsonConfig.Port)
 	this.ListenOn = v2net.AnyIP
 	if jsonConfig.Listen != nil {
-		if jsonConfig.Listen.Address.Family().IsDomain() {
-			return errors.New("Point: Unable to listen on domain address: " + jsonConfig.Listen.Address.Domain())
+		if jsonConfig.Listen.AsAddress().Family().IsDomain() {
+			return errors.New("Point: Unable to listen on domain address: " + jsonConfig.Listen.AsAddress().Domain())
 		}
-		this.ListenOn = jsonConfig.Listen.Address
+		this.ListenOn = jsonConfig.Listen.AsAddress()
 	}
 	if jsonConfig.StreamSetting != nil {
 		this.StreamSettings = jsonConfig.StreamSetting
@@ -100,7 +100,7 @@ func (this *InboundConnectionConfig) UnmarshalJSON(data []byte) error {
 func (this *OutboundConnectionConfig) UnmarshalJSON(data []byte) error {
 	type JsonConnectionConfig struct {
 		Protocol      string                   `json:"protocol"`
-		SendThrough   *v2net.AddressJson       `json:"sendThrough"`
+		SendThrough   *v2net.AddressPB         `json:"sendThrough"`
 		StreamSetting *internet.StreamSettings `json:"streamSettings"`
 		Settings      json.RawMessage          `json:"settings"`
 	}
@@ -112,7 +112,7 @@ func (this *OutboundConnectionConfig) UnmarshalJSON(data []byte) error {
 	this.Settings = jsonConfig.Settings
 
 	if jsonConfig.SendThrough != nil {
-		address := jsonConfig.SendThrough.Address
+		address := jsonConfig.SendThrough.AsAddress()
 		if address.Family().IsDomain() {
 			return errors.New("Point: Unable to send through: " + address.String())
 		}
@@ -184,7 +184,7 @@ func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 	type JsonInboundDetourConfig struct {
 		Protocol      string                         `json:"protocol"`
 		PortRange     *v2net.PortRange               `json:"port"`
-		ListenOn      *v2net.AddressJson             `json:"listen"`
+		ListenOn      *v2net.AddressPB               `json:"listen"`
 		Settings      json.RawMessage                `json:"settings"`
 		Tag           string                         `json:"tag"`
 		Allocation    *InboundDetourAllocationConfig `json:"allocate"`
@@ -201,10 +201,10 @@ func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 	}
 	this.ListenOn = v2net.AnyIP
 	if jsonConfig.ListenOn != nil {
-		if jsonConfig.ListenOn.Address.Family().IsDomain() {
-			return errors.New("Point: Unable to listen on domain address: " + jsonConfig.ListenOn.Address.Domain())
+		if jsonConfig.ListenOn.AsAddress().Family().IsDomain() {
+			return errors.New("Point: Unable to listen on domain address: " + jsonConfig.ListenOn.AsAddress().Domain())
 		}
-		this.ListenOn = jsonConfig.ListenOn.Address
+		this.ListenOn = jsonConfig.ListenOn.AsAddress()
 	}
 	this.Protocol = jsonConfig.Protocol
 	this.PortRange = *jsonConfig.PortRange
@@ -227,7 +227,7 @@ func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 func (this *OutboundDetourConfig) UnmarshalJSON(data []byte) error {
 	type JsonOutboundDetourConfig struct {
 		Protocol      string                   `json:"protocol"`
-		SendThrough   *v2net.AddressJson       `json:"sendThrough"`
+		SendThrough   *v2net.AddressPB         `json:"sendThrough"`
 		Tag           string                   `json:"tag"`
 		Settings      json.RawMessage          `json:"settings"`
 		StreamSetting *internet.StreamSettings `json:"streamSettings"`
@@ -241,7 +241,7 @@ func (this *OutboundDetourConfig) UnmarshalJSON(data []byte) error {
 	this.Settings = jsonConfig.Settings
 
 	if jsonConfig.SendThrough != nil {
-		address := jsonConfig.SendThrough.Address
+		address := jsonConfig.SendThrough.AsAddress()
 		if address.Family().IsDomain() {
 			return errors.New("Point: Unable to send through: " + address.String())
 		}

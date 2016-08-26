@@ -23,8 +23,8 @@ func PortFromBytes(port []byte) Port {
 
 // PortFromInt converts an integer to a Port.
 // @error when the integer is not positive or larger then 65535
-func PortFromInt(v int) (Port, error) {
-	if v <= 0 || v > 65535 {
+func PortFromInt(v uint32) (Port, error) {
+	if v > 65535 {
 		return Port(0), ErrInvalidPortRange
 	}
 	return Port(v), nil
@@ -33,11 +33,11 @@ func PortFromInt(v int) (Port, error) {
 // PortFromString converts a string to a Port.
 // @error when the string is not an integer or the integral value is a not a valid Port.
 func PortFromString(s string) (Port, error) {
-	v, err := strconv.Atoi(s)
+	v, err := strconv.ParseUint(s, 10, 32)
 	if err != nil {
 		return Port(0), ErrInvalidPortRange
 	}
-	return PortFromInt(v)
+	return PortFromInt(uint32(v))
 }
 
 // Value return the correspoding uint16 value of this Port.
@@ -55,13 +55,15 @@ func (this Port) String() string {
 	return serial.Uint16ToString(this.Value())
 }
 
-// PortRange represents a range of ports.
-type PortRange struct {
-	From Port
-	To   Port
+func (this PortRange) FromPort() Port {
+	return Port(this.From)
+}
+
+func (this PortRange) ToPort() Port {
+	return Port(this.To)
 }
 
 // Contains returns true if the given port is within the range of this PortRange.
 func (this PortRange) Contains(port Port) bool {
-	return this.From <= port && port <= this.To
+	return this.FromPort() <= port && port <= this.ToPort()
 }

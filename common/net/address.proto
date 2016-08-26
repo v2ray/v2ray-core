@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package com.v2ray.core.common.net;
+option go_package = "net";
+
+message AddressPB {
+  oneof address {
+    bytes ip = 1;
+    string domain = 2;
+  }
+}

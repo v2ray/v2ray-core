@@ -19,11 +19,11 @@ const (
 
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type SocksConfig struct {
-		AuthMethod string             `json:"auth"`
-		Accounts   []*Account         `json:"accounts"`
-		UDP        bool               `json:"udp"`
-		Host       *v2net.AddressJson `json:"ip"`
-		Timeout    uint32             `json:"timeout"`
+		AuthMethod string           `json:"auth"`
+		Accounts   []*Account       `json:"accounts"`
+		UDP        bool             `json:"udp"`
+		Host       *v2net.AddressPB `json:"ip"`
+		Timeout    uint32           `json:"timeout"`
 	}
 
 	rawConfig := new(SocksConfig)
@@ -48,7 +48,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 
 	this.UDPEnabled = rawConfig.UDP
 	if rawConfig.Host != nil {
-		this.Address = rawConfig.Host.Address
+		this.Address = rawConfig.Host.AsAddress()
 	} else {
 		this.Address = v2net.LocalHostIP
 	}
