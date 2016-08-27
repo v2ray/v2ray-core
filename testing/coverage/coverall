@@ -37,7 +37,7 @@ for OUT_FILE in $(find ${V2RAY_COV} -name "*.out"); do
 done
 
 COV_SORTED=${V2RAY_COV}/coverallsorted.out
-cat ${COVERAGE_FILE} | sort -t: -k1 | grep -vw "testing" > ${COV_SORTED}
+cat ${COVERAGE_FILE} | sort -t: -k1 | grep -vw "testing" | grep -v ".pb.go" > ${COV_SORTED}
 echo "mode: set" | cat - ${COV_SORTED} > ${COVERAGE_FILE}
 
 if [ "$FAIL" -eq 0 ]; then
