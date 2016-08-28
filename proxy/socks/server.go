@@ -303,6 +303,7 @@ func (this *Server) transport(reader io.Reader, writer io.Writer, session *proxy
 		defer v2reader.Release()
 
 		v2io.Pipe(v2reader, input)
+		input.Close()
 	}()
 
 	v2writer := v2io.NewAdaptiveWriter(writer)
