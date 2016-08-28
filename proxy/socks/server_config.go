@@ -4,20 +4,7 @@ import (
 	v2net "v2ray.com/core/common/net"
 )
 
-const (
-	AuthTypeNoAuth   = byte(0)
-	AuthTypePassword = byte(1)
-)
-
-type Config struct {
-	AuthType   byte
-	Accounts   map[string]string
-	Address    v2net.Address
-	UDPEnabled bool
-	Timeout    uint32
-}
-
-func (this *Config) HasAccount(username, password string) bool {
+func (this *ServerConfig) HasAccount(username, password string) bool {
 	if this.Accounts == nil {
 		return false
 	}
@@ -26,4 +13,11 @@ func (this *Config) HasAccount(username, password string) bool {
 		return false
 	}
 	return storedPassed == password
+}
+
+func (this *ServerConfig) GetNetAddress() v2net.Address {
+	if this.Address == nil {
+		return v2net.LocalHostIP
+	}
+	return this.Address.AsAddress()
 }

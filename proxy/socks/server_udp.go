@@ -17,7 +17,7 @@ func (this *Server) listenUDP() error {
 		return err
 	}
 	this.udpMutex.Lock()
-	this.udpAddress = v2net.UDPDestination(this.config.Address, this.meta.Port)
+	this.udpAddress = v2net.UDPDestination(this.config.GetNetAddress(), this.meta.Port)
 	this.udpHub = udpHub
 	this.udpMutex.Unlock()
 	return nil

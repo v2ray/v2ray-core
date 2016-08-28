@@ -29,7 +29,7 @@ type Server struct {
 	udpMutex         sync.RWMutex
 	accepting        bool
 	packetDispatcher dispatcher.PacketDispatcher
-	config           *Config
+	config           *ServerConfig
 	tcpListener      *internet.TCPHub
 	udpHub           *udp.UDPHub
 	udpAddress       v2net.Destination
@@ -38,7 +38,7 @@ type Server struct {
 }
 
 // NewServer creates a new Server object.
-func NewServer(config *Config, space app.Space, meta *proxy.InboundHandlerMeta) *Server {
+func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandlerMeta) *Server {
 	s := &Server{
 		config: config,
 		meta:   meta,
@@ -95,7 +95,7 @@ func (this *Server) Start() error {
 	this.tcpMutex.Lock()
 	this.tcpListener = listener
 	this.tcpMutex.Unlock()
-	if this.config.UDPEnabled {
+	if this.config.UdpEnabled {
 		this.listenUDP()
 	}
 	return nil
@@ -129,7 +129,7 @@ func (this *Server) handleConnection(connection internet.Connection) {
 
 func (this *Server) handleSocks5(clientAddr v2net.Destination, reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks5AuthenticationRequest) error {
 	expectedAuthMethod := protocol.AuthNotRequired
-	if this.config.AuthType == AuthTypePassword {
+	if this.config.AuthType == ServerConfig_PASSWORD {
 		expectedAuthMethod = protocol.AuthUserPass
 	}
 
@@ -152,7 +152,7 @@ func (this *Server) handleSocks5(clientAddr v2net.Destination, reader *v2io.Buff
 		log.Error("Socks: failed to write authentication: ", err)
 		return err
 	}
-	if this.config.AuthType == AuthTypePassword {
+	if this.config.AuthType == ServerConfig_PASSWORD {
 		upRequest, err := protocol.ReadUserPassRequest(reader)
 		if err != nil {
 			log.Warning("Socks: failed to read username and password: ", err)
@@ -182,7 +182,7 @@ func (this *Server) handleSocks5(clientAddr v2net.Destination, reader *v2io.Buff
 		return err
 	}
 
-	if request.Command == protocol.CmdUdpAssociate && this.config.UDPEnabled {
+	if request.Command == protocol.CmdUdpAssociate && this.config.UdpEnabled {
 		return this.handleUDP(reader, writer)
 	}
 
@@ -320,7 +320,7 @@ func (this *ServerFactory) StreamCapability() internet.StreamConnectionType {
 }
 
 func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
-	return NewServer(rawConfig.(*Config), space, meta), nil
+	return NewServer(rawConfig.(*ServerConfig), space, meta), nil
 }
 
 func init() {

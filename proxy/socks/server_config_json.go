@@ -17,7 +17,7 @@ const (
 	AuthMethodUserPass = "password"
 )
 
-func (this *Config) UnmarshalJSON(data []byte) error {
+func (this *ServerConfig) UnmarshalJSON(data []byte) error {
 	type SocksConfig struct {
 		AuthMethod string           `json:"auth"`
 		Accounts   []*Account       `json:"accounts"`
@@ -31,9 +31,9 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		return errors.New("Socks: Failed to parse config: " + err.Error())
 	}
 	if rawConfig.AuthMethod == AuthMethodNoAuth {
-		this.AuthType = AuthTypeNoAuth
+		this.AuthType = ServerConfig_NO_AUTH
 	} else if rawConfig.AuthMethod == AuthMethodUserPass {
-		this.AuthType = AuthTypePassword
+		this.AuthType = ServerConfig_PASSWORD
 	} else {
 		log.Error("Socks: Unknown auth method: ", rawConfig.AuthMethod)
 		return common.ErrBadConfiguration
@@ -46,11 +46,9 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		}
 	}
 
-	this.UDPEnabled = rawConfig.UDP
+	this.UdpEnabled = rawConfig.UDP
 	if rawConfig.Host != nil {
-		this.Address = rawConfig.Host.AsAddress()
-	} else {
-		this.Address = v2net.LocalHostIP
+		this.Address = rawConfig.Host
 	}
 
 	if rawConfig.Timeout >= 0 {
@@ -60,5 +58,5 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 }
 
 func init() {
-	registry.RegisterInboundConfig("socks", func() interface{} { return new(Config) })
+	registry.RegisterInboundConfig("socks", func() interface{} { return new(ServerConfig) })
 }
