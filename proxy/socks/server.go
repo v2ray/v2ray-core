@@ -295,28 +295,21 @@ func (this *Server) transport(reader io.Reader, writer io.Writer, session *proxy
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 
-	var inputFinish, outputFinish sync.Mutex
-	inputFinish.Lock()
-	outputFinish.Lock()
+	defer input.Close()
+	defer output.Release()
 
 	go func() {
 		v2reader := v2io.NewAdaptiveReader(reader)
 		defer v2reader.Release()
 
 		v2io.Pipe(v2reader, input)
-		inputFinish.Unlock()
-		input.Close()
 	}()
 
-	go func() {
-		v2writer := v2io.NewAdaptiveWriter(writer)
-		defer v2writer.Release()
+	v2writer := v2io.NewAdaptiveWriter(writer)
+	defer v2writer.Release()
 
-		v2io.Pipe(output, v2writer)
-		outputFinish.Unlock()
-		output.Release()
-	}()
-	outputFinish.Lock()
+	v2io.Pipe(output, v2writer)
+	output.Release()
 }
 
 type ServerFactory struct{}
