@@ -17,5 +17,5 @@ func TestDefaultIPAddress(t *testing.T) {
     "auth": "noauth"
   }`))
 	assert.Error(err).IsNil()
-	assert.Address(socksConfig.(*ServerConfig).Address.AsAddress()).EqualsString("127.0.0.1")
+	assert.Address(socksConfig.(*ServerConfig).GetNetAddress()).EqualsString("127.0.0.1")
 }
