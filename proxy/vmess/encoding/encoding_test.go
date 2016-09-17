@@ -10,18 +10,24 @@ import (
 	"v2ray.com/core/proxy/vmess"
 	. "v2ray.com/core/proxy/vmess/encoding"
 	"v2ray.com/core/testing/assert"
+
+	"github.com/golang/protobuf/ptypes"
 )
 
 func TestRequestSerialization(t *testing.T) {
 	assert := assert.On(t)
 
-	user := protocol.NewUser(
-		protocol.UserLevelUntrusted,
-		"test@v2ray.com")
-	user.Account = &vmess.Account{
-		ID:       protocol.NewID(uuid.New()),
-		AlterIDs: nil,
+	user := &protocol.User{
+		Level: 0,
+		Email: "test@v2ray.com",
 	}
+	account := &vmess.AccountPB{
+		Id:      uuid.New().String(),
+		AlterId: 0,
+	}
+	anyAccount, err := ptypes.MarshalAny(account)
+	assert.Error(err).IsNil()
+	user.Account = anyAccount
 
 	expectedRequest := &protocol.RequestHeader{
 		Version: 1,

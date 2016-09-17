@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+import "v2ray.com/core/common/protocol/user.proto";
+
+package com.v2ray.core.proxy.shadowsocks;
+option go_package = "shadowsocks";
+
+message Account {
+  string password = 1;
+}
+
+message Config {
+  enum Cipher {
+    UNKNOWN = 0;
+    AES_128_CFB = 1;
+    AES_256_CFB = 2;
+    CHACHA20 = 3;
+    CHACHA20_IEFT = 4;
+  }
+  Cipher cipher = 1;
+  bool udp_enabled = 2;
+  com.v2ray.core.common.protocol.User user = 3;
+}

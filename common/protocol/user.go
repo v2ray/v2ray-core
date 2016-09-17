@@ -1,35 +1,44 @@
 package protocol
 
-type UserLevel byte
+import (
+	"errors"
 
-const (
-	UserLevelAdmin     = UserLevel(255)
-	UserLevelUntrusted = UserLevel(0)
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
 )
 
-type User struct {
-	Account Account
-	Level   UserLevel
-	Email   string
+var (
+	ErrUserMissing    = errors.New("User is not specified.")
+	ErrAccountMissing = errors.New("Account is not specified.")
+	ErrNonMessageType = errors.New("Not a protobuf message.")
+)
+
+func (this *User) GetTypedAccount(account AsAccount) (Account, error) {
+	anyAccount := this.GetAccount()
+	if anyAccount == nil {
+		return nil, ErrAccountMissing
+	}
+	protoAccount, ok := account.(proto.Message)
+	if !ok {
+		return nil, ErrNonMessageType
+	}
+	err := ptypes.UnmarshalAny(anyAccount, protoAccount)
+	if err != nil {
+		return nil, err
+	}
+	return account.AsAccount()
 }
 
-func NewUser(level UserLevel, email string) *User {
-	return &User{
-		Level: level,
-		Email: email,
+func (this *User) GetSettings() UserSettings {
+	settings := UserSettings{
+		PayloadReadTimeout: 120,
 	}
+	if this.Level > 0 {
+		settings.PayloadReadTimeout = 0
+	}
+	return settings
 }
 
 type UserSettings struct {
 	PayloadReadTimeout uint32
-}
-
-func GetUserSettings(level UserLevel) UserSettings {
-	settings := UserSettings{
-		PayloadReadTimeout: 120,
-	}
-	if level > 0 {
-		settings.PayloadReadTimeout = 0
-	}
-	return settings
 }

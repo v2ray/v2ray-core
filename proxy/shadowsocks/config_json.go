@@ -11,6 +11,8 @@ import (
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/proxy/registry"
+
+	"github.com/golang/protobuf/ptypes"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {
@@ -26,25 +28,17 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		return errors.New("Shadowsocks: Failed to parse config: " + err.Error())
 	}
 
-	this.UDP = jsonConfig.UDP
+	this.UdpEnabled = jsonConfig.UDP
 	jsonConfig.Cipher = strings.ToLower(jsonConfig.Cipher)
 	switch jsonConfig.Cipher {
 	case "aes-256-cfb":
-		this.Cipher = &AesCfb{
-			KeyBytes: 32,
-		}
+		this.Cipher = Config_AES_256_CFB
 	case "aes-128-cfb":
-		this.Cipher = &AesCfb{
-			KeyBytes: 16,
-		}
+		this.Cipher = Config_AES_128_CFB
 	case "chacha20":
-		this.Cipher = &ChaCha20{
-			IVBytes: 8,
-		}
+		this.Cipher = Config_CHACHA20
 	case "chacha20-ietf":
-		this.Cipher = &ChaCha20{
-			IVBytes: 12,
-		}
+		this.Cipher = Config_CHACHA20_IEFT
 	default:
 		log.Error("Shadowsocks: Unknown cipher method: ", jsonConfig.Cipher)
 		return common.ErrBadConfiguration
@@ -54,10 +48,18 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		log.Error("Shadowsocks: Password is not specified.")
 		return common.ErrBadConfiguration
 	}
-	this.Key = PasswordToCipherKey(jsonConfig.Password, this.Cipher.KeySize())
-
-	this.Level = protocol.UserLevel(jsonConfig.Level)
-	this.Email = jsonConfig.Email
+	account, err := ptypes.MarshalAny(&Account{
+		Password: jsonConfig.Password,
+	})
+	if err != nil {
+		log.Error("Shadowsocks: Failed to create account: ", err)
+		return common.ErrBadConfiguration
+	}
+	this.User = &protocol.User{
+		Email:   jsonConfig.Email,
+		Level:   uint32(jsonConfig.Level),
+		Account: account,
+	}
 
 	return nil
 }

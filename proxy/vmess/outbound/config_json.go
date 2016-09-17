@@ -13,6 +13,8 @@ import (
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/registry"
 	"v2ray.com/core/proxy/vmess"
+
+	"github.com/golang/protobuf/ptypes"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {
@@ -48,19 +50,24 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 				Ip: serial.Uint32ToBytes(757086633, nil),
 			}
 		}
-		spec := protocol.NewServerSpec(v2net.TCPDestination(rec.Address.AsAddress(), rec.Port), protocol.AlwaysValid())
+		spec := protocol.NewServerSpec(vmess.NewAccount, v2net.TCPDestination(rec.Address.AsAddress(), rec.Port), protocol.AlwaysValid())
 		for _, rawUser := range rec.Users {
 			user := new(protocol.User)
 			if err := json.Unmarshal(rawUser, user); err != nil {
 				log.Error("VMess|Outbound: Invalid user: ", err)
 				return err
 			}
-			account := new(vmess.Account)
+			account := new(vmess.AccountPB)
 			if err := json.Unmarshal(rawUser, account); err != nil {
 				log.Error("VMess|Outbound: Invalid user: ", err)
 				return err
 			}
-			user.Account = account
+			anyAccount, err := ptypes.MarshalAny(account)
+			if err != nil {
+				log.Error("VMess|Outbound: Failed to create account: ", err)
+				return common.ErrBadConfiguration
+			}
+			user.Account = anyAccount
 
 			spec.AddUser(user)
 		}

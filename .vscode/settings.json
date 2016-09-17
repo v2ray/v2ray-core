@@ -2,5 +2,12 @@
 {
   "editor.tabSize": 2,
   
-  "go.buildTags": "json"
+  "go.buildTags": "json",
+
+  "protoc": {
+    "options": [
+      "--proto_path=$GOPATH/src/",
+      "--proto_path=$GOPATH/src/github.com/google/protobuf/src"
+    ]
+  }
 }

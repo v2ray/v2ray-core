@@ -9,31 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/signal"
 )
-
-type Account struct {
-	ID       *protocol.ID
-	AlterIDs []*protocol.ID
-}
-
-func (this *Account) AnyValidID() *protocol.ID {
-	if len(this.AlterIDs) == 0 {
-		return this.ID
-	}
-	return this.AlterIDs[dice.Roll(len(this.AlterIDs))]
-}
-
-func (this *Account) Equals(account protocol.Account) bool {
-	vmessAccount, ok := account.(*Account)
-	if !ok {
-		return false
-	}
-	// TODO: handle AlterIds difference
-	return this.ID.Equals(vmessAccount.ID)
-}
 
 const (
 	updateIntervalSec = 10
@@ -140,7 +118,11 @@ L:
 func (this *TimedUserValidator) Add(user *protocol.User) error {
 	idx := len(this.validUsers)
 	this.validUsers = append(this.validUsers, user)
-	account := user.Account.(*Account)
+	rawAccount, err := user.GetTypedAccount(&AccountPB{})
+	if err != nil {
+		return err
+	}
+	account := rawAccount.(*Account)
 
 	nowSec := time.Now().Unix()
 

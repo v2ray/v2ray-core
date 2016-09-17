@@ -20,12 +20,14 @@ import (
 	"v2ray.com/core/proxy/vmess/encoding"
 	vmessio "v2ray.com/core/proxy/vmess/io"
 	"v2ray.com/core/transport/internet"
+
+	"github.com/golang/protobuf/ptypes"
 )
 
 type userByEmail struct {
 	sync.RWMutex
 	cache           map[string]*protocol.User
-	defaultLevel    protocol.UserLevel
+	defaultLevel    uint32
 	defaultAlterIDs uint16
 }
 
@@ -51,14 +53,16 @@ func (this *userByEmail) Get(email string) (*protocol.User, bool) {
 		this.Lock()
 		user, found = this.cache[email]
 		if !found {
-			id := protocol.NewID(uuid.New())
-			alterIDs := protocol.NewAlterIDs(id, this.defaultAlterIDs)
-			account := &vmess.Account{
-				ID:       id,
-				AlterIDs: alterIDs,
+			account := &vmess.AccountPB{
+				Id:      uuid.New().String(),
+				AlterId: uint32(this.defaultAlterIDs),
 			}
-			user = protocol.NewUser(this.defaultLevel, email)
-			user.Account = account
+			anyAccount, _ := ptypes.MarshalAny(account)
+			user = &protocol.User{
+				Level:   this.defaultLevel,
+				Email:   email,
+				Account: anyAccount,
+			}
 			this.cache[email] = user
 		}
 		this.Unlock()
@@ -176,7 +180,7 @@ func (this *VMessInboundHandler) HandleConnection(connection internet.Connection
 	var readFinish sync.Mutex
 	readFinish.Lock()
 
-	userSettings := protocol.GetUserSettings(request.User.Level)
+	userSettings := request.User.GetSettings()
 	connReader.SetTimeOut(userSettings.PayloadReadTimeout)
 	reader.SetCached(false)
 

@@ -24,6 +24,8 @@ import (
 type Server struct {
 	packetDispatcher dispatcher.PacketDispatcher
 	config           *Config
+	cipher           Cipher
+	cipherKey        []byte
 	meta             *proxy.InboundHandlerMeta
 	accepting        bool
 	tcpHub           *internet.TCPHub
@@ -31,12 +33,31 @@ type Server struct {
 	udpServer        *udp.UDPServer
 }
 
-func NewServer(config *Config, packetDispatcher dispatcher.PacketDispatcher, meta *proxy.InboundHandlerMeta) *Server {
-	return &Server{
-		config:           config,
-		packetDispatcher: packetDispatcher,
-		meta:             meta,
+func NewServer(config *Config, space app.Space, meta *proxy.InboundHandlerMeta) (*Server, error) {
+	if config.GetUser() == nil {
+		return nil, protocol.ErrUserMissing
 	}
+	account := new(Account)
+	if _, err := config.GetUser().GetTypedAccount(account); err != nil {
+		return nil, err
+	}
+	cipher := config.GetCipher()
+	s := &Server{
+		config:    config,
+		meta:      meta,
+		cipher:    cipher,
+		cipherKey: account.GetCipherKey(cipher.KeySize()),
+	}
+
+	space.InitializeApplication(func() error {
+		if !space.HasApp(dispatcher.APP_ID) {
+			return app.ErrMissingApplication
+		}
+		s.packetDispatcher = space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)
+		return nil
+	})
+
+	return s, nil
 }
 
 func (this *Server) Port() v2net.Port {
@@ -70,7 +91,7 @@ func (this *Server) Start() error {
 	}
 	this.tcpHub = tcpHub
 
-	if this.config.UDP {
+	if this.config.UdpEnabled {
 		this.udpServer = udp.NewUDPServer(this.meta, this.packetDispatcher)
 		udpHub, err := udp.ListenUDP(this.meta.Address, this.meta.Port, udp.ListenOption{Callback: this.handlerUDPPayload})
 		if err != nil {
@@ -89,12 +110,11 @@ func (this *Server) handlerUDPPayload(payload *alloc.Buffer, session *proxy.Sess
 	defer payload.Release()
 
 	source := session.Source
-	ivLen := this.config.Cipher.IVSize()
+	ivLen := this.cipher.IVSize()
 	iv := payload.Value[:ivLen]
-	key := this.config.Key
 	payload.SliceFrom(ivLen)
 
-	stream, err := this.config.Cipher.NewDecodingStream(key, iv)
+	stream, err := this.cipher.NewDecodingStream(this.cipherKey, iv)
 	if err != nil {
 		log.Error("Shadowsocks: Failed to create decoding stream: ", err)
 		return
@@ -102,7 +122,7 @@ func (this *Server) handlerUDPPayload(payload *alloc.Buffer, session *proxy.Sess
 
 	reader := crypto.NewCryptionReader(stream, payload)
 
-	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(key, iv)), true)
+	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(this.cipherKey, iv)), true)
 	if err != nil {
 		if err != io.EOF {
 			log.Access(source, "", log.AccessRejected, err)
@@ -125,7 +145,7 @@ func (this *Server) handlerUDPPayload(payload *alloc.Buffer, session *proxy.Sess
 		rand.Read(response.Value)
 		respIv := response.Value
 
-		stream, err := this.config.Cipher.NewEncodingStream(key, respIv)
+		stream, err := this.cipher.NewEncodingStream(this.cipherKey, respIv)
 		if err != nil {
 			log.Error("Shadowsocks: Failed to create encoding stream: ", err)
 			return
@@ -149,7 +169,7 @@ func (this *Server) handlerUDPPayload(payload *alloc.Buffer, session *proxy.Sess
 		writer.Write(payload.Value)
 
 		if request.OTA {
-			respAuth := NewAuthenticator(HeaderKeyGenerator(key, respIv))
+			respAuth := NewAuthenticator(HeaderKeyGenerator(this.cipherKey, respIv))
 			respAuth.Authenticate(response.Value, response.Value[ivLen:])
 		}
 
@@ -169,7 +189,7 @@ func (this *Server) handleConnection(conn internet.Connection) {
 	bufferedReader := v2io.NewBufferedReader(timedReader)
 	defer bufferedReader.Release()
 
-	ivLen := this.config.Cipher.IVSize()
+	ivLen := this.cipher.IVSize()
 	_, err := io.ReadFull(bufferedReader, buffer.Value[:ivLen])
 	if err != nil {
 		if err != io.EOF {
@@ -180,9 +200,8 @@ func (this *Server) handleConnection(conn internet.Connection) {
 	}
 
 	iv := buffer.Value[:ivLen]
-	key := this.config.Key
 
-	stream, err := this.config.Cipher.NewDecodingStream(key, iv)
+	stream, err := this.cipher.NewDecodingStream(this.cipherKey, iv)
 	if err != nil {
 		log.Error("Shadowsocks: Failed to create decoding stream: ", err)
 		return
@@ -190,7 +209,7 @@ func (this *Server) handleConnection(conn internet.Connection) {
 
 	reader := crypto.NewCryptionReader(stream, bufferedReader)
 
-	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(key, iv)), false)
+	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(this.cipherKey, iv)), false)
 	if err != nil {
 		log.Access(conn.RemoteAddr(), "", log.AccessRejected, err)
 		log.Warning("Shadowsocks: Invalid request from ", conn.RemoteAddr(), ": ", err)
@@ -199,7 +218,7 @@ func (this *Server) handleConnection(conn internet.Connection) {
 	defer request.Release()
 	bufferedReader.SetCached(false)
 
-	userSettings := protocol.GetUserSettings(this.config.Level)
+	userSettings := this.config.GetUser().GetSettings()
 	timedReader.SetTimeOut(userSettings.PayloadReadTimeout)
 
 	dest := v2net.TCPDestination(request.Address, request.Port)
@@ -219,7 +238,7 @@ func (this *Server) handleConnection(conn internet.Connection) {
 			payload.SliceBack(ivLen)
 			rand.Read(payload.Value[:ivLen])
 
-			stream, err := this.config.Cipher.NewEncodingStream(key, payload.Value[:ivLen])
+			stream, err := this.cipher.NewEncodingStream(this.cipherKey, payload.Value[:ivLen])
 			if err != nil {
 				log.Error("Shadowsocks: Failed to create encoding stream: ", err)
 				return
@@ -264,10 +283,7 @@ func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *
 	if !space.HasApp(dispatcher.APP_ID) {
 		return nil, common.ErrBadConfiguration
 	}
-	return NewServer(
-		rawConfig.(*Config),
-		space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
-		meta), nil
+	return NewServer(rawConfig.(*Config), space, meta)
 }
 
 func init() {

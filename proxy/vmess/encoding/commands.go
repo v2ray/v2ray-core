@@ -139,7 +139,7 @@ func (this *CommandSwitchAccountFactory) Unmarshal(data []byte) (interface{}, er
 	if len(data) < levelStart+1 {
 		return nil, transport.ErrCorruptedPacket
 	}
-	cmd.Level = protocol.UserLevel(data[levelStart])
+	cmd.Level = uint32(data[levelStart])
 	timeStart := levelStart + 1
 	if len(data) < timeStart {
 		return nil, transport.ErrCorruptedPacket

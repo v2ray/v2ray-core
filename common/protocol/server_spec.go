@@ -45,17 +45,24 @@ func (this *TimeoutValidStrategy) Invalidate() {
 
 type ServerSpec struct {
 	sync.RWMutex
-	dest  v2net.Destination
-	users []*User
-	valid ValidationStrategy
+	dest       v2net.Destination
+	users      []*User
+	valid      ValidationStrategy
+	newAccount NewAccountFactory
 }
 
-func NewServerSpec(dest v2net.Destination, valid ValidationStrategy, users ...*User) *ServerSpec {
+func NewServerSpec(newAccount NewAccountFactory, dest v2net.Destination, valid ValidationStrategy, users ...*User) *ServerSpec {
 	return &ServerSpec{
-		dest:  dest,
-		users: users,
-		valid: valid,
+		dest:       dest,
+		users:      users,
+		valid:      valid,
+		newAccount: newAccount,
 	}
+}
+
+func NewServerSpecFromPB(newAccount NewAccountFactory, spec ServerSpecPB) *ServerSpec {
+	dest := v2net.TCPDestination(spec.Address.AsAddress(), v2net.Port(spec.Port))
+	return NewServerSpec(newAccount, dest, AlwaysValid(), spec.Users...)
 }
 
 func (this *ServerSpec) Destination() v2net.Destination {
@@ -66,9 +73,13 @@ func (this *ServerSpec) HasUser(user *User) bool {
 	this.RLock()
 	defer this.RUnlock()
 
-	account := user.Account
+	accountA, err := user.GetTypedAccount(this.newAccount())
+	if err != nil {
+		return false
+	}
 	for _, u := range this.users {
-		if u.Account.Equals(account) {
+		accountB, err := u.GetTypedAccount(this.newAccount())
+		if err == nil && accountA.Equals(accountB) {
 			return true
 		}
 	}

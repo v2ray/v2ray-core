@@ -6,9 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/proxy/registry"
 	"v2ray.com/core/proxy/vmess"
+
+	"github.com/golang/protobuf/ptypes"
 )
 
 func (this *DetourConfig) UnmarshalJSON(data []byte) error {
@@ -48,7 +52,7 @@ func (this *DefaultConfig) UnmarshalJSON(data []byte) error {
 	if this.AlterIDs == 0 {
 		this.AlterIDs = 32
 	}
-	this.Level = protocol.UserLevel(jsonConfig.Level)
+	this.Level = uint32(jsonConfig.Level)
 	return nil
 }
 
@@ -67,7 +71,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	this.Defaults = jsonConfig.Defaults
 	if this.Defaults == nil {
 		this.Defaults = &DefaultConfig{
-			Level:    protocol.UserLevel(0),
+			Level:    0,
 			AlterIDs: 32,
 		}
 	}
@@ -82,11 +86,16 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(rawData, user); err != nil {
 			return errors.New("VMess|Inbound: Invalid user: " + err.Error())
 		}
-		account := new(vmess.Account)
+		account := new(vmess.AccountPB)
 		if err := json.Unmarshal(rawData, account); err != nil {
 			return errors.New("VMess|Inbound: Invalid user: " + err.Error())
 		}
-		user.Account = account
+		anyAccount, err := ptypes.MarshalAny(account)
+		if err != nil {
+			log.Error("VMess|Inbound: Failed to create account: ", err)
+			return common.ErrBadConfiguration
+		}
+		user.Account = anyAccount
 		this.AllowedUsers[idx] = user
 	}
 

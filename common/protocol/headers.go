@@ -77,6 +77,6 @@ type CommandSwitchAccount struct {
 	Port     v2net.Port
 	ID       *uuid.UUID
 	AlterIds uint16
-	Level    UserLevel
+	Level    uint32
 	ValidMin byte
 }

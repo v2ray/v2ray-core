@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package com.v2ray.core.proxy.vmess;
+option go_package = "vmess";
+
+message AccountPB {
+  string id = 1;
+  uint32 alterId = 2;
+}

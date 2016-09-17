@@ -2,15 +2,6 @@
 // source: v2ray.com/core/proxy/socks/server_config.proto
 // DO NOT EDIT!
 
-/*
-Package socks is a generated protocol buffer package.
-
-It is generated from these files:
-	v2ray.com/core/proxy/socks/server_config.proto
-
-It has these top-level messages:
-	ServerConfig
-*/
 package socks
 
 import proto "github.com/golang/protobuf/proto"
@@ -22,12 +13,6 @@ import com_v2ray_core_common_net "v2ray.com/core/common/net"
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
-
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-// A compilation error at this line likely means your copy of the
-// proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type ServerConfig_AuthType int32
 
@@ -48,7 +33,7 @@ var ServerConfig_AuthType_value = map[string]int32{
 func (x ServerConfig_AuthType) String() string {
 	return proto.EnumName(ServerConfig_AuthType_name, int32(x))
 }
-func (ServerConfig_AuthType) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0, 0} }
+func (ServerConfig_AuthType) EnumDescriptor() ([]byte, []int) { return fileDescriptor1, []int{0, 0} }
 
 type ServerConfig struct {
 	AuthType   ServerConfig_AuthType                `protobuf:"varint,1,opt,name=auth_type,json=authType,enum=com.v2ray.core.proxy.socks.ServerConfig_AuthType" json:"auth_type,omitempty"`
@@ -61,7 +46,7 @@ type ServerConfig struct {
 func (m *ServerConfig) Reset()                    { *m = ServerConfig{} }
 func (m *ServerConfig) String() string            { return proto.CompactTextString(m) }
 func (*ServerConfig) ProtoMessage()               {}
-func (*ServerConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (*ServerConfig) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
 
 func (m *ServerConfig) GetAccounts() map[string]string {
 	if m != nil {
@@ -82,9 +67,9 @@ func init() {
 	proto.RegisterEnum("com.v2ray.core.proxy.socks.ServerConfig_AuthType", ServerConfig_AuthType_name, ServerConfig_AuthType_value)
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/proxy/socks/server_config.proto", fileDescriptor0) }
+func init() { proto.RegisterFile("v2ray.com/core/proxy/socks/server_config.proto", fileDescriptor1) }
 
-var fileDescriptor0 = []byte{
+var fileDescriptor1 = []byte{
 	// 345 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x8c, 0x91, 0xd1, 0x4b, 0xeb, 0x30,
 	0x14, 0xc6, 0x6f, 0xd7, 0xbb, 0xdb, 0x2e, 0xdd, 0x2e, 0x23, 0xf8, 0x50, 0xf6, 0x62, 0x19, 0x8a,

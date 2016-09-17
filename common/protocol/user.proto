@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+import "google/protobuf/any.proto";
+
+package com.v2ray.core.common.protocol;
+option go_package = "protocol";
+
+message User {
+  uint32 level = 1;
+  string email = 2;
+  google.protobuf.Any account = 3;
+}

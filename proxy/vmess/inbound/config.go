@@ -14,7 +14,7 @@ type FeaturesConfig struct {
 
 type DefaultConfig struct {
 	AlterIDs uint16
-	Level    protocol.UserLevel
+	Level    uint32
 }
 
 type Config struct {

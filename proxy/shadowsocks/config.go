@@ -8,6 +8,35 @@ import (
 	"v2ray.com/core/common/protocol"
 )
 
+func (this *Config) GetCipher() Cipher {
+	switch this.Cipher {
+	case Config_AES_128_CFB:
+		return &AesCfb{KeyBytes: 16}
+	case Config_AES_256_CFB:
+		return &AesCfb{KeyBytes: 32}
+	case Config_CHACHA20:
+		return &ChaCha20{IVBytes: 8}
+	case Config_CHACHA20_IEFT:
+		return &ChaCha20{IVBytes: 12}
+	}
+	panic("Failed to create Cipher. Should not happen.")
+}
+
+func (this *Account) Equals(another protocol.Account) bool {
+	if account, ok := another.(*Account); ok {
+		return account.Password == this.Password
+	}
+	return false
+}
+
+func (this *Account) AsAccount() (protocol.Account, error) {
+	return this, nil
+}
+
+func (this *Account) GetCipherKey(size int) []byte {
+	return PasswordToCipherKey(this.Password, size)
+}
+
 type Cipher interface {
 	KeySize() int
 	IVSize() int
@@ -55,14 +84,6 @@ func (this *ChaCha20) NewEncodingStream(key []byte, iv []byte) (cipher.Stream, e
 
 func (this *ChaCha20) NewDecodingStream(key []byte, iv []byte) (cipher.Stream, error) {
 	return crypto.NewChaCha20Stream(key, iv), nil
-}
-
-type Config struct {
-	Cipher Cipher
-	Key    []byte
-	UDP    bool
-	Level  protocol.UserLevel
-	Email  string
 }
 
 func PasswordToCipherKey(password string, keySize int) []byte {

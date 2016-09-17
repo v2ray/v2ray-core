@@ -15,7 +15,7 @@ func (u *User) UnmarshalJSON(data []byte) error {
 	}
 
 	u.Email = rawUserValue.EmailString
-	u.Level = UserLevel(rawUserValue.LevelByte)
+	u.Level = uint32(rawUserValue.LevelByte)
 
 	return nil
 }
