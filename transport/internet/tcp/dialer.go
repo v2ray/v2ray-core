@@ -19,7 +19,7 @@ func Dial(src v2net.Address, dest v2net.Destination) (internet.Connection, error
 	}
 	id := src.String() + "-" + dest.NetAddr()
 	var conn net.Conn
-	if dest.IsTCP() && effectiveConfig.ConnectionReuse {
+	if dest.Network() == v2net.TCPNetwork && effectiveConfig.ConnectionReuse {
 		conn = globalCache.Get(id)
 	}
 	if conn == nil {

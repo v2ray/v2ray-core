@@ -49,7 +49,7 @@ func (this *Router) ResolveIP(dest v2net.Destination) []v2net.Destination {
 	}
 	dests := make([]v2net.Destination, len(ips))
 	for idx, ip := range ips {
-		if dest.IsTCP() {
+		if dest.Network() == v2net.TCPNetwork {
 			dests[idx] = v2net.TCPDestination(v2net.IPAddress(ip), dest.Port())
 		} else {
 			dests[idx] = v2net.UDPDestination(v2net.IPAddress(ip), dest.Port())

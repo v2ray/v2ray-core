@@ -78,7 +78,7 @@ func (dest *tcpDestination) Equals(another Destination) bool {
 	if dest == nil || another == nil {
 		return false
 	}
-	if !another.IsTCP() {
+	if another.Network() != TCPNetwork {
 		return false
 	}
 	return dest.Port() == another.Port() && dest.Address().Equals(another.Address())
@@ -124,7 +124,7 @@ func (dest *udpDestination) Equals(another Destination) bool {
 	if dest == nil || another == nil {
 		return false
 	}
-	if !another.IsUDP() {
+	if another.Network() != UDPNetwork {
 		return false
 	}
 	return dest.Port() == another.Port() && dest.Address().Equals(another.Address())

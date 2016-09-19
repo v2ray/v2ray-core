@@ -27,7 +27,7 @@ func Dial(src v2net.Address, dest v2net.Destination, settings *StreamSettings) (
 
 	var connection Connection
 	var err error
-	if dest.IsTCP() {
+	if dest.Network() == v2net.TCPNetwork {
 		switch {
 		case settings.IsCapableOf(StreamConnectionTypeTCP):
 			connection, err = TCPDialer(src, dest)
@@ -36,12 +36,7 @@ func Dial(src v2net.Address, dest v2net.Destination, settings *StreamSettings) (
 		case settings.IsCapableOf(StreamConnectionTypeWebSocket):
 			connection, err = WSDialer(src, dest)
 
-		/*Warning: Hours wasted: the following item must be last one
-
-		internet.StreamConnectionType have a default value of 1,
-		so the following attempt will catch all.
-		*/
-
+			// This check has to be the last one.
 		case settings.IsCapableOf(StreamConnectionTypeRawTCP):
 			connection, err = RawTCPDialer(src, dest)
 		default:

@@ -58,7 +58,7 @@ func (this *FreedomConnection) ResolveIP(destination v2net.Destination) v2net.De
 
 	ip := ips[dice.Roll(len(ips))]
 	var newDest v2net.Destination
-	if destination.IsTCP() {
+	if destination.Network() == v2net.TCPNetwork {
 		newDest = v2net.TCPDestination(v2net.IPAddress(ip), destination.Port())
 	} else {
 		newDest = v2net.UDPDestination(v2net.IPAddress(ip), destination.Port())
@@ -112,7 +112,7 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 	var reader io.Reader = conn
 
 	timeout := this.timeout
-	if destination.IsUDP() {
+	if destination.Network() == v2net.UDPNetwork {
 		timeout = 16
 	}
 	if timeout > 0 {

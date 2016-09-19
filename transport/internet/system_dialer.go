@@ -25,7 +25,7 @@ func (this *DefaultSystemDialer) Dial(src v2net.Address, dest v2net.Destination)
 	}
 	if src != nil && src != v2net.AnyIP {
 		var addr net.Addr
-		if dest.IsTCP() {
+		if dest.Network() == v2net.TCPNetwork {
 			addr = &net.TCPAddr{
 				IP:   src.IP(),
 				Port: 0,

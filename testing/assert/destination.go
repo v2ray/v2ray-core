@@ -20,25 +20,25 @@ type DestinationSubject struct {
 }
 
 func (this *DestinationSubject) IsTCP() {
-	if !this.value.IsTCP() {
+	if this.value.Network() != v2net.TCPNetwork {
 		this.Fail("is", "a TCP destination")
 	}
 }
 
 func (this *DestinationSubject) IsNotTCP() {
-	if this.value.IsTCP() {
+	if this.value.Network() == v2net.TCPNetwork {
 		this.Fail("is not", "a TCP destination")
 	}
 }
 
 func (this *DestinationSubject) IsUDP() {
-	if !this.value.IsUDP() {
+	if this.value.Network() != v2net.UDPNetwork {
 		this.Fail("is", "a UDP destination")
 	}
 }
 
 func (this *DestinationSubject) IsNotUDP() {
-	if this.value.IsUDP() {
+	if this.value.Network() == v2net.UDPNetwork {
 		this.Fail("is not", "a UDP destination")
 	}
 }
