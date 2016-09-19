@@ -7,5 +7,5 @@ import (
 )
 
 func init() {
-	internet.RegisterAuthenticatorConfig("srtp", func() interface{} { return &Config{} })
+	internet.RegisterAuthenticatorConfig("utp", func() interface{} { return &Config{} })
 }
