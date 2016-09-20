@@ -6,30 +6,38 @@ import (
 	"v2ray.com/core/common/collect"
 )
 
-const (
-	// TCPNetwork represents the TCP network.
-	TCPNetwork = Network("tcp")
-
-	// UDPNetwork represents the UDP network.
-	UDPNetwork = Network("udp")
-
-	// KCPNetwork represents the KCP network.
-	KCPNetwork = Network("kcp")
-
-	// WSNetwork represents the Websocket over HTTP network.
-	WSNetwork = Network("ws")
-)
-
-// Network represents a communication network on internet.
-type Network string
+func ParseNetwork(nwStr string) Network {
+	if network, found := Network_value[nwStr]; found {
+		return Network(network)
+	}
+	switch strings.ToLower(nwStr) {
+	case "tcp":
+		return Network_TCP
+	case "udp":
+		return Network_UDP
+	case "kcp":
+		return Network_KCP
+	case "ws":
+		return Network_WebSocket
+	default:
+		return Network_Unknown
+	}
+}
 
 func (this Network) AsList() *NetworkList {
 	list := NetworkList([]Network{this})
 	return &list
 }
 
-func (this Network) String() string {
-	return string(this)
+func (this Network) SystemString() string {
+	switch this {
+	case Network_TCP, Network_RawTCP:
+		return "tcp"
+	case Network_UDP, Network_KCP:
+		return "udp"
+	default:
+		return "unknown"
+	}
 }
 
 // NetworkList is a list of Networks.
@@ -39,7 +47,7 @@ type NetworkList []Network
 func NewNetworkList(networks collect.StringList) NetworkList {
 	list := NetworkList(make([]Network, networks.Len()))
 	for idx, network := range networks {
-		list[idx] = Network(strings.ToLower(strings.TrimSpace(network)))
+		list[idx] = ParseNetwork(network)
 	}
 	return list
 }

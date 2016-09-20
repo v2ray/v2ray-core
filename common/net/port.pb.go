@@ -22,15 +22,15 @@ type PortRange struct {
 func (m *PortRange) Reset()                    { *m = PortRange{} }
 func (m *PortRange) String() string            { return proto.CompactTextString(m) }
 func (*PortRange) ProtoMessage()               {}
-func (*PortRange) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
+func (*PortRange) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{0} }
 
 func init() {
 	proto.RegisterType((*PortRange)(nil), "com.v2ray.core.common.net.PortRange")
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/common/net/port.proto", fileDescriptor1) }
+func init() { proto.RegisterFile("v2ray.com/core/common/net/port.proto", fileDescriptor3) }
 
-var fileDescriptor1 = []byte{
+var fileDescriptor3 = []byte{
 	// 137 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x34, 0xcc, 0xb1, 0x0a, 0xc2, 0x40,
 	0x0c, 0x87, 0x71, 0x7a, 0x56, 0xc1, 0x03, 0x1d, 0x6e, 0xaa, 0x9b, 0x88, 0x83, 0x53, 0x02, 0xfa,

@@ -16,8 +16,8 @@ func TestArrayNetworkList(t *testing.T) {
 	var list NetworkList
 	err := json.Unmarshal([]byte("[\"Tcp\"]"), &list)
 	assert.Error(err).IsNil()
-	assert.Bool(list.HasNetwork(Network("tcp"))).IsTrue()
-	assert.Bool(list.HasNetwork(Network("udp"))).IsFalse()
+	assert.Bool(list.HasNetwork(ParseNetwork("tcp"))).IsTrue()
+	assert.Bool(list.HasNetwork(ParseNetwork("udp"))).IsFalse()
 }
 
 func TestStringNetworkList(t *testing.T) {
@@ -26,8 +26,8 @@ func TestStringNetworkList(t *testing.T) {
 	var list NetworkList
 	err := json.Unmarshal([]byte("\"TCP, ip\""), &list)
 	assert.Error(err).IsNil()
-	assert.Bool(list.HasNetwork(Network("tcp"))).IsTrue()
-	assert.Bool(list.HasNetwork(Network("udp"))).IsFalse()
+	assert.Bool(list.HasNetwork(ParseNetwork("tcp"))).IsTrue()
+	assert.Bool(list.HasNetwork(ParseNetwork("udp"))).IsFalse()
 }
 
 func TestInvalidNetworkJson(t *testing.T) {

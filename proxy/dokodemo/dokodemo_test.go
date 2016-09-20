@@ -56,7 +56,7 @@ func TestDokodemoTCP(t *testing.T) {
 	dokodemo := NewDokodemoDoor(&Config{
 		Address: v2net.LocalHostIP,
 		Port:    tcpServer.Port,
-		Network: v2net.TCPNetwork.AsList(),
+		Network: v2net.Network_TCP.AsList(),
 		Timeout: 600,
 	}, space, &proxy.InboundHandlerMeta{
 		Address: v2net.LocalHostIP,
@@ -126,7 +126,7 @@ func TestDokodemoUDP(t *testing.T) {
 	dokodemo := NewDokodemoDoor(&Config{
 		Address: v2net.LocalHostIP,
 		Port:    udpServer.Port,
-		Network: v2net.UDPNetwork.AsList(),
+		Network: v2net.Network_UDP.AsList(),
 		Timeout: 600,
 	}, space, &proxy.InboundHandlerMeta{
 		Address: v2net.LocalHostIP,

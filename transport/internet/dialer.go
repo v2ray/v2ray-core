@@ -27,7 +27,7 @@ func Dial(src v2net.Address, dest v2net.Destination, settings *StreamSettings) (
 
 	var connection Connection
 	var err error
-	if dest.Network() == v2net.TCPNetwork {
+	if dest.Network() == v2net.Network_TCP {
 		switch {
 		case settings.IsCapableOf(StreamConnectionTypeTCP):
 			connection, err = TCPDialer(src, dest)

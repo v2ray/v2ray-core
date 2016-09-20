@@ -73,13 +73,13 @@ func (this *DokodemoDoor) Start() error {
 	}
 	this.accepting = true
 
-	if this.config.Network.HasNetwork(v2net.TCPNetwork) {
+	if this.config.Network.HasNetwork(v2net.Network_TCP) {
 		err := this.ListenTCP()
 		if err != nil {
 			return err
 		}
 	}
-	if this.config.Network.HasNetwork(v2net.UDPNetwork) {
+	if this.config.Network.HasNetwork(v2net.Network_UDP) {
 		err := this.ListenUDP()
 		if err != nil {
 			return err

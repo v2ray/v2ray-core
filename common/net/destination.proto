@@ -1,0 +1,4 @@
+syntax = "proto3";
+
+package com.v2ray.core.common.net;
+option go_package = "net";

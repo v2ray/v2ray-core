@@ -47,13 +47,13 @@ func (this *StreamSettings) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
 		return err
 	}
-	if jsonConfig.Network.HasNetwork(v2net.KCPNetwork) {
+	if jsonConfig.Network.HasNetwork(v2net.Network_KCP) {
 		this.Type |= StreamConnectionTypeKCP
 	}
-	if jsonConfig.Network.HasNetwork(v2net.WSNetwork) {
+	if jsonConfig.Network.HasNetwork(v2net.Network_WebSocket) {
 		this.Type |= StreamConnectionTypeWebSocket
 	}
-	if jsonConfig.Network.HasNetwork(v2net.TCPNetwork) {
+	if jsonConfig.Network.HasNetwork(v2net.Network_TCP) {
 		this.Type |= StreamConnectionTypeTCP
 	}
 	this.Security = StreamSecurityTypeNone

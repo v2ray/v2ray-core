@@ -49,7 +49,7 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 	log.Info("VMess|Outbound: Tunneling request to ", target, " via ", rec.Destination())
 
 	command := protocol.RequestCommandTCP
-	if target.Network() == v2net.UDPNetwork {
+	if target.Network() == v2net.Network_UDP {
 		command = protocol.RequestCommandUDP
 	}
 	request := &protocol.RequestHeader{

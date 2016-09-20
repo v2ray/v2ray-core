@@ -44,7 +44,7 @@ type tcpDestination struct {
 }
 
 func (dest *tcpDestination) Network() Network {
-	return TCPNetwork
+	return Network_TCP
 }
 
 func (dest *tcpDestination) Address() Address {
@@ -78,7 +78,7 @@ func (dest *tcpDestination) Equals(another Destination) bool {
 	if dest == nil || another == nil {
 		return false
 	}
-	if another.Network() != TCPNetwork {
+	if another.Network() != Network_TCP {
 		return false
 	}
 	return dest.Port() == another.Port() && dest.Address().Equals(another.Address())
@@ -90,7 +90,7 @@ type udpDestination struct {
 }
 
 func (dest *udpDestination) Network() Network {
-	return UDPNetwork
+	return Network_UDP
 }
 
 func (dest *udpDestination) Address() Address {
@@ -124,7 +124,7 @@ func (dest *udpDestination) Equals(another Destination) bool {
 	if dest == nil || another == nil {
 		return false
 	}
-	if another.Network() != UDPNetwork {
+	if another.Network() != Network_UDP {
 		return false
 	}
 	return dest.Port() == another.Port() && dest.Address().Equals(another.Address())

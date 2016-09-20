@@ -7,6 +7,8 @@ Package net is a generated protocol buffer package.
 
 It is generated from these files:
 	v2ray.com/core/common/net/address.proto
+	v2ray.com/core/common/net/destination.proto
+	v2ray.com/core/common/net/network.proto
 	v2ray.com/core/common/net/port.proto
 
 It has these top-level messages:

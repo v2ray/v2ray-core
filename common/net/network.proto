@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package com.v2ray.core.common.net;
+option go_package = "net";
+
+enum Network {
+  Unknown = 0;
+  RawTCP = 1;
+  TCP = 2;
+  UDP = 3;
+  KCP = 4;
+  WebSocket = 5;
+}
