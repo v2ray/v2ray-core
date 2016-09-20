@@ -106,10 +106,10 @@ func (this *DokodemoDoor) ListenUDP() error {
 }
 
 func (this *DokodemoDoor) handleUDPPackets(payload *alloc.Buffer, session *proxy.SessionInfo) {
-	if session.Destination == nil && this.address != nil && this.port > 0 {
+	if session.Destination.Network == v2net.Network_Unknown && this.address != nil && this.port > 0 {
 		session.Destination = v2net.UDPDestination(this.address, this.port)
 	}
-	if session.Destination == nil {
+	if session.Destination.Network == v2net.Network_Unknown {
 		log.Info("Dokodemo: Unknown destination, stop forwarding...")
 		return
 	}
@@ -144,16 +144,16 @@ func (this *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 	var dest v2net.Destination
 	if this.config.FollowRedirect {
 		originalDest := GetOriginalDestination(conn)
-		if originalDest != nil {
+		if originalDest.Network != v2net.Network_Unknown {
 			log.Info("Dokodemo: Following redirect to: ", originalDest)
 			dest = originalDest
 		}
 	}
-	if dest == nil && this.address != nil && this.port > v2net.Port(0) {
+	if dest.Network == v2net.Network_Unknown && this.address != nil && this.port > v2net.Port(0) {
 		dest = v2net.TCPDestination(this.address, this.port)
 	}
 
-	if dest == nil {
+	if dest.Network == v2net.Network_Unknown {
 		log.Info("Dokodemo: Unknown destination, stop forwarding...")
 		return
 	}

@@ -8,5 +8,5 @@ import (
 )
 
 func GetOriginalDestination(conn internet.Connection) v2net.Destination {
-	return nil
+	return v2net.Destination{}
 }

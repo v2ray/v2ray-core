@@ -63,8 +63,8 @@ func (this *UDPHub) Close() {
 
 func (this *UDPHub) WriteTo(payload []byte, dest v2net.Destination) (int, error) {
 	return this.conn.WriteToUDP(payload, &net.UDPAddr{
-		IP:   dest.Address().IP(),
-		Port: int(dest.Port()),
+		IP:   dest.Address.IP(),
+		Port: int(dest.Port),
 	})
 }
 

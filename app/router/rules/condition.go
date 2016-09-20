@@ -73,10 +73,10 @@ func NewPlainDomainMatcher(pattern string) *PlainDomainMatcher {
 }
 
 func (this *PlainDomainMatcher) Apply(dest v2net.Destination) bool {
-	if !dest.Address().Family().IsDomain() {
+	if !dest.Address.Family().IsDomain() {
 		return false
 	}
-	domain := dest.Address().Domain()
+	domain := dest.Address.Domain()
 	return strings.Contains(domain, this.pattern)
 }
 
@@ -95,10 +95,10 @@ func NewRegexpDomainMatcher(pattern string) (*RegexpDomainMatcher, error) {
 }
 
 func (this *RegexpDomainMatcher) Apply(dest v2net.Destination) bool {
-	if !dest.Address().Family().IsDomain() {
+	if !dest.Address.Family().IsDomain() {
 		return false
 	}
-	domain := dest.Address().Domain()
+	domain := dest.Address.Domain()
 	return this.pattern.MatchString(strings.ToLower(domain))
 }
 
@@ -117,10 +117,10 @@ func NewCIDRMatcher(ipnet string) (*CIDRMatcher, error) {
 }
 
 func (this *CIDRMatcher) Apply(dest v2net.Destination) bool {
-	if !dest.Address().Family().Either(v2net.AddressFamilyIPv4, v2net.AddressFamilyIPv6) {
+	if !dest.Address.Family().Either(v2net.AddressFamilyIPv4, v2net.AddressFamilyIPv6) {
 		return false
 	}
-	return this.cidr.Contains(dest.Address().IP())
+	return this.cidr.Contains(dest.Address.IP())
 }
 
 type IPv4Matcher struct {
@@ -134,10 +134,10 @@ func NewIPv4Matcher(ipnet *v2net.IPNet) *IPv4Matcher {
 }
 
 func (this *IPv4Matcher) Apply(dest v2net.Destination) bool {
-	if !dest.Address().Family().Either(v2net.AddressFamilyIPv4) {
+	if !dest.Address.Family().Either(v2net.AddressFamilyIPv4) {
 		return false
 	}
-	return this.ipv4net.Contains(dest.Address().IP())
+	return this.ipv4net.Contains(dest.Address.IP())
 }
 
 type PortMatcher struct {
@@ -151,7 +151,7 @@ func NewPortMatcher(portRange v2net.PortRange) *PortMatcher {
 }
 
 func (this *PortMatcher) Apply(dest v2net.Destination) bool {
-	return this.port.Contains(dest.Port())
+	return this.port.Contains(dest.Port)
 }
 
 type NetworkMatcher struct {
@@ -165,5 +165,5 @@ func NewNetworkMatcher(network *v2net.NetworkList) *NetworkMatcher {
 }
 
 func (this *NetworkMatcher) Apply(dest v2net.Destination) bool {
-	return this.network.HasNetwork(dest.Network())
+	return this.network.HasNetwork(dest.Network)
 }

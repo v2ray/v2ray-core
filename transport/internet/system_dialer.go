@@ -25,7 +25,7 @@ func (this *DefaultSystemDialer) Dial(src v2net.Address, dest v2net.Destination)
 	}
 	if src != nil && src != v2net.AnyIP {
 		var addr net.Addr
-		if dest.Network() == v2net.Network_TCP {
+		if dest.Network == v2net.Network_TCP {
 			addr = &net.TCPAddr{
 				IP:   src.IP(),
 				Port: 0,
@@ -38,7 +38,7 @@ func (this *DefaultSystemDialer) Dial(src v2net.Address, dest v2net.Destination)
 		}
 		dialer.LocalAddr = addr
 	}
-	return dialer.Dial(dest.Network().SystemString(), dest.NetAddr())
+	return dialer.Dial(dest.Network.SystemString(), dest.NetAddr())
 }
 
 type SystemDialerAdapter interface {
@@ -56,7 +56,7 @@ func WithAdapter(dialer SystemDialerAdapter) SystemDialer {
 }
 
 func (this *SimpleSystemDialer) Dial(src v2net.Address, dest v2net.Destination) (net.Conn, error) {
-	return this.adapter.Dial(dest.Network().SystemString(), dest.NetAddr())
+	return this.adapter.Dial(dest.Network.SystemString(), dest.NetAddr())
 }
 
 // UseAlternativeSystemDialer replaces the current system dialer with a given one.

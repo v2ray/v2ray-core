@@ -22,7 +22,7 @@ func SetOriginalDestOptions(fd int) error {
 func RetrieveOriginalDest(oob []byte) v2net.Destination {
 	msgs, err := syscall.ParseSocketControlMessage(oob)
 	if err != nil {
-		return nil
+		return v2net.Destination{}
 	}
 	for _, msg := range msgs {
 		if msg.Header.Level == syscall.SOL_IP && msg.Header.Type == syscall.IP_ORIGDSTADDR {
@@ -31,7 +31,7 @@ func RetrieveOriginalDest(oob []byte) v2net.Destination {
 			return v2net.UDPDestination(ip, port)
 		}
 	}
-	return nil
+	return v2net.Destination{}
 }
 
 func ReadUDPMsg(conn *net.UDPConn, payload []byte, oob []byte) (int, int, int, *net.UDPAddr, error) {

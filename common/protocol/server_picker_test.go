@@ -19,13 +19,13 @@ func TestServerList(t *testing.T) {
 	assert.Uint32(list.Size()).Equals(2)
 
 	server := list.GetServer(1)
-	assert.Port(server.Destination().Port()).Equals(2)
+	assert.Port(server.Destination().Port).Equals(2)
 	time.Sleep(2 * time.Second)
 	server = list.GetServer(1)
 	assert.Pointer(server).IsNil()
 
 	server = list.GetServer(0)
-	assert.Port(server.Destination().Port()).Equals(1)
+	assert.Port(server.Destination().Port).Equals(1)
 }
 
 func TestServerPicker(t *testing.T) {
@@ -38,17 +38,17 @@ func TestServerPicker(t *testing.T) {
 
 	picker := NewRoundRobinServerPicker(list)
 	server := picker.PickServer()
-	assert.Port(server.Destination().Port()).Equals(1)
+	assert.Port(server.Destination().Port).Equals(1)
 	server = picker.PickServer()
-	assert.Port(server.Destination().Port()).Equals(2)
+	assert.Port(server.Destination().Port).Equals(2)
 	server = picker.PickServer()
-	assert.Port(server.Destination().Port()).Equals(3)
+	assert.Port(server.Destination().Port).Equals(3)
 	server = picker.PickServer()
-	assert.Port(server.Destination().Port()).Equals(1)
+	assert.Port(server.Destination().Port).Equals(1)
 
 	time.Sleep(2 * time.Second)
 	server = picker.PickServer()
-	assert.Port(server.Destination().Port()).Equals(1)
+	assert.Port(server.Destination().Port).Equals(1)
 	server = picker.PickServer()
-	assert.Port(server.Destination().Port()).Equals(1)
+	assert.Port(server.Destination().Port).Equals(1)
 }

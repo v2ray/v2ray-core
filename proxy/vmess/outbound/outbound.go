@@ -49,15 +49,15 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 	log.Info("VMess|Outbound: Tunneling request to ", target, " via ", rec.Destination())
 
 	command := protocol.RequestCommandTCP
-	if target.Network() == v2net.Network_UDP {
+	if target.Network == v2net.Network_UDP {
 		command = protocol.RequestCommandUDP
 	}
 	request := &protocol.RequestHeader{
 		Version: encoding.Version,
 		User:    rec.PickUser(),
 		Command: command,
-		Address: target.Address(),
-		Port:    target.Port(),
+		Address: target.Address,
+		Port:    target.Port,
 		Option:  protocol.RequestOptionChunkStream,
 	}
 

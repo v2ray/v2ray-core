@@ -49,8 +49,8 @@ func (this *Server) handleUDPPayload(payload *alloc.Buffer, session *proxy.Sessi
 	this.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: request.Destination()}, request.Data, func(destination v2net.Destination, payload *alloc.Buffer) {
 		response := &protocol.Socks5UDPRequest{
 			Fragment: 0,
-			Address:  request.Destination().Address(),
-			Port:     request.Destination().Port(),
+			Address:  request.Destination().Address,
+			Port:     request.Destination().Port,
 			Data:     payload,
 		}
 		log.Info("Socks: Writing back UDP response with ", payload.Len(), " bytes to ", destination)

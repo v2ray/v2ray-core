@@ -17,9 +17,9 @@ func TestDialDomain(t *testing.T) {
 	assert.Error(err).IsNil()
 	defer server.Close()
 
-	conn, err := DialToDest(nil, v2net.TCPDestination(v2net.DomainAddress("local.v2ray.com"), dest.Port()))
+	conn, err := DialToDest(nil, v2net.TCPDestination(v2net.DomainAddress("local.v2ray.com"), dest.Port))
 	assert.Error(err).IsNil()
-	assert.String(conn.RemoteAddr().String()).Equals("127.0.0.1:" + dest.Port().String())
+	assert.String(conn.RemoteAddr().String()).Equals("127.0.0.1:" + dest.Port.String())
 	conn.Close()
 }
 
@@ -31,8 +31,8 @@ func TestDialWithLocalAddr(t *testing.T) {
 	assert.Error(err).IsNil()
 	defer server.Close()
 
-	conn, err := DialToDest(v2net.LocalHostIP, v2net.TCPDestination(v2net.LocalHostIP, dest.Port()))
+	conn, err := DialToDest(v2net.LocalHostIP, v2net.TCPDestination(v2net.LocalHostIP, dest.Port))
 	assert.Error(err).IsNil()
-	assert.String(conn.RemoteAddr().String()).Equals("127.0.0.1:" + dest.Port().String())
+	assert.String(conn.RemoteAddr().String()).Equals("127.0.0.1:" + dest.Port.String())
 	conn.Close()
 }

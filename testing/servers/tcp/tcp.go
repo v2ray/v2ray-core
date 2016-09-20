@@ -22,7 +22,7 @@ func (server *Server) Start() (v2net.Destination, error) {
 		Zone: "",
 	})
 	if err != nil {
-		return nil, err
+		return v2net.Destination{}, err
 	}
 	server.Port = v2net.Port(listener.Addr().(*net.TCPAddr).Port)
 	server.listener = listener

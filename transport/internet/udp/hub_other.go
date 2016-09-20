@@ -13,7 +13,7 @@ func SetOriginalDestOptions(fd int) error {
 }
 
 func RetrieveOriginalDest(oob []byte) v2net.Destination {
-	return nil
+	return v2net.Destination{}
 }
 
 func ReadUDPMsg(conn *net.UDPConn, payload []byte, oob []byte) (int, int, int, *net.UDPAddr, error) {

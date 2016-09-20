@@ -43,16 +43,16 @@ func (this *Router) Release() {
 
 // Private: Visible for testing.
 func (this *Router) ResolveIP(dest v2net.Destination) []v2net.Destination {
-	ips := this.dnsServer.Get(dest.Address().Domain())
+	ips := this.dnsServer.Get(dest.Address.Domain())
 	if len(ips) == 0 {
 		return nil
 	}
 	dests := make([]v2net.Destination, len(ips))
 	for idx, ip := range ips {
-		if dest.Network() == v2net.Network_TCP {
-			dests[idx] = v2net.TCPDestination(v2net.IPAddress(ip), dest.Port())
+		if dest.Network == v2net.Network_TCP {
+			dests[idx] = v2net.TCPDestination(v2net.IPAddress(ip), dest.Port)
 		} else {
-			dests[idx] = v2net.UDPDestination(v2net.IPAddress(ip), dest.Port())
+			dests[idx] = v2net.UDPDestination(v2net.IPAddress(ip), dest.Port)
 		}
 	}
 	return dests
@@ -64,7 +64,7 @@ func (this *Router) takeDetourWithoutCache(dest v2net.Destination) (string, erro
 			return rule.Tag, nil
 		}
 	}
-	if this.config.DomainStrategy == UseIPIfNonMatch && dest.Address().Family().IsDomain() {
+	if this.config.DomainStrategy == UseIPIfNonMatch && dest.Address.Family().IsDomain() {
 		log.Info("Router: Looking up IP for ", dest)
 		ipDests := this.ResolveIP(dest)
 		if ipDests != nil {

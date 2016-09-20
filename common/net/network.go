@@ -40,6 +40,21 @@ func (this Network) SystemString() string {
 	}
 }
 
+func (this Network) UrlPrefix() string {
+	switch this {
+	case Network_TCP, Network_RawTCP:
+		return "tcp"
+	case Network_UDP:
+		return "udp"
+	case Network_KCP:
+		return "kcp"
+	case Network_WebSocket:
+		return "ws"
+	default:
+		return "unknown"
+	}
+}
+
 // NetworkList is a list of Networks.
 type NetworkList []Network
 

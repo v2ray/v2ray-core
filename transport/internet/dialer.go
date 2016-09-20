@@ -27,7 +27,7 @@ func Dial(src v2net.Address, dest v2net.Destination, settings *StreamSettings) (
 
 	var connection Connection
 	var err error
-	if dest.Network() == v2net.Network_TCP {
+	if dest.Network == v2net.Network_TCP {
 		switch {
 		case settings.IsCapableOf(StreamConnectionTypeTCP):
 			connection, err = TCPDialer(src, dest)
@@ -51,8 +51,8 @@ func Dial(src v2net.Address, dest v2net.Destination, settings *StreamSettings) (
 		}
 
 		config := settings.TLSSettings.GetTLSConfig()
-		if dest.Address().Family().IsDomain() {
-			config.ServerName = dest.Address().Domain()
+		if dest.Address.Family().IsDomain() {
+			config.ServerName = dest.Address.Domain()
 		}
 		tlsConn := tls.Client(connection, config)
 		return v2tls.NewConnection(tlsConn), nil

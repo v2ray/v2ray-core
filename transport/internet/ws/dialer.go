@@ -23,7 +23,7 @@ func Dial(src v2net.Address, dest v2net.Destination) (internet.Connection, error
 	}
 	id := src.String() + "-" + dest.NetAddr()
 	var conn *wsconn
-	if dest.Network() == v2net.Network_TCP && effectiveConfig.ConnectionReuse {
+	if dest.Network == v2net.Network_TCP && effectiveConfig.ConnectionReuse {
 		connt := globalCache.Get(id)
 		if connt != nil {
 			conn = connt.(*wsconn)
@@ -49,7 +49,7 @@ func wsDial(src v2net.Address, dest v2net.Destination) (*wsconn, error) {
 		return internet.DialToDest(src, dest)
 	}
 
-	tlsconf := &tls.Config{ServerName: dest.Address().Domain(), InsecureSkipVerify: effectiveConfig.DeveloperInsecureSkipVerify}
+	tlsconf := &tls.Config{ServerName: dest.Address.Domain(), InsecureSkipVerify: effectiveConfig.DeveloperInsecureSkipVerify}
 
 	dialer := websocket.Dialer{NetDial: commonDial, ReadBufferSize: 65536, WriteBufferSize: 65536, TLSClientConfig: tlsconf}
 
@@ -80,7 +80,7 @@ func calcPto(dst v2net.Destination) string {
 		return effectiveConfig.Pto
 	}
 
-	switch dst.Port().Value() {
+	switch dst.Port.Value() {
 	/*
 		Since the value is not given explicitly,
 		We are guessing it now.

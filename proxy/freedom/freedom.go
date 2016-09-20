@@ -46,11 +46,11 @@ func NewFreedomConnection(config *Config, space app.Space, meta *proxy.OutboundH
 
 // Private: Visible for testing.
 func (this *FreedomConnection) ResolveIP(destination v2net.Destination) v2net.Destination {
-	if !destination.Address().Family().IsDomain() {
+	if !destination.Address.Family().IsDomain() {
 		return destination
 	}
 
-	ips := this.dns.Get(destination.Address().Domain())
+	ips := this.dns.Get(destination.Address.Domain())
 	if len(ips) == 0 {
 		log.Info("Freedom: DNS returns nil answer. Keep domain as is.")
 		return destination
@@ -58,10 +58,10 @@ func (this *FreedomConnection) ResolveIP(destination v2net.Destination) v2net.De
 
 	ip := ips[dice.Roll(len(ips))]
 	var newDest v2net.Destination
-	if destination.Network() == v2net.Network_TCP {
-		newDest = v2net.TCPDestination(v2net.IPAddress(ip), destination.Port())
+	if destination.Network == v2net.Network_TCP {
+		newDest = v2net.TCPDestination(v2net.IPAddress(ip), destination.Port)
 	} else {
-		newDest = v2net.UDPDestination(v2net.IPAddress(ip), destination.Port())
+		newDest = v2net.UDPDestination(v2net.IPAddress(ip), destination.Port)
 	}
 	log.Info("Freedom: Changing destination from ", destination, " to ", newDest)
 	return newDest
@@ -75,7 +75,7 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 	defer ray.OutboundOutput().Close()
 
 	var conn internet.Connection
-	if this.domainStrategy == Config_USE_IP && destination.Address().Family().IsDomain() {
+	if this.domainStrategy == Config_USE_IP && destination.Address.Family().IsDomain() {
 		destination = this.ResolveIP(destination)
 	}
 	err := retry.Timed(5, 100).On(func() error {
@@ -112,7 +112,7 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 	var reader io.Reader = conn
 
 	timeout := this.timeout
-	if destination.Network() == v2net.Network_UDP {
+	if destination.Network == v2net.Network_UDP {
 		timeout = 16
 	}
 	if timeout > 0 {

@@ -110,5 +110,5 @@ func TestIPResolution(t *testing.T) {
 
 	ipDest := freedom.ResolveIP(v2net.TCPDestination(v2net.DomainAddress("v2ray.com"), v2net.Port(80)))
 	assert.Destination(ipDest).IsTCP()
-	assert.Address(ipDest.Address()).Equals(v2net.LocalHostIP)
+	assert.Address(ipDest.Address).Equals(v2net.LocalHostIP)
 }

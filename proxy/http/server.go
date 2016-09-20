@@ -77,12 +77,12 @@ func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error
 		if addrError, ok := err.(*net.AddrError); ok && strings.Contains(addrError.Err, "missing port") {
 			host = rawHost
 		} else {
-			return nil, err
+			return v2net.Destination{}, err
 		}
 	} else {
 		intPort, err := strconv.Atoi(rawPort)
 		if err != nil {
-			return nil, err
+			return v2net.Destination{}, err
 		}
 		port = v2net.Port(intPort)
 	}

@@ -30,7 +30,7 @@ func (this *VMessOutboundHandler) handleCommand(dest v2net.Destination, cmd prot
 	switch typedCommand := cmd.(type) {
 	case *protocol.CommandSwitchAccount:
 		if typedCommand.Host == nil {
-			typedCommand.Host = dest.Address()
+			typedCommand.Host = dest.Address
 		}
 		this.handleSwitchAccount(typedCommand)
 	default:

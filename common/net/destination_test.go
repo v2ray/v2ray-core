@@ -29,7 +29,7 @@ func TestTCPDestinationEquals(t *testing.T) {
 	assert := assert.On(t)
 
 	dest := v2net.TCPDestination(v2net.IPAddress([]byte{1, 2, 3, 4}), 80)
-	assert.Bool(dest.Equals(nil)).IsFalse()
+	assert.Bool(dest.Equals(v2net.Destination{})).IsFalse()
 
 	dest2 := v2net.TCPDestination(v2net.IPAddress([]byte{1, 2, 3, 4}), 80)
 	assert.Bool(dest.Equals(dest2)).IsTrue()
@@ -45,7 +45,7 @@ func TestUDPDestinationEquals(t *testing.T) {
 	assert := assert.On(t)
 
 	dest := v2net.UDPDestination(v2net.IPAddress([]byte{1, 2, 3, 4}), 80)
-	assert.Bool(dest.Equals(nil)).IsFalse()
+	assert.Bool(dest.Equals(v2net.Destination{})).IsFalse()
 
 	dest2 := v2net.UDPDestination(v2net.IPAddress([]byte{1, 2, 3, 4}), 80)
 	assert.Bool(dest.Equals(dest2)).IsTrue()

@@ -2,3 +2,12 @@ syntax = "proto3";
 
 package com.v2ray.core.common.net;
 option go_package = "net";
+
+import "v2ray.com/core/common/net/network.proto";
+import "v2ray.com/core/common/net/address.proto";
+
+message DestinationPB {
+  Network network = 1;
+  AddressPB address = 2;
+  uint32 port = 3;
+}

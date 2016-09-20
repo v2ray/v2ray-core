@@ -80,8 +80,8 @@ func (this *Listener) OnReceive(payload *alloc.Buffer, session *proxy.SessionInf
 			listener: this,
 		}
 		srcAddr := &net.UDPAddr{
-			IP:   src.Address().IP(),
-			Port: int(src.Port()),
+			IP:   src.Address.IP(),
+			Port: int(src.Port),
 		}
 		auth, err := effectiveConfig.GetAuthenticator()
 		if err != nil {
