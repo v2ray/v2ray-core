@@ -55,9 +55,15 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	this.OutboundDetours = jsonConfig.OutboundDetours
 	if jsonConfig.DNSConfig == nil {
 		jsonConfig.DNSConfig = &dns.Config{
-			NameServers: []v2net.Destination{
-				v2net.UDPDestination(v2net.DomainAddress("localhost"), v2net.Port(53)),
-			},
+			NameServers: []*v2net.DestinationPB{{
+				Network: v2net.Network_UDP,
+				Address: &v2net.AddressPB{
+					Address: &v2net.AddressPB_Domain{
+						Domain: "localhost",
+					},
+				},
+				Port: 53,
+			}},
 		}
 	}
 	this.DNSConfig = jsonConfig.DNSConfig

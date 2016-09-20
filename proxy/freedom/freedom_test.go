@@ -1,7 +1,6 @@
 package freedom_test
 
 import (
-	"net"
 	"testing"
 
 	"v2ray.com/core/app"
@@ -90,8 +89,12 @@ func TestIPResolution(t *testing.T) {
 	r, _ := router.CreateRouter("rules", &rules.RouterRuleConfig{}, space)
 	space.BindApp(router.APP_ID, r)
 	dnsServer := dns.NewCacheServer(space, &dns.Config{
-		Hosts: map[string]net.IP{
-			"v2ray.com": net.IP([]byte{127, 0, 0, 1}),
+		Hosts: map[string]*v2net.AddressPB{
+			"v2ray.com": &v2net.AddressPB{
+				Address: &v2net.AddressPB_Ip{
+					Ip: []byte{127, 0, 0, 1},
+				},
+			},
 		},
 	})
 	space.BindApp(dns.APP_ID, dnsServer)

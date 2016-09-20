@@ -8,6 +8,7 @@ import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common/log"
+	v2net "v2ray.com/core/common/net"
 
 	"github.com/miekg/dns"
 )
@@ -32,7 +33,7 @@ func NewCacheServer(space app.Space, config *Config) *CacheServer {
 	server := &CacheServer{
 		records: make(map[string]*DomainRecord),
 		servers: make([]NameServer, len(config.NameServers)),
-		hosts:   config.Hosts,
+		hosts:   config.GetInternalHosts(),
 	}
 	space.InitializeApplication(func() error {
 		if !space.HasApp(dispatcher.APP_ID) {
@@ -41,11 +42,18 @@ func NewCacheServer(space app.Space, config *Config) *CacheServer {
 		}
 
 		dispatcher := space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)
-		for idx, ns := range config.NameServers {
-			if ns.Address.Family().IsDomain() && ns.Address.Domain() == "localhost" {
+		for idx, destPB := range config.NameServers {
+			address := destPB.Address.AsAddress()
+			if address.Family().IsDomain() && address.Domain() == "localhost" {
 				server.servers[idx] = &LocalNameServer{}
 			} else {
-				server.servers[idx] = NewUDPNameServer(ns, dispatcher)
+				dest := destPB.AsDestination()
+				if dest.Network == v2net.Network_Unknown {
+					dest.Network = v2net.Network_UDP
+				}
+				if dest.Network == v2net.Network_UDP {
+					server.servers[idx] = NewUDPNameServer(dest, dispatcher)
+				}
 			}
 		}
 		if len(config.NameServers) == 0 {

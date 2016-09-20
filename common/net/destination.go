@@ -51,3 +51,11 @@ func (this Destination) String() string {
 func (this Destination) Equals(another Destination) bool {
 	return this.Network == another.Network && this.Port == another.Port && this.Address.Equals(another.Address)
 }
+
+func (this *DestinationPB) AsDestination() Destination {
+	return Destination{
+		Network: this.Network,
+		Address: this.Address.AsAddress(),
+		Port:    Port(this.Port),
+	}
+}
