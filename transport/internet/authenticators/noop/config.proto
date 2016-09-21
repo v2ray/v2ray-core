@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+package com.v2ray.core.transport.internet.authenticators.noop;
+option go_package = "noop";
+
+message Config {}

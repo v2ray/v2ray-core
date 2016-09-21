@@ -7,15 +7,6 @@ import (
 	"v2ray.com/core/transport/internet"
 )
 
-type Config struct {
-	Version     byte
-	Padding     bool
-	Extension   bool
-	CSRCCount   byte
-	Marker      bool
-	PayloadType byte
-}
-
 type SRTP struct {
 	header uint16
 	number uint16
@@ -39,7 +30,7 @@ func (this *SRTP) Seal(payload *alloc.Buffer) {
 type SRTPFactory struct {
 }
 
-func (this SRTPFactory) Create(rawSettings internet.AuthenticatorConfig) internet.Authenticator {
+func (this SRTPFactory) Create(rawSettings interface{}) internet.Authenticator {
 	return &SRTP{
 		header: 0xB5E8,
 		number: uint16(rand.Intn(65536)),
@@ -48,4 +39,5 @@ func (this SRTPFactory) Create(rawSettings internet.AuthenticatorConfig) interne
 
 func init() {
 	internet.RegisterAuthenticator("srtp", SRTPFactory{})
+	internet.RegisterAuthenticatorConfig("srtp", func() interface{} { return &Config{} })
 }

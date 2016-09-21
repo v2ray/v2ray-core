@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package com.v2ray.core.transport.internet.kcp;
+option go_package = "kcp";
+
+import "v2ray.com/core/transport/internet/authenticator.proto";
+
+message Config {
+  uint32 mtu = 1;
+  uint32 tti = 2;
+  uint32 uplink_capacity = 3;
+  uint32 downlink_capacity = 4;
+  bool congestion = 5;
+  uint32 write_buffer = 6;
+  uint32 read_buffer = 7;
+  com.v2ray.core.transport.internet.AuthenticatorConfig header_config = 8;
+}

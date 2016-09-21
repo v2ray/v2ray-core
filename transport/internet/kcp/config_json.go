@@ -72,8 +72,12 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 			log.Error("KCP|Config: Failed to parse header config: ", err)
 			return err
 		}
-		this.HeaderType = name
-		this.HeaderConfig = config
+		authConfig, err := internet.NewAuthenticatorConfig(name, config)
+		if err != nil {
+			log.Error("KCP:Config: Failed to create header config: ", err)
+			return err
+		}
+		this.HeaderConfig = authConfig
 	}
 
 	return nil

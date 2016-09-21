@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package com.v2ray.core.transport.internet.authenticators.utp;
+option go_package = "utp";
+
+message Config {
+  uint32 version = 1;
+}

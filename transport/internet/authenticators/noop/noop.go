@@ -17,12 +17,11 @@ func (this NoOpAuthenticator) Seal(payload *alloc.Buffer) {}
 
 type NoOpAuthenticatorFactory struct{}
 
-func (this NoOpAuthenticatorFactory) Create(config internet.AuthenticatorConfig) internet.Authenticator {
+func (this NoOpAuthenticatorFactory) Create(config interface{}) internet.Authenticator {
 	return NoOpAuthenticator{}
 }
 
-type NoOpAuthenticatorConfig struct{}
-
 func init() {
 	internet.RegisterAuthenticator("none", NoOpAuthenticatorFactory{})
+	internet.RegisterAuthenticatorConfig("none", func() interface{} { return &Config{} })
 }

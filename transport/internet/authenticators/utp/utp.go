@@ -7,10 +7,6 @@ import (
 	"v2ray.com/core/transport/internet"
 )
 
-type Config struct {
-	Version byte
-}
-
 type UTP struct {
 	header       byte
 	extension    byte
@@ -33,7 +29,7 @@ func (this *UTP) Seal(payload *alloc.Buffer) {
 
 type UTPFactory struct{}
 
-func (this UTPFactory) Create(rawSettings internet.AuthenticatorConfig) internet.Authenticator {
+func (this UTPFactory) Create(rawSettings interface{}) internet.Authenticator {
 	return &UTP{
 		header:       1,
 		extension:    0,
@@ -43,4 +39,5 @@ func (this UTPFactory) Create(rawSettings internet.AuthenticatorConfig) internet
 
 func init() {
 	internet.RegisterAuthenticator("utp", UTPFactory{})
+	internet.RegisterAuthenticatorConfig("utp", func() interface{} { return &Config{} })
 }

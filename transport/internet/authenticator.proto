@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package com.v2ray.core.transport.internet;
+option go_package = "internet";
+
+import "google/protobuf/any.proto";
+
+message AuthenticatorConfig {
+  string name = 1;
+  google.protobuf.Any settings = 2;
+}
