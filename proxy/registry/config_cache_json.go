@@ -7,6 +7,6 @@ import (
 )
 
 func init() {
-	inboundConfigCache = loader.NewJSONConfigLoader("protocol", "settings")
-	outboundConfigCache = loader.NewJSONConfigLoader("protocol", "settings")
+	inboundConfigCache = loader.NewJSONConfigLoader(loader.ConfigCreatorCache{}, "protocol", "settings")
+	outboundConfigCache = loader.NewJSONConfigLoader(loader.ConfigCreatorCache{}, "protocol", "settings")
 }

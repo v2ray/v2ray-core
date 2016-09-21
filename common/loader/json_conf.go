@@ -10,21 +10,21 @@ import (
 )
 
 type JSONConfigLoader struct {
-	*BaseConfigLoader
+	cache     ConfigCreatorCache
 	idKey     string
 	configKey string
 }
 
-func NewJSONConfigLoader(idKey string, configKey string) *JSONConfigLoader {
+func NewJSONConfigLoader(cache ConfigCreatorCache, idKey string, configKey string) *JSONConfigLoader {
 	return &JSONConfigLoader{
-		idKey:            idKey,
-		configKey:        configKey,
-		BaseConfigLoader: NewBaseConfigLoader(),
+		idKey:     idKey,
+		configKey: configKey,
+		cache:     cache,
 	}
 }
 
 func (this *JSONConfigLoader) LoadWithID(raw []byte, id string) (interface{}, error) {
-	config, err := this.CreateConfig(id)
+	config, err := this.cache.CreateConfig(id)
 	if err != nil {
 		return nil, err
 	}

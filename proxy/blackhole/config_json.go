@@ -21,7 +21,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 
 	this.Response = new(NoneResponse)
 	if jsonConfig.Response != nil {
-		loader := loader.NewJSONConfigLoader("type", "")
+		loader := loader.NewJSONConfigLoader(loader.ConfigCreatorCache{}, "type", "")
 		loader.RegisterCreator("none", func() interface{} { return new(NoneResponse) })
 		loader.RegisterCreator("http", func() interface{} { return new(HTTPResponse) })
 		response, _, err := loader.Load(jsonConfig.Response)
