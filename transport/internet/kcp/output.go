@@ -75,5 +75,5 @@ func (this *AuthenticationWriter) Write(payload *alloc.Buffer) error {
 func (this *AuthenticationWriter) Release() {}
 
 func (this *AuthenticationWriter) Mtu() uint32 {
-	return effectiveConfig.Mtu - uint32(this.Authenticator.Overhead())
+	return effectiveConfig.Mtu.GetValue() - uint32(this.Authenticator.Overhead())
 }

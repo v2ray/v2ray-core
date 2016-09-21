@@ -16,9 +16,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		KCPConfig kcp.Config  `json:"kcpSettings"`
 		WSConfig  *ws.Config  `json:"wsSettings"`
 	}
-	jsonConfig := &JsonConfig{
-		KCPConfig: kcp.DefaultConfig(),
-	}
+	jsonConfig := &JsonConfig{}
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
 		return err
 	}

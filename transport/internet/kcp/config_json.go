@@ -31,7 +31,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 			log.Error("KCP|Config: Invalid MTU size: ", mtu)
 			return common.ErrBadConfiguration
 		}
-		this.Mtu = mtu
+		this.Mtu = &MTU{Value: *jsonConfig.Mtu}
 	}
 	if jsonConfig.Tti != nil {
 		tti := *jsonConfig.Tti
@@ -39,13 +39,13 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 			log.Error("KCP|Config: Invalid TTI: ", tti)
 			return common.ErrBadConfiguration
 		}
-		this.Tti = tti
+		this.Tti = &TTI{Value: *jsonConfig.Tti}
 	}
 	if jsonConfig.UpCap != nil {
-		this.UplinkCapacity = *jsonConfig.UpCap
+		this.UplinkCapacity = &UplinkCapacity{Value: *jsonConfig.UpCap}
 	}
 	if jsonConfig.DownCap != nil {
-		this.DownlinkCapacity = *jsonConfig.DownCap
+		this.DownlinkCapacity = &DownlinkCapacity{Value: *jsonConfig.DownCap}
 	}
 	if jsonConfig.Congestion != nil {
 		this.Congestion = *jsonConfig.Congestion
@@ -53,17 +53,17 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	if jsonConfig.ReadBufferSize != nil {
 		size := *jsonConfig.ReadBufferSize
 		if size > 0 {
-			this.ReadBuffer = size * 1024 * 1024
+			this.ReadBuffer = &ReadBuffer{Size: size * 1024 * 1024}
 		} else {
-			this.ReadBuffer = 512 * 1024
+			this.ReadBuffer = &ReadBuffer{Size: 512 * 1024}
 		}
 	}
 	if jsonConfig.WriteBufferSize != nil {
 		size := *jsonConfig.WriteBufferSize
 		if size > 0 {
-			this.WriteBuffer = size * 1024 * 1024
+			this.WriteBuffer = &WriteBuffer{Size: size * 1024 * 1024}
 		} else {
-			this.WriteBuffer = 512 * 1024
+			this.WriteBuffer = &WriteBuffer{Size: 512 * 1024}
 		}
 	}
 	if len(jsonConfig.HeaderConfig) > 0 {

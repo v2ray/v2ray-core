@@ -5,13 +5,43 @@ option go_package = "kcp";
 
 import "v2ray.com/core/transport/internet/authenticator.proto";
 
+// Maximum Transmission Unit, in bytes.
+message MTU {
+  uint32 value = 1;
+}
+
+// Transmission Time Interview, in milli-sec.
+message TTI {
+  uint32 value = 1;
+}
+
+// Uplink capacity, in MB.
+message UplinkCapacity {
+  uint32 value = 1;
+}
+
+// Downlink capacity, in MB.
+message DownlinkCapacity {
+  uint32 value = 1;
+}
+
+message WriteBuffer {
+  // Buffer size in bytes.
+  uint32 size = 1;
+}
+
+message ReadBuffer {
+  // Buffer size in bytes.
+  uint32 size = 1;
+}
+
 message Config {
-  uint32 mtu = 1;
-  uint32 tti = 2;
-  uint32 uplink_capacity = 3;
-  uint32 downlink_capacity = 4;
+  MTU mtu = 1;
+  TTI tti = 2;
+  UplinkCapacity uplink_capacity = 3;
+  DownlinkCapacity downlink_capacity = 4;
   bool congestion = 5;
-  uint32 write_buffer = 6;
-  uint32 read_buffer = 7;
+  WriteBuffer write_buffer = 6;
+  ReadBuffer read_buffer = 7;
   com.v2ray.core.transport.internet.AuthenticatorConfig header_config = 8;
 }
