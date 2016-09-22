@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package com.v2ray.core.proxy.blackhole;
+option go_package = "blackhole";
+
+import "google/protobuf/any.proto";
+
+message NoneResponse {
+
+}
+
+message HTTPResponse {
+
+}
+
+message Response {
+  enum Type {
+    None = 0;
+    HTTP = 1;
+  }
+  Type type = 1;
+  google.protobuf.Any settings = 2;
+}
+
+message Config {
+  Response response = 1;
+}

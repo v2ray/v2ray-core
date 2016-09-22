@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"strings"
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/proxy/registry"
 )
@@ -19,21 +20,27 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		return errors.New("Blackhole: Failed to parse config: " + err.Error())
 	}
 
-	this.Response = new(NoneResponse)
 	if jsonConfig.Response != nil {
-		cache := loader.ConfigCreatorCache{}
-		loader := loader.NewJSONConfigLoader(cache, "type", "")
-		cache.RegisterCreator("none", func() interface{} { return new(NoneResponse) })
-		cache.RegisterCreator("http", func() interface{} { return new(HTTPResponse) })
-		response, _, err := loader.Load(jsonConfig.Response)
+		response, rType, err := configLoader.Load(jsonConfig.Response)
 		if err != nil {
 			return errors.New("Blackhole: Failed to parse response config: " + err.Error())
 		}
-		this.Response = response.(Response)
+		this.Response = new(Response)
+		switch rType {
+		case strings.ToLower(Response_Type_name[int32(Response_None)]):
+			this.Response.Type = Response_None
+		case strings.ToLower(Response_Type_name[int32(Response_HTTP)]):
+			this.Response.Type = Response_HTTP
+		}
+		this.Response.Settings = response.(ResponseConfig).AsAny()
 	}
 
 	return nil
 }
+
+var (
+	configLoader = loader.NewJSONConfigLoader(cache, "type", "")
+)
 
 func init() {
 	registry.RegisterOutboundConfig("blackhole", func() interface{} { return new(Config) })

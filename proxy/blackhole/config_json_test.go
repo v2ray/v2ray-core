@@ -22,6 +22,10 @@ func TestHTTPResponseJSON(t *testing.T) {
 	err := json.Unmarshal([]byte(rawJson), config)
 	assert.Error(err).IsNil()
 
-	_, ok := config.Response.(*HTTPResponse)
+	assert.Int(int(config.Response.Type)).Equals(int(Response_HTTP))
+	response, err := config.Response.GetInternalResponse()
+	assert.Error(err).IsNil()
+
+	_, ok := response.(*HTTPResponse)
 	assert.Bool(ok).IsTrue()
 }

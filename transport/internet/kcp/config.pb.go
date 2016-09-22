@@ -35,6 +35,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
+// Maximum Transmission Unit, in bytes.
 type MTU struct {
 	Value uint32 `protobuf:"varint,1,opt,name=value" json:"value,omitempty"`
 }
@@ -44,6 +45,7 @@ func (m *MTU) String() string            { return proto.CompactTextString(m) }
 func (*MTU) ProtoMessage()               {}
 func (*MTU) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+// Transmission Time Interview, in milli-sec.
 type TTI struct {
 	Value uint32 `protobuf:"varint,1,opt,name=value" json:"value,omitempty"`
 }
@@ -53,6 +55,7 @@ func (m *TTI) String() string            { return proto.CompactTextString(m) }
 func (*TTI) ProtoMessage()               {}
 func (*TTI) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
+// Uplink capacity, in MB.
 type UplinkCapacity struct {
 	Value uint32 `protobuf:"varint,1,opt,name=value" json:"value,omitempty"`
 }
@@ -62,6 +65,7 @@ func (m *UplinkCapacity) String() string            { return proto.CompactTextSt
 func (*UplinkCapacity) ProtoMessage()               {}
 func (*UplinkCapacity) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
+// Downlink capacity, in MB.
 type DownlinkCapacity struct {
 	Value uint32 `protobuf:"varint,1,opt,name=value" json:"value,omitempty"`
 }
@@ -72,6 +76,7 @@ func (*DownlinkCapacity) ProtoMessage()               {}
 func (*DownlinkCapacity) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
 type WriteBuffer struct {
+	// Buffer size in bytes.
 	Size uint32 `protobuf:"varint,1,opt,name=size" json:"size,omitempty"`
 }
 
@@ -81,6 +86,7 @@ func (*WriteBuffer) ProtoMessage()               {}
 func (*WriteBuffer) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
 type ReadBuffer struct {
+	// Buffer size in bytes.
 	Size uint32 `protobuf:"varint,1,opt,name=size" json:"size,omitempty"`
 }
 
