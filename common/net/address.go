@@ -188,6 +188,9 @@ func (this *domainAddress) Equals(another Address) bool {
 }
 
 func (this *AddressPB) AsAddress() Address {
+	if this == nil {
+		return nil
+	}
 	switch addr := this.Address.(type) {
 	case *AddressPB_Ip:
 		return IPAddress(addr.Ip)

@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package com.v2ray.core.proxy.dokodemo;
+option go_package = "dokodemo";
+
+import "v2ray.com/core/common/net/address.proto";
+import "v2ray.com/core/common/net/network.proto";
+
+message Config {
+  com.v2ray.core.common.net.AddressPB address = 1;
+  uint32 port = 2;
+  com.v2ray.core.common.net.NetworkList network_list = 3;
+  uint32 timeout = 4;
+  bool follow_redirect = 5;
+}

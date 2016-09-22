@@ -4,10 +4,6 @@ import (
 	v2net "v2ray.com/core/common/net"
 )
 
-type Config struct {
-	FollowRedirect bool
-	Address        v2net.Address
-	Port           v2net.Port
-	Network        *v2net.NetworkList
-	Timeout        uint32
+func (this *Config) GetPredefinedAddress() v2net.Address {
+	return this.Address.AsAddress()
 }

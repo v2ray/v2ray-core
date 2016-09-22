@@ -32,8 +32,8 @@ type DokodemoDoor struct {
 func NewDokodemoDoor(config *Config, space app.Space, meta *proxy.InboundHandlerMeta) *DokodemoDoor {
 	d := &DokodemoDoor{
 		config:  config,
-		address: config.Address,
-		port:    config.Port,
+		address: config.GetPredefinedAddress(),
+		port:    v2net.Port(config.Port),
 		meta:    meta,
 	}
 	space.InitializeApplication(func() error {
@@ -73,13 +73,13 @@ func (this *DokodemoDoor) Start() error {
 	}
 	this.accepting = true
 
-	if this.config.Network.HasNetwork(v2net.Network_TCP) {
+	if this.config.NetworkList.HasNetwork(v2net.Network_TCP) {
 		err := this.ListenTCP()
 		if err != nil {
 			return err
 		}
 	}
-	if this.config.Network.HasNetwork(v2net.Network_UDP) {
+	if this.config.NetworkList.HasNetwork(v2net.Network_UDP) {
 		err := this.ListenUDP()
 		if err != nil {
 			return err
