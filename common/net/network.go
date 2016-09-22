@@ -25,8 +25,9 @@ func ParseNetwork(nwStr string) Network {
 }
 
 func (this Network) AsList() *NetworkList {
-	list := NetworkList([]Network{this})
-	return &list
+	return &NetworkList{
+		Network: []Network{this},
+	}
 }
 
 func (this Network) SystemString() string {
@@ -55,21 +56,20 @@ func (this Network) UrlPrefix() string {
 	}
 }
 
-// NetworkList is a list of Networks.
-type NetworkList []Network
-
 // NewNetworkList construsts a NetWorklist from the given StringListeralList.
-func NewNetworkList(networks collect.StringList) NetworkList {
-	list := NetworkList(make([]Network, networks.Len()))
+func NewNetworkList(networks collect.StringList) *NetworkList {
+	list := &NetworkList{
+		Network: make([]Network, networks.Len()),
+	}
 	for idx, network := range networks {
-		list[idx] = ParseNetwork(network)
+		list.Network[idx] = ParseNetwork(network)
 	}
 	return list
 }
 
 // HashNetwork returns true if the given network is in this NetworkList.
 func (this *NetworkList) HasNetwork(network Network) bool {
-	for _, value := range *this {
+	for _, value := range this.Network {
 		if string(value) == string(network) {
 			return true
 		}

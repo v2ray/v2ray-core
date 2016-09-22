@@ -11,3 +11,7 @@ enum Network {
   KCP = 4;
   WebSocket = 5;
 }
+
+message NetworkList {
+  repeated Network network = 1;
+}

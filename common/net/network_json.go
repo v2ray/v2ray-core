@@ -13,6 +13,6 @@ func (this *NetworkList) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &strlist); err != nil {
 		return err
 	}
-	*this = NewNetworkList(strlist)
+	*this = *NewNetworkList(strlist)
 	return nil
 }
