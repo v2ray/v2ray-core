@@ -23,20 +23,12 @@ func (this *DetourConfig) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
 		return errors.New("VMess|Inbound: Failed to parse detour config: " + err.Error())
 	}
-	this.ToTag = jsonConfig.ToTag
+	this.To = jsonConfig.ToTag
 	return nil
 }
 
-func (this *FeaturesConfig) UnmarshalJSON(data []byte) error {
-	type JsonFeaturesConfig struct {
-		Detour *DetourConfig `json:"detour"`
-	}
-	jsonConfig := new(JsonFeaturesConfig)
-	if err := json.Unmarshal(data, jsonConfig); err != nil {
-		return errors.New("VMess|Inbound: Failed to parse features config: " + err.Error())
-	}
-	this.Detour = jsonConfig.Detour
-	return nil
+type FeaturesConfig struct {
+	Detour *DetourConfig `json:"detour"`
 }
 
 func (this *DefaultConfig) UnmarshalJSON(data []byte) error {
@@ -48,9 +40,9 @@ func (this *DefaultConfig) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
 		return errors.New("VMess|Inbound: Failed to parse default config: " + err.Error())
 	}
-	this.AlterIDs = jsonConfig.AlterIDs
-	if this.AlterIDs == 0 {
-		this.AlterIDs = 32
+	this.AlterId = uint32(jsonConfig.AlterIDs)
+	if this.AlterId == 0 {
+		this.AlterId = 32
 	}
 	this.Level = uint32(jsonConfig.Level)
 	return nil
@@ -67,20 +59,19 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
 		return errors.New("VMess|Inbound: Failed to parse config: " + err.Error())
 	}
-	this.Features = jsonConfig.Features // Backward compatibility
-	this.Defaults = jsonConfig.Defaults
-	if this.Defaults == nil {
-		this.Defaults = &DefaultConfig{
-			Level:    0,
-			AlterIDs: 32,
+	this.Default = jsonConfig.Defaults
+	if this.Default == nil {
+		this.Default = &DefaultConfig{
+			Level:   0,
+			AlterId: 32,
 		}
 	}
-	this.DetourConfig = jsonConfig.DetourConfig
+	this.Detour = jsonConfig.DetourConfig
 	// Backward compatibility
-	if this.Features != nil && this.DetourConfig == nil {
-		this.DetourConfig = this.Features.Detour
+	if jsonConfig.Features != nil && jsonConfig.DetourConfig == nil {
+		this.Detour = jsonConfig.Features.Detour
 	}
-	this.AllowedUsers = make([]*protocol.User, len(jsonConfig.Users))
+	this.User = make([]*protocol.User, len(jsonConfig.Users))
 	for idx, rawData := range jsonConfig.Users {
 		user := new(protocol.User)
 		if err := json.Unmarshal(rawData, user); err != nil {
@@ -96,7 +87,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 			return common.ErrBadConfiguration
 		}
 		user.Account = anyAccount
-		this.AllowedUsers[idx] = user
+		this.User[idx] = user
 	}
 
 	return nil

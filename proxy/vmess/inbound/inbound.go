@@ -39,7 +39,7 @@ func NewUserByEmail(users []*protocol.User, config *DefaultConfig) *userByEmail 
 	return &userByEmail{
 		cache:           cache,
 		defaultLevel:    config.Level,
-		defaultAlterIDs: config.AlterIDs,
+		defaultAlterIDs: uint16(config.AlterId),
 	}
 }
 
@@ -260,15 +260,15 @@ func (this *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.
 	config := rawConfig.(*Config)
 
 	allowedClients := vmess.NewTimedUserValidator(protocol.DefaultIDHash)
-	for _, user := range config.AllowedUsers {
+	for _, user := range config.User {
 		allowedClients.Add(user)
 	}
 
 	handler := &VMessInboundHandler{
 		packetDispatcher: space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
 		clients:          allowedClients,
-		detours:          config.DetourConfig,
-		usersByEmail:     NewUserByEmail(config.AllowedUsers, config.Defaults),
+		detours:          config.Detour,
+		usersByEmail:     NewUserByEmail(config.User, config.Default),
 		meta:             meta,
 	}
 

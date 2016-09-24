@@ -5,5 +5,5 @@ option go_package = "vmess";
 
 message AccountPB {
   string id = 1;
-  uint32 alterId = 2;
+  uint32 alter_id = 2;
 }

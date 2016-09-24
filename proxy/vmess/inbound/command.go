@@ -8,7 +8,7 @@ import (
 
 func (this *VMessInboundHandler) generateCommand(request *protocol.RequestHeader) protocol.ResponseCommand {
 	if this.detours != nil {
-		tag := this.detours.ToTag
+		tag := this.detours.To
 		if this.inboundHandlerManager != nil {
 			handler, availableMin := this.inboundHandlerManager.GetHandler(tag)
 			inboundHandler, ok := handler.(*VMessInboundHandler)

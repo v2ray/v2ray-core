@@ -13,6 +13,7 @@ import (
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/registry"
+	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/encoding"
 	vmessio "v2ray.com/core/proxy/vmess/io"
 	"v2ray.com/core/transport/internet"
@@ -167,8 +168,8 @@ func (this *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.
 	vOutConfig := rawConfig.(*Config)
 
 	serverList := protocol.NewServerList()
-	for _, rec := range vOutConfig.Receivers {
-		serverList.AddServer(rec)
+	for _, rec := range vOutConfig.Receiver {
+		serverList.AddServer(protocol.NewServerSpecFromPB(vmess.NewAccount, *rec))
 	}
 	handler := &VMessOutboundHandler{
 		serverList:   serverList,

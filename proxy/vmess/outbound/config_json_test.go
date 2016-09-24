@@ -6,7 +6,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	//"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/proxy/vmess"
 	. "v2ray.com/core/proxy/vmess/outbound"
 	"v2ray.com/core/testing/assert"
 )
@@ -31,5 +32,7 @@ func TestConfigTargetParsing(t *testing.T) {
 	config := new(Config)
 	err := json.Unmarshal([]byte(rawJson), &config)
 	assert.Error(err).IsNil()
-	assert.Destination(config.Receivers[0].Destination()).EqualsString("tcp:127.0.0.1:80")
+	specPB := config.Receiver[0]
+	spec := protocol.NewServerSpecFromPB(vmess.NewAccount, *specPB)
+	assert.Destination(spec.Destination()).EqualsString("tcp:127.0.0.1:80")
 }

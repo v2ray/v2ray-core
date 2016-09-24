@@ -35,7 +35,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		log.Error("VMessOut: 0 VMess receiver configured.")
 		return common.ErrBadConfiguration
 	}
-	serverSpecs := make([]*protocol.ServerSpec, len(rawOutbound.Receivers))
+	serverSpecs := make([]*protocol.ServerSpecPB, len(rawOutbound.Receivers))
 	for idx, rec := range rawOutbound.Receivers {
 		if len(rec.Users) == 0 {
 			log.Error("VMess: 0 user configured for VMess outbound.")
@@ -50,7 +50,10 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 				Ip: serial.Uint32ToBytes(757086633, nil),
 			}
 		}
-		spec := protocol.NewServerSpec(vmess.NewAccount, v2net.TCPDestination(rec.Address.AsAddress(), rec.Port), protocol.AlwaysValid())
+		spec := &protocol.ServerSpecPB{
+			Address: rec.Address,
+			Port:    uint32(rec.Port),
+		}
 		for _, rawUser := range rec.Users {
 			user := new(protocol.User)
 			if err := json.Unmarshal(rawUser, user); err != nil {
@@ -68,12 +71,11 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 				return common.ErrBadConfiguration
 			}
 			user.Account = anyAccount
-
-			spec.AddUser(user)
+			spec.Users = append(spec.Users, user)
 		}
 		serverSpecs[idx] = spec
 	}
-	this.Receivers = serverSpecs
+	this.Receiver = serverSpecs
 	return nil
 }
 
