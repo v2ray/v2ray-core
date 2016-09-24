@@ -5,5 +5,9 @@ import (
 )
 
 func (this *Config) GetPredefinedAddress() v2net.Address {
-	return this.Address.AsAddress()
+	addr := this.Address.AsAddress()
+	if addr == nil {
+		return nil
+	}
+	return addr
 }
