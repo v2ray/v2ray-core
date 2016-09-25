@@ -8,15 +8,15 @@ import (
 	"v2ray.com/core/common/protocol"
 )
 
-func (this *Config) GetCipher() Cipher {
-	switch this.Cipher {
-	case Config_AES_128_CFB:
+func (this *Account) GetCipher() Cipher {
+	switch this.CipherType {
+	case CipherType_AES_128_CFB:
 		return &AesCfb{KeyBytes: 16}
-	case Config_AES_256_CFB:
+	case CipherType_AES_256_CFB:
 		return &AesCfb{KeyBytes: 32}
-	case Config_CHACHA20:
+	case CipherType_CHACHA20:
 		return &ChaCha20{IVBytes: 8}
-	case Config_CHACHA20_IEFT:
+	case CipherType_CHACHA20_IEFT:
 		return &ChaCha20{IVBytes: 12}
 	}
 	panic("Failed to create Cipher. Should not happen.")

@@ -23,7 +23,7 @@ import (
 
 type Server struct {
 	packetDispatcher dispatcher.PacketDispatcher
-	config           *Config
+	config           *ServerConfig
 	cipher           Cipher
 	cipherKey        []byte
 	meta             *proxy.InboundHandlerMeta
@@ -33,7 +33,7 @@ type Server struct {
 	udpServer        *udp.UDPServer
 }
 
-func NewServer(config *Config, space app.Space, meta *proxy.InboundHandlerMeta) (*Server, error) {
+func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandlerMeta) (*Server, error) {
 	if config.GetUser() == nil {
 		return nil, protocol.ErrUserMissing
 	}
@@ -41,7 +41,7 @@ func NewServer(config *Config, space app.Space, meta *proxy.InboundHandlerMeta) 
 	if _, err := config.GetUser().GetTypedAccount(account); err != nil {
 		return nil, err
 	}
-	cipher := config.GetCipher()
+	cipher := account.GetCipher()
 	s := &Server{
 		config:    config,
 		meta:      meta,
@@ -283,7 +283,7 @@ func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *
 	if !space.HasApp(dispatcher.APP_ID) {
 		return nil, common.ErrBadConfiguration
 	}
-	return NewServer(rawConfig.(*Config), space, meta)
+	return NewServer(rawConfig.(*ServerConfig), space, meta)
 }
 
 func init() {

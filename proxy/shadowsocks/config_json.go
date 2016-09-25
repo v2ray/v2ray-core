@@ -15,7 +15,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 )
 
-func (this *Config) UnmarshalJSON(data []byte) error {
+func (this *ServerConfig) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
 		Cipher   string `json:"method"`
 		Password string `json:"password"`
@@ -29,28 +29,30 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 
 	this.UdpEnabled = jsonConfig.UDP
-	jsonConfig.Cipher = strings.ToLower(jsonConfig.Cipher)
-	switch jsonConfig.Cipher {
-	case "aes-256-cfb":
-		this.Cipher = Config_AES_256_CFB
-	case "aes-128-cfb":
-		this.Cipher = Config_AES_128_CFB
-	case "chacha20":
-		this.Cipher = Config_CHACHA20
-	case "chacha20-ietf":
-		this.Cipher = Config_CHACHA20_IEFT
-	default:
-		log.Error("Shadowsocks: Unknown cipher method: ", jsonConfig.Cipher)
-		return common.ErrBadConfiguration
-	}
 
 	if len(jsonConfig.Password) == 0 {
 		log.Error("Shadowsocks: Password is not specified.")
 		return common.ErrBadConfiguration
 	}
-	account, err := ptypes.MarshalAny(&Account{
+	account := &Account{
 		Password: jsonConfig.Password,
-	})
+	}
+	jsonConfig.Cipher = strings.ToLower(jsonConfig.Cipher)
+	switch jsonConfig.Cipher {
+	case "aes-256-cfb":
+		account.CipherType = CipherType_AES_256_CFB
+	case "aes-128-cfb":
+		account.CipherType = CipherType_AES_128_CFB
+	case "chacha20":
+		account.CipherType = CipherType_CHACHA20
+	case "chacha20-ietf":
+		account.CipherType = CipherType_CHACHA20_IEFT
+	default:
+		log.Error("Shadowsocks: Unknown cipher method: ", jsonConfig.Cipher)
+		return common.ErrBadConfiguration
+	}
+
+	anyAccount, err := ptypes.MarshalAny(account)
 	if err != nil {
 		log.Error("Shadowsocks: Failed to create account: ", err)
 		return common.ErrBadConfiguration
@@ -58,12 +60,12 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	this.User = &protocol.User{
 		Email:   jsonConfig.Email,
 		Level:   uint32(jsonConfig.Level),
-		Account: account,
+		Account: anyAccount,
 	}
 
 	return nil
 }
 
 func init() {
-	registry.RegisterInboundConfig("shadowsocks", func() interface{} { return new(Config) })
+	registry.RegisterInboundConfig("shadowsocks", func() interface{} { return new(ServerConfig) })
 }
