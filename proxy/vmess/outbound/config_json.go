@@ -71,7 +71,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 				return common.ErrBadConfiguration
 			}
 			user.Account = anyAccount
-			spec.Users = append(spec.Users, user)
+			spec.User = append(spec.User, user)
 		}
 		serverSpecs[idx] = spec
 	}

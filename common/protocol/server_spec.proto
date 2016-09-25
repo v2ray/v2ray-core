@@ -9,5 +9,5 @@ option go_package = "protocol";
 message ServerSpecPB {
   com.v2ray.core.common.net.AddressPB address = 1;
   uint32 port = 2;
-  repeated com.v2ray.core.common.protocol.User users = 3;
+  repeated com.v2ray.core.common.protocol.User user = 3;
 }

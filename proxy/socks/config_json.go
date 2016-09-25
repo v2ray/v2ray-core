@@ -58,7 +58,7 @@ func (this *ClientConfig) UnmarshalJSON(data []byte) error {
 				return err
 			}
 			user.Account = anyAccount
-			server.Users = append(server.Users, user)
+			server.User = append(server.User, user)
 		}
 		this.Server[idx] = server
 	}
