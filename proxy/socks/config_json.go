@@ -38,9 +38,12 @@ func (this *ClientConfig) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
 		return errors.New("Socks|Client: Failed to parse config: " + err.Error())
 	}
-	this.Servers = make([]*protocol.ServerSpec, len(jsonConfig.Servers))
+	this.Server = make([]*protocol.ServerSpecPB, len(jsonConfig.Servers))
 	for idx, serverConfig := range jsonConfig.Servers {
-		server := protocol.NewServerSpec(NewAccount, v2net.TCPDestination(serverConfig.Address.AsAddress(), serverConfig.Port), protocol.AlwaysValid())
+		server := &protocol.ServerSpecPB{
+			Address: serverConfig.Address,
+			Port:    uint32(serverConfig.Port),
+		}
 		for _, rawUser := range serverConfig.Users {
 			user := new(protocol.User)
 			if err := json.Unmarshal(rawUser, user); err != nil {
@@ -55,9 +58,9 @@ func (this *ClientConfig) UnmarshalJSON(data []byte) error {
 				return err
 			}
 			user.Account = anyAccount
-			server.AddUser(user)
+			server.Users = append(server.Users, user)
 		}
-		this.Servers[idx] = server
+		this.Server[idx] = server
 	}
 	return nil
 }

@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-package com.v2ray.core.proxy.socks;
-option go_package = "socks";
-
-message Account {
-  string username = 1;
-  string password = 2;
-}

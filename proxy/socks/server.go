@@ -129,7 +129,7 @@ func (this *Server) handleConnection(connection internet.Connection) {
 
 func (this *Server) handleSocks5(clientAddr v2net.Destination, reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks5AuthenticationRequest) error {
 	expectedAuthMethod := protocol.AuthNotRequired
-	if this.config.AuthType == ServerConfig_PASSWORD {
+	if this.config.AuthType == AuthType_PASSWORD {
 		expectedAuthMethod = protocol.AuthUserPass
 	}
 
@@ -152,7 +152,7 @@ func (this *Server) handleSocks5(clientAddr v2net.Destination, reader *v2io.Buff
 		log.Error("Socks: failed to write authentication: ", err)
 		return err
 	}
-	if this.config.AuthType == ServerConfig_PASSWORD {
+	if this.config.AuthType == AuthType_PASSWORD {
 		upRequest, err := protocol.ReadUserPassRequest(reader)
 		if err != nil {
 			log.Warning("Socks: failed to read username and password: ", err)
