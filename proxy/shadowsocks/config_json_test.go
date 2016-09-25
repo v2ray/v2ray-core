@@ -17,12 +17,16 @@ func TestConfigParsing(t *testing.T) {
     "password": "v2ray-password"
   }`
 
-	config := new(Config)
+	config := new(ServerConfig)
 	err := json.Unmarshal([]byte(rawJson), config)
 	assert.Error(err).IsNil()
 
-	assert.Int(config.GetCipher().KeySize()).Equals(16)
-	account, err := config.User.GetTypedAccount(&Account{})
+	account := new(Account)
+	_, err = config.User.GetTypedAccount(account)
 	assert.Error(err).IsNil()
-	assert.Bytes(account.(*Account).GetCipherKey(config.GetCipher().KeySize())).Equals([]byte{160, 224, 26, 2, 22, 110, 9, 80, 65, 52, 80, 20, 38, 243, 224, 241})
+
+	cipher, err := account.GetCipher()
+	assert.Error(err).IsNil()
+	assert.Int(cipher.KeySize()).Equals(16)
+	assert.Bytes(account.GetCipherKey()).Equals([]byte{160, 224, 26, 2, 22, 110, 9, 80, 65, 52, 80, 20, 38, 243, 224, 241})
 }

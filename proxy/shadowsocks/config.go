@@ -3,23 +3,25 @@ package shadowsocks
 import (
 	"crypto/cipher"
 	"crypto/md5"
+	"errors"
 
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/protocol"
 )
 
-func (this *Account) GetCipher() Cipher {
+func (this *Account) GetCipher() (Cipher, error) {
 	switch this.CipherType {
 	case CipherType_AES_128_CFB:
-		return &AesCfb{KeyBytes: 16}
+		return &AesCfb{KeyBytes: 16}, nil
 	case CipherType_AES_256_CFB:
-		return &AesCfb{KeyBytes: 32}
+		return &AesCfb{KeyBytes: 32}, nil
 	case CipherType_CHACHA20:
-		return &ChaCha20{IVBytes: 8}
+		return &ChaCha20{IVBytes: 8}, nil
 	case CipherType_CHACHA20_IEFT:
-		return &ChaCha20{IVBytes: 12}
+		return &ChaCha20{IVBytes: 12}, nil
+	default:
+		return nil, errors.New("Unsupported cipher.")
 	}
-	panic("Failed to create Cipher. Should not happen.")
 }
 
 func (this *Account) Equals(another protocol.Account) bool {
@@ -33,8 +35,12 @@ func (this *Account) AsAccount() (protocol.Account, error) {
 	return this, nil
 }
 
-func (this *Account) GetCipherKey(size int) []byte {
-	return PasswordToCipherKey(this.Password, size)
+func (this *Account) GetCipherKey() []byte {
+	ct, err := this.GetCipher()
+	if err != nil {
+		return nil
+	}
+	return PasswordToCipherKey(this.Password, ct.KeySize())
 }
 
 type Cipher interface {

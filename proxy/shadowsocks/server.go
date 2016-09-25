@@ -41,12 +41,15 @@ func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandler
 	if _, err := config.GetUser().GetTypedAccount(account); err != nil {
 		return nil, err
 	}
-	cipher := account.GetCipher()
+	cipher, err := account.GetCipher()
+	if err != nil {
+		return nil, err
+	}
 	s := &Server{
 		config:    config,
 		meta:      meta,
 		cipher:    cipher,
-		cipherKey: account.GetCipherKey(cipher.KeySize()),
+		cipherKey: account.GetCipherKey(),
 	}
 
 	space.InitializeApplication(func() error {
