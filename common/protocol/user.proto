@@ -1,9 +1,11 @@
 syntax = "proto3";
 
-import "google/protobuf/any.proto";
-
-package com.v2ray.core.common.protocol;
+package v2ray.core.common.protocol;
 option go_package = "protocol";
+option java_package = "com.v2ray.core.common.protocol";
+option java_outer_classname = "UserProto";
+
+import "google/protobuf/any.proto";
 
 message User {
   uint32 level = 1;

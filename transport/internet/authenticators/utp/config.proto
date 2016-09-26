@@ -1,7 +1,9 @@
 syntax = "proto3";
 
-package com.v2ray.core.transport.internet.authenticators.utp;
+package v2ray.core.transport.internet.authenticators.utp;
 option go_package = "utp";
+option java_package = "com.v2ray.core.transport.internet.authenticators.utp";
+option java_outer_classname = "ConfigProto";
 
 message Config {
   uint32 version = 1;

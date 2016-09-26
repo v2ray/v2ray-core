@@ -1,7 +1,9 @@
 syntax = "proto3";
 
-package com.v2ray.core.proxy.http;
+package v2ray.core.proxy.http;
 option go_package = "http";
+option java_package = "com.v2ray.core.proxy.http";
+option java_outer_classname = "ConfigProto";
 
 // Config for HTTP proxy server.
 message ServerConfig {

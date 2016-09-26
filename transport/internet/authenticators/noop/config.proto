@@ -1,6 +1,8 @@
 syntax = "proto3";
 
-package com.v2ray.core.transport.internet.authenticators.noop;
+package v2ray.core.transport.internet.authenticators.noop;
 option go_package = "noop";
+option java_package = "com.v2ray.core.transport.internet.authenticators.noop";
+option java_outer_classname = "ConfigProto";
 
 message Config {}

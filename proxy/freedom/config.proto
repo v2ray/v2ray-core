@@ -1,7 +1,9 @@
 syntax = "proto3";
 
-package com.v2ray.core.proxy.freedom;
+package v2ray.core.proxy.freedom;
 option go_package = "freedom";
+option java_package = "com.v2ray.core.proxy.freedom";
+option java_outer_classname = "ConfigProto";
 
 message Config {
   enum DomainStrategy {

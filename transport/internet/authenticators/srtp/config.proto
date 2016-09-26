@@ -1,7 +1,9 @@
 syntax = "proto3";
 
-package com.v2ray.core.transport.internet.authenticators.srtp;
+package v2ray.core.transport.internet.authenticators.srtp;
 option go_package = "srtp";
+option java_package = "com.v2ray.core.transport.internet.authenticators.srtp";
+option java_outer_classname = "ConfigProto";
 
 message Config {
   uint32 version = 1;

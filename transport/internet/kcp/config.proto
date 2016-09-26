@@ -1,7 +1,9 @@
 syntax = "proto3";
 
-package com.v2ray.core.transport.internet.kcp;
+package v2ray.core.transport.internet.kcp;
 option go_package = "kcp";
+option java_package = "com.v2ray.core.transport.internet.kcp";
+option java_outer_classname = "ConfigProto";
 
 import "v2ray.com/core/transport/internet/authenticator.proto";
 
@@ -43,5 +45,5 @@ message Config {
   bool congestion = 5;
   WriteBuffer write_buffer = 6;
   ReadBuffer read_buffer = 7;
-  com.v2ray.core.transport.internet.AuthenticatorConfig header_config = 8;
+  v2ray.core.transport.internet.AuthenticatorConfig header_config = 8;
 }

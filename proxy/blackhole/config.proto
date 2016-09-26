@@ -1,7 +1,9 @@
 syntax = "proto3";
 
-package com.v2ray.core.proxy.blackhole;
+package v2ray.core.proxy.blackhole;
 option go_package = "blackhole";
+option java_package = "com.v2ray.core.proxy.blackhole";
+option java_outer_classname = "ConfigProto";
 
 import "google/protobuf/any.proto";
 

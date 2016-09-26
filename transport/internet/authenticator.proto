@@ -1,7 +1,9 @@
 syntax = "proto3";
 
-package com.v2ray.core.transport.internet;
+package v2ray.core.transport.internet;
 option go_package = "internet";
+option java_package = "com.v2ray.core.transport.internet";
+option java_outer_classname = "AuthenticatorProto";
 
 import "google/protobuf/any.proto";
 

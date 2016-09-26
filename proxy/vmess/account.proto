@@ -1,7 +1,10 @@
 syntax = "proto3";
 
-package com.v2ray.core.proxy.vmess;
+package v2ray.core.proxy.vmess;
 option go_package = "vmess";
+
+option java_package = "com.v2ray.core.proxy.vmess";
+option java_outer_classname = "AccountProto";
 
 message AccountPB {
   string id = 1;

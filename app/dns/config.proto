@@ -1,12 +1,14 @@
 syntax = "proto3";
 
-package com.v2ray.core.app.dns;
+package v2ray.core.app.dns;
 option go_package = "dns";
+option java_package = "com.v2ray.core.app.dns";
+option java_outer_classname = "ConfigProto";
 
 import "v2ray.com/core/common/net/address.proto";
 import "v2ray.com/core/common/net/destination.proto";
 
 message Config {
-  repeated com.v2ray.core.common.net.DestinationPB NameServers = 1;
-  map<string, com.v2ray.core.common.net.AddressPB> Hosts = 2;
+  repeated v2ray.core.common.net.DestinationPB NameServers = 1;
+  map<string, v2ray.core.common.net.AddressPB> Hosts = 2;
 }

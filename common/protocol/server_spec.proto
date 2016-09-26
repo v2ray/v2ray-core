@@ -1,13 +1,15 @@
 syntax = "proto3";
 
+package v2ray.core.common.protocol;
+option go_package = "protocol";
+option java_package = "com.v2ray.core.common.protocol";
+option java_outer_classname = "ServerSpecProto";
+
 import "v2ray.com/core/common/net/address.proto";
 import "v2ray.com/core/common/protocol/user.proto";
 
-package com.v2ray.core.common.protocol;
-option go_package = "protocol";
-
 message ServerSpecPB {
-  com.v2ray.core.common.net.AddressPB address = 1;
+  v2ray.core.common.net.AddressPB address = 1;
   uint32 port = 2;
-  repeated com.v2ray.core.common.protocol.User user = 3;
+  repeated v2ray.core.common.protocol.User user = 3;
 }

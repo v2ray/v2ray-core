@@ -1,7 +1,9 @@
 syntax = "proto3";
 
-package com.v2ray.core.proxy.shadowsocks;
+package v2ray.core.proxy.shadowsocks;
 option go_package = "shadowsocks";
+option java_package = "com.v2ray.core.proxy.shadowsocks";
+option java_outer_classname = "ConfigProto";
 
 import "v2ray.com/core/common/protocol/user.proto";
 import "v2ray.com/core/common/protocol/server_spec.proto";
@@ -21,9 +23,9 @@ enum CipherType {
 
 message ServerConfig {
   bool udp_enabled = 1;
-  com.v2ray.core.common.protocol.User user = 2;
+  v2ray.core.common.protocol.User user = 2;
 }
 
 message ClientConfig {
-  repeated com.v2ray.core.common.protocol.ServerSpecPB server = 1;
+  repeated v2ray.core.common.protocol.ServerSpecPB server = 1;
 }

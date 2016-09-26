@@ -1,7 +1,9 @@
 syntax = "proto3";
 
-package com.v2ray.core.common.net;
+package v2ray.core.common.net;
 option go_package = "net";
+option java_package = "com.v2ray.core.common.net";
+option java_outer_classname = "DestinationProto";
 
 import "v2ray.com/core/common/net/network.proto";
 import "v2ray.com/core/common/net/address.proto";
