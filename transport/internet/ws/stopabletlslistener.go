@@ -2,14 +2,8 @@ package ws
 
 import "crypto/tls"
 
-func getstopableTLSlistener(cert, key, listenaddr string) (*StoppableListener, error) {
-	cer, err := tls.LoadX509KeyPair(cert, key)
-	if err != nil {
-		return nil, err
-	}
-
-	config := &tls.Config{Certificates: []tls.Certificate{cer}}
-	ln, err := tls.Listen("tcp", listenaddr, config)
+func getstopableTLSlistener(tlsConfig *tls.Config, listenaddr string) (*StoppableListener, error) {
+	ln, err := tls.Listen("tcp", listenaddr, tlsConfig)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package kcp
 
 import (
+	"crypto/tls"
 	"net"
 	"sync/atomic"
 
@@ -8,13 +9,14 @@ import (
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
+	v2tls "v2ray.com/core/transport/internet/tls"
 )
 
 var (
 	globalConv = uint32(dice.Roll(65536))
 )
 
-func DialKCP(src v2net.Address, dest v2net.Destination) (internet.Connection, error) {
+func DialKCP(src v2net.Address, dest v2net.Destination, options internet.DialerOptions) (internet.Connection, error) {
 	dest.Network = v2net.Network_UDP
 	log.Info("KCP|Dialer: Dialing KCP to ", dest)
 	conn, err := internet.DialToDest(src, dest)
@@ -32,7 +34,19 @@ func DialKCP(src v2net.Address, dest v2net.Destination) (internet.Connection, er
 	session := NewConnection(conv, conn, conn.LocalAddr().(*net.UDPAddr), conn.RemoteAddr().(*net.UDPAddr), cpip)
 	session.FetchInputFrom(conn)
 
-	return session, nil
+	var iConn internet.Connection
+	iConn = session
+
+	if options.Stream != nil && options.Stream.Security == internet.StreamSecurityTypeTLS {
+		config := options.Stream.TLSSettings.GetTLSConfig()
+		if dest.Address.Family().IsDomain() {
+			config.ServerName = dest.Address.Domain()
+		}
+		tlsConn := tls.Client(conn, config)
+		iConn = v2tls.NewConnection(tlsConn)
+	}
+
+	return iConn, nil
 }
 
 func init() {

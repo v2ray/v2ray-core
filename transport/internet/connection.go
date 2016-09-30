@@ -39,10 +39,13 @@ type TLSSettings struct {
 
 func (this *TLSSettings) GetTLSConfig() *tls.Config {
 	config := &tls.Config{
-		InsecureSkipVerify: this.AllowInsecure,
 		ClientSessionCache: globalSessionCache,
 	}
+	if this == nil {
+		return config
+	}
 
+	config.InsecureSkipVerify = this.AllowInsecure
 	config.Certificates = this.Certs
 	config.BuildNameToCertificate()
 

@@ -1,6 +1,7 @@
 package tcp
 
 import (
+	"crypto/tls"
 	"errors"
 	"net"
 	"sync"
@@ -24,9 +25,10 @@ type TCPListener struct {
 	acccepting    bool
 	listener      *net.TCPListener
 	awaitingConns chan *ConnectionWithError
+	tlsConfig     *tls.Config
 }
 
-func ListenTCP(address v2net.Address, port v2net.Port) (internet.Listener, error) {
+func ListenTCP(address v2net.Address, port v2net.Port, options internet.ListenOptions) (internet.Listener, error) {
 	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   address.IP(),
 		Port: int(port),
@@ -38,6 +40,9 @@ func ListenTCP(address v2net.Address, port v2net.Port) (internet.Listener, error
 		acccepting:    true,
 		listener:      listener,
 		awaitingConns: make(chan *ConnectionWithError, 32),
+	}
+	if options.Stream != nil && options.Stream.Security == internet.StreamSecurityTypeTLS {
+		l.tlsConfig = options.Stream.TLSSettings.GetTLSConfig()
 	}
 	go l.KeepAccepting()
 	return l, nil
@@ -53,7 +58,11 @@ func (this *TCPListener) Accept() (internet.Connection, error) {
 			if connErr.err != nil {
 				return nil, connErr.err
 			}
-			return NewConnection("", connErr.conn, this), nil
+			conn := connErr.conn
+			if this.tlsConfig != nil {
+				conn = tls.Server(conn, this.tlsConfig)
+			}
+			return NewConnection("", conn, this), nil
 		case <-time.After(time.Second * 2):
 		}
 	}
@@ -139,7 +148,7 @@ func (this *RawTCPListener) Close() error {
 	return nil
 }
 
-func ListenRawTCP(address v2net.Address, port v2net.Port) (internet.Listener, error) {
+func ListenRawTCP(address v2net.Address, port v2net.Port, options internet.ListenOptions) (internet.Listener, error) {
 	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   address.IP(),
 		Port: int(port),
@@ -147,6 +156,7 @@ func ListenRawTCP(address v2net.Address, port v2net.Port) (internet.Listener, er
 	if err != nil {
 		return nil, err
 	}
+	// TODO: handle listen options
 	return &RawTCPListener{
 		accepting: true,
 		listener:  listener,

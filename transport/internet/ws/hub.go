@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"crypto/tls"
 	"errors"
 	"net"
 	"net/http"
@@ -28,13 +29,17 @@ type WSListener struct {
 	acccepting    bool
 	awaitingConns chan *ConnectionWithError
 	listener      *StoppableListener
+	tlsConfig     *tls.Config
 }
 
-func ListenWS(address v2net.Address, port v2net.Port) (internet.Listener, error) {
+func ListenWS(address v2net.Address, port v2net.Port, options internet.ListenOptions) (internet.Listener, error) {
 
 	l := &WSListener{
 		acccepting:    true,
 		awaitingConns: make(chan *ConnectionWithError, 32),
+	}
+	if options.Stream != nil && options.Stream.Security == internet.StreamSecurityTypeTLS {
+		l.tlsConfig = options.Stream.TLSSettings.GetTLSConfig()
 	}
 
 	err := l.listenws(address, port)
@@ -77,10 +82,10 @@ func (wsl *WSListener) listenws(address v2net.Address, port v2net.Port) error {
 		return http.Serve(wsl.listener, nil)
 	}
 
-	if effectiveConfig.Pto == "wss" {
+	if wsl.tlsConfig != nil {
 		listenerfunc = func() error {
 			var err error
-			wsl.listener, err = getstopableTLSlistener(effectiveConfig.Cert, effectiveConfig.PrivKey, address.String()+":"+strconv.Itoa(int(port.Value())))
+			wsl.listener, err = getstopableTLSlistener(wsl.tlsConfig, address.String()+":"+strconv.Itoa(int(port.Value())))
 			if err != nil {
 				return err
 			}

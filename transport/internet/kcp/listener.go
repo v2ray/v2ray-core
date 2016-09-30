@@ -1,6 +1,7 @@
 package kcp
 
 import (
+	"crypto/tls"
 	"net"
 	"sync"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
+	v2tls "v2ray.com/core/transport/internet/tls"
 	"v2ray.com/core/transport/internet/udp"
 )
 
@@ -22,9 +24,10 @@ type Listener struct {
 	sessions      map[string]*Connection
 	awaitingConns chan *Connection
 	hub           *udp.UDPHub
+	tlsConfig     *tls.Config
 }
 
-func NewListener(address v2net.Address, port v2net.Port) (*Listener, error) {
+func NewListener(address v2net.Address, port v2net.Port, options internet.ListenOptions) (*Listener, error) {
 	auth, err := effectiveConfig.GetAuthenticator()
 	if err != nil {
 		return nil, err
@@ -34,6 +37,9 @@ func NewListener(address v2net.Address, port v2net.Port) (*Listener, error) {
 		sessions:      make(map[string]*Connection),
 		awaitingConns: make(chan *Connection, 64),
 		running:       true,
+	}
+	if options.Stream != nil && options.Stream.Security == internet.StreamSecurityTypeTLS {
+		l.tlsConfig = options.Stream.TLSSettings.GetTLSConfig()
 	}
 	hub, err := udp.ListenUDP(address, port, udp.ListenOption{Callback: l.OnReceive})
 	if err != nil {
@@ -120,6 +126,10 @@ func (this *Listener) Accept() (internet.Connection, error) {
 		}
 		select {
 		case conn := <-this.awaitingConns:
+			if this.tlsConfig != nil {
+				tlsConn := tls.Server(conn, this.tlsConfig)
+				return v2tls.NewConnection(tlsConn), nil
+			}
 			return conn, nil
 		case <-time.After(time.Second):
 
@@ -173,8 +183,8 @@ func (this *Writer) Close() error {
 	return nil
 }
 
-func ListenKCP(address v2net.Address, port v2net.Port) (internet.Listener, error) {
-	return NewListener(address, port)
+func ListenKCP(address v2net.Address, port v2net.Port, options internet.ListenOptions) (internet.Listener, error) {
+	return NewListener(address, port, options)
 }
 
 func init() {

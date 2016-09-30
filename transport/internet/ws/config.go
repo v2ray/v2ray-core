@@ -1,12 +1,8 @@
 package ws
 
 type Config struct {
-	ConnectionReuse             bool
-	Path                        string
-	Pto                         string
-	Cert                        string
-	PrivKey                     string
-	DeveloperInsecureSkipVerify bool
+	ConnectionReuse bool
+	Path            string
 }
 
 func (this *Config) Apply() {
@@ -17,6 +13,5 @@ var (
 	effectiveConfig = &Config{
 		ConnectionReuse: true,
 		Path:            "",
-		Pto:             "",
 	}
 )

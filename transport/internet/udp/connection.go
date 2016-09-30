@@ -18,11 +18,12 @@ func (this *Connection) Reusable() bool {
 func (this *Connection) SetReusable(b bool) {}
 
 func init() {
-	internet.UDPDialer = func(src v2net.Address, dest v2net.Destination) (internet.Connection, error) {
+	internet.UDPDialer = func(src v2net.Address, dest v2net.Destination, options internet.DialerOptions) (internet.Connection, error) {
 		conn, err := internet.DialToDest(src, dest)
 		if err != nil {
 			return nil, err
 		}
+		// TODO: handle dialer options
 		return &Connection{
 			UDPConn: *(conn.(*net.UDPConn)),
 		}, nil
