@@ -7,9 +7,13 @@ Package internet is a generated protocol buffer package.
 
 It is generated from these files:
 	v2ray.com/core/transport/internet/authenticator.proto
+	v2ray.com/core/transport/internet/config.proto
 
 It has these top-level messages:
 	AuthenticatorConfig
+	SecuritySettings
+	NetworkSettings
+	StreamConfig
 */
 package internet
 

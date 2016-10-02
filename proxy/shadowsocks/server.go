@@ -278,8 +278,10 @@ func (this *Server) handleConnection(conn internet.Connection) {
 
 type ServerFactory struct{}
 
-func (this *ServerFactory) StreamCapability() internet.StreamConnectionType {
-	return internet.StreamConnectionTypeRawTCP
+func (this *ServerFactory) StreamCapability() v2net.NetworkList {
+	return v2net.NetworkList{
+		Network: []v2net.Network{v2net.Network_RawTCP},
+	}
 }
 
 func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {

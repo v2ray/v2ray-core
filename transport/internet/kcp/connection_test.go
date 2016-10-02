@@ -27,7 +27,7 @@ func (this *NoOpWriteCloser) Close() error {
 func TestConnectionReadTimeout(t *testing.T) {
 	assert := assert.On(t)
 
-	conn := NewConnection(1, &NoOpWriteCloser{}, nil, nil, NewSimpleAuthenticator())
+	conn := NewConnection(1, &NoOpWriteCloser{}, nil, nil, NewSimpleAuthenticator(), &Config{})
 	conn.SetReadDeadline(time.Now().Add(time.Second))
 
 	b := make([]byte, 1024)
@@ -44,10 +44,10 @@ func TestConnectionReadWrite(t *testing.T) {
 
 	auth := internet.NewAuthenticatorChain(srtp.SRTPFactory{}.Create(nil), NewSimpleAuthenticator())
 
-	connClient := NewConnection(1, upWriter, &net.UDPAddr{IP: v2net.LocalHostIP.IP(), Port: 1}, &net.UDPAddr{IP: v2net.LocalHostIP.IP(), Port: 2}, auth)
+	connClient := NewConnection(1, upWriter, &net.UDPAddr{IP: v2net.LocalHostIP.IP(), Port: 1}, &net.UDPAddr{IP: v2net.LocalHostIP.IP(), Port: 2}, auth, &Config{})
 	connClient.FetchInputFrom(downReader)
 
-	connServer := NewConnection(1, downWriter, &net.UDPAddr{IP: v2net.LocalHostIP.IP(), Port: 2}, &net.UDPAddr{IP: v2net.LocalHostIP.IP(), Port: 1}, auth)
+	connServer := NewConnection(1, downWriter, &net.UDPAddr{IP: v2net.LocalHostIP.IP(), Port: 2}, &net.UDPAddr{IP: v2net.LocalHostIP.IP(), Port: 1}, auth, &Config{})
 	connServer.FetchInputFrom(upReader)
 
 	totalWritten := 1024 * 1024

@@ -27,13 +27,13 @@ type InboundHandlerMeta struct {
 	Address                v2net.Address
 	Port                   v2net.Port
 	AllowPassiveConnection bool
-	StreamSettings         *internet.StreamSettings
+	StreamSettings         *internet.StreamConfig
 }
 
 type OutboundHandlerMeta struct {
 	Tag            string
 	Address        v2net.Address
-	StreamSettings *internet.StreamSettings
+	StreamSettings *internet.StreamConfig
 }
 
 // An InboundHandler handles inbound network connections to V2Ray.

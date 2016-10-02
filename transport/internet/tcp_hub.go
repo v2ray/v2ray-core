@@ -20,7 +20,7 @@ var (
 
 type ListenFunc func(address v2net.Address, port v2net.Port, options ListenOptions) (Listener, error)
 type ListenOptions struct {
-	Stream *StreamSettings
+	Stream *StreamConfig
 }
 
 type Listener interface {
@@ -36,23 +36,23 @@ type TCPHub struct {
 	accepting    bool
 }
 
-func ListenTCP(address v2net.Address, port v2net.Port, callback ConnectionHandler, settings *StreamSettings) (*TCPHub, error) {
+func ListenTCP(address v2net.Address, port v2net.Port, callback ConnectionHandler, settings *StreamConfig) (*TCPHub, error) {
 	var listener Listener
 	var err error
 	options := ListenOptions{
 		Stream: settings,
 	}
-	switch {
-	case settings.IsCapableOf(StreamConnectionTypeTCP):
+	switch settings.Network {
+	case v2net.Network_TCP:
 		listener, err = TCPListenFunc(address, port, options)
-	case settings.IsCapableOf(StreamConnectionTypeKCP):
+	case v2net.Network_KCP:
 		listener, err = KCPListenFunc(address, port, options)
-	case settings.IsCapableOf(StreamConnectionTypeWebSocket):
+	case v2net.Network_WebSocket:
 		listener, err = WSListenFunc(address, port, options)
-	case settings.IsCapableOf(StreamConnectionTypeRawTCP):
+	case v2net.Network_RawTCP:
 		listener, err = RawTCPListenFunc(address, port, options)
 	default:
-		log.Error("Internet|Listener: Unknown stream type: ", settings.Type)
+		log.Error("Internet|Listener: Unknown stream type: ", settings.Network)
 		err = ErrUnsupportedStreamType
 	}
 

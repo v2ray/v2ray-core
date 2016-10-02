@@ -28,8 +28,8 @@ func TestDnsAdd(t *testing.T) {
 			space,
 			&proxy.OutboundHandlerMeta{
 				Address: v2net.AnyIP,
-				StreamSettings: &internet.StreamSettings{
-					Type: internet.StreamConnectionTypeRawTCP,
+				StreamSettings: &internet.StreamConfig{
+					Network: v2net.Network_RawTCP,
 				},
 			}))
 	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, outboundHandlerManager)

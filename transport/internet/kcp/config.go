@@ -1,7 +1,10 @@
 package kcp
 
 import (
+	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
+
+	"github.com/golang/protobuf/proto"
 )
 
 func (this *MTU) GetValue() uint32 {
@@ -46,10 +49,6 @@ func (this *ReadBuffer) GetSize() uint32 {
 	return this.Size
 }
 
-func (this *Config) Apply() {
-	effectiveConfig = *this
-}
-
 func (this *Config) GetAuthenticator() (internet.Authenticator, error) {
 	auth := NewSimpleAuthenticator()
 	if this.HeaderConfig != nil {
@@ -86,6 +85,8 @@ func (this *Config) GetReceivingBufferSize() uint32 {
 	return this.GetReceivingInFlightSize() + this.ReadBuffer.GetSize()/this.Mtu.GetValue()
 }
 
-var (
-	effectiveConfig Config
-)
+func init() {
+	internet.RegisterNetworkConfigCreator(v2net.Network_KCP, func() proto.Message {
+		return new(Config)
+	})
+}

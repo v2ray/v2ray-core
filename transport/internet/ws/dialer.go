@@ -9,6 +9,7 @@ import (
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
+	v2tls "v2ray.com/core/transport/internet/tls"
 )
 
 var (
@@ -20,9 +21,15 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 	if src == nil {
 		src = v2net.AnyIP
 	}
+	networkSettings, err := options.Stream.GetEffectiveNetworkSettings()
+	if err != nil {
+		return nil, err
+	}
+	wsSettings := networkSettings.(*Config)
+
 	id := src.String() + "-" + dest.NetAddr()
 	var conn *wsconn
-	if dest.Network == v2net.Network_TCP && effectiveConfig.ConnectionReuse {
+	if dest.Network == v2net.Network_TCP && wsSettings.ConnectionReuse {
 		connt := globalCache.Get(id)
 		if connt != nil {
 			conn = connt.(*wsconn)
@@ -36,7 +43,7 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 			return nil, err
 		}
 	}
-	return NewConnection(id, conn, globalCache), nil
+	return NewConnection(id, conn, globalCache, wsSettings), nil
 }
 
 func init() {
@@ -44,6 +51,12 @@ func init() {
 }
 
 func wsDial(src v2net.Address, dest v2net.Destination, options internet.DialerOptions) (*wsconn, error) {
+	networkSettings, err := options.Stream.GetEffectiveNetworkSettings()
+	if err != nil {
+		return nil, err
+	}
+	wsSettings := networkSettings.(*Config)
+
 	commonDial := func(network, addr string) (net.Conn, error) {
 		return internet.DialToDest(src, dest)
 	}
@@ -56,9 +69,14 @@ func wsDial(src v2net.Address, dest v2net.Destination, options internet.DialerOp
 
 	protocol := "ws"
 
-	if options.Stream != nil && options.Stream.Security == internet.StreamSecurityTypeTLS {
+	if options.Stream != nil && options.Stream.SecurityType == internet.SecurityType_TLS {
 		protocol = "wss"
-		dialer.TLSClientConfig = options.Stream.TLSSettings.GetTLSConfig()
+		securitySettings, err := options.Stream.GetEffectiveSecuritySettings()
+		if err != nil {
+			log.Error("WebSocket: Failed to create apply TLS config: ", err)
+			return nil, err
+		}
+		dialer.TLSClientConfig = securitySettings.(*v2tls.Config).GetTLSConfig()
 		if dest.Address.Family().IsDomain() {
 			dialer.TLSClientConfig.ServerName = dest.Address.Domain()
 		}
@@ -66,7 +84,7 @@ func wsDial(src v2net.Address, dest v2net.Destination, options internet.DialerOp
 
 	uri := func(dst v2net.Destination, pto string, path string) string {
 		return fmt.Sprintf("%v://%v/%v", pto, dst.NetAddr(), path)
-	}(dest, protocol, effectiveConfig.Path)
+	}(dest, protocol, wsSettings.Path)
 
 	conn, resp, err := dialer.Dial(uri, nil)
 	if err != nil {
@@ -77,7 +95,11 @@ func wsDial(src v2net.Address, dest v2net.Destination, options internet.DialerOp
 		return nil, err
 	}
 	return func() internet.Connection {
-		connv2ray := &wsconn{wsc: conn, connClosing: false}
+		connv2ray := &wsconn{
+			wsc:         conn,
+			connClosing: false,
+			config:      wsSettings,
+		}
 		connv2ray.setup()
 		return connv2ray
 	}().(*wsconn), nil

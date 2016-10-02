@@ -73,12 +73,12 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 
 func (this *InboundConnectionConfig) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
-		Port          uint16                   `json:"port"`
-		Listen        *v2net.AddressPB         `json:"listen"`
-		Protocol      string                   `json:"protocol"`
-		StreamSetting *internet.StreamSettings `json:"streamSettings"`
-		Settings      json.RawMessage          `json:"settings"`
-		AllowPassive  bool                     `json:"allowPassive"`
+		Port          uint16                 `json:"port"`
+		Listen        *v2net.AddressPB       `json:"listen"`
+		Protocol      string                 `json:"protocol"`
+		StreamSetting *internet.StreamConfig `json:"streamSettings"`
+		Settings      json.RawMessage        `json:"settings"`
+		AllowPassive  bool                   `json:"allowPassive"`
 	}
 
 	jsonConfig := new(JsonConfig)
@@ -105,10 +105,10 @@ func (this *InboundConnectionConfig) UnmarshalJSON(data []byte) error {
 
 func (this *OutboundConnectionConfig) UnmarshalJSON(data []byte) error {
 	type JsonConnectionConfig struct {
-		Protocol      string                   `json:"protocol"`
-		SendThrough   *v2net.AddressPB         `json:"sendThrough"`
-		StreamSetting *internet.StreamSettings `json:"streamSettings"`
-		Settings      json.RawMessage          `json:"settings"`
+		Protocol      string                 `json:"protocol"`
+		SendThrough   *v2net.AddressPB       `json:"sendThrough"`
+		StreamSetting *internet.StreamConfig `json:"streamSettings"`
+		Settings      json.RawMessage        `json:"settings"`
 	}
 	jsonConfig := new(JsonConnectionConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
@@ -194,7 +194,7 @@ func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 		Settings      json.RawMessage                `json:"settings"`
 		Tag           string                         `json:"tag"`
 		Allocation    *InboundDetourAllocationConfig `json:"allocate"`
-		StreamSetting *internet.StreamSettings       `json:"streamSettings"`
+		StreamSetting *internet.StreamConfig         `json:"streamSettings"`
 		AllowPassive  bool                           `json:"allowPassive"`
 	}
 	jsonConfig := new(JsonInboundDetourConfig)
@@ -232,11 +232,11 @@ func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 
 func (this *OutboundDetourConfig) UnmarshalJSON(data []byte) error {
 	type JsonOutboundDetourConfig struct {
-		Protocol      string                   `json:"protocol"`
-		SendThrough   *v2net.AddressPB         `json:"sendThrough"`
-		Tag           string                   `json:"tag"`
-		Settings      json.RawMessage          `json:"settings"`
-		StreamSetting *internet.StreamSettings `json:"streamSettings"`
+		Protocol      string                 `json:"protocol"`
+		SendThrough   *v2net.AddressPB       `json:"sendThrough"`
+		Tag           string                 `json:"tag"`
+		Settings      json.RawMessage        `json:"settings"`
+		StreamSetting *internet.StreamConfig `json:"streamSettings"`
 	}
 	jsonConfig := new(JsonOutboundDetourConfig)
 	if err := json.Unmarshal(data, jsonConfig); err != nil {

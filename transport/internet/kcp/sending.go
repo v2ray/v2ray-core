@@ -185,9 +185,9 @@ func NewSendingWorker(kcp *Connection) *SendingWorker {
 		conn:             kcp,
 		fastResend:       2,
 		remoteNextNumber: 32,
-		controlWindow:    effectiveConfig.GetSendingInFlightSize(),
+		controlWindow:    kcp.Config.GetSendingInFlightSize(),
 	}
-	worker.window = NewSendingWindow(effectiveConfig.GetSendingBufferSize(), worker, worker.OnPacketLoss)
+	worker.window = NewSendingWindow(kcp.Config.GetSendingBufferSize(), worker, worker.OnPacketLoss)
 	return worker
 }
 
@@ -291,7 +291,7 @@ func (this *SendingWorker) Write(seg Segment) {
 }
 
 func (this *SendingWorker) OnPacketLoss(lossRate uint32) {
-	if !effectiveConfig.Congestion || this.conn.roundTrip.Timeout() == 0 {
+	if !this.conn.Config.Congestion || this.conn.roundTrip.Timeout() == 0 {
 		return
 	}
 
@@ -303,8 +303,8 @@ func (this *SendingWorker) OnPacketLoss(lossRate uint32) {
 	if this.controlWindow < 16 {
 		this.controlWindow = 16
 	}
-	if this.controlWindow > 2*effectiveConfig.GetSendingInFlightSize() {
-		this.controlWindow = 2 * effectiveConfig.GetSendingInFlightSize()
+	if this.controlWindow > 2*this.conn.Config.GetSendingInFlightSize() {
+		this.controlWindow = 2 * this.conn.Config.GetSendingInFlightSize()
 	}
 }
 
@@ -312,11 +312,11 @@ func (this *SendingWorker) Flush(current uint32) {
 	this.Lock()
 	defer this.Unlock()
 
-	cwnd := this.firstUnacknowledged + effectiveConfig.GetSendingInFlightSize()
+	cwnd := this.firstUnacknowledged + this.conn.Config.GetSendingInFlightSize()
 	if cwnd > this.remoteNextNumber {
 		cwnd = this.remoteNextNumber
 	}
-	if effectiveConfig.Congestion && cwnd > this.firstUnacknowledged+this.controlWindow {
+	if this.conn.Config.Congestion && cwnd > this.firstUnacknowledged+this.controlWindow {
 		cwnd = this.firstUnacknowledged + this.controlWindow
 	}
 

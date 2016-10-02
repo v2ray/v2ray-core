@@ -129,6 +129,7 @@ type Connection struct {
 	since          int64
 	dataInputCond  *sync.Cond
 	dataOutputCond *sync.Cond
+	Config         *Config
 
 	conv             uint16
 	state            State
@@ -149,7 +150,7 @@ type Connection struct {
 }
 
 // NewConnection create a new KCP connection between local and remote.
-func NewConnection(conv uint16, writerCloser io.WriteCloser, local *net.UDPAddr, remote *net.UDPAddr, block internet.Authenticator) *Connection {
+func NewConnection(conv uint16, writerCloser io.WriteCloser, local *net.UDPAddr, remote *net.UDPAddr, block internet.Authenticator, config *Config) *Connection {
 	log.Info("KCP|Connection: creating connection ", conv)
 
 	conn := new(Connection)
@@ -160,10 +161,12 @@ func NewConnection(conv uint16, writerCloser io.WriteCloser, local *net.UDPAddr,
 	conn.since = nowMillisec()
 	conn.dataInputCond = sync.NewCond(new(sync.Mutex))
 	conn.dataOutputCond = sync.NewCond(new(sync.Mutex))
+	conn.Config = config
 
 	authWriter := &AuthenticationWriter{
 		Authenticator: block,
 		Writer:        writerCloser,
+		Config:        config,
 	}
 	conn.conv = conv
 	conn.output = NewSegmentWriter(authWriter)
@@ -171,12 +174,12 @@ func NewConnection(conv uint16, writerCloser io.WriteCloser, local *net.UDPAddr,
 	conn.mss = authWriter.Mtu() - DataSegmentOverhead
 	conn.roundTrip = &RoundTripInfo{
 		rto:    100,
-		minRtt: effectiveConfig.Tti.GetValue(),
+		minRtt: config.Tti.GetValue(),
 	}
-	conn.interval = effectiveConfig.Tti.GetValue()
+	conn.interval = config.Tti.GetValue()
 	conn.receivingWorker = NewReceivingWorker(conn)
 	conn.fastresend = 2
-	conn.congestionControl = effectiveConfig.Congestion
+	conn.congestionControl = config.Congestion
 	conn.sendingWorker = NewSendingWorker(conn)
 
 	go conn.updateTask()
@@ -366,7 +369,7 @@ func (this *Connection) updateTask() {
 	for this.State() != StateTerminated {
 		this.flush()
 
-		interval := time.Duration(effectiveConfig.Tti.GetValue()) * time.Millisecond
+		interval := time.Duration(this.Config.Tti.GetValue()) * time.Millisecond
 		if this.State() == StateTerminating {
 			interval = time.Second
 		}

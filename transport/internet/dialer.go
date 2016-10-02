@@ -12,7 +12,7 @@ var (
 )
 
 type DialerOptions struct {
-	Stream *StreamSettings
+	Stream *StreamConfig
 }
 
 type Dialer func(src v2net.Address, dest v2net.Destination, options DialerOptions) (Connection, error)
@@ -25,7 +25,7 @@ var (
 	WSDialer     Dialer
 )
 
-func Dial(src v2net.Address, dest v2net.Destination, settings *StreamSettings) (Connection, error) {
+func Dial(src v2net.Address, dest v2net.Destination, settings *StreamConfig) (Connection, error) {
 
 	var connection Connection
 	var err error
@@ -33,16 +33,16 @@ func Dial(src v2net.Address, dest v2net.Destination, settings *StreamSettings) (
 		Stream: settings,
 	}
 	if dest.Network == v2net.Network_TCP {
-		switch {
-		case settings.IsCapableOf(StreamConnectionTypeTCP):
+		switch settings.Network {
+		case v2net.Network_TCP:
 			connection, err = TCPDialer(src, dest, dialerOptions)
-		case settings.IsCapableOf(StreamConnectionTypeKCP):
+		case v2net.Network_KCP:
 			connection, err = KCPDialer(src, dest, dialerOptions)
-		case settings.IsCapableOf(StreamConnectionTypeWebSocket):
+		case v2net.Network_WebSocket:
 			connection, err = WSDialer(src, dest, dialerOptions)
 
 			// This check has to be the last one.
-		case settings.IsCapableOf(StreamConnectionTypeRawTCP):
+		case v2net.Network_RawTCP:
 			connection, err = RawTCPDialer(src, dest, dialerOptions)
 		default:
 			return nil, ErrUnsupportedStreamType

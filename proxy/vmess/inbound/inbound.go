@@ -249,8 +249,10 @@ func (this *VMessInboundHandler) HandleConnection(connection internet.Connection
 
 type Factory struct{}
 
-func (this *Factory) StreamCapability() internet.StreamConnectionType {
-	return internet.StreamConnectionTypeRawTCP | internet.StreamConnectionTypeTCP | internet.StreamConnectionTypeKCP | internet.StreamConnectionTypeWebSocket
+func (this *Factory) StreamCapability() v2net.NetworkList {
+	return v2net.NetworkList{
+		Network: []v2net.Network{v2net.Network_TCP, v2net.Network_KCP, v2net.Network_WebSocket},
+	}
 }
 
 func (this *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {

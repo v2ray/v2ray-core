@@ -44,8 +44,8 @@ func TestDokodemoTCP(t *testing.T) {
 			space,
 			&proxy.OutboundHandlerMeta{
 				Address: v2net.LocalHostIP,
-				StreamSettings: &internet.StreamSettings{
-					Type: internet.StreamConnectionTypeRawTCP,
+				StreamSettings: &internet.StreamConfig{
+					Network: v2net.Network_RawTCP,
 				},
 			}))
 	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, ohm)
@@ -65,8 +65,8 @@ func TestDokodemoTCP(t *testing.T) {
 	}, space, &proxy.InboundHandlerMeta{
 		Address: v2net.LocalHostIP,
 		Port:    port,
-		StreamSettings: &internet.StreamSettings{
-			Type: internet.StreamConnectionTypeRawTCP,
+		StreamSettings: &internet.StreamConfig{
+			Network: v2net.Network_RawTCP,
 		}})
 	defer dokodemo.Close()
 
@@ -119,8 +119,8 @@ func TestDokodemoUDP(t *testing.T) {
 			space,
 			&proxy.OutboundHandlerMeta{
 				Address: v2net.AnyIP,
-				StreamSettings: &internet.StreamSettings{
-					Type: internet.StreamConnectionTypeRawTCP,
+				StreamSettings: &internet.StreamConfig{
+					Network: v2net.Network_RawTCP,
 				}}))
 	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, ohm)
 
@@ -139,8 +139,8 @@ func TestDokodemoUDP(t *testing.T) {
 	}, space, &proxy.InboundHandlerMeta{
 		Address: v2net.LocalHostIP,
 		Port:    port,
-		StreamSettings: &internet.StreamSettings{
-			Type: internet.StreamConnectionTypeRawTCP,
+		StreamSettings: &internet.StreamConfig{
+			Network: v2net.Network_RawTCP,
 		}})
 	defer dokodemo.Close()
 

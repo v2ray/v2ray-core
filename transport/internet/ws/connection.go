@@ -20,14 +20,16 @@ type Connection struct {
 	conn     *wsconn
 	listener ConnectionManager
 	reusable bool
+	config   *Config
 }
 
-func NewConnection(dest string, conn *wsconn, manager ConnectionManager) *Connection {
+func NewConnection(dest string, conn *wsconn, manager ConnectionManager, config *Config) *Connection {
 	return &Connection{
 		dest:     dest,
 		conn:     conn,
 		listener: manager,
-		reusable: effectiveConfig.ConnectionReuse,
+		reusable: config.ConnectionReuse,
+		config:   config,
 	}
 }
 
@@ -80,7 +82,7 @@ func (this *Connection) SetWriteDeadline(t time.Time) error {
 }
 
 func (this *Connection) SetReusable(reusable bool) {
-	if !effectiveConfig.ConnectionReuse {
+	if !this.config.ConnectionReuse {
 		return
 	}
 	this.reusable = reusable

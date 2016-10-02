@@ -68,11 +68,15 @@ func NewNetworkList(networks collect.StringList) *NetworkList {
 }
 
 // HashNetwork returns true if the given network is in this NetworkList.
-func (this *NetworkList) HasNetwork(network Network) bool {
+func (this NetworkList) HasNetwork(network Network) bool {
 	for _, value := range this.Network {
 		if string(value) == string(network) {
 			return true
 		}
 	}
 	return false
+}
+
+func (this NetworkList) Get(idx int) Network {
+	return this.Network[idx]
 }

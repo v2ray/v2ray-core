@@ -13,7 +13,7 @@ import (
 type InboundConnectionConfig struct {
 	Port                   v2net.Port
 	ListenOn               v2net.Address
-	StreamSettings         *internet.StreamSettings
+	StreamSettings         *internet.StreamConfig
 	Protocol               string
 	Settings               []byte
 	AllowPassiveConnection bool
@@ -22,7 +22,7 @@ type InboundConnectionConfig struct {
 type OutboundConnectionConfig struct {
 	Protocol       string
 	SendThrough    v2net.Address
-	StreamSettings *internet.StreamSettings
+	StreamSettings *internet.StreamConfig
 	Settings       []byte
 }
 
@@ -50,7 +50,7 @@ type InboundDetourConfig struct {
 	ListenOn               v2net.Address
 	Tag                    string
 	Allocation             *InboundDetourAllocationConfig
-	StreamSettings         *internet.StreamSettings
+	StreamSettings         *internet.StreamConfig
 	Settings               []byte
 	AllowPassiveConnection bool
 }
@@ -58,7 +58,7 @@ type InboundDetourConfig struct {
 type OutboundDetourConfig struct {
 	Protocol       string
 	SendThrough    v2net.Address
-	StreamSettings *internet.StreamSettings
+	StreamSettings *internet.StreamConfig
 	Tag            string
 	Settings       []byte
 }

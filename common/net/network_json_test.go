@@ -10,6 +10,15 @@ import (
 	"v2ray.com/core/testing/assert"
 )
 
+func TestStringNetwork(t *testing.T) {
+	assert := assert.On(t)
+
+	var network Network
+	err := json.Unmarshal([]byte(`"tcp"`), &network)
+	assert.Error(err).IsNil()
+	assert.Bool(network == Network_TCP).IsTrue()
+}
+
 func TestArrayNetworkList(t *testing.T) {
 	assert := assert.On(t)
 

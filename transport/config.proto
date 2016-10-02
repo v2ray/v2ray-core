@@ -5,6 +5,8 @@ option go_package = "transport";
 option java_package = "com.v2ray.core.transport";
 option java_outer_classname = "ConfigProto";
 
+import "v2ray.com/core/transport/internet/config.proto";
+
 message Config {
-  
+  repeated v2ray.core.transport.internet.NetworkSettings network_settings = 1;
 }

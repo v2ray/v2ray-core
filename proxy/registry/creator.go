@@ -2,16 +2,16 @@ package registry
 
 import (
 	"v2ray.com/core/app"
+	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
-	"v2ray.com/core/transport/internet"
 )
 
 type InboundHandlerFactory interface {
-	StreamCapability() internet.StreamConnectionType
+	StreamCapability() v2net.NetworkList
 	Create(space app.Space, config interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error)
 }
 
 type OutboundHandlerFactory interface {
-	StreamCapability() internet.StreamConnectionType
+	StreamCapability() v2net.NetworkList
 	Create(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error)
 }

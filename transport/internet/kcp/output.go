@@ -62,6 +62,7 @@ func (this *BufferedSegmentWriter) Flush() {
 type AuthenticationWriter struct {
 	Authenticator internet.Authenticator
 	Writer        io.Writer
+	Config        *Config
 }
 
 func (this *AuthenticationWriter) Write(payload *alloc.Buffer) error {
@@ -75,5 +76,5 @@ func (this *AuthenticationWriter) Write(payload *alloc.Buffer) error {
 func (this *AuthenticationWriter) Release() {}
 
 func (this *AuthenticationWriter) Mtu() uint32 {
-	return effectiveConfig.Mtu.GetValue() - uint32(this.Authenticator.Overhead())
+	return this.Config.Mtu.GetValue() - uint32(this.Authenticator.Overhead())
 }

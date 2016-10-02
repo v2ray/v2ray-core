@@ -1,15 +1,14 @@
 package tcp
 
-type Config struct {
-	ConnectionReuse bool
-}
+import (
+	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/transport/internet"
 
-func (this *Config) Apply() {
-	effectiveConfig = this
-}
-
-var (
-	effectiveConfig = &Config{
-		ConnectionReuse: true,
-	}
+	"github.com/golang/protobuf/proto"
 )
+
+func init() {
+	internet.RegisterNetworkConfigCreator(v2net.Network_TCP, func() proto.Message {
+		return new(Config)
+	})
+}

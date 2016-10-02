@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package v2ray.core.transport.internet.tls;
+option go_package = "tls";
+option java_package = "com.v2ray.core.transport.internet.tls";
+option java_outer_classname = "ConfigProto";
+
+message Certificate {
+  bytes Certificate = 1;
+  bytes Key = 2;
+}
+
+message Config {
+  bool allow_insecure = 1;
+  repeated Certificate certificate = 2;
+}

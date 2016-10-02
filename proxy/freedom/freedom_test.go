@@ -40,8 +40,8 @@ func TestSinglePacket(t *testing.T) {
 		space,
 		&proxy.OutboundHandlerMeta{
 			Address: v2net.AnyIP,
-			StreamSettings: &internet.StreamSettings{
-				Type: internet.StreamConnectionTypeRawTCP,
+			StreamSettings: &internet.StreamConfig{
+				Network: v2net.Network_RawTCP,
 			},
 		})
 	space.Initialize()
@@ -68,8 +68,8 @@ func TestUnreachableDestination(t *testing.T) {
 		app.NewSpace(),
 		&proxy.OutboundHandlerMeta{
 			Address: v2net.AnyIP,
-			StreamSettings: &internet.StreamSettings{
-				Type: internet.StreamConnectionTypeRawTCP,
+			StreamSettings: &internet.StreamConfig{
+				Network: v2net.Network_RawTCP,
 			},
 		})
 	traffic := ray.NewRay()
@@ -104,8 +104,8 @@ func TestIPResolution(t *testing.T) {
 		space,
 		&proxy.OutboundHandlerMeta{
 			Address: v2net.AnyIP,
-			StreamSettings: &internet.StreamSettings{
-				Type: internet.StreamConnectionTypeRawTCP,
+			StreamSettings: &internet.StreamConfig{
+				Network: v2net.Network_RawTCP,
 			},
 		})
 

@@ -1,6 +1,8 @@
 package registry
 
 import (
+	"errors"
+
 	"v2ray.com/core/app"
 	"v2ray.com/core/common"
 	"v2ray.com/core/proxy"
@@ -46,11 +48,13 @@ func CreateInboundHandler(name string, space app.Space, rawConfig []byte, meta *
 		return nil, common.ErrObjectNotFound
 	}
 	if meta.StreamSettings == nil {
-		meta.StreamSettings = &internet.StreamSettings{
-			Type: creator.StreamCapability(),
+		meta.StreamSettings = &internet.StreamConfig{
+			Network: creator.StreamCapability().Get(0),
 		}
 	} else {
-		meta.StreamSettings.Type &= creator.StreamCapability()
+		if !creator.StreamCapability().HasNetwork(meta.StreamSettings.Network) {
+			return nil, errors.New("Proxy|Registry: Invalid network: " + meta.StreamSettings.Network.String())
+		}
 	}
 
 	if len(rawConfig) > 0 {
@@ -69,11 +73,13 @@ func CreateOutboundHandler(name string, space app.Space, rawConfig []byte, meta 
 		return nil, common.ErrObjectNotFound
 	}
 	if meta.StreamSettings == nil {
-		meta.StreamSettings = &internet.StreamSettings{
-			Type: creator.StreamCapability(),
+		meta.StreamSettings = &internet.StreamConfig{
+			Network: creator.StreamCapability().Get(0),
 		}
 	} else {
-		meta.StreamSettings.Type &= creator.StreamCapability()
+		if !creator.StreamCapability().HasNetwork(meta.StreamSettings.Network) {
+			return nil, errors.New("Proxy|Registry: Invalid network: " + meta.StreamSettings.Network.String())
+		}
 	}
 
 	if len(rawConfig) > 0 {

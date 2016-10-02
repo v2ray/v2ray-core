@@ -124,8 +124,8 @@ type ReceivingWorker struct {
 func NewReceivingWorker(kcp *Connection) *ReceivingWorker {
 	worker := &ReceivingWorker{
 		conn:       kcp,
-		window:     NewReceivingWindow(effectiveConfig.GetReceivingBufferSize()),
-		windowSize: effectiveConfig.GetReceivingInFlightSize(),
+		window:     NewReceivingWindow(kcp.Config.GetReceivingBufferSize()),
+		windowSize: kcp.Config.GetReceivingInFlightSize(),
 	}
 	worker.acklist = NewAckList(worker)
 	return worker

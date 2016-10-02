@@ -129,8 +129,10 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 
 type FreedomFactory struct{}
 
-func (this *FreedomFactory) StreamCapability() internet.StreamConnectionType {
-	return internet.StreamConnectionTypeRawTCP
+func (this *FreedomFactory) StreamCapability() v2net.NetworkList {
+	return v2net.NetworkList{
+		Network: []v2net.Network{v2net.Network_RawTCP},
+	}
 }
 
 func (this *FreedomFactory) Create(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {

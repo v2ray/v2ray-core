@@ -18,6 +18,7 @@ type wsconn struct {
 	reusable    bool
 	rlock       *sync.Mutex
 	wlock       *sync.Mutex
+	config      *Config
 }
 
 func (ws *wsconn) Read(b []byte) (n int, err error) {
@@ -164,7 +165,7 @@ func (ws *wsconn) Reusable() bool {
 }
 
 func (ws *wsconn) SetReusable(reusable bool) {
-	if !effectiveConfig.ConnectionReuse {
+	if !ws.config.ConnectionReuse {
 		return
 	}
 	ws.reusable = reusable

@@ -1,20 +1,43 @@
 package ws_test
 
 import (
-	"crypto/tls"
+	"io/ioutil"
 	"testing"
 	"time"
 
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/transport/internet"
+	v2tls "v2ray.com/core/transport/internet/tls"
 	. "v2ray.com/core/transport/internet/ws"
+
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/any"
 )
+
+func MarshalSettings(config *Config, assert *assert.Assert) *any.Any {
+	anySettings, err := ptypes.MarshalAny(config)
+	assert.Error(err).IsNil()
+
+	return anySettings
+}
 
 func Test_Connect_ws(t *testing.T) {
 	assert := assert.On(t)
-	(&Config{Path: ""}).Apply()
-	conn, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("echo.websocket.org"), 80), internet.DialerOptions{})
+
+	conn, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("echo.websocket.org"), 80), internet.DialerOptions{
+		Stream: &internet.StreamConfig{
+			Network: v2net.Network_WebSocket,
+			NetworkSettings: []*internet.NetworkSettings{
+				{
+					Network: v2net.Network_WebSocket,
+					Settings: MarshalSettings(&Config{
+						Path: "",
+					}, assert),
+				},
+			},
+		},
+	})
 	assert.Error(err).IsNil()
 	conn.Write([]byte("echo"))
 	s := make(chan int)
@@ -33,10 +56,18 @@ func Test_Connect_ws(t *testing.T) {
 
 func Test_Connect_wss(t *testing.T) {
 	assert := assert.On(t)
-	(&Config{Path: ""}).Apply()
 	conn, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("echo.websocket.org"), 443), internet.DialerOptions{
-		Stream: &internet.StreamSettings{
-			Security: internet.StreamSecurityTypeTLS,
+		Stream: &internet.StreamConfig{
+			Network: v2net.Network_WebSocket,
+			NetworkSettings: []*internet.NetworkSettings{
+				{
+					Network: v2net.Network_WebSocket,
+					Settings: MarshalSettings(&Config{
+						Path: "",
+					}, assert),
+				},
+			},
+			SecurityType: internet.SecurityType_TLS,
 		},
 	})
 	assert.Error(err).IsNil()
@@ -57,10 +88,18 @@ func Test_Connect_wss(t *testing.T) {
 
 func Test_Connect_wss_1_nil(t *testing.T) {
 	assert := assert.On(t)
-	(&Config{Path: ""}).Apply()
 	conn, err := Dial(nil, v2net.TCPDestination(v2net.DomainAddress("echo.websocket.org"), 443), internet.DialerOptions{
-		Stream: &internet.StreamSettings{
-			Security: internet.StreamSecurityTypeTLS,
+		Stream: &internet.StreamConfig{
+			Network: v2net.Network_WebSocket,
+			NetworkSettings: []*internet.NetworkSettings{
+				{
+					Network: v2net.Network_WebSocket,
+					Settings: MarshalSettings(&Config{
+						Path: "",
+					}, assert),
+				},
+			},
+			SecurityType: internet.SecurityType_TLS,
 		},
 	})
 	assert.Error(err).IsNil()
@@ -81,8 +120,19 @@ func Test_Connect_wss_1_nil(t *testing.T) {
 
 func Test_Connect_ws_guess(t *testing.T) {
 	assert := assert.On(t)
-	(&Config{Path: ""}).Apply()
-	conn, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("echo.websocket.org"), 80), internet.DialerOptions{})
+	conn, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("echo.websocket.org"), 80), internet.DialerOptions{
+		Stream: &internet.StreamConfig{
+			Network: v2net.Network_WebSocket,
+			NetworkSettings: []*internet.NetworkSettings{
+				{
+					Network: v2net.Network_WebSocket,
+					Settings: MarshalSettings(&Config{
+						Path: "",
+					}, assert),
+				},
+			},
+		},
+	})
 	assert.Error(err).IsNil()
 	conn.Write([]byte("echo"))
 	s := make(chan int)
@@ -101,10 +151,18 @@ func Test_Connect_ws_guess(t *testing.T) {
 
 func Test_Connect_wss_guess(t *testing.T) {
 	assert := assert.On(t)
-	(&Config{Path: ""}).Apply()
 	conn, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("echo.websocket.org"), 443), internet.DialerOptions{
-		Stream: &internet.StreamSettings{
-			Security: internet.StreamSecurityTypeTLS,
+		Stream: &internet.StreamConfig{
+			Network: v2net.Network_WebSocket,
+			NetworkSettings: []*internet.NetworkSettings{
+				{
+					Network: v2net.Network_WebSocket,
+					Settings: MarshalSettings(&Config{
+						Path: "",
+					}, assert),
+				},
+			},
+			SecurityType: internet.SecurityType_TLS,
 		},
 	})
 	assert.Error(err).IsNil()
@@ -125,10 +183,18 @@ func Test_Connect_wss_guess(t *testing.T) {
 
 func Test_Connect_wss_guess_fail(t *testing.T) {
 	assert := assert.On(t)
-	(&Config{Path: ""}).Apply()
 	_, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("static.kkdev.org"), 443), internet.DialerOptions{
-		Stream: &internet.StreamSettings{
-			Security: internet.StreamSecurityTypeTLS,
+		Stream: &internet.StreamConfig{
+			Network: v2net.Network_WebSocket,
+			NetworkSettings: []*internet.NetworkSettings{
+				{
+					Network: v2net.Network_WebSocket,
+					Settings: MarshalSettings(&Config{
+						Path: "",
+					}, assert),
+				},
+			},
+			SecurityType: internet.SecurityType_TLS,
 		},
 	})
 	assert.Error(err).IsNotNil()
@@ -136,12 +202,21 @@ func Test_Connect_wss_guess_fail(t *testing.T) {
 
 func Test_Connect_wss_guess_reuse(t *testing.T) {
 	assert := assert.On(t)
-	(&Config{Path: "", ConnectionReuse: true}).Apply()
 	i := 3
 	for i != 0 {
 		conn, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("echo.websocket.org"), 443), internet.DialerOptions{
-			Stream: &internet.StreamSettings{
-				Security: internet.StreamSecurityTypeTLS,
+			Stream: &internet.StreamConfig{
+				Network: v2net.Network_WebSocket,
+				NetworkSettings: []*internet.NetworkSettings{
+					{
+						Network: v2net.Network_WebSocket,
+						Settings: MarshalSettings(&Config{
+							Path:            "",
+							ConnectionReuse: true,
+						}, assert),
+					},
+				},
+				SecurityType: internet.SecurityType_TLS,
 			},
 		})
 		assert.Error(err).IsNil()
@@ -170,8 +245,19 @@ func Test_Connect_wss_guess_reuse(t *testing.T) {
 
 func Test_listenWSAndDial(t *testing.T) {
 	assert := assert.On(t)
-	(&Config{Path: "ws"}).Apply()
-	listen, err := ListenWS(v2net.DomainAddress("localhost"), 13142, internet.ListenOptions{})
+	listen, err := ListenWS(v2net.DomainAddress("localhost"), 13142, internet.ListenOptions{
+		Stream: &internet.StreamConfig{
+			Network: v2net.Network_WebSocket,
+			NetworkSettings: []*internet.NetworkSettings{
+				{
+					Network: v2net.Network_WebSocket,
+					Settings: MarshalSettings(&Config{
+						Path: "ws",
+					}, assert),
+				},
+			},
+		},
+	})
 	assert.Error(err).IsNil()
 	go func() {
 		conn, err := listen.Accept()
@@ -185,15 +271,51 @@ func Test_listenWSAndDial(t *testing.T) {
 		conn.Close()
 		listen.Close()
 	}()
-	conn, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13142), internet.DialerOptions{})
+	conn, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13142), internet.DialerOptions{
+		Stream: &internet.StreamConfig{
+			Network: v2net.Network_WebSocket,
+			NetworkSettings: []*internet.NetworkSettings{
+				{
+					Network: v2net.Network_WebSocket,
+					Settings: MarshalSettings(&Config{
+						Path: "ws",
+					}, assert),
+				},
+			},
+		},
+	})
 	assert.Error(err).IsNil()
 	conn.Close()
 	<-time.After(time.Second * 5)
-	conn, err = Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13142), internet.DialerOptions{})
+	conn, err = Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13142), internet.DialerOptions{
+		Stream: &internet.StreamConfig{
+			Network: v2net.Network_WebSocket,
+			NetworkSettings: []*internet.NetworkSettings{
+				{
+					Network: v2net.Network_WebSocket,
+					Settings: MarshalSettings(&Config{
+						Path: "ws",
+					}, assert),
+				},
+			},
+		},
+	})
 	assert.Error(err).IsNil()
 	conn.Close()
 	<-time.After(time.Second * 15)
-	conn, err = Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13142), internet.DialerOptions{})
+	conn, err = Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13142), internet.DialerOptions{
+		Stream: &internet.StreamConfig{
+			Network: v2net.Network_WebSocket,
+			NetworkSettings: []*internet.NetworkSettings{
+				{
+					Network: v2net.Network_WebSocket,
+					Settings: MarshalSettings(&Config{
+						Path: "ws",
+					}, assert),
+				},
+			},
+		},
+	})
 	assert.Error(err).IsNil()
 	conn.Close()
 }
@@ -204,14 +326,34 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 		<-time.After(time.Second * 5)
 		assert.Fail("Too slow")
 	}()
-	(&Config{Path: "wss", ConnectionReuse: true}).Apply()
+	tlsSettings := &v2tls.Config{
+		AllowInsecure: true,
+		Certificate: []*v2tls.Certificate{
+			{
+				Certificate: ReadFile("./../../../testing/tls/cert.pem", assert),
+				Key:         ReadFile("./../../../testing/tls/key.pem", assert),
+			},
+		},
+	}
+	anyTlsSettings, err := ptypes.MarshalAny(tlsSettings)
+	assert.Error(err).IsNil()
 
 	listen, err := ListenWS(v2net.DomainAddress("localhost"), 13143, internet.ListenOptions{
-		Stream: &internet.StreamSettings{
-			Security: internet.StreamSecurityTypeTLS,
-			TLSSettings: &internet.TLSSettings{
-				AllowInsecure: true,
-				Certs:         LoadTestCert(assert),
+		Stream: &internet.StreamConfig{
+			SecurityType: internet.SecurityType_TLS,
+			SecuritySettings: []*internet.SecuritySettings{{
+				Type:     internet.SecurityType_TLS,
+				Settings: anyTlsSettings,
+			}},
+			Network: v2net.Network_WebSocket,
+			NetworkSettings: []*internet.NetworkSettings{
+				{
+					Network: v2net.Network_WebSocket,
+					Settings: MarshalSettings(&Config{
+						Path:            "wss",
+						ConnectionReuse: true,
+					}, assert),
+				},
 			},
 		},
 	})
@@ -223,11 +365,21 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 		listen.Close()
 	}()
 	conn, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13143), internet.DialerOptions{
-		Stream: &internet.StreamSettings{
-			Security: internet.StreamSecurityTypeTLS,
-			TLSSettings: &internet.TLSSettings{
-				AllowInsecure: true,
-				Certs:         LoadTestCert(assert),
+		Stream: &internet.StreamConfig{
+			SecurityType: internet.SecurityType_TLS,
+			SecuritySettings: []*internet.SecuritySettings{{
+				Type:     internet.SecurityType_TLS,
+				Settings: anyTlsSettings,
+			}},
+			Network: v2net.Network_WebSocket,
+			NetworkSettings: []*internet.NetworkSettings{
+				{
+					Network: v2net.Network_WebSocket,
+					Settings: MarshalSettings(&Config{
+						Path:            "wss",
+						ConnectionReuse: true,
+					}, assert),
+				},
 			},
 		},
 	})
@@ -235,8 +387,8 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 	conn.Close()
 }
 
-func LoadTestCert(assert *assert.Assert) []tls.Certificate {
-	cert, err := tls.LoadX509KeyPair("./../../../testing/tls/cert.pem", "./../../../testing/tls/key.pem")
+func ReadFile(file string, assert *assert.Assert) []byte {
+	b, err := ioutil.ReadFile(file)
 	assert.Error(err).IsNil()
-	return []tls.Certificate{cert}
+	return b
 }
