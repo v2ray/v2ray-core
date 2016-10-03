@@ -5,8 +5,7 @@ package point
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
-	"os"
+	"io"
 	"strings"
 
 	"v2ray.com/core/app/dns"
@@ -260,16 +259,10 @@ func (this *OutboundDetourConfig) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func JsonLoadConfig(file string) (*Config, error) {
-	fixedFile := os.ExpandEnv(file)
-	rawConfig, err := ioutil.ReadFile(fixedFile)
-	if err != nil {
-		log.Error("Point: Failed to read server config file (", file, "): ", file, err)
-		return nil, err
-	}
-
+func JsonLoadConfig(input io.Reader) (*Config, error) {
 	jsonConfig := &Config{}
-	err = json.Unmarshal(rawConfig, jsonConfig)
+	decoder := json.NewDecoder(input)
+	err := decoder.Decode(jsonConfig)
 	if err != nil {
 		log.Error("Point: Failed to load server config: ", err)
 		return nil, err

@@ -4,6 +4,7 @@ package point_test
 
 import (
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -14,13 +15,19 @@ import (
 	"v2ray.com/core/testing/assert"
 )
 
+func OpenFile(file string, assert *assert.Assert) io.Reader {
+	input, err := os.Open(file)
+	assert.Error(err).IsNil()
+	return input
+}
+
 func TestClientSampleConfig(t *testing.T) {
 	assert := assert.On(t)
 
 	GOPATH := os.Getenv("GOPATH")
 	baseDir := filepath.Join(GOPATH, "src", "v2ray.com", "core", "tools", "release", "config")
 
-	pointConfig, err := LoadConfig(filepath.Join(baseDir, "vpoint_socks_vmess.json"))
+	pointConfig, err := LoadConfig(OpenFile(filepath.Join(baseDir, "vpoint_socks_vmess.json"), assert))
 	assert.Error(err).IsNil()
 
 	assert.Pointer(pointConfig.InboundConfig).IsNotNil()
@@ -40,7 +47,7 @@ func TestServerSampleConfig(t *testing.T) {
 	GOPATH := os.Getenv("GOPATH")
 	baseDir := filepath.Join(GOPATH, "src", "v2ray.com", "core", "tools", "release", "config")
 
-	pointConfig, err := LoadConfig(filepath.Join(baseDir, "vpoint_vmess_freedom.json"))
+	pointConfig, err := LoadConfig(OpenFile(filepath.Join(baseDir, "vpoint_vmess_freedom.json"), assert))
 	assert.Error(err).IsNil()
 
 	assert.Pointer(pointConfig.InboundConfig).IsNotNil()

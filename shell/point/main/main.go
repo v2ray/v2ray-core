@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -38,6 +39,7 @@ var (
 	logLevel   = flag.String("loglevel", "warning", "Level of log info to be printed to console, available value: debug, info, warning, error")
 	version    = flag.Bool("version", false, "Show current version of V2Ray.")
 	test       = flag.Bool("test", false, "Test config file only, without launching V2Ray server.")
+	format     = flag.String("format", "json", "Format of input file.")
 )
 
 func init() {
@@ -68,7 +70,20 @@ func startV2Ray() *point.Point {
 		log.Error("Config file is not set.")
 		return nil
 	}
-	config, err := point.LoadConfig(configFile)
+	var configInput io.Reader
+	if configFile == "stdin:" {
+		configInput = os.Stdin
+	} else {
+		fixedFile := os.ExpandEnv(configFile)
+		file, err := os.Open(fixedFile)
+		if err != nil {
+			log.Error("Config file not readable: ", err)
+			return nil
+		}
+		defer file.Close()
+		configInput = file
+	}
+	config, err := point.LoadConfig(configInput)
 	if err != nil {
 		log.Error("Failed to read config file (", configFile, "): ", configFile, err)
 		return nil

@@ -1,6 +1,8 @@
 package point
 
 import (
+	"io"
+
 	"v2ray.com/core/app/dns"
 	"v2ray.com/core/app/router"
 	"v2ray.com/core/common"
@@ -75,15 +77,15 @@ type Config struct {
 	TransportConfig *transport.Config
 }
 
-type ConfigLoader func(init string) (*Config, error)
+type ConfigLoader func(input io.Reader) (*Config, error)
 
 var (
 	configLoader ConfigLoader
 )
 
-func LoadConfig(init string) (*Config, error) {
+func LoadConfig(input io.Reader) (*Config, error) {
 	if configLoader == nil {
 		return nil, common.ErrBadConfiguration
 	}
-	return configLoader(init)
+	return configLoader(input)
 }
