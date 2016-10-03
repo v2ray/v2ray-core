@@ -28,12 +28,6 @@ type OutboundConnectionConfig struct {
 	Settings       []byte
 }
 
-type LogConfig struct {
-	AccessLog string
-	ErrorLog  string
-	LogLevel  log.LogLevel
-}
-
 const (
 	AllocationStrategyAlways   = "always"
 	AllocationStrategyRandom   = "random"
@@ -67,7 +61,7 @@ type OutboundDetourConfig struct {
 
 type Config struct {
 	Port            v2net.Port
-	LogConfig       *LogConfig
+	LogConfig       *log.Config
 	RouterConfig    *router.Config
 	DNSConfig       *dns.Config
 	InboundConfig   *InboundConnectionConfig

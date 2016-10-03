@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"strings"
 
 	"v2ray.com/core/app/dns"
 	"v2ray.com/core/app/router"
@@ -24,7 +23,7 @@ const (
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
 		Port            v2net.Port                `json:"port"` // Port of this Point server.
-		LogConfig       *LogConfig                `json:"log"`
+		LogConfig       *log.Config               `json:"log"`
 		RouterConfig    *router.Config            `json:"routing"`
 		DNSConfig       *dns.Config               `json:"dns"`
 		InboundConfig   *InboundConnectionConfig  `json:"inbound"`
@@ -125,35 +124,6 @@ func (this *OutboundConnectionConfig) UnmarshalJSON(data []byte) error {
 	}
 	if jsonConfig.StreamSetting != nil {
 		this.StreamSettings = jsonConfig.StreamSetting
-	}
-	return nil
-}
-
-func (this *LogConfig) UnmarshalJSON(data []byte) error {
-	type JsonLogConfig struct {
-		AccessLog string `json:"access"`
-		ErrorLog  string `json:"error"`
-		LogLevel  string `json:"loglevel"`
-	}
-	jsonConfig := new(JsonLogConfig)
-	if err := json.Unmarshal(data, jsonConfig); err != nil {
-		return errors.New("Point: Failed to parse log config: " + err.Error())
-	}
-	this.AccessLog = jsonConfig.AccessLog
-	this.ErrorLog = jsonConfig.ErrorLog
-
-	level := strings.ToLower(jsonConfig.LogLevel)
-	switch level {
-	case "debug":
-		this.LogLevel = log.DebugLevel
-	case "info":
-		this.LogLevel = log.InfoLevel
-	case "error":
-		this.LogLevel = log.ErrorLevel
-	case "none":
-		this.LogLevel = log.NoneLevel
-	default:
-		this.LogLevel = log.WarningLevel
 	}
 	return nil
 }

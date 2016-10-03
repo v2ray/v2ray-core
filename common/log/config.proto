@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package v2ray.core.common.log;
+option go_package = "log";
+option java_package = "com.v2ray.core.common.log";
+option java_outer_classname = "ConfigProto";
+
+enum LogType {
+  None = 0;
+  Console = 1;
+  File = 2;
+  Event = 3;
+}
+
+enum LogLevel {
+  Disabled = 0;
+  Error = 1;
+  Warning = 2;
+  Info = 3;
+  Debug = 4;
+}
+
+message Config {
+  LogType error_log_type = 1;
+  LogLevel error_log_level = 2;
+  string error_log_path = 3;
+
+  LogType access_log_type = 4;
+  string access_log_path = 5;
+}

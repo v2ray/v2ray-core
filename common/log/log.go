@@ -4,16 +4,6 @@ import (
 	"v2ray.com/core/common/log/internal"
 )
 
-type LogLevel int
-
-const (
-	DebugLevel   = LogLevel(0)
-	InfoLevel    = LogLevel(1)
-	WarningLevel = LogLevel(2)
-	ErrorLevel   = LogLevel(3)
-	NoneLevel    = LogLevel(999)
-)
-
 var (
 	streamLoggerInstance internal.LogWriter = internal.NewStdOutLogWriter()
 
@@ -25,27 +15,23 @@ var (
 
 func SetLogLevel(level LogLevel) {
 	debugLogger = new(internal.NoOpLogWriter)
-	if level <= DebugLevel {
+	if level >= LogLevel_Debug {
 		debugLogger = streamLoggerInstance
 	}
 
 	infoLogger = new(internal.NoOpLogWriter)
-	if level <= InfoLevel {
+	if level >= LogLevel_Info {
 		infoLogger = streamLoggerInstance
 	}
 
 	warningLogger = new(internal.NoOpLogWriter)
-	if level <= WarningLevel {
+	if level >= LogLevel_Warning {
 		warningLogger = streamLoggerInstance
 	}
 
 	errorLogger = new(internal.NoOpLogWriter)
-	if level <= ErrorLevel {
+	if level >= LogLevel_Error {
 		errorLogger = streamLoggerInstance
-	}
-
-	if level == NoneLevel {
-		accessLoggerInstance = new(internal.NoOpLogWriter)
 	}
 }
 

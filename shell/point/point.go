@@ -48,22 +48,9 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	}
 
 	if pConfig.LogConfig != nil {
-		logConfig := pConfig.LogConfig
-		if len(logConfig.AccessLog) > 0 {
-			err := log.InitAccessLogger(logConfig.AccessLog)
-			if err != nil {
-				return nil, err
-			}
+		if err := pConfig.LogConfig.Apply(); err != nil {
+			return nil, err
 		}
-
-		if len(logConfig.ErrorLog) > 0 {
-			err := log.InitErrorLogger(logConfig.ErrorLog)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		log.SetLogLevel(logConfig.LogLevel)
 	}
 
 	vpoint.space = app.NewSpace()
