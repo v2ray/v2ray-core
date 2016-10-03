@@ -15,5 +15,9 @@ func CreateAuthenticatorConfig(rawConfig []byte) (string, interface{}, error) {
 }
 
 var (
-	configLoader = loader.NewJSONConfigLoader(loader.ConfigCreatorCache{}, "type", "")
+	configLoader loader.ConfigLoader
 )
+
+func init() {
+	configLoader = loader.NewJSONConfigLoader(configCache, "type", "")
+}

@@ -34,6 +34,10 @@
     }
   },
   "transport": {
-    "connectionReuse": true
+    "kcpSettings": {
+      "header": {
+        "type": "srtp"
+      }
+    }
   }
 }
