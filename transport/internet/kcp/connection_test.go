@@ -34,6 +34,8 @@ func TestConnectionReadTimeout(t *testing.T) {
 	nBytes, err := conn.Read(b)
 	assert.Int(nBytes).Equals(0)
 	assert.Error(err).IsNotNil()
+
+	conn.Terminate()
 }
 
 func TestConnectionReadWrite(t *testing.T) {

@@ -338,3 +338,7 @@ func (this *SendingWorker) IsEmpty() bool {
 
 	return this.window.IsEmpty()
 }
+
+func (this *SendingWorker) UpdateNecessary() bool {
+	return !this.IsEmpty()
+}

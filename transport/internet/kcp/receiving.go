@@ -213,3 +213,7 @@ func (this *ReceivingWorker) Write(seg Segment) {
 
 func (this *ReceivingWorker) CloseRead() {
 }
+
+func (this *ReceivingWorker) UpdateNecessary() bool {
+	return len(this.acklist.numbers) > 0
+}
