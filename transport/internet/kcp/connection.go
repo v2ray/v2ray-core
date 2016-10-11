@@ -233,7 +233,7 @@ func NewConnection(conv uint16, writerCloser io.WriteCloser, local *net.UDPAddr,
 	}
 	conn.dataUpdater = NewUpdater(
 		conn.interval,
-		predicate.All(predicate.Not(isTerminating), predicate.Any(conn.sendingWorker.UpdateNecessary, conn.receivingWorker.UpdateNecessary)),
+		predicate.Not(isTerminating).And(predicate.Any(conn.sendingWorker.UpdateNecessary, conn.receivingWorker.UpdateNecessary)),
 		isTerminating,
 		conn.updateTask)
 	conn.pingUpdater = NewUpdater(

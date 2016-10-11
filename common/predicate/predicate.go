@@ -2,6 +2,14 @@ package predicate
 
 type Predicate func() bool
 
+func (this Predicate) And(predicate Predicate) Predicate {
+	return All(this, predicate)
+}
+
+func (this Predicate) Or(predicate Predicate) Predicate {
+	return Any(this, predicate)
+}
+
 func All(predicates ...Predicate) Predicate {
 	return func() bool {
 		for _, p := range predicates {
