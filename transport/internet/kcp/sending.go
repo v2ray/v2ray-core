@@ -171,13 +171,14 @@ func (this *SendingWindow) Flush(current uint32, resend uint32, rto uint32, maxI
 
 type SendingWorker struct {
 	sync.RWMutex
-	conn                *Connection
-	window              *SendingWindow
-	firstUnacknowledged uint32
-	nextNumber          uint32
-	remoteNextNumber    uint32
-	controlWindow       uint32
-	fastResend          uint32
+	conn                       *Connection
+	window                     *SendingWindow
+	firstUnacknowledged        uint32
+	firstUnacknowledgedUpdated bool
+	nextNumber                 uint32
+	remoteNextNumber           uint32
+	controlWindow              uint32
+	fastResend                 uint32
 }
 
 func NewSendingWorker(kcp *Connection) *SendingWorker {
@@ -205,10 +206,14 @@ func (this *SendingWorker) ProcessReceivingNextWithoutLock(nextNumber uint32) {
 
 // Private: Visible for testing.
 func (this *SendingWorker) FindFirstUnacknowledged() {
+	v := this.firstUnacknowledged
 	if !this.window.IsEmpty() {
 		this.firstUnacknowledged = this.window.First().Number
 	} else {
 		this.firstUnacknowledged = this.nextNumber
+	}
+	if v != this.firstUnacknowledged {
+		this.firstUnacknowledgedUpdated = true
 	}
 }
 
@@ -322,7 +327,11 @@ func (this *SendingWorker) Flush(current uint32) {
 
 	if !this.window.IsEmpty() {
 		this.window.Flush(current, this.conn.fastresend, this.conn.roundTrip.Timeout(), cwnd)
+	} else if this.firstUnacknowledgedUpdated {
+		this.conn.Ping(current, CommandPing)
 	}
+
+	this.firstUnacknowledgedUpdated = false
 }
 
 func (this *SendingWorker) CloseWrite() {

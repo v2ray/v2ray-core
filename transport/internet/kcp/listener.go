@@ -139,7 +139,10 @@ func (this *Listener) Accept() (internet.Connection, error) {
 			return nil, ErrClosedListener
 		}
 		select {
-		case conn := <-this.awaitingConns:
+		case conn, open := <-this.awaitingConns:
+			if !open {
+				break
+			}
 			if this.tlsConfig != nil {
 				tlsConn := tls.Server(conn, this.tlsConfig)
 				return v2tls.NewConnection(tlsConn), nil

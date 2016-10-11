@@ -233,10 +233,11 @@ func NewConnection(conv uint16, writerCloser io.WriteCloser, local *net.UDPAddr,
 		},
 		conn.updateTask)
 	conn.pingUpdater = NewUpdater(
-		3000, // 3 seconds
+		5000, // 5 seconds
 		func() bool { return conn.State() != StateTerminated },
 		func() bool { return conn.State() == StateTerminated },
 		conn.updateTask)
+	conn.pingUpdater.WakeUp()
 
 	return conn
 }
@@ -333,24 +334,22 @@ func (this *Connection) SetState(state State) {
 	switch state {
 	case StateReadyToClose:
 		this.receivingWorker.CloseRead()
-		this.dataUpdater.WakeUp()
 	case StatePeerClosed:
 		this.sendingWorker.CloseWrite()
-		this.dataUpdater.WakeUp()
 	case StateTerminating:
 		this.receivingWorker.CloseRead()
 		this.sendingWorker.CloseWrite()
-		this.dataUpdater.interval = time.Second
-		this.dataUpdater.WakeUp()
+		this.pingUpdater.interval = time.Second
 	case StatePeerTerminating:
 		this.sendingWorker.CloseWrite()
-		this.dataUpdater.WakeUp()
+		this.pingUpdater.interval = time.Second
 	case StateTerminated:
 		this.receivingWorker.CloseRead()
 		this.sendingWorker.CloseWrite()
-		this.dataUpdater.interval = time.Second
+		this.pingUpdater.interval = time.Second
 		this.dataUpdater.WakeUp()
-		this.Terminate()
+		this.pingUpdater.WakeUp()
+		go this.Terminate()
 	}
 }
 
@@ -488,7 +487,6 @@ func (this *Connection) OnPeerClosed() {
 func (this *Connection) Input(data []byte) int {
 	current := this.Elapsed()
 	atomic.StoreUint32(&this.lastIncomingTime, current)
-	this.dataUpdater.WakeUp()
 
 	var seg Segment
 	for {
@@ -502,10 +500,12 @@ func (this *Connection) Input(data []byte) int {
 			this.HandleOption(seg.Option)
 			this.receivingWorker.ProcessSegment(seg)
 			this.dataInputCond.Signal()
+			this.dataUpdater.WakeUp()
 		case *AckSegment:
 			this.HandleOption(seg.Option)
 			this.sendingWorker.ProcessSegment(current, seg)
 			this.dataOutputCond.Signal()
+			this.dataUpdater.WakeUp()
 		case *CmdOnlySegment:
 			this.HandleOption(seg.Option)
 			if seg.Command == CommandTerminate {
@@ -545,12 +545,7 @@ func (this *Connection) flush() {
 
 	if this.State() == StateTerminating {
 		log.Debug("KCP|Connection: #", this.conv, " sending terminating cmd.")
-		seg := NewCmdOnlySegment()
-		defer seg.Release()
-
-		seg.Conv = this.conv
-		seg.Command = CommandTerminate
-		this.output.Write(seg)
+		this.Ping(current, CommandTerminate)
 		this.output.Flush()
 
 		if current-atomic.LoadUint32(&this.stateBeginTime) > 8000 {
@@ -570,19 +565,8 @@ func (this *Connection) flush() {
 	this.receivingWorker.Flush(current)
 	this.sendingWorker.Flush(current)
 
-	if current-atomic.LoadUint32(&this.lastPingTime) >= 3000 {
-		seg := NewCmdOnlySegment()
-		seg.Conv = this.conv
-		seg.Command = CommandPing
-		seg.ReceivinNext = this.receivingWorker.nextNumber
-		seg.SendingNext = this.sendingWorker.firstUnacknowledged
-		seg.PeerRTO = this.roundTrip.Timeout()
-		if this.State() == StateReadyToClose {
-			seg.Option = SegmentOptionClose
-		}
-		this.output.Write(seg)
-		this.lastPingTime = current
-		seg.Release()
+	if current-atomic.LoadUint32(&this.lastPingTime) >= 1000 {
+		this.Ping(current, CommandPing)
 	}
 
 	// flash remain segments
@@ -591,4 +575,19 @@ func (this *Connection) flush() {
 
 func (this *Connection) State() State {
 	return State(atomic.LoadInt32((*int32)(&this.state)))
+}
+
+func (this *Connection) Ping(current uint32, cmd Command) {
+	seg := NewCmdOnlySegment()
+	seg.Conv = this.conv
+	seg.Command = cmd
+	seg.ReceivinNext = this.receivingWorker.nextNumber
+	seg.SendingNext = this.sendingWorker.firstUnacknowledged
+	seg.PeerRTO = this.roundTrip.Timeout()
+	if this.State() == StateReadyToClose {
+		seg.Option = SegmentOptionClose
+	}
+	this.output.Write(seg)
+	atomic.StoreUint32(&this.lastPingTime, current)
+	seg.Release()
 }
