@@ -567,7 +567,7 @@ func (this *Connection) flush() {
 	this.receivingWorker.Flush(current)
 	this.sendingWorker.Flush(current)
 
-	if current-atomic.LoadUint32(&this.lastPingTime) >= 1000 {
+	if current-atomic.LoadUint32(&this.lastPingTime) >= 3000 {
 		this.Ping(current, CommandPing)
 	}
 
