@@ -103,7 +103,7 @@ func (this *SendingWindow) Remove(idx uint32) {
 	}
 }
 
-func (this *SendingWindow) HandleFastAck(number uint32) {
+func (this *SendingWindow) HandleFastAck(number uint32, rto uint32) {
 	if this.len == 0 {
 		return
 	}
@@ -114,7 +114,9 @@ func (this *SendingWindow) HandleFastAck(number uint32) {
 			break
 		}
 		if number != seg.Number {
-			seg.ackSkipped++
+			if seg.transmit > 0 && seg.timeout > rto/3 {
+				seg.timeout -= rto / 3
+			}
 		}
 		if i == this.last {
 			break
@@ -122,7 +124,7 @@ func (this *SendingWindow) HandleFastAck(number uint32) {
 	}
 }
 
-func (this *SendingWindow) Flush(current uint32, resend uint32, rto uint32, maxInFlightSize uint32) {
+func (this *SendingWindow) Flush(current uint32, rto uint32, maxInFlightSize uint32) {
 	if this.IsEmpty() {
 		return
 	}
@@ -133,25 +135,20 @@ func (this *SendingWindow) Flush(current uint32, resend uint32, rto uint32, maxI
 	for i := this.start; ; i = this.next[i] {
 		segment := this.data[i]
 		needsend := false
-		if segment.transmit == 0 {
+		if current-segment.timeout < 0x7FFFFFFF {
+			if segment.transmit == 0 {
+				// First time
+				this.totalInFlightSize++
+			} else {
+				lost++
+			}
 			needsend = true
-			segment.transmit++
-			segment.timeout = current + rto
-			this.totalInFlightSize++
-		} else if current-segment.timeout < 0x7FFFFFFF {
-			needsend = true
-			segment.transmit++
-			segment.timeout = current + rto
-			lost++
-		} else if segment.ackSkipped >= resend {
-			needsend = true
-			segment.transmit++
-			segment.ackSkipped = 0
 			segment.timeout = current + rto
 		}
 
 		if needsend {
 			segment.Timestamp = current
+			segment.transmit++
 			this.writer.Write(segment)
 			inFlightSize++
 			if inFlightSize >= maxInFlightSize {
@@ -228,7 +225,7 @@ func (this *SendingWorker) ProcessAck(number uint32) {
 	this.FindFirstUnacknowledged()
 }
 
-func (this *SendingWorker) ProcessSegment(current uint32, seg *AckSegment) {
+func (this *SendingWorker) ProcessSegment(current uint32, seg *AckSegment, rto uint32) {
 	defer seg.Release()
 
 	this.Lock()
@@ -252,7 +249,7 @@ func (this *SendingWorker) ProcessSegment(current uint32, seg *AckSegment) {
 		}
 	}
 
-	this.window.HandleFastAck(maxack)
+	this.window.HandleFastAck(maxack, rto)
 }
 
 func (this *SendingWorker) Push(b []byte) int {
@@ -271,7 +268,6 @@ func (this *SendingWorker) Push(b []byte) int {
 		seg.Data = AllocateBuffer().Clear().Append(b[:size])
 		seg.Number = this.nextNumber
 		seg.timeout = 0
-		seg.ackSkipped = 0
 		seg.transmit = 0
 		this.window.Push(seg)
 		this.nextNumber++
@@ -326,7 +322,7 @@ func (this *SendingWorker) Flush(current uint32) {
 	}
 
 	if !this.window.IsEmpty() {
-		this.window.Flush(current, this.conn.fastresend, this.conn.roundTrip.Timeout(), cwnd)
+		this.window.Flush(current, this.conn.roundTrip.Timeout(), cwnd)
 	} else if this.firstUnacknowledgedUpdated {
 		this.conn.Ping(current, CommandPing)
 	}

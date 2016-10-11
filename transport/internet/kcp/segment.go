@@ -40,9 +40,8 @@ type DataSegment struct {
 	SendingNext uint32
 	Data        *alloc.Buffer
 
-	timeout    uint32
-	ackSkipped uint32
-	transmit   uint32
+	timeout  uint32
+	transmit uint32
 }
 
 func NewDataSegment() *DataSegment {

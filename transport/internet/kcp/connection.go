@@ -102,7 +102,7 @@ func (this *RoundTripInfo) Update(rtt uint32, current uint32) {
 	if rto > 10000 {
 		rto = 10000
 	}
-	this.rto = rto * 3 / 2
+	this.rto = rto * 5 / 4
 	this.updatedTimestamp = current
 }
 
@@ -184,7 +184,6 @@ type Connection struct {
 	receivingWorker *ReceivingWorker
 	sendingWorker   *SendingWorker
 
-	fastresend        uint32
 	congestionControl bool
 	output            *BufferedSegmentWriter
 
@@ -221,7 +220,6 @@ func NewConnection(conv uint16, writerCloser io.WriteCloser, local *net.UDPAddr,
 	}
 	conn.interval = config.Tti.GetValue()
 	conn.receivingWorker = NewReceivingWorker(conn)
-	conn.fastresend = 2
 	conn.congestionControl = config.Congestion
 	conn.sendingWorker = NewSendingWorker(conn)
 
@@ -507,7 +505,7 @@ func (this *Connection) Input(data []byte) int {
 			this.dataUpdater.WakeUp()
 		case *AckSegment:
 			this.HandleOption(seg.Option)
-			this.sendingWorker.ProcessSegment(current, seg)
+			this.sendingWorker.ProcessSegment(current, seg, this.roundTrip.Timeout())
 			this.dataOutputCond.Signal()
 			this.dataUpdater.WakeUp()
 		case *CmdOnlySegment:
