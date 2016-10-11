@@ -106,10 +106,10 @@ type CIDRMatcher struct {
 	cidr *net.IPNet
 }
 
-func NewCIDRMatcher(ipnet string) (*CIDRMatcher, error) {
-	_, cidr, err := net.ParseCIDR(ipnet)
-	if err != nil {
-		return nil, err
+func NewCIDRMatcher(ip []byte, mask uint32) (*CIDRMatcher, error) {
+	cidr := &net.IPNet{
+		IP:   net.IP(ip),
+		Mask: net.CIDRMask(int(mask), len(ip)),
 	}
 	return &CIDRMatcher{
 		cidr: cidr,

@@ -17,11 +17,13 @@ import (
 func TestSimpleRouter(t *testing.T) {
 	assert := assert.On(t)
 
-	config := &RouterRuleConfig{
-		Rules: []*Rule{
+	config := &Config{
+		Rule: []*RoutingRule{
 			{
-				Tag:       "test",
-				Condition: NewNetworkMatcher(v2net.Network_TCP.AsList()),
+				Tag: "test",
+				NetworkList: &v2net.NetworkList{
+					Network: []v2net.Network{v2net.Network_TCP},
+				},
 			},
 		},
 	}

@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package v2ray.core.app.router.rules;
+option go_package = "rules";
+option java_package = "com.v2ray.core.app.router.rules";
+option java_outer_classname = "ConfigProto";
+
+import "v2ray.com/core/common/net/port.proto";
+import "v2ray.com/core/common/net/network.proto";
+
+// Domain for routing decision. 
+message Domain {
+  // Type of domain value.
+  enum Type {
+    // The value is used as is.
+    Plain = 0;
+    // The value is used as a regular expression.
+    Regex = 1;
+  }
+
+  // Domain matching type.
+  Type type = 1;
+
+  // Domain value.
+  string value = 2;
+}
+
+// IP for routing decision.
+message IP {
+  // IP address, should be either 4 or 16 bytes.
+  bytes ip = 1;
+
+  // Number of right-most bits in IP matching that is allowed.
+  // Single IP address like 127.0.0.1 should use unmatching_bits = 0.
+  // CIDR 10.0.0.0/8 should use unmatching_bits = 32-8 = 24.
+  uint32 unmatching_bits = 2;
+}
+
+message RoutingRule {
+  string tag = 1;
+  repeated Domain domain = 2;
+  repeated IP ip = 3;
+  v2ray.core.common.net.PortRange port_range = 4;
+  v2ray.core.common.net.NetworkList network_list = 5;
+}
+
+message Config {
+  enum DomainStrategy {
+    AsIs = 0;
+    UseIp = 1;
+    IpIfNonMatch = 2;
+  }
+  DomainStrategy domain_strategy = 1;
+  repeated RoutingRule rule = 2;
+}

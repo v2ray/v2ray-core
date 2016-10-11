@@ -4,7 +4,7 @@ package rules
 
 import (
 	"encoding/json"
-	"errors"
+	"strconv"
 	"strings"
 
 	router "v2ray.com/core/app/router"
@@ -18,7 +18,38 @@ type JsonRule struct {
 	OutboundTag string `json:"outboundTag"`
 }
 
-func parseFieldRule(msg json.RawMessage) (*Rule, error) {
+func parseIP(s string) *IP {
+	var addr, mask string
+	i := strings.Index(s, "/")
+	if i < 0 {
+		addr = s
+	} else {
+		addr = s[:i]
+		mask = s[i+1:]
+	}
+	ip := v2net.ParseAddress(addr)
+	if !ip.Family().Either(v2net.AddressFamilyIPv4, v2net.AddressFamilyIPv6) {
+		return nil
+	}
+	bits := uint32(32)
+	if len(mask) > 0 {
+		bits64, err := strconv.ParseUint(mask, 10, 32)
+		if err != nil {
+			return nil
+		}
+		bits = uint32(bits64)
+	}
+	if bits > 32 {
+		log.Warning("Router: invalid network mask: ", bits)
+		return nil
+	}
+	return &IP{
+		Ip:             []byte(ip.IP()),
+		UnmatchingBits: 32 - bits,
+	}
+}
+
+func parseFieldRule(msg json.RawMessage) (*RoutingRule, error) {
 	type RawFieldRule struct {
 		JsonRule
 		Domain  *collect.StringList `json:"domain"`
@@ -31,54 +62,45 @@ func parseFieldRule(msg json.RawMessage) (*Rule, error) {
 	if err != nil {
 		return nil, err
 	}
-	conds := NewConditionChan()
 
-	if rawFieldRule.Domain != nil && rawFieldRule.Domain.Len() > 0 {
-		anyCond := NewAnyCondition()
-		for _, rawDomain := range *(rawFieldRule.Domain) {
-			var matcher Condition
-			if strings.HasPrefix(rawDomain, "regexp:") {
-				rawMatcher, err := NewRegexpDomainMatcher(rawDomain[7:])
-				if err != nil {
-					return nil, err
-				}
-				matcher = rawMatcher
+	rule := new(RoutingRule)
+	rule.Tag = rawFieldRule.OutboundTag
+
+	if rawFieldRule.Domain != nil {
+		for _, domain := range *rawFieldRule.Domain {
+			domainRule := new(Domain)
+			if strings.HasPrefix(domain, "regexp:") {
+				domainRule.Type = Domain_Regex
+				domainRule.Value = domain[7:]
 			} else {
-				matcher = NewPlainDomainMatcher(rawDomain)
+				domainRule.Type = Domain_Plain
+				domainRule.Value = domain
 			}
-			anyCond.Add(matcher)
+			rule.Domain = append(rule.Domain, domainRule)
 		}
-		conds.Add(anyCond)
 	}
 
-	if rawFieldRule.IP != nil && rawFieldRule.IP.Len() > 0 {
-		anyCond := NewAnyCondition()
-		for _, ipStr := range *(rawFieldRule.IP) {
-			cidrMatcher, err := NewCIDRMatcher(ipStr)
-			if err != nil {
-				log.Error("Router: Invalid IP range in router rule: ", err)
-				return nil, err
+	if rawFieldRule.IP != nil {
+		for _, ip := range *rawFieldRule.IP {
+			ipRule := parseIP(ip)
+			if ipRule != nil {
+				rule.Ip = append(rule.Ip, ipRule)
 			}
-			anyCond.Add(cidrMatcher)
 		}
-		conds.Add(anyCond)
 	}
+
 	if rawFieldRule.Port != nil {
-		conds.Add(NewPortMatcher(*rawFieldRule.Port))
+		rule.PortRange = rawFieldRule.Port
 	}
+
 	if rawFieldRule.Network != nil {
-		conds.Add(NewNetworkMatcher(rawFieldRule.Network))
+		rule.NetworkList = rawFieldRule.Network
 	}
-	if conds.Len() == 0 {
-		return nil, errors.New("Router: This rule has no effective fields.")
-	}
-	return &Rule{
-		Tag:       rawFieldRule.OutboundTag,
-		Condition: conds,
-	}, nil
+
+	return rule, nil
 }
 
-func ParseRule(msg json.RawMessage) *Rule {
+func ParseRule(msg json.RawMessage) *RoutingRule {
 	rawRule := new(JsonRule)
 	err := json.Unmarshal(msg, rawRule)
 	if err != nil {
@@ -124,19 +146,19 @@ func init() {
 		if err := json.Unmarshal(data, jsonConfig); err != nil {
 			return nil, err
 		}
-		config := &RouterRuleConfig{
-			Rules:          make([]*Rule, len(jsonConfig.RuleList)),
-			DomainStrategy: DomainAsIs,
+		config := &Config{
+			Rule:           make([]*RoutingRule, len(jsonConfig.RuleList)),
+			DomainStrategy: Config_AsIs,
 		}
 		domainStrategy := strings.ToLower(jsonConfig.DomainStrategy)
 		if domainStrategy == "alwaysip" {
-			config.DomainStrategy = AlwaysUseIP
+			config.DomainStrategy = Config_UseIp
 		} else if domainStrategy == "ipifnonmatch" {
-			config.DomainStrategy = UseIPIfNonMatch
+			config.DomainStrategy = Config_IpIfNonMatch
 		}
 		for idx, rawRule := range jsonConfig.RuleList {
 			rule := ParseRule(rawRule)
-			config.Rules[idx] = rule
+			config.Rule[idx] = rule
 		}
 		return config, nil
 	})

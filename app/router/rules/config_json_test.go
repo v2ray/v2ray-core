@@ -24,11 +24,13 @@ func TestDomainRule(t *testing.T) {
     "outboundTag": "direct"
   }`))
 	assert.Pointer(rule).IsNotNil()
-	assert.Bool(rule.Apply(v2net.TCPDestination(v2net.DomainAddress("www.ooxx.com"), 80))).IsTrue()
-	assert.Bool(rule.Apply(v2net.TCPDestination(v2net.DomainAddress("www.aabb.com"), 80))).IsFalse()
-	assert.Bool(rule.Apply(v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), 80))).IsFalse()
-	assert.Bool(rule.Apply(v2net.TCPDestination(v2net.DomainAddress("www.12306.cn"), 80))).IsTrue()
-	assert.Bool(rule.Apply(v2net.TCPDestination(v2net.DomainAddress("www.acn.com"), 80))).IsFalse()
+	cond, err := rule.BuildCondition()
+	assert.Error(err).IsNil()
+	assert.Bool(cond.Apply(v2net.TCPDestination(v2net.DomainAddress("www.ooxx.com"), 80))).IsTrue()
+	assert.Bool(cond.Apply(v2net.TCPDestination(v2net.DomainAddress("www.aabb.com"), 80))).IsFalse()
+	assert.Bool(cond.Apply(v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), 80))).IsFalse()
+	assert.Bool(cond.Apply(v2net.TCPDestination(v2net.DomainAddress("www.12306.cn"), 80))).IsTrue()
+	assert.Bool(cond.Apply(v2net.TCPDestination(v2net.DomainAddress("www.acn.com"), 80))).IsFalse()
 }
 
 func TestIPRule(t *testing.T) {
@@ -44,8 +46,10 @@ func TestIPRule(t *testing.T) {
     "outboundTag": "direct"
   }`))
 	assert.Pointer(rule).IsNotNil()
-	assert.Bool(rule.Apply(v2net.TCPDestination(v2net.DomainAddress("www.ooxx.com"), 80))).IsFalse()
-	assert.Bool(rule.Apply(v2net.TCPDestination(v2net.IPAddress([]byte{10, 0, 0, 1}), 80))).IsTrue()
-	assert.Bool(rule.Apply(v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), 80))).IsFalse()
-	assert.Bool(rule.Apply(v2net.TCPDestination(v2net.IPAddress([]byte{192, 0, 0, 1}), 80))).IsTrue()
+	cond, err := rule.BuildCondition()
+	assert.Error(err).IsNil()
+	assert.Bool(cond.Apply(v2net.TCPDestination(v2net.DomainAddress("www.ooxx.com"), 80))).IsFalse()
+	assert.Bool(cond.Apply(v2net.TCPDestination(v2net.IPAddress([]byte{10, 0, 0, 1}), 80))).IsTrue()
+	assert.Bool(cond.Apply(v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), 80))).IsFalse()
+	assert.Bool(cond.Apply(v2net.TCPDestination(v2net.IPAddress([]byte{192, 0, 0, 1}), 80))).IsTrue()
 }

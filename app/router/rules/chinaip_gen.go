@@ -12,13 +12,16 @@ import (
 	"os"
 	"strconv"
 	"strings"
-
-	v2net "v2ray.com/core/common/net"
 )
 
 const (
 	apnicFile = "http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest"
 )
+
+type IPEntry struct {
+	IP   []byte
+	Bits uint32
+}
 
 func main() {
 	resp, err := http.Get(apnicFile)
@@ -31,7 +34,7 @@ func main() {
 	defer resp.Body.Close()
 	scanner := bufio.NewScanner(resp.Body)
 
-	ipNet := v2net.NewIPNet()
+	ips := make([]IPEntry, 0, 8192)
 	for scanner.Scan() {
 		line := scanner.Text()
 		line = strings.TrimSpace(line)
@@ -47,15 +50,16 @@ func main() {
 		if err != nil {
 			continue
 		}
-		mask := 32 - int(math.Floor(math.Log2(float64(count))+0.5))
-		cidr := fmt.Sprintf("%s/%d", ip, mask)
-		_, t, err := net.ParseCIDR(cidr)
-		if err != nil {
-			panic(err)
+		mask := uint32(math.Floor(math.Log2(float64(count)) + 0.5))
+		ipBytes := net.ParseIP(ip)
+		if len(ipBytes) == 0 {
+			panic("Invalid IP " + ip)
 		}
-		ipNet.Add(t)
+		ips = append(ips, IPEntry{
+			IP:   []byte(ipBytes),
+			Bits: mask,
+		})
 	}
-	dump := ipNet.Serialize()
 
 	file, err := os.OpenFile("chinaip_init.go", os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
 	if err != nil {
@@ -64,20 +68,27 @@ func main() {
 	defer file.Close()
 
 	fmt.Fprintln(file, "package rules")
-	fmt.Fprintln(file, "import (")
-	fmt.Fprintln(file, "v2net \"v2ray.com/core/common/net\"")
-	fmt.Fprintln(file, ")")
 
-	fmt.Fprintln(file, "var (")
-	fmt.Fprintln(file, "chinaIPNet *v2net.IPNet")
-	fmt.Fprintln(file, ")")
+	fmt.Fprintln(file, "var chinaIPs []*IP")
 
 	fmt.Fprintln(file, "func init() {")
 
-	fmt.Fprintln(file, "chinaIPNet = v2net.NewIPNetInitialValue(map[uint32]byte {")
-	for i := 0; i < len(dump); i += 2 {
-		fmt.Fprintln(file, dump[i], ": ", dump[i+1], ",")
+	fmt.Fprintln(file, "chinaIPs = []*IP {")
+	for _, ip := range ips {
+		fmt.Fprintln(file, "&IP{", formatArray(ip.IP[12:16]), ",", ip.Bits, "},")
 	}
-	fmt.Fprintln(file, "})")
 	fmt.Fprintln(file, "}")
+	fmt.Fprintln(file, "}")
+}
+
+func formatArray(a []byte) string {
+	r := "[]byte{"
+	for idx, v := range a {
+		if idx > 0 {
+			r += ","
+		}
+		r += fmt.Sprintf("%d", v)
+	}
+	r += "}"
+	return r
 }

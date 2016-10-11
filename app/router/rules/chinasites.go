@@ -1,12 +1,5 @@
 package rules
 
-func NewChinaSitesRule(tag string) *Rule {
-	return &Rule{
-		Tag:       tag,
-		Condition: chinaSitesConds,
-	}
-}
-
 const (
 	anySubDomain = "^(.*\\.)?"
 	dotAm        = "\\.am$"
@@ -23,7 +16,7 @@ const (
 )
 
 var (
-	chinaSitesConds Condition
+	chinaSitesDomains []*Domain
 )
 
 func init() {
@@ -487,15 +480,11 @@ func init() {
 		anySubDomain + "zuchecdn" + dotCom,
 	}
 
-	conds := make([]Condition, len(regexpDomains))
+	chinaSitesDomains = make([]*Domain, len(regexpDomains))
 	for idx, pattern := range regexpDomains {
-		matcher, err := NewRegexpDomainMatcher(pattern)
-		if err != nil {
-			panic(err)
+		chinaSitesDomains[idx] = &Domain{
+			Type:  Domain_Regex,
+			Value: pattern,
 		}
-		conds[idx] = matcher
 	}
-
-	anyConds := AnyCondition(conds)
-	chinaSitesConds = &anyConds
 }

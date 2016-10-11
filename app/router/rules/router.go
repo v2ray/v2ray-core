@@ -16,17 +16,29 @@ var (
 )
 
 type Router struct {
-	config    *RouterRuleConfig
-	cache     *RoutingTable
-	dnsServer dns.Server
+	domainStrategy Config_DomainStrategy
+	rules          []Rule
+	cache          *RoutingTable
+	dnsServer      dns.Server
 }
 
-func NewRouter(config *RouterRuleConfig, space app.Space) *Router {
+func NewRouter(config *Config, space app.Space) *Router {
 	r := &Router{
-		config: config,
-		cache:  NewRoutingTable(),
+		domainStrategy: config.DomainStrategy,
+		cache:          NewRoutingTable(),
+		rules:          make([]Rule, len(config.Rule)),
 	}
+
 	space.InitializeApplication(func() error {
+		for idx, rule := range config.Rule {
+			r.rules[idx].Tag = rule.Tag
+			cond, err := rule.BuildCondition()
+			if err != nil {
+				return err
+			}
+			r.rules[idx].Condition = cond
+		}
+
 		if !space.HasApp(dns.APP_ID) {
 			log.Error("DNS: Router is not found in the space.")
 			return app.ErrMissingApplication
@@ -59,18 +71,18 @@ func (this *Router) ResolveIP(dest v2net.Destination) []v2net.Destination {
 }
 
 func (this *Router) takeDetourWithoutCache(dest v2net.Destination) (string, error) {
-	for _, rule := range this.config.Rules {
+	for _, rule := range this.rules {
 		if rule.Apply(dest) {
 			return rule.Tag, nil
 		}
 	}
-	if this.config.DomainStrategy == UseIPIfNonMatch && dest.Address.Family().IsDomain() {
+	if this.domainStrategy == Config_IpIfNonMatch && dest.Address.Family().IsDomain() {
 		log.Info("Router: Looking up IP for ", dest)
 		ipDests := this.ResolveIP(dest)
 		if ipDests != nil {
 			for _, ipDest := range ipDests {
 				log.Info("Router: Trying IP ", ipDest)
-				for _, rule := range this.config.Rules {
+				for _, rule := range this.rules {
 					if rule.Apply(ipDest) {
 						return rule.Tag, nil
 					}
@@ -97,7 +109,7 @@ type RouterFactory struct {
 }
 
 func (this *RouterFactory) Create(rawConfig interface{}, space app.Space) (router.Router, error) {
-	return NewRouter(rawConfig.(*RouterRuleConfig), space), nil
+	return NewRouter(rawConfig.(*Config), space), nil
 }
 
 func init() {
