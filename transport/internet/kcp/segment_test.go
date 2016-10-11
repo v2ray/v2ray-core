@@ -69,3 +69,30 @@ func TestACKSegment(t *testing.T) {
 		assert.Uint32(seg2.NumberList[i]).Equals(seg.NumberList[i])
 	}
 }
+
+func TestCmdSegment(t *testing.T) {
+	assert := assert.On(t)
+
+	seg := &CmdOnlySegment{
+		Conv:         1,
+		Command:      CommandPing,
+		Option:       SegmentOptionClose,
+		SendingNext:  11,
+		ReceivinNext: 13,
+		PeerRTO:      15,
+	}
+
+	nBytes := seg.ByteSize()
+	bytes := seg.Bytes(nil)
+
+	assert.Int(len(bytes)).Equals(nBytes)
+
+	iseg, _ := ReadSegment(bytes)
+	seg2 := iseg.(*CmdOnlySegment)
+	assert.Uint16(seg2.Conv).Equals(seg.Conv)
+	assert.Byte(byte(seg2.Command)).Equals(byte(seg.Command))
+	assert.Byte(byte(seg2.Option)).Equals(byte(seg.Option))
+	assert.Uint32(seg2.SendingNext).Equals(seg.SendingNext)
+	assert.Uint32(seg2.ReceivinNext).Equals(seg.ReceivinNext)
+	assert.Uint32(seg2.PeerRTO).Equals(seg.PeerRTO)
+}

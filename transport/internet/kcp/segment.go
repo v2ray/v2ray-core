@@ -149,7 +149,7 @@ func (this *CmdOnlySegment) Release() {
 }
 
 func ReadSegment(buf []byte) (Segment, []byte) {
-	if len(buf) <= 4 {
+	if len(buf) < 4 {
 		return nil, nil
 	}
 
