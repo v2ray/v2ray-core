@@ -225,17 +225,21 @@ func NewConnection(conv uint16, writerCloser io.WriteCloser, local *net.UDPAddr,
 	conn.congestionControl = config.Congestion
 	conn.sendingWorker = NewSendingWorker(conn)
 
+	isTerminating := func() bool {
+		return conn.State().Is(StateTerminating, StateTerminated)
+	}
+	isTerminated := func() bool {
+		return conn.State() == StateTerminated
+	}
 	conn.dataUpdater = NewUpdater(
 		conn.interval,
-		predicate.Any(conn.sendingWorker.UpdateNecessary, conn.receivingWorker.UpdateNecessary),
-		func() bool {
-			return conn.State() == StateTerminated
-		},
+		predicate.All(predicate.Not(isTerminating), predicate.Any(conn.sendingWorker.UpdateNecessary, conn.receivingWorker.UpdateNecessary)),
+		isTerminating,
 		conn.updateTask)
 	conn.pingUpdater = NewUpdater(
 		5000, // 5 seconds
-		func() bool { return conn.State() != StateTerminated },
-		func() bool { return conn.State() == StateTerminated },
+		predicate.Not(isTerminated),
+		isTerminated,
 		conn.updateTask)
 	conn.pingUpdater.WakeUp()
 

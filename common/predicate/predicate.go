@@ -23,3 +23,9 @@ func Any(predicates ...Predicate) Predicate {
 		return false
 	}
 }
+
+func Not(predicate Predicate) Predicate {
+	return func() bool {
+		return !predicate()
+	}
+}
