@@ -22,7 +22,14 @@ type AuthenticatorFactory interface {
 }
 
 func (this *AuthenticatorConfig) GetInternalConfig() (interface{}, error) {
-	return configCache.CreateConfig(this.Name)
+	config, err := configCache.CreateConfig(this.Name)
+	if err != nil {
+		return nil, err
+	}
+	if err := ptypes.UnmarshalAny(this.Settings, config.(proto.Message)); err != nil {
+		return nil, err
+	}
+	return config, nil
 }
 
 func NewAuthenticatorConfig(name string, config interface{}) (*AuthenticatorConfig, error) {
