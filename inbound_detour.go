@@ -1,4 +1,4 @@
-package point
+package core
 
 import (
 	"v2ray.com/core/proxy"

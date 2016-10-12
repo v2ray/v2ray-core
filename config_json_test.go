@@ -1,6 +1,6 @@
 // +build json
 
-package point_test
+package core_test
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	. "v2ray.com/core/shell/point"
+	. "v2ray.com/core"
 
 	"v2ray.com/core/testing/assert"
 )

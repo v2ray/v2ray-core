@@ -11,7 +11,6 @@ import (
 
 	"v2ray.com/core"
 	"v2ray.com/core/common/log"
-	"v2ray.com/core/shell/point"
 
 	// The following are necessary as they register handlers in their init functions.
 	_ "v2ray.com/core/proxy/blackhole"
@@ -49,7 +48,7 @@ func init() {
 	flag.StringVar(&configFile, "config", defaultConfigFile, "Config file for this Point server.")
 }
 
-func startV2Ray() *point.Point {
+func startV2Ray() *core.Point {
 	if len(configFile) == 0 {
 		log.Error("Config file is not set.")
 		return nil
@@ -67,13 +66,13 @@ func startV2Ray() *point.Point {
 		defer file.Close()
 		configInput = file
 	}
-	config, err := point.LoadConfig(configInput)
+	config, err := core.LoadConfig(configInput)
 	if err != nil {
 		log.Error("Failed to read config file (", configFile, "): ", configFile, err)
 		return nil
 	}
 
-	vPoint, err := point.NewPoint(config)
+	vPoint, err := core.NewPoint(config)
 	if err != nil {
 		log.Error("Failed to create Point server: ", err)
 		return nil

@@ -33,7 +33,7 @@ func GetTestBinaryPath() string {
 }
 
 func GetSourcePath() string {
-	return filepath.Join("v2ray.com", "core", "shell", "point", "main")
+	return filepath.Join("v2ray.com", "core", "main")
 }
 
 func TestFile(filename string) string {

@@ -1,8 +1,4 @@
-// Package point is a shell of V2Ray to run on various of systems.
-// Point server is a full functionality proxying system. It consists of an inbound and an outbound
-// connection, as well as any number of inbound and outbound detours. It provides a way internally
-// to route network packets.
-package point
+package core
 
 import (
 	"v2ray.com/core/app"

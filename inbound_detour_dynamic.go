@@ -1,4 +1,4 @@
-package point
+package core
 
 import (
 	"sync"

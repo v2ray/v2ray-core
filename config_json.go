@@ -1,6 +1,6 @@
 // +build json
 
-package point
+package core
 
 import (
 	"encoding/json"
