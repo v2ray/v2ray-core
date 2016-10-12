@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 )
 
-func (u *AccountPB) UnmarshalJSON(data []byte) error {
+func (u *Account) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
 		ID       string `json:"id"`
 		AlterIds uint16 `json:"alterId"`

@@ -8,8 +8,8 @@ option java_outer_classname = "DestinationProto";
 import "v2ray.com/core/common/net/network.proto";
 import "v2ray.com/core/common/net/address.proto";
 
-message DestinationPB {
+message Endpoint {
   Network network = 1;
-  AddressPB address = 2;
+  IPOrDomain address = 2;
   uint32 port = 3;
 }

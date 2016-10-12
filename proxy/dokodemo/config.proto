@@ -9,7 +9,7 @@ import "v2ray.com/core/common/net/address.proto";
 import "v2ray.com/core/common/net/network.proto";
 
 message Config {
-  v2ray.core.common.net.AddressPB address = 1;
+  v2ray.core.common.net.IPOrDomain address = 1;
   uint32 port = 2;
   v2ray.core.common.net.NetworkList network_list = 3;
   uint32 timeout = 4;

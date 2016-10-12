@@ -77,7 +77,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(rawData, user); err != nil {
 			return errors.New("VMess|Inbound: Invalid user: " + err.Error())
 		}
-		account := new(vmess.AccountPB)
+		account := new(vmess.Account)
 		if err := json.Unmarshal(rawData, account); err != nil {
 			return errors.New("VMess|Inbound: Invalid user: " + err.Error())
 		}

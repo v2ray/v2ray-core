@@ -8,8 +8,8 @@ option java_outer_classname = "ServerSpecProto";
 import "v2ray.com/core/common/net/address.proto";
 import "v2ray.com/core/common/protocol/user.proto";
 
-message ServerSpecPB {
-  v2ray.core.common.net.AddressPB address = 1;
+message ServerEndpoint {
+  v2ray.core.common.net.IPOrDomain address = 1;
   uint32 port = 2;
   repeated v2ray.core.common.protocol.User user = 3;
 }

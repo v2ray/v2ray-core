@@ -27,5 +27,5 @@ message ServerConfig {
 }
 
 message ClientConfig {
-  repeated v2ray.core.common.protocol.ServerSpecPB server = 1;
+  repeated v2ray.core.common.protocol.ServerEndpoint server = 1;
 }

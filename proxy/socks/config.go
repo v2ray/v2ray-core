@@ -61,7 +61,7 @@ func (this *ServerConfig) UnmarshalJSON(data []byte) error {
 		AuthMethod string           `json:"auth"`
 		Accounts   []*Account       `json:"accounts"`
 		UDP        bool             `json:"udp"`
-		Host       *v2net.AddressPB `json:"ip"`
+		Host       *v2net.IPOrDomain `json:"ip"`
 		Timeout    uint32           `json:"timeout"`
 	}
 

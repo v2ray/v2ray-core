@@ -53,7 +53,7 @@ func (this *userByEmail) Get(email string) (*protocol.User, bool) {
 		this.Lock()
 		user, found = this.cache[email]
 		if !found {
-			account := &vmess.AccountPB{
+			account := &vmess.Account{
 				Id:      uuid.New().String(),
 				AlterId: uint32(this.defaultAlterIDs),
 			}

@@ -53,10 +53,10 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	this.OutboundDetours = jsonConfig.OutboundDetours
 	if jsonConfig.DNSConfig == nil {
 		jsonConfig.DNSConfig = &dns.Config{
-			NameServers: []*v2net.DestinationPB{{
+			NameServers: []*v2net.Endpoint{{
 				Network: v2net.Network_UDP,
-				Address: &v2net.AddressPB{
-					Address: &v2net.AddressPB_Domain{
+				Address: &v2net.IPOrDomain{
+					Address: &v2net.IPOrDomain_Domain{
 						Domain: "localhost",
 					},
 				},
@@ -72,7 +72,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 func (this *InboundConnectionConfig) UnmarshalJSON(data []byte) error {
 	type JsonConfig struct {
 		Port          uint16                 `json:"port"`
-		Listen        *v2net.AddressPB       `json:"listen"`
+		Listen        *v2net.IPOrDomain      `json:"listen"`
 		Protocol      string                 `json:"protocol"`
 		StreamSetting *internet.StreamConfig `json:"streamSettings"`
 		Settings      json.RawMessage        `json:"settings"`
@@ -104,7 +104,7 @@ func (this *InboundConnectionConfig) UnmarshalJSON(data []byte) error {
 func (this *OutboundConnectionConfig) UnmarshalJSON(data []byte) error {
 	type JsonConnectionConfig struct {
 		Protocol      string                 `json:"protocol"`
-		SendThrough   *v2net.AddressPB       `json:"sendThrough"`
+		SendThrough   *v2net.IPOrDomain      `json:"sendThrough"`
 		StreamSetting *internet.StreamConfig `json:"streamSettings"`
 		Settings      json.RawMessage        `json:"settings"`
 	}
@@ -159,7 +159,7 @@ func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 	type JsonInboundDetourConfig struct {
 		Protocol      string                         `json:"protocol"`
 		PortRange     *v2net.PortRange               `json:"port"`
-		ListenOn      *v2net.AddressPB               `json:"listen"`
+		ListenOn      *v2net.IPOrDomain              `json:"listen"`
 		Settings      json.RawMessage                `json:"settings"`
 		Tag           string                         `json:"tag"`
 		Allocation    *InboundDetourAllocationConfig `json:"allocate"`
@@ -202,7 +202,7 @@ func (this *InboundDetourConfig) UnmarshalJSON(data []byte) error {
 func (this *OutboundDetourConfig) UnmarshalJSON(data []byte) error {
 	type JsonOutboundDetourConfig struct {
 		Protocol      string                 `json:"protocol"`
-		SendThrough   *v2net.AddressPB       `json:"sendThrough"`
+		SendThrough   *v2net.IPOrDomain      `json:"sendThrough"`
 		Tag           string                 `json:"tag"`
 		Settings      json.RawMessage        `json:"settings"`
 		StreamSetting *internet.StreamConfig `json:"streamSettings"`

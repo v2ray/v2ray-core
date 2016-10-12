@@ -37,10 +37,10 @@ func TestDnsAdd(t *testing.T) {
 
 	domain := "local.v2ray.com"
 	server := NewCacheServer(space, &Config{
-		NameServers: []*v2net.DestinationPB{{
+		NameServers: []*v2net.Endpoint{{
 			Network: v2net.Network_UDP,
-			Address: &v2net.AddressPB{
-				Address: &v2net.AddressPB_Ip{
+			Address: &v2net.IPOrDomain{
+				Address: &v2net.IPOrDomain_Ip{
 					Ip: []byte{8, 8, 8, 8},
 				},
 			},

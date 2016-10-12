@@ -60,7 +60,7 @@ func NewServerSpec(newAccount NewAccountFactory, dest v2net.Destination, valid V
 	}
 }
 
-func NewServerSpecFromPB(newAccount NewAccountFactory, spec ServerSpecPB) *ServerSpec {
+func NewServerSpecFromPB(newAccount NewAccountFactory, spec ServerEndpoint) *ServerSpec {
 	dest := v2net.TCPDestination(spec.Address.AsAddress(), v2net.Port(spec.Port))
 	return NewServerSpec(newAccount, dest, AlwaysValid(), spec.User...)
 }

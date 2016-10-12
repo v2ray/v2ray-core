@@ -21,7 +21,7 @@ func TestRequestSerialization(t *testing.T) {
 		Level: 0,
 		Email: "test@v2ray.com",
 	}
-	account := &vmess.AccountPB{
+	account := &vmess.Account{
 		Id:      uuid.New().String(),
 		AlterId: 0,
 	}

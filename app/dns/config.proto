@@ -9,6 +9,6 @@ import "v2ray.com/core/common/net/address.proto";
 import "v2ray.com/core/common/net/destination.proto";
 
 message Config {
-  repeated v2ray.core.common.net.DestinationPB NameServers = 1;
-  map<string, v2ray.core.common.net.AddressPB> Hosts = 2;
+  repeated v2ray.core.common.net.Endpoint NameServers = 1;
+  map<string, v2ray.core.common.net.IPOrDomain> Hosts = 2;
 }

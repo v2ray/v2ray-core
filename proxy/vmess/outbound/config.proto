@@ -8,5 +8,5 @@ option java_outer_classname = "ConfigProto";
 import "v2ray.com/core/common/protocol/server_spec.proto";
 
 message Config {
-  repeated v2ray.core.common.protocol.ServerSpecPB Receiver = 1;
+  repeated v2ray.core.common.protocol.ServerEndpoint Receiver = 1;
 }

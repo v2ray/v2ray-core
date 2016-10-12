@@ -187,15 +187,15 @@ func (this *domainAddress) Equals(another Address) bool {
 	return this.Domain() == anotherDomain.Domain()
 }
 
-func (this *AddressPB) AsAddress() Address {
+func (this *IPOrDomain) AsAddress() Address {
 	if this == nil {
 		return nil
 	}
 	switch addr := this.Address.(type) {
-	case *AddressPB_Ip:
+	case *IPOrDomain_Ip:
 		return IPAddress(addr.Ip)
-	case *AddressPB_Domain:
+	case *IPOrDomain_Domain:
 		return DomainAddress(addr.Domain)
 	}
-	panic("Common|Net: Invalid AddressPB.")
+	panic("Common|Net: Invalid address.")
 }

@@ -59,12 +59,12 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 	timestampHash := md5.New()
 	timestampHash.Write(hashTimestamp(timestamp))
 	iv := timestampHash.Sum(nil)
-	account, err := user.GetTypedAccount(&vmess.AccountPB{})
+	account, err := user.GetTypedAccount(&vmess.Account{})
 	if err != nil {
 		log.Error("Vmess: Failed to get user account: ", err)
 		return nil, err
 	}
-	aesStream := crypto.NewAesDecryptionStream(account.(*vmess.Account).ID.CmdKey(), iv)
+	aesStream := crypto.NewAesDecryptionStream(account.(*vmess.InternalAccount).ID.CmdKey(), iv)
 	decryptor := crypto.NewCryptionReader(aesStream, reader)
 
 	nBytes, err := io.ReadFull(decryptor, buffer[:41])

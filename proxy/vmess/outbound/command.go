@@ -11,7 +11,7 @@ import (
 )
 
 func (this *VMessOutboundHandler) handleSwitchAccount(cmd *protocol.CommandSwitchAccount) {
-	account := &vmess.AccountPB{
+	account := &vmess.Account{
 		Id:      cmd.ID.String(),
 		AlterId: uint32(cmd.AlterIds),
 	}

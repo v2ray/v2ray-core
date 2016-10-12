@@ -8,8 +8,8 @@ import (
 
 func (this *Config) GetInternalHosts() map[string]net.IP {
 	hosts := make(map[string]net.IP)
-	for domain, addressPB := range this.GetHosts() {
-		address := addressPB.AsAddress()
+	for domain, ipOrDomain := range this.GetHosts() {
+		address := ipOrDomain.AsAddress()
 		if address.Family().IsDomain() {
 			log.Warning("DNS: Ignoring domain address in static hosts: ", address.Domain())
 			continue

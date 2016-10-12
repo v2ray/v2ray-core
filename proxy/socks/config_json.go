@@ -27,7 +27,7 @@ func (this *Account) UnmarshalJSON(data []byte) error {
 
 func (this *ClientConfig) UnmarshalJSON(data []byte) error {
 	type ServerConfig struct {
-		Address *v2net.AddressPB  `json:"address"`
+		Address *v2net.IPOrDomain  `json:"address"`
 		Port    v2net.Port        `json:"port"`
 		Users   []json.RawMessage `json:"users"`
 	}
@@ -38,9 +38,9 @@ func (this *ClientConfig) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, jsonConfig); err != nil {
 		return errors.New("Socks|Client: Failed to parse config: " + err.Error())
 	}
-	this.Server = make([]*protocol.ServerSpecPB, len(jsonConfig.Servers))
+	this.Server = make([]*protocol.ServerEndpoint, len(jsonConfig.Servers))
 	for idx, serverConfig := range jsonConfig.Servers {
-		server := &protocol.ServerSpecPB{
+		server := &protocol.ServerEndpoint{
 			Address: serverConfig.Address,
 			Port:    uint32(serverConfig.Port),
 		}

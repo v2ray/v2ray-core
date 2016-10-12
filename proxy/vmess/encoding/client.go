@@ -52,12 +52,12 @@ func NewClientSession(idHash protocol.IDHash) *ClientSession {
 
 func (this *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writer io.Writer) {
 	timestamp := protocol.NewTimestampGenerator(protocol.NowTime(), 30)()
-	account, err := header.User.GetTypedAccount(&vmess.AccountPB{})
+	account, err := header.User.GetTypedAccount(&vmess.Account{})
 	if err != nil {
 		log.Error("VMess: Failed to get user account: ", err)
 		return
 	}
-	idHash := this.idHash(account.(*vmess.Account).AnyValidID().Bytes())
+	idHash := this.idHash(account.(*vmess.InternalAccount).AnyValidID().Bytes())
 	idHash.Write(timestamp.Bytes(nil))
 	writer.Write(idHash.Sum(nil))
 
@@ -88,7 +88,7 @@ func (this *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, w
 	timestampHash := md5.New()
 	timestampHash.Write(hashTimestamp(timestamp))
 	iv := timestampHash.Sum(nil)
-	aesStream := crypto.NewAesEncryptionStream(account.(*vmess.Account).ID.CmdKey(), iv)
+	aesStream := crypto.NewAesEncryptionStream(account.(*vmess.InternalAccount).ID.CmdKey(), iv)
 	aesStream.XORKeyStream(buffer, buffer)
 	writer.Write(buffer)
 

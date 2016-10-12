@@ -6,7 +6,7 @@ option go_package = "vmess";
 option java_package = "com.v2ray.core.proxy.vmess";
 option java_outer_classname = "AccountProto";
 
-message AccountPB {
+message Account {
   string id = 1;
   uint32 alter_id = 2;
 }

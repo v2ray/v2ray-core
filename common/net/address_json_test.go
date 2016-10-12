@@ -14,7 +14,7 @@ func TestIPParsing(t *testing.T) {
 	assert := assert.On(t)
 
 	rawJson := "\"8.8.8.8\""
-	var address AddressPB
+	var address IPOrDomain
 	err := json.Unmarshal([]byte(rawJson), &address)
 	assert.Error(err).IsNil()
 	assert.Bytes(address.GetIp()).Equals([]byte{8, 8, 8, 8})
@@ -24,7 +24,7 @@ func TestDomainParsing(t *testing.T) {
 	assert := assert.On(t)
 
 	rawJson := "\"v2ray.com\""
-	var address AddressPB
+	var address IPOrDomain
 	err := json.Unmarshal([]byte(rawJson), &address)
 	assert.Error(err).IsNil()
 	assert.String(address.GetDomain()).Equals("v2ray.com")
@@ -34,7 +34,7 @@ func TestInvalidAddressJson(t *testing.T) {
 	assert := assert.On(t)
 
 	rawJson := "1234"
-	var address AddressPB
+	var address IPOrDomain
 	err := json.Unmarshal([]byte(rawJson), &address)
 	assert.Error(err).IsNotNil()
 }

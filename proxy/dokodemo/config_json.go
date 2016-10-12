@@ -12,7 +12,7 @@ import (
 
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type DokodemoConfig struct {
-		Host         *v2net.AddressPB   `json:"address"`
+		Host         *v2net.IPOrDomain  `json:"address"`
 		PortValue    v2net.Port         `json:"port"`
 		NetworkList  *v2net.NetworkList `json:"network"`
 		TimeoutValue uint32             `json:"timeout"`

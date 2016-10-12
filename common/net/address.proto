@@ -5,7 +5,7 @@ option go_package = "net";
 option java_package = "com.v2ray.core.common.net";
 option java_outer_classname = "AddressProto";
 
-message AddressPB {
+message IPOrDomain {
   oneof address {
     bytes ip = 1;
     string domain = 2;

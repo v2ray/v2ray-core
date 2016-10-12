@@ -54,8 +54,8 @@ func TestDokodemoTCP(t *testing.T) {
 
 	port := v2net.Port(dice.Roll(20000) + 10000)
 	dokodemo := NewDokodemoDoor(&Config{
-		Address: &v2net.AddressPB{
-			Address: &v2net.AddressPB_Ip{
+		Address: &v2net.IPOrDomain{
+			Address: &v2net.IPOrDomain_Ip{
 				Ip: v2net.LocalHostIP.IP(),
 			},
 		},
@@ -128,8 +128,8 @@ func TestDokodemoUDP(t *testing.T) {
 
 	port := v2net.Port(dice.Roll(20000) + 10000)
 	dokodemo := NewDokodemoDoor(&Config{
-		Address: &v2net.AddressPB{
-			Address: &v2net.AddressPB_Ip{
+		Address: &v2net.IPOrDomain{
+			Address: &v2net.IPOrDomain_Ip{
 				Ip: v2net.LocalHostIP.IP(),
 			},
 		},

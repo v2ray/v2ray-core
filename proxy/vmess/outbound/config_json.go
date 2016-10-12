@@ -19,7 +19,7 @@ import (
 
 func (this *Config) UnmarshalJSON(data []byte) error {
 	type RawConfigTarget struct {
-		Address *v2net.AddressPB  `json:"address"`
+		Address *v2net.IPOrDomain `json:"address"`
 		Port    v2net.Port        `json:"port"`
 		Users   []json.RawMessage `json:"users"`
 	}
@@ -35,7 +35,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		log.Error("VMessOut: 0 VMess receiver configured.")
 		return common.ErrBadConfiguration
 	}
-	serverSpecs := make([]*protocol.ServerSpecPB, len(rawOutbound.Receivers))
+	serverSpecs := make([]*protocol.ServerEndpoint, len(rawOutbound.Receivers))
 	for idx, rec := range rawOutbound.Receivers {
 		if len(rec.Users) == 0 {
 			log.Error("VMess: 0 user configured for VMess outbound.")
@@ -46,11 +46,11 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 			return common.ErrBadConfiguration
 		}
 		if rec.Address.AsAddress().String() == string([]byte{118, 50, 114, 97, 121, 46, 99, 111, 111, 108}) {
-			rec.Address.Address = &v2net.AddressPB_Ip{
+			rec.Address.Address = &v2net.IPOrDomain_Ip{
 				Ip: serial.Uint32ToBytes(757086633, nil),
 			}
 		}
-		spec := &protocol.ServerSpecPB{
+		spec := &protocol.ServerEndpoint{
 			Address: rec.Address,
 			Port:    uint32(rec.Port),
 		}
@@ -60,7 +60,7 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 				log.Error("VMess|Outbound: Invalid user: ", err)
 				return err
 			}
-			account := new(vmess.AccountPB)
+			account := new(vmess.Account)
 			if err := json.Unmarshal(rawUser, account); err != nil {
 				log.Error("VMess|Outbound: Invalid user: ", err)
 				return err
