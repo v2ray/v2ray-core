@@ -67,7 +67,7 @@ func main() {
 	}
 	defer file.Close()
 
-	fmt.Fprintln(file, "package rules")
+	fmt.Fprintln(file, "package router")
 
 	fmt.Fprintln(file, "var chinaIPs []*IP")
 

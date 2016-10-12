@@ -10,7 +10,6 @@ import (
 	"syscall"
 
 	"v2ray.com/core"
-	_ "v2ray.com/core/app/router/rules"
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/shell/point"
 

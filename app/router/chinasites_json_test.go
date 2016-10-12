@@ -1,11 +1,11 @@
 // +build json
 
-package rules_test
+package router_test
 
 import (
 	"testing"
 
-	. "v2ray.com/core/app/router/rules"
+	. "v2ray.com/core/app/router"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/testing/assert"
 )

@@ -28,7 +28,7 @@ type Point struct {
 	idh       []InboundDetourHandler
 	taggedIdh map[string]InboundDetourHandler
 	odh       map[string]proxy.OutboundHandler
-	router    router.Router
+	router    *router.Router
 	space     app.Space
 }
 
@@ -67,11 +67,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 
 	routerConfig := pConfig.RouterConfig
 	if routerConfig != nil {
-		r, err := router.CreateRouter(routerConfig.Strategy, routerConfig.Settings, vpoint.space)
-		if err != nil {
-			log.Error("Failed to create router: ", err)
-			return nil, common.ErrBadConfiguration
-		}
+		r := router.NewRouter(routerConfig, vpoint.space)
 		vpoint.space.BindApp(router.APP_ID, r)
 		vpoint.router = r
 	}

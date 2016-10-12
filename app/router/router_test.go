@@ -1,4 +1,4 @@
-package rules_test
+package router_test
 
 import (
 	"testing"
@@ -8,8 +8,7 @@ import (
 	dispatchers "v2ray.com/core/app/dispatcher/impl"
 	"v2ray.com/core/app/dns"
 	"v2ray.com/core/app/proxyman"
-	"v2ray.com/core/app/router"
-	. "v2ray.com/core/app/router/rules"
+	. "v2ray.com/core/app/router"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/testing/assert"
 )
@@ -33,7 +32,7 @@ func TestSimpleRouter(t *testing.T) {
 	space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(space))
 	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, proxyman.NewDefaultOutboundHandlerManager())
 	r := NewRouter(config, space)
-	space.BindApp(router.APP_ID, r)
+	space.BindApp(APP_ID, r)
 	assert.Error(space.Initialize()).IsNil()
 
 	tag, err := r.TakeDetour(v2net.TCPDestination(v2net.DomainAddress("v2ray.com"), 80))

@@ -1,6 +1,6 @@
 // +build json
 
-package rules
+package router
 
 import (
 	"encoding/json"

@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	_ "v2ray.com/core/app/router/rules"
 	. "v2ray.com/core/shell/point"
 
 	"v2ray.com/core/testing/assert"

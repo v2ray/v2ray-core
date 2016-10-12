@@ -13,7 +13,7 @@ import (
 
 type DefaultDispatcher struct {
 	ohm    proxyman.OutboundHandlerManager
-	router router.Router
+	router *router.Router
 }
 
 func NewDefaultDispatcher(space app.Space) *DefaultDispatcher {
@@ -33,7 +33,7 @@ func (this *DefaultDispatcher) Initialize(space app.Space) error {
 	this.ohm = space.GetApp(proxyman.APP_ID_OUTBOUND_MANAGER).(proxyman.OutboundHandlerManager)
 
 	if space.HasApp(router.APP_ID) {
-		this.router = space.GetApp(router.APP_ID).(router.Router)
+		this.router = space.GetApp(router.APP_ID).(*router.Router)
 	}
 
 	return nil
