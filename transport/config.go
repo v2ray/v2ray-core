@@ -6,6 +6,11 @@ import (
 
 // Apply applies this Config.
 func (this *Config) Apply() error {
-	internet.ApplyGlobalNetworkSettings(this.NetworkSettings)
+	if this == nil {
+		return nil
+	}
+	if err := internet.ApplyGlobalNetworkSettings(this.NetworkSettings); err != nil {
+		return err
+	}
 	return nil
 }
