@@ -15,6 +15,11 @@ import "v2ray.com/core/transport/config.proto";
 
 import "google/protobuf/any.proto";
 
+enum ConfigFormat {
+  Protobuf = 0;
+  JSON = 1;
+}
+
 message AllocationStrategyConcurrency {
   uint32 value = 1;
 }
