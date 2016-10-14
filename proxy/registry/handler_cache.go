@@ -42,7 +42,7 @@ func MustRegisterOutboundHandlerCreator(name string, creator OutboundHandlerFact
 	}
 }
 
-func CreateInboundHandler(name string, space app.Space, rawConfig []byte, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
+func CreateInboundHandler(name string, space app.Space, config interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
 	creator, found := inboundFactories[name]
 	if !found {
 		return nil, common.ErrObjectNotFound
@@ -57,17 +57,10 @@ func CreateInboundHandler(name string, space app.Space, rawConfig []byte, meta *
 		}
 	}
 
-	if len(rawConfig) > 0 {
-		proxyConfig, err := CreateInboundConfig(name, rawConfig)
-		if err != nil {
-			return nil, err
-		}
-		return creator.Create(space, proxyConfig, meta)
-	}
-	return creator.Create(space, nil, meta)
+	return creator.Create(space, config, meta)
 }
 
-func CreateOutboundHandler(name string, space app.Space, rawConfig []byte, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
+func CreateOutboundHandler(name string, space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 	creator, found := outboundFactories[name]
 	if !found {
 		return nil, common.ErrObjectNotFound
@@ -82,13 +75,5 @@ func CreateOutboundHandler(name string, space app.Space, rawConfig []byte, meta 
 		}
 	}
 
-	if len(rawConfig) > 0 {
-		proxyConfig, err := CreateOutboundConfig(name, rawConfig)
-		if err != nil {
-			return nil, err
-		}
-		return creator.Create(space, proxyConfig, meta)
-	}
-
-	return creator.Create(space, nil, meta)
+	return creator.Create(space, config, meta)
 }

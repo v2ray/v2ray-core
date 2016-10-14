@@ -12,11 +12,11 @@ import (
 // Handler for inbound detour connections.
 type InboundDetourHandlerAlways struct {
 	space  app.Space
-	config *InboundDetourConfig
+	config *InboundConnectionConfig
 	ich    []proxy.InboundHandler
 }
 
-func NewInboundDetourHandlerAlways(space app.Space, config *InboundDetourConfig) (*InboundDetourHandlerAlways, error) {
+func NewInboundDetourHandlerAlways(space app.Space, config *InboundConnectionConfig) (*InboundDetourHandlerAlways, error) {
 	handler := &InboundDetourHandlerAlways{
 		space:  space,
 		config: config,
@@ -24,9 +24,12 @@ func NewInboundDetourHandlerAlways(space app.Space, config *InboundDetourConfig)
 	ports := config.PortRange
 	handler.ich = make([]proxy.InboundHandler, 0, ports.To-ports.From+1)
 	for i := ports.FromPort(); i <= ports.ToPort(); i++ {
-		ichConfig := config.Settings
+		ichConfig, err := config.GetTypedSettings()
+		if err != nil {
+			return nil, err
+		}
 		ich, err := proxyregistry.CreateInboundHandler(config.Protocol, space, ichConfig, &proxy.InboundHandlerMeta{
-			Address:                config.ListenOn,
+			Address:                config.ListenOn.AsAddress(),
 			Port:                   i,
 			Tag:                    config.Tag,
 			StreamSettings:         config.StreamSettings,
@@ -43,7 +46,7 @@ func NewInboundDetourHandlerAlways(space app.Space, config *InboundDetourConfig)
 
 func (this *InboundDetourHandlerAlways) GetConnectionHandler() (proxy.InboundHandler, int) {
 	ich := this.ich[dice.Roll(len(this.ich))]
-	return ich, this.config.Allocation.Refresh
+	return ich, int(this.config.GetAllocationStrategyValue().Refresh.GetValue())
 }
 
 func (this *InboundDetourHandlerAlways) Close() {

@@ -16,24 +16,24 @@ import (
 type InboundDetourHandlerDynamic struct {
 	sync.RWMutex
 	space       app.Space
-	config      *InboundDetourConfig
+	config      *InboundConnectionConfig
 	portsInUse  map[v2net.Port]bool
 	ichs        []proxy.InboundHandler
 	ich2Recyle  []proxy.InboundHandler
 	lastRefresh time.Time
 }
 
-func NewInboundDetourHandlerDynamic(space app.Space, config *InboundDetourConfig) (*InboundDetourHandlerDynamic, error) {
+func NewInboundDetourHandlerDynamic(space app.Space, config *InboundConnectionConfig) (*InboundDetourHandlerDynamic, error) {
 	handler := &InboundDetourHandlerDynamic{
 		space:      space,
 		config:     config,
 		portsInUse: make(map[v2net.Port]bool),
 	}
-	handler.ichs = make([]proxy.InboundHandler, config.Allocation.Concurrency)
+	handler.ichs = make([]proxy.InboundHandler, config.GetAllocationStrategyValue().Concurrency.GetValue())
 
 	// To test configuration
 	ich, err := proxyregistry.CreateInboundHandler(config.Protocol, space, config.Settings, &proxy.InboundHandlerMeta{
-		Address:                config.ListenOn,
+		Address:                config.ListenOn.AsAddress(),
 		Port:                   0,
 		Tag:                    config.Tag,
 		StreamSettings:         config.StreamSettings,
@@ -64,7 +64,7 @@ func (this *InboundDetourHandlerDynamic) GetConnectionHandler() (proxy.InboundHa
 	this.RLock()
 	defer this.RUnlock()
 	ich := this.ichs[dice.Roll(len(this.ichs))]
-	until := this.config.Allocation.Refresh - int((time.Now().Unix()-this.lastRefresh.Unix())/60/1000)
+	until := int(this.config.GetAllocationStrategyValue().Refresh.GetValue()) - int((time.Now().Unix()-this.lastRefresh.Unix())/60/1000)
 	if until < 0 {
 		until = 0
 	}
@@ -98,13 +98,13 @@ func (this *InboundDetourHandlerDynamic) refresh() error {
 
 	config := this.config
 	this.ich2Recyle = this.ichs
-	newIchs := make([]proxy.InboundHandler, config.Allocation.Concurrency)
+	newIchs := make([]proxy.InboundHandler, config.GetAllocationStrategyValue().Concurrency.GetValue())
 
 	for idx := range newIchs {
 		err := retry.Timed(5, 100).On(func() error {
 			port := this.pickUnusedPort()
 			ich, err := proxyregistry.CreateInboundHandler(config.Protocol, this.space, config.Settings, &proxy.InboundHandlerMeta{
-				Address: config.ListenOn, Port: port, Tag: config.Tag, StreamSettings: config.StreamSettings})
+				Address: config.ListenOn.AsAddress(), Port: port, Tag: config.Tag, StreamSettings: config.StreamSettings})
 			if err != nil {
 				delete(this.portsInUse, port)
 				return err
@@ -140,7 +140,7 @@ func (this *InboundDetourHandlerDynamic) Start() error {
 
 	go func() {
 		for {
-			time.Sleep(time.Duration(this.config.Allocation.Refresh)*time.Minute - 1)
+			time.Sleep(time.Duration(this.config.GetAllocationStrategyValue().Refresh.GetValue())*time.Minute - 1)
 			this.RecyleHandles()
 			err := this.refresh()
 			if err != nil {

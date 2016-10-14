@@ -9,44 +9,33 @@ import (
 	"v2ray.com/core/app/router"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/log"
-	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/common/retry"
 	"v2ray.com/core/proxy"
 	proxyregistry "v2ray.com/core/proxy/registry"
 )
 
 // Point shell of V2Ray.
 type Point struct {
-	port      v2net.Port
-	listen    v2net.Address
-	ich       proxy.InboundHandler
-	och       proxy.OutboundHandler
-	idh       []InboundDetourHandler
-	taggedIdh map[string]InboundDetourHandler
-	odh       map[string]proxy.OutboundHandler
-	router    *router.Router
-	space     app.Space
+	inboundHandlers       []InboundDetourHandler
+	taggedInboundHandlers map[string]InboundDetourHandler
+
+	outboundHandlers       []proxy.OutboundHandler
+	taggedOutboundHandlers map[string]proxy.OutboundHandler
+
+	router *router.Router
+	space  app.Space
 }
 
 // NewPoint returns a new Point server based on given configuration.
 // The server is not started at this point.
 func NewPoint(pConfig *Config) (*Point, error) {
 	var vpoint = new(Point)
-	vpoint.port = pConfig.InboundConfig.Port
-	if vpoint.port == 0 {
-		vpoint.port = pConfig.Port // Backward compatibility
+
+	if err := pConfig.Transport.Apply(); err != nil {
+		return nil, err
 	}
 
-	vpoint.listen = pConfig.InboundConfig.ListenOn
-
-	if pConfig.TransportConfig != nil {
-		pConfig.TransportConfig.Apply()
-	}
-
-	if pConfig.LogConfig != nil {
-		if err := pConfig.LogConfig.Apply(); err != nil {
-			return nil, err
-		}
+	if err := pConfig.Log.Apply(); err != nil {
+		return nil, err
 	}
 
 	vpoint.space = app.NewSpace()
@@ -55,13 +44,13 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	outboundHandlerManager := proxyman.NewDefaultOutboundHandlerManager()
 	vpoint.space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, outboundHandlerManager)
 
-	dnsConfig := pConfig.DNSConfig
+	dnsConfig := pConfig.Dns
 	if dnsConfig != nil {
 		dnsServer := dns.NewCacheServer(vpoint.space, dnsConfig)
 		vpoint.space.BindApp(dns.APP_ID, dnsServer)
 	}
 
-	routerConfig := pConfig.RouterConfig
+	routerConfig := pConfig.Router
 	if routerConfig != nil {
 		r := router.NewRouter(routerConfig, vpoint.space)
 		vpoint.space.BindApp(router.APP_ID, r)
@@ -70,84 +59,54 @@ func NewPoint(pConfig *Config) (*Point, error) {
 
 	vpoint.space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(vpoint.space))
 
-	ichConfig := pConfig.InboundConfig.Settings
-	ich, err := proxyregistry.CreateInboundHandler(
-		pConfig.InboundConfig.Protocol, vpoint.space, ichConfig, &proxy.InboundHandlerMeta{
-			Tag:                    "system.inbound",
-			Address:                pConfig.InboundConfig.ListenOn,
-			Port:                   vpoint.port,
-			StreamSettings:         pConfig.InboundConfig.StreamSettings,
-			AllowPassiveConnection: pConfig.InboundConfig.AllowPassiveConnection,
-		})
-	if err != nil {
-		log.Error("Failed to create inbound connection handler: ", err)
-		return nil, err
-	}
-	vpoint.ich = ich
-
-	ochConfig := pConfig.OutboundConfig.Settings
-	och, err := proxyregistry.CreateOutboundHandler(
-		pConfig.OutboundConfig.Protocol, vpoint.space, ochConfig, &proxy.OutboundHandlerMeta{
-			Tag:            "system.outbound",
-			Address:        pConfig.OutboundConfig.SendThrough,
-			StreamSettings: pConfig.OutboundConfig.StreamSettings,
-		})
-	if err != nil {
-		log.Error("Failed to create outbound connection handler: ", err)
-		return nil, err
-	}
-	vpoint.och = och
-	outboundHandlerManager.SetDefaultHandler(och)
-
-	vpoint.taggedIdh = make(map[string]InboundDetourHandler)
-	detours := pConfig.InboundDetours
-	if len(detours) > 0 {
-		vpoint.idh = make([]InboundDetourHandler, len(detours))
-		for idx, detourConfig := range detours {
-			allocConfig := detourConfig.Allocation
-			var detourHandler InboundDetourHandler
-			switch allocConfig.Strategy {
-			case AllocationStrategyAlways:
-				dh, err := NewInboundDetourHandlerAlways(vpoint.space, detourConfig)
-				if err != nil {
-					log.Error("Point: Failed to create detour handler: ", err)
-					return nil, common.ErrBadConfiguration
-				}
-				detourHandler = dh
-			case AllocationStrategyRandom:
-				dh, err := NewInboundDetourHandlerDynamic(vpoint.space, detourConfig)
-				if err != nil {
-					log.Error("Point: Failed to create detour handler: ", err)
-					return nil, common.ErrBadConfiguration
-				}
-				detourHandler = dh
-			default:
-				log.Error("Point: Unknown allocation strategy: ", allocConfig.Strategy)
+	vpoint.inboundHandlers = make([]InboundDetourHandler, 8)
+	vpoint.taggedInboundHandlers = make(map[string]InboundDetourHandler)
+	for _, inbound := range pConfig.Inbound {
+		allocConfig := inbound.GetAllocationStrategyValue()
+		var inboundHandler InboundDetourHandler
+		switch allocConfig.Type {
+		case AllocationStrategy_Always:
+			dh, err := NewInboundDetourHandlerAlways(vpoint.space, inbound)
+			if err != nil {
+				log.Error("Point: Failed to create detour handler: ", err)
 				return nil, common.ErrBadConfiguration
 			}
-			vpoint.idh[idx] = detourHandler
-			if len(detourConfig.Tag) > 0 {
-				vpoint.taggedIdh[detourConfig.Tag] = detourHandler
+			inboundHandler = dh
+		case AllocationStrategy_Random:
+			dh, err := NewInboundDetourHandlerDynamic(vpoint.space, inbound)
+			if err != nil {
+				log.Error("Point: Failed to create detour handler: ", err)
+				return nil, common.ErrBadConfiguration
 			}
+			inboundHandler = dh
+		default:
+			log.Error("Point: Unknown allocation strategy: ", allocConfig.Type)
+			return nil, common.ErrBadConfiguration
+		}
+		vpoint.inboundHandlers = append(vpoint.inboundHandlers, inboundHandler)
+		if len(inbound.Tag) > 0 {
+			vpoint.taggedInboundHandlers[inbound.Tag] = inboundHandler
 		}
 	}
 
-	outboundDetours := pConfig.OutboundDetours
-	if len(outboundDetours) > 0 {
-		vpoint.odh = make(map[string]proxy.OutboundHandler)
-		for _, detourConfig := range outboundDetours {
-			detourHandler, err := proxyregistry.CreateOutboundHandler(
-				detourConfig.Protocol, vpoint.space, detourConfig.Settings, &proxy.OutboundHandlerMeta{
-					Tag:            detourConfig.Tag,
-					Address:        detourConfig.SendThrough,
-					StreamSettings: detourConfig.StreamSettings,
-				})
-			if err != nil {
-				log.Error("Point: Failed to create detour outbound connection handler: ", err)
-				return nil, err
-			}
-			vpoint.odh[detourConfig.Tag] = detourHandler
-			outboundHandlerManager.SetHandler(detourConfig.Tag, detourHandler)
+	vpoint.outboundHandlers = make([]proxy.OutboundHandler, 8)
+	vpoint.taggedOutboundHandlers = make(map[string]proxy.OutboundHandler)
+	for idx, outbound := range pConfig.Outbound {
+		outboundHandler, err := proxyregistry.CreateOutboundHandler(
+			outbound.Protocol, vpoint.space, outbound.Settings, &proxy.OutboundHandlerMeta{
+				Tag:            outbound.Tag,
+				Address:        outbound.SendThrough.AsAddress(),
+				StreamSettings: outbound.StreamSettings,
+			})
+		if err != nil {
+			log.Error("Point: Failed to create detour outbound connection handler: ", err)
+			return nil, err
+		}
+		if idx == 0 {
+			outboundHandlerManager.SetDefaultHandler(outboundHandler)
+		}
+		if len(outbound.Tag) > 0 {
+			outboundHandlerManager.SetHandler(outbound.Tag, outboundHandler)
 		}
 	}
 
@@ -159,44 +118,27 @@ func NewPoint(pConfig *Config) (*Point, error) {
 }
 
 func (this *Point) Close() {
-	this.ich.Close()
-	for _, idh := range this.idh {
-		idh.Close()
+	for _, inbound := range this.inboundHandlers {
+		inbound.Close()
 	}
 }
 
 // Start starts the Point server, and return any error during the process.
 // In the case of any errors, the state of the server is unpredicatable.
 func (this *Point) Start() error {
-	if this.port <= 0 {
-		log.Error("Point: Invalid port ", this.port)
-		return common.ErrBadConfiguration
-	}
-
-	err := retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
-		err := this.ich.Start()
-		if err != nil {
-			return err
-		}
-		log.Warning("Point: started on port ", this.port)
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
-	for _, detourHandler := range this.idh {
-		err := detourHandler.Start()
+	for _, inbound := range this.inboundHandlers {
+		err := inbound.Start()
 		if err != nil {
 			return err
 		}
 	}
+	log.Warning("V2Ray started.")
 
 	return nil
 }
 
 func (this *Point) GetHandler(tag string) (proxy.InboundHandler, int) {
-	handler, found := this.taggedIdh[tag]
+	handler, found := this.taggedInboundHandlers[tag]
 	if !found {
 		log.Warning("Point: Unable to find an inbound handler with tag: ", tag)
 		return nil, 0
