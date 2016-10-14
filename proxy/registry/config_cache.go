@@ -26,6 +26,9 @@ func MarshalInboundConfig(protocol string, settings *any.Any) (interface{}, erro
 	if err != nil {
 		return nil, err
 	}
+	if settings == nil {
+		return config, nil
+	}
 	if err := ptypes.UnmarshalAny(settings, config.(proto.Message)); err != nil {
 		return nil, err
 	}
@@ -36,6 +39,9 @@ func MarshalOutboundConfig(protocol string, settings *any.Any) (interface{}, err
 	config, err := outboundConfigCreatorCache.CreateConfig(protocol)
 	if err != nil {
 		return nil, err
+	}
+	if settings == nil {
+		return config, nil
 	}
 	if err := ptypes.UnmarshalAny(settings, config.(proto.Message)); err != nil {
 		return nil, err
