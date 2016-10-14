@@ -34,3 +34,7 @@ func LoadProtobufConfig(input io.Reader) (*Config, error) {
 	}
 	return config, nil
 }
+
+func init() {
+	RegisterConfigLoader(ConfigFormat_Protobuf, LoadProtobufConfig)
+}
