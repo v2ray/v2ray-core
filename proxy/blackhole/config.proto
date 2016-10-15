@@ -5,25 +5,14 @@ option go_package = "blackhole";
 option java_package = "com.v2ray.core.proxy.blackhole";
 option java_outer_classname = "ConfigProto";
 
-import "google/protobuf/any.proto";
+import "v2ray.com/core/common/loader/type.proto";
 
 message NoneResponse {
-
 }
 
 message HTTPResponse {
-
-}
-
-message Response {
-  enum Type {
-    None = 0;
-    HTTP = 1;
-  }
-  Type type = 1;
-  google.protobuf.Any settings = 2;
 }
 
 message Config {
-  Response response = 1;
+  v2ray.core.common.loader.TypedSettings response = 1;
 }
