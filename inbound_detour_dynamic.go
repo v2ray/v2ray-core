@@ -32,7 +32,11 @@ func NewInboundDetourHandlerDynamic(space app.Space, config *InboundConnectionCo
 	handler.ichs = make([]proxy.InboundHandler, config.GetAllocationStrategyValue().Concurrency.GetValue())
 
 	// To test configuration
-	ich, err := proxyregistry.CreateInboundHandler(config.Protocol, space, config.Settings, &proxy.InboundHandlerMeta{
+	ichConfig, err := config.GetTypedSettings()
+	if err != nil {
+		return nil, err
+	}
+	ich, err := proxyregistry.CreateInboundHandler(config.Protocol, space, ichConfig, &proxy.InboundHandlerMeta{
 		Address:                config.ListenOn.AsAddress(),
 		Port:                   0,
 		Tag:                    config.Tag,

@@ -1,6 +1,7 @@
 package core
 
 import (
+	"v2ray.com/core/common"
 	"v2ray.com/core/proxy/registry"
 )
 
@@ -26,5 +27,15 @@ func (this *InboundConnectionConfig) GetAllocationStrategyValue() *AllocationStr
 }
 
 func (this *InboundConnectionConfig) GetTypedSettings() (interface{}, error) {
-	return registry.MarshalInboundConfig(this.Protocol, this.Settings)
+	if this.GetSettings() == nil {
+		return nil, common.ErrBadConfiguration
+	}
+	return this.GetSettings().GetInstance()
+}
+
+func (this *OutboundConnectionConfig) GetTypedSettings() (interface{}, error) {
+	if this.GetSettings() == nil {
+		return nil, common.ErrBadConfiguration
+	}
+	return this.GetSettings().GetInstance()
 }
