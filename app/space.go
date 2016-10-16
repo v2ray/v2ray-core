@@ -26,6 +26,19 @@ type Application interface {
 }
 
 type ApplicationInitializer func() error
+type ApplicationFactory interface {
+	Create(space Space, config interface{}) (Application, error)
+	AppId() ID
+}
+
+var (
+	applicationFactoryCache map[string]ApplicationFactory
+)
+
+func RegisterApplicationFactory(name string, factory ApplicationFactory) error {
+	applicationFactoryCache[name] = factory
+	return nil
+}
 
 // A Space contains all apps that may be available in a V2Ray runtime.
 // Caller must check the availability of an app by calling HasXXX before getting its instance.
@@ -36,6 +49,7 @@ type Space interface {
 	HasApp(ID) bool
 	GetApp(ID) Application
 	BindApp(ID, Application)
+	BindFromConfig(name string, config interface{}) error
 }
 
 type spaceImpl struct {
@@ -79,4 +93,17 @@ func (this *spaceImpl) GetApp(id ID) Application {
 
 func (this *spaceImpl) BindApp(id ID, application Application) {
 	this.cache[id] = application
+}
+
+func (this *spaceImpl) BindFromConfig(name string, config interface{}) error {
+	factory, found := applicationFactoryCache[name]
+	if !found {
+		return errors.New("Space: app not registered: " + name)
+	}
+	app, err := factory.Create(this, config)
+	if err != nil {
+		return err
+	}
+	this.BindApp(factory.AppId(), app)
+	return nil
 }

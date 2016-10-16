@@ -5,8 +5,6 @@ option go_package = "core";
 option java_package = "com.v2ray.core";
 option java_outer_classname = "ConfigProto";
 
-import "v2ray.com/core/app/router/config.proto";
-import "v2ray.com/core/app/dns/config.proto";
 import "v2ray.com/core/common/loader/type.proto";
 import "v2ray.com/core/common/net/port.proto";
 import "v2ray.com/core/common/net/address.proto";
@@ -70,7 +68,6 @@ message Config {
   repeated InboundConnectionConfig inbound = 1;
   repeated OutboundConnectionConfig outbound = 2;
   v2ray.core.common.log.Config log = 3;
-  v2ray.core.app.router.Config router = 4;
-  v2ray.core.app.dns.Config dns = 5;
-  v2ray.core.transport.Config transport = 6;
+  repeated v2ray.core.common.loader.TypedSettings app = 4;
+  v2ray.core.transport.Config transport = 5;
 }

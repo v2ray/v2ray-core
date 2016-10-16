@@ -4,9 +4,7 @@ import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	dispatchers "v2ray.com/core/app/dispatcher/impl"
-	"v2ray.com/core/app/dns"
 	"v2ray.com/core/app/proxyman"
-	"v2ray.com/core/app/router"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/proxy"
@@ -21,8 +19,7 @@ type Point struct {
 	outboundHandlers       []proxy.OutboundHandler
 	taggedOutboundHandlers map[string]proxy.OutboundHandler
 
-	router *router.Router
-	space  app.Space
+	space app.Space
 }
 
 // NewPoint returns a new Point server based on given configuration.
@@ -38,23 +35,21 @@ func NewPoint(pConfig *Config) (*Point, error) {
 		return nil, err
 	}
 
-	vpoint.space = app.NewSpace()
+	space := app.NewSpace()
+	vpoint.space = space
 	vpoint.space.BindApp(proxyman.APP_ID_INBOUND_MANAGER, vpoint)
 
 	outboundHandlerManager := proxyman.NewDefaultOutboundHandlerManager()
 	vpoint.space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, outboundHandlerManager)
 
-	dnsConfig := pConfig.Dns
-	if dnsConfig != nil {
-		dnsServer := dns.NewCacheServer(vpoint.space, dnsConfig)
-		vpoint.space.BindApp(dns.APP_ID, dnsServer)
-	}
-
-	routerConfig := pConfig.Router
-	if routerConfig != nil {
-		r := router.NewRouter(routerConfig, vpoint.space)
-		vpoint.space.BindApp(router.APP_ID, r)
-		vpoint.router = r
+	for _, app := range pConfig.App {
+		settings, err := app.GetInstance()
+		if err != nil {
+			return nil, err
+		}
+		if err := space.BindFromConfig(app.Type, settings); err != nil {
+			return nil, err
+		}
 	}
 
 	vpoint.space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(vpoint.space))

@@ -7,6 +7,7 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 
@@ -110,4 +111,19 @@ func (this *CacheServer) Get(domain string) []net.IP {
 
 	log.Debug("DNS: Returning nil for domain ", domain)
 	return nil
+}
+
+type CacheServerFactory struct{}
+
+func (this CacheServerFactory) Create(space app.Space, config interface{}) (app.Application, error) {
+	server := NewCacheServer(space, config.(*Config))
+	return server, nil
+}
+
+func (this CacheServerFactory) AppId() app.ID {
+	return APP_ID
+}
+
+func init() {
+	app.RegisterApplicationFactory(loader.GetType(new(Config)), CacheServerFactory{})
 }

@@ -5,6 +5,7 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dns"
+	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 )
@@ -106,4 +107,19 @@ func (this *Router) TakeDetour(dest v2net.Destination) (string, error) {
 		return tag, err
 	}
 	return tag, err
+}
+
+type RouterFactory struct{}
+
+func (RouterFactory) Create(space app.Space, config interface{}) (app.Application, error) {
+	router := NewRouter(config.(*Config), space)
+	return router, nil
+}
+
+func (RouterFactory) AppId() app.ID {
+	return APP_ID
+}
+
+func init() {
+	app.RegisterApplicationFactory(loader.GetType(new(Config)), RouterFactory{})
 }
