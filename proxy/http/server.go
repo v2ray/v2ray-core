@@ -13,6 +13,7 @@ import (
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common"
 	v2io "v2ray.com/core/common/io"
+	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
@@ -281,5 +282,5 @@ func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *
 }
 
 func init() {
-	registry.MustRegisterInboundHandlerCreator("http", new(ServerFactory))
+	registry.MustRegisterInboundHandlerCreator(loader.GetType(new(ServerConfig)), new(ServerFactory))
 }

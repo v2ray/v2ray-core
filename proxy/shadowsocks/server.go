@@ -12,6 +12,7 @@ import (
 	"v2ray.com/core/common/alloc"
 	"v2ray.com/core/common/crypto"
 	v2io "v2ray.com/core/common/io"
+	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -37,9 +38,13 @@ func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandler
 	if config.GetUser() == nil {
 		return nil, protocol.ErrUserMissing
 	}
-	account := new(Account)
-	if _, err := config.GetUser().GetTypedAccount(account); err != nil {
+	rawAccount, err := config.GetUser().GetTypedAccount()
+	if err != nil {
 		return nil, err
+	}
+	account, ok := rawAccount.(*Account)
+	if !ok {
+		return nil, protocol.ErrUnknownAccountType
 	}
 	cipher, err := account.GetCipher()
 	if err != nil {
@@ -292,5 +297,5 @@ func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *
 }
 
 func init() {
-	registry.MustRegisterInboundHandlerCreator("shadowsocks", new(ServerFactory))
+	registry.MustRegisterInboundHandlerCreator(loader.GetType(new(ServerConfig)), new(ServerFactory))
 }

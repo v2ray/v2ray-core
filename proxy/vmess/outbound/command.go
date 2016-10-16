@@ -3,11 +3,10 @@ package outbound
 import (
 	"time"
 
+	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/proxy/vmess"
-
-	"github.com/golang/protobuf/ptypes"
 )
 
 func (this *VMessOutboundHandler) handleSwitchAccount(cmd *protocol.CommandSwitchAccount) {
@@ -15,11 +14,11 @@ func (this *VMessOutboundHandler) handleSwitchAccount(cmd *protocol.CommandSwitc
 		Id:      cmd.ID.String(),
 		AlterId: uint32(cmd.AlterIds),
 	}
-	anyAccount, _ := ptypes.MarshalAny(account)
+
 	user := &protocol.User{
 		Email:   "",
 		Level:   cmd.Level,
-		Account: anyAccount,
+		Account: loader.NewTypedSettings(account),
 	}
 	dest := v2net.TCPDestination(cmd.Host, cmd.Port)
 	until := time.Now().Add(time.Duration(cmd.ValidMin) * time.Minute)

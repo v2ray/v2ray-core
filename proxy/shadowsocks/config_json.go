@@ -8,11 +8,9 @@ import (
 	"strings"
 
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/proxy/registry"
-
-	"github.com/golang/protobuf/ptypes"
 )
 
 func (this *ServerConfig) UnmarshalJSON(data []byte) error {
@@ -52,20 +50,11 @@ func (this *ServerConfig) UnmarshalJSON(data []byte) error {
 		return common.ErrBadConfiguration
 	}
 
-	anyAccount, err := ptypes.MarshalAny(account)
-	if err != nil {
-		log.Error("Shadowsocks: Failed to create account: ", err)
-		return common.ErrBadConfiguration
-	}
 	this.User = &protocol.User{
 		Email:   jsonConfig.Email,
 		Level:   uint32(jsonConfig.Level),
-		Account: anyAccount,
+		Account: loader.NewTypedSettings(account),
 	}
 
 	return nil
-}
-
-func init() {
-	registry.RegisterInboundConfig("shadowsocks", func() interface{} { return new(ServerConfig) })
 }

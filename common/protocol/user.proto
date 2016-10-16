@@ -5,10 +5,10 @@ option go_package = "protocol";
 option java_package = "com.v2ray.core.common.protocol";
 option java_outer_classname = "UserProto";
 
-import "google/protobuf/any.proto";
+import "v2ray.com/core/common/loader/type.proto";
 
 message User {
   uint32 level = 1;
   string email = 2;
-  google.protobuf.Any account = 3;
+  v2ray.core.common.loader.TypedSettings account = 3;
 }

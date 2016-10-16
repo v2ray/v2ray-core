@@ -4,6 +4,7 @@ import (
 	"math/rand"
 
 	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/loader"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -38,6 +39,5 @@ func (this UTPFactory) Create(rawSettings interface{}) internet.Authenticator {
 }
 
 func init() {
-	internet.RegisterAuthenticator("utp", UTPFactory{})
-	internet.RegisterAuthenticatorConfig("utp", func() interface{} { return &Config{} })
+	internet.RegisterAuthenticator(loader.GetType(new(Config)), UTPFactory{})
 }

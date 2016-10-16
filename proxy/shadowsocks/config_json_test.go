@@ -21,9 +21,11 @@ func TestConfigParsing(t *testing.T) {
 	err := json.Unmarshal([]byte(rawJson), config)
 	assert.Error(err).IsNil()
 
-	account := new(Account)
-	_, err = config.User.GetTypedAccount(account)
+	rawAccount, err = config.User.GetTypedAccount()
 	assert.Error(err).IsNil()
+
+	account, ok := rawAccount.(*Account)
+	assert.Bool(ok).IsTrue()
 
 	cipher, err := account.GetCipher()
 	assert.Error(err).IsNil()

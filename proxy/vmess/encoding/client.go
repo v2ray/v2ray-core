@@ -52,7 +52,7 @@ func NewClientSession(idHash protocol.IDHash) *ClientSession {
 
 func (this *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writer io.Writer) {
 	timestamp := protocol.NewTimestampGenerator(protocol.NowTime(), 30)()
-	account, err := header.User.GetTypedAccount(&vmess.Account{})
+	account, err := header.User.GetTypedAccount()
 	if err != nil {
 		log.Error("VMess: Failed to get user account: ", err)
 		return

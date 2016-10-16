@@ -8,6 +8,7 @@ import (
 	"v2ray.com/core/common/alloc"
 	"v2ray.com/core/common/dice"
 	v2io "v2ray.com/core/common/io"
+	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
@@ -140,5 +141,5 @@ func (this *FreedomFactory) Create(space app.Space, config interface{}, meta *pr
 }
 
 func init() {
-	registry.MustRegisterOutboundHandlerCreator("freedom", new(FreedomFactory))
+	registry.MustRegisterOutboundHandlerCreator(loader.GetType(new(Config)), new(FreedomFactory))
 }

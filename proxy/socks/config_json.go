@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 
+	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/proxy/registry"
 )
 
 func (this *Account) UnmarshalJSON(data []byte) error {
@@ -27,7 +27,7 @@ func (this *Account) UnmarshalJSON(data []byte) error {
 
 func (this *ClientConfig) UnmarshalJSON(data []byte) error {
 	type ServerConfig struct {
-		Address *v2net.IPOrDomain  `json:"address"`
+		Address *v2net.IPOrDomain `json:"address"`
 		Port    v2net.Port        `json:"port"`
 		Users   []json.RawMessage `json:"users"`
 	}
@@ -53,18 +53,10 @@ func (this *ClientConfig) UnmarshalJSON(data []byte) error {
 			if err := json.Unmarshal(rawUser, account); err != nil {
 				return errors.New("Socks|Client: Failed to parse socks account: " + err.Error())
 			}
-			anyAccount, err := account.AsAny()
-			if err != nil {
-				return err
-			}
-			user.Account = anyAccount
+			user.Account = loader.NewTypedSettings(account)
 			server.User = append(server.User, user)
 		}
 		this.Server[idx] = server
 	}
 	return nil
-}
-
-func init() {
-	registry.RegisterOutboundConfig("socks", func() interface{} { return new(ClientConfig) })
 }

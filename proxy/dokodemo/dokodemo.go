@@ -7,6 +7,7 @@ import (
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common/alloc"
 	v2io "v2ray.com/core/common/io"
+	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
@@ -205,5 +206,5 @@ func (this *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.
 }
 
 func init() {
-	registry.MustRegisterInboundHandlerCreator("dokodemo-door", new(Factory))
+	registry.MustRegisterInboundHandlerCreator(loader.GetType(new(Config)), new(Factory))
 }

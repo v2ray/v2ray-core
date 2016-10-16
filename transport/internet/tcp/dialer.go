@@ -37,17 +37,20 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 			return nil, err
 		}
 	}
-	if options.Stream != nil && options.Stream.SecurityType == internet.SecurityType_TLS {
+	if options.Stream != nil && options.Stream.HasSecuritySettings() {
 		securitySettings, err := options.Stream.GetEffectiveSecuritySettings()
 		if err != nil {
-			log.Error("TCP: Failed to apply TLS config: ", err)
+			log.Error("TCP: Failed to get security settings: ", err)
 			return nil, err
 		}
-		config := securitySettings.(*v2tls.Config).GetTLSConfig()
-		if dest.Address.Family().IsDomain() {
-			config.ServerName = dest.Address.Domain()
+		tlsConfig, ok := securitySettings.(*v2tls.Config)
+		if ok {
+			config := tlsConfig.GetTLSConfig()
+			if dest.Address.Family().IsDomain() {
+				config.ServerName = dest.Address.Domain()
+			}
+			conn = tls.Client(conn, config)
 		}
-		conn = tls.Client(conn, config)
 	}
 	return NewConnection(id, conn, globalCache, tcpSettings), nil
 }

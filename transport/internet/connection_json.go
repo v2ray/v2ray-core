@@ -6,8 +6,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"errors"
-	"github.com/golang/protobuf/ptypes"
+	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
 	v2tls "v2ray.com/core/transport/internet/tls"
 )
@@ -26,19 +25,12 @@ func (this *StreamConfig) UnmarshalJSON(data []byte) error {
 	if jsonConfig.Network != nil {
 		this.Network = *jsonConfig.Network
 	}
-	this.SecurityType = SecurityType_None
 	if strings.ToLower(jsonConfig.Security) == "tls" {
-		this.SecurityType = SecurityType_TLS
-	}
-	if jsonConfig.TLSSettings != nil {
-		anyTLSSettings, err := ptypes.MarshalAny(jsonConfig.TLSSettings)
-		if err != nil {
-			return errors.New("Internet: Failed to parse TLS settings: " + err.Error())
+		tlsSettings := jsonConfig.TLSSettings
+		if tlsSettings == nil {
+			tlsSettings = &v2tls.Config{}
 		}
-		this.SecuritySettings = append(this.SecuritySettings, &SecuritySettings{
-			Type:     SecurityType_TLS,
-			Settings: anyTLSSettings,
-		})
+		this.SecuritySettings = append(this.SecuritySettings, loader.NewTypedSettings(tlsSettings))
 	}
 	return nil
 }

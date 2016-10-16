@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package v2ray.core.common.loader;
+option go_package = "loader";
+option java_package = "com.v2ray.core.common.loader";
+option java_outer_classname = "TypeProto";
+
+message TypedSettings {
+  string type = 1;
+  bytes settings = 2;
+}

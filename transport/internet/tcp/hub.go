@@ -51,13 +51,16 @@ func ListenTCP(address v2net.Address, port v2net.Port, options internet.ListenOp
 		awaitingConns: make(chan *ConnectionWithError, 32),
 		config:        tcpSettings,
 	}
-	if options.Stream != nil && options.Stream.SecurityType == internet.SecurityType_TLS {
+	if options.Stream != nil && options.Stream.HasSecuritySettings() {
 		securitySettings, err := options.Stream.GetEffectiveSecuritySettings()
 		if err != nil {
-			log.Error("TCP: Failed to apply TLS config: ", err)
+			log.Error("TCP: Failed to get security config: ", err)
 			return nil, err
 		}
-		l.tlsConfig = securitySettings.(*v2tls.Config).GetTLSConfig()
+		tlsConfig, ok := securitySettings.(*v2tls.Config)
+		if ok {
+			l.tlsConfig = tlsConfig.GetTLSConfig()
+		}
 	}
 	go l.KeepAccepting()
 	return l, nil

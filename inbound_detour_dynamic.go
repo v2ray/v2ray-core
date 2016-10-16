@@ -36,7 +36,7 @@ func NewInboundDetourHandlerDynamic(space app.Space, config *InboundConnectionCo
 	if err != nil {
 		return nil, err
 	}
-	ich, err := proxyregistry.CreateInboundHandler(config.Protocol, space, ichConfig, &proxy.InboundHandlerMeta{
+	ich, err := proxyregistry.CreateInboundHandler(config.Settings.Type, space, ichConfig, &proxy.InboundHandlerMeta{
 		Address:                config.ListenOn.AsAddress(),
 		Port:                   0,
 		Tag:                    config.Tag,
@@ -107,7 +107,7 @@ func (this *InboundDetourHandlerDynamic) refresh() error {
 	for idx := range newIchs {
 		err := retry.Timed(5, 100).On(func() error {
 			port := this.pickUnusedPort()
-			ich, err := proxyregistry.CreateInboundHandler(config.Protocol, this.space, config.Settings, &proxy.InboundHandlerMeta{
+			ich, err := proxyregistry.CreateInboundHandler(config.Settings.Type, this.space, config.Settings, &proxy.InboundHandlerMeta{
 				Address: config.ListenOn.AsAddress(), Port: port, Tag: config.Tag, StreamSettings: config.StreamSettings})
 			if err != nil {
 				delete(this.portsInUse, port)

@@ -69,16 +69,19 @@ func wsDial(src v2net.Address, dest v2net.Destination, options internet.DialerOp
 
 	protocol := "ws"
 
-	if options.Stream != nil && options.Stream.SecurityType == internet.SecurityType_TLS {
+	if options.Stream != nil && options.Stream.HasSecuritySettings() {
 		protocol = "wss"
 		securitySettings, err := options.Stream.GetEffectiveSecuritySettings()
 		if err != nil {
-			log.Error("WebSocket: Failed to create apply TLS config: ", err)
+			log.Error("WebSocket: Failed to create security settings: ", err)
 			return nil, err
 		}
-		dialer.TLSClientConfig = securitySettings.(*v2tls.Config).GetTLSConfig()
-		if dest.Address.Family().IsDomain() {
-			dialer.TLSClientConfig.ServerName = dest.Address.Domain()
+		tlsConfig, ok := securitySettings.(*v2tls.Config)
+		if ok {
+			dialer.TLSClientConfig = tlsConfig.GetTLSConfig()
+			if dest.Address.Family().IsDomain() {
+				dialer.TLSClientConfig.ServerName = dest.Address.Domain()
+			}
 		}
 	}
 

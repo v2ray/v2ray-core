@@ -5,8 +5,6 @@ package http
 import (
 	"encoding/json"
 	"errors"
-
-	"v2ray.com/core/proxy/registry"
 )
 
 // UnmarshalJSON implements json.Unmarshaler
@@ -21,8 +19,4 @@ func (this *ServerConfig) UnmarshalJSON(data []byte) error {
 	this.Timeout = jsonConfig.Timeout
 
 	return nil
-}
-
-func init() {
-	registry.RegisterInboundConfig("http", func() interface{} { return new(ServerConfig) })
 }

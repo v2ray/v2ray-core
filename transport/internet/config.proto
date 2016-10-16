@@ -5,27 +5,16 @@ option go_package = "internet";
 option java_package = "com.v2ray.core.transport.internet";
 
 import "v2ray.com/core/common/net/network.proto";
-
-import "google/protobuf/any.proto";
-
-enum SecurityType {
-  None = 0;
-  TLS = 1;
-}
-
-message SecuritySettings {
-  SecurityType type = 1;
-  google.protobuf.Any settings = 2;
-}
+import "v2ray.com/core/common/loader/type.proto";
 
 message NetworkSettings {
   v2ray.core.common.net.Network network = 1;
-  google.protobuf.Any settings = 2;
+  v2ray.core.common.loader.TypedSettings settings = 2;
 }
 
 message StreamConfig {
   v2ray.core.common.net.Network network = 1;
   repeated NetworkSettings network_settings = 2;
-  SecurityType security_type = 3;
-  repeated SecuritySettings security_settings = 4;
+  string security_type = 3;
+  repeated v2ray.core.common.loader.TypedSettings security_settings = 4;
 }

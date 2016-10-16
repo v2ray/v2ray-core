@@ -7,14 +7,12 @@ import (
 	"errors"
 
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
-	"v2ray.com/core/proxy/registry"
 	"v2ray.com/core/proxy/vmess"
-
-	"github.com/golang/protobuf/ptypes"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {
@@ -65,20 +63,11 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 				log.Error("VMess|Outbound: Invalid user: ", err)
 				return err
 			}
-			anyAccount, err := ptypes.MarshalAny(account)
-			if err != nil {
-				log.Error("VMess|Outbound: Failed to create account: ", err)
-				return common.ErrBadConfiguration
-			}
-			user.Account = anyAccount
+			user.Account = loader.NewTypedSettings(account)
 			spec.User = append(spec.User, user)
 		}
 		serverSpecs[idx] = spec
 	}
 	this.Receiver = serverSpecs
 	return nil
-}
-
-func init() {
-	registry.RegisterOutboundConfig("vmess", func() interface{} { return new(Config) })
 }

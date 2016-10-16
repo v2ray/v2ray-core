@@ -7,6 +7,7 @@ import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/common/alloc"
 	v2io "v2ray.com/core/common/io"
+	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -183,5 +184,5 @@ func (this *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.
 }
 
 func init() {
-	registry.MustRegisterOutboundHandlerCreator("vmess", new(Factory))
+	registry.MustRegisterOutboundHandlerCreator(loader.GetType(new(Config)), new(Factory))
 }

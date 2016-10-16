@@ -2,7 +2,6 @@ package core
 
 import (
 	"v2ray.com/core/common"
-	"v2ray.com/core/proxy/registry"
 )
 
 func (this *AllocationStrategyConcurrency) GetValue() uint32 {

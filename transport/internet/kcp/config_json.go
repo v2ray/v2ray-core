@@ -5,9 +5,13 @@ package kcp
 import (
 	"encoding/json"
 
+	"github.com/golang/protobuf/proto"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
-	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/internet/authenticators/noop"
+	"v2ray.com/core/transport/internet/authenticators/srtp"
+	"v2ray.com/core/transport/internet/authenticators/utp"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {
@@ -67,18 +71,21 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		}
 	}
 	if len(jsonConfig.HeaderConfig) > 0 {
-		name, config, err := internet.CreateAuthenticatorConfig(jsonConfig.HeaderConfig)
+		config, _, err := headerLoader.Load(jsonConfig.HeaderConfig)
 		if err != nil {
 			log.Error("KCP|Config: Failed to parse header config: ", err)
 			return err
 		}
-		authConfig, err := internet.NewAuthenticatorConfig(name, config)
-		if err != nil {
-			log.Error("KCP:Config: Failed to create header config: ", err)
-			return err
-		}
-		this.HeaderConfig = authConfig
+		this.HeaderConfig = loader.NewTypedSettings(config.(proto.Message))
 	}
 
 	return nil
 }
+
+var (
+	headerLoader = loader.NewJSONConfigLoader(loader.NamedTypeMap{
+		"none": loader.GetType(new(noop.Config)),
+		"srtp": loader.GetType(new(srtp.Config)),
+		"utp":  loader.GetType(new(utp.Config)),
+	}, "type", "")
+)

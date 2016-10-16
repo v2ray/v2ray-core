@@ -1,14 +1,9 @@
 package internet
 
 import (
-	"errors"
-
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/alloc"
 	"v2ray.com/core/common/loader"
-
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
 )
 
 type Authenticator interface {
@@ -19,40 +14,6 @@ type Authenticator interface {
 
 type AuthenticatorFactory interface {
 	Create(interface{}) Authenticator
-}
-
-func (this *AuthenticatorConfig) GetInternalConfig() (interface{}, error) {
-	config, err := configCache.CreateConfig(this.Name)
-	if err != nil {
-		return nil, err
-	}
-	if err := ptypes.UnmarshalAny(this.Settings, config.(proto.Message)); err != nil {
-		return nil, err
-	}
-	return config, nil
-}
-
-func NewAuthenticatorConfig(name string, config interface{}) (*AuthenticatorConfig, error) {
-	pbMsg, ok := config.(proto.Message)
-	if !ok {
-		return nil, errors.New("Internet|Authenticator: Failed to convert config into proto message.")
-	}
-	anyConfig, err := ptypes.MarshalAny(pbMsg)
-	if err != nil {
-		return nil, err
-	}
-	return &AuthenticatorConfig{
-		Name:     name,
-		Settings: anyConfig,
-	}, nil
-}
-
-func (this *AuthenticatorConfig) CreateAuthenticator() (Authenticator, error) {
-	config, err := this.GetInternalConfig()
-	if err != nil {
-		return nil, err
-	}
-	return CreateAuthenticator(this.Name, config)
 }
 
 var (
@@ -66,10 +27,6 @@ func RegisterAuthenticator(name string, factory AuthenticatorFactory) error {
 	}
 	authenticatorCache[name] = factory
 	return nil
-}
-
-func RegisterAuthenticatorConfig(name string, configCreator loader.ConfigCreator) error {
-	return configCache.RegisterCreator(name, configCreator)
 }
 
 func CreateAuthenticator(name string, config interface{}) (Authenticator, error) {

@@ -2,31 +2,31 @@ package protocol
 
 import (
 	"errors"
-
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
 )
 
 var (
-	ErrUserMissing    = errors.New("User is not specified.")
-	ErrAccountMissing = errors.New("Account is not specified.")
-	ErrNonMessageType = errors.New("Not a protobuf message.")
+	ErrUserMissing        = errors.New("User is not specified.")
+	ErrAccountMissing     = errors.New("Account is not specified.")
+	ErrNonMessageType     = errors.New("Not a protobuf message.")
+	ErrUnknownAccountType = errors.New("Unknown account type.")
 )
 
-func (this *User) GetTypedAccount(account AsAccount) (Account, error) {
-	anyAccount := this.GetAccount()
-	if anyAccount == nil {
+func (this *User) GetTypedAccount() (Account, error) {
+	if this.GetAccount() == nil {
 		return nil, ErrAccountMissing
 	}
-	protoAccount, ok := account.(proto.Message)
-	if !ok {
-		return nil, ErrNonMessageType
-	}
-	err := ptypes.UnmarshalAny(anyAccount, protoAccount)
+
+	rawAccount, err := this.Account.GetInstance()
 	if err != nil {
 		return nil, err
 	}
-	return account.AsAccount()
+	if asAccount, ok := rawAccount.(AsAccount); ok {
+		return asAccount.AsAccount()
+	}
+	if account, ok := rawAccount.(Account); ok {
+		return account, nil
+	}
+	return nil, errors.New("Unknown account type: " + this.Account.Type)
 }
 
 func (this *User) GetSettings() UserSettings {

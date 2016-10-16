@@ -6,9 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 
-	"strings"
+	"github.com/golang/protobuf/proto"
 	"v2ray.com/core/common/loader"
-	"v2ray.com/core/proxy/registry"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {
@@ -21,27 +20,22 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 
 	if jsonConfig.Response != nil {
-		response, rType, err := configLoader.Load(jsonConfig.Response)
+		response, _, err := configLoader.Load(jsonConfig.Response)
 		if err != nil {
 			return errors.New("Blackhole: Failed to parse response config: " + err.Error())
 		}
-		this.Response = new(Response)
-		switch rType {
-		case strings.ToLower(Response_Type_name[int32(Response_None)]):
-			this.Response.Type = Response_None
-		case strings.ToLower(Response_Type_name[int32(Response_HTTP)]):
-			this.Response.Type = Response_HTTP
-		}
-		this.Response.Settings = response.(ResponseConfig).AsAny()
+		this.Response = loader.NewTypedSettings(response.(proto.Message))
 	}
 
 	return nil
 }
 
 var (
-	configLoader = loader.NewJSONConfigLoader(cache, "type", "")
+	configLoader = loader.NewJSONConfigLoader(
+		loader.NamedTypeMap{
+			"none": loader.GetType(new(NoneResponse)),
+			"http": loader.GetType(new(HTTPResponse)),
+		},
+		"type",
+		"")
 )
-
-func init() {
-	registry.RegisterOutboundConfig("blackhole", func() interface{} { return new(Config) })
-}

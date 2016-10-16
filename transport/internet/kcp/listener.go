@@ -47,13 +47,16 @@ func NewListener(address v2net.Address, port v2net.Port, options internet.Listen
 		running:       true,
 		config:        kcpSettings,
 	}
-	if options.Stream != nil && options.Stream.SecurityType == internet.SecurityType_TLS {
+	if options.Stream != nil && options.Stream.HasSecuritySettings() {
 		securitySettings, err := options.Stream.GetEffectiveSecuritySettings()
 		if err != nil {
-			log.Error("KCP|Listener: Failed to apply TLS config: ", err)
+			log.Error("KCP|Listener: Failed to get security settings: ", err)
 			return nil, err
 		}
-		l.tlsConfig = securitySettings.(*v2tls.Config).GetTLSConfig()
+		switch securitySettings := securitySettings.(type) {
+		case *v2tls.Config:
+			l.tlsConfig = securitySettings.GetTLSConfig()
+		}
 	}
 	hub, err := udp.ListenUDP(address, port, udp.ListenOption{Callback: l.OnReceive})
 	if err != nil {

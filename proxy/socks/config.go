@@ -8,7 +8,6 @@ import (
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/proxy/registry"
 
 	"github.com/golang/protobuf/ptypes"
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
@@ -58,11 +57,11 @@ const (
 
 func (this *ServerConfig) UnmarshalJSON(data []byte) error {
 	type SocksConfig struct {
-		AuthMethod string           `json:"auth"`
-		Accounts   []*Account       `json:"accounts"`
-		UDP        bool             `json:"udp"`
+		AuthMethod string            `json:"auth"`
+		Accounts   []*Account        `json:"accounts"`
+		UDP        bool              `json:"udp"`
 		Host       *v2net.IPOrDomain `json:"ip"`
-		Timeout    uint32           `json:"timeout"`
+		Timeout    uint32            `json:"timeout"`
 	}
 
 	rawConfig := new(SocksConfig)
@@ -94,8 +93,4 @@ func (this *ServerConfig) UnmarshalJSON(data []byte) error {
 		this.Timeout = rawConfig.Timeout
 	}
 	return nil
-}
-
-func init() {
-	registry.RegisterInboundConfig("socks", func() interface{} { return new(ServerConfig) })
 }

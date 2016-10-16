@@ -9,13 +9,15 @@ import (
 	"v2ray.com/core/common/log"
 )
 
+type NamedTypeMap map[string]string
+
 type JSONConfigLoader struct {
-	cache     ConfigCreatorCache
+	cache     NamedTypeMap
 	idKey     string
 	configKey string
 }
 
-func NewJSONConfigLoader(cache ConfigCreatorCache, idKey string, configKey string) *JSONConfigLoader {
+func NewJSONConfigLoader(cache NamedTypeMap, idKey string, configKey string) *JSONConfigLoader {
 	return &JSONConfigLoader{
 		idKey:     idKey,
 		configKey: configKey,
@@ -24,7 +26,7 @@ func NewJSONConfigLoader(cache ConfigCreatorCache, idKey string, configKey strin
 }
 
 func (this *JSONConfigLoader) LoadWithID(raw []byte, id string) (interface{}, error) {
-	config, err := this.cache.CreateConfig(id)
+	config, err := GetInstance(this.cache[id])
 	if err != nil {
 		return nil, err
 	}

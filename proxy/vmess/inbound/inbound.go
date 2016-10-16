@@ -10,6 +10,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/alloc"
 	v2io "v2ray.com/core/common/io"
+	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -20,8 +21,6 @@ import (
 	"v2ray.com/core/proxy/vmess/encoding"
 	vmessio "v2ray.com/core/proxy/vmess/io"
 	"v2ray.com/core/transport/internet"
-
-	"github.com/golang/protobuf/ptypes"
 )
 
 type userByEmail struct {
@@ -57,11 +56,10 @@ func (this *userByEmail) Get(email string) (*protocol.User, bool) {
 				Id:      uuid.New().String(),
 				AlterId: uint32(this.defaultAlterIDs),
 			}
-			anyAccount, _ := ptypes.MarshalAny(account)
 			user = &protocol.User{
 				Level:   this.defaultLevel,
 				Email:   email,
-				Account: anyAccount,
+				Account: loader.NewTypedSettings(account),
 			}
 			this.cache[email] = user
 		}
@@ -282,5 +280,5 @@ func (this *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.
 }
 
 func init() {
-	registry.MustRegisterInboundHandlerCreator("vmess", new(Factory))
+	registry.MustRegisterInboundHandlerCreator(loader.GetType(new(Config)), new(Factory))
 }

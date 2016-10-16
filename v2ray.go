@@ -97,7 +97,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 			return nil, err
 		}
 		outboundHandler, err := proxyregistry.CreateOutboundHandler(
-			outbound.Protocol, vpoint.space, outboundSettings, &proxy.OutboundHandlerMeta{
+			outbound.Settings.Type, vpoint.space, outboundSettings, &proxy.OutboundHandlerMeta{
 				Tag:            outbound.Tag,
 				Address:        outbound.SendThrough.AsAddress(),
 				StreamSettings: outbound.StreamSettings,

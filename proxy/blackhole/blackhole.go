@@ -3,6 +3,7 @@ package blackhole
 import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/registry"
@@ -16,7 +17,7 @@ type BlackHole struct {
 }
 
 func NewBlackHole(space app.Space, config *Config, meta *proxy.OutboundHandlerMeta) (*BlackHole, error) {
-	response, err := config.Response.GetInternalResponse()
+	response, err := config.GetInternalResponse()
 	if err != nil {
 		return nil, err
 	}
@@ -50,5 +51,5 @@ func (this *Factory) Create(space app.Space, config interface{}, meta *proxy.Out
 }
 
 func init() {
-	registry.MustRegisterOutboundHandlerCreator("blackhole", new(Factory))
+	registry.MustRegisterOutboundHandlerCreator(loader.GetType(new(Config)), new(Factory))
 }

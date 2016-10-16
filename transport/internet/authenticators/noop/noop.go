@@ -2,6 +2,7 @@ package noop
 
 import (
 	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/loader"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -22,6 +23,5 @@ func (this NoOpAuthenticatorFactory) Create(config interface{}) internet.Authent
 }
 
 func init() {
-	internet.RegisterAuthenticator("none", NoOpAuthenticatorFactory{})
-	internet.RegisterAuthenticatorConfig("none", func() interface{} { return &Config{} })
+	internet.RegisterAuthenticator(loader.GetType(new(Config)), NoOpAuthenticatorFactory{})
 }

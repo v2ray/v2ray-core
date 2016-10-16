@@ -44,18 +44,21 @@ func DialKCP(src v2net.Address, dest v2net.Destination, options internet.DialerO
 	var iConn internet.Connection
 	iConn = session
 
-	if options.Stream != nil && options.Stream.SecurityType == internet.SecurityType_TLS {
+	if options.Stream != nil && options.Stream.HasSecuritySettings() {
 		securitySettings, err := options.Stream.GetEffectiveSecuritySettings()
 		if err != nil {
-			log.Error("KCP|Dialer: Failed to apply TLS config: ", err)
+			log.Error("KCP|Dialer: Failed to get security settings: ", err)
 			return nil, err
 		}
-		config := securitySettings.(*v2tls.Config).GetTLSConfig()
-		if dest.Address.Family().IsDomain() {
-			config.ServerName = dest.Address.Domain()
+		switch securitySettings := securitySettings.(type) {
+		case *v2tls.Config:
+			config := securitySettings.GetTLSConfig()
+			if dest.Address.Family().IsDomain() {
+				config.ServerName = dest.Address.Domain()
+			}
+			tlsConn := tls.Client(conn, config)
+			iConn = v2tls.NewConnection(tlsConn)
 		}
-		tlsConn := tls.Client(conn, config)
-		iConn = v2tls.NewConnection(tlsConn)
 	}
 
 	return iConn, nil

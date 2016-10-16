@@ -22,7 +22,7 @@ func (this *VMessInboundHandler) generateCommand(request *protocol.RequestHeader
 				if user == nil {
 					return nil
 				}
-				account, _ := user.GetTypedAccount(&vmess.Account{})
+				account, _ := user.GetTypedAccount()
 				return &protocol.CommandSwitchAccount{
 					Port:     inboundHandler.Port(),
 					ID:       account.(*vmess.InternalAccount).ID.UUID(),

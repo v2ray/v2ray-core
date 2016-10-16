@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
-
-	"v2ray.com/core/proxy/registry"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {
@@ -26,8 +24,4 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 	this.Timeout = jsonConfig.Timeout
 	return nil
-}
-
-func init() {
-	registry.RegisterOutboundConfig("freedom", func() interface{} { return new(Config) })
 }

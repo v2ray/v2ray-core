@@ -118,7 +118,7 @@ L:
 func (this *TimedUserValidator) Add(user *protocol.User) error {
 	idx := len(this.validUsers)
 	this.validUsers = append(this.validUsers, user)
-	rawAccount, err := user.GetTypedAccount(&Account{})
+	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
 		return err
 	}

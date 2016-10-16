@@ -6,13 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 
-	"v2ray.com/core/common"
-	"v2ray.com/core/common/log"
+	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/proxy/registry"
 	"v2ray.com/core/proxy/vmess"
-
-	"github.com/golang/protobuf/ptypes"
 )
 
 func (this *DetourConfig) UnmarshalJSON(data []byte) error {
@@ -81,18 +77,9 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(rawData, account); err != nil {
 			return errors.New("VMess|Inbound: Invalid user: " + err.Error())
 		}
-		anyAccount, err := ptypes.MarshalAny(account)
-		if err != nil {
-			log.Error("VMess|Inbound: Failed to create account: ", err)
-			return common.ErrBadConfiguration
-		}
-		user.Account = anyAccount
+		user.Account = loader.NewTypedSettings(account)
 		this.User[idx] = user
 	}
 
 	return nil
-}
-
-func init() {
-	registry.RegisterInboundConfig("vmess", func() interface{} { return new(Config) })
 }

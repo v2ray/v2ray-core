@@ -4,6 +4,7 @@ import (
 	"math/rand"
 
 	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/loader"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -38,6 +39,5 @@ func (this SRTPFactory) Create(rawSettings interface{}) internet.Authenticator {
 }
 
 func init() {
-	internet.RegisterAuthenticator("srtp", SRTPFactory{})
-	internet.RegisterAuthenticatorConfig("srtp", func() interface{} { return &Config{} })
+	internet.RegisterAuthenticator(loader.GetType(new(Config)), SRTPFactory{})
 }

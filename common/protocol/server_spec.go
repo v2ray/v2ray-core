@@ -73,12 +73,12 @@ func (this *ServerSpec) HasUser(user *User) bool {
 	this.RLock()
 	defer this.RUnlock()
 
-	accountA, err := user.GetTypedAccount(this.newAccount())
+	accountA, err := user.GetTypedAccount()
 	if err != nil {
 		return false
 	}
 	for _, u := range this.users {
-		accountB, err := u.GetTypedAccount(this.newAccount())
+		accountB, err := u.GetTypedAccount()
 		if err == nil && accountA.Equals(accountB) {
 			return true
 		}

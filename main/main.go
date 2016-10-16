@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"v2ray.com/core"
@@ -29,6 +30,17 @@ func init() {
 	flag.StringVar(&configFile, "config", defaultConfigFile, "Config file for this Point server.")
 }
 
+func GetConfigFormat() core.ConfigFormat {
+	switch strings.ToLower(*format) {
+	case "json":
+		return core.ConfigFormat_JSON
+	case "pb", "protobuf":
+		return core.ConfigFormat_Protobuf
+	default:
+		return core.ConfigFormat_JSON
+	}
+}
+
 func startV2Ray() *core.Point {
 	if len(configFile) == 0 {
 		log.Error("Config file is not set.")
@@ -47,7 +59,7 @@ func startV2Ray() *core.Point {
 		defer file.Close()
 		configInput = file
 	}
-	config, err := core.LoadConfig(configInput)
+	config, err := core.LoadConfig(GetConfigFormat(), configInput)
 	if err != nil {
 		log.Error("Failed to read config file (", configFile, "): ", configFile, err)
 		return nil

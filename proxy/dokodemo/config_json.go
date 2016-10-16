@@ -7,7 +7,6 @@ import (
 	"errors"
 
 	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/proxy/registry"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {
@@ -30,8 +29,4 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	this.Timeout = rawConfig.TimeoutValue
 	this.FollowRedirect = rawConfig.Redirect
 	return nil
-}
-
-func init() {
-	registry.RegisterInboundConfig("dokodemo-door", func() interface{} { return new(Config) })
 }

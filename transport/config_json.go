@@ -5,13 +5,12 @@ package transport
 import (
 	"encoding/json"
 
+	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/kcp"
 	"v2ray.com/core/transport/internet/tcp"
 	"v2ray.com/core/transport/internet/ws"
-
-	"github.com/golang/protobuf/ptypes"
 )
 
 func (this *Config) UnmarshalJSON(data []byte) error {
@@ -26,35 +25,23 @@ func (this *Config) UnmarshalJSON(data []byte) error {
 	}
 
 	if jsonConfig.TCPConfig != nil {
-		any, err := ptypes.MarshalAny(jsonConfig.TCPConfig)
-		if err != nil {
-			return err
-		}
 		this.NetworkSettings = append(this.NetworkSettings, &internet.NetworkSettings{
 			Network:  v2net.Network_TCP,
-			Settings: any,
+			Settings: loader.NewTypedSettings(jsonConfig.TCPConfig),
 		})
 	}
 
 	if jsonConfig.KCPConfig != nil {
-		any, err := ptypes.MarshalAny(jsonConfig.KCPConfig)
-		if err != nil {
-			return err
-		}
 		this.NetworkSettings = append(this.NetworkSettings, &internet.NetworkSettings{
 			Network:  v2net.Network_KCP,
-			Settings: any,
+			Settings: loader.NewTypedSettings(jsonConfig.KCPConfig),
 		})
 	}
 
 	if jsonConfig.WSConfig != nil {
-		any, err := ptypes.MarshalAny(jsonConfig.WSConfig)
-		if err != nil {
-			return err
-		}
 		this.NetworkSettings = append(this.NetworkSettings, &internet.NetworkSettings{
 			Network:  v2net.Network_WebSocket,
-			Settings: any,
+			Settings: loader.NewTypedSettings(jsonConfig.WSConfig),
 		})
 	}
 	return nil
