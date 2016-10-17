@@ -46,3 +46,10 @@ func (this *OutboundConnectionConfig) GetTypedSettings() (interface{}, error) {
 	}
 	return this.GetSettings().GetInstance()
 }
+
+func (this *OutboundConnectionConfig) GetSendThroughValue() v2net.Address {
+	if this.GetSendThrough() == nil {
+		return v2net.AnyIP
+	}
+	return this.SendThrough.AsAddress()
+}
