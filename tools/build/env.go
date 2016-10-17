@@ -11,6 +11,7 @@ const (
 	MacOS     = GoOS("darwin")
 	Linux     = GoOS("linux")
 	FreeBSD   = GoOS("freebsd")
+	OpenBSD   = GoOS("openbsd")
 	UnknownOS = GoOS("unknown")
 )
 
@@ -38,6 +39,9 @@ func parseOS(rawOS string) GoOS {
 	}
 	if osStr == "freebsd" {
 		return FreeBSD
+	}
+	if osStr == "openbsd" {
+		return OpenBSD
 	}
 	return UnknownOS
 }

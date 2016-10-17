@@ -33,6 +33,8 @@ deploy:
     - "$GOPATH/bin/v2ray-linux-mips64.zip"
     - "$GOPATH/bin/v2ray-freebsd-64.zip"
     - "$GOPATH/bin/v2ray-freebsd-32.zip"
+    - "$GOPATH/bin/v2ray-openbsd-64.zip"
+    - "$GOPATH/bin/v2ray-openbsd-32.zip"
     - "$GOPATH/bin/metadata.txt"
   skip_cleanup: true
   on:
