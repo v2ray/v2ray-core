@@ -1,23 +1,45 @@
-// +build json
-
-package loader
+package conf
 
 import (
 	"encoding/json"
+	"errors"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/log"
 )
 
-type NamedTypeMap map[string]string
+var (
+	ErrUnknownConfigID = errors.New("Unknown config ID.")
+)
+
+type ConfigCreator func() interface{}
+
+type ConfigCreatorCache map[string]ConfigCreator
+
+func (this ConfigCreatorCache) RegisterCreator(id string, creator ConfigCreator) error {
+	if _, found := this[id]; found {
+		return common.ErrDuplicatedName
+	}
+
+	this[id] = creator
+	return nil
+}
+
+func (this ConfigCreatorCache) CreateConfig(id string) (interface{}, error) {
+	creator, found := this[id]
+	if !found {
+		return nil, ErrUnknownConfigID
+	}
+	return creator(), nil
+}
 
 type JSONConfigLoader struct {
-	cache     NamedTypeMap
+	cache     ConfigCreatorCache
 	idKey     string
 	configKey string
 }
 
-func NewJSONConfigLoader(cache NamedTypeMap, idKey string, configKey string) *JSONConfigLoader {
+func NewJSONConfigLoader(cache ConfigCreatorCache, idKey string, configKey string) *JSONConfigLoader {
 	return &JSONConfigLoader{
 		idKey:     idKey,
 		configKey: configKey,
@@ -26,11 +48,12 @@ func NewJSONConfigLoader(cache NamedTypeMap, idKey string, configKey string) *JS
 }
 
 func (this *JSONConfigLoader) LoadWithID(raw []byte, id string) (interface{}, error) {
-	config, err := GetInstance(this.cache[id])
-	if err != nil {
-		return nil, err
+	creator, found := this.cache[id]
+	if !found {
+		return nil, ErrUnknownConfigID
 	}
 
+	config := creator()
 	if err := json.Unmarshal(raw, config); err != nil {
 		return nil, err
 	}

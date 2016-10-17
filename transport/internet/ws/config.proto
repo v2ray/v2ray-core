@@ -5,7 +5,11 @@ option go_package = "ws";
 option java_package = "com.v2ray.core.transport.internet.ws";
 option java_outer_classname = "ConfigProto";
 
+message ConnectionReuse {
+  bool enable = 1;
+}
+
 message Config {
-  bool connection_reuse = 1;
+  ConnectionReuse connection_reuse = 1;
   string path = 2;
 }

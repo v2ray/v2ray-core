@@ -165,7 +165,7 @@ func (ws *wsconn) Reusable() bool {
 }
 
 func (ws *wsconn) SetReusable(reusable bool) {
-	if !ws.config.ConnectionReuse {
+	if !ws.config.ConnectionReuse.IsEnabled() {
 		return
 	}
 	ws.reusable = reusable

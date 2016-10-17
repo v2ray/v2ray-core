@@ -4,14 +4,13 @@ import (
 	"testing"
 
 	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/uuid"
 	"v2ray.com/core/proxy/vmess"
 	. "v2ray.com/core/proxy/vmess/encoding"
 	"v2ray.com/core/testing/assert"
-
-	"github.com/golang/protobuf/ptypes"
 )
 
 func TestRequestSerialization(t *testing.T) {
@@ -25,9 +24,7 @@ func TestRequestSerialization(t *testing.T) {
 		Id:      uuid.New().String(),
 		AlterId: 0,
 	}
-	anyAccount, err := ptypes.MarshalAny(account)
-	assert.Error(err).IsNil()
-	user.Account = anyAccount
+	user.Account = loader.NewTypedSettings(account)
 
 	expectedRequest := &protocol.RequestHeader{
 		Version: 1,

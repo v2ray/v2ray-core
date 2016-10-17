@@ -4,9 +4,11 @@ import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	dispatchers "v2ray.com/core/app/dispatcher/impl"
+	"v2ray.com/core/app/dns"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/log"
+	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	proxyregistry "v2ray.com/core/proxy/registry"
 )
@@ -52,9 +54,24 @@ func NewPoint(pConfig *Config) (*Point, error) {
 		}
 	}
 
+	if !space.HasApp(dns.APP_ID) {
+		dnsServer := dns.NewCacheServer(space, &dns.Config{
+			NameServers: []*v2net.Endpoint{
+				&v2net.Endpoint{
+					Address: &v2net.IPOrDomain{
+						Address: &v2net.IPOrDomain_Domain{
+							Domain: "localhost",
+						},
+					},
+				},
+			},
+		})
+		space.BindApp(dns.APP_ID, dnsServer)
+	}
+
 	vpoint.space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(vpoint.space))
 
-	vpoint.inboundHandlers = make([]InboundDetourHandler, 8)
+	vpoint.inboundHandlers = make([]InboundDetourHandler, 0, 8)
 	vpoint.taggedInboundHandlers = make(map[string]InboundDetourHandler)
 	for _, inbound := range pConfig.Inbound {
 		allocConfig := inbound.GetAllocationStrategyValue()
@@ -84,7 +101,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 		}
 	}
 
-	vpoint.outboundHandlers = make([]proxy.OutboundHandler, 8)
+	vpoint.outboundHandlers = make([]proxy.OutboundHandler, 0, 8)
 	vpoint.taggedOutboundHandlers = make(map[string]proxy.OutboundHandler)
 	for idx, outbound := range pConfig.Outbound {
 		outboundSettings, err := outbound.GetTypedSettings()
@@ -106,7 +123,10 @@ func NewPoint(pConfig *Config) (*Point, error) {
 		}
 		if len(outbound.Tag) > 0 {
 			outboundHandlerManager.SetHandler(outbound.Tag, outboundHandler)
+			vpoint.taggedOutboundHandlers[outbound.Tag] = outboundHandler
 		}
+
+		vpoint.outboundHandlers = append(vpoint.outboundHandlers, outboundHandler)
 	}
 
 	if err := vpoint.space.Initialize(); err != nil {

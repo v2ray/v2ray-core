@@ -8,20 +8,15 @@ import (
 	"testing"
 	"time"
 
+	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/transport/internet"
 	. "v2ray.com/core/transport/internet/kcp"
-
-	"github.com/golang/protobuf/ptypes"
 )
 
 func TestDialAndListen(t *testing.T) {
 	assert := assert.On(t)
-
-	kcpSettings := new(Config)
-	anySettings, err := ptypes.MarshalAny(kcpSettings)
-	assert.Error(err).IsNil()
 
 	listerner, err := NewListener(v2net.LocalHostIP, v2net.Port(0), internet.ListenOptions{
 		Stream: &internet.StreamConfig{
@@ -29,7 +24,7 @@ func TestDialAndListen(t *testing.T) {
 			NetworkSettings: []*internet.NetworkSettings{
 				{
 					Network:  v2net.Network_KCP,
-					Settings: anySettings,
+					Settings: loader.NewTypedSettings(&Config{}),
 				},
 			},
 		},
@@ -68,7 +63,7 @@ func TestDialAndListen(t *testing.T) {
 				NetworkSettings: []*internet.NetworkSettings{
 					{
 						Network:  v2net.Network_KCP,
-						Settings: anySettings,
+						Settings: loader.NewTypedSettings(&Config{}),
 					},
 				},
 			},

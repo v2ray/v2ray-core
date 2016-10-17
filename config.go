@@ -2,6 +2,7 @@ package core
 
 import (
 	"v2ray.com/core/common"
+	v2net "v2ray.com/core/common/net"
 )
 
 func (this *AllocationStrategyConcurrency) GetValue() uint32 {
@@ -23,6 +24,13 @@ func (this *InboundConnectionConfig) GetAllocationStrategyValue() *AllocationStr
 		return &AllocationStrategy{}
 	}
 	return this.AllocationStrategy
+}
+
+func (this *InboundConnectionConfig) GetListenOnValue() v2net.Address {
+	if this.GetListenOn() == nil {
+		return v2net.AnyIP
+	}
+	return this.ListenOn.AsAddress()
 }
 
 func (this *InboundConnectionConfig) GetTypedSettings() (interface{}, error) {

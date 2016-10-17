@@ -28,7 +28,7 @@ func NewConnection(dest string, conn *wsconn, manager ConnectionManager, config 
 		dest:     dest,
 		conn:     conn,
 		listener: manager,
-		reusable: config.ConnectionReuse,
+		reusable: config.ConnectionReuse.IsEnabled(),
 		config:   config,
 	}
 }
@@ -82,7 +82,7 @@ func (this *Connection) SetWriteDeadline(t time.Time) error {
 }
 
 func (this *Connection) SetReusable(reusable bool) {
-	if !this.config.ConnectionReuse {
+	if !this.config.ConnectionReuse.IsEnabled() {
 		return
 	}
 	this.reusable = reusable

@@ -5,22 +5,13 @@ import (
 	"testing"
 	"time"
 
+	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/transport/internet"
 	v2tls "v2ray.com/core/transport/internet/tls"
 	. "v2ray.com/core/transport/internet/ws"
-
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/any"
 )
-
-func MarshalSettings(config *Config, assert *assert.Assert) *any.Any {
-	anySettings, err := ptypes.MarshalAny(config)
-	assert.Error(err).IsNil()
-
-	return anySettings
-}
 
 func Test_Connect_ws(t *testing.T) {
 	assert := assert.On(t)
@@ -31,9 +22,9 @@ func Test_Connect_ws(t *testing.T) {
 			NetworkSettings: []*internet.NetworkSettings{
 				{
 					Network: v2net.Network_WebSocket,
-					Settings: MarshalSettings(&Config{
+					Settings: loader.NewTypedSettings(&Config{
 						Path: "",
-					}, assert),
+					}),
 				},
 			},
 		},
@@ -62,12 +53,12 @@ func Test_Connect_wss(t *testing.T) {
 			NetworkSettings: []*internet.NetworkSettings{
 				{
 					Network: v2net.Network_WebSocket,
-					Settings: MarshalSettings(&Config{
+					Settings: loader.NewTypedSettings(&Config{
 						Path: "",
-					}, assert),
+					}),
 				},
 			},
-			SecurityType: internet.SecurityType_TLS,
+			SecurityType: loader.GetType(new(v2tls.Config)),
 		},
 	})
 	assert.Error(err).IsNil()
@@ -94,12 +85,12 @@ func Test_Connect_wss_1_nil(t *testing.T) {
 			NetworkSettings: []*internet.NetworkSettings{
 				{
 					Network: v2net.Network_WebSocket,
-					Settings: MarshalSettings(&Config{
+					Settings: loader.NewTypedSettings(&Config{
 						Path: "",
-					}, assert),
+					}),
 				},
 			},
-			SecurityType: internet.SecurityType_TLS,
+			SecurityType: loader.GetType(new(v2tls.Config)),
 		},
 	})
 	assert.Error(err).IsNil()
@@ -126,9 +117,9 @@ func Test_Connect_ws_guess(t *testing.T) {
 			NetworkSettings: []*internet.NetworkSettings{
 				{
 					Network: v2net.Network_WebSocket,
-					Settings: MarshalSettings(&Config{
+					Settings: loader.NewTypedSettings(&Config{
 						Path: "",
-					}, assert),
+					}),
 				},
 			},
 		},
@@ -157,12 +148,12 @@ func Test_Connect_wss_guess(t *testing.T) {
 			NetworkSettings: []*internet.NetworkSettings{
 				{
 					Network: v2net.Network_WebSocket,
-					Settings: MarshalSettings(&Config{
+					Settings: loader.NewTypedSettings(&Config{
 						Path: "",
-					}, assert),
+					}),
 				},
 			},
-			SecurityType: internet.SecurityType_TLS,
+			SecurityType: loader.GetType(new(v2tls.Config)),
 		},
 	})
 	assert.Error(err).IsNil()
@@ -189,12 +180,12 @@ func Test_Connect_wss_guess_fail(t *testing.T) {
 			NetworkSettings: []*internet.NetworkSettings{
 				{
 					Network: v2net.Network_WebSocket,
-					Settings: MarshalSettings(&Config{
+					Settings: loader.NewTypedSettings(&Config{
 						Path: "",
-					}, assert),
+					}),
 				},
 			},
-			SecurityType: internet.SecurityType_TLS,
+			SecurityType: loader.GetType(new(v2tls.Config)),
 		},
 	})
 	assert.Error(err).IsNotNil()
@@ -210,13 +201,15 @@ func Test_Connect_wss_guess_reuse(t *testing.T) {
 				NetworkSettings: []*internet.NetworkSettings{
 					{
 						Network: v2net.Network_WebSocket,
-						Settings: MarshalSettings(&Config{
-							Path:            "",
-							ConnectionReuse: true,
-						}, assert),
+						Settings: loader.NewTypedSettings(&Config{
+							Path: "",
+							ConnectionReuse: &ConnectionReuse{
+								Enable: true,
+							},
+						}),
 					},
 				},
-				SecurityType: internet.SecurityType_TLS,
+				SecurityType: loader.GetType(new(v2tls.Config)),
 			},
 		})
 		assert.Error(err).IsNil()
@@ -245,15 +238,15 @@ func Test_Connect_wss_guess_reuse(t *testing.T) {
 
 func Test_listenWSAndDial(t *testing.T) {
 	assert := assert.On(t)
-	listen, err := ListenWS(v2net.DomainAddress("localhost"), 13142, internet.ListenOptions{
+	listen, err := ListenWS(v2net.DomainAddress("localhost"), 13146, internet.ListenOptions{
 		Stream: &internet.StreamConfig{
 			Network: v2net.Network_WebSocket,
 			NetworkSettings: []*internet.NetworkSettings{
 				{
 					Network: v2net.Network_WebSocket,
-					Settings: MarshalSettings(&Config{
+					Settings: loader.NewTypedSettings(&Config{
 						Path: "ws",
-					}, assert),
+					}),
 				},
 			},
 		},
@@ -271,15 +264,15 @@ func Test_listenWSAndDial(t *testing.T) {
 		conn.Close()
 		listen.Close()
 	}()
-	conn, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13142), internet.DialerOptions{
+	conn, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13146), internet.DialerOptions{
 		Stream: &internet.StreamConfig{
 			Network: v2net.Network_WebSocket,
 			NetworkSettings: []*internet.NetworkSettings{
 				{
 					Network: v2net.Network_WebSocket,
-					Settings: MarshalSettings(&Config{
+					Settings: loader.NewTypedSettings(&Config{
 						Path: "ws",
-					}, assert),
+					}),
 				},
 			},
 		},
@@ -287,15 +280,15 @@ func Test_listenWSAndDial(t *testing.T) {
 	assert.Error(err).IsNil()
 	conn.Close()
 	<-time.After(time.Second * 5)
-	conn, err = Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13142), internet.DialerOptions{
+	conn, err = Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13146), internet.DialerOptions{
 		Stream: &internet.StreamConfig{
 			Network: v2net.Network_WebSocket,
 			NetworkSettings: []*internet.NetworkSettings{
 				{
 					Network: v2net.Network_WebSocket,
-					Settings: MarshalSettings(&Config{
+					Settings: loader.NewTypedSettings(&Config{
 						Path: "ws",
-					}, assert),
+					}),
 				},
 			},
 		},
@@ -303,15 +296,15 @@ func Test_listenWSAndDial(t *testing.T) {
 	assert.Error(err).IsNil()
 	conn.Close()
 	<-time.After(time.Second * 15)
-	conn, err = Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13142), internet.DialerOptions{
+	conn, err = Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13146), internet.DialerOptions{
 		Stream: &internet.StreamConfig{
 			Network: v2net.Network_WebSocket,
 			NetworkSettings: []*internet.NetworkSettings{
 				{
 					Network: v2net.Network_WebSocket,
-					Settings: MarshalSettings(&Config{
+					Settings: loader.NewTypedSettings(&Config{
 						Path: "ws",
-					}, assert),
+					}),
 				},
 			},
 		},
@@ -335,24 +328,21 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 			},
 		},
 	}
-	anyTlsSettings, err := ptypes.MarshalAny(tlsSettings)
-	assert.Error(err).IsNil()
 
 	listen, err := ListenWS(v2net.DomainAddress("localhost"), 13143, internet.ListenOptions{
 		Stream: &internet.StreamConfig{
-			SecurityType: internet.SecurityType_TLS,
-			SecuritySettings: []*internet.SecuritySettings{{
-				Type:     internet.SecurityType_TLS,
-				Settings: anyTlsSettings,
-			}},
-			Network: v2net.Network_WebSocket,
+			SecurityType:     loader.GetType(new(v2tls.Config)),
+			SecuritySettings: []*loader.TypedSettings{loader.NewTypedSettings(tlsSettings)},
+			Network:          v2net.Network_WebSocket,
 			NetworkSettings: []*internet.NetworkSettings{
 				{
 					Network: v2net.Network_WebSocket,
-					Settings: MarshalSettings(&Config{
-						Path:            "wss",
-						ConnectionReuse: true,
-					}, assert),
+					Settings: loader.NewTypedSettings(&Config{
+						Path: "wss",
+						ConnectionReuse: &ConnectionReuse{
+							Enable: true,
+						},
+					}),
 				},
 			},
 		},
@@ -366,19 +356,18 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 	}()
 	conn, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13143), internet.DialerOptions{
 		Stream: &internet.StreamConfig{
-			SecurityType: internet.SecurityType_TLS,
-			SecuritySettings: []*internet.SecuritySettings{{
-				Type:     internet.SecurityType_TLS,
-				Settings: anyTlsSettings,
-			}},
-			Network: v2net.Network_WebSocket,
+			SecurityType:     loader.GetType(new(v2tls.Config)),
+			SecuritySettings: []*loader.TypedSettings{loader.NewTypedSettings(tlsSettings)},
+			Network:          v2net.Network_WebSocket,
 			NetworkSettings: []*internet.NetworkSettings{
 				{
 					Network: v2net.Network_WebSocket,
-					Settings: MarshalSettings(&Config{
-						Path:            "wss",
-						ConnectionReuse: true,
-					}, assert),
+					Settings: loader.NewTypedSettings(&Config{
+						Path: "wss",
+						ConnectionReuse: &ConnectionReuse{
+							Enable: true,
+						},
+					}),
 				},
 			},
 		},

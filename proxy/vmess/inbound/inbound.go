@@ -268,7 +268,7 @@ func (this *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.
 		packetDispatcher: space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
 		clients:          allowedClients,
 		detours:          config.Detour,
-		usersByEmail:     NewUserByEmail(config.User, config.Default),
+		usersByEmail:     NewUserByEmail(config.User, config.GetDefaultValue()),
 		meta:             meta,
 	}
 

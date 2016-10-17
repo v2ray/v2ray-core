@@ -45,7 +45,7 @@ func MustRegisterOutboundHandlerCreator(name string, creator OutboundHandlerFact
 func CreateInboundHandler(name string, space app.Space, config interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
 	creator, found := inboundFactories[name]
 	if !found {
-		return nil, common.ErrObjectNotFound
+		return nil, errors.New("Proxy|Registry: Unknown inbound name: " + name)
 	}
 	if meta.StreamSettings == nil {
 		meta.StreamSettings = &internet.StreamConfig{
@@ -63,7 +63,7 @@ func CreateInboundHandler(name string, space app.Space, config interface{}, meta
 func CreateOutboundHandler(name string, space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 	creator, found := outboundFactories[name]
 	if !found {
-		return nil, common.ErrObjectNotFound
+		return nil, errors.New("Proxy|Registry: Unknown outbound name: " + name)
 	}
 	if meta.StreamSettings == nil {
 		meta.StreamSettings = &internet.StreamConfig{

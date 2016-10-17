@@ -11,7 +11,7 @@ import (
 
 type ConfigLoader func(input io.Reader) (*Config, error)
 
-var configLoaderCache map[ConfigFormat]ConfigLoader
+var configLoaderCache = make(map[ConfigFormat]ConfigLoader)
 
 func RegisterConfigLoader(format ConfigFormat, loader ConfigLoader) error {
 	configLoaderCache[format] = loader

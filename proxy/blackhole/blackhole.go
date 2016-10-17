@@ -3,10 +3,8 @@ package blackhole
 import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/common/alloc"
-	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
-	"v2ray.com/core/proxy/registry"
 	"v2ray.com/core/transport/ray"
 )
 
@@ -48,8 +46,4 @@ func (this *Factory) StreamCapability() v2net.NetworkList {
 
 func (this *Factory) Create(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 	return NewBlackHole(space, config.(*Config), meta)
-}
-
-func init() {
-	registry.MustRegisterOutboundHandlerCreator(loader.GetType(new(Config)), new(Factory))
 }

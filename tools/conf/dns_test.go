@@ -1,26 +1,26 @@
-// +build json
-
-package dns_test
+package conf_test
 
 import (
 	"encoding/json"
 	"testing"
 
-	. "v2ray.com/core/app/dns"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/testing/assert"
+	. "v2ray.com/core/tools/conf"
 )
 
-func TestConfigParsing(t *testing.T) {
+func TestDnsConfigParsing(t *testing.T) {
 	assert := assert.On(t)
 
 	rawJson := `{
     "servers": ["8.8.8.8"]
   }`
 
-	config := new(Config)
-	err := json.Unmarshal([]byte(rawJson), config)
+	jsonConfig := new(DnsConfig)
+	err := json.Unmarshal([]byte(rawJson), jsonConfig)
 	assert.Error(err).IsNil()
+
+	config := jsonConfig.Build()
 	assert.Int(len(config.NameServers)).Equals(1)
 	dest := config.NameServers[0].AsDestination()
 	assert.Destination(dest).IsUDP()

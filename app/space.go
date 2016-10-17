@@ -32,7 +32,7 @@ type ApplicationFactory interface {
 }
 
 var (
-	applicationFactoryCache map[string]ApplicationFactory
+	applicationFactoryCache = make(map[string]ApplicationFactory)
 )
 
 func RegisterApplicationFactory(name string, factory ApplicationFactory) error {

@@ -61,21 +61,22 @@ func main() {
 		})
 	}
 
-	file, err := os.OpenFile("chinaip_init.go", os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+	file, err := os.OpenFile("geoip_data.go", os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
 	if err != nil {
-		log.Fatalf("Failed to generate chinaip_init.go: %v", err)
+		log.Fatalf("Failed to generate geoip_data.go: %v", err)
 	}
 	defer file.Close()
 
-	fmt.Fprintln(file, "package router")
+	fmt.Fprintln(file, "package geoip")
+	fmt.Fprintln(file, "import \"v2ray.com/core/app/router\"")
 
-	fmt.Fprintln(file, "var chinaIPs []*IP")
+	fmt.Fprintln(file, "var ChinaIPs []*router.IP")
 
 	fmt.Fprintln(file, "func init() {")
 
-	fmt.Fprintln(file, "chinaIPs = []*IP {")
+	fmt.Fprintln(file, "ChinaIPs = []*router.IP {")
 	for _, ip := range ips {
-		fmt.Fprintln(file, "&IP{", formatArray(ip.IP[12:16]), ",", ip.Bits, "},")
+		fmt.Fprintln(file, "&router.IP{", formatArray(ip.IP[12:16]), ",", ip.Bits, "},")
 	}
 	fmt.Fprintln(file, "}")
 	fmt.Fprintln(file, "}")

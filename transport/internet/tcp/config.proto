@@ -5,6 +5,9 @@ option go_package = "tcp";
 option java_package = "com.v2ray.core.transport.internet.tcp";
 option java_outer_classname = "ConfigProto";
 
+message ConnectionReuse {
+  bool enable = 1;
+}
 message Config {
-  bool connection_reuse = 1;
+  ConnectionReuse connection_reuse = 1;
 }

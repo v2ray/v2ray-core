@@ -1,4 +1,8 @@
-package router
+package conf
+
+import (
+	"v2ray.com/core/app/router"
+)
 
 const (
 	anySubDomain = "^(.*\\.)?"
@@ -16,7 +20,7 @@ const (
 )
 
 var (
-	chinaSitesDomains []*Domain
+	chinaSitesDomains []*router.Domain
 )
 
 func init() {
@@ -480,10 +484,10 @@ func init() {
 		anySubDomain + "zuchecdn" + dotCom,
 	}
 
-	chinaSitesDomains = make([]*Domain, len(regexpDomains))
+	chinaSitesDomains = make([]*router.Domain, len(regexpDomains))
 	for idx, pattern := range regexpDomains {
-		chinaSitesDomains[idx] = &Domain{
-			Type:  Domain_Regex,
+		chinaSitesDomains[idx] = &router.Domain{
+			Type:  router.Domain_Regex,
 			Value: pattern,
 		}
 	}

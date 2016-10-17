@@ -29,7 +29,7 @@ func NewInboundDetourHandlerAlways(space app.Space, config *InboundConnectionCon
 			return nil, err
 		}
 		ich, err := proxyregistry.CreateInboundHandler(config.Settings.Type, space, ichConfig, &proxy.InboundHandlerMeta{
-			Address:                config.ListenOn.AsAddress(),
+			Address:                config.GetListenOnValue(),
 			Port:                   i,
 			Tag:                    config.Tag,
 			StreamSettings:         config.StreamSettings,
