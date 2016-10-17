@@ -57,7 +57,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	if !space.HasApp(dns.APP_ID) {
 		dnsServer := dns.NewCacheServer(space, &dns.Config{
 			NameServers: []*v2net.Endpoint{
-				&v2net.Endpoint{
+				{
 					Address: &v2net.IPOrDomain{
 						Address: &v2net.IPOrDomain_Domain{
 							Domain: "localhost",
