@@ -8,13 +8,21 @@ import "v2ray.com/core/common/net/network.proto";
 import "v2ray.com/core/common/loader/type.proto";
 
 message NetworkSettings {
+  // Type of network that this settings supports.
   v2ray.core.common.net.Network network = 1;
+
+  // Specific settings.
   v2ray.core.common.loader.TypedSettings settings = 2;
 }
 
 message StreamConfig {
+  // Effective network.
   v2ray.core.common.net.Network network = 1;
+
   repeated NetworkSettings network_settings = 2;
+
+  // Type of security. Must be a message name of the settings proto.
   string security_type = 3;
+  
   repeated v2ray.core.common.loader.TypedSettings security_settings = 4;
 }
