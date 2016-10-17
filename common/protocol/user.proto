@@ -10,5 +10,7 @@ import "v2ray.com/core/common/loader/type.proto";
 message User {
   uint32 level = 1;
   string email = 2;
+
+  // Protocol specific account information.
   v2ray.core.common.loader.TypedSettings account = 3;
 }

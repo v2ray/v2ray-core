@@ -7,7 +7,10 @@ option java_outer_classname = "AddressProto";
 
 message IPOrDomain {
   oneof address {
+    // IP address. Must by either 4 or 16 bytes.
     bytes ip = 1;
+
+    // Domain address.
     string domain = 2;
   }
 }

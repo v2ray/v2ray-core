@@ -7,10 +7,17 @@ option java_outer_classname = "NetworkProto";
 
 enum Network {
   Unknown = 0;
+
+  // Native TCP provided by system.
   RawTCP = 1;
+
+  // V2Ray specific TCP.
   TCP = 2;
+
   UDP = 3;
+
   KCP = 4;
+  
   WebSocket = 5;
 }
 
