@@ -100,6 +100,14 @@ func getSuffix(os GoOS, arch GoArch) string {
 		case Arm:
 			suffix = "-freebsd-arm"
 		}
+	case OpenBSD:
+		switch arch {
+		case X86:
+			suffix = "-openbsd-32"
+		case Amd64:
+			suffix = "-openbsd-64"
+		}
 	}
+
 	return suffix
 }
