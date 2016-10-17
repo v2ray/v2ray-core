@@ -12,16 +12,16 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"v2ray.com/core/app/router"
+	"v2ray.com/core/tools/geoip"
+
+	"github.com/golang/protobuf/proto"
 )
 
 const (
 	apnicFile = "http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest"
 )
-
-type IPEntry struct {
-	IP   []byte
-	Bits uint32
-}
 
 func main() {
 	resp, err := http.Get(apnicFile)
@@ -34,7 +34,9 @@ func main() {
 	defer resp.Body.Close()
 	scanner := bufio.NewScanner(resp.Body)
 
-	ips := make([]IPEntry, 0, 8192)
+	ips := &geoip.CountryIPRange{
+		Ips: make([]*router.IP, 0, 8192),
+	}
 	for scanner.Scan() {
 		line := scanner.Text()
 		line = strings.TrimSpace(line)
@@ -55,10 +57,15 @@ func main() {
 		if len(ipBytes) == 0 {
 			panic("Invalid IP " + ip)
 		}
-		ips = append(ips, IPEntry{
-			IP:   []byte(ipBytes),
-			Bits: mask,
+		ips.Ips = append(ips.Ips, &router.IP{
+			Ip:             []byte(ipBytes)[12:16],
+			UnmatchingBits: mask,
 		})
+	}
+
+	ipbytes, err := proto.Marshal(ips)
+	if err != nil {
+		log.Fatalf("Failed to marshal country IPs: %v", err)
 	}
 
 	file, err := os.OpenFile("geoip_data.go", os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
@@ -68,18 +75,8 @@ func main() {
 	defer file.Close()
 
 	fmt.Fprintln(file, "package geoip")
-	fmt.Fprintln(file, "import \"v2ray.com/core/app/router\"")
 
-	fmt.Fprintln(file, "var ChinaIPs []*router.IP")
-
-	fmt.Fprintln(file, "func init() {")
-
-	fmt.Fprintln(file, "ChinaIPs = []*router.IP {")
-	for _, ip := range ips {
-		fmt.Fprintln(file, "&router.IP{", formatArray(ip.IP[12:16]), ",", ip.Bits, "},")
-	}
-	fmt.Fprintln(file, "}")
-	fmt.Fprintln(file, "}")
+	fmt.Fprintln(file, "var ChinaIPs = "+formatArray(ipbytes))
 }
 
 func formatArray(a []byte) string {

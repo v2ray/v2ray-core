@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package v2ray.core.tools.geoip;
+option go_package = "geoip";
+
+import "v2ray.com/core/app/router/config.proto";
+
+message CountryIPRange {
+  repeated v2ray.core.app.router.IP ips = 1;
+}
