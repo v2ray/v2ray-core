@@ -154,9 +154,12 @@ func (this *TLSConfig) Build() (*loader.TypedSettings, error) {
 }
 
 type StreamConfig struct {
-	Network     *Network   `json:"network"`
-	Security    string     `json:"security"`
-	TLSSettings *TLSConfig `json:"tlsSettings"`
+	Network     *Network         `json:"network"`
+	Security    string           `json:"security"`
+	TLSSettings *TLSConfig       `json:"tlsSettings"`
+	TCPSettings *TCPConfig       `json:"tcpSettings"`
+	KCPSettings *KCPConfig       `json:"kcpSettings"`
+	WSSettings  *WebSocketConfig `json:"wsSettings"`
 }
 
 func (this *StreamConfig) Build() (*internet.StreamConfig, error) {
@@ -176,6 +179,36 @@ func (this *StreamConfig) Build() (*internet.StreamConfig, error) {
 			return nil, errors.New("Failed to build TLS config: " + err.Error())
 		}
 		config.SecuritySettings = append(config.SecuritySettings, ts)
+	}
+	if this.TCPSettings != nil {
+		ts, err := this.TCPSettings.Build()
+		if err != nil {
+			return nil, errors.New("Failed to build TCP config: " + err.Error())
+		}
+		config.NetworkSettings = append(config.NetworkSettings, &internet.NetworkSettings{
+			Network:  v2net.Network_TCP,
+			Settings: ts,
+		})
+	}
+	if this.KCPSettings != nil {
+		ts, err := this.KCPSettings.Build()
+		if err != nil {
+			return nil, errors.New("Failed to build KCP config: " + err.Error())
+		}
+		config.NetworkSettings = append(config.NetworkSettings, &internet.NetworkSettings{
+			Network:  v2net.Network_KCP,
+			Settings: ts,
+		})
+	}
+	if this.WSSettings != nil {
+		ts, err := this.WSSettings.Build()
+		if err != nil {
+			return nil, errors.New("Failed to build WebSocket config: " + err.Error())
+		}
+		config.NetworkSettings = append(config.NetworkSettings, &internet.NetworkSettings{
+			Network:  v2net.Network_WebSocket,
+			Settings: ts,
+		})
 	}
 	return config, nil
 }
