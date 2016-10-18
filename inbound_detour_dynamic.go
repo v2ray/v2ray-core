@@ -109,7 +109,7 @@ func (this *InboundDetourHandlerDynamic) refresh() error {
 			port := this.pickUnusedPort()
 			ichConfig, _ := config.GetTypedSettings()
 			ich, err := proxyregistry.CreateInboundHandler(config.Settings.Type, this.space, ichConfig, &proxy.InboundHandlerMeta{
-				Address: config.ListenOn.AsAddress(), Port: port, Tag: config.Tag, StreamSettings: config.StreamSettings})
+				Address: config.GetListenOnValue(), Port: port, Tag: config.Tag, StreamSettings: config.StreamSettings})
 			if err != nil {
 				delete(this.portsInUse, port)
 				return err
