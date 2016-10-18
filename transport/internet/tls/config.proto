@@ -6,11 +6,17 @@ option java_package = "com.v2ray.core.transport.internet.tls";
 option java_outer_classname = "ConfigProto";
 
 message Certificate {
+  // TLS certificate in x509 format.
   bytes Certificate = 1;
+
+  // TLS key in x509 format.
   bytes Key = 2;
 }
 
 message Config {
+  // Whether or not to allow self-signed certificates.
   bool allow_insecure = 1;
+
+  // List of certificates to be served on server.
   repeated Certificate certificate = 2;
 }

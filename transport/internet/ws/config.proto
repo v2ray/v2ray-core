@@ -10,6 +10,9 @@ message ConnectionReuse {
 }
 
 message Config {
+  // Whether or not to reuse WebSocket connections.
   ConnectionReuse connection_reuse = 1;
+
+  // URL path to the WebSocket service. Empty value means root(/).
   string path = 2;
 }
