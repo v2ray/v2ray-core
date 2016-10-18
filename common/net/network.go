@@ -2,8 +2,6 @@ package net
 
 import (
 	"strings"
-
-	"v2ray.com/core/common/collect"
 )
 
 func ParseNetwork(nwStr string) Network {
@@ -54,17 +52,6 @@ func (this Network) UrlPrefix() string {
 	default:
 		return "unknown"
 	}
-}
-
-// NewNetworkList construsts a NetWorklist from the given StringListeralList.
-func NewNetworkList(networks collect.StringList) *NetworkList {
-	list := &NetworkList{
-		Network: make([]Network, networks.Len()),
-	}
-	for idx, network := range networks {
-		list.Network[idx] = ParseNetwork(network)
-	}
-	return list
 }
 
 // HashNetwork returns true if the given network is in this NetworkList.
