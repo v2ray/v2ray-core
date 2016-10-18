@@ -104,10 +104,12 @@ func parseIP(s string) *router.CIDR {
 func parseFieldRule(msg json.RawMessage) (*router.RoutingRule, error) {
 	type RawFieldRule struct {
 		RouterRule
-		Domain  *StringList  `json:"domain"`
-		IP      *StringList  `json:"ip"`
-		Port    *PortRange   `json:"port"`
-		Network *NetworkList `json:"network"`
+		Domain   *StringList  `json:"domain"`
+		IP       *StringList  `json:"ip"`
+		Port     *PortRange   `json:"port"`
+		Network  *NetworkList `json:"network"`
+		SourceIP *StringList  `json:"source"`
+		User     *StringList  `json:"user"`
 	}
 	rawFieldRule := new(RawFieldRule)
 	err := json.Unmarshal(msg, rawFieldRule)
@@ -147,6 +149,21 @@ func parseFieldRule(msg json.RawMessage) (*router.RoutingRule, error) {
 
 	if rawFieldRule.Network != nil {
 		rule.NetworkList = rawFieldRule.Network.Build()
+	}
+
+	if rawFieldRule.SourceIP != nil {
+		for _, ip := range *rawFieldRule.IP {
+			ipRule := parseIP(ip)
+			if ipRule != nil {
+				rule.SourceCidr = append(rule.SourceCidr, ipRule)
+			}
+		}
+	}
+
+	if rawFieldRule.User != nil {
+		for _, s := range *rawFieldRule.User {
+			rule.UserEmail = append(rule.UserEmail, s)
+		}
 	}
 
 	return rule, nil
