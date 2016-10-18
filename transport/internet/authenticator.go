@@ -3,7 +3,6 @@ package internet
 import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/alloc"
-	"v2ray.com/core/common/loader"
 )
 
 type Authenticator interface {
@@ -18,7 +17,6 @@ type AuthenticatorFactory interface {
 
 var (
 	authenticatorCache = make(map[string]AuthenticatorFactory)
-	configCache        = loader.ConfigCreatorCache{}
 )
 
 func RegisterAuthenticator(name string, factory AuthenticatorFactory) error {

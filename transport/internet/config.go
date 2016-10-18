@@ -8,15 +8,17 @@ import (
 	v2net "v2ray.com/core/common/net"
 )
 
+type ConfigCreator func() interface{}
+
 var (
-	globalNetworkConfigCreatorCache = make(map[v2net.Network]loader.ConfigCreator)
+	globalNetworkConfigCreatorCache = make(map[v2net.Network]ConfigCreator)
 
 	globalNetworkSettings []*NetworkSettings
 
 	ErrUnconfiguredNetwork = errors.New("Network config creator not set.")
 )
 
-func RegisterNetworkConfigCreator(network v2net.Network, creator loader.ConfigCreator) error {
+func RegisterNetworkConfigCreator(network v2net.Network, creator ConfigCreator) error {
 	// TODO: check duplicate
 	globalNetworkConfigCreatorCache[network] = creator
 	return nil
