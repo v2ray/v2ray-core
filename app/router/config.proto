@@ -40,6 +40,8 @@ message RoutingRule {
   repeated CIDR cidr = 3;
   v2ray.core.common.net.PortRange port_range = 4;
   v2ray.core.common.net.NetworkList network_list = 5;
+  repeated CIDR source_cidr = 6;
+  repeated string user_email = 7;
 }
 
 message Config {

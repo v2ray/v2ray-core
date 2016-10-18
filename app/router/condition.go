@@ -6,10 +6,11 @@ import (
 	"strings"
 
 	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/proxy"
 )
 
 type Condition interface {
-	Apply(dest v2net.Destination) bool
+	Apply(session *proxy.SessionInfo) bool
 }
 
 type ConditionChan []Condition
@@ -24,9 +25,9 @@ func (this *ConditionChan) Add(cond Condition) *ConditionChan {
 	return this
 }
 
-func (this *ConditionChan) Apply(dest v2net.Destination) bool {
+func (this *ConditionChan) Apply(session *proxy.SessionInfo) bool {
 	for _, cond := range *this {
-		if !cond.Apply(dest) {
+		if !cond.Apply(session) {
 			return false
 		}
 	}
@@ -49,9 +50,9 @@ func (this *AnyCondition) Add(cond Condition) *AnyCondition {
 	return this
 }
 
-func (this *AnyCondition) Apply(dest v2net.Destination) bool {
+func (this *AnyCondition) Apply(session *proxy.SessionInfo) bool {
 	for _, cond := range *this {
-		if cond.Apply(dest) {
+		if cond.Apply(session) {
 			return true
 		}
 	}
@@ -72,7 +73,8 @@ func NewPlainDomainMatcher(pattern string) *PlainDomainMatcher {
 	}
 }
 
-func (this *PlainDomainMatcher) Apply(dest v2net.Destination) bool {
+func (this *PlainDomainMatcher) Apply(session *proxy.SessionInfo) bool {
+	dest := session.Destination
 	if !dest.Address.Family().IsDomain() {
 		return false
 	}
@@ -94,7 +96,8 @@ func NewRegexpDomainMatcher(pattern string) (*RegexpDomainMatcher, error) {
 	}, nil
 }
 
-func (this *RegexpDomainMatcher) Apply(dest v2net.Destination) bool {
+func (this *RegexpDomainMatcher) Apply(session *proxy.SessionInfo) bool {
+	dest := session.Destination
 	if !dest.Address.Family().IsDomain() {
 		return false
 	}
@@ -103,20 +106,26 @@ func (this *RegexpDomainMatcher) Apply(dest v2net.Destination) bool {
 }
 
 type CIDRMatcher struct {
-	cidr *net.IPNet
+	cidr     *net.IPNet
+	onSource bool
 }
 
-func NewCIDRMatcher(ip []byte, mask uint32) (*CIDRMatcher, error) {
+func NewCIDRMatcher(ip []byte, mask uint32, onSource bool) (*CIDRMatcher, error) {
 	cidr := &net.IPNet{
 		IP:   net.IP(ip),
 		Mask: net.CIDRMask(int(mask), len(ip)),
 	}
 	return &CIDRMatcher{
-		cidr: cidr,
+		cidr:     cidr,
+		onSource: onSource,
 	}, nil
 }
 
-func (this *CIDRMatcher) Apply(dest v2net.Destination) bool {
+func (this *CIDRMatcher) Apply(session *proxy.SessionInfo) bool {
+	dest := session.Destination
+	if this.onSource {
+		dest = session.Source
+	}
 	if !dest.Address.Family().Either(v2net.AddressFamilyIPv4, v2net.AddressFamilyIPv6) {
 		return false
 	}
@@ -124,16 +133,22 @@ func (this *CIDRMatcher) Apply(dest v2net.Destination) bool {
 }
 
 type IPv4Matcher struct {
-	ipv4net *v2net.IPNet
+	ipv4net  *v2net.IPNet
+	onSource bool
 }
 
-func NewIPv4Matcher(ipnet *v2net.IPNet) *IPv4Matcher {
+func NewIPv4Matcher(ipnet *v2net.IPNet, onSource bool) *IPv4Matcher {
 	return &IPv4Matcher{
-		ipv4net: ipnet,
+		ipv4net:  ipnet,
+		onSource: onSource,
 	}
 }
 
-func (this *IPv4Matcher) Apply(dest v2net.Destination) bool {
+func (this *IPv4Matcher) Apply(session *proxy.SessionInfo) bool {
+	dest := session.Destination
+	if this.onSource {
+		dest = session.Source
+	}
 	if !dest.Address.Family().Either(v2net.AddressFamilyIPv4) {
 		return false
 	}
@@ -150,8 +165,8 @@ func NewPortMatcher(portRange v2net.PortRange) *PortMatcher {
 	}
 }
 
-func (this *PortMatcher) Apply(dest v2net.Destination) bool {
-	return this.port.Contains(dest.Port)
+func (this *PortMatcher) Apply(session *proxy.SessionInfo) bool {
+	return this.port.Contains(session.Destination.Port)
 }
 
 type NetworkMatcher struct {
@@ -164,6 +179,28 @@ func NewNetworkMatcher(network *v2net.NetworkList) *NetworkMatcher {
 	}
 }
 
-func (this *NetworkMatcher) Apply(dest v2net.Destination) bool {
-	return this.network.HasNetwork(dest.Network)
+func (this *NetworkMatcher) Apply(session *proxy.SessionInfo) bool {
+	return this.network.HasNetwork(session.Destination.Network)
+}
+
+type UserMatcher struct {
+	user []string
+}
+
+func NewUserMatcher(users []string) *UserMatcher {
+	return &UserMatcher{
+		user: users,
+	}
+}
+
+func (this *UserMatcher) Apply(session *proxy.SessionInfo) bool {
+	if session.User == nil {
+		return false
+	}
+	for _, u := range this.user {
+		if u == session.User.Email {
+			return true
+		}
+	}
+	return false
 }

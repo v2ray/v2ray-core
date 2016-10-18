@@ -5,6 +5,7 @@ import (
 	"net"
 
 	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/proxy"
 )
 
 type Rule struct {
@@ -12,8 +13,8 @@ type Rule struct {
 	Condition Condition
 }
 
-func (this *Rule) Apply(dest v2net.Destination) bool {
-	return this.Condition.Apply(dest)
+func (this *Rule) Apply(session *proxy.SessionInfo) bool {
+	return this.Condition.Apply(session)
 }
 
 func (this *RoutingRule) BuildCondition() (Condition, error) {
@@ -46,7 +47,7 @@ func (this *RoutingRule) BuildCondition() (Condition, error) {
 				ipv4Net.AddIP(ip.Ip, byte(ip.Prefix))
 			case net.IPv6len:
 				hasIpv6 = true
-				matcher, err := NewCIDRMatcher(ip.Ip, ip.Prefix)
+				matcher, err := NewCIDRMatcher(ip.Ip, ip.Prefix, false)
 				if err != nil {
 					return nil, err
 				}
@@ -58,11 +59,11 @@ func (this *RoutingRule) BuildCondition() (Condition, error) {
 
 		if !ipv4Net.IsEmpty() && hasIpv6 {
 			cond := NewAnyCondition()
-			cond.Add(NewIPv4Matcher(ipv4Net))
+			cond.Add(NewIPv4Matcher(ipv4Net, false))
 			cond.Add(ipv6Cond)
 			conds.Add(cond)
 		} else if !ipv4Net.IsEmpty() {
-			conds.Add(NewIPv4Matcher(ipv4Net))
+			conds.Add(NewIPv4Matcher(ipv4Net, false))
 		} else if hasIpv6 {
 			conds.Add(ipv6Cond)
 		}
@@ -74,6 +75,43 @@ func (this *RoutingRule) BuildCondition() (Condition, error) {
 
 	if this.NetworkList != nil {
 		conds.Add(NewNetworkMatcher(this.NetworkList))
+	}
+
+	if len(this.SourceCidr) > 0 {
+		ipv4Net := v2net.NewIPNet()
+		ipv6Cond := NewAnyCondition()
+		hasIpv6 := false
+
+		for _, ip := range this.SourceCidr {
+			switch len(ip.Ip) {
+			case net.IPv4len:
+				ipv4Net.AddIP(ip.Ip, byte(ip.Prefix))
+			case net.IPv6len:
+				hasIpv6 = true
+				matcher, err := NewCIDRMatcher(ip.Ip, ip.Prefix, true)
+				if err != nil {
+					return nil, err
+				}
+				ipv6Cond.Add(matcher)
+			default:
+				return nil, errors.New("Router: Invalid IP length.")
+			}
+		}
+
+		if !ipv4Net.IsEmpty() && hasIpv6 {
+			cond := NewAnyCondition()
+			cond.Add(NewIPv4Matcher(ipv4Net, true))
+			cond.Add(ipv6Cond)
+			conds.Add(cond)
+		} else if !ipv4Net.IsEmpty() {
+			conds.Add(NewIPv4Matcher(ipv4Net, true))
+		} else if hasIpv6 {
+			conds.Add(ipv6Cond)
+		}
+	}
+
+	if len(this.UserEmail) > 0 {
+		conds.Add(NewUserMatcher(this.UserEmail))
 	}
 
 	if conds.Len() == 0 {

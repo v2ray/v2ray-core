@@ -49,7 +49,7 @@ func (this *DefaultDispatcher) DispatchToOutbound(meta *proxy.InboundHandlerMeta
 	destination := session.Destination
 
 	if this.router != nil {
-		if tag, err := this.router.TakeDetour(destination); err == nil {
+		if tag, err := this.router.TakeDetour(session); err == nil {
 			if handler := this.ohm.GetHandler(tag); handler != nil {
 				log.Info("DefaultDispatcher: Taking detour [", tag, "] for [", destination, "].")
 				dispatcher = handler
