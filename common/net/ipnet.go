@@ -13,12 +13,8 @@ type IPNet struct {
 }
 
 func NewIPNet() *IPNet {
-	return NewIPNetInitialValue(make(map[uint32]byte, 1024))
-}
-
-func NewIPNetInitialValue(data map[uint32]byte) *IPNet {
 	return &IPNet{
-		cache: data,
+		cache: make(map[uint32]byte, 1024),
 	}
 }
 
@@ -45,11 +41,15 @@ func (this *IPNet) Add(ipNet *net.IPNet) {
 		// For now, we don't support IPv6
 		return
 	}
-	value := ipToUint32(ipv4)
 	mask := ipMaskToByte(ipNet.Mask)
-	existing, found := this.cache[value]
+	this.AddIP(ipv4, mask)
+}
+
+func (this *IPNet) AddIP(ip []byte, mask byte) {
+	k := ipToUint32(ip)
+	existing, found := this.cache[k]
 	if !found || existing > mask {
-		this.cache[value] = mask
+		this.cache[k] = mask
 	}
 }
 
@@ -80,12 +80,8 @@ func (this *IPNet) Contains(ip net.IP) bool {
 	return false
 }
 
-func (this *IPNet) Serialize() []uint32 {
-	content := make([]uint32, 0, 2*len(this.cache))
-	for key, value := range this.cache {
-		content = append(content, uint32(key), uint32(value))
-	}
-	return content
+func (this *IPNet) IsEmpty() bool {
+	return len(this.cache) == 0
 }
 
 func init() {

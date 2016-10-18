@@ -35,7 +35,7 @@ func main() {
 	scanner := bufio.NewScanner(resp.Body)
 
 	ips := &geoip.CountryIPRange{
-		Ips: make([]*router.IP, 0, 8192),
+		Ips: make([]*router.CIDR, 0, 8192),
 	}
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -57,9 +57,9 @@ func main() {
 		if len(ipBytes) == 0 {
 			panic("Invalid IP " + ip)
 		}
-		ips.Ips = append(ips.Ips, &router.IP{
-			Ip:             []byte(ipBytes)[12:16],
-			UnmatchingBits: mask,
+		ips.Ips = append(ips.Ips, &router.CIDR{
+			Ip:     []byte(ipBytes)[12:16],
+			Prefix: 32 - mask,
 		})
 	}
 

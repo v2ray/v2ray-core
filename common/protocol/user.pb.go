@@ -15,8 +15,9 @@ var _ = fmt.Errorf
 var _ = math.Inf
 
 type User struct {
-	Level   uint32                                  `protobuf:"varint,1,opt,name=level" json:"level,omitempty"`
-	Email   string                                  `protobuf:"bytes,2,opt,name=email" json:"email,omitempty"`
+	Level uint32 `protobuf:"varint,1,opt,name=level" json:"level,omitempty"`
+	Email string `protobuf:"bytes,2,opt,name=email" json:"email,omitempty"`
+	// Protocol specific account information.
 	Account *v2ray_core_common_loader.TypedSettings `protobuf:"bytes,3,opt,name=account" json:"account,omitempty"`
 }
 

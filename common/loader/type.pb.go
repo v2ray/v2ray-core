@@ -28,8 +28,11 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
+// Serialized proto message along with its type name.
 type TypedSettings struct {
-	Type     string `protobuf:"bytes,1,opt,name=type" json:"type,omitempty"`
+	// The name of the message type, retrieved from protobuf API.
+	Type string `protobuf:"bytes,1,opt,name=type" json:"type,omitempty"`
+	// Serialized proto message.
 	Settings []byte `protobuf:"bytes,2,opt,name=settings,proto3" json:"settings,omitempty"`
 }
 

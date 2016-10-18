@@ -6,5 +6,5 @@ option go_package = "geoip";
 import "v2ray.com/core/app/router/config.proto";
 
 message CountryIPRange {
-  repeated v2ray.core.app.router.IP ips = 1;
+  repeated v2ray.core.app.router.CIDR ips = 1;
 }

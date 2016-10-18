@@ -29,6 +29,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
+// Global transport settings. This affects all type of connections that go through V2Ray.
 type Config struct {
 	NetworkSettings []*v2ray_core_transport_internet.NetworkSettings `protobuf:"bytes,1,rep,name=network_settings,json=networkSettings" json:"network_settings,omitempty"`
 }

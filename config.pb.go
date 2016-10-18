@@ -39,6 +39,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
+// Configuration serialization format.
 type ConfigFormat int32
 
 const (
@@ -108,8 +109,10 @@ func (*AllocationStrategyRefresh) Descriptor() ([]byte, []int) { return fileDesc
 type AllocationStrategy struct {
 	Type AllocationStrategy_Type `protobuf:"varint,1,opt,name=type,enum=v2ray.core.AllocationStrategy_Type" json:"type,omitempty"`
 	// Number of handlers (ports) running in parallel.
+	// Default value is 3 if unset.
 	Concurrency *AllocationStrategyConcurrency `protobuf:"bytes,2,opt,name=concurrency" json:"concurrency,omitempty"`
 	// Number of minutes before a handler is regenerated.
+	// Default value is 5 if unset.
 	Refresh *AllocationStrategyRefresh `protobuf:"bytes,3,opt,name=refresh" json:"refresh,omitempty"`
 }
 
@@ -134,9 +137,13 @@ func (m *AllocationStrategy) GetRefresh() *AllocationStrategyRefresh {
 
 // Config for an inbound connection handler.
 type InboundConnectionConfig struct {
-	Settings               *v2ray_core_common_loader.TypedSettings     `protobuf:"bytes,1,opt,name=settings" json:"settings,omitempty"`
-	PortRange              *v2ray_core_common_net.PortRange            `protobuf:"bytes,2,opt,name=port_range,json=portRange" json:"port_range,omitempty"`
-	ListenOn               *v2ray_core_common_net1.IPOrDomain          `protobuf:"bytes,3,opt,name=listen_on,json=listenOn" json:"listen_on,omitempty"`
+	// Protocol specific settings. Must be one of the supported protocols.
+	Settings *v2ray_core_common_loader.TypedSettings `protobuf:"bytes,1,opt,name=settings" json:"settings,omitempty"`
+	// Range of port number to run on. Both inclusive.
+	PortRange *v2ray_core_common_net.PortRange `protobuf:"bytes,2,opt,name=port_range,json=portRange" json:"port_range,omitempty"`
+	// IP address to listen on. 0.0.0.0 if unset.
+	ListenOn *v2ray_core_common_net1.IPOrDomain `protobuf:"bytes,3,opt,name=listen_on,json=listenOn" json:"listen_on,omitempty"`
+	// Tag of this handler.
 	Tag                    string                                      `protobuf:"bytes,4,opt,name=tag" json:"tag,omitempty"`
 	AllocationStrategy     *AllocationStrategy                         `protobuf:"bytes,5,opt,name=allocation_strategy,json=allocationStrategy" json:"allocation_strategy,omitempty"`
 	StreamSettings         *v2ray_core_transport_internet.StreamConfig `protobuf:"bytes,6,opt,name=stream_settings,json=streamSettings" json:"stream_settings,omitempty"`
@@ -183,8 +190,10 @@ func (m *InboundConnectionConfig) GetStreamSettings() *v2ray_core_transport_inte
 	return nil
 }
 
+// Config for an outbound connection handler.
 type OutboundConnectionConfig struct {
-	Settings       *v2ray_core_common_loader.TypedSettings     `protobuf:"bytes,1,opt,name=settings" json:"settings,omitempty"`
+	Settings *v2ray_core_common_loader.TypedSettings `protobuf:"bytes,1,opt,name=settings" json:"settings,omitempty"`
+	// IP address to send data through. 0.0.0.0 if unset.
 	SendThrough    *v2ray_core_common_net1.IPOrDomain          `protobuf:"bytes,2,opt,name=send_through,json=sendThrough" json:"send_through,omitempty"`
 	StreamSettings *v2ray_core_transport_internet.StreamConfig `protobuf:"bytes,3,opt,name=stream_settings,json=streamSettings" json:"stream_settings,omitempty"`
 	Tag            string                                      `protobuf:"bytes,4,opt,name=tag" json:"tag,omitempty"`
@@ -217,9 +226,12 @@ func (m *OutboundConnectionConfig) GetStreamSettings() *v2ray_core_transport_int
 }
 
 type Config struct {
-	Inbound   []*InboundConnectionConfig                `protobuf:"bytes,1,rep,name=inbound" json:"inbound,omitempty"`
-	Outbound  []*OutboundConnectionConfig               `protobuf:"bytes,2,rep,name=outbound" json:"outbound,omitempty"`
-	Log       *v2ray_core_common_log.Config             `protobuf:"bytes,3,opt,name=log" json:"log,omitempty"`
+	// Inbound handler configurations. Must have at least one item.
+	Inbound []*InboundConnectionConfig `protobuf:"bytes,1,rep,name=inbound" json:"inbound,omitempty"`
+	// Outbound handler configurations. Must have at least one item. The first item is used as default for routing.
+	Outbound []*OutboundConnectionConfig   `protobuf:"bytes,2,rep,name=outbound" json:"outbound,omitempty"`
+	Log      *v2ray_core_common_log.Config `protobuf:"bytes,3,opt,name=log" json:"log,omitempty"`
+	// App configuration. Must be one in the app directory.
 	App       []*v2ray_core_common_loader.TypedSettings `protobuf:"bytes,4,rep,name=app" json:"app,omitempty"`
 	Transport *v2ray_core_transport.Config              `protobuf:"bytes,5,opt,name=transport" json:"transport,omitempty"`
 }

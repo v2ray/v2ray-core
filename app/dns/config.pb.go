@@ -31,8 +31,11 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Config struct {
-	NameServers []*v2ray_core_common_net2.Endpoint           `protobuf:"bytes,1,rep,name=NameServers" json:"NameServers,omitempty"`
-	Hosts       map[string]*v2ray_core_common_net.IPOrDomain `protobuf:"bytes,2,rep,name=Hosts" json:"Hosts,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// Nameservers used by this DNS. Only traditional UDP servers are support at the moment.
+	// A special value 'localhost' as a domain address can be set to use DNS on local system.
+	NameServers []*v2ray_core_common_net2.Endpoint `protobuf:"bytes,1,rep,name=NameServers" json:"NameServers,omitempty"`
+	// Static hosts. Domain to IP.
+	Hosts map[string]*v2ray_core_common_net.IPOrDomain `protobuf:"bytes,2,rep,name=Hosts" json:"Hosts,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 }
 
 func (m *Config) Reset()                    { *m = Config{} }

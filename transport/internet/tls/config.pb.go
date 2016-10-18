@@ -30,8 +30,10 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Certificate struct {
+	// TLS certificate in x509 format.
 	Certificate []byte `protobuf:"bytes,1,opt,name=Certificate,proto3" json:"Certificate,omitempty"`
-	Key         []byte `protobuf:"bytes,2,opt,name=Key,proto3" json:"Key,omitempty"`
+	// TLS key in x509 format.
+	Key []byte `protobuf:"bytes,2,opt,name=Key,proto3" json:"Key,omitempty"`
 }
 
 func (m *Certificate) Reset()                    { *m = Certificate{} }
@@ -40,8 +42,10 @@ func (*Certificate) ProtoMessage()               {}
 func (*Certificate) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
 type Config struct {
-	AllowInsecure bool           `protobuf:"varint,1,opt,name=allow_insecure,json=allowInsecure" json:"allow_insecure,omitempty"`
-	Certificate   []*Certificate `protobuf:"bytes,2,rep,name=certificate" json:"certificate,omitempty"`
+	// Whether or not to allow self-signed certificates.
+	AllowInsecure bool `protobuf:"varint,1,opt,name=allow_insecure,json=allowInsecure" json:"allow_insecure,omitempty"`
+	// List of certificates to be served on server.
+	Certificate []*Certificate `protobuf:"bytes,2,rep,name=certificate" json:"certificate,omitempty"`
 }
 
 func (m *Config) Reset()                    { *m = Config{} }

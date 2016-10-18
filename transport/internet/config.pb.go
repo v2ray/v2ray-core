@@ -2,6 +2,16 @@
 // source: v2ray.com/core/transport/internet/config.proto
 // DO NOT EDIT!
 
+/*
+Package internet is a generated protocol buffer package.
+
+It is generated from these files:
+	v2ray.com/core/transport/internet/config.proto
+
+It has these top-level messages:
+	NetworkSettings
+	StreamConfig
+*/
 package internet
 
 import proto "github.com/golang/protobuf/proto"
@@ -15,15 +25,23 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+
 type NetworkSettings struct {
-	Network  v2ray_core_common_net.Network           `protobuf:"varint,1,opt,name=network,enum=v2ray.core.common.net.Network" json:"network,omitempty"`
+	// Type of network that this settings supports.
+	Network v2ray_core_common_net.Network `protobuf:"varint,1,opt,name=network,enum=v2ray.core.common.net.Network" json:"network,omitempty"`
+	// Specific settings.
 	Settings *v2ray_core_common_loader.TypedSettings `protobuf:"bytes,2,opt,name=settings" json:"settings,omitempty"`
 }
 
 func (m *NetworkSettings) Reset()                    { *m = NetworkSettings{} }
 func (m *NetworkSettings) String() string            { return proto.CompactTextString(m) }
 func (*NetworkSettings) ProtoMessage()               {}
-func (*NetworkSettings) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
+func (*NetworkSettings) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
 func (m *NetworkSettings) GetSettings() *v2ray_core_common_loader.TypedSettings {
 	if m != nil {
@@ -33,8 +51,10 @@ func (m *NetworkSettings) GetSettings() *v2ray_core_common_loader.TypedSettings 
 }
 
 type StreamConfig struct {
-	Network          v2ray_core_common_net.Network             `protobuf:"varint,1,opt,name=network,enum=v2ray.core.common.net.Network" json:"network,omitempty"`
-	NetworkSettings  []*NetworkSettings                        `protobuf:"bytes,2,rep,name=network_settings,json=networkSettings" json:"network_settings,omitempty"`
+	// Effective network.
+	Network         v2ray_core_common_net.Network `protobuf:"varint,1,opt,name=network,enum=v2ray.core.common.net.Network" json:"network,omitempty"`
+	NetworkSettings []*NetworkSettings            `protobuf:"bytes,2,rep,name=network_settings,json=networkSettings" json:"network_settings,omitempty"`
+	// Type of security. Must be a message name of the settings proto.
 	SecurityType     string                                    `protobuf:"bytes,3,opt,name=security_type,json=securityType" json:"security_type,omitempty"`
 	SecuritySettings []*v2ray_core_common_loader.TypedSettings `protobuf:"bytes,4,rep,name=security_settings,json=securitySettings" json:"security_settings,omitempty"`
 }
@@ -42,7 +62,7 @@ type StreamConfig struct {
 func (m *StreamConfig) Reset()                    { *m = StreamConfig{} }
 func (m *StreamConfig) String() string            { return proto.CompactTextString(m) }
 func (*StreamConfig) ProtoMessage()               {}
-func (*StreamConfig) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{1} }
+func (*StreamConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
 func (m *StreamConfig) GetNetworkSettings() []*NetworkSettings {
 	if m != nil {
@@ -63,9 +83,9 @@ func init() {
 	proto.RegisterType((*StreamConfig)(nil), "v2ray.core.transport.internet.StreamConfig")
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/transport/internet/config.proto", fileDescriptor1) }
+func init() { proto.RegisterFile("v2ray.com/core/transport/internet/config.proto", fileDescriptor0) }
 
-var fileDescriptor1 = []byte{
+var fileDescriptor0 = []byte{
 	// 296 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xa4, 0x91, 0x4f, 0x4b, 0xc3, 0x40,
 	0x10, 0xc5, 0x49, 0x2b, 0x5a, 0xb7, 0xd5, 0xd6, 0x9c, 0x82, 0xa0, 0xc4, 0x7a, 0x68, 0x2e, 0xce,

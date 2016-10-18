@@ -39,8 +39,10 @@ func (*ConnectionReuse) ProtoMessage()               {}
 func (*ConnectionReuse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
 type Config struct {
+	// Whether or not to reuse WebSocket connections.
 	ConnectionReuse *ConnectionReuse `protobuf:"bytes,1,opt,name=connection_reuse,json=connectionReuse" json:"connection_reuse,omitempty"`
-	Path            string           `protobuf:"bytes,2,opt,name=path" json:"path,omitempty"`
+	// URL path to the WebSocket service. Empty value means root(/).
+	Path string `protobuf:"bytes,2,opt,name=path" json:"path,omitempty"`
 }
 
 func (m *Config) Reset()                    { *m = Config{} }

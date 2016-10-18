@@ -50,7 +50,7 @@ type RouterRule struct {
 	OutboundTag string `json:"outboundTag"`
 }
 
-func parseIP(s string) *router.IP {
+func parseIP(s string) *router.CIDR {
 	var addr, mask string
 	i := strings.Index(s, "/")
 	if i < 0 {
@@ -74,9 +74,9 @@ func parseIP(s string) *router.IP {
 			log.Warning("Router: invalid network mask: ", bits)
 			return nil
 		}
-		return &router.IP{
-			Ip:             []byte(ip.IP()),
-			UnmatchingBits: 32 - bits,
+		return &router.CIDR{
+			Ip:     []byte(ip.IP()),
+			Prefix: bits,
 		}
 	case v2net.AddressFamilyIPv6:
 		bits := uint32(128)
@@ -91,9 +91,9 @@ func parseIP(s string) *router.IP {
 			log.Warning("Router: invalid network mask: ", bits)
 			return nil
 		}
-		return &router.IP{
-			Ip:             []byte(ip.IP()),
-			UnmatchingBits: 128 - bits,
+		return &router.CIDR{
+			Ip:     []byte(ip.IP()),
+			Prefix: bits,
 		}
 	default:
 		log.Warning("Router: unsupported address: ", s)
@@ -136,7 +136,7 @@ func parseFieldRule(msg json.RawMessage) (*router.RoutingRule, error) {
 		for _, ip := range *rawFieldRule.IP {
 			ipRule := parseIP(ip)
 			if ipRule != nil {
-				rule.Ip = append(rule.Ip, ipRule)
+				rule.Cidr = append(rule.Cidr, ipRule)
 			}
 		}
 	}
@@ -200,8 +200,8 @@ func parseChinaIPRule(data []byte) (*router.RoutingRule, error) {
 		return nil, err
 	}
 	return &router.RoutingRule{
-		Tag: rawRule.OutboundTag,
-		Ip:  chinaIPs.Ips,
+		Tag:  rawRule.OutboundTag,
+		Cidr: chinaIPs.Ips,
 	}, nil
 }
 

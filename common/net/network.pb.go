@@ -16,8 +16,10 @@ var _ = math.Inf
 type Network int32
 
 const (
-	Network_Unknown   Network = 0
-	Network_RawTCP    Network = 1
+	Network_Unknown Network = 0
+	// Native TCP provided by system.
+	Network_RawTCP Network = 1
+	// V2Ray specific TCP.
 	Network_TCP       Network = 2
 	Network_UDP       Network = 3
 	Network_KCP       Network = 4

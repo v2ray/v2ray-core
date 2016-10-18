@@ -35,19 +35,18 @@ func (this *RoutingRule) BuildCondition() (Condition, error) {
 		conds.Add(anyCond)
 	}
 
-	if len(this.Ip) > 0 {
-		ipv4Net := make(map[uint32]byte)
+	if len(this.Cidr) > 0 {
+		ipv4Net := v2net.NewIPNet()
 		ipv6Cond := NewAnyCondition()
 		hasIpv6 := false
 
-		for _, ip := range this.Ip {
+		for _, ip := range this.Cidr {
 			switch len(ip.Ip) {
 			case net.IPv4len:
-				k := (uint32(ip.Ip[0]) << 24) + (uint32(ip.Ip[1]) << 16) + (uint32(ip.Ip[2]) << 8) + uint32(ip.Ip[3])
-				ipv4Net[k] = byte(32 - ip.UnmatchingBits)
+				ipv4Net.AddIP(ip.Ip, byte(ip.Prefix))
 			case net.IPv6len:
 				hasIpv6 = true
-				matcher, err := NewCIDRMatcher(ip.Ip, uint32(32)-ip.UnmatchingBits)
+				matcher, err := NewCIDRMatcher(ip.Ip, ip.Prefix)
 				if err != nil {
 					return nil, err
 				}
@@ -57,13 +56,13 @@ func (this *RoutingRule) BuildCondition() (Condition, error) {
 			}
 		}
 
-		if len(ipv4Net) > 0 && hasIpv6 {
+		if !ipv4Net.IsEmpty() && hasIpv6 {
 			cond := NewAnyCondition()
-			cond.Add(NewIPv4Matcher(v2net.NewIPNetInitialValue(ipv4Net)))
+			cond.Add(NewIPv4Matcher(ipv4Net))
 			cond.Add(ipv6Cond)
 			conds.Add(cond)
-		} else if len(ipv4Net) > 0 {
-			conds.Add(NewIPv4Matcher(v2net.NewIPNetInitialValue(ipv4Net)))
+		} else if !ipv4Net.IsEmpty() {
+			conds.Add(NewIPv4Matcher(ipv4Net))
 		} else if hasIpv6 {
 			conds.Add(ipv6Cond)
 		}

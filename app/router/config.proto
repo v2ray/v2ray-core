@@ -25,21 +25,19 @@ message Domain {
   string value = 2;
 }
 
-// IP for routing decision.
-message IP {
+// IP for routing decision, in CIDR form.
+message CIDR {
   // IP address, should be either 4 or 16 bytes.
   bytes ip = 1;
 
-  // Number of right-most bits in IP matching that is allowed.
-  // Single IP address like 127.0.0.1 should use unmatching_bits = 0.
-  // CIDR 10.0.0.0/8 should use unmatching_bits = 32-8 = 24.
-  uint32 unmatching_bits = 2;
+  // Number of leading ones in the network mask.
+  uint32 prefix = 2;
 }
 
 message RoutingRule {
   string tag = 1;
   repeated Domain domain = 2;
-  repeated IP ip = 3;
+  repeated CIDR cidr = 3;
   v2ray.core.common.net.PortRange port_range = 4;
   v2ray.core.common.net.NetworkList network_list = 5;
 }
