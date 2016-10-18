@@ -9,6 +9,10 @@ import "v2ray.com/core/common/net/address.proto";
 import "v2ray.com/core/common/net/destination.proto";
 
 message Config {
+  // Nameservers used by this DNS. Only traditional UDP servers are support at the moment.
+  // A special value 'localhost' as a domain address can be set to use DNS on local system.
   repeated v2ray.core.common.net.Endpoint NameServers = 1;
+
+  // Static hosts. Domain to IP.
   map<string, v2ray.core.common.net.IPOrDomain> Hosts = 2;
 }

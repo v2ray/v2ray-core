@@ -46,8 +46,13 @@ message RoutingRule {
 
 message Config {
   enum DomainStrategy {
+    // Use domain as is.
     AsIs = 0;
+
+    // Always resolve IP for domains.
     UseIp = 1;
+
+    // Resolve to IP if the domain doesn't match any rules.
     IpIfNonMatch = 2;
   }
   DomainStrategy domain_strategy = 1;
