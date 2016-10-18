@@ -60,24 +60,44 @@ func parseIP(s string) *router.IP {
 		mask = s[i+1:]
 	}
 	ip := v2net.ParseAddress(addr)
-	if !ip.Family().Either(v2net.AddressFamilyIPv4, v2net.AddressFamilyIPv6) {
-		return nil
-	}
-	bits := uint32(32)
-	if len(mask) > 0 {
-		bits64, err := strconv.ParseUint(mask, 10, 32)
-		if err != nil {
+	switch ip.Family() {
+	case v2net.AddressFamilyIPv4:
+		bits := uint32(32)
+		if len(mask) > 0 {
+			bits64, err := strconv.ParseUint(mask, 10, 32)
+			if err != nil {
+				return nil
+			}
+			bits = uint32(bits64)
+		}
+		if bits > 32 {
+			log.Warning("Router: invalid network mask: ", bits)
 			return nil
 		}
-		bits = uint32(bits64)
-	}
-	if bits > 32 {
-		log.Warning("Router: invalid network mask: ", bits)
+		return &router.IP{
+			Ip:             []byte(ip.IP()),
+			UnmatchingBits: 32 - bits,
+		}
+	case v2net.AddressFamilyIPv6:
+		bits := uint32(128)
+		if len(mask) > 0 {
+			bits64, err := strconv.ParseUint(mask, 10, 32)
+			if err != nil {
+				return nil
+			}
+			bits = uint32(bits64)
+		}
+		if bits > 128 {
+			log.Warning("Router: invalid network mask: ", bits)
+			return nil
+		}
+		return &router.IP{
+			Ip:             []byte(ip.IP()),
+			UnmatchingBits: 128 - bits,
+		}
+	default:
+		log.Warning("Router: unsupported address: ", s)
 		return nil
-	}
-	return &router.IP{
-		Ip:             []byte(ip.IP()),
-		UnmatchingBits: 32 - bits,
 	}
 }
 
