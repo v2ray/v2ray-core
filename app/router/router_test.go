@@ -10,6 +10,7 @@ import (
 	"v2ray.com/core/app/proxyman"
 	. "v2ray.com/core/app/router"
 	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/proxy"
 	"v2ray.com/core/testing/assert"
 )
 
@@ -35,7 +36,7 @@ func TestSimpleRouter(t *testing.T) {
 	space.BindApp(APP_ID, r)
 	assert.Error(space.Initialize()).IsNil()
 
-	tag, err := r.TakeDetour(v2net.TCPDestination(v2net.DomainAddress("v2ray.com"), 80))
+	tag, err := r.TakeDetour(&proxy.SessionInfo{Destination: v2net.TCPDestination(v2net.DomainAddress("v2ray.com"), 80)})
 	assert.Error(err).IsNil()
 	assert.String(tag).Equals("test")
 }
