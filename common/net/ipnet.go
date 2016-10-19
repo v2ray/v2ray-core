@@ -61,7 +61,7 @@ func (this *IPNet) Contains(ip net.IP) bool {
 	originalValue := ipToUint32(ipv4)
 
 	if entry, found := this.cache[originalValue]; found {
-		if entry == 0 {
+		if entry == 32 {
 			return true
 		}
 	}
