@@ -100,3 +100,28 @@ func (this *ChunkReader) Read() (*alloc.Buffer, error) {
 
 	return buffer, nil
 }
+
+type ChunkWriter struct {
+	writer io.Writer
+	auth   *Authenticator
+}
+
+func NewChunkWriter(writer io.Writer, auth *Authenticator) *ChunkWriter {
+	return &ChunkWriter{
+		writer: writer,
+		auth:   auth,
+	}
+}
+
+func (this *ChunkWriter) Release() {
+	this.writer = nil
+	this.auth = nil
+}
+
+func (this *ChunkWriter) Write(payload *alloc.Buffer) (int, error) {
+	totalLength := payload.Len()
+	authBytes := this.auth.Authenticate(nil, payload.Bytes())
+	payload.Prepend(authBytes)
+	payload.PrependUint16(uint16(totalLength))
+	return this.writer.Write(payload.Bytes())
+}
