@@ -169,6 +169,7 @@ func (this *VMessInboundHandler) HandleConnection(connection internet.Connection
 	ray := this.packetDispatcher.DispatchToOutbound(this.meta, &proxy.SessionInfo{
 		Source:      v2net.DestinationFromAddr(connection.RemoteAddr()),
 		Destination: request.Destination(),
+		User:        request.User,
 	})
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
