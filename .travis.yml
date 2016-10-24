@@ -15,8 +15,8 @@ after_success:
   - ./testing/coverage/coverall
 
 before_deploy:
-  - rvm 1.9.3 do gem install mime-types -v 2.6.2
   - "./tools/release/release-ci.sh"
+  - gem install octokit -v 4.3.0 # 4.4.0 needs Ruby 2 which is missing on the build
 
 deploy:
   provider: releases
