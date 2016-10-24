@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ -z "${TRAVIS_TAG}" ]; then
+if [ -n "${TRAVIS_TAG}" ]; then
   exit 0
 fi
 
