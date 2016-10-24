@@ -16,7 +16,11 @@ func (this *LogConfig) Build() *log.Config {
 	if this == nil {
 		return nil
 	}
-	config := new(log.Config)
+	config := &log.Config{
+		ErrorLogType:  log.LogType_Console,
+		AccessLogType: log.LogType_Console,
+	}
+
 	if len(this.AccessLog) > 0 {
 		config.AccessLogPath = this.AccessLog
 		config.AccessLogType = log.LogType_File
@@ -36,6 +40,7 @@ func (this *LogConfig) Build() *log.Config {
 		config.ErrorLogLevel = log.LogLevel_Error
 	case "none":
 		config.ErrorLogType = log.LogType_None
+		config.AccessLogType = log.LogType_None
 	default:
 		config.ErrorLogLevel = log.LogLevel_Warning
 	}
