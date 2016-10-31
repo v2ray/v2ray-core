@@ -342,3 +342,46 @@ func DecodeUDPPacket(user *protocol.User, payload *alloc.Buffer) (*protocol.Requ
 
 	return request, payload, nil
 }
+
+type UDPReader struct {
+	Reader io.Reader
+	User   *protocol.User
+}
+
+func (this *UDPReader) Read() (*alloc.Buffer, error) {
+	buffer := alloc.NewLocalBuffer(2048)
+	nBytes, err := this.Reader.Read(buffer.Value)
+	if err != nil {
+		buffer.Release()
+		return nil, err
+	}
+	buffer.Slice(0, nBytes)
+	_, payload, err := DecodeUDPPacket(this.User, buffer)
+	if err != nil {
+		buffer.Release()
+		return nil, err
+	}
+	return payload, nil
+}
+
+func (this *UDPReader) Release() {
+}
+
+type UDPWriter struct {
+	Writer  io.Writer
+	Request *protocol.RequestHeader
+}
+
+func (this *UDPWriter) Write(buffer *alloc.Buffer) error {
+	payload, err := EncodeUDPPacket(this.Request, buffer)
+	if err != nil {
+		return err
+	}
+	_, err = this.Writer.Write(payload.Value)
+	payload.Release()
+	return err
+}
+
+func (this *UDPWriter) Release() {
+
+}

@@ -30,11 +30,9 @@ func TestShadowsocksServerConfigParsing(t *testing.T) {
 	rawAccount, err := config.User.GetTypedAccount()
 	assert.Error(err).IsNil()
 
-	account, ok := rawAccount.(*shadowsocks.Account)
+	account, ok := rawAccount.(*shadowsocks.ShadowsocksAccount)
 	assert.Bool(ok).IsTrue()
 
-	cipher, err := account.GetCipher()
-	assert.Error(err).IsNil()
-	assert.Int(cipher.KeySize()).Equals(16)
-	assert.Bytes(account.GetCipherKey()).Equals([]byte{160, 224, 26, 2, 22, 110, 9, 80, 65, 52, 80, 20, 38, 243, 224, 241})
+	assert.Int(account.Cipher.KeySize()).Equals(16)
+	assert.Bytes(account.Key).Equals([]byte{160, 224, 26, 2, 22, 110, 9, 80, 65, 52, 80, 20, 38, 243, 224, 241})
 }
