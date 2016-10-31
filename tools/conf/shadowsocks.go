@@ -4,7 +4,6 @@ import (
 	"errors"
 	"strings"
 
-	"encoding/json"
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/proxy/shadowsocks"
@@ -108,6 +107,8 @@ func (this *ShadowsocksClientConfig) Build() (*loader.TypedSettings, error) {
 				},
 			},
 		}
+
+		serverSpecs[idx] = ss
 	}
 
 	return loader.NewTypedSettings(config), nil
