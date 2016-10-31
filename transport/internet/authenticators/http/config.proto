@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package v2ray.core.transport.internet.authenticators.http;
+option go_package = "http";
+option java_package = "com.v2ray.core.transport.internet.authenticators.http";
+option java_outer_classname = "ConfigProto";
+
+message Header {
+  // "Accept", "Cookie", etc
+  string name = 1;
+
+  // Each entry must be valid in one piece. Random entry will be chosen if multiple entries present.
+  repeated string value = 2;
+}
+
+message HeaderEnding {
+  string value = 1;
+}
+
+message RequestConfig {
+  // Full HTTP version like "1.1".
+  string version = 1;
+
+  // GET, POST, CONNECT etc
+  string method = 2;
+
+  // URI like "/login.php"
+  repeated string uri = 3;
+
+  repeated Header header = 4;
+}
+
+message ResponseConfig {
+  string version = 1;
+
+  string status = 2;
+
+  string reason = 3;
+
+  repeated Header header = 4;
+}
