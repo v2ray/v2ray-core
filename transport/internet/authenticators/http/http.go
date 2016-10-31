@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/loader"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -117,4 +118,17 @@ func (this *ResponseAuthenticator) Open(reader io.Reader) (io.Reader, error) {
 			buffer.Slice(0, len(ENDING))
 		}
 	}
+}
+
+type ResponseAuthenticatorFactory struct{}
+
+func (ResponseAuthenticatorFactory) Create(config interface{}) internet.ConnectionAuthenticator {
+	return &ResponseAuthenticator{
+		config: config.(*ResponseConfig),
+	}
+}
+
+func init() {
+	internet.RegisterConnectionAuthenticator(loader.GetType(new(RequestConfig)), RequestAuthenticatorFactory{})
+	internet.RegisterConnectionAuthenticator(loader.GetType(new(ResponseConfig)), ResponseAuthenticatorFactory{})
 }
