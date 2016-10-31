@@ -77,9 +77,6 @@ func (this *TCPListener) Accept() (internet.Connection, error) {
 				return nil, connErr.err
 			}
 			conn := connErr.conn
-			if this.tlsConfig != nil {
-				conn = tls.Server(conn, this.tlsConfig)
-			}
 			return NewConnection("", conn, this, this.config), nil
 		case <-time.After(time.Second * 2):
 		}
@@ -94,6 +91,9 @@ func (this *TCPListener) KeepAccepting() {
 		if !this.acccepting {
 			this.Unlock()
 			break
+		}
+		if this.tlsConfig != nil {
+			conn = tls.Server(conn, this.tlsConfig)
 		}
 		select {
 		case this.awaitingConns <- &ConnectionWithError{
