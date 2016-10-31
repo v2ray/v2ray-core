@@ -25,8 +25,8 @@ func (this NoOpAuthenticatorFactory) Create(config interface{}) internet.Authent
 
 type NoOpConnectionAuthenticator struct{}
 
-func (NoOpConnectionAuthenticator) Open(reader io.Reader) (bool, io.Reader) {
-	return true, reader
+func (NoOpConnectionAuthenticator) Open(reader io.Reader) (io.Reader, error) {
+	return reader, nil
 }
 
 func (NoOpConnectionAuthenticator) Seal(writer io.Writer) io.Writer {
