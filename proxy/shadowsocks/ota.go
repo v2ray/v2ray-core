@@ -118,10 +118,11 @@ func (this *ChunkWriter) Release() {
 	this.auth = nil
 }
 
-func (this *ChunkWriter) Write(payload *alloc.Buffer) (int, error) {
+func (this *ChunkWriter) Write(payload *alloc.Buffer) error {
 	totalLength := payload.Len()
-	authBytes := this.auth.Authenticate(nil, payload.Bytes())
-	payload.Prepend(authBytes)
+	payload.SliceBack(AuthSize)
+	this.auth.Authenticate(payload.Value[:0], payload.Value[AuthSize:])
 	payload.PrependUint16(uint16(totalLength))
-	return this.writer.Write(payload.Bytes())
+	_, err := this.writer.Write(payload.Bytes())
+	return err
 }

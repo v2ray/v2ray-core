@@ -1,136 +1,77 @@
 package shadowsocks_test
 
 import (
-	"io"
 	"testing"
 
 	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/proxy"
+	"v2ray.com/core/common/protocol"
 	. "v2ray.com/core/proxy/shadowsocks"
 	"v2ray.com/core/testing/assert"
-	"v2ray.com/core/transport"
 )
 
-func TestNormalRequestParsing(t *testing.T) {
+func TestUDPEncoding(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := alloc.NewLocalBuffer(2048).Clear()
-	buffer.AppendBytes(1, 127, 0, 0, 1, 0, 80)
+	request := &protocol.RequestHeader{
+		Version: Version,
+		Command: protocol.RequestCommandUDP,
+		Address: v2net.LocalHostIP,
+		Port:    1234,
+		User: &protocol.User{
+			Email: "love@v2ray.com",
+			Account: loader.NewTypedSettings(&Account{
+				Password:   "shadowsocks-password",
+				CipherType: CipherType_AES_128_CFB,
+				Ota:        Account_Disabled,
+			}),
+		},
+	}
 
-	request, err := ReadRequest(buffer, nil, false)
+	data := alloc.NewLocalBuffer(256).Clear().AppendString("test string")
+	encodedData, err := EncodeUDPPacket(request, data)
 	assert.Error(err).IsNil()
-	assert.Address(request.Address).Equals(v2net.LocalHostIP)
-	assert.Port(request.Port).Equals(v2net.Port(80))
-	assert.Bool(request.OTA).IsFalse()
-}
 
-func TestEmptyPayload(t *testing.T) {
-	assert := assert.On(t)
-
-	buffer := alloc.NewLocalBuffer(2048).Clear()
-	_, err := ReadRequest(buffer, nil, false)
-	assert.Error(err).Equals(io.EOF)
-}
-
-func TestSingleBytePayload(t *testing.T) {
-	assert := assert.On(t)
-
-	buffer := alloc.NewLocalBuffer(2048).Clear().AppendBytes(1)
-	_, err := ReadRequest(buffer, nil, false)
-	assert.Error(err).Equals(transport.ErrCorruptedPacket)
-}
-
-func TestWrongAddressType(t *testing.T) {
-	assert := assert.On(t)
-
-	buffer := alloc.NewLocalBuffer(2048).Clear().AppendBytes(5)
-	_, err := ReadRequest(buffer, nil, false)
-	assert.Error(err).Equals(transport.ErrCorruptedPacket)
-}
-
-func TestInsufficientAddressRequest(t *testing.T) {
-	assert := assert.On(t)
-
-	buffer := alloc.NewLocalBuffer(2048).Clear().AppendBytes(1, 1)
-	_, err := ReadRequest(buffer, nil, false)
-	assert.Error(err).Equals(transport.ErrCorruptedPacket)
-
-	buffer = alloc.NewLocalBuffer(2048).Clear().AppendBytes(4, 1)
-	_, err = ReadRequest(buffer, nil, false)
-	assert.Error(err).Equals(transport.ErrCorruptedPacket)
-
-	buffer = alloc.NewLocalBuffer(2048).Clear().AppendBytes(3, 255, 1)
-	_, err = ReadRequest(buffer, nil, false)
-	assert.Error(err).Equals(transport.ErrCorruptedPacket)
-}
-
-func TestInsufficientPortRequest(t *testing.T) {
-	assert := assert.On(t)
-
-	buffer := alloc.NewLocalBuffer(2048).Clear().AppendBytes(1, 1, 2, 3, 4, 5)
-	_, err := ReadRequest(buffer, nil, false)
-	assert.Error(err).Equals(transport.ErrCorruptedPacket)
-}
-
-func TestOTARequest(t *testing.T) {
-	assert := assert.On(t)
-
-	buffer := alloc.NewLocalBuffer(2048).Clear()
-	buffer.AppendBytes(0x13, 13, 119, 119, 119, 46, 118, 50, 114, 97, 121, 46, 99, 111, 109, 0, 0, 239, 115, 52, 212, 178, 172, 26, 6, 168, 0)
-
-	auth := NewAuthenticator(HeaderKeyGenerator(
-		[]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5},
-		[]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5}))
-	request, err := ReadRequest(buffer, auth, false)
+	decodedRequest, decodedData, err := DecodeUDPPacket(request.User, encodedData)
 	assert.Error(err).IsNil()
-	assert.Address(request.Address).Equals(v2net.DomainAddress("www.v2ray.com"))
-	assert.Bool(request.OTA).IsTrue()
+	assert.Bytes(decodedData.Value).Equals(data.Value)
+	assert.Address(decodedRequest.Address).Equals(request.Address)
+	assert.Port(decodedRequest.Port).Equals(request.Port)
 }
 
-func TestInvalidOTARequest(t *testing.T) {
+func TestTCPRequest(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := alloc.NewLocalBuffer(2048).Clear()
-	buffer.AppendBytes(0x13, 13, 119, 119, 119, 46, 118, 50, 114, 97, 121, 46, 99, 111, 109, 0, 0, 239, 115, 52, 212, 178, 172, 26, 6, 168, 1)
+	request := &protocol.RequestHeader{
+		Version: Version,
+		Command: protocol.RequestCommandTCP,
+		Address: v2net.LocalHostIP,
+		Option:  RequestOptionOneTimeAuth,
+		Port:    1234,
+		User: &protocol.User{
+			Email: "love@v2ray.com",
+			Account: loader.NewTypedSettings(&Account{
+				Password:   "tcp-password",
+				CipherType: CipherType_CHACHA20,
+			}),
+		},
+	}
 
-	auth := NewAuthenticator(HeaderKeyGenerator(
-		[]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5},
-		[]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5}))
-	_, err := ReadRequest(buffer, auth, false)
-	assert.Error(err).Equals(proxy.ErrInvalidAuthentication)
-}
+	data := alloc.NewLocalBuffer(256).Clear().AppendString("test string")
+	cache := alloc.NewLargeBuffer().Clear()
 
-func TestUDPRequestParsing(t *testing.T) {
-	assert := assert.On(t)
-
-	buffer := alloc.NewLocalBuffer(2048).Clear()
-	buffer.AppendBytes(1, 127, 0, 0, 1, 0, 80, 1, 2, 3, 4, 5, 6)
-
-	request, err := ReadRequest(buffer, nil, true)
+	writer, err := WriteTCPRequest(request, cache)
 	assert.Error(err).IsNil()
-	assert.Address(request.Address).Equals(v2net.LocalHostIP)
-	assert.Port(request.Port).Equals(v2net.Port(80))
-	assert.Bool(request.OTA).IsFalse()
-	assert.Bytes(request.UDPPayload.Value).Equals([]byte{1, 2, 3, 4, 5, 6})
-}
 
-func TestUDPRequestWithOTA(t *testing.T) {
-	assert := assert.On(t)
+	writer.Write(data)
 
-	buffer := alloc.NewLocalBuffer(2048).Clear()
-	buffer.AppendBytes(
-		0x13, 13, 119, 119, 119, 46, 118, 50, 114, 97, 121, 46, 99, 111, 109, 0, 0,
-		1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
-		58, 32, 223, 30, 57, 199, 50, 139, 143, 101)
-
-	auth := NewAuthenticator(HeaderKeyGenerator(
-		[]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5},
-		[]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1, 2, 3, 4, 5}))
-	request, err := ReadRequest(buffer, auth, true)
+	decodedRequest, reader, err := ReadTCPSession(request.User, cache)
 	assert.Error(err).IsNil()
-	assert.Address(request.Address).Equals(v2net.DomainAddress("www.v2ray.com"))
-	assert.Bool(request.OTA).IsTrue()
-	assert.Bytes(request.UDPPayload.Value).Equals([]byte{
-		1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0})
+	assert.Address(decodedRequest.Address).Equals(request.Address)
+	assert.Port(decodedRequest.Port).Equals(request.Port)
+
+	decodedData, err := reader.Read()
+	assert.Error(err).IsNil()
+	assert.Bytes(decodedData.Value).Equals([]byte("test string"))
 }

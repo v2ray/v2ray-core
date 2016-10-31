@@ -2,22 +2,17 @@
 package shadowsocks
 
 import (
-	"crypto/rand"
-	"io"
 	"sync"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/alloc"
-	"v2ray.com/core/common/crypto"
 	v2io "v2ray.com/core/common/io"
-	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/proxy"
-	"v2ray.com/core/proxy/registry"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/udp"
 )
@@ -25,8 +20,7 @@ import (
 type Server struct {
 	packetDispatcher dispatcher.PacketDispatcher
 	config           *ServerConfig
-	cipher           Cipher
-	cipherKey        []byte
+	user             *protocol.User
 	meta             *proxy.InboundHandlerMeta
 	accepting        bool
 	tcpHub           *internet.TCPHub
@@ -38,23 +32,11 @@ func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandler
 	if config.GetUser() == nil {
 		return nil, protocol.ErrUserMissing
 	}
-	rawAccount, err := config.GetUser().GetTypedAccount()
-	if err != nil {
-		return nil, err
-	}
-	account, ok := rawAccount.(*Account)
-	if !ok {
-		return nil, protocol.ErrUnknownAccountType
-	}
-	cipher, err := account.GetCipher()
-	if err != nil {
-		return nil, err
-	}
+
 	s := &Server{
-		config:    config,
-		meta:      meta,
-		cipher:    cipher,
-		cipherKey: account.GetCipherKey(),
+		config: config,
+		meta:   meta,
+		user:   config.GetUser(),
 	}
 
 	space.InitializeApplication(func() error {
@@ -84,7 +66,6 @@ func (this *Server) Close() {
 		this.udpHub.Close()
 		this.udpHub = nil
 	}
-
 }
 
 func (this *Server) Start() error {
@@ -115,73 +96,30 @@ func (this *Server) Start() error {
 }
 
 func (this *Server) handlerUDPPayload(payload *alloc.Buffer, session *proxy.SessionInfo) {
-	defer payload.Release()
-
 	source := session.Source
-	ivLen := this.cipher.IVSize()
-	iv := payload.Value[:ivLen]
-	payload.SliceFrom(ivLen)
-
-	stream, err := this.cipher.NewDecodingStream(this.cipherKey, iv)
+	request, data, err := DecodeUDPPacket(this.user, payload)
 	if err != nil {
-		log.Error("Shadowsocks: Failed to create decoding stream: ", err)
+		log.Info("Shadowsocks|Server: Skipping invalid UDP packet from: ", source, ": ", err)
+		log.Access(source, "", log.AccessRejected, err)
+		payload.Release()
 		return
 	}
 
-	reader := crypto.NewCryptionReader(stream, payload)
-
-	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(this.cipherKey, iv)), true)
-	if err != nil {
-		if err != io.EOF {
-			log.Access(source, "", log.AccessRejected, err)
-			log.Warning("Shadowsocks: Invalid request from ", source, ": ", err)
-		}
-		return
-	}
-	//defer request.Release()
-
-	dest := v2net.UDPDestination(request.Address, request.Port)
+	dest := request.Destination()
 	log.Access(source, dest, log.AccessAccepted, "")
-	log.Info("Shadowsocks: Tunnelling request to ", dest)
+	log.Info("Shadowsocks|Server: Tunnelling request to ", dest)
 
-	this.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: dest}, request.DetachUDPPayload(), func(destination v2net.Destination, payload *alloc.Buffer) {
+	this.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: dest}, data, func(destination v2net.Destination, payload *alloc.Buffer) {
 		defer payload.Release()
 
-		response := alloc.NewBuffer().Slice(0, ivLen)
-		defer response.Release()
-
-		rand.Read(response.Value)
-		respIv := response.Value
-
-		stream, err := this.cipher.NewEncodingStream(this.cipherKey, respIv)
+		data, err := EncodeUDPPacket(request, payload)
 		if err != nil {
-			log.Error("Shadowsocks: Failed to create encoding stream: ", err)
+			log.Warning("Shadowsocks|Server: Failed to encode UDP packet: ", err)
 			return
 		}
+		defer data.Release()
 
-		writer := crypto.NewCryptionWriter(stream, response)
-
-		switch request.Address.Family() {
-		case v2net.AddressFamilyIPv4:
-			writer.Write([]byte{AddrTypeIPv4})
-			writer.Write(request.Address.IP())
-		case v2net.AddressFamilyIPv6:
-			writer.Write([]byte{AddrTypeIPv6})
-			writer.Write(request.Address.IP())
-		case v2net.AddressFamilyDomain:
-			writer.Write([]byte{AddrTypeDomain, byte(len(request.Address.Domain()))})
-			writer.Write([]byte(request.Address.Domain()))
-		}
-
-		writer.Write(request.Port.Bytes(nil))
-		writer.Write(payload.Value)
-
-		if request.OTA {
-			respAuth := NewAuthenticator(HeaderKeyGenerator(this.cipherKey, respIv))
-			respAuth.Authenticate(response.Value, response.Value[ivLen:])
-		}
-
-		this.udpHub.WriteTo(response.Value, source)
+		this.udpHub.WriteTo(data.Value, source)
 	})
 }
 
@@ -197,41 +135,22 @@ func (this *Server) handleConnection(conn internet.Connection) {
 	bufferedReader := v2io.NewBufferedReader(timedReader)
 	defer bufferedReader.Release()
 
-	ivLen := this.cipher.IVSize()
-	_, err := io.ReadFull(bufferedReader, buffer.Value[:ivLen])
-	if err != nil {
-		if err != io.EOF {
-			log.Access(conn.RemoteAddr(), "", log.AccessRejected, err)
-			log.Warning("Shadowsocks: Failed to read IV: ", err)
-		}
-		return
-	}
-
-	iv := buffer.Value[:ivLen]
-
-	stream, err := this.cipher.NewDecodingStream(this.cipherKey, iv)
-	if err != nil {
-		log.Error("Shadowsocks: Failed to create decoding stream: ", err)
-		return
-	}
-
-	reader := crypto.NewCryptionReader(stream, bufferedReader)
-
-	request, err := ReadRequest(reader, NewAuthenticator(HeaderKeyGenerator(this.cipherKey, iv)), false)
+	request, bodyReader, err := ReadTCPSession(this.user, bufferedReader)
 	if err != nil {
 		log.Access(conn.RemoteAddr(), "", log.AccessRejected, err)
-		log.Warning("Shadowsocks: Invalid request from ", conn.RemoteAddr(), ": ", err)
+		log.Info("Shadowsocks|Server: Failed to create request from: ", conn.RemoteAddr(), ": ", err)
 		return
 	}
-	defer request.Release()
+	defer bodyReader.Release()
+
 	bufferedReader.SetCached(false)
 
-	userSettings := this.config.GetUser().GetSettings()
+	userSettings := this.user.GetSettings()
 	timedReader.SetTimeOut(userSettings.PayloadReadTimeout)
 
-	dest := v2net.TCPDestination(request.Address, request.Port)
+	dest := request.Destination()
 	log.Access(conn.RemoteAddr(), dest, log.AccessAccepted, "")
-	log.Info("Shadowsocks: Tunnelling request to ", dest)
+	log.Info("Shadowsocks|Server: Tunnelling request to ", dest)
 
 	ray := this.packetDispatcher.DispatchToOutbound(this.meta, &proxy.SessionInfo{
 		Source:      v2net.DestinationFromAddr(conn.RemoteAddr()),
@@ -242,41 +161,28 @@ func (this *Server) handleConnection(conn internet.Connection) {
 	var writeFinish sync.Mutex
 	writeFinish.Lock()
 	go func() {
-		if payload, err := ray.InboundOutput().Read(); err == nil {
-			payload.SliceBack(ivLen)
-			rand.Read(payload.Value[:ivLen])
+		defer writeFinish.Unlock()
 
-			stream, err := this.cipher.NewEncodingStream(this.cipherKey, payload.Value[:ivLen])
-			if err != nil {
-				log.Error("Shadowsocks: Failed to create encoding stream: ", err)
-				return
-			}
-			stream.XORKeyStream(payload.Value[ivLen:], payload.Value[ivLen:])
+		bufferedWriter := v2io.NewBufferedWriter(conn)
+		defer bufferedWriter.Release()
 
-			conn.Write(payload.Value)
-			payload.Release()
-
-			writer := crypto.NewCryptionWriter(stream, conn)
-			v2writer := v2io.NewAdaptiveWriter(writer)
-
-			v2io.Pipe(ray.InboundOutput(), v2writer)
-			writer.Release()
-			v2writer.Release()
+		responseWriter, err := WriteTCPResponse(request, bufferedWriter)
+		if err != nil {
+			log.Warning("Shadowsocks|Server: Failed to write response: ", err)
+			return
 		}
-		writeFinish.Unlock()
+		defer responseWriter.Release()
+
+		if payload, err := ray.InboundOutput().Read(); err == nil {
+			responseWriter.Write(payload)
+			bufferedWriter.SetCached(false)
+
+			v2io.Pipe(ray.InboundOutput(), responseWriter)
+		}
 	}()
 
-	var payloadReader v2io.Reader
-	if request.OTA {
-		payloadAuth := NewAuthenticator(ChunkKeyGenerator(iv))
-		payloadReader = NewChunkReader(reader, payloadAuth)
-	} else {
-		payloadReader = v2io.NewAdaptiveReader(reader)
-	}
-
-	v2io.Pipe(payloadReader, ray.InboundInput())
+	v2io.Pipe(bodyReader, ray.InboundInput())
 	ray.InboundInput().Close()
-	payloadReader.Release()
 
 	writeFinish.Lock()
 }
@@ -294,8 +200,4 @@ func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *
 		return nil, common.ErrBadConfiguration
 	}
 	return NewServer(rawConfig.(*ServerConfig), space, meta)
-}
-
-func init() {
-	registry.MustRegisterInboundHandlerCreator(loader.GetType(new(ServerConfig)), new(ServerFactory))
 }

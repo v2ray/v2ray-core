@@ -1,6 +1,7 @@
 package shadowsocks
 
 import (
+	"bytes"
 	"crypto/cipher"
 	"crypto/md5"
 	"errors"
@@ -8,6 +9,18 @@ import (
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/protocol"
 )
+
+type ShadowsocksAccount struct {
+	Cipher Cipher
+	Key    []byte
+}
+
+func (this *ShadowsocksAccount) Equals(another protocol.Account) bool {
+	if account, ok := another.(*ShadowsocksAccount); ok {
+		return bytes.Equal(this.Key, account.Key)
+	}
+	return false
+}
 
 func (this *Account) GetCipher() (Cipher, error) {
 	switch this.CipherType {
@@ -24,15 +37,15 @@ func (this *Account) GetCipher() (Cipher, error) {
 	}
 }
 
-func (this *Account) Equals(another protocol.Account) bool {
-	if account, ok := another.(*Account); ok {
-		return account.Password == this.Password
-	}
-	return false
-}
-
 func (this *Account) AsAccount() (protocol.Account, error) {
-	return this, nil
+	cipher, err := this.GetCipher()
+	if err != nil {
+		return nil, err
+	}
+	return &ShadowsocksAccount{
+		Cipher: cipher,
+		Key:    this.GetCipherKey(),
+	}, nil
 }
 
 func (this *Account) GetCipherKey() []byte {

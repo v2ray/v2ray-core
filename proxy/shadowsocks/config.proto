@@ -9,8 +9,14 @@ import "v2ray.com/core/common/protocol/user.proto";
 import "v2ray.com/core/common/protocol/server_spec.proto";
 
 message Account {
+  enum OneTimeAuth {
+    Auto = 0;
+    Disabled = 1;
+    Enabled = 2;
+  }
   string password = 1;
   CipherType cipher_type = 2;
+  OneTimeAuth ota = 3;
 }
 
 enum CipherType {
