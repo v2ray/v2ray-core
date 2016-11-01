@@ -10,9 +10,10 @@ type SendingWindow struct {
 	len   uint32
 	last  uint32
 
-	data []*DataSegment
-	prev []uint32
-	next []uint32
+	data  []DataSegment
+	inuse []bool
+	prev  []uint32
+	next  []uint32
 
 	totalInFlightSize uint32
 	writer            SegmentWriter
@@ -25,9 +26,10 @@ func NewSendingWindow(size uint32, writer SegmentWriter, onPacketLoss func(uint3
 		cap:          size,
 		len:          0,
 		last:         0,
-		data:         make([]*DataSegment, size),
+		data:         make([]DataSegment, size),
 		prev:         make([]uint32, size),
 		next:         make([]uint32, size),
+		inuse:        make([]bool, size),
 		writer:       writer,
 		onPacketLoss: onPacketLoss,
 	}
@@ -50,9 +52,13 @@ func (this *SendingWindow) IsFull() bool {
 	return this.len == this.cap
 }
 
-func (this *SendingWindow) Push(seg *DataSegment) {
+func (this *SendingWindow) Push(number uint32, data []byte) {
 	pos := (this.start + this.len) % this.cap
-	this.data[pos] = seg
+	this.data[pos].SetData(data)
+	this.data[pos].Number = number
+	this.data[pos].timeout = 0
+	this.data[pos].transmit = 0
+	this.inuse[pos] = true
 	if this.len > 0 {
 		this.next[this.last] = pos
 		this.prev[pos] = this.last
@@ -61,8 +67,8 @@ func (this *SendingWindow) Push(seg *DataSegment) {
 	this.len++
 }
 
-func (this *SendingWindow) First() *DataSegment {
-	return this.data[this.start]
+func (this *SendingWindow) FirstNumber() uint32 {
+	return this.data[this.start].Number
 }
 
 func (this *SendingWindow) Clear(una uint32) {
@@ -77,13 +83,11 @@ func (this *SendingWindow) Remove(idx uint32) {
 	}
 
 	pos := (this.start + idx) % this.cap
-	seg := this.data[pos]
-	if seg == nil {
+	if !this.inuse[pos] {
 		return
 	}
+	this.inuse[pos] = false
 	this.totalInFlightSize--
-	seg.Release()
-	this.data[pos] = nil
 	if pos == this.start && pos == this.last {
 		this.len = 0
 		this.start = 0
@@ -109,7 +113,7 @@ func (this *SendingWindow) HandleFastAck(number uint32, rto uint32) {
 	}
 
 	for i := this.start; ; i = this.next[i] {
-		seg := this.data[i]
+		seg := &this.data[i]
 		if number-seg.Number > 0x7FFFFFFF {
 			break
 		}
@@ -133,7 +137,7 @@ func (this *SendingWindow) Flush(current uint32, rto uint32, maxInFlightSize uin
 	var inFlightSize uint32
 
 	for i := this.start; ; i = this.next[i] {
-		segment := this.data[i]
+		segment := &this.data[i]
 		needsend := false
 		if current-segment.timeout < 0x7FFFFFFF {
 			if segment.transmit == 0 {
@@ -205,7 +209,7 @@ func (this *SendingWorker) ProcessReceivingNextWithoutLock(nextNumber uint32) {
 func (this *SendingWorker) FindFirstUnacknowledged() {
 	v := this.firstUnacknowledged
 	if !this.window.IsEmpty() {
-		this.firstUnacknowledged = this.window.First().Number
+		this.firstUnacknowledged = this.window.FirstNumber()
 	} else {
 		this.firstUnacknowledged = this.nextNumber
 	}
@@ -264,12 +268,7 @@ func (this *SendingWorker) Push(b []byte) int {
 		} else {
 			size = len(b)
 		}
-		seg := NewDataSegment()
-		seg.Data = AllocateBuffer().Clear().Append(b[:size])
-		seg.Number = this.nextNumber
-		seg.timeout = 0
-		seg.transmit = 0
-		this.window.Push(seg)
+		this.window.Push(this.nextNumber, b[:size])
 		this.nextNumber++
 		b = b[size:]
 		nBytes += size

@@ -48,6 +48,13 @@ func NewDataSegment() *DataSegment {
 	return new(DataSegment)
 }
 
+func (this *DataSegment) SetData(b []byte) {
+	if this.Data == nil {
+		this.Data = alloc.NewLocalBuffer(1600)
+	}
+	this.Data.Clear().Append(b)
+}
+
 func (this *DataSegment) Bytes(b []byte) []byte {
 	b = serial.Uint16ToBytes(this.Conv, b)
 	b = append(b, byte(CommandData), byte(this.Option))
@@ -181,7 +188,7 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 		if len(buf) < dataLen {
 			return nil, nil
 		}
-		seg.Data = AllocateBuffer().Clear().Append(buf[:dataLen])
+		seg.SetData(buf[:dataLen])
 		buf = buf[dataLen:]
 
 		return seg, buf
