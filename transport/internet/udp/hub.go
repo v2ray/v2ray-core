@@ -18,6 +18,7 @@ type UDPHub struct {
 	conn      *net.UDPConn
 	option    ListenOption
 	accepting bool
+	pool      *alloc.BufferPool
 }
 
 type ListenOption struct {
@@ -48,6 +49,7 @@ func ListenUDP(address v2net.Address, port v2net.Port, option ListenOption) (*UD
 	hub := &UDPHub{
 		conn:   udpConn,
 		option: option,
+		pool:   alloc.NewBufferPool(2048, 64),
 	}
 	go hub.start()
 	return hub, nil
@@ -75,7 +77,7 @@ func (this *UDPHub) start() {
 
 	oobBytes := make([]byte, 256)
 	for this.Running() {
-		buffer := alloc.NewBuffer()
+		buffer := this.pool.Allocate()
 		nBytes, noob, _, addr, err := ReadUDPMsg(this.conn, buffer.Value, oobBytes)
 		if err != nil {
 			log.Info("UDP|Hub: Failed to read UDP msg: ", err)
