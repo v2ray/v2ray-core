@@ -126,9 +126,6 @@ func (this *Server) handlerUDPPayload(payload *alloc.Buffer, session *proxy.Sess
 func (this *Server) handleConnection(conn internet.Connection) {
 	defer conn.Close()
 
-	buffer := alloc.NewSmallBuffer()
-	defer buffer.Release()
-
 	timedReader := v2net.NewTimeOutReader(16, conn)
 	defer timedReader.Release()
 

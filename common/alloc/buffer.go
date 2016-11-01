@@ -200,11 +200,6 @@ func (b *Buffer) String() string {
 	return string(b.Value)
 }
 
-// NewSmallBuffer creates a Buffer with 1K bytes of arbitrary content.
-func NewSmallBuffer() *Buffer {
-	return smallPool.Allocate()
-}
-
 // NewBuffer creates a Buffer with 8K bytes of arbitrary content.
 func NewBuffer() *Buffer {
 	return mediumPool.Allocate()
@@ -216,10 +211,6 @@ func NewLargeBuffer() *Buffer {
 }
 
 func NewBufferWithSize(size int) *Buffer {
-	if size <= SmallBufferSize {
-		return NewSmallBuffer()
-	}
-
 	if size <= BufferSize {
 		return NewBuffer()
 	}

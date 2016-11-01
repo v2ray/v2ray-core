@@ -120,7 +120,7 @@ func (request Socks5UserPassRequest) AuthDetail() string {
 }
 
 func ReadUserPassRequest(reader io.Reader) (request Socks5UserPassRequest, err error) {
-	buffer := alloc.NewSmallBuffer()
+	buffer := alloc.NewLocalBuffer(512)
 	defer buffer.Release()
 
 	_, err = reader.Read(buffer.Value[0:2])
@@ -186,7 +186,7 @@ type Socks5Request struct {
 }
 
 func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
-	buffer := alloc.NewSmallBuffer()
+	buffer := alloc.NewLocalBuffer(512)
 	defer buffer.Release()
 
 	_, err = io.ReadFull(reader, buffer.Value[:4])

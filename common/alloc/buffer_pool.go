@@ -52,8 +52,6 @@ func (p *BufferPool) Free(buffer *Buffer) {
 }
 
 const (
-	SmallBufferSize = 1600 - defaultOffset
-
 	mediumBufferByteSize = 8 * 1024
 	BufferSize           = mediumBufferByteSize - defaultOffset
 
@@ -64,7 +62,6 @@ const (
 )
 
 var (
-	smallPool  = NewBufferPool(1600, 256)
 	mediumPool *BufferPool
 	largePool  *BufferPool
 )
