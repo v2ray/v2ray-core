@@ -61,6 +61,8 @@ func (this *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffe
 	}
 	log.Info("Shadowsocks|Client: Tunneling request to ", destination, " via ", server.Destination())
 
+	conn.SetReusable(false)
+
 	request := &protocol.RequestHeader{
 		Version: Version,
 		Address: destination.Address,
