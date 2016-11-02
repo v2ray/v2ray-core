@@ -12,10 +12,6 @@ type InternalAccount struct {
 	AlterIDs []*protocol.ID
 }
 
-func NewAccount() protocol.AsAccount {
-	return &Account{}
-}
-
 func (this *InternalAccount) AnyValidID() *protocol.ID {
 	if len(this.AlterIDs) == 0 {
 		return this.ID
