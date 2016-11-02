@@ -45,24 +45,22 @@ func (this *TimeoutValidStrategy) Invalidate() {
 
 type ServerSpec struct {
 	sync.RWMutex
-	dest       v2net.Destination
-	users      []*User
-	valid      ValidationStrategy
-	newAccount NewAccountFactory
+	dest  v2net.Destination
+	users []*User
+	valid ValidationStrategy
 }
 
-func NewServerSpec(newAccount NewAccountFactory, dest v2net.Destination, valid ValidationStrategy, users ...*User) *ServerSpec {
+func NewServerSpec(dest v2net.Destination, valid ValidationStrategy, users ...*User) *ServerSpec {
 	return &ServerSpec{
-		dest:       dest,
-		users:      users,
-		valid:      valid,
-		newAccount: newAccount,
+		dest:  dest,
+		users: users,
+		valid: valid,
 	}
 }
 
-func NewServerSpecFromPB(newAccount NewAccountFactory, spec ServerEndpoint) *ServerSpec {
+func NewServerSpecFromPB(spec ServerEndpoint) *ServerSpec {
 	dest := v2net.TCPDestination(spec.Address.AsAddress(), v2net.Port(spec.Port))
-	return NewServerSpec(newAccount, dest, AlwaysValid(), spec.User...)
+	return NewServerSpec(dest, AlwaysValid(), spec.User...)
 }
 
 func (this *ServerSpec) Destination() v2net.Destination {

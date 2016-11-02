@@ -22,7 +22,7 @@ func (this *VMessOutboundHandler) handleSwitchAccount(cmd *protocol.CommandSwitc
 	}
 	dest := v2net.TCPDestination(cmd.Host, cmd.Port)
 	until := time.Now().Add(time.Duration(cmd.ValidMin) * time.Minute)
-	this.serverList.AddServer(protocol.NewServerSpec(vmess.NewAccount, dest, protocol.BeforeTime(until), user))
+	this.serverList.AddServer(protocol.NewServerSpec(dest, protocol.BeforeTime(until), user))
 }
 
 func (this *VMessOutboundHandler) handleCommand(dest v2net.Destination, cmd protocol.ResponseCommand) {

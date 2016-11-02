@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"sync"
+	"v2ray.com/core/app"
 	"v2ray.com/core/common/alloc"
 	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/log"
@@ -18,6 +19,19 @@ import (
 type Client struct {
 	serverPicker protocol.ServerPicker
 	meta         *proxy.OutboundHandlerMeta
+}
+
+func NewClient(config *ClientConfig, space app.Space, meta *proxy.OutboundHandlerMeta) (*Client, error) {
+	serverList := protocol.NewServerList()
+	for _, rec := range config.Server {
+		serverList.AddServer(protocol.NewServerSpecFromPB(*rec))
+	}
+	client := &Client{
+		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
+		meta:         meta,
+	}
+
+	return client, nil
 }
 
 func (this *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
@@ -135,4 +149,16 @@ func (this *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffe
 	}
 
 	return nil
+}
+
+type ClientFactory struct{}
+
+func (this *ClientFactory) StreamCapability() v2net.NetworkList {
+	return v2net.NetworkList{
+		Network: []v2net.Network{v2net.Network_TCP, v2net.Network_RawTCP},
+	}
+}
+
+func (this *ClientFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
+	return NewClient(rawConfig.(*ClientConfig), space, meta)
 }
