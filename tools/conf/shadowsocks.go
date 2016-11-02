@@ -26,6 +26,7 @@ func (this *ShadowsocksServerConfig) Build() (*loader.TypedSettings, error) {
 	}
 	account := &shadowsocks.Account{
 		Password: this.Password,
+		Ota:      shadowsocks.Account_Auto,
 	}
 	cipher := strings.ToLower(this.Cipher)
 	switch cipher {
@@ -56,6 +57,7 @@ type ShadowsocksServerTarget struct {
 	Cipher   string   `json:"method"`
 	Password string   `json:"password"`
 	Email    string   `json:"email"`
+	Ota      bool     `json:"ota"`
 }
 
 type ShadowsocksClientConfig struct {
@@ -82,6 +84,10 @@ func (this *ShadowsocksClientConfig) Build() (*loader.TypedSettings, error) {
 		}
 		account := &shadowsocks.Account{
 			Password: server.Password,
+			Ota:      shadowsocks.Account_Enabled,
+		}
+		if !server.Ota {
+			account.Ota = shadowsocks.Account_Disabled
 		}
 		cipher := strings.ToLower(server.Cipher)
 		switch cipher {
