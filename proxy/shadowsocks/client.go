@@ -66,7 +66,7 @@ func (this *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffe
 	account := rawAccount.(*ShadowsocksAccount)
 	request.User = user
 
-	if account.OneTimeAuth {
+	if account.OneTimeAuth == Account_Auto || account.OneTimeAuth == Account_Enabled {
 		request.Option |= RequestOptionOneTimeAuth
 	}
 

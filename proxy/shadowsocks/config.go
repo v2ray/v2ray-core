@@ -13,7 +13,7 @@ import (
 type ShadowsocksAccount struct {
 	Cipher      Cipher
 	Key         []byte
-	OneTimeAuth bool
+	OneTimeAuth Account_OneTimeAuth
 }
 
 func (this *ShadowsocksAccount) Equals(another protocol.Account) bool {
@@ -46,7 +46,7 @@ func (this *Account) AsAccount() (protocol.Account, error) {
 	return &ShadowsocksAccount{
 		Cipher:      cipher,
 		Key:         this.GetCipherKey(),
-		OneTimeAuth: this.Ota == Account_Auto || this.Ota == Account_Enabled,
+		OneTimeAuth: this.Ota,
 	}, nil
 }
 

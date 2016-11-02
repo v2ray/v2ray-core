@@ -21,6 +21,7 @@ type Server struct {
 	packetDispatcher dispatcher.PacketDispatcher
 	config           *ServerConfig
 	user             *protocol.User
+	account          *ShadowsocksAccount
 	meta             *proxy.InboundHandlerMeta
 	accepting        bool
 	tcpHub           *internet.TCPHub
@@ -33,10 +34,17 @@ func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandler
 		return nil, protocol.ErrUserMissing
 	}
 
+	rawAccount, err := user.GetTypedAccount()
+	if err != nil {
+		return nil, errors.New("Shadowsocks|Server: Failed to get user account: " + err.Error())
+	}
+	account := rawAccount.(*ShadowsocksAccount)
+
 	s := &Server{
-		config: config,
-		meta:   meta,
-		user:   config.GetUser(),
+		config:  config,
+		meta:    meta,
+		user:    config.GetUser(),
+		account: account,
 	}
 
 	space.InitializeApplication(func() error {
@@ -101,6 +109,18 @@ func (this *Server) handlerUDPPayload(payload *alloc.Buffer, session *proxy.Sess
 	if err != nil {
 		log.Info("Shadowsocks|Server: Skipping invalid UDP packet from: ", source, ": ", err)
 		log.Access(source, "", log.AccessRejected, err)
+		payload.Release()
+		return
+	}
+
+	if request.Option.Has(RequestOptionOneTimeAuth) && this.account.OneTimeAuth == Account_Disabled {
+		log.Info("Shadowsocks|Server: Client payload enables OTA but server doesn't allow it.")
+		payload.Release()
+		return
+	}
+
+	if !request.Option.Has(RequestOptionOneTimeAuth) && this.account.OneTimeAuth == Account_Enabled {
+		log.Info("Shadowsocks|Server: Client payload disables OTA but server forces it.")
 		payload.Release()
 		return
 	}
