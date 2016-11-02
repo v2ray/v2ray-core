@@ -4,6 +4,7 @@ package shadowsocks
 import (
 	"sync"
 
+	"errors"
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common"
@@ -34,7 +35,7 @@ func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandler
 		return nil, protocol.ErrUserMissing
 	}
 
-	rawAccount, err := user.GetTypedAccount()
+	rawAccount, err := config.User.GetTypedAccount()
 	if err != nil {
 		return nil, errors.New("Shadowsocks|Server: Failed to get user account: " + err.Error())
 	}
