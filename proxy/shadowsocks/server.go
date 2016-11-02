@@ -130,7 +130,7 @@ func (this *Server) handlerUDPPayload(payload *alloc.Buffer, session *proxy.Sess
 	log.Access(source, dest, log.AccessAccepted, "")
 	log.Info("Shadowsocks|Server: Tunnelling request to ", dest)
 
-	this.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: dest}, data, func(destination v2net.Destination, payload *alloc.Buffer) {
+	this.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: dest, User: request.User}, data, func(destination v2net.Destination, payload *alloc.Buffer) {
 		defer payload.Release()
 
 		data, err := EncodeUDPPacket(request, payload)
@@ -173,6 +173,7 @@ func (this *Server) handleConnection(conn internet.Connection) {
 	ray := this.packetDispatcher.DispatchToOutbound(this.meta, &proxy.SessionInfo{
 		Source:      v2net.DestinationFromAddr(conn.RemoteAddr()),
 		Destination: dest,
+		User:        request.User,
 	})
 	defer ray.InboundOutput().Release()
 
