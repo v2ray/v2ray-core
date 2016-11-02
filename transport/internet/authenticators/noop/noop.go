@@ -1,7 +1,8 @@
 package noop
 
 import (
-	"io"
+	"net"
+
 	"v2ray.com/core/common/alloc"
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/transport/internet"
@@ -25,12 +26,12 @@ func (this NoOpAuthenticatorFactory) Create(config interface{}) internet.Authent
 
 type NoOpConnectionAuthenticator struct{}
 
-func (NoOpConnectionAuthenticator) Open(reader io.Reader) (io.Reader, error) {
-	return reader, nil
+func (NoOpConnectionAuthenticator) Client(conn net.Conn) net.Conn {
+	return conn
 }
 
-func (NoOpConnectionAuthenticator) Seal(writer io.Writer) io.Writer {
-	return writer
+func (NoOpConnectionAuthenticator) Server(conn net.Conn) net.Conn {
+	return conn
 }
 
 type NoOpConnectionAuthenticatorFactory struct{}

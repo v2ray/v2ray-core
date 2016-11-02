@@ -1,13 +1,14 @@
 package internet
 
 import (
-	"io"
+	"net"
+
 	"v2ray.com/core/common"
 )
 
 type ConnectionAuthenticator interface {
-	Seal(io.Writer) io.Writer
-	Open(io.Reader) (io.Reader, error)
+	Client(net.Conn) net.Conn
+	Server(net.Conn) net.Conn
 }
 
 type ConnectionAuthenticatorFactory interface {

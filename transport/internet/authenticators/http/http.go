@@ -2,7 +2,8 @@ package http
 
 import (
 	"bytes"
-	"io"
+	"net"
+
 	"v2ray.com/core/common/alloc"
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/transport/internet"
@@ -13,122 +14,117 @@ const (
 	ENDING = CRLF + CRLF
 )
 
-type RequestAuthenticator struct {
-	config *RequestConfig
+type HttpConn struct {
+	net.Conn
+
+	buffer     *alloc.Buffer
+	readHeader bool
+
+	writeHeaderContent *alloc.Buffer
+	writeHeader        bool
 }
 
-func (this *RequestAuthenticator) Seal(writer io.Writer) io.Writer {
-	header := alloc.NewLocalBuffer(2048)
-	header.AppendString(this.config.Method).AppendString(" ").AppendString(this.config.PickUri()).AppendString(" ").AppendString(this.config.GetVersion()).AppendString(CRLF)
+func NewHttpConn(conn net.Conn, writeHeaderContent *alloc.Buffer) *HttpConn {
+	return &HttpConn{
+		Conn:               conn,
+		readHeader:         true,
+		writeHeader:        true,
+		writeHeaderContent: writeHeaderContent,
+	}
+}
 
-	headers := this.config.PickHeaders()
+func (this *HttpConn) Read(b []byte) (int, error) {
+	if this.readHeader {
+		buffer := alloc.NewLocalBuffer(2048)
+		for {
+			_, err := buffer.FillFrom(this.Conn)
+			if err != nil {
+				return 0, err
+			}
+			if n := bytes.Index(buffer.Value, []byte(ENDING)); n != -1 {
+				buffer.SliceFrom(n + len(ENDING))
+				break
+			}
+			if buffer.Len() >= len(ENDING) {
+				copy(buffer.Value, buffer.Value[buffer.Len()-len(ENDING):])
+				buffer.Slice(0, len(ENDING))
+			}
+		}
+		this.buffer = buffer
+		this.readHeader = false
+	}
+
+	if this.buffer.Len() > 0 {
+		nBytes, err := this.buffer.Read(b)
+		if nBytes == this.buffer.Len() {
+			this.buffer.Release()
+			this.buffer = nil
+		}
+		return nBytes, err
+	}
+
+	return this.Conn.Read(b)
+}
+
+func (this *HttpConn) Write(b []byte) (int, error) {
+	if this.writeHeader {
+		_, err := this.Conn.Write(this.writeHeaderContent.Value)
+		this.writeHeaderContent.Release()
+		if err != nil {
+			return 0, err
+		}
+		this.writeHeader = false
+	}
+
+	return this.Conn.Write(b)
+}
+
+type HttpAuthenticator struct {
+	config *Config
+}
+
+func (this HttpAuthenticator) GetClientWriteHeader() *alloc.Buffer {
+	header := alloc.NewLocalBuffer(2048)
+	config := this.config.Request
+	header.AppendString(config.Method.GetValue()).AppendString(" ").AppendString(config.PickUri()).AppendString(" ").AppendString(config.GetFullVersion()).AppendString(CRLF)
+
+	headers := config.PickHeaders()
 	for _, h := range headers {
 		header.AppendString(h).AppendString(CRLF)
 	}
 	header.AppendString(CRLF)
-
-	writer.Write(header.Value)
-	header.Release()
-
-	return writer
+	return header
 }
 
-func (this *RequestAuthenticator) Open(reader io.Reader) (io.Reader, error) {
-	buffer := alloc.NewLocalBuffer(2048)
-	for {
-		_, err := buffer.FillFrom(reader)
-		if err != nil {
-			return nil, err
-		}
-		if n := bytes.Index(buffer.Value, []byte(ENDING)); n != -1 {
-			buffer.SliceFrom(n + len(ENDING))
-			return &BufferAndReader{
-				buffer: buffer,
-				reader: reader,
-			}, nil
-		}
-		if buffer.Len() >= len(ENDING) {
-			copy(buffer.Value, buffer.Value[buffer.Len()-len(ENDING):])
-			buffer.Slice(0, len(ENDING))
-		}
-	}
-}
-
-type BufferAndReader struct {
-	buffer *alloc.Buffer
-	reader io.Reader
-}
-
-func (this *BufferAndReader) Read(b []byte) (int, error) {
-	if this.buffer.Len() == 0 {
-		return this.reader.Read(b)
-	}
-	n, err := this.buffer.Read(b)
-	if n == this.buffer.Len() {
-		this.buffer.Release()
-		this.buffer = nil
-	}
-	return n, err
-}
-
-type RequestAuthenticatorFactory struct{}
-
-func (RequestAuthenticatorFactory) Create(config interface{}) internet.ConnectionAuthenticator {
-	return &RequestAuthenticator{
-		config: config.(*RequestConfig),
-	}
-}
-
-type ResponseAuthenticator struct {
-	config *ResponseConfig
-}
-
-func (this *ResponseAuthenticator) Seal(writer io.Writer) io.Writer {
+func (this HttpAuthenticator) GetServerWriteHeader() *alloc.Buffer {
 	header := alloc.NewLocalBuffer(2048)
-	header.AppendString(this.config.GetVersion()).AppendString(" ").AppendString(this.config.Status).AppendString(" ").AppendString(this.config.Reason).AppendString(CRLF)
+	config := this.config.Response
+	header.AppendString(config.GetFullVersion()).AppendString(" ").AppendString(config.Status.GetCode()).AppendString(" ").AppendString(config.Status.GetReason()).AppendString(CRLF)
 
-	headers := this.config.PickHeaders()
+	headers := config.PickHeaders()
 	for _, h := range headers {
 		header.AppendString(h).AppendString(CRLF)
 	}
 	header.AppendString(CRLF)
-
-	writer.Write(header.Value)
-	header.Release()
-
-	return writer
+	return header
 }
 
-func (this *ResponseAuthenticator) Open(reader io.Reader) (io.Reader, error) {
-	buffer := alloc.NewLocalBuffer(2048)
-	for {
-		_, err := buffer.FillFrom(reader)
-		if err != nil {
-			return nil, err
-		}
-		if n := bytes.Index(buffer.Value, []byte(ENDING)); n != -1 {
-			buffer.SliceFrom(n + len(ENDING))
-			return &BufferAndReader{
-				buffer: buffer,
-				reader: reader,
-			}, nil
-		}
-		if buffer.Len() >= len(ENDING) {
-			copy(buffer.Value, buffer.Value[buffer.Len()-len(ENDING):])
-			buffer.Slice(0, len(ENDING))
-		}
-	}
+func (this HttpAuthenticator) Client(conn net.Conn) net.Conn {
+	return NewHttpConn(conn, this.GetClientWriteHeader())
 }
 
-type ResponseAuthenticatorFactory struct{}
+func (this HttpAuthenticator) Server(conn net.Conn) net.Conn {
+	return NewHttpConn(conn, this.GetServerWriteHeader())
+}
 
-func (ResponseAuthenticatorFactory) Create(config interface{}) internet.ConnectionAuthenticator {
-	return &ResponseAuthenticator{
-		config: config.(*ResponseConfig),
+type HttpAuthenticatorFactory struct{}
+
+func (HttpAuthenticatorFactory) Create(config interface{}) internet.ConnectionAuthenticator {
+	return HttpAuthenticator{
+		config: config.(*Config),
 	}
 }
 
 func init() {
-	internet.RegisterConnectionAuthenticator(loader.GetType(new(RequestConfig)), RequestAuthenticatorFactory{})
-	internet.RegisterConnectionAuthenticator(loader.GetType(new(ResponseConfig)), ResponseAuthenticatorFactory{})
+	internet.RegisterConnectionAuthenticator(loader.GetType(new(Config)), HttpAuthenticatorFactory{})
 }

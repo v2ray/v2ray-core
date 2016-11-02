@@ -28,6 +28,7 @@ type TCPListener struct {
 	listener      *net.TCPListener
 	awaitingConns chan *ConnectionWithError
 	tlsConfig     *tls.Config
+	authConfig    internet.ConnectionAuthenticator
 	config        *Config
 }
 
@@ -62,6 +63,17 @@ func ListenTCP(address v2net.Address, port v2net.Port, options internet.ListenOp
 			l.tlsConfig = tlsConfig.GetTLSConfig()
 		}
 	}
+	if tcpSettings.HeaderSettings != nil {
+		headerConfig, err := tcpSettings.HeaderSettings.GetInstance()
+		if err != nil {
+			return nil, errors.New("TCP: Failed to get header settings: " + err.Error())
+		}
+		auth, err := internet.CreateConnectionAuthenticator(tcpSettings.HeaderSettings.Type, headerConfig)
+		if err != nil {
+			return nil, errors.New("TCP: Failed to create header authenticator: " + err.Error())
+		}
+		l.authConfig = auth
+	}
 	go l.KeepAccepting()
 	return l, nil
 }
@@ -94,6 +106,9 @@ func (this *TCPListener) KeepAccepting() {
 		}
 		if this.tlsConfig != nil {
 			conn = tls.Server(conn, this.tlsConfig)
+		}
+		if this.authConfig != nil {
+			conn = this.authConfig.Server(conn)
 		}
 		select {
 		case this.awaitingConns <- &ConnectionWithError{

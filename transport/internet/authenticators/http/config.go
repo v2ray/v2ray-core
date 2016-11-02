@@ -4,6 +4,34 @@ import (
 	"v2ray.com/core/common/dice"
 )
 
+func (this *Version) GetValue() string {
+	if this == nil {
+		return "1.1"
+	}
+	return this.Value
+}
+
+func (this *Method) GetValue() string {
+	if this == nil {
+		return "GET"
+	}
+	return this.Value
+}
+
+func (this *Status) GetCode() string {
+	if this == nil {
+		return "200"
+	}
+	return this.Code
+}
+
+func (this *Status) GetReason() string {
+	if this == nil {
+		return "OK"
+	}
+	return this.Reason
+}
+
 func pickString(arr []string) string {
 	n := len(arr)
 	if n == 0 {
@@ -30,8 +58,8 @@ func (this *RequestConfig) PickHeaders() []string {
 	return headers
 }
 
-func (this *RequestConfig) GetVersion() string {
-	return "HTTP/" + this.Version
+func (this *RequestConfig) GetFullVersion() string {
+	return "HTTP/" + this.Version.GetValue()
 }
 
 func (this *ResponseConfig) PickHeaders() []string {
@@ -48,6 +76,6 @@ func (this *ResponseConfig) PickHeaders() []string {
 	return headers
 }
 
-func (this *ResponseConfig) GetVersion() string {
-	return "HTTP/" + this.Version
+func (this *ResponseConfig) GetFullVersion() string {
+	return "HTTP/" + this.Version.GetValue()
 }

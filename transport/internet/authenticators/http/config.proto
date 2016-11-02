@@ -13,16 +13,22 @@ message Header {
   repeated string value = 2;
 }
 
-message HeaderEnding {
+// HTTP version. Default value "1.1".
+message Version {
+  string value = 1;
+}
+
+// HTTP method. Default value "GET".
+message Method {
   string value = 1;
 }
 
 message RequestConfig {
   // Full HTTP version like "1.1".
-  string version = 1;
+  Version version = 1;
 
   // GET, POST, CONNECT etc
-  string method = 2;
+  Method method = 2;
 
   // URI like "/login.php"
   repeated string uri = 3;
@@ -30,12 +36,23 @@ message RequestConfig {
   repeated Header header = 4;
 }
 
+message Status {
+  // Status code. Default "200".
+  string code = 1;
+
+  // Statue reason. Default "OK".
+  string reason = 2;
+}
+
 message ResponseConfig {
-  string version = 1;
+  Version version = 1;
 
-  string status = 2;
+  Status status = 2;
 
-  string reason = 3;
+  repeated Header header = 3;
+}
 
-  repeated Header header = 4;
+message Config {
+  RequestConfig request = 1;
+  ResponseConfig response = 2;
 }

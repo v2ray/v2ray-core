@@ -1,6 +1,7 @@
 package tcp
 
 import (
+	"errors"
 	"net"
 
 	"crypto/tls"
@@ -50,6 +51,17 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 				}
 				conn = tls.Client(conn, config)
 			}
+		}
+		if tcpSettings.HeaderSettings != nil {
+			headerConfig, err := tcpSettings.HeaderSettings.GetInstance()
+			if err != nil {
+				return nil, errors.New("TCP: Failed to get header settings: " + err.Error())
+			}
+			auth, err := internet.CreateConnectionAuthenticator(tcpSettings.HeaderSettings.Type, headerConfig)
+			if err != nil {
+				return nil, errors.New("TCP: Failed to create header authenticator: " + err.Error())
+			}
+			conn = auth.Client(conn)
 		}
 	}
 	return NewConnection(id, conn, globalCache, tcpSettings), nil

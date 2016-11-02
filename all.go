@@ -20,6 +20,7 @@ import (
 	_ "v2ray.com/core/transport/internet/udp"
 	_ "v2ray.com/core/transport/internet/ws"
 
+	_ "v2ray.com/core/transport/internet/authenticators/http"
 	_ "v2ray.com/core/transport/internet/authenticators/noop"
 	_ "v2ray.com/core/transport/internet/authenticators/srtp"
 	_ "v2ray.com/core/transport/internet/authenticators/utp"
