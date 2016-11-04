@@ -22,6 +22,10 @@ var (
 		"srtp": func() interface{} { return new(SRTPAuthenticator) },
 		"utp":  func() interface{} { return new(UTPAuthenticator) },
 	}, "type", "")
+
+	tcpHeaderLoader = NewJSONConfigLoader(ConfigCreatorCache{
+		"http": func() interface{} { return new(HTTPAuthenticator) },
+	}, "type", "")
 )
 
 type KCPConfig struct {
@@ -93,7 +97,8 @@ func (this *KCPConfig) Build() (*loader.TypedSettings, error) {
 }
 
 type TCPConfig struct {
-	ConnectionReuse *bool `json:"connectionReuse"`
+	ConnectionReuse *bool           `json:"connectionReuse"`
+	HeaderConfig    json.RawMessage `json:"header"`
 }
 
 func (this *TCPConfig) Build() (*loader.TypedSettings, error) {
@@ -103,6 +108,18 @@ func (this *TCPConfig) Build() (*loader.TypedSettings, error) {
 			Enable: *this.ConnectionReuse,
 		}
 	}
+	if len(this.HeaderConfig) > 0 {
+		headerConfig, _, err := tcpHeaderLoader.Load(this.HeaderConfig)
+		if err != nil {
+			return nil, errors.New("TCP|Config: Failed to parse header config: " + err.Error())
+		}
+		ts, err := headerConfig.(Buildable).Build()
+		if err != nil {
+			return nil, errors.New("Failed to get TCP authenticator config: " + err.Error())
+		}
+		config.HeaderSettings = ts
+	}
+
 	return loader.NewTypedSettings(config), nil
 }
 
