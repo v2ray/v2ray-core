@@ -104,7 +104,7 @@ func (this *HTTPAuthenticatorResponse) Build() (*http.ResponseConfig, error) {
 	}
 
 	if this.Status != nil || this.Reason != nil {
-		config.Status = http.Status{
+		config.Status = &http.Status{
 			Code:   "200",
 			Reason: "OK",
 		}
