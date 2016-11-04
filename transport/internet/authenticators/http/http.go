@@ -41,6 +41,12 @@ type HeaderWriter struct {
 	header *alloc.Buffer
 }
 
+func NewHeaderWriter(header *alloc.Buffer) *HeaderWriter {
+	return &HeaderWriter{
+		header: header,
+	}
+}
+
 func (this *HeaderWriter) Write(writer io.Writer) error {
 	if this.header == nil {
 		return nil
