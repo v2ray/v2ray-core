@@ -21,9 +21,10 @@ var (
 	}, "protocol", "settings")
 
 	outboundConfigLoader = NewJSONConfigLoader(ConfigCreatorCache{
-		"blackhole": func() interface{} { return new(BlackholeConfig) },
-		"freedom":   func() interface{} { return new(FreedomConfig) },
-		"vmess":     func() interface{} { return new(VMessOutboundConfig) },
+		"blackhole":   func() interface{} { return new(BlackholeConfig) },
+		"freedom":     func() interface{} { return new(FreedomConfig) },
+		"shadowsocks": func() interface{} { return new(ShadowsocksClientConfig) },
+		"vmess":       func() interface{} { return new(VMessOutboundConfig) },
 	}, "protocol", "settings")
 )
 
@@ -59,7 +60,7 @@ func (this *InboundConnectionConfig) Build() (*core.InboundConnectionConfig, err
 
 	jsonConfig, err := inboundConfigLoader.LoadWithID(this.Settings, this.Protocol)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("Failed to load inbound config: " + err.Error())
 	}
 	ts, err := jsonConfig.(Buildable).Build()
 	if err != nil {
@@ -80,7 +81,7 @@ func (this *OutboundConnectionConfig) Build() (*core.OutboundConnectionConfig, e
 	config := new(core.OutboundConnectionConfig)
 	rawConfig, err := outboundConfigLoader.LoadWithID(this.Settings, this.Protocol)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("Failed to parse outbound config: " + err.Error())
 	}
 	ts, err := rawConfig.(Buildable).Build()
 	if err != nil {
@@ -181,7 +182,7 @@ func (this *InboundDetourConfig) Build() (*core.InboundConnectionConfig, error) 
 
 	rawConfig, err := inboundConfigLoader.LoadWithID(this.Settings, this.Protocol)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("Failed to load inbound detour config: " + err.Error())
 	}
 	ts, err := rawConfig.(Buildable).Build()
 	if err != nil {
@@ -221,7 +222,7 @@ func (this *OutboundDetourConfig) Build() (*core.OutboundConnectionConfig, error
 
 	rawConfig, err := outboundConfigLoader.LoadWithID(this.Settings, this.Protocol)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("Failed to parse to outbound detour config: " + err.Error())
 	}
 	ts, err := rawConfig.(Buildable).Build()
 	if err != nil {
