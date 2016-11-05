@@ -1,11 +1,24 @@
 {
-  "port": 50051,
+  "log": {
+    "loglevel": "debug"
+  },
   "inbound": {
+    "port": 50051,
     "listen": "127.0.0.1",
     "protocol": "shadowsocks",
     "settings": {
       "method": "aes-256-cfb",
       "password": "v2ray-password"
+    },
+    "streamSettings": {
+      "network": "tcp",
+      "tcpSettings": {
+        "header": {
+          "type": "http",
+          "request": {},
+          "response": {}
+        }
+      }
     }
   },
   "inboundDetour": [
@@ -17,6 +30,16 @@
         "method": "aes-128-cfb",
         "password": "v2ray-another",
         "udp": true
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "tcpSettings": {
+          "header": {
+            "type": "http",
+            "request": {},
+            "response": {}
+          }
+        }
       }
     },
     {

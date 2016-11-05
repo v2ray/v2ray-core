@@ -4,11 +4,10 @@ import (
 	"net"
 	"testing"
 
+	"v2ray.com/core/common/alloc"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/testing/servers/tcp"
-
-	ssclient "github.com/shadowsocks/shadowsocks-go/shadowsocks"
 )
 
 func TestShadowsocksTCP(t *testing.T) {
@@ -27,65 +26,39 @@ func TestShadowsocksTCP(t *testing.T) {
 	assert.Error(err).IsNil()
 	defer tcpServer.Close()
 
-	assert.Error(InitializeServerServer("test_6")).IsNil()
+	assert.Error(InitializeServerSetOnce("test_6")).IsNil()
 
-	cipher, err := ssclient.NewCipher("aes-256-cfb", "v2ray-password")
-	assert.Error(err).IsNil()
+	for i := 0; i < 1; i++ {
+		conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
+			IP:   []byte{127, 0, 0, 1},
+			Port: 50050,
+		})
+		assert.Error(err).IsNil()
 
-	rawAddr := []byte{1, 127, 0, 0, 1, 0xc3, 0x84} // 127.0.0.1:50052
-	conn, err := ssclient.DialWithRawAddr(rawAddr, "127.0.0.1:50051", cipher)
-	assert.Error(err).IsNil()
+		payload := "dokodemo request."
+		nBytes, err := conn.Write([]byte(payload))
+		assert.Error(err).IsNil()
+		assert.Int(nBytes).Equals(len(payload))
 
-	payload := "shadowsocks request."
-	nBytes, err := conn.Write([]byte(payload))
-	assert.Error(err).IsNil()
-	assert.Int(nBytes).Equals(len(payload))
+		conn.CloseWrite()
 
-	conn.Conn.(*net.TCPConn).CloseWrite()
+		response := alloc.NewBuffer().Clear()
+		finished := false
+		for {
+			_, err := response.FillFrom(conn)
+			assert.Error(err).IsNil()
+			if err != nil {
+				break
+			}
+			if response.String() == "Processed: "+payload {
+				finished = true
+				break
+			}
+		}
+		assert.Bool(finished).IsTrue()
 
-	response := make([]byte, 1024)
-	nBytes, err = conn.Read(response)
-	assert.Error(err).IsNil()
-	assert.String("Processed: " + payload).Equals(string(response[:nBytes]))
-	conn.Close()
-
-	cipher, err = ssclient.NewCipher("aes-128-cfb", "v2ray-another")
-	assert.Error(err).IsNil()
-
-	conn, err = ssclient.DialWithRawAddr(rawAddr, "127.0.0.1:50055", cipher)
-	assert.Error(err).IsNil()
-
-	payload = "shadowsocks request 2."
-	nBytes, err = conn.Write([]byte(payload))
-	assert.Error(err).IsNil()
-	assert.Int(nBytes).Equals(len(payload))
-
-	conn.Conn.(*net.TCPConn).CloseWrite()
-
-	response = make([]byte, 1024)
-	nBytes, err = conn.Read(response)
-	assert.Error(err).IsNil()
-	assert.String("Processed: " + payload).Equals(string(response[:nBytes]))
-	conn.Close()
-
-	cipher, err = ssclient.NewCipher("chacha20", "new-password")
-	assert.Error(err).IsNil()
-
-	conn, err = ssclient.DialWithRawAddr(rawAddr, "127.0.0.1:50056", cipher)
-	assert.Error(err).IsNil()
-
-	payload = "shadowsocks request 3."
-	nBytes, err = conn.Write([]byte(payload))
-	assert.Error(err).IsNil()
-	assert.Int(nBytes).Equals(len(payload))
-
-	conn.Conn.(*net.TCPConn).CloseWrite()
-
-	response = make([]byte, 1024)
-	nBytes, err = conn.Read(response)
-	assert.Error(err).IsNil()
-	assert.String("Processed: " + payload).Equals(string(response[:nBytes]))
-	conn.Close()
+		conn.Close()
+	}
 
 	CloseAllServers()
 }
