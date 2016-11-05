@@ -36,16 +36,11 @@ func (UTPAuthenticator) Build() (*loader.TypedSettings, error) {
 	return loader.NewTypedSettings(new(utp.Config)), nil
 }
 
-type HTTPAuthenticatorHeader struct {
-	Name  string      `json:"name"`
-	Value *StringList `json:"value"`
-}
-
 type HTTPAuthenticatorRequest struct {
-	Version *string                   `json:"version"`
-	Method  *string                   `json:"method"`
-	Path    *StringList               `json:"path"`
-	Headers []HTTPAuthenticatorHeader `json:"headers"`
+	Version *string                `json:"version"`
+	Method  *string                `json:"method"`
+	Path    *StringList            `json:"path"`
+	Headers map[string]*StringList `json:"headers"`
 }
 
 func (this *HTTPAuthenticatorRequest) Build() (*http.RequestConfig, error) {
@@ -72,12 +67,12 @@ func (this *HTTPAuthenticatorRequest) Build() (*http.RequestConfig, error) {
 	}
 
 	if len(this.Headers) > 0 {
-		config.Header = make([]*http.Header, len(this.Headers))
-		for idx, header := range this.Headers {
-			config.Header[idx] = &http.Header{
-				Name:  header.Name,
-				Value: append([]string(nil), (*header.Value)...),
-			}
+		config.Header = make([]*http.Header, 0, len(this.Headers))
+		for key, value := range this.Headers {
+			config.Header = append(config.Header, &http.Header{
+				Name:  key,
+				Value: append([]string(nil), (*value)...),
+			})
 		}
 	}
 
@@ -85,10 +80,10 @@ func (this *HTTPAuthenticatorRequest) Build() (*http.RequestConfig, error) {
 }
 
 type HTTPAuthenticatorResponse struct {
-	Version *string                   `json:"version"`
-	Status  *string                   `json:"status"`
-	Reason  *string                   `json:"reason"`
-	Headers []HTTPAuthenticatorHeader `json:"headers"`
+	Version *string                `json:"version"`
+	Status  *string                `json:"status"`
+	Reason  *string                `json:"reason"`
+	Headers map[string]*StringList `json:"headers"`
 }
 
 func (this *HTTPAuthenticatorResponse) Build() (*http.ResponseConfig, error) {
@@ -123,12 +118,12 @@ func (this *HTTPAuthenticatorResponse) Build() (*http.ResponseConfig, error) {
 	}
 
 	if len(this.Headers) > 0 {
-		config.Header = make([]*http.Header, len(this.Headers))
-		for idx, header := range this.Headers {
-			config.Header[idx] = &http.Header{
-				Name:  header.Name,
-				Value: append([]string(nil), (*header.Value)...),
-			}
+		config.Header = make([]*http.Header, 0, len(this.Headers))
+		for key, value := range this.Headers {
+			config.Header = append(config.Header, &http.Header{
+				Name:  key,
+				Value: append([]string(nil), (*value)...),
+			})
 		}
 	}
 
