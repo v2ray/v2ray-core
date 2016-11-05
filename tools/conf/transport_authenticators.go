@@ -18,6 +18,12 @@ func (NoOpAuthenticator) Build() (*loader.TypedSettings, error) {
 	return loader.NewTypedSettings(new(noop.Config)), nil
 }
 
+type NoOpConnectionAuthenticator struct{}
+
+func (NoOpConnectionAuthenticator) Build() (*loader.TypedSettings, error) {
+	return loader.NewTypedSettings(new(noop.Config)), nil
+}
+
 type SRTPAuthenticator struct{}
 
 func (SRTPAuthenticator) Build() (*loader.TypedSettings, error) {
