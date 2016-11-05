@@ -1,10 +1,8 @@
 package conf
 
 import (
-	"encoding/json"
-
 	"errors"
-	"strings"
+
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/transport/internet/authenticators/http"
 	"v2ray.com/core/transport/internet/authenticators/noop"
@@ -131,41 +129,27 @@ func (this *HTTPAuthenticatorResponse) Build() (*http.ResponseConfig, error) {
 }
 
 type HTTPAuthenticator struct {
-	Request  *HTTPAuthenticatorRequest `json:"request"`
-	Response json.RawMessage           `json:"response"`
+	Request  *HTTPAuthenticatorRequest  `json:"request"`
+	Response *HTTPAuthenticatorResponse `json:"response"`
 }
 
 func (this *HTTPAuthenticator) Build() (*loader.TypedSettings, error) {
 	config := new(http.Config)
-	if this.Request != nil {
-		requestConfig, err := this.Request.Build()
+	if this.Request == nil {
+		return nil, errors.New("HTTP request settings not set.")
+	}
+	requestConfig, err := this.Request.Build()
+	if err != nil {
+		return nil, err
+	}
+	config.Request = requestConfig
+
+	if this.Response != nil {
+		responseConfig, err := this.Response.Build()
 		if err != nil {
 			return nil, err
 		}
-		config.Request = requestConfig
-	}
-
-	if len(this.Response) > 0 {
-		var text string
-		parsed := false
-		if err := json.Unmarshal(this.Response, &text); err == nil {
-			if strings.ToLower(text) != "disabled" {
-				return nil, errors.New("Unknown HTTP header settings: " + text)
-			}
-			parsed = true
-		}
-
-		if !parsed {
-			var response HTTPAuthenticatorResponse
-			if err := json.Unmarshal(this.Response, &response); err != nil {
-				return nil, errors.New("Failed to parse HTTP header response.")
-			}
-			responseConfig, err := response.Build()
-			if err != nil {
-				return nil, err
-			}
-			config.Response = responseConfig
-		}
+		config.Response = responseConfig
 	}
 
 	return loader.NewTypedSettings(config), nil
