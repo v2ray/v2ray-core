@@ -101,9 +101,6 @@ func (this *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffe
 			return errors.New("Shadowsocks|Client: Failed to write payload: " + err.Error())
 		}
 
-		bufferedWriter.SetCached(false)
-		v2io.Pipe(ray.OutboundInput(), bodyWriter)
-
 		var responseMutex sync.Mutex
 		responseMutex.Lock()
 
@@ -119,19 +116,13 @@ func (this *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffe
 			v2io.Pipe(responseReader, ray.OutboundOutput())
 		}()
 
+		bufferedWriter.SetCached(false)
+		v2io.Pipe(ray.OutboundInput(), bodyWriter)
+
 		responseMutex.Lock()
 	}
 
 	if request.Command == protocol.RequestCommandUDP {
-		writer := &UDPWriter{
-			Writer:  conn,
-			Request: request,
-		}
-		if err := writer.Write(payload); err != nil {
-			return errors.New("Shadowsocks|Client: Failed to write payload: " + err.Error())
-		}
-		v2io.Pipe(ray.OutboundInput(), writer)
-
 		timedReader := v2net.NewTimeOutReader(16, conn)
 		var responseMutex sync.Mutex
 		responseMutex.Lock()
@@ -146,6 +137,15 @@ func (this *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffe
 
 			v2io.Pipe(reader, ray.OutboundOutput())
 		}()
+
+		writer := &UDPWriter{
+			Writer:  conn,
+			Request: request,
+		}
+		if err := writer.Write(payload); err != nil {
+			return errors.New("Shadowsocks|Client: Failed to write payload: " + err.Error())
+		}
+		v2io.Pipe(ray.OutboundInput(), writer)
 
 		responseMutex.Lock()
 	}
