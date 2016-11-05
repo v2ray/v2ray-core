@@ -117,5 +117,7 @@ func (this *ShadowsocksClientConfig) Build() (*loader.TypedSettings, error) {
 		serverSpecs[idx] = ss
 	}
 
+	config.Server = serverSpecs
+
 	return loader.NewTypedSettings(config), nil
 }
