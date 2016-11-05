@@ -15,6 +15,26 @@ const (
 	ENDING = CRLF + CRLF
 )
 
+type Reader interface {
+	Read(io.Reader) (*alloc.Buffer, error)
+}
+
+type Writer interface {
+	Write(io.Writer) error
+}
+
+type NoOpReader struct{}
+
+func (this *NoOpReader) Read(io.Reader) (*alloc.Buffer, error) {
+	return nil, nil
+}
+
+type NoOpWriter struct{}
+
+func (this *NoOpWriter) Write(io.Writer) error {
+	return nil
+}
+
 type HeaderReader struct {
 }
 
@@ -33,6 +53,10 @@ func (*HeaderReader) Read(reader io.Reader) (*alloc.Buffer, error) {
 			copy(buffer.Value, buffer.Value[buffer.Len()-len(ENDING):])
 			buffer.Slice(0, len(ENDING))
 		}
+	}
+	if buffer.IsEmpty() {
+		buffer.Release()
+		return nil, nil
 	}
 	return buffer, nil
 }
@@ -61,11 +85,11 @@ type HttpConn struct {
 	net.Conn
 
 	readBuffer    *alloc.Buffer
-	oneTimeReader *HeaderReader
-	oneTimeWriter *HeaderWriter
+	oneTimeReader Reader
+	oneTimeWriter Writer
 }
 
-func NewHttpConn(conn net.Conn, reader *HeaderReader, writer *HeaderWriter) *HttpConn {
+func NewHttpConn(conn net.Conn, reader Reader, writer Writer) *HttpConn {
 	return &HttpConn{
 		Conn:          conn,
 		oneTimeReader: reader,
@@ -145,7 +169,16 @@ func (this HttpAuthenticator) Client(conn net.Conn) net.Conn {
 	if this.config.Request == nil && this.config.Response == nil {
 		return conn
 	}
-	return NewHttpConn(conn, new(HeaderReader), this.GetClientWriter())
+	var reader Reader = new(NoOpReader)
+	if this.config.Request != nil {
+		reader = new(HeaderReader)
+	}
+
+	var writer Writer = new(NoOpWriter)
+	if this.config.Response != nil {
+		writer = this.GetClientWriter()
+	}
+	return NewHttpConn(conn, reader, writer)
 }
 
 func (this HttpAuthenticator) Server(conn net.Conn) net.Conn {
