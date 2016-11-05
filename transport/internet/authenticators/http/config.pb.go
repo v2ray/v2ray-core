@@ -147,7 +147,9 @@ func (m *ResponseConfig) GetHeader() []*Header {
 }
 
 type Config struct {
-	Request  *RequestConfig  `protobuf:"bytes,1,opt,name=request" json:"request,omitempty"`
+	// Settings for authenticating requests. If not set, client side will not send authenication header, and server side will bypass authentication.
+	Request *RequestConfig `protobuf:"bytes,1,opt,name=request" json:"request,omitempty"`
+	// Settings for authenticating responses. If not set, client side will bypass authentication, and server side will not send authentication header.
 	Response *ResponseConfig `protobuf:"bytes,2,opt,name=response" json:"response,omitempty"`
 }
 
