@@ -75,3 +75,44 @@ func TestTCPRequest(t *testing.T) {
 	assert.Error(err).IsNil()
 	assert.Bytes(decodedData.Value).Equals([]byte("test string"))
 }
+
+func TestUDPReaderWriter(t *testing.T) {
+	assert := assert.On(t)
+
+	user := &protocol.User{
+		Account: loader.NewTypedSettings(&Account{
+			Password:   "test-password",
+			CipherType: CipherType_CHACHA20_IEFT,
+		}),
+	}
+	cache := alloc.NewBuffer().Clear()
+	writer := &UDPWriter{
+		Writer: cache,
+		Request: &protocol.RequestHeader{
+			Version: Version,
+			Address: v2net.DomainAddress("v2ray.com"),
+			Port:    123,
+			User:    user,
+			Option:  RequestOptionOneTimeAuth,
+		},
+	}
+
+	reader := &UDPReader{
+		Reader: cache,
+		User:   user,
+	}
+
+	err := writer.Write(alloc.NewBuffer().Clear().AppendString("test payload"))
+	assert.Error(err).IsNil()
+
+	payload, err := reader.Read()
+	assert.Error(err).IsNil()
+	assert.String(payload.String()).Equals("test payload")
+
+	err = writer.Write(alloc.NewBuffer().Clear().AppendString("test payload 2"))
+	assert.Error(err).IsNil()
+
+	payload, err = reader.Read()
+	assert.Error(err).IsNil()
+	assert.String(payload.String()).Equals("test payload 2")
+}

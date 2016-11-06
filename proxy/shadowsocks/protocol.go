@@ -250,10 +250,10 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload *alloc.Buffer) (*a
 	case v2net.AddressFamilyIPv4:
 		buffer.AppendBytes(AddrTypeIPv4)
 		buffer.Append([]byte(request.Address.IP()))
-	case AddrTypeIPv6:
+	case v2net.AddressFamilyIPv6:
 		buffer.AppendBytes(AddrTypeIPv6)
 		buffer.Append([]byte(request.Address.IP()))
-	case AddrTypeDomain:
+	case v2net.AddressFamilyDomain:
 		buffer.AppendBytes(AddrTypeDomain, byte(len(request.Address.Domain())))
 		buffer.Append([]byte(request.Address.Domain()))
 	default:
@@ -265,7 +265,7 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload *alloc.Buffer) (*a
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {
 		authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
-		buffer.Value[ivLen] |= 0x0F
+		buffer.Value[ivLen] |= 0x10
 
 		buffer.Value = authenticator.Authenticate(buffer.Value, buffer.Value[ivLen:])
 	}
@@ -334,7 +334,7 @@ func DecodeUDPPacket(user *protocol.User, payload *alloc.Buffer) (*protocol.Requ
 		request.Address = v2net.DomainAddress(string(payload.Value[1 : 1+domainLength]))
 		payload.SliceFrom(1 + domainLength)
 	default:
-		return nil, nil, errors.New("Shadowsocks|UDP: Unknown address type: " + err.Error())
+		return nil, nil, errors.New("Shadowsocks|UDP: Unknown address type")
 	}
 
 	request.Port = v2net.PortFromBytes(payload.Value[:2])
