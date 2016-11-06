@@ -155,10 +155,10 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (v2io.Wr
 	case v2net.AddressFamilyIPv4:
 		header.AppendBytes(AddrTypeIPv4)
 		header.Append([]byte(request.Address.IP()))
-	case AddrTypeIPv6:
+	case v2net.AddressFamilyIPv6:
 		header.AppendBytes(AddrTypeIPv6)
 		header.Append([]byte(request.Address.IP()))
-	case AddrTypeDomain:
+	case v2net.AddressFamilyDomain:
 		header.AppendBytes(AddrTypeDomain, byte(len(request.Address.Domain())))
 		header.Append([]byte(request.Address.Domain()))
 	default:
