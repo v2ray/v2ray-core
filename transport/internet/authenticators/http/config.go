@@ -1,6 +1,7 @@
 package http
 
 import (
+	"strings"
 	"v2ray.com/core/common/dice"
 )
 
@@ -60,6 +61,16 @@ func (this *RequestConfig) PickHeaders() []string {
 
 func (this *RequestConfig) GetFullVersion() string {
 	return "HTTP/" + this.Version.GetValue()
+}
+
+func (this *ResponseConfig) HasHeader(header string) bool {
+	cHeader := strings.ToLower(header)
+	for _, tHeader := range this.Header {
+		if strings.ToLower(tHeader.Name) == cHeader {
+			return true
+		}
+	}
+	return false
 }
 
 func (this *ResponseConfig) PickHeaders() []string {

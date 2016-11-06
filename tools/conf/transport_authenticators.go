@@ -56,6 +56,10 @@ func (this *HTTPAuthenticatorRequest) Build() (*http.RequestConfig, error) {
 					"Mozilla/5.0 (iPhone; CPU iPhone OS 10_0_2 like Mac OS X) AppleWebKit/601.1 (KHTML, like Gecko) CriOS/53.0.2785.109 Mobile/14A456 Safari/601.1.46",
 				},
 			},
+			{
+				Name:  "Accept-Encoding",
+				Value: []string{"gzip, deflate"},
+			},
 		},
 	}
 

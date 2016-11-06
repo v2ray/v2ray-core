@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"io"
 	"net"
+	"net/http"
+	"time"
 
 	"v2ray.com/core/common/alloc"
 	"v2ray.com/core/common/loader"
@@ -158,6 +160,9 @@ func (this HttpAuthenticator) GetServerWriter() *HeaderWriter {
 	headers := config.PickHeaders()
 	for _, h := range headers {
 		header.AppendString(h).AppendString(CRLF)
+	}
+	if !config.HasHeader("Date") {
+		header.AppendString("Date: ").AppendString(time.Now().Format(http.TimeFormat)).AppendString(CRLF)
 	}
 	header.AppendString(CRLF)
 	return &HeaderWriter{
