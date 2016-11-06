@@ -60,6 +60,14 @@ func (this *HTTPAuthenticatorRequest) Build() (*http.RequestConfig, error) {
 				Name:  "Accept-Encoding",
 				Value: []string{"gzip, deflate"},
 			},
+			{
+				Name:  "Connection",
+				Value: []string{"keep-alive"},
+			},
+			{
+				Name:  "Pragma",
+				Value: []string{"no-cache"},
+			},
 		},
 	}
 
@@ -105,6 +113,14 @@ func (this *HTTPAuthenticatorResponse) Build() (*http.ResponseConfig, error) {
 			{
 				Name:  "Transfer-Encoding",
 				Value: []string{"chunked"},
+			},
+			{
+				Name:  "Connection",
+				Value: []string{"keep-alive"},
+			},
+			{
+				Name:  "Pragma",
+				Value: []string{"no-cache"},
 			},
 		},
 	}
