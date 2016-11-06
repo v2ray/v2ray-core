@@ -35,10 +35,14 @@ func (this *Status) GetReason() string {
 
 func pickString(arr []string) string {
 	n := len(arr)
-	if n == 0 {
+	switch n {
+	case 0:
 		return ""
+	case 1:
+		return arr[0]
+	default:
+		return arr[dice.Roll(n)]
 	}
-	return arr[dice.Roll(n)]
 }
 
 func (this *RequestConfig) PickUri() string {
