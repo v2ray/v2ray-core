@@ -35,9 +35,9 @@ func (UTPAuthenticator) Build() (*loader.TypedSettings, error) {
 }
 
 type HTTPAuthenticatorRequest struct {
-	Version *string                `json:"version"`
-	Method  *string                `json:"method"`
-	Path    *StringList            `json:"path"`
+	Version string                 `json:"version"`
+	Method  string                 `json:"method"`
+	Path    StringList             `json:"path"`
 	Headers map[string]*StringList `json:"headers"`
 }
 
@@ -71,21 +71,24 @@ func (this *HTTPAuthenticatorRequest) Build() (*http.RequestConfig, error) {
 		},
 	}
 
-	if this.Version != nil {
-		config.Version = &http.Version{Value: *this.Version}
+	if len(this.Version) > 0 {
+		config.Version = &http.Version{Value: this.Version}
 	}
 
-	if this.Method != nil {
-		config.Method = &http.Method{Value: *this.Method}
+	if len(this.Method) > 0 {
+		config.Method = &http.Method{Value: this.Method}
 	}
 
-	if this.Path != nil && this.Path.Len() > 0 {
-		config.Uri = append([]string(nil), (*this.Path)...)
+	if len(this.Path) > 0 {
+		config.Uri = append([]string(nil), (this.Path)...)
 	}
 
 	if len(this.Headers) > 0 {
 		config.Header = make([]*http.Header, 0, len(this.Headers))
 		for key, value := range this.Headers {
+			if value == nil {
+				return nil, errors.New("Empty HTTP header value: " + key)
+			}
 			config.Header = append(config.Header, &http.Header{
 				Name:  key,
 				Value: append([]string(nil), (*value)...),
@@ -97,9 +100,9 @@ func (this *HTTPAuthenticatorRequest) Build() (*http.RequestConfig, error) {
 }
 
 type HTTPAuthenticatorResponse struct {
-	Version *string                `json:"version"`
-	Status  *string                `json:"status"`
-	Reason  *string                `json:"reason"`
+	Version string                 `json:"version"`
+	Status  string                 `json:"status"`
+	Reason  string                 `json:"reason"`
 	Headers map[string]*StringList `json:"headers"`
 }
 
@@ -125,26 +128,29 @@ func (this *HTTPAuthenticatorResponse) Build() (*http.ResponseConfig, error) {
 		},
 	}
 
-	if this.Version != nil {
-		config.Version = &http.Version{Value: *this.Version}
+	if len(this.Version) > 0 {
+		config.Version = &http.Version{Value: this.Version}
 	}
 
-	if this.Status != nil || this.Reason != nil {
+	if len(this.Status) > 0 || len(this.Reason) > 0 {
 		config.Status = &http.Status{
 			Code:   "200",
 			Reason: "OK",
 		}
-		if this.Status != nil {
-			config.Status.Code = *this.Status
+		if len(this.Status) > 0 {
+			config.Status.Code = this.Status
 		}
-		if this.Reason != nil {
-			config.Status.Reason = *this.Reason
+		if len(this.Reason) > 0 {
+			config.Status.Reason = this.Reason
 		}
 	}
 
 	if len(this.Headers) > 0 {
 		config.Header = make([]*http.Header, 0, len(this.Headers))
 		for key, value := range this.Headers {
+			if value == nil {
+				return nil, errors.New("Empty HTTP header value: " + key)
+			}
 			config.Header = append(config.Header, &http.Header{
 				Name:  key,
 				Value: append([]string(nil), (*value)...),
@@ -156,28 +162,23 @@ func (this *HTTPAuthenticatorResponse) Build() (*http.ResponseConfig, error) {
 }
 
 type HTTPAuthenticator struct {
-	Request  *HTTPAuthenticatorRequest  `json:"request"`
-	Response *HTTPAuthenticatorResponse `json:"response"`
+	Request  HTTPAuthenticatorRequest  `json:"request"`
+	Response HTTPAuthenticatorResponse `json:"response"`
 }
 
 func (this *HTTPAuthenticator) Build() (*loader.TypedSettings, error) {
 	config := new(http.Config)
-	if this.Request == nil {
-		return nil, errors.New("HTTP request settings not set.")
-	}
 	requestConfig, err := this.Request.Build()
 	if err != nil {
 		return nil, err
 	}
 	config.Request = requestConfig
 
-	if this.Response != nil {
-		responseConfig, err := this.Response.Build()
-		if err != nil {
-			return nil, err
-		}
-		config.Response = responseConfig
+	responseConfig, err := this.Response.Build()
+	if err != nil {
+		return nil, err
 	}
+	config.Response = responseConfig
 
 	return loader.NewTypedSettings(config), nil
 }
