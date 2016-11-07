@@ -138,7 +138,7 @@ type HttpAuthenticator struct {
 }
 
 func (this HttpAuthenticator) GetClientWriter() *HeaderWriter {
-	header := alloc.NewLocalBuffer(2048)
+	header := alloc.NewLocalBuffer(2048).Clear()
 	config := this.config.Request
 	header.AppendString(config.Method.GetValue()).AppendString(" ").AppendString(config.PickUri()).AppendString(" ").AppendString(config.GetFullVersion()).AppendString(CRLF)
 
@@ -153,7 +153,7 @@ func (this HttpAuthenticator) GetClientWriter() *HeaderWriter {
 }
 
 func (this HttpAuthenticator) GetServerWriter() *HeaderWriter {
-	header := alloc.NewLocalBuffer(2048)
+	header := alloc.NewLocalBuffer(2048).Clear()
 	config := this.config.Response
 	header.AppendString(config.GetFullVersion()).AppendString(" ").AppendString(config.Status.GetCode()).AppendString(" ").AppendString(config.Status.GetReason()).AppendString(CRLF)
 
