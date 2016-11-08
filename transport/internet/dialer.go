@@ -12,7 +12,8 @@ var (
 )
 
 type DialerOptions struct {
-	Stream *StreamConfig
+	Stream   *StreamConfig
+	ProxyTag string
 }
 
 type Dialer func(src v2net.Address, dest v2net.Destination, options DialerOptions) (Connection, error)
@@ -23,27 +24,28 @@ var (
 	RawTCPDialer Dialer
 	UDPDialer    Dialer
 	WSDialer     Dialer
+	ProxyDialer  Dialer
 )
 
-func Dial(src v2net.Address, dest v2net.Destination, settings *StreamConfig) (Connection, error) {
+func Dial(src v2net.Address, dest v2net.Destination, options DialerOptions) (Connection, error) {
+	if len(options.ProxyTag) > 0 && ProxyDialer != nil {
+		return ProxyDialer(src, dest, options)
+	}
 
 	var connection Connection
 	var err error
-	dialerOptions := DialerOptions{
-		Stream: settings,
-	}
 	if dest.Network == v2net.Network_TCP {
-		switch settings.Network {
+		switch options.Stream.Network {
 		case v2net.Network_TCP:
-			connection, err = TCPDialer(src, dest, dialerOptions)
+			connection, err = TCPDialer(src, dest, options)
 		case v2net.Network_KCP:
-			connection, err = KCPDialer(src, dest, dialerOptions)
+			connection, err = KCPDialer(src, dest, options)
 		case v2net.Network_WebSocket:
-			connection, err = WSDialer(src, dest, dialerOptions)
+			connection, err = WSDialer(src, dest, options)
 
 			// This check has to be the last one.
 		case v2net.Network_RawTCP:
-			connection, err = RawTCPDialer(src, dest, dialerOptions)
+			connection, err = RawTCPDialer(src, dest, options)
 		default:
 			return nil, ErrUnsupportedStreamType
 		}
@@ -54,7 +56,7 @@ func Dial(src v2net.Address, dest v2net.Destination, settings *StreamConfig) (Co
 		return connection, nil
 	}
 
-	return UDPDialer(src, dest, dialerOptions)
+	return UDPDialer(src, dest, options)
 }
 
 func DialToDest(src v2net.Address, dest v2net.Destination) (net.Conn, error) {
