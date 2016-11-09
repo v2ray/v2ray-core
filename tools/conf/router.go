@@ -152,7 +152,7 @@ func parseFieldRule(msg json.RawMessage) (*router.RoutingRule, error) {
 	}
 
 	if rawFieldRule.SourceIP != nil {
-		for _, ip := range *rawFieldRule.IP {
+		for _, ip := range *rawFieldRule.SourceIP {
 			ipRule := parseIP(ip)
 			if ipRule != nil {
 				rule.SourceCidr = append(rule.SourceCidr, ipRule)

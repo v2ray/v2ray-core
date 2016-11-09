@@ -135,3 +135,31 @@ func TestIPRule(t *testing.T) {
 		Destination: v2net.TCPDestination(v2net.IPAddress([]byte{192, 0, 0, 1}), 80),
 	})).IsTrue()
 }
+
+func TestSourceIPRule(t *testing.T) {
+	assert := assert.On(t)
+
+	rule := ParseRule([]byte(`{
+    "type": "field",
+    "source": [
+      "10.0.0.0/8",
+      "192.0.0.0/24"
+    ],
+    "outboundTag": "direct"
+  }`))
+	assert.Pointer(rule).IsNotNil()
+	cond, err := rule.BuildCondition()
+	assert.Error(err).IsNil()
+	assert.Bool(cond.Apply(&proxy.SessionInfo{
+		Source: v2net.TCPDestination(v2net.DomainAddress("www.ooxx.com"), 80),
+	})).IsFalse()
+	assert.Bool(cond.Apply(&proxy.SessionInfo{
+		Source: v2net.TCPDestination(v2net.IPAddress([]byte{10, 0, 0, 1}), 80),
+	})).IsTrue()
+	assert.Bool(cond.Apply(&proxy.SessionInfo{
+		Source: v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), 80),
+	})).IsFalse()
+	assert.Bool(cond.Apply(&proxy.SessionInfo{
+		Source: v2net.TCPDestination(v2net.IPAddress([]byte{192, 0, 0, 1}), 80),
+	})).IsTrue()
+}
