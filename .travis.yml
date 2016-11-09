@@ -1,41 +1,34 @@
 language: go
-
 go:
-  - 1.7.3
-
+- 1.7.3
 go_import_path: v2ray.com/core
-
 git:
   depth: 5
-  
 script:
-  - go test -tags json v2ray.com/core/...
-
+- go test -tags json v2ray.com/core/...
 after_success:
-  - ./testing/coverage/coverall
-
+- ./testing/coverage/coverall
 before_deploy:
-  - "./tools/release/release-ci.sh"
-  - gem install octokit -v 4.3.0 # 4.4.0 needs Ruby 2 which is missing on the build
-
+- ./tools/release/release-ci.sh
+- gem install octokit -v 4.3.0
 deploy:
   provider: releases
-  api_key: 
-    secure: "FORkI+hXFWSxLkqkBDvo8APQ1XLfuzbOBqhVW474x299AzHpgE/7dYLNo/rQaerYMdmw8gB21tUWOI3FjUYv51x1dO2a2Bu8Por+1BQ+zdUIyS3zJteJ8bAMZGVtg1BCTFjxQsIDMmaziaScSKz3NwEJ1IL8UIBiidFf8EuYyK+EL6yQFodrSeUDsUH52pBO0SBugsAj4lOSTCS25ZcpWYcUMBo7zaD9sNE1Oo8f/bz7cFe4cJLCpazIgkt57IT3u/8BH/EMz4HRbAqj48mjKytp4lm7R3IC8w0ba6yLNXgKqva10B/KNwZQweXqglM5iawQDdSbnIjUnVEe9Oexu8wNV52oBt+8wC7P/ZtAsZTnyWvwIhH2uyhzEHfsM5Up7DnAnaATh/+2upn3lcs4s2p9d/6tIObeIpBvP/3QRNmlmtZFIOnlqkcROj9NQ3IHGbswGiAfBDAsAC8h9CRDy9MtRs6ZbaCih0FLgMzEXi+S50eelNRv4SGaeLlW07cz7uma5C+z+zWb4ZmWsOwWjkOAaFL/zL5O9/w7i4cbXr/sQ6z6YmdDEejbrkHiE8DmKQqeV13xY1FhDqFyEpsdUbftG6pKPt5wcyNEAnw9aPMK7Ec0dAe6vg+oTcfMPAO/rHRXEc4IP56QqdlZTmsZOdDrGgnkRxpbayc+KcvrN28="
+  api_key:
+    secure: h7P6y7jHe0yALKgXb9HyPAlE6JPOB/BiScMlqsG6MUF0G29JrEjcDXh/jZm8HB82OfUG3zPBtr5m0P3LUoM60EQQ96/yE9KKrhEBeyF+E9CAOUHx7Ar4XDR7dG7/Wv+q3ZRFl+4CB5f7xbt9qlobqXkeffngeu9RNWngqVvbyTWIZclx7NYl5haf/hhqGcX2OPKQQfjvOsnP+uLmqiRJBbaYQMzPmvjaQJ9cB6Z11ctJqunk3bN89nV86uaHLqmz8nfk3/J7RjdeT0mqgRYVwfMavZifGPISlgsZd7N0PqiiWB7gZqzjbiSCur+PtnVScYfTlfNoRP+XJtVx3OFnepffSvyE6zOP20MEINAMOgME68Zzkaab8JnDVwj0eTsPNEDpK+E+RUZ1IkaAvVZ19L0qNYwO6bP8koUI4cFDI45srcx0o5xC7Hzz1eaSm5ZJZ3iwwzFZE2vFm83pcQilopG0E7gTYyB+fk0x6sca5MY1PhHAByvBbvYhsCBV4x4o0N1lD1V3QXhvljJL4qieFybwg8g0hdUNeSrm2+NxPqKpEHUQWQFGsl0OGMy2Ji6u/NG5tSvfWKUUsXpkueyutvfTb9D94Xk4s1eNGMG+BHFIGHRTZzX6XXB7/j3zObWApD3h8SIbXjfL0mLaKaBeMyLwf2tlsKTgzwEjvIzcNfQ=
   file:
-    - "$GOPATH/bin/v2ray-macos.zip"
-    - "$GOPATH/bin/v2ray-windows-64.zip"
-    - "$GOPATH/bin/v2ray-windows-32.zip"
-    - "$GOPATH/bin/v2ray-linux-64.zip"
-    - "$GOPATH/bin/v2ray-linux-32.zip"
-    - "$GOPATH/bin/v2ray-linux-arm.zip"
-    - "$GOPATH/bin/v2ray-linux-arm64.zip"
-    - "$GOPATH/bin/v2ray-linux-mips64.zip"
-    - "$GOPATH/bin/v2ray-freebsd-64.zip"
-    - "$GOPATH/bin/v2ray-freebsd-32.zip"
-    - "$GOPATH/bin/v2ray-openbsd-64.zip"
-    - "$GOPATH/bin/v2ray-openbsd-32.zip"
-    - "$GOPATH/bin/metadata.txt"
+  - $GOPATH/bin/v2ray-macos.zip
+  - $GOPATH/bin/v2ray-windows-64.zip
+  - $GOPATH/bin/v2ray-windows-32.zip
+  - $GOPATH/bin/v2ray-linux-64.zip
+  - $GOPATH/bin/v2ray-linux-32.zip
+  - $GOPATH/bin/v2ray-linux-arm.zip
+  - $GOPATH/bin/v2ray-linux-arm64.zip
+  - $GOPATH/bin/v2ray-linux-mips64.zip
+  - $GOPATH/bin/v2ray-freebsd-64.zip
+  - $GOPATH/bin/v2ray-freebsd-32.zip
+  - $GOPATH/bin/v2ray-openbsd-64.zip
+  - $GOPATH/bin/v2ray-openbsd-32.zip
+  - $GOPATH/bin/metadata.txt
   skip_cleanup: true
   on:
     tags: true
