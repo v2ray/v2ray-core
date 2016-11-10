@@ -68,3 +68,7 @@ func ApplyGlobalNetworkSettings(settings []*NetworkSettings) error {
 	globalNetworkSettings = settings
 	return nil
 }
+
+func (this *ProxyConfig) HasTag() bool {
+	return this != nil && len(this.Tag) > 0
+}

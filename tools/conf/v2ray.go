@@ -74,6 +74,7 @@ type OutboundConnectionConfig struct {
 	Protocol      string          `json:"protocol"`
 	SendThrough   *Address        `json:"sendThrough"`
 	StreamSetting *StreamConfig   `json:"streamSettings"`
+	ProxySettings *ProxyConfig    `json:"proxySettings"`
 	Settings      json.RawMessage `json:"settings"`
 }
 
@@ -102,6 +103,13 @@ func (this *OutboundConnectionConfig) Build() (*core.OutboundConnectionConfig, e
 			return nil, err
 		}
 		config.StreamSettings = ss
+	}
+	if this.ProxySettings != nil {
+		ps, err := this.ProxySettings.Build()
+		if err != nil {
+			return nil, errors.New("Outbound: invalid proxy settings: " + err.Error())
+		}
+		config.ProxySettings = ps
 	}
 	return config, nil
 }
@@ -198,6 +206,7 @@ type OutboundDetourConfig struct {
 	Tag           string          `json:"tag"`
 	Settings      json.RawMessage `json:"settings"`
 	StreamSetting *StreamConfig   `json:"streamSettings"`
+	ProxySettings *ProxyConfig    `json:"proxySettings"`
 }
 
 func (this *OutboundDetourConfig) Build() (*core.OutboundConnectionConfig, error) {
@@ -227,6 +236,14 @@ func (this *OutboundDetourConfig) Build() (*core.OutboundConnectionConfig, error
 	ts, err := rawConfig.(Buildable).Build()
 	if err != nil {
 		return nil, err
+	}
+
+	if this.ProxySettings != nil {
+		ps, err := this.ProxySettings.Build()
+		if err != nil {
+			return nil, errors.New("OutboundDetour: invalid proxy settings: " + err.Error())
+		}
+		config.ProxySettings = ps
 	}
 	config.Settings = ts
 	return config, nil

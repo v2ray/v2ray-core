@@ -48,9 +48,7 @@ func (this *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffe
 		server = this.serverPicker.PickServer()
 		dest := server.Destination()
 		dest.Network = network
-		rawConn, err := internet.Dial(this.meta.Address, dest, internet.DialerOptions{
-			Stream: this.meta.StreamSettings,
-		})
+		rawConn, err := internet.Dial(this.meta.Address, dest, this.meta.GetDialerOptions())
 		if err != nil {
 			return err
 		}

@@ -36,18 +36,20 @@ func NewOutboundProxy(space app.Space) *OutboundProxy {
 	return proxy
 }
 
+func (this *OutboundProxy) RegisterDialer() {
+	internet.ProxyDialer = this.Dial
+}
+
 func (this *OutboundProxy) Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOptions) (internet.Connection, error) {
-	handler := this.outboundManager.GetHandler(options.ProxyTag)
+	handler := this.outboundManager.GetHandler(options.Proxy.Tag)
 	if handler == nil {
-		log.Warning("Proxy: Failed to get outbound handler with tag: ", options.ProxyTag)
+		log.Warning("Proxy: Failed to get outbound handler with tag: ", options.Proxy.Tag)
 		return internet.Dial(src, dest, internet.DialerOptions{
 			Stream: options.Stream,
 		})
 	}
 	stream := ray.NewRay()
-	if err := handler.Dispatch(dest, alloc.NewLocalBuffer(32).Clear(), stream); err != nil {
-		return nil, err
-	}
+	go handler.Dispatch(dest, alloc.NewLocalBuffer(32).Clear(), stream)
 	return NewProxyConnection(src, dest, stream), nil
 }
 

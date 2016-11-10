@@ -5,6 +5,7 @@ import (
 	"v2ray.com/core/app/dispatcher"
 	dispatchers "v2ray.com/core/app/dispatcher/impl"
 	"v2ray.com/core/app/dns"
+	proxydialer "v2ray.com/core/app/proxy"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/log"
@@ -43,6 +44,10 @@ func NewPoint(pConfig *Config) (*Point, error) {
 
 	outboundHandlerManager := proxyman.NewDefaultOutboundHandlerManager()
 	vpoint.space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, outboundHandlerManager)
+
+	proxyDialer := proxydialer.NewOutboundProxy(space)
+	proxyDialer.RegisterDialer()
+	space.BindApp(proxydialer.APP_ID, proxyDialer)
 
 	for _, app := range pConfig.App {
 		settings, err := app.GetInstance()
@@ -113,6 +118,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 				Tag:            outbound.Tag,
 				Address:        outbound.GetSendThroughValue(),
 				StreamSettings: outbound.StreamSettings,
+				ProxySettings:  outbound.ProxySettings,
 			})
 		if err != nil {
 			log.Error("Point: Failed to create detour outbound connection handler: ", err)

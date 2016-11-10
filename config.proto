@@ -77,6 +77,7 @@ message OutboundConnectionConfig {
   // IP address to send data through. 0.0.0.0 if unset.
   v2ray.core.common.net.IPOrDomain send_through = 2;
   v2ray.core.transport.internet.StreamConfig stream_settings = 3;
+  v2ray.core.transport.internet.ProxyConfig proxy_settings = 5;
   string tag = 4;
 }
 

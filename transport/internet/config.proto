@@ -26,3 +26,7 @@ message StreamConfig {
   
   repeated v2ray.core.common.loader.TypedSettings security_settings = 4;
 }
+
+message ProxyConfig {
+  string tag = 1;
+}

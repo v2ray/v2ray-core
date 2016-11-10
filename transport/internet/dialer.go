@@ -12,8 +12,8 @@ var (
 )
 
 type DialerOptions struct {
-	Stream   *StreamConfig
-	ProxyTag string
+	Stream *StreamConfig
+	Proxy  *ProxyConfig
 }
 
 type Dialer func(src v2net.Address, dest v2net.Destination, options DialerOptions) (Connection, error)
@@ -28,7 +28,7 @@ var (
 )
 
 func Dial(src v2net.Address, dest v2net.Destination, options DialerOptions) (Connection, error) {
-	if len(options.ProxyTag) > 0 && ProxyDialer != nil {
+	if options.Proxy.HasTag() && ProxyDialer != nil {
 		return ProxyDialer(src, dest, options)
 	}
 

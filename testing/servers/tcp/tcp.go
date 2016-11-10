@@ -36,7 +36,7 @@ func (server *Server) acceptConnections(listener *net.TCPListener) {
 	for server.accepting {
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Printf("Failed accept TCP connection: %v", err)
+			fmt.Printf("Failed accept TCP connection: %v\n", err)
 			continue
 		}
 

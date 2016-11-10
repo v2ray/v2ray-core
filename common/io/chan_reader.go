@@ -15,11 +15,9 @@ type ChanReader struct {
 }
 
 func NewChanReader(stream Reader) *ChanReader {
-	this := &ChanReader{
+	return &ChanReader{
 		stream: stream,
 	}
-	this.Fill()
-	return this
 }
 
 // Private: Visible for testing.

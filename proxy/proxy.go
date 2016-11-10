@@ -34,6 +34,14 @@ type OutboundHandlerMeta struct {
 	Tag            string
 	Address        v2net.Address
 	StreamSettings *internet.StreamConfig
+	ProxySettings  *internet.ProxyConfig
+}
+
+func (this *OutboundHandlerMeta) GetDialerOptions() internet.DialerOptions {
+	return internet.DialerOptions{
+		Stream: this.StreamSettings,
+		Proxy:  this.ProxySettings,
+	}
 }
 
 // An InboundHandler handles inbound network connections to V2Ray.

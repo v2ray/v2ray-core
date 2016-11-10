@@ -230,3 +230,16 @@ func (this *StreamConfig) Build() (*internet.StreamConfig, error) {
 	}
 	return config, nil
 }
+
+type ProxyConfig struct {
+	Tag string `json:"tag"`
+}
+
+func (this *ProxyConfig) Build() (*internet.ProxyConfig, error) {
+	if len(this.Tag) == 0 {
+		return nil, errors.New("Proxy tag is not set.")
+	}
+	return &internet.ProxyConfig{
+		Tag: this.Tag,
+	}, nil
+}
