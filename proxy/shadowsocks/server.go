@@ -90,7 +90,7 @@ func (this *Server) Start() error {
 	this.tcpHub = tcpHub
 
 	if this.config.UdpEnabled {
-		this.udpServer = udp.NewUDPServer(this.meta, this.packetDispatcher)
+		this.udpServer = udp.NewUDPServer(this.packetDispatcher)
 		udpHub, err := udp.ListenUDP(this.meta.Address, this.meta.Port, udp.ListenOption{Callback: this.handlerUDPPayload})
 		if err != nil {
 			log.Error("Shadowsocks: Failed to listen UDP on ", this.meta.Address, ":", this.meta.Port, ": ", err)
@@ -130,7 +130,7 @@ func (this *Server) handlerUDPPayload(payload *alloc.Buffer, session *proxy.Sess
 	log.Access(source, dest, log.AccessAccepted, "")
 	log.Info("Shadowsocks|Server: Tunnelling request to ", dest)
 
-	this.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: dest, User: request.User}, data, func(destination v2net.Destination, payload *alloc.Buffer) {
+	this.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: dest, User: request.User, Inbound: this.meta}, data, func(destination v2net.Destination, payload *alloc.Buffer) {
 		defer payload.Release()
 
 		data, err := EncodeUDPPacket(request, payload)
@@ -171,10 +171,11 @@ func (this *Server) handleConnection(conn internet.Connection) {
 	log.Access(conn.RemoteAddr(), dest, log.AccessAccepted, "")
 	log.Info("Shadowsocks|Server: Tunnelling request to ", dest)
 
-	ray := this.packetDispatcher.DispatchToOutbound(this.meta, &proxy.SessionInfo{
+	ray := this.packetDispatcher.DispatchToOutbound(&proxy.SessionInfo{
 		Source:      v2net.DestinationFromAddr(conn.RemoteAddr()),
 		Destination: dest,
 		User:        request.User,
+		Inbound:     this.meta,
 	})
 	defer ray.InboundOutput().Release()
 

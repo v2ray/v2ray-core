@@ -96,14 +96,12 @@ type UDPServer struct {
 	sync.RWMutex
 	conns            map[string]*TimedInboundRay
 	packetDispatcher dispatcher.PacketDispatcher
-	meta             *proxy.InboundHandlerMeta
 }
 
-func NewUDPServer(meta *proxy.InboundHandlerMeta, packetDispatcher dispatcher.PacketDispatcher) *UDPServer {
+func NewUDPServer(packetDispatcher dispatcher.PacketDispatcher) *UDPServer {
 	return &UDPServer{
 		conns:            make(map[string]*TimedInboundRay),
 		packetDispatcher: packetDispatcher,
-		meta:             meta,
 	}
 }
 
@@ -144,7 +142,7 @@ func (this *UDPServer) Dispatch(session *proxy.SessionInfo, payload *alloc.Buffe
 	}
 
 	log.Info("UDP Server: establishing new connection for ", destString)
-	inboundRay := this.packetDispatcher.DispatchToOutbound(this.meta, session)
+	inboundRay := this.packetDispatcher.DispatchToOutbound(session)
 	timedInboundRay := NewTimedInboundRay(destString, inboundRay, this)
 	outputStream := timedInboundRay.InboundInput()
 	if outputStream != nil {

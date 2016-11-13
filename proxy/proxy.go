@@ -20,6 +20,7 @@ type SessionInfo struct {
 	Source      v2net.Destination
 	Destination v2net.Destination
 	User        *protocol.User
+	Inbound     *InboundHandlerMeta
 }
 
 type InboundHandlerMeta struct {

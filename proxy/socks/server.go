@@ -285,6 +285,7 @@ func (this *Server) handleSocks4(clientAddr v2net.Destination, reader *v2io.Buff
 	session := &proxy.SessionInfo{
 		Source:      clientAddr,
 		Destination: dest,
+		Inbound:     this.meta,
 	}
 	log.Access(clientAddr, dest, log.AccessAccepted, "")
 	this.transport(reader, writer, session)
@@ -292,7 +293,7 @@ func (this *Server) handleSocks4(clientAddr v2net.Destination, reader *v2io.Buff
 }
 
 func (this *Server) transport(reader io.Reader, writer io.Writer, session *proxy.SessionInfo) {
-	ray := this.packetDispatcher.DispatchToOutbound(this.meta, session)
+	ray := this.packetDispatcher.DispatchToOutbound(session)
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 

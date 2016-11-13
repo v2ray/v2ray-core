@@ -43,7 +43,7 @@ func (this *DefaultDispatcher) Release() {
 
 }
 
-func (this *DefaultDispatcher) DispatchToOutbound(meta *proxy.InboundHandlerMeta, session *proxy.SessionInfo) ray.InboundRay {
+func (this *DefaultDispatcher) DispatchToOutbound(session *proxy.SessionInfo) ray.InboundRay {
 	direct := ray.NewRay()
 	dispatcher := this.ohm.GetDefaultHandler()
 	destination := session.Destination
@@ -61,7 +61,7 @@ func (this *DefaultDispatcher) DispatchToOutbound(meta *proxy.InboundHandlerMeta
 		}
 	}
 
-	if meta.AllowPassiveConnection {
+	if session.Inbound != nil && session.Inbound.AllowPassiveConnection {
 		go dispatcher.Dispatch(destination, alloc.NewLocalBuffer(32).Clear(), direct)
 	} else {
 		go this.FilterPacketAndDispatch(destination, direct, dispatcher)

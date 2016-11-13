@@ -10,7 +10,7 @@ import (
 )
 
 func (this *Server) listenUDP() error {
-	this.udpServer = udp.NewUDPServer(this.meta, this.packetDispatcher)
+	this.udpServer = udp.NewUDPServer(this.packetDispatcher)
 	udpHub, err := udp.ListenUDP(this.meta.Address, this.meta.Port, udp.ListenOption{Callback: this.handleUDPPayload})
 	if err != nil {
 		log.Error("Socks: Failed to listen on udp ", this.meta.Address, ":", this.meta.Port)
@@ -46,7 +46,7 @@ func (this *Server) handleUDPPayload(payload *alloc.Buffer, session *proxy.Sessi
 
 	log.Info("Socks: Send packet to ", request.Destination(), " with ", request.Data.Len(), " bytes")
 	log.Access(source, request.Destination, log.AccessAccepted, "")
-	this.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: request.Destination()}, request.Data, func(destination v2net.Destination, payload *alloc.Buffer) {
+	this.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: request.Destination(), Inbound: this.meta}, request.Data, func(destination v2net.Destination, payload *alloc.Buffer) {
 		response := &protocol.Socks5UDPRequest{
 			Fragment: 0,
 			Address:  request.Destination().Address,

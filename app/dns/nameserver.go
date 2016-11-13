@@ -50,11 +50,9 @@ type UDPNameServer struct {
 
 func NewUDPNameServer(address v2net.Destination, dispatcher dispatcher.PacketDispatcher) *UDPNameServer {
 	s := &UDPNameServer{
-		address:  address,
-		requests: make(map[uint16]*PendingRequest),
-		udpServer: udp.NewUDPServer(&proxy.InboundHandlerMeta{
-			AllowPassiveConnection: false,
-		}, dispatcher),
+		address:   address,
+		requests:  make(map[uint16]*PendingRequest),
+		udpServer: udp.NewUDPServer(dispatcher),
 	}
 	return s
 }

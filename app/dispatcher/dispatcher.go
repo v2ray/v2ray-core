@@ -12,5 +12,5 @@ const (
 
 // PacketDispatcher dispatch a packet and possibly further network payload to its destination.
 type PacketDispatcher interface {
-	DispatchToOutbound(meta *proxy.InboundHandlerMeta, session *proxy.SessionInfo) ray.InboundRay
+	DispatchToOutbound(session *proxy.SessionInfo) ray.InboundRay
 }

@@ -124,6 +124,7 @@ func (this *Server) handleConnection(conn internet.Connection) {
 	session := &proxy.SessionInfo{
 		Source:      v2net.DestinationFromAddr(conn.RemoteAddr()),
 		Destination: dest,
+		Inbound:     this.meta,
 	}
 	if strings.ToUpper(request.Method) == "CONNECT" {
 		this.handleConnect(request, session, reader, conn)
@@ -146,7 +147,7 @@ func (this *Server) handleConnect(request *http.Request, session *proxy.SessionI
 	}
 	response.Write(writer)
 
-	ray := this.packetDispatcher.DispatchToOutbound(this.meta, session)
+	ray := this.packetDispatcher.DispatchToOutbound(session)
 	this.transport(reader, writer, ray)
 }
 
@@ -226,7 +227,7 @@ func (this *Server) handlePlainHTTP(request *http.Request, session *proxy.Sessio
 	request.Host = request.URL.Host
 	StripHopByHopHeaders(request)
 
-	ray := this.packetDispatcher.DispatchToOutbound(this.meta, session)
+	ray := this.packetDispatcher.DispatchToOutbound(session)
 	defer ray.InboundInput().Close()
 	defer ray.InboundOutput().Release()
 

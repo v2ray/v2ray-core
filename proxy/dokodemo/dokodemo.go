@@ -90,7 +90,7 @@ func (this *DokodemoDoor) Start() error {
 }
 
 func (this *DokodemoDoor) ListenUDP() error {
-	this.udpServer = udp.NewUDPServer(this.meta, this.packetDispatcher)
+	this.udpServer = udp.NewUDPServer(this.packetDispatcher)
 	udpHub, err := udp.ListenUDP(
 		this.meta.Address, this.meta.Port, udp.ListenOption{
 			Callback:            this.handleUDPPackets,
@@ -114,6 +114,7 @@ func (this *DokodemoDoor) handleUDPPackets(payload *alloc.Buffer, session *proxy
 		log.Info("Dokodemo: Unknown destination, stop forwarding...")
 		return
 	}
+	session.Inbound = this.meta
 	this.udpServer.Dispatch(session, payload, this.handleUDPResponse)
 }
 
@@ -160,9 +161,10 @@ func (this *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 	}
 	log.Info("Dokodemo: Handling request to ", dest)
 
-	ray := this.packetDispatcher.DispatchToOutbound(this.meta, &proxy.SessionInfo{
+	ray := this.packetDispatcher.DispatchToOutbound(&proxy.SessionInfo{
 		Source:      v2net.DestinationFromAddr(conn.RemoteAddr()),
 		Destination: dest,
+		Inbound:     this.meta,
 	})
 	defer ray.InboundOutput().Release()
 
