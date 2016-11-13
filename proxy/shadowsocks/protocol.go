@@ -29,7 +29,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 
-	buffer := alloc.NewLocalBuffer(256)
+	buffer := alloc.NewLocalBuffer(512)
 	defer buffer.Release()
 
 	ivLen := account.Cipher.IVSize()
