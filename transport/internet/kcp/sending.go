@@ -77,14 +77,14 @@ func (this *SendingWindow) Clear(una uint32) {
 	}
 }
 
-func (this *SendingWindow) Remove(idx uint32) {
+func (this *SendingWindow) Remove(idx uint32) bool {
 	if this.len == 0 {
-		return
+		return false
 	}
 
 	pos := (this.start + idx) % this.cap
 	if !this.inuse[pos] {
-		return
+		return false
 	}
 	this.inuse[pos] = false
 	this.totalInFlightSize--
@@ -105,6 +105,7 @@ func (this *SendingWindow) Remove(idx uint32) {
 		this.next[this.prev[pos]] = this.next[pos]
 		this.prev[this.next[pos]] = this.prev[pos]
 	}
+	return true
 }
 
 func (this *SendingWindow) HandleFastAck(number uint32, rto uint32) {
@@ -219,14 +220,17 @@ func (this *SendingWorker) FindFirstUnacknowledged() {
 }
 
 // Private: Visible for testing.
-func (this *SendingWorker) ProcessAck(number uint32) {
+func (this *SendingWorker) ProcessAck(number uint32) bool {
 	// number < this.firstUnacknowledged || number >= this.nextNumber
 	if number-this.firstUnacknowledged > 0x7FFFFFFF || number-this.nextNumber < 0x7FFFFFFF {
-		return
+		return false
 	}
 
-	this.window.Remove(number - this.firstUnacknowledged)
-	this.FindFirstUnacknowledged()
+	removed := this.window.Remove(number - this.firstUnacknowledged)
+	if removed {
+		this.FindFirstUnacknowledged()
+	}
+	return removed
 }
 
 func (this *SendingWorker) ProcessSegment(current uint32, seg *AckSegment, rto uint32) {
@@ -239,21 +243,25 @@ func (this *SendingWorker) ProcessSegment(current uint32, seg *AckSegment, rto u
 		this.remoteNextNumber = seg.ReceivingWindow
 	}
 	this.ProcessReceivingNextWithoutLock(seg.ReceivingNext)
-	if current-seg.Timestamp < 10000 {
-		this.conn.roundTrip.Update(current-seg.Timestamp, current)
-	}
 
 	var maxack uint32
+	var maxackRemoved bool
 	for i := 0; i < int(seg.Count); i++ {
 		number := seg.NumberList[i]
 
-		this.ProcessAck(number)
+		removed := this.ProcessAck(number)
 		if maxack < number {
 			maxack = number
+			maxackRemoved = removed
 		}
 	}
 
-	this.window.HandleFastAck(maxack, rto)
+	if maxackRemoved {
+		this.window.HandleFastAck(maxack, rto)
+		if current-seg.Timestamp < 10000 {
+			this.conn.roundTrip.Update(current-seg.Timestamp, current)
+		}
+	}
 }
 
 func (this *SendingWorker) Push(b []byte) int {
