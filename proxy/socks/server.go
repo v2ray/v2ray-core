@@ -223,6 +223,7 @@ func (this *Server) handleSocks5(clientAddr v2net.Destination, reader *v2io.Buff
 	session := &proxy.SessionInfo{
 		Source:      clientAddr,
 		Destination: dest,
+		Inbound:     this.meta,
 	}
 	log.Info("Socks: TCP Connect request to ", dest)
 	log.Access(clientAddr, dest, log.AccessAccepted, "")
