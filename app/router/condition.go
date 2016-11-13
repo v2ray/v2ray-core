@@ -204,3 +204,26 @@ func (this *UserMatcher) Apply(session *proxy.SessionInfo) bool {
 	}
 	return false
 }
+
+type InboundTagMatcher struct {
+	tags []string
+}
+
+func NewInboundTagMatcher(tags []string) *InboundTagMatcher {
+	return &InboundTagMatcher{
+		tags: tags,
+	}
+}
+
+func (this *InboundTagMatcher) Apply(session *proxy.SessionInfo) bool {
+	if session.Inbound == nil || len(session.Inbound.Tag) == 0 {
+		return false
+	}
+
+	for _, t := range this.tags {
+		if t == session.Inbound.Tag {
+			return true
+		}
+	}
+	return false
+}

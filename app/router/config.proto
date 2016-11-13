@@ -42,6 +42,7 @@ message RoutingRule {
   v2ray.core.common.net.NetworkList network_list = 5;
   repeated CIDR source_cidr = 6;
   repeated string user_email = 7;
+  repeated string inbound_tag = 8;
 }
 
 message Config {

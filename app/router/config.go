@@ -114,6 +114,10 @@ func (this *RoutingRule) BuildCondition() (Condition, error) {
 		conds.Add(NewUserMatcher(this.UserEmail))
 	}
 
+	if len(this.InboundTag) > 0 {
+		conds.Add(NewInboundTagMatcher(this.InboundTag))
+	}
+
 	if conds.Len() == 0 {
 		return nil, errors.New("Router: This rule has no effective fields.")
 	}
