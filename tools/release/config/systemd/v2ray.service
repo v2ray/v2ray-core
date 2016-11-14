@@ -7,7 +7,7 @@ Wants=network.target
 Type=simple
 PIDFile=/var/run/v2ray.pid
 ExecStart=/usr/bin/v2ray/v2ray -config /etc/v2ray/config.json
-Restart=on-abnormal
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
