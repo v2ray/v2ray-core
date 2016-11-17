@@ -92,7 +92,7 @@ func (this *ProxyConnection) Read(b []byte) (int, error) {
 
 func (this *ProxyConnection) Write(b []byte) (int, error) {
 	if this.closed {
-		return 0, io.EOF
+		return 0, errors.New("Proxy|Outbound: Writing into closed connection.")
 	}
 	return this.writer.Write(b)
 }

@@ -27,7 +27,7 @@ func (this *BufferedWriter) ReadFrom(reader io.Reader) (int64, error) {
 	defer this.Unlock()
 
 	if this.writer == nil {
-		return 0, io.EOF
+		return 0, io.ErrClosedPipe
 	}
 
 	totalBytes := int64(0)
@@ -49,7 +49,7 @@ func (this *BufferedWriter) Write(b []byte) (int, error) {
 	defer this.Unlock()
 
 	if this.writer == nil {
-		return 0, io.EOF
+		return 0, io.ErrClosedPipe
 	}
 
 	if !this.cached {
@@ -67,7 +67,7 @@ func (this *BufferedWriter) Flush() error {
 	defer this.Unlock()
 
 	if this.writer == nil {
-		return io.EOF
+		return io.ErrClosedPipe
 	}
 
 	return this.FlushWithoutLock()

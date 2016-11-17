@@ -30,9 +30,7 @@ func (ws *wsconn) Read(b []byte) (n int, err error) {
 }
 
 func (ws *wsconn) read(b []byte) (n int, err error) {
-
 	if ws.connClosing {
-
 		return 0, io.EOF
 	}
 
@@ -79,9 +77,8 @@ func (ws *wsconn) readNext(b []byte) (n int, err error) {
 
 func (ws *wsconn) Write(b []byte) (n int, err error) {
 	ws.wlock.Lock()
-
 	if ws.connClosing {
-		return 0, io.EOF
+		return 0, io.ErrClosedPipe
 	}
 
 	n, err = ws.write(b)

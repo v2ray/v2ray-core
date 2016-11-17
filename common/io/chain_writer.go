@@ -20,7 +20,7 @@ func NewChainWriter(writer Writer) *ChainWriter {
 
 func (this *ChainWriter) Write(payload []byte) (int, error) {
 	if this.writer == nil {
-		return 0, io.EOF
+		return 0, io.ErrClosedPipe
 	}
 
 	size := len(payload)
@@ -30,7 +30,7 @@ func (this *ChainWriter) Write(payload []byte) (int, error) {
 	this.Lock()
 	defer this.Unlock()
 	if this.writer == nil {
-		return 0, io.EOF
+		return 0, io.ErrClosedPipe
 	}
 
 	err := this.writer.Write(buffer)

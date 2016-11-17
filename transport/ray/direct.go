@@ -1,7 +1,6 @@
 package ray
 
 import (
-	"errors"
 	"io"
 	"sync"
 	"time"
@@ -11,10 +10,6 @@ import (
 
 const (
 	bufferSize = 128
-)
-
-var (
-	ErrIOTimeout = errors.New("IO Timeout")
 )
 
 // NewRay creates a new Ray for direct traffic transport.
@@ -79,24 +74,24 @@ func (this *Stream) Read() (*alloc.Buffer, error) {
 func (this *Stream) Write(data *alloc.Buffer) error {
 	for !this.closed {
 		err := this.TryWriteOnce(data)
-		if err != ErrIOTimeout {
+		if err != io.ErrNoProgress {
 			return err
 		}
 	}
-	return io.EOF
+	return io.ErrClosedPipe
 }
 
 func (this *Stream) TryWriteOnce(data *alloc.Buffer) error {
 	this.access.RLock()
 	defer this.access.RUnlock()
 	if this.closed {
-		return io.EOF
+		return io.ErrClosedPipe
 	}
 	select {
 	case this.buffer <- data:
 		return nil
 	case <-time.After(2 * time.Second):
-		return ErrIOTimeout
+		return io.ErrNoProgress
 	}
 }
 

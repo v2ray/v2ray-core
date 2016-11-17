@@ -102,6 +102,7 @@ func (this *VMessOutboundHandler) handleRequest(session *encoding.ClientSession,
 	}
 	if !payload.IsEmpty() {
 		if err := streamWriter.Write(payload); err != nil {
+			log.Info("VMess|Outbound: Failed to write payload. Disabling connection reuse.")
 			conn.SetReusable(false)
 		}
 	}
