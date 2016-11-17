@@ -35,6 +35,7 @@ type InboundConnectionConfig struct {
 	StreamSetting *StreamConfig   `json:"streamSettings"`
 	Settings      json.RawMessage `json:"settings"`
 	AllowPassive  bool            `json:"allowPassive"`
+	Tag           string          `json:"tag"`
 }
 
 func (this *InboundConnectionConfig) Build() (*core.InboundConnectionConfig, error) {
@@ -67,6 +68,9 @@ func (this *InboundConnectionConfig) Build() (*core.InboundConnectionConfig, err
 		return nil, err
 	}
 	config.Settings = ts
+	if len(this.Tag) > 0 {
+		config.Tag = this.Tag
+	}
 	return config, nil
 }
 
@@ -76,6 +80,7 @@ type OutboundConnectionConfig struct {
 	StreamSetting *StreamConfig   `json:"streamSettings"`
 	ProxySettings *ProxyConfig    `json:"proxySettings"`
 	Settings      json.RawMessage `json:"settings"`
+	Tag           string          `json:"tag"`
 }
 
 func (this *OutboundConnectionConfig) Build() (*core.OutboundConnectionConfig, error) {
@@ -110,6 +115,9 @@ func (this *OutboundConnectionConfig) Build() (*core.OutboundConnectionConfig, e
 			return nil, errors.New("Outbound: invalid proxy settings: " + err.Error())
 		}
 		config.ProxySettings = ps
+	}
+	if len(this.Tag) > 0 {
+		config.Tag = this.Tag
 	}
 	return config, nil
 }
