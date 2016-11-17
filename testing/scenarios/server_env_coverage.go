@@ -24,6 +24,7 @@ func RunV2Ray(configFile string) *exec.Cmd {
 	GenTestBinaryPath()
 
 	covDir := filepath.Join(os.Getenv("GOPATH"), "out", "v2ray", "cov")
+	os.MkdirAll(covDir, os.ModeDir)
 	profile := uuid.New().String() + ".out"
 	proc := exec.Command(testBinaryPath, "-config", configFile, "-test.run", "TestRunMainForCoverage", "-test.coverprofile", profile, "-test.outputdir", covDir)
 	proc.Stderr = os.Stderr
