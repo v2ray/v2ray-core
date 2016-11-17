@@ -2,17 +2,13 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"v2ray.com/core/testing/assert"
 )
-
-func cleanBinPath() {
-	os.RemoveAll(binPath)
-	os.Mkdir(binPath, os.ModeDir|0777)
-}
 
 func fileExists(file string) bool {
 	_, err := os.Stat(file)
@@ -32,8 +28,10 @@ func allFilesExists(files ...string) bool {
 
 func TestBuildMacOS(t *testing.T) {
 	assert := assert.On(t)
-	binPath = filepath.Join(os.Getenv("GOPATH"), "testing")
-	cleanBinPath()
+	tmpPath, err := ioutil.TempDir("", "v2ray")
+	assert.Error(err).IsNil()
+
+	binPath = tmpPath
 
 	build("macos", "amd64", true, "test", "metadata.txt")
 	assert.Bool(allFilesExists(

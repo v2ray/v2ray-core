@@ -9,19 +9,40 @@ import (
 
 	"v2ray.com/core/common/log"
 
+	"fmt"
+	"io/ioutil"
+	"sync"
 	_ "v2ray.com/core"
+	"v2ray.com/core/common/retry"
 )
 
 var (
-	runningServers = make([]*exec.Cmd, 0, 10)
+	runningServers    = make([]*exec.Cmd, 0, 10)
+	testBinaryPath    string
+	testBinaryPathGen sync.Once
 )
 
-func GetTestBinaryPath() string {
-	file := filepath.Join(os.Getenv("GOPATH"), "out", "v2ray", "v2ray.test")
-	if runtime.GOOS == "windows" {
-		file += ".exe"
-	}
-	return file
+func GenTestBinaryPath() {
+	testBinaryPathGen.Do(func() {
+		var tempDir string
+		err := retry.Timed(5, 100).On(func() error {
+			dir, err := ioutil.TempDir("", "v2ray")
+			if err != nil {
+				return err
+			}
+			tempDir = dir
+			return nil
+		})
+		if err != nil {
+			panic(err)
+		}
+		file := filepath.Join(tempDir, "v2ray.test")
+		if runtime.GOOS == "windows" {
+			file += ".exe"
+		}
+		testBinaryPath = file
+		fmt.Printf("Generated binary path: %s\n", file)
+	})
 }
 
 func GetSourcePath() string {

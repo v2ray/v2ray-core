@@ -11,21 +11,21 @@ import (
 )
 
 func BuildV2Ray() error {
-	binaryPath := GetTestBinaryPath()
-	if _, err := os.Stat(binaryPath); err == nil {
+	GenTestBinaryPath()
+	if _, err := os.Stat(testBinaryPath); err == nil {
 		return nil
 	}
 
-	cmd := exec.Command("go", "test", "-tags", "json coverage coveragemain", "-coverpkg", "v2ray.com/core/...", "-c", "-o", binaryPath, GetSourcePath())
+	cmd := exec.Command("go", "test", "-tags", "json coverage coveragemain", "-coverpkg", "v2ray.com/core/...", "-c", "-o", testBinaryPath, GetSourcePath())
 	return cmd.Run()
 }
 
 func RunV2Ray(configFile string) *exec.Cmd {
-	binaryPath := GetTestBinaryPath()
+	GenTestBinaryPath()
 
 	covDir := filepath.Join(os.Getenv("GOPATH"), "out", "v2ray", "cov")
 	profile := uuid.New().String() + ".out"
-	proc := exec.Command(binaryPath, "-config", configFile, "-test.run", "TestRunMainForCoverage", "-test.coverprofile", profile, "-test.outputdir", covDir)
+	proc := exec.Command(testBinaryPath, "-config", configFile, "-test.run", "TestRunMainForCoverage", "-test.coverprofile", profile, "-test.outputdir", covDir)
 	proc.Stderr = os.Stderr
 	proc.Stdout = os.Stdout
 
