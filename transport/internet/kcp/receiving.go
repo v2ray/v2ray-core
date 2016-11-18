@@ -80,14 +80,15 @@ func (this *AckList) Add(number uint32, timestamp uint32) {
 func (this *AckList) Clear(una uint32) {
 	count := 0
 	for i := 0; i < len(this.numbers); i++ {
-		if this.numbers[i] >= una {
-			if i != count {
-				this.numbers[count] = this.numbers[i]
-				this.timestamps[count] = this.timestamps[i]
-				this.nextFlush[count] = this.nextFlush[i]
-			}
-			count++
+		if this.numbers[i] < una {
+			continue
 		}
+		if i != count {
+			this.numbers[count] = this.numbers[i]
+			this.timestamps[count] = this.timestamps[i]
+			this.nextFlush[count] = this.nextFlush[i]
+		}
+		count++
 	}
 	if count < len(this.numbers) {
 		this.numbers = this.numbers[:count]
@@ -99,15 +100,16 @@ func (this *AckList) Clear(una uint32) {
 func (this *AckList) Flush(current uint32, rto uint32) {
 	seg := NewAckSegment()
 	for i := 0; i < len(this.numbers) && !seg.IsFull(); i++ {
-		if this.nextFlush[i] <= current {
-			seg.PutNumber(this.numbers[i])
-			seg.PutTimestamp(this.timestamps[i])
-			timeout := rto / 4
-			if timeout < 20 {
-				timeout = 20
-			}
-			this.nextFlush[i] = current + timeout
+		if this.nextFlush[i] > current {
+			continue
 		}
+		seg.PutNumber(this.numbers[i])
+		seg.PutTimestamp(this.timestamps[i])
+		timeout := rto / 4
+		if timeout < 20 {
+			timeout = 20
+		}
+		this.nextFlush[i] = current + timeout
 	}
 	if seg.Count > 0 {
 		this.writer.Write(seg)

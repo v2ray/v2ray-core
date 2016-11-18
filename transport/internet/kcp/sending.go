@@ -109,21 +109,25 @@ func (this *SendingWindow) Remove(idx uint32) bool {
 }
 
 func (this *SendingWindow) HandleFastAck(number uint32, rto uint32) {
-	if this.len == 0 {
+	if this.IsEmpty() {
 		return
 	}
 
+	this.Visit(func(seg *DataSegment) bool {
+		if number == seg.Number || number-seg.Number > 0x7FFFFFFF {
+			return false
+		}
+
+		if seg.transmit > 0 && seg.timeout > rto/3 {
+			seg.timeout -= rto / 3
+		}
+		return true
+	})
+}
+
+func (this *SendingWindow) Visit(visitor func(seg *DataSegment) bool) {
 	for i := this.start; ; i = this.next[i] {
-		seg := &this.data[i]
-		if number-seg.Number > 0x7FFFFFFF {
-			break
-		}
-		if number != seg.Number {
-			if seg.transmit > 0 && seg.timeout > rto/3 {
-				seg.timeout -= rto / 3
-			}
-		}
-		if i == this.last {
+		if !visitor(&this.data[i]) || i == this.last {
 			break
 		}
 	}
@@ -137,33 +141,27 @@ func (this *SendingWindow) Flush(current uint32, rto uint32, maxInFlightSize uin
 	var lost uint32
 	var inFlightSize uint32
 
-	for i := this.start; ; i = this.next[i] {
-		segment := &this.data[i]
-		needsend := false
-		if current-segment.timeout < 0x7FFFFFFF {
-			if segment.transmit == 0 {
-				// First time
-				this.totalInFlightSize++
-			} else {
-				lost++
-			}
-			needsend = true
-			segment.timeout = current + rto
+	this.Visit(func(segment *DataSegment) bool {
+		if current-segment.timeout >= 0x7FFFFFFF {
+			return true
 		}
+		if segment.transmit == 0 {
+			// First time
+			this.totalInFlightSize++
+		} else {
+			lost++
+		}
+		segment.timeout = current + rto
 
-		if needsend {
-			segment.Timestamp = current
-			segment.transmit++
-			this.writer.Write(segment)
-			inFlightSize++
-			if inFlightSize >= maxInFlightSize {
-				break
-			}
+		segment.Timestamp = current
+		segment.transmit++
+		this.writer.Write(segment)
+		inFlightSize++
+		if inFlightSize >= maxInFlightSize {
+			return false
 		}
-		if i == this.last {
-			break
-		}
-	}
+		return true
+	})
 
 	if this.onPacketLoss != nil && inFlightSize > 0 && this.totalInFlightSize != 0 {
 		rate := lost * 100 / this.totalInFlightSize
