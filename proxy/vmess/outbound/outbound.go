@@ -157,7 +157,6 @@ func (this *VMessOutboundHandler) handleResponse(session *encoding.ClientSession
 	}
 
 	bodyReader.Release()
-
 	return
 }
 
