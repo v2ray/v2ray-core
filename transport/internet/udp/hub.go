@@ -41,15 +41,16 @@ func NewUDPPayloadQueue(option ListenOption) *UDPPayloadQueue {
 
 func (this *UDPPayloadQueue) Enqueue(payload UDPPayload) {
 	size := len(this.queue)
+	idx := 0
+	if size > 1 {
+		idx = dice.Roll(size)
+	}
 	for i := 0; i < size; i++ {
-		idx := 0
-		if size > 1 {
-			idx = dice.Roll(size)
-		}
 		select {
-		case this.queue[idx] <- payload:
+		case this.queue[idx%size] <- payload:
 			return
 		default:
+			idx++
 		}
 	}
 }
