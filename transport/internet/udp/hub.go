@@ -23,13 +23,11 @@ type UDPPayloadHandler func(*alloc.Buffer, *proxy.SessionInfo)
 type UDPPayloadQueue struct {
 	queue    []chan UDPPayload
 	callback UDPPayloadHandler
-	cancel   *signal.CancelSignal
 }
 
 func NewUDPPayloadQueue(option ListenOption) *UDPPayloadQueue {
 	queue := &UDPPayloadQueue{
 		callback: option.Callback,
-		cancel:   signal.NewCloseSignal(),
 		queue:    make([]chan UDPPayload, option.Concurrency),
 	}
 	for i := range queue.queue {
@@ -56,24 +54,15 @@ func (this *UDPPayloadQueue) Enqueue(payload UDPPayload) {
 }
 
 func (this *UDPPayloadQueue) Dequeue(queue <-chan UDPPayload) {
-	this.cancel.WaitThread()
-	defer this.cancel.FinishThread()
-
-	for !this.cancel.Cancelled() {
-		payload, open := <-queue
-		if !open {
-			return
-		}
+	for payload := range queue {
 		this.callback(payload.payload, payload.session)
 	}
 }
 
 func (this *UDPPayloadQueue) Close() {
-	this.cancel.Cancel()
 	for _, queue := range this.queue {
 		close(queue)
 	}
-	this.cancel.WaitForDone()
 }
 
 type ListenOption struct {
