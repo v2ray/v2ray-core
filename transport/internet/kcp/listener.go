@@ -58,7 +58,7 @@ func NewListener(address v2net.Address, port v2net.Port, options internet.Listen
 			l.tlsConfig = securitySettings.GetTLSConfig()
 		}
 	}
-	hub, err := udp.ListenUDP(address, port, udp.ListenOption{Callback: l.OnReceive})
+	hub, err := udp.ListenUDP(address, port, udp.ListenOption{Callback: l.OnReceive, Concurrency: 2})
 	if err != nil {
 		return nil, err
 	}

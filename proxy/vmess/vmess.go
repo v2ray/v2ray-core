@@ -59,7 +59,7 @@ func (this *TimedUserValidator) Release() {
 	}
 
 	this.cancel.Cancel()
-	<-this.cancel.WaitForDone()
+	this.cancel.WaitForDone()
 
 	this.Lock()
 	defer this.Unlock()
@@ -100,7 +100,9 @@ func (this *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, idx
 }
 
 func (this *TimedUserValidator) updateUserHash(interval time.Duration) {
-L:
+	this.cancel.WaitThread()
+	defer this.cancel.FinishThread()
+
 	for {
 		select {
 		case now := <-time.After(interval):
@@ -109,10 +111,9 @@ L:
 				this.generateNewHashes(nowSec, entry.userIdx, entry)
 			}
 		case <-this.cancel.WaitForCancel():
-			break L
+			return
 		}
 	}
-	this.cancel.Done()
 }
 
 func (this *TimedUserValidator) Add(user *protocol.User) error {

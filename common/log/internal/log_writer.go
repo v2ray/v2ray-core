@@ -62,6 +62,9 @@ func (this *FileLogWriter) Log(log LogEntry) {
 }
 
 func (this *FileLogWriter) run() {
+	this.cancel.WaitThread()
+	defer this.cancel.FinishThread()
+
 	for {
 		entry, open := <-this.queue
 		if !open {
@@ -69,12 +72,11 @@ func (this *FileLogWriter) run() {
 		}
 		this.logger.Print(entry + platform.LineSeparator())
 	}
-	this.cancel.Done()
 }
 
 func (this *FileLogWriter) Close() {
 	close(this.queue)
-	<-this.cancel.WaitForDone()
+	this.cancel.WaitForDone()
 	this.file.Close()
 }
 

@@ -5,28 +5,95 @@ import (
 	"sync"
 
 	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet/internal"
 )
 
+type UDPPayload struct {
+	payload *alloc.Buffer
+	session *proxy.SessionInfo
+}
+
 type UDPPayloadHandler func(*alloc.Buffer, *proxy.SessionInfo)
 
-type UDPHub struct {
-	sync.RWMutex
-	conn      *net.UDPConn
-	option    ListenOption
-	accepting bool
-	pool      *alloc.BufferPool
+type UDPPayloadQueue struct {
+	queue    []chan UDPPayload
+	callback UDPPayloadHandler
+	cancel   *signal.CancelSignal
+}
+
+func NewUDPPayloadQueue(option ListenOption) *UDPPayloadQueue {
+	queue := &UDPPayloadQueue{
+		callback: option.Callback,
+		cancel:   signal.NewCloseSignal(),
+		queue:    make([]chan UDPPayload, option.Concurrency),
+	}
+	for i := range queue.queue {
+		queue.queue[i] = make(chan UDPPayload, 64)
+		go queue.Dequeue(queue.queue[i])
+	}
+	return queue
+}
+
+func (this *UDPPayloadQueue) Enqueue(payload UDPPayload) {
+	size := len(this.queue)
+	for i := 0; i < size; i++ {
+		idx := 0
+		if size > 1 {
+			idx = dice.Roll(size)
+		}
+		select {
+		case this.queue[idx] <- payload:
+			return
+		default:
+		}
+	}
+}
+
+func (this *UDPPayloadQueue) Dequeue(queue <-chan UDPPayload) {
+	this.cancel.WaitThread()
+	defer this.cancel.FinishThread()
+
+	for !this.cancel.Cancelled() {
+		payload, open := <-queue
+		if !open {
+			return
+		}
+		this.callback(payload.payload, payload.session)
+	}
+}
+
+func (this *UDPPayloadQueue) Close() {
+	this.cancel.Cancel()
+	for _, queue := range this.queue {
+		close(queue)
+	}
+	this.cancel.WaitForDone()
 }
 
 type ListenOption struct {
 	Callback            UDPPayloadHandler
 	ReceiveOriginalDest bool
+	Concurrency         int
+}
+
+type UDPHub struct {
+	sync.RWMutex
+	conn   *net.UDPConn
+	pool   *alloc.BufferPool
+	cancel *signal.CancelSignal
+	queue  *UDPPayloadQueue
+	option ListenOption
 }
 
 func ListenUDP(address v2net.Address, port v2net.Port, option ListenOption) (*UDPHub, error) {
+	if option.Concurrency < 1 {
+		option.Concurrency = 1
+	}
 	udpConn, err := net.ListenUDP("udp", &net.UDPAddr{
 		IP:   address.IP(),
 		Port: int(port),
@@ -48,8 +115,10 @@ func ListenUDP(address v2net.Address, port v2net.Port, option ListenOption) (*UD
 	}
 	hub := &UDPHub{
 		conn:   udpConn,
-		option: option,
 		pool:   alloc.NewBufferPool(2048, 64),
+		queue:  NewUDPPayloadQueue(option),
+		option: option,
+		cancel: signal.NewCloseSignal(),
 	}
 	go hub.start()
 	return hub, nil
@@ -59,8 +128,10 @@ func (this *UDPHub) Close() {
 	this.Lock()
 	defer this.Unlock()
 
-	this.accepting = false
+	this.cancel.Cancel()
 	this.conn.Close()
+	this.cancel.WaitForDone()
+	this.queue.Close()
 }
 
 func (this *UDPHub) WriteTo(payload []byte, dest v2net.Destination) (int, error) {
@@ -71,9 +142,8 @@ func (this *UDPHub) WriteTo(payload []byte, dest v2net.Destination) (int, error)
 }
 
 func (this *UDPHub) start() {
-	this.Lock()
-	this.accepting = true
-	this.Unlock()
+	this.cancel.WaitThread()
+	defer this.cancel.FinishThread()
 
 	oobBytes := make([]byte, 256)
 	for this.Running() {
@@ -91,15 +161,15 @@ func (this *UDPHub) start() {
 		if this.option.ReceiveOriginalDest && noob > 0 {
 			session.Destination = RetrieveOriginalDest(oobBytes[:noob])
 		}
-		go this.option.Callback(buffer, session)
+		this.queue.Enqueue(UDPPayload{
+			payload: buffer,
+			session: session,
+		})
 	}
 }
 
 func (this *UDPHub) Running() bool {
-	this.RLock()
-	defer this.RUnlock()
-
-	return this.accepting
+	return !this.cancel.Cancelled()
 }
 
 // Connection return the net.Conn underneath this hub.
