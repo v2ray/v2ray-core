@@ -73,7 +73,7 @@ func (this *Config) GetSendingInFlightSize() uint32 {
 }
 
 func (this *Config) GetSendingBufferSize() uint32 {
-	return this.GetSendingInFlightSize() + this.WriteBuffer.GetSize()/this.Mtu.GetValue()
+	return this.WriteBuffer.GetSize() / this.Mtu.GetValue()
 }
 
 func (this *Config) GetReceivingInFlightSize() uint32 {
@@ -85,7 +85,7 @@ func (this *Config) GetReceivingInFlightSize() uint32 {
 }
 
 func (this *Config) GetReceivingBufferSize() uint32 {
-	return this.GetReceivingInFlightSize() + this.ReadBuffer.GetSize()/this.Mtu.GetValue()
+	return this.ReadBuffer.GetSize() / this.Mtu.GetValue()
 }
 
 func init() {
