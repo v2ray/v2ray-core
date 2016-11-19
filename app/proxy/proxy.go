@@ -8,7 +8,6 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/proxyman"
-	"v2ray.com/core/common/alloc"
 	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -48,8 +47,9 @@ func (this *OutboundProxy) Dial(src v2net.Address, dest v2net.Destination, optio
 			Stream: options.Stream,
 		})
 	}
+	log.Info("Proxy: Dialing to ", dest)
 	stream := ray.NewRay()
-	go handler.Dispatch(dest, alloc.NewLocalBuffer(32).Clear(), stream)
+	go handler.Dispatch(dest, nil, stream)
 	return NewProxyConnection(src, dest, stream), nil
 }
 
@@ -101,6 +101,8 @@ func (this *ProxyConnection) Close() error {
 	this.closed = true
 	this.stream.InboundInput().Close()
 	this.stream.InboundOutput().Release()
+	this.reader.Release()
+	this.writer.Release()
 	return nil
 }
 
