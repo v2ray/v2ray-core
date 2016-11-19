@@ -2,11 +2,9 @@ package protocol
 
 import (
 	"errors"
-
+	"fmt"
 	"v2ray.com/core/common/alloc"
-	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/transport"
 )
 
 var (
@@ -40,7 +38,7 @@ func (request *Socks5UDPRequest) Write(buffer *alloc.Buffer) {
 
 func ReadUDPRequest(packet []byte) (*Socks5UDPRequest, error) {
 	if len(packet) < 5 {
-		return nil, transport.ErrCorruptedPacket
+		return nil, errors.New("Socks|UDP: Insufficient length of packet.")
 	}
 	request := new(Socks5UDPRequest)
 
@@ -53,7 +51,7 @@ func ReadUDPRequest(packet []byte) (*Socks5UDPRequest, error) {
 	switch addrType {
 	case AddrTypeIPv4:
 		if len(packet) < 10 {
-			return nil, transport.ErrCorruptedPacket
+			return nil, errors.New("Socks|UDP: Insufficient length of packet.")
 		}
 		ip := packet[4:8]
 		request.Port = v2net.PortFromBytes(packet[8:10])
@@ -61,7 +59,7 @@ func ReadUDPRequest(packet []byte) (*Socks5UDPRequest, error) {
 		dataBegin = 10
 	case AddrTypeIPv6:
 		if len(packet) < 22 {
-			return nil, transport.ErrCorruptedPacket
+			return nil, errors.New("Socks|UDP: Insufficient length of packet.")
 		}
 		ip := packet[4:20]
 		request.Port = v2net.PortFromBytes(packet[20:22])
@@ -70,15 +68,14 @@ func ReadUDPRequest(packet []byte) (*Socks5UDPRequest, error) {
 	case AddrTypeDomain:
 		domainLength := int(packet[4])
 		if len(packet) < 5+domainLength+2 {
-			return nil, transport.ErrCorruptedPacket
+			return nil, errors.New("Socks|UDP: Insufficient length of packet.")
 		}
 		domain := string(packet[5 : 5+domainLength])
 		request.Port = v2net.PortFromBytes(packet[5+domainLength : 5+domainLength+2])
 		request.Address = v2net.ParseAddress(domain)
 		dataBegin = 5 + domainLength + 2
 	default:
-		log.Warning("Unknown address type ", addrType)
-		return nil, ErrorUnknownAddressType
+		return nil, fmt.Errorf("Socks|UDP: Unknown address type %d", addrType)
 	}
 
 	if len(packet) > dataBegin {

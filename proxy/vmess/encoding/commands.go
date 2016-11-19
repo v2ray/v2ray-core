@@ -9,7 +9,6 @@ import (
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/uuid"
-	"v2ray.com/core/transport"
 )
 
 var (
@@ -54,12 +53,12 @@ func MarshalCommand(command interface{}, writer io.Writer) error {
 
 func UnmarshalCommand(cmdId byte, data []byte) (protocol.ResponseCommand, error) {
 	if len(data) <= 4 {
-		return nil, transport.ErrCorruptedPacket
+		return nil, errors.New("VMess|Command: Insufficient length.")
 	}
 	expectedAuth := Authenticate(data[4:])
 	actualAuth := serial.BytesToUint32(data[:4])
 	if expectedAuth != actualAuth {
-		return nil, transport.ErrCorruptedPacket
+		return nil, errors.New("VMess|Command: Invalid auth.")
 	}
 
 	var factory CommandFactory
@@ -111,38 +110,38 @@ func (this *CommandSwitchAccountFactory) Marshal(command interface{}, writer io.
 func (this *CommandSwitchAccountFactory) Unmarshal(data []byte) (interface{}, error) {
 	cmd := new(protocol.CommandSwitchAccount)
 	if len(data) == 0 {
-		return nil, transport.ErrCorruptedPacket
+		return nil, errors.New("VMess|SwitchAccountCommand: Insufficient length.")
 	}
 	lenHost := int(data[0])
 	if len(data) < lenHost+1 {
-		return nil, transport.ErrCorruptedPacket
+		return nil, errors.New("VMess|SwitchAccountCommand: Insufficient length.")
 	}
 	if lenHost > 0 {
 		cmd.Host = v2net.ParseAddress(string(data[1 : 1+lenHost]))
 	}
 	portStart := 1 + lenHost
 	if len(data) < portStart+2 {
-		return nil, transport.ErrCorruptedPacket
+		return nil, errors.New("VMess|SwitchAccountCommand: Insufficient length.")
 	}
 	cmd.Port = v2net.PortFromBytes(data[portStart : portStart+2])
 	idStart := portStart + 2
 	if len(data) < idStart+16 {
-		return nil, transport.ErrCorruptedPacket
+		return nil, errors.New("VMess|SwitchAccountCommand: Insufficient length.")
 	}
 	cmd.ID, _ = uuid.ParseBytes(data[idStart : idStart+16])
 	alterIdStart := idStart + 16
 	if len(data) < alterIdStart+2 {
-		return nil, transport.ErrCorruptedPacket
+		return nil, errors.New("VMess|SwitchAccountCommand: Insufficient length.")
 	}
 	cmd.AlterIds = serial.BytesToUint16(data[alterIdStart : alterIdStart+2])
 	levelStart := alterIdStart + 2
 	if len(data) < levelStart+1 {
-		return nil, transport.ErrCorruptedPacket
+		return nil, errors.New("VMess|SwitchAccountCommand: Insufficient length.")
 	}
 	cmd.Level = uint32(data[levelStart])
 	timeStart := levelStart + 1
 	if len(data) < timeStart {
-		return nil, transport.ErrCorruptedPacket
+		return nil, errors.New("VMess|SwitchAccountCommand: Insufficient length.")
 	}
 	cmd.ValidMin = data[timeStart]
 	return cmd, nil

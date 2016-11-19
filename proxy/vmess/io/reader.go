@@ -1,13 +1,12 @@
 package io
 
 import (
+	"errors"
 	"hash"
 	"hash/fnv"
 	"io"
-
 	"v2ray.com/core/common/alloc"
 	"v2ray.com/core/common/serial"
-	"v2ray.com/core/transport"
 )
 
 // Private: Visible for testing.
@@ -93,7 +92,7 @@ func (this *AuthChunkReader) Read() (*alloc.Buffer, error) {
 		this.validator.Consume(buffer.Value[:this.chunkLength])
 		if !this.validator.Validate() {
 			buffer.Release()
-			return nil, transport.ErrCorruptedPacket
+			return nil, errors.New("VMess|AuthChunkReader: Invalid auth.")
 		}
 		leftLength := buffer.Len() - this.chunkLength
 		if leftLength > 0 {

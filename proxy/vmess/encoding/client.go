@@ -3,15 +3,14 @@ package encoding
 import (
 	"crypto/md5"
 	"crypto/rand"
+	"fmt"
 	"hash/fnv"
 	"io"
-
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/proxy/vmess"
-	"v2ray.com/core/transport"
 )
 
 func hashTimestamp(t protocol.Timestamp) []byte {
@@ -113,8 +112,7 @@ func (this *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Res
 	}
 
 	if buffer[0] != this.responseHeader {
-		log.Info("Raw: Unexpected response header. Expecting ", this.responseHeader, " but actually ", buffer[0])
-		return nil, transport.ErrCorruptedPacket
+		return nil, fmt.Errorf("VMess|Client: Unexpected response header. Expecting %d but actually %d", this.responseHeader, buffer[0])
 	}
 
 	header := &protocol.ResponseHeader{

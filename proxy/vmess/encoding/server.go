@@ -2,16 +2,15 @@ package encoding
 
 import (
 	"crypto/md5"
+	"errors"
 	"hash/fnv"
 	"io"
-
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/vmess"
-	"v2ray.com/core/transport"
 )
 
 type ServerSession struct {
@@ -61,8 +60,7 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 	iv := timestampHash.Sum(nil)
 	account, err := user.GetTypedAccount()
 	if err != nil {
-		log.Error("Vmess: Failed to get user account: ", err)
-		return nil, err
+		return nil, errors.New("VMess|Server: Failed to get user account: " + err.Error())
 	}
 
 	aesStream := crypto.NewAesDecryptionStream(account.(*vmess.InternalAccount).ID.CmdKey(), iv)
@@ -70,8 +68,7 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 
 	nBytes, err := io.ReadFull(decryptor, buffer[:41])
 	if err != nil {
-		log.Debug("Raw: Failed to read request header (", nBytes, " bytes): ", err)
-		return nil, err
+		return nil, errors.New("VMess|Server: Failed to read request header: " + err.Error())
 	}
 	bufferLen := nBytes
 
@@ -81,7 +78,7 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 	}
 
 	if request.Version != Version {
-		log.Info("Raw: Invalid protocol version ", request.Version)
+		log.Info("VMess|Server: Invalid protocol version ", request.Version)
 		return nil, protocol.ErrInvalidVersion
 	}
 
@@ -98,32 +95,28 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 		nBytes, err = io.ReadFull(decryptor, buffer[41:45]) // 4 bytes
 		bufferLen += 4
 		if err != nil {
-			log.Debug("VMess: Failed to read target IPv4 (", nBytes, " bytes): ", err)
-			return nil, err
+			return nil, errors.New("VMess|Server: Failed to read IPv4: " + err.Error())
 		}
 		request.Address = v2net.IPAddress(buffer[41:45])
 	case AddrTypeIPv6:
 		nBytes, err = io.ReadFull(decryptor, buffer[41:57]) // 16 bytes
 		bufferLen += 16
 		if err != nil {
-			log.Debug("VMess: Failed to read target IPv6 (", nBytes, " bytes): ", nBytes, err)
-			return nil, err
+			return nil, errors.New("VMess|Server: Failed to read IPv6 address: " + err.Error())
 		}
 		request.Address = v2net.IPAddress(buffer[41:57])
 	case AddrTypeDomain:
-		nBytes, err = io.ReadFull(decryptor, buffer[41:42])
+		_, err = io.ReadFull(decryptor, buffer[41:42])
 		if err != nil {
-			log.Debug("VMess: Failed to read target domain (", nBytes, " bytes): ", nBytes, err)
-			return nil, err
+			return nil, errors.New("VMess:Server: Failed to read domain: " + err.Error())
 		}
 		domainLength := int(buffer[41])
 		if domainLength == 0 {
-			return nil, transport.ErrCorruptedPacket
+			return nil, errors.New("VMess|Server: Zero domain length.")
 		}
 		nBytes, err = io.ReadFull(decryptor, buffer[42:42+domainLength])
 		if err != nil {
-			log.Debug("VMess: Failed to read target domain (", nBytes, " bytes): ", nBytes, err)
-			return nil, err
+			return nil, errors.New("VMess|Server: Failed to read domain: " + err.Error())
 		}
 		bufferLen += 1 + domainLength
 		request.Address = v2net.DomainAddress(string(buffer[42 : 42+domainLength]))
@@ -131,8 +124,7 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 
 	nBytes, err = io.ReadFull(decryptor, buffer[bufferLen:bufferLen+4])
 	if err != nil {
-		log.Debug("VMess: Failed to read checksum (", nBytes, " bytes): ", nBytes, err)
-		return nil, err
+		return nil, errors.New("VMess|Server: Failed to read checksum: " + err.Error())
 	}
 
 	fnv1a := fnv.New32a()
@@ -141,7 +133,7 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 	expectedHash := serial.BytesToUint32(buffer[bufferLen : bufferLen+4])
 
 	if actualHash != expectedHash {
-		return nil, transport.ErrCorruptedPacket
+		return nil, errors.New("VMess|Server: Invalid auth.")
 	}
 
 	return request, nil

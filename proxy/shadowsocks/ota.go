@@ -4,12 +4,10 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha1"
+	"errors"
 	"io"
-
 	"v2ray.com/core/common/alloc"
-	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/serial"
-	"v2ray.com/core/transport"
 )
 
 const (
@@ -98,8 +96,7 @@ func (this *ChunkReader) Read() (*alloc.Buffer, error) {
 	actualAuthBytes := this.auth.Authenticate(nil, payload)
 	if !bytes.Equal(authBytes, actualAuthBytes) {
 		buffer.Release()
-		log.Debug("AuthenticationReader: Unexpected auth: ", authBytes)
-		return nil, transport.ErrCorruptedPacket
+		return nil, errors.New("Shadowsocks|AuthenticationReader: Invalid auth.")
 	}
 	buffer.SliceFrom(AuthSize)
 

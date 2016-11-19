@@ -1,13 +1,13 @@
 package protocol
 
 import (
+	"errors"
+	"fmt"
 	"io"
-
 	"v2ray.com/core/common/alloc"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
-	"v2ray.com/core/transport"
 )
 
 const (
@@ -47,8 +47,7 @@ func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, aut
 		return
 	}
 	if nBytes < 2 {
-		log.Warning("Socks: expected 2 bytes read, but only ", nBytes, " bytes read")
-		err = transport.ErrCorruptedPacket
+		err = errors.New("Socks: Insufficient header.")
 		return
 	}
 
@@ -224,8 +223,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 			return
 		}
 	default:
-		log.Warning("Socks: Unexpected address type ", request.AddrType)
-		err = transport.ErrCorruptedPacket
+		err = fmt.Errorf("Socks: Unexpected address type %d", request.AddrType)
 		return
 	}
 

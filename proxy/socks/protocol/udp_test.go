@@ -5,7 +5,6 @@ import (
 
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/testing/assert"
-	"v2ray.com/core/transport"
 )
 
 func TestSingleByteUDPRequest(t *testing.T) {
@@ -15,7 +14,7 @@ func TestSingleByteUDPRequest(t *testing.T) {
 	if request != nil {
 		t.Fail()
 	}
-	assert.Error(err).Equals(transport.ErrCorruptedPacket)
+	assert.Error(err).IsNotNil()
 }
 
 func TestDomainAddressRequest(t *testing.T) {

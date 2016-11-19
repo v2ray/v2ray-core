@@ -9,7 +9,6 @@ import (
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/testing/assert"
-	"v2ray.com/core/transport"
 )
 
 func TestHasAuthenticationMethod(t *testing.T) {
@@ -136,7 +135,7 @@ func TestSingleByteAuthRequest(t *testing.T) {
 	assert := assert.On(t)
 
 	_, _, err := ReadAuthentication(bytes.NewReader(make([]byte, 1)))
-	assert.Error(err).Equals(transport.ErrCorruptedPacket)
+	assert.Error(err).IsNotNil()
 }
 
 func TestZeroAuthenticationMethod(t *testing.T) {
