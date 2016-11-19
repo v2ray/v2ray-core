@@ -81,6 +81,11 @@ func (this *ChunkReader) Read() (*alloc.Buffer, error) {
 	// There is a potential buffer overflow here. Large buffer is 64K bytes,
 	// while uin16 + 10 will be more than that
 	length := serial.BytesToUint16(buffer.Value[:2]) + AuthSize
+	if length > alloc.BufferSize {
+		// Theoretically the size of a chunk is 64K, but most Shadowsocks implementations used <4K buffer.
+		buffer.Release()
+		buffer = alloc.NewLocalBuffer(int(length) + 128)
+	}
 	if _, err := io.ReadFull(this.reader, buffer.Value[:length]); err != nil {
 		buffer.Release()
 		return nil, err
