@@ -73,7 +73,7 @@ func (this *ChunkReader) Release() {
 }
 
 func (this *ChunkReader) Read() (*alloc.Buffer, error) {
-	buffer := alloc.NewLargeBuffer()
+	buffer := alloc.NewBuffer()
 	if _, err := io.ReadFull(this.reader, buffer.Value[:2]); err != nil {
 		buffer.Release()
 		return nil, err

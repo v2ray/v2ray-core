@@ -11,7 +11,7 @@ import (
 func TestBufferedReader(t *testing.T) {
 	assert := assert.On(t)
 
-	content := alloc.NewLargeBuffer()
+	content := alloc.NewBuffer()
 	len := content.Len()
 
 	reader := NewBufferedReader(content)
@@ -31,13 +31,4 @@ func TestBufferedReader(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	assert.Int(content.Len()).Equals(len2)
-	reader.SetCached(false)
-
-	payload2 := alloc.NewBuffer()
-	reader.Read(payload2.Value)
-
-	assert.Int(content.Len()).Equals(len2)
-
-	reader.Read(payload2.Value)
-	assert.Int(content.Len()).LessThan(len2)
 }

@@ -13,7 +13,7 @@ import (
 func TestAdaptiveWriter(t *testing.T) {
 	assert := assert.On(t)
 
-	lb := alloc.NewLargeBuffer()
+	lb := alloc.NewBuffer()
 	rand.Read(lb.Value)
 
 	writeBuffer := make([]byte, 0, 1024*1024)

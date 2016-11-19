@@ -63,7 +63,7 @@ const (
 
 var (
 	mediumPool *BufferPool
-	largePool  *BufferPool
+	//largePool  *BufferPool
 )
 
 func init() {
@@ -76,6 +76,6 @@ func init() {
 		}
 	}
 	totalByteSize := size * 1024 * 1024
-	mediumPool = NewBufferPool(mediumBufferByteSize, totalByteSize/4*3/mediumBufferByteSize)
-	largePool = NewBufferPool(largeBufferByteSize, totalByteSize/4/largeBufferByteSize)
+	mediumPool = NewBufferPool(mediumBufferByteSize, totalByteSize/mediumBufferByteSize)
+	//largePool = NewBufferPool(largeBufferByteSize, totalByteSize/4/largeBufferByteSize)
 }

@@ -38,11 +38,11 @@ func (this *AdaptiveReader) Read() (*alloc.Buffer, error) {
 		return nil, err
 	}
 
-	if buffer.Len() >= alloc.BufferSize {
-		this.allocate = alloc.NewLargeBuffer
-	} else {
-		this.allocate = alloc.NewBuffer
-	}
+	//if buffer.Len() >= alloc.BufferSize {
+	//	this.allocate = alloc.NewLargeBuffer
+	//} else {
+	//	this.allocate = alloc.NewBuffer
+	//}
 
 	return buffer, nil
 }

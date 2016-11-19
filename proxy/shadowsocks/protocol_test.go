@@ -59,7 +59,7 @@ func TestTCPRequest(t *testing.T) {
 	}
 
 	data := alloc.NewLocalBuffer(256).Clear().AppendString("test string")
-	cache := alloc.NewLargeBuffer().Clear()
+	cache := alloc.NewBuffer().Clear()
 
 	writer, err := WriteTCPRequest(request, cache)
 	assert.Error(err).IsNil()

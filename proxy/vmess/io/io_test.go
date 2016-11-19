@@ -60,36 +60,6 @@ func TestLargeIO(t *testing.T) {
 		if writeSize == len(content) {
 			break
 		}
-
-		chunkSize = 8 * 1024
-		if chunkSize+writeSize > len(content) {
-			chunkSize = len(content) - writeSize
-		}
-		writer.Write(alloc.NewLargeBuffer().Clear().Append(content[writeSize : writeSize+chunkSize]))
-		writeSize += chunkSize
-		if writeSize == len(content) {
-			break
-		}
-
-		chunkSize = 63 * 1024
-		if chunkSize+writeSize > len(content) {
-			chunkSize = len(content) - writeSize
-		}
-		writer.Write(alloc.NewLargeBuffer().Clear().Append(content[writeSize : writeSize+chunkSize]))
-		writeSize += chunkSize
-		if writeSize == len(content) {
-			break
-		}
-
-		chunkSize = 64*1024 - 16
-		if chunkSize+writeSize > len(content) {
-			chunkSize = len(content) - writeSize
-		}
-		writer.Write(alloc.NewLargeBuffer().Clear().Append(content[writeSize : writeSize+chunkSize]))
-		writeSize += chunkSize
-		if writeSize == len(content) {
-			break
-		}
 	}
 	writer.Write(alloc.NewBuffer().Clear())
 	writer.Release()

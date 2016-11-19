@@ -19,24 +19,28 @@ func NewChainWriter(writer Writer) *ChainWriter {
 }
 
 func (this *ChainWriter) Write(payload []byte) (int, error) {
-	if this.writer == nil {
-		return 0, io.ErrClosedPipe
-	}
-
-	size := len(payload)
-	buffer := alloc.NewBufferWithSize(size).Clear()
-	buffer.Append(payload)
-
 	this.Lock()
 	defer this.Unlock()
 	if this.writer == nil {
 		return 0, io.ErrClosedPipe
 	}
 
-	err := this.writer.Write(buffer)
-	if err != nil {
-		return 0, err
+	size := len(payload)
+	for size > 0 {
+		buffer := alloc.NewBuffer().Clear()
+		if size > alloc.BufferSize {
+			buffer.Append(payload[:alloc.BufferSize])
+			size -= alloc.BufferSize
+		} else {
+			buffer.Append(payload)
+			size = 0
+		}
+		err := this.writer.Write(buffer)
+		if err != nil {
+			return 0, err
+		}
 	}
+
 	return size, nil
 }
 

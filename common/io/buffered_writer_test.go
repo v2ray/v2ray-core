@@ -11,7 +11,7 @@ import (
 func TestBufferedWriter(t *testing.T) {
 	assert := assert.On(t)
 
-	content := alloc.NewLargeBuffer().Clear()
+	content := alloc.NewBuffer().Clear()
 
 	writer := NewBufferedWriter(content)
 	assert.Bool(writer.Cached()).IsTrue()

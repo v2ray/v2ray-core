@@ -206,17 +206,17 @@ func NewBuffer() *Buffer {
 }
 
 // NewLargeBuffer creates a Buffer with 64K bytes of arbitrary content.
-func NewLargeBuffer() *Buffer {
-	return largePool.Allocate()
-}
+//func NewLargeBuffer() *Buffer {
+//	return largePool.Allocate()
+//}
 
-func NewBufferWithSize(size int) *Buffer {
-	if size <= BufferSize {
-		return NewBuffer()
-	}
-
-	return NewLargeBuffer()
-}
+//func NewBufferWithSize(size int) *Buffer {
+//	if size <= BufferSize {
+//		return NewBuffer()
+//	}
+//
+//	return NewLargeBuffer()
+//}
 
 func NewLocalBuffer(size int) *Buffer {
 	return CreateBuffer(make([]byte, size), nil)
