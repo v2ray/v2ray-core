@@ -31,6 +31,7 @@ func (this *ChainWriter) Write(payload []byte) (int, error) {
 		if size > alloc.BufferSize {
 			buffer.Append(payload[:alloc.BufferSize])
 			size -= alloc.BufferSize
+			payload = payload[alloc.BufferSize:]
 		} else {
 			buffer.Append(payload)
 			size = 0
