@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net"
 
+	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 )
 
@@ -29,6 +30,7 @@ var (
 
 func Dial(src v2net.Address, dest v2net.Destination, options DialerOptions) (Connection, error) {
 	if options.Proxy.HasTag() && ProxyDialer != nil {
+		log.Info("Internet: Proxying outbound connection through: ", options.Proxy.Tag)
 		return ProxyDialer(src, dest, options)
 	}
 
