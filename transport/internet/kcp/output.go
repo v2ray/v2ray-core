@@ -44,7 +44,7 @@ func (this *BufferedSegmentWriter) Write(seg Segment) {
 }
 
 func (this *BufferedSegmentWriter) FlushWithoutLock() {
-	go this.writer.Write(this.buffer)
+	this.writer.Write(this.buffer)
 	this.buffer = nil
 }
 
