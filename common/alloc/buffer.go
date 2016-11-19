@@ -16,18 +16,20 @@ const (
 // the buffer into an internal buffer pool, in order to recreate a buffer more
 // quickly.
 type Buffer struct {
-	head   []byte
-	pool   Pool
-	Value  []byte
-	offset int
+	head           []byte
+	pool           Pool
+	Value          []byte
+	offset         int
+	startingOffset int
 }
 
-func CreateBuffer(container []byte, parent Pool) *Buffer {
+func CreateBuffer(container []byte, offset int, parent Pool) *Buffer {
 	b := new(Buffer)
 	b.head = container
 	b.pool = parent
-	b.Value = b.head[defaultOffset:]
-	b.offset = defaultOffset
+	b.Value = b.head[offset:]
+	b.offset = offset
+	b.startingOffset = offset
 	return b
 }
 
@@ -47,15 +49,15 @@ func (b *Buffer) Release() {
 // Clear clears the content of the buffer, results an empty buffer with
 // Len() = 0.
 func (b *Buffer) Clear() *Buffer {
-	b.offset = defaultOffset
+	b.offset = b.startingOffset
 	b.Value = b.head[b.offset:b.offset]
 	return b
 }
 
 // Reset resets this Buffer into its original state.
 func (b *Buffer) Reset() *Buffer {
-	b.offset = defaultOffset
-	b.Value = b.head
+	b.offset = b.startingOffset
+	b.Value = b.head[b.offset:]
 	return b
 }
 
@@ -219,5 +221,5 @@ func NewBuffer() *Buffer {
 //}
 
 func NewLocalBuffer(size int) *Buffer {
-	return CreateBuffer(make([]byte, size), nil)
+	return CreateBuffer(make([]byte, size), defaultOffset, nil)
 }

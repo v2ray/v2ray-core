@@ -36,7 +36,7 @@ func (p *BufferPool) Allocate() *Buffer {
 	default:
 		b = p.allocator.Get().([]byte)
 	}
-	return CreateBuffer(b, p)
+	return CreateBuffer(b, defaultOffset, p)
 }
 
 func (p *BufferPool) Free(buffer *Buffer) {
@@ -63,7 +63,6 @@ const (
 
 var (
 	mediumPool *BufferPool
-	//largePool  *BufferPool
 )
 
 func init() {
@@ -77,5 +76,4 @@ func init() {
 	}
 	totalByteSize := size * 1024 * 1024
 	mediumPool = NewBufferPool(mediumBufferByteSize, totalByteSize/mediumBufferByteSize)
-	//largePool = NewBufferPool(largeBufferByteSize, totalByteSize/4/largeBufferByteSize)
 }
