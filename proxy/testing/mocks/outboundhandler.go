@@ -23,7 +23,9 @@ func (this *OutboundConnectionHandler) Dispatch(destination v2net.Destination, p
 	output := ray.OutboundOutput()
 
 	this.Destination = destination
-	this.ConnOutput.Write(payload.Value)
+	if !payload.IsEmpty() {
+		this.ConnOutput.Write(payload.Value)
+	}
 	payload.Release()
 
 	writeFinish := &sync.Mutex{}

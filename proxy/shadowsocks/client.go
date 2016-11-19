@@ -142,8 +142,10 @@ func (this *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffe
 			Writer:  conn,
 			Request: request,
 		}
-		if err := writer.Write(payload); err != nil {
-			return errors.New("Shadowsocks|Client: Failed to write payload: " + err.Error())
+		if !payload.IsEmpty() {
+			if err := writer.Write(payload); err != nil {
+				return errors.New("Shadowsocks|Client: Failed to write payload: " + err.Error())
+			}
 		}
 		v2io.Pipe(ray.OutboundInput(), writer)
 
