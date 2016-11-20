@@ -33,7 +33,7 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 	var rec *protocol.ServerSpec
 	var conn internet.Connection
 
-	err := retry.Timed(5, 100).On(func() error {
+	err := retry.ExponentialBackoff(5, 100).On(func() error {
 		rec = this.serverPicker.PickServer()
 		rawConn, err := internet.Dial(this.meta.Address, rec.Destination(), this.meta.GetDialerOptions())
 		if err != nil {

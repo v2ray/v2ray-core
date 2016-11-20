@@ -7,6 +7,7 @@ import (
 
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/retry"
 )
 
 var (
@@ -78,14 +79,23 @@ func (this *TCPHub) Close() {
 func (this *TCPHub) start() {
 	this.accepting = true
 	for this.accepting {
-		conn, err := this.listener.Accept()
-
-		if err != nil {
-			if this.accepting {
-				log.Warning("Internet|Listener: Failed to accept new TCP connection: ", err)
+		var newConn Connection
+		err := retry.ExponentialBackoff(10, 200).On(func() error {
+			if !this.accepting {
+				return nil
 			}
-			continue
+			conn, err := this.listener.Accept()
+			if err != nil {
+				if this.accepting {
+					log.Warning("Internet|Listener: Failed to accept new TCP connection: ", err)
+				}
+				return err
+			}
+			newConn = conn
+			return nil
+		})
+		if err == nil && newConn != nil {
+			go this.connCallback(newConn)
 		}
-		go this.connCallback(conn)
 	}
 }

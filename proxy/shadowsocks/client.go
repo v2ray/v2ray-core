@@ -44,7 +44,7 @@ func (this *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffe
 	var server *protocol.ServerSpec
 	var conn internet.Connection
 
-	err := retry.Timed(5, 100).On(func() error {
+	err := retry.ExponentialBackoff(5, 100).On(func() error {
 		server = this.serverPicker.PickServer()
 		dest := server.Destination()
 		dest.Network = network

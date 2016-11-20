@@ -58,7 +58,7 @@ func (this *InboundDetourHandlerAlways) Close() {
 // Starts the inbound connection handler.
 func (this *InboundDetourHandlerAlways) Start() error {
 	for _, ich := range this.ich {
-		err := retry.Timed(100 /* times */, 100 /* ms */).On(func() error {
+		err := retry.ExponentialBackoff(10 /* times */, 200 /* ms */).On(func() error {
 			err := ich.Start()
 			if err != nil {
 				log.Error("Failed to start inbound detour:", err)

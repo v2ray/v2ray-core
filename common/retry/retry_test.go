@@ -68,14 +68,26 @@ func TestRetryExhausted(t *testing.T) {
 	startTime := time.Now()
 	called := 0
 	err := Timed(2, 1000).On(func() error {
-		if called < 5 {
-			called++
-			return errorTestOnly
-		}
-		return nil
+		called++
+		return errorTestOnly
 	})
 	duration := time.Since(startTime)
 
 	assert.Error(err).Equals(ErrRetryFailed)
 	assert.Int64(int64(duration / time.Millisecond)).AtLeast(1900)
+}
+
+func TestExponentialBackoff(t *testing.T) {
+	assert := assert.On(t)
+
+	startTime := time.Now()
+	called := 0
+	err := ExponentialBackoff(10, 100).On(func() error {
+		called++
+		return errorTestOnly
+	})
+	duration := time.Since(startTime)
+
+	assert.Error(err).Equals(ErrRetryFailed)
+	assert.Int64(int64(duration / time.Millisecond)).AtLeast(4000)
 }

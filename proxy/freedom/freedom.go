@@ -79,7 +79,7 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 	if this.domainStrategy == Config_USE_IP && destination.Address.Family().IsDomain() {
 		destination = this.ResolveIP(destination)
 	}
-	err := retry.Timed(5, 100).On(func() error {
+	err := retry.ExponentialBackoff(5, 100).On(func() error {
 		rawConn, err := internet.Dial(this.meta.Address, destination, this.meta.GetDialerOptions())
 		if err != nil {
 			return err
