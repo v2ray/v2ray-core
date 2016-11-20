@@ -1,6 +1,7 @@
 package log
 
 import (
+	"errors"
 	"v2ray.com/core/common/log/internal"
 )
 
@@ -38,8 +39,7 @@ func SetLogLevel(level LogLevel) {
 func InitErrorLogger(file string) error {
 	logger, err := internal.NewFileLogWriter(file)
 	if err != nil {
-		Error("Failed to create error logger on file (", file, "): ", err)
-		return err
+		return errors.New("Log:Failed to create error logger on file (" + file + "): " + err.Error())
 	}
 	streamLoggerInstance = logger
 	return nil

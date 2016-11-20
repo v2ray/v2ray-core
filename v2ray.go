@@ -85,19 +85,19 @@ func NewPoint(pConfig *Config) (*Point, error) {
 		case AllocationStrategy_Always:
 			dh, err := NewInboundDetourHandlerAlways(vpoint.space, inbound)
 			if err != nil {
-				log.Error("Point: Failed to create detour handler: ", err)
+				log.Error("V2Ray: Failed to create detour handler: ", err)
 				return nil, common.ErrBadConfiguration
 			}
 			inboundHandler = dh
 		case AllocationStrategy_Random:
 			dh, err := NewInboundDetourHandlerDynamic(vpoint.space, inbound)
 			if err != nil {
-				log.Error("Point: Failed to create detour handler: ", err)
+				log.Error("V2Ray: Failed to create detour handler: ", err)
 				return nil, common.ErrBadConfiguration
 			}
 			inboundHandler = dh
 		default:
-			log.Error("Point: Unknown allocation strategy: ", allocConfig.Type)
+			log.Error("V2Ray: Unknown allocation strategy: ", allocConfig.Type)
 			return nil, common.ErrBadConfiguration
 		}
 		vpoint.inboundHandlers = append(vpoint.inboundHandlers, inboundHandler)
@@ -121,7 +121,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 				ProxySettings:  outbound.ProxySettings,
 			})
 		if err != nil {
-			log.Error("Point: Failed to create detour outbound connection handler: ", err)
+			log.Error("V2Ray: Failed to create detour outbound connection handler: ", err)
 			return nil, err
 		}
 		if idx == 0 {
@@ -165,7 +165,7 @@ func (this *Point) Start() error {
 func (this *Point) GetHandler(tag string) (proxy.InboundHandler, int) {
 	handler, found := this.taggedInboundHandlers[tag]
 	if !found {
-		log.Warning("Point: Unable to find an inbound handler with tag: ", tag)
+		log.Warning("V2Ray: Unable to find an inbound handler with tag: ", tag)
 		return nil, 0
 	}
 	return handler.GetConnectionHandler()
