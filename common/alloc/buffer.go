@@ -190,9 +190,7 @@ func (b *Buffer) FillFrom(reader io.Reader) (int, error) {
 	begin := b.Len()
 	b.Value = b.Value[:cap(b.Value)]
 	nBytes, err := reader.Read(b.Value[begin:])
-	if err == nil {
-		b.Value = b.Value[:begin+nBytes]
-	}
+	b.Value = b.Value[:begin+nBytes]
 	return nBytes, err
 }
 
