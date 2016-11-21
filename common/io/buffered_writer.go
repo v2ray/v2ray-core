@@ -4,6 +4,7 @@ import (
 	"io"
 	"sync"
 
+	"fmt"
 	"v2ray.com/core/common/alloc"
 )
 
@@ -52,6 +53,8 @@ func (this *BufferedWriter) Write(b []byte) (int, error) {
 		return 0, io.ErrClosedPipe
 	}
 
+	fmt.Printf("BufferedWriter writing: %v\n", b)
+
 	if !this.cached {
 		return this.writer.Write(b)
 	}
@@ -59,6 +62,7 @@ func (this *BufferedWriter) Write(b []byte) (int, error) {
 	if this.buffer.IsFull() {
 		this.FlushWithoutLock()
 	}
+	fmt.Printf("BufferedWriter content: %v\n", this.buffer.Value)
 	return nBytes, nil
 }
 
