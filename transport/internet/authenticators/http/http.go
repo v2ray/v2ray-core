@@ -41,7 +41,7 @@ type HeaderReader struct {
 }
 
 func (*HeaderReader) Read(reader io.Reader) (*alloc.Buffer, error) {
-	buffer := alloc.NewSmallBuffer()
+	buffer := alloc.NewSmallBuffer().Clear()
 	for {
 		_, err := buffer.FillFrom(reader)
 		if err != nil {
