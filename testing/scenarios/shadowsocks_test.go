@@ -1,9 +1,9 @@
 package scenarios
 
 import (
+	"fmt"
 	"net"
 	"testing"
-
 	"v2ray.com/core/common/alloc"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/testing/assert"
@@ -44,14 +44,19 @@ func TestShadowsocksTCP(t *testing.T) {
 
 		response := alloc.NewBuffer().Clear()
 		finished := false
+		expectedResponse := "Processed: " + payload
 		for {
 			_, err := response.FillFrom(conn)
 			assert.Error(err).IsNil()
 			if err != nil {
 				break
 			}
-			if response.String() == "Processed: "+payload {
+			if response.String() == expectedResponse {
 				finished = true
+				break
+			}
+			if response.Len() > len(expectedResponse) {
+				fmt.Printf("Unexpected response: %s\n", response.String())
 				break
 			}
 		}
