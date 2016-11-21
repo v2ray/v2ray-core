@@ -58,3 +58,31 @@ func TestBufferString(t *testing.T) {
 	buffer.AppendString("Test String")
 	assert.String(buffer.String()).Equals("Test String")
 }
+
+func BenchmarkNewBuffer8192(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		buffer := NewBuffer()
+		buffer.Release()
+	}
+}
+
+func BenchmarkNewLocalBuffer8192(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		buffer := NewLocalBuffer(8192)
+		buffer.Release()
+	}
+}
+
+func BenchmarkNewBuffer2048(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		buffer := NewSmallBuffer()
+		buffer.Release()
+	}
+}
+
+func BenchmarkNewLocalBuffer2048(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		buffer := NewLocalBuffer(2048)
+		buffer.Release()
+	}
+}

@@ -11,6 +11,31 @@ type Pool interface {
 	Free(*Buffer)
 }
 
+type SyncPool struct {
+	allocator *sync.Pool
+}
+
+func NewSyncPool(bufferSize uint32) *SyncPool {
+	pool := &SyncPool{
+		allocator: &sync.Pool{
+			New: func() interface{} { return make([]byte, bufferSize) },
+		},
+	}
+	return pool
+}
+
+func (p *SyncPool) Allocate() *Buffer {
+	return CreateBuffer(p.allocator.Get().([]byte), p)
+}
+
+func (p *SyncPool) Free(buffer *Buffer) {
+	rawBuffer := buffer.head
+	if rawBuffer == nil {
+		return
+	}
+	p.allocator.Put(rawBuffer)
+}
+
 type BufferPool struct {
 	chain     chan []byte
 	allocator *sync.Pool
@@ -55,14 +80,15 @@ const (
 	mediumBufferByteSize = 8 * 1024
 	BufferSize           = mediumBufferByteSize - defaultOffset
 
-	largeBufferByteSize = 64 * 1024
-	LargeBufferSize     = largeBufferByteSize - defaultOffset
+	smallBufferByteSize = 2 * 1024
+	SmallBufferSize     = smallBufferByteSize - defaultOffset
 
 	PoolSizeEnvKey = "v2ray.buffer.size"
 )
 
 var (
 	mediumPool *BufferPool
+	smallPool  = NewSyncPool(2048)
 )
 
 func init() {

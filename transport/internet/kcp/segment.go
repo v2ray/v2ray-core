@@ -50,7 +50,7 @@ func NewDataSegment() *DataSegment {
 
 func (this *DataSegment) SetData(b []byte) {
 	if this.Data == nil {
-		this.Data = alloc.NewLocalBuffer(1600)
+		this.Data = alloc.NewSmallBuffer()
 	}
 	this.Data.Clear().Append(b)
 }

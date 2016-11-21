@@ -74,7 +74,6 @@ type ListenOption struct {
 type UDPHub struct {
 	sync.RWMutex
 	conn   *net.UDPConn
-	pool   *alloc.BufferPool
 	cancel *signal.CancelSignal
 	queue  *UDPPayloadQueue
 	option ListenOption
@@ -105,7 +104,6 @@ func ListenUDP(address v2net.Address, port v2net.Port, option ListenOption) (*UD
 	}
 	hub := &UDPHub{
 		conn:   udpConn,
-		pool:   alloc.NewBufferPool(2048, 64),
 		queue:  NewUDPPayloadQueue(option),
 		option: option,
 		cancel: signal.NewCloseSignal(),
@@ -137,7 +135,7 @@ func (this *UDPHub) start() {
 
 	oobBytes := make([]byte, 256)
 	for this.Running() {
-		buffer := this.pool.Allocate()
+		buffer := alloc.NewSmallBuffer()
 		nBytes, noob, _, addr, err := ReadUDPMsg(this.conn, buffer.Value, oobBytes)
 		if err != nil {
 			log.Info("UDP|Hub: Failed to read UDP msg: ", err)
