@@ -78,9 +78,11 @@ func (this *BufferedWriter) Flush() error {
 }
 
 func (this *BufferedWriter) FlushWithoutLock() error {
+	fmt.Println("BufferedWriter flushing")
 	defer this.buffer.Clear()
 	for !this.buffer.IsEmpty() {
 		nBytes, err := this.writer.Write(this.buffer.Value)
+		fmt.Printf("BufferedWriting flushed %d bytes.\n", nBytes)
 		if err != nil {
 			return err
 		}
