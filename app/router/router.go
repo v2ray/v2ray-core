@@ -45,8 +45,7 @@ func NewRouter(config *Config, space app.Space) *Router {
 		}
 
 		if !space.HasApp(dns.APP_ID) {
-			log.Error("Router: DNS is not found in the space.")
-			return app.ErrMissingApplication
+			return errors.New("Router: DNS is not found in the space.")
 		}
 		r.dnsServer = space.GetApp(dns.APP_ID).(dns.Server)
 		return nil

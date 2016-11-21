@@ -46,8 +46,7 @@ func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandler
 	}
 	space.InitializeApplication(func() error {
 		if !space.HasApp(dispatcher.APP_ID) {
-			log.Error("Socks|Server: Dispatcher is not found in the space.")
-			return app.ErrMissingApplication
+			return errors.New("Socks|Server: Dispatcher is not found in the space.")
 		}
 		s.packetDispatcher = space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)
 		return nil

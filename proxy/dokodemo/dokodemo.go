@@ -3,6 +3,7 @@ package dokodemo
 import (
 	"sync"
 
+	"errors"
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common/alloc"
@@ -39,8 +40,7 @@ func NewDokodemoDoor(config *Config, space app.Space, meta *proxy.InboundHandler
 	}
 	space.InitializeApplication(func() error {
 		if !space.HasApp(dispatcher.APP_ID) {
-			log.Error("Dokodemo: Dispatcher is not found in the space.")
-			return app.ErrMissingApplication
+			return errors.New("Dokodemo: Dispatcher is not found in the space.")
 		}
 		d.packetDispatcher = space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)
 		return nil

@@ -1,6 +1,7 @@
 package impl
 
 import (
+	"errors"
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/router"
@@ -27,8 +28,7 @@ func NewDefaultDispatcher(space app.Space) *DefaultDispatcher {
 // Private: Used by app.Space only.
 func (this *DefaultDispatcher) Initialize(space app.Space) error {
 	if !space.HasApp(proxyman.APP_ID_OUTBOUND_MANAGER) {
-		log.Error("DefaultDispatcher: OutboundHandlerManager is not found in the space.")
-		return app.ErrMissingApplication
+		return errors.New("DefaultDispatcher: OutboundHandlerManager is not found in the space.")
 	}
 	this.ohm = space.GetApp(proxyman.APP_ID_OUTBOUND_MANAGER).(proxyman.OutboundHandlerManager)
 

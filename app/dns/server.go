@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"errors"
 	"net"
 	"sync"
 	"time"
@@ -38,8 +39,7 @@ func NewCacheServer(space app.Space, config *Config) *CacheServer {
 	}
 	space.InitializeApplication(func() error {
 		if !space.HasApp(dispatcher.APP_ID) {
-			log.Error("DNS: Dispatcher is not found in the space.")
-			return app.ErrMissingApplication
+			return errors.New("DNS: Dispatcher is not found in the space.")
 		}
 
 		dispatcher := space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)

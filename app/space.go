@@ -6,10 +6,6 @@ import (
 	"v2ray.com/core/common"
 )
 
-var (
-	ErrMissingApplication = errors.New("App: Failed to found one or more applications.")
-)
-
 type ID int
 
 // Context of a function call from proxy to app.

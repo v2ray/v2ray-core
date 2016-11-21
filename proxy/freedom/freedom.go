@@ -3,6 +3,7 @@ package freedom
 import (
 	"io"
 
+	"errors"
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dns"
 	"v2ray.com/core/common/alloc"
@@ -35,8 +36,7 @@ func NewFreedomConnection(config *Config, space app.Space, meta *proxy.OutboundH
 	space.InitializeApplication(func() error {
 		if config.DomainStrategy == Config_USE_IP {
 			if !space.HasApp(dns.APP_ID) {
-				log.Error("Freedom: DNS server is not found in the space.")
-				return app.ErrMissingApplication
+				return errors.New("Freedom: DNS server is not found in the space.")
 			}
 			f.dns = space.GetApp(dns.APP_ID).(dns.Server)
 		}
