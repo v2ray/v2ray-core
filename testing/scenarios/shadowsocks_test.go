@@ -56,7 +56,7 @@ func TestShadowsocksTCP(t *testing.T) {
 				break
 			}
 			if response.Len() > len(expectedResponse) {
-				fmt.Printf("Unexpected response: %s\n", response.String())
+				fmt.Printf("Unexpected response: %v\n", response.Value)
 				break
 			}
 		}
