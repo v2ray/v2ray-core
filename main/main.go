@@ -12,8 +12,6 @@ import (
 
 	"v2ray.com/core"
 	"v2ray.com/core/common/log"
-	//"net/http"
-	//_ "net/http/pprof"
 )
 
 var (
@@ -95,10 +93,6 @@ func main() {
 	if *version {
 		return
 	}
-
-	//go func() {
-	//	http.ListenAndServe(":6060", nil)
-	//}()
 
 	if point := startV2Ray(); point != nil {
 		osSignals := make(chan os.Signal, 1)
