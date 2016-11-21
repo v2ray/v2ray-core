@@ -2,7 +2,7 @@ package shadowsocks
 
 import (
 	"errors"
-
+	"io"
 	"sync"
 	"v2ray.com/core/app"
 	"v2ray.com/core/common/alloc"
@@ -113,11 +113,19 @@ func (this *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffe
 				return
 			}
 
-			v2io.Pipe(responseReader, ray.OutboundOutput())
+			if err := v2io.Pipe(responseReader, ray.OutboundOutput()); err != nil {
+				if err != io.EOF {
+					log.Info("Shadowsocks|Client: Failed to transport all TCP response: ", err)
+				}
+			}
 		}()
 
 		bufferedWriter.SetCached(false)
-		v2io.Pipe(ray.OutboundInput(), bodyWriter)
+		if err := v2io.Pipe(ray.OutboundInput(), bodyWriter); err != nil {
+			if err != io.EOF {
+				log.Info("Shadowsocks|Client: Failed to trasnport all TCP request: ", err)
+			}
+		}
 
 		responseMutex.Lock()
 	}
@@ -135,7 +143,11 @@ func (this *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffe
 				User:   user,
 			}
 
-			v2io.Pipe(reader, ray.OutboundOutput())
+			if err := v2io.Pipe(reader, ray.OutboundOutput()); err != nil {
+				if err != io.EOF {
+					log.Info("Shadowsocks|Client: Failed to transport all UDP response: ", err)
+				}
+			}
 		}()
 
 		writer := &UDPWriter{
@@ -147,7 +159,11 @@ func (this *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffe
 				return errors.New("Shadowsocks|Client: Failed to write payload: " + err.Error())
 			}
 		}
-		v2io.Pipe(ray.OutboundInput(), writer)
+		if err := v2io.Pipe(ray.OutboundInput(), writer); err != nil {
+			if err != io.EOF {
+				log.Info("Shadowsocks|Client: Failed to transport all UDP request: ", err)
+			}
+		}
 
 		responseMutex.Lock()
 	}
