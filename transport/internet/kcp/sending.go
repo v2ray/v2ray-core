@@ -36,6 +36,15 @@ func NewSendingWindow(size uint32, writer SegmentWriter, onPacketLoss func(uint3
 	return window
 }
 
+func (this *SendingWindow) Release() {
+	if this == nil {
+		return
+	}
+	for _, seg := range this.data {
+		seg.Release()
+	}
+}
+
 func (this *SendingWindow) Len() int {
 	return int(this.len)
 }
@@ -190,6 +199,10 @@ func NewSendingWorker(kcp *Connection) *SendingWorker {
 	}
 	worker.window = NewSendingWindow(kcp.Config.GetSendingBufferSize(), worker, worker.OnPacketLoss)
 	return worker
+}
+
+func (this *SendingWorker) Release() {
+	this.window.Release()
 }
 
 func (this *SendingWorker) ProcessReceivingNext(nextNumber uint32) {

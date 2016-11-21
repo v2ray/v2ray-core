@@ -467,6 +467,8 @@ func (this *Connection) Terminate() {
 	this.dataInputCond.Broadcast()
 	this.dataOutputCond.Broadcast()
 	this.writer.Close()
+	this.sendingWorker.Release()
+	this.receivingWorker.Release()
 }
 
 func (this *Connection) HandleOption(opt SegmentOption) {

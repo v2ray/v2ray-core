@@ -137,6 +137,10 @@ func NewReceivingWorker(kcp *Connection) *ReceivingWorker {
 	return worker
 }
 
+func (this *ReceivingWorker) Release() {
+	this.leftOver.Release()
+}
+
 func (this *ReceivingWorker) ProcessSendingNext(number uint32) {
 	this.Lock()
 	defer this.Unlock()
