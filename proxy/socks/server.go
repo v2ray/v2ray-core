@@ -304,14 +304,18 @@ func (this *Server) transport(reader io.Reader, writer io.Writer, session *proxy
 		v2reader := v2io.NewAdaptiveReader(reader)
 		defer v2reader.Release()
 
-		v2io.Pipe(v2reader, input)
+		if err := v2io.PipeUntilEOF(v2reader, input); err != nil {
+			log.Info("Socks|Server: Failed to transport all TCP request: ", err)
+		}
 		input.Close()
 	}()
 
 	v2writer := v2io.NewAdaptiveWriter(writer)
 	defer v2writer.Release()
 
-	v2io.Pipe(output, v2writer)
+	if err := v2io.PipeUntilEOF(output, v2writer); err != nil {
+		log.Info("Socks|Server: Failed to transport all TCP response: ", err)
+	}
 	output.Release()
 }
 

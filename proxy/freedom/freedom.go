@@ -104,7 +104,9 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 		v2writer := v2io.NewAdaptiveWriter(conn)
 		defer v2writer.Release()
 
-		v2io.Pipe(input, v2writer)
+		if err := v2io.PipeUntilEOF(input, v2writer); err != nil {
+			log.Info("Freedom: Failed to transport all TCP request: ", err)
+		}
 		if tcpConn, ok := conn.(*tcp.RawConnection); ok {
 			tcpConn.CloseWrite()
 		}
@@ -121,7 +123,9 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 	}
 
 	v2reader := v2io.NewAdaptiveReader(reader)
-	v2io.Pipe(v2reader, output)
+	if err := v2io.PipeUntilEOF(v2reader, output); err != nil {
+		log.Info("Freedom: Failed to transport all TCP response: ", err)
+	}
 	v2reader.Release()
 	ray.OutboundOutput().Close()
 

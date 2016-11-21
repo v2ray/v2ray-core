@@ -179,7 +179,9 @@ func (this *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 		v2reader := v2io.NewAdaptiveReader(reader)
 		defer v2reader.Release()
 
-		v2io.Pipe(v2reader, ray.InboundInput())
+		if err := v2io.PipeUntilEOF(v2reader, ray.InboundInput()); err != nil {
+			log.Info("Dokodemo: Failed to transport all TCP request: ", err)
+		}
 		wg.Done()
 		ray.InboundInput().Close()
 	}()
@@ -189,7 +191,9 @@ func (this *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 		v2writer := v2io.NewAdaptiveWriter(conn)
 		defer v2writer.Release()
 
-		v2io.Pipe(ray.InboundOutput(), v2writer)
+		if err := v2io.PipeUntilEOF(ray.InboundOutput(), v2writer); err != nil {
+			log.Info("Dokodemo: Failed to transport all TCP response: ", err)
+		}
 		wg.Done()
 	}()
 

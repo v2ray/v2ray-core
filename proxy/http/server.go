@@ -160,7 +160,9 @@ func (this *Server) transport(input io.Reader, output io.Writer, ray ray.Inbound
 		v2reader := v2io.NewAdaptiveReader(input)
 		defer v2reader.Release()
 
-		v2io.Pipe(v2reader, ray.InboundInput())
+		if err := v2io.PipeUntilEOF(v2reader, ray.InboundInput()); err != nil {
+			log.Info("HTTP: Failed to transport all TCP request: ", err)
+		}
 		ray.InboundInput().Close()
 		wg.Done()
 	}()
@@ -169,7 +171,9 @@ func (this *Server) transport(input io.Reader, output io.Writer, ray ray.Inbound
 		v2writer := v2io.NewAdaptiveWriter(output)
 		defer v2writer.Release()
 
-		v2io.Pipe(ray.InboundOutput(), v2writer)
+		if err := v2io.PipeUntilEOF(ray.InboundOutput(), v2writer); err != nil {
+			log.Info("HTTP: Failed to transport all TCP response: ", err)
+		}
 		ray.InboundOutput().Release()
 		wg.Done()
 	}()

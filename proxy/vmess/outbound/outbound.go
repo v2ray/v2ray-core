@@ -1,7 +1,6 @@
 package outbound
 
 import (
-	"io"
 	"sync"
 
 	"v2ray.com/core/app"
@@ -107,8 +106,7 @@ func (this *VMessOutboundHandler) handleRequest(session *encoding.ClientSession,
 	}
 	writer.SetCached(false)
 
-	err := v2io.Pipe(input, streamWriter)
-	if err != io.EOF {
+	if err := v2io.PipeUntilEOF(input, streamWriter); err != nil {
 		conn.SetReusable(false)
 	}
 
@@ -150,8 +148,7 @@ func (this *VMessOutboundHandler) handleResponse(session *encoding.ClientSession
 		bodyReader = v2io.NewAdaptiveReader(decryptReader)
 	}
 
-	err = v2io.Pipe(bodyReader, output)
-	if err != io.EOF {
+	if err := v2io.PipeUntilEOF(bodyReader, output); err != nil {
 		conn.SetReusable(false)
 	}
 

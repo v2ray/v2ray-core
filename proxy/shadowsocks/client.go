@@ -2,7 +2,6 @@ package shadowsocks
 
 import (
 	"errors"
-	"io"
 	"sync"
 	"v2ray.com/core/app"
 	"v2ray.com/core/common/alloc"
@@ -113,18 +112,14 @@ func (this *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffe
 				return
 			}
 
-			if err := v2io.Pipe(responseReader, ray.OutboundOutput()); err != nil {
-				if err != io.EOF {
-					log.Info("Shadowsocks|Client: Failed to transport all TCP response: ", err)
-				}
+			if err := v2io.PipeUntilEOF(responseReader, ray.OutboundOutput()); err != nil {
+				log.Info("Shadowsocks|Client: Failed to transport all TCP response: ", err)
 			}
 		}()
 
 		bufferedWriter.SetCached(false)
-		if err := v2io.Pipe(ray.OutboundInput(), bodyWriter); err != nil {
-			if err != io.EOF {
-				log.Info("Shadowsocks|Client: Failed to trasnport all TCP request: ", err)
-			}
+		if err := v2io.PipeUntilEOF(ray.OutboundInput(), bodyWriter); err != nil {
+			log.Info("Shadowsocks|Client: Failed to trasnport all TCP request: ", err)
 		}
 
 		responseMutex.Lock()
@@ -143,10 +138,8 @@ func (this *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffe
 				User:   user,
 			}
 
-			if err := v2io.Pipe(reader, ray.OutboundOutput()); err != nil {
-				if err != io.EOF {
-					log.Info("Shadowsocks|Client: Failed to transport all UDP response: ", err)
-				}
+			if err := v2io.PipeUntilEOF(reader, ray.OutboundOutput()); err != nil {
+				log.Info("Shadowsocks|Client: Failed to transport all UDP response: ", err)
 			}
 		}()
 
@@ -159,10 +152,8 @@ func (this *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffe
 				return errors.New("Shadowsocks|Client: Failed to write payload: " + err.Error())
 			}
 		}
-		if err := v2io.Pipe(ray.OutboundInput(), writer); err != nil {
-			if err != io.EOF {
-				log.Info("Shadowsocks|Client: Failed to transport all UDP request: ", err)
-			}
+		if err := v2io.PipeUntilEOF(ray.OutboundInput(), writer); err != nil {
+			log.Info("Shadowsocks|Client: Failed to transport all UDP request: ", err)
 		}
 
 		responseMutex.Lock()

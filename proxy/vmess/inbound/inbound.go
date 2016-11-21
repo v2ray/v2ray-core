@@ -192,8 +192,7 @@ func (this *VMessInboundHandler) HandleConnection(connection internet.Connection
 		} else {
 			requestReader = v2io.NewAdaptiveReader(bodyReader)
 		}
-		err := v2io.Pipe(requestReader, input)
-		if err != io.EOF {
+		if err := v2io.PipeUntilEOF(requestReader, input); err != nil {
 			connection.SetReusable(false)
 		}
 
@@ -229,8 +228,7 @@ func (this *VMessInboundHandler) HandleConnection(connection internet.Connection
 
 		writer.SetCached(false)
 
-		err = v2io.Pipe(output, v2writer)
-		if err != io.EOF {
+		if err := v2io.PipeUntilEOF(output, v2writer); err != nil {
 			connection.SetReusable(false)
 		}
 

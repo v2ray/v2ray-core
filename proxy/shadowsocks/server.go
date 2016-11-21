@@ -198,11 +198,15 @@ func (this *Server) handleConnection(conn internet.Connection) {
 			responseWriter.Write(payload)
 			bufferedWriter.SetCached(false)
 
-			v2io.Pipe(ray.InboundOutput(), responseWriter)
+			if err := v2io.PipeUntilEOF(ray.InboundOutput(), responseWriter); err != nil {
+				log.Info("Shadowsocks|Server: Failed to transport all TCP response: ", err)
+			}
 		}
 	}()
 
-	v2io.Pipe(bodyReader, ray.InboundInput())
+	if err := v2io.PipeUntilEOF(bodyReader, ray.InboundInput()); err != nil {
+		log.Info("Shadowsocks|Server: Failed to transport all TCP request: ", err)
+	}
 	ray.InboundInput().Close()
 
 	writeFinish.Lock()
