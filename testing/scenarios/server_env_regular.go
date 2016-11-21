@@ -14,7 +14,7 @@ func BuildV2Ray() error {
 		return nil
 	}
 
-	fmt.Printf("Building V2Ray into path (%d)\n", testBinaryPath)
+	fmt.Printf("Building V2Ray into path (%s)\n", testBinaryPath)
 	cmd := exec.Command("go", "build", "-tags=json", "-o="+testBinaryPath, GetSourcePath())
 	return cmd.Run()
 }
