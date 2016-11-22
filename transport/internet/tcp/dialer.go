@@ -16,7 +16,7 @@ var (
 )
 
 func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOptions) (internet.Connection, error) {
-	log.Info("Dailing TCP to ", dest)
+	log.Info("Internet|TCP: Dailing TCP to ", dest)
 	if src == nil {
 		src = v2net.AnyIP
 	}
@@ -68,7 +68,7 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 }
 
 func DialRaw(src v2net.Address, dest v2net.Destination, options internet.DialerOptions) (internet.Connection, error) {
-	log.Info("Dailing Raw TCP to ", dest)
+	log.Info("Internet|TCP: Dailing Raw TCP to ", dest)
 	conn, err := internet.DialToDest(src, dest)
 	if err != nil {
 		return nil, err
