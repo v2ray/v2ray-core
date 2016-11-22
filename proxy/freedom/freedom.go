@@ -1,9 +1,8 @@
 package freedom
 
 import (
-	"io"
-
 	"errors"
+	"io"
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dns"
 	"v2ray.com/core/common/alloc"
