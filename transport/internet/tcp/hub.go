@@ -10,6 +10,7 @@ import (
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/internet/internal"
 	v2tls "v2ray.com/core/transport/internet/tls"
 )
 
@@ -89,7 +90,7 @@ func (this *TCPListener) Accept() (internet.Connection, error) {
 				return nil, connErr.err
 			}
 			conn := connErr.conn
-			return NewConnection("", conn, this, this.config), nil
+			return NewConnection(internal.ConnectionId{}, conn, this, this.config), nil
 		case <-time.After(time.Second * 2):
 		}
 	}
@@ -125,7 +126,7 @@ func (this *TCPListener) KeepAccepting() {
 	}
 }
 
-func (this *TCPListener) Recycle(dest string, conn net.Conn) {
+func (this *TCPListener) Put(id internal.ConnectionId, conn net.Conn) {
 	this.Lock()
 	defer this.Unlock()
 	if !this.acccepting {

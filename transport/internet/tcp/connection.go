@@ -9,7 +9,7 @@ import (
 )
 
 type ConnectionManager interface {
-	Recycle(string, net.Conn)
+	Put(internal.ConnectionId, net.Conn)
 }
 
 type RawConnection struct {
@@ -27,16 +27,16 @@ func (this *RawConnection) SysFd() (int, error) {
 }
 
 type Connection struct {
-	dest     string
+	id       internal.ConnectionId
 	conn     net.Conn
 	listener ConnectionManager
 	reusable bool
 	config   *Config
 }
 
-func NewConnection(dest string, conn net.Conn, manager ConnectionManager, config *Config) *Connection {
+func NewConnection(id internal.ConnectionId, conn net.Conn, manager ConnectionManager, config *Config) *Connection {
 	return &Connection{
-		dest:     dest,
+		id:       id,
 		conn:     conn,
 		listener: manager,
 		reusable: config.ConnectionReuse.IsEnabled(),
@@ -64,7 +64,7 @@ func (this *Connection) Close() error {
 		return io.ErrClosedPipe
 	}
 	if this.Reusable() {
-		this.listener.Recycle(this.dest, this.conn)
+		this.listener.Put(this.id, this.conn)
 		return nil
 	}
 	err := this.conn.Close()
