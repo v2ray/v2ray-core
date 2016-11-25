@@ -56,12 +56,20 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	lenBuffer := 1
 	_, err = io.ReadFull(reader, buffer.Value[:1])
 	if err != nil {
-		return nil, nil, errors.New("Sahdowsocks|TCP: Failed to read address type: " + err.Error())
+		return nil, nil, errors.New("Shadowsocks|TCP: Failed to read address type: " + err.Error())
 	}
 
 	addrType := (buffer.Value[0] & 0x0F)
 	if (buffer.Value[0] & 0x10) == 0x10 {
 		request.Option |= RequestOptionOneTimeAuth
+	}
+
+	if request.Option.Has(RequestOptionOneTimeAuth) && account.OneTimeAuth == Account_Disabled {
+		return nil, nil, errors.New("Shadowsocks|TCP: Rejecting connection with OTA enabled, while server disables OTA.")
+	}
+
+	if !request.Option.Has(RequestOptionOneTimeAuth) && account.OneTimeAuth == Account_Enabled {
+		return nil, nil, errors.New("Shadowsocks|TCP: Rejecting connection with OTA disabled, while server enables OTA.")
 	}
 
 	switch addrType {
@@ -306,6 +314,14 @@ func DecodeUDPPacket(user *protocol.User, payload *alloc.Buffer) (*protocol.Requ
 	addrType := (payload.Value[0] & 0x0F)
 	if (payload.Value[0] & 0x10) == 0x10 {
 		request.Option |= RequestOptionOneTimeAuth
+	}
+
+	if request.Option.Has(RequestOptionOneTimeAuth) && account.OneTimeAuth == Account_Disabled {
+		return nil, nil, errors.New("Shadowsocks|UDP: Rejecting packet with OTA enabled, while server disables OTA.")
+	}
+
+	if !request.Option.Has(RequestOptionOneTimeAuth) && account.OneTimeAuth == Account_Enabled {
+		return nil, nil, errors.New("Shadowsocks|UDP: Rejecting packet with OTA disabled, while server enables OTA.")
 	}
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {

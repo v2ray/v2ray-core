@@ -15,6 +15,7 @@ type ShadowsocksServerConfig struct {
 	UDP      bool   `json:"udp"`
 	Level    byte   `json:"level"`
 	Email    string `json:"email"`
+	OTA      *bool  `json:"ota"`
 }
 
 func (this *ShadowsocksServerConfig) Build() (*loader.TypedSettings, error) {
@@ -27,6 +28,13 @@ func (this *ShadowsocksServerConfig) Build() (*loader.TypedSettings, error) {
 	account := &shadowsocks.Account{
 		Password: this.Password,
 		Ota:      shadowsocks.Account_Auto,
+	}
+	if this.OTA != nil {
+		if *this.OTA {
+			account.Ota = shadowsocks.Account_Enabled
+		} else {
+			account.Ota = shadowsocks.Account_Disabled
+		}
 	}
 	cipher := strings.ToLower(this.Cipher)
 	switch cipher {
