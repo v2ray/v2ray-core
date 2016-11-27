@@ -100,6 +100,7 @@ func NewListener(address v2net.Address, port v2net.Port, options internet.Listen
 		return nil, err
 	}
 	kcpSettings := networkSettings.(*Config)
+	kcpSettings.ConnectionReuse = &ConnectionReuse{Enable: false}
 
 	auth, err := kcpSettings.GetAuthenticator()
 	if err != nil {

@@ -439,10 +439,12 @@ func (this *Connection) updateTask() {
 }
 
 func (this *Connection) Reusable() bool {
-	return false
+	return this.Config.ConnectionReuse.IsEnabled() && this.reusable
 }
 
-func (this *Connection) SetReusable(b bool) {}
+func (this *Connection) SetReusable(b bool) {
+	this.reusable = b
+}
 
 func (this *Connection) Terminate() {
 	if this == nil {
