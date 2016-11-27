@@ -48,10 +48,6 @@ func (this Destination) String() string {
 	return this.Network.UrlPrefix() + ":" + this.NetAddr()
 }
 
-func (this Destination) Equals(another Destination) bool {
-	return this.Network == another.Network && this.Port == another.Port && this.Address.Equals(another.Address)
-}
-
 func (this *Endpoint) AsDestination() Destination {
 	return Destination{
 		Network: this.Network,

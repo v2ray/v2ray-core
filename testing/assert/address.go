@@ -20,13 +20,13 @@ type AddressSubject struct {
 }
 
 func (subject *AddressSubject) NotEquals(another v2net.Address) {
-	if subject.value.Equals(another) {
+	if subject.value == another {
 		subject.Fail("not equals to", another.String())
 	}
 }
 
 func (subject *AddressSubject) Equals(another v2net.Address) {
-	if !subject.value.Equals(another) {
+	if subject.value != another {
 		subject.Fail("equals to", another.String())
 	}
 }

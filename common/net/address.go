@@ -49,7 +49,6 @@ type Address interface {
 	Family() AddressFamily
 
 	String() string // String representation of this Address
-	Equals(Address) bool
 }
 
 // ParseAddress parses a string into an Address. The return value will be an IPAddress when
@@ -109,17 +108,6 @@ func (this ipv4Address) String() string {
 	return this.IP().String()
 }
 
-func (this ipv4Address) Equals(another Address) bool {
-	anotherIPv4, ok := another.(ipv4Address)
-	if !ok {
-		return false
-	}
-	return this[0] == anotherIPv4[0] &&
-		this[1] == anotherIPv4[1] &&
-		this[2] == anotherIPv4[2] &&
-		this[3] == anotherIPv4[3]
-}
-
 type ipv6Address [16]byte
 
 func (addr ipv6Address) IP() net.IP {
@@ -138,29 +126,6 @@ func (this ipv6Address) String() string {
 	return "[" + this.IP().String() + "]"
 }
 
-func (this ipv6Address) Equals(another Address) bool {
-	anotherIPv6, ok := another.(ipv6Address)
-	if !ok {
-		return false
-	}
-	return this[0] == anotherIPv6[0] &&
-		this[1] == anotherIPv6[1] &&
-		this[2] == anotherIPv6[2] &&
-		this[3] == anotherIPv6[3] &&
-		this[4] == anotherIPv6[4] &&
-		this[5] == anotherIPv6[5] &&
-		this[6] == anotherIPv6[6] &&
-		this[7] == anotherIPv6[7] &&
-		this[8] == anotherIPv6[8] &&
-		this[9] == anotherIPv6[9] &&
-		this[10] == anotherIPv6[10] &&
-		this[11] == anotherIPv6[11] &&
-		this[12] == anotherIPv6[12] &&
-		this[13] == anotherIPv6[13] &&
-		this[14] == anotherIPv6[14] &&
-		this[15] == anotherIPv6[15]
-}
-
 type domainAddress string
 
 func (addr domainAddress) IP() net.IP {
@@ -177,14 +142,6 @@ func (addr domainAddress) Family() AddressFamily {
 
 func (this domainAddress) String() string {
 	return this.Domain()
-}
-
-func (this domainAddress) Equals(another Address) bool {
-	anotherDomain, ok := another.(domainAddress)
-	if !ok {
-		return false
-	}
-	return this.Domain() == anotherDomain.Domain()
 }
 
 func (this *IPOrDomain) AsAddress() Address {
