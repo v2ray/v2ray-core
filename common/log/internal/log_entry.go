@@ -24,7 +24,7 @@ func InterfaceToString(value interface{}) string {
 	case []byte:
 		return serial.BytesToHexString(value)
 	default:
-		return fmt.Sprint(value)
+		return fmt.Sprintf("%+v", value)
 	}
 }
 
