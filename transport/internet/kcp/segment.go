@@ -24,6 +24,7 @@ const (
 
 type Segment interface {
 	common.Releasable
+	Conversation() uint16
 	ByteSize() int
 	Bytes([]byte) []byte
 }
@@ -46,6 +47,10 @@ type DataSegment struct {
 
 func NewDataSegment() *DataSegment {
 	return new(DataSegment)
+}
+
+func (this *DataSegment) Conversation() uint16 {
+	return this.Conv
 }
 
 func (this *DataSegment) SetData(b []byte) {
@@ -87,6 +92,10 @@ type AckSegment struct {
 
 func NewAckSegment() *AckSegment {
 	return new(AckSegment)
+}
+
+func (this *AckSegment) Conversation() uint16 {
+	return this.Conv
 }
 
 func (this *AckSegment) PutTimestamp(timestamp uint32) {
@@ -136,6 +145,10 @@ type CmdOnlySegment struct {
 
 func NewCmdOnlySegment() *CmdOnlySegment {
 	return new(CmdOnlySegment)
+}
+
+func (this *CmdOnlySegment) Conversation() uint16 {
+	return this.Conv
 }
 
 func (this *CmdOnlySegment) ByteSize() int {

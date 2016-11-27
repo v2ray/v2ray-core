@@ -12,16 +12,81 @@ import (
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/internet/internal"
 	v2tls "v2ray.com/core/transport/internet/tls"
 	"v2ray.com/core/transport/internet/udp"
 )
+
+type ConnectionId struct {
+	Remote v2net.Address
+	Port   v2net.Port
+	Conv   uint16
+}
+
+type ServerConnection struct {
+	id     internal.ConnectionId
+	writer *Writer
+	local  net.Addr
+	remote net.Addr
+	auth   internet.Authenticator
+	input  func([]byte)
+}
+
+func (o *ServerConnection) Read([]byte) (int, error) {
+	panic("KCP|ServerConnection: Read should not be called.")
+}
+
+func (o *ServerConnection) Write(b []byte) (int, error) {
+	return o.writer.Write(b)
+}
+
+func (o *ServerConnection) Close() error {
+	return o.writer.Close()
+}
+
+func (o *ServerConnection) Reset(auth internet.Authenticator, input func([]byte)) {
+	o.auth = auth
+	o.input = input
+}
+
+func (o *ServerConnection) Input(b *alloc.Buffer) {
+	defer b.Release()
+
+	if o.auth.Open(b) {
+		o.input(b.Value)
+	}
+}
+
+func (o *ServerConnection) LocalAddr() net.Addr {
+	return o.local
+}
+
+func (o *ServerConnection) RemoteAddr() net.Addr {
+	return o.remote
+}
+
+func (o *ServerConnection) SetDeadline(time.Time) error {
+	return nil
+}
+
+func (o *ServerConnection) SetReadDeadline(time.Time) error {
+	return nil
+}
+
+func (o *ServerConnection) SetWriteDeadline(time.Time) error {
+	return nil
+}
+
+func (o *ServerConnection) Id() internal.ConnectionId {
+	return o.id
+}
 
 // Listener defines a server listening for connections
 type Listener struct {
 	sync.Mutex
 	running       bool
 	authenticator internet.Authenticator
-	sessions      map[string]*Connection
+	sessions      map[ConnectionId]*Connection
 	awaitingConns chan *Connection
 	hub           *udp.UDPHub
 	tlsConfig     *tls.Config
@@ -42,7 +107,7 @@ func NewListener(address v2net.Address, port v2net.Port, options internet.Listen
 	}
 	l := &Listener{
 		authenticator: auth,
-		sessions:      make(map[string]*Connection),
+		sessions:      make(map[ConnectionId]*Connection),
 		awaitingConns: make(chan *Connection, 64),
 		running:       true,
 		config:        kcpSettings,
@@ -89,40 +154,51 @@ func (this *Listener) OnReceive(payload *alloc.Buffer, session *proxy.SessionInf
 	}
 	conv := serial.BytesToUint16(payload.Value)
 	cmd := Command(payload.Value[2])
-	sourceId := src.NetAddr() + "|" + serial.Uint16ToString(conv)
-	conn, found := this.sessions[sourceId]
+	id := ConnectionId{
+		Remote: src.Address,
+		Port:   src.Port,
+		Conv:   conv,
+	}
+	conn, found := this.sessions[id]
+
 	if !found {
 		if cmd == CommandTerminate {
 			return
 		}
-		log.Debug("KCP|Listener: Creating session with id(", sourceId, ") from ", src)
 		writer := &Writer{
-			id:       sourceId,
+			id:       id,
 			hub:      this.hub,
 			dest:     src,
 			listener: this,
 		}
-		srcAddr := &net.UDPAddr{
+		remoteAddr := &net.UDPAddr{
 			IP:   src.Address.IP(),
 			Port: int(src.Port),
 		}
+		localAddr := this.hub.Addr()
 		auth, err := this.config.GetAuthenticator()
 		if err != nil {
 			log.Error("KCP|Listener: Failed to create authenticator: ", err)
 		}
-		conn = NewConnection(conv, writer, this.Addr().(*net.UDPAddr), srcAddr, auth, this.config)
+		sConn := &ServerConnection{
+			id:     internal.NewConnectionId(v2net.LocalHostIP, src),
+			local:  localAddr,
+			remote: remoteAddr,
+			writer: writer,
+		}
+		conn = NewConnection(conv, sConn, this, auth, this.config)
 		select {
 		case this.awaitingConns <- conn:
 		case <-time.After(time.Second * 5):
 			conn.Close()
 			return
 		}
-		this.sessions[sourceId] = conn
+		this.sessions[id] = conn
 	}
 	conn.Input(payload.Value)
 }
 
-func (this *Listener) Remove(dest string) {
+func (this *Listener) Remove(id ConnectionId) {
 	if !this.running {
 		return
 	}
@@ -131,8 +207,7 @@ func (this *Listener) Remove(dest string) {
 	if !this.running {
 		return
 	}
-	log.Debug("KCP|Listener: Removing session ", dest)
-	delete(this.sessions, dest)
+	delete(this.sessions, id)
 }
 
 // Accept implements the Accept method in the Listener interface; it waits for the next call and returns a generic Conn.
@@ -187,8 +262,10 @@ func (this *Listener) Addr() net.Addr {
 	return this.hub.Addr()
 }
 
+func (this *Listener) Put(internal.ConnectionId, net.Conn) {}
+
 type Writer struct {
-	id       string
+	id       ConnectionId
 	dest     v2net.Destination
 	hub      *udp.UDPHub
 	listener *Listener

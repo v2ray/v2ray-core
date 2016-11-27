@@ -88,6 +88,13 @@ func (this *Config) GetReceivingBufferSize() uint32 {
 	return this.ReadBuffer.GetSize() / this.Mtu.GetValue()
 }
 
+func (o *ConnectionReuse) IsEnabled() bool {
+	if o == nil {
+		return true
+	}
+	return o.Enable
+}
+
 func init() {
 	internet.RegisterNetworkConfigCreator(v2net.Network_KCP, func() interface{} {
 		return new(Config)

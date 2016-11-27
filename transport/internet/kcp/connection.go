@@ -8,10 +8,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"v2ray.com/core/common/alloc"
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/predicate"
 	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/internet/internal"
 )
 
 var (
@@ -159,13 +159,19 @@ func (this *Updater) Run() {
 	}
 }
 
+type SystemConnection interface {
+	net.Conn
+	Id() internal.ConnectionId
+	Reset(internet.Authenticator, func([]byte))
+}
+
 // Connection is a KCP connection over UDP.
 type Connection struct {
+	conn           SystemConnection
+	connRecycler   internal.ConnectionRecyler
 	block          internet.Authenticator
-	local, remote  net.Addr
 	rd             time.Time
 	wd             time.Time // write deadline
-	writer         io.WriteCloser
 	since          int64
 	dataInputCond  *sync.Cond
 	dataOutputCond *sync.Cond
@@ -179,48 +185,47 @@ type Connection struct {
 
 	mss       uint32
 	roundTrip *RoundTripInfo
-	interval  uint32
 
 	receivingWorker *ReceivingWorker
 	sendingWorker   *SendingWorker
 
-	congestionControl bool
-	output            *BufferedSegmentWriter
+	output *BufferedSegmentWriter
 
 	dataUpdater *Updater
 	pingUpdater *Updater
+
+	reusable bool
 }
 
 // NewConnection create a new KCP connection between local and remote.
-func NewConnection(conv uint16, writerCloser io.WriteCloser, local *net.UDPAddr, remote *net.UDPAddr, block internet.Authenticator, config *Config) *Connection {
+func NewConnection(conv uint16, sysConn SystemConnection, recycler internal.ConnectionRecyler, block internet.Authenticator, config *Config) *Connection {
 	log.Info("KCP|Connection: creating connection ", conv)
-
-	conn := new(Connection)
-	conn.local = local
-	conn.remote = remote
-	conn.block = block
-	conn.writer = writerCloser
-	conn.since = nowMillisec()
-	conn.dataInputCond = sync.NewCond(new(sync.Mutex))
-	conn.dataOutputCond = sync.NewCond(new(sync.Mutex))
-	conn.Config = config
 
 	authWriter := &AuthenticationWriter{
 		Authenticator: block,
-		Writer:        writerCloser,
+		Writer:        sysConn,
 		Config:        config,
 	}
-	conn.conv = conv
-	conn.output = NewSegmentWriter(authWriter)
 
-	conn.mss = authWriter.Mtu() - DataSegmentOverhead
-	conn.roundTrip = &RoundTripInfo{
-		rto:    100,
-		minRtt: config.Tti.GetValue(),
+	conn := &Connection{
+		conv:           conv,
+		conn:           sysConn,
+		connRecycler:   recycler,
+		block:          block,
+		since:          nowMillisec(),
+		dataInputCond:  sync.NewCond(new(sync.Mutex)),
+		dataOutputCond: sync.NewCond(new(sync.Mutex)),
+		Config:         config,
+		output:         NewSegmentWriter(authWriter),
+		mss:            authWriter.Mtu() - DataSegmentOverhead,
+		roundTrip: &RoundTripInfo{
+			rto:    100,
+			minRtt: config.Tti.GetValue(),
+		},
 	}
-	conn.interval = config.Tti.GetValue()
+	sysConn.Reset(block, conn.Input)
+
 	conn.receivingWorker = NewReceivingWorker(conn)
-	conn.congestionControl = config.Congestion
 	conn.sendingWorker = NewSendingWorker(conn)
 
 	isTerminating := func() bool {
@@ -230,7 +235,7 @@ func NewConnection(conv uint16, writerCloser io.WriteCloser, local *net.UDPAddr,
 		return conn.State() == StateTerminated
 	}
 	conn.dataUpdater = NewUpdater(
-		conn.interval,
+		config.Tti.GetValue(),
 		predicate.Not(isTerminating).And(predicate.Any(conn.sendingWorker.UpdateNecessary, conn.receivingWorker.UpdateNecessary)),
 		isTerminating,
 		conn.updateTask)
@@ -368,7 +373,7 @@ func (this *Connection) Close() error {
 	if state.Is(StateReadyToClose, StateTerminating, StateTerminated) {
 		return ErrClosedConnection
 	}
-	log.Info("KCP|Connection: Closing connection to ", this.remote)
+	log.Info("KCP|Connection: Closing connection to ", this.conn.RemoteAddr())
 
 	if state == StateActive {
 		this.SetState(StateReadyToClose)
@@ -388,7 +393,7 @@ func (this *Connection) LocalAddr() net.Addr {
 	if this == nil {
 		return nil
 	}
-	return this.local
+	return this.conn.LocalAddr()
 }
 
 // RemoteAddr returns the remote network address. The Addr returned is shared by all invocations of RemoteAddr, so do not modify it.
@@ -396,7 +401,7 @@ func (this *Connection) RemoteAddr() net.Addr {
 	if this == nil {
 		return nil
 	}
-	return this.remote
+	return this.conn.RemoteAddr()
 }
 
 // SetDeadline sets the deadline associated with the listener. A zero time value disables the deadline.
@@ -433,24 +438,6 @@ func (this *Connection) updateTask() {
 	this.flush()
 }
 
-func (this *Connection) FetchInputFrom(conn io.Reader) {
-	go func() {
-		payload := alloc.NewLocalBuffer(2048)
-		defer payload.Release()
-		for this.State() != StateTerminated {
-			payload.Reset()
-			nBytes, err := conn.Read(payload.Value)
-			if err != nil {
-				return
-			}
-			payload.Slice(0, nBytes)
-			if this.block.Open(payload) {
-				this.Input(payload.Value)
-			}
-		}
-	}()
-}
-
 func (this *Connection) Reusable() bool {
 	return false
 }
@@ -458,7 +445,7 @@ func (this *Connection) Reusable() bool {
 func (this *Connection) SetReusable(b bool) {}
 
 func (this *Connection) Terminate() {
-	if this == nil || this.writer == nil {
+	if this == nil {
 		return
 	}
 	log.Info("KCP|Connection: Terminating connection to ", this.RemoteAddr())
@@ -466,7 +453,11 @@ func (this *Connection) Terminate() {
 	//this.SetState(StateTerminated)
 	this.dataInputCond.Broadcast()
 	this.dataOutputCond.Broadcast()
-	this.writer.Close()
+	if this.Config.ConnectionReuse.IsEnabled() && this.reusable {
+		this.connRecycler.Put(this.conn.Id(), this.conn)
+	} else {
+		this.conn.Close()
+	}
 	this.sendingWorker.Release()
 	this.receivingWorker.Release()
 }
@@ -488,7 +479,7 @@ func (this *Connection) OnPeerClosed() {
 }
 
 // Input when you received a low level packet (eg. UDP packet), call it
-func (this *Connection) Input(data []byte) int {
+func (this *Connection) Input(data []byte) {
 	current := this.Elapsed()
 	atomic.StoreUint32(&this.lastIncomingTime, current)
 
@@ -497,6 +488,9 @@ func (this *Connection) Input(data []byte) int {
 		seg, data = ReadSegment(data)
 		if seg == nil {
 			break
+		}
+		if seg.Conversation() != this.conv {
+			return
 		}
 
 		switch seg := seg.(type) {
@@ -530,8 +524,6 @@ func (this *Connection) Input(data []byte) int {
 		default:
 		}
 	}
-
-	return 0
 }
 
 func (this *Connection) flush() {
