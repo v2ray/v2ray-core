@@ -58,5 +58,5 @@ type InboundHandler interface {
 // An OutboundHandler handles outbound network connection for V2Ray.
 type OutboundHandler interface {
 	// Dispatch sends one or more Packets to its destination.
-	Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error
+	Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay)
 }

@@ -25,15 +25,13 @@ func NewBlackHole(space app.Space, config *Config, meta *proxy.OutboundHandlerMe
 	}, nil
 }
 
-func (v *BlackHole) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
+func (v *BlackHole) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) {
 	payload.Release()
 
 	v.response.WriteTo(ray.OutboundOutput())
 	ray.OutboundOutput().Close()
 
 	ray.OutboundInput().Release()
-
-	return nil
 }
 
 type Factory struct{}

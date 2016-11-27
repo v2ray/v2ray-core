@@ -18,7 +18,7 @@ type OutboundConnectionHandler struct {
 	ConnOutput  io.Writer
 }
 
-func (v *OutboundConnectionHandler) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
+func (v *OutboundConnectionHandler) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) {
 	input := ray.OutboundInput()
 	output := ray.OutboundOutput()
 
@@ -48,8 +48,6 @@ func (v *OutboundConnectionHandler) Dispatch(destination v2net.Destination, payl
 
 	v2io.Pipe(v2reader, output)
 	output.Close()
-
-	return nil
 }
 
 func (v *OutboundConnectionHandler) Create(space app.Space, config interface{}, sendThrough v2net.Address) (proxy.OutboundHandler, error) {

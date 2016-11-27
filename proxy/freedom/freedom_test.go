@@ -59,26 +59,6 @@ func TestSinglePacket(t *testing.T) {
 	tcpServer.Close()
 }
 
-func TestUnreachableDestination(t *testing.T) {
-	assert := assert.On(t)
-
-	freedom := NewFreedomConnection(
-		&Config{},
-		app.NewSpace(),
-		&proxy.OutboundHandlerMeta{
-			Address: v2net.AnyIP,
-			StreamSettings: &internet.StreamConfig{
-				Network: v2net.Network_RawTCP,
-			},
-		})
-	traffic := ray.NewRay()
-	data2Send := "Data to be sent to remote"
-	payload := alloc.NewLocalBuffer(2048).Clear().Append([]byte(data2Send))
-
-	err := freedom.Dispatch(v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), 128), payload, traffic)
-	assert.Error(err).IsNotNil()
-}
-
 func TestIPResolution(t *testing.T) {
 	assert := assert.On(t)
 

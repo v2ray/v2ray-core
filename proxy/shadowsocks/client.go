@@ -1,7 +1,6 @@
 package shadowsocks
 
 import (
-	"errors"
 	"sync"
 	"v2ray.com/core/app"
 	"v2ray.com/core/common/alloc"
@@ -33,7 +32,7 @@ func NewClient(config *ClientConfig, space app.Space, meta *proxy.OutboundHandle
 	return client, nil
 }
 
-func (v *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
+func (v *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) {
 	defer payload.Release()
 	defer ray.OutboundInput().Release()
 	defer ray.OutboundOutput().Close()
@@ -56,7 +55,8 @@ func (v *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffer, 
 		return nil
 	})
 	if err != nil {
-		return errors.New("Shadowsocks|Client: Failed to find an available destination:" + err.Error())
+		log.Warning("Shadowsocks|Client: Failed to find an available destination:", err)
+		return
 	}
 	log.Info("Shadowsocks|Client: Tunneling request to ", destination, " via ", server.Destination())
 
@@ -76,7 +76,8 @@ func (v *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffer, 
 	user := server.PickUser()
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
-		return errors.New("Shadowsocks|Client: Failed to get a valid user account: " + err.Error())
+		log.Warning("Shadowsocks|Client: Failed to get a valid user account: ", err)
+		return
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 	request.User = user
@@ -93,11 +94,13 @@ func (v *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffer, 
 		defer bodyWriter.Release()
 
 		if err != nil {
-			return errors.New("Shadowsock|Client: Failed to write request: " + err.Error())
+			log.Info("Shadowsock|Client: Failed to write request: ", err)
+			return
 		}
 
 		if err := bodyWriter.Write(payload); err != nil {
-			return errors.New("Shadowsocks|Client: Failed to write payload: " + err.Error())
+			log.Info("Shadowsocks|Client: Failed to write payload: ", err)
+			return
 		}
 
 		var responseMutex sync.Mutex
@@ -149,7 +152,8 @@ func (v *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffer, 
 		}
 		if !payload.IsEmpty() {
 			if err := writer.Write(payload); err != nil {
-				return errors.New("Shadowsocks|Client: Failed to write payload: " + err.Error())
+				log.Info("Shadowsocks|Client: Failed to write payload: ", err)
+				return
 			}
 		}
 		if err := v2io.PipeUntilEOF(ray.OutboundInput(), writer); err != nil {
@@ -158,8 +162,6 @@ func (v *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffer, 
 
 		responseMutex.Lock()
 	}
-
-	return nil
 }
 
 type ClientFactory struct{}

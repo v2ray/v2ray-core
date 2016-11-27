@@ -25,7 +25,7 @@ type VMessOutboundHandler struct {
 	meta         *proxy.OutboundHandlerMeta
 }
 
-func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
+func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) {
 	defer ray.OutboundInput().Release()
 	defer ray.OutboundOutput().Close()
 
@@ -43,8 +43,8 @@ func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *alloc
 		return nil
 	})
 	if err != nil {
-		log.Error("VMess|Outbound: Failed to find an available destination:", err)
-		return err
+		log.Warning("VMess|Outbound: Failed to find an available destination:", err)
+		return
 	}
 	log.Info("VMess|Outbound: Tunneling request to ", target, " via ", rec.Destination())
 
@@ -82,7 +82,7 @@ func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *alloc
 
 	requestFinish.Lock()
 	responseFinish.Lock()
-	return nil
+	return
 }
 
 func (v *VMessOutboundHandler) handleRequest(session *encoding.ClientSession, conn internet.Connection, request *protocol.RequestHeader, payload *alloc.Buffer, input v2io.Reader, finish *sync.Mutex) {

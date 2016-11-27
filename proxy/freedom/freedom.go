@@ -67,7 +67,7 @@ func (v *FreedomConnection) ResolveIP(destination v2net.Destination) v2net.Desti
 	return newDest
 }
 
-func (v *FreedomConnection) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
+func (v *FreedomConnection) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) {
 	log.Info("Freedom: Opening connection to ", destination)
 
 	defer payload.Release()
@@ -88,7 +88,7 @@ func (v *FreedomConnection) Dispatch(destination v2net.Destination, payload *all
 	})
 	if err != nil {
 		log.Warning("Freedom: Failed to open connection to ", destination, ": ", err)
-		return err
+		return
 	}
 	defer conn.Close()
 
@@ -127,8 +127,6 @@ func (v *FreedomConnection) Dispatch(destination v2net.Destination, payload *all
 	}
 	v2reader.Release()
 	ray.OutboundOutput().Close()
-
-	return nil
 }
 
 type FreedomFactory struct{}
