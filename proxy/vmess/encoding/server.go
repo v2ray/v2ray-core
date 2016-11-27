@@ -85,7 +85,7 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	v.requestBodyIV = append([]byte(nil), buffer[1:17]...)   // 16 bytes
 	v.requestBodyKey = append([]byte(nil), buffer[17:33]...) // 16 bytes
 	v.responseHeader = buffer[33]                            // 1 byte
-	request.Option = protocol.RequestOption(buffer[34])         // 1 byte + 2 bytes reserved
+	request.Option = protocol.RequestOption(buffer[34])      // 1 byte + 2 bytes reserved
 	request.Command = protocol.RequestCommand(buffer[37])
 
 	request.Port = v2net.PortFromBytes(buffer[38:40])
