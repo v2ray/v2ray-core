@@ -219,13 +219,13 @@ func (this *SendingWorker) ProcessReceivingNextWithoutLock(nextNumber uint32) {
 
 // Private: Visible for testing.
 func (this *SendingWorker) FindFirstUnacknowledged() {
-	v := this.firstUnacknowledged
+	first := this.firstUnacknowledged
 	if !this.window.IsEmpty() {
 		this.firstUnacknowledged = this.window.FirstNumber()
 	} else {
 		this.firstUnacknowledged = this.nextNumber
 	}
-	if v != this.firstUnacknowledged {
+	if first != this.firstUnacknowledged {
 		this.firstUnacknowledgedUpdated = true
 	}
 }

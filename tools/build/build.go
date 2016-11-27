@@ -61,15 +61,15 @@ func build(targetOS, targetArch string, archive bool, version string, metadataFi
 	v2rayArch := parseArch(targetArch)
 
 	if len(version) == 0 {
-		v, err := git.RepoVersionHead()
-		if v == git.VersionUndefined {
-			v = "custom"
+		headVer, err := git.RepoVersionHead()
+		if headVer == git.VersionUndefined {
+			headVer = "custom"
 		}
 		if err != nil {
 			fmt.Println("Unable to detect V2Ray version: " + err.Error())
 			return
 		}
-		version = v
+		version = headVer
 	}
 	fmt.Printf("Building V2Ray (%s) for %s %s\n", version, v2rayOS, v2rayArch)
 

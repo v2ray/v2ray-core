@@ -71,9 +71,9 @@ func (this *ConnectionCache) Recycle(dest string, conn *wsconn) {
 	}
 
 	var list []*AwaitingConnection
-	if v, found := this.cache[dest]; found {
-		v = append(v, aconn)
-		list = v
+	if val, found := this.cache[dest]; found {
+		val = append(val, aconn)
+		list = val
 	} else {
 		list = []*AwaitingConnection{aconn}
 	}

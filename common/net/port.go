@@ -23,21 +23,21 @@ func PortFromBytes(port []byte) Port {
 
 // PortFromInt converts an integer to a Port.
 // @error when the integer is not positive or larger then 65535
-func PortFromInt(v uint32) (Port, error) {
-	if v > 65535 {
+func PortFromInt(val uint32) (Port, error) {
+	if val > 65535 {
 		return Port(0), ErrInvalidPortRange
 	}
-	return Port(v), nil
+	return Port(val), nil
 }
 
 // PortFromString converts a string to a Port.
 // @error when the string is not an integer or the integral value is a not a valid Port.
 func PortFromString(s string) (Port, error) {
-	v, err := strconv.ParseUint(s, 10, 32)
+	val, err := strconv.ParseUint(s, 10, 32)
 	if err != nil {
 		return Port(0), ErrInvalidPortRange
 	}
-	return PortFromInt(uint32(v))
+	return PortFromInt(uint32(val))
 }
 
 // Value return the correspoding uint16 value of this Port.

@@ -77,13 +77,13 @@ func (b *Buffer) AppendString(s string) *Buffer {
 	return b
 }
 
-func (b *Buffer) AppendUint16(v uint16) *Buffer {
-	b.Value = serial.Uint16ToBytes(v, b.Value)
+func (b *Buffer) AppendUint16(val uint16) *Buffer {
+	b.Value = serial.Uint16ToBytes(val, b.Value)
 	return b
 }
 
-func (b *Buffer) AppendUint32(v uint32) *Buffer {
-	b.Value = serial.Uint32ToBytes(v, b.Value)
+func (b *Buffer) AppendUint32(val uint32) *Buffer {
+	b.Value = serial.Uint32ToBytes(val, b.Value)
 	return b
 }
 
@@ -99,15 +99,15 @@ func (b *Buffer) PrependBytes(data ...byte) *Buffer {
 	return b.Prepend(data)
 }
 
-func (b *Buffer) PrependUint16(v uint16) *Buffer {
+func (b *Buffer) PrependUint16(val uint16) *Buffer {
 	b.SliceBack(2)
-	serial.Uint16ToBytes(v, b.Value[:0])
+	serial.Uint16ToBytes(val, b.Value[:0])
 	return b
 }
 
-func (b *Buffer) PrependUint32(v uint32) *Buffer {
+func (b *Buffer) PrependUint32(val uint32) *Buffer {
 	b.SliceBack(4)
-	serial.Uint32ToBytes(v, b.Value[:0])
+	serial.Uint32ToBytes(val, b.Value[:0])
 	return b
 }
 

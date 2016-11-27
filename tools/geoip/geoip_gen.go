@@ -81,11 +81,11 @@ func main() {
 
 func formatArray(a []byte) string {
 	r := "[]byte{"
-	for idx, v := range a {
+	for idx, val := range a {
 		if idx > 0 {
 			r += ","
 		}
-		r += fmt.Sprintf("%d", v)
+		r += fmt.Sprintf("%d", val)
 	}
 	r += "}"
 	return r

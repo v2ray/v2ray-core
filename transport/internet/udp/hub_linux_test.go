@@ -32,11 +32,11 @@ func TestHubSocksOption(t *testing.T) {
 	fd, err := internal.GetSysFd(conn)
 	assert.Error(err).IsNil()
 
-	v, err := syscall.GetsockoptInt(fd, syscall.SOL_IP, syscall.IP_TRANSPARENT)
+	val, err := syscall.GetsockoptInt(fd, syscall.SOL_IP, syscall.IP_TRANSPARENT)
 	assert.Error(err).IsNil()
-	assert.Int(v).Equals(1)
+	assert.Int(val).Equals(1)
 
-	v, err = syscall.GetsockoptInt(fd, syscall.SOL_IP, syscall.IP_RECVORIGDSTADDR)
+	val, err = syscall.GetsockoptInt(fd, syscall.SOL_IP, syscall.IP_RECVORIGDSTADDR)
 	assert.Error(err).IsNil()
-	assert.Int(v).Equals(1)
+	assert.Int(val).Equals(1)
 }

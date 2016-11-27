@@ -23,8 +23,8 @@ func (this *DnsConfig) Build() *dns.Config {
 
 	if this.Hosts != nil {
 		config.Hosts = make(map[string]*v2net.IPOrDomain)
-		for k, v := range this.Hosts {
-			config.Hosts[k] = v.Build()
+		for domain, ip := range this.Hosts {
+			config.Hosts[domain] = ip.Build()
 		}
 	}
 

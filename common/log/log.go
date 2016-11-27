@@ -46,34 +46,34 @@ func InitErrorLogger(file string) error {
 }
 
 // Debug outputs a debug log with given format and optional arguments.
-func Debug(v ...interface{}) {
+func Debug(val ...interface{}) {
 	debugLogger.Log(&internal.ErrorLog{
 		Prefix: "[Debug]",
-		Values: v,
+		Values: val,
 	})
 }
 
 // Info outputs an info log with given format and optional arguments.
-func Info(v ...interface{}) {
+func Info(val ...interface{}) {
 	infoLogger.Log(&internal.ErrorLog{
 		Prefix: "[Info]",
-		Values: v,
+		Values: val,
 	})
 }
 
 // Warning outputs a warning log with given format and optional arguments.
-func Warning(v ...interface{}) {
+func Warning(val ...interface{}) {
 	warningLogger.Log(&internal.ErrorLog{
 		Prefix: "[Warning]",
-		Values: v,
+		Values: val,
 	})
 }
 
 // Error outputs an error log with given format and optional arguments.
-func Error(v ...interface{}) {
+func Error(val ...interface{}) {
 	errorLogger.Log(&internal.ErrorLog{
 		Prefix: "[Error]",
-		Values: v,
+		Values: val,
 	})
 }
 
