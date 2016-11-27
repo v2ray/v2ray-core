@@ -67,7 +67,7 @@ func IPAddress(ip []byte) Address {
 	switch len(ip) {
 	case net.IPv4len:
 		var addr ipv4Address = [4]byte{ip[0], ip[1], ip[2], ip[3]}
-		return &addr
+		return addr
 	case net.IPv6len:
 		if predicate.BytesAll(ip[0:10], 0) && predicate.BytesAll(ip[10:12], 0xff) {
 			return IPAddress(ip[12:16])
@@ -78,7 +78,7 @@ func IPAddress(ip []byte) Address {
 			ip[8], ip[9], ip[10], ip[11],
 			ip[12], ip[13], ip[14], ip[15],
 		}
-		return &addr
+		return addr
 	default:
 		log.Error("Invalid IP format: ", ip)
 		return nil
@@ -88,29 +88,29 @@ func IPAddress(ip []byte) Address {
 // DomainAddress creates an Address with given domain.
 func DomainAddress(domain string) Address {
 	var addr domainAddress = domainAddress(domain)
-	return &addr
+	return addr
 }
 
 type ipv4Address [4]byte
 
-func (addr *ipv4Address) IP() net.IP {
+func (addr ipv4Address) IP() net.IP {
 	return net.IP(addr[:])
 }
 
-func (addr *ipv4Address) Domain() string {
+func (addr ipv4Address) Domain() string {
 	panic("Calling Domain() on an IPv4Address.")
 }
 
-func (addr *ipv4Address) Family() AddressFamily {
+func (addr ipv4Address) Family() AddressFamily {
 	return AddressFamilyIPv4
 }
 
-func (this *ipv4Address) String() string {
+func (this ipv4Address) String() string {
 	return this.IP().String()
 }
 
-func (this *ipv4Address) Equals(another Address) bool {
-	anotherIPv4, ok := another.(*ipv4Address)
+func (this ipv4Address) Equals(another Address) bool {
+	anotherIPv4, ok := another.(ipv4Address)
 	if !ok {
 		return false
 	}
@@ -122,24 +122,24 @@ func (this *ipv4Address) Equals(another Address) bool {
 
 type ipv6Address [16]byte
 
-func (addr *ipv6Address) IP() net.IP {
+func (addr ipv6Address) IP() net.IP {
 	return net.IP(addr[:])
 }
 
-func (addr *ipv6Address) Domain() string {
+func (addr ipv6Address) Domain() string {
 	panic("Calling Domain() on an IPv6Address.")
 }
 
-func (this *ipv6Address) Family() AddressFamily {
+func (this ipv6Address) Family() AddressFamily {
 	return AddressFamilyIPv6
 }
 
-func (this *ipv6Address) String() string {
+func (this ipv6Address) String() string {
 	return "[" + this.IP().String() + "]"
 }
 
-func (this *ipv6Address) Equals(another Address) bool {
-	anotherIPv6, ok := another.(*ipv6Address)
+func (this ipv6Address) Equals(another Address) bool {
+	anotherIPv6, ok := another.(ipv6Address)
 	if !ok {
 		return false
 	}
@@ -163,24 +163,24 @@ func (this *ipv6Address) Equals(another Address) bool {
 
 type domainAddress string
 
-func (addr *domainAddress) IP() net.IP {
+func (addr domainAddress) IP() net.IP {
 	panic("Calling IP() on a DomainAddress.")
 }
 
-func (addr *domainAddress) Domain() string {
-	return string(*addr)
+func (addr domainAddress) Domain() string {
+	return string(addr)
 }
 
-func (addr *domainAddress) Family() AddressFamily {
+func (addr domainAddress) Family() AddressFamily {
 	return AddressFamilyDomain
 }
 
-func (this *domainAddress) String() string {
+func (this domainAddress) String() string {
 	return this.Domain()
 }
 
-func (this *domainAddress) Equals(another Address) bool {
-	anotherDomain, ok := another.(*domainAddress)
+func (this domainAddress) Equals(another Address) bool {
+	anotherDomain, ok := another.(domainAddress)
 	if !ok {
 		return false
 	}
