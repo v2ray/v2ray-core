@@ -8,6 +8,10 @@ import (
 	"v2ray.com/core/common/signal"
 )
 
+type ConnectionRecyler interface {
+	Put(ConnectionId, net.Conn)
+}
+
 type ConnectionId struct {
 	Local      v2net.Address
 	Remote     v2net.Address
