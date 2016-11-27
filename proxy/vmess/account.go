@@ -12,24 +12,24 @@ type InternalAccount struct {
 	AlterIDs []*protocol.ID
 }
 
-func (this *InternalAccount) AnyValidID() *protocol.ID {
-	if len(this.AlterIDs) == 0 {
-		return this.ID
+func (v *InternalAccount) AnyValidID() *protocol.ID {
+	if len(v.AlterIDs) == 0 {
+		return v.ID
 	}
-	return this.AlterIDs[dice.Roll(len(this.AlterIDs))]
+	return v.AlterIDs[dice.Roll(len(v.AlterIDs))]
 }
 
-func (this *InternalAccount) Equals(account protocol.Account) bool {
+func (v *InternalAccount) Equals(account protocol.Account) bool {
 	vmessAccount, ok := account.(*InternalAccount)
 	if !ok {
 		return false
 	}
 	// TODO: handle AlterIds difference
-	return this.ID.Equals(vmessAccount.ID)
+	return v.ID.Equals(vmessAccount.ID)
 }
 
-func (this *Account) AsAccount() (protocol.Account, error) {
-	id, err := uuid.ParseString(this.Id)
+func (v *Account) AsAccount() (protocol.Account, error) {
+	id, err := uuid.ParseString(v.Id)
 	if err != nil {
 		log.Error("VMess: Failed to parse ID: ", err)
 		return nil, err
@@ -37,6 +37,6 @@ func (this *Account) AsAccount() (protocol.Account, error) {
 	protoId := protocol.NewID(id)
 	return &InternalAccount{
 		ID:       protoId,
-		AlterIDs: protocol.NewAlterIDs(protoId, uint16(this.AlterId)),
+		AlterIDs: protocol.NewAlterIDs(protoId, uint16(v.AlterId)),
 	}, nil
 }

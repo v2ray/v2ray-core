@@ -20,25 +20,25 @@ const (
 	AddressFamilyDomain = AddressFamily(2)
 )
 
-func (this AddressFamily) Either(fs ...AddressFamily) bool {
+func (v AddressFamily) Either(fs ...AddressFamily) bool {
 	for _, f := range fs {
-		if this == f {
+		if v == f {
 			return true
 		}
 	}
 	return false
 }
 
-func (this AddressFamily) IsIPv4() bool {
-	return this == AddressFamilyIPv4
+func (v AddressFamily) IsIPv4() bool {
+	return v == AddressFamilyIPv4
 }
 
-func (this AddressFamily) IsIPv6() bool {
-	return this == AddressFamilyIPv6
+func (v AddressFamily) IsIPv6() bool {
+	return v == AddressFamilyIPv6
 }
 
-func (this AddressFamily) IsDomain() bool {
-	return this == AddressFamilyDomain
+func (v AddressFamily) IsDomain() bool {
+	return v == AddressFamilyDomain
 }
 
 // Address represents a network address to be communicated with. It may be an IP address or domain
@@ -104,8 +104,8 @@ func (addr ipv4Address) Family() AddressFamily {
 	return AddressFamilyIPv4
 }
 
-func (this ipv4Address) String() string {
-	return this.IP().String()
+func (v ipv4Address) String() string {
+	return v.IP().String()
 }
 
 type ipv6Address [16]byte
@@ -118,12 +118,12 @@ func (addr ipv6Address) Domain() string {
 	panic("Calling Domain() on an IPv6Address.")
 }
 
-func (this ipv6Address) Family() AddressFamily {
+func (v ipv6Address) Family() AddressFamily {
 	return AddressFamilyIPv6
 }
 
-func (this ipv6Address) String() string {
-	return "[" + this.IP().String() + "]"
+func (v ipv6Address) String() string {
+	return "[" + v.IP().String() + "]"
 }
 
 type domainAddress string
@@ -140,15 +140,15 @@ func (addr domainAddress) Family() AddressFamily {
 	return AddressFamilyDomain
 }
 
-func (this domainAddress) String() string {
-	return this.Domain()
+func (v domainAddress) String() string {
+	return v.Domain()
 }
 
-func (this *IPOrDomain) AsAddress() Address {
-	if this == nil {
+func (v *IPOrDomain) AsAddress() Address {
+	if v == nil {
 		return nil
 	}
-	switch addr := this.Address.(type) {
+	switch addr := v.Address.(type) {
 	case *IPOrDomain_Ip:
 		return IPAddress(addr.Ip)
 	case *IPOrDomain_Domain:

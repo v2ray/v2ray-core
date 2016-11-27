@@ -45,12 +45,12 @@ func NewFreedomConnection(config *Config, space app.Space, meta *proxy.OutboundH
 }
 
 // Private: Visible for testing.
-func (this *FreedomConnection) ResolveIP(destination v2net.Destination) v2net.Destination {
+func (v *FreedomConnection) ResolveIP(destination v2net.Destination) v2net.Destination {
 	if !destination.Address.Family().IsDomain() {
 		return destination
 	}
 
-	ips := this.dns.Get(destination.Address.Domain())
+	ips := v.dns.Get(destination.Address.Domain())
 	if len(ips) == 0 {
 		log.Info("Freedom: DNS returns nil answer. Keep domain as is.")
 		return destination
@@ -67,7 +67,7 @@ func (this *FreedomConnection) ResolveIP(destination v2net.Destination) v2net.De
 	return newDest
 }
 
-func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
+func (v *FreedomConnection) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
 	log.Info("Freedom: Opening connection to ", destination)
 
 	defer payload.Release()
@@ -75,11 +75,11 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 	defer ray.OutboundOutput().Close()
 
 	var conn internet.Connection
-	if this.domainStrategy == Config_USE_IP && destination.Address.Family().IsDomain() {
-		destination = this.ResolveIP(destination)
+	if v.domainStrategy == Config_USE_IP && destination.Address.Family().IsDomain() {
+		destination = v.ResolveIP(destination)
 	}
 	err := retry.ExponentialBackoff(5, 100).On(func() error {
-		rawConn, err := internet.Dial(this.meta.Address, destination, this.meta.GetDialerOptions())
+		rawConn, err := internet.Dial(v.meta.Address, destination, v.meta.GetDialerOptions())
 		if err != nil {
 			return err
 		}
@@ -113,7 +113,7 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 
 	var reader io.Reader = conn
 
-	timeout := this.timeout
+	timeout := v.timeout
 	if destination.Network == v2net.Network_UDP {
 		timeout = 16
 	}
@@ -133,13 +133,13 @@ func (this *FreedomConnection) Dispatch(destination v2net.Destination, payload *
 
 type FreedomFactory struct{}
 
-func (this *FreedomFactory) StreamCapability() v2net.NetworkList {
+func (v *FreedomFactory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
 		Network: []v2net.Network{v2net.Network_RawTCP},
 	}
 }
 
-func (this *FreedomFactory) Create(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
+func (v *FreedomFactory) Create(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 	return NewFreedomConnection(config.(*Config), space, meta), nil
 }
 

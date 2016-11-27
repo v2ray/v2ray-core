@@ -65,44 +65,44 @@ func NewCacheServer(space app.Space, config *Config) *CacheServer {
 	return server
 }
 
-func (this *CacheServer) Release() {
+func (v *CacheServer) Release() {
 
 }
 
 // Private: Visible for testing.
-func (this *CacheServer) GetCached(domain string) []net.IP {
-	this.RLock()
-	defer this.RUnlock()
+func (v *CacheServer) GetCached(domain string) []net.IP {
+	v.RLock()
+	defer v.RUnlock()
 
-	if record, found := this.records[domain]; found && record.A.Expire.After(time.Now()) {
+	if record, found := v.records[domain]; found && record.A.Expire.After(time.Now()) {
 		return record.A.IPs
 	}
 	return nil
 }
 
-func (this *CacheServer) Get(domain string) []net.IP {
-	if ip, found := this.hosts[domain]; found {
+func (v *CacheServer) Get(domain string) []net.IP {
+	if ip, found := v.hosts[domain]; found {
 		return []net.IP{ip}
 	}
 
 	domain = dns.Fqdn(domain)
-	ips := this.GetCached(domain)
+	ips := v.GetCached(domain)
 	if ips != nil {
 		return ips
 	}
 
-	for _, server := range this.servers {
+	for _, server := range v.servers {
 		response := server.QueryA(domain)
 		select {
 		case a, open := <-response:
 			if !open || a == nil {
 				continue
 			}
-			this.Lock()
-			this.records[domain] = &DomainRecord{
+			v.Lock()
+			v.records[domain] = &DomainRecord{
 				A: a,
 			}
-			this.Unlock()
+			v.Unlock()
 			log.Debug("DNS: Returning ", len(a.IPs), " IPs for domain ", domain)
 			return a.IPs
 		case <-time.After(QueryTimeout):
@@ -115,12 +115,12 @@ func (this *CacheServer) Get(domain string) []net.IP {
 
 type CacheServerFactory struct{}
 
-func (this CacheServerFactory) Create(space app.Space, config interface{}) (app.Application, error) {
+func (v CacheServerFactory) Create(space app.Space, config interface{}) (app.Application, error) {
 	server := NewCacheServer(space, config.(*Config))
 	return server, nil
 }
 
-func (this CacheServerFactory) AppId() app.ID {
+func (v CacheServerFactory) AppId() app.ID {
 	return APP_ID
 }
 

@@ -14,11 +14,11 @@ func NewSimpleAuthenticator() internet.Authenticator {
 	return &SimpleAuthenticator{}
 }
 
-func (this *SimpleAuthenticator) Overhead() int {
+func (v *SimpleAuthenticator) Overhead() int {
 	return 6
 }
 
-func (this *SimpleAuthenticator) Seal(buffer *alloc.Buffer) {
+func (v *SimpleAuthenticator) Seal(buffer *alloc.Buffer) {
 	buffer.PrependUint16(uint16(buffer.Len()))
 	fnvHash := fnv.New32a()
 	fnvHash.Write(buffer.Value)
@@ -35,7 +35,7 @@ func (this *SimpleAuthenticator) Seal(buffer *alloc.Buffer) {
 	}
 }
 
-func (this *SimpleAuthenticator) Open(buffer *alloc.Buffer) bool {
+func (v *SimpleAuthenticator) Open(buffer *alloc.Buffer) bool {
 	len := buffer.Len()
 	xtra := 4 - len%4
 	if xtra != 0 {

@@ -18,25 +18,25 @@ type ShadowsocksServerConfig struct {
 	OTA      *bool  `json:"ota"`
 }
 
-func (this *ShadowsocksServerConfig) Build() (*loader.TypedSettings, error) {
+func (v *ShadowsocksServerConfig) Build() (*loader.TypedSettings, error) {
 	config := new(shadowsocks.ServerConfig)
-	config.UdpEnabled = this.UDP
+	config.UdpEnabled = v.UDP
 
-	if len(this.Password) == 0 {
+	if len(v.Password) == 0 {
 		return nil, errors.New("Shadowsocks password is not specified.")
 	}
 	account := &shadowsocks.Account{
-		Password: this.Password,
+		Password: v.Password,
 		Ota:      shadowsocks.Account_Auto,
 	}
-	if this.OTA != nil {
-		if *this.OTA {
+	if v.OTA != nil {
+		if *v.OTA {
 			account.Ota = shadowsocks.Account_Enabled
 		} else {
 			account.Ota = shadowsocks.Account_Disabled
 		}
 	}
-	cipher := strings.ToLower(this.Cipher)
+	cipher := strings.ToLower(v.Cipher)
 	switch cipher {
 	case "aes-256-cfb":
 		account.CipherType = shadowsocks.CipherType_AES_256_CFB
@@ -51,8 +51,8 @@ func (this *ShadowsocksServerConfig) Build() (*loader.TypedSettings, error) {
 	}
 
 	config.User = &protocol.User{
-		Email:   this.Email,
-		Level:   uint32(this.Level),
+		Email:   v.Email,
+		Level:   uint32(v.Level),
 		Account: loader.NewTypedSettings(account),
 	}
 
@@ -72,15 +72,15 @@ type ShadowsocksClientConfig struct {
 	Servers []*ShadowsocksServerTarget `json:"servers"`
 }
 
-func (this *ShadowsocksClientConfig) Build() (*loader.TypedSettings, error) {
+func (v *ShadowsocksClientConfig) Build() (*loader.TypedSettings, error) {
 	config := new(shadowsocks.ClientConfig)
 
-	if len(this.Servers) == 0 {
+	if len(v.Servers) == 0 {
 		return nil, errors.New("0 Shadowsocks server configured.")
 	}
 
-	serverSpecs := make([]*protocol.ServerEndpoint, len(this.Servers))
-	for idx, server := range this.Servers {
+	serverSpecs := make([]*protocol.ServerEndpoint, len(v.Servers))
+	for idx, server := range v.Servers {
 		if server.Address == nil {
 			return nil, errors.New("Shadowsocks server address is not set.")
 		}

@@ -20,13 +20,13 @@ func NewConditionChan() *ConditionChan {
 	return &condChan
 }
 
-func (this *ConditionChan) Add(cond Condition) *ConditionChan {
-	*this = append(*this, cond)
-	return this
+func (v *ConditionChan) Add(cond Condition) *ConditionChan {
+	*v = append(*v, cond)
+	return v
 }
 
-func (this *ConditionChan) Apply(session *proxy.SessionInfo) bool {
-	for _, cond := range *this {
+func (v *ConditionChan) Apply(session *proxy.SessionInfo) bool {
+	for _, cond := range *v {
 		if !cond.Apply(session) {
 			return false
 		}
@@ -34,8 +34,8 @@ func (this *ConditionChan) Apply(session *proxy.SessionInfo) bool {
 	return true
 }
 
-func (this *ConditionChan) Len() int {
-	return len(*this)
+func (v *ConditionChan) Len() int {
+	return len(*v)
 }
 
 type AnyCondition []Condition
@@ -45,13 +45,13 @@ func NewAnyCondition() *AnyCondition {
 	return &anyCond
 }
 
-func (this *AnyCondition) Add(cond Condition) *AnyCondition {
-	*this = append(*this, cond)
-	return this
+func (v *AnyCondition) Add(cond Condition) *AnyCondition {
+	*v = append(*v, cond)
+	return v
 }
 
-func (this *AnyCondition) Apply(session *proxy.SessionInfo) bool {
-	for _, cond := range *this {
+func (v *AnyCondition) Apply(session *proxy.SessionInfo) bool {
+	for _, cond := range *v {
 		if cond.Apply(session) {
 			return true
 		}
@@ -59,8 +59,8 @@ func (this *AnyCondition) Apply(session *proxy.SessionInfo) bool {
 	return false
 }
 
-func (this *AnyCondition) Len() int {
-	return len(*this)
+func (v *AnyCondition) Len() int {
+	return len(*v)
 }
 
 type PlainDomainMatcher struct {
@@ -73,13 +73,13 @@ func NewPlainDomainMatcher(pattern string) *PlainDomainMatcher {
 	}
 }
 
-func (this *PlainDomainMatcher) Apply(session *proxy.SessionInfo) bool {
+func (v *PlainDomainMatcher) Apply(session *proxy.SessionInfo) bool {
 	dest := session.Destination
 	if !dest.Address.Family().IsDomain() {
 		return false
 	}
 	domain := dest.Address.Domain()
-	return strings.Contains(domain, this.pattern)
+	return strings.Contains(domain, v.pattern)
 }
 
 type RegexpDomainMatcher struct {
@@ -96,13 +96,13 @@ func NewRegexpDomainMatcher(pattern string) (*RegexpDomainMatcher, error) {
 	}, nil
 }
 
-func (this *RegexpDomainMatcher) Apply(session *proxy.SessionInfo) bool {
+func (v *RegexpDomainMatcher) Apply(session *proxy.SessionInfo) bool {
 	dest := session.Destination
 	if !dest.Address.Family().IsDomain() {
 		return false
 	}
 	domain := dest.Address.Domain()
-	return this.pattern.MatchString(strings.ToLower(domain))
+	return v.pattern.MatchString(strings.ToLower(domain))
 }
 
 type CIDRMatcher struct {
@@ -121,15 +121,15 @@ func NewCIDRMatcher(ip []byte, mask uint32, onSource bool) (*CIDRMatcher, error)
 	}, nil
 }
 
-func (this *CIDRMatcher) Apply(session *proxy.SessionInfo) bool {
+func (v *CIDRMatcher) Apply(session *proxy.SessionInfo) bool {
 	dest := session.Destination
-	if this.onSource {
+	if v.onSource {
 		dest = session.Source
 	}
 	if !dest.Address.Family().Either(v2net.AddressFamilyIPv4, v2net.AddressFamilyIPv6) {
 		return false
 	}
-	return this.cidr.Contains(dest.Address.IP())
+	return v.cidr.Contains(dest.Address.IP())
 }
 
 type IPv4Matcher struct {
@@ -144,15 +144,15 @@ func NewIPv4Matcher(ipnet *v2net.IPNet, onSource bool) *IPv4Matcher {
 	}
 }
 
-func (this *IPv4Matcher) Apply(session *proxy.SessionInfo) bool {
+func (v *IPv4Matcher) Apply(session *proxy.SessionInfo) bool {
 	dest := session.Destination
-	if this.onSource {
+	if v.onSource {
 		dest = session.Source
 	}
 	if !dest.Address.Family().Either(v2net.AddressFamilyIPv4) {
 		return false
 	}
-	return this.ipv4net.Contains(dest.Address.IP())
+	return v.ipv4net.Contains(dest.Address.IP())
 }
 
 type PortMatcher struct {
@@ -165,8 +165,8 @@ func NewPortMatcher(portRange v2net.PortRange) *PortMatcher {
 	}
 }
 
-func (this *PortMatcher) Apply(session *proxy.SessionInfo) bool {
-	return this.port.Contains(session.Destination.Port)
+func (v *PortMatcher) Apply(session *proxy.SessionInfo) bool {
+	return v.port.Contains(session.Destination.Port)
 }
 
 type NetworkMatcher struct {
@@ -179,8 +179,8 @@ func NewNetworkMatcher(network *v2net.NetworkList) *NetworkMatcher {
 	}
 }
 
-func (this *NetworkMatcher) Apply(session *proxy.SessionInfo) bool {
-	return this.network.HasNetwork(session.Destination.Network)
+func (v *NetworkMatcher) Apply(session *proxy.SessionInfo) bool {
+	return v.network.HasNetwork(session.Destination.Network)
 }
 
 type UserMatcher struct {
@@ -193,11 +193,11 @@ func NewUserMatcher(users []string) *UserMatcher {
 	}
 }
 
-func (this *UserMatcher) Apply(session *proxy.SessionInfo) bool {
+func (v *UserMatcher) Apply(session *proxy.SessionInfo) bool {
 	if session.User == nil {
 		return false
 	}
-	for _, u := range this.user {
+	for _, u := range v.user {
 		if u == session.User.Email {
 			return true
 		}
@@ -215,12 +215,12 @@ func NewInboundTagMatcher(tags []string) *InboundTagMatcher {
 	}
 }
 
-func (this *InboundTagMatcher) Apply(session *proxy.SessionInfo) bool {
+func (v *InboundTagMatcher) Apply(session *proxy.SessionInfo) bool {
 	if session.Inbound == nil || len(session.Inbound.Tag) == 0 {
 		return false
 	}
 
-	for _, t := range this.tags {
+	for _, t := range v.tags {
 		if t == session.Inbound.Tag {
 			return true
 		}

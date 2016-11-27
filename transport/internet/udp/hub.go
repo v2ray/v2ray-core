@@ -37,15 +37,15 @@ func NewUDPPayloadQueue(option ListenOption) *UDPPayloadQueue {
 	return queue
 }
 
-func (this *UDPPayloadQueue) Enqueue(payload UDPPayload) {
-	size := len(this.queue)
+func (v *UDPPayloadQueue) Enqueue(payload UDPPayload) {
+	size := len(v.queue)
 	idx := 0
 	if size > 1 {
 		idx = dice.Roll(size)
 	}
 	for i := 0; i < size; i++ {
 		select {
-		case this.queue[idx%size] <- payload:
+		case v.queue[idx%size] <- payload:
 			return
 		default:
 			idx++
@@ -53,14 +53,14 @@ func (this *UDPPayloadQueue) Enqueue(payload UDPPayload) {
 	}
 }
 
-func (this *UDPPayloadQueue) Dequeue(queue <-chan UDPPayload) {
+func (v *UDPPayloadQueue) Dequeue(queue <-chan UDPPayload) {
 	for payload := range queue {
-		this.callback(payload.payload, payload.session)
+		v.callback(payload.payload, payload.session)
 	}
 }
 
-func (this *UDPPayloadQueue) Close() {
-	for _, queue := range this.queue {
+func (v *UDPPayloadQueue) Close() {
+	for _, queue := range v.queue {
 		close(queue)
 	}
 }
@@ -112,31 +112,31 @@ func ListenUDP(address v2net.Address, port v2net.Port, option ListenOption) (*UD
 	return hub, nil
 }
 
-func (this *UDPHub) Close() {
-	this.Lock()
-	defer this.Unlock()
+func (v *UDPHub) Close() {
+	v.Lock()
+	defer v.Unlock()
 
-	this.cancel.Cancel()
-	this.conn.Close()
-	this.cancel.WaitForDone()
-	this.queue.Close()
+	v.cancel.Cancel()
+	v.conn.Close()
+	v.cancel.WaitForDone()
+	v.queue.Close()
 }
 
-func (this *UDPHub) WriteTo(payload []byte, dest v2net.Destination) (int, error) {
-	return this.conn.WriteToUDP(payload, &net.UDPAddr{
+func (v *UDPHub) WriteTo(payload []byte, dest v2net.Destination) (int, error) {
+	return v.conn.WriteToUDP(payload, &net.UDPAddr{
 		IP:   dest.Address.IP(),
 		Port: int(dest.Port),
 	})
 }
 
-func (this *UDPHub) start() {
-	this.cancel.WaitThread()
-	defer this.cancel.FinishThread()
+func (v *UDPHub) start() {
+	v.cancel.WaitThread()
+	defer v.cancel.FinishThread()
 
 	oobBytes := make([]byte, 256)
-	for this.Running() {
+	for v.Running() {
 		buffer := alloc.NewSmallBuffer()
-		nBytes, noob, _, addr, err := ReadUDPMsg(this.conn, buffer.Value, oobBytes)
+		nBytes, noob, _, addr, err := ReadUDPMsg(v.conn, buffer.Value, oobBytes)
 		if err != nil {
 			log.Info("UDP|Hub: Failed to read UDP msg: ", err)
 			buffer.Release()
@@ -146,26 +146,26 @@ func (this *UDPHub) start() {
 
 		session := new(proxy.SessionInfo)
 		session.Source = v2net.UDPDestination(v2net.IPAddress(addr.IP), v2net.Port(addr.Port))
-		if this.option.ReceiveOriginalDest && noob > 0 {
+		if v.option.ReceiveOriginalDest && noob > 0 {
 			session.Destination = RetrieveOriginalDest(oobBytes[:noob])
 		}
-		this.queue.Enqueue(UDPPayload{
+		v.queue.Enqueue(UDPPayload{
 			payload: buffer,
 			session: session,
 		})
 	}
 }
 
-func (this *UDPHub) Running() bool {
-	return !this.cancel.Cancelled()
+func (v *UDPHub) Running() bool {
+	return !v.cancel.Cancelled()
 }
 
-// Connection return the net.Conn underneath this hub.
+// Connection return the net.Conn underneath v hub.
 // Private: Visible for testing only
-func (this *UDPHub) Connection() net.Conn {
-	return this.conn
+func (v *UDPHub) Connection() net.Conn {
+	return v.conn
 }
 
-func (this *UDPHub) Addr() net.Addr {
-	return this.conn.LocalAddr()
+func (v *UDPHub) Addr() net.Addr {
+	return v.conn.LocalAddr()
 }

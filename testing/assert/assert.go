@@ -18,9 +18,9 @@ type Assert struct {
 	t *testing.T
 }
 
-func (this *Assert) Fail(message string) {
+func (v *Assert) Fail(message string) {
 	fmt.Println(decorate(message))
-	this.t.Fail()
+	v.t.Fail()
 }
 
 func getCaller() (string, int) {

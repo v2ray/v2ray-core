@@ -133,21 +133,21 @@ func NewListener(address v2net.Address, port v2net.Port, options internet.Listen
 	return l, nil
 }
 
-func (this *Listener) OnReceive(payload *alloc.Buffer, session *proxy.SessionInfo) {
+func (v *Listener) OnReceive(payload *alloc.Buffer, session *proxy.SessionInfo) {
 	defer payload.Release()
 
 	src := session.Source
 
-	if valid := this.authenticator.Open(payload); !valid {
+	if valid := v.authenticator.Open(payload); !valid {
 		log.Info("KCP|Listener: discarding invalid payload from ", src)
 		return
 	}
-	if !this.running {
+	if !v.running {
 		return
 	}
-	this.Lock()
-	defer this.Unlock()
-	if !this.running {
+	v.Lock()
+	defer v.Unlock()
+	if !v.running {
 		return
 	}
 	if payload.Len() < 4 {
@@ -160,7 +160,7 @@ func (this *Listener) OnReceive(payload *alloc.Buffer, session *proxy.SessionInf
 		Port:   src.Port,
 		Conv:   conv,
 	}
-	conn, found := this.sessions[id]
+	conn, found := v.sessions[id]
 
 	if !found {
 		if cmd == CommandTerminate {
@@ -168,16 +168,16 @@ func (this *Listener) OnReceive(payload *alloc.Buffer, session *proxy.SessionInf
 		}
 		writer := &Writer{
 			id:       id,
-			hub:      this.hub,
+			hub:      v.hub,
 			dest:     src,
-			listener: this,
+			listener: v,
 		}
 		remoteAddr := &net.UDPAddr{
 			IP:   src.Address.IP(),
 			Port: int(src.Port),
 		}
-		localAddr := this.hub.Addr()
-		auth, err := this.config.GetAuthenticator()
+		localAddr := v.hub.Addr()
+		auth, err := v.config.GetAuthenticator()
 		if err != nil {
 			log.Error("KCP|Listener: Failed to create authenticator: ", err)
 		}
@@ -187,43 +187,43 @@ func (this *Listener) OnReceive(payload *alloc.Buffer, session *proxy.SessionInf
 			remote: remoteAddr,
 			writer: writer,
 		}
-		conn = NewConnection(conv, sConn, this, auth, this.config)
+		conn = NewConnection(conv, sConn, v, auth, v.config)
 		select {
-		case this.awaitingConns <- conn:
+		case v.awaitingConns <- conn:
 		case <-time.After(time.Second * 5):
 			conn.Close()
 			return
 		}
-		this.sessions[id] = conn
+		v.sessions[id] = conn
 	}
 	conn.Input(payload.Value)
 }
 
-func (this *Listener) Remove(id ConnectionId) {
-	if !this.running {
+func (v *Listener) Remove(id ConnectionId) {
+	if !v.running {
 		return
 	}
-	this.Lock()
-	defer this.Unlock()
-	if !this.running {
+	v.Lock()
+	defer v.Unlock()
+	if !v.running {
 		return
 	}
-	delete(this.sessions, id)
+	delete(v.sessions, id)
 }
 
 // Accept implements the Accept method in the Listener interface; it waits for the next call and returns a generic Conn.
-func (this *Listener) Accept() (internet.Connection, error) {
+func (v *Listener) Accept() (internet.Connection, error) {
 	for {
-		if !this.running {
+		if !v.running {
 			return nil, ErrClosedListener
 		}
 		select {
-		case conn, open := <-this.awaitingConns:
+		case conn, open := <-v.awaitingConns:
 			if !open {
 				break
 			}
-			if this.tlsConfig != nil {
-				tlsConn := tls.Server(conn, this.tlsConfig)
+			if v.tlsConfig != nil {
+				tlsConn := tls.Server(conn, v.tlsConfig)
 				return v2tls.NewConnection(tlsConn), nil
 			}
 			return conn, nil
@@ -234,36 +234,36 @@ func (this *Listener) Accept() (internet.Connection, error) {
 }
 
 // Close stops listening on the UDP address. Already Accepted connections are not closed.
-func (this *Listener) Close() error {
-	if !this.running {
+func (v *Listener) Close() error {
+	if !v.running {
 		return ErrClosedListener
 	}
-	this.Lock()
-	defer this.Unlock()
+	v.Lock()
+	defer v.Unlock()
 
-	this.running = false
-	close(this.awaitingConns)
-	for _, conn := range this.sessions {
+	v.running = false
+	close(v.awaitingConns)
+	for _, conn := range v.sessions {
 		go conn.Terminate()
 	}
-	this.hub.Close()
+	v.hub.Close()
 
 	return nil
 }
 
-func (this *Listener) ActiveConnections() int {
-	this.Lock()
-	defer this.Unlock()
+func (v *Listener) ActiveConnections() int {
+	v.Lock()
+	defer v.Unlock()
 
-	return len(this.sessions)
+	return len(v.sessions)
 }
 
 // Addr returns the listener's network address, The Addr returned is shared by all invocations of Addr, so do not modify it.
-func (this *Listener) Addr() net.Addr {
-	return this.hub.Addr()
+func (v *Listener) Addr() net.Addr {
+	return v.hub.Addr()
 }
 
-func (this *Listener) Put(internal.ConnectionId, net.Conn) {}
+func (v *Listener) Put(internal.ConnectionId, net.Conn) {}
 
 type Writer struct {
 	id       ConnectionId
@@ -272,12 +272,12 @@ type Writer struct {
 	listener *Listener
 }
 
-func (this *Writer) Write(payload []byte) (int, error) {
-	return this.hub.WriteTo(payload, this.dest)
+func (v *Writer) Write(payload []byte) (int, error) {
+	return v.hub.WriteTo(payload, v.dest)
 }
 
-func (this *Writer) Close() error {
-	this.listener.Remove(this.id)
+func (v *Writer) Close() error {
+	v.listener.Remove(v.id)
 	return nil
 }
 

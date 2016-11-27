@@ -25,10 +25,10 @@ func NewBlackHole(space app.Space, config *Config, meta *proxy.OutboundHandlerMe
 	}, nil
 }
 
-func (this *BlackHole) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
+func (v *BlackHole) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
 	payload.Release()
 
-	this.response.WriteTo(ray.OutboundOutput())
+	v.response.WriteTo(ray.OutboundOutput())
 	ray.OutboundOutput().Close()
 
 	ray.OutboundInput().Release()
@@ -38,12 +38,12 @@ func (this *BlackHole) Dispatch(destination v2net.Destination, payload *alloc.Bu
 
 type Factory struct{}
 
-func (this *Factory) StreamCapability() v2net.NetworkList {
+func (v *Factory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
 		Network: []v2net.Network{v2net.Network_RawTCP},
 	}
 }
 
-func (this *Factory) Create(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
+func (v *Factory) Create(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 	return NewBlackHole(space, config.(*Config), meta)
 }

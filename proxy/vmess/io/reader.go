@@ -22,12 +22,12 @@ func NewValidator(expectedAuth uint32) *Validator {
 	}
 }
 
-func (this *Validator) Consume(b []byte) {
-	this.actualAuth.Write(b)
+func (v *Validator) Consume(b []byte) {
+	v.actualAuth.Write(b)
 }
 
-func (this *Validator) Validate() bool {
-	return this.actualAuth.Sum32() == this.expectedAuth
+func (v *Validator) Validate() bool {
+	return v.actualAuth.Sum32() == v.expectedAuth
 }
 
 type AuthChunkReader struct {
@@ -44,73 +44,73 @@ func NewAuthChunkReader(reader io.Reader) *AuthChunkReader {
 	}
 }
 
-func (this *AuthChunkReader) Read() (*alloc.Buffer, error) {
+func (v *AuthChunkReader) Read() (*alloc.Buffer, error) {
 	var buffer *alloc.Buffer
-	if this.last != nil {
-		buffer = this.last
-		this.last = nil
+	if v.last != nil {
+		buffer = v.last
+		v.last = nil
 	} else {
 		buffer = alloc.NewBuffer().Clear()
 	}
 
-	if this.chunkLength == -1 {
+	if v.chunkLength == -1 {
 		for buffer.Len() < 6 {
-			_, err := buffer.FillFrom(this.reader)
+			_, err := buffer.FillFrom(v.reader)
 			if err != nil {
 				buffer.Release()
 				return nil, io.ErrUnexpectedEOF
 			}
 		}
 		length := serial.BytesToUint16(buffer.Value[:2])
-		this.chunkLength = int(length) - 4
-		this.validator = NewValidator(serial.BytesToUint32(buffer.Value[2:6]))
+		v.chunkLength = int(length) - 4
+		v.validator = NewValidator(serial.BytesToUint32(buffer.Value[2:6]))
 		buffer.SliceFrom(6)
-		if buffer.Len() < this.chunkLength && this.chunkLength <= 2048 {
-			_, err := buffer.FillFrom(this.reader)
+		if buffer.Len() < v.chunkLength && v.chunkLength <= 2048 {
+			_, err := buffer.FillFrom(v.reader)
 			if err != nil {
 				buffer.Release()
 				return nil, io.ErrUnexpectedEOF
 			}
 		}
-	} else if buffer.Len() < this.chunkLength {
-		_, err := buffer.FillFrom(this.reader)
+	} else if buffer.Len() < v.chunkLength {
+		_, err := buffer.FillFrom(v.reader)
 		if err != nil {
 			buffer.Release()
 			return nil, io.ErrUnexpectedEOF
 		}
 	}
 
-	if this.chunkLength == 0 {
+	if v.chunkLength == 0 {
 		buffer.Release()
 		return nil, io.EOF
 	}
 
-	if buffer.Len() < this.chunkLength {
-		this.validator.Consume(buffer.Value)
-		this.chunkLength -= buffer.Len()
+	if buffer.Len() < v.chunkLength {
+		v.validator.Consume(buffer.Value)
+		v.chunkLength -= buffer.Len()
 	} else {
-		this.validator.Consume(buffer.Value[:this.chunkLength])
-		if !this.validator.Validate() {
+		v.validator.Consume(buffer.Value[:v.chunkLength])
+		if !v.validator.Validate() {
 			buffer.Release()
 			return nil, errors.New("VMess|AuthChunkReader: Invalid auth.")
 		}
-		leftLength := buffer.Len() - this.chunkLength
+		leftLength := buffer.Len() - v.chunkLength
 		if leftLength > 0 {
-			this.last = alloc.NewBuffer().Clear()
-			this.last.Append(buffer.Value[this.chunkLength:])
-			buffer.Slice(0, this.chunkLength)
+			v.last = alloc.NewBuffer().Clear()
+			v.last.Append(buffer.Value[v.chunkLength:])
+			buffer.Slice(0, v.chunkLength)
 		}
 
-		this.chunkLength = -1
-		this.validator = nil
+		v.chunkLength = -1
+		v.validator = nil
 	}
 
 	return buffer, nil
 }
 
-func (this *AuthChunkReader) Release() {
-	this.reader = nil
-	this.last.Release()
-	this.last = nil
-	this.validator = nil
+func (v *AuthChunkReader) Release() {
+	v.reader = nil
+	v.last.Release()
+	v.last = nil
+	v.validator = nil
 }

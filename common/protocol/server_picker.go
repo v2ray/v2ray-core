@@ -13,32 +13,32 @@ func NewServerList() *ServerList {
 	return &ServerList{}
 }
 
-func (this *ServerList) AddServer(server *ServerSpec) {
-	this.Lock()
-	defer this.Unlock()
+func (v *ServerList) AddServer(server *ServerSpec) {
+	v.Lock()
+	defer v.Unlock()
 
-	this.servers = append(this.servers, server)
+	v.servers = append(v.servers, server)
 }
 
-func (this *ServerList) Size() uint32 {
-	this.RLock()
-	defer this.RUnlock()
+func (v *ServerList) Size() uint32 {
+	v.RLock()
+	defer v.RUnlock()
 
-	return uint32(len(this.servers))
+	return uint32(len(v.servers))
 }
 
-func (this *ServerList) GetServer(idx uint32) *ServerSpec {
-	this.RLock()
-	defer this.RUnlock()
+func (v *ServerList) GetServer(idx uint32) *ServerSpec {
+	v.RLock()
+	defer v.RUnlock()
 
 	for {
-		if idx >= uint32(len(this.servers)) {
+		if idx >= uint32(len(v.servers)) {
 			return nil
 		}
 
-		server := this.servers[idx]
+		server := v.servers[idx]
 		if !server.IsValid() {
-			this.RemoveServer(idx)
+			v.RemoveServer(idx)
 			continue
 		}
 
@@ -47,10 +47,10 @@ func (this *ServerList) GetServer(idx uint32) *ServerSpec {
 }
 
 // Private: Visible for testing.
-func (this *ServerList) RemoveServer(idx uint32) {
-	n := len(this.servers)
-	this.servers[idx] = this.servers[n-1]
-	this.servers = this.servers[:n-1]
+func (v *ServerList) RemoveServer(idx uint32) {
+	n := len(v.servers)
+	v.servers[idx] = v.servers[n-1]
+	v.servers = v.servers[:n-1]
 }
 
 type ServerPicker interface {
@@ -70,21 +70,21 @@ func NewRoundRobinServerPicker(serverlist *ServerList) *RoundRobinServerPicker {
 	}
 }
 
-func (this *RoundRobinServerPicker) PickServer() *ServerSpec {
-	this.Lock()
-	defer this.Unlock()
+func (v *RoundRobinServerPicker) PickServer() *ServerSpec {
+	v.Lock()
+	defer v.Unlock()
 
-	next := this.nextIndex
-	server := this.serverlist.GetServer(next)
+	next := v.nextIndex
+	server := v.serverlist.GetServer(next)
 	if server == nil {
 		next = 0
-		server = this.serverlist.GetServer(0)
+		server = v.serverlist.GetServer(0)
 	}
 	next++
-	if next >= this.serverlist.Size() {
+	if next >= v.serverlist.Size() {
 		next = 0
 	}
-	this.nextIndex = next
+	v.nextIndex = next
 
 	return server
 }

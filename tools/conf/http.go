@@ -9,9 +9,9 @@ type HttpServerConfig struct {
 	Timeout uint32 `json:"timeout"`
 }
 
-func (this *HttpServerConfig) Build() (*loader.TypedSettings, error) {
+func (v *HttpServerConfig) Build() (*loader.TypedSettings, error) {
 	config := &http.ServerConfig{
-		Timeout: this.Timeout,
+		Timeout: v.Timeout,
 	}
 
 	return loader.NewTypedSettings(config), nil

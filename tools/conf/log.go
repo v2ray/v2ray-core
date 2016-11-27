@@ -12,8 +12,8 @@ type LogConfig struct {
 	LogLevel  string `json:"loglevel"`
 }
 
-func (this *LogConfig) Build() *log.Config {
-	if this == nil {
+func (v *LogConfig) Build() *log.Config {
+	if v == nil {
 		return nil
 	}
 	config := &log.Config{
@@ -21,16 +21,16 @@ func (this *LogConfig) Build() *log.Config {
 		AccessLogType: log.LogType_Console,
 	}
 
-	if len(this.AccessLog) > 0 {
-		config.AccessLogPath = this.AccessLog
+	if len(v.AccessLog) > 0 {
+		config.AccessLogPath = v.AccessLog
 		config.AccessLogType = log.LogType_File
 	}
-	if len(this.ErrorLog) > 0 {
-		config.ErrorLogPath = this.ErrorLog
+	if len(v.ErrorLog) > 0 {
+		config.ErrorLogPath = v.ErrorLog
 		config.ErrorLogType = log.LogType_File
 	}
 
-	level := strings.ToLower(this.LogLevel)
+	level := strings.ToLower(v.LogLevel)
 	switch level {
 	case "debug":
 		config.ErrorLogLevel = log.LogLevel_Debug

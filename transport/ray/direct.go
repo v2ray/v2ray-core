@@ -25,20 +25,20 @@ type directRay struct {
 	Output *Stream
 }
 
-func (this *directRay) OutboundInput() InputStream {
-	return this.Input
+func (v *directRay) OutboundInput() InputStream {
+	return v.Input
 }
 
-func (this *directRay) OutboundOutput() OutputStream {
-	return this.Output
+func (v *directRay) OutboundOutput() OutputStream {
+	return v.Output
 }
 
-func (this *directRay) InboundInput() OutputStream {
-	return this.Input
+func (v *directRay) InboundInput() OutputStream {
+	return v.Input
 }
 
-func (this *directRay) InboundOutput() InputStream {
-	return this.Output
+func (v *directRay) InboundOutput() InputStream {
+	return v.Output
 }
 
 type Stream struct {
@@ -53,17 +53,17 @@ func NewStream() *Stream {
 	}
 }
 
-func (this *Stream) Read() (*alloc.Buffer, error) {
-	if this.buffer == nil {
+func (v *Stream) Read() (*alloc.Buffer, error) {
+	if v.buffer == nil {
 		return nil, io.EOF
 	}
-	this.access.RLock()
-	if this.buffer == nil {
-		this.access.RUnlock()
+	v.access.RLock()
+	if v.buffer == nil {
+		v.access.RUnlock()
 		return nil, io.EOF
 	}
-	channel := this.buffer
-	this.access.RUnlock()
+	channel := v.buffer
+	v.access.RUnlock()
 	result, open := <-channel
 	if !open {
 		return nil, io.EOF
@@ -71,9 +71,9 @@ func (this *Stream) Read() (*alloc.Buffer, error) {
 	return result, nil
 }
 
-func (this *Stream) Write(data *alloc.Buffer) error {
-	for !this.closed {
-		err := this.TryWriteOnce(data)
+func (v *Stream) Write(data *alloc.Buffer) error {
+	for !v.closed {
+		err := v.TryWriteOnce(data)
 		if err != io.ErrNoProgress {
 			return err
 		}
@@ -81,45 +81,45 @@ func (this *Stream) Write(data *alloc.Buffer) error {
 	return io.ErrClosedPipe
 }
 
-func (this *Stream) TryWriteOnce(data *alloc.Buffer) error {
-	this.access.RLock()
-	defer this.access.RUnlock()
-	if this.closed {
+func (v *Stream) TryWriteOnce(data *alloc.Buffer) error {
+	v.access.RLock()
+	defer v.access.RUnlock()
+	if v.closed {
 		return io.ErrClosedPipe
 	}
 	select {
-	case this.buffer <- data:
+	case v.buffer <- data:
 		return nil
 	case <-time.After(2 * time.Second):
 		return io.ErrNoProgress
 	}
 }
 
-func (this *Stream) Close() {
-	if this.closed {
+func (v *Stream) Close() {
+	if v.closed {
 		return
 	}
-	this.access.Lock()
-	defer this.access.Unlock()
-	if this.closed {
+	v.access.Lock()
+	defer v.access.Unlock()
+	if v.closed {
 		return
 	}
-	this.closed = true
-	close(this.buffer)
+	v.closed = true
+	close(v.buffer)
 }
 
-func (this *Stream) Release() {
-	if this.buffer == nil {
+func (v *Stream) Release() {
+	if v.buffer == nil {
 		return
 	}
-	this.Close()
-	this.access.Lock()
-	defer this.access.Unlock()
-	if this.buffer == nil {
+	v.Close()
+	v.access.Lock()
+	defer v.access.Unlock()
+	if v.buffer == nil {
 		return
 	}
-	for data := range this.buffer {
+	for data := range v.buffer {
 		data.Release()
 	}
-	this.buffer = nil
+	v.buffer = nil
 }

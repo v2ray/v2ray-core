@@ -24,10 +24,10 @@ type BlackholeConfig struct {
 	Response json.RawMessage `json:"response"`
 }
 
-func (this *BlackholeConfig) Build() (*loader.TypedSettings, error) {
+func (v *BlackholeConfig) Build() (*loader.TypedSettings, error) {
 	config := new(blackhole.Config)
-	if this.Response != nil {
-		response, _, err := configLoader.Load(this.Response)
+	if v.Response != nil {
+		response, _, err := configLoader.Load(v.Response)
 		if err != nil {
 			return nil, errors.New("Blackhole: Failed to parse response config: " + err.Error())
 		}

@@ -44,20 +44,20 @@ func NewInboundDetourHandlerAlways(space app.Space, config *InboundConnectionCon
 	return handler, nil
 }
 
-func (this *InboundDetourHandlerAlways) GetConnectionHandler() (proxy.InboundHandler, int) {
-	ich := this.ich[dice.Roll(len(this.ich))]
-	return ich, int(this.config.GetAllocationStrategyValue().Refresh.GetValue())
+func (v *InboundDetourHandlerAlways) GetConnectionHandler() (proxy.InboundHandler, int) {
+	ich := v.ich[dice.Roll(len(v.ich))]
+	return ich, int(v.config.GetAllocationStrategyValue().Refresh.GetValue())
 }
 
-func (this *InboundDetourHandlerAlways) Close() {
-	for _, ich := range this.ich {
+func (v *InboundDetourHandlerAlways) Close() {
+	for _, ich := range v.ich {
 		ich.Close()
 	}
 }
 
 // Starts the inbound connection handler.
-func (this *InboundDetourHandlerAlways) Start() error {
-	for _, ich := range this.ich {
+func (v *InboundDetourHandlerAlways) Start() error {
+	for _, ich := range v.ich {
 		err := retry.ExponentialBackoff(10 /* times */, 200 /* ms */).On(func() error {
 			err := ich.Start()
 			if err != nil {

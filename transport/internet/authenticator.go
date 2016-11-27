@@ -45,16 +45,16 @@ func NewAuthenticatorChain(auths ...Authenticator) Authenticator {
 	}
 }
 
-func (this *AuthenticatorChain) Overhead() int {
+func (v *AuthenticatorChain) Overhead() int {
 	total := 0
-	for _, auth := range this.authenticators {
+	for _, auth := range v.authenticators {
 		total += auth.Overhead()
 	}
 	return total
 }
 
-func (this *AuthenticatorChain) Open(payload *alloc.Buffer) bool {
-	for _, auth := range this.authenticators {
+func (v *AuthenticatorChain) Open(payload *alloc.Buffer) bool {
+	for _, auth := range v.authenticators {
 		if !auth.Open(payload) {
 			return false
 		}
@@ -62,9 +62,9 @@ func (this *AuthenticatorChain) Open(payload *alloc.Buffer) bool {
 	return true
 }
 
-func (this *AuthenticatorChain) Seal(payload *alloc.Buffer) {
-	for i := len(this.authenticators) - 1; i >= 0; i-- {
-		auth := this.authenticators[i]
+func (v *AuthenticatorChain) Seal(payload *alloc.Buffer) {
+	for i := len(v.authenticators) - 1; i >= 0; i-- {
+		auth := v.authenticators[i]
 		auth.Seal(payload)
 	}
 }

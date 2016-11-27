@@ -6,10 +6,10 @@ import (
 	"v2ray.com/core/common/serial"
 )
 
-func (this *Assert) Pointer(value interface{}) *PointerSubject {
+func (v *Assert) Pointer(value interface{}) *PointerSubject {
 	return &PointerSubject{
 		Subject: Subject{
-			a:    this,
+			a:    v,
 			disp: serial.PointerToString(value),
 		},
 		value: value,

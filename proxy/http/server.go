@@ -40,34 +40,34 @@ func NewServer(config *ServerConfig, packetDispatcher dispatcher.PacketDispatche
 	}
 }
 
-func (this *Server) Port() v2net.Port {
-	return this.meta.Port
+func (v *Server) Port() v2net.Port {
+	return v.meta.Port
 }
 
-func (this *Server) Close() {
-	this.accepting = false
-	if this.tcpListener != nil {
-		this.Lock()
-		this.tcpListener.Close()
-		this.tcpListener = nil
-		this.Unlock()
+func (v *Server) Close() {
+	v.accepting = false
+	if v.tcpListener != nil {
+		v.Lock()
+		v.tcpListener.Close()
+		v.tcpListener = nil
+		v.Unlock()
 	}
 }
 
-func (this *Server) Start() error {
-	if this.accepting {
+func (v *Server) Start() error {
+	if v.accepting {
 		return nil
 	}
 
-	tcpListener, err := internet.ListenTCP(this.meta.Address, this.meta.Port, this.handleConnection, this.meta.StreamSettings)
+	tcpListener, err := internet.ListenTCP(v.meta.Address, v.meta.Port, v.handleConnection, v.meta.StreamSettings)
 	if err != nil {
-		log.Error("HTTP: Failed listen on ", this.meta.Address, ":", this.meta.Port, ": ", err)
+		log.Error("HTTP: Failed listen on ", v.meta.Address, ":", v.meta.Port, ": ", err)
 		return err
 	}
-	this.Lock()
-	this.tcpListener = tcpListener
-	this.Unlock()
-	this.accepting = true
+	v.Lock()
+	v.tcpListener = tcpListener
+	v.Unlock()
+	v.accepting = true
 	return nil
 }
 
@@ -94,9 +94,9 @@ func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error
 	return v2net.TCPDestination(v2net.DomainAddress(host), port), nil
 }
 
-func (this *Server) handleConnection(conn internet.Connection) {
+func (v *Server) handleConnection(conn internet.Connection) {
 	defer conn.Close()
-	timedReader := v2net.NewTimeOutReader(this.config.Timeout, conn)
+	timedReader := v2net.NewTimeOutReader(v.config.Timeout, conn)
 	reader := bufio.NewReaderSize(timedReader, 2048)
 
 	request, err := http.ReadRequest(reader)
@@ -124,16 +124,16 @@ func (this *Server) handleConnection(conn internet.Connection) {
 	session := &proxy.SessionInfo{
 		Source:      v2net.DestinationFromAddr(conn.RemoteAddr()),
 		Destination: dest,
-		Inbound:     this.meta,
+		Inbound:     v.meta,
 	}
 	if strings.ToUpper(request.Method) == "CONNECT" {
-		this.handleConnect(request, session, reader, conn)
+		v.handleConnect(request, session, reader, conn)
 	} else {
-		this.handlePlainHTTP(request, session, reader, conn)
+		v.handlePlainHTTP(request, session, reader, conn)
 	}
 }
 
-func (this *Server) handleConnect(request *http.Request, session *proxy.SessionInfo, reader io.Reader, writer io.Writer) {
+func (v *Server) handleConnect(request *http.Request, session *proxy.SessionInfo, reader io.Reader, writer io.Writer) {
 	response := &http.Response{
 		Status:        "200 OK",
 		StatusCode:    200,
@@ -147,11 +147,11 @@ func (this *Server) handleConnect(request *http.Request, session *proxy.SessionI
 	}
 	response.Write(writer)
 
-	ray := this.packetDispatcher.DispatchToOutbound(session)
-	this.transport(reader, writer, ray)
+	ray := v.packetDispatcher.DispatchToOutbound(session)
+	v.transport(reader, writer, ray)
 }
 
-func (this *Server) transport(input io.Reader, output io.Writer, ray ray.InboundRay) {
+func (v *Server) transport(input io.Reader, output io.Writer, ray ray.InboundRay) {
 	var wg sync.WaitGroup
 	wg.Add(2)
 	defer wg.Wait()
@@ -204,7 +204,7 @@ func StripHopByHopHeaders(request *http.Request) {
 	}
 }
 
-func (this *Server) GenerateResponse(statusCode int, status string) *http.Response {
+func (v *Server) GenerateResponse(statusCode int, status string) *http.Response {
 	hdr := http.Header(make(map[string][]string))
 	hdr.Set("Connection", "close")
 	return &http.Response{
@@ -220,9 +220,9 @@ func (this *Server) GenerateResponse(statusCode int, status string) *http.Respon
 	}
 }
 
-func (this *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionInfo, reader *bufio.Reader, writer io.Writer) {
+func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionInfo, reader *bufio.Reader, writer io.Writer) {
 	if len(request.URL.Host) <= 0 {
-		response := this.GenerateResponse(400, "Bad Request")
+		response := v.GenerateResponse(400, "Bad Request")
 		response.Write(writer)
 
 		return
@@ -231,7 +231,7 @@ func (this *Server) handlePlainHTTP(request *http.Request, session *proxy.Sessio
 	request.Host = request.URL.Host
 	StripHopByHopHeaders(request)
 
-	ray := this.packetDispatcher.DispatchToOutbound(session)
+	ray := v.packetDispatcher.DispatchToOutbound(session)
 	defer ray.InboundInput().Close()
 	defer ray.InboundOutput().Release()
 
@@ -255,7 +255,7 @@ func (this *Server) handlePlainHTTP(request *http.Request, session *proxy.Sessio
 		response, err := http.ReadResponse(responseReader, request)
 		if err != nil {
 			log.Warning("HTTP: Failed to read response: ", err)
-			response = this.GenerateResponse(503, "Service Unavailable")
+			response = v.GenerateResponse(503, "Service Unavailable")
 		}
 		responseWriter := v2io.NewBufferedWriter(writer)
 		err = response.Write(responseWriter)
@@ -270,13 +270,13 @@ func (this *Server) handlePlainHTTP(request *http.Request, session *proxy.Sessio
 
 type ServerFactory struct{}
 
-func (this *ServerFactory) StreamCapability() v2net.NetworkList {
+func (v *ServerFactory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
 		Network: []v2net.Network{v2net.Network_RawTCP},
 	}
 }
 
-func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
+func (v *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
 	if !space.HasApp(dispatcher.APP_ID) {
 		return nil, common.ErrBadConfiguration
 	}

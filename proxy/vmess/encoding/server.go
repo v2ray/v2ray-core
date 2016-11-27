@@ -32,16 +32,16 @@ func NewServerSession(validator protocol.UserValidator) *ServerSession {
 }
 
 // Release implements common.Releaseable.
-func (this *ServerSession) Release() {
-	this.userValidator = nil
-	this.requestBodyIV = nil
-	this.requestBodyKey = nil
-	this.responseBodyIV = nil
-	this.responseBodyKey = nil
-	this.responseWriter = nil
+func (v *ServerSession) Release() {
+	v.userValidator = nil
+	v.requestBodyIV = nil
+	v.requestBodyKey = nil
+	v.responseBodyIV = nil
+	v.responseBodyKey = nil
+	v.responseWriter = nil
 }
 
-func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.RequestHeader, error) {
+func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.RequestHeader, error) {
 	buffer := make([]byte, 512)
 
 	_, err := io.ReadFull(reader, buffer[:protocol.IDBytesLen])
@@ -50,7 +50,7 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 		return nil, io.EOF
 	}
 
-	user, timestamp, valid := this.userValidator.Get(buffer[:protocol.IDBytesLen])
+	user, timestamp, valid := v.userValidator.Get(buffer[:protocol.IDBytesLen])
 	if !valid {
 		return nil, protocol.ErrInvalidUser
 	}
@@ -82,9 +82,9 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 		return nil, protocol.ErrInvalidVersion
 	}
 
-	this.requestBodyIV = append([]byte(nil), buffer[1:17]...)   // 16 bytes
-	this.requestBodyKey = append([]byte(nil), buffer[17:33]...) // 16 bytes
-	this.responseHeader = buffer[33]                            // 1 byte
+	v.requestBodyIV = append([]byte(nil), buffer[1:17]...)   // 16 bytes
+	v.requestBodyKey = append([]byte(nil), buffer[17:33]...) // 16 bytes
+	v.responseHeader = buffer[33]                            // 1 byte
 	request.Option = protocol.RequestOption(buffer[34])         // 1 byte + 2 bytes reserved
 	request.Command = protocol.RequestCommand(buffer[37])
 
@@ -139,28 +139,28 @@ func (this *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Requ
 	return request, nil
 }
 
-func (this *ServerSession) DecodeRequestBody(reader io.Reader) io.Reader {
-	aesStream := crypto.NewAesDecryptionStream(this.requestBodyKey, this.requestBodyIV)
+func (v *ServerSession) DecodeRequestBody(reader io.Reader) io.Reader {
+	aesStream := crypto.NewAesDecryptionStream(v.requestBodyKey, v.requestBodyIV)
 	return crypto.NewCryptionReader(aesStream, reader)
 }
 
-func (this *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, writer io.Writer) {
-	responseBodyKey := md5.Sum(this.requestBodyKey)
-	responseBodyIV := md5.Sum(this.requestBodyIV)
-	this.responseBodyKey = responseBodyKey[:]
-	this.responseBodyIV = responseBodyIV[:]
+func (v *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, writer io.Writer) {
+	responseBodyKey := md5.Sum(v.requestBodyKey)
+	responseBodyIV := md5.Sum(v.requestBodyIV)
+	v.responseBodyKey = responseBodyKey[:]
+	v.responseBodyIV = responseBodyIV[:]
 
-	aesStream := crypto.NewAesEncryptionStream(this.responseBodyKey, this.responseBodyIV)
+	aesStream := crypto.NewAesEncryptionStream(v.responseBodyKey, v.responseBodyIV)
 	encryptionWriter := crypto.NewCryptionWriter(aesStream, writer)
-	this.responseWriter = encryptionWriter
+	v.responseWriter = encryptionWriter
 
-	encryptionWriter.Write([]byte{this.responseHeader, byte(header.Option)})
+	encryptionWriter.Write([]byte{v.responseHeader, byte(header.Option)})
 	err := MarshalCommand(header.Command, encryptionWriter)
 	if err != nil {
 		encryptionWriter.Write([]byte{0x00, 0x00})
 	}
 }
 
-func (this *ServerSession) EncodeResponseBody(writer io.Writer) io.Writer {
-	return this.responseWriter
+func (v *ServerSession) EncodeResponseBody(writer io.Writer) io.Writer {
+	return v.responseWriter
 }

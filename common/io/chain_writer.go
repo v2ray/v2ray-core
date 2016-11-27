@@ -18,10 +18,10 @@ func NewChainWriter(writer Writer) *ChainWriter {
 	}
 }
 
-func (this *ChainWriter) Write(payload []byte) (int, error) {
-	this.Lock()
-	defer this.Unlock()
-	if this.writer == nil {
+func (v *ChainWriter) Write(payload []byte) (int, error) {
+	v.Lock()
+	defer v.Unlock()
+	if v.writer == nil {
 		return 0, io.ErrClosedPipe
 	}
 
@@ -39,7 +39,7 @@ func (this *ChainWriter) Write(payload []byte) (int, error) {
 			bytesWritten += size
 			size = 0
 		}
-		err := this.writer.Write(buffer)
+		err := v.writer.Write(buffer)
 		if err != nil {
 			return bytesWritten, err
 		}
@@ -48,9 +48,9 @@ func (this *ChainWriter) Write(payload []byte) (int, error) {
 	return bytesWritten, nil
 }
 
-func (this *ChainWriter) Release() {
-	this.Lock()
-	this.writer.Release()
-	this.writer = nil
-	this.Unlock()
+func (v *ChainWriter) Release() {
+	v.Lock()
+	v.writer.Release()
+	v.writer = nil
+	v.Unlock()
 }

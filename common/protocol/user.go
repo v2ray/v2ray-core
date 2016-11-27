@@ -11,12 +11,12 @@ var (
 	ErrUnknownAccountType = errors.New("Unknown account type.")
 )
 
-func (this *User) GetTypedAccount() (Account, error) {
-	if this.GetAccount() == nil {
+func (v *User) GetTypedAccount() (Account, error) {
+	if v.GetAccount() == nil {
 		return nil, ErrAccountMissing
 	}
 
-	rawAccount, err := this.Account.GetInstance()
+	rawAccount, err := v.Account.GetInstance()
 	if err != nil {
 		return nil, err
 	}
@@ -26,14 +26,14 @@ func (this *User) GetTypedAccount() (Account, error) {
 	if account, ok := rawAccount.(Account); ok {
 		return account, nil
 	}
-	return nil, errors.New("Unknown account type: " + this.Account.Type)
+	return nil, errors.New("Unknown account type: " + v.Account.Type)
 }
 
-func (this *User) GetSettings() UserSettings {
+func (v *User) GetSettings() UserSettings {
 	settings := UserSettings{
 		PayloadReadTimeout: 120,
 	}
-	if this.Level > 0 {
+	if v.Level > 0 {
 		settings.PayloadReadTimeout = 0
 	}
 	return settings

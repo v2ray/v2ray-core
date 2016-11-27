@@ -27,13 +27,13 @@ type Writer interface {
 
 type NoOpReader struct{}
 
-func (this *NoOpReader) Read(io.Reader) (*alloc.Buffer, error) {
+func (v *NoOpReader) Read(io.Reader) (*alloc.Buffer, error) {
 	return nil, nil
 }
 
 type NoOpWriter struct{}
 
-func (this *NoOpWriter) Write(io.Writer) error {
+func (v *NoOpWriter) Write(io.Writer) error {
 	return nil
 }
 
@@ -73,13 +73,13 @@ func NewHeaderWriter(header *alloc.Buffer) *HeaderWriter {
 	}
 }
 
-func (this *HeaderWriter) Write(writer io.Writer) error {
-	if this.header == nil {
+func (v *HeaderWriter) Write(writer io.Writer) error {
+	if v.header == nil {
 		return nil
 	}
-	_, err := writer.Write(this.header.Value)
-	this.header.Release()
-	this.header = nil
+	_, err := writer.Write(v.header.Value)
+	v.header.Release()
+	v.header = nil
 	return err
 }
 
@@ -99,47 +99,47 @@ func NewHttpConn(conn net.Conn, reader Reader, writer Writer) *HttpConn {
 	}
 }
 
-func (this *HttpConn) Read(b []byte) (int, error) {
-	if this.oneTimeReader != nil {
-		buffer, err := this.oneTimeReader.Read(this.Conn)
+func (v *HttpConn) Read(b []byte) (int, error) {
+	if v.oneTimeReader != nil {
+		buffer, err := v.oneTimeReader.Read(v.Conn)
 		if err != nil {
 			return 0, err
 		}
-		this.readBuffer = buffer
-		this.oneTimeReader = nil
+		v.readBuffer = buffer
+		v.oneTimeReader = nil
 	}
 
-	if this.readBuffer.Len() > 0 {
-		nBytes, err := this.readBuffer.Read(b)
-		if nBytes == this.readBuffer.Len() {
-			this.readBuffer.Release()
-			this.readBuffer = nil
+	if v.readBuffer.Len() > 0 {
+		nBytes, err := v.readBuffer.Read(b)
+		if nBytes == v.readBuffer.Len() {
+			v.readBuffer.Release()
+			v.readBuffer = nil
 		}
 		return nBytes, err
 	}
 
-	return this.Conn.Read(b)
+	return v.Conn.Read(b)
 }
 
-func (this *HttpConn) Write(b []byte) (int, error) {
-	if this.oneTimeWriter != nil {
-		err := this.oneTimeWriter.Write(this.Conn)
-		this.oneTimeWriter = nil
+func (v *HttpConn) Write(b []byte) (int, error) {
+	if v.oneTimeWriter != nil {
+		err := v.oneTimeWriter.Write(v.Conn)
+		v.oneTimeWriter = nil
 		if err != nil {
 			return 0, err
 		}
 	}
 
-	return this.Conn.Write(b)
+	return v.Conn.Write(b)
 }
 
 type HttpAuthenticator struct {
 	config *Config
 }
 
-func (this HttpAuthenticator) GetClientWriter() *HeaderWriter {
+func (v HttpAuthenticator) GetClientWriter() *HeaderWriter {
 	header := alloc.NewSmallBuffer().Clear()
-	config := this.config.Request
+	config := v.config.Request
 	header.AppendString(config.Method.GetValue()).AppendString(" ").AppendString(config.PickUri()).AppendString(" ").AppendString(config.GetFullVersion()).AppendString(CRLF)
 
 	headers := config.PickHeaders()
@@ -152,9 +152,9 @@ func (this HttpAuthenticator) GetClientWriter() *HeaderWriter {
 	}
 }
 
-func (this HttpAuthenticator) GetServerWriter() *HeaderWriter {
+func (v HttpAuthenticator) GetServerWriter() *HeaderWriter {
 	header := alloc.NewSmallBuffer().Clear()
-	config := this.config.Response
+	config := v.config.Response
 	header.AppendString(config.GetFullVersion()).AppendString(" ").AppendString(config.Status.GetCode()).AppendString(" ").AppendString(config.Status.GetReason()).AppendString(CRLF)
 
 	headers := config.PickHeaders()
@@ -170,27 +170,27 @@ func (this HttpAuthenticator) GetServerWriter() *HeaderWriter {
 	}
 }
 
-func (this HttpAuthenticator) Client(conn net.Conn) net.Conn {
-	if this.config.Request == nil && this.config.Response == nil {
+func (v HttpAuthenticator) Client(conn net.Conn) net.Conn {
+	if v.config.Request == nil && v.config.Response == nil {
 		return conn
 	}
 	var reader Reader = new(NoOpReader)
-	if this.config.Request != nil {
+	if v.config.Request != nil {
 		reader = new(HeaderReader)
 	}
 
 	var writer Writer = new(NoOpWriter)
-	if this.config.Response != nil {
-		writer = this.GetClientWriter()
+	if v.config.Response != nil {
+		writer = v.GetClientWriter()
 	}
 	return NewHttpConn(conn, reader, writer)
 }
 
-func (this HttpAuthenticator) Server(conn net.Conn) net.Conn {
-	if this.config.Request == nil && this.config.Response == nil {
+func (v HttpAuthenticator) Server(conn net.Conn) net.Conn {
+	if v.config.Request == nil && v.config.Response == nil {
 		return conn
 	}
-	return NewHttpConn(conn, new(HeaderReader), this.GetServerWriter())
+	return NewHttpConn(conn, new(HeaderReader), v.GetServerWriter())
 }
 
 type HttpAuthenticatorFactory struct{}

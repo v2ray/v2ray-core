@@ -19,16 +19,16 @@ const (
 	RequestOptionConnectionReuse = RequestOption(0x02)
 )
 
-func (this RequestOption) Has(option RequestOption) bool {
-	return (this & option) == option
+func (v RequestOption) Has(option RequestOption) bool {
+	return (v & option) == option
 }
 
-func (this *RequestOption) Set(option RequestOption) {
-	*this = (*this | option)
+func (v *RequestOption) Set(option RequestOption) {
+	*v = (*v | option)
 }
 
-func (this *RequestOption) Clear(option RequestOption) {
-	*this = (*this & (^option))
+func (v *RequestOption) Clear(option RequestOption) {
+	*v = (*v & (^option))
 }
 
 type RequestHeader struct {
@@ -40,11 +40,11 @@ type RequestHeader struct {
 	Port    v2net.Port
 }
 
-func (this *RequestHeader) Destination() v2net.Destination {
-	if this.Command == RequestCommandUDP {
-		return v2net.UDPDestination(this.Address, this.Port)
+func (v *RequestHeader) Destination() v2net.Destination {
+	if v.Command == RequestCommandUDP {
+		return v2net.UDPDestination(v.Address, v.Port)
 	}
-	return v2net.TCPDestination(this.Address, this.Port)
+	return v2net.TCPDestination(v.Address, v.Port)
 }
 
 type ResponseOption byte
@@ -53,16 +53,16 @@ const (
 	ResponseOptionConnectionReuse = ResponseOption(1)
 )
 
-func (this *ResponseOption) Set(option ResponseOption) {
-	*this = (*this | option)
+func (v *ResponseOption) Set(option ResponseOption) {
+	*v = (*v | option)
 }
 
-func (this ResponseOption) Has(option ResponseOption) bool {
-	return (this | option) == option
+func (v ResponseOption) Has(option ResponseOption) bool {
+	return (v | option) == option
 }
 
-func (this *ResponseOption) Clear(option ResponseOption) {
-	*this = (*this & (^option))
+func (v *ResponseOption) Clear(option ResponseOption) {
+	*v = (*v & (^option))
 }
 
 type ResponseCommand interface{}

@@ -5,11 +5,11 @@ import (
 )
 
 // Assert on a boolean variable.
-func (this *Assert) Bool(value bool) *BoolSubject {
+func (v *Assert) Bool(value bool) *BoolSubject {
 	return &BoolSubject{
 		Subject: Subject{
 			disp: strconv.FormatBool(value),
-			a:    this,
+			a:    v,
 		},
 		value: value,
 	}

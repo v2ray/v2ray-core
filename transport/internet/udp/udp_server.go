@@ -33,63 +33,63 @@ func NewTimedInboundRay(name string, inboundRay ray.InboundRay, server *UDPServe
 	return r
 }
 
-func (this *TimedInboundRay) Monitor() {
+func (v *TimedInboundRay) Monitor() {
 	for {
 		time.Sleep(time.Second * 16)
 		select {
-		case <-this.accessed:
+		case <-v.accessed:
 		default:
 			// Ray not accessed for a while, assuming communication is dead.
-			this.RLock()
-			if this.server == nil {
-				this.RUnlock()
+			v.RLock()
+			if v.server == nil {
+				v.RUnlock()
 				return
 			}
-			this.server.RemoveRay(this.name)
-			this.RUnlock()
-			this.Release()
+			v.server.RemoveRay(v.name)
+			v.RUnlock()
+			v.Release()
 			return
 		}
 	}
 }
 
-func (this *TimedInboundRay) InboundInput() ray.OutputStream {
-	this.RLock()
-	defer this.RUnlock()
-	if this.inboundRay == nil {
+func (v *TimedInboundRay) InboundInput() ray.OutputStream {
+	v.RLock()
+	defer v.RUnlock()
+	if v.inboundRay == nil {
 		return nil
 	}
 	select {
-	case this.accessed <- true:
+	case v.accessed <- true:
 	default:
 	}
-	return this.inboundRay.InboundInput()
+	return v.inboundRay.InboundInput()
 }
 
-func (this *TimedInboundRay) InboundOutput() ray.InputStream {
-	this.RLock()
-	defer this.RUnlock()
-	if this.inboundRay == nil {
+func (v *TimedInboundRay) InboundOutput() ray.InputStream {
+	v.RLock()
+	defer v.RUnlock()
+	if v.inboundRay == nil {
 		return nil
 	}
 	select {
-	case this.accessed <- true:
+	case v.accessed <- true:
 	default:
 	}
-	return this.inboundRay.InboundOutput()
+	return v.inboundRay.InboundOutput()
 }
 
-func (this *TimedInboundRay) Release() {
-	log.Debug("UDP Server: Releasing TimedInboundRay: ", this.name)
-	this.Lock()
-	defer this.Unlock()
-	if this.server == nil {
+func (v *TimedInboundRay) Release() {
+	log.Debug("UDP Server: Releasing TimedInboundRay: ", v.name)
+	v.Lock()
+	defer v.Unlock()
+	if v.server == nil {
 		return
 	}
-	this.server = nil
-	this.inboundRay.InboundInput().Close()
-	this.inboundRay.InboundOutput().Release()
-	this.inboundRay = nil
+	v.server = nil
+	v.inboundRay.InboundInput().Close()
+	v.inboundRay.InboundOutput().Release()
+	v.inboundRay = nil
 }
 
 type UDPServer struct {
@@ -105,17 +105,17 @@ func NewUDPServer(packetDispatcher dispatcher.PacketDispatcher) *UDPServer {
 	}
 }
 
-func (this *UDPServer) RemoveRay(name string) {
-	this.Lock()
-	defer this.Unlock()
-	delete(this.conns, name)
+func (v *UDPServer) RemoveRay(name string) {
+	v.Lock()
+	defer v.Unlock()
+	delete(v.conns, name)
 }
 
-func (this *UDPServer) locateExistingAndDispatch(name string, payload *alloc.Buffer) bool {
+func (v *UDPServer) locateExistingAndDispatch(name string, payload *alloc.Buffer) bool {
 	log.Debug("UDP Server: Locating existing connection for ", name)
-	this.RLock()
-	defer this.RUnlock()
-	if entry, found := this.conns[name]; found {
+	v.RLock()
+	defer v.RUnlock()
+	if entry, found := v.conns[name]; found {
 		outputStream := entry.InboundInput()
 		if outputStream == nil {
 			return false
@@ -130,32 +130,32 @@ func (this *UDPServer) locateExistingAndDispatch(name string, payload *alloc.Buf
 	return false
 }
 
-func (this *UDPServer) Dispatch(session *proxy.SessionInfo, payload *alloc.Buffer, callback UDPResponseCallback) {
+func (v *UDPServer) Dispatch(session *proxy.SessionInfo, payload *alloc.Buffer, callback UDPResponseCallback) {
 	source := session.Source
 	destination := session.Destination
 
 	// TODO: Add user to destString
 	destString := source.String() + "-" + destination.String()
 	log.Debug("UDP Server: Dispatch request: ", destString)
-	if this.locateExistingAndDispatch(destString, payload) {
+	if v.locateExistingAndDispatch(destString, payload) {
 		return
 	}
 
 	log.Info("UDP Server: establishing new connection for ", destString)
-	inboundRay := this.packetDispatcher.DispatchToOutbound(session)
-	timedInboundRay := NewTimedInboundRay(destString, inboundRay, this)
+	inboundRay := v.packetDispatcher.DispatchToOutbound(session)
+	timedInboundRay := NewTimedInboundRay(destString, inboundRay, v)
 	outputStream := timedInboundRay.InboundInput()
 	if outputStream != nil {
 		outputStream.Write(payload)
 	}
 
-	this.Lock()
-	this.conns[destString] = timedInboundRay
-	this.Unlock()
-	go this.handleConnection(timedInboundRay, source, callback)
+	v.Lock()
+	v.conns[destString] = timedInboundRay
+	v.Unlock()
+	go v.handleConnection(timedInboundRay, source, callback)
 }
 
-func (this *UDPServer) handleConnection(inboundRay *TimedInboundRay, source v2net.Destination, callback UDPResponseCallback) {
+func (v *UDPServer) handleConnection(inboundRay *TimedInboundRay, source v2net.Destination, callback UDPResponseCallback) {
 	for {
 		inputStream := inboundRay.InboundOutput()
 		if inputStream == nil {

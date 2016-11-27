@@ -26,8 +26,8 @@ func NewAuthenticator(keygen KeyGenerator) *Authenticator {
 	}
 }
 
-func (this *Authenticator) Authenticate(auth []byte, data []byte) []byte {
-	hasher := hmac.New(sha1.New, this.key())
+func (v *Authenticator) Authenticate(auth []byte, data []byte) []byte {
+	hasher := hmac.New(sha1.New, v.key())
 	hasher.Write(data)
 	res := hasher.Sum(nil)
 	return append(auth, res[:AuthSize]...)
@@ -65,14 +65,14 @@ func NewChunkReader(reader io.Reader, auth *Authenticator) *ChunkReader {
 	}
 }
 
-func (this *ChunkReader) Release() {
-	this.reader = nil
-	this.auth = nil
+func (v *ChunkReader) Release() {
+	v.reader = nil
+	v.auth = nil
 }
 
-func (this *ChunkReader) Read() (*alloc.Buffer, error) {
+func (v *ChunkReader) Read() (*alloc.Buffer, error) {
 	buffer := alloc.NewBuffer()
-	if _, err := io.ReadFull(this.reader, buffer.Value[:2]); err != nil {
+	if _, err := io.ReadFull(v.reader, buffer.Value[:2]); err != nil {
 		buffer.Release()
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (this *ChunkReader) Read() (*alloc.Buffer, error) {
 		buffer.Release()
 		buffer = alloc.NewLocalBuffer(int(length) + 128)
 	}
-	if _, err := io.ReadFull(this.reader, buffer.Value[:length]); err != nil {
+	if _, err := io.ReadFull(v.reader, buffer.Value[:length]); err != nil {
 		buffer.Release()
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (this *ChunkReader) Read() (*alloc.Buffer, error) {
 	authBytes := buffer.Value[:AuthSize]
 	payload := buffer.Value[AuthSize:]
 
-	actualAuthBytes := this.auth.Authenticate(nil, payload)
+	actualAuthBytes := v.auth.Authenticate(nil, payload)
 	if !bytes.Equal(authBytes, actualAuthBytes) {
 		buffer.Release()
 		return nil, errors.New("Shadowsocks|AuthenticationReader: Invalid auth.")
@@ -115,16 +115,16 @@ func NewChunkWriter(writer io.Writer, auth *Authenticator) *ChunkWriter {
 	}
 }
 
-func (this *ChunkWriter) Release() {
-	this.writer = nil
-	this.auth = nil
+func (v *ChunkWriter) Release() {
+	v.writer = nil
+	v.auth = nil
 }
 
-func (this *ChunkWriter) Write(payload *alloc.Buffer) error {
+func (v *ChunkWriter) Write(payload *alloc.Buffer) error {
 	totalLength := payload.Len()
 	payload.SliceBack(AuthSize)
-	this.auth.Authenticate(payload.Value[:0], payload.Value[AuthSize:])
+	v.auth.Authenticate(payload.Value[:0], payload.Value[AuthSize:])
 	payload.PrependUint16(uint16(totalLength))
-	_, err := this.writer.Write(payload.Bytes())
+	_, err := v.writer.Write(payload.Bytes())
 	return err
 }

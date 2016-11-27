@@ -26,31 +26,31 @@ func NewDefaultDispatcher(space app.Space) *DefaultDispatcher {
 }
 
 // Private: Used by app.Space only.
-func (this *DefaultDispatcher) Initialize(space app.Space) error {
+func (v *DefaultDispatcher) Initialize(space app.Space) error {
 	if !space.HasApp(proxyman.APP_ID_OUTBOUND_MANAGER) {
 		return errors.New("DefaultDispatcher: OutboundHandlerManager is not found in the space.")
 	}
-	this.ohm = space.GetApp(proxyman.APP_ID_OUTBOUND_MANAGER).(proxyman.OutboundHandlerManager)
+	v.ohm = space.GetApp(proxyman.APP_ID_OUTBOUND_MANAGER).(proxyman.OutboundHandlerManager)
 
 	if space.HasApp(router.APP_ID) {
-		this.router = space.GetApp(router.APP_ID).(*router.Router)
+		v.router = space.GetApp(router.APP_ID).(*router.Router)
 	}
 
 	return nil
 }
 
-func (this *DefaultDispatcher) Release() {
+func (v *DefaultDispatcher) Release() {
 
 }
 
-func (this *DefaultDispatcher) DispatchToOutbound(session *proxy.SessionInfo) ray.InboundRay {
+func (v *DefaultDispatcher) DispatchToOutbound(session *proxy.SessionInfo) ray.InboundRay {
 	direct := ray.NewRay()
-	dispatcher := this.ohm.GetDefaultHandler()
+	dispatcher := v.ohm.GetDefaultHandler()
 	destination := session.Destination
 
-	if this.router != nil {
-		if tag, err := this.router.TakeDetour(session); err == nil {
-			if handler := this.ohm.GetHandler(tag); handler != nil {
+	if v.router != nil {
+		if tag, err := v.router.TakeDetour(session); err == nil {
+			if handler := v.ohm.GetHandler(tag); handler != nil {
 				log.Info("DefaultDispatcher: Taking detour [", tag, "] for [", destination, "].")
 				dispatcher = handler
 			} else {
@@ -64,14 +64,14 @@ func (this *DefaultDispatcher) DispatchToOutbound(session *proxy.SessionInfo) ra
 	if session.Inbound != nil && session.Inbound.AllowPassiveConnection {
 		go dispatcher.Dispatch(destination, alloc.NewLocalBuffer(32).Clear(), direct)
 	} else {
-		go this.FilterPacketAndDispatch(destination, direct, dispatcher)
+		go v.FilterPacketAndDispatch(destination, direct, dispatcher)
 	}
 
 	return direct
 }
 
 // Private: Visible for testing.
-func (this *DefaultDispatcher) FilterPacketAndDispatch(destination v2net.Destination, link ray.OutboundRay, dispatcher proxy.OutboundHandler) {
+func (v *DefaultDispatcher) FilterPacketAndDispatch(destination v2net.Destination, link ray.OutboundRay, dispatcher proxy.OutboundHandler) {
 	payload, err := link.OutboundInput().Read()
 	if err != nil {
 		log.Info("DefaultDispatcher: No payload towards ", destination, ", stopping now.")

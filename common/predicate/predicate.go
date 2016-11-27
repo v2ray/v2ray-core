@@ -2,12 +2,12 @@ package predicate
 
 type Predicate func() bool
 
-func (this Predicate) And(predicate Predicate) Predicate {
-	return All(this, predicate)
+func (v Predicate) And(predicate Predicate) Predicate {
+	return All(v, predicate)
 }
 
-func (this Predicate) Or(predicate Predicate) Predicate {
-	return Any(this, predicate)
+func (v Predicate) Or(predicate Predicate) Predicate {
+	return Any(v, predicate)
 }
 
 func All(predicates ...Predicate) Predicate {

@@ -10,11 +10,11 @@ type Connection struct {
 	net.UDPConn
 }
 
-func (this *Connection) Reusable() bool {
+func (v *Connection) Reusable() bool {
 	return false
 }
 
-func (this *Connection) SetReusable(b bool) {}
+func (v *Connection) SetReusable(b bool) {}
 
 func init() {
 	internet.UDPDialer = func(src v2net.Address, dest v2net.Destination, options internet.DialerOptions) (internet.Connection, error) {

@@ -20,38 +20,38 @@ func NewReceivingWindow(size uint32) *ReceivingWindow {
 	}
 }
 
-func (this *ReceivingWindow) Size() uint32 {
-	return this.size
+func (v *ReceivingWindow) Size() uint32 {
+	return v.size
 }
 
-func (this *ReceivingWindow) Position(idx uint32) uint32 {
-	return (idx + this.start) % this.size
+func (v *ReceivingWindow) Position(idx uint32) uint32 {
+	return (idx + v.start) % v.size
 }
 
-func (this *ReceivingWindow) Set(idx uint32, value *DataSegment) bool {
-	pos := this.Position(idx)
-	if this.list[pos] != nil {
+func (v *ReceivingWindow) Set(idx uint32, value *DataSegment) bool {
+	pos := v.Position(idx)
+	if v.list[pos] != nil {
 		return false
 	}
-	this.list[pos] = value
+	v.list[pos] = value
 	return true
 }
 
-func (this *ReceivingWindow) Remove(idx uint32) *DataSegment {
-	pos := this.Position(idx)
-	e := this.list[pos]
-	this.list[pos] = nil
+func (v *ReceivingWindow) Remove(idx uint32) *DataSegment {
+	pos := v.Position(idx)
+	e := v.list[pos]
+	v.list[pos] = nil
 	return e
 }
 
-func (this *ReceivingWindow) RemoveFirst() *DataSegment {
-	return this.Remove(0)
+func (v *ReceivingWindow) RemoveFirst() *DataSegment {
+	return v.Remove(0)
 }
 
-func (this *ReceivingWindow) Advance() {
-	this.start++
-	if this.start == this.size {
-		this.start = 0
+func (v *ReceivingWindow) Advance() {
+	v.start++
+	if v.start == v.size {
+		v.start = 0
 	}
 }
 
@@ -71,48 +71,48 @@ func NewAckList(writer SegmentWriter) *AckList {
 	}
 }
 
-func (this *AckList) Add(number uint32, timestamp uint32) {
-	this.timestamps = append(this.timestamps, timestamp)
-	this.numbers = append(this.numbers, number)
-	this.nextFlush = append(this.nextFlush, 0)
+func (v *AckList) Add(number uint32, timestamp uint32) {
+	v.timestamps = append(v.timestamps, timestamp)
+	v.numbers = append(v.numbers, number)
+	v.nextFlush = append(v.nextFlush, 0)
 }
 
-func (this *AckList) Clear(una uint32) {
+func (v *AckList) Clear(una uint32) {
 	count := 0
-	for i := 0; i < len(this.numbers); i++ {
-		if this.numbers[i] < una {
+	for i := 0; i < len(v.numbers); i++ {
+		if v.numbers[i] < una {
 			continue
 		}
 		if i != count {
-			this.numbers[count] = this.numbers[i]
-			this.timestamps[count] = this.timestamps[i]
-			this.nextFlush[count] = this.nextFlush[i]
+			v.numbers[count] = v.numbers[i]
+			v.timestamps[count] = v.timestamps[i]
+			v.nextFlush[count] = v.nextFlush[i]
 		}
 		count++
 	}
-	if count < len(this.numbers) {
-		this.numbers = this.numbers[:count]
-		this.timestamps = this.timestamps[:count]
-		this.nextFlush = this.nextFlush[:count]
+	if count < len(v.numbers) {
+		v.numbers = v.numbers[:count]
+		v.timestamps = v.timestamps[:count]
+		v.nextFlush = v.nextFlush[:count]
 	}
 }
 
-func (this *AckList) Flush(current uint32, rto uint32) {
+func (v *AckList) Flush(current uint32, rto uint32) {
 	seg := NewAckSegment()
-	for i := 0; i < len(this.numbers) && !seg.IsFull(); i++ {
-		if this.nextFlush[i] > current {
+	for i := 0; i < len(v.numbers) && !seg.IsFull(); i++ {
+		if v.nextFlush[i] > current {
 			continue
 		}
-		seg.PutNumber(this.numbers[i])
-		seg.PutTimestamp(this.timestamps[i])
+		seg.PutNumber(v.numbers[i])
+		seg.PutTimestamp(v.timestamps[i])
 		timeout := rto / 4
 		if timeout < 20 {
 			timeout = 20
 		}
-		this.nextFlush[i] = current + timeout
+		v.nextFlush[i] = current + timeout
 	}
 	if seg.Count > 0 {
-		this.writer.Write(seg)
+		v.writer.Write(seg)
 		seg.Release()
 	}
 }
@@ -137,63 +137,63 @@ func NewReceivingWorker(kcp *Connection) *ReceivingWorker {
 	return worker
 }
 
-func (this *ReceivingWorker) Release() {
-	this.leftOver.Release()
+func (v *ReceivingWorker) Release() {
+	v.leftOver.Release()
 }
 
-func (this *ReceivingWorker) ProcessSendingNext(number uint32) {
-	this.Lock()
-	defer this.Unlock()
+func (v *ReceivingWorker) ProcessSendingNext(number uint32) {
+	v.Lock()
+	defer v.Unlock()
 
-	this.acklist.Clear(number)
+	v.acklist.Clear(number)
 }
 
-func (this *ReceivingWorker) ProcessSegment(seg *DataSegment) {
-	this.Lock()
-	defer this.Unlock()
+func (v *ReceivingWorker) ProcessSegment(seg *DataSegment) {
+	v.Lock()
+	defer v.Unlock()
 
 	number := seg.Number
-	idx := number - this.nextNumber
-	if idx >= this.windowSize {
+	idx := number - v.nextNumber
+	if idx >= v.windowSize {
 		return
 	}
-	this.acklist.Clear(seg.SendingNext)
-	this.acklist.Add(number, seg.Timestamp)
+	v.acklist.Clear(seg.SendingNext)
+	v.acklist.Add(number, seg.Timestamp)
 
-	if !this.window.Set(idx, seg) {
+	if !v.window.Set(idx, seg) {
 		seg.Release()
 	}
 }
 
-func (this *ReceivingWorker) Read(b []byte) int {
-	this.Lock()
-	defer this.Unlock()
+func (v *ReceivingWorker) Read(b []byte) int {
+	v.Lock()
+	defer v.Unlock()
 
 	total := 0
-	if this.leftOver != nil {
-		nBytes := copy(b, this.leftOver.Value)
-		if nBytes < this.leftOver.Len() {
-			this.leftOver.SliceFrom(nBytes)
+	if v.leftOver != nil {
+		nBytes := copy(b, v.leftOver.Value)
+		if nBytes < v.leftOver.Len() {
+			v.leftOver.SliceFrom(nBytes)
 			return nBytes
 		}
-		this.leftOver.Release()
-		this.leftOver = nil
+		v.leftOver.Release()
+		v.leftOver = nil
 		total += nBytes
 	}
 
 	for total < len(b) {
-		seg := this.window.RemoveFirst()
+		seg := v.window.RemoveFirst()
 		if seg == nil {
 			break
 		}
-		this.window.Advance()
-		this.nextNumber++
+		v.window.Advance()
+		v.nextNumber++
 
 		nBytes := copy(b[total:], seg.Data.Value)
 		total += nBytes
 		if nBytes < seg.Data.Len() {
 			seg.Data.SliceFrom(nBytes)
-			this.leftOver = seg.Data
+			v.leftOver = seg.Data
 			seg.Data = nil
 			seg.Release()
 			break
@@ -203,27 +203,27 @@ func (this *ReceivingWorker) Read(b []byte) int {
 	return total
 }
 
-func (this *ReceivingWorker) Flush(current uint32) {
-	this.Lock()
-	defer this.Unlock()
+func (v *ReceivingWorker) Flush(current uint32) {
+	v.Lock()
+	defer v.Unlock()
 
-	this.acklist.Flush(current, this.conn.roundTrip.Timeout())
+	v.acklist.Flush(current, v.conn.roundTrip.Timeout())
 }
 
-func (this *ReceivingWorker) Write(seg Segment) {
+func (v *ReceivingWorker) Write(seg Segment) {
 	ackSeg := seg.(*AckSegment)
-	ackSeg.Conv = this.conn.conv
-	ackSeg.ReceivingNext = this.nextNumber
-	ackSeg.ReceivingWindow = this.nextNumber + this.windowSize
-	if this.conn.state == StateReadyToClose {
+	ackSeg.Conv = v.conn.conv
+	ackSeg.ReceivingNext = v.nextNumber
+	ackSeg.ReceivingWindow = v.nextNumber + v.windowSize
+	if v.conn.state == StateReadyToClose {
 		ackSeg.Option = SegmentOptionClose
 	}
-	this.conn.output.Write(ackSeg)
+	v.conn.output.Write(ackSeg)
 }
 
-func (this *ReceivingWorker) CloseRead() {
+func (v *ReceivingWorker) CloseRead() {
 }
 
-func (this *ReceivingWorker) UpdateNecessary() bool {
-	return len(this.acklist.numbers) > 0
+func (v *ReceivingWorker) UpdateNecessary() bool {
+	return len(v.acklist.numbers) > 0
 }

@@ -18,10 +18,10 @@ type VMessAccount struct {
 	AlterIds uint16 `json:"alterId"`
 }
 
-func (this *VMessAccount) Build() *vmess.Account {
+func (v *VMessAccount) Build() *vmess.Account {
 	return &vmess.Account{
-		Id:      this.ID,
-		AlterId: uint32(this.AlterIds),
+		Id:      v.ID,
+		AlterId: uint32(v.AlterIds),
 	}
 }
 
@@ -29,9 +29,9 @@ type VMessDetourConfig struct {
 	ToTag string `json:"to"`
 }
 
-func (this *VMessDetourConfig) Build() *inbound.DetourConfig {
+func (v *VMessDetourConfig) Build() *inbound.DetourConfig {
 	return &inbound.DetourConfig{
-		To: this.ToTag,
+		To: v.ToTag,
 	}
 }
 
@@ -44,13 +44,13 @@ type VMessDefaultConfig struct {
 	Level    byte   `json:"level"`
 }
 
-func (this *VMessDefaultConfig) Build() *inbound.DefaultConfig {
+func (v *VMessDefaultConfig) Build() *inbound.DefaultConfig {
 	config := new(inbound.DefaultConfig)
-	config.AlterId = uint32(this.AlterIDs)
+	config.AlterId = uint32(v.AlterIDs)
 	if config.AlterId == 0 {
 		config.AlterId = 32
 	}
-	config.Level = uint32(this.Level)
+	config.Level = uint32(v.Level)
 	return config
 }
 
@@ -61,21 +61,21 @@ type VMessInboundConfig struct {
 	DetourConfig *VMessDetourConfig  `json:"detour"`
 }
 
-func (this *VMessInboundConfig) Build() (*loader.TypedSettings, error) {
+func (v *VMessInboundConfig) Build() (*loader.TypedSettings, error) {
 	config := new(inbound.Config)
 
-	if this.Defaults != nil {
-		config.Default = this.Defaults.Build()
+	if v.Defaults != nil {
+		config.Default = v.Defaults.Build()
 	}
 
-	if this.DetourConfig != nil {
-		config.Detour = this.DetourConfig.Build()
-	} else if this.Features != nil && this.Features.Detour != nil {
-		config.Detour = this.Features.Detour.Build()
+	if v.DetourConfig != nil {
+		config.Detour = v.DetourConfig.Build()
+	} else if v.Features != nil && v.Features.Detour != nil {
+		config.Detour = v.Features.Detour.Build()
 	}
 
-	config.User = make([]*protocol.User, len(this.Users))
-	for idx, rawData := range this.Users {
+	config.User = make([]*protocol.User, len(v.Users))
+	for idx, rawData := range v.Users {
 		user := new(protocol.User)
 		if err := json.Unmarshal(rawData, user); err != nil {
 			return nil, errors.New("VMess|Inbound: Invalid user: " + err.Error())
@@ -100,14 +100,14 @@ type VMessOutboundConfig struct {
 	Receivers []*VMessOutboundTarget `json:"vnext"`
 }
 
-func (this *VMessOutboundConfig) Build() (*loader.TypedSettings, error) {
+func (v *VMessOutboundConfig) Build() (*loader.TypedSettings, error) {
 	config := new(outbound.Config)
 
-	if len(this.Receivers) == 0 {
+	if len(v.Receivers) == 0 {
 		return nil, errors.New("0 VMess receiver configured.")
 	}
-	serverSpecs := make([]*protocol.ServerEndpoint, len(this.Receivers))
-	for idx, rec := range this.Receivers {
+	serverSpecs := make([]*protocol.ServerEndpoint, len(v.Receivers))
+	for idx, rec := range v.Receivers {
 		if len(rec.Users) == 0 {
 			return nil, errors.New("0 user configured for VMess outbound.")
 		}

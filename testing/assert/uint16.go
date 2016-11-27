@@ -4,10 +4,10 @@ import (
 	"v2ray.com/core/common/serial"
 )
 
-func (this *Assert) Uint16(value uint16) *Uint16Subject {
+func (v *Assert) Uint16(value uint16) *Uint16Subject {
 	return &Uint16Subject{
 		Subject: Subject{
-			a:    this,
+			a:    v,
 			disp: serial.Uint16ToString(value),
 		},
 		value: value,

@@ -16,15 +16,15 @@ type ShadowsocksAccount struct {
 	OneTimeAuth Account_OneTimeAuth
 }
 
-func (this *ShadowsocksAccount) Equals(another protocol.Account) bool {
+func (v *ShadowsocksAccount) Equals(another protocol.Account) bool {
 	if account, ok := another.(*ShadowsocksAccount); ok {
-		return bytes.Equal(this.Key, account.Key)
+		return bytes.Equal(v.Key, account.Key)
 	}
 	return false
 }
 
-func (this *Account) GetCipher() (Cipher, error) {
-	switch this.CipherType {
+func (v *Account) GetCipher() (Cipher, error) {
+	switch v.CipherType {
 	case CipherType_AES_128_CFB:
 		return &AesCfb{KeyBytes: 16}, nil
 	case CipherType_AES_256_CFB:
@@ -38,24 +38,24 @@ func (this *Account) GetCipher() (Cipher, error) {
 	}
 }
 
-func (this *Account) AsAccount() (protocol.Account, error) {
-	cipher, err := this.GetCipher()
+func (v *Account) AsAccount() (protocol.Account, error) {
+	cipher, err := v.GetCipher()
 	if err != nil {
 		return nil, err
 	}
 	return &ShadowsocksAccount{
 		Cipher:      cipher,
-		Key:         this.GetCipherKey(),
-		OneTimeAuth: this.Ota,
+		Key:         v.GetCipherKey(),
+		OneTimeAuth: v.Ota,
 	}, nil
 }
 
-func (this *Account) GetCipherKey() []byte {
-	ct, err := this.GetCipher()
+func (v *Account) GetCipherKey() []byte {
+	ct, err := v.GetCipher()
 	if err != nil {
 		return nil
 	}
-	return PasswordToCipherKey(this.Password, ct.KeySize())
+	return PasswordToCipherKey(v.Password, ct.KeySize())
 }
 
 type Cipher interface {
@@ -69,20 +69,20 @@ type AesCfb struct {
 	KeyBytes int
 }
 
-func (this *AesCfb) KeySize() int {
-	return this.KeyBytes
+func (v *AesCfb) KeySize() int {
+	return v.KeyBytes
 }
 
-func (this *AesCfb) IVSize() int {
+func (v *AesCfb) IVSize() int {
 	return 16
 }
 
-func (this *AesCfb) NewEncodingStream(key []byte, iv []byte) (cipher.Stream, error) {
+func (v *AesCfb) NewEncodingStream(key []byte, iv []byte) (cipher.Stream, error) {
 	stream := crypto.NewAesEncryptionStream(key, iv)
 	return stream, nil
 }
 
-func (this *AesCfb) NewDecodingStream(key []byte, iv []byte) (cipher.Stream, error) {
+func (v *AesCfb) NewDecodingStream(key []byte, iv []byte) (cipher.Stream, error) {
 	stream := crypto.NewAesDecryptionStream(key, iv)
 	return stream, nil
 }
@@ -91,19 +91,19 @@ type ChaCha20 struct {
 	IVBytes int
 }
 
-func (this *ChaCha20) KeySize() int {
+func (v *ChaCha20) KeySize() int {
 	return 32
 }
 
-func (this *ChaCha20) IVSize() int {
-	return this.IVBytes
+func (v *ChaCha20) IVSize() int {
+	return v.IVBytes
 }
 
-func (this *ChaCha20) NewEncodingStream(key []byte, iv []byte) (cipher.Stream, error) {
+func (v *ChaCha20) NewEncodingStream(key []byte, iv []byte) (cipher.Stream, error) {
 	return crypto.NewChaCha20Stream(key, iv), nil
 }
 
-func (this *ChaCha20) NewDecodingStream(key []byte, iv []byte) (cipher.Stream, error) {
+func (v *ChaCha20) NewDecodingStream(key []byte, iv []byte) (cipher.Stream, error) {
 	return crypto.NewChaCha20Stream(key, iv), nil
 }
 

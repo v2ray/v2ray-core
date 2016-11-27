@@ -59,54 +59,54 @@ func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandler
 	return s, nil
 }
 
-func (this *Server) Port() v2net.Port {
-	return this.meta.Port
+func (v *Server) Port() v2net.Port {
+	return v.meta.Port
 }
 
-func (this *Server) Close() {
-	this.accepting = false
+func (v *Server) Close() {
+	v.accepting = false
 	// TODO: synchronization
-	if this.tcpHub != nil {
-		this.tcpHub.Close()
-		this.tcpHub = nil
+	if v.tcpHub != nil {
+		v.tcpHub.Close()
+		v.tcpHub = nil
 	}
 
-	if this.udpHub != nil {
-		this.udpHub.Close()
-		this.udpHub = nil
+	if v.udpHub != nil {
+		v.udpHub.Close()
+		v.udpHub = nil
 	}
 }
 
-func (this *Server) Start() error {
-	if this.accepting {
+func (v *Server) Start() error {
+	if v.accepting {
 		return nil
 	}
 
-	tcpHub, err := internet.ListenTCP(this.meta.Address, this.meta.Port, this.handleConnection, this.meta.StreamSettings)
+	tcpHub, err := internet.ListenTCP(v.meta.Address, v.meta.Port, v.handleConnection, v.meta.StreamSettings)
 	if err != nil {
-		log.Error("Shadowsocks: Failed to listen TCP on ", this.meta.Address, ":", this.meta.Port, ": ", err)
+		log.Error("Shadowsocks: Failed to listen TCP on ", v.meta.Address, ":", v.meta.Port, ": ", err)
 		return err
 	}
-	this.tcpHub = tcpHub
+	v.tcpHub = tcpHub
 
-	if this.config.UdpEnabled {
-		this.udpServer = udp.NewUDPServer(this.packetDispatcher)
-		udpHub, err := udp.ListenUDP(this.meta.Address, this.meta.Port, udp.ListenOption{Callback: this.handlerUDPPayload})
+	if v.config.UdpEnabled {
+		v.udpServer = udp.NewUDPServer(v.packetDispatcher)
+		udpHub, err := udp.ListenUDP(v.meta.Address, v.meta.Port, udp.ListenOption{Callback: v.handlerUDPPayload})
 		if err != nil {
-			log.Error("Shadowsocks: Failed to listen UDP on ", this.meta.Address, ":", this.meta.Port, ": ", err)
+			log.Error("Shadowsocks: Failed to listen UDP on ", v.meta.Address, ":", v.meta.Port, ": ", err)
 			return err
 		}
-		this.udpHub = udpHub
+		v.udpHub = udpHub
 	}
 
-	this.accepting = true
+	v.accepting = true
 
 	return nil
 }
 
-func (this *Server) handlerUDPPayload(payload *alloc.Buffer, session *proxy.SessionInfo) {
+func (v *Server) handlerUDPPayload(payload *alloc.Buffer, session *proxy.SessionInfo) {
 	source := session.Source
-	request, data, err := DecodeUDPPacket(this.user, payload)
+	request, data, err := DecodeUDPPacket(v.user, payload)
 	if err != nil {
 		log.Info("Shadowsocks|Server: Skipping invalid UDP packet from: ", source, ": ", err)
 		log.Access(source, "", log.AccessRejected, err)
@@ -114,13 +114,13 @@ func (this *Server) handlerUDPPayload(payload *alloc.Buffer, session *proxy.Sess
 		return
 	}
 
-	if request.Option.Has(RequestOptionOneTimeAuth) && this.account.OneTimeAuth == Account_Disabled {
+	if request.Option.Has(RequestOptionOneTimeAuth) && v.account.OneTimeAuth == Account_Disabled {
 		log.Info("Shadowsocks|Server: Client payload enables OTA but server doesn't allow it.")
 		payload.Release()
 		return
 	}
 
-	if !request.Option.Has(RequestOptionOneTimeAuth) && this.account.OneTimeAuth == Account_Enabled {
+	if !request.Option.Has(RequestOptionOneTimeAuth) && v.account.OneTimeAuth == Account_Enabled {
 		log.Info("Shadowsocks|Server: Client payload disables OTA but server forces it.")
 		payload.Release()
 		return
@@ -130,7 +130,7 @@ func (this *Server) handlerUDPPayload(payload *alloc.Buffer, session *proxy.Sess
 	log.Access(source, dest, log.AccessAccepted, "")
 	log.Info("Shadowsocks|Server: Tunnelling request to ", dest)
 
-	this.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: dest, User: request.User, Inbound: this.meta}, data, func(destination v2net.Destination, payload *alloc.Buffer) {
+	v.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: dest, User: request.User, Inbound: v.meta}, data, func(destination v2net.Destination, payload *alloc.Buffer) {
 		defer payload.Release()
 
 		data, err := EncodeUDPPacket(request, payload)
@@ -140,11 +140,11 @@ func (this *Server) handlerUDPPayload(payload *alloc.Buffer, session *proxy.Sess
 		}
 		defer data.Release()
 
-		this.udpHub.WriteTo(data.Value, source)
+		v.udpHub.WriteTo(data.Value, source)
 	})
 }
 
-func (this *Server) handleConnection(conn internet.Connection) {
+func (v *Server) handleConnection(conn internet.Connection) {
 	defer conn.Close()
 	conn.SetReusable(false)
 
@@ -154,7 +154,7 @@ func (this *Server) handleConnection(conn internet.Connection) {
 	bufferedReader := v2io.NewBufferedReader(timedReader)
 	defer bufferedReader.Release()
 
-	request, bodyReader, err := ReadTCPSession(this.user, bufferedReader)
+	request, bodyReader, err := ReadTCPSession(v.user, bufferedReader)
 	if err != nil {
 		log.Access(conn.RemoteAddr(), "", log.AccessRejected, err)
 		log.Info("Shadowsocks|Server: Failed to create request from: ", conn.RemoteAddr(), ": ", err)
@@ -164,18 +164,18 @@ func (this *Server) handleConnection(conn internet.Connection) {
 
 	bufferedReader.SetCached(false)
 
-	userSettings := this.user.GetSettings()
+	userSettings := v.user.GetSettings()
 	timedReader.SetTimeOut(userSettings.PayloadReadTimeout)
 
 	dest := request.Destination()
 	log.Access(conn.RemoteAddr(), dest, log.AccessAccepted, "")
 	log.Info("Shadowsocks|Server: Tunnelling request to ", dest)
 
-	ray := this.packetDispatcher.DispatchToOutbound(&proxy.SessionInfo{
+	ray := v.packetDispatcher.DispatchToOutbound(&proxy.SessionInfo{
 		Source:      v2net.DestinationFromAddr(conn.RemoteAddr()),
 		Destination: dest,
 		User:        request.User,
-		Inbound:     this.meta,
+		Inbound:     v.meta,
 	})
 	defer ray.InboundOutput().Release()
 
@@ -214,13 +214,13 @@ func (this *Server) handleConnection(conn internet.Connection) {
 
 type ServerFactory struct{}
 
-func (this *ServerFactory) StreamCapability() v2net.NetworkList {
+func (v *ServerFactory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
 		Network: []v2net.Network{v2net.Network_TCP, v2net.Network_RawTCP},
 	}
 }
 
-func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
+func (v *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
 	if !space.HasApp(dispatcher.APP_ID) {
 		return nil, common.ErrBadConfiguration
 	}

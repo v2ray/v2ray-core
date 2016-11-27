@@ -38,10 +38,10 @@ type OutboundHandlerMeta struct {
 	ProxySettings  *internet.ProxyConfig
 }
 
-func (this *OutboundHandlerMeta) GetDialerOptions() internet.DialerOptions {
+func (v *OutboundHandlerMeta) GetDialerOptions() internet.DialerOptions {
 	return internet.DialerOptions{
-		Stream: this.StreamSettings,
-		Proxy:  this.ProxySettings,
+		Stream: v.StreamSettings,
+		Proxy:  v.ProxySettings,
 	}
 }
 

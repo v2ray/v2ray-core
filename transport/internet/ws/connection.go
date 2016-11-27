@@ -33,67 +33,67 @@ func NewConnection(dest string, conn *wsconn, manager ConnectionManager, config 
 	}
 }
 
-func (this *Connection) Read(b []byte) (int, error) {
-	if this == nil || this.conn == nil {
+func (v *Connection) Read(b []byte) (int, error) {
+	if v == nil || v.conn == nil {
 		return 0, io.EOF
 	}
 
-	return this.conn.Read(b)
+	return v.conn.Read(b)
 }
 
-func (this *Connection) Write(b []byte) (int, error) {
-	if this == nil || this.conn == nil {
+func (v *Connection) Write(b []byte) (int, error) {
+	if v == nil || v.conn == nil {
 		return 0, io.ErrClosedPipe
 	}
-	return this.conn.Write(b)
+	return v.conn.Write(b)
 }
 
-func (this *Connection) Close() error {
-	if this == nil || this.conn == nil {
+func (v *Connection) Close() error {
+	if v == nil || v.conn == nil {
 		return io.ErrClosedPipe
 	}
-	if this.Reusable() {
-		this.listener.Recycle(this.dest, this.conn)
+	if v.Reusable() {
+		v.listener.Recycle(v.dest, v.conn)
 		return nil
 	}
-	err := this.conn.Close()
-	this.conn = nil
+	err := v.conn.Close()
+	v.conn = nil
 	return err
 }
 
-func (this *Connection) LocalAddr() net.Addr {
-	return this.conn.LocalAddr()
+func (v *Connection) LocalAddr() net.Addr {
+	return v.conn.LocalAddr()
 }
 
-func (this *Connection) RemoteAddr() net.Addr {
-	return this.conn.RemoteAddr()
+func (v *Connection) RemoteAddr() net.Addr {
+	return v.conn.RemoteAddr()
 }
 
-func (this *Connection) SetDeadline(t time.Time) error {
-	return this.conn.SetDeadline(t)
+func (v *Connection) SetDeadline(t time.Time) error {
+	return v.conn.SetDeadline(t)
 }
 
-func (this *Connection) SetReadDeadline(t time.Time) error {
-	return this.conn.SetReadDeadline(t)
+func (v *Connection) SetReadDeadline(t time.Time) error {
+	return v.conn.SetReadDeadline(t)
 }
 
-func (this *Connection) SetWriteDeadline(t time.Time) error {
-	return this.conn.SetWriteDeadline(t)
+func (v *Connection) SetWriteDeadline(t time.Time) error {
+	return v.conn.SetWriteDeadline(t)
 }
 
-func (this *Connection) SetReusable(reusable bool) {
-	if !this.config.ConnectionReuse.IsEnabled() {
+func (v *Connection) SetReusable(reusable bool) {
+	if !v.config.ConnectionReuse.IsEnabled() {
 		return
 	}
-	this.reusable = reusable
+	v.reusable = reusable
 }
 
-func (this *Connection) Reusable() bool {
-	return this.reusable
+func (v *Connection) Reusable() bool {
+	return v.reusable
 }
 
-func (this *Connection) SysFd() (int, error) {
-	return getSysFd(this.conn)
+func (v *Connection) SysFd() (int, error) {
+	return getSysFd(v.conn)
 }
 
 func getSysFd(conn net.Conn) (int, error) {

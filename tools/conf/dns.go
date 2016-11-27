@@ -10,10 +10,10 @@ type DnsConfig struct {
 	Hosts   map[string]*Address `json:"hosts"`
 }
 
-func (this *DnsConfig) Build() *dns.Config {
+func (v *DnsConfig) Build() *dns.Config {
 	config := new(dns.Config)
-	config.NameServers = make([]*v2net.Endpoint, len(this.Servers))
-	for idx, server := range this.Servers {
+	config.NameServers = make([]*v2net.Endpoint, len(v.Servers))
+	for idx, server := range v.Servers {
 		config.NameServers[idx] = &v2net.Endpoint{
 			Network: v2net.Network_UDP,
 			Address: server.Build(),
@@ -21,9 +21,9 @@ func (this *DnsConfig) Build() *dns.Config {
 		}
 	}
 
-	if this.Hosts != nil {
+	if v.Hosts != nil {
 		config.Hosts = make(map[string]*v2net.IPOrDomain)
-		for domain, ip := range this.Hosts {
+		for domain, ip := range v.Hosts {
 			config.Hosts[domain] = ip.Build()
 		}
 	}

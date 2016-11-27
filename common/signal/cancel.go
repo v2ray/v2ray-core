@@ -17,18 +17,18 @@ func NewCloseSignal() *CancelSignal {
 	}
 }
 
-func (this *CancelSignal) WaitThread() {
-	this.done.Add(1)
+func (v *CancelSignal) WaitThread() {
+	v.done.Add(1)
 }
 
 // Cancel signals the goroutine to stop.
-func (this *CancelSignal) Cancel() {
-	close(this.cancel)
+func (v *CancelSignal) Cancel() {
+	close(v.cancel)
 }
 
-func (this *CancelSignal) Cancelled() bool {
+func (v *CancelSignal) Cancelled() bool {
 	select {
-	case <-this.cancel:
+	case <-v.cancel:
 		return true
 	default:
 		return false
@@ -36,16 +36,16 @@ func (this *CancelSignal) Cancelled() bool {
 }
 
 // WaitForCancel should be monitored by the goroutine for when to stop.
-func (this *CancelSignal) WaitForCancel() <-chan struct{} {
-	return this.cancel
+func (v *CancelSignal) WaitForCancel() <-chan struct{} {
+	return v.cancel
 }
 
 // FinishThread signals that current goroutine has finished.
-func (this *CancelSignal) FinishThread() {
-	this.done.Done()
+func (v *CancelSignal) FinishThread() {
+	v.done.Done()
 }
 
 // WaitForDone is used by caller to wait for the goroutine finishes.
-func (this *CancelSignal) WaitForDone() {
-	this.done.Wait()
+func (v *CancelSignal) WaitForDone() {
+	v.done.Wait()
 }

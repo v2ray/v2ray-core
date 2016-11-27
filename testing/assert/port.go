@@ -4,10 +4,10 @@ import (
 	v2net "v2ray.com/core/common/net"
 )
 
-func (this *Assert) Port(value v2net.Port) *PortSubject {
+func (v *Assert) Port(value v2net.Port) *PortSubject {
 	return &PortSubject{
 		Subject: Subject{
-			a:    this,
+			a:    v,
 			disp: value.String(),
 		},
 		value: value,

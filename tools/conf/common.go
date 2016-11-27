@@ -17,21 +17,21 @@ func NewStringList(raw []string) *StringList {
 	return &list
 }
 
-func (this StringList) Len() int {
-	return len(this)
+func (v StringList) Len() int {
+	return len(v)
 }
 
-func (this *StringList) UnmarshalJSON(data []byte) error {
+func (v *StringList) UnmarshalJSON(data []byte) error {
 	var strarray []string
 	if err := json.Unmarshal(data, &strarray); err == nil {
-		*this = *NewStringList(strarray)
+		*v = *NewStringList(strarray)
 		return nil
 	}
 
 	var rawstr string
 	if err := json.Unmarshal(data, &rawstr); err == nil {
 		strlist := strings.Split(rawstr, ",")
-		*this = *NewStringList(strlist)
+		*v = *NewStringList(strlist)
 		return nil
 	}
 	return errors.New("Unknown format of a string list: " + string(data))
@@ -41,45 +41,45 @@ type Address struct {
 	v2net.Address
 }
 
-func (this *Address) UnmarshalJSON(data []byte) error {
+func (v *Address) UnmarshalJSON(data []byte) error {
 	var rawStr string
 	if err := json.Unmarshal(data, &rawStr); err != nil {
 		return err
 	}
-	this.Address = v2net.ParseAddress(rawStr)
+	v.Address = v2net.ParseAddress(rawStr)
 
 	return nil
 }
 
-func (this *Address) Build() *v2net.IPOrDomain {
-	if this.Family().IsDomain() {
+func (v *Address) Build() *v2net.IPOrDomain {
+	if v.Family().IsDomain() {
 		return &v2net.IPOrDomain{
 			Address: &v2net.IPOrDomain_Domain{
-				Domain: this.Domain(),
+				Domain: v.Domain(),
 			},
 		}
 	}
 
 	return &v2net.IPOrDomain{
 		Address: &v2net.IPOrDomain_Ip{
-			Ip: []byte(this.IP()),
+			Ip: []byte(v.IP()),
 		},
 	}
 }
 
 type Network string
 
-func (this Network) Build() v2net.Network {
-	return v2net.ParseNetwork(string(this))
+func (v Network) Build() v2net.Network {
+	return v2net.ParseNetwork(string(v))
 }
 
 type NetworkList []Network
 
-func (this *NetworkList) UnmarshalJSON(data []byte) error {
+func (v *NetworkList) UnmarshalJSON(data []byte) error {
 	var strarray []Network
 	if err := json.Unmarshal(data, &strarray); err == nil {
 		nl := NetworkList(strarray)
-		*this = nl
+		*v = nl
 		return nil
 	}
 
@@ -90,15 +90,15 @@ func (this *NetworkList) UnmarshalJSON(data []byte) error {
 		for idx, network := range strlist {
 			nl[idx] = Network(network)
 		}
-		*this = nl
+		*v = nl
 		return nil
 	}
 	return errors.New("Unknown format of a string list: " + string(data))
 }
 
-func (this *NetworkList) Build() *v2net.NetworkList {
+func (v *NetworkList) Build() *v2net.NetworkList {
 	list := new(v2net.NetworkList)
-	for _, network := range *this {
+	for _, network := range *v {
 		list.Network = append(list.Network, network.Build())
 	}
 	return list
@@ -144,28 +144,28 @@ type PortRange struct {
 	To   uint32
 }
 
-func (this *PortRange) Build() *v2net.PortRange {
+func (v *PortRange) Build() *v2net.PortRange {
 	return &v2net.PortRange{
-		From: this.From,
-		To:   this.To,
+		From: v.From,
+		To:   v.To,
 	}
 }
 
 // UnmarshalJSON implements encoding/json.Unmarshaler.UnmarshalJSON
-func (this *PortRange) UnmarshalJSON(data []byte) error {
+func (v *PortRange) UnmarshalJSON(data []byte) error {
 	port, err := parseIntPort(data)
 	if err == nil {
-		this.From = uint32(port)
-		this.To = uint32(port)
+		v.From = uint32(port)
+		v.To = uint32(port)
 		return nil
 	}
 
 	from, to, err := parseStringPort(data)
 	if err == nil {
-		this.From = uint32(from)
-		this.To = uint32(to)
-		if this.From > this.To {
-			log.Error("Invalid port range ", this.From, " -> ", this.To)
+		v.From = uint32(from)
+		v.To = uint32(to)
+		if v.From > v.To {
+			log.Error("Invalid port range ", v.From, " -> ", v.To)
 			return v2net.ErrInvalidPortRange
 		}
 		return nil
@@ -180,9 +180,9 @@ type User struct {
 	LevelByte   byte   `json:"level"`
 }
 
-func (this *User) Build() *protocol.User {
+func (v *User) Build() *protocol.User {
 	return &protocol.User{
-		Email: this.EmailString,
-		Level: uint32(this.LevelByte),
+		Email: v.EmailString,
+		Level: uint32(v.LevelByte),
 	}
 }

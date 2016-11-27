@@ -5,57 +5,57 @@ import (
 	"v2ray.com/core/transport/internet"
 )
 
-func (this *MTU) GetValue() uint32 {
-	if this == nil {
+func (v *MTU) GetValue() uint32 {
+	if v == nil {
 		return 1350
 	}
-	return this.Value
+	return v.Value
 }
 
-func (this *TTI) GetValue() uint32 {
-	if this == nil {
+func (v *TTI) GetValue() uint32 {
+	if v == nil {
 		return 50
 	}
-	return this.Value
+	return v.Value
 }
 
-func (this *UplinkCapacity) GetValue() uint32 {
-	if this == nil {
+func (v *UplinkCapacity) GetValue() uint32 {
+	if v == nil {
 		return 5
 	}
-	return this.Value
+	return v.Value
 }
 
-func (this *DownlinkCapacity) GetValue() uint32 {
-	if this == nil {
+func (v *DownlinkCapacity) GetValue() uint32 {
+	if v == nil {
 		return 20
 	}
-	return this.Value
+	return v.Value
 }
 
-func (this *WriteBuffer) GetSize() uint32 {
-	if this == nil {
+func (v *WriteBuffer) GetSize() uint32 {
+	if v == nil {
 		return 1 * 1024 * 1024
 	}
-	return this.Size
+	return v.Size
 }
 
-func (this *ReadBuffer) GetSize() uint32 {
-	if this == nil {
+func (v *ReadBuffer) GetSize() uint32 {
+	if v == nil {
 		return 1 * 1024 * 1024
 	}
-	return this.Size
+	return v.Size
 }
 
-func (this *Config) GetAuthenticator() (internet.Authenticator, error) {
+func (v *Config) GetAuthenticator() (internet.Authenticator, error) {
 	auth := NewSimpleAuthenticator()
-	if this.HeaderConfig != nil {
-		rawConfig, err := this.HeaderConfig.GetInstance()
+	if v.HeaderConfig != nil {
+		rawConfig, err := v.HeaderConfig.GetInstance()
 		if err != nil {
 			return nil, err
 		}
 
-		header, err := internet.CreateAuthenticator(this.HeaderConfig.Type, rawConfig)
+		header, err := internet.CreateAuthenticator(v.HeaderConfig.Type, rawConfig)
 		if err != nil {
 			return nil, err
 		}
@@ -64,28 +64,28 @@ func (this *Config) GetAuthenticator() (internet.Authenticator, error) {
 	return auth, nil
 }
 
-func (this *Config) GetSendingInFlightSize() uint32 {
-	size := this.UplinkCapacity.GetValue() * 1024 * 1024 / this.Mtu.GetValue() / (1000 / this.Tti.GetValue()) / 2
+func (v *Config) GetSendingInFlightSize() uint32 {
+	size := v.UplinkCapacity.GetValue() * 1024 * 1024 / v.Mtu.GetValue() / (1000 / v.Tti.GetValue()) / 2
 	if size < 8 {
 		size = 8
 	}
 	return size
 }
 
-func (this *Config) GetSendingBufferSize() uint32 {
-	return this.WriteBuffer.GetSize() / this.Mtu.GetValue()
+func (v *Config) GetSendingBufferSize() uint32 {
+	return v.WriteBuffer.GetSize() / v.Mtu.GetValue()
 }
 
-func (this *Config) GetReceivingInFlightSize() uint32 {
-	size := this.DownlinkCapacity.GetValue() * 1024 * 1024 / this.Mtu.GetValue() / (1000 / this.Tti.GetValue()) / 2
+func (v *Config) GetReceivingInFlightSize() uint32 {
+	size := v.DownlinkCapacity.GetValue() * 1024 * 1024 / v.Mtu.GetValue() / (1000 / v.Tti.GetValue()) / 2
 	if size < 8 {
 		size = 8
 	}
 	return size
 }
 
-func (this *Config) GetReceivingBufferSize() uint32 {
-	return this.ReadBuffer.GetSize() / this.Mtu.GetValue()
+func (v *Config) GetReceivingBufferSize() uint32 {
+	return v.ReadBuffer.GetSize() / v.Mtu.GetValue()
 }
 
 func (o *ConnectionReuse) IsEnabled() bool {

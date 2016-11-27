@@ -17,14 +17,14 @@ func NewAuthChunkWriter(writer v2io.Writer) *AuthChunkWriter {
 	}
 }
 
-func (this *AuthChunkWriter) Write(buffer *alloc.Buffer) error {
+func (v *AuthChunkWriter) Write(buffer *alloc.Buffer) error {
 	Authenticate(buffer)
-	return this.writer.Write(buffer)
+	return v.writer.Write(buffer)
 }
 
-func (this *AuthChunkWriter) Release() {
-	this.writer.Release()
-	this.writer = nil
+func (v *AuthChunkWriter) Release() {
+	v.writer.Release()
+	v.writer = nil
 }
 
 func Authenticate(buffer *alloc.Buffer) {

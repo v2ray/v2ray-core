@@ -5,32 +5,32 @@ import (
 	"v2ray.com/core/common/dice"
 )
 
-func (this *Version) GetValue() string {
-	if this == nil {
+func (v *Version) GetValue() string {
+	if v == nil {
 		return "1.1"
 	}
-	return this.Value
+	return v.Value
 }
 
-func (this *Method) GetValue() string {
-	if this == nil {
+func (v *Method) GetValue() string {
+	if v == nil {
 		return "GET"
 	}
-	return this.Value
+	return v.Value
 }
 
-func (this *Status) GetCode() string {
-	if this == nil {
+func (v *Status) GetCode() string {
+	if v == nil {
 		return "200"
 	}
-	return this.Code
+	return v.Code
 }
 
-func (this *Status) GetReason() string {
-	if this == nil {
+func (v *Status) GetReason() string {
+	if v == nil {
 		return "OK"
 	}
-	return this.Reason
+	return v.Reason
 }
 
 func pickString(arr []string) string {
@@ -45,17 +45,17 @@ func pickString(arr []string) string {
 	}
 }
 
-func (this *RequestConfig) PickUri() string {
-	return pickString(this.Uri)
+func (v *RequestConfig) PickUri() string {
+	return pickString(v.Uri)
 }
 
-func (this *RequestConfig) PickHeaders() []string {
-	n := len(this.Header)
+func (v *RequestConfig) PickHeaders() []string {
+	n := len(v.Header)
 	if n == 0 {
 		return nil
 	}
 	headers := make([]string, n)
-	for idx, headerConfig := range this.Header {
+	for idx, headerConfig := range v.Header {
 		headerName := headerConfig.Name
 		headerValue := pickString(headerConfig.Value)
 		headers[idx] = headerName + ": " + headerValue
@@ -63,13 +63,13 @@ func (this *RequestConfig) PickHeaders() []string {
 	return headers
 }
 
-func (this *RequestConfig) GetFullVersion() string {
-	return "HTTP/" + this.Version.GetValue()
+func (v *RequestConfig) GetFullVersion() string {
+	return "HTTP/" + v.Version.GetValue()
 }
 
-func (this *ResponseConfig) HasHeader(header string) bool {
+func (v *ResponseConfig) HasHeader(header string) bool {
 	cHeader := strings.ToLower(header)
-	for _, tHeader := range this.Header {
+	for _, tHeader := range v.Header {
 		if strings.ToLower(tHeader.Name) == cHeader {
 			return true
 		}
@@ -77,13 +77,13 @@ func (this *ResponseConfig) HasHeader(header string) bool {
 	return false
 }
 
-func (this *ResponseConfig) PickHeaders() []string {
-	n := len(this.Header)
+func (v *ResponseConfig) PickHeaders() []string {
+	n := len(v.Header)
 	if n == 0 {
 		return nil
 	}
 	headers := make([]string, n)
-	for idx, headerConfig := range this.Header {
+	for idx, headerConfig := range v.Header {
 		headerName := headerConfig.Name
 		headerValue := pickString(headerConfig.Value)
 		headers[idx] = headerName + ": " + headerValue
@@ -91,6 +91,6 @@ func (this *ResponseConfig) PickHeaders() []string {
 	return headers
 }
 
-func (this *ResponseConfig) GetFullVersion() string {
-	return "HTTP/" + this.Version.GetValue()
+func (v *ResponseConfig) GetFullVersion() string {
+	return "HTTP/" + v.Version.GetValue()
 }

@@ -21,17 +21,17 @@ func NewBufferedWriter(rawWriter io.Writer) *BufferedWriter {
 	}
 }
 
-func (this *BufferedWriter) ReadFrom(reader io.Reader) (int64, error) {
-	this.Lock()
-	defer this.Unlock()
+func (v *BufferedWriter) ReadFrom(reader io.Reader) (int64, error) {
+	v.Lock()
+	defer v.Unlock()
 
-	if this.writer == nil {
+	if v.writer == nil {
 		return 0, io.ErrClosedPipe
 	}
 
 	totalBytes := int64(0)
 	for {
-		nBytes, err := this.buffer.FillFrom(reader)
+		nBytes, err := v.buffer.FillFrom(reader)
 		totalBytes += int64(nBytes)
 		if err != nil {
 			if err == io.EOF {
@@ -39,69 +39,69 @@ func (this *BufferedWriter) ReadFrom(reader io.Reader) (int64, error) {
 			}
 			return totalBytes, err
 		}
-		this.FlushWithoutLock()
+		v.FlushWithoutLock()
 	}
 }
 
-func (this *BufferedWriter) Write(b []byte) (int, error) {
-	this.Lock()
-	defer this.Unlock()
+func (v *BufferedWriter) Write(b []byte) (int, error) {
+	v.Lock()
+	defer v.Unlock()
 
-	if this.writer == nil {
+	if v.writer == nil {
 		return 0, io.ErrClosedPipe
 	}
 
-	if !this.cached {
-		return this.writer.Write(b)
+	if !v.cached {
+		return v.writer.Write(b)
 	}
-	nBytes, _ := this.buffer.Write(b)
-	if this.buffer.IsFull() {
-		this.FlushWithoutLock()
+	nBytes, _ := v.buffer.Write(b)
+	if v.buffer.IsFull() {
+		v.FlushWithoutLock()
 	}
 	return nBytes, nil
 }
 
-func (this *BufferedWriter) Flush() error {
-	this.Lock()
-	defer this.Unlock()
+func (v *BufferedWriter) Flush() error {
+	v.Lock()
+	defer v.Unlock()
 
-	if this.writer == nil {
+	if v.writer == nil {
 		return io.ErrClosedPipe
 	}
 
-	return this.FlushWithoutLock()
+	return v.FlushWithoutLock()
 }
 
-func (this *BufferedWriter) FlushWithoutLock() error {
-	defer this.buffer.Clear()
-	for !this.buffer.IsEmpty() {
-		nBytes, err := this.writer.Write(this.buffer.Value)
+func (v *BufferedWriter) FlushWithoutLock() error {
+	defer v.buffer.Clear()
+	for !v.buffer.IsEmpty() {
+		nBytes, err := v.writer.Write(v.buffer.Value)
 		if err != nil {
 			return err
 		}
-		this.buffer.SliceFrom(nBytes)
+		v.buffer.SliceFrom(nBytes)
 	}
 	return nil
 }
 
-func (this *BufferedWriter) Cached() bool {
-	return this.cached
+func (v *BufferedWriter) Cached() bool {
+	return v.cached
 }
 
-func (this *BufferedWriter) SetCached(cached bool) {
-	this.cached = cached
-	if !cached && !this.buffer.IsEmpty() {
-		this.Flush()
+func (v *BufferedWriter) SetCached(cached bool) {
+	v.cached = cached
+	if !cached && !v.buffer.IsEmpty() {
+		v.Flush()
 	}
 }
 
-func (this *BufferedWriter) Release() {
-	this.Flush()
+func (v *BufferedWriter) Release() {
+	v.Flush()
 
-	this.Lock()
-	defer this.Unlock()
+	v.Lock()
+	defer v.Unlock()
 
-	this.buffer.Release()
-	this.buffer = nil
-	this.writer = nil
+	v.buffer.Release()
+	v.buffer = nil
+	v.writer = nil
 }

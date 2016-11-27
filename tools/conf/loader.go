@@ -16,17 +16,17 @@ type ConfigCreator func() interface{}
 
 type ConfigCreatorCache map[string]ConfigCreator
 
-func (this ConfigCreatorCache) RegisterCreator(id string, creator ConfigCreator) error {
-	if _, found := this[id]; found {
+func (v ConfigCreatorCache) RegisterCreator(id string, creator ConfigCreator) error {
+	if _, found := v[id]; found {
 		return common.ErrDuplicatedName
 	}
 
-	this[id] = creator
+	v[id] = creator
 	return nil
 }
 
-func (this ConfigCreatorCache) CreateConfig(id string) (interface{}, error) {
-	creator, found := this[id]
+func (v ConfigCreatorCache) CreateConfig(id string) (interface{}, error) {
+	creator, found := v[id]
 	if !found {
 		return nil, ErrUnknownConfigID
 	}
@@ -47,8 +47,8 @@ func NewJSONConfigLoader(cache ConfigCreatorCache, idKey string, configKey strin
 	}
 }
 
-func (this *JSONConfigLoader) LoadWithID(raw []byte, id string) (interface{}, error) {
-	creator, found := this.cache[id]
+func (v *JSONConfigLoader) LoadWithID(raw []byte, id string) (interface{}, error) {
+	creator, found := v.cache[id]
 	if !found {
 		return nil, ErrUnknownConfigID
 	}
@@ -60,14 +60,14 @@ func (this *JSONConfigLoader) LoadWithID(raw []byte, id string) (interface{}, er
 	return config, nil
 }
 
-func (this *JSONConfigLoader) Load(raw []byte) (interface{}, string, error) {
+func (v *JSONConfigLoader) Load(raw []byte) (interface{}, string, error) {
 	var obj map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &obj); err != nil {
 		return nil, "", err
 	}
-	rawID, found := obj[this.idKey]
+	rawID, found := obj[v.idKey]
 	if !found {
-		log.Error(this.idKey, " not found in JSON content.")
+		log.Error(v.idKey, " not found in JSON content.")
 		return nil, "", common.ErrObjectNotFound
 	}
 	var id string
@@ -75,15 +75,15 @@ func (this *JSONConfigLoader) Load(raw []byte) (interface{}, string, error) {
 		return nil, "", err
 	}
 	rawConfig := json.RawMessage(raw)
-	if len(this.configKey) > 0 {
-		configValue, found := obj[this.configKey]
+	if len(v.configKey) > 0 {
+		configValue, found := obj[v.configKey]
 		if !found {
-			log.Error(this.configKey, " not found in JSON content.")
+			log.Error(v.configKey, " not found in JSON content.")
 			return nil, "", common.ErrObjectNotFound
 		}
 		rawConfig = configValue
 	}
-	config, err := this.LoadWithID([]byte(rawConfig), id)
+	config, err := v.LoadWithID([]byte(rawConfig), id)
 	if err != nil {
 		return nil, id, err
 	}

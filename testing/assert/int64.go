@@ -4,10 +4,10 @@ import (
 	"v2ray.com/core/common/serial"
 )
 
-func (this *Assert) Int64(value int64) *Int64Subject {
+func (v *Assert) Int64(value int64) *Int64Subject {
 	return &Int64Subject{
 		Subject: Subject{
-			a:    this,
+			a:    v,
 			disp: serial.Int64ToString(value),
 		},
 		value: value,

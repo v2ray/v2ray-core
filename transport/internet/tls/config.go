@@ -10,9 +10,9 @@ var (
 	globalSessionCache = tls.NewLRUClientSessionCache(128)
 )
 
-func (this *Config) BuildCertificates() []tls.Certificate {
-	certs := make([]tls.Certificate, 0, len(this.Certificate))
-	for _, entry := range this.Certificate {
+func (v *Config) BuildCertificates() []tls.Certificate {
+	certs := make([]tls.Certificate, 0, len(v.Certificate))
+	for _, entry := range v.Certificate {
 		keyPair, err := tls.X509KeyPair(entry.Certificate, entry.Key)
 		if err != nil {
 			log.Warning("TLS: ignoring invalid X509 key pair: ", err)
@@ -23,16 +23,16 @@ func (this *Config) BuildCertificates() []tls.Certificate {
 	return certs
 }
 
-func (this *Config) GetTLSConfig() *tls.Config {
+func (v *Config) GetTLSConfig() *tls.Config {
 	config := &tls.Config{
 		ClientSessionCache: globalSessionCache,
 	}
-	if this == nil {
+	if v == nil {
 		return config
 	}
 
-	config.InsecureSkipVerify = this.AllowInsecure
-	config.Certificates = this.BuildCertificates()
+	config.InsecureSkipVerify = v.AllowInsecure
+	config.Certificates = v.BuildCertificates()
 	config.BuildNameToCertificate()
 
 	return config

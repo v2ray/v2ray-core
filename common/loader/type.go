@@ -30,20 +30,20 @@ func GetInstance(messageType string) (interface{}, error) {
 	return reflect.New(mType).Interface(), nil
 }
 
-func (this *TypedSettings) Load(message proto.Message) error {
+func (v *TypedSettings) Load(message proto.Message) error {
 	targetType := GetType(message)
-	if targetType != this.Type {
-		return errors.New("Have type " + this.Type + ", but retrieved for " + targetType)
+	if targetType != v.Type {
+		return errors.New("Have type " + v.Type + ", but retrieved for " + targetType)
 	}
-	return proto.Unmarshal(this.Settings, message)
+	return proto.Unmarshal(v.Settings, message)
 }
 
-func (this *TypedSettings) GetInstance() (interface{}, error) {
-	instance, err := GetInstance(this.Type)
+func (v *TypedSettings) GetInstance() (interface{}, error) {
+	instance, err := GetInstance(v.Type)
 	if err != nil {
 		return nil, err
 	}
-	if err := proto.Unmarshal(this.Settings, instance.(proto.Message)); err != nil {
+	if err := proto.Unmarshal(v.Settings, instance.(proto.Message)); err != nil {
 		return nil, err
 	}
 	return instance, nil

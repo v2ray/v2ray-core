@@ -4,8 +4,8 @@ import (
 	v2net "v2ray.com/core/common/net"
 )
 
-func (this *Config) GetPredefinedAddress() v2net.Address {
-	addr := this.Address.AsAddress()
+func (v *Config) GetPredefinedAddress() v2net.Address {
+	addr := v.Address.AsAddress()
 	if addr == nil {
 		return nil
 	}

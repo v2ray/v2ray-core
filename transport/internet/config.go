@@ -33,35 +33,35 @@ func CreateNetworkConfig(network v2net.Network) (interface{}, error) {
 	return creator(), nil
 }
 
-func (this *NetworkSettings) GetTypedSettings() (interface{}, error) {
-	return this.Settings.GetInstance()
+func (v *NetworkSettings) GetTypedSettings() (interface{}, error) {
+	return v.Settings.GetInstance()
 }
 
-func (this *StreamConfig) GetEffectiveNetworkSettings() (interface{}, error) {
-	for _, settings := range this.NetworkSettings {
-		if settings.Network == this.Network {
+func (v *StreamConfig) GetEffectiveNetworkSettings() (interface{}, error) {
+	for _, settings := range v.NetworkSettings {
+		if settings.Network == v.Network {
 			return settings.GetTypedSettings()
 		}
 	}
 	for _, settings := range globalNetworkSettings {
-		if settings.Network == this.Network {
+		if settings.Network == v.Network {
 			return settings.GetTypedSettings()
 		}
 	}
-	return CreateNetworkConfig(this.Network)
+	return CreateNetworkConfig(v.Network)
 }
 
-func (this *StreamConfig) GetEffectiveSecuritySettings() (interface{}, error) {
-	for _, settings := range this.SecuritySettings {
-		if settings.Type == this.SecurityType {
+func (v *StreamConfig) GetEffectiveSecuritySettings() (interface{}, error) {
+	for _, settings := range v.SecuritySettings {
+		if settings.Type == v.SecurityType {
 			return settings.GetInstance()
 		}
 	}
-	return loader.GetInstance(this.SecurityType)
+	return loader.GetInstance(v.SecurityType)
 }
 
-func (this *StreamConfig) HasSecuritySettings() bool {
-	return len(this.SecurityType) > 0
+func (v *StreamConfig) HasSecuritySettings() bool {
+	return len(v.SecurityType) > 0
 }
 
 func ApplyGlobalNetworkSettings(settings []*NetworkSettings) error {
@@ -69,6 +69,6 @@ func ApplyGlobalNetworkSettings(settings []*NetworkSettings) error {
 	return nil
 }
 
-func (this *ProxyConfig) HasTag() bool {
-	return this != nil && len(this.Tag) > 0
+func (v *ProxyConfig) HasTag() bool {
+	return v != nil && len(v.Tag) > 0
 }

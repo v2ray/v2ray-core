@@ -18,7 +18,7 @@ type SystemDialer interface {
 type DefaultSystemDialer struct {
 }
 
-func (this *DefaultSystemDialer) Dial(src v2net.Address, dest v2net.Destination) (net.Conn, error) {
+func (v *DefaultSystemDialer) Dial(src v2net.Address, dest v2net.Destination) (net.Conn, error) {
 	dialer := &net.Dialer{
 		Timeout:   time.Second * 60,
 		DualStack: true,
@@ -55,8 +55,8 @@ func WithAdapter(dialer SystemDialerAdapter) SystemDialer {
 	}
 }
 
-func (this *SimpleSystemDialer) Dial(src v2net.Address, dest v2net.Destination) (net.Conn, error) {
-	return this.adapter.Dial(dest.Network.SystemString(), dest.NetAddr())
+func (v *SimpleSystemDialer) Dial(src v2net.Address, dest v2net.Destination) (net.Conn, error) {
+	return v.adapter.Dial(dest.Network.SystemString(), dest.NetAddr())
 }
 
 // UseAlternativeSystemDialer replaces the current system dialer with a given one.

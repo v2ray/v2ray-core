@@ -33,37 +33,37 @@ func NewDefaultOutboundHandlerManager() *DefaultOutboundHandlerManager {
 	}
 }
 
-func (this *DefaultOutboundHandlerManager) Release() {
+func (v *DefaultOutboundHandlerManager) Release() {
 
 }
 
-func (this *DefaultOutboundHandlerManager) GetDefaultHandler() proxy.OutboundHandler {
-	this.RLock()
-	defer this.RUnlock()
-	if this.defaultHandler == nil {
+func (v *DefaultOutboundHandlerManager) GetDefaultHandler() proxy.OutboundHandler {
+	v.RLock()
+	defer v.RUnlock()
+	if v.defaultHandler == nil {
 		return nil
 	}
-	return this.defaultHandler
+	return v.defaultHandler
 }
 
-func (this *DefaultOutboundHandlerManager) SetDefaultHandler(handler proxy.OutboundHandler) {
-	this.Lock()
-	defer this.Unlock()
-	this.defaultHandler = handler
+func (v *DefaultOutboundHandlerManager) SetDefaultHandler(handler proxy.OutboundHandler) {
+	v.Lock()
+	defer v.Unlock()
+	v.defaultHandler = handler
 }
 
-func (this *DefaultOutboundHandlerManager) GetHandler(tag string) proxy.OutboundHandler {
-	this.RLock()
-	defer this.RUnlock()
-	if handler, found := this.taggedHandler[tag]; found {
+func (v *DefaultOutboundHandlerManager) GetHandler(tag string) proxy.OutboundHandler {
+	v.RLock()
+	defer v.RUnlock()
+	if handler, found := v.taggedHandler[tag]; found {
 		return handler
 	}
 	return nil
 }
 
-func (this *DefaultOutboundHandlerManager) SetHandler(tag string, handler proxy.OutboundHandler) {
-	this.Lock()
-	defer this.Unlock()
+func (v *DefaultOutboundHandlerManager) SetHandler(tag string, handler proxy.OutboundHandler) {
+	v.Lock()
+	defer v.Unlock()
 
-	this.taggedHandler[tag] = handler
+	v.taggedHandler[tag] = handler
 }

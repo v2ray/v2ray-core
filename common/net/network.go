@@ -22,14 +22,14 @@ func ParseNetwork(nwStr string) Network {
 	}
 }
 
-func (this Network) AsList() *NetworkList {
+func (v Network) AsList() *NetworkList {
 	return &NetworkList{
-		Network: []Network{this},
+		Network: []Network{v},
 	}
 }
 
-func (this Network) SystemString() string {
-	switch this {
+func (v Network) SystemString() string {
+	switch v {
 	case Network_TCP, Network_RawTCP:
 		return "tcp"
 	case Network_UDP, Network_KCP:
@@ -39,8 +39,8 @@ func (this Network) SystemString() string {
 	}
 }
 
-func (this Network) UrlPrefix() string {
-	switch this {
+func (v Network) UrlPrefix() string {
+	switch v {
 	case Network_TCP, Network_RawTCP:
 		return "tcp"
 	case Network_UDP:
@@ -54,9 +54,9 @@ func (this Network) UrlPrefix() string {
 	}
 }
 
-// HashNetwork returns true if the given network is in this NetworkList.
-func (this NetworkList) HasNetwork(network Network) bool {
-	for _, value := range this.Network {
+// HashNetwork returns true if the given network is in v NetworkList.
+func (v NetworkList) HasNetwork(network Network) bool {
+	for _, value := range v.Network {
 		if string(value) == string(network) {
 			return true
 		}
@@ -64,6 +64,6 @@ func (this NetworkList) HasNetwork(network Network) bool {
 	return false
 }
 
-func (this NetworkList) Get(idx int) Network {
-	return this.Network[idx]
+func (v NetworkList) Get(idx int) Network {
+	return v.Network[idx]
 }

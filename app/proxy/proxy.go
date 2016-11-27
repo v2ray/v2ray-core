@@ -35,12 +35,12 @@ func NewOutboundProxy(space app.Space) *OutboundProxy {
 	return proxy
 }
 
-func (this *OutboundProxy) RegisterDialer() {
-	internet.ProxyDialer = this.Dial
+func (v *OutboundProxy) RegisterDialer() {
+	internet.ProxyDialer = v.Dial
 }
 
-func (this *OutboundProxy) Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOptions) (internet.Connection, error) {
-	handler := this.outboundManager.GetHandler(options.Proxy.Tag)
+func (v *OutboundProxy) Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOptions) (internet.Connection, error) {
+	handler := v.outboundManager.GetHandler(options.Proxy.Tag)
 	if handler == nil {
 		log.Warning("Proxy: Failed to get outbound handler with tag: ", options.Proxy.Tag)
 		return internet.Dial(src, dest, internet.DialerOptions{
@@ -53,7 +53,7 @@ func (this *OutboundProxy) Dial(src v2net.Address, dest v2net.Destination, optio
 	return NewProxyConnection(src, dest, stream), nil
 }
 
-func (this *OutboundProxy) Release() {
+func (v *OutboundProxy) Release() {
 
 }
 
@@ -83,53 +83,53 @@ func NewProxyConnection(src v2net.Address, dest v2net.Destination, stream ray.Ra
 	}
 }
 
-func (this *ProxyConnection) Read(b []byte) (int, error) {
-	if this.closed {
+func (v *ProxyConnection) Read(b []byte) (int, error) {
+	if v.closed {
 		return 0, io.EOF
 	}
-	return this.reader.Read(b)
+	return v.reader.Read(b)
 }
 
-func (this *ProxyConnection) Write(b []byte) (int, error) {
-	if this.closed {
+func (v *ProxyConnection) Write(b []byte) (int, error) {
+	if v.closed {
 		return 0, io.ErrClosedPipe
 	}
-	return this.writer.Write(b)
+	return v.writer.Write(b)
 }
 
-func (this *ProxyConnection) Close() error {
-	this.closed = true
-	this.stream.InboundInput().Close()
-	this.stream.InboundOutput().Release()
-	this.reader.Release()
-	this.writer.Release()
+func (v *ProxyConnection) Close() error {
+	v.closed = true
+	v.stream.InboundInput().Close()
+	v.stream.InboundOutput().Release()
+	v.reader.Release()
+	v.writer.Release()
 	return nil
 }
 
-func (this *ProxyConnection) LocalAddr() net.Addr {
-	return this.localAddr
+func (v *ProxyConnection) LocalAddr() net.Addr {
+	return v.localAddr
 }
 
-func (this *ProxyConnection) RemoteAddr() net.Addr {
-	return this.remoteAddr
+func (v *ProxyConnection) RemoteAddr() net.Addr {
+	return v.remoteAddr
 }
 
-func (this *ProxyConnection) SetDeadline(t time.Time) error {
+func (v *ProxyConnection) SetDeadline(t time.Time) error {
 	return nil
 }
 
-func (this *ProxyConnection) SetReadDeadline(t time.Time) error {
+func (v *ProxyConnection) SetReadDeadline(t time.Time) error {
 	return nil
 }
 
-func (this *ProxyConnection) SetWriteDeadline(t time.Time) error {
+func (v *ProxyConnection) SetWriteDeadline(t time.Time) error {
 	return nil
 }
 
-func (this *ProxyConnection) Reusable() bool {
+func (v *ProxyConnection) Reusable() bool {
 	return false
 }
 
-func (this *ProxyConnection) SetReusable(bool) {
+func (v *ProxyConnection) SetReusable(bool) {
 
 }

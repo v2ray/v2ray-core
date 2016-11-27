@@ -60,12 +60,12 @@ func NewSpace() Space {
 	}
 }
 
-func (this *spaceImpl) InitializeApplication(f ApplicationInitializer) {
-	this.appInit = append(this.appInit, f)
+func (v *spaceImpl) InitializeApplication(f ApplicationInitializer) {
+	v.appInit = append(v.appInit, f)
 }
 
-func (this *spaceImpl) Initialize() error {
-	for _, f := range this.appInit {
+func (v *spaceImpl) Initialize() error {
+	for _, f := range v.appInit {
 		err := f()
 		if err != nil {
 			return err
@@ -74,32 +74,32 @@ func (this *spaceImpl) Initialize() error {
 	return nil
 }
 
-func (this *spaceImpl) HasApp(id ID) bool {
-	_, found := this.cache[id]
+func (v *spaceImpl) HasApp(id ID) bool {
+	_, found := v.cache[id]
 	return found
 }
 
-func (this *spaceImpl) GetApp(id ID) Application {
-	obj, found := this.cache[id]
+func (v *spaceImpl) GetApp(id ID) Application {
+	obj, found := v.cache[id]
 	if !found {
 		return nil
 	}
 	return obj
 }
 
-func (this *spaceImpl) BindApp(id ID, application Application) {
-	this.cache[id] = application
+func (v *spaceImpl) BindApp(id ID, application Application) {
+	v.cache[id] = application
 }
 
-func (this *spaceImpl) BindFromConfig(name string, config interface{}) error {
+func (v *spaceImpl) BindFromConfig(name string, config interface{}) error {
 	factory, found := applicationFactoryCache[name]
 	if !found {
 		return errors.New("Space: app not registered: " + name)
 	}
-	app, err := factory.Create(this, config)
+	app, err := factory.Create(v, config)
 	if err != nil {
 		return err
 	}
-	this.BindApp(factory.AppId(), app)
+	v.BindApp(factory.AppId(), app)
 	return nil
 }

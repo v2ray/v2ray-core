@@ -5,10 +5,10 @@ import (
 	"net"
 )
 
-func (this *Assert) IP(value net.IP) *IPSubject {
+func (v *Assert) IP(value net.IP) *IPSubject {
 	return &IPSubject{
 		Subject: Subject{
-			a:    this,
+			a:    v,
 			disp: value.String(),
 		},
 		value: value,

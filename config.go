@@ -5,51 +5,51 @@ import (
 	v2net "v2ray.com/core/common/net"
 )
 
-func (this *AllocationStrategyConcurrency) GetValue() uint32 {
-	if this == nil {
+func (v *AllocationStrategyConcurrency) GetValue() uint32 {
+	if v == nil {
 		return 3
 	}
-	return this.Value
+	return v.Value
 }
 
-func (this *AllocationStrategyRefresh) GetValue() uint32 {
-	if this == nil {
+func (v *AllocationStrategyRefresh) GetValue() uint32 {
+	if v == nil {
 		return 5
 	}
-	return this.Value
+	return v.Value
 }
 
-func (this *InboundConnectionConfig) GetAllocationStrategyValue() *AllocationStrategy {
-	if this.AllocationStrategy == nil {
+func (v *InboundConnectionConfig) GetAllocationStrategyValue() *AllocationStrategy {
+	if v.AllocationStrategy == nil {
 		return &AllocationStrategy{}
 	}
-	return this.AllocationStrategy
+	return v.AllocationStrategy
 }
 
-func (this *InboundConnectionConfig) GetListenOnValue() v2net.Address {
-	if this.GetListenOn() == nil {
+func (v *InboundConnectionConfig) GetListenOnValue() v2net.Address {
+	if v.GetListenOn() == nil {
 		return v2net.AnyIP
 	}
-	return this.ListenOn.AsAddress()
+	return v.ListenOn.AsAddress()
 }
 
-func (this *InboundConnectionConfig) GetTypedSettings() (interface{}, error) {
-	if this.GetSettings() == nil {
+func (v *InboundConnectionConfig) GetTypedSettings() (interface{}, error) {
+	if v.GetSettings() == nil {
 		return nil, common.ErrBadConfiguration
 	}
-	return this.GetSettings().GetInstance()
+	return v.GetSettings().GetInstance()
 }
 
-func (this *OutboundConnectionConfig) GetTypedSettings() (interface{}, error) {
-	if this.GetSettings() == nil {
+func (v *OutboundConnectionConfig) GetTypedSettings() (interface{}, error) {
+	if v.GetSettings() == nil {
 		return nil, common.ErrBadConfiguration
 	}
-	return this.GetSettings().GetInstance()
+	return v.GetSettings().GetInstance()
 }
 
-func (this *OutboundConnectionConfig) GetSendThroughValue() v2net.Address {
-	if this.GetSendThrough() == nil {
+func (v *OutboundConnectionConfig) GetSendThroughValue() v2net.Address {
+	if v.GetSendThrough() == nil {
 		return v2net.AnyIP
 	}
-	return this.SendThrough.AsAddress()
+	return v.SendThrough.AsAddress()
 }

@@ -38,17 +38,17 @@ type ErrorLog struct {
 	Values []interface{}
 }
 
-func (this *ErrorLog) Release() {
-	for index := range this.Values {
-		this.Values[index] = nil
+func (v *ErrorLog) Release() {
+	for index := range v.Values {
+		v.Values[index] = nil
 	}
-	this.Values = nil
+	v.Values = nil
 }
 
-func (this *ErrorLog) String() string {
-	values := make([]string, len(this.Values)+1)
-	values[0] = this.Prefix
-	for i, value := range this.Values {
+func (v *ErrorLog) String() string {
+	values := make([]string, len(v.Values)+1)
+	values[0] = v.Prefix
+	for i, value := range v.Values {
 		values[i+1] = InterfaceToString(value)
 	}
 	return strings.Join(values, "")
@@ -61,12 +61,12 @@ type AccessLog struct {
 	Reason interface{}
 }
 
-func (this *AccessLog) Release() {
-	this.From = nil
-	this.To = nil
-	this.Reason = nil
+func (v *AccessLog) Release() {
+	v.From = nil
+	v.To = nil
+	v.Reason = nil
 }
 
-func (this *AccessLog) String() string {
-	return strings.Join([]string{InterfaceToString(this.From), this.Status, InterfaceToString(this.To), InterfaceToString(this.Reason)}, " ")
+func (v *AccessLog) String() string {
+	return strings.Join([]string{InterfaceToString(v.From), v.Status, InterfaceToString(v.To), InterfaceToString(v.Reason)}, " ")
 }

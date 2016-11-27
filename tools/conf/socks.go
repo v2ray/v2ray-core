@@ -14,10 +14,10 @@ type SocksAccount struct {
 	Password string `json:"pass"`
 }
 
-func (this *SocksAccount) Build() *socks.Account {
+func (v *SocksAccount) Build() *socks.Account {
 	return &socks.Account{
-		Username: this.Username,
-		Password: this.Password,
+		Username: v.Username,
+		Password: v.Password,
 	}
 }
 
@@ -34,29 +34,29 @@ type SocksServerConfig struct {
 	Timeout    uint32          `json:"timeout"`
 }
 
-func (this *SocksServerConfig) Build() (*loader.TypedSettings, error) {
+func (v *SocksServerConfig) Build() (*loader.TypedSettings, error) {
 	config := new(socks.ServerConfig)
-	if this.AuthMethod == AuthMethodNoAuth {
+	if v.AuthMethod == AuthMethodNoAuth {
 		config.AuthType = socks.AuthType_NO_AUTH
-	} else if this.AuthMethod == AuthMethodUserPass {
+	} else if v.AuthMethod == AuthMethodUserPass {
 		config.AuthType = socks.AuthType_PASSWORD
 	} else {
-		return nil, errors.New("Unknown socks auth method: " + this.AuthMethod)
+		return nil, errors.New("Unknown socks auth method: " + v.AuthMethod)
 	}
 
-	if len(this.Accounts) > 0 {
-		config.Accounts = make(map[string]string, len(this.Accounts))
-		for _, account := range this.Accounts {
+	if len(v.Accounts) > 0 {
+		config.Accounts = make(map[string]string, len(v.Accounts))
+		for _, account := range v.Accounts {
 			config.Accounts[account.Username] = account.Password
 		}
 	}
 
-	config.UdpEnabled = this.UDP
-	if this.Host != nil {
-		config.Address = this.Host.Build()
+	config.UdpEnabled = v.UDP
+	if v.Host != nil {
+		config.Address = v.Host.Build()
 	}
 
-	config.Timeout = this.Timeout
+	config.Timeout = v.Timeout
 	return loader.NewTypedSettings(config), nil
 }
 
@@ -69,10 +69,10 @@ type SocksClientConfig struct {
 	Servers []*SocksRemoteConfig `json:"servers"`
 }
 
-func (this *SocksClientConfig) Build() (*loader.TypedSettings, error) {
+func (v *SocksClientConfig) Build() (*loader.TypedSettings, error) {
 	config := new(socks.ClientConfig)
-	config.Server = make([]*protocol.ServerEndpoint, len(this.Servers))
-	for idx, serverConfig := range this.Servers {
+	config.Server = make([]*protocol.ServerEndpoint, len(v.Servers))
+	for idx, serverConfig := range v.Servers {
 		server := &protocol.ServerEndpoint{
 			Address: serverConfig.Address.Build(),
 			Port:    uint32(serverConfig.Port),

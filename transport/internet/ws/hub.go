@@ -145,49 +145,49 @@ func (wsl *WSListener) converttovws(w http.ResponseWriter, r *http.Request) (*ws
 	return wrapedConn, nil
 }
 
-func (this *WSListener) Accept() (internet.Connection, error) {
-	for this.acccepting {
+func (v *WSListener) Accept() (internet.Connection, error) {
+	for v.acccepting {
 		select {
-		case connErr, open := <-this.awaitingConns:
+		case connErr, open := <-v.awaitingConns:
 			if !open {
 				return nil, ErrClosedListener
 			}
 			if connErr.err != nil {
 				return nil, connErr.err
 			}
-			return NewConnection("", connErr.conn.(*wsconn), this, this.config), nil
+			return NewConnection("", connErr.conn.(*wsconn), v, v.config), nil
 		case <-time.After(time.Second * 2):
 		}
 	}
 	return nil, ErrClosedListener
 }
 
-func (this *WSListener) Recycle(dest string, conn *wsconn) {
-	this.Lock()
-	defer this.Unlock()
-	if !this.acccepting {
+func (v *WSListener) Recycle(dest string, conn *wsconn) {
+	v.Lock()
+	defer v.Unlock()
+	if !v.acccepting {
 		return
 	}
 	select {
-	case this.awaitingConns <- &ConnectionWithError{conn: conn}:
+	case v.awaitingConns <- &ConnectionWithError{conn: conn}:
 	default:
 		conn.Close()
 	}
 }
 
-func (this *WSListener) Addr() net.Addr {
+func (v *WSListener) Addr() net.Addr {
 	return nil
 }
 
-func (this *WSListener) Close() error {
-	this.Lock()
-	defer this.Unlock()
-	this.acccepting = false
+func (v *WSListener) Close() error {
+	v.Lock()
+	defer v.Unlock()
+	v.acccepting = false
 
-	this.listener.Stop()
+	v.listener.Stop()
 
-	close(this.awaitingConns)
-	for connErr := range this.awaitingConns {
+	close(v.awaitingConns)
+	for connErr := range v.awaitingConns {
 		if connErr.conn != nil {
 			go connErr.conn.Close()
 		}

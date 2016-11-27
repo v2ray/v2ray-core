@@ -35,32 +35,32 @@ func ipMaskToByte(mask net.IPMask) byte {
 	return value
 }
 
-func (this *IPNet) Add(ipNet *net.IPNet) {
+func (v *IPNet) Add(ipNet *net.IPNet) {
 	ipv4 := ipNet.IP.To4()
 	if ipv4 == nil {
 		// For now, we don't support IPv6
 		return
 	}
 	mask := ipMaskToByte(ipNet.Mask)
-	this.AddIP(ipv4, mask)
+	v.AddIP(ipv4, mask)
 }
 
-func (this *IPNet) AddIP(ip []byte, mask byte) {
+func (v *IPNet) AddIP(ip []byte, mask byte) {
 	k := ipToUint32(ip)
-	existing, found := this.cache[k]
+	existing, found := v.cache[k]
 	if !found || existing > mask {
-		this.cache[k] = mask
+		v.cache[k] = mask
 	}
 }
 
-func (this *IPNet) Contains(ip net.IP) bool {
+func (v *IPNet) Contains(ip net.IP) bool {
 	ipv4 := ip.To4()
 	if ipv4 == nil {
 		return false
 	}
 	originalValue := ipToUint32(ipv4)
 
-	if entry, found := this.cache[originalValue]; found {
+	if entry, found := v.cache[originalValue]; found {
 		if entry == 32 {
 			return true
 		}
@@ -71,7 +71,7 @@ func (this *IPNet) Contains(ip net.IP) bool {
 		mask += 1 << uint32(32-maskbit)
 
 		maskedValue := originalValue & mask
-		if entry, found := this.cache[maskedValue]; found {
+		if entry, found := v.cache[maskedValue]; found {
 			if entry == maskbit {
 				return true
 			}
@@ -80,8 +80,8 @@ func (this *IPNet) Contains(ip net.IP) bool {
 	return false
 }
 
-func (this *IPNet) IsEmpty() bool {
-	return len(this.cache) == 0
+func (v *IPNet) IsEmpty() bool {
+	return len(v.cache) == 0
 }
 
 func init() {

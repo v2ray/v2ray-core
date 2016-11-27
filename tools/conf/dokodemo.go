@@ -13,14 +13,14 @@ type DokodemoConfig struct {
 	Redirect     bool         `json:"followRedirect"`
 }
 
-func (this *DokodemoConfig) Build() (*loader.TypedSettings, error) {
+func (v *DokodemoConfig) Build() (*loader.TypedSettings, error) {
 	config := new(dokodemo.Config)
-	if this.Host != nil {
-		config.Address = this.Host.Build()
+	if v.Host != nil {
+		config.Address = v.Host.Build()
 	}
-	config.Port = uint32(this.PortValue)
-	config.NetworkList = this.NetworkList.Build()
-	config.Timeout = this.TimeoutValue
-	config.FollowRedirect = this.Redirect
+	config.Port = uint32(v.PortValue)
+	config.NetworkList = v.NetworkList.Build()
+	config.Timeout = v.TimeoutValue
+	config.FollowRedirect = v.Redirect
 	return loader.NewTypedSettings(config), nil
 }

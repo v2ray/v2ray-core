@@ -30,9 +30,9 @@ func NewAdaptiveReader(reader io.Reader) *AdaptiveReader {
 }
 
 // Read implements Reader.Read().
-func (this *AdaptiveReader) Read() (*alloc.Buffer, error) {
-	buffer := this.allocate().Clear()
-	_, err := buffer.FillFrom(this.reader)
+func (v *AdaptiveReader) Read() (*alloc.Buffer, error) {
+	buffer := v.allocate().Clear()
+	_, err := buffer.FillFrom(v.reader)
 	if err != nil {
 		buffer.Release()
 		return nil, err
@@ -41,6 +41,6 @@ func (this *AdaptiveReader) Read() (*alloc.Buffer, error) {
 	return buffer, nil
 }
 
-func (this *AdaptiveReader) Release() {
-	this.reader = nil
+func (v *AdaptiveReader) Release() {
+	v.reader = nil
 }

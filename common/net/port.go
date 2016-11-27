@@ -40,30 +40,30 @@ func PortFromString(s string) (Port, error) {
 	return PortFromInt(uint32(val))
 }
 
-// Value return the correspoding uint16 value of this Port.
-func (this Port) Value() uint16 {
-	return uint16(this)
+// Value return the correspoding uint16 value of v Port.
+func (v Port) Value() uint16 {
+	return uint16(v)
 }
 
-// Bytes returns the correspoding bytes of this Port, in big endian order.
-func (this Port) Bytes(b []byte) []byte {
-	return serial.Uint16ToBytes(this.Value(), b)
+// Bytes returns the correspoding bytes of v Port, in big endian order.
+func (v Port) Bytes(b []byte) []byte {
+	return serial.Uint16ToBytes(v.Value(), b)
 }
 
-// String returns the string presentation of this Port.
-func (this Port) String() string {
-	return serial.Uint16ToString(this.Value())
+// String returns the string presentation of v Port.
+func (v Port) String() string {
+	return serial.Uint16ToString(v.Value())
 }
 
-func (this PortRange) FromPort() Port {
-	return Port(this.From)
+func (v PortRange) FromPort() Port {
+	return Port(v.From)
 }
 
-func (this PortRange) ToPort() Port {
-	return Port(this.To)
+func (v PortRange) ToPort() Port {
+	return Port(v.To)
 }
 
-// Contains returns true if the given port is within the range of this PortRange.
-func (this PortRange) Contains(port Port) bool {
-	return this.FromPort() <= port && port <= this.ToPort()
+// Contains returns true if the given port is within the range of v PortRange.
+func (v PortRange) Contains(port Port) bool {
+	return v.FromPort() <= port && port <= v.ToPort()
 }

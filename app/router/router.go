@@ -53,13 +53,13 @@ func NewRouter(config *Config, space app.Space) *Router {
 	return r
 }
 
-func (this *Router) Release() {
+func (v *Router) Release() {
 
 }
 
 // Private: Visible for testing.
-func (this *Router) ResolveIP(dest v2net.Destination) []v2net.Destination {
-	ips := this.dnsServer.Get(dest.Address.Domain())
+func (v *Router) ResolveIP(dest v2net.Destination) []v2net.Destination {
+	ips := v.dnsServer.Get(dest.Address.Domain())
 	if len(ips) == 0 {
 		return nil
 	}
@@ -74,20 +74,20 @@ func (this *Router) ResolveIP(dest v2net.Destination) []v2net.Destination {
 	return dests
 }
 
-func (this *Router) takeDetourWithoutCache(session *proxy.SessionInfo) (string, error) {
-	for _, rule := range this.rules {
+func (v *Router) takeDetourWithoutCache(session *proxy.SessionInfo) (string, error) {
+	for _, rule := range v.rules {
 		if rule.Apply(session) {
 			return rule.Tag, nil
 		}
 	}
 	dest := session.Destination
-	if this.domainStrategy == Config_IpIfNonMatch && dest.Address.Family().IsDomain() {
+	if v.domainStrategy == Config_IpIfNonMatch && dest.Address.Family().IsDomain() {
 		log.Info("Router: Looking up IP for ", dest)
-		ipDests := this.ResolveIP(dest)
+		ipDests := v.ResolveIP(dest)
 		if ipDests != nil {
 			for _, ipDest := range ipDests {
 				log.Info("Router: Trying IP ", ipDest)
-				for _, rule := range this.rules {
+				for _, rule := range v.rules {
 					if rule.Apply(&proxy.SessionInfo{
 						Source:      session.Source,
 						Destination: ipDest,
@@ -103,12 +103,12 @@ func (this *Router) takeDetourWithoutCache(session *proxy.SessionInfo) (string, 
 	return "", ErrNoRuleApplicable
 }
 
-func (this *Router) TakeDetour(session *proxy.SessionInfo) (string, error) {
+func (v *Router) TakeDetour(session *proxy.SessionInfo) (string, error) {
 	//destStr := dest.String()
-	//found, tag, err := this.cache.Get(destStr)
+	//found, tag, err := v.cache.Get(destStr)
 	//if !found {
-	tag, err := this.takeDetourWithoutCache(session)
-	//this.cache.Set(destStr, tag, err)
+	tag, err := v.takeDetourWithoutCache(session)
+	//v.cache.Set(destStr, tag, err)
 	return tag, err
 	//}
 	//return tag, err

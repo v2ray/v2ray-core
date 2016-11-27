@@ -27,36 +27,36 @@ func NewSegmentWriter(writer *AuthenticationWriter) *BufferedSegmentWriter {
 	}
 }
 
-func (this *BufferedSegmentWriter) Write(seg Segment) {
-	this.Lock()
-	defer this.Unlock()
+func (v *BufferedSegmentWriter) Write(seg Segment) {
+	v.Lock()
+	defer v.Unlock()
 
 	nBytes := seg.ByteSize()
-	if uint32(this.buffer.Len()+nBytes) > this.mtu {
-		this.FlushWithoutLock()
+	if uint32(v.buffer.Len()+nBytes) > v.mtu {
+		v.FlushWithoutLock()
 	}
 
-	if this.buffer == nil {
-		this.buffer = alloc.NewSmallBuffer().Clear()
+	if v.buffer == nil {
+		v.buffer = alloc.NewSmallBuffer().Clear()
 	}
 
-	this.buffer.Value = seg.Bytes(this.buffer.Value)
+	v.buffer.Value = seg.Bytes(v.buffer.Value)
 }
 
-func (this *BufferedSegmentWriter) FlushWithoutLock() {
-	this.writer.Write(this.buffer)
-	this.buffer = nil
+func (v *BufferedSegmentWriter) FlushWithoutLock() {
+	v.writer.Write(v.buffer)
+	v.buffer = nil
 }
 
-func (this *BufferedSegmentWriter) Flush() {
-	this.Lock()
-	defer this.Unlock()
+func (v *BufferedSegmentWriter) Flush() {
+	v.Lock()
+	defer v.Unlock()
 
-	if this.buffer.Len() == 0 {
+	if v.buffer.Len() == 0 {
 		return
 	}
 
-	this.FlushWithoutLock()
+	v.FlushWithoutLock()
 }
 
 type AuthenticationWriter struct {
@@ -65,16 +65,16 @@ type AuthenticationWriter struct {
 	Config        *Config
 }
 
-func (this *AuthenticationWriter) Write(payload *alloc.Buffer) error {
+func (v *AuthenticationWriter) Write(payload *alloc.Buffer) error {
 	defer payload.Release()
 
-	this.Authenticator.Seal(payload)
-	_, err := this.Writer.Write(payload.Value)
+	v.Authenticator.Seal(payload)
+	_, err := v.Writer.Write(payload.Value)
 	return err
 }
 
-func (this *AuthenticationWriter) Release() {}
+func (v *AuthenticationWriter) Release() {}
 
-func (this *AuthenticationWriter) Mtu() uint32 {
-	return this.Config.Mtu.GetValue() - uint32(this.Authenticator.Overhead())
+func (v *AuthenticationWriter) Mtu() uint32 {
+	return v.Config.Mtu.GetValue() - uint32(v.Authenticator.Overhead())
 }

@@ -23,28 +23,28 @@ type ResponseConfig interface {
 	WriteTo(v2io.Writer)
 }
 
-func (this *NoneResponse) WriteTo(v2io.Writer) {}
+func (v *NoneResponse) WriteTo(v2io.Writer) {}
 
-func (this *NoneResponse) AsAny() *any.Any {
-	r, _ := ptypes.MarshalAny(this)
+func (v *NoneResponse) AsAny() *any.Any {
+	r, _ := ptypes.MarshalAny(v)
 	return r
 }
 
-func (this *HTTPResponse) WriteTo(writer v2io.Writer) {
+func (v *HTTPResponse) WriteTo(writer v2io.Writer) {
 	writer.Write(alloc.NewLocalBuffer(512).Clear().AppendString(http403response))
 }
 
-func (this *HTTPResponse) AsAny() *any.Any {
-	r, _ := ptypes.MarshalAny(this)
+func (v *HTTPResponse) AsAny() *any.Any {
+	r, _ := ptypes.MarshalAny(v)
 	return r
 }
 
-func (this *Config) GetInternalResponse() (ResponseConfig, error) {
-	if this.GetResponse() == nil {
+func (v *Config) GetInternalResponse() (ResponseConfig, error) {
+	if v.GetResponse() == nil {
 		return new(NoneResponse), nil
 	}
 
-	config, err := this.GetResponse().GetInstance()
+	config, err := v.GetResponse().GetInstance()
 	if err != nil {
 		return nil, err
 	}

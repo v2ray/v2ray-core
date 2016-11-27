@@ -52,74 +52,74 @@ func NewInboundDetourHandlerDynamic(space app.Space, config *InboundConnectionCo
 	return handler, nil
 }
 
-func (this *InboundDetourHandlerDynamic) pickUnusedPort() v2net.Port {
-	delta := int(this.config.PortRange.To) - int(this.config.PortRange.From) + 1
+func (v *InboundDetourHandlerDynamic) pickUnusedPort() v2net.Port {
+	delta := int(v.config.PortRange.To) - int(v.config.PortRange.From) + 1
 	for {
 		r := dice.Roll(delta)
-		port := this.config.PortRange.FromPort() + v2net.Port(r)
-		_, used := this.portsInUse[port]
+		port := v.config.PortRange.FromPort() + v2net.Port(r)
+		_, used := v.portsInUse[port]
 		if !used {
 			return port
 		}
 	}
 }
 
-func (this *InboundDetourHandlerDynamic) GetConnectionHandler() (proxy.InboundHandler, int) {
-	this.RLock()
-	defer this.RUnlock()
-	ich := this.ichs[dice.Roll(len(this.ichs))]
-	until := int(this.config.GetAllocationStrategyValue().Refresh.GetValue()) - int((time.Now().Unix()-this.lastRefresh.Unix())/60/1000)
+func (v *InboundDetourHandlerDynamic) GetConnectionHandler() (proxy.InboundHandler, int) {
+	v.RLock()
+	defer v.RUnlock()
+	ich := v.ichs[dice.Roll(len(v.ichs))]
+	until := int(v.config.GetAllocationStrategyValue().Refresh.GetValue()) - int((time.Now().Unix()-v.lastRefresh.Unix())/60/1000)
 	if until < 0 {
 		until = 0
 	}
 	return ich, int(until)
 }
 
-func (this *InboundDetourHandlerDynamic) Close() {
-	this.Lock()
-	defer this.Unlock()
-	for _, ich := range this.ichs {
+func (v *InboundDetourHandlerDynamic) Close() {
+	v.Lock()
+	defer v.Unlock()
+	for _, ich := range v.ichs {
 		ich.Close()
 	}
 }
 
-func (this *InboundDetourHandlerDynamic) RecyleHandles() {
-	if this.ich2Recyle != nil {
-		for _, ich := range this.ich2Recyle {
+func (v *InboundDetourHandlerDynamic) RecyleHandles() {
+	if v.ich2Recyle != nil {
+		for _, ich := range v.ich2Recyle {
 			if ich == nil {
 				continue
 			}
 			port := ich.Port()
 			ich.Close()
-			delete(this.portsInUse, port)
+			delete(v.portsInUse, port)
 		}
-		this.ich2Recyle = nil
+		v.ich2Recyle = nil
 	}
 }
 
-func (this *InboundDetourHandlerDynamic) refresh() error {
-	this.lastRefresh = time.Now()
+func (v *InboundDetourHandlerDynamic) refresh() error {
+	v.lastRefresh = time.Now()
 
-	config := this.config
-	this.ich2Recyle = this.ichs
+	config := v.config
+	v.ich2Recyle = v.ichs
 	newIchs := make([]proxy.InboundHandler, config.GetAllocationStrategyValue().Concurrency.GetValue())
 
 	for idx := range newIchs {
 		err := retry.Timed(5, 100).On(func() error {
-			port := this.pickUnusedPort()
+			port := v.pickUnusedPort()
 			ichConfig, _ := config.GetTypedSettings()
-			ich, err := proxyregistry.CreateInboundHandler(config.Settings.Type, this.space, ichConfig, &proxy.InboundHandlerMeta{
+			ich, err := proxyregistry.CreateInboundHandler(config.Settings.Type, v.space, ichConfig, &proxy.InboundHandlerMeta{
 				Address: config.GetListenOnValue(), Port: port, Tag: config.Tag, StreamSettings: config.StreamSettings})
 			if err != nil {
-				delete(this.portsInUse, port)
+				delete(v.portsInUse, port)
 				return err
 			}
 			err = ich.Start()
 			if err != nil {
-				delete(this.portsInUse, port)
+				delete(v.portsInUse, port)
 				return err
 			}
-			this.portsInUse[port] = true
+			v.portsInUse[port] = true
 			newIchs[idx] = ich
 			return nil
 		})
@@ -129,15 +129,15 @@ func (this *InboundDetourHandlerDynamic) refresh() error {
 		}
 	}
 
-	this.Lock()
-	this.ichs = newIchs
-	this.Unlock()
+	v.Lock()
+	v.ichs = newIchs
+	v.Unlock()
 
 	return nil
 }
 
-func (this *InboundDetourHandlerDynamic) Start() error {
-	err := this.refresh()
+func (v *InboundDetourHandlerDynamic) Start() error {
+	err := v.refresh()
 	if err != nil {
 		log.Error("Point: Failed to refresh dynamic allocations: ", err)
 		return err
@@ -145,9 +145,9 @@ func (this *InboundDetourHandlerDynamic) Start() error {
 
 	go func() {
 		for {
-			time.Sleep(time.Duration(this.config.GetAllocationStrategyValue().Refresh.GetValue())*time.Minute - 1)
-			this.RecyleHandles()
-			err := this.refresh()
+			time.Sleep(time.Duration(v.config.GetAllocationStrategyValue().Refresh.GetValue())*time.Minute - 1)
+			v.RecyleHandles()
+			err := v.refresh()
 			if err != nil {
 				log.Error("Point: Failed to refresh dynamic allocations: ", err)
 			}

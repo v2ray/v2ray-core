@@ -21,42 +21,42 @@ func NewChanReader(stream Reader) *ChanReader {
 }
 
 // Private: Visible for testing.
-func (this *ChanReader) Fill() {
-	b, err := this.stream.Read()
-	this.current = b
+func (v *ChanReader) Fill() {
+	b, err := v.stream.Read()
+	v.current = b
 	if err != nil {
-		this.eof = true
-		this.current = nil
+		v.eof = true
+		v.current = nil
 	}
 }
 
-func (this *ChanReader) Read(b []byte) (int, error) {
-	if this.eof {
+func (v *ChanReader) Read(b []byte) (int, error) {
+	if v.eof {
 		return 0, io.EOF
 	}
 
-	this.Lock()
-	defer this.Unlock()
-	if this.current == nil {
-		this.Fill()
-		if this.eof {
+	v.Lock()
+	defer v.Unlock()
+	if v.current == nil {
+		v.Fill()
+		if v.eof {
 			return 0, io.EOF
 		}
 	}
-	nBytes, err := this.current.Read(b)
-	if this.current.IsEmpty() {
-		this.current.Release()
-		this.current = nil
+	nBytes, err := v.current.Read(b)
+	if v.current.IsEmpty() {
+		v.current.Release()
+		v.current = nil
 	}
 	return nBytes, err
 }
 
-func (this *ChanReader) Release() {
-	this.Lock()
-	defer this.Unlock()
+func (v *ChanReader) Release() {
+	v.Lock()
+	defer v.Unlock()
 
-	this.eof = true
-	this.current.Release()
-	this.current = nil
-	this.stream = nil
+	v.eof = true
+	v.current.Release()
+	v.current = nil
+	v.stream = nil
 }

@@ -41,7 +41,7 @@ type HTTPAuthenticatorRequest struct {
 	Headers map[string]*StringList `json:"headers"`
 }
 
-func (this *HTTPAuthenticatorRequest) Build() (*http.RequestConfig, error) {
+func (v *HTTPAuthenticatorRequest) Build() (*http.RequestConfig, error) {
 	config := &http.RequestConfig{
 		Uri: []string{"/"},
 		Header: []*http.Header{
@@ -71,21 +71,21 @@ func (this *HTTPAuthenticatorRequest) Build() (*http.RequestConfig, error) {
 		},
 	}
 
-	if len(this.Version) > 0 {
-		config.Version = &http.Version{Value: this.Version}
+	if len(v.Version) > 0 {
+		config.Version = &http.Version{Value: v.Version}
 	}
 
-	if len(this.Method) > 0 {
-		config.Method = &http.Method{Value: this.Method}
+	if len(v.Method) > 0 {
+		config.Method = &http.Method{Value: v.Method}
 	}
 
-	if len(this.Path) > 0 {
-		config.Uri = append([]string(nil), (this.Path)...)
+	if len(v.Path) > 0 {
+		config.Uri = append([]string(nil), (v.Path)...)
 	}
 
-	if len(this.Headers) > 0 {
-		config.Header = make([]*http.Header, 0, len(this.Headers))
-		for key, value := range this.Headers {
+	if len(v.Headers) > 0 {
+		config.Header = make([]*http.Header, 0, len(v.Headers))
+		for key, value := range v.Headers {
 			if value == nil {
 				return nil, errors.New("Empty HTTP header value: " + key)
 			}
@@ -106,7 +106,7 @@ type HTTPAuthenticatorResponse struct {
 	Headers map[string]*StringList `json:"headers"`
 }
 
-func (this *HTTPAuthenticatorResponse) Build() (*http.ResponseConfig, error) {
+func (v *HTTPAuthenticatorResponse) Build() (*http.ResponseConfig, error) {
 	config := &http.ResponseConfig{
 		Header: []*http.Header{
 			{
@@ -128,26 +128,26 @@ func (this *HTTPAuthenticatorResponse) Build() (*http.ResponseConfig, error) {
 		},
 	}
 
-	if len(this.Version) > 0 {
-		config.Version = &http.Version{Value: this.Version}
+	if len(v.Version) > 0 {
+		config.Version = &http.Version{Value: v.Version}
 	}
 
-	if len(this.Status) > 0 || len(this.Reason) > 0 {
+	if len(v.Status) > 0 || len(v.Reason) > 0 {
 		config.Status = &http.Status{
 			Code:   "200",
 			Reason: "OK",
 		}
-		if len(this.Status) > 0 {
-			config.Status.Code = this.Status
+		if len(v.Status) > 0 {
+			config.Status.Code = v.Status
 		}
-		if len(this.Reason) > 0 {
-			config.Status.Reason = this.Reason
+		if len(v.Reason) > 0 {
+			config.Status.Reason = v.Reason
 		}
 	}
 
-	if len(this.Headers) > 0 {
-		config.Header = make([]*http.Header, 0, len(this.Headers))
-		for key, value := range this.Headers {
+	if len(v.Headers) > 0 {
+		config.Header = make([]*http.Header, 0, len(v.Headers))
+		for key, value := range v.Headers {
 			if value == nil {
 				return nil, errors.New("Empty HTTP header value: " + key)
 			}
@@ -166,15 +166,15 @@ type HTTPAuthenticator struct {
 	Response HTTPAuthenticatorResponse `json:"response"`
 }
 
-func (this *HTTPAuthenticator) Build() (*loader.TypedSettings, error) {
+func (v *HTTPAuthenticator) Build() (*loader.TypedSettings, error) {
 	config := new(http.Config)
-	requestConfig, err := this.Request.Build()
+	requestConfig, err := v.Request.Build()
 	if err != nil {
 		return nil, err
 	}
 	config.Request = requestConfig
 
-	responseConfig, err := this.Response.Build()
+	responseConfig, err := v.Response.Build()
 	if err != nil {
 		return nil, err
 	}

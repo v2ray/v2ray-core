@@ -142,16 +142,16 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	return vpoint, nil
 }
 
-func (this *Point) Close() {
-	for _, inbound := range this.inboundHandlers {
+func (v *Point) Close() {
+	for _, inbound := range v.inboundHandlers {
 		inbound.Close()
 	}
 }
 
 // Start starts the Point server, and return any error during the process.
 // In the case of any errors, the state of the server is unpredicatable.
-func (this *Point) Start() error {
-	for _, inbound := range this.inboundHandlers {
+func (v *Point) Start() error {
+	for _, inbound := range v.inboundHandlers {
 		err := inbound.Start()
 		if err != nil {
 			return err
@@ -162,8 +162,8 @@ func (this *Point) Start() error {
 	return nil
 }
 
-func (this *Point) GetHandler(tag string) (proxy.InboundHandler, int) {
-	handler, found := this.taggedInboundHandlers[tag]
+func (v *Point) GetHandler(tag string) (proxy.InboundHandler, int) {
+	handler, found := v.taggedInboundHandlers[tag]
 	if !found {
 		log.Warning("V2Ray: Unable to find an inbound handler with tag: ", tag)
 		return nil, 0
@@ -171,6 +171,6 @@ func (this *Point) GetHandler(tag string) (proxy.InboundHandler, int) {
 	return handler.GetConnectionHandler()
 }
 
-func (this *Point) Release() {
+func (v *Point) Release() {
 
 }

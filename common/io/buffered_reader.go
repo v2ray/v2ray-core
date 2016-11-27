@@ -22,47 +22,47 @@ func NewBufferedReader(rawReader io.Reader) *BufferedReader {
 	}
 }
 
-func (this *BufferedReader) Release() {
-	this.Lock()
-	defer this.Unlock()
+func (v *BufferedReader) Release() {
+	v.Lock()
+	defer v.Unlock()
 
-	this.buffer.Release()
-	this.buffer = nil
-	this.reader = nil
+	v.buffer.Release()
+	v.buffer = nil
+	v.reader = nil
 }
 
-func (this *BufferedReader) Cached() bool {
-	return this.cached
+func (v *BufferedReader) Cached() bool {
+	return v.cached
 }
 
-func (this *BufferedReader) SetCached(cached bool) {
-	this.cached = cached
+func (v *BufferedReader) SetCached(cached bool) {
+	v.cached = cached
 }
 
-func (this *BufferedReader) Read(b []byte) (int, error) {
-	this.Lock()
-	defer this.Unlock()
+func (v *BufferedReader) Read(b []byte) (int, error) {
+	v.Lock()
+	defer v.Unlock()
 
-	if this.reader == nil {
+	if v.reader == nil {
 		return 0, io.EOF
 	}
 
-	if !this.cached {
-		if !this.buffer.IsEmpty() {
-			return this.buffer.Read(b)
+	if !v.cached {
+		if !v.buffer.IsEmpty() {
+			return v.buffer.Read(b)
 		}
-		return this.reader.Read(b)
+		return v.reader.Read(b)
 	}
-	if this.buffer.IsEmpty() {
-		_, err := this.buffer.FillFrom(this.reader)
+	if v.buffer.IsEmpty() {
+		_, err := v.buffer.FillFrom(v.reader)
 		if err != nil {
 			return 0, err
 		}
 	}
 
-	if this.buffer.IsEmpty() {
+	if v.buffer.IsEmpty() {
 		return 0, nil
 	}
 
-	return this.buffer.Read(b)
+	return v.buffer.Read(b)
 }

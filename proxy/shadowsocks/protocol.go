@@ -364,15 +364,15 @@ type UDPReader struct {
 	User   *protocol.User
 }
 
-func (this *UDPReader) Read() (*alloc.Buffer, error) {
+func (v *UDPReader) Read() (*alloc.Buffer, error) {
 	buffer := alloc.NewSmallBuffer()
-	nBytes, err := this.Reader.Read(buffer.Value)
+	nBytes, err := v.Reader.Read(buffer.Value)
 	if err != nil {
 		buffer.Release()
 		return nil, err
 	}
 	buffer.Slice(0, nBytes)
-	_, payload, err := DecodeUDPPacket(this.User, buffer)
+	_, payload, err := DecodeUDPPacket(v.User, buffer)
 	if err != nil {
 		buffer.Release()
 		return nil, err
@@ -380,7 +380,7 @@ func (this *UDPReader) Read() (*alloc.Buffer, error) {
 	return payload, nil
 }
 
-func (this *UDPReader) Release() {
+func (v *UDPReader) Release() {
 }
 
 type UDPWriter struct {
@@ -388,16 +388,16 @@ type UDPWriter struct {
 	Request *protocol.RequestHeader
 }
 
-func (this *UDPWriter) Write(buffer *alloc.Buffer) error {
-	payload, err := EncodeUDPPacket(this.Request, buffer)
+func (v *UDPWriter) Write(buffer *alloc.Buffer) error {
+	payload, err := EncodeUDPPacket(v.Request, buffer)
 	if err != nil {
 		return err
 	}
-	_, err = this.Writer.Write(payload.Value)
+	_, err = v.Writer.Write(payload.Value)
 	payload.Release()
 	return err
 }
 
-func (this *UDPWriter) Release() {
+func (v *UDPWriter) Release() {
 
 }

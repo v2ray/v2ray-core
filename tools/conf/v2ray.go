@@ -38,28 +38,28 @@ type InboundConnectionConfig struct {
 	Tag           string          `json:"tag"`
 }
 
-func (this *InboundConnectionConfig) Build() (*core.InboundConnectionConfig, error) {
+func (v *InboundConnectionConfig) Build() (*core.InboundConnectionConfig, error) {
 	config := new(core.InboundConnectionConfig)
 	config.PortRange = &v2net.PortRange{
-		From: uint32(this.Port),
-		To:   uint32(this.Port),
+		From: uint32(v.Port),
+		To:   uint32(v.Port),
 	}
-	if this.Listen != nil {
-		if this.Listen.Family().IsDomain() {
-			return nil, errors.New("Point: Unable to listen on domain address: " + this.Listen.Domain())
+	if v.Listen != nil {
+		if v.Listen.Family().IsDomain() {
+			return nil, errors.New("Point: Unable to listen on domain address: " + v.Listen.Domain())
 		}
-		config.ListenOn = this.Listen.Build()
+		config.ListenOn = v.Listen.Build()
 	}
-	if this.StreamSetting != nil {
-		ts, err := this.StreamSetting.Build()
+	if v.StreamSetting != nil {
+		ts, err := v.StreamSetting.Build()
 		if err != nil {
 			return nil, err
 		}
 		config.StreamSettings = ts
 	}
-	config.AllowPassiveConnection = this.AllowPassive
+	config.AllowPassiveConnection = v.AllowPassive
 
-	jsonConfig, err := inboundConfigLoader.LoadWithID(this.Settings, this.Protocol)
+	jsonConfig, err := inboundConfigLoader.LoadWithID(v.Settings, v.Protocol)
 	if err != nil {
 		return nil, errors.New("Failed to load inbound config: " + err.Error())
 	}
@@ -68,8 +68,8 @@ func (this *InboundConnectionConfig) Build() (*core.InboundConnectionConfig, err
 		return nil, err
 	}
 	config.Settings = ts
-	if len(this.Tag) > 0 {
-		config.Tag = this.Tag
+	if len(v.Tag) > 0 {
+		config.Tag = v.Tag
 	}
 	return config, nil
 }
@@ -83,9 +83,9 @@ type OutboundConnectionConfig struct {
 	Tag           string          `json:"tag"`
 }
 
-func (this *OutboundConnectionConfig) Build() (*core.OutboundConnectionConfig, error) {
+func (v *OutboundConnectionConfig) Build() (*core.OutboundConnectionConfig, error) {
 	config := new(core.OutboundConnectionConfig)
-	rawConfig, err := outboundConfigLoader.LoadWithID(this.Settings, this.Protocol)
+	rawConfig, err := outboundConfigLoader.LoadWithID(v.Settings, v.Protocol)
 	if err != nil {
 		return nil, errors.New("Failed to parse outbound config: " + err.Error())
 	}
@@ -95,29 +95,29 @@ func (this *OutboundConnectionConfig) Build() (*core.OutboundConnectionConfig, e
 	}
 	config.Settings = ts
 
-	if this.SendThrough != nil {
-		address := this.SendThrough
+	if v.SendThrough != nil {
+		address := v.SendThrough
 		if address.Family().IsDomain() {
 			return nil, errors.New("Point: Unable to send through: " + address.String())
 		}
 		config.SendThrough = address.Build()
 	}
-	if this.StreamSetting != nil {
-		ss, err := this.StreamSetting.Build()
+	if v.StreamSetting != nil {
+		ss, err := v.StreamSetting.Build()
 		if err != nil {
 			return nil, err
 		}
 		config.StreamSettings = ss
 	}
-	if this.ProxySettings != nil {
-		ps, err := this.ProxySettings.Build()
+	if v.ProxySettings != nil {
+		ps, err := v.ProxySettings.Build()
 		if err != nil {
 			return nil, errors.New("Outbound: invalid proxy settings: " + err.Error())
 		}
 		config.ProxySettings = ps
 	}
-	if len(this.Tag) > 0 {
-		config.Tag = this.Tag
+	if len(v.Tag) > 0 {
+		config.Tag = v.Tag
 	}
 	return config, nil
 }
@@ -128,9 +128,9 @@ type InboundDetourAllocationConfig struct {
 	RefreshMin  *uint32 `json:"refresh"`
 }
 
-func (this *InboundDetourAllocationConfig) Build() (*core.AllocationStrategy, error) {
+func (v *InboundDetourAllocationConfig) Build() (*core.AllocationStrategy, error) {
 	config := new(core.AllocationStrategy)
-	switch strings.ToLower(this.Strategy) {
+	switch strings.ToLower(v.Strategy) {
 	case "always":
 		config.Type = core.AllocationStrategy_Always
 	case "random":
@@ -138,17 +138,17 @@ func (this *InboundDetourAllocationConfig) Build() (*core.AllocationStrategy, er
 	case "external":
 		config.Type = core.AllocationStrategy_External
 	default:
-		return nil, errors.New("Unknown allocation strategy: " + this.Strategy)
+		return nil, errors.New("Unknown allocation strategy: " + v.Strategy)
 	}
-	if this.Concurrency != nil {
+	if v.Concurrency != nil {
 		config.Concurrency = &core.AllocationStrategyConcurrency{
-			Value: *this.Concurrency,
+			Value: *v.Concurrency,
 		}
 	}
 
-	if this.RefreshMin != nil {
+	if v.RefreshMin != nil {
 		config.Refresh = &core.AllocationStrategyRefresh{
-			Value: *this.RefreshMin,
+			Value: *v.RefreshMin,
 		}
 	}
 
@@ -166,37 +166,37 @@ type InboundDetourConfig struct {
 	AllowPassive  bool                           `json:"allowPassive"`
 }
 
-func (this *InboundDetourConfig) Build() (*core.InboundConnectionConfig, error) {
+func (v *InboundDetourConfig) Build() (*core.InboundConnectionConfig, error) {
 	config := new(core.InboundConnectionConfig)
-	if this.PortRange == nil {
+	if v.PortRange == nil {
 		return nil, errors.New("Point: Port range not specified in InboundDetour.")
 	}
-	config.PortRange = this.PortRange.Build()
+	config.PortRange = v.PortRange.Build()
 
-	if this.ListenOn != nil {
-		if this.ListenOn.Family().IsDomain() {
-			return nil, errors.New("Point: Unable to listen on domain address: " + this.ListenOn.Domain())
+	if v.ListenOn != nil {
+		if v.ListenOn.Family().IsDomain() {
+			return nil, errors.New("Point: Unable to listen on domain address: " + v.ListenOn.Domain())
 		}
-		config.ListenOn = this.ListenOn.Build()
+		config.ListenOn = v.ListenOn.Build()
 	}
-	config.Tag = this.Tag
-	if this.Allocation != nil {
-		as, err := this.Allocation.Build()
+	config.Tag = v.Tag
+	if v.Allocation != nil {
+		as, err := v.Allocation.Build()
 		if err != nil {
 			return nil, err
 		}
 		config.AllocationStrategy = as
 	}
-	if this.StreamSetting != nil {
-		ss, err := this.StreamSetting.Build()
+	if v.StreamSetting != nil {
+		ss, err := v.StreamSetting.Build()
 		if err != nil {
 			return nil, err
 		}
 		config.StreamSettings = ss
 	}
-	config.AllowPassiveConnection = this.AllowPassive
+	config.AllowPassiveConnection = v.AllowPassive
 
-	rawConfig, err := inboundConfigLoader.LoadWithID(this.Settings, this.Protocol)
+	rawConfig, err := inboundConfigLoader.LoadWithID(v.Settings, v.Protocol)
 	if err != nil {
 		return nil, errors.New("Failed to load inbound detour config: " + err.Error())
 	}
@@ -217,27 +217,27 @@ type OutboundDetourConfig struct {
 	ProxySettings *ProxyConfig    `json:"proxySettings"`
 }
 
-func (this *OutboundDetourConfig) Build() (*core.OutboundConnectionConfig, error) {
+func (v *OutboundDetourConfig) Build() (*core.OutboundConnectionConfig, error) {
 	config := new(core.OutboundConnectionConfig)
-	config.Tag = this.Tag
+	config.Tag = v.Tag
 
-	if this.SendThrough != nil {
-		address := this.SendThrough
+	if v.SendThrough != nil {
+		address := v.SendThrough
 		if address.Family().IsDomain() {
 			return nil, errors.New("Point: Unable to send through: " + address.String())
 		}
 		config.SendThrough = address.Build()
 	}
 
-	if this.StreamSetting != nil {
-		ss, err := this.StreamSetting.Build()
+	if v.StreamSetting != nil {
+		ss, err := v.StreamSetting.Build()
 		if err != nil {
 			return nil, err
 		}
 		config.StreamSettings = ss
 	}
 
-	rawConfig, err := outboundConfigLoader.LoadWithID(this.Settings, this.Protocol)
+	rawConfig, err := outboundConfigLoader.LoadWithID(v.Settings, v.Protocol)
 	if err != nil {
 		return nil, errors.New("Failed to parse to outbound detour config: " + err.Error())
 	}
@@ -246,8 +246,8 @@ func (this *OutboundDetourConfig) Build() (*core.OutboundConnectionConfig, error
 		return nil, err
 	}
 
-	if this.ProxySettings != nil {
-		ps, err := this.ProxySettings.Build()
+	if v.ProxySettings != nil {
+		ps, err := v.ProxySettings.Build()
 		if err != nil {
 			return nil, errors.New("OutboundDetour: invalid proxy settings: " + err.Error())
 		}
@@ -269,48 +269,48 @@ type Config struct {
 	Transport       *TransportConfig          `json:"transport"`
 }
 
-func (this *Config) Build() (*core.Config, error) {
+func (v *Config) Build() (*core.Config, error) {
 	config := new(core.Config)
 
-	if this.LogConfig != nil {
-		config.Log = this.LogConfig.Build()
+	if v.LogConfig != nil {
+		config.Log = v.LogConfig.Build()
 	}
 
-	if this.Transport != nil {
-		ts, err := this.Transport.Build()
+	if v.Transport != nil {
+		ts, err := v.Transport.Build()
 		if err != nil {
 			return nil, err
 		}
 		config.Transport = ts
 	}
 
-	if this.RouterConfig != nil {
-		routerConfig, err := this.RouterConfig.Build()
+	if v.RouterConfig != nil {
+		routerConfig, err := v.RouterConfig.Build()
 		if err != nil {
 			return nil, err
 		}
 		config.App = append(config.App, loader.NewTypedSettings(routerConfig))
 	}
 
-	if this.DNSConfig != nil {
-		config.App = append(config.App, loader.NewTypedSettings(this.DNSConfig.Build()))
+	if v.DNSConfig != nil {
+		config.App = append(config.App, loader.NewTypedSettings(v.DNSConfig.Build()))
 	}
 
-	if this.InboundConfig == nil {
+	if v.InboundConfig == nil {
 		return nil, errors.New("No inbound config specified.")
 	}
 
-	if this.InboundConfig.Port == 0 && this.Port > 0 {
-		this.InboundConfig.Port = this.Port
+	if v.InboundConfig.Port == 0 && v.Port > 0 {
+		v.InboundConfig.Port = v.Port
 	}
 
-	ic, err := this.InboundConfig.Build()
+	ic, err := v.InboundConfig.Build()
 	if err != nil {
 		return nil, err
 	}
 	config.Inbound = append(config.Inbound, ic)
 
-	for _, rawInboundConfig := range this.InboundDetours {
+	for _, rawInboundConfig := range v.InboundDetours {
 		ic, err := rawInboundConfig.Build()
 		if err != nil {
 			return nil, err
@@ -318,13 +318,13 @@ func (this *Config) Build() (*core.Config, error) {
 		config.Inbound = append(config.Inbound, ic)
 	}
 
-	oc, err := this.OutboundConfig.Build()
+	oc, err := v.OutboundConfig.Build()
 	if err != nil {
 		return nil, err
 	}
 	config.Outbound = append(config.Outbound, oc)
 
-	for _, rawOutboundConfig := range this.OutboundDetours {
+	for _, rawOutboundConfig := range v.OutboundDetours {
 		oc, err := rawOutboundConfig.Build()
 		if err != nil {
 			return nil, err

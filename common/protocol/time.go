@@ -9,8 +9,8 @@ import (
 
 type Timestamp int64
 
-func (this Timestamp) Bytes(b []byte) []byte {
-	return serial.Int64ToBytes(int64(this), b)
+func (v Timestamp) Bytes(b []byte) []byte {
+	return serial.Int64ToBytes(int64(v), b)
 }
 
 type TimestampGenerator func() Timestamp

@@ -55,56 +55,56 @@ func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandler
 }
 
 // Port implements InboundHandler.Port().
-func (this *Server) Port() v2net.Port {
-	return this.meta.Port
+func (v *Server) Port() v2net.Port {
+	return v.meta.Port
 }
 
 // Close implements InboundHandler.Close().
-func (this *Server) Close() {
-	this.accepting = false
-	if this.tcpListener != nil {
-		this.tcpMutex.Lock()
-		this.tcpListener.Close()
-		this.tcpListener = nil
-		this.tcpMutex.Unlock()
+func (v *Server) Close() {
+	v.accepting = false
+	if v.tcpListener != nil {
+		v.tcpMutex.Lock()
+		v.tcpListener.Close()
+		v.tcpListener = nil
+		v.tcpMutex.Unlock()
 	}
-	if this.udpHub != nil {
-		this.udpMutex.Lock()
-		this.udpHub.Close()
-		this.udpHub = nil
-		this.udpMutex.Unlock()
+	if v.udpHub != nil {
+		v.udpMutex.Lock()
+		v.udpHub.Close()
+		v.udpHub = nil
+		v.udpMutex.Unlock()
 	}
 }
 
 // Listen implements InboundHandler.Listen().
-func (this *Server) Start() error {
-	if this.accepting {
+func (v *Server) Start() error {
+	if v.accepting {
 		return nil
 	}
 
 	listener, err := internet.ListenTCP(
-		this.meta.Address,
-		this.meta.Port,
-		this.handleConnection,
-		this.meta.StreamSettings)
+		v.meta.Address,
+		v.meta.Port,
+		v.handleConnection,
+		v.meta.StreamSettings)
 	if err != nil {
-		log.Error("Socks: failed to listen on ", this.meta.Address, ":", this.meta.Port, ": ", err)
+		log.Error("Socks: failed to listen on ", v.meta.Address, ":", v.meta.Port, ": ", err)
 		return err
 	}
-	this.accepting = true
-	this.tcpMutex.Lock()
-	this.tcpListener = listener
-	this.tcpMutex.Unlock()
-	if this.config.UdpEnabled {
-		this.listenUDP()
+	v.accepting = true
+	v.tcpMutex.Lock()
+	v.tcpListener = listener
+	v.tcpMutex.Unlock()
+	if v.config.UdpEnabled {
+		v.listenUDP()
 	}
 	return nil
 }
 
-func (this *Server) handleConnection(connection internet.Connection) {
+func (v *Server) handleConnection(connection internet.Connection) {
 	defer connection.Close()
 
-	timedReader := v2net.NewTimeOutReader(this.config.Timeout, connection)
+	timedReader := v2net.NewTimeOutReader(v.config.Timeout, connection)
 	reader := v2io.NewBufferedReader(timedReader)
 	defer reader.Release()
 
@@ -121,15 +121,15 @@ func (this *Server) handleConnection(connection internet.Connection) {
 
 	clientAddr := v2net.DestinationFromAddr(connection.RemoteAddr())
 	if err != nil && err == protocol.Socks4Downgrade {
-		this.handleSocks4(clientAddr, reader, writer, auth4)
+		v.handleSocks4(clientAddr, reader, writer, auth4)
 	} else {
-		this.handleSocks5(clientAddr, reader, writer, auth)
+		v.handleSocks5(clientAddr, reader, writer, auth)
 	}
 }
 
-func (this *Server) handleSocks5(clientAddr v2net.Destination, reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks5AuthenticationRequest) error {
+func (v *Server) handleSocks5(clientAddr v2net.Destination, reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks5AuthenticationRequest) error {
 	expectedAuthMethod := protocol.AuthNotRequired
-	if this.config.AuthType == AuthType_PASSWORD {
+	if v.config.AuthType == AuthType_PASSWORD {
 		expectedAuthMethod = protocol.AuthUserPass
 	}
 
@@ -152,14 +152,14 @@ func (this *Server) handleSocks5(clientAddr v2net.Destination, reader *v2io.Buff
 		log.Error("Socks: failed to write authentication: ", err)
 		return err
 	}
-	if this.config.AuthType == AuthType_PASSWORD {
+	if v.config.AuthType == AuthType_PASSWORD {
 		upRequest, err := protocol.ReadUserPassRequest(reader)
 		if err != nil {
 			log.Warning("Socks: failed to read username and password: ", err)
 			return err
 		}
 		status := byte(0)
-		if !this.config.HasAccount(upRequest.Username(), upRequest.Password()) {
+		if !v.config.HasAccount(upRequest.Username(), upRequest.Password()) {
 			status = byte(0xFF)
 		}
 		upResponse := protocol.NewSocks5UserPassResponse(status)
@@ -182,8 +182,8 @@ func (this *Server) handleSocks5(clientAddr v2net.Destination, reader *v2io.Buff
 		return err
 	}
 
-	if request.Command == protocol.CmdUdpAssociate && this.config.UdpEnabled {
-		return this.handleUDP(reader, writer)
+	if request.Command == protocol.CmdUdpAssociate && v.config.UdpEnabled {
+		return v.handleUDP(reader, writer)
 	}
 
 	if request.Command == protocol.CmdBind || request.Command == protocol.CmdUdpAssociate {
@@ -222,20 +222,20 @@ func (this *Server) handleSocks5(clientAddr v2net.Destination, reader *v2io.Buff
 	session := &proxy.SessionInfo{
 		Source:      clientAddr,
 		Destination: dest,
-		Inbound:     this.meta,
+		Inbound:     v.meta,
 	}
 	log.Info("Socks: TCP Connect request to ", dest)
 	log.Access(clientAddr, dest, log.AccessAccepted, "")
 
-	this.transport(reader, writer, session)
+	v.transport(reader, writer, session)
 	return nil
 }
 
-func (this *Server) handleUDP(reader io.Reader, writer *v2io.BufferedWriter) error {
+func (v *Server) handleUDP(reader io.Reader, writer *v2io.BufferedWriter) error {
 	response := protocol.NewSocks5Response()
 	response.Error = protocol.ErrorSuccess
 
-	udpAddr := this.udpAddress
+	udpAddr := v.udpAddress
 
 	response.Port = udpAddr.Port
 	switch udpAddr.Address.Family() {
@@ -255,7 +255,7 @@ func (this *Server) handleUDP(reader io.Reader, writer *v2io.BufferedWriter) err
 		return err
 	}
 
-	// The TCP connection closes after this method returns. We need to wait until
+	// The TCP connection closes after v method returns. We need to wait until
 	// the client closes it.
 	// TODO: get notified from UDP part
 	<-time.After(5 * time.Minute)
@@ -263,7 +263,7 @@ func (this *Server) handleUDP(reader io.Reader, writer *v2io.BufferedWriter) err
 	return nil
 }
 
-func (this *Server) handleSocks4(clientAddr v2net.Destination, reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks4AuthenticationRequest) error {
+func (v *Server) handleSocks4(clientAddr v2net.Destination, reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks4AuthenticationRequest) error {
 	result := protocol.Socks4RequestGranted
 	if auth.Command == protocol.CmdBind {
 		result = protocol.Socks4RequestRejected
@@ -285,15 +285,15 @@ func (this *Server) handleSocks4(clientAddr v2net.Destination, reader *v2io.Buff
 	session := &proxy.SessionInfo{
 		Source:      clientAddr,
 		Destination: dest,
-		Inbound:     this.meta,
+		Inbound:     v.meta,
 	}
 	log.Access(clientAddr, dest, log.AccessAccepted, "")
-	this.transport(reader, writer, session)
+	v.transport(reader, writer, session)
 	return nil
 }
 
-func (this *Server) transport(reader io.Reader, writer io.Writer, session *proxy.SessionInfo) {
-	ray := this.packetDispatcher.DispatchToOutbound(session)
+func (v *Server) transport(reader io.Reader, writer io.Writer, session *proxy.SessionInfo) {
+	ray := v.packetDispatcher.DispatchToOutbound(session)
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 
@@ -321,13 +321,13 @@ func (this *Server) transport(reader io.Reader, writer io.Writer, session *proxy
 
 type ServerFactory struct{}
 
-func (this *ServerFactory) StreamCapability() v2net.NetworkList {
+func (v *ServerFactory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
 		Network: []v2net.Network{v2net.Network_RawTCP},
 	}
 }
 
-func (this *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
+func (v *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
 	return NewServer(rawConfig.(*ServerConfig), space, meta), nil
 }
 

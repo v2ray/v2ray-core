@@ -4,10 +4,10 @@ import (
 	"strings"
 )
 
-func (this *Assert) String(value string) *StringSubject {
+func (v *Assert) String(value string) *StringSubject {
 	return &StringSubject{
 		Subject: Subject{
-			a:    this,
+			a:    v,
 			disp: value,
 		},
 		value: value,

@@ -79,10 +79,10 @@ func ListenTCP(address v2net.Address, port v2net.Port, options internet.ListenOp
 	return l, nil
 }
 
-func (this *TCPListener) Accept() (internet.Connection, error) {
-	for this.acccepting {
+func (v *TCPListener) Accept() (internet.Connection, error) {
+	for v.acccepting {
 		select {
-		case connErr, open := <-this.awaitingConns:
+		case connErr, open := <-v.awaitingConns:
 			if !open {
 				return nil, ErrClosedListener
 			}
@@ -90,29 +90,29 @@ func (this *TCPListener) Accept() (internet.Connection, error) {
 				return nil, connErr.err
 			}
 			conn := connErr.conn
-			return NewConnection(internal.ConnectionId{}, conn, this, this.config), nil
+			return NewConnection(internal.ConnectionId{}, conn, v, v.config), nil
 		case <-time.After(time.Second * 2):
 		}
 	}
 	return nil, ErrClosedListener
 }
 
-func (this *TCPListener) KeepAccepting() {
-	for this.acccepting {
-		conn, err := this.listener.Accept()
-		this.Lock()
-		if !this.acccepting {
-			this.Unlock()
+func (v *TCPListener) KeepAccepting() {
+	for v.acccepting {
+		conn, err := v.listener.Accept()
+		v.Lock()
+		if !v.acccepting {
+			v.Unlock()
 			break
 		}
-		if this.tlsConfig != nil {
-			conn = tls.Server(conn, this.tlsConfig)
+		if v.tlsConfig != nil {
+			conn = tls.Server(conn, v.tlsConfig)
 		}
-		if this.authConfig != nil {
-			conn = this.authConfig.Server(conn)
+		if v.authConfig != nil {
+			conn = v.authConfig.Server(conn)
 		}
 		select {
-		case this.awaitingConns <- &ConnectionWithError{
+		case v.awaitingConns <- &ConnectionWithError{
 			conn: conn,
 			err:  err,
 		}:
@@ -122,34 +122,34 @@ func (this *TCPListener) KeepAccepting() {
 			}
 		}
 
-		this.Unlock()
+		v.Unlock()
 	}
 }
 
-func (this *TCPListener) Put(id internal.ConnectionId, conn net.Conn) {
-	this.Lock()
-	defer this.Unlock()
-	if !this.acccepting {
+func (v *TCPListener) Put(id internal.ConnectionId, conn net.Conn) {
+	v.Lock()
+	defer v.Unlock()
+	if !v.acccepting {
 		return
 	}
 	select {
-	case this.awaitingConns <- &ConnectionWithError{conn: conn}:
+	case v.awaitingConns <- &ConnectionWithError{conn: conn}:
 	default:
 		conn.Close()
 	}
 }
 
-func (this *TCPListener) Addr() net.Addr {
-	return this.listener.Addr()
+func (v *TCPListener) Addr() net.Addr {
+	return v.listener.Addr()
 }
 
-func (this *TCPListener) Close() error {
-	this.Lock()
-	defer this.Unlock()
-	this.acccepting = false
-	this.listener.Close()
-	close(this.awaitingConns)
-	for connErr := range this.awaitingConns {
+func (v *TCPListener) Close() error {
+	v.Lock()
+	defer v.Unlock()
+	v.acccepting = false
+	v.listener.Close()
+	close(v.awaitingConns)
+	for connErr := range v.awaitingConns {
 		if connErr.conn != nil {
 			go connErr.conn.Close()
 		}
@@ -162,8 +162,8 @@ type RawTCPListener struct {
 	listener  *net.TCPListener
 }
 
-func (this *RawTCPListener) Accept() (internet.Connection, error) {
-	conn, err := this.listener.AcceptTCP()
+func (v *RawTCPListener) Accept() (internet.Connection, error) {
+	conn, err := v.listener.AcceptTCP()
 	if err != nil {
 		return nil, err
 	}
@@ -172,13 +172,13 @@ func (this *RawTCPListener) Accept() (internet.Connection, error) {
 	}, nil
 }
 
-func (this *RawTCPListener) Addr() net.Addr {
-	return this.listener.Addr()
+func (v *RawTCPListener) Addr() net.Addr {
+	return v.listener.Addr()
 }
 
-func (this *RawTCPListener) Close() error {
-	this.accepting = false
-	this.listener.Close()
+func (v *RawTCPListener) Close() error {
+	v.accepting = false
+	v.listener.Close()
 	return nil
 }
 

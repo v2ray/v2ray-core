@@ -14,23 +14,23 @@ type UTP struct {
 	connectionId uint16
 }
 
-func (this *UTP) Overhead() int {
+func (v *UTP) Overhead() int {
 	return 4
 }
 
-func (this *UTP) Open(payload *alloc.Buffer) bool {
-	payload.SliceFrom(this.Overhead())
+func (v *UTP) Open(payload *alloc.Buffer) bool {
+	payload.SliceFrom(v.Overhead())
 	return true
 }
 
-func (this *UTP) Seal(payload *alloc.Buffer) {
-	payload.PrependUint16(this.connectionId)
-	payload.PrependBytes(this.header, this.extension)
+func (v *UTP) Seal(payload *alloc.Buffer) {
+	payload.PrependUint16(v.connectionId)
+	payload.PrependBytes(v.header, v.extension)
 }
 
 type UTPFactory struct{}
 
-func (this UTPFactory) Create(rawSettings interface{}) internet.Authenticator {
+func (v UTPFactory) Create(rawSettings interface{}) internet.Authenticator {
 	return &UTP{
 		header:       1,
 		extension:    0,

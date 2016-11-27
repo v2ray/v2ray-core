@@ -16,14 +16,14 @@ type RawConnection struct {
 	net.TCPConn
 }
 
-func (this *RawConnection) Reusable() bool {
+func (v *RawConnection) Reusable() bool {
 	return false
 }
 
-func (this *RawConnection) SetReusable(b bool) {}
+func (v *RawConnection) SetReusable(b bool) {}
 
-func (this *RawConnection) SysFd() (int, error) {
-	return internal.GetSysFd(&this.TCPConn)
+func (v *RawConnection) SysFd() (int, error) {
+	return internal.GetSysFd(&v.TCPConn)
 }
 
 type Connection struct {
@@ -44,65 +44,65 @@ func NewConnection(id internal.ConnectionId, conn net.Conn, manager ConnectionMa
 	}
 }
 
-func (this *Connection) Read(b []byte) (int, error) {
-	if this == nil || this.conn == nil {
+func (v *Connection) Read(b []byte) (int, error) {
+	if v == nil || v.conn == nil {
 		return 0, io.EOF
 	}
 
-	return this.conn.Read(b)
+	return v.conn.Read(b)
 }
 
-func (this *Connection) Write(b []byte) (int, error) {
-	if this == nil || this.conn == nil {
+func (v *Connection) Write(b []byte) (int, error) {
+	if v == nil || v.conn == nil {
 		return 0, io.ErrClosedPipe
 	}
-	return this.conn.Write(b)
+	return v.conn.Write(b)
 }
 
-func (this *Connection) Close() error {
-	if this == nil || this.conn == nil {
+func (v *Connection) Close() error {
+	if v == nil || v.conn == nil {
 		return io.ErrClosedPipe
 	}
-	if this.Reusable() {
-		this.listener.Put(this.id, this.conn)
+	if v.Reusable() {
+		v.listener.Put(v.id, v.conn)
 		return nil
 	}
-	err := this.conn.Close()
-	this.conn = nil
+	err := v.conn.Close()
+	v.conn = nil
 	return err
 }
 
-func (this *Connection) LocalAddr() net.Addr {
-	return this.conn.LocalAddr()
+func (v *Connection) LocalAddr() net.Addr {
+	return v.conn.LocalAddr()
 }
 
-func (this *Connection) RemoteAddr() net.Addr {
-	return this.conn.RemoteAddr()
+func (v *Connection) RemoteAddr() net.Addr {
+	return v.conn.RemoteAddr()
 }
 
-func (this *Connection) SetDeadline(t time.Time) error {
-	return this.conn.SetDeadline(t)
+func (v *Connection) SetDeadline(t time.Time) error {
+	return v.conn.SetDeadline(t)
 }
 
-func (this *Connection) SetReadDeadline(t time.Time) error {
-	return this.conn.SetReadDeadline(t)
+func (v *Connection) SetReadDeadline(t time.Time) error {
+	return v.conn.SetReadDeadline(t)
 }
 
-func (this *Connection) SetWriteDeadline(t time.Time) error {
-	return this.conn.SetWriteDeadline(t)
+func (v *Connection) SetWriteDeadline(t time.Time) error {
+	return v.conn.SetWriteDeadline(t)
 }
 
-func (this *Connection) SetReusable(reusable bool) {
-	if !this.config.ConnectionReuse.IsEnabled() {
+func (v *Connection) SetReusable(reusable bool) {
+	if !v.config.ConnectionReuse.IsEnabled() {
 		return
 	}
-	this.reusable = reusable
+	v.reusable = reusable
 }
 
-func (this *Connection) Reusable() bool {
-	return this.reusable
+func (v *Connection) Reusable() bool {
+	return v.reusable
 }
 
-func (this *Connection) SysFd() (int, error) {
-	return internal.GetSysFd(this.conn)
+func (v *Connection) SysFd() (int, error) {
+	return internal.GetSysFd(v.conn)
 }

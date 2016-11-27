@@ -5,11 +5,11 @@ import (
 )
 
 // Apply applies this Config.
-func (this *Config) Apply() error {
-	if this == nil {
+func (v *Config) Apply() error {
+	if v == nil {
 		return nil
 	}
-	if err := internet.ApplyGlobalNetworkSettings(this.NetworkSettings); err != nil {
+	if err := internet.ApplyGlobalNetworkSettings(v.NetworkSettings); err != nil {
 		return err
 	}
 	return nil

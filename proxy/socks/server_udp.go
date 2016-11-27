@@ -9,21 +9,21 @@ import (
 	"v2ray.com/core/transport/internet/udp"
 )
 
-func (this *Server) listenUDP() error {
-	this.udpServer = udp.NewUDPServer(this.packetDispatcher)
-	udpHub, err := udp.ListenUDP(this.meta.Address, this.meta.Port, udp.ListenOption{Callback: this.handleUDPPayload})
+func (v *Server) listenUDP() error {
+	v.udpServer = udp.NewUDPServer(v.packetDispatcher)
+	udpHub, err := udp.ListenUDP(v.meta.Address, v.meta.Port, udp.ListenOption{Callback: v.handleUDPPayload})
 	if err != nil {
-		log.Error("Socks: Failed to listen on udp ", this.meta.Address, ":", this.meta.Port)
+		log.Error("Socks: Failed to listen on udp ", v.meta.Address, ":", v.meta.Port)
 		return err
 	}
-	this.udpMutex.Lock()
-	this.udpAddress = v2net.UDPDestination(this.config.GetNetAddress(), this.meta.Port)
-	this.udpHub = udpHub
-	this.udpMutex.Unlock()
+	v.udpMutex.Lock()
+	v.udpAddress = v2net.UDPDestination(v.config.GetNetAddress(), v.meta.Port)
+	v.udpHub = udpHub
+	v.udpMutex.Unlock()
 	return nil
 }
 
-func (this *Server) handleUDPPayload(payload *alloc.Buffer, session *proxy.SessionInfo) {
+func (v *Server) handleUDPPayload(payload *alloc.Buffer, session *proxy.SessionInfo) {
 	source := session.Source
 	log.Info("Socks: Client UDP connection from ", source)
 	request, err := protocol.ReadUDPRequest(payload.Value)
@@ -46,7 +46,7 @@ func (this *Server) handleUDPPayload(payload *alloc.Buffer, session *proxy.Sessi
 
 	log.Info("Socks: Send packet to ", request.Destination(), " with ", request.Data.Len(), " bytes")
 	log.Access(source, request.Destination, log.AccessAccepted, "")
-	this.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: request.Destination(), Inbound: this.meta}, request.Data, func(destination v2net.Destination, payload *alloc.Buffer) {
+	v.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: request.Destination(), Inbound: v.meta}, request.Data, func(destination v2net.Destination, payload *alloc.Buffer) {
 		response := &protocol.Socks5UDPRequest{
 			Fragment: 0,
 			Address:  request.Destination().Address,
@@ -58,13 +58,13 @@ func (this *Server) handleUDPPayload(payload *alloc.Buffer, session *proxy.Sessi
 		udpMessage := alloc.NewLocalBuffer(2048).Clear()
 		response.Write(udpMessage)
 
-		this.udpMutex.RLock()
-		if !this.accepting {
-			this.udpMutex.RUnlock()
+		v.udpMutex.RLock()
+		if !v.accepting {
+			v.udpMutex.RUnlock()
 			return
 		}
-		nBytes, err := this.udpHub.WriteTo(udpMessage.Value, destination)
-		this.udpMutex.RUnlock()
+		nBytes, err := v.udpHub.WriteTo(udpMessage.Value, destination)
+		v.udpMutex.RUnlock()
 		udpMessage.Release()
 		response.Data.Release()
 		if err != nil {

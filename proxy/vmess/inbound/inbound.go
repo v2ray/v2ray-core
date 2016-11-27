@@ -42,28 +42,28 @@ func NewUserByEmail(users []*protocol.User, config *DefaultConfig) *userByEmail 
 	}
 }
 
-func (this *userByEmail) Get(email string) (*protocol.User, bool) {
+func (v *userByEmail) Get(email string) (*protocol.User, bool) {
 	var user *protocol.User
 	var found bool
-	this.RLock()
-	user, found = this.cache[email]
-	this.RUnlock()
+	v.RLock()
+	user, found = v.cache[email]
+	v.RUnlock()
 	if !found {
-		this.Lock()
-		user, found = this.cache[email]
+		v.Lock()
+		user, found = v.cache[email]
 		if !found {
 			account := &vmess.Account{
 				Id:      uuid.New().String(),
-				AlterId: uint32(this.defaultAlterIDs),
+				AlterId: uint32(v.defaultAlterIDs),
 			}
 			user = &protocol.User{
-				Level:   this.defaultLevel,
+				Level:   v.defaultLevel,
 				Email:   email,
 				Account: loader.NewTypedSettings(account),
 			}
-			this.cache[email] = user
+			v.cache[email] = user
 		}
-		this.Unlock()
+		v.Unlock()
 	}
 	return user, found
 }
@@ -81,58 +81,58 @@ type VMessInboundHandler struct {
 	meta                  *proxy.InboundHandlerMeta
 }
 
-func (this *VMessInboundHandler) Port() v2net.Port {
-	return this.meta.Port
+func (v *VMessInboundHandler) Port() v2net.Port {
+	return v.meta.Port
 }
 
-func (this *VMessInboundHandler) Close() {
-	this.accepting = false
-	if this.listener != nil {
-		this.Lock()
-		this.listener.Close()
-		this.listener = nil
-		this.clients.Release()
-		this.clients = nil
-		this.Unlock()
+func (v *VMessInboundHandler) Close() {
+	v.accepting = false
+	if v.listener != nil {
+		v.Lock()
+		v.listener.Close()
+		v.listener = nil
+		v.clients.Release()
+		v.clients = nil
+		v.Unlock()
 	}
 }
 
-func (this *VMessInboundHandler) GetUser(email string) *protocol.User {
-	this.RLock()
-	defer this.RUnlock()
+func (v *VMessInboundHandler) GetUser(email string) *protocol.User {
+	v.RLock()
+	defer v.RUnlock()
 
-	if !this.accepting {
+	if !v.accepting {
 		return nil
 	}
 
-	user, existing := this.usersByEmail.Get(email)
+	user, existing := v.usersByEmail.Get(email)
 	if !existing {
-		this.clients.Add(user)
+		v.clients.Add(user)
 	}
 	return user
 }
 
-func (this *VMessInboundHandler) Start() error {
-	if this.accepting {
+func (v *VMessInboundHandler) Start() error {
+	if v.accepting {
 		return nil
 	}
 
-	tcpListener, err := internet.ListenTCP(this.meta.Address, this.meta.Port, this.HandleConnection, this.meta.StreamSettings)
+	tcpListener, err := internet.ListenTCP(v.meta.Address, v.meta.Port, v.HandleConnection, v.meta.StreamSettings)
 	if err != nil {
-		log.Error("VMess|Inbound: Unable to listen tcp ", this.meta.Address, ":", this.meta.Port, ": ", err)
+		log.Error("VMess|Inbound: Unable to listen tcp ", v.meta.Address, ":", v.meta.Port, ": ", err)
 		return err
 	}
-	this.accepting = true
-	this.Lock()
-	this.listener = tcpListener
-	this.Unlock()
+	v.accepting = true
+	v.Lock()
+	v.listener = tcpListener
+	v.Unlock()
 	return nil
 }
 
-func (this *VMessInboundHandler) HandleConnection(connection internet.Connection) {
+func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	defer connection.Close()
 
-	if !this.accepting {
+	if !v.accepting {
 		return
 	}
 
@@ -142,16 +142,16 @@ func (this *VMessInboundHandler) HandleConnection(connection internet.Connection
 	reader := v2io.NewBufferedReader(connReader)
 	defer reader.Release()
 
-	this.RLock()
-	if !this.accepting {
-		this.RUnlock()
+	v.RLock()
+	if !v.accepting {
+		v.RUnlock()
 		return
 	}
-	session := encoding.NewServerSession(this.clients)
+	session := encoding.NewServerSession(v.clients)
 	defer session.Release()
 
 	request, err := session.DecodeRequestHeader(reader)
-	this.RUnlock()
+	v.RUnlock()
 
 	if err != nil {
 		if err != io.EOF {
@@ -166,11 +166,11 @@ func (this *VMessInboundHandler) HandleConnection(connection internet.Connection
 
 	connection.SetReusable(request.Option.Has(protocol.RequestOptionConnectionReuse))
 
-	ray := this.packetDispatcher.DispatchToOutbound(&proxy.SessionInfo{
+	ray := v.packetDispatcher.DispatchToOutbound(&proxy.SessionInfo{
 		Source:      v2net.DestinationFromAddr(connection.RemoteAddr()),
 		Destination: request.Destination(),
 		User:        request.User,
-		Inbound:     this.meta,
+		Inbound:     v.meta,
 	})
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
@@ -205,7 +205,7 @@ func (this *VMessInboundHandler) HandleConnection(connection internet.Connection
 	defer writer.Release()
 
 	response := &protocol.ResponseHeader{
-		Command: this.generateCommand(request),
+		Command: v.generateCommand(request),
 	}
 
 	if connection.Reusable() {
@@ -247,13 +247,13 @@ func (this *VMessInboundHandler) HandleConnection(connection internet.Connection
 
 type Factory struct{}
 
-func (this *Factory) StreamCapability() v2net.NetworkList {
+func (v *Factory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
 		Network: []v2net.Network{v2net.Network_TCP, v2net.Network_KCP, v2net.Network_WebSocket},
 	}
 }
 
-func (this *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
+func (v *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
 	if !space.HasApp(dispatcher.APP_ID) {
 		return nil, common.ErrBadConfiguration
 	}

@@ -18,20 +18,20 @@ type InboundConnectionHandler struct {
 	ConnOutput       io.Writer
 }
 
-func (this *InboundConnectionHandler) Start() error {
+func (v *InboundConnectionHandler) Start() error {
 	return nil
 }
 
-func (this *InboundConnectionHandler) Port() v2net.Port {
-	return this.ListeningPort
+func (v *InboundConnectionHandler) Port() v2net.Port {
+	return v.ListeningPort
 }
 
-func (this *InboundConnectionHandler) Close() {
+func (v *InboundConnectionHandler) Close() {
 
 }
 
-func (this *InboundConnectionHandler) Communicate(destination v2net.Destination) error {
-	ray := this.PacketDispatcher.DispatchToOutbound(&proxy.SessionInfo{
+func (v *InboundConnectionHandler) Communicate(destination v2net.Destination) error {
+	ray := v.PacketDispatcher.DispatchToOutbound(&proxy.SessionInfo{
 		Source:      v2net.TCPDestination(v2net.LocalHostIP, v2net.Port(0)),
 		Destination: destination,
 		Inbound: &proxy.InboundHandlerMeta{
@@ -49,7 +49,7 @@ func (this *InboundConnectionHandler) Communicate(destination v2net.Destination)
 	writeFinish.Lock()
 
 	go func() {
-		v2reader := v2io.NewAdaptiveReader(this.ConnInput)
+		v2reader := v2io.NewAdaptiveReader(v.ConnInput)
 		defer v2reader.Release()
 
 		v2io.Pipe(v2reader, input)
@@ -58,7 +58,7 @@ func (this *InboundConnectionHandler) Communicate(destination v2net.Destination)
 	}()
 
 	go func() {
-		v2writer := v2io.NewAdaptiveWriter(this.ConnOutput)
+		v2writer := v2io.NewAdaptiveWriter(v.ConnOutput)
 		defer v2writer.Release()
 
 		v2io.Pipe(output, v2writer)

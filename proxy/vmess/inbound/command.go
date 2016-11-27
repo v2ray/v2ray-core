@@ -6,11 +6,11 @@ import (
 	"v2ray.com/core/proxy/vmess"
 )
 
-func (this *VMessInboundHandler) generateCommand(request *protocol.RequestHeader) protocol.ResponseCommand {
-	if this.detours != nil {
-		tag := this.detours.To
-		if this.inboundHandlerManager != nil {
-			handler, availableMin := this.inboundHandlerManager.GetHandler(tag)
+func (v *VMessInboundHandler) generateCommand(request *protocol.RequestHeader) protocol.ResponseCommand {
+	if v.detours != nil {
+		tag := v.detours.To
+		if v.inboundHandlerManager != nil {
+			handler, availableMin := v.inboundHandlerManager.GetHandler(tag)
 			inboundHandler, ok := handler.(*VMessInboundHandler)
 			if ok {
 				if availableMin > 255 {

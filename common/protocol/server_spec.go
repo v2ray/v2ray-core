@@ -19,11 +19,11 @@ func AlwaysValid() ValidationStrategy {
 	return AlwaysValidStrategy{}
 }
 
-func (this AlwaysValidStrategy) IsValid() bool {
+func (v AlwaysValidStrategy) IsValid() bool {
 	return true
 }
 
-func (this AlwaysValidStrategy) Invalidate() {}
+func (v AlwaysValidStrategy) Invalidate() {}
 
 type TimeoutValidStrategy struct {
 	until time.Time
@@ -35,12 +35,12 @@ func BeforeTime(t time.Time) ValidationStrategy {
 	}
 }
 
-func (this *TimeoutValidStrategy) IsValid() bool {
-	return this.until.After(time.Now())
+func (v *TimeoutValidStrategy) IsValid() bool {
+	return v.until.After(time.Now())
 }
 
-func (this *TimeoutValidStrategy) Invalidate() {
-	this.until = time.Time{}
+func (v *TimeoutValidStrategy) Invalidate() {
+	v.until = time.Time{}
 }
 
 type ServerSpec struct {
@@ -63,19 +63,19 @@ func NewServerSpecFromPB(spec ServerEndpoint) *ServerSpec {
 	return NewServerSpec(dest, AlwaysValid(), spec.User...)
 }
 
-func (this *ServerSpec) Destination() v2net.Destination {
-	return this.dest
+func (v *ServerSpec) Destination() v2net.Destination {
+	return v.dest
 }
 
-func (this *ServerSpec) HasUser(user *User) bool {
-	this.RLock()
-	defer this.RUnlock()
+func (v *ServerSpec) HasUser(user *User) bool {
+	v.RLock()
+	defer v.RUnlock()
 
 	accountA, err := user.GetTypedAccount()
 	if err != nil {
 		return false
 	}
-	for _, u := range this.users {
+	for _, u := range v.users {
 		accountB, err := u.GetTypedAccount()
 		if err == nil && accountA.Equals(accountB) {
 			return true
@@ -84,26 +84,26 @@ func (this *ServerSpec) HasUser(user *User) bool {
 	return false
 }
 
-func (this *ServerSpec) AddUser(user *User) {
-	if this.HasUser(user) {
+func (v *ServerSpec) AddUser(user *User) {
+	if v.HasUser(user) {
 		return
 	}
 
-	this.Lock()
-	defer this.Unlock()
+	v.Lock()
+	defer v.Unlock()
 
-	this.users = append(this.users, user)
+	v.users = append(v.users, user)
 }
 
-func (this *ServerSpec) PickUser() *User {
-	userCount := len(this.users)
-	return this.users[dice.Roll(userCount)]
+func (v *ServerSpec) PickUser() *User {
+	userCount := len(v.users)
+	return v.users[dice.Roll(userCount)]
 }
 
-func (this *ServerSpec) IsValid() bool {
-	return this.valid.IsValid()
+func (v *ServerSpec) IsValid() bool {
+	return v.valid.IsValid()
 }
 
-func (this *ServerSpec) Invalidate() {
-	this.valid.Invalidate()
+func (v *ServerSpec) Invalidate() {
+	v.valid.Invalidate()
 }

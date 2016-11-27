@@ -40,18 +40,18 @@ func UDPDestination(address Address, port Port) Destination {
 	}
 }
 
-func (this Destination) NetAddr() string {
-	return this.Address.String() + ":" + this.Port.String()
+func (v Destination) NetAddr() string {
+	return v.Address.String() + ":" + v.Port.String()
 }
 
-func (this Destination) String() string {
-	return this.Network.UrlPrefix() + ":" + this.NetAddr()
+func (v Destination) String() string {
+	return v.Network.UrlPrefix() + ":" + v.NetAddr()
 }
 
-func (this *Endpoint) AsDestination() Destination {
+func (v *Endpoint) AsDestination() Destination {
 	return Destination{
-		Network: this.Network,
-		Address: this.Address.AsAddress(),
-		Port:    Port(this.Port),
+		Network: v.Network,
+		Address: v.Address.AsAddress(),
+		Port:    Port(v.Port),
 	}
 }

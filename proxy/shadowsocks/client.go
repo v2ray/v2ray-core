@@ -33,7 +33,7 @@ func NewClient(config *ClientConfig, space app.Space, meta *proxy.OutboundHandle
 	return client, nil
 }
 
-func (this *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
+func (v *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
 	defer payload.Release()
 	defer ray.OutboundInput().Release()
 	defer ray.OutboundOutput().Close()
@@ -44,10 +44,10 @@ func (this *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffe
 	var conn internet.Connection
 
 	err := retry.ExponentialBackoff(5, 100).On(func() error {
-		server = this.serverPicker.PickServer()
+		server = v.serverPicker.PickServer()
 		dest := server.Destination()
 		dest.Network = network
-		rawConn, err := internet.Dial(this.meta.Address, dest, this.meta.GetDialerOptions())
+		rawConn, err := internet.Dial(v.meta.Address, dest, v.meta.GetDialerOptions())
 		if err != nil {
 			return err
 		}
@@ -164,12 +164,12 @@ func (this *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffe
 
 type ClientFactory struct{}
 
-func (this *ClientFactory) StreamCapability() v2net.NetworkList {
+func (v *ClientFactory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
 		Network: []v2net.Network{v2net.Network_TCP, v2net.Network_RawTCP},
 	}
 }
 
-func (this *ClientFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
+func (v *ClientFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 	return NewClient(rawConfig.(*ClientConfig), space, meta)
 }

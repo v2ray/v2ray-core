@@ -60,11 +60,11 @@ type timedReaderWorker struct {
 	connection net.Conn
 }
 
-func (this *timedReaderWorker) Read(p []byte) (int, error) {
-	deadline := time.Duration(this.timeout) * time.Second
-	this.connection.SetReadDeadline(time.Now().Add(deadline))
-	nBytes, err := this.connection.Read(p)
-	this.connection.SetReadDeadline(emptyTime)
+func (v *timedReaderWorker) Read(p []byte) (int, error) {
+	deadline := time.Duration(v.timeout) * time.Second
+	v.connection.SetReadDeadline(time.Now().Add(deadline))
+	nBytes, err := v.connection.Read(p)
+	v.connection.SetReadDeadline(emptyTime)
 	return nBytes, err
 }
 
@@ -72,6 +72,6 @@ type noOpReaderWorker struct {
 	connection net.Conn
 }
 
-func (this *noOpReaderWorker) Read(p []byte) (int, error) {
-	return this.connection.Read(p)
+func (v *noOpReaderWorker) Read(p []byte) (int, error) {
+	return v.connection.Read(p)
 }

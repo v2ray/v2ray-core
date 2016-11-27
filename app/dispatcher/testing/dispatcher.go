@@ -30,10 +30,10 @@ func NewTestPacketDispatcher(handler func(destination v2net.Destination, traffic
 	}
 }
 
-func (this *TestPacketDispatcher) DispatchToOutbound(session *proxy.SessionInfo) ray.InboundRay {
+func (v *TestPacketDispatcher) DispatchToOutbound(session *proxy.SessionInfo) ray.InboundRay {
 	traffic := ray.NewRay()
-	this.Destination <- session.Destination
-	go this.Handler(session.Destination, traffic)
+	v.Destination <- session.Destination
+	go v.Handler(session.Destination, traffic)
 
 	return traffic
 }

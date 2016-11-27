@@ -1,11 +1,11 @@
 package inbound
 
-func (this *Config) GetDefaultValue() *DefaultConfig {
-	if this.GetDefault() == nil {
+func (v *Config) GetDefaultValue() *DefaultConfig {
+	if v.GetDefault() == nil {
 		return &DefaultConfig{
 			AlterId: 32,
 			Level:   0,
 		}
 	}
-	return this.Default
+	return v.Default
 }

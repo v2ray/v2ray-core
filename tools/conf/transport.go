@@ -14,11 +14,11 @@ type TransportConfig struct {
 	WSConfig  *WebSocketConfig `json:"wsSettings"`
 }
 
-func (this *TransportConfig) Build() (*transport.Config, error) {
+func (v *TransportConfig) Build() (*transport.Config, error) {
 	config := new(transport.Config)
 
-	if this.TCPConfig != nil {
-		ts, err := this.TCPConfig.Build()
+	if v.TCPConfig != nil {
+		ts, err := v.TCPConfig.Build()
 		if err != nil {
 			return nil, errors.New("Failed to build TCP config: " + err.Error())
 		}
@@ -28,8 +28,8 @@ func (this *TransportConfig) Build() (*transport.Config, error) {
 		})
 	}
 
-	if this.KCPConfig != nil {
-		ts, err := this.KCPConfig.Build()
+	if v.KCPConfig != nil {
+		ts, err := v.KCPConfig.Build()
 		if err != nil {
 			return nil, errors.New("Failed to build KCP config: " + err.Error())
 		}
@@ -39,8 +39,8 @@ func (this *TransportConfig) Build() (*transport.Config, error) {
 		})
 	}
 
-	if this.WSConfig != nil {
-		ts, err := this.WSConfig.Build()
+	if v.WSConfig != nil {
+		ts, err := v.WSConfig.Build()
 		if err != nil {
 			return nil, errors.New("Failed to build WebSocket config: " + err.Error())
 		}

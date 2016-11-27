@@ -53,33 +53,33 @@ func NewTimedUserValidator(hasher protocol.IDHash) protocol.UserValidator {
 	return tus
 }
 
-func (this *TimedUserValidator) Release() {
-	if !this.running {
+func (v *TimedUserValidator) Release() {
+	if !v.running {
 		return
 	}
 
-	this.cancel.Cancel()
-	this.cancel.WaitForDone()
+	v.cancel.Cancel()
+	v.cancel.WaitForDone()
 
-	this.Lock()
-	defer this.Unlock()
+	v.Lock()
+	defer v.Unlock()
 
-	if !this.running {
+	if !v.running {
 		return
 	}
 
-	this.running = false
-	this.validUsers = nil
-	this.userHash = nil
-	this.ids = nil
-	this.hasher = nil
-	this.cancel = nil
+	v.running = false
+	v.validUsers = nil
+	v.userHash = nil
+	v.ids = nil
+	v.hasher = nil
+	v.cancel = nil
 }
 
-func (this *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, idx int, entry *idEntry) {
+func (v *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, idx int, entry *idEntry) {
 	var hashValue [16]byte
 	var hashValueRemoval [16]byte
-	idHash := this.hasher(entry.id.Bytes())
+	idHash := v.hasher(entry.id.Bytes())
 	for entry.lastSec <= nowSec {
 		idHash.Write(entry.lastSec.Bytes(nil))
 		idHash.Sum(hashValue[:0])
@@ -89,36 +89,36 @@ func (this *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, idx
 		idHash.Sum(hashValueRemoval[:0])
 		idHash.Reset()
 
-		this.Lock()
-		this.userHash[hashValue] = &indexTimePair{idx, entry.lastSec}
-		delete(this.userHash, hashValueRemoval)
-		this.Unlock()
+		v.Lock()
+		v.userHash[hashValue] = &indexTimePair{idx, entry.lastSec}
+		delete(v.userHash, hashValueRemoval)
+		v.Unlock()
 
 		entry.lastSec++
 		entry.lastSecRemoval++
 	}
 }
 
-func (this *TimedUserValidator) updateUserHash(interval time.Duration) {
-	this.cancel.WaitThread()
-	defer this.cancel.FinishThread()
+func (v *TimedUserValidator) updateUserHash(interval time.Duration) {
+	v.cancel.WaitThread()
+	defer v.cancel.FinishThread()
 
 	for {
 		select {
 		case now := <-time.After(interval):
 			nowSec := protocol.Timestamp(now.Unix() + cacheDurationSec)
-			for _, entry := range this.ids {
-				this.generateNewHashes(nowSec, entry.userIdx, entry)
+			for _, entry := range v.ids {
+				v.generateNewHashes(nowSec, entry.userIdx, entry)
 			}
-		case <-this.cancel.WaitForCancel():
+		case <-v.cancel.WaitForCancel():
 			return
 		}
 	}
 }
 
-func (this *TimedUserValidator) Add(user *protocol.User) error {
-	idx := len(this.validUsers)
-	this.validUsers = append(this.validUsers, user)
+func (v *TimedUserValidator) Add(user *protocol.User) error {
+	idx := len(v.validUsers)
+	v.validUsers = append(v.validUsers, user)
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
 		return err
@@ -133,8 +133,8 @@ func (this *TimedUserValidator) Add(user *protocol.User) error {
 		lastSec:        protocol.Timestamp(nowSec - cacheDurationSec),
 		lastSecRemoval: protocol.Timestamp(nowSec - cacheDurationSec*3),
 	}
-	this.generateNewHashes(protocol.Timestamp(nowSec+cacheDurationSec), idx, entry)
-	this.ids = append(this.ids, entry)
+	v.generateNewHashes(protocol.Timestamp(nowSec+cacheDurationSec), idx, entry)
+	v.ids = append(v.ids, entry)
 	for _, alterid := range account.AlterIDs {
 		entry := &idEntry{
 			id:             alterid,
@@ -142,25 +142,25 @@ func (this *TimedUserValidator) Add(user *protocol.User) error {
 			lastSec:        protocol.Timestamp(nowSec - cacheDurationSec),
 			lastSecRemoval: protocol.Timestamp(nowSec - cacheDurationSec*3),
 		}
-		this.generateNewHashes(protocol.Timestamp(nowSec+cacheDurationSec), idx, entry)
-		this.ids = append(this.ids, entry)
+		v.generateNewHashes(protocol.Timestamp(nowSec+cacheDurationSec), idx, entry)
+		v.ids = append(v.ids, entry)
 	}
 
 	return nil
 }
 
-func (this *TimedUserValidator) Get(userHash []byte) (*protocol.User, protocol.Timestamp, bool) {
-	defer this.RUnlock()
-	this.RLock()
+func (v *TimedUserValidator) Get(userHash []byte) (*protocol.User, protocol.Timestamp, bool) {
+	defer v.RUnlock()
+	v.RLock()
 
-	if !this.running {
+	if !v.running {
 		return nil, 0, false
 	}
 	var fixedSizeHash [16]byte
 	copy(fixedSizeHash[:], userHash)
-	pair, found := this.userHash[fixedSizeHash]
+	pair, found := v.userHash[fixedSizeHash]
 	if found {
-		return this.validUsers[pair.index], pair.timeSec, true
+		return v.validUsers[pair.index], pair.timeSec, true
 	}
 	return nil, 0, false
 }

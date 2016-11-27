@@ -8,39 +8,39 @@ import (
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
 
-func (this *Account) Equals(another protocol.Account) bool {
+func (v *Account) Equals(another protocol.Account) bool {
 	if account, ok := another.(*Account); ok {
-		return this.Username == account.Username
+		return v.Username == account.Username
 	}
 	return false
 }
 
-func (this *Account) AsAccount() (protocol.Account, error) {
-	return this, nil
+func (v *Account) AsAccount() (protocol.Account, error) {
+	return v, nil
 }
 
 func NewAccount() protocol.AsAccount {
 	return &Account{}
 }
 
-func (this *Account) AsAny() (*google_protobuf.Any, error) {
-	return ptypes.MarshalAny(this)
+func (v *Account) AsAny() (*google_protobuf.Any, error) {
+	return ptypes.MarshalAny(v)
 }
 
-func (this *ServerConfig) HasAccount(username, password string) bool {
-	if this.Accounts == nil {
+func (v *ServerConfig) HasAccount(username, password string) bool {
+	if v.Accounts == nil {
 		return false
 	}
-	storedPassed, found := this.Accounts[username]
+	storedPassed, found := v.Accounts[username]
 	if !found {
 		return false
 	}
 	return storedPassed == password
 }
 
-func (this *ServerConfig) GetNetAddress() v2net.Address {
-	if this.Address == nil {
+func (v *ServerConfig) GetNetAddress() v2net.Address {
+	if v.Address == nil {
 		return v2net.LocalHostIP
 	}
-	return this.Address.AsAddress()
+	return v.Address.AsAddress()
 }

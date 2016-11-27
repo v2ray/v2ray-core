@@ -17,35 +17,35 @@ var (
 type UUID [16]byte
 
 // String returns the string representation of this UUID.
-func (this *UUID) String() string {
-	return bytesToString(this.Bytes())
+func (v *UUID) String() string {
+	return bytesToString(v.Bytes())
 }
 
 // Bytes returns the bytes representation of this UUID.
-func (this *UUID) Bytes() []byte {
-	return this[:]
+func (v *UUID) Bytes() []byte {
+	return v[:]
 }
 
 // Equals returns true if this UUID equals another UUID by value.
-func (this *UUID) Equals(another *UUID) bool {
-	if this == nil && another == nil {
+func (v *UUID) Equals(another *UUID) bool {
+	if v == nil && another == nil {
 		return true
 	}
-	if this == nil || another == nil {
+	if v == nil || another == nil {
 		return false
 	}
-	return bytes.Equal(this.Bytes(), another.Bytes())
+	return bytes.Equal(v.Bytes(), another.Bytes())
 }
 
 // Next generates a deterministic random UUID based on this UUID.
-func (this *UUID) Next() *UUID {
+func (v *UUID) Next() *UUID {
 	md5hash := md5.New()
-	md5hash.Write(this.Bytes())
+	md5hash.Write(v.Bytes())
 	md5hash.Write([]byte("16167dc8-16b6-4e6d-b8bb-65dd68113a81"))
 	newid := new(UUID)
 	for {
 		md5hash.Sum(newid[:0])
-		if !newid.Equals(this) {
+		if !newid.Equals(v) {
 			return newid
 		}
 		md5hash.Write([]byte("533eff8a-4113-4b10-b5ce-0f5d76b98cd2"))

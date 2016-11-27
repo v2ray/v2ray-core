@@ -18,13 +18,13 @@ type OutboundConnectionHandler struct {
 	ConnOutput  io.Writer
 }
 
-func (this *OutboundConnectionHandler) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
+func (v *OutboundConnectionHandler) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
 	input := ray.OutboundInput()
 	output := ray.OutboundOutput()
 
-	this.Destination = destination
+	v.Destination = destination
 	if !payload.IsEmpty() {
-		this.ConnOutput.Write(payload.Value)
+		v.ConnOutput.Write(payload.Value)
 	}
 	payload.Release()
 
@@ -33,7 +33,7 @@ func (this *OutboundConnectionHandler) Dispatch(destination v2net.Destination, p
 	writeFinish.Lock()
 
 	go func() {
-		v2writer := v2io.NewAdaptiveWriter(this.ConnOutput)
+		v2writer := v2io.NewAdaptiveWriter(v.ConnOutput)
 		defer v2writer.Release()
 
 		v2io.Pipe(input, v2writer)
@@ -43,7 +43,7 @@ func (this *OutboundConnectionHandler) Dispatch(destination v2net.Destination, p
 
 	writeFinish.Lock()
 
-	v2reader := v2io.NewAdaptiveReader(this.ConnInput)
+	v2reader := v2io.NewAdaptiveReader(v.ConnInput)
 	defer v2reader.Release()
 
 	v2io.Pipe(v2reader, output)
@@ -52,6 +52,6 @@ func (this *OutboundConnectionHandler) Dispatch(destination v2net.Destination, p
 	return nil
 }
 
-func (this *OutboundConnectionHandler) Create(space app.Space, config interface{}, sendThrough v2net.Address) (proxy.OutboundHandler, error) {
-	return this, nil
+func (v *OutboundConnectionHandler) Create(space app.Space, config interface{}, sendThrough v2net.Address) (proxy.OutboundHandler, error) {
+	return v, nil
 }

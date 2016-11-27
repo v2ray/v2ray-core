@@ -9,7 +9,7 @@ import (
 	"v2ray.com/core/proxy/vmess"
 )
 
-func (this *VMessOutboundHandler) handleSwitchAccount(cmd *protocol.CommandSwitchAccount) {
+func (v *VMessOutboundHandler) handleSwitchAccount(cmd *protocol.CommandSwitchAccount) {
 	account := &vmess.Account{
 		Id:      cmd.ID.String(),
 		AlterId: uint32(cmd.AlterIds),
@@ -22,16 +22,16 @@ func (this *VMessOutboundHandler) handleSwitchAccount(cmd *protocol.CommandSwitc
 	}
 	dest := v2net.TCPDestination(cmd.Host, cmd.Port)
 	until := time.Now().Add(time.Duration(cmd.ValidMin) * time.Minute)
-	this.serverList.AddServer(protocol.NewServerSpec(dest, protocol.BeforeTime(until), user))
+	v.serverList.AddServer(protocol.NewServerSpec(dest, protocol.BeforeTime(until), user))
 }
 
-func (this *VMessOutboundHandler) handleCommand(dest v2net.Destination, cmd protocol.ResponseCommand) {
+func (v *VMessOutboundHandler) handleCommand(dest v2net.Destination, cmd protocol.ResponseCommand) {
 	switch typedCommand := cmd.(type) {
 	case *protocol.CommandSwitchAccount:
 		if typedCommand.Host == nil {
 			typedCommand.Host = dest.Address
 		}
-		this.handleSwitchAccount(typedCommand)
+		v.handleSwitchAccount(typedCommand)
 	default:
 	}
 }

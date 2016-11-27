@@ -79,7 +79,7 @@ type CommandFactory interface {
 type CommandSwitchAccountFactory struct {
 }
 
-func (this *CommandSwitchAccountFactory) Marshal(command interface{}, writer io.Writer) error {
+func (v *CommandSwitchAccountFactory) Marshal(command interface{}, writer io.Writer) error {
 	cmd, ok := command.(*protocol.CommandSwitchAccount)
 	if !ok {
 		return ErrCommandTypeMismatch
@@ -107,7 +107,7 @@ func (this *CommandSwitchAccountFactory) Marshal(command interface{}, writer io.
 	return nil
 }
 
-func (this *CommandSwitchAccountFactory) Unmarshal(data []byte) (interface{}, error) {
+func (v *CommandSwitchAccountFactory) Unmarshal(data []byte) (interface{}, error) {
 	cmd := new(protocol.CommandSwitchAccount)
 	if len(data) == 0 {
 		return nil, errors.New("VMess|SwitchAccountCommand: Insufficient length.")

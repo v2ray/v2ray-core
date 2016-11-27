@@ -25,7 +25,7 @@ type VMessOutboundHandler struct {
 	meta         *proxy.OutboundHandlerMeta
 }
 
-func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
+func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) error {
 	defer ray.OutboundInput().Release()
 	defer ray.OutboundOutput().Close()
 
@@ -33,8 +33,8 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 	var conn internet.Connection
 
 	err := retry.ExponentialBackoff(5, 100).On(func() error {
-		rec = this.serverPicker.PickServer()
-		rawConn, err := internet.Dial(this.meta.Address, rec.Destination(), this.meta.GetDialerOptions())
+		rec = v.serverPicker.PickServer()
+		rawConn, err := internet.Dial(v.meta.Address, rec.Destination(), v.meta.GetDialerOptions())
 		if err != nil {
 			return err
 		}
@@ -77,15 +77,15 @@ func (this *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *al
 
 	session := encoding.NewClientSession(protocol.DefaultIDHash)
 
-	go this.handleRequest(session, conn, request, payload, input, &requestFinish)
-	go this.handleResponse(session, conn, request, rec.Destination(), output, &responseFinish)
+	go v.handleRequest(session, conn, request, payload, input, &requestFinish)
+	go v.handleResponse(session, conn, request, rec.Destination(), output, &responseFinish)
 
 	requestFinish.Lock()
 	responseFinish.Lock()
 	return nil
 }
 
-func (this *VMessOutboundHandler) handleRequest(session *encoding.ClientSession, conn internet.Connection, request *protocol.RequestHeader, payload *alloc.Buffer, input v2io.Reader, finish *sync.Mutex) {
+func (v *VMessOutboundHandler) handleRequest(session *encoding.ClientSession, conn internet.Connection, request *protocol.RequestHeader, payload *alloc.Buffer, input v2io.Reader, finish *sync.Mutex) {
 	defer finish.Unlock()
 
 	writer := v2io.NewBufferedWriter(conn)
@@ -120,7 +120,7 @@ func (this *VMessOutboundHandler) handleRequest(session *encoding.ClientSession,
 	return
 }
 
-func (this *VMessOutboundHandler) handleResponse(session *encoding.ClientSession, conn internet.Connection, request *protocol.RequestHeader, dest v2net.Destination, output v2io.Writer, finish *sync.Mutex) {
+func (v *VMessOutboundHandler) handleResponse(session *encoding.ClientSession, conn internet.Connection, request *protocol.RequestHeader, dest v2net.Destination, output v2io.Writer, finish *sync.Mutex) {
 	defer finish.Unlock()
 
 	reader := v2io.NewBufferedReader(conn)
@@ -132,7 +132,7 @@ func (this *VMessOutboundHandler) handleResponse(session *encoding.ClientSession
 		log.Warning("VMess|Outbound: Failed to read response from ", request.Destination(), ": ", err)
 		return
 	}
-	go this.handleCommand(dest, header.Command)
+	go v.handleCommand(dest, header.Command)
 
 	if !header.Option.Has(protocol.ResponseOptionConnectionReuse) {
 		conn.SetReusable(false)
@@ -158,13 +158,13 @@ func (this *VMessOutboundHandler) handleResponse(session *encoding.ClientSession
 
 type Factory struct{}
 
-func (this *Factory) StreamCapability() v2net.NetworkList {
+func (v *Factory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
 		Network: []v2net.Network{v2net.Network_TCP, v2net.Network_KCP, v2net.Network_WebSocket},
 	}
 }
 
-func (this *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
+func (v *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 	vOutConfig := rawConfig.(*Config)
 
 	serverList := protocol.NewServerList()

@@ -12,13 +12,13 @@ type FreedomConfig struct {
 	Timeout        uint32 `json:"timeout"`
 }
 
-func (this *FreedomConfig) Build() (*loader.TypedSettings, error) {
+func (v *FreedomConfig) Build() (*loader.TypedSettings, error) {
 	config := new(freedom.Config)
 	config.DomainStrategy = freedom.Config_AS_IS
-	domainStrategy := strings.ToLower(this.DomainStrategy)
+	domainStrategy := strings.ToLower(v.DomainStrategy)
 	if domainStrategy == "useip" || domainStrategy == "use_ip" {
 		config.DomainStrategy = freedom.Config_USE_IP
 	}
-	config.Timeout = this.Timeout
+	config.Timeout = v.Timeout
 	return loader.NewTypedSettings(config), nil
 }

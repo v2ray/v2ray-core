@@ -1,13 +1,13 @@
 package assert
 
-func (this *Assert) Error(value error) *ErrorSubject {
+func (v *Assert) Error(value error) *ErrorSubject {
 	valueStr := ""
 	if value != nil {
 		valueStr = value.Error()
 	}
 	return &ErrorSubject{
 		Subject: Subject{
-			a:    this,
+			a:    v,
 			disp: valueStr,
 		},
 		value: value,

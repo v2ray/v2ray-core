@@ -58,50 +58,50 @@ func NewUDPNameServer(address v2net.Destination, dispatcher dispatcher.PacketDis
 }
 
 // Private: Visible for testing.
-func (this *UDPNameServer) Cleanup() {
+func (v *UDPNameServer) Cleanup() {
 	expiredRequests := make([]uint16, 0, 16)
 	now := time.Now()
-	this.Lock()
-	for id, r := range this.requests {
+	v.Lock()
+	for id, r := range v.requests {
 		if r.expire.Before(now) {
 			expiredRequests = append(expiredRequests, id)
 			close(r.response)
 		}
 	}
 	for _, id := range expiredRequests {
-		delete(this.requests, id)
+		delete(v.requests, id)
 	}
-	this.Unlock()
+	v.Unlock()
 	expiredRequests = nil
 }
 
 // Private: Visible for testing.
-func (this *UDPNameServer) AssignUnusedID(response chan<- *ARecord) uint16 {
+func (v *UDPNameServer) AssignUnusedID(response chan<- *ARecord) uint16 {
 	var id uint16
-	this.Lock()
-	if len(this.requests) > CleanupThreshold && this.nextCleanup.Before(time.Now()) {
-		this.nextCleanup = time.Now().Add(CleanupInterval)
-		go this.Cleanup()
+	v.Lock()
+	if len(v.requests) > CleanupThreshold && v.nextCleanup.Before(time.Now()) {
+		v.nextCleanup = time.Now().Add(CleanupInterval)
+		go v.Cleanup()
 	}
 
 	for {
 		id = uint16(dice.Roll(65536))
-		if _, found := this.requests[id]; found {
+		if _, found := v.requests[id]; found {
 			continue
 		}
 		log.Debug("DNS: Add pending request id ", id)
-		this.requests[id] = &PendingRequest{
+		v.requests[id] = &PendingRequest{
 			expire:   time.Now().Add(time.Second * 8),
 			response: response,
 		}
 		break
 	}
-	this.Unlock()
+	v.Unlock()
 	return id
 }
 
 // Private: Visible for testing.
-func (this *UDPNameServer) HandleResponse(dest v2net.Destination, payload *alloc.Buffer) {
+func (v *UDPNameServer) HandleResponse(dest v2net.Destination, payload *alloc.Buffer) {
 	msg := new(dns.Msg)
 	err := msg.Unpack(payload.Value)
 	if err != nil {
@@ -115,14 +115,14 @@ func (this *UDPNameServer) HandleResponse(dest v2net.Destination, payload *alloc
 	ttl := DefaultTTL
 	log.Debug("DNS: Handling response for id ", id, " content: ", msg.String())
 
-	this.Lock()
-	request, found := this.requests[id]
+	v.Lock()
+	request, found := v.requests[id]
 	if !found {
-		this.Unlock()
+		v.Unlock()
 		return
 	}
-	delete(this.requests, id)
-	this.Unlock()
+	delete(v.requests, id)
+	v.Unlock()
 
 	for _, rr := range msg.Answer {
 		switch rr := rr.(type) {
@@ -144,7 +144,7 @@ func (this *UDPNameServer) HandleResponse(dest v2net.Destination, payload *alloc
 	close(request.response)
 }
 
-func (this *UDPNameServer) BuildQueryA(domain string, id uint16) *alloc.Buffer {
+func (v *UDPNameServer) BuildQueryA(domain string, id uint16) *alloc.Buffer {
 	buffer := alloc.NewBuffer()
 	msg := new(dns.Msg)
 	msg.Id = id
@@ -162,24 +162,24 @@ func (this *UDPNameServer) BuildQueryA(domain string, id uint16) *alloc.Buffer {
 	return buffer
 }
 
-func (this *UDPNameServer) DispatchQuery(payload *alloc.Buffer) {
-	this.udpServer.Dispatch(&proxy.SessionInfo{Source: pseudoDestination, Destination: this.address}, payload, this.HandleResponse)
+func (v *UDPNameServer) DispatchQuery(payload *alloc.Buffer) {
+	v.udpServer.Dispatch(&proxy.SessionInfo{Source: pseudoDestination, Destination: v.address}, payload, v.HandleResponse)
 }
 
-func (this *UDPNameServer) QueryA(domain string) <-chan *ARecord {
+func (v *UDPNameServer) QueryA(domain string) <-chan *ARecord {
 	response := make(chan *ARecord, 1)
-	id := this.AssignUnusedID(response)
+	id := v.AssignUnusedID(response)
 
-	this.DispatchQuery(this.BuildQueryA(domain, id))
+	v.DispatchQuery(v.BuildQueryA(domain, id))
 
 	go func() {
 		for i := 0; i < 2; i++ {
 			time.Sleep(time.Second)
-			this.Lock()
-			_, found := this.requests[id]
-			this.Unlock()
+			v.Lock()
+			_, found := v.requests[id]
+			v.Unlock()
 			if found {
-				this.DispatchQuery(this.BuildQueryA(domain, id))
+				v.DispatchQuery(v.BuildQueryA(domain, id))
 			} else {
 				break
 			}
@@ -192,7 +192,7 @@ func (this *UDPNameServer) QueryA(domain string) <-chan *ARecord {
 type LocalNameServer struct {
 }
 
-func (this *LocalNameServer) QueryA(domain string) <-chan *ARecord {
+func (v *LocalNameServer) QueryA(domain string) <-chan *ARecord {
 	response := make(chan *ARecord, 1)
 
 	go func() {

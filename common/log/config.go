@@ -1,24 +1,24 @@
 package log
 
-func (this *Config) Apply() error {
-	if this == nil {
+func (v *Config) Apply() error {
+	if v == nil {
 		return nil
 	}
-	if this.AccessLogType == LogType_File {
-		if err := InitAccessLogger(this.AccessLogPath); err != nil {
+	if v.AccessLogType == LogType_File {
+		if err := InitAccessLogger(v.AccessLogPath); err != nil {
 			return err
 		}
 	}
 
-	if this.ErrorLogType == LogType_None {
+	if v.ErrorLogType == LogType_None {
 		SetLogLevel(LogLevel_Disabled)
 	} else {
-		if this.ErrorLogType == LogType_File {
-			if err := InitErrorLogger(this.ErrorLogPath); err != nil {
+		if v.ErrorLogType == LogType_File {
+			if err := InitErrorLogger(v.ErrorLogPath); err != nil {
 				return err
 			}
 		}
-		SetLogLevel(this.ErrorLogLevel)
+		SetLogLevel(v.ErrorLogLevel)
 	}
 
 	return nil

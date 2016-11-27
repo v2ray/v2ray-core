@@ -11,12 +11,12 @@ type RoutingEntry struct {
 	expire time.Time
 }
 
-func (this *RoutingEntry) Extend() {
-	this.expire = time.Now().Add(time.Hour)
+func (v *RoutingEntry) Extend() {
+	v.expire = time.Now().Add(time.Hour)
 }
 
-func (this *RoutingEntry) Expired() bool {
-	return this.expire.Before(time.Now())
+func (v *RoutingEntry) Expired() bool {
+	return v.expire.Before(time.Now())
 }
 
 type RoutingTable struct {
@@ -30,38 +30,38 @@ func NewRoutingTable() *RoutingTable {
 	}
 }
 
-func (this *RoutingTable) Cleanup() {
-	this.Lock()
-	defer this.Unlock()
+func (v *RoutingTable) Cleanup() {
+	v.Lock()
+	defer v.Unlock()
 
-	for key, value := range this.table {
+	for key, value := range v.table {
 		if value.Expired() {
-			delete(this.table, key)
+			delete(v.table, key)
 		}
 	}
 }
 
-func (this *RoutingTable) Set(destination string, tag string, err error) {
-	this.Lock()
-	defer this.Unlock()
+func (v *RoutingTable) Set(destination string, tag string, err error) {
+	v.Lock()
+	defer v.Unlock()
 
 	entry := &RoutingEntry{
 		tag: tag,
 		err: err,
 	}
 	entry.Extend()
-	this.table[destination] = entry
+	v.table[destination] = entry
 
-	if len(this.table) > 1000 {
-		go this.Cleanup()
+	if len(v.table) > 1000 {
+		go v.Cleanup()
 	}
 }
 
-func (this *RoutingTable) Get(destination string) (bool, string, error) {
-	this.RLock()
-	defer this.RUnlock()
+func (v *RoutingTable) Get(destination string) (bool, string, error) {
+	v.RLock()
+	defer v.RUnlock()
 
-	entry, found := this.table[destination]
+	entry, found := v.table[destination]
 	if !found {
 		return false, "", nil
 	}

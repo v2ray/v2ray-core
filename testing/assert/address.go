@@ -4,11 +4,11 @@ import (
 	v2net "v2ray.com/core/common/net"
 )
 
-func (this *Assert) Address(value v2net.Address) *AddressSubject {
+func (v *Assert) Address(value v2net.Address) *AddressSubject {
 	return &AddressSubject{
 		Subject: Subject{
 			disp: value.String(),
-			a:    this,
+			a:    v,
 		},
 		value: value,
 	}

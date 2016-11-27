@@ -60,7 +60,7 @@ func (server *Server) handleConnection(conn net.Conn) {
 	conn.Close()
 }
 
-func (this *Server) Close() {
-	this.accepting = false
-	this.listener.Close()
+func (v *Server) Close() {
+	v.accepting = false
+	v.listener.Close()
 }

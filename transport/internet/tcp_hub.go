@@ -71,22 +71,22 @@ func ListenTCP(address v2net.Address, port v2net.Port, callback ConnectionHandle
 	return hub, nil
 }
 
-func (this *TCPHub) Close() {
-	this.accepting = false
-	this.listener.Close()
+func (v *TCPHub) Close() {
+	v.accepting = false
+	v.listener.Close()
 }
 
-func (this *TCPHub) start() {
-	this.accepting = true
-	for this.accepting {
+func (v *TCPHub) start() {
+	v.accepting = true
+	for v.accepting {
 		var newConn Connection
 		err := retry.ExponentialBackoff(10, 200).On(func() error {
-			if !this.accepting {
+			if !v.accepting {
 				return nil
 			}
-			conn, err := this.listener.Accept()
+			conn, err := v.listener.Accept()
 			if err != nil {
-				if this.accepting {
+				if v.accepting {
 					log.Warning("Internet|Listener: Failed to accept new TCP connection: ", err)
 				}
 				return err
@@ -95,7 +95,7 @@ func (this *TCPHub) start() {
 			return nil
 		})
 		if err == nil && newConn != nil {
-			go this.connCallback(newConn)
+			go v.connCallback(newConn)
 		}
 	}
 }

@@ -29,20 +29,20 @@ type ID struct {
 	cmdKey [IDBytesLen]byte
 }
 
-func (this *ID) Equals(another *ID) bool {
-	return this.uuid.Equals(another.uuid)
+func (v *ID) Equals(another *ID) bool {
+	return v.uuid.Equals(another.uuid)
 }
 
-func (this *ID) Bytes() []byte {
-	return this.uuid.Bytes()
+func (v *ID) Bytes() []byte {
+	return v.uuid.Bytes()
 }
 
-func (this *ID) String() string {
-	return this.uuid.String()
+func (v *ID) String() string {
+	return v.uuid.String()
 }
 
-func (this *ID) UUID() *uuid.UUID {
-	return this.uuid
+func (v *ID) UUID() *uuid.UUID {
+	return v.uuid
 }
 
 func (v ID) CmdKey() []byte {

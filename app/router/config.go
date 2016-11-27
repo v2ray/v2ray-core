@@ -13,16 +13,16 @@ type Rule struct {
 	Condition Condition
 }
 
-func (this *Rule) Apply(session *proxy.SessionInfo) bool {
-	return this.Condition.Apply(session)
+func (v *Rule) Apply(session *proxy.SessionInfo) bool {
+	return v.Condition.Apply(session)
 }
 
-func (this *RoutingRule) BuildCondition() (Condition, error) {
+func (v *RoutingRule) BuildCondition() (Condition, error) {
 	conds := NewConditionChan()
 
-	if len(this.Domain) > 0 {
+	if len(v.Domain) > 0 {
 		anyCond := NewAnyCondition()
-		for _, domain := range this.Domain {
+		for _, domain := range v.Domain {
 			if domain.Type == Domain_Plain {
 				anyCond.Add(NewPlainDomainMatcher(domain.Value))
 			} else {
@@ -36,12 +36,12 @@ func (this *RoutingRule) BuildCondition() (Condition, error) {
 		conds.Add(anyCond)
 	}
 
-	if len(this.Cidr) > 0 {
+	if len(v.Cidr) > 0 {
 		ipv4Net := v2net.NewIPNet()
 		ipv6Cond := NewAnyCondition()
 		hasIpv6 := false
 
-		for _, ip := range this.Cidr {
+		for _, ip := range v.Cidr {
 			switch len(ip.Ip) {
 			case net.IPv4len:
 				ipv4Net.AddIP(ip.Ip, byte(ip.Prefix))
@@ -69,20 +69,20 @@ func (this *RoutingRule) BuildCondition() (Condition, error) {
 		}
 	}
 
-	if this.PortRange != nil {
-		conds.Add(NewPortMatcher(*this.PortRange))
+	if v.PortRange != nil {
+		conds.Add(NewPortMatcher(*v.PortRange))
 	}
 
-	if this.NetworkList != nil {
-		conds.Add(NewNetworkMatcher(this.NetworkList))
+	if v.NetworkList != nil {
+		conds.Add(NewNetworkMatcher(v.NetworkList))
 	}
 
-	if len(this.SourceCidr) > 0 {
+	if len(v.SourceCidr) > 0 {
 		ipv4Net := v2net.NewIPNet()
 		ipv6Cond := NewAnyCondition()
 		hasIpv6 := false
 
-		for _, ip := range this.SourceCidr {
+		for _, ip := range v.SourceCidr {
 			switch len(ip.Ip) {
 			case net.IPv4len:
 				ipv4Net.AddIP(ip.Ip, byte(ip.Prefix))
@@ -110,12 +110,12 @@ func (this *RoutingRule) BuildCondition() (Condition, error) {
 		}
 	}
 
-	if len(this.UserEmail) > 0 {
-		conds.Add(NewUserMatcher(this.UserEmail))
+	if len(v.UserEmail) > 0 {
+		conds.Add(NewUserMatcher(v.UserEmail))
 	}
 
-	if len(this.InboundTag) > 0 {
-		conds.Add(NewInboundTagMatcher(this.InboundTag))
+	if len(v.InboundTag) > 0 {
+		conds.Add(NewInboundTagMatcher(v.InboundTag))
 	}
 
 	if conds.Len() == 0 {

@@ -48,40 +48,40 @@ func NewDokodemoDoor(config *Config, space app.Space, meta *proxy.InboundHandler
 	return d
 }
 
-func (this *DokodemoDoor) Port() v2net.Port {
-	return this.meta.Port
+func (v *DokodemoDoor) Port() v2net.Port {
+	return v.meta.Port
 }
 
-func (this *DokodemoDoor) Close() {
-	this.accepting = false
-	if this.tcpListener != nil {
-		this.tcpMutex.Lock()
-		this.tcpListener.Close()
-		this.tcpListener = nil
-		this.tcpMutex.Unlock()
+func (v *DokodemoDoor) Close() {
+	v.accepting = false
+	if v.tcpListener != nil {
+		v.tcpMutex.Lock()
+		v.tcpListener.Close()
+		v.tcpListener = nil
+		v.tcpMutex.Unlock()
 	}
-	if this.udpHub != nil {
-		this.udpMutex.Lock()
-		this.udpHub.Close()
-		this.udpHub = nil
-		this.udpMutex.Unlock()
+	if v.udpHub != nil {
+		v.udpMutex.Lock()
+		v.udpHub.Close()
+		v.udpHub = nil
+		v.udpMutex.Unlock()
 	}
 }
 
-func (this *DokodemoDoor) Start() error {
-	if this.accepting {
+func (v *DokodemoDoor) Start() error {
+	if v.accepting {
 		return nil
 	}
-	this.accepting = true
+	v.accepting = true
 
-	if this.config.NetworkList.HasNetwork(v2net.Network_TCP) {
-		err := this.ListenTCP()
+	if v.config.NetworkList.HasNetwork(v2net.Network_TCP) {
+		err := v.ListenTCP()
 		if err != nil {
 			return err
 		}
 	}
-	if this.config.NetworkList.HasNetwork(v2net.Network_UDP) {
-		err := this.ListenUDP()
+	if v.config.NetworkList.HasNetwork(v2net.Network_UDP) {
+		err := v.ListenUDP()
 		if err != nil {
 			return err
 		}
@@ -89,71 +89,71 @@ func (this *DokodemoDoor) Start() error {
 	return nil
 }
 
-func (this *DokodemoDoor) ListenUDP() error {
-	this.udpServer = udp.NewUDPServer(this.packetDispatcher)
+func (v *DokodemoDoor) ListenUDP() error {
+	v.udpServer = udp.NewUDPServer(v.packetDispatcher)
 	udpHub, err := udp.ListenUDP(
-		this.meta.Address, this.meta.Port, udp.ListenOption{
-			Callback:            this.handleUDPPackets,
-			ReceiveOriginalDest: this.config.FollowRedirect,
+		v.meta.Address, v.meta.Port, udp.ListenOption{
+			Callback:            v.handleUDPPackets,
+			ReceiveOriginalDest: v.config.FollowRedirect,
 			Concurrency:         2,
 		})
 	if err != nil {
-		log.Error("Dokodemo failed to listen on ", this.meta.Address, ":", this.meta.Port, ": ", err)
+		log.Error("Dokodemo failed to listen on ", v.meta.Address, ":", v.meta.Port, ": ", err)
 		return err
 	}
-	this.udpMutex.Lock()
-	this.udpHub = udpHub
-	this.udpMutex.Unlock()
+	v.udpMutex.Lock()
+	v.udpHub = udpHub
+	v.udpMutex.Unlock()
 	return nil
 }
 
-func (this *DokodemoDoor) handleUDPPackets(payload *alloc.Buffer, session *proxy.SessionInfo) {
-	if session.Destination.Network == v2net.Network_Unknown && this.address != nil && this.port > 0 {
-		session.Destination = v2net.UDPDestination(this.address, this.port)
+func (v *DokodemoDoor) handleUDPPackets(payload *alloc.Buffer, session *proxy.SessionInfo) {
+	if session.Destination.Network == v2net.Network_Unknown && v.address != nil && v.port > 0 {
+		session.Destination = v2net.UDPDestination(v.address, v.port)
 	}
 	if session.Destination.Network == v2net.Network_Unknown {
 		log.Info("Dokodemo: Unknown destination, stop forwarding...")
 		return
 	}
-	session.Inbound = this.meta
-	this.udpServer.Dispatch(session, payload, this.handleUDPResponse)
+	session.Inbound = v.meta
+	v.udpServer.Dispatch(session, payload, v.handleUDPResponse)
 }
 
-func (this *DokodemoDoor) handleUDPResponse(dest v2net.Destination, payload *alloc.Buffer) {
+func (v *DokodemoDoor) handleUDPResponse(dest v2net.Destination, payload *alloc.Buffer) {
 	defer payload.Release()
-	this.udpMutex.RLock()
-	defer this.udpMutex.RUnlock()
-	if !this.accepting {
+	v.udpMutex.RLock()
+	defer v.udpMutex.RUnlock()
+	if !v.accepting {
 		return
 	}
-	this.udpHub.WriteTo(payload.Value, dest)
+	v.udpHub.WriteTo(payload.Value, dest)
 }
 
-func (this *DokodemoDoor) ListenTCP() error {
-	tcpListener, err := internet.ListenTCP(this.meta.Address, this.meta.Port, this.HandleTCPConnection, this.meta.StreamSettings)
+func (v *DokodemoDoor) ListenTCP() error {
+	tcpListener, err := internet.ListenTCP(v.meta.Address, v.meta.Port, v.HandleTCPConnection, v.meta.StreamSettings)
 	if err != nil {
-		log.Error("Dokodemo: Failed to listen on ", this.meta.Address, ":", this.meta.Port, ": ", err)
+		log.Error("Dokodemo: Failed to listen on ", v.meta.Address, ":", v.meta.Port, ": ", err)
 		return err
 	}
-	this.tcpMutex.Lock()
-	this.tcpListener = tcpListener
-	this.tcpMutex.Unlock()
+	v.tcpMutex.Lock()
+	v.tcpListener = tcpListener
+	v.tcpMutex.Unlock()
 	return nil
 }
 
-func (this *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
+func (v *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 	defer conn.Close()
 
 	var dest v2net.Destination
-	if this.config.FollowRedirect {
+	if v.config.FollowRedirect {
 		originalDest := GetOriginalDestination(conn)
 		if originalDest.Network != v2net.Network_Unknown {
 			log.Info("Dokodemo: Following redirect to: ", originalDest)
 			dest = originalDest
 		}
 	}
-	if dest.Network == v2net.Network_Unknown && this.address != nil && this.port > v2net.Port(0) {
-		dest = v2net.TCPDestination(this.address, this.port)
+	if dest.Network == v2net.Network_Unknown && v.address != nil && v.port > v2net.Port(0) {
+		dest = v2net.TCPDestination(v.address, v.port)
 	}
 
 	if dest.Network == v2net.Network_Unknown {
@@ -162,16 +162,16 @@ func (this *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 	}
 	log.Info("Dokodemo: Handling request to ", dest)
 
-	ray := this.packetDispatcher.DispatchToOutbound(&proxy.SessionInfo{
+	ray := v.packetDispatcher.DispatchToOutbound(&proxy.SessionInfo{
 		Source:      v2net.DestinationFromAddr(conn.RemoteAddr()),
 		Destination: dest,
-		Inbound:     this.meta,
+		Inbound:     v.meta,
 	})
 	defer ray.InboundOutput().Release()
 
 	var wg sync.WaitGroup
 
-	reader := v2net.NewTimeOutReader(this.config.Timeout, conn)
+	reader := v2net.NewTimeOutReader(v.config.Timeout, conn)
 	defer reader.Release()
 
 	wg.Add(1)
@@ -202,13 +202,13 @@ func (this *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 
 type Factory struct{}
 
-func (this *Factory) StreamCapability() v2net.NetworkList {
+func (v *Factory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
 		Network: []v2net.Network{v2net.Network_RawTCP},
 	}
 }
 
-func (this *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
+func (v *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
 	return NewDokodemoDoor(rawConfig.(*Config), space, meta), nil
 }
 

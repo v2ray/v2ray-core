@@ -23,13 +23,13 @@ type RouterConfig struct {
 	Settings *RouterRulesConfig `json:"settings"`
 }
 
-func (this *RouterConfig) Build() (*router.Config, error) {
-	if this.Settings == nil {
+func (v *RouterConfig) Build() (*router.Config, error) {
+	if v.Settings == nil {
 		return nil, errors.New("Router settings is not specified.")
 	}
 	config := new(router.Config)
 
-	settings := this.Settings
+	settings := v.Settings
 	config.DomainStrategy = router.Config_AsIs
 	config.Rule = make([]*router.RoutingRule, len(settings.RuleList))
 	domainStrategy := strings.ToLower(settings.DomainStrategy)

@@ -14,8 +14,8 @@ type AwaitingConnection struct {
 	expire time.Time
 }
 
-func (this *AwaitingConnection) Expired() bool {
-	return this.expire.Before(time.Now())
+func (v *AwaitingConnection) Expired() bool {
+	return v.expire.Before(time.Now())
 }
 
 type ConnectionCache struct {
@@ -30,13 +30,13 @@ func NewConnectionCache() *ConnectionCache {
 	}
 }
 
-func (this *ConnectionCache) Cleanup() {
-	defer this.cleanupOnce.Reset()
+func (v *ConnectionCache) Cleanup() {
+	defer v.cleanupOnce.Reset()
 
-	for len(this.cache) > 0 {
+	for len(v.cache) > 0 {
 		time.Sleep(time.Second * 7)
-		this.Lock()
-		for key, value := range this.cache {
+		v.Lock()
+		for key, value := range v.cache {
 			size := len(value)
 			changed := false
 			for i := 0; i < size; {
@@ -54,16 +54,16 @@ func (this *ConnectionCache) Cleanup() {
 					value[i] = nil
 				}
 				value = value[:size]
-				this.cache[key] = value
+				v.cache[key] = value
 			}
 		}
-		this.Unlock()
+		v.Unlock()
 	}
 }
 
-func (this *ConnectionCache) Recycle(dest string, conn *wsconn) {
-	this.Lock()
-	defer this.Unlock()
+func (v *ConnectionCache) Recycle(dest string, conn *wsconn) {
+	v.Lock()
+	defer v.Unlock()
 
 	aconn := &AwaitingConnection{
 		conn:   conn,
@@ -71,15 +71,15 @@ func (this *ConnectionCache) Recycle(dest string, conn *wsconn) {
 	}
 
 	var list []*AwaitingConnection
-	if val, found := this.cache[dest]; found {
+	if val, found := v.cache[dest]; found {
 		val = append(val, aconn)
 		list = val
 	} else {
 		list = []*AwaitingConnection{aconn}
 	}
-	this.cache[dest] = list
+	v.cache[dest] = list
 
-	go this.cleanupOnce.Do(this.Cleanup)
+	go v.cleanupOnce.Do(v.Cleanup)
 }
 
 func FindFirstValid(list []*AwaitingConnection) int {
@@ -92,23 +92,23 @@ func FindFirstValid(list []*AwaitingConnection) int {
 	return -1
 }
 
-func (this *ConnectionCache) Get(dest string) net.Conn {
-	this.Lock()
-	defer this.Unlock()
+func (v *ConnectionCache) Get(dest string) net.Conn {
+	v.Lock()
+	defer v.Unlock()
 
-	list, found := this.cache[dest]
+	list, found := v.cache[dest]
 	if !found {
 		return nil
 	}
 
 	firstValid := FindFirstValid(list)
 	if firstValid == -1 {
-		delete(this.cache, dest)
+		delete(v.cache, dest)
 		return nil
 	}
 	res := list[firstValid].conn
 	list = list[firstValid+1:]
-	this.cache[dest] = list
+	v.cache[dest] = list
 	log.Debug("WS:Conn Cache used.")
 	return res
 }

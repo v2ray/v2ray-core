@@ -19,20 +19,20 @@ func NewCryptionReader(stream cipher.Stream, reader io.Reader) *CryptionReader {
 	}
 }
 
-func (this *CryptionReader) Read(data []byte) (int, error) {
-	if this.reader == nil {
+func (v *CryptionReader) Read(data []byte) (int, error) {
+	if v.reader == nil {
 		return 0, common.ErrObjectReleased
 	}
-	nBytes, err := this.reader.Read(data)
+	nBytes, err := v.reader.Read(data)
 	if nBytes > 0 {
-		this.stream.XORKeyStream(data[:nBytes], data[:nBytes])
+		v.stream.XORKeyStream(data[:nBytes], data[:nBytes])
 	}
 	return nBytes, err
 }
 
-func (this *CryptionReader) Release() {
-	this.reader = nil
-	this.stream = nil
+func (v *CryptionReader) Release() {
+	v.reader = nil
+	v.stream = nil
 }
 
 type CryptionWriter struct {
@@ -47,15 +47,15 @@ func NewCryptionWriter(stream cipher.Stream, writer io.Writer) *CryptionWriter {
 	}
 }
 
-func (this *CryptionWriter) Write(data []byte) (int, error) {
-	if this.writer == nil {
+func (v *CryptionWriter) Write(data []byte) (int, error) {
+	if v.writer == nil {
 		return 0, common.ErrObjectReleased
 	}
-	this.stream.XORKeyStream(data, data)
-	return this.writer.Write(data)
+	v.stream.XORKeyStream(data, data)
+	return v.writer.Write(data)
 }
 
-func (this *CryptionWriter) Release() {
-	this.writer = nil
-	this.stream = nil
+func (v *CryptionWriter) Release() {
+	v.writer = nil
+	v.stream = nil
 }
