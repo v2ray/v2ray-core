@@ -92,7 +92,9 @@ func TestDialAndListen(t *testing.T) {
 	}
 
 	wg.Wait()
-	time.Sleep(20 * time.Second)
+	for i := 0; i < 60 && listerner.ActiveConnections() > 0; i++ {
+		time.Sleep(500 * time.Millisecond)
+	}
 	assert.Int(listerner.ActiveConnections()).Equals(0)
 
 	listerner.Close()
