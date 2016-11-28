@@ -60,14 +60,17 @@ type AckList struct {
 	timestamps []uint32
 	numbers    []uint32
 	nextFlush  []uint32
+
+	flushCandidates []uint32
 }
 
 func NewAckList(writer SegmentWriter) *AckList {
 	return &AckList{
-		writer:     writer,
-		timestamps: make([]uint32, 0, 32),
-		numbers:    make([]uint32, 0, 32),
-		nextFlush:  make([]uint32, 0, 32),
+		writer:          writer,
+		timestamps:      make([]uint32, 0, 32),
+		numbers:         make([]uint32, 0, 32),
+		nextFlush:       make([]uint32, 0, 32),
+		flushCandidates: make([]uint32, 0, 128),
 	}
 }
 
@@ -98,9 +101,14 @@ func (v *AckList) Clear(una uint32) {
 }
 
 func (v *AckList) Flush(current uint32, rto uint32) {
+	v.flushCandidates = v.flushCandidates[:0]
+
 	seg := NewAckSegment()
 	for i := 0; i < len(v.numbers) && !seg.IsFull(); i++ {
 		if v.nextFlush[i] > current {
+			if len(v.flushCandidates) < cap(v.flushCandidates) {
+				v.flushCandidates = append(v.flushCandidates, v.numbers[i])
+			}
 			continue
 		}
 		seg.PutNumber(v.numbers[i])
@@ -112,6 +120,12 @@ func (v *AckList) Flush(current uint32, rto uint32) {
 		v.nextFlush[i] = current + timeout
 	}
 	if seg.Count > 0 {
+		for _, number := range v.flushCandidates {
+			if seg.IsFull() {
+				break
+			}
+			seg.PutNumber(number)
+		}
 		v.writer.Write(seg)
 		seg.Release()
 	}
