@@ -104,7 +104,7 @@ func (v *AckList) Flush(current uint32, rto uint32) {
 	v.flushCandidates = v.flushCandidates[:0]
 
 	seg := NewAckSegment()
-	for i := 0; i < len(v.numbers) && !seg.IsFull(); i++ {
+	for i := 0; i < len(v.numbers); i++ {
 		if v.nextFlush[i] > current {
 			if len(v.flushCandidates) < cap(v.flushCandidates) {
 				v.flushCandidates = append(v.flushCandidates, v.numbers[i])
@@ -118,6 +118,12 @@ func (v *AckList) Flush(current uint32, rto uint32) {
 			timeout = 20
 		}
 		v.nextFlush[i] = current + timeout
+
+		if seg.IsFull() {
+			v.writer.Write(seg)
+			seg.Release()
+			seg = NewAckSegment()
+		}
 	}
 	if seg.Count > 0 {
 		for _, number := range v.flushCandidates {
