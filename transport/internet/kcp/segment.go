@@ -90,8 +90,12 @@ type AckSegment struct {
 	NumberList      []uint32
 }
 
+const ackNumberLimit = 128
+
 func NewAckSegment() *AckSegment {
-	return new(AckSegment)
+	return &AckSegment{
+		NumberList: make([]uint32, 0, ackNumberLimit),
+	}
 }
 
 func (v *AckSegment) Conversation() uint16 {
@@ -110,7 +114,7 @@ func (v *AckSegment) PutNumber(number uint32) {
 }
 
 func (v *AckSegment) IsFull() bool {
-	return v.Count == 128
+	return v.Count == ackNumberLimit
 }
 
 func (v *AckSegment) ByteSize() int {
