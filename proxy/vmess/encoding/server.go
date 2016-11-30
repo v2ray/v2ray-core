@@ -46,7 +46,7 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 
 	_, err := io.ReadFull(reader, buffer[:protocol.IDBytesLen])
 	if err != nil {
-		log.Info("Raw: Failed to read request header: ", err)
+		log.Info("VMess|Server: Failed to read request header: ", err)
 		return nil, io.EOF
 	}
 

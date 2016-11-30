@@ -156,7 +156,7 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	if err != nil {
 		if err != io.EOF {
 			log.Access(connection.RemoteAddr(), "", log.AccessRejected, err)
-			log.Warning("VMessIn: Invalid request from ", connection.RemoteAddr(), ": ", err)
+			log.Info("VMessIn: Invalid request from ", connection.RemoteAddr(), ": ", err)
 		}
 		connection.SetReusable(false)
 		return
