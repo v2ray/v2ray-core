@@ -35,14 +35,14 @@ func (v *DownlinkCapacity) GetValue() uint32 {
 
 func (v *WriteBuffer) GetSize() uint32 {
 	if v == nil {
-		return 1 * 1024 * 1024
+		return 2 * 1024 * 1024
 	}
 	return v.Size
 }
 
 func (v *ReadBuffer) GetSize() uint32 {
 	if v == nil {
-		return 1 * 1024 * 1024
+		return 2 * 1024 * 1024
 	}
 	return v.Size
 }
@@ -65,7 +65,7 @@ func (v *Config) GetAuthenticator() (internet.Authenticator, error) {
 }
 
 func (v *Config) GetSendingInFlightSize() uint32 {
-	size := v.UplinkCapacity.GetValue() * 1024 * 1024 / v.Mtu.GetValue() / (1000 / v.Tti.GetValue()) / 2
+	size := v.UplinkCapacity.GetValue() * 1024 * 1024 / v.Mtu.GetValue() / (1000 / v.Tti.GetValue())
 	if size < 8 {
 		size = 8
 	}
@@ -77,7 +77,7 @@ func (v *Config) GetSendingBufferSize() uint32 {
 }
 
 func (v *Config) GetReceivingInFlightSize() uint32 {
-	size := v.DownlinkCapacity.GetValue() * 1024 * 1024 / v.Mtu.GetValue() / (1000 / v.Tti.GetValue()) / 2
+	size := v.DownlinkCapacity.GetValue() * 1024 * 1024 / v.Mtu.GetValue() / (1000 / v.Tti.GetValue())
 	if size < 8 {
 		size = 8
 	}
