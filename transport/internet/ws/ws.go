@@ -27,7 +27,7 @@ It is worth noting that accepting a non-valid cert is not supported as a self-si
 
 
 This transport was disscussed at
-https://v2ray.com/core/issues/224
+https://github.com/v2ray/v2ray-core/issues/224
 
 */
 package ws
