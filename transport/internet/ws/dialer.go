@@ -1,7 +1,6 @@
 package ws
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net"
 
@@ -85,9 +84,7 @@ func wsDial(src v2net.Address, dest v2net.Destination, options internet.DialerOp
 		}
 	}
 
-	uri := func(dst v2net.Destination, pto string, path string) string {
-		return fmt.Sprintf("%v://%v/%v", pto, dst.NetAddr(), path)
-	}(dest, protocol, wsSettings.Path)
+	uri := protocol + "://" + dest.NetAddr() + "/" + wsSettings.Path
 
 	conn, resp, err := dialer.Dial(uri, nil)
 	if err != nil {
