@@ -62,14 +62,15 @@ type AckList struct {
 	nextFlush  []uint32
 
 	flushCandidates []uint32
+	dirty           bool
 }
 
 func NewAckList(writer SegmentWriter) *AckList {
 	return &AckList{
 		writer:          writer,
-		timestamps:      make([]uint32, 0, 32),
-		numbers:         make([]uint32, 0, 32),
-		nextFlush:       make([]uint32, 0, 32),
+		timestamps:      make([]uint32, 0, 128),
+		numbers:         make([]uint32, 0, 128),
+		nextFlush:       make([]uint32, 0, 128),
 		flushCandidates: make([]uint32, 0, 128),
 	}
 }
@@ -78,6 +79,7 @@ func (v *AckList) Add(number uint32, timestamp uint32) {
 	v.timestamps = append(v.timestamps, timestamp)
 	v.numbers = append(v.numbers, number)
 	v.nextFlush = append(v.nextFlush, 0)
+	v.dirty = true
 }
 
 func (v *AckList) Clear(una uint32) {
@@ -97,6 +99,7 @@ func (v *AckList) Clear(una uint32) {
 		v.numbers = v.numbers[:count]
 		v.timestamps = v.timestamps[:count]
 		v.nextFlush = v.nextFlush[:count]
+		v.dirty = true
 	}
 }
 
@@ -123,9 +126,10 @@ func (v *AckList) Flush(current uint32, rto uint32) {
 			v.writer.Write(seg)
 			seg.Release()
 			seg = NewAckSegment()
+			v.dirty = false
 		}
 	}
-	if seg.Count > 0 {
+	if v.dirty || seg.Count > 0 {
 		for _, number := range v.flushCandidates {
 			if seg.IsFull() {
 				break
@@ -134,6 +138,7 @@ func (v *AckList) Flush(current uint32, rto uint32) {
 		}
 		v.writer.Write(seg)
 		seg.Release()
+		v.dirty = false
 	}
 }
 
