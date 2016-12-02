@@ -11,7 +11,7 @@ import (
 func TestReaderWriter(t *testing.T) {
 	assert := assert.On(t)
 
-	cache := alloc.NewBuffer()
+	cache := alloc.NewBuffer().Clear()
 	writer := NewHeaderWriter(alloc.NewLocalBuffer(256).Clear().AppendString("abcd" + ENDING))
 	writer.Write(cache)
 	cache.Write([]byte{'e', 'f', 'g'})
