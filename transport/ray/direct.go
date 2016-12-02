@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	bufferSize = 128
+	bufferSize = 512
 )
 
 // NewRay creates a new Ray for direct traffic transport.
