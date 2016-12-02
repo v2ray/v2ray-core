@@ -167,8 +167,11 @@ func (b *Buffer) IsFull() bool {
 
 // Write implements Write method in io.Writer.
 func (b *Buffer) Write(data []byte) (int, error) {
-	b.Append(data)
-	return len(data), nil
+	begin := b.Len()
+	b.Value = b.Value[:cap(b.Value)]
+	nBytes := copy(b.Value[begin:], data)
+	b.Value = b.Value[:begin+nBytes]
+	return nBytes, nil
 }
 
 // Read implements io.Reader.Read().

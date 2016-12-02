@@ -59,6 +59,19 @@ func TestBufferString(t *testing.T) {
 	assert.String(buffer.String()).Equals("Test String")
 }
 
+func TestBufferWrite(t *testing.T) {
+	assert := assert.On(t)
+
+	buffer := NewLocalBuffer(24).Clear() // 16 + 8
+	nBytes, err := buffer.Write([]byte("abcd"))
+	assert.Error(err).IsNil()
+	assert.Int(nBytes).Equals(4)
+	nBytes, err = buffer.Write([]byte("abcde"))
+	assert.Error(err).IsNil()
+	assert.Int(nBytes).Equals(4)
+	assert.String(buffer.String()).Equals("abcdabcd")
+}
+
 func BenchmarkNewBuffer8192(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		buffer := NewBuffer()
