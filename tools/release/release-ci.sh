@@ -23,6 +23,7 @@ cp $GOPATH/bin/v2ray-${TRAVIS_TAG}-linux-64/v2ray ${INSTALL_DIR}/docker/official
 pushd ${INSTALL_DIR}
 git config user.name "V2Ray Auto Build"
 git config user.email "admin@v2ray.com"
+git add -A
 git commit -m "Update for ${TRAVIS_TAG}"
 git push "https://${GIT_KEY_INSTALL}@github.com/v2ray/install.git" master
 popd
