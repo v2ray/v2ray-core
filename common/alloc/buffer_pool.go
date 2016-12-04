@@ -87,7 +87,7 @@ const (
 )
 
 var (
-	mediumPool *BufferPool
+	mediumPool Pool
 	smallPool  = NewSyncPool(2048)
 )
 
@@ -100,6 +100,10 @@ func init() {
 			size = uint32(customSize)
 		}
 	}
-	totalByteSize := size * 1024 * 1024
-	mediumPool = NewBufferPool(mediumBufferByteSize, totalByteSize/mediumBufferByteSize)
+	if size > 0 {
+		totalByteSize := size * 1024 * 1024
+		mediumPool = NewBufferPool(mediumBufferByteSize, totalByteSize/mediumBufferByteSize)
+	} else {
+		mediumPool = NewSyncPool(mediumBufferByteSize)
+	}
 }
