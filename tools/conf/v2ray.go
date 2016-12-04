@@ -60,7 +60,7 @@ func (v *InboundConnectionConfig) Build() (*core.InboundConnectionConfig, error)
 
 	jsonConfig, err := inboundConfigLoader.LoadWithID(v.Settings, v.Protocol)
 	if err != nil {
-		return nil, errors.New("Failed to load inbound config: " + err.Error())
+		return nil, errors.Base(err).Message("Failed to load inbound config.")
 	}
 	ts, err := jsonConfig.(Buildable).Build()
 	if err != nil {
@@ -86,7 +86,7 @@ func (v *OutboundConnectionConfig) Build() (*core.OutboundConnectionConfig, erro
 	config := new(core.OutboundConnectionConfig)
 	rawConfig, err := outboundConfigLoader.LoadWithID(v.Settings, v.Protocol)
 	if err != nil {
-		return nil, errors.New("Failed to parse outbound config: " + err.Error())
+		return nil, errors.Base(err).Message("Failed to parse outbound config.")
 	}
 	ts, err := rawConfig.(Buildable).Build()
 	if err != nil {
@@ -97,7 +97,7 @@ func (v *OutboundConnectionConfig) Build() (*core.OutboundConnectionConfig, erro
 	if v.SendThrough != nil {
 		address := v.SendThrough
 		if address.Family().IsDomain() {
-			return nil, errors.New("Point: Unable to send through: " + address.String())
+			return nil, errors.New("Invalid sendThrough address: " + address.String())
 		}
 		config.SendThrough = address.Build()
 	}
@@ -111,7 +111,7 @@ func (v *OutboundConnectionConfig) Build() (*core.OutboundConnectionConfig, erro
 	if v.ProxySettings != nil {
 		ps, err := v.ProxySettings.Build()
 		if err != nil {
-			return nil, errors.New("Outbound: invalid proxy settings: " + err.Error())
+			return nil, errors.Base(err).Message("Invalid outbound proxy settings.")
 		}
 		config.ProxySettings = ps
 	}
@@ -137,7 +137,7 @@ func (v *InboundDetourAllocationConfig) Build() (*core.AllocationStrategy, error
 	case "external":
 		config.Type = core.AllocationStrategy_External
 	default:
-		return nil, errors.New("Unknown allocation strategy: " + v.Strategy)
+		return nil, errors.New("Unknown allocation strategy: ", v.Strategy)
 	}
 	if v.Concurrency != nil {
 		config.Concurrency = &core.AllocationStrategyConcurrency{
@@ -168,13 +168,13 @@ type InboundDetourConfig struct {
 func (v *InboundDetourConfig) Build() (*core.InboundConnectionConfig, error) {
 	config := new(core.InboundConnectionConfig)
 	if v.PortRange == nil {
-		return nil, errors.New("Point: Port range not specified in InboundDetour.")
+		return nil, errors.New("Port range not specified in InboundDetour.")
 	}
 	config.PortRange = v.PortRange.Build()
 
 	if v.ListenOn != nil {
 		if v.ListenOn.Family().IsDomain() {
-			return nil, errors.New("Point: Unable to listen on domain address: " + v.ListenOn.Domain())
+			return nil, errors.New("Unable to listen on domain address: ", v.ListenOn.Domain())
 		}
 		config.ListenOn = v.ListenOn.Build()
 	}
@@ -197,7 +197,7 @@ func (v *InboundDetourConfig) Build() (*core.InboundConnectionConfig, error) {
 
 	rawConfig, err := inboundConfigLoader.LoadWithID(v.Settings, v.Protocol)
 	if err != nil {
-		return nil, errors.New("Failed to load inbound detour config: " + err.Error())
+		return nil, errors.Base(err).Message("Failed to load inbound detour config.")
 	}
 	ts, err := rawConfig.(Buildable).Build()
 	if err != nil {
@@ -238,7 +238,7 @@ func (v *OutboundDetourConfig) Build() (*core.OutboundConnectionConfig, error) {
 
 	rawConfig, err := outboundConfigLoader.LoadWithID(v.Settings, v.Protocol)
 	if err != nil {
-		return nil, errors.New("Failed to parse to outbound detour config: " + err.Error())
+		return nil, errors.Base(err).Message("Failed to parse to outbound detour config.")
 	}
 	ts, err := rawConfig.(Buildable).Build()
 	if err != nil {
@@ -248,7 +248,7 @@ func (v *OutboundDetourConfig) Build() (*core.OutboundConnectionConfig, error) {
 	if v.ProxySettings != nil {
 		ps, err := v.ProxySettings.Build()
 		if err != nil {
-			return nil, errors.New("OutboundDetour: invalid proxy settings: " + err.Error())
+			return nil, errors.Base(err).Message("Invalid outbound detour proxy settings.")
 		}
 		config.ProxySettings = ps
 	}
@@ -340,7 +340,7 @@ func init() {
 		decoder := json.NewDecoder(input)
 		err := decoder.Decode(jsonConfig)
 		if err != nil {
-			return nil, errors.New("Point: Failed to load server config: " + err.Error())
+			return nil, errors.Base(err).Message("Invalid V2Ray config.")
 		}
 
 		return jsonConfig.Build()

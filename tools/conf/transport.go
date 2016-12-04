@@ -19,7 +19,7 @@ func (v *TransportConfig) Build() (*transport.Config, error) {
 	if v.TCPConfig != nil {
 		ts, err := v.TCPConfig.Build()
 		if err != nil {
-			return nil, errors.New("Failed to build TCP config: " + err.Error())
+			return nil, errors.Base(err).Message("Failed to build TCP config.")
 		}
 		config.NetworkSettings = append(config.NetworkSettings, &internet.NetworkSettings{
 			Network:  v2net.Network_TCP,
@@ -30,7 +30,7 @@ func (v *TransportConfig) Build() (*transport.Config, error) {
 	if v.KCPConfig != nil {
 		ts, err := v.KCPConfig.Build()
 		if err != nil {
-			return nil, errors.New("Failed to build KCP config: " + err.Error())
+			return nil, errors.Base(err).Message("Failed to build mKCP config.")
 		}
 		config.NetworkSettings = append(config.NetworkSettings, &internet.NetworkSettings{
 			Network:  v2net.Network_KCP,
@@ -41,7 +41,7 @@ func (v *TransportConfig) Build() (*transport.Config, error) {
 	if v.WSConfig != nil {
 		ts, err := v.WSConfig.Build()
 		if err != nil {
-			return nil, errors.New("Failed to build WebSocket config: " + err.Error())
+			return nil, errors.Base(err).Message("Failed to build WebSocket config.")
 		}
 		config.NetworkSettings = append(config.NetworkSettings, &internet.NetworkSettings{
 			Network:  v2net.Network_WebSocket,

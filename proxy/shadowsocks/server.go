@@ -36,7 +36,7 @@ func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandler
 
 	rawAccount, err := config.User.GetTypedAccount()
 	if err != nil {
-		return nil, errors.New("Shadowsocks|Server: Failed to get user account: " + err.Error())
+		return nil, errors.Base(err).Message("Shadowsocks|Server: Failed to get user account.")
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 

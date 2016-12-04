@@ -55,11 +55,11 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 		if tcpSettings.HeaderSettings != nil {
 			headerConfig, err := tcpSettings.HeaderSettings.GetInstance()
 			if err != nil {
-				return nil, errors.New("TCP: Failed to get header settings: " + err.Error())
+				return nil, errors.Base(err).Message("Interent|TCP: Failed to get header settings.")
 			}
 			auth, err := internet.CreateConnectionAuthenticator(tcpSettings.HeaderSettings.Type, headerConfig)
 			if err != nil {
-				return nil, errors.New("TCP: Failed to create header authenticator: " + err.Error())
+				return nil, errors.Base(err).Message("Internet|TCP: Failed to create header authenticator.")
 			}
 			conn = auth.Client(conn)
 		}

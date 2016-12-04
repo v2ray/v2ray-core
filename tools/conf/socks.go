@@ -79,11 +79,11 @@ func (v *SocksClientConfig) Build() (*loader.TypedSettings, error) {
 		for _, rawUser := range serverConfig.Users {
 			user := new(protocol.User)
 			if err := json.Unmarshal(rawUser, user); err != nil {
-				return nil, errors.New("Socks|Client: Failed to parse user: " + err.Error())
+				return nil, errors.Base(err).Message("Socks|Client: Failed to parse user.")
 			}
 			account := new(SocksAccount)
 			if err := json.Unmarshal(rawUser, account); err != nil {
-				return nil, errors.New("Socks|Client: Failed to parse socks account: " + err.Error())
+				return nil, errors.Base(err).Message("Socks|Client: Failed to parse socks account.")
 			}
 			user.Account = loader.NewTypedSettings(account.Build())
 			server.User = append(server.User, user)

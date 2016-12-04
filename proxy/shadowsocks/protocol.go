@@ -105,7 +105,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 
 	_, err = io.ReadFull(reader, buffer.Value[lenBuffer:lenBuffer+2])
 	if err != nil {
-		return nil, nil, errors.New("Shadowsocks|TCP: Failed to read port: " + err.Error())
+		return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read port.")
 	}
 
 	request.Port = v2net.PortFromBytes(buffer.Value[lenBuffer : lenBuffer+2])
@@ -115,7 +115,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 		authBytes := buffer.Value[lenBuffer : lenBuffer+AuthSize]
 		_, err = io.ReadFull(reader, authBytes)
 		if err != nil {
-			return nil, nil, errors.New("Shadowsocks|TCP: Failed to read OTA: " + err.Error())
+			return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read OTA.")
 		}
 
 		actualAuth := authenticator.Authenticate(nil, buffer.Value[0:lenBuffer])
@@ -199,19 +199,19 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (v2io.Wr
 func ReadTCPResponse(user *protocol.User, reader io.Reader) (v2io.Reader, error) {
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
-		return nil, errors.New("Shadowsocks|TCP: Failed to parse account: " + err.Error())
+		return nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to parse account.")
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 
 	iv := make([]byte, account.Cipher.IVSize())
 	_, err = io.ReadFull(reader, iv)
 	if err != nil {
-		return nil, errors.New("Shadowsocks|TCP: Failed to read IV: " + err.Error())
+		return nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read IV.")
 	}
 
 	stream, err := account.Cipher.NewDecodingStream(account.Key, iv)
 	if err != nil {
-		return nil, errors.New("Shadowsocks|TCP: Failed to initialize decoding stream: " + err.Error())
+		return nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to initialize decoding stream.")
 	}
 	return v2io.NewAdaptiveReader(crypto.NewCryptionReader(stream, reader)), nil
 }
@@ -220,7 +220,7 @@ func WriteTCPResponse(request *protocol.RequestHeader, writer io.Writer) (v2io.W
 	user := request.User
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
-		return nil, errors.New("Shadowsocks|TCP: Failed to parse account: " + err.Error())
+		return nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to parse account.")
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 
@@ -228,12 +228,12 @@ func WriteTCPResponse(request *protocol.RequestHeader, writer io.Writer) (v2io.W
 	rand.Read(iv)
 	_, err = writer.Write(iv)
 	if err != nil {
-		return nil, errors.New("Shadowsocks|TCP: Failed to write IV: " + err.Error())
+		return nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to write IV.")
 	}
 
 	stream, err := account.Cipher.NewEncodingStream(account.Key, iv)
 	if err != nil {
-		return nil, errors.New("Shadowsocks|TCP: Failed to create encoding stream: " + err.Error())
+		return nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to create encoding stream.")
 	}
 
 	return v2io.NewAdaptiveWriter(crypto.NewCryptionWriter(stream, writer)), nil
@@ -243,7 +243,7 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload *alloc.Buffer) (*a
 	user := request.User
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
-		return nil, errors.New("Shadowsocks|UDP: Failed to parse account: " + err.Error())
+		return nil, errors.Base(err).Message("Shadowsocks|UDP: Failed to parse account.")
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 
@@ -264,7 +264,7 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload *alloc.Buffer) (*a
 		buffer.AppendBytes(AddrTypeDomain, byte(len(request.Address.Domain())))
 		buffer.Append([]byte(request.Address.Domain()))
 	default:
-		return nil, errors.New("Shadowsocks|UDP: Unsupported address type. ")
+		return nil, errors.New("Shadowsocks|UDP: Unsupported address type: ", request.Address.Family())
 	}
 
 	buffer.AppendUint16(uint16(request.Port))
@@ -279,7 +279,7 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload *alloc.Buffer) (*a
 
 	stream, err := account.Cipher.NewEncodingStream(account.Key, iv)
 	if err != nil {
-		return nil, errors.New("Shadowsocks|TCP: Failed to create encoding stream: " + err.Error())
+		return nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to create encoding stream.")
 	}
 
 	stream.XORKeyStream(buffer.Value[ivLen:], buffer.Value[ivLen:])
@@ -289,7 +289,7 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload *alloc.Buffer) (*a
 func DecodeUDPPacket(user *protocol.User, payload *alloc.Buffer) (*protocol.RequestHeader, *alloc.Buffer, error) {
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
-		return nil, nil, errors.New("Shadowsocks|UDP: Failed to parse account: " + err.Error())
+		return nil, nil, errors.Base(err).Message("Shadowsocks|UDP: Failed to parse account.")
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 
@@ -299,7 +299,7 @@ func DecodeUDPPacket(user *protocol.User, payload *alloc.Buffer) (*protocol.Requ
 
 	stream, err := account.Cipher.NewDecodingStream(account.Key, iv)
 	if err != nil {
-		return nil, nil, errors.New("Shadowsocks|UDP: Failed to initialize decoding stream: " + err.Error())
+		return nil, nil, errors.Base(err).Message("Shadowsocks|UDP: Failed to initialize decoding stream.")
 	}
 	stream.XORKeyStream(payload.Value, payload.Value)
 
@@ -349,7 +349,7 @@ func DecodeUDPPacket(user *protocol.User, payload *alloc.Buffer) (*protocol.Requ
 		request.Address = v2net.DomainAddress(string(payload.Value[1 : 1+domainLength]))
 		payload.SliceFrom(1 + domainLength)
 	default:
-		return nil, nil, errors.New("Shadowsocks|UDP: Unknown address type")
+		return nil, nil, errors.New("Shadowsocks|UDP: Unknown address type: ", addrType)
 	}
 
 	request.Port = v2net.PortFromBytes(payload.Value[:2])

@@ -84,11 +84,11 @@ func (v *KCPConfig) Build() (*loader.TypedSettings, error) {
 	if len(v.HeaderConfig) > 0 {
 		headerConfig, _, err := kcpHeaderLoader.Load(v.HeaderConfig)
 		if err != nil {
-			return nil, errors.New("KCP|Config: Failed to parse header config: " + err.Error())
+			return nil, errors.Base(err).Message("Invalid mKCP header config.")
 		}
 		ts, err := headerConfig.(Buildable).Build()
 		if err != nil {
-			return nil, errors.New("Failed to get KCP authenticator config: " + err.Error())
+			return nil, errors.Base(err).Message("Invalid mKCP header config.")
 		}
 		config.HeaderConfig = ts
 	}
@@ -111,11 +111,11 @@ func (v *TCPConfig) Build() (*loader.TypedSettings, error) {
 	if len(v.HeaderConfig) > 0 {
 		headerConfig, _, err := tcpHeaderLoader.Load(v.HeaderConfig)
 		if err != nil {
-			return nil, errors.New("TCP|Config: Failed to parse header config: " + err.Error())
+			return nil, errors.Base(err).Message("Invalid TCP header config.")
 		}
 		ts, err := headerConfig.(Buildable).Build()
 		if err != nil {
-			return nil, errors.New("Failed to get TCP authenticator config: " + err.Error())
+			return nil, errors.Base(err).Message("Invalid TCP header config.")
 		}
 		config.HeaderSettings = ts
 	}
@@ -155,11 +155,11 @@ func (v *TLSConfig) Build() (*loader.TypedSettings, error) {
 	for idx, certConf := range v.Certs {
 		cert, err := ioutil.ReadFile(certConf.CertFile)
 		if err != nil {
-			return nil, errors.New("TLS: Failed to load certificate file: " + err.Error())
+			return nil, errors.Base(err).Message("Failed to load TLS certificate file: ", certConf.CertFile)
 		}
 		key, err := ioutil.ReadFile(certConf.KeyFile)
 		if err != nil {
-			return nil, errors.New("TLS: Failed to load key file: " + err.Error())
+			return nil, errors.Base(err).Message("Failed to load TLS key file: ", certConf.KeyFile)
 		}
 		config.Certificate[idx] = &tls.Certificate{
 			Key:         key,
@@ -193,14 +193,14 @@ func (v *StreamConfig) Build() (*internet.StreamConfig, error) {
 		}
 		ts, err := tlsSettings.Build()
 		if err != nil {
-			return nil, errors.New("Failed to build TLS config: " + err.Error())
+			return nil, errors.Base(err).Message("Failed to build TLS config.")
 		}
 		config.SecuritySettings = append(config.SecuritySettings, ts)
 	}
 	if v.TCPSettings != nil {
 		ts, err := v.TCPSettings.Build()
 		if err != nil {
-			return nil, errors.New("Failed to build TCP config: " + err.Error())
+			return nil, errors.Base(err).Message("Failed to build TCP config.")
 		}
 		config.NetworkSettings = append(config.NetworkSettings, &internet.NetworkSettings{
 			Network:  v2net.Network_TCP,
@@ -210,7 +210,7 @@ func (v *StreamConfig) Build() (*internet.StreamConfig, error) {
 	if v.KCPSettings != nil {
 		ts, err := v.KCPSettings.Build()
 		if err != nil {
-			return nil, errors.New("Failed to build KCP config: " + err.Error())
+			return nil, errors.Base(err).Message("Failed to build mKCP config.")
 		}
 		config.NetworkSettings = append(config.NetworkSettings, &internet.NetworkSettings{
 			Network:  v2net.Network_KCP,
@@ -220,7 +220,7 @@ func (v *StreamConfig) Build() (*internet.StreamConfig, error) {
 	if v.WSSettings != nil {
 		ts, err := v.WSSettings.Build()
 		if err != nil {
-			return nil, errors.New("Failed to build WebSocket config: " + err.Error())
+			return nil, errors.Base(err).Message("Failed to build WebSocket config.")
 		}
 		config.NetworkSettings = append(config.NetworkSettings, &internet.NetworkSettings{
 			Network:  v2net.Network_WebSocket,

@@ -66,11 +66,11 @@ func ListenTCP(address v2net.Address, port v2net.Port, options internet.ListenOp
 	if tcpSettings.HeaderSettings != nil {
 		headerConfig, err := tcpSettings.HeaderSettings.GetInstance()
 		if err != nil {
-			return nil, errors.New("TCP: Failed to get header settings: " + err.Error())
+			return nil, errors.Base(err).Message("Internet|TCP: Invalid header settings.")
 		}
 		auth, err := internet.CreateConnectionAuthenticator(tcpSettings.HeaderSettings.Type, headerConfig)
 		if err != nil {
-			return nil, errors.New("TCP: Failed to create header authenticator: " + err.Error())
+			return nil, errors.Base(err).Message("Internet|TCP: Invalid header settings.")
 		}
 		l.authConfig = auth
 	}

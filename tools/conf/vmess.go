@@ -77,11 +77,11 @@ func (v *VMessInboundConfig) Build() (*loader.TypedSettings, error) {
 	for idx, rawData := range v.Users {
 		user := new(protocol.User)
 		if err := json.Unmarshal(rawData, user); err != nil {
-			return nil, errors.New("VMess|Inbound: Invalid user: " + err.Error())
+			return nil, errors.Base(err).Message("Invalid VMess user.")
 		}
 		account := new(VMessAccount)
 		if err := json.Unmarshal(rawData, account); err != nil {
-			return nil, errors.New("VMess|Inbound: Invalid user: " + err.Error())
+			return nil, errors.Base(err).Message("Invalid VMess user.")
 		}
 		user.Account = loader.NewTypedSettings(account.Build())
 		config.User[idx] = user
@@ -123,11 +123,11 @@ func (v *VMessOutboundConfig) Build() (*loader.TypedSettings, error) {
 		for _, rawUser := range rec.Users {
 			user := new(protocol.User)
 			if err := json.Unmarshal(rawUser, user); err != nil {
-				return nil, errors.New("VMess|Outbound: Invalid user: " + err.Error())
+				return nil, errors.Base(err).Message("Invalid VMess user.")
 			}
 			account := new(VMessAccount)
 			if err := json.Unmarshal(rawUser, account); err != nil {
-				return nil, errors.New("VMess|Outbound: Invalid user: " + err.Error())
+				return nil, errors.Base(err).Message("Invalid VMess user.")
 			}
 			user.Account = loader.NewTypedSettings(account.Build())
 			spec.User = append(spec.User, user)

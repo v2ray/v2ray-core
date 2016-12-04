@@ -42,7 +42,7 @@ func (ws *wsconn) read(b []byte) (n int, err error) {
 func (ws *wsconn) getNewReadBuffer() error {
 	_, r, err := ws.wsc.NextReader()
 	if err != nil {
-		log.Warning("WS transport: ws connection NewFrameReader return " + err.Error())
+		log.Warning("WS transport: ws connection NewFrameReader return ", err)
 		ws.connClosing = true
 		ws.Close()
 		return err
@@ -90,7 +90,7 @@ func (ws *wsconn) Write(b []byte) (n int, err error) {
 func (ws *wsconn) write(b []byte) (n int, err error) {
 	wr, err := ws.wsc.NextWriter(websocket.BinaryMessage)
 	if err != nil {
-		log.Warning("WS transport: ws connection NewFrameReader return " + err.Error())
+		log.Warning("WS transport: ws connection NewFrameReader return ", err)
 		ws.connClosing = true
 		ws.Close()
 		return 0, err
