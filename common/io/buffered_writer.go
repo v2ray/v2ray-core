@@ -17,7 +17,7 @@ type BufferedWriter struct {
 func NewBufferedWriter(rawWriter io.Writer) *BufferedWriter {
 	return &BufferedWriter{
 		writer: rawWriter,
-		buffer: alloc.NewBuffer().Clear(),
+		buffer: alloc.NewSmallBuffer().Clear(),
 		cached: true,
 	}
 }
@@ -55,11 +55,22 @@ func (v *BufferedWriter) Write(b []byte) (int, error) {
 	if !v.cached {
 		return v.writer.Write(b)
 	}
-	nBytes, _ := v.buffer.Write(b)
-	if v.buffer.IsFull() {
-		v.FlushWithoutLock()
+	nBytes, err := v.buffer.Write(b)
+	if err != nil {
+		return 0, err
 	}
-	return nBytes, nil
+	if v.buffer.IsFull() {
+		err := v.FlushWithoutLock()
+		if err != nil {
+			return 0, err
+		}
+		if nBytes < len(b) {
+			if _, err := v.writer.Write(b[nBytes:]); err != nil {
+				return nBytes, err
+			}
+		}
+	}
+	return len(b), nil
 }
 
 func (v *BufferedWriter) Flush() error {

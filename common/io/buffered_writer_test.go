@@ -1,6 +1,7 @@
 package io_test
 
 import (
+	"crypto/rand"
 	"testing"
 
 	"v2ray.com/core/common/alloc"
@@ -26,4 +27,27 @@ func TestBufferedWriter(t *testing.T) {
 
 	writer.SetCached(false)
 	assert.Int(content.Len()).Equals(16)
+}
+
+func TestBufferedWriterLargePayload(t *testing.T) {
+	assert := assert.On(t)
+
+	content := alloc.NewLocalBuffer(128 * 1024).Clear()
+
+	writer := NewBufferedWriter(content)
+	assert.Bool(writer.Cached()).IsTrue()
+
+	payload := make([]byte, 64*1024)
+	rand.Read(payload)
+
+	nBytes, err := writer.Write(payload[:1024])
+	assert.Int(nBytes).Equals(1024)
+	assert.Error(err).IsNil()
+
+	assert.Bool(content.IsEmpty()).IsTrue()
+
+	nBytes, err = writer.Write(payload[1024:])
+	assert.Error(err).IsNil()
+	assert.Int(nBytes).Equals(63 * 1024)
+	assert.Bytes(content.Value).Equals(payload)
 }
