@@ -3,12 +3,11 @@ package shadowsocks
 
 import (
 	"sync"
-
-	"errors"
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/errors"
 	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"

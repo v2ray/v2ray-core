@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/errors"
 	v2io "v2ray.com/core/common/io"
 	. "v2ray.com/core/proxy/vmess/io"
 	"v2ray.com/core/testing/assert"
@@ -68,7 +69,7 @@ func TestLargeIO(t *testing.T) {
 	reader := NewAuthChunkReader(chunckContent)
 	for {
 		buffer, err := reader.Read()
-		if err == io.EOF {
+		if errors.Cause(err) == io.EOF {
 			break
 		}
 		assert.Error(err).IsNil()

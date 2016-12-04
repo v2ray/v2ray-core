@@ -2,18 +2,19 @@ package ws
 
 import (
 	"crypto/tls"
-	"errors"
 	"net"
 	"net/http"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/gorilla/websocket"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	v2tls "v2ray.com/core/transport/internet/tls"
+
+	"github.com/gorilla/websocket"
 )
 
 var (

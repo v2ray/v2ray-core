@@ -1,13 +1,13 @@
 package proxy
 
 import (
-	"errors"
 	"io"
 	"net"
 	"time"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/common/errors"
 	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"

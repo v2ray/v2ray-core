@@ -1,7 +1,7 @@
 package proxy
 
 import (
-	"errors"
+	"v2ray.com/core/common/errors"
 )
 
 var (

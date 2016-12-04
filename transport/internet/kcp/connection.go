@@ -1,13 +1,12 @@
 package kcp
 
 import (
-	"errors"
 	"io"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
-
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/predicate"
 	"v2ray.com/core/transport/internet"

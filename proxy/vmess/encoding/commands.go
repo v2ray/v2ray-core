@@ -1,10 +1,10 @@
 package encoding
 
 import (
-	"errors"
 	"io"
 
 	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"

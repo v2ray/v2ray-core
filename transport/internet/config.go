@@ -1,8 +1,7 @@
 package internet
 
 import (
-	"errors"
-
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"

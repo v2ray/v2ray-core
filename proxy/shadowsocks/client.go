@@ -111,7 +111,7 @@ func (v *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffer, 
 
 			responseReader, err := ReadTCPResponse(user, conn)
 			if err != nil {
-				log.Warning("Shadowsocks|Client: Failed to read response: " + err.Error())
+				log.Warning("Shadowsocks|Client: Failed to read response: ", err)
 				return
 			}
 

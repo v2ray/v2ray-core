@@ -1,12 +1,12 @@
 package freedom
 
 import (
-	"errors"
 	"io"
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dns"
 	"v2ray.com/core/common/alloc"
 	"v2ray.com/core/common/dice"
+	"v2ray.com/core/common/errors"
 	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"

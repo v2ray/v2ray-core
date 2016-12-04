@@ -1,9 +1,9 @@
 package internal
 
 import (
-	"errors"
 	"net"
 	"reflect"
+	"v2ray.com/core/common/errors"
 )
 
 var (

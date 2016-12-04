@@ -3,7 +3,7 @@
 package common
 
 import (
-	"errors"
+	"v2ray.com/core/common/errors"
 )
 
 var (

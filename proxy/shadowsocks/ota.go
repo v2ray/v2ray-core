@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha1"
-	"errors"
 	"io"
 	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/serial"
 )
 

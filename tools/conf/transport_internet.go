@@ -2,11 +2,10 @@ package conf
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
-
 	"strings"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"

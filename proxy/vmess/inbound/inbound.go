@@ -9,6 +9,7 @@ import (
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/errors"
 	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
@@ -154,7 +155,7 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	v.RUnlock()
 
 	if err != nil {
-		if err != io.EOF {
+		if errors.Cause(err) != io.EOF {
 			log.Access(connection.RemoteAddr(), "", log.AccessRejected, err)
 			log.Info("VMessIn: Invalid request from ", connection.RemoteAddr(), ": ", err)
 		}

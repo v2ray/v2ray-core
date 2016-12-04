@@ -2,8 +2,7 @@ package conf
 
 import (
 	"encoding/json"
-	"errors"
-
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/proxy/socks"

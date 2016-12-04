@@ -2,9 +2,8 @@ package conf
 
 import (
 	"encoding/json"
-	"errors"
-
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 )
 

@@ -1,11 +1,11 @@
 package io
 
 import (
-	"errors"
 	"hash"
 	"hash/fnv"
 	"io"
 	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/serial"
 )
 

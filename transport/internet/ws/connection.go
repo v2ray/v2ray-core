@@ -1,10 +1,10 @@
 package ws
 
 import (
-	"errors"
 	"io"
 	"net"
 	"time"
+	"v2ray.com/core/common/errors"
 )
 
 var (

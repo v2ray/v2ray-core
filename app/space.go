@@ -1,9 +1,8 @@
 package app
 
 import (
-	"errors"
-
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/errors"
 )
 
 type ID int
@@ -94,7 +93,7 @@ func (v *spaceImpl) BindApp(id ID, application Application) {
 func (v *spaceImpl) BindFromConfig(name string, config interface{}) error {
 	factory, found := applicationFactoryCache[name]
 	if !found {
-		return errors.New("Space: app not registered: " + name)
+		return errors.New("Space: app not registered: ", name)
 	}
 	app, err := factory.Create(v, config)
 	if err != nil {

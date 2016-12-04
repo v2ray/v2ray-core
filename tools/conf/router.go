@@ -2,11 +2,11 @@ package conf
 
 import (
 	"encoding/json"
-	"errors"
 	"strconv"
 	"strings"
 
 	"v2ray.com/core/app/router"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/tools/geoip"

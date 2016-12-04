@@ -1,7 +1,7 @@
 package protocol
 
 import (
-	"errors"
+	"v2ray.com/core/common/errors"
 )
 
 var (

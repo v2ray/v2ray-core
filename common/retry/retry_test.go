@@ -1,10 +1,10 @@
 package retry_test
 
 import (
-	"errors"
 	"testing"
 	"time"
 
+	"v2ray.com/core/common/errors"
 	. "v2ray.com/core/common/retry"
 	"v2ray.com/core/testing/assert"
 )

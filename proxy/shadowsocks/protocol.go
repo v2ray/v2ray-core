@@ -3,11 +3,10 @@ package shadowsocks
 import (
 	"bytes"
 	"crypto/rand"
-	"errors"
 	"io"
-
 	"v2ray.com/core/common/alloc"
 	"v2ray.com/core/common/crypto"
+	"v2ray.com/core/common/errors"
 	v2io "v2ray.com/core/common/io"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -25,7 +24,7 @@ const (
 func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHeader, v2io.Reader, error) {
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
-		return nil, nil, errors.New("Shadowsocks|TCP: Failed to parse account: " + err.Error())
+		return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to parse account.")
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 
@@ -35,14 +34,14 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	ivLen := account.Cipher.IVSize()
 	_, err = io.ReadFull(reader, buffer.Value[:ivLen])
 	if err != nil {
-		return nil, nil, errors.New("Shadowsocks|TCP: Failed to read IV: " + err.Error())
+		return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read IV.")
 	}
 
 	iv := append([]byte(nil), buffer.Value[:ivLen]...)
 
 	stream, err := account.Cipher.NewDecodingStream(account.Key, iv)
 	if err != nil {
-		return nil, nil, errors.New("Shadowsocks|TCP: Failed to initialize decoding stream: " + err.Error())
+		return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to initialize decoding stream.")
 	}
 	reader = crypto.NewCryptionReader(stream, reader)
 
@@ -56,7 +55,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	lenBuffer := 1
 	_, err = io.ReadFull(reader, buffer.Value[:1])
 	if err != nil {
-		return nil, nil, errors.New("Shadowsocks|TCP: Failed to read address type: " + err.Error())
+		return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read address type.")
 	}
 
 	addrType := (buffer.Value[0] & 0x0F)
@@ -76,32 +75,32 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	case AddrTypeIPv4:
 		_, err := io.ReadFull(reader, buffer.Value[lenBuffer:lenBuffer+4])
 		if err != nil {
-			return nil, nil, errors.New("Shadowsocks|TCP: Failed to read IPv4 address: " + err.Error())
+			return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read IPv4 address.")
 		}
 		request.Address = v2net.IPAddress(buffer.Value[lenBuffer : lenBuffer+4])
 		lenBuffer += 4
 	case AddrTypeIPv6:
 		_, err := io.ReadFull(reader, buffer.Value[lenBuffer:lenBuffer+16])
 		if err != nil {
-			return nil, nil, errors.New("Shadowsocks|TCP: Failed to read IPv6 address: " + err.Error())
+			return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read IPv6 address.")
 		}
 		request.Address = v2net.IPAddress(buffer.Value[lenBuffer : lenBuffer+16])
 		lenBuffer += 16
 	case AddrTypeDomain:
 		_, err := io.ReadFull(reader, buffer.Value[lenBuffer:lenBuffer+1])
 		if err != nil {
-			return nil, nil, errors.New("Shadowsocks|TCP: Failed to read domain lenth: " + err.Error())
+			return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read domain lenth.")
 		}
 		domainLength := int(buffer.Value[lenBuffer])
 		lenBuffer++
 		_, err = io.ReadFull(reader, buffer.Value[lenBuffer:lenBuffer+domainLength])
 		if err != nil {
-			return nil, nil, errors.New("Shadowsocks|TCP: Failed to read domain: " + err.Error())
+			return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read domain.")
 		}
 		request.Address = v2net.DomainAddress(string(buffer.Value[lenBuffer : lenBuffer+domainLength]))
 		lenBuffer += domainLength
 	default:
-		return nil, nil, errors.New("Shadowsocks|TCP: Unknown address type.")
+		return nil, nil, errors.New("Shadowsocks|TCP: Unknown address type: ", addrType)
 	}
 
 	_, err = io.ReadFull(reader, buffer.Value[lenBuffer:lenBuffer+2])
@@ -139,7 +138,7 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (v2io.Wr
 	user := request.User
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
-		return nil, errors.New("Shadowsocks|TCP: Failed to parse account: " + err.Error())
+		return nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to parse account.")
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 
@@ -147,12 +146,12 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (v2io.Wr
 	rand.Read(iv)
 	_, err = writer.Write(iv)
 	if err != nil {
-		return nil, errors.New("Shadowsocks|TCP: Failed to write IV: " + err.Error())
+		return nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to write IV.")
 	}
 
 	stream, err := account.Cipher.NewEncodingStream(account.Key, iv)
 	if err != nil {
-		return nil, errors.New("Shadowsocks|TCP: Failed to create encoding stream: " + err.Error())
+		return nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to create encoding stream.")
 	}
 
 	writer = crypto.NewCryptionWriter(stream, writer)
@@ -170,7 +169,7 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (v2io.Wr
 		header.AppendBytes(AddrTypeDomain, byte(len(request.Address.Domain())))
 		header.Append([]byte(request.Address.Domain()))
 	default:
-		return nil, errors.New("Shadowsocks|TCP: Unsupported address type. ")
+		return nil, errors.New("Shadowsocks|TCP: Unsupported address type: ", request.Address.Family())
 	}
 
 	header.AppendUint16(uint16(request.Port))
@@ -184,7 +183,7 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (v2io.Wr
 
 	_, err = writer.Write(header.Value)
 	if err != nil {
-		return nil, errors.New("Shadowsocks|TCP: Failed to write header: " + err.Error())
+		return nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to write header.")
 	}
 
 	var chunkWriter v2io.Writer

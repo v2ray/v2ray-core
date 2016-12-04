@@ -1,10 +1,9 @@
 package registry
 
 import (
-	"errors"
-
 	"v2ray.com/core/app"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 )

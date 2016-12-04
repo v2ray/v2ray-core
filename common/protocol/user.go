@@ -1,7 +1,7 @@
 package protocol
 
 import (
-	"errors"
+	"v2ray.com/core/common/errors"
 )
 
 var (
@@ -26,7 +26,7 @@ func (v *User) GetTypedAccount() (Account, error) {
 	if account, ok := rawAccount.(Account); ok {
 		return account, nil
 	}
-	return nil, errors.New("Unknown account type: " + v.Account.Type)
+	return nil, errors.New("Unknown account type: ", v.Account.Type)
 }
 
 func (v *User) GetSettings() UserSettings {

@@ -1,11 +1,11 @@
 package impl
 
 import (
-	"errors"
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/router"
 	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"

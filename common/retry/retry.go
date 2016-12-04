@@ -1,8 +1,8 @@
 package retry
 
 import (
-	"errors"
 	"time"
+	"v2ray.com/core/common/errors"
 )
 
 var (

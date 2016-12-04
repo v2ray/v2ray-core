@@ -2,11 +2,10 @@ package tcp
 
 import (
 	"crypto/tls"
-	"errors"
 	"net"
 	"sync"
 	"time"
-
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"

@@ -3,9 +3,9 @@ package protocol
 import (
 	"crypto/hmac"
 	"crypto/md5"
-	"errors"
 	"hash"
 
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/uuid"
 )
 

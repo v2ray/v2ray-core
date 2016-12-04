@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 )
 
@@ -64,7 +65,7 @@ func (ws *wsconn) readNext(b []byte) (n int, err error) {
 		return n, err
 	}
 
-	if err == io.EOF {
+	if errors.Cause(err) == io.EOF {
 		ws.readBuffer = nil
 		if n == 0 {
 			return ws.readNext(b)

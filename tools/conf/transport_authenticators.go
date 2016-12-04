@@ -1,8 +1,7 @@
 package conf
 
 import (
-	"errors"
-
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/transport/internet/authenticators/http"
 	"v2ray.com/core/transport/internet/authenticators/noop"

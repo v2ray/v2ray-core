@@ -2,6 +2,7 @@ package io
 
 import (
 	"io"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 )
 
@@ -29,7 +30,7 @@ func Pipe(reader Reader, writer Writer) error {
 
 func PipeUntilEOF(reader Reader, writer Writer) error {
 	err := Pipe(reader, writer)
-	if err != nil && err != io.EOF {
+	if err != nil && errors.Cause(err) != io.EOF {
 		return err
 	}
 	return nil

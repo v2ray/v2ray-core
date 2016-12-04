@@ -4,6 +4,7 @@ import (
 	"io"
 	"sync"
 	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/errors"
 )
 
 type BufferedWriter struct {
@@ -34,7 +35,7 @@ func (v *BufferedWriter) ReadFrom(reader io.Reader) (int64, error) {
 		nBytes, err := v.buffer.FillFrom(reader)
 		totalBytes += int64(nBytes)
 		if err != nil {
-			if err == io.EOF {
+			if errors.Cause(err) == io.EOF {
 				return totalBytes, nil
 			}
 			return totalBytes, err

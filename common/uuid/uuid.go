@@ -5,7 +5,7 @@ import (
 	"crypto/md5"
 	"crypto/rand"
 	"encoding/hex"
-	"errors"
+	"v2ray.com/core/common/errors"
 )
 
 var (

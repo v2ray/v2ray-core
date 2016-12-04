@@ -2,11 +2,10 @@ package conf
 
 import (
 	"encoding/json"
-	"errors"
-	"strings"
-
 	"io"
+	"strings"
 	"v2ray.com/core"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
 )

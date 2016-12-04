@@ -12,6 +12,7 @@ import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/errors"
 	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
@@ -101,7 +102,7 @@ func (v *Server) handleConnection(conn internet.Connection) {
 
 	request, err := http.ReadRequest(reader)
 	if err != nil {
-		if err != io.EOF {
+		if errors.Cause(err) != io.EOF {
 			log.Warning("HTTP: Failed to read http request: ", err)
 		}
 		return

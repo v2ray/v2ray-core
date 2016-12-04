@@ -1,13 +1,13 @@
 package socks
 
 import (
-	"errors"
 	"io"
 	"sync"
 	"time"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core/common/errors"
 	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
@@ -112,8 +112,8 @@ func (v *Server) handleConnection(connection internet.Connection) {
 	defer writer.Release()
 
 	auth, auth4, err := protocol.ReadAuthentication(reader)
-	if err != nil && err != protocol.Socks4Downgrade {
-		if err != io.EOF {
+	if err != nil && errors.Cause(err) != protocol.Socks4Downgrade {
+		if errors.Cause(err) != io.EOF {
 			log.Warning("Socks: failed to read authentication: ", err)
 		}
 		return

@@ -1,9 +1,8 @@
 package protocol
 
 import (
-	"errors"
 	"io"
-
+	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 )
 

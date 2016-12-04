@@ -1,10 +1,10 @@
 package loader
 
 import (
-	"errors"
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
+	"v2ray.com/core/common/errors"
 )
 
 func NewTypedSettings(message proto.Message) *TypedSettings {

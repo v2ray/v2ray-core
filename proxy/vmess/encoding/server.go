@@ -2,10 +2,10 @@ package encoding
 
 import (
 	"crypto/md5"
-	"errors"
 	"hash/fnv"
 	"io"
 	"v2ray.com/core/common/crypto"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"

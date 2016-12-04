@@ -1,8 +1,8 @@
 package ws
 
 import (
-	"errors"
 	"net"
+	"v2ray.com/core/common/errors"
 )
 
 type StoppableListener struct {

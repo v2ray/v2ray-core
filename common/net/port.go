@@ -1,9 +1,9 @@
 package net
 
 import (
-	"errors"
 	"strconv"
 
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/serial"
 )
 

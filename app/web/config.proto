@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package v2ray.core.app.web;
+option go_package = "web";
+option java_package = "com.v2ray.core.app.web";
+option java_outer_classname = "ConfigProto";
+
+import "v2ray.com/core/common/loader/type.proto";
+
+message FileServer {
+  message Entry {
+    oneof FileOrDir {
+      string File = 1;
+      string Directory = 2;
+    }
+    string path = 3;
+  }
+
+  repeated Entry entry = 1;
+}
+
+message Server {
+  repeated string domain = 1;
+  v2ray.core.common.loader.TypedSettings settings = 2;
+}
+
+message Config {
+  repeated Server server = 1;
+}

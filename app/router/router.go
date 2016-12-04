@@ -1,10 +1,9 @@
 package router
 
 import (
-	"errors"
-
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dns"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"

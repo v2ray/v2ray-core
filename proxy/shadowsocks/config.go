@@ -4,9 +4,8 @@ import (
 	"bytes"
 	"crypto/cipher"
 	"crypto/md5"
-	"errors"
-
 	"v2ray.com/core/common/crypto"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/protocol"
 )
 
@@ -41,7 +40,7 @@ func (v *Account) GetCipher() (Cipher, error) {
 func (v *Account) AsAccount() (protocol.Account, error) {
 	cipher, err := v.GetCipher()
 	if err != nil {
-		return nil, err
+		return nil, errors.Base(err).Message("Shadowsocks|Account: Failed to get cipher.")
 	}
 	return &ShadowsocksAccount{
 		Cipher:      cipher,
