@@ -10,8 +10,6 @@ import (
 
 var (
 	byteGroups = []int{8, 4, 4, 4, 12}
-
-	ErrInvalidID = errors.New("Invalid ID.")
 )
 
 type UUID [16]byte
@@ -74,7 +72,7 @@ func New() *UUID {
 // PraseBytes converts an UUID in byte form to object.
 func ParseBytes(b []byte) (*UUID, error) {
 	if len(b) != 16 {
-		return nil, ErrInvalidID
+		return nil, errors.New("Invalid UUID: ", b)
 	}
 	uuid := new(UUID)
 	copy(uuid[:], b)
@@ -85,7 +83,7 @@ func ParseBytes(b []byte) (*UUID, error) {
 func ParseString(str string) (*UUID, error) {
 	text := []byte(str)
 	if len(text) < 32 {
-		return nil, ErrInvalidID
+		return nil, errors.New("Invalid UUID: ", str)
 	}
 
 	uuid := new(UUID)
