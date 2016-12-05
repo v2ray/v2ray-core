@@ -87,7 +87,7 @@ func (v *BufferedWriter) Flush() error {
 func (v *BufferedWriter) FlushWithoutLock() error {
 	defer v.buffer.Clear()
 	for !v.buffer.IsEmpty() {
-		nBytes, err := v.writer.Write(v.buffer.Value)
+		nBytes, err := v.writer.Write(v.buffer.Bytes())
 		if err != nil {
 			return err
 		}

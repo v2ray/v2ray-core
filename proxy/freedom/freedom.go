@@ -96,7 +96,7 @@ func (v *FreedomConnection) Dispatch(destination v2net.Destination, payload *all
 	output := ray.OutboundOutput()
 
 	if !payload.IsEmpty() {
-		conn.Write(payload.Value)
+		conn.Write(payload.Bytes())
 	}
 
 	go func() {

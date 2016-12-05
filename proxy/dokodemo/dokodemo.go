@@ -126,7 +126,7 @@ func (v *DokodemoDoor) handleUDPResponse(dest v2net.Destination, payload *alloc.
 	if !v.accepting {
 		return
 	}
-	v.udpHub.WriteTo(payload.Value, dest)
+	v.udpHub.WriteTo(payload.Bytes(), dest)
 }
 
 func (v *DokodemoDoor) ListenTCP() error {

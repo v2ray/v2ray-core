@@ -32,12 +32,12 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	defer buffer.Release()
 
 	ivLen := account.Cipher.IVSize()
-	_, err = io.ReadFull(reader, buffer.Value[:ivLen])
+	_, err = io.ReadFull(reader, buffer.Bytes()[:ivLen])
 	if err != nil {
 		return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read IV.")
 	}
 
-	iv := append([]byte(nil), buffer.Value[:ivLen]...)
+	iv := append([]byte(nil), buffer.Bytes()[:ivLen]...)
 
 	stream, err := account.Cipher.NewDecodingStream(account.Key, iv)
 	if err != nil {
@@ -53,13 +53,13 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	}
 
 	lenBuffer := 1
-	_, err = io.ReadFull(reader, buffer.Value[:1])
+	_, err = io.ReadFull(reader, buffer.Bytes()[:1])
 	if err != nil {
 		return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read address type.")
 	}
 
-	addrType := (buffer.Value[0] & 0x0F)
-	if (buffer.Value[0] & 0x10) == 0x10 {
+	addrType := (buffer.Bytes()[0] & 0x0F)
+	if (buffer.Bytes()[0] & 0x10) == 0x10 {
 		request.Option |= RequestOptionOneTimeAuth
 	}
 
@@ -73,52 +73,52 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 
 	switch addrType {
 	case AddrTypeIPv4:
-		_, err := io.ReadFull(reader, buffer.Value[lenBuffer:lenBuffer+4])
+		_, err := io.ReadFull(reader, buffer.BytesRange(lenBuffer, lenBuffer+4))
 		if err != nil {
 			return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read IPv4 address.")
 		}
-		request.Address = v2net.IPAddress(buffer.Value[lenBuffer : lenBuffer+4])
+		request.Address = v2net.IPAddress(buffer.BytesRange(lenBuffer, lenBuffer+4))
 		lenBuffer += 4
 	case AddrTypeIPv6:
-		_, err := io.ReadFull(reader, buffer.Value[lenBuffer:lenBuffer+16])
+		_, err := io.ReadFull(reader, buffer.BytesRange(lenBuffer, lenBuffer+16))
 		if err != nil {
 			return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read IPv6 address.")
 		}
-		request.Address = v2net.IPAddress(buffer.Value[lenBuffer : lenBuffer+16])
+		request.Address = v2net.IPAddress(buffer.BytesRange(lenBuffer, lenBuffer+16))
 		lenBuffer += 16
 	case AddrTypeDomain:
-		_, err := io.ReadFull(reader, buffer.Value[lenBuffer:lenBuffer+1])
+		_, err := io.ReadFull(reader, buffer.BytesRange(lenBuffer, lenBuffer+1))
 		if err != nil {
 			return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read domain lenth.")
 		}
-		domainLength := int(buffer.Value[lenBuffer])
+		domainLength := int(buffer.Bytes()[lenBuffer])
 		lenBuffer++
-		_, err = io.ReadFull(reader, buffer.Value[lenBuffer:lenBuffer+domainLength])
+		_, err = io.ReadFull(reader, buffer.BytesRange(lenBuffer, lenBuffer+domainLength))
 		if err != nil {
 			return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read domain.")
 		}
-		request.Address = v2net.DomainAddress(string(buffer.Value[lenBuffer : lenBuffer+domainLength]))
+		request.Address = v2net.DomainAddress(string(buffer.BytesRange(lenBuffer, lenBuffer+domainLength)))
 		lenBuffer += domainLength
 	default:
 		return nil, nil, errors.New("Shadowsocks|TCP: Unknown address type: ", addrType)
 	}
 
-	_, err = io.ReadFull(reader, buffer.Value[lenBuffer:lenBuffer+2])
+	_, err = io.ReadFull(reader, buffer.BytesRange(lenBuffer, lenBuffer+2))
 	if err != nil {
 		return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read port.")
 	}
 
-	request.Port = v2net.PortFromBytes(buffer.Value[lenBuffer : lenBuffer+2])
+	request.Port = v2net.PortFromBytes(buffer.BytesRange(lenBuffer, lenBuffer+2))
 	lenBuffer += 2
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {
-		authBytes := buffer.Value[lenBuffer : lenBuffer+AuthSize]
+		authBytes := buffer.BytesRange(lenBuffer, lenBuffer+AuthSize)
 		_, err = io.ReadFull(reader, authBytes)
 		if err != nil {
 			return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read OTA.")
 		}
 
-		actualAuth := authenticator.Authenticate(nil, buffer.Value[0:lenBuffer])
+		actualAuth := authenticator.Authenticate(nil, buffer.BytesTo(lenBuffer))
 		if !bytes.Equal(actualAuth, authBytes) {
 			return nil, nil, errors.New("Shadowsocks|TCP: Invalid OTA")
 		}
@@ -175,7 +175,7 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (v2io.Wr
 	header.AppendUint16(uint16(request.Port))
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {
-		header.Value[0] |= 0x10
+		header.Bytes()[0] |= 0x10
 
 		authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
 		header.Value = authenticator.Authenticate(header.Value, header.Value)

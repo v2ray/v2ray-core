@@ -117,9 +117,37 @@ func (b *Buffer) PrependHash(h hash.Hash) *Buffer {
 	return b
 }
 
+func (b *Buffer) Byte(index int) byte {
+	return b.Value[index]
+}
+
 // Bytes returns the content bytes of this Buffer.
 func (b *Buffer) Bytes() []byte {
 	return b.Value
+}
+
+func (b *Buffer) BytesRange(from, to int) []byte {
+	if from < 0 {
+		from += len(b.Value)
+	}
+	if to < 0 {
+		to += len(b.Value)
+	}
+	return b.Value[from:to]
+}
+
+func (b *Buffer) BytesFrom(from int) []byte {
+	if from < 0 {
+		from += len(b.Value)
+	}
+	return b.Value[from:]
+}
+
+func (b *Buffer) BytesTo(to int) []byte {
+	if to < 0 {
+		to += len(b.Value)
+	}
+	return b.Value[:to]
 }
 
 // Slice cuts the buffer at the given position.

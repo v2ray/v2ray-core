@@ -54,7 +54,7 @@ func TestSinglePacket(t *testing.T) {
 
 	respPayload, err := traffic.InboundOutput().Read()
 	assert.Error(err).IsNil()
-	assert.Bytes(respPayload.Value).Equals([]byte("Processed: Data to be sent to remote"))
+	assert.String(respPayload.String()).Equals("Processed: Data to be sent to remote")
 
 	tcpServer.Close()
 }

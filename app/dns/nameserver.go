@@ -103,7 +103,7 @@ func (v *UDPNameServer) AssignUnusedID(response chan<- *ARecord) uint16 {
 // Private: Visible for testing.
 func (v *UDPNameServer) HandleResponse(dest v2net.Destination, payload *alloc.Buffer) {
 	msg := new(dns.Msg)
-	err := msg.Unpack(payload.Value)
+	err := msg.Unpack(payload.Bytes())
 	if err != nil {
 		log.Warning("DNS: Failed to parse DNS response: ", err)
 		return
@@ -156,7 +156,7 @@ func (v *UDPNameServer) BuildQueryA(domain string, id uint16) *alloc.Buffer {
 			Qclass: dns.ClassINET,
 		}}
 
-	writtenBuffer, _ := msg.PackBuffer(buffer.Value)
+	writtenBuffer, _ := msg.PackBuffer(buffer.Bytes())
 	buffer.Slice(0, len(writtenBuffer))
 
 	return buffer

@@ -72,26 +72,26 @@ func (v *ChunkReader) Release() {
 
 func (v *ChunkReader) Read() (*alloc.Buffer, error) {
 	buffer := alloc.NewBuffer()
-	if _, err := io.ReadFull(v.reader, buffer.Value[:2]); err != nil {
+	if _, err := io.ReadFull(v.reader, buffer.BytesTo(2)); err != nil {
 		buffer.Release()
 		return nil, err
 	}
 	// There is a potential buffer overflow here. Large buffer is 64K bytes,
 	// while uin16 + 10 will be more than that
-	length := serial.BytesToUint16(buffer.Value[:2]) + AuthSize
+	length := serial.BytesToUint16(buffer.BytesTo(2)) + AuthSize
 	if length > alloc.BufferSize {
 		// Theoretically the size of a chunk is 64K, but most Shadowsocks implementations used <4K buffer.
 		buffer.Release()
 		buffer = alloc.NewLocalBuffer(int(length) + 128)
 	}
-	if _, err := io.ReadFull(v.reader, buffer.Value[:length]); err != nil {
+	if _, err := io.ReadFull(v.reader, buffer.BytesTo(int(length))); err != nil {
 		buffer.Release()
 		return nil, err
 	}
 	buffer.Slice(0, int(length))
 
-	authBytes := buffer.Value[:AuthSize]
-	payload := buffer.Value[AuthSize:]
+	authBytes := buffer.BytesTo(AuthSize)
+	payload := buffer.BytesFrom(AuthSize)
 
 	actualAuthBytes := v.auth.Authenticate(nil, payload)
 	if !bytes.Equal(authBytes, actualAuthBytes) {
@@ -123,7 +123,7 @@ func (v *ChunkWriter) Release() {
 func (v *ChunkWriter) Write(payload *alloc.Buffer) error {
 	totalLength := payload.Len()
 	payload.SliceBack(AuthSize)
-	v.auth.Authenticate(payload.Value[:0], payload.Value[AuthSize:])
+	v.auth.Authenticate(payload.BytesTo(0), payload.BytesFrom(AuthSize))
 	payload.PrependUint16(uint16(totalLength))
 	_, err := v.writer.Write(payload.Bytes())
 	return err

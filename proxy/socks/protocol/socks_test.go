@@ -95,7 +95,7 @@ func TestResponseWrite(t *testing.T) {
 		0x72, 0x72, 0x72, 0x72,
 		byte(0x00), byte(0x035),
 	}
-	assert.Bytes(buffer.Value).Equals(expectedBytes)
+	assert.Bytes(buffer.Bytes()).Equals(expectedBytes)
 }
 
 func TestSetIPv6(t *testing.T) {
@@ -107,7 +107,7 @@ func TestSetIPv6(t *testing.T) {
 	buffer := alloc.NewLocalBuffer(2048).Clear()
 	defer buffer.Release()
 	response.Write(buffer)
-	assert.Bytes(buffer.Value).Equals([]byte{
+	assert.Bytes(buffer.Bytes()).Equals([]byte{
 		socksVersion, 0, 0, AddrTypeIPv6, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0, 0})
 }
 
@@ -120,7 +120,7 @@ func TestSetDomain(t *testing.T) {
 	buffer := alloc.NewLocalBuffer(2048).Clear()
 	defer buffer.Release()
 	response.Write(buffer)
-	assert.Bytes(buffer.Value).Equals([]byte{
+	assert.Bytes(buffer.Bytes()).Equals([]byte{
 		socksVersion, 0, 0, AddrTypeDomain, 9, 118, 50, 114, 97, 121, 46, 99, 111, 109, 0, 0})
 }
 

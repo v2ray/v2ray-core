@@ -139,7 +139,7 @@ func (v *Server) handlerUDPPayload(payload *alloc.Buffer, session *proxy.Session
 		}
 		defer data.Release()
 
-		v.udpHub.WriteTo(data.Value, source)
+		v.udpHub.WriteTo(data.Bytes(), source)
 	})
 }
 

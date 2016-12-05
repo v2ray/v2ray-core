@@ -35,7 +35,7 @@ func TestUDPEncoding(t *testing.T) {
 
 	decodedRequest, decodedData, err := DecodeUDPPacket(request.User, encodedData)
 	assert.Error(err).IsNil()
-	assert.Bytes(decodedData.Value).Equals(data.Value)
+	assert.Bytes(decodedData.Bytes()).Equals(data.Bytes())
 	assert.Address(decodedRequest.Address).Equals(request.Address)
 	assert.Port(decodedRequest.Port).Equals(request.Port)
 }
@@ -73,7 +73,7 @@ func TestTCPRequest(t *testing.T) {
 
 	decodedData, err := reader.Read()
 	assert.Error(err).IsNil()
-	assert.Bytes(decodedData.Value).Equals([]byte("test string"))
+	assert.String(decodedData.String()).Equals("test string")
 }
 
 func TestUDPReaderWriter(t *testing.T) {

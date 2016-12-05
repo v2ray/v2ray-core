@@ -30,7 +30,7 @@ func NewAdaptiveWriter(writer io.Writer) *AdaptiveWriter {
 func (v *AdaptiveWriter) Write(buffer *alloc.Buffer) error {
 	defer buffer.Release()
 	for !buffer.IsEmpty() {
-		nBytes, err := v.writer.Write(buffer.Value)
+		nBytes, err := v.writer.Write(buffer.Bytes())
 		if err != nil {
 			return err
 		}

@@ -43,10 +43,10 @@ func TestBufferPrepend(t *testing.T) {
 	buffer.Prepend([]byte{'x', 'y', 'z'})
 
 	assert.Int(buffer.Len()).Equals(6)
-	assert.Bytes(buffer.Value).Equals([]byte("xyzabc"))
+	assert.String(buffer.String()).Equals("xyzabc")
 
 	buffer.Prepend([]byte{'u', 'v', 'w'})
-	assert.Bytes(buffer.Value).Equals([]byte("uvwxyzabc"))
+	assert.String(buffer.String()).Equals("uvwxyzabc")
 }
 
 func TestBufferString(t *testing.T) {
