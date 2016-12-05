@@ -71,8 +71,8 @@ func (v *ChunkReader) Release() {
 }
 
 func (v *ChunkReader) Read() (*alloc.Buffer, error) {
-	buffer := alloc.NewBuffer()
-	if _, err := io.ReadFull(v.reader, buffer.BytesTo(2)); err != nil {
+	buffer := alloc.NewBuffer().Clear()
+	if _, err := buffer.FillFullFrom(v.reader, 2); err != nil {
 		buffer.Release()
 		return nil, err
 	}
@@ -84,11 +84,12 @@ func (v *ChunkReader) Read() (*alloc.Buffer, error) {
 		buffer.Release()
 		buffer = alloc.NewLocalBuffer(int(length) + 128)
 	}
-	if _, err := io.ReadFull(v.reader, buffer.BytesTo(int(length))); err != nil {
+
+	buffer.Clear()
+	if _, err := buffer.FillFullFrom(v.reader, int(length)); err != nil {
 		buffer.Release()
 		return nil, err
 	}
-	buffer.Slice(0, int(length))
 
 	authBytes := buffer.BytesTo(AuthSize)
 	payload := buffer.BytesFrom(AuthSize)

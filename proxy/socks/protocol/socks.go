@@ -185,10 +185,10 @@ type Socks5Request struct {
 }
 
 func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
-	buffer := alloc.NewLocalBuffer(512)
+	buffer := alloc.NewLocalBuffer(512).Clear()
 	defer buffer.Release()
 
-	_, err = io.ReadFull(reader, buffer.Value[:4])
+	_, err = buffer.FillFullFrom(reader, 4)
 	if err != nil {
 		return
 	}
@@ -206,17 +206,18 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 			return
 		}
 	case AddrTypeDomain:
-		_, err = io.ReadFull(reader, buffer.Value[0:1])
+		buffer.Clear()
+		_, err = buffer.FillFullFrom(reader, 1)
 		if err != nil {
 			return
 		}
-		domainLength := buffer.Value[0]
-		_, err = io.ReadFull(reader, buffer.Value[:domainLength])
+		domainLength := int(buffer.Byte(0))
+		_, err = buffer.FillFullFrom(reader, domainLength)
 		if err != nil {
 			return
 		}
 
-		request.Domain = string(append([]byte(nil), buffer.Value[:domainLength]...))
+		request.Domain = string(buffer.BytesFrom(-domainLength))
 	case AddrTypeIPv6:
 		_, err = io.ReadFull(reader, request.IPv6[:])
 		if err != nil {
@@ -227,12 +228,12 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 		return
 	}
 
-	_, err = io.ReadFull(reader, buffer.Value[:2])
+	_, err = buffer.FillFullFrom(reader, 2)
 	if err != nil {
 		return
 	}
 
-	request.Port = v2net.PortFromBytes(buffer.Value[:2])
+	request.Port = v2net.PortFromBytes(buffer.BytesFrom(-2))
 	return
 }
 

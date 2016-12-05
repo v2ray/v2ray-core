@@ -220,7 +220,14 @@ func (b *Buffer) Read(data []byte) (int, error) {
 func (b *Buffer) FillFrom(reader io.Reader) (int, error) {
 	begin := b.Len()
 	nBytes, err := reader.Read(b.head[b.offset+begin:])
-	b.Value = b.head[:b.offset+begin+nBytes]
+	b.Value = b.head[b.offset : b.offset+begin+nBytes]
+	return nBytes, err
+}
+
+func (b *Buffer) FillFullFrom(reader io.Reader, amount int) (int, error) {
+	begin := b.Len()
+	nBytes, err := io.ReadFull(reader, b.head[b.offset+begin:b.offset+begin+amount])
+	b.Value = b.head[b.offset : b.offset+begin+nBytes]
 	return nBytes, err
 }
 
