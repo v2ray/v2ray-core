@@ -29,7 +29,7 @@ func (v *AuthChunkWriter) Release() {
 
 func Authenticate(buffer *alloc.Buffer) {
 	fnvHash := fnv.New32a()
-	fnvHash.Write(buffer.Value)
+	fnvHash.Write(buffer.Bytes())
 	buffer.PrependHash(fnvHash)
 
 	buffer.PrependUint16(uint16(buffer.Len()))

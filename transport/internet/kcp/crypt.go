@@ -21,7 +21,7 @@ func (v *SimpleAuthenticator) Overhead() int {
 func (v *SimpleAuthenticator) Seal(buffer *alloc.Buffer) {
 	buffer.PrependUint16(uint16(buffer.Len()))
 	fnvHash := fnv.New32a()
-	fnvHash.Write(buffer.Value)
+	fnvHash.Write(buffer.Bytes())
 	buffer.PrependHash(fnvHash)
 
 	len := buffer.Len()
@@ -29,7 +29,7 @@ func (v *SimpleAuthenticator) Seal(buffer *alloc.Buffer) {
 	if xtra != 0 {
 		buffer.Slice(0, len+xtra)
 	}
-	xorfwd(buffer.Value)
+	xorfwd(buffer.Bytes())
 	if xtra != 0 {
 		buffer.Slice(0, len)
 	}
@@ -41,7 +41,7 @@ func (v *SimpleAuthenticator) Open(buffer *alloc.Buffer) bool {
 	if xtra != 0 {
 		buffer.Slice(0, len+xtra)
 	}
-	xorbkd(buffer.Value)
+	xorbkd(buffer.Bytes())
 	if xtra != 0 {
 		buffer.Slice(0, len)
 	}

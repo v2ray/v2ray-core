@@ -19,11 +19,11 @@ func TestAuthenticate(t *testing.T) {
 	buffer := alloc.NewBuffer().Clear()
 	buffer.AppendBytes(1, 2, 3, 4)
 	Authenticate(buffer)
-	assert.Bytes(buffer.Value).Equals([]byte{0, 8, 87, 52, 168, 125, 1, 2, 3, 4})
+	assert.Bytes(buffer.Bytes()).Equals([]byte{0, 8, 87, 52, 168, 125, 1, 2, 3, 4})
 
 	b2, err := NewAuthChunkReader(buffer).Read()
 	assert.Error(err).IsNil()
-	assert.Bytes(b2.Value).Equals([]byte{1, 2, 3, 4})
+	assert.Bytes(b2.Bytes()).Equals([]byte{1, 2, 3, 4})
 }
 
 func TestSingleIO(t *testing.T) {
@@ -39,7 +39,7 @@ func TestSingleIO(t *testing.T) {
 	reader := NewAuthChunkReader(content)
 	buffer, err := reader.Read()
 	assert.Error(err).IsNil()
-	assert.Bytes(buffer.Value).Equals([]byte("abcd"))
+	assert.String(buffer.String()).Equals("abcd")
 }
 
 func TestLargeIO(t *testing.T) {
@@ -73,7 +73,7 @@ func TestLargeIO(t *testing.T) {
 			break
 		}
 		assert.Error(err).IsNil()
-		actualContent = append(actualContent, buffer.Value...)
+		actualContent = append(actualContent, buffer.Bytes()...)
 	}
 
 	assert.Int(len(actualContent)).Equals(len(content))

@@ -24,7 +24,7 @@ func (v *OutboundConnectionHandler) Dispatch(destination v2net.Destination, payl
 
 	v.Destination = destination
 	if !payload.IsEmpty() {
-		v.ConnOutput.Write(payload.Value)
+		v.ConnOutput.Write(payload.Bytes())
 	}
 	payload.Release()
 

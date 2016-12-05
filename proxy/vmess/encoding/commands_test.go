@@ -25,7 +25,7 @@ func TestSwitchAccount(t *testing.T) {
 	err := MarshalCommand(sa, buffer)
 	assert.Error(err).IsNil()
 
-	cmd, err := UnmarshalCommand(1, buffer.Value[2:])
+	cmd, err := UnmarshalCommand(1, buffer.BytesFrom(2))
 	assert.Error(err).IsNil()
 
 	sa2, ok := cmd.(*protocol.CommandSwitchAccount)

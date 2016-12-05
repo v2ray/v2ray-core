@@ -40,14 +40,14 @@ func MarshalCommand(command interface{}, writer io.Writer) error {
 		return err
 	}
 
-	auth := Authenticate(buffer.Value)
+	auth := Authenticate(buffer.Bytes())
 	len := buffer.Len() + 4
 	if len > 255 {
 		return ErrCommandTooLarge
 	}
 
 	writer.Write([]byte{cmdId, byte(len), byte(auth >> 24), byte(auth >> 16), byte(auth >> 8), byte(auth)})
-	writer.Write(buffer.Value)
+	writer.Write(buffer.Bytes())
 	return nil
 }
 

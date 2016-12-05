@@ -136,7 +136,7 @@ func (v *UDPHub) start() {
 	oobBytes := make([]byte, 256)
 	for v.Running() {
 		buffer := alloc.NewSmallBuffer()
-		nBytes, noob, _, addr, err := ReadUDPMsg(v.conn, buffer.Value, oobBytes)
+		nBytes, noob, _, addr, err := ReadUDPMsg(v.conn, buffer.Bytes(), oobBytes)
 		if err != nil {
 			log.Info("UDP|Hub: Failed to read UDP msg: ", err)
 			buffer.Release()

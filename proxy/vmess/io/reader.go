@@ -61,9 +61,9 @@ func (v *AuthChunkReader) Read() (*alloc.Buffer, error) {
 				return nil, io.ErrUnexpectedEOF
 			}
 		}
-		length := serial.BytesToUint16(buffer.Value[:2])
+		length := serial.BytesToUint16(buffer.BytesTo(2))
 		v.chunkLength = int(length) - 4
-		v.validator = NewValidator(serial.BytesToUint32(buffer.Value[2:6]))
+		v.validator = NewValidator(serial.BytesToUint32(buffer.BytesRange(2, 6)))
 		buffer.SliceFrom(6)
 		if buffer.Len() < v.chunkLength && v.chunkLength <= 2048 {
 			_, err := buffer.FillFrom(v.reader)
@@ -86,10 +86,10 @@ func (v *AuthChunkReader) Read() (*alloc.Buffer, error) {
 	}
 
 	if buffer.Len() < v.chunkLength {
-		v.validator.Consume(buffer.Value)
+		v.validator.Consume(buffer.Bytes())
 		v.chunkLength -= buffer.Len()
 	} else {
-		v.validator.Consume(buffer.Value[:v.chunkLength])
+		v.validator.Consume(buffer.BytesTo(v.chunkLength))
 		if !v.validator.Validate() {
 			buffer.Release()
 			return nil, errors.New("VMess|AuthChunkReader: Invalid auth.")
@@ -97,7 +97,7 @@ func (v *AuthChunkReader) Read() (*alloc.Buffer, error) {
 		leftLength := buffer.Len() - v.chunkLength
 		if leftLength > 0 {
 			v.last = alloc.NewBuffer().Clear()
-			v.last.Append(buffer.Value[v.chunkLength:])
+			v.last.Append(buffer.BytesFrom(v.chunkLength))
 			buffer.Slice(0, v.chunkLength)
 		}
 

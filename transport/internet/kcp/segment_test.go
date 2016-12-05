@@ -38,7 +38,7 @@ func TestDataSegment(t *testing.T) {
 	assert.Uint32(seg2.Timestamp).Equals(seg.Timestamp)
 	assert.Uint32(seg2.SendingNext).Equals(seg.SendingNext)
 	assert.Uint32(seg2.Number).Equals(seg.Number)
-	assert.Bytes(seg2.Data.Value).Equals(seg.Data.Value)
+	assert.Bytes(seg2.Data.Bytes()).Equals(seg.Data.Bytes())
 }
 
 func TestACKSegment(t *testing.T) {
