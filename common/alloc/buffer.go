@@ -219,9 +219,8 @@ func (b *Buffer) Read(data []byte) (int, error) {
 
 func (b *Buffer) FillFrom(reader io.Reader) (int, error) {
 	begin := b.Len()
-	b.Value = b.Value[:cap(b.Value)]
-	nBytes, err := reader.Read(b.Value[begin:])
-	b.Value = b.Value[:begin+nBytes]
+	nBytes, err := reader.Read(b.head[b.offset+begin:])
+	b.Value = b.head[:b.offset+begin+nBytes]
 	return nBytes, err
 }
 
