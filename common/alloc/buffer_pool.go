@@ -6,6 +6,7 @@ import (
 	"sync"
 )
 
+// Pool provides functionality to generate and recycle buffers on demand.
 type Pool interface {
 	Allocate() *Buffer
 	Free(*Buffer)
