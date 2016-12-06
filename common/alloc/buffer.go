@@ -92,6 +92,10 @@ func (b *Buffer) Byte(index int) byte {
 	return b.head[b.start+index]
 }
 
+func (b *Buffer) SetByte(index int, value byte) {
+	b.head[b.start+index] = value
+}
+
 // Bytes returns the content bytes of this Buffer.
 func (b *Buffer) Bytes() []byte {
 	return b.head[b.start:b.end]

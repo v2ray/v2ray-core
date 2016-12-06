@@ -38,7 +38,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 		return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read IV.")
 	}
 
-	iv := append([]byte(nil), buffer.Bytes()[:ivLen]...)
+	iv := append([]byte(nil), buffer.BytesTo(ivLen)...)
 
 	stream, err := account.Cipher.NewDecodingStream(account.Key, iv)
 	if err != nil {
@@ -59,8 +59,8 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 		return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read address type.")
 	}
 
-	addrType := (buffer.Bytes()[0] & 0x0F)
-	if (buffer.Bytes()[0] & 0x10) == 0x10 {
+	addrType := (buffer.Byte(0) & 0x0F)
+	if (buffer.Byte(0) & 0x10) == 0x10 {
 		request.Option |= RequestOptionOneTimeAuth
 	}
 
@@ -171,7 +171,7 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (v2io.Wr
 	header.AppendFunc(serial.WriteUint16(uint16(request.Port)))
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {
-		header.Bytes()[0] |= 0x10
+		header.SetByte(0, header.Byte(0)|0x10)
 
 		authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
 		header.AppendFunc(authenticator.Authenticate(header.Bytes()))
@@ -267,7 +267,7 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload *alloc.Buffer) (*a
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {
 		authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
-		buffer.Bytes()[ivLen] |= 0x10
+		buffer.SetByte(ivLen, buffer.Byte(ivLen)|0x10)
 
 		buffer.AppendFunc(authenticator.Authenticate(buffer.BytesFrom(ivLen)))
 	}
