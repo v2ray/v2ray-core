@@ -29,16 +29,10 @@ func (v *ChainWriter) Write(payload []byte) (int, error) {
 	size := len(payload)
 	for size > 0 {
 		buffer := alloc.NewBuffer()
-		if size > alloc.BufferSize {
-			buffer.Append(payload[:alloc.BufferSize])
-			size -= alloc.BufferSize
-			payload = payload[alloc.BufferSize:]
-			bytesWritten += alloc.BufferSize
-		} else {
-			buffer.Append(payload)
-			bytesWritten += size
-			size = 0
-		}
+		nBytes, _ := buffer.Write(payload)
+		size -= nBytes
+		payload = payload[nBytes:]
+		bytesWritten += nBytes
 		err := v.writer.Write(buffer)
 		if err != nil {
 			return bytesWritten, err
