@@ -10,7 +10,7 @@ func (v *Assert) Pointer(value interface{}) *PointerSubject {
 	return &PointerSubject{
 		Subject: Subject{
 			a:    v,
-			disp: serial.PointerToString(value),
+			disp: serial.ToString(value),
 		},
 		value: value,
 	}
