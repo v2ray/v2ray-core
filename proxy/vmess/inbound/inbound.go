@@ -9,6 +9,7 @@ import (
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/errors"
 	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/loader"
@@ -189,7 +190,8 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 		bodyReader := session.DecodeRequestBody(reader)
 		var requestReader v2io.Reader
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
-			requestReader = vmessio.NewAuthChunkReader(bodyReader)
+			authReader := crypto.NewAuthenticationReader(new(encoding.FnvAuthenticator), bodyReader, func() []byte { return nil }, func() []byte { return nil })
+			requestReader = v2io.NewAdaptiveReader(authReader)
 		} else {
 			requestReader = v2io.NewAdaptiveReader(bodyReader)
 		}
