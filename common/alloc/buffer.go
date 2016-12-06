@@ -15,7 +15,7 @@ type BytesWriter func([]byte) int
 // the buffer into an internal buffer pool, in order to recreate a buffer more
 // quickly.
 type Buffer struct {
-	head []byte
+	v    []byte
 	pool Pool
 
 	start int
@@ -24,7 +24,7 @@ type Buffer struct {
 
 func CreateBuffer(container []byte, parent Pool) *Buffer {
 	b := new(Buffer)
-	b.head = container
+	b.v = container
 	b.pool = parent
 	b.start = defaultOffset
 	b.end = defaultOffset
@@ -33,13 +33,13 @@ func CreateBuffer(container []byte, parent Pool) *Buffer {
 
 // Release recycles the buffer into an internal buffer pool.
 func (b *Buffer) Release() {
-	if b == nil || b.head == nil {
+	if b == nil || b.v == nil {
 		return
 	}
 	if b.pool != nil {
 		b.pool.Free(b)
 	}
-	b.head = nil
+	b.v = nil
 	b.pool = nil
 }
 
@@ -53,7 +53,7 @@ func (b *Buffer) Clear() {
 // Reset resets this Buffer into its original state.
 func (b *Buffer) Reset() {
 	b.start = defaultOffset
-	b.end = len(b.head)
+	b.end = len(b.v)
 }
 
 // AppendBytes appends one or more bytes to the end of the buffer.
@@ -63,12 +63,12 @@ func (b *Buffer) AppendBytes(bytes ...byte) {
 
 // Append appends a byte array to the end of the buffer.
 func (b *Buffer) Append(data []byte) {
-	nBytes := copy(b.head[b.end:], data)
+	nBytes := copy(b.v[b.end:], data)
 	b.end += nBytes
 }
 
 func (b *Buffer) AppendFunc(writer BytesWriter) {
-	nBytes := writer(b.head[b.end:])
+	nBytes := writer(b.v[b.end:])
 	b.end += nBytes
 }
 
@@ -76,7 +76,7 @@ func (b *Buffer) AppendFunc(writer BytesWriter) {
 // no more than 16 bytes.
 func (b *Buffer) Prepend(data []byte) {
 	b.SliceBack(len(data))
-	copy(b.head[b.start:], data)
+	copy(b.v[b.start:], data)
 }
 
 func (b *Buffer) PrependBytes(data ...byte) {
@@ -85,20 +85,24 @@ func (b *Buffer) PrependBytes(data ...byte) {
 
 func (b *Buffer) PrependFunc(offset int, writer BytesWriter) {
 	b.SliceBack(offset)
-	writer(b.head[b.start:])
+	writer(b.v[b.start:])
 }
 
 func (b *Buffer) Byte(index int) byte {
-	return b.head[b.start+index]
+	return b.v[b.start+index]
 }
 
 func (b *Buffer) SetByte(index int, value byte) {
-	b.head[b.start+index] = value
+	b.v[b.start+index] = value
 }
 
 // Bytes returns the content bytes of this Buffer.
 func (b *Buffer) Bytes() []byte {
-	return b.head[b.start:b.end]
+	return b.v[b.start:b.end]
+}
+
+func (b *Buffer) SetBytesFunc(writer BytesWriter) {
+	b.end = b.start + writer(b.v[b.start:])
 }
 
 func (b *Buffer) BytesRange(from, to int) []byte {
@@ -108,21 +112,21 @@ func (b *Buffer) BytesRange(from, to int) []byte {
 	if to < 0 {
 		to += b.Len()
 	}
-	return b.head[b.start+from : b.start+to]
+	return b.v[b.start+from : b.start+to]
 }
 
 func (b *Buffer) BytesFrom(from int) []byte {
 	if from < 0 {
 		from += b.Len()
 	}
-	return b.head[b.start+from : b.end]
+	return b.v[b.start+from : b.end]
 }
 
 func (b *Buffer) BytesTo(to int) []byte {
 	if to < 0 {
 		to += b.Len()
 	}
-	return b.head[b.start : b.start+to]
+	return b.v[b.start : b.start+to]
 }
 
 // Slice cuts the buffer at the given position.
@@ -171,12 +175,12 @@ func (b *Buffer) IsEmpty() bool {
 
 // IsFull returns true if the buffer has no more room to grow.
 func (b *Buffer) IsFull() bool {
-	return b.end == len(b.head)
+	return b.end == len(b.v)
 }
 
 // Write implements Write method in io.Writer.
 func (b *Buffer) Write(data []byte) (int, error) {
-	nBytes := copy(b.head[b.end:], data)
+	nBytes := copy(b.v[b.end:], data)
 	b.end += nBytes
 	return nBytes, nil
 }
@@ -186,7 +190,7 @@ func (b *Buffer) Read(data []byte) (int, error) {
 	if b.Len() == 0 {
 		return 0, io.EOF
 	}
-	nBytes := copy(data, b.head[b.start:b.end])
+	nBytes := copy(data, b.v[b.start:b.end])
 	if nBytes == b.Len() {
 		b.Clear()
 	} else {
@@ -196,19 +200,19 @@ func (b *Buffer) Read(data []byte) (int, error) {
 }
 
 func (b *Buffer) FillFrom(reader io.Reader) (int, error) {
-	nBytes, err := reader.Read(b.head[b.end:])
+	nBytes, err := reader.Read(b.v[b.end:])
 	b.end += nBytes
 	return nBytes, err
 }
 
 func (b *Buffer) FillFullFrom(reader io.Reader, amount int) (int, error) {
-	nBytes, err := io.ReadFull(reader, b.head[b.end:b.end+amount])
+	nBytes, err := io.ReadFull(reader, b.v[b.end:b.end+amount])
 	b.end += nBytes
 	return nBytes, err
 }
 
 func (b *Buffer) String() string {
-	return string(b.head[b.start:b.end])
+	return string(b.v[b.start:b.end])
 }
 
 // NewBuffer creates a Buffer with 8K bytes of arbitrary content.

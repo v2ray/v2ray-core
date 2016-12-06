@@ -29,7 +29,7 @@ func (p *SyncPool) Allocate() *Buffer {
 }
 
 func (p *SyncPool) Free(buffer *Buffer) {
-	rawBuffer := buffer.head
+	rawBuffer := buffer.v
 	if rawBuffer == nil {
 		return
 	}
@@ -65,7 +65,7 @@ func (p *BufferPool) Allocate() *Buffer {
 }
 
 func (p *BufferPool) Free(buffer *Buffer) {
-	rawBuffer := buffer.head
+	rawBuffer := buffer.v
 	if rawBuffer == nil {
 		return
 	}
