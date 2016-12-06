@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
+	"v2ray.com/core/common/serial"
 )
 
 const (
@@ -31,7 +32,9 @@ func (v *NoneResponse) AsAny() *any.Any {
 }
 
 func (v *HTTPResponse) WriteTo(writer v2io.Writer) {
-	writer.Write(alloc.NewLocalBuffer(512).Clear().AppendString(http403response))
+	b := alloc.NewLocalBuffer(512)
+	b.AppendFunc(serial.WriteString(http403response))
+	writer.Write(b)
 }
 
 func (v *HTTPResponse) AsAny() *any.Any {

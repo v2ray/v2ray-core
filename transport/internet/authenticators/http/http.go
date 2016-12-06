@@ -5,16 +5,21 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strings"
 	"time"
-
 	"v2ray.com/core/common/alloc"
 	"v2ray.com/core/common/loader"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/transport/internet"
 )
 
 const (
 	CRLF   = "\r\n"
 	ENDING = CRLF + CRLF
+)
+
+var (
+	writeCRLF = serial.WriteString(CRLF)
 )
 
 type Reader interface {
@@ -41,18 +46,18 @@ type HeaderReader struct {
 }
 
 func (*HeaderReader) Read(reader io.Reader) (*alloc.Buffer, error) {
-	buffer := alloc.NewSmallBuffer().Clear()
+	buffer := alloc.NewSmallBuffer()
 	for {
 		_, err := buffer.FillFrom(reader)
 		if err != nil {
 			return nil, err
 		}
-		if n := bytes.Index(buffer.Value, []byte(ENDING)); n != -1 {
+		if n := bytes.Index(buffer.Bytes(), []byte(ENDING)); n != -1 {
 			buffer.SliceFrom(n + len(ENDING))
 			break
 		}
 		if buffer.Len() >= len(ENDING) {
-			copy(buffer.Value, buffer.Value[buffer.Len()-len(ENDING):])
+			copy(buffer.Bytes(), buffer.BytesFrom(buffer.Len()-len(ENDING)))
 			buffer.Slice(0, len(ENDING))
 		}
 	}
@@ -77,7 +82,7 @@ func (v *HeaderWriter) Write(writer io.Writer) error {
 	if v.header == nil {
 		return nil
 	}
-	_, err := writer.Write(v.header.Value)
+	_, err := writer.Write(v.header.Bytes())
 	v.header.Release()
 	v.header = nil
 	return err
@@ -138,33 +143,39 @@ type HttpAuthenticator struct {
 }
 
 func (v HttpAuthenticator) GetClientWriter() *HeaderWriter {
-	header := alloc.NewSmallBuffer().Clear()
+	header := alloc.NewSmallBuffer()
 	config := v.config.Request
-	header.AppendString(config.Method.GetValue()).AppendString(" ").AppendString(config.PickUri()).AppendString(" ").AppendString(config.GetFullVersion()).AppendString(CRLF)
+	header.AppendFunc(serial.WriteString(strings.Join([]string{config.Method.GetValue(), config.PickUri(), config.GetFullVersion()}, " ")))
+	header.AppendFunc(writeCRLF)
 
 	headers := config.PickHeaders()
 	for _, h := range headers {
-		header.AppendString(h).AppendString(CRLF)
+		header.AppendFunc(serial.WriteString(h))
+		header.AppendFunc(writeCRLF)
 	}
-	header.AppendString(CRLF)
+	header.AppendFunc(writeCRLF)
 	return &HeaderWriter{
 		header: header,
 	}
 }
 
 func (v HttpAuthenticator) GetServerWriter() *HeaderWriter {
-	header := alloc.NewSmallBuffer().Clear()
+	header := alloc.NewSmallBuffer()
 	config := v.config.Response
-	header.AppendString(config.GetFullVersion()).AppendString(" ").AppendString(config.Status.GetCode()).AppendString(" ").AppendString(config.Status.GetReason()).AppendString(CRLF)
+	header.AppendFunc(serial.WriteString(strings.Join([]string{config.GetFullVersion(), config.Status.GetCode(), config.Status.GetReason()}, " ")))
+	header.AppendFunc(writeCRLF)
 
 	headers := config.PickHeaders()
 	for _, h := range headers {
-		header.AppendString(h).AppendString(CRLF)
+		header.AppendFunc(serial.WriteString(h))
+		header.AppendFunc(writeCRLF)
 	}
 	if !config.HasHeader("Date") {
-		header.AppendString("Date: ").AppendString(time.Now().Format(http.TimeFormat)).AppendString(CRLF)
+		header.AppendFunc(serial.WriteString("Date: "))
+		header.AppendFunc(serial.WriteString(time.Now().Format(http.TimeFormat)))
+		header.AppendFunc(writeCRLF)
 	}
-	header.AppendString(CRLF)
+	header.AppendFunc(writeCRLF)
 	return &HeaderWriter{
 		header: header,
 	}

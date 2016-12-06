@@ -9,6 +9,7 @@ import (
 	"v2ray.com/core/common/alloc"
 	"v2ray.com/core/common/errors"
 	v2io "v2ray.com/core/common/io"
+	"v2ray.com/core/common/serial"
 	. "v2ray.com/core/proxy/vmess/io"
 	"v2ray.com/core/testing/assert"
 )
@@ -16,7 +17,7 @@ import (
 func TestAuthenticate(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := alloc.NewBuffer().Clear()
+	buffer := alloc.NewBuffer()
 	buffer.AppendBytes(1, 2, 3, 4)
 	Authenticate(buffer)
 	assert.Bytes(buffer.Bytes()).Equals([]byte{0, 8, 87, 52, 168, 125, 1, 2, 3, 4})
@@ -32,8 +33,10 @@ func TestSingleIO(t *testing.T) {
 	content := bytes.NewBuffer(make([]byte, 0, 1024*1024))
 
 	writer := NewAuthChunkWriter(v2io.NewAdaptiveWriter(content))
-	writer.Write(alloc.NewBuffer().Clear().AppendString("abcd"))
-	writer.Write(alloc.NewBuffer().Clear())
+	b := alloc.NewBuffer()
+	b.AppendFunc(serial.WriteString("abcd"))
+	writer.Write(b)
+	writer.Write(alloc.NewBuffer())
 	writer.Release()
 
 	reader := NewAuthChunkReader(content)
@@ -56,13 +59,17 @@ func TestLargeIO(t *testing.T) {
 		if chunkSize+writeSize > len(content) {
 			chunkSize = len(content) - writeSize
 		}
-		writer.Write(alloc.NewBuffer().Clear().Append(content[writeSize : writeSize+chunkSize]))
+		b := alloc.NewBuffer()
+		b.Append(content[writeSize : writeSize+chunkSize])
+		writer.Write(b)
+		b.Release()
+
 		writeSize += chunkSize
 		if writeSize == len(content) {
 			break
 		}
 	}
-	writer.Write(alloc.NewBuffer().Clear())
+	writer.Write(alloc.NewBuffer())
 	writer.Release()
 
 	actualContent := make([]byte, 0, len(content))

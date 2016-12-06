@@ -12,7 +12,9 @@ func TestUTPOpenSeal(t *testing.T) {
 	assert := assert.On(t)
 
 	content := []byte{'a', 'b', 'c', 'd', 'e', 'f', 'g'}
-	payload := alloc.NewLocalBuffer(2048).Clear().Append(content)
+	payload := alloc.NewLocalBuffer(2048)
+	payload.Append(content)
+
 	utp := UTP{}
 	utp.Seal(payload)
 	assert.Int(payload.Len()).GreaterThan(len(content))

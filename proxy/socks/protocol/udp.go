@@ -5,6 +5,7 @@ import (
 	"v2ray.com/core/common/alloc"
 	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/serial"
 )
 
 var (
@@ -26,14 +27,17 @@ func (request *Socks5UDPRequest) Write(buffer *alloc.Buffer) {
 	buffer.AppendBytes(0, 0, request.Fragment)
 	switch request.Address.Family() {
 	case v2net.AddressFamilyIPv4:
-		buffer.AppendBytes(AddrTypeIPv4).Append(request.Address.IP())
+		buffer.AppendBytes(AddrTypeIPv4)
+		buffer.Append(request.Address.IP())
 	case v2net.AddressFamilyIPv6:
-		buffer.AppendBytes(AddrTypeIPv6).Append(request.Address.IP())
+		buffer.AppendBytes(AddrTypeIPv6)
+		buffer.Append(request.Address.IP())
 	case v2net.AddressFamilyDomain:
-		buffer.AppendBytes(AddrTypeDomain, byte(len(request.Address.Domain()))).Append([]byte(request.Address.Domain()))
+		buffer.AppendBytes(AddrTypeDomain, byte(len(request.Address.Domain())))
+		buffer.Append([]byte(request.Address.Domain()))
 	}
-	buffer.AppendUint16(request.Port.Value())
-	buffer.Append(request.Data.Value)
+	buffer.AppendFunc(serial.WriteUint16(request.Port.Value()))
+	buffer.Append(request.Data.Bytes())
 }
 
 func ReadUDPRequest(packet []byte) (*Socks5UDPRequest, error) {
@@ -79,7 +83,9 @@ func ReadUDPRequest(packet []byte) (*Socks5UDPRequest, error) {
 	}
 
 	if len(packet) > dataBegin {
-		request.Data = alloc.NewBuffer().Clear().Append(packet[dataBegin:])
+		b := alloc.NewSmallBuffer()
+		b.Append(packet[dataBegin:])
+		request.Data = b
 	}
 
 	return request, nil

@@ -4,13 +4,14 @@ import (
 	"testing"
 
 	. "v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/testing/assert"
 )
 
 func TestBufferClear(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := NewBuffer().Clear()
+	buffer := NewBuffer()
 	defer buffer.Release()
 
 	payload := "Bytes"
@@ -21,22 +22,19 @@ func TestBufferClear(t *testing.T) {
 	assert.Int(buffer.Len()).Equals(0)
 }
 
-func TestBufferIsFull(t *testing.T) {
+func TestBufferIsEmpty(t *testing.T) {
 	assert := assert.On(t)
 
 	buffer := NewBuffer()
 	defer buffer.Release()
 
-	assert.Bool(buffer.IsFull()).IsTrue()
-
-	buffer.Clear()
-	assert.Bool(buffer.IsFull()).IsFalse()
+	assert.Bool(buffer.IsEmpty()).IsTrue()
 }
 
 func TestBufferPrepend(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := NewBuffer().Clear()
+	buffer := NewBuffer()
 	defer buffer.Release()
 
 	buffer.Append([]byte{'a', 'b', 'c'})
@@ -52,17 +50,17 @@ func TestBufferPrepend(t *testing.T) {
 func TestBufferString(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := NewBuffer().Clear()
+	buffer := NewBuffer()
 	defer buffer.Release()
 
-	buffer.AppendString("Test String")
+	buffer.AppendFunc(serial.WriteString("Test String"))
 	assert.String(buffer.String()).Equals("Test String")
 }
 
 func TestBufferWrite(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := NewLocalBuffer(24).Clear() // 16 + 8
+	buffer := NewLocalBuffer(24) // 16 + 8
 	nBytes, err := buffer.Write([]byte("abcd"))
 	assert.Error(err).IsNil()
 	assert.Int(nBytes).Equals(4)

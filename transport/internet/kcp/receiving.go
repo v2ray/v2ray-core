@@ -196,7 +196,7 @@ func (v *ReceivingWorker) Read(b []byte) int {
 
 	total := 0
 	if v.leftOver != nil {
-		nBytes := copy(b, v.leftOver.Value)
+		nBytes := copy(b, v.leftOver.Bytes())
 		if nBytes < v.leftOver.Len() {
 			v.leftOver.SliceFrom(nBytes)
 			return nBytes
@@ -214,7 +214,7 @@ func (v *ReceivingWorker) Read(b []byte) int {
 		v.window.Advance()
 		v.nextNumber++
 
-		nBytes := copy(b[total:], seg.Data.Value)
+		nBytes := copy(b[total:], seg.Data.Bytes())
 		total += nBytes
 		if nBytes < seg.Data.Len() {
 			seg.Data.SliceFrom(nBytes)

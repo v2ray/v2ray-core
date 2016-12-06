@@ -13,13 +13,15 @@ import (
 func TestAdaptiveWriter(t *testing.T) {
 	assert := assert.On(t)
 
-	lb := alloc.NewBuffer().Clear()
+	lb := alloc.NewBuffer()
 	lb.FillFrom(rand.Reader)
 
-	writeBuffer := make([]byte, 0, 1024*1024)
+	expectedBytes := append([]byte(nil), lb.Bytes()...)
 
-	writer := NewAdaptiveWriter(NewBufferedWriter(bytes.NewBuffer(writeBuffer)))
+	writeBuffer := bytes.NewBuffer(make([]byte, 0, 1024*1024))
+
+	writer := NewAdaptiveWriter(NewBufferedWriter(writeBuffer))
 	err := writer.Write(lb)
 	assert.Error(err).IsNil()
-	assert.Bytes(lb.Bytes()).Equals(writeBuffer)
+	assert.Bytes(expectedBytes).Equals(writeBuffer.Bytes())
 }

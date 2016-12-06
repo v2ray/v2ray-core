@@ -5,6 +5,7 @@ import (
 
 	"v2ray.com/core/common/alloc"
 	v2io "v2ray.com/core/common/io"
+	"v2ray.com/core/common/serial"
 )
 
 type AuthChunkWriter struct {
@@ -30,7 +31,7 @@ func (v *AuthChunkWriter) Release() {
 func Authenticate(buffer *alloc.Buffer) {
 	fnvHash := fnv.New32a()
 	fnvHash.Write(buffer.Bytes())
-	buffer.PrependHash(fnvHash)
+	buffer.PrependFunc(4, serial.WriteHash(fnvHash))
 
-	buffer.PrependUint16(uint16(buffer.Len()))
+	buffer.PrependFunc(2, serial.WriteUint16(uint16(buffer.Len())))
 }

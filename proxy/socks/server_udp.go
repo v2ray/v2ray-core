@@ -26,7 +26,7 @@ func (v *Server) listenUDP() error {
 func (v *Server) handleUDPPayload(payload *alloc.Buffer, session *proxy.SessionInfo) {
 	source := session.Source
 	log.Info("Socks: Client UDP connection from ", source)
-	request, err := protocol.ReadUDPRequest(payload.Value)
+	request, err := protocol.ReadUDPRequest(payload.Bytes())
 	payload.Release()
 
 	if err != nil {
@@ -55,7 +55,7 @@ func (v *Server) handleUDPPayload(payload *alloc.Buffer, session *proxy.SessionI
 		}
 		log.Info("Socks: Writing back UDP response with ", payload.Len(), " bytes to ", destination)
 
-		udpMessage := alloc.NewLocalBuffer(2048).Clear()
+		udpMessage := alloc.NewLocalBuffer(2048)
 		response.Write(udpMessage)
 
 		v.udpMutex.RLock()
@@ -63,7 +63,7 @@ func (v *Server) handleUDPPayload(payload *alloc.Buffer, session *proxy.SessionI
 			v.udpMutex.RUnlock()
 			return
 		}
-		nBytes, err := v.udpHub.WriteTo(udpMessage.Value, destination)
+		nBytes, err := v.udpHub.WriteTo(udpMessage.Bytes(), destination)
 		v.udpMutex.RUnlock()
 		udpMessage.Release()
 		response.Data.Release()

@@ -19,10 +19,10 @@ func (v *SimpleAuthenticator) Overhead() int {
 }
 
 func (v *SimpleAuthenticator) Seal(buffer *alloc.Buffer) {
-	buffer.PrependUint16(uint16(buffer.Len()))
+	buffer.PrependFunc(2, serial.WriteUint16(uint16(buffer.Len())))
 	fnvHash := fnv.New32a()
 	fnvHash.Write(buffer.Bytes())
-	buffer.PrependHash(fnvHash)
+	buffer.PrependFunc(4, serial.WriteHash(fnvHash))
 
 	len := buffer.Len()
 	xtra := 4 - len%4
@@ -47,12 +47,12 @@ func (v *SimpleAuthenticator) Open(buffer *alloc.Buffer) bool {
 	}
 
 	fnvHash := fnv.New32a()
-	fnvHash.Write(buffer.Value[4:])
-	if serial.BytesToUint32(buffer.Value[:4]) != fnvHash.Sum32() {
+	fnvHash.Write(buffer.BytesFrom(4))
+	if serial.BytesToUint32(buffer.BytesTo(4)) != fnvHash.Sum32() {
 		return false
 	}
 
-	length := serial.BytesToUint16(buffer.Value[4:6])
+	length := serial.BytesToUint16(buffer.BytesRange(4, 6))
 	if buffer.Len()-6 != int(length) {
 		return false
 	}

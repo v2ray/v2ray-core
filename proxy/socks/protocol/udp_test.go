@@ -32,5 +32,5 @@ func TestDomainAddressRequest(t *testing.T) {
 	assert.Byte(request.Fragment).Equals(1)
 	assert.Address(request.Address).EqualsString("v2ray.com")
 	assert.Port(request.Port).Equals(v2net.Port(80))
-	assert.Bytes(request.Data.Value).Equals([]byte("Actual payload"))
+	assert.String(request.Data.String()).Equals("Actual payload")
 }

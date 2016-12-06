@@ -37,10 +37,10 @@ func (v *BufferedSegmentWriter) Write(seg Segment) {
 	}
 
 	if v.buffer == nil {
-		v.buffer = alloc.NewSmallBuffer().Clear()
+		v.buffer = alloc.NewSmallBuffer()
 	}
 
-	v.buffer.Value = seg.Bytes(v.buffer.Value)
+	v.buffer.AppendFunc(seg.Bytes())
 }
 
 func (v *BufferedSegmentWriter) FlushWithoutLock() {
@@ -69,7 +69,7 @@ func (v *AuthenticationWriter) Write(payload *alloc.Buffer) error {
 	defer payload.Release()
 
 	v.Authenticator.Seal(payload)
-	_, err := v.Writer.Write(payload.Value)
+	_, err := v.Writer.Write(payload.Bytes())
 	return err
 }
 

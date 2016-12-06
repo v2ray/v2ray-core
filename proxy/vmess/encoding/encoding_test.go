@@ -35,7 +35,7 @@ func TestRequestSerialization(t *testing.T) {
 		Port:    v2net.Port(443),
 	}
 
-	buffer := alloc.NewBuffer().Clear()
+	buffer := alloc.NewBuffer()
 	client := NewClientSession(protocol.DefaultIDHash)
 	client.EncodeRequestHeader(expectedRequest, buffer)
 

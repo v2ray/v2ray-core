@@ -17,7 +17,7 @@ type BufferedReader struct {
 func NewBufferedReader(rawReader io.Reader) *BufferedReader {
 	return &BufferedReader{
 		reader: rawReader,
-		buffer: alloc.NewBuffer().Clear(),
+		buffer: alloc.NewBuffer(),
 		cached: true,
 	}
 }

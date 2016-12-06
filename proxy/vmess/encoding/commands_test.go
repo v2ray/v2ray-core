@@ -21,7 +21,7 @@ func TestSwitchAccount(t *testing.T) {
 		ValidMin: 16,
 	}
 
-	buffer := alloc.NewBuffer().Clear()
+	buffer := alloc.NewBuffer()
 	err := MarshalCommand(sa, buffer)
 	assert.Error(err).IsNil()
 

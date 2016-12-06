@@ -10,6 +10,7 @@ import (
 	v2io "v2ray.com/core/common/io"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/serial"
 )
 
 const (
@@ -28,7 +29,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 
-	buffer := alloc.NewLocalBuffer(512).Clear()
+	buffer := alloc.NewLocalBuffer(512)
 	defer buffer.Release()
 
 	ivLen := account.Cipher.IVSize()
@@ -106,7 +107,8 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	request.Port = v2net.PortFromBytes(buffer.BytesFrom(-2))
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {
-		actualAuth := authenticator.Authenticate(nil, buffer.Bytes())
+		actualAuth := make([]byte, AuthSize)
+		authenticator.Authenticate(buffer.Bytes())(actualAuth)
 
 		_, err := buffer.FillFullFrom(reader, AuthSize)
 		if err != nil {
@@ -150,7 +152,7 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (v2io.Wr
 
 	writer = crypto.NewCryptionWriter(stream, writer)
 
-	header := alloc.NewLocalBuffer(512).Clear()
+	header := alloc.NewLocalBuffer(512)
 
 	switch request.Address.Family() {
 	case v2net.AddressFamilyIPv4:
@@ -166,16 +168,16 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (v2io.Wr
 		return nil, errors.New("Shadowsocks|TCP: Unsupported address type: ", request.Address.Family())
 	}
 
-	header.AppendUint16(uint16(request.Port))
+	header.AppendFunc(serial.WriteUint16(uint16(request.Port)))
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {
 		header.Bytes()[0] |= 0x10
 
 		authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
-		header.Value = authenticator.Authenticate(header.Value, header.Value)
+		header.AppendFunc(authenticator.Authenticate(header.Bytes()))
 	}
 
-	_, err = writer.Write(header.Value)
+	_, err = writer.Write(header.Bytes())
 	if err != nil {
 		return nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to write header.")
 	}
@@ -243,9 +245,8 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload *alloc.Buffer) (*a
 
 	buffer := alloc.NewSmallBuffer()
 	ivLen := account.Cipher.IVSize()
-	buffer.Slice(0, ivLen)
-	rand.Read(buffer.Value)
-	iv := buffer.Value
+	buffer.FillFullFrom(rand.Reader, ivLen)
+	iv := buffer.Bytes()
 
 	switch request.Address.Family() {
 	case v2net.AddressFamilyIPv4:
@@ -261,14 +262,14 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload *alloc.Buffer) (*a
 		return nil, errors.New("Shadowsocks|UDP: Unsupported address type: ", request.Address.Family())
 	}
 
-	buffer.AppendUint16(uint16(request.Port))
-	buffer.Append(payload.Value)
+	buffer.AppendFunc(serial.WriteUint16(uint16(request.Port)))
+	buffer.Append(payload.Bytes())
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {
 		authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
-		buffer.Value[ivLen] |= 0x10
+		buffer.Bytes()[ivLen] |= 0x10
 
-		buffer.Value = authenticator.Authenticate(buffer.Value, buffer.Value[ivLen:])
+		buffer.AppendFunc(authenticator.Authenticate(buffer.BytesFrom(ivLen)))
 	}
 
 	stream, err := account.Cipher.NewEncodingStream(account.Key, iv)
@@ -276,7 +277,7 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload *alloc.Buffer) (*a
 		return nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to create encoding stream.")
 	}
 
-	stream.XORKeyStream(buffer.Value[ivLen:], buffer.Value[ivLen:])
+	stream.XORKeyStream(buffer.BytesFrom(ivLen), buffer.BytesFrom(ivLen))
 	return buffer, nil
 }
 
@@ -288,14 +289,14 @@ func DecodeUDPPacket(user *protocol.User, payload *alloc.Buffer) (*protocol.Requ
 	account := rawAccount.(*ShadowsocksAccount)
 
 	ivLen := account.Cipher.IVSize()
-	iv := payload.Value[:ivLen]
+	iv := payload.BytesTo(ivLen)
 	payload.SliceFrom(ivLen)
 
 	stream, err := account.Cipher.NewDecodingStream(account.Key, iv)
 	if err != nil {
 		return nil, nil, errors.Base(err).Message("Shadowsocks|UDP: Failed to initialize decoding stream.")
 	}
-	stream.XORKeyStream(payload.Value, payload.Value)
+	stream.XORKeyStream(payload.Bytes(), payload.Bytes())
 
 	authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
 	request := &protocol.RequestHeader{
@@ -304,8 +305,8 @@ func DecodeUDPPacket(user *protocol.User, payload *alloc.Buffer) (*protocol.Requ
 		Command: protocol.RequestCommandUDP,
 	}
 
-	addrType := (payload.Value[0] & 0x0F)
-	if (payload.Value[0] & 0x10) == 0x10 {
+	addrType := (payload.Byte(0) & 0x0F)
+	if (payload.Byte(0) & 0x10) == 0x10 {
 		request.Option |= RequestOptionOneTimeAuth
 	}
 
@@ -319,9 +320,10 @@ func DecodeUDPPacket(user *protocol.User, payload *alloc.Buffer) (*protocol.Requ
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {
 		payloadLen := payload.Len() - AuthSize
-		authBytes := payload.Value[payloadLen:]
+		authBytes := payload.BytesFrom(payloadLen)
 
-		actualAuth := authenticator.Authenticate(nil, payload.Value[0:payloadLen])
+		actualAuth := make([]byte, AuthSize)
+		authenticator.Authenticate(payload.BytesTo(payloadLen))(actualAuth)
 		if !bytes.Equal(actualAuth, authBytes) {
 			return nil, nil, errors.New("Shadowsocks|UDP: Invalid OTA.")
 		}
@@ -333,20 +335,20 @@ func DecodeUDPPacket(user *protocol.User, payload *alloc.Buffer) (*protocol.Requ
 
 	switch addrType {
 	case AddrTypeIPv4:
-		request.Address = v2net.IPAddress(payload.Value[:4])
+		request.Address = v2net.IPAddress(payload.BytesTo(4))
 		payload.SliceFrom(4)
 	case AddrTypeIPv6:
-		request.Address = v2net.IPAddress(payload.Value[:16])
+		request.Address = v2net.IPAddress(payload.BytesTo(16))
 		payload.SliceFrom(16)
 	case AddrTypeDomain:
-		domainLength := int(payload.Value[0])
-		request.Address = v2net.DomainAddress(string(payload.Value[1 : 1+domainLength]))
+		domainLength := int(payload.Byte(0))
+		request.Address = v2net.DomainAddress(string(payload.BytesRange(1, 1+domainLength)))
 		payload.SliceFrom(1 + domainLength)
 	default:
 		return nil, nil, errors.New("Shadowsocks|UDP: Unknown address type: ", addrType)
 	}
 
-	request.Port = v2net.PortFromBytes(payload.Value[:2])
+	request.Port = v2net.PortFromBytes(payload.BytesTo(2))
 	payload.SliceFrom(2)
 
 	return request, payload, nil
@@ -359,12 +361,11 @@ type UDPReader struct {
 
 func (v *UDPReader) Read() (*alloc.Buffer, error) {
 	buffer := alloc.NewSmallBuffer()
-	nBytes, err := v.Reader.Read(buffer.Value)
+	_, err := buffer.FillFrom(v.Reader)
 	if err != nil {
 		buffer.Release()
 		return nil, err
 	}
-	buffer.Slice(0, nBytes)
 	_, payload, err := DecodeUDPPacket(v.User, buffer)
 	if err != nil {
 		buffer.Release()
@@ -386,7 +387,7 @@ func (v *UDPWriter) Write(buffer *alloc.Buffer) error {
 	if err != nil {
 		return err
 	}
-	_, err = v.Writer.Write(payload.Value)
+	_, err = v.Writer.Write(payload.Bytes())
 	payload.Release()
 	return err
 }

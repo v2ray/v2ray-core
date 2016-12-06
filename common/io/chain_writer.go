@@ -28,7 +28,7 @@ func (v *ChainWriter) Write(payload []byte) (int, error) {
 	bytesWritten := 0
 	size := len(payload)
 	for size > 0 {
-		buffer := alloc.NewBuffer().Clear()
+		buffer := alloc.NewBuffer()
 		if size > alloc.BufferSize {
 			buffer.Append(payload[:alloc.BufferSize])
 			size -= alloc.BufferSize

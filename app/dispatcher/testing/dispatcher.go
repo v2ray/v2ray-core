@@ -19,7 +19,8 @@ func NewTestPacketDispatcher(handler func(destination v2net.Destination, traffic
 				if err != nil {
 					break
 				}
-				traffic.OutboundOutput().Write(payload.Prepend([]byte("Processed: ")))
+				payload.Prepend([]byte("Processed: "))
+				traffic.OutboundOutput().Write(payload)
 			}
 			traffic.OutboundOutput().Close()
 		}

@@ -50,7 +50,7 @@ func (v *AuthChunkReader) Read() (*alloc.Buffer, error) {
 		buffer = v.last
 		v.last = nil
 	} else {
-		buffer = alloc.NewBuffer().Clear()
+		buffer = alloc.NewBuffer()
 	}
 
 	if v.chunkLength == -1 {
@@ -96,7 +96,7 @@ func (v *AuthChunkReader) Read() (*alloc.Buffer, error) {
 		}
 		leftLength := buffer.Len() - v.chunkLength
 		if leftLength > 0 {
-			v.last = alloc.NewBuffer().Clear()
+			v.last = alloc.NewBuffer()
 			v.last.Append(buffer.BytesFrom(v.chunkLength))
 			buffer.Slice(0, v.chunkLength)
 		}

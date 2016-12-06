@@ -26,11 +26,14 @@ func NewAuthenticator(keygen KeyGenerator) *Authenticator {
 	}
 }
 
-func (v *Authenticator) Authenticate(auth []byte, data []byte) []byte {
+func (v *Authenticator) Authenticate(data []byte) alloc.BytesWriter {
 	hasher := hmac.New(sha1.New, v.key())
 	hasher.Write(data)
 	res := hasher.Sum(nil)
-	return append(auth, res[:AuthSize]...)
+	return func(b []byte) int {
+		copy(b, res[:AuthSize])
+		return AuthSize
+	}
 }
 
 func HeaderKeyGenerator(key []byte, iv []byte) func() []byte {
@@ -71,7 +74,7 @@ func (v *ChunkReader) Release() {
 }
 
 func (v *ChunkReader) Read() (*alloc.Buffer, error) {
-	buffer := alloc.NewBuffer().Clear()
+	buffer := alloc.NewBuffer()
 	if _, err := buffer.FillFullFrom(v.reader, 2); err != nil {
 		buffer.Release()
 		return nil, err
@@ -94,7 +97,8 @@ func (v *ChunkReader) Read() (*alloc.Buffer, error) {
 	authBytes := buffer.BytesTo(AuthSize)
 	payload := buffer.BytesFrom(AuthSize)
 
-	actualAuthBytes := v.auth.Authenticate(nil, payload)
+	actualAuthBytes := make([]byte, AuthSize)
+	v.auth.Authenticate(payload)(actualAuthBytes)
 	if !bytes.Equal(authBytes, actualAuthBytes) {
 		buffer.Release()
 		return nil, errors.New("Shadowsocks|AuthenticationReader: Invalid auth.")
@@ -123,9 +127,8 @@ func (v *ChunkWriter) Release() {
 
 func (v *ChunkWriter) Write(payload *alloc.Buffer) error {
 	totalLength := payload.Len()
-	payload.SliceBack(AuthSize)
-	v.auth.Authenticate(payload.BytesTo(0), payload.BytesFrom(AuthSize))
-	payload.PrependUint16(uint16(totalLength))
+	payload.PrependFunc(AuthSize, v.auth.Authenticate(payload.Bytes()))
+	payload.PrependFunc(2, serial.WriteUint16(uint16(totalLength)))
 	_, err := v.writer.Write(payload.Bytes())
 	return err
 }

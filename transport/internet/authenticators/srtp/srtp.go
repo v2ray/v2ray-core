@@ -5,6 +5,7 @@ import (
 
 	"v2ray.com/core/common/alloc"
 	"v2ray.com/core/common/loader"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -24,8 +25,8 @@ func (v *SRTP) Open(payload *alloc.Buffer) bool {
 
 func (v *SRTP) Seal(payload *alloc.Buffer) {
 	v.number++
-	payload.PrependUint16(v.number)
-	payload.PrependUint16(v.header)
+	payload.PrependFunc(2, serial.WriteUint16(v.number))
+	payload.PrependFunc(2, serial.WriteUint16(v.header))
 }
 
 type SRTPFactory struct {

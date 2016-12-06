@@ -53,7 +53,7 @@ func (o *ServerConnection) Input(b *alloc.Buffer) {
 	defer b.Release()
 
 	if o.auth.Open(b) {
-		o.input(b.Value)
+		o.input(b.Bytes())
 	}
 }
 
@@ -153,8 +153,8 @@ func (v *Listener) OnReceive(payload *alloc.Buffer, session *proxy.SessionInfo) 
 	if payload.Len() < 4 {
 		return
 	}
-	conv := serial.BytesToUint16(payload.Value)
-	cmd := Command(payload.Value[2])
+	conv := serial.BytesToUint16(payload.BytesTo(2))
+	cmd := Command(payload.Byte(2))
 	id := ConnectionId{
 		Remote: src.Address,
 		Port:   src.Port,
@@ -196,7 +196,7 @@ func (v *Listener) OnReceive(payload *alloc.Buffer, session *proxy.SessionInfo) 
 		}
 		v.sessions[id] = conn
 	}
-	conn.Input(payload.Value)
+	conn.Input(payload.Bytes())
 }
 
 func (v *Listener) Remove(id ConnectionId) {

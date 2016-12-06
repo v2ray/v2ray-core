@@ -122,28 +122,30 @@ func ReadUserPassRequest(reader io.Reader) (request Socks5UserPassRequest, err e
 	buffer := alloc.NewLocalBuffer(512)
 	defer buffer.Release()
 
-	_, err = reader.Read(buffer.Value[0:2])
+	_, err = buffer.FillFullFrom(reader, 2)
 	if err != nil {
 		return
 	}
-	request.version = buffer.Value[0]
-	nUsername := buffer.Value[1]
-	nBytes, err := reader.Read(buffer.Value[:nUsername])
-	if err != nil {
-		return
-	}
-	request.username = string(buffer.Value[:nBytes])
+	request.version = buffer.Byte(0)
+	nUsername := int(buffer.Byte(1))
 
-	_, err = reader.Read(buffer.Value[0:1])
+	buffer.Clear()
+	_, err = buffer.FillFullFrom(reader, nUsername)
 	if err != nil {
 		return
 	}
-	nPassword := buffer.Value[0]
-	nBytes, err = reader.Read(buffer.Value[:nPassword])
+	request.username = string(buffer.Bytes())
+
+	_, err = buffer.FillFullFrom(reader, 1)
 	if err != nil {
 		return
 	}
-	request.password = string(buffer.Value[:nBytes])
+	nPassword := int(buffer.Byte(0))
+	_, err = buffer.FillFullFrom(reader, nPassword)
+	if err != nil {
+		return
+	}
+	request.password = string(buffer.Bytes())
 	return
 }
 
@@ -185,7 +187,7 @@ type Socks5Request struct {
 }
 
 func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
-	buffer := alloc.NewLocalBuffer(512).Clear()
+	buffer := alloc.NewLocalBuffer(512)
 	defer buffer.Release()
 
 	_, err = buffer.FillFullFrom(reader, 4)
@@ -194,10 +196,10 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 	}
 
 	request = &Socks5Request{
-		Version: buffer.Value[0],
-		Command: buffer.Value[1],
+		Version: buffer.Byte(0),
+		Command: buffer.Byte(1),
 		// buffer[2] is a reserved field
-		AddrType: buffer.Value[3],
+		AddrType: buffer.Byte(3),
 	}
 	switch request.AddrType {
 	case AddrTypeIPv4:

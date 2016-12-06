@@ -19,16 +19,19 @@ func TestBadSegment(t *testing.T) {
 func TestDataSegment(t *testing.T) {
 	assert := assert.On(t)
 
+	b := alloc.NewLocalBuffer(512)
+	b.Append([]byte{'a', 'b', 'c', 'd'})
 	seg := &DataSegment{
 		Conv:        1,
 		Timestamp:   3,
 		Number:      4,
 		SendingNext: 5,
-		Data:        alloc.NewLocalBuffer(512).Clear().Append([]byte{'a', 'b', 'c', 'd'}),
+		Data:        b,
 	}
 
 	nBytes := seg.ByteSize()
-	bytes := seg.Bytes(nil)
+	bytes := make([]byte, nBytes)
+	seg.Bytes()(bytes)
 
 	assert.Int(len(bytes)).Equals(nBytes)
 
@@ -54,7 +57,8 @@ func TestACKSegment(t *testing.T) {
 	}
 
 	nBytes := seg.ByteSize()
-	bytes := seg.Bytes(nil)
+	bytes := make([]byte, nBytes)
+	seg.Bytes()(bytes)
 
 	assert.Int(len(bytes)).Equals(nBytes)
 
@@ -83,7 +87,8 @@ func TestCmdSegment(t *testing.T) {
 	}
 
 	nBytes := seg.ByteSize()
-	bytes := seg.Bytes(nil)
+	bytes := make([]byte, nBytes)
+	seg.Bytes()(bytes)
 
 	assert.Int(len(bytes)).Equals(nBytes)
 

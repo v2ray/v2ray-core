@@ -51,15 +51,15 @@ func (o *ClientConnection) Run() {
 	defer payload.Release()
 
 	for {
-		nBytes, err := o.Conn.Read(payload.Value)
+		payload.Clear()
+		_, err := payload.FillFrom(o.Conn)
 		if err != nil {
 			payload.Release()
 			return
 		}
-		payload.Slice(0, nBytes)
 		o.Lock()
 		if o.input != nil && o.auth.Open(payload) {
-			o.input(payload.Value)
+			o.input(payload.Bytes())
 		}
 		o.Unlock()
 		payload.Reset()

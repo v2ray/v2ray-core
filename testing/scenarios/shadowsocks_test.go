@@ -42,7 +42,7 @@ func TestShadowsocksTCP(t *testing.T) {
 
 		//conn.CloseWrite()
 
-		response := alloc.NewBuffer().Clear()
+		response := alloc.NewBuffer()
 		finished := false
 		expectedResponse := "Processed: " + payload
 		for {
@@ -56,7 +56,7 @@ func TestShadowsocksTCP(t *testing.T) {
 				break
 			}
 			if response.Len() > len(expectedResponse) {
-				fmt.Printf("Unexpected response: %v\n", response.Value)
+				fmt.Printf("Unexpected response: %v\n", response.Bytes())
 				break
 			}
 		}

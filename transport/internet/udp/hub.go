@@ -136,13 +136,22 @@ func (v *UDPHub) start() {
 	oobBytes := make([]byte, 256)
 	for v.Running() {
 		buffer := alloc.NewSmallBuffer()
-		nBytes, noob, _, addr, err := ReadUDPMsg(v.conn, buffer.Bytes(), oobBytes)
+		var noob int
+		var addr *net.UDPAddr
+		var err error
+		buffer.AppendFunc(func(b []byte) int {
+			n, nb, _, a, e := ReadUDPMsg(v.conn, b, oobBytes)
+			noob = nb
+			addr = a
+			err = e
+			return n
+		})
+
 		if err != nil {
 			log.Info("UDP|Hub: Failed to read UDP msg: ", err)
 			buffer.Release()
 			continue
 		}
-		buffer.Slice(0, nBytes)
 
 		session := new(proxy.SessionInfo)
 		session.Source = v2net.UDPDestination(v2net.IPAddress(addr.IP), v2net.Port(addr.Port))

@@ -3,6 +3,7 @@ package io_test
 import (
 	"testing"
 
+	"crypto/rand"
 	"v2ray.com/core/common/alloc"
 	. "v2ray.com/core/common/io"
 	"v2ray.com/core/testing/assert"
@@ -12,6 +13,8 @@ func TestBufferedReader(t *testing.T) {
 	assert := assert.On(t)
 
 	content := alloc.NewBuffer()
+	content.FillFrom(rand.Reader)
+
 	len := content.Len()
 
 	reader := NewBufferedReader(content)

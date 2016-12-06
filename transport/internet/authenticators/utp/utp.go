@@ -5,6 +5,7 @@ import (
 
 	"v2ray.com/core/common/alloc"
 	"v2ray.com/core/common/loader"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -24,7 +25,7 @@ func (v *UTP) Open(payload *alloc.Buffer) bool {
 }
 
 func (v *UTP) Seal(payload *alloc.Buffer) {
-	payload.PrependUint16(v.connectionId)
+	payload.PrependFunc(2, serial.WriteUint16(v.connectionId))
 	payload.PrependBytes(v.header, v.extension)
 }
 

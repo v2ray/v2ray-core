@@ -17,7 +17,7 @@ type BufferedWriter struct {
 func NewBufferedWriter(rawWriter io.Writer) *BufferedWriter {
 	return &BufferedWriter{
 		writer: rawWriter,
-		buffer: alloc.NewSmallBuffer().Clear(),
+		buffer: alloc.NewSmallBuffer(),
 		cached: true,
 	}
 }

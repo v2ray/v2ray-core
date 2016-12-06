@@ -12,7 +12,7 @@ import (
 func TestSimpleAuthenticator(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := alloc.NewLocalBuffer(512).Clear()
+	buffer := alloc.NewLocalBuffer(512)
 	buffer.AppendBytes('a', 'b', 'c', 'd', 'e', 'f', 'g')
 
 	auth := NewSimpleAuthenticator()
@@ -25,18 +25,18 @@ func TestSimpleAuthenticator(t *testing.T) {
 func TestSimpleAuthenticator2(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := alloc.NewLocalBuffer(512).Clear()
+	buffer := alloc.NewLocalBuffer(512)
 	buffer.AppendBytes('1', '2')
 
 	auth := NewSimpleAuthenticator()
 	auth.Seal(buffer)
 
 	assert.Bool(auth.Open(buffer)).IsTrue()
-	assert.Bytes(buffer.Value).Equals([]byte{'1', '2'})
+	assert.Bytes(buffer.Bytes()).Equals([]byte{'1', '2'})
 }
 
 func BenchmarkSimpleAuthenticator(b *testing.B) {
-	buffer := alloc.NewLocalBuffer(2048).Clear()
+	buffer := alloc.NewLocalBuffer(2048)
 	buffer.FillFullFrom(rand.Reader, 1024)
 
 	auth := NewSimpleAuthenticator()
