@@ -63,6 +63,7 @@ func (v *AdaptiveReader) Read() (*alloc.Buffer, error) {
 	return buffer, nil
 }
 
+// Release implements Releasable.Release().
 func (v *AdaptiveReader) Release() {
 	v.reader = nil
 }
