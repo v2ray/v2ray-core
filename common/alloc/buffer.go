@@ -9,6 +9,7 @@ const (
 	defaultOffset = 16
 )
 
+// A Writer that writes contents into the given buffer.
 type BytesWriter func([]byte) int
 
 // Buffer is a recyclable allocation of a byte array. Buffer.Release() recycles
