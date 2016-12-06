@@ -52,6 +52,7 @@ func (v *AuthenticationReader) NextChunk() error {
 		return err
 	}
 	v.chunk = plainChunk
+	v.buffer.SliceFrom(size + 2)
 	return nil
 }
 
