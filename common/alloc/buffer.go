@@ -9,7 +9,7 @@ const (
 	defaultOffset = 16
 )
 
-// A Writer that writes contents into the given buffer.
+// BytesWriter is a writer that writes contents into the given buffer.
 type BytesWriter func([]byte) int
 
 // Buffer is a recyclable allocation of a byte array. Buffer.Release() recycles
@@ -23,6 +23,7 @@ type Buffer struct {
 	end   int
 }
 
+// CreateBuffer creates a new Buffer object based on given container and parent pool.
 func CreateBuffer(container []byte, parent Pool) *Buffer {
 	b := new(Buffer)
 	b.head = container
@@ -68,6 +69,7 @@ func (b *Buffer) Append(data []byte) {
 	b.end += nBytes
 }
 
+// AppendFunc appends the content of a BytesWriter to the buffer.
 func (b *Buffer) AppendFunc(writer BytesWriter) {
 	nBytes := writer(b.head[b.end:])
 	b.end += nBytes
@@ -80,6 +82,7 @@ func (b *Buffer) Prepend(data []byte) {
 	copy(b.head[b.start:], data)
 }
 
+// PrependBytes prepends all data in front of the buffer.
 func (b *Buffer) PrependBytes(data ...byte) {
 	b.Prepend(data)
 }
@@ -89,10 +92,12 @@ func (b *Buffer) PrependFunc(offset int, writer BytesWriter) {
 	writer(b.head[b.start:])
 }
 
+// Byte returns the bytes at index.
 func (b *Buffer) Byte(index int) byte {
 	return b.head[b.start+index]
 }
 
+// SetByte sets the byte value at index.
 func (b *Buffer) SetByte(index int, value byte) {
 	b.head[b.start+index] = value
 }
@@ -102,6 +107,7 @@ func (b *Buffer) Bytes() []byte {
 	return b.head[b.start:b.end]
 }
 
+// BytesRange returns a slice of this buffer with given from and to bounary.
 func (b *Buffer) BytesRange(from, to int) []byte {
 	if from < 0 {
 		from += b.Len()
@@ -166,6 +172,7 @@ func (b *Buffer) Len() int {
 	return b.end - b.start
 }
 
+// IsEmpty returns true if the buffer is empty.
 func (b *Buffer) IsEmpty() bool {
 	return b.Len() == 0
 }
@@ -217,10 +224,12 @@ func NewBuffer() *Buffer {
 	return mediumPool.Allocate()
 }
 
+// NewSmallBuffer returns a buffer with 2K bytes capacity.
 func NewSmallBuffer() *Buffer {
 	return smallPool.Allocate()
 }
 
+// NewLocalBuffer creates and returns a buffer on current thread.
 func NewLocalBuffer(size int) *Buffer {
 	return CreateBuffer(make([]byte, size), nil)
 }
