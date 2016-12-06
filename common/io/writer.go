@@ -39,6 +39,7 @@ func (v *AdaptiveWriter) Write(buffer *alloc.Buffer) error {
 	return nil
 }
 
+// Release implements Releasable.Release().
 func (v *AdaptiveWriter) Release() {
 	v.writer = nil
 }
