@@ -36,9 +36,15 @@ func NewAuthenticationReader(aead cipher.AEAD, reader io.Reader, ivGen BytesGene
 }
 
 func (v *AuthenticationReader) NextChunk() error {
+	if v.buffer.Len() < 2 {
+		return errInsufficientBuffer
+	}
 	size := int(serial.BytesToUint16(v.buffer.BytesTo(2)))
 	if size > v.buffer.Len()-2 {
 		return errInsufficientBuffer
+	}
+	if size == v.aead.Overhead() {
+		return io.EOF
 	}
 	cipherChunk := v.buffer.BytesRange(2, size+2)
 	plainChunk, err := v.aead.Open(cipherChunk, v.ivGen(), cipherChunk, v.extraGen())
@@ -67,9 +73,11 @@ func (v *AuthenticationReader) Read(b []byte) (int, error) {
 
 	err := v.NextChunk()
 	if err == errInsufficientBuffer {
-		v.buffer.FillFrom(v.reader)
-	} else if err != nil {
-		return 0, io.ErrUnexpectedEOF
+		_, err = v.buffer.FillFrom(v.reader)
+	}
+
+	if err != nil {
+		return 0, err
 	}
 
 	totalBytes := 0
