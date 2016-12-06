@@ -23,7 +23,7 @@ type PointerSubject struct {
 
 func (subject *PointerSubject) Equals(expectation interface{}) {
 	if subject.value != expectation {
-		subject.Fail("is equal to", serial.PointerToString(expectation))
+		subject.Fail("is equal to", serial.ToString(expectation))
 	}
 }
 
