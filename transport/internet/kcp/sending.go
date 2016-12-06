@@ -40,6 +40,7 @@ func (v *SendingWindow) Release() {
 	if v == nil {
 		return
 	}
+	v.len = 0
 	for _, seg := range v.data {
 		seg.Release()
 	}
@@ -135,6 +136,10 @@ func (v *SendingWindow) HandleFastAck(number uint32, rto uint32) {
 }
 
 func (v *SendingWindow) Visit(visitor func(seg *DataSegment) bool) {
+	if v.IsEmpty() {
+		return
+	}
+
 	for i := v.start; ; i = v.next[i] {
 		if !visitor(&v.data[i]) || i == v.last {
 			break
