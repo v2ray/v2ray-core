@@ -13,6 +13,7 @@ import (
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/registry"
+	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/encoding"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/ray"
@@ -59,6 +60,13 @@ func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *alloc
 		Port:    target.Port,
 		Option:  protocol.RequestOptionChunkStream,
 	}
+
+	rawAccount, err := request.User.GetTypedAccount()
+	if err != nil {
+		log.Warning("VMess|Outbound: Failed to get user account: ", err)
+	}
+	account := rawAccount.(*vmess.InternalAccount)
+	request.Security = account.Security
 
 	defer conn.Close()
 

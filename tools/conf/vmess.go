@@ -2,6 +2,8 @@ package conf
 
 import (
 	"encoding/json"
+	"strings"
+
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
@@ -15,12 +17,25 @@ import (
 type VMessAccount struct {
 	ID       string `json:"id"`
 	AlterIds uint16 `json:"alterId"`
+	Security string `json:"security"`
 }
 
 func (v *VMessAccount) Build() *vmess.Account {
+	var st protocol.SecurityType
+	switch strings.ToLower(v.Security) {
+	case "aes-128-gcm":
+		st = protocol.SecurityType_AES128_GCM
+	case "chacha20-poly1305":
+		st = protocol.SecurityType_CHACHA20_POLY1305
+	case "none":
+		st = protocol.SecurityType_NONE
+	default:
+		st = protocol.SecurityType_LEGACY
+	}
 	return &vmess.Account{
-		Id:      v.ID,
-		AlterId: uint32(v.AlterIds),
+		Id:       v.ID,
+		AlterId:  uint32(v.AlterIds),
+		Security: st,
 	}
 }
 

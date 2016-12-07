@@ -149,7 +149,7 @@ func (v *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 		}
 		authWriter = crypto.NewAuthenticationWriter(auth, writer)
 	} else if request.Security.Is(protocol.SecurityType_CHACHA20_POLY1305) {
-		aead, _ := chacha20poly1305.New(v.responseBodyKey)
+		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(v.responseBodyKey))
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD: aead,
@@ -243,7 +243,7 @@ func (v *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 		}
 		authReader = crypto.NewAuthenticationReader(auth, reader, aggressive)
 	} else if request.Security.Is(protocol.SecurityType_CHACHA20_POLY1305) {
-		aead, _ := chacha20poly1305.New(v.responseBodyKey)
+		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(v.responseBodyKey))
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD: aead,

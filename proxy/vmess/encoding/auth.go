@@ -3,6 +3,7 @@ package encoding
 import (
 	"hash/fnv"
 
+	"crypto/md5"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/serial"
 )
@@ -34,4 +35,13 @@ func (v *FnvAuthenticator) Open(dst, nonce, ciphertext, additionalData []byte) (
 		return dst, crypto.ErrAuthenticationFailed
 	}
 	return append(dst[:0], ciphertext[4:]...), nil
+}
+
+func GenerateChacha20Poly1305Key(b []byte) []byte {
+	key := make([]byte, 32)
+	t := md5.Sum(b)
+	copy(key, t[:])
+	t = md5.Sum(key[:16])
+	copy(key[16:], t[:])
+	return key
 }
