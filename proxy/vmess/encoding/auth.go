@@ -26,7 +26,7 @@ func (v *FnvAuthenticator) Overhead() int {
 }
 
 func (v *FnvAuthenticator) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
-	dst = serial.Uint32ToBytes(Authenticate(plaintext), dst[:0])
+	dst = serial.Uint32ToBytes(Authenticate(plaintext), dst)
 	return append(dst, plaintext...)
 }
 
@@ -34,7 +34,7 @@ func (v *FnvAuthenticator) Open(dst, nonce, ciphertext, additionalData []byte) (
 	if serial.BytesToUint32(ciphertext[:4]) != Authenticate(ciphertext[4:]) {
 		return dst, crypto.ErrAuthenticationFailed
 	}
-	return append(dst[:0], ciphertext[4:]...), nil
+	return append(dst, ciphertext[4:]...), nil
 }
 
 func GenerateChacha20Poly1305Key(b []byte) []byte {
