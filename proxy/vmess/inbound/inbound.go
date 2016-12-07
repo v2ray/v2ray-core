@@ -190,7 +190,12 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 		bodyReader := session.DecodeRequestBody(reader)
 		var requestReader v2io.Reader
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
-			authReader := crypto.NewAuthenticationReader(new(encoding.FnvAuthenticator), bodyReader, func() []byte { return nil }, func() []byte { return nil })
+			auth := &crypto.AEADAuthenticator{
+				AEAD:                    new(encoding.FnvAuthenticator),
+				NonceGenerator:          crypto.NoOpBytesGenerator{},
+				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
+			}
+			authReader := crypto.NewAuthenticationReader(auth, bodyReader, request.Command == protocol.RequestCommandTCP)
 			requestReader = v2io.NewAdaptiveReader(authReader)
 		} else {
 			requestReader = v2io.NewAdaptiveReader(bodyReader)
