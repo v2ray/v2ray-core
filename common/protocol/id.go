@@ -5,16 +5,11 @@ import (
 	"crypto/md5"
 	"hash"
 
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/uuid"
 )
 
 const (
 	IDBytesLen = 16
-)
-
-var (
-	InvalidID = errors.New("Invalid ID.")
 )
 
 type IDHash func(key []byte) hash.Hash
@@ -29,6 +24,7 @@ type ID struct {
 	cmdKey [IDBytesLen]byte
 }
 
+// Equals returns true if this ID equals to the other one.
 func (v *ID) Equals(another *ID) bool {
 	return v.uuid.Equals(another.uuid)
 }
