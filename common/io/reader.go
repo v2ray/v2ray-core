@@ -33,7 +33,7 @@ func NewAdaptiveReader(reader io.Reader) *AdaptiveReader {
 func (v *AdaptiveReader) Read() (*alloc.Buffer, error) {
 	if v.highVolumn && v.largeBuffer.IsEmpty() {
 		if v.largeBuffer == nil {
-			v.largeBuffer = alloc.NewLocalBuffer(256 * 1024)
+			v.largeBuffer = alloc.NewLocalBuffer(32 * 1024)
 		}
 		nBytes, err := v.largeBuffer.FillFrom(v.reader)
 		if err != nil {
