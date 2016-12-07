@@ -24,7 +24,7 @@ type User struct {
 func (m *User) Reset()                    { *m = User{} }
 func (m *User) String() string            { return proto.CompactTextString(m) }
 func (*User) ProtoMessage()               {}
-func (*User) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
+func (*User) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
 
 func (m *User) GetAccount() *v2ray_core_common_loader.TypedSettings {
 	if m != nil {
@@ -37,9 +37,9 @@ func init() {
 	proto.RegisterType((*User)(nil), "v2ray.core.common.protocol.User")
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/common/protocol/user.proto", fileDescriptor1) }
+func init() { proto.RegisterFile("v2ray.com/core/common/protocol/user.proto", fileDescriptor2) }
 
-var fileDescriptor1 = []byte{
+var fileDescriptor2 = []byte{
 	// 200 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x74, 0x8f, 0x3f, 0xef, 0x82, 0x30,
 	0x10, 0x86, 0xd3, 0xdf, 0x5f, 0xa9, 0x71, 0x21, 0x0e, 0x84, 0xc1, 0x10, 0x17, 0x70, 0x69, 0x13,

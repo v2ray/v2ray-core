@@ -2,17 +2,6 @@
 // source: v2ray.com/core/common/protocol/server_spec.proto
 // DO NOT EDIT!
 
-/*
-Package protocol is a generated protocol buffer package.
-
-It is generated from these files:
-	v2ray.com/core/common/protocol/server_spec.proto
-	v2ray.com/core/common/protocol/user.proto
-
-It has these top-level messages:
-	ServerEndpoint
-	User
-*/
 package protocol
 
 import proto "github.com/golang/protobuf/proto"
@@ -25,12 +14,6 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-// A compilation error at this line likely means your copy of the
-// proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
-
 type ServerEndpoint struct {
 	Address *v2ray_core_common_net.IPOrDomain `protobuf:"bytes,1,opt,name=address" json:"address,omitempty"`
 	Port    uint32                            `protobuf:"varint,2,opt,name=port" json:"port,omitempty"`
@@ -40,7 +23,7 @@ type ServerEndpoint struct {
 func (m *ServerEndpoint) Reset()                    { *m = ServerEndpoint{} }
 func (m *ServerEndpoint) String() string            { return proto.CompactTextString(m) }
 func (*ServerEndpoint) ProtoMessage()               {}
-func (*ServerEndpoint) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (*ServerEndpoint) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
 
 func (m *ServerEndpoint) GetAddress() *v2ray_core_common_net.IPOrDomain {
 	if m != nil {
@@ -60,9 +43,9 @@ func init() {
 	proto.RegisterType((*ServerEndpoint)(nil), "v2ray.core.common.protocol.ServerEndpoint")
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/common/protocol/server_spec.proto", fileDescriptor0) }
+func init() { proto.RegisterFile("v2ray.com/core/common/protocol/server_spec.proto", fileDescriptor1) }
 
-var fileDescriptor0 = []byte{
+var fileDescriptor1 = []byte{
 	// 230 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x84, 0x8f, 0x3d, 0x4b, 0x04, 0x31,
 	0x10, 0x86, 0x59, 0xef, 0x50, 0xc9, 0xa1, 0x42, 0xaa, 0x65, 0x0b, 0x89, 0x36, 0xae, 0xcd, 0x44,
