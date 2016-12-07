@@ -9,7 +9,7 @@ const (
 	APP_ID = app.ID(8)
 )
 
-type Server interface {
+type WebServer interface {
 	common.Releasable
 	Handle()
 }
