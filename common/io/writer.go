@@ -29,10 +29,13 @@ func NewAdaptiveWriter(writer io.Writer) *AdaptiveWriter {
 // Write implements Writer.Write(). Write() takes ownership of the given buffer.
 func (v *AdaptiveWriter) Write(buffer *alloc.Buffer) error {
 	defer buffer.Release()
-	for !buffer.IsEmpty() {
+	for {
 		nBytes, err := v.writer.Write(buffer.Bytes())
 		if err != nil {
 			return err
+		}
+		if nBytes == buffer.Len() {
+			break
 		}
 		buffer.SliceFrom(nBytes)
 	}

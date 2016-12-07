@@ -9,7 +9,6 @@ import (
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/alloc"
-	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/errors"
 	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/loader"
@@ -21,7 +20,6 @@ import (
 	"v2ray.com/core/proxy/registry"
 	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/encoding"
-	vmessio "v2ray.com/core/proxy/vmess/io"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -187,24 +185,12 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	reader.SetCached(false)
 
 	go func() {
-		bodyReader := session.DecodeRequestBody(reader)
-		var requestReader v2io.Reader
-		if request.Option.Has(protocol.RequestOptionChunkStream) {
-			auth := &crypto.AEADAuthenticator{
-				AEAD:                    new(encoding.FnvAuthenticator),
-				NonceGenerator:          crypto.NoOpBytesGenerator{},
-				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
-			}
-			authReader := crypto.NewAuthenticationReader(auth, bodyReader, request.Command == protocol.RequestCommandTCP)
-			requestReader = v2io.NewAdaptiveReader(authReader)
-		} else {
-			requestReader = v2io.NewAdaptiveReader(bodyReader)
-		}
-		if err := v2io.PipeUntilEOF(requestReader, input); err != nil {
+		bodyReader := session.DecodeRequestBody(request, reader)
+		if err := v2io.PipeUntilEOF(bodyReader, input); err != nil {
 			connection.SetReusable(false)
 		}
+		bodyReader.Release()
 
-		requestReader.Release()
 		input.Close()
 		readFinish.Unlock()
 	}()
@@ -222,33 +208,29 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 
 	session.EncodeResponseHeader(response, writer)
 
-	bodyWriter := session.EncodeResponseBody(writer)
-	var v2writer v2io.Writer = v2io.NewAdaptiveWriter(bodyWriter)
-	if request.Option.Has(protocol.RequestOptionChunkStream) {
-		v2writer = vmessio.NewAuthChunkWriter(v2writer)
-	}
+	bodyWriter := session.EncodeResponseBody(request, writer)
 
 	// Optimize for small response packet
 	if data, err := output.Read(); err == nil {
-		if err := v2writer.Write(data); err != nil {
+		if err := bodyWriter.Write(data); err != nil {
 			connection.SetReusable(false)
 		}
 
 		writer.SetCached(false)
 
-		if err := v2io.PipeUntilEOF(output, v2writer); err != nil {
+		if err := v2io.PipeUntilEOF(output, bodyWriter); err != nil {
 			connection.SetReusable(false)
 		}
 
 	}
 	output.Release()
 	if request.Option.Has(protocol.RequestOptionChunkStream) {
-		if err := v2writer.Write(alloc.NewLocalBuffer(32)); err != nil {
+		if err := bodyWriter.Write(alloc.NewLocalBuffer(32)); err != nil {
 			connection.SetReusable(false)
 		}
 	}
 	writer.Flush()
-	v2writer.Release()
+	bodyWriter.Release()
 
 	readFinish.Lock()
 }

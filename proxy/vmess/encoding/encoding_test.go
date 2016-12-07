@@ -27,12 +27,13 @@ func TestRequestSerialization(t *testing.T) {
 	user.Account = loader.NewTypedSettings(account)
 
 	expectedRequest := &protocol.RequestHeader{
-		Version: 1,
-		User:    user,
-		Command: protocol.RequestCommandTCP,
-		Option:  protocol.RequestOption(0),
-		Address: v2net.DomainAddress("www.v2ray.com"),
-		Port:    v2net.Port(443),
+		Version:  1,
+		User:     user,
+		Command:  protocol.RequestCommandTCP,
+		Option:   protocol.RequestOption(0),
+		Address:  v2net.DomainAddress("www.v2ray.com"),
+		Port:     v2net.Port(443),
+		Security: protocol.Security(protocol.SecurityType_AES128_GCM),
 	}
 
 	buffer := alloc.NewBuffer()
@@ -51,4 +52,5 @@ func TestRequestSerialization(t *testing.T) {
 	assert.Byte(byte(expectedRequest.Option)).Equals(byte(actualRequest.Option))
 	assert.Address(expectedRequest.Address).Equals(actualRequest.Address)
 	assert.Port(expectedRequest.Port).Equals(actualRequest.Port)
+	assert.Byte(byte(expectedRequest.Security)).Equals(byte(actualRequest.Security))
 }

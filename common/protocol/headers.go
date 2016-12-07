@@ -31,13 +31,20 @@ func (v *RequestOption) Clear(option RequestOption) {
 	*v = (*v & (^option))
 }
 
+type Security byte
+
+func (v Security) Is(t SecurityType) bool {
+	return v == Security(t)
+}
+
 type RequestHeader struct {
-	Version byte
-	User    *User
-	Command RequestCommand
-	Option  RequestOption
-	Address v2net.Address
-	Port    v2net.Port
+	Version  byte
+	User     *User
+	Command  RequestCommand
+	Option   RequestOption
+	Security Security
+	Address  v2net.Address
+	Port     v2net.Port
 }
 
 func (v *RequestHeader) Destination() v2net.Destination {

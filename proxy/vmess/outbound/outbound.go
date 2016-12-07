@@ -14,7 +14,6 @@ import (
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/registry"
 	"v2ray.com/core/proxy/vmess/encoding"
-	vmessio "v2ray.com/core/proxy/vmess/io"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/ray"
 )
@@ -92,13 +91,11 @@ func (v *VMessOutboundHandler) handleRequest(session *encoding.ClientSession, co
 	defer writer.Release()
 	session.EncodeRequestHeader(request, writer)
 
-	bodyWriter := session.EncodeRequestBody(writer)
-	var streamWriter v2io.Writer = v2io.NewAdaptiveWriter(bodyWriter)
-	if request.Option.Has(protocol.RequestOptionChunkStream) {
-		streamWriter = vmessio.NewAuthChunkWriter(streamWriter)
-	}
+	bodyWriter := session.EncodeRequestBody(request, writer)
+	defer bodyWriter.Release()
+
 	if !payload.IsEmpty() {
-		if err := streamWriter.Write(payload); err != nil {
+		if err := bodyWriter.Write(payload); err != nil {
 			log.Info("VMess|Outbound: Failed to write payload. Disabling connection reuse.", err)
 			conn.SetReusable(false)
 		}
@@ -106,17 +103,16 @@ func (v *VMessOutboundHandler) handleRequest(session *encoding.ClientSession, co
 	}
 	writer.SetCached(false)
 
-	if err := v2io.PipeUntilEOF(input, streamWriter); err != nil {
+	if err := v2io.PipeUntilEOF(input, bodyWriter); err != nil {
 		conn.SetReusable(false)
 	}
 
 	if request.Option.Has(protocol.RequestOptionChunkStream) {
-		err := streamWriter.Write(alloc.NewLocalBuffer(32))
+		err := bodyWriter.Write(alloc.NewLocalBuffer(32))
 		if err != nil {
 			conn.SetReusable(false)
 		}
 	}
-	streamWriter.Release()
 	return
 }
 
@@ -139,20 +135,13 @@ func (v *VMessOutboundHandler) handleResponse(session *encoding.ClientSession, c
 	}
 
 	reader.SetCached(false)
-	decryptReader := session.DecodeResponseBody(reader)
-
-	var bodyReader v2io.Reader
-	if request.Option.Has(protocol.RequestOptionChunkStream) {
-		bodyReader = vmessio.NewAuthChunkReader(decryptReader)
-	} else {
-		bodyReader = v2io.NewAdaptiveReader(decryptReader)
-	}
+	bodyReader := session.DecodeResponseBody(request, reader)
+	defer bodyReader.Release()
 
 	if err := v2io.PipeUntilEOF(bodyReader, output); err != nil {
 		conn.SetReusable(false)
 	}
 
-	bodyReader.Release()
 	return
 }
 

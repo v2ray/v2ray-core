@@ -98,6 +98,9 @@ func (v *AuthenticationReader) NextChunk() error {
 	if size == v.auth.Overhead() {
 		return io.EOF
 	}
+	if size < v.auth.Overhead() {
+		return errors.New("AuthenticationReader: invalid packet size.")
+	}
 	cipherChunk := v.buffer.BytesRange(2, size+2)
 	plainChunk, err := v.auth.Open(cipherChunk, cipherChunk)
 	if err != nil {
@@ -176,7 +179,7 @@ func (v *AuthenticationWriter) Write(b []byte) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	serial.Uint16ToBytes(uint16(len(cipherChunk)), b[:0])
+	serial.Uint16ToBytes(uint16(len(cipherChunk)), v.buffer[:0])
 	_, err = v.writer.Write(v.buffer[:2+len(cipherChunk)])
 	return len(b), err
 }

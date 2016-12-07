@@ -1,11 +1,17 @@
 package encoding
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/md5"
 	"hash/fnv"
 	"io"
+
+	"golang.org/x/crypto/chacha20poly1305"
+
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/errors"
+	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -84,7 +90,10 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	v.requestBodyIV = append([]byte(nil), buffer[1:17]...)   // 16 bytes
 	v.requestBodyKey = append([]byte(nil), buffer[17:33]...) // 16 bytes
 	v.responseHeader = buffer[33]                            // 1 byte
-	request.Option = protocol.RequestOption(buffer[34])      // 1 byte + 2 bytes reserved
+	request.Option = protocol.RequestOption(buffer[34])      // 1 byte
+	padingLen := int(buffer[35] >> 4)
+	request.Security = protocol.Security(buffer[35] & 0x0F)
+	// 1 bytes reserved
 	request.Command = protocol.RequestCommand(buffer[37])
 
 	request.Port = v2net.PortFromBytes(buffer[38:40])
@@ -121,6 +130,14 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		request.Address = v2net.DomainAddress(string(buffer[42 : 42+domainLength]))
 	}
 
+	if padingLen > 0 {
+		_, err = io.ReadFull(decryptor, buffer[bufferLen:bufferLen+padingLen])
+		if err != nil {
+			return nil, errors.New("VMess|Server: Failed to read padding.")
+		}
+		bufferLen += padingLen
+	}
+
 	_, err = io.ReadFull(decryptor, buffer[bufferLen:bufferLen+4])
 	if err != nil {
 		return nil, errors.Base(err).Message("VMess|Server: Failed to read checksum.")
@@ -138,9 +155,61 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	return request, nil
 }
 
-func (v *ServerSession) DecodeRequestBody(reader io.Reader) io.Reader {
-	aesStream := crypto.NewAesDecryptionStream(v.requestBodyKey, v.requestBodyIV)
-	return crypto.NewCryptionReader(aesStream, reader)
+func (v *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reader io.Reader) v2io.Reader {
+	aggressive := (request.Command == protocol.RequestCommandTCP)
+	var authReader io.Reader
+	if request.Security.Is(protocol.SecurityType_NONE) {
+		if request.Option.Has(protocol.RequestOptionChunkStream) {
+			auth := &crypto.AEADAuthenticator{
+				AEAD:                    new(FnvAuthenticator),
+				NonceGenerator:          crypto.NoOpBytesGenerator{},
+				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
+			}
+			authReader = crypto.NewAuthenticationReader(auth, reader, aggressive)
+		} else {
+			authReader = reader
+		}
+	} else if request.Security.Is(protocol.SecurityType_LEGACY) {
+		aesStream := crypto.NewAesDecryptionStream(v.requestBodyKey, v.requestBodyIV)
+		cryptionReader := crypto.NewCryptionReader(aesStream, reader)
+		if request.Option.Has(protocol.RequestOptionChunkStream) {
+			auth := &crypto.AEADAuthenticator{
+				AEAD:                    new(FnvAuthenticator),
+				NonceGenerator:          crypto.NoOpBytesGenerator{},
+				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
+			}
+			authReader = crypto.NewAuthenticationReader(auth, cryptionReader, aggressive)
+		} else {
+			authReader = cryptionReader
+		}
+	} else if request.Security.Is(protocol.SecurityType_AES128_GCM) {
+		block, _ := aes.NewCipher(v.responseBodyKey)
+		aead, _ := cipher.NewGCM(block)
+
+		auth := &crypto.AEADAuthenticator{
+			AEAD: aead,
+			NonceGenerator: &ChunkNonceGenerator{
+				Nonce: append([]byte(nil), v.responseBodyIV...),
+				Size:  aead.NonceSize(),
+			},
+			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
+		}
+		authReader = crypto.NewAuthenticationReader(auth, reader, aggressive)
+	} else if request.Security.Is(protocol.SecurityType_CHACHA20_POLY1305) {
+		aead, _ := chacha20poly1305.New(v.responseBodyKey)
+
+		auth := &crypto.AEADAuthenticator{
+			AEAD: aead,
+			NonceGenerator: &ChunkNonceGenerator{
+				Nonce: append([]byte(nil), v.responseBodyIV...),
+				Size:  aead.NonceSize(),
+			},
+			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
+		}
+		authReader = crypto.NewAuthenticationReader(auth, reader, aggressive)
+	}
+
+	return v2io.NewAdaptiveReader(authReader)
 }
 
 func (v *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, writer io.Writer) {
@@ -160,6 +229,56 @@ func (v *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, wr
 	}
 }
 
-func (v *ServerSession) EncodeResponseBody(writer io.Writer) io.Writer {
-	return v.responseWriter
+func (v *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writer io.Writer) v2io.Writer {
+	var authWriter io.Writer
+	if request.Security.Is(protocol.SecurityType_NONE) {
+		if request.Option.Has(protocol.RequestOptionChunkStream) {
+			auth := &crypto.AEADAuthenticator{
+				AEAD:                    new(FnvAuthenticator),
+				NonceGenerator:          crypto.NoOpBytesGenerator{},
+				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
+			}
+			authWriter = crypto.NewAuthenticationWriter(auth, writer)
+		} else {
+			authWriter = writer
+		}
+	} else if request.Security.Is(protocol.SecurityType_LEGACY) {
+		if request.Option.Has(protocol.RequestOptionChunkStream) {
+			auth := &crypto.AEADAuthenticator{
+				AEAD:                    new(FnvAuthenticator),
+				NonceGenerator:          crypto.NoOpBytesGenerator{},
+				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
+			}
+			authWriter = crypto.NewAuthenticationWriter(auth, v.responseWriter)
+		} else {
+			authWriter = v.responseWriter
+		}
+	} else if request.Security.Is(protocol.SecurityType_AES128_GCM) {
+		block, _ := aes.NewCipher(v.responseBodyKey)
+		aead, _ := cipher.NewGCM(block)
+
+		auth := &crypto.AEADAuthenticator{
+			AEAD: aead,
+			NonceGenerator: &ChunkNonceGenerator{
+				Nonce: append([]byte(nil), v.responseBodyIV...),
+				Size:  aead.NonceSize(),
+			},
+			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
+		}
+		authWriter = crypto.NewAuthenticationWriter(auth, writer)
+	} else if request.Security.Is(protocol.SecurityType_CHACHA20_POLY1305) {
+		aead, _ := chacha20poly1305.New(v.responseBodyKey)
+
+		auth := &crypto.AEADAuthenticator{
+			AEAD: aead,
+			NonceGenerator: &ChunkNonceGenerator{
+				Nonce: append([]byte(nil), v.responseBodyIV...),
+				Size:  aead.NonceSize(),
+			},
+			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
+		}
+		authWriter = crypto.NewAuthenticationWriter(auth, writer)
+	}
+
+	return v2io.NewAdaptiveWriter(authWriter)
 }
