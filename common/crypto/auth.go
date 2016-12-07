@@ -121,38 +121,38 @@ func (v *AuthenticationReader) CopyChunk(b []byte) int {
 	return nBytes
 }
 
+func (v *AuthenticationReader) EnsureChunk() error {
+	for {
+		err := v.NextChunk()
+		if err == nil {
+			return nil
+		}
+		if err == errInsufficientBuffer {
+			if !v.buffer.IsEmpty() {
+				leftover := v.buffer.Bytes()
+				v.buffer.SetBytesFunc(func(b []byte) int {
+					return copy(b, leftover)
+				})
+			}
+			_, err = v.buffer.FillFrom(v.reader)
+		}
+		return err
+	}
+}
+
 func (v *AuthenticationReader) Read(b []byte) (int, error) {
 	if len(v.chunk) > 0 {
 		nBytes := v.CopyChunk(b)
 		return nBytes, nil
 	}
 
-	totalBytes := 0
-	for {
-		err := v.NextChunk()
-		if err == errInsufficientBuffer {
-			if totalBytes > 0 {
-				return totalBytes, nil
-			}
-			leftover := v.buffer.Bytes()
-			v.buffer.SetBytesFunc(func(b []byte) int {
-				return copy(b, leftover)
-			})
-			_, err = v.buffer.FillFrom(v.reader)
-		}
-
-		if err != nil {
-			return 0, err
-		}
-
-		nBytes := v.CopyChunk(b)
-		b = b[nBytes:]
-		totalBytes += nBytes
-
-		if !v.aggressive {
-			return totalBytes, nil
-		}
+	err := v.EnsureChunk()
+	if err != nil {
+		return 0, err
 	}
+
+	nBytes := v.CopyChunk(b)
+	return nBytes, nil
 }
 
 type AuthenticationWriter struct {

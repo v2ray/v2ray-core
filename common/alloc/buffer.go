@@ -108,6 +108,7 @@ func (b *Buffer) Bytes() []byte {
 }
 
 func (b *Buffer) SetBytesFunc(writer BytesWriter) {
+	b.start = defaultOffset
 	b.end = b.start + writer(b.v[b.start:])
 }
 
