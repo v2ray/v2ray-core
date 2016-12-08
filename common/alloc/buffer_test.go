@@ -81,3 +81,25 @@ func BenchmarkNewLocalBuffer2048(b *testing.B) {
 		buffer.Release()
 	}
 }
+
+func BenchmarkBufferValue(b *testing.B) {
+	x := Buffer{}
+	doSomething := func(a Buffer) {
+		_ = a.Len()
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		doSomething(x)
+	}
+}
+
+func BenchmarkBufferPointer(b *testing.B) {
+	x := NewSmallBuffer()
+	doSomething := func(a *Buffer) {
+		_ = a.Len()
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		doSomething(x)
+	}
+}
