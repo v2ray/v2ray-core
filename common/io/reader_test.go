@@ -25,5 +25,5 @@ func TestAdaptiveReader(t *testing.T) {
 	b2, err := reader.Read()
 	assert.Error(err).IsNil()
 	assert.Bool(b2.IsFull()).IsTrue()
-	assert.Int(buffer.Len()).Equals(1007648)
+	assert.Int(buffer.Len()).Equals(1007616)
 }
