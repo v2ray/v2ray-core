@@ -16,8 +16,8 @@ func TestFnvAuth(t *testing.T) {
 	rand.Read(expectedText)
 
 	buffer := make([]byte, 512)
-	b := fnvAuth.Seal(buffer, nil, expectedText, nil)
-	b, err := fnvAuth.Open(buffer, nil, b, nil)
+	b := fnvAuth.Seal(buffer[:0], nil, expectedText, nil)
+	b, err := fnvAuth.Open(buffer[:0], nil, b, nil)
 	assert.Error(err).IsNil()
 	assert.Int(len(b)).Equals(256)
 	assert.Bytes(b).Equals(expectedText)
