@@ -31,22 +31,6 @@ func TestBufferIsEmpty(t *testing.T) {
 	assert.Bool(buffer.IsEmpty()).IsTrue()
 }
 
-func TestBufferPrepend(t *testing.T) {
-	assert := assert.On(t)
-
-	buffer := NewBuffer()
-	defer buffer.Release()
-
-	buffer.Append([]byte{'a', 'b', 'c'})
-	buffer.Prepend([]byte{'x', 'y', 'z'})
-
-	assert.Int(buffer.Len()).Equals(6)
-	assert.String(buffer.String()).Equals("xyzabc")
-
-	buffer.Prepend([]byte{'u', 'v', 'w'})
-	assert.String(buffer.String()).Equals("uvwxyzabc")
-}
-
 func TestBufferString(t *testing.T) {
 	assert := assert.On(t)
 
@@ -60,7 +44,7 @@ func TestBufferString(t *testing.T) {
 func TestBufferWrite(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := NewLocalBuffer(24) // 16 + 8
+	buffer := NewLocalBuffer(8)
 	nBytes, err := buffer.Write([]byte("abcd"))
 	assert.Error(err).IsNil()
 	assert.Int(nBytes).Equals(4)

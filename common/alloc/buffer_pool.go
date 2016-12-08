@@ -84,11 +84,8 @@ func (p *BufferPool) Free(buffer *Buffer) {
 }
 
 const (
-	mediumBufferByteSize = 8 * 1024
-	BufferSize           = mediumBufferByteSize - defaultOffset
-
-	smallBufferByteSize = 2 * 1024
-	SmallBufferSize     = smallBufferByteSize - defaultOffset
+	BufferSize      = 8 * 1024
+	SmallBufferSize = 2 * 1024
 
 	PoolSizeEnvKey = "v2ray.buffer.size"
 )
@@ -109,8 +106,8 @@ func init() {
 	}
 	if size > 0 {
 		totalByteSize := size * 1024 * 1024
-		mediumPool = NewBufferPool(mediumBufferByteSize, totalByteSize/mediumBufferByteSize)
+		mediumPool = NewBufferPool(BufferSize, totalByteSize/BufferSize)
 	} else {
-		mediumPool = NewSyncPool(mediumBufferByteSize)
+		mediumPool = NewSyncPool(BufferSize)
 	}
 }

@@ -5,10 +5,6 @@ import (
 	"io"
 )
 
-const (
-	defaultOffset = 16
-)
-
 // BytesWriter is a writer that writes contents into the given buffer.
 type BytesWriter func([]byte) int
 
@@ -28,8 +24,8 @@ func CreateBuffer(container []byte, parent Pool) *Buffer {
 	b := new(Buffer)
 	b.v = container
 	b.pool = parent
-	b.start = defaultOffset
-	b.end = defaultOffset
+	b.start = 0
+	b.end = 0
 	return b
 }
 
@@ -48,14 +44,8 @@ func (b *Buffer) Release() {
 // Clear clears the content of the buffer, results an empty buffer with
 // Len() = 0.
 func (b *Buffer) Clear() {
-	b.start = defaultOffset
-	b.end = defaultOffset
-}
-
-// Reset resets this Buffer into its original state.
-func (b *Buffer) Reset() {
-	b.start = defaultOffset
-	b.end = len(b.v)
+	b.start = 0
+	b.end = 0
 }
 
 // AppendBytes appends one or more bytes to the end of the buffer.
@@ -75,23 +65,6 @@ func (b *Buffer) AppendFunc(writer BytesWriter) {
 	b.end += nBytes
 }
 
-// Prepend prepends bytes in front of the buffer. Caller must ensure total bytes prepended is
-// no more than 16 bytes.
-func (b *Buffer) Prepend(data []byte) {
-	b.SliceBack(len(data))
-	copy(b.v[b.start:], data)
-}
-
-// PrependBytes prepends all data in front of the buffer.
-func (b *Buffer) PrependBytes(data ...byte) {
-	b.Prepend(data)
-}
-
-func (b *Buffer) PrependFunc(offset int, writer BytesWriter) {
-	b.SliceBack(offset)
-	writer(b.v[b.start:])
-}
-
 // Byte returns the bytes at index.
 func (b *Buffer) Byte(index int) byte {
 	return b.v[b.start+index]
@@ -108,7 +81,7 @@ func (b *Buffer) Bytes() []byte {
 }
 
 func (b *Buffer) SetBytesFunc(writer BytesWriter) {
-	b.start = defaultOffset
+	b.start = 0
 	b.end = b.start + writer(b.v[b.start:])
 }
 
@@ -158,15 +131,6 @@ func (b *Buffer) SliceFrom(from int) {
 		from += b.Len()
 	}
 	b.start += from
-}
-
-// SliceBack extends the Buffer to its front by offset bytes.
-// Caller must ensure cumulated offset is no more than 16.
-func (b *Buffer) SliceBack(offset int) {
-	b.start -= offset
-	if b.start < 0 {
-		panic("Negative buffer offset.")
-	}
 }
 
 // Len returns the length of the buffer content.

@@ -116,7 +116,7 @@ func (v *VMessOutboundHandler) handleRequest(session *encoding.ClientSession, co
 	}
 
 	if request.Option.Has(protocol.RequestOptionChunkStream) {
-		err := bodyWriter.Write(alloc.NewLocalBuffer(32))
+		err := bodyWriter.Write(alloc.NewLocalBuffer(8))
 		if err != nil {
 			conn.SetReusable(false)
 		}
