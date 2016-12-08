@@ -6,13 +6,18 @@ import (
 	"v2ray.com/core/common/serial"
 )
 
+// Command is a KCP command that indicate the purpose of a Segment.
 type Command byte
 
 const (
-	CommandACK       Command = 0
-	CommandData      Command = 1
+	// CommandACK indicates a AckSegment.
+	CommandACK Command = 0
+	// CommandData indicates a DataSegment.
+	CommandData Command = 1
+	// CommandTerminate indicates that peer terminates the connection.
 	CommandTerminate Command = 2
-	CommandPing      Command = 3
+	// CommandPing indicates a ping.
+	CommandPing Command = 3
 )
 
 type SegmentOption byte

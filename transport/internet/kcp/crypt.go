@@ -2,9 +2,9 @@ package kcp
 
 import (
 	"crypto/cipher"
-	"errors"
 	"hash/fnv"
 
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/serial"
 )
 
@@ -12,20 +12,25 @@ var (
 	errInvalidAuth = errors.New("Invalid auth.")
 )
 
+// SimpleAuthenticator is a legacy AEAD used for KCP encryption.
 type SimpleAuthenticator struct{}
 
+// NewSimpleAuthenticator creates a new SimpleAuthenticator
 func NewSimpleAuthenticator() cipher.AEAD {
 	return &SimpleAuthenticator{}
 }
 
+// NonceSize implements cipher.AEAD.NonceSize().
 func (v *SimpleAuthenticator) NonceSize() int {
 	return 0
 }
 
+// Overhead implements cipher.AEAD.NonceSize().
 func (v *SimpleAuthenticator) Overhead() int {
 	return 6
 }
 
+// Seal implements cipher.AEAD.Seal().
 func (v *SimpleAuthenticator) Seal(dst, nonce, plain, extra []byte) []byte {
 	dst = append(dst, 0, 0, 0, 0)
 	dst = serial.Uint16ToBytes(uint16(len(plain)), dst)
@@ -47,6 +52,7 @@ func (v *SimpleAuthenticator) Seal(dst, nonce, plain, extra []byte) []byte {
 	return dst
 }
 
+// Open implements cipher.AEAD.Open().
 func (v *SimpleAuthenticator) Open(dst, nonce, cipherText, extra []byte) ([]byte, error) {
 	dst = append(dst, cipherText...)
 	dstLen := len(dst)
