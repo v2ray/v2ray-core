@@ -4,12 +4,8 @@ import (
 	"crypto/cipher"
 	"hash/fnv"
 
-	"v2ray.com/core/common/errors"
+	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/serial"
-)
-
-var (
-	errInvalidAuth = errors.New("Invalid auth.")
 )
 
 // SimpleAuthenticator is a legacy AEAD used for KCP encryption.
@@ -68,12 +64,12 @@ func (v *SimpleAuthenticator) Open(dst, nonce, cipherText, extra []byte) ([]byte
 	fnvHash := fnv.New32a()
 	fnvHash.Write(dst[4:])
 	if serial.BytesToUint32(dst[:4]) != fnvHash.Sum32() {
-		return nil, errInvalidAuth
+		return nil, crypto.ErrAuthenticationFailed
 	}
 
 	length := serial.BytesToUint16(dst[4:6])
 	if len(dst)-6 != int(length) {
-		return nil, errInvalidAuth
+		return nil, crypto.ErrAuthenticationFailed
 	}
 
 	return dst[6:], nil

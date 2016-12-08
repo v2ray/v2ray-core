@@ -9,6 +9,7 @@ import (
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/testing/assert"
+	"v2ray.com/core/common/crypto"
 )
 
 func TestHasAuthenticationMethod(t *testing.T) {
@@ -145,7 +146,7 @@ func TestZeroAuthenticationMethod(t *testing.T) {
 	buffer := alloc.NewBuffer()
 	buffer.AppendBytes(5, 0)
 	_, _, err := ReadAuthentication(buffer)
-	assert.Error(err).Equals(proxy.ErrInvalidAuthentication)
+	assert.Error(err).Equals(crypto.ErrAuthenticationFailed)
 }
 func TestWrongProtocolVersion(t *testing.T) {
 	assert := assert.On(t)

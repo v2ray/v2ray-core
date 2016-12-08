@@ -7,6 +7,7 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/errors"
 	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/loader"
@@ -171,8 +172,8 @@ func (v *Server) handleSocks5(clientAddr v2net.Destination, reader *v2io.Buffere
 		}
 		if status != byte(0) {
 			log.Warning("Socks: Invalid user account: ", upRequest.AuthDetail())
-			log.Access(clientAddr, "", log.AccessRejected, proxy.ErrInvalidAuthentication)
-			return proxy.ErrInvalidAuthentication
+			log.Access(clientAddr, "", log.AccessRejected, crypto.ErrAuthenticationFailed)
+			return crypto.ErrAuthenticationFailed
 		}
 	}
 

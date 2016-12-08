@@ -8,6 +8,7 @@ import (
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
+	"v2ray.com/core/common/crypto"
 )
 
 const (
@@ -70,13 +71,13 @@ func ReadAuthentication(reader io.Reader) (auth Socks5AuthenticationRequest, aut
 	auth.nMethods = buffer[1]
 	if auth.nMethods <= 0 {
 		log.Warning("Socks: Zero length of authentication methods")
-		err = proxy.ErrInvalidAuthentication
+		err = crypto.ErrAuthenticationFailed
 		return
 	}
 
 	if nBytes-2 != int(auth.nMethods) {
 		log.Warning("Socks: Unmatching number of auth methods, expecting ", auth.nMethods, ", but got ", nBytes)
-		err = proxy.ErrInvalidAuthentication
+		err = crypto.ErrAuthenticationFailed
 		return
 	}
 	copy(auth.authMethods[:], buffer[2:nBytes])
