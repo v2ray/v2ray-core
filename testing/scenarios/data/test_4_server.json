@@ -17,10 +17,8 @@
           "alterId": 10
         }
       ],
-      "features": {
-        "detour": {
-          "to": "detour"
-        }
+      "detour": {
+        "to": "detour"
       }
     }
   },
