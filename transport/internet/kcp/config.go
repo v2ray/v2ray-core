@@ -7,6 +7,7 @@ import (
 	"v2ray.com/core/transport/internet"
 )
 
+// GetValue returns the value of MTU settings.
 func (v *MTU) GetValue() uint32 {
 	if v == nil {
 		return 1350
@@ -14,6 +15,7 @@ func (v *MTU) GetValue() uint32 {
 	return v.Value
 }
 
+// GetValue returns the value of TTI settings.
 func (v *TTI) GetValue() uint32 {
 	if v == nil {
 		return 50
@@ -21,6 +23,7 @@ func (v *TTI) GetValue() uint32 {
 	return v.Value
 }
 
+// GetValue returns the value of UplinkCapacity settings.
 func (v *UplinkCapacity) GetValue() uint32 {
 	if v == nil {
 		return 5
@@ -28,6 +31,7 @@ func (v *UplinkCapacity) GetValue() uint32 {
 	return v.Value
 }
 
+// GetValue returns the value of DownlinkCapacity settings.
 func (v *DownlinkCapacity) GetValue() uint32 {
 	if v == nil {
 		return 20
@@ -35,6 +39,7 @@ func (v *DownlinkCapacity) GetValue() uint32 {
 	return v.Value
 }
 
+// GetSize returns the size of WriterBuffer in bytes.
 func (v *WriteBuffer) GetSize() uint32 {
 	if v == nil {
 		return 2 * 1024 * 1024
@@ -42,6 +47,7 @@ func (v *WriteBuffer) GetSize() uint32 {
 	return v.Size
 }
 
+// GetSize returns the size of ReadBuffer in bytes.
 func (v *ReadBuffer) GetSize() uint32 {
 	if v == nil {
 		return 2 * 1024 * 1024
@@ -49,6 +55,7 @@ func (v *ReadBuffer) GetSize() uint32 {
 	return v.Size
 }
 
+// GetSecurity returns the security settings.
 func (v *Config) GetSecurity() (cipher.AEAD, error) {
 	return NewSimpleAuthenticator(), nil
 }
