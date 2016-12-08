@@ -88,7 +88,7 @@ func (v *SendingWindow) Clear(una uint32) {
 }
 
 func (v *SendingWindow) Remove(idx uint32) bool {
-	if v.len == 0 {
+	if v.IsEmpty() {
 		return false
 	}
 
