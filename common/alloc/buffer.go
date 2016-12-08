@@ -185,7 +185,7 @@ func (b *Buffer) FillFullFrom(reader io.Reader, amount int) (int, error) {
 }
 
 func (b *Buffer) String() string {
-	return string(b.v[b.start:b.end])
+	return string(b.Bytes())
 }
 
 // NewBuffer creates a Buffer with 8K bytes of arbitrary content.
