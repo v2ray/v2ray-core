@@ -19,9 +19,6 @@ func TestNormalChunkReading(t *testing.T) {
 	payload, err := reader.Read()
 	assert.Error(err).IsNil()
 	assert.Bytes(payload.Bytes()).Equals([]byte{11, 12, 13, 14, 15, 16, 17, 18})
-
-	payload.PrependBytes(3, 4)
-	assert.Bytes(payload.Bytes()).Equals([]byte{3, 4, 11, 12, 13, 14, 15, 16, 17, 18})
 }
 
 func TestNormalChunkWriting(t *testing.T) {

@@ -1,6 +1,7 @@
 package testing
 
 import (
+	"v2ray.com/core/common/alloc"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
@@ -19,8 +20,11 @@ func NewTestPacketDispatcher(handler func(destination v2net.Destination, traffic
 				if err != nil {
 					break
 				}
-				payload.Prepend([]byte("Processed: "))
-				traffic.OutboundOutput().Write(payload)
+				output := alloc.NewBuffer()
+				output.Append([]byte("Processed: "))
+				output.Append(payload.Bytes())
+				payload.Release()
+				traffic.OutboundOutput().Write(output)
 			}
 			traffic.OutboundOutput().Close()
 		}

@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"io"
+
 	"v2ray.com/core/common/alloc"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/serial"
@@ -111,12 +112,14 @@ func (v *ChunkReader) Read() (*alloc.Buffer, error) {
 type ChunkWriter struct {
 	writer io.Writer
 	auth   *Authenticator
+	buffer []byte
 }
 
 func NewChunkWriter(writer io.Writer, auth *Authenticator) *ChunkWriter {
 	return &ChunkWriter{
 		writer: writer,
 		auth:   auth,
+		buffer: make([]byte, 32*1024),
 	}
 }
 
@@ -127,8 +130,9 @@ func (v *ChunkWriter) Release() {
 
 func (v *ChunkWriter) Write(payload *alloc.Buffer) error {
 	totalLength := payload.Len()
-	payload.PrependFunc(AuthSize, v.auth.Authenticate(payload.Bytes()))
-	payload.PrependFunc(2, serial.WriteUint16(uint16(totalLength)))
-	_, err := v.writer.Write(payload.Bytes())
+	serial.Uint16ToBytes(uint16(totalLength), v.buffer[:0])
+	v.auth.Authenticate(payload.Bytes())(v.buffer[2:])
+	copy(v.buffer[2+AuthSize:], payload.Bytes())
+	_, err := v.writer.Write(v.buffer[:2+AuthSize+payload.Len()])
 	return err
 }
