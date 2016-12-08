@@ -24,6 +24,7 @@ const (
 type Segment interface {
 	common.Releasable
 	Conversation() uint16
+	Command() Command
 	ByteSize() int
 	Bytes() alloc.BytesWriter
 }
@@ -50,6 +51,10 @@ func NewDataSegment() *DataSegment {
 
 func (v *DataSegment) Conversation() uint16 {
 	return v.Conv
+}
+
+func (v *DataSegment) Command() Command {
+	return CommandData
 }
 
 func (v *DataSegment) SetData(b []byte) {
@@ -104,6 +109,10 @@ func (v *AckSegment) Conversation() uint16 {
 	return v.Conv
 }
 
+func (v *AckSegment) Command() Command {
+	return CommandACK
+}
+
 func (v *AckSegment) PutTimestamp(timestamp uint32) {
 	if timestamp-v.Timestamp < 0x7FFFFFFF {
 		v.Timestamp = timestamp
@@ -144,7 +153,7 @@ func (v *AckSegment) Release() {
 
 type CmdOnlySegment struct {
 	Conv         uint16
-	Command      Command
+	Cmd          Command
 	Option       SegmentOption
 	SendingNext  uint32
 	ReceivinNext uint32
@@ -159,6 +168,10 @@ func (v *CmdOnlySegment) Conversation() uint16 {
 	return v.Conv
 }
 
+func (v *CmdOnlySegment) Command() Command {
+	return v.Cmd
+}
+
 func (v *CmdOnlySegment) ByteSize() int {
 	return 2 + 1 + 1 + 4 + 4 + 4
 }
@@ -166,7 +179,7 @@ func (v *CmdOnlySegment) ByteSize() int {
 func (v *CmdOnlySegment) Bytes() alloc.BytesWriter {
 	return func(b []byte) int {
 		b = serial.Uint16ToBytes(v.Conv, b[:0])
-		b = append(b, byte(v.Command), byte(v.Option))
+		b = append(b, byte(v.Cmd), byte(v.Option))
 		b = serial.Uint32ToBytes(v.SendingNext, b)
 		b = serial.Uint32ToBytes(v.ReceivinNext, b)
 		b = serial.Uint32ToBytes(v.PeerRTO, b)
@@ -250,7 +263,7 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 
 	seg := NewCmdOnlySegment()
 	seg.Conv = conv
-	seg.Command = cmd
+	seg.Cmd = cmd
 	seg.Option = opt
 
 	if len(buf) < 12 {

@@ -4,13 +4,17 @@ import (
 	"net"
 	"testing"
 	"time"
+
 	"v2ray.com/core/testing/assert"
-	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/internal"
 	. "v2ray.com/core/transport/internet/kcp"
 )
 
 type NoOpConn struct{}
+
+func (o *NoOpConn) Overhead() int {
+	return 0
+}
 
 func (o *NoOpConn) Write(b []byte) (int, error) {
 	return len(b), nil
@@ -48,7 +52,7 @@ func (o *NoOpConn) Id() internal.ConnectionId {
 	return internal.ConnectionId{}
 }
 
-func (o *NoOpConn) Reset(auth internet.Authenticator, input func([]byte)) {}
+func (o *NoOpConn) Reset(input func([]Segment)) {}
 
 type NoOpRecycler struct{}
 
@@ -57,7 +61,7 @@ func (o *NoOpRecycler) Put(internal.ConnectionId, net.Conn) {}
 func TestConnectionReadTimeout(t *testing.T) {
 	assert := assert.On(t)
 
-	conn := NewConnection(1, &NoOpConn{}, &NoOpRecycler{}, NewSimpleAuthenticator(), &Config{})
+	conn := NewConnection(1, &NoOpConn{}, &NoOpRecycler{}, &Config{})
 	conn.SetReadDeadline(time.Now().Add(time.Second))
 
 	b := make([]byte, 1024)

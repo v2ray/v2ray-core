@@ -6,6 +6,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/predicate"
@@ -161,7 +162,8 @@ func (v *Updater) Run() {
 type SystemConnection interface {
 	net.Conn
 	Id() internal.ConnectionId
-	Reset(internet.Authenticator, func([]byte))
+	Reset(func([]Segment))
+	Overhead() int
 }
 
 // Connection is a KCP connection over UDP.
@@ -197,32 +199,25 @@ type Connection struct {
 }
 
 // NewConnection create a new KCP connection between local and remote.
-func NewConnection(conv uint16, sysConn SystemConnection, recycler internal.ConnectionRecyler, block internet.Authenticator, config *Config) *Connection {
+func NewConnection(conv uint16, sysConn SystemConnection, recycler internal.ConnectionRecyler, config *Config) *Connection {
 	log.Info("KCP|Connection: creating connection ", conv)
-
-	authWriter := &AuthenticationWriter{
-		Authenticator: block,
-		Writer:        sysConn,
-		Config:        config,
-	}
 
 	conn := &Connection{
 		conv:           conv,
 		conn:           sysConn,
 		connRecycler:   recycler,
-		block:          block,
 		since:          nowMillisec(),
 		dataInputCond:  sync.NewCond(new(sync.Mutex)),
 		dataOutputCond: sync.NewCond(new(sync.Mutex)),
 		Config:         config,
-		output:         NewSegmentWriter(authWriter),
-		mss:            authWriter.Mtu() - DataSegmentOverhead,
+		output:         NewSegmentWriter(sysConn, config.GetMtu().GetValue()-uint32(sysConn.Overhead())),
+		mss:            config.GetMtu().GetValue() - uint32(sysConn.Overhead()) - DataSegmentOverhead,
 		roundTrip: &RoundTripInfo{
 			rto:    100,
 			minRtt: config.Tti.GetValue(),
 		},
 	}
-	sysConn.Reset(block, conn.Input)
+	sysConn.Reset(conn.Input)
 
 	conn.receivingWorker = NewReceivingWorker(conn)
 	conn.sendingWorker = NewSendingWorker(conn)
@@ -480,16 +475,11 @@ func (v *Connection) OnPeerClosed() {
 }
 
 // Input when you received a low level packet (eg. UDP packet), call it
-func (v *Connection) Input(data []byte) {
+func (v *Connection) Input(segments []Segment) {
 	current := v.Elapsed()
 	atomic.StoreUint32(&v.lastIncomingTime, current)
 
-	var seg Segment
-	for {
-		seg, data = ReadSegment(data)
-		if seg == nil {
-			break
-		}
+	for _, seg := range segments {
 		if seg.Conversation() != v.conv {
 			return
 		}
@@ -507,7 +497,7 @@ func (v *Connection) Input(data []byte) {
 			v.dataUpdater.WakeUp()
 		case *CmdOnlySegment:
 			v.HandleOption(seg.Option)
-			if seg.Command == CommandTerminate {
+			if seg.Command() == CommandTerminate {
 				state := v.State()
 				if state == StateActive ||
 					state == StatePeerClosed {
@@ -577,7 +567,7 @@ func (v *Connection) State() State {
 func (v *Connection) Ping(current uint32, cmd Command) {
 	seg := NewCmdOnlySegment()
 	seg.Conv = v.conv
-	seg.Command = cmd
+	seg.Cmd = cmd
 	seg.ReceivinNext = v.receivingWorker.nextNumber
 	seg.SendingNext = v.sendingWorker.firstUnacknowledged
 	seg.PeerRTO = v.roundTrip.Timeout()

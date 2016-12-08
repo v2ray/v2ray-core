@@ -1,63 +1,74 @@
 package kcp
 
 import (
+	"crypto/cipher"
+	"errors"
 	"hash/fnv"
 
-	"v2ray.com/core/common/alloc"
 	"v2ray.com/core/common/serial"
-	"v2ray.com/core/transport/internet"
+)
+
+var (
+	errInvalidAuth = errors.New("Invalid auth.")
 )
 
 type SimpleAuthenticator struct{}
 
-func NewSimpleAuthenticator() internet.Authenticator {
+func NewSimpleAuthenticator() cipher.AEAD {
 	return &SimpleAuthenticator{}
+}
+
+func (v *SimpleAuthenticator) NonceSize() int {
+	return 0
 }
 
 func (v *SimpleAuthenticator) Overhead() int {
 	return 6
 }
 
-func (v *SimpleAuthenticator) Seal(buffer *alloc.Buffer) {
-	buffer.PrependFunc(2, serial.WriteUint16(uint16(buffer.Len())))
-	fnvHash := fnv.New32a()
-	fnvHash.Write(buffer.Bytes())
-	buffer.PrependFunc(4, serial.WriteHash(fnvHash))
+func (v *SimpleAuthenticator) Seal(dst, nonce, plain, extra []byte) []byte {
+	dst = append(dst, 0, 0, 0, 0)
+	dst = serial.Uint16ToBytes(uint16(len(plain)), dst)
+	dst = append(dst, plain...)
 
-	len := buffer.Len()
+	fnvHash := fnv.New32a()
+	fnvHash.Write(dst[4:])
+	fnvHash.Sum(dst[:0])
+
+	len := len(dst)
 	xtra := 4 - len%4
-	if xtra != 0 {
-		buffer.Slice(0, len+xtra)
+	if xtra != 4 {
+		dst = append(dst, make([]byte, xtra)...)
 	}
-	xorfwd(buffer.Bytes())
-	if xtra != 0 {
-		buffer.Slice(0, len)
+	xorfwd(dst)
+	if xtra != 4 {
+		dst = dst[:len]
 	}
+	return dst
 }
 
-func (v *SimpleAuthenticator) Open(buffer *alloc.Buffer) bool {
-	len := buffer.Len()
-	xtra := 4 - len%4
-	if xtra != 0 {
-		buffer.Slice(0, len+xtra)
+func (v *SimpleAuthenticator) Open(dst, nonce, cipherText, extra []byte) ([]byte, error) {
+	dst = append(dst, cipherText...)
+	dstLen := len(dst)
+	xtra := 4 - dstLen%4
+	if xtra != 4 {
+		dst = append(dst, make([]byte, xtra)...)
 	}
-	xorbkd(buffer.Bytes())
-	if xtra != 0 {
-		buffer.Slice(0, len)
+	xorbkd(dst)
+	if xtra != 4 {
+		dst = dst[:dstLen]
 	}
 
 	fnvHash := fnv.New32a()
-	fnvHash.Write(buffer.BytesFrom(4))
-	if serial.BytesToUint32(buffer.BytesTo(4)) != fnvHash.Sum32() {
-		return false
+	fnvHash.Write(dst[4:])
+	if serial.BytesToUint32(dst[:4]) != fnvHash.Sum32() {
+		return nil, errInvalidAuth
 	}
 
-	length := serial.BytesToUint16(buffer.BytesRange(4, 6))
-	if buffer.Len()-6 != int(length) {
-		return false
+	length := serial.BytesToUint16(dst[4:6])
+	if len(dst)-6 != int(length) {
+		return nil, errInvalidAuth
 	}
 
-	buffer.SliceFrom(6)
-
-	return true
+	return dst[6:], nil
 }

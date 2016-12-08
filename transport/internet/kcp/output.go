@@ -5,8 +5,6 @@ import (
 	"sync"
 
 	"v2ray.com/core/common/alloc"
-	v2io "v2ray.com/core/common/io"
-	"v2ray.com/core/transport/internet"
 )
 
 type SegmentWriter interface {
@@ -17,13 +15,14 @@ type BufferedSegmentWriter struct {
 	sync.Mutex
 	mtu    uint32
 	buffer *alloc.Buffer
-	writer v2io.Writer
+	writer io.Writer
 }
 
-func NewSegmentWriter(writer *AuthenticationWriter) *BufferedSegmentWriter {
+func NewSegmentWriter(writer io.Writer, mtu uint32) *BufferedSegmentWriter {
 	return &BufferedSegmentWriter{
-		mtu:    writer.Mtu(),
+		mtu:    mtu,
 		writer: writer,
+		buffer: alloc.NewSmallBuffer(),
 	}
 }
 
@@ -36,45 +35,21 @@ func (v *BufferedSegmentWriter) Write(seg Segment) {
 		v.FlushWithoutLock()
 	}
 
-	if v.buffer == nil {
-		v.buffer = alloc.NewSmallBuffer()
-	}
-
 	v.buffer.AppendFunc(seg.Bytes())
 }
 
 func (v *BufferedSegmentWriter) FlushWithoutLock() {
-	v.writer.Write(v.buffer)
-	v.buffer = nil
+	v.writer.Write(v.buffer.Bytes())
+	v.buffer.Clear()
 }
 
 func (v *BufferedSegmentWriter) Flush() {
 	v.Lock()
 	defer v.Unlock()
 
-	if v.buffer.Len() == 0 {
+	if v.buffer.IsEmpty() {
 		return
 	}
 
 	v.FlushWithoutLock()
-}
-
-type AuthenticationWriter struct {
-	Authenticator internet.Authenticator
-	Writer        io.Writer
-	Config        *Config
-}
-
-func (v *AuthenticationWriter) Write(payload *alloc.Buffer) error {
-	defer payload.Release()
-
-	v.Authenticator.Seal(payload)
-	_, err := v.Writer.Write(payload.Bytes())
-	return err
-}
-
-func (v *AuthenticationWriter) Release() {}
-
-func (v *AuthenticationWriter) Mtu() uint32 {
-	return v.Config.Mtu.GetValue() - uint32(v.Authenticator.Overhead())
 }

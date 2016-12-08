@@ -3,10 +3,10 @@ package conf
 import (
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/loader"
-	"v2ray.com/core/transport/internet/authenticators/http"
-	"v2ray.com/core/transport/internet/authenticators/noop"
-	"v2ray.com/core/transport/internet/authenticators/srtp"
-	"v2ray.com/core/transport/internet/authenticators/utp"
+	"v2ray.com/core/transport/internet/headers/http"
+	"v2ray.com/core/transport/internet/headers/noop"
+	"v2ray.com/core/transport/internet/headers/srtp"
+	"v2ray.com/core/transport/internet/headers/utp"
 )
 
 type NoOpAuthenticator struct{}

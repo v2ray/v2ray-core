@@ -2,14 +2,17 @@ package kcp
 
 import (
 	"crypto/tls"
+	"io"
 	"net"
 	"sync"
 	"time"
 
+	"crypto/cipher"
+
 	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/internal"
@@ -25,11 +28,14 @@ type ConnectionId struct {
 
 type ServerConnection struct {
 	id     internal.ConnectionId
-	writer *Writer
 	local  net.Addr
 	remote net.Addr
-	auth   internet.Authenticator
-	input  func([]byte)
+	writer PacketWriter
+	closer io.Closer
+}
+
+func (o *ServerConnection) Overhead() int {
+	return o.writer.Overhead()
 }
 
 func (o *ServerConnection) Read([]byte) (int, error) {
@@ -41,20 +47,10 @@ func (o *ServerConnection) Write(b []byte) (int, error) {
 }
 
 func (o *ServerConnection) Close() error {
-	return o.writer.Close()
+	return o.closer.Close()
 }
 
-func (o *ServerConnection) Reset(auth internet.Authenticator, input func([]byte)) {
-	o.auth = auth
-	o.input = input
-}
-
-func (o *ServerConnection) Input(b *alloc.Buffer) {
-	defer b.Release()
-
-	if o.auth.Open(b) {
-		o.input(b.Bytes())
-	}
+func (o *ServerConnection) Reset(input func([]Segment)) {
 }
 
 func (o *ServerConnection) LocalAddr() net.Addr {
@@ -85,12 +81,14 @@ func (o *ServerConnection) Id() internal.ConnectionId {
 type Listener struct {
 	sync.Mutex
 	running       bool
-	authenticator internet.Authenticator
 	sessions      map[ConnectionId]*Connection
 	awaitingConns chan *Connection
 	hub           *udp.UDPHub
 	tlsConfig     *tls.Config
 	config        *Config
+	reader        PacketReader
+	header        internet.PacketHeader
+	security      cipher.AEAD
 }
 
 func NewListener(address v2net.Address, port v2net.Port, options internet.ListenOptions) (*Listener, error) {
@@ -102,12 +100,21 @@ func NewListener(address v2net.Address, port v2net.Port, options internet.Listen
 	kcpSettings := networkSettings.(*Config)
 	kcpSettings.ConnectionReuse = &ConnectionReuse{Enable: false}
 
-	auth, err := kcpSettings.GetAuthenticator()
+	header, err := kcpSettings.GetPackerHeader()
 	if err != nil {
-		return nil, err
+		return nil, errors.Base(err).Message("KCP|Listener: Failed to create packet header.")
+	}
+	security, err := kcpSettings.GetSecurity()
+	if err != nil {
+		return nil, errors.Base(err).Message("KCP|Listener: Failed to create security.")
 	}
 	l := &Listener{
-		authenticator: auth,
+		header:   header,
+		security: security,
+		reader: &KCPPacketReader{
+			Header:   header,
+			Security: security,
+		},
 		sessions:      make(map[ConnectionId]*Connection),
 		awaitingConns: make(chan *Connection, 64),
 		running:       true,
@@ -138,10 +145,12 @@ func (v *Listener) OnReceive(payload *alloc.Buffer, session *proxy.SessionInfo) 
 
 	src := session.Source
 
-	if valid := v.authenticator.Open(payload); !valid {
+	segments := v.reader.Read(payload.Bytes())
+	if len(segments) == 0 {
 		log.Info("KCP|Listener: discarding invalid payload from ", src)
 		return
 	}
+
 	if !v.running {
 		return
 	}
@@ -153,8 +162,9 @@ func (v *Listener) OnReceive(payload *alloc.Buffer, session *proxy.SessionInfo) 
 	if payload.Len() < 4 {
 		return
 	}
-	conv := serial.BytesToUint16(payload.BytesTo(2))
-	cmd := Command(payload.Byte(2))
+	conv := segments[0].Conversation()
+	cmd := segments[0].Command()
+
 	id := ConnectionId{
 		Remote: src.Address,
 		Port:   src.Port,
@@ -177,17 +187,18 @@ func (v *Listener) OnReceive(payload *alloc.Buffer, session *proxy.SessionInfo) 
 			Port: int(src.Port),
 		}
 		localAddr := v.hub.Addr()
-		auth, err := v.config.GetAuthenticator()
-		if err != nil {
-			log.Error("KCP|Listener: Failed to create authenticator: ", err)
-		}
 		sConn := &ServerConnection{
 			id:     internal.NewConnectionId(v2net.LocalHostIP, src),
 			local:  localAddr,
 			remote: remoteAddr,
-			writer: writer,
+			writer: &KCPPacketWriter{
+				Header:   v.header,
+				Writer:   writer,
+				Security: v.security,
+			},
+			closer: writer,
 		}
-		conn = NewConnection(conv, sConn, v, auth, v.config)
+		conn = NewConnection(conv, sConn, v, v.config)
 		select {
 		case v.awaitingConns <- conn:
 		case <-time.After(time.Second * 5):
@@ -196,7 +207,7 @@ func (v *Listener) OnReceive(payload *alloc.Buffer, session *proxy.SessionInfo) 
 		}
 		v.sessions[id] = conn
 	}
-	conn.Input(payload.Bytes())
+	conn.Input(segments)
 }
 
 func (v *Listener) Remove(id ConnectionId) {

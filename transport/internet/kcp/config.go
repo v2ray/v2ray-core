@@ -1,6 +1,8 @@
 package kcp
 
 import (
+	"crypto/cipher"
+
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 )
@@ -47,21 +49,20 @@ func (v *ReadBuffer) GetSize() uint32 {
 	return v.Size
 }
 
-func (v *Config) GetAuthenticator() (internet.Authenticator, error) {
-	auth := NewSimpleAuthenticator()
+func (v *Config) GetSecurity() (cipher.AEAD, error) {
+	return NewSimpleAuthenticator(), nil
+}
+
+func (v *Config) GetPackerHeader() (internet.PacketHeader, error) {
 	if v.HeaderConfig != nil {
 		rawConfig, err := v.HeaderConfig.GetInstance()
 		if err != nil {
 			return nil, err
 		}
 
-		header, err := internet.CreateAuthenticator(v.HeaderConfig.Type, rawConfig)
-		if err != nil {
-			return nil, err
-		}
-		auth = internet.NewAuthenticatorChain(header, auth)
+		return internet.CreatePacketHeader(v.HeaderConfig.Type, rawConfig)
 	}
-	return auth, nil
+	return nil, nil
 }
 
 func (v *Config) GetSendingInFlightSize() uint32 {

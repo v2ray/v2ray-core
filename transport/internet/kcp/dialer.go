@@ -5,8 +5,12 @@ import (
 	"net"
 	"sync"
 	"sync/atomic"
+
+	"crypto/cipher"
+
 	"v2ray.com/core/common/alloc"
 	"v2ray.com/core/common/dice"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
@@ -20,11 +24,32 @@ var (
 )
 
 type ClientConnection struct {
-	sync.Mutex
+	sync.RWMutex
 	net.Conn
-	id    internal.ConnectionId
-	input func([]byte)
-	auth  internet.Authenticator
+	id     internal.ConnectionId
+	input  func([]Segment)
+	reader PacketReader
+	writer PacketWriter
+}
+
+func (o *ClientConnection) Overhead() int {
+	o.RLock()
+	defer o.RUnlock()
+	if o.writer == nil {
+		return 0
+	}
+	return o.writer.Overhead()
+}
+
+func (o *ClientConnection) Write(b []byte) (int, error) {
+	o.RLock()
+	defer o.RUnlock()
+
+	if o.writer == nil {
+		return len(b), nil
+	}
+
+	return o.writer.Write(b)
 }
 
 func (o *ClientConnection) Read([]byte) (int, error) {
@@ -39,10 +64,26 @@ func (o *ClientConnection) Close() error {
 	return o.Conn.Close()
 }
 
-func (o *ClientConnection) Reset(auth internet.Authenticator, inputCallback func([]byte)) {
+func (o *ClientConnection) Reset(inputCallback func([]Segment)) {
 	o.Lock()
 	o.input = inputCallback
-	o.auth = auth
+	o.Unlock()
+}
+
+func (o *ClientConnection) ResetSecurity(header internet.PacketHeader, security cipher.AEAD) {
+	o.Lock()
+	if o.reader == nil {
+		o.reader = new(KCPPacketReader)
+	}
+	o.reader.(*KCPPacketReader).Header = header
+	o.reader.(*KCPPacketReader).Security = security
+	if o.writer == nil {
+		o.writer = new(KCPPacketWriter)
+	}
+	o.writer.(*KCPPacketWriter).Header = header
+	o.writer.(*KCPPacketWriter).Security = security
+	o.writer.(*KCPPacketWriter).Writer = o.Conn
+
 	o.Unlock()
 }
 
@@ -57,12 +98,14 @@ func (o *ClientConnection) Run() {
 			payload.Release()
 			return
 		}
-		o.Lock()
-		if o.input != nil && o.auth.Open(payload) {
-			o.input(payload.Bytes())
+		o.RLock()
+		if o.input != nil {
+			segments := o.reader.Read(payload.Bytes())
+			if len(segments) > 0 {
+				o.input(segments)
+			}
 		}
-		o.Unlock()
-		payload.Reset()
+		o.RUnlock()
 	}
 }
 
@@ -93,13 +136,18 @@ func DialKCP(src v2net.Address, dest v2net.Destination, options internet.DialerO
 	}
 	kcpSettings := networkSettings.(*Config)
 
-	cpip, err := kcpSettings.GetAuthenticator()
+	clientConn := conn.(*ClientConnection)
+	header, err := kcpSettings.GetPackerHeader()
 	if err != nil {
-		log.Error("KCP|Dialer: Failed to create authenticator: ", err)
-		return nil, err
+		return nil, errors.Base(err).Message("KCP|Dialer: Failed to create packet header.")
 	}
+	security, err := kcpSettings.GetSecurity()
+	if err != nil {
+		return nil, errors.Base(err).Message("KCP|Dialer: Failed to create security.")
+	}
+	clientConn.ResetSecurity(header, security)
 	conv := uint16(atomic.AddUint32(&globalConv, 1))
-	session := NewConnection(conv, conn.(*ClientConnection), globalPool, cpip, kcpSettings)
+	session := NewConnection(conv, clientConn, globalPool, kcpSettings)
 
 	var iConn internet.Connection
 	iConn = session

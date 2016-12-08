@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package v2ray.core.transport.internet.authenticators.http;
+package v2ray.core.transport.internet.headers.http;
 option go_package = "http";
-option java_package = "com.v2ray.core.transport.internet.authenticators.http";
+option java_package = "com.v2ray.core.transport.internet.headers.http";
 option java_outer_classname = "ConfigProto";
 
 message Header {

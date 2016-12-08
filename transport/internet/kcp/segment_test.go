@@ -79,7 +79,7 @@ func TestCmdSegment(t *testing.T) {
 
 	seg := &CmdOnlySegment{
 		Conv:         1,
-		Command:      CommandPing,
+		Cmd:          CommandPing,
 		Option:       SegmentOptionClose,
 		SendingNext:  11,
 		ReceivinNext: 13,
@@ -95,7 +95,7 @@ func TestCmdSegment(t *testing.T) {
 	iseg, _ := ReadSegment(bytes)
 	seg2 := iseg.(*CmdOnlySegment)
 	assert.Uint16(seg2.Conv).Equals(seg.Conv)
-	assert.Byte(byte(seg2.Command)).Equals(byte(seg.Command))
+	assert.Byte(byte(seg2.Command())).Equals(byte(seg.Command()))
 	assert.Byte(byte(seg2.Option)).Equals(byte(seg.Option))
 	assert.Uint32(seg2.SendingNext).Equals(seg.SendingNext)
 	assert.Uint32(seg2.ReceivinNext).Equals(seg.ReceivinNext)

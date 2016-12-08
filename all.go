@@ -21,8 +21,8 @@ import (
 	_ "v2ray.com/core/transport/internet/udp"
 	_ "v2ray.com/core/transport/internet/ws"
 
-	_ "v2ray.com/core/transport/internet/authenticators/http"
-	_ "v2ray.com/core/transport/internet/authenticators/noop"
-	_ "v2ray.com/core/transport/internet/authenticators/srtp"
-	_ "v2ray.com/core/transport/internet/authenticators/utp"
+	_ "v2ray.com/core/transport/internet/headers/http"
+	_ "v2ray.com/core/transport/internet/headers/noop"
+	_ "v2ray.com/core/transport/internet/headers/srtp"
+	_ "v2ray.com/core/transport/internet/headers/utp"
 )
