@@ -4,7 +4,7 @@ import "v2ray.com/core/common"
 
 type PacketHeader interface {
 	Size() int
-	Write([]byte) int
+	Write([]byte) (int, error)
 }
 
 type PacketHeaderFactory interface {

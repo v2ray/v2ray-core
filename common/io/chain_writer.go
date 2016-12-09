@@ -28,7 +28,7 @@ func (v *ChainWriter) Write(payload []byte) (int, error) {
 	bytesWritten := 0
 	size := len(payload)
 	for size > 0 {
-		buffer := buf.NewBuffer()
+		buffer := buf.New()
 		nBytes, _ := buffer.Write(payload)
 		size -= nBytes
 		payload = payload[nBytes:]

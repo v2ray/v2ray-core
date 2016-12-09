@@ -18,10 +18,10 @@ func (v *UTP) Size() int {
 	return 4
 }
 
-func (v *UTP) Write(b []byte) int {
+func (v *UTP) Write(b []byte) (int, error) {
 	b = serial.Uint16ToBytes(v.connectionId, b[:0])
 	b = append(b, v.header, v.extension)
-	return 4
+	return 4, nil
 }
 
 type UTPFactory struct{}

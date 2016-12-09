@@ -12,9 +12,9 @@ import (
 func TestReaderWriter(t *testing.T) {
 	assert := assert.On(t)
 
-	cache := buf.NewBuffer()
-	b := buf.NewLocalBuffer(256)
-	b.AppendFunc(serial.WriteString("abcd" + ENDING))
+	cache := buf.New()
+	b := buf.NewLocal(256)
+	b.AppendSupplier(serial.WriteString("abcd" + ENDING))
 	writer := NewHeaderWriter(b)
 	writer.Write(cache)
 	cache.Write([]byte{'e', 'f', 'g'})
@@ -41,7 +41,7 @@ func TestRequestHeader(t *testing.T) {
 		},
 	}).(HttpAuthenticator)
 
-	cache := buf.NewBuffer()
+	cache := buf.New()
 	err := auth.GetClientWriter().Write(cache)
 	assert.Error(err).IsNil()
 

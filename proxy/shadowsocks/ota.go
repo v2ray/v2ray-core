@@ -27,13 +27,12 @@ func NewAuthenticator(keygen KeyGenerator) *Authenticator {
 	}
 }
 
-func (v *Authenticator) Authenticate(data []byte) buf.BytesWriter {
+func (v *Authenticator) Authenticate(data []byte) buf.Supplier {
 	hasher := hmac.New(sha1.New, v.key())
 	hasher.Write(data)
 	res := hasher.Sum(nil)
-	return func(b []byte) int {
-		copy(b, res[:AuthSize])
-		return AuthSize
+	return func(b []byte) (int, error) {
+		return copy(b, res[:AuthSize]), nil
 	}
 }
 
@@ -75,22 +74,22 @@ func (v *ChunkReader) Release() {
 }
 
 func (v *ChunkReader) Read() (*buf.Buffer, error) {
-	buffer := buf.NewBuffer()
-	if _, err := buffer.FillFullFrom(v.reader, 2); err != nil {
+	buffer := buf.New()
+	if err := buffer.AppendSupplier(buf.ReadFullFrom(v.reader, 2)); err != nil {
 		buffer.Release()
 		return nil, err
 	}
 	// There is a potential buffer overflow here. Large buffer is 64K bytes,
 	// while uin16 + 10 will be more than that
 	length := serial.BytesToUint16(buffer.BytesTo(2)) + AuthSize
-	if length > buf.BufferSize {
+	if length > buf.Size {
 		// Theoretically the size of a chunk is 64K, but most Shadowsocks implementations used <4K buffer.
 		buffer.Release()
-		buffer = buf.NewLocalBuffer(int(length) + 128)
+		buffer = buf.NewLocal(int(length) + 128)
 	}
 
 	buffer.Clear()
-	if _, err := buffer.FillFullFrom(v.reader, int(length)); err != nil {
+	if err := buffer.AppendSupplier(buf.ReadFullFrom(v.reader, int(length))); err != nil {
 		buffer.Release()
 		return nil, err
 	}

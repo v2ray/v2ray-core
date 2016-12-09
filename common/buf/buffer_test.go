@@ -11,7 +11,7 @@ import (
 func TestBufferClear(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := NewBuffer()
+	buffer := New()
 	defer buffer.Release()
 
 	payload := "Bytes"
@@ -25,7 +25,7 @@ func TestBufferClear(t *testing.T) {
 func TestBufferIsEmpty(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := NewBuffer()
+	buffer := New()
 	defer buffer.Release()
 
 	assert.Bool(buffer.IsEmpty()).IsTrue()
@@ -34,17 +34,17 @@ func TestBufferIsEmpty(t *testing.T) {
 func TestBufferString(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := NewBuffer()
+	buffer := New()
 	defer buffer.Release()
 
-	buffer.AppendFunc(serial.WriteString("Test String"))
+	buffer.AppendSupplier(serial.WriteString("Test String"))
 	assert.String(buffer.String()).Equals("Test String")
 }
 
 func TestBufferWrite(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := NewLocalBuffer(8)
+	buffer := NewLocal(8)
 	nBytes, err := buffer.Write([]byte("abcd"))
 	assert.Error(err).IsNil()
 	assert.Int(nBytes).Equals(4)
@@ -56,28 +56,28 @@ func TestBufferWrite(t *testing.T) {
 
 func BenchmarkNewBuffer8192(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		buffer := NewBuffer()
+		buffer := New()
 		buffer.Release()
 	}
 }
 
 func BenchmarkNewLocalBuffer8192(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		buffer := NewLocalBuffer(8192)
+		buffer := NewLocal(8192)
 		buffer.Release()
 	}
 }
 
 func BenchmarkNewBuffer2048(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		buffer := NewSmallBuffer()
+		buffer := NewSmall()
 		buffer.Release()
 	}
 }
 
 func BenchmarkNewLocalBuffer2048(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		buffer := NewLocalBuffer(2048)
+		buffer := NewLocal(2048)
 		buffer.Release()
 	}
 }
@@ -94,7 +94,7 @@ func BenchmarkBufferValue(b *testing.B) {
 }
 
 func BenchmarkBufferPointer(b *testing.B) {
-	x := NewSmallBuffer()
+	x := NewSmall()
 	doSomething := func(a *Buffer) {
 		_ = a.Len()
 	}

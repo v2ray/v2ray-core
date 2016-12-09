@@ -81,7 +81,7 @@ type AuthenticationReader struct {
 func NewAuthenticationReader(auth Authenticator, reader io.Reader, aggressive bool) *AuthenticationReader {
 	return &AuthenticationReader{
 		auth:       auth,
-		buffer:     buf.NewLocalBuffer(32 * 1024),
+		buffer:     buf.NewLocal(32 * 1024),
 		reader:     reader,
 		aggressive: aggressive,
 	}
@@ -135,11 +135,11 @@ func (v *AuthenticationReader) EnsureChunk() error {
 				v.buffer.Clear()
 			} else {
 				leftover := v.buffer.Bytes()
-				v.buffer.SetBytesFunc(func(b []byte) int {
-					return copy(b, leftover)
+				v.buffer.Reset(func(b []byte) (int, error) {
+					return copy(b, leftover), nil
 				})
 			}
-			_, err = v.buffer.FillFrom(v.reader)
+			err = v.buffer.AppendSupplier(buf.ReadFrom(v.reader))
 		}
 		return err
 	}

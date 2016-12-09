@@ -31,7 +31,7 @@ type Segment interface {
 	Conversation() uint16
 	Command() Command
 	ByteSize() int
-	Bytes() buf.BytesWriter
+	Bytes() buf.Supplier
 }
 
 const (
@@ -64,14 +64,14 @@ func (v *DataSegment) Command() Command {
 
 func (v *DataSegment) SetData(b []byte) {
 	if v.Data == nil {
-		v.Data = buf.NewSmallBuffer()
+		v.Data = buf.NewSmall()
 	}
 	v.Data.Clear()
 	v.Data.Append(b)
 }
 
-func (v *DataSegment) Bytes() buf.BytesWriter {
-	return func(b []byte) int {
+func (v *DataSegment) Bytes() buf.Supplier {
+	return func(b []byte) (int, error) {
 		b = serial.Uint16ToBytes(v.Conv, b[:0])
 		b = append(b, byte(CommandData), byte(v.Option))
 		b = serial.Uint32ToBytes(v.Timestamp, b)
@@ -79,7 +79,7 @@ func (v *DataSegment) Bytes() buf.BytesWriter {
 		b = serial.Uint32ToBytes(v.SendingNext, b)
 		b = serial.Uint16ToBytes(uint16(v.Data.Len()), b)
 		b = append(b, v.Data.Bytes()...)
-		return v.ByteSize()
+		return v.ByteSize(), nil
 	}
 }
 
@@ -137,8 +137,8 @@ func (v *AckSegment) ByteSize() int {
 	return 2 + 1 + 1 + 4 + 4 + 4 + 1 + int(v.Count)*4
 }
 
-func (v *AckSegment) Bytes() buf.BytesWriter {
-	return func(b []byte) int {
+func (v *AckSegment) Bytes() buf.Supplier {
+	return func(b []byte) (int, error) {
 		b = serial.Uint16ToBytes(v.Conv, b[:0])
 		b = append(b, byte(CommandACK), byte(v.Option))
 		b = serial.Uint32ToBytes(v.ReceivingWindow, b)
@@ -148,7 +148,7 @@ func (v *AckSegment) Bytes() buf.BytesWriter {
 		for i := byte(0); i < v.Count; i++ {
 			b = serial.Uint32ToBytes(v.NumberList[i], b)
 		}
-		return v.ByteSize()
+		return v.ByteSize(), nil
 	}
 }
 
@@ -181,14 +181,14 @@ func (v *CmdOnlySegment) ByteSize() int {
 	return 2 + 1 + 1 + 4 + 4 + 4
 }
 
-func (v *CmdOnlySegment) Bytes() buf.BytesWriter {
-	return func(b []byte) int {
+func (v *CmdOnlySegment) Bytes() buf.Supplier {
+	return func(b []byte) (int, error) {
 		b = serial.Uint16ToBytes(v.Conv, b[:0])
 		b = append(b, byte(v.Cmd), byte(v.Option))
 		b = serial.Uint32ToBytes(v.SendingNext, b)
 		b = serial.Uint32ToBytes(v.ReceivinNext, b)
 		b = serial.Uint32ToBytes(v.PeerRTO, b)
-		return v.ByteSize()
+		return v.ByteSize(), nil
 	}
 }
 

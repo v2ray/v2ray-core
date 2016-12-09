@@ -12,7 +12,7 @@ import (
 func TestBufferedWriter(t *testing.T) {
 	assert := assert.On(t)
 
-	content := buf.NewBuffer()
+	content := buf.New()
 
 	writer := NewBufferedWriter(content)
 	assert.Bool(writer.Cached()).IsTrue()
@@ -32,7 +32,7 @@ func TestBufferedWriter(t *testing.T) {
 func TestBufferedWriterLargePayload(t *testing.T) {
 	assert := assert.On(t)
 
-	content := buf.NewLocalBuffer(128 * 1024)
+	content := buf.NewLocal(128 * 1024)
 
 	writer := NewBufferedWriter(content)
 	assert.Bool(writer.Cached()).IsTrue()

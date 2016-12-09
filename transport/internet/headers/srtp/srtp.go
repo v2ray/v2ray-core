@@ -17,11 +17,11 @@ func (v *SRTP) Size() int {
 	return 4
 }
 
-func (v *SRTP) Write(b []byte) int {
+func (v *SRTP) Write(b []byte) (int, error) {
 	v.number++
 	b = serial.Uint16ToBytes(v.number, b[:0])
 	b = serial.Uint16ToBytes(v.number, b)
-	return 4
+	return 4, nil
 }
 
 type SRTPFactory struct {

@@ -55,7 +55,7 @@ func (v *Server) handleUDPPayload(payload *buf.Buffer, session *proxy.SessionInf
 		}
 		log.Info("Socks: Writing back UDP response with ", payload.Len(), " bytes to ", destination)
 
-		udpMessage := buf.NewLocalBuffer(2048)
+		udpMessage := buf.NewLocal(2048)
 		response.Write(udpMessage)
 
 		v.udpMutex.RLock()

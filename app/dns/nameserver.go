@@ -145,7 +145,7 @@ func (v *UDPNameServer) HandleResponse(dest v2net.Destination, payload *buf.Buff
 }
 
 func (v *UDPNameServer) BuildQueryA(domain string, id uint16) *buf.Buffer {
-	buffer := buf.NewBuffer()
+	buffer := buf.New()
 	msg := new(dns.Msg)
 	msg.Id = id
 	msg.RecursionDesired = true

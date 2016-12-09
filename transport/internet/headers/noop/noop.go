@@ -12,8 +12,8 @@ type NoOpHeader struct{}
 func (v NoOpHeader) Size() int {
 	return 0
 }
-func (v NoOpHeader) Write([]byte) int {
-	return 0
+func (v NoOpHeader) Write([]byte) (int, error) {
+	return 0, nil
 }
 
 type NoOpHeaderFactory struct{}

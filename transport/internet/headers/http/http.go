@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/serial"
@@ -46,9 +47,9 @@ type HeaderReader struct {
 }
 
 func (*HeaderReader) Read(reader io.Reader) (*buf.Buffer, error) {
-	buffer := buf.NewSmallBuffer()
+	buffer := buf.NewSmall()
 	for {
-		_, err := buffer.FillFrom(reader)
+		err := buffer.AppendSupplier(buf.ReadFrom(reader))
 		if err != nil {
 			return nil, err
 		}
@@ -143,39 +144,39 @@ type HttpAuthenticator struct {
 }
 
 func (v HttpAuthenticator) GetClientWriter() *HeaderWriter {
-	header := buf.NewSmallBuffer()
+	header := buf.NewSmall()
 	config := v.config.Request
-	header.AppendFunc(serial.WriteString(strings.Join([]string{config.Method.GetValue(), config.PickUri(), config.GetFullVersion()}, " ")))
-	header.AppendFunc(writeCRLF)
+	header.AppendSupplier(serial.WriteString(strings.Join([]string{config.Method.GetValue(), config.PickUri(), config.GetFullVersion()}, " ")))
+	header.AppendSupplier(writeCRLF)
 
 	headers := config.PickHeaders()
 	for _, h := range headers {
-		header.AppendFunc(serial.WriteString(h))
-		header.AppendFunc(writeCRLF)
+		header.AppendSupplier(serial.WriteString(h))
+		header.AppendSupplier(writeCRLF)
 	}
-	header.AppendFunc(writeCRLF)
+	header.AppendSupplier(writeCRLF)
 	return &HeaderWriter{
 		header: header,
 	}
 }
 
 func (v HttpAuthenticator) GetServerWriter() *HeaderWriter {
-	header := buf.NewSmallBuffer()
+	header := buf.NewSmall()
 	config := v.config.Response
-	header.AppendFunc(serial.WriteString(strings.Join([]string{config.GetFullVersion(), config.Status.GetCode(), config.Status.GetReason()}, " ")))
-	header.AppendFunc(writeCRLF)
+	header.AppendSupplier(serial.WriteString(strings.Join([]string{config.GetFullVersion(), config.Status.GetCode(), config.Status.GetReason()}, " ")))
+	header.AppendSupplier(writeCRLF)
 
 	headers := config.PickHeaders()
 	for _, h := range headers {
-		header.AppendFunc(serial.WriteString(h))
-		header.AppendFunc(writeCRLF)
+		header.AppendSupplier(serial.WriteString(h))
+		header.AppendSupplier(writeCRLF)
 	}
 	if !config.HasHeader("Date") {
-		header.AppendFunc(serial.WriteString("Date: "))
-		header.AppendFunc(serial.WriteString(time.Now().Format(http.TimeFormat)))
-		header.AppendFunc(writeCRLF)
+		header.AppendSupplier(serial.WriteString("Date: "))
+		header.AppendSupplier(serial.WriteString(time.Now().Format(http.TimeFormat)))
+		header.AppendSupplier(writeCRLF)
 	}
-	header.AppendFunc(writeCRLF)
+	header.AppendSupplier(writeCRLF)
 	return &HeaderWriter{
 		header: header,
 	}

@@ -88,12 +88,12 @@ func (o *ClientConnection) ResetSecurity(header internet.PacketHeader, security 
 }
 
 func (o *ClientConnection) Run() {
-	payload := buf.NewSmallBuffer()
+	payload := buf.NewSmall()
 	defer payload.Release()
 
 	for {
 		payload.Clear()
-		_, err := payload.FillFrom(o.Conn)
+		err := payload.AppendSupplier(buf.ReadFrom(o.Conn))
 		if err != nil {
 			payload.Release()
 			return

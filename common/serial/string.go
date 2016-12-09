@@ -36,9 +36,8 @@ func Concat(v ...interface{}) string {
 	return strings.Join(values, "")
 }
 
-func WriteString(s string) buf.BytesWriter {
-	return func(b []byte) int {
-		copy(b, []byte(s))
-		return len(s)
+func WriteString(s string) buf.Supplier {
+	return func(b []byte) (int, error) {
+		return copy(b, []byte(s)), nil
 	}
 }

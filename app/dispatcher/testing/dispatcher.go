@@ -20,7 +20,7 @@ func NewTestPacketDispatcher(handler func(destination v2net.Destination, traffic
 				if err != nil {
 					break
 				}
-				output := buf.NewBuffer()
+				output := buf.New()
 				output.Append([]byte("Processed: "))
 				output.Append(payload.Bytes())
 				payload.Release()

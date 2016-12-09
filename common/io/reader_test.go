@@ -19,8 +19,8 @@ func TestAdaptiveReader(t *testing.T) {
 	b1, err := reader.Read()
 	assert.Error(err).IsNil()
 	assert.Bool(b1.IsFull()).IsTrue()
-	assert.Int(b1.Len()).Equals(buf.BufferSize)
-	assert.Int(buffer.Len()).Equals(cap(rawContent) - buf.BufferSize)
+	assert.Int(b1.Len()).Equals(buf.Size)
+	assert.Int(buffer.Len()).Equals(cap(rawContent) - buf.Size)
 
 	b2, err := reader.Read()
 	assert.Error(err).IsNil()

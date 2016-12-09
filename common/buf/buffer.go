@@ -1,12 +1,12 @@
-// Package alloc provides a light-weight memory allocation mechanism.
+// Package buf provides a light-weight memory allocation mechanism.
 package buf
 
 import (
 	"io"
 )
 
-// BytesWriter is a writer that writes contents into the given buffer.
-type BytesWriter func([]byte) int
+// Supplier is a writer that writes contents into the given buffer.
+type Supplier func([]byte) (int, error)
 
 // Buffer is a recyclable allocation of a byte array. Buffer.Release() recycles
 // the buffer into an internal buffer pool, in order to recreate a buffer more
@@ -59,10 +59,11 @@ func (b *Buffer) Append(data []byte) {
 	b.end += nBytes
 }
 
-// AppendFunc appends the content of a BytesWriter to the buffer.
-func (b *Buffer) AppendFunc(writer BytesWriter) {
-	nBytes := writer(b.v[b.end:])
+// AppendSupplier appends the content of a BytesWriter to the buffer.
+func (b *Buffer) AppendSupplier(writer Supplier) error {
+	nBytes, err := writer(b.v[b.end:])
 	b.end += nBytes
+	return err
 }
 
 // Byte returns the bytes at index.
@@ -80,9 +81,11 @@ func (b *Buffer) Bytes() []byte {
 	return b.v[b.start:b.end]
 }
 
-func (b *Buffer) SetBytesFunc(writer BytesWriter) {
+func (b *Buffer) Reset(writer Supplier) error {
 	b.start = 0
-	b.end = b.start + writer(b.v[b.start:])
+	nBytes, err := writer(b.v[b.start:])
+	b.end = b.start + nBytes
+	return err
 }
 
 // BytesRange returns a slice of this buffer with given from and to bounary.
@@ -172,33 +175,21 @@ func (b *Buffer) Read(data []byte) (int, error) {
 	return nBytes, nil
 }
 
-func (b *Buffer) FillFrom(reader io.Reader) (int, error) {
-	nBytes, err := reader.Read(b.v[b.end:])
-	b.end += nBytes
-	return nBytes, err
-}
-
-func (b *Buffer) FillFullFrom(reader io.Reader, amount int) (int, error) {
-	nBytes, err := io.ReadFull(reader, b.v[b.end:b.end+amount])
-	b.end += nBytes
-	return nBytes, err
-}
-
 func (b *Buffer) String() string {
 	return string(b.Bytes())
 }
 
-// NewBuffer creates a Buffer with 8K bytes of arbitrary content.
-func NewBuffer() *Buffer {
+// New creates a Buffer with 8K bytes of arbitrary content.
+func New() *Buffer {
 	return mediumPool.Allocate()
 }
 
-// NewSmallBuffer returns a buffer with 2K bytes capacity.
-func NewSmallBuffer() *Buffer {
+// NewSmall returns a buffer with 2K bytes capacity.
+func NewSmall() *Buffer {
 	return smallPool.Allocate()
 }
 
-// NewLocalBuffer creates and returns a buffer on current thread.
-func NewLocalBuffer(size int) *Buffer {
+// NewLocal creates and returns a buffer on current thread.
+func NewLocal(size int) *Buffer {
 	return CreateBuffer(make([]byte, size), nil)
 }

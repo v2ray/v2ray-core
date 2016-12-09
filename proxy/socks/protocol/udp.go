@@ -36,7 +36,7 @@ func (request *Socks5UDPRequest) Write(buffer *buf.Buffer) {
 		buffer.AppendBytes(AddrTypeDomain, byte(len(request.Address.Domain())))
 		buffer.Append([]byte(request.Address.Domain()))
 	}
-	buffer.AppendFunc(serial.WriteUint16(request.Port.Value()))
+	buffer.AppendSupplier(serial.WriteUint16(request.Port.Value()))
 	buffer.Append(request.Data.Bytes())
 }
 
@@ -83,7 +83,7 @@ func ReadUDPRequest(packet []byte) (*Socks5UDPRequest, error) {
 	}
 
 	if len(packet) > dataBegin {
-		b := buf.NewSmallBuffer()
+		b := buf.NewSmall()
 		b.Append(packet[dataBegin:])
 		request.Data = b
 	}

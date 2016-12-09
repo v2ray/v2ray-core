@@ -225,7 +225,7 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	}
 	output.Release()
 	if request.Option.Has(protocol.RequestOptionChunkStream) {
-		if err := bodyWriter.Write(buf.NewLocalBuffer(8)); err != nil {
+		if err := bodyWriter.Write(buf.NewLocal(8)); err != nil {
 			connection.SetReusable(false)
 		}
 	}

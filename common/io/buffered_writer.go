@@ -3,6 +3,7 @@ package io
 import (
 	"io"
 	"sync"
+
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 )
@@ -17,7 +18,7 @@ type BufferedWriter struct {
 func NewBufferedWriter(rawWriter io.Writer) *BufferedWriter {
 	return &BufferedWriter{
 		writer: rawWriter,
-		buffer: buf.NewSmallBuffer(),
+		buffer: buf.NewSmall(),
 		cached: true,
 	}
 }
@@ -32,8 +33,9 @@ func (v *BufferedWriter) ReadFrom(reader io.Reader) (int64, error) {
 
 	totalBytes := int64(0)
 	for {
-		nBytes, err := v.buffer.FillFrom(reader)
-		totalBytes += int64(nBytes)
+		oriSize := v.buffer.Len()
+		err := v.buffer.AppendSupplier(buf.ReadFrom(reader))
+		totalBytes += int64(v.buffer.Len() - oriSize)
 		if err != nil {
 			if errors.Cause(err) == io.EOF {
 				return totalBytes, nil

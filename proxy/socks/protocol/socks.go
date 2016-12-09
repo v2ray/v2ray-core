@@ -3,12 +3,13 @@ package protocol
 import (
 	"fmt"
 	"io"
+
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
-	"v2ray.com/core/common/crypto"
 )
 
 const (
@@ -120,10 +121,10 @@ func (request Socks5UserPassRequest) AuthDetail() string {
 }
 
 func ReadUserPassRequest(reader io.Reader) (request Socks5UserPassRequest, err error) {
-	buffer := buf.NewLocalBuffer(512)
+	buffer := buf.NewLocal(512)
 	defer buffer.Release()
 
-	_, err = buffer.FillFullFrom(reader, 2)
+	err = buffer.AppendSupplier(buf.ReadFullFrom(reader, 2))
 	if err != nil {
 		return
 	}
@@ -131,18 +132,18 @@ func ReadUserPassRequest(reader io.Reader) (request Socks5UserPassRequest, err e
 	nUsername := int(buffer.Byte(1))
 
 	buffer.Clear()
-	_, err = buffer.FillFullFrom(reader, nUsername)
+	err = buffer.AppendSupplier(buf.ReadFullFrom(reader, nUsername))
 	if err != nil {
 		return
 	}
 	request.username = string(buffer.Bytes())
 
-	_, err = buffer.FillFullFrom(reader, 1)
+	err = buffer.AppendSupplier(buf.ReadFullFrom(reader, 1))
 	if err != nil {
 		return
 	}
 	nPassword := int(buffer.Byte(0))
-	_, err = buffer.FillFullFrom(reader, nPassword)
+	err = buffer.AppendSupplier(buf.ReadFullFrom(reader, nPassword))
 	if err != nil {
 		return
 	}
@@ -188,10 +189,10 @@ type Socks5Request struct {
 }
 
 func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
-	buffer := buf.NewLocalBuffer(512)
+	buffer := buf.NewLocal(512)
 	defer buffer.Release()
 
-	_, err = buffer.FillFullFrom(reader, 4)
+	err = buffer.AppendSupplier(buf.ReadFullFrom(reader, 4))
 	if err != nil {
 		return
 	}
@@ -210,12 +211,12 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 		}
 	case AddrTypeDomain:
 		buffer.Clear()
-		_, err = buffer.FillFullFrom(reader, 1)
+		err = buffer.AppendSupplier(buf.ReadFullFrom(reader, 1))
 		if err != nil {
 			return
 		}
 		domainLength := int(buffer.Byte(0))
-		_, err = buffer.FillFullFrom(reader, domainLength)
+		err = buffer.AppendSupplier(buf.ReadFullFrom(reader, domainLength))
 		if err != nil {
 			return
 		}
@@ -231,7 +232,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 		return
 	}
 
-	_, err = buffer.FillFullFrom(reader, 2)
+	err = buffer.AppendSupplier(buf.ReadFullFrom(reader, 2))
 	if err != nil {
 		return
 	}

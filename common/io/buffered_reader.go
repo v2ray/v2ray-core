@@ -17,7 +17,7 @@ type BufferedReader struct {
 func NewBufferedReader(rawReader io.Reader) *BufferedReader {
 	return &BufferedReader{
 		reader: rawReader,
-		buffer: buf.NewBuffer(),
+		buffer: buf.New(),
 		cached: true,
 	}
 }
@@ -54,7 +54,7 @@ func (v *BufferedReader) Read(b []byte) (int, error) {
 		return v.reader.Read(b)
 	}
 	if v.buffer.IsEmpty() {
-		_, err := v.buffer.FillFrom(v.reader)
+		err := v.buffer.AppendSupplier(buf.ReadFrom(v.reader))
 		if err != nil {
 			return 0, err
 		}

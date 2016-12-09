@@ -14,8 +14,8 @@ func TestUTPWrite(t *testing.T) {
 	content := []byte{'a', 'b', 'c', 'd', 'e', 'f', 'g'}
 	utp := UTP{}
 
-	payload := buf.NewLocalBuffer(2048)
-	payload.AppendFunc(utp.Write)
+	payload := buf.NewLocal(2048)
+	payload.AppendSupplier(utp.Write)
 	payload.Append(content)
 
 	assert.Int(payload.Len()).Equals(len(content) + utp.Size())

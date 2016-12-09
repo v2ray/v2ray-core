@@ -69,7 +69,7 @@ func (v *KCPPacketWriter) Write(b []byte) (int, error) {
 	x := v.buffer[:]
 	size := 0
 	if v.Header != nil {
-		nBytes := v.Header.Write(x)
+		nBytes, _ := v.Header.Write(x)
 		size += nBytes
 		x = x[nBytes:]
 	}

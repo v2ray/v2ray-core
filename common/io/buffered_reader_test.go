@@ -1,9 +1,9 @@
 package io_test
 
 import (
+	"crypto/rand"
 	"testing"
 
-	"crypto/rand"
 	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/common/io"
 	"v2ray.com/core/testing/assert"
@@ -12,8 +12,8 @@ import (
 func TestBufferedReader(t *testing.T) {
 	assert := assert.On(t)
 
-	content := buf.NewBuffer()
-	content.FillFrom(rand.Reader)
+	content := buf.New()
+	content.AppendSupplier(buf.ReadFrom(rand.Reader))
 
 	len := content.Len()
 

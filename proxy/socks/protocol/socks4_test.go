@@ -31,7 +31,7 @@ func TestSocks4AuthenticationResponseToBytes(t *testing.T) {
 
 	response := NewSocks4AuthenticationResponse(byte(0x10), 443, []byte{1, 2, 3, 4})
 
-	buffer := buf.NewLocalBuffer(2048)
+	buffer := buf.NewLocal(2048)
 	defer buffer.Release()
 
 	response.Write(buffer)

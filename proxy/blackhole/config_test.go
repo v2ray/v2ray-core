@@ -14,7 +14,7 @@ import (
 func TestHTTPResponse(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := buf.NewBuffer()
+	buffer := buf.New()
 
 	httpResponse := new(HTTPResponse)
 	httpResponse.WriteTo(v2io.NewAdaptiveWriter(buffer))

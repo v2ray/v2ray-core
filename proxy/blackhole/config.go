@@ -32,8 +32,8 @@ func (v *NoneResponse) AsAny() *any.Any {
 }
 
 func (v *HTTPResponse) WriteTo(writer v2io.Writer) {
-	b := buf.NewLocalBuffer(512)
-	b.AppendFunc(serial.WriteString(http403response))
+	b := buf.NewLocal(512)
+	b.AppendSupplier(serial.WriteString(http403response))
 	writer.Write(b)
 }
 

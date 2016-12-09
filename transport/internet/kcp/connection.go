@@ -10,7 +10,6 @@ import (
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/predicate"
-	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/internal"
 )
 
@@ -170,7 +169,6 @@ type SystemConnection interface {
 type Connection struct {
 	conn         SystemConnection
 	connRecycler internal.ConnectionRecyler
-	block        internet.Authenticator
 	rd           time.Time
 	wd           time.Time // write deadline
 	since        int64

@@ -135,16 +135,14 @@ func (v *UDPHub) start() {
 
 	oobBytes := make([]byte, 256)
 	for v.Running() {
-		buffer := buf.NewSmallBuffer()
+		buffer := buf.NewSmall()
 		var noob int
 		var addr *net.UDPAddr
-		var err error
-		buffer.AppendFunc(func(b []byte) int {
+		err := buffer.AppendSupplier(func(b []byte) (int, error) {
 			n, nb, _, a, e := ReadUDPMsg(v.conn, b, oobBytes)
 			noob = nb
 			addr = a
-			err = e
-			return n
+			return n, e
 		})
 
 		if err != nil {

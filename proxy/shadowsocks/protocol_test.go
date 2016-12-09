@@ -30,8 +30,8 @@ func TestUDPEncoding(t *testing.T) {
 		},
 	}
 
-	data := buf.NewLocalBuffer(256)
-	data.AppendFunc(serial.WriteString("test string"))
+	data := buf.NewLocal(256)
+	data.AppendSupplier(serial.WriteString("test string"))
 	encodedData, err := EncodeUDPPacket(request, data)
 	assert.Error(err).IsNil()
 
@@ -60,9 +60,9 @@ func TestTCPRequest(t *testing.T) {
 		},
 	}
 
-	data := buf.NewLocalBuffer(256)
-	data.AppendFunc(serial.WriteString("test string"))
-	cache := buf.NewBuffer()
+	data := buf.NewLocal(256)
+	data.AppendSupplier(serial.WriteString("test string"))
+	cache := buf.New()
 
 	writer, err := WriteTCPRequest(request, cache)
 	assert.Error(err).IsNil()
@@ -88,7 +88,7 @@ func TestUDPReaderWriter(t *testing.T) {
 			CipherType: CipherType_CHACHA20_IEFT,
 		}),
 	}
-	cache := buf.NewBuffer()
+	cache := buf.New()
 	writer := &UDPWriter{
 		Writer: cache,
 		Request: &protocol.RequestHeader{
@@ -105,8 +105,8 @@ func TestUDPReaderWriter(t *testing.T) {
 		User:   user,
 	}
 
-	b := buf.NewBuffer()
-	b.AppendFunc(serial.WriteString("test payload"))
+	b := buf.New()
+	b.AppendSupplier(serial.WriteString("test payload"))
 	err := writer.Write(b)
 	assert.Error(err).IsNil()
 
@@ -114,8 +114,8 @@ func TestUDPReaderWriter(t *testing.T) {
 	assert.Error(err).IsNil()
 	assert.String(payload.String()).Equals("test payload")
 
-	b = buf.NewBuffer()
-	b.AppendFunc(serial.WriteString("test payload 2"))
+	b = buf.New()
+	b.AppendSupplier(serial.WriteString("test payload 2"))
 	err = writer.Write(b)
 	assert.Error(err).IsNil()
 

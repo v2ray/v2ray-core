@@ -22,7 +22,7 @@ func NewSegmentWriter(writer io.Writer, mtu uint32) *BufferedSegmentWriter {
 	return &BufferedSegmentWriter{
 		mtu:    mtu,
 		writer: writer,
-		buffer: buf.NewSmallBuffer(),
+		buffer: buf.NewSmall(),
 	}
 }
 
@@ -35,7 +35,7 @@ func (v *BufferedSegmentWriter) Write(seg Segment) {
 		v.FlushWithoutLock()
 	}
 
-	v.buffer.AppendFunc(seg.Bytes())
+	v.buffer.AppendSupplier(seg.Bytes())
 }
 
 func (v *BufferedSegmentWriter) FlushWithoutLock() {

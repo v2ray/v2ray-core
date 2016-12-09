@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"testing"
+
 	"v2ray.com/core/common/buf"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/testing/assert"
@@ -42,11 +43,11 @@ func TestShadowsocksTCP(t *testing.T) {
 
 		//conn.CloseWrite()
 
-		response := buf.NewBuffer()
+		response := buf.New()
 		finished := false
 		expectedResponse := "Processed: " + payload
 		for {
-			_, err := response.FillFrom(conn)
+			err := response.AppendSupplier(buf.ReadFrom(conn))
 			assert.Error(err).IsNil()
 			if err != nil {
 				break

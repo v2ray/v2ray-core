@@ -19,7 +19,7 @@ func TestBadSegment(t *testing.T) {
 func TestDataSegment(t *testing.T) {
 	assert := assert.On(t)
 
-	b := buf.NewLocalBuffer(512)
+	b := buf.NewLocal(512)
 	b.Append([]byte{'a', 'b', 'c', 'd'})
 	seg := &DataSegment{
 		Conv:        1,

@@ -36,7 +36,7 @@ func TestRequestSerialization(t *testing.T) {
 		Security: protocol.Security(protocol.SecurityType_AES128_GCM),
 	}
 
-	buffer := buf.NewBuffer()
+	buffer := buf.New()
 	client := NewClientSession(protocol.DefaultIDHash)
 	client.EncodeRequestHeader(expectedRequest, buffer)
 

@@ -14,10 +14,10 @@ func Uint16ToString(value uint16) string {
 	return strconv.Itoa(int(value))
 }
 
-func WriteUint16(value uint16) buf.BytesWriter {
-	return func(b []byte) int {
+func WriteUint16(value uint16) buf.Supplier {
+	return func(b []byte) (int, error) {
 		b = Uint16ToBytes(value, b[:0])
-		return 2
+		return 2, nil
 	}
 }
 
@@ -29,10 +29,10 @@ func Uint32ToString(value uint32) string {
 	return strconv.FormatUint(uint64(value), 10)
 }
 
-func WriteUint32(value uint32) buf.BytesWriter {
-	return func(b []byte) int {
+func WriteUint32(value uint32) buf.Supplier {
+	return func(b []byte) (int, error) {
 		b = Uint32ToBytes(value, b[:0])
-		return 4
+		return 4, nil
 	}
 }
 

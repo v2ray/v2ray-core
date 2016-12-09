@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"io"
+
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/errors"
@@ -29,11 +30,11 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 
-	buffer := buf.NewLocalBuffer(512)
+	buffer := buf.NewLocal(512)
 	defer buffer.Release()
 
 	ivLen := account.Cipher.IVSize()
-	_, err = buffer.FillFullFrom(reader, ivLen)
+	err = buffer.AppendSupplier(buf.ReadFullFrom(reader, ivLen))
 	if err != nil {
 		return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read IV.")
 	}
@@ -54,7 +55,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	}
 
 	buffer.Clear()
-	_, err = buffer.FillFullFrom(reader, 1)
+	err = buffer.AppendSupplier(buf.ReadFullFrom(reader, 1))
 	if err != nil {
 		return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read address type.")
 	}
@@ -74,24 +75,24 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 
 	switch addrType {
 	case AddrTypeIPv4:
-		_, err := buffer.FillFullFrom(reader, 4)
+		err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 4))
 		if err != nil {
 			return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read IPv4 address.")
 		}
 		request.Address = v2net.IPAddress(buffer.BytesFrom(-4))
 	case AddrTypeIPv6:
-		_, err := buffer.FillFullFrom(reader, 16)
+		err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 16))
 		if err != nil {
 			return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read IPv6 address.")
 		}
 		request.Address = v2net.IPAddress(buffer.BytesFrom(-16))
 	case AddrTypeDomain:
-		_, err := buffer.FillFullFrom(reader, 1)
+		err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 1))
 		if err != nil {
 			return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read domain lenth.")
 		}
 		domainLength := int(buffer.BytesFrom(-1)[0])
-		_, err = buffer.FillFullFrom(reader, domainLength)
+		err = buffer.AppendSupplier(buf.ReadFullFrom(reader, domainLength))
 		if err != nil {
 			return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read domain.")
 		}
@@ -100,7 +101,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 		return nil, nil, errors.New("Shadowsocks|TCP: Unknown address type: ", addrType)
 	}
 
-	_, err = buffer.FillFullFrom(reader, 2)
+	err = buffer.AppendSupplier(buf.ReadFullFrom(reader, 2))
 	if err != nil {
 		return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read port.")
 	}
@@ -110,7 +111,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 		actualAuth := make([]byte, AuthSize)
 		authenticator.Authenticate(buffer.Bytes())(actualAuth)
 
-		_, err := buffer.FillFullFrom(reader, AuthSize)
+		err := buffer.AppendSupplier(buf.ReadFullFrom(reader, AuthSize))
 		if err != nil {
 			return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to read OTA.")
 		}
@@ -152,7 +153,7 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (v2io.Wr
 
 	writer = crypto.NewCryptionWriter(stream, writer)
 
-	header := buf.NewLocalBuffer(512)
+	header := buf.NewLocal(512)
 
 	switch request.Address.Family() {
 	case v2net.AddressFamilyIPv4:
@@ -168,13 +169,13 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (v2io.Wr
 		return nil, errors.New("Shadowsocks|TCP: Unsupported address type: ", request.Address.Family())
 	}
 
-	header.AppendFunc(serial.WriteUint16(uint16(request.Port)))
+	header.AppendSupplier(serial.WriteUint16(uint16(request.Port)))
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {
 		header.SetByte(0, header.Byte(0)|0x10)
 
 		authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
-		header.AppendFunc(authenticator.Authenticate(header.Bytes()))
+		header.AppendSupplier(authenticator.Authenticate(header.Bytes()))
 	}
 
 	_, err = writer.Write(header.Bytes())
@@ -243,9 +244,9 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload *buf.Buffer) (*buf
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 
-	buffer := buf.NewSmallBuffer()
+	buffer := buf.NewSmall()
 	ivLen := account.Cipher.IVSize()
-	buffer.FillFullFrom(rand.Reader, ivLen)
+	buffer.AppendSupplier(buf.ReadFullFrom(rand.Reader, ivLen))
 	iv := buffer.Bytes()
 
 	switch request.Address.Family() {
@@ -262,14 +263,14 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload *buf.Buffer) (*buf
 		return nil, errors.New("Shadowsocks|UDP: Unsupported address type: ", request.Address.Family())
 	}
 
-	buffer.AppendFunc(serial.WriteUint16(uint16(request.Port)))
+	buffer.AppendSupplier(serial.WriteUint16(uint16(request.Port)))
 	buffer.Append(payload.Bytes())
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {
 		authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
 		buffer.SetByte(ivLen, buffer.Byte(ivLen)|0x10)
 
-		buffer.AppendFunc(authenticator.Authenticate(buffer.BytesFrom(ivLen)))
+		buffer.AppendSupplier(authenticator.Authenticate(buffer.BytesFrom(ivLen)))
 	}
 
 	stream, err := account.Cipher.NewEncodingStream(account.Key, iv)
@@ -360,8 +361,8 @@ type UDPReader struct {
 }
 
 func (v *UDPReader) Read() (*buf.Buffer, error) {
-	buffer := buf.NewSmallBuffer()
-	_, err := buffer.FillFrom(v.Reader)
+	buffer := buf.NewSmall()
+	err := buffer.AppendSupplier(buf.ReadFrom(v.Reader))
 	if err != nil {
 		buffer.Release()
 		return nil, err

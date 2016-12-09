@@ -62,7 +62,7 @@ func (v *DefaultDispatcher) DispatchToOutbound(session *proxy.SessionInfo) ray.I
 	}
 
 	if session.Inbound != nil && session.Inbound.AllowPassiveConnection {
-		go dispatcher.Dispatch(destination, buf.NewLocalBuffer(32), direct)
+		go dispatcher.Dispatch(destination, buf.NewLocal(32), direct)
 	} else {
 		go v.FilterPacketAndDispatch(destination, direct, dispatcher)
 	}
