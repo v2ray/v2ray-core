@@ -5,7 +5,7 @@ import (
 	"io"
 	"testing"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/testing/assert"
@@ -30,7 +30,7 @@ func TestHasAuthenticationMethod(t *testing.T) {
 func TestAuthenticationRequestRead(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := alloc.NewBuffer()
+	buffer := buf.NewBuffer()
 	buffer.AppendBytes(
 		0x05, // version
 		0x01, // nMethods
@@ -85,7 +85,7 @@ func TestResponseWrite(t *testing.T) {
 		[16]byte{},
 		v2net.Port(53),
 	}
-	buffer := alloc.NewLocalBuffer(2048)
+	buffer := buf.NewLocalBuffer(2048)
 	defer buffer.Release()
 
 	response.Write(buffer)
@@ -106,7 +106,7 @@ func TestSetIPv6(t *testing.T) {
 	response := NewSocks5Response()
 	response.SetIPv6([]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
 
-	buffer := alloc.NewLocalBuffer(2048)
+	buffer := buf.NewLocalBuffer(2048)
 	defer buffer.Release()
 	response.Write(buffer)
 	assert.Bytes(buffer.Bytes()).Equals([]byte{
@@ -119,7 +119,7 @@ func TestSetDomain(t *testing.T) {
 	response := NewSocks5Response()
 	response.SetDomain("v2ray.com")
 
-	buffer := alloc.NewLocalBuffer(2048)
+	buffer := buf.NewLocalBuffer(2048)
 	defer buffer.Release()
 	response.Write(buffer)
 	assert.Bytes(buffer.Bytes()).Equals([]byte{
@@ -129,7 +129,7 @@ func TestSetDomain(t *testing.T) {
 func TestEmptyAuthRequest(t *testing.T) {
 	assert := assert.On(t)
 
-	_, _, err := ReadAuthentication(alloc.NewBuffer())
+	_, _, err := ReadAuthentication(buf.NewBuffer())
 	assert.Error(err).Equals(io.EOF)
 }
 
@@ -143,7 +143,7 @@ func TestSingleByteAuthRequest(t *testing.T) {
 func TestZeroAuthenticationMethod(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := alloc.NewBuffer()
+	buffer := buf.NewBuffer()
 	buffer.AppendBytes(5, 0)
 	_, _, err := ReadAuthentication(buffer)
 	assert.Error(err).Equals(crypto.ErrAuthenticationFailed)
@@ -151,7 +151,7 @@ func TestZeroAuthenticationMethod(t *testing.T) {
 func TestWrongProtocolVersion(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := alloc.NewBuffer()
+	buffer := buf.NewBuffer()
 	buffer.AppendBytes(6, 1, 0)
 	_, _, err := ReadAuthentication(buffer)
 	assert.Error(err).Equals(proxy.ErrInvalidProtocolVersion)
@@ -160,14 +160,14 @@ func TestWrongProtocolVersion(t *testing.T) {
 func TestEmptyRequest(t *testing.T) {
 	assert := assert.On(t)
 
-	_, err := ReadRequest(alloc.NewBuffer())
+	_, err := ReadRequest(buf.NewBuffer())
 	assert.Error(err).Equals(io.EOF)
 }
 
 func TestIPv6Request(t *testing.T) {
 	assert := assert.On(t)
 
-	b := alloc.NewBuffer()
+	b := buf.NewBuffer()
 	b.AppendBytes(5, 1, 0, 4, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 0, 8)
 	request, err := ReadRequest(b)
 	assert.Error(err).IsNil()

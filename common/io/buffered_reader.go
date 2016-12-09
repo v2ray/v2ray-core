@@ -4,20 +4,20 @@ import (
 	"io"
 	"sync"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 )
 
 type BufferedReader struct {
 	sync.Mutex
 	reader io.Reader
-	buffer *alloc.Buffer
+	buffer *buf.Buffer
 	cached bool
 }
 
 func NewBufferedReader(rawReader io.Reader) *BufferedReader {
 	return &BufferedReader{
 		reader: rawReader,
-		buffer: alloc.NewBuffer(),
+		buffer: buf.NewBuffer(),
 		cached: true,
 	}
 }

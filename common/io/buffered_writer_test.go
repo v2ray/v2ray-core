@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"testing"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/common/io"
 	"v2ray.com/core/testing/assert"
 )
@@ -12,7 +12,7 @@ import (
 func TestBufferedWriter(t *testing.T) {
 	assert := assert.On(t)
 
-	content := alloc.NewBuffer()
+	content := buf.NewBuffer()
 
 	writer := NewBufferedWriter(content)
 	assert.Bool(writer.Cached()).IsTrue()
@@ -32,7 +32,7 @@ func TestBufferedWriter(t *testing.T) {
 func TestBufferedWriterLargePayload(t *testing.T) {
 	assert := assert.On(t)
 
-	content := alloc.NewLocalBuffer(128 * 1024)
+	content := buf.NewLocalBuffer(128 * 1024)
 
 	writer := NewBufferedWriter(content)
 	assert.Bool(writer.Cached()).IsTrue()

@@ -3,7 +3,7 @@ package shadowsocks_test
 import (
 	"testing"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/proxy/shadowsocks"
 	"v2ray.com/core/testing/assert"
 )
@@ -11,7 +11,7 @@ import (
 func TestNormalChunkReading(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := alloc.NewBuffer()
+	buffer := buf.NewBuffer()
 	buffer.AppendBytes(
 		0, 8, 39, 228, 69, 96, 133, 39, 254, 26, 201, 70, 11, 12, 13, 14, 15, 16, 17, 18)
 	reader := NewChunkReader(buffer, NewAuthenticator(ChunkKeyGenerator(
@@ -24,11 +24,11 @@ func TestNormalChunkReading(t *testing.T) {
 func TestNormalChunkWriting(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := alloc.NewLocalBuffer(512)
+	buffer := buf.NewLocalBuffer(512)
 	writer := NewChunkWriter(buffer, NewAuthenticator(ChunkKeyGenerator(
 		[]byte{21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36})))
 
-	b := alloc.NewLocalBuffer(256)
+	b := buf.NewLocalBuffer(256)
 	b.Append([]byte{11, 12, 13, 14, 15, 16, 17, 18})
 	err := writer.Write(b)
 	assert.Error(err).IsNil()

@@ -4,7 +4,7 @@ import (
 	"io"
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dns"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/errors"
 	v2io "v2ray.com/core/common/io"
@@ -67,7 +67,7 @@ func (v *FreedomConnection) ResolveIP(destination v2net.Destination) v2net.Desti
 	return newDest
 }
 
-func (v *FreedomConnection) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) {
+func (v *FreedomConnection) Dispatch(destination v2net.Destination, payload *buf.Buffer, ray ray.OutboundRay) {
 	log.Info("Freedom: Opening connection to ", destination)
 
 	defer payload.Release()

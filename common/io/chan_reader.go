@@ -4,13 +4,13 @@ import (
 	"io"
 	"sync"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 )
 
 type ChanReader struct {
 	sync.Mutex
 	stream  Reader
-	current *alloc.Buffer
+	current *buf.Buffer
 	eof     bool
 }
 

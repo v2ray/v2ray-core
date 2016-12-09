@@ -2,7 +2,8 @@ package serial
 
 import (
 	"strconv"
-	"v2ray.com/core/common/alloc"
+
+	"v2ray.com/core/common/buf"
 )
 
 func Uint16ToBytes(value uint16, b []byte) []byte {
@@ -13,7 +14,7 @@ func Uint16ToString(value uint16) string {
 	return strconv.Itoa(int(value))
 }
 
-func WriteUint16(value uint16) alloc.BytesWriter {
+func WriteUint16(value uint16) buf.BytesWriter {
 	return func(b []byte) int {
 		b = Uint16ToBytes(value, b[:0])
 		return 2
@@ -28,7 +29,7 @@ func Uint32ToString(value uint32) string {
 	return strconv.FormatUint(uint64(value), 10)
 }
 
-func WriteUint32(value uint32) alloc.BytesWriter {
+func WriteUint32(value uint32) buf.BytesWriter {
 	return func(b []byte) int {
 		b = Uint32ToBytes(value, b[:0])
 		return 4

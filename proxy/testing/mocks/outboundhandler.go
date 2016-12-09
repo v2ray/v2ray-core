@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"v2ray.com/core/app"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	v2io "v2ray.com/core/common/io"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
@@ -18,7 +18,7 @@ type OutboundConnectionHandler struct {
 	ConnOutput  io.Writer
 }
 
-func (v *OutboundConnectionHandler) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) {
+func (v *OutboundConnectionHandler) Dispatch(destination v2net.Destination, payload *buf.Buffer, ray ray.OutboundRay) {
 	input := ray.OutboundInput()
 	output := ray.OutboundOutput()
 

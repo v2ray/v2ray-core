@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"io"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/errors"
 	v2io "v2ray.com/core/common/io"
@@ -29,7 +29,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 
-	buffer := alloc.NewLocalBuffer(512)
+	buffer := buf.NewLocalBuffer(512)
 	defer buffer.Release()
 
 	ivLen := account.Cipher.IVSize()
@@ -152,7 +152,7 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (v2io.Wr
 
 	writer = crypto.NewCryptionWriter(stream, writer)
 
-	header := alloc.NewLocalBuffer(512)
+	header := buf.NewLocalBuffer(512)
 
 	switch request.Address.Family() {
 	case v2net.AddressFamilyIPv4:
@@ -235,7 +235,7 @@ func WriteTCPResponse(request *protocol.RequestHeader, writer io.Writer) (v2io.W
 	return v2io.NewAdaptiveWriter(crypto.NewCryptionWriter(stream, writer)), nil
 }
 
-func EncodeUDPPacket(request *protocol.RequestHeader, payload *alloc.Buffer) (*alloc.Buffer, error) {
+func EncodeUDPPacket(request *protocol.RequestHeader, payload *buf.Buffer) (*buf.Buffer, error) {
 	user := request.User
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
@@ -243,7 +243,7 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload *alloc.Buffer) (*a
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 
-	buffer := alloc.NewSmallBuffer()
+	buffer := buf.NewSmallBuffer()
 	ivLen := account.Cipher.IVSize()
 	buffer.FillFullFrom(rand.Reader, ivLen)
 	iv := buffer.Bytes()
@@ -281,7 +281,7 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload *alloc.Buffer) (*a
 	return buffer, nil
 }
 
-func DecodeUDPPacket(user *protocol.User, payload *alloc.Buffer) (*protocol.RequestHeader, *alloc.Buffer, error) {
+func DecodeUDPPacket(user *protocol.User, payload *buf.Buffer) (*protocol.RequestHeader, *buf.Buffer, error) {
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
 		return nil, nil, errors.Base(err).Message("Shadowsocks|UDP: Failed to parse account.")
@@ -359,8 +359,8 @@ type UDPReader struct {
 	User   *protocol.User
 }
 
-func (v *UDPReader) Read() (*alloc.Buffer, error) {
-	buffer := alloc.NewSmallBuffer()
+func (v *UDPReader) Read() (*buf.Buffer, error) {
+	buffer := buf.NewSmallBuffer()
 	_, err := buffer.FillFrom(v.Reader)
 	if err != nil {
 		buffer.Release()
@@ -382,7 +382,7 @@ type UDPWriter struct {
 	Request *protocol.RequestHeader
 }
 
-func (v *UDPWriter) Write(buffer *alloc.Buffer) error {
+func (v *UDPWriter) Write(buffer *buf.Buffer) error {
 	payload, err := EncodeUDPPacket(v.Request, buffer)
 	if err != nil {
 		return err

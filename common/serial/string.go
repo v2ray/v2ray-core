@@ -3,7 +3,8 @@ package serial
 import (
 	"fmt"
 	"strings"
-	"v2ray.com/core/common/alloc"
+
+	"v2ray.com/core/common/buf"
 )
 
 func ToString(v interface{}) string {
@@ -35,7 +36,7 @@ func Concat(v ...interface{}) string {
 	return strings.Join(values, "")
 }
 
-func WriteString(s string) alloc.BytesWriter {
+func WriteString(s string) buf.BytesWriter {
 	return func(b []byte) int {
 		copy(b, []byte(s))
 		return len(s)

@@ -5,7 +5,7 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/loader"
@@ -107,7 +107,7 @@ func (v *DokodemoDoor) ListenUDP() error {
 	return nil
 }
 
-func (v *DokodemoDoor) handleUDPPackets(payload *alloc.Buffer, session *proxy.SessionInfo) {
+func (v *DokodemoDoor) handleUDPPackets(payload *buf.Buffer, session *proxy.SessionInfo) {
 	if session.Destination.Network == v2net.Network_Unknown && v.address != nil && v.port > 0 {
 		session.Destination = v2net.UDPDestination(v.address, v.port)
 	}
@@ -119,7 +119,7 @@ func (v *DokodemoDoor) handleUDPPackets(payload *alloc.Buffer, session *proxy.Se
 	v.udpServer.Dispatch(session, payload, v.handleUDPResponse)
 }
 
-func (v *DokodemoDoor) handleUDPResponse(dest v2net.Destination, payload *alloc.Buffer) {
+func (v *DokodemoDoor) handleUDPResponse(dest v2net.Destination, payload *buf.Buffer) {
 	defer payload.Release()
 	v.udpMutex.RLock()
 	defer v.udpMutex.RUnlock()

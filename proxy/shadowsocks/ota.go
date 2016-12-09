@@ -6,7 +6,7 @@ import (
 	"crypto/sha1"
 	"io"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/serial"
 )
@@ -27,7 +27,7 @@ func NewAuthenticator(keygen KeyGenerator) *Authenticator {
 	}
 }
 
-func (v *Authenticator) Authenticate(data []byte) alloc.BytesWriter {
+func (v *Authenticator) Authenticate(data []byte) buf.BytesWriter {
 	hasher := hmac.New(sha1.New, v.key())
 	hasher.Write(data)
 	res := hasher.Sum(nil)
@@ -74,8 +74,8 @@ func (v *ChunkReader) Release() {
 	v.auth = nil
 }
 
-func (v *ChunkReader) Read() (*alloc.Buffer, error) {
-	buffer := alloc.NewBuffer()
+func (v *ChunkReader) Read() (*buf.Buffer, error) {
+	buffer := buf.NewBuffer()
 	if _, err := buffer.FillFullFrom(v.reader, 2); err != nil {
 		buffer.Release()
 		return nil, err
@@ -83,10 +83,10 @@ func (v *ChunkReader) Read() (*alloc.Buffer, error) {
 	// There is a potential buffer overflow here. Large buffer is 64K bytes,
 	// while uin16 + 10 will be more than that
 	length := serial.BytesToUint16(buffer.BytesTo(2)) + AuthSize
-	if length > alloc.BufferSize {
+	if length > buf.BufferSize {
 		// Theoretically the size of a chunk is 64K, but most Shadowsocks implementations used <4K buffer.
 		buffer.Release()
-		buffer = alloc.NewLocalBuffer(int(length) + 128)
+		buffer = buf.NewLocalBuffer(int(length) + 128)
 	}
 
 	buffer.Clear()
@@ -128,7 +128,7 @@ func (v *ChunkWriter) Release() {
 	v.auth = nil
 }
 
-func (v *ChunkWriter) Write(payload *alloc.Buffer) error {
+func (v *ChunkWriter) Write(payload *buf.Buffer) error {
 	totalLength := payload.Len()
 	serial.Uint16ToBytes(uint16(totalLength), v.buffer[:0])
 	v.auth.Authenticate(payload.Bytes())(v.buffer[2:])

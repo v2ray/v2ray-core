@@ -1,4 +1,4 @@
-package alloc
+package buf
 
 import (
 	"os"

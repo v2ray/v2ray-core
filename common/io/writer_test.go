@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"testing"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/common/io"
 	"v2ray.com/core/testing/assert"
 )
@@ -13,7 +13,7 @@ import (
 func TestAdaptiveWriter(t *testing.T) {
 	assert := assert.On(t)
 
-	lb := alloc.NewBuffer()
+	lb := buf.NewBuffer()
 	lb.FillFrom(rand.Reader)
 
 	expectedBytes := append([]byte(nil), lb.Bytes()...)

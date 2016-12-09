@@ -3,7 +3,7 @@ package kcp
 import (
 	"sync"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 )
 
 type ReceivingWindow struct {
@@ -145,7 +145,7 @@ func (v *AckList) Flush(current uint32, rto uint32) {
 type ReceivingWorker struct {
 	sync.RWMutex
 	conn       *Connection
-	leftOver   *alloc.Buffer
+	leftOver   *buf.Buffer
 	window     *ReceivingWindow
 	acklist    *AckList
 	nextNumber uint32

@@ -6,7 +6,7 @@ import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/log"
@@ -103,7 +103,7 @@ func (v *Server) Start() error {
 	return nil
 }
 
-func (v *Server) handlerUDPPayload(payload *alloc.Buffer, session *proxy.SessionInfo) {
+func (v *Server) handlerUDPPayload(payload *buf.Buffer, session *proxy.SessionInfo) {
 	source := session.Source
 	request, data, err := DecodeUDPPacket(v.user, payload)
 	if err != nil {
@@ -129,7 +129,7 @@ func (v *Server) handlerUDPPayload(payload *alloc.Buffer, session *proxy.Session
 	log.Access(source, dest, log.AccessAccepted, "")
 	log.Info("Shadowsocks|Server: Tunnelling request to ", dest)
 
-	v.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: dest, User: request.User, Inbound: v.meta}, data, func(destination v2net.Destination, payload *alloc.Buffer) {
+	v.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: dest, User: request.User, Inbound: v.meta}, data, func(destination v2net.Destination, payload *buf.Buffer) {
 		defer payload.Release()
 
 		data, err := EncodeUDPPacket(request, payload)

@@ -4,7 +4,7 @@ import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/router"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -62,7 +62,7 @@ func (v *DefaultDispatcher) DispatchToOutbound(session *proxy.SessionInfo) ray.I
 	}
 
 	if session.Inbound != nil && session.Inbound.AllowPassiveConnection {
-		go dispatcher.Dispatch(destination, alloc.NewLocalBuffer(32), direct)
+		go dispatcher.Dispatch(destination, buf.NewLocalBuffer(32), direct)
 	} else {
 		go v.FilterPacketAndDispatch(destination, direct, dispatcher)
 	}

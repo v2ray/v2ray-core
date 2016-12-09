@@ -4,7 +4,7 @@ import (
 	"io"
 	"sync"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 )
 
 type SegmentWriter interface {
@@ -14,7 +14,7 @@ type SegmentWriter interface {
 type BufferedSegmentWriter struct {
 	sync.Mutex
 	mtu    uint32
-	buffer *alloc.Buffer
+	buffer *buf.Buffer
 	writer io.Writer
 }
 
@@ -22,7 +22,7 @@ func NewSegmentWriter(writer io.Writer, mtu uint32) *BufferedSegmentWriter {
 	return &BufferedSegmentWriter{
 		mtu:    mtu,
 		writer: writer,
-		buffer: alloc.NewSmallBuffer(),
+		buffer: buf.NewSmallBuffer(),
 	}
 }
 

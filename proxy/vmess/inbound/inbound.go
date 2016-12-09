@@ -8,7 +8,7 @@ import (
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/loader"
@@ -225,7 +225,7 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	}
 	output.Release()
 	if request.Option.Has(protocol.RequestOptionChunkStream) {
-		if err := bodyWriter.Write(alloc.NewLocalBuffer(8)); err != nil {
+		if err := bodyWriter.Write(buf.NewLocalBuffer(8)); err != nil {
 			connection.SetReusable(false)
 		}
 	}

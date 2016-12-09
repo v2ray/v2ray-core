@@ -2,7 +2,7 @@ package kcp
 
 import (
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/serial"
 )
 
@@ -31,7 +31,7 @@ type Segment interface {
 	Conversation() uint16
 	Command() Command
 	ByteSize() int
-	Bytes() alloc.BytesWriter
+	Bytes() buf.BytesWriter
 }
 
 const (
@@ -44,7 +44,7 @@ type DataSegment struct {
 	Timestamp   uint32
 	Number      uint32
 	SendingNext uint32
-	Data        *alloc.Buffer
+	Data        *buf.Buffer
 
 	timeout  uint32
 	transmit uint32
@@ -64,13 +64,13 @@ func (v *DataSegment) Command() Command {
 
 func (v *DataSegment) SetData(b []byte) {
 	if v.Data == nil {
-		v.Data = alloc.NewSmallBuffer()
+		v.Data = buf.NewSmallBuffer()
 	}
 	v.Data.Clear()
 	v.Data.Append(b)
 }
 
-func (v *DataSegment) Bytes() alloc.BytesWriter {
+func (v *DataSegment) Bytes() buf.BytesWriter {
 	return func(b []byte) int {
 		b = serial.Uint16ToBytes(v.Conv, b[:0])
 		b = append(b, byte(CommandData), byte(v.Option))
@@ -137,7 +137,7 @@ func (v *AckSegment) ByteSize() int {
 	return 2 + 1 + 1 + 4 + 4 + 4 + 1 + int(v.Count)*4
 }
 
-func (v *AckSegment) Bytes() alloc.BytesWriter {
+func (v *AckSegment) Bytes() buf.BytesWriter {
 	return func(b []byte) int {
 		b = serial.Uint16ToBytes(v.Conv, b[:0])
 		b = append(b, byte(CommandACK), byte(v.Option))
@@ -181,7 +181,7 @@ func (v *CmdOnlySegment) ByteSize() int {
 	return 2 + 1 + 1 + 4 + 4 + 4
 }
 
-func (v *CmdOnlySegment) Bytes() alloc.BytesWriter {
+func (v *CmdOnlySegment) Bytes() buf.BytesWriter {
 	return func(b []byte) int {
 		b = serial.Uint16ToBytes(v.Conv, b[:0])
 		b = append(b, byte(v.Cmd), byte(v.Option))

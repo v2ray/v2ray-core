@@ -5,7 +5,7 @@ import (
 	"errors"
 	"io"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/serial"
 )
 
@@ -71,7 +71,7 @@ func (v *AEADAuthenticator) Seal(dst, plainText []byte) ([]byte, error) {
 
 type AuthenticationReader struct {
 	auth   Authenticator
-	buffer *alloc.Buffer
+	buffer *buf.Buffer
 	reader io.Reader
 
 	chunk      []byte
@@ -81,7 +81,7 @@ type AuthenticationReader struct {
 func NewAuthenticationReader(auth Authenticator, reader io.Reader, aggressive bool) *AuthenticationReader {
 	return &AuthenticationReader{
 		auth:       auth,
-		buffer:     alloc.NewLocalBuffer(32 * 1024),
+		buffer:     buf.NewLocalBuffer(32 * 1024),
 		reader:     reader,
 		aggressive: aggressive,
 	}

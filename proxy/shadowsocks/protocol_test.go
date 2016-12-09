@@ -3,7 +3,7 @@ package shadowsocks_test
 import (
 	"testing"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -30,7 +30,7 @@ func TestUDPEncoding(t *testing.T) {
 		},
 	}
 
-	data := alloc.NewLocalBuffer(256)
+	data := buf.NewLocalBuffer(256)
 	data.AppendFunc(serial.WriteString("test string"))
 	encodedData, err := EncodeUDPPacket(request, data)
 	assert.Error(err).IsNil()
@@ -60,9 +60,9 @@ func TestTCPRequest(t *testing.T) {
 		},
 	}
 
-	data := alloc.NewLocalBuffer(256)
+	data := buf.NewLocalBuffer(256)
 	data.AppendFunc(serial.WriteString("test string"))
-	cache := alloc.NewBuffer()
+	cache := buf.NewBuffer()
 
 	writer, err := WriteTCPRequest(request, cache)
 	assert.Error(err).IsNil()
@@ -88,7 +88,7 @@ func TestUDPReaderWriter(t *testing.T) {
 			CipherType: CipherType_CHACHA20_IEFT,
 		}),
 	}
-	cache := alloc.NewBuffer()
+	cache := buf.NewBuffer()
 	writer := &UDPWriter{
 		Writer: cache,
 		Request: &protocol.RequestHeader{
@@ -105,7 +105,7 @@ func TestUDPReaderWriter(t *testing.T) {
 		User:   user,
 	}
 
-	b := alloc.NewBuffer()
+	b := buf.NewBuffer()
 	b.AppendFunc(serial.WriteString("test payload"))
 	err := writer.Write(b)
 	assert.Error(err).IsNil()
@@ -114,7 +114,7 @@ func TestUDPReaderWriter(t *testing.T) {
 	assert.Error(err).IsNil()
 	assert.String(payload.String()).Equals("test payload")
 
-	b = alloc.NewBuffer()
+	b = buf.NewBuffer()
 	b.AppendFunc(serial.WriteString("test payload 2"))
 	err = writer.Write(b)
 	assert.Error(err).IsNil()

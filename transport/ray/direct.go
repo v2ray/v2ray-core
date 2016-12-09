@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 )
 
 const (
@@ -44,16 +44,16 @@ func (v *directRay) InboundOutput() InputStream {
 type Stream struct {
 	access sync.RWMutex
 	closed bool
-	buffer chan *alloc.Buffer
+	buffer chan *buf.Buffer
 }
 
 func NewStream() *Stream {
 	return &Stream{
-		buffer: make(chan *alloc.Buffer, bufferSize),
+		buffer: make(chan *buf.Buffer, bufferSize),
 	}
 }
 
-func (v *Stream) Read() (*alloc.Buffer, error) {
+func (v *Stream) Read() (*buf.Buffer, error) {
 	if v.buffer == nil {
 		return nil, io.EOF
 	}
@@ -71,7 +71,7 @@ func (v *Stream) Read() (*alloc.Buffer, error) {
 	return result, nil
 }
 
-func (v *Stream) Write(data *alloc.Buffer) error {
+func (v *Stream) Write(data *buf.Buffer) error {
 	for !v.closed {
 		err := v.TryWriteOnce(data)
 		if err != io.ErrNoProgress {
@@ -81,7 +81,7 @@ func (v *Stream) Write(data *alloc.Buffer) error {
 	return io.ErrClosedPipe
 }
 
-func (v *Stream) TryWriteOnce(data *alloc.Buffer) error {
+func (v *Stream) TryWriteOnce(data *buf.Buffer) error {
 	v.access.RLock()
 	defer v.access.RUnlock()
 	if v.closed {

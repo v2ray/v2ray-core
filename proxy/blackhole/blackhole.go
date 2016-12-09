@@ -2,7 +2,7 @@ package blackhole
 
 import (
 	"v2ray.com/core/app"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
@@ -25,7 +25,7 @@ func NewBlackHole(space app.Space, config *Config, meta *proxy.OutboundHandlerMe
 	}, nil
 }
 
-func (v *BlackHole) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) {
+func (v *BlackHole) Dispatch(destination v2net.Destination, payload *buf.Buffer, ray ray.OutboundRay) {
 	payload.Release()
 
 	v.response.WriteTo(ray.OutboundOutput())

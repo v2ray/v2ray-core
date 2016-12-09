@@ -2,12 +2,12 @@ package internet
 
 import (
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 )
 
 type Authenticator interface {
-	Seal(*alloc.Buffer)
-	Open(*alloc.Buffer) bool
+	Seal(*buf.Buffer)
+	Open(*buf.Buffer) bool
 	Overhead() int
 }
 
@@ -53,7 +53,7 @@ func (v *AuthenticatorChain) Overhead() int {
 	return total
 }
 
-func (v *AuthenticatorChain) Open(payload *alloc.Buffer) bool {
+func (v *AuthenticatorChain) Open(payload *buf.Buffer) bool {
 	for _, auth := range v.authenticators {
 		if !auth.Open(payload) {
 			return false
@@ -62,7 +62,7 @@ func (v *AuthenticatorChain) Open(payload *alloc.Buffer) bool {
 	return true
 }
 
-func (v *AuthenticatorChain) Seal(payload *alloc.Buffer) {
+func (v *AuthenticatorChain) Seal(payload *buf.Buffer) {
 	for i := len(v.authenticators) - 1; i >= 0; i-- {
 		auth := v.authenticators[i]
 		auth.Seal(payload)

@@ -4,14 +4,14 @@ import (
 	"io"
 
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 )
 
 // Writer extends io.Writer with alloc.Buffer.
 type Writer interface {
 	common.Releasable
 	// Write writes an alloc.Buffer into underlying writer.
-	Write(*alloc.Buffer) error
+	Write(*buf.Buffer) error
 }
 
 // AdaptiveWriter is a Writer that writes alloc.Buffer into underlying writer.
@@ -27,7 +27,7 @@ func NewAdaptiveWriter(writer io.Writer) *AdaptiveWriter {
 }
 
 // Write implements Writer.Write(). Write() takes ownership of the given buffer.
-func (v *AdaptiveWriter) Write(buffer *alloc.Buffer) error {
+func (v *AdaptiveWriter) Write(buffer *buf.Buffer) error {
 	defer buffer.Release()
 	for {
 		nBytes, err := v.writer.Write(buffer.Bytes())

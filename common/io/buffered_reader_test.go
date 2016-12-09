@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"crypto/rand"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/common/io"
 	"v2ray.com/core/testing/assert"
 )
@@ -12,7 +12,7 @@ import (
 func TestBufferedReader(t *testing.T) {
 	assert := assert.On(t)
 
-	content := alloc.NewBuffer()
+	content := buf.NewBuffer()
 	content.FillFrom(rand.Reader)
 
 	len := content.Len()

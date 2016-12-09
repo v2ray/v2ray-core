@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	v2io "v2ray.com/core/common/io"
 	. "v2ray.com/core/proxy/blackhole"
 	"v2ray.com/core/testing/assert"
@@ -14,7 +14,7 @@ import (
 func TestHTTPResponse(t *testing.T) {
 	assert := assert.On(t)
 
-	buffer := alloc.NewBuffer()
+	buffer := buf.NewBuffer()
 
 	httpResponse := new(HTTPResponse)
 	httpResponse.WriteTo(v2io.NewAdaptiveWriter(buffer))

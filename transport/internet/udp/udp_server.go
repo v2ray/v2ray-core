@@ -5,14 +5,14 @@ import (
 	"time"
 
 	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
 )
 
-type UDPResponseCallback func(destination v2net.Destination, payload *alloc.Buffer)
+type UDPResponseCallback func(destination v2net.Destination, payload *buf.Buffer)
 
 type TimedInboundRay struct {
 	name       string
@@ -111,7 +111,7 @@ func (v *UDPServer) RemoveRay(name string) {
 	delete(v.conns, name)
 }
 
-func (v *UDPServer) locateExistingAndDispatch(name string, payload *alloc.Buffer) bool {
+func (v *UDPServer) locateExistingAndDispatch(name string, payload *buf.Buffer) bool {
 	log.Debug("UDP Server: Locating existing connection for ", name)
 	v.RLock()
 	defer v.RUnlock()
@@ -130,7 +130,7 @@ func (v *UDPServer) locateExistingAndDispatch(name string, payload *alloc.Buffer
 	return false
 }
 
-func (v *UDPServer) Dispatch(session *proxy.SessionInfo, payload *alloc.Buffer, callback UDPResponseCallback) {
+func (v *UDPServer) Dispatch(session *proxy.SessionInfo, payload *buf.Buffer, callback UDPResponseCallback) {
 	source := session.Source
 	destination := session.Destination
 

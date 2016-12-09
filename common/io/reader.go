@@ -4,20 +4,20 @@ import (
 	"io"
 
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 )
 
 // Reader extends io.Reader with alloc.Buffer.
 type Reader interface {
 	common.Releasable
 	// Read reads content from underlying reader, and put it into an alloc.Buffer.
-	Read() (*alloc.Buffer, error)
+	Read() (*buf.Buffer, error)
 }
 
 // AdaptiveReader is a Reader that adjusts its reading speed automatically.
 type AdaptiveReader struct {
 	reader      io.Reader
-	largeBuffer *alloc.Buffer
+	largeBuffer *buf.Buffer
 	highVolumn  bool
 }
 
@@ -30,21 +30,21 @@ func NewAdaptiveReader(reader io.Reader) *AdaptiveReader {
 }
 
 // Read implements Reader.Read().
-func (v *AdaptiveReader) Read() (*alloc.Buffer, error) {
+func (v *AdaptiveReader) Read() (*buf.Buffer, error) {
 	if v.highVolumn && v.largeBuffer.IsEmpty() {
 		if v.largeBuffer == nil {
-			v.largeBuffer = alloc.NewLocalBuffer(32 * 1024)
+			v.largeBuffer = buf.NewLocalBuffer(32 * 1024)
 		}
 		nBytes, err := v.largeBuffer.FillFrom(v.reader)
 		if err != nil {
 			return nil, err
 		}
-		if nBytes < alloc.BufferSize {
+		if nBytes < buf.BufferSize {
 			v.highVolumn = false
 		}
 	}
 
-	buffer := alloc.NewBuffer()
+	buffer := buf.NewBuffer()
 	if !v.largeBuffer.IsEmpty() {
 		buffer.FillFrom(v.largeBuffer)
 		return buffer, nil

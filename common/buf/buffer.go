@@ -1,5 +1,5 @@
 // Package alloc provides a light-weight memory allocation mechanism.
-package alloc
+package buf
 
 import (
 	"io"

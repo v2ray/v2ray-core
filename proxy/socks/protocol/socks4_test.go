@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/testing/assert"
 )
@@ -31,7 +31,7 @@ func TestSocks4AuthenticationResponseToBytes(t *testing.T) {
 
 	response := NewSocks4AuthenticationResponse(byte(0x10), 443, []byte{1, 2, 3, 4})
 
-	buffer := alloc.NewLocalBuffer(2048)
+	buffer := buf.NewLocalBuffer(2048)
 	defer buffer.Release()
 
 	response.Write(buffer)

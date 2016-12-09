@@ -3,7 +3,7 @@ package encoding
 import (
 	"io"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -32,7 +32,7 @@ func MarshalCommand(command interface{}, writer io.Writer) error {
 		return ErrUnknownCommand
 	}
 
-	buffer := alloc.NewLocalBuffer(512)
+	buffer := buf.NewLocalBuffer(512)
 	defer buffer.Release()
 
 	err := factory.Marshal(command, buffer)

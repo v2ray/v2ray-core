@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/common/io"
 	"v2ray.com/core/testing/assert"
 )
@@ -19,8 +19,8 @@ func TestAdaptiveReader(t *testing.T) {
 	b1, err := reader.Read()
 	assert.Error(err).IsNil()
 	assert.Bool(b1.IsFull()).IsTrue()
-	assert.Int(b1.Len()).Equals(alloc.BufferSize)
-	assert.Int(buffer.Len()).Equals(cap(rawContent) - alloc.BufferSize)
+	assert.Int(b1.Len()).Equals(buf.BufferSize)
+	assert.Int(buffer.Len()).Equals(cap(rawContent) - buf.BufferSize)
 
 	b2, err := reader.Read()
 	assert.Error(err).IsNil()

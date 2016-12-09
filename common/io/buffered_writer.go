@@ -3,21 +3,21 @@ package io
 import (
 	"io"
 	"sync"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 )
 
 type BufferedWriter struct {
 	sync.Mutex
 	writer io.Writer
-	buffer *alloc.Buffer
+	buffer *buf.Buffer
 	cached bool
 }
 
 func NewBufferedWriter(rawWriter io.Writer) *BufferedWriter {
 	return &BufferedWriter{
 		writer: rawWriter,
-		buffer: alloc.NewSmallBuffer(),
+		buffer: buf.NewSmallBuffer(),
 		cached: true,
 	}
 }

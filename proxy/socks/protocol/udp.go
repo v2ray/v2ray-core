@@ -2,7 +2,7 @@ package protocol
 
 import (
 	"fmt"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
@@ -16,14 +16,14 @@ type Socks5UDPRequest struct {
 	Fragment byte
 	Address  v2net.Address
 	Port     v2net.Port
-	Data     *alloc.Buffer
+	Data     *buf.Buffer
 }
 
 func (request *Socks5UDPRequest) Destination() v2net.Destination {
 	return v2net.UDPDestination(request.Address, request.Port)
 }
 
-func (request *Socks5UDPRequest) Write(buffer *alloc.Buffer) {
+func (request *Socks5UDPRequest) Write(buffer *buf.Buffer) {
 	buffer.AppendBytes(0, 0, request.Fragment)
 	switch request.Address.Family() {
 	case v2net.AddressFamilyIPv4:
@@ -83,7 +83,7 @@ func ReadUDPRequest(packet []byte) (*Socks5UDPRequest, error) {
 	}
 
 	if len(packet) > dataBegin {
-		b := alloc.NewSmallBuffer()
+		b := buf.NewSmallBuffer()
 		b.Append(packet[dataBegin:])
 		request.Data = b
 	}

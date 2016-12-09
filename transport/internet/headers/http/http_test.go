@@ -3,7 +3,7 @@ package http_test
 import (
 	"testing"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/testing/assert"
 	. "v2ray.com/core/transport/internet/headers/http"
@@ -12,8 +12,8 @@ import (
 func TestReaderWriter(t *testing.T) {
 	assert := assert.On(t)
 
-	cache := alloc.NewBuffer()
-	b := alloc.NewLocalBuffer(256)
+	cache := buf.NewBuffer()
+	b := buf.NewLocalBuffer(256)
 	b.AppendFunc(serial.WriteString("abcd" + ENDING))
 	writer := NewHeaderWriter(b)
 	writer.Write(cache)
@@ -41,7 +41,7 @@ func TestRequestHeader(t *testing.T) {
 		},
 	}).(HttpAuthenticator)
 
-	cache := alloc.NewBuffer()
+	cache := buf.NewBuffer()
 	err := auth.GetClientWriter().Write(cache)
 	assert.Error(err).IsNil()
 

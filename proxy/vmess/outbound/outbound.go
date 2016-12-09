@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"v2ray.com/core/app"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
@@ -25,7 +25,7 @@ type VMessOutboundHandler struct {
 	meta         *proxy.OutboundHandlerMeta
 }
 
-func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) {
+func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *buf.Buffer, ray ray.OutboundRay) {
 	defer ray.OutboundInput().Release()
 	defer ray.OutboundOutput().Close()
 
@@ -92,7 +92,7 @@ func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *alloc
 	return
 }
 
-func (v *VMessOutboundHandler) handleRequest(session *encoding.ClientSession, conn internet.Connection, request *protocol.RequestHeader, payload *alloc.Buffer, input v2io.Reader, finish *sync.Mutex) {
+func (v *VMessOutboundHandler) handleRequest(session *encoding.ClientSession, conn internet.Connection, request *protocol.RequestHeader, payload *buf.Buffer, input v2io.Reader, finish *sync.Mutex) {
 	defer finish.Unlock()
 
 	writer := v2io.NewBufferedWriter(conn)
@@ -116,7 +116,7 @@ func (v *VMessOutboundHandler) handleRequest(session *encoding.ClientSession, co
 	}
 
 	if request.Option.Has(protocol.RequestOptionChunkStream) {
-		err := bodyWriter.Write(alloc.NewLocalBuffer(8))
+		err := bodyWriter.Write(buf.NewLocalBuffer(8))
 		if err != nil {
 			conn.SetReusable(false)
 		}

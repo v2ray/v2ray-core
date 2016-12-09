@@ -9,7 +9,7 @@ import (
 	"v2ray.com/core/app/dns"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/router"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	. "v2ray.com/core/proxy/freedom"
@@ -47,7 +47,7 @@ func TestSinglePacket(t *testing.T) {
 
 	traffic := ray.NewRay()
 	data2Send := "Data to be sent to remote"
-	payload := alloc.NewLocalBuffer(2048)
+	payload := buf.NewLocalBuffer(2048)
 	payload.Append([]byte(data2Send))
 
 	go freedom.Dispatch(v2net.TCPDestination(v2net.LocalHostIP, tcpServer.Port), payload, traffic)

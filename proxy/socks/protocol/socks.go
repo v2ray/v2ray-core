@@ -3,7 +3,7 @@ package protocol
 import (
 	"fmt"
 	"io"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -120,7 +120,7 @@ func (request Socks5UserPassRequest) AuthDetail() string {
 }
 
 func ReadUserPassRequest(reader io.Reader) (request Socks5UserPassRequest, err error) {
-	buffer := alloc.NewLocalBuffer(512)
+	buffer := buf.NewLocalBuffer(512)
 	defer buffer.Release()
 
 	_, err = buffer.FillFullFrom(reader, 2)
@@ -188,7 +188,7 @@ type Socks5Request struct {
 }
 
 func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
-	buffer := alloc.NewLocalBuffer(512)
+	buffer := buf.NewLocalBuffer(512)
 	defer buffer.Release()
 
 	_, err = buffer.FillFullFrom(reader, 4)

@@ -3,7 +3,7 @@ package kcp_test
 import (
 	"testing"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/testing/assert"
 	. "v2ray.com/core/transport/internet/kcp"
 )
@@ -19,7 +19,7 @@ func TestBadSegment(t *testing.T) {
 func TestDataSegment(t *testing.T) {
 	assert := assert.On(t)
 
-	b := alloc.NewLocalBuffer(512)
+	b := buf.NewLocalBuffer(512)
 	b.Append([]byte{'a', 'b', 'c', 'd'})
 	seg := &DataSegment{
 		Conv:        1,

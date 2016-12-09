@@ -8,7 +8,7 @@ import (
 
 	"crypto/cipher"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
@@ -88,7 +88,7 @@ func (o *ClientConnection) ResetSecurity(header internet.PacketHeader, security 
 }
 
 func (o *ClientConnection) Run() {
-	payload := alloc.NewSmallBuffer()
+	payload := buf.NewSmallBuffer()
 	defer payload.Release()
 
 	for {

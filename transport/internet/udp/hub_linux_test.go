@@ -7,7 +7,7 @@ import (
 	"syscall"
 	"testing"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/testing/assert"
@@ -23,7 +23,7 @@ func TestHubSocksOption(t *testing.T) {
 	}
 
 	hub, err := ListenUDP(v2net.LocalHostIP, v2net.Port(0), ListenOption{
-		Callback:            func(*alloc.Buffer, *proxy.SessionInfo) {},
+		Callback:            func(*buf.Buffer, *proxy.SessionInfo) {},
 		ReceiveOriginalDest: true,
 	})
 	assert.Error(err).IsNil()

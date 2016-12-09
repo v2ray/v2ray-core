@@ -9,7 +9,7 @@ import (
 
 	"crypto/cipher"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -140,7 +140,7 @@ func NewListener(address v2net.Address, port v2net.Port, options internet.Listen
 	return l, nil
 }
 
-func (v *Listener) OnReceive(payload *alloc.Buffer, session *proxy.SessionInfo) {
+func (v *Listener) OnReceive(payload *buf.Buffer, session *proxy.SessionInfo) {
 	defer payload.Release()
 
 	src := session.Source

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -101,7 +101,7 @@ func (v *UDPNameServer) AssignUnusedID(response chan<- *ARecord) uint16 {
 }
 
 // Private: Visible for testing.
-func (v *UDPNameServer) HandleResponse(dest v2net.Destination, payload *alloc.Buffer) {
+func (v *UDPNameServer) HandleResponse(dest v2net.Destination, payload *buf.Buffer) {
 	msg := new(dns.Msg)
 	err := msg.Unpack(payload.Bytes())
 	if err != nil {
@@ -144,8 +144,8 @@ func (v *UDPNameServer) HandleResponse(dest v2net.Destination, payload *alloc.Bu
 	close(request.response)
 }
 
-func (v *UDPNameServer) BuildQueryA(domain string, id uint16) *alloc.Buffer {
-	buffer := alloc.NewBuffer()
+func (v *UDPNameServer) BuildQueryA(domain string, id uint16) *buf.Buffer {
+	buffer := buf.NewBuffer()
 	msg := new(dns.Msg)
 	msg.Id = id
 	msg.RecursionDesired = true
@@ -162,7 +162,7 @@ func (v *UDPNameServer) BuildQueryA(domain string, id uint16) *alloc.Buffer {
 	return buffer
 }
 
-func (v *UDPNameServer) DispatchQuery(payload *alloc.Buffer) {
+func (v *UDPNameServer) DispatchQuery(payload *buf.Buffer) {
 	v.udpServer.Dispatch(&proxy.SessionInfo{Source: pseudoDestination, Destination: v.address}, payload, v.HandleResponse)
 }
 

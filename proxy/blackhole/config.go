@@ -1,7 +1,7 @@
 package blackhole
 
 import (
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	v2io "v2ray.com/core/common/io"
 
 	"github.com/golang/protobuf/ptypes"
@@ -32,7 +32,7 @@ func (v *NoneResponse) AsAny() *any.Any {
 }
 
 func (v *HTTPResponse) WriteTo(writer v2io.Writer) {
-	b := alloc.NewLocalBuffer(512)
+	b := buf.NewLocalBuffer(512)
 	b.AppendFunc(serial.WriteString(http403response))
 	writer.Write(b)
 }

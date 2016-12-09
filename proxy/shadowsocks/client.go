@@ -3,7 +3,7 @@ package shadowsocks
 import (
 	"sync"
 	"v2ray.com/core/app"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -32,7 +32,7 @@ func NewClient(config *ClientConfig, space app.Space, meta *proxy.OutboundHandle
 	return client, nil
 }
 
-func (v *Client) Dispatch(destination v2net.Destination, payload *alloc.Buffer, ray ray.OutboundRay) {
+func (v *Client) Dispatch(destination v2net.Destination, payload *buf.Buffer, ray ray.OutboundRay) {
 	defer payload.Release()
 	defer ray.OutboundInput().Release()
 	defer ray.OutboundOutput().Close()

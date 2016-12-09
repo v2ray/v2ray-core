@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/transport/internet"
@@ -23,7 +23,7 @@ var (
 )
 
 type Reader interface {
-	Read(io.Reader) (*alloc.Buffer, error)
+	Read(io.Reader) (*buf.Buffer, error)
 }
 
 type Writer interface {
@@ -32,7 +32,7 @@ type Writer interface {
 
 type NoOpReader struct{}
 
-func (v *NoOpReader) Read(io.Reader) (*alloc.Buffer, error) {
+func (v *NoOpReader) Read(io.Reader) (*buf.Buffer, error) {
 	return nil, nil
 }
 
@@ -45,8 +45,8 @@ func (v *NoOpWriter) Write(io.Writer) error {
 type HeaderReader struct {
 }
 
-func (*HeaderReader) Read(reader io.Reader) (*alloc.Buffer, error) {
-	buffer := alloc.NewSmallBuffer()
+func (*HeaderReader) Read(reader io.Reader) (*buf.Buffer, error) {
+	buffer := buf.NewSmallBuffer()
 	for {
 		_, err := buffer.FillFrom(reader)
 		if err != nil {
@@ -69,10 +69,10 @@ func (*HeaderReader) Read(reader io.Reader) (*alloc.Buffer, error) {
 }
 
 type HeaderWriter struct {
-	header *alloc.Buffer
+	header *buf.Buffer
 }
 
-func NewHeaderWriter(header *alloc.Buffer) *HeaderWriter {
+func NewHeaderWriter(header *buf.Buffer) *HeaderWriter {
 	return &HeaderWriter{
 		header: header,
 	}
@@ -91,7 +91,7 @@ func (v *HeaderWriter) Write(writer io.Writer) error {
 type HttpConn struct {
 	net.Conn
 
-	readBuffer    *alloc.Buffer
+	readBuffer    *buf.Buffer
 	oneTimeReader Reader
 	oneTimeWriter Writer
 }
@@ -143,7 +143,7 @@ type HttpAuthenticator struct {
 }
 
 func (v HttpAuthenticator) GetClientWriter() *HeaderWriter {
-	header := alloc.NewSmallBuffer()
+	header := buf.NewSmallBuffer()
 	config := v.config.Request
 	header.AppendFunc(serial.WriteString(strings.Join([]string{config.Method.GetValue(), config.PickUri(), config.GetFullVersion()}, " ")))
 	header.AppendFunc(writeCRLF)
@@ -160,7 +160,7 @@ func (v HttpAuthenticator) GetClientWriter() *HeaderWriter {
 }
 
 func (v HttpAuthenticator) GetServerWriter() *HeaderWriter {
-	header := alloc.NewSmallBuffer()
+	header := buf.NewSmallBuffer()
 	config := v.config.Response
 	header.AppendFunc(serial.WriteString(strings.Join([]string{config.GetFullVersion(), config.Status.GetCode(), config.Status.GetReason()}, " ")))
 	header.AppendFunc(writeCRLF)

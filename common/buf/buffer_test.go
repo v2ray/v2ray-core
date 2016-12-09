@@ -1,9 +1,9 @@
-package alloc_test
+package buf_test
 
 import (
 	"testing"
 
-	. "v2ray.com/core/common/alloc"
+	. "v2ray.com/core/common/buf"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/testing/assert"
 )

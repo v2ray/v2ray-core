@@ -1,7 +1,7 @@
 package socks
 
 import (
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
@@ -23,7 +23,7 @@ func (v *Server) listenUDP() error {
 	return nil
 }
 
-func (v *Server) handleUDPPayload(payload *alloc.Buffer, session *proxy.SessionInfo) {
+func (v *Server) handleUDPPayload(payload *buf.Buffer, session *proxy.SessionInfo) {
 	source := session.Source
 	log.Info("Socks: Client UDP connection from ", source)
 	request, err := protocol.ReadUDPRequest(payload.Bytes())
@@ -46,7 +46,7 @@ func (v *Server) handleUDPPayload(payload *alloc.Buffer, session *proxy.SessionI
 
 	log.Info("Socks: Send packet to ", request.Destination(), " with ", request.Data.Len(), " bytes")
 	log.Access(source, request.Destination, log.AccessAccepted, "")
-	v.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: request.Destination(), Inbound: v.meta}, request.Data, func(destination v2net.Destination, payload *alloc.Buffer) {
+	v.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: request.Destination(), Inbound: v.meta}, request.Data, func(destination v2net.Destination, payload *buf.Buffer) {
 		response := &protocol.Socks5UDPRequest{
 			Fragment: 0,
 			Address:  request.Destination().Address,
@@ -55,7 +55,7 @@ func (v *Server) handleUDPPayload(payload *alloc.Buffer, session *proxy.SessionI
 		}
 		log.Info("Socks: Writing back UDP response with ", payload.Len(), " bytes to ", destination)
 
-		udpMessage := alloc.NewLocalBuffer(2048)
+		udpMessage := buf.NewLocalBuffer(2048)
 		response.Write(udpMessage)
 
 		v.udpMutex.RLock()

@@ -3,7 +3,7 @@ package encoding_test
 import (
 	"testing"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -36,7 +36,7 @@ func TestRequestSerialization(t *testing.T) {
 		Security: protocol.Security(protocol.SecurityType_AES128_GCM),
 	}
 
-	buffer := alloc.NewBuffer()
+	buffer := buf.NewBuffer()
 	client := NewClientSession(protocol.DefaultIDHash)
 	client.EncodeRequestHeader(expectedRequest, buffer)
 

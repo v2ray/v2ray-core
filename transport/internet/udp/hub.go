@@ -4,7 +4,7 @@ import (
 	"net"
 	"sync"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -14,11 +14,11 @@ import (
 )
 
 type UDPPayload struct {
-	payload *alloc.Buffer
+	payload *buf.Buffer
 	session *proxy.SessionInfo
 }
 
-type UDPPayloadHandler func(*alloc.Buffer, *proxy.SessionInfo)
+type UDPPayloadHandler func(*buf.Buffer, *proxy.SessionInfo)
 
 type UDPPayloadQueue struct {
 	queue    []chan UDPPayload
@@ -135,7 +135,7 @@ func (v *UDPHub) start() {
 
 	oobBytes := make([]byte, 256)
 	for v.Running() {
-		buffer := alloc.NewSmallBuffer()
+		buffer := buf.NewSmallBuffer()
 		var noob int
 		var addr *net.UDPAddr
 		var err error

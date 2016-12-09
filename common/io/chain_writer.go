@@ -4,7 +4,7 @@ import (
 	"io"
 	"sync"
 
-	"v2ray.com/core/common/alloc"
+	"v2ray.com/core/common/buf"
 )
 
 type ChainWriter struct {
@@ -28,7 +28,7 @@ func (v *ChainWriter) Write(payload []byte) (int, error) {
 	bytesWritten := 0
 	size := len(payload)
 	for size > 0 {
-		buffer := alloc.NewBuffer()
+		buffer := buf.NewBuffer()
 		nBytes, _ := buffer.Write(payload)
 		size -= nBytes
 		payload = payload[nBytes:]
