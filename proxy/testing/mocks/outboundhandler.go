@@ -6,7 +6,6 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/common/buf"
-	v2io "v2ray.com/core/common/io"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
@@ -33,20 +32,20 @@ func (v *OutboundConnectionHandler) Dispatch(destination v2net.Destination, payl
 	writeFinish.Lock()
 
 	go func() {
-		v2writer := v2io.NewAdaptiveWriter(v.ConnOutput)
+		v2writer := buf.NewWriter(v.ConnOutput)
 		defer v2writer.Release()
 
-		v2io.Pipe(input, v2writer)
+		buf.Pipe(input, v2writer)
 		writeFinish.Unlock()
 		input.Release()
 	}()
 
 	writeFinish.Lock()
 
-	v2reader := v2io.NewAdaptiveReader(v.ConnInput)
+	v2reader := buf.NewReader(v.ConnInput)
 	defer v2reader.Release()
 
-	v2io.Pipe(v2reader, output)
+	buf.Pipe(v2reader, output)
 	output.Close()
 }
 

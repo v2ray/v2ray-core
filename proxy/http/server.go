@@ -1,7 +1,6 @@
 package http
 
 import (
-	"bufio"
 	"io"
 	"net"
 	"net/http"
@@ -12,8 +11,9 @@ import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
-	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -98,7 +98,7 @@ func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error
 func (v *Server) handleConnection(conn internet.Connection) {
 	defer conn.Close()
 	timedReader := v2net.NewTimeOutReader(v.config.Timeout, conn)
-	reader := bufio.NewReaderSize(timedReader, 2048)
+	reader := bufio.OriginalReaderSize(timedReader, 2048)
 
 	request, err := http.ReadRequest(reader)
 	if err != nil {
@@ -158,10 +158,10 @@ func (v *Server) transport(input io.Reader, output io.Writer, ray ray.InboundRay
 	defer wg.Wait()
 
 	go func() {
-		v2reader := v2io.NewAdaptiveReader(input)
+		v2reader := buf.NewReader(input)
 		defer v2reader.Release()
 
-		if err := v2io.PipeUntilEOF(v2reader, ray.InboundInput()); err != nil {
+		if err := buf.PipeUntilEOF(v2reader, ray.InboundInput()); err != nil {
 			log.Info("HTTP: Failed to transport all TCP request: ", err)
 		}
 		ray.InboundInput().Close()
@@ -169,10 +169,10 @@ func (v *Server) transport(input io.Reader, output io.Writer, ray ray.InboundRay
 	}()
 
 	go func() {
-		v2writer := v2io.NewAdaptiveWriter(output)
+		v2writer := buf.NewWriter(output)
 		defer v2writer.Release()
 
-		if err := v2io.PipeUntilEOF(ray.InboundOutput(), v2writer); err != nil {
+		if err := buf.PipeUntilEOF(ray.InboundOutput(), v2writer); err != nil {
 			log.Info("HTTP: Failed to transport all TCP response: ", err)
 		}
 		ray.InboundOutput().Release()
@@ -221,7 +221,7 @@ func (v *Server) GenerateResponse(statusCode int, status string) *http.Response 
 	}
 }
 
-func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionInfo, reader *bufio.Reader, writer io.Writer) {
+func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionInfo, reader io.Reader, writer io.Writer) {
 	if len(request.URL.Host) <= 0 {
 		response := v.GenerateResponse(400, "Bad Request")
 		response.Write(writer)
@@ -240,7 +240,7 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 	finish.Add(1)
 	go func() {
 		defer finish.Done()
-		requestWriter := v2io.NewBufferedWriter(v2io.NewChainWriter(ray.InboundInput()))
+		requestWriter := bufio.NewWriter(buf.NewBytesWriter(ray.InboundInput()))
 		err := request.Write(requestWriter)
 		if err != nil {
 			log.Warning("HTTP: Failed to write request: ", err)
@@ -252,13 +252,13 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 	finish.Add(1)
 	go func() {
 		defer finish.Done()
-		responseReader := bufio.NewReader(v2io.NewChanReader(ray.InboundOutput()))
+		responseReader := bufio.OriginalReader(buf.NewBytesReader(ray.InboundOutput()))
 		response, err := http.ReadResponse(responseReader, request)
 		if err != nil {
 			log.Warning("HTTP: Failed to read response: ", err)
 			response = v.GenerateResponse(503, "Service Unavailable")
 		}
-		responseWriter := v2io.NewBufferedWriter(writer)
+		responseWriter := bufio.NewWriter(writer)
 		err = response.Write(responseWriter)
 		if err != nil {
 			log.Warning("HTTP: Failed to write response: ", err)

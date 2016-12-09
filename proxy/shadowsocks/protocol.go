@@ -8,7 +8,6 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/errors"
-	v2io "v2ray.com/core/common/io"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -23,7 +22,7 @@ const (
 	AddrTypeDomain = 3
 )
 
-func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHeader, v2io.Reader, error) {
+func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHeader, buf.Reader, error) {
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
 		return nil, nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to parse account.")
@@ -121,17 +120,17 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 		}
 	}
 
-	var chunkReader v2io.Reader
+	var chunkReader buf.Reader
 	if request.Option.Has(RequestOptionOneTimeAuth) {
 		chunkReader = NewChunkReader(reader, NewAuthenticator(ChunkKeyGenerator(iv)))
 	} else {
-		chunkReader = v2io.NewAdaptiveReader(reader)
+		chunkReader = buf.NewReader(reader)
 	}
 
 	return request, chunkReader, nil
 }
 
-func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (v2io.Writer, error) {
+func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (buf.Writer, error) {
 	user := request.User
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
@@ -183,17 +182,17 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (v2io.Wr
 		return nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to write header.")
 	}
 
-	var chunkWriter v2io.Writer
+	var chunkWriter buf.Writer
 	if request.Option.Has(RequestOptionOneTimeAuth) {
 		chunkWriter = NewChunkWriter(writer, NewAuthenticator(ChunkKeyGenerator(iv)))
 	} else {
-		chunkWriter = v2io.NewAdaptiveWriter(writer)
+		chunkWriter = buf.NewWriter(writer)
 	}
 
 	return chunkWriter, nil
 }
 
-func ReadTCPResponse(user *protocol.User, reader io.Reader) (v2io.Reader, error) {
+func ReadTCPResponse(user *protocol.User, reader io.Reader) (buf.Reader, error) {
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
 		return nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to parse account.")
@@ -210,10 +209,10 @@ func ReadTCPResponse(user *protocol.User, reader io.Reader) (v2io.Reader, error)
 	if err != nil {
 		return nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to initialize decoding stream.")
 	}
-	return v2io.NewAdaptiveReader(crypto.NewCryptionReader(stream, reader)), nil
+	return buf.NewReader(crypto.NewCryptionReader(stream, reader)), nil
 }
 
-func WriteTCPResponse(request *protocol.RequestHeader, writer io.Writer) (v2io.Writer, error) {
+func WriteTCPResponse(request *protocol.RequestHeader, writer io.Writer) (buf.Writer, error) {
 	user := request.User
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
@@ -233,7 +232,7 @@ func WriteTCPResponse(request *protocol.RequestHeader, writer io.Writer) (v2io.W
 		return nil, errors.Base(err).Message("Shadowsocks|TCP: Failed to create encoding stream.")
 	}
 
-	return v2io.NewAdaptiveWriter(crypto.NewCryptionWriter(stream, writer)), nil
+	return buf.NewWriter(crypto.NewCryptionWriter(stream, writer)), nil
 }
 
 func EncodeUDPPacket(request *protocol.RequestHeader, payload *buf.Buffer) (*buf.Buffer, error) {

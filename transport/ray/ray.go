@@ -1,8 +1,6 @@
 package ray
 
-import (
-	v2io "v2ray.com/core/common/io"
-)
+import "v2ray.com/core/common/buf"
 
 // OutboundRay is a transport interface for outbound connections.
 type OutboundRay interface {
@@ -36,11 +34,11 @@ type Ray interface {
 }
 
 type InputStream interface {
-	v2io.Reader
+	buf.Reader
 	Close()
 }
 
 type OutputStream interface {
-	v2io.Writer
+	buf.Writer
 	Close()
 }

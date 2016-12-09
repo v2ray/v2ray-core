@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"v2ray.com/core/common/buf"
-	v2io "v2ray.com/core/common/io"
 	. "v2ray.com/core/proxy/blackhole"
 	"v2ray.com/core/testing/assert"
 )
@@ -17,7 +16,7 @@ func TestHTTPResponse(t *testing.T) {
 	buffer := buf.New()
 
 	httpResponse := new(HTTPResponse)
-	httpResponse.WriteTo(v2io.NewAdaptiveWriter(buffer))
+	httpResponse.WriteTo(buf.NewWriter(buffer))
 
 	reader := bufio.NewReader(buffer)
 	response, err := http.ReadResponse(reader, nil)

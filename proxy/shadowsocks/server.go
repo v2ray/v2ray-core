@@ -3,12 +3,13 @@ package shadowsocks
 
 import (
 	"sync"
+
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
-	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -150,7 +151,7 @@ func (v *Server) handleConnection(conn internet.Connection) {
 	timedReader := v2net.NewTimeOutReader(16, conn)
 	defer timedReader.Release()
 
-	bufferedReader := v2io.NewBufferedReader(timedReader)
+	bufferedReader := bufio.NewReader(timedReader)
 	defer bufferedReader.Release()
 
 	request, bodyReader, err := ReadTCPSession(v.user, bufferedReader)
@@ -183,7 +184,7 @@ func (v *Server) handleConnection(conn internet.Connection) {
 	go func() {
 		defer writeFinish.Unlock()
 
-		bufferedWriter := v2io.NewBufferedWriter(conn)
+		bufferedWriter := bufio.NewWriter(conn)
 		defer bufferedWriter.Release()
 
 		responseWriter, err := WriteTCPResponse(request, bufferedWriter)
@@ -197,13 +198,13 @@ func (v *Server) handleConnection(conn internet.Connection) {
 			responseWriter.Write(payload)
 			bufferedWriter.SetCached(false)
 
-			if err := v2io.PipeUntilEOF(ray.InboundOutput(), responseWriter); err != nil {
+			if err := buf.PipeUntilEOF(ray.InboundOutput(), responseWriter); err != nil {
 				log.Info("Shadowsocks|Server: Failed to transport all TCP response: ", err)
 			}
 		}
 	}()
 
-	if err := v2io.PipeUntilEOF(bodyReader, ray.InboundInput()); err != nil {
+	if err := buf.PipeUntilEOF(bodyReader, ray.InboundInput()); err != nil {
 		log.Info("Shadowsocks|Server: Failed to transport all TCP request: ", err)
 	}
 	ray.InboundInput().Close()

@@ -7,8 +7,8 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
-	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
@@ -63,8 +63,8 @@ type ProxyConnection struct {
 	localAddr  net.Addr
 	remoteAddr net.Addr
 
-	reader *v2io.ChanReader
-	writer *v2io.ChainWriter
+	reader *buf.BufferToBytesReader
+	writer *buf.BytesToBufferWriter
 }
 
 func NewProxyConnection(src v2net.Address, dest v2net.Destination, stream ray.Ray) *ProxyConnection {
@@ -78,8 +78,8 @@ func NewProxyConnection(src v2net.Address, dest v2net.Destination, stream ray.Ra
 			IP:   []byte{0, 0, 0, 0},
 			Port: 0,
 		},
-		reader: v2io.NewChanReader(stream.InboundOutput()),
-		writer: v2io.NewChainWriter(stream.InboundInput()),
+		reader: buf.NewBytesReader(stream.InboundOutput()),
+		writer: buf.NewBytesWriter(stream.InboundInput()),
 	}
 }
 

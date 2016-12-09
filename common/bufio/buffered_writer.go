@@ -1,4 +1,4 @@
-package io
+package bufio
 
 import (
 	"io"
@@ -15,7 +15,7 @@ type BufferedWriter struct {
 	cached bool
 }
 
-func NewBufferedWriter(rawWriter io.Writer) *BufferedWriter {
+func NewWriter(rawWriter io.Writer) *BufferedWriter {
 	return &BufferedWriter{
 		writer: rawWriter,
 		buffer: buf.NewSmall(),

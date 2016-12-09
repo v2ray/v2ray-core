@@ -11,9 +11,9 @@ import (
 
 	"golang.org/x/crypto/chacha20poly1305"
 
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/dice"
-	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -109,7 +109,7 @@ func (v *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 	return
 }
 
-func (v *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, writer io.Writer) v2io.Writer {
+func (v *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, writer io.Writer) buf.Writer {
 	var authWriter io.Writer
 	if request.Security.Is(protocol.SecurityType_NONE) {
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
@@ -162,7 +162,7 @@ func (v *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 		authWriter = crypto.NewAuthenticationWriter(auth, writer)
 	}
 
-	return v2io.NewAdaptiveWriter(authWriter)
+	return buf.NewWriter(authWriter)
 
 }
 
@@ -204,7 +204,7 @@ func (v *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 	return header, nil
 }
 
-func (v *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, reader io.Reader) v2io.Reader {
+func (v *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, reader io.Reader) buf.Reader {
 	aggressive := (request.Command == protocol.RequestCommandTCP)
 	var authReader io.Reader
 	if request.Security.Is(protocol.SecurityType_NONE) {
@@ -256,7 +256,7 @@ func (v *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 		authReader = crypto.NewAuthenticationReader(auth, reader, aggressive)
 	}
 
-	return v2io.NewAdaptiveReader(authReader)
+	return buf.NewReader(authReader)
 }
 
 type ChunkNonceGenerator struct {

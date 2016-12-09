@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"v2ray.com/core/app/dispatcher"
-	v2io "v2ray.com/core/common/io"
+	"v2ray.com/core/common/buf"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 )
@@ -49,19 +49,19 @@ func (v *InboundConnectionHandler) Communicate(destination v2net.Destination) er
 	writeFinish.Lock()
 
 	go func() {
-		v2reader := v2io.NewAdaptiveReader(v.ConnInput)
+		v2reader := buf.NewReader(v.ConnInput)
 		defer v2reader.Release()
 
-		v2io.Pipe(v2reader, input)
+		buf.Pipe(v2reader, input)
 		input.Close()
 		readFinish.Unlock()
 	}()
 
 	go func() {
-		v2writer := v2io.NewAdaptiveWriter(v.ConnOutput)
+		v2writer := buf.NewWriter(v.ConnOutput)
 		defer v2writer.Release()
 
-		v2io.Pipe(output, v2writer)
+		buf.Pipe(output, v2writer)
 		output.Release()
 		writeFinish.Unlock()
 	}()

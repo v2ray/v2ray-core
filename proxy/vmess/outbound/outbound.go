@@ -5,7 +5,7 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/common/buf"
-	v2io "v2ray.com/core/common/io"
+	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -92,10 +92,10 @@ func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *buf.B
 	return
 }
 
-func (v *VMessOutboundHandler) handleRequest(session *encoding.ClientSession, conn internet.Connection, request *protocol.RequestHeader, payload *buf.Buffer, input v2io.Reader, finish *sync.Mutex) {
+func (v *VMessOutboundHandler) handleRequest(session *encoding.ClientSession, conn internet.Connection, request *protocol.RequestHeader, payload *buf.Buffer, input buf.Reader, finish *sync.Mutex) {
 	defer finish.Unlock()
 
-	writer := v2io.NewBufferedWriter(conn)
+	writer := bufio.NewWriter(conn)
 	defer writer.Release()
 	session.EncodeRequestHeader(request, writer)
 
@@ -111,7 +111,7 @@ func (v *VMessOutboundHandler) handleRequest(session *encoding.ClientSession, co
 	}
 	writer.SetCached(false)
 
-	if err := v2io.PipeUntilEOF(input, bodyWriter); err != nil {
+	if err := buf.PipeUntilEOF(input, bodyWriter); err != nil {
 		conn.SetReusable(false)
 	}
 
@@ -124,10 +124,10 @@ func (v *VMessOutboundHandler) handleRequest(session *encoding.ClientSession, co
 	return
 }
 
-func (v *VMessOutboundHandler) handleResponse(session *encoding.ClientSession, conn internet.Connection, request *protocol.RequestHeader, dest v2net.Destination, output v2io.Writer, finish *sync.Mutex) {
+func (v *VMessOutboundHandler) handleResponse(session *encoding.ClientSession, conn internet.Connection, request *protocol.RequestHeader, dest v2net.Destination, output buf.Writer, finish *sync.Mutex) {
 	defer finish.Unlock()
 
-	reader := v2io.NewBufferedReader(conn)
+	reader := bufio.NewReader(conn)
 	defer reader.Release()
 
 	header, err := session.DecodeResponseHeader(reader)
@@ -146,7 +146,7 @@ func (v *VMessOutboundHandler) handleResponse(session *encoding.ClientSession, c
 	bodyReader := session.DecodeResponseBody(request, reader)
 	defer bodyReader.Release()
 
-	if err := v2io.PipeUntilEOF(bodyReader, output); err != nil {
+	if err := buf.PipeUntilEOF(bodyReader, output); err != nil {
 		conn.SetReusable(false)
 	}
 

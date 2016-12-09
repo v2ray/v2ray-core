@@ -2,12 +2,12 @@ package freedom
 
 import (
 	"io"
+
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dns"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/errors"
-	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -100,10 +100,10 @@ func (v *FreedomConnection) Dispatch(destination v2net.Destination, payload *buf
 	}
 
 	go func() {
-		v2writer := v2io.NewAdaptiveWriter(conn)
+		v2writer := buf.NewWriter(conn)
 		defer v2writer.Release()
 
-		if err := v2io.PipeUntilEOF(input, v2writer); err != nil {
+		if err := buf.PipeUntilEOF(input, v2writer); err != nil {
 			log.Info("Freedom: Failed to transport all TCP request: ", err)
 		}
 		if tcpConn, ok := conn.(*tcp.RawConnection); ok {
@@ -121,8 +121,8 @@ func (v *FreedomConnection) Dispatch(destination v2net.Destination, payload *buf
 		reader = v2net.NewTimeOutReader(timeout /* seconds */, conn)
 	}
 
-	v2reader := v2io.NewAdaptiveReader(reader)
-	if err := v2io.PipeUntilEOF(v2reader, output); err != nil {
+	v2reader := buf.NewReader(reader)
+	if err := buf.PipeUntilEOF(v2reader, output); err != nil {
 		log.Info("Freedom: Failed to transport all TCP response: ", err)
 	}
 	v2reader.Release()

@@ -1,4 +1,4 @@
-package io
+package bufio
 
 import (
 	"io"
@@ -14,7 +14,7 @@ type BufferedReader struct {
 	cached bool
 }
 
-func NewBufferedReader(rawReader io.Reader) *BufferedReader {
+func NewReader(rawReader io.Reader) *BufferedReader {
 	return &BufferedReader{
 		reader: rawReader,
 		buffer: buf.New(),

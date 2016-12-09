@@ -7,9 +7,10 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/errors"
-	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -106,10 +107,10 @@ func (v *Server) handleConnection(connection internet.Connection) {
 	defer connection.Close()
 
 	timedReader := v2net.NewTimeOutReader(v.config.Timeout, connection)
-	reader := v2io.NewBufferedReader(timedReader)
+	reader := bufio.NewReader(timedReader)
 	defer reader.Release()
 
-	writer := v2io.NewBufferedWriter(connection)
+	writer := bufio.NewWriter(connection)
 	defer writer.Release()
 
 	auth, auth4, err := protocol.ReadAuthentication(reader)
@@ -128,7 +129,7 @@ func (v *Server) handleConnection(connection internet.Connection) {
 	}
 }
 
-func (v *Server) handleSocks5(clientAddr v2net.Destination, reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks5AuthenticationRequest) error {
+func (v *Server) handleSocks5(clientAddr v2net.Destination, reader *bufio.BufferedReader, writer *bufio.BufferedWriter, auth protocol.Socks5AuthenticationRequest) error {
 	expectedAuthMethod := protocol.AuthNotRequired
 	if v.config.AuthType == AuthType_PASSWORD {
 		expectedAuthMethod = protocol.AuthUserPass
@@ -232,7 +233,7 @@ func (v *Server) handleSocks5(clientAddr v2net.Destination, reader *v2io.Buffere
 	return nil
 }
 
-func (v *Server) handleUDP(reader io.Reader, writer *v2io.BufferedWriter) error {
+func (v *Server) handleUDP(reader io.Reader, writer *bufio.BufferedWriter) error {
 	response := protocol.NewSocks5Response()
 	response.Error = protocol.ErrorSuccess
 
@@ -264,7 +265,7 @@ func (v *Server) handleUDP(reader io.Reader, writer *v2io.BufferedWriter) error 
 	return nil
 }
 
-func (v *Server) handleSocks4(clientAddr v2net.Destination, reader *v2io.BufferedReader, writer *v2io.BufferedWriter, auth protocol.Socks4AuthenticationRequest) error {
+func (v *Server) handleSocks4(clientAddr v2net.Destination, reader *bufio.BufferedReader, writer *bufio.BufferedWriter, auth protocol.Socks4AuthenticationRequest) error {
 	result := protocol.Socks4RequestGranted
 	if auth.Command == protocol.CmdBind {
 		result = protocol.Socks4RequestRejected
@@ -302,19 +303,19 @@ func (v *Server) transport(reader io.Reader, writer io.Writer, session *proxy.Se
 	defer output.Release()
 
 	go func() {
-		v2reader := v2io.NewAdaptiveReader(reader)
+		v2reader := buf.NewReader(reader)
 		defer v2reader.Release()
 
-		if err := v2io.PipeUntilEOF(v2reader, input); err != nil {
+		if err := buf.PipeUntilEOF(v2reader, input); err != nil {
 			log.Info("Socks|Server: Failed to transport all TCP request: ", err)
 		}
 		input.Close()
 	}()
 
-	v2writer := v2io.NewAdaptiveWriter(writer)
+	v2writer := buf.NewWriter(writer)
 	defer v2writer.Release()
 
-	if err := v2io.PipeUntilEOF(output, v2writer); err != nil {
+	if err := buf.PipeUntilEOF(output, v2writer); err != nil {
 		log.Info("Socks|Server: Failed to transport all TCP response: ", err)
 	}
 	output.Release()

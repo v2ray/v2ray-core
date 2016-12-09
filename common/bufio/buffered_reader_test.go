@@ -1,11 +1,11 @@
-package io_test
+package bufio_test
 
 import (
 	"crypto/rand"
 	"testing"
 
 	"v2ray.com/core/common/buf"
-	. "v2ray.com/core/common/io"
+	. "v2ray.com/core/common/bufio"
 	"v2ray.com/core/testing/assert"
 )
 
@@ -17,7 +17,7 @@ func TestBufferedReader(t *testing.T) {
 
 	len := content.Len()
 
-	reader := NewBufferedReader(content)
+	reader := NewReader(content)
 	assert.Bool(reader.Cached()).IsTrue()
 
 	payload := make([]byte, 16)

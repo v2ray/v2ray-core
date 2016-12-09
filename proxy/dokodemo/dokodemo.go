@@ -7,7 +7,6 @@ import (
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
-	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -176,10 +175,10 @@ func (v *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 
 	wg.Add(1)
 	go func() {
-		v2reader := v2io.NewAdaptiveReader(reader)
+		v2reader := buf.NewReader(reader)
 		defer v2reader.Release()
 
-		if err := v2io.PipeUntilEOF(v2reader, ray.InboundInput()); err != nil {
+		if err := buf.PipeUntilEOF(v2reader, ray.InboundInput()); err != nil {
 			log.Info("Dokodemo: Failed to transport all TCP request: ", err)
 		}
 		wg.Done()
@@ -188,10 +187,10 @@ func (v *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 
 	wg.Add(1)
 	go func() {
-		v2writer := v2io.NewAdaptiveWriter(conn)
+		v2writer := buf.NewWriter(conn)
 		defer v2writer.Release()
 
-		if err := v2io.PipeUntilEOF(ray.InboundOutput(), v2writer); err != nil {
+		if err := buf.PipeUntilEOF(ray.InboundOutput(), v2writer); err != nil {
 			log.Info("Dokodemo: Failed to transport all TCP response: ", err)
 		}
 		wg.Done()

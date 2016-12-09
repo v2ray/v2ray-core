@@ -1,12 +1,8 @@
 package serial
 
-import (
-	"hash"
+import "hash"
 
-	"v2ray.com/core/common/buf"
-)
-
-func WriteHash(h hash.Hash) buf.Supplier {
+func WriteHash(h hash.Hash) func([]byte) (int, error) {
 	return func(b []byte) (int, error) {
 		h.Sum(b[:0])
 		return h.Size(), nil

@@ -9,8 +9,8 @@ import (
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
-	v2io "v2ray.com/core/common/io"
 	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -139,7 +139,7 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	connReader := v2net.NewTimeOutReader(8, connection)
 	defer connReader.Release()
 
-	reader := v2io.NewBufferedReader(connReader)
+	reader := bufio.NewReader(connReader)
 	defer reader.Release()
 
 	v.RLock()
@@ -186,7 +186,7 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 
 	go func() {
 		bodyReader := session.DecodeRequestBody(request, reader)
-		if err := v2io.PipeUntilEOF(bodyReader, input); err != nil {
+		if err := buf.PipeUntilEOF(bodyReader, input); err != nil {
 			connection.SetReusable(false)
 		}
 		bodyReader.Release()
@@ -195,7 +195,7 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 		readFinish.Unlock()
 	}()
 
-	writer := v2io.NewBufferedWriter(connection)
+	writer := bufio.NewWriter(connection)
 	defer writer.Release()
 
 	response := &protocol.ResponseHeader{
@@ -218,7 +218,7 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 
 		writer.SetCached(false)
 
-		if err := v2io.PipeUntilEOF(output, bodyWriter); err != nil {
+		if err := buf.PipeUntilEOF(output, bodyWriter); err != nil {
 			connection.SetReusable(false)
 		}
 

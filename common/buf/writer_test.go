@@ -1,26 +1,26 @@
-package io_test
+package buf_test
 
 import (
 	"bytes"
 	"crypto/rand"
 	"testing"
 
-	"v2ray.com/core/common/buf"
-	. "v2ray.com/core/common/io"
+	. "v2ray.com/core/common/buf"
+	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/testing/assert"
 )
 
-func TestAdaptiveWriter(t *testing.T) {
+func TestWriter(t *testing.T) {
 	assert := assert.On(t)
 
-	lb := buf.New()
-	lb.AppendSupplier(buf.ReadFrom(rand.Reader))
+	lb := New()
+	lb.AppendSupplier(ReadFrom(rand.Reader))
 
 	expectedBytes := append([]byte(nil), lb.Bytes()...)
 
 	writeBuffer := bytes.NewBuffer(make([]byte, 0, 1024*1024))
 
-	writer := NewAdaptiveWriter(NewBufferedWriter(writeBuffer))
+	writer := NewWriter(bufio.NewWriter(writeBuffer))
 	err := writer.Write(lb)
 	assert.Error(err).IsNil()
 	assert.Bytes(expectedBytes).Equals(writeBuffer.Bytes())

@@ -1,11 +1,10 @@
 package blackhole
 
 import (
-	"v2ray.com/core/common/buf"
-	v2io "v2ray.com/core/common/io"
-
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
+
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/serial"
 )
 
@@ -21,17 +20,17 @@ Content-Length: 0
 
 type ResponseConfig interface {
 	AsAny() *any.Any
-	WriteTo(v2io.Writer)
+	WriteTo(buf.Writer)
 }
 
-func (v *NoneResponse) WriteTo(v2io.Writer) {}
+func (v *NoneResponse) WriteTo(buf.Writer) {}
 
 func (v *NoneResponse) AsAny() *any.Any {
 	r, _ := ptypes.MarshalAny(v)
 	return r
 }
 
-func (v *HTTPResponse) WriteTo(writer v2io.Writer) {
+func (v *HTTPResponse) WriteTo(writer buf.Writer) {
 	b := buf.NewLocal(512)
 	b.AppendSupplier(serial.WriteString(http403response))
 	writer.Write(b)
