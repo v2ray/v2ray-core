@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strings"
+
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
@@ -196,6 +197,7 @@ func (v *StreamConfig) Build() (*internet.StreamConfig, error) {
 			return nil, errors.Base(err).Message("Failed to build TLS config.")
 		}
 		config.SecuritySettings = append(config.SecuritySettings, ts)
+		config.SecurityType = ts.Type
 	}
 	if v.TCPSettings != nil {
 		ts, err := v.TCPSettings.Build()
