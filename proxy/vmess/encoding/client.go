@@ -74,6 +74,10 @@ func (v *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 	buffer = append(buffer, v.requestBodyKey...)
 	buffer = append(buffer, v.responseHeader, byte(header.Option))
 	padingLen := dice.Roll(16)
+	if header.Security.Is(protocol.SecurityType_LEGACY) {
+		// Disable padding in legacy mode for a smooth transition.
+		padingLen = 0
+	}
 	security := byte(padingLen<<4) | byte(header.Security)
 	buffer = append(buffer, security, byte(0), byte(header.Command))
 	buffer = header.Port.Bytes(buffer)
@@ -90,9 +94,11 @@ func (v *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 		buffer = append(buffer, header.Address.Domain()...)
 	}
 
-	pading := make([]byte, padingLen)
-	rand.Read(pading)
-	buffer = append(buffer, pading...)
+	if padingLen > 0 {
+		pading := make([]byte, padingLen)
+		rand.Read(pading)
+		buffer = append(buffer, pading...)
+	}
 
 	fnv1a := fnv.New32a()
 	fnv1a.Write(buffer)
