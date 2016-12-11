@@ -19,16 +19,6 @@ type Buffer struct {
 	end   int
 }
 
-// CreateBuffer creates a new Buffer object based on given container and parent pool.
-func CreateBuffer(container []byte, parent Pool) *Buffer {
-	b := new(Buffer)
-	b.v = container
-	b.pool = parent
-	b.start = 0
-	b.end = 0
-	return b
-}
-
 // Release recycles the buffer into an internal buffer pool.
 func (b *Buffer) Release() {
 	if b == nil || b.v == nil {
@@ -81,6 +71,7 @@ func (b *Buffer) Bytes() []byte {
 	return b.v[b.start:b.end]
 }
 
+// Reset resets the content of the Buffer with a supplier.
 func (b *Buffer) Reset(writer Supplier) error {
 	b.start = 0
 	nBytes, err := writer(b.v[b.start:])
@@ -99,6 +90,7 @@ func (b *Buffer) BytesRange(from, to int) []byte {
 	return b.v[b.start+from : b.start+to]
 }
 
+// BytesFrom returns a slice of this Buffer starting from the given position.
 func (b *Buffer) BytesFrom(from int) []byte {
 	if from < 0 {
 		from += b.Len()
@@ -106,6 +98,7 @@ func (b *Buffer) BytesFrom(from int) []byte {
 	return b.v[b.start+from : b.end]
 }
 
+// BytesFrom returns a slice of this Buffer from start to the given position.
 func (b *Buffer) BytesTo(to int) []byte {
 	if to < 0 {
 		to += b.Len()
@@ -175,6 +168,7 @@ func (b *Buffer) Read(data []byte) (int, error) {
 	return nBytes, nil
 }
 
+// String returns the string form of this Buffer.
 func (b *Buffer) String() string {
 	return string(b.Bytes())
 }
@@ -191,5 +185,8 @@ func NewSmall() *Buffer {
 
 // NewLocal creates and returns a buffer on current thread.
 func NewLocal(size int) *Buffer {
-	return CreateBuffer(make([]byte, size), nil)
+	return &Buffer{
+		v:    make([]byte, size),
+		pool: nil,
+	}
 }

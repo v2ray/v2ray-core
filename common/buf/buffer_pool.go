@@ -31,7 +31,10 @@ func NewSyncPool(bufferSize uint32) *SyncPool {
 
 // Allocate implements Pool.Allocate().
 func (p *SyncPool) Allocate() *Buffer {
-	return CreateBuffer(p.allocator.Get().([]byte), p)
+	return &Buffer{
+		v:    p.allocator.Get().([]byte),
+		pool: p,
+	}
 }
 
 // Free implements Pool.Free().
@@ -43,11 +46,13 @@ func (p *SyncPool) Free(buffer *Buffer) {
 	p.allocator.Put(rawBuffer)
 }
 
+// BufferPool is a Pool that utilizes an internal cache.
 type BufferPool struct {
 	chain     chan []byte
 	allocator *sync.Pool
 }
 
+// NewBufferPool creates a new BufferPool with given buffer size, and internal cache size.
 func NewBufferPool(bufferSize, poolSize uint32) *BufferPool {
 	pool := &BufferPool{
 		chain: make(chan []byte, poolSize),
@@ -61,6 +66,7 @@ func NewBufferPool(bufferSize, poolSize uint32) *BufferPool {
 	return pool
 }
 
+// Allocate implements Pool.Allocate().
 func (p *BufferPool) Allocate() *Buffer {
 	var b []byte
 	select {
@@ -68,9 +74,13 @@ func (p *BufferPool) Allocate() *Buffer {
 	default:
 		b = p.allocator.Get().([]byte)
 	}
-	return CreateBuffer(b, p)
+	return &Buffer{
+		v:    b,
+		pool: p,
+	}
 }
 
+// Free implements Pool.Free().
 func (p *BufferPool) Free(buffer *Buffer) {
 	rawBuffer := buffer.v
 	if rawBuffer == nil {
@@ -84,7 +94,9 @@ func (p *BufferPool) Free(buffer *Buffer) {
 }
 
 const (
-	Size      = 8 * 1024
+	// Size of a regular buffer.
+	Size = 8 * 1024
+	// Size of a small buffer.
 	SizeSmall = 2 * 1024
 
 	PoolSizeEnvKey = "v2ray.buffer.size"
