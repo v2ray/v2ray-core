@@ -20,12 +20,14 @@ type Writer interface {
 	Write(*Buffer) error
 }
 
+// ReadFrom creates a Supplier to read from a given io.Reader.
 func ReadFrom(reader io.Reader) Supplier {
 	return func(b []byte) (int, error) {
 		return reader.Read(b)
 	}
 }
 
+// ReadFullFrom creates a Supplier to read full buffer from a given io.Reader.
 func ReadFullFrom(reader io.Reader, size int) Supplier {
 	return func(b []byte) (int, error) {
 		return io.ReadFull(reader, b[:size])
