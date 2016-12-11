@@ -157,7 +157,7 @@ func (v *UDPNameServer) BuildQueryA(domain string, id uint16) *buf.Buffer {
 		}}
 
 	writtenBuffer, _ := msg.PackBuffer(buffer.Bytes())
-	buffer.Slice(0, len(writtenBuffer))
+	buffer.Append(writtenBuffer)
 
 	return buffer
 }
