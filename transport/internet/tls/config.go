@@ -34,6 +34,9 @@ func (v *Config) GetTLSConfig() *tls.Config {
 	config.InsecureSkipVerify = v.AllowInsecure
 	config.Certificates = v.BuildCertificates()
 	config.BuildNameToCertificate()
+	if len(v.ServerName) > 0 {
+		config.ServerName = v.ServerName
+	}
 
 	return config
 }

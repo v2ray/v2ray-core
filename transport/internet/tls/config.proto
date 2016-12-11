@@ -19,4 +19,7 @@ message Config {
 
   // List of certificates to be served on server.
   repeated Certificate certificate = 2;
+
+  // Override server name.
+  string server_name = 3;
 }

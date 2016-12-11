@@ -146,8 +146,9 @@ type TLSCertConfig struct {
 	KeyFile  string `json:"keyFile"`
 }
 type TLSConfig struct {
-	Insecure bool             `json:"allowInsecure"`
-	Certs    []*TLSCertConfig `json:"certificates"`
+	Insecure   bool             `json:"allowInsecure"`
+	Certs      []*TLSCertConfig `json:"certificates"`
+	ServerName string           `json:"serverName"`
 }
 
 func (v *TLSConfig) Build() (*loader.TypedSettings, error) {
@@ -168,6 +169,9 @@ func (v *TLSConfig) Build() (*loader.TypedSettings, error) {
 		}
 	}
 	config.AllowInsecure = v.Insecure
+	if len(v.ServerName) > 0 {
+		config.ServerName = v.ServerName
+	}
 	return loader.NewTypedSettings(config), nil
 }
 
