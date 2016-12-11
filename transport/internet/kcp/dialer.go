@@ -92,8 +92,7 @@ func (o *ClientConnection) Run() {
 	defer payload.Release()
 
 	for {
-		payload.Clear()
-		err := payload.AppendSupplier(buf.ReadFrom(o.Conn))
+		err := payload.Reset(buf.ReadFrom(o.Conn))
 		if err != nil {
 			payload.Release()
 			return

@@ -145,7 +145,7 @@ func (v *UDPNameServer) HandleResponse(dest v2net.Destination, payload *buf.Buff
 }
 
 func (v *UDPNameServer) BuildQueryA(domain string, id uint16) *buf.Buffer {
-	buffer := buf.New()
+
 	msg := new(dns.Msg)
 	msg.Id = id
 	msg.RecursionDesired = true
@@ -156,8 +156,11 @@ func (v *UDPNameServer) BuildQueryA(domain string, id uint16) *buf.Buffer {
 			Qclass: dns.ClassINET,
 		}}
 
-	writtenBuffer, _ := msg.PackBuffer(buffer.Bytes())
-	buffer.Append(writtenBuffer)
+	buffer := buf.New()
+	buffer.AppendSupplier(func(b []byte) (int, error) {
+		writtenBuffer, err := msg.PackBuffer(b)
+		return len(writtenBuffer), err
+	})
 
 	return buffer
 }

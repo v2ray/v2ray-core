@@ -136,7 +136,7 @@ func ReadUserPassRequest(reader io.Reader) (request Socks5UserPassRequest, err e
 	if err != nil {
 		return
 	}
-	request.username = string(buffer.Bytes())
+	request.username = buffer.String()
 
 	err = buffer.AppendSupplier(buf.ReadFullFrom(reader, 1))
 	if err != nil {
@@ -147,7 +147,7 @@ func ReadUserPassRequest(reader io.Reader) (request Socks5UserPassRequest, err e
 	if err != nil {
 		return
 	}
-	request.password = string(buffer.Bytes())
+	request.password = buffer.String()
 	return
 }
 

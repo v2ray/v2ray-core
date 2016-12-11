@@ -58,8 +58,10 @@ func (*HeaderReader) Read(reader io.Reader) (*buf.Buffer, error) {
 			break
 		}
 		if buffer.Len() >= len(ENDING) {
-			copy(buffer.Bytes(), buffer.BytesFrom(buffer.Len()-len(ENDING)))
-			buffer.Slice(0, len(ENDING))
+			leftover := buffer.BytesFrom(buffer.Len() - len(ENDING))
+			buffer.Reset(func(b []byte) (int, error) {
+				return copy(b, leftover), nil
+			})
 		}
 	}
 	if buffer.IsEmpty() {
