@@ -39,6 +39,6 @@ func (v *Account) AsAccount() (protocol.Account, error) {
 	return &InternalAccount{
 		ID:       protoId,
 		AlterIDs: protocol.NewAlterIDs(protoId, uint16(v.AlterId)),
-		Security: protocol.Security(v.Security),
+		Security: v.SecuritySettings.AsSecurity(),
 	}, nil
 }

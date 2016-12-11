@@ -11,5 +11,5 @@ import "v2ray.com/core/common/protocol/headers.proto";
 message Account {
   string id = 1;
   uint32 alter_id = 2;
-  v2ray.core.common.protocol.SecurityType security = 3;
+  v2ray.core.common.protocol.SecurityConfig security_settings = 3;
 }

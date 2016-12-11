@@ -6,8 +6,13 @@ option java_package = "com.v2ray.core.common.protocol";
 option java_outer_classname = "HeadersProto";
 
 enum SecurityType {
-  LEGACY = 0;
-  NONE = 1;
-  AES128_GCM = 2;
-  CHACHA20_POLY1305 = 3;
+  NONE = 0;
+  LEGACY = 1;
+  AUTO = 2;
+  AES128_GCM = 3;
+  CHACHA20_POLY1305 = 4;
+}
+
+message SecurityConfig {
+  SecurityType type = 1;
 }

@@ -27,15 +27,19 @@ func (v *VMessAccount) Build() *vmess.Account {
 		st = protocol.SecurityType_AES128_GCM
 	case "chacha20-poly1305":
 		st = protocol.SecurityType_CHACHA20_POLY1305
+	case "auto":
+		st = protocol.SecurityType_AUTO
 	case "none":
 		st = protocol.SecurityType_NONE
 	default:
 		st = protocol.SecurityType_LEGACY
 	}
 	return &vmess.Account{
-		Id:       v.ID,
-		AlterId:  uint32(v.AlterIds),
-		Security: st,
+		Id:      v.ID,
+		AlterId: uint32(v.AlterIds),
+		SecuritySettings: &protocol.SecurityConfig{
+			Type: st,
+		},
 	}
 }
 

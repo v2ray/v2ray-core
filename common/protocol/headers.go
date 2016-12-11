@@ -1,6 +1,8 @@
 package protocol
 
 import (
+	"runtime"
+
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/uuid"
 )
@@ -86,4 +88,17 @@ type CommandSwitchAccount struct {
 	AlterIds uint16
 	Level    uint32
 	ValidMin byte
+}
+
+func (v *SecurityConfig) AsSecurity() Security {
+	if v == nil {
+		return Security(SecurityType_LEGACY)
+	}
+	if v.Type == SecurityType_AUTO {
+		if runtime.GOARCH == "amd64" || runtime.GOARCH == "s390x" {
+			return Security(SecurityType_AES128_GCM)
+		}
+		return Security(SecurityType_CHACHA20_POLY1305)
+	}
+	return Security(v.Type)
 }
