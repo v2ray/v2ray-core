@@ -138,9 +138,7 @@ func (v *VMessOutboundHandler) handleResponse(session *encoding.ClientSession, c
 	}
 	go v.handleCommand(dest, header.Command)
 
-	if !header.Option.Has(protocol.ResponseOptionConnectionReuse) {
-		conn.SetReusable(false)
-	}
+	conn.SetReusable(header.Option.Has(protocol.ResponseOptionConnectionReuse))
 
 	reader.SetCached(false)
 	bodyReader := session.DecodeResponseBody(request, reader)

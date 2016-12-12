@@ -93,14 +93,11 @@ func (v *Connection) SetWriteDeadline(t time.Time) error {
 }
 
 func (v *Connection) SetReusable(reusable bool) {
-	if !v.config.ConnectionReuse.IsEnabled() {
-		return
-	}
 	v.reusable = reusable
 }
 
 func (v *Connection) Reusable() bool {
-	return v.reusable
+	return v.config.ConnectionReuse.IsEnabled() && v.reusable
 }
 
 func (v *Connection) SysFd() (int, error) {
