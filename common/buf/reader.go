@@ -58,8 +58,6 @@ type BufferToBytesReader struct {
 	eof     bool
 }
 
-
-
 // Private: Visible for testing.
 func (v *BufferToBytesReader) Fill() {
 	b, err := v.stream.Read()
