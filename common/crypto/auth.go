@@ -139,7 +139,9 @@ func (v *AuthenticationReader) EnsureChunk() error {
 					return copy(b, leftover), nil
 				})
 			}
-			err = v.buffer.AppendSupplier(buf.ReadFrom(v.reader))
+			if err := v.buffer.AppendSupplier(buf.ReadFrom(v.reader)); err == nil {
+				continue
+			}
 		}
 		return err
 	}
