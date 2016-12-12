@@ -67,7 +67,7 @@ func (v *ResponseOption) Set(option ResponseOption) {
 }
 
 func (v ResponseOption) Has(option ResponseOption) bool {
-	return (v | option) == option
+	return (v & option) == option
 }
 
 func (v *ResponseOption) Clear(option ResponseOption) {
