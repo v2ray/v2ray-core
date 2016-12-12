@@ -19,8 +19,9 @@ func (v *UTP) Size() int {
 }
 
 func (v *UTP) Write(b []byte) (int, error) {
-	b = serial.Uint16ToBytes(v.connectionId, b[:0])
-	b = append(b, v.header, v.extension)
+	serial.Uint16ToBytes(v.connectionId, b[:0])
+	b[2] = v.header
+	b[3] = v.extension
 	return 4, nil
 }
 

@@ -19,8 +19,8 @@ func (v *SRTP) Size() int {
 
 func (v *SRTP) Write(b []byte) (int, error) {
 	v.number++
-	b = serial.Uint16ToBytes(v.number, b[:0])
-	b = serial.Uint16ToBytes(v.number, b)
+	serial.Uint16ToBytes(v.number, b[:0])
+	serial.Uint16ToBytes(v.number, b[:2])
 	return 4, nil
 }
 
