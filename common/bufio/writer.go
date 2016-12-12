@@ -4,6 +4,7 @@ import (
 	"io"
 	"sync"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 )
@@ -117,5 +118,9 @@ func (v *BufferedWriter) Release() {
 
 	v.buffer.Release()
 	v.buffer = nil
+
+	if releasable, ok := v.writer.(common.Releasable); ok {
+		releasable.Release()
+	}
 	v.writer = nil
 }
