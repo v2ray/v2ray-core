@@ -158,8 +158,14 @@ func (v *AuthenticationReader) Read(b []byte) (int, error) {
 		return 0, err
 	}
 
-	nBytes := v.CopyChunk(b)
-	return nBytes, nil
+	totalBytes := v.CopyChunk(b)
+	for v.aggressive {
+		if err := v.NextChunk(); err != nil {
+			break
+		}
+		totalBytes += v.CopyChunk(b[totalBytes:])
+	}
+	return totalBytes, nil
 }
 
 type AuthenticationWriter struct {
