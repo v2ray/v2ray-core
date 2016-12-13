@@ -152,6 +152,10 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		return nil, errors.New("VMess|Server: Invalid auth.")
 	}
 
+	if request.Address == nil {
+		return nil, errors.New("VMess|Server: Invalid remote address.")
+	}
+
 	return request, nil
 }
 

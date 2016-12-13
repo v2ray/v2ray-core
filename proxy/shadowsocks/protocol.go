@@ -97,7 +97,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 		}
 		request.Address = v2net.DomainAddress(string(buffer.BytesFrom(-domainLength)))
 	default:
-		return nil, nil, errors.New("Shadowsocks|TCP: Unknown address type: ", addrType)
+		// Check address validity after OTA verification.
 	}
 
 	err = buffer.AppendSupplier(buf.ReadFullFrom(reader, 2))
@@ -118,6 +118,10 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 		if !bytes.Equal(actualAuth, buffer.BytesFrom(-AuthSize)) {
 			return nil, nil, errors.New("Shadowsocks|TCP: Invalid OTA")
 		}
+	}
+
+	if request.Address == nil {
+		return nil, nil, errors.New("Shadowsocks|TCP: Invalid remote address.")
 	}
 
 	var chunkReader buf.Reader
