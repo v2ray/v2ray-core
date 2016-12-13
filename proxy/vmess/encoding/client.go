@@ -30,6 +30,7 @@ func hashTimestamp(t protocol.Timestamp) []byte {
 	return bytes
 }
 
+// ClientSession stores connection session info for VMess client.
 type ClientSession struct {
 	requestBodyKey  []byte
 	requestBodyIV   []byte
@@ -40,6 +41,7 @@ type ClientSession struct {
 	idHash          protocol.IDHash
 }
 
+// NewClientSession creates a new ClientSession.
 func NewClientSession(idHash protocol.IDHash) *ClientSession {
 	randomBytes := make([]byte, 33) // 16 + 16 + 1
 	rand.Read(randomBytes)
