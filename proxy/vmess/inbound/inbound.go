@@ -153,8 +153,6 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	request, err := session.DecodeRequestHeader(reader)
 	v.RUnlock()
 
-	connection.SetReusable(request.Option.Has(protocol.RequestOptionConnectionReuse))
-
 	if err != nil {
 		if errors.Cause(err) != io.EOF {
 			log.Access(connection.RemoteAddr(), "", log.AccessRejected, err)
