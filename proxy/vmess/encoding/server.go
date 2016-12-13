@@ -92,7 +92,7 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	v.responseHeader = buffer[33]                            // 1 byte
 	request.Option = protocol.RequestOption(buffer[34])      // 1 byte
 	padingLen := int(buffer[35] >> 4)
-	request.Security = protocol.Security(buffer[35] & 0x0F)
+	request.Security = protocol.NormSecurity(protocol.Security(buffer[35] & 0x0F))
 	// 1 bytes reserved
 	request.Command = protocol.RequestCommand(buffer[37])
 

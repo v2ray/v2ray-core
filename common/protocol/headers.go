@@ -39,6 +39,13 @@ func (v Security) Is(t SecurityType) bool {
 	return v == Security(t)
 }
 
+func NormSecurity(s Security) Security {
+	if s.Is(SecurityType_UNKNOWN) {
+		return Security(SecurityType_LEGACY)
+	}
+	return s
+}
+
 type RequestHeader struct {
 	Version  byte
 	User     *User
@@ -100,5 +107,5 @@ func (v *SecurityConfig) AsSecurity() Security {
 		}
 		return Security(SecurityType_CHACHA20_POLY1305)
 	}
-	return Security(v.Type)
+	return NormSecurity(Security(v.Type))
 }

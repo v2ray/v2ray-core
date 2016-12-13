@@ -187,6 +187,7 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	go func() {
 		bodyReader := session.DecodeRequestBody(request, reader)
 		if err := buf.PipeUntilEOF(bodyReader, input); err != nil {
+			log.Debug("VMess|Inbound: Error when sending data to outbound: ", err)
 			connection.SetReusable(false)
 		}
 		bodyReader.Release()
@@ -219,6 +220,7 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 		writer.SetCached(false)
 
 		if err := buf.PipeUntilEOF(output, bodyWriter); err != nil {
+			log.Debug("VMess|Inbound: Error when sending data to downstream: ", err)
 			connection.SetReusable(false)
 		}
 
