@@ -159,7 +159,7 @@ func (v *AuthenticationReader) Read(b []byte) (int, error) {
 	}
 
 	totalBytes := v.CopyChunk(b)
-	for v.aggressive {
+	for v.aggressive && totalBytes < len(b) {
 		if err := v.NextChunk(); err != nil {
 			break
 		}
