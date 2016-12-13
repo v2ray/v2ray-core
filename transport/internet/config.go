@@ -56,11 +56,11 @@ func (v *StreamConfig) GetEffectiveSecuritySettings() (interface{}, error) {
 			return settings.GetInstance()
 		}
 	}
-	return loader.GetInstance(v.SecurityType)
+	return loader.GetInstance(v.SecuritySettings[0].Type)
 }
 
 func (v *StreamConfig) HasSecuritySettings() bool {
-	return len(v.SecurityType) > 0
+	return v.SecuritySettings != nil
 }
 
 func ApplyGlobalNetworkSettings(settings []*NetworkSettings) error {
