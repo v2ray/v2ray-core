@@ -195,7 +195,7 @@ func (v *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 	}
 
 	if buffer[2] != 0 {
-		cmdId := buffer[2]
+		cmdID := buffer[2]
 		dataLen := int(buffer[3])
 		_, err := io.ReadFull(v.responseReader, buffer[:dataLen])
 		if err != nil {
@@ -203,7 +203,7 @@ func (v *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 			return nil, err
 		}
 		data := buffer[:dataLen]
-		command, err := UnmarshalCommand(cmdId, data)
+		command, err := UnmarshalCommand(cmdID, data)
 		if err == nil {
 			header.Command = command
 		}

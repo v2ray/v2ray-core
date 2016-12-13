@@ -22,12 +22,12 @@ func MarshalCommand(command interface{}, writer io.Writer) error {
 		return ErrUnknownCommand
 	}
 
-	var cmdId byte
+	var cmdID byte
 	var factory CommandFactory
 	switch command.(type) {
 	case *protocol.CommandSwitchAccount:
 		factory = new(CommandSwitchAccountFactory)
-		cmdId = 1
+		cmdID = 1
 	default:
 		return ErrUnknownCommand
 	}
@@ -46,12 +46,12 @@ func MarshalCommand(command interface{}, writer io.Writer) error {
 		return ErrCommandTooLarge
 	}
 
-	writer.Write([]byte{cmdId, byte(len), byte(auth >> 24), byte(auth >> 16), byte(auth >> 8), byte(auth)})
+	writer.Write([]byte{cmdID, byte(len), byte(auth >> 24), byte(auth >> 16), byte(auth >> 8), byte(auth)})
 	writer.Write(buffer.Bytes())
 	return nil
 }
 
-func UnmarshalCommand(cmdId byte, data []byte) (protocol.ResponseCommand, error) {
+func UnmarshalCommand(cmdID byte, data []byte) (protocol.ResponseCommand, error) {
 	if len(data) <= 4 {
 		return nil, errors.New("VMess|Command: Insufficient length.")
 	}
@@ -62,7 +62,7 @@ func UnmarshalCommand(cmdId byte, data []byte) (protocol.ResponseCommand, error)
 	}
 
 	var factory CommandFactory
-	switch cmdId {
+	switch cmdID {
 	case 1:
 		factory = new(CommandSwitchAccountFactory)
 	default:
@@ -129,12 +129,12 @@ func (v *CommandSwitchAccountFactory) Unmarshal(data []byte) (interface{}, error
 		return nil, errors.New("VMess|SwitchAccountCommand: Insufficient length.")
 	}
 	cmd.ID, _ = uuid.ParseBytes(data[idStart : idStart+16])
-	alterIdStart := idStart + 16
-	if len(data) < alterIdStart+2 {
+	alterIDStart := idStart + 16
+	if len(data) < alterIDStart+2 {
 		return nil, errors.New("VMess|SwitchAccountCommand: Insufficient length.")
 	}
-	cmd.AlterIds = serial.BytesToUint16(data[alterIdStart : alterIdStart+2])
-	levelStart := alterIdStart + 2
+	cmd.AlterIds = serial.BytesToUint16(data[alterIDStart : alterIDStart+2])
+	levelStart := alterIDStart + 2
 	if len(data) < levelStart+1 {
 		return nil, errors.New("VMess|SwitchAccountCommand: Insufficient length.")
 	}
