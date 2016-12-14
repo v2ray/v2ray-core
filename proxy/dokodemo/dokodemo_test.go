@@ -54,11 +54,7 @@ func TestDokodemoTCP(t *testing.T) {
 
 	port := v2net.Port(dice.Roll(20000) + 10000)
 	dokodemo := NewDokodemoDoor(&Config{
-		Address: &v2net.IPOrDomain{
-			Address: &v2net.IPOrDomain_Ip{
-				Ip: v2net.LocalHostIP.IP(),
-			},
-		},
+		Address:     v2net.NewIPOrDomain(v2net.LocalHostIP),
 		Port:        uint32(tcpServer.Port),
 		NetworkList: v2net.Network_TCP.AsList(),
 		Timeout:     600,
@@ -128,11 +124,7 @@ func TestDokodemoUDP(t *testing.T) {
 
 	port := v2net.Port(dice.Roll(20000) + 10000)
 	dokodemo := NewDokodemoDoor(&Config{
-		Address: &v2net.IPOrDomain{
-			Address: &v2net.IPOrDomain_Ip{
-				Ip: v2net.LocalHostIP.IP(),
-			},
-		},
+		Address:     v2net.NewIPOrDomain(v2net.LocalHostIP),
 		Port:        uint32(udpServer.Port),
 		NetworkList: v2net.Network_UDP.AsList(),
 		Timeout:     600,

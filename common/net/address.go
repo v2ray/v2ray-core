@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	LocalHostIP = IPAddress([]byte{127, 0, 0, 1})
-	AnyIP       = IPAddress([]byte{0, 0, 0, 0})
+	LocalHostIP     = IPAddress([]byte{127, 0, 0, 1})
+	AnyIP           = IPAddress([]byte{0, 0, 0, 0})
+	LocalHostDomain = DomainAddress("localhost")
 )
 
 type AddressFamily int
@@ -155,4 +156,23 @@ func (v *IPOrDomain) AsAddress() Address {
 		return DomainAddress(addr.Domain)
 	}
 	panic("Common|Net: Invalid address.")
+}
+
+func NewIPOrDomain(addr Address) *IPOrDomain {
+	switch addr.Family() {
+	case AddressFamilyDomain:
+		return &IPOrDomain{
+			Address: &IPOrDomain_Domain{
+				Domain: addr.Domain(),
+			},
+		}
+	case AddressFamilyIPv4, AddressFamilyIPv6:
+		return &IPOrDomain{
+			Address: &IPOrDomain_Ip{
+				Ip: addr.IP(),
+			},
+		}
+	default:
+		panic("Unknown Address type.")
+	}
 }

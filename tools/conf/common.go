@@ -51,19 +51,7 @@ func (v *Address) UnmarshalJSON(data []byte) error {
 }
 
 func (v *Address) Build() *v2net.IPOrDomain {
-	if v.Family().IsDomain() {
-		return &v2net.IPOrDomain{
-			Address: &v2net.IPOrDomain_Domain{
-				Domain: v.Domain(),
-			},
-		}
-	}
-
-	return &v2net.IPOrDomain{
-		Address: &v2net.IPOrDomain_Ip{
-			Ip: []byte(v.IP()),
-		},
-	}
+	return v2net.NewIPOrDomain(v.Address)
 }
 
 type Network string

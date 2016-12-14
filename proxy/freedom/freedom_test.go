@@ -70,11 +70,7 @@ func TestIPResolution(t *testing.T) {
 	space.BindApp(router.APP_ID, r)
 	dnsServer := dns.NewCacheServer(space, &dns.Config{
 		Hosts: map[string]*v2net.IPOrDomain{
-			"v2ray.com": {
-				Address: &v2net.IPOrDomain_Ip{
-					Ip: []byte{127, 0, 0, 1},
-				},
-			},
+			"v2ray.com": v2net.NewIPOrDomain(v2net.LocalHostIP),
 		},
 	})
 	space.BindApp(dns.APP_ID, dnsServer)
