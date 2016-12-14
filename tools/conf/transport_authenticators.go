@@ -124,6 +124,10 @@ func (v *HTTPAuthenticatorResponse) Build() (*http.ResponseConfig, error) {
 				Name:  "Pragma",
 				Value: []string{"no-cache"},
 			},
+			{
+				Name:  "Cache-Control",
+				Value: []string{"private", "no-cache"},
+			},
 		},
 	}
 

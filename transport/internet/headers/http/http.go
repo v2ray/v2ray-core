@@ -97,13 +97,15 @@ type HttpConn struct {
 	readBuffer    *buf.Buffer
 	oneTimeReader Reader
 	oneTimeWriter Writer
+	isServer      bool
 }
 
-func NewHttpConn(conn net.Conn, reader Reader, writer Writer) *HttpConn {
+func NewHttpConn(conn net.Conn, reader Reader, writer Writer, isServer bool) *HttpConn {
 	return &HttpConn{
 		Conn:          conn,
 		oneTimeReader: reader,
 		oneTimeWriter: writer,
+		isServer:      isServer,
 	}
 }
 
@@ -141,6 +143,61 @@ func (v *HttpConn) Write(b []byte) (int, error) {
 	return v.Conn.Write(b)
 }
 
+// Close implements net.Conn.Close().
+func (v *HttpConn) Close() error {
+	if v.isServer && v.oneTimeWriter != nil {
+		// Connection is being closed but header wasn't sent. This means the client request
+		// is probably not valid. Sending back a server error header in this case.
+		writer := formResponseHeader(&ResponseConfig{
+			Version: &Version{
+				Value: "1.1",
+			},
+			Status: &Status{
+				Code:   "500",
+				Reason: "Internal Server Error",
+			},
+			Header: []*Header{
+				{
+					Name:  "Connection",
+					Value: []string{"close"},
+				},
+				{
+					Name:  "Cache-Control",
+					Value: []string{"private"},
+				},
+				{
+					Name:  "Content-Length",
+					Value: []string{"0"},
+				},
+			},
+		})
+		writer.Write(v.Conn)
+	}
+
+	return v.Conn.Close()
+}
+
+func formResponseHeader(config *ResponseConfig) *HeaderWriter {
+	header := buf.NewSmall()
+	header.AppendSupplier(serial.WriteString(strings.Join([]string{config.GetFullVersion(), config.Status.GetCode(), config.Status.GetReason()}, " ")))
+	header.AppendSupplier(writeCRLF)
+
+	headers := config.PickHeaders()
+	for _, h := range headers {
+		header.AppendSupplier(serial.WriteString(h))
+		header.AppendSupplier(writeCRLF)
+	}
+	if !config.HasHeader("Date") {
+		header.AppendSupplier(serial.WriteString("Date: "))
+		header.AppendSupplier(serial.WriteString(time.Now().Format(http.TimeFormat)))
+		header.AppendSupplier(writeCRLF)
+	}
+	header.AppendSupplier(writeCRLF)
+	return &HeaderWriter{
+		header: header,
+	}
+}
+
 type HttpAuthenticator struct {
 	config *Config
 }
@@ -163,25 +220,7 @@ func (v HttpAuthenticator) GetClientWriter() *HeaderWriter {
 }
 
 func (v HttpAuthenticator) GetServerWriter() *HeaderWriter {
-	header := buf.NewSmall()
-	config := v.config.Response
-	header.AppendSupplier(serial.WriteString(strings.Join([]string{config.GetFullVersion(), config.Status.GetCode(), config.Status.GetReason()}, " ")))
-	header.AppendSupplier(writeCRLF)
-
-	headers := config.PickHeaders()
-	for _, h := range headers {
-		header.AppendSupplier(serial.WriteString(h))
-		header.AppendSupplier(writeCRLF)
-	}
-	if !config.HasHeader("Date") {
-		header.AppendSupplier(serial.WriteString("Date: "))
-		header.AppendSupplier(serial.WriteString(time.Now().Format(http.TimeFormat)))
-		header.AppendSupplier(writeCRLF)
-	}
-	header.AppendSupplier(writeCRLF)
-	return &HeaderWriter{
-		header: header,
-	}
+	return formResponseHeader(v.config.Response)
 }
 
 func (v HttpAuthenticator) Client(conn net.Conn) net.Conn {
@@ -197,14 +236,14 @@ func (v HttpAuthenticator) Client(conn net.Conn) net.Conn {
 	if v.config.Response != nil {
 		writer = v.GetClientWriter()
 	}
-	return NewHttpConn(conn, reader, writer)
+	return NewHttpConn(conn, reader, writer, false)
 }
 
 func (v HttpAuthenticator) Server(conn net.Conn) net.Conn {
 	if v.config.Request == nil && v.config.Response == nil {
 		return conn
 	}
-	return NewHttpConn(conn, new(HeaderReader), v.GetServerWriter())
+	return NewHttpConn(conn, new(HeaderReader), v.GetServerWriter(), true)
 }
 
 type HttpAuthenticatorFactory struct{}
