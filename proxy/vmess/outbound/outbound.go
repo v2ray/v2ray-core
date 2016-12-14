@@ -136,7 +136,7 @@ func (v *VMessOutboundHandler) handleResponse(session *encoding.ClientSession, c
 		log.Warning("VMess|Outbound: Failed to read response from ", request.Destination(), ": ", err)
 		return
 	}
-	go v.handleCommand(dest, header.Command)
+	v.handleCommand(dest, header.Command)
 
 	conn.SetReusable(header.Option.Has(protocol.ResponseOptionConnectionReuse))
 
