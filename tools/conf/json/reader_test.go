@@ -32,6 +32,7 @@ text 2*/`, `
 text text 2*`},
 		{`"//"content`, `"//"content`},
 		{`abcd'//'abcd`, `abcd'//'abcd`},
+		{`"\""`, `"\""`},
 	}
 
 	for _, testCase := range data {
