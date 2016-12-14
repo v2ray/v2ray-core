@@ -8,6 +8,7 @@ import (
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
+	json_reader "v2ray.com/core/tools/conf/json"
 )
 
 var (
@@ -337,7 +338,9 @@ func (v *Config) Build() (*core.Config, error) {
 func init() {
 	core.RegisterConfigLoader(core.ConfigFormat_JSON, func(input io.Reader) (*core.Config, error) {
 		jsonConfig := &Config{}
-		decoder := json.NewDecoder(input)
+		decoder := json.NewDecoder(&json_reader.Reader{
+			Reader: input,
+		})
 		err := decoder.Decode(jsonConfig)
 		if err != nil {
 			return nil, errors.Base(err).Message("Invalid V2Ray config.")
