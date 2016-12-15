@@ -20,11 +20,13 @@ const (
 	StateMultilineCommentStar
 )
 
+// Reader is a JSON reader which allows comments.
 type Reader struct {
 	io.Reader
 	state State
 }
 
+// Read implements io.Reader.Read().
 func (v *Reader) Read(b []byte) (int, error) {
 	n, err := v.Reader.Read(b)
 	if err != nil {
