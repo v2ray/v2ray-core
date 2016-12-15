@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"bytes"
+
 	"v2ray.com/core/testing/assert"
 	. "v2ray.com/core/tools/conf/json"
 )
@@ -33,6 +34,7 @@ text text 2*`},
 		{`"//"content`, `"//"content`},
 		{`abcd'//'abcd`, `abcd'//'abcd`},
 		{`"\""`, `"\""`},
+		{`\"/*abcd*/\"`, `\"\"`},
 	}
 
 	for _, testCase := range data {

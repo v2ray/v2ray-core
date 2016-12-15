@@ -4,6 +4,7 @@ import (
 	"io"
 )
 
+// State is the internal state of parser.
 type State byte
 
 const (
@@ -50,7 +51,7 @@ func (v *Reader) Read(b []byte) (int, error) {
 				p = append(p, x)
 			}
 		case StateEscape:
-			p = append(p, x)
+			p = append(p, '\\', x)
 			v.state = StateContent
 		case StateDoubleQuote:
 			switch x {
