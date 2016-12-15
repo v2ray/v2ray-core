@@ -2,7 +2,6 @@ package conf
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"strings"
 
@@ -46,14 +45,14 @@ func (v *KCPConfig) Build() (*loader.TypedSettings, error) {
 	if v.Mtu != nil {
 		mtu := *v.Mtu
 		if mtu < 576 || mtu > 1460 {
-			return nil, fmt.Errorf("KCP|Config: Invalid MTU size: %d", mtu)
+			return nil, errors.Format("KCP|Config: Invalid MTU size: %d", mtu)
 		}
 		config.Mtu = &kcp.MTU{Value: mtu}
 	}
 	if v.Tti != nil {
 		tti := *v.Tti
 		if tti < 10 || tti > 100 {
-			return nil, fmt.Errorf("KCP|Config: Invalid TTI: %d", tti)
+			return nil, errors.Format("KCP|Config: Invalid TTI: %d", tti)
 		}
 		config.Tti = &kcp.TTI{Value: tti}
 	}

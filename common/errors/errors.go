@@ -2,6 +2,7 @@ package errors
 
 import (
 	"fmt"
+
 	"v2ray.com/core/common/serial"
 )
 
@@ -27,7 +28,7 @@ func (v *Error) Inner() error {
 
 func New(msg ...interface{}) error {
 	return &Error{
-		message: serial.ToString(msg),
+		message: serial.Concat(msg),
 	}
 }
 
@@ -37,6 +38,11 @@ func Base(err error) ErrorBuilder {
 	}
 }
 
+func Format(format string, values ...interface{}) error {
+	return New(fmt.Sprintf(format, values...))
+}
+
+// Cause returns the root cause of this error.
 func Cause(err error) error {
 	if err == nil {
 		return nil

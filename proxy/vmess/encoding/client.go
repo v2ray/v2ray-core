@@ -5,7 +5,6 @@ import (
 	"crypto/cipher"
 	"crypto/md5"
 	"crypto/rand"
-	"fmt"
 	"hash/fnv"
 	"io"
 
@@ -14,6 +13,7 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/dice"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -187,7 +187,7 @@ func (v *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 	}
 
 	if buffer[0] != v.responseHeader {
-		return nil, fmt.Errorf("VMess|Client: Unexpected response header. Expecting %d but actually %d", v.responseHeader, buffer[0])
+		return nil, errors.Format("VMess|Client: Unexpected response header. Expecting %d but actually %d", v.responseHeader, buffer[0])
 	}
 
 	header := &protocol.ResponseHeader{

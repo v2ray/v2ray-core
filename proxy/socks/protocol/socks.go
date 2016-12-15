@@ -1,7 +1,6 @@
 package protocol
 
 import (
-	"fmt"
 	"io"
 
 	"v2ray.com/core/common/buf"
@@ -228,7 +227,7 @@ func ReadRequest(reader io.Reader) (request *Socks5Request, err error) {
 			return
 		}
 	default:
-		err = fmt.Errorf("Socks: Unexpected address type %d", request.AddrType)
+		err = errors.Format("Socks: Unexpected address type %d", request.AddrType)
 		return
 	}
 

@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"v2ray.com/core/app/router"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/tools/geoip"
 
 	"github.com/golang/protobuf/proto"
@@ -29,7 +30,7 @@ func main() {
 		panic(err)
 	}
 	if resp.StatusCode != 200 {
-		panic(fmt.Errorf("Unexpected status %d", resp.StatusCode))
+		panic(errors.Format("Unexpected status %d", resp.StatusCode))
 	}
 	defer resp.Body.Close()
 	scanner := bufio.NewScanner(resp.Body)

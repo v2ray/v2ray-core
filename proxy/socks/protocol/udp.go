@@ -1,7 +1,6 @@
 package protocol
 
 import (
-	"fmt"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
@@ -79,7 +78,7 @@ func ReadUDPRequest(packet []byte) (*Socks5UDPRequest, error) {
 		request.Address = v2net.ParseAddress(domain)
 		dataBegin = 5 + domainLength + 2
 	default:
-		return nil, fmt.Errorf("Socks|UDP: Unknown address type %d", addrType)
+		return nil, errors.Format("Socks|UDP: Unknown address type %d", addrType)
 	}
 
 	if len(packet) > dataBegin {
