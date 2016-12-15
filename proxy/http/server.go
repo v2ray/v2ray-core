@@ -18,7 +18,6 @@ import (
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy"
-	"v2ray.com/core/proxy/registry"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/ray"
 )
@@ -288,5 +287,5 @@ func (v *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *pro
 }
 
 func init() {
-	registry.MustRegisterInboundHandlerCreator(serial.GetMessageType(new(ServerConfig)), new(ServerFactory))
+	proxy.MustRegisterInboundHandlerCreator(serial.GetMessageType(new(ServerConfig)), new(ServerFactory))
 }

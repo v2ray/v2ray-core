@@ -10,7 +10,6 @@ import (
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/proxy"
-	proxyregistry "v2ray.com/core/proxy/registry"
 )
 
 type InboundDetourHandlerDynamic struct {
@@ -36,7 +35,7 @@ func NewInboundDetourHandlerDynamic(space app.Space, config *InboundConnectionCo
 	if err != nil {
 		return nil, err
 	}
-	ich, err := proxyregistry.CreateInboundHandler(config.Settings.Type, space, ichConfig, &proxy.InboundHandlerMeta{
+	ich, err := proxy.CreateInboundHandler(config.Settings.Type, space, ichConfig, &proxy.InboundHandlerMeta{
 		Address:                config.GetListenOnValue(),
 		Port:                   0,
 		Tag:                    config.Tag,
@@ -108,7 +107,7 @@ func (v *InboundDetourHandlerDynamic) refresh() error {
 		err := retry.Timed(5, 100).On(func() error {
 			port := v.pickUnusedPort()
 			ichConfig, _ := config.GetTypedSettings()
-			ich, err := proxyregistry.CreateInboundHandler(config.Settings.Type, v.space, ichConfig, &proxy.InboundHandlerMeta{
+			ich, err := proxy.CreateInboundHandler(config.Settings.Type, v.space, ichConfig, &proxy.InboundHandlerMeta{
 				Address: config.GetListenOnValue(), Port: port, Tag: config.Tag, StreamSettings: config.StreamSettings})
 			if err != nil {
 				delete(v.portsInUse, port)

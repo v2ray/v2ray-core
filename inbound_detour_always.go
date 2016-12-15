@@ -6,7 +6,6 @@ import (
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/proxy"
-	proxyregistry "v2ray.com/core/proxy/registry"
 )
 
 // Handler for inbound detour connections.
@@ -28,7 +27,7 @@ func NewInboundDetourHandlerAlways(space app.Space, config *InboundConnectionCon
 		if err != nil {
 			return nil, err
 		}
-		ich, err := proxyregistry.CreateInboundHandler(config.Settings.Type, space, ichConfig, &proxy.InboundHandlerMeta{
+		ich, err := proxy.CreateInboundHandler(config.Settings.Type, space, ichConfig, &proxy.InboundHandlerMeta{
 			Address:                config.GetListenOnValue(),
 			Port:                   i,
 			Tag:                    config.Tag,

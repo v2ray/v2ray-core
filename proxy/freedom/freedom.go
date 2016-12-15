@@ -13,7 +13,6 @@ import (
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy"
-	"v2ray.com/core/proxy/registry"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tcp"
 	"v2ray.com/core/transport/ray"
@@ -142,5 +141,5 @@ func (v *FreedomFactory) Create(space app.Space, config interface{}, meta *proxy
 }
 
 func init() {
-	registry.MustRegisterOutboundHandlerCreator(serial.GetMessageType(new(Config)), new(FreedomFactory))
+	proxy.MustRegisterOutboundHandlerCreator(serial.GetMessageType(new(Config)), new(FreedomFactory))
 }

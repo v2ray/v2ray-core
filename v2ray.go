@@ -11,7 +11,6 @@ import (
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
-	proxyregistry "v2ray.com/core/proxy/registry"
 )
 
 // Point shell of V2Ray.
@@ -109,7 +108,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 		if err != nil {
 			return nil, err
 		}
-		outboundHandler, err := proxyregistry.CreateOutboundHandler(
+		outboundHandler, err := proxy.CreateOutboundHandler(
 			outbound.Settings.Type, vpoint.space, outboundSettings, &proxy.OutboundHandlerMeta{
 				Tag:            outbound.Tag,
 				Address:        outbound.GetSendThroughValue(),

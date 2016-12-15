@@ -1,10 +1,9 @@
-package registry
+package proxy
 
 import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -41,10 +40,10 @@ func MustRegisterOutboundHandlerCreator(name string, creator OutboundHandlerFact
 	}
 }
 
-func CreateInboundHandler(name string, space app.Space, config interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
+func CreateInboundHandler(name string, space app.Space, config interface{}, meta *InboundHandlerMeta) (InboundHandler, error) {
 	creator, found := inboundFactories[name]
 	if !found {
-		return nil, errors.New("Proxy|Registry: Unknown inbound name: " + name)
+		return nil, errors.New("Proxy: Unknown inbound name: " + name)
 	}
 	if meta.StreamSettings == nil {
 		meta.StreamSettings = &internet.StreamConfig{
@@ -52,17 +51,17 @@ func CreateInboundHandler(name string, space app.Space, config interface{}, meta
 		}
 	} else {
 		if !creator.StreamCapability().HasNetwork(meta.StreamSettings.Network) {
-			return nil, errors.New("Proxy|Registry: Invalid network: " + meta.StreamSettings.Network.String())
+			return nil, errors.New("Proxy: Invalid network: " + meta.StreamSettings.Network.String())
 		}
 	}
 
 	return creator.Create(space, config, meta)
 }
 
-func CreateOutboundHandler(name string, space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
+func CreateOutboundHandler(name string, space app.Space, config interface{}, meta *OutboundHandlerMeta) (OutboundHandler, error) {
 	creator, found := outboundFactories[name]
 	if !found {
-		return nil, errors.New("Proxy|Registry: Unknown outbound name: " + name)
+		return nil, errors.New("Proxy: Unknown outbound name: " + name)
 	}
 	if meta.StreamSettings == nil {
 		meta.StreamSettings = &internet.StreamConfig{
@@ -70,7 +69,7 @@ func CreateOutboundHandler(name string, space app.Space, config interface{}, met
 		}
 	} else {
 		if !creator.StreamCapability().HasNetwork(meta.StreamSettings.Network) {
-			return nil, errors.New("Proxy|Registry: Invalid network: " + meta.StreamSettings.Network.String())
+			return nil, errors.New("Proxy: Invalid network: " + meta.StreamSettings.Network.String())
 		}
 	}
 
