@@ -58,7 +58,7 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 
 	user, timestamp, valid := v.userValidator.Get(buffer[:protocol.IDBytesLen])
 	if !valid {
-		return nil, protocol.ErrInvalidUser
+		return nil, errors.New("VMess|Server: Invalid user.")
 	}
 
 	timestampHash := md5.New()
