@@ -11,10 +11,10 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/uuid"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/registry"
@@ -59,7 +59,7 @@ func (v *userByEmail) Get(email string) (*protocol.User, bool) {
 			user = &protocol.User{
 				Level:   v.defaultLevel,
 				Email:   email,
-				Account: loader.NewTypedSettings(account),
+				Account: serial.ToTypedMessage(account),
 			}
 			v.cache[email] = user
 		}
@@ -272,5 +272,5 @@ func (v *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.Inb
 }
 
 func init() {
-	registry.MustRegisterInboundHandlerCreator(loader.GetType(new(Config)), new(Factory))
+	registry.MustRegisterInboundHandlerCreator(serial.GetMessageType(new(Config)), new(Factory))
 }

@@ -5,7 +5,7 @@ option go_package = "blackhole";
 option java_package = "com.v2ray.core.proxy.blackhole";
 option java_outer_classname = "ConfigProto";
 
-import "v2ray.com/core/common/loader/type.proto";
+import "v2ray.com/core/common/serial/typed_message.proto";
 
 message NoneResponse {
 }
@@ -14,5 +14,5 @@ message HTTPResponse {
 }
 
 message Config {
-  v2ray.core.common.loader.TypedSettings response = 1;
+  v2ray.core.common.serial.TypedMessage response = 1;
 }

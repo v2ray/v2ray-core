@@ -3,8 +3,8 @@ package conf
 import (
 	"encoding/json"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/socks"
 )
 
@@ -33,7 +33,7 @@ type SocksServerConfig struct {
 	Timeout    uint32          `json:"timeout"`
 }
 
-func (v *SocksServerConfig) Build() (*loader.TypedSettings, error) {
+func (v *SocksServerConfig) Build() (*serial.TypedMessage, error) {
 	config := new(socks.ServerConfig)
 	if v.AuthMethod == AuthMethodNoAuth {
 		config.AuthType = socks.AuthType_NO_AUTH
@@ -56,7 +56,7 @@ func (v *SocksServerConfig) Build() (*loader.TypedSettings, error) {
 	}
 
 	config.Timeout = v.Timeout
-	return loader.NewTypedSettings(config), nil
+	return serial.ToTypedMessage(config), nil
 }
 
 type SocksRemoteConfig struct {
@@ -68,7 +68,7 @@ type SocksClientConfig struct {
 	Servers []*SocksRemoteConfig `json:"servers"`
 }
 
-func (v *SocksClientConfig) Build() (*loader.TypedSettings, error) {
+func (v *SocksClientConfig) Build() (*serial.TypedMessage, error) {
 	config := new(socks.ClientConfig)
 	config.Server = make([]*protocol.ServerEndpoint, len(v.Servers))
 	for idx, serverConfig := range v.Servers {
@@ -85,10 +85,10 @@ func (v *SocksClientConfig) Build() (*loader.TypedSettings, error) {
 			if err := json.Unmarshal(rawUser, account); err != nil {
 				return nil, errors.Base(err).Message("Socks|Client: Failed to parse socks account.")
 			}
-			user.Account = loader.NewTypedSettings(account.Build())
+			user.Account = serial.ToTypedMessage(account.Build())
 			server.User = append(server.User, user)
 		}
 		config.Server[idx] = server
 	}
-	return loader.NewTypedSettings(config), nil
+	return serial.ToTypedMessage(config), nil
 }

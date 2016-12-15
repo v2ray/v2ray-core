@@ -5,7 +5,7 @@ option go_package = "web";
 option java_package = "com.v2ray.core.app.web";
 option java_outer_classname = "ConfigProto";
 
-import "v2ray.com/core/common/loader/type.proto";
+import "v2ray.com/core/common/serial/typed_message.proto";
 
 message FileServer {
   message Entry {
@@ -21,7 +21,7 @@ message FileServer {
 
 message Server {
   repeated string domain = 1;
-  v2ray.core.common.loader.TypedSettings settings = 2;
+  v2ray.core.common.serial.TypedMessage settings = 2;
 }
 
 message Config {

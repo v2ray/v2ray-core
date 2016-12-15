@@ -3,9 +3,9 @@ package outbound
 import (
 	"time"
 
-	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/vmess"
 )
 
@@ -18,7 +18,7 @@ func (v *VMessOutboundHandler) handleSwitchAccount(cmd *protocol.CommandSwitchAc
 	user := &protocol.User{
 		Email:   "",
 		Level:   cmd.Level,
-		Account: loader.NewTypedSettings(account),
+		Account: serial.ToTypedMessage(account),
 	}
 	dest := v2net.TCPDestination(cmd.Host, cmd.Port)
 	until := time.Now().Add(time.Duration(cmd.ValidMin) * time.Minute)

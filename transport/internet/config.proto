@@ -5,14 +5,14 @@ option go_package = "internet";
 option java_package = "com.v2ray.core.transport.internet";
 
 import "v2ray.com/core/common/net/network.proto";
-import "v2ray.com/core/common/loader/type.proto";
+import "v2ray.com/core/common/serial/typed_message.proto";
 
 message NetworkSettings {
   // Type of network that this settings supports.
   v2ray.core.common.net.Network network = 1;
 
   // Specific settings.
-  v2ray.core.common.loader.TypedSettings settings = 2;
+  v2ray.core.common.serial.TypedMessage settings = 2;
 }
 
 message StreamConfig {
@@ -24,7 +24,7 @@ message StreamConfig {
   // Type of security. Must be a message name of the settings proto.
   string security_type = 3;
   
-  repeated v2ray.core.common.loader.TypedSettings security_settings = 4;
+  repeated v2ray.core.common.serial.TypedMessage security_settings = 4;
 }
 
 message ProxyConfig {

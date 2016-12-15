@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/kcp"
 	"v2ray.com/core/transport/internet/tcp"
@@ -39,7 +39,7 @@ type KCPConfig struct {
 	HeaderConfig    json.RawMessage `json:"header"`
 }
 
-func (v *KCPConfig) Build() (*loader.TypedSettings, error) {
+func (v *KCPConfig) Build() (*serial.TypedMessage, error) {
 	config := new(kcp.Config)
 
 	if v.Mtu != nil {
@@ -93,7 +93,7 @@ func (v *KCPConfig) Build() (*loader.TypedSettings, error) {
 		config.HeaderConfig = ts
 	}
 
-	return loader.NewTypedSettings(config), nil
+	return serial.ToTypedMessage(config), nil
 }
 
 type TCPConfig struct {
@@ -101,7 +101,7 @@ type TCPConfig struct {
 	HeaderConfig    json.RawMessage `json:"header"`
 }
 
-func (v *TCPConfig) Build() (*loader.TypedSettings, error) {
+func (v *TCPConfig) Build() (*serial.TypedMessage, error) {
 	config := new(tcp.Config)
 	if v.ConnectionReuse != nil {
 		config.ConnectionReuse = &tcp.ConnectionReuse{
@@ -120,7 +120,7 @@ func (v *TCPConfig) Build() (*loader.TypedSettings, error) {
 		config.HeaderSettings = ts
 	}
 
-	return loader.NewTypedSettings(config), nil
+	return serial.ToTypedMessage(config), nil
 }
 
 type WebSocketConfig struct {
@@ -128,7 +128,7 @@ type WebSocketConfig struct {
 	Path            string `json:"Path"`
 }
 
-func (v *WebSocketConfig) Build() (*loader.TypedSettings, error) {
+func (v *WebSocketConfig) Build() (*serial.TypedMessage, error) {
 	config := &ws.Config{
 		Path: v.Path,
 	}
@@ -137,7 +137,7 @@ func (v *WebSocketConfig) Build() (*loader.TypedSettings, error) {
 			Enable: *v.ConnectionReuse,
 		}
 	}
-	return loader.NewTypedSettings(config), nil
+	return serial.ToTypedMessage(config), nil
 }
 
 type TLSCertConfig struct {
@@ -150,7 +150,7 @@ type TLSConfig struct {
 	ServerName string           `json:"serverName"`
 }
 
-func (v *TLSConfig) Build() (*loader.TypedSettings, error) {
+func (v *TLSConfig) Build() (*serial.TypedMessage, error) {
 	config := new(tls.Config)
 	config.Certificate = make([]*tls.Certificate, len(v.Certs))
 	for idx, certConf := range v.Certs {
@@ -171,7 +171,7 @@ func (v *TLSConfig) Build() (*loader.TypedSettings, error) {
 	if len(v.ServerName) > 0 {
 		config.ServerName = v.ServerName
 	}
-	return loader.NewTypedSettings(config), nil
+	return serial.ToTypedMessage(config), nil
 }
 
 type StreamConfig struct {

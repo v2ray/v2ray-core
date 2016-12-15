@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -79,7 +78,7 @@ type VMessInboundConfig struct {
 	DetourConfig *VMessDetourConfig  `json:"detour"`
 }
 
-func (v *VMessInboundConfig) Build() (*loader.TypedSettings, error) {
+func (v *VMessInboundConfig) Build() (*serial.TypedMessage, error) {
 	config := new(inbound.Config)
 
 	if v.Defaults != nil {
@@ -102,11 +101,11 @@ func (v *VMessInboundConfig) Build() (*loader.TypedSettings, error) {
 		if err := json.Unmarshal(rawData, account); err != nil {
 			return nil, errors.Base(err).Message("Invalid VMess user.")
 		}
-		user.Account = loader.NewTypedSettings(account.Build())
+		user.Account = serial.ToTypedMessage(account.Build())
 		config.User[idx] = user
 	}
 
-	return loader.NewTypedSettings(config), nil
+	return serial.ToTypedMessage(config), nil
 }
 
 type VMessOutboundTarget struct {
@@ -118,7 +117,7 @@ type VMessOutboundConfig struct {
 	Receivers []*VMessOutboundTarget `json:"vnext"`
 }
 
-func (v *VMessOutboundConfig) Build() (*loader.TypedSettings, error) {
+func (v *VMessOutboundConfig) Build() (*serial.TypedMessage, error) {
 	config := new(outbound.Config)
 
 	if len(v.Receivers) == 0 {
@@ -148,11 +147,11 @@ func (v *VMessOutboundConfig) Build() (*loader.TypedSettings, error) {
 			if err := json.Unmarshal(rawUser, account); err != nil {
 				return nil, errors.Base(err).Message("Invalid VMess user.")
 			}
-			user.Account = loader.NewTypedSettings(account.Build())
+			user.Account = serial.ToTypedMessage(account.Build())
 			spec.User = append(spec.User, user)
 		}
 		serverSpecs[idx] = spec
 	}
 	config.Receiver = serverSpecs
-	return loader.NewTypedSettings(config), nil
+	return serial.ToTypedMessage(config), nil
 }

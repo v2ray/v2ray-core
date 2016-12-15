@@ -3,8 +3,8 @@ package conf
 import (
 	"strings"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/shadowsocks"
 )
 
@@ -17,7 +17,7 @@ type ShadowsocksServerConfig struct {
 	OTA      *bool  `json:"ota"`
 }
 
-func (v *ShadowsocksServerConfig) Build() (*loader.TypedSettings, error) {
+func (v *ShadowsocksServerConfig) Build() (*serial.TypedMessage, error) {
 	config := new(shadowsocks.ServerConfig)
 	config.UdpEnabled = v.UDP
 
@@ -52,10 +52,10 @@ func (v *ShadowsocksServerConfig) Build() (*loader.TypedSettings, error) {
 	config.User = &protocol.User{
 		Email:   v.Email,
 		Level:   uint32(v.Level),
-		Account: loader.NewTypedSettings(account),
+		Account: serial.ToTypedMessage(account),
 	}
 
-	return loader.NewTypedSettings(config), nil
+	return serial.ToTypedMessage(config), nil
 }
 
 type ShadowsocksServerTarget struct {
@@ -71,7 +71,7 @@ type ShadowsocksClientConfig struct {
 	Servers []*ShadowsocksServerTarget `json:"servers"`
 }
 
-func (v *ShadowsocksClientConfig) Build() (*loader.TypedSettings, error) {
+func (v *ShadowsocksClientConfig) Build() (*serial.TypedMessage, error) {
 	config := new(shadowsocks.ClientConfig)
 
 	if len(v.Servers) == 0 {
@@ -116,7 +116,7 @@ func (v *ShadowsocksClientConfig) Build() (*loader.TypedSettings, error) {
 			User: []*protocol.User{
 				{
 					Email:   server.Email,
-					Account: loader.NewTypedSettings(account),
+					Account: serial.ToTypedMessage(account),
 				},
 			},
 		}
@@ -126,5 +126,5 @@ func (v *ShadowsocksClientConfig) Build() (*loader.TypedSettings, error) {
 
 	config.Server = serverSpecs
 
-	return loader.NewTypedSettings(config), nil
+	return serial.ToTypedMessage(config), nil
 }

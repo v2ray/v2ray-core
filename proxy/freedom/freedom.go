@@ -8,10 +8,10 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/registry"
 	"v2ray.com/core/transport/internet"
@@ -142,5 +142,5 @@ func (v *FreedomFactory) Create(space app.Space, config interface{}, meta *proxy
 }
 
 func init() {
-	registry.MustRegisterOutboundHandlerCreator(loader.GetType(new(Config)), new(FreedomFactory))
+	registry.MustRegisterOutboundHandlerCreator(serial.GetMessageType(new(Config)), new(FreedomFactory))
 }

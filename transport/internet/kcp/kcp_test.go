@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/transport/internet"
 	. "v2ray.com/core/transport/internet/kcp"
@@ -24,7 +24,7 @@ func TestDialAndListen(t *testing.T) {
 			NetworkSettings: []*internet.NetworkSettings{
 				{
 					Network:  v2net.Network_KCP,
-					Settings: loader.NewTypedSettings(&Config{}),
+					Settings: serial.ToTypedMessage(&Config{}),
 				},
 			},
 		},
@@ -63,7 +63,7 @@ func TestDialAndListen(t *testing.T) {
 				NetworkSettings: []*internet.NetworkSettings{
 					{
 						Network:  v2net.Network_KCP,
-						Settings: loader.NewTypedSettings(&Config{}),
+						Settings: serial.ToTypedMessage(&Config{}),
 					},
 				},
 			},

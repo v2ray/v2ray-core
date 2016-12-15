@@ -5,12 +5,12 @@ option go_package = "protocol";
 option java_package = "com.v2ray.core.common.protocol";
 option java_outer_classname = "UserProto";
 
-import "v2ray.com/core/common/loader/type.proto";
+import "v2ray.com/core/common/serial/typed_message.proto";
 
 message User {
   uint32 level = 1;
   string email = 2;
 
   // Protocol specific account information.
-  v2ray.core.common.loader.TypedSettings account = 3;
+  v2ray.core.common.serial.TypedMessage account = 3;
 }

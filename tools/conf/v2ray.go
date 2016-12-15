@@ -6,8 +6,8 @@ import (
 	"strings"
 	"v2ray.com/core"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/serial"
 	json_reader "v2ray.com/core/tools/conf/json"
 )
 
@@ -289,11 +289,11 @@ func (v *Config) Build() (*core.Config, error) {
 		if err != nil {
 			return nil, err
 		}
-		config.App = append(config.App, loader.NewTypedSettings(routerConfig))
+		config.App = append(config.App, serial.ToTypedMessage(routerConfig))
 	}
 
 	if v.DNSConfig != nil {
-		config.App = append(config.App, loader.NewTypedSettings(v.DNSConfig.Build()))
+		config.App = append(config.App, serial.ToTypedMessage(v.DNSConfig.Build()))
 	}
 
 	if v.InboundConfig == nil {

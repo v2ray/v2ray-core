@@ -1,7 +1,7 @@
 package conf
 
 import (
-	"v2ray.com/core/common/loader"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/dokodemo"
 )
 
@@ -13,7 +13,7 @@ type DokodemoConfig struct {
 	Redirect     bool         `json:"followRedirect"`
 }
 
-func (v *DokodemoConfig) Build() (*loader.TypedSettings, error) {
+func (v *DokodemoConfig) Build() (*serial.TypedMessage, error) {
 	config := new(dokodemo.Config)
 	if v.Host != nil {
 		config.Address = v.Host.Build()
@@ -22,5 +22,5 @@ func (v *DokodemoConfig) Build() (*loader.TypedSettings, error) {
 	config.NetworkList = v.NetworkList.Build()
 	config.Timeout = v.TimeoutValue
 	config.FollowRedirect = v.Redirect
-	return loader.NewTypedSettings(config), nil
+	return serial.ToTypedMessage(config), nil
 }

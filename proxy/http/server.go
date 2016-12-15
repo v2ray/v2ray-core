@@ -14,9 +14,9 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/registry"
 	"v2ray.com/core/transport/internet"
@@ -288,5 +288,5 @@ func (v *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *pro
 }
 
 func init() {
-	registry.MustRegisterInboundHandlerCreator(loader.GetType(new(ServerConfig)), new(ServerFactory))
+	registry.MustRegisterInboundHandlerCreator(serial.GetMessageType(new(ServerConfig)), new(ServerFactory))
 }

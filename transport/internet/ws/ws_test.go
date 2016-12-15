@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/transport/internet"
 	v2tls "v2ray.com/core/transport/internet/tls"
@@ -21,7 +21,7 @@ func Test_listenWSAndDial(t *testing.T) {
 			NetworkSettings: []*internet.NetworkSettings{
 				{
 					Network: v2net.Network_WebSocket,
-					Settings: loader.NewTypedSettings(&Config{
+					Settings: serial.ToTypedMessage(&Config{
 						Path: "ws",
 					}),
 				},
@@ -47,7 +47,7 @@ func Test_listenWSAndDial(t *testing.T) {
 			NetworkSettings: []*internet.NetworkSettings{
 				{
 					Network: v2net.Network_WebSocket,
-					Settings: loader.NewTypedSettings(&Config{
+					Settings: serial.ToTypedMessage(&Config{
 						Path: "ws",
 					}),
 				},
@@ -63,7 +63,7 @@ func Test_listenWSAndDial(t *testing.T) {
 			NetworkSettings: []*internet.NetworkSettings{
 				{
 					Network: v2net.Network_WebSocket,
-					Settings: loader.NewTypedSettings(&Config{
+					Settings: serial.ToTypedMessage(&Config{
 						Path: "ws",
 					}),
 				},
@@ -79,7 +79,7 @@ func Test_listenWSAndDial(t *testing.T) {
 			NetworkSettings: []*internet.NetworkSettings{
 				{
 					Network: v2net.Network_WebSocket,
-					Settings: loader.NewTypedSettings(&Config{
+					Settings: serial.ToTypedMessage(&Config{
 						Path: "ws",
 					}),
 				},
@@ -108,13 +108,13 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 
 	listen, err := ListenWS(v2net.DomainAddress("localhost"), 13143, internet.ListenOptions{
 		Stream: &internet.StreamConfig{
-			SecurityType:     loader.GetType(new(v2tls.Config)),
-			SecuritySettings: []*loader.TypedSettings{loader.NewTypedSettings(tlsSettings)},
+			SecurityType:     serial.GetMessageType(new(v2tls.Config)),
+			SecuritySettings: []*serial.TypedMessage{serial.ToTypedMessage(tlsSettings)},
 			Network:          v2net.Network_WebSocket,
 			NetworkSettings: []*internet.NetworkSettings{
 				{
 					Network: v2net.Network_WebSocket,
-					Settings: loader.NewTypedSettings(&Config{
+					Settings: serial.ToTypedMessage(&Config{
 						Path: "wss",
 						ConnectionReuse: &ConnectionReuse{
 							Enable: true,
@@ -133,13 +133,13 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 	}()
 	conn, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13143), internet.DialerOptions{
 		Stream: &internet.StreamConfig{
-			SecurityType:     loader.GetType(new(v2tls.Config)),
-			SecuritySettings: []*loader.TypedSettings{loader.NewTypedSettings(tlsSettings)},
+			SecurityType:     serial.GetMessageType(new(v2tls.Config)),
+			SecuritySettings: []*serial.TypedMessage{serial.ToTypedMessage(tlsSettings)},
 			Network:          v2net.Network_WebSocket,
 			NetworkSettings: []*internet.NetworkSettings{
 				{
 					Network: v2net.Network_WebSocket,
-					Settings: loader.NewTypedSettings(&Config{
+					Settings: serial.ToTypedMessage(&Config{
 						Path: "wss",
 						ConnectionReuse: &ConnectionReuse{
 							Enable: true,

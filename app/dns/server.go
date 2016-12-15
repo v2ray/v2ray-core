@@ -8,9 +8,9 @@ import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/serial"
 
 	"github.com/miekg/dns"
 )
@@ -125,5 +125,5 @@ func (v CacheServerFactory) AppId() app.ID {
 }
 
 func init() {
-	app.RegisterApplicationFactory(loader.GetType(new(Config)), CacheServerFactory{})
+	app.RegisterApplicationFactory(serial.GetMessageType(new(Config)), CacheServerFactory{})
 }

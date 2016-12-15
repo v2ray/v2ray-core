@@ -2,7 +2,7 @@ package conf
 
 import (
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/loader"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/transport/internet/headers/http"
 	"v2ray.com/core/transport/internet/headers/noop"
 	"v2ray.com/core/transport/internet/headers/srtp"
@@ -11,26 +11,26 @@ import (
 
 type NoOpAuthenticator struct{}
 
-func (NoOpAuthenticator) Build() (*loader.TypedSettings, error) {
-	return loader.NewTypedSettings(new(noop.Config)), nil
+func (NoOpAuthenticator) Build() (*serial.TypedMessage, error) {
+	return serial.ToTypedMessage(new(noop.Config)), nil
 }
 
 type NoOpConnectionAuthenticator struct{}
 
-func (NoOpConnectionAuthenticator) Build() (*loader.TypedSettings, error) {
-	return loader.NewTypedSettings(new(noop.Config)), nil
+func (NoOpConnectionAuthenticator) Build() (*serial.TypedMessage, error) {
+	return serial.ToTypedMessage(new(noop.Config)), nil
 }
 
 type SRTPAuthenticator struct{}
 
-func (SRTPAuthenticator) Build() (*loader.TypedSettings, error) {
-	return loader.NewTypedSettings(new(srtp.Config)), nil
+func (SRTPAuthenticator) Build() (*serial.TypedMessage, error) {
+	return serial.ToTypedMessage(new(srtp.Config)), nil
 }
 
 type UTPAuthenticator struct{}
 
-func (UTPAuthenticator) Build() (*loader.TypedSettings, error) {
-	return loader.NewTypedSettings(new(utp.Config)), nil
+func (UTPAuthenticator) Build() (*serial.TypedMessage, error) {
+	return serial.ToTypedMessage(new(utp.Config)), nil
 }
 
 type HTTPAuthenticatorRequest struct {
@@ -169,7 +169,7 @@ type HTTPAuthenticator struct {
 	Response HTTPAuthenticatorResponse `json:"response"`
 }
 
-func (v *HTTPAuthenticator) Build() (*loader.TypedSettings, error) {
+func (v *HTTPAuthenticator) Build() (*serial.TypedMessage, error) {
 	config := new(http.Config)
 	requestConfig, err := v.Request.Build()
 	if err != nil {
@@ -183,5 +183,5 @@ func (v *HTTPAuthenticator) Build() (*loader.TypedSettings, error) {
 	}
 	config.Response = responseConfig
 
-	return loader.NewTypedSettings(config), nil
+	return serial.ToTypedMessage(config), nil
 }

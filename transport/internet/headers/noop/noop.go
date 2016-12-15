@@ -3,7 +3,7 @@ package noop
 import (
 	"net"
 
-	"v2ray.com/core/common/loader"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -39,6 +39,6 @@ func (NoOpConnectionHeaderFactory) Create(config interface{}) internet.Connectio
 }
 
 func init() {
-	internet.RegisterPacketHeader(loader.GetType(new(Config)), NoOpHeaderFactory{})
-	internet.RegisterConnectionAuthenticator(loader.GetType(new(Config)), NoOpConnectionHeaderFactory{})
+	internet.RegisterPacketHeader(serial.GetMessageType(new(Config)), NoOpHeaderFactory{})
+	internet.RegisterConnectionAuthenticator(serial.GetMessageType(new(Config)), NoOpConnectionHeaderFactory{})
 }

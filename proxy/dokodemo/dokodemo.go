@@ -7,9 +7,9 @@ import (
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/registry"
 	"v2ray.com/core/transport/internet"
@@ -212,5 +212,5 @@ func (v *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.Inb
 }
 
 func init() {
-	registry.MustRegisterInboundHandlerCreator(loader.GetType(new(Config)), new(Factory))
+	registry.MustRegisterInboundHandlerCreator(serial.GetMessageType(new(Config)), new(Factory))
 }

@@ -5,7 +5,7 @@ option go_package = "core";
 option java_package = "com.v2ray.core";
 option java_outer_classname = "ConfigProto";
 
-import "v2ray.com/core/common/loader/type.proto";
+import "v2ray.com/core/common/serial/typed_message.proto";
 import "v2ray.com/core/common/net/port.proto";
 import "v2ray.com/core/common/net/address.proto";
 import "v2ray.com/core/common/log/config.proto";
@@ -52,7 +52,7 @@ message AllocationStrategy {
 // Config for an inbound connection handler.
 message InboundConnectionConfig {
   // Protocol specific settings. Must be one of the supported protocols.
-  v2ray.core.common.loader.TypedSettings settings = 1;
+  v2ray.core.common.serial.TypedMessage settings = 1;
 
   // Range of port number to run on. Both inclusive.
   v2ray.core.common.net.PortRange port_range = 2;
@@ -72,7 +72,7 @@ message InboundConnectionConfig {
 
 // Config for an outbound connection handler.
 message OutboundConnectionConfig {
-  v2ray.core.common.loader.TypedSettings settings = 1;
+  v2ray.core.common.serial.TypedMessage settings = 1;
 
   // IP address to send data through. 0.0.0.0 if unset.
   v2ray.core.common.net.IPOrDomain send_through = 2;
@@ -90,6 +90,6 @@ message Config {
   v2ray.core.common.log.Config log = 3;
 
   // App configuration. Must be one in the app directory.
-  repeated v2ray.core.common.loader.TypedSettings app = 4;
+  repeated v2ray.core.common.serial.TypedMessage app = 4;
   v2ray.core.transport.Config transport = 5;
 }

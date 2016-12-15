@@ -2,7 +2,7 @@ package internet
 
 import (
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/loader"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 )
@@ -56,7 +56,7 @@ func (v *StreamConfig) GetEffectiveSecuritySettings() (interface{}, error) {
 			return settings.GetInstance()
 		}
 	}
-	return loader.GetInstance(v.SecurityType)
+	return serial.GetInstance(v.SecurityType)
 }
 
 func (v *StreamConfig) HasSecuritySettings() bool {

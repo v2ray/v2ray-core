@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -22,7 +21,7 @@ func TestUDPEncoding(t *testing.T) {
 		Port:    1234,
 		User: &protocol.User{
 			Email: "love@v2ray.com",
-			Account: loader.NewTypedSettings(&Account{
+			Account: serial.ToTypedMessage(&Account{
 				Password:   "shadowsocks-password",
 				CipherType: CipherType_AES_128_CFB,
 				Ota:        Account_Disabled,
@@ -53,7 +52,7 @@ func TestTCPRequest(t *testing.T) {
 		Port:    1234,
 		User: &protocol.User{
 			Email: "love@v2ray.com",
-			Account: loader.NewTypedSettings(&Account{
+			Account: serial.ToTypedMessage(&Account{
 				Password:   "tcp-password",
 				CipherType: CipherType_CHACHA20,
 			}),
@@ -83,7 +82,7 @@ func TestUDPReaderWriter(t *testing.T) {
 	assert := assert.On(t)
 
 	user := &protocol.User{
-		Account: loader.NewTypedSettings(&Account{
+		Account: serial.ToTypedMessage(&Account{
 			Password:   "test-password",
 			CipherType: CipherType_CHACHA20_IEFT,
 		}),

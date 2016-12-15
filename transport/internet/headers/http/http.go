@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/transport/internet"
 )
@@ -255,5 +254,5 @@ func (HttpAuthenticatorFactory) Create(config interface{}) internet.ConnectionAu
 }
 
 func init() {
-	internet.RegisterConnectionAuthenticator(loader.GetType(new(Config)), HttpAuthenticatorFactory{})
+	internet.RegisterConnectionAuthenticator(serial.GetMessageType(new(Config)), HttpAuthenticatorFactory{})
 }

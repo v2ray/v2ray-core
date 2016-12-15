@@ -3,7 +3,6 @@ package utp
 import (
 	"math/rand"
 
-	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/transport/internet"
 )
@@ -36,5 +35,5 @@ func (v UTPFactory) Create(rawSettings interface{}) internet.PacketHeader {
 }
 
 func init() {
-	internet.RegisterPacketHeader(loader.GetType(new(Config)), UTPFactory{})
+	internet.RegisterPacketHeader(serial.GetMessageType(new(Config)), UTPFactory{})
 }

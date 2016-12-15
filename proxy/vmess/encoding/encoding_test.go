@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/loader"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/uuid"
 	"v2ray.com/core/proxy/vmess"
 	. "v2ray.com/core/proxy/vmess/encoding"
@@ -24,7 +24,7 @@ func TestRequestSerialization(t *testing.T) {
 		Id:      uuid.New().String(),
 		AlterId: 0,
 	}
-	user.Account = loader.NewTypedSettings(account)
+	user.Account = serial.ToTypedMessage(account)
 
 	expectedRequest := &protocol.RequestHeader{
 		Version:  1,

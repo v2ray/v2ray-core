@@ -6,11 +6,11 @@ import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
-	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/registry"
 	"v2ray.com/core/proxy/vmess"
@@ -176,5 +176,5 @@ func (v *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.Out
 }
 
 func init() {
-	registry.MustRegisterOutboundHandlerCreator(loader.GetType(new(Config)), new(Factory))
+	registry.MustRegisterOutboundHandlerCreator(serial.GetMessageType(new(Config)), new(Factory))
 }

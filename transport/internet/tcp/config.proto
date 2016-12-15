@@ -5,12 +5,12 @@ option go_package = "tcp";
 option java_package = "com.v2ray.core.transport.internet.tcp";
 option java_outer_classname = "ConfigProto";
 
-import "v2ray.com/core/common/loader/type.proto";
+import "v2ray.com/core/common/serial/typed_message.proto";
 
 message ConnectionReuse {
   bool enable = 1;
 }
 message Config {
   ConnectionReuse connection_reuse = 1;
-  v2ray.core.common.loader.TypedSettings header_settings = 2;
+  v2ray.core.common.serial.TypedMessage header_settings = 2;
 }

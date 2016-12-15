@@ -3,7 +3,6 @@ package srtp
 import (
 	"math/rand"
 
-	"v2ray.com/core/common/loader"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/transport/internet"
 )
@@ -35,5 +34,5 @@ func (v SRTPFactory) Create(rawSettings interface{}) internet.PacketHeader {
 }
 
 func init() {
-	internet.RegisterPacketHeader(loader.GetType(new(Config)), SRTPFactory{})
+	internet.RegisterPacketHeader(serial.GetMessageType(new(Config)), SRTPFactory{})
 }
