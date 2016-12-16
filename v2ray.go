@@ -3,13 +3,13 @@ package core
 import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
-	dispatchers "v2ray.com/core/app/dispatcher/impl"
 	"v2ray.com/core/app/dns"
 	proxydialer "v2ray.com/core/app/proxy"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy"
 )
 
@@ -69,7 +69,10 @@ func NewPoint(pConfig *Config) (*Point, error) {
 		space.BindApp(dns.APP_ID, dnsServer)
 	}
 
-	vpoint.space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(vpoint.space))
+	dispatcherConfig := new(dispatcher.Config)
+	if err := vpoint.space.BindFromConfig(serial.GetMessageType(dispatcherConfig), dispatcherConfig); err != nil {
+		return nil, err
+	}
 
 	vpoint.inboundHandlers = make([]InboundDetourHandler, 0, 8)
 	vpoint.taggedInboundHandlers = make(map[string]InboundDetourHandler)

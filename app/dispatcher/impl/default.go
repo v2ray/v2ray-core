@@ -2,12 +2,14 @@ package impl
 
 import (
 	"v2ray.com/core/app"
+	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/router"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
 )
@@ -80,4 +82,18 @@ func (v *DefaultDispatcher) FilterPacketAndDispatch(destination v2net.Destinatio
 		return
 	}
 	dispatcher.Dispatch(destination, payload, link)
+}
+
+type DefaultDispatcherFactory struct{}
+
+func (v DefaultDispatcherFactory) Create(space app.Space, config interface{}) (app.Application, error) {
+	return NewDefaultDispatcher(space), nil
+}
+
+func (v DefaultDispatcherFactory) AppId() app.ID {
+	return dispatcher.APP_ID
+}
+
+func init() {
+	app.RegisterApplicationFactory(serial.GetMessageType(new(dispatcher.Config)), DefaultDispatcherFactory{})
 }
