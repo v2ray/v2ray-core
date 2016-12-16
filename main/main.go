@@ -12,6 +12,8 @@ import (
 
 	"v2ray.com/core"
 	"v2ray.com/core/common/log"
+
+	_ "v2ray.com/core/main/distro/all"
 )
 
 var (
