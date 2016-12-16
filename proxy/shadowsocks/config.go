@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/cipher"
 	"crypto/md5"
+
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/protocol"
@@ -73,7 +74,7 @@ func (v *AesCfb) KeySize() int {
 }
 
 func (v *AesCfb) IVSize() int {
-	return 16
+	return v.KeyBytes
 }
 
 func (v *AesCfb) NewEncodingStream(key []byte, iv []byte) (cipher.Stream, error) {
