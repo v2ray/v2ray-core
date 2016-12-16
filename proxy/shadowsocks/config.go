@@ -74,7 +74,7 @@ func (v *AesCfb) KeySize() int {
 }
 
 func (v *AesCfb) IVSize() int {
-	return v.KeyBytes
+	return 16
 }
 
 func (v *AesCfb) NewEncodingStream(key []byte, iv []byte) (cipher.Stream, error) {
