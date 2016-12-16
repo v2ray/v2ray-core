@@ -16,6 +16,8 @@ import (
 const (
 	CRLF   = "\r\n"
 	ENDING = CRLF + CRLF
+
+	maxHeaderLength = 8192
 )
 
 var (
@@ -47,7 +49,8 @@ type HeaderReader struct {
 
 func (*HeaderReader) Read(reader io.Reader) (*buf.Buffer, error) {
 	buffer := buf.NewSmall()
-	for {
+	totalBytes := 0
+	for totalBytes < maxHeaderLength {
 		err := buffer.AppendSupplier(buf.ReadFrom(reader))
 		if err != nil {
 			return nil, err
@@ -57,7 +60,8 @@ func (*HeaderReader) Read(reader io.Reader) (*buf.Buffer, error) {
 			break
 		}
 		if buffer.Len() >= len(ENDING) {
-			leftover := buffer.BytesFrom(buffer.Len() - len(ENDING))
+			totalBytes += buffer.Len() - len(ENDING)
+			leftover := buffer.BytesFrom(-len(ENDING))
 			buffer.Reset(func(b []byte) (int, error) {
 				return copy(b, leftover), nil
 			})
