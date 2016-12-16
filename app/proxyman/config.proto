@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package v2ray.core.app.proxyman;
+option go_package = "proxyman";
+option java_package = "com.v2ray.core.app.proxyman";
+option java_outer_classname = "ConfigProto";
+
+message InboundConfig {
+}
+
+message OutboundConfig {
+  
+}

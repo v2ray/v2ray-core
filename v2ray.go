@@ -41,8 +41,12 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	vpoint.space = space
 	vpoint.space.BindApp(proxyman.APP_ID_INBOUND_MANAGER, vpoint)
 
-	outboundHandlerManager := proxyman.NewDefaultOutboundHandlerManager()
-	vpoint.space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, outboundHandlerManager)
+	outboundManagerConfig := new(proxyman.OutboundConfig)
+	if err := space.BindFromConfig(serial.GetMessageType(outboundManagerConfig), outboundManagerConfig); err != nil {
+		return nil, err
+	}
+
+	outboundHandlerManager := space.GetApp(proxyman.APP_ID_OUTBOUND_MANAGER).(proxyman.OutboundHandlerManager)
 
 	proxyDialer := proxydialer.NewOutboundProxy(space)
 	proxyDialer.RegisterDialer()

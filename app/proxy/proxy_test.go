@@ -6,6 +6,7 @@ import (
 	"v2ray.com/core/app"
 	. "v2ray.com/core/app/proxy"
 	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/app/proxyman/outbound"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/freedom"
@@ -18,7 +19,7 @@ func TestProxyDial(t *testing.T) {
 	assert := assert.On(t)
 
 	space := app.NewSpace()
-	outboundManager := proxyman.NewDefaultOutboundHandlerManager()
+	outboundManager := outbound.New()
 	outboundManager.SetHandler("tag", freedom.NewFreedomConnection(&freedom.Config{}, space, &proxy.OutboundHandlerMeta{
 		Tag: "tag",
 		StreamSettings: &internet.StreamConfig{

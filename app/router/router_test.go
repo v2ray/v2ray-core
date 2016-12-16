@@ -7,7 +7,9 @@ import (
 	"v2ray.com/core/app/dispatcher"
 	dispatchers "v2ray.com/core/app/dispatcher/impl"
 	"v2ray.com/core/app/dns"
+	dnsserver "v2ray.com/core/app/dns/server"
 	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/app/proxyman/outbound"
 	. "v2ray.com/core/app/router"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
@@ -29,9 +31,9 @@ func TestSimpleRouter(t *testing.T) {
 	}
 
 	space := app.NewSpace()
-	space.BindApp(dns.APP_ID, dns.NewCacheServer(space, &dns.Config{}))
+	space.BindApp(dns.APP_ID, dnsserver.NewCacheServer(space, &dns.Config{}))
 	space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(space))
-	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, proxyman.NewDefaultOutboundHandlerManager())
+	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, outbound.New())
 	r := NewRouter(config, space)
 	space.BindApp(APP_ID, r)
 	assert.Error(space.Initialize()).IsNil()

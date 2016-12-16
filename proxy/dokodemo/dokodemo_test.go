@@ -8,6 +8,7 @@ import (
 	"v2ray.com/core/app/dispatcher"
 	dispatchers "v2ray.com/core/app/dispatcher/impl"
 	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/app/proxyman/outbound"
 	"v2ray.com/core/common/dice"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
@@ -37,7 +38,7 @@ func TestDokodemoTCP(t *testing.T) {
 
 	space := app.NewSpace()
 	space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(space))
-	ohm := proxyman.NewDefaultOutboundHandlerManager()
+	ohm := outbound.New()
 	ohm.SetDefaultHandler(
 		freedom.NewFreedomConnection(
 			&freedom.Config{},
@@ -108,7 +109,7 @@ func TestDokodemoUDP(t *testing.T) {
 
 	space := app.NewSpace()
 	space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(space))
-	ohm := proxyman.NewDefaultOutboundHandlerManager()
+	ohm := outbound.New()
 	ohm.SetDefaultHandler(
 		freedom.NewFreedomConnection(
 			&freedom.Config{},

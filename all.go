@@ -5,6 +5,7 @@ import (
 	_ "v2ray.com/core/app/dispatcher/impl"
 	_ "v2ray.com/core/app/dns/server"
 	_ "v2ray.com/core/app/proxy"
+	_ "v2ray.com/core/app/proxyman/outbound"
 	_ "v2ray.com/core/app/router"
 
 	_ "v2ray.com/core/proxy/blackhole"

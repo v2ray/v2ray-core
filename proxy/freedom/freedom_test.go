@@ -7,7 +7,9 @@ import (
 	"v2ray.com/core/app/dispatcher"
 	dispatchers "v2ray.com/core/app/dispatcher/impl"
 	"v2ray.com/core/app/dns"
+	dnsserver "v2ray.com/core/app/dns/server"
 	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/app/proxyman/outbound"
 	"v2ray.com/core/app/router"
 	"v2ray.com/core/common/buf"
 	v2net "v2ray.com/core/common/net"
@@ -64,11 +66,11 @@ func TestIPResolution(t *testing.T) {
 	assert := assert.On(t)
 
 	space := app.NewSpace()
-	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, proxyman.NewDefaultOutboundHandlerManager())
+	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, outbound.New())
 	space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(space))
 	r := router.NewRouter(&router.Config{}, space)
 	space.BindApp(router.APP_ID, r)
-	dnsServer := dns.NewCacheServer(space, &dns.Config{
+	dnsServer := dnsserver.NewCacheServer(space, &dns.Config{
 		Hosts: map[string]*v2net.IPOrDomain{
 			"v2ray.com": v2net.NewIPOrDomain(v2net.LocalHostIP),
 		},
