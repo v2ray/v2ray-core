@@ -3,6 +3,7 @@
 package scenarios
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -22,6 +23,16 @@ func BuildV2Ray() error {
 func RunV2Ray(configFile string) *exec.Cmd {
 	GenTestBinaryPath()
 	proc := exec.Command(testBinaryPath, "-config", configFile)
+	proc.Stderr = os.Stderr
+	proc.Stdout = os.Stdout
+
+	return proc
+}
+
+func RunV2RayProtobuf(config []byte) *exec.Cmd {
+	GenTestBinaryPath()
+	proc := exec.Command(testBinaryPath, "-config=stdin:", "-format=pb")
+	proc.Stdin = bytes.NewBuffer(config)
 	proc.Stderr = os.Stderr
 	proc.Stdout = os.Stdout
 
