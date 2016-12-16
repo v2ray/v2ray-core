@@ -3,7 +3,7 @@ package core
 import (
 	// The following are necessary as they register handlers in their init functions.
 	_ "v2ray.com/core/app/dispatcher/impl"
-	_ "v2ray.com/core/app/dns"
+	_ "v2ray.com/core/app/dns/server"
 	_ "v2ray.com/core/app/proxy"
 	_ "v2ray.com/core/app/router"
 

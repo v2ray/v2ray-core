@@ -59,14 +59,14 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	}
 
 	if !space.HasApp(dns.APP_ID) {
-		dnsServer := dns.NewCacheServer(space, &dns.Config{
-			NameServers: []*v2net.Endpoint{
-				{
-					Address: v2net.NewIPOrDomain(v2net.LocalHostDomain),
-				},
-			},
-		})
-		space.BindApp(dns.APP_ID, dnsServer)
+		dnsConfig := &dns.Config{
+			NameServers: []*v2net.Endpoint{{
+				Address: v2net.NewIPOrDomain(v2net.LocalHostDomain),
+			}},
+		}
+		if err := space.BindFromConfig(serial.GetMessageType(dnsConfig), dnsConfig); err != nil {
+			return nil, err
+		}
 	}
 
 	dispatcherConfig := new(dispatcher.Config)

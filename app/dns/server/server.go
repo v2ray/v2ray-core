@@ -1,4 +1,4 @@
-package dns
+package server
 
 import (
 	"net"
@@ -7,12 +7,13 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core/app/dns"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
 
-	"github.com/miekg/dns"
+	dnsmsg "github.com/miekg/dns"
 )
 
 const (
@@ -31,7 +32,7 @@ type CacheServer struct {
 	servers []NameServer
 }
 
-func NewCacheServer(space app.Space, config *Config) *CacheServer {
+func NewCacheServer(space app.Space, config *dns.Config) *CacheServer {
 	server := &CacheServer{
 		records: make(map[string]*DomainRecord),
 		servers: make([]NameServer, len(config.NameServers)),
@@ -85,7 +86,7 @@ func (v *CacheServer) Get(domain string) []net.IP {
 		return []net.IP{ip}
 	}
 
-	domain = dns.Fqdn(domain)
+	domain = dnsmsg.Fqdn(domain)
 	ips := v.GetCached(domain)
 	if ips != nil {
 		return ips
@@ -116,14 +117,14 @@ func (v *CacheServer) Get(domain string) []net.IP {
 type CacheServerFactory struct{}
 
 func (v CacheServerFactory) Create(space app.Space, config interface{}) (app.Application, error) {
-	server := NewCacheServer(space, config.(*Config))
+	server := NewCacheServer(space, config.(*dns.Config))
 	return server, nil
 }
 
 func (v CacheServerFactory) AppId() app.ID {
-	return APP_ID
+	return dns.APP_ID
 }
 
 func init() {
-	app.RegisterApplicationFactory(serial.GetMessageType(new(Config)), CacheServerFactory{})
+	app.RegisterApplicationFactory(serial.GetMessageType(new(dns.Config)), CacheServerFactory{})
 }
