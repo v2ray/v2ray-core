@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -17,11 +18,13 @@ const (
 	CRLF   = "\r\n"
 	ENDING = CRLF + CRLF
 
+	// max length of HTTP header. Safety precaution for DDoS attack.
 	maxHeaderLength = 8192
 )
 
 var (
-	writeCRLF = serial.WriteString(CRLF)
+	ErrHeaderToLong = errors.New("Header too long.")
+	writeCRLF       = serial.WriteString(CRLF)
 )
 
 type Reader interface {
@@ -50,6 +53,7 @@ type HeaderReader struct {
 func (*HeaderReader) Read(reader io.Reader) (*buf.Buffer, error) {
 	buffer := buf.NewSmall()
 	totalBytes := 0
+	endingDetected := false
 	for totalBytes < maxHeaderLength {
 		err := buffer.AppendSupplier(buf.ReadFrom(reader))
 		if err != nil {
@@ -57,6 +61,7 @@ func (*HeaderReader) Read(reader io.Reader) (*buf.Buffer, error) {
 		}
 		if n := bytes.Index(buffer.Bytes(), []byte(ENDING)); n != -1 {
 			buffer.SliceFrom(n + len(ENDING))
+			endingDetected = true
 			break
 		}
 		if buffer.Len() >= len(ENDING) {
@@ -70,6 +75,10 @@ func (*HeaderReader) Read(reader io.Reader) (*buf.Buffer, error) {
 	if buffer.IsEmpty() {
 		buffer.Release()
 		return nil, nil
+	}
+	if !endingDetected {
+		buffer.Release()
+		return nil, ErrHeaderToLong
 	}
 	return buffer, nil
 }
