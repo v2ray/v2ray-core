@@ -8,48 +8,28 @@ import (
 )
 
 type SegmentWriter interface {
-	Write(seg Segment)
+	Write(seg Segment) error
 }
 
-type BufferedSegmentWriter struct {
+type SimpleSegmentWriter struct {
 	sync.Mutex
-	mtu    uint32
 	buffer *buf.Buffer
 	writer io.Writer
 }
 
-func NewSegmentWriter(writer io.Writer, mtu uint32) *BufferedSegmentWriter {
-	return &BufferedSegmentWriter{
-		mtu:    mtu,
+func NewSegmentWriter(writer io.Writer) SegmentWriter {
+	return &SimpleSegmentWriter{
 		writer: writer,
 		buffer: buf.NewSmall(),
 	}
 }
 
-func (v *BufferedSegmentWriter) Write(seg Segment) {
+func (v *SimpleSegmentWriter) Write(seg Segment) error {
 	v.Lock()
 	defer v.Unlock()
-
-	nBytes := seg.ByteSize()
-	if uint32(v.buffer.Len()+nBytes) > v.mtu {
-		v.FlushWithoutLock()
-	}
 
 	v.buffer.AppendSupplier(seg.Bytes())
-}
-
-func (v *BufferedSegmentWriter) FlushWithoutLock() {
-	v.writer.Write(v.buffer.Bytes())
+	_, err := v.writer.Write(v.buffer.Bytes())
 	v.buffer.Clear()
-}
-
-func (v *BufferedSegmentWriter) Flush() {
-	v.Lock()
-	defer v.Unlock()
-
-	if v.buffer.IsEmpty() {
-		return
-	}
-
-	v.FlushWithoutLock()
+	return err
 }

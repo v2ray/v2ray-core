@@ -188,7 +188,7 @@ type Connection struct {
 	receivingWorker *ReceivingWorker
 	sendingWorker   *SendingWorker
 
-	output *BufferedSegmentWriter
+	output SegmentWriter
 
 	dataUpdater *Updater
 	pingUpdater *Updater
@@ -208,7 +208,7 @@ func NewConnection(conv uint16, sysConn SystemConnection, recycler internal.Conn
 		dataInput:    make(chan bool, 1),
 		dataOutput:   make(chan bool, 1),
 		Config:       config,
-		output:       NewSegmentWriter(sysConn, config.GetMtu().GetValue()-uint32(sysConn.Overhead())),
+		output:       NewSegmentWriter(sysConn),
 		mss:          config.GetMtu().GetValue() - uint32(sysConn.Overhead()) - DataSegmentOverhead,
 		roundTrip: &RoundTripInfo{
 			rto:    100,
@@ -542,7 +542,6 @@ func (v *Connection) flush() {
 	if v.State() == StateTerminating {
 		log.Debug("KCP|Connection: #", v.conv, " sending terminating cmd.")
 		v.Ping(current, CommandTerminate)
-		v.output.Flush()
 
 		if current-atomic.LoadUint32(&v.stateBeginTime) > 8000 {
 			v.SetState(StateTerminated)
@@ -564,9 +563,6 @@ func (v *Connection) flush() {
 	if current-atomic.LoadUint32(&v.lastPingTime) >= 3000 {
 		v.Ping(current, CommandPing)
 	}
-
-	// flash remain segments
-	v.output.Flush()
 }
 
 func (v *Connection) State() State {

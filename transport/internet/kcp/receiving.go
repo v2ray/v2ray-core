@@ -235,7 +235,7 @@ func (v *ReceivingWorker) Flush(current uint32) {
 	v.acklist.Flush(current, v.conn.roundTrip.Timeout())
 }
 
-func (v *ReceivingWorker) Write(seg Segment) {
+func (v *ReceivingWorker) Write(seg Segment) error {
 	ackSeg := seg.(*AckSegment)
 	ackSeg.Conv = v.conn.conv
 	ackSeg.ReceivingNext = v.nextNumber
@@ -243,7 +243,7 @@ func (v *ReceivingWorker) Write(seg Segment) {
 	if v.conn.state == StateReadyToClose {
 		ackSeg.Option = SegmentOptionClose
 	}
-	v.conn.output.Write(ackSeg)
+	return v.conn.output.Write(ackSeg)
 }
 
 func (v *ReceivingWorker) CloseRead() {

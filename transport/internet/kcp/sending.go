@@ -305,7 +305,7 @@ func (v *SendingWorker) Push(b []byte) int {
 }
 
 // Private: Visible for testing.
-func (v *SendingWorker) Write(seg Segment) {
+func (v *SendingWorker) Write(seg Segment) error {
 	dataSeg := seg.(*DataSegment)
 
 	dataSeg.Conv = v.conn.conv
@@ -315,7 +315,7 @@ func (v *SendingWorker) Write(seg Segment) {
 		dataSeg.Option = SegmentOptionClose
 	}
 
-	v.conn.output.Write(dataSeg)
+	return v.conn.output.Write(dataSeg)
 }
 
 func (v *SendingWorker) OnPacketLoss(lossRate uint32) {
