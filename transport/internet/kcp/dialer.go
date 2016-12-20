@@ -163,7 +163,7 @@ func DialKCP(src v2net.Address, dest v2net.Destination, options internet.DialerO
 			if dest.Address.Family().IsDomain() {
 				config.ServerName = dest.Address.Domain()
 			}
-			tlsConn := tls.Client(conn, config)
+			tlsConn := tls.Client(iConn, config)
 			iConn = v2tls.NewConnection(tlsConn)
 		}
 	}
