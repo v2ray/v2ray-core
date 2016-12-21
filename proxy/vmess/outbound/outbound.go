@@ -18,12 +18,14 @@ import (
 	"v2ray.com/core/transport/ray"
 )
 
+// VMessOutboundHandler is an outbound connection handler for VMess protocol.
 type VMessOutboundHandler struct {
 	serverList   *protocol.ServerList
 	serverPicker protocol.ServerPicker
 	meta         *proxy.OutboundHandlerMeta
 }
 
+// Dispatch implements OutboundHandler.Dispatch().
 func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *buf.Buffer, ray ray.OutboundRay) {
 	defer ray.OutboundInput().Release()
 	defer ray.OutboundOutput().Close()
@@ -150,6 +152,7 @@ func (v *VMessOutboundHandler) handleResponse(session *encoding.ClientSession, c
 	return
 }
 
+// Factory is a proxy factory for VMess outbound.
 type Factory struct{}
 
 func (v *Factory) StreamCapability() v2net.NetworkList {

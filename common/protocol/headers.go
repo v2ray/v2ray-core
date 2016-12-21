@@ -14,11 +14,18 @@ const (
 	RequestCommandUDP = RequestCommand(0x02)
 )
 
+// RequestOption is the options of a request.
 type RequestOption byte
 
 const (
-	RequestOptionChunkStream     = RequestOption(0x01)
+	// RequestOptionChunkStream indicates request payload is chunked. Each chunk consists of length, authentication and payload.
+	RequestOptionChunkStream = RequestOption(0x01)
+
+	// RequestOptionConnectionReuse indicates client side expects to reuse the connection.
 	RequestOptionConnectionReuse = RequestOption(0x02)
+
+	// RequestOptionCompressedStream indicates request payload is compressed.
+	RequestOptionCompressedStream = RequestOption(0x04)
 )
 
 func (v RequestOption) Has(option RequestOption) bool {
@@ -66,7 +73,7 @@ func (v *RequestHeader) Destination() v2net.Destination {
 type ResponseOption byte
 
 const (
-	ResponseOptionConnectionReuse = ResponseOption(1)
+	ResponseOptionConnectionReuse = ResponseOption(0x01)
 )
 
 func (v *ResponseOption) Set(option ResponseOption) {
