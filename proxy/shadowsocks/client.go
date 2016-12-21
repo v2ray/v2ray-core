@@ -15,11 +15,13 @@ import (
 	"v2ray.com/core/transport/ray"
 )
 
+// Client is a inbound handler for Shadowsocks protocol
 type Client struct {
 	serverPicker protocol.ServerPicker
 	meta         *proxy.OutboundHandlerMeta
 }
 
+// NewClient create a new Shadowsocks client.
 func NewClient(config *ClientConfig, space app.Space, meta *proxy.OutboundHandlerMeta) (*Client, error) {
 	serverList := protocol.NewServerList()
 	for _, rec := range config.Server {
@@ -33,6 +35,7 @@ func NewClient(config *ClientConfig, space app.Space, meta *proxy.OutboundHandle
 	return client, nil
 }
 
+// Dispatch implements OutboundHandler.Dispatch().
 func (v *Client) Dispatch(destination v2net.Destination, payload *buf.Buffer, ray ray.OutboundRay) {
 	defer payload.Release()
 	defer ray.OutboundInput().Release()
@@ -95,7 +98,7 @@ func (v *Client) Dispatch(destination v2net.Destination, payload *buf.Buffer, ra
 		defer bodyWriter.Release()
 
 		if err != nil {
-			log.Info("Shadowsock|Client: Failed to write request: ", err)
+			log.Info("Shadowsocks|Client: Failed to write request: ", err)
 			return
 		}
 
@@ -167,14 +170,17 @@ func (v *Client) Dispatch(destination v2net.Destination, payload *buf.Buffer, ra
 	}
 }
 
+// ClientFactory is a OutboundHandlerFactory.
 type ClientFactory struct{}
 
+// StreamCapability implements OutboundHandlerFactory.StreamCapability().
 func (v *ClientFactory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
 		Network: []v2net.Network{v2net.Network_TCP, v2net.Network_RawTCP},
 	}
 }
 
+// Create implements OutboundHandlerFactory.Create().
 func (v *ClientFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 	return NewClient(rawConfig.(*ClientConfig), space, meta)
 }

@@ -12,6 +12,7 @@ import (
 )
 
 const (
+	// AuthSize is the number of extra bytes for Shadowsocks OTA.
 	AuthSize = 10
 )
 
@@ -46,12 +47,12 @@ func HeaderKeyGenerator(key []byte, iv []byte) func() []byte {
 }
 
 func ChunkKeyGenerator(iv []byte) func() []byte {
-	chunkId := 0
+	chunkID := 0
 	return func() []byte {
 		newKey := make([]byte, 0, len(iv)+4)
 		newKey = append(newKey, iv...)
-		newKey = serial.IntToBytes(chunkId, newKey)
-		chunkId++
+		newKey = serial.IntToBytes(chunkID, newKey)
+		chunkID++
 		return newKey
 	}
 }
