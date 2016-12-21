@@ -4,6 +4,7 @@
   
   "go.buildTags": "json",
   "go.lintTool": "gometalinter",
+  "go.formatTool": "goimports",
 
   "protoc": {
     "options": [
