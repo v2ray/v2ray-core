@@ -99,9 +99,11 @@ func (v *Client) Dispatch(destination v2net.Destination, payload *buf.Buffer, ra
 			return
 		}
 
-		if err := bodyWriter.Write(payload); err != nil {
-			log.Info("Shadowsocks|Client: Failed to write payload: ", err)
-			return
+		if !payload.IsEmpty() {
+			if err := bodyWriter.Write(payload); err != nil {
+				log.Info("Shadowsocks|Client: Failed to write payload: ", err)
+				return
+			}
 		}
 
 		var responseMutex sync.Mutex

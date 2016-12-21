@@ -72,6 +72,7 @@ func (v *DefaultDispatcher) DispatchToOutbound(session *proxy.SessionInfo) ray.I
 	return direct
 }
 
+// FilterPacketAndDispatch waits for a payload from source and starts dispatching.
 // Private: Visible for testing.
 func (v *DefaultDispatcher) FilterPacketAndDispatch(destination v2net.Destination, link ray.OutboundRay, dispatcher proxy.OutboundHandler) {
 	payload, err := link.OutboundInput().Read()
