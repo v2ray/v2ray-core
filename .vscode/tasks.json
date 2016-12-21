@@ -6,7 +6,7 @@
   "tasks": [
     {
       "taskName": "build",
-      "args": ["-tags", "json", "v2ray.com/core/..."],
+      "args": ["v2ray.com/core/..."],
       "isBuildCommand": true,
       "problemMatcher": {
         "owner": "go",
@@ -21,7 +21,7 @@
     },
     {
       "taskName": "test",
-      "args": ["-tags", "json", "v2ray.com/core/..."],
+      "args": ["v2ray.com/core/..."],
       "isBuildCommand": false
     }
   ]

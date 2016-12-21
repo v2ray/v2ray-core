@@ -2,8 +2,10 @@
 {
   "editor.tabSize": 2,
   
-  "go.buildTags": "json",
   "go.lintTool": "gometalinter",
+  "go.lintFlags": [
+    "--enable-gc"
+  ],
   "go.formatTool": "goimports",
 
   "protoc": {
