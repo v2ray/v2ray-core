@@ -8,24 +8,26 @@ import (
 	"v2ray.com/core/transport/ray"
 )
 
-// BlackHole is an outbound connection that sliently swallow the entire payload.
-type BlackHole struct {
+// Handler is an outbound connection that sliently swallow the entire payload.
+type Handler struct {
 	meta     *proxy.OutboundHandlerMeta
 	response ResponseConfig
 }
 
-func NewBlackHole(space app.Space, config *Config, meta *proxy.OutboundHandlerMeta) (*BlackHole, error) {
+// New creates a new blackhole handler.
+func New(space app.Space, config *Config, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 	response, err := config.GetInternalResponse()
 	if err != nil {
 		return nil, err
 	}
-	return &BlackHole{
+	return &Handler{
 		meta:     meta,
 		response: response,
 	}, nil
 }
 
-func (v *BlackHole) Dispatch(destination v2net.Destination, payload *buf.Buffer, ray ray.OutboundRay) {
+// Dispatch implements OutboundHandler.Dispatch().
+func (v *Handler) Dispatch(destination v2net.Destination, payload *buf.Buffer, ray ray.OutboundRay) {
 	payload.Release()
 
 	v.response.WriteTo(ray.OutboundOutput())
@@ -34,14 +36,17 @@ func (v *BlackHole) Dispatch(destination v2net.Destination, payload *buf.Buffer,
 	ray.OutboundInput().Release()
 }
 
+// Factory is an utility for creating blackhole handlers.
 type Factory struct{}
 
+// StreamCapability implements OutboundHandlerFactory.StreamCapability().
 func (v *Factory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
 		Network: []v2net.Network{v2net.Network_RawTCP},
 	}
 }
 
+// Create implements OutboundHandlerFactory.Create().
 func (v *Factory) Create(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
-	return NewBlackHole(space, config.(*Config), meta)
+	return New(space, config.(*Config), meta)
 }

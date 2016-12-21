@@ -2,6 +2,7 @@ package conf
 
 import (
 	"encoding/json"
+
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/blackhole"
