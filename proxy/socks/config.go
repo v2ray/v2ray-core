@@ -16,10 +16,6 @@ func (v *Account) AsAccount() (protocol.Account, error) {
 	return v, nil
 }
 
-func NewAccount() protocol.AsAccount {
-	return &Account{}
-}
-
 func (v *ServerConfig) HasAccount(username, password string) bool {
 	if v.Accounts == nil {
 		return false
