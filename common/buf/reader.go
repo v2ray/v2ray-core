@@ -29,8 +29,8 @@ func (v *BytesToBufferReader) Read() (*Buffer, error) {
 
 	buffer := New()
 	if !v.largeBuffer.IsEmpty() {
-		buffer.AppendSupplier(ReadFrom(v.largeBuffer))
-		return buffer, nil
+		err := buffer.AppendSupplier(ReadFrom(v.largeBuffer))
+		return buffer, err
 	}
 
 	err := buffer.AppendSupplier(ReadFrom(v.reader))
@@ -58,6 +58,7 @@ type BufferToBytesReader struct {
 	eof     bool
 }
 
+// Fill fills in the internal buffer.
 // Private: Visible for testing.
 func (v *BufferToBytesReader) Fill() {
 	b, err := v.stream.Read()
@@ -89,6 +90,7 @@ func (v *BufferToBytesReader) Read(b []byte) (int, error) {
 	return nBytes, err
 }
 
+// Release implements Releasable.Release().
 func (v *BufferToBytesReader) Release() {
 	v.Lock()
 	defer v.Unlock()

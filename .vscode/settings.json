@@ -3,6 +3,7 @@
   "editor.tabSize": 2,
   
   "go.buildTags": "json",
+  "go.lintTool": "gometalinter",
 
   "protoc": {
     "options": [

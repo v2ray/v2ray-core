@@ -55,12 +55,12 @@ func NormSecurity(s Security) Security {
 
 type RequestHeader struct {
 	Version  byte
-	User     *User
 	Command  RequestCommand
 	Option   RequestOption
 	Security Security
-	Address  v2net.Address
 	Port     v2net.Port
+	Address  v2net.Address
+	User     *User
 }
 
 func (v *RequestHeader) Destination() v2net.Destination {

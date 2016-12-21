@@ -98,7 +98,7 @@ func (b *Buffer) BytesFrom(from int) []byte {
 	return b.v[b.start+from : b.end]
 }
 
-// BytesFrom returns a slice of this Buffer from start to the given position.
+// BytesTo returns a slice of this Buffer from start to the given position.
 func (b *Buffer) BytesTo(to int) []byte {
 	if to < 0 {
 		to += b.Len()

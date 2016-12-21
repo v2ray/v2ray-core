@@ -27,7 +27,7 @@ type Server struct {
 	accepting        bool
 	tcpHub           *internet.TCPHub
 	udpHub           *udp.UDPHub
-	udpServer        *udp.UDPServer
+	udpServer        *udp.Server
 }
 
 func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandlerMeta) (*Server, error) {
@@ -90,7 +90,7 @@ func (v *Server) Start() error {
 	v.tcpHub = tcpHub
 
 	if v.config.UdpEnabled {
-		v.udpServer = udp.NewUDPServer(v.packetDispatcher)
+		v.udpServer = udp.NewServer(v.packetDispatcher)
 		udpHub, err := udp.ListenUDP(v.meta.Address, v.meta.Port, udp.ListenOption{Callback: v.handlerUDPPayload})
 		if err != nil {
 			log.Error("Shadowsocks: Failed to listen UDP on ", v.meta.Address, ":", v.meta.Port, ": ", err)

@@ -37,7 +37,7 @@ func TestBufferString(t *testing.T) {
 	buffer := New()
 	defer buffer.Release()
 
-	buffer.AppendSupplier(serial.WriteString("Test String"))
+	assert.Error(buffer.AppendSupplier(serial.WriteString("Test String"))).IsNil()
 	assert.String(buffer.String()).Equals("Test String")
 }
 

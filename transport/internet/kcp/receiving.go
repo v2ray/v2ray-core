@@ -129,7 +129,7 @@ func (v *AckList) Flush(current uint32, rto uint32) {
 			v.dirty = false
 		}
 	}
-	if v.dirty || seg.Count > 0 {
+	if v.dirty || !seg.IsEmpty() {
 		for _, number := range v.flushCandidates {
 			if seg.IsFull() {
 				break

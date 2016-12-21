@@ -260,15 +260,13 @@ func (v *SendingWorker) ProcessSegment(current uint32, seg *AckSegment, rto uint
 	}
 	v.ProcessReceivingNextWithoutLock(seg.ReceivingNext)
 
-	if seg.Count == 0 {
+	if seg.IsEmpty() {
 		return
 	}
 
 	var maxack uint32
 	var maxackRemoved bool
-	for i := 0; i < int(seg.Count); i++ {
-		number := seg.NumberList[i]
-
+	for _, number := range seg.NumberList {
 		removed := v.ProcessAck(number)
 		if maxack < number {
 			maxack = number

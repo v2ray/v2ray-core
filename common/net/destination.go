@@ -7,8 +7,8 @@ import (
 // Destination represents a network destination including address and protocol (tcp / udp).
 type Destination struct {
 	Network Network
-	Address Address
 	Port    Port
+	Address Address
 }
 
 func DestinationFromAddr(addr net.Addr) Destination {
@@ -45,7 +45,7 @@ func (v Destination) NetAddr() string {
 }
 
 func (v Destination) String() string {
-	return v.Network.UrlPrefix() + ":" + v.NetAddr()
+	return v.Network.URLPrefix() + ":" + v.NetAddr()
 }
 
 func (v *Endpoint) AsDestination() Destination {

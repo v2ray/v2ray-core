@@ -2,9 +2,9 @@ package internet
 
 import (
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/serial"
 )
 
 type ConfigCreator func() interface{}

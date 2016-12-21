@@ -8,7 +8,7 @@ import (
 	"v2ray.com/core/proxy"
 )
 
-// Handler for inbound detour connections.
+// InboundDetourHandlerAlways is a handler for inbound detour connections.
 type InboundDetourHandlerAlways struct {
 	space  app.Space
 	config *InboundConnectionConfig
@@ -54,7 +54,7 @@ func (v *InboundDetourHandlerAlways) Close() {
 	}
 }
 
-// Starts the inbound connection handler.
+// Start starts the inbound connection handler.
 func (v *InboundDetourHandlerAlways) Start() error {
 	for _, ich := range v.ich {
 		err := retry.ExponentialBackoff(10 /* times */, 200 /* ms */).On(func() error {

@@ -14,7 +14,7 @@ func TestWriter(t *testing.T) {
 	assert := assert.On(t)
 
 	lb := New()
-	lb.AppendSupplier(ReadFrom(rand.Reader))
+	assert.Error(lb.AppendSupplier(ReadFrom(rand.Reader))).IsNil()
 
 	expectedBytes := append([]byte(nil), lb.Bytes()...)
 

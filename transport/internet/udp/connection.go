@@ -2,6 +2,7 @@ package udp
 
 import (
 	"net"
+
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 )

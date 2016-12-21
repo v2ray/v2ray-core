@@ -79,7 +79,7 @@ func (v *DataSegment) Bytes() buf.Supplier {
 		b = serial.Uint32ToBytes(v.SendingNext, b)
 		b = serial.Uint16ToBytes(uint16(v.Data.Len()), b)
 		b = append(b, v.Data.Bytes()...)
-		return v.ByteSize(), nil
+		return len(b), nil
 	}
 }
 
@@ -98,7 +98,6 @@ type AckSegment struct {
 	ReceivingWindow uint32
 	ReceivingNext   uint32
 	Timestamp       uint32
-	Count           byte
 	NumberList      []uint32
 }
 
@@ -125,16 +124,19 @@ func (v *AckSegment) PutTimestamp(timestamp uint32) {
 }
 
 func (v *AckSegment) PutNumber(number uint32) {
-	v.Count++
 	v.NumberList = append(v.NumberList, number)
 }
 
 func (v *AckSegment) IsFull() bool {
-	return v.Count == ackNumberLimit
+	return len(v.NumberList) == ackNumberLimit
+}
+
+func (v *AckSegment) IsEmpty() bool {
+	return len(v.NumberList) == 0
 }
 
 func (v *AckSegment) ByteSize() int {
-	return 2 + 1 + 1 + 4 + 4 + 4 + 1 + int(v.Count)*4
+	return 2 + 1 + 1 + 4 + 4 + 4 + 1 + len(v.NumberList)*4
 }
 
 func (v *AckSegment) Bytes() buf.Supplier {
@@ -144,9 +146,10 @@ func (v *AckSegment) Bytes() buf.Supplier {
 		b = serial.Uint32ToBytes(v.ReceivingWindow, b)
 		b = serial.Uint32ToBytes(v.ReceivingNext, b)
 		b = serial.Uint32ToBytes(v.Timestamp, b)
-		b = append(b, v.Count)
-		for i := byte(0); i < v.Count; i++ {
-			b = serial.Uint32ToBytes(v.NumberList[i], b)
+		count := byte(len(v.NumberList))
+		b = append(b, count)
+		for _, number := range v.NumberList {
+			b = serial.Uint32ToBytes(number, b)
 		}
 		return v.ByteSize(), nil
 	}
@@ -188,7 +191,7 @@ func (v *CmdOnlySegment) Bytes() buf.Supplier {
 		b = serial.Uint32ToBytes(v.SendingNext, b)
 		b = serial.Uint32ToBytes(v.ReceivinNext, b)
 		b = serial.Uint32ToBytes(v.PeerRTO, b)
-		return v.ByteSize(), nil
+		return len(b), nil
 	}
 }
 

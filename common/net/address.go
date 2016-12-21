@@ -8,8 +8,13 @@ import (
 )
 
 var (
-	LocalHostIP     = IPAddress([]byte{127, 0, 0, 1})
-	AnyIP           = IPAddress([]byte{0, 0, 0, 0})
+	// LocalHostIP is a constant value for localhost IP in IPv4.
+	LocalHostIP = IPAddress([]byte{127, 0, 0, 1})
+
+	// AnyIP is a constant value for any IP in IPv4.
+	AnyIP = IPAddress([]byte{0, 0, 0, 0})
+
+	// LocalHostDomain is a constant value for localhost domain.
 	LocalHostDomain = DomainAddress("localhost")
 )
 
@@ -87,21 +92,20 @@ func IPAddress(ip []byte) Address {
 
 // DomainAddress creates an Address with given domain.
 func DomainAddress(domain string) Address {
-	var addr domainAddress = domainAddress(domain)
-	return addr
+	return domainAddress(domain)
 }
 
 type ipv4Address [4]byte
 
-func (addr ipv4Address) IP() net.IP {
-	return net.IP(addr[:])
+func (v ipv4Address) IP() net.IP {
+	return net.IP(v[:])
 }
 
-func (addr ipv4Address) Domain() string {
+func (ipv4Address) Domain() string {
 	panic("Calling Domain() on an IPv4Address.")
 }
 
-func (addr ipv4Address) Family() AddressFamily {
+func (ipv4Address) Family() AddressFamily {
 	return AddressFamilyIPv4
 }
 
@@ -111,15 +115,15 @@ func (v ipv4Address) String() string {
 
 type ipv6Address [16]byte
 
-func (addr ipv6Address) IP() net.IP {
-	return net.IP(addr[:])
+func (v ipv6Address) IP() net.IP {
+	return net.IP(v[:])
 }
 
-func (addr ipv6Address) Domain() string {
+func (ipv6Address) Domain() string {
 	panic("Calling Domain() on an IPv6Address.")
 }
 
-func (v ipv6Address) Family() AddressFamily {
+func (ipv6Address) Family() AddressFamily {
 	return AddressFamilyIPv6
 }
 
@@ -129,15 +133,15 @@ func (v ipv6Address) String() string {
 
 type domainAddress string
 
-func (addr domainAddress) IP() net.IP {
+func (domainAddress) IP() net.IP {
 	panic("Calling IP() on a DomainAddress.")
 }
 
-func (addr domainAddress) Domain() string {
-	return string(addr)
+func (v domainAddress) Domain() string {
+	return string(v)
 }
 
-func (addr domainAddress) Family() AddressFamily {
+func (domainAddress) Family() AddressFamily {
 	return AddressFamilyDomain
 }
 

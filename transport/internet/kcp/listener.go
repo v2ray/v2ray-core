@@ -20,7 +20,7 @@ import (
 	"v2ray.com/core/transport/internet/udp"
 )
 
-type ConnectionId struct {
+type ConnectionID struct {
 	Remote v2net.Address
 	Port   v2net.Port
 	Conv   uint16
@@ -81,7 +81,7 @@ func (o *ServerConnection) Id() internal.ConnectionId {
 type Listener struct {
 	sync.Mutex
 	running       bool
-	sessions      map[ConnectionId]*Connection
+	sessions      map[ConnectionID]*Connection
 	awaitingConns chan *Connection
 	hub           *udp.UDPHub
 	tlsConfig     *tls.Config
@@ -115,7 +115,7 @@ func NewListener(address v2net.Address, port v2net.Port, options internet.Listen
 			Header:   header,
 			Security: security,
 		},
-		sessions:      make(map[ConnectionId]*Connection),
+		sessions:      make(map[ConnectionID]*Connection),
 		awaitingConns: make(chan *Connection, 64),
 		running:       true,
 		config:        kcpSettings,
@@ -165,7 +165,7 @@ func (v *Listener) OnReceive(payload *buf.Buffer, session *proxy.SessionInfo) {
 	conv := segments[0].Conversation()
 	cmd := segments[0].Command()
 
-	id := ConnectionId{
+	id := ConnectionID{
 		Remote: src.Address,
 		Port:   src.Port,
 		Conv:   conv,
@@ -210,7 +210,7 @@ func (v *Listener) OnReceive(payload *buf.Buffer, session *proxy.SessionInfo) {
 	conn.Input(segments)
 }
 
-func (v *Listener) Remove(id ConnectionId) {
+func (v *Listener) Remove(id ConnectionID) {
 	if !v.running {
 		return
 	}
@@ -277,7 +277,7 @@ func (v *Listener) Addr() net.Addr {
 func (v *Listener) Put(internal.ConnectionId, net.Conn) {}
 
 type Writer struct {
-	id       ConnectionId
+	id       ConnectionID
 	dest     v2net.Destination
 	hub      *udp.UDPHub
 	listener *Listener

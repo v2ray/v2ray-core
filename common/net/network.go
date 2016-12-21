@@ -39,7 +39,7 @@ func (v Network) SystemString() string {
 	}
 }
 
-func (v Network) UrlPrefix() string {
+func (v Network) URLPrefix() string {
 	switch v {
 	case Network_TCP, Network_RawTCP:
 		return "tcp"

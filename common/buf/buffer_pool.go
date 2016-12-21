@@ -96,10 +96,10 @@ func (p *BufferPool) Free(buffer *Buffer) {
 const (
 	// Size of a regular buffer.
 	Size = 8 * 1024
-	// Size of a small buffer.
+	// SizeSmall is the size of a small buffer.
 	SizeSmall = 2 * 1024
 
-	PoolSizeEnvKey = "v2ray.buffer.size"
+	poolSizeEnvKey = "v2ray.buffer.size"
 )
 
 var (
@@ -109,7 +109,7 @@ var (
 
 func init() {
 	var size uint32 = 20
-	sizeStr := os.Getenv(PoolSizeEnvKey)
+	sizeStr := os.Getenv(poolSizeEnvKey)
 	if len(sizeStr) > 0 {
 		customSize, err := strconv.ParseUint(sizeStr, 10, 32)
 		if err == nil {

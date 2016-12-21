@@ -25,7 +25,7 @@ type DokodemoDoor struct {
 	packetDispatcher dispatcher.PacketDispatcher
 	tcpListener      *internet.TCPHub
 	udpHub           *udp.UDPHub
-	udpServer        *udp.UDPServer
+	udpServer        *udp.Server
 	meta             *proxy.InboundHandlerMeta
 }
 
@@ -88,7 +88,7 @@ func (v *DokodemoDoor) Start() error {
 }
 
 func (v *DokodemoDoor) ListenUDP() error {
-	v.udpServer = udp.NewUDPServer(v.packetDispatcher)
+	v.udpServer = udp.NewServer(v.packetDispatcher)
 	udpHub, err := udp.ListenUDP(
 		v.meta.Address, v.meta.Port, udp.ListenOption{
 			Callback:            v.handleUDPPackets,

@@ -35,7 +35,7 @@ type Server struct {
 	tcpListener      *internet.TCPHub
 	udpHub           *udp.UDPHub
 	udpAddress       v2net.Destination
-	udpServer        *udp.UDPServer
+	udpServer        *udp.Server
 	meta             *proxy.InboundHandlerMeta
 }
 

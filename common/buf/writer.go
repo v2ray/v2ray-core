@@ -60,6 +60,7 @@ func (v *BytesToBufferWriter) Write(payload []byte) (int, error) {
 	return bytesWritten, nil
 }
 
+// Release implements Releasable.Release()
 func (v *BytesToBufferWriter) Release() {
 	v.Lock()
 	v.writer.Release()

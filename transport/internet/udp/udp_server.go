@@ -12,17 +12,17 @@ import (
 	"v2ray.com/core/transport/ray"
 )
 
-type UDPResponseCallback func(destination v2net.Destination, payload *buf.Buffer)
+type ResponseCallback func(destination v2net.Destination, payload *buf.Buffer)
 
 type TimedInboundRay struct {
 	name       string
 	inboundRay ray.InboundRay
 	accessed   chan bool
-	server     *UDPServer
+	server     *Server
 	sync.RWMutex
 }
 
-func NewTimedInboundRay(name string, inboundRay ray.InboundRay, server *UDPServer) *TimedInboundRay {
+func NewTimedInboundRay(name string, inboundRay ray.InboundRay, server *Server) *TimedInboundRay {
 	r := &TimedInboundRay{
 		name:       name,
 		inboundRay: inboundRay,
@@ -92,26 +92,26 @@ func (v *TimedInboundRay) Release() {
 	v.inboundRay = nil
 }
 
-type UDPServer struct {
+type Server struct {
 	sync.RWMutex
 	conns            map[string]*TimedInboundRay
 	packetDispatcher dispatcher.PacketDispatcher
 }
 
-func NewUDPServer(packetDispatcher dispatcher.PacketDispatcher) *UDPServer {
-	return &UDPServer{
+func NewServer(packetDispatcher dispatcher.PacketDispatcher) *Server {
+	return &Server{
 		conns:            make(map[string]*TimedInboundRay),
 		packetDispatcher: packetDispatcher,
 	}
 }
 
-func (v *UDPServer) RemoveRay(name string) {
+func (v *Server) RemoveRay(name string) {
 	v.Lock()
 	defer v.Unlock()
 	delete(v.conns, name)
 }
 
-func (v *UDPServer) locateExistingAndDispatch(name string, payload *buf.Buffer) bool {
+func (v *Server) locateExistingAndDispatch(name string, payload *buf.Buffer) bool {
 	log.Debug("UDP Server: Locating existing connection for ", name)
 	v.RLock()
 	defer v.RUnlock()
@@ -130,7 +130,7 @@ func (v *UDPServer) locateExistingAndDispatch(name string, payload *buf.Buffer) 
 	return false
 }
 
-func (v *UDPServer) Dispatch(session *proxy.SessionInfo, payload *buf.Buffer, callback UDPResponseCallback) {
+func (v *Server) Dispatch(session *proxy.SessionInfo, payload *buf.Buffer, callback ResponseCallback) {
 	source := session.Source
 	destination := session.Destination
 
@@ -155,7 +155,7 @@ func (v *UDPServer) Dispatch(session *proxy.SessionInfo, payload *buf.Buffer, ca
 	go v.handleConnection(timedInboundRay, source, callback)
 }
 
-func (v *UDPServer) handleConnection(inboundRay *TimedInboundRay, source v2net.Destination, callback UDPResponseCallback) {
+func (v *Server) handleConnection(inboundRay *TimedInboundRay, source v2net.Destination, callback ResponseCallback) {
 	for {
 		inputStream := inboundRay.InboundOutput()
 		if inputStream == nil {

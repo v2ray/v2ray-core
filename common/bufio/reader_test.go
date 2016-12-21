@@ -13,7 +13,7 @@ func TestBufferedReader(t *testing.T) {
 	assert := assert.On(t)
 
 	content := buf.New()
-	content.AppendSupplier(buf.ReadFrom(rand.Reader))
+	assert.Error(content.AppendSupplier(buf.ReadFrom(rand.Reader))).IsNil()
 
 	len := content.Len()
 

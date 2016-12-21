@@ -170,11 +170,9 @@ func (v *AuthenticationReader) Read(b []byte) (int, error) {
 }
 
 type AuthenticationWriter struct {
-	auth     Authenticator
-	buffer   []byte
-	writer   io.Writer
-	ivGen    BytesGenerator
-	extraGen BytesGenerator
+	auth   Authenticator
+	buffer []byte
+	writer io.Writer
 }
 
 func NewAuthenticationWriter(auth Authenticator, writer io.Writer) *AuthenticationWriter {
