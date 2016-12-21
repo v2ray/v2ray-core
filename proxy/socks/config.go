@@ -3,9 +3,6 @@ package socks
 import (
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
-
-	"github.com/golang/protobuf/ptypes"
-	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
 
 func (v *Account) Equals(another protocol.Account) bool {
@@ -21,10 +18,6 @@ func (v *Account) AsAccount() (protocol.Account, error) {
 
 func NewAccount() protocol.AsAccount {
 	return &Account{}
-}
-
-func (v *Account) AsAny() (*google_protobuf.Any, error) {
-	return ptypes.MarshalAny(v)
 }
 
 func (v *ServerConfig) HasAccount(username, password string) bool {
