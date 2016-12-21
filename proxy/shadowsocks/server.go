@@ -26,7 +26,7 @@ type Server struct {
 	meta             *proxy.InboundHandlerMeta
 	accepting        bool
 	tcpHub           *internet.TCPHub
-	udpHub           *udp.UDPHub
+	udpHub           *udp.Hub
 	udpServer        *udp.Server
 }
 

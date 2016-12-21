@@ -28,9 +28,9 @@ func (v *RawConnection) SysFd() (int, error) {
 
 type Connection struct {
 	id       internal.ConnectionId
+	reusable bool
 	conn     net.Conn
 	listener ConnectionManager
-	reusable bool
 	config   *Config
 }
 

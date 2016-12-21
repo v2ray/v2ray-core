@@ -83,7 +83,7 @@ type Listener struct {
 	running       bool
 	sessions      map[ConnectionID]*Connection
 	awaitingConns chan *Connection
-	hub           *udp.UDPHub
+	hub           *udp.Hub
 	tlsConfig     *tls.Config
 	config        *Config
 	reader        PacketReader
@@ -279,7 +279,7 @@ func (v *Listener) Put(internal.ConnectionId, net.Conn) {}
 type Writer struct {
 	id       ConnectionID
 	dest     v2net.Destination
-	hub      *udp.UDPHub
+	hub      *udp.Hub
 	listener *Listener
 }
 

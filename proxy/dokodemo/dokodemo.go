@@ -24,7 +24,7 @@ type DokodemoDoor struct {
 	port             v2net.Port
 	packetDispatcher dispatcher.PacketDispatcher
 	tcpListener      *internet.TCPHub
-	udpHub           *udp.UDPHub
+	udpHub           *udp.Hub
 	udpServer        *udp.Server
 	meta             *proxy.InboundHandlerMeta
 }

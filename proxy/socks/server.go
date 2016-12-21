@@ -33,7 +33,7 @@ type Server struct {
 	packetDispatcher dispatcher.PacketDispatcher
 	config           *ServerConfig
 	tcpListener      *internet.TCPHub
-	udpHub           *udp.UDPHub
+	udpHub           *udp.Hub
 	udpAddress       v2net.Destination
 	udpServer        *udp.Server
 	meta             *proxy.InboundHandlerMeta
