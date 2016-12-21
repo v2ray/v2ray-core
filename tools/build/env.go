@@ -28,42 +28,38 @@ const (
 
 func parseOS(rawOS string) GoOS {
 	osStr := strings.ToLower(rawOS)
-	if osStr == "windows" || osStr == "win" {
+	switch osStr {
+	case "windows", "win":
 		return Windows
-	}
-	if osStr == "darwin" || osStr == "mac" || osStr == "macos" || osStr == "osx" {
+	case "darwin", "mac", "macos", "osx":
 		return MacOS
-	}
-	if osStr == "linux" || osStr == "debian" || osStr == "ubuntu" || osStr == "redhat" || osStr == "centos" {
+	case "linux", "debian", "ubuntu", "redhat", "centos":
 		return Linux
-	}
-	if osStr == "freebsd" {
+	case "freebsd":
 		return FreeBSD
-	}
-	if osStr == "openbsd" {
+	case "openbsd":
 		return OpenBSD
+	default:
+		return UnknownOS
 	}
-	return UnknownOS
 }
 
 func parseArch(rawArch string) GoArch {
 	archStr := strings.ToLower(rawArch)
-	if archStr == "x86" || archStr == "386" || archStr == "i386" {
+	switch archStr {
+	case "x86", "386", "i386":
 		return X86
-	}
-	if archStr == "amd64" || archStr == "x86-64" || archStr == "x64" {
+	case "amd64", "x86-64", "x64":
 		return Amd64
-	}
-	if archStr == "arm" {
+	case "arm":
 		return Arm
-	}
-	if archStr == "arm64" {
+	case "arm64":
 		return Arm64
-	}
-	if archStr == "mips" || archStr == "mips64" {
+	case "mips", "mips64":
 		return Mips64
+	default:
+		return UnknownArch
 	}
-	return UnknownArch
 }
 
 func getSuffix(os GoOS, arch GoArch) string {

@@ -37,10 +37,7 @@ func (worker *ZipWorker) zipAllFiles(path string, info os.FileInfo, err error) e
 		return err
 	}
 	_, err = io.Copy(fileWriter, fileReader)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (worker *ZipWorker) close() {
