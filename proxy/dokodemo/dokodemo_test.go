@@ -40,7 +40,7 @@ func TestDokodemoTCP(t *testing.T) {
 	space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(space))
 	ohm := outbound.New()
 	ohm.SetDefaultHandler(
-		freedom.NewFreedomConnection(
+		freedom.New(
 			&freedom.Config{},
 			space,
 			&proxy.OutboundHandlerMeta{
@@ -111,7 +111,7 @@ func TestDokodemoUDP(t *testing.T) {
 	space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(space))
 	ohm := outbound.New()
 	ohm.SetDefaultHandler(
-		freedom.NewFreedomConnection(
+		freedom.New(
 			&freedom.Config{},
 			space,
 			&proxy.OutboundHandlerMeta{

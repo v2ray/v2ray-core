@@ -36,7 +36,7 @@ func TestSinglePacket(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	space := app.NewSpace()
-	freedom := NewFreedomConnection(
+	freedom := New(
 		&Config{},
 		space,
 		&proxy.OutboundHandlerMeta{
@@ -45,7 +45,7 @@ func TestSinglePacket(t *testing.T) {
 				Network: v2net.Network_RawTCP,
 			},
 		})
-	space.Initialize()
+	assert.Error(space.Initialize()).IsNil()
 
 	traffic := ray.NewRay()
 	data2Send := "Data to be sent to remote"
@@ -77,7 +77,7 @@ func TestIPResolution(t *testing.T) {
 	})
 	space.BindApp(dns.APP_ID, dnsServer)
 
-	freedom := NewFreedomConnection(
+	freedom := New(
 		&Config{DomainStrategy: Config_USE_IP},
 		space,
 		&proxy.OutboundHandlerMeta{
@@ -87,7 +87,7 @@ func TestIPResolution(t *testing.T) {
 			},
 		})
 
-	space.Initialize()
+	assert.Error(space.Initialize()).IsNil()
 
 	ipDest := freedom.ResolveIP(v2net.TCPDestination(v2net.DomainAddress("v2ray.com"), v2net.Port(80)))
 	assert.Destination(ipDest).IsTCP()

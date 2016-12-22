@@ -1,3 +1,4 @@
+// Package blackhole is an outbound handler that blocks all connections.
 package blackhole
 
 import (

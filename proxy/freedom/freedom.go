@@ -18,15 +18,15 @@ import (
 	"v2ray.com/core/transport/ray"
 )
 
-type FreedomConnection struct {
+type Handler struct {
 	domainStrategy Config_DomainStrategy
 	timeout        uint32
 	dns            dns.Server
 	meta           *proxy.OutboundHandlerMeta
 }
 
-func NewFreedomConnection(config *Config, space app.Space, meta *proxy.OutboundHandlerMeta) *FreedomConnection {
-	f := &FreedomConnection{
+func New(config *Config, space app.Space, meta *proxy.OutboundHandlerMeta) *Handler {
+	f := &Handler{
 		domainStrategy: config.DomainStrategy,
 		timeout:        config.Timeout,
 		meta:           meta,
@@ -44,7 +44,7 @@ func NewFreedomConnection(config *Config, space app.Space, meta *proxy.OutboundH
 }
 
 // Private: Visible for testing.
-func (v *FreedomConnection) ResolveIP(destination v2net.Destination) v2net.Destination {
+func (v *Handler) ResolveIP(destination v2net.Destination) v2net.Destination {
 	if !destination.Address.Family().IsDomain() {
 		return destination
 	}
@@ -66,7 +66,7 @@ func (v *FreedomConnection) ResolveIP(destination v2net.Destination) v2net.Desti
 	return newDest
 }
 
-func (v *FreedomConnection) Dispatch(destination v2net.Destination, payload *buf.Buffer, ray ray.OutboundRay) {
+func (v *Handler) Dispatch(destination v2net.Destination, payload *buf.Buffer, ray ray.OutboundRay) {
 	log.Info("Freedom: Opening connection to ", destination)
 
 	defer payload.Release()
@@ -128,18 +128,18 @@ func (v *FreedomConnection) Dispatch(destination v2net.Destination, payload *buf
 	ray.OutboundOutput().Close()
 }
 
-type FreedomFactory struct{}
+type Factory struct{}
 
-func (v *FreedomFactory) StreamCapability() v2net.NetworkList {
+func (v *Factory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
 		Network: []v2net.Network{v2net.Network_RawTCP},
 	}
 }
 
-func (v *FreedomFactory) Create(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
-	return NewFreedomConnection(config.(*Config), space, meta), nil
+func (v *Factory) Create(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
+	return New(config.(*Config), space, meta), nil
 }
 
 func init() {
-	proxy.MustRegisterOutboundHandlerCreator(serial.GetMessageType(new(Config)), new(FreedomFactory))
+	proxy.MustRegisterOutboundHandlerCreator(serial.GetMessageType(new(Config)), new(Factory))
 }

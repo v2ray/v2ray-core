@@ -20,7 +20,7 @@ func TestProxyDial(t *testing.T) {
 
 	space := app.NewSpace()
 	outboundManager := outbound.New()
-	outboundManager.SetHandler("tag", freedom.NewFreedomConnection(&freedom.Config{}, space, &proxy.OutboundHandlerMeta{
+	outboundManager.SetHandler("tag", freedom.New(&freedom.Config{}, space, &proxy.OutboundHandlerMeta{
 		Tag: "tag",
 		StreamSettings: &internet.StreamConfig{
 			Network: v2net.Network_RawTCP,
