@@ -32,6 +32,7 @@ type Server struct {
 	meta             *proxy.InboundHandlerMeta
 }
 
+// NewServer creates a new HTTP inbound handler.
 func NewServer(config *ServerConfig, packetDispatcher dispatcher.PacketDispatcher, meta *proxy.InboundHandlerMeta) *Server {
 	return &Server{
 		packetDispatcher: packetDispatcher,
@@ -40,10 +41,12 @@ func NewServer(config *ServerConfig, packetDispatcher dispatcher.PacketDispatche
 	}
 }
 
+// Port implements InboundHandler.Port().
 func (v *Server) Port() v2net.Port {
 	return v.meta.Port
 }
 
+// Close implements InboundHandler.Close().
 func (v *Server) Close() {
 	v.accepting = false
 	if v.tcpListener != nil {
@@ -54,6 +57,7 @@ func (v *Server) Close() {
 	}
 }
 
+// Start implements InboundHandler.Start().
 func (v *Server) Start() error {
 	if v.accepting {
 		return nil
@@ -145,7 +149,10 @@ func (v *Server) handleConnect(request *http.Request, session *proxy.SessionInfo
 		ContentLength: 0,
 		Close:         false,
 	}
-	response.Write(writer)
+	if err := response.Write(writer); err != nil {
+		log.Warning("HTTP|Server: failed to write back OK response: ", err)
+		return
+	}
 
 	ray := v.packetDispatcher.DispatchToOutbound(session)
 	v.transport(reader, writer, ray)
@@ -232,12 +239,11 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 	StripHopByHopHeaders(request)
 
 	ray := v.packetDispatcher.DispatchToOutbound(session)
-	defer ray.InboundInput().Close()
-	defer ray.InboundOutput().Release()
 
 	var finish sync.WaitGroup
 	finish.Add(1)
 	go func() {
+		defer ray.InboundInput().Close()
 		defer finish.Done()
 		requestWriter := bufio.NewWriter(buf.NewBytesWriter(ray.InboundInput()))
 		err := request.Write(requestWriter)
@@ -250,6 +256,7 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 
 	finish.Add(1)
 	go func() {
+		defer ray.InboundOutput().Release()
 		defer finish.Done()
 		responseReader := bufio.OriginalReader(buf.NewBytesReader(ray.InboundOutput()))
 		response, err := http.ReadResponse(responseReader, request)
@@ -265,17 +272,21 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 		}
 		responseWriter.Flush()
 	}()
+
 	finish.Wait()
 }
 
+// ServerFactory is a InboundHandlerFactory.
 type ServerFactory struct{}
 
+// StreamCapability implements InboundHandlerFactory.StreamCapability().
 func (v *ServerFactory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
 		Network: []v2net.Network{v2net.Network_RawTCP},
 	}
 }
 
+// Create implements InboundHandlerFactory.Create().
 func (v *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
 	if !space.HasApp(dispatcher.APP_ID) {
 		return nil, common.ErrBadConfiguration
