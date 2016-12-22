@@ -12,7 +12,7 @@ import (
 	"v2ray.com/core/transport/internet/kcp"
 	"v2ray.com/core/transport/internet/tcp"
 	"v2ray.com/core/transport/internet/tls"
-	"v2ray.com/core/transport/internet/ws"
+	"v2ray.com/core/transport/internet/websocket"
 )
 
 var (
@@ -129,11 +129,11 @@ type WebSocketConfig struct {
 }
 
 func (v *WebSocketConfig) Build() (*serial.TypedMessage, error) {
-	config := &ws.Config{
+	config := &websocket.Config{
 		Path: v.Path,
 	}
 	if v.ConnectionReuse != nil {
-		config.ConnectionReuse = &ws.ConnectionReuse{
+		config.ConnectionReuse = &websocket.ConnectionReuse{
 			Enable: *v.ConnectionReuse,
 		}
 	}

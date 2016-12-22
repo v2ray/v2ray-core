@@ -30,4 +30,4 @@ This transport was disscussed at
 https://github.com/v2ray/v2ray-core/issues/224
 
 */
-package ws
+package websocket

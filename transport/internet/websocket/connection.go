@@ -1,9 +1,10 @@
-package ws
+package websocket
 
 import (
 	"io"
 	"net"
 	"time"
+
 	"v2ray.com/core/common/errors"
 )
 

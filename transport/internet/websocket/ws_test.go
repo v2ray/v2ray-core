@@ -1,4 +1,4 @@
-package ws_test
+package websocket_test
 
 import (
 	"io/ioutil"
@@ -10,7 +10,7 @@ import (
 	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/transport/internet"
 	v2tls "v2ray.com/core/transport/internet/tls"
-	. "v2ray.com/core/transport/internet/ws"
+	. "v2ray.com/core/transport/internet/websocket"
 )
 
 func Test_listenWSAndDial(t *testing.T) {

@@ -1,7 +1,8 @@
-package ws
+package websocket
 
 import (
 	"net"
+
 	"v2ray.com/core/common/errors"
 )
 
