@@ -30,8 +30,11 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Account struct {
-	Id               string                                     `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
-	AlterId          uint32                                     `protobuf:"varint,2,opt,name=alter_id,json=alterId" json:"alter_id,omitempty"`
+	// ID of the account, in the form of an UUID, e.g., "66ad4540-b58c-4ad2-9926-ea63445a9b57".
+	Id string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
+	// Number of alternative IDs. Client and server must share the same number.
+	AlterId uint32 `protobuf:"varint,2,opt,name=alter_id,json=alterId" json:"alter_id,omitempty"`
+	// Security settings. Only applies to client side.
 	SecuritySettings *v2ray_core_common_protocol.SecurityConfig `protobuf:"bytes,3,opt,name=security_settings,json=securitySettings" json:"security_settings,omitempty"`
 }
 
