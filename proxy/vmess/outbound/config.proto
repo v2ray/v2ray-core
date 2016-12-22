@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package v2ray.core.proxy.vmess.outbound;
+option csharp_namespace = "V2Ray.Core.Proxy.Vmess.Outbound";
 option go_package = "outbound";
 option java_package = "com.v2ray.core.proxy.vmess.outbound";
 option java_outer_classname = "ConfigProto";

@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package v2ray.core.proxy.socks;
+option csharp_namespace = "V2Ray.Core.Proxy.Socks";
 option go_package = "socks";
 option java_package = "com.v2ray.core.proxy.socks";
 option java_outer_classname = "ConfigProto";

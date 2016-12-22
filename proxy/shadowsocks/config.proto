@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package v2ray.core.proxy.shadowsocks;
+option csharp_namespace = "V2Ray.Core.Proxy.Shadowsocks";
 option go_package = "shadowsocks";
 option java_package = "com.v2ray.core.proxy.shadowsocks";
 option java_outer_classname = "ConfigProto";

@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package v2ray.core.proxy.blackhole;
+option csharp_namespace = "V2Ray.Core.Proxy.Blackhole";
 option go_package = "blackhole";
 option java_package = "com.v2ray.core.proxy.blackhole";
 option java_outer_classname = "ConfigProto";
