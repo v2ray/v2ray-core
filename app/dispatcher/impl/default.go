@@ -85,6 +85,21 @@ func (v *DefaultDispatcher) FilterPacketAndDispatch(destination v2net.Destinatio
 	dispatcher.Dispatch(destination, payload, link)
 }
 
+func (v *DefaultDispatcher) FixDestination(payload *buf.Buffer, dest v2net.Destination) v2net.Destination {
+	if dest.Address.Family().IsDomain() || dest.Network != v2net.Network_TCP {
+		return dest
+	}
+
+	switch dest.Port {
+	case 80:
+		addr := DetectHTTPHost(payload)
+		if addr != nil {
+			dest.Address = addr
+		}
+	}
+	return dest
+}
+
 type DefaultDispatcherFactory struct{}
 
 func (v DefaultDispatcherFactory) Create(space app.Space, config interface{}) (app.Application, error) {
