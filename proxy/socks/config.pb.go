@@ -63,6 +63,20 @@ func (m *Account) String() string            { return proto.CompactTextString(m)
 func (*Account) ProtoMessage()               {}
 func (*Account) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *Account) GetUsername() string {
+	if m != nil {
+		return m.Username
+	}
+	return ""
+}
+
+func (m *Account) GetPassword() string {
+	if m != nil {
+		return m.Password
+	}
+	return ""
+}
+
 type ServerConfig struct {
 	AuthType   AuthType                          `protobuf:"varint,1,opt,name=auth_type,json=authType,enum=v2ray.core.proxy.socks.AuthType" json:"auth_type,omitempty"`
 	Accounts   map[string]string                 `protobuf:"bytes,2,rep,name=accounts" json:"accounts,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -76,6 +90,13 @@ func (m *ServerConfig) String() string            { return proto.CompactTextStri
 func (*ServerConfig) ProtoMessage()               {}
 func (*ServerConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
+func (m *ServerConfig) GetAuthType() AuthType {
+	if m != nil {
+		return m.AuthType
+	}
+	return AuthType_NO_AUTH
+}
+
 func (m *ServerConfig) GetAccounts() map[string]string {
 	if m != nil {
 		return m.Accounts
@@ -88,6 +109,20 @@ func (m *ServerConfig) GetAddress() *v2ray_core_common_net.IPOrDomain {
 		return m.Address
 	}
 	return nil
+}
+
+func (m *ServerConfig) GetUdpEnabled() bool {
+	if m != nil {
+		return m.UdpEnabled
+	}
+	return false
+}
+
+func (m *ServerConfig) GetTimeout() uint32 {
+	if m != nil {
+		return m.Timeout
+	}
+	return 0
 }
 
 type ClientConfig struct {

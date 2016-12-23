@@ -38,6 +38,13 @@ func (m *ConnectionReuse) String() string            { return proto.CompactTextS
 func (*ConnectionReuse) ProtoMessage()               {}
 func (*ConnectionReuse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *ConnectionReuse) GetEnable() bool {
+	if m != nil {
+		return m.Enable
+	}
+	return false
+}
+
 type Config struct {
 	// Whether or not to reuse WebSocket connections.
 	ConnectionReuse *ConnectionReuse `protobuf:"bytes,1,opt,name=connection_reuse,json=connectionReuse" json:"connection_reuse,omitempty"`
@@ -55,6 +62,13 @@ func (m *Config) GetConnectionReuse() *ConnectionReuse {
 		return m.ConnectionReuse
 	}
 	return nil
+}
+
+func (m *Config) GetPath() string {
+	if m != nil {
+		return m.Path
+	}
+	return ""
 }
 
 func init() {

@@ -50,11 +50,32 @@ func (m *Config) GetAddress() *v2ray_core_common_net.IPOrDomain {
 	return nil
 }
 
+func (m *Config) GetPort() uint32 {
+	if m != nil {
+		return m.Port
+	}
+	return 0
+}
+
 func (m *Config) GetNetworkList() *v2ray_core_common_net1.NetworkList {
 	if m != nil {
 		return m.NetworkList
 	}
 	return nil
+}
+
+func (m *Config) GetTimeout() uint32 {
+	if m != nil {
+		return m.Timeout
+	}
+	return 0
+}
+
+func (m *Config) GetFollowRedirect() bool {
+	if m != nil {
+		return m.FollowRedirect
+	}
+	return false
 }
 
 func init() {

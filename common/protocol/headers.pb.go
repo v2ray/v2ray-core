@@ -55,6 +55,13 @@ func (m *SecurityConfig) String() string            { return proto.CompactTextSt
 func (*SecurityConfig) ProtoMessage()               {}
 func (*SecurityConfig) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
 
+func (m *SecurityConfig) GetType() SecurityType {
+	if m != nil {
+		return m.Type
+	}
+	return SecurityType_UNKNOWN
+}
+
 func init() {
 	proto.RegisterType((*SecurityConfig)(nil), "v2ray.core.common.protocol.SecurityConfig")
 	proto.RegisterEnum("v2ray.core.common.protocol.SecurityType", SecurityType_name, SecurityType_value)

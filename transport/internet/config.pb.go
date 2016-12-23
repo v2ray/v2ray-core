@@ -44,6 +44,13 @@ func (m *NetworkSettings) String() string            { return proto.CompactTextS
 func (*NetworkSettings) ProtoMessage()               {}
 func (*NetworkSettings) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *NetworkSettings) GetNetwork() v2ray_core_common_net.Network {
+	if m != nil {
+		return m.Network
+	}
+	return v2ray_core_common_net.Network_Unknown
+}
+
 func (m *NetworkSettings) GetSettings() *v2ray_core_common_serial.TypedMessage {
 	if m != nil {
 		return m.Settings
@@ -65,11 +72,25 @@ func (m *StreamConfig) String() string            { return proto.CompactTextStri
 func (*StreamConfig) ProtoMessage()               {}
 func (*StreamConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
+func (m *StreamConfig) GetNetwork() v2ray_core_common_net.Network {
+	if m != nil {
+		return m.Network
+	}
+	return v2ray_core_common_net.Network_Unknown
+}
+
 func (m *StreamConfig) GetNetworkSettings() []*NetworkSettings {
 	if m != nil {
 		return m.NetworkSettings
 	}
 	return nil
+}
+
+func (m *StreamConfig) GetSecurityType() string {
+	if m != nil {
+		return m.SecurityType
+	}
+	return ""
 }
 
 func (m *StreamConfig) GetSecuritySettings() []*v2ray_core_common_serial.TypedMessage {
@@ -87,6 +108,13 @@ func (m *ProxyConfig) Reset()                    { *m = ProxyConfig{} }
 func (m *ProxyConfig) String() string            { return proto.CompactTextString(m) }
 func (*ProxyConfig) ProtoMessage()               {}
 func (*ProxyConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+
+func (m *ProxyConfig) GetTag() string {
+	if m != nil {
+		return m.Tag
+	}
+	return ""
+}
 
 func init() {
 	proto.RegisterType((*NetworkSettings)(nil), "v2ray.core.transport.internet.NetworkSettings")

@@ -2,36 +2,9 @@ package http
 
 import (
 	"strings"
+
 	"v2ray.com/core/common/dice"
 )
-
-func (v *Version) GetValue() string {
-	if v == nil {
-		return "1.1"
-	}
-	return v.Value
-}
-
-func (v *Method) GetValue() string {
-	if v == nil {
-		return "GET"
-	}
-	return v.Value
-}
-
-func (v *Status) GetCode() string {
-	if v == nil {
-		return "200"
-	}
-	return v.Code
-}
-
-func (v *Status) GetReason() string {
-	if v == nil {
-		return "OK"
-	}
-	return v.Reason
-}
 
 func pickString(arr []string) string {
 	n := len(arr)
@@ -63,8 +36,22 @@ func (v *RequestConfig) PickHeaders() []string {
 	return headers
 }
 
+func (v *RequestConfig) GetVersionValue() string {
+	if v == nil || v.Version == nil {
+		return "1.1"
+	}
+	return v.Version.Value
+}
+
+func (v *RequestConfig) GetMethodValue() string {
+	if v == nil || v.Method == nil {
+		return "GET"
+	}
+	return v.Method.Value
+}
+
 func (v *RequestConfig) GetFullVersion() string {
-	return "HTTP/" + v.Version.GetValue()
+	return "HTTP/" + v.GetVersionValue()
 }
 
 func (v *ResponseConfig) HasHeader(header string) bool {
@@ -91,6 +78,23 @@ func (v *ResponseConfig) PickHeaders() []string {
 	return headers
 }
 
+func (v *ResponseConfig) GetVersionValue() string {
+	if v == nil || v.Version == nil {
+		return "1.1"
+	}
+	return v.Version.Value
+}
+
 func (v *ResponseConfig) GetFullVersion() string {
-	return "HTTP/" + v.Version.GetValue()
+	return "HTTP/" + v.GetVersionValue()
+}
+
+func (v *ResponseConfig) GetStatusValue() *Status {
+	if v == nil || v.Status == nil {
+		return &Status{
+			Code:   "200",
+			Reason: "OK",
+		}
+	}
+	return v.Status
 }

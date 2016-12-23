@@ -97,6 +97,20 @@ func (m *Domain) String() string            { return proto.CompactTextString(m) 
 func (*Domain) ProtoMessage()               {}
 func (*Domain) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *Domain) GetType() Domain_Type {
+	if m != nil {
+		return m.Type
+	}
+	return Domain_Plain
+}
+
+func (m *Domain) GetValue() string {
+	if m != nil {
+		return m.Value
+	}
+	return ""
+}
+
 // IP for routing decision, in CIDR form.
 type CIDR struct {
 	// IP address, should be either 4 or 16 bytes.
@@ -109,6 +123,20 @@ func (m *CIDR) Reset()                    { *m = CIDR{} }
 func (m *CIDR) String() string            { return proto.CompactTextString(m) }
 func (*CIDR) ProtoMessage()               {}
 func (*CIDR) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+func (m *CIDR) GetIp() []byte {
+	if m != nil {
+		return m.Ip
+	}
+	return nil
+}
+
+func (m *CIDR) GetPrefix() uint32 {
+	if m != nil {
+		return m.Prefix
+	}
+	return 0
+}
 
 type RoutingRule struct {
 	Tag         string                              `protobuf:"bytes,1,opt,name=tag" json:"tag,omitempty"`
@@ -125,6 +153,13 @@ func (m *RoutingRule) Reset()                    { *m = RoutingRule{} }
 func (m *RoutingRule) String() string            { return proto.CompactTextString(m) }
 func (*RoutingRule) ProtoMessage()               {}
 func (*RoutingRule) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+
+func (m *RoutingRule) GetTag() string {
+	if m != nil {
+		return m.Tag
+	}
+	return ""
+}
 
 func (m *RoutingRule) GetDomain() []*Domain {
 	if m != nil {
@@ -161,6 +196,20 @@ func (m *RoutingRule) GetSourceCidr() []*CIDR {
 	return nil
 }
 
+func (m *RoutingRule) GetUserEmail() []string {
+	if m != nil {
+		return m.UserEmail
+	}
+	return nil
+}
+
+func (m *RoutingRule) GetInboundTag() []string {
+	if m != nil {
+		return m.InboundTag
+	}
+	return nil
+}
+
 type Config struct {
 	DomainStrategy Config_DomainStrategy `protobuf:"varint,1,opt,name=domain_strategy,json=domainStrategy,enum=v2ray.core.app.router.Config_DomainStrategy" json:"domain_strategy,omitempty"`
 	Rule           []*RoutingRule        `protobuf:"bytes,2,rep,name=rule" json:"rule,omitempty"`
@@ -170,6 +219,13 @@ func (m *Config) Reset()                    { *m = Config{} }
 func (m *Config) String() string            { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()               {}
 func (*Config) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+
+func (m *Config) GetDomainStrategy() Config_DomainStrategy {
+	if m != nil {
+		return m.DomainStrategy
+	}
+	return Config_AsIs
+}
 
 func (m *Config) GetRule() []*RoutingRule {
 	if m != nil {

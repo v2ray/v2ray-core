@@ -95,6 +95,13 @@ func (m *FileServer_Entry) GetDirectory() string {
 	return ""
 }
 
+func (m *FileServer_Entry) GetPath() string {
+	if m != nil {
+		return m.Path
+	}
+	return ""
+}
+
 // XXX_OneofFuncs is for the internal use of the proto package.
 func (*FileServer_Entry) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
 	return _FileServer_Entry_OneofMarshaler, _FileServer_Entry_OneofUnmarshaler, _FileServer_Entry_OneofSizer, []interface{}{
@@ -170,6 +177,13 @@ func (m *Server) Reset()                    { *m = Server{} }
 func (m *Server) String() string            { return proto.CompactTextString(m) }
 func (*Server) ProtoMessage()               {}
 func (*Server) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+func (m *Server) GetDomain() []string {
+	if m != nil {
+		return m.Domain
+	}
+	return nil
+}
 
 func (m *Server) GetSettings() *v2ray_core_common_serial.TypedMessage {
 	if m != nil {

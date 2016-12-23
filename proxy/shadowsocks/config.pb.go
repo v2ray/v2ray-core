@@ -97,6 +97,27 @@ func (m *Account) String() string            { return proto.CompactTextString(m)
 func (*Account) ProtoMessage()               {}
 func (*Account) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *Account) GetPassword() string {
+	if m != nil {
+		return m.Password
+	}
+	return ""
+}
+
+func (m *Account) GetCipherType() CipherType {
+	if m != nil {
+		return m.CipherType
+	}
+	return CipherType_UNKNOWN
+}
+
+func (m *Account) GetOta() Account_OneTimeAuth {
+	if m != nil {
+		return m.Ota
+	}
+	return Account_Auto
+}
+
 type ServerConfig struct {
 	UdpEnabled bool                             `protobuf:"varint,1,opt,name=udp_enabled,json=udpEnabled" json:"udp_enabled,omitempty"`
 	User       *v2ray_core_common_protocol.User `protobuf:"bytes,2,opt,name=user" json:"user,omitempty"`
@@ -106,6 +127,13 @@ func (m *ServerConfig) Reset()                    { *m = ServerConfig{} }
 func (m *ServerConfig) String() string            { return proto.CompactTextString(m) }
 func (*ServerConfig) ProtoMessage()               {}
 func (*ServerConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+func (m *ServerConfig) GetUdpEnabled() bool {
+	if m != nil {
+		return m.UdpEnabled
+	}
+	return false
+}
 
 func (m *ServerConfig) GetUser() *v2ray_core_common_protocol.User {
 	if m != nil {

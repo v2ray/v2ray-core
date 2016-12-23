@@ -97,6 +97,13 @@ func (m *AllocationStrategyConcurrency) String() string            { return prot
 func (*AllocationStrategyConcurrency) ProtoMessage()               {}
 func (*AllocationStrategyConcurrency) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *AllocationStrategyConcurrency) GetValue() uint32 {
+	if m != nil {
+		return m.Value
+	}
+	return 0
+}
+
 type AllocationStrategyRefresh struct {
 	Value uint32 `protobuf:"varint,1,opt,name=value" json:"value,omitempty"`
 }
@@ -105,6 +112,13 @@ func (m *AllocationStrategyRefresh) Reset()                    { *m = Allocation
 func (m *AllocationStrategyRefresh) String() string            { return proto.CompactTextString(m) }
 func (*AllocationStrategyRefresh) ProtoMessage()               {}
 func (*AllocationStrategyRefresh) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+func (m *AllocationStrategyRefresh) GetValue() uint32 {
+	if m != nil {
+		return m.Value
+	}
+	return 0
+}
 
 type AllocationStrategy struct {
 	Type AllocationStrategy_Type `protobuf:"varint,1,opt,name=type,enum=v2ray.core.AllocationStrategy_Type" json:"type,omitempty"`
@@ -120,6 +134,13 @@ func (m *AllocationStrategy) Reset()                    { *m = AllocationStrateg
 func (m *AllocationStrategy) String() string            { return proto.CompactTextString(m) }
 func (*AllocationStrategy) ProtoMessage()               {}
 func (*AllocationStrategy) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+
+func (m *AllocationStrategy) GetType() AllocationStrategy_Type {
+	if m != nil {
+		return m.Type
+	}
+	return AllocationStrategy_Always
+}
 
 func (m *AllocationStrategy) GetConcurrency() *AllocationStrategyConcurrency {
 	if m != nil {
@@ -176,6 +197,13 @@ func (m *InboundConnectionConfig) GetListenOn() *v2ray_core_common_net1.IPOrDoma
 	return nil
 }
 
+func (m *InboundConnectionConfig) GetTag() string {
+	if m != nil {
+		return m.Tag
+	}
+	return ""
+}
+
 func (m *InboundConnectionConfig) GetAllocationStrategy() *AllocationStrategy {
 	if m != nil {
 		return m.AllocationStrategy
@@ -188,6 +216,13 @@ func (m *InboundConnectionConfig) GetStreamSettings() *v2ray_core_transport_inte
 		return m.StreamSettings
 	}
 	return nil
+}
+
+func (m *InboundConnectionConfig) GetAllowPassiveConnection() bool {
+	if m != nil {
+		return m.AllowPassiveConnection
+	}
+	return false
 }
 
 // Config for an outbound connection handler.
@@ -231,6 +266,13 @@ func (m *OutboundConnectionConfig) GetProxySettings() *v2ray_core_transport_inte
 		return m.ProxySettings
 	}
 	return nil
+}
+
+func (m *OutboundConnectionConfig) GetTag() string {
+	if m != nil {
+		return m.Tag
+	}
+	return ""
 }
 
 type Config struct {

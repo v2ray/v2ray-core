@@ -26,6 +26,20 @@ func (m *User) String() string            { return proto.CompactTextString(m) }
 func (*User) ProtoMessage()               {}
 func (*User) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{0} }
 
+func (m *User) GetLevel() uint32 {
+	if m != nil {
+		return m.Level
+	}
+	return 0
+}
+
+func (m *User) GetEmail() string {
+	if m != nil {
+		return m.Email
+	}
+	return ""
+}
+
 func (m *User) GetAccount() *v2ray_core_common_serial.TypedMessage {
 	if m != nil {
 		return m.Account

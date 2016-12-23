@@ -32,6 +32,13 @@ func (m *ServerEndpoint) GetAddress() *v2ray_core_common_net1.IPOrDomain {
 	return nil
 }
 
+func (m *ServerEndpoint) GetPort() uint32 {
+	if m != nil {
+		return m.Port
+	}
+	return 0
+}
+
 func (m *ServerEndpoint) GetUser() []*User {
 	if m != nil {
 		return m.User

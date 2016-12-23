@@ -43,6 +43,20 @@ func (m *Account) String() string            { return proto.CompactTextString(m)
 func (*Account) ProtoMessage()               {}
 func (*Account) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *Account) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
+func (m *Account) GetAlterId() uint32 {
+	if m != nil {
+		return m.AlterId
+	}
+	return 0
+}
+
 func (m *Account) GetSecuritySettings() *v2ray_core_common_protocol.SecurityConfig {
 	if m != nil {
 		return m.SecuritySettings

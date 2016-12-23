@@ -59,6 +59,20 @@ func (m *Config) String() string            { return proto.CompactTextString(m) 
 func (*Config) ProtoMessage()               {}
 func (*Config) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *Config) GetDomainStrategy() Config_DomainStrategy {
+	if m != nil {
+		return m.DomainStrategy
+	}
+	return Config_AS_IS
+}
+
+func (m *Config) GetTimeout() uint32 {
+	if m != nil {
+		return m.Timeout
+	}
+	return 0
+}
+
 func init() {
 	proto.RegisterType((*Config)(nil), "v2ray.core.proxy.freedom.Config")
 	proto.RegisterEnum("v2ray.core.proxy.freedom.Config_DomainStrategy", Config_DomainStrategy_name, Config_DomainStrategy_value)

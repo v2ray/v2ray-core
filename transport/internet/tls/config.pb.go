@@ -41,6 +41,20 @@ func (m *Certificate) String() string            { return proto.CompactTextStrin
 func (*Certificate) ProtoMessage()               {}
 func (*Certificate) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *Certificate) GetCertificate() []byte {
+	if m != nil {
+		return m.Certificate
+	}
+	return nil
+}
+
+func (m *Certificate) GetKey() []byte {
+	if m != nil {
+		return m.Key
+	}
+	return nil
+}
+
 type Config struct {
 	// Whether or not to allow self-signed certificates.
 	AllowInsecure bool `protobuf:"varint,1,opt,name=allow_insecure,json=allowInsecure" json:"allow_insecure,omitempty"`
@@ -55,11 +69,25 @@ func (m *Config) String() string            { return proto.CompactTextString(m) 
 func (*Config) ProtoMessage()               {}
 func (*Config) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
+func (m *Config) GetAllowInsecure() bool {
+	if m != nil {
+		return m.AllowInsecure
+	}
+	return false
+}
+
 func (m *Config) GetCertificate() []*Certificate {
 	if m != nil {
 		return m.Certificate
 	}
 	return nil
+}
+
+func (m *Config) GetServerName() string {
+	if m != nil {
+		return m.ServerName
+	}
+	return ""
 }
 
 func init() {

@@ -41,6 +41,20 @@ func (m *TypedMessage) String() string            { return proto.CompactTextStri
 func (*TypedMessage) ProtoMessage()               {}
 func (*TypedMessage) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *TypedMessage) GetType() string {
+	if m != nil {
+		return m.Type
+	}
+	return ""
+}
+
+func (m *TypedMessage) GetValue() []byte {
+	if m != nil {
+		return m.Value
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*TypedMessage)(nil), "v2ray.core.common.serial.TypedMessage")
 }

@@ -46,6 +46,20 @@ func (m *Header) String() string            { return proto.CompactTextString(m) 
 func (*Header) ProtoMessage()               {}
 func (*Header) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *Header) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *Header) GetValue() []string {
+	if m != nil {
+		return m.Value
+	}
+	return nil
+}
+
 // HTTP version. Default value "1.1".
 type Version struct {
 	Value string `protobuf:"bytes,1,opt,name=value" json:"value,omitempty"`
@@ -56,6 +70,13 @@ func (m *Version) String() string            { return proto.CompactTextString(m)
 func (*Version) ProtoMessage()               {}
 func (*Version) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
+func (m *Version) GetValue() string {
+	if m != nil {
+		return m.Value
+	}
+	return ""
+}
+
 // HTTP method. Default value "GET".
 type Method struct {
 	Value string `protobuf:"bytes,1,opt,name=value" json:"value,omitempty"`
@@ -65,6 +86,13 @@ func (m *Method) Reset()                    { *m = Method{} }
 func (m *Method) String() string            { return proto.CompactTextString(m) }
 func (*Method) ProtoMessage()               {}
 func (*Method) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+
+func (m *Method) GetValue() string {
+	if m != nil {
+		return m.Value
+	}
+	return ""
+}
 
 type RequestConfig struct {
 	// Full HTTP version like "1.1".
@@ -95,6 +123,13 @@ func (m *RequestConfig) GetMethod() *Method {
 	return nil
 }
 
+func (m *RequestConfig) GetUri() []string {
+	if m != nil {
+		return m.Uri
+	}
+	return nil
+}
+
 func (m *RequestConfig) GetHeader() []*Header {
 	if m != nil {
 		return m.Header
@@ -113,6 +148,20 @@ func (m *Status) Reset()                    { *m = Status{} }
 func (m *Status) String() string            { return proto.CompactTextString(m) }
 func (*Status) ProtoMessage()               {}
 func (*Status) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+
+func (m *Status) GetCode() string {
+	if m != nil {
+		return m.Code
+	}
+	return ""
+}
+
+func (m *Status) GetReason() string {
+	if m != nil {
+		return m.Reason
+	}
+	return ""
+}
 
 type ResponseConfig struct {
 	Version *Version  `protobuf:"bytes,1,opt,name=version" json:"version,omitempty"`

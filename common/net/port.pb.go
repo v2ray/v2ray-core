@@ -24,6 +24,20 @@ func (m *PortRange) String() string            { return proto.CompactTextString(
 func (*PortRange) ProtoMessage()               {}
 func (*PortRange) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{0} }
 
+func (m *PortRange) GetFrom() uint32 {
+	if m != nil {
+		return m.From
+	}
+	return 0
+}
+
+func (m *PortRange) GetTo() uint32 {
+	if m != nil {
+		return m.To
+	}
+	return 0
+}
+
 func init() {
 	proto.RegisterType((*PortRange)(nil), "v2ray.core.common.net.PortRange")
 }

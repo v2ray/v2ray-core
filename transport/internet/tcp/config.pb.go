@@ -39,6 +39,13 @@ func (m *ConnectionReuse) String() string            { return proto.CompactTextS
 func (*ConnectionReuse) ProtoMessage()               {}
 func (*ConnectionReuse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *ConnectionReuse) GetEnable() bool {
+	if m != nil {
+		return m.Enable
+	}
+	return false
+}
+
 type Config struct {
 	ConnectionReuse *ConnectionReuse                       `protobuf:"bytes,1,opt,name=connection_reuse,json=connectionReuse" json:"connection_reuse,omitempty"`
 	HeaderSettings  *v2ray_core_common_serial.TypedMessage `protobuf:"bytes,2,opt,name=header_settings,json=headerSettings" json:"header_settings,omitempty"`

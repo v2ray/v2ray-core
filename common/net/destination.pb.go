@@ -24,11 +24,25 @@ func (m *Endpoint) String() string            { return proto.CompactTextString(m
 func (*Endpoint) ProtoMessage()               {}
 func (*Endpoint) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
 
+func (m *Endpoint) GetNetwork() Network {
+	if m != nil {
+		return m.Network
+	}
+	return Network_Unknown
+}
+
 func (m *Endpoint) GetAddress() *IPOrDomain {
 	if m != nil {
 		return m.Address
 	}
 	return nil
+}
+
+func (m *Endpoint) GetPort() uint32 {
+	if m != nil {
+		return m.Port
+	}
+	return 0
 }
 
 func init() {

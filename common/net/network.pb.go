@@ -57,6 +57,13 @@ func (m *NetworkList) String() string            { return proto.CompactTextStrin
 func (*NetworkList) ProtoMessage()               {}
 func (*NetworkList) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
 
+func (m *NetworkList) GetNetwork() []Network {
+	if m != nil {
+		return m.Network
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*NetworkList)(nil), "v2ray.core.common.net.NetworkList")
 	proto.RegisterEnum("v2ray.core.common.net.Network", Network_name, Network_value)

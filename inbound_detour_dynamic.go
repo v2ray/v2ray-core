@@ -28,7 +28,7 @@ func NewInboundDetourHandlerDynamic(space app.Space, config *InboundConnectionCo
 		config:     config,
 		portsInUse: make(map[v2net.Port]bool),
 	}
-	handler.ichs = make([]proxy.InboundHandler, config.GetAllocationStrategyValue().Concurrency.GetValue())
+	handler.ichs = make([]proxy.InboundHandler, config.GetAllocationStrategyValue().GetConcurrencyValue())
 
 	// To test configuration
 	ichConfig, err := config.GetTypedSettings()
@@ -67,7 +67,7 @@ func (v *InboundDetourHandlerDynamic) GetConnectionHandler() (proxy.InboundHandl
 	v.RLock()
 	defer v.RUnlock()
 	ich := v.ichs[dice.Roll(len(v.ichs))]
-	until := int(v.config.GetAllocationStrategyValue().Refresh.GetValue()) - int((time.Now().Unix()-v.lastRefresh.Unix())/60/1000)
+	until := int(v.config.GetAllocationStrategyValue().GetRefreshValue()) - int((time.Now().Unix()-v.lastRefresh.Unix())/60/1000)
 	if until < 0 {
 		until = 0
 	}
@@ -101,7 +101,7 @@ func (v *InboundDetourHandlerDynamic) refresh() error {
 
 	config := v.config
 	v.ich2Recyle = v.ichs
-	newIchs := make([]proxy.InboundHandler, config.GetAllocationStrategyValue().Concurrency.GetValue())
+	newIchs := make([]proxy.InboundHandler, config.GetAllocationStrategyValue().GetConcurrencyValue())
 
 	for idx := range newIchs {
 		err := retry.Timed(5, 100).On(func() error {
@@ -144,7 +144,7 @@ func (v *InboundDetourHandlerDynamic) Start() error {
 
 	go func() {
 		for {
-			time.Sleep(time.Duration(v.config.GetAllocationStrategyValue().Refresh.GetValue())*time.Minute - 1)
+			time.Sleep(time.Duration(v.config.GetAllocationStrategyValue().GetRefreshValue())*time.Minute - 1)
 			v.RecyleHandles()
 			err := v.refresh()
 			if err != nil {

@@ -98,6 +98,41 @@ func (m *Config) String() string            { return proto.CompactTextString(m) 
 func (*Config) ProtoMessage()               {}
 func (*Config) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *Config) GetErrorLogType() LogType {
+	if m != nil {
+		return m.ErrorLogType
+	}
+	return LogType_None
+}
+
+func (m *Config) GetErrorLogLevel() LogLevel {
+	if m != nil {
+		return m.ErrorLogLevel
+	}
+	return LogLevel_Disabled
+}
+
+func (m *Config) GetErrorLogPath() string {
+	if m != nil {
+		return m.ErrorLogPath
+	}
+	return ""
+}
+
+func (m *Config) GetAccessLogType() LogType {
+	if m != nil {
+		return m.AccessLogType
+	}
+	return LogType_None
+}
+
+func (m *Config) GetAccessLogPath() string {
+	if m != nil {
+		return m.AccessLogPath
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*Config)(nil), "v2ray.core.common.log.Config")
 	proto.RegisterEnum("v2ray.core.common.log.LogType", LogType_name, LogType_value)

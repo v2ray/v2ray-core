@@ -191,7 +191,7 @@ func (v *HttpConn) Close() error {
 
 func formResponseHeader(config *ResponseConfig) *HeaderWriter {
 	header := buf.NewSmall()
-	header.AppendSupplier(serial.WriteString(strings.Join([]string{config.GetFullVersion(), config.Status.GetCode(), config.Status.GetReason()}, " ")))
+	header.AppendSupplier(serial.WriteString(strings.Join([]string{config.GetFullVersion(), config.GetStatusValue().Code, config.GetStatusValue().Reason}, " ")))
 	header.AppendSupplier(writeCRLF)
 
 	headers := config.PickHeaders()
@@ -217,7 +217,7 @@ type HttpAuthenticator struct {
 func (v HttpAuthenticator) GetClientWriter() *HeaderWriter {
 	header := buf.NewSmall()
 	config := v.config.Request
-	header.AppendSupplier(serial.WriteString(strings.Join([]string{config.Method.GetValue(), config.PickUri(), config.GetFullVersion()}, " ")))
+	header.AppendSupplier(serial.WriteString(strings.Join([]string{config.GetMethodValue(), config.PickUri(), config.GetFullVersion()}, " ")))
 	header.AppendSupplier(writeCRLF)
 
 	headers := config.PickHeaders()

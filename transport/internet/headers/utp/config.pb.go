@@ -37,6 +37,13 @@ func (m *Config) String() string            { return proto.CompactTextString(m) 
 func (*Config) ProtoMessage()               {}
 func (*Config) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *Config) GetVersion() uint32 {
+	if m != nil {
+		return m.Version
+	}
+	return 0
+}
+
 func init() {
 	proto.RegisterType((*Config)(nil), "v2ray.core.transport.internet.headers.utp.Config")
 }

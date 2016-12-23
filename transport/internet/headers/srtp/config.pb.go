@@ -42,6 +42,48 @@ func (m *Config) String() string            { return proto.CompactTextString(m) 
 func (*Config) ProtoMessage()               {}
 func (*Config) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *Config) GetVersion() uint32 {
+	if m != nil {
+		return m.Version
+	}
+	return 0
+}
+
+func (m *Config) GetPadding() bool {
+	if m != nil {
+		return m.Padding
+	}
+	return false
+}
+
+func (m *Config) GetExtension() bool {
+	if m != nil {
+		return m.Extension
+	}
+	return false
+}
+
+func (m *Config) GetCsrcCount() uint32 {
+	if m != nil {
+		return m.CsrcCount
+	}
+	return 0
+}
+
+func (m *Config) GetMarker() bool {
+	if m != nil {
+		return m.Marker
+	}
+	return false
+}
+
+func (m *Config) GetPayloadType() uint32 {
+	if m != nil {
+		return m.PayloadType
+	}
+	return 0
+}
+
 func init() {
 	proto.RegisterType((*Config)(nil), "v2ray.core.transport.internet.headers.srtp.Config")
 }

@@ -39,6 +39,13 @@ func (m *ServerConfig) String() string            { return proto.CompactTextStri
 func (*ServerConfig) ProtoMessage()               {}
 func (*ServerConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *ServerConfig) GetTimeout() uint32 {
+	if m != nil {
+		return m.Timeout
+	}
+	return 0
+}
+
 // ClientConfig for HTTP proxy client.
 type ClientConfig struct {
 }

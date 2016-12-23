@@ -46,6 +46,13 @@ func (m *MTU) String() string            { return proto.CompactTextString(m) }
 func (*MTU) ProtoMessage()               {}
 func (*MTU) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *MTU) GetValue() uint32 {
+	if m != nil {
+		return m.Value
+	}
+	return 0
+}
+
 // Transmission Time Interview, in milli-sec.
 type TTI struct {
 	Value uint32 `protobuf:"varint,1,opt,name=value" json:"value,omitempty"`
@@ -55,6 +62,13 @@ func (m *TTI) Reset()                    { *m = TTI{} }
 func (m *TTI) String() string            { return proto.CompactTextString(m) }
 func (*TTI) ProtoMessage()               {}
 func (*TTI) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+func (m *TTI) GetValue() uint32 {
+	if m != nil {
+		return m.Value
+	}
+	return 0
+}
 
 // Uplink capacity, in MB.
 type UplinkCapacity struct {
@@ -66,6 +80,13 @@ func (m *UplinkCapacity) String() string            { return proto.CompactTextSt
 func (*UplinkCapacity) ProtoMessage()               {}
 func (*UplinkCapacity) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
+func (m *UplinkCapacity) GetValue() uint32 {
+	if m != nil {
+		return m.Value
+	}
+	return 0
+}
+
 // Downlink capacity, in MB.
 type DownlinkCapacity struct {
 	Value uint32 `protobuf:"varint,1,opt,name=value" json:"value,omitempty"`
@@ -75,6 +96,13 @@ func (m *DownlinkCapacity) Reset()                    { *m = DownlinkCapacity{} 
 func (m *DownlinkCapacity) String() string            { return proto.CompactTextString(m) }
 func (*DownlinkCapacity) ProtoMessage()               {}
 func (*DownlinkCapacity) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+
+func (m *DownlinkCapacity) GetValue() uint32 {
+	if m != nil {
+		return m.Value
+	}
+	return 0
+}
 
 type WriteBuffer struct {
 	// Buffer size in bytes.
@@ -86,6 +114,13 @@ func (m *WriteBuffer) String() string            { return proto.CompactTextStrin
 func (*WriteBuffer) ProtoMessage()               {}
 func (*WriteBuffer) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
+func (m *WriteBuffer) GetSize() uint32 {
+	if m != nil {
+		return m.Size
+	}
+	return 0
+}
+
 type ReadBuffer struct {
 	// Buffer size in bytes.
 	Size uint32 `protobuf:"varint,1,opt,name=size" json:"size,omitempty"`
@@ -96,6 +131,13 @@ func (m *ReadBuffer) String() string            { return proto.CompactTextString
 func (*ReadBuffer) ProtoMessage()               {}
 func (*ReadBuffer) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
 
+func (m *ReadBuffer) GetSize() uint32 {
+	if m != nil {
+		return m.Size
+	}
+	return 0
+}
+
 type ConnectionReuse struct {
 	Enable bool `protobuf:"varint,1,opt,name=enable" json:"enable,omitempty"`
 }
@@ -104,6 +146,13 @@ func (m *ConnectionReuse) Reset()                    { *m = ConnectionReuse{} }
 func (m *ConnectionReuse) String() string            { return proto.CompactTextString(m) }
 func (*ConnectionReuse) ProtoMessage()               {}
 func (*ConnectionReuse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
+
+func (m *ConnectionReuse) GetEnable() bool {
+	if m != nil {
+		return m.Enable
+	}
+	return false
+}
 
 type Config struct {
 	Mtu              *MTU                                   `protobuf:"bytes,1,opt,name=mtu" json:"mtu,omitempty"`
@@ -148,6 +197,13 @@ func (m *Config) GetDownlinkCapacity() *DownlinkCapacity {
 		return m.DownlinkCapacity
 	}
 	return nil
+}
+
+func (m *Config) GetCongestion() bool {
+	if m != nil {
+		return m.Congestion
+	}
+	return false
 }
 
 func (m *Config) GetWriteBuffer() *WriteBuffer {

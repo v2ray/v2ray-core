@@ -40,6 +40,13 @@ func (m *DetourConfig) String() string            { return proto.CompactTextStri
 func (*DetourConfig) ProtoMessage()               {}
 func (*DetourConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+func (m *DetourConfig) GetTo() string {
+	if m != nil {
+		return m.To
+	}
+	return ""
+}
+
 type DefaultConfig struct {
 	AlterId uint32 `protobuf:"varint,1,opt,name=alter_id,json=alterId" json:"alter_id,omitempty"`
 	Level   uint32 `protobuf:"varint,2,opt,name=level" json:"level,omitempty"`
@@ -49,6 +56,20 @@ func (m *DefaultConfig) Reset()                    { *m = DefaultConfig{} }
 func (m *DefaultConfig) String() string            { return proto.CompactTextString(m) }
 func (*DefaultConfig) ProtoMessage()               {}
 func (*DefaultConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+func (m *DefaultConfig) GetAlterId() uint32 {
+	if m != nil {
+		return m.AlterId
+	}
+	return 0
+}
+
+func (m *DefaultConfig) GetLevel() uint32 {
+	if m != nil {
+		return m.Level
+	}
+	return 0
+}
 
 type Config struct {
 	User    []*v2ray_core_common_protocol.User `protobuf:"bytes,1,rep,name=user" json:"user,omitempty"`
