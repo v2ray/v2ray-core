@@ -315,7 +315,7 @@ func (v *Connection) Write(b []byte) (int, error) {
 		}
 
 		duration := time.Duration(time.Minute)
-		if !v.rd.IsZero() {
+		if !v.wd.IsZero() {
 			duration = v.wd.Sub(time.Now())
 			if duration < 0 {
 				return totalWritten, ErrIOTimeout
