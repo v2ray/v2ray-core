@@ -278,7 +278,7 @@ func (v *Connection) Read(b []byte) (int, error) {
 			return 0, io.EOF
 		}
 
-		duration := time.Duration(time.Minute)
+		duration := time.Minute
 		if !v.rd.IsZero() {
 			duration = v.rd.Sub(time.Now())
 			if duration < 0 {
@@ -314,7 +314,7 @@ func (v *Connection) Write(b []byte) (int, error) {
 			}
 		}
 
-		duration := time.Duration(time.Minute)
+		duration := time.Minute
 		if !v.wd.IsZero() {
 			duration = v.wd.Sub(time.Now())
 			if duration < 0 {
