@@ -239,11 +239,12 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 	StripHopByHopHeaders(request)
 
 	ray := v.packetDispatcher.DispatchToOutbound(session)
+	defer ray.InboundInput().Close()
+	defer ray.InboundOutput().Release()
 
 	var finish sync.WaitGroup
 	finish.Add(1)
 	go func() {
-		defer ray.InboundInput().Close()
 		defer finish.Done()
 		requestWriter := bufio.NewWriter(buf.NewBytesWriter(ray.InboundInput()))
 		err := request.Write(requestWriter)
@@ -256,7 +257,6 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 
 	finish.Add(1)
 	go func() {
-		defer ray.InboundOutput().Release()
 		defer finish.Done()
 		responseReader := bufio.OriginalReader(buf.NewBytesReader(ray.InboundOutput()))
 		response, err := http.ReadResponse(responseReader, request)
@@ -272,7 +272,6 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 		}
 		responseWriter.Flush()
 	}()
-
 	finish.Wait()
 }
 
