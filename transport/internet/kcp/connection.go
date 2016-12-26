@@ -517,6 +517,10 @@ func (v *Connection) Input(segments []Segment) {
 					v.SetState(StateTerminated)
 				}
 			}
+			if seg.Option == SegmentOptionClose || seg.Command() == CommandTerminate {
+				v.OnDataInput()
+				v.OnDataOutput()
+			}
 			v.sendingWorker.ProcessReceivingNext(seg.ReceivinNext)
 			v.receivingWorker.ProcessSendingNext(seg.SendingNext)
 			v.roundTrip.UpdatePeerRTO(seg.PeerRTO, current)
