@@ -10,7 +10,7 @@ function detect_protoc() {
   if [[ "$OSTYPE" == "linux"* ]]; then
     echo $GOPATH/src/v2ray.com/core/.dev/protoc/linux/protoc
   elif [[ "$OSTYPE" == "darwin"* ]]; then
-    echo $GOPATH/src/v2ray.com/core/.dev/protoc/linux/protoc
+    echo $GOPATH/src/v2ray.com/core/.dev/protoc/macos/protoc
   fi
 }
 
