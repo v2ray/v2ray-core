@@ -70,6 +70,10 @@ func (v *Stream) Read() (*buf.Buffer, error) {
 }
 
 func (v *Stream) Write(data *buf.Buffer) (err error) {
+	if data.IsEmpty() {
+		return
+	}
+
 	select {
 	case <-v.destClose:
 		return io.ErrClosedPipe

@@ -13,7 +13,9 @@ func TestStreamIO(t *testing.T) {
 	assert := assert.On(t)
 
 	stream := NewStream()
-	assert.Error(stream.Write(buf.New())).IsNil()
+	b1 := buf.New()
+	b1.AppendBytes('a')
+	assert.Error(stream.Write(b1)).IsNil()
 
 	_, err := stream.Read()
 	assert.Error(err).IsNil()
@@ -22,7 +24,9 @@ func TestStreamIO(t *testing.T) {
 	_, err = stream.Read()
 	assert.Error(err).Equals(io.EOF)
 
-	err = stream.Write(buf.New())
+	b2 := buf.New()
+	b2.AppendBytes('b')
+	err = stream.Write(b2)
 	assert.Error(err).Equals(io.ErrClosedPipe)
 }
 
@@ -30,7 +34,9 @@ func TestStreamClose(t *testing.T) {
 	assert := assert.On(t)
 
 	stream := NewStream()
-	assert.Error(stream.Write(buf.New())).IsNil()
+	b1 := buf.New()
+	b1.AppendBytes('a')
+	assert.Error(stream.Write(b1)).IsNil()
 
 	stream.Close()
 
