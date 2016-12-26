@@ -39,10 +39,6 @@ const (
 	StateTerminated      State = 5
 )
 
-const (
-	headerSize uint32 = 2
-)
-
 func nowMillisec() int64 {
 	now := time.Now()
 	return now.Unix()*1000 + int64(now.Nanosecond()/1000000)
