@@ -2,7 +2,6 @@ package bufio
 
 import (
 	"io"
-	"sync"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -10,7 +9,6 @@ import (
 
 // BufferedReader is a reader with internal cache.
 type BufferedReader struct {
-	sync.Mutex
 	reader io.Reader
 	buffer *buf.Buffer
 	cached bool
@@ -27,15 +25,11 @@ func NewReader(rawReader io.Reader) *BufferedReader {
 
 // Release implements Releasable.Release().
 func (v *BufferedReader) Release() {
-	v.Lock()
-	defer v.Unlock()
-
 	v.buffer.Release()
 	v.buffer = nil
 	if releasable, ok := v.reader.(common.Releasable); ok {
 		releasable.Release()
 	}
-	v.reader = nil
 }
 
 // Cached returns true if the internal cache is effective.
@@ -51,14 +45,7 @@ func (v *BufferedReader) SetCached(cached bool) {
 
 // Read implements io.Reader.Read().
 func (v *BufferedReader) Read(b []byte) (int, error) {
-	v.Lock()
-	defer v.Unlock()
-
-	if v.reader == nil {
-		return 0, io.EOF
-	}
-
-	if !v.cached {
+	if !v.cached || v.buffer == nil {
 		if !v.buffer.IsEmpty() {
 			return v.buffer.Read(b)
 		}

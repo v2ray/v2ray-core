@@ -2,7 +2,6 @@ package bufio
 
 import (
 	"io"
-	"sync"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -10,7 +9,6 @@ import (
 )
 
 type BufferedWriter struct {
-	sync.Mutex
 	writer io.Writer
 	buffer *buf.Buffer
 	cached bool
@@ -25,13 +23,6 @@ func NewWriter(rawWriter io.Writer) *BufferedWriter {
 }
 
 func (v *BufferedWriter) ReadFrom(reader io.Reader) (int64, error) {
-	v.Lock()
-	defer v.Unlock()
-
-	if v.writer == nil {
-		return 0, io.ErrClosedPipe
-	}
-
 	totalBytes := int64(0)
 	for {
 		oriSize := v.buffer.Len()
@@ -43,19 +34,14 @@ func (v *BufferedWriter) ReadFrom(reader io.Reader) (int64, error) {
 			}
 			return totalBytes, err
 		}
-		v.FlushWithoutLock()
+		if err := v.Flush(); err != nil {
+			return totalBytes, err
+		}
 	}
 }
 
 func (v *BufferedWriter) Write(b []byte) (int, error) {
-	v.Lock()
-	defer v.Unlock()
-
-	if v.writer == nil {
-		return 0, io.ErrClosedPipe
-	}
-
-	if !v.cached {
+	if !v.cached || v.buffer == nil {
 		return v.writer.Write(b)
 	}
 	nBytes, err := v.buffer.Write(b)
@@ -63,7 +49,7 @@ func (v *BufferedWriter) Write(b []byte) (int, error) {
 		return 0, err
 	}
 	if v.buffer.IsFull() {
-		err := v.FlushWithoutLock()
+		err := v.Flush()
 		if err != nil {
 			return 0, err
 		}
@@ -77,17 +63,6 @@ func (v *BufferedWriter) Write(b []byte) (int, error) {
 }
 
 func (v *BufferedWriter) Flush() error {
-	v.Lock()
-	defer v.Unlock()
-
-	if v.writer == nil {
-		return io.ErrClosedPipe
-	}
-
-	return v.FlushWithoutLock()
-}
-
-func (v *BufferedWriter) FlushWithoutLock() error {
 	defer v.buffer.Clear()
 	for !v.buffer.IsEmpty() {
 		nBytes, err := v.writer.Write(v.buffer.Bytes())
@@ -113,14 +88,10 @@ func (v *BufferedWriter) SetCached(cached bool) {
 func (v *BufferedWriter) Release() {
 	v.Flush()
 
-	v.Lock()
-	defer v.Unlock()
-
 	v.buffer.Release()
 	v.buffer = nil
 
 	if releasable, ok := v.writer.(common.Releasable); ok {
 		releasable.Release()
 	}
-	v.writer = nil
 }
