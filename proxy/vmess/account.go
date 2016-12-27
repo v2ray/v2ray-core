@@ -35,10 +35,10 @@ func (v *Account) AsAccount() (protocol.Account, error) {
 		log.Error("VMess: Failed to parse ID: ", err)
 		return nil, err
 	}
-	protoId := protocol.NewID(id)
+	protoID := protocol.NewID(id)
 	return &InternalAccount{
-		ID:       protoId,
-		AlterIDs: protocol.NewAlterIDs(protoId, uint16(v.AlterId)),
+		ID:       protoID,
+		AlterIDs: protocol.NewAlterIDs(protoID, uint16(v.AlterId)),
 		Security: v.SecuritySettings.AsSecurity(),
 	}, nil
 }
