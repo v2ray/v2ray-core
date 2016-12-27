@@ -223,7 +223,7 @@ func (v *Server) GenerateResponse(statusCode int, status string) *http.Response 
 		Header:        hdr,
 		Body:          nil,
 		ContentLength: 0,
-		Close:         false,
+		Close:         true,
 	}
 }
 
@@ -247,6 +247,8 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 	go func() {
 		defer finish.Done()
 		requestWriter := bufio.NewWriter(buf.NewBytesWriter(ray.InboundInput()))
+		defer requestWriter.Release()
+
 		err := request.Write(requestWriter)
 		if err != nil {
 			log.Warning("HTTP: Failed to write request: ", err)

@@ -96,7 +96,10 @@ func (v *Handler) Dispatch(destination v2net.Destination, payload *buf.Buffer, r
 	output := ray.OutboundOutput()
 
 	if !payload.IsEmpty() {
-		conn.Write(payload.Bytes())
+		if _, err := conn.Write(payload.Bytes()); err != nil {
+			log.Warning("Freedom: Failed to write to destination: ", destination, ": ", err)
+			return
+		}
 	}
 
 	go func() {
