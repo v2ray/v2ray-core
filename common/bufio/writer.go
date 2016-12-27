@@ -85,11 +85,15 @@ func (v *BufferedWriter) SetCached(cached bool) {
 	}
 }
 
+// Release implements common.Releasable.Release().
 func (v *BufferedWriter) Release() {
-	v.Flush()
+	if !v.buffer.IsEmpty() {
+		v.Flush()
+	}
 
-	v.buffer.Release()
-	v.buffer = nil
-
+	if v.buffer != nil {
+		v.buffer.Release()
+		v.buffer = nil
+	}
 	common.Release(v.writer)
 }
