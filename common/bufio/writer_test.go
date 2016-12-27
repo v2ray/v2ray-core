@@ -15,7 +15,7 @@ func TestBufferedWriter(t *testing.T) {
 	content := buf.New()
 
 	writer := NewWriter(content)
-	assert.Bool(writer.Buffered()).IsTrue()
+	assert.Bool(writer.IsBuffered()).IsTrue()
 
 	payload := make([]byte, 16)
 
@@ -35,7 +35,7 @@ func TestBufferedWriterLargePayload(t *testing.T) {
 	content := buf.NewLocal(128 * 1024)
 
 	writer := NewWriter(content)
-	assert.Bool(writer.Buffered()).IsTrue()
+	assert.Bool(writer.IsBuffered()).IsTrue()
 
 	payload := make([]byte, 64*1024)
 	rand.Read(payload)

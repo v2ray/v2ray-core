@@ -25,6 +25,7 @@ func NewWriter(rawWriter io.Writer) *BufferedWriter {
 	}
 }
 
+// ReadFrom implements io.ReaderFrom.ReadFrom().
 func (v *BufferedWriter) ReadFrom(reader io.Reader) (int64, error) {
 	totalBytes := int64(0)
 	for {
@@ -65,6 +66,7 @@ func (v *BufferedWriter) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
+// Flush writes all buffered content into underlying writer, if any.
 func (v *BufferedWriter) Flush() error {
 	defer v.buffer.Clear()
 	for !v.buffer.IsEmpty() {
@@ -77,10 +79,12 @@ func (v *BufferedWriter) Flush() error {
 	return nil
 }
 
-func (v *BufferedWriter) Buffered() bool {
+// IsBuffered returns true if this BufferedWriter holds a buffer.
+func (v *BufferedWriter) IsBuffered() bool {
 	return v.buffered
 }
 
+// SetBuffered controls whether the BufferedWriter holds a buffer for writing. If not buffered, any write() calls into underlying writer directly.
 func (v *BufferedWriter) SetBuffered(cached bool) {
 	v.buffered = cached
 	if !cached && !v.buffer.IsEmpty() {
