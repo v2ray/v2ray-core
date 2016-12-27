@@ -14,3 +14,6 @@ const (
 type PacketDispatcher interface {
 	DispatchToOutbound(session *proxy.SessionInfo) ray.InboundRay
 }
+
+type Inspector interface {
+}

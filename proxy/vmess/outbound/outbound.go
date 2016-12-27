@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"v2ray.com/core/app"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/log"
@@ -178,5 +179,5 @@ func (v *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.Out
 }
 
 func init() {
-	proxy.MustRegisterOutboundHandlerCreator(serial.GetMessageType(new(Config)), new(Factory))
+	common.Must(proxy.RegisterOutboundHandlerCreator(serial.GetMessageType(new(Config)), new(Factory)))
 }

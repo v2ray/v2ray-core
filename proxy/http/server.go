@@ -297,5 +297,5 @@ func (v *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *pro
 }
 
 func init() {
-	proxy.MustRegisterInboundHandlerCreator(serial.GetMessageType(new(ServerConfig)), new(ServerFactory))
+	common.Must(proxy.RegisterInboundHandlerCreator(serial.GetMessageType(new(ServerConfig)), new(ServerFactory)))
 }

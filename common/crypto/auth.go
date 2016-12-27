@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/serial"
 )
@@ -135,9 +136,9 @@ func (v *AuthenticationReader) EnsureChunk() error {
 				v.buffer.Clear()
 			} else {
 				leftover := v.buffer.Bytes()
-				v.buffer.Reset(func(b []byte) (int, error) {
+				common.Must(v.buffer.Reset(func(b []byte) (int, error) {
 					return copy(b, leftover), nil
-				})
+				}))
 			}
 			err = v.buffer.AppendSupplier(buf.ReadFrom(v.reader))
 			if err == nil {

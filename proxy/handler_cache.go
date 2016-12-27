@@ -20,24 +20,12 @@ func RegisterInboundHandlerCreator(name string, creator InboundHandlerFactory) e
 	return nil
 }
 
-func MustRegisterInboundHandlerCreator(name string, creator InboundHandlerFactory) {
-	if err := RegisterInboundHandlerCreator(name, creator); err != nil {
-		panic(err)
-	}
-}
-
 func RegisterOutboundHandlerCreator(name string, creator OutboundHandlerFactory) error {
 	if _, found := outboundFactories[name]; found {
 		return common.ErrDuplicatedName
 	}
 	outboundFactories[name] = creator
 	return nil
-}
-
-func MustRegisterOutboundHandlerCreator(name string, creator OutboundHandlerFactory) {
-	if err := RegisterOutboundHandlerCreator(name, creator); err != nil {
-		panic(err)
-	}
 }
 
 func CreateInboundHandler(name string, space app.Space, config interface{}, meta *InboundHandlerMeta) (InboundHandler, error) {
