@@ -27,9 +27,8 @@ func NewReader(rawReader io.Reader) *BufferedReader {
 func (v *BufferedReader) Release() {
 	v.buffer.Release()
 	v.buffer = nil
-	if releasable, ok := v.reader.(common.Releasable); ok {
-		releasable.Release()
-	}
+
+	common.Release(v.reader)
 }
 
 // Cached returns true if the internal cache is effective.

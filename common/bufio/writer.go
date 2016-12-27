@@ -91,7 +91,5 @@ func (v *BufferedWriter) Release() {
 	v.buffer.Release()
 	v.buffer = nil
 
-	if releasable, ok := v.writer.(common.Releasable); ok {
-		releasable.Release()
-	}
+	common.Release(v.writer)
 }
