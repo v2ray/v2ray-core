@@ -18,7 +18,7 @@ func TestBufferedReader(t *testing.T) {
 	len := content.Len()
 
 	reader := NewReader(content)
-	assert.Bool(reader.Cached()).IsTrue()
+	assert.Bool(reader.IsBuffered()).IsTrue()
 
 	payload := make([]byte, 16)
 

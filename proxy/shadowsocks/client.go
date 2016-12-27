@@ -126,7 +126,7 @@ func (v *Client) Dispatch(destination v2net.Destination, payload *buf.Buffer, ra
 			}
 		}()
 
-		bufferedWriter.SetCached(false)
+		bufferedWriter.SetBuffered(false)
 		if err := buf.PipeUntilEOF(ray.OutboundInput(), bodyWriter); err != nil {
 			log.Info("Shadowsocks|Client: Failed to trasnport all TCP request: ", err)
 		}

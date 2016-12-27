@@ -216,8 +216,8 @@ func (v *Server) handleSocks5(clientAddr v2net.Destination, reader *bufio.Buffer
 		return err
 	}
 
-	reader.SetCached(false)
-	writer.SetCached(false)
+	reader.SetBuffered(false)
+	writer.SetBuffered(false)
 
 	dest := request.Destination()
 	session := &proxy.SessionInfo{
@@ -279,8 +279,8 @@ func (v *Server) handleSocks4(clientAddr v2net.Destination, reader *bufio.Buffer
 		return ErrUnsupportedSocksCommand
 	}
 
-	reader.SetCached(false)
-	writer.SetCached(false)
+	reader.SetBuffered(false)
+	writer.SetBuffered(false)
 
 	dest := v2net.TCPDestination(v2net.IPAddress(auth.IP[:]), auth.Port)
 	session := &proxy.SessionInfo{

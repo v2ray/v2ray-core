@@ -161,7 +161,7 @@ func (v *Server) handleConnection(conn internet.Connection) {
 	}
 	defer bodyReader.Release()
 
-	bufferedReader.SetCached(false)
+	bufferedReader.SetBuffered(false)
 
 	userSettings := v.user.GetSettings()
 	timedReader.SetTimeOut(userSettings.PayloadReadTimeout)
@@ -195,7 +195,7 @@ func (v *Server) handleConnection(conn internet.Connection) {
 
 		if payload, err := ray.InboundOutput().Read(); err == nil {
 			responseWriter.Write(payload)
-			bufferedWriter.SetCached(false)
+			bufferedWriter.SetBuffered(false)
 
 			if err := buf.PipeUntilEOF(ray.InboundOutput(), responseWriter); err != nil {
 				log.Info("Shadowsocks|Server: Failed to transport all TCP response: ", err)

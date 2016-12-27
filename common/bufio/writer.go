@@ -8,17 +8,20 @@ import (
 	"v2ray.com/core/common/errors"
 )
 
+// BufferedWriter is an io.Writer with internal buffer. It writes to underlying writer when buffer is full or on demand.
+// This type is not thread safe.
 type BufferedWriter struct {
-	writer io.Writer
-	buffer *buf.Buffer
-	cached bool
+	writer   io.Writer
+	buffer   *buf.Buffer
+	buffered bool
 }
 
+// NewWriter creates a new BufferedWriter.
 func NewWriter(rawWriter io.Writer) *BufferedWriter {
 	return &BufferedWriter{
-		writer: rawWriter,
-		buffer: buf.NewSmall(),
-		cached: true,
+		writer:   rawWriter,
+		buffer:   buf.NewSmall(),
+		buffered: true,
 	}
 }
 
@@ -41,7 +44,7 @@ func (v *BufferedWriter) ReadFrom(reader io.Reader) (int64, error) {
 }
 
 func (v *BufferedWriter) Write(b []byte) (int, error) {
-	if !v.cached || v.buffer == nil {
+	if !v.buffered || v.buffer == nil {
 		return v.writer.Write(b)
 	}
 	nBytes, err := v.buffer.Write(b)
@@ -74,12 +77,12 @@ func (v *BufferedWriter) Flush() error {
 	return nil
 }
 
-func (v *BufferedWriter) Cached() bool {
-	return v.cached
+func (v *BufferedWriter) Buffered() bool {
+	return v.buffered
 }
 
-func (v *BufferedWriter) SetCached(cached bool) {
-	v.cached = cached
+func (v *BufferedWriter) SetBuffered(cached bool) {
+	v.buffered = cached
 	if !cached && !v.buffer.IsEmpty() {
 		v.Flush()
 	}

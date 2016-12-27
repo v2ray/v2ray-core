@@ -9,17 +9,17 @@ import (
 
 // BufferedReader is a reader with internal cache.
 type BufferedReader struct {
-	reader io.Reader
-	buffer *buf.Buffer
-	cached bool
+	reader   io.Reader
+	buffer   *buf.Buffer
+	buffered bool
 }
 
 // NewReader creates a new BufferedReader based on an io.Reader.
 func NewReader(rawReader io.Reader) *BufferedReader {
 	return &BufferedReader{
-		reader: rawReader,
-		buffer: buf.New(),
-		cached: true,
+		reader:   rawReader,
+		buffer:   buf.New(),
+		buffered: true,
 	}
 }
 
@@ -33,20 +33,20 @@ func (v *BufferedReader) Release() {
 	common.Release(v.reader)
 }
 
-// Cached returns true if the internal cache is effective.
-func (v *BufferedReader) Cached() bool {
-	return v.cached
+// IsBuffered returns true if the internal cache is effective.
+func (v *BufferedReader) IsBuffered() bool {
+	return v.buffered
 }
 
-// SetCached is to enable or disable internal cache. If cache is disabled,
-// Read() and Write() calls will be delegated to the underlying io.Reader directly.
-func (v *BufferedReader) SetCached(cached bool) {
-	v.cached = cached
+// SetBuffered is to enable or disable internal cache. If cache is disabled,
+// Read() calls will be delegated to the underlying io.Reader directly.
+func (v *BufferedReader) SetBuffered(cached bool) {
+	v.buffered = cached
 }
 
 // Read implements io.Reader.Read().
 func (v *BufferedReader) Read(b []byte) (int, error) {
-	if !v.cached || v.buffer == nil {
+	if !v.buffered || v.buffer == nil {
 		if !v.buffer.IsEmpty() {
 			return v.buffer.Read(b)
 		}

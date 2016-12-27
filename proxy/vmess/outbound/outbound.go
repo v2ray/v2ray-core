@@ -110,7 +110,7 @@ func (v *VMessOutboundHandler) handleRequest(session *encoding.ClientSession, co
 		}
 		payload.Release()
 	}
-	writer.SetCached(false)
+	writer.SetBuffered(false)
 
 	if err := buf.PipeUntilEOF(input, bodyWriter); err != nil {
 		conn.SetReusable(false)
@@ -141,7 +141,7 @@ func (v *VMessOutboundHandler) handleResponse(session *encoding.ClientSession, c
 
 	conn.SetReusable(header.Option.Has(protocol.ResponseOptionConnectionReuse))
 
-	reader.SetCached(false)
+	reader.SetBuffered(false)
 	bodyReader := session.DecodeResponseBody(request, reader)
 	defer bodyReader.Release()
 
