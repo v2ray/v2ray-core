@@ -25,8 +25,10 @@ func NewReader(rawReader io.Reader) *BufferedReader {
 
 // Release implements Releasable.Release().
 func (v *BufferedReader) Release() {
-	v.buffer.Release()
-	v.buffer = nil
+	if v.buffer != nil {
+		v.buffer.Release()
+		v.buffer = nil
+	}
 
 	common.Release(v.reader)
 }

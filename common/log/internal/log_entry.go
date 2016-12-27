@@ -19,10 +19,9 @@ type ErrorLog struct {
 }
 
 func (v *ErrorLog) Release() {
-	for index := range v.Values {
-		v.Values[index] = nil
+	for _, val := range v.Values {
+		common.Release(val)
 	}
-	v.Values = nil
 }
 
 func (v *ErrorLog) String() string {
@@ -37,9 +36,9 @@ type AccessLog struct {
 }
 
 func (v *AccessLog) Release() {
-	v.From = nil
-	v.To = nil
-	v.Reason = nil
+	common.Release(v.From)
+	common.Release(v.To)
+	common.Release(v.Reason)
 }
 
 func (v *AccessLog) String() string {

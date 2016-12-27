@@ -31,8 +31,8 @@ func (v *CryptionReader) Read(data []byte) (int, error) {
 }
 
 func (v *CryptionReader) Release() {
-	v.reader = nil
-	v.stream = nil
+	common.Release(v.reader)
+	common.Release(v.stream)
 }
 
 type CryptionWriter struct {
@@ -56,6 +56,6 @@ func (v *CryptionWriter) Write(data []byte) (int, error) {
 }
 
 func (v *CryptionWriter) Release() {
-	v.writer = nil
-	v.stream = nil
+	common.Release(v.writer)
+	common.Release(v.stream)
 }
