@@ -18,6 +18,7 @@ import (
 	"v2ray.com/core/testing/servers/tcp"
 	"v2ray.com/core/testing/servers/udp"
 	"v2ray.com/core/transport/internet"
+	_ "v2ray.com/core/transport/internet/tcp"
 )
 
 func TestDokodemoTCP(t *testing.T) {

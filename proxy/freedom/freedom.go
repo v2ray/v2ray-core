@@ -15,7 +15,6 @@ import (
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/internet/tcp"
 	"v2ray.com/core/transport/ray"
 )
 
@@ -108,9 +107,6 @@ func (v *Handler) Dispatch(destination v2net.Destination, payload *buf.Buffer, r
 
 		if err := buf.PipeUntilEOF(input, v2writer); err != nil {
 			log.Info("Freedom: Failed to transport all TCP request: ", err)
-		}
-		if tcpConn, ok := conn.(*tcp.RawConnection); ok {
-			tcpConn.CloseWrite()
 		}
 	}()
 

@@ -1,6 +1,7 @@
 package freedom_test
 
 import (
+	"fmt"
 	"testing"
 
 	"v2ray.com/core/app"
@@ -18,6 +19,7 @@ import (
 	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/testing/servers/tcp"
 	"v2ray.com/core/transport/internet"
+	_ "v2ray.com/core/transport/internet/tcp"
 	"v2ray.com/core/transport/ray"
 )
 
@@ -32,7 +34,7 @@ func TestSinglePacket(t *testing.T) {
 			return buffer
 		},
 	}
-	_, err := tcpServer.Start()
+	tcpServerAddr, err := tcpServer.Start()
 	assert.Error(err).IsNil()
 
 	space := app.NewSpace()
@@ -52,7 +54,8 @@ func TestSinglePacket(t *testing.T) {
 	payload := buf.NewLocal(2048)
 	payload.Append([]byte(data2Send))
 
-	go freedom.Dispatch(v2net.TCPDestination(v2net.LocalHostIP, tcpServer.Port), payload, traffic)
+	fmt.Println(tcpServerAddr.Network, tcpServerAddr.Address, tcpServerAddr.Port)
+	go freedom.Dispatch(tcpServerAddr, payload, traffic)
 	traffic.InboundInput().Close()
 
 	respPayload, err := traffic.InboundOutput().Read()

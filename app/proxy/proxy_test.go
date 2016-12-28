@@ -13,6 +13,7 @@ import (
 	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/testing/servers/tcp"
 	"v2ray.com/core/transport/internet"
+	_ "v2ray.com/core/transport/internet/tcp"
 )
 
 func TestProxyDial(t *testing.T) {
