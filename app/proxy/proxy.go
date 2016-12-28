@@ -50,14 +50,14 @@ func (v *OutboundProxy) Dial(src v2net.Address, dest v2net.Destination, options 
 	log.Info("Proxy: Dialing to ", dest)
 	stream := ray.NewRay()
 	go handler.Dispatch(dest, nil, stream)
-	return NewProxyConnection(src, dest, stream), nil
+	return NewConnection(src, dest, stream), nil
 }
 
 func (v *OutboundProxy) Release() {
 
 }
 
-type ProxyConnection struct {
+type Connection struct {
 	stream     ray.Ray
 	closed     bool
 	localAddr  net.Addr
@@ -67,8 +67,8 @@ type ProxyConnection struct {
 	writer *buf.BytesToBufferWriter
 }
 
-func NewProxyConnection(src v2net.Address, dest v2net.Destination, stream ray.Ray) *ProxyConnection {
-	return &ProxyConnection{
+func NewConnection(src v2net.Address, dest v2net.Destination, stream ray.Ray) *Connection {
+	return &Connection{
 		stream: stream,
 		localAddr: &net.TCPAddr{
 			IP:   []byte{0, 0, 0, 0},
@@ -83,21 +83,21 @@ func NewProxyConnection(src v2net.Address, dest v2net.Destination, stream ray.Ra
 	}
 }
 
-func (v *ProxyConnection) Read(b []byte) (int, error) {
+func (v *Connection) Read(b []byte) (int, error) {
 	if v.closed {
 		return 0, io.EOF
 	}
 	return v.reader.Read(b)
 }
 
-func (v *ProxyConnection) Write(b []byte) (int, error) {
+func (v *Connection) Write(b []byte) (int, error) {
 	if v.closed {
 		return 0, io.ErrClosedPipe
 	}
 	return v.writer.Write(b)
 }
 
-func (v *ProxyConnection) Close() error {
+func (v *Connection) Close() error {
 	v.closed = true
 	v.stream.InboundInput().Close()
 	v.stream.InboundOutput().Release()
@@ -106,30 +106,30 @@ func (v *ProxyConnection) Close() error {
 	return nil
 }
 
-func (v *ProxyConnection) LocalAddr() net.Addr {
+func (v *Connection) LocalAddr() net.Addr {
 	return v.localAddr
 }
 
-func (v *ProxyConnection) RemoteAddr() net.Addr {
+func (v *Connection) RemoteAddr() net.Addr {
 	return v.remoteAddr
 }
 
-func (v *ProxyConnection) SetDeadline(t time.Time) error {
+func (v *Connection) SetDeadline(t time.Time) error {
 	return nil
 }
 
-func (v *ProxyConnection) SetReadDeadline(t time.Time) error {
+func (v *Connection) SetReadDeadline(t time.Time) error {
 	return nil
 }
 
-func (v *ProxyConnection) SetWriteDeadline(t time.Time) error {
+func (v *Connection) SetWriteDeadline(t time.Time) error {
 	return nil
 }
 
-func (v *ProxyConnection) Reusable() bool {
+func (v *Connection) Reusable() bool {
 	return false
 }
 
-func (v *ProxyConnection) SetReusable(bool) {
+func (v *Connection) SetReusable(bool) {
 
 }

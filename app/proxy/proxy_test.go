@@ -7,6 +7,7 @@ import (
 	. "v2ray.com/core/app/proxy"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/proxyman/outbound"
+	"v2ray.com/core/common"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/freedom"
@@ -21,12 +22,12 @@ func TestProxyDial(t *testing.T) {
 
 	space := app.NewSpace()
 	outboundManager := outbound.New()
-	outboundManager.SetHandler("tag", freedom.New(&freedom.Config{}, space, &proxy.OutboundHandlerMeta{
+	common.Must(outboundManager.SetHandler("tag", freedom.New(&freedom.Config{}, space, &proxy.OutboundHandlerMeta{
 		Tag: "tag",
 		StreamSettings: &internet.StreamConfig{
 			Network: v2net.Network_RawTCP,
 		},
-	}))
+	})))
 	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, outboundManager)
 
 	proxy := NewOutboundProxy(space)
@@ -65,6 +66,6 @@ func TestProxyDial(t *testing.T) {
 
 	assert.Bytes(xor(b[:nBytes])).Equals([]byte{'a', 'b', 'c', 'd'})
 
-	conn.Close()
+	common.Must(conn.Close())
 	tcpServer.Close()
 }
