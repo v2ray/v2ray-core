@@ -1,8 +1,6 @@
 package shadowsocks
 
 import (
-	"sync"
-
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common"
@@ -12,6 +10,7 @@ import (
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/udp"
@@ -177,11 +176,10 @@ func (v *Server) handleConnection(conn internet.Connection) {
 		Inbound:     v.meta,
 	})
 	defer ray.InboundOutput().Release()
+	defer ray.InboundInput().Close()
 
-	var writeFinish sync.Mutex
-	writeFinish.Lock()
-	go func() {
-		defer writeFinish.Unlock()
+	requestDone := signal.ExecuteAsync(func() error {
+		defer ray.InboundOutput().Release()
 
 		bufferedWriter := bufio.NewWriter(conn)
 		defer bufferedWriter.Release()
@@ -189,26 +187,38 @@ func (v *Server) handleConnection(conn internet.Connection) {
 		responseWriter, err := WriteTCPResponse(request, bufferedWriter)
 		if err != nil {
 			log.Warning("Shadowsocks|Server: Failed to write response: ", err)
-			return
+			return err
 		}
 		defer responseWriter.Release()
 
-		if payload, err := ray.InboundOutput().Read(); err == nil {
-			responseWriter.Write(payload)
-			bufferedWriter.SetBuffered(false)
-
-			if err := buf.PipeUntilEOF(ray.InboundOutput(), responseWriter); err != nil {
-				log.Info("Shadowsocks|Server: Failed to transport all TCP response: ", err)
-			}
+		payload, err := ray.InboundOutput().Read()
+		if err != nil {
+			return err
 		}
-	}()
+		responseWriter.Write(payload)
+		bufferedWriter.SetBuffered(false)
 
-	if err := buf.PipeUntilEOF(bodyReader, ray.InboundInput()); err != nil {
-		log.Info("Shadowsocks|Server: Failed to transport all TCP request: ", err)
+		if err := buf.PipeUntilEOF(ray.InboundOutput(), responseWriter); err != nil {
+			log.Info("Shadowsocks|Server: Failed to transport all TCP response: ", err)
+			return err
+		}
+
+		return nil
+	})
+
+	responseDone := signal.ExecuteAsync(func() error {
+		defer ray.InboundInput().Close()
+
+		if err := buf.PipeUntilEOF(bodyReader, ray.InboundInput()); err != nil {
+			log.Info("Shadowsocks|Server: Failed to transport all TCP request: ", err)
+			return err
+		}
+		return nil
+	})
+
+	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+		log.Info("Shadowsocks|Server: Connection ends with ", err)
 	}
-	ray.InboundInput().Close()
-
-	writeFinish.Lock()
 }
 
 type ServerFactory struct{}

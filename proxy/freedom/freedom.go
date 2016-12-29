@@ -13,6 +13,7 @@ import (
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/ray"
@@ -101,14 +102,17 @@ func (v *Handler) Dispatch(destination v2net.Destination, payload *buf.Buffer, r
 		}
 	}
 
-	go func() {
+	requestDone := signal.ExecuteAsync(func() error {
+		defer input.Release()
+
 		v2writer := buf.NewWriter(conn)
 		defer v2writer.Release()
 
 		if err := buf.PipeUntilEOF(input, v2writer); err != nil {
-			log.Info("Freedom: Failed to transport all TCP request: ", err)
+			return err
 		}
-	}()
+		return nil
+	})
 
 	var reader io.Reader = conn
 
@@ -120,12 +124,21 @@ func (v *Handler) Dispatch(destination v2net.Destination, payload *buf.Buffer, r
 		reader = v2net.NewTimeOutReader(timeout /* seconds */, conn)
 	}
 
-	v2reader := buf.NewReader(reader)
-	if err := buf.PipeUntilEOF(v2reader, output); err != nil {
-		log.Info("Freedom: Failed to transport all TCP response: ", err)
+	responseDone := signal.ExecuteAsync(func() error {
+		defer output.Close()
+
+		v2reader := buf.NewReader(reader)
+		defer v2reader.Release()
+
+		if err := buf.PipeUntilEOF(v2reader, output); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+		log.Info("Freedom: Connection ending with ", err)
 	}
-	v2reader.Release()
-	ray.OutboundOutput().Close()
 }
 
 type Factory struct{}

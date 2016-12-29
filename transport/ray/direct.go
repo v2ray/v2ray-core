@@ -65,6 +65,8 @@ func (v *Stream) Read() (*buf.Buffer, error) {
 			return b, nil
 		case <-v.srcClose:
 			return nil, io.EOF
+		case <-v.destClose:
+			return nil, io.ErrClosedPipe
 		}
 	}
 }
@@ -97,7 +99,7 @@ func (v *Stream) Close() {
 	close(v.srcClose)
 }
 
-func (v *Stream) Release() {
+func (v *Stream) ForceClose() {
 	defer swallowPanic()
 
 	close(v.destClose)
@@ -113,6 +115,8 @@ func (v *Stream) Release() {
 		}
 	}
 }
+
+func (v *Stream) Release() {}
 
 func swallowPanic() {
 	recover()

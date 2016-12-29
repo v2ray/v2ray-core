@@ -15,6 +15,7 @@ import (
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/socks/protocol"
 	"v2ray.com/core/transport/internet"
@@ -299,26 +300,36 @@ func (v *Server) transport(reader io.Reader, writer io.Writer, session *proxy.Se
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 
-	defer input.Close()
-	defer output.Release()
+	requestDone := signal.ExecuteAsync(func() error {
+		defer input.Close()
 
-	go func() {
 		v2reader := buf.NewReader(reader)
 		defer v2reader.Release()
 
 		if err := buf.PipeUntilEOF(v2reader, input); err != nil {
 			log.Info("Socks|Server: Failed to transport all TCP request: ", err)
+			return err
 		}
-		input.Close()
-	}()
+		return nil
+	})
 
-	v2writer := buf.NewWriter(writer)
-	defer v2writer.Release()
+	responseDone := signal.ExecuteAsync(func() error {
+		defer output.Release()
 
-	if err := buf.PipeUntilEOF(output, v2writer); err != nil {
-		log.Info("Socks|Server: Failed to transport all TCP response: ", err)
+		v2writer := buf.NewWriter(writer)
+		defer v2writer.Release()
+
+		if err := buf.PipeUntilEOF(output, v2writer); err != nil {
+			log.Info("Socks|Server: Failed to transport all TCP response: ", err)
+			return err
+		}
+		return nil
+
+	})
+
+	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+		log.Info("Socks|Server: Connection ends with ", err)
 	}
-	output.Release()
 }
 
 type ServerFactory struct{}

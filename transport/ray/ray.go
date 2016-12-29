@@ -36,9 +36,11 @@ type Ray interface {
 type InputStream interface {
 	buf.Reader
 	Close()
+	ForceClose()
 }
 
 type OutputStream interface {
 	buf.Writer
 	Close()
+	ForceClose()
 }

@@ -1,8 +1,6 @@
 package shadowsocks
 
 import (
-	"sync"
-
 	"v2ray.com/core/app"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
@@ -10,6 +8,7 @@ import (
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
+	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/ray"
@@ -38,8 +37,6 @@ func NewClient(config *ClientConfig, space app.Space, meta *proxy.OutboundHandle
 // Dispatch implements OutboundHandler.Dispatch().
 func (v *Client) Dispatch(destination v2net.Destination, payload *buf.Buffer, ray ray.OutboundRay) {
 	defer payload.Release()
-	defer ray.OutboundInput().Release()
-	defer ray.OutboundOutput().Close()
 
 	network := destination.Network
 
@@ -109,48 +106,38 @@ func (v *Client) Dispatch(destination v2net.Destination, payload *buf.Buffer, ra
 			}
 		}
 
-		var responseMutex sync.Mutex
-		responseMutex.Lock()
+		bufferedWriter.SetBuffered(false)
 
-		go func() {
-			defer responseMutex.Unlock()
+		requestDone := signal.ExecuteAsync(func() error {
+			defer ray.OutboundInput().Release()
+
+			if err := buf.PipeUntilEOF(ray.OutboundInput(), bodyWriter); err != nil {
+				return err
+			}
+			return nil
+		})
+
+		responseDone := signal.ExecuteAsync(func() error {
+			defer ray.OutboundOutput().Close()
 
 			responseReader, err := ReadTCPResponse(user, conn)
 			if err != nil {
-				log.Warning("Shadowsocks|Client: Failed to read response: ", err)
-				return
+				return err
 			}
 
 			if err := buf.PipeUntilEOF(responseReader, ray.OutboundOutput()); err != nil {
-				log.Info("Shadowsocks|Client: Failed to transport all TCP response: ", err)
+				return err
 			}
-		}()
 
-		bufferedWriter.SetBuffered(false)
-		if err := buf.PipeUntilEOF(ray.OutboundInput(), bodyWriter); err != nil {
-			log.Info("Shadowsocks|Client: Failed to trasnport all TCP request: ", err)
+			return nil
+		})
+
+		if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+			log.Info("Shadowsocks|Client: Connection ends with ", err)
 		}
-
-		responseMutex.Lock()
 	}
 
 	if request.Command == protocol.RequestCommandUDP {
-		timedReader := v2net.NewTimeOutReader(16, conn)
-		var responseMutex sync.Mutex
-		responseMutex.Lock()
-
-		go func() {
-			defer responseMutex.Unlock()
-
-			reader := &UDPReader{
-				Reader: timedReader,
-				User:   user,
-			}
-
-			if err := buf.PipeUntilEOF(reader, ray.OutboundOutput()); err != nil {
-				log.Info("Shadowsocks|Client: Failed to transport all UDP response: ", err)
-			}
-		}()
 
 		writer := &UDPWriter{
 			Writer:  conn,
@@ -162,11 +149,35 @@ func (v *Client) Dispatch(destination v2net.Destination, payload *buf.Buffer, ra
 				return
 			}
 		}
-		if err := buf.PipeUntilEOF(ray.OutboundInput(), writer); err != nil {
-			log.Info("Shadowsocks|Client: Failed to transport all UDP request: ", err)
-		}
 
-		responseMutex.Lock()
+		requestDone := signal.ExecuteAsync(func() error {
+			defer ray.OutboundInput().Release()
+
+			if err := buf.PipeUntilEOF(ray.OutboundInput(), writer); err != nil {
+				log.Info("Shadowsocks|Client: Failed to transport all UDP request: ", err)
+				return err
+			}
+			return nil
+		})
+
+		timedReader := v2net.NewTimeOutReader(16, conn)
+
+		responseDone := signal.ExecuteAsync(func() error {
+			defer ray.OutboundOutput().Close()
+
+			reader := &UDPReader{
+				Reader: timedReader,
+				User:   user,
+			}
+
+			if err := buf.PipeUntilEOF(reader, ray.OutboundOutput()); err != nil {
+				log.Info("Shadowsocks|Client: Failed to transport all UDP response: ", err)
+				return err
+			}
+			return nil
+		})
+
+		signal.ErrorOrFinish2(requestDone, responseDone)
 	}
 }
 

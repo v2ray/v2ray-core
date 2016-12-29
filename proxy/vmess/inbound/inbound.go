@@ -137,7 +137,6 @@ func transferRequest(session *encoding.ServerSession, request *protocol.RequestH
 	defer bodyReader.Release()
 
 	if err := buf.PipeUntilEOF(bodyReader, output); err != nil {
-		log.Debug("VMess|Inbound: Error when sending data to outbound: ", err)
 		return err
 	}
 	return nil
@@ -160,7 +159,6 @@ func transferResponse(session *encoding.ServerSession, request *protocol.Request
 		}
 
 		if err := buf.PipeUntilEOF(input, bodyWriter); err != nil {
-			log.Debug("VMess|Inbound: Error when sending data to downstream: ", err)
 			return err
 		}
 	}
@@ -201,13 +199,13 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	if err != nil {
 		if errors.Cause(err) != io.EOF {
 			log.Access(connection.RemoteAddr(), "", log.AccessRejected, err)
-			log.Info("VMessIn: Invalid request from ", connection.RemoteAddr(), ": ", err)
+			log.Info("VMess|Inbound: Invalid request from ", connection.RemoteAddr(), ": ", err)
 		}
 		connection.SetReusable(false)
 		return
 	}
 	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, "")
-	log.Info("VMessIn: Received request for ", request.Destination())
+	log.Info("VMess|Inbound: Received request for ", request.Destination())
 
 	connection.SetReusable(request.Option.Has(protocol.RequestOptionConnectionReuse))
 
@@ -245,13 +243,14 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 		return transferResponse(session, request, response, output, writer)
 	})
 
-	err = signal.ErrorOrFinish2(requestDone, responseDone)
-	if err != nil {
+	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+		log.Info("VMess|Inbound: Connection ending with ", err)
 		connection.SetReusable(false)
 		return
 	}
 
 	if err := writer.Flush(); err != nil {
+		log.Info("VMess|Inbound: Failed to flush remain data: ", err)
 		connection.SetReusable(false)
 		return
 	}
