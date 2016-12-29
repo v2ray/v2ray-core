@@ -39,6 +39,7 @@ func (v *OutboundProxy) RegisterDialer() {
 	internet.ProxyDialer = v.Dial
 }
 
+// Dial implements internet.Dialer.
 func (v *OutboundProxy) Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOptions) (internet.Connection, error) {
 	handler := v.outboundManager.GetHandler(options.Proxy.Tag)
 	if handler == nil {
@@ -53,6 +54,7 @@ func (v *OutboundProxy) Dial(src v2net.Address, dest v2net.Destination, options 
 	return NewConnection(src, dest, stream), nil
 }
 
+// Release implements common.Releasable.Release().
 func (v *OutboundProxy) Release() {
 
 }
@@ -83,6 +85,7 @@ func NewConnection(src v2net.Address, dest v2net.Destination, stream ray.Ray) *C
 	}
 }
 
+// Read implements net.Conn.Read().
 func (v *Connection) Read(b []byte) (int, error) {
 	if v.closed {
 		return 0, io.EOF
@@ -90,6 +93,7 @@ func (v *Connection) Read(b []byte) (int, error) {
 	return v.reader.Read(b)
 }
 
+// Write implements net.Conn.Write().
 func (v *Connection) Write(b []byte) (int, error) {
 	if v.closed {
 		return 0, io.ErrClosedPipe
@@ -97,6 +101,7 @@ func (v *Connection) Write(b []byte) (int, error) {
 	return v.writer.Write(b)
 }
 
+// Close implements net.Conn.Close().
 func (v *Connection) Close() error {
 	v.closed = true
 	v.stream.InboundInput().Close()
@@ -106,10 +111,12 @@ func (v *Connection) Close() error {
 	return nil
 }
 
+// LocalAddr implements net.Conn.LocalAddr().
 func (v *Connection) LocalAddr() net.Addr {
 	return v.localAddr
 }
 
+// RemoteAddr implements net.Conn.RemoteAddr().
 func (v *Connection) RemoteAddr() net.Addr {
 	return v.remoteAddr
 }
