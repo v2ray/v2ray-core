@@ -11,6 +11,7 @@ import (
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/udp"
@@ -168,35 +169,37 @@ func (v *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 	})
 	defer ray.InboundOutput().Release()
 
-	var wg sync.WaitGroup
-
 	reader := v2net.NewTimeOutReader(v.config.Timeout, conn)
 	defer reader.Release()
 
-	wg.Add(1)
-	go func() {
+	requestDone := signal.ExecuteAsync(func() error {
+		defer ray.InboundInput().Close()
+
 		v2reader := buf.NewReader(reader)
 		defer v2reader.Release()
 
 		if err := buf.PipeUntilEOF(v2reader, ray.InboundInput()); err != nil {
 			log.Info("Dokodemo: Failed to transport all TCP request: ", err)
+			return err
 		}
-		wg.Done()
-		ray.InboundInput().Close()
-	}()
 
-	wg.Add(1)
-	go func() {
+		return nil
+	})
+
+	responseDone := signal.ExecuteAsync(func() error {
+		defer ray.InboundOutput().Release()
+
 		v2writer := buf.NewWriter(conn)
 		defer v2writer.Release()
 
 		if err := buf.PipeUntilEOF(ray.InboundOutput(), v2writer); err != nil {
 			log.Info("Dokodemo: Failed to transport all TCP response: ", err)
+			return err
 		}
-		wg.Done()
-	}()
+		return nil
+	})
 
-	wg.Wait()
+	signal.ErrorOrFinish2(requestDone, responseDone)
 }
 
 type Factory struct{}

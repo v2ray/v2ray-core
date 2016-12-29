@@ -15,7 +15,7 @@ import (
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
-	"v2ray.com/core/common/task"
+	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/uuid"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/vmess"
@@ -23,66 +23,6 @@ import (
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/ray"
 )
-
-type requestProcessor struct {
-	session *encoding.ServerSession
-	request *protocol.RequestHeader
-	input   io.Reader
-	output  ray.OutputStream
-}
-
-func (r *requestProcessor) Execute() error {
-	defer r.output.Close()
-
-	bodyReader := r.session.DecodeRequestBody(r.request, r.input)
-	defer bodyReader.Release()
-
-	if err := buf.PipeUntilEOF(bodyReader, r.output); err != nil {
-		log.Debug("VMess|Inbound: Error when sending data to outbound: ", err)
-		return err
-	}
-
-	return nil
-}
-
-type responseProcessor struct {
-	session  *encoding.ServerSession
-	request  *protocol.RequestHeader
-	response *protocol.ResponseHeader
-	input    ray.InputStream
-	output   io.Writer
-}
-
-func (r *responseProcessor) Execute() error {
-	defer r.input.Release()
-	r.session.EncodeResponseHeader(r.response, r.output)
-
-	bodyWriter := r.session.EncodeResponseBody(r.request, r.output)
-
-	// Optimize for small response packet
-	if data, err := r.input.Read(); err == nil {
-		if err := bodyWriter.Write(data); err != nil {
-			return err
-		}
-
-		if bufferedWriter, ok := r.output.(*bufio.BufferedWriter); ok {
-			bufferedWriter.SetBuffered(false)
-		}
-
-		if err := buf.PipeUntilEOF(r.input, bodyWriter); err != nil {
-			log.Debug("VMess|Inbound: Error when sending data to downstream: ", err)
-			return err
-		}
-	}
-
-	if r.request.Option.Has(protocol.RequestOptionChunkStream) {
-		if err := bodyWriter.Write(buf.NewLocal(8)); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
 
 type userByEmail struct {
 	sync.RWMutex
@@ -190,6 +130,50 @@ func (v *VMessInboundHandler) Start() error {
 	return nil
 }
 
+func transferRequest(session *encoding.ServerSession, request *protocol.RequestHeader, input io.Reader, output ray.OutputStream) error {
+	defer output.Close()
+
+	bodyReader := session.DecodeRequestBody(request, input)
+	defer bodyReader.Release()
+
+	if err := buf.PipeUntilEOF(bodyReader, output); err != nil {
+		log.Debug("VMess|Inbound: Error when sending data to outbound: ", err)
+		return err
+	}
+	return nil
+}
+
+func transferResponse(session *encoding.ServerSession, request *protocol.RequestHeader, response *protocol.ResponseHeader, input ray.InputStream, output io.Writer) error {
+	defer input.Release()
+	session.EncodeResponseHeader(response, output)
+
+	bodyWriter := session.EncodeResponseBody(request, output)
+
+	// Optimize for small response packet
+	if data, err := input.Read(); err == nil {
+		if err := bodyWriter.Write(data); err != nil {
+			return err
+		}
+
+		if bufferedWriter, ok := output.(*bufio.BufferedWriter); ok {
+			bufferedWriter.SetBuffered(false)
+		}
+
+		if err := buf.PipeUntilEOF(input, bodyWriter); err != nil {
+			log.Debug("VMess|Inbound: Error when sending data to downstream: ", err)
+			return err
+		}
+	}
+
+	if request.Option.Has(protocol.RequestOptionChunkStream) {
+		if err := bodyWriter.Write(buf.NewLocal(8)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	defer connection.Close()
 
@@ -242,12 +226,8 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	connReader.SetTimeOut(userSettings.PayloadReadTimeout)
 	reader.SetBuffered(false)
 
-	var executor task.ParallelExecutor
-	executor.Execute(&requestProcessor{
-		session: session,
-		request: request,
-		input:   reader,
-		output:  input,
+	requestDone := signal.ExecuteAsync(func() error {
+		return transferRequest(session, request, reader, input)
 	})
 
 	writer := bufio.NewWriter(connection)
@@ -261,23 +241,19 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 		response.Option.Set(protocol.ResponseOptionConnectionReuse)
 	}
 
-	executor.Execute(&responseProcessor{
-		session:  session,
-		request:  request,
-		response: response,
-		input:    output,
-		output:   writer,
+	responseDone := signal.ExecuteAsync(func() error {
+		return transferResponse(session, request, response, output, writer)
 	})
 
-	executor.Wait()
+	err = signal.ErrorOrFinish2(requestDone, responseDone)
+	if err != nil {
+		connection.SetReusable(false)
+		return
+	}
 
 	if err := writer.Flush(); err != nil {
 		connection.SetReusable(false)
-	}
-
-	errors := executor.Errors()
-	if len(errors) > 0 {
-		connection.SetReusable(false)
+		return
 	}
 }
 
