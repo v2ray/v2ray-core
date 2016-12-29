@@ -71,8 +71,10 @@ func (v *Handler) Dispatch(destination v2net.Destination, payload *buf.Buffer, r
 	log.Info("Freedom: Opening connection to ", destination)
 
 	defer payload.Release()
-	defer ray.OutboundInput().Release()
-	defer ray.OutboundOutput().Close()
+	input := ray.OutboundInput()
+	output := ray.OutboundOutput()
+	defer input.ForceClose()
+	defer output.Close()
 
 	var conn internet.Connection
 	if v.domainStrategy == Config_USE_IP && destination.Address.Family().IsDomain() {
@@ -92,9 +94,6 @@ func (v *Handler) Dispatch(destination v2net.Destination, payload *buf.Buffer, r
 	}
 	defer conn.Close()
 
-	input := ray.OutboundInput()
-	output := ray.OutboundOutput()
-
 	if !payload.IsEmpty() {
 		if _, err := conn.Write(payload.Bytes()); err != nil {
 			log.Warning("Freedom: Failed to write to destination: ", destination, ": ", err)
@@ -103,7 +102,7 @@ func (v *Handler) Dispatch(destination v2net.Destination, payload *buf.Buffer, r
 	}
 
 	requestDone := signal.ExecuteAsync(func() error {
-		defer input.Release()
+		defer input.ForceClose()
 
 		v2writer := buf.NewWriter(conn)
 		defer v2writer.Release()

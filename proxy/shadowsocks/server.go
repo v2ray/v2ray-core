@@ -175,11 +175,11 @@ func (v *Server) handleConnection(conn internet.Connection) {
 		User:        request.User,
 		Inbound:     v.meta,
 	})
-	defer ray.InboundOutput().Release()
+	defer ray.InboundOutput().ForceClose()
 	defer ray.InboundInput().Close()
 
 	requestDone := signal.ExecuteAsync(func() error {
-		defer ray.InboundOutput().Release()
+		defer ray.InboundOutput().ForceClose()
 
 		bufferedWriter := bufio.NewWriter(conn)
 		defer bufferedWriter.Release()

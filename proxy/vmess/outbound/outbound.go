@@ -28,7 +28,7 @@ type VMessOutboundHandler struct {
 // Dispatch implements OutboundHandler.Dispatch().
 func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *buf.Buffer, ray ray.OutboundRay) {
 	defer payload.Release()
-	defer ray.OutboundInput().Release()
+	defer ray.OutboundInput().ForceClose()
 	defer ray.OutboundOutput().Close()
 
 	var rec *protocol.ServerSpec
@@ -83,7 +83,7 @@ func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *buf.B
 	session := encoding.NewClientSession(protocol.DefaultIDHash)
 
 	requestDone := signal.ExecuteAsync(func() error {
-		defer input.Release()
+		defer input.ForceClose()
 
 		writer := bufio.NewWriter(conn)
 		defer writer.Release()

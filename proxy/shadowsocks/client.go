@@ -109,7 +109,7 @@ func (v *Client) Dispatch(destination v2net.Destination, payload *buf.Buffer, ra
 		bufferedWriter.SetBuffered(false)
 
 		requestDone := signal.ExecuteAsync(func() error {
-			defer ray.OutboundInput().Release()
+			defer ray.OutboundInput().ForceClose()
 
 			if err := buf.PipeUntilEOF(ray.OutboundInput(), bodyWriter); err != nil {
 				return err
@@ -151,7 +151,7 @@ func (v *Client) Dispatch(destination v2net.Destination, payload *buf.Buffer, ra
 		}
 
 		requestDone := signal.ExecuteAsync(func() error {
-			defer ray.OutboundInput().Release()
+			defer ray.OutboundInput().ForceClose()
 
 			if err := buf.PipeUntilEOF(ray.OutboundInput(), writer); err != nil {
 				log.Info("Shadowsocks|Client: Failed to transport all UDP request: ", err)

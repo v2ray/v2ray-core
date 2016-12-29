@@ -167,7 +167,8 @@ func (v *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 		Destination: dest,
 		Inbound:     v.meta,
 	})
-	defer ray.InboundOutput().Release()
+	output := ray.InboundOutput()
+	defer output.ForceClose()
 
 	reader := v2net.NewTimeOutReader(v.config.Timeout, conn)
 	defer reader.Release()
@@ -187,19 +188,21 @@ func (v *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
-		defer ray.InboundOutput().Release()
+		defer output.ForceClose()
 
 		v2writer := buf.NewWriter(conn)
 		defer v2writer.Release()
 
-		if err := buf.PipeUntilEOF(ray.InboundOutput(), v2writer); err != nil {
+		if err := buf.PipeUntilEOF(output, v2writer); err != nil {
 			log.Info("Dokodemo: Failed to transport all TCP response: ", err)
 			return err
 		}
 		return nil
 	})
 
-	signal.ErrorOrFinish2(requestDone, responseDone)
+	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+		log.Info("Dokodemo: Connection ends with ", err)
+	}
 }
 
 type Factory struct{}

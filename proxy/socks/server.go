@@ -314,7 +314,7 @@ func (v *Server) transport(reader io.Reader, writer io.Writer, session *proxy.Se
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
-		defer output.Release()
+		defer output.ForceClose()
 
 		v2writer := buf.NewWriter(writer)
 		defer v2writer.Release()
