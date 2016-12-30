@@ -29,6 +29,8 @@ func (b *Buffer) Release() {
 	}
 	b.v = nil
 	b.pool = nil
+	b.start = 0
+	b.end = 0
 }
 
 // Clear clears the content of the buffer, results an empty buffer with
