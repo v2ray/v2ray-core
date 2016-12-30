@@ -2,6 +2,8 @@ package websocket_test
 
 import (
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -100,8 +102,8 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 		AllowInsecure: true,
 		Certificate: []*v2tls.Certificate{
 			{
-				Certificate: ReadFile("./../../../testing/tls/cert.pem", assert),
-				Key:         ReadFile("./../../../testing/tls/key.pem", assert),
+				Certificate: ReadFile(filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", "testing", "tls", "cert.pem"), assert),
+				Key:         ReadFile(filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", "testing", "tls", "key.pem"), assert),
 			},
 		},
 	}
