@@ -7,11 +7,4 @@ option java_package = "com.v2ray.core.app.dispatcher";
 option java_outer_classname = "ConfigProto";
 
 message Config {
-  enum FixDestination {
-    Auto = 0;
-    Enabled = 1;
-    Disabled = 2;
-  }
-
-  FixDestination fix_destination = 1;
 }

@@ -27,6 +27,7 @@ func NewDefaultDispatcher(space app.Space) *DefaultDispatcher {
 	return d
 }
 
+// Initialize initializes the dispatcher.
 // Private: Used by app.Space only.
 func (v *DefaultDispatcher) Initialize(space app.Space) error {
 	if !space.HasApp(proxyman.APP_ID_OUTBOUND_MANAGER) {
@@ -41,6 +42,7 @@ func (v *DefaultDispatcher) Initialize(space app.Space) error {
 	return nil
 }
 
+// Release implements common.Releasable.Release().
 func (v *DefaultDispatcher) Release() {
 
 }
@@ -83,21 +85,6 @@ func (v *DefaultDispatcher) FilterPacketAndDispatch(destination v2net.Destinatio
 		return
 	}
 	dispatcher.Dispatch(destination, payload, link)
-}
-
-func (v *DefaultDispatcher) FixDestination(payload *buf.Buffer, dest v2net.Destination) v2net.Destination {
-	if dest.Address.Family().IsDomain() || dest.Network != v2net.Network_TCP {
-		return dest
-	}
-
-	switch dest.Port {
-	case 80:
-		addr := DetectHTTPHost(payload)
-		if addr != nil {
-			dest.Address = addr
-		}
-	}
-	return dest
 }
 
 type DefaultDispatcherFactory struct{}
