@@ -28,7 +28,7 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 
 	id := src.String() + "-" + dest.NetAddr()
 	var conn *wsconn
-	if dest.Network == v2net.Network_TCP && wsSettings.ConnectionReuse.IsEnabled() {
+	if dest.Network == v2net.Network_TCP && wsSettings.IsConnectionReuse() {
 		connt := globalCache.Get(id)
 		if connt != nil {
 			conn = connt.(*wsconn)

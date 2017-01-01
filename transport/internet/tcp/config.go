@@ -5,11 +5,11 @@ import (
 	"v2ray.com/core/transport/internet"
 )
 
-func (v *ConnectionReuse) IsEnabled() bool {
-	if v == nil {
+func (v *Config) IsConnectionReuse() bool {
+	if v == nil || v.ConnectionReuse == nil {
 		return true
 	}
-	return v.Enable
+	return v.ConnectionReuse.Enable
 }
 
 func init() {

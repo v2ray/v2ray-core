@@ -39,7 +39,7 @@ func NewConnection(id internal.ConnectionId, conn net.Conn, manager ConnectionMa
 		id:       id,
 		conn:     conn,
 		listener: manager,
-		reusable: config.ConnectionReuse.IsEnabled(),
+		reusable: config.IsConnectionReuse(),
 		config:   config,
 	}
 }
@@ -97,7 +97,7 @@ func (v *Connection) SetReusable(reusable bool) {
 }
 
 func (v *Connection) Reusable() bool {
-	return v.config.ConnectionReuse.IsEnabled() && v.reusable
+	return v.config.IsConnectionReuse() && v.reusable
 }
 
 func (v *Connection) SysFd() (int, error) {

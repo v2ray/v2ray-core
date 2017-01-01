@@ -3,6 +3,7 @@ package tcp
 import (
 	"crypto/tls"
 	"net"
+
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -28,7 +29,7 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 
 	id := internal.NewConnectionId(src, dest)
 	var conn net.Conn
-	if dest.Network == v2net.Network_TCP && tcpSettings.ConnectionReuse.IsEnabled() {
+	if dest.Network == v2net.Network_TCP && tcpSettings.IsConnectionReuse() {
 		conn = globalCache.Get(id)
 	}
 	if conn == nil {

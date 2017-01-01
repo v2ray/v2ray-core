@@ -159,13 +159,10 @@ func (ws *wsconn) setup() {
 }
 
 func (ws *wsconn) Reusable() bool {
-	return ws.reusable && !ws.connClosing
+	return ws.config.IsConnectionReuse() && ws.reusable && !ws.connClosing
 }
 
 func (ws *wsconn) SetReusable(reusable bool) {
-	if !ws.config.ConnectionReuse.IsEnabled() {
-		return
-	}
 	ws.reusable = reusable
 }
 
