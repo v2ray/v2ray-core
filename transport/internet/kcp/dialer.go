@@ -26,7 +26,7 @@ var (
 type ClientConnection struct {
 	sync.RWMutex
 	net.Conn
-	id     internal.ConnectionId
+	id     internal.ConnectionID
 	input  func([]Segment)
 	reader PacketReader
 	writer PacketWriter
@@ -56,7 +56,7 @@ func (o *ClientConnection) Read([]byte) (int, error) {
 	panic("KCP|ClientConnection: Read should not be called.")
 }
 
-func (o *ClientConnection) Id() internal.ConnectionId {
+func (o *ClientConnection) Id() internal.ConnectionID {
 	return o.id
 }
 
@@ -112,7 +112,7 @@ func DialKCP(src v2net.Address, dest v2net.Destination, options internet.DialerO
 	dest.Network = v2net.Network_UDP
 	log.Info("KCP|Dialer: Dialing KCP to ", dest)
 
-	id := internal.NewConnectionId(src, dest)
+	id := internal.NewConnectionID(src, dest)
 	conn := globalPool.Get(id)
 	if conn == nil {
 		rawConn, err := internet.DialToDest(src, dest)

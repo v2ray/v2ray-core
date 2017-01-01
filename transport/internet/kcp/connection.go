@@ -156,7 +156,7 @@ func (v *Updater) Run() {
 
 type SystemConnection interface {
 	net.Conn
-	Id() internal.ConnectionId
+	Id() internal.ConnectionID
 	Reset(func([]Segment))
 	Overhead() int
 }

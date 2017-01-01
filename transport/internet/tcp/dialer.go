@@ -27,7 +27,7 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 	}
 	tcpSettings := networkSettings.(*Config)
 
-	id := internal.NewConnectionId(src, dest)
+	id := internal.NewConnectionID(src, dest)
 	var conn net.Conn
 	if dest.Network == v2net.Network_TCP && tcpSettings.IsConnectionReuse() {
 		conn = globalCache.Get(id)

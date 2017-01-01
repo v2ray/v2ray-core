@@ -89,7 +89,7 @@ func (v *TCPListener) Accept() (internet.Connection, error) {
 				return nil, connErr.err
 			}
 			conn := connErr.conn
-			return NewConnection(internal.ConnectionId{}, conn, v, v.config), nil
+			return NewConnection(internal.ConnectionID{}, conn, v, v.config), nil
 		case <-time.After(time.Second * 2):
 		}
 	}
@@ -125,7 +125,7 @@ func (v *TCPListener) KeepAccepting() {
 	}
 }
 
-func (v *TCPListener) Put(id internal.ConnectionId, conn net.Conn) {
+func (v *TCPListener) Put(id internal.ConnectionID, conn net.Conn) {
 	v.Lock()
 	defer v.Unlock()
 	if !v.acccepting {

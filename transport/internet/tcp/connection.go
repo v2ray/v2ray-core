@@ -9,7 +9,7 @@ import (
 )
 
 type ConnectionManager interface {
-	Put(internal.ConnectionId, net.Conn)
+	Put(internal.ConnectionID, net.Conn)
 }
 
 type RawConnection struct {
@@ -27,14 +27,14 @@ func (v *RawConnection) SysFd() (int, error) {
 }
 
 type Connection struct {
-	id       internal.ConnectionId
+	id       internal.ConnectionID
 	reusable bool
 	conn     net.Conn
 	listener ConnectionManager
 	config   *Config
 }
 
-func NewConnection(id internal.ConnectionId, conn net.Conn, manager ConnectionManager, config *Config) *Connection {
+func NewConnection(id internal.ConnectionID, conn net.Conn, manager ConnectionManager, config *Config) *Connection {
 	return &Connection{
 		id:       id,
 		conn:     conn,

@@ -3,13 +3,15 @@ package internal
 import (
 	"net"
 	"reflect"
+
 	"v2ray.com/core/common/errors"
 )
 
 var (
-	ErrInvalidConn = errors.New("Invalid Connection.")
+	errInvalidConn = errors.New("Invalid Connection.")
 )
 
+// GetSysFd returns the underlying fd of a connection.
 func GetSysFd(conn net.Conn) (int, error) {
 	cv := reflect.ValueOf(conn)
 	switch ce := cv.Elem(); ce.Kind() {
@@ -21,5 +23,5 @@ func GetSysFd(conn net.Conn) (int, error) {
 			return int(fd.Int()), nil
 		}
 	}
-	return 0, ErrInvalidConn
+	return 0, errInvalidConn
 }
