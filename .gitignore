@@ -1,2 +1,2 @@
-.generated.go
-.pb.go
+*.generated.go
+*.pb.go
