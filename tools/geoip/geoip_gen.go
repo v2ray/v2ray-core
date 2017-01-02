@@ -69,7 +69,7 @@ func main() {
 		log.Fatalf("Failed to marshal country IPs: %v", err)
 	}
 
-	file, err := os.OpenFile("geoip_data.go", os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+	file, err := os.OpenFile("geoip.generated.go", os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
 	if err != nil {
 		log.Fatalf("Failed to generate geoip_data.go: %v", err)
 	}
