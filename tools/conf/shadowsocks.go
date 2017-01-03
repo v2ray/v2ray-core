@@ -2,6 +2,7 @@ package conf
 
 import (
 	"strings"
+
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -44,7 +45,7 @@ func (v *ShadowsocksServerConfig) Build() (*serial.TypedMessage, error) {
 	case "chacha20":
 		account.CipherType = shadowsocks.CipherType_CHACHA20
 	case "chacha20-ietf":
-		account.CipherType = shadowsocks.CipherType_CHACHA20_IEFT
+		account.CipherType = shadowsocks.CipherType_CHACHA20_IETF
 	default:
 		return nil, errors.New("Unknown cipher method: " + cipher)
 	}
@@ -105,7 +106,7 @@ func (v *ShadowsocksClientConfig) Build() (*serial.TypedMessage, error) {
 		case "chacha20":
 			account.CipherType = shadowsocks.CipherType_CHACHA20
 		case "chacha20-ietf":
-			account.CipherType = shadowsocks.CipherType_CHACHA20_IEFT
+			account.CipherType = shadowsocks.CipherType_CHACHA20_IETF
 		default:
 			return nil, errors.New("Unknown cipher method: " + cipher)
 		}
