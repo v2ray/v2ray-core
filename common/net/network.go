@@ -30,7 +30,7 @@ func (v Network) AsList() *NetworkList {
 
 func (v Network) SystemString() string {
 	switch v {
-	case Network_TCP, Network_RawTCP:
+	case Network_TCP:
 		return "tcp"
 	case Network_UDP, Network_KCP:
 		return "udp"
@@ -41,7 +41,7 @@ func (v Network) SystemString() string {
 
 func (v Network) URLPrefix() string {
 	switch v {
-	case Network_TCP, Network_RawTCP:
+	case Network_TCP:
 		return "tcp"
 	case Network_UDP:
 		return "udp"

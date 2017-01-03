@@ -94,6 +94,8 @@ func (v *Handler) Dispatch(destination v2net.Destination, payload *buf.Buffer, r
 	}
 	defer conn.Close()
 
+	conn.SetReusable(false)
+
 	if !payload.IsEmpty() {
 		if _, err := conn.Write(payload.Bytes()); err != nil {
 			log.Warning("Freedom: Failed to write to destination: ", destination, ": ", err)
@@ -144,7 +146,7 @@ type Factory struct{}
 
 func (v *Factory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_RawTCP},
+		Network: []v2net.Network{v2net.Network_TCP},
 	}
 }
 

@@ -3,6 +3,7 @@ package internet
 import (
 	"net"
 	"sync"
+
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -12,10 +13,9 @@ import (
 var (
 	ErrClosedConnection = errors.New("Connection already closed.")
 
-	KCPListenFunc    ListenFunc
-	TCPListenFunc    ListenFunc
-	RawTCPListenFunc ListenFunc
-	WSListenFunc     ListenFunc
+	KCPListenFunc ListenFunc
+	TCPListenFunc ListenFunc
+	WSListenFunc  ListenFunc
 )
 
 type ListenFunc func(address v2net.Address, port v2net.Port, options ListenOptions) (Listener, error)
@@ -49,8 +49,6 @@ func ListenTCP(address v2net.Address, port v2net.Port, callback ConnectionHandle
 		listener, err = KCPListenFunc(address, port, options)
 	case v2net.Network_WebSocket:
 		listener, err = WSListenFunc(address, port, options)
-	case v2net.Network_RawTCP:
-		listener, err = RawTCPListenFunc(address, port, options)
 	default:
 		log.Error("Internet|Listener: Unknown stream type: ", settings.Network)
 		err = ErrUnsupportedStreamType

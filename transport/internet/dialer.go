@@ -2,6 +2,7 @@ package internet
 
 import (
 	"net"
+
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -19,12 +20,11 @@ type DialerOptions struct {
 type Dialer func(src v2net.Address, dest v2net.Destination, options DialerOptions) (Connection, error)
 
 var (
-	TCPDialer    Dialer
-	KCPDialer    Dialer
-	RawTCPDialer Dialer
-	UDPDialer    Dialer
-	WSDialer     Dialer
-	ProxyDialer  Dialer
+	TCPDialer   Dialer
+	KCPDialer   Dialer
+	UDPDialer   Dialer
+	WSDialer    Dialer
+	ProxyDialer Dialer
 )
 
 func Dial(src v2net.Address, dest v2net.Destination, options DialerOptions) (Connection, error) {
@@ -43,10 +43,6 @@ func Dial(src v2net.Address, dest v2net.Destination, options DialerOptions) (Con
 			connection, err = KCPDialer(src, dest, options)
 		case v2net.Network_WebSocket:
 			connection, err = WSDialer(src, dest, options)
-
-			// This check has to be the last one.
-		case v2net.Network_RawTCP:
-			connection, err = RawTCPDialer(src, dest, options)
 		default:
 			return nil, ErrUnsupportedStreamType
 		}

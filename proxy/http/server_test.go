@@ -64,7 +64,7 @@ func TestNormalGetRequest(t *testing.T) {
 			Address: v2net.LocalHostIP,
 			Port:    port,
 			StreamSettings: &internet.StreamConfig{
-				Network: v2net.Network_RawTCP,
+				Network: v2net.Network_TCP,
 			}})
 	defer httpProxy.Close()
 

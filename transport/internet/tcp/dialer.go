@@ -68,19 +68,6 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 	return NewConnection(id, conn, globalCache, tcpSettings), nil
 }
 
-func DialRaw(src v2net.Address, dest v2net.Destination, options internet.DialerOptions) (internet.Connection, error) {
-	log.Info("Internet|TCP: Dailing Raw TCP to ", dest)
-	conn, err := internet.DialToDest(src, dest)
-	if err != nil {
-		return nil, err
-	}
-	// TODO: handle dialer options
-	return &RawConnection{
-		TCPConn: *conn.(*net.TCPConn),
-	}, nil
-}
-
 func init() {
 	internet.TCPDialer = Dial
-	internet.RawTCPDialer = DialRaw
 }

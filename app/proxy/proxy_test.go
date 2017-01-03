@@ -25,7 +25,7 @@ func TestProxyDial(t *testing.T) {
 	common.Must(outboundManager.SetHandler("tag", freedom.New(&freedom.Config{}, space, &proxy.OutboundHandlerMeta{
 		Tag: "tag",
 		StreamSettings: &internet.StreamConfig{
-			Network: v2net.Network_RawTCP,
+			Network: v2net.Network_TCP,
 		},
 	})))
 	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, outboundManager)
@@ -49,7 +49,7 @@ func TestProxyDial(t *testing.T) {
 
 	conn, err := proxy.Dial(v2net.LocalHostIP, dest, internet.DialerOptions{
 		Stream: &internet.StreamConfig{
-			Network: v2net.Network_RawTCP,
+			Network: v2net.Network_TCP,
 		},
 		Proxy: &internet.ProxyConfig{
 			Tag: "tag",

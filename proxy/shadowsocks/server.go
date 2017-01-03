@@ -225,7 +225,7 @@ type ServerFactory struct{}
 
 func (v *ServerFactory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_TCP, v2net.Network_RawTCP},
+		Network: []v2net.Network{v2net.Network_TCP},
 	}
 }
 

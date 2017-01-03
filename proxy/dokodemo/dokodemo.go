@@ -143,6 +143,7 @@ func (v *DokodemoDoor) ListenTCP() error {
 
 func (v *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 	defer conn.Close()
+	conn.SetReusable(false)
 
 	var dest v2net.Destination
 	if v.config.FollowRedirect {
@@ -209,7 +210,7 @@ type Factory struct{}
 
 func (v *Factory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_RawTCP},
+		Network: []v2net.Network{v2net.Network_TCP},
 	}
 }
 

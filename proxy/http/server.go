@@ -100,6 +100,8 @@ func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error
 
 func (v *Server) handleConnection(conn internet.Connection) {
 	defer conn.Close()
+	conn.SetReusable(false)
+
 	timedReader := v2net.NewTimeOutReader(v.config.Timeout, conn)
 	reader := bufio.OriginalReaderSize(timedReader, 2048)
 
@@ -289,7 +291,7 @@ type ServerFactory struct{}
 // StreamCapability implements InboundHandlerFactory.StreamCapability().
 func (v *ServerFactory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_RawTCP},
+		Network: []v2net.Network{v2net.Network_TCP},
 	}
 }
 

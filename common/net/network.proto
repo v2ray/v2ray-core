@@ -10,7 +10,7 @@ enum Network {
   Unknown = 0;
 
   // Native TCP provided by system.
-  RawTCP = 1;
+  RawTCP = 1 [deprecated=true];
 
   // V2Ray specific TCP.
   TCP = 2;

@@ -185,7 +185,7 @@ type StreamConfig struct {
 
 func (v *StreamConfig) Build() (*internet.StreamConfig, error) {
 	config := &internet.StreamConfig{
-		Network: v2net.Network_RawTCP,
+		Network: v2net.Network_TCP,
 	}
 	if v.Network != nil {
 		config.Network = (*v.Network).Build()

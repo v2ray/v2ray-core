@@ -9,20 +9,6 @@ import (
 	"v2ray.com/core/transport/internet/internal"
 )
 
-type RawConnection struct {
-	net.TCPConn
-}
-
-func (v *RawConnection) Reusable() bool {
-	return false
-}
-
-func (v *RawConnection) SetReusable(b bool) {}
-
-func (v *RawConnection) SysFd() (int, error) {
-	return internal.GetSysFd(&v.TCPConn)
-}
-
 type Connection struct {
 	sync.RWMutex
 	id       internal.ConnectionID
