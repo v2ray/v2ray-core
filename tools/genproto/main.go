@@ -3,7 +3,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -53,5 +55,36 @@ func main() {
 		if err != nil {
 			fmt.Println(err)
 		}
+	}
+
+	err := filepath.Walk(filepath.Join(gosrc, "v2ray.com", "core"), func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		if !strings.HasSuffix(info.Name(), ".pb.go") {
+			return nil
+		}
+
+		content, err := ioutil.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		pos := bytes.Index(content, []byte("\npackage"))
+		if pos > 0 {
+			if err := ioutil.WriteFile(path, content[pos+1:], info.Mode()); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		panic(err)
 	}
 }
