@@ -61,7 +61,6 @@ func main() {
 	}
 	defer file.Close()
 
-	fmt.Fprintln(file, "// GENERATED CODE. DO NOT MODIFY!")
 	fmt.Fprintln(file, "package internal")
 	fmt.Fprintln(file)
 	fmt.Fprintln(file, "import \"encoding/binary\"")
