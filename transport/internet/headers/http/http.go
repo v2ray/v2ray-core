@@ -109,15 +109,15 @@ type HttpConn struct {
 	readBuffer    *buf.Buffer
 	oneTimeReader Reader
 	oneTimeWriter Writer
-	isServer      bool
+	errorWriter   Writer
 }
 
-func NewHttpConn(conn net.Conn, reader Reader, writer Writer, isServer bool) *HttpConn {
+func NewHttpConn(conn net.Conn, reader Reader, writer Writer, errorWriter Writer) *HttpConn {
 	return &HttpConn{
 		Conn:          conn,
 		oneTimeReader: reader,
 		oneTimeWriter: writer,
-		isServer:      isServer,
+		errorWriter:   errorWriter,
 	}
 }
 
@@ -157,33 +157,10 @@ func (v *HttpConn) Write(b []byte) (int, error) {
 
 // Close implements net.Conn.Close().
 func (v *HttpConn) Close() error {
-	if v.isServer && v.oneTimeWriter != nil {
+	if v.oneTimeWriter != nil && v.errorWriter != nil {
 		// Connection is being closed but header wasn't sent. This means the client request
 		// is probably not valid. Sending back a server error header in this case.
-		writer := formResponseHeader(&ResponseConfig{
-			Version: &Version{
-				Value: "1.1",
-			},
-			Status: &Status{
-				Code:   "500",
-				Reason: "Internal Server Error",
-			},
-			Header: []*Header{
-				{
-					Name:  "Connection",
-					Value: []string{"close"},
-				},
-				{
-					Name:  "Cache-Control",
-					Value: []string{"private"},
-				},
-				{
-					Name:  "Content-Length",
-					Value: []string{"0"},
-				},
-			},
-		})
-		writer.Write(v.Conn)
+		v.errorWriter.Write(v.Conn)
 	}
 
 	return v.Conn.Close()
@@ -248,14 +225,36 @@ func (v HttpAuthenticator) Client(conn net.Conn) net.Conn {
 	if v.config.Response != nil {
 		writer = v.GetClientWriter()
 	}
-	return NewHttpConn(conn, reader, writer, false)
+	return NewHttpConn(conn, reader, writer, new(NoOpWriter))
 }
 
 func (v HttpAuthenticator) Server(conn net.Conn) net.Conn {
 	if v.config.Request == nil && v.config.Response == nil {
 		return conn
 	}
-	return NewHttpConn(conn, new(HeaderReader), v.GetServerWriter(), true)
+	return NewHttpConn(conn, new(HeaderReader), v.GetServerWriter(), formResponseHeader(&ResponseConfig{
+		Version: &Version{
+			Value: "1.1",
+		},
+		Status: &Status{
+			Code:   "500",
+			Reason: "Internal Server Error",
+		},
+		Header: []*Header{
+			{
+				Name:  "Connection",
+				Value: []string{"close"},
+			},
+			{
+				Name:  "Cache-Control",
+				Value: []string{"private"},
+			},
+			{
+				Name:  "Content-Length",
+				Value: []string{"0"},
+			},
+		},
+	}))
 }
 
 type HttpAuthenticatorFactory struct{}
