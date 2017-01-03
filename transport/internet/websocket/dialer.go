@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"github.com/gorilla/websocket"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
@@ -46,7 +47,7 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 }
 
 func init() {
-	internet.WSDialer = Dial
+	common.Must(internet.RegisterNetworkDialer(v2net.Network_WebSocket, Dial))
 }
 
 func wsDial(src v2net.Address, dest v2net.Destination, options internet.DialerOptions) (*wsconn, error) {
@@ -57,7 +58,7 @@ func wsDial(src v2net.Address, dest v2net.Destination, options internet.DialerOp
 	wsSettings := networkSettings.(*Config)
 
 	commonDial := func(network, addr string) (net.Conn, error) {
-		return internet.DialToDest(src, dest)
+		return internet.DialSystem(src, dest)
 	}
 
 	dialer := websocket.Dialer{

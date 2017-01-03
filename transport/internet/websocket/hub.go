@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -197,5 +198,5 @@ func (v *WSListener) Close() error {
 }
 
 func init() {
-	internet.WSListenFunc = ListenWS
+	common.Must(internet.RegisterNetworkListener(v2net.Network_WebSocket, ListenWS))
 }

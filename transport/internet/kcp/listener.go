@@ -9,6 +9,7 @@ import (
 
 	"crypto/cipher"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
@@ -297,5 +298,5 @@ func ListenKCP(address v2net.Address, port v2net.Port, options internet.ListenOp
 }
 
 func init() {
-	internet.KCPListenFunc = ListenKCP
+	common.Must(internet.RegisterNetworkListener(v2net.Network_KCP, ListenKCP))
 }

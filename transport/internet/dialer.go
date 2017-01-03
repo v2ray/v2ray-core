@@ -20,12 +20,18 @@ type DialerOptions struct {
 type Dialer func(src v2net.Address, dest v2net.Destination, options DialerOptions) (Connection, error)
 
 var (
-	TCPDialer   Dialer
-	KCPDialer   Dialer
-	UDPDialer   Dialer
-	WSDialer    Dialer
+	networkDialerCache = make(map[v2net.Network]Dialer)
+
 	ProxyDialer Dialer
 )
+
+func RegisterNetworkDialer(network v2net.Network, dialer Dialer) error {
+	if _, found := networkDialerCache[network]; found {
+		return errors.New("Internet|Dialer: ", network, " dialer already registered.")
+	}
+	networkDialerCache[network] = dialer
+	return nil
+}
 
 func Dial(src v2net.Address, dest v2net.Destination, options DialerOptions) (Connection, error) {
 	if options.Proxy.HasTag() && ProxyDialer != nil {
@@ -33,29 +39,22 @@ func Dial(src v2net.Address, dest v2net.Destination, options DialerOptions) (Con
 		return ProxyDialer(src, dest, options)
 	}
 
-	var connection Connection
-	var err error
 	if dest.Network == v2net.Network_TCP {
-		switch options.Stream.Network {
-		case v2net.Network_TCP:
-			connection, err = TCPDialer(src, dest, options)
-		case v2net.Network_KCP:
-			connection, err = KCPDialer(src, dest, options)
-		case v2net.Network_WebSocket:
-			connection, err = WSDialer(src, dest, options)
-		default:
-			return nil, ErrUnsupportedStreamType
+		dialer := networkDialerCache[options.Stream.Network]
+		if dialer == nil {
+			return nil, errors.New("Internet|Dialer: ", options.Stream.Network, " dialer not registered.")
 		}
-		if err != nil {
-			return nil, err
-		}
-
-		return connection, nil
+		return dialer(src, dest, options)
 	}
 
-	return UDPDialer(src, dest, options)
+	udpDialer := networkDialerCache[v2net.Network_UDP]
+	if udpDialer == nil {
+		return nil, errors.New("Internet|Dialer: UDP dialer not registered.")
+	}
+	return udpDialer(src, dest, options)
 }
 
-func DialToDest(src v2net.Address, dest v2net.Destination) (net.Conn, error) {
+// DialSystem calls system dialer to create a network connection.
+func DialSystem(src v2net.Address, dest v2net.Destination) (net.Conn, error) {
 	return effectiveSystemDialer.Dial(src, dest)
 }

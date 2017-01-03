@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"net"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -34,7 +35,7 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 	}
 	if conn == nil {
 		var err error
-		conn, err = internet.DialToDest(src, dest)
+		conn, err = internet.DialSystem(src, dest)
 		if err != nil {
 			return nil, err
 		}
@@ -69,5 +70,5 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 }
 
 func init() {
-	internet.TCPDialer = Dial
+	common.Must(internet.RegisterNetworkDialer(v2net.Network_TCP, Dial))
 }

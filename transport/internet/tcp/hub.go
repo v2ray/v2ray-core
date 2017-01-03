@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -158,5 +159,5 @@ func (v *TCPListener) Close() error {
 }
 
 func init() {
-	internet.TCPListenFunc = ListenTCP
+	common.Must(internet.RegisterNetworkListener(v2net.Network_TCP, ListenTCP))
 }

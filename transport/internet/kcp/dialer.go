@@ -8,6 +8,7 @@ import (
 
 	"crypto/cipher"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/errors"
@@ -115,7 +116,7 @@ func DialKCP(src v2net.Address, dest v2net.Destination, options internet.DialerO
 	id := internal.NewConnectionID(src, dest)
 	conn := globalPool.Get(id)
 	if conn == nil {
-		rawConn, err := internet.DialToDest(src, dest)
+		rawConn, err := internet.DialSystem(src, dest)
 		if err != nil {
 			log.Error("KCP|Dialer: Failed to dial to dest: ", err)
 			return nil, err
@@ -172,5 +173,5 @@ func DialKCP(src v2net.Address, dest v2net.Destination, options internet.DialerO
 }
 
 func init() {
-	internet.KCPDialer = DialKCP
+	common.Must(internet.RegisterNetworkDialer(v2net.Network_KCP, DialKCP))
 }
