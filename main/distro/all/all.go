@@ -27,4 +27,5 @@ import (
 	_ "v2ray.com/core/transport/internet/headers/noop"
 	_ "v2ray.com/core/transport/internet/headers/srtp"
 	_ "v2ray.com/core/transport/internet/headers/utp"
+	_ "v2ray.com/core/transport/internet/headers/wechat"
 )
