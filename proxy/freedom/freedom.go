@@ -67,10 +67,9 @@ func (v *Handler) ResolveIP(destination v2net.Destination) v2net.Destination {
 	return newDest
 }
 
-func (v *Handler) Dispatch(destination v2net.Destination, payload *buf.Buffer, ray ray.OutboundRay) {
+func (v *Handler) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 	log.Info("Freedom: Opening connection to ", destination)
 
-	defer payload.Release()
 	input := ray.OutboundInput()
 	output := ray.OutboundOutput()
 	defer input.ForceClose()
@@ -95,13 +94,6 @@ func (v *Handler) Dispatch(destination v2net.Destination, payload *buf.Buffer, r
 	defer conn.Close()
 
 	conn.SetReusable(false)
-
-	if !payload.IsEmpty() {
-		if _, err := conn.Write(payload.Bytes()); err != nil {
-			log.Warning("Freedom: Failed to write to destination: ", destination, ": ", err)
-			return
-		}
-	}
 
 	requestDone := signal.ExecuteAsync(func() error {
 		defer input.ForceClose()

@@ -1,10 +1,13 @@
 package outbound
 
 import (
+	"time"
+
 	"v2ray.com/core/app"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -26,10 +29,9 @@ type VMessOutboundHandler struct {
 }
 
 // Dispatch implements OutboundHandler.Dispatch().
-func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *buf.Buffer, ray ray.OutboundRay) {
-	defer payload.Release()
-	defer ray.OutboundInput().ForceClose()
-	defer ray.OutboundOutput().Close()
+func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, outboundRay ray.OutboundRay) {
+	defer outboundRay.OutboundInput().ForceClose()
+	defer outboundRay.OutboundOutput().Close()
 
 	var rec *protocol.ServerSpec
 	var conn internet.Connection
@@ -77,8 +79,8 @@ func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *buf.B
 		request.Option.Set(protocol.RequestOptionConnectionReuse)
 	}
 
-	input := ray.OutboundInput()
-	output := ray.OutboundOutput()
+	input := outboundRay.OutboundInput()
+	output := outboundRay.OutboundOutput()
 
 	session := encoding.NewClientSession(protocol.DefaultIDHash)
 
@@ -93,11 +95,17 @@ func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *buf.B
 		bodyWriter := session.EncodeRequestBody(request, writer)
 		defer bodyWriter.Release()
 
-		if !payload.IsEmpty() {
-			if err := bodyWriter.Write(payload); err != nil {
-				return err
-			}
+		firstPayload, err := input.ReadTimeout(time.Millisecond * 500)
+		if err != nil && err != ray.ErrReadTimeout {
+			return errors.Base(err).Message("VMess|Outbound: Failed to get first payload.")
 		}
+		if !firstPayload.IsEmpty() {
+			if err := bodyWriter.Write(firstPayload); err != nil {
+				return errors.Base(err).Message("VMess|Outbound: Failed to write first payload.")
+			}
+			firstPayload.Release()
+		}
+
 		writer.SetBuffered(false)
 
 		if err := buf.PipeUntilEOF(input, bodyWriter); err != nil {

@@ -50,7 +50,7 @@ func (v *OutboundProxy) Dial(src v2net.Address, dest v2net.Destination, options 
 	}
 	log.Info("Proxy: Dialing to ", dest)
 	stream := ray.NewRay()
-	go handler.Dispatch(dest, nil, stream)
+	go handler.Dispatch(dest, stream)
 	return NewConnection(src, dest, stream), nil
 }
 

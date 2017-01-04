@@ -1,6 +1,7 @@
 package ray
 
 import "v2ray.com/core/common/buf"
+import "time"
 
 // OutboundRay is a transport interface for outbound connections.
 type OutboundRay interface {
@@ -31,10 +32,12 @@ type InboundRay interface {
 type Ray interface {
 	InboundRay
 	OutboundRay
+	AddInspector(Inspector)
 }
 
 type InputStream interface {
 	buf.Reader
+	ReadTimeout(time.Duration) (*buf.Buffer, error)
 	ForceClose()
 }
 

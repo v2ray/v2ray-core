@@ -2,7 +2,6 @@
 package proxy
 
 import (
-	"v2ray.com/core/common/buf"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/transport/internet"
@@ -58,5 +57,5 @@ type InboundHandler interface {
 // An OutboundHandler handles outbound network connection for V2Ray.
 type OutboundHandler interface {
 	// Dispatch sends one or more Packets to its destination.
-	Dispatch(destination v2net.Destination, payload *buf.Buffer, ray ray.OutboundRay)
+	Dispatch(destination v2net.Destination, ray ray.OutboundRay)
 }

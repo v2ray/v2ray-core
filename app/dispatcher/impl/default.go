@@ -1,6 +1,8 @@
 package impl
 
 import (
+	"time"
+
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/proxyman"
@@ -48,7 +50,6 @@ func (v *DefaultDispatcher) Release() {
 }
 
 func (v *DefaultDispatcher) DispatchToOutbound(session *proxy.SessionInfo) ray.InboundRay {
-	direct := ray.NewRay()
 	dispatcher := v.ohm.GetDefaultHandler()
 	destination := session.Destination
 
@@ -65,26 +66,32 @@ func (v *DefaultDispatcher) DispatchToOutbound(session *proxy.SessionInfo) ray.I
 		}
 	}
 
+	direct := ray.NewRay()
+	var waitFunc func() error
 	if session.Inbound != nil && session.Inbound.AllowPassiveConnection {
-		go dispatcher.Dispatch(destination, buf.NewLocal(32), direct)
+		waitFunc = noOpWait()
 	} else {
-		go v.FilterPacketAndDispatch(destination, direct, dispatcher)
+		wdi := &waitDataInspector{
+			hasData: make(chan bool, 1),
+		}
+		direct.AddInspector(wdi)
+		waitFunc = waitForData(wdi)
 	}
+
+	go v.waitAndDispatch(waitFunc, destination, direct, dispatcher)
 
 	return direct
 }
 
-// FilterPacketAndDispatch waits for a payload from source and starts dispatching.
-// Private: Visible for testing.
-func (v *DefaultDispatcher) FilterPacketAndDispatch(destination v2net.Destination, link ray.OutboundRay, dispatcher proxy.OutboundHandler) {
-	payload, err := link.OutboundInput().Read()
-	if err != nil {
-		log.Info("DefaultDispatcher: No payload towards ", destination, ", stopping now.")
-		link.OutboundInput().Release()
-		link.OutboundOutput().Release()
+func (v *DefaultDispatcher) waitAndDispatch(wait func() error, destination v2net.Destination, link ray.OutboundRay, dispatcher proxy.OutboundHandler) {
+	if err := wait(); err != nil {
+		log.Info("DefaultDispatcher: Failed precondition: ", err)
+		link.OutboundInput().ForceClose()
+		link.OutboundOutput().Close()
 		return
 	}
-	dispatcher.Dispatch(destination, payload, link)
+
+	dispatcher.Dispatch(destination, link)
 }
 
 type DefaultDispatcherFactory struct{}
@@ -99,4 +106,39 @@ func (v DefaultDispatcherFactory) AppId() app.ID {
 
 func init() {
 	app.RegisterApplicationFactory(serial.GetMessageType(new(dispatcher.Config)), DefaultDispatcherFactory{})
+}
+
+type waitDataInspector struct {
+	hasData chan bool
+}
+
+func (wdi *waitDataInspector) Input(*buf.Buffer) {
+	select {
+	case wdi.hasData <- true:
+	default:
+	}
+}
+
+func (wdi *waitDataInspector) WaitForData() bool {
+	select {
+	case <-wdi.hasData:
+		return true
+	case <-time.After(time.Minute):
+		return false
+	}
+}
+
+func waitForData(wdi *waitDataInspector) func() error {
+	return func() error {
+		if wdi.WaitForData() {
+			return nil
+		}
+		return errors.New("DefaultDispatcher: No data.")
+	}
+}
+
+func noOpWait() func() error {
+	return func() error {
+		return nil
+	}
 }

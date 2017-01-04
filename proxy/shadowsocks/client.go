@@ -35,9 +35,7 @@ func NewClient(config *ClientConfig, space app.Space, meta *proxy.OutboundHandle
 }
 
 // Dispatch implements OutboundHandler.Dispatch().
-func (v *Client) Dispatch(destination v2net.Destination, payload *buf.Buffer, ray ray.OutboundRay) {
-	defer payload.Release()
-
+func (v *Client) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 	network := destination.Network
 
 	var server *protocol.ServerSpec
@@ -99,13 +97,6 @@ func (v *Client) Dispatch(destination v2net.Destination, payload *buf.Buffer, ra
 			return
 		}
 
-		if !payload.IsEmpty() {
-			if err := bodyWriter.Write(payload); err != nil {
-				log.Info("Shadowsocks|Client: Failed to write payload: ", err)
-				return
-			}
-		}
-
 		bufferedWriter.SetBuffered(false)
 
 		requestDone := signal.ExecuteAsync(func() error {
@@ -142,12 +133,6 @@ func (v *Client) Dispatch(destination v2net.Destination, payload *buf.Buffer, ra
 		writer := &UDPWriter{
 			Writer:  conn,
 			Request: request,
-		}
-		if !payload.IsEmpty() {
-			if err := writer.Write(payload); err != nil {
-				log.Info("Shadowsocks|Client: Failed to write payload: ", err)
-				return
-			}
 		}
 
 		requestDone := signal.ExecuteAsync(func() error {

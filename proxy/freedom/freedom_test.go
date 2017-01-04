@@ -53,9 +53,10 @@ func TestSinglePacket(t *testing.T) {
 	data2Send := "Data to be sent to remote"
 	payload := buf.NewLocal(2048)
 	payload.Append([]byte(data2Send))
+	traffic.InboundInput().Write(payload)
 
 	fmt.Println(tcpServerAddr.Network, tcpServerAddr.Address, tcpServerAddr.Port)
-	go freedom.Dispatch(tcpServerAddr, payload, traffic)
+	go freedom.Dispatch(tcpServerAddr, traffic)
 	traffic.InboundInput().Close()
 
 	respPayload, err := traffic.InboundOutput().Read()
