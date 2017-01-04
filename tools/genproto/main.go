@@ -19,12 +19,19 @@ var protocMap = map[string]string{
 	"linux":   filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", ".dev", "protoc", "linux", "protoc"),
 }
 
+func sdkPath(reporoot, lang string) string {
+	path := filepath.Join(reporoot, ".dev", "sdk", lang)
+	os.MkdirAll(path, os.ModePerm)
+	return path
+}
+
 func main() {
 	protofiles := make(map[string][]string)
 	protoc := protocMap[runtime.GOOS]
 	gosrc := filepath.Join(os.Getenv("GOPATH"), "src")
+	reporoot := filepath.Join(gosrc, "v2ray.com", "core")
 
-	filepath.Walk(filepath.Join(gosrc, "v2ray.com", "core"), func(path string, info os.FileInfo, err error) error {
+	filepath.Walk(reporoot, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			fmt.Println(err)
 			return err
@@ -57,7 +64,7 @@ func main() {
 		}
 	}
 
-	err := filepath.Walk(filepath.Join(gosrc, "v2ray.com", "core"), func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(reporoot, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			fmt.Println(err)
 			return err
