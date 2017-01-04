@@ -159,7 +159,7 @@ func (ws *wsconn) SetReusable(reusable bool) {
 }
 
 func (ws *wsconn) pingPong() {
-	pongRcv := make(chan int, 0)
+	pongRcv := make(chan int, 1)
 	ws.wsc.SetPongHandler(func(data string) error {
 		pongRcv <- 0
 		return nil

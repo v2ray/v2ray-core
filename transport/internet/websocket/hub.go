@@ -16,6 +16,7 @@ import (
 	v2tls "v2ray.com/core/transport/internet/tls"
 
 	"github.com/gorilla/websocket"
+	"v2ray.com/core/transport/internet/internal"
 )
 
 var (
@@ -157,14 +158,14 @@ func (v *WSListener) Accept() (internet.Connection, error) {
 			if connErr.err != nil {
 				return nil, connErr.err
 			}
-			return NewConnection("", connErr.conn.(*wsconn), v, v.config), nil
+			return internal.NewConnection(internal.ConnectionID{}, connErr.conn.(*wsconn), v, internal.ReuseConnection(v.config.IsConnectionReuse())), nil
 		case <-time.After(time.Second * 2):
 		}
 	}
 	return nil, ErrClosedListener
 }
 
-func (v *WSListener) Recycle(dest string, conn *wsconn) {
+func (v *WSListener) Put(id internal.ConnectionID, conn net.Conn) {
 	v.Lock()
 	defer v.Unlock()
 	if !v.acccepting {

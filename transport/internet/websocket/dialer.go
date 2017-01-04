@@ -9,11 +9,12 @@ import (
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/internet/internal"
 	v2tls "v2ray.com/core/transport/internet/tls"
 )
 
 var (
-	globalCache = NewConnectionCache()
+	globalCache = internal.NewConnectionPool()
 )
 
 func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOptions) (internet.Connection, error) {
@@ -27,7 +28,7 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 	}
 	wsSettings := networkSettings.(*Config)
 
-	id := src.String() + "-" + dest.NetAddr()
+	id := internal.NewConnectionID(src, dest)
 	var conn *wsconn
 	if dest.Network == v2net.Network_TCP && wsSettings.IsConnectionReuse() {
 		connt := globalCache.Get(id)
@@ -43,7 +44,7 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 			return nil, err
 		}
 	}
-	return NewConnection(id, conn, globalCache, wsSettings), nil
+	return internal.NewConnection(id, conn, globalCache, internal.ReuseConnection(wsSettings.IsConnectionReuse())), nil
 }
 
 func init() {
