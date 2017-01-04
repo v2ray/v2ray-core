@@ -1,7 +1,6 @@
 package buf
 
 import "io"
-import "v2ray.com/core/common"
 
 // BytesToBufferReader is a Reader that adjusts its reading speed automatically.
 type BytesToBufferReader struct {
@@ -44,11 +43,6 @@ func (v *BytesToBufferReader) Read() (*Buffer, error) {
 	return buffer, nil
 }
 
-// Release implements Releasable.Release().
-func (v *BytesToBufferReader) Release() {
-	common.Release(v.reader)
-}
-
 type BufferToBytesReader struct {
 	stream  Reader
 	current *Buffer
@@ -83,11 +77,4 @@ func (v *BufferToBytesReader) Read(b []byte) (int, error) {
 		v.current = nil
 	}
 	return nBytes, err
-}
-
-// Release implements Releasable.Release().
-func (v *BufferToBytesReader) Release() {
-	v.eof = true
-	v.current.Release()
-	v.current = nil
 }

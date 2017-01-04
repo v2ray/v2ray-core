@@ -66,10 +66,6 @@ func NewCacheServer(space app.Space, config *dns.Config) *CacheServer {
 	return server
 }
 
-func (v *CacheServer) Release() {
-
-}
-
 // Private: Visible for testing.
 func (v *CacheServer) GetCached(domain string) []net.IP {
 	v.RLock()

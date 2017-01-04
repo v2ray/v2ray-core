@@ -1,7 +1,6 @@
 package buf
 
 import "io"
-import "v2ray.com/core/common"
 
 // BufferToBytesWriter is a Writer that writes alloc.Buffer into underlying writer.
 type BufferToBytesWriter struct {
@@ -24,11 +23,6 @@ func (v *BufferToBytesWriter) Write(buffer *Buffer) error {
 	return nil
 }
 
-// Release implements Releasable.Release().
-func (v *BufferToBytesWriter) Release() {
-	common.Release(v.writer)
-}
-
 type BytesToBufferWriter struct {
 	writer Writer
 }
@@ -49,9 +43,4 @@ func (v *BytesToBufferWriter) Write(payload []byte) (int, error) {
 	}
 
 	return bytesWritten, nil
-}
-
-// Release implements Releasable.Release()
-func (v *BytesToBufferWriter) Release() {
-	v.writer.Release()
 }

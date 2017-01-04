@@ -3,7 +3,6 @@ package bufio
 import (
 	"io"
 
-	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 )
@@ -20,7 +19,7 @@ type BufferedWriter struct {
 func NewWriter(rawWriter io.Writer) *BufferedWriter {
 	return &BufferedWriter{
 		writer:   rawWriter,
-		buffer:   buf.NewSmall(),
+		buffer:   buf.NewLocal(1024),
 		buffered: true,
 	}
 }
@@ -90,17 +89,4 @@ func (v *BufferedWriter) SetBuffered(cached bool) {
 	if !cached && !v.buffer.IsEmpty() {
 		v.Flush()
 	}
-}
-
-// Release implements common.Releasable.Release().
-func (v *BufferedWriter) Release() {
-	if !v.buffer.IsEmpty() {
-		v.Flush()
-	}
-
-	if v.buffer != nil {
-		v.buffer.Release()
-		v.buffer = nil
-	}
-	common.Release(v.writer)
 }

@@ -147,18 +147,13 @@ func (v *Server) handleConnection(conn internet.Connection) {
 	conn.SetReusable(false)
 
 	timedReader := v2net.NewTimeOutReader(16, conn)
-	defer timedReader.Release()
-
 	bufferedReader := bufio.NewReader(timedReader)
-	defer bufferedReader.Release()
-
 	request, bodyReader, err := ReadTCPSession(v.user, bufferedReader)
 	if err != nil {
 		log.Access(conn.RemoteAddr(), "", log.AccessRejected, err)
 		log.Info("Shadowsocks|Server: Failed to create request from: ", conn.RemoteAddr(), ": ", err)
 		return
 	}
-	defer bodyReader.Release()
 
 	bufferedReader.SetBuffered(false)
 
@@ -182,14 +177,11 @@ func (v *Server) handleConnection(conn internet.Connection) {
 		defer ray.InboundOutput().ForceClose()
 
 		bufferedWriter := bufio.NewWriter(conn)
-		defer bufferedWriter.Release()
-
 		responseWriter, err := WriteTCPResponse(request, bufferedWriter)
 		if err != nil {
 			log.Warning("Shadowsocks|Server: Failed to write response: ", err)
 			return err
 		}
-		defer responseWriter.Release()
 
 		payload, err := ray.InboundOutput().Read()
 		if err != nil {

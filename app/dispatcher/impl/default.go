@@ -44,11 +44,6 @@ func (v *DefaultDispatcher) Initialize(space app.Space) error {
 	return nil
 }
 
-// Release implements common.Releasable.Release().
-func (v *DefaultDispatcher) Release() {
-
-}
-
 func (v *DefaultDispatcher) DispatchToOutbound(session *proxy.SessionInfo) ray.InboundRay {
 	dispatcher := v.ohm.GetDefaultHandler()
 	destination := session.Destination

@@ -4,8 +4,6 @@ import (
 	"io"
 	"net"
 	"time"
-
-	"v2ray.com/core/common"
 )
 
 var (
@@ -50,11 +48,6 @@ func (reader *TimeOutReader) SetTimeOut(value uint32) {
 			connection: reader.connection,
 		}
 	}
-}
-
-func (reader *TimeOutReader) Release() {
-	common.Release(reader.connection)
-	common.Release(reader.worker)
 }
 
 type timedReaderWorker struct {

@@ -378,9 +378,6 @@ func (v *UDPReader) Read() (*buf.Buffer, error) {
 	return payload, nil
 }
 
-func (v *UDPReader) Release() {
-}
-
 type UDPWriter struct {
 	Writer  io.Writer
 	Request *protocol.RequestHeader
@@ -394,8 +391,4 @@ func (v *UDPWriter) Write(buffer *buf.Buffer) error {
 	_, err = v.Writer.Write(payload.Bytes())
 	payload.Release()
 	return err
-}
-
-func (v *UDPWriter) Release() {
-
 }

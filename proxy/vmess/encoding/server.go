@@ -37,16 +37,6 @@ func NewServerSession(validator protocol.UserValidator) *ServerSession {
 	}
 }
 
-// Release implements common.Releaseable.
-func (v *ServerSession) Release() {
-	v.userValidator = nil
-	v.requestBodyIV = nil
-	v.requestBodyKey = nil
-	v.responseBodyIV = nil
-	v.responseBodyKey = nil
-	v.responseWriter = nil
-}
-
 func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.RequestHeader, error) {
 	buffer := make([]byte, 512)
 

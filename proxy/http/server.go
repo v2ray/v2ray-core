@@ -162,8 +162,6 @@ func (v *Server) handleConnect(request *http.Request, session *proxy.SessionInfo
 		defer ray.InboundInput().Close()
 
 		v2reader := buf.NewReader(reader)
-		defer v2reader.Release()
-
 		if err := buf.PipeUntilEOF(v2reader, ray.InboundInput()); err != nil {
 			return err
 		}
@@ -174,8 +172,6 @@ func (v *Server) handleConnect(request *http.Request, session *proxy.SessionInfo
 		defer ray.InboundOutput().ForceClose()
 
 		v2writer := buf.NewWriter(writer)
-		defer v2writer.Release()
-
 		if err := buf.PipeUntilEOF(ray.InboundOutput(), v2writer); err != nil {
 			return err
 		}
@@ -248,8 +244,6 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 		defer input.Close()
 
 		requestWriter := bufio.NewWriter(buf.NewBytesWriter(ray.InboundInput()))
-		defer requestWriter.Release()
-
 		err := request.Write(requestWriter)
 		if err != nil {
 			return err

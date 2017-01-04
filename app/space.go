@@ -1,9 +1,6 @@
 package app
 
-import (
-	"v2ray.com/core/common"
-	"v2ray.com/core/common/errors"
-)
+import "v2ray.com/core/common/errors"
 
 type ID int
 
@@ -17,7 +14,6 @@ type Caller interface {
 }
 
 type Application interface {
-	common.Releasable
 }
 
 type ApplicationInitializer func() error

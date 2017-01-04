@@ -87,11 +87,7 @@ func (v *Client) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 
 	if request.Command == protocol.RequestCommandTCP {
 		bufferedWriter := bufio.NewWriter(conn)
-		defer bufferedWriter.Release()
-
 		bodyWriter, err := WriteTCPRequest(request, bufferedWriter)
-		defer bodyWriter.Release()
-
 		if err != nil {
 			log.Info("Shadowsocks|Client: Failed to write request: ", err)
 			return

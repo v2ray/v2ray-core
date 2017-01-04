@@ -3,8 +3,6 @@ package crypto
 import (
 	"crypto/cipher"
 	"io"
-
-	"v2ray.com/core/common"
 )
 
 type CryptionReader struct {
@@ -27,11 +25,6 @@ func (v *CryptionReader) Read(data []byte) (int, error) {
 	return nBytes, err
 }
 
-func (v *CryptionReader) Release() {
-	common.Release(v.reader)
-	common.Release(v.stream)
-}
-
 type CryptionWriter struct {
 	stream cipher.Stream
 	writer io.Writer
@@ -49,10 +42,4 @@ func NewCryptionWriter(stream cipher.Stream, writer io.Writer) *CryptionWriter {
 func (v *CryptionWriter) Write(data []byte) (int, error) {
 	v.stream.XORKeyStream(data, data)
 	return v.writer.Write(data)
-}
-
-// Release implements common.Releasable.Release().
-func (v *CryptionWriter) Release() {
-	common.Release(v.writer)
-	common.Release(v.stream)
 }

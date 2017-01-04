@@ -3,7 +3,6 @@ package bufio
 import (
 	"io"
 
-	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 )
 
@@ -18,19 +17,9 @@ type BufferedReader struct {
 func NewReader(rawReader io.Reader) *BufferedReader {
 	return &BufferedReader{
 		reader:   rawReader,
-		buffer:   buf.New(),
+		buffer:   buf.NewLocal(1024),
 		buffered: true,
 	}
-}
-
-// Release implements Releasable.Release().
-func (v *BufferedReader) Release() {
-	if v.buffer != nil {
-		v.buffer.Release()
-		v.buffer = nil
-	}
-
-	common.Release(v.reader)
 }
 
 // IsBuffered returns true if the internal cache is effective.

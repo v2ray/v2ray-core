@@ -40,14 +40,14 @@ func TestBufferedWriterLargePayload(t *testing.T) {
 	payload := make([]byte, 64*1024)
 	rand.Read(payload)
 
-	nBytes, err := writer.Write(payload[:1024])
-	assert.Int(nBytes).Equals(1024)
+	nBytes, err := writer.Write(payload[:512])
+	assert.Int(nBytes).Equals(512)
 	assert.Error(err).IsNil()
 
 	assert.Bool(content.IsEmpty()).IsTrue()
 
-	nBytes, err = writer.Write(payload[1024:])
+	nBytes, err = writer.Write(payload[512:])
 	assert.Error(err).IsNil()
-	assert.Int(nBytes).Equals(63 * 1024)
+	assert.Int(nBytes).Equals(64*1024 - 512)
 	assert.Bytes(content.Bytes()).Equals(payload)
 }

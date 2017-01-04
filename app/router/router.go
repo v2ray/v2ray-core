@@ -52,10 +52,6 @@ func NewRouter(config *Config, space app.Space) *Router {
 	return r
 }
 
-func (v *Router) Release() {
-
-}
-
 // Private: Visible for testing.
 func (v *Router) ResolveIP(dest v2net.Destination) []v2net.Destination {
 	ips := v.dnsServer.Get(dest.Address.Domain())

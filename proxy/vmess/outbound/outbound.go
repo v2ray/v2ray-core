@@ -88,13 +88,9 @@ func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, outboundRay ra
 		defer input.ForceClose()
 
 		writer := bufio.NewWriter(conn)
-		defer writer.Release()
-
 		session.EncodeRequestHeader(request, writer)
 
 		bodyWriter := session.EncodeRequestBody(request, writer)
-		defer bodyWriter.Release()
-
 		firstPayload, err := input.ReadTimeout(time.Millisecond * 500)
 		if err != nil && err != ray.ErrReadTimeout {
 			return errors.Base(err).Message("VMess|Outbound: Failed to get first payload.")
@@ -124,8 +120,6 @@ func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, outboundRay ra
 		defer output.Close()
 
 		reader := bufio.NewReader(conn)
-		defer reader.Release()
-
 		header, err := session.DecodeResponseHeader(reader)
 		if err != nil {
 			return err
@@ -136,8 +130,6 @@ func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, outboundRay ra
 
 		reader.SetBuffered(false)
 		bodyReader := session.DecodeResponseBody(request, reader)
-		defer bodyReader.Release()
-
 		if err := buf.PipeUntilEOF(bodyReader, output); err != nil {
 			return err
 		}

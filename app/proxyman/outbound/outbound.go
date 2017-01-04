@@ -2,6 +2,7 @@ package outbound
 
 import (
 	"sync"
+
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common/serial"
@@ -18,10 +19,6 @@ func New() *DefaultOutboundHandlerManager {
 	return &DefaultOutboundHandlerManager{
 		taggedHandler: make(map[string]proxy.OutboundHandler),
 	}
-}
-
-func (v *DefaultOutboundHandlerManager) Release() {
-
 }
 
 func (v *DefaultOutboundHandlerManager) GetDefaultHandler() proxy.OutboundHandler {

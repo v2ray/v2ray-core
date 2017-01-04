@@ -87,15 +87,15 @@ func (v *VMessInboundHandler) Port() v2net.Port {
 }
 
 func (v *VMessInboundHandler) Close() {
+	v.Lock()
 	v.accepting = false
 	if v.listener != nil {
-		v.Lock()
 		v.listener.Close()
 		v.listener = nil
 		v.clients.Release()
 		v.clients = nil
-		v.Unlock()
 	}
+	v.Unlock()
 }
 
 func (v *VMessInboundHandler) GetUser(email string) *protocol.User {
@@ -134,8 +134,6 @@ func transferRequest(session *encoding.ServerSession, request *protocol.RequestH
 	defer output.Close()
 
 	bodyReader := session.DecodeRequestBody(request, input)
-	defer bodyReader.Release()
-
 	if err := buf.PipeUntilEOF(bodyReader, output); err != nil {
 		return err
 	}
@@ -180,19 +178,13 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	}
 
 	connReader := v2net.NewTimeOutReader(8, connection)
-	defer connReader.Release()
-
 	reader := bufio.NewReader(connReader)
-	defer reader.Release()
-
 	v.RLock()
 	if !v.accepting {
 		v.RUnlock()
 		return
 	}
 	session := encoding.NewServerSession(v.clients)
-	defer session.Release()
-
 	request, err := session.DecodeRequestHeader(reader)
 	v.RUnlock()
 
@@ -229,8 +221,6 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	})
 
 	writer := bufio.NewWriter(connection)
-	defer writer.Release()
-
 	response := &protocol.ResponseHeader{
 		Command: v.generateCommand(request),
 	}

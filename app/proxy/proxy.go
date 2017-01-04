@@ -54,11 +54,6 @@ func (v *OutboundProxy) Dial(src v2net.Address, dest v2net.Destination, options 
 	return NewConnection(src, dest, stream), nil
 }
 
-// Release implements common.Releasable.Release().
-func (v *OutboundProxy) Release() {
-
-}
-
 type Connection struct {
 	stream     ray.Ray
 	closed     bool
@@ -105,9 +100,7 @@ func (v *Connection) Write(b []byte) (int, error) {
 func (v *Connection) Close() error {
 	v.closed = true
 	v.stream.InboundInput().Close()
-	v.stream.InboundOutput().Release()
-	v.reader.Release()
-	v.writer.Release()
+	v.stream.InboundOutput().ForceClose()
 	return nil
 }
 

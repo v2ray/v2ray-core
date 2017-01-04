@@ -6,7 +6,6 @@ import (
 	"crypto/sha1"
 	"io"
 
-	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/serial"
@@ -70,11 +69,6 @@ func NewChunkReader(reader io.Reader, auth *Authenticator) *ChunkReader {
 	}
 }
 
-func (v *ChunkReader) Release() {
-	common.Release(v.reader)
-	common.Release(v.auth)
-}
-
 func (v *ChunkReader) Read() (*buf.Buffer, error) {
 	buffer := buf.New()
 	if err := buffer.AppendSupplier(buf.ReadFullFrom(v.reader, 2)); err != nil {
@@ -122,11 +116,6 @@ func NewChunkWriter(writer io.Writer, auth *Authenticator) *ChunkWriter {
 		auth:   auth,
 		buffer: make([]byte, 32*1024),
 	}
-}
-
-func (v *ChunkWriter) Release() {
-	common.Release(v.writer)
-	common.Release(v.auth)
 }
 
 func (v *ChunkWriter) Write(payload *buf.Buffer) error {

@@ -105,7 +105,6 @@ func (v *Server) handleConnection(connection internet.Connection) {
 
 	timedReader := v2net.NewTimeOutReader(v.config.Timeout, connection)
 	reader := bufio.NewReader(timedReader)
-	defer reader.Release()
 
 	session := &ServerSession{
 		config: v.config,
@@ -159,8 +158,6 @@ func (v *Server) transport(reader io.Reader, writer io.Writer, session *proxy.Se
 		defer input.Close()
 
 		v2reader := buf.NewReader(reader)
-		defer v2reader.Release()
-
 		if err := buf.PipeUntilEOF(v2reader, input); err != nil {
 			log.Info("Socks|Server: Failed to transport all TCP request: ", err)
 			return err
@@ -172,8 +169,6 @@ func (v *Server) transport(reader io.Reader, writer io.Writer, session *proxy.Se
 		defer output.ForceClose()
 
 		v2writer := buf.NewWriter(writer)
-		defer v2writer.Release()
-
 		if err := buf.PipeUntilEOF(output, v2writer); err != nil {
 			log.Info("Socks|Server: Failed to transport all TCP response: ", err)
 			return err

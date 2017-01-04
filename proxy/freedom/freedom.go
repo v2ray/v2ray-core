@@ -99,8 +99,6 @@ func (v *Handler) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 		defer input.ForceClose()
 
 		v2writer := buf.NewWriter(conn)
-		defer v2writer.Release()
-
 		if err := buf.PipeUntilEOF(input, v2writer); err != nil {
 			return err
 		}
@@ -121,8 +119,6 @@ func (v *Handler) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 		defer output.Close()
 
 		v2reader := buf.NewReader(reader)
-		defer v2reader.Release()
-
 		if err := buf.PipeUntilEOF(v2reader, output); err != nil {
 			return err
 		}
