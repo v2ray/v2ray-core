@@ -7,6 +7,7 @@ import (
 	"v2ray.com/core/transport/internet/headers/noop"
 	"v2ray.com/core/transport/internet/headers/srtp"
 	"v2ray.com/core/transport/internet/headers/utp"
+	"v2ray.com/core/transport/internet/headers/wechat"
 )
 
 type NoOpAuthenticator struct{}
@@ -31,6 +32,12 @@ type UTPAuthenticator struct{}
 
 func (UTPAuthenticator) Build() (*serial.TypedMessage, error) {
 	return serial.ToTypedMessage(new(utp.Config)), nil
+}
+
+type WechatVideoAuthenticator struct{}
+
+func (WechatVideoAuthenticator) Build() (*serial.TypedMessage, error) {
+	return serial.ToTypedMessage(new(wechat.VideoConfig)), nil
 }
 
 type HTTPAuthenticatorRequest struct {
