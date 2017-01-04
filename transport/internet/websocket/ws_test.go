@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"bytes"
+
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/testing/assert"
@@ -32,16 +34,27 @@ func Test_listenWSAndDial(t *testing.T) {
 	})
 	assert.Error(err).IsNil()
 	go func() {
-		conn, err := listen.Accept()
-		assert.Error(err).IsNil()
-		conn.Close()
-		conn, err = listen.Accept()
-		assert.Error(err).IsNil()
-		conn.Close()
-		conn, err = listen.Accept()
-		assert.Error(err).IsNil()
-		conn.Close()
-		listen.Close()
+		for {
+			conn, err := listen.Accept()
+			if err != nil {
+				break
+			}
+			go func() {
+				defer conn.Close()
+
+				var b [1024]byte
+				n, err := conn.Read(b[:])
+				//assert.Error(err).IsNil()
+				if err != nil {
+					conn.SetReusable(false)
+					return
+				}
+				assert.Bool(bytes.HasPrefix(b[:n], []byte("Test connection"))).IsTrue()
+
+				_, err = conn.Write([]byte("Response"))
+				assert.Error(err).IsNil()
+			}()
+		}
 	}()
 	conn, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13146), internet.DialerOptions{
 		Stream: &internet.StreamConfig{
@@ -57,7 +70,15 @@ func Test_listenWSAndDial(t *testing.T) {
 		},
 	})
 	assert.Error(err).IsNil()
-	conn.Close()
+	_, err = conn.Write([]byte("Test connection 1"))
+	assert.Error(err).IsNil()
+
+	var b [1024]byte
+	n, err := conn.Read(b[:])
+	assert.Error(err).IsNil()
+	assert.String(string(b[:n])).Equals("Response")
+
+	assert.Error(conn.Close()).IsNil()
 	<-time.After(time.Second * 5)
 	conn, err = Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13146), internet.DialerOptions{
 		Stream: &internet.StreamConfig{
@@ -73,7 +94,12 @@ func Test_listenWSAndDial(t *testing.T) {
 		},
 	})
 	assert.Error(err).IsNil()
-	conn.Close()
+	_, err = conn.Write([]byte("Test connection 2"))
+	assert.Error(err).IsNil()
+	n, err = conn.Read(b[:])
+	assert.Error(err).IsNil()
+	assert.String(string(b[:n])).Equals("Response")
+	assert.Error(conn.Close()).IsNil()
 	<-time.After(time.Second * 15)
 	conn, err = Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13146), internet.DialerOptions{
 		Stream: &internet.StreamConfig{
@@ -89,7 +115,14 @@ func Test_listenWSAndDial(t *testing.T) {
 		},
 	})
 	assert.Error(err).IsNil()
-	conn.Close()
+	_, err = conn.Write([]byte("Test connection 3"))
+	assert.Error(err).IsNil()
+	n, err = conn.Read(b[:])
+	assert.Error(err).IsNil()
+	assert.String(string(b[:n])).Equals("Response")
+	assert.Error(conn.Close()).IsNil()
+
+	assert.Error(listen.Close()).IsNil()
 }
 
 func Test_listenWSAndDial_TLS(t *testing.T) {

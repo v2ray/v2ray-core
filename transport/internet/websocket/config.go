@@ -7,7 +7,7 @@ import (
 
 func (c *Config) IsConnectionReuse() bool {
 	if c == nil || c.ConnectionReuse == nil {
-		return false
+		return true
 	}
 	return c.ConnectionReuse.Enable
 }
