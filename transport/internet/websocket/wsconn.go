@@ -121,18 +121,10 @@ func (ws *wsconn) RemoteAddr() net.Addr {
 	return ws.wsc.RemoteAddr()
 }
 func (ws *wsconn) SetDeadline(t time.Time) error {
-	return func() error {
-		errr := ws.SetReadDeadline(t)
-		errw := ws.SetWriteDeadline(t)
-		if errr == nil || errw == nil {
-			return nil
-		}
-		if errr != nil {
-			return errr
-		}
-
-		return errw
-	}()
+	if err := ws.SetReadDeadline(t); err != nil {
+		return err
+	}
+	return ws.SetWriteDeadline(t)
 }
 func (ws *wsconn) SetReadDeadline(t time.Time) error {
 	return ws.wsc.SetReadDeadline(t)

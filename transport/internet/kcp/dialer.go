@@ -165,7 +165,7 @@ func DialKCP(src v2net.Address, dest v2net.Destination, options internet.DialerO
 				config.ServerName = dest.Address.Domain()
 			}
 			tlsConn := tls.Client(iConn, config)
-			iConn = v2tls.NewConnection(tlsConn)
+			iConn = UnreusableConnection{Conn: tlsConn}
 		}
 	}
 

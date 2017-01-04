@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/signal"
 )
 
@@ -13,22 +12,6 @@ import (
 type ConnectionRecyler interface {
 	// Put returns a connection back to a connection pool.
 	Put(ConnectionID, net.Conn)
-}
-
-// ConnectionID is the ID of a connection.
-type ConnectionID struct {
-	Local      v2net.Address
-	Remote     v2net.Address
-	RemotePort v2net.Port
-}
-
-// NewConnectionID creates a new ConnectionId.
-func NewConnectionID(source v2net.Address, dest v2net.Destination) ConnectionID {
-	return ConnectionID{
-		Local:      source,
-		Remote:     dest.Address,
-		RemotePort: dest.Port,
-	}
 }
 
 // ExpiringConnection is a connection that will expire in certain time.

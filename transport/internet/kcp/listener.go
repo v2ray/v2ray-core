@@ -236,7 +236,7 @@ func (v *Listener) Accept() (internet.Connection, error) {
 			}
 			if v.tlsConfig != nil {
 				tlsConn := tls.Server(conn, v.tlsConfig)
-				return v2tls.NewConnection(tlsConn), nil
+				return UnreusableConnection{Conn: tlsConn}, nil
 			}
 			return conn, nil
 		case <-time.After(time.Second):

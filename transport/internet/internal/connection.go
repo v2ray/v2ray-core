@@ -1,4 +1,4 @@
-package tcp
+package internal
 
 import (
 	"io"
@@ -6,25 +6,52 @@ import (
 	"sync"
 	"time"
 
-	"v2ray.com/core/transport/internet/internal"
+	v2net "v2ray.com/core/common/net"
 )
 
-type Connection struct {
-	sync.RWMutex
-	id       internal.ConnectionID
-	reusable bool
-	conn     net.Conn
-	listener internal.ConnectionRecyler
-	config   *Config
+// ConnectionID is the ID of a connection.
+type ConnectionID struct {
+	Local      v2net.Address
+	Remote     v2net.Address
+	RemotePort v2net.Port
 }
 
-func NewConnection(id internal.ConnectionID, conn net.Conn, manager internal.ConnectionRecyler, config *Config) *Connection {
+// NewConnectionID creates a new ConnectionId.
+func NewConnectionID(source v2net.Address, dest v2net.Destination) ConnectionID {
+	return ConnectionID{
+		Local:      source,
+		Remote:     dest.Address,
+		RemotePort: dest.Port,
+	}
+}
+
+type Reuser struct {
+	userEnabled bool
+	appEnable   bool
+}
+
+func ReuseConnection(reuse bool) *Reuser {
+	return &Reuser{
+		userEnabled: reuse,
+		appEnable:   reuse,
+	}
+}
+
+// Connection is an implementation of net.Conn with re-usability.
+type Connection struct {
+	sync.RWMutex
+	id       ConnectionID
+	conn     net.Conn
+	listener ConnectionRecyler
+	reuser   *Reuser
+}
+
+func NewConnection(id ConnectionID, conn net.Conn, manager ConnectionRecyler, reuser *Reuser) *Connection {
 	return &Connection{
 		id:       id,
 		conn:     conn,
 		listener: manager,
-		reusable: config.IsConnectionReuse(),
-		config:   config,
+		reuser:   reuser,
 	}
 }
 
@@ -45,6 +72,7 @@ func (v *Connection) Write(b []byte) (int, error) {
 	return conn.Write(b)
 }
 
+// Close implements net.Conn.Close(). If the connection is reusable, the underlying connection will be recycled.
 func (v *Connection) Close() error {
 	if v == nil {
 		return io.ErrClosedPipe
@@ -108,14 +136,14 @@ func (v *Connection) SetReusable(reusable bool) {
 	if v == nil {
 		return
 	}
-	v.reusable = reusable
+	v.reuser.appEnable = reusable
 }
 
 func (v *Connection) Reusable() bool {
 	if v == nil {
 		return false
 	}
-	return v.config.IsConnectionReuse() && v.reusable
+	return v.reuser.userEnabled && v.reuser.appEnable
 }
 
 func (v *Connection) SysFd() (int, error) {
@@ -123,7 +151,7 @@ func (v *Connection) SysFd() (int, error) {
 	if conn == nil {
 		return 0, io.ErrClosedPipe
 	}
-	return internal.GetSysFd(conn)
+	return GetSysFd(conn)
 }
 
 func (v *Connection) underlyingConn() net.Conn {

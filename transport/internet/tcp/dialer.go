@@ -66,7 +66,7 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 			conn = auth.Client(conn)
 		}
 	}
-	return NewConnection(id, conn, globalCache, tcpSettings), nil
+	return internal.NewConnection(id, conn, globalCache, internal.ReuseConnection(tcpSettings.IsConnectionReuse())), nil
 }
 
 func init() {

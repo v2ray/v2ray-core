@@ -91,7 +91,7 @@ func (v *TCPListener) Accept() (internet.Connection, error) {
 				return nil, connErr.err
 			}
 			conn := connErr.conn
-			return NewConnection(internal.ConnectionID{}, conn, v, v.config), nil
+			return internal.NewConnection(internal.ConnectionID{}, conn, v, internal.ReuseConnection(v.config.IsConnectionReuse())), nil
 		case <-time.After(time.Second * 2):
 		}
 	}
