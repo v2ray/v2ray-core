@@ -213,7 +213,7 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 		seg := NewDataSegment()
 		seg.Conv = conv
 		seg.Option = opt
-		if len(buf) < 16 {
+		if len(buf) < 15 {
 			return nil, nil
 		}
 		seg.Timestamp = serial.BytesToUint32(buf)

@@ -44,6 +44,34 @@ func TestDataSegment(t *testing.T) {
 	assert.Bytes(seg2.Data.Bytes()).Equals(seg.Data.Bytes())
 }
 
+func Test1ByteDataSegment(t *testing.T) {
+	assert := assert.On(t)
+
+	b := buf.NewLocal(512)
+	b.AppendBytes('a')
+	seg := &DataSegment{
+		Conv:        1,
+		Timestamp:   3,
+		Number:      4,
+		SendingNext: 5,
+		Data:        b,
+	}
+
+	nBytes := seg.ByteSize()
+	bytes := make([]byte, nBytes)
+	seg.Bytes()(bytes)
+
+	assert.Int(len(bytes)).Equals(nBytes)
+
+	iseg, _ := ReadSegment(bytes)
+	seg2 := iseg.(*DataSegment)
+	assert.Uint16(seg2.Conv).Equals(seg.Conv)
+	assert.Uint32(seg2.Timestamp).Equals(seg.Timestamp)
+	assert.Uint32(seg2.SendingNext).Equals(seg.SendingNext)
+	assert.Uint32(seg2.Number).Equals(seg.Number)
+	assert.Bytes(seg2.Data.Bytes()).Equals(seg.Data.Bytes())
+}
+
 func TestACKSegment(t *testing.T) {
 	assert := assert.On(t)
 
