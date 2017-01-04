@@ -132,17 +132,147 @@ func TestSimpleTLSConnection(t *testing.T) {
 		IP:   []byte{127, 0, 0, 1},
 		Port: int(clientPort),
 	})
+	assert.Error(err).IsNil()
 
 	payload := "dokodemo request."
 	nBytes, err := conn.Write([]byte(payload))
 	assert.Error(err).IsNil()
 	assert.Int(nBytes).Equals(len(payload))
 
-	conn.CloseWrite()
+	response := readFrom(conn, time.Second*2, len(payload))
+	assert.Bytes(response).Equals(xor([]byte(payload)))
+	assert.Error(conn.Close()).IsNil()
+
+	CloseAllServers()
+}
+
+func TestTLSConnectionReuse(t *testing.T) {
+	assert := assert.On(t)
+
+	tcpServer := tcp.Server{
+		MsgProcessor: xor,
+	}
+	dest, err := tcpServer.Start()
+	assert.Error(err).IsNil()
+
+	userID := protocol.NewID(uuid.New())
+	serverPort := pickPort()
+	serverConfig := &core.Config{
+		Inbound: []*core.InboundConnectionConfig{
+			{
+				PortRange: v2net.SinglePortRange(serverPort),
+				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
+				Settings: serial.ToTypedMessage(&inbound.Config{
+					User: []*protocol.User{
+						{
+							Account: serial.ToTypedMessage(&vmess.Account{
+								Id: userID.String(),
+							}),
+						},
+					},
+				}),
+				StreamSettings: &internet.StreamConfig{
+					SecurityType: serial.GetMessageType(&tls.Config{}),
+					SecuritySettings: []*serial.TypedMessage{
+						serial.ToTypedMessage(&tls.Config{
+							Certificate: []*tls.Certificate{
+								{
+									Certificate: mustReadFile(filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", "testing", "tls", "cert.pem")),
+									Key:         mustReadFile(filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", "testing", "tls", "key.pem")),
+								},
+							},
+						}),
+					},
+				},
+			},
+		},
+		Outbound: []*core.OutboundConnectionConfig{
+			{
+				Settings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+		},
+	}
+
+	clientPort := pickPort()
+	clientConfig := &core.Config{
+		Inbound: []*core.InboundConnectionConfig{
+			{
+				PortRange: v2net.SinglePortRange(clientPort),
+				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
+				Settings: serial.ToTypedMessage(&dokodemo.Config{
+					Address: v2net.NewIPOrDomain(dest.Address),
+					Port:    uint32(dest.Port),
+					NetworkList: &v2net.NetworkList{
+						Network: []v2net.Network{v2net.Network_TCP},
+					},
+				}),
+			},
+		},
+		Outbound: []*core.OutboundConnectionConfig{
+			{
+				Settings: serial.ToTypedMessage(&outbound.Config{
+					Receiver: []*protocol.ServerEndpoint{
+						{
+							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vmess.Account{
+										Id: userID.String(),
+									}),
+								},
+							},
+						},
+					},
+				}),
+				StreamSettings: &internet.StreamConfig{
+					SecurityType: serial.GetMessageType(&tls.Config{}),
+					SecuritySettings: []*serial.TypedMessage{
+						serial.ToTypedMessage(&tls.Config{
+							AllowInsecure: true,
+						}),
+					},
+				},
+			},
+		},
+	}
+
+	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
+	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+
+	for i := 0; i < 5; i++ {
+		conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
+			IP:   []byte{127, 0, 0, 1},
+			Port: int(clientPort),
+		})
+		assert.Error(err).IsNil()
+
+		payload := "dokodemo request."
+		nBytes, err := conn.Write([]byte(payload))
+		assert.Error(err).IsNil()
+		assert.Int(nBytes).Equals(len(payload))
+
+		response := readFrom(conn, time.Second*2, len(payload))
+		assert.Bytes(response).Equals(xor([]byte(payload)))
+		assert.Error(conn.Close()).IsNil()
+	}
+
+	time.Sleep(time.Second * 10)
+
+	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
+		IP:   []byte{127, 0, 0, 1},
+		Port: int(clientPort),
+	})
+	assert.Error(err).IsNil()
+
+	payload := "dokodemo request."
+	nBytes, err := conn.Write([]byte(payload))
+	assert.Error(err).IsNil()
+	assert.Int(nBytes).Equals(len(payload))
 
 	response := readFrom(conn, time.Second*2, len(payload))
 	assert.Bytes(response).Equals(xor([]byte(payload)))
-	conn.Close()
+	assert.Error(conn.Close()).IsNil()
 
 	CloseAllServers()
 }
