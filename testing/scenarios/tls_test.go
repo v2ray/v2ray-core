@@ -42,6 +42,7 @@ func TestSimpleTLSConnection(t *testing.T) {
 	}
 	dest, err := tcpServer.Start()
 	assert.Error(err).IsNil()
+	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
 	serverPort := pickPort()
@@ -154,6 +155,7 @@ func TestTLSConnectionReuse(t *testing.T) {
 	}
 	dest, err := tcpServer.Start()
 	assert.Error(err).IsNil()
+	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
 	serverPort := pickPort()

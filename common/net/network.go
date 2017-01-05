@@ -67,3 +67,7 @@ func (v NetworkList) HasNetwork(network Network) bool {
 func (v NetworkList) Get(idx int) Network {
 	return v.Network[idx]
 }
+
+func (v NetworkList) Size() int {
+	return len(v.Network)
+}

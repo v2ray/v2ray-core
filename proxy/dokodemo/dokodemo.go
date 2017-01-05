@@ -74,6 +74,10 @@ func (v *DokodemoDoor) Start() error {
 	}
 	v.accepting = true
 
+	if v.config.NetworkList == nil || v.config.NetworkList.Size() == 0 {
+		return errors.New("DokodemoDoor: No network specified.")
+	}
+
 	if v.config.NetworkList.HasNetwork(v2net.Network_TCP) {
 		err := v.ListenTCP()
 		if err != nil {
