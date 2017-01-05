@@ -25,15 +25,19 @@ func NewConnectionID(source v2net.Address, dest v2net.Destination) ConnectionID 
 	}
 }
 
+// Reuser determines whether a connection can be reused or not.
 type Reuser struct {
+	// userEnabled indicates connection-reuse enabled by user.
 	userEnabled bool
-	appEnable   bool
+	// appEnabled indicates connection-reuse enabled by app.
+	appEnabled bool
 }
 
+// ReuseConnection returns a tracker for tracking connection reusability.
 func ReuseConnection(reuse bool) *Reuser {
 	return &Reuser{
 		userEnabled: reuse,
-		appEnable:   reuse,
+		appEnabled:  reuse,
 	}
 }
 
@@ -46,6 +50,7 @@ type Connection struct {
 	reuser   *Reuser
 }
 
+// NewConnection creates a new connection.
 func NewConnection(id ConnectionID, conn net.Conn, manager ConnectionRecyler, reuser *Reuser) *Connection {
 	return &Connection{
 		id:       id,
@@ -55,6 +60,7 @@ func NewConnection(id ConnectionID, conn net.Conn, manager ConnectionRecyler, re
 	}
 }
 
+// Read implements net.Conn.Read().
 func (v *Connection) Read(b []byte) (int, error) {
 	conn := v.underlyingConn()
 	if conn == nil {
@@ -64,6 +70,7 @@ func (v *Connection) Read(b []byte) (int, error) {
 	return conn.Read(b)
 }
 
+// Write implement net.Conn.Write().
 func (v *Connection) Write(b []byte) (int, error) {
 	conn := v.underlyingConn()
 	if conn == nil {
@@ -92,6 +99,7 @@ func (v *Connection) Close() error {
 	return err
 }
 
+// LocalAddr implements net.Conn.LocalAddr().
 func (v *Connection) LocalAddr() net.Addr {
 	conn := v.underlyingConn()
 	if conn == nil {
@@ -100,6 +108,7 @@ func (v *Connection) LocalAddr() net.Addr {
 	return conn.LocalAddr()
 }
 
+// RemoteAddr implements net.Conn.RemoteAddr().
 func (v *Connection) RemoteAddr() net.Addr {
 	conn := v.underlyingConn()
 	if conn == nil {
@@ -108,6 +117,7 @@ func (v *Connection) RemoteAddr() net.Addr {
 	return conn.RemoteAddr()
 }
 
+// SetDeadline implements net.Conn.SetDeadline().
 func (v *Connection) SetDeadline(t time.Time) error {
 	conn := v.underlyingConn()
 	if conn == nil {
@@ -116,6 +126,7 @@ func (v *Connection) SetDeadline(t time.Time) error {
 	return conn.SetDeadline(t)
 }
 
+// SetReadDeadline implements net.Conn.SetReadDeadline().
 func (v *Connection) SetReadDeadline(t time.Time) error {
 	conn := v.underlyingConn()
 	if conn == nil {
@@ -124,6 +135,7 @@ func (v *Connection) SetReadDeadline(t time.Time) error {
 	return conn.SetReadDeadline(t)
 }
 
+// SetWriteDeadline implements net.Conn.SetWriteDeadline().
 func (v *Connection) SetWriteDeadline(t time.Time) error {
 	conn := v.underlyingConn()
 	if conn == nil {
@@ -132,20 +144,23 @@ func (v *Connection) SetWriteDeadline(t time.Time) error {
 	return conn.SetWriteDeadline(t)
 }
 
+// SetReusable implements internet.Reusable.SetReusable().
 func (v *Connection) SetReusable(reusable bool) {
 	if v == nil {
 		return
 	}
-	v.reuser.appEnable = reusable
+	v.reuser.appEnabled = reusable
 }
 
+// Reusable implements internet.Reusable.Reusable().
 func (v *Connection) Reusable() bool {
 	if v == nil {
 		return false
 	}
-	return v.reuser.userEnabled && v.reuser.appEnable
+	return v.reuser.userEnabled && v.reuser.appEnabled
 }
 
+// SysFd implement internet.SysFd.SysFd().
 func (v *Connection) SysFd() (int, error) {
 	conn := v.underlyingConn()
 	if conn == nil {
