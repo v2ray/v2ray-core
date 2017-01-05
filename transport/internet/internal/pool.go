@@ -14,6 +14,10 @@ type ConnectionRecyler interface {
 	Put(ConnectionID, net.Conn)
 }
 
+type NoOpConnectionRecyler struct{}
+
+func (NoOpConnectionRecyler) Put(ConnectionID, net.Conn) {}
+
 // ExpiringConnection is a connection that will expire in certain time.
 type ExpiringConnection struct {
 	conn   net.Conn

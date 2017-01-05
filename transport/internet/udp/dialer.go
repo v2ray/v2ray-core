@@ -1,22 +1,11 @@
 package udp
 
 import (
-	"net"
-
 	"v2ray.com/core/common"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/internet/internal"
 )
-
-type Connection struct {
-	net.UDPConn
-}
-
-func (v *Connection) Reusable() bool {
-	return false
-}
-
-func (v *Connection) SetReusable(b bool) {}
 
 func init() {
 	common.Must(internet.RegisterNetworkDialer(v2net.Network_UDP,
@@ -26,8 +15,6 @@ func init() {
 				return nil, err
 			}
 			// TODO: handle dialer options
-			return &Connection{
-				UDPConn: *(conn.(*net.UDPConn)),
-			}, nil
+			return internal.NewConnection(internal.NewConnectionID(src, dest), conn, internal.NoOpConnectionRecyler{}, internal.ReuseConnection(false)), nil
 		}))
 }
