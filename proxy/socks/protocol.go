@@ -104,7 +104,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 			if err != nil {
 				return nil, errors.Base(err).Message("Socks|Server: Failed to read username or password.")
 			}
-			if !s.validate(username, password) {
+			if !s.config.HasAccount(username, password) {
 				writeSocks5AuthenticationResponse(writer, 0xFF)
 				return nil, errors.Base(err).Message("Socks|Server: Invalid username or password.")
 			}
@@ -184,11 +184,6 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 	}
 
 	return nil, errors.New("Socks|Server: Unknown Socks version: ", version)
-}
-
-func (s *ServerSession) validate(username, password string) bool {
-	p, found := s.config.Accounts[username]
-	return found && p == password
 }
 
 func readUsernamePassword(reader io.Reader) (string, string, error) {
