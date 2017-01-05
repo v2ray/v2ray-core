@@ -4,15 +4,6 @@ import "v2ray.com/core/common/errors"
 
 type ID int
 
-// Context of a function call from proxy to app.
-type Context interface {
-	CallerTag() string
-}
-
-type Caller interface {
-	Tag() string
-}
-
 type Application interface {
 }
 
