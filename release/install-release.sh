@@ -42,10 +42,10 @@ while [[ $# > 0 ]];do
         -c|--check)
         CHECK="1"
         ;;
-        -r|--remove)
+        --remove)
         REMOVE="1"
         ;;
-        -v|--version)
+        --version)
         VERSION="$2"
         shift
         ;;
