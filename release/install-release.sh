@@ -125,7 +125,7 @@ getPMT(){
         CMD_INSTALL="apt-get -y -qq install"
         CMD_UPDATE="apt-get -qq update"
     elif [[ -n `command -v yum` ]]; then
-        CMD_INSTALL="yum -y -qq install"
+        CMD_INSTALL="yum -y -q install"
         CMD_UPDATE="yum -q makecache"
     else
         return 1
@@ -262,7 +262,7 @@ remove(){
             stopV2ray
         fi
         systemctl disable v2ray.service
-        rm -rf "/usr/lib/v2ray" "/lib/systemd/system/v2ray.service"
+        rm -rf "/usr/bin/v2ray" "/lib/systemd/system/v2ray.service"
         if [[ $? -ne 0 ]]; then
             colorEcho ${RED} "Failed to remove V2Ray."
             exit
@@ -275,7 +275,7 @@ remove(){
         if pgrep "v2ray" > /dev/null ; then
             stopV2ray
         fi
-        rm -rf "/usr/lib/v2ray" "/etc/init.d/v2ray"
+        rm -rf "/usr/bin/v2ray" "/etc/init.d/v2ray"
         if [[ $? -ne 0 ]]; then
             colorEcho ${RED} "Failed to remove V2Ray."
             exit
