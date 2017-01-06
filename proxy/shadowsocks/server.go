@@ -187,8 +187,14 @@ func (v *Server) handleConnection(conn internet.Connection) {
 		if err != nil {
 			return err
 		}
-		responseWriter.Write(payload)
-		bufferedWriter.SetBuffered(false)
+		if err := responseWriter.Write(payload); err != nil {
+			return err
+		}
+		payload.Release()
+
+		if err := bufferedWriter.SetBuffered(false); err != nil {
+			return err
+		}
 
 		if err := buf.PipeUntilEOF(ray.InboundOutput(), responseWriter); err != nil {
 			log.Info("Shadowsocks|Server: Failed to transport all TCP response: ", err)
