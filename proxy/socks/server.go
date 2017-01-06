@@ -41,11 +41,11 @@ func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandler
 		config: config,
 		meta:   meta,
 	}
-	space.InitializeApplication(func() error {
-		if !space.HasApp(dispatcher.APP_ID) {
+	space.OnInitialize(func() error {
+		s.packetDispatcher = dispatcher.FromSpace(space)
+		if s.packetDispatcher == nil {
 			return errors.New("Socks|Server: Dispatcher is not found in the space.")
 		}
-		s.packetDispatcher = space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)
 		return nil
 	})
 	return s

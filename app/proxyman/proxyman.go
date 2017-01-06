@@ -3,12 +3,8 @@ package proxyman
 
 import (
 	"v2ray.com/core/app"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy"
-)
-
-const (
-	APP_ID_INBOUND_MANAGER  = app.ID(4)
-	APP_ID_OUTBOUND_MANAGER = app.ID(6)
 )
 
 type InboundHandlerManager interface {
@@ -20,4 +16,20 @@ type OutboundHandlerManager interface {
 	GetDefaultHandler() proxy.OutboundHandler
 	SetDefaultHandler(handler proxy.OutboundHandler) error
 	SetHandler(tag string, handler proxy.OutboundHandler) error
+}
+
+func InboundHandlerManagerFromSpace(space app.Space) InboundHandlerManager {
+	app := space.(app.AppGetter).GetApp(serial.GetMessageType((*InboundConfig)(nil)))
+	if app == nil {
+		return nil
+	}
+	return app.(InboundHandlerManager)
+}
+
+func OutboundHandlerManagerFromSpace(space app.Space) OutboundHandlerManager {
+	app := space.(app.AppGetter).GetApp(serial.GetMessageType((*OutboundConfig)(nil)))
+	if app == nil {
+		return nil
+	}
+	return app.(OutboundHandlerManager)
 }

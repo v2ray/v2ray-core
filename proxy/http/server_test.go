@@ -6,13 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	testdispatcher "v2ray.com/core/app/dispatcher/testing"
-	"v2ray.com/core/common/dice"
-	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/proxy"
 	. "v2ray.com/core/proxy/http"
 	"v2ray.com/core/testing/assert"
-	"v2ray.com/core/transport/internet"
 
 	_ "v2ray.com/core/transport/internet/tcp"
 )
@@ -49,31 +44,4 @@ Accept-Language: de,en;q=0.7,en-us;q=0.3
 	assert.String(req.Header.Get("Bar")).Equals("")
 	assert.String(req.Header.Get("Proxy-Connection")).Equals("")
 	assert.String(req.Header.Get("Proxy-Authenticate")).Equals("")
-}
-
-func TestNormalGetRequest(t *testing.T) {
-	assert := assert.On(t)
-
-	testPacketDispatcher := testdispatcher.NewTestPacketDispatcher(nil)
-
-	port := v2net.Port(dice.Roll(20000) + 10000)
-	httpProxy := NewServer(
-		&ServerConfig{},
-		testPacketDispatcher,
-		&proxy.InboundHandlerMeta{
-			Address: v2net.LocalHostIP,
-			Port:    port,
-			StreamSettings: &internet.StreamConfig{
-				Network: v2net.Network_TCP,
-			}})
-	defer httpProxy.Close()
-
-	err := httpProxy.Start()
-	assert.Error(err).IsNil()
-	assert.Port(port).Equals(httpProxy.Port())
-
-	httpClient := &http.Client{}
-	resp, err := httpClient.Get("http://127.0.0.1:" + port.String() + "/")
-	assert.Error(err).IsNil()
-	assert.Int(resp.StatusCode).Equals(400)
 }

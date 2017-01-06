@@ -7,16 +7,14 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/ray"
-)
-
-const (
-	APP_ID = 7
 )
 
 type OutboundProxy struct {
@@ -25,11 +23,11 @@ type OutboundProxy struct {
 
 func NewOutboundProxy(space app.Space) *OutboundProxy {
 	proxy := new(OutboundProxy)
-	space.InitializeApplication(func() error {
-		if !space.HasApp(proxyman.APP_ID_OUTBOUND_MANAGER) {
-			return errors.New("Proxy: Outbound handler manager not found.")
+	space.OnInitialize(func() error {
+		proxy.outboundManager = proxyman.OutboundHandlerManagerFromSpace(space)
+		if proxy.outboundManager == nil {
+			return errors.New("Proxy: Outbound handler manager not found in space.")
 		}
-		proxy.outboundManager = space.GetApp(proxyman.APP_ID_OUTBOUND_MANAGER).(proxyman.OutboundHandlerManager)
 		return nil
 	})
 	return proxy
@@ -132,4 +130,22 @@ func (v *Connection) Reusable() bool {
 
 func (v *Connection) SetReusable(bool) {
 
+}
+
+type OutboundProxyFactory struct{}
+
+func (OutboundProxyFactory) Create(space app.Space, config interface{}) (app.Application, error) {
+	return NewOutboundProxy(space), nil
+}
+
+func OutboundProxyFromSpace(space app.Space) *OutboundProxy {
+	app := space.(app.AppGetter).GetApp(serial.GetMessageType((*Config)(nil)))
+	if app == nil {
+		return nil
+	}
+	return app.(*OutboundProxy)
+}
+
+func init() {
+	common.Must(app.RegisterApplicationFactory((*Config)(nil), OutboundProxyFactory{}))
 }

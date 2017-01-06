@@ -7,11 +7,11 @@ import (
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/router"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
 )
@@ -23,25 +23,15 @@ type DefaultDispatcher struct {
 
 func NewDefaultDispatcher(space app.Space) *DefaultDispatcher {
 	d := &DefaultDispatcher{}
-	space.InitializeApplication(func() error {
-		return d.Initialize(space)
+	space.OnInitialize(func() error {
+		d.ohm = proxyman.OutboundHandlerManagerFromSpace(space)
+		if d.ohm == nil {
+			return errors.New("DefaultDispatcher: OutboundHandlerManager is not found in the space.")
+		}
+		d.router = router.FromSpace(space)
+		return nil
 	})
 	return d
-}
-
-// Initialize initializes the dispatcher.
-// Private: Used by app.Space only.
-func (v *DefaultDispatcher) Initialize(space app.Space) error {
-	if !space.HasApp(proxyman.APP_ID_OUTBOUND_MANAGER) {
-		return errors.New("DefaultDispatcher: OutboundHandlerManager is not found in the space.")
-	}
-	v.ohm = space.GetApp(proxyman.APP_ID_OUTBOUND_MANAGER).(proxyman.OutboundHandlerManager)
-
-	if space.HasApp(router.APP_ID) {
-		v.router = space.GetApp(router.APP_ID).(*router.Router)
-	}
-
-	return nil
 }
 
 func (v *DefaultDispatcher) DispatchToOutbound(session *proxy.SessionInfo) ray.InboundRay {
@@ -95,12 +85,8 @@ func (v DefaultDispatcherFactory) Create(space app.Space, config interface{}) (a
 	return NewDefaultDispatcher(space), nil
 }
 
-func (v DefaultDispatcherFactory) AppId() app.ID {
-	return dispatcher.APP_ID
-}
-
 func init() {
-	app.RegisterApplicationFactory(serial.GetMessageType(new(dispatcher.Config)), DefaultDispatcherFactory{})
+	common.Must(app.RegisterApplicationFactory((*dispatcher.Config)(nil), DefaultDispatcherFactory{}))
 }
 
 type waitDataInspector struct {

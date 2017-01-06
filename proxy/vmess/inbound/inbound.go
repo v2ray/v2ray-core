@@ -261,9 +261,6 @@ func (v *Factory) StreamCapability() v2net.NetworkList {
 }
 
 func (v *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
-	if !space.HasApp(dispatcher.APP_ID) {
-		return nil, common.ErrBadConfiguration
-	}
 	config := rawConfig.(*Config)
 
 	allowedClients := vmess.NewTimedUserValidator(protocol.DefaultIDHash)
@@ -272,16 +269,23 @@ func (v *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.Inb
 	}
 
 	handler := &VMessInboundHandler{
-		packetDispatcher: space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
-		clients:          allowedClients,
-		detours:          config.Detour,
-		usersByEmail:     NewUserByEmail(config.User, config.GetDefaultValue()),
-		meta:             meta,
+		clients:      allowedClients,
+		detours:      config.Detour,
+		usersByEmail: NewUserByEmail(config.User, config.GetDefaultValue()),
+		meta:         meta,
 	}
 
-	if space.HasApp(proxyman.APP_ID_INBOUND_MANAGER) {
-		handler.inboundHandlerManager = space.GetApp(proxyman.APP_ID_INBOUND_MANAGER).(proxyman.InboundHandlerManager)
-	}
+	space.OnInitialize(func() error {
+		handler.packetDispatcher = dispatcher.FromSpace(space)
+		if handler.packetDispatcher == nil {
+			return errors.New("VMess|Inbound: Dispatcher is not found in space.")
+		}
+		handler.inboundHandlerManager = proxyman.InboundHandlerManagerFromSpace(space)
+		if handler.inboundHandlerManager == nil {
+			return errors.New("VMess|Inbound: InboundHandlerManager is not found is space.")
+		}
+		return nil
+	})
 
 	return handler, nil
 }

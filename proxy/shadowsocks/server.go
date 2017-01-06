@@ -3,7 +3,6 @@ package shadowsocks
 import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
@@ -46,11 +45,11 @@ func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandler
 		account: account,
 	}
 
-	space.InitializeApplication(func() error {
-		if !space.HasApp(dispatcher.APP_ID) {
+	space.OnInitialize(func() error {
+		s.packetDispatcher = dispatcher.FromSpace(space)
+		if s.packetDispatcher == nil {
 			return errors.New("Shadowsocks|Server: Dispatcher is not found in space.")
 		}
-		s.packetDispatcher = space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)
 		return nil
 	})
 
@@ -228,8 +227,5 @@ func (v *ServerFactory) StreamCapability() v2net.NetworkList {
 }
 
 func (v *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
-	if !space.HasApp(dispatcher.APP_ID) {
-		return nil, common.ErrBadConfiguration
-	}
 	return NewServer(rawConfig.(*ServerConfig), space, meta)
 }

@@ -3,15 +3,12 @@ package router
 import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dns"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy"
-)
-
-const (
-	APP_ID = app.ID(3)
 )
 
 var (
@@ -33,7 +30,7 @@ func NewRouter(config *Config, space app.Space) *Router {
 		rules: make([]Rule, len(config.Rule)),
 	}
 
-	space.InitializeApplication(func() error {
+	space.OnInitialize(func() error {
 		for idx, rule := range config.Rule {
 			r.rules[idx].Tag = rule.Tag
 			cond, err := rule.BuildCondition()
@@ -43,10 +40,10 @@ func NewRouter(config *Config, space app.Space) *Router {
 			r.rules[idx].Condition = cond
 		}
 
-		if !space.HasApp(dns.APP_ID) {
+		r.dnsServer = dns.FromSpace(space)
+		if r.dnsServer == nil {
 			return errors.New("Router: DNS is not found in the space.")
 		}
-		r.dnsServer = space.GetApp(dns.APP_ID).(dns.Server)
 		return nil
 	})
 	return r
@@ -116,10 +113,14 @@ func (RouterFactory) Create(space app.Space, config interface{}) (app.Applicatio
 	return router, nil
 }
 
-func (RouterFactory) AppId() app.ID {
-	return APP_ID
+func FromSpace(space app.Space) *Router {
+	app := space.(app.AppGetter).GetApp(serial.GetMessageType((*Config)(nil)))
+	if app == nil {
+		return nil
+	}
+	return app.(*Router)
 }
 
 func init() {
-	app.RegisterApplicationFactory(serial.GetMessageType(new(Config)), RouterFactory{})
+	common.Must(app.RegisterApplicationFactory((*Config)(nil), RouterFactory{}))
 }

@@ -5,7 +5,7 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/proxyman"
-	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common"
 	"v2ray.com/core/proxy"
 )
 
@@ -60,10 +60,6 @@ func (v OutboundHandlerManagerFactory) Create(space app.Space, config interface{
 	return New(), nil
 }
 
-func (v OutboundHandlerManagerFactory) AppId() app.ID {
-	return proxyman.APP_ID_OUTBOUND_MANAGER
-}
-
 func init() {
-	app.RegisterApplicationFactory(serial.GetMessageType(new(proxyman.OutboundConfig)), OutboundHandlerManagerFactory{})
+	common.Must(app.RegisterApplicationFactory((*proxyman.OutboundConfig)(nil), OutboundHandlerManagerFactory{}))
 }

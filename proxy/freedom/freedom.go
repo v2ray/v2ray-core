@@ -32,12 +32,12 @@ func New(config *Config, space app.Space, meta *proxy.OutboundHandlerMeta) *Hand
 		timeout:        config.Timeout,
 		meta:           meta,
 	}
-	space.InitializeApplication(func() error {
+	space.OnInitialize(func() error {
 		if config.DomainStrategy == Config_USE_IP {
-			if !space.HasApp(dns.APP_ID) {
+			f.dns = dns.FromSpace(space)
+			if f.dns == nil {
 				return errors.New("Freedom: DNS server is not found in the space.")
 			}
-			f.dns = space.GetApp(dns.APP_ID).(dns.Server)
 		}
 		return nil
 	})

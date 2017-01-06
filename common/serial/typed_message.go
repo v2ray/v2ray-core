@@ -30,13 +30,14 @@ func GetInstance(messageType string) (interface{}, error) {
 	return reflect.New(mType.Elem()).Interface(), nil
 }
 
-func (v *TypedMessage) GetInstance() (interface{}, error) {
+func (v *TypedMessage) GetInstance() (proto.Message, error) {
 	instance, err := GetInstance(v.Type)
 	if err != nil {
 		return nil, err
 	}
-	if err := proto.Unmarshal(v.Value, instance.(proto.Message)); err != nil {
+	protoMessage := instance.(proto.Message)
+	if err := proto.Unmarshal(v.Value, protoMessage); err != nil {
 		return nil, err
 	}
-	return instance, nil
+	return protoMessage, nil
 }

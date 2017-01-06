@@ -33,12 +33,19 @@ type Server struct {
 }
 
 // NewServer creates a new HTTP inbound handler.
-func NewServer(config *ServerConfig, packetDispatcher dispatcher.PacketDispatcher, meta *proxy.InboundHandlerMeta) *Server {
-	return &Server{
-		packetDispatcher: packetDispatcher,
-		config:           config,
-		meta:             meta,
+func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandlerMeta) *Server {
+	s := &Server{
+		config: config,
+		meta:   meta,
 	}
+	space.OnInitialize(func() error {
+		s.packetDispatcher = dispatcher.FromSpace(space)
+		if s.packetDispatcher == nil {
+			return errors.New("HTTP|Server: Dispatcher not found in space.")
+		}
+		return nil
+	})
+	return s
 }
 
 // Port implements InboundHandler.Port().
@@ -291,13 +298,7 @@ func (v *ServerFactory) StreamCapability() v2net.NetworkList {
 
 // Create implements InboundHandlerFactory.Create().
 func (v *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
-	if !space.HasApp(dispatcher.APP_ID) {
-		return nil, common.ErrBadConfiguration
-	}
-	return NewServer(
-		rawConfig.(*ServerConfig),
-		space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
-		meta), nil
+	return NewServer(rawConfig.(*ServerConfig), space, meta), nil
 }
 
 func init() {

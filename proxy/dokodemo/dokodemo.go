@@ -38,11 +38,11 @@ func NewDokodemoDoor(config *Config, space app.Space, meta *proxy.InboundHandler
 		port:    v2net.Port(config.Port),
 		meta:    meta,
 	}
-	space.InitializeApplication(func() error {
-		if !space.HasApp(dispatcher.APP_ID) {
+	space.OnInitialize(func() error {
+		d.packetDispatcher = dispatcher.FromSpace(space)
+		if d.packetDispatcher == nil {
 			return errors.New("Dokodemo: Dispatcher is not found in the space.")
 		}
-		d.packetDispatcher = space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)
 		return nil
 	})
 	return d
