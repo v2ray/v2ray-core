@@ -74,6 +74,7 @@ func (v *spaceImpl) Initialize() error {
 			return err
 		}
 	}
+	v.appInit = nil
 	v.initialized = true
 	return nil
 }
