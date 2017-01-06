@@ -147,18 +147,24 @@ func transferResponse(session *encoding.ServerSession, request *protocol.Request
 	bodyWriter := session.EncodeResponseBody(request, output)
 
 	// Optimize for small response packet
-	if data, err := input.Read(); err == nil {
-		if err := bodyWriter.Write(data); err != nil {
+	data, err := input.Read()
+	if err != nil {
+		return err
+	}
+
+	if err := bodyWriter.Write(data); err != nil {
+		return err
+	}
+	data.Release()
+
+	if bufferedWriter, ok := output.(*bufio.BufferedWriter); ok {
+		if err := bufferedWriter.SetBuffered(false); err != nil {
 			return err
 		}
+	}
 
-		if bufferedWriter, ok := output.(*bufio.BufferedWriter); ok {
-			bufferedWriter.SetBuffered(false)
-		}
-
-		if err := buf.PipeUntilEOF(input, bodyWriter); err != nil {
-			return err
-		}
+	if err := buf.PipeUntilEOF(input, bodyWriter); err != nil {
+		return err
 	}
 
 	if request.Option.Has(protocol.RequestOptionChunkStream) {
