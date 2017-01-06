@@ -84,9 +84,10 @@ func (v *BufferedWriter) IsBuffered() bool {
 }
 
 // SetBuffered controls whether the BufferedWriter holds a buffer for writing. If not buffered, any write() calls into underlying writer directly.
-func (v *BufferedWriter) SetBuffered(cached bool) {
+func (v *BufferedWriter) SetBuffered(cached bool) error {
 	v.buffered = cached
 	if !cached && !v.buffer.IsEmpty() {
-		v.Flush()
+		return v.Flush()
 	}
+	return nil
 }
