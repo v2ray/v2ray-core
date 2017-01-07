@@ -13,7 +13,7 @@ import (
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
-	proto "v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
@@ -120,7 +120,7 @@ func (v *Server) handleConnection(connection internet.Connection) {
 		return
 	}
 
-	if request.Command == proto.RequestCommandTCP {
+	if request.Command == protocol.RequestCommandTCP {
 		dest := request.Destination()
 		session := &proxy.SessionInfo{
 			Source:      clientAddr,
@@ -134,7 +134,7 @@ func (v *Server) handleConnection(connection internet.Connection) {
 		return
 	}
 
-	if request.Command == proto.RequestCommandUDP {
+	if request.Command == protocol.RequestCommandUDP {
 		v.handleUDP()
 		return
 	}

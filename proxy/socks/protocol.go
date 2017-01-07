@@ -272,3 +272,72 @@ func writeSocks4Response(writer io.Writer, errCode byte, address v2net.Address, 
 	_, err := writer.Write(buffer.Bytes())
 	return err
 }
+
+func DecodeUDPPacket(packet []byte) (*protocol.RequestHeader, []byte, error) {
+	if len(packet) < 5 {
+		return nil, nil, errors.New("Socks|UDP: Insufficient length of packet.")
+	}
+	request := &protocol.RequestHeader{
+		Version: socks5Version,
+		Command: protocol.RequestCommandUDP,
+	}
+
+	// packet[0] and packet[1] are reserved
+	if packet[2] != 0 /* fragments */ {
+		return nil, nil, errors.New("Socks|UDP: Fragmented payload.")
+	}
+
+	addrType := packet[3]
+	var dataBegin int
+
+	switch addrType {
+	case addrTypeIPv4:
+		if len(packet) < 10 {
+			return nil, nil, errors.New("Socks|UDP: Insufficient length of packet.")
+		}
+		ip := packet[4:8]
+		request.Port = v2net.PortFromBytes(packet[8:10])
+		request.Address = v2net.IPAddress(ip)
+		dataBegin = 10
+	case addrTypeIPv6:
+		if len(packet) < 22 {
+			return nil, nil, errors.New("Socks|UDP: Insufficient length of packet.")
+		}
+		ip := packet[4:20]
+		request.Port = v2net.PortFromBytes(packet[20:22])
+		request.Address = v2net.IPAddress(ip)
+		dataBegin = 22
+	case addrTypeDomain:
+		domainLength := int(packet[4])
+		if len(packet) < 5+domainLength+2 {
+			return nil, nil, errors.New("Socks|UDP: Insufficient length of packet.")
+		}
+		domain := string(packet[5 : 5+domainLength])
+		request.Port = v2net.PortFromBytes(packet[5+domainLength : 5+domainLength+2])
+		request.Address = v2net.ParseAddress(domain)
+		dataBegin = 5 + domainLength + 2
+	default:
+		return nil, nil, errors.New("Socks|UDP: Unknown address type ", addrType)
+	}
+
+	return request, packet[dataBegin:], nil
+}
+
+func EncodeUDPPacket(request *protocol.RequestHeader, data []byte) *buf.Buffer {
+	b := buf.NewSmall()
+	b.AppendBytes(0, 0, 0 /* Fragment */)
+	switch request.Address.Family() {
+	case v2net.AddressFamilyIPv4:
+		b.AppendBytes(addrTypeIPv4)
+		b.Append(request.Address.IP())
+	case v2net.AddressFamilyIPv6:
+		b.AppendBytes(addrTypeIPv6)
+		b.Append(request.Address.IP())
+	case v2net.AddressFamilyDomain:
+		b.AppendBytes(addrTypeDomain, byte(len(request.Address.Domain())))
+		b.AppendSupplier(serial.WriteString(request.Address.Domain()))
+	}
+	b.AppendSupplier(serial.WriteUint16(request.Port.Value()))
+	b.Append(data)
+	return b
+}

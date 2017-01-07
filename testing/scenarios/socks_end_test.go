@@ -200,7 +200,7 @@ func TestUDPAssociate(t *testing.T) {
 			return buffer
 		},
 	}
-	_, err := udpServer.Start()
+	udpServerAddr, err := udpServer.Start()
 	assert.Error(err).IsNil()
 	defer udpServer.Close()
 
@@ -223,7 +223,7 @@ func TestUDPAssociate(t *testing.T) {
 	assert.Error(err).IsNil()
 	assert.Bytes(authResponse[:nBytes]).Equals([]byte{socks5Version, 0})
 
-	connectRequest := socks5Request(byte(3), v2net.TCPDestination(v2net.IPAddress([]byte{127, 0, 0, 1}), udpServer.Port))
+	connectRequest := socks5Request(byte(3), v2net.TCPDestination(v2net.LocalHostIP, udpServer.Port))
 	nBytes, err = conn.Write(connectRequest)
 	assert.Int(nBytes).Equals(len(connectRequest))
 	assert.Error(err).IsNil()
@@ -241,7 +241,7 @@ func TestUDPAssociate(t *testing.T) {
 
 	for i := 0; i < 100; i++ {
 		udpPayload := "UDP request to udp server."
-		udpRequest := socks5UDPRequest(v2net.UDPDestination(v2net.LocalHostIP, udpServer.Port), []byte(udpPayload))
+		udpRequest := socks5UDPRequest(udpServerAddr, []byte(udpPayload))
 
 		nBytes, err = udpConn.Write(udpRequest)
 		assert.Int(nBytes).Equals(len(udpRequest))
