@@ -38,6 +38,9 @@ type InboundConnectionConfig struct {
 	Tag           string          `json:"tag"`
 }
 
+func ImportJsonParser(){
+}
+
 func (v *InboundConnectionConfig) Build() (*core.InboundConnectionConfig, error) {
 	config := new(core.InboundConnectionConfig)
 	config.PortRange = &v2net.PortRange{

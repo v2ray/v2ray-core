@@ -14,6 +14,7 @@ import (
 	"v2ray.com/core/common/log"
 
 	_ "v2ray.com/core/main/distro/all"
+	conf "v2ray.com/core/tools/conf"
 )
 
 var (
@@ -29,6 +30,7 @@ func init() {
 	if err == nil {
 		defaultConfigFile = filepath.Join(workingDir, "config.json")
 	}
+
 	flag.StringVar(&configFile, "config", defaultConfigFile, "Config file for this Point server.")
 }
 
@@ -95,6 +97,9 @@ func main() {
 	if *version {
 		return
 	}
+
+	//开发期间自动引入json库（其实代码里面，什么都没有写）
+	conf.ImportJsonParser()
 
 	if point := startV2Ray(); point != nil {
 		osSignals := make(chan os.Signal, 1)
