@@ -3,8 +3,6 @@ package socks
 import (
 	"io"
 
-	"fmt"
-
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
@@ -105,13 +103,11 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 			return nil, err
 		}
 
-		fmt.Println("s a")
 		if expectedAuth == authPassword {
 			username, password, err := readUsernamePassword(reader)
 			if err != nil {
 				return nil, errors.Base(err).Message("Socks|Server: Failed to read username or password.")
 			}
-			fmt.Println("s b")
 			if !s.config.HasAccount(username, password) {
 				writeSocks5AuthenticationResponse(writer, 0xFF)
 				return nil, errors.Base(err).Message("Socks|Server: Invalid username or password.")
@@ -121,7 +117,6 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 				return nil, err
 			}
 		}
-		fmt.Println("s c")
 		buffer.Clear()
 		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 4)); err != nil {
 			return nil, err
@@ -202,27 +197,23 @@ func readUsernamePassword(reader io.Reader) (string, string, error) {
 		return "", "", err
 	}
 	nUsername := int(buffer.Byte(1))
-	fmt.Println("s username", nUsername)
 
 	buffer.Clear()
 	if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, nUsername)); err != nil {
 		return "", "", err
 	}
 	username := buffer.String()
-	fmt.Println("s username", username)
 	buffer.Clear()
 
 	if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 1)); err != nil {
 		return "", "", err
 	}
 	nPassword := int(buffer.Byte(0))
-	fmt.Println("s pwd", nPassword)
 	buffer.Clear()
 	if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, nPassword)); err != nil {
 		return "", "", err
 	}
 	password := buffer.String()
-	fmt.Println("s pwd", password)
 	return username, password, nil
 }
 
@@ -411,23 +402,18 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 		}
 		account := rawAccount.(*Account)
 
-		fmt.Println("c username", account.Username)
-		fmt.Println("c pwd", account.Password)
 		b.Clear()
 		b.AppendBytes(socks5Version, byte(len(account.Username)))
 		b.Append([]byte(account.Username))
 		b.AppendBytes(byte(len(account.Password)))
 		b.Append([]byte(account.Password))
-		fmt.Println("c a")
 		if _, err := writer.Write(b.Bytes()); err != nil {
 			return nil, err
 		}
-		fmt.Println("c b")
 		b.Clear()
 		if err := b.AppendSupplier(buf.ReadFullFrom(reader, 2)); err != nil {
 			return nil, err
 		}
-		fmt.Println("c c")
 		if b.Byte(1) != 0x00 {
 			return nil, errors.New("Socks|Client: Server rejects account: ", b.Byte(1))
 		}
@@ -441,13 +427,11 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 	}
 	b.AppendBytes(socks5Version, command, 0x00 /* reserved */)
 	appendAddress(b, request.Address, request.Port)
-	fmt.Println("c e")
 	if _, err := writer.Write(b.Bytes()); err != nil {
 		return nil, err
 	}
 
 	b.Clear()
-	fmt.Println("c f")
 	if err := b.AppendSupplier(buf.ReadFullFrom(reader, 4)); err != nil {
 		return nil, err
 	}

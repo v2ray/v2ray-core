@@ -1,7 +1,6 @@
 package freedom_test
 
 import (
-	"fmt"
 	"testing"
 
 	"v2ray.com/core/app"
@@ -55,7 +54,6 @@ func TestSinglePacket(t *testing.T) {
 	payload.Append([]byte(data2Send))
 	traffic.InboundInput().Write(payload)
 
-	fmt.Println(tcpServerAddr.Network, tcpServerAddr.Address, tcpServerAddr.Port)
 	go freedom.Dispatch(tcpServerAddr, traffic)
 	traffic.InboundInput().Close()
 
