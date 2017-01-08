@@ -97,7 +97,14 @@ func (v *ServerSpec) AddUser(user *User) {
 
 func (v *ServerSpec) PickUser() *User {
 	userCount := len(v.users)
-	return v.users[dice.Roll(userCount)]
+	switch userCount {
+	case 0:
+		return nil
+	case 1:
+		return v.users[0]
+	default:
+		return v.users[dice.Roll(userCount)]
+	}
 }
 
 func (v *ServerSpec) IsValid() bool {

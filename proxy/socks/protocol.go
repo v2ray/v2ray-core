@@ -3,6 +3,8 @@ package socks
 import (
 	"io"
 
+	"fmt"
+
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
@@ -90,7 +92,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 		}
 
 		var expectedAuth byte = authNotRequired
-		if len(s.config.Accounts) > 0 {
+		if s.config.AuthType == AuthType_PASSWORD {
 			expectedAuth = authPassword
 		}
 
@@ -99,21 +101,27 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 			return nil, errors.New("Socks|Server: No matching auth method.")
 		}
 
+		if err := writeSocks5AuthenticationResponse(writer, expectedAuth); err != nil {
+			return nil, err
+		}
+
+		fmt.Println("s a")
 		if expectedAuth == authPassword {
 			username, password, err := readUsernamePassword(reader)
 			if err != nil {
 				return nil, errors.Base(err).Message("Socks|Server: Failed to read username or password.")
 			}
+			fmt.Println("s b")
 			if !s.config.HasAccount(username, password) {
 				writeSocks5AuthenticationResponse(writer, 0xFF)
 				return nil, errors.Base(err).Message("Socks|Server: Invalid username or password.")
 			}
-		}
 
-		if err := writeSocks5AuthenticationResponse(writer, 0x00); err != nil {
-			return nil, err
+			if err := writeSocks5AuthenticationResponse(writer, 0x00); err != nil {
+				return nil, err
+			}
 		}
-
+		fmt.Println("s c")
 		buffer.Clear()
 		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 4)); err != nil {
 			return nil, err
@@ -194,21 +202,27 @@ func readUsernamePassword(reader io.Reader) (string, string, error) {
 		return "", "", err
 	}
 	nUsername := int(buffer.Byte(1))
+	fmt.Println("s username", nUsername)
 
 	buffer.Clear()
 	if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, nUsername)); err != nil {
 		return "", "", err
 	}
 	username := buffer.String()
+	fmt.Println("s username", username)
+	buffer.Clear()
 
 	if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 1)); err != nil {
 		return "", "", err
 	}
 	nPassword := int(buffer.Byte(0))
+	fmt.Println("s pwd", nPassword)
+	buffer.Clear()
 	if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, nPassword)); err != nil {
 		return "", "", err
 	}
 	password := buffer.String()
+	fmt.Println("s pwd", password)
 	return username, password, nil
 }
 
@@ -244,9 +258,7 @@ func writeSocks5AuthenticationResponse(writer io.Writer, auth byte) error {
 	return err
 }
 
-func writeSocks5Response(writer io.Writer, errCode byte, address v2net.Address, port v2net.Port) error {
-	buffer := buf.NewLocal(64)
-	buffer.AppendBytes(socks5Version, errCode, 0x00 /* reserved */)
+func appendAddress(buffer *buf.Buffer, address v2net.Address, port v2net.Port) {
 	switch address.Family() {
 	case v2net.AddressFamilyIPv4:
 		buffer.AppendBytes(0x01)
@@ -259,6 +271,12 @@ func writeSocks5Response(writer io.Writer, errCode byte, address v2net.Address, 
 		buffer.AppendSupplier(serial.WriteString(address.Domain()))
 	}
 	buffer.AppendSupplier(serial.WriteUint16(port.Value()))
+}
+
+func writeSocks5Response(writer io.Writer, errCode byte, address v2net.Address, port v2net.Port) error {
+	buffer := buf.NewLocal(64)
+	buffer.AppendBytes(socks5Version, errCode, 0x00 /* reserved */)
+	appendAddress(buffer, address, port)
 
 	_, err := writer.Write(buffer.Bytes())
 	return err
@@ -326,18 +344,162 @@ func DecodeUDPPacket(packet []byte) (*protocol.RequestHeader, []byte, error) {
 func EncodeUDPPacket(request *protocol.RequestHeader, data []byte) *buf.Buffer {
 	b := buf.NewSmall()
 	b.AppendBytes(0, 0, 0 /* Fragment */)
-	switch request.Address.Family() {
-	case v2net.AddressFamilyIPv4:
-		b.AppendBytes(addrTypeIPv4)
-		b.Append(request.Address.IP())
-	case v2net.AddressFamilyIPv6:
-		b.AppendBytes(addrTypeIPv6)
-		b.Append(request.Address.IP())
-	case v2net.AddressFamilyDomain:
-		b.AppendBytes(addrTypeDomain, byte(len(request.Address.Domain())))
-		b.AppendSupplier(serial.WriteString(request.Address.Domain()))
-	}
-	b.AppendSupplier(serial.WriteUint16(request.Port.Value()))
+	appendAddress(b, request.Address, request.Port)
 	b.Append(data)
 	return b
+}
+
+type UDPReader struct {
+	reader io.Reader
+}
+
+func (r *UDPReader) Read() (*buf.Buffer, error) {
+	b := buf.NewSmall()
+	if err := b.AppendSupplier(buf.ReadFrom(r.reader)); err != nil {
+		return nil, err
+	}
+	_, data, err := DecodeUDPPacket(b.Bytes())
+	if err != nil {
+		return nil, err
+	}
+	b.Clear()
+	b.Append(data)
+	return b, nil
+}
+
+type UDPWriter struct {
+	request *protocol.RequestHeader
+	writer  io.Writer
+}
+
+func (w *UDPWriter) Write(b *buf.Buffer) error {
+	eb := EncodeUDPPacket(w.request, b.Bytes())
+	b.Release()
+	defer eb.Release()
+	if _, err := w.writer.Write(eb.Bytes()); err != nil {
+		return err
+	}
+	return nil
+}
+
+func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer io.Writer) (*protocol.RequestHeader, error) {
+	authByte := byte(authNotRequired)
+	if request.User != nil {
+		authByte = byte(authPassword)
+	}
+	authRequest := []byte{socks5Version, 0x01, authByte}
+	if _, err := writer.Write(authRequest); err != nil {
+		return nil, err
+	}
+
+	b := buf.NewLocal(64)
+	if err := b.AppendSupplier(buf.ReadFullFrom(reader, 2)); err != nil {
+		return nil, err
+	}
+
+	if b.Byte(0) != socks5Version {
+		return nil, errors.New("Socks|Client: Unexpected server version: ", b.Byte(0))
+	}
+	if b.Byte(1) != authByte {
+		return nil, errors.New("Socks|Client: auth method not supported.")
+	}
+
+	if authByte == authPassword {
+		rawAccount, err := request.User.GetTypedAccount()
+		if err != nil {
+			return nil, err
+		}
+		account := rawAccount.(*Account)
+
+		fmt.Println("c username", account.Username)
+		fmt.Println("c pwd", account.Password)
+		b.Clear()
+		b.AppendBytes(socks5Version, byte(len(account.Username)))
+		b.Append([]byte(account.Username))
+		b.AppendBytes(byte(len(account.Password)))
+		b.Append([]byte(account.Password))
+		fmt.Println("c a")
+		if _, err := writer.Write(b.Bytes()); err != nil {
+			return nil, err
+		}
+		fmt.Println("c b")
+		b.Clear()
+		if err := b.AppendSupplier(buf.ReadFullFrom(reader, 2)); err != nil {
+			return nil, err
+		}
+		fmt.Println("c c")
+		if b.Byte(1) != 0x00 {
+			return nil, errors.New("Socks|Client: Server rejects account: ", b.Byte(1))
+		}
+	}
+
+	b.Clear()
+
+	command := byte(cmdTCPConnect)
+	if request.Command == protocol.RequestCommandUDP {
+		command = byte(cmdUDPPort)
+	}
+	b.AppendBytes(socks5Version, command, 0x00 /* reserved */)
+	appendAddress(b, request.Address, request.Port)
+	fmt.Println("c e")
+	if _, err := writer.Write(b.Bytes()); err != nil {
+		return nil, err
+	}
+
+	b.Clear()
+	fmt.Println("c f")
+	if err := b.AppendSupplier(buf.ReadFullFrom(reader, 4)); err != nil {
+		return nil, err
+	}
+
+	resp := b.Byte(1)
+	if resp != 0x00 {
+		return nil, errors.New("Socks|Client: Server rejects request: ", resp)
+	}
+
+	addrType := b.Byte(3)
+
+	b.Clear()
+
+	var address v2net.Address
+	switch addrType {
+	case addrTypeIPv4:
+		if err := b.AppendSupplier(buf.ReadFullFrom(reader, 4)); err != nil {
+			return nil, err
+		}
+		address = v2net.IPAddress(b.Bytes())
+	case addrTypeIPv6:
+		if err := b.AppendSupplier(buf.ReadFullFrom(reader, 16)); err != nil {
+			return nil, err
+		}
+		address = v2net.IPAddress(b.Bytes())
+	case addrTypeDomain:
+		if err := b.AppendSupplier(buf.ReadFullFrom(reader, 1)); err != nil {
+			return nil, err
+		}
+		domainLength := int(b.Byte(0))
+		if err := b.AppendSupplier(buf.ReadFullFrom(reader, domainLength)); err != nil {
+			return nil, err
+		}
+		address = v2net.DomainAddress(string(b.BytesFrom(-domainLength)))
+	default:
+		return nil, errors.New("Socks|Server: Unknown address type: ", addrType)
+	}
+
+	if err := b.AppendSupplier(buf.ReadFullFrom(reader, 2)); err != nil {
+		return nil, err
+	}
+	port := v2net.PortFromBytes(b.BytesFrom(-2))
+
+	if request.Command == protocol.RequestCommandUDP {
+		udpRequest := &protocol.RequestHeader{
+			Version: socks5Version,
+			Command: protocol.RequestCommandUDP,
+			Address: address,
+			Port:    port,
+		}
+		return udpRequest, nil
+	}
+
+	return nil, nil
 }
