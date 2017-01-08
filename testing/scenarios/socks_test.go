@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	xproxy "golang.org/x/net/proxy"
+	socks4 "h12.me/socks"
 	"v2ray.com/core"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -203,7 +204,7 @@ func TestSocksBridageUDP(t *testing.T) {
 	CloseAllServers()
 }
 
-func TestSocks5conformance(t *testing.T) {
+func TestSocksConformance(t *testing.T) {
 	assert := assert.On(t)
 
 	tcpServer := tcp.Server{
@@ -273,6 +274,40 @@ func TestSocks5conformance(t *testing.T) {
 		authDialer, err := xproxy.SOCKS5("tcp", v2net.TCPDestination(v2net.LocalHostIP, noAuthPort).NetAddr(), &xproxy.Auth{User: "Test Account", Password: "Test Password"}, xproxy.Direct)
 		assert.Error(err).IsNil()
 		conn, err := authDialer.Dial("tcp", dest.NetAddr())
+		assert.Error(err).IsNil()
+
+		payload := "test payload"
+		nBytes, err := conn.Write([]byte(payload))
+		assert.Error(err).IsNil()
+		assert.Int(nBytes).Equals(len(payload))
+
+		response := make([]byte, 1024)
+		nBytes, err = conn.Read(response)
+		assert.Error(err).IsNil()
+		assert.Bytes(response[:nBytes]).Equals(xor([]byte(payload)))
+		assert.Error(conn.Close()).IsNil()
+	}
+
+	{
+		dialer := socks4.DialSocksProxy(socks4.SOCKS4, v2net.TCPDestination(v2net.LocalHostIP, noAuthPort).NetAddr())
+		conn, err := dialer("tcp", dest.NetAddr())
+		assert.Error(err).IsNil()
+
+		payload := "test payload"
+		nBytes, err := conn.Write([]byte(payload))
+		assert.Error(err).IsNil()
+		assert.Int(nBytes).Equals(len(payload))
+
+		response := make([]byte, 1024)
+		nBytes, err = conn.Read(response)
+		assert.Error(err).IsNil()
+		assert.Bytes(response[:nBytes]).Equals(xor([]byte(payload)))
+		assert.Error(conn.Close()).IsNil()
+	}
+
+	{
+		dialer := socks4.DialSocksProxy(socks4.SOCKS4A, v2net.TCPDestination(v2net.LocalHostIP, noAuthPort).NetAddr())
+		conn, err := dialer("tcp", v2net.TCPDestination(v2net.LocalHostDomain, tcpServer.Port).NetAddr())
 		assert.Error(err).IsNil()
 
 		payload := "test payload"
