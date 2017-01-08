@@ -101,7 +101,7 @@ func (v *Server) handleConnection(connection internet.Connection) {
 
 	connection.SetReusable(false)
 
-	timedReader := v2net.NewTimeOutReader(v.config.Timeout, connection)
+	timedReader := v2net.NewTimeOutReader(16 /* seconds, for handshake */, connection)
 	reader := bufio.NewReader(timedReader)
 
 	session := &ServerSession{
@@ -128,6 +128,7 @@ func (v *Server) handleConnection(connection internet.Connection) {
 		log.Info("Socks|Server: TCP Connect request to ", dest)
 		log.Access(clientAddr, dest, log.AccessAccepted, "")
 
+		timedReader.SetTimeOut(v.config.Timeout)
 		v.transport(reader, connection, session)
 		return
 	}
