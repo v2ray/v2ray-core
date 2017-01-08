@@ -4,7 +4,6 @@ import (
 	"net"
 	"testing"
 
-	socks1 "h12.me/socks"
 	"v2ray.com/core"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -94,56 +93,6 @@ func TestSocksBridgeTCP(t *testing.T) {
 		IP:   []byte{127, 0, 0, 1},
 		Port: int(clientPort),
 	})
-	assert.Error(err).IsNil()
-
-	payload := "test payload"
-	nBytes, err := conn.Write([]byte(payload))
-	assert.Error(err).IsNil()
-	assert.Int(nBytes).Equals(len(payload))
-
-	response := make([]byte, 1024)
-	nBytes, err = conn.Read(response)
-	assert.Error(err).IsNil()
-	assert.Bytes(response[:nBytes]).Equals(xor([]byte(payload)))
-	assert.Error(conn.Close()).IsNil()
-
-	CloseAllServers()
-}
-
-func TestSocks4(t *testing.T) {
-	assert := assert.On(t)
-
-	tcpServer := tcp.Server{
-		MsgProcessor: xor,
-	}
-	dest, err := tcpServer.Start()
-	assert.Error(err).IsNil()
-	defer tcpServer.Close()
-
-	serverPort := pickPort()
-	serverConfig := &core.Config{
-		Inbound: []*core.InboundConnectionConfig{
-			{
-				PortRange: v2net.SinglePortRange(serverPort),
-				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
-				Settings: serial.ToTypedMessage(&socks.ServerConfig{
-					AuthType:   socks.AuthType_NO_AUTH,
-					Address:    v2net.NewIPOrDomain(v2net.LocalHostIP),
-					UdpEnabled: false,
-				}),
-			},
-		},
-		Outbound: []*core.OutboundConnectionConfig{
-			{
-				Settings: serial.ToTypedMessage(&freedom.Config{}),
-			},
-		},
-	}
-
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-
-	dialer := socks1.DialSocksProxy(socks1.SOCKS4, v2net.TCPDestination(v2net.LocalHostIP, serverPort).NetAddr())
-	conn, err := dialer("tcp", dest.NetAddr())
 	assert.Error(err).IsNil()
 
 	payload := "test payload"
