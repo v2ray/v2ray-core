@@ -73,12 +73,12 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 			request.Address = address
 			request.Port = port
 			request.Version = socks4Version
-			if err := writeSocks4Response(writer, socks4RequestGranted, address, port); err != nil {
+			if err := writeSocks4Response(writer, socks4RequestGranted, v2net.AnyIP, v2net.Port(0)); err != nil {
 				return nil, err
 			}
 			return request, nil
 		default:
-			writeSocks4Response(writer, socks4RequestRejected, address, port)
+			writeSocks4Response(writer, socks4RequestRejected, v2net.AnyIP, v2net.Port(0))
 			return nil, errors.New("Socks|Server: Unsupported command: ", buffer.Byte(1))
 		}
 	}

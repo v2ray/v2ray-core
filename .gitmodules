@@ -1,0 +1,3 @@
+[submodule "vendor/h12.me/socks"]
+	path = vendor/h12.me/socks
+	url = https://github.com/h12w/socks

@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package v2ray.core.app.receiver;
+option csharp_namespace = "V2Ray.Core.App.Receiver";
+option go_package = "receiver";
+option java_package = "com.v2ray.core.app.receiver";
+option java_outer_classname = "ConfigProto";
+
+import "v2ray.com/core/common/serial/typed_message.proto";
+import "v2ray.com/core/common/net/address.proto";
+import "v2ray.com/core/common/net/port.proto";
+import "v2ray.com/core/transport/internet/config.proto";
+
+message AllocationStrategy {
+  enum Type {
+    // Always allocate all connection handlers.
+    Always = 0;
+
+    // Randomly allocate specific range of handlers.
+    Random = 1;
+
+    // External. Not supported yet.
+    External = 2;
+  }
+
+  Type type = 1;
+
+  message AllocationStrategyConcurrency {
+    uint32 value = 1;
+  }
+
+  // Number of handlers (ports) running in parallel.
+  // Default value is 3 if unset.
+  AllocationStrategyConcurrency concurrency = 2;
+
+
+  message AllocationStrategyRefresh {
+    uint32 value = 1;
+  }
+
+  // Number of minutes before a handler is regenerated.
+  // Default value is 5 if unset.
+  AllocationStrategyRefresh refresh = 3;
+}
+
+message StreamReceiverConfig {
+  v2ray.core.common.net.PortRange port_range = 1;
+  v2ray.core.common.net.IPOrDomain listen = 2;
+  AllocationStrategy allocation_strategy = 3;
+  v2ray.core.transport.internet.StreamConfig stream_settings = 4;
+}
+
+message DatagramReceiverConfig {
+  v2ray.core.common.net.PortRange port_range = 1;
+  v2ray.core.common.net.IPOrDomain listen = 2;
+  AllocationStrategy allocation_strategy = 3;
+}
+
+message PerProxyConfig {
+  string tag = 1;
+  repeated v2ray.core.common.serial.TypedMessage settings = 2;
+}
+
+message Config {
+  repeated PerProxyConfig settings = 1;
+}
