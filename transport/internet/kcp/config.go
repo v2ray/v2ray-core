@@ -7,52 +7,52 @@ import (
 	"v2ray.com/core/transport/internet"
 )
 
-// GetValue returns the value of MTU settings.
-func (v *MTU) GetValue() uint32 {
-	if v == nil {
+// GetMTUValue returns the value of MTU settings.
+func (v *Config) GetMTUValue() uint32 {
+	if v == nil || v.Mtu == nil {
 		return 1350
 	}
-	return v.Value
+	return v.Mtu.Value
 }
 
-// GetValue returns the value of TTI settings.
-func (v *TTI) GetValue() uint32 {
-	if v == nil {
+// GetTTIValue returns the value of TTI settings.
+func (v *Config) GetTTIValue() uint32 {
+	if v == nil || v.Tti == nil {
 		return 50
 	}
-	return v.Value
+	return v.Tti.Value
 }
 
-// GetValue returns the value of UplinkCapacity settings.
-func (v *UplinkCapacity) GetValue() uint32 {
-	if v == nil {
+// GetUplinkCapacityValue returns the value of UplinkCapacity settings.
+func (v *Config) GetUplinkCapacityValue() uint32 {
+	if v == nil || v.UplinkCapacity == nil {
 		return 5
 	}
-	return v.Value
+	return v.UplinkCapacity.Value
 }
 
-// GetValue returns the value of DownlinkCapacity settings.
-func (v *DownlinkCapacity) GetValue() uint32 {
-	if v == nil {
+// GetDownlinkCapacityValue returns the value of DownlinkCapacity settings.
+func (v *Config) GetDownlinkCapacityValue() uint32 {
+	if v == nil || v.DownlinkCapacity == nil {
 		return 20
 	}
-	return v.Value
+	return v.DownlinkCapacity.Value
 }
 
-// GetSize returns the size of WriterBuffer in bytes.
-func (v *WriteBuffer) GetSize() uint32 {
-	if v == nil {
+// GetWriteBufferSize returns the size of WriterBuffer in bytes.
+func (v *Config) GetWriteBufferSize() uint32 {
+	if v == nil || v.WriteBuffer == nil {
 		return 2 * 1024 * 1024
 	}
-	return v.Size
+	return v.WriteBuffer.Size
 }
 
-// GetSize returns the size of ReadBuffer in bytes.
-func (v *ReadBuffer) GetSize() uint32 {
-	if v == nil {
+// GetReadBufferSize returns the size of ReadBuffer in bytes.
+func (v *Config) GetReadBufferSize() uint32 {
+	if v == nil || v.ReadBuffer == nil {
 		return 2 * 1024 * 1024
 	}
-	return v.Size
+	return v.ReadBuffer.Size
 }
 
 // GetSecurity returns the security settings.
@@ -73,7 +73,7 @@ func (v *Config) GetPackerHeader() (internet.PacketHeader, error) {
 }
 
 func (v *Config) GetSendingInFlightSize() uint32 {
-	size := v.UplinkCapacity.GetValue() * 1024 * 1024 / v.Mtu.GetValue() / (1000 / v.Tti.GetValue())
+	size := v.GetUplinkCapacityValue() * 1024 * 1024 / v.GetMTUValue() / (1000 / v.GetTTIValue())
 	if size < 8 {
 		size = 8
 	}
@@ -81,11 +81,11 @@ func (v *Config) GetSendingInFlightSize() uint32 {
 }
 
 func (v *Config) GetSendingBufferSize() uint32 {
-	return v.WriteBuffer.GetSize() / v.Mtu.GetValue()
+	return v.GetWriteBufferSize() / v.GetMTUValue()
 }
 
 func (v *Config) GetReceivingInFlightSize() uint32 {
-	size := v.DownlinkCapacity.GetValue() * 1024 * 1024 / v.Mtu.GetValue() / (1000 / v.Tti.GetValue())
+	size := v.GetDownlinkCapacityValue() * 1024 * 1024 / v.GetMTUValue() / (1000 / v.GetTTIValue())
 	if size < 8 {
 		size = 8
 	}
@@ -93,14 +93,14 @@ func (v *Config) GetReceivingInFlightSize() uint32 {
 }
 
 func (v *Config) GetReceivingBufferSize() uint32 {
-	return v.ReadBuffer.GetSize() / v.Mtu.GetValue()
+	return v.GetReadBufferSize() / v.GetMTUValue()
 }
 
-func (o *ConnectionReuse) IsEnabled() bool {
-	if o == nil {
+func (v *Config) IsConnectionReuse() bool {
+	if v == nil || v.ConnectionReuse == nil {
 		return true
 	}
-	return o.Enable
+	return v.ConnectionReuse.Enable
 }
 
 func init() {

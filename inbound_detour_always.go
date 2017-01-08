@@ -45,7 +45,7 @@ func NewInboundDetourHandlerAlways(space app.Space, config *InboundConnectionCon
 
 func (v *InboundDetourHandlerAlways) GetConnectionHandler() (proxy.InboundHandler, int) {
 	ich := v.ich[dice.Roll(len(v.ich))]
-	return ich, int(v.config.GetAllocationStrategyValue().Refresh.GetValue())
+	return ich, int(v.config.GetAllocationStrategyValue().GetRefreshValue())
 }
 
 func (v *InboundDetourHandlerAlways) Close() {

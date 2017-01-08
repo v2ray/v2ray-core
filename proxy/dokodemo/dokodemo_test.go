@@ -6,9 +6,9 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
-	dispatchers "v2ray.com/core/app/dispatcher/impl"
+	_ "v2ray.com/core/app/dispatcher/impl"
 	"v2ray.com/core/app/proxyman"
-	"v2ray.com/core/app/proxyman/outbound"
+	_ "v2ray.com/core/app/proxyman/outbound"
 	"v2ray.com/core/common/dice"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
@@ -18,6 +18,7 @@ import (
 	"v2ray.com/core/testing/servers/tcp"
 	"v2ray.com/core/testing/servers/udp"
 	"v2ray.com/core/transport/internet"
+	_ "v2ray.com/core/transport/internet/tcp"
 )
 
 func TestDokodemoTCP(t *testing.T) {
@@ -37,19 +38,20 @@ func TestDokodemoTCP(t *testing.T) {
 	defer tcpServer.Close()
 
 	space := app.NewSpace()
-	space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(space))
-	ohm := outbound.New()
+	space.AddApp(new(dispatcher.Config))
+	space.AddApp(new(proxyman.OutboundConfig))
+
+	ohm := proxyman.OutboundHandlerManagerFromSpace(space)
 	ohm.SetDefaultHandler(
-		freedom.NewFreedomConnection(
+		freedom.New(
 			&freedom.Config{},
 			space,
 			&proxy.OutboundHandlerMeta{
 				Address: v2net.LocalHostIP,
 				StreamSettings: &internet.StreamConfig{
-					Network: v2net.Network_RawTCP,
+					Network: v2net.Network_TCP,
 				},
 			}))
-	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, ohm)
 
 	data2Send := "Data to be sent to remote."
 
@@ -63,7 +65,7 @@ func TestDokodemoTCP(t *testing.T) {
 		Address: v2net.LocalHostIP,
 		Port:    port,
 		StreamSettings: &internet.StreamConfig{
-			Network: v2net.Network_RawTCP,
+			Network: v2net.Network_TCP,
 		}})
 	defer dokodemo.Close()
 
@@ -108,18 +110,19 @@ func TestDokodemoUDP(t *testing.T) {
 	defer udpServer.Close()
 
 	space := app.NewSpace()
-	space.BindApp(dispatcher.APP_ID, dispatchers.NewDefaultDispatcher(space))
-	ohm := outbound.New()
+	space.AddApp(new(dispatcher.Config))
+	space.AddApp(new(proxyman.OutboundConfig))
+
+	ohm := proxyman.OutboundHandlerManagerFromSpace(space)
 	ohm.SetDefaultHandler(
-		freedom.NewFreedomConnection(
+		freedom.New(
 			&freedom.Config{},
 			space,
 			&proxy.OutboundHandlerMeta{
 				Address: v2net.AnyIP,
 				StreamSettings: &internet.StreamConfig{
-					Network: v2net.Network_RawTCP,
+					Network: v2net.Network_TCP,
 				}}))
-	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, ohm)
 
 	data2Send := "Data to be sent to remote."
 
@@ -133,7 +136,7 @@ func TestDokodemoUDP(t *testing.T) {
 		Address: v2net.LocalHostIP,
 		Port:    port,
 		StreamSettings: &internet.StreamConfig{
-			Network: v2net.Network_RawTCP,
+			Network: v2net.Network_TCP,
 		}})
 	defer dokodemo.Close()
 

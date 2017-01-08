@@ -3,6 +3,8 @@ package tcp
 import (
 	"crypto/tls"
 	"net"
+
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -26,14 +28,14 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 	}
 	tcpSettings := networkSettings.(*Config)
 
-	id := internal.NewConnectionId(src, dest)
+	id := internal.NewConnectionID(src, dest)
 	var conn net.Conn
-	if dest.Network == v2net.Network_TCP && tcpSettings.ConnectionReuse.IsEnabled() {
+	if dest.Network == v2net.Network_TCP && tcpSettings.IsConnectionReuse() {
 		conn = globalCache.Get(id)
 	}
 	if conn == nil {
 		var err error
-		conn, err = internet.DialToDest(src, dest)
+		conn, err = internet.DialSystem(src, dest)
 		if err != nil {
 			return nil, err
 		}
@@ -64,22 +66,9 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 			conn = auth.Client(conn)
 		}
 	}
-	return NewConnection(id, conn, globalCache, tcpSettings), nil
-}
-
-func DialRaw(src v2net.Address, dest v2net.Destination, options internet.DialerOptions) (internet.Connection, error) {
-	log.Info("Internet|TCP: Dailing Raw TCP to ", dest)
-	conn, err := internet.DialToDest(src, dest)
-	if err != nil {
-		return nil, err
-	}
-	// TODO: handle dialer options
-	return &RawConnection{
-		TCPConn: *conn.(*net.TCPConn),
-	}, nil
+	return internal.NewConnection(id, conn, globalCache, internal.ReuseConnection(tcpSettings.IsConnectionReuse())), nil
 }
 
 func init() {
-	internet.TCPDialer = Dial
-	internet.RawTCPDialer = DialRaw
+	common.Must(internet.RegisterNetworkDialer(v2net.Network_TCP, Dial))
 }

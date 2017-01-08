@@ -15,7 +15,7 @@ func TestBufferedWriter(t *testing.T) {
 	content := buf.New()
 
 	writer := NewWriter(content)
-	assert.Bool(writer.Cached()).IsTrue()
+	assert.Bool(writer.IsBuffered()).IsTrue()
 
 	payload := make([]byte, 16)
 
@@ -25,7 +25,7 @@ func TestBufferedWriter(t *testing.T) {
 
 	assert.Bool(content.IsEmpty()).IsTrue()
 
-	writer.SetCached(false)
+	writer.SetBuffered(false)
 	assert.Int(content.Len()).Equals(16)
 }
 
@@ -35,19 +35,19 @@ func TestBufferedWriterLargePayload(t *testing.T) {
 	content := buf.NewLocal(128 * 1024)
 
 	writer := NewWriter(content)
-	assert.Bool(writer.Cached()).IsTrue()
+	assert.Bool(writer.IsBuffered()).IsTrue()
 
 	payload := make([]byte, 64*1024)
 	rand.Read(payload)
 
-	nBytes, err := writer.Write(payload[:1024])
-	assert.Int(nBytes).Equals(1024)
+	nBytes, err := writer.Write(payload[:512])
+	assert.Int(nBytes).Equals(512)
 	assert.Error(err).IsNil()
 
 	assert.Bool(content.IsEmpty()).IsTrue()
 
-	nBytes, err = writer.Write(payload[1024:])
+	nBytes, err = writer.Write(payload[512:])
 	assert.Error(err).IsNil()
-	assert.Int(nBytes).Equals(63 * 1024)
+	assert.Int(nBytes).Equals(64*1024 - 512)
 	assert.Bytes(content.Bytes()).Equals(payload)
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"strings"
+
 	"v2ray.com/core"
 	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
@@ -25,6 +26,7 @@ var (
 		"freedom":     func() interface{} { return new(FreedomConfig) },
 		"shadowsocks": func() interface{} { return new(ShadowsocksClientConfig) },
 		"vmess":       func() interface{} { return new(VMessOutboundConfig) },
+		"socks":       func() interface{} { return new(SocksClientConfig) },
 	}, "protocol", "settings")
 )
 

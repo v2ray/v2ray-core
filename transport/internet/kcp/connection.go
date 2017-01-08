@@ -39,10 +39,6 @@ const (
 	StateTerminated      State = 5
 )
 
-const (
-	headerSize uint32 = 2
-)
-
 func nowMillisec() int64 {
 	now := time.Now()
 	return now.Unix()*1000 + int64(now.Nanosecond()/1000000)
@@ -160,7 +156,7 @@ func (v *Updater) Run() {
 
 type SystemConnection interface {
 	net.Conn
-	Id() internal.ConnectionId
+	Id() internal.ConnectionID
 	Reset(func([]Segment))
 	Overhead() int
 }
@@ -209,10 +205,10 @@ func NewConnection(conv uint16, sysConn SystemConnection, recycler internal.Conn
 		dataOutput:   make(chan bool, 1),
 		Config:       config,
 		output:       NewSegmentWriter(sysConn),
-		mss:          config.GetMtu().GetValue() - uint32(sysConn.Overhead()) - DataSegmentOverhead,
+		mss:          config.GetMTUValue() - uint32(sysConn.Overhead()) - DataSegmentOverhead,
 		roundTrip: &RoundTripInfo{
 			rto:    100,
-			minRtt: config.Tti.GetValue(),
+			minRtt: config.GetTTIValue(),
 		},
 	}
 	sysConn.Reset(conn.Input)
@@ -227,7 +223,7 @@ func NewConnection(conv uint16, sysConn SystemConnection, recycler internal.Conn
 		return conn.State() == StateTerminated
 	}
 	conn.dataUpdater = NewUpdater(
-		config.Tti.GetValue(),
+		config.GetTTIValue(),
 		predicate.Not(isTerminating).And(predicate.Any(conn.sendingWorker.UpdateNecessary, conn.receivingWorker.UpdateNecessary)),
 		isTerminating,
 		conn.updateTask)
@@ -278,7 +274,7 @@ func (v *Connection) Read(b []byte) (int, error) {
 			return 0, io.EOF
 		}
 
-		duration := time.Duration(time.Minute)
+		duration := time.Minute
 		if !v.rd.IsZero() {
 			duration = v.rd.Sub(time.Now())
 			if duration < 0 {
@@ -314,8 +310,8 @@ func (v *Connection) Write(b []byte) (int, error) {
 			}
 		}
 
-		duration := time.Duration(time.Minute)
-		if !v.rd.IsZero() {
+		duration := time.Minute
+		if !v.wd.IsZero() {
 			duration = v.wd.Sub(time.Now())
 			if duration < 0 {
 				return totalWritten, ErrIOTimeout
@@ -439,7 +435,7 @@ func (v *Connection) updateTask() {
 }
 
 func (v *Connection) Reusable() bool {
-	return v.Config.ConnectionReuse.IsEnabled() && v.reusable
+	return v.Config.IsConnectionReuse() && v.reusable
 }
 
 func (v *Connection) SetReusable(b bool) {
@@ -456,7 +452,7 @@ func (v *Connection) Terminate() {
 	v.OnDataInput()
 	v.OnDataOutput()
 
-	if v.Config.ConnectionReuse.IsEnabled() && v.reusable {
+	if v.Config.IsConnectionReuse() && v.reusable {
 		v.connRecycler.Put(v.conn.Id(), v.conn)
 	} else {
 		v.conn.Close()
@@ -516,6 +512,10 @@ func (v *Connection) Input(segments []Segment) {
 				} else if state == StateTerminating {
 					v.SetState(StateTerminated)
 				}
+			}
+			if seg.Option == SegmentOptionClose || seg.Command() == CommandTerminate {
+				v.OnDataInput()
+				v.OnDataOutput()
 			}
 			v.sendingWorker.ProcessReceivingNext(seg.ReceivinNext)
 			v.receivingWorker.ProcessSendingNext(seg.SendingNext)

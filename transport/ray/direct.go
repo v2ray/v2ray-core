@@ -1,8 +1,9 @@
 package ray
 
 import (
+	"errors"
 	"io"
-	"sync"
+
 	"time"
 
 	"v2ray.com/core/common/buf"
@@ -11,6 +12,8 @@ import (
 const (
 	bufferSize = 512
 )
+
+var ErrReadTimeout = errors.New("Ray: timeout.")
 
 // NewRay creates a new Ray for direct traffic transport.
 func NewRay() Ray {
@@ -41,85 +44,116 @@ func (v *directRay) InboundOutput() InputStream {
 	return v.Output
 }
 
+func (v *directRay) AddInspector(inspector Inspector) {
+	if inspector == nil {
+		return
+	}
+	v.Input.inspector.AddInspector(inspector)
+	v.Output.inspector.AddInspector(inspector)
+}
+
 type Stream struct {
-	access sync.RWMutex
-	closed bool
-	buffer chan *buf.Buffer
+	buffer    chan *buf.Buffer
+	srcClose  chan bool
+	destClose chan bool
+	inspector *InspectorChain
 }
 
 func NewStream() *Stream {
 	return &Stream{
-		buffer: make(chan *buf.Buffer, bufferSize),
+		buffer:    make(chan *buf.Buffer, bufferSize),
+		srcClose:  make(chan bool),
+		destClose: make(chan bool),
+		inspector: &InspectorChain{},
 	}
 }
 
 func (v *Stream) Read() (*buf.Buffer, error) {
-	if v.buffer == nil {
-		return nil, io.EOF
-	}
-	v.access.RLock()
-	if v.buffer == nil {
-		v.access.RUnlock()
-		return nil, io.EOF
-	}
-	channel := v.buffer
-	v.access.RUnlock()
-	result, open := <-channel
-	if !open {
-		return nil, io.EOF
-	}
-	return result, nil
-}
-
-func (v *Stream) Write(data *buf.Buffer) error {
-	for !v.closed {
-		err := v.TryWriteOnce(data)
-		if err != io.ErrNoProgress {
-			return err
+	select {
+	case <-v.destClose:
+		return nil, io.ErrClosedPipe
+	case b := <-v.buffer:
+		return b, nil
+	default:
+		select {
+		case b := <-v.buffer:
+			return b, nil
+		case <-v.srcClose:
+			return nil, io.EOF
+		case <-v.destClose:
+			return nil, io.ErrClosedPipe
 		}
 	}
-	return io.ErrClosedPipe
 }
 
-func (v *Stream) TryWriteOnce(data *buf.Buffer) error {
-	v.access.RLock()
-	defer v.access.RUnlock()
-	if v.closed {
-		return io.ErrClosedPipe
-	}
+func (v *Stream) ReadTimeout(timeout time.Duration) (*buf.Buffer, error) {
 	select {
-	case v.buffer <- data:
-		return nil
-	case <-time.After(2 * time.Second):
-		return io.ErrNoProgress
+	case <-v.destClose:
+		return nil, io.ErrClosedPipe
+	case b := <-v.buffer:
+		return b, nil
+	default:
+		select {
+		case b := <-v.buffer:
+			return b, nil
+		case <-v.srcClose:
+			return nil, io.EOF
+		case <-v.destClose:
+			return nil, io.ErrClosedPipe
+		case <-time.After(timeout):
+			return nil, ErrReadTimeout
+		}
+	}
+}
+
+func (v *Stream) Write(data *buf.Buffer) (err error) {
+	if data.IsEmpty() {
+		return
+	}
+
+	select {
+	case <-v.destClose:
+		return io.ErrClosedPipe
+	case <-v.srcClose:
+		return io.ErrClosedPipe
+	default:
+		select {
+		case <-v.destClose:
+			return io.ErrClosedPipe
+		case <-v.srcClose:
+			return io.ErrClosedPipe
+		case v.buffer <- data:
+			v.inspector.Input(data)
+			return nil
+		}
 	}
 }
 
 func (v *Stream) Close() {
-	if v.closed {
-		return
-	}
-	v.access.Lock()
-	defer v.access.Unlock()
-	if v.closed {
-		return
-	}
-	v.closed = true
-	close(v.buffer)
+	defer swallowPanic()
+
+	close(v.srcClose)
 }
 
-func (v *Stream) Release() {
-	if v.buffer == nil {
-		return
-	}
+func (v *Stream) ForceClose() {
+	defer swallowPanic()
+
+	close(v.destClose)
 	v.Close()
-	v.access.Lock()
-	defer v.access.Unlock()
-	if v.buffer == nil {
-		return
+
+	n := len(v.buffer)
+	for i := 0; i < n; i++ {
+		select {
+		case b := <-v.buffer:
+			b.Release()
+		default:
+			return
+		}
 	}
-	for data := range v.buffer {
-		data.Release()
-	}
-	v.buffer = nil
+}
+
+func (v *Stream) Release() {}
+
+func swallowPanic() {
+	recover()
 }

@@ -17,9 +17,7 @@ type LogWriter interface {
 type NoOpLogWriter struct {
 }
 
-func (v *NoOpLogWriter) Log(entry LogEntry) {
-	entry.Release()
-}
+func (v *NoOpLogWriter) Log(entry LogEntry) {}
 
 func (v *NoOpLogWriter) Close() {
 }
@@ -38,7 +36,6 @@ func NewStdOutLogWriter() LogWriter {
 
 func (v *StdOutLogWriter) Log(log LogEntry) {
 	v.logger.Print(log.String() + platform.LineSeparator())
-	log.Release()
 }
 
 func (v *StdOutLogWriter) Close() {
@@ -58,7 +55,6 @@ func (v *FileLogWriter) Log(log LogEntry) {
 	default:
 		// We don't expect this to happen, but don't want to block main thread as well.
 	}
-	log.Release()
 }
 
 func (v *FileLogWriter) run() {

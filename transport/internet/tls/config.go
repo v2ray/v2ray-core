@@ -26,6 +26,7 @@ func (v *Config) BuildCertificates() []tls.Certificate {
 func (v *Config) GetTLSConfig() *tls.Config {
 	config := &tls.Config{
 		ClientSessionCache: globalSessionCache,
+		NextProtos:         []string{"http/1.1"},
 	}
 	if v == nil {
 		return config

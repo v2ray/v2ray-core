@@ -1,16 +1,19 @@
 package outbound
 
 import (
-	"sync"
+	"time"
 
 	"v2ray.com/core/app"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/encoding"
@@ -26,9 +29,9 @@ type VMessOutboundHandler struct {
 }
 
 // Dispatch implements OutboundHandler.Dispatch().
-func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *buf.Buffer, ray ray.OutboundRay) {
-	defer ray.OutboundInput().Release()
-	defer ray.OutboundOutput().Close()
+func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, outboundRay ray.OutboundRay) {
+	defer outboundRay.OutboundInput().ForceClose()
+	defer outboundRay.OutboundOutput().Close()
 
 	var rec *protocol.ServerSpec
 	var conn internet.Connection
@@ -76,76 +79,66 @@ func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, payload *buf.B
 		request.Option.Set(protocol.RequestOptionConnectionReuse)
 	}
 
-	input := ray.OutboundInput()
-	output := ray.OutboundOutput()
-
-	var requestFinish, responseFinish sync.Mutex
-	requestFinish.Lock()
-	responseFinish.Lock()
+	input := outboundRay.OutboundInput()
+	output := outboundRay.OutboundOutput()
 
 	session := encoding.NewClientSession(protocol.DefaultIDHash)
 
-	go v.handleRequest(session, conn, request, payload, input, &requestFinish)
-	go v.handleResponse(session, conn, request, rec.Destination(), output, &responseFinish)
+	requestDone := signal.ExecuteAsync(func() error {
+		defer input.ForceClose()
 
-	requestFinish.Lock()
-	responseFinish.Lock()
-	return
-}
+		writer := bufio.NewWriter(conn)
+		session.EncodeRequestHeader(request, writer)
 
-func (v *VMessOutboundHandler) handleRequest(session *encoding.ClientSession, conn internet.Connection, request *protocol.RequestHeader, payload *buf.Buffer, input buf.Reader, finish *sync.Mutex) {
-	defer finish.Unlock()
-
-	writer := bufio.NewWriter(conn)
-	defer writer.Release()
-	session.EncodeRequestHeader(request, writer)
-
-	bodyWriter := session.EncodeRequestBody(request, writer)
-	defer bodyWriter.Release()
-
-	if !payload.IsEmpty() {
-		if err := bodyWriter.Write(payload); err != nil {
-			log.Info("VMess|Outbound: Failed to write payload. Disabling connection reuse.", err)
-			conn.SetReusable(false)
+		bodyWriter := session.EncodeRequestBody(request, writer)
+		firstPayload, err := input.ReadTimeout(time.Millisecond * 500)
+		if err != nil && err != ray.ErrReadTimeout {
+			return errors.Base(err).Message("VMess|Outbound: Failed to get first payload.")
 		}
-		payload.Release()
-	}
-	writer.SetCached(false)
+		if !firstPayload.IsEmpty() {
+			if err := bodyWriter.Write(firstPayload); err != nil {
+				return errors.Base(err).Message("VMess|Outbound: Failed to write first payload.")
+			}
+			firstPayload.Release()
+		}
 
-	if err := buf.PipeUntilEOF(input, bodyWriter); err != nil {
-		conn.SetReusable(false)
-	}
+		writer.SetBuffered(false)
 
-	if request.Option.Has(protocol.RequestOptionChunkStream) {
-		err := bodyWriter.Write(buf.NewLocal(8))
+		if err := buf.PipeUntilEOF(input, bodyWriter); err != nil {
+			return err
+		}
+
+		if request.Option.Has(protocol.RequestOptionChunkStream) {
+			if err := bodyWriter.Write(buf.NewLocal(8)); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	responseDone := signal.ExecuteAsync(func() error {
+		defer output.Close()
+
+		reader := bufio.NewReader(conn)
+		header, err := session.DecodeResponseHeader(reader)
 		if err != nil {
-			conn.SetReusable(false)
+			return err
 		}
-	}
-	return
-}
+		v.handleCommand(rec.Destination(), header.Command)
 
-func (v *VMessOutboundHandler) handleResponse(session *encoding.ClientSession, conn internet.Connection, request *protocol.RequestHeader, dest v2net.Destination, output buf.Writer, finish *sync.Mutex) {
-	defer finish.Unlock()
+		conn.SetReusable(header.Option.Has(protocol.ResponseOptionConnectionReuse))
 
-	reader := bufio.NewReader(conn)
-	defer reader.Release()
+		reader.SetBuffered(false)
+		bodyReader := session.DecodeResponseBody(request, reader)
+		if err := buf.PipeUntilEOF(bodyReader, output); err != nil {
+			return err
+		}
 
-	header, err := session.DecodeResponseHeader(reader)
-	if err != nil {
-		conn.SetReusable(false)
-		log.Warning("VMess|Outbound: Failed to read response from ", request.Destination(), ": ", err)
-		return
-	}
-	v.handleCommand(dest, header.Command)
+		return nil
+	})
 
-	conn.SetReusable(header.Option.Has(protocol.ResponseOptionConnectionReuse))
-
-	reader.SetCached(false)
-	bodyReader := session.DecodeResponseBody(request, reader)
-	defer bodyReader.Release()
-
-	if err := buf.PipeUntilEOF(bodyReader, output); err != nil {
+	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+		log.Info("VMess|Outbound: Connection ending with ", err)
 		conn.SetReusable(false)
 	}
 
@@ -178,5 +171,5 @@ func (v *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.Out
 }
 
 func init() {
-	proxy.MustRegisterOutboundHandlerCreator(serial.GetMessageType(new(Config)), new(Factory))
+	common.Must(proxy.RegisterOutboundHandlerCreator(serial.GetMessageType(new(Config)), new(Factory)))
 }

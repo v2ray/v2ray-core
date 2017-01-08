@@ -1,7 +1,6 @@
 package kcp
 
 import (
-	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/serial"
 )
@@ -27,7 +26,7 @@ const (
 )
 
 type Segment interface {
-	common.Releasable
+	Release()
 	Conversation() uint16
 	Command() Command
 	ByteSize() int
@@ -214,7 +213,7 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 		seg := NewDataSegment()
 		seg.Conv = conv
 		seg.Option = opt
-		if len(buf) < 16 {
+		if len(buf) < 15 {
 			return nil, nil
 		}
 		seg.Timestamp = serial.BytesToUint32(buf)

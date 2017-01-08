@@ -12,14 +12,15 @@ import (
 	"v2ray.com/core/transport/internet/kcp"
 	"v2ray.com/core/transport/internet/tcp"
 	"v2ray.com/core/transport/internet/tls"
-	"v2ray.com/core/transport/internet/ws"
+	"v2ray.com/core/transport/internet/websocket"
 )
 
 var (
 	kcpHeaderLoader = NewJSONConfigLoader(ConfigCreatorCache{
-		"none": func() interface{} { return new(NoOpAuthenticator) },
-		"srtp": func() interface{} { return new(SRTPAuthenticator) },
-		"utp":  func() interface{} { return new(UTPAuthenticator) },
+		"none":         func() interface{} { return new(NoOpAuthenticator) },
+		"srtp":         func() interface{} { return new(SRTPAuthenticator) },
+		"utp":          func() interface{} { return new(UTPAuthenticator) },
+		"wechat-video": func() interface{} { return new(WechatVideoAuthenticator) },
 	}, "type", "")
 
 	tcpHeaderLoader = NewJSONConfigLoader(ConfigCreatorCache{
@@ -129,11 +130,11 @@ type WebSocketConfig struct {
 }
 
 func (v *WebSocketConfig) Build() (*serial.TypedMessage, error) {
-	config := &ws.Config{
+	config := &websocket.Config{
 		Path: v.Path,
 	}
 	if v.ConnectionReuse != nil {
-		config.ConnectionReuse = &ws.ConnectionReuse{
+		config.ConnectionReuse = &websocket.ConnectionReuse{
 			Enable: *v.ConnectionReuse,
 		}
 	}
@@ -185,7 +186,7 @@ type StreamConfig struct {
 
 func (v *StreamConfig) Build() (*internet.StreamConfig, error) {
 	config := &internet.StreamConfig{
-		Network: v2net.Network_RawTCP,
+		Network: v2net.Network_TCP,
 	}
 	if v.Network != nil {
 		config.Network = (*v.Network).Build()

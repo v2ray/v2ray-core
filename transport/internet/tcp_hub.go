@@ -3,6 +3,7 @@ package internet
 import (
 	"net"
 	"sync"
+
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -12,11 +13,16 @@ import (
 var (
 	ErrClosedConnection = errors.New("Connection already closed.")
 
-	KCPListenFunc    ListenFunc
-	TCPListenFunc    ListenFunc
-	RawTCPListenFunc ListenFunc
-	WSListenFunc     ListenFunc
+	networkListenerCache = make(map[v2net.Network]ListenFunc)
 )
+
+func RegisterNetworkListener(network v2net.Network, listener ListenFunc) error {
+	if _, found := networkListenerCache[network]; found {
+		return errors.New("Internet|TCPHub: ", network, " listener already registered.")
+	}
+	networkListenerCache[network] = listener
+	return nil
+}
 
 type ListenFunc func(address v2net.Address, port v2net.Port, options ListenOptions) (Listener, error)
 type ListenOptions struct {
@@ -37,28 +43,16 @@ type TCPHub struct {
 }
 
 func ListenTCP(address v2net.Address, port v2net.Port, callback ConnectionHandler, settings *StreamConfig) (*TCPHub, error) {
-	var listener Listener
-	var err error
 	options := ListenOptions{
 		Stream: settings,
 	}
-	switch settings.Network {
-	case v2net.Network_TCP:
-		listener, err = TCPListenFunc(address, port, options)
-	case v2net.Network_KCP:
-		listener, err = KCPListenFunc(address, port, options)
-	case v2net.Network_WebSocket:
-		listener, err = WSListenFunc(address, port, options)
-	case v2net.Network_RawTCP:
-		listener, err = RawTCPListenFunc(address, port, options)
-	default:
-		log.Error("Internet|Listener: Unknown stream type: ", settings.Network)
-		err = ErrUnsupportedStreamType
+	listenFunc := networkListenerCache[settings.Network]
+	if listenFunc == nil {
+		return nil, errors.New("Internet|TCPHub: ", settings.Network, " listener not registered.")
 	}
-
+	listener, err := listenFunc(address, port, options)
 	if err != nil {
-		log.Warning("Internet|Listener: Failed to listen on ", address, ":", port)
-		return nil, err
+		return nil, errors.Base(err).Message("Interent|TCPHub: Failed to listen: ")
 	}
 
 	hub := &TCPHub{

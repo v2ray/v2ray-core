@@ -84,7 +84,7 @@ func TestUDPReaderWriter(t *testing.T) {
 	user := &protocol.User{
 		Account: serial.ToTypedMessage(&Account{
 			Password:   "test-password",
-			CipherType: CipherType_CHACHA20_IEFT,
+			CipherType: CipherType_CHACHA20_IETF,
 		}),
 	}
 	cache := buf.New()

@@ -5,6 +5,8 @@ import (
 	"net"
 	"sync"
 	"time"
+
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -89,7 +91,7 @@ func (v *TCPListener) Accept() (internet.Connection, error) {
 				return nil, connErr.err
 			}
 			conn := connErr.conn
-			return NewConnection(internal.ConnectionId{}, conn, v, v.config), nil
+			return internal.NewConnection(internal.ConnectionID{}, conn, v, internal.ReuseConnection(v.config.IsConnectionReuse())), nil
 		case <-time.After(time.Second * 2):
 		}
 	}
@@ -125,7 +127,7 @@ func (v *TCPListener) KeepAccepting() {
 	}
 }
 
-func (v *TCPListener) Put(id internal.ConnectionId, conn net.Conn) {
+func (v *TCPListener) Put(id internal.ConnectionID, conn net.Conn) {
 	v.Lock()
 	defer v.Unlock()
 	if !v.acccepting {
@@ -156,47 +158,6 @@ func (v *TCPListener) Close() error {
 	return nil
 }
 
-type RawTCPListener struct {
-	accepting bool
-	listener  *net.TCPListener
-}
-
-func (v *RawTCPListener) Accept() (internet.Connection, error) {
-	conn, err := v.listener.AcceptTCP()
-	if err != nil {
-		return nil, err
-	}
-	return &RawConnection{
-		TCPConn: *conn,
-	}, nil
-}
-
-func (v *RawTCPListener) Addr() net.Addr {
-	return v.listener.Addr()
-}
-
-func (v *RawTCPListener) Close() error {
-	v.accepting = false
-	v.listener.Close()
-	return nil
-}
-
-func ListenRawTCP(address v2net.Address, port v2net.Port, options internet.ListenOptions) (internet.Listener, error) {
-	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
-		IP:   address.IP(),
-		Port: int(port),
-	})
-	if err != nil {
-		return nil, err
-	}
-	// TODO: handle listen options
-	return &RawTCPListener{
-		accepting: true,
-		listener:  listener,
-	}, nil
-}
-
 func init() {
-	internet.TCPListenFunc = ListenTCP
-	internet.RawTCPListenFunc = ListenRawTCP
+	common.Must(internet.RegisterNetworkListener(v2net.Network_TCP, ListenTCP))
 }

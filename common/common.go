@@ -13,8 +13,9 @@ var (
 	ErrDuplicatedName   = errors.New("Duplicated name.")
 )
 
-// Releasable interface is for those types that can release its members.
-type Releasable interface {
-	// Release releases all references to accelerate garbage collection.
-	Release()
+// Must panics if err is not nil.
+func Must(err error) {
+	if err != nil {
+		panic(err)
+	}
 }

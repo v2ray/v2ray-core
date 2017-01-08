@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package v2ray.core.proxy.shadowsocks;
+option csharp_namespace = "V2Ray.Core.Proxy.Shadowsocks";
 option go_package = "shadowsocks";
 option java_package = "com.v2ray.core.proxy.shadowsocks";
 option java_outer_classname = "ConfigProto";
@@ -24,7 +25,7 @@ enum CipherType {
   AES_128_CFB = 1;
   AES_256_CFB = 2;
   CHACHA20 = 3;
-  CHACHA20_IEFT = 4;
+  CHACHA20_IETF = 4;
 }
 
 message ServerConfig {

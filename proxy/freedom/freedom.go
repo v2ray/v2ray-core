@@ -5,6 +5,7 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dns"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/errors"
@@ -12,31 +13,31 @@ import (
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/internet/tcp"
 	"v2ray.com/core/transport/ray"
 )
 
-type FreedomConnection struct {
+type Handler struct {
 	domainStrategy Config_DomainStrategy
 	timeout        uint32
 	dns            dns.Server
 	meta           *proxy.OutboundHandlerMeta
 }
 
-func NewFreedomConnection(config *Config, space app.Space, meta *proxy.OutboundHandlerMeta) *FreedomConnection {
-	f := &FreedomConnection{
+func New(config *Config, space app.Space, meta *proxy.OutboundHandlerMeta) *Handler {
+	f := &Handler{
 		domainStrategy: config.DomainStrategy,
 		timeout:        config.Timeout,
 		meta:           meta,
 	}
-	space.InitializeApplication(func() error {
+	space.OnInitialize(func() error {
 		if config.DomainStrategy == Config_USE_IP {
-			if !space.HasApp(dns.APP_ID) {
+			f.dns = dns.FromSpace(space)
+			if f.dns == nil {
 				return errors.New("Freedom: DNS server is not found in the space.")
 			}
-			f.dns = space.GetApp(dns.APP_ID).(dns.Server)
 		}
 		return nil
 	})
@@ -44,7 +45,7 @@ func NewFreedomConnection(config *Config, space app.Space, meta *proxy.OutboundH
 }
 
 // Private: Visible for testing.
-func (v *FreedomConnection) ResolveIP(destination v2net.Destination) v2net.Destination {
+func (v *Handler) ResolveIP(destination v2net.Destination) v2net.Destination {
 	if !destination.Address.Family().IsDomain() {
 		return destination
 	}
@@ -66,12 +67,13 @@ func (v *FreedomConnection) ResolveIP(destination v2net.Destination) v2net.Desti
 	return newDest
 }
 
-func (v *FreedomConnection) Dispatch(destination v2net.Destination, payload *buf.Buffer, ray ray.OutboundRay) {
+func (v *Handler) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 	log.Info("Freedom: Opening connection to ", destination)
 
-	defer payload.Release()
-	defer ray.OutboundInput().Release()
-	defer ray.OutboundOutput().Close()
+	input := ray.OutboundInput()
+	output := ray.OutboundOutput()
+	defer input.ForceClose()
+	defer output.Close()
 
 	var conn internet.Connection
 	if v.domainStrategy == Config_USE_IP && destination.Address.Family().IsDomain() {
@@ -91,24 +93,17 @@ func (v *FreedomConnection) Dispatch(destination v2net.Destination, payload *buf
 	}
 	defer conn.Close()
 
-	input := ray.OutboundInput()
-	output := ray.OutboundOutput()
+	conn.SetReusable(false)
 
-	if !payload.IsEmpty() {
-		conn.Write(payload.Bytes())
-	}
+	requestDone := signal.ExecuteAsync(func() error {
+		defer input.ForceClose()
 
-	go func() {
 		v2writer := buf.NewWriter(conn)
-		defer v2writer.Release()
-
 		if err := buf.PipeUntilEOF(input, v2writer); err != nil {
-			log.Info("Freedom: Failed to transport all TCP request: ", err)
+			return err
 		}
-		if tcpConn, ok := conn.(*tcp.RawConnection); ok {
-			tcpConn.CloseWrite()
-		}
-	}()
+		return nil
+	})
 
 	var reader io.Reader = conn
 
@@ -120,26 +115,33 @@ func (v *FreedomConnection) Dispatch(destination v2net.Destination, payload *buf
 		reader = v2net.NewTimeOutReader(timeout /* seconds */, conn)
 	}
 
-	v2reader := buf.NewReader(reader)
-	if err := buf.PipeUntilEOF(v2reader, output); err != nil {
-		log.Info("Freedom: Failed to transport all TCP response: ", err)
+	responseDone := signal.ExecuteAsync(func() error {
+		defer output.Close()
+
+		v2reader := buf.NewReader(reader)
+		if err := buf.PipeUntilEOF(v2reader, output); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+		log.Info("Freedom: Connection ending with ", err)
 	}
-	v2reader.Release()
-	ray.OutboundOutput().Close()
 }
 
-type FreedomFactory struct{}
+type Factory struct{}
 
-func (v *FreedomFactory) StreamCapability() v2net.NetworkList {
+func (v *Factory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_RawTCP},
+		Network: []v2net.Network{v2net.Network_TCP},
 	}
 }
 
-func (v *FreedomFactory) Create(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
-	return NewFreedomConnection(config.(*Config), space, meta), nil
+func (v *Factory) Create(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
+	return New(config.(*Config), space, meta), nil
 }
 
 func init() {
-	proxy.MustRegisterOutboundHandlerCreator(serial.GetMessageType(new(Config)), new(FreedomFactory))
+	common.Must(proxy.RegisterOutboundHandlerCreator(serial.GetMessageType(new(Config)), new(Factory)))
 }

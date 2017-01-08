@@ -69,11 +69,6 @@ func NewChunkReader(reader io.Reader, auth *Authenticator) *ChunkReader {
 	}
 }
 
-func (v *ChunkReader) Release() {
-	v.reader = nil
-	v.auth = nil
-}
-
 func (v *ChunkReader) Read() (*buf.Buffer, error) {
 	buffer := buf.New()
 	if err := buffer.AppendSupplier(buf.ReadFullFrom(v.reader, 2)); err != nil {
@@ -121,11 +116,6 @@ func NewChunkWriter(writer io.Writer, auth *Authenticator) *ChunkWriter {
 		auth:   auth,
 		buffer: make([]byte, 32*1024),
 	}
-}
-
-func (v *ChunkWriter) Release() {
-	v.writer = nil
-	v.auth = nil
 }
 
 func (v *ChunkWriter) Write(payload *buf.Buffer) error {

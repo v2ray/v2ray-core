@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package v2ray.core.proxy.freedom;
+option csharp_namespace = "V2Ray.Core.Proxy.Freedom";
 option go_package = "freedom";
 option java_package = "com.v2ray.core.proxy.freedom";
 option java_outer_classname = "ConfigProto";

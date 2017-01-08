@@ -23,20 +23,21 @@ func GetMessageType(message proto.Message) string {
 }
 
 func GetInstance(messageType string) (interface{}, error) {
-	mType := proto.MessageType(messageType).Elem()
-	if mType == nil {
+	mType := proto.MessageType(messageType)
+	if mType == nil || mType.Elem() == nil {
 		return nil, errors.New("Unknown type: " + messageType)
 	}
-	return reflect.New(mType).Interface(), nil
+	return reflect.New(mType.Elem()).Interface(), nil
 }
 
-func (v *TypedMessage) GetInstance() (interface{}, error) {
+func (v *TypedMessage) GetInstance() (proto.Message, error) {
 	instance, err := GetInstance(v.Type)
 	if err != nil {
 		return nil, err
 	}
-	if err := proto.Unmarshal(v.Value, instance.(proto.Message)); err != nil {
+	protoMessage := instance.(proto.Message)
+	if err := proto.Unmarshal(v.Value, protoMessage); err != nil {
 		return nil, err
 	}
-	return instance, nil
+	return protoMessage, nil
 }

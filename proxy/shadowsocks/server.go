@@ -1,17 +1,15 @@
 package shadowsocks
 
 import (
-	"sync"
-
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/udp"
@@ -47,11 +45,11 @@ func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandler
 		account: account,
 	}
 
-	space.InitializeApplication(func() error {
-		if !space.HasApp(dispatcher.APP_ID) {
+	space.OnInitialize(func() error {
+		s.packetDispatcher = dispatcher.FromSpace(space)
+		if s.packetDispatcher == nil {
 			return errors.New("Shadowsocks|Server: Dispatcher is not found in space.")
 		}
-		s.packetDispatcher = space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)
 		return nil
 	})
 
@@ -148,20 +146,15 @@ func (v *Server) handleConnection(conn internet.Connection) {
 	conn.SetReusable(false)
 
 	timedReader := v2net.NewTimeOutReader(16, conn)
-	defer timedReader.Release()
-
 	bufferedReader := bufio.NewReader(timedReader)
-	defer bufferedReader.Release()
-
 	request, bodyReader, err := ReadTCPSession(v.user, bufferedReader)
 	if err != nil {
 		log.Access(conn.RemoteAddr(), "", log.AccessRejected, err)
 		log.Info("Shadowsocks|Server: Failed to create request from: ", conn.RemoteAddr(), ": ", err)
 		return
 	}
-	defer bodyReader.Release()
 
-	bufferedReader.SetCached(false)
+	bufferedReader.SetBuffered(false)
 
 	userSettings := v.user.GetSettings()
 	timedReader.SetTimeOut(userSettings.PayloadReadTimeout)
@@ -176,52 +169,63 @@ func (v *Server) handleConnection(conn internet.Connection) {
 		User:        request.User,
 		Inbound:     v.meta,
 	})
-	defer ray.InboundOutput().Release()
+	defer ray.InboundOutput().ForceClose()
+	defer ray.InboundInput().Close()
 
-	var writeFinish sync.Mutex
-	writeFinish.Lock()
-	go func() {
-		defer writeFinish.Unlock()
+	requestDone := signal.ExecuteAsync(func() error {
+		defer ray.InboundOutput().ForceClose()
 
 		bufferedWriter := bufio.NewWriter(conn)
-		defer bufferedWriter.Release()
-
 		responseWriter, err := WriteTCPResponse(request, bufferedWriter)
 		if err != nil {
 			log.Warning("Shadowsocks|Server: Failed to write response: ", err)
-			return
+			return err
 		}
-		defer responseWriter.Release()
 
-		if payload, err := ray.InboundOutput().Read(); err == nil {
-			responseWriter.Write(payload)
-			bufferedWriter.SetCached(false)
-
-			if err := buf.PipeUntilEOF(ray.InboundOutput(), responseWriter); err != nil {
-				log.Info("Shadowsocks|Server: Failed to transport all TCP response: ", err)
-			}
+		payload, err := ray.InboundOutput().Read()
+		if err != nil {
+			return err
 		}
-	}()
+		if err := responseWriter.Write(payload); err != nil {
+			return err
+		}
+		payload.Release()
 
-	if err := buf.PipeUntilEOF(bodyReader, ray.InboundInput()); err != nil {
-		log.Info("Shadowsocks|Server: Failed to transport all TCP request: ", err)
+		if err := bufferedWriter.SetBuffered(false); err != nil {
+			return err
+		}
+
+		if err := buf.PipeUntilEOF(ray.InboundOutput(), responseWriter); err != nil {
+			log.Info("Shadowsocks|Server: Failed to transport all TCP response: ", err)
+			return err
+		}
+
+		return nil
+	})
+
+	responseDone := signal.ExecuteAsync(func() error {
+		defer ray.InboundInput().Close()
+
+		if err := buf.PipeUntilEOF(bodyReader, ray.InboundInput()); err != nil {
+			log.Info("Shadowsocks|Server: Failed to transport all TCP request: ", err)
+			return err
+		}
+		return nil
+	})
+
+	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+		log.Info("Shadowsocks|Server: Connection ends with ", err)
 	}
-	ray.InboundInput().Close()
-
-	writeFinish.Lock()
 }
 
 type ServerFactory struct{}
 
 func (v *ServerFactory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_TCP, v2net.Network_RawTCP},
+		Network: []v2net.Network{v2net.Network_TCP},
 	}
 }
 
 func (v *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
-	if !space.HasApp(dispatcher.APP_ID) {
-		return nil, common.ErrBadConfiguration
-	}
 	return NewServer(rawConfig.(*ServerConfig), space, meta)
 }

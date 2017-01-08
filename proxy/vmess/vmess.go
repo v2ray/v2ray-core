@@ -69,11 +69,6 @@ func (v *TimedUserValidator) Release() {
 	}
 
 	v.running = false
-	v.validUsers = nil
-	v.userHash = nil
-	v.ids = nil
-	v.hasher = nil
-	v.cancel = nil
 }
 
 func (v *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, idx int, entry *idEntry) {
@@ -89,10 +84,8 @@ func (v *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, idx in
 		idHash.Sum(hashValueRemoval[:0])
 		idHash.Reset()
 
-		v.Lock()
 		v.userHash[hashValue] = &indexTimePair{idx, entry.lastSec}
 		delete(v.userHash, hashValueRemoval)
-		v.Unlock()
 
 		entry.lastSec++
 		entry.lastSecRemoval++
@@ -107,9 +100,11 @@ func (v *TimedUserValidator) updateUserHash(interval time.Duration) {
 		select {
 		case now := <-time.After(interval):
 			nowSec := protocol.Timestamp(now.Unix() + cacheDurationSec)
+			v.Lock()
 			for _, entry := range v.ids {
 				v.generateNewHashes(nowSec, entry.userIdx, entry)
 			}
+			v.Unlock()
 		case <-v.cancel.WaitForCancel():
 			return
 		}
@@ -117,6 +112,9 @@ func (v *TimedUserValidator) updateUserHash(interval time.Duration) {
 }
 
 func (v *TimedUserValidator) Add(user *protocol.User) error {
+	v.Lock()
+	defer v.Unlock()
+
 	idx := len(v.validUsers)
 	v.validUsers = append(v.validUsers, user)
 	rawAccount, err := user.GetTypedAccount()

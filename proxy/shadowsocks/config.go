@@ -31,7 +31,7 @@ func (v *Account) GetCipher() (Cipher, error) {
 		return &AesCfb{KeyBytes: 32}, nil
 	case CipherType_CHACHA20:
 		return &ChaCha20{IVBytes: 8}, nil
-	case CipherType_CHACHA20_IEFT:
+	case CipherType_CHACHA20_IETF:
 		return &ChaCha20{IVBytes: 12}, nil
 	default:
 		return nil, errors.New("Unsupported cipher.")

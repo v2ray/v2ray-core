@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package v2ray.core.transport.internet.websocket;
+option csharp_namespace = "V2Ray.Core.Transport.Internet.Websocket";
+option go_package = "websocket";
+option java_package = "com.v2ray.core.transport.internet.websocket";
+option java_outer_classname = "ConfigProto";
+
+message ConnectionReuse {
+  bool enable = 1;
+}
+
+message Config {
+  // Whether or not to reuse WebSocket connections.
+  ConnectionReuse connection_reuse = 1;
+
+  // URL path to the WebSocket service. Empty value means root(/).
+  string path = 2;
+}

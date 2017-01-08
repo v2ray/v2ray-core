@@ -48,15 +48,15 @@ func (o *NoOpConn) SetWriteDeadline(time.Time) error {
 	return nil
 }
 
-func (o *NoOpConn) Id() internal.ConnectionId {
-	return internal.ConnectionId{}
+func (o *NoOpConn) Id() internal.ConnectionID {
+	return internal.ConnectionID{}
 }
 
 func (o *NoOpConn) Reset(input func([]Segment)) {}
 
 type NoOpRecycler struct{}
 
-func (o *NoOpRecycler) Put(internal.ConnectionId, net.Conn) {}
+func (o *NoOpRecycler) Put(internal.ConnectionID, net.Conn) {}
 
 func TestConnectionReadTimeout(t *testing.T) {
 	assert := assert.On(t)

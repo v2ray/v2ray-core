@@ -17,9 +17,9 @@ import (
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/ray"
 )
 
 // Server is a HTTP proxy server.
@@ -32,18 +32,28 @@ type Server struct {
 	meta             *proxy.InboundHandlerMeta
 }
 
-func NewServer(config *ServerConfig, packetDispatcher dispatcher.PacketDispatcher, meta *proxy.InboundHandlerMeta) *Server {
-	return &Server{
-		packetDispatcher: packetDispatcher,
-		config:           config,
-		meta:             meta,
+// NewServer creates a new HTTP inbound handler.
+func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandlerMeta) *Server {
+	s := &Server{
+		config: config,
+		meta:   meta,
 	}
+	space.OnInitialize(func() error {
+		s.packetDispatcher = dispatcher.FromSpace(space)
+		if s.packetDispatcher == nil {
+			return errors.New("HTTP|Server: Dispatcher not found in space.")
+		}
+		return nil
+	})
+	return s
 }
 
+// Port implements InboundHandler.Port().
 func (v *Server) Port() v2net.Port {
 	return v.meta.Port
 }
 
+// Close implements InboundHandler.Close().
 func (v *Server) Close() {
 	v.accepting = false
 	if v.tcpListener != nil {
@@ -54,6 +64,7 @@ func (v *Server) Close() {
 	}
 }
 
+// Start implements InboundHandler.Start().
 func (v *Server) Start() error {
 	if v.accepting {
 		return nil
@@ -96,6 +107,8 @@ func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error
 
 func (v *Server) handleConnection(conn internet.Connection) {
 	defer conn.Close()
+	conn.SetReusable(false)
+
 	timedReader := v2net.NewTimeOutReader(v.config.Timeout, conn)
 	reader := bufio.OriginalReaderSize(timedReader, 2048)
 
@@ -145,38 +158,34 @@ func (v *Server) handleConnect(request *http.Request, session *proxy.SessionInfo
 		ContentLength: 0,
 		Close:         false,
 	}
-	response.Write(writer)
+	if err := response.Write(writer); err != nil {
+		log.Warning("HTTP|Server: failed to write back OK response: ", err)
+		return
+	}
 
 	ray := v.packetDispatcher.DispatchToOutbound(session)
-	v.transport(reader, writer, ray)
-}
 
-func (v *Server) transport(input io.Reader, output io.Writer, ray ray.InboundRay) {
-	var wg sync.WaitGroup
-	wg.Add(2)
-	defer wg.Wait()
+	requestDone := signal.ExecuteAsync(func() error {
+		defer ray.InboundInput().Close()
 
-	go func() {
-		v2reader := buf.NewReader(input)
-		defer v2reader.Release()
-
+		v2reader := buf.NewReader(reader)
 		if err := buf.PipeUntilEOF(v2reader, ray.InboundInput()); err != nil {
-			log.Info("HTTP: Failed to transport all TCP request: ", err)
+			return err
 		}
-		ray.InboundInput().Close()
-		wg.Done()
-	}()
+		return nil
+	})
 
-	go func() {
-		v2writer := buf.NewWriter(output)
-		defer v2writer.Release()
+	responseDone := signal.ExecuteAsync(func() error {
+		defer ray.InboundOutput().ForceClose()
 
+		v2writer := buf.NewWriter(writer)
 		if err := buf.PipeUntilEOF(ray.InboundOutput(), v2writer); err != nil {
-			log.Info("HTTP: Failed to transport all TCP response: ", err)
+			return err
 		}
-		ray.InboundOutput().Release()
-		wg.Done()
-	}()
+		return nil
+	})
+
+	signal.ErrorOrFinish2(requestDone, responseDone)
 }
 
 // @VisibleForTesting
@@ -216,7 +225,7 @@ func (v *Server) GenerateResponse(statusCode int, status string) *http.Response 
 		Header:        hdr,
 		Body:          nil,
 		ContentLength: 0,
-		Close:         false,
+		Close:         true,
 	}
 }
 
@@ -232,25 +241,29 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 	StripHopByHopHeaders(request)
 
 	ray := v.packetDispatcher.DispatchToOutbound(session)
-	defer ray.InboundInput().Close()
-	defer ray.InboundOutput().Release()
+	input := ray.InboundInput()
+	output := ray.InboundOutput()
 
-	var finish sync.WaitGroup
-	finish.Add(1)
-	go func() {
-		defer finish.Done()
+	defer input.Close()
+	defer output.ForceClose()
+
+	requestDone := signal.ExecuteAsync(func() error {
+		defer input.Close()
+
 		requestWriter := bufio.NewWriter(buf.NewBytesWriter(ray.InboundInput()))
 		err := request.Write(requestWriter)
 		if err != nil {
-			log.Warning("HTTP: Failed to write request: ", err)
-			return
+			return err
 		}
-		requestWriter.Flush()
-	}()
+		if err := requestWriter.Flush(); err != nil {
+			return err
+		}
+		return nil
+	})
 
-	finish.Add(1)
-	go func() {
-		defer finish.Done()
+	responseDone := signal.ExecuteAsync(func() error {
+		defer output.ForceClose()
+
 		responseReader := bufio.OriginalReader(buf.NewBytesReader(ray.InboundOutput()))
 		response, err := http.ReadResponse(responseReader, request)
 		if err != nil {
@@ -258,34 +271,36 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 			response = v.GenerateResponse(503, "Service Unavailable")
 		}
 		responseWriter := bufio.NewWriter(writer)
-		err = response.Write(responseWriter)
-		if err != nil {
-			log.Warning("HTTP: Failed to write response: ", err)
-			return
+		if err := response.Write(responseWriter); err != nil {
+			return err
 		}
-		responseWriter.Flush()
-	}()
-	finish.Wait()
+
+		if err := responseWriter.Flush(); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+		log.Info("HTTP|Server: Connecton ending with ", err)
+	}
 }
 
+// ServerFactory is a InboundHandlerFactory.
 type ServerFactory struct{}
 
+// StreamCapability implements InboundHandlerFactory.StreamCapability().
 func (v *ServerFactory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_RawTCP},
+		Network: []v2net.Network{v2net.Network_TCP},
 	}
 }
 
+// Create implements InboundHandlerFactory.Create().
 func (v *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
-	if !space.HasApp(dispatcher.APP_ID) {
-		return nil, common.ErrBadConfiguration
-	}
-	return NewServer(
-		rawConfig.(*ServerConfig),
-		space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher),
-		meta), nil
+	return NewServer(rawConfig.(*ServerConfig), space, meta), nil
 }
 
 func init() {
-	proxy.MustRegisterInboundHandlerCreator(serial.GetMessageType(new(ServerConfig)), new(ServerFactory))
+	common.Must(proxy.RegisterInboundHandlerCreator(serial.GetMessageType(new(ServerConfig)), new(ServerFactory)))
 }

@@ -2,36 +2,30 @@ package bufio
 
 import (
 	"io"
-	"sync"
 
-	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 )
 
+// BufferedWriter is an io.Writer with internal buffer. It writes to underlying writer when buffer is full or on demand.
+// This type is not thread safe.
 type BufferedWriter struct {
-	sync.Mutex
-	writer io.Writer
-	buffer *buf.Buffer
-	cached bool
+	writer   io.Writer
+	buffer   *buf.Buffer
+	buffered bool
 }
 
+// NewWriter creates a new BufferedWriter.
 func NewWriter(rawWriter io.Writer) *BufferedWriter {
 	return &BufferedWriter{
-		writer: rawWriter,
-		buffer: buf.NewSmall(),
-		cached: true,
+		writer:   rawWriter,
+		buffer:   buf.NewLocal(1024),
+		buffered: true,
 	}
 }
 
+// ReadFrom implements io.ReaderFrom.ReadFrom().
 func (v *BufferedWriter) ReadFrom(reader io.Reader) (int64, error) {
-	v.Lock()
-	defer v.Unlock()
-
-	if v.writer == nil {
-		return 0, io.ErrClosedPipe
-	}
-
 	totalBytes := int64(0)
 	for {
 		oriSize := v.buffer.Len()
@@ -43,19 +37,14 @@ func (v *BufferedWriter) ReadFrom(reader io.Reader) (int64, error) {
 			}
 			return totalBytes, err
 		}
-		v.FlushWithoutLock()
+		if err := v.Flush(); err != nil {
+			return totalBytes, err
+		}
 	}
 }
 
 func (v *BufferedWriter) Write(b []byte) (int, error) {
-	v.Lock()
-	defer v.Unlock()
-
-	if v.writer == nil {
-		return 0, io.ErrClosedPipe
-	}
-
-	if !v.cached {
+	if !v.buffered || v.buffer == nil {
 		return v.writer.Write(b)
 	}
 	nBytes, err := v.buffer.Write(b)
@@ -63,7 +52,7 @@ func (v *BufferedWriter) Write(b []byte) (int, error) {
 		return 0, err
 	}
 	if v.buffer.IsFull() {
-		err := v.FlushWithoutLock()
+		err := v.Flush()
 		if err != nil {
 			return 0, err
 		}
@@ -76,18 +65,8 @@ func (v *BufferedWriter) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
+// Flush writes all buffered content into underlying writer, if any.
 func (v *BufferedWriter) Flush() error {
-	v.Lock()
-	defer v.Unlock()
-
-	if v.writer == nil {
-		return io.ErrClosedPipe
-	}
-
-	return v.FlushWithoutLock()
-}
-
-func (v *BufferedWriter) FlushWithoutLock() error {
 	defer v.buffer.Clear()
 	for !v.buffer.IsEmpty() {
 		nBytes, err := v.writer.Write(v.buffer.Bytes())
@@ -99,28 +78,16 @@ func (v *BufferedWriter) FlushWithoutLock() error {
 	return nil
 }
 
-func (v *BufferedWriter) Cached() bool {
-	return v.cached
+// IsBuffered returns true if this BufferedWriter holds a buffer.
+func (v *BufferedWriter) IsBuffered() bool {
+	return v.buffered
 }
 
-func (v *BufferedWriter) SetCached(cached bool) {
-	v.cached = cached
+// SetBuffered controls whether the BufferedWriter holds a buffer for writing. If not buffered, any write() calls into underlying writer directly.
+func (v *BufferedWriter) SetBuffered(cached bool) error {
+	v.buffered = cached
 	if !cached && !v.buffer.IsEmpty() {
-		v.Flush()
+		return v.Flush()
 	}
-}
-
-func (v *BufferedWriter) Release() {
-	v.Flush()
-
-	v.Lock()
-	defer v.Unlock()
-
-	v.buffer.Release()
-	v.buffer = nil
-
-	if releasable, ok := v.writer.(common.Releasable); ok {
-		releasable.Release()
-	}
-	v.writer = nil
+	return nil
 }

@@ -9,6 +9,7 @@ import (
 
 	"crypto/cipher"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
@@ -27,7 +28,7 @@ type ConnectionID struct {
 }
 
 type ServerConnection struct {
-	id     internal.ConnectionId
+	id     internal.ConnectionID
 	local  net.Addr
 	remote net.Addr
 	writer PacketWriter
@@ -73,7 +74,7 @@ func (o *ServerConnection) SetWriteDeadline(time.Time) error {
 	return nil
 }
 
-func (o *ServerConnection) Id() internal.ConnectionId {
+func (o *ServerConnection) Id() internal.ConnectionID {
 	return o.id
 }
 
@@ -188,7 +189,7 @@ func (v *Listener) OnReceive(payload *buf.Buffer, session *proxy.SessionInfo) {
 		}
 		localAddr := v.hub.Addr()
 		sConn := &ServerConnection{
-			id:     internal.NewConnectionId(v2net.LocalHostIP, src),
+			id:     internal.NewConnectionID(v2net.LocalHostIP, src),
 			local:  localAddr,
 			remote: remoteAddr,
 			writer: &KCPPacketWriter{
@@ -235,7 +236,7 @@ func (v *Listener) Accept() (internet.Connection, error) {
 			}
 			if v.tlsConfig != nil {
 				tlsConn := tls.Server(conn, v.tlsConfig)
-				return v2tls.NewConnection(tlsConn), nil
+				return UnreusableConnection{Conn: tlsConn}, nil
 			}
 			return conn, nil
 		case <-time.After(time.Second):
@@ -274,7 +275,7 @@ func (v *Listener) Addr() net.Addr {
 	return v.hub.Addr()
 }
 
-func (v *Listener) Put(internal.ConnectionId, net.Conn) {}
+func (v *Listener) Put(internal.ConnectionID, net.Conn) {}
 
 type Writer struct {
 	id       ConnectionID
@@ -297,5 +298,5 @@ func ListenKCP(address v2net.Address, port v2net.Port, options internet.ListenOp
 }
 
 func init() {
-	internet.KCPListenFunc = ListenKCP
+	common.Must(internet.RegisterNetworkListener(v2net.Network_KCP, ListenKCP))
 }

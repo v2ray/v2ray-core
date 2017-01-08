@@ -6,30 +6,32 @@ import (
 	"v2ray.com/core/app"
 	. "v2ray.com/core/app/proxy"
 	"v2ray.com/core/app/proxyman"
-	"v2ray.com/core/app/proxyman/outbound"
+	_ "v2ray.com/core/app/proxyman/outbound"
+	"v2ray.com/core/common"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/freedom"
 	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/testing/servers/tcp"
 	"v2ray.com/core/transport/internet"
+	_ "v2ray.com/core/transport/internet/tcp"
 )
 
 func TestProxyDial(t *testing.T) {
 	assert := assert.On(t)
 
 	space := app.NewSpace()
-	outboundManager := outbound.New()
-	outboundManager.SetHandler("tag", freedom.NewFreedomConnection(&freedom.Config{}, space, &proxy.OutboundHandlerMeta{
+	assert.Error(space.AddApp(new(proxyman.OutboundConfig)))
+	outboundManager := proxyman.OutboundHandlerManagerFromSpace(space)
+	common.Must(outboundManager.SetHandler("tag", freedom.New(&freedom.Config{}, space, &proxy.OutboundHandlerMeta{
 		Tag: "tag",
 		StreamSettings: &internet.StreamConfig{
-			Network: v2net.Network_RawTCP,
+			Network: v2net.Network_TCP,
 		},
-	}))
-	space.BindApp(proxyman.APP_ID_OUTBOUND_MANAGER, outboundManager)
+	})))
 
-	proxy := NewOutboundProxy(space)
-	space.BindApp(APP_ID, proxy)
+	assert.Error(space.AddApp(new(Config))).IsNil()
+	proxy := OutboundProxyFromSpace(space)
 
 	assert.Error(space.Initialize()).IsNil()
 
@@ -47,7 +49,7 @@ func TestProxyDial(t *testing.T) {
 
 	conn, err := proxy.Dial(v2net.LocalHostIP, dest, internet.DialerOptions{
 		Stream: &internet.StreamConfig{
-			Network: v2net.Network_RawTCP,
+			Network: v2net.Network_TCP,
 		},
 		Proxy: &internet.ProxyConfig{
 			Tag: "tag",
@@ -64,6 +66,6 @@ func TestProxyDial(t *testing.T) {
 
 	assert.Bytes(xor(b[:nBytes])).Equals([]byte{'a', 'b', 'c', 'd'})
 
-	conn.Close()
+	common.Must(conn.Close())
 	tcpServer.Close()
 }

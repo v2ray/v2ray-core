@@ -4,6 +4,7 @@ import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
+	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -20,24 +21,12 @@ func RegisterInboundHandlerCreator(name string, creator InboundHandlerFactory) e
 	return nil
 }
 
-func MustRegisterInboundHandlerCreator(name string, creator InboundHandlerFactory) {
-	if err := RegisterInboundHandlerCreator(name, creator); err != nil {
-		panic(err)
-	}
-}
-
 func RegisterOutboundHandlerCreator(name string, creator OutboundHandlerFactory) error {
 	if _, found := outboundFactories[name]; found {
 		return common.ErrDuplicatedName
 	}
 	outboundFactories[name] = creator
 	return nil
-}
-
-func MustRegisterOutboundHandlerCreator(name string, creator OutboundHandlerFactory) {
-	if err := RegisterOutboundHandlerCreator(name, creator); err != nil {
-		panic(err)
-	}
 }
 
 func CreateInboundHandler(name string, space app.Space, config interface{}, meta *InboundHandlerMeta) (InboundHandler, error) {
@@ -49,6 +38,8 @@ func CreateInboundHandler(name string, space app.Space, config interface{}, meta
 		meta.StreamSettings = &internet.StreamConfig{
 			Network: creator.StreamCapability().Get(0),
 		}
+	} else if meta.StreamSettings.Network == v2net.Network_Unknown {
+		meta.StreamSettings.Network = creator.StreamCapability().Get(0)
 	} else {
 		if !creator.StreamCapability().HasNetwork(meta.StreamSettings.Network) {
 			return nil, errors.New("Proxy: Invalid network: " + meta.StreamSettings.Network.String())
@@ -67,6 +58,8 @@ func CreateOutboundHandler(name string, space app.Space, config interface{}, met
 		meta.StreamSettings = &internet.StreamConfig{
 			Network: creator.StreamCapability().Get(0),
 		}
+	} else if meta.StreamSettings.Network == v2net.Network_Unknown {
+		meta.StreamSettings.Network = creator.StreamCapability().Get(0)
 	} else {
 		if !creator.StreamCapability().HasNetwork(meta.StreamSettings.Network) {
 			return nil, errors.New("Proxy: Invalid network: " + meta.StreamSettings.Network.String())

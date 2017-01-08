@@ -15,18 +15,23 @@ Content-Length: 0
 `
 )
 
+// ResponseConfig is the configuration for blackhole responses.
 type ResponseConfig interface {
+	// WriteTo writes predefined response to the give buffer.
 	WriteTo(buf.Writer)
 }
 
+// WriteTo implements ResponseConfig.WriteTo().
 func (v *NoneResponse) WriteTo(buf.Writer) {}
 
+// WriteTo implements ResponseConfig.WriteTo().
 func (v *HTTPResponse) WriteTo(writer buf.Writer) {
 	b := buf.NewLocal(512)
 	b.AppendSupplier(serial.WriteString(http403response))
 	writer.Write(b)
 }
 
+// GetInternalResponse converts response settings from proto to internal data structure.
 func (v *Config) GetInternalResponse() (ResponseConfig, error) {
 	if v.GetResponse() == nil {
 		return new(NoneResponse), nil

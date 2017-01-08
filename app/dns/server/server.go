@@ -8,10 +8,10 @@ import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/dns"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/common/serial"
 
 	dnsmsg "github.com/miekg/dns"
 )
@@ -38,12 +38,11 @@ func NewCacheServer(space app.Space, config *dns.Config) *CacheServer {
 		servers: make([]NameServer, len(config.NameServers)),
 		hosts:   config.GetInternalHosts(),
 	}
-	space.InitializeApplication(func() error {
-		if !space.HasApp(dispatcher.APP_ID) {
+	space.OnInitialize(func() error {
+		disp := dispatcher.FromSpace(space)
+		if disp == nil {
 			return errors.New("DNS: Dispatcher is not found in the space.")
 		}
-
-		dispatcher := space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)
 		for idx, destPB := range config.NameServers {
 			address := destPB.Address.AsAddress()
 			if address.Family().IsDomain() && address.Domain() == "localhost" {
@@ -54,7 +53,7 @@ func NewCacheServer(space app.Space, config *dns.Config) *CacheServer {
 					dest.Network = v2net.Network_UDP
 				}
 				if dest.Network == v2net.Network_UDP {
-					server.servers[idx] = NewUDPNameServer(dest, dispatcher)
+					server.servers[idx] = NewUDPNameServer(dest, disp)
 				}
 			}
 		}
@@ -64,10 +63,6 @@ func NewCacheServer(space app.Space, config *dns.Config) *CacheServer {
 		return nil
 	})
 	return server
-}
-
-func (v *CacheServer) Release() {
-
 }
 
 // Private: Visible for testing.
@@ -121,10 +116,6 @@ func (v CacheServerFactory) Create(space app.Space, config interface{}) (app.App
 	return server, nil
 }
 
-func (v CacheServerFactory) AppId() app.ID {
-	return dns.APP_ID
-}
-
 func init() {
-	app.RegisterApplicationFactory(serial.GetMessageType(new(dns.Config)), CacheServerFactory{})
+	common.Must(app.RegisterApplicationFactory((*dns.Config)(nil), CacheServerFactory{}))
 }

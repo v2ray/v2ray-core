@@ -8,14 +8,12 @@ import (
 
 // Reader extends io.Reader with alloc.Buffer.
 type Reader interface {
-	Release()
 	// Read reads content from underlying reader, and put it into an alloc.Buffer.
 	Read() (*Buffer, error)
 }
 
 // Writer extends io.Writer with alloc.Buffer.
 type Writer interface {
-	Release()
 	// Write writes an alloc.Buffer into underlying writer.
 	Write(*Buffer) error
 }

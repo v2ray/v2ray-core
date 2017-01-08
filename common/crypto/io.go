@@ -3,8 +3,6 @@ package crypto
 import (
 	"crypto/cipher"
 	"io"
-
-	"v2ray.com/core/common"
 )
 
 type CryptionReader struct {
@@ -20,9 +18,6 @@ func NewCryptionReader(stream cipher.Stream, reader io.Reader) *CryptionReader {
 }
 
 func (v *CryptionReader) Read(data []byte) (int, error) {
-	if v.reader == nil {
-		return 0, common.ErrObjectReleased
-	}
 	nBytes, err := v.reader.Read(data)
 	if nBytes > 0 {
 		v.stream.XORKeyStream(data[:nBytes], data[:nBytes])
@@ -30,16 +25,12 @@ func (v *CryptionReader) Read(data []byte) (int, error) {
 	return nBytes, err
 }
 
-func (v *CryptionReader) Release() {
-	v.reader = nil
-	v.stream = nil
-}
-
 type CryptionWriter struct {
 	stream cipher.Stream
 	writer io.Writer
 }
 
+// NewCryptionWriter creates a new CryptionWriter.
 func NewCryptionWriter(stream cipher.Stream, writer io.Writer) *CryptionWriter {
 	return &CryptionWriter{
 		stream: stream,
@@ -47,15 +38,8 @@ func NewCryptionWriter(stream cipher.Stream, writer io.Writer) *CryptionWriter {
 	}
 }
 
+// Write implements io.Writer.Write().
 func (v *CryptionWriter) Write(data []byte) (int, error) {
-	if v.writer == nil {
-		return 0, common.ErrObjectReleased
-	}
 	v.stream.XORKeyStream(data, data)
 	return v.writer.Write(data)
-}
-
-func (v *CryptionWriter) Release() {
-	v.writer = nil
-	v.stream = nil
 }

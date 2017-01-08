@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package v2ray.core.proxy.dokodemo;
+option csharp_namespace = "V2Ray.Core.Proxy.Dokodemo";
 option go_package = "dokodemo";
 option java_package = "com.v2ray.core.proxy.dokodemo";
 option java_outer_classname = "ConfigProto";

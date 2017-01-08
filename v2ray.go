@@ -39,43 +39,52 @@ func NewPoint(pConfig *Config) (*Point, error) {
 
 	space := app.NewSpace()
 	vpoint.space = space
-	vpoint.space.BindApp(proxyman.APP_ID_INBOUND_MANAGER, vpoint)
+	vpoint.space.AddAppLegacy(serial.GetMessageType((*proxyman.InboundConfig)(nil)), vpoint)
 
-	outboundManagerConfig := new(proxyman.OutboundConfig)
-	if err := space.BindFromConfig(serial.GetMessageType(outboundManagerConfig), outboundManagerConfig); err != nil {
-		return nil, err
+	outboundHandlerManager := proxyman.OutboundHandlerManagerFromSpace(space)
+	if outboundHandlerManager == nil {
+		if err := space.AddApp(new(proxyman.OutboundConfig)); err != nil {
+			return nil, err
+		}
+		outboundHandlerManager = proxyman.OutboundHandlerManagerFromSpace(space)
 	}
 
-	outboundHandlerManager := space.GetApp(proxyman.APP_ID_OUTBOUND_MANAGER).(proxyman.OutboundHandlerManager)
-
-	proxyDialer := proxydialer.NewOutboundProxy(space)
+	proxyDialer := proxydialer.OutboundProxyFromSpace(space)
+	if proxyDialer == nil {
+		space.AddApp(new(proxydialer.Config))
+		proxyDialer = proxydialer.OutboundProxyFromSpace(space)
+	}
 	proxyDialer.RegisterDialer()
-	space.BindApp(proxydialer.APP_ID, proxyDialer)
 
 	for _, app := range pConfig.App {
 		settings, err := app.GetInstance()
 		if err != nil {
 			return nil, err
 		}
-		if err := space.BindFromConfig(app.Type, settings); err != nil {
+		if err := space.AddApp(settings); err != nil {
 			return nil, err
 		}
 	}
 
-	if !space.HasApp(dns.APP_ID) {
+	dnsServer := dns.FromSpace(space)
+	if dnsServer == nil {
 		dnsConfig := &dns.Config{
 			NameServers: []*v2net.Endpoint{{
 				Address: v2net.NewIPOrDomain(v2net.LocalHostDomain),
 			}},
 		}
-		if err := space.BindFromConfig(serial.GetMessageType(dnsConfig), dnsConfig); err != nil {
+		if err := space.AddApp(dnsConfig); err != nil {
 			return nil, err
 		}
 	}
 
-	dispatcherConfig := new(dispatcher.Config)
-	if err := vpoint.space.BindFromConfig(serial.GetMessageType(dispatcherConfig), dispatcherConfig); err != nil {
-		return nil, err
+	disp := dispatcher.FromSpace(space)
+	if disp == nil {
+		dispatcherConfig := new(dispatcher.Config)
+		if err := vpoint.space.AddApp(dispatcherConfig); err != nil {
+			return nil, err
+		}
+		disp = dispatcher.FromSpace(space)
 	}
 
 	vpoint.inboundHandlers = make([]InboundDetourHandler, 0, 8)

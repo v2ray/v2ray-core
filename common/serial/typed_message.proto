@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package v2ray.core.common.serial;
+option csharp_namespace = "V2Ray.Core.Common.Serial";
 option go_package = "serial";
 option java_package = "com.v2ray.core.common.serial";
 option java_outer_classname = "TypedMessageProto";

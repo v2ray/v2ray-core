@@ -5,11 +5,13 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/udp"
@@ -36,11 +38,11 @@ func NewDokodemoDoor(config *Config, space app.Space, meta *proxy.InboundHandler
 		port:    v2net.Port(config.Port),
 		meta:    meta,
 	}
-	space.InitializeApplication(func() error {
-		if !space.HasApp(dispatcher.APP_ID) {
+	space.OnInitialize(func() error {
+		d.packetDispatcher = dispatcher.FromSpace(space)
+		if d.packetDispatcher == nil {
 			return errors.New("Dokodemo: Dispatcher is not found in the space.")
 		}
-		d.packetDispatcher = space.GetApp(dispatcher.APP_ID).(dispatcher.PacketDispatcher)
 		return nil
 	})
 	return d
@@ -71,6 +73,10 @@ func (v *DokodemoDoor) Start() error {
 		return nil
 	}
 	v.accepting = true
+
+	if v.config.NetworkList == nil || v.config.NetworkList.Size() == 0 {
+		return errors.New("DokodemoDoor: No network specified.")
+	}
 
 	if v.config.NetworkList.HasNetwork(v2net.Network_TCP) {
 		err := v.ListenTCP()
@@ -141,6 +147,7 @@ func (v *DokodemoDoor) ListenTCP() error {
 
 func (v *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 	defer conn.Close()
+	conn.SetReusable(false)
 
 	var dest v2net.Destination
 	if v.config.FollowRedirect {
@@ -165,44 +172,46 @@ func (v *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 		Destination: dest,
 		Inbound:     v.meta,
 	})
-	defer ray.InboundOutput().Release()
-
-	var wg sync.WaitGroup
+	output := ray.InboundOutput()
+	defer output.ForceClose()
 
 	reader := v2net.NewTimeOutReader(v.config.Timeout, conn)
-	defer reader.Release()
 
-	wg.Add(1)
-	go func() {
+	requestDone := signal.ExecuteAsync(func() error {
+		defer ray.InboundInput().Close()
+
 		v2reader := buf.NewReader(reader)
-		defer v2reader.Release()
 
 		if err := buf.PipeUntilEOF(v2reader, ray.InboundInput()); err != nil {
 			log.Info("Dokodemo: Failed to transport all TCP request: ", err)
+			return err
 		}
-		wg.Done()
-		ray.InboundInput().Close()
-	}()
 
-	wg.Add(1)
-	go func() {
+		return nil
+	})
+
+	responseDone := signal.ExecuteAsync(func() error {
+		defer output.ForceClose()
+
 		v2writer := buf.NewWriter(conn)
-		defer v2writer.Release()
 
-		if err := buf.PipeUntilEOF(ray.InboundOutput(), v2writer); err != nil {
+		if err := buf.PipeUntilEOF(output, v2writer); err != nil {
 			log.Info("Dokodemo: Failed to transport all TCP response: ", err)
+			return err
 		}
-		wg.Done()
-	}()
+		return nil
+	})
 
-	wg.Wait()
+	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+		log.Info("Dokodemo: Connection ends with ", err)
+	}
 }
 
 type Factory struct{}
 
 func (v *Factory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_RawTCP},
+		Network: []v2net.Network{v2net.Network_TCP},
 	}
 }
 
@@ -211,5 +220,5 @@ func (v *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.Inb
 }
 
 func init() {
-	proxy.MustRegisterInboundHandlerCreator(serial.GetMessageType(new(Config)), new(Factory))
+	common.Must(proxy.RegisterInboundHandlerCreator(serial.GetMessageType(new(Config)), new(Factory)))
 }

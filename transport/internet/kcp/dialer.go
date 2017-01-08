@@ -8,6 +8,7 @@ import (
 
 	"crypto/cipher"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/errors"
@@ -26,7 +27,7 @@ var (
 type ClientConnection struct {
 	sync.RWMutex
 	net.Conn
-	id     internal.ConnectionId
+	id     internal.ConnectionID
 	input  func([]Segment)
 	reader PacketReader
 	writer PacketWriter
@@ -56,7 +57,7 @@ func (o *ClientConnection) Read([]byte) (int, error) {
 	panic("KCP|ClientConnection: Read should not be called.")
 }
 
-func (o *ClientConnection) Id() internal.ConnectionId {
+func (o *ClientConnection) Id() internal.ConnectionID {
 	return o.id
 }
 
@@ -112,10 +113,10 @@ func DialKCP(src v2net.Address, dest v2net.Destination, options internet.DialerO
 	dest.Network = v2net.Network_UDP
 	log.Info("KCP|Dialer: Dialing KCP to ", dest)
 
-	id := internal.NewConnectionId(src, dest)
+	id := internal.NewConnectionID(src, dest)
 	conn := globalPool.Get(id)
 	if conn == nil {
-		rawConn, err := internet.DialToDest(src, dest)
+		rawConn, err := internet.DialSystem(src, dest)
 		if err != nil {
 			log.Error("KCP|Dialer: Failed to dial to dest: ", err)
 			return nil, err
@@ -164,7 +165,7 @@ func DialKCP(src v2net.Address, dest v2net.Destination, options internet.DialerO
 				config.ServerName = dest.Address.Domain()
 			}
 			tlsConn := tls.Client(iConn, config)
-			iConn = v2tls.NewConnection(tlsConn)
+			iConn = UnreusableConnection{Conn: tlsConn}
 		}
 	}
 
@@ -172,5 +173,5 @@ func DialKCP(src v2net.Address, dest v2net.Destination, options internet.DialerO
 }
 
 func init() {
-	internet.KCPDialer = DialKCP
+	common.Must(internet.RegisterNetworkDialer(v2net.Network_KCP, DialKCP))
 }

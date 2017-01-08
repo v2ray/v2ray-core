@@ -5,18 +5,18 @@ import (
 	v2net "v2ray.com/core/common/net"
 )
 
-func (v *AllocationStrategyConcurrency) GetValue() uint32 {
-	if v == nil {
+func (v *AllocationStrategy) GetConcurrencyValue() uint32 {
+	if v == nil || v.Concurrency == nil {
 		return 3
 	}
-	return v.Value
+	return v.Concurrency.Value
 }
 
-func (v *AllocationStrategyRefresh) GetValue() uint32 {
-	if v == nil {
+func (v *AllocationStrategy) GetRefreshValue() uint32 {
+	if v == nil || v.Refresh == nil {
 		return 5
 	}
-	return v.Value
+	return v.Refresh.Value
 }
 
 func (v *InboundConnectionConfig) GetAllocationStrategyValue() *AllocationStrategy {

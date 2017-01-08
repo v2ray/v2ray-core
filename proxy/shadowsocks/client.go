@@ -1,8 +1,6 @@
 package shadowsocks
 
 import (
-	"sync"
-
 	"v2ray.com/core/app"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
@@ -10,6 +8,7 @@ import (
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
+	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/ray"
@@ -36,11 +35,7 @@ func NewClient(config *ClientConfig, space app.Space, meta *proxy.OutboundHandle
 }
 
 // Dispatch implements OutboundHandler.Dispatch().
-func (v *Client) Dispatch(destination v2net.Destination, payload *buf.Buffer, ray ray.OutboundRay) {
-	defer payload.Release()
-	defer ray.OutboundInput().Release()
-	defer ray.OutboundOutput().Close()
-
+func (v *Client) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 	network := destination.Network
 
 	var server *protocol.ServerSpec
@@ -92,55 +87,64 @@ func (v *Client) Dispatch(destination v2net.Destination, payload *buf.Buffer, ra
 
 	if request.Command == protocol.RequestCommandTCP {
 		bufferedWriter := bufio.NewWriter(conn)
-		defer bufferedWriter.Release()
-
 		bodyWriter, err := WriteTCPRequest(request, bufferedWriter)
-		defer bodyWriter.Release()
-
 		if err != nil {
 			log.Info("Shadowsocks|Client: Failed to write request: ", err)
 			return
 		}
 
-		if !payload.IsEmpty() {
-			if err := bodyWriter.Write(payload); err != nil {
-				log.Info("Shadowsocks|Client: Failed to write payload: ", err)
-				return
+		bufferedWriter.SetBuffered(false)
+
+		requestDone := signal.ExecuteAsync(func() error {
+			defer ray.OutboundInput().ForceClose()
+
+			if err := buf.PipeUntilEOF(ray.OutboundInput(), bodyWriter); err != nil {
+				return err
 			}
-		}
+			return nil
+		})
 
-		var responseMutex sync.Mutex
-		responseMutex.Lock()
-
-		go func() {
-			defer responseMutex.Unlock()
+		responseDone := signal.ExecuteAsync(func() error {
+			defer ray.OutboundOutput().Close()
 
 			responseReader, err := ReadTCPResponse(user, conn)
 			if err != nil {
-				log.Warning("Shadowsocks|Client: Failed to read response: ", err)
-				return
+				return err
 			}
 
 			if err := buf.PipeUntilEOF(responseReader, ray.OutboundOutput()); err != nil {
-				log.Info("Shadowsocks|Client: Failed to transport all TCP response: ", err)
+				return err
 			}
-		}()
 
-		bufferedWriter.SetCached(false)
-		if err := buf.PipeUntilEOF(ray.OutboundInput(), bodyWriter); err != nil {
-			log.Info("Shadowsocks|Client: Failed to trasnport all TCP request: ", err)
+			return nil
+		})
+
+		if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+			log.Info("Shadowsocks|Client: Connection ends with ", err)
 		}
-
-		responseMutex.Lock()
 	}
 
 	if request.Command == protocol.RequestCommandUDP {
-		timedReader := v2net.NewTimeOutReader(16, conn)
-		var responseMutex sync.Mutex
-		responseMutex.Lock()
 
-		go func() {
-			defer responseMutex.Unlock()
+		writer := &UDPWriter{
+			Writer:  conn,
+			Request: request,
+		}
+
+		requestDone := signal.ExecuteAsync(func() error {
+			defer ray.OutboundInput().ForceClose()
+
+			if err := buf.PipeUntilEOF(ray.OutboundInput(), writer); err != nil {
+				log.Info("Shadowsocks|Client: Failed to transport all UDP request: ", err)
+				return err
+			}
+			return nil
+		})
+
+		timedReader := v2net.NewTimeOutReader(16, conn)
+
+		responseDone := signal.ExecuteAsync(func() error {
+			defer ray.OutboundOutput().Close()
 
 			reader := &UDPReader{
 				Reader: timedReader,
@@ -149,24 +153,12 @@ func (v *Client) Dispatch(destination v2net.Destination, payload *buf.Buffer, ra
 
 			if err := buf.PipeUntilEOF(reader, ray.OutboundOutput()); err != nil {
 				log.Info("Shadowsocks|Client: Failed to transport all UDP response: ", err)
+				return err
 			}
-		}()
+			return nil
+		})
 
-		writer := &UDPWriter{
-			Writer:  conn,
-			Request: request,
-		}
-		if !payload.IsEmpty() {
-			if err := writer.Write(payload); err != nil {
-				log.Info("Shadowsocks|Client: Failed to write payload: ", err)
-				return
-			}
-		}
-		if err := buf.PipeUntilEOF(ray.OutboundInput(), writer); err != nil {
-			log.Info("Shadowsocks|Client: Failed to transport all UDP request: ", err)
-		}
-
-		responseMutex.Lock()
+		signal.ErrorOrFinish2(requestDone, responseDone)
 	}
 }
 
@@ -174,13 +166,13 @@ func (v *Client) Dispatch(destination v2net.Destination, payload *buf.Buffer, ra
 type ClientFactory struct{}
 
 // StreamCapability implements OutboundHandlerFactory.StreamCapability().
-func (v *ClientFactory) StreamCapability() v2net.NetworkList {
+func (ClientFactory) StreamCapability() v2net.NetworkList {
 	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_TCP, v2net.Network_RawTCP},
+		Network: []v2net.Network{v2net.Network_TCP},
 	}
 }
 
 // Create implements OutboundHandlerFactory.Create().
-func (v *ClientFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
+func (ClientFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 	return NewClient(rawConfig.(*ClientConfig), space, meta)
 }
