@@ -22,8 +22,8 @@ const (
 	socks4RequestGranted  = 90
 	socks4RequestRejected = 91
 
-	authNotRequired      = 0x00
-	authGssAPI           = 0x01
+	authNotRequired = 0x00
+	//authGssAPI           = 0x01
 	authPassword         = 0x02
 	authNoMatchingMethod = 0xFF
 
