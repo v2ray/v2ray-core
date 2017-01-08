@@ -91,7 +91,9 @@ func (v *Server) Start() error {
 	v.tcpListener = listener
 	v.tcpMutex.Unlock()
 	if v.config.UdpEnabled {
-		v.listenUDP()
+		if err := v.listenUDP(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -139,13 +141,11 @@ func (v *Server) handleConnection(connection internet.Connection) {
 	}
 }
 
-func (v *Server) handleUDP() error {
+func (v *Server) handleUDP() {
 	// The TCP connection closes after v method returns. We need to wait until
 	// the client closes it.
 	// TODO: get notified from UDP part
 	<-time.After(5 * time.Minute)
-
-	return nil
 }
 
 func (v *Server) transport(reader io.Reader, writer io.Writer, session *proxy.SessionInfo) {
