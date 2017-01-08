@@ -86,7 +86,11 @@ func wsDial(src v2net.Address, dest v2net.Destination, options internet.DialerOp
 		}
 	}
 
-	uri := protocol + "://" + dest.NetAddr() + "/" + wsSettings.Path
+	host := dest.NetAddr()
+	if (protocol == "ws" && dest.Port == 80) || (protocol == "wss" && dest.Port == 443) {
+		host = dest.Address.String()
+	}
+	uri := protocol + "://" + host + "/" + wsSettings.Path
 
 	conn, resp, err := dialer.Dial(uri, nil)
 	if err != nil {
