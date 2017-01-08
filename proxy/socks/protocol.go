@@ -344,6 +344,10 @@ type UDPReader struct {
 	reader io.Reader
 }
 
+func NewUDPReader(reader io.Reader) *UDPReader {
+	return &UDPReader{reader: reader}
+}
+
 func (r *UDPReader) Read() (*buf.Buffer, error) {
 	b := buf.NewSmall()
 	if err := b.AppendSupplier(buf.ReadFrom(r.reader)); err != nil {
@@ -361,6 +365,13 @@ func (r *UDPReader) Read() (*buf.Buffer, error) {
 type UDPWriter struct {
 	request *protocol.RequestHeader
 	writer  io.Writer
+}
+
+func NewUDPWriter(request *protocol.RequestHeader, writer io.Writer) *UDPWriter {
+	return &UDPWriter{
+		request: request,
+		writer:  writer,
+	}
 }
 
 func (w *UDPWriter) Write(b *buf.Buffer) error {
