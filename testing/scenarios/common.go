@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	port uint32 = 50000
+	port uint32 = 40000
 )
 
 func pickPort() v2net.Port {
