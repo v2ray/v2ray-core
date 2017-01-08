@@ -6,5 +6,10 @@ option go_package = "dispatcher";
 option java_package = "com.v2ray.core.app.dispatcher";
 option java_outer_classname = "ConfigProto";
 
+message SessionConfig {
+  bool allow_passive_connection = 1;
+}
+
 message Config {
+  SessionConfig settings = 1;
 }

@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package v2ray.core.app.sender;
+option csharp_namespace = "V2Ray.Core.App.Sender";
+option go_package = "sender";
+option java_package = "com.v2ray.core.app.sender";
+option java_outer_classname = "ConfigProto";
+
+import "v2ray.com/core/common/serial/typed_message.proto";
+import "v2ray.com/core/common/net/address.proto";
+import "v2ray.com/core/transport/internet/config.proto";
+
+message StreamSenderConfig {
+  v2ray.core.common.net.IPOrDomain via = 1;
+  v2ray.core.transport.internet.StreamConfig stream_settings = 2;
+  v2ray.core.transport.internet.ProxyConfig proxy_settings = 3;
+}
+
+message DatagramSenderConfig {
+  v2ray.core.common.net.IPOrDomain via = 1;
+}
+
+message PerProxyConfig {
+  string tag = 1;
+  repeated v2ray.core.common.serial.TypedMessage settings = 2;
+}
+
+message Config {
+  repeated PerProxyConfig settings = 1;
+}
