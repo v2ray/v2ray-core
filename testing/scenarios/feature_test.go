@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"v2ray.com/core"
+	"v2ray.com/core/app/router"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -240,13 +241,20 @@ func TestBlackhole(t *testing.T) {
 	assert.Error(err).IsNil()
 	defer tcpServer.Close()
 
+	tcpServer2 := tcp.Server{
+		MsgProcessor: xor,
+	}
+	dest2, err := tcpServer2.Start()
+	assert.Error(err).IsNil()
+	defer tcpServer2.Close()
+
 	serverPort := pickPort()
+	serverPort2 := pickPort()
 	serverConfig := &core.Config{
 		Inbound: []*core.InboundConnectionConfig{
 			{
-				PortRange:              v2net.SinglePortRange(serverPort),
-				ListenOn:               v2net.NewIPOrDomain(v2net.LocalHostIP),
-				AllowPassiveConnection: true,
+				PortRange: v2net.SinglePortRange(serverPort),
+				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
 				Settings: serial.ToTypedMessage(&dokodemo.Config{
 					Address: v2net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
@@ -255,11 +263,37 @@ func TestBlackhole(t *testing.T) {
 					},
 				}),
 			},
+			{
+				PortRange: v2net.SinglePortRange(serverPort2),
+				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
+				Settings: serial.ToTypedMessage(&dokodemo.Config{
+					Address: v2net.NewIPOrDomain(dest2.Address),
+					Port:    uint32(dest2.Port),
+					NetworkList: &v2net.NetworkList{
+						Network: []v2net.Network{v2net.Network_TCP},
+					},
+				}),
+			},
 		},
 		Outbound: []*core.OutboundConnectionConfig{
 			{
+				Tag:      "direct",
+				Settings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+			{
+				Tag:      "blocked",
 				Settings: serial.ToTypedMessage(&blackhole.Config{}),
 			},
+		},
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&router.Config{
+				Rule: []*router.RoutingRule{
+					{
+						Tag:       "blocked",
+						PortRange: v2net.SinglePortRange(dest2.Port),
+					},
+				},
+			}),
 		},
 	}
 
@@ -267,7 +301,7 @@ func TestBlackhole(t *testing.T) {
 
 	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 		IP:   []byte{127, 0, 0, 1},
-		Port: int(serverPort),
+		Port: int(serverPort2),
 	})
 	assert.Error(err).IsNil()
 

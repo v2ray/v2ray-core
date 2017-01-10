@@ -31,12 +31,11 @@ func New(space app.Space, config *Config, meta *proxy.OutboundHandlerMeta) (prox
 // Dispatch implements OutboundHandler.Dispatch().
 func (v *Handler) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 	v.response.WriteTo(ray.OutboundOutput())
-	ray.OutboundOutput().Close()
-
 	// CloseError() will immediately close the connection.
 	// Sleep a little here to make sure the response is sent to client.
 	time.Sleep(time.Millisecond * 500)
 	ray.OutboundInput().CloseError()
+	ray.OutboundOutput().CloseError()
 }
 
 // Factory is an utility for creating blackhole handlers.
