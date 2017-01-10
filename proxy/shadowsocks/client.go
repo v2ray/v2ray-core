@@ -96,8 +96,6 @@ func (v *Client) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 		bufferedWriter.SetBuffered(false)
 
 		requestDone := signal.ExecuteAsync(func() error {
-			defer ray.OutboundInput().ForceClose()
-
 			if err := buf.PipeUntilEOF(ray.OutboundInput(), bodyWriter); err != nil {
 				return err
 			}
@@ -121,6 +119,8 @@ func (v *Client) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 
 		if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
 			log.Info("Shadowsocks|Client: Connection ends with ", err)
+			ray.OutboundInput().CloseError()
+			ray.OutboundOutput().CloseError()
 		}
 	}
 
@@ -132,8 +132,6 @@ func (v *Client) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 		}
 
 		requestDone := signal.ExecuteAsync(func() error {
-			defer ray.OutboundInput().ForceClose()
-
 			if err := buf.PipeUntilEOF(ray.OutboundInput(), writer); err != nil {
 				log.Info("Shadowsocks|Client: Failed to transport all UDP request: ", err)
 				return err
@@ -158,7 +156,11 @@ func (v *Client) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 			return nil
 		})
 
-		signal.ErrorOrFinish2(requestDone, responseDone)
+		if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+			log.Info("Shadowsocks|Client: Connection ends with ", err)
+			ray.OutboundInput().CloseError()
+			ray.OutboundOutput().CloseError()
+		}
 	}
 }
 

@@ -31,7 +31,7 @@ func (v *Handler) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 	v.response.WriteTo(ray.OutboundOutput())
 	ray.OutboundOutput().Close()
 
-	ray.OutboundInput().ForceClose()
+	ray.OutboundInput().CloseError()
 }
 
 // Factory is an utility for creating blackhole handlers.

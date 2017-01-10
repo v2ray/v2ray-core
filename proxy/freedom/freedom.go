@@ -72,8 +72,6 @@ func (v *Handler) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 
 	input := ray.OutboundInput()
 	output := ray.OutboundOutput()
-	defer input.ForceClose()
-	defer output.Close()
 
 	var conn internet.Connection
 	if v.domainStrategy == Config_USE_IP && destination.Address.Family().IsDomain() {
@@ -96,8 +94,6 @@ func (v *Handler) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 	conn.SetReusable(false)
 
 	requestDone := signal.ExecuteAsync(func() error {
-		defer input.ForceClose()
-
 		v2writer := buf.NewWriter(conn)
 		if err := buf.PipeUntilEOF(input, v2writer); err != nil {
 			return err
@@ -127,6 +123,8 @@ func (v *Handler) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 
 	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
 		log.Info("Freedom: Connection ending with ", err)
+		input.CloseError()
+		output.CloseError()
 	}
 }
 

@@ -30,9 +30,6 @@ type VMessOutboundHandler struct {
 
 // Dispatch implements OutboundHandler.Dispatch().
 func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, outboundRay ray.OutboundRay) {
-	defer outboundRay.OutboundInput().ForceClose()
-	defer outboundRay.OutboundOutput().Close()
-
 	var rec *protocol.ServerSpec
 	var conn internet.Connection
 
@@ -85,8 +82,6 @@ func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, outboundRay ra
 	session := encoding.NewClientSession(protocol.DefaultIDHash)
 
 	requestDone := signal.ExecuteAsync(func() error {
-		defer input.ForceClose()
-
 		writer := bufio.NewWriter(conn)
 		session.EncodeRequestHeader(request, writer)
 
@@ -140,6 +135,8 @@ func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, outboundRay ra
 	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
 		log.Info("VMess|Outbound: Connection ending with ", err)
 		conn.SetReusable(false)
+		input.CloseError()
+		output.CloseError()
 	}
 
 	return

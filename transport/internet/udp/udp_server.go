@@ -88,7 +88,7 @@ func (v *TimedInboundRay) Release() {
 	}
 	v.server = nil
 	v.inboundRay.InboundInput().Close()
-	v.inboundRay.InboundOutput().ForceClose()
+	v.inboundRay.InboundOutput().CloseError()
 	v.inboundRay = nil
 }
 

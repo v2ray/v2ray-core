@@ -169,12 +169,8 @@ func (v *Server) handleConnection(conn internet.Connection) {
 		User:        request.User,
 		Inbound:     v.meta,
 	})
-	defer ray.InboundOutput().ForceClose()
-	defer ray.InboundInput().Close()
 
 	requestDone := signal.ExecuteAsync(func() error {
-		defer ray.InboundOutput().ForceClose()
-
 		bufferedWriter := bufio.NewWriter(conn)
 		responseWriter, err := WriteTCPResponse(request, bufferedWriter)
 		if err != nil {
@@ -215,6 +211,8 @@ func (v *Server) handleConnection(conn internet.Connection) {
 
 	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
 		log.Info("Shadowsocks|Server: Connection ends with ", err)
+		ray.InboundInput().CloseError()
+		ray.InboundOutput().CloseError()
 	}
 }
 

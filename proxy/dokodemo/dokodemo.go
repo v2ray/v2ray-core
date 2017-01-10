@@ -172,8 +172,6 @@ func (v *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 		Destination: dest,
 		Inbound:     v.meta,
 	})
-	output := ray.InboundOutput()
-	defer output.ForceClose()
 
 	reader := v2net.NewTimeOutReader(v.config.Timeout, conn)
 
@@ -191,11 +189,9 @@ func (v *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
-		defer output.ForceClose()
-
 		v2writer := buf.NewWriter(conn)
 
-		if err := buf.PipeUntilEOF(output, v2writer); err != nil {
+		if err := buf.PipeUntilEOF(ray.InboundOutput(), v2writer); err != nil {
 			log.Info("Dokodemo: Failed to transport all TCP response: ", err)
 			return err
 		}
@@ -203,6 +199,8 @@ func (v *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 	})
 
 	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+		ray.InboundInput().CloseError()
+		ray.InboundOutput().CloseError()
 		log.Info("Dokodemo: Connection ends with ", err)
 	}
 }

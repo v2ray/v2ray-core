@@ -98,7 +98,7 @@ func (v *Connection) Write(b []byte) (int, error) {
 func (v *Connection) Close() error {
 	v.closed = true
 	v.stream.InboundInput().Close()
-	v.stream.InboundOutput().ForceClose()
+	v.stream.InboundOutput().CloseError()
 	return nil
 }
 

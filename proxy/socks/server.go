@@ -165,8 +165,6 @@ func (v *Server) transport(reader io.Reader, writer io.Writer, session *proxy.Se
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
-		defer output.ForceClose()
-
 		v2writer := buf.NewWriter(writer)
 		if err := buf.PipeUntilEOF(output, v2writer); err != nil {
 			log.Info("Socks|Server: Failed to transport all TCP response: ", err)
@@ -178,6 +176,8 @@ func (v *Server) transport(reader io.Reader, writer io.Writer, session *proxy.Se
 
 	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
 		log.Info("Socks|Server: Connection ends with ", err)
+		input.CloseError()
+		output.CloseError()
 	}
 }
 

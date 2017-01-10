@@ -176,8 +176,6 @@ func (v *Server) handleConnect(request *http.Request, session *proxy.SessionInfo
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
-		defer ray.InboundOutput().ForceClose()
-
 		v2writer := buf.NewWriter(writer)
 		if err := buf.PipeUntilEOF(ray.InboundOutput(), v2writer); err != nil {
 			return err
@@ -185,7 +183,11 @@ func (v *Server) handleConnect(request *http.Request, session *proxy.SessionInfo
 		return nil
 	})
 
-	signal.ErrorOrFinish2(requestDone, responseDone)
+	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+		log.Info("HTTP|Server: Connection ends with: ", err)
+		ray.InboundInput().CloseError()
+		ray.InboundOutput().CloseError()
+	}
 }
 
 // @VisibleForTesting
@@ -244,9 +246,6 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 
-	defer input.Close()
-	defer output.ForceClose()
-
 	requestDone := signal.ExecuteAsync(func() error {
 		defer input.Close()
 
@@ -262,8 +261,6 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
-		defer output.ForceClose()
-
 		responseReader := bufio.OriginalReader(buf.NewBytesReader(ray.InboundOutput()))
 		response, err := http.ReadResponse(responseReader, request)
 		if err != nil {
@@ -283,6 +280,8 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 
 	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
 		log.Info("HTTP|Server: Connecton ending with ", err)
+		input.CloseError()
+		output.CloseError()
 	}
 }
 

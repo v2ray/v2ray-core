@@ -141,7 +141,6 @@ func transferRequest(session *encoding.ServerSession, request *protocol.RequestH
 }
 
 func transferResponse(session *encoding.ServerSession, request *protocol.RequestHeader, response *protocol.ResponseHeader, input ray.InputStream, output io.Writer) error {
-	defer input.ForceClose()
 	session.EncodeResponseHeader(response, output)
 
 	bodyWriter := session.EncodeResponseBody(request, output)
@@ -215,8 +214,6 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	})
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
-	defer input.Close()
-	defer output.ForceClose()
 
 	userSettings := request.User.GetSettings()
 	connReader.SetTimeOut(userSettings.PayloadReadTimeout)
@@ -242,6 +239,8 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
 		log.Info("VMess|Inbound: Connection ending with ", err)
 		connection.SetReusable(false)
+		input.CloseError()
+		output.CloseError()
 		return
 	}
 

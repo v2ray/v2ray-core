@@ -80,7 +80,6 @@ func (c *Client) Dispatch(destination net.Destination, ray ray.OutboundRay) {
 	var responseFunc func() error
 	if request.Command == protocol.RequestCommandTCP {
 		requestFunc = func() error {
-			defer ray.OutboundInput().ForceClose()
 			return buf.PipeUntilEOF(ray.OutboundInput(), buf.NewWriter(conn))
 		}
 		responseFunc = func() error {
@@ -95,7 +94,6 @@ func (c *Client) Dispatch(destination net.Destination, ray ray.OutboundRay) {
 		}
 		defer udpConn.Close()
 		requestFunc = func() error {
-			defer ray.OutboundInput().ForceClose()
 			return buf.PipeUntilEOF(ray.OutboundInput(), &UDPWriter{request: request, writer: udpConn})
 		}
 		responseFunc = func() error {
@@ -109,6 +107,8 @@ func (c *Client) Dispatch(destination net.Destination, ray ray.OutboundRay) {
 	responseDone := signal.ExecuteAsync(responseFunc)
 	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
 		log.Info("Socks|Client: Connection ends with ", err)
+		ray.OutboundInput().CloseError()
+		ray.OutboundOutput().CloseError()
 	}
 }
 
