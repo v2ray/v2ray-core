@@ -72,7 +72,7 @@ func (v *DefaultDispatcher) waitAndDispatch(wait func() error, destination v2net
 	if err := wait(); err != nil {
 		log.Info("DefaultDispatcher: Failed precondition: ", err)
 		link.OutboundInput().CloseError()
-		link.OutboundOutput().Close()
+		link.OutboundOutput().CloseError()
 		return
 	}
 
