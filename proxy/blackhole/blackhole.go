@@ -2,6 +2,8 @@
 package blackhole
 
 import (
+	"time"
+
 	"v2ray.com/core/app"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
@@ -31,6 +33,9 @@ func (v *Handler) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 	v.response.WriteTo(ray.OutboundOutput())
 	ray.OutboundOutput().Close()
 
+	// CloseError() will immediately close the connection.
+	// Sleep a little here to make sure the response is sent to client.
+	time.Sleep(time.Millisecond * 500)
 	ray.OutboundInput().CloseError()
 }
 
