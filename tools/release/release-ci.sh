@@ -18,6 +18,12 @@ $GOPATH/bin/build --os=openbsd --arch=amd64 --zip
 INSTALL_DIR=_install
 
 git clone "https://github.com/v2ray/install.git" ${INSTALL_DIR}
+
+rm -rf ${INSTALL_DIR}/releases/
+mkdir ${INSTALL_DIR}/releases/
+cp $GOPATH/bin/metadata.txt ${INSTALL_DIR}/releases/
+cp $GOPATH/bin/v2ray-*.zip ${INSTALL_DIR}/releases/
+
 cp $GOPATH/bin/v2ray-${TRAVIS_TAG}-linux-64/v2ray ${INSTALL_DIR}/docker/official/
 
 pushd ${INSTALL_DIR}
