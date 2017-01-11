@@ -139,7 +139,6 @@ func (v *Stream) CloseError() {
 	defer swallowPanic()
 
 	close(v.err)
-	v.Close()
 
 	n := len(v.buffer)
 	for i := 0; i < n; i++ {
