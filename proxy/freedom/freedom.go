@@ -1,6 +1,7 @@
 package freedom
 
 import (
+	"context"
 	"io"
 
 	"v2ray.com/core/app"
@@ -12,7 +13,6 @@ import (
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
@@ -26,7 +26,15 @@ type Handler struct {
 	meta           *proxy.OutboundHandlerMeta
 }
 
-func New(config *Config, space app.Space, meta *proxy.OutboundHandlerMeta) *Handler {
+func New(ctx context.Context, config *Config) (*Handler, error) {
+	space := app.SpaceFromContext(ctx)
+	if space == nil {
+		return nil, errors.New("Freedom: No space in context.")
+	}
+	meta := proxy.OutboundMetaFromContext(ctx)
+	if meta == nil {
+		return nil, errors.New("Freedom: No outbound meta in context.")
+	}
 	f := &Handler{
 		domainStrategy: config.DomainStrategy,
 		timeout:        config.Timeout,
@@ -41,7 +49,7 @@ func New(config *Config, space app.Space, meta *proxy.OutboundHandlerMeta) *Hand
 		}
 		return nil
 	})
-	return f
+	return f, nil
 }
 
 // Private: Visible for testing.
@@ -128,12 +136,8 @@ func (v *Handler) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 	}
 }
 
-type Factory struct{}
-
-func (v *Factory) Create(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
-	return New(config.(*Config), space, meta), nil
-}
-
 func init() {
-	common.Must(proxy.RegisterOutboundHandlerCreator(serial.GetMessageType(new(Config)), new(Factory)))
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return New(ctx, config.(*Config))
+	}))
 }

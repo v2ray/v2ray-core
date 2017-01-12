@@ -4,6 +4,8 @@ import (
 	"sync"
 	"time"
 
+	"context"
+
 	"v2ray.com/core/app"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/log"
@@ -20,13 +22,16 @@ type InboundDetourHandlerDynamic struct {
 	ichs        []proxy.InboundHandler
 	ich2Recyle  []proxy.InboundHandler
 	lastRefresh time.Time
+	ctx         context.Context
 }
 
-func NewInboundDetourHandlerDynamic(space app.Space, config *InboundConnectionConfig) (*InboundDetourHandlerDynamic, error) {
+func NewInboundDetourHandlerDynamic(ctx context.Context, config *InboundConnectionConfig) (*InboundDetourHandlerDynamic, error) {
+	space := app.SpaceFromContext(ctx)
 	handler := &InboundDetourHandlerDynamic{
 		space:      space,
 		config:     config,
 		portsInUse: make(map[v2net.Port]bool),
+		ctx:        ctx,
 	}
 	handler.ichs = make([]proxy.InboundHandler, config.GetAllocationStrategyValue().GetConcurrencyValue())
 
@@ -35,13 +40,13 @@ func NewInboundDetourHandlerDynamic(space app.Space, config *InboundConnectionCo
 	if err != nil {
 		return nil, err
 	}
-	ich, err := proxy.CreateInboundHandler(config.Settings.Type, space, ichConfig, &proxy.InboundHandlerMeta{
+	ich, err := proxy.CreateInboundHandler(proxy.ContextWithInboundMeta(ctx, &proxy.InboundHandlerMeta{
 		Address:                config.GetListenOnValue(),
 		Port:                   0,
 		Tag:                    config.Tag,
 		StreamSettings:         config.StreamSettings,
 		AllowPassiveConnection: config.AllowPassiveConnection,
-	})
+	}), ichConfig)
 	if err != nil {
 		log.Error("Point: Failed to create inbound connection handler: ", err)
 		return nil, err
@@ -107,8 +112,10 @@ func (v *InboundDetourHandlerDynamic) refresh() error {
 		err := retry.Timed(5, 100).On(func() error {
 			port := v.pickUnusedPort()
 			ichConfig, _ := config.GetTypedSettings()
-			ich, err := proxy.CreateInboundHandler(config.Settings.Type, v.space, ichConfig, &proxy.InboundHandlerMeta{
-				Address: config.GetListenOnValue(), Port: port, Tag: config.Tag, StreamSettings: config.StreamSettings})
+			ich, err := proxy.CreateInboundHandler(proxy.ContextWithInboundMeta(v.ctx, &proxy.InboundHandlerMeta{
+				Address: config.GetListenOnValue(),
+				Port:    port, Tag: config.Tag,
+				StreamSettings: config.StreamSettings}), ichConfig)
 			if err != nil {
 				delete(v.portsInUse, port)
 				return err

@@ -1,6 +1,7 @@
 package proxy_test
 
 import (
+	"context"
 	"testing"
 
 	"v2ray.com/core/app"
@@ -21,14 +22,17 @@ func TestProxyDial(t *testing.T) {
 	assert := assert.On(t)
 
 	space := app.NewSpace()
+	ctx := app.ContextWithSpace(context.Background(), space)
 	assert.Error(space.AddApp(new(proxyman.OutboundConfig)))
 	outboundManager := proxyman.OutboundHandlerManagerFromSpace(space)
-	common.Must(outboundManager.SetHandler("tag", freedom.New(&freedom.Config{}, space, &proxy.OutboundHandlerMeta{
+	freedom, err := freedom.New(proxy.ContextWithOutboundMeta(ctx, &proxy.OutboundHandlerMeta{
 		Tag: "tag",
 		StreamSettings: &internet.StreamConfig{
 			Protocol: internet.TransportProtocol_TCP,
 		},
-	})))
+	}), &freedom.Config{})
+	assert.Error(err).IsNil()
+	common.Must(outboundManager.SetHandler("tag", freedom))
 
 	assert.Error(space.AddApp(new(Config))).IsNil()
 	proxy := OutboundProxyFromSpace(space)

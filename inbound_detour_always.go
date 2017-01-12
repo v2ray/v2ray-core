@@ -1,6 +1,8 @@
 package core
 
 import (
+	"context"
+
 	"v2ray.com/core/app"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/log"
@@ -15,7 +17,8 @@ type InboundDetourHandlerAlways struct {
 	ich    []proxy.InboundHandler
 }
 
-func NewInboundDetourHandlerAlways(space app.Space, config *InboundConnectionConfig) (*InboundDetourHandlerAlways, error) {
+func NewInboundDetourHandlerAlways(ctx context.Context, config *InboundConnectionConfig) (*InboundDetourHandlerAlways, error) {
+	space := app.SpaceFromContext(ctx)
 	handler := &InboundDetourHandlerAlways{
 		space:  space,
 		config: config,
@@ -27,13 +30,14 @@ func NewInboundDetourHandlerAlways(space app.Space, config *InboundConnectionCon
 		if err != nil {
 			return nil, err
 		}
-		ich, err := proxy.CreateInboundHandler(config.Settings.Type, space, ichConfig, &proxy.InboundHandlerMeta{
+		ich, err := proxy.CreateInboundHandler(proxy.ContextWithInboundMeta(ctx, &proxy.InboundHandlerMeta{
 			Address:                config.GetListenOnValue(),
 			Port:                   i,
 			Tag:                    config.Tag,
 			StreamSettings:         config.StreamSettings,
 			AllowPassiveConnection: config.AllowPassiveConnection,
-		})
+		}), ichConfig)
+
 		if err != nil {
 			log.Error("Failed to create inbound connection handler: ", err)
 			return nil, err

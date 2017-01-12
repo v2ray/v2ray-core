@@ -1,8 +1,11 @@
 package shadowsocks
 
 import (
+	"context"
+
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
@@ -27,7 +30,15 @@ type Server struct {
 	udpServer        *udp.Server
 }
 
-func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandlerMeta) (*Server, error) {
+func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
+	space := app.SpaceFromContext(ctx)
+	if space == nil {
+		return nil, errors.New("Shadowsocks|Server: No space in context.")
+	}
+	meta := proxy.InboundMetaFromContext(ctx)
+	if meta == nil {
+		return nil, errors.New("Shadowsocks|Server: No inbound meta in context.")
+	}
 	if config.GetUser() == nil {
 		return nil, protocol.ErrUserMissing
 	}
@@ -216,8 +227,8 @@ func (v *Server) handleConnection(conn internet.Connection) {
 	}
 }
 
-type ServerFactory struct{}
-
-func (v *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
-	return NewServer(rawConfig.(*ServerConfig), space, meta)
+func init() {
+	common.Must(common.RegisterConfig((*ServerConfig)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return NewServer(ctx, config.(*ServerConfig))
+	}))
 }

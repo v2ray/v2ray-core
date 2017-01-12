@@ -4,6 +4,8 @@ import (
 	"io"
 	"sync"
 
+	"context"
+
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/proxyman"
@@ -80,6 +82,43 @@ type VMessInboundHandler struct {
 	listener              *internet.TCPHub
 	detours               *DetourConfig
 	meta                  *proxy.InboundHandlerMeta
+}
+
+func New(ctx context.Context, config *Config) (*VMessInboundHandler, error) {
+	space := app.SpaceFromContext(ctx)
+	if space == nil {
+		return nil, errors.New("VMess|Inbound: No space in context.")
+	}
+	meta := proxy.InboundMetaFromContext(ctx)
+	if meta == nil {
+		return nil, errors.New("VMess|Inbound: No inbound meta in context.")
+	}
+
+	allowedClients := vmess.NewTimedUserValidator(protocol.DefaultIDHash)
+	for _, user := range config.User {
+		allowedClients.Add(user)
+	}
+
+	handler := &VMessInboundHandler{
+		clients:      allowedClients,
+		detours:      config.Detour,
+		usersByEmail: NewUserByEmail(config.User, config.GetDefaultValue()),
+		meta:         meta,
+	}
+
+	space.OnInitialize(func() error {
+		handler.packetDispatcher = dispatcher.FromSpace(space)
+		if handler.packetDispatcher == nil {
+			return errors.New("VMess|Inbound: Dispatcher is not found in space.")
+		}
+		handler.inboundHandlerManager = proxyman.InboundHandlerManagerFromSpace(space)
+		if handler.inboundHandlerManager == nil {
+			return errors.New("VMess|Inbound: InboundHandlerManager is not found is space.")
+		}
+		return nil
+	})
+
+	return handler, nil
 }
 
 func (v *VMessInboundHandler) Port() v2net.Port {
@@ -251,38 +290,8 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	}
 }
 
-type Factory struct{}
-
-func (v *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
-	config := rawConfig.(*Config)
-
-	allowedClients := vmess.NewTimedUserValidator(protocol.DefaultIDHash)
-	for _, user := range config.User {
-		allowedClients.Add(user)
-	}
-
-	handler := &VMessInboundHandler{
-		clients:      allowedClients,
-		detours:      config.Detour,
-		usersByEmail: NewUserByEmail(config.User, config.GetDefaultValue()),
-		meta:         meta,
-	}
-
-	space.OnInitialize(func() error {
-		handler.packetDispatcher = dispatcher.FromSpace(space)
-		if handler.packetDispatcher == nil {
-			return errors.New("VMess|Inbound: Dispatcher is not found in space.")
-		}
-		handler.inboundHandlerManager = proxyman.InboundHandlerManagerFromSpace(space)
-		if handler.inboundHandlerManager == nil {
-			return errors.New("VMess|Inbound: InboundHandlerManager is not found is space.")
-		}
-		return nil
-	})
-
-	return handler, nil
-}
-
 func init() {
-	common.Must(proxy.RegisterInboundHandlerCreator(serial.GetMessageType(new(Config)), new(Factory)))
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return New(ctx, config.(*Config))
+	}))
 }

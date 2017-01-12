@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"context"
+
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common"
@@ -16,7 +18,6 @@ import (
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
@@ -33,7 +34,15 @@ type Server struct {
 }
 
 // NewServer creates a new HTTP inbound handler.
-func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandlerMeta) *Server {
+func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
+	space := app.SpaceFromContext(ctx)
+	if space == nil {
+		return nil, errors.New("HTTP|Server: No space in context.")
+	}
+	meta := proxy.InboundMetaFromContext(ctx)
+	if meta == nil {
+		return nil, errors.New("HTTP|Server: No inbound meta from context.")
+	}
 	s := &Server{
 		config: config,
 		meta:   meta,
@@ -45,7 +54,7 @@ func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandler
 		}
 		return nil
 	})
-	return s
+	return s, nil
 }
 
 // Port implements InboundHandler.Port().
@@ -285,14 +294,8 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 	}
 }
 
-// ServerFactory is a InboundHandlerFactory.
-type ServerFactory struct{}
-
-// Create implements InboundHandlerFactory.Create().
-func (v *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
-	return NewServer(rawConfig.(*ServerConfig), space, meta), nil
-}
-
 func init() {
-	common.Must(proxy.RegisterInboundHandlerCreator(serial.GetMessageType(new(ServerConfig)), new(ServerFactory)))
+	common.Must(common.RegisterConfig((*ServerConfig)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return NewServer(ctx, config.(*ServerConfig))
+	}))
 }

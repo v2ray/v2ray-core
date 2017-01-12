@@ -1,6 +1,8 @@
 package app
 
 import (
+	"context"
+
 	"github.com/golang/protobuf/proto"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
@@ -103,4 +105,18 @@ func (v *spaceImpl) AddApp(config proto.Message) error {
 
 func (v *spaceImpl) AddAppLegacy(name string, application Application) {
 	v.cache[name] = application
+}
+
+type contextKey int
+
+const (
+	spaceKey = contextKey(0)
+)
+
+func SpaceFromContext(ctx context.Context) Space {
+	return ctx.Value(spaceKey).(Space)
+}
+
+func ContextWithSpace(ctx context.Context, space Space) context.Context {
+	return context.WithValue(ctx, spaceKey, space)
 }

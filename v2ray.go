@@ -1,6 +1,8 @@
 package core
 
 import (
+	"context"
+
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/dns"
@@ -38,6 +40,8 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	}
 
 	space := app.NewSpace()
+	ctx := app.ContextWithSpace(context.Background(), space)
+
 	vpoint.space = space
 	vpoint.space.AddAppLegacy(serial.GetMessageType((*proxyman.InboundConfig)(nil)), vpoint)
 
@@ -94,14 +98,14 @@ func NewPoint(pConfig *Config) (*Point, error) {
 		var inboundHandler InboundDetourHandler
 		switch allocConfig.Type {
 		case AllocationStrategy_Always:
-			dh, err := NewInboundDetourHandlerAlways(vpoint.space, inbound)
+			dh, err := NewInboundDetourHandlerAlways(ctx, inbound)
 			if err != nil {
 				log.Error("V2Ray: Failed to create detour handler: ", err)
 				return nil, common.ErrBadConfiguration
 			}
 			inboundHandler = dh
 		case AllocationStrategy_Random:
-			dh, err := NewInboundDetourHandlerDynamic(vpoint.space, inbound)
+			dh, err := NewInboundDetourHandlerDynamic(ctx, inbound)
 			if err != nil {
 				log.Error("V2Ray: Failed to create detour handler: ", err)
 				return nil, common.ErrBadConfiguration
@@ -124,13 +128,12 @@ func NewPoint(pConfig *Config) (*Point, error) {
 		if err != nil {
 			return nil, err
 		}
-		outboundHandler, err := proxy.CreateOutboundHandler(
-			outbound.Settings.Type, vpoint.space, outboundSettings, &proxy.OutboundHandlerMeta{
-				Tag:            outbound.Tag,
-				Address:        outbound.GetSendThroughValue(),
-				StreamSettings: outbound.StreamSettings,
-				ProxySettings:  outbound.ProxySettings,
-			})
+		outboundHandler, err := proxy.CreateOutboundHandler(proxy.ContextWithOutboundMeta(ctx, &proxy.OutboundHandlerMeta{
+			Tag:            outbound.Tag,
+			Address:        outbound.GetSendThroughValue(),
+			StreamSettings: outbound.StreamSettings,
+			ProxySettings:  outbound.ProxySettings,
+		}), outboundSettings)
 		if err != nil {
 			log.Error("V2Ray: Failed to create detour outbound connection handler: ", err)
 			return nil, err

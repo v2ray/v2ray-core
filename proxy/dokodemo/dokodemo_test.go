@@ -4,6 +4,8 @@ import (
 	"net"
 	"testing"
 
+	"context"
+
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	_ "v2ray.com/core/app/dispatcher/impl"
@@ -42,31 +44,36 @@ func TestDokodemoTCP(t *testing.T) {
 	space.AddApp(new(proxyman.OutboundConfig))
 
 	ohm := proxyman.OutboundHandlerManagerFromSpace(space)
-	ohm.SetDefaultHandler(
-		freedom.New(
-			&freedom.Config{},
-			space,
-			&proxy.OutboundHandlerMeta{
-				Address: v2net.LocalHostIP,
-				StreamSettings: &internet.StreamConfig{
-					Protocol: internet.TransportProtocol_TCP,
-				},
-			}))
+	ctx := context.Background()
+	ctx = app.ContextWithSpace(ctx, space)
+
+	freedom, err := freedom.New(proxy.ContextWithOutboundMeta(ctx, &proxy.OutboundHandlerMeta{
+		Address: v2net.LocalHostIP,
+		StreamSettings: &internet.StreamConfig{
+			Protocol: internet.TransportProtocol_TCP,
+		},
+	}), &freedom.Config{})
+	assert.Error(err).IsNil()
+	ohm.SetDefaultHandler(freedom)
 
 	data2Send := "Data to be sent to remote."
 
 	port := v2net.Port(dice.Roll(20000) + 10000)
-	dokodemo := NewDokodemoDoor(&Config{
-		Address:     v2net.NewIPOrDomain(v2net.LocalHostIP),
-		Port:        uint32(tcpServer.Port),
-		NetworkList: v2net.Network_TCP.AsList(),
-		Timeout:     600,
-	}, space, &proxy.InboundHandlerMeta{
+
+	ctx = proxy.ContextWithInboundMeta(ctx, &proxy.InboundHandlerMeta{
 		Address: v2net.LocalHostIP,
 		Port:    port,
 		StreamSettings: &internet.StreamConfig{
 			Protocol: internet.TransportProtocol_TCP,
 		}})
+
+	dokodemo, err := NewDokodemoDoor(ctx, &Config{
+		Address:     v2net.NewIPOrDomain(v2net.LocalHostIP),
+		Port:        uint32(tcpServer.Port),
+		NetworkList: v2net.Network_TCP.AsList(),
+		Timeout:     600,
+	})
+	assert.Error(err).IsNil()
 	defer dokodemo.Close()
 
 	assert.Error(space.Initialize()).IsNil()
@@ -114,30 +121,36 @@ func TestDokodemoUDP(t *testing.T) {
 	space.AddApp(new(proxyman.OutboundConfig))
 
 	ohm := proxyman.OutboundHandlerManagerFromSpace(space)
-	ohm.SetDefaultHandler(
-		freedom.New(
-			&freedom.Config{},
-			space,
-			&proxy.OutboundHandlerMeta{
-				Address: v2net.AnyIP,
-				StreamSettings: &internet.StreamConfig{
-					Protocol: internet.TransportProtocol_TCP,
-				}}))
+
+	ctx := context.Background()
+	ctx = app.ContextWithSpace(ctx, space)
+	freedom, err := freedom.New(proxy.ContextWithOutboundMeta(ctx, &proxy.OutboundHandlerMeta{
+		Address: v2net.AnyIP,
+		StreamSettings: &internet.StreamConfig{
+			Protocol: internet.TransportProtocol_TCP,
+		},
+	}), &freedom.Config{})
+	assert.Error(err).IsNil()
+	ohm.SetDefaultHandler(freedom)
 
 	data2Send := "Data to be sent to remote."
 
 	port := v2net.Port(dice.Roll(20000) + 10000)
-	dokodemo := NewDokodemoDoor(&Config{
-		Address:     v2net.NewIPOrDomain(v2net.LocalHostIP),
-		Port:        uint32(udpServer.Port),
-		NetworkList: v2net.Network_UDP.AsList(),
-		Timeout:     600,
-	}, space, &proxy.InboundHandlerMeta{
+
+	ctx = proxy.ContextWithInboundMeta(ctx, &proxy.InboundHandlerMeta{
 		Address: v2net.LocalHostIP,
 		Port:    port,
 		StreamSettings: &internet.StreamConfig{
 			Protocol: internet.TransportProtocol_TCP,
 		}})
+
+	dokodemo, err := NewDokodemoDoor(ctx, &Config{
+		Address:     v2net.NewIPOrDomain(v2net.LocalHostIP),
+		Port:        uint32(udpServer.Port),
+		NetworkList: v2net.Network_UDP.AsList(),
+		Timeout:     600,
+	})
+	assert.Error(err).IsNil()
 	defer dokodemo.Close()
 
 	assert.Error(space.Initialize()).IsNil()
