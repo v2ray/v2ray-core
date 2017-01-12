@@ -1,9 +1,6 @@
 package websocket_test
 
 import (
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -12,6 +9,7 @@ import (
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/testing/assert"
+	tlsgen "v2ray.com/core/testing/tls"
 	"v2ray.com/core/transport/internet"
 	v2tls "v2ray.com/core/transport/internet/tls"
 	. "v2ray.com/core/transport/internet/websocket"
@@ -131,21 +129,14 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 		<-time.After(time.Second * 5)
 		assert.Fail("Too slow")
 	}()
-	tlsSettings := &v2tls.Config{
-		AllowInsecure: true,
-		Certificate: []*v2tls.Certificate{
-			{
-				Certificate: ReadFile(filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", "testing", "tls", "cert.pem"), assert),
-				Key:         ReadFile(filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", "testing", "tls", "key.pem"), assert),
-			},
-		},
-	}
 
 	listen, err := ListenWS(v2net.DomainAddress("localhost"), 13143, internet.ListenOptions{
 		Stream: &internet.StreamConfig{
-			SecurityType:     serial.GetMessageType(new(v2tls.Config)),
-			SecuritySettings: []*serial.TypedMessage{serial.ToTypedMessage(tlsSettings)},
-			Protocol:         internet.TransportProtocol_WebSocket,
+			SecurityType: serial.GetMessageType(new(v2tls.Config)),
+			SecuritySettings: []*serial.TypedMessage{serial.ToTypedMessage(&v2tls.Config{
+				Certificate: []*v2tls.Certificate{tlsgen.GenerateCertificateForTest()},
+			})},
+			Protocol: internet.TransportProtocol_WebSocket,
 			TransportSettings: []*internet.TransportSettings{
 				{
 					Protocol: internet.TransportProtocol_WebSocket,
@@ -168,9 +159,11 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 	}()
 	conn, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13143), internet.DialerOptions{
 		Stream: &internet.StreamConfig{
-			SecurityType:     serial.GetMessageType(new(v2tls.Config)),
-			SecuritySettings: []*serial.TypedMessage{serial.ToTypedMessage(tlsSettings)},
-			Protocol:         internet.TransportProtocol_WebSocket,
+			SecurityType: serial.GetMessageType(new(v2tls.Config)),
+			SecuritySettings: []*serial.TypedMessage{serial.ToTypedMessage(&v2tls.Config{
+				AllowInsecure: true,
+			})},
+			Protocol: internet.TransportProtocol_WebSocket,
 			TransportSettings: []*internet.TransportSettings{
 				{
 					Protocol: internet.TransportProtocol_WebSocket,
@@ -186,10 +179,4 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 	})
 	assert.Error(err).IsNil()
 	conn.Close()
-}
-
-func ReadFile(file string, assert *assert.Assert) []byte {
-	b, err := ioutil.ReadFile(file)
-	assert.Error(err).IsNil()
-	return b
 }
