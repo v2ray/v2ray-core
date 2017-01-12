@@ -3,7 +3,6 @@ package scenarios
 import (
 	"net"
 	"testing"
-
 	"time"
 
 	"v2ray.com/core"
