@@ -67,7 +67,7 @@ func (v *Config) GetPackerHeader() (internet.PacketHeader, error) {
 			return nil, err
 		}
 
-		return internet.CreatePacketHeader(v.HeaderConfig.Type, rawConfig)
+		return internet.CreatePacketHeader(rawConfig)
 	}
 	return nil, nil
 }

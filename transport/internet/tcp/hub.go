@@ -70,7 +70,7 @@ func ListenTCP(address v2net.Address, port v2net.Port, options internet.ListenOp
 		if err != nil {
 			return nil, errors.Base(err).Message("Internet|TCP: Invalid header settings.")
 		}
-		auth, err := internet.CreateConnectionAuthenticator(tcpSettings.HeaderSettings.Type, headerConfig)
+		auth, err := internet.CreateConnectionAuthenticator(headerConfig)
 		if err != nil {
 			return nil, errors.Base(err).Message("Internet|TCP: Invalid header settings.")
 		}

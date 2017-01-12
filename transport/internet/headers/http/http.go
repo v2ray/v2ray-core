@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"net"
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/transport/internet"
@@ -265,6 +267,12 @@ func (HttpAuthenticatorFactory) Create(config interface{}) internet.ConnectionAu
 	}
 }
 
+func NewHttpAuthenticator(ctx context.Context, config interface{}) (interface{}, error) {
+	return HttpAuthenticator{
+		config: config.(*Config),
+	}, nil
+}
+
 func init() {
-	internet.RegisterConnectionAuthenticator(serial.GetMessageType(new(Config)), HttpAuthenticatorFactory{})
+	common.Must(common.RegisterConfig((*Config)(nil), NewHttpAuthenticator))
 }

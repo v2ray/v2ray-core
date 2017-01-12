@@ -1,10 +1,11 @@
 package wechat
 
 import (
+	"context"
+
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/serial"
-	"v2ray.com/core/transport/internet"
 )
 
 type VideoChat struct {
@@ -23,14 +24,12 @@ func (vc *VideoChat) Write(b []byte) (int, error) {
 	return 13, nil
 }
 
-type VideoChatFactory struct{}
-
-func (VideoChatFactory) Create(rawSettings interface{}) internet.PacketHeader {
+func NewVideoChat(ctx context.Context, config interface{}) (interface{}, error) {
 	return &VideoChat{
 		sn: dice.Roll(65535),
-	}
+	}, nil
 }
 
 func init() {
-	common.Must(internet.RegisterPacketHeader(serial.GetMessageType(new(VideoConfig)), VideoChatFactory{}))
+	common.Must(common.RegisterConfig((*VideoConfig)(nil), NewVideoChat))
 }
