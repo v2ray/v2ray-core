@@ -129,7 +129,7 @@ func DialKCP(src v2net.Address, dest v2net.Destination, options internet.DialerO
 		conn = c
 	}
 
-	networkSettings, err := options.Stream.GetEffectiveNetworkSettings()
+	networkSettings, err := options.Stream.GetEffectiveTransportSettings()
 	if err != nil {
 		log.Error("KCP|Dialer: Failed to get KCP settings: ", err)
 		return nil, err
@@ -173,5 +173,5 @@ func DialKCP(src v2net.Address, dest v2net.Destination, options internet.DialerO
 }
 
 func init() {
-	common.Must(internet.RegisterNetworkDialer(v2net.Network_KCP, DialKCP))
+	common.Must(internet.RegisterTransportDialer(internet.TransportProtocol_MKCP, DialKCP))
 }

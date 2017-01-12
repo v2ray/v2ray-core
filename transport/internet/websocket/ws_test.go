@@ -21,10 +21,10 @@ func Test_listenWSAndDial(t *testing.T) {
 	assert := assert.On(t)
 	listen, err := ListenWS(v2net.DomainAddress("localhost"), 13146, internet.ListenOptions{
 		Stream: &internet.StreamConfig{
-			Network: v2net.Network_WebSocket,
-			NetworkSettings: []*internet.NetworkSettings{
+			Protocol: internet.TransportProtocol_WebSocket,
+			TransportSettings: []*internet.TransportSettings{
 				{
-					Network: v2net.Network_WebSocket,
+					Protocol: internet.TransportProtocol_WebSocket,
 					Settings: serial.ToTypedMessage(&Config{
 						Path: "ws",
 					}),
@@ -58,10 +58,10 @@ func Test_listenWSAndDial(t *testing.T) {
 	}()
 	conn, err := Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13146), internet.DialerOptions{
 		Stream: &internet.StreamConfig{
-			Network: v2net.Network_WebSocket,
-			NetworkSettings: []*internet.NetworkSettings{
+			Protocol: internet.TransportProtocol_WebSocket,
+			TransportSettings: []*internet.TransportSettings{
 				{
-					Network: v2net.Network_WebSocket,
+					Protocol: internet.TransportProtocol_WebSocket,
 					Settings: serial.ToTypedMessage(&Config{
 						Path: "ws",
 					}),
@@ -82,10 +82,10 @@ func Test_listenWSAndDial(t *testing.T) {
 	<-time.After(time.Second * 5)
 	conn, err = Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13146), internet.DialerOptions{
 		Stream: &internet.StreamConfig{
-			Network: v2net.Network_WebSocket,
-			NetworkSettings: []*internet.NetworkSettings{
+			Protocol: internet.TransportProtocol_WebSocket,
+			TransportSettings: []*internet.TransportSettings{
 				{
-					Network: v2net.Network_WebSocket,
+					Protocol: internet.TransportProtocol_WebSocket,
 					Settings: serial.ToTypedMessage(&Config{
 						Path: "ws",
 					}),
@@ -103,10 +103,10 @@ func Test_listenWSAndDial(t *testing.T) {
 	<-time.After(time.Second * 15)
 	conn, err = Dial(v2net.AnyIP, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13146), internet.DialerOptions{
 		Stream: &internet.StreamConfig{
-			Network: v2net.Network_WebSocket,
-			NetworkSettings: []*internet.NetworkSettings{
+			Protocol: internet.TransportProtocol_WebSocket,
+			TransportSettings: []*internet.TransportSettings{
 				{
-					Network: v2net.Network_WebSocket,
+					Protocol: internet.TransportProtocol_WebSocket,
 					Settings: serial.ToTypedMessage(&Config{
 						Path: "ws",
 					}),
@@ -145,10 +145,10 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 		Stream: &internet.StreamConfig{
 			SecurityType:     serial.GetMessageType(new(v2tls.Config)),
 			SecuritySettings: []*serial.TypedMessage{serial.ToTypedMessage(tlsSettings)},
-			Network:          v2net.Network_WebSocket,
-			NetworkSettings: []*internet.NetworkSettings{
+			Protocol:         internet.TransportProtocol_WebSocket,
+			TransportSettings: []*internet.TransportSettings{
 				{
-					Network: v2net.Network_WebSocket,
+					Protocol: internet.TransportProtocol_WebSocket,
 					Settings: serial.ToTypedMessage(&Config{
 						Path: "wss",
 						ConnectionReuse: &ConnectionReuse{
@@ -170,10 +170,10 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 		Stream: &internet.StreamConfig{
 			SecurityType:     serial.GetMessageType(new(v2tls.Config)),
 			SecuritySettings: []*serial.TypedMessage{serial.ToTypedMessage(tlsSettings)},
-			Network:          v2net.Network_WebSocket,
-			NetworkSettings: []*internet.NetworkSettings{
+			Protocol:         internet.TransportProtocol_WebSocket,
+			TransportSettings: []*internet.TransportSettings{
 				{
-					Network: v2net.Network_WebSocket,
+					Protocol: internet.TransportProtocol_WebSocket,
 					Settings: serial.ToTypedMessage(&Config{
 						Path: "wss",
 						ConnectionReuse: &ConnectionReuse{

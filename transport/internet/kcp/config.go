@@ -3,7 +3,7 @@ package kcp
 import (
 	"crypto/cipher"
 
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -104,7 +104,7 @@ func (v *Config) IsConnectionReuse() bool {
 }
 
 func init() {
-	internet.RegisterNetworkConfigCreator(v2net.Network_KCP, func() interface{} {
+	common.Must(internet.RegisterProtocolConfigCreator(internet.TransportProtocol_MKCP, func() interface{} {
 		return new(Config)
-	})
+	}))
 }

@@ -41,13 +41,6 @@ func (v *Handler) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 // Factory is an utility for creating blackhole handlers.
 type Factory struct{}
 
-// StreamCapability implements OutboundHandlerFactory.StreamCapability().
-func (v *Factory) StreamCapability() v2net.NetworkList {
-	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_TCP},
-	}
-}
-
 // Create implements OutboundHandlerFactory.Create().
 func (v *Factory) Create(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 	return New(space, config.(*Config), meta)

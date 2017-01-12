@@ -167,13 +167,6 @@ func (v *Client) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 // ClientFactory is a OutboundHandlerFactory.
 type ClientFactory struct{}
 
-// StreamCapability implements OutboundHandlerFactory.StreamCapability().
-func (ClientFactory) StreamCapability() v2net.NetworkList {
-	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_TCP},
-	}
-}
-
 // Create implements OutboundHandlerFactory.Create().
 func (ClientFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 	return NewClient(rawConfig.(*ClientConfig), space, meta)

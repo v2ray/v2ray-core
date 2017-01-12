@@ -5,12 +5,18 @@ option csharp_namespace = "V2Ray.Core.Transport.Internet";
 option go_package = "internet";
 option java_package = "com.v2ray.core.transport.internet";
 
-import "v2ray.com/core/common/net/network.proto";
 import "v2ray.com/core/common/serial/typed_message.proto";
 
-message NetworkSettings {
+enum TransportProtocol {
+  TCP = 0;
+  UDP = 1;
+  MKCP = 2;
+  WebSocket = 3;
+}
+
+message TransportSettings {
   // Type of network that this settings supports.
-  v2ray.core.common.net.Network network = 1;
+  TransportProtocol protocol = 1;
 
   // Specific settings.
   v2ray.core.common.serial.TypedMessage settings = 2;
@@ -18,9 +24,9 @@ message NetworkSettings {
 
 message StreamConfig {
   // Effective network.
-  v2ray.core.common.net.Network network = 1;
+  TransportProtocol protocol = 1;
 
-  repeated NetworkSettings network_settings = 2;
+  repeated TransportSettings transport_settings = 2;
 
   // Type of security. Must be a message name of the settings proto.
   string security_type = 3;

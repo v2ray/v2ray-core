@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"v2ray.com/core/common/errors"
-	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/kcp"
@@ -175,21 +174,40 @@ func (v *TLSConfig) Build() (*serial.TypedMessage, error) {
 	return serial.ToTypedMessage(config), nil
 }
 
+type TransportProtocol string
+
+func (p TransportProtocol) Build() (internet.TransportProtocol, error) {
+	switch strings.ToLower(string(p)) {
+	case "tcp":
+		return internet.TransportProtocol_TCP, nil
+	case "kcp", "mkcp":
+		return internet.TransportProtocol_MKCP, nil
+	case "ws", "websocket":
+		return internet.TransportProtocol_WebSocket, nil
+	default:
+		return internet.TransportProtocol_TCP, errors.New("Config: unknown transport protocol: ", p)
+	}
+}
+
 type StreamConfig struct {
-	Network     *Network         `json:"network"`
-	Security    string           `json:"security"`
-	TLSSettings *TLSConfig       `json:"tlsSettings"`
-	TCPSettings *TCPConfig       `json:"tcpSettings"`
-	KCPSettings *KCPConfig       `json:"kcpSettings"`
-	WSSettings  *WebSocketConfig `json:"wsSettings"`
+	Network     *TransportProtocol `json:"network"`
+	Security    string             `json:"security"`
+	TLSSettings *TLSConfig         `json:"tlsSettings"`
+	TCPSettings *TCPConfig         `json:"tcpSettings"`
+	KCPSettings *KCPConfig         `json:"kcpSettings"`
+	WSSettings  *WebSocketConfig   `json:"wsSettings"`
 }
 
 func (v *StreamConfig) Build() (*internet.StreamConfig, error) {
 	config := &internet.StreamConfig{
-		Network: v2net.Network_TCP,
+		Protocol: internet.TransportProtocol_TCP,
 	}
 	if v.Network != nil {
-		config.Network = (*v.Network).Build()
+		protocol, err := (*v.Network).Build()
+		if err != nil {
+			return nil, err
+		}
+		config.Protocol = protocol
 	}
 	if strings.ToLower(v.Security) == "tls" {
 		tlsSettings := v.TLSSettings
@@ -208,8 +226,8 @@ func (v *StreamConfig) Build() (*internet.StreamConfig, error) {
 		if err != nil {
 			return nil, errors.Base(err).Message("Failed to build TCP config.")
 		}
-		config.NetworkSettings = append(config.NetworkSettings, &internet.NetworkSettings{
-			Network:  v2net.Network_TCP,
+		config.TransportSettings = append(config.TransportSettings, &internet.TransportSettings{
+			Protocol: internet.TransportProtocol_TCP,
 			Settings: ts,
 		})
 	}
@@ -218,8 +236,8 @@ func (v *StreamConfig) Build() (*internet.StreamConfig, error) {
 		if err != nil {
 			return nil, errors.Base(err).Message("Failed to build mKCP config.")
 		}
-		config.NetworkSettings = append(config.NetworkSettings, &internet.NetworkSettings{
-			Network:  v2net.Network_KCP,
+		config.TransportSettings = append(config.TransportSettings, &internet.TransportSettings{
+			Protocol: internet.TransportProtocol_MKCP,
 			Settings: ts,
 		})
 	}
@@ -228,8 +246,8 @@ func (v *StreamConfig) Build() (*internet.StreamConfig, error) {
 		if err != nil {
 			return nil, errors.Base(err).Message("Failed to build WebSocket config.")
 		}
-		config.NetworkSettings = append(config.NetworkSettings, &internet.NetworkSettings{
-			Network:  v2net.Network_WebSocket,
+		config.TransportSettings = append(config.TransportSettings, &internet.TransportSettings{
+			Protocol: internet.TransportProtocol_WebSocket,
 			Settings: ts,
 		})
 	}

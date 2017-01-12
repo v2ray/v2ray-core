@@ -49,7 +49,7 @@ func TestDokodemoTCP(t *testing.T) {
 			&proxy.OutboundHandlerMeta{
 				Address: v2net.LocalHostIP,
 				StreamSettings: &internet.StreamConfig{
-					Network: v2net.Network_TCP,
+					Protocol: internet.TransportProtocol_TCP,
 				},
 			}))
 
@@ -65,7 +65,7 @@ func TestDokodemoTCP(t *testing.T) {
 		Address: v2net.LocalHostIP,
 		Port:    port,
 		StreamSettings: &internet.StreamConfig{
-			Network: v2net.Network_TCP,
+			Protocol: internet.TransportProtocol_TCP,
 		}})
 	defer dokodemo.Close()
 
@@ -121,7 +121,7 @@ func TestDokodemoUDP(t *testing.T) {
 			&proxy.OutboundHandlerMeta{
 				Address: v2net.AnyIP,
 				StreamSettings: &internet.StreamConfig{
-					Network: v2net.Network_TCP,
+					Protocol: internet.TransportProtocol_TCP,
 				}}))
 
 	data2Send := "Data to be sent to remote."
@@ -136,7 +136,7 @@ func TestDokodemoUDP(t *testing.T) {
 		Address: v2net.LocalHostIP,
 		Port:    port,
 		StreamSettings: &internet.StreamConfig{
-			Network: v2net.Network_TCP,
+			Protocol: internet.TransportProtocol_TCP,
 		}})
 	defer dokodemo.Close()
 

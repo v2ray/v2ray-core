@@ -3,7 +3,7 @@ package protocol
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import v2ray_core_common_net1 "v2ray.com/core/common/net"
+import v2ray_core_common_net "v2ray.com/core/common/net"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -11,9 +11,9 @@ var _ = fmt.Errorf
 var _ = math.Inf
 
 type ServerEndpoint struct {
-	Address *v2ray_core_common_net1.IPOrDomain `protobuf:"bytes,1,opt,name=address" json:"address,omitempty"`
-	Port    uint32                             `protobuf:"varint,2,opt,name=port" json:"port,omitempty"`
-	User    []*User                            `protobuf:"bytes,3,rep,name=user" json:"user,omitempty"`
+	Address *v2ray_core_common_net.IPOrDomain `protobuf:"bytes,1,opt,name=address" json:"address,omitempty"`
+	Port    uint32                            `protobuf:"varint,2,opt,name=port" json:"port,omitempty"`
+	User    []*User                           `protobuf:"bytes,3,rep,name=user" json:"user,omitempty"`
 }
 
 func (m *ServerEndpoint) Reset()                    { *m = ServerEndpoint{} }
@@ -21,7 +21,7 @@ func (m *ServerEndpoint) String() string            { return proto.CompactTextSt
 func (*ServerEndpoint) ProtoMessage()               {}
 func (*ServerEndpoint) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
 
-func (m *ServerEndpoint) GetAddress() *v2ray_core_common_net1.IPOrDomain {
+func (m *ServerEndpoint) GetAddress() *v2ray_core_common_net.IPOrDomain {
 	if m != nil {
 		return m.Address
 	}

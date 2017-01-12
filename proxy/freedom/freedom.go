@@ -130,12 +130,6 @@ func (v *Handler) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 
 type Factory struct{}
 
-func (v *Factory) StreamCapability() v2net.NetworkList {
-	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_TCP},
-	}
-}
-
 func (v *Factory) Create(space app.Space, config interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 	return New(config.(*Config), space, meta), nil
 }

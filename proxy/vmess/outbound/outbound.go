@@ -145,12 +145,6 @@ func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, outboundRay ra
 // Factory is a proxy factory for VMess outbound.
 type Factory struct{}
 
-func (v *Factory) StreamCapability() v2net.NetworkList {
-	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_TCP, v2net.Network_KCP, v2net.Network_WebSocket},
-	}
-}
-
 func (v *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 	vOutConfig := rawConfig.(*Config)
 

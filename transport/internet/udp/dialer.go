@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	common.Must(internet.RegisterNetworkDialer(v2net.Network_UDP,
+	common.Must(internet.RegisterTransportDialer(internet.TransportProtocol_UDP,
 		func(src v2net.Address, dest v2net.Destination, options internet.DialerOptions) (internet.Connection, error) {
 			conn, err := internet.DialSystem(src, dest)
 			if err != nil {

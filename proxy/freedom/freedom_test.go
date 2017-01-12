@@ -43,7 +43,7 @@ func TestSinglePacket(t *testing.T) {
 		&proxy.OutboundHandlerMeta{
 			Address: v2net.AnyIP,
 			StreamSettings: &internet.StreamConfig{
-				Network: v2net.Network_TCP,
+				Protocol: internet.TransportProtocol_TCP,
 			},
 		})
 	assert.Error(space.Initialize()).IsNil()
@@ -83,7 +83,7 @@ func TestIPResolution(t *testing.T) {
 		&proxy.OutboundHandlerMeta{
 			Address: v2net.AnyIP,
 			StreamSettings: &internet.StreamConfig{
-				Network: v2net.Network_TCP,
+				Protocol: internet.TransportProtocol_TCP,
 			},
 		})
 

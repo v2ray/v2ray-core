@@ -288,13 +288,6 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 // ServerFactory is a InboundHandlerFactory.
 type ServerFactory struct{}
 
-// StreamCapability implements InboundHandlerFactory.StreamCapability().
-func (v *ServerFactory) StreamCapability() v2net.NetworkList {
-	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_TCP},
-	}
-}
-
 // Create implements InboundHandlerFactory.Create().
 func (v *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
 	return NewServer(rawConfig.(*ServerConfig), space, meta), nil

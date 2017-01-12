@@ -207,12 +207,6 @@ func (v *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 
 type Factory struct{}
 
-func (v *Factory) StreamCapability() v2net.NetworkList {
-	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_TCP},
-	}
-}
-
 func (v *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
 	return NewDokodemoDoor(rawConfig.(*Config), space, meta), nil
 }

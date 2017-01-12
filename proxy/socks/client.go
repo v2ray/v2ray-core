@@ -114,12 +114,6 @@ func (c *Client) Dispatch(destination net.Destination, ray ray.OutboundRay) {
 
 type ClientFactory struct{}
 
-func (ClientFactory) StreamCapability() net.NetworkList {
-	return net.NetworkList{
-		Network: []net.Network{net.Network_TCP},
-	}
-}
-
 func (ClientFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
 	return NewClient(rawConfig.(*ClientConfig), space, meta)
 }
