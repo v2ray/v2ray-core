@@ -19,10 +19,11 @@ INSTALL_DIR=_install
 
 git clone "https://github.com/v2ray/install.git" ${INSTALL_DIR}
 
-rm -rf ${INSTALL_DIR}/releases/
-mkdir ${INSTALL_DIR}/releases/
-cp $GOPATH/bin/metadata.txt ${INSTALL_DIR}/releases/
-cp $GOPATH/bin/v2ray-*.zip ${INSTALL_DIR}/releases/
+RELEASE_DIR=${INSTALL_DIR}/releases/${TRAVIS_TAG}
+mkdir -p ${RELEASE_DIR}/
+cp $GOPATH/bin/metadata.txt ${RELEASE_DIR}/
+cp $GOPATH/bin/v2ray-*.zip ${RELEASE_DIR}/
+echo ${TRAVIS_TAG} > ${INSTALL_DIR}/releases/
 
 cp $GOPATH/bin/v2ray-${TRAVIS_TAG}-linux-64/v2ray ${INSTALL_DIR}/docker/official/
 
