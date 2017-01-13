@@ -6,7 +6,7 @@ import (
 	"v2ray.com/core/app"
 )
 
-// A DnsCache is an internal cache of DNS resolutions.
+// A Server is a DNS server for responding DNS queries.
 type Server interface {
 	Get(domain string) []net.IP
 }
