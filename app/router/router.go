@@ -115,8 +115,6 @@ func (Router) Interface() interface{} {
 	return (*Router)(nil)
 }
 
-type RouterFactory struct{}
-
 func FromSpace(space app.Space) *Router {
 	app := space.GetApplication((*Router)(nil))
 	if app == nil {

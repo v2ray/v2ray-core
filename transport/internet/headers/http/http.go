@@ -13,7 +13,6 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/serial"
-	"v2ray.com/core/transport/internet"
 )
 
 const (
@@ -259,20 +258,14 @@ func (v HttpAuthenticator) Server(conn net.Conn) net.Conn {
 	}))
 }
 
-type HttpAuthenticatorFactory struct{}
-
-func (HttpAuthenticatorFactory) Create(config interface{}) internet.ConnectionAuthenticator {
+func NewHttpAuthenticator(ctx context.Context, config *Config) (HttpAuthenticator, error) {
 	return HttpAuthenticator{
-		config: config.(*Config),
-	}
-}
-
-func NewHttpAuthenticator(ctx context.Context, config interface{}) (interface{}, error) {
-	return HttpAuthenticator{
-		config: config.(*Config),
+		config: config,
 	}, nil
 }
 
 func init() {
-	common.Must(common.RegisterConfig((*Config)(nil), NewHttpAuthenticator))
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return NewHttpAuthenticator(ctx, config.(*Config))
+	}))
 }

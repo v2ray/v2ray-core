@@ -1,9 +1,9 @@
 package http_test
 
 import (
+	"context"
 	"net"
 	"testing"
-
 	"time"
 
 	"v2ray.com/core/common/buf"
@@ -34,8 +34,7 @@ func TestReaderWriter(t *testing.T) {
 func TestRequestHeader(t *testing.T) {
 	assert := assert.On(t)
 
-	factory := HttpAuthenticatorFactory{}
-	auth := factory.Create(&Config{
+	auth, err := NewHttpAuthenticator(context.Background(), &Config{
 		Request: &RequestConfig{
 			Uri: []string{"/"},
 			Header: []*Header{
@@ -45,10 +44,11 @@ func TestRequestHeader(t *testing.T) {
 				},
 			},
 		},
-	}).(HttpAuthenticator)
+	})
+	assert.Error(err).IsNil()
 
 	cache := buf.New()
-	err := auth.GetClientWriter().Write(cache)
+	err = auth.GetClientWriter().Write(cache)
 	assert.Error(err).IsNil()
 
 	assert.String(cache.String()).Equals("GET / HTTP/1.1\r\nTest: Value\r\n\r\n")
@@ -57,8 +57,8 @@ func TestRequestHeader(t *testing.T) {
 func TestConnection(t *testing.T) {
 	assert := assert.On(t)
 
-	factory := HttpAuthenticatorFactory{}
-	auth := factory.Create(new(Config))
+	auth, err := NewHttpAuthenticator(context.Background(), new(Config))
+	assert.Error(err).IsNil()
 
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	assert.Error(err).IsNil()
