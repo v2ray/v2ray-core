@@ -26,7 +26,7 @@ type Server struct {
 	tcpMutex         sync.RWMutex
 	udpMutex         sync.RWMutex
 	accepting        bool
-	packetDispatcher dispatcher.PacketDispatcher
+	packetDispatcher dispatcher.Interface
 	config           *ServerConfig
 	tcpListener      *internet.TCPHub
 	udpHub           *udp.Hub

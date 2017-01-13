@@ -101,7 +101,7 @@ func NewPoint(pConfig *Config) (*Point, error) {
 			return nil, err
 		}
 		space.AddApplication(d)
-		disp = d.(dispatcher.PacketDispatcher)
+		disp = d.(dispatcher.Interface)
 	}
 
 	vpoint.inboundHandlers = make([]InboundDetourHandler, 0, 8)

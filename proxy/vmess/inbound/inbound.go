@@ -74,7 +74,7 @@ func (v *userByEmail) Get(email string) (*protocol.User, bool) {
 // Inbound connection handler that handles messages in VMess format.
 type VMessInboundHandler struct {
 	sync.RWMutex
-	packetDispatcher      dispatcher.PacketDispatcher
+	packetDispatcher      dispatcher.Interface
 	inboundHandlerManager proxyman.InboundHandlerManager
 	clients               protocol.UserValidator
 	usersByEmail          *userByEmail

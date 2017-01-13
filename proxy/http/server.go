@@ -27,7 +27,7 @@ import (
 type Server struct {
 	sync.Mutex
 	accepting        bool
-	packetDispatcher dispatcher.PacketDispatcher
+	packetDispatcher dispatcher.Interface
 	config           *ServerConfig
 	tcpListener      *internet.TCPHub
 	meta             *proxy.InboundHandlerMeta

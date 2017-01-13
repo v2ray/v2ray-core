@@ -19,7 +19,7 @@ import (
 )
 
 type Server struct {
-	packetDispatcher dispatcher.PacketDispatcher
+	packetDispatcher dispatcher.Interface
 	config           *ServerConfig
 	user             *protocol.User
 	account          *ShadowsocksAccount

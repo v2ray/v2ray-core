@@ -24,7 +24,7 @@ type DokodemoDoor struct {
 	accepting        bool
 	address          v2net.Address
 	port             v2net.Port
-	packetDispatcher dispatcher.PacketDispatcher
+	packetDispatcher dispatcher.Interface
 	tcpListener      *internet.TCPHub
 	udpHub           *udp.Hub
 	udpServer        *udp.Server

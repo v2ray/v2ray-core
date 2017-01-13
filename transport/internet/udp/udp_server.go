@@ -95,10 +95,10 @@ func (v *TimedInboundRay) Release() {
 type Server struct {
 	sync.RWMutex
 	conns            map[string]*TimedInboundRay
-	packetDispatcher dispatcher.PacketDispatcher
+	packetDispatcher dispatcher.Interface
 }
 
-func NewServer(packetDispatcher dispatcher.PacketDispatcher) *Server {
+func NewServer(packetDispatcher dispatcher.Interface) *Server {
 	return &Server{
 		conns:            make(map[string]*TimedInboundRay),
 		packetDispatcher: packetDispatcher,

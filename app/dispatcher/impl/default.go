@@ -40,7 +40,7 @@ func NewDefaultDispatcher(ctx context.Context, config *dispatcher.Config) (*Defa
 }
 
 func (DefaultDispatcher) Interface() interface{} {
-	return (*dispatcher.PacketDispatcher)(nil)
+	return (*dispatcher.Interface)(nil)
 }
 
 func (v *DefaultDispatcher) DispatchToOutbound(session *proxy.SessionInfo) ray.InboundRay {
