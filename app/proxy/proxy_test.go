@@ -9,7 +9,7 @@ import (
 	"v2ray.com/core/app/proxyman"
 	_ "v2ray.com/core/app/proxyman/outbound"
 	"v2ray.com/core/common"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/freedom"
 	"v2ray.com/core/testing/assert"
@@ -50,7 +50,7 @@ func TestProxyDial(t *testing.T) {
 	dest, err := tcpServer.Start()
 	assert.Error(err).IsNil()
 
-	conn, err := proxy.Dial(v2net.LocalHostIP, dest, internet.DialerOptions{
+	conn, err := proxy.Dial(net.LocalHostIP, dest, internet.DialerOptions{
 		Stream: &internet.StreamConfig{
 			Protocol: internet.TransportProtocol_TCP,
 		},

@@ -1,10 +1,10 @@
 package assert
 
 import (
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 )
 
-func (v *Assert) Port(value v2net.Port) *PortSubject {
+func (v *Assert) Port(value net.Port) *PortSubject {
 	return &PortSubject{
 		Subject: Subject{
 			a:    v,
@@ -16,22 +16,22 @@ func (v *Assert) Port(value v2net.Port) *PortSubject {
 
 type PortSubject struct {
 	Subject
-	value v2net.Port
+	value net.Port
 }
 
-func (subject *PortSubject) Equals(expectation v2net.Port) {
+func (subject *PortSubject) Equals(expectation net.Port) {
 	if subject.value.Value() != expectation.Value() {
 		subject.Fail("is equal to", expectation.String())
 	}
 }
 
-func (subject *PortSubject) GreaterThan(expectation v2net.Port) {
+func (subject *PortSubject) GreaterThan(expectation net.Port) {
 	if subject.value.Value() <= expectation.Value() {
 		subject.Fail("is greater than", expectation.String())
 	}
 }
 
-func (subject *PortSubject) LessThan(expectation v2net.Port) {
+func (subject *PortSubject) LessThan(expectation net.Port) {
 	if subject.value.Value() >= expectation.Value() {
 		subject.Fail("is less than", expectation.String())
 	}

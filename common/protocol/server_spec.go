@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"v2ray.com/core/common/dice"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 )
 
 type ValidationStrategy interface {
@@ -45,12 +45,12 @@ func (v *TimeoutValidStrategy) Invalidate() {
 
 type ServerSpec struct {
 	sync.RWMutex
-	dest  v2net.Destination
+	dest  net.Destination
 	users []*User
 	valid ValidationStrategy
 }
 
-func NewServerSpec(dest v2net.Destination, valid ValidationStrategy, users ...*User) *ServerSpec {
+func NewServerSpec(dest net.Destination, valid ValidationStrategy, users ...*User) *ServerSpec {
 	return &ServerSpec{
 		dest:  dest,
 		users: users,
@@ -59,11 +59,11 @@ func NewServerSpec(dest v2net.Destination, valid ValidationStrategy, users ...*U
 }
 
 func NewServerSpecFromPB(spec ServerEndpoint) *ServerSpec {
-	dest := v2net.TCPDestination(spec.Address.AsAddress(), v2net.Port(spec.Port))
+	dest := net.TCPDestination(spec.Address.AsAddress(), net.Port(spec.Port))
 	return NewServerSpec(dest, AlwaysValid(), spec.User...)
 }
 
-func (v *ServerSpec) Destination() v2net.Destination {
+func (v *ServerSpec) Destination() net.Destination {
 	return v.dest
 }
 

@@ -12,7 +12,7 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
 )
@@ -77,7 +77,7 @@ func (v *DefaultDispatcher) DispatchToOutbound(session *proxy.SessionInfo) ray.I
 	return direct
 }
 
-func (v *DefaultDispatcher) waitAndDispatch(wait func() error, destination v2net.Destination, link ray.OutboundRay, dispatcher proxy.OutboundHandler) {
+func (v *DefaultDispatcher) waitAndDispatch(wait func() error, destination net.Destination, link ray.OutboundRay, dispatcher proxy.OutboundHandler) {
 	if err := wait(); err != nil {
 		log.Info("DefaultDispatcher: Failed precondition: ", err)
 		link.OutboundInput().CloseError()

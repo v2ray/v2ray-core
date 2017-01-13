@@ -2,7 +2,6 @@ package receiver
 
 import (
 	"net"
-
 	"time"
 
 	v2net "v2ray.com/core/common/net"

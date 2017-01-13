@@ -1,10 +1,10 @@
 package assert
 
 import (
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 )
 
-func (v *Assert) Destination(value v2net.Destination) *DestinationSubject {
+func (v *Assert) Destination(value net.Destination) *DestinationSubject {
 	return &DestinationSubject{
 		Subject: Subject{
 			disp: value.String(),
@@ -16,29 +16,29 @@ func (v *Assert) Destination(value v2net.Destination) *DestinationSubject {
 
 type DestinationSubject struct {
 	Subject
-	value v2net.Destination
+	value net.Destination
 }
 
 func (v *DestinationSubject) IsTCP() {
-	if v.value.Network != v2net.Network_TCP {
+	if v.value.Network != net.Network_TCP {
 		v.Fail("is", "a TCP destination")
 	}
 }
 
 func (v *DestinationSubject) IsNotTCP() {
-	if v.value.Network == v2net.Network_TCP {
+	if v.value.Network == net.Network_TCP {
 		v.Fail("is not", "a TCP destination")
 	}
 }
 
 func (v *DestinationSubject) IsUDP() {
-	if v.value.Network != v2net.Network_UDP {
+	if v.value.Network != net.Network_UDP {
 		v.Fail("is", "a UDP destination")
 	}
 }
 
 func (v *DestinationSubject) IsNotUDP() {
-	if v.value.Network == v2net.Network_UDP {
+	if v.value.Network == net.Network_UDP {
 		v.Fail("is not", "a UDP destination")
 	}
 }

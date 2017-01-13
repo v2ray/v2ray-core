@@ -1,13 +1,12 @@
 package kcp
 
 import (
+	"crypto/cipher"
 	"crypto/tls"
 	"io"
 	"net"
 	"sync"
 	"time"
-
-	"crypto/cipher"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"

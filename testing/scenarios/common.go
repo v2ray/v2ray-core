@@ -1,10 +1,9 @@
 package scenarios
 
 import (
+	"net"
 	"sync/atomic"
 	"time"
-
-	"net"
 
 	"github.com/golang/protobuf/proto"
 	"v2ray.com/core"

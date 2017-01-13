@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"v2ray.com/core/common"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/ray"
 )
 
@@ -27,7 +27,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 }
 
 // Dispatch implements OutboundHandler.Dispatch().
-func (v *Handler) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
+func (v *Handler) Dispatch(destination net.Destination, ray ray.OutboundRay) {
 	v.response.WriteTo(ray.OutboundOutput())
 	// CloseError() will immediately close the connection.
 	// Sleep a little here to make sure the response is sent to client.

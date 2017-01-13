@@ -8,7 +8,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 )
 
@@ -55,17 +55,17 @@ func NewRouter(ctx context.Context, config *Config) (*Router, error) {
 }
 
 // Private: Visible for testing.
-func (v *Router) ResolveIP(dest v2net.Destination) []v2net.Destination {
+func (v *Router) ResolveIP(dest net.Destination) []net.Destination {
 	ips := v.dnsServer.Get(dest.Address.Domain())
 	if len(ips) == 0 {
 		return nil
 	}
-	dests := make([]v2net.Destination, len(ips))
+	dests := make([]net.Destination, len(ips))
 	for idx, ip := range ips {
-		if dest.Network == v2net.Network_TCP {
-			dests[idx] = v2net.TCPDestination(v2net.IPAddress(ip), dest.Port)
+		if dest.Network == net.Network_TCP {
+			dests[idx] = net.TCPDestination(net.IPAddress(ip), dest.Port)
 		} else {
-			dests[idx] = v2net.UDPDestination(v2net.IPAddress(ip), dest.Port)
+			dests[idx] = net.UDPDestination(net.IPAddress(ip), dest.Port)
 		}
 	}
 	return dests
