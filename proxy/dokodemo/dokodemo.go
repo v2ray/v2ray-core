@@ -31,7 +31,7 @@ type DokodemoDoor struct {
 	meta             *proxy.InboundHandlerMeta
 }
 
-func NewDokodemoDoor(ctx context.Context, config *Config) (*DokodemoDoor, error) {
+func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
 		return nil, errors.New("Dokodemo: No space in context.")
@@ -215,6 +215,6 @@ func (v *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 
 func init() {
 	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
-		return NewDokodemoDoor(ctx, config.(*Config))
+		return New(ctx, config.(*Config))
 	}))
 }

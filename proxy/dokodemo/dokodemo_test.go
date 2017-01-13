@@ -65,7 +65,7 @@ func TestDokodemoTCP(t *testing.T) {
 			Protocol: internet.TransportProtocol_TCP,
 		}})
 
-	dokodemo, err := NewDokodemoDoor(ctx, &Config{
+	dokodemo, err := New(ctx, &Config{
 		Address:     v2net.NewIPOrDomain(v2net.LocalHostIP),
 		Port:        uint32(tcpServer.Port),
 		NetworkList: v2net.Network_TCP.AsList(),
@@ -140,7 +140,7 @@ func TestDokodemoUDP(t *testing.T) {
 			Protocol: internet.TransportProtocol_TCP,
 		}})
 
-	dokodemo, err := NewDokodemoDoor(ctx, &Config{
+	dokodemo, err := New(ctx, &Config{
 		Address:     v2net.NewIPOrDomain(v2net.LocalHostIP),
 		Port:        uint32(udpServer.Port),
 		NetworkList: v2net.Network_UDP.AsList(),
