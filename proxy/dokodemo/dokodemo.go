@@ -10,7 +10,7 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
@@ -22,8 +22,8 @@ type DokodemoDoor struct {
 	udpMutex         sync.RWMutex
 	config           *Config
 	accepting        bool
-	address          v2net.Address
-	port             v2net.Port
+	address          net.Address
+	port             net.Port
 	packetDispatcher dispatcher.Interface
 	tcpListener      *internet.TCPHub
 	udpHub           *udp.Hub
@@ -43,7 +43,7 @@ func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
 	d := &DokodemoDoor{
 		config:  config,
 		address: config.GetPredefinedAddress(),
-		port:    v2net.Port(config.Port),
+		port:    net.Port(config.Port),
 		meta:    meta,
 	}
 	space.OnInitialize(func() error {
@@ -56,7 +56,7 @@ func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
 	return d, nil
 }
 
-func (v *DokodemoDoor) Port() v2net.Port {
+func (v *DokodemoDoor) Port() net.Port {
 	return v.meta.Port
 }
 
@@ -86,13 +86,13 @@ func (v *DokodemoDoor) Start() error {
 		return errors.New("DokodemoDoor: No network specified.")
 	}
 
-	if v.config.NetworkList.HasNetwork(v2net.Network_TCP) {
+	if v.config.NetworkList.HasNetwork(net.Network_TCP) {
 		err := v.ListenTCP()
 		if err != nil {
 			return err
 		}
 	}
-	if v.config.NetworkList.HasNetwork(v2net.Network_UDP) {
+	if v.config.NetworkList.HasNetwork(net.Network_UDP) {
 		err := v.ListenUDP()
 		if err != nil {
 			return err
@@ -120,10 +120,10 @@ func (v *DokodemoDoor) ListenUDP() error {
 }
 
 func (v *DokodemoDoor) handleUDPPackets(payload *buf.Buffer, session *proxy.SessionInfo) {
-	if session.Destination.Network == v2net.Network_Unknown && v.address != nil && v.port > 0 {
-		session.Destination = v2net.UDPDestination(v.address, v.port)
+	if session.Destination.Network == net.Network_Unknown && v.address != nil && v.port > 0 {
+		session.Destination = net.UDPDestination(v.address, v.port)
 	}
-	if session.Destination.Network == v2net.Network_Unknown {
+	if session.Destination.Network == net.Network_Unknown {
 		log.Info("Dokodemo: Unknown destination, stop forwarding...")
 		return
 	}
@@ -131,7 +131,7 @@ func (v *DokodemoDoor) handleUDPPackets(payload *buf.Buffer, session *proxy.Sess
 	v.udpServer.Dispatch(session, payload, v.handleUDPResponse)
 }
 
-func (v *DokodemoDoor) handleUDPResponse(dest v2net.Destination, payload *buf.Buffer) {
+func (v *DokodemoDoor) handleUDPResponse(dest net.Destination, payload *buf.Buffer) {
 	defer payload.Release()
 	v.udpMutex.RLock()
 	defer v.udpMutex.RUnlock()
@@ -157,31 +157,31 @@ func (v *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 	defer conn.Close()
 	conn.SetReusable(false)
 
-	var dest v2net.Destination
+	var dest net.Destination
 	if v.config.FollowRedirect {
 		originalDest := GetOriginalDestination(conn)
-		if originalDest.Network != v2net.Network_Unknown {
+		if originalDest.Network != net.Network_Unknown {
 			log.Info("Dokodemo: Following redirect to: ", originalDest)
 			dest = originalDest
 		}
 	}
-	if dest.Network == v2net.Network_Unknown && v.address != nil && v.port > v2net.Port(0) {
-		dest = v2net.TCPDestination(v.address, v.port)
+	if dest.Network == net.Network_Unknown && v.address != nil && v.port > net.Port(0) {
+		dest = net.TCPDestination(v.address, v.port)
 	}
 
-	if dest.Network == v2net.Network_Unknown {
+	if dest.Network == net.Network_Unknown {
 		log.Info("Dokodemo: Unknown destination, stop forwarding...")
 		return
 	}
 	log.Info("Dokodemo: Handling request to ", dest)
 
 	ray := v.packetDispatcher.DispatchToOutbound(&proxy.SessionInfo{
-		Source:      v2net.DestinationFromAddr(conn.RemoteAddr()),
+		Source:      net.DestinationFromAddr(conn.RemoteAddr()),
 		Destination: dest,
 		Inbound:     v.meta,
 	})
 
-	reader := v2net.NewTimeOutReader(v.config.Timeout, conn)
+	reader := net.NewTimeOutReader(v.config.Timeout, conn)
 
 	requestDone := signal.ExecuteAsync(func() error {
 		defer ray.InboundInput().Close()

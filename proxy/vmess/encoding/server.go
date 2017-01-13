@@ -13,7 +13,7 @@ import (
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/vmess"
@@ -86,7 +86,7 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	// 1 bytes reserved
 	request.Command = protocol.RequestCommand(buffer[37])
 
-	request.Port = v2net.PortFromBytes(buffer[38:40])
+	request.Port = net.PortFromBytes(buffer[38:40])
 
 	switch buffer[40] {
 	case AddrTypeIPv4:
@@ -95,14 +95,14 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		if err != nil {
 			return nil, errors.Base(err).Message("VMess|Server: Failed to read IPv4.")
 		}
-		request.Address = v2net.IPAddress(buffer[41:45])
+		request.Address = net.IPAddress(buffer[41:45])
 	case AddrTypeIPv6:
 		_, err = io.ReadFull(decryptor, buffer[41:57]) // 16 bytes
 		bufferLen += 16
 		if err != nil {
 			return nil, errors.Base(err).Message("VMess|Server: Failed to read IPv6 address.")
 		}
-		request.Address = v2net.IPAddress(buffer[41:57])
+		request.Address = net.IPAddress(buffer[41:57])
 	case AddrTypeDomain:
 		_, err = io.ReadFull(decryptor, buffer[41:42])
 		if err != nil {
@@ -117,7 +117,7 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 			return nil, errors.Base(err).Message("VMess|Server: Failed to read domain.")
 		}
 		bufferLen += 1 + domainLength
-		request.Address = v2net.DomainAddress(string(buffer[42 : 42+domainLength]))
+		request.Address = net.DomainAddress(string(buffer[42 : 42+domainLength]))
 	}
 
 	if padingLen > 0 {

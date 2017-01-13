@@ -10,7 +10,7 @@ import (
 	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
@@ -67,7 +67,7 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	return s, nil
 }
 
-func (v *Server) Port() v2net.Port {
+func (v *Server) Port() net.Port {
 	return v.meta.Port
 }
 
@@ -138,7 +138,7 @@ func (v *Server) handlerUDPPayload(payload *buf.Buffer, session *proxy.SessionIn
 	log.Access(source, dest, log.AccessAccepted, "")
 	log.Info("Shadowsocks|Server: Tunnelling request to ", dest)
 
-	v.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: dest, User: request.User, Inbound: v.meta}, data, func(destination v2net.Destination, payload *buf.Buffer) {
+	v.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: dest, User: request.User, Inbound: v.meta}, data, func(destination net.Destination, payload *buf.Buffer) {
 		defer payload.Release()
 
 		data, err := EncodeUDPPacket(request, payload)
@@ -156,7 +156,7 @@ func (v *Server) handleConnection(conn internet.Connection) {
 	defer conn.Close()
 	conn.SetReusable(false)
 
-	timedReader := v2net.NewTimeOutReader(16, conn)
+	timedReader := net.NewTimeOutReader(16, conn)
 	bufferedReader := bufio.NewReader(timedReader)
 	request, bodyReader, err := ReadTCPSession(v.user, bufferedReader)
 	if err != nil {
@@ -175,7 +175,7 @@ func (v *Server) handleConnection(conn internet.Connection) {
 	log.Info("Shadowsocks|Server: Tunnelling request to ", dest)
 
 	ray := v.packetDispatcher.DispatchToOutbound(&proxy.SessionInfo{
-		Source:      v2net.DestinationFromAddr(conn.RemoteAddr()),
+		Source:      net.DestinationFromAddr(conn.RemoteAddr()),
 		Destination: dest,
 		User:        request.User,
 		Inbound:     v.meta,

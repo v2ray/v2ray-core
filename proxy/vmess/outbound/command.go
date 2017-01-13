@@ -3,7 +3,7 @@ package outbound
 import (
 	"time"
 
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/vmess"
@@ -20,12 +20,12 @@ func (v *VMessOutboundHandler) handleSwitchAccount(cmd *protocol.CommandSwitchAc
 		Level:   cmd.Level,
 		Account: serial.ToTypedMessage(account),
 	}
-	dest := v2net.TCPDestination(cmd.Host, cmd.Port)
+	dest := net.TCPDestination(cmd.Host, cmd.Port)
 	until := time.Now().Add(time.Duration(cmd.ValidMin) * time.Minute)
 	v.serverList.AddServer(protocol.NewServerSpec(dest, protocol.BeforeTime(until), user))
 }
 
-func (v *VMessOutboundHandler) handleCommand(dest v2net.Destination, cmd protocol.ResponseCommand) {
+func (v *VMessOutboundHandler) handleCommand(dest net.Destination, cmd protocol.ResponseCommand) {
 	switch typedCommand := cmd.(type) {
 	case *protocol.CommandSwitchAccount:
 		if typedCommand.Host == nil {

@@ -1,9 +1,8 @@
 package encoding
 
 import (
-	"hash/fnv"
-
 	"crypto/md5"
+	"hash/fnv"
 
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/serial"

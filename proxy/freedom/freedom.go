@@ -11,7 +11,7 @@ import (
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
@@ -53,7 +53,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 }
 
 // Private: Visible for testing.
-func (v *Handler) ResolveIP(destination v2net.Destination) v2net.Destination {
+func (v *Handler) ResolveIP(destination net.Destination) net.Destination {
 	if !destination.Address.Family().IsDomain() {
 		return destination
 	}
@@ -65,17 +65,17 @@ func (v *Handler) ResolveIP(destination v2net.Destination) v2net.Destination {
 	}
 
 	ip := ips[dice.Roll(len(ips))]
-	var newDest v2net.Destination
-	if destination.Network == v2net.Network_TCP {
-		newDest = v2net.TCPDestination(v2net.IPAddress(ip), destination.Port)
+	var newDest net.Destination
+	if destination.Network == net.Network_TCP {
+		newDest = net.TCPDestination(net.IPAddress(ip), destination.Port)
 	} else {
-		newDest = v2net.UDPDestination(v2net.IPAddress(ip), destination.Port)
+		newDest = net.UDPDestination(net.IPAddress(ip), destination.Port)
 	}
 	log.Info("Freedom: Changing destination from ", destination, " to ", newDest)
 	return newDest
 }
 
-func (v *Handler) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
+func (v *Handler) Dispatch(destination net.Destination, ray ray.OutboundRay) {
 	log.Info("Freedom: Opening connection to ", destination)
 
 	input := ray.OutboundInput()
@@ -112,11 +112,11 @@ func (v *Handler) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 	var reader io.Reader = conn
 
 	timeout := v.timeout
-	if destination.Network == v2net.Network_UDP {
+	if destination.Network == net.Network_UDP {
 		timeout = 16
 	}
 	if timeout > 0 {
-		reader = v2net.NewTimeOutReader(timeout /* seconds */, conn)
+		reader = net.NewTimeOutReader(timeout /* seconds */, conn)
 	}
 
 	responseDone := signal.ExecuteAsync(func() error {

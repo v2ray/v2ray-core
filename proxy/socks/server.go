@@ -13,7 +13,7 @@ import (
 	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
@@ -30,7 +30,7 @@ type Server struct {
 	config           *ServerConfig
 	tcpListener      *internet.TCPHub
 	udpHub           *udp.Hub
-	udpAddress       v2net.Destination
+	udpAddress       net.Destination
 	udpServer        *udp.Server
 	meta             *proxy.InboundHandlerMeta
 }
@@ -60,7 +60,7 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 }
 
 // Port implements InboundHandler.Port().
-func (v *Server) Port() v2net.Port {
+func (v *Server) Port() net.Port {
 	return v.meta.Port
 }
 
@@ -113,7 +113,7 @@ func (v *Server) handleConnection(connection internet.Connection) {
 
 	connection.SetReusable(false)
 
-	timedReader := v2net.NewTimeOutReader(16 /* seconds, for handshake */, connection)
+	timedReader := net.NewTimeOutReader(16 /* seconds, for handshake */, connection)
 	reader := bufio.NewReader(timedReader)
 
 	session := &ServerSession{
@@ -121,7 +121,7 @@ func (v *Server) handleConnection(connection internet.Connection) {
 		meta:   v.meta,
 	}
 
-	clientAddr := v2net.DestinationFromAddr(connection.RemoteAddr())
+	clientAddr := net.DestinationFromAddr(connection.RemoteAddr())
 
 	request, err := session.Handshake(reader, connection)
 	if err != nil {

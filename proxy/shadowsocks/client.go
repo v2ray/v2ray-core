@@ -8,7 +8,7 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/log"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/common/signal"
@@ -42,7 +42,7 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 }
 
 // Dispatch implements OutboundHandler.Dispatch().
-func (v *Client) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
+func (v *Client) Dispatch(destination net.Destination, ray ray.OutboundRay) {
 	network := destination.Network
 
 	var server *protocol.ServerSpec
@@ -73,7 +73,7 @@ func (v *Client) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 		Address: destination.Address,
 		Port:    destination.Port,
 	}
-	if destination.Network == v2net.Network_TCP {
+	if destination.Network == net.Network_TCP {
 		request.Command = protocol.RequestCommandTCP
 	} else {
 		request.Command = protocol.RequestCommandUDP
@@ -146,7 +146,7 @@ func (v *Client) Dispatch(destination v2net.Destination, ray ray.OutboundRay) {
 			return nil
 		})
 
-		timedReader := v2net.NewTimeOutReader(16, conn)
+		timedReader := net.NewTimeOutReader(16, conn)
 
 		responseDone := signal.ExecuteAsync(func() error {
 			defer ray.OutboundOutput().Close()

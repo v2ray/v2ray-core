@@ -1,9 +1,8 @@
 package outbound
 
 import (
-	"time"
-
 	"context"
+	"time"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/common"
@@ -11,7 +10,7 @@ import (
 	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/common/signal"
@@ -53,7 +52,7 @@ func New(ctx context.Context, config *Config) (*VMessOutboundHandler, error) {
 }
 
 // Dispatch implements OutboundHandler.Dispatch().
-func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, outboundRay ray.OutboundRay) {
+func (v *VMessOutboundHandler) Dispatch(target net.Destination, outboundRay ray.OutboundRay) {
 	var rec *protocol.ServerSpec
 	var conn internet.Connection
 
@@ -74,7 +73,7 @@ func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, outboundRay ra
 	log.Info("VMess|Outbound: Tunneling request to ", target, " via ", rec.Destination())
 
 	command := protocol.RequestCommandTCP
-	if target.Network == v2net.Network_UDP {
+	if target.Network == net.Network_UDP {
 		command = protocol.RequestCommandUDP
 	}
 	request := &protocol.RequestHeader{

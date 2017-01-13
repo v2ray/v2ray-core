@@ -1,10 +1,9 @@
 package inbound
 
 import (
+	"context"
 	"io"
 	"sync"
-
-	"context"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
@@ -14,7 +13,7 @@ import (
 	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/signal"
@@ -121,7 +120,7 @@ func New(ctx context.Context, config *Config) (*VMessInboundHandler, error) {
 	return handler, nil
 }
 
-func (v *VMessInboundHandler) Port() v2net.Port {
+func (v *VMessInboundHandler) Port() net.Port {
 	return v.meta.Port
 }
 
@@ -221,7 +220,7 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 		return
 	}
 
-	connReader := v2net.NewTimeOutReader(8, connection)
+	connReader := net.NewTimeOutReader(8, connection)
 	reader := bufio.NewReader(connReader)
 	v.RLock()
 	if !v.accepting {
@@ -246,7 +245,7 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	connection.SetReusable(request.Option.Has(protocol.RequestOptionConnectionReuse))
 
 	ray := v.packetDispatcher.DispatchToOutbound(&proxy.SessionInfo{
-		Source:      v2net.DestinationFromAddr(connection.RemoteAddr()),
+		Source:      net.DestinationFromAddr(connection.RemoteAddr()),
 		Destination: request.Destination(),
 		User:        request.User,
 		Inbound:     v.meta,
