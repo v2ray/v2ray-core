@@ -3,6 +3,7 @@ package conf
 import (
 	"encoding/json"
 	"strings"
+
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
@@ -84,6 +85,12 @@ func (v *NetworkList) UnmarshalJSON(data []byte) error {
 }
 
 func (v *NetworkList) Build() *v2net.NetworkList {
+	if v == nil {
+		return &v2net.NetworkList{
+			Network: []v2net.Network{v2net.Network_TCP},
+		}
+	}
+
 	list := new(v2net.NetworkList)
 	for _, network := range *v {
 		list.Network = append(list.Network, network.Build())
