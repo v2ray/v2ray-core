@@ -1,10 +1,11 @@
 package sender
 
 import (
+	"context"
+
 	"v2ray.com/core/app"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -15,18 +16,16 @@ type Sender interface {
 type SenderManager struct {
 }
 
-func New(space app.Space, config *Config) (*SenderManager, error) {
+func New(ctx context.Context, config *Config) (*SenderManager, error) {
 	return &SenderManager{}, nil
 }
 
-type SenderManagerFactory struct{}
-
-func (SenderManagerFactory) Create(space app.Space, config interface{}) (app.Application, error) {
-	return New(space, config.(*Config))
+func (SenderManager) Interface() interface{} {
+	return (*SenderManager)(nil)
 }
 
 func FromSpace(space app.Space) *SenderManager {
-	app := space.(app.AppGetter).GetApp(serial.GetMessageType((*Config)(nil)))
+	app := space.GetApplication((*SenderManager)(nil))
 	if app == nil {
 		return nil
 	}
@@ -34,5 +33,7 @@ func FromSpace(space app.Space) *SenderManager {
 }
 
 func init() {
-	common.Must(app.RegisterApplicationFactory((*Config)(nil), SenderManagerFactory{}))
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return New(ctx, config.(*Config))
+	}))
 }

@@ -5,6 +5,8 @@ import (
 	"net"
 	"time"
 
+	"context"
+
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
@@ -12,7 +14,6 @@ import (
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/ray"
 )
@@ -21,7 +22,11 @@ type OutboundProxy struct {
 	outboundManager proxyman.OutboundHandlerManager
 }
 
-func NewOutboundProxy(space app.Space) *OutboundProxy {
+func NewOutboundProxy(ctx context.Context, config *Config) (*OutboundProxy, error) {
+	space := app.SpaceFromContext(ctx)
+	if space == nil {
+		return nil, errors.New("OutboundProxy: No space in context.")
+	}
 	proxy := new(OutboundProxy)
 	space.OnInitialize(func() error {
 		proxy.outboundManager = proxyman.OutboundHandlerManagerFromSpace(space)
@@ -30,7 +35,11 @@ func NewOutboundProxy(space app.Space) *OutboundProxy {
 		}
 		return nil
 	})
-	return proxy
+	return proxy, nil
+}
+
+func (OutboundProxy) Interface() interface{} {
+	return (*OutboundProxy)(nil)
 }
 
 func (v *OutboundProxy) RegisterDialer() {
@@ -132,14 +141,8 @@ func (v *Connection) SetReusable(bool) {
 
 }
 
-type OutboundProxyFactory struct{}
-
-func (OutboundProxyFactory) Create(space app.Space, config interface{}) (app.Application, error) {
-	return NewOutboundProxy(space), nil
-}
-
 func OutboundProxyFromSpace(space app.Space) *OutboundProxy {
-	app := space.(app.AppGetter).GetApp(serial.GetMessageType((*Config)(nil)))
+	app := space.GetApplication((*OutboundProxy)(nil))
 	if app == nil {
 		return nil
 	}
@@ -147,5 +150,7 @@ func OutboundProxyFromSpace(space app.Space) *OutboundProxy {
 }
 
 func init() {
-	common.Must(app.RegisterApplicationFactory((*Config)(nil), OutboundProxyFactory{}))
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return NewOutboundProxy(ctx, config.(*Config))
+	}))
 }

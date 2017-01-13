@@ -1,6 +1,7 @@
 package router_test
 
 import (
+	"context"
 	"testing"
 
 	"v2ray.com/core/app"
@@ -31,10 +32,11 @@ func TestSimpleRouter(t *testing.T) {
 	}
 
 	space := app.NewSpace()
-	assert.Error(space.AddApp(new(dns.Config))).IsNil()
-	assert.Error(space.AddApp(new(dispatcher.Config))).IsNil()
-	assert.Error(space.AddApp(new(proxyman.OutboundConfig))).IsNil()
-	assert.Error(space.AddApp(config)).IsNil()
+	ctx := app.ContextWithSpace(context.Background(), space)
+	assert.Error(app.AddApplicationToSpace(ctx, new(dns.Config))).IsNil()
+	assert.Error(app.AddApplicationToSpace(ctx, new(dispatcher.Config))).IsNil()
+	assert.Error(app.AddApplicationToSpace(ctx, new(proxyman.OutboundConfig))).IsNil()
+	assert.Error(app.AddApplicationToSpace(ctx, config)).IsNil()
 	assert.Error(space.Initialize()).IsNil()
 
 	r := FromSpace(space)

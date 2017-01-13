@@ -3,7 +3,6 @@ package proxyman
 
 import (
 	"v2ray.com/core/app"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy"
 )
 
@@ -19,7 +18,7 @@ type OutboundHandlerManager interface {
 }
 
 func InboundHandlerManagerFromSpace(space app.Space) InboundHandlerManager {
-	app := space.(app.AppGetter).GetApp(serial.GetMessageType((*InboundConfig)(nil)))
+	app := space.GetApplication((*InboundHandlerManager)(nil))
 	if app == nil {
 		return nil
 	}
@@ -27,7 +26,7 @@ func InboundHandlerManagerFromSpace(space app.Space) InboundHandlerManager {
 }
 
 func OutboundHandlerManagerFromSpace(space app.Space) OutboundHandlerManager {
-	app := space.(app.AppGetter).GetApp(serial.GetMessageType((*OutboundConfig)(nil)))
+	app := space.GetApplication((*OutboundHandlerManager)(nil))
 	if app == nil {
 		return nil
 	}

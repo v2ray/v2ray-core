@@ -70,16 +70,16 @@ func TestIPResolution(t *testing.T) {
 	assert := assert.On(t)
 
 	space := app.NewSpace()
-	assert.Error(space.AddApp(new(proxyman.OutboundConfig))).IsNil()
-	assert.Error(space.AddApp(new(dispatcher.Config))).IsNil()
-	assert.Error(space.AddApp(new(router.Config))).IsNil()
-	assert.Error(space.AddApp(&dns.Config{
+	ctx := app.ContextWithSpace(context.Background(), space)
+	assert.Error(app.AddApplicationToSpace(ctx, new(proxyman.OutboundConfig))).IsNil()
+	assert.Error(app.AddApplicationToSpace(ctx, new(dispatcher.Config))).IsNil()
+	assert.Error(app.AddApplicationToSpace(ctx, new(router.Config))).IsNil()
+	assert.Error(app.AddApplicationToSpace(ctx, &dns.Config{
 		Hosts: map[string]*v2net.IPOrDomain{
 			"v2ray.com": v2net.NewIPOrDomain(v2net.LocalHostIP),
 		},
 	})).IsNil()
 
-	ctx := app.ContextWithSpace(context.Background(), space)
 	ctx = proxy.ContextWithOutboundMeta(ctx, &proxy.OutboundHandlerMeta{
 		Address: v2net.AnyIP,
 		StreamSettings: &internet.StreamConfig{

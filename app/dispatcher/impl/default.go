@@ -1,6 +1,7 @@
 package impl
 
 import (
+	"context"
 	"time"
 
 	"v2ray.com/core/app"
@@ -21,7 +22,11 @@ type DefaultDispatcher struct {
 	router *router.Router
 }
 
-func NewDefaultDispatcher(space app.Space) *DefaultDispatcher {
+func NewDefaultDispatcher(ctx context.Context, config *dispatcher.Config) (*DefaultDispatcher, error) {
+	space := app.SpaceFromContext(ctx)
+	if space == nil {
+		return nil, errors.New("DefaultDispatcher: No space in context.")
+	}
 	d := &DefaultDispatcher{}
 	space.OnInitialize(func() error {
 		d.ohm = proxyman.OutboundHandlerManagerFromSpace(space)
@@ -31,7 +36,11 @@ func NewDefaultDispatcher(space app.Space) *DefaultDispatcher {
 		d.router = router.FromSpace(space)
 		return nil
 	})
-	return d
+	return d, nil
+}
+
+func (DefaultDispatcher) Interface() interface{} {
+	return (*dispatcher.PacketDispatcher)(nil)
 }
 
 func (v *DefaultDispatcher) DispatchToOutbound(session *proxy.SessionInfo) ray.InboundRay {
@@ -79,14 +88,10 @@ func (v *DefaultDispatcher) waitAndDispatch(wait func() error, destination v2net
 	dispatcher.Dispatch(destination, link)
 }
 
-type DefaultDispatcherFactory struct{}
-
-func (v DefaultDispatcherFactory) Create(space app.Space, config interface{}) (app.Application, error) {
-	return NewDefaultDispatcher(space), nil
-}
-
 func init() {
-	common.Must(app.RegisterApplicationFactory((*dispatcher.Config)(nil), DefaultDispatcherFactory{}))
+	common.Must(common.RegisterConfig((*dispatcher.Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return NewDefaultDispatcher(ctx, config.(*dispatcher.Config))
+	}))
 }
 
 type waitDataInspector struct {

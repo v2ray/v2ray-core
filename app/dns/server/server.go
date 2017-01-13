@@ -1,10 +1,12 @@
 package server
 
 import (
+	"context"
 	"net"
 	"sync"
 	"time"
 
+	dnsmsg "github.com/miekg/dns"
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/dns"
@@ -12,8 +14,6 @@ import (
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
-
-	dnsmsg "github.com/miekg/dns"
 )
 
 const (
@@ -32,7 +32,11 @@ type CacheServer struct {
 	servers []NameServer
 }
 
-func NewCacheServer(space app.Space, config *dns.Config) *CacheServer {
+func NewCacheServer(ctx context.Context, config *dns.Config) (*CacheServer, error) {
+	space := app.SpaceFromContext(ctx)
+	if space == nil {
+		return nil, errors.New("DNSCacheServer: No space in context.")
+	}
 	server := &CacheServer{
 		records: make(map[string]*DomainRecord),
 		servers: make([]NameServer, len(config.NameServers)),
@@ -62,7 +66,11 @@ func NewCacheServer(space app.Space, config *dns.Config) *CacheServer {
 		}
 		return nil
 	})
-	return server
+	return server, nil
+}
+
+func (CacheServer) Interface() interface{} {
+	return (*dns.Server)(nil)
 }
 
 // Private: Visible for testing.
@@ -109,13 +117,8 @@ func (v *CacheServer) Get(domain string) []net.IP {
 	return nil
 }
 
-type CacheServerFactory struct{}
-
-func (v CacheServerFactory) Create(space app.Space, config interface{}) (app.Application, error) {
-	server := NewCacheServer(space, config.(*dns.Config))
-	return server, nil
-}
-
 func init() {
-	common.Must(app.RegisterApplicationFactory((*dns.Config)(nil), CacheServerFactory{}))
+	common.Must(common.RegisterConfig((*dns.Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return NewCacheServer(ctx, config.(*dns.Config))
+	}))
 }

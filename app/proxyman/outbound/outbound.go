@@ -3,7 +3,8 @@ package outbound
 import (
 	"sync"
 
-	"v2ray.com/core/app"
+	"context"
+
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
 	"v2ray.com/core/proxy"
@@ -15,10 +16,14 @@ type DefaultOutboundHandlerManager struct {
 	taggedHandler  map[string]proxy.OutboundHandler
 }
 
-func New() *DefaultOutboundHandlerManager {
+func New(ctx context.Context, config *proxyman.OutboundConfig) (*DefaultOutboundHandlerManager, error) {
 	return &DefaultOutboundHandlerManager{
 		taggedHandler: make(map[string]proxy.OutboundHandler),
-	}
+	}, nil
+}
+
+func (DefaultOutboundHandlerManager) Interface() interface{} {
+	return (*proxyman.OutboundHandlerManager)(nil)
 }
 
 func (v *DefaultOutboundHandlerManager) GetDefaultHandler() proxy.OutboundHandler {
@@ -54,12 +59,8 @@ func (v *DefaultOutboundHandlerManager) SetHandler(tag string, handler proxy.Out
 	return nil
 }
 
-type OutboundHandlerManagerFactory struct{}
-
-func (v OutboundHandlerManagerFactory) Create(space app.Space, config interface{}) (app.Application, error) {
-	return New(), nil
-}
-
 func init() {
-	common.Must(app.RegisterApplicationFactory((*proxyman.OutboundConfig)(nil), OutboundHandlerManagerFactory{}))
+	common.Must(common.RegisterConfig((*proxyman.OutboundConfig)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return New(ctx, config.(*proxyman.OutboundConfig))
+	}))
 }

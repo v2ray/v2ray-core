@@ -2,60 +2,50 @@ package app
 
 import (
 	"context"
+	"reflect"
 
-	"github.com/golang/protobuf/proto"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
-	"v2ray.com/core/common/serial"
 )
 
 type Application interface {
+	Interface() interface{}
 }
 
 type InitializationCallback func() error
 
-type ApplicationFactory interface {
-	Create(space Space, config interface{}) (Application, error)
-}
-
-type AppGetter interface {
-	GetApp(name string) Application
-}
-
-var (
-	applicationFactoryCache = make(map[string]ApplicationFactory)
-)
-
-func RegisterApplicationFactory(defaultConfig proto.Message, factory ApplicationFactory) error {
-	if defaultConfig == nil {
-		return errors.New("Space: config is nil.")
+func CreateAppFromConfig(ctx context.Context, config interface{}) (Application, error) {
+	application, err := common.CreateObject(ctx, config)
+	if err != nil {
+		return nil, err
 	}
-	name := serial.GetMessageType(defaultConfig)
-	if len(name) == 0 {
-		return errors.New("Space: cannot get config type.")
+	switch a := application.(type) {
+	case Application:
+		return a, nil
+	default:
+		return nil, errors.New("App: Not an application.")
 	}
-	applicationFactoryCache[name] = factory
-	return nil
 }
 
 // A Space contains all apps that may be available in a V2Ray runtime.
 // Caller must check the availability of an app by calling HasXXX before getting its instance.
 type Space interface {
-	AddApp(config proto.Message) error
-	AddAppLegacy(name string, app Application)
+	GetApplication(appInterface interface{}) Application
+	AddApplication(application Application) error
 	Initialize() error
 	OnInitialize(InitializationCallback)
 }
 
 type spaceImpl struct {
 	initialized bool
-	cache       map[string]Application
+	cache       map[reflect.Type]Application
 	appInit     []InitializationCallback
 }
 
 func NewSpace() Space {
 	return &spaceImpl{
-		cache:   make(map[string]Application),
+		cache:   make(map[reflect.Type]Application),
 		appInit: make([]InitializationCallback, 0, 32),
 	}
 }
@@ -81,30 +71,15 @@ func (v *spaceImpl) Initialize() error {
 	return nil
 }
 
-func (v *spaceImpl) GetApp(configType string) Application {
-	obj, found := v.cache[configType]
-	if !found {
-		return nil
-	}
-	return obj
+func (v *spaceImpl) GetApplication(appInterface interface{}) Application {
+	appType := reflect.TypeOf(appInterface)
+	return v.cache[appType]
 }
 
-func (v *spaceImpl) AddApp(config proto.Message) error {
-	configName := serial.GetMessageType(config)
-	factory, found := applicationFactoryCache[configName]
-	if !found {
-		return errors.New("Space: app not registered: ", configName)
-	}
-	app, err := factory.Create(v, config)
-	if err != nil {
-		return err
-	}
-	v.cache[configName] = app
+func (v *spaceImpl) AddApplication(app Application) error {
+	appType := reflect.TypeOf(app.Interface())
+	v.cache[appType] = app
 	return nil
-}
-
-func (v *spaceImpl) AddAppLegacy(name string, application Application) {
-	v.cache[name] = application
 }
 
 type contextKey int
@@ -112,6 +87,18 @@ type contextKey int
 const (
 	spaceKey = contextKey(0)
 )
+
+func AddApplicationToSpace(ctx context.Context, appConfig interface{}) error {
+	space := SpaceFromContext(ctx)
+	if space == nil {
+		return errors.New("App: No space in context.")
+	}
+	application, err := CreateAppFromConfig(ctx, appConfig)
+	if err != nil {
+		return err
+	}
+	return space.AddApplication(application)
+}
 
 func SpaceFromContext(ctx context.Context) Space {
 	return ctx.Value(spaceKey).(Space)

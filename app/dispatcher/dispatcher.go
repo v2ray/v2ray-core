@@ -2,7 +2,6 @@ package dispatcher
 
 import (
 	"v2ray.com/core/app"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
 )
@@ -13,7 +12,7 @@ type PacketDispatcher interface {
 }
 
 func FromSpace(space app.Space) PacketDispatcher {
-	if app := space.(app.AppGetter).GetApp(serial.GetMessageType((*Config)(nil))); app != nil {
+	if app := space.GetApplication((*PacketDispatcher)(nil)); app != nil {
 		return app.(PacketDispatcher)
 	}
 	return nil

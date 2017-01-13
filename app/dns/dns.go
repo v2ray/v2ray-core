@@ -4,7 +4,6 @@ import (
 	"net"
 
 	"v2ray.com/core/app"
-	"v2ray.com/core/common/serial"
 )
 
 // A DnsCache is an internal cache of DNS resolutions.
@@ -13,7 +12,7 @@ type Server interface {
 }
 
 func FromSpace(space app.Space) Server {
-	app := space.(app.AppGetter).GetApp(serial.GetMessageType((*Config)(nil)))
+	app := space.GetApplication((*Server)(nil))
 	if app == nil {
 		return nil
 	}

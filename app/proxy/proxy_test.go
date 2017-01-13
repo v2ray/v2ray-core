@@ -23,7 +23,7 @@ func TestProxyDial(t *testing.T) {
 
 	space := app.NewSpace()
 	ctx := app.ContextWithSpace(context.Background(), space)
-	assert.Error(space.AddApp(new(proxyman.OutboundConfig)))
+	assert.Error(app.AddApplicationToSpace(ctx, new(proxyman.OutboundConfig))).IsNil()
 	outboundManager := proxyman.OutboundHandlerManagerFromSpace(space)
 	freedom, err := freedom.New(proxy.ContextWithOutboundMeta(ctx, &proxy.OutboundHandlerMeta{
 		Tag: "tag",
@@ -34,9 +34,8 @@ func TestProxyDial(t *testing.T) {
 	assert.Error(err).IsNil()
 	common.Must(outboundManager.SetHandler("tag", freedom))
 
-	assert.Error(space.AddApp(new(Config))).IsNil()
+	assert.Error(app.AddApplicationToSpace(ctx, new(Config))).IsNil()
 	proxy := OutboundProxyFromSpace(space)
-
 	assert.Error(space.Initialize()).IsNil()
 
 	xor := func(b []byte) []byte {

@@ -40,13 +40,11 @@ func TestDokodemoTCP(t *testing.T) {
 	defer tcpServer.Close()
 
 	space := app.NewSpace()
-	space.AddApp(new(dispatcher.Config))
-	space.AddApp(new(proxyman.OutboundConfig))
+	ctx := app.ContextWithSpace(context.Background(), space)
+	app.AddApplicationToSpace(ctx, new(dispatcher.Config))
+	app.AddApplicationToSpace(ctx, new(proxyman.OutboundConfig))
 
 	ohm := proxyman.OutboundHandlerManagerFromSpace(space)
-	ctx := context.Background()
-	ctx = app.ContextWithSpace(ctx, space)
-
 	freedom, err := freedom.New(proxy.ContextWithOutboundMeta(ctx, &proxy.OutboundHandlerMeta{
 		Address: v2net.LocalHostIP,
 		StreamSettings: &internet.StreamConfig{
@@ -117,13 +115,11 @@ func TestDokodemoUDP(t *testing.T) {
 	defer udpServer.Close()
 
 	space := app.NewSpace()
-	space.AddApp(new(dispatcher.Config))
-	space.AddApp(new(proxyman.OutboundConfig))
+	ctx := app.ContextWithSpace(context.Background(), space)
+	app.AddApplicationToSpace(ctx, new(dispatcher.Config))
+	app.AddApplicationToSpace(ctx, new(proxyman.OutboundConfig))
 
 	ohm := proxyman.OutboundHandlerManagerFromSpace(space)
-
-	ctx := context.Background()
-	ctx = app.ContextWithSpace(ctx, space)
 	freedom, err := freedom.New(proxy.ContextWithOutboundMeta(ctx, &proxy.OutboundHandlerMeta{
 		Address: v2net.AnyIP,
 		StreamSettings: &internet.StreamConfig{
