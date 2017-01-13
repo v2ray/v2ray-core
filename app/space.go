@@ -72,11 +72,17 @@ func (v *spaceImpl) Initialize() error {
 }
 
 func (v *spaceImpl) GetApplication(appInterface interface{}) Application {
+	if v == nil {
+		return nil
+	}
 	appType := reflect.TypeOf(appInterface)
 	return v.cache[appType]
 }
 
 func (v *spaceImpl) AddApplication(app Application) error {
+	if v == nil {
+		return errors.New("App: Nil space.")
+	}
 	appType := reflect.TypeOf(app.Interface())
 	v.cache[appType] = app
 	return nil
