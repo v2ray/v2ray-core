@@ -2,6 +2,8 @@
 package proxy
 
 import (
+	"context"
+
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/transport/internet"
@@ -58,4 +60,9 @@ type InboundHandler interface {
 type OutboundHandler interface {
 	// Dispatch sends one or more Packets to its destination.
 	Dispatch(destination net.Destination, ray ray.OutboundRay)
+}
+
+// Dialer is used by OutboundHandler for creating outbound connections.
+type Dialer interface {
+	Dial(ctx context.Context, destination net.Destination) (internet.Connection, error)
 }

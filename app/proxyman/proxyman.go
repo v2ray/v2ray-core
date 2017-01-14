@@ -10,6 +10,10 @@ type InboundHandlerManager interface {
 	GetHandler(tag string) (proxy.InboundHandler, int)
 }
 
+type InboundHandler interface {
+	
+}
+
 type OutboundHandlerManager interface {
 	GetHandler(tag string) proxy.OutboundHandler
 	GetDefaultHandler() proxy.OutboundHandler
