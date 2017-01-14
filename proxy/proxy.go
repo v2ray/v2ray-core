@@ -54,6 +54,8 @@ type InboundHandler interface {
 	Close()
 	// Port returns the port that the handler is listening on.
 	Port() net.Port
+
+	Network() net.NetworkList
 }
 
 // An OutboundHandler handles outbound network connection for V2Ray.

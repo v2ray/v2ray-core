@@ -67,6 +67,16 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	return s, nil
 }
 
+func (v *Server) Network() net.NetworkList {
+	list := net.NetworkList{
+		Network: []net.Network{net.Network_TCP},
+	}
+	if v.config.UdpEnabled {
+		list.Network = append(list.Network, net.Network_UDP)
+	}
+	return list
+}
+
 func (v *Server) Port() net.Port {
 	return v.meta.Port
 }

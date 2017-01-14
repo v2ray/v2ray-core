@@ -120,6 +120,12 @@ func New(ctx context.Context, config *Config) (*VMessInboundHandler, error) {
 	return handler, nil
 }
 
+func (v *VMessInboundHandler) Network() net.NetworkList {
+	return net.NetworkList{
+		Network: []net.Network{net.Network_TCP},
+	}
+}
+
 func (v *VMessInboundHandler) Port() net.Port {
 	return v.meta.Port
 }

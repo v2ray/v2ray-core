@@ -40,6 +40,9 @@ func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
 	if meta == nil {
 		return nil, errors.New("Dokodemo: No outbound meta in context.")
 	}
+	if config.NetworkList == nil || config.NetworkList.Size() == 0 {
+		return nil, errors.New("DokodemoDoor: No network specified.")
+	}
 	d := &DokodemoDoor{
 		config:  config,
 		address: config.GetPredefinedAddress(),
@@ -76,15 +79,15 @@ func (v *DokodemoDoor) Close() {
 	}
 }
 
+func (v *DokodemoDoor) Network() net.NetworkList {
+	return *(v.config.NetworkList)
+}
+
 func (v *DokodemoDoor) Start() error {
 	if v.accepting {
 		return nil
 	}
 	v.accepting = true
-
-	if v.config.NetworkList == nil || v.config.NetworkList.Size() == 0 {
-		return errors.New("DokodemoDoor: No network specified.")
-	}
 
 	if v.config.NetworkList.HasNetwork(net.Network_TCP) {
 		err := v.ListenTCP()

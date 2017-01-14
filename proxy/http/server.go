@@ -1,14 +1,13 @@
 package http
 
 import (
+	"context"
 	"io"
 	"net"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
-
-	"context"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
@@ -60,6 +59,12 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 // Port implements InboundHandler.Port().
 func (v *Server) Port() v2net.Port {
 	return v.meta.Port
+}
+
+func (v *Server) Network() v2net.NetworkList {
+	return v2net.NetworkList{
+		Network: []v2net.Network{v2net.Network_TCP},
+	}
 }
 
 // Close implements InboundHandler.Close().
