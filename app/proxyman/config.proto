@@ -73,11 +73,13 @@ message StreamSenderConfig {
   // Send traffic through the given IP. Only IP is allowed.
   v2ray.core.common.net.IPOrDomain via = 1;
   v2ray.core.transport.internet.StreamConfig stream_settings = 2;
+  v2ray.core.transport.internet.ProxyConfig proxy_settings = 3;
 }
 
 message DatagramSenderConfig {
   // Send traffic through the given IP. Only IP is allowed.
   v2ray.core.common.net.IPOrDomain via = 1;
+  v2ray.core.transport.internet.ProxyConfig proxy_settings = 2;
 }
 
 message OutboundHandlerConfig {

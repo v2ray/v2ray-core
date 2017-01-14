@@ -1,9 +1,8 @@
 package outbound
 
 import (
-	"sync"
-
 	"context"
+	"sync"
 
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
