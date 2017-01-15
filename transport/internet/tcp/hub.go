@@ -42,7 +42,7 @@ func ListenTCP(address v2net.Address, port v2net.Port, options internet.ListenOp
 	if err != nil {
 		return nil, err
 	}
-	networkSettings, err := options.Stream.GetEffectiveNetworkSettings()
+	networkSettings, err := options.Stream.GetEffectiveTransportSettings()
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func ListenTCP(address v2net.Address, port v2net.Port, options internet.ListenOp
 		if err != nil {
 			return nil, errors.Base(err).Message("Internet|TCP: Invalid header settings.")
 		}
-		auth, err := internet.CreateConnectionAuthenticator(tcpSettings.HeaderSettings.Type, headerConfig)
+		auth, err := internet.CreateConnectionAuthenticator(headerConfig)
 		if err != nil {
 			return nil, errors.Base(err).Message("Internet|TCP: Invalid header settings.")
 		}
@@ -159,5 +159,5 @@ func (v *TCPListener) Close() error {
 }
 
 func init() {
-	common.Must(internet.RegisterNetworkListener(v2net.Network_TCP, ListenTCP))
+	common.Must(internet.RegisterTransportListener(internet.TransportProtocol_TCP, ListenTCP))
 }

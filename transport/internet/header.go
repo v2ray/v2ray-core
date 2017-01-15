@@ -1,32 +1,26 @@
 package internet
 
-import "v2ray.com/core/common"
+import (
+	"context"
+	"errors"
+
+	"v2ray.com/core/common"
+)
 
 type PacketHeader interface {
 	Size() int
 	Write([]byte) (int, error)
 }
 
-type PacketHeaderFactory interface {
-	Create(interface{}) PacketHeader
-}
-
-var (
-	headerCache = make(map[string]PacketHeaderFactory)
-)
-
-func RegisterPacketHeader(name string, factory PacketHeaderFactory) error {
-	if _, found := headerCache[name]; found {
-		return common.ErrDuplicatedName
+func CreatePacketHeader(config interface{}) (PacketHeader, error) {
+	header, err := common.CreateObject(context.Background(), config)
+	if err != nil {
+		return nil, err
 	}
-	headerCache[name] = factory
-	return nil
-}
-
-func CreatePacketHeader(name string, config interface{}) (PacketHeader, error) {
-	factory, found := headerCache[name]
-	if !found {
-		return nil, common.ErrObjectNotFound
+	switch h := header.(type) {
+	case PacketHeader:
+		return h, nil
+	default:
+		return nil, errors.New("Internet: Not a packet header.")
 	}
-	return factory.Create(config), nil
 }

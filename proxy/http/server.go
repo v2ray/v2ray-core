@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"io"
 	"net"
 	"net/http"
@@ -16,7 +17,6 @@ import (
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
@@ -26,14 +26,22 @@ import (
 type Server struct {
 	sync.Mutex
 	accepting        bool
-	packetDispatcher dispatcher.PacketDispatcher
+	packetDispatcher dispatcher.Interface
 	config           *ServerConfig
 	tcpListener      *internet.TCPHub
 	meta             *proxy.InboundHandlerMeta
 }
 
 // NewServer creates a new HTTP inbound handler.
-func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandlerMeta) *Server {
+func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
+	space := app.SpaceFromContext(ctx)
+	if space == nil {
+		return nil, errors.New("HTTP|Server: No space in context.")
+	}
+	meta := proxy.InboundMetaFromContext(ctx)
+	if meta == nil {
+		return nil, errors.New("HTTP|Server: No inbound meta from context.")
+	}
 	s := &Server{
 		config: config,
 		meta:   meta,
@@ -45,12 +53,18 @@ func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandler
 		}
 		return nil
 	})
-	return s
+	return s, nil
 }
 
 // Port implements InboundHandler.Port().
 func (v *Server) Port() v2net.Port {
 	return v.meta.Port
+}
+
+func (v *Server) Network() v2net.NetworkList {
+	return v2net.NetworkList{
+		Network: []v2net.Network{v2net.Network_TCP},
+	}
 }
 
 // Close implements InboundHandler.Close().
@@ -176,8 +190,6 @@ func (v *Server) handleConnect(request *http.Request, session *proxy.SessionInfo
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
-		defer ray.InboundOutput().ForceClose()
-
 		v2writer := buf.NewWriter(writer)
 		if err := buf.PipeUntilEOF(ray.InboundOutput(), v2writer); err != nil {
 			return err
@@ -185,7 +197,11 @@ func (v *Server) handleConnect(request *http.Request, session *proxy.SessionInfo
 		return nil
 	})
 
-	signal.ErrorOrFinish2(requestDone, responseDone)
+	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+		log.Info("HTTP|Server: Connection ends with: ", err)
+		ray.InboundInput().CloseError()
+		ray.InboundOutput().CloseError()
+	}
 }
 
 // @VisibleForTesting
@@ -244,9 +260,6 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 
-	defer input.Close()
-	defer output.ForceClose()
-
 	requestDone := signal.ExecuteAsync(func() error {
 		defer input.Close()
 
@@ -262,8 +275,6 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
-		defer output.ForceClose()
-
 		responseReader := bufio.OriginalReader(buf.NewBytesReader(ray.InboundOutput()))
 		response, err := http.ReadResponse(responseReader, request)
 		if err != nil {
@@ -283,24 +294,13 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 
 	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
 		log.Info("HTTP|Server: Connecton ending with ", err)
+		input.CloseError()
+		output.CloseError()
 	}
-}
-
-// ServerFactory is a InboundHandlerFactory.
-type ServerFactory struct{}
-
-// StreamCapability implements InboundHandlerFactory.StreamCapability().
-func (v *ServerFactory) StreamCapability() v2net.NetworkList {
-	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_TCP},
-	}
-}
-
-// Create implements InboundHandlerFactory.Create().
-func (v *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
-	return NewServer(rawConfig.(*ServerConfig), space, meta), nil
 }
 
 func init() {
-	common.Must(proxy.RegisterInboundHandlerCreator(serial.GetMessageType(new(ServerConfig)), new(ServerFactory)))
+	common.Must(common.RegisterConfig((*ServerConfig)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return NewServer(ctx, config.(*ServerConfig))
+	}))
 }

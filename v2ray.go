@@ -1,6 +1,8 @@
 package core
 
 import (
+	"context"
+
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/dns"
@@ -9,7 +11,6 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy"
 )
 
@@ -38,30 +39,42 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	}
 
 	space := app.NewSpace()
+	ctx := app.ContextWithSpace(context.Background(), space)
+
 	vpoint.space = space
-	vpoint.space.AddAppLegacy(serial.GetMessageType((*proxyman.InboundConfig)(nil)), vpoint)
+	vpoint.space.AddApplication(vpoint)
 
 	outboundHandlerManager := proxyman.OutboundHandlerManagerFromSpace(space)
 	if outboundHandlerManager == nil {
-		if err := space.AddApp(new(proxyman.OutboundConfig)); err != nil {
+		o, err := app.CreateAppFromConfig(ctx, new(proxyman.OutboundConfig))
+		if err != nil {
 			return nil, err
 		}
-		outboundHandlerManager = proxyman.OutboundHandlerManagerFromSpace(space)
+		space.AddApplication(o)
+		outboundHandlerManager = o.(proxyman.OutboundHandlerManager)
 	}
 
 	proxyDialer := proxydialer.OutboundProxyFromSpace(space)
 	if proxyDialer == nil {
-		space.AddApp(new(proxydialer.Config))
-		proxyDialer = proxydialer.OutboundProxyFromSpace(space)
-	}
-	proxyDialer.RegisterDialer()
-
-	for _, app := range pConfig.App {
-		settings, err := app.GetInstance()
+		p, err := app.CreateAppFromConfig(ctx, new(proxydialer.Config))
 		if err != nil {
 			return nil, err
 		}
-		if err := space.AddApp(settings); err != nil {
+		space.AddApplication(p)
+		proxyDialer = p.(*proxydialer.OutboundProxy)
+	}
+	proxyDialer.RegisterDialer()
+
+	for _, appSettings := range pConfig.App {
+		settings, err := appSettings.GetInstance()
+		if err != nil {
+			return nil, err
+		}
+		application, err := app.CreateAppFromConfig(ctx, settings)
+		if err != nil {
+			return nil, err
+		}
+		if err := space.AddApplication(application); err != nil {
 			return nil, err
 		}
 	}
@@ -73,18 +86,22 @@ func NewPoint(pConfig *Config) (*Point, error) {
 				Address: v2net.NewIPOrDomain(v2net.LocalHostDomain),
 			}},
 		}
-		if err := space.AddApp(dnsConfig); err != nil {
+		d, err := app.CreateAppFromConfig(ctx, dnsConfig)
+		if err != nil {
 			return nil, err
 		}
+		space.AddApplication(d)
+		dnsServer = d.(dns.Server)
 	}
 
 	disp := dispatcher.FromSpace(space)
 	if disp == nil {
-		dispatcherConfig := new(dispatcher.Config)
-		if err := vpoint.space.AddApp(dispatcherConfig); err != nil {
+		d, err := app.CreateAppFromConfig(ctx, new(dispatcher.Config))
+		if err != nil {
 			return nil, err
 		}
-		disp = dispatcher.FromSpace(space)
+		space.AddApplication(d)
+		disp = d.(dispatcher.Interface)
 	}
 
 	vpoint.inboundHandlers = make([]InboundDetourHandler, 0, 8)
@@ -94,14 +111,14 @@ func NewPoint(pConfig *Config) (*Point, error) {
 		var inboundHandler InboundDetourHandler
 		switch allocConfig.Type {
 		case AllocationStrategy_Always:
-			dh, err := NewInboundDetourHandlerAlways(vpoint.space, inbound)
+			dh, err := NewInboundDetourHandlerAlways(ctx, inbound)
 			if err != nil {
 				log.Error("V2Ray: Failed to create detour handler: ", err)
 				return nil, common.ErrBadConfiguration
 			}
 			inboundHandler = dh
 		case AllocationStrategy_Random:
-			dh, err := NewInboundDetourHandlerDynamic(vpoint.space, inbound)
+			dh, err := NewInboundDetourHandlerDynamic(ctx, inbound)
 			if err != nil {
 				log.Error("V2Ray: Failed to create detour handler: ", err)
 				return nil, common.ErrBadConfiguration
@@ -124,13 +141,12 @@ func NewPoint(pConfig *Config) (*Point, error) {
 		if err != nil {
 			return nil, err
 		}
-		outboundHandler, err := proxy.CreateOutboundHandler(
-			outbound.Settings.Type, vpoint.space, outboundSettings, &proxy.OutboundHandlerMeta{
-				Tag:            outbound.Tag,
-				Address:        outbound.GetSendThroughValue(),
-				StreamSettings: outbound.StreamSettings,
-				ProxySettings:  outbound.ProxySettings,
-			})
+		outboundHandler, err := proxy.CreateOutboundHandler(proxy.ContextWithOutboundMeta(ctx, &proxy.OutboundHandlerMeta{
+			Tag:            outbound.Tag,
+			Address:        outbound.GetSendThroughValue(),
+			StreamSettings: outbound.StreamSettings,
+			ProxySettings:  outbound.ProxySettings,
+		}), outboundSettings)
 		if err != nil {
 			log.Error("V2Ray: Failed to create detour outbound connection handler: ", err)
 			return nil, err
@@ -151,6 +167,10 @@ func NewPoint(pConfig *Config) (*Point, error) {
 	}
 
 	return vpoint, nil
+}
+
+func (Point) Interface() interface{} {
+	return (*proxyman.InboundHandlerManager)(nil)
 }
 
 func (v *Point) Close() {

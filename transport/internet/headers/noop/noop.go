@@ -1,10 +1,10 @@
 package noop
 
 import (
+	"context"
 	"net"
 
-	"v2ray.com/core/common/serial"
-	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/common"
 )
 
 type NoOpHeader struct{}
@@ -16,10 +16,8 @@ func (v NoOpHeader) Write([]byte) (int, error) {
 	return 0, nil
 }
 
-type NoOpHeaderFactory struct{}
-
-func (v NoOpHeaderFactory) Create(config interface{}) internet.PacketHeader {
-	return NoOpHeader{}
+func NewNoOpHeader(context.Context, interface{}) (interface{}, error) {
+	return NoOpHeader{}, nil
 }
 
 type NoOpConnectionHeader struct{}
@@ -32,13 +30,11 @@ func (NoOpConnectionHeader) Server(conn net.Conn) net.Conn {
 	return conn
 }
 
-type NoOpConnectionHeaderFactory struct{}
-
-func (NoOpConnectionHeaderFactory) Create(config interface{}) internet.ConnectionAuthenticator {
-	return NoOpConnectionHeader{}
+func NewNoOpConnectionHeader(context.Context, interface{}) (interface{}, error) {
+	return NoOpConnectionHeader{}, nil
 }
 
 func init() {
-	internet.RegisterPacketHeader(serial.GetMessageType(new(Config)), NoOpHeaderFactory{})
-	internet.RegisterConnectionAuthenticator(serial.GetMessageType(new(Config)), NoOpConnectionHeaderFactory{})
+	common.Must(common.RegisterConfig((*Config)(nil), NewNoOpHeader))
+	common.Must(common.RegisterConfig((*ConnectionConfig)(nil), NewNoOpConnectionHeader))
 }

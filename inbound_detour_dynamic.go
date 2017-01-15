@@ -1,13 +1,14 @@
 package core
 
 import (
+	"context"
 	"sync"
 	"time"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/log"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/proxy"
 )
@@ -16,17 +17,20 @@ type InboundDetourHandlerDynamic struct {
 	sync.RWMutex
 	space       app.Space
 	config      *InboundConnectionConfig
-	portsInUse  map[v2net.Port]bool
+	portsInUse  map[net.Port]bool
 	ichs        []proxy.InboundHandler
 	ich2Recyle  []proxy.InboundHandler
 	lastRefresh time.Time
+	ctx         context.Context
 }
 
-func NewInboundDetourHandlerDynamic(space app.Space, config *InboundConnectionConfig) (*InboundDetourHandlerDynamic, error) {
+func NewInboundDetourHandlerDynamic(ctx context.Context, config *InboundConnectionConfig) (*InboundDetourHandlerDynamic, error) {
+	space := app.SpaceFromContext(ctx)
 	handler := &InboundDetourHandlerDynamic{
 		space:      space,
 		config:     config,
-		portsInUse: make(map[v2net.Port]bool),
+		portsInUse: make(map[net.Port]bool),
+		ctx:        ctx,
 	}
 	handler.ichs = make([]proxy.InboundHandler, config.GetAllocationStrategyValue().GetConcurrencyValue())
 
@@ -35,13 +39,13 @@ func NewInboundDetourHandlerDynamic(space app.Space, config *InboundConnectionCo
 	if err != nil {
 		return nil, err
 	}
-	ich, err := proxy.CreateInboundHandler(config.Settings.Type, space, ichConfig, &proxy.InboundHandlerMeta{
+	ich, err := proxy.CreateInboundHandler(proxy.ContextWithInboundMeta(ctx, &proxy.InboundHandlerMeta{
 		Address:                config.GetListenOnValue(),
 		Port:                   0,
 		Tag:                    config.Tag,
 		StreamSettings:         config.StreamSettings,
 		AllowPassiveConnection: config.AllowPassiveConnection,
-	})
+	}), ichConfig)
 	if err != nil {
 		log.Error("Point: Failed to create inbound connection handler: ", err)
 		return nil, err
@@ -51,11 +55,11 @@ func NewInboundDetourHandlerDynamic(space app.Space, config *InboundConnectionCo
 	return handler, nil
 }
 
-func (v *InboundDetourHandlerDynamic) pickUnusedPort() v2net.Port {
+func (v *InboundDetourHandlerDynamic) pickUnusedPort() net.Port {
 	delta := int(v.config.PortRange.To) - int(v.config.PortRange.From) + 1
 	for {
 		r := dice.Roll(delta)
-		port := v.config.PortRange.FromPort() + v2net.Port(r)
+		port := v.config.PortRange.FromPort() + net.Port(r)
 		_, used := v.portsInUse[port]
 		if !used {
 			return port
@@ -107,8 +111,10 @@ func (v *InboundDetourHandlerDynamic) refresh() error {
 		err := retry.Timed(5, 100).On(func() error {
 			port := v.pickUnusedPort()
 			ichConfig, _ := config.GetTypedSettings()
-			ich, err := proxy.CreateInboundHandler(config.Settings.Type, v.space, ichConfig, &proxy.InboundHandlerMeta{
-				Address: config.GetListenOnValue(), Port: port, Tag: config.Tag, StreamSettings: config.StreamSettings})
+			ich, err := proxy.CreateInboundHandler(proxy.ContextWithInboundMeta(v.ctx, &proxy.InboundHandlerMeta{
+				Address: config.GetListenOnValue(),
+				Port:    port, Tag: config.Tag,
+				StreamSettings: config.StreamSettings}), ichConfig)
 			if err != nil {
 				delete(v.portsInUse, port)
 				return err

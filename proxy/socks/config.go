@@ -1,7 +1,7 @@
 package socks
 
 import (
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 )
 
@@ -27,9 +27,9 @@ func (v *ServerConfig) HasAccount(username, password string) bool {
 	return storedPassed == password
 }
 
-func (v *ServerConfig) GetNetAddress() v2net.Address {
+func (v *ServerConfig) GetNetAddress() net.Address {
 	if v.Address == nil {
-		return v2net.LocalHostIP
+		return net.LocalHostIP
 	}
 	return v.Address.AsAddress()
 }

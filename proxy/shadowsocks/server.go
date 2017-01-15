@@ -1,13 +1,16 @@
 package shadowsocks
 
 import (
+	"context"
+
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
@@ -16,7 +19,7 @@ import (
 )
 
 type Server struct {
-	packetDispatcher dispatcher.PacketDispatcher
+	packetDispatcher dispatcher.Interface
 	config           *ServerConfig
 	user             *protocol.User
 	account          *ShadowsocksAccount
@@ -27,7 +30,15 @@ type Server struct {
 	udpServer        *udp.Server
 }
 
-func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandlerMeta) (*Server, error) {
+func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
+	space := app.SpaceFromContext(ctx)
+	if space == nil {
+		return nil, errors.New("Shadowsocks|Server: No space in context.")
+	}
+	meta := proxy.InboundMetaFromContext(ctx)
+	if meta == nil {
+		return nil, errors.New("Shadowsocks|Server: No inbound meta in context.")
+	}
 	if config.GetUser() == nil {
 		return nil, protocol.ErrUserMissing
 	}
@@ -56,7 +67,17 @@ func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandler
 	return s, nil
 }
 
-func (v *Server) Port() v2net.Port {
+func (v *Server) Network() net.NetworkList {
+	list := net.NetworkList{
+		Network: []net.Network{net.Network_TCP},
+	}
+	if v.config.UdpEnabled {
+		list.Network = append(list.Network, net.Network_UDP)
+	}
+	return list
+}
+
+func (v *Server) Port() net.Port {
 	return v.meta.Port
 }
 
@@ -127,7 +148,7 @@ func (v *Server) handlerUDPPayload(payload *buf.Buffer, session *proxy.SessionIn
 	log.Access(source, dest, log.AccessAccepted, "")
 	log.Info("Shadowsocks|Server: Tunnelling request to ", dest)
 
-	v.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: dest, User: request.User, Inbound: v.meta}, data, func(destination v2net.Destination, payload *buf.Buffer) {
+	v.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: dest, User: request.User, Inbound: v.meta}, data, func(destination net.Destination, payload *buf.Buffer) {
 		defer payload.Release()
 
 		data, err := EncodeUDPPacket(request, payload)
@@ -145,7 +166,7 @@ func (v *Server) handleConnection(conn internet.Connection) {
 	defer conn.Close()
 	conn.SetReusable(false)
 
-	timedReader := v2net.NewTimeOutReader(16, conn)
+	timedReader := net.NewTimeOutReader(16, conn)
 	bufferedReader := bufio.NewReader(timedReader)
 	request, bodyReader, err := ReadTCPSession(v.user, bufferedReader)
 	if err != nil {
@@ -164,17 +185,13 @@ func (v *Server) handleConnection(conn internet.Connection) {
 	log.Info("Shadowsocks|Server: Tunnelling request to ", dest)
 
 	ray := v.packetDispatcher.DispatchToOutbound(&proxy.SessionInfo{
-		Source:      v2net.DestinationFromAddr(conn.RemoteAddr()),
+		Source:      net.DestinationFromAddr(conn.RemoteAddr()),
 		Destination: dest,
 		User:        request.User,
 		Inbound:     v.meta,
 	})
-	defer ray.InboundOutput().ForceClose()
-	defer ray.InboundInput().Close()
 
 	requestDone := signal.ExecuteAsync(func() error {
-		defer ray.InboundOutput().ForceClose()
-
 		bufferedWriter := bufio.NewWriter(conn)
 		responseWriter, err := WriteTCPResponse(request, bufferedWriter)
 		if err != nil {
@@ -215,17 +232,13 @@ func (v *Server) handleConnection(conn internet.Connection) {
 
 	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
 		log.Info("Shadowsocks|Server: Connection ends with ", err)
+		ray.InboundInput().CloseError()
+		ray.InboundOutput().CloseError()
 	}
 }
 
-type ServerFactory struct{}
-
-func (v *ServerFactory) StreamCapability() v2net.NetworkList {
-	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_TCP},
-	}
-}
-
-func (v *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
-	return NewServer(rawConfig.(*ServerConfig), space, meta)
+func init() {
+	common.Must(common.RegisterConfig((*ServerConfig)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return NewServer(ctx, config.(*ServerConfig))
+	}))
 }

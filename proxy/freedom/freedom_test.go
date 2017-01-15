@@ -3,6 +3,8 @@ package freedom_test
 import (
 	"testing"
 
+	"context"
+
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	_ "v2ray.com/core/app/dispatcher/impl"
@@ -37,15 +39,15 @@ func TestSinglePacket(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	space := app.NewSpace()
-	freedom := New(
-		&Config{},
-		space,
-		&proxy.OutboundHandlerMeta{
-			Address: v2net.AnyIP,
-			StreamSettings: &internet.StreamConfig{
-				Network: v2net.Network_TCP,
-			},
-		})
+	ctx := app.ContextWithSpace(context.Background(), space)
+	ctx = proxy.ContextWithOutboundMeta(ctx, &proxy.OutboundHandlerMeta{
+		Address: v2net.AnyIP,
+		StreamSettings: &internet.StreamConfig{
+			Protocol: internet.TransportProtocol_TCP,
+		},
+	})
+	freedom, err := New(ctx, &Config{})
+	assert.Error(err).IsNil()
 	assert.Error(space.Initialize()).IsNil()
 
 	traffic := ray.NewRay()
@@ -68,24 +70,24 @@ func TestIPResolution(t *testing.T) {
 	assert := assert.On(t)
 
 	space := app.NewSpace()
-	assert.Error(space.AddApp(new(proxyman.OutboundConfig))).IsNil()
-	assert.Error(space.AddApp(new(dispatcher.Config))).IsNil()
-	assert.Error(space.AddApp(new(router.Config))).IsNil()
-	assert.Error(space.AddApp(&dns.Config{
+	ctx := app.ContextWithSpace(context.Background(), space)
+	assert.Error(app.AddApplicationToSpace(ctx, new(proxyman.OutboundConfig))).IsNil()
+	assert.Error(app.AddApplicationToSpace(ctx, new(dispatcher.Config))).IsNil()
+	assert.Error(app.AddApplicationToSpace(ctx, new(router.Config))).IsNil()
+	assert.Error(app.AddApplicationToSpace(ctx, &dns.Config{
 		Hosts: map[string]*v2net.IPOrDomain{
 			"v2ray.com": v2net.NewIPOrDomain(v2net.LocalHostIP),
 		},
 	})).IsNil()
 
-	freedom := New(
-		&Config{DomainStrategy: Config_USE_IP},
-		space,
-		&proxy.OutboundHandlerMeta{
-			Address: v2net.AnyIP,
-			StreamSettings: &internet.StreamConfig{
-				Network: v2net.Network_TCP,
-			},
-		})
+	ctx = proxy.ContextWithOutboundMeta(ctx, &proxy.OutboundHandlerMeta{
+		Address: v2net.AnyIP,
+		StreamSettings: &internet.StreamConfig{
+			Protocol: internet.TransportProtocol_TCP,
+		},
+	})
+	freedom, err := New(ctx, &Config{DomainStrategy: Config_USE_IP})
+	assert.Error(err).IsNil()
 
 	assert.Error(space.Initialize()).IsNil()
 

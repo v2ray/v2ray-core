@@ -35,13 +35,18 @@ type Ray interface {
 	AddInspector(Inspector)
 }
 
+type RayStream interface {
+	Close()
+	CloseError()
+}
+
 type InputStream interface {
 	buf.Reader
+	RayStream
 	ReadTimeout(time.Duration) (*buf.Buffer, error)
-	ForceClose()
 }
 
 type OutputStream interface {
 	buf.Writer
-	Close()
+	RayStream
 }

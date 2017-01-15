@@ -16,10 +16,6 @@ enum Network {
   TCP = 2;
 
   UDP = 3;
-
-  KCP = 4;
-  
-  WebSocket = 5;
 }
 
 message NetworkList {

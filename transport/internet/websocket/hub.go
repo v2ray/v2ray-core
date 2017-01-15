@@ -38,7 +38,7 @@ type WSListener struct {
 }
 
 func ListenWS(address v2net.Address, port v2net.Port, options internet.ListenOptions) (internet.Listener, error) {
-	networkSettings, err := options.Stream.GetEffectiveNetworkSettings()
+	networkSettings, err := options.Stream.GetEffectiveTransportSettings()
 	if err != nil {
 		return nil, err
 	}
@@ -199,5 +199,5 @@ func (v *WSListener) Close() error {
 }
 
 func init() {
-	common.Must(internet.RegisterNetworkListener(v2net.Network_WebSocket, ListenWS))
+	common.Must(internet.RegisterTransportListener(internet.TransportProtocol_WebSocket, ListenWS))
 }

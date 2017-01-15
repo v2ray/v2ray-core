@@ -1,7 +1,10 @@
 package internet
 
 import (
+	"errors"
 	"net"
+
+	"context"
 
 	"v2ray.com/core/common"
 )
@@ -11,26 +14,15 @@ type ConnectionAuthenticator interface {
 	Server(net.Conn) net.Conn
 }
 
-type ConnectionAuthenticatorFactory interface {
-	Create(interface{}) ConnectionAuthenticator
-}
-
-var (
-	connectionAuthenticatorCache = make(map[string]ConnectionAuthenticatorFactory)
-)
-
-func RegisterConnectionAuthenticator(name string, factory ConnectionAuthenticatorFactory) error {
-	if _, found := connectionAuthenticatorCache[name]; found {
-		return common.ErrDuplicatedName
+func CreateConnectionAuthenticator(config interface{}) (ConnectionAuthenticator, error) {
+	auth, err := common.CreateObject(context.Background(), config)
+	if err != nil {
+		return nil, err
 	}
-	connectionAuthenticatorCache[name] = factory
-	return nil
-}
-
-func CreateConnectionAuthenticator(name string, config interface{}) (ConnectionAuthenticator, error) {
-	factory, found := connectionAuthenticatorCache[name]
-	if !found {
-		return nil, common.ErrObjectNotFound
+	switch a := auth.(type) {
+	case ConnectionAuthenticator:
+		return a, nil
+	default:
+		return nil, errors.New("Internet: Not a ConnectionAuthenticator.")
 	}
-	return factory.Create(config), nil
 }

@@ -1,6 +1,7 @@
 package inbound
 
 import (
+	"context"
 	"io"
 	"sync"
 
@@ -12,7 +13,7 @@ import (
 	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/signal"
@@ -72,7 +73,7 @@ func (v *userByEmail) Get(email string) (*protocol.User, bool) {
 // Inbound connection handler that handles messages in VMess format.
 type VMessInboundHandler struct {
 	sync.RWMutex
-	packetDispatcher      dispatcher.PacketDispatcher
+	packetDispatcher      dispatcher.Interface
 	inboundHandlerManager proxyman.InboundHandlerManager
 	clients               protocol.UserValidator
 	usersByEmail          *userByEmail
@@ -82,7 +83,50 @@ type VMessInboundHandler struct {
 	meta                  *proxy.InboundHandlerMeta
 }
 
-func (v *VMessInboundHandler) Port() v2net.Port {
+func New(ctx context.Context, config *Config) (*VMessInboundHandler, error) {
+	space := app.SpaceFromContext(ctx)
+	if space == nil {
+		return nil, errors.New("VMess|Inbound: No space in context.")
+	}
+	meta := proxy.InboundMetaFromContext(ctx)
+	if meta == nil {
+		return nil, errors.New("VMess|Inbound: No inbound meta in context.")
+	}
+
+	allowedClients := vmess.NewTimedUserValidator(protocol.DefaultIDHash)
+	for _, user := range config.User {
+		allowedClients.Add(user)
+	}
+
+	handler := &VMessInboundHandler{
+		clients:      allowedClients,
+		detours:      config.Detour,
+		usersByEmail: NewUserByEmail(config.User, config.GetDefaultValue()),
+		meta:         meta,
+	}
+
+	space.OnInitialize(func() error {
+		handler.packetDispatcher = dispatcher.FromSpace(space)
+		if handler.packetDispatcher == nil {
+			return errors.New("VMess|Inbound: Dispatcher is not found in space.")
+		}
+		handler.inboundHandlerManager = proxyman.InboundHandlerManagerFromSpace(space)
+		if handler.inboundHandlerManager == nil {
+			return errors.New("VMess|Inbound: InboundHandlerManager is not found is space.")
+		}
+		return nil
+	})
+
+	return handler, nil
+}
+
+func (v *VMessInboundHandler) Network() net.NetworkList {
+	return net.NetworkList{
+		Network: []net.Network{net.Network_TCP},
+	}
+}
+
+func (v *VMessInboundHandler) Port() net.Port {
 	return v.meta.Port
 }
 
@@ -141,7 +185,6 @@ func transferRequest(session *encoding.ServerSession, request *protocol.RequestH
 }
 
 func transferResponse(session *encoding.ServerSession, request *protocol.RequestHeader, response *protocol.ResponseHeader, input ray.InputStream, output io.Writer) error {
-	defer input.ForceClose()
 	session.EncodeResponseHeader(response, output)
 
 	bodyWriter := session.EncodeResponseBody(request, output)
@@ -183,7 +226,7 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 		return
 	}
 
-	connReader := v2net.NewTimeOutReader(8, connection)
+	connReader := net.NewTimeOutReader(8, connection)
 	reader := bufio.NewReader(connReader)
 	v.RLock()
 	if !v.accepting {
@@ -208,15 +251,13 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	connection.SetReusable(request.Option.Has(protocol.RequestOptionConnectionReuse))
 
 	ray := v.packetDispatcher.DispatchToOutbound(&proxy.SessionInfo{
-		Source:      v2net.DestinationFromAddr(connection.RemoteAddr()),
+		Source:      net.DestinationFromAddr(connection.RemoteAddr()),
 		Destination: request.Destination(),
 		User:        request.User,
 		Inbound:     v.meta,
 	})
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
-	defer input.Close()
-	defer output.ForceClose()
 
 	userSettings := request.User.GetSettings()
 	connReader.SetTimeOut(userSettings.PayloadReadTimeout)
@@ -242,6 +283,8 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
 		log.Info("VMess|Inbound: Connection ending with ", err)
 		connection.SetReusable(false)
+		input.CloseError()
+		output.CloseError()
 		return
 	}
 
@@ -252,44 +295,8 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 	}
 }
 
-type Factory struct{}
-
-func (v *Factory) StreamCapability() v2net.NetworkList {
-	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_TCP, v2net.Network_KCP, v2net.Network_WebSocket},
-	}
-}
-
-func (v *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
-	config := rawConfig.(*Config)
-
-	allowedClients := vmess.NewTimedUserValidator(protocol.DefaultIDHash)
-	for _, user := range config.User {
-		allowedClients.Add(user)
-	}
-
-	handler := &VMessInboundHandler{
-		clients:      allowedClients,
-		detours:      config.Detour,
-		usersByEmail: NewUserByEmail(config.User, config.GetDefaultValue()),
-		meta:         meta,
-	}
-
-	space.OnInitialize(func() error {
-		handler.packetDispatcher = dispatcher.FromSpace(space)
-		if handler.packetDispatcher == nil {
-			return errors.New("VMess|Inbound: Dispatcher is not found in space.")
-		}
-		handler.inboundHandlerManager = proxyman.InboundHandlerManagerFromSpace(space)
-		if handler.inboundHandlerManager == nil {
-			return errors.New("VMess|Inbound: InboundHandlerManager is not found is space.")
-		}
-		return nil
-	})
-
-	return handler, nil
-}
-
 func init() {
-	common.Must(proxy.RegisterInboundHandlerCreator(serial.GetMessageType(new(Config)), new(Factory)))
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return New(ctx, config.(*Config))
+	}))
 }

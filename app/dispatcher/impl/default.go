@@ -1,6 +1,7 @@
 package impl
 
 import (
+	"context"
 	"time"
 
 	"v2ray.com/core/app"
@@ -11,7 +12,7 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
 )
@@ -21,7 +22,11 @@ type DefaultDispatcher struct {
 	router *router.Router
 }
 
-func NewDefaultDispatcher(space app.Space) *DefaultDispatcher {
+func NewDefaultDispatcher(ctx context.Context, config *dispatcher.Config) (*DefaultDispatcher, error) {
+	space := app.SpaceFromContext(ctx)
+	if space == nil {
+		return nil, errors.New("DefaultDispatcher: No space in context.")
+	}
 	d := &DefaultDispatcher{}
 	space.OnInitialize(func() error {
 		d.ohm = proxyman.OutboundHandlerManagerFromSpace(space)
@@ -31,7 +36,11 @@ func NewDefaultDispatcher(space app.Space) *DefaultDispatcher {
 		d.router = router.FromSpace(space)
 		return nil
 	})
-	return d
+	return d, nil
+}
+
+func (DefaultDispatcher) Interface() interface{} {
+	return (*dispatcher.Interface)(nil)
 }
 
 func (v *DefaultDispatcher) DispatchToOutbound(session *proxy.SessionInfo) ray.InboundRay {
@@ -68,25 +77,21 @@ func (v *DefaultDispatcher) DispatchToOutbound(session *proxy.SessionInfo) ray.I
 	return direct
 }
 
-func (v *DefaultDispatcher) waitAndDispatch(wait func() error, destination v2net.Destination, link ray.OutboundRay, dispatcher proxy.OutboundHandler) {
+func (v *DefaultDispatcher) waitAndDispatch(wait func() error, destination net.Destination, link ray.OutboundRay, dispatcher proxy.OutboundHandler) {
 	if err := wait(); err != nil {
 		log.Info("DefaultDispatcher: Failed precondition: ", err)
-		link.OutboundInput().ForceClose()
-		link.OutboundOutput().Close()
+		link.OutboundInput().CloseError()
+		link.OutboundOutput().CloseError()
 		return
 	}
 
 	dispatcher.Dispatch(destination, link)
 }
 
-type DefaultDispatcherFactory struct{}
-
-func (v DefaultDispatcherFactory) Create(space app.Space, config interface{}) (app.Application, error) {
-	return NewDefaultDispatcher(space), nil
-}
-
 func init() {
-	common.Must(app.RegisterApplicationFactory((*dispatcher.Config)(nil), DefaultDispatcherFactory{}))
+	common.Must(common.RegisterConfig((*dispatcher.Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return NewDefaultDispatcher(ctx, config.(*dispatcher.Config))
+	}))
 }
 
 type waitDataInspector struct {

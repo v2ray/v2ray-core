@@ -2,7 +2,6 @@ package conf
 
 import (
 	"v2ray.com/core/common/errors"
-	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport"
 	"v2ray.com/core/transport/internet"
 )
@@ -21,8 +20,8 @@ func (v *TransportConfig) Build() (*transport.Config, error) {
 		if err != nil {
 			return nil, errors.Base(err).Message("Failed to build TCP config.")
 		}
-		config.NetworkSettings = append(config.NetworkSettings, &internet.NetworkSettings{
-			Network:  v2net.Network_TCP,
+		config.TransportSettings = append(config.TransportSettings, &internet.TransportSettings{
+			Protocol: internet.TransportProtocol_TCP,
 			Settings: ts,
 		})
 	}
@@ -32,8 +31,8 @@ func (v *TransportConfig) Build() (*transport.Config, error) {
 		if err != nil {
 			return nil, errors.Base(err).Message("Failed to build mKCP config.")
 		}
-		config.NetworkSettings = append(config.NetworkSettings, &internet.NetworkSettings{
-			Network:  v2net.Network_KCP,
+		config.TransportSettings = append(config.TransportSettings, &internet.TransportSettings{
+			Protocol: internet.TransportProtocol_MKCP,
 			Settings: ts,
 		})
 	}
@@ -43,8 +42,8 @@ func (v *TransportConfig) Build() (*transport.Config, error) {
 		if err != nil {
 			return nil, errors.Base(err).Message("Failed to build WebSocket config.")
 		}
-		config.NetworkSettings = append(config.NetworkSettings, &internet.NetworkSettings{
-			Network:  v2net.Network_WebSocket,
+		config.TransportSettings = append(config.TransportSettings, &internet.TransportSettings{
+			Protocol: internet.TransportProtocol_WebSocket,
 			Settings: ts,
 		})
 	}

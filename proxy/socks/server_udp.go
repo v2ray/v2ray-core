@@ -3,7 +3,7 @@ package socks
 import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/log"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet/udp"
 )
@@ -16,7 +16,7 @@ func (v *Server) listenUDP() error {
 		return err
 	}
 	v.udpMutex.Lock()
-	v.udpAddress = v2net.UDPDestination(v.config.GetNetAddress(), v.meta.Port)
+	v.udpAddress = net.UDPDestination(v.config.GetNetAddress(), v.meta.Port)
 	v.udpHub = udpHub
 	v.udpMutex.Unlock()
 	return nil
@@ -43,7 +43,7 @@ func (v *Server) handleUDPPayload(payload *buf.Buffer, session *proxy.SessionInf
 
 	dataBuf := buf.NewSmall()
 	dataBuf.Append(data)
-	v.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: request.Destination(), Inbound: v.meta}, dataBuf, func(destination v2net.Destination, payload *buf.Buffer) {
+	v.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: request.Destination(), Inbound: v.meta}, dataBuf, func(destination net.Destination, payload *buf.Buffer) {
 		defer payload.Release()
 
 		log.Info("Socks: Writing back UDP response with ", payload.Len(), " bytes to ", destination)

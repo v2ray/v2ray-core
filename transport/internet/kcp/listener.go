@@ -1,13 +1,12 @@
 package kcp
 
 import (
+	"crypto/cipher"
 	"crypto/tls"
 	"io"
 	"net"
 	"sync"
 	"time"
-
-	"crypto/cipher"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -93,7 +92,7 @@ type Listener struct {
 }
 
 func NewListener(address v2net.Address, port v2net.Port, options internet.ListenOptions) (*Listener, error) {
-	networkSettings, err := options.Stream.GetEffectiveNetworkSettings()
+	networkSettings, err := options.Stream.GetEffectiveTransportSettings()
 	if err != nil {
 		log.Error("KCP|Listener: Failed to get KCP settings: ", err)
 		return nil, err
@@ -298,5 +297,5 @@ func ListenKCP(address v2net.Address, port v2net.Port, options internet.ListenOp
 }
 
 func init() {
-	common.Must(internet.RegisterNetworkListener(v2net.Network_KCP, ListenKCP))
+	common.Must(internet.RegisterTransportListener(internet.TransportProtocol_MKCP, ListenKCP))
 }

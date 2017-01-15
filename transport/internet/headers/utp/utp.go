@@ -1,10 +1,11 @@
 package utp
 
 import (
+	"context"
 	"math/rand"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/serial"
-	"v2ray.com/core/transport/internet"
 )
 
 type UTP struct {
@@ -24,16 +25,14 @@ func (v *UTP) Write(b []byte) (int, error) {
 	return 4, nil
 }
 
-type UTPFactory struct{}
-
-func (v UTPFactory) Create(rawSettings interface{}) internet.PacketHeader {
+func NewUTP(ctx context.Context, config interface{}) (interface{}, error) {
 	return &UTP{
 		header:       1,
 		extension:    0,
 		connectionId: uint16(rand.Intn(65536)),
-	}
+	}, nil
 }
 
 func init() {
-	internet.RegisterPacketHeader(serial.GetMessageType(new(Config)), UTPFactory{})
+	common.Must(common.RegisterConfig((*Config)(nil), NewUTP))
 }

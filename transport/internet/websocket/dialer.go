@@ -22,7 +22,7 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 	if src == nil {
 		src = v2net.AnyIP
 	}
-	networkSettings, err := options.Stream.GetEffectiveNetworkSettings()
+	networkSettings, err := options.Stream.GetEffectiveTransportSettings()
 	if err != nil {
 		return nil, err
 	}
@@ -48,11 +48,11 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 }
 
 func init() {
-	common.Must(internet.RegisterNetworkDialer(v2net.Network_WebSocket, Dial))
+	common.Must(internet.RegisterTransportDialer(internet.TransportProtocol_WebSocket, Dial))
 }
 
 func wsDial(src v2net.Address, dest v2net.Destination, options internet.DialerOptions) (*wsconn, error) {
-	networkSettings, err := options.Stream.GetEffectiveNetworkSettings()
+	networkSettings, err := options.Stream.GetEffectiveTransportSettings()
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,11 @@ func wsDial(src v2net.Address, dest v2net.Destination, options internet.DialerOp
 		}
 	}
 
-	uri := protocol + "://" + dest.NetAddr() + "/" + wsSettings.Path
+	host := dest.NetAddr()
+	if (protocol == "ws" && dest.Port == 80) || (protocol == "wss" && dest.Port == 443) {
+		host = dest.Address.String()
+	}
+	uri := protocol + "://" + host + "/" + wsSettings.Path
 
 	conn, resp, err := dialer.Dial(uri, nil)
 	if err != nil {

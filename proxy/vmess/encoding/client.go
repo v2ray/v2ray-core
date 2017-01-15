@@ -15,7 +15,7 @@ import (
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/vmess"
@@ -85,13 +85,13 @@ func (v *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 	buffer = header.Port.Bytes(buffer)
 
 	switch header.Address.Family() {
-	case v2net.AddressFamilyIPv4:
+	case net.AddressFamilyIPv4:
 		buffer = append(buffer, AddrTypeIPv4)
 		buffer = append(buffer, header.Address.IP()...)
-	case v2net.AddressFamilyIPv6:
+	case net.AddressFamilyIPv6:
 		buffer = append(buffer, AddrTypeIPv6)
 		buffer = append(buffer, header.Address.IP()...)
-	case v2net.AddressFamilyDomain:
+	case net.AddressFamilyDomain:
 		buffer = append(buffer, AddrTypeDomain, byte(len(header.Address.Domain())))
 		buffer = append(buffer, header.Address.Domain()...)
 	}

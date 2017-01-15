@@ -1,7 +1,7 @@
 package websocket
 
 import (
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -13,7 +13,7 @@ func (c *Config) IsConnectionReuse() bool {
 }
 
 func init() {
-	internet.RegisterNetworkConfigCreator(v2net.Network_WebSocket, func() interface{} {
+	common.Must(internet.RegisterProtocolConfigCreator(internet.TransportProtocol_WebSocket, func() interface{} {
 		return new(Config)
-	})
+	}))
 }

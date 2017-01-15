@@ -2,7 +2,9 @@
 package proxy
 
 import (
-	v2net "v2ray.com/core/common/net"
+	"context"
+
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/ray"
@@ -16,23 +18,23 @@ const (
 )
 
 type SessionInfo struct {
-	Source      v2net.Destination
-	Destination v2net.Destination
+	Source      net.Destination
+	Destination net.Destination
 	User        *protocol.User
 	Inbound     *InboundHandlerMeta
 }
 
 type InboundHandlerMeta struct {
 	Tag                    string
-	Address                v2net.Address
-	Port                   v2net.Port
+	Address                net.Address
+	Port                   net.Port
 	AllowPassiveConnection bool
 	StreamSettings         *internet.StreamConfig
 }
 
 type OutboundHandlerMeta struct {
 	Tag            string
-	Address        v2net.Address
+	Address        net.Address
 	StreamSettings *internet.StreamConfig
 	ProxySettings  *internet.ProxyConfig
 }
@@ -51,11 +53,18 @@ type InboundHandler interface {
 	// Close stops the handler to accepting anymore inbound connections.
 	Close()
 	// Port returns the port that the handler is listening on.
-	Port() v2net.Port
+	Port() net.Port
+
+	Network() net.NetworkList
 }
 
 // An OutboundHandler handles outbound network connection for V2Ray.
 type OutboundHandler interface {
 	// Dispatch sends one or more Packets to its destination.
-	Dispatch(destination v2net.Destination, ray ray.OutboundRay)
+	Dispatch(destination net.Destination, ray ray.OutboundRay)
+}
+
+// Dialer is used by OutboundHandler for creating outbound connections.
+type Dialer interface {
+	Dial(ctx context.Context, destination net.Destination) (internet.Connection, error)
 }

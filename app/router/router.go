@@ -1,13 +1,14 @@
 package router
 
 import (
+	"context"
+
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dns"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
-	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 )
 
@@ -23,7 +24,11 @@ type Router struct {
 	dnsServer dns.Server
 }
 
-func NewRouter(config *Config, space app.Space) *Router {
+func NewRouter(ctx context.Context, config *Config) (*Router, error) {
+	space := app.SpaceFromContext(ctx)
+	if space == nil {
+		return nil, errors.New("Router: No space in context.")
+	}
 	r := &Router{
 		domainStrategy: config.DomainStrategy,
 		//cache:          NewRoutingTable(),
@@ -46,21 +51,21 @@ func NewRouter(config *Config, space app.Space) *Router {
 		}
 		return nil
 	})
-	return r
+	return r, nil
 }
 
 // Private: Visible for testing.
-func (v *Router) ResolveIP(dest v2net.Destination) []v2net.Destination {
+func (v *Router) ResolveIP(dest net.Destination) []net.Destination {
 	ips := v.dnsServer.Get(dest.Address.Domain())
 	if len(ips) == 0 {
 		return nil
 	}
-	dests := make([]v2net.Destination, len(ips))
+	dests := make([]net.Destination, len(ips))
 	for idx, ip := range ips {
-		if dest.Network == v2net.Network_TCP {
-			dests[idx] = v2net.TCPDestination(v2net.IPAddress(ip), dest.Port)
+		if dest.Network == net.Network_TCP {
+			dests[idx] = net.TCPDestination(net.IPAddress(ip), dest.Port)
 		} else {
-			dests[idx] = v2net.UDPDestination(v2net.IPAddress(ip), dest.Port)
+			dests[idx] = net.UDPDestination(net.IPAddress(ip), dest.Port)
 		}
 	}
 	return dests
@@ -106,15 +111,12 @@ func (v *Router) TakeDetour(session *proxy.SessionInfo) (string, error) {
 	//return tag, err
 }
 
-type RouterFactory struct{}
-
-func (RouterFactory) Create(space app.Space, config interface{}) (app.Application, error) {
-	router := NewRouter(config.(*Config), space)
-	return router, nil
+func (Router) Interface() interface{} {
+	return (*Router)(nil)
 }
 
 func FromSpace(space app.Space) *Router {
-	app := space.(app.AppGetter).GetApp(serial.GetMessageType((*Config)(nil)))
+	app := space.GetApplication((*Router)(nil))
 	if app == nil {
 		return nil
 	}
@@ -122,5 +124,7 @@ func FromSpace(space app.Space) *Router {
 }
 
 func init() {
-	common.Must(app.RegisterApplicationFactory((*Config)(nil), RouterFactory{}))
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return NewRouter(ctx, config.(*Config))
+	}))
 }

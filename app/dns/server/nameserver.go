@@ -48,7 +48,7 @@ type UDPNameServer struct {
 	nextCleanup time.Time
 }
 
-func NewUDPNameServer(address v2net.Destination, dispatcher dispatcher.PacketDispatcher) *UDPNameServer {
+func NewUDPNameServer(address v2net.Destination, dispatcher dispatcher.Interface) *UDPNameServer {
 	s := &UDPNameServer{
 		address:   address,
 		requests:  make(map[uint16]*PendingRequest),

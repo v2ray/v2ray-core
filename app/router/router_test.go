@@ -1,6 +1,7 @@
 package router_test
 
 import (
+	"context"
 	"testing"
 
 	"v2ray.com/core/app"
@@ -11,7 +12,7 @@ import (
 	"v2ray.com/core/app/proxyman"
 	_ "v2ray.com/core/app/proxyman/outbound"
 	. "v2ray.com/core/app/router"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/testing/assert"
 )
@@ -23,23 +24,24 @@ func TestSimpleRouter(t *testing.T) {
 		Rule: []*RoutingRule{
 			{
 				Tag: "test",
-				NetworkList: &v2net.NetworkList{
-					Network: []v2net.Network{v2net.Network_TCP},
+				NetworkList: &net.NetworkList{
+					Network: []net.Network{net.Network_TCP},
 				},
 			},
 		},
 	}
 
 	space := app.NewSpace()
-	assert.Error(space.AddApp(new(dns.Config))).IsNil()
-	assert.Error(space.AddApp(new(dispatcher.Config))).IsNil()
-	assert.Error(space.AddApp(new(proxyman.OutboundConfig))).IsNil()
-	assert.Error(space.AddApp(config)).IsNil()
+	ctx := app.ContextWithSpace(context.Background(), space)
+	assert.Error(app.AddApplicationToSpace(ctx, new(dns.Config))).IsNil()
+	assert.Error(app.AddApplicationToSpace(ctx, new(dispatcher.Config))).IsNil()
+	assert.Error(app.AddApplicationToSpace(ctx, new(proxyman.OutboundConfig))).IsNil()
+	assert.Error(app.AddApplicationToSpace(ctx, config)).IsNil()
 	assert.Error(space.Initialize()).IsNil()
 
 	r := FromSpace(space)
 
-	tag, err := r.TakeDetour(&proxy.SessionInfo{Destination: v2net.TCPDestination(v2net.DomainAddress("v2ray.com"), 80)})
+	tag, err := r.TakeDetour(&proxy.SessionInfo{Destination: net.TCPDestination(net.DomainAddress("v2ray.com"), 80)})
 	assert.Error(err).IsNil()
 	assert.String(tag).Equals("test")
 }

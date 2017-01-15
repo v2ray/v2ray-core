@@ -1,6 +1,7 @@
 package outbound
 
 import (
+	"context"
 	"time"
 
 	"v2ray.com/core/app"
@@ -9,10 +10,9 @@ import (
 	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/vmess"
@@ -28,11 +28,31 @@ type VMessOutboundHandler struct {
 	meta         *proxy.OutboundHandlerMeta
 }
 
-// Dispatch implements OutboundHandler.Dispatch().
-func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, outboundRay ray.OutboundRay) {
-	defer outboundRay.OutboundInput().ForceClose()
-	defer outboundRay.OutboundOutput().Close()
+func New(ctx context.Context, config *Config) (*VMessOutboundHandler, error) {
+	space := app.SpaceFromContext(ctx)
+	if space == nil {
+		return nil, errors.New("VMess|Outbound: No space in context.")
+	}
+	meta := proxy.OutboundMetaFromContext(ctx)
+	if meta == nil {
+		return nil, errors.New("VMess|Outbound: No outbound meta in context.")
+	}
 
+	serverList := protocol.NewServerList()
+	for _, rec := range config.Receiver {
+		serverList.AddServer(protocol.NewServerSpecFromPB(*rec))
+	}
+	handler := &VMessOutboundHandler{
+		serverList:   serverList,
+		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
+		meta:         meta,
+	}
+
+	return handler, nil
+}
+
+// Dispatch implements OutboundHandler.Dispatch().
+func (v *VMessOutboundHandler) Dispatch(target net.Destination, outboundRay ray.OutboundRay) {
 	var rec *protocol.ServerSpec
 	var conn internet.Connection
 
@@ -53,7 +73,7 @@ func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, outboundRay ra
 	log.Info("VMess|Outbound: Tunneling request to ", target, " via ", rec.Destination())
 
 	command := protocol.RequestCommandTCP
-	if target.Network == v2net.Network_UDP {
+	if target.Network == net.Network_UDP {
 		command = protocol.RequestCommandUDP
 	}
 	request := &protocol.RequestHeader{
@@ -85,8 +105,6 @@ func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, outboundRay ra
 	session := encoding.NewClientSession(protocol.DefaultIDHash)
 
 	requestDone := signal.ExecuteAsync(func() error {
-		defer input.ForceClose()
-
 		writer := bufio.NewWriter(conn)
 		session.EncodeRequestHeader(request, writer)
 
@@ -140,36 +158,15 @@ func (v *VMessOutboundHandler) Dispatch(target v2net.Destination, outboundRay ra
 	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
 		log.Info("VMess|Outbound: Connection ending with ", err)
 		conn.SetReusable(false)
+		input.CloseError()
+		output.CloseError()
 	}
 
 	return
 }
 
-// Factory is a proxy factory for VMess outbound.
-type Factory struct{}
-
-func (v *Factory) StreamCapability() v2net.NetworkList {
-	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_TCP, v2net.Network_KCP, v2net.Network_WebSocket},
-	}
-}
-
-func (v *Factory) Create(space app.Space, rawConfig interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
-	vOutConfig := rawConfig.(*Config)
-
-	serverList := protocol.NewServerList()
-	for _, rec := range vOutConfig.Receiver {
-		serverList.AddServer(protocol.NewServerSpecFromPB(*rec))
-	}
-	handler := &VMessOutboundHandler{
-		serverList:   serverList,
-		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
-		meta:         meta,
-	}
-
-	return handler, nil
-}
-
 func init() {
-	common.Must(proxy.RegisterOutboundHandlerCreator(serial.GetMessageType(new(Config)), new(Factory)))
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return New(ctx, config.(*Config))
+	}))
 }

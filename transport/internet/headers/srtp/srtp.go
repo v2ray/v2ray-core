@@ -1,10 +1,11 @@
 package srtp
 
 import (
+	"context"
 	"math/rand"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/serial"
-	"v2ray.com/core/transport/internet"
 )
 
 type SRTP struct {
@@ -23,16 +24,13 @@ func (v *SRTP) Write(b []byte) (int, error) {
 	return 4, nil
 }
 
-type SRTPFactory struct {
-}
-
-func (v SRTPFactory) Create(rawSettings interface{}) internet.PacketHeader {
+func NewSRTP(ctx context.Context, config interface{}) (interface{}, error) {
 	return &SRTP{
 		header: 0xB5E8,
 		number: uint16(rand.Intn(65536)),
-	}
+	}, nil
 }
 
 func init() {
-	internet.RegisterPacketHeader(serial.GetMessageType(new(Config)), SRTPFactory{})
+	common.Must(common.RegisterConfig((*Config)(nil), NewSRTP))
 }

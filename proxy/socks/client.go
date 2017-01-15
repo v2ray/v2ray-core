@@ -1,7 +1,10 @@
 package socks
 
 import (
-	"v2ray.com/core/app"
+	"context"
+	"errors"
+
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
@@ -18,7 +21,11 @@ type Client struct {
 	meta         *proxy.OutboundHandlerMeta
 }
 
-func NewClient(config *ClientConfig, space app.Space, meta *proxy.OutboundHandlerMeta) (*Client, error) {
+func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
+	meta := proxy.OutboundMetaFromContext(ctx)
+	if meta == nil {
+		return nil, errors.New("Socks|Client: No outbound meta in context.")
+	}
 	serverList := protocol.NewServerList()
 	for _, rec := range config.Server {
 		serverList.AddServer(protocol.NewServerSpecFromPB(*rec))
@@ -80,7 +87,6 @@ func (c *Client) Dispatch(destination net.Destination, ray ray.OutboundRay) {
 	var responseFunc func() error
 	if request.Command == protocol.RequestCommandTCP {
 		requestFunc = func() error {
-			defer ray.OutboundInput().ForceClose()
 			return buf.PipeUntilEOF(ray.OutboundInput(), buf.NewWriter(conn))
 		}
 		responseFunc = func() error {
@@ -95,7 +101,6 @@ func (c *Client) Dispatch(destination net.Destination, ray ray.OutboundRay) {
 		}
 		defer udpConn.Close()
 		requestFunc = func() error {
-			defer ray.OutboundInput().ForceClose()
 			return buf.PipeUntilEOF(ray.OutboundInput(), &UDPWriter{request: request, writer: udpConn})
 		}
 		responseFunc = func() error {
@@ -109,17 +114,13 @@ func (c *Client) Dispatch(destination net.Destination, ray ray.OutboundRay) {
 	responseDone := signal.ExecuteAsync(responseFunc)
 	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
 		log.Info("Socks|Client: Connection ends with ", err)
+		ray.OutboundInput().CloseError()
+		ray.OutboundOutput().CloseError()
 	}
 }
 
-type ClientFactory struct{}
-
-func (ClientFactory) StreamCapability() net.NetworkList {
-	return net.NetworkList{
-		Network: []net.Network{net.Network_TCP},
-	}
-}
-
-func (ClientFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.OutboundHandlerMeta) (proxy.OutboundHandler, error) {
-	return NewClient(rawConfig.(*ClientConfig), space, meta)
+func init() {
+	common.Must(common.RegisterConfig((*ClientConfig)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return NewClient(ctx, config.(*ClientConfig))
+	}))
 }

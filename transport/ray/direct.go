@@ -54,23 +54,23 @@ func (v *directRay) AddInspector(inspector Inspector) {
 
 type Stream struct {
 	buffer    chan *buf.Buffer
-	srcClose  chan bool
-	destClose chan bool
+	close     chan bool
+	err       chan bool
 	inspector *InspectorChain
 }
 
 func NewStream() *Stream {
 	return &Stream{
 		buffer:    make(chan *buf.Buffer, bufferSize),
-		srcClose:  make(chan bool),
-		destClose: make(chan bool),
+		close:     make(chan bool),
+		err:       make(chan bool),
 		inspector: &InspectorChain{},
 	}
 }
 
 func (v *Stream) Read() (*buf.Buffer, error) {
 	select {
-	case <-v.destClose:
+	case <-v.err:
 		return nil, io.ErrClosedPipe
 	case b := <-v.buffer:
 		return b, nil
@@ -78,9 +78,9 @@ func (v *Stream) Read() (*buf.Buffer, error) {
 		select {
 		case b := <-v.buffer:
 			return b, nil
-		case <-v.srcClose:
+		case <-v.close:
 			return nil, io.EOF
-		case <-v.destClose:
+		case <-v.err:
 			return nil, io.ErrClosedPipe
 		}
 	}
@@ -88,7 +88,7 @@ func (v *Stream) Read() (*buf.Buffer, error) {
 
 func (v *Stream) ReadTimeout(timeout time.Duration) (*buf.Buffer, error) {
 	select {
-	case <-v.destClose:
+	case <-v.err:
 		return nil, io.ErrClosedPipe
 	case b := <-v.buffer:
 		return b, nil
@@ -96,9 +96,9 @@ func (v *Stream) ReadTimeout(timeout time.Duration) (*buf.Buffer, error) {
 		select {
 		case b := <-v.buffer:
 			return b, nil
-		case <-v.srcClose:
+		case <-v.close:
 			return nil, io.EOF
-		case <-v.destClose:
+		case <-v.err:
 			return nil, io.ErrClosedPipe
 		case <-time.After(timeout):
 			return nil, ErrReadTimeout
@@ -112,15 +112,15 @@ func (v *Stream) Write(data *buf.Buffer) (err error) {
 	}
 
 	select {
-	case <-v.destClose:
+	case <-v.err:
 		return io.ErrClosedPipe
-	case <-v.srcClose:
+	case <-v.close:
 		return io.ErrClosedPipe
 	default:
 		select {
-		case <-v.destClose:
+		case <-v.err:
 			return io.ErrClosedPipe
-		case <-v.srcClose:
+		case <-v.close:
 			return io.ErrClosedPipe
 		case v.buffer <- data:
 			v.inspector.Input(data)
@@ -132,14 +132,13 @@ func (v *Stream) Write(data *buf.Buffer) (err error) {
 func (v *Stream) Close() {
 	defer swallowPanic()
 
-	close(v.srcClose)
+	close(v.close)
 }
 
-func (v *Stream) ForceClose() {
+func (v *Stream) CloseError() {
 	defer swallowPanic()
 
-	close(v.destClose)
-	v.Close()
+	close(v.err)
 
 	n := len(v.buffer)
 	for i := 0; i < n; i++ {

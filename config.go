@@ -2,7 +2,7 @@ package core
 
 import (
 	"v2ray.com/core/common"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 )
 
 func (v *AllocationStrategy) GetConcurrencyValue() uint32 {
@@ -26,9 +26,9 @@ func (v *InboundConnectionConfig) GetAllocationStrategyValue() *AllocationStrate
 	return v.AllocationStrategy
 }
 
-func (v *InboundConnectionConfig) GetListenOnValue() v2net.Address {
+func (v *InboundConnectionConfig) GetListenOnValue() net.Address {
 	if v.GetListenOn() == nil {
-		return v2net.AnyIP
+		return net.AnyIP
 	}
 	return v.ListenOn.AsAddress()
 }
@@ -47,9 +47,9 @@ func (v *OutboundConnectionConfig) GetTypedSettings() (interface{}, error) {
 	return v.GetSettings().GetInstance()
 }
 
-func (v *OutboundConnectionConfig) GetSendThroughValue() v2net.Address {
+func (v *OutboundConnectionConfig) GetSendThroughValue() net.Address {
 	if v.GetSendThrough() == nil {
-		return v2net.AnyIP
+		return net.AnyIP
 	}
 	return v.SendThrough.AsAddress()
 }

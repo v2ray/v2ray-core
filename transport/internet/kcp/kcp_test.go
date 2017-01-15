@@ -20,10 +20,10 @@ func TestDialAndListen(t *testing.T) {
 
 	listerner, err := NewListener(v2net.LocalHostIP, v2net.Port(0), internet.ListenOptions{
 		Stream: &internet.StreamConfig{
-			Network: v2net.Network_KCP,
-			NetworkSettings: []*internet.NetworkSettings{
+			Protocol: internet.TransportProtocol_MKCP,
+			TransportSettings: []*internet.TransportSettings{
 				{
-					Network:  v2net.Network_KCP,
+					Protocol: internet.TransportProtocol_MKCP,
 					Settings: serial.ToTypedMessage(&Config{}),
 				},
 			},
@@ -59,10 +59,10 @@ func TestDialAndListen(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		clientConn, err := DialKCP(v2net.LocalHostIP, v2net.UDPDestination(v2net.LocalHostIP, port), internet.DialerOptions{
 			Stream: &internet.StreamConfig{
-				Network: v2net.Network_KCP,
-				NetworkSettings: []*internet.NetworkSettings{
+				Protocol: internet.TransportProtocol_MKCP,
+				TransportSettings: []*internet.TransportSettings{
 					{
-						Network:  v2net.Network_KCP,
+						Protocol: internet.TransportProtocol_MKCP,
 						Settings: serial.ToTypedMessage(&Config{}),
 					},
 				},

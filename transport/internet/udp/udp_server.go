@@ -88,17 +88,17 @@ func (v *TimedInboundRay) Release() {
 	}
 	v.server = nil
 	v.inboundRay.InboundInput().Close()
-	v.inboundRay.InboundOutput().ForceClose()
+	v.inboundRay.InboundOutput().CloseError()
 	v.inboundRay = nil
 }
 
 type Server struct {
 	sync.RWMutex
 	conns            map[string]*TimedInboundRay
-	packetDispatcher dispatcher.PacketDispatcher
+	packetDispatcher dispatcher.Interface
 }
 
-func NewServer(packetDispatcher dispatcher.PacketDispatcher) *Server {
+func NewServer(packetDispatcher dispatcher.Interface) *Server {
 	return &Server{
 		conns:            make(map[string]*TimedInboundRay),
 		packetDispatcher: packetDispatcher,

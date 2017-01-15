@@ -11,16 +11,14 @@ import (
 )
 
 var (
-	ErrClosedConnection = errors.New("Connection already closed.")
-
-	networkListenerCache = make(map[v2net.Network]ListenFunc)
+	transportListenerCache = make(map[TransportProtocol]ListenFunc)
 )
 
-func RegisterNetworkListener(network v2net.Network, listener ListenFunc) error {
-	if _, found := networkListenerCache[network]; found {
-		return errors.New("Internet|TCPHub: ", network, " listener already registered.")
+func RegisterTransportListener(protocol TransportProtocol, listener ListenFunc) error {
+	if _, found := transportListenerCache[protocol]; found {
+		return errors.New("Internet|TCPHub: ", protocol, " listener already registered.")
 	}
-	networkListenerCache[network] = listener
+	transportListenerCache[protocol] = listener
 	return nil
 }
 
@@ -46,13 +44,14 @@ func ListenTCP(address v2net.Address, port v2net.Port, callback ConnectionHandle
 	options := ListenOptions{
 		Stream: settings,
 	}
-	listenFunc := networkListenerCache[settings.Network]
+	protocol := settings.GetEffectiveProtocol()
+	listenFunc := transportListenerCache[protocol]
 	if listenFunc == nil {
-		return nil, errors.New("Internet|TCPHub: ", settings.Network, " listener not registered.")
+		return nil, errors.New("Internet|TCPHub: ", protocol, " listener not registered.")
 	}
 	listener, err := listenFunc(address, port, options)
 	if err != nil {
-		return nil, errors.Base(err).Message("Interent|TCPHub: Failed to listen: ")
+		return nil, errors.Base(err).Message("Interent|TCPHub: Failed to listen on address: ", address, ":", port)
 	}
 
 	hub := &TCPHub{

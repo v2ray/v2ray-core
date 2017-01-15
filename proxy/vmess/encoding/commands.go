@@ -5,7 +5,7 @@ import (
 
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/uuid"
@@ -117,13 +117,13 @@ func (v *CommandSwitchAccountFactory) Unmarshal(data []byte) (interface{}, error
 		return nil, errors.New("VMess|SwitchAccountCommand: Insufficient length.")
 	}
 	if lenHost > 0 {
-		cmd.Host = v2net.ParseAddress(string(data[1 : 1+lenHost]))
+		cmd.Host = net.ParseAddress(string(data[1 : 1+lenHost]))
 	}
 	portStart := 1 + lenHost
 	if len(data) < portStart+2 {
 		return nil, errors.New("VMess|SwitchAccountCommand: Insufficient length.")
 	}
-	cmd.Port = v2net.PortFromBytes(data[portStart : portStart+2])
+	cmd.Port = net.PortFromBytes(data[portStart : portStart+2])
 	idStart := portStart + 2
 	if len(data) < idStart+16 {
 		return nil, errors.New("VMess|SwitchAccountCommand: Insufficient length.")

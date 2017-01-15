@@ -1,10 +1,9 @@
 package scenarios
 
 import (
+	"net"
 	"sync/atomic"
 	"time"
-
-	"net"
 
 	"github.com/golang/protobuf/proto"
 	"v2ray.com/core"
@@ -12,7 +11,7 @@ import (
 )
 
 var (
-	port uint32 = 50000
+	port uint32 = 40000
 )
 
 func pickPort() v2net.Port {

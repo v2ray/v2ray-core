@@ -22,7 +22,7 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 	if src == nil {
 		src = v2net.AnyIP
 	}
-	networkSettings, err := options.Stream.GetEffectiveNetworkSettings()
+	networkSettings, err := options.Stream.GetEffectiveTransportSettings()
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 			if err != nil {
 				return nil, errors.Base(err).Message("Interent|TCP: Failed to get header settings.")
 			}
-			auth, err := internet.CreateConnectionAuthenticator(tcpSettings.HeaderSettings.Type, headerConfig)
+			auth, err := internet.CreateConnectionAuthenticator(headerConfig)
 			if err != nil {
 				return nil, errors.Base(err).Message("Internet|TCP: Failed to create header authenticator.")
 			}
@@ -70,5 +70,5 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 }
 
 func init() {
-	common.Must(internet.RegisterNetworkDialer(v2net.Network_TCP, Dial))
+	common.Must(internet.RegisterTransportDialer(internet.TransportProtocol_TCP, Dial))
 }

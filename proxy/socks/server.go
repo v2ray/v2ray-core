@@ -1,17 +1,19 @@
 package socks
 
 import (
+	"context"
 	"io"
 	"sync"
 	"time"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
@@ -24,17 +26,25 @@ type Server struct {
 	tcpMutex         sync.RWMutex
 	udpMutex         sync.RWMutex
 	accepting        bool
-	packetDispatcher dispatcher.PacketDispatcher
+	packetDispatcher dispatcher.Interface
 	config           *ServerConfig
 	tcpListener      *internet.TCPHub
 	udpHub           *udp.Hub
-	udpAddress       v2net.Destination
+	udpAddress       net.Destination
 	udpServer        *udp.Server
 	meta             *proxy.InboundHandlerMeta
 }
 
 // NewServer creates a new Server object.
-func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandlerMeta) *Server {
+func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
+	space := app.SpaceFromContext(ctx)
+	if space == nil {
+		return nil, errors.New("Socks|Server: No space in context.")
+	}
+	meta := proxy.InboundMetaFromContext(ctx)
+	if meta == nil {
+		return nil, errors.New("Socks|Server: No inbound meta in context.")
+	}
 	s := &Server{
 		config: config,
 		meta:   meta,
@@ -46,11 +56,21 @@ func NewServer(config *ServerConfig, space app.Space, meta *proxy.InboundHandler
 		}
 		return nil
 	})
-	return s
+	return s, nil
+}
+
+func (v *Server) Network() net.NetworkList {
+	list := net.NetworkList{
+		Network: []net.Network{net.Network_TCP},
+	}
+	if v.config.UdpEnabled {
+		list.Network = append(list.Network, net.Network_UDP)
+	}
+	return list
 }
 
 // Port implements InboundHandler.Port().
-func (v *Server) Port() v2net.Port {
+func (v *Server) Port() net.Port {
 	return v.meta.Port
 }
 
@@ -91,7 +111,9 @@ func (v *Server) Start() error {
 	v.tcpListener = listener
 	v.tcpMutex.Unlock()
 	if v.config.UdpEnabled {
-		v.listenUDP()
+		if err := v.listenUDP(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -101,7 +123,7 @@ func (v *Server) handleConnection(connection internet.Connection) {
 
 	connection.SetReusable(false)
 
-	timedReader := v2net.NewTimeOutReader(v.config.Timeout, connection)
+	timedReader := net.NewTimeOutReader(16 /* seconds, for handshake */, connection)
 	reader := bufio.NewReader(timedReader)
 
 	session := &ServerSession{
@@ -109,7 +131,7 @@ func (v *Server) handleConnection(connection internet.Connection) {
 		meta:   v.meta,
 	}
 
-	clientAddr := v2net.DestinationFromAddr(connection.RemoteAddr())
+	clientAddr := net.DestinationFromAddr(connection.RemoteAddr())
 
 	request, err := session.Handshake(reader, connection)
 	if err != nil {
@@ -128,6 +150,7 @@ func (v *Server) handleConnection(connection internet.Connection) {
 		log.Info("Socks|Server: TCP Connect request to ", dest)
 		log.Access(clientAddr, dest, log.AccessAccepted, "")
 
+		timedReader.SetTimeOut(v.config.Timeout)
 		v.transport(reader, connection, session)
 		return
 	}
@@ -138,13 +161,11 @@ func (v *Server) handleConnection(connection internet.Connection) {
 	}
 }
 
-func (v *Server) handleUDP() error {
+func (v *Server) handleUDP() {
 	// The TCP connection closes after v method returns. We need to wait until
 	// the client closes it.
 	// TODO: get notified from UDP part
 	<-time.After(5 * time.Minute)
-
-	return nil
 }
 
 func (v *Server) transport(reader io.Reader, writer io.Writer, session *proxy.SessionInfo) {
@@ -164,8 +185,6 @@ func (v *Server) transport(reader io.Reader, writer io.Writer, session *proxy.Se
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
-		defer output.ForceClose()
-
 		v2writer := buf.NewWriter(writer)
 		if err := buf.PipeUntilEOF(output, v2writer); err != nil {
 			log.Info("Socks|Server: Failed to transport all TCP response: ", err)
@@ -177,17 +196,13 @@ func (v *Server) transport(reader io.Reader, writer io.Writer, session *proxy.Se
 
 	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
 		log.Info("Socks|Server: Connection ends with ", err)
+		input.CloseError()
+		output.CloseError()
 	}
 }
 
-type ServerFactory struct{}
-
-func (v *ServerFactory) StreamCapability() v2net.NetworkList {
-	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_TCP},
-	}
-}
-
-func (v *ServerFactory) Create(space app.Space, rawConfig interface{}, meta *proxy.InboundHandlerMeta) (proxy.InboundHandler, error) {
-	return NewServer(rawConfig.(*ServerConfig), space, meta), nil
+func init() {
+	common.Must(common.RegisterConfig((*ServerConfig)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return NewServer(ctx, config.(*ServerConfig))
+	}))
 }

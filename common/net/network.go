@@ -13,10 +13,6 @@ func ParseNetwork(nwStr string) Network {
 		return Network_TCP
 	case "udp":
 		return Network_UDP
-	case "kcp":
-		return Network_KCP
-	case "ws":
-		return Network_WebSocket
 	default:
 		return Network_Unknown
 	}
@@ -32,7 +28,7 @@ func (v Network) SystemString() string {
 	switch v {
 	case Network_TCP:
 		return "tcp"
-	case Network_UDP, Network_KCP:
+	case Network_UDP:
 		return "udp"
 	default:
 		return "unknown"
@@ -45,10 +41,6 @@ func (v Network) URLPrefix() string {
 		return "tcp"
 	case Network_UDP:
 		return "udp"
-	case Network_KCP:
-		return "kcp"
-	case Network_WebSocket:
-		return "ws"
 	default:
 		return "unknown"
 	}

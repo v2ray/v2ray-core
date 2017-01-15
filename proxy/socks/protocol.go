@@ -22,8 +22,8 @@ const (
 	socks4RequestGranted  = 90
 	socks4RequestRejected = 91
 
-	authNotRequired      = 0x00
-	authGssAPI           = 0x01
+	authNotRequired = 0x00
+	//authGssAPI           = 0x01
 	authPassword         = 0x02
 	authNoMatchingMethod = 0xFF
 
@@ -105,10 +105,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 
 		if expectedAuth == authPassword {
 			username, password, err := readUsernamePassword(reader)
-			if err != nil {
-				return nil, errors.Base(err).Message("Socks|Server: Failed to read username or password.")
-			}
-			if !s.config.HasAccount(username, password) {
+			if err != nil || !s.config.HasAccount(username, password) {
 				writeSocks5AuthenticationResponse(writer, 0xFF)
 				return nil, errors.Base(err).Message("Socks|Server: Invalid username or password.")
 			}
@@ -344,6 +341,10 @@ type UDPReader struct {
 	reader io.Reader
 }
 
+func NewUDPReader(reader io.Reader) *UDPReader {
+	return &UDPReader{reader: reader}
+}
+
 func (r *UDPReader) Read() (*buf.Buffer, error) {
 	b := buf.NewSmall()
 	if err := b.AppendSupplier(buf.ReadFrom(r.reader)); err != nil {
@@ -361,6 +362,13 @@ func (r *UDPReader) Read() (*buf.Buffer, error) {
 type UDPWriter struct {
 	request *protocol.RequestHeader
 	writer  io.Writer
+}
+
+func NewUDPWriter(request *protocol.RequestHeader, writer io.Writer) *UDPWriter {
+	return &UDPWriter{
+		request: request,
+		writer:  writer,
+	}
 }
 
 func (w *UDPWriter) Write(b *buf.Buffer) error {

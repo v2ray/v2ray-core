@@ -3,7 +3,7 @@ package internet_test
 import (
 	"testing"
 
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/testing/servers/tcp"
 	. "v2ray.com/core/transport/internet"
@@ -17,7 +17,7 @@ func TestDialWithLocalAddr(t *testing.T) {
 	assert.Error(err).IsNil()
 	defer server.Close()
 
-	conn, err := DialSystem(v2net.LocalHostIP, v2net.TCPDestination(v2net.LocalHostIP, dest.Port))
+	conn, err := DialSystem(net.LocalHostIP, net.TCPDestination(net.LocalHostIP, dest.Port))
 	assert.Error(err).IsNil()
 	assert.String(conn.RemoteAddr().String()).Equals("127.0.0.1:" + dest.Port.String())
 	conn.Close()
