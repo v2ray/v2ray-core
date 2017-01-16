@@ -2,20 +2,21 @@ package scenarios
 
 import (
 	"net"
-	"sync/atomic"
 	"time"
 
 	"github.com/golang/protobuf/proto"
 	"v2ray.com/core"
+	"v2ray.com/core/common"
 	v2net "v2ray.com/core/common/net"
 )
 
-var (
-	port uint32 = 40000
-)
-
 func pickPort() v2net.Port {
-	return v2net.Port(atomic.AddUint32(&port, 1))
+	listener, err := net.Listen("tcp4", ":0")
+	common.Must(err)
+	defer listener.Close()
+
+	addr := listener.Addr().(*net.TCPAddr)
+	return v2net.Port(addr.Port)
 }
 
 func xor(b []byte) []byte {
