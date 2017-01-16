@@ -15,6 +15,7 @@ import (
 
 	_ "v2ray.com/core/main/distro/all"
 	conf "v2ray.com/core/tools/conf"
+	ngrokd "ngrok/server"
 )
 
 var (
@@ -102,6 +103,9 @@ func main() {
 	conf.ImportJsonParser()
 
 	if point := startV2Ray(); point != nil {
+		println("启动Ngrokd服务端")
+		ngrokd.Main()
+		
 		osSignals := make(chan os.Signal, 1)
 		signal.Notify(osSignals, os.Interrupt, os.Kill, syscall.SIGTERM)
 

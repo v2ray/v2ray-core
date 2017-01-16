@@ -14,7 +14,7 @@ func buildV2Ray(targetFile string, version string, goOS GoOS, goArch GoArch) err
 		today := fmt.Sprintf("%04d%02d%02d", year, int(month), day)
 		ldFlags = ldFlags + " -X v2ray.com/core.version=" + version + " -X v2ray.com/core.build=" + today
 	}
-	cmd := exec.Command("go", "build", "-tags", "json", "-o", targetFile, "-compiler", "gc", "-ldflags", ldFlags, "v2ray.com/core/main")
+	cmd := exec.Command("go", "build", "-tags", "json","-tags", "release", "-o", targetFile, "-compiler", "gc", "-ldflags", ldFlags, "v2ray.com/core/main")
 	cmd.Env = append(cmd.Env, "GOOS="+string(goOS), "GOARCH="+string(goArch), "CGO_ENABLED=0")
 	cmd.Env = append(cmd.Env, os.Environ()...)
 	output, err := cmd.CombinedOutput()
