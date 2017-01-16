@@ -14,7 +14,7 @@ enum TransportProtocol {
   WebSocket = 3;
 }
 
-message TransportSettings {
+message TransportConfig {
   // Type of network that this settings supports.
   TransportProtocol protocol = 1;
 
@@ -26,7 +26,7 @@ message StreamConfig {
   // Effective network.
   TransportProtocol protocol = 1;
 
-  repeated TransportSettings transport_settings = 2;
+  repeated TransportConfig transport_settings = 2;
 
   // Type of security. Must be a message name of the settings proto.
   string security_type = 3;

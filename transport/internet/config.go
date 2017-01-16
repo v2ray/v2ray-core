@@ -9,7 +9,7 @@ type ConfigCreator func() interface{}
 
 var (
 	globalTransportConfigCreatorCache = make(map[TransportProtocol]ConfigCreator)
-	globalTransportSettings           []*TransportSettings
+	globalTransportSettings           []*TransportConfig
 )
 
 func RegisterProtocolConfigCreator(protocol TransportProtocol, creator ConfigCreator) error {
@@ -26,7 +26,7 @@ func CreateTransportConfig(protocol TransportProtocol) (interface{}, error) {
 	return creator(), nil
 }
 
-func (v *TransportSettings) GetTypedSettings() (interface{}, error) {
+func (v *TransportConfig) GetTypedSettings() (interface{}, error) {
 	return v.Settings.GetInstance()
 }
 
@@ -69,7 +69,7 @@ func (v *StreamConfig) HasSecuritySettings() bool {
 	return len(v.SecurityType) > 0
 }
 
-func ApplyGlobalTransportSettings(settings []*TransportSettings) error {
+func ApplyGlobalTransportSettings(settings []*TransportConfig) error {
 	globalTransportSettings = settings
 	return nil
 }
