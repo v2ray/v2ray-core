@@ -19,7 +19,7 @@ func (NoOpAuthenticator) Build() (*serial.TypedMessage, error) {
 type NoOpConnectionAuthenticator struct{}
 
 func (NoOpConnectionAuthenticator) Build() (*serial.TypedMessage, error) {
-	return serial.ToTypedMessage(new(noop.Config)), nil
+	return serial.ToTypedMessage(new(noop.ConnectionConfig)), nil
 }
 
 type SRTPAuthenticator struct{}
