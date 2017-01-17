@@ -29,7 +29,7 @@ Please answer the following questions before submitting your issue. Thank you.
     ```
     
 6)  请附上出错时软件输出的日志。
-    Please attach log file output by software when something goes wrong.
+    Please attach log file thrown by software when something goes wrong.
 
     Server Log File（服务器端日志）:
     ```
