@@ -1,8 +1,8 @@
 提交 Issue 之前请先阅读 [Issue 指引](https://www.v2ray.com/zh_cn/chapter_01/issue.html)，然后回答下面的问题，谢谢。
 Please read the [instruction](https://www.v2ray.com/en/get_started/issue.html) and answer the following questions before submitting your issue. Thank you.
 
-1.  你正在使用哪个版本的 V2Ray？（如果服务器和客户端使用了不同版本，请注明）
-    What version of V2Ray are you using(If you deploy different version on server and client, please explicitly point out)?
+1)  你正在使用哪个版本的 V2Ray？（如果服务器和客户端使用了不同版本，请注明）
+    What version of V2Ray are you using (If you deploy different version on server and client, please explicitly point out)?
 
 2)  你的使用场景是什么？比如使用 Chrome 通过 Socks/VMess 代理观看 YouTube 视频。
     What's your scenario of using V2Ray? E.g., Watching YouTube videos in Chrome via Socks/VMess proxy.
@@ -14,16 +14,16 @@ Please read the [instruction](https://www.v2ray.com/en/get_started/issue.html) a
     What's your expection?
 
 5)  请附上你的配置文件（提交 Issue 前请隐藏服务器端IP地址）。
-    Please attach your configuration file(**Hide your server IP address before submit this issue**).
+    Please attach your configuration file (**Mask IP addresses before submit this issue**).
 
     Server Configuration File（服务器端配置文件）:
-    ```
+    ```javascript
     // 在这里附上服务器端配置文件
     // Please attach your server configuration file here.
     ```
     
     Client Configuration File（客户端配置文件）:
-    ```
+    ```javascript
     // 在这里附上客户端配置文件
     // Please attach your client configuration file here.
     ```
