@@ -271,7 +271,7 @@ func TestSocksConformance(t *testing.T) {
 	}
 
 	{
-		authDialer, err := xproxy.SOCKS5("tcp", v2net.TCPDestination(v2net.LocalHostIP, noAuthPort).NetAddr(), &xproxy.Auth{User: "Test Account", Password: "Test Password"}, xproxy.Direct)
+		authDialer, err := xproxy.SOCKS5("tcp", v2net.TCPDestination(v2net.LocalHostIP, authPort).NetAddr(), &xproxy.Auth{User: "Test Account", Password: "Test Password"}, xproxy.Direct)
 		assert.Error(err).IsNil()
 		conn, err := authDialer.Dial("tcp", dest.NetAddr())
 		assert.Error(err).IsNil()
