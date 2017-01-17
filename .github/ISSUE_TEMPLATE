@@ -28,8 +28,8 @@ Please read the [instruction](https://www.v2ray.com/en/get_started/issue.html) a
     // Please attach your client configuration file here.
     ```
     
-6)  请附上出错时软件输出的日志。
-    Please attach the log file, especially the bottom lines if the file is large. Log file is usually /var/log/v2ray/error.log on Linux.
+6)  请附上出错时软件输出的日志。在 Linux 中，日志通常在 `/var/log/v2ray/error.log` 文件中。
+    Please attach the log file, especially the bottom lines if the file is large. Log file is usually `/var/log/v2ray/error.log` on Linux.
 
     Server Log File（服务器端日志）:
     ```
