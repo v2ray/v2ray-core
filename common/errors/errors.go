@@ -28,7 +28,7 @@ func (v *Error) Inner() error {
 
 func New(msg ...interface{}) error {
 	return &Error{
-		message: serial.Concat(msg),
+		message: serial.Concat(msg...),
 	}
 }
 
