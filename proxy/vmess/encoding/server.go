@@ -155,7 +155,7 @@ func (v *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 	if request.Security.Is(protocol.SecurityType_NONE) {
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
 			auth := &crypto.AEADAuthenticator{
-				AEAD:                    new(FnvAuthenticator),
+				AEAD:                    NoOpAuthenticator{},
 				NonceGenerator:          crypto.NoOpBytesGenerator{},
 				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 			}

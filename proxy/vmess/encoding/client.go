@@ -122,7 +122,7 @@ func (v *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 	if request.Security.Is(protocol.SecurityType_NONE) {
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
 			auth := &crypto.AEADAuthenticator{
-				AEAD:                    new(FnvAuthenticator),
+				AEAD:                    NoOpAuthenticator{},
 				NonceGenerator:          crypto.NoOpBytesGenerator{},
 				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 			}

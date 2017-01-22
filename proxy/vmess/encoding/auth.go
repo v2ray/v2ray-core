@@ -15,6 +15,26 @@ func Authenticate(b []byte) uint32 {
 	return fnv1hash.Sum32()
 }
 
+type NoOpAuthenticator struct{}
+
+func (NoOpAuthenticator) NonceSize() int {
+	return 0
+}
+
+func (NoOpAuthenticator) Overhead() int {
+	return 0
+}
+
+// Seal implements AEAD.Seal().
+func (NoOpAuthenticator) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
+	return append(dst[:0], plaintext...)
+}
+
+// Open implements AEAD.Open().
+func (NoOpAuthenticator) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, error) {
+	return append(dst[:0], ciphertext...), nil
+}
+
 // FnvAuthenticator is an AEAD based on Fnv hash.
 type FnvAuthenticator struct {
 }
