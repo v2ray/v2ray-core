@@ -34,6 +34,9 @@ func (v *FreedomConfig) Build() (*serial.TypedMessage, error) {
 		if err != nil {
 			return nil, errors.Base(err).Message("Config: Invalid redirect port: ", v.Redirect, ": ", err)
 		}
+		if len(host) == 0 {
+			host = "127.0.0.1"
+		}
 		config.DestinationOverride = &freedom.DestinationOverride{
 			Server: &protocol.ServerEndpoint{
 				Address: v2net.NewIPOrDomain(v2net.ParseAddress(host)),
