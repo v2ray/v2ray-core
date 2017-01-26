@@ -23,6 +23,7 @@ type Handler struct {
 	domainStrategy Config_DomainStrategy
 	timeout        uint32
 	dns            dns.Server
+	destOverride   *DestinationOverride
 }
 
 func New(ctx context.Context, config *Config) (*Handler, error) {
@@ -33,6 +34,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	f := &Handler{
 		domainStrategy: config.DomainStrategy,
 		timeout:        config.Timeout,
+		destOverride:   config.DestinationOverride,
 	}
 	space.OnInitialize(func() error {
 		if config.DomainStrategy == Config_USE_IP {
@@ -71,6 +73,14 @@ func (v *Handler) ResolveIP(destination net.Destination) net.Destination {
 
 func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay) error {
 	destination := proxy.DestinationFromContext(ctx)
+	if v.destOverride != nil {
+		server := v.destOverride.Server
+		destination = net.Destination{
+			Network: destination.Network,
+			Address: server.Address.AsAddress(),
+			Port:    net.Port(server.Port),
+		}
+	}
 	log.Info("Freedom: Opening connection to ", destination)
 
 	input := outboundRay.OutboundInput()

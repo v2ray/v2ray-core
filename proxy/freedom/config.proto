@@ -6,11 +6,18 @@ option go_package = "freedom";
 option java_package = "com.v2ray.core.proxy.freedom";
 option java_outer_classname = "ConfigProto";
 
+import "v2ray.com/core/common/protocol/server_spec.proto";
+
+message DestinationOverride {
+  v2ray.core.common.protocol.ServerEndpoint server = 1;
+}
+
 message Config {
   enum DomainStrategy {
     AS_IS = 0;
     USE_IP = 1;
   }
-  DomainStrategy domainStrategy = 1;
+  DomainStrategy domain_strategy = 1;
   uint32 timeout = 2;
+  DestinationOverride destination_override = 3;
 }
