@@ -21,13 +21,13 @@ type worker interface {
 	Start() error
 	Close()
 	Port() v2net.Port
-	Proxy() proxy.InboundHandler
+	Proxy() proxy.Inbound
 }
 
 type tcpWorker struct {
 	address          v2net.Address
 	port             v2net.Port
-	proxy            proxy.InboundHandler
+	proxy            proxy.Inbound
 	stream           *internet.StreamConfig
 	recvOrigDest     bool
 	tag              string
@@ -56,7 +56,7 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 	conn.Close()
 }
 
-func (w *tcpWorker) Proxy() proxy.InboundHandler {
+func (w *tcpWorker) Proxy() proxy.Inbound {
 	return w.proxy
 }
 
@@ -148,7 +148,7 @@ func (*udpConn) SetReusable(bool) {}
 type udpWorker struct {
 	sync.RWMutex
 
-	proxy        proxy.InboundHandler
+	proxy        proxy.Inbound
 	hub          *udp.Hub
 	address      v2net.Address
 	port         v2net.Port
@@ -264,6 +264,6 @@ func (w *udpWorker) Port() v2net.Port {
 	return w.port
 }
 
-func (w *udpWorker) Proxy() proxy.InboundHandler {
+func (w *udpWorker) Proxy() proxy.Inbound {
 	return w.proxy
 }

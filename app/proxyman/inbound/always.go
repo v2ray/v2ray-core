@@ -11,7 +11,7 @@ import (
 )
 
 type AlwaysOnInboundHandler struct {
-	proxy   proxy.InboundHandler
+	proxy   proxy.Inbound
 	workers []worker
 }
 
@@ -72,7 +72,7 @@ func (h *AlwaysOnInboundHandler) Close() {
 	}
 }
 
-func (h *AlwaysOnInboundHandler) GetRandomInboundProxy() (proxy.InboundHandler, net.Port, int) {
+func (h *AlwaysOnInboundHandler) GetRandomInboundProxy() (proxy.Inbound, net.Port, int) {
 	w := h.workers[dice.Roll(len(h.workers))]
 	return w.Proxy(), w.Port(), 9999
 }

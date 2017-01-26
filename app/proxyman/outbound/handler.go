@@ -20,7 +20,7 @@ import (
 type Handler struct {
 	config          *proxyman.OutboundHandlerConfig
 	senderSettings  *proxyman.SenderConfig
-	proxy           proxy.OutboundHandler
+	proxy           proxy.Outbound
 	outboundManager proxyman.OutboundHandlerManager
 }
 

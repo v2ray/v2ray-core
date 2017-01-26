@@ -9,15 +9,15 @@ import (
 	"v2ray.com/core/transport/ray"
 )
 
-// An InboundHandler handles inbound network connections to V2Ray.
-type InboundHandler interface {
+// An Inbound processes inbound connections.
+type Inbound interface {
 	Network() net.NetworkList
 
 	Process(context.Context, net.Network, internet.Connection) error
 }
 
-// An OutboundHandler handles outbound network connection for V2Ray.
-type OutboundHandler interface {
+// An Outbound process outbound connections.
+type Outbound interface {
 	Process(context.Context, ray.OutboundRay) error
 }
 

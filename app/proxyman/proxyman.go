@@ -22,7 +22,7 @@ type InboundHandler interface {
 	Close()
 
 	// For migration
-	GetRandomInboundProxy() (proxy.InboundHandler, net.Port, int)
+	GetRandomInboundProxy() (proxy.Inbound, net.Port, int)
 }
 
 type OutboundHandlerManager interface {

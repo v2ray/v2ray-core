@@ -136,7 +136,7 @@ func (h *DynamicInboundHandler) Close() {
 	h.cancel()
 }
 
-func (h *DynamicInboundHandler) GetRandomInboundProxy() (proxy.InboundHandler, v2net.Port, int) {
+func (h *DynamicInboundHandler) GetRandomInboundProxy() (proxy.Inbound, v2net.Port, int) {
 	w := h.worker[dice.Roll(len(h.worker))]
 	expire := h.receiverConfig.AllocationStrategy.GetRefreshValue() - uint32(time.Since(h.lastRefresh)/time.Minute)
 	return w.Proxy(), w.Port(), int(expire)
