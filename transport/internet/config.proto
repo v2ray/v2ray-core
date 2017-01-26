@@ -4,6 +4,7 @@ package v2ray.core.transport.internet;
 option csharp_namespace = "V2Ray.Core.Transport.Internet";
 option go_package = "internet";
 option java_package = "com.v2ray.core.transport.internet";
+option java_outer_classname = "ConfigProto";
 
 import "v2ray.com/core/common/serial/typed_message.proto";
 
