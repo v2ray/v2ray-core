@@ -19,8 +19,8 @@ var protocMap = map[string]string{
 	"linux":   filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", ".dev", "protoc", "linux", "protoc"),
 }
 
-func sdkPath(reporoot, lang string) string {
-	path := filepath.Join(reporoot, ".dev", "sdk", lang)
+func sdkPath(lang string) string {
+	path := filepath.Join(os.Getenv("GOPATH"), "src", "github.com", "v2ray", "sdk-"+lang, "proto")
 	os.MkdirAll(path, os.ModePerm)
 	return path
 }
@@ -51,7 +51,7 @@ func main() {
 	})
 
 	for _, files := range protofiles {
-		args := []string{"--proto_path", gosrc, "--go_out", gosrc}
+		args := []string{"--proto_path", gosrc, "--go_out", gosrc, "--java_out", sdkPath("java")}
 		args = append(args, files...)
 		cmd := exec.Command(protoc, args...)
 		cmd.Env = append(cmd.Env, os.Environ()...)
