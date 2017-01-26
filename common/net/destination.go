@@ -48,6 +48,10 @@ func (v Destination) String() string {
 	return v.Network.URLPrefix() + ":" + v.NetAddr()
 }
 
+func (v Destination) IsValid() bool {
+	return v.Network != Network_Unknown
+}
+
 func (v *Endpoint) AsDestination() Destination {
 	return Destination{
 		Network: v.Network,

@@ -4,6 +4,8 @@ import (
 	"io"
 	"testing"
 
+	"context"
+
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/testing/assert"
 	. "v2ray.com/core/transport/ray"
@@ -12,7 +14,7 @@ import (
 func TestStreamIO(t *testing.T) {
 	assert := assert.On(t)
 
-	stream := NewStream()
+	stream := NewStream(context.Background())
 	b1 := buf.New()
 	b1.AppendBytes('a')
 	assert.Error(stream.Write(b1)).IsNil()
@@ -33,7 +35,7 @@ func TestStreamIO(t *testing.T) {
 func TestStreamClose(t *testing.T) {
 	assert := assert.On(t)
 
-	stream := NewStream()
+	stream := NewStream(context.Background())
 	b1 := buf.New()
 	b1.AppendBytes('a')
 	assert.Error(stream.Write(b1)).IsNil()

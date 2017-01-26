@@ -77,20 +77,13 @@ type VMessInboundHandler struct {
 	inboundHandlerManager proxyman.InboundHandlerManager
 	clients               protocol.UserValidator
 	usersByEmail          *userByEmail
-	accepting             bool
-	listener              *internet.TCPHub
 	detours               *DetourConfig
-	meta                  *proxy.InboundHandlerMeta
 }
 
 func New(ctx context.Context, config *Config) (*VMessInboundHandler, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
 		return nil, errors.New("VMess|Inbound: No space in context.")
-	}
-	meta := proxy.InboundMetaFromContext(ctx)
-	if meta == nil {
-		return nil, errors.New("VMess|Inbound: No inbound meta in context.")
 	}
 
 	allowedClients := vmess.NewTimedUserValidator(protocol.DefaultIDHash)
@@ -102,7 +95,6 @@ func New(ctx context.Context, config *Config) (*VMessInboundHandler, error) {
 		clients:      allowedClients,
 		detours:      config.Detour,
 		usersByEmail: NewUserByEmail(config.User, config.GetDefaultValue()),
-		meta:         meta,
 	}
 
 	space.OnInitialize(func() error {
@@ -120,58 +112,21 @@ func New(ctx context.Context, config *Config) (*VMessInboundHandler, error) {
 	return handler, nil
 }
 
-func (v *VMessInboundHandler) Network() net.NetworkList {
+func (*VMessInboundHandler) Network() net.NetworkList {
 	return net.NetworkList{
 		Network: []net.Network{net.Network_TCP},
 	}
-}
-
-func (v *VMessInboundHandler) Port() net.Port {
-	return v.meta.Port
-}
-
-func (v *VMessInboundHandler) Close() {
-	v.Lock()
-	v.accepting = false
-	if v.listener != nil {
-		v.listener.Close()
-		v.listener = nil
-		v.clients.Release()
-		v.clients = nil
-	}
-	v.Unlock()
 }
 
 func (v *VMessInboundHandler) GetUser(email string) *protocol.User {
 	v.RLock()
 	defer v.RUnlock()
 
-	if !v.accepting {
-		return nil
-	}
-
 	user, existing := v.usersByEmail.Get(email)
 	if !existing {
 		v.clients.Add(user)
 	}
 	return user
-}
-
-func (v *VMessInboundHandler) Start() error {
-	if v.accepting {
-		return nil
-	}
-
-	tcpListener, err := internet.ListenTCP(v.meta.Address, v.meta.Port, v.HandleConnection, v.meta.StreamSettings)
-	if err != nil {
-		log.Error("VMess|Inbound: Unable to listen tcp ", v.meta.Address, ":", v.meta.Port, ": ", err)
-		return err
-	}
-	v.accepting = true
-	v.Lock()
-	v.listener = tcpListener
-	v.Unlock()
-	return nil
 }
 
 func transferRequest(session *encoding.ServerSession, request *protocol.RequestHeader, input io.Reader, output ray.OutputStream) error {
@@ -219,23 +174,12 @@ func transferResponse(session *encoding.ServerSession, request *protocol.Request
 	return nil
 }
 
-func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
-	defer connection.Close()
-
-	if !v.accepting {
-		return
-	}
-
+func (v *VMessInboundHandler) Process(ctx context.Context, network net.Network, connection internet.Connection) error {
 	connReader := net.NewTimeOutReader(8, connection)
 	reader := bufio.NewReader(connReader)
-	v.RLock()
-	if !v.accepting {
-		v.RUnlock()
-		return
-	}
+
 	session := encoding.NewServerSession(v.clients)
 	request, err := session.DecodeRequestHeader(reader)
-	v.RUnlock()
 
 	if err != nil {
 		if errors.Cause(err) != io.EOF {
@@ -243,19 +187,17 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 			log.Info("VMess|Inbound: Invalid request from ", connection.RemoteAddr(), ": ", err)
 		}
 		connection.SetReusable(false)
-		return
+		return err
 	}
 	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, "")
 	log.Info("VMess|Inbound: Received request for ", request.Destination())
 
 	connection.SetReusable(request.Option.Has(protocol.RequestOptionConnectionReuse))
 
-	ray := v.packetDispatcher.DispatchToOutbound(&proxy.SessionInfo{
-		Source:      net.DestinationFromAddr(connection.RemoteAddr()),
-		Destination: request.Destination(),
-		User:        request.User,
-		Inbound:     v.meta,
-	})
+	ctx = proxy.ContextWithDestination(ctx, request.Destination())
+	ctx = protocol.ContextWithUser(ctx, request.User)
+	ray := v.packetDispatcher.DispatchToOutbound(ctx)
+
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 
@@ -269,7 +211,7 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 
 	writer := bufio.NewWriter(connection)
 	response := &protocol.ResponseHeader{
-		Command: v.generateCommand(request),
+		Command: v.generateCommand(ctx, request),
 	}
 
 	if connection.Reusable() {
@@ -285,14 +227,52 @@ func (v *VMessInboundHandler) HandleConnection(connection internet.Connection) {
 		connection.SetReusable(false)
 		input.CloseError()
 		output.CloseError()
-		return
+		return err
 	}
 
 	if err := writer.Flush(); err != nil {
 		log.Info("VMess|Inbound: Failed to flush remain data: ", err)
 		connection.SetReusable(false)
-		return
+		return err
 	}
+
+	return nil
+}
+
+func (v *VMessInboundHandler) generateCommand(ctx context.Context, request *protocol.RequestHeader) protocol.ResponseCommand {
+	if v.detours != nil {
+		tag := v.detours.To
+		if v.inboundHandlerManager != nil {
+			handler, err := v.inboundHandlerManager.GetHandler(ctx, tag)
+			if err != nil {
+				log.Warning("VMess|Inbound: Failed to get detour handler: ", tag, err)
+				return nil
+			}
+			proxyHandler, port, availableMin := handler.GetRandomInboundProxy()
+			inboundHandler, ok := proxyHandler.(*VMessInboundHandler)
+			if ok {
+				if availableMin > 255 {
+					availableMin = 255
+				}
+
+				log.Info("VMessIn: Pick detour handler for port ", port, " for ", availableMin, " minutes.")
+				user := inboundHandler.GetUser(request.User.Email)
+				if user == nil {
+					return nil
+				}
+				account, _ := user.GetTypedAccount()
+				return &protocol.CommandSwitchAccount{
+					Port:     port,
+					ID:       account.(*vmess.InternalAccount).ID.UUID(),
+					AlterIds: uint16(len(account.(*vmess.InternalAccount).AlterIDs)),
+					Level:    user.Level,
+					ValidMin: byte(availableMin),
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 func init() {

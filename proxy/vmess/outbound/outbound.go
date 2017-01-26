@@ -25,17 +25,12 @@ import (
 type VMessOutboundHandler struct {
 	serverList   *protocol.ServerList
 	serverPicker protocol.ServerPicker
-	meta         *proxy.OutboundHandlerMeta
 }
 
 func New(ctx context.Context, config *Config) (*VMessOutboundHandler, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
 		return nil, errors.New("VMess|Outbound: No space in context.")
-	}
-	meta := proxy.OutboundMetaFromContext(ctx)
-	if meta == nil {
-		return nil, errors.New("VMess|Outbound: No outbound meta in context.")
 	}
 
 	serverList := protocol.NewServerList()
@@ -45,20 +40,20 @@ func New(ctx context.Context, config *Config) (*VMessOutboundHandler, error) {
 	handler := &VMessOutboundHandler{
 		serverList:   serverList,
 		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
-		meta:         meta,
 	}
 
 	return handler, nil
 }
 
 // Dispatch implements OutboundHandler.Dispatch().
-func (v *VMessOutboundHandler) Dispatch(target net.Destination, outboundRay ray.OutboundRay) {
+func (v *VMessOutboundHandler) Process(ctx context.Context, outboundRay ray.OutboundRay) error {
 	var rec *protocol.ServerSpec
 	var conn internet.Connection
 
+	dialer := proxy.DialerFromContext(ctx)
 	err := retry.ExponentialBackoff(5, 100).On(func() error {
 		rec = v.serverPicker.PickServer()
-		rawConn, err := internet.Dial(v.meta.Address, rec.Destination(), v.meta.GetDialerOptions())
+		rawConn, err := dialer.Dial(ctx, rec.Destination())
 		if err != nil {
 			return err
 		}
@@ -68,8 +63,11 @@ func (v *VMessOutboundHandler) Dispatch(target net.Destination, outboundRay ray.
 	})
 	if err != nil {
 		log.Warning("VMess|Outbound: Failed to find an available destination:", err)
-		return
+		return err
 	}
+	defer conn.Close()
+
+	target := proxy.DestinationFromContext(ctx)
 	log.Info("VMess|Outbound: Tunneling request to ", target, " via ", rec.Destination())
 
 	command := protocol.RequestCommandTCP
@@ -88,11 +86,10 @@ func (v *VMessOutboundHandler) Dispatch(target net.Destination, outboundRay ray.
 	rawAccount, err := request.User.GetTypedAccount()
 	if err != nil {
 		log.Warning("VMess|Outbound: Failed to get user account: ", err)
+		return err
 	}
 	account := rawAccount.(*vmess.InternalAccount)
 	request.Security = account.Security
-
-	defer conn.Close()
 
 	conn.SetReusable(true)
 	if conn.Reusable() { // Conn reuse may be disabled on transportation layer
@@ -160,9 +157,10 @@ func (v *VMessOutboundHandler) Dispatch(target net.Destination, outboundRay ray.
 		conn.SetReusable(false)
 		input.CloseError()
 		output.CloseError()
+		return err
 	}
 
-	return
+	return nil
 }
 
 func init() {

@@ -56,6 +56,24 @@ func (v *StreamConfig) GetEffectiveTransportSettings() (interface{}, error) {
 	return CreateTransportConfig(protocol)
 }
 
+func (c *StreamConfig) GetTransportSettingsFor(protocol TransportProtocol) (interface{}, error) {
+	if c != nil {
+		for _, settings := range c.TransportSettings {
+			if settings.Protocol == protocol {
+				return settings.GetTypedSettings()
+			}
+		}
+	}
+
+	for _, settings := range globalTransportSettings {
+		if settings.Protocol == protocol {
+			return settings.GetTypedSettings()
+		}
+	}
+
+	return CreateTransportConfig(protocol)
+}
+
 func (v *StreamConfig) GetEffectiveSecuritySettings() (interface{}, error) {
 	for _, settings := range v.SecuritySettings {
 		if settings.Type == v.SecurityType {

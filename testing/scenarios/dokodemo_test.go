@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"v2ray.com/core"
+	"v2ray.com/core/app/proxyman"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -32,11 +33,13 @@ func TestDokodemoTCP(t *testing.T) {
 	userID := protocol.NewID(uuid.New())
 	serverPort := pickPort()
 	serverConfig := &core.Config{
-		Inbound: []*core.InboundConnectionConfig{
+		Inbound: []*proxyman.InboundHandlerConfig{
 			{
-				PortRange: v2net.SinglePortRange(serverPort),
-				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
-				Settings: serial.ToTypedMessage(&inbound.Config{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(serverPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
 						{
 							Account: serial.ToTypedMessage(&vmess.Account{
@@ -47,9 +50,9 @@ func TestDokodemoTCP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*core.OutboundConnectionConfig{
+		Outbound: []*proxyman.OutboundHandlerConfig{
 			{
-				Settings: serial.ToTypedMessage(&freedom.Config{}),
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
@@ -57,11 +60,13 @@ func TestDokodemoTCP(t *testing.T) {
 	clientPort := uint32(pickPort())
 	clientPortRange := uint32(5)
 	clientConfig := &core.Config{
-		Inbound: []*core.InboundConnectionConfig{
+		Inbound: []*proxyman.InboundHandlerConfig{
 			{
-				PortRange: &v2net.PortRange{From: clientPort, To: clientPort + clientPortRange},
-				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
-				Settings: serial.ToTypedMessage(&dokodemo.Config{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: &v2net.PortRange{From: clientPort, To: clientPort + clientPortRange},
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
 					Address: v2net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
 					NetworkList: &v2net.NetworkList{
@@ -70,9 +75,9 @@ func TestDokodemoTCP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*core.OutboundConnectionConfig{
+		Outbound: []*proxyman.OutboundHandlerConfig{
 			{
-				Settings: serial.ToTypedMessage(&outbound.Config{
+				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
 							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
@@ -129,11 +134,13 @@ func TestDokodemoUDP(t *testing.T) {
 	userID := protocol.NewID(uuid.New())
 	serverPort := pickPort()
 	serverConfig := &core.Config{
-		Inbound: []*core.InboundConnectionConfig{
+		Inbound: []*proxyman.InboundHandlerConfig{
 			{
-				PortRange: v2net.SinglePortRange(serverPort),
-				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
-				Settings: serial.ToTypedMessage(&inbound.Config{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(serverPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
 						{
 							Account: serial.ToTypedMessage(&vmess.Account{
@@ -144,9 +151,9 @@ func TestDokodemoUDP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*core.OutboundConnectionConfig{
+		Outbound: []*proxyman.OutboundHandlerConfig{
 			{
-				Settings: serial.ToTypedMessage(&freedom.Config{}),
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
@@ -154,11 +161,13 @@ func TestDokodemoUDP(t *testing.T) {
 	clientPort := uint32(pickPort())
 	clientPortRange := uint32(5)
 	clientConfig := &core.Config{
-		Inbound: []*core.InboundConnectionConfig{
+		Inbound: []*proxyman.InboundHandlerConfig{
 			{
-				PortRange: &v2net.PortRange{From: clientPort, To: clientPort + clientPortRange},
-				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
-				Settings: serial.ToTypedMessage(&dokodemo.Config{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: &v2net.PortRange{From: clientPort, To: clientPort + clientPortRange},
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
 					Address: v2net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
 					NetworkList: &v2net.NetworkList{
@@ -167,9 +176,9 @@ func TestDokodemoUDP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*core.OutboundConnectionConfig{
+		Outbound: []*proxyman.OutboundHandlerConfig{
 			{
-				Settings: serial.ToTypedMessage(&outbound.Config{
+				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
 							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),

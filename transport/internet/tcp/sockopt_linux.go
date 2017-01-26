@@ -1,6 +1,6 @@
 // +build linux
 
-package dokodemo
+package tcp
 
 import (
 	"syscall"

@@ -25,11 +25,8 @@ import (
 // Server is a HTTP proxy server.
 type Server struct {
 	sync.Mutex
-	accepting        bool
 	packetDispatcher dispatcher.Interface
 	config           *ServerConfig
-	tcpListener      *internet.TCPHub
-	meta             *proxy.InboundHandlerMeta
 }
 
 // NewServer creates a new HTTP inbound handler.
@@ -38,13 +35,8 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	if space == nil {
 		return nil, errors.New("HTTP|Server: No space in context.")
 	}
-	meta := proxy.InboundMetaFromContext(ctx)
-	if meta == nil {
-		return nil, errors.New("HTTP|Server: No inbound meta from context.")
-	}
 	s := &Server{
 		config: config,
-		meta:   meta,
 	}
 	space.OnInitialize(func() error {
 		s.packetDispatcher = dispatcher.FromSpace(space)
@@ -56,44 +48,10 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	return s, nil
 }
 
-// Port implements InboundHandler.Port().
-func (v *Server) Port() v2net.Port {
-	return v.meta.Port
-}
-
-func (v *Server) Network() v2net.NetworkList {
+func (*Server) Network() v2net.NetworkList {
 	return v2net.NetworkList{
 		Network: []v2net.Network{v2net.Network_TCP},
 	}
-}
-
-// Close implements InboundHandler.Close().
-func (v *Server) Close() {
-	v.accepting = false
-	if v.tcpListener != nil {
-		v.Lock()
-		v.tcpListener.Close()
-		v.tcpListener = nil
-		v.Unlock()
-	}
-}
-
-// Start implements InboundHandler.Start().
-func (v *Server) Start() error {
-	if v.accepting {
-		return nil
-	}
-
-	tcpListener, err := internet.ListenTCP(v.meta.Address, v.meta.Port, v.handleConnection, v.meta.StreamSettings)
-	if err != nil {
-		log.Error("HTTP: Failed listen on ", v.meta.Address, ":", v.meta.Port, ": ", err)
-		return err
-	}
-	v.Lock()
-	v.tcpListener = tcpListener
-	v.Unlock()
-	v.accepting = true
-	return nil
 }
 
 func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error) {
@@ -119,11 +77,10 @@ func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error
 	return v2net.TCPDestination(v2net.DomainAddress(host), port), nil
 }
 
-func (v *Server) handleConnection(conn internet.Connection) {
-	defer conn.Close()
+func (s *Server) Process(ctx context.Context, network v2net.Network, conn internet.Connection) error {
 	conn.SetReusable(false)
 
-	timedReader := v2net.NewTimeOutReader(v.config.Timeout, conn)
+	timedReader := v2net.NewTimeOutReader(s.config.Timeout, conn)
 	reader := bufio.OriginalReaderSize(timedReader, 2048)
 
 	request, err := http.ReadRequest(reader)
@@ -131,7 +88,7 @@ func (v *Server) handleConnection(conn internet.Connection) {
 		if errors.Cause(err) != io.EOF {
 			log.Warning("HTTP: Failed to read http request: ", err)
 		}
-		return
+		return err
 	}
 	log.Info("HTTP: Request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]")
 	defaultPort := v2net.Port(80)
@@ -145,22 +102,18 @@ func (v *Server) handleConnection(conn internet.Connection) {
 	dest, err := parseHost(host, defaultPort)
 	if err != nil {
 		log.Warning("HTTP: Malformed proxy host (", host, "): ", err)
-		return
+		return err
 	}
 	log.Access(conn.RemoteAddr(), request.URL, log.AccessAccepted, "")
-	session := &proxy.SessionInfo{
-		Source:      v2net.DestinationFromAddr(conn.RemoteAddr()),
-		Destination: dest,
-		Inbound:     v.meta,
-	}
+	ctx = proxy.ContextWithDestination(ctx, dest)
 	if strings.ToUpper(request.Method) == "CONNECT" {
-		v.handleConnect(request, session, reader, conn)
+		return s.handleConnect(ctx, request, reader, conn)
 	} else {
-		v.handlePlainHTTP(request, session, reader, conn)
+		return s.handlePlainHTTP(ctx, request, reader, conn)
 	}
 }
 
-func (v *Server) handleConnect(request *http.Request, session *proxy.SessionInfo, reader io.Reader, writer io.Writer) {
+func (s *Server) handleConnect(ctx context.Context, request *http.Request, reader io.Reader, writer io.Writer) error {
 	response := &http.Response{
 		Status:        "200 OK",
 		StatusCode:    200,
@@ -174,10 +127,10 @@ func (v *Server) handleConnect(request *http.Request, session *proxy.SessionInfo
 	}
 	if err := response.Write(writer); err != nil {
 		log.Warning("HTTP|Server: failed to write back OK response: ", err)
-		return
+		return err
 	}
 
-	ray := v.packetDispatcher.DispatchToOutbound(session)
+	ray := s.packetDispatcher.DispatchToOutbound(ctx)
 
 	requestDone := signal.ExecuteAsync(func() error {
 		defer ray.InboundInput().Close()
@@ -201,7 +154,10 @@ func (v *Server) handleConnect(request *http.Request, session *proxy.SessionInfo
 		log.Info("HTTP|Server: Connection ends with: ", err)
 		ray.InboundInput().CloseError()
 		ray.InboundOutput().CloseError()
+		return err
 	}
+
+	return nil
 }
 
 // @VisibleForTesting
@@ -229,7 +185,7 @@ func StripHopByHopHeaders(request *http.Request) {
 	}
 }
 
-func (v *Server) GenerateResponse(statusCode int, status string) *http.Response {
+func generateResponse(statusCode int, status string) *http.Response {
 	hdr := http.Header(make(map[string][]string))
 	hdr.Set("Connection", "close")
 	return &http.Response{
@@ -245,18 +201,16 @@ func (v *Server) GenerateResponse(statusCode int, status string) *http.Response 
 	}
 }
 
-func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionInfo, reader io.Reader, writer io.Writer) {
+func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, reader io.Reader, writer io.Writer) error {
 	if len(request.URL.Host) <= 0 {
-		response := v.GenerateResponse(400, "Bad Request")
-		response.Write(writer)
-
-		return
+		response := generateResponse(400, "Bad Request")
+		return response.Write(writer)
 	}
 
 	request.Host = request.URL.Host
 	StripHopByHopHeaders(request)
 
-	ray := v.packetDispatcher.DispatchToOutbound(session)
+	ray := s.packetDispatcher.DispatchToOutbound(ctx)
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 
@@ -279,7 +233,7 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 		response, err := http.ReadResponse(responseReader, request)
 		if err != nil {
 			log.Warning("HTTP: Failed to read response: ", err)
-			response = v.GenerateResponse(503, "Service Unavailable")
+			response = generateResponse(503, "Service Unavailable")
 		}
 		responseWriter := bufio.NewWriter(writer)
 		if err := response.Write(responseWriter); err != nil {
@@ -296,7 +250,10 @@ func (v *Server) handlePlainHTTP(request *http.Request, session *proxy.SessionIn
 		log.Info("HTTP|Server: Connecton ending with ", err)
 		input.CloseError()
 		output.CloseError()
+		return err
 	}
+
+	return nil
 }
 
 func init() {

@@ -1,16 +1,18 @@
 package router
 
 import (
+	"context"
 	"net"
 	"regexp"
 	"strings"
 
 	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/proxy"
 )
 
 type Condition interface {
-	Apply(session *proxy.SessionInfo) bool
+	Apply(ctx context.Context) bool
 }
 
 type ConditionChan []Condition
@@ -25,9 +27,9 @@ func (v *ConditionChan) Add(cond Condition) *ConditionChan {
 	return v
 }
 
-func (v *ConditionChan) Apply(session *proxy.SessionInfo) bool {
+func (v *ConditionChan) Apply(ctx context.Context) bool {
 	for _, cond := range *v {
-		if !cond.Apply(session) {
+		if !cond.Apply(ctx) {
 			return false
 		}
 	}
@@ -50,9 +52,9 @@ func (v *AnyCondition) Add(cond Condition) *AnyCondition {
 	return v
 }
 
-func (v *AnyCondition) Apply(session *proxy.SessionInfo) bool {
+func (v *AnyCondition) Apply(ctx context.Context) bool {
 	for _, cond := range *v {
-		if cond.Apply(session) {
+		if cond.Apply(ctx) {
 			return true
 		}
 	}
@@ -73,8 +75,8 @@ func NewPlainDomainMatcher(pattern string) *PlainDomainMatcher {
 	}
 }
 
-func (v *PlainDomainMatcher) Apply(session *proxy.SessionInfo) bool {
-	dest := session.Destination
+func (v *PlainDomainMatcher) Apply(ctx context.Context) bool {
+	dest := proxy.DestinationFromContext(ctx)
 	if !dest.Address.Family().IsDomain() {
 		return false
 	}
@@ -96,8 +98,8 @@ func NewRegexpDomainMatcher(pattern string) (*RegexpDomainMatcher, error) {
 	}, nil
 }
 
-func (v *RegexpDomainMatcher) Apply(session *proxy.SessionInfo) bool {
-	dest := session.Destination
+func (v *RegexpDomainMatcher) Apply(ctx context.Context) bool {
+	dest := proxy.DestinationFromContext(ctx)
 	if !dest.Address.Family().IsDomain() {
 		return false
 	}
@@ -121,15 +123,31 @@ func NewCIDRMatcher(ip []byte, mask uint32, onSource bool) (*CIDRMatcher, error)
 	}, nil
 }
 
-func (v *CIDRMatcher) Apply(session *proxy.SessionInfo) bool {
-	dest := session.Destination
+func (v *CIDRMatcher) Apply(ctx context.Context) bool {
+	var dest v2net.Destination
 	if v.onSource {
-		dest = session.Source
+		dest = proxy.SourceFromContext(ctx)
+	} else {
+		dest = proxy.DestinationFromContext(ctx)
 	}
+
 	if !dest.Address.Family().Either(v2net.AddressFamilyIPv4, v2net.AddressFamilyIPv6) {
 		return false
 	}
-	return v.cidr.Contains(dest.Address.IP())
+
+	ips := []net.IP{dest.Address.IP()}
+	if resolveIPs, ok := proxy.ResolvedIPsFromContext(ctx); ok {
+		for _, rip := range resolveIPs {
+			ips = append(ips, rip.IP())
+		}
+	}
+
+	for _, ip := range ips {
+		if v.cidr.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }
 
 type IPv4Matcher struct {
@@ -144,15 +162,30 @@ func NewIPv4Matcher(ipnet *v2net.IPNet, onSource bool) *IPv4Matcher {
 	}
 }
 
-func (v *IPv4Matcher) Apply(session *proxy.SessionInfo) bool {
-	dest := session.Destination
+func (v *IPv4Matcher) Apply(ctx context.Context) bool {
+	var dest v2net.Destination
 	if v.onSource {
-		dest = session.Source
+		dest = proxy.SourceFromContext(ctx)
+	} else {
+		dest = proxy.DestinationFromContext(ctx)
 	}
 	if !dest.Address.Family().Either(v2net.AddressFamilyIPv4) {
 		return false
 	}
-	return v.ipv4net.Contains(dest.Address.IP())
+
+	ips := []net.IP{dest.Address.IP()}
+	if resolvedIPs, ok := proxy.ResolvedIPsFromContext(ctx); ok {
+		for _, rip := range resolvedIPs {
+			ips = append(ips, rip.IP())
+		}
+	}
+
+	for _, ip := range ips {
+		if v.ipv4net.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }
 
 type PortMatcher struct {
@@ -165,8 +198,9 @@ func NewPortMatcher(portRange v2net.PortRange) *PortMatcher {
 	}
 }
 
-func (v *PortMatcher) Apply(session *proxy.SessionInfo) bool {
-	return v.port.Contains(session.Destination.Port)
+func (v *PortMatcher) Apply(ctx context.Context) bool {
+	dest := proxy.DestinationFromContext(ctx)
+	return v.port.Contains(dest.Port)
 }
 
 type NetworkMatcher struct {
@@ -179,8 +213,9 @@ func NewNetworkMatcher(network *v2net.NetworkList) *NetworkMatcher {
 	}
 }
 
-func (v *NetworkMatcher) Apply(session *proxy.SessionInfo) bool {
-	return v.network.HasNetwork(session.Destination.Network)
+func (v *NetworkMatcher) Apply(ctx context.Context) bool {
+	dest := proxy.DestinationFromContext(ctx)
+	return v.network.HasNetwork(dest.Network)
 }
 
 type UserMatcher struct {
@@ -193,12 +228,13 @@ func NewUserMatcher(users []string) *UserMatcher {
 	}
 }
 
-func (v *UserMatcher) Apply(session *proxy.SessionInfo) bool {
-	if session.User == nil {
+func (v *UserMatcher) Apply(ctx context.Context) bool {
+	user := protocol.UserFromContext(ctx)
+	if user == nil {
 		return false
 	}
 	for _, u := range v.user {
-		if u == session.User.Email {
+		if u == user.Email {
 			return true
 		}
 	}
@@ -215,13 +251,14 @@ func NewInboundTagMatcher(tags []string) *InboundTagMatcher {
 	}
 }
 
-func (v *InboundTagMatcher) Apply(session *proxy.SessionInfo) bool {
-	if session.Inbound == nil || len(session.Inbound.Tag) == 0 {
+func (v *InboundTagMatcher) Apply(ctx context.Context) bool {
+	tag := proxy.InboundTagFromContext(ctx)
+	if len(tag) == 0 {
 		return false
 	}
 
 	for _, t := range v.tags {
-		if t == session.Inbound.Tag {
+		if t == tag {
 			return true
 		}
 	}

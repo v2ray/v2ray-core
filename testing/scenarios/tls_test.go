@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"v2ray.com/core"
+	"v2ray.com/core/app/proxyman"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -35,11 +36,21 @@ func TestSimpleTLSConnection(t *testing.T) {
 	userID := protocol.NewID(uuid.New())
 	serverPort := pickPort()
 	serverConfig := &core.Config{
-		Inbound: []*core.InboundConnectionConfig{
+		Inbound: []*proxyman.InboundHandlerConfig{
 			{
-				PortRange: v2net.SinglePortRange(serverPort),
-				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
-				Settings: serial.ToTypedMessage(&inbound.Config{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(serverPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					StreamSettings: &internet.StreamConfig{
+						SecurityType: serial.GetMessageType(&tls.Config{}),
+						SecuritySettings: []*serial.TypedMessage{
+							serial.ToTypedMessage(&tls.Config{
+								Certificate: []*tls.Certificate{tlsgen.GenerateCertificateForTest()},
+							}),
+						},
+					},
+				}),
+				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
 						{
 							Account: serial.ToTypedMessage(&vmess.Account{
@@ -48,30 +59,24 @@ func TestSimpleTLSConnection(t *testing.T) {
 						},
 					},
 				}),
-				StreamSettings: &internet.StreamConfig{
-					SecurityType: serial.GetMessageType(&tls.Config{}),
-					SecuritySettings: []*serial.TypedMessage{
-						serial.ToTypedMessage(&tls.Config{
-							Certificate: []*tls.Certificate{tlsgen.GenerateCertificateForTest()},
-						}),
-					},
-				},
 			},
 		},
-		Outbound: []*core.OutboundConnectionConfig{
+		Outbound: []*proxyman.OutboundHandlerConfig{
 			{
-				Settings: serial.ToTypedMessage(&freedom.Config{}),
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
 
 	clientPort := pickPort()
 	clientConfig := &core.Config{
-		Inbound: []*core.InboundConnectionConfig{
+		Inbound: []*proxyman.InboundHandlerConfig{
 			{
-				PortRange: v2net.SinglePortRange(clientPort),
-				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
-				Settings: serial.ToTypedMessage(&dokodemo.Config{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(clientPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
 					Address: v2net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
 					NetworkList: &v2net.NetworkList{
@@ -80,9 +85,9 @@ func TestSimpleTLSConnection(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*core.OutboundConnectionConfig{
+		Outbound: []*proxyman.OutboundHandlerConfig{
 			{
-				Settings: serial.ToTypedMessage(&outbound.Config{
+				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
 							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
@@ -97,14 +102,16 @@ func TestSimpleTLSConnection(t *testing.T) {
 						},
 					},
 				}),
-				StreamSettings: &internet.StreamConfig{
-					SecurityType: serial.GetMessageType(&tls.Config{}),
-					SecuritySettings: []*serial.TypedMessage{
-						serial.ToTypedMessage(&tls.Config{
-							AllowInsecure: true,
-						}),
+				SenderSettings: serial.ToTypedMessage(&proxyman.SenderConfig{
+					StreamSettings: &internet.StreamConfig{
+						SecurityType: serial.GetMessageType(&tls.Config{}),
+						SecuritySettings: []*serial.TypedMessage{
+							serial.ToTypedMessage(&tls.Config{
+								AllowInsecure: true,
+							}),
+						},
 					},
-				},
+				}),
 			},
 		},
 	}
@@ -143,11 +150,22 @@ func TestTLSOverKCP(t *testing.T) {
 	userID := protocol.NewID(uuid.New())
 	serverPort := pickPort()
 	serverConfig := &core.Config{
-		Inbound: []*core.InboundConnectionConfig{
+		Inbound: []*proxyman.InboundHandlerConfig{
 			{
-				PortRange: v2net.SinglePortRange(serverPort),
-				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
-				Settings: serial.ToTypedMessage(&inbound.Config{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(serverPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					StreamSettings: &internet.StreamConfig{
+						Protocol:     internet.TransportProtocol_MKCP,
+						SecurityType: serial.GetMessageType(&tls.Config{}),
+						SecuritySettings: []*serial.TypedMessage{
+							serial.ToTypedMessage(&tls.Config{
+								Certificate: []*tls.Certificate{tlsgen.GenerateCertificateForTest()},
+							}),
+						},
+					},
+				}),
+				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
 						{
 							Account: serial.ToTypedMessage(&vmess.Account{
@@ -156,31 +174,24 @@ func TestTLSOverKCP(t *testing.T) {
 						},
 					},
 				}),
-				StreamSettings: &internet.StreamConfig{
-					Protocol:     internet.TransportProtocol_MKCP,
-					SecurityType: serial.GetMessageType(&tls.Config{}),
-					SecuritySettings: []*serial.TypedMessage{
-						serial.ToTypedMessage(&tls.Config{
-							Certificate: []*tls.Certificate{tlsgen.GenerateCertificateForTest()},
-						}),
-					},
-				},
 			},
 		},
-		Outbound: []*core.OutboundConnectionConfig{
+		Outbound: []*proxyman.OutboundHandlerConfig{
 			{
-				Settings: serial.ToTypedMessage(&freedom.Config{}),
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
 
 	clientPort := pickPort()
 	clientConfig := &core.Config{
-		Inbound: []*core.InboundConnectionConfig{
+		Inbound: []*proxyman.InboundHandlerConfig{
 			{
-				PortRange: v2net.SinglePortRange(clientPort),
-				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
-				Settings: serial.ToTypedMessage(&dokodemo.Config{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(clientPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
 					Address: v2net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
 					NetworkList: &v2net.NetworkList{
@@ -189,9 +200,9 @@ func TestTLSOverKCP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*core.OutboundConnectionConfig{
+		Outbound: []*proxyman.OutboundHandlerConfig{
 			{
-				Settings: serial.ToTypedMessage(&outbound.Config{
+				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
 							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
@@ -206,15 +217,17 @@ func TestTLSOverKCP(t *testing.T) {
 						},
 					},
 				}),
-				StreamSettings: &internet.StreamConfig{
-					Protocol:     internet.TransportProtocol_MKCP,
-					SecurityType: serial.GetMessageType(&tls.Config{}),
-					SecuritySettings: []*serial.TypedMessage{
-						serial.ToTypedMessage(&tls.Config{
-							AllowInsecure: true,
-						}),
+				SenderSettings: serial.ToTypedMessage(&proxyman.SenderConfig{
+					StreamSettings: &internet.StreamConfig{
+						Protocol:     internet.TransportProtocol_MKCP,
+						SecurityType: serial.GetMessageType(&tls.Config{}),
+						SecuritySettings: []*serial.TypedMessage{
+							serial.ToTypedMessage(&tls.Config{
+								AllowInsecure: true,
+							}),
+						},
 					},
-				},
+				}),
 			},
 		},
 	}
@@ -253,11 +266,21 @@ func TestTLSConnectionReuse(t *testing.T) {
 	userID := protocol.NewID(uuid.New())
 	serverPort := pickPort()
 	serverConfig := &core.Config{
-		Inbound: []*core.InboundConnectionConfig{
+		Inbound: []*proxyman.InboundHandlerConfig{
 			{
-				PortRange: v2net.SinglePortRange(serverPort),
-				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
-				Settings: serial.ToTypedMessage(&inbound.Config{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(serverPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					StreamSettings: &internet.StreamConfig{
+						SecurityType: serial.GetMessageType(&tls.Config{}),
+						SecuritySettings: []*serial.TypedMessage{
+							serial.ToTypedMessage(&tls.Config{
+								Certificate: []*tls.Certificate{tlsgen.GenerateCertificateForTest()},
+							}),
+						},
+					},
+				}),
+				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
 						{
 							Account: serial.ToTypedMessage(&vmess.Account{
@@ -266,30 +289,24 @@ func TestTLSConnectionReuse(t *testing.T) {
 						},
 					},
 				}),
-				StreamSettings: &internet.StreamConfig{
-					SecurityType: serial.GetMessageType(&tls.Config{}),
-					SecuritySettings: []*serial.TypedMessage{
-						serial.ToTypedMessage(&tls.Config{
-							Certificate: []*tls.Certificate{tlsgen.GenerateCertificateForTest()},
-						}),
-					},
-				},
 			},
 		},
-		Outbound: []*core.OutboundConnectionConfig{
+		Outbound: []*proxyman.OutboundHandlerConfig{
 			{
-				Settings: serial.ToTypedMessage(&freedom.Config{}),
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
 
 	clientPort := pickPort()
 	clientConfig := &core.Config{
-		Inbound: []*core.InboundConnectionConfig{
+		Inbound: []*proxyman.InboundHandlerConfig{
 			{
-				PortRange: v2net.SinglePortRange(clientPort),
-				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
-				Settings: serial.ToTypedMessage(&dokodemo.Config{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(clientPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
 					Address: v2net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
 					NetworkList: &v2net.NetworkList{
@@ -298,9 +315,9 @@ func TestTLSConnectionReuse(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*core.OutboundConnectionConfig{
+		Outbound: []*proxyman.OutboundHandlerConfig{
 			{
-				Settings: serial.ToTypedMessage(&outbound.Config{
+				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
 							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
@@ -315,14 +332,16 @@ func TestTLSConnectionReuse(t *testing.T) {
 						},
 					},
 				}),
-				StreamSettings: &internet.StreamConfig{
-					SecurityType: serial.GetMessageType(&tls.Config{}),
-					SecuritySettings: []*serial.TypedMessage{
-						serial.ToTypedMessage(&tls.Config{
-							AllowInsecure: true,
-						}),
+				SenderSettings: serial.ToTypedMessage(&proxyman.SenderConfig{
+					StreamSettings: &internet.StreamConfig{
+						SecurityType: serial.GetMessageType(&tls.Config{}),
+						SecuritySettings: []*serial.TypedMessage{
+							serial.ToTypedMessage(&tls.Config{
+								AllowInsecure: true,
+							}),
+						},
 					},
-				},
+				}),
 			},
 		},
 	}

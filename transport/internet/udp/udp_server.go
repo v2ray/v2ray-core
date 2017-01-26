@@ -1,8 +1,8 @@
 package udp
 
 import (
+	"context"
 	"sync"
-	"time"
 
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common/buf"
@@ -12,95 +12,17 @@ import (
 	"v2ray.com/core/transport/ray"
 )
 
-type ResponseCallback func(destination v2net.Destination, payload *buf.Buffer)
-
-type TimedInboundRay struct {
-	name       string
-	inboundRay ray.InboundRay
-	accessed   chan bool
-	server     *Server
-	sync.RWMutex
-}
-
-func NewTimedInboundRay(name string, inboundRay ray.InboundRay, server *Server) *TimedInboundRay {
-	r := &TimedInboundRay{
-		name:       name,
-		inboundRay: inboundRay,
-		accessed:   make(chan bool, 1),
-		server:     server,
-	}
-	go r.Monitor()
-	return r
-}
-
-func (v *TimedInboundRay) Monitor() {
-	for {
-		time.Sleep(time.Second * 16)
-		select {
-		case <-v.accessed:
-		default:
-			// Ray not accessed for a while, assuming communication is dead.
-			v.RLock()
-			if v.server == nil {
-				v.RUnlock()
-				return
-			}
-			v.server.RemoveRay(v.name)
-			v.RUnlock()
-			v.Release()
-			return
-		}
-	}
-}
-
-func (v *TimedInboundRay) InboundInput() ray.OutputStream {
-	v.RLock()
-	defer v.RUnlock()
-	if v.inboundRay == nil {
-		return nil
-	}
-	select {
-	case v.accessed <- true:
-	default:
-	}
-	return v.inboundRay.InboundInput()
-}
-
-func (v *TimedInboundRay) InboundOutput() ray.InputStream {
-	v.RLock()
-	defer v.RUnlock()
-	if v.inboundRay == nil {
-		return nil
-	}
-	select {
-	case v.accessed <- true:
-	default:
-	}
-	return v.inboundRay.InboundOutput()
-}
-
-func (v *TimedInboundRay) Release() {
-	log.Debug("UDP Server: Releasing TimedInboundRay: ", v.name)
-	v.Lock()
-	defer v.Unlock()
-	if v.server == nil {
-		return
-	}
-	v.server = nil
-	v.inboundRay.InboundInput().Close()
-	v.inboundRay.InboundOutput().CloseError()
-	v.inboundRay = nil
-}
+type ResponseCallback func(payload *buf.Buffer)
 
 type Server struct {
 	sync.RWMutex
-	conns            map[string]*TimedInboundRay
+	conns            map[string]ray.InboundRay
 	packetDispatcher dispatcher.Interface
 }
 
 func NewServer(packetDispatcher dispatcher.Interface) *Server {
 	return &Server{
-		conns:            make(map[string]*TimedInboundRay),
+		conns:            make(map[string]ray.InboundRay),
 		packetDispatcher: packetDispatcher,
 	}
 }
@@ -108,69 +30,53 @@ func NewServer(packetDispatcher dispatcher.Interface) *Server {
 func (v *Server) RemoveRay(name string) {
 	v.Lock()
 	defer v.Unlock()
-	delete(v.conns, name)
-}
-
-func (v *Server) locateExistingAndDispatch(name string, payload *buf.Buffer) bool {
-	log.Debug("UDP Server: Locating existing connection for ", name)
-	v.RLock()
-	defer v.RUnlock()
-	if entry, found := v.conns[name]; found {
-		outputStream := entry.InboundInput()
-		if outputStream == nil {
-			return false
-		}
-		err := outputStream.Write(payload)
-		if err != nil {
-			go entry.Release()
-			return false
-		}
-		return true
+	if conn, found := v.conns[name]; found {
+		conn.InboundInput().Close()
+		conn.InboundOutput().Close()
+		delete(v.conns, name)
 	}
-	return false
 }
 
-func (v *Server) getInboundRay(dest string, session *proxy.SessionInfo) (*TimedInboundRay, bool) {
+func (v *Server) getInboundRay(ctx context.Context, dest v2net.Destination) (ray.InboundRay, bool) {
+	destString := dest.String()
 	v.Lock()
 	defer v.Unlock()
 
-	if entry, found := v.conns[dest]; found {
+	if entry, found := v.conns[destString]; found {
 		return entry, true
 	}
 
 	log.Info("UDP|Server: establishing new connection for ", dest)
-	inboundRay := v.packetDispatcher.DispatchToOutbound(session)
-	return NewTimedInboundRay(dest, inboundRay, v), false
+	ctx = proxy.ContextWithDestination(ctx, dest)
+	return v.packetDispatcher.DispatchToOutbound(ctx), false
 }
 
-func (v *Server) Dispatch(session *proxy.SessionInfo, payload *buf.Buffer, callback ResponseCallback) {
-	source := session.Source
-	destination := session.Destination
-
+func (v *Server) Dispatch(ctx context.Context, destination v2net.Destination, payload *buf.Buffer, callback ResponseCallback) {
 	// TODO: Add user to destString
-	destString := source.String() + "-" + destination.String()
+	destString := destination.String()
 	log.Debug("UDP|Server: Dispatch request: ", destString)
-	inboundRay, existing := v.getInboundRay(destString, session)
+
+	inboundRay, existing := v.getInboundRay(ctx, destination)
 	outputStream := inboundRay.InboundInput()
 	if outputStream != nil {
-		outputStream.Write(payload)
+		if err := outputStream.Write(payload); err != nil {
+			v.RemoveRay(destString)
+		}
 	}
 	if !existing {
-		go v.handleConnection(inboundRay, source, callback)
+		go func() {
+			handleInput(inboundRay.InboundOutput(), callback)
+			v.RemoveRay(destString)
+		}()
 	}
 }
 
-func (v *Server) handleConnection(inboundRay *TimedInboundRay, source v2net.Destination, callback ResponseCallback) {
+func handleInput(input ray.InputStream, callback ResponseCallback) {
 	for {
-		inputStream := inboundRay.InboundOutput()
-		if inputStream == nil {
-			break
-		}
-		data, err := inputStream.Read()
+		data, err := input.Read()
 		if err != nil {
 			break
 		}
-		callback(source, data)
+		callback(data)
 	}
-	inboundRay.Release()
 }

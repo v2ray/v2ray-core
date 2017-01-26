@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"v2ray.com/core"
+	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/router"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -34,12 +35,14 @@ func TestPassiveConnection(t *testing.T) {
 
 	serverPort := pickPort()
 	serverConfig := &core.Config{
-		Inbound: []*core.InboundConnectionConfig{
+		Inbound: []*proxyman.InboundHandlerConfig{
 			{
-				PortRange:              v2net.SinglePortRange(serverPort),
-				ListenOn:               v2net.NewIPOrDomain(v2net.LocalHostIP),
-				AllowPassiveConnection: true,
-				Settings: serial.ToTypedMessage(&dokodemo.Config{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange:              v2net.SinglePortRange(serverPort),
+					Listen:                 v2net.NewIPOrDomain(v2net.LocalHostIP),
+					AllowPassiveConnection: true,
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
 					Address: v2net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
 					NetworkList: &v2net.NetworkList{
@@ -48,9 +51,9 @@ func TestPassiveConnection(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*core.OutboundConnectionConfig{
+		Outbound: []*proxyman.OutboundHandlerConfig{
 			{
-				Settings: serial.ToTypedMessage(&freedom.Config{}),
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
@@ -103,11 +106,13 @@ func TestProxy(t *testing.T) {
 	serverUserID := protocol.NewID(uuid.New())
 	serverPort := pickPort()
 	serverConfig := &core.Config{
-		Inbound: []*core.InboundConnectionConfig{
+		Inbound: []*proxyman.InboundHandlerConfig{
 			{
-				PortRange: v2net.SinglePortRange(serverPort),
-				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
-				Settings: serial.ToTypedMessage(&inbound.Config{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(serverPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
 						{
 							Account: serial.ToTypedMessage(&vmess.Account{
@@ -118,9 +123,9 @@ func TestProxy(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*core.OutboundConnectionConfig{
+		Outbound: []*proxyman.OutboundHandlerConfig{
 			{
-				Settings: serial.ToTypedMessage(&freedom.Config{}),
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
@@ -128,11 +133,13 @@ func TestProxy(t *testing.T) {
 	proxyUserID := protocol.NewID(uuid.New())
 	proxyPort := pickPort()
 	proxyConfig := &core.Config{
-		Inbound: []*core.InboundConnectionConfig{
+		Inbound: []*proxyman.InboundHandlerConfig{
 			{
-				PortRange: v2net.SinglePortRange(proxyPort),
-				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
-				Settings: serial.ToTypedMessage(&inbound.Config{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(proxyPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
 						{
 							Account: serial.ToTypedMessage(&vmess.Account{
@@ -143,20 +150,22 @@ func TestProxy(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*core.OutboundConnectionConfig{
+		Outbound: []*proxyman.OutboundHandlerConfig{
 			{
-				Settings: serial.ToTypedMessage(&freedom.Config{}),
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
 
 	clientPort := pickPort()
 	clientConfig := &core.Config{
-		Inbound: []*core.InboundConnectionConfig{
+		Inbound: []*proxyman.InboundHandlerConfig{
 			{
-				PortRange: v2net.SinglePortRange(clientPort),
-				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
-				Settings: serial.ToTypedMessage(&dokodemo.Config{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(clientPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
 					Address: v2net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
 					NetworkList: &v2net.NetworkList{
@@ -165,9 +174,9 @@ func TestProxy(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*core.OutboundConnectionConfig{
+		Outbound: []*proxyman.OutboundHandlerConfig{
 			{
-				Settings: serial.ToTypedMessage(&outbound.Config{
+				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
 							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
@@ -182,13 +191,15 @@ func TestProxy(t *testing.T) {
 						},
 					},
 				}),
-				ProxySettings: &internet.ProxyConfig{
-					Tag: "proxy",
-				},
+				SenderSettings: serial.ToTypedMessage(&proxyman.SenderConfig{
+					ProxySettings: &internet.ProxyConfig{
+						Tag: "proxy",
+					},
+				}),
 			},
 			{
 				Tag: "proxy",
-				Settings: serial.ToTypedMessage(&outbound.Config{
+				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
 							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
@@ -244,11 +255,16 @@ func TestProxyOverKCP(t *testing.T) {
 	serverUserID := protocol.NewID(uuid.New())
 	serverPort := pickPort()
 	serverConfig := &core.Config{
-		Inbound: []*core.InboundConnectionConfig{
+		Inbound: []*proxyman.InboundHandlerConfig{
 			{
-				PortRange: v2net.SinglePortRange(serverPort),
-				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
-				Settings: serial.ToTypedMessage(&inbound.Config{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(serverPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					StreamSettings: &internet.StreamConfig{
+						Protocol: internet.TransportProtocol_MKCP,
+					},
+				}),
+				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
 						{
 							Account: serial.ToTypedMessage(&vmess.Account{
@@ -257,14 +273,11 @@ func TestProxyOverKCP(t *testing.T) {
 						},
 					},
 				}),
-				StreamSettings: &internet.StreamConfig{
-					Protocol: internet.TransportProtocol_MKCP,
-				},
 			},
 		},
-		Outbound: []*core.OutboundConnectionConfig{
+		Outbound: []*proxyman.OutboundHandlerConfig{
 			{
-				Settings: serial.ToTypedMessage(&freedom.Config{}),
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
@@ -272,11 +285,13 @@ func TestProxyOverKCP(t *testing.T) {
 	proxyUserID := protocol.NewID(uuid.New())
 	proxyPort := pickPort()
 	proxyConfig := &core.Config{
-		Inbound: []*core.InboundConnectionConfig{
+		Inbound: []*proxyman.InboundHandlerConfig{
 			{
-				PortRange: v2net.SinglePortRange(proxyPort),
-				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
-				Settings: serial.ToTypedMessage(&inbound.Config{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(proxyPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
 						{
 							Account: serial.ToTypedMessage(&vmess.Account{
@@ -287,23 +302,27 @@ func TestProxyOverKCP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*core.OutboundConnectionConfig{
+		Outbound: []*proxyman.OutboundHandlerConfig{
 			{
-				Settings: serial.ToTypedMessage(&freedom.Config{}),
-				StreamSettings: &internet.StreamConfig{
-					Protocol: internet.TransportProtocol_MKCP,
-				},
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
+				SenderSettings: serial.ToTypedMessage(&proxyman.SenderConfig{
+					StreamSettings: &internet.StreamConfig{
+						Protocol: internet.TransportProtocol_MKCP,
+					},
+				}),
 			},
 		},
 	}
 
 	clientPort := pickPort()
 	clientConfig := &core.Config{
-		Inbound: []*core.InboundConnectionConfig{
+		Inbound: []*proxyman.InboundHandlerConfig{
 			{
-				PortRange: v2net.SinglePortRange(clientPort),
-				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
-				Settings: serial.ToTypedMessage(&dokodemo.Config{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(clientPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
 					Address: v2net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
 					NetworkList: &v2net.NetworkList{
@@ -312,9 +331,9 @@ func TestProxyOverKCP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*core.OutboundConnectionConfig{
+		Outbound: []*proxyman.OutboundHandlerConfig{
 			{
-				Settings: serial.ToTypedMessage(&outbound.Config{
+				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
 							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
@@ -329,16 +348,18 @@ func TestProxyOverKCP(t *testing.T) {
 						},
 					},
 				}),
-				ProxySettings: &internet.ProxyConfig{
-					Tag: "proxy",
-				},
-				StreamSettings: &internet.StreamConfig{
-					Protocol: internet.TransportProtocol_MKCP,
-				},
+				SenderSettings: serial.ToTypedMessage(&proxyman.SenderConfig{
+					ProxySettings: &internet.ProxyConfig{
+						Tag: "proxy",
+					},
+					StreamSettings: &internet.StreamConfig{
+						Protocol: internet.TransportProtocol_MKCP,
+					},
+				}),
 			},
 			{
 				Tag: "proxy",
-				Settings: serial.ToTypedMessage(&outbound.Config{
+				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
 							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
@@ -401,11 +422,13 @@ func TestBlackhole(t *testing.T) {
 	serverPort := pickPort()
 	serverPort2 := pickPort()
 	serverConfig := &core.Config{
-		Inbound: []*core.InboundConnectionConfig{
+		Inbound: []*proxyman.InboundHandlerConfig{
 			{
-				PortRange: v2net.SinglePortRange(serverPort),
-				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
-				Settings: serial.ToTypedMessage(&dokodemo.Config{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(serverPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
 					Address: v2net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
 					NetworkList: &v2net.NetworkList{
@@ -414,9 +437,11 @@ func TestBlackhole(t *testing.T) {
 				}),
 			},
 			{
-				PortRange: v2net.SinglePortRange(serverPort2),
-				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
-				Settings: serial.ToTypedMessage(&dokodemo.Config{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(serverPort2),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
 					Address: v2net.NewIPOrDomain(dest2.Address),
 					Port:    uint32(dest2.Port),
 					NetworkList: &v2net.NetworkList{
@@ -425,14 +450,14 @@ func TestBlackhole(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*core.OutboundConnectionConfig{
+		Outbound: []*proxyman.OutboundHandlerConfig{
 			{
-				Tag:      "direct",
-				Settings: serial.ToTypedMessage(&freedom.Config{}),
+				Tag:           "direct",
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 			{
-				Tag:      "blocked",
-				Settings: serial.ToTypedMessage(&blackhole.Config{}),
+				Tag:           "blocked",
+				ProxySettings: serial.ToTypedMessage(&blackhole.Config{}),
 			},
 		},
 		App: []*serial.TypedMessage{

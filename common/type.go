@@ -25,7 +25,7 @@ func CreateObject(ctx context.Context, config interface{}) (interface{}, error) 
 	configType := reflect.TypeOf(config)
 	creator, found := typeCreatorRegistry[configType]
 	if !found {
-		return nil, errors.New("Common: " + configType.Name() + " is not registered.")
+		return nil, errors.New("Common: " + configType.String() + " is not registered.")
 	}
 	return creator(ctx, config)
 }

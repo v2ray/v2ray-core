@@ -42,6 +42,7 @@ func ListenTCP(address v2net.Address, port v2net.Port, options internet.ListenOp
 	if err != nil {
 		return nil, err
 	}
+	log.Info("TCP|Listener: Listening on ", address, ":", port)
 	networkSettings, err := options.Stream.GetEffectiveTransportSettings()
 	if err != nil {
 		return nil, err

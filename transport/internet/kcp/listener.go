@@ -13,7 +13,6 @@ import (
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/internal"
 	v2tls "v2ray.com/core/transport/internet/tls"
@@ -140,10 +139,8 @@ func NewListener(address v2net.Address, port v2net.Port, options internet.Listen
 	return l, nil
 }
 
-func (v *Listener) OnReceive(payload *buf.Buffer, session *proxy.SessionInfo) {
+func (v *Listener) OnReceive(payload *buf.Buffer, src v2net.Destination, originalDest v2net.Destination) {
 	defer payload.Release()
-
-	src := session.Source
 
 	segments := v.reader.Read(payload.Bytes())
 	if len(segments) == 0 {

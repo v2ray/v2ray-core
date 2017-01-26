@@ -23,7 +23,6 @@ type Handler struct {
 	domainStrategy Config_DomainStrategy
 	timeout        uint32
 	dns            dns.Server
-	meta           *proxy.OutboundHandlerMeta
 }
 
 func New(ctx context.Context, config *Config) (*Handler, error) {
@@ -31,14 +30,9 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	if space == nil {
 		return nil, errors.New("Freedom: No space in context.")
 	}
-	meta := proxy.OutboundMetaFromContext(ctx)
-	if meta == nil {
-		return nil, errors.New("Freedom: No outbound meta in context.")
-	}
 	f := &Handler{
 		domainStrategy: config.DomainStrategy,
 		timeout:        config.Timeout,
-		meta:           meta,
 	}
 	space.OnInitialize(func() error {
 		if config.DomainStrategy == Config_USE_IP {
@@ -75,18 +69,21 @@ func (v *Handler) ResolveIP(destination net.Destination) net.Destination {
 	return newDest
 }
 
-func (v *Handler) Dispatch(destination net.Destination, ray ray.OutboundRay) {
+func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay) error {
+	destination := proxy.DestinationFromContext(ctx)
 	log.Info("Freedom: Opening connection to ", destination)
 
-	input := ray.OutboundInput()
-	output := ray.OutboundOutput()
+	input := outboundRay.OutboundInput()
+	output := outboundRay.OutboundOutput()
 
 	var conn internet.Connection
 	if v.domainStrategy == Config_USE_IP && destination.Address.Family().IsDomain() {
 		destination = v.ResolveIP(destination)
 	}
+
+	dialer := proxy.DialerFromContext(ctx)
 	err := retry.ExponentialBackoff(5, 100).On(func() error {
-		rawConn, err := internet.Dial(v.meta.Address, destination, v.meta.GetDialerOptions())
+		rawConn, err := dialer.Dial(ctx, destination)
 		if err != nil {
 			return err
 		}
@@ -95,7 +92,7 @@ func (v *Handler) Dispatch(destination net.Destination, ray ray.OutboundRay) {
 	})
 	if err != nil {
 		log.Warning("Freedom: Failed to open connection to ", destination, ": ", err)
-		return
+		return err
 	}
 	defer conn.Close()
 
@@ -133,7 +130,10 @@ func (v *Handler) Dispatch(destination net.Destination, ray ray.OutboundRay) {
 		log.Info("Freedom: Connection ending with ", err)
 		input.CloseError()
 		output.CloseError()
+		return err
 	}
+
+	return nil
 }
 
 func init() {

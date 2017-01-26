@@ -8,7 +8,6 @@ import (
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
-	"v2ray.com/core/proxy"
 )
 
 const (
@@ -37,7 +36,7 @@ const (
 
 type ServerSession struct {
 	config *ServerConfig
-	meta   *proxy.InboundHandlerMeta
+	port   v2net.Port
 }
 
 func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol.RequestHeader, error) {
@@ -178,7 +177,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 				addr = v2net.LocalHostIP
 			}
 			responseAddress = addr
-			responsePort = s.meta.Port
+			responsePort = s.port
 		}
 		if err := writeSocks5Response(writer, statusSuccess, responseAddress, responsePort); err != nil {
 			return nil, err

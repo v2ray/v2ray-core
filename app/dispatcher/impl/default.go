@@ -12,7 +12,6 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
-	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
 )
@@ -43,12 +42,15 @@ func (DefaultDispatcher) Interface() interface{} {
 	return (*dispatcher.Interface)(nil)
 }
 
-func (v *DefaultDispatcher) DispatchToOutbound(session *proxy.SessionInfo) ray.InboundRay {
+func (v *DefaultDispatcher) DispatchToOutbound(ctx context.Context) ray.InboundRay {
 	dispatcher := v.ohm.GetDefaultHandler()
-	destination := session.Destination
+	destination := proxy.DestinationFromContext(ctx)
+	if !destination.IsValid() {
+		panic("Dispatcher: Invalid destination.")
+	}
 
 	if v.router != nil {
-		if tag, err := v.router.TakeDetour(session); err == nil {
+		if tag, err := v.router.TakeDetour(ctx); err == nil {
 			if handler := v.ohm.GetHandler(tag); handler != nil {
 				log.Info("DefaultDispatcher: Taking detour [", tag, "] for [", destination, "].")
 				dispatcher = handler
@@ -60,9 +62,9 @@ func (v *DefaultDispatcher) DispatchToOutbound(session *proxy.SessionInfo) ray.I
 		}
 	}
 
-	direct := ray.NewRay()
+	direct := ray.NewRay(ctx)
 	var waitFunc func() error
-	if session.Inbound != nil && session.Inbound.AllowPassiveConnection {
+	if allowPassiveConnection, ok := proxy.AllowPassiveConnectionFromContext(ctx); ok && allowPassiveConnection {
 		waitFunc = noOpWait()
 	} else {
 		wdi := &waitDataInspector{
@@ -72,12 +74,12 @@ func (v *DefaultDispatcher) DispatchToOutbound(session *proxy.SessionInfo) ray.I
 		waitFunc = waitForData(wdi)
 	}
 
-	go v.waitAndDispatch(waitFunc, destination, direct, dispatcher)
+	go v.waitAndDispatch(ctx, waitFunc, direct, dispatcher)
 
 	return direct
 }
 
-func (v *DefaultDispatcher) waitAndDispatch(wait func() error, destination net.Destination, link ray.OutboundRay, dispatcher proxy.OutboundHandler) {
+func (v *DefaultDispatcher) waitAndDispatch(ctx context.Context, wait func() error, link ray.OutboundRay, dispatcher proxyman.OutboundHandler) {
 	if err := wait(); err != nil {
 		log.Info("DefaultDispatcher: Failed precondition: ", err)
 		link.OutboundInput().CloseError()
@@ -85,7 +87,7 @@ func (v *DefaultDispatcher) waitAndDispatch(wait func() error, destination net.D
 		return
 	}
 
-	dispatcher.Dispatch(destination, link)
+	dispatcher.Dispatch(ctx, link)
 }
 
 func init() {

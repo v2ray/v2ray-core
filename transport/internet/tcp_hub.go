@@ -24,7 +24,8 @@ func RegisterTransportListener(protocol TransportProtocol, listener ListenFunc) 
 
 type ListenFunc func(address v2net.Address, port v2net.Port, options ListenOptions) (Listener, error)
 type ListenOptions struct {
-	Stream *StreamConfig
+	Stream       *StreamConfig
+	RecvOrigDest bool
 }
 
 type Listener interface {

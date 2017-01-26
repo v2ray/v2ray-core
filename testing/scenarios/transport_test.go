@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"v2ray.com/core"
+	"v2ray.com/core/app/proxyman"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -35,11 +36,23 @@ func TestNoOpConnectionHeader(t *testing.T) {
 	userID := protocol.NewID(uuid.New())
 	serverPort := pickPort()
 	serverConfig := &core.Config{
-		Inbound: []*core.InboundConnectionConfig{
+		Inbound: []*proxyman.InboundHandlerConfig{
 			{
-				PortRange: v2net.SinglePortRange(serverPort),
-				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
-				Settings: serial.ToTypedMessage(&inbound.Config{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(serverPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					StreamSettings: &internet.StreamConfig{
+						TransportSettings: []*internet.TransportConfig{
+							{
+								Protocol: internet.TransportProtocol_TCP,
+								Settings: serial.ToTypedMessage(&tcptransport.Config{
+									HeaderSettings: serial.ToTypedMessage(&http.Config{}),
+								}),
+							},
+						},
+					},
+				}),
+				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
 						{
 							Account: serial.ToTypedMessage(&vmess.Account{
@@ -48,32 +61,24 @@ func TestNoOpConnectionHeader(t *testing.T) {
 						},
 					},
 				}),
-				StreamSettings: &internet.StreamConfig{
-					TransportSettings: []*internet.TransportConfig{
-						{
-							Protocol: internet.TransportProtocol_TCP,
-							Settings: serial.ToTypedMessage(&tcptransport.Config{
-								HeaderSettings: serial.ToTypedMessage(&http.Config{}),
-							}),
-						},
-					},
-				},
 			},
 		},
-		Outbound: []*core.OutboundConnectionConfig{
+		Outbound: []*proxyman.OutboundHandlerConfig{
 			{
-				Settings: serial.ToTypedMessage(&freedom.Config{}),
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
 
 	clientPort := pickPort()
 	clientConfig := &core.Config{
-		Inbound: []*core.InboundConnectionConfig{
+		Inbound: []*proxyman.InboundHandlerConfig{
 			{
-				PortRange: v2net.SinglePortRange(clientPort),
-				ListenOn:  v2net.NewIPOrDomain(v2net.LocalHostIP),
-				Settings: serial.ToTypedMessage(&dokodemo.Config{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(clientPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
 					Address: v2net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
 					NetworkList: &v2net.NetworkList{
@@ -82,9 +87,9 @@ func TestNoOpConnectionHeader(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*core.OutboundConnectionConfig{
+		Outbound: []*proxyman.OutboundHandlerConfig{
 			{
-				Settings: serial.ToTypedMessage(&outbound.Config{
+				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
 							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
@@ -99,16 +104,18 @@ func TestNoOpConnectionHeader(t *testing.T) {
 						},
 					},
 				}),
-				StreamSettings: &internet.StreamConfig{
-					TransportSettings: []*internet.TransportConfig{
-						{
-							Protocol: internet.TransportProtocol_TCP,
-							Settings: serial.ToTypedMessage(&tcptransport.Config{
-								HeaderSettings: serial.ToTypedMessage(&http.Config{}),
-							}),
+				SenderSettings: serial.ToTypedMessage(&proxyman.SenderConfig{
+					StreamSettings: &internet.StreamConfig{
+						TransportSettings: []*internet.TransportConfig{
+							{
+								Protocol: internet.TransportProtocol_TCP,
+								Settings: serial.ToTypedMessage(&tcptransport.Config{
+									HeaderSettings: serial.ToTypedMessage(&http.Config{}),
+								}),
+							},
 						},
 					},
-				},
+				}),
 			},
 		},
 	}

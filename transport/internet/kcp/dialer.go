@@ -1,6 +1,7 @@
 package kcp
 
 import (
+	"context"
 	"crypto/cipher"
 	"crypto/tls"
 	"net"
@@ -108,10 +109,11 @@ func (o *ClientConnection) Run() {
 	}
 }
 
-func DialKCP(src v2net.Address, dest v2net.Destination, options internet.DialerOptions) (internet.Connection, error) {
+func DialKCP(ctx context.Context, dest v2net.Destination) (internet.Connection, error) {
 	dest.Network = v2net.Network_UDP
 	log.Info("KCP|Dialer: Dialing KCP to ", dest)
 
+	src := internet.DialerSourceFromContext(ctx)
 	id := internal.NewConnectionID(src, dest)
 	conn := globalPool.Get(id)
 	if conn == nil {
@@ -128,12 +130,7 @@ func DialKCP(src v2net.Address, dest v2net.Destination, options internet.DialerO
 		conn = c
 	}
 
-	networkSettings, err := options.Stream.GetEffectiveTransportSettings()
-	if err != nil {
-		log.Error("KCP|Dialer: Failed to get KCP settings: ", err)
-		return nil, err
-	}
-	kcpSettings := networkSettings.(*Config)
+	kcpSettings := internet.TransportSettingsFromContext(ctx).(*Config)
 
 	clientConn := conn.(*ClientConnection)
 	header, err := kcpSettings.GetPackerHeader()
@@ -151,12 +148,7 @@ func DialKCP(src v2net.Address, dest v2net.Destination, options internet.DialerO
 	var iConn internet.Connection
 	iConn = session
 
-	if options.Stream != nil && options.Stream.HasSecuritySettings() {
-		securitySettings, err := options.Stream.GetEffectiveSecuritySettings()
-		if err != nil {
-			log.Error("KCP|Dialer: Failed to get security settings: ", err)
-			return nil, err
-		}
+	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
 		switch securitySettings := securitySettings.(type) {
 		case *v2tls.Config:
 			config := securitySettings.GetTLSConfig()

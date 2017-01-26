@@ -23,10 +23,6 @@ type Server struct {
 	config           *ServerConfig
 	user             *protocol.User
 	account          *ShadowsocksAccount
-	meta             *proxy.InboundHandlerMeta
-	accepting        bool
-	tcpHub           *internet.TCPHub
-	udpHub           *udp.Hub
 	udpServer        *udp.Server
 }
 
@@ -34,10 +30,6 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
 		return nil, errors.New("Shadowsocks|Server: No space in context.")
-	}
-	meta := proxy.InboundMetaFromContext(ctx)
-	if meta == nil {
-		return nil, errors.New("Shadowsocks|Server: No inbound meta in context.")
 	}
 	if config.GetUser() == nil {
 		return nil, protocol.ErrUserMissing
@@ -51,7 +43,6 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 
 	s := &Server{
 		config:  config,
-		meta:    meta,
 		user:    config.GetUser(),
 		account: account,
 	}
@@ -67,129 +58,103 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	return s, nil
 }
 
-func (v *Server) Network() net.NetworkList {
+func (s *Server) Network() net.NetworkList {
 	list := net.NetworkList{
 		Network: []net.Network{net.Network_TCP},
 	}
-	if v.config.UdpEnabled {
+	if s.config.UdpEnabled {
 		list.Network = append(list.Network, net.Network_UDP)
 	}
 	return list
 }
 
-func (v *Server) Port() net.Port {
-	return v.meta.Port
-}
-
-func (v *Server) Close() {
-	v.accepting = false
-	// TODO: synchronization
-	if v.tcpHub != nil {
-		v.tcpHub.Close()
-		v.tcpHub = nil
-	}
-
-	if v.udpHub != nil {
-		v.udpHub.Close()
-		v.udpHub = nil
+func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection) error {
+	switch network {
+	case net.Network_TCP:
+		return s.handleConnection(ctx, conn)
+	case net.Network_UDP:
+		return s.handlerUDPPayload(ctx, conn)
+	default:
+		return errors.New("Shadowsocks|Server: Unknown network: ", network)
 	}
 }
 
-func (v *Server) Start() error {
-	if v.accepting {
-		return nil
-	}
+func (v *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection) error {
+	source := proxy.SourceFromContext(ctx)
 
-	tcpHub, err := internet.ListenTCP(v.meta.Address, v.meta.Port, v.handleConnection, v.meta.StreamSettings)
-	if err != nil {
-		log.Error("Shadowsocks: Failed to listen TCP on ", v.meta.Address, ":", v.meta.Port, ": ", err)
-		return err
-	}
-	v.tcpHub = tcpHub
-
-	if v.config.UdpEnabled {
-		v.udpServer = udp.NewServer(v.packetDispatcher)
-		udpHub, err := udp.ListenUDP(v.meta.Address, v.meta.Port, udp.ListenOption{Callback: v.handlerUDPPayload})
+	reader := buf.NewReader(conn)
+	for {
+		payload, err := reader.Read()
 		if err != nil {
-			log.Error("Shadowsocks: Failed to listen UDP on ", v.meta.Address, ":", v.meta.Port, ": ", err)
-			return err
+			break
 		}
-		v.udpHub = udpHub
-	}
 
-	v.accepting = true
+		request, data, err := DecodeUDPPacket(v.user, payload)
+		if err != nil {
+			log.Info("Shadowsocks|Server: Skipping invalid UDP packet from: ", source, ": ", err)
+			log.Access(source, "", log.AccessRejected, err)
+			payload.Release()
+			continue
+		}
+
+		if request.Option.Has(RequestOptionOneTimeAuth) && v.account.OneTimeAuth == Account_Disabled {
+			log.Info("Shadowsocks|Server: Client payload enables OTA but server doesn't allow it.")
+			payload.Release()
+			continue
+		}
+
+		if !request.Option.Has(RequestOptionOneTimeAuth) && v.account.OneTimeAuth == Account_Enabled {
+			log.Info("Shadowsocks|Server: Client payload disables OTA but server forces it.")
+			payload.Release()
+			continue
+		}
+
+		dest := request.Destination()
+		log.Access(source, dest, log.AccessAccepted, "")
+		log.Info("Shadowsocks|Server: Tunnelling request to ", dest)
+
+		ctx = protocol.ContextWithUser(ctx, request.User)
+		v.udpServer.Dispatch(ctx, dest, data, func(payload *buf.Buffer) {
+			defer payload.Release()
+
+			data, err := EncodeUDPPacket(request, payload)
+			if err != nil {
+				log.Warning("Shadowsocks|Server: Failed to encode UDP packet: ", err)
+				return
+			}
+			defer data.Release()
+
+			conn.Write(data.Bytes())
+		})
+	}
 
 	return nil
 }
 
-func (v *Server) handlerUDPPayload(payload *buf.Buffer, session *proxy.SessionInfo) {
-	source := session.Source
-	request, data, err := DecodeUDPPacket(v.user, payload)
-	if err != nil {
-		log.Info("Shadowsocks|Server: Skipping invalid UDP packet from: ", source, ": ", err)
-		log.Access(source, "", log.AccessRejected, err)
-		payload.Release()
-		return
-	}
-
-	if request.Option.Has(RequestOptionOneTimeAuth) && v.account.OneTimeAuth == Account_Disabled {
-		log.Info("Shadowsocks|Server: Client payload enables OTA but server doesn't allow it.")
-		payload.Release()
-		return
-	}
-
-	if !request.Option.Has(RequestOptionOneTimeAuth) && v.account.OneTimeAuth == Account_Enabled {
-		log.Info("Shadowsocks|Server: Client payload disables OTA but server forces it.")
-		payload.Release()
-		return
-	}
-
-	dest := request.Destination()
-	log.Access(source, dest, log.AccessAccepted, "")
-	log.Info("Shadowsocks|Server: Tunnelling request to ", dest)
-
-	v.udpServer.Dispatch(&proxy.SessionInfo{Source: source, Destination: dest, User: request.User, Inbound: v.meta}, data, func(destination net.Destination, payload *buf.Buffer) {
-		defer payload.Release()
-
-		data, err := EncodeUDPPacket(request, payload)
-		if err != nil {
-			log.Warning("Shadowsocks|Server: Failed to encode UDP packet: ", err)
-			return
-		}
-		defer data.Release()
-
-		v.udpHub.WriteTo(data.Bytes(), source)
-	})
-}
-
-func (v *Server) handleConnection(conn internet.Connection) {
-	defer conn.Close()
+func (s *Server) handleConnection(ctx context.Context, conn internet.Connection) error {
 	conn.SetReusable(false)
 
 	timedReader := net.NewTimeOutReader(16, conn)
 	bufferedReader := bufio.NewReader(timedReader)
-	request, bodyReader, err := ReadTCPSession(v.user, bufferedReader)
+	request, bodyReader, err := ReadTCPSession(s.user, bufferedReader)
 	if err != nil {
 		log.Access(conn.RemoteAddr(), "", log.AccessRejected, err)
 		log.Info("Shadowsocks|Server: Failed to create request from: ", conn.RemoteAddr(), ": ", err)
-		return
+		return err
 	}
 
 	bufferedReader.SetBuffered(false)
 
-	userSettings := v.user.GetSettings()
+	userSettings := s.user.GetSettings()
 	timedReader.SetTimeOut(userSettings.PayloadReadTimeout)
 
 	dest := request.Destination()
 	log.Access(conn.RemoteAddr(), dest, log.AccessAccepted, "")
 	log.Info("Shadowsocks|Server: Tunnelling request to ", dest)
 
-	ray := v.packetDispatcher.DispatchToOutbound(&proxy.SessionInfo{
-		Source:      net.DestinationFromAddr(conn.RemoteAddr()),
-		Destination: dest,
-		User:        request.User,
-		Inbound:     v.meta,
-	})
+	ctx = proxy.ContextWithDestination(ctx, dest)
+	ctx = protocol.ContextWithUser(ctx, request.User)
+	ray := s.packetDispatcher.DispatchToOutbound(ctx)
 
 	requestDone := signal.ExecuteAsync(func() error {
 		bufferedWriter := bufio.NewWriter(conn)
@@ -234,7 +199,10 @@ func (v *Server) handleConnection(conn internet.Connection) {
 		log.Info("Shadowsocks|Server: Connection ends with ", err)
 		ray.InboundInput().CloseError()
 		ray.InboundOutput().CloseError()
+		return err
 	}
+
+	return nil
 }
 
 func init() {
