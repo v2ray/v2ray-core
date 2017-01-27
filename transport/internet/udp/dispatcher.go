@@ -14,20 +14,20 @@ import (
 
 type ResponseCallback func(payload *buf.Buffer)
 
-type Server struct {
+type Dispatcher struct {
 	sync.RWMutex
 	conns            map[string]ray.InboundRay
 	packetDispatcher dispatcher.Interface
 }
 
-func NewServer(packetDispatcher dispatcher.Interface) *Server {
-	return &Server{
+func NewDispatcher(packetDispatcher dispatcher.Interface) *Dispatcher {
+	return &Dispatcher{
 		conns:            make(map[string]ray.InboundRay),
 		packetDispatcher: packetDispatcher,
 	}
 }
 
-func (v *Server) RemoveRay(name string) {
+func (v *Dispatcher) RemoveRay(name string) {
 	v.Lock()
 	defer v.Unlock()
 	if conn, found := v.conns[name]; found {
@@ -37,7 +37,7 @@ func (v *Server) RemoveRay(name string) {
 	}
 }
 
-func (v *Server) getInboundRay(ctx context.Context, dest v2net.Destination) (ray.InboundRay, bool) {
+func (v *Dispatcher) getInboundRay(ctx context.Context, dest v2net.Destination) (ray.InboundRay, bool) {
 	destString := dest.String()
 	v.Lock()
 	defer v.Unlock()
@@ -51,7 +51,7 @@ func (v *Server) getInboundRay(ctx context.Context, dest v2net.Destination) (ray
 	return v.packetDispatcher.DispatchToOutbound(ctx), false
 }
 
-func (v *Server) Dispatch(ctx context.Context, destination v2net.Destination, payload *buf.Buffer, callback ResponseCallback) {
+func (v *Dispatcher) Dispatch(ctx context.Context, destination v2net.Destination, payload *buf.Buffer, callback ResponseCallback) {
 	// TODO: Add user to destString
 	destString := destination.String()
 	log.Debug("UDP|Server: Dispatch request: ", destString)

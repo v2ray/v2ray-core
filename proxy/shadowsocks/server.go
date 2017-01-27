@@ -23,7 +23,7 @@ type Server struct {
 	config           *ServerConfig
 	user             *protocol.User
 	account          *ShadowsocksAccount
-	udpServer        *udp.Server
+	udpServer        *udp.Dispatcher
 }
 
 func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {

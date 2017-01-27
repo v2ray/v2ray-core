@@ -43,7 +43,7 @@ type UDPNameServer struct {
 	sync.Mutex
 	address     v2net.Destination
 	requests    map[uint16]*PendingRequest
-	udpServer   *udp.Server
+	udpServer   *udp.Dispatcher
 	nextCleanup time.Time
 }
 
@@ -51,7 +51,7 @@ func NewUDPNameServer(address v2net.Destination, dispatcher dispatcher.Interface
 	s := &UDPNameServer{
 		address:   address,
 		requests:  make(map[uint16]*PendingRequest),
-		udpServer: udp.NewServer(dispatcher),
+		udpServer: udp.NewDispatcher(dispatcher),
 	}
 	return s
 }

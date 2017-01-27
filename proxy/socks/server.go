@@ -24,7 +24,7 @@ import (
 type Server struct {
 	packetDispatcher dispatcher.Interface
 	config           *ServerConfig
-	udpServer        *udp.Server
+	udpServer        *udp.Dispatcher
 }
 
 // NewServer creates a new Server object.
@@ -41,7 +41,7 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 		if s.packetDispatcher == nil {
 			return errors.New("Socks|Server: Dispatcher is not found in the space.")
 		}
-		s.udpServer = udp.NewServer(s.packetDispatcher)
+		s.udpServer = udp.NewDispatcher(s.packetDispatcher)
 		return nil
 	})
 	return s, nil
