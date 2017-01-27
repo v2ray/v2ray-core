@@ -188,6 +188,7 @@ func (w *udpWorker) getConnection(src v2net.Destination) (*udpConn, bool) {
 			Port: int(w.port),
 		},
 	}
+	w.activeConn[src] = conn
 
 	conn.updateActivity()
 	return conn, false
@@ -223,6 +224,7 @@ func (w *udpWorker) removeConn(src v2net.Destination) {
 }
 
 func (w *udpWorker) Start() error {
+	w.activeConn = make(map[v2net.Destination]*udpConn)
 	ctx, cancel := context.WithCancel(context.Background())
 	w.ctx = ctx
 	w.cancel = cancel

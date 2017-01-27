@@ -3,6 +3,7 @@ package scenarios
 import (
 	"net"
 	"testing"
+	"time"
 
 	xproxy "golang.org/x/net/proxy"
 	"v2ray.com/core"
@@ -21,6 +22,7 @@ import (
 	"v2ray.com/core/proxy/vmess/outbound"
 	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/testing/servers/tcp"
+	"v2ray.com/core/testing/servers/udp"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -552,6 +554,88 @@ func TestForward(t *testing.T) {
 		assert.Error(err).IsNil()
 
 		payload := "test payload"
+		nBytes, err := conn.Write([]byte(payload))
+		assert.Error(err).IsNil()
+		assert.Int(nBytes).Equals(len(payload))
+
+		response := make([]byte, 1024)
+		nBytes, err = conn.Read(response)
+		assert.Error(err).IsNil()
+		assert.Bytes(response[:nBytes]).Equals(xor([]byte(payload)))
+		assert.Error(conn.Close()).IsNil()
+	}
+
+	CloseAllServers()
+}
+
+func TestUDPConnection(t *testing.T) {
+	assert := assert.On(t)
+
+	udpServer := udp.Server{
+		MsgProcessor: xor,
+	}
+	dest, err := udpServer.Start()
+	assert.Error(err).IsNil()
+	defer udpServer.Close()
+
+	clientPort := pickPort()
+	clientConfig := &core.Config{
+		Inbound: []*proxyman.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(clientPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
+					Address: v2net.NewIPOrDomain(dest.Address),
+					Port:    uint32(dest.Port),
+					NetworkList: &v2net.NetworkList{
+						Network: []v2net.Network{v2net.Network_UDP},
+					},
+				}),
+			},
+		},
+		Outbound: []*proxyman.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+		},
+	}
+
+	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+
+	{
+		conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
+			IP:   []byte{127, 0, 0, 1},
+			Port: int(clientPort),
+		})
+		assert.Error(err).IsNil()
+
+		payload := "dokodemo request."
+		for i := 0; i < 5; i++ {
+			nBytes, err := conn.Write([]byte(payload))
+			assert.Error(err).IsNil()
+			assert.Int(nBytes).Equals(len(payload))
+
+			response := make([]byte, 1024)
+			nBytes, err = conn.Read(response)
+			assert.Error(err).IsNil()
+			assert.Bytes(response[:nBytes]).Equals(xor([]byte(payload)))
+		}
+
+		assert.Error(conn.Close()).IsNil()
+	}
+
+	time.Sleep(20 * time.Second)
+
+	{
+		conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
+			IP:   []byte{127, 0, 0, 1},
+			Port: int(clientPort),
+		})
+		assert.Error(err).IsNil()
+
+		payload := "dokodemo request."
 		nBytes, err := conn.Write([]byte(payload))
 		assert.Error(err).IsNil()
 		assert.Int(nBytes).Equals(len(payload))
