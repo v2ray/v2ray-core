@@ -124,6 +124,13 @@ func NewCIDRMatcher(ip []byte, mask uint32, onSource bool) (*CIDRMatcher, error)
 }
 
 func (v *CIDRMatcher) Apply(ctx context.Context) bool {
+	ips := make([]net.IP, 4)
+	if resolveIPs, ok := proxy.ResolvedIPsFromContext(ctx); ok {
+		for _, rip := range resolveIPs {
+			ips = append(ips, rip.IP())
+		}
+	}
+
 	var dest v2net.Destination
 	if v.onSource {
 		dest = proxy.SourceFromContext(ctx)
@@ -131,19 +138,8 @@ func (v *CIDRMatcher) Apply(ctx context.Context) bool {
 		dest = proxy.DestinationFromContext(ctx)
 	}
 
-	if !dest.IsValid() {
-		return false
-	}
-
-	if !dest.Address.Family().Either(v2net.AddressFamilyIPv4, v2net.AddressFamilyIPv6) {
-		return false
-	}
-
-	ips := []net.IP{dest.Address.IP()}
-	if resolveIPs, ok := proxy.ResolvedIPsFromContext(ctx); ok {
-		for _, rip := range resolveIPs {
-			ips = append(ips, rip.IP())
-		}
+	if dest.IsValid() && dest.Address.Family().Either(v2net.AddressFamilyIPv4, v2net.AddressFamilyIPv6) {
+		ips = append(ips, dest.Address.IP())
 	}
 
 	for _, ip := range ips {
@@ -167,25 +163,22 @@ func NewIPv4Matcher(ipnet *v2net.IPNet, onSource bool) *IPv4Matcher {
 }
 
 func (v *IPv4Matcher) Apply(ctx context.Context) bool {
+	ips := make([]net.IP, 4)
+	if resolveIPs, ok := proxy.ResolvedIPsFromContext(ctx); ok {
+		for _, rip := range resolveIPs {
+			ips = append(ips, rip.IP())
+		}
+	}
+
 	var dest v2net.Destination
 	if v.onSource {
 		dest = proxy.SourceFromContext(ctx)
 	} else {
 		dest = proxy.DestinationFromContext(ctx)
 	}
-	if !dest.IsValid() {
-		return false
-	}
 
-	if !dest.Address.Family().Either(v2net.AddressFamilyIPv4) {
-		return false
-	}
-
-	ips := []net.IP{dest.Address.IP()}
-	if resolvedIPs, ok := proxy.ResolvedIPsFromContext(ctx); ok {
-		for _, rip := range resolvedIPs {
-			ips = append(ips, rip.IP())
-		}
+	if dest.IsValid() && dest.Address.Family().Either(v2net.AddressFamilyIPv4) {
+		ips = append(ips, dest.Address.IP())
 	}
 
 	for _, ip := range ips {
