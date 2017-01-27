@@ -83,13 +83,12 @@ func (w *tcpWorker) Port() v2net.Port {
 }
 
 type udpConn struct {
-	cancel           context.CancelFunc
 	lastActivityTime int64 // in seconds
 	input            chan []byte
 	output           func([]byte) (int, error)
-	closer           func() error
 	remote           net.Addr
 	local            net.Addr
+	cancel           context.CancelFunc
 }
 
 func (c *udpConn) updateActivity() {
@@ -114,8 +113,6 @@ func (c *udpConn) Write(buf []byte) (int, error) {
 }
 
 func (c *udpConn) Close() error {
-	close(c.input)
-	c.cancel()
 	return nil
 }
 
@@ -173,12 +170,6 @@ func (w *udpWorker) getConnection(src v2net.Destination) (*udpConn, bool) {
 		output: func(b []byte) (int, error) {
 			return w.hub.WriteTo(b, src)
 		},
-		closer: func() error {
-			w.Lock()
-			delete(w.activeConn, src)
-			w.Unlock()
-			return nil
-		},
 		remote: &net.UDPAddr{
 			IP:   src.Address.IP(),
 			Port: int(src.Port),
@@ -212,7 +203,8 @@ func (w *udpWorker) callback(b *buf.Buffer, source v2net.Destination, originalDe
 			ctx = proxy.ContextWithSource(ctx, source)
 			ctx = proxy.ContextWithInboundDestination(ctx, v2net.UDPDestination(w.address, w.port))
 			w.proxy.Process(ctx, v2net.Network_UDP, conn)
-			conn.cancel()
+			w.removeConn(source)
+			cancel()
 		}()
 	}
 }
@@ -235,6 +227,7 @@ func (w *udpWorker) Start() error {
 	if err != nil {
 		return err
 	}
+	go w.monitor()
 	w.hub = h
 	return nil
 }
@@ -254,10 +247,11 @@ func (w *udpWorker) monitor() {
 			w.Lock()
 			for addr, conn := range w.activeConn {
 				if nowSec-conn.lastActivityTime > 8 {
-					w.removeConn(addr)
-					conn.Close()
+					delete(w.activeConn, addr)
+					conn.cancel()
 				}
 			}
+			w.Unlock()
 		}
 	}
 }
