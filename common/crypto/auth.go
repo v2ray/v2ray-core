@@ -15,6 +15,7 @@ var (
 
 	errInsufficientBuffer = errors.New("Insufficient buffer.")
 	errInvalidNonce       = errors.New("Invalid nonce.")
+	errInvalidLength      = errors.New("Invalid buffer size.")
 )
 
 type BytesGenerator interface {
@@ -79,10 +80,14 @@ type AuthenticationReader struct {
 	aggressive bool
 }
 
+const (
+	readerBufferSize = 32 * 1024
+)
+
 func NewAuthenticationReader(auth Authenticator, reader io.Reader, aggressive bool) *AuthenticationReader {
 	return &AuthenticationReader{
 		auth:       auth,
-		buffer:     buf.NewLocal(32 * 1024),
+		buffer:     buf.NewLocal(readerBufferSize),
 		reader:     reader,
 		aggressive: aggressive,
 	}
@@ -95,6 +100,9 @@ func (v *AuthenticationReader) NextChunk() error {
 	size := int(serial.BytesToUint16(v.buffer.BytesTo(2)))
 	if size > v.buffer.Len()-2 {
 		return errInsufficientBuffer
+	}
+	if size > readerBufferSize-2 {
+		return errInvalidLength
 	}
 	if size == v.auth.Overhead() {
 		return io.EOF
