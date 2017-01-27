@@ -12,9 +12,9 @@ import (
 )
 
 type FreedomConfig struct {
-	DomainStrategy string `json:"domainStrategy"`
-	Timeout        uint32 `json:"timeout"`
-	Redirect       string `json:"redirect"`
+	DomainStrategy string  `json:"domainStrategy"`
+	Timeout        *uint32 `json:"timeout"`
+	Redirect       string  `json:"redirect"`
 }
 
 func (v *FreedomConfig) Build() (*serial.TypedMessage, error) {
@@ -24,7 +24,10 @@ func (v *FreedomConfig) Build() (*serial.TypedMessage, error) {
 	if domainStrategy == "useip" || domainStrategy == "use_ip" {
 		config.DomainStrategy = freedom.Config_USE_IP
 	}
-	config.Timeout = v.Timeout
+	config.Timeout = 600
+	if v.Timeout != nil {
+		config.Timeout = *v.Timeout
+	}
 	if len(v.Redirect) > 0 {
 		host, portStr, err := net.SplitHostPort(v.Redirect)
 		if err != nil {
