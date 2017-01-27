@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
@@ -73,7 +72,6 @@ func (w *tcpWorker) Start() error {
 }
 
 func (w *tcpWorker) Close() {
-	log.Debug("Proxyman|TCPWorker: Closed. ", w.port)
 	w.hub.Close()
 	w.cancel()
 }
