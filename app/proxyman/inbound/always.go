@@ -27,11 +27,15 @@ func NewAlwaysOnInboundHandler(ctx context.Context, tag string, receiverConfig *
 
 	nl := p.Network()
 	pr := receiverConfig.PortRange
+	address := receiverConfig.Listen.AsAddress()
+	if address == nil {
+		address = net.AnyIP
+	}
 	for port := pr.From; port <= pr.To; port++ {
 		if nl.HasNetwork(net.Network_TCP) {
-			log.Debug("Proxyman|DefaultInboundHandler: creating tcp worker on ", receiverConfig.Listen.AsAddress(), ":", port)
+			log.Debug("Proxyman|DefaultInboundHandler: creating tcp worker on ", address, ":", port)
 			worker := &tcpWorker{
-				address:          receiverConfig.Listen.AsAddress(),
+				address:          address,
 				port:             net.Port(port),
 				proxy:            p,
 				stream:           receiverConfig.StreamSettings,
@@ -46,7 +50,7 @@ func NewAlwaysOnInboundHandler(ctx context.Context, tag string, receiverConfig *
 			worker := &udpWorker{
 				tag:          tag,
 				proxy:        p,
-				address:      receiverConfig.Listen.AsAddress(),
+				address:      address,
 				port:         net.Port(port),
 				recvOrigDest: receiverConfig.ReceiveOriginalDestination,
 			}

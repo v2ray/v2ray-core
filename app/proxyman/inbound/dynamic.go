@@ -73,6 +73,10 @@ func (h *DynamicInboundHandler) refresh() error {
 
 	h.worker2Recycle, h.worker = h.worker, h.worker2Recycle[:0]
 
+	address := h.receiverConfig.Listen.AsAddress()
+	if address == nil {
+		address = v2net.AnyIP
+	}
 	for i := uint32(0); i < h.receiverConfig.AllocationStrategy.GetConcurrencyValue(); i++ {
 		port := h.allocatePort()
 		p, err := proxy.CreateInboundHandler(h.ctx, h.proxyConfig)
@@ -84,7 +88,7 @@ func (h *DynamicInboundHandler) refresh() error {
 		if nl.HasNetwork(v2net.Network_TCP) {
 			worker := &tcpWorker{
 				tag:              h.tag,
-				address:          h.receiverConfig.Listen.AsAddress(),
+				address:          address,
 				port:             port,
 				proxy:            p,
 				stream:           h.receiverConfig.StreamSettings,
@@ -101,7 +105,7 @@ func (h *DynamicInboundHandler) refresh() error {
 			worker := &udpWorker{
 				tag:          h.tag,
 				proxy:        p,
-				address:      h.receiverConfig.Listen.AsAddress(),
+				address:      address,
 				port:         port,
 				recvOrigDest: h.receiverConfig.ReceiveOriginalDestination,
 			}
