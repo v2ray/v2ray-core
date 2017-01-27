@@ -13,15 +13,13 @@ import (
 )
 
 var (
-	ErrInvalidRule      = errors.New("Invalid Rule")
 	ErrNoRuleApplicable = errors.New("No rule applicable")
 )
 
 type Router struct {
 	domainStrategy Config_DomainStrategy
 	rules          []Rule
-	//	cache          *RoutingTable
-	dnsServer dns.Server
+	dnsServer      dns.Server
 }
 
 func NewRouter(ctx context.Context, config *Config) (*Router, error) {
@@ -31,8 +29,7 @@ func NewRouter(ctx context.Context, config *Config) (*Router, error) {
 	}
 	r := &Router{
 		domainStrategy: config.DomainStrategy,
-		//cache:          NewRoutingTable(),
-		rules: make([]Rule, len(config.Rule)),
+		rules:          make([]Rule, len(config.Rule)),
 	}
 
 	space.OnInitialize(func() error {
@@ -54,8 +51,7 @@ func NewRouter(ctx context.Context, config *Config) (*Router, error) {
 	return r, nil
 }
 
-// Private: Visible for testing.
-func (v *Router) ResolveIP(dest net.Destination) []net.Address {
+func (v *Router) resolveIP(dest net.Destination) []net.Address {
 	ips := v.dnsServer.Get(dest.Address.Domain())
 	if len(ips) == 0 {
 		return nil
@@ -67,7 +63,7 @@ func (v *Router) ResolveIP(dest net.Destination) []net.Address {
 	return dests
 }
 
-func (v *Router) takeDetourWithoutCache(ctx context.Context) (string, error) {
+func (v *Router) TakeDetour(ctx context.Context) (string, error) {
 	for _, rule := range v.rules {
 		if rule.Apply(ctx) {
 			return rule.Tag, nil
@@ -77,7 +73,7 @@ func (v *Router) takeDetourWithoutCache(ctx context.Context) (string, error) {
 	dest := proxy.DestinationFromContext(ctx)
 	if v.domainStrategy == Config_IpIfNonMatch && dest.Address.Family().IsDomain() {
 		log.Info("Router: Looking up IP for ", dest)
-		ipDests := v.ResolveIP(dest)
+		ipDests := v.resolveIP(dest)
 		if ipDests != nil {
 			ctx = proxy.ContextWithResolveIPs(ctx, ipDests)
 			for _, rule := range v.rules {
@@ -89,17 +85,6 @@ func (v *Router) takeDetourWithoutCache(ctx context.Context) (string, error) {
 	}
 
 	return "", ErrNoRuleApplicable
-}
-
-func (v *Router) TakeDetour(ctx context.Context) (string, error) {
-	//destStr := dest.String()
-	//found, tag, err := v.cache.Get(destStr)
-	//if !found {
-	tag, err := v.takeDetourWithoutCache(ctx)
-	//v.cache.Set(destStr, tag, err)
-	return tag, err
-	//}
-	//return tag, err
 }
 
 func (Router) Interface() interface{} {
