@@ -131,6 +131,10 @@ func (v *CIDRMatcher) Apply(ctx context.Context) bool {
 		dest = proxy.DestinationFromContext(ctx)
 	}
 
+	if !dest.IsValid() {
+		return false
+	}
+
 	if !dest.Address.Family().Either(v2net.AddressFamilyIPv4, v2net.AddressFamilyIPv6) {
 		return false
 	}
@@ -169,6 +173,10 @@ func (v *IPv4Matcher) Apply(ctx context.Context) bool {
 	} else {
 		dest = proxy.DestinationFromContext(ctx)
 	}
+	if !dest.IsValid() {
+		return false
+	}
+
 	if !dest.Address.Family().Either(v2net.AddressFamilyIPv4) {
 		return false
 	}
