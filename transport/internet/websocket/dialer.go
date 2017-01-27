@@ -56,8 +56,8 @@ func wsDial(ctx context.Context, dest v2net.Destination) (*wsconn, error) {
 
 	dialer := websocket.Dialer{
 		NetDial:         commonDial,
-		ReadBufferSize:  65536,
-		WriteBufferSize: 65536,
+		ReadBufferSize:  32 * 1024,
+		WriteBufferSize: 32 * 1024,
 	}
 
 	protocol := "ws"

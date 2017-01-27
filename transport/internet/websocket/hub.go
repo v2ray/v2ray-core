@@ -134,8 +134,8 @@ func (wsl *WSListener) listenws(address v2net.Address, port v2net.Port) error {
 
 func (wsl *WSListener) converttovws(w http.ResponseWriter, r *http.Request) (*wsconn, error) {
 	var upgrader = websocket.Upgrader{
-		ReadBufferSize:  65536,
-		WriteBufferSize: 65536,
+		ReadBufferSize:  32 * 1024,
+		WriteBufferSize: 32 * 1024,
 	}
 	conn, err := upgrader.Upgrade(w, r, nil)
 
