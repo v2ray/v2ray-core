@@ -41,8 +41,6 @@ func TestShadowsocksTCP(t *testing.T) {
 		assert.Error(err).IsNil()
 		assert.Int(nBytes).Equals(len(payload))
 
-		//conn.CloseWrite()
-
 		response := buf.New()
 		finished := false
 		expectedResponse := "Processed: " + payload

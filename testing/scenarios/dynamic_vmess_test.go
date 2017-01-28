@@ -41,8 +41,6 @@ func TestDynamicVMess(t *testing.T) {
 		assert.Error(err).IsNil()
 		assert.Int(nBytes).Equals(len(payload))
 
-		conn.CloseWrite()
-
 		expectedResponse := "Processed: " + payload
 		finished := false
 		response := buf.New()
