@@ -82,7 +82,7 @@ func (w *tcpWorker) Port() v2net.Port {
 
 type udpConn struct {
 	lastActivityTime int64 // in seconds
-	input            chan []byte
+	input            chan *buf.Buffer
 	output           func([]byte) (int, error)
 	remote           net.Addr
 	local            net.Addr
@@ -98,8 +98,9 @@ func (c *udpConn) Read(buf []byte) (int, error) {
 	if !open {
 		return 0, io.EOF
 	}
+	defer in.Release()
 	c.updateActivity()
-	return copy(buf, in), nil
+	return copy(buf, in.Bytes()), nil
 }
 
 func (c *udpConn) Write(buf []byte) (int, error) {
@@ -164,7 +165,7 @@ func (w *udpWorker) getConnection(src v2net.Destination) (*udpConn, bool) {
 	}
 
 	conn := &udpConn{
-		input: make(chan []byte, 32),
+		input: make(chan *buf.Buffer, 32),
 		output: func(b []byte) (int, error) {
 			return w.hub.WriteTo(b, src)
 		},
@@ -185,7 +186,11 @@ func (w *udpWorker) getConnection(src v2net.Destination) (*udpConn, bool) {
 
 func (w *udpWorker) callback(b *buf.Buffer, source v2net.Destination, originalDest v2net.Destination) {
 	conn, existing := w.getConnection(source)
-	conn.input <- b.Bytes()
+	select {
+	case conn.input <- b:
+	default:
+		b.Release()
+	}
 
 	if !existing {
 		go func() {
