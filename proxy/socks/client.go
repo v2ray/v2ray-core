@@ -87,7 +87,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay) error {
 		}
 		responseFunc = func() error {
 			defer ray.OutboundOutput().Close()
-			return buf.PipeUntilEOF(buf.NewReader(conn), ray.OutboundOutput())
+			return buf.Pipe(buf.NewReader(conn), ray.OutboundOutput())
 		}
 	} else if request.Command == protocol.RequestCommandUDP {
 		udpConn, err := dialer.Dial(ctx, udpRequest.Destination())
@@ -102,7 +102,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay) error {
 		responseFunc = func() error {
 			defer ray.OutboundOutput().Close()
 			reader := &UDPReader{reader: net.NewTimeOutReader(16, udpConn)}
-			return buf.PipeUntilEOF(reader, ray.OutboundOutput())
+			return buf.Pipe(reader, ray.OutboundOutput())
 		}
 	}
 

@@ -145,7 +145,7 @@ func (v *VMessOutboundHandler) Process(ctx context.Context, outboundRay ray.Outb
 
 		reader.SetBuffered(false)
 		bodyReader := session.DecodeResponseBody(request, reader)
-		if err := buf.PipeUntilEOF(bodyReader, output); err != nil {
+		if err := buf.Pipe(bodyReader, output); err != nil {
 			return err
 		}
 

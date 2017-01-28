@@ -133,7 +133,7 @@ func transferRequest(session *encoding.ServerSession, request *protocol.RequestH
 	defer output.Close()
 
 	bodyReader := session.DecodeRequestBody(request, input)
-	if err := buf.PipeUntilEOF(bodyReader, output); err != nil {
+	if err := buf.Pipe(bodyReader, output); err != nil {
 		return err
 	}
 	return nil

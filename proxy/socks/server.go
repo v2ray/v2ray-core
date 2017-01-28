@@ -58,6 +58,8 @@ func (s *Server) Network() net.NetworkList {
 }
 
 func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection) error {
+	conn.SetReusable(false)
+
 	switch network {
 	case net.Network_TCP:
 		return s.processTCP(ctx, conn)
@@ -69,8 +71,6 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 }
 
 func (s *Server) processTCP(ctx context.Context, conn internet.Connection) error {
-	conn.SetReusable(false)
-
 	timedReader := net.NewTimeOutReader(16 /* seconds, for handshake */, conn)
 	reader := bufio.NewReader(timedReader)
 
@@ -123,7 +123,7 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 		defer input.Close()
 
 		v2reader := buf.NewReader(reader)
-		if err := buf.PipeUntilEOF(v2reader, input); err != nil {
+		if err := buf.Pipe(v2reader, input); err != nil {
 			log.Info("Socks|Server: Failed to transport all TCP request: ", err)
 			return err
 		}

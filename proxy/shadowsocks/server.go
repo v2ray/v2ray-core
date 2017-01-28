@@ -177,7 +177,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection)
 			return err
 		}
 
-		if err := buf.PipeUntilEOF(ray.InboundOutput(), responseWriter); err != nil {
+		if err := buf.Pipe(ray.InboundOutput(), responseWriter); err != nil {
 			log.Info("Shadowsocks|Server: Failed to transport all TCP response: ", err)
 			return err
 		}

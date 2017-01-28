@@ -136,7 +136,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		defer ray.InboundInput().Close()
 
 		v2reader := buf.NewReader(reader)
-		if err := buf.PipeUntilEOF(v2reader, ray.InboundInput()); err != nil {
+		if err := buf.Pipe(v2reader, ray.InboundInput()); err != nil {
 			return err
 		}
 		return nil

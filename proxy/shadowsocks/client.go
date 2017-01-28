@@ -113,7 +113,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay) error
 				return err
 			}
 
-			if err := buf.PipeUntilEOF(responseReader, outboundRay.OutboundOutput()); err != nil {
+			if err := buf.Pipe(responseReader, outboundRay.OutboundOutput()); err != nil {
 				return err
 			}
 
@@ -122,8 +122,6 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay) error
 
 		if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 			log.Info("Shadowsocks|Client: Connection ends with ", err)
-			outboundRay.OutboundInput().CloseError()
-			outboundRay.OutboundOutput().CloseError()
 			return err
 		}
 
@@ -155,7 +153,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay) error
 				User:   user,
 			}
 
-			if err := buf.PipeUntilEOF(reader, outboundRay.OutboundOutput()); err != nil {
+			if err := buf.Pipe(reader, outboundRay.OutboundOutput()); err != nil {
 				log.Info("Shadowsocks|Client: Failed to transport all UDP response: ", err)
 				return err
 			}

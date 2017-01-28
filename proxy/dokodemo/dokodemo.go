@@ -65,7 +65,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		timedReader := net.NewTimeOutReader(d.config.Timeout, conn)
 		chunkReader := buf.NewReader(timedReader)
 
-		if err := buf.PipeUntilEOF(chunkReader, inboundRay.InboundInput()); err != nil {
+		if err := buf.Pipe(chunkReader, inboundRay.InboundInput()); err != nil {
 			log.Info("Dokodemo: Failed to transport request: ", err)
 			return err
 		}

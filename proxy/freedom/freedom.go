@@ -130,7 +130,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay) erro
 		defer output.Close()
 
 		v2reader := buf.NewReader(reader)
-		if err := buf.PipeUntilEOF(v2reader, output); err != nil {
+		if err := buf.Pipe(v2reader, output); err != nil {
 			return err
 		}
 		return nil
