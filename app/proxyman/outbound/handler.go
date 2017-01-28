@@ -2,7 +2,6 @@ package outbound
 
 import (
 	"context"
-	"errors"
 	"io"
 	"net"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
@@ -67,7 +67,7 @@ func (h *Handler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
 	ctx = proxy.ContextWithDialer(ctx, h)
 	err := h.proxy.Process(ctx, outboundRay)
 	// Ensure outbound ray is properly closed.
-	if err != nil {
+	if err != nil && errors.Cause(err) != io.EOF {
 		outboundRay.OutboundOutput().CloseError()
 	} else {
 		outboundRay.OutboundOutput().Close()

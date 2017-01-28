@@ -213,10 +213,9 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 	ray := s.packetDispatcher.DispatchToOutbound(ctx)
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
+	defer input.Close()
 
 	requestDone := signal.ExecuteAsync(func() error {
-		defer input.Close()
-
 		requestWriter := bufio.NewWriter(buf.NewBytesWriter(ray.InboundInput()))
 		err := request.Write(requestWriter)
 		if err != nil {
