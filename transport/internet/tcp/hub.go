@@ -153,7 +153,7 @@ func (v *TCPListener) Close() error {
 	close(v.awaitingConns)
 	for connErr := range v.awaitingConns {
 		if connErr.conn != nil {
-			go connErr.conn.Close()
+			connErr.conn.Close()
 		}
 	}
 	return nil
