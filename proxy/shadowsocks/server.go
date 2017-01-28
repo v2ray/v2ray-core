@@ -69,6 +69,8 @@ func (s *Server) Network() net.NetworkList {
 }
 
 func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection) error {
+	conn.SetReusable(false)
+
 	switch network {
 	case net.Network_TCP:
 		return s.handleConnection(ctx, conn)
@@ -132,8 +134,6 @@ func (v *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 }
 
 func (s *Server) handleConnection(ctx context.Context, conn internet.Connection) error {
-	conn.SetReusable(false)
-
 	timedReader := net.NewTimeOutReader(16, conn)
 	bufferedReader := bufio.NewReader(timedReader)
 	request, bodyReader, err := ReadTCPSession(s.user, bufferedReader)
@@ -195,7 +195,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection)
 		return nil
 	})
 
-	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		log.Info("Shadowsocks|Server: Connection ends with ", err)
 		ray.InboundInput().CloseError()
 		ray.InboundOutput().CloseError()

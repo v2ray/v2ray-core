@@ -137,10 +137,9 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 			return err
 		}
 		return nil
-
 	})
 
-	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		log.Info("Socks|Server: Connection ends with ", err)
 		input.CloseError()
 		output.CloseError()

@@ -1,6 +1,7 @@
 package signal_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -16,7 +17,7 @@ func TestErrorOrFinish2_Error(t *testing.T) {
 	c := make(chan error, 1)
 
 	go func() {
-		c <- ErrorOrFinish2(c1, c2)
+		c <- ErrorOrFinish2(context.Background(), c1, c2)
 	}()
 
 	c1 <- errors.New("test")
@@ -32,7 +33,7 @@ func TestErrorOrFinish2_Error2(t *testing.T) {
 	c := make(chan error, 1)
 
 	go func() {
-		c <- ErrorOrFinish2(c1, c2)
+		c <- ErrorOrFinish2(context.Background(), c1, c2)
 	}()
 
 	c2 <- errors.New("test")
@@ -48,7 +49,7 @@ func TestErrorOrFinish2_NoneError(t *testing.T) {
 	c := make(chan error, 1)
 
 	go func() {
-		c <- ErrorOrFinish2(c1, c2)
+		c <- ErrorOrFinish2(context.Background(), c1, c2)
 	}()
 
 	close(c1)
@@ -71,7 +72,7 @@ func TestErrorOrFinish2_NoneError2(t *testing.T) {
 	c := make(chan error, 1)
 
 	go func() {
-		c <- ErrorOrFinish2(c1, c2)
+		c <- ErrorOrFinish2(context.Background(), c1, c2)
 	}()
 
 	close(c2)

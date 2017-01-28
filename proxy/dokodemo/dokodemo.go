@@ -83,7 +83,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		return nil
 	})
 
-	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		inboundRay.InboundInput().CloseError()
 		inboundRay.InboundOutput().CloseError()
 		log.Info("Dokodemo: Connection ends with ", err)

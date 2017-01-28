@@ -150,7 +150,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		return nil
 	})
 
-	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		log.Info("HTTP|Server: Connection ends with: ", err)
 		ray.InboundInput().CloseError()
 		ray.InboundOutput().CloseError()
@@ -246,7 +246,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 		return nil
 	})
 
-	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		log.Info("HTTP|Server: Connecton ending with ", err)
 		input.CloseError()
 		output.CloseError()

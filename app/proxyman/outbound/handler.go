@@ -65,7 +65,14 @@ func NewHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) (*H
 
 func (h *Handler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
 	ctx = proxy.ContextWithDialer(ctx, h)
-	h.proxy.Process(ctx, outboundRay)
+	err := h.proxy.Process(ctx, outboundRay)
+	// Ensure outbound ray is properly closed.
+	if err != nil {
+		outboundRay.OutboundOutput().CloseError()
+	} else {
+		outboundRay.OutboundOutput().Close()
+	}
+	outboundRay.OutboundInput().CloseError()
 }
 
 func (h *Handler) Dial(ctx context.Context, dest v2net.Destination) (internet.Connection, error) {

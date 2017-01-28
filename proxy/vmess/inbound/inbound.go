@@ -222,7 +222,7 @@ func (v *VMessInboundHandler) Process(ctx context.Context, network net.Network, 
 		return transferResponse(session, request, response, output, writer)
 	})
 
-	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		log.Info("VMess|Inbound: Connection ending with ", err)
 		connection.SetReusable(false)
 		input.CloseError()

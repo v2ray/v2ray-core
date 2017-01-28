@@ -61,6 +61,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay) error
 	}
 	log.Info("Shadowsocks|Client: Tunneling request to ", destination, " via ", server.Destination())
 
+	defer conn.Close()
 	conn.SetReusable(false)
 
 	request := &protocol.RequestHeader{
@@ -119,7 +120,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay) error
 			return nil
 		})
 
-		if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+		if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 			log.Info("Shadowsocks|Client: Connection ends with ", err)
 			outboundRay.OutboundInput().CloseError()
 			outboundRay.OutboundOutput().CloseError()
@@ -161,10 +162,8 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay) error
 			return nil
 		})
 
-		if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+		if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 			log.Info("Shadowsocks|Client: Connection ends with ", err)
-			outboundRay.OutboundInput().CloseError()
-			outboundRay.OutboundOutput().CloseError()
 			return err
 		}
 

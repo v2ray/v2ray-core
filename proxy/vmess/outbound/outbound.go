@@ -152,11 +152,9 @@ func (v *VMessOutboundHandler) Process(ctx context.Context, outboundRay ray.Outb
 		return nil
 	})
 
-	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		log.Info("VMess|Outbound: Connection ending with ", err)
 		conn.SetReusable(false)
-		input.CloseError()
-		output.CloseError()
 		return err
 	}
 

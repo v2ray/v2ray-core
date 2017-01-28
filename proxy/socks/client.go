@@ -108,10 +108,8 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay) error {
 
 	requestDone := signal.ExecuteAsync(requestFunc)
 	responseDone := signal.ExecuteAsync(responseFunc)
-	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		log.Info("Socks|Client: Connection ends with ", err)
-		ray.OutboundInput().CloseError()
-		ray.OutboundOutput().CloseError()
 		return err
 	}
 

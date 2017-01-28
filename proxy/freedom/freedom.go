@@ -136,7 +136,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay) erro
 		return nil
 	})
 
-	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		log.Info("Freedom: Connection ending with ", err)
 		input.CloseError()
 		output.CloseError()
