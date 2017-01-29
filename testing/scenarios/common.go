@@ -1,6 +1,7 @@
 package scenarios
 
 import (
+	"io"
 	"net"
 	"time"
 
@@ -29,20 +30,10 @@ func xor(b []byte) []byte {
 
 func readFrom(conn net.Conn, timeout time.Duration, length int) []byte {
 	b := make([]byte, 2048)
-	totalBytes := 0
 	deadline := time.Now().Add(timeout)
 	conn.SetReadDeadline(deadline)
-	for totalBytes < length {
-		if time.Now().After(deadline) {
-			break
-		}
-		n, err := conn.Read(b[totalBytes:])
-		if err != nil {
-			break
-		}
-		totalBytes += n
-	}
-	return b[:totalBytes]
+	n, _ := io.ReadFull(conn, b[:length])
+	return b[:n]
 }
 
 func InitializeServerConfig(config *core.Config) error {

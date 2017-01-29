@@ -1,11 +1,10 @@
 package scenarios
 
 import (
-	"fmt"
 	"net"
 	"testing"
+	"time"
 
-	"v2ray.com/core/common/buf"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/testing/servers/tcp"
@@ -42,24 +41,8 @@ func TestDynamicVMess(t *testing.T) {
 		assert.Int(nBytes).Equals(len(payload))
 
 		expectedResponse := "Processed: " + payload
-		finished := false
-		response := buf.New()
-		for {
-			err := response.AppendSupplier(buf.ReadFrom(conn))
-			assert.Error(err).IsNil()
-			if err != nil {
-				break
-			}
-			if response.String() == expectedResponse {
-				finished = true
-				break
-			}
-			if response.Len() > len(expectedResponse) {
-				fmt.Printf("Unexpected response: %v\n", response.Bytes())
-				break
-			}
-		}
-		assert.Bool(finished).IsTrue()
+		response := readFrom(conn, time.Second, len(expectedResponse))
+		assert.String(string(response)).Equals(expectedResponse)
 
 		conn.Close()
 	}
