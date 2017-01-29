@@ -70,7 +70,7 @@ func (v ErrorBuilder) Message(msg ...interface{}) error {
 	}
 
 	return &Error{
-		message: serial.ToString(msg) + " > " + v.error.Error(),
+		message: serial.ToString(msg...) + " > " + v.error.Error(),
 		inner:   v.error,
 	}
 }
