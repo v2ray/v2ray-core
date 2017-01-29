@@ -86,7 +86,7 @@ func New(ctx context.Context, config *Config) (*VMessInboundHandler, error) {
 		return nil, errors.New("VMess|Inbound: No space in context.")
 	}
 
-	allowedClients := vmess.NewTimedUserValidator(protocol.DefaultIDHash)
+	allowedClients := vmess.NewTimedUserValidator(ctx, protocol.DefaultIDHash)
 	for _, user := range config.User {
 		allowedClients.Add(user)
 	}

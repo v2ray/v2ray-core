@@ -12,6 +12,17 @@ import (
 	"v2ray.com/core/proxy"
 )
 
+type workerWithContext struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+	worker worker
+}
+
+func (w *workerWithContext) Close() {
+	w.cancel()
+	w.worker.Close()
+}
+
 type DynamicInboundHandler struct {
 	sync.Mutex
 	tag            string
@@ -20,8 +31,8 @@ type DynamicInboundHandler struct {
 	proxyConfig    interface{}
 	receiverConfig *proxyman.ReceiverConfig
 	portsInUse     map[v2net.Port]bool
-	worker         []worker
-	worker2Recycle []worker
+	worker         []*workerWithContext
+	worker2Recycle []*workerWithContext
 	lastRefresh    time.Time
 }
 
@@ -62,7 +73,7 @@ func (h *DynamicInboundHandler) refresh() error {
 	ports2Del := make([]v2net.Port, 0, 16)
 	for _, worker := range h.worker2Recycle {
 		worker.Close()
-		ports2Del = append(ports2Del, worker.Port())
+		ports2Del = append(ports2Del, worker.worker.Port())
 	}
 
 	h.Lock()
@@ -78,8 +89,10 @@ func (h *DynamicInboundHandler) refresh() error {
 		address = v2net.AnyIP
 	}
 	for i := uint32(0); i < h.receiverConfig.AllocationStrategy.GetConcurrencyValue(); i++ {
+		ctx, cancel := context.WithCancel(h.ctx)
+
 		port := h.allocatePort()
-		p, err := proxy.CreateInboundHandler(h.ctx, h.proxyConfig)
+		p, err := proxy.CreateInboundHandler(ctx, h.proxyConfig)
 		if err != nil {
 			log.Warning("Proxyman|DefaultInboundHandler: Failed to create proxy instance: ", err)
 			continue
@@ -98,7 +111,11 @@ func (h *DynamicInboundHandler) refresh() error {
 			if err := worker.Start(); err != nil {
 				return err
 			}
-			h.worker = append(h.worker, worker)
+			h.worker = append(h.worker, &workerWithContext{
+				ctx:    ctx,
+				cancel: cancel,
+				worker: worker,
+			})
 		}
 
 		if nl.HasNetwork(v2net.Network_UDP) {
@@ -112,7 +129,11 @@ func (h *DynamicInboundHandler) refresh() error {
 			if err := worker.Start(); err != nil {
 				return err
 			}
-			h.worker = append(h.worker, worker)
+			h.worker = append(h.worker, &workerWithContext{
+				ctx:    ctx,
+				cancel: cancel,
+				worker: worker,
+			})
 		}
 	}
 
@@ -143,5 +164,5 @@ func (h *DynamicInboundHandler) Close() {
 func (h *DynamicInboundHandler) GetRandomInboundProxy() (proxy.Inbound, v2net.Port, int) {
 	w := h.worker[dice.Roll(len(h.worker))]
 	expire := h.receiverConfig.AllocationStrategy.GetRefreshValue() - uint32(time.Since(h.lastRefresh)/time.Minute)
-	return w.Proxy(), w.Port(), int(expire)
+	return w.worker.Proxy(), w.worker.Port(), int(expire)
 }
