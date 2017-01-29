@@ -14,6 +14,8 @@ import (
 	"v2ray.com/core/common/log"
 
 	_ "v2ray.com/core/main/distro/all"
+	
+	"github.com/howeyc/fsnotify"
 )
 
 var (
@@ -96,7 +98,37 @@ func main() {
 		return
 	}
 
-	if point := startV2Ray(); point != nil {
+	point := startV2Ray()
+
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Error("fsnotify error: ", err)
+	}
+	defer watcher.Close()
+
+	go func() {
+		for {
+			select {
+			case ev := <-watcher.Event:
+				if ev.IsModify() {
+					point.Close()
+					point = startV2Ray()
+					if err != nil {
+						log.Error("Error starting Point server: ", err)
+					}
+				}
+			case err := <-watcher.Error:
+				log.Error("fsnotify error: ", err)
+			}
+		}
+	}()
+
+	err = watcher.Watch(configFile)
+	if err != nil {
+		log.Error("fsnotify error: ", err)
+	}
+
+	if point != nil {
 		osSignals := make(chan os.Signal, 1)
 		signal.Notify(osSignals, os.Interrupt, os.Kill, syscall.SIGTERM)
 
