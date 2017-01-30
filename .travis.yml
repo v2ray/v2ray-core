@@ -1,6 +1,6 @@
 language: go
 go:
-- stable
+- 1
 go_import_path: v2ray.com/core
 git:
   depth: 5
