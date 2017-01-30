@@ -76,15 +76,16 @@ func (h *DynamicInboundHandler) waitAnyCloseWorkers(ctx context.Context, cancel 
 func (h *DynamicInboundHandler) refresh() error {
 	h.lastRefresh = time.Now()
 
-	timeout := time.Minute * time.Duration(h.receiverConfig.AllocationStrategy.GetRefreshValue())
+	timeout := time.Minute * time.Duration(h.receiverConfig.AllocationStrategy.GetRefreshValue()) * 2
+	concurrency := h.receiverConfig.AllocationStrategy.GetConcurrencyValue()
 	ctx, cancel := context.WithTimeout(h.ctx, timeout)
-	workers := make([]worker, 0, h.receiverConfig.AllocationStrategy.GetConcurrencyValue())
+	workers := make([]worker, 0, concurrency)
 
 	address := h.receiverConfig.Listen.AsAddress()
 	if address == nil {
 		address = v2net.AnyIP
 	}
-	for i := uint32(0); i < h.receiverConfig.AllocationStrategy.GetConcurrencyValue(); i++ {
+	for i := uint32(0); i < concurrency; i++ {
 		port := h.allocatePort()
 		p, err := proxy.CreateInboundHandler(ctx, h.proxyConfig)
 		if err != nil {
