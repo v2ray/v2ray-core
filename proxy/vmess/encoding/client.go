@@ -213,7 +213,6 @@ func (v *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 }
 
 func (v *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, reader io.Reader) buf.Reader {
-	aggressive := (request.Command == protocol.RequestCommandTCP)
 	var authReader io.Reader
 	if request.Security.Is(protocol.SecurityType_NONE) {
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
@@ -222,7 +221,7 @@ func (v *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 				NonceGenerator:          crypto.NoOpBytesGenerator{},
 				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 			}
-			authReader = crypto.NewAuthenticationReader(auth, reader, aggressive)
+			authReader = crypto.NewAuthenticationReader(auth, reader)
 		} else {
 			authReader = reader
 		}
@@ -233,7 +232,7 @@ func (v *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 				NonceGenerator:          crypto.NoOpBytesGenerator{},
 				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 			}
-			authReader = crypto.NewAuthenticationReader(auth, v.responseReader, aggressive)
+			authReader = crypto.NewAuthenticationReader(auth, v.responseReader)
 		} else {
 			authReader = v.responseReader
 		}
@@ -249,7 +248,7 @@ func (v *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 		}
-		authReader = crypto.NewAuthenticationReader(auth, reader, aggressive)
+		authReader = crypto.NewAuthenticationReader(auth, reader)
 	} else if request.Security.Is(protocol.SecurityType_CHACHA20_POLY1305) {
 		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(v.responseBodyKey))
 
@@ -261,7 +260,7 @@ func (v *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 		}
-		authReader = crypto.NewAuthenticationReader(auth, reader, aggressive)
+		authReader = crypto.NewAuthenticationReader(auth, reader)
 	}
 
 	return buf.NewReader(authReader)

@@ -76,20 +76,18 @@ type AuthenticationReader struct {
 	buffer *buf.Buffer
 	reader io.Reader
 
-	chunk      []byte
-	aggressive bool
+	chunk []byte
 }
 
 const (
 	readerBufferSize = 32 * 1024
 )
 
-func NewAuthenticationReader(auth Authenticator, reader io.Reader, aggressive bool) *AuthenticationReader {
+func NewAuthenticationReader(auth Authenticator, reader io.Reader) *AuthenticationReader {
 	return &AuthenticationReader{
-		auth:       auth,
-		buffer:     buf.NewLocal(readerBufferSize),
-		reader:     reader,
-		aggressive: aggressive,
+		auth:   auth,
+		buffer: buf.NewLocal(readerBufferSize),
+		reader: reader,
 	}
 }
 
@@ -168,14 +166,7 @@ func (v *AuthenticationReader) Read(b []byte) (int, error) {
 		return 0, err
 	}
 
-	totalBytes := v.CopyChunk(b)
-	for v.aggressive && totalBytes < len(b) {
-		if err := v.NextChunk(); err != nil {
-			break
-		}
-		totalBytes += v.CopyChunk(b[totalBytes:])
-	}
-	return totalBytes, nil
+	return v.CopyChunk(b), nil
 }
 
 type AuthenticationWriter struct {
