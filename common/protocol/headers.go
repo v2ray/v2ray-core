@@ -3,6 +3,7 @@ package protocol
 import (
 	"runtime"
 
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/uuid"
 )
@@ -115,4 +116,27 @@ func (v *SecurityConfig) AsSecurity() Security {
 		return Security(SecurityType_CHACHA20_POLY1305)
 	}
 	return NormSecurity(Security(v.Type))
+}
+
+type SessionFrameOption byte
+
+const (
+	SessionFrameOptionDefault  SessionFrameOption = 0x00
+	SessionFrameOptionNew      SessionFrameOption = 0x01
+	SessionFrameOptionContinue SessionFrameOption = 0x02
+	SessionFrameOptionEnd      SessionFrameOption = 0x03
+)
+
+type SessionId uint32
+
+const (
+	DefaultSessionId SessionId = 0
+)
+
+type SessionFrame struct {
+	Id      SessionId
+	Option  SessionFrameOption
+	Address net.Address
+	Port    net.Port
+	Payload *buf.Buffer
 }
