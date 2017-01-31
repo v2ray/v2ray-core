@@ -2,6 +2,9 @@ package shadowsocks
 
 import (
 	"context"
+	"time"
+
+	"runtime"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
@@ -154,6 +157,9 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection)
 
 	ctx = proxy.ContextWithDestination(ctx, dest)
 	ctx = protocol.ContextWithUser(ctx, request.User)
+
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
 	ray := s.packetDispatcher.DispatchToOutbound(ctx)
 
 	requestDone := signal.ExecuteAsync(func() error {
@@ -177,7 +183,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection)
 			return err
 		}
 
-		if err := buf.Pipe(ray.InboundOutput(), responseWriter); err != nil {
+		if err := buf.PipeUntilEOF(timer, ray.InboundOutput(), responseWriter); err != nil {
 			log.Info("Shadowsocks|Server: Failed to transport all TCP response: ", err)
 			return err
 		}
@@ -188,7 +194,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection)
 	responseDone := signal.ExecuteAsync(func() error {
 		defer ray.InboundInput().Close()
 
-		if err := buf.PipeUntilEOF(bodyReader, ray.InboundInput()); err != nil {
+		if err := buf.PipeUntilEOF(timer, bodyReader, ray.InboundInput()); err != nil {
 			log.Info("Shadowsocks|Server: Failed to transport all TCP request: ", err)
 			return err
 		}
@@ -201,6 +207,8 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection)
 		ray.InboundOutput().CloseError()
 		return err
 	}
+
+	runtime.KeepAlive(timer)
 
 	return nil
 }

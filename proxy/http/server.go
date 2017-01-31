@@ -5,9 +5,11 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
@@ -130,13 +132,15 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		return err
 	}
 
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
 	ray := s.packetDispatcher.DispatchToOutbound(ctx)
 
 	requestDone := signal.ExecuteAsync(func() error {
 		defer ray.InboundInput().Close()
 
 		v2reader := buf.NewReader(reader)
-		if err := buf.Pipe(v2reader, ray.InboundInput()); err != nil {
+		if err := buf.PipeUntilEOF(timer, v2reader, ray.InboundInput()); err != nil {
 			return err
 		}
 		return nil
@@ -144,7 +148,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 
 	responseDone := signal.ExecuteAsync(func() error {
 		v2writer := buf.NewWriter(writer)
-		if err := buf.PipeUntilEOF(ray.InboundOutput(), v2writer); err != nil {
+		if err := buf.PipeUntilEOF(timer, ray.InboundOutput(), v2writer); err != nil {
 			return err
 		}
 		return nil
@@ -156,6 +160,8 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		ray.InboundOutput().CloseError()
 		return err
 	}
+
+	runtime.KeepAlive(timer)
 
 	return nil
 }

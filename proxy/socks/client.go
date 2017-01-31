@@ -3,6 +3,9 @@ package socks
 import (
 	"context"
 
+	"runtime"
+	"time"
+
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/log"
@@ -79,15 +82,18 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay) error {
 		return err
 	}
 
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
+
 	var requestFunc func() error
 	var responseFunc func() error
 	if request.Command == protocol.RequestCommandTCP {
 		requestFunc = func() error {
-			return buf.PipeUntilEOF(ray.OutboundInput(), buf.NewWriter(conn))
+			return buf.PipeUntilEOF(timer, ray.OutboundInput(), buf.NewWriter(conn))
 		}
 		responseFunc = func() error {
 			defer ray.OutboundOutput().Close()
-			return buf.Pipe(buf.NewReader(conn), ray.OutboundOutput())
+			return buf.PipeUntilEOF(timer, buf.NewReader(conn), ray.OutboundOutput())
 		}
 	} else if request.Command == protocol.RequestCommandUDP {
 		udpConn, err := dialer.Dial(ctx, udpRequest.Destination())
@@ -97,12 +103,12 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay) error {
 		}
 		defer udpConn.Close()
 		requestFunc = func() error {
-			return buf.PipeUntilEOF(ray.OutboundInput(), &UDPWriter{request: request, writer: udpConn})
+			return buf.PipeUntilEOF(timer, ray.OutboundInput(), &UDPWriter{request: request, writer: udpConn})
 		}
 		responseFunc = func() error {
 			defer ray.OutboundOutput().Close()
 			reader := &UDPReader{reader: net.NewTimeOutReader(16, udpConn)}
-			return buf.Pipe(reader, ray.OutboundOutput())
+			return buf.PipeUntilEOF(timer, reader, ray.OutboundOutput())
 		}
 	}
 
@@ -112,6 +118,8 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay) error {
 		log.Info("Socks|Client: Connection ends with ", err)
 		return err
 	}
+
+	runtime.KeepAlive(timer)
 
 	return nil
 }

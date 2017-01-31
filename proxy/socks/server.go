@@ -3,6 +3,7 @@ package socks
 import (
 	"context"
 	"io"
+	"runtime"
 	"time"
 
 	"v2ray.com/core/app"
@@ -115,6 +116,9 @@ func (*Server) handleUDP() error {
 }
 
 func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writer) error {
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
+
 	ray := v.packetDispatcher.DispatchToOutbound(ctx)
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
@@ -123,7 +127,7 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 		defer input.Close()
 
 		v2reader := buf.NewReader(reader)
-		if err := buf.Pipe(v2reader, input); err != nil {
+		if err := buf.PipeUntilEOF(timer, v2reader, input); err != nil {
 			log.Info("Socks|Server: Failed to transport all TCP request: ", err)
 			return err
 		}
@@ -132,7 +136,7 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 
 	responseDone := signal.ExecuteAsync(func() error {
 		v2writer := buf.NewWriter(writer)
-		if err := buf.PipeUntilEOF(output, v2writer); err != nil {
+		if err := buf.PipeUntilEOF(timer, output, v2writer); err != nil {
 			log.Info("Socks|Server: Failed to transport all TCP response: ", err)
 			return err
 		}
@@ -145,6 +149,8 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 		output.CloseError()
 		return err
 	}
+
+	runtime.KeepAlive(timer)
 
 	return nil
 }

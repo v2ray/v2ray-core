@@ -2,6 +2,8 @@ package dokodemo
 
 import (
 	"context"
+	"runtime"
+	"time"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
@@ -52,11 +54,24 @@ func (d *DokodemoDoor) Network() net.NetworkList {
 func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn internet.Connection) error {
 	log.Debug("Dokodemo: processing connection from: ", conn.RemoteAddr())
 	conn.SetReusable(false)
-	ctx = proxy.ContextWithDestination(ctx, net.Destination{
+	dest := net.Destination{
 		Network: network,
 		Address: d.address,
 		Port:    d.port,
-	})
+	}
+	if d.config.FollowRedirect {
+		if origDest := proxy.OriginalDestinationFromContext(ctx); origDest.IsValid() {
+			dest = origDest
+		}
+	}
+	if !dest.IsValid() || dest.Address == nil {
+		log.Info("Dokodemo: Invalid destination. Discarding...")
+		return errors.New("Dokodemo: Unable to get destination.")
+	}
+	ctx = proxy.ContextWithDestination(ctx, dest)
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
+
 	inboundRay := d.packetDispatcher.DispatchToOutbound(ctx)
 
 	requestDone := signal.ExecuteAsync(func() error {
@@ -65,7 +80,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		timedReader := net.NewTimeOutReader(d.config.Timeout, conn)
 		chunkReader := buf.NewReader(timedReader)
 
-		if err := buf.Pipe(chunkReader, inboundRay.InboundInput()); err != nil {
+		if err := buf.PipeUntilEOF(timer, chunkReader, inboundRay.InboundInput()); err != nil {
 			log.Info("Dokodemo: Failed to transport request: ", err)
 			return err
 		}
@@ -76,7 +91,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 	responseDone := signal.ExecuteAsync(func() error {
 		v2writer := buf.NewWriter(conn)
 
-		if err := buf.PipeUntilEOF(inboundRay.InboundOutput(), v2writer); err != nil {
+		if err := buf.PipeUntilEOF(timer, inboundRay.InboundOutput(), v2writer); err != nil {
 			log.Info("Dokodemo: Failed to transport response: ", err)
 			return err
 		}
@@ -89,6 +104,8 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		log.Info("Dokodemo: Connection ends with ", err)
 		return err
 	}
+
+	runtime.KeepAlive(timer)
 
 	return nil
 }

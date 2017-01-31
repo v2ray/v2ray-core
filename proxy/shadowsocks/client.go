@@ -3,6 +3,10 @@ package shadowsocks
 import (
 	"context"
 
+	"time"
+
+	"runtime"
+
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
@@ -88,6 +92,9 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay) error
 		request.Option |= RequestOptionOneTimeAuth
 	}
 
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
+
 	if request.Command == protocol.RequestCommandTCP {
 		bufferedWriter := bufio.NewWriter(conn)
 		bodyWriter, err := WriteTCPRequest(request, bufferedWriter)
@@ -99,7 +106,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay) error
 		bufferedWriter.SetBuffered(false)
 
 		requestDone := signal.ExecuteAsync(func() error {
-			if err := buf.PipeUntilEOF(outboundRay.OutboundInput(), bodyWriter); err != nil {
+			if err := buf.PipeUntilEOF(timer, outboundRay.OutboundInput(), bodyWriter); err != nil {
 				return err
 			}
 			return nil
@@ -113,7 +120,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay) error
 				return err
 			}
 
-			if err := buf.Pipe(responseReader, outboundRay.OutboundOutput()); err != nil {
+			if err := buf.PipeUntilEOF(timer, responseReader, outboundRay.OutboundOutput()); err != nil {
 				return err
 			}
 
@@ -136,24 +143,22 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay) error
 		}
 
 		requestDone := signal.ExecuteAsync(func() error {
-			if err := buf.PipeUntilEOF(outboundRay.OutboundInput(), writer); err != nil {
+			if err := buf.PipeUntilEOF(timer, outboundRay.OutboundInput(), writer); err != nil {
 				log.Info("Shadowsocks|Client: Failed to transport all UDP request: ", err)
 				return err
 			}
 			return nil
 		})
 
-		timedReader := net.NewTimeOutReader(16, conn)
-
 		responseDone := signal.ExecuteAsync(func() error {
 			defer outboundRay.OutboundOutput().Close()
 
 			reader := &UDPReader{
-				Reader: timedReader,
+				Reader: conn,
 				User:   user,
 			}
 
-			if err := buf.Pipe(reader, outboundRay.OutboundOutput()); err != nil {
+			if err := buf.PipeUntilEOF(timer, reader, outboundRay.OutboundOutput()); err != nil {
 				log.Info("Shadowsocks|Client: Failed to transport all UDP response: ", err)
 				return err
 			}
@@ -167,6 +172,8 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay) error
 
 		return nil
 	}
+
+	runtime.KeepAlive(timer)
 
 	return nil
 }

@@ -5,6 +5,9 @@ import (
 	"io"
 	"sync"
 
+	"runtime"
+	"time"
+
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/proxyman"
@@ -129,17 +132,17 @@ func (v *VMessInboundHandler) GetUser(email string) *protocol.User {
 	return user
 }
 
-func transferRequest(session *encoding.ServerSession, request *protocol.RequestHeader, input io.Reader, output ray.OutputStream) error {
+func transferRequest(timer *signal.ActivityTimer, session *encoding.ServerSession, request *protocol.RequestHeader, input io.Reader, output ray.OutputStream) error {
 	defer output.Close()
 
 	bodyReader := session.DecodeRequestBody(request, input)
-	if err := buf.Pipe(bodyReader, output); err != nil {
+	if err := buf.PipeUntilEOF(timer, bodyReader, output); err != nil {
 		return err
 	}
 	return nil
 }
 
-func transferResponse(session *encoding.ServerSession, request *protocol.RequestHeader, response *protocol.ResponseHeader, input ray.InputStream, output io.Writer) error {
+func transferResponse(timer *signal.ActivityTimer, session *encoding.ServerSession, request *protocol.RequestHeader, response *protocol.ResponseHeader, input ray.InputStream, output io.Writer) error {
 	session.EncodeResponseHeader(response, output)
 
 	bodyWriter := session.EncodeResponseBody(request, output)
@@ -161,7 +164,7 @@ func transferResponse(session *encoding.ServerSession, request *protocol.Request
 		}
 	}
 
-	if err := buf.PipeUntilEOF(input, bodyWriter); err != nil {
+	if err := buf.PipeUntilEOF(timer, input, bodyWriter); err != nil {
 		return err
 	}
 
@@ -196,6 +199,8 @@ func (v *VMessInboundHandler) Process(ctx context.Context, network net.Network, 
 
 	ctx = proxy.ContextWithDestination(ctx, request.Destination())
 	ctx = protocol.ContextWithUser(ctx, request.User)
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
 	ray := v.packetDispatcher.DispatchToOutbound(ctx)
 
 	input := ray.InboundInput()
@@ -206,7 +211,7 @@ func (v *VMessInboundHandler) Process(ctx context.Context, network net.Network, 
 	reader.SetBuffered(false)
 
 	requestDone := signal.ExecuteAsync(func() error {
-		return transferRequest(session, request, reader, input)
+		return transferRequest(timer, session, request, reader, input)
 	})
 
 	writer := bufio.NewWriter(connection)
@@ -219,7 +224,7 @@ func (v *VMessInboundHandler) Process(ctx context.Context, network net.Network, 
 	}
 
 	responseDone := signal.ExecuteAsync(func() error {
-		return transferResponse(session, request, response, output, writer)
+		return transferResponse(timer, session, request, response, output, writer)
 	})
 
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
@@ -235,6 +240,8 @@ func (v *VMessInboundHandler) Process(ctx context.Context, network net.Network, 
 		connection.SetReusable(false)
 		return err
 	}
+
+	runtime.KeepAlive(timer)
 
 	return nil
 }

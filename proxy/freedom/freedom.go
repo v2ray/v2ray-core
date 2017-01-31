@@ -2,7 +2,9 @@ package freedom
 
 import (
 	"context"
-	"io"
+	"time"
+
+	"runtime"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dns"
@@ -108,29 +110,26 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay) erro
 
 	conn.SetReusable(false)
 
+	ctx, cancel := context.WithCancel(ctx)
+	timeout := time.Second * time.Duration(v.timeout)
+	if timeout == 0 {
+		timeout = time.Minute * 10
+	}
+	timer := signal.CancelAfterInactivity(ctx, cancel, timeout)
+
 	requestDone := signal.ExecuteAsync(func() error {
 		v2writer := buf.NewWriter(conn)
-		if err := buf.PipeUntilEOF(input, v2writer); err != nil {
+		if err := buf.PipeUntilEOF(timer, input, v2writer); err != nil {
 			return err
 		}
 		return nil
 	})
 
-	var reader io.Reader = conn
-
-	timeout := v.timeout
-	if destination.Network == net.Network_UDP {
-		timeout = 16
-	}
-	if timeout > 0 {
-		reader = net.NewTimeOutReader(timeout /* seconds */, conn)
-	}
-
 	responseDone := signal.ExecuteAsync(func() error {
 		defer output.Close()
 
-		v2reader := buf.NewReader(reader)
-		if err := buf.Pipe(v2reader, output); err != nil {
+		v2reader := buf.NewReader(conn)
+		if err := buf.PipeUntilEOF(timer, v2reader, output); err != nil {
 			return err
 		}
 		return nil
@@ -142,6 +141,8 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay) erro
 		output.CloseError()
 		return err
 	}
+
+	runtime.KeepAlive(timer)
 
 	return nil
 }

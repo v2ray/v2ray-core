@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"v2ray.com/core/common/errors"
+	"v2ray.com/core/common/signal"
 )
 
 // Reader extends io.Reader with alloc.Buffer.
@@ -33,12 +34,14 @@ func ReadFullFrom(reader io.Reader, size int) Supplier {
 }
 
 // Pipe dumps all content from reader to writer, until an error happens.
-func Pipe(reader Reader, writer Writer) error {
+func Pipe(timer *signal.ActivityTimer, reader Reader, writer Writer) error {
 	for {
 		buffer, err := reader.Read()
 		if err != nil {
 			return err
 		}
+
+		timer.UpdateActivity()
 
 		if buffer.IsEmpty() {
 			buffer.Release()
@@ -54,8 +57,8 @@ func Pipe(reader Reader, writer Writer) error {
 }
 
 // PipeUntilEOF behaves the same as Pipe(). The only difference is PipeUntilEOF returns nil on EOF.
-func PipeUntilEOF(reader Reader, writer Writer) error {
-	err := Pipe(reader, writer)
+func PipeUntilEOF(timer *signal.ActivityTimer, reader Reader, writer Writer) error {
+	err := Pipe(timer, reader, writer)
 	if err != nil && errors.Cause(err) != io.EOF {
 		return err
 	}

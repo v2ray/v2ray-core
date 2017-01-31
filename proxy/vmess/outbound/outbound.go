@@ -2,6 +2,7 @@ package outbound
 
 import (
 	"context"
+	"runtime"
 	"time"
 
 	"v2ray.com/core/app"
@@ -101,6 +102,9 @@ func (v *VMessOutboundHandler) Process(ctx context.Context, outboundRay ray.Outb
 
 	session := encoding.NewClientSession(protocol.DefaultIDHash)
 
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
+
 	requestDone := signal.ExecuteAsync(func() error {
 		writer := bufio.NewWriter(conn)
 		session.EncodeRequestHeader(request, writer)
@@ -119,7 +123,7 @@ func (v *VMessOutboundHandler) Process(ctx context.Context, outboundRay ray.Outb
 
 		writer.SetBuffered(false)
 
-		if err := buf.PipeUntilEOF(input, bodyWriter); err != nil {
+		if err := buf.PipeUntilEOF(timer, input, bodyWriter); err != nil {
 			return err
 		}
 
@@ -145,7 +149,7 @@ func (v *VMessOutboundHandler) Process(ctx context.Context, outboundRay ray.Outb
 
 		reader.SetBuffered(false)
 		bodyReader := session.DecodeResponseBody(request, reader)
-		if err := buf.Pipe(bodyReader, output); err != nil {
+		if err := buf.PipeUntilEOF(timer, bodyReader, output); err != nil {
 			return err
 		}
 
@@ -157,6 +161,7 @@ func (v *VMessOutboundHandler) Process(ctx context.Context, outboundRay ray.Outb
 		conn.SetReusable(false)
 		return err
 	}
+	runtime.KeepAlive(timer)
 
 	return nil
 }
