@@ -203,11 +203,7 @@ func (v *VMessInboundHandler) Process(ctx context.Context, network net.Network, 
 	ctx = proxy.ContextWithDestination(ctx, request.Destination())
 	ctx = protocol.ContextWithUser(ctx, request.User)
 	ctx, cancel := context.WithCancel(ctx)
-	timeout := time.Second * time.Duration(userSettings.PayloadReadTimeout)
-	if timeout == 0 {
-		timeout = time.Minute * 2
-	}
-	timer := signal.CancelAfterInactivity(ctx, cancel, timeout)
+	timer := signal.CancelAfterInactivity(ctx, cancel, userSettings.PayloadTimeout)
 	ray := v.packetDispatcher.DispatchToOutbound(ctx)
 
 	input := ray.InboundInput()

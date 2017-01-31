@@ -158,11 +158,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection)
 
 	ctx, cancel := context.WithCancel(ctx)
 	userSettings := s.user.GetSettings()
-	timeout := time.Second * time.Duration(userSettings.PayloadReadTimeout)
-	if timeout == 0 {
-		timeout = time.Minute * 2
-	}
-	timer := signal.CancelAfterInactivity(ctx, cancel, timeout)
+	timer := signal.CancelAfterInactivity(ctx, cancel, userSettings.PayloadTimeout)
 	ray := s.packetDispatcher.DispatchToOutbound(ctx)
 
 	requestDone := signal.ExecuteAsync(func() error {
