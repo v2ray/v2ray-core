@@ -23,7 +23,7 @@ RELEASE_DIR=${INSTALL_DIR}/releases/${TRAVIS_TAG}
 mkdir -p ${RELEASE_DIR}/
 cp $GOPATH/bin/metadata.txt ${RELEASE_DIR}/
 cp $GOPATH/bin/v2ray-*.zip ${RELEASE_DIR}/
-echo ${TRAVIS_TAG} > ${INSTALL_DIR}/releases/
+echo ${TRAVIS_TAG} > ${INSTALL_DIR}/releases/latest.txt
 
 cp $GOPATH/bin/v2ray-${TRAVIS_TAG}-linux-64/v2ray ${INSTALL_DIR}/docker/official/
 
