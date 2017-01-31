@@ -21,14 +21,21 @@ func (t *ActivityTimer) UpdateActivity() {
 
 func (t *ActivityTimer) run() {
 	for {
-		time.Sleep(t.timeout)
 		select {
-		case <-t.ctx.Done():
-			return
-		case <-t.updated:
-		default:
+		case <-time.After(t.timeout):
 			t.cancel()
 			return
+		case <-t.ctx.Done():
+			return
+		default:
+			select {
+			case <-time.After(t.timeout):
+				t.cancel()
+				return
+			case <-t.ctx.Done():
+				return
+			case <-t.updated:
+			}
 		}
 	}
 }
