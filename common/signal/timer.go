@@ -23,20 +23,17 @@ func (t *ActivityTimer) run() {
 	for {
 		select {
 		case <-time.After(t.timeout):
-			t.cancel()
-			return
 		case <-t.ctx.Done():
 			return
-		default:
-			select {
-			case <-time.After(t.timeout):
-				t.cancel()
-				return
-			case <-t.ctx.Done():
-				return
-			case <-t.updated:
-			}
 		}
+		select {
+		case <-t.updated:
+		// Updated keep waiting.
+		default:
+			t.cancel()
+			return
+		}
+
 	}
 }
 
