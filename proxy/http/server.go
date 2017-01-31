@@ -82,8 +82,8 @@ func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error
 func (s *Server) Process(ctx context.Context, network v2net.Network, conn internet.Connection) error {
 	conn.SetReusable(false)
 
-	timedReader := v2net.NewTimeOutReader(s.config.Timeout, conn)
-	reader := bufio.OriginalReaderSize(timedReader, 2048)
+	conn.SetReadDeadline(time.Now().Add(time.Second * 8))
+	reader := bufio.OriginalReaderSize(conn, 2048)
 
 	request, err := http.ReadRequest(reader)
 	if err != nil {
@@ -93,6 +93,8 @@ func (s *Server) Process(ctx context.Context, network v2net.Network, conn intern
 		return err
 	}
 	log.Info("HTTP: Request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]")
+	conn.SetReadDeadline(time.Time{})
+
 	defaultPort := v2net.Port(80)
 	if strings.ToLower(request.URL.Scheme) == "https" {
 		defaultPort = v2net.Port(443)
@@ -133,7 +135,11 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
+	timeout := time.Second * time.Duration(s.config.Timeout)
+	if timeout == 0 {
+		timeout = time.Minute * 2
+	}
+	timer := signal.CancelAfterInactivity(ctx, cancel, timeout)
 	ray := s.packetDispatcher.DispatchToOutbound(ctx)
 
 	requestDone := signal.ExecuteAsync(func() error {

@@ -137,19 +137,17 @@ func (v *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 }
 
 func (s *Server) handleConnection(ctx context.Context, conn internet.Connection) error {
-	timedReader := net.NewTimeOutReader(16, conn)
-	bufferedReader := bufio.NewReader(timedReader)
+	conn.SetReadDeadline(time.Now().Add(time.Second * 8))
+	bufferedReader := bufio.NewReader(conn)
 	request, bodyReader, err := ReadTCPSession(s.user, bufferedReader)
 	if err != nil {
 		log.Access(conn.RemoteAddr(), "", log.AccessRejected, err)
 		log.Info("Shadowsocks|Server: Failed to create request from: ", conn.RemoteAddr(), ": ", err)
 		return err
 	}
+	conn.SetReadDeadline(time.Time{})
 
 	bufferedReader.SetBuffered(false)
-
-	userSettings := s.user.GetSettings()
-	timedReader.SetTimeOut(userSettings.PayloadReadTimeout)
 
 	dest := request.Destination()
 	log.Access(conn.RemoteAddr(), dest, log.AccessAccepted, "")
@@ -159,7 +157,12 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection)
 	ctx = protocol.ContextWithUser(ctx, request.User)
 
 	ctx, cancel := context.WithCancel(ctx)
-	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
+	userSettings := s.user.GetSettings()
+	timeout := time.Second * time.Duration(userSettings.PayloadReadTimeout)
+	if timeout == 0 {
+		timeout = time.Minute * 2
+	}
+	timer := signal.CancelAfterInactivity(ctx, cancel, timeout)
 	ray := s.packetDispatcher.DispatchToOutbound(ctx)
 
 	requestDone := signal.ExecuteAsync(func() error {

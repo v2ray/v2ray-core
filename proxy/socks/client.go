@@ -107,7 +107,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay) error {
 		}
 		responseFunc = func() error {
 			defer ray.OutboundOutput().Close()
-			reader := &UDPReader{reader: net.NewTimeOutReader(16, udpConn)}
+			reader := &UDPReader{reader: udpConn}
 			return buf.PipeUntilEOF(timer, reader, ray.OutboundOutput())
 		}
 	}
