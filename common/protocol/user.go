@@ -1,6 +1,8 @@
 package protocol
 
 import (
+	"time"
+
 	"v2ray.com/core/common/errors"
 )
 
@@ -30,15 +32,18 @@ func (v *User) GetTypedAccount() (Account, error) {
 }
 
 func (v *User) GetSettings() UserSettings {
-	settings := UserSettings{
-		PayloadReadTimeout: 120,
-	}
-	if v.Level > 0 {
-		settings.PayloadReadTimeout = 0
+	settings := UserSettings{}
+	switch v.Level {
+	case 0:
+		settings.PayloadTimeout = time.Second * 30
+	case 1:
+		settings.PayloadTimeout = time.Minute * 2
+	default:
+		settings.PayloadTimeout = time.Minute * 5
 	}
 	return settings
 }
 
 type UserSettings struct {
-	PayloadReadTimeout uint32
+	PayloadTimeout time.Duration
 }

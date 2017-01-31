@@ -178,8 +178,8 @@ func transferResponse(timer *signal.ActivityTimer, session *encoding.ServerSessi
 }
 
 func (v *VMessInboundHandler) Process(ctx context.Context, network net.Network, connection internet.Connection) error {
-	connReader := net.NewTimeOutReader(8, connection)
-	reader := bufio.NewReader(connReader)
+	connection.SetReadDeadline(time.Now().Add(time.Second * 8))
+	reader := bufio.NewReader(connection)
 
 	session := encoding.NewServerSession(v.clients)
 	request, err := session.DecodeRequestHeader(reader)
@@ -195,19 +195,20 @@ func (v *VMessInboundHandler) Process(ctx context.Context, network net.Network, 
 	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, "")
 	log.Info("VMess|Inbound: Received request for ", request.Destination())
 
+	connection.SetReadDeadline(time.Time{})
+
 	connection.SetReusable(request.Option.Has(protocol.RequestOptionConnectionReuse))
+	userSettings := request.User.GetSettings()
 
 	ctx = proxy.ContextWithDestination(ctx, request.Destination())
 	ctx = protocol.ContextWithUser(ctx, request.User)
 	ctx, cancel := context.WithCancel(ctx)
-	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
+	timer := signal.CancelAfterInactivity(ctx, cancel, userSettings.PayloadTimeout)
 	ray := v.packetDispatcher.DispatchToOutbound(ctx)
 
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 
-	userSettings := request.User.GetSettings()
-	connReader.SetTimeOut(userSettings.PayloadReadTimeout)
 	reader.SetBuffered(false)
 
 	requestDone := signal.ExecuteAsync(func() error {

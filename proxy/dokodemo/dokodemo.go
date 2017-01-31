@@ -70,15 +70,18 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 	}
 	ctx = proxy.ContextWithDestination(ctx, dest)
 	ctx, cancel := context.WithCancel(ctx)
-	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
+	timeout := time.Second * time.Duration(d.config.Timeout)
+	if timeout == 0 {
+		timeout = time.Minute * 2
+	}
+	timer := signal.CancelAfterInactivity(ctx, cancel, timeout)
 
 	inboundRay := d.packetDispatcher.DispatchToOutbound(ctx)
 
 	requestDone := signal.ExecuteAsync(func() error {
 		defer inboundRay.InboundInput().Close()
 
-		timedReader := net.NewTimeOutReader(d.config.Timeout, conn)
-		chunkReader := buf.NewReader(timedReader)
+		chunkReader := buf.NewReader(conn)
 
 		if err := buf.PipeUntilEOF(timer, chunkReader, inboundRay.InboundInput()); err != nil {
 			log.Info("Dokodemo: Failed to transport request: ", err)

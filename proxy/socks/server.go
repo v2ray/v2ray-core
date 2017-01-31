@@ -72,8 +72,8 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 }
 
 func (s *Server) processTCP(ctx context.Context, conn internet.Connection) error {
-	timedReader := net.NewTimeOutReader(16 /* seconds, for handshake */, conn)
-	reader := bufio.NewReader(timedReader)
+	conn.SetReadDeadline(time.Now().Add(time.Second * 8))
+	reader := bufio.NewReader(conn)
 
 	inboundDest := proxy.InboundDestinationFromContext(ctx)
 	session := &ServerSession{
@@ -88,13 +88,13 @@ func (s *Server) processTCP(ctx context.Context, conn internet.Connection) error
 		log.Info("Socks|Server: Failed to read request: ", err)
 		return err
 	}
+	conn.SetReadDeadline(time.Time{})
 
 	if request.Command == protocol.RequestCommandTCP {
 		dest := request.Destination()
 		log.Info("Socks|Server: TCP Connect request to ", dest)
 		log.Access(source, dest, log.AccessAccepted, "")
 
-		timedReader.SetTimeOut(s.config.Timeout)
 		ctx = proxy.ContextWithDestination(ctx, dest)
 		return s.transport(ctx, reader, conn)
 	}
@@ -117,7 +117,11 @@ func (*Server) handleUDP() error {
 
 func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writer) error {
 	ctx, cancel := context.WithCancel(ctx)
-	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
+	timeout := time.Second * time.Duration(v.config.Timeout)
+	if timeout == 0 {
+		timeout = time.Minute * 2
+	}
+	timer := signal.CancelAfterInactivity(ctx, cancel, timeout)
 
 	ray := v.packetDispatcher.DispatchToOutbound(ctx)
 	input := ray.InboundInput()
