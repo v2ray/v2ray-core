@@ -18,19 +18,19 @@ type Point struct {
 
 // NewPoint returns a new Point server based on given configuration.
 // The server is not started at this point.
-func NewPoint(pConfig *Config) (*Point, error) {
-	var vpoint = new(Point)
+func NewPoint(config *Config) (*Point, error) {
+	var pt = new(Point)
 
-	if err := pConfig.Transport.Apply(); err != nil {
+	if err := config.Transport.Apply(); err != nil {
 		return nil, err
 	}
 
 	space := app.NewSpace()
 	ctx := app.ContextWithSpace(context.Background(), space)
 
-	vpoint.space = space
+	pt.space = space
 
-	for _, appSettings := range pConfig.App {
+	for _, appSettings := range config.App {
 		settings, err := appSettings.GetInstance()
 		if err != nil {
 			return nil, err
@@ -102,23 +102,23 @@ func NewPoint(pConfig *Config) (*Point, error) {
 		disp = d.(dispatcher.Interface)
 	}
 
-	for _, inbound := range pConfig.Inbound {
+	for _, inbound := range config.Inbound {
 		if err := inboundHandlerManager.AddHandler(ctx, inbound); err != nil {
 			return nil, err
 		}
 	}
 
-	for _, outbound := range pConfig.Outbound {
+	for _, outbound := range config.Outbound {
 		if err := outboundHandlerManager.AddHandler(ctx, outbound); err != nil {
 			return nil, err
 		}
 	}
 
-	if err := vpoint.space.Initialize(); err != nil {
+	if err := pt.space.Initialize(); err != nil {
 		return nil, err
 	}
 
-	return vpoint, nil
+	return pt, nil
 }
 
 func (v *Point) Close() {
