@@ -339,6 +339,9 @@ func (v *Config) Build() (*core.Config, error) {
 		config.Inbound = append(config.Inbound, ic)
 	}
 
+	if v.OutboundConfig == nil {
+		return nil, errors.New("Config: No outbound config specified.")
+	}
 	oc, err := v.OutboundConfig.Build()
 	if err != nil {
 		return nil, err
