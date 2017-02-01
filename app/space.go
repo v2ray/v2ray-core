@@ -6,11 +6,12 @@ import (
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/log"
 )
 
 type Application interface {
 	Interface() interface{}
+	Start() error
+	Close()
 }
 
 type InitializationCallback func() error
@@ -35,6 +36,8 @@ type Space interface {
 	AddApplication(application Application) error
 	Initialize() error
 	OnInitialize(InitializationCallback)
+	Start() error
+	Close()
 }
 
 type spaceImpl struct {
@@ -52,9 +55,7 @@ func NewSpace() Space {
 
 func (v *spaceImpl) OnInitialize(f InitializationCallback) {
 	if v.initialized {
-		if err := f(); err != nil {
-			log.Error("Space: error after space initialization: ", err)
-		}
+		f()
 	} else {
 		v.appInit = append(v.appInit, f)
 	}
@@ -86,6 +87,21 @@ func (v *spaceImpl) AddApplication(app Application) error {
 	appType := reflect.TypeOf(app.Interface())
 	v.cache[appType] = app
 	return nil
+}
+
+func (s *spaceImpl) Start() error {
+	for _, app := range s.cache {
+		if err := app.Start(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *spaceImpl) Close() {
+	for _, app := range s.cache {
+		app.Close()
+	}
 }
 
 type contextKey int

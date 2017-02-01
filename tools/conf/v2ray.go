@@ -294,7 +294,7 @@ func (v *Config) Build() (*core.Config, error) {
 	config := new(core.Config)
 
 	if v.LogConfig != nil {
-		config.Log = v.LogConfig.Build()
+		config.App = append(config.App, serial.ToTypedMessage(v.LogConfig.Build()))
 	}
 
 	if v.Transport != nil {

@@ -1,7 +1,7 @@
 package log
 
 import (
-	"v2ray.com/core/common/log/internal"
+	"v2ray.com/core/app/log/internal"
 )
 
 // AccessStatus is the status of an access request from clients.

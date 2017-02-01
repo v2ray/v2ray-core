@@ -3,7 +3,7 @@ package internal_test
 import (
 	"testing"
 
-	. "v2ray.com/core/common/log/internal"
+	. "v2ray.com/core/app/log/internal"
 	"v2ray.com/core/testing/assert"
 )
 

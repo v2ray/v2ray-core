@@ -5,7 +5,7 @@ package tcp
 import (
 	"syscall"
 
-	"v2ray.com/core/common/log"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 )

@@ -5,9 +5,9 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dns"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 )
@@ -90,6 +90,12 @@ func (v *Router) TakeDetour(ctx context.Context) (string, error) {
 func (Router) Interface() interface{} {
 	return (*Router)(nil)
 }
+
+func (Router) Start() error {
+	return nil
+}
+
+func (Router) Close() {}
 
 func FromSpace(space app.Space) *Router {
 	app := space.GetApplication((*Router)(nil))

@@ -8,7 +8,6 @@ option java_outer_classname = "ConfigProto";
 
 import "v2ray.com/core/app/proxyman/config.proto";
 import "v2ray.com/core/common/serial/typed_message.proto";
-import "v2ray.com/core/common/log/config.proto";
 import "v2ray.com/core/transport/config.proto";
 
 // Configuration serialization format.
@@ -24,7 +23,7 @@ message Config {
   // Outbound handler configurations. Must have at least one item. The first item is used as default for routing.
   repeated v2ray.core.app.proxyman.OutboundHandlerConfig outbound = 2;
 
-  v2ray.core.common.log.Config log = 3;
+  reserved 3;
 
   // App configuration. Must be one in the app directory.
   repeated v2ray.core.common.serial.TypedMessage app = 4;

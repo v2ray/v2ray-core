@@ -10,6 +10,8 @@ import (
 // Interface dispatch a packet and possibly further network payload to its destination.
 type Interface interface {
 	DispatchToOutbound(ctx context.Context) ray.InboundRay
+	Start() error
+	Close()
 }
 
 func FromSpace(space app.Space) Interface {

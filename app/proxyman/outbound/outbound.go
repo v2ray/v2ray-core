@@ -24,6 +24,10 @@ func (DefaultOutboundHandlerManager) Interface() interface{} {
 	return (*proxyman.OutboundHandlerManager)(nil)
 }
 
+func (DefaultOutboundHandlerManager) Start() error { return nil }
+
+func (DefaultOutboundHandlerManager) Close() {}
+
 func (v *DefaultOutboundHandlerManager) GetDefaultHandler() proxyman.OutboundHandler {
 	v.RLock()
 	defer v.RUnlock()

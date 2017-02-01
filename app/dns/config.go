@@ -3,7 +3,7 @@ package dns
 import (
 	"net"
 
-	"v2ray.com/core/common/log"
+	"v2ray.com/core/app/log"
 )
 
 func (v *Config) GetInternalHosts() map[string]net.IP {

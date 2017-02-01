@@ -6,8 +6,8 @@ import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/dns"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
-	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 )
 
@@ -25,14 +25,37 @@ func NewPoint(pConfig *Config) (*Point, error) {
 		return nil, err
 	}
 
-	if err := pConfig.Log.Apply(); err != nil {
-		return nil, err
-	}
-
 	space := app.NewSpace()
 	ctx := app.ContextWithSpace(context.Background(), space)
 
 	vpoint.space = space
+
+	for _, appSettings := range pConfig.App {
+		settings, err := appSettings.GetInstance()
+		if err != nil {
+			return nil, err
+		}
+		application, err := app.CreateAppFromConfig(ctx, settings)
+		if err != nil {
+			return nil, err
+		}
+		if err := space.AddApplication(application); err != nil {
+			return nil, err
+		}
+	}
+
+	logger := log.FromSpace(space)
+	if logger == nil {
+		l, err := app.CreateAppFromConfig(ctx, &log.Config{
+			ErrorLogType:  log.LogType_Console,
+			ErrorLogLevel: log.LogLevel_Warning,
+			AccessLogType: log.LogType_None,
+		})
+		if err != nil {
+			return nil, err
+		}
+		space.AddApplication(l)
+	}
 
 	outboundHandlerManager := proxyman.OutboundHandlerManagerFromSpace(space)
 	if outboundHandlerManager == nil {
@@ -52,20 +75,6 @@ func NewPoint(pConfig *Config) (*Point, error) {
 		}
 		space.AddApplication(o)
 		inboundHandlerManager = o.(proxyman.InboundHandlerManager)
-	}
-
-	for _, appSettings := range pConfig.App {
-		settings, err := appSettings.GetInstance()
-		if err != nil {
-			return nil, err
-		}
-		application, err := app.CreateAppFromConfig(ctx, settings)
-		if err != nil {
-			return nil, err
-		}
-		if err := space.AddApplication(application); err != nil {
-			return nil, err
-		}
 	}
 
 	dnsServer := dns.FromSpace(space)
@@ -113,15 +122,13 @@ func NewPoint(pConfig *Config) (*Point, error) {
 }
 
 func (v *Point) Close() {
-	ihm := proxyman.InboundHandlerManagerFromSpace(v.space)
-	ihm.Close()
+	v.space.Close()
 }
 
 // Start starts the Point server, and return any error during the process.
 // In the case of any errors, the state of the server is unpredicatable.
 func (v *Point) Start() error {
-	ihm := proxyman.InboundHandlerManagerFromSpace(v.space)
-	if err := ihm.Start(); err != nil {
+	if err := v.space.Start(); err != nil {
 		return err
 	}
 	log.Warning("V2Ray started.")

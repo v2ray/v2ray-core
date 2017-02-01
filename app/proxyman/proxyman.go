@@ -29,6 +29,8 @@ type OutboundHandlerManager interface {
 	GetHandler(tag string) OutboundHandler
 	GetDefaultHandler() OutboundHandler
 	AddHandler(ctx context.Context, config *OutboundHandlerConfig) error
+	Start() error
+	Close()
 }
 
 type OutboundHandler interface {

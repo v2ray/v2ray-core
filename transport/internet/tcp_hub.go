@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/log"
+	"v2ray.com/core/app/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
 )

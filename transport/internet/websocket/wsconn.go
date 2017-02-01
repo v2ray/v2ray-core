@@ -9,7 +9,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/log"
+	"v2ray.com/core/app/log"
 )
 
 type wsconn struct {

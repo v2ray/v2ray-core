@@ -6,12 +6,12 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/router"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/log"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
 )
@@ -37,6 +37,12 @@ func NewDefaultDispatcher(ctx context.Context, config *dispatcher.Config) (*Defa
 	})
 	return d, nil
 }
+
+func (DefaultDispatcher) Start() error {
+	return nil
+}
+
+func (DefaultDispatcher) Close() {}
 
 func (DefaultDispatcher) Interface() interface{} {
 	return (*dispatcher.Interface)(nil)
