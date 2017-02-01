@@ -11,7 +11,7 @@ import (
 	"syscall"
 
 	"v2ray.com/core"
-	"v2ray.com/core/common/log"
+	"v2ray.com/core/app/log"
 
 	_ "v2ray.com/core/main/distro/all"
 )
@@ -103,5 +103,4 @@ func main() {
 		<-osSignals
 		point.Close()
 	}
-	log.Close()
 }
