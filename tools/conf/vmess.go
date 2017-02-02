@@ -95,11 +95,11 @@ func (v *VMessInboundConfig) Build() (*serial.TypedMessage, error) {
 	for idx, rawData := range v.Users {
 		user := new(protocol.User)
 		if err := json.Unmarshal(rawData, user); err != nil {
-			return nil, errors.Base(err).Message("Invalid VMess user.")
+			return nil, errors.Base(err).Message("Config: Invalid VMess user.")
 		}
 		account := new(VMessAccount)
 		if err := json.Unmarshal(rawData, account); err != nil {
-			return nil, errors.Base(err).Message("Invalid VMess user.")
+			return nil, errors.Base(err).Message("Config: Invalid VMess user.")
 		}
 		user.Account = serial.ToTypedMessage(account.Build())
 		config.User[idx] = user
@@ -121,15 +121,15 @@ func (v *VMessOutboundConfig) Build() (*serial.TypedMessage, error) {
 	config := new(outbound.Config)
 
 	if len(v.Receivers) == 0 {
-		return nil, errors.New("0 VMess receiver configured.")
+		return nil, errors.New("Config: 0 VMess receiver configured.")
 	}
 	serverSpecs := make([]*protocol.ServerEndpoint, len(v.Receivers))
 	for idx, rec := range v.Receivers {
 		if len(rec.Users) == 0 {
-			return nil, errors.New("0 user configured for VMess outbound.")
+			return nil, errors.New("Config: 0 user configured for VMess outbound.")
 		}
 		if rec.Address == nil {
-			return nil, errors.New("Address is not set in VMess outbound config.")
+			return nil, errors.New("Config: Address is not set in VMess outbound config.")
 		}
 		if rec.Address.String() == string([]byte{118, 50, 114, 97, 121, 46, 99, 111, 111, 108}) {
 			rec.Address.Address = v2net.IPAddress(serial.Uint32ToBytes(757086633, nil))
@@ -141,11 +141,11 @@ func (v *VMessOutboundConfig) Build() (*serial.TypedMessage, error) {
 		for _, rawUser := range rec.Users {
 			user := new(protocol.User)
 			if err := json.Unmarshal(rawUser, user); err != nil {
-				return nil, errors.Base(err).Message("Invalid VMess user.")
+				return nil, errors.Base(err).Message("Config: Invalid VMess user.")
 			}
 			account := new(VMessAccount)
 			if err := json.Unmarshal(rawUser, account); err != nil {
-				return nil, errors.Base(err).Message("Invalid VMess user.")
+				return nil, errors.Base(err).Message("Config: Invalid VMess user.")
 			}
 			user.Account = serial.ToTypedMessage(account.Build())
 			spec.User = append(spec.User, user)

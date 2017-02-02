@@ -29,7 +29,7 @@ func (v *BlackholeConfig) Build() (*serial.TypedMessage, error) {
 	if v.Response != nil {
 		response, _, err := configLoader.Load(v.Response)
 		if err != nil {
-			return nil, errors.Base(err).Message("Blackhole: Failed to parse response config.")
+			return nil, errors.Base(err).Message("Config: Failed to parse Blackhole response config.")
 		}
 		responseSettings, err := response.(Buildable).Build()
 		if err != nil {

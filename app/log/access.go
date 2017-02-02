@@ -2,6 +2,7 @@ package log
 
 import (
 	"v2ray.com/core/app/log/internal"
+	"v2ray.com/core/common/errors"
 )
 
 // AccessStatus is the status of an access request from clients.
@@ -20,8 +21,7 @@ var (
 func InitAccessLogger(file string) error {
 	logger, err := internal.NewFileLogWriter(file)
 	if err != nil {
-		Error("Failed to create access logger on file (", file, "): ", file, err)
-		return err
+		return errors.Base(err).Message("Failed to create access logger on file: ", file)
 	}
 	accessLoggerInstance = logger
 	return nil

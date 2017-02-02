@@ -4,9 +4,9 @@ import (
 	"io"
 	"io/ioutil"
 
-	"v2ray.com/core/common"
-
 	"github.com/golang/protobuf/proto"
+
+	"v2ray.com/core/common/errors"
 )
 
 type ConfigLoader func(input io.Reader) (*Config, error)
@@ -21,7 +21,7 @@ func RegisterConfigLoader(format ConfigFormat, loader ConfigLoader) error {
 func LoadConfig(format ConfigFormat, input io.Reader) (*Config, error) {
 	loader, found := configLoaderCache[format]
 	if !found {
-		return nil, common.ErrBadConfiguration
+		return nil, errors.New("Core: ", ConfigFormat_name[int32(format)], " is not loadable.")
 	}
 	return loader(input)
 }

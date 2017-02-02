@@ -2,13 +2,8 @@ package conf
 
 import (
 	"encoding/json"
-	"v2ray.com/core/common"
-	"v2ray.com/core/common/errors"
-	"v2ray.com/core/app/log"
-)
 
-var (
-	ErrUnknownConfigID = errors.New("Unknown config ID.")
+	"v2ray.com/core/common/errors"
 )
 
 type ConfigCreator func() interface{}
@@ -17,7 +12,7 @@ type ConfigCreatorCache map[string]ConfigCreator
 
 func (v ConfigCreatorCache) RegisterCreator(id string, creator ConfigCreator) error {
 	if _, found := v[id]; found {
-		return common.ErrDuplicatedName
+		return errors.New("Config: ", id, " already registered.")
 	}
 
 	v[id] = creator
@@ -27,7 +22,7 @@ func (v ConfigCreatorCache) RegisterCreator(id string, creator ConfigCreator) er
 func (v ConfigCreatorCache) CreateConfig(id string) (interface{}, error) {
 	creator, found := v[id]
 	if !found {
-		return nil, ErrUnknownConfigID
+		return nil, errors.New("Config: Unknown config id: ", id)
 	}
 	return creator(), nil
 }
@@ -49,7 +44,7 @@ func NewJSONConfigLoader(cache ConfigCreatorCache, idKey string, configKey strin
 func (v *JSONConfigLoader) LoadWithID(raw []byte, id string) (interface{}, error) {
 	creator, found := v.cache[id]
 	if !found {
-		return nil, ErrUnknownConfigID
+		return nil, errors.New("Config: Unknown config id: ", id)
 	}
 
 	config := creator()
@@ -66,8 +61,7 @@ func (v *JSONConfigLoader) Load(raw []byte) (interface{}, string, error) {
 	}
 	rawID, found := obj[v.idKey]
 	if !found {
-		log.Error(v.idKey, " not found in JSON content.")
-		return nil, "", common.ErrObjectNotFound
+		return nil, "", errors.New("Config: ", v.idKey, " not found in JSON context.")
 	}
 	var id string
 	if err := json.Unmarshal(rawID, &id); err != nil {
@@ -77,8 +71,7 @@ func (v *JSONConfigLoader) Load(raw []byte) (interface{}, string, error) {
 	if len(v.configKey) > 0 {
 		configValue, found := obj[v.configKey]
 		if !found {
-			log.Error(v.configKey, " not found in JSON content.")
-			return nil, "", common.ErrObjectNotFound
+			return nil, "", errors.New("Config: ", v.configKey, " not found in JSON content.")
 		}
 		rawConfig = configValue
 	}

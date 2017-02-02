@@ -1,10 +1,9 @@
 package conf_test
 
 import (
+	"context"
 	"net"
 	"testing"
-
-	"context"
 
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
@@ -23,10 +22,11 @@ func makeDomainDestination(domain string) v2net.Destination {
 func TestChinaIPJson(t *testing.T) {
 	assert := assert.On(t)
 
-	rule := ParseRule([]byte(`{
+	rule, err := ParseRule([]byte(`{
     "type": "chinaip",
     "outboundTag": "x"
   }`))
+	assert.Error(err).IsNil()
 	assert.String(rule.Tag).Equals("x")
 	cond, err := rule.BuildCondition()
 	assert.Error(err).IsNil()
@@ -41,10 +41,11 @@ func TestChinaIPJson(t *testing.T) {
 func TestChinaSitesJson(t *testing.T) {
 	assert := assert.On(t)
 
-	rule := ParseRule([]byte(`{
+	rule, err := ParseRule([]byte(`{
     "type": "chinasites",
     "outboundTag": "y"
   }`))
+	assert.Error(err).IsNil()
 	assert.String(rule.Tag).Equals("y")
 	cond, err := rule.BuildCondition()
 	assert.Error(err).IsNil()
@@ -59,7 +60,7 @@ func TestChinaSitesJson(t *testing.T) {
 func TestDomainRule(t *testing.T) {
 	assert := assert.On(t)
 
-	rule := ParseRule([]byte(`{
+	rule, err := ParseRule([]byte(`{
     "type": "field",
     "domain": [
       "ooxx.com",
@@ -69,6 +70,7 @@ func TestDomainRule(t *testing.T) {
     "network": "tcp",
     "outboundTag": "direct"
   }`))
+	assert.Error(err).IsNil()
 	assert.Pointer(rule).IsNotNil()
 	cond, err := rule.BuildCondition()
 	assert.Error(err).IsNil()
@@ -82,7 +84,7 @@ func TestDomainRule(t *testing.T) {
 func TestIPRule(t *testing.T) {
 	assert := assert.On(t)
 
-	rule := ParseRule([]byte(`{
+	rule, err := ParseRule([]byte(`{
     "type": "field",
     "ip": [
       "10.0.0.0/8",
@@ -91,6 +93,7 @@ func TestIPRule(t *testing.T) {
     "network": "tcp",
     "outboundTag": "direct"
   }`))
+	assert.Error(err).IsNil()
 	assert.Pointer(rule).IsNotNil()
 	cond, err := rule.BuildCondition()
 	assert.Error(err).IsNil()
@@ -103,7 +106,7 @@ func TestIPRule(t *testing.T) {
 func TestSourceIPRule(t *testing.T) {
 	assert := assert.On(t)
 
-	rule := ParseRule([]byte(`{
+	rule, err := ParseRule([]byte(`{
     "type": "field",
     "source": [
       "10.0.0.0/8",
@@ -111,6 +114,7 @@ func TestSourceIPRule(t *testing.T) {
     ],
     "outboundTag": "direct"
   }`))
+	assert.Error(err).IsNil()
 	assert.Pointer(rule).IsNotNil()
 	cond, err := rule.BuildCondition()
 	assert.Error(err).IsNil()

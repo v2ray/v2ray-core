@@ -11,7 +11,7 @@ import (
 	"syscall"
 
 	"v2ray.com/core"
-	"v2ray.com/core/app/log"
+	"v2ray.com/core/common/errors"
 
 	_ "v2ray.com/core/main/distro/all"
 )
@@ -43,10 +43,9 @@ func GetConfigFormat() core.ConfigFormat {
 	}
 }
 
-func startV2Ray() *core.Point {
+func startV2Ray() (*core.Point, error) {
 	if len(configFile) == 0 {
-		log.Error("Config file is not set.")
-		return nil
+		return nil, errors.New("V2Ray: Config file is not set.")
 	}
 	var configInput io.Reader
 	if configFile == "stdin:" {
@@ -55,36 +54,22 @@ func startV2Ray() *core.Point {
 		fixedFile := os.ExpandEnv(configFile)
 		file, err := os.Open(fixedFile)
 		if err != nil {
-			log.Error("Config file not readable: ", err)
-			return nil
+			return nil, errors.Base(err).Message("V2Ray: Config file not readable.")
 		}
 		defer file.Close()
 		configInput = file
 	}
 	config, err := core.LoadConfig(GetConfigFormat(), configInput)
 	if err != nil {
-		log.Error("Failed to read config file (", configFile, "): ", configFile, err)
-		return nil
+		return nil, errors.Base(err).Message("V2Ray: Failed to read config file: ", configFile)
 	}
 
 	vPoint, err := core.NewPoint(config)
 	if err != nil {
-		log.Error("Failed to create Point server: ", err)
-		return nil
+		return nil, errors.Base(err).Message("V2Ray: Failed to create initialize.")
 	}
 
-	if *test {
-		fmt.Println("Configuration OK.")
-		return nil
-	}
-
-	err = vPoint.Start()
-	if err != nil {
-		log.Error("Error starting Point server: ", err)
-		return nil
-	}
-
-	return vPoint
+	return vPoint, nil
 }
 
 func main() {
@@ -96,11 +81,24 @@ func main() {
 		return
 	}
 
-	if point := startV2Ray(); point != nil {
-		osSignals := make(chan os.Signal, 1)
-		signal.Notify(osSignals, os.Interrupt, os.Kill, syscall.SIGTERM)
-
-		<-osSignals
-		point.Close()
+	point, err := startV2Ray()
+	if err != nil {
+		fmt.Println(err.Error())
+		return
 	}
+
+	if *test {
+		fmt.Println("V2Ray: Configuration OK.")
+		return
+	}
+
+	if err := point.Start(); err != nil {
+		fmt.Println("V2Ray: Failed to start. ", err)
+	}
+
+	osSignals := make(chan os.Signal, 1)
+	signal.Notify(osSignals, os.Interrupt, os.Kill, syscall.SIGTERM)
+
+	<-osSignals
+	point.Close()
 }

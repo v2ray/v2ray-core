@@ -45,14 +45,14 @@ func (v *KCPConfig) Build() (*serial.TypedMessage, error) {
 	if v.Mtu != nil {
 		mtu := *v.Mtu
 		if mtu < 576 || mtu > 1460 {
-			return nil, errors.Format("KCP|Config: Invalid MTU size: %d", mtu)
+			return nil, errors.Format("Config: Invalid mKCP MTU size: %d", mtu)
 		}
 		config.Mtu = &kcp.MTU{Value: mtu}
 	}
 	if v.Tti != nil {
 		tti := *v.Tti
 		if tti < 10 || tti > 100 {
-			return nil, errors.Format("KCP|Config: Invalid TTI: %d", tti)
+			return nil, errors.Format("Config: Invalid mKCP TTI: %d", tti)
 		}
 		config.Tti = &kcp.TTI{Value: tti}
 	}
@@ -84,11 +84,11 @@ func (v *KCPConfig) Build() (*serial.TypedMessage, error) {
 	if len(v.HeaderConfig) > 0 {
 		headerConfig, _, err := kcpHeaderLoader.Load(v.HeaderConfig)
 		if err != nil {
-			return nil, errors.Base(err).Message("Invalid mKCP header config.")
+			return nil, errors.Base(err).Message("Config: Invalid mKCP header config.")
 		}
 		ts, err := headerConfig.(Buildable).Build()
 		if err != nil {
-			return nil, errors.Base(err).Message("Invalid mKCP header config.")
+			return nil, errors.Base(err).Message("Config: Invalid mKCP header config.")
 		}
 		config.HeaderConfig = ts
 	}
@@ -111,11 +111,11 @@ func (v *TCPConfig) Build() (*serial.TypedMessage, error) {
 	if len(v.HeaderConfig) > 0 {
 		headerConfig, _, err := tcpHeaderLoader.Load(v.HeaderConfig)
 		if err != nil {
-			return nil, errors.Base(err).Message("Invalid TCP header config.")
+			return nil, errors.Base(err).Message("Config: Invalid TCP header config.")
 		}
 		ts, err := headerConfig.(Buildable).Build()
 		if err != nil {
-			return nil, errors.Base(err).Message("Invalid TCP header config.")
+			return nil, errors.Base(err).Message("Config: Invalid TCP header config.")
 		}
 		config.HeaderSettings = ts
 	}
