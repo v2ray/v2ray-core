@@ -46,22 +46,18 @@ message AllocationStrategy {
   AllocationStrategyRefresh refresh = 3;
 }
 
-message StreamReceiverConfig {
+message ReceiverConfig {
   v2ray.core.common.net.PortRange port_range = 1;
   v2ray.core.common.net.IPOrDomain listen = 2;
   AllocationStrategy allocation_strategy = 3;
   v2ray.core.transport.internet.StreamConfig stream_settings = 4;
-}
-
-message DatagramReceiverConfig {
-  v2ray.core.common.net.PortRange port_range = 1;
-  v2ray.core.common.net.IPOrDomain listen = 2;
-  AllocationStrategy allocation_strategy = 3;
+  bool receive_original_destination = 5;
+  bool allow_passive_connection = 6;
 }
 
 message InboundHandlerConfig {
   string tag = 1;
-  repeated v2ray.core.common.serial.TypedMessage receiver_settings = 2;
+  v2ray.core.common.serial.TypedMessage receiver_settings = 2;
   v2ray.core.common.serial.TypedMessage proxy_settings = 3;
 }
 
@@ -69,21 +65,17 @@ message OutboundConfig {
   
 }
 
-message StreamSenderConfig {
+message SenderConfig {
   // Send traffic through the given IP. Only IP is allowed.
   v2ray.core.common.net.IPOrDomain via = 1;
   v2ray.core.transport.internet.StreamConfig stream_settings = 2;
   v2ray.core.transport.internet.ProxyConfig proxy_settings = 3;
 }
 
-message DatagramSenderConfig {
-  // Send traffic through the given IP. Only IP is allowed.
-  v2ray.core.common.net.IPOrDomain via = 1;
-  v2ray.core.transport.internet.ProxyConfig proxy_settings = 2;
-}
-
 message OutboundHandlerConfig {
   string tag = 1;
-  repeated v2ray.core.common.serial.TypedMessage sender_settings = 2;
+  v2ray.core.common.serial.TypedMessage sender_settings = 2;
   v2ray.core.common.serial.TypedMessage proxy_settings = 3;
+  int64 expire = 4;
+  string comment = 5;
 }

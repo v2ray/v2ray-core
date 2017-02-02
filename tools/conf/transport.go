@@ -18,9 +18,9 @@ func (v *TransportConfig) Build() (*transport.Config, error) {
 	if v.TCPConfig != nil {
 		ts, err := v.TCPConfig.Build()
 		if err != nil {
-			return nil, errors.Base(err).Message("Failed to build TCP config.")
+			return nil, errors.Base(err).Message("Config: Failed to build TCP config.")
 		}
-		config.TransportSettings = append(config.TransportSettings, &internet.TransportSettings{
+		config.TransportSettings = append(config.TransportSettings, &internet.TransportConfig{
 			Protocol: internet.TransportProtocol_TCP,
 			Settings: ts,
 		})
@@ -29,9 +29,9 @@ func (v *TransportConfig) Build() (*transport.Config, error) {
 	if v.KCPConfig != nil {
 		ts, err := v.KCPConfig.Build()
 		if err != nil {
-			return nil, errors.Base(err).Message("Failed to build mKCP config.")
+			return nil, errors.Base(err).Message("Config: Failed to build mKCP config.")
 		}
-		config.TransportSettings = append(config.TransportSettings, &internet.TransportSettings{
+		config.TransportSettings = append(config.TransportSettings, &internet.TransportConfig{
 			Protocol: internet.TransportProtocol_MKCP,
 			Settings: ts,
 		})
@@ -40,9 +40,9 @@ func (v *TransportConfig) Build() (*transport.Config, error) {
 	if v.WSConfig != nil {
 		ts, err := v.WSConfig.Build()
 		if err != nil {
-			return nil, errors.Base(err).Message("Failed to build WebSocket config.")
+			return nil, errors.Base(err).Message("Config: Failed to build WebSocket config.")
 		}
-		config.TransportSettings = append(config.TransportSettings, &internet.TransportSettings{
+		config.TransportSettings = append(config.TransportSettings, &internet.TransportConfig{
 			Protocol: internet.TransportProtocol_WebSocket,
 			Settings: ts,
 		})

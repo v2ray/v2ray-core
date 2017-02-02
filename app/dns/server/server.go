@@ -10,9 +10,9 @@ import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/dns"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 )
 
@@ -72,6 +72,12 @@ func NewCacheServer(ctx context.Context, config *dns.Config) (*CacheServer, erro
 func (CacheServer) Interface() interface{} {
 	return (*dns.Server)(nil)
 }
+
+func (CacheServer) Start() error {
+	return nil
+}
+
+func (CacheServer) Close() {}
 
 // Private: Visible for testing.
 func (v *CacheServer) GetCached(domain string) []net.IP {

@@ -12,7 +12,6 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -42,8 +41,7 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 
 	_, err := io.ReadFull(reader, buffer[:protocol.IDBytesLen])
 	if err != nil {
-		log.Info("VMess|Server: Failed to read request header: ", err)
-		return nil, io.EOF
+		return nil, errors.Base(err).Message("VMess|Server: Failed to read request header.")
 	}
 
 	user, timestamp, valid := v.userValidator.Get(buffer[:protocol.IDBytesLen])
@@ -123,7 +121,7 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	if padingLen > 0 {
 		_, err = io.ReadFull(decryptor, buffer[bufferLen:bufferLen+padingLen])
 		if err != nil {
-			return nil, errors.New("VMess|Server: Failed to read padding.")
+			return nil, errors.Base(err).Message("VMess|Server: Failed to read padding.")
 		}
 		bufferLen += padingLen
 	}
@@ -150,16 +148,15 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 }
 
 func (v *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reader io.Reader) buf.Reader {
-	aggressive := (request.Command == protocol.RequestCommandTCP)
 	var authReader io.Reader
 	if request.Security.Is(protocol.SecurityType_NONE) {
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
 			auth := &crypto.AEADAuthenticator{
-				AEAD:                    new(FnvAuthenticator),
+				AEAD:                    NoOpAuthenticator{},
 				NonceGenerator:          crypto.NoOpBytesGenerator{},
 				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 			}
-			authReader = crypto.NewAuthenticationReader(auth, reader, aggressive)
+			authReader = crypto.NewAuthenticationReader(auth, reader)
 		} else {
 			authReader = reader
 		}
@@ -172,7 +169,7 @@ func (v *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 				NonceGenerator:          crypto.NoOpBytesGenerator{},
 				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 			}
-			authReader = crypto.NewAuthenticationReader(auth, cryptionReader, aggressive)
+			authReader = crypto.NewAuthenticationReader(auth, cryptionReader)
 		} else {
 			authReader = cryptionReader
 		}
@@ -188,7 +185,7 @@ func (v *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 		}
-		authReader = crypto.NewAuthenticationReader(auth, reader, aggressive)
+		authReader = crypto.NewAuthenticationReader(auth, reader)
 	} else if request.Security.Is(protocol.SecurityType_CHACHA20_POLY1305) {
 		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(v.requestBodyKey))
 
@@ -200,7 +197,7 @@ func (v *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 		}
-		authReader = crypto.NewAuthenticationReader(auth, reader, aggressive)
+		authReader = crypto.NewAuthenticationReader(auth, reader)
 	}
 
 	return buf.NewReader(authReader)

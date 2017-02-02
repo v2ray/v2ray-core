@@ -1,11 +1,11 @@
 package router
 
 import (
+	"context"
 	"net"
 
 	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/proxy"
 )
 
 type Rule struct {
@@ -13,8 +13,8 @@ type Rule struct {
 	Condition Condition
 }
 
-func (v *Rule) Apply(session *proxy.SessionInfo) bool {
-	return v.Condition.Apply(session)
+func (v *Rule) Apply(ctx context.Context) bool {
+	return v.Condition.Apply(ctx)
 }
 
 func (v *RoutingRule) BuildCondition() (Condition, error) {

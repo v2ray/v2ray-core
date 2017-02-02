@@ -2,12 +2,15 @@ package shadowsocks
 
 import (
 	"context"
-	"errors"
+
+	"time"
+
+	"runtime"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
-	"v2ray.com/core/common/log"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
@@ -20,39 +23,35 @@ import (
 // Client is a inbound handler for Shadowsocks protocol
 type Client struct {
 	serverPicker protocol.ServerPicker
-	meta         *proxy.OutboundHandlerMeta
 }
 
 // NewClient create a new Shadowsocks client.
 func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
-	meta := proxy.OutboundMetaFromContext(ctx)
-	if meta == nil {
-		return nil, errors.New("Shadowsocks|Client: No outbound meta in context.")
-	}
 	serverList := protocol.NewServerList()
 	for _, rec := range config.Server {
 		serverList.AddServer(protocol.NewServerSpecFromPB(*rec))
 	}
 	client := &Client{
 		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
-		meta:         meta,
 	}
 
 	return client, nil
 }
 
-// Dispatch implements OutboundHandler.Dispatch().
-func (v *Client) Dispatch(destination net.Destination, ray ray.OutboundRay) {
+// Process implements OutboundHandler.Process().
+func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay) error {
+	destination := proxy.DestinationFromContext(ctx)
 	network := destination.Network
 
 	var server *protocol.ServerSpec
 	var conn internet.Connection
 
+	dialer := proxy.DialerFromContext(ctx)
 	err := retry.ExponentialBackoff(5, 100).On(func() error {
 		server = v.serverPicker.PickServer()
 		dest := server.Destination()
 		dest.Network = network
-		rawConn, err := internet.Dial(v.meta.Address, dest, v.meta.GetDialerOptions())
+		rawConn, err := dialer.Dial(ctx, dest)
 		if err != nil {
 			return err
 		}
@@ -62,10 +61,11 @@ func (v *Client) Dispatch(destination net.Destination, ray ray.OutboundRay) {
 	})
 	if err != nil {
 		log.Warning("Shadowsocks|Client: Failed to find an available destination:", err)
-		return
+		return err
 	}
 	log.Info("Shadowsocks|Client: Tunneling request to ", destination, " via ", server.Destination())
 
+	defer conn.Close()
 	conn.SetReusable(false)
 
 	request := &protocol.RequestHeader{
@@ -83,7 +83,7 @@ func (v *Client) Dispatch(destination net.Destination, ray ray.OutboundRay) {
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
 		log.Warning("Shadowsocks|Client: Failed to get a valid user account: ", err)
-		return
+		return err
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 	request.User = user
@@ -92,43 +92,47 @@ func (v *Client) Dispatch(destination net.Destination, ray ray.OutboundRay) {
 		request.Option |= RequestOptionOneTimeAuth
 	}
 
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
+
 	if request.Command == protocol.RequestCommandTCP {
 		bufferedWriter := bufio.NewWriter(conn)
 		bodyWriter, err := WriteTCPRequest(request, bufferedWriter)
 		if err != nil {
 			log.Info("Shadowsocks|Client: Failed to write request: ", err)
-			return
+			return err
 		}
 
 		bufferedWriter.SetBuffered(false)
 
 		requestDone := signal.ExecuteAsync(func() error {
-			if err := buf.PipeUntilEOF(ray.OutboundInput(), bodyWriter); err != nil {
+			if err := buf.PipeUntilEOF(timer, outboundRay.OutboundInput(), bodyWriter); err != nil {
 				return err
 			}
 			return nil
 		})
 
 		responseDone := signal.ExecuteAsync(func() error {
-			defer ray.OutboundOutput().Close()
+			defer outboundRay.OutboundOutput().Close()
 
 			responseReader, err := ReadTCPResponse(user, conn)
 			if err != nil {
 				return err
 			}
 
-			if err := buf.PipeUntilEOF(responseReader, ray.OutboundOutput()); err != nil {
+			if err := buf.PipeUntilEOF(timer, responseReader, outboundRay.OutboundOutput()); err != nil {
 				return err
 			}
 
 			return nil
 		})
 
-		if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+		if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 			log.Info("Shadowsocks|Client: Connection ends with ", err)
-			ray.OutboundInput().CloseError()
-			ray.OutboundOutput().CloseError()
+			return err
 		}
+
+		return nil
 	}
 
 	if request.Command == protocol.RequestCommandUDP {
@@ -139,36 +143,39 @@ func (v *Client) Dispatch(destination net.Destination, ray ray.OutboundRay) {
 		}
 
 		requestDone := signal.ExecuteAsync(func() error {
-			if err := buf.PipeUntilEOF(ray.OutboundInput(), writer); err != nil {
+			if err := buf.PipeUntilEOF(timer, outboundRay.OutboundInput(), writer); err != nil {
 				log.Info("Shadowsocks|Client: Failed to transport all UDP request: ", err)
 				return err
 			}
 			return nil
 		})
 
-		timedReader := net.NewTimeOutReader(16, conn)
-
 		responseDone := signal.ExecuteAsync(func() error {
-			defer ray.OutboundOutput().Close()
+			defer outboundRay.OutboundOutput().Close()
 
 			reader := &UDPReader{
-				Reader: timedReader,
+				Reader: conn,
 				User:   user,
 			}
 
-			if err := buf.PipeUntilEOF(reader, ray.OutboundOutput()); err != nil {
+			if err := buf.PipeUntilEOF(timer, reader, outboundRay.OutboundOutput()); err != nil {
 				log.Info("Shadowsocks|Client: Failed to transport all UDP response: ", err)
 				return err
 			}
 			return nil
 		})
 
-		if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+		if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 			log.Info("Shadowsocks|Client: Connection ends with ", err)
-			ray.OutboundInput().CloseError()
-			ray.OutboundOutput().CloseError()
+			return err
 		}
+
+		return nil
 	}
+
+	runtime.KeepAlive(timer)
+
+	return nil
 }
 
 func init() {

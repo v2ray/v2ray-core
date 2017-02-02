@@ -1,24 +1,17 @@
 package internet
 
 import (
+	"context"
 	"net"
 
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/log"
 	v2net "v2ray.com/core/common/net"
 )
 
-type DialerOptions struct {
-	Stream *StreamConfig
-	Proxy  *ProxyConfig
-}
-
-type Dialer func(src v2net.Address, dest v2net.Destination, options DialerOptions) (Connection, error)
+type Dialer func(ctx context.Context, dest v2net.Destination) (Connection, error)
 
 var (
 	transportDialerCache = make(map[TransportProtocol]Dialer)
-
-	ProxyDialer Dialer
 )
 
 func RegisterTransportDialer(protocol TransportProtocol, dialer Dialer) error {
@@ -29,26 +22,34 @@ func RegisterTransportDialer(protocol TransportProtocol, dialer Dialer) error {
 	return nil
 }
 
-func Dial(src v2net.Address, dest v2net.Destination, options DialerOptions) (Connection, error) {
-	if options.Proxy.HasTag() && ProxyDialer != nil {
-		log.Info("Internet: Proxying outbound connection through: ", options.Proxy.Tag)
-		return ProxyDialer(src, dest, options)
-	}
-
+func Dial(ctx context.Context, dest v2net.Destination) (Connection, error) {
 	if dest.Network == v2net.Network_TCP {
-		protocol := options.Stream.GetEffectiveProtocol()
+		streamSettings, _ := StreamSettingsFromContext(ctx)
+		protocol := streamSettings.GetEffectiveProtocol()
+		transportSettings, err := streamSettings.GetEffectiveTransportSettings()
+		if err != nil {
+			return nil, err
+		}
+		ctx = ContextWithTransportSettings(ctx, transportSettings)
+		if streamSettings != nil && streamSettings.HasSecuritySettings() {
+			securitySettings, err := streamSettings.GetEffectiveSecuritySettings()
+			if err != nil {
+				return nil, err
+			}
+			ctx = ContextWithSecuritySettings(ctx, securitySettings)
+		}
 		dialer := transportDialerCache[protocol]
 		if dialer == nil {
-			return nil, errors.New("Internet|Dialer: ", options.Stream.Protocol, " dialer not registered.")
+			return nil, errors.New("Internet|Dialer: ", protocol, " dialer not registered.")
 		}
-		return dialer(src, dest, options)
+		return dialer(ctx, dest)
 	}
 
 	udpDialer := transportDialerCache[TransportProtocol_UDP]
 	if udpDialer == nil {
 		return nil, errors.New("Internet|Dialer: UDP dialer not registered.")
 	}
-	return udpDialer(src, dest, options)
+	return udpDialer(ctx, dest)
 }
 
 // DialSystem calls system dialer to create a network connection.

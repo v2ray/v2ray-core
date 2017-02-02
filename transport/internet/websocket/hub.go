@@ -10,7 +10,7 @@ import (
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/log"
+	"v2ray.com/core/app/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	v2tls "v2ray.com/core/transport/internet/tls"
@@ -134,8 +134,8 @@ func (wsl *WSListener) listenws(address v2net.Address, port v2net.Port) error {
 
 func (wsl *WSListener) converttovws(w http.ResponseWriter, r *http.Request) (*wsconn, error) {
 	var upgrader = websocket.Upgrader{
-		ReadBufferSize:  65536,
-		WriteBufferSize: 65536,
+		ReadBufferSize:  32 * 1024,
+		WriteBufferSize: 32 * 1024,
 	}
 	conn, err := upgrader.Upgrade(w, r, nil)
 
@@ -192,7 +192,7 @@ func (v *WSListener) Close() error {
 	close(v.awaitingConns)
 	for connErr := range v.awaitingConns {
 		if connErr.conn != nil {
-			go connErr.conn.Close()
+			connErr.conn.Close()
 		}
 	}
 	return nil

@@ -25,7 +25,7 @@ func GetMessageType(message proto.Message) string {
 func GetInstance(messageType string) (interface{}, error) {
 	mType := proto.MessageType(messageType)
 	if mType == nil || mType.Elem() == nil {
-		return nil, errors.New("Unknown type: " + messageType)
+		return nil, errors.New("Serial: Unknown type: " + messageType)
 	}
 	return reflect.New(mType.Elem()).Interface(), nil
 }

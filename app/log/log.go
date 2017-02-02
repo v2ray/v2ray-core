@@ -1,8 +1,12 @@
 package log
 
 import (
+	"context"
+
+	"v2ray.com/core/app"
+	"v2ray.com/core/app/log/internal"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/log/internal"
 )
 
 var (
@@ -77,7 +81,55 @@ func Error(val ...interface{}) {
 	})
 }
 
-func Close() {
+type Instance struct {
+	config *Config
+}
+
+func New(ctx context.Context, config *Config) (*Instance, error) {
+	return &Instance{config: config}, nil
+}
+
+func (*Instance) Interface() interface{} {
+	return (*Instance)(nil)
+}
+
+func (g *Instance) Start() error {
+	config := g.config
+	if config.AccessLogType == LogType_File {
+		if err := InitAccessLogger(config.AccessLogPath); err != nil {
+			return err
+		}
+	}
+
+	if config.ErrorLogType == LogType_None {
+		SetLogLevel(LogLevel_Disabled)
+	} else {
+		if config.ErrorLogType == LogType_File {
+			if err := InitErrorLogger(config.ErrorLogPath); err != nil {
+				return err
+			}
+		}
+		SetLogLevel(config.ErrorLogLevel)
+	}
+
+	return nil
+}
+
+func (*Instance) Close() {
 	streamLoggerInstance.Close()
 	accessLoggerInstance.Close()
+}
+
+func FromSpace(space app.Space) *Instance {
+	v := space.GetApplication((*Instance)(nil))
+	if logger, ok := v.(*Instance); ok && logger != nil {
+		return logger
+	}
+	return nil
+}
+
+func init() {
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return New(ctx, config.(*Config))
+	}))
 }

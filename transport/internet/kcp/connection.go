@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/log"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/predicate"
 	"v2ray.com/core/transport/internet/internal"
 )

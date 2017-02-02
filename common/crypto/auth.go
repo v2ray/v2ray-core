@@ -15,6 +15,7 @@ var (
 
 	errInsufficientBuffer = errors.New("Insufficient buffer.")
 	errInvalidNonce       = errors.New("Invalid nonce.")
+	errInvalidLength      = errors.New("Invalid buffer size.")
 )
 
 type BytesGenerator interface {
@@ -75,16 +76,18 @@ type AuthenticationReader struct {
 	buffer *buf.Buffer
 	reader io.Reader
 
-	chunk      []byte
-	aggressive bool
+	chunk []byte
 }
 
-func NewAuthenticationReader(auth Authenticator, reader io.Reader, aggressive bool) *AuthenticationReader {
+const (
+	readerBufferSize = 32 * 1024
+)
+
+func NewAuthenticationReader(auth Authenticator, reader io.Reader) *AuthenticationReader {
 	return &AuthenticationReader{
-		auth:       auth,
-		buffer:     buf.NewLocal(32 * 1024),
-		reader:     reader,
-		aggressive: aggressive,
+		auth:   auth,
+		buffer: buf.NewLocal(readerBufferSize),
+		reader: reader,
 	}
 }
 
@@ -95,6 +98,9 @@ func (v *AuthenticationReader) NextChunk() error {
 	size := int(serial.BytesToUint16(v.buffer.BytesTo(2)))
 	if size > v.buffer.Len()-2 {
 		return errInsufficientBuffer
+	}
+	if size > readerBufferSize-2 {
+		return errInvalidLength
 	}
 	if size == v.auth.Overhead() {
 		return io.EOF
@@ -160,14 +166,7 @@ func (v *AuthenticationReader) Read(b []byte) (int, error) {
 		return 0, err
 	}
 
-	totalBytes := v.CopyChunk(b)
-	for v.aggressive && totalBytes < len(b) {
-		if err := v.NextChunk(); err != nil {
-			break
-		}
-		totalBytes += v.CopyChunk(b[totalBytes:])
-	}
-	return totalBytes, nil
+	return v.CopyChunk(b), nil
 }
 
 type AuthenticationWriter struct {

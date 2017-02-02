@@ -2,11 +2,13 @@ package socks
 
 import (
 	"context"
-	"errors"
+
+	"runtime"
+	"time"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/log"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
@@ -18,34 +20,31 @@ import (
 
 type Client struct {
 	serverPicker protocol.ServerPicker
-	meta         *proxy.OutboundHandlerMeta
 }
 
 func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
-	meta := proxy.OutboundMetaFromContext(ctx)
-	if meta == nil {
-		return nil, errors.New("Socks|Client: No outbound meta in context.")
-	}
 	serverList := protocol.NewServerList()
 	for _, rec := range config.Server {
 		serverList.AddServer(protocol.NewServerSpecFromPB(*rec))
 	}
 	client := &Client{
 		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
-		meta:         meta,
 	}
 
 	return client, nil
 }
 
-func (c *Client) Dispatch(destination net.Destination, ray ray.OutboundRay) {
+func (c *Client) Process(ctx context.Context, ray ray.OutboundRay) error {
+	destination := proxy.DestinationFromContext(ctx)
+
 	var server *protocol.ServerSpec
 	var conn internet.Connection
 
+	dialer := proxy.DialerFromContext(ctx)
 	err := retry.ExponentialBackoff(5, 100).On(func() error {
 		server = c.serverPicker.PickServer()
 		dest := server.Destination()
-		rawConn, err := internet.Dial(c.meta.Address, dest, c.meta.GetDialerOptions())
+		rawConn, err := dialer.Dial(ctx, dest)
 		if err != nil {
 			return err
 		}
@@ -56,7 +55,7 @@ func (c *Client) Dispatch(destination net.Destination, ray ray.OutboundRay) {
 
 	if err != nil {
 		log.Warning("Socks|Client: Failed to find an available destination.")
-		return
+		return err
 	}
 
 	defer conn.Close()
@@ -80,43 +79,49 @@ func (c *Client) Dispatch(destination net.Destination, ray ray.OutboundRay) {
 	udpRequest, err := ClientHandshake(request, conn, conn)
 	if err != nil {
 		log.Warning("Socks|Client: Failed to establish connection to server: ", err)
-		return
+		return err
 	}
+
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
 
 	var requestFunc func() error
 	var responseFunc func() error
 	if request.Command == protocol.RequestCommandTCP {
 		requestFunc = func() error {
-			return buf.PipeUntilEOF(ray.OutboundInput(), buf.NewWriter(conn))
+			return buf.PipeUntilEOF(timer, ray.OutboundInput(), buf.NewWriter(conn))
 		}
 		responseFunc = func() error {
 			defer ray.OutboundOutput().Close()
-			return buf.PipeUntilEOF(buf.NewReader(conn), ray.OutboundOutput())
+			return buf.PipeUntilEOF(timer, buf.NewReader(conn), ray.OutboundOutput())
 		}
 	} else if request.Command == protocol.RequestCommandUDP {
-		udpConn, err := internet.Dial(c.meta.Address, udpRequest.Destination(), c.meta.GetDialerOptions())
+		udpConn, err := dialer.Dial(ctx, udpRequest.Destination())
 		if err != nil {
 			log.Info("Socks|Client: Failed to create UDP connection: ", err)
-			return
+			return err
 		}
 		defer udpConn.Close()
 		requestFunc = func() error {
-			return buf.PipeUntilEOF(ray.OutboundInput(), &UDPWriter{request: request, writer: udpConn})
+			return buf.PipeUntilEOF(timer, ray.OutboundInput(), &UDPWriter{request: request, writer: udpConn})
 		}
 		responseFunc = func() error {
 			defer ray.OutboundOutput().Close()
-			reader := &UDPReader{reader: net.NewTimeOutReader(16, udpConn)}
-			return buf.PipeUntilEOF(reader, ray.OutboundOutput())
+			reader := &UDPReader{reader: udpConn}
+			return buf.PipeUntilEOF(timer, reader, ray.OutboundOutput())
 		}
 	}
 
 	requestDone := signal.ExecuteAsync(requestFunc)
 	responseDone := signal.ExecuteAsync(responseFunc)
-	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		log.Info("Socks|Client: Connection ends with ", err)
-		ray.OutboundInput().CloseError()
-		ray.OutboundOutput().CloseError()
+		return err
 	}
+
+	runtime.KeepAlive(timer)
+
+	return nil
 }
 
 func init() {

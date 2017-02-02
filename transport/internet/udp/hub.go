@@ -6,21 +6,21 @@ import (
 
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
-	"v2ray.com/core/common/log"
+	"v2ray.com/core/app/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/signal"
-	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet/internal"
 )
 
 // Payload represents a single UDP payload.
 type Payload struct {
-	payload *buf.Buffer
-	session *proxy.SessionInfo
+	payload      *buf.Buffer
+	source       v2net.Destination
+	originalDest v2net.Destination
 }
 
 // PayloadHandler is function to handle Payload.
-type PayloadHandler func(*buf.Buffer, *proxy.SessionInfo)
+type PayloadHandler func(payload *buf.Buffer, source v2net.Destination, originalDest v2net.Destination)
 
 // PayloadQueue is a queue of Payload.
 type PayloadQueue struct {
@@ -59,7 +59,7 @@ func (v *PayloadQueue) Enqueue(payload Payload) {
 
 func (v *PayloadQueue) Dequeue(queue <-chan Payload) {
 	for payload := range queue {
-		v.callback(payload.payload, payload.session)
+		v.callback(payload.payload, payload.source, payload.originalDest)
 	}
 }
 
@@ -94,6 +94,7 @@ func ListenUDP(address v2net.Address, port v2net.Port, option ListenOption) (*Hu
 	if err != nil {
 		return nil, err
 	}
+	log.Info("UDP|Hub: Listening on ", address, ":", port)
 	if option.ReceiveOriginalDest {
 		fd, err := internal.GetSysFd(udpConn)
 		if err != nil {
@@ -155,15 +156,14 @@ func (v *Hub) start() {
 			continue
 		}
 
-		session := new(proxy.SessionInfo)
-		session.Source = v2net.UDPDestination(v2net.IPAddress(addr.IP), v2net.Port(addr.Port))
-		if v.option.ReceiveOriginalDest && noob > 0 {
-			session.Destination = RetrieveOriginalDest(oobBytes[:noob])
-		}
-		v.queue.Enqueue(Payload{
+		payload := Payload{
 			payload: buffer,
-			session: session,
-		})
+		}
+		payload.source = v2net.UDPDestination(v2net.IPAddress(addr.IP), v2net.Port(addr.Port))
+		if v.option.ReceiveOriginalDest && noob > 0 {
+			payload.originalDest = RetrieveOriginalDest(oobBytes[:noob])
+		}
+		v.queue.Enqueue(payload)
 	}
 }
 

@@ -6,18 +6,17 @@ import (
 
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
-	"v2ray.com/core/proxy"
 )
 
 type DefaultOutboundHandlerManager struct {
 	sync.RWMutex
-	defaultHandler proxy.OutboundHandler
-	taggedHandler  map[string]proxy.OutboundHandler
+	defaultHandler *Handler
+	taggedHandler  map[string]*Handler
 }
 
 func New(ctx context.Context, config *proxyman.OutboundConfig) (*DefaultOutboundHandlerManager, error) {
 	return &DefaultOutboundHandlerManager{
-		taggedHandler: make(map[string]proxy.OutboundHandler),
+		taggedHandler: make(map[string]*Handler),
 	}, nil
 }
 
@@ -25,7 +24,11 @@ func (DefaultOutboundHandlerManager) Interface() interface{} {
 	return (*proxyman.OutboundHandlerManager)(nil)
 }
 
-func (v *DefaultOutboundHandlerManager) GetDefaultHandler() proxy.OutboundHandler {
+func (DefaultOutboundHandlerManager) Start() error { return nil }
+
+func (DefaultOutboundHandlerManager) Close() {}
+
+func (v *DefaultOutboundHandlerManager) GetDefaultHandler() proxyman.OutboundHandler {
 	v.RLock()
 	defer v.RUnlock()
 	if v.defaultHandler == nil {
@@ -34,14 +37,7 @@ func (v *DefaultOutboundHandlerManager) GetDefaultHandler() proxy.OutboundHandle
 	return v.defaultHandler
 }
 
-func (v *DefaultOutboundHandlerManager) SetDefaultHandler(handler proxy.OutboundHandler) error {
-	v.Lock()
-	defer v.Unlock()
-	v.defaultHandler = handler
-	return nil
-}
-
-func (v *DefaultOutboundHandlerManager) GetHandler(tag string) proxy.OutboundHandler {
+func (v *DefaultOutboundHandlerManager) GetHandler(tag string) proxyman.OutboundHandler {
 	v.RLock()
 	defer v.RUnlock()
 	if handler, found := v.taggedHandler[tag]; found {
@@ -50,11 +46,22 @@ func (v *DefaultOutboundHandlerManager) GetHandler(tag string) proxy.OutboundHan
 	return nil
 }
 
-func (v *DefaultOutboundHandlerManager) SetHandler(tag string, handler proxy.OutboundHandler) error {
+func (v *DefaultOutboundHandlerManager) AddHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) error {
 	v.Lock()
 	defer v.Unlock()
 
-	v.taggedHandler[tag] = handler
+	handler, err := NewHandler(ctx, config)
+	if err != nil {
+		return err
+	}
+	if v.defaultHandler == nil {
+		v.defaultHandler = handler
+	}
+
+	if len(config.Tag) > 0 {
+		v.taggedHandler[config.Tag] = handler
+	}
+
 	return nil
 }
 

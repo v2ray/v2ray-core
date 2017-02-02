@@ -41,7 +41,8 @@ func TestSimpleRouter(t *testing.T) {
 
 	r := FromSpace(space)
 
-	tag, err := r.TakeDetour(&proxy.SessionInfo{Destination: net.TCPDestination(net.DomainAddress("v2ray.com"), 80)})
+	ctx = proxy.ContextWithDestination(ctx, net.TCPDestination(net.DomainAddress("v2ray.com"), 80))
+	tag, err := r.TakeDetour(ctx)
 	assert.Error(err).IsNil()
 	assert.String(tag).Equals("test")
 }

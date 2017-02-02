@@ -1,19 +1,18 @@
 package server
 
 import (
+	"context"
 	"net"
 	"sync"
 	"time"
 
+	"github.com/miekg/dns"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
-	"v2ray.com/core/common/log"
+	"v2ray.com/core/app/log"
 	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet/udp"
-
-	"github.com/miekg/dns"
 )
 
 const (
@@ -44,7 +43,7 @@ type UDPNameServer struct {
 	sync.Mutex
 	address     v2net.Destination
 	requests    map[uint16]*PendingRequest
-	udpServer   *udp.Server
+	udpServer   *udp.Dispatcher
 	nextCleanup time.Time
 }
 
@@ -52,7 +51,7 @@ func NewUDPNameServer(address v2net.Destination, dispatcher dispatcher.Interface
 	s := &UDPNameServer{
 		address:   address,
 		requests:  make(map[uint16]*PendingRequest),
-		udpServer: udp.NewServer(dispatcher),
+		udpServer: udp.NewDispatcher(dispatcher),
 	}
 	return s
 }
@@ -101,7 +100,7 @@ func (v *UDPNameServer) AssignUnusedID(response chan<- *ARecord) uint16 {
 }
 
 // Private: Visible for testing.
-func (v *UDPNameServer) HandleResponse(dest v2net.Destination, payload *buf.Buffer) {
+func (v *UDPNameServer) HandleResponse(payload *buf.Buffer) {
 	msg := new(dns.Msg)
 	err := msg.Unpack(payload.Bytes())
 	if err != nil {
@@ -165,15 +164,12 @@ func (v *UDPNameServer) BuildQueryA(domain string, id uint16) *buf.Buffer {
 	return buffer
 }
 
-func (v *UDPNameServer) DispatchQuery(payload *buf.Buffer) {
-	v.udpServer.Dispatch(&proxy.SessionInfo{Source: pseudoDestination, Destination: v.address}, payload, v.HandleResponse)
-}
-
 func (v *UDPNameServer) QueryA(domain string) <-chan *ARecord {
 	response := make(chan *ARecord, 1)
 	id := v.AssignUnusedID(response)
 
-	v.DispatchQuery(v.BuildQueryA(domain, id))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*8)
+	v.udpServer.Dispatch(ctx, v.address, v.BuildQueryA(domain, id), v.HandleResponse)
 
 	go func() {
 		for i := 0; i < 2; i++ {
@@ -182,11 +178,12 @@ func (v *UDPNameServer) QueryA(domain string) <-chan *ARecord {
 			_, found := v.requests[id]
 			v.Unlock()
 			if found {
-				v.DispatchQuery(v.BuildQueryA(domain, id))
+				v.udpServer.Dispatch(ctx, v.address, v.BuildQueryA(domain, id), v.HandleResponse)
 			} else {
 				break
 			}
 		}
+		cancel()
 	}()
 
 	return response

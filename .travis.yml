@@ -1,6 +1,6 @@
 language: go
 go:
-- 1.7.4
+- 1.7.5
 go_import_path: v2ray.com/core
 git:
   depth: 5

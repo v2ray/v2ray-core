@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"time"
 
-	"v2ray.com/core/common/log"
+	"v2ray.com/core/app/log"
 
 	"fmt"
 	"io/ioutil"

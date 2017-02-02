@@ -1,12 +1,13 @@
 package tcp
 
 import (
+	"context"
 	"crypto/tls"
 	"net"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/log"
+	"v2ray.com/core/app/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/internal"
@@ -17,16 +18,11 @@ var (
 	globalCache = internal.NewConnectionPool()
 )
 
-func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOptions) (internet.Connection, error) {
+func Dial(ctx context.Context, dest v2net.Destination) (internet.Connection, error) {
 	log.Info("Internet|TCP: Dailing TCP to ", dest)
-	if src == nil {
-		src = v2net.AnyIP
-	}
-	networkSettings, err := options.Stream.GetEffectiveTransportSettings()
-	if err != nil {
-		return nil, err
-	}
-	tcpSettings := networkSettings.(*Config)
+	src := internet.DialerSourceFromContext(ctx)
+
+	tcpSettings := internet.TransportSettingsFromContext(ctx).(*Config)
 
 	id := internal.NewConnectionID(src, dest)
 	var conn net.Conn
@@ -39,12 +35,7 @@ func Dial(src v2net.Address, dest v2net.Destination, options internet.DialerOpti
 		if err != nil {
 			return nil, err
 		}
-		if options.Stream != nil && options.Stream.HasSecuritySettings() {
-			securitySettings, err := options.Stream.GetEffectiveSecuritySettings()
-			if err != nil {
-				log.Error("TCP: Failed to get security settings: ", err)
-				return nil, err
-			}
+		if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
 			tlsConfig, ok := securitySettings.(*v2tls.Config)
 			if ok {
 				config := tlsConfig.GetTLSConfig()

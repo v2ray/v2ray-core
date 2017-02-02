@@ -1,6 +1,7 @@
 package encoding_test
 
 import (
+	"context"
 	"testing"
 
 	"v2ray.com/core/common/buf"
@@ -40,7 +41,8 @@ func TestRequestSerialization(t *testing.T) {
 	client := NewClientSession(protocol.DefaultIDHash)
 	client.EncodeRequestHeader(expectedRequest, buffer)
 
-	userValidator := vmess.NewTimedUserValidator(protocol.DefaultIDHash)
+	ctx, cancel := context.WithCancel(context.Background())
+	userValidator := vmess.NewTimedUserValidator(ctx, protocol.DefaultIDHash)
 	userValidator.Add(user)
 
 	server := NewServerSession(userValidator)
@@ -53,4 +55,5 @@ func TestRequestSerialization(t *testing.T) {
 	assert.Address(expectedRequest.Address).Equals(actualRequest.Address)
 	assert.Port(expectedRequest.Port).Equals(actualRequest.Port)
 	assert.Byte(byte(expectedRequest.Security)).Equals(byte(actualRequest.Security))
+	cancel()
 }

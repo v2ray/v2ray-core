@@ -8,7 +8,7 @@ import (
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/log"
+	"v2ray.com/core/app/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/internal"
@@ -42,6 +42,7 @@ func ListenTCP(address v2net.Address, port v2net.Port, options internet.ListenOp
 	if err != nil {
 		return nil, err
 	}
+	log.Info("TCP|Listener: Listening on ", address, ":", port)
 	networkSettings, err := options.Stream.GetEffectiveTransportSettings()
 	if err != nil {
 		return nil, err
@@ -152,7 +153,7 @@ func (v *TCPListener) Close() error {
 	close(v.awaitingConns)
 	for connErr := range v.awaitingConns {
 		if connErr.conn != nil {
-			go connErr.conn.Close()
+			connErr.conn.Close()
 		}
 	}
 	return nil

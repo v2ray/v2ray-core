@@ -21,7 +21,7 @@ func (s *AllocationStrategy) GetRefreshValue() uint32 {
 	return s.Refresh.Value
 }
 
-func (c *OutboundHandlerConfig) GetProxyHandler(ctx context.Context) (proxy.OutboundHandler, error) {
+func (c *OutboundHandlerConfig) GetProxyHandler(ctx context.Context) (proxy.Outbound, error) {
 	if c == nil {
 		return nil, errors.New("Proxyman: OutboundHandlerConfig is nil.")
 	}

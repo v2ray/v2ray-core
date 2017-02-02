@@ -5,23 +5,21 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dns"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 )
 
 var (
-	ErrInvalidRule      = errors.New("Invalid Rule")
 	ErrNoRuleApplicable = errors.New("No rule applicable")
 )
 
 type Router struct {
 	domainStrategy Config_DomainStrategy
 	rules          []Rule
-	//	cache          *RoutingTable
-	dnsServer dns.Server
+	dnsServer      dns.Server
 }
 
 func NewRouter(ctx context.Context, config *Config) (*Router, error) {
@@ -31,8 +29,7 @@ func NewRouter(ctx context.Context, config *Config) (*Router, error) {
 	}
 	r := &Router{
 		domainStrategy: config.DomainStrategy,
-		//cache:          NewRoutingTable(),
-		rules: make([]Rule, len(config.Rule)),
+		rules:          make([]Rule, len(config.Rule)),
 	}
 
 	space.OnInitialize(func() error {
@@ -54,44 +51,34 @@ func NewRouter(ctx context.Context, config *Config) (*Router, error) {
 	return r, nil
 }
 
-// Private: Visible for testing.
-func (v *Router) ResolveIP(dest net.Destination) []net.Destination {
+func (v *Router) resolveIP(dest net.Destination) []net.Address {
 	ips := v.dnsServer.Get(dest.Address.Domain())
 	if len(ips) == 0 {
 		return nil
 	}
-	dests := make([]net.Destination, len(ips))
+	dests := make([]net.Address, len(ips))
 	for idx, ip := range ips {
-		if dest.Network == net.Network_TCP {
-			dests[idx] = net.TCPDestination(net.IPAddress(ip), dest.Port)
-		} else {
-			dests[idx] = net.UDPDestination(net.IPAddress(ip), dest.Port)
-		}
+		dests[idx] = net.IPAddress(ip)
 	}
 	return dests
 }
 
-func (v *Router) takeDetourWithoutCache(session *proxy.SessionInfo) (string, error) {
+func (v *Router) TakeDetour(ctx context.Context) (string, error) {
 	for _, rule := range v.rules {
-		if rule.Apply(session) {
+		if rule.Apply(ctx) {
 			return rule.Tag, nil
 		}
 	}
-	dest := session.Destination
+
+	dest := proxy.DestinationFromContext(ctx)
 	if v.domainStrategy == Config_IpIfNonMatch && dest.Address.Family().IsDomain() {
 		log.Info("Router: Looking up IP for ", dest)
-		ipDests := v.ResolveIP(dest)
+		ipDests := v.resolveIP(dest)
 		if ipDests != nil {
-			for _, ipDest := range ipDests {
-				log.Info("Router: Trying IP ", ipDest)
-				for _, rule := range v.rules {
-					if rule.Apply(&proxy.SessionInfo{
-						Source:      session.Source,
-						Destination: ipDest,
-						User:        session.User,
-					}) {
-						return rule.Tag, nil
-					}
+			ctx = proxy.ContextWithResolveIPs(ctx, ipDests)
+			for _, rule := range v.rules {
+				if rule.Apply(ctx) {
+					return rule.Tag, nil
 				}
 			}
 		}
@@ -100,20 +87,15 @@ func (v *Router) takeDetourWithoutCache(session *proxy.SessionInfo) (string, err
 	return "", ErrNoRuleApplicable
 }
 
-func (v *Router) TakeDetour(session *proxy.SessionInfo) (string, error) {
-	//destStr := dest.String()
-	//found, tag, err := v.cache.Get(destStr)
-	//if !found {
-	tag, err := v.takeDetourWithoutCache(session)
-	//v.cache.Set(destStr, tag, err)
-	return tag, err
-	//}
-	//return tag, err
-}
-
 func (Router) Interface() interface{} {
 	return (*Router)(nil)
 }
+
+func (Router) Start() error {
+	return nil
+}
+
+func (Router) Close() {}
 
 func FromSpace(space app.Space) *Router {
 	app := space.GetApplication((*Router)(nil))

@@ -1,5 +1,9 @@
 package signal
 
+import (
+	"context"
+)
+
 func executeAndFulfill(f func() error, done chan<- error) {
 	err := f()
 	if err != nil {
@@ -14,17 +18,28 @@ func ExecuteAsync(f func() error) <-chan error {
 	return done
 }
 
-func ErrorOrFinish2(c1, c2 <-chan error) error {
+func ErrorOrFinish1(ctx context.Context, c <-chan error) error {
 	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-c:
+		return err
+	}
+}
+
+func ErrorOrFinish2(ctx context.Context, c1, c2 <-chan error) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
 	case err, failed := <-c1:
 		if failed {
 			return err
 		}
-		return <-c2
+		return ErrorOrFinish1(ctx, c2)
 	case err, failed := <-c2:
 		if failed {
 			return err
 		}
-		return <-c1
+		return ErrorOrFinish1(ctx, c1)
 	}
 }

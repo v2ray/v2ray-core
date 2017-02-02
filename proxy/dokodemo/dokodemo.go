@@ -2,43 +2,32 @@ package dokodemo
 
 import (
 	"context"
-	"sync"
+	"runtime"
+	"time"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/log"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/internet/udp"
 )
 
 type DokodemoDoor struct {
-	tcpMutex         sync.RWMutex
-	udpMutex         sync.RWMutex
 	config           *Config
-	accepting        bool
 	address          net.Address
 	port             net.Port
 	packetDispatcher dispatcher.Interface
-	tcpListener      *internet.TCPHub
-	udpHub           *udp.Hub
-	udpServer        *udp.Server
-	meta             *proxy.InboundHandlerMeta
 }
 
 func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
 		return nil, errors.New("Dokodemo: No space in context.")
-	}
-	meta := proxy.InboundMetaFromContext(ctx)
-	if meta == nil {
-		return nil, errors.New("Dokodemo: No outbound meta in context.")
 	}
 	if config.NetworkList == nil || config.NetworkList.Size() == 0 {
 		return nil, errors.New("DokodemoDoor: No network specified.")
@@ -47,7 +36,6 @@ func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
 		config:  config,
 		address: config.GetPredefinedAddress(),
 		port:    net.Port(config.Port),
-		meta:    meta,
 	}
 	space.OnInitialize(func() error {
 		d.packetDispatcher = dispatcher.FromSpace(space)
@@ -59,140 +47,44 @@ func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
 	return d, nil
 }
 
-func (v *DokodemoDoor) Port() net.Port {
-	return v.meta.Port
+func (d *DokodemoDoor) Network() net.NetworkList {
+	return *(d.config.NetworkList)
 }
 
-func (v *DokodemoDoor) Close() {
-	v.accepting = false
-	if v.tcpListener != nil {
-		v.tcpMutex.Lock()
-		v.tcpListener.Close()
-		v.tcpListener = nil
-		v.tcpMutex.Unlock()
-	}
-	if v.udpHub != nil {
-		v.udpMutex.Lock()
-		v.udpHub.Close()
-		v.udpHub = nil
-		v.udpMutex.Unlock()
-	}
-}
-
-func (v *DokodemoDoor) Network() net.NetworkList {
-	return *(v.config.NetworkList)
-}
-
-func (v *DokodemoDoor) Start() error {
-	if v.accepting {
-		return nil
-	}
-	v.accepting = true
-
-	if v.config.NetworkList.HasNetwork(net.Network_TCP) {
-		err := v.ListenTCP()
-		if err != nil {
-			return err
-		}
-	}
-	if v.config.NetworkList.HasNetwork(net.Network_UDP) {
-		err := v.ListenUDP()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (v *DokodemoDoor) ListenUDP() error {
-	v.udpServer = udp.NewServer(v.packetDispatcher)
-	udpHub, err := udp.ListenUDP(
-		v.meta.Address, v.meta.Port, udp.ListenOption{
-			Callback:            v.handleUDPPackets,
-			ReceiveOriginalDest: v.config.FollowRedirect,
-			Concurrency:         2,
-		})
-	if err != nil {
-		log.Error("Dokodemo failed to listen on ", v.meta.Address, ":", v.meta.Port, ": ", err)
-		return err
-	}
-	v.udpMutex.Lock()
-	v.udpHub = udpHub
-	v.udpMutex.Unlock()
-	return nil
-}
-
-func (v *DokodemoDoor) handleUDPPackets(payload *buf.Buffer, session *proxy.SessionInfo) {
-	if session.Destination.Network == net.Network_Unknown && v.address != nil && v.port > 0 {
-		session.Destination = net.UDPDestination(v.address, v.port)
-	}
-	if session.Destination.Network == net.Network_Unknown {
-		log.Info("Dokodemo: Unknown destination, stop forwarding...")
-		return
-	}
-	session.Inbound = v.meta
-	v.udpServer.Dispatch(session, payload, v.handleUDPResponse)
-}
-
-func (v *DokodemoDoor) handleUDPResponse(dest net.Destination, payload *buf.Buffer) {
-	defer payload.Release()
-	v.udpMutex.RLock()
-	defer v.udpMutex.RUnlock()
-	if !v.accepting {
-		return
-	}
-	v.udpHub.WriteTo(payload.Bytes(), dest)
-}
-
-func (v *DokodemoDoor) ListenTCP() error {
-	tcpListener, err := internet.ListenTCP(v.meta.Address, v.meta.Port, v.HandleTCPConnection, v.meta.StreamSettings)
-	if err != nil {
-		log.Error("Dokodemo: Failed to listen on ", v.meta.Address, ":", v.meta.Port, ": ", err)
-		return err
-	}
-	v.tcpMutex.Lock()
-	v.tcpListener = tcpListener
-	v.tcpMutex.Unlock()
-	return nil
-}
-
-func (v *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
-	defer conn.Close()
+func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn internet.Connection) error {
+	log.Debug("Dokodemo: processing connection from: ", conn.RemoteAddr())
 	conn.SetReusable(false)
-
-	var dest net.Destination
-	if v.config.FollowRedirect {
-		originalDest := GetOriginalDestination(conn)
-		if originalDest.Network != net.Network_Unknown {
-			log.Info("Dokodemo: Following redirect to: ", originalDest)
-			dest = originalDest
+	dest := net.Destination{
+		Network: network,
+		Address: d.address,
+		Port:    d.port,
+	}
+	if d.config.FollowRedirect {
+		if origDest := proxy.OriginalDestinationFromContext(ctx); origDest.IsValid() {
+			dest = origDest
 		}
 	}
-	if dest.Network == net.Network_Unknown && v.address != nil && v.port > net.Port(0) {
-		dest = net.TCPDestination(v.address, v.port)
+	if !dest.IsValid() || dest.Address == nil {
+		log.Info("Dokodemo: Invalid destination. Discarding...")
+		return errors.New("Dokodemo: Unable to get destination.")
 	}
-
-	if dest.Network == net.Network_Unknown {
-		log.Info("Dokodemo: Unknown destination, stop forwarding...")
-		return
+	ctx = proxy.ContextWithDestination(ctx, dest)
+	ctx, cancel := context.WithCancel(ctx)
+	timeout := time.Second * time.Duration(d.config.Timeout)
+	if timeout == 0 {
+		timeout = time.Minute * 2
 	}
-	log.Info("Dokodemo: Handling request to ", dest)
+	timer := signal.CancelAfterInactivity(ctx, cancel, timeout)
 
-	ray := v.packetDispatcher.DispatchToOutbound(&proxy.SessionInfo{
-		Source:      net.DestinationFromAddr(conn.RemoteAddr()),
-		Destination: dest,
-		Inbound:     v.meta,
-	})
-
-	reader := net.NewTimeOutReader(v.config.Timeout, conn)
+	inboundRay := d.packetDispatcher.DispatchToOutbound(ctx)
 
 	requestDone := signal.ExecuteAsync(func() error {
-		defer ray.InboundInput().Close()
+		defer inboundRay.InboundInput().Close()
 
-		v2reader := buf.NewReader(reader)
+		chunkReader := buf.NewReader(conn)
 
-		if err := buf.PipeUntilEOF(v2reader, ray.InboundInput()); err != nil {
-			log.Info("Dokodemo: Failed to transport all TCP request: ", err)
+		if err := buf.PipeUntilEOF(timer, chunkReader, inboundRay.InboundInput()); err != nil {
+			log.Info("Dokodemo: Failed to transport request: ", err)
 			return err
 		}
 
@@ -202,18 +94,23 @@ func (v *DokodemoDoor) HandleTCPConnection(conn internet.Connection) {
 	responseDone := signal.ExecuteAsync(func() error {
 		v2writer := buf.NewWriter(conn)
 
-		if err := buf.PipeUntilEOF(ray.InboundOutput(), v2writer); err != nil {
-			log.Info("Dokodemo: Failed to transport all TCP response: ", err)
+		if err := buf.PipeUntilEOF(timer, inboundRay.InboundOutput(), v2writer); err != nil {
+			log.Info("Dokodemo: Failed to transport response: ", err)
 			return err
 		}
 		return nil
 	})
 
-	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
-		ray.InboundInput().CloseError()
-		ray.InboundOutput().CloseError()
+	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
+		inboundRay.InboundInput().CloseError()
+		inboundRay.InboundOutput().CloseError()
 		log.Info("Dokodemo: Connection ends with ", err)
+		return err
 	}
+
+	runtime.KeepAlive(timer)
+
+	return nil
 }
 
 func init() {

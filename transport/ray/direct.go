@@ -6,6 +6,8 @@ import (
 
 	"time"
 
+	"context"
+
 	"v2ray.com/core/common/buf"
 )
 
@@ -16,10 +18,10 @@ const (
 var ErrReadTimeout = errors.New("Ray: timeout.")
 
 // NewRay creates a new Ray for direct traffic transport.
-func NewRay() Ray {
+func NewRay(ctx context.Context) Ray {
 	return &directRay{
-		Input:  NewStream(),
-		Output: NewStream(),
+		Input:  NewStream(ctx),
+		Output: NewStream(ctx),
 	}
 }
 
@@ -54,13 +56,15 @@ func (v *directRay) AddInspector(inspector Inspector) {
 
 type Stream struct {
 	buffer    chan *buf.Buffer
+	ctx       context.Context
 	close     chan bool
 	err       chan bool
 	inspector *InspectorChain
 }
 
-func NewStream() *Stream {
+func NewStream(ctx context.Context) *Stream {
 	return &Stream{
+		ctx:       ctx,
 		buffer:    make(chan *buf.Buffer, bufferSize),
 		close:     make(chan bool),
 		err:       make(chan bool),
@@ -70,12 +74,16 @@ func NewStream() *Stream {
 
 func (v *Stream) Read() (*buf.Buffer, error) {
 	select {
+	case <-v.ctx.Done():
+		return nil, io.ErrClosedPipe
 	case <-v.err:
 		return nil, io.ErrClosedPipe
 	case b := <-v.buffer:
 		return b, nil
 	default:
 		select {
+		case <-v.ctx.Done():
+			return nil, io.ErrClosedPipe
 		case b := <-v.buffer:
 			return b, nil
 		case <-v.close:
@@ -88,12 +96,16 @@ func (v *Stream) Read() (*buf.Buffer, error) {
 
 func (v *Stream) ReadTimeout(timeout time.Duration) (*buf.Buffer, error) {
 	select {
+	case <-v.ctx.Done():
+		return nil, io.ErrClosedPipe
 	case <-v.err:
 		return nil, io.ErrClosedPipe
 	case b := <-v.buffer:
 		return b, nil
 	default:
 		select {
+		case <-v.ctx.Done():
+			return nil, io.ErrClosedPipe
 		case b := <-v.buffer:
 			return b, nil
 		case <-v.close:
@@ -112,12 +124,16 @@ func (v *Stream) Write(data *buf.Buffer) (err error) {
 	}
 
 	select {
+	case <-v.ctx.Done():
+		return io.ErrClosedPipe
 	case <-v.err:
 		return io.ErrClosedPipe
 	case <-v.close:
 		return io.ErrClosedPipe
 	default:
 		select {
+		case <-v.ctx.Done():
+			return io.ErrClosedPipe
 		case <-v.err:
 			return io.ErrClosedPipe
 		case <-v.close:

@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/log"
+	"v2ray.com/core/app/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
 )
@@ -24,7 +24,8 @@ func RegisterTransportListener(protocol TransportProtocol, listener ListenFunc) 
 
 type ListenFunc func(address v2net.Address, port v2net.Port, options ListenOptions) (Listener, error)
 type ListenOptions struct {
-	Stream *StreamConfig
+	Stream       *StreamConfig
+	RecvOrigDest bool
 }
 
 type Listener interface {

@@ -2,6 +2,7 @@ package outbound
 
 import (
 	"context"
+	"runtime"
 	"time"
 
 	"v2ray.com/core/app"
@@ -9,7 +10,7 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/log"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
@@ -25,17 +26,12 @@ import (
 type VMessOutboundHandler struct {
 	serverList   *protocol.ServerList
 	serverPicker protocol.ServerPicker
-	meta         *proxy.OutboundHandlerMeta
 }
 
 func New(ctx context.Context, config *Config) (*VMessOutboundHandler, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
 		return nil, errors.New("VMess|Outbound: No space in context.")
-	}
-	meta := proxy.OutboundMetaFromContext(ctx)
-	if meta == nil {
-		return nil, errors.New("VMess|Outbound: No outbound meta in context.")
 	}
 
 	serverList := protocol.NewServerList()
@@ -45,20 +41,20 @@ func New(ctx context.Context, config *Config) (*VMessOutboundHandler, error) {
 	handler := &VMessOutboundHandler{
 		serverList:   serverList,
 		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
-		meta:         meta,
 	}
 
 	return handler, nil
 }
 
 // Dispatch implements OutboundHandler.Dispatch().
-func (v *VMessOutboundHandler) Dispatch(target net.Destination, outboundRay ray.OutboundRay) {
+func (v *VMessOutboundHandler) Process(ctx context.Context, outboundRay ray.OutboundRay) error {
 	var rec *protocol.ServerSpec
 	var conn internet.Connection
 
+	dialer := proxy.DialerFromContext(ctx)
 	err := retry.ExponentialBackoff(5, 100).On(func() error {
 		rec = v.serverPicker.PickServer()
-		rawConn, err := internet.Dial(v.meta.Address, rec.Destination(), v.meta.GetDialerOptions())
+		rawConn, err := dialer.Dial(ctx, rec.Destination())
 		if err != nil {
 			return err
 		}
@@ -68,8 +64,11 @@ func (v *VMessOutboundHandler) Dispatch(target net.Destination, outboundRay ray.
 	})
 	if err != nil {
 		log.Warning("VMess|Outbound: Failed to find an available destination:", err)
-		return
+		return err
 	}
+	defer conn.Close()
+
+	target := proxy.DestinationFromContext(ctx)
 	log.Info("VMess|Outbound: Tunneling request to ", target, " via ", rec.Destination())
 
 	command := protocol.RequestCommandTCP
@@ -88,11 +87,10 @@ func (v *VMessOutboundHandler) Dispatch(target net.Destination, outboundRay ray.
 	rawAccount, err := request.User.GetTypedAccount()
 	if err != nil {
 		log.Warning("VMess|Outbound: Failed to get user account: ", err)
+		return err
 	}
 	account := rawAccount.(*vmess.InternalAccount)
 	request.Security = account.Security
-
-	defer conn.Close()
 
 	conn.SetReusable(true)
 	if conn.Reusable() { // Conn reuse may be disabled on transportation layer
@@ -103,6 +101,9 @@ func (v *VMessOutboundHandler) Dispatch(target net.Destination, outboundRay ray.
 	output := outboundRay.OutboundOutput()
 
 	session := encoding.NewClientSession(protocol.DefaultIDHash)
+
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
 
 	requestDone := signal.ExecuteAsync(func() error {
 		writer := bufio.NewWriter(conn)
@@ -122,7 +123,7 @@ func (v *VMessOutboundHandler) Dispatch(target net.Destination, outboundRay ray.
 
 		writer.SetBuffered(false)
 
-		if err := buf.PipeUntilEOF(input, bodyWriter); err != nil {
+		if err := buf.PipeUntilEOF(timer, input, bodyWriter); err != nil {
 			return err
 		}
 
@@ -148,21 +149,21 @@ func (v *VMessOutboundHandler) Dispatch(target net.Destination, outboundRay ray.
 
 		reader.SetBuffered(false)
 		bodyReader := session.DecodeResponseBody(request, reader)
-		if err := buf.PipeUntilEOF(bodyReader, output); err != nil {
+		if err := buf.PipeUntilEOF(timer, bodyReader, output); err != nil {
 			return err
 		}
 
 		return nil
 	})
 
-	if err := signal.ErrorOrFinish2(requestDone, responseDone); err != nil {
+	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		log.Info("VMess|Outbound: Connection ending with ", err)
 		conn.SetReusable(false)
-		input.CloseError()
-		output.CloseError()
+		return err
 	}
+	runtime.KeepAlive(timer)
 
-	return
+	return nil
 }
 
 func init() {

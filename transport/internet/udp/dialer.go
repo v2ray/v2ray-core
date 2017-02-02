@@ -1,6 +1,8 @@
 package udp
 
 import (
+	"context"
+
 	"v2ray.com/core/common"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
@@ -9,7 +11,8 @@ import (
 
 func init() {
 	common.Must(internet.RegisterTransportDialer(internet.TransportProtocol_UDP,
-		func(src v2net.Address, dest v2net.Destination, options internet.DialerOptions) (internet.Connection, error) {
+		func(ctx context.Context, dest v2net.Destination) (internet.Connection, error) {
+			src := internet.DialerSourceFromContext(ctx)
 			conn, err := internet.DialSystem(src, dest)
 			if err != nil {
 				return nil, err

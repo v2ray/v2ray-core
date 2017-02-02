@@ -3,7 +3,7 @@ package net
 import (
 	"net"
 
-	"v2ray.com/core/common/log"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/predicate"
 )
 
@@ -85,7 +85,7 @@ func IPAddress(ip []byte) Address {
 		}
 		return addr
 	default:
-		log.Error("Invalid IP format: ", ip)
+		log.Error("Net: Invalid IP format: ", ip)
 		return nil
 	}
 }

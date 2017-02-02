@@ -1,21 +1,23 @@
 package scenarios
 
 import (
+	"io"
 	"net"
-	"sync/atomic"
 	"time"
 
 	"github.com/golang/protobuf/proto"
 	"v2ray.com/core"
+	"v2ray.com/core/common"
 	v2net "v2ray.com/core/common/net"
 )
 
-var (
-	port uint32 = 40000
-)
-
 func pickPort() v2net.Port {
-	return v2net.Port(atomic.AddUint32(&port, 1))
+	listener, err := net.Listen("tcp4", ":0")
+	common.Must(err)
+	defer listener.Close()
+
+	addr := listener.Addr().(*net.TCPAddr)
+	return v2net.Port(addr.Port)
 }
 
 func xor(b []byte) []byte {
@@ -28,20 +30,10 @@ func xor(b []byte) []byte {
 
 func readFrom(conn net.Conn, timeout time.Duration, length int) []byte {
 	b := make([]byte, 2048)
-	totalBytes := 0
 	deadline := time.Now().Add(timeout)
 	conn.SetReadDeadline(deadline)
-	for totalBytes < length {
-		if time.Now().After(deadline) {
-			break
-		}
-		n, err := conn.Read(b[totalBytes:])
-		if err != nil {
-			break
-		}
-		totalBytes += n
-	}
-	return b[:totalBytes]
+	n, _ := io.ReadFull(conn, b[:length])
+	return b[:n]
 }
 
 func InitializeServerConfig(config *core.Config) error {

@@ -2,6 +2,7 @@ package conf
 
 import (
 	"encoding/json"
+
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -40,7 +41,7 @@ func (v *SocksServerConfig) Build() (*serial.TypedMessage, error) {
 	} else if v.AuthMethod == AuthMethodUserPass {
 		config.AuthType = socks.AuthType_PASSWORD
 	} else {
-		return nil, errors.New("Unknown socks auth method: " + v.AuthMethod)
+		return nil, errors.New("Config: Unknown socks auth method: " + v.AuthMethod)
 	}
 
 	if len(v.Accounts) > 0 {
@@ -79,11 +80,11 @@ func (v *SocksClientConfig) Build() (*serial.TypedMessage, error) {
 		for _, rawUser := range serverConfig.Users {
 			user := new(protocol.User)
 			if err := json.Unmarshal(rawUser, user); err != nil {
-				return nil, errors.Base(err).Message("Socks|Client: Failed to parse user.")
+				return nil, errors.Base(err).Message("Config: Failed to parse Socks user.")
 			}
 			account := new(SocksAccount)
 			if err := json.Unmarshal(rawUser, account); err != nil {
-				return nil, errors.Base(err).Message("Socks|Client: Failed to parse socks account.")
+				return nil, errors.Base(err).Message("Config: Failed to parse socks account.")
 			}
 			user.Account = serial.ToTypedMessage(account.Build())
 			server.User = append(server.User, user)

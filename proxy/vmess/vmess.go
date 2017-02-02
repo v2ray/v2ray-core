@@ -6,11 +6,11 @@
 package vmess
 
 import (
+	"context"
 	"sync"
 	"time"
 
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/common/signal"
 )
 
 const (
@@ -27,12 +27,11 @@ type idEntry struct {
 
 type TimedUserValidator struct {
 	sync.RWMutex
-	running    bool
+	ctx        context.Context
 	validUsers []*protocol.User
 	userHash   map[[16]byte]*indexTimePair
 	ids        []*idEntry
 	hasher     protocol.IDHash
-	cancel     *signal.CancelSignal
 }
 
 type indexTimePair struct {
@@ -40,35 +39,16 @@ type indexTimePair struct {
 	timeSec protocol.Timestamp
 }
 
-func NewTimedUserValidator(hasher protocol.IDHash) protocol.UserValidator {
+func NewTimedUserValidator(ctx context.Context, hasher protocol.IDHash) protocol.UserValidator {
 	tus := &TimedUserValidator{
+		ctx:        ctx,
 		validUsers: make([]*protocol.User, 0, 16),
 		userHash:   make(map[[16]byte]*indexTimePair, 512),
 		ids:        make([]*idEntry, 0, 512),
 		hasher:     hasher,
-		running:    true,
-		cancel:     signal.NewCloseSignal(),
 	}
 	go tus.updateUserHash(updateIntervalSec * time.Second)
 	return tus
-}
-
-func (v *TimedUserValidator) Release() {
-	if !v.running {
-		return
-	}
-
-	v.cancel.Cancel()
-	v.cancel.WaitForDone()
-
-	v.Lock()
-	defer v.Unlock()
-
-	if !v.running {
-		return
-	}
-
-	v.running = false
 }
 
 func (v *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, idx int, entry *idEntry) {
@@ -93,9 +73,6 @@ func (v *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, idx in
 }
 
 func (v *TimedUserValidator) updateUserHash(interval time.Duration) {
-	v.cancel.WaitThread()
-	defer v.cancel.FinishThread()
-
 	for {
 		select {
 		case now := <-time.After(interval):
@@ -105,7 +82,7 @@ func (v *TimedUserValidator) updateUserHash(interval time.Duration) {
 				v.generateNewHashes(nowSec, entry.userIdx, entry)
 			}
 			v.Unlock()
-		case <-v.cancel.WaitForCancel():
+		case <-v.ctx.Done():
 			return
 		}
 	}
@@ -151,9 +128,6 @@ func (v *TimedUserValidator) Get(userHash []byte) (*protocol.User, protocol.Time
 	defer v.RUnlock()
 	v.RLock()
 
-	if !v.running {
-		return nil, 0, false
-	}
 	var fixedSizeHash [16]byte
 	copy(fixedSizeHash[:], userHash)
 	pair, found := v.userHash[fixedSizeHash]

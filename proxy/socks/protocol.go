@@ -8,7 +8,6 @@ import (
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
-	"v2ray.com/core/proxy"
 )
 
 const (
@@ -37,7 +36,7 @@ const (
 
 type ServerSession struct {
 	config *ServerConfig
-	meta   *proxy.InboundHandlerMeta
+	port   v2net.Port
 }
 
 func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol.RequestHeader, error) {
@@ -86,7 +85,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 	if version == socks5Version {
 		nMethod := int(buffer.Byte(1))
 		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, nMethod)); err != nil {
-			return nil, err
+			return nil, errors.Base(err).Message("Socks|Server: Failed to read auth methods.")
 		}
 
 		var expectedAuth byte = authNotRequired
@@ -95,28 +94,32 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 		}
 
 		if !hasAuthMethod(expectedAuth, buffer.BytesRange(2, 2+nMethod)) {
-			writeSocks5AuthenticationResponse(writer, authNoMatchingMethod)
+			writeSocks5AuthenticationResponse(writer, socks5Version, authNoMatchingMethod)
 			return nil, errors.New("Socks|Server: No matching auth method.")
 		}
 
-		if err := writeSocks5AuthenticationResponse(writer, expectedAuth); err != nil {
-			return nil, err
+		if err := writeSocks5AuthenticationResponse(writer, socks5Version, expectedAuth); err != nil {
+			return nil, errors.Base(err).Message("Socks|Server: Failed to write auth response.")
 		}
 
 		if expectedAuth == authPassword {
 			username, password, err := readUsernamePassword(reader)
-			if err != nil || !s.config.HasAccount(username, password) {
-				writeSocks5AuthenticationResponse(writer, 0xFF)
-				return nil, errors.Base(err).Message("Socks|Server: Invalid username or password.")
+			if err != nil {
+				return nil, errors.Base(err).Message("Socks|Server: Failed to read username and password for authentication.")
 			}
 
-			if err := writeSocks5AuthenticationResponse(writer, 0x00); err != nil {
-				return nil, err
+			if !s.config.HasAccount(username, password) {
+				writeSocks5AuthenticationResponse(writer, 0x01, 0xFF)
+				return nil, errors.New("Socks|Server: Invalid username or password.")
+			}
+
+			if err := writeSocks5AuthenticationResponse(writer, 0x01, 0x00); err != nil {
+				return nil, errors.Base(err).Message("Socks|Server: Failed to write auth response.")
 			}
 		}
 		buffer.Clear()
 		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 4)); err != nil {
-			return nil, err
+			return nil, errors.Base(err).Message("Socks|Server: Failed to read request.")
 		}
 
 		cmd := buffer.Byte(1)
@@ -174,7 +177,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 				addr = v2net.LocalHostIP
 			}
 			responseAddress = addr
-			responsePort = s.meta.Port
+			responsePort = s.port
 		}
 		if err := writeSocks5Response(writer, statusSuccess, responseAddress, responsePort); err != nil {
 			return nil, err
@@ -241,8 +244,8 @@ func hasAuthMethod(expectedAuth byte, authCandidates []byte) bool {
 	return false
 }
 
-func writeSocks5AuthenticationResponse(writer io.Writer, auth byte) error {
-	_, err := writer.Write([]byte{socks5Version, auth})
+func writeSocks5AuthenticationResponse(writer io.Writer, version byte, auth byte) error {
+	_, err := writer.Write([]byte{version, auth})
 	return err
 }
 

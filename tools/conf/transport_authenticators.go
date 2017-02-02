@@ -19,7 +19,7 @@ func (NoOpAuthenticator) Build() (*serial.TypedMessage, error) {
 type NoOpConnectionAuthenticator struct{}
 
 func (NoOpConnectionAuthenticator) Build() (*serial.TypedMessage, error) {
-	return serial.ToTypedMessage(new(noop.Config)), nil
+	return serial.ToTypedMessage(new(noop.ConnectionConfig)), nil
 }
 
 type SRTPAuthenticator struct{}
@@ -93,7 +93,7 @@ func (v *HTTPAuthenticatorRequest) Build() (*http.RequestConfig, error) {
 		config.Header = make([]*http.Header, 0, len(v.Headers))
 		for key, value := range v.Headers {
 			if value == nil {
-				return nil, errors.New("Empty HTTP header value: " + key)
+				return nil, errors.New("Config: Empty HTTP header value: " + key)
 			}
 			config.Header = append(config.Header, &http.Header{
 				Name:  key,
@@ -159,7 +159,7 @@ func (v *HTTPAuthenticatorResponse) Build() (*http.ResponseConfig, error) {
 		config.Header = make([]*http.Header, 0, len(v.Headers))
 		for key, value := range v.Headers {
 			if value == nil {
-				return nil, errors.New("Empty HTTP header value: " + key)
+				return nil, errors.New("Config: Empty HTTP header value: " + key)
 			}
 			config.Header = append(config.Header, &http.Header{
 				Name:  key,

@@ -1,6 +1,7 @@
 package kcp_test
 
 import (
+	"context"
 	"crypto/rand"
 	"io"
 	"net"
@@ -21,7 +22,7 @@ func TestDialAndListen(t *testing.T) {
 	listerner, err := NewListener(v2net.LocalHostIP, v2net.Port(0), internet.ListenOptions{
 		Stream: &internet.StreamConfig{
 			Protocol: internet.TransportProtocol_MKCP,
-			TransportSettings: []*internet.TransportSettings{
+			TransportSettings: []*internet.TransportConfig{
 				{
 					Protocol: internet.TransportProtocol_MKCP,
 					Settings: serial.ToTypedMessage(&Config{}),
@@ -55,19 +56,10 @@ func TestDialAndListen(t *testing.T) {
 		}
 	}()
 
+	ctx := internet.ContextWithTransportSettings(context.Background(), &Config{})
 	wg := new(sync.WaitGroup)
 	for i := 0; i < 10; i++ {
-		clientConn, err := DialKCP(v2net.LocalHostIP, v2net.UDPDestination(v2net.LocalHostIP, port), internet.DialerOptions{
-			Stream: &internet.StreamConfig{
-				Protocol: internet.TransportProtocol_MKCP,
-				TransportSettings: []*internet.TransportSettings{
-					{
-						Protocol: internet.TransportProtocol_MKCP,
-						Settings: serial.ToTypedMessage(&Config{}),
-					},
-				},
-			},
-		})
+		clientConn, err := DialKCP(ctx, v2net.UDPDestination(v2net.LocalHostIP, port))
 		assert.Error(err).IsNil()
 		wg.Add(1)
 
