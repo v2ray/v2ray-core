@@ -12,7 +12,6 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -42,8 +41,7 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 
 	_, err := io.ReadFull(reader, buffer[:protocol.IDBytesLen])
 	if err != nil {
-		log.Info("VMess|Server: Failed to read request header: ", err)
-		return nil, io.EOF
+		return nil, errors.Base(err).Message("VMess|Server: Failed to read request header.")
 	}
 
 	user, timestamp, valid := v.userValidator.Get(buffer[:protocol.IDBytesLen])
@@ -123,7 +121,7 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	if padingLen > 0 {
 		_, err = io.ReadFull(decryptor, buffer[bufferLen:bufferLen+padingLen])
 		if err != nil {
-			return nil, errors.New("VMess|Server: Failed to read padding.")
+			return nil, errors.Base(err).Message("VMess|Server: Failed to read padding.")
 		}
 		bufferLen += padingLen
 	}
