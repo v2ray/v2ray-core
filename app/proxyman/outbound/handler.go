@@ -93,7 +93,8 @@ func (h *Handler) Dial(ctx context.Context, dest v2net.Destination) (internet.Co
 		if h.senderSettings.Via != nil {
 			ctx = internet.ContextWithDialerSource(ctx, h.senderSettings.Via.AsAddress())
 		}
-		if h.senderSettings != nil {
+
+		if h.senderSettings.StreamSettings != nil {
 			ctx = internet.ContextWithStreamSettings(ctx, h.senderSettings.StreamSettings)
 		}
 	}
