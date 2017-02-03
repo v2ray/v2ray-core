@@ -9,8 +9,6 @@ import (
 // A Server is a DNS server for responding DNS queries.
 type Server interface {
 	Get(domain string) []net.IP
-	Start() error
-	Close()
 }
 
 func FromSpace(space app.Space) Server {

@@ -13,8 +13,6 @@ import (
 type InboundHandlerManager interface {
 	GetHandler(ctx context.Context, tag string) (InboundHandler, error)
 	AddHandler(ctx context.Context, config *InboundHandlerConfig) error
-	Start() error
-	Close()
 }
 
 type InboundHandler interface {
@@ -29,8 +27,6 @@ type OutboundHandlerManager interface {
 	GetHandler(tag string) OutboundHandler
 	GetDefaultHandler() OutboundHandler
 	AddHandler(ctx context.Context, config *OutboundHandlerConfig) error
-	Start() error
-	Close()
 }
 
 type OutboundHandler interface {

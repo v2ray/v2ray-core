@@ -2,18 +2,14 @@ package inbound
 
 import (
 	"context"
-	"errors"
 	"sync"
 	"time"
 
-	"v2ray.com/core/app"
-	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common/dice"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
-	"v2ray.com/core/transport/ray"
 )
 
 type DynamicInboundHandler struct {
@@ -27,7 +23,7 @@ type DynamicInboundHandler struct {
 	workerMutex    sync.RWMutex
 	worker         []worker
 	lastRefresh    time.Time
-	dispatcher     dispatcher.Interface
+	mux            *mux
 }
 
 func NewDynamicInboundHandler(ctx context.Context, tag string, receiverConfig *proxyman.ReceiverConfig, proxyConfig interface{}) (*DynamicInboundHandler, error) {
@@ -39,17 +35,8 @@ func NewDynamicInboundHandler(ctx context.Context, tag string, receiverConfig *p
 		proxyConfig:    proxyConfig,
 		receiverConfig: receiverConfig,
 		portsInUse:     make(map[v2net.Port]bool),
+		mux:            newMux(ctx),
 	}
-
-	space := app.SpaceFromContext(ctx)
-	space.OnInitialize(func() error {
-		d := dispatcher.FromSpace(space)
-		if d == nil {
-			return errors.New("Proxyman|DefaultInboundHandler: No dispatcher in space.")
-		}
-		h.dispatcher = d
-		return nil
-	})
 
 	return h, nil
 }
@@ -117,7 +104,7 @@ func (h *DynamicInboundHandler) refresh() error {
 				stream:           h.receiverConfig.StreamSettings,
 				recvOrigDest:     h.receiverConfig.ReceiveOriginalDestination,
 				allowPassiveConn: h.receiverConfig.AllowPassiveConnection,
-				dispatcher:       h,
+				dispatcher:       h.mux,
 			}
 			if err := worker.Start(); err != nil {
 				log.Warning("Proxyman:InboundHandler: Failed to create TCP worker: ", err)
@@ -133,7 +120,7 @@ func (h *DynamicInboundHandler) refresh() error {
 				address:      address,
 				port:         port,
 				recvOrigDest: h.receiverConfig.ReceiveOriginalDestination,
-				dispatcher:   h,
+				dispatcher:   h.mux,
 			}
 			if err := worker.Start(); err != nil {
 				log.Warning("Proxyman:InboundHandler: Failed to create UDP worker: ", err)
@@ -180,8 +167,4 @@ func (h *DynamicInboundHandler) GetRandomInboundProxy() (proxy.Inbound, v2net.Po
 	w := h.worker[dice.Roll(len(h.worker))]
 	expire := h.receiverConfig.AllocationStrategy.GetRefreshValue() - uint32(time.Since(h.lastRefresh)/time.Minute)
 	return w.Proxy(), w.Port(), int(expire)
-}
-
-func (h *DynamicInboundHandler) Dispatch(ctx context.Context, dest v2net.Destination) (ray.InboundRay, error) {
-	return h.dispatcher.Dispatch(ctx, dest)
 }

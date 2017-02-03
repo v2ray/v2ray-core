@@ -3,21 +3,17 @@ package inbound
 import (
 	"context"
 
-	"v2ray.com/core/app"
-	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common/dice"
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
-	"v2ray.com/core/transport/ray"
 )
 
 type AlwaysOnInboundHandler struct {
-	proxy      proxy.Inbound
-	workers    []worker
-	dispatcher dispatcher.Interface
+	proxy   proxy.Inbound
+	workers []worker
+	mux     *mux
 }
 
 func NewAlwaysOnInboundHandler(ctx context.Context, tag string, receiverConfig *proxyman.ReceiverConfig, proxyConfig interface{}) (*AlwaysOnInboundHandler, error) {
@@ -28,17 +24,8 @@ func NewAlwaysOnInboundHandler(ctx context.Context, tag string, receiverConfig *
 
 	h := &AlwaysOnInboundHandler{
 		proxy: p,
+		mux:   newMux(ctx),
 	}
-
-	space := app.SpaceFromContext(ctx)
-	space.OnInitialize(func() error {
-		d := dispatcher.FromSpace(space)
-		if d == nil {
-			return errors.New("Proxyman|DefaultInboundHandler: No dispatcher in space.")
-		}
-		h.dispatcher = d
-		return nil
-	})
 
 	nl := p.Network()
 	pr := receiverConfig.PortRange
@@ -57,7 +44,7 @@ func NewAlwaysOnInboundHandler(ctx context.Context, tag string, receiverConfig *
 				recvOrigDest:     receiverConfig.ReceiveOriginalDestination,
 				tag:              tag,
 				allowPassiveConn: receiverConfig.AllowPassiveConnection,
-				dispatcher:       h,
+				dispatcher:       h.mux,
 			}
 			h.workers = append(h.workers, worker)
 		}
@@ -69,7 +56,7 @@ func NewAlwaysOnInboundHandler(ctx context.Context, tag string, receiverConfig *
 				address:      address,
 				port:         net.Port(port),
 				recvOrigDest: receiverConfig.ReceiveOriginalDestination,
-				dispatcher:   h,
+				dispatcher:   h.mux,
 			}
 			h.workers = append(h.workers, worker)
 		}
@@ -96,8 +83,4 @@ func (h *AlwaysOnInboundHandler) Close() {
 func (h *AlwaysOnInboundHandler) GetRandomInboundProxy() (proxy.Inbound, net.Port, int) {
 	w := h.workers[dice.Roll(len(h.workers))]
 	return w.Proxy(), w.Port(), 9999
-}
-
-func (h *AlwaysOnInboundHandler) Dispatch(ctx context.Context, dest net.Destination) (ray.InboundRay, error) {
-	return h.dispatcher.Dispatch(ctx, dest)
 }

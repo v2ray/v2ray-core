@@ -11,8 +11,6 @@ import (
 // Interface dispatch a packet and possibly further network payload to its destination.
 type Interface interface {
 	Dispatch(ctx context.Context, dest net.Destination) (ray.InboundRay, error)
-	Start() error
-	Close()
 }
 
 func FromSpace(space app.Space) Interface {
