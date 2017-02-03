@@ -11,6 +11,7 @@ message InboundConfig {
 
 import "v2ray.com/core/common/serial/typed_message.proto";
 import "v2ray.com/core/common/net/address.proto";
+import "v2ray.com/core/common/net/destination.proto";
 import "v2ray.com/core/common/net/port.proto";
 import "v2ray.com/core/transport/internet/config.proto";
 
@@ -78,4 +79,18 @@ message OutboundHandlerConfig {
   v2ray.core.common.serial.TypedMessage proxy_settings = 3;
   int64 expire = 4;
   string comment = 5;
+}
+
+message MultiplexingConfig {
+  bool enabled = 1;
+}
+
+message DispatchConfig {
+  MultiplexingConfig mux_settings = 1;
+}
+
+message SessionFrame {
+  uint32 id = 1;
+  v2ray.core.common.net.Endpoint target = 2;
+  bytes payload = 3;
 }
