@@ -4,7 +4,7 @@ package v2ray.core.common.net;
 option csharp_namespace = "V2Ray.Core.Common.Net";
 option go_package = "net";
 option java_package = "com.v2ray.core.common.net";
-option java_outer_classname = "AddressProto";
+option java_multiple_files = true;
 
 message IPOrDomain {
   oneof address {

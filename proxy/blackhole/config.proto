@@ -4,7 +4,7 @@ package v2ray.core.proxy.blackhole;
 option csharp_namespace = "V2Ray.Core.Proxy.Blackhole";
 option go_package = "blackhole";
 option java_package = "com.v2ray.core.proxy.blackhole";
-option java_outer_classname = "ConfigProto";
+option java_multiple_files = true;
 
 import "v2ray.com/core/common/serial/typed_message.proto";
 

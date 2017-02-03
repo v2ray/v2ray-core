@@ -4,7 +4,7 @@ package v2ray.core.app.dispatcher;
 option csharp_namespace = "V2Ray.Core.App.Dispatcher";
 option go_package = "dispatcher";
 option java_package = "com.v2ray.core.app.dispatcher";
-option java_outer_classname = "ConfigProto";
+option java_multiple_files = true;
 
 message SessionConfig {
   bool allow_passive_connection = 1;

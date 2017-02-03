@@ -4,7 +4,7 @@ package v2ray.core.transport.internet.headers.srtp;
 option csharp_namespace = "V2Ray.Core.Transport.Internet.Headers.Srtp";
 option go_package = "srtp";
 option java_package = "com.v2ray.core.transport.internet.headers.srtp";
-option java_outer_classname = "ConfigProto";
+option java_multiple_files = true;
 
 message Config {
   uint32 version = 1;

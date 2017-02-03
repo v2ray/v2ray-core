@@ -4,7 +4,7 @@ package v2ray.core.app.proxyman;
 option csharp_namespace = "V2Ray.Core.App.Proxyman";
 option go_package = "proxyman";
 option java_package = "com.v2ray.core.app.proxyman";
-option java_outer_classname = "ConfigProto";
+option java_multiple_files = true;
 
 message InboundConfig {
 }

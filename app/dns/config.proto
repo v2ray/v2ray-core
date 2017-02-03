@@ -4,7 +4,7 @@ package v2ray.core.app.dns;
 option csharp_namespace = "V2Ray.Core.App.Dns";
 option go_package = "dns";
 option java_package = "com.v2ray.core.app.dns";
-option java_outer_classname = "ConfigProto";
+option java_multiple_files = true;
 
 import "v2ray.com/core/common/net/address.proto";
 import "v2ray.com/core/common/net/destination.proto";

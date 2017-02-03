@@ -4,7 +4,7 @@ package v2ray.core.transport.internet.websocket;
 option csharp_namespace = "V2Ray.Core.Transport.Internet.Websocket";
 option go_package = "websocket";
 option java_package = "com.v2ray.core.transport.internet.websocket";
-option java_outer_classname = "ConfigProto";
+option java_multiple_files = true;
 
 message ConnectionReuse {
   bool enable = 1;

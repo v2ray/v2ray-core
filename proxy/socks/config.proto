@@ -4,7 +4,7 @@ package v2ray.core.proxy.socks;
 option csharp_namespace = "V2Ray.Core.Proxy.Socks";
 option go_package = "socks";
 option java_package = "com.v2ray.core.proxy.socks";
-option java_outer_classname = "ConfigProto";
+option java_multiple_files = true;
 
 import "v2ray.com/core/common/net/address.proto";
 import "v2ray.com/core/common/protocol/server_spec.proto";

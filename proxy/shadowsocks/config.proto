@@ -4,7 +4,7 @@ package v2ray.core.proxy.shadowsocks;
 option csharp_namespace = "V2Ray.Core.Proxy.Shadowsocks";
 option go_package = "shadowsocks";
 option java_package = "com.v2ray.core.proxy.shadowsocks";
-option java_outer_classname = "ConfigProto";
+option java_multiple_files = true;
 
 import "v2ray.com/core/common/protocol/user.proto";
 import "v2ray.com/core/common/protocol/server_spec.proto";

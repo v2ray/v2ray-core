@@ -4,7 +4,7 @@ package v2ray.core.proxy.freedom;
 option csharp_namespace = "V2Ray.Core.Proxy.Freedom";
 option go_package = "freedom";
 option java_package = "com.v2ray.core.proxy.freedom";
-option java_outer_classname = "ConfigProto";
+option java_multiple_files = true;
 
 import "v2ray.com/core/common/protocol/server_spec.proto";
 

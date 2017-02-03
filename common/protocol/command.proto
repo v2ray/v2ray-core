@@ -4,7 +4,7 @@ package v2ray.core.common.protocol;
 option csharp_namespace = "V2Ray.Core.Common.Protocol";
 option go_package = "protocol";
 option java_package = "com.v2ray.core.common.protocol";
-option java_outer_classname = "CommandProto";
+option java_multiple_files = true;
 
 import "v2ray.com/core/common/serial/typed_message.proto";
 import "v2ray.com/core/transport/internet/config.proto";

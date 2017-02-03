@@ -4,7 +4,7 @@ package v2ray.core.common.net;
 option csharp_namespace = "V2Ray.Core.Common.Net";
 option go_package = "net";
 option java_package = "com.v2ray.core.common.net";
-option java_outer_classname = "DestinationProto";
+option java_multiple_files = true;
 
 import "v2ray.com/core/common/net/network.proto";
 import "v2ray.com/core/common/net/address.proto";
