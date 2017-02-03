@@ -4,6 +4,7 @@ package proxy
 import (
 	"context"
 
+	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/ray"
@@ -13,12 +14,12 @@ import (
 type Inbound interface {
 	Network() net.NetworkList
 
-	Process(context.Context, net.Network, internet.Connection) error
+	Process(context.Context, net.Network, internet.Connection, dispatcher.Interface) error
 }
 
 // An Outbound process outbound connections.
 type Outbound interface {
-	Process(context.Context, ray.OutboundRay) error
+	Process(context.Context, ray.OutboundRay, Dialer) error
 }
 
 // Dialer is used by OutboundHandler for creating outbound connections.

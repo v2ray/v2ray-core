@@ -5,10 +5,9 @@ import (
 	"sync"
 
 	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/common/buf"
 	"v2ray.com/core/app/log"
+	"v2ray.com/core/common/buf"
 	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
 )
 
@@ -16,14 +15,14 @@ type ResponseCallback func(payload *buf.Buffer)
 
 type Dispatcher struct {
 	sync.RWMutex
-	conns            map[string]ray.InboundRay
-	packetDispatcher dispatcher.Interface
+	conns      map[string]ray.InboundRay
+	dispatcher dispatcher.Interface
 }
 
-func NewDispatcher(packetDispatcher dispatcher.Interface) *Dispatcher {
+func NewDispatcher(dispatcher dispatcher.Interface) *Dispatcher {
 	return &Dispatcher{
-		conns:            make(map[string]ray.InboundRay),
-		packetDispatcher: packetDispatcher,
+		conns:      make(map[string]ray.InboundRay),
+		dispatcher: dispatcher,
 	}
 }
 
@@ -47,8 +46,8 @@ func (v *Dispatcher) getInboundRay(ctx context.Context, dest v2net.Destination) 
 	}
 
 	log.Info("UDP|Server: establishing new connection for ", dest)
-	ctx = proxy.ContextWithDestination(ctx, dest)
-	return v.packetDispatcher.DispatchToOutbound(ctx), false
+	inboundRay, _ := v.dispatcher.Dispatch(ctx, dest)
+	return inboundRay, false
 }
 
 func (v *Dispatcher) Dispatch(ctx context.Context, destination v2net.Destination, payload *buf.Buffer, callback ResponseCallback) {

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"v2ray.com/core/common"
+	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
 )
 
@@ -31,7 +32,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 }
 
 // Dispatch implements OutboundHandler.Dispatch().
-func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay) error {
+func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
 	v.response.WriteTo(outboundRay.OutboundOutput())
 	// Sleep a little here to make sure the response is sent to client.
 	time.Sleep(time.Second)

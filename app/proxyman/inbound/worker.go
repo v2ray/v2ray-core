@@ -8,6 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/buf"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
@@ -31,6 +33,7 @@ type tcpWorker struct {
 	recvOrigDest     bool
 	tag              string
 	allowPassiveConn bool
+	dispatcher       dispatcher.Interface
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -51,7 +54,9 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 	ctx = proxy.ContextWithAllowPassiveConnection(ctx, w.allowPassiveConn)
 	ctx = proxy.ContextWithInboundDestination(ctx, v2net.TCPDestination(w.address, w.port))
 	ctx = proxy.ContextWithSource(ctx, v2net.DestinationFromAddr(conn.RemoteAddr()))
-	w.proxy.Process(ctx, v2net.Network_TCP, conn)
+	if err := w.proxy.Process(ctx, v2net.Network_TCP, conn, w.dispatcher); err != nil {
+		log.Info("Proxyman|TCPWorker: Connection ends with ", err)
+	}
 	cancel()
 	conn.Close()
 }
@@ -151,6 +156,7 @@ type udpWorker struct {
 	port         v2net.Port
 	recvOrigDest bool
 	tag          string
+	dispatcher   dispatcher.Interface
 
 	ctx        context.Context
 	cancel     context.CancelFunc
@@ -206,7 +212,9 @@ func (w *udpWorker) callback(b *buf.Buffer, source v2net.Destination, originalDe
 			}
 			ctx = proxy.ContextWithSource(ctx, source)
 			ctx = proxy.ContextWithInboundDestination(ctx, v2net.UDPDestination(w.address, w.port))
-			w.proxy.Process(ctx, v2net.Network_UDP, conn)
+			if err := w.proxy.Process(ctx, v2net.Network_UDP, conn, w.dispatcher); err != nil {
+				log.Info("Proxyman|UDPWorker: Connection ends with ", err)
+			}
 			w.removeConn(source)
 			cancel()
 		}()

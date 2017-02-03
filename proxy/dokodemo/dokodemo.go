@@ -7,10 +7,10 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
@@ -18,10 +18,9 @@ import (
 )
 
 type DokodemoDoor struct {
-	config           *Config
-	address          net.Address
-	port             net.Port
-	packetDispatcher dispatcher.Interface
+	config  *Config
+	address net.Address
+	port    net.Port
 }
 
 func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
@@ -37,13 +36,6 @@ func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
 		address: config.GetPredefinedAddress(),
 		port:    net.Port(config.Port),
 	}
-	space.OnInitialize(func() error {
-		d.packetDispatcher = dispatcher.FromSpace(space)
-		if d.packetDispatcher == nil {
-			return errors.New("Dokodemo: Dispatcher is not found in the space.")
-		}
-		return nil
-	})
 	return d, nil
 }
 
@@ -51,7 +43,7 @@ func (d *DokodemoDoor) Network() net.NetworkList {
 	return *(d.config.NetworkList)
 }
 
-func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn internet.Connection) error {
+func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
 	log.Debug("Dokodemo: processing connection from: ", conn.RemoteAddr())
 	conn.SetReusable(false)
 	dest := net.Destination{
@@ -68,7 +60,6 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		log.Info("Dokodemo: Invalid destination. Discarding...")
 		return errors.New("Dokodemo: Unable to get destination.")
 	}
-	ctx = proxy.ContextWithDestination(ctx, dest)
 	ctx, cancel := context.WithCancel(ctx)
 	timeout := time.Second * time.Duration(d.config.Timeout)
 	if timeout == 0 {
@@ -76,7 +67,10 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 	}
 	timer := signal.CancelAfterInactivity(ctx, cancel, timeout)
 
-	inboundRay := d.packetDispatcher.DispatchToOutbound(ctx)
+	inboundRay, err := dispatcher.Dispatch(ctx, dest)
+	if err != nil {
+		return err
+	}
 
 	requestDone := signal.ExecuteAsync(func() error {
 		defer inboundRay.InboundInput().Close()

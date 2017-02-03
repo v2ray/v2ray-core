@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"v2ray.com/core/app"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
@@ -47,11 +47,10 @@ func New(ctx context.Context, config *Config) (*VMessOutboundHandler, error) {
 }
 
 // Dispatch implements OutboundHandler.Dispatch().
-func (v *VMessOutboundHandler) Process(ctx context.Context, outboundRay ray.OutboundRay) error {
+func (v *VMessOutboundHandler) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
 	var rec *protocol.ServerSpec
 	var conn internet.Connection
 
-	dialer := proxy.DialerFromContext(ctx)
 	err := retry.ExponentialBackoff(5, 100).On(func() error {
 		rec = v.serverPicker.PickServer()
 		rawConn, err := dialer.Dial(ctx, rec.Destination())

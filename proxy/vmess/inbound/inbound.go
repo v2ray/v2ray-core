@@ -10,18 +10,17 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/uuid"
-	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/encoding"
 	"v2ray.com/core/transport/internet"
@@ -75,8 +74,6 @@ func (v *userByEmail) Get(email string) (*protocol.User, bool) {
 
 // Inbound connection handler that handles messages in VMess format.
 type VMessInboundHandler struct {
-	sync.RWMutex
-	packetDispatcher      dispatcher.Interface
 	inboundHandlerManager proxyman.InboundHandlerManager
 	clients               protocol.UserValidator
 	usersByEmail          *userByEmail
@@ -101,10 +98,6 @@ func New(ctx context.Context, config *Config) (*VMessInboundHandler, error) {
 	}
 
 	space.OnInitialize(func() error {
-		handler.packetDispatcher = dispatcher.FromSpace(space)
-		if handler.packetDispatcher == nil {
-			return errors.New("VMess|Inbound: Dispatcher is not found in space.")
-		}
 		handler.inboundHandlerManager = proxyman.InboundHandlerManagerFromSpace(space)
 		if handler.inboundHandlerManager == nil {
 			return errors.New("VMess|Inbound: InboundHandlerManager is not found is space.")
@@ -122,9 +115,6 @@ func (*VMessInboundHandler) Network() net.NetworkList {
 }
 
 func (v *VMessInboundHandler) GetUser(email string) *protocol.User {
-	v.RLock()
-	defer v.RUnlock()
-
 	user, existing := v.usersByEmail.Get(email)
 	if !existing {
 		v.clients.Add(user)
@@ -177,7 +167,7 @@ func transferResponse(timer *signal.ActivityTimer, session *encoding.ServerSessi
 	return nil
 }
 
-func (v *VMessInboundHandler) Process(ctx context.Context, network net.Network, connection internet.Connection) error {
+func (v *VMessInboundHandler) Process(ctx context.Context, network net.Network, connection internet.Connection, dispatcher dispatcher.Interface) error {
 	connection.SetReadDeadline(time.Now().Add(time.Second * 8))
 	reader := bufio.NewReader(connection)
 
@@ -200,11 +190,13 @@ func (v *VMessInboundHandler) Process(ctx context.Context, network net.Network, 
 	connection.SetReusable(request.Option.Has(protocol.RequestOptionConnectionReuse))
 	userSettings := request.User.GetSettings()
 
-	ctx = proxy.ContextWithDestination(ctx, request.Destination())
 	ctx = protocol.ContextWithUser(ctx, request.User)
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, userSettings.PayloadTimeout)
-	ray := v.packetDispatcher.DispatchToOutbound(ctx)
+	ray, err := dispatcher.Dispatch(ctx, request.Destination())
+	if err != nil {
+		return err
+	}
 
 	input := ray.InboundInput()
 	output := ray.InboundOutput()

@@ -8,11 +8,11 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dns"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/common/signal"
@@ -73,7 +73,7 @@ func (v *Handler) ResolveIP(destination net.Destination) net.Destination {
 	return newDest
 }
 
-func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay) error {
+func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
 	destination := proxy.DestinationFromContext(ctx)
 	if v.destOverride != nil {
 		server := v.destOverride.Server
@@ -93,7 +93,6 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay) erro
 		destination = v.ResolveIP(destination)
 	}
 
-	dialer := proxy.DialerFromContext(ctx)
 	err := retry.ExponentialBackoff(5, 100).On(func() error {
 		rawConn, err := dialer.Dial(ctx, destination)
 		if err != nil {

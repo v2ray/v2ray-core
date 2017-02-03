@@ -12,6 +12,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
 )
@@ -48,12 +49,13 @@ func (DefaultDispatcher) Interface() interface{} {
 	return (*dispatcher.Interface)(nil)
 }
 
-func (v *DefaultDispatcher) DispatchToOutbound(ctx context.Context) ray.InboundRay {
+func (v *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destination) (ray.InboundRay, error) {
 	dispatcher := v.ohm.GetDefaultHandler()
-	destination := proxy.DestinationFromContext(ctx)
 	if !destination.IsValid() {
 		panic("Dispatcher: Invalid destination.")
 	}
+
+	ctx = proxy.ContextWithDestination(ctx, destination)
 
 	if v.router != nil {
 		if tag, err := v.router.TakeDetour(ctx); err == nil {
@@ -82,7 +84,7 @@ func (v *DefaultDispatcher) DispatchToOutbound(ctx context.Context) ray.InboundR
 
 	go v.waitAndDispatch(ctx, waitFunc, direct, dispatcher)
 
-	return direct
+	return direct, nil
 }
 
 func (v *DefaultDispatcher) waitAndDispatch(ctx context.Context, wait func() error, link ray.OutboundRay, dispatcher proxyman.OutboundHandler) {

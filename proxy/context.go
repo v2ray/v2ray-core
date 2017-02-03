@@ -9,8 +9,7 @@ import (
 type key int
 
 const (
-	dialerKey key = iota
-	sourceKey
+	sourceKey key = iota
 	destinationKey
 	originalDestinationKey
 	inboundDestinationKey
@@ -18,19 +17,8 @@ const (
 	outboundTagKey
 	resolvedIPsKey
 	allowPassiveConnKey
+	dispatcherKey
 )
-
-func ContextWithDialer(ctx context.Context, dialer Dialer) context.Context {
-	return context.WithValue(ctx, dialerKey, dialer)
-}
-
-func DialerFromContext(ctx context.Context) Dialer {
-	v := ctx.Value(dialerKey)
-	if v == nil {
-		return nil
-	}
-	return v.(Dialer)
-}
 
 func ContextWithSource(ctx context.Context, src net.Destination) context.Context {
 	return context.WithValue(ctx, sourceKey, src)

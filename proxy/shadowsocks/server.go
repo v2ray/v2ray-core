@@ -2,17 +2,16 @@ package shadowsocks
 
 import (
 	"context"
-	"time"
-
 	"runtime"
+	"time"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/signal"
@@ -22,11 +21,9 @@ import (
 )
 
 type Server struct {
-	packetDispatcher dispatcher.Interface
-	config           *ServerConfig
-	user             *protocol.User
-	account          *ShadowsocksAccount
-	udpServer        *udp.Dispatcher
+	config  *ServerConfig
+	user    *protocol.User
+	account *ShadowsocksAccount
 }
 
 func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
@@ -50,14 +47,6 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 		account: account,
 	}
 
-	space.OnInitialize(func() error {
-		s.packetDispatcher = dispatcher.FromSpace(space)
-		if s.packetDispatcher == nil {
-			return errors.New("Shadowsocks|Server: Dispatcher is not found in space.")
-		}
-		return nil
-	})
-
 	return s, nil
 }
 
@@ -71,20 +60,21 @@ func (s *Server) Network() net.NetworkList {
 	return list
 }
 
-func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection) error {
+func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
 	conn.SetReusable(false)
 
 	switch network {
 	case net.Network_TCP:
-		return s.handleConnection(ctx, conn)
+		return s.handleConnection(ctx, conn, dispatcher)
 	case net.Network_UDP:
-		return s.handlerUDPPayload(ctx, conn)
+		return s.handlerUDPPayload(ctx, conn, dispatcher)
 	default:
 		return errors.New("Shadowsocks|Server: Unknown network: ", network)
 	}
 }
 
-func (v *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection) error {
+func (v *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection, dispatcher dispatcher.Interface) error {
+	udpServer := udp.NewDispatcher(dispatcher)
 	source := proxy.SourceFromContext(ctx)
 
 	reader := buf.NewReader(conn)
@@ -119,7 +109,7 @@ func (v *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 		log.Info("Shadowsocks|Server: Tunnelling request to ", dest)
 
 		ctx = protocol.ContextWithUser(ctx, request.User)
-		v.udpServer.Dispatch(ctx, dest, data, func(payload *buf.Buffer) {
+		udpServer.Dispatch(ctx, dest, data, func(payload *buf.Buffer) {
 			defer payload.Release()
 
 			data, err := EncodeUDPPacket(request, payload)
@@ -136,7 +126,7 @@ func (v *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 	return nil
 }
 
-func (s *Server) handleConnection(ctx context.Context, conn internet.Connection) error {
+func (s *Server) handleConnection(ctx context.Context, conn internet.Connection, dispatcher dispatcher.Interface) error {
 	conn.SetReadDeadline(time.Now().Add(time.Second * 8))
 	bufferedReader := bufio.NewReader(conn)
 	request, bodyReader, err := ReadTCPSession(s.user, bufferedReader)
@@ -153,13 +143,15 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection)
 	log.Access(conn.RemoteAddr(), dest, log.AccessAccepted, "")
 	log.Info("Shadowsocks|Server: Tunnelling request to ", dest)
 
-	ctx = proxy.ContextWithDestination(ctx, dest)
 	ctx = protocol.ContextWithUser(ctx, request.User)
 
 	ctx, cancel := context.WithCancel(ctx)
 	userSettings := s.user.GetSettings()
 	timer := signal.CancelAfterInactivity(ctx, cancel, userSettings.PayloadTimeout)
-	ray := s.packetDispatcher.DispatchToOutbound(ctx)
+	ray, err := dispatcher.Dispatch(ctx, dest)
+	if err != nil {
+		return err
+	}
 
 	requestDone := signal.ExecuteAsync(func() error {
 		bufferedWriter := bufio.NewWriter(conn)

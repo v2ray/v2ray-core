@@ -8,27 +8,23 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/app/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/signal"
-	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 )
 
 // Server is a HTTP proxy server.
 type Server struct {
-	sync.Mutex
-	packetDispatcher dispatcher.Interface
-	config           *ServerConfig
+	config *ServerConfig
 }
 
 // NewServer creates a new HTTP inbound handler.
@@ -40,13 +36,6 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	s := &Server{
 		config: config,
 	}
-	space.OnInitialize(func() error {
-		s.packetDispatcher = dispatcher.FromSpace(space)
-		if s.packetDispatcher == nil {
-			return errors.New("HTTP|Server: Dispatcher not found in space.")
-		}
-		return nil
-	})
 	return s, nil
 }
 
@@ -79,7 +68,7 @@ func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error
 	return v2net.TCPDestination(v2net.DomainAddress(host), port), nil
 }
 
-func (s *Server) Process(ctx context.Context, network v2net.Network, conn internet.Connection) error {
+func (s *Server) Process(ctx context.Context, network v2net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
 	conn.SetReusable(false)
 
 	conn.SetReadDeadline(time.Now().Add(time.Second * 8))
@@ -109,15 +98,15 @@ func (s *Server) Process(ctx context.Context, network v2net.Network, conn intern
 		return err
 	}
 	log.Access(conn.RemoteAddr(), request.URL, log.AccessAccepted, "")
-	ctx = proxy.ContextWithDestination(ctx, dest)
+
 	if strings.ToUpper(request.Method) == "CONNECT" {
-		return s.handleConnect(ctx, request, reader, conn)
+		return s.handleConnect(ctx, request, reader, conn, dest, dispatcher)
 	} else {
-		return s.handlePlainHTTP(ctx, request, reader, conn)
+		return s.handlePlainHTTP(ctx, request, reader, conn, dest, dispatcher)
 	}
 }
 
-func (s *Server) handleConnect(ctx context.Context, request *http.Request, reader io.Reader, writer io.Writer) error {
+func (s *Server) handleConnect(ctx context.Context, request *http.Request, reader io.Reader, writer io.Writer, dest v2net.Destination, dispatcher dispatcher.Interface) error {
 	response := &http.Response{
 		Status:        "200 OK",
 		StatusCode:    200,
@@ -140,7 +129,10 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		timeout = time.Minute * 2
 	}
 	timer := signal.CancelAfterInactivity(ctx, cancel, timeout)
-	ray := s.packetDispatcher.DispatchToOutbound(ctx)
+	ray, err := dispatcher.Dispatch(ctx, dest)
+	if err != nil {
+		return err
+	}
 
 	requestDone := signal.ExecuteAsync(func() error {
 		defer ray.InboundInput().Close()
@@ -213,7 +205,7 @@ func generateResponse(statusCode int, status string) *http.Response {
 	}
 }
 
-func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, reader io.Reader, writer io.Writer) error {
+func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, reader io.Reader, writer io.Writer, dest v2net.Destination, dispatcher dispatcher.Interface) error {
 	if len(request.URL.Host) <= 0 {
 		response := generateResponse(400, "Bad Request")
 		return response.Write(writer)
@@ -222,7 +214,10 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 	request.Host = request.URL.Host
 	StripHopByHopHeaders(request)
 
-	ray := s.packetDispatcher.DispatchToOutbound(ctx)
+	ray, err := dispatcher.Dispatch(ctx, dest)
+	if err != nil {
+		return err
+	}
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 	defer input.Close()

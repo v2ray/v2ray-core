@@ -8,11 +8,11 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/signal"
@@ -23,9 +23,7 @@ import (
 
 // Server is a SOCKS 5 proxy server
 type Server struct {
-	packetDispatcher dispatcher.Interface
-	config           *ServerConfig
-	udpServer        *udp.Dispatcher
+	config *ServerConfig
 }
 
 // NewServer creates a new Server object.
@@ -37,14 +35,6 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	s := &Server{
 		config: config,
 	}
-	space.OnInitialize(func() error {
-		s.packetDispatcher = dispatcher.FromSpace(space)
-		if s.packetDispatcher == nil {
-			return errors.New("Socks|Server: Dispatcher is not found in the space.")
-		}
-		s.udpServer = udp.NewDispatcher(s.packetDispatcher)
-		return nil
-	})
 	return s, nil
 }
 
@@ -58,20 +48,20 @@ func (s *Server) Network() net.NetworkList {
 	return list
 }
 
-func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection) error {
+func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
 	conn.SetReusable(false)
 
 	switch network {
 	case net.Network_TCP:
-		return s.processTCP(ctx, conn)
+		return s.processTCP(ctx, conn, dispatcher)
 	case net.Network_UDP:
-		return s.handleUDPPayload(ctx, conn)
+		return s.handleUDPPayload(ctx, conn, dispatcher)
 	default:
 		return errors.New("Socks|Server: Unknown network: ", network)
 	}
 }
 
-func (s *Server) processTCP(ctx context.Context, conn internet.Connection) error {
+func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispatcher dispatcher.Interface) error {
 	conn.SetReadDeadline(time.Now().Add(time.Second * 8))
 	reader := bufio.NewReader(conn)
 
@@ -95,8 +85,7 @@ func (s *Server) processTCP(ctx context.Context, conn internet.Connection) error
 		log.Info("Socks|Server: TCP Connect request to ", dest)
 		log.Access(source, dest, log.AccessAccepted, "")
 
-		ctx = proxy.ContextWithDestination(ctx, dest)
-		return s.transport(ctx, reader, conn)
+		return s.transport(ctx, reader, conn, dest, dispatcher)
 	}
 
 	if request.Command == protocol.RequestCommandUDP {
@@ -115,7 +104,7 @@ func (*Server) handleUDP() error {
 	return nil
 }
 
-func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writer) error {
+func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writer, dest net.Destination, dispatcher dispatcher.Interface) error {
 	ctx, cancel := context.WithCancel(ctx)
 	timeout := time.Second * time.Duration(v.config.Timeout)
 	if timeout == 0 {
@@ -123,7 +112,11 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 	}
 	timer := signal.CancelAfterInactivity(ctx, cancel, timeout)
 
-	ray := v.packetDispatcher.DispatchToOutbound(ctx)
+	ray, err := dispatcher.Dispatch(ctx, dest)
+	if err != nil {
+		return err
+	}
+
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 
@@ -159,7 +152,9 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 	return nil
 }
 
-func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection) error {
+func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection, dispatcher dispatcher.Interface) error {
+	udpServer := udp.NewDispatcher(dispatcher)
+
 	source := proxy.SourceFromContext(ctx)
 	log.Info("Socks|Server: Client UDP connection from ", source)
 
@@ -185,7 +180,7 @@ func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection)
 
 		dataBuf := buf.NewSmall()
 		dataBuf.Append(data)
-		v.udpServer.Dispatch(ctx, request.Destination(), dataBuf, func(payload *buf.Buffer) {
+		udpServer.Dispatch(ctx, request.Destination(), dataBuf, func(payload *buf.Buffer) {
 			defer payload.Release()
 
 			log.Info("Socks|Server: Writing back UDP response with ", payload.Len(), " bytes")

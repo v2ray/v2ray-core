@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"v2ray.com/core/app"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/app/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
@@ -64,8 +64,7 @@ func NewHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) (*H
 }
 
 func (h *Handler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
-	ctx = proxy.ContextWithDialer(ctx, h)
-	err := h.proxy.Process(ctx, outboundRay)
+	err := h.proxy.Process(ctx, outboundRay, h)
 	// Ensure outbound ray is properly closed.
 	if err != nil && errors.Cause(err) != io.EOF {
 		outboundRay.OutboundOutput().CloseError()
