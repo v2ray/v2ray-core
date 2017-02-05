@@ -78,8 +78,10 @@ func (w *tcpWorker) Start() error {
 }
 
 func (w *tcpWorker) Close() {
-	w.hub.Close()
-	w.cancel()
+	if w.hub != nil {
+		w.hub.Close()
+		w.cancel()
+	}
 }
 
 func (w *tcpWorker) Port() v2net.Port {
