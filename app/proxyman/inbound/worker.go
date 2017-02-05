@@ -245,8 +245,10 @@ func (w *udpWorker) Start() error {
 }
 
 func (w *udpWorker) Close() {
-	w.hub.Close()
-	w.cancel()
+	if w.hub != nil {
+		w.hub.Close()
+		w.cancel()
+	}
 }
 
 func (w *udpWorker) monitor() {
