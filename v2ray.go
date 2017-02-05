@@ -8,7 +8,7 @@ import (
 	"v2ray.com/core/app/dns"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 )
 
 // Point shell of V2Ray.
@@ -80,8 +80,8 @@ func NewPoint(config *Config) (*Point, error) {
 	dnsServer := dns.FromSpace(space)
 	if dnsServer == nil {
 		dnsConfig := &dns.Config{
-			NameServers: []*v2net.Endpoint{{
-				Address: v2net.NewIPOrDomain(v2net.LocalHostDomain),
+			NameServers: []*net.Endpoint{{
+				Address: net.NewIPOrDomain(net.LocalHostDomain),
 			}},
 		}
 		d, err := app.CreateAppFromConfig(ctx, dnsConfig)
