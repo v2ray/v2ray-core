@@ -91,6 +91,8 @@ func TestAuthenticationReaderWriterPartial(t *testing.T) {
 		AdditionalDataGenerator: &NoOpBytesGenerator{},
 	}, cache)
 
+	writer.Write([]byte{'a', 'b', 'c', 'd'})
+
 	nBytes, err := writer.Write(payload)
 	assert.Error(err).IsNil()
 	assert.Int(nBytes).Equals(len(payload))
@@ -120,6 +122,11 @@ func TestAuthenticationReaderWriterPartial(t *testing.T) {
 	}, pr)
 
 	actualPayload := make([]byte, 7*1024)
+	nBytes, err = reader.Read(actualPayload)
+	assert.Error(err).IsNil()
+	assert.Int(nBytes).Equals(4)
+	assert.Bytes(actualPayload[:nBytes]).Equals([]byte{'a', 'b', 'c', 'd'})
+
 	nBytes, err = reader.Read(actualPayload)
 	assert.Error(err).IsNil()
 	assert.Int(nBytes).Equals(len(actualPayload))

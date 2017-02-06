@@ -128,8 +128,10 @@ func (v *AuthenticationReader) CopyChunk(b []byte) int {
 }
 
 func (v *AuthenticationReader) EnsureChunk() error {
+	atHead := false
 	if v.buffer.IsEmpty() {
 		v.buffer.Clear()
+		atHead = true
 	}
 
 	for {
@@ -139,7 +141,7 @@ func (v *AuthenticationReader) EnsureChunk() error {
 		}
 
 		leftover := v.buffer.Bytes()
-		if len(leftover) > 0 {
+		if !atHead && len(leftover) > 0 {
 			common.Must(v.buffer.Reset(func(b []byte) (int, error) {
 				return copy(b, leftover), nil
 			}))
