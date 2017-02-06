@@ -28,8 +28,7 @@ func (v *SimpleSegmentWriter) Write(seg Segment) error {
 	v.Lock()
 	defer v.Unlock()
 
-	v.buffer.AppendSupplier(seg.Bytes())
+	v.buffer.Reset(seg.Bytes())
 	_, err := v.writer.Write(v.buffer.Bytes())
-	v.buffer.Clear()
 	return err
 }

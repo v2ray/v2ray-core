@@ -61,12 +61,13 @@ func (v *DataSegment) Command() Command {
 	return CommandData
 }
 
-func (v *DataSegment) SetData(b []byte) {
+func (v *DataSegment) SetData(data []byte) {
 	if v.Data == nil {
 		v.Data = buf.NewSmall()
 	}
-	v.Data.Clear()
-	v.Data.Append(b)
+	v.Data.Reset(func(b []byte) (int, error) {
+		return copy(b, data), nil
+	})
 }
 
 func (v *DataSegment) Bytes() buf.Supplier {
