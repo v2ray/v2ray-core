@@ -7,6 +7,8 @@ import (
 	"io"
 	"testing"
 
+	"time"
+
 	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/common/crypto"
 	"v2ray.com/core/testing/assert"
@@ -77,10 +79,10 @@ func TestAuthenticationReaderWriterPartial(t *testing.T) {
 	payload := make([]byte, 8*1024)
 	rand.Read(payload)
 
-	cache := buf.NewLocal(16 * 1024)
 	iv := make([]byte, 12)
 	rand.Read(iv)
 
+	cache := buf.NewLocal(16 * 1024)
 	writer := NewAuthenticationWriter(&AEADAuthenticator{
 		AEAD: aead,
 		NonceGenerator: &StaticBytesGenerator{
@@ -96,13 +98,22 @@ func TestAuthenticationReaderWriterPartial(t *testing.T) {
 	_, err = writer.Write([]byte{})
 	assert.Error(err).IsNil()
 
+	pr, pw := io.Pipe()
+	go func() {
+		pw.Write(cache.BytesTo(1024))
+		time.Sleep(time.Second * 2)
+		pw.Write(cache.BytesFrom(1024))
+		time.Sleep(time.Second * 2)
+		pw.Close()
+	}()
+
 	reader := NewAuthenticationReader(&AEADAuthenticator{
 		AEAD: aead,
 		NonceGenerator: &StaticBytesGenerator{
 			Content: iv,
 		},
 		AdditionalDataGenerator: &NoOpBytesGenerator{},
-	}, cache)
+	}, pr)
 
 	actualPayload := make([]byte, 7*1024)
 	nBytes, err = reader.Read(actualPayload)
