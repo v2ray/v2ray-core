@@ -29,7 +29,7 @@ func xor(b []byte) []byte {
 }
 
 func readFrom(conn net.Conn, timeout time.Duration, length int) []byte {
-	b := make([]byte, 2048)
+	b := make([]byte, length)
 	deadline := time.Now().Add(timeout)
 	conn.SetReadDeadline(deadline)
 	n, _ := io.ReadFull(conn, b[:length])
