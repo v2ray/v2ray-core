@@ -102,7 +102,11 @@ func TestAuthenticationReaderWriterPartial(t *testing.T) {
 	go func() {
 		pw.Write(cache.BytesTo(1024))
 		time.Sleep(time.Second * 2)
-		pw.Write(cache.BytesFrom(1024))
+		pw.Write(cache.BytesRange(1024, 2048))
+		time.Sleep(time.Second * 2)
+		pw.Write(cache.BytesRange(2048, 3072))
+		time.Sleep(time.Second * 2)
+		pw.Write(cache.BytesFrom(3072))
 		time.Sleep(time.Second * 2)
 		pw.Close()
 	}()
