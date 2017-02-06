@@ -2,20 +2,16 @@ package crypto
 
 import (
 	"crypto/cipher"
-	"errors"
 	"io"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/serial"
 )
 
 var (
-	ErrAuthenticationFailed = errors.New("Authentication failed.")
-
 	errInsufficientBuffer = errors.New("Insufficient buffer.")
-	errInvalidNonce       = errors.New("Invalid nonce.")
-	errInvalidLength      = errors.New("Invalid buffer size.")
 )
 
 type BytesGenerator interface {
@@ -54,7 +50,7 @@ type AEADAuthenticator struct {
 func (v *AEADAuthenticator) Open(dst, cipherText []byte) ([]byte, error) {
 	iv := v.NonceGenerator.Next()
 	if len(iv) != v.AEAD.NonceSize() {
-		return nil, errInvalidNonce
+		return nil, errors.New("Crypto:AEADAuthenticator: Invalid nonce size: ", len(iv))
 	}
 
 	additionalData := v.AdditionalDataGenerator.Next()
@@ -64,7 +60,7 @@ func (v *AEADAuthenticator) Open(dst, cipherText []byte) ([]byte, error) {
 func (v *AEADAuthenticator) Seal(dst, plainText []byte) ([]byte, error) {
 	iv := v.NonceGenerator.Next()
 	if len(iv) != v.AEAD.NonceSize() {
-		return nil, errInvalidNonce
+		return nil, errors.New("Crypto:AEADAuthenticator: Invalid nonce size: ", len(iv))
 	}
 
 	additionalData := v.AdditionalDataGenerator.Next()
@@ -100,13 +96,13 @@ func (v *AuthenticationReader) NextChunk() error {
 		return errInsufficientBuffer
 	}
 	if size > readerBufferSize-2 {
-		return errInvalidLength
+		return errors.New("Crypto:AuthenticationReader: Size too large: ", size)
 	}
 	if size == v.auth.Overhead() {
 		return io.EOF
 	}
 	if size < v.auth.Overhead() {
-		return errors.New("AuthenticationReader: invalid packet size.")
+		return errors.New("AuthenticationReader: invalid packet size:", size)
 	}
 	cipherChunk := v.buffer.BytesRange(2, size+2)
 	plainChunk, err := v.auth.Open(cipherChunk[:0], cipherChunk)
@@ -132,26 +128,28 @@ func (v *AuthenticationReader) CopyChunk(b []byte) int {
 }
 
 func (v *AuthenticationReader) EnsureChunk() error {
+	atHead := false
+	if v.buffer.IsEmpty() {
+		v.buffer.Clear()
+		atHead = true
+	}
+
 	for {
 		err := v.NextChunk()
-		if err == nil {
-			return nil
+		if err != errInsufficientBuffer {
+			return err
 		}
-		if err == errInsufficientBuffer {
-			if v.buffer.IsEmpty() {
-				v.buffer.Clear()
-			} else {
-				leftover := v.buffer.Bytes()
-				common.Must(v.buffer.Reset(func(b []byte) (int, error) {
-					return copy(b, leftover), nil
-				}))
-			}
-			err = v.buffer.AppendSupplier(buf.ReadFrom(v.reader))
-			if err == nil {
-				continue
-			}
+
+		leftover := v.buffer.Bytes()
+		if !atHead && len(leftover) > 0 {
+			common.Must(v.buffer.Reset(func(b []byte) (int, error) {
+				return copy(b, leftover), nil
+			}))
 		}
-		return err
+
+		if err := v.buffer.AppendSupplier(buf.ReadFrom(v.reader)); err != nil {
+			return err
+		}
 	}
 }
 

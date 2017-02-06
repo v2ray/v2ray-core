@@ -2,9 +2,9 @@ package encoding
 
 import (
 	"crypto/md5"
+	"errors"
 	"hash/fnv"
 
-	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/serial"
 )
 
@@ -58,7 +58,7 @@ func (v *FnvAuthenticator) Seal(dst, nonce, plaintext, additionalData []byte) []
 // Open implements AEAD.Open().
 func (v *FnvAuthenticator) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, error) {
 	if serial.BytesToUint32(ciphertext[:4]) != Authenticate(ciphertext[4:]) {
-		return dst, crypto.ErrAuthenticationFailed
+		return dst, errors.New("VMess|FNV: Invalid authentication.")
 	}
 	return append(dst, ciphertext[4:]...), nil
 }
