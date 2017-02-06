@@ -3,6 +3,8 @@ package assert
 import (
 	"bytes"
 
+	"fmt"
+
 	"v2ray.com/core/common/serial"
 )
 
@@ -22,8 +24,14 @@ type BytesSubject struct {
 }
 
 func (subject *BytesSubject) Equals(expectation []byte) {
-	if !bytes.Equal(subject.value, expectation) {
-		subject.Fail("is equal to", serial.BytesToHexString(expectation))
+	if len(subject.value) != len(expectation) {
+		subject.FailWithMessage(fmt.Sprint("Bytes arrays have differen size: expected", len(expectation), ", actual", len(subject.value)))
+	}
+	for idx, b := range expectation {
+		if subject.value[idx] != b {
+			subject.FailWithMessage(fmt.Sprint("Bytes are different:", b, "vs", subject.value[idx]))
+			return
+		}
 	}
 }
 
