@@ -53,7 +53,7 @@ message ReceiverConfig {
   AllocationStrategy allocation_strategy = 3;
   v2ray.core.transport.internet.StreamConfig stream_settings = 4;
   bool receive_original_destination = 5;
-  bool allow_passive_connection = 6;
+  bool allow_passive_connection = 6 [deprecated=true];
 }
 
 message InboundHandlerConfig {

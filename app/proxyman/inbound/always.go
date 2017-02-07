@@ -37,14 +37,13 @@ func NewAlwaysOnInboundHandler(ctx context.Context, tag string, receiverConfig *
 		if nl.HasNetwork(net.Network_TCP) {
 			log.Debug("Proxyman|DefaultInboundHandler: creating tcp worker on ", address, ":", port)
 			worker := &tcpWorker{
-				address:          address,
-				port:             net.Port(port),
-				proxy:            p,
-				stream:           receiverConfig.StreamSettings,
-				recvOrigDest:     receiverConfig.ReceiveOriginalDestination,
-				tag:              tag,
-				allowPassiveConn: receiverConfig.AllowPassiveConnection,
-				dispatcher:       h.mux,
+				address:      address,
+				port:         net.Port(port),
+				proxy:        p,
+				stream:       receiverConfig.StreamSettings,
+				recvOrigDest: receiverConfig.ReceiveOriginalDestination,
+				tag:          tag,
+				dispatcher:   h.mux,
 			}
 			h.workers = append(h.workers, worker)
 		}
