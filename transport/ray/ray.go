@@ -32,7 +32,6 @@ type InboundRay interface {
 type Ray interface {
 	InboundRay
 	OutboundRay
-	AddInspector(Inspector)
 }
 
 type RayStream interface {

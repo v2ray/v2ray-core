@@ -1,3 +1,4 @@
+sudo: required
 language: go
 go:
 - 1.7.5
@@ -5,7 +6,7 @@ go_import_path: v2ray.com/core
 git:
   depth: 5
 script:
-- go test -tags json v2ray.com/core/...
+- go test -tags json -v v2ray.com/core/...
 after_success:
 - ./testing/coverage/coverall
 before_deploy:

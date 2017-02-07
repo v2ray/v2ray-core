@@ -2,7 +2,6 @@ package impl
 
 import (
 	"context"
-	"time"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
@@ -10,7 +9,6 @@ import (
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/router"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
@@ -71,70 +69,13 @@ func (v *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	}
 
 	direct := ray.NewRay(ctx)
-	var waitFunc func() error
-	if allowPassiveConnection, ok := proxy.AllowPassiveConnectionFromContext(ctx); ok && allowPassiveConnection {
-		waitFunc = noOpWait()
-	} else {
-		wdi := &waitDataInspector{
-			hasData: make(chan bool, 1),
-		}
-		direct.AddInspector(wdi)
-		waitFunc = waitForData(wdi)
-	}
-
-	go v.waitAndDispatch(ctx, waitFunc, direct, dispatcher)
+	go dispatcher.Dispatch(ctx, direct)
 
 	return direct, nil
-}
-
-func (v *DefaultDispatcher) waitAndDispatch(ctx context.Context, wait func() error, link ray.OutboundRay, dispatcher proxyman.OutboundHandler) {
-	if err := wait(); err != nil {
-		log.Info("DefaultDispatcher: Failed precondition: ", err)
-		link.OutboundInput().CloseError()
-		link.OutboundOutput().CloseError()
-		return
-	}
-
-	dispatcher.Dispatch(ctx, link)
 }
 
 func init() {
 	common.Must(common.RegisterConfig((*dispatcher.Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
 		return NewDefaultDispatcher(ctx, config.(*dispatcher.Config))
 	}))
-}
-
-type waitDataInspector struct {
-	hasData chan bool
-}
-
-func (wdi *waitDataInspector) Input(*buf.Buffer) {
-	select {
-	case wdi.hasData <- true:
-	default:
-	}
-}
-
-func (wdi *waitDataInspector) WaitForData() bool {
-	select {
-	case <-wdi.hasData:
-		return true
-	case <-time.After(time.Minute):
-		return false
-	}
-}
-
-func waitForData(wdi *waitDataInspector) func() error {
-	return func() error {
-		if wdi.WaitForData() {
-			return nil
-		}
-		return errors.New("DefaultDispatcher: No data.")
-	}
-}
-
-func noOpWait() func() error {
-	return func() error {
-		return nil
-	}
 }

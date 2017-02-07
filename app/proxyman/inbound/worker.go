@@ -26,14 +26,13 @@ type worker interface {
 }
 
 type tcpWorker struct {
-	address          v2net.Address
-	port             v2net.Port
-	proxy            proxy.Inbound
-	stream           *internet.StreamConfig
-	recvOrigDest     bool
-	tag              string
-	allowPassiveConn bool
-	dispatcher       dispatcher.Interface
+	address      v2net.Address
+	port         v2net.Port
+	proxy        proxy.Inbound
+	stream       *internet.StreamConfig
+	recvOrigDest bool
+	tag          string
+	dispatcher   dispatcher.Interface
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -51,7 +50,6 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 	if len(w.tag) > 0 {
 		ctx = proxy.ContextWithInboundTag(ctx, w.tag)
 	}
-	ctx = proxy.ContextWithAllowPassiveConnection(ctx, w.allowPassiveConn)
 	ctx = proxy.ContextWithInboundDestination(ctx, v2net.TCPDestination(w.address, w.port))
 	ctx = proxy.ContextWithSource(ctx, v2net.DestinationFromAddr(conn.RemoteAddr()))
 	if err := w.proxy.Process(ctx, v2net.Network_TCP, conn, w.dispatcher); err != nil {

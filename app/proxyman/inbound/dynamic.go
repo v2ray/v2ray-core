@@ -97,14 +97,13 @@ func (h *DynamicInboundHandler) refresh() error {
 		nl := p.Network()
 		if nl.HasNetwork(v2net.Network_TCP) {
 			worker := &tcpWorker{
-				tag:              h.tag,
-				address:          address,
-				port:             port,
-				proxy:            p,
-				stream:           h.receiverConfig.StreamSettings,
-				recvOrigDest:     h.receiverConfig.ReceiveOriginalDestination,
-				allowPassiveConn: h.receiverConfig.AllowPassiveConnection,
-				dispatcher:       h.mux,
+				tag:          h.tag,
+				address:      address,
+				port:         port,
+				proxy:        p,
+				stream:       h.receiverConfig.StreamSettings,
+				recvOrigDest: h.receiverConfig.ReceiveOriginalDestination,
+				dispatcher:   h.mux,
 			}
 			if err := worker.Start(); err != nil {
 				log.Warning("Proxyman:InboundHandler: Failed to create TCP worker: ", err)

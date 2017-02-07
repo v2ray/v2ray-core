@@ -1,12 +1,10 @@
 package ray
 
 import (
+	"context"
 	"errors"
 	"io"
-
 	"time"
-
-	"context"
 
 	"v2ray.com/core/common/buf"
 )
@@ -46,29 +44,19 @@ func (v *directRay) InboundOutput() InputStream {
 	return v.Output
 }
 
-func (v *directRay) AddInspector(inspector Inspector) {
-	if inspector == nil {
-		return
-	}
-	v.Input.inspector.AddInspector(inspector)
-	v.Output.inspector.AddInspector(inspector)
-}
-
 type Stream struct {
-	buffer    chan *buf.Buffer
-	ctx       context.Context
-	close     chan bool
-	err       chan bool
-	inspector *InspectorChain
+	buffer chan *buf.Buffer
+	ctx    context.Context
+	close  chan bool
+	err    chan bool
 }
 
 func NewStream(ctx context.Context) *Stream {
 	return &Stream{
-		ctx:       ctx,
-		buffer:    make(chan *buf.Buffer, bufferSize),
-		close:     make(chan bool),
-		err:       make(chan bool),
-		inspector: &InspectorChain{},
+		ctx:    ctx,
+		buffer: make(chan *buf.Buffer, bufferSize),
+		close:  make(chan bool),
+		err:    make(chan bool),
 	}
 }
 
@@ -139,7 +127,6 @@ func (v *Stream) Write(data *buf.Buffer) (err error) {
 		case <-v.close:
 			return io.ErrClosedPipe
 		case v.buffer <- data:
-			v.inspector.Input(data)
 			return nil
 		}
 	}
