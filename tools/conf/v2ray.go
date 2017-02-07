@@ -37,7 +37,6 @@ type InboundConnectionConfig struct {
 	Protocol      string          `json:"protocol"`
 	StreamSetting *StreamConfig   `json:"streamSettings"`
 	Settings      json.RawMessage `json:"settings"`
-	AllowPassive  bool            `json:"allowPassive"`
 	Tag           string          `json:"tag"`
 }
 
@@ -47,7 +46,6 @@ func (v *InboundConnectionConfig) Build() (*proxyman.InboundHandlerConfig, error
 			From: uint32(v.Port),
 			To:   uint32(v.Port),
 		},
-		AllowPassiveConnection: v.AllowPassive,
 	}
 	if v.Listen != nil {
 		if v.Listen.Family().IsDomain() {
@@ -173,13 +171,10 @@ type InboundDetourConfig struct {
 	Tag           string                         `json:"tag"`
 	Allocation    *InboundDetourAllocationConfig `json:"allocate"`
 	StreamSetting *StreamConfig                  `json:"streamSettings"`
-	AllowPassive  bool                           `json:"allowPassive"`
 }
 
 func (v *InboundDetourConfig) Build() (*proxyman.InboundHandlerConfig, error) {
-	receiverSettings := &proxyman.ReceiverConfig{
-		AllowPassiveConnection: v.AllowPassive,
-	}
+	receiverSettings := &proxyman.ReceiverConfig{}
 
 	if v.PortRange == nil {
 		return nil, errors.New("Config: Port range not specified in InboundDetour.")
