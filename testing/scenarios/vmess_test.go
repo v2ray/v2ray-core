@@ -3,11 +3,9 @@ package scenarios
 import (
 	"crypto/rand"
 	"net"
-	"testing"
-
-	"time"
-
 	"sync"
+	"testing"
+	"time"
 
 	"v2ray.com/core"
 	"v2ray.com/core/app/log"
@@ -634,8 +632,8 @@ func TestVMessKCP(t *testing.T) {
 	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
 
 	var wg sync.WaitGroup
-	wg.Add(10)
 	for i := 0; i < 10; i++ {
+		wg.Add(1)
 		go func() {
 			conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 				IP:   []byte{127, 0, 0, 1},
@@ -650,7 +648,7 @@ func TestVMessKCP(t *testing.T) {
 			assert.Error(err).IsNil()
 			assert.Int(nBytes).Equals(len(payload))
 
-			response := readFrom(conn, time.Second*10, 10240*1024)
+			response := readFrom(conn, time.Minute, 10240*1024)
 			assert.Bytes(response).Equals(xor([]byte(payload)))
 			assert.Error(conn.Close()).IsNil()
 			wg.Done()
