@@ -25,11 +25,12 @@ type BytesSubject struct {
 
 func (subject *BytesSubject) Equals(expectation []byte) {
 	if len(subject.value) != len(expectation) {
-		subject.FailWithMessage(fmt.Sprint("Bytes arrays have differen size: expected", len(expectation), ", actual", len(subject.value)))
+		subject.FailWithMessage(fmt.Sprint("Bytes arrays have differen size: expected ", len(expectation), ", actual ", len(subject.value)))
+		return
 	}
 	for idx, b := range expectation {
 		if subject.value[idx] != b {
-			subject.FailWithMessage(fmt.Sprint("Bytes are different:", b, "vs", subject.value[idx]))
+			subject.FailWithMessage(fmt.Sprint("Bytes are different: ", b, " vs ", subject.value[idx]))
 			return
 		}
 	}
