@@ -11,13 +11,18 @@ type Server struct {
 	Port         v2net.Port
 	MsgProcessor func(msg []byte) []byte
 	SendFirst    []byte
+	Listen       v2net.Address
 	accepting    bool
 	listener     *net.TCPListener
 }
 
 func (server *Server) Start() (v2net.Destination, error) {
+	listenerAddr := server.Listen
+	if listenerAddr == nil {
+		listenerAddr = v2net.LocalHostIP
+	}
 	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
-		IP:   []byte{127, 0, 0, 1},
+		IP:   listenerAddr.IP(),
 		Port: int(server.Port),
 		Zone: "",
 	})

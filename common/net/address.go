@@ -16,6 +16,9 @@ var (
 
 	// LocalHostDomain is a constant value for localhost domain.
 	LocalHostDomain = DomainAddress("localhost")
+
+	// LocalHostIPv6 is a constant value for localhost IP in IPv6.
+	LocalHostIPv6 = IPAddress([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1})
 )
 
 type AddressFamily int
