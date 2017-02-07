@@ -5,6 +5,9 @@ go:
 go_import_path: v2ray.com/core
 git:
   depth: 5
+before_script:
+- sudo ntpdate time.google.com
+- date
 script:
 - go test -tags json -v v2ray.com/core/...
 after_success:
