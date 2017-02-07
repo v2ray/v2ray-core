@@ -660,6 +660,7 @@ func TestVMessKCP(t *testing.T) {
 }
 
 func TestVMessIPv6(t *testing.T) {
+	t.SkipNow() // No IPv6 on travis-ci.
 	assert := assert.On(t)
 
 	tcpServer := tcp.Server{
