@@ -60,6 +60,7 @@ message InboundHandlerConfig {
   string tag = 1;
   v2ray.core.common.serial.TypedMessage receiver_settings = 2;
   v2ray.core.common.serial.TypedMessage proxy_settings = 3;
+  DispatchConfig dispatch_settings = 4;
 }
 
 message OutboundConfig {
@@ -79,6 +80,7 @@ message OutboundHandlerConfig {
   v2ray.core.common.serial.TypedMessage proxy_settings = 3;
   int64 expire = 4;
   string comment = 5;
+  DispatchConfig dispatch_settings = 6;
 }
 
 message MultiplexingConfig {
@@ -91,6 +93,15 @@ message DispatchConfig {
 
 message SessionFrame {
   uint32 id = 1;
-  v2ray.core.common.net.Endpoint target = 2;
-  bytes payload = 3;
+
+  enum FrameCommand {
+    SessionNew = 0;
+    SessionKeep = 1;
+    SessionEnd = 2;
+  }
+
+  FrameCommand command = 2;
+
+  v2ray.core.common.net.Endpoint target = 3;
+  bytes payload = 4;
 }
