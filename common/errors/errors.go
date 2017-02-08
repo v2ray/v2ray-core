@@ -1,3 +1,4 @@
+// Package errors is a drop-in replacement for Golang lib 'errors'.
 package errors
 
 import (
@@ -6,19 +7,23 @@ import (
 	"v2ray.com/core/common/serial"
 )
 
-type HasInnerError interface {
+type hasInnerError interface {
+	// Inner returns the underlying error of this one.
 	Inner() error
 }
 
+// Error is an error object with underlying error.
 type Error struct {
 	message string
 	inner   error
 }
 
+// Error implements error.Error().
 func (v *Error) Error() string {
 	return v.message
 }
 
+// Inner implements hasInnerError.Inner()
 func (v *Error) Inner() error {
 	if v.inner == nil {
 		return nil
@@ -26,12 +31,14 @@ func (v *Error) Inner() error {
 	return v.inner
 }
 
+// New returns a new error object with message formed from given arguments.
 func New(msg ...interface{}) error {
 	return &Error{
 		message: serial.Concat(msg...),
 	}
 }
 
+// Base returns an ErrorBuilder based on the given error.
 func Base(err error) ErrorBuilder {
 	return ErrorBuilder{
 		error: err,
@@ -48,7 +55,7 @@ func Cause(err error) error {
 		return nil
 	}
 	for {
-		inner, ok := err.(HasInnerError)
+		inner, ok := err.(hasInnerError)
 		if !ok {
 			break
 		}
@@ -64,6 +71,7 @@ type ErrorBuilder struct {
 	error
 }
 
+// Message returns an error object with given message and base error.
 func (v ErrorBuilder) Message(msg ...interface{}) error {
 	if v.error == nil {
 		return nil
@@ -75,6 +83,7 @@ func (v ErrorBuilder) Message(msg ...interface{}) error {
 	}
 }
 
+// Format returns an errors object with given message format and base error.
 func (v ErrorBuilder) Format(format string, values ...interface{}) error {
 	if v.error == nil {
 		return nil

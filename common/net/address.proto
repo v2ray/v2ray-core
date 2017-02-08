@@ -6,6 +6,7 @@ option go_package = "net";
 option java_package = "com.v2ray.core.common.net";
 option java_multiple_files = true;
 
+// Address of a network host. It may be an IP address or a domain address.
 message IPOrDomain {
   oneof address {
     // IP address. Must by either 4 or 16 bytes.

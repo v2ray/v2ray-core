@@ -18,7 +18,7 @@ func DestinationFromAddr(addr net.Addr) Destination {
 	case *net.UDPAddr:
 		return UDPDestination(IPAddress(addr.IP), Port(addr.Port))
 	default:
-		panic("Unknown address type.")
+		panic("Net: Unknown address type.")
 	}
 }
 

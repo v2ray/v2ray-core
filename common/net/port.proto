@@ -8,6 +8,8 @@ option java_multiple_files = true;
 
 // PortRange represents a range of ports.
 message PortRange {
+  // The port that this range starts from.
   uint32 From = 1;
+  // The port that this range ends with (inclusive).
   uint32 To = 2;
 }
