@@ -100,12 +100,3 @@ func ResolvedIPsFromContext(ctx context.Context) ([]net.Address, bool) {
 	ips, ok := ctx.Value(resolvedIPsKey).([]net.Address)
 	return ips, ok
 }
-
-func ContextWithAllowPassiveConnection(ctx context.Context, allowPassiveConnection bool) context.Context {
-	return context.WithValue(ctx, allowPassiveConnKey, allowPassiveConnection)
-}
-
-func AllowPassiveConnectionFromContext(ctx context.Context) (bool, bool) {
-	allow, ok := ctx.Value(allowPassiveConnKey).(bool)
-	return allow, ok
-}
