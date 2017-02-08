@@ -8,18 +8,16 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/app/log"
+	"v2ray.com/core/common/errors"
 )
 
 type wsconn struct {
 	wsc         *websocket.Conn
 	readBuffer  *bufio.Reader
 	connClosing bool
-	reusable    bool
 	rlock       *sync.Mutex
 	wlock       *sync.Mutex
-	config      *Config
 }
 
 func (ws *wsconn) Read(b []byte) (n int, err error) {
@@ -42,7 +40,7 @@ func (ws *wsconn) read(b []byte) (n int, err error) {
 func (ws *wsconn) getNewReadBuffer() error {
 	_, r, err := ws.wsc.NextReader()
 	if err != nil {
-		log.Warning("WS transport: ws connection NewFrameReader return ", err)
+		log.Warning("WebSocket|Connection: Failed to get reader.", err)
 		ws.connClosing = true
 		ws.Close()
 		return err
@@ -90,7 +88,7 @@ func (ws *wsconn) Write(b []byte) (n int, err error) {
 func (ws *wsconn) write(b []byte) (n int, err error) {
 	wr, err := ws.wsc.NextWriter(websocket.BinaryMessage)
 	if err != nil {
-		log.Warning("WS transport: ws connection NewFrameReader return ", err)
+		log.Warning("WebSocket|Connection: Failed to get writer.", err)
 		ws.connClosing = true
 		ws.Close()
 		return 0, err
@@ -148,14 +146,6 @@ func (ws *wsconn) setup() {
 	ws.wlock = &sync.Mutex{}
 
 	ws.pingPong()
-}
-
-func (ws *wsconn) Reusable() bool {
-	return ws.config.IsConnectionReuse() && ws.reusable && !ws.connClosing
-}
-
-func (ws *wsconn) SetReusable(reusable bool) {
-	ws.reusable = reusable
 }
 
 func (ws *wsconn) pingPong() {

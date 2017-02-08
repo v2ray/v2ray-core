@@ -6,8 +6,8 @@ import (
 	"net"
 
 	"github.com/gorilla/websocket"
-	"v2ray.com/core/common"
 	"v2ray.com/core/app/log"
+	"v2ray.com/core/common"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/internal"
@@ -24,12 +24,9 @@ func Dial(ctx context.Context, dest v2net.Destination) (internet.Connection, err
 	wsSettings := internet.TransportSettingsFromContext(ctx).(*Config)
 
 	id := internal.NewConnectionID(src, dest)
-	var conn *wsconn
+	var conn net.Conn
 	if dest.Network == v2net.Network_TCP && wsSettings.IsConnectionReuse() {
-		connt := globalCache.Get(id)
-		if connt != nil {
-			conn = connt.(*wsconn)
-		}
+		conn = globalCache.Get(id)
 	}
 	if conn == nil {
 		var err error
@@ -46,7 +43,7 @@ func init() {
 	common.Must(internet.RegisterTransportDialer(internet.TransportProtocol_WebSocket, Dial))
 }
 
-func wsDial(ctx context.Context, dest v2net.Destination) (*wsconn, error) {
+func wsDial(ctx context.Context, dest v2net.Destination) (net.Conn, error) {
 	src := internet.DialerSourceFromContext(ctx)
 	wsSettings := internet.TransportSettingsFromContext(ctx).(*Config)
 
@@ -87,13 +84,12 @@ func wsDial(ctx context.Context, dest v2net.Destination) (*wsconn, error) {
 		}
 		return nil, err
 	}
-	return func() internet.Connection {
+	return func() net.Conn {
 		connv2ray := &wsconn{
 			wsc:         conn,
 			connClosing: false,
-			config:      wsSettings,
 		}
 		connv2ray.setup()
 		return connv2ray
-	}().(*wsconn), nil
+	}(), nil
 }

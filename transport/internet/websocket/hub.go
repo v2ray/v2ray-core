@@ -8,15 +8,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gorilla/websocket"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/app/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
-	v2tls "v2ray.com/core/transport/internet/tls"
-
-	"github.com/gorilla/websocket"
 	"v2ray.com/core/transport/internet/internal"
+	v2tls "v2ray.com/core/transport/internet/tls"
 )
 
 var (
@@ -68,7 +67,7 @@ func ListenWS(address v2net.Address, port v2net.Port, options internet.ListenOpt
 
 func (wsl *WSListener) listenws(address v2net.Address, port v2net.Port) error {
 	http.HandleFunc("/"+wsl.config.Path, func(w http.ResponseWriter, r *http.Request) {
-		con, err := wsl.converttovws(w, r)
+		conn, err := wsl.converttovws(w, r)
 		if err != nil {
 			log.Warning("WebSocket|Listener: Failed to convert connection: ", err)
 			return
@@ -76,17 +75,17 @@ func (wsl *WSListener) listenws(address v2net.Address, port v2net.Port) error {
 
 		select {
 		case wsl.awaitingConns <- &ConnectionWithError{
-			conn: con,
+			conn: conn,
 		}:
 		default:
-			if con != nil {
-				con.Close()
+			if conn != nil {
+				conn.Close()
 			}
 		}
 		return
 	})
 
-	errchan := make(chan error)
+	errchan := make(chan error, 1)
 
 	listenerfunc := func() error {
 		ol, err := net.Listen("tcp", address.String()+":"+strconv.Itoa(int(port.Value())))
@@ -114,14 +113,13 @@ func (wsl *WSListener) listenws(address v2net.Address, port v2net.Port) error {
 	go func() {
 		err := listenerfunc()
 		errchan <- err
-		return
 	}()
 
 	var err error
 	select {
 	case err = <-errchan:
-	case <-time.After(time.Second * 2):
-		//Should this listen fail after 2 sec, it could gone untracked.
+	case <-time.After(time.Second * 5):
+		//Should this listen fail after 5 sec, it could gone untracked.
 	}
 
 	if err != nil {
@@ -158,7 +156,7 @@ func (v *WSListener) Accept() (internet.Connection, error) {
 			if connErr.err != nil {
 				return nil, connErr.err
 			}
-			return internal.NewConnection(internal.ConnectionID{}, connErr.conn.(*wsconn), v, internal.ReuseConnection(v.config.IsConnectionReuse())), nil
+			return internal.NewConnection(internal.ConnectionID{}, connErr.conn, v, internal.ReuseConnection(v.config.IsConnectionReuse())), nil
 		case <-time.After(time.Second * 2):
 		}
 	}
