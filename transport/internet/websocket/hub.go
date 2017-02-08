@@ -31,7 +31,7 @@ type WSListener struct {
 	sync.Mutex
 	acccepting    bool
 	awaitingConns chan *ConnectionWithError
-	listener      *StoppableListener
+	listener      net.Listener
 	tlsConfig     *tls.Config
 	config        *Config
 }
@@ -85,49 +85,28 @@ func (wsl *WSListener) listenws(address v2net.Address, port v2net.Port) error {
 		return
 	})
 
-	errchan := make(chan error, 1)
-
-	listenerfunc := func() error {
-		ol, err := net.Listen("tcp", address.String()+":"+strconv.Itoa(int(port.Value())))
+	netAddr := address.String() + ":" + strconv.Itoa(int(port.Value()))
+	var listener net.Listener
+	if wsl.tlsConfig == nil {
+		l, err := net.Listen("tcp", netAddr)
 		if err != nil {
-			return err
+			return errors.Base(err).Message("WebSocket|Listener: Failed to listen TCP ", netAddr)
 		}
-		wsl.listener, err = NewStoppableListener(ol)
+		listener = l
+	} else {
+		l, err := tls.Listen("tcp", netAddr, wsl.tlsConfig)
 		if err != nil {
-			return err
+			return errors.Base(err).Message("WebSocket|Listener: Failed to listen TLS ", netAddr)
 		}
-		return http.Serve(wsl.listener, nil)
+		listener = l
 	}
-
-	if wsl.tlsConfig != nil {
-		listenerfunc = func() error {
-			var err error
-			wsl.listener, err = getstopableTLSlistener(wsl.tlsConfig, address.String()+":"+strconv.Itoa(int(port.Value())))
-			if err != nil {
-				return err
-			}
-			return http.Serve(wsl.listener, nil)
-		}
-	}
+	wsl.listener = listener
 
 	go func() {
-		err := listenerfunc()
-		errchan <- err
+		http.Serve(listener, nil)
 	}()
 
-	var err error
-	select {
-	case err = <-errchan:
-	case <-time.After(time.Second * 5):
-		//Should this listen fail after 5 sec, it could gone untracked.
-	}
-
-	if err != nil {
-		log.Error("WebSocket|Listener: Failed to serve: ", err)
-	}
-
-	return err
-
+	return nil
 }
 
 func (wsl *WSListener) converttovws(w http.ResponseWriter, r *http.Request) (*wsconn, error) {
@@ -185,7 +164,7 @@ func (v *WSListener) Close() error {
 	defer v.Unlock()
 	v.acccepting = false
 
-	v.listener.Stop()
+	v.listener.Close()
 
 	close(v.awaitingConns)
 	for connErr := range v.awaitingConns {
