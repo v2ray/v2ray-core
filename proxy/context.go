@@ -14,10 +14,7 @@ const (
 	originalDestinationKey
 	inboundDestinationKey
 	inboundTagKey
-	outboundTagKey
 	resolvedIPsKey
-	allowPassiveConnKey
-	dispatcherKey
 )
 
 func ContextWithSource(ctx context.Context, src net.Destination) context.Context {
@@ -74,18 +71,6 @@ func ContextWithInboundTag(ctx context.Context, tag string) context.Context {
 
 func InboundTagFromContext(ctx context.Context) string {
 	v := ctx.Value(inboundTagKey)
-	if v == nil {
-		return ""
-	}
-	return v.(string)
-}
-
-func ContextWithOutboundTag(ctx context.Context, tag string) context.Context {
-	return context.WithValue(ctx, outboundTagKey, tag)
-}
-
-func OutboundTagFromContext(ctx context.Context) string {
-	v := ctx.Value(outboundTagKey)
 	if v == nil {
 		return ""
 	}
