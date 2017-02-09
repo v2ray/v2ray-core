@@ -29,6 +29,7 @@ func (c *wsconn) Read(b []byte) (int, error) {
 
 		nBytes, err := reader.Read(b)
 		if errors.Cause(err) == io.EOF {
+			c.reader = nil
 			continue
 		}
 		return nBytes, err
