@@ -84,12 +84,8 @@ func wsDial(ctx context.Context, dest v2net.Destination) (net.Conn, error) {
 		}
 		return nil, err
 	}
-	return func() net.Conn {
-		connv2ray := &wsconn{
-			wsc:         conn,
-			connClosing: false,
-		}
-		connv2ray.setup()
-		return connv2ray
-	}(), nil
+
+	return &wsconn{
+		wsc: conn,
+	}, nil
 }

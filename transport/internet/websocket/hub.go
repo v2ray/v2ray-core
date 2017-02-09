@@ -120,9 +120,7 @@ func (wsl *WSListener) converttovws(w http.ResponseWriter, r *http.Request) (*ws
 		return nil, err
 	}
 
-	wrapedConn := &wsconn{wsc: conn, connClosing: false}
-	wrapedConn.setup()
-	return wrapedConn, nil
+	return &wsconn{wsc: conn}, nil
 }
 
 func (v *WSListener) Accept() (internet.Connection, error) {
