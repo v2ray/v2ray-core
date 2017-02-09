@@ -71,10 +71,19 @@ func TestTransportConfig(t *testing.T) {
 			assert.String(header.Request.GetVersionValue()).Equals("1.1")
 			assert.String(header.Request.Uri[0]).Equals("/b")
 			assert.String(header.Request.Method.Value).Equals("GET")
-			assert.String(header.Request.Header[0].Name).Equals("a")
-			assert.String(header.Request.Header[0].Value[0]).Equals("b")
-			assert.String(header.Request.Header[1].Name).Equals("c")
-			assert.String(header.Request.Header[1].Value[0]).Equals("d")
+			var va, vc string
+			for _, h := range header.Request.Header {
+				switch h.Name {
+				case "a":
+					va = h.Value[0]
+				case "c":
+					vc = h.Value[0]
+				default:
+					t.Error("Unknown header ", h.String())
+				}
+			}
+			assert.String(va).Equals("b")
+			assert.String(vc).Equals("d")
 			assert.String(header.Response.Version.Value).Equals("1.0")
 			assert.String(header.Response.Status.Code).Equals("404")
 			assert.String(header.Response.Status.Reason).Equals("Not Found")
