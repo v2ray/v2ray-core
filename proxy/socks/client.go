@@ -2,7 +2,7 @@ package socks
 
 import (
 	"context"
-
+	"errors"
 	"runtime"
 	"time"
 
@@ -35,7 +35,10 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 }
 
 func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.Dialer) error {
-	destination := proxy.DestinationFromContext(ctx)
+	destination, ok := proxy.TargetFromContext(ctx)
+	if !ok {
+		return errors.New("Socks|Client: Target not specified.")
+	}
 
 	var server *protocol.ServerSpec
 	var conn internet.Connection

@@ -76,7 +76,11 @@ func NewPlainDomainMatcher(pattern string) *PlainDomainMatcher {
 }
 
 func (v *PlainDomainMatcher) Apply(ctx context.Context) bool {
-	dest := proxy.DestinationFromContext(ctx)
+	dest, ok := proxy.TargetFromContext(ctx)
+	if !ok {
+		return false
+	}
+
 	if !dest.Address.Family().IsDomain() {
 		return false
 	}
@@ -99,7 +103,10 @@ func NewRegexpDomainMatcher(pattern string) (*RegexpDomainMatcher, error) {
 }
 
 func (v *RegexpDomainMatcher) Apply(ctx context.Context) bool {
-	dest := proxy.DestinationFromContext(ctx)
+	dest, ok := proxy.TargetFromContext(ctx)
+	if !ok {
+		return false
+	}
 	if !dest.Address.Family().IsDomain() {
 		return false
 	}
@@ -135,13 +142,14 @@ func (v *CIDRMatcher) Apply(ctx context.Context) bool {
 	}
 
 	var dest v2net.Destination
+	var ok bool
 	if v.onSource {
-		dest = proxy.SourceFromContext(ctx)
+		dest, ok = proxy.SourceFromContext(ctx)
 	} else {
-		dest = proxy.DestinationFromContext(ctx)
+		dest, ok = proxy.TargetFromContext(ctx)
 	}
 
-	if dest.IsValid() && dest.Address.Family().IsIPv6() {
+	if ok && dest.Address.Family().IsIPv6() {
 		ips = append(ips, dest.Address.IP())
 	}
 
@@ -177,13 +185,14 @@ func (v *IPv4Matcher) Apply(ctx context.Context) bool {
 	}
 
 	var dest v2net.Destination
+	var ok bool
 	if v.onSource {
-		dest = proxy.SourceFromContext(ctx)
+		dest, ok = proxy.SourceFromContext(ctx)
 	} else {
-		dest = proxy.DestinationFromContext(ctx)
+		dest, ok = proxy.TargetFromContext(ctx)
 	}
 
-	if dest.IsValid() && dest.Address.Family().IsIPv4() {
+	if ok && dest.Address.Family().IsIPv4() {
 		ips = append(ips, dest.Address.IP())
 	}
 
@@ -206,7 +215,10 @@ func NewPortMatcher(portRange v2net.PortRange) *PortMatcher {
 }
 
 func (v *PortMatcher) Apply(ctx context.Context) bool {
-	dest := proxy.DestinationFromContext(ctx)
+	dest, ok := proxy.TargetFromContext(ctx)
+	if !ok {
+		return false
+	}
 	return v.port.Contains(dest.Port)
 }
 
@@ -221,7 +233,10 @@ func NewNetworkMatcher(network *v2net.NetworkList) *NetworkMatcher {
 }
 
 func (v *NetworkMatcher) Apply(ctx context.Context) bool {
-	dest := proxy.DestinationFromContext(ctx)
+	dest, ok := proxy.TargetFromContext(ctx)
+	if !ok {
+		return false
+	}
 	return v.network.HasNetwork(dest.Network)
 }
 
@@ -259,8 +274,8 @@ func NewInboundTagMatcher(tags []string) *InboundTagMatcher {
 }
 
 func (v *InboundTagMatcher) Apply(ctx context.Context) bool {
-	tag := proxy.InboundTagFromContext(ctx)
-	if len(tag) == 0 {
+	tag, ok := proxy.InboundTagFromContext(ctx)
+	if !ok {
 		return false
 	}
 

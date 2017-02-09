@@ -52,7 +52,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		Port:    d.port,
 	}
 	if d.config.FollowRedirect {
-		if origDest := proxy.OriginalDestinationFromContext(ctx); origDest.IsValid() {
+		if origDest, ok := proxy.OriginalTargetFromContext(ctx); ok {
 			dest = origDest
 		}
 	}

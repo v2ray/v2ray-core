@@ -53,7 +53,7 @@ func (v *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 		panic("Dispatcher: Invalid destination.")
 	}
 
-	ctx = proxy.ContextWithDestination(ctx, destination)
+	ctx = proxy.ContextWithTarget(ctx, destination)
 
 	if v.router != nil {
 		if tag, err := v.router.TakeDetour(ctx); err == nil {

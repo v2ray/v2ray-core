@@ -65,16 +65,20 @@ func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispa
 	conn.SetReadDeadline(time.Now().Add(time.Second * 8))
 	reader := bufio.NewReader(conn)
 
-	inboundDest := proxy.InboundDestinationFromContext(ctx)
+	inboundDest, ok := proxy.InboundEntryPointFromContext(ctx)
+	if !ok {
+		return errors.New("Socks|Server: inbound entry point not specified.")
+	}
 	session := &ServerSession{
 		config: s.config,
 		port:   inboundDest.Port,
 	}
 
-	source := proxy.SourceFromContext(ctx)
 	request, err := session.Handshake(reader, conn)
 	if err != nil {
-		log.Access(source, "", log.AccessRejected, err)
+		if source, ok := proxy.SourceFromContext(ctx); ok {
+			log.Access(source, "", log.AccessRejected, err)
+		}
 		log.Info("Socks|Server: Failed to read request: ", err)
 		return err
 	}
@@ -83,7 +87,9 @@ func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispa
 	if request.Command == protocol.RequestCommandTCP {
 		dest := request.Destination()
 		log.Info("Socks|Server: TCP Connect request to ", dest)
-		log.Access(source, dest, log.AccessAccepted, "")
+		if source, ok := proxy.SourceFromContext(ctx); ok {
+			log.Access(source, dest, log.AccessAccepted, "")
+		}
 
 		return s.transport(ctx, reader, conn, dest, dispatcher)
 	}
@@ -155,8 +161,9 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection, dispatcher dispatcher.Interface) error {
 	udpServer := udp.NewDispatcher(dispatcher)
 
-	source := proxy.SourceFromContext(ctx)
-	log.Info("Socks|Server: Client UDP connection from ", source)
+	if source, ok := proxy.SourceFromContext(ctx); ok {
+		log.Info("Socks|Server: Client UDP connection from ", source)
+	}
 
 	reader := buf.NewReader(conn)
 	for {
@@ -176,7 +183,9 @@ func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 		}
 
 		log.Info("Socks: Send packet to ", request.Destination(), " with ", len(data), " bytes")
-		log.Access(source, request.Destination, log.AccessAccepted, "")
+		if source, ok := proxy.SourceFromContext(ctx); ok {
+			log.Access(source, request.Destination, log.AccessAccepted, "")
+		}
 
 		dataBuf := buf.NewSmall()
 		dataBuf.Append(data)

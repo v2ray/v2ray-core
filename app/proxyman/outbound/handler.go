@@ -81,7 +81,7 @@ func (h *Handler) Dial(ctx context.Context, dest v2net.Destination) (internet.Co
 			handler := h.outboundManager.GetHandler(tag)
 			if handler != nil {
 				log.Info("Proxyman|OutboundHandler: Proxying to ", tag)
-				ctx = proxy.ContextWithDestination(ctx, dest)
+				ctx = proxy.ContextWithTarget(ctx, dest)
 				stream := ray.NewRay(ctx)
 				go handler.Dispatch(ctx, stream)
 				return NewConnection(stream), nil

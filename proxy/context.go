@@ -10,9 +10,9 @@ type key int
 
 const (
 	sourceKey key = iota
-	destinationKey
-	originalDestinationKey
-	inboundDestinationKey
+	targetKey
+	originalTargetKey
+	inboundEntryPointKey
 	inboundTagKey
 	resolvedIPsKey
 )
@@ -21,60 +21,45 @@ func ContextWithSource(ctx context.Context, src net.Destination) context.Context
 	return context.WithValue(ctx, sourceKey, src)
 }
 
-func SourceFromContext(ctx context.Context) net.Destination {
-	v := ctx.Value(sourceKey)
-	if v == nil {
-		return net.Destination{}
-	}
-	return v.(net.Destination)
+func SourceFromContext(ctx context.Context) (net.Destination, bool) {
+	v, ok := ctx.Value(sourceKey).(net.Destination)
+	return v, ok
 }
 
-func ContextWithOriginalDestination(ctx context.Context, dest net.Destination) context.Context {
-	return context.WithValue(ctx, originalDestinationKey, dest)
+func ContextWithOriginalTarget(ctx context.Context, dest net.Destination) context.Context {
+	return context.WithValue(ctx, originalTargetKey, dest)
 }
 
-func OriginalDestinationFromContext(ctx context.Context) net.Destination {
-	v := ctx.Value(originalDestinationKey)
-	if v == nil {
-		return net.Destination{}
-	}
-	return v.(net.Destination)
+func OriginalTargetFromContext(ctx context.Context) (net.Destination, bool) {
+	v, ok := ctx.Value(originalTargetKey).(net.Destination)
+	return v, ok
 }
 
-func ContextWithDestination(ctx context.Context, dest net.Destination) context.Context {
-	return context.WithValue(ctx, destinationKey, dest)
+func ContextWithTarget(ctx context.Context, dest net.Destination) context.Context {
+	return context.WithValue(ctx, targetKey, dest)
 }
 
-func DestinationFromContext(ctx context.Context) net.Destination {
-	v := ctx.Value(destinationKey)
-	if v == nil {
-		return net.Destination{}
-	}
-	return v.(net.Destination)
+func TargetFromContext(ctx context.Context) (net.Destination, bool) {
+	v, ok := ctx.Value(targetKey).(net.Destination)
+	return v, ok
 }
 
-func ContextWithInboundDestination(ctx context.Context, dest net.Destination) context.Context {
-	return context.WithValue(ctx, inboundDestinationKey, dest)
+func ContextWithInboundEntryPoint(ctx context.Context, dest net.Destination) context.Context {
+	return context.WithValue(ctx, inboundEntryPointKey, dest)
 }
 
-func InboundDestinationFromContext(ctx context.Context) net.Destination {
-	v := ctx.Value(inboundDestinationKey)
-	if v == nil {
-		return net.Destination{}
-	}
-	return v.(net.Destination)
+func InboundEntryPointFromContext(ctx context.Context) (net.Destination, bool) {
+	v, ok := ctx.Value(inboundEntryPointKey).(net.Destination)
+	return v, ok
 }
 
 func ContextWithInboundTag(ctx context.Context, tag string) context.Context {
 	return context.WithValue(ctx, inboundTagKey, tag)
 }
 
-func InboundTagFromContext(ctx context.Context) string {
-	v := ctx.Value(inboundTagKey)
-	if v == nil {
-		return ""
-	}
-	return v.(string)
+func InboundTagFromContext(ctx context.Context) (string, bool) {
+	v, ok := ctx.Value(inboundTagKey).(string)
+	return v, ok
 }
 
 func ContextWithResolveIPs(ctx context.Context, ips []net.Address) context.Context {

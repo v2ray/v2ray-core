@@ -2,10 +2,9 @@ package shadowsocks
 
 import (
 	"context"
-
-	"time"
-
+	"errors"
 	"runtime"
+	"time"
 
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
@@ -40,7 +39,10 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 
 // Process implements OutboundHandler.Process().
 func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
-	destination := proxy.DestinationFromContext(ctx)
+	destination, ok := proxy.TargetFromContext(ctx)
+	if !ok {
+		return errors.New("Shadowsocks|Client: Target not specified.")
+	}
 	network := destination.Network
 
 	var server *protocol.ServerSpec

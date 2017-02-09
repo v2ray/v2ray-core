@@ -75,7 +75,6 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 
 func (v *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection, dispatcher dispatcher.Interface) error {
 	udpServer := udp.NewDispatcher(dispatcher)
-	source := proxy.SourceFromContext(ctx)
 
 	reader := buf.NewReader(conn)
 	for {
@@ -86,8 +85,10 @@ func (v *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 
 		request, data, err := DecodeUDPPacket(v.user, payload)
 		if err != nil {
-			log.Info("Shadowsocks|Server: Skipping invalid UDP packet from: ", source, ": ", err)
-			log.Access(source, "", log.AccessRejected, err)
+			if source, ok := proxy.SourceFromContext(ctx); ok {
+				log.Info("Shadowsocks|Server: Skipping invalid UDP packet from: ", source, ": ", err)
+				log.Access(source, "", log.AccessRejected, err)
+			}
 			payload.Release()
 			continue
 		}
@@ -105,7 +106,9 @@ func (v *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 		}
 
 		dest := request.Destination()
-		log.Access(source, dest, log.AccessAccepted, "")
+		if source, ok := proxy.SourceFromContext(ctx); ok {
+			log.Access(source, dest, log.AccessAccepted, "")
+		}
 		log.Info("Shadowsocks|Server: Tunnelling request to ", dest)
 
 		ctx = protocol.ContextWithUser(ctx, request.User)

@@ -67,7 +67,10 @@ func (v *VMessOutboundHandler) Process(ctx context.Context, outboundRay ray.Outb
 	}
 	defer conn.Close()
 
-	target := proxy.DestinationFromContext(ctx)
+	target, ok := proxy.TargetFromContext(ctx)
+	if !ok {
+		return errors.New("VMess|Outbound: Target not specified.")
+	}
 	log.Info("VMess|Outbound: Tunneling request to ", target, " via ", rec.Destination())
 
 	command := protocol.RequestCommandTCP

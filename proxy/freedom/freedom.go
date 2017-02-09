@@ -74,7 +74,7 @@ func (v *Handler) ResolveIP(destination net.Destination) net.Destination {
 }
 
 func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
-	destination := proxy.DestinationFromContext(ctx)
+	destination, _ := proxy.TargetFromContext(ctx)
 	if v.destOverride != nil {
 		server := v.destOverride.Server
 		destination = net.Destination{

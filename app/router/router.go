@@ -70,7 +70,11 @@ func (v *Router) TakeDetour(ctx context.Context) (string, error) {
 		}
 	}
 
-	dest := proxy.DestinationFromContext(ctx)
+	dest, ok := proxy.TargetFromContext(ctx)
+	if !ok {
+		return "", ErrNoRuleApplicable
+	}
+
 	if v.domainStrategy == Config_IpIfNonMatch && dest.Address.Family().IsDomain() {
 		log.Info("Router: Looking up IP for ", dest)
 		ipDests := v.resolveIP(dest)
