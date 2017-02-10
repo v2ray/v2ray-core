@@ -74,7 +74,7 @@ func wsDial(ctx context.Context, dest v2net.Destination) (net.Conn, error) {
 	if (protocol == "ws" && dest.Port == 80) || (protocol == "wss" && dest.Port == 443) {
 		host = dest.Address.String()
 	}
-	uri := protocol + "://" + host + "/" + wsSettings.Path
+	uri := protocol + "://" + host + wsSettings.GetNormailzedPath()
 
 	conn, resp, err := dialer.Dial(uri, nil)
 	if err != nil {

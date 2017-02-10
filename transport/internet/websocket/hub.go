@@ -108,7 +108,7 @@ func (ln *Listener) listenws(address v2net.Address, port v2net.Port) error {
 
 	go func() {
 		http.Serve(listener, &requestHandler{
-			path:  "/" + ln.config.Path,
+			path:  "/" + ln.config.GetNormailzedPath(),
 			conns: ln.awaitingConns,
 		})
 	}()
