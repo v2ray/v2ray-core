@@ -26,13 +26,13 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	}, nil
 }
 
-// Dispatch implements OutboundHandler.Dispatch().
+// Process implements OutboundHandler.Dispatch().
 func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
 	v.response.WriteTo(outboundRay.OutboundOutput())
 	// Sleep a little here to make sure the response is sent to client.
 	time.Sleep(time.Second)
-	outboundRay.OutboundOutput().Close()
-	outboundRay.OutboundInput().CloseError()
+	outboundRay.OutboundOutput().CloseError()
+	time.Sleep(time.Second * 2)
 	return nil
 }
 
