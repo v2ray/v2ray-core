@@ -58,8 +58,8 @@ func TestV2RayClose(t *testing.T) {
 		},
 	}
 
-	point, err := NewPoint(config)
+	server, err := New(config)
 	assert.Error(err).IsNil()
 
-	point.Close()
+	server.Close()
 }

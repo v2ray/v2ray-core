@@ -19,8 +19,9 @@ func Version() string {
 	return version
 }
 
+// PrintVersion prints current version into console.
 func PrintVersion() {
-	fmt.Printf("V2Ray %s (%s) %s%s", version, codename, build, platform.LineSeparator())
+	fmt.Printf("V2Ray %s (%s) %s%s", Version(), codename, build, platform.LineSeparator())
 	fmt.Printf("%s%s", intro, platform.LineSeparator())
 }
 

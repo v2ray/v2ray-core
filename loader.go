@@ -5,19 +5,21 @@ import (
 	"io/ioutil"
 
 	"github.com/golang/protobuf/proto"
-
 	"v2ray.com/core/common/errors"
 )
 
+// ConfigLoader is an utility to load V2Ray config from external source.
 type ConfigLoader func(input io.Reader) (*Config, error)
 
 var configLoaderCache = make(map[ConfigFormat]ConfigLoader)
 
+// RegisterConfigLoader add a new ConfigLoader.
 func RegisterConfigLoader(format ConfigFormat, loader ConfigLoader) error {
 	configLoaderCache[format] = loader
 	return nil
 }
 
+// LoadConfig loads config with given format from given source.
 func LoadConfig(format ConfigFormat, input io.Reader) (*Config, error) {
 	loader, found := configLoaderCache[format]
 	if !found {
@@ -26,7 +28,7 @@ func LoadConfig(format ConfigFormat, input io.Reader) (*Config, error) {
 	return loader(input)
 }
 
-func LoadProtobufConfig(input io.Reader) (*Config, error) {
+func loadProtobufConfig(input io.Reader) (*Config, error) {
 	config := new(Config)
 	data, _ := ioutil.ReadAll(input)
 	if err := proto.Unmarshal(data, config); err != nil {
@@ -36,5 +38,5 @@ func LoadProtobufConfig(input io.Reader) (*Config, error) {
 }
 
 func init() {
-	RegisterConfigLoader(ConfigFormat_Protobuf, LoadProtobufConfig)
+	RegisterConfigLoader(ConfigFormat_Protobuf, loadProtobufConfig)
 }

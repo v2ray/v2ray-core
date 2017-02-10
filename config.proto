@@ -16,6 +16,7 @@ enum ConfigFormat {
   JSON = 1;
 }
 
+// Master config of V2Ray. V2Ray Core takes this config as input and functions accordingly.
 message Config {
   // Inbound handler configurations. Must have at least one item.
   repeated v2ray.core.app.proxyman.InboundHandlerConfig inbound = 1;
@@ -27,5 +28,7 @@ message Config {
 
   // App configuration. Must be one in the app directory.
   repeated v2ray.core.common.serial.TypedMessage app = 4;
+
+  // Transport settings.
   v2ray.core.transport.Config transport = 5;
 }

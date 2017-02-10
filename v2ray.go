@@ -11,9 +11,24 @@ import (
 	"v2ray.com/core/common/net"
 )
 
+// Server is an instance of V2Ray. At any time, there must be at most one Server instance running.
+type Server interface {
+	// Start starts the V2Ray server, and return any error during the process.
+	// In the case of any errors, the state of the server is unpredicatable.
+	Start() error
+
+	// Close closes the V2Ray server. All inbound and outbound connections will be closed immediately.
+	Close()
+}
+
 // Point shell of V2Ray.
 type Point struct {
 	space app.Space
+}
+
+// New creates a new V2Ray server with given config.
+func New(config *Config) (Server, error) {
+	return NewPoint(config)
 }
 
 // NewPoint returns a new Point server based on given configuration.
@@ -125,8 +140,6 @@ func (v *Point) Close() {
 	v.space.Close()
 }
 
-// Start starts the Point server, and return any error during the process.
-// In the case of any errors, the state of the server is unpredicatable.
 func (v *Point) Start() error {
 	if err := v.space.Start(); err != nil {
 		return err
