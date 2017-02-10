@@ -2,12 +2,12 @@ package websocket
 
 import (
 	"context"
-	"io/ioutil"
 	"net"
 
 	"github.com/gorilla/websocket"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/internal"
@@ -78,11 +78,11 @@ func wsDial(ctx context.Context, dest v2net.Destination) (net.Conn, error) {
 
 	conn, resp, err := dialer.Dial(uri, nil)
 	if err != nil {
+		var reason string
 		if resp != nil {
-			reason, reasonerr := ioutil.ReadAll(resp.Body)
-			log.Info(string(reason), reasonerr)
+			reason = resp.Status
 		}
-		return nil, err
+		return nil, errors.Base(err).Format("WebSocket|Dialer: Failed to dial to (", uri, "): ", reason)
 	}
 
 	return &wsconn{

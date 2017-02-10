@@ -51,7 +51,7 @@ func (v *VMessOutboundHandler) Process(ctx context.Context, outboundRay ray.Outb
 	var rec *protocol.ServerSpec
 	var conn internet.Connection
 
-	err := retry.ExponentialBackoff(5, 100).On(func() error {
+	err := retry.ExponentialBackoff(5, 200).On(func() error {
 		rec = v.serverPicker.PickServer()
 		rawConn, err := dialer.Dial(ctx, rec.Destination())
 		if err != nil {
@@ -62,8 +62,7 @@ func (v *VMessOutboundHandler) Process(ctx context.Context, outboundRay ray.Outb
 		return nil
 	})
 	if err != nil {
-		log.Warning("VMess|Outbound: Failed to find an available destination:", err)
-		return err
+		return errors.Base(err).Message("VMess|Outbound: Failed to find an available destination.")
 	}
 	defer conn.Close()
 

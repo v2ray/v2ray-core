@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/app/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
 )
@@ -73,16 +72,13 @@ func (v *TCPHub) start() {
 	v.accepting = true
 	for v.accepting {
 		var newConn Connection
-		err := retry.ExponentialBackoff(10, 200).On(func() error {
+		err := retry.ExponentialBackoff(10, 500).On(func() error {
 			if !v.accepting {
 				return nil
 			}
 			conn, err := v.listener.Accept()
 			if err != nil {
-				if v.accepting {
-					log.Warning("Internet|Listener: Failed to accept new TCP connection: ", err)
-				}
-				return err
+				return errors.Base(err).Message("Internet|Listener: Failed to accept new TCP connection.")
 			}
 			newConn = conn
 			return nil

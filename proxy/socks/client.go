@@ -2,13 +2,13 @@ package socks
 
 import (
 	"context"
-	"errors"
 	"runtime"
 	"time"
 
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
@@ -56,8 +56,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 	})
 
 	if err != nil {
-		log.Warning("Socks|Client: Failed to find an available destination.")
-		return err
+		return errors.Base(err).Message("Socks|Client: Failed to find an available destination.")
 	}
 
 	defer conn.Close()

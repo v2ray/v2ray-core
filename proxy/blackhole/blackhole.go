@@ -3,16 +3,11 @@ package blackhole
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
-)
-
-var (
-	errConnectionBlocked = errors.New("Blackhole: connection blocked.")
 )
 
 // Handler is an outbound connection that sliently swallow the entire payload.
@@ -36,7 +31,9 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	v.response.WriteTo(outboundRay.OutboundOutput())
 	// Sleep a little here to make sure the response is sent to client.
 	time.Sleep(time.Second)
-	return errConnectionBlocked
+	outboundRay.OutboundOutput().Close()
+	outboundRay.OutboundInput().CloseError()
+	return nil
 }
 
 func init() {

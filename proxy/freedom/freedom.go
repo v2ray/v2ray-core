@@ -102,8 +102,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		return nil
 	})
 	if err != nil {
-		log.Warning("Freedom: Failed to open connection to ", destination, ": ", err)
-		return err
+		return errors.Base(err).Message("Freedom: Failed to open connection to ", destination)
 	}
 	defer conn.Close()
 

@@ -2,7 +2,6 @@ package shadowsocks
 
 import (
 	"context"
-	"errors"
 	"runtime"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bufio"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
@@ -61,8 +61,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 		return nil
 	})
 	if err != nil {
-		log.Warning("Shadowsocks|Client: Failed to find an available destination:", err)
-		return err
+		return errors.Base(err).Message("Shadowsocks|Client: Failed to find an available destination.")
 	}
 	log.Info("Shadowsocks|Client: Tunneling request to ", destination, " via ", server.Destination())
 
