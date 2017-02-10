@@ -8,6 +8,8 @@ import (
 	"v2ray.com/core/app/dns"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 )
 
@@ -59,15 +61,14 @@ func NewPoint(config *Config) (*Point, error) {
 		}
 	}
 
-	logger := log.FromSpace(space)
-	if logger == nil {
+	if log.FromSpace(space) == nil {
 		l, err := app.CreateAppFromConfig(ctx, &log.Config{
 			ErrorLogType:  log.LogType_Console,
 			ErrorLogLevel: log.LogLevel_Warning,
 			AccessLogType: log.LogType_None,
 		})
 		if err != nil {
-			return nil, err
+			return nil, errors.Base(err).Message("Core: Failed apply default log settings.")
 		}
 		space.AddApplication(l)
 	}
@@ -78,7 +79,9 @@ func NewPoint(config *Config) (*Point, error) {
 		if err != nil {
 			return nil, err
 		}
-		space.AddApplication(o)
+		if err := space.AddApplication(o); err != nil {
+			return nil, errors.Base(err).Message("Core: Failed to add default outbound handler manager.")
+		}
 		outboundHandlerManager = o.(proxyman.OutboundHandlerManager)
 	}
 
@@ -88,12 +91,13 @@ func NewPoint(config *Config) (*Point, error) {
 		if err != nil {
 			return nil, err
 		}
-		space.AddApplication(o)
+		if err := space.AddApplication(o); err != nil {
+			return nil, errors.Base(err).Message("Core: Failed to add default inbound handler manager.")
+		}
 		inboundHandlerManager = o.(proxyman.InboundHandlerManager)
 	}
 
-	dnsServer := dns.FromSpace(space)
-	if dnsServer == nil {
+	if dns.FromSpace(space) == nil {
 		dnsConfig := &dns.Config{
 			NameServers: []*net.Endpoint{{
 				Address: net.NewIPOrDomain(net.LocalHostDomain),
@@ -103,8 +107,7 @@ func NewPoint(config *Config) (*Point, error) {
 		if err != nil {
 			return nil, err
 		}
-		space.AddApplication(d)
-		dnsServer = d.(dns.Server)
+		common.Must(space.AddApplication(d))
 	}
 
 	disp := dispatcher.FromSpace(space)
