@@ -74,8 +74,7 @@ func ListenWS(address v2net.Address, port v2net.Port, options internet.ListenOpt
 	if options.Stream != nil && options.Stream.HasSecuritySettings() {
 		securitySettings, err := options.Stream.GetEffectiveSecuritySettings()
 		if err != nil {
-			log.Error("WebSocket: Failed to create apply TLS config: ", err)
-			return nil, err
+			return nil, errors.Base(err).Message("WebSocket: Failed to create apply TLS config.")
 		}
 		tlsConfig, ok := securitySettings.(*v2tls.Config)
 		if ok {
@@ -108,7 +107,7 @@ func (ln *Listener) listenws(address v2net.Address, port v2net.Port) error {
 
 	go func() {
 		http.Serve(listener, &requestHandler{
-			path:  "/" + ln.config.GetNormailzedPath(),
+			path:  ln.config.GetNormailzedPath(),
 			conns: ln.awaitingConns,
 		})
 	}()
