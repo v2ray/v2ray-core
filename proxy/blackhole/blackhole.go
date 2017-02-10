@@ -10,7 +10,7 @@ import (
 	"v2ray.com/core/transport/ray"
 )
 
-// Handler is an outbound connection that sliently swallow the entire payload.
+// Handler is an outbound connection that silently swallow the entire payload.
 type Handler struct {
 	response ResponseConfig
 }
