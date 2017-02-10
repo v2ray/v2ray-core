@@ -3,7 +3,6 @@ package websocket
 import (
 	"io"
 	"net"
-	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -13,14 +12,9 @@ import (
 type wsconn struct {
 	wsc    *websocket.Conn
 	reader io.Reader
-	rlock  sync.Mutex
-	wlock  sync.Mutex
 }
 
 func (c *wsconn) Read(b []byte) (int, error) {
-	c.rlock.Lock()
-	defer c.rlock.Unlock()
-
 	for {
 		reader, err := c.getReader()
 		if err != nil {
@@ -50,9 +44,6 @@ func (c *wsconn) getReader() (io.Reader, error) {
 }
 
 func (c *wsconn) Write(b []byte) (int, error) {
-	c.wlock.Lock()
-	defer c.wlock.Unlock()
-
 	if err := c.wsc.WriteMessage(websocket.BinaryMessage, b); err != nil {
 		return 0, err
 	}
