@@ -5,9 +5,9 @@ import (
 	"crypto/tls"
 	"net"
 
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/app/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/internal"
@@ -48,7 +48,7 @@ func Dial(ctx context.Context, dest v2net.Destination) (internet.Connection, err
 		if tcpSettings.HeaderSettings != nil {
 			headerConfig, err := tcpSettings.HeaderSettings.GetInstance()
 			if err != nil {
-				return nil, errors.Base(err).Message("Interent|TCP: Failed to get header settings.")
+				return nil, errors.Base(err).Message("Internet|TCP: Failed to get header settings.")
 			}
 			auth, err := internet.CreateConnectionAuthenticator(headerConfig)
 			if err != nil {
