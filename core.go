@@ -1,4 +1,12 @@
-// Package core provides common definitions and functionalities of V2Ray.
+// Package core provides an entry point to use V2Ray core functionalities.
+//
+// V2Ray makes it possible to accept incoming network connections with certain
+// protocol, process the data, and send them through another connection with
+// the same or a difference protocol on demand.
+//
+// It may be configured to work with multiple protocols at the same time, and
+// uses the internal router to tunnel through different inbound and outbound
+// connections.
 package core
 
 import (
