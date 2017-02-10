@@ -10,11 +10,11 @@ import (
 
 	"golang.org/x/crypto/chacha20poly1305"
 
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"

@@ -8,11 +8,11 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/errors"
-	"v2ray.com/core/app/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/internal"

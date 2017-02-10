@@ -4,9 +4,9 @@ import (
 	"net"
 	"sync"
 
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
-	"v2ray.com/core/app/log"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/transport/internet/internal"
