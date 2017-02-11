@@ -13,6 +13,9 @@ func (v *VMessOutboundHandler) handleSwitchAccount(cmd *protocol.CommandSwitchAc
 	account := &vmess.Account{
 		Id:      cmd.ID.String(),
 		AlterId: uint32(cmd.AlterIds),
+		SecuritySettings: &protocol.SecurityConfig{
+			Type: protocol.SecurityType_LEGACY,
+		},
 	}
 
 	user := &protocol.User{
