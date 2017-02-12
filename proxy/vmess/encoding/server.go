@@ -6,9 +6,10 @@ import (
 	"crypto/md5"
 	"hash/fnv"
 	"io"
+	"sync"
+	"time"
 
 	"golang.org/x/crypto/chacha20poly1305"
-
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/errors"
@@ -16,6 +17,63 @@ import (
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/vmess"
+)
+
+type sessionId struct {
+	user  [16]byte
+	key   [16]byte
+	nonce [16]byte
+}
+
+type sessionHistory struct {
+	sync.RWMutex
+	cache map[sessionId]time.Time
+}
+
+func newSessionHistory() *sessionHistory {
+	h := &sessionHistory{
+		cache: make(map[sessionId]time.Time, 128),
+	}
+	go h.run()
+	return h
+}
+
+func (h *sessionHistory) Add(session sessionId) {
+	h.Lock()
+	h.cache[session] = time.Now().Add(time.Minute * 3)
+	h.Unlock()
+}
+
+func (h *sessionHistory) Has(session sessionId) bool {
+	h.RLock()
+	defer h.RUnlock()
+
+	if expire, found := h.cache[session]; found {
+		return expire.After(time.Now())
+	}
+	return false
+}
+
+func (h *sessionHistory) run() {
+	for {
+		time.Sleep(time.Second * 30)
+		session2Remove := make([]sessionId, 0, 16)
+		now := time.Now()
+		h.Lock()
+		for session, expire := range h.cache {
+			if expire.Before(now) {
+				session2Remove = append(session2Remove, session)
+			}
+		}
+		for _, session := range session2Remove {
+			delete(h.cache, session)
+		}
+		h.Unlock()
+	}
+}
+
+var (
+	globalSessionHistory = newSessionHistory()
 )
 
 type ServerSession struct {
@@ -56,8 +114,9 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	if err != nil {
 		return nil, errors.Base(err).Message("VMess|Server: Failed to get user account.")
 	}
+	vmessAccount := account.(*vmess.InternalAccount)
 
-	aesStream := crypto.NewAesDecryptionStream(account.(*vmess.InternalAccount).ID.CmdKey(), iv)
+	aesStream := crypto.NewAesDecryptionStream(vmessAccount.ID.CmdKey(), iv)
 	decryptor := crypto.NewCryptionReader(aesStream, reader)
 
 	nBytes, err := io.ReadFull(decryptor, buffer[:41])
@@ -77,8 +136,17 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 
 	v.requestBodyIV = append([]byte(nil), buffer[1:17]...)   // 16 bytes
 	v.requestBodyKey = append([]byte(nil), buffer[17:33]...) // 16 bytes
-	v.responseHeader = buffer[33]                            // 1 byte
-	request.Option = protocol.RequestOption(buffer[34])      // 1 byte
+	var sid sessionId
+	copy(sid.user[:], vmessAccount.ID.Bytes())
+	copy(sid.key[:], v.requestBodyKey)
+	copy(sid.nonce[:], v.requestBodyIV)
+	if globalSessionHistory.Has(sid) {
+		return nil, errors.New("VMess|Server: Duplicated session id. Possibly under reply attack.")
+	}
+	globalSessionHistory.Add(sid)
+
+	v.responseHeader = buffer[33]                       // 1 byte
+	request.Option = protocol.RequestOption(buffer[34]) // 1 byte
 	padingLen := int(buffer[35] >> 4)
 	request.Security = protocol.NormSecurity(protocol.Security(buffer[35] & 0x0F))
 	// 1 bytes reserved
