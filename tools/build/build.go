@@ -6,8 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-
-	"v2ray.com/core"
 )
 
 var (
@@ -63,8 +61,9 @@ func build(targetOS, targetArch string, archive bool, version string, metadataFi
 	if len(version) == 0 {
 		version = os.Getenv("TRAVIS_TAG")
 	}
+
 	if len(version) == 0 {
-		version = core.Version()
+		version = "custom"
 	}
 
 	fmt.Printf("Building V2Ray (%s) for %s %s\n", version, v2rayOS, v2rayArch)
