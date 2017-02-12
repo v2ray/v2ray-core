@@ -78,6 +78,7 @@ type VMessInboundHandler struct {
 	clients               protocol.UserValidator
 	usersByEmail          *userByEmail
 	detours               *DetourConfig
+	sessionHistory        *encoding.SessionHistory
 }
 
 func New(ctx context.Context, config *Config) (*VMessInboundHandler, error) {
@@ -92,9 +93,10 @@ func New(ctx context.Context, config *Config) (*VMessInboundHandler, error) {
 	}
 
 	handler := &VMessInboundHandler{
-		clients:      allowedClients,
-		detours:      config.Detour,
-		usersByEmail: NewUserByEmail(config.User, config.GetDefaultValue()),
+		clients:        allowedClients,
+		detours:        config.Detour,
+		usersByEmail:   NewUserByEmail(config.User, config.GetDefaultValue()),
+		sessionHistory: encoding.NewSessionHistory(ctx),
 	}
 
 	space.OnInitialize(func() error {
@@ -171,7 +173,7 @@ func (v *VMessInboundHandler) Process(ctx context.Context, network net.Network, 
 	connection.SetReadDeadline(time.Now().Add(time.Second * 8))
 	reader := bufio.NewReader(connection)
 
-	session := encoding.NewServerSession(v.clients)
+	session := encoding.NewServerSession(v.clients, v.sessionHistory)
 	request, err := session.DecodeRequestHeader(reader)
 
 	if err != nil {
