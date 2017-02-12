@@ -7,7 +7,6 @@ import (
 )
 
 var (
-	ErrUserMissing        = errors.New("User is not specified.")
 	ErrAccountMissing     = errors.New("Account is not specified.")
 	ErrNonMessageType     = errors.New("Not a protobuf message.")
 	ErrUnknownAccountType = errors.New("Unknown account type.")

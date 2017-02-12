@@ -32,7 +32,7 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 		return nil, errors.New("Shadowsocks|Server: No space in context.")
 	}
 	if config.GetUser() == nil {
-		return nil, protocol.ErrUserMissing
+		return nil, errors.New("Shadowsocks|Server: User is not specified.")
 	}
 
 	rawAccount, err := config.User.GetTypedAccount()
