@@ -3,9 +3,8 @@ package inbound
 import (
 	"context"
 	"io"
-	"sync"
-
 	"runtime"
+	"sync"
 	"time"
 
 	"v2ray.com/core/app"
@@ -223,17 +222,15 @@ func (v *VMessInboundHandler) Process(ctx context.Context, network net.Network, 
 	})
 
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
-		log.Info("VMess|Inbound: Connection ending with ", err)
 		connection.SetReusable(false)
 		input.CloseError()
 		output.CloseError()
-		return err
+		return errors.Base(err).Message("VMess|Inbound: Error during processing.")
 	}
 
 	if err := writer.Flush(); err != nil {
-		log.Info("VMess|Inbound: Failed to flush remain data: ", err)
 		connection.SetReusable(false)
-		return err
+		return errors.Base(err).Message("VMess|Inbound: Error during flushing remaining data.")
 	}
 
 	runtime.KeepAlive(timer)
@@ -257,7 +254,7 @@ func (v *VMessInboundHandler) generateCommand(ctx context.Context, request *prot
 					availableMin = 255
 				}
 
-				log.Info("VMessIn: Pick detour handler for port ", port, " for ", availableMin, " minutes.")
+				log.Info("VMess|Inbound: Pick detour handler for port ", port, " for ", availableMin, " minutes.")
 				user := inboundHandler.GetUser(request.User.Email)
 				if user == nil {
 					return nil
