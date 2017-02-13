@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// ToString serialize an abitrary value into string.
 func ToString(v interface{}) string {
 	if v == nil {
 		return " "

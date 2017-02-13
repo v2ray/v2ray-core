@@ -8,6 +8,7 @@ option java_multiple_files = true;
 
 import "v2ray.com/core/common/serial/typed_message.proto";
 
+// User is a generic user for all procotols.
 message User {
   uint32 level = 1;
   string email = 2;
