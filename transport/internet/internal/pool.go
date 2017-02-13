@@ -4,8 +4,6 @@ import (
 	"net"
 	"sync"
 	"time"
-
-	"v2ray.com/core/common/signal"
 )
 
 // ConnectionRecyler is the interface for recycling connections.
@@ -32,15 +30,18 @@ func (ec *ExpiringConnection) Expired() bool {
 // Pool is a connection pool.
 type Pool struct {
 	sync.Mutex
-	connsByDest map[ConnectionID][]*ExpiringConnection
-	cleanupOnce signal.Once
+	connsByDest  map[ConnectionID][]*ExpiringConnection
+	cleanupToken chan bool
 }
 
 // NewConnectionPool creates a new Pool.
 func NewConnectionPool() *Pool {
-	return &Pool{
-		connsByDest: make(map[ConnectionID][]*ExpiringConnection),
+	p := &Pool{
+		connsByDest:  make(map[ConnectionID][]*ExpiringConnection),
+		cleanupToken: make(chan bool, 1),
 	}
+	p.cleanupToken <- true
+	return p
 }
 
 // Get returns a connection with matching connection ID. Nil if not found.
@@ -73,7 +74,9 @@ func (p *Pool) Get(id ConnectionID) net.Conn {
 }
 
 func (p *Pool) cleanup() {
-	defer p.cleanupOnce.Reset()
+	defer func() {
+		p.cleanupToken <- true
+	}()
 
 	for len(p.connsByDest) > 0 {
 		time.Sleep(time.Second * 5)
@@ -117,7 +120,9 @@ func (p *Pool) Put(id ConnectionID, conn net.Conn) {
 	}
 	p.connsByDest[id] = list
 
-	p.cleanupOnce.Do(func() {
+	select {
+	case <-p.cleanupToken:
 		go p.cleanup()
-	})
+	default:
+	}
 }
