@@ -163,6 +163,9 @@ func (h *DynamicInboundHandler) GetRandomInboundProxy() (proxy.Inbound, v2net.Po
 	h.workerMutex.RLock()
 	defer h.workerMutex.RUnlock()
 
+	if len(h.worker) == 0 {
+		return nil, 0, 0
+	}
 	w := h.worker[dice.Roll(len(h.worker))]
 	expire := h.receiverConfig.AllocationStrategy.GetRefreshValue() - uint32(time.Since(h.lastRefresh)/time.Minute)
 	return w.Proxy(), w.Port(), int(expire)

@@ -80,6 +80,9 @@ func (h *AlwaysOnInboundHandler) Close() {
 }
 
 func (h *AlwaysOnInboundHandler) GetRandomInboundProxy() (proxy.Inbound, net.Port, int) {
+	if len(h.workers) == 0 {
+		return nil, 0, 0
+	}
 	w := h.workers[dice.Roll(len(h.workers))]
 	return w.Proxy(), w.Port(), 9999
 }

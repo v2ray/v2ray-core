@@ -252,7 +252,7 @@ func (v *VMessInboundHandler) generateCommand(ctx context.Context, request *prot
 			}
 			proxyHandler, port, availableMin := handler.GetRandomInboundProxy()
 			inboundHandler, ok := proxyHandler.(*VMessInboundHandler)
-			if ok {
+			if ok && inboundHandler != nil {
 				if availableMin > 255 {
 					availableMin = 255
 				}
