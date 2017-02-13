@@ -1,12 +1,11 @@
 package internal
 
 import (
+	"context"
 	"log"
 	"os"
-	"time"
 
 	"v2ray.com/core/common/platform"
-	"v2ray.com/core/common/signal"
 )
 
 type LogWriter interface {
@@ -24,13 +23,11 @@ func (v *NoOpLogWriter) Close() {
 
 type StdOutLogWriter struct {
 	logger *log.Logger
-	cancel *signal.CancelSignal
 }
 
 func NewStdOutLogWriter() LogWriter {
 	return &StdOutLogWriter{
 		logger: log.New(os.Stdout, "", log.Ldate|log.Ltime),
-		cancel: signal.NewCloseSignal(),
 	}
 }
 
@@ -38,42 +35,41 @@ func (v *StdOutLogWriter) Log(log LogEntry) {
 	v.logger.Print(log.String() + platform.LineSeparator())
 }
 
-func (v *StdOutLogWriter) Close() {
-	time.Sleep(500 * time.Millisecond)
-}
+func (v *StdOutLogWriter) Close() {}
 
 type FileLogWriter struct {
 	queue  chan string
 	logger *log.Logger
 	file   *os.File
-	cancel *signal.CancelSignal
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 func (v *FileLogWriter) Log(log LogEntry) {
 	select {
+	case <-v.ctx.Done():
+		return
 	case v.queue <- log.String():
 	default:
 		// We don't expect this to happen, but don't want to block main thread as well.
 	}
 }
 
-func (v *FileLogWriter) run() {
-	v.cancel.WaitThread()
-	defer v.cancel.FinishThread()
-
+func (v *FileLogWriter) run(ctx context.Context) {
+L:
 	for {
-		entry, open := <-v.queue
-		if !open {
-			break
+		select {
+		case <-ctx.Done():
+			break L
+		case entry := <-v.queue:
+			v.logger.Print(entry + platform.LineSeparator())
 		}
-		v.logger.Print(entry + platform.LineSeparator())
 	}
+	v.file.Close()
 }
 
 func (v *FileLogWriter) Close() {
-	close(v.queue)
-	v.cancel.WaitForDone()
-	v.file.Close()
+	v.cancel()
 }
 
 func NewFileLogWriter(path string) (*FileLogWriter, error) {
@@ -81,12 +77,14 @@ func NewFileLogWriter(path string) (*FileLogWriter, error) {
 	if err != nil {
 		return nil, err
 	}
+	ctx, cancel := context.WithCancel(context.Background())
 	logger := &FileLogWriter{
 		queue:  make(chan string, 16),
 		logger: log.New(file, "", log.Ldate|log.Ltime),
 		file:   file,
-		cancel: signal.NewCloseSignal(),
+		ctx:    ctx,
+		cancel: cancel,
 	}
-	go logger.run()
+	go logger.run(ctx)
 	return logger, nil
 }
