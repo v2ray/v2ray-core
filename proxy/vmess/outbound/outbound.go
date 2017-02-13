@@ -22,13 +22,13 @@ import (
 	"v2ray.com/core/transport/ray"
 )
 
-// VMessOutboundHandler is an outbound connection handler for VMess protocol.
-type VMessOutboundHandler struct {
+// Handler is an outbound connection handler for VMess protocol.
+type Handler struct {
 	serverList   *protocol.ServerList
 	serverPicker protocol.ServerPicker
 }
 
-func New(ctx context.Context, config *Config) (*VMessOutboundHandler, error) {
+func New(ctx context.Context, config *Config) (*Handler, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
 		return nil, errors.New("VMess|Outbound: No space in context.")
@@ -38,7 +38,7 @@ func New(ctx context.Context, config *Config) (*VMessOutboundHandler, error) {
 	for _, rec := range config.Receiver {
 		serverList.AddServer(protocol.NewServerSpecFromPB(*rec))
 	}
-	handler := &VMessOutboundHandler{
+	handler := &Handler{
 		serverList:   serverList,
 		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
 	}
@@ -46,8 +46,8 @@ func New(ctx context.Context, config *Config) (*VMessOutboundHandler, error) {
 	return handler, nil
 }
 
-// Dispatch implements OutboundHandler.Dispatch().
-func (v *VMessOutboundHandler) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
+// Process implements proxy.Outbound.Process().
+func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
 	var rec *protocol.ServerSpec
 	var conn internet.Connection
 

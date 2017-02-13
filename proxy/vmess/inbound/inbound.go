@@ -71,8 +71,8 @@ func (v *userByEmail) Get(email string) (*protocol.User, bool) {
 	return user, found
 }
 
-// Inbound connection handler that handles messages in VMess format.
-type VMessInboundHandler struct {
+// Handler is an inbound connection handler that handles messages in VMess protocol.
+type Handler struct {
 	inboundHandlerManager proxyman.InboundHandlerManager
 	clients               protocol.UserValidator
 	usersByEmail          *userByEmail
@@ -80,7 +80,7 @@ type VMessInboundHandler struct {
 	sessionHistory        *encoding.SessionHistory
 }
 
-func New(ctx context.Context, config *Config) (*VMessInboundHandler, error) {
+func New(ctx context.Context, config *Config) (*Handler, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
 		return nil, errors.New("VMess|Inbound: No space in context.")
@@ -91,7 +91,7 @@ func New(ctx context.Context, config *Config) (*VMessInboundHandler, error) {
 		allowedClients.Add(user)
 	}
 
-	handler := &VMessInboundHandler{
+	handler := &Handler{
 		clients:        allowedClients,
 		detours:        config.Detour,
 		usersByEmail:   NewUserByEmail(config.User, config.GetDefaultValue()),
@@ -109,13 +109,14 @@ func New(ctx context.Context, config *Config) (*VMessInboundHandler, error) {
 	return handler, nil
 }
 
-func (*VMessInboundHandler) Network() net.NetworkList {
+// Network implements proxy.Inbound.Network().
+func (*Handler) Network() net.NetworkList {
 	return net.NetworkList{
 		Network: []net.Network{net.Network_TCP},
 	}
 }
 
-func (v *VMessInboundHandler) GetUser(email string) *protocol.User {
+func (v *Handler) GetUser(email string) *protocol.User {
 	user, existing := v.usersByEmail.Get(email)
 	if !existing {
 		v.clients.Add(user)
@@ -168,7 +169,8 @@ func transferResponse(timer *signal.ActivityTimer, session *encoding.ServerSessi
 	return nil
 }
 
-func (v *VMessInboundHandler) Process(ctx context.Context, network net.Network, connection internet.Connection, dispatcher dispatcher.Interface) error {
+// Process implements proxy.Inbound.Process().
+func (v *Handler) Process(ctx context.Context, network net.Network, connection internet.Connection, dispatcher dispatcher.Interface) error {
 	connection.SetReadDeadline(time.Now().Add(time.Second * 8))
 	reader := bufio.NewReader(connection)
 
@@ -238,7 +240,7 @@ func (v *VMessInboundHandler) Process(ctx context.Context, network net.Network, 
 	return nil
 }
 
-func (v *VMessInboundHandler) generateCommand(ctx context.Context, request *protocol.RequestHeader) protocol.ResponseCommand {
+func (v *Handler) generateCommand(ctx context.Context, request *protocol.RequestHeader) protocol.ResponseCommand {
 	if v.detours != nil {
 		tag := v.detours.To
 		if v.inboundHandlerManager != nil {
@@ -248,7 +250,7 @@ func (v *VMessInboundHandler) generateCommand(ctx context.Context, request *prot
 				return nil
 			}
 			proxyHandler, port, availableMin := handler.GetRandomInboundProxy()
-			inboundHandler, ok := proxyHandler.(*VMessInboundHandler)
+			inboundHandler, ok := proxyHandler.(*Handler)
 			if ok && inboundHandler != nil {
 				if availableMin > 255 {
 					availableMin = 255
