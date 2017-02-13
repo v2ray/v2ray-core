@@ -130,7 +130,14 @@ func (v *Hub) WriteTo(payload []byte, dest v2net.Destination) (int, error) {
 
 func (v *Hub) start(ctx context.Context) {
 	oobBytes := make([]byte, 256)
-	for range ctx.Done() {
+L:
+	for {
+		select {
+		case <-ctx.Done():
+			break L
+		default:
+		}
+
 		buffer := buf.NewSmall()
 		var noob int
 		var addr *net.UDPAddr
