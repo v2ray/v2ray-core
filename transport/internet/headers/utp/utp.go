@@ -2,9 +2,9 @@ package utp
 
 import (
 	"context"
-	"math/rand"
 
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/serial"
 )
 
@@ -29,7 +29,7 @@ func NewUTP(ctx context.Context, config interface{}) (interface{}, error) {
 	return &UTP{
 		header:       1,
 		extension:    0,
-		connectionId: uint16(rand.Intn(65536)),
+		connectionId: dice.RandomUint16(),
 	}, nil
 }
 

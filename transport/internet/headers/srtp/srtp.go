@@ -2,9 +2,9 @@ package srtp
 
 import (
 	"context"
-	"math/rand"
 
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/serial"
 )
 
@@ -27,7 +27,7 @@ func (v *SRTP) Write(b []byte) (int, error) {
 func NewSRTP(ctx context.Context, config interface{}) (interface{}, error) {
 	return &SRTP{
 		header: 0xB5E8,
-		number: uint16(rand.Intn(65536)),
+		number: dice.RandomUint16(),
 	}, nil
 }
 

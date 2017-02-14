@@ -20,7 +20,7 @@ import (
 func TestV2RayClose(t *testing.T) {
 	assert := assert.On(t)
 
-	port := v2net.Port(dice.Roll(65535))
+	port := v2net.Port(dice.RandomUint16())
 	config := &Config{
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{

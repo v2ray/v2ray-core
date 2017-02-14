@@ -84,7 +84,7 @@ func (v *UDPNameServer) AssignUnusedID(response chan<- *ARecord) uint16 {
 	}
 
 	for {
-		id = uint16(dice.Roll(65536))
+		id = dice.RandomUint16()
 		if _, found := v.requests[id]; found {
 			continue
 		}

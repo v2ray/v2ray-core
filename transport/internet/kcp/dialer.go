@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	globalConv = uint32(dice.Roll(65536))
+	globalConv = uint32(dice.RandomUint16())
 	globalPool = internal.NewConnectionPool()
 )
 
