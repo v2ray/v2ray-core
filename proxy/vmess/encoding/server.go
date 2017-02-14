@@ -94,12 +94,8 @@ func (h *SessionHistory) run() {
 	}
 }
 
-func getSizeMask(b []byte) uint16 {
-	mask := uint16(0)
-	for i := 0; i < len(b); i += 2 {
-		mask ^= serial.BytesToUint16(b[i : i+2])
-	}
-	return mask
+func getSizeMask(b []byte) crypto.Uint16Generator {
+	return crypto.NewShakeUint16Generator(b)
 }
 
 type ServerSession struct {
@@ -245,6 +241,10 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 
 func (v *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reader io.Reader) buf.Reader {
 	var authReader io.Reader
+	var sizeMask crypto.Uint16Generator = crypto.StaticUint16Generator(0)
+	if request.Option.Has(protocol.RequestOptionChunkMasking) {
+		sizeMask = getSizeMask(v.requestBodyIV)
+	}
 	if request.Security.Is(protocol.SecurityType_NONE) {
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
 			auth := &crypto.AEADAuthenticator{
@@ -252,7 +252,7 @@ func (v *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 				NonceGenerator:          crypto.NoOpBytesGenerator{},
 				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 			}
-			authReader = crypto.NewAuthenticationReader(auth, reader, getSizeMask(v.requestBodyIV))
+			authReader = crypto.NewAuthenticationReader(auth, reader, sizeMask)
 		} else {
 			authReader = reader
 		}
@@ -265,7 +265,7 @@ func (v *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 				NonceGenerator:          crypto.NoOpBytesGenerator{},
 				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 			}
-			authReader = crypto.NewAuthenticationReader(auth, cryptionReader, 0)
+			authReader = crypto.NewAuthenticationReader(auth, cryptionReader, sizeMask)
 		} else {
 			authReader = cryptionReader
 		}
@@ -281,7 +281,7 @@ func (v *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 		}
-		authReader = crypto.NewAuthenticationReader(auth, reader, getSizeMask(v.requestBodyIV))
+		authReader = crypto.NewAuthenticationReader(auth, reader, sizeMask)
 	} else if request.Security.Is(protocol.SecurityType_CHACHA20_POLY1305) {
 		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(v.requestBodyKey))
 
@@ -293,7 +293,7 @@ func (v *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 		}
-		authReader = crypto.NewAuthenticationReader(auth, reader, getSizeMask(v.requestBodyIV))
+		authReader = crypto.NewAuthenticationReader(auth, reader, sizeMask)
 	}
 
 	return buf.NewReader(authReader)
@@ -318,14 +318,18 @@ func (v *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, wr
 
 func (v *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writer io.Writer) buf.Writer {
 	var authWriter io.Writer
+	var sizeMask crypto.Uint16Generator = crypto.StaticUint16Generator(0)
+	if request.Option.Has(protocol.RequestOptionChunkMasking) {
+		sizeMask = getSizeMask(v.responseBodyIV)
+	}
 	if request.Security.Is(protocol.SecurityType_NONE) {
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
 			auth := &crypto.AEADAuthenticator{
-				AEAD:                    new(FnvAuthenticator),
+				AEAD:                    NoOpAuthenticator{},
 				NonceGenerator:          crypto.NoOpBytesGenerator{},
 				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 			}
-			authWriter = crypto.NewAuthenticationWriter(auth, writer, getSizeMask(v.responseBodyIV))
+			authWriter = crypto.NewAuthenticationWriter(auth, writer, sizeMask)
 		} else {
 			authWriter = writer
 		}
@@ -336,7 +340,7 @@ func (v *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 				NonceGenerator:          crypto.NoOpBytesGenerator{},
 				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 			}
-			authWriter = crypto.NewAuthenticationWriter(auth, v.responseWriter, 0)
+			authWriter = crypto.NewAuthenticationWriter(auth, v.responseWriter, sizeMask)
 		} else {
 			authWriter = v.responseWriter
 		}
@@ -352,7 +356,7 @@ func (v *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 		}
-		authWriter = crypto.NewAuthenticationWriter(auth, writer, getSizeMask(v.responseBodyIV))
+		authWriter = crypto.NewAuthenticationWriter(auth, writer, sizeMask)
 	} else if request.Security.Is(protocol.SecurityType_CHACHA20_POLY1305) {
 		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(v.responseBodyKey))
 
@@ -364,7 +368,7 @@ func (v *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 		}
-		authWriter = crypto.NewAuthenticationWriter(auth, writer, getSizeMask(v.responseBodyIV))
+		authWriter = crypto.NewAuthenticationWriter(auth, writer, sizeMask)
 	}
 
 	return buf.NewWriter(authWriter)

@@ -93,6 +93,10 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	account := rawAccount.(*vmess.InternalAccount)
 	request.Security = account.Security
 
+	if request.Security.Is(protocol.SecurityType_AES128_GCM) || request.Security.Is(protocol.SecurityType_NONE) || request.Security.Is(protocol.SecurityType_CHACHA20_POLY1305) {
+		request.Option.Set(protocol.RequestOptionChunkMasking)
+	}
+
 	conn.SetReusable(true)
 	if conn.Reusable() { // Conn reuse may be disabled on transportation layer
 		request.Option.Set(protocol.RequestOptionConnectionReuse)

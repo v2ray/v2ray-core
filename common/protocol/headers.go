@@ -24,8 +24,7 @@ const (
 	// RequestOptionConnectionReuse indicates client side expects to reuse the connection.
 	RequestOptionConnectionReuse = RequestOption(0x02)
 
-	// RequestOptionCompressedStream indicates request payload is compressed.
-	RequestOptionCompressedStream = RequestOption(0x04)
+	RequestOptionChunkMasking = RequestOption(0x04)
 )
 
 func (v RequestOption) Has(option RequestOption) bool {

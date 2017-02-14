@@ -4,6 +4,7 @@ import (
 	"crypto/cipher"
 	"io"
 
+	"golang.org/x/crypto/sha3"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
@@ -67,11 +68,56 @@ func (v *AEADAuthenticator) Seal(dst, plainText []byte) ([]byte, error) {
 	return v.AEAD.Seal(dst, iv, plainText, additionalData), nil
 }
 
+type Uint16Generator interface {
+	Next() uint16
+}
+
+type StaticUint16Generator uint16
+
+func (g StaticUint16Generator) Next() uint16 {
+	return uint16(g)
+}
+
+type MultiplyUint16Generator struct {
+	base  uint16
+	value uint16
+}
+
+func NewMultiplyUint16Generator(base uint16) *MultiplyUint16Generator {
+	return &MultiplyUint16Generator{
+		base:  base,
+		value: 1,
+	}
+}
+
+func (g *MultiplyUint16Generator) Next() uint16 {
+	g.value *= g.base
+	return g.value
+}
+
+type ShakeUint16Generator struct {
+	shake  sha3.ShakeHash
+	buffer [2]byte
+}
+
+func NewShakeUint16Generator(nonce []byte) *ShakeUint16Generator {
+	shake := sha3.NewShake128()
+	shake.Write(nonce)
+	return &ShakeUint16Generator{
+		shake: shake,
+	}
+}
+
+func (g *ShakeUint16Generator) Next() uint16 {
+	g.shake.Read(g.buffer[:])
+	return serial.BytesToUint16(g.buffer[:])
+}
+
 type AuthenticationReader struct {
 	auth     Authenticator
 	buffer   *buf.Buffer
 	reader   io.Reader
-	sizeMask uint16
+	sizeMask Uint16Generator
 
 	chunk []byte
 }
@@ -80,7 +126,7 @@ const (
 	readerBufferSize = 32 * 1024
 )
 
-func NewAuthenticationReader(auth Authenticator, reader io.Reader, sizeMask uint16) *AuthenticationReader {
+func NewAuthenticationReader(auth Authenticator, reader io.Reader, sizeMask Uint16Generator) *AuthenticationReader {
 	return &AuthenticationReader{
 		auth:     auth,
 		buffer:   buf.NewLocal(readerBufferSize),
@@ -89,11 +135,11 @@ func NewAuthenticationReader(auth Authenticator, reader io.Reader, sizeMask uint
 	}
 }
 
-func (v *AuthenticationReader) NextChunk() error {
+func (v *AuthenticationReader) NextChunk(mask uint16) error {
 	if v.buffer.Len() < 2 {
 		return errInsufficientBuffer
 	}
-	size := int(serial.BytesToUint16(v.buffer.BytesTo(2)) ^ v.sizeMask)
+	size := int(serial.BytesToUint16(v.buffer.BytesTo(2)) ^ mask)
 	if size > v.buffer.Len()-2 {
 		return errInsufficientBuffer
 	}
@@ -136,8 +182,9 @@ func (v *AuthenticationReader) EnsureChunk() error {
 		atHead = true
 	}
 
+	mask := v.sizeMask.Next()
 	for {
-		err := v.NextChunk()
+		err := v.NextChunk(mask)
 		if err != errInsufficientBuffer {
 			return err
 		}
@@ -173,10 +220,10 @@ type AuthenticationWriter struct {
 	auth     Authenticator
 	buffer   []byte
 	writer   io.Writer
-	sizeMask uint16
+	sizeMask Uint16Generator
 }
 
-func NewAuthenticationWriter(auth Authenticator, writer io.Writer, sizeMask uint16) *AuthenticationWriter {
+func NewAuthenticationWriter(auth Authenticator, writer io.Writer, sizeMask Uint16Generator) *AuthenticationWriter {
 	return &AuthenticationWriter{
 		auth:     auth,
 		buffer:   make([]byte, 32*1024),
@@ -191,7 +238,7 @@ func (v *AuthenticationWriter) Write(b []byte) (int, error) {
 		return 0, err
 	}
 
-	size := uint16(len(cipherChunk)) ^ v.sizeMask
+	size := uint16(len(cipherChunk)) ^ v.sizeMask.Next()
 	serial.Uint16ToBytes(size, v.buffer[:0])
 	_, err = v.writer.Write(v.buffer[:2+len(cipherChunk)])
 	return len(b), err
