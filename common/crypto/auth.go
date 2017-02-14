@@ -78,23 +78,6 @@ func (g StaticUint16Generator) Next() uint16 {
 	return uint16(g)
 }
 
-type MultiplyUint16Generator struct {
-	base  uint16
-	value uint16
-}
-
-func NewMultiplyUint16Generator(base uint16) *MultiplyUint16Generator {
-	return &MultiplyUint16Generator{
-		base:  base,
-		value: 1,
-	}
-}
-
-func (g *MultiplyUint16Generator) Next() uint16 {
-	g.value *= g.base
-	return g.value
-}
-
 type ShakeUint16Generator struct {
 	shake  sha3.ShakeHash
 	buffer [2]byte
