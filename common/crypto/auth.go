@@ -68,9 +68,10 @@ func (v *AEADAuthenticator) Seal(dst, plainText []byte) ([]byte, error) {
 }
 
 type AuthenticationReader struct {
-	auth   Authenticator
-	buffer *buf.Buffer
-	reader io.Reader
+	auth     Authenticator
+	buffer   *buf.Buffer
+	reader   io.Reader
+	sizeMask uint16
 
 	chunk []byte
 }
@@ -79,11 +80,12 @@ const (
 	readerBufferSize = 32 * 1024
 )
 
-func NewAuthenticationReader(auth Authenticator, reader io.Reader) *AuthenticationReader {
+func NewAuthenticationReader(auth Authenticator, reader io.Reader, sizeMask uint16) *AuthenticationReader {
 	return &AuthenticationReader{
-		auth:   auth,
-		buffer: buf.NewLocal(readerBufferSize),
-		reader: reader,
+		auth:     auth,
+		buffer:   buf.NewLocal(readerBufferSize),
+		reader:   reader,
+		sizeMask: sizeMask,
 	}
 }
 
@@ -91,7 +93,7 @@ func (v *AuthenticationReader) NextChunk() error {
 	if v.buffer.Len() < 2 {
 		return errInsufficientBuffer
 	}
-	size := int(serial.BytesToUint16(v.buffer.BytesTo(2)))
+	size := int(serial.BytesToUint16(v.buffer.BytesTo(2)) ^ v.sizeMask)
 	if size > v.buffer.Len()-2 {
 		return errInsufficientBuffer
 	}
@@ -168,16 +170,18 @@ func (v *AuthenticationReader) Read(b []byte) (int, error) {
 }
 
 type AuthenticationWriter struct {
-	auth   Authenticator
-	buffer []byte
-	writer io.Writer
+	auth     Authenticator
+	buffer   []byte
+	writer   io.Writer
+	sizeMask uint16
 }
 
-func NewAuthenticationWriter(auth Authenticator, writer io.Writer) *AuthenticationWriter {
+func NewAuthenticationWriter(auth Authenticator, writer io.Writer, sizeMask uint16) *AuthenticationWriter {
 	return &AuthenticationWriter{
-		auth:   auth,
-		buffer: make([]byte, 32*1024),
-		writer: writer,
+		auth:     auth,
+		buffer:   make([]byte, 32*1024),
+		writer:   writer,
+		sizeMask: sizeMask,
 	}
 }
 
@@ -187,7 +191,8 @@ func (v *AuthenticationWriter) Write(b []byte) (int, error) {
 		return 0, err
 	}
 
-	serial.Uint16ToBytes(uint16(len(cipherChunk)), v.buffer[:0])
+	size := uint16(len(cipherChunk)) ^ v.sizeMask
+	serial.Uint16ToBytes(size, v.buffer[:0])
 	_, err = v.writer.Write(v.buffer[:2+len(cipherChunk)])
 	return len(b), err
 }
