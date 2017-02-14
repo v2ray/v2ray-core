@@ -6,16 +6,18 @@ import (
 	"crypto/rand"
 	"io"
 	"testing"
-
 	"time"
 
 	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/common/crypto"
+	"v2ray.com/core/common/dice"
 	"v2ray.com/core/testing/assert"
 )
 
 func TestAuthenticationReaderWriter(t *testing.T) {
 	assert := assert.On(t)
+
+	sizeMask := uint16(dice.Roll(65536))
 
 	key := make([]byte, 16)
 	rand.Read(key)
@@ -38,7 +40,7 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 			Content: iv,
 		},
 		AdditionalDataGenerator: &NoOpBytesGenerator{},
-	}, cache)
+	}, cache, sizeMask)
 
 	nBytes, err := writer.Write(payload)
 	assert.Error(err).IsNil()
@@ -53,7 +55,7 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 			Content: iv,
 		},
 		AdditionalDataGenerator: &NoOpBytesGenerator{},
-	}, cache)
+	}, cache, sizeMask)
 
 	actualPayload := make([]byte, 16*1024)
 	nBytes, err = reader.Read(actualPayload)
@@ -67,6 +69,8 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 
 func TestAuthenticationReaderWriterPartial(t *testing.T) {
 	assert := assert.On(t)
+
+	sizeMask := uint16(dice.Roll(65536))
 
 	key := make([]byte, 16)
 	rand.Read(key)
@@ -89,7 +93,7 @@ func TestAuthenticationReaderWriterPartial(t *testing.T) {
 			Content: iv,
 		},
 		AdditionalDataGenerator: &NoOpBytesGenerator{},
-	}, cache)
+	}, cache, sizeMask)
 
 	writer.Write([]byte{'a', 'b', 'c', 'd'})
 
@@ -119,7 +123,7 @@ func TestAuthenticationReaderWriterPartial(t *testing.T) {
 			Content: iv,
 		},
 		AdditionalDataGenerator: &NoOpBytesGenerator{},
-	}, pr)
+	}, pr, sizeMask)
 
 	actualPayload := make([]byte, 7*1024)
 	nBytes, err = reader.Read(actualPayload)
