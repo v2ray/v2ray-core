@@ -118,7 +118,7 @@ func NewAuthenticationReader(auth Authenticator, reader io.Reader, sizeMask Uint
 	}
 }
 
-func (v *AuthenticationReader) NextChunk(mask uint16) error {
+func (v *AuthenticationReader) nextChunk(mask uint16) error {
 	if v.buffer.Len() < 2 {
 		return errInsufficientBuffer
 	}
@@ -133,7 +133,7 @@ func (v *AuthenticationReader) NextChunk(mask uint16) error {
 		return io.EOF
 	}
 	if size < v.auth.Overhead() {
-		return errors.New("AuthenticationReader: invalid packet size:", size)
+		return errors.New("Crypto:AuthenticationReader: invalid packet size:", size)
 	}
 	cipherChunk := v.buffer.BytesRange(2, size+2)
 	plainChunk, err := v.auth.Open(cipherChunk[:0], cipherChunk)
@@ -145,7 +145,7 @@ func (v *AuthenticationReader) NextChunk(mask uint16) error {
 	return nil
 }
 
-func (v *AuthenticationReader) CopyChunk(b []byte) int {
+func (v *AuthenticationReader) copyChunk(b []byte) int {
 	if len(v.chunk) == 0 {
 		return 0
 	}
@@ -158,7 +158,7 @@ func (v *AuthenticationReader) CopyChunk(b []byte) int {
 	return nBytes
 }
 
-func (v *AuthenticationReader) EnsureChunk() error {
+func (v *AuthenticationReader) ensureChunk() error {
 	atHead := false
 	if v.buffer.IsEmpty() {
 		v.buffer.Clear()
@@ -167,7 +167,7 @@ func (v *AuthenticationReader) EnsureChunk() error {
 
 	mask := v.sizeMask.Next()
 	for {
-		err := v.NextChunk(mask)
+		err := v.nextChunk(mask)
 		if err != errInsufficientBuffer {
 			return err
 		}
@@ -187,16 +187,16 @@ func (v *AuthenticationReader) EnsureChunk() error {
 
 func (v *AuthenticationReader) Read(b []byte) (int, error) {
 	if len(v.chunk) > 0 {
-		nBytes := v.CopyChunk(b)
+		nBytes := v.copyChunk(b)
 		return nBytes, nil
 	}
 
-	err := v.EnsureChunk()
+	err := v.ensureChunk()
 	if err != nil {
 		return 0, err
 	}
 
-	return v.CopyChunk(b), nil
+	return v.copyChunk(b), nil
 }
 
 type AuthenticationWriter struct {
