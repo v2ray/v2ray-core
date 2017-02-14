@@ -17,6 +17,7 @@ import (
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy/vmess"
 )
 
@@ -29,19 +30,29 @@ type sessionId struct {
 type SessionHistory struct {
 	sync.RWMutex
 	cache map[sessionId]time.Time
+	token *signal.Semaphore
+	ctx   context.Context
 }
 
 func NewSessionHistory(ctx context.Context) *SessionHistory {
 	h := &SessionHistory{
 		cache: make(map[sessionId]time.Time, 128),
+		token: signal.NewSemaphore(1),
+		ctx:   ctx,
 	}
-	go h.run(ctx)
 	return h
 }
 
 func (h *SessionHistory) add(session sessionId) {
 	h.Lock()
 	h.cache[session] = time.Now().Add(time.Minute * 3)
+
+	select {
+	case <-h.token.Wait():
+		go h.run()
+	default:
+	}
+
 	h.Unlock()
 }
 
@@ -55,16 +66,22 @@ func (h *SessionHistory) has(session sessionId) bool {
 	return false
 }
 
-func (h *SessionHistory) run(ctx context.Context) {
+func (h *SessionHistory) run() {
+	defer h.token.Signal()
+
 	for {
 		select {
-		case <-ctx.Done():
+		case <-h.ctx.Done():
 			return
 		case <-time.After(time.Second * 30):
 		}
 		session2Remove := make([]sessionId, 0, 16)
 		now := time.Now()
 		h.Lock()
+		if len(h.cache) == 0 {
+			h.Unlock()
+			return
+		}
 		for session, expire := range h.cache {
 			if expire.Before(now) {
 				session2Remove = append(session2Remove, session)
