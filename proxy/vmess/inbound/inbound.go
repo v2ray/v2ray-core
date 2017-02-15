@@ -13,7 +13,6 @@ import (
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -150,7 +149,7 @@ func transferResponse(timer *signal.ActivityTimer, session *encoding.ServerSessi
 	}
 	data.Release()
 
-	if bufferedWriter, ok := output.(*bufio.BufferedWriter); ok {
+	if bufferedWriter, ok := output.(*buf.BufferedWriter); ok {
 		if err := bufferedWriter.SetBuffered(false); err != nil {
 			return err
 		}
@@ -172,7 +171,7 @@ func transferResponse(timer *signal.ActivityTimer, session *encoding.ServerSessi
 // Process implements proxy.Inbound.Process().
 func (v *Handler) Process(ctx context.Context, network net.Network, connection internet.Connection, dispatcher dispatcher.Interface) error {
 	connection.SetReadDeadline(time.Now().Add(time.Second * 8))
-	reader := bufio.NewReader(connection)
+	reader := buf.NewBufferedReader(connection)
 
 	session := encoding.NewServerSession(v.clients, v.sessionHistory)
 	request, err := session.DecodeRequestHeader(reader)
@@ -210,7 +209,7 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 		return transferRequest(timer, session, request, reader, input)
 	})
 
-	writer := bufio.NewWriter(connection)
+	writer := buf.NewBufferedWriter(connection)
 	response := &protocol.ResponseHeader{
 		Command: v.generateCommand(ctx, request),
 	}

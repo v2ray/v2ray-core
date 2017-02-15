@@ -1,20 +1,19 @@
-package bufio_test
+package buf_test
 
 import (
 	"crypto/rand"
 	"testing"
 
-	"v2ray.com/core/common/buf"
-	. "v2ray.com/core/common/bufio"
+	. "v2ray.com/core/common/buf"
 	"v2ray.com/core/testing/assert"
 )
 
 func TestBufferedWriter(t *testing.T) {
 	assert := assert.On(t)
 
-	content := buf.New()
+	content := New()
 
-	writer := NewWriter(content)
+	writer := NewBufferedWriter(content)
 	assert.Bool(writer.IsBuffered()).IsTrue()
 
 	payload := make([]byte, 16)
@@ -32,9 +31,9 @@ func TestBufferedWriter(t *testing.T) {
 func TestBufferedWriterLargePayload(t *testing.T) {
 	assert := assert.On(t)
 
-	content := buf.NewLocal(128 * 1024)
+	content := NewLocal(128 * 1024)
 
-	writer := NewWriter(content)
+	writer := NewBufferedWriter(content)
 	assert.Bool(writer.IsBuffered()).IsTrue()
 
 	payload := make([]byte, 64*1024)

@@ -9,7 +9,6 @@ import (
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -111,7 +110,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
 
 	requestDone := signal.ExecuteAsync(func() error {
-		writer := bufio.NewWriter(conn)
+		writer := buf.NewBufferedWriter(conn)
 		session.EncodeRequestHeader(request, writer)
 
 		bodyWriter := session.EncodeRequestBody(request, writer)
@@ -143,7 +142,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	responseDone := signal.ExecuteAsync(func() error {
 		defer output.Close()
 
-		reader := bufio.NewReader(conn)
+		reader := buf.NewBufferedReader(conn)
 		header, err := session.DecodeResponseHeader(reader)
 		if err != nil {
 			return err

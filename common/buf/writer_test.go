@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	. "v2ray.com/core/common/buf"
-	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/testing/assert"
 )
 
@@ -20,7 +19,7 @@ func TestWriter(t *testing.T) {
 
 	writeBuffer := bytes.NewBuffer(make([]byte, 0, 1024*1024))
 
-	writer := NewWriter(bufio.NewWriter(writeBuffer))
+	writer := NewWriter(NewBufferedWriter(writeBuffer))
 	err := writer.Write(lb)
 	assert.Error(err).IsNil()
 	assert.Bytes(expectedBytes).Equals(writeBuffer.Bytes())

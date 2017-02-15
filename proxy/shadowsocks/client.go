@@ -8,7 +8,6 @@ import (
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -96,7 +95,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
 
 	if request.Command == protocol.RequestCommandTCP {
-		bufferedWriter := bufio.NewWriter(conn)
+		bufferedWriter := buf.NewBufferedWriter(conn)
 		bodyWriter, err := WriteTCPRequest(request, bufferedWriter)
 		if err != nil {
 			log.Info("Shadowsocks|Client: Failed to write request: ", err)

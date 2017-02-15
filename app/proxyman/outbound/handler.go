@@ -75,6 +75,7 @@ func (h *Handler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
 	outboundRay.OutboundInput().CloseError()
 }
 
+// Dial implements proxy.Dialer.Dial().
 func (h *Handler) Dial(ctx context.Context, dest v2net.Destination) (internet.Connection, error) {
 	if h.senderSettings != nil {
 		if h.senderSettings.ProxySettings.HasTag() {
@@ -109,8 +110,8 @@ type Connection struct {
 	localAddr  net.Addr
 	remoteAddr net.Addr
 
-	reader *buf.BufferToBytesReader
-	writer *buf.BytesToBufferWriter
+	reader io.Reader
+	writer io.Writer
 }
 
 func NewConnection(stream ray.Ray) *Connection {
@@ -124,8 +125,8 @@ func NewConnection(stream ray.Ray) *Connection {
 			IP:   []byte{0, 0, 0, 0},
 			Port: 0,
 		},
-		reader: buf.NewBytesReader(stream.InboundOutput()),
-		writer: buf.NewBytesWriter(stream.InboundInput()),
+		reader: buf.ToBytesReader(stream.InboundOutput()),
+		writer: buf.ToBytesWriter(stream.InboundInput()),
 	}
 }
 
@@ -163,14 +164,17 @@ func (v *Connection) RemoteAddr() net.Addr {
 	return v.remoteAddr
 }
 
+// SetDeadline implements net.Conn.SetDeadline().
 func (v *Connection) SetDeadline(t time.Time) error {
 	return nil
 }
 
+// SetReadDeadline implements net.Conn.SetReadDeadline().
 func (v *Connection) SetReadDeadline(t time.Time) error {
 	return nil
 }
 
+// SetWriteDeadline implement net.Conn.SetWriteDeadline().
 func (v *Connection) SetWriteDeadline(t time.Time) error {
 	return nil
 }

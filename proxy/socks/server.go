@@ -11,7 +11,6 @@ import (
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -63,7 +62,7 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 
 func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispatcher dispatcher.Interface) error {
 	conn.SetReadDeadline(time.Now().Add(time.Second * 8))
-	reader := bufio.NewReader(conn)
+	reader := buf.NewBufferedReader(conn)
 
 	inboundDest, ok := proxy.InboundEntryPointFromContext(ctx)
 	if !ok {

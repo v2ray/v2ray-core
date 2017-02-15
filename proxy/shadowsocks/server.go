@@ -10,7 +10,6 @@ import (
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -131,7 +130,7 @@ func (v *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 
 func (s *Server) handleConnection(ctx context.Context, conn internet.Connection, dispatcher dispatcher.Interface) error {
 	conn.SetReadDeadline(time.Now().Add(time.Second * 8))
-	bufferedReader := bufio.NewReader(conn)
+	bufferedReader := buf.NewBufferedReader(conn)
 	request, bodyReader, err := ReadTCPSession(s.user, bufferedReader)
 	if err != nil {
 		log.Access(conn.RemoteAddr(), "", log.AccessRejected, err)
@@ -157,7 +156,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 	}
 
 	requestDone := signal.ExecuteAsync(func() error {
-		bufferedWriter := bufio.NewWriter(conn)
+		bufferedWriter := buf.NewBufferedWriter(conn)
 		responseWriter, err := WriteTCPResponse(request, bufferedWriter)
 		if err != nil {
 			log.Warning("Shadowsocks|Server: Failed to write response: ", err)

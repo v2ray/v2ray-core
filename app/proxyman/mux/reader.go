@@ -12,7 +12,7 @@ type muxReader struct {
 
 func NewReader(reader buf.Reader) *muxReader {
 	return &muxReader{
-		reader: buf.NewBytesReader(reader),
+		reader: buf.ToBytesReader(reader),
 		buffer: buf.NewLocal(1024),
 	}
 }

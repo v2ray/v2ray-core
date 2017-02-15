@@ -33,7 +33,8 @@ func ReadFullFrom(reader io.Reader, size int) Supplier {
 	}
 }
 
-// Pipe dumps all content from reader to writer, until an error happens.
+// Pipe dumps all payload from reader to writer, until an error occurs.
+// ActivityTimer gets updated as soon as there is a payload.
 func Pipe(timer *signal.ActivityTimer, reader Reader, writer Writer) error {
 	for {
 		buffer, err := reader.Read()
@@ -73,7 +74,8 @@ func NewReader(reader io.Reader) Reader {
 	}
 }
 
-func NewBytesReader(stream Reader) *BufferToBytesReader {
+// ToBytesReader converts a Reaaer to io.Reader.
+func ToBytesReader(stream Reader) io.Reader {
 	return &BufferToBytesReader{
 		stream: stream,
 	}
@@ -86,7 +88,8 @@ func NewWriter(writer io.Writer) Writer {
 	}
 }
 
-func NewBytesWriter(writer Writer) *BytesToBufferWriter {
+// ToBytesWriter converts a Writer to io.Writer
+func ToBytesWriter(writer Writer) io.Writer {
 	return &BytesToBufferWriter{
 		writer: writer,
 	}

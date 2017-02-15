@@ -1,9 +1,8 @@
-package bufio
+package buf
 
 import (
 	"io"
 
-	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 )
 
@@ -11,15 +10,15 @@ import (
 // This type is not thread safe.
 type BufferedWriter struct {
 	writer   io.Writer
-	buffer   *buf.Buffer
+	buffer   *Buffer
 	buffered bool
 }
 
 // NewWriter creates a new BufferedWriter.
-func NewWriter(rawWriter io.Writer) *BufferedWriter {
+func NewBufferedWriter(rawWriter io.Writer) *BufferedWriter {
 	return &BufferedWriter{
 		writer:   rawWriter,
-		buffer:   buf.NewLocal(1024),
+		buffer:   NewLocal(1024),
 		buffered: true,
 	}
 }
@@ -29,7 +28,7 @@ func (v *BufferedWriter) ReadFrom(reader io.Reader) (int64, error) {
 	totalBytes := int64(0)
 	for {
 		oriSize := v.buffer.Len()
-		err := v.buffer.AppendSupplier(buf.ReadFrom(reader))
+		err := v.buffer.AppendSupplier(ReadFrom(reader))
 		totalBytes += int64(v.buffer.Len() - oriSize)
 		if err != nil {
 			if errors.Cause(err) == io.EOF {

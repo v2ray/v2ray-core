@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bufio"
 	"context"
 	"io"
 	"net"
@@ -15,7 +16,6 @@ import (
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/bufio"
 	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/signal"
@@ -72,7 +72,7 @@ func (s *Server) Process(ctx context.Context, network v2net.Network, conn intern
 	conn.SetReusable(false)
 
 	conn.SetReadDeadline(time.Now().Add(time.Second * 8))
-	reader := bufio.OriginalReaderSize(conn, 2048)
+	reader := bufio.NewReaderSize(conn, 2048)
 
 	request, err := http.ReadRequest(reader)
 	if err != nil {
@@ -223,7 +223,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 	defer input.Close()
 
 	requestDone := signal.ExecuteAsync(func() error {
-		requestWriter := bufio.NewWriter(buf.NewBytesWriter(ray.InboundInput()))
+		requestWriter := buf.NewBufferedWriter(buf.ToBytesWriter(ray.InboundInput()))
 		err := request.Write(requestWriter)
 		if err != nil {
 			return err
@@ -235,13 +235,13 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
-		responseReader := bufio.OriginalReader(buf.NewBytesReader(ray.InboundOutput()))
+		responseReader := bufio.NewReader(buf.ToBytesReader(ray.InboundOutput()))
 		response, err := http.ReadResponse(responseReader, request)
 		if err != nil {
 			log.Warning("HTTP: Failed to read response: ", err)
 			response = generateResponse(503, "Service Unavailable")
 		}
-		responseWriter := bufio.NewWriter(writer)
+		responseWriter := buf.NewBufferedWriter(writer)
 		if err := response.Write(responseWriter); err != nil {
 			return err
 		}

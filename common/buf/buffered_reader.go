@@ -1,23 +1,21 @@
-package bufio
+package buf
 
 import (
 	"io"
-
-	"v2ray.com/core/common/buf"
 )
 
 // BufferedReader is a reader with internal cache.
 type BufferedReader struct {
 	reader   io.Reader
-	buffer   *buf.Buffer
+	buffer   *Buffer
 	buffered bool
 }
 
 // NewReader creates a new BufferedReader based on an io.Reader.
-func NewReader(rawReader io.Reader) *BufferedReader {
+func NewBufferedReader(rawReader io.Reader) *BufferedReader {
 	return &BufferedReader{
 		reader:   rawReader,
-		buffer:   buf.NewLocal(1024),
+		buffer:   NewLocal(1024),
 		buffered: true,
 	}
 }
@@ -42,7 +40,7 @@ func (v *BufferedReader) Read(b []byte) (int, error) {
 		return v.reader.Read(b)
 	}
 	if v.buffer.IsEmpty() {
-		err := v.buffer.AppendSupplier(buf.ReadFrom(v.reader))
+		err := v.buffer.AppendSupplier(ReadFrom(v.reader))
 		if err != nil {
 			return 0, err
 		}
