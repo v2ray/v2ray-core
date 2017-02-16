@@ -30,10 +30,9 @@ func Dial(ctx context.Context, dest v2net.Destination) (internet.Connection, err
 	}
 	if conn == nil {
 		var err error
-		conn, err = wsDial(ctx, dest)
+		conn, err = dialWebsocket(ctx, dest)
 		if err != nil {
-			log.Warning("WebSocket|Dialer: Dial failed: ", err)
-			return nil, err
+			return nil, errors.Base(err).Message("WebSocket|Dialer: Dial failed.")
 		}
 	}
 	return internal.NewConnection(id, conn, globalCache, internal.ReuseConnection(wsSettings.IsConnectionReuse())), nil
@@ -43,7 +42,7 @@ func init() {
 	common.Must(internet.RegisterTransportDialer(internet.TransportProtocol_WebSocket, Dial))
 }
 
-func wsDial(ctx context.Context, dest v2net.Destination) (net.Conn, error) {
+func dialWebsocket(ctx context.Context, dest v2net.Destination) (net.Conn, error) {
 	src := internet.DialerSourceFromContext(ctx)
 	wsSettings := internet.TransportSettingsFromContext(ctx).(*Config)
 
