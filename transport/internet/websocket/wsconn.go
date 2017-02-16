@@ -9,12 +9,14 @@ import (
 	"v2ray.com/core/common/errors"
 )
 
-type wsconn struct {
+// connection is a wrapper for net.Conn over WebSocket connection.
+type connection struct {
 	wsc    *websocket.Conn
 	reader io.Reader
 }
 
-func (c *wsconn) Read(b []byte) (int, error) {
+// Read implements net.Conn.Read()
+func (c *connection) Read(b []byte) (int, error) {
 	for {
 		reader, err := c.getReader()
 		if err != nil {
@@ -30,7 +32,7 @@ func (c *wsconn) Read(b []byte) (int, error) {
 	}
 }
 
-func (c *wsconn) getReader() (io.Reader, error) {
+func (c *connection) getReader() (io.Reader, error) {
 	if c.reader != nil {
 		return c.reader, nil
 	}
@@ -43,37 +45,37 @@ func (c *wsconn) getReader() (io.Reader, error) {
 	return reader, nil
 }
 
-func (c *wsconn) Write(b []byte) (int, error) {
+func (c *connection) Write(b []byte) (int, error) {
 	if err := c.wsc.WriteMessage(websocket.BinaryMessage, b); err != nil {
 		return 0, err
 	}
 	return len(b), nil
 }
 
-func (c *wsconn) Close() error {
+func (c *connection) Close() error {
 	c.wsc.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add(time.Second*5))
 	return c.wsc.Close()
 }
 
-func (c *wsconn) LocalAddr() net.Addr {
+func (c *connection) LocalAddr() net.Addr {
 	return c.wsc.LocalAddr()
 }
 
-func (c *wsconn) RemoteAddr() net.Addr {
+func (c *connection) RemoteAddr() net.Addr {
 	return c.wsc.RemoteAddr()
 }
 
-func (c *wsconn) SetDeadline(t time.Time) error {
+func (c *connection) SetDeadline(t time.Time) error {
 	if err := c.SetReadDeadline(t); err != nil {
 		return err
 	}
 	return c.SetWriteDeadline(t)
 }
 
-func (c *wsconn) SetReadDeadline(t time.Time) error {
+func (c *connection) SetReadDeadline(t time.Time) error {
 	return c.wsc.SetReadDeadline(t)
 }
 
-func (c *wsconn) SetWriteDeadline(t time.Time) error {
+func (c *connection) SetWriteDeadline(t time.Time) error {
 	return c.wsc.SetWriteDeadline(t)
 }

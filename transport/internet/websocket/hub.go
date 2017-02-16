@@ -115,7 +115,7 @@ func (ln *Listener) listenws(address v2net.Address, port v2net.Port) error {
 	return nil
 }
 
-func converttovws(w http.ResponseWriter, r *http.Request) (*wsconn, error) {
+func converttovws(w http.ResponseWriter, r *http.Request) (*connection, error) {
 	var upgrader = websocket.Upgrader{
 		ReadBufferSize:  32 * 1024,
 		WriteBufferSize: 32 * 1024,
@@ -126,7 +126,7 @@ func converttovws(w http.ResponseWriter, r *http.Request) (*wsconn, error) {
 		return nil, err
 	}
 
-	return &wsconn{wsc: conn}, nil
+	return &connection{wsc: conn}, nil
 }
 
 func (ln *Listener) Accept() (internet.Connection, error) {

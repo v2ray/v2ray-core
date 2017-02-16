@@ -85,7 +85,7 @@ func wsDial(ctx context.Context, dest v2net.Destination) (net.Conn, error) {
 		return nil, errors.Base(err).Message("WebSocket|Dialer: Failed to dial to (", uri, "): ", reason)
 	}
 
-	return &wsconn{
+	return &connection{
 		wsc: conn,
 	}, nil
 }
