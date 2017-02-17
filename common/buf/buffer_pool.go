@@ -2,6 +2,7 @@ package buf
 
 import (
 	"os"
+	"runtime"
 	"strconv"
 	"sync"
 )
@@ -107,8 +108,17 @@ var (
 	smallPool  = NewSyncPool(SizeSmall)
 )
 
+func getDefaultPoolSize() uint32 {
+	switch runtime.GOARCH {
+	case "amd64", "386":
+		return 20
+	default:
+		return 5
+	}
+}
+
 func init() {
-	var size uint32 = 20
+	var size uint32 = getDefaultPoolSize()
 	sizeStr := os.Getenv(poolSizeEnvKey)
 	if len(sizeStr) > 0 {
 		customSize, err := strconv.ParseUint(sizeStr, 10, 32)
