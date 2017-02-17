@@ -107,12 +107,13 @@ func (v *TCPListener) KeepAccepting() {
 			v.Unlock()
 			break
 		}
-		if v.tlsConfig != nil {
+		if conn != nil && v.tlsConfig != nil {
 			conn = tls.Server(conn, v.tlsConfig)
 		}
-		if v.authConfig != nil {
+		if conn != nil && v.authConfig != nil {
 			conn = v.authConfig.Server(conn)
 		}
+
 		select {
 		case v.awaitingConns <- &ConnectionWithError{
 			conn: conn,
