@@ -52,7 +52,7 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 
 type Listener struct {
 	sync.Mutex
-	acccepting    bool
+	closed        chan bool
 	awaitingConns chan *ConnectionWithError
 	listener      net.Listener
 	tlsConfig     *tls.Config
@@ -67,7 +67,7 @@ func ListenWS(address v2net.Address, port v2net.Port, options internet.ListenOpt
 	wsSettings := networkSettings.(*Config)
 
 	l := &Listener{
-		acccepting:    true,
+		closed:        make(chan bool),
 		awaitingConns: make(chan *ConnectionWithError, 32),
 		config:        wsSettings,
 	}
@@ -130,8 +130,10 @@ func converttovws(w http.ResponseWriter, r *http.Request) (*connection, error) {
 }
 
 func (ln *Listener) Accept() (internet.Connection, error) {
-	for ln.acccepting {
+	for {
 		select {
+		case <-ln.closed:
+			return nil, ErrClosedListener
 		case connErr, open := <-ln.awaitingConns:
 			if !open {
 				return nil, ErrClosedListener
@@ -143,14 +145,15 @@ func (ln *Listener) Accept() (internet.Connection, error) {
 		case <-time.After(time.Second * 2):
 		}
 	}
-	return nil, ErrClosedListener
 }
 
 func (ln *Listener) Put(id internal.ConnectionID, conn net.Conn) {
 	ln.Lock()
 	defer ln.Unlock()
-	if !ln.acccepting {
+	select {
+	case <-ln.closed:
 		return
+	default:
 	}
 	select {
 	case ln.awaitingConns <- &ConnectionWithError{conn: conn}:
@@ -166,10 +169,13 @@ func (ln *Listener) Addr() net.Addr {
 func (ln *Listener) Close() error {
 	ln.Lock()
 	defer ln.Unlock()
-	ln.acccepting = false
-
+	select {
+	case <-ln.closed:
+		return ErrClosedListener
+	default:
+	}
+	close(ln.closed)
 	ln.listener.Close()
-
 	close(ln.awaitingConns)
 	for connErr := range ln.awaitingConns {
 		if connErr.conn != nil {

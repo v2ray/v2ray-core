@@ -246,13 +246,14 @@ func (v *Listener) Accept() (internet.Connection, error) {
 
 // Close stops listening on the UDP address. Already Accepted connections are not closed.
 func (v *Listener) Close() error {
+
+	v.Lock()
+	defer v.Unlock()
 	select {
 	case <-v.closed:
 		return ErrClosedListener
 	default:
 	}
-	v.Lock()
-	defer v.Unlock()
 
 	close(v.closed)
 	close(v.awaitingConns)

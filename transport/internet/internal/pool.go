@@ -31,7 +31,7 @@ func (ec *ExpiringConnection) Expired() bool {
 
 // Pool is a connection pool.
 type Pool struct {
-	sync.Mutex
+	sync.RWMutex
 	connsByDest  map[ConnectionID][]*ExpiringConnection
 	cleanupToken *signal.Semaphore
 }
@@ -74,10 +74,17 @@ func (p *Pool) Get(id ConnectionID) net.Conn {
 	return conn.conn
 }
 
+func (p *Pool) isEmpty() bool {
+	p.RLock()
+	defer p.RUnlock()
+
+	return len(p.connsByDest) == 0
+}
+
 func (p *Pool) cleanup() {
 	defer p.cleanupToken.Signal()
 
-	for len(p.connsByDest) > 0 {
+	for !p.isEmpty() {
 		time.Sleep(time.Second * 5)
 		expiredConns := make([]net.Conn, 0, 16)
 		p.Lock()
