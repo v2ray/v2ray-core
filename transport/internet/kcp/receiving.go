@@ -48,6 +48,10 @@ func (v *ReceivingWindow) RemoveFirst() *DataSegment {
 	return v.Remove(0)
 }
 
+func (w *ReceivingWindow) HasFirst() bool {
+	return w.list[w.Position(0)] != nil
+}
+
 func (v *ReceivingWindow) Advance() {
 	v.start++
 	if v.start == v.size {
@@ -163,7 +167,9 @@ func NewReceivingWorker(kcp *Connection) *ReceivingWorker {
 }
 
 func (v *ReceivingWorker) Release() {
+	v.Lock()
 	v.leftOver.Release()
+	v.Unlock()
 }
 
 func (v *ReceivingWorker) ProcessSendingNext(number uint32) {
@@ -228,6 +234,19 @@ func (v *ReceivingWorker) Read(b []byte) int {
 	return total
 }
 
+func (w *ReceivingWorker) IsDataAvailable() bool {
+	w.RLock()
+	defer w.RUnlock()
+	return w.window.HasFirst()
+}
+
+func (w *ReceivingWorker) NextNumber() uint32 {
+	w.RLock()
+	defer w.RUnlock()
+
+	return w.nextNumber
+}
+
 func (v *ReceivingWorker) Flush(current uint32) {
 	v.Lock()
 	defer v.Unlock()
@@ -250,5 +269,8 @@ func (v *ReceivingWorker) CloseRead() {
 }
 
 func (v *ReceivingWorker) UpdateNecessary() bool {
+	v.RLock()
+	defer v.RUnlock()
+
 	return len(v.acklist.numbers) > 0
 }

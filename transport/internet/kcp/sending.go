@@ -207,7 +207,9 @@ func NewSendingWorker(kcp *Connection) *SendingWorker {
 }
 
 func (v *SendingWorker) Release() {
+	v.Lock()
 	v.window.Release()
+	v.Unlock()
 }
 
 func (v *SendingWorker) ProcessReceivingNext(nextNumber uint32) {
@@ -336,7 +338,6 @@ func (v *SendingWorker) OnPacketLoss(lossRate uint32) {
 
 func (v *SendingWorker) Flush(current uint32) {
 	v.Lock()
-	defer v.Unlock()
 
 	cwnd := v.firstUnacknowledged + v.conn.Config.GetSendingInFlightSize()
 	if cwnd > v.remoteNextNumber {
@@ -348,11 +349,17 @@ func (v *SendingWorker) Flush(current uint32) {
 
 	if !v.window.IsEmpty() {
 		v.window.Flush(current, v.conn.roundTrip.Timeout(), cwnd)
-	} else if v.firstUnacknowledgedUpdated {
-		v.conn.Ping(current, CommandPing)
+		v.firstUnacknowledgedUpdated = false
 	}
 
+	updated := v.firstUnacknowledgedUpdated
 	v.firstUnacknowledgedUpdated = false
+
+	v.Unlock()
+
+	if updated {
+		v.conn.Ping(current, CommandPing)
+	}
 }
 
 func (v *SendingWorker) CloseWrite() {
@@ -371,4 +378,11 @@ func (v *SendingWorker) IsEmpty() bool {
 
 func (v *SendingWorker) UpdateNecessary() bool {
 	return !v.IsEmpty()
+}
+
+func (w *SendingWorker) FirstUnacknowledged() uint32 {
+	w.RLock()
+	defer w.RUnlock()
+
+	return w.firstUnacknowledged
 }

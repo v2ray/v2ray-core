@@ -116,7 +116,7 @@ func (v *RoundTripInfo) SmoothedTime() uint32 {
 }
 
 type Updater struct {
-	interval        time.Duration
+	interval        int64
 	shouldContinue  predicate.Predicate
 	shouldTerminate predicate.Predicate
 	updateFunc      func()
@@ -125,7 +125,7 @@ type Updater struct {
 
 func NewUpdater(interval uint32, shouldContinue predicate.Predicate, shouldTerminate predicate.Predicate, updateFunc func()) *Updater {
 	u := &Updater{
-		interval:        time.Duration(interval) * time.Millisecond,
+		interval:        int64(time.Duration(interval) * time.Millisecond),
 		shouldContinue:  shouldContinue,
 		shouldTerminate: shouldTerminate,
 		updateFunc:      updateFunc,
@@ -149,9 +149,17 @@ func (v *Updater) Run() {
 		}
 		for v.shouldContinue() {
 			v.updateFunc()
-			time.Sleep(v.interval)
+			time.Sleep(v.Interval())
 		}
 	}
+}
+
+func (u *Updater) Interval() time.Duration {
+	return time.Duration(atomic.LoadInt64(&u.interval))
+}
+
+func (u *Updater) SetInterval(d time.Duration) {
+	atomic.StoreInt64(&u.interval, int64(d))
 }
 
 type SystemConnection interface {
@@ -342,14 +350,14 @@ func (v *Connection) SetState(state State) {
 	case StateTerminating:
 		v.receivingWorker.CloseRead()
 		v.sendingWorker.CloseWrite()
-		v.pingUpdater.interval = time.Second
+		v.pingUpdater.SetInterval(time.Second)
 	case StatePeerTerminating:
 		v.sendingWorker.CloseWrite()
-		v.pingUpdater.interval = time.Second
+		v.pingUpdater.SetInterval(time.Second)
 	case StateTerminated:
 		v.receivingWorker.CloseRead()
 		v.sendingWorker.CloseWrite()
-		v.pingUpdater.interval = time.Second
+		v.pingUpdater.SetInterval(time.Second)
 		v.dataUpdater.WakeUp()
 		v.pingUpdater.WakeUp()
 		go v.Terminate()
@@ -491,7 +499,7 @@ func (v *Connection) Input(segments []Segment) {
 		case *DataSegment:
 			v.HandleOption(seg.Option)
 			v.receivingWorker.ProcessSegment(seg)
-			if seg.Number == v.receivingWorker.nextNumber {
+			if v.receivingWorker.IsDataAvailable() {
 				v.OnDataInput()
 			}
 			v.dataUpdater.WakeUp()
@@ -573,8 +581,8 @@ func (v *Connection) Ping(current uint32, cmd Command) {
 	seg := NewCmdOnlySegment()
 	seg.Conv = v.conv
 	seg.Cmd = cmd
-	seg.ReceivinNext = v.receivingWorker.nextNumber
-	seg.SendingNext = v.sendingWorker.firstUnacknowledged
+	seg.ReceivinNext = v.receivingWorker.NextNumber()
+	seg.SendingNext = v.sendingWorker.FirstUnacknowledged()
 	seg.PeerRTO = v.roundTrip.Timeout()
 	if v.State() == StateReadyToClose {
 		seg.Option = SegmentOptionClose

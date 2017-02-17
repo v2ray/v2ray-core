@@ -79,7 +79,7 @@ func (o *ServerConnection) Id() internal.ConnectionID {
 // Listener defines a server listening for connections
 type Listener struct {
 	sync.Mutex
-	running       bool
+	closed        chan bool
 	sessions      map[ConnectionID]*Connection
 	awaitingConns chan *Connection
 	hub           *udp.Hub
@@ -116,7 +116,7 @@ func NewListener(address v2net.Address, port v2net.Port, options internet.Listen
 		},
 		sessions:      make(map[ConnectionID]*Connection),
 		awaitingConns: make(chan *Connection, 64),
-		running:       true,
+		closed:        make(chan bool),
 		config:        kcpSettings,
 	}
 	if options.Stream != nil && options.Stream.HasSecuritySettings() {
@@ -134,7 +134,9 @@ func NewListener(address v2net.Address, port v2net.Port, options internet.Listen
 	if err != nil {
 		return nil, err
 	}
+	l.Lock()
 	l.hub = hub
+	l.Unlock()
 	log.Info("KCP|Listener: listening on ", address, ":", port)
 	return l, nil
 }
@@ -148,12 +150,15 @@ func (v *Listener) OnReceive(payload *buf.Buffer, src v2net.Destination, origina
 		return
 	}
 
-	if !v.running {
+	select {
+	case <-v.closed:
 		return
+	default:
 	}
+
 	v.Lock()
 	defer v.Unlock()
-	if !v.running {
+	if v.hub == nil {
 		return
 	}
 	if payload.Len() < 4 {
@@ -208,24 +213,22 @@ func (v *Listener) OnReceive(payload *buf.Buffer, src v2net.Destination, origina
 }
 
 func (v *Listener) Remove(id ConnectionID) {
-	if !v.running {
+	select {
+	case <-v.closed:
 		return
+	default:
+		v.Lock()
+		delete(v.sessions, id)
+		v.Unlock()
 	}
-	v.Lock()
-	defer v.Unlock()
-	if !v.running {
-		return
-	}
-	delete(v.sessions, id)
 }
 
 // Accept implements the Accept method in the Listener interface; it waits for the next call and returns a generic Conn.
 func (v *Listener) Accept() (internet.Connection, error) {
 	for {
-		if !v.running {
-			return nil, ErrClosedListener
-		}
 		select {
+		case <-v.closed:
+			return nil, ErrClosedListener
 		case conn, open := <-v.awaitingConns:
 			if !open {
 				break
@@ -243,13 +246,15 @@ func (v *Listener) Accept() (internet.Connection, error) {
 
 // Close stops listening on the UDP address. Already Accepted connections are not closed.
 func (v *Listener) Close() error {
-	if !v.running {
+	select {
+	case <-v.closed:
 		return ErrClosedListener
+	default:
 	}
 	v.Lock()
 	defer v.Unlock()
 
-	v.running = false
+	close(v.closed)
 	close(v.awaitingConns)
 	for _, conn := range v.sessions {
 		go conn.Terminate()
