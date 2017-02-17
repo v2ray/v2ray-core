@@ -10,6 +10,9 @@ $GOPATH/bin/build --os=linux --arch=x64 --zip
 $GOPATH/bin/build --os=linux --arch=arm --zip
 $GOPATH/bin/build --os=linux --arch=arm64 --zip
 $GOPATH/bin/build --os=linux --arch=mips64 --zip
+$GOPATH/bin/build --os=linux --arch=mips64le --zip
+$GOPATH/bin/build --os=linux --arch=mips --zip
+$GOPATH/bin/build --os=linux --arch=mipsle --zip
 $GOPATH/bin/build --os=freebsd --arch=x86 --zip
 $GOPATH/bin/build --os=freebsd --arch=amd64 --zip
 $GOPATH/bin/build --os=openbsd --arch=x86 --zip

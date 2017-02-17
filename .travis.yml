@@ -1,7 +1,7 @@
 sudo: required
 language: go
 go:
-- 1.7.5
+- 1.8
 go_import_path: v2ray.com/core
 git:
   depth: 5
@@ -28,6 +28,9 @@ deploy:
   - $GOPATH/bin/v2ray-linux-arm.zip
   - $GOPATH/bin/v2ray-linux-arm64.zip
   - $GOPATH/bin/v2ray-linux-mips64.zip
+  - $GOPATH/bin/v2ray-linux-mips64le.zip
+  - $GOPATH/bin/v2ray-linux-mips.zip
+  - $GOPATH/bin/v2ray-linux-mipsle.zip
   - $GOPATH/bin/v2ray-freebsd-64.zip
   - $GOPATH/bin/v2ray-freebsd-32.zip
   - $GOPATH/bin/v2ray-openbsd-64.zip
