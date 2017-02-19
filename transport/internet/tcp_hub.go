@@ -2,7 +2,6 @@ package internet
 
 import (
 	"net"
-	"sync"
 
 	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
@@ -34,10 +33,9 @@ type Listener interface {
 }
 
 type TCPHub struct {
-	sync.Mutex
 	listener     Listener
 	connCallback ConnectionHandler
-	accepting    bool
+	closed       chan bool
 }
 
 func ListenTCP(address v2net.Address, port v2net.Port, callback ConnectionHandler, settings *StreamConfig) (*TCPHub, error) {
@@ -64,24 +62,34 @@ func ListenTCP(address v2net.Address, port v2net.Port, callback ConnectionHandle
 }
 
 func (v *TCPHub) Close() {
-	v.accepting = false
-	v.listener.Close()
+	select {
+	case <-v.closed:
+		return
+	default:
+		v.listener.Close()
+	}
 }
 
 func (v *TCPHub) start() {
-	v.accepting = true
-	for v.accepting {
+	for {
+		select {
+		case <-v.closed:
+			return
+		default:
+		}
 		var newConn Connection
 		err := retry.ExponentialBackoff(10, 500).On(func() error {
-			if !v.accepting {
+			select {
+			case <-v.closed:
+				return nil
+			default:
+				conn, err := v.listener.Accept()
+				if err != nil {
+					return errors.Base(err).Message("Internet|Listener: Failed to accept new TCP connection.")
+				}
+				newConn = conn
 				return nil
 			}
-			conn, err := v.listener.Accept()
-			if err != nil {
-				return errors.Base(err).Message("Internet|Listener: Failed to accept new TCP connection.")
-			}
-			newConn = conn
-			return nil
 		})
 		if err == nil && newConn != nil {
 			go v.connCallback(newConn)
