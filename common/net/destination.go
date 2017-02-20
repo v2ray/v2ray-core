@@ -11,6 +11,7 @@ type Destination struct {
 	Address Address
 }
 
+// DestinationFromAddr generates a Destination from a net address.
 func DestinationFromAddr(addr net.Addr) Destination {
 	switch addr := addr.(type) {
 	case *net.TCPAddr:
@@ -52,6 +53,7 @@ func (v Destination) IsValid() bool {
 	return v.Network != Network_Unknown
 }
 
+// AsDestination converts current Enpoint into Destination.
 func (v *Endpoint) AsDestination() Destination {
 	return Destination{
 		Network: v.Network,

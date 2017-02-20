@@ -63,6 +63,7 @@ func (v PortRange) Contains(port Port) bool {
 	return v.FromPort() <= port && port <= v.ToPort()
 }
 
+// SinglePortRange returns a PortRange contains a single port.
 func SinglePortRange(v Port) *PortRange {
 	return &PortRange{
 		From: uint32(v),

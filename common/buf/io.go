@@ -76,7 +76,7 @@ func NewReader(reader io.Reader) Reader {
 
 // ToBytesReader converts a Reaaer to io.Reader.
 func ToBytesReader(stream Reader) io.Reader {
-	return &BufferToBytesReader{
+	return &bufferToBytesReader{
 		stream: stream,
 	}
 }
@@ -90,7 +90,7 @@ func NewWriter(writer io.Writer) Writer {
 
 // ToBytesWriter converts a Writer to io.Writer
 func ToBytesWriter(writer Writer) io.Writer {
-	return &BytesToBufferWriter{
+	return &bytesToBufferWriter{
 		writer: writer,
 	}
 }

@@ -23,11 +23,11 @@ func (v *BufferToBytesWriter) Write(buffer *Buffer) error {
 	return nil
 }
 
-type BytesToBufferWriter struct {
+type bytesToBufferWriter struct {
 	writer Writer
 }
 
-func (v *BytesToBufferWriter) Write(payload []byte) (int, error) {
+func (v *bytesToBufferWriter) Write(payload []byte) (int, error) {
 	bytesWritten := 0
 	size := len(payload)
 	for size > 0 {

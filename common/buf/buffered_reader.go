@@ -11,7 +11,7 @@ type BufferedReader struct {
 	buffered bool
 }
 
-// NewReader creates a new BufferedReader based on an io.Reader.
+// NewBufferedReader creates a new BufferedReader based on an io.Reader.
 func NewBufferedReader(rawReader io.Reader) *BufferedReader {
 	return &BufferedReader{
 		reader:   rawReader,
