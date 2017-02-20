@@ -7,6 +7,7 @@ import (
 	"v2ray.com/core/common/uuid"
 )
 
+// RequestCommand is a custom command in a proxy request.
 type RequestCommand byte
 
 const (

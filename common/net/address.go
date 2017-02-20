@@ -21,11 +21,17 @@ var (
 	LocalHostIPv6 = IPAddress([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1})
 )
 
+// AddressFamily is the type of address.
 type AddressFamily int
 
 const (
-	AddressFamilyIPv4   = AddressFamily(0)
-	AddressFamilyIPv6   = AddressFamily(1)
+	// AddressFamilyIPv4 represents address as IPv4
+	AddressFamilyIPv4 = AddressFamily(0)
+
+	// AddressFamilyIPv6 represents address as IPv6
+	AddressFamilyIPv6 = AddressFamily(1)
+
+	// AddressFamilyDomain represents address as Domain
 	AddressFamilyDomain = AddressFamily(2)
 )
 

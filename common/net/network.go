@@ -46,7 +46,7 @@ func (v Network) URLPrefix() string {
 	}
 }
 
-// HashNetwork returns true if the given network is in v NetworkList.
+// HasNetwork returns true if the given network is in v NetworkList.
 func (v NetworkList) HasNetwork(network Network) bool {
 	for _, value := range v.Network {
 		if string(value) == string(network) {
@@ -60,6 +60,7 @@ func (v NetworkList) Get(idx int) Network {
 	return v.Network[idx]
 }
 
+// Size returns the number of networks in this network list.
 func (v NetworkList) Size() int {
 	return len(v.Network)
 }
