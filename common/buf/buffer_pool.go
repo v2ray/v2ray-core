@@ -118,7 +118,7 @@ func getDefaultPoolSize() uint32 {
 }
 
 func init() {
-	var size uint32 = getDefaultPoolSize()
+	size := getDefaultPoolSize()
 	sizeStr := os.Getenv(poolSizeEnvKey)
 	if len(sizeStr) > 0 {
 		customSize, err := strconv.ParseUint(sizeStr, 10, 32)

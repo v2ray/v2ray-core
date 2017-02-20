@@ -24,7 +24,7 @@ func TestBufferedWriter(t *testing.T) {
 
 	assert.Bool(content.IsEmpty()).IsTrue()
 
-	writer.SetBuffered(false)
+	assert.Error(writer.SetBuffered(false)).IsNil()
 	assert.Int(content.Len()).Equals(16)
 }
 

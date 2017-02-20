@@ -43,15 +43,14 @@ func (v *BytesToBufferReader) Read() (*Buffer, error) {
 	return buffer, nil
 }
 
-type BufferToBytesReader struct {
+type bufferToBytesReader struct {
 	stream  Reader
 	current *Buffer
 	err     error
 }
 
-// Fill fills in the internal buffer.
-// Private: Visible for testing.
-func (v *BufferToBytesReader) Fill() {
+// fill fills in the internal buffer.
+func (v *bufferToBytesReader) fill() {
 	b, err := v.stream.Read()
 	v.current = b
 	if err != nil {
@@ -60,13 +59,13 @@ func (v *BufferToBytesReader) Fill() {
 	}
 }
 
-func (v *BufferToBytesReader) Read(b []byte) (int, error) {
+func (v *bufferToBytesReader) Read(b []byte) (int, error) {
 	if v.err != nil {
 		return 0, v.err
 	}
 
 	if v.current == nil {
-		v.Fill()
+		v.fill()
 		if v.err != nil {
 			return 0, v.err
 		}

@@ -14,7 +14,7 @@ type BufferedWriter struct {
 	buffered bool
 }
 
-// NewWriter creates a new BufferedWriter.
+// NewBufferedWriter creates a new BufferedWriter.
 func NewBufferedWriter(rawWriter io.Writer) *BufferedWriter {
 	return &BufferedWriter{
 		writer:   rawWriter,
