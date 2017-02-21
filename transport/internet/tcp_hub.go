@@ -63,11 +63,16 @@ func ListenTCP(address v2net.Address, port v2net.Port, callback ConnectionHandle
 }
 
 func (v *TCPHub) Close() {
+	defer func() {
+		recover()
+	}()
+
 	select {
 	case <-v.closed:
 		return
 	default:
 		v.listener.Close()
+		close(v.closed)
 	}
 }
 
