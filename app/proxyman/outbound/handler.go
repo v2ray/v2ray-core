@@ -67,7 +67,12 @@ func (h *Handler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
 	err := h.proxy.Process(ctx, outboundRay, h)
 	// Ensure outbound ray is properly closed.
 	if err != nil && errors.Cause(err) != io.EOF {
-		log.Info("Proxyman|OutboundHandler: Failed to process outbound traffic: ", err)
+		err = errors.Base(err).Message("Proxyman|OutboundHandler: Failed to process outbound traffic.")
+		if errors.IsActionRequired(err) {
+			log.Warning(err)
+		} else {
+			log.Info(err)
+		}
 		outboundRay.OutboundOutput().CloseError()
 	} else {
 		outboundRay.OutboundOutput().Close()

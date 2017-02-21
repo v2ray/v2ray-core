@@ -12,10 +12,15 @@ type hasInnerError interface {
 	Inner() error
 }
 
+type actionRequired interface {
+	ActionRequired() bool
+}
+
 // Error is an error object with underlying error.
 type Error struct {
-	message string
-	inner   error
+	message        string
+	inner          error
+	actionRequired bool
 }
 
 // Error implements error.Error().
@@ -29,6 +34,10 @@ func (v *Error) Inner() error {
 		return nil
 	}
 	return v.inner
+}
+
+func (v *Error) ActionRequired() bool {
+	return v.actionRequired
 }
 
 // New returns a new error object with message formed from given arguments.
@@ -56,10 +65,7 @@ func Cause(err error) error {
 	}
 	for {
 		inner, ok := err.(hasInnerError)
-		if !ok {
-			break
-		}
-		if inner.Inner() == nil {
+		if !ok || inner.Inner() == nil {
 			break
 		}
 		err = inner.Inner()
@@ -67,8 +73,28 @@ func Cause(err error) error {
 	return err
 }
 
+func IsActionRequired(err error) bool {
+	for err != nil {
+		if ar, ok := err.(actionRequired); ok && ar.ActionRequired() {
+			return true
+		}
+		inner, ok := err.(hasInnerError)
+		if !ok || inner.Inner() == nil {
+			break
+		}
+		err = inner.Inner()
+	}
+	return false
+}
+
 type ErrorBuilder struct {
 	error
+	actionRequired bool
+}
+
+func (v ErrorBuilder) RequireUserAction() ErrorBuilder {
+	v.actionRequired = true
+	return v
 }
 
 // Message returns an error object with given message and base error.
@@ -78,8 +104,9 @@ func (v ErrorBuilder) Message(msg ...interface{}) error {
 	}
 
 	return &Error{
-		message: serial.Concat(msg...) + " > " + v.error.Error(),
-		inner:   v.error,
+		message:        serial.Concat(msg...) + " > " + v.error.Error(),
+		inner:          v.error,
+		actionRequired: v.actionRequired,
 	}
 }
 
@@ -89,7 +116,8 @@ func (v ErrorBuilder) Format(format string, values ...interface{}) error {
 		return nil
 	}
 	return &Error{
-		message: fmt.Sprintf(format, values...) + " > " + v.error.Error(),
-		inner:   v.error,
+		message:        fmt.Sprintf(format, values...) + " > " + v.error.Error(),
+		inner:          v.error,
+		actionRequired: v.actionRequired,
 	}
 }

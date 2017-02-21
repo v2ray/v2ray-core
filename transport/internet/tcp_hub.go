@@ -3,6 +3,7 @@ package internet
 import (
 	"net"
 
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
@@ -85,13 +86,21 @@ func (v *TCPHub) start() {
 			default:
 				conn, err := v.listener.Accept()
 				if err != nil {
-					return errors.Base(err).Message("Internet|Listener: Failed to accept new TCP connection.")
+					return errors.Base(err).RequireUserAction().Message("Internet|Listener: Failed to accept new TCP connection.")
 				}
 				newConn = conn
 				return nil
 			}
 		})
-		if err == nil && newConn != nil {
+		if err != nil {
+			if errors.IsActionRequired(err) {
+				log.Warning(err)
+			} else {
+				log.Info(err)
+			}
+			continue
+		}
+		if newConn != nil {
 			go v.connCallback(newConn)
 		}
 	}

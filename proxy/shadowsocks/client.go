@@ -60,7 +60,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 		return nil
 	})
 	if err != nil {
-		return errors.Base(err).Message("Shadowsocks|Client: Failed to find an available destination.")
+		return errors.Base(err).RequireUserAction().Message("Shadowsocks|Client: Failed to find an available destination.")
 	}
 	log.Info("Shadowsocks|Client: Tunneling request to ", destination, " via ", server.Destination())
 

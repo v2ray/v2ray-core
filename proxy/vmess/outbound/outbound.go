@@ -61,7 +61,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		return nil
 	})
 	if err != nil {
-		return errors.Base(err).Message("VMess|Outbound: Failed to find an available destination.")
+		return errors.Base(err).RequireUserAction().Message("VMess|Outbound: Failed to find an available destination.")
 	}
 	defer conn.Close()
 
