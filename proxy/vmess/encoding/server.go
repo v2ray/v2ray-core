@@ -165,7 +165,7 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	copy(sid.key[:], v.requestBodyKey)
 	copy(sid.nonce[:], v.requestBodyIV)
 	if v.sessionHistory.has(sid) {
-		return nil, errors.New("VMess|Server: Duplicated session id. Possibly under reply attack.")
+		return nil, errors.New("VMess|Server: Duplicated session id. Possibly under replay attack.")
 	}
 	v.sessionHistory.add(sid)
 

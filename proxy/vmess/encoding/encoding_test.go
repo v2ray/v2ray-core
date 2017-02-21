@@ -62,7 +62,7 @@ func TestRequestSerialization(t *testing.T) {
 	assert.Byte(byte(expectedRequest.Security)).Equals(byte(actualRequest.Security))
 
 	_, err = server.DecodeRequestHeader(buffer2)
-	// anti reply attack
+	// anti replay attack
 	assert.Error(err).IsNotNil()
 
 	cancel()
