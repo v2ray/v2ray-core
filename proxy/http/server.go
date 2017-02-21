@@ -119,8 +119,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		Close:         false,
 	}
 	if err := response.Write(writer); err != nil {
-		log.Warning("HTTP|Server: failed to write back OK response: ", err)
-		return err
+		return errors.Base(err).Message("HTTP|Server: Failed to write back OK response.")
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -153,10 +152,9 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 	})
 
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
-		log.Info("HTTP|Server: Connection ends with: ", err)
 		ray.InboundInput().CloseError()
 		ray.InboundOutput().CloseError()
-		return err
+		return errors.Base(err).Message("HTTP|Server: Connection ends.")
 	}
 
 	runtime.KeepAlive(timer)
@@ -253,10 +251,9 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 	})
 
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
-		log.Info("HTTP|Server: Connecton ending with ", err)
 		input.CloseError()
 		output.CloseError()
-		return err
+		return errors.Base(err).Message("HTTP|Server: Connection ends.")
 	}
 
 	return nil
