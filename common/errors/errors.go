@@ -24,33 +24,49 @@ type Error struct {
 }
 
 // Error implements error.Error().
-func (v *Error) Error() string {
+func (v Error) Error() string {
 	return v.message
 }
 
 // Inner implements hasInnerError.Inner()
-func (v *Error) Inner() error {
+func (v Error) Inner() error {
 	if v.inner == nil {
 		return nil
 	}
 	return v.inner
 }
 
-func (v *Error) ActionRequired() bool {
+func (v Error) ActionRequired() bool {
 	return v.actionRequired
 }
 
-// New returns a new error object with message formed from given arguments.
-func New(msg ...interface{}) error {
-	return &Error{
+func (v Error) RequireUserAction() Error {
+	v.actionRequired = true
+	return v
+}
+
+func (v Error) Message(msg ...interface{}) Error {
+	return Error{
+		inner:   v,
 		message: serial.Concat(msg...),
 	}
 }
 
-// Base returns an ErrorBuilder based on the given error.
-func Base(err error) ErrorBuilder {
-	return ErrorBuilder{
-		error: err,
+func (v Error) Format(format string, values ...interface{}) Error {
+	return v.Message(fmt.Sprintf(format, values...))
+}
+
+// New returns a new error object with message formed from given arguments.
+func New(msg ...interface{}) Error {
+	return Error{
+		message: serial.Concat(msg...),
+	}
+}
+
+// Base returns an Error based on the given error.
+func Base(err error) Error {
+	return Error{
+		inner: err,
 	}
 }
 
@@ -85,39 +101,4 @@ func IsActionRequired(err error) bool {
 		err = inner.Inner()
 	}
 	return false
-}
-
-type ErrorBuilder struct {
-	error
-	actionRequired bool
-}
-
-func (v ErrorBuilder) RequireUserAction() ErrorBuilder {
-	v.actionRequired = true
-	return v
-}
-
-// Message returns an error object with given message and base error.
-func (v ErrorBuilder) Message(msg ...interface{}) error {
-	if v.error == nil {
-		return nil
-	}
-
-	return &Error{
-		message:        serial.Concat(msg...) + " > " + v.error.Error(),
-		inner:          v.error,
-		actionRequired: v.actionRequired,
-	}
-}
-
-// Format returns an errors object with given message format and base error.
-func (v ErrorBuilder) Format(format string, values ...interface{}) error {
-	if v.error == nil {
-		return nil
-	}
-	return &Error{
-		message:        fmt.Sprintf(format, values...) + " > " + v.error.Error(),
-		inner:          v.error,
-		actionRequired: v.actionRequired,
-	}
 }

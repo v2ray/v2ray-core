@@ -159,7 +159,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 			if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, domainLength)); err != nil {
 				return nil, err
 			}
-			request.Address = v2net.DomainAddress(string(buffer.BytesFrom(-domainLength)))
+			request.Address = v2net.ParseAddress(string(buffer.BytesFrom(-domainLength)))
 		default:
 			return nil, errors.New("Socks|Server: Unknown address type: ", addrType)
 		}
@@ -400,10 +400,10 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 	}
 
 	if b.Byte(0) != socks5Version {
-		return nil, errors.New("Socks|Client: Unexpected server version: ", b.Byte(0))
+		return nil, errors.New("Socks|Client: Unexpected server version: ", b.Byte(0)).RequireUserAction()
 	}
 	if b.Byte(1) != authByte {
-		return nil, errors.New("Socks|Client: auth method not supported.")
+		return nil, errors.New("Socks|Client: auth method not supported.").RequireUserAction()
 	}
 
 	if authByte == authPassword {
