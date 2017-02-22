@@ -29,7 +29,7 @@ type Server struct {
 func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
-		return nil, errors.New("Socks|Server: No space in context.")
+		return nil, errors.New("Socks|Server: No space in context.").RequireUserAction()
 	}
 	s := &Server{
 		config: config,
@@ -130,8 +130,7 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 
 		v2reader := buf.NewReader(reader)
 		if err := buf.PipeUntilEOF(timer, v2reader, input); err != nil {
-			log.Info("Socks|Server: Failed to transport all TCP request: ", err)
-			return err
+			return errors.Base(err).Message("Socks|Server: Failed to transport all TCP request.")
 		}
 		return nil
 	})
@@ -139,17 +138,15 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 	responseDone := signal.ExecuteAsync(func() error {
 		v2writer := buf.NewWriter(writer)
 		if err := buf.PipeUntilEOF(timer, output, v2writer); err != nil {
-			log.Info("Socks|Server: Failed to transport all TCP response: ", err)
-			return err
+			return errors.Base(err).Message("Socks|Server: Failed to transport all TCP response.")
 		}
 		return nil
 	})
 
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
-		log.Info("Socks|Server: Connection ends with ", err)
 		input.CloseError()
 		output.CloseError()
-		return err
+		return errors.Base(err).Message("Socks|Server: Connection ends.")
 	}
 
 	runtime.KeepAlive(timer)
