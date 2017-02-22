@@ -23,20 +23,20 @@ type Server interface {
 	Close()
 }
 
-// Point shell of V2Ray.
-type Point struct {
+// New creates a new V2Ray server with given config.
+func New(config *Config) (Server, error) {
+	return newSimpleServer(config)
+}
+
+// simpleServer shell of V2Ray.
+type simpleServer struct {
 	space app.Space
 }
 
-// New creates a new V2Ray server with given config.
-func New(config *Config) (Server, error) {
-	return NewPoint(config)
-}
-
-// NewPoint returns a new Point server based on given configuration.
+// newSimpleServer returns a new Point server based on given configuration.
 // The server is not started at this point.
-func NewPoint(config *Config) (*Point, error) {
-	var pt = new(Point)
+func newSimpleServer(config *Config) (*simpleServer, error) {
+	var server = new(simpleServer)
 
 	if err := config.Transport.Apply(); err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func NewPoint(config *Config) (*Point, error) {
 	space := app.NewSpace()
 	ctx := app.ContextWithSpace(context.Background(), space)
 
-	pt.space = space
+	server.space = space
 
 	for _, appSettings := range config.App {
 		settings, err := appSettings.GetInstance()
@@ -132,19 +132,19 @@ func NewPoint(config *Config) (*Point, error) {
 		}
 	}
 
-	if err := pt.space.Initialize(); err != nil {
+	if err := server.space.Initialize(); err != nil {
 		return nil, err
 	}
 
-	return pt, nil
+	return server, nil
 }
 
-func (v *Point) Close() {
-	v.space.Close()
+func (s *simpleServer) Close() {
+	s.space.Close()
 }
 
-func (v *Point) Start() error {
-	if err := v.space.Start(); err != nil {
+func (s *simpleServer) Start() error {
+	if err := s.space.Start(); err != nil {
 		return err
 	}
 	log.Warning("V2Ray started.")

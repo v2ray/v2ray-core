@@ -43,7 +43,7 @@ func GetConfigFormat() core.ConfigFormat {
 	}
 }
 
-func startV2Ray() (*core.Point, error) {
+func startV2Ray() (core.Server, error) {
 	if len(configFile) == 0 {
 		return nil, errors.New("V2Ray: Config file is not set.")
 	}
@@ -64,7 +64,7 @@ func startV2Ray() (*core.Point, error) {
 		return nil, errors.Base(err).Message("V2Ray: Failed to read config file: ", configFile)
 	}
 
-	vPoint, err := core.NewPoint(config)
+	vPoint, err := core.New(config)
 	if err != nil {
 		return nil, errors.Base(err).Message("V2Ray: Failed to create initialize.")
 	}
@@ -81,7 +81,7 @@ func main() {
 		return
 	}
 
-	point, err := startV2Ray()
+	server, err := startV2Ray()
 	if err != nil {
 		fmt.Println(err.Error())
 		return
@@ -92,7 +92,7 @@ func main() {
 		return
 	}
 
-	if err := point.Start(); err != nil {
+	if err := server.Start(); err != nil {
 		fmt.Println("V2Ray: Failed to start. ", err)
 	}
 
@@ -100,5 +100,5 @@ func main() {
 	signal.Notify(osSignals, os.Interrupt, os.Kill, syscall.SIGTERM)
 
 	<-osSignals
-	point.Close()
+	server.Close()
 }
