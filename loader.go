@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 
 	"github.com/golang/protobuf/proto"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 )
 
@@ -38,5 +39,5 @@ func loadProtobufConfig(input io.Reader) (*Config, error) {
 }
 
 func init() {
-	RegisterConfigLoader(ConfigFormat_Protobuf, loadProtobufConfig)
+	common.Must(RegisterConfigLoader(ConfigFormat_Protobuf, loadProtobufConfig))
 }
