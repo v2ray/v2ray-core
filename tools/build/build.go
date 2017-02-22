@@ -14,6 +14,7 @@ var (
 	flagTargetArch   = flag.String("arch", runtime.GOARCH, "Target CPU arch of this build.")
 	flagArchive      = flag.Bool("zip", false, "Whether to make an archive of files or not.")
 	flagMetadataFile = flag.String("metadata", "metadata.txt", "File to store metadata info of released packages.")
+	flagSignBinary   = flag.Bool("sign", false, "Whether or not to sign the binaries.")
 
 	binPath string
 )
