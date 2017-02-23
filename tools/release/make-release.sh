@@ -8,6 +8,11 @@ if [ -z "$PRE" ]; then
   PRE="true"
 fi
 
+if [ -z "$PROJECT" ]; then
+  echo "Project not specified. Exiting..."
+  exit 0
+fi
+
 echo Creating a new release: $VER: $MSG
 
 IFS="." read -a PARTS <<< "$VER"
