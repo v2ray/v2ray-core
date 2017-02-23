@@ -76,15 +76,28 @@ func build(targetOS, targetArch string, archive bool, version string, metadataFi
 
 	targetFile := getTargetFile(v2rayOS)
 	targetFileFull := filepath.Join(targetDir, targetFile)
-	err = buildV2Ray(targetFileFull, version, v2rayOS, v2rayArch)
+	err = buildV2Ray(targetFileFull, version, v2rayOS, v2rayArch, "")
 	if err != nil {
 		fmt.Println("Unable to build V2Ray: " + err.Error())
+	}
+	if v2rayOS == Windows {
+		err = buildV2Ray(filepath.Join(targetDir, "w"+targetFile), version, v2rayOS, v2rayArch, "-H windowsgui")
+		if err != nil {
+			fmt.Println("Unable to build V2Ray no console: " + err.Error())
+		}
 	}
 
 	if *flagSignBinary {
 		err := signFile(targetFileFull)
 		if err != nil {
 			fmt.Println("Unable to sign V2Ray binary: " + err.Error())
+		}
+
+		if v2rayOS == Windows {
+			err = signFile(filepath.Join(targetDir, "w"+targetFile))
+			if err != nil {
+				fmt.Println("Unable to sign V2Ray no console: " + err.Error())
+			}
 		}
 	}
 

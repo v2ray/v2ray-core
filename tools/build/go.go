@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-func buildV2Ray(targetFile string, version string, goOS GoOS, goArch GoArch) error {
+func buildV2Ray(targetFile string, version string, goOS GoOS, goArch GoArch, extraLdFlags string) error {
 	goPath := os.Getenv("GOPATH")
-	ldFlags := "-s"
+	ldFlags := "-s " + extraLdFlags
 	if version != "custom" {
 		year, month, day := time.Now().UTC().Date()
 		today := fmt.Sprintf("%04d%02d%02d", year, int(month), day)
