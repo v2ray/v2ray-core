@@ -12,6 +12,7 @@ func executeAndFulfill(f func() error, done chan<- error) {
 	close(done)
 }
 
+// ExecuteAsync executes a function asychrously and return its result.
 func ExecuteAsync(f func() error) <-chan error {
 	done := make(chan error, 1)
 	go executeAndFulfill(f, done)
