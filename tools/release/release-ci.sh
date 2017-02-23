@@ -13,8 +13,13 @@ GITHUB_TOKEN=$(getattr "github_token" "project")
 RELEASE_TAG=$(getattr "release_tag" "instance")
 PRERELEASE=$(getattr "prerelease" "instance")
 DOCKER_HUB_KEY=$(getattr "docker_hub_key" "project")
+SIGN_KEY_PATH=$(getattr "sign_key_path" "project")
+SIGN_KEY_PASS=$(getattr "sign_key_pass" "project")
 
 mkdir -p /v2ray/build
+
+gsutil cp ${SIGN_KEY_PATH} /v2ray/build/sign_key.asc
+gpg --import /v2ray/build/sign_key.asc
 
 curl -L -o /v2ray/build/releases https://api.github.com/repos/v2ray/v2ray-core/releases
 
@@ -35,22 +40,23 @@ popd
 go install v2ray.com/core/tools/build
 
 export TRAVIS_TAG=${RELEASE_TAG}
+export GPG_SIGN_PASS=${SIGN_KEY_PASS}
 
-$GOPATH/bin/build --os=windows --arch=x86 --zip
-$GOPATH/bin/build --os=windows --arch=x64 --zip
-$GOPATH/bin/build --os=macos --arch=x64 --zip
-$GOPATH/bin/build --os=linux --arch=x86 --zip
-$GOPATH/bin/build --os=linux --arch=x64 --zip
-$GOPATH/bin/build --os=linux --arch=arm --zip
-$GOPATH/bin/build --os=linux --arch=arm64 --zip
-$GOPATH/bin/build --os=linux --arch=mips64 --zip
-$GOPATH/bin/build --os=linux --arch=mips64le --zip
-$GOPATH/bin/build --os=linux --arch=mips --zip
-$GOPATH/bin/build --os=linux --arch=mipsle --zip
-$GOPATH/bin/build --os=freebsd --arch=x86 --zip
-$GOPATH/bin/build --os=freebsd --arch=amd64 --zip
-$GOPATH/bin/build --os=openbsd --arch=x86 --zip
-$GOPATH/bin/build --os=openbsd --arch=amd64 --zip
+$GOPATH/bin/build --os=windows --arch=x86 --zip --sign
+$GOPATH/bin/build --os=windows --arch=x64 --zip --sign
+$GOPATH/bin/build --os=macos --arch=x64 --zip --sign
+$GOPATH/bin/build --os=linux --arch=x86 --zip --sign
+$GOPATH/bin/build --os=linux --arch=x64 --zip --sign
+$GOPATH/bin/build --os=linux --arch=arm --zip --sign
+$GOPATH/bin/build --os=linux --arch=arm64 --zip --sign
+$GOPATH/bin/build --os=linux --arch=mips64 --zip --sign
+$GOPATH/bin/build --os=linux --arch=mips64le --zip --sign
+$GOPATH/bin/build --os=linux --arch=mips --zip --sign
+$GOPATH/bin/build --os=linux --arch=mipsle --zip --sign
+$GOPATH/bin/build --os=freebsd --arch=x86 --zip --sign
+$GOPATH/bin/build --os=freebsd --arch=amd64 --zip --sign
+$GOPATH/bin/build --os=openbsd --arch=x86 --zip --sign
+$GOPATH/bin/build --os=openbsd --arch=amd64 --zip --sign
 
 JSON_DATA=$(printf '{"tag_name": "%s", "prerelease": "%s"}' ${RELEASE_TAG} ${PRERELEASE})
 RELEASE_ID=$(curl --data "${JSON_DATA}" -H "Authorization: token ${GITHUB_TOKEN}" -X POST https://api.github.com/repos/v2ray/v2ray-core/releases | jq ".id")

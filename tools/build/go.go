@@ -32,3 +32,14 @@ func buildV2Ray(targetFile string, version string, goOS GoOS, goArch GoArch) err
 	}
 	return err
 }
+
+func signFile(file string) error {
+	pass := os.Getenv("GPG_SIGN_PASS")
+	cmd := exec.Command("gpg", "--passphrase", pass, "--output", file+".sig", "--detach-sig", file)
+	cmd.Env = append(cmd.Env, os.Environ()...)
+	output, err := cmd.CombinedOutput()
+	if len(output) > 0 {
+		fmt.Println(string(output))
+	}
+	return err
+}

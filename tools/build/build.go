@@ -75,9 +75,17 @@ func build(targetOS, targetArch string, archive bool, version string, metadataFi
 	}
 
 	targetFile := getTargetFile(v2rayOS)
-	err = buildV2Ray(filepath.Join(targetDir, targetFile), version, v2rayOS, v2rayArch)
+	targetFileFull := filepath.Join(targetDir, targetFile)
+	err = buildV2Ray(targetFileFull, version, v2rayOS, v2rayArch)
 	if err != nil {
 		fmt.Println("Unable to build V2Ray: " + err.Error())
+	}
+
+	if *flagSignBinary {
+		err := signFile(targetFileFull)
+		if err != nil {
+			fmt.Println("Unable to sign V2Ray binary: " + err.Error())
+		}
 	}
 
 	err = copyConfigFiles(targetDir, v2rayOS)
