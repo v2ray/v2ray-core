@@ -47,7 +47,7 @@ func dialWebsocket(ctx context.Context, dest v2net.Destination) (net.Conn, error
 	wsSettings := internet.TransportSettingsFromContext(ctx).(*Config)
 
 	commonDial := func(network, addr string) (net.Conn, error) {
-		return internet.DialSystem(src, dest)
+		return internet.DialSystem(ctx, src, dest)
 	}
 
 	dialer := websocket.Dialer{

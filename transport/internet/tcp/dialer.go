@@ -31,7 +31,7 @@ func Dial(ctx context.Context, dest v2net.Destination) (internet.Connection, err
 	}
 	if conn == nil {
 		var err error
-		conn, err = internet.DialSystem(src, dest)
+		conn, err = internet.DialSystem(ctx, src, dest)
 		if err != nil {
 			return nil, err
 		}

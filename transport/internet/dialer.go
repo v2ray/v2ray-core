@@ -53,6 +53,6 @@ func Dial(ctx context.Context, dest v2net.Destination) (Connection, error) {
 }
 
 // DialSystem calls system dialer to create a network connection.
-func DialSystem(src v2net.Address, dest v2net.Destination) (net.Conn, error) {
-	return effectiveSystemDialer.Dial(src, dest)
+func DialSystem(ctx context.Context, src v2net.Address, dest v2net.Destination) (net.Conn, error) {
+	return effectiveSystemDialer.Dial(ctx, src, dest)
 }

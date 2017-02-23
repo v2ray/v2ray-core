@@ -117,7 +117,7 @@ func DialKCP(ctx context.Context, dest v2net.Destination) (internet.Connection, 
 	id := internal.NewConnectionID(src, dest)
 	conn := globalPool.Get(id)
 	if conn == nil {
-		rawConn, err := internet.DialSystem(src, dest)
+		rawConn, err := internet.DialSystem(ctx, src, dest)
 		if err != nil {
 			log.Error("KCP|Dialer: Failed to dial to dest: ", err)
 			return nil, err

@@ -13,7 +13,7 @@ func init() {
 	common.Must(internet.RegisterTransportDialer(internet.TransportProtocol_UDP,
 		func(ctx context.Context, dest v2net.Destination) (internet.Connection, error) {
 			src := internet.DialerSourceFromContext(ctx)
-			conn, err := internet.DialSystem(src, dest)
+			conn, err := internet.DialSystem(ctx, src, dest)
 			if err != nil {
 				return nil, err
 			}
