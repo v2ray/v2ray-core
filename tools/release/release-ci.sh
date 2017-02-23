@@ -58,7 +58,7 @@ $GOPATH/bin/build --os=freebsd --arch=amd64 --zip --sign
 $GOPATH/bin/build --os=openbsd --arch=x86 --zip --sign
 $GOPATH/bin/build --os=openbsd --arch=amd64 --zip --sign
 
-JSON_DATA=$(printf '{"tag_name": "%s", "prerelease": "%s"}' ${RELEASE_TAG} ${PRERELEASE})
+JSON_DATA=$(printf '{"tag_name": "%s", "prerelease": %s}' ${RELEASE_TAG} ${PRERELEASE})
 RELEASE_ID=$(curl --data "${JSON_DATA}" -H "Authorization: token ${GITHUB_TOKEN}" -X POST https://api.github.com/repos/v2ray/v2ray-core/releases | jq ".id")
 
 function upload() {
