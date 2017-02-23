@@ -23,7 +23,7 @@ func TestBuildAndRun(t *testing.T) {
 	if goOS == Windows {
 		target += ".exe"
 	}
-	err := buildV2Ray(target, "v1.0", goOS, goArch)
+	err := buildV2Ray(target, "v1.0", goOS, goArch, "")
 	assert.Error(err).IsNil()
 
 	outBuffer := bytes.NewBuffer(make([]byte, 0, 1024))
