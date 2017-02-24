@@ -35,12 +35,23 @@ func copyConfigFiles(dir string, goOS GoOS) error {
 		return err
 	}
 
+	src = filepath.Join(GOPATH, "src", "v2ray.com", "core", "tools", "release", "doc", "readme.md")
+	dest = filepath.Join(dir, "readme.md")
+
+	if err := copyConfigFile(src, dest, goOS, true); err != nil {
+		return err
+	}
+
 	if goOS == Windows || goOS == MacOS {
 		return nil
 	}
 
 	src = filepath.Join(srcDir, "vpoint_vmess_freedom.json")
 	dest = filepath.Join(dir, "vpoint_vmess_freedom.json")
+
+	if err := copyConfigFile(src, dest, goOS, true); err != nil {
+		return err
+	}
 
 	if err := copyConfigFile(src, dest, goOS, true); err != nil {
 		return err
