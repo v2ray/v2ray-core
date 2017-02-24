@@ -67,14 +67,6 @@ func UseAlternativeSystemDialer(dialer SystemDialer) {
 	effectiveSystemDialer = dialer
 }
 
-// SubstituteDialer replaces the current system dialer with a given one.
-// Caller must ensure there is no race condition.
-// @Deprecated: Use UseAlternativeSimpleSystemDialer.
-func SubstituteDialer(dialer SystemDialerAdapter) error {
-	UseAlternativeSystemDialer(WithAdapter(dialer))
-	return nil
-}
-
 func init() {
 	effectiveSystemDialer = &DefaultSystemDialer{}
 }
