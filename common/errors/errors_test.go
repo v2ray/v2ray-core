@@ -23,4 +23,5 @@ func TestActionRequired(t *testing.T) {
 	err = Base(io.EOF).RequireUserAction().Message("TestError4")
 	err = Base(err).Message("TestError5")
 	assert.Bool(IsActionRequired(err)).IsTrue()
+	assert.String(err.Error()).Contains("EOF")
 }

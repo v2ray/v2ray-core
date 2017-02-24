@@ -25,7 +25,11 @@ type Error struct {
 
 // Error implements error.Error().
 func (v Error) Error() string {
-	return v.message
+	msg := v.message
+	if v.inner != nil {
+		msg += " > " + v.inner.Error()
+	}
+	return msg
 }
 
 // Inner implements hasInnerError.Inner()
