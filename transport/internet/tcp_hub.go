@@ -3,6 +3,8 @@ package internet
 import (
 	"net"
 
+	"context"
+
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
@@ -21,11 +23,7 @@ func RegisterTransportListener(protocol TransportProtocol, listener ListenFunc) 
 	return nil
 }
 
-type ListenFunc func(address v2net.Address, port v2net.Port, options ListenOptions) (Listener, error)
-type ListenOptions struct {
-	Stream       *StreamConfig
-	RecvOrigDest bool
-}
+type ListenFunc func(ctx context.Context, address v2net.Address, port v2net.Port) (Listener, error)
 
 type Listener interface {
 	Accept() (Connection, error)
@@ -40,15 +38,25 @@ type TCPHub struct {
 }
 
 func ListenTCP(address v2net.Address, port v2net.Port, callback ConnectionHandler, settings *StreamConfig) (*TCPHub, error) {
-	options := ListenOptions{
-		Stream: settings,
-	}
+	ctx := context.Background()
 	protocol := settings.GetEffectiveProtocol()
+	transportSettings, err := settings.GetEffectiveTransportSettings()
+	if err != nil {
+		return nil, err
+	}
+	ctx = ContextWithTransportSettings(ctx, transportSettings)
+	if settings != nil && settings.HasSecuritySettings() {
+		securitySettings, err := settings.GetEffectiveSecuritySettings()
+		if err != nil {
+			return nil, err
+		}
+		ctx = ContextWithSecuritySettings(ctx, securitySettings)
+	}
 	listenFunc := transportListenerCache[protocol]
 	if listenFunc == nil {
 		return nil, errors.New("Internet|TCPHub: ", protocol, " listener not registered.")
 	}
-	listener, err := listenFunc(address, port, options)
+	listener, err := listenFunc(ctx, address, port)
 	if err != nil {
 		return nil, errors.Base(err).Message("Internet|TCPHub: Failed to listen on address: ", address, ":", port)
 	}

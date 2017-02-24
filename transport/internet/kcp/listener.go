@@ -1,6 +1,7 @@
 package kcp
 
 import (
+	"context"
 	"crypto/cipher"
 	"crypto/tls"
 	"io"
@@ -90,12 +91,8 @@ type Listener struct {
 	security      cipher.AEAD
 }
 
-func NewListener(address v2net.Address, port v2net.Port, options internet.ListenOptions) (*Listener, error) {
-	networkSettings, err := options.Stream.GetEffectiveTransportSettings()
-	if err != nil {
-		log.Error("KCP|Listener: Failed to get KCP settings: ", err)
-		return nil, err
-	}
+func NewListener(ctx context.Context, address v2net.Address, port v2net.Port) (*Listener, error) {
+	networkSettings := internet.TransportSettingsFromContext(ctx)
 	kcpSettings := networkSettings.(*Config)
 	kcpSettings.ConnectionReuse = &ConnectionReuse{Enable: false}
 
@@ -119,12 +116,8 @@ func NewListener(address v2net.Address, port v2net.Port, options internet.Listen
 		closed:        make(chan bool),
 		config:        kcpSettings,
 	}
-	if options.Stream != nil && options.Stream.HasSecuritySettings() {
-		securitySettings, err := options.Stream.GetEffectiveSecuritySettings()
-		if err != nil {
-			log.Error("KCP|Listener: Failed to get security settings: ", err)
-			return nil, err
-		}
+	securitySettings := internet.SecuritySettingsFromContext(ctx)
+	if securitySettings != nil {
 		switch securitySettings := securitySettings.(type) {
 		case *v2tls.Config:
 			l.tlsConfig = securitySettings.GetTLSConfig()
@@ -295,8 +288,8 @@ func (v *Writer) Close() error {
 	return nil
 }
 
-func ListenKCP(address v2net.Address, port v2net.Port, options internet.ListenOptions) (internet.Listener, error) {
-	return NewListener(address, port, options)
+func ListenKCP(ctx context.Context, address v2net.Address, port v2net.Port) (internet.Listener, error) {
+	return NewListener(ctx, address, port)
 }
 
 func init() {

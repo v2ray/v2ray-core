@@ -1,15 +1,12 @@
 package websocket_test
 
 import (
+	"bytes"
+	"context"
 	"testing"
 	"time"
 
-	"bytes"
-
-	"context"
-
 	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/testing/assert"
 	tlsgen "v2ray.com/core/testing/tls"
 	"v2ray.com/core/transport/internet"
@@ -19,19 +16,9 @@ import (
 
 func Test_listenWSAndDial(t *testing.T) {
 	assert := assert.On(t)
-	listen, err := ListenWS(v2net.DomainAddress("localhost"), 13146, internet.ListenOptions{
-		Stream: &internet.StreamConfig{
-			Protocol: internet.TransportProtocol_WebSocket,
-			TransportSettings: []*internet.TransportConfig{
-				{
-					Protocol: internet.TransportProtocol_WebSocket,
-					Settings: serial.ToTypedMessage(&Config{
-						Path: "ws",
-					}),
-				},
-			},
-		},
-	})
+	listen, err := ListenWS(internet.ContextWithTransportSettings(context.Background(), &Config{
+		Path: "ws",
+	}), v2net.DomainAddress("localhost"), 13146)
 	assert.Error(err).IsNil()
 	go func() {
 		for {
@@ -99,33 +86,6 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 		assert.Fail("Too slow")
 	}()
 
-	listen, err := ListenWS(v2net.DomainAddress("localhost"), 13143, internet.ListenOptions{
-		Stream: &internet.StreamConfig{
-			SecurityType: serial.GetMessageType(new(v2tls.Config)),
-			SecuritySettings: []*serial.TypedMessage{serial.ToTypedMessage(&v2tls.Config{
-				Certificate: []*v2tls.Certificate{tlsgen.GenerateCertificateForTest()},
-			})},
-			Protocol: internet.TransportProtocol_WebSocket,
-			TransportSettings: []*internet.TransportConfig{
-				{
-					Protocol: internet.TransportProtocol_WebSocket,
-					Settings: serial.ToTypedMessage(&Config{
-						Path: "wss",
-						ConnectionReuse: &ConnectionReuse{
-							Enable: true,
-						},
-					}),
-				},
-			},
-		},
-	})
-	assert.Error(err).IsNil()
-	go func() {
-		conn, err := listen.Accept()
-		assert.Error(err).IsNil()
-		conn.Close()
-		listen.Close()
-	}()
 	ctx := internet.ContextWithTransportSettings(context.Background(), &Config{
 		Path: "wss",
 		ConnectionReuse: &ConnectionReuse{
@@ -134,7 +94,17 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 	})
 	ctx = internet.ContextWithSecuritySettings(ctx, &v2tls.Config{
 		AllowInsecure: true,
+		Certificate:   []*v2tls.Certificate{tlsgen.GenerateCertificateForTest()},
 	})
+	listen, err := ListenWS(ctx, v2net.DomainAddress("localhost"), 13143)
+	assert.Error(err).IsNil()
+	go func() {
+		conn, err := listen.Accept()
+		assert.Error(err).IsNil()
+		conn.Close()
+		listen.Close()
+	}()
+
 	conn, err := Dial(ctx, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13143))
 	assert.Error(err).IsNil()
 	conn.Close()

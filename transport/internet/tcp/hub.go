@@ -1,6 +1,7 @@
 package tcp
 
 import (
+	"context"
 	"crypto/tls"
 	"net"
 	"sync"
@@ -34,7 +35,7 @@ type TCPListener struct {
 	config        *Config
 }
 
-func ListenTCP(address v2net.Address, port v2net.Port, options internet.ListenOptions) (internet.Listener, error) {
+func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port) (internet.Listener, error) {
 	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   address.IP(),
 		Port: int(port),
@@ -43,10 +44,7 @@ func ListenTCP(address v2net.Address, port v2net.Port, options internet.ListenOp
 		return nil, err
 	}
 	log.Info("TCP|Listener: Listening on ", address, ":", port)
-	networkSettings, err := options.Stream.GetEffectiveTransportSettings()
-	if err != nil {
-		return nil, err
-	}
+	networkSettings := internet.TransportSettingsFromContext(ctx)
 	tcpSettings := networkSettings.(*Config)
 
 	l := &TCPListener{
@@ -55,12 +53,7 @@ func ListenTCP(address v2net.Address, port v2net.Port, options internet.ListenOp
 		awaitingConns: make(chan *ConnectionWithError, 32),
 		config:        tcpSettings,
 	}
-	if options.Stream != nil && options.Stream.HasSecuritySettings() {
-		securitySettings, err := options.Stream.GetEffectiveSecuritySettings()
-		if err != nil {
-			log.Error("TCP: Failed to get security config: ", err)
-			return nil, err
-		}
+	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
 		tlsConfig, ok := securitySettings.(*v2tls.Config)
 		if ok {
 			l.tlsConfig = tlsConfig.GetTLSConfig()

@@ -1,6 +1,7 @@
 package websocket
 
 import (
+	"context"
 	"crypto/tls"
 	"net"
 	"net/http"
@@ -59,11 +60,8 @@ type Listener struct {
 	config        *Config
 }
 
-func ListenWS(address v2net.Address, port v2net.Port, options internet.ListenOptions) (internet.Listener, error) {
-	networkSettings, err := options.Stream.GetEffectiveTransportSettings()
-	if err != nil {
-		return nil, err
-	}
+func ListenWS(ctx context.Context, address v2net.Address, port v2net.Port) (internet.Listener, error) {
+	networkSettings := internet.TransportSettingsFromContext(ctx)
 	wsSettings := networkSettings.(*Config)
 
 	l := &Listener{
@@ -71,18 +69,14 @@ func ListenWS(address v2net.Address, port v2net.Port, options internet.ListenOpt
 		awaitingConns: make(chan *ConnectionWithError, 32),
 		config:        wsSettings,
 	}
-	if options.Stream != nil && options.Stream.HasSecuritySettings() {
-		securitySettings, err := options.Stream.GetEffectiveSecuritySettings()
-		if err != nil {
-			return nil, errors.Base(err).Message("WebSocket: Failed to create apply TLS config.")
-		}
+	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
 		tlsConfig, ok := securitySettings.(*v2tls.Config)
 		if ok {
 			l.tlsConfig = tlsConfig.GetTLSConfig()
 		}
 	}
 
-	err = l.listenws(address, port)
+	err := l.listenws(address, port)
 
 	return l, err
 }

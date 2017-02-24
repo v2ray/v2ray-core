@@ -10,7 +10,6 @@ import (
 	"time"
 
 	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/transport/internet"
 	. "v2ray.com/core/transport/internet/kcp"
@@ -19,17 +18,7 @@ import (
 func TestDialAndListen(t *testing.T) {
 	assert := assert.On(t)
 
-	listerner, err := NewListener(v2net.LocalHostIP, v2net.Port(0), internet.ListenOptions{
-		Stream: &internet.StreamConfig{
-			Protocol: internet.TransportProtocol_MKCP,
-			TransportSettings: []*internet.TransportConfig{
-				{
-					Protocol: internet.TransportProtocol_MKCP,
-					Settings: serial.ToTypedMessage(&Config{}),
-				},
-			},
-		},
-	})
+	listerner, err := NewListener(internet.ContextWithTransportSettings(context.Background(), &Config{}), v2net.LocalHostIP, v2net.Port(0))
 	assert.Error(err).IsNil()
 	port := v2net.Port(listerner.Addr().(*net.UDPAddr).Port)
 
