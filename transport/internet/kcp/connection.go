@@ -147,9 +147,10 @@ func (v *Updater) Run() {
 		if v.shouldTerminate() {
 			return
 		}
+		interval := v.Interval()
 		for v.shouldContinue() {
 			v.updateFunc()
-			time.Sleep(v.Interval())
+			time.Sleep(interval)
 		}
 	}
 }
