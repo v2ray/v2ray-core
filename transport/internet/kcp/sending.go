@@ -237,8 +237,7 @@ func (v *SendingWorker) FindFirstUnacknowledged() {
 	}
 }
 
-// Private: Visible for testing.
-func (v *SendingWorker) ProcessAck(number uint32) bool {
+func (v *SendingWorker) processAck(number uint32) bool {
 	// number < v.firstUnacknowledged || number >= v.nextNumber
 	if number-v.firstUnacknowledged > 0x7FFFFFFF || number-v.nextNumber < 0x7FFFFFFF {
 		return false
@@ -269,7 +268,7 @@ func (v *SendingWorker) ProcessSegment(current uint32, seg *AckSegment, rto uint
 	var maxack uint32
 	var maxackRemoved bool
 	for _, number := range seg.NumberList {
-		removed := v.ProcessAck(number)
+		removed := v.processAck(number)
 		if maxack < number {
 			maxack = number
 			maxackRemoved = removed
