@@ -1,10 +1,9 @@
 package internet
 
 import (
+	"context"
 	"net"
 	"time"
-
-	"context"
 
 	v2net "v2ray.com/core/common/net"
 )

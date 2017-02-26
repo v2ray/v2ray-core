@@ -18,30 +18,27 @@ import (
 func TestDialAndListen(t *testing.T) {
 	assert := assert.On(t)
 
-	listerner, err := NewListener(internet.ContextWithTransportSettings(context.Background(), &Config{}), v2net.LocalHostIP, v2net.Port(0))
+	conns := make(chan internet.Connection, 16)
+	listerner, err := NewListener(internet.ContextWithTransportSettings(context.Background(), &Config{}), v2net.LocalHostIP, v2net.Port(0), conns)
 	assert.Error(err).IsNil()
 	port := v2net.Port(listerner.Addr().(*net.UDPAddr).Port)
 
 	go func() {
-		for {
-			conn, err := listerner.Accept()
-			if err != nil {
-				break
-			}
-			go func() {
+		for conn := range conns {
+			go func(c internet.Connection) {
 				payload := make([]byte, 4096)
 				for {
-					nBytes, err := conn.Read(payload)
+					nBytes, err := c.Read(payload)
 					if err != nil {
 						break
 					}
 					for idx, b := range payload[:nBytes] {
 						payload[idx] = b ^ 'c'
 					}
-					conn.Write(payload[:nBytes])
+					c.Write(payload[:nBytes])
 				}
-				conn.Close()
-			}()
+				c.Close()
+			}(conn)
 		}
 	}()
 
@@ -79,4 +76,5 @@ func TestDialAndListen(t *testing.T) {
 	assert.Int(listerner.ActiveConnections()).Equals(0)
 
 	listerner.Close()
+	close(conns)
 }

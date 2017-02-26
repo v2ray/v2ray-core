@@ -23,14 +23,9 @@ var (
 	ErrClosedListener = errors.New("Listener is closed.")
 )
 
-type ConnectionWithError struct {
-	conn net.Conn
-	err  error
-}
-
 type requestHandler struct {
-	path  string
-	conns chan *ConnectionWithError
+	path string
+	ln   *Listener
 }
 
 func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
@@ -45,29 +40,29 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 	}
 
 	select {
-	case h.conns <- &ConnectionWithError{conn: conn}:
-	default:
+	case h.ln.conns <- internal.NewConnection(internal.ConnectionID{}, conn, h.ln, internal.ReuseConnection(h.ln.config.IsConnectionReuse())):
+	case <-time.After(time.Second * 5):
 		conn.Close()
 	}
 }
 
 type Listener struct {
 	sync.Mutex
-	closed        chan bool
-	awaitingConns chan *ConnectionWithError
-	listener      net.Listener
-	tlsConfig     *tls.Config
-	config        *Config
+	closed    chan bool
+	listener  net.Listener
+	tlsConfig *tls.Config
+	config    *Config
+	conns     chan<- internet.Connection
 }
 
-func ListenWS(ctx context.Context, address v2net.Address, port v2net.Port) (internet.Listener, error) {
+func ListenWS(ctx context.Context, address v2net.Address, port v2net.Port, conns chan<- internet.Connection) (internet.Listener, error) {
 	networkSettings := internet.TransportSettingsFromContext(ctx)
 	wsSettings := networkSettings.(*Config)
 
 	l := &Listener{
-		closed:        make(chan bool),
-		awaitingConns: make(chan *ConnectionWithError, 32),
-		config:        wsSettings,
+		closed: make(chan bool),
+		config: wsSettings,
+		conns:  conns,
 	}
 	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
 		tlsConfig, ok := securitySettings.(*v2tls.Config)
@@ -101,8 +96,8 @@ func (ln *Listener) listenws(address v2net.Address, port v2net.Port) error {
 
 	go func() {
 		http.Serve(listener, &requestHandler{
-			path:  ln.config.GetNormailzedPath(),
-			conns: ln.awaitingConns,
+			path: ln.config.GetNormailzedPath(),
+			ln:   ln,
 		})
 	}()
 
@@ -123,24 +118,6 @@ func converttovws(w http.ResponseWriter, r *http.Request) (*connection, error) {
 	return &connection{wsc: conn}, nil
 }
 
-func (ln *Listener) Accept() (internet.Connection, error) {
-	for {
-		select {
-		case <-ln.closed:
-			return nil, ErrClosedListener
-		case connErr, open := <-ln.awaitingConns:
-			if !open {
-				return nil, ErrClosedListener
-			}
-			if connErr.err != nil {
-				return nil, connErr.err
-			}
-			return internal.NewConnection(internal.ConnectionID{}, connErr.conn, ln, internal.ReuseConnection(ln.config.IsConnectionReuse())), nil
-		case <-time.After(time.Second * 2):
-		}
-	}
-}
-
 func (ln *Listener) Put(id internal.ConnectionID, conn net.Conn) {
 	ln.Lock()
 	defer ln.Unlock()
@@ -150,8 +127,8 @@ func (ln *Listener) Put(id internal.ConnectionID, conn net.Conn) {
 	default:
 	}
 	select {
-	case ln.awaitingConns <- &ConnectionWithError{conn: conn}:
-	default:
+	case ln.conns <- internal.NewConnection(internal.ConnectionID{}, conn, ln, internal.ReuseConnection(ln.config.IsConnectionReuse())):
+	case <-time.After(time.Second * 5):
 		conn.Close()
 	}
 }
@@ -170,12 +147,6 @@ func (ln *Listener) Close() error {
 	}
 	close(ln.closed)
 	ln.listener.Close()
-	close(ln.awaitingConns)
-	for connErr := range ln.awaitingConns {
-		if connErr.conn != nil {
-			connErr.conn.Close()
-		}
-	}
 	return nil
 }
 

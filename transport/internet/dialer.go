@@ -24,7 +24,7 @@ func RegisterTransportDialer(protocol TransportProtocol, dialer Dialer) error {
 
 func Dial(ctx context.Context, dest v2net.Destination) (Connection, error) {
 	if dest.Network == v2net.Network_TCP {
-		streamSettings, _ := StreamSettingsFromContext(ctx)
+		streamSettings := StreamSettingsFromContext(ctx)
 		protocol := streamSettings.GetEffectiveProtocol()
 		transportSettings, err := streamSettings.GetEffectiveTransportSettings()
 		if err != nil {

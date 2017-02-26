@@ -20,22 +20,17 @@ var (
 	ErrClosedListener = errors.New("Listener is closed.")
 )
 
-type ConnectionWithError struct {
-	conn net.Conn
-	err  error
-}
-
 type TCPListener struct {
 	sync.Mutex
-	acccepting    bool
-	listener      *net.TCPListener
-	awaitingConns chan *ConnectionWithError
-	tlsConfig     *tls.Config
-	authConfig    internet.ConnectionAuthenticator
-	config        *Config
+	acccepting bool
+	listener   *net.TCPListener
+	tlsConfig  *tls.Config
+	authConfig internet.ConnectionAuthenticator
+	config     *Config
+	conns      chan<- internet.Connection
 }
 
-func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port) (internet.Listener, error) {
+func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, conns chan<- internet.Connection) (internet.Listener, error) {
 	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   address.IP(),
 		Port: int(port),
@@ -48,10 +43,10 @@ func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port) (int
 	tcpSettings := networkSettings.(*Config)
 
 	l := &TCPListener{
-		acccepting:    true,
-		listener:      listener,
-		awaitingConns: make(chan *ConnectionWithError, 32),
-		config:        tcpSettings,
+		acccepting: true,
+		listener:   listener,
+		config:     tcpSettings,
+		conns:      conns,
 	}
 	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
 		tlsConfig, ok := securitySettings.(*v2tls.Config)
@@ -74,24 +69,6 @@ func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port) (int
 	return l, nil
 }
 
-func (v *TCPListener) Accept() (internet.Connection, error) {
-	for v.acccepting {
-		select {
-		case connErr, open := <-v.awaitingConns:
-			if !open {
-				return nil, ErrClosedListener
-			}
-			if connErr.err != nil {
-				return nil, connErr.err
-			}
-			conn := connErr.conn
-			return internal.NewConnection(internal.ConnectionID{}, conn, v, internal.ReuseConnection(v.config.IsConnectionReuse())), nil
-		case <-time.After(time.Second * 2):
-		}
-	}
-	return nil, ErrClosedListener
-}
-
 func (v *TCPListener) KeepAccepting() {
 	for v.acccepting {
 		conn, err := v.listener.Accept()
@@ -100,22 +77,22 @@ func (v *TCPListener) KeepAccepting() {
 			v.Unlock()
 			break
 		}
-		if conn != nil && v.tlsConfig != nil {
+		if err != nil {
+			log.Warning("TCP|Listener: Failed to accepted raw connections: ", err)
+			v.Unlock()
+			continue
+		}
+		if v.tlsConfig != nil {
 			conn = tls.Server(conn, v.tlsConfig)
 		}
-		if conn != nil && v.authConfig != nil {
+		if v.authConfig != nil {
 			conn = v.authConfig.Server(conn)
 		}
 
 		select {
-		case v.awaitingConns <- &ConnectionWithError{
-			conn: conn,
-			err:  err,
-		}:
-		default:
-			if conn != nil {
-				conn.Close()
-			}
+		case v.conns <- internal.NewConnection(internal.ConnectionID{}, conn, v, internal.ReuseConnection(v.config.IsConnectionReuse())):
+		case <-time.After(time.Second * 5):
+			conn.Close()
 		}
 
 		v.Unlock()
@@ -129,8 +106,8 @@ func (v *TCPListener) Put(id internal.ConnectionID, conn net.Conn) {
 		return
 	}
 	select {
-	case v.awaitingConns <- &ConnectionWithError{conn: conn}:
-	default:
+	case v.conns <- internal.NewConnection(internal.ConnectionID{}, conn, v, internal.ReuseConnection(v.config.IsConnectionReuse())):
+	case <-time.After(time.Second * 5):
 		conn.Close()
 	}
 }
@@ -144,12 +121,6 @@ func (v *TCPListener) Close() error {
 	defer v.Unlock()
 	v.acccepting = false
 	v.listener.Close()
-	close(v.awaitingConns)
-	for connErr := range v.awaitingConns {
-		if connErr.conn != nil {
-			connErr.conn.Close()
-		}
-	}
 	return nil
 }
 

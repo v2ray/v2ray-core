@@ -19,9 +19,12 @@ func ContextWithStreamSettings(ctx context.Context, streamSettings *StreamConfig
 	return context.WithValue(ctx, streamSettingsKey, streamSettings)
 }
 
-func StreamSettingsFromContext(ctx context.Context) (*StreamConfig, bool) {
-	ss, ok := ctx.Value(streamSettingsKey).(*StreamConfig)
-	return ss, ok
+func StreamSettingsFromContext(ctx context.Context) *StreamConfig {
+	ss := ctx.Value(streamSettingsKey)
+	if ss == nil {
+		return nil
+	}
+	return ss.(*StreamConfig)
 }
 
 func ContextWithDialerSource(ctx context.Context, addr net.Address) context.Context {

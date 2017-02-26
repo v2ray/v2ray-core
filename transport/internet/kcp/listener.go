@@ -80,18 +80,18 @@ func (o *ServerConnection) Id() internal.ConnectionID {
 // Listener defines a server listening for connections
 type Listener struct {
 	sync.Mutex
-	closed        chan bool
-	sessions      map[ConnectionID]*Connection
-	awaitingConns chan *Connection
-	hub           *udp.Hub
-	tlsConfig     *tls.Config
-	config        *Config
-	reader        PacketReader
-	header        internet.PacketHeader
-	security      cipher.AEAD
+	closed    chan bool
+	sessions  map[ConnectionID]*Connection
+	hub       *udp.Hub
+	tlsConfig *tls.Config
+	config    *Config
+	reader    PacketReader
+	header    internet.PacketHeader
+	security  cipher.AEAD
+	conns     chan<- internet.Connection
 }
 
-func NewListener(ctx context.Context, address v2net.Address, port v2net.Port) (*Listener, error) {
+func NewListener(ctx context.Context, address v2net.Address, port v2net.Port, conns chan<- internet.Connection) (*Listener, error) {
 	networkSettings := internet.TransportSettingsFromContext(ctx)
 	kcpSettings := networkSettings.(*Config)
 	kcpSettings.ConnectionReuse = &ConnectionReuse{Enable: false}
@@ -111,10 +111,10 @@ func NewListener(ctx context.Context, address v2net.Address, port v2net.Port) (*
 			Header:   header,
 			Security: security,
 		},
-		sessions:      make(map[ConnectionID]*Connection),
-		awaitingConns: make(chan *Connection, 64),
-		closed:        make(chan bool),
-		config:        kcpSettings,
+		sessions: make(map[ConnectionID]*Connection),
+		closed:   make(chan bool),
+		config:   kcpSettings,
+		conns:    conns,
 	}
 	securitySettings := internet.SecuritySettingsFromContext(ctx)
 	if securitySettings != nil {
@@ -194,8 +194,14 @@ func (v *Listener) OnReceive(payload *buf.Buffer, src v2net.Destination, origina
 			closer: writer,
 		}
 		conn = NewConnection(conv, sConn, v, v.config)
+		var netConn internet.Connection = conn
+		if v.tlsConfig != nil {
+			tlsConn := tls.Server(conn, v.tlsConfig)
+			netConn = UnreusableConnection{Conn: tlsConn}
+		}
+
 		select {
-		case v.awaitingConns <- conn:
+		case v.conns <- netConn:
 		case <-time.After(time.Second * 5):
 			conn.Close()
 			return
@@ -216,27 +222,6 @@ func (v *Listener) Remove(id ConnectionID) {
 	}
 }
 
-// Accept implements the Accept method in the Listener interface; it waits for the next call and returns a generic Conn.
-func (v *Listener) Accept() (internet.Connection, error) {
-	for {
-		select {
-		case <-v.closed:
-			return nil, ErrClosedListener
-		case conn, open := <-v.awaitingConns:
-			if !open {
-				break
-			}
-			if v.tlsConfig != nil {
-				tlsConn := tls.Server(conn, v.tlsConfig)
-				return UnreusableConnection{Conn: tlsConn}, nil
-			}
-			return conn, nil
-		case <-time.After(time.Second):
-
-		}
-	}
-}
-
 // Close stops listening on the UDP address. Already Accepted connections are not closed.
 func (v *Listener) Close() error {
 
@@ -249,7 +234,6 @@ func (v *Listener) Close() error {
 	}
 
 	close(v.closed)
-	close(v.awaitingConns)
 	for _, conn := range v.sessions {
 		go conn.Terminate()
 	}
@@ -288,8 +272,8 @@ func (v *Writer) Close() error {
 	return nil
 }
 
-func ListenKCP(ctx context.Context, address v2net.Address, port v2net.Port) (internet.Listener, error) {
-	return NewListener(ctx, address, port)
+func ListenKCP(ctx context.Context, address v2net.Address, port v2net.Port, conns chan<- internet.Connection) (internet.Listener, error) {
+	return NewListener(ctx, address, port, conns)
 }
 
 func init() {

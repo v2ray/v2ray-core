@@ -37,7 +37,7 @@ type tcpWorker struct {
 
 	ctx    context.Context
 	cancel context.CancelFunc
-	hub    *internet.TCPHub
+	hub    internet.Listener
 }
 
 func (w *tcpWorker) callback(conn internet.Connection) {
@@ -73,17 +73,41 @@ func (w *tcpWorker) Start() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	w.ctx = ctx
 	w.cancel = cancel
-	hub, err := internet.ListenTCP(w.address, w.port, w.callback, w.stream)
+	ctx = internet.ContextWithStreamSettings(ctx, w.stream)
+	conns := make(chan internet.Connection, 16)
+	hub, err := internet.ListenTCP(ctx, w.address, w.port, conns)
 	if err != nil {
 		return err
 	}
+	go w.handleConnections(conns)
 	w.hub = hub
 	return nil
 }
 
+func (w *tcpWorker) handleConnections(conns <-chan internet.Connection) {
+	for {
+		select {
+		case <-w.ctx.Done():
+			w.hub.Close()
+			nconns := len(conns)
+		L:
+			for i := 0; i < nconns; i++ {
+				select {
+				case conn := <-conns:
+					conn.Close()
+				default:
+					break L
+				}
+			}
+			return
+		case conn := <-conns:
+			go w.callback(conn)
+		}
+	}
+}
+
 func (w *tcpWorker) Close() {
 	if w.hub != nil {
-		w.hub.Close()
 		w.cancel()
 	}
 }

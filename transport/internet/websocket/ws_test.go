@@ -16,31 +16,28 @@ import (
 
 func Test_listenWSAndDial(t *testing.T) {
 	assert := assert.On(t)
+	conns := make(chan internet.Connection, 16)
 	listen, err := ListenWS(internet.ContextWithTransportSettings(context.Background(), &Config{
 		Path: "ws",
-	}), v2net.DomainAddress("localhost"), 13146)
+	}), v2net.DomainAddress("localhost"), 13146, conns)
 	assert.Error(err).IsNil()
 	go func() {
-		for {
-			conn, err := listen.Accept()
-			if err != nil {
-				break
-			}
-			go func() {
-				defer conn.Close()
+		for conn := range conns {
+			go func(c internet.Connection) {
+				defer c.Close()
 
 				var b [1024]byte
-				n, err := conn.Read(b[:])
+				n, err := c.Read(b[:])
 				//assert.Error(err).IsNil()
 				if err != nil {
-					conn.SetReusable(false)
+					c.SetReusable(false)
 					return
 				}
 				assert.Bool(bytes.HasPrefix(b[:n], []byte("Test connection"))).IsTrue()
 
-				_, err = conn.Write([]byte("Response"))
+				_, err = c.Write([]byte("Response"))
 				assert.Error(err).IsNil()
-			}()
+			}(conn)
 		}
 	}()
 
@@ -77,6 +74,8 @@ func Test_listenWSAndDial(t *testing.T) {
 	assert.Error(conn.Close()).IsNil()
 
 	assert.Error(listen.Close()).IsNil()
+
+	close(conns)
 }
 
 func Test_listenWSAndDial_TLS(t *testing.T) {
@@ -96,11 +95,11 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 		AllowInsecure: true,
 		Certificate:   []*v2tls.Certificate{tlsgen.GenerateCertificateForTest()},
 	})
-	listen, err := ListenWS(ctx, v2net.DomainAddress("localhost"), 13143)
+	conns := make(chan internet.Connection, 16)
+	listen, err := ListenWS(ctx, v2net.DomainAddress("localhost"), 13143, conns)
 	assert.Error(err).IsNil()
 	go func() {
-		conn, err := listen.Accept()
-		assert.Error(err).IsNil()
+		conn := <-conns
 		conn.Close()
 		listen.Close()
 	}()
