@@ -89,9 +89,8 @@ func (w *tcpWorker) handleConnections(conns <-chan internet.Connection) {
 		select {
 		case <-w.ctx.Done():
 			w.hub.Close()
-			nconns := len(conns)
 		L:
-			for i := 0; i < nconns; i++ {
+			for {
 				select {
 				case conn := <-conns:
 					conn.Close()
@@ -295,7 +294,7 @@ func (w *udpWorker) monitor() {
 			nowSec := time.Now().Unix()
 			w.Lock()
 			for addr, conn := range w.activeConn {
-				if nowSec-conn.lastActivityTime > 8 {
+				if nowSec-atomic.LoadInt64(&conn.lastActivityTime) > 8 {
 					delete(w.activeConn, addr)
 					conn.cancel()
 				}
