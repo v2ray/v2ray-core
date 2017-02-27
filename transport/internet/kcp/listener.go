@@ -34,47 +34,47 @@ type ServerConnection struct {
 	closer io.Closer
 }
 
-func (o *ServerConnection) Overhead() int {
-	return o.writer.Overhead()
+func (c *ServerConnection) Overhead() int {
+	return c.writer.Overhead()
 }
 
-func (o *ServerConnection) Read([]byte) (int, error) {
+func (*ServerConnection) Read([]byte) (int, error) {
 	panic("KCP|ServerConnection: Read should not be called.")
 }
 
-func (o *ServerConnection) Write(b []byte) (int, error) {
-	return o.writer.Write(b)
+func (c *ServerConnection) Write(b []byte) (int, error) {
+	return c.writer.Write(b)
 }
 
-func (o *ServerConnection) Close() error {
-	return o.closer.Close()
+func (c *ServerConnection) Close() error {
+	return c.closer.Close()
 }
 
-func (o *ServerConnection) Reset(input func([]Segment)) {
+func (*ServerConnection) Reset(input func([]Segment)) {
 }
 
-func (o *ServerConnection) LocalAddr() net.Addr {
-	return o.local
+func (c *ServerConnection) LocalAddr() net.Addr {
+	return c.local
 }
 
-func (o *ServerConnection) RemoteAddr() net.Addr {
-	return o.remote
+func (c *ServerConnection) RemoteAddr() net.Addr {
+	return c.remote
 }
 
-func (o *ServerConnection) SetDeadline(time.Time) error {
+func (*ServerConnection) SetDeadline(time.Time) error {
 	return nil
 }
 
-func (o *ServerConnection) SetReadDeadline(time.Time) error {
+func (*ServerConnection) SetReadDeadline(time.Time) error {
 	return nil
 }
 
-func (o *ServerConnection) SetWriteDeadline(time.Time) error {
+func (*ServerConnection) SetWriteDeadline(time.Time) error {
 	return nil
 }
 
-func (o *ServerConnection) Id() internal.ConnectionID {
-	return o.id
+func (c *ServerConnection) Id() internal.ConnectionID {
+	return c.id
 }
 
 // Listener defines a server listening for connections
