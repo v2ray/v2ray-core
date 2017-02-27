@@ -40,6 +40,8 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 	}
 
 	select {
+	case <-h.ln.ctx.Done():
+		conn.Close()
 	case h.ln.conns <- internal.NewConnection(internal.ConnectionID{}, conn, h.ln, internal.ReuseConnection(h.ln.config.IsConnectionReuse())):
 	case <-time.After(time.Second * 5):
 		conn.Close()
@@ -48,7 +50,7 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 
 type Listener struct {
 	sync.Mutex
-	closed    chan bool
+	ctx       context.Context
 	listener  net.Listener
 	tlsConfig *tls.Config
 	config    *Config
@@ -60,7 +62,7 @@ func ListenWS(ctx context.Context, address v2net.Address, port v2net.Port, conns
 	wsSettings := networkSettings.(*Config)
 
 	l := &Listener{
-		closed: make(chan bool),
+		ctx:    ctx,
 		config: wsSettings,
 		conns:  conns,
 	}
@@ -119,14 +121,9 @@ func converttovws(w http.ResponseWriter, r *http.Request) (*connection, error) {
 }
 
 func (ln *Listener) Put(id internal.ConnectionID, conn net.Conn) {
-	ln.Lock()
-	defer ln.Unlock()
 	select {
-	case <-ln.closed:
-		return
-	default:
-	}
-	select {
+	case <-ln.ctx.Done():
+		conn.Close()
 	case ln.conns <- internal.NewConnection(internal.ConnectionID{}, conn, ln, internal.ReuseConnection(ln.config.IsConnectionReuse())):
 	case <-time.After(time.Second * 5):
 		conn.Close()
@@ -138,16 +135,7 @@ func (ln *Listener) Addr() net.Addr {
 }
 
 func (ln *Listener) Close() error {
-	ln.Lock()
-	defer ln.Unlock()
-	select {
-	case <-ln.closed:
-		return ErrClosedListener
-	default:
-	}
-	close(ln.closed)
-	ln.listener.Close()
-	return nil
+	return ln.listener.Close()
 }
 
 func init() {

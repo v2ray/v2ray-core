@@ -22,7 +22,7 @@ var (
 
 type TCPListener struct {
 	sync.Mutex
-	acccepting bool
+	ctx        context.Context
 	listener   *net.TCPListener
 	tlsConfig  *tls.Config
 	authConfig internet.ConnectionAuthenticator
@@ -43,10 +43,10 @@ func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, conn
 	tcpSettings := networkSettings.(*Config)
 
 	l := &TCPListener{
-		acccepting: true,
-		listener:   listener,
-		config:     tcpSettings,
-		conns:      conns,
+		ctx:      ctx,
+		listener: listener,
+		config:   tcpSettings,
+		conns:    conns,
 	}
 	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
 		tlsConfig, ok := securitySettings.(*v2tls.Config)
@@ -70,13 +70,14 @@ func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, conn
 }
 
 func (v *TCPListener) KeepAccepting() {
-	for v.acccepting {
+	for {
+		select {
+		case <-v.ctx.Done():
+			return
+		default:
+		}
 		conn, err := v.listener.Accept()
 		v.Lock()
-		if !v.acccepting {
-			v.Unlock()
-			break
-		}
 		if err != nil {
 			log.Warning("TCP|Listener: Failed to accepted raw connections: ", err)
 			v.Unlock()
@@ -100,12 +101,10 @@ func (v *TCPListener) KeepAccepting() {
 }
 
 func (v *TCPListener) Put(id internal.ConnectionID, conn net.Conn) {
-	v.Lock()
-	defer v.Unlock()
-	if !v.acccepting {
-		return
-	}
 	select {
+	case <-v.ctx.Done():
+		conn.Close()
+		return
 	case v.conns <- internal.NewConnection(internal.ConnectionID{}, conn, v, internal.ReuseConnection(v.config.IsConnectionReuse())):
 	case <-time.After(time.Second * 5):
 		conn.Close()
@@ -117,9 +116,6 @@ func (v *TCPListener) Addr() net.Addr {
 }
 
 func (v *TCPListener) Close() error {
-	v.Lock()
-	defer v.Unlock()
-	v.acccepting = false
 	v.listener.Close()
 	return nil
 }

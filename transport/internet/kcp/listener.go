@@ -80,7 +80,7 @@ func (o *ServerConnection) Id() internal.ConnectionID {
 // Listener defines a server listening for connections
 type Listener struct {
 	sync.Mutex
-	closed    chan bool
+	ctx       context.Context
 	sessions  map[ConnectionID]*Connection
 	hub       *udp.Hub
 	tlsConfig *tls.Config
@@ -112,7 +112,7 @@ func NewListener(ctx context.Context, address v2net.Address, port v2net.Port, co
 			Security: security,
 		},
 		sessions: make(map[ConnectionID]*Connection),
-		closed:   make(chan bool),
+		ctx:      ctx,
 		config:   kcpSettings,
 		conns:    conns,
 	}
@@ -143,20 +143,19 @@ func (v *Listener) OnReceive(payload *buf.Buffer, src v2net.Destination, origina
 		return
 	}
 
+	v.Lock()
+	defer v.Unlock()
+
 	select {
-	case <-v.closed:
+	case <-v.ctx.Done():
 		return
 	default:
 	}
 
-	v.Lock()
-	defer v.Unlock()
 	if v.hub == nil {
 		return
 	}
-	if payload.Len() < 4 {
-		return
-	}
+
 	conv := segments[0].Conversation()
 	cmd := segments[0].Command()
 
@@ -213,7 +212,7 @@ func (v *Listener) OnReceive(payload *buf.Buffer, src v2net.Destination, origina
 
 func (v *Listener) Remove(id ConnectionID) {
 	select {
-	case <-v.closed:
+	case <-v.ctx.Done():
 		return
 	default:
 		v.Lock()
@@ -224,20 +223,14 @@ func (v *Listener) Remove(id ConnectionID) {
 
 // Close stops listening on the UDP address. Already Accepted connections are not closed.
 func (v *Listener) Close() error {
+	v.hub.Close()
 
 	v.Lock()
 	defer v.Unlock()
-	select {
-	case <-v.closed:
-		return ErrClosedListener
-	default:
-	}
 
-	close(v.closed)
 	for _, conn := range v.sessions {
 		go conn.Terminate()
 	}
-	v.hub.Close()
 
 	return nil
 }

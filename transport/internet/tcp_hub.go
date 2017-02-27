@@ -27,12 +27,6 @@ type Listener interface {
 	Addr() net.Addr
 }
 
-type TCPHub struct {
-	listener     Listener
-	connCallback ConnectionHandler
-	closed       chan bool
-}
-
 func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, conns chan<- Connection) (Listener, error) {
 	settings := StreamSettingsFromContext(ctx)
 	protocol := settings.GetEffectiveProtocol()
