@@ -4,13 +4,13 @@ import (
 	"context"
 	"crypto/tls"
 	"net"
-	"sync"
 	"time"
 
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/retry"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/internal"
 	v2tls "v2ray.com/core/transport/internet/tls"
@@ -21,7 +21,6 @@ var (
 )
 
 type TCPListener struct {
-	sync.Mutex
 	ctx        context.Context
 	listener   *net.TCPListener
 	tlsConfig  *tls.Config
@@ -76,13 +75,20 @@ func (v *TCPListener) KeepAccepting() {
 			return
 		default:
 		}
-		conn, err := v.listener.Accept()
-		v.Lock()
+		var conn net.Conn
+		err := retry.ExponentialBackoff(5, 200).On(func() error {
+			rawConn, err := v.listener.Accept()
+			if err != nil {
+				return err
+			}
+			conn = rawConn
+			return nil
+		})
 		if err != nil {
 			log.Warning("TCP|Listener: Failed to accepted raw connections: ", err)
-			v.Unlock()
 			continue
 		}
+
 		if v.tlsConfig != nil {
 			conn = tls.Server(conn, v.tlsConfig)
 		}
@@ -95,18 +101,15 @@ func (v *TCPListener) KeepAccepting() {
 		case <-time.After(time.Second * 5):
 			conn.Close()
 		}
-
-		v.Unlock()
 	}
 }
 
 func (v *TCPListener) Put(id internal.ConnectionID, conn net.Conn) {
 	select {
-	case <-v.ctx.Done():
-		conn.Close()
-		return
 	case v.conns <- internal.NewConnection(internal.ConnectionID{}, conn, v, internal.ReuseConnection(v.config.IsConnectionReuse())):
 	case <-time.After(time.Second * 5):
+		conn.Close()
+	case <-v.ctx.Done():
 		conn.Close()
 	}
 }

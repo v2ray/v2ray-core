@@ -93,6 +93,7 @@ func (w *tcpWorker) handleConnections(conns <-chan internet.Connection) {
 			for {
 				select {
 				case conn := <-conns:
+					conn.SetReusable(false)
 					conn.Close()
 				default:
 					break L

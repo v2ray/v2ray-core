@@ -202,6 +202,7 @@ func (v *Listener) OnReceive(payload *buf.Buffer, src v2net.Destination, origina
 		select {
 		case v.conns <- netConn:
 		case <-time.After(time.Second * 5):
+			conn.SetReusable(false)
 			conn.Close()
 			return
 		}
