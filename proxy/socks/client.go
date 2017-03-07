@@ -5,7 +5,6 @@ import (
 	"runtime"
 	"time"
 
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
@@ -79,8 +78,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 
 	udpRequest, err := ClientHandshake(request, conn, conn)
 	if err != nil {
-		log.Warning("Socks|Client: Failed to establish connection to server: ", err)
-		return err
+		return errors.Base(err).RequireUserAction().Message("Socks|Client: Failed to establish connection to server.")
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -99,8 +97,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 	} else if request.Command == protocol.RequestCommandUDP {
 		udpConn, err := dialer.Dial(ctx, udpRequest.Destination())
 		if err != nil {
-			log.Info("Socks|Client: Failed to create UDP connection: ", err)
-			return err
+			return errors.Base(err).Message("Socks|Client: Failed to create UDP connection.")
 		}
 		defer udpConn.Close()
 		requestFunc = func() error {
@@ -116,8 +113,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 	requestDone := signal.ExecuteAsync(requestFunc)
 	responseDone := signal.ExecuteAsync(responseFunc)
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
-		log.Info("Socks|Client: Connection ends with ", err)
-		return err
+		return errors.Base(err).Message("Socks|Client: Connection ends.")
 	}
 
 	runtime.KeepAlive(timer)

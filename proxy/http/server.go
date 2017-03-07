@@ -94,8 +94,7 @@ func (s *Server) Process(ctx context.Context, network v2net.Network, conn intern
 	}
 	dest, err := parseHost(host, defaultPort)
 	if err != nil {
-		log.Warning("HTTP: Malformed proxy host (", host, "): ", err)
-		return err
+		return errors.Base(err).Message("HTTP: Malformed proxy host: ", host).RequireUserAction()
 	}
 	log.Access(conn.RemoteAddr(), request.URL, log.AccessAccepted, "")
 

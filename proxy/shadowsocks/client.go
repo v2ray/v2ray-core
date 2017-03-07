@@ -81,8 +81,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 	user := server.PickUser()
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
-		log.Warning("Shadowsocks|Client: Failed to get a valid user account: ", err)
-		return err
+		return errors.Base(err).Message("Shadowsocks|Client: Failed to get a valid user account.").RequireUserAction()
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 	request.User = user

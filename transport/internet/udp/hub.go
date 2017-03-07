@@ -7,6 +7,7 @@ import (
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
+	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet/internal"
 )
@@ -96,13 +97,11 @@ func ListenUDP(address v2net.Address, port v2net.Port, option ListenOption) (*Hu
 	if option.ReceiveOriginalDest {
 		fd, err := internal.GetSysFd(udpConn)
 		if err != nil {
-			log.Warning("UDP|Listener: Failed to get fd: ", err)
-			return nil, err
+			return nil, errors.Base(err).Message("UDP|Listener: Failed to get fd.")
 		}
 		err = SetOriginalDestOptions(fd)
 		if err != nil {
-			log.Warning("UDP|Listener: Failed to set socket options: ", err)
-			return nil, err
+			return nil, errors.Base(err).Message("UDP|Listener: Failed to set socket options.")
 		}
 	}
 	ctx, cancel := context.WithCancel(context.Background())

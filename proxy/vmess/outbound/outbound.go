@@ -86,8 +86,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 
 	rawAccount, err := request.User.GetTypedAccount()
 	if err != nil {
-		log.Warning("VMess|Outbound: Failed to get user account: ", err)
-		return err
+		return errors.Base(err).RequireUserAction().Message("VMess|Outbound: Failed to get user account.")
 	}
 	account := rawAccount.(*vmess.InternalAccount)
 	request.Security = account.Security
