@@ -1,6 +1,7 @@
 # Project V2Ray
 
 [![Build Status][1]][2] [![codecov.io][3]][4] [![Go Report][5]][6] [![GoDoc][7]][8] [![codebeat][9]][10]
+
 [1]: https://travis-ci.org/v2ray/v2ray-core.svg?branch=master "Build Status badge"
 [2]: https://travis-ci.org/v2ray/v2ray-core "Travis-CI Build Status"
 [3]: https://codecov.io/github/v2ray/v2ray-core/coverage.svg?branch=master "Coverage badge"
