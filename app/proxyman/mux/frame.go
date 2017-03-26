@@ -31,8 +31,21 @@ const (
 	AddressTypeIPv6   AddressType = 0x03
 )
 
+/*
+Frame format
+2 bytes - length
+2 bytes - session id
+1 bytes - status
+1 bytes - reserved
+
+1 byte - network
+2 bytes - port
+n bytes - address
+
+*/
+
 type FrameMetadata struct {
-	SessionId     uint16
+	SessionID     uint16
 	SessionStatus SessionStatus
 	Target        net.Destination
 }
@@ -41,7 +54,7 @@ func (f FrameMetadata) AsSupplier() buf.Supplier {
 	return func(b []byte) (int, error) {
 		b = serial.Uint16ToBytes(uint16(0), b) // place holder for length
 
-		b = serial.Uint16ToBytes(f.SessionId, b)
+		b = serial.Uint16ToBytes(f.SessionID, b)
 		b = append(b, byte(f.SessionStatus), 0 /* reserved */)
 		length := 4
 
@@ -84,7 +97,7 @@ func ReadFrameFrom(b []byte) (*FrameMetadata, error) {
 	}
 
 	f := &FrameMetadata{
-		SessionId:     serial.BytesToUint16(b[:2]),
+		SessionID:     serial.BytesToUint16(b[:2]),
 		SessionStatus: SessionStatus(b[2]),
 	}
 

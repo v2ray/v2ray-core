@@ -1,7 +1,9 @@
 package mux
 
-import "v2ray.com/core/common/buf"
-import "v2ray.com/core/common/serial"
+import (
+	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/serial"
+)
 
 type muxWriter struct {
 	meta   *FrameMetadata
