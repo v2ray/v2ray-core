@@ -101,10 +101,13 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 			return err
 		}
 
-		bufferedWriter.SetBuffered(false)
+		if err := bufferedWriter.SetBuffered(false); err != nil {
+			return err
+		}
 
 		requestDone := signal.ExecuteAsync(func() error {
-			if err := buf.PipeUntilEOF(timer, outboundRay.OutboundInput(), bodyWriter); err != nil {
+			mergedInput := buf.NewMergingReader(outboundRay.OutboundInput())
+			if err := buf.PipeUntilEOF(timer, mergedInput, bodyWriter); err != nil {
 				return err
 			}
 			return nil

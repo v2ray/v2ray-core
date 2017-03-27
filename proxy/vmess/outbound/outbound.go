@@ -124,9 +124,16 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 			firstPayload.Release()
 		}
 
-		writer.SetBuffered(false)
+		if err := writer.SetBuffered(false); err != nil {
+			return err
+		}
 
-		if err := buf.PipeUntilEOF(timer, input, bodyWriter); err != nil {
+		var inputReader buf.Reader = input
+		if request.Command == protocol.RequestCommandTCP {
+			inputReader = buf.NewMergingReader(input)
+		}
+
+		if err := buf.PipeUntilEOF(timer, inputReader, bodyWriter); err != nil {
 			return err
 		}
 

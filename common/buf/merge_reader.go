@@ -31,17 +31,20 @@ func (r *MergingReader) Read() (*Buffer, error) {
 		return b, nil
 	}
 
-	b2, err := r.timeoutReader.ReadTimeout(0)
-	if err != nil {
-		return b, nil
-	}
+	for {
+		b2, err := r.timeoutReader.ReadTimeout(0)
+		if err != nil {
+			break
+		}
 
-	nBytes := b.Append(b2.Bytes())
-	b2.SliceFrom(nBytes)
-	if b2.IsEmpty() {
-		b2.Release()
-	} else {
-		r.leftover = b2
+		nBytes := b.Append(b2.Bytes())
+		b2.SliceFrom(nBytes)
+		if b2.IsEmpty() {
+			b2.Release()
+		} else {
+			r.leftover = b2
+			break
+		}
 	}
 
 	return b, nil
