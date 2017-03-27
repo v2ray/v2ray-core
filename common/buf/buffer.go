@@ -41,14 +41,15 @@ func (b *Buffer) Clear() {
 }
 
 // AppendBytes appends one or more bytes to the end of the buffer.
-func (b *Buffer) AppendBytes(bytes ...byte) {
-	b.Append(bytes)
+func (b *Buffer) AppendBytes(bytes ...byte) int {
+	return b.Append(bytes)
 }
 
 // Append appends a byte array to the end of the buffer.
-func (b *Buffer) Append(data []byte) {
+func (b *Buffer) Append(data []byte) int {
 	nBytes := copy(b.v[b.end:], data)
 	b.end += nBytes
+	return nBytes
 }
 
 // AppendSupplier appends the content of a BytesWriter to the buffer.

@@ -2,6 +2,7 @@ package buf
 
 import (
 	"io"
+	"time"
 
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/signal"
@@ -11,6 +12,12 @@ import (
 type Reader interface {
 	// Read reads content from underlying reader, and put it into an alloc.Buffer.
 	Read() (*Buffer, error)
+}
+
+var ErrReadTimeout = errors.New("Buf: IO timeout.")
+
+type TimeoutReader interface {
+	ReadTimeout(time.Duration) (*Buffer, error)
 }
 
 // Writer extends io.Writer with alloc.Buffer.

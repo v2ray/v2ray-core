@@ -2,7 +2,6 @@ package ray
 
 import (
 	"context"
-	"errors"
 	"io"
 	"time"
 
@@ -12,8 +11,6 @@ import (
 const (
 	bufferSize = 512
 )
-
-var ErrReadTimeout = errors.New("Ray: timeout.")
 
 // NewRay creates a new Ray for direct traffic transport.
 func NewRay(ctx context.Context) Ray {
@@ -101,7 +98,7 @@ func (v *Stream) ReadTimeout(timeout time.Duration) (*buf.Buffer, error) {
 		case <-v.err:
 			return nil, io.ErrClosedPipe
 		case <-time.After(timeout):
-			return nil, ErrReadTimeout
+			return nil, buf.ErrReadTimeout
 		}
 	}
 }
