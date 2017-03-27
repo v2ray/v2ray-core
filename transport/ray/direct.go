@@ -89,7 +89,7 @@ func (v *Stream) ReadTimeout(timeout time.Duration) (*buf.Buffer, error) {
 		return b, nil
 	default:
 		if timeout == 0 {
-			return nil, ErrReadTimeout
+			return nil, buf.ErrReadTimeout
 		}
 
 		select {

@@ -1,13 +1,15 @@
 package buf
 
 type MergingReader struct {
-	reader   Reader
-	leftover *Buffer
+	reader        Reader
+	timeoutReader TimeoutReader
+	leftover      *Buffer
 }
 
 func NewMergingReader(reader Reader) Reader {
 	return &MergingReader{
-		reader: reader,
+		reader:        reader,
+		timeoutReader: reader.(TimeoutReader),
 	}
 }
 
@@ -25,7 +27,11 @@ func (r *MergingReader) Read() (*Buffer, error) {
 		return b, nil
 	}
 
-	b2, err := r.reader.Read()
+	if r.timeoutReader == nil {
+		return b, nil
+	}
+
+	b2, err := r.timeoutReader.ReadTimeout(0)
 	if err != nil {
 		return b, nil
 	}

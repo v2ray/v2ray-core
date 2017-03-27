@@ -114,7 +114,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 
 		bodyWriter := session.EncodeRequestBody(request, writer)
 		firstPayload, err := input.ReadTimeout(time.Millisecond * 500)
-		if err != nil && err != ray.ErrReadTimeout {
+		if err != nil && err != buf.ErrReadTimeout {
 			return errors.Base(err).Message("VMess|Outbound: Failed to get first payload.")
 		}
 		if !firstPayload.IsEmpty() {
