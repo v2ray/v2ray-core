@@ -91,6 +91,10 @@ func (v *Stream) ReadTimeout(timeout time.Duration) (*buf.Buffer, error) {
 	case b := <-v.buffer:
 		return b, nil
 	default:
+		if timeout == 0 {
+			return nil, ErrReadTimeout
+		}
+
 		select {
 		case <-v.ctx.Done():
 			return nil, io.ErrClosedPipe
