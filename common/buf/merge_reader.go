@@ -15,7 +15,9 @@ func NewMergingReader(reader Reader) Reader {
 
 func (r *MergingReader) Read() (*Buffer, error) {
 	if r.leftover != nil {
-		return r.leftover, nil
+		b := r.leftover
+		r.leftover = nil
+		return b, nil
 	}
 
 	b, err := r.reader.Read()
