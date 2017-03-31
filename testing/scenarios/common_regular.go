@@ -10,7 +10,7 @@ import (
 )
 
 func BuildV2Ray() error {
-	GenTestBinaryPath()
+	genTestBinaryPath()
 	if _, err := os.Stat(testBinaryPath); err == nil {
 		return nil
 	}
@@ -20,17 +20,8 @@ func BuildV2Ray() error {
 	return cmd.Run()
 }
 
-func RunV2Ray(configFile string) *exec.Cmd {
-	GenTestBinaryPath()
-	proc := exec.Command(testBinaryPath, "-config", configFile)
-	proc.Stderr = os.Stderr
-	proc.Stdout = os.Stdout
-
-	return proc
-}
-
 func RunV2RayProtobuf(config []byte) *exec.Cmd {
-	GenTestBinaryPath()
+	genTestBinaryPath()
 	proc := exec.Command(testBinaryPath, "-config=stdin:", "-format=pb")
 	proc.Stdin = bytes.NewBuffer(config)
 	proc.Stderr = os.Stderr
