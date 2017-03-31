@@ -2,41 +2,76 @@ package mux
 
 import (
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
 )
 
 type muxWriter struct {
-	meta   *FrameMetadata
-	writer buf.Writer
+	id       uint16
+	dest     net.Destination
+	writer   buf.Writer
+	followup bool
+}
+
+func (w *muxWriter) writeInternal(b *buf.Buffer) error {
+	meta := FrameMetadata{
+		SessionID: w.id,
+		Target:    w.dest,
+	}
+	if w.followup {
+		meta.SessionStatus = SessionStatusKeep
+	} else {
+		w.followup = true
+		meta.SessionStatus = SessionStatusNew
+	}
+
+	if b.Len() > 0 {
+		meta.Option.Add(OptionData)
+	}
+
+	frame := buf.New()
+	frame.AppendSupplier(meta.AsSupplier())
+
+	if b.Len() > 0 {
+		frame.AppendSupplier(serial.WriteUint16(0))
+		lengthBytes := frame.BytesFrom(-2)
+
+		nBytes, err := frame.Write(b.Bytes())
+		if err != nil {
+			frame.Release()
+			return err
+		}
+
+		serial.Uint16ToBytes(uint16(nBytes), lengthBytes[:0])
+		b.SliceFrom(nBytes)
+	}
+
+	return w.writer.Write(frame)
 }
 
 func (w *muxWriter) Write(b *buf.Buffer) error {
-	frame := buf.New()
-	frame.AppendSupplier(w.meta.AsSupplier())
-	if w.meta.SessionStatus == SessionStatusNew {
-		w.meta.SessionStatus = SessionStatusKeep
-	}
+	defer b.Release()
 
-	frame.AppendSupplier(serial.WriteUint16(0))
-	lengthBytes := frame.BytesFrom(-2)
-
-	nBytes, err := frame.Write(b.Bytes())
-	if err != nil {
+	if err := w.writeInternal(b); err != nil {
 		return err
 	}
-
-	serial.Uint16ToBytes(uint16(nBytes), lengthBytes[:0])
-	if err := w.writer.Write(frame); err != nil {
-		frame.Release()
-		b.Release()
-		return err
+	for !b.IsEmpty() {
+		if err := w.writeInternal(b); err != nil {
+			return err
+		}
 	}
-
-	b.SliceFrom(nBytes)
-	if !b.IsEmpty() {
-		return w.Write(b)
-	}
-	b.Release()
-
 	return nil
+}
+
+func (w *muxWriter) Close() {
+	meta := FrameMetadata{
+		SessionID:     w.id,
+		Target:        w.dest,
+		SessionStatus: SessionStatusEnd,
+	}
+
+	frame := buf.New()
+	frame.AppendSupplier(meta.AsSupplier())
+
+	w.writer.Write(frame)
 }

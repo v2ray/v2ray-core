@@ -16,6 +16,24 @@ const (
 	SessionStatusEnd  SessionStatus = 0x03
 )
 
+type Option byte
+
+const (
+	OptionData Option = 0x01
+)
+
+func (o Option) Has(x Option) bool {
+	return (o & x) == x
+}
+
+func (o *Option) Add(x Option) {
+	*o = (*o | x)
+}
+
+func (o *Option) Clear(x Option) {
+	*o = (*o & (^x))
+}
+
 type TargetNetwork byte
 
 const (
@@ -36,7 +54,7 @@ Frame format
 2 bytes - length
 2 bytes - session id
 1 bytes - status
-1 bytes - reserved
+1 bytes - option
 
 1 byte - network
 2 bytes - port
@@ -48,6 +66,7 @@ type FrameMetadata struct {
 	SessionID     uint16
 	SessionStatus SessionStatus
 	Target        net.Destination
+	Option        Option
 }
 
 func (f FrameMetadata) AsSupplier() buf.Supplier {
@@ -55,7 +74,7 @@ func (f FrameMetadata) AsSupplier() buf.Supplier {
 		b = serial.Uint16ToBytes(uint16(0), b) // place holder for length
 
 		b = serial.Uint16ToBytes(f.SessionID, b)
-		b = append(b, byte(f.SessionStatus), 0 /* reserved */)
+		b = append(b, byte(f.SessionStatus), byte(f.Option))
 		length := 4
 
 		if f.SessionStatus == SessionStatusNew {
