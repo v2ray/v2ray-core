@@ -111,8 +111,9 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	ctx, cancel := context.WithCancel(ctx)
 	timeout := time.Second * time.Duration(v.timeout)
 	if timeout == 0 {
-		timeout = time.Minute * 10
+		timeout = time.Minute * 5
 	}
+	log.Debug("Freedom: Cancel after ", timeout)
 	timer := signal.CancelAfterInactivity(ctx, cancel, timeout)
 
 	requestDone := signal.ExecuteAsync(func() error {
@@ -135,6 +136,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		log.Info("Freedom: Connection ending with ", err)
+		cancel()
 		input.CloseError()
 		output.CloseError()
 		return err
