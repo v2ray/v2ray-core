@@ -122,6 +122,8 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	timeout := time.Second * time.Duration(s.config.Timeout)
 	if timeout == 0 {
 		timeout = time.Minute * 2

@@ -61,6 +61,8 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		return errors.New("Dokodemo: Unable to get destination.")
 	}
 	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	timeout := time.Second * time.Duration(d.config.Timeout)
 	if timeout == 0 {
 		timeout = time.Minute * 2

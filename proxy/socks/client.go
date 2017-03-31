@@ -82,6 +82,8 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
 
 	var requestFunc func() error

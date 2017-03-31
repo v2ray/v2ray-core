@@ -91,6 +91,8 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
 
 	if request.Command == protocol.RequestCommandTCP {

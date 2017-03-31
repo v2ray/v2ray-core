@@ -196,6 +196,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		log.Info("Shadowsocks|Server: Connection ends with ", err)
+		cancel()
 		ray.InboundInput().CloseError()
 		ray.InboundOutput().CloseError()
 		return err
