@@ -12,7 +12,7 @@ type ActivityTimer struct {
 	cancel  context.CancelFunc
 }
 
-func (t *ActivityTimer) UpdateActivity() {
+func (t *ActivityTimer) Update() {
 	select {
 	case t.updated <- true:
 	default:
@@ -37,7 +37,8 @@ func (t *ActivityTimer) run() {
 	}
 }
 
-func CancelAfterInactivity(ctx context.Context, cancel context.CancelFunc, timeout time.Duration) *ActivityTimer {
+func CancelAfterInactivity(ctx context.Context, timeout time.Duration) (context.Context, *ActivityTimer) {
+	ctx, cancel := context.WithCancel(ctx)
 	timer := &ActivityTimer{
 		ctx:     ctx,
 		cancel:  cancel,
@@ -45,5 +46,5 @@ func CancelAfterInactivity(ctx context.Context, cancel context.CancelFunc, timeo
 		updated: make(chan bool, 1),
 	}
 	go timer.run()
-	return timer
+	return ctx, timer
 }

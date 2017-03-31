@@ -121,14 +121,11 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		return errors.Base(err).Message("HTTP|Server: Failed to write back OK response.")
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	timeout := time.Second * time.Duration(s.config.Timeout)
 	if timeout == 0 {
 		timeout = time.Minute * 2
 	}
-	timer := signal.CancelAfterInactivity(ctx, cancel, timeout)
+	ctx, timer := signal.CancelAfterInactivity(ctx, timeout)
 	ray, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return err

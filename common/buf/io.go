@@ -49,7 +49,7 @@ func Pipe(timer *signal.ActivityTimer, reader Reader, writer Writer) error {
 			return err
 		}
 
-		timer.UpdateActivity()
+		timer.Update()
 
 		if buffer.IsEmpty() {
 			buffer.Release()

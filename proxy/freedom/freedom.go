@@ -108,15 +108,12 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 
 	conn.SetReusable(false)
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	timeout := time.Second * time.Duration(v.timeout)
 	if timeout == 0 {
 		timeout = time.Minute * 5
 	}
 	log.Debug("Freedom: Cancel after ", timeout)
-	timer := signal.CancelAfterInactivity(ctx, cancel, timeout)
+	ctx, timer := signal.CancelAfterInactivity(ctx, timeout)
 
 	requestDone := signal.ExecuteAsync(func() error {
 		v2writer := buf.NewWriter(conn)
@@ -137,10 +134,9 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	})
 
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
-		log.Info("Freedom: Connection ending with ", err)
 		input.CloseError()
 		output.CloseError()
-		return err
+		return errors.Base(err).Message("Freedom: Connection ends.")
 	}
 
 	runtime.KeepAlive(timer)

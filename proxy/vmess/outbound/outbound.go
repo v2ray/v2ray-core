@@ -105,10 +105,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 
 	session := encoding.NewClientSession(protocol.DefaultIDHash)
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
+	ctx, timer := signal.CancelAfterInactivity(ctx, time.Minute*2)
 
 	requestDone := signal.ExecuteAsync(func() error {
 		writer := buf.NewBufferedWriter(conn)

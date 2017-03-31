@@ -134,8 +134,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 	request, bodyReader, err := ReadTCPSession(s.user, bufferedReader)
 	if err != nil {
 		log.Access(conn.RemoteAddr(), "", log.AccessRejected, err)
-		log.Info("Shadowsocks|Server: Failed to create request from: ", conn.RemoteAddr(), ": ", err)
-		return err
+		return errors.Base(err).Message("Shadowsocks|Server: Failed to create request from: ", conn.RemoteAddr())
 	}
 	conn.SetReadDeadline(time.Time{})
 
@@ -147,9 +146,8 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 
 	ctx = protocol.ContextWithUser(ctx, request.User)
 
-	ctx, cancel := context.WithCancel(ctx)
 	userSettings := s.user.GetSettings()
-	timer := signal.CancelAfterInactivity(ctx, cancel, userSettings.PayloadTimeout)
+	ctx, timer := signal.CancelAfterInactivity(ctx, userSettings.PayloadTimeout)
 	ray, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return err
@@ -159,8 +157,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 		bufferedWriter := buf.NewBufferedWriter(conn)
 		responseWriter, err := WriteTCPResponse(request, bufferedWriter)
 		if err != nil {
-			log.Warning("Shadowsocks|Server: Failed to write response: ", err)
-			return err
+			return errors.Base(err).Message("Shadowsocks|Server: Failed to write response.")
 		}
 
 		payload, err := ray.InboundOutput().Read()
@@ -177,8 +174,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 		}
 
 		if err := buf.PipeUntilEOF(timer, ray.InboundOutput(), responseWriter); err != nil {
-			log.Info("Shadowsocks|Server: Failed to transport all TCP response: ", err)
-			return err
+			return errors.Base(err).Message("Shadowsocks|Server: Failed to transport all TCP response.")
 		}
 
 		return nil
@@ -188,18 +184,15 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 		defer ray.InboundInput().Close()
 
 		if err := buf.PipeUntilEOF(timer, bodyReader, ray.InboundInput()); err != nil {
-			log.Info("Shadowsocks|Server: Failed to transport all TCP request: ", err)
-			return err
+			return errors.Base(err).Message("Shadowsocks|Server: Failed to transport all TCP request.")
 		}
 		return nil
 	})
 
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
-		log.Info("Shadowsocks|Server: Connection ends with ", err)
-		cancel()
 		ray.InboundInput().CloseError()
 		ray.InboundOutput().CloseError()
-		return err
+		return errors.Base(err).Message("Shadowsocks|Server: Connection ends.")
 	}
 
 	runtime.KeepAlive(timer)

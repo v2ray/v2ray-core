@@ -60,14 +60,12 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		log.Info("Dokodemo: Invalid destination. Discarding...")
 		return errors.New("Dokodemo: Unable to get destination.")
 	}
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 
 	timeout := time.Second * time.Duration(d.config.Timeout)
 	if timeout == 0 {
 		timeout = time.Minute * 2
 	}
-	timer := signal.CancelAfterInactivity(ctx, cancel, timeout)
+	ctx, timer := signal.CancelAfterInactivity(ctx, timeout)
 
 	inboundRay, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {

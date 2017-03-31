@@ -81,10 +81,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 		return errors.Base(err).RequireUserAction().Message("Socks|Client: Failed to establish connection to server.")
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
+	ctx, timer := signal.CancelAfterInactivity(ctx, time.Minute*2)
 
 	var requestFunc func() error
 	var responseFunc func() error

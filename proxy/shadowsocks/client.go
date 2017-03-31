@@ -90,17 +90,13 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 		request.Option |= RequestOptionOneTimeAuth
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*2)
+	ctx, timer := signal.CancelAfterInactivity(ctx, time.Minute*2)
 
 	if request.Command == protocol.RequestCommandTCP {
 		bufferedWriter := buf.NewBufferedWriter(conn)
 		bodyWriter, err := WriteTCPRequest(request, bufferedWriter)
 		if err != nil {
-			log.Info("Shadowsocks|Client: Failed to write request: ", err)
-			return err
+			return errors.Base(err).Message("Shadowsocks|Client: Failed to write request")
 		}
 
 		if err := bufferedWriter.SetBuffered(false); err != nil {
@@ -131,8 +127,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 		})
 
 		if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
-			log.Info("Shadowsocks|Client: Connection ends with ", err)
-			return err
+			return errors.Base(err).Message("Shadowsocks|Client: Connection ends.")
 		}
 
 		return nil
@@ -147,8 +142,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 
 		requestDone := signal.ExecuteAsync(func() error {
 			if err := buf.PipeUntilEOF(timer, outboundRay.OutboundInput(), writer); err != nil {
-				log.Info("Shadowsocks|Client: Failed to transport all UDP request: ", err)
-				return err
+				return errors.Base(err).Message("Shadowsocks|Client: Failed to transport all UDP request")
 			}
 			return nil
 		})
@@ -162,15 +156,13 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 			}
 
 			if err := buf.PipeUntilEOF(timer, reader, outboundRay.OutboundOutput()); err != nil {
-				log.Info("Shadowsocks|Client: Failed to transport all UDP response: ", err)
-				return err
+				return errors.Base(err).Message("Shadowsocks|Client: Failed to transport all UDP response.")
 			}
 			return nil
 		})
 
 		if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
-			log.Info("Shadowsocks|Client: Connection ends with ", err)
-			return err
+			return errors.Base(err).Message("Shadowsocks|Client: Connection ends.")
 		}
 
 		return nil

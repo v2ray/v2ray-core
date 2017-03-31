@@ -110,14 +110,11 @@ func (*Server) handleUDP() error {
 }
 
 func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writer, dest net.Destination, dispatcher dispatcher.Interface) error {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	timeout := time.Second * time.Duration(v.config.Timeout)
 	if timeout == 0 {
 		timeout = time.Minute * 2
 	}
-	timer := signal.CancelAfterInactivity(ctx, cancel, timeout)
+	ctx, timer := signal.CancelAfterInactivity(ctx, timeout)
 
 	ray, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
