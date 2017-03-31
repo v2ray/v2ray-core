@@ -23,7 +23,7 @@ import (
 	tcptransport "v2ray.com/core/transport/internet/tcp"
 )
 
-func TestNoOpConnectionHeader(t *testing.T) {
+func TestHttpConnectionHeader(t *testing.T) {
 	assert := assert.On(t)
 
 	tcpServer := tcp.Server{
