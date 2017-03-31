@@ -47,6 +47,7 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&shadowsocks.ServerConfig{
 					User: &protocol.User{
 						Account: account,
+						Level:   1,
 					},
 				}),
 			},
@@ -164,6 +165,7 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&shadowsocks.ServerConfig{
 					User: &protocol.User{
 						Account: account,
+						Level:   1,
 					},
 				}),
 			},
