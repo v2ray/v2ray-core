@@ -1,9 +1,8 @@
 package mux
 
 import (
-	"errors"
-
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
 )
@@ -38,7 +37,7 @@ type TargetNetwork byte
 
 const (
 	TargetNetworkTCP TargetNetwork = 0x01
-	TargetnetworkUDP TargetNetwork = 0x02
+	TargetNetworkUDP TargetNetwork = 0x02
 )
 
 type AddressType byte
@@ -71,7 +70,8 @@ type FrameMetadata struct {
 
 func (f FrameMetadata) AsSupplier() buf.Supplier {
 	return func(b []byte) (int, error) {
-		b = serial.Uint16ToBytes(uint16(0), b) // place holder for length
+		lengthBytes := b
+		b = serial.Uint16ToBytes(uint16(0), b[:0]) // place holder for length
 
 		b = serial.Uint16ToBytes(f.SessionID, b)
 		b = append(b, byte(f.SessionStatus), byte(f.Option))
@@ -82,7 +82,7 @@ func (f FrameMetadata) AsSupplier() buf.Supplier {
 			case net.Network_TCP:
 				b = append(b, byte(TargetNetworkTCP))
 			case net.Network_UDP:
-				b = append(b, byte(TargetnetworkUDP))
+				b = append(b, byte(TargetNetworkUDP))
 			}
 			length++
 
@@ -101,11 +101,12 @@ func (f FrameMetadata) AsSupplier() buf.Supplier {
 				length += 17
 			case net.AddressFamilyDomain:
 				nDomain := len(addr.Domain())
-				b = append(b, byte(nDomain))
+				b = append(b, byte(AddressTypeDomain), byte(nDomain))
 				b = append(b, addr.Domain()...)
-				length += nDomain + 1
+				length += nDomain + 2
 			}
 		}
+		serial.Uint16ToBytes(uint16(length), lengthBytes[:0])
 		return length + 2, nil
 	}
 }
@@ -118,6 +119,7 @@ func ReadFrameFrom(b []byte) (*FrameMetadata, error) {
 	f := &FrameMetadata{
 		SessionID:     serial.BytesToUint16(b[:2]),
 		SessionStatus: SessionStatus(b[2]),
+		Option:        Option(b[3]),
 	}
 
 	b = b[4:]
@@ -140,11 +142,13 @@ func ReadFrameFrom(b []byte) (*FrameMetadata, error) {
 			nDomain := int(b[0])
 			addr = net.DomainAddress(string(b[1 : 1+nDomain]))
 			b = b[nDomain+1:]
+		default:
+			return nil, errors.New("Proxyman|Mux: Unknown address type: ", addrType)
 		}
 		switch network {
 		case TargetNetworkTCP:
 			f.Target = net.TCPDestination(addr, port)
-		case TargetnetworkUDP:
+		case TargetNetworkUDP:
 			f.Target = net.UDPDestination(addr, port)
 		}
 	}

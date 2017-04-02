@@ -1,23 +1,26 @@
 package mux
 
-import "io"
-import "v2ray.com/core/common/buf"
-import "v2ray.com/core/common/serial"
+import (
+	"io"
 
-type muxReader struct {
+	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/serial"
+)
+
+type MuxReader struct {
 	reader          io.Reader
 	remainingLength int
 	buffer          *buf.Buffer
 }
 
-func NewReader(reader buf.Reader) *muxReader {
-	return &muxReader{
+func NewReader(reader buf.Reader) *MuxReader {
+	return &MuxReader{
 		reader: buf.ToBytesReader(reader),
 		buffer: buf.NewLocal(1024),
 	}
 }
 
-func (r *muxReader) ReadMetadata() (*FrameMetadata, error) {
+func (r *MuxReader) ReadMetadata() (*FrameMetadata, error) {
 	b := r.buffer
 	b.Clear()
 
@@ -32,7 +35,7 @@ func (r *muxReader) ReadMetadata() (*FrameMetadata, error) {
 	return ReadFrameFrom(b.Bytes())
 }
 
-func (r *muxReader) Read() (*buf.Buffer, bool, error) {
+func (r *MuxReader) Read() (*buf.Buffer, bool, error) {
 	b := buf.New()
 	var dataLen int
 	if r.remainingLength > 0 {

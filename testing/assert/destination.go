@@ -49,6 +49,12 @@ func (v *DestinationSubject) EqualsString(another string) {
 	}
 }
 
+func (v *DestinationSubject) Equals(another net.Destination) {
+	if v.value != another {
+		v.Fail("not equals to", another.String())
+	}
+}
+
 func (v *DestinationSubject) HasAddress() *AddressSubject {
 	return v.a.Address(v.value.Address)
 }
