@@ -57,6 +57,52 @@ func (s *session) closeDownlink() {
 	s.checkAndRemove()
 }
 
+type ClientManager struct {
+	access  sync.Mutex
+	clients []*Client
+	proxy   proxy.Outbound
+	dialer  proxy.Dialer
+}
+
+func NewClientManager(p proxy.Outbound, d proxy.Dialer) *ClientManager {
+	return &ClientManager{
+		proxy:  p,
+		dialer: d,
+	}
+}
+
+func (m *ClientManager) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) error {
+	m.access.Lock()
+	defer m.access.Unlock()
+
+	for _, client := range m.clients {
+		if client.Dispatch(ctx, outboundRay) {
+			return nil
+		}
+	}
+
+	client, err := NewClient(m.proxy, m.dialer, m)
+	if err != nil {
+		return err
+	}
+	m.clients = append(m.clients, client)
+	client.Dispatch(ctx, outboundRay)
+	return nil
+}
+
+func (m *ClientManager) onClientFinish() {
+	m.access.Lock()
+	defer m.access.Unlock()
+
+	nActive := 0
+	for idx, client := range m.clients {
+		if nActive != idx && !client.Closed() {
+			m.clients[nActive] = client
+		}
+	}
+	m.clients = m.clients[:nActive]
+}
+
 type Client struct {
 	access     sync.RWMutex
 	count      uint16
@@ -64,11 +110,12 @@ type Client struct {
 	inboundRay ray.InboundRay
 	ctx        context.Context
 	cancel     context.CancelFunc
+	manager    *ClientManager
 }
 
 var muxCoolDestination = net.TCPDestination(net.DomainAddress("v1.mux.cool"), net.Port(9527))
 
-func NewClient(p proxy.Outbound, dialer proxy.Dialer) (*Client, error) {
+func NewClient(p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	ctx = proxy.ContextWithTarget(ctx, muxCoolDestination)
 	pipe := ray.NewRay(ctx)
@@ -82,6 +129,7 @@ func NewClient(p proxy.Outbound, dialer proxy.Dialer) (*Client, error) {
 		inboundRay: pipe,
 		ctx:        ctx,
 		cancel:     cancel,
+		manager:    m,
 	}, nil
 }
 
@@ -101,6 +149,7 @@ func (m *Client) remove(id uint16) {
 	if len(m.sessions) == 0 {
 		m.cancel()
 		m.inboundRay.InboundInput().Close()
+		go m.manager.onClientFinish()
 	}
 }
 
@@ -121,7 +170,10 @@ func (m *Client) fetchInput(ctx context.Context, s *session) {
 		writer: m.inboundRay.InboundInput(),
 	}
 	_, timer := signal.CancelAfterInactivity(ctx, time.Minute*5)
-	buf.PipeUntilEOF(timer, s.input, writer)
+	if err := buf.PipeUntilEOF(timer, s.input, writer); err != nil {
+		log.Info("Proxyman|Mux|Client: Failed to fetch all input: ", err)
+	}
+
 	writer.Close()
 	s.closeUplink()
 }

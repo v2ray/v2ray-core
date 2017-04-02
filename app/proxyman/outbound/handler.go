@@ -9,6 +9,7 @@ import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/app/proxyman/mux"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
@@ -22,6 +23,7 @@ type Handler struct {
 	senderSettings  *proxyman.SenderConfig
 	proxy           proxy.Outbound
 	outboundManager proxyman.OutboundHandlerManager
+	mux             *mux.ClientManager
 }
 
 func NewHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) (*Handler, error) {
@@ -54,6 +56,10 @@ func NewHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) (*H
 		}
 	}
 
+	if h.senderSettings != nil && h.senderSettings.MultiplexSettings != nil && h.senderSettings.MultiplexSettings.Enabled {
+		h.mux = mux.NewClientManager(h.proxy, h)
+	}
+
 	proxyHandler, err := config.GetProxyHandler(ctx)
 	if err != nil {
 		return nil, err
@@ -64,20 +70,32 @@ func NewHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) (*H
 }
 
 func (h *Handler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
-	err := h.proxy.Process(ctx, outboundRay, h)
-	// Ensure outbound ray is properly closed.
-	if err != nil && errors.Cause(err) != io.EOF {
-		err = errors.Base(err).Message("Proxyman|OutboundHandler: Failed to process outbound traffic.")
-		if errors.IsActionRequired(err) {
-			log.Warning(err)
-		} else {
-			log.Info(err)
+	if h.mux != nil {
+		err := h.mux.Dispatch(ctx, outboundRay)
+		if err != nil {
+			err = errors.Base(err).Message("Proxyman|OutboundHandler: Failed to process outbound traffic.")
+			if errors.IsActionRequired(err) {
+				log.Warning(err)
+			} else {
+				log.Info(err)
+			}
 		}
-		outboundRay.OutboundOutput().CloseError()
 	} else {
-		outboundRay.OutboundOutput().Close()
+		err := h.proxy.Process(ctx, outboundRay, h)
+		// Ensure outbound ray is properly closed.
+		if err != nil && errors.Cause(err) != io.EOF {
+			err = errors.Base(err).Message("Proxyman|OutboundHandler: Failed to process outbound traffic.")
+			if errors.IsActionRequired(err) {
+				log.Warning(err)
+			} else {
+				log.Info(err)
+			}
+			outboundRay.OutboundOutput().CloseError()
+		} else {
+			outboundRay.OutboundOutput().Close()
+		}
+		outboundRay.OutboundInput().CloseError()
 	}
-	outboundRay.OutboundInput().CloseError()
 }
 
 // Dial implements proxy.Dialer.Dial().

@@ -80,6 +80,10 @@ func (v *InboundConnectionConfig) Build() (*proxyman.InboundHandlerConfig, error
 	}, nil
 }
 
+type MuxConfig struct {
+	Enabled bool `json:"enabled"`
+}
+
 type OutboundConnectionConfig struct {
 	Protocol      string          `json:"protocol"`
 	SendThrough   *Address        `json:"sendThrough"`
@@ -87,6 +91,7 @@ type OutboundConnectionConfig struct {
 	ProxySettings *ProxyConfig    `json:"proxySettings"`
 	Settings      json.RawMessage `json:"settings"`
 	Tag           string          `json:"tag"`
+	MuxSettings   *MuxConfig      `json:"mux"`
 }
 
 func (v *OutboundConnectionConfig) Build() (*proxyman.OutboundHandlerConfig, error) {
@@ -112,6 +117,12 @@ func (v *OutboundConnectionConfig) Build() (*proxyman.OutboundHandlerConfig, err
 			return nil, errors.Base(err).Message("Config: Invalid outbound proxy settings.")
 		}
 		senderSettings.ProxySettings = ps
+	}
+
+	if v.MuxSettings != nil && v.MuxSettings.Enabled {
+		senderSettings.MultiplexSettings = &proxyman.MultiplexingConfig{
+			Enabled: true,
+		}
 	}
 
 	rawConfig, err := outboundConfigLoader.LoadWithID(v.Settings, v.Protocol)
@@ -228,6 +239,7 @@ type OutboundDetourConfig struct {
 	Settings      json.RawMessage `json:"settings"`
 	StreamSetting *StreamConfig   `json:"streamSettings"`
 	ProxySettings *ProxyConfig    `json:"proxySettings"`
+	MuxSettings   *MuxConfig      `json:"mux"`
 }
 
 func (v *OutboundDetourConfig) Build() (*proxyman.OutboundHandlerConfig, error) {
@@ -255,6 +267,12 @@ func (v *OutboundDetourConfig) Build() (*proxyman.OutboundHandlerConfig, error) 
 			return nil, errors.Base(err).Message("Config: Invalid outbound detour proxy settings.")
 		}
 		senderSettings.ProxySettings = ps
+	}
+
+	if v.MuxSettings != nil && v.MuxSettings.Enabled {
+		senderSettings.MultiplexSettings = &proxyman.MultiplexingConfig{
+			Enabled: true,
+		}
 	}
 
 	rawConfig, err := outboundConfigLoader.LoadWithID(v.Settings, v.Protocol)
