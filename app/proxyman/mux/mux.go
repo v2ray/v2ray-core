@@ -5,9 +5,11 @@ import (
 	"sync"
 	"time"
 
+	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
@@ -194,13 +196,32 @@ type Server struct {
 	dispatcher dispatcher.Interface
 }
 
+func NewServer(ctx context.Context) *Server {
+	s := &Server{}
+	space := app.SpaceFromContext(ctx)
+	space.OnInitialize(func() error {
+		d := dispatcher.FromSpace(space)
+		if d == nil {
+			return errors.New("Proxyman|Mux: No dispatcher in space.")
+		}
+		s.dispatcher = d
+		return nil
+	})
+	return s
+}
+
 func (s *Server) Dispatch(ctx context.Context, dest net.Destination) (ray.InboundRay, error) {
 	if dest != muxCoolDestination {
 		return s.dispatcher.Dispatch(ctx, dest)
 	}
 
 	ray := ray.NewRay(ctx)
-
+	worker := &ServerWorker{
+		dispatcher:  s.dispatcher,
+		outboundRay: ray,
+		sessions:    make(map[uint16]*session),
+	}
+	go worker.run(ctx)
 	return ray, nil
 }
 

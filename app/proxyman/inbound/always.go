@@ -5,6 +5,7 @@ import (
 
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/app/proxyman/mux"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
@@ -13,7 +14,7 @@ import (
 type AlwaysOnInboundHandler struct {
 	proxy   proxy.Inbound
 	workers []worker
-	mux     *mux
+	mux     *mux.Server
 }
 
 func NewAlwaysOnInboundHandler(ctx context.Context, tag string, receiverConfig *proxyman.ReceiverConfig, proxyConfig interface{}) (*AlwaysOnInboundHandler, error) {
@@ -24,7 +25,7 @@ func NewAlwaysOnInboundHandler(ctx context.Context, tag string, receiverConfig *
 
 	h := &AlwaysOnInboundHandler{
 		proxy: p,
-		mux:   newMux(ctx),
+		mux:   mux.NewServer(ctx),
 	}
 
 	nl := p.Network()

@@ -7,6 +7,7 @@ import (
 
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/app/proxyman/mux"
 	"v2ray.com/core/common/dice"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
@@ -23,7 +24,7 @@ type DynamicInboundHandler struct {
 	workerMutex    sync.RWMutex
 	worker         []worker
 	lastRefresh    time.Time
-	mux            *mux
+	mux            *mux.Server
 }
 
 func NewDynamicInboundHandler(ctx context.Context, tag string, receiverConfig *proxyman.ReceiverConfig, proxyConfig interface{}) (*DynamicInboundHandler, error) {
@@ -35,7 +36,7 @@ func NewDynamicInboundHandler(ctx context.Context, tag string, receiverConfig *p
 		proxyConfig:    proxyConfig,
 		receiverConfig: receiverConfig,
 		portsInUse:     make(map[v2net.Port]bool),
-		mux:            newMux(ctx),
+		mux:            mux.NewServer(ctx),
 	}
 
 	return h, nil
