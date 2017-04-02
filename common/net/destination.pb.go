@@ -9,6 +9,7 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// Endpoint of a network connection.
 type Endpoint struct {
 	Network Network     `protobuf:"varint,1,opt,name=network,enum=v2ray.core.common.net.Network" json:"network,omitempty"`
 	Address *IPOrDomain `protobuf:"bytes,2,opt,name=address" json:"address,omitempty"`

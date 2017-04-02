@@ -11,8 +11,10 @@ var _ = math.Inf
 
 // PortRange represents a range of ports.
 type PortRange struct {
+	// The port that this range starts from.
 	From uint32 `protobuf:"varint,1,opt,name=From" json:"From,omitempty"`
-	To   uint32 `protobuf:"varint,2,opt,name=To" json:"To,omitempty"`
+	// The port that this range ends with (inclusive).
+	To uint32 `protobuf:"varint,2,opt,name=To" json:"To,omitempty"`
 }
 
 func (m *PortRange) Reset()                    { *m = PortRange{} }

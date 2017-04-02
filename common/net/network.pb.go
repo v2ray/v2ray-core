@@ -13,11 +13,9 @@ type Network int32
 
 const (
 	Network_Unknown Network = 0
-	// Native TCP provided by system.
-	Network_RawTCP Network = 1
-	// V2Ray specific TCP.
-	Network_TCP Network = 2
-	Network_UDP Network = 3
+	Network_RawTCP  Network = 1
+	Network_TCP     Network = 2
+	Network_UDP     Network = 3
 )
 
 var Network_name = map[int32]string{
@@ -38,6 +36,7 @@ func (x Network) String() string {
 }
 func (Network) EnumDescriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
 
+// NetworkList is a list of Networks.
 type NetworkList struct {
 	Network []Network `protobuf:"varint,1,rep,packed,name=network,enum=v2ray.core.common.net.Network" json:"network,omitempty"`
 }

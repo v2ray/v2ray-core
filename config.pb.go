@@ -40,14 +40,16 @@ func (x ConfigFormat) String() string {
 }
 func (ConfigFormat) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
+// Master config of V2Ray. V2Ray Core takes this config as input and functions accordingly.
 type Config struct {
 	// Inbound handler configurations. Must have at least one item.
 	Inbound []*v2ray_core_app_proxyman.InboundHandlerConfig `protobuf:"bytes,1,rep,name=inbound" json:"inbound,omitempty"`
 	// Outbound handler configurations. Must have at least one item. The first item is used as default for routing.
 	Outbound []*v2ray_core_app_proxyman.OutboundHandlerConfig `protobuf:"bytes,2,rep,name=outbound" json:"outbound,omitempty"`
 	// App configuration. Must be one in the app directory.
-	App       []*v2ray_core_common_serial.TypedMessage `protobuf:"bytes,4,rep,name=app" json:"app,omitempty"`
-	Transport *v2ray_core_transport.Config             `protobuf:"bytes,5,opt,name=transport" json:"transport,omitempty"`
+	App []*v2ray_core_common_serial.TypedMessage `protobuf:"bytes,4,rep,name=app" json:"app,omitempty"`
+	// Transport settings.
+	Transport *v2ray_core_transport.Config `protobuf:"bytes,5,opt,name=transport" json:"transport,omitempty"`
 }
 
 func (m *Config) Reset()                    { *m = Config{} }

@@ -15,6 +15,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
+// Address of a network host. It may be either an IP address or a domain address.
 type IPOrDomain struct {
 	// Types that are valid to be assigned to Address:
 	//	*IPOrDomain_Ip

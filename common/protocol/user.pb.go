@@ -10,6 +10,7 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// User is a generic user for all procotols.
 type User struct {
 	Level uint32 `protobuf:"varint,1,opt,name=level" json:"level,omitempty"`
 	Email string `protobuf:"bytes,2,opt,name=email" json:"email,omitempty"`
