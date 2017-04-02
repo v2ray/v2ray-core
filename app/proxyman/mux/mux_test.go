@@ -20,7 +20,7 @@ func TestReaderWriter(t *testing.T) {
 
 	payload := buf.New()
 	payload.AppendBytes('a', 'b', 'c', 'd')
-	writer.Write(payload)
+	assert.Error(writer.Write(payload)).IsNil()
 
 	writer.Close()
 

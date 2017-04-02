@@ -113,7 +113,7 @@ func (m *Client) Closed() bool {
 
 func (m *Client) fetchInput(ctx context.Context, s *session) {
 	dest, _ := proxy.TargetFromContext(ctx)
-	writer := &MuxWriter{
+	writer := &Writer{
 		dest:   dest,
 		id:     s.id,
 		writer: m.inboundRay.InboundInput(),

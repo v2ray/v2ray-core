@@ -6,22 +6,22 @@ import (
 	"v2ray.com/core/common/serial"
 )
 
-type MuxWriter struct {
+type Writer struct {
 	id       uint16
 	dest     net.Destination
 	writer   buf.Writer
 	followup bool
 }
 
-func NewWriter(id uint16, dest net.Destination, writer buf.Writer) *MuxWriter {
-	return &MuxWriter{
+func NewWriter(id uint16, dest net.Destination, writer buf.Writer) *Writer {
+	return &Writer{
 		id:     id,
 		dest:   dest,
 		writer: writer,
 	}
 }
 
-func (w *MuxWriter) writeInternal(b *buf.Buffer) error {
+func (w *Writer) writeInternal(b *buf.Buffer) error {
 	meta := FrameMetadata{
 		SessionID: w.id,
 		Target:    w.dest,
@@ -57,7 +57,7 @@ func (w *MuxWriter) writeInternal(b *buf.Buffer) error {
 	return w.writer.Write(frame)
 }
 
-func (w *MuxWriter) Write(b *buf.Buffer) error {
+func (w *Writer) Write(b *buf.Buffer) error {
 	defer b.Release()
 
 	if err := w.writeInternal(b); err != nil {
@@ -71,7 +71,7 @@ func (w *MuxWriter) Write(b *buf.Buffer) error {
 	return nil
 }
 
-func (w *MuxWriter) Close() {
+func (w *Writer) Close() {
 	meta := FrameMetadata{
 		SessionID:     w.id,
 		Target:        w.dest,

@@ -7,20 +7,20 @@ import (
 	"v2ray.com/core/common/serial"
 )
 
-type MuxReader struct {
+type Reader struct {
 	reader          io.Reader
 	remainingLength int
 	buffer          *buf.Buffer
 }
 
-func NewReader(reader buf.Reader) *MuxReader {
-	return &MuxReader{
+func NewReader(reader buf.Reader) *Reader {
+	return &Reader{
 		reader: buf.ToBytesReader(reader),
 		buffer: buf.NewLocal(1024),
 	}
 }
 
-func (r *MuxReader) ReadMetadata() (*FrameMetadata, error) {
+func (r *Reader) ReadMetadata() (*FrameMetadata, error) {
 	b := r.buffer
 	b.Clear()
 
@@ -35,7 +35,7 @@ func (r *MuxReader) ReadMetadata() (*FrameMetadata, error) {
 	return ReadFrameFrom(b.Bytes())
 }
 
-func (r *MuxReader) Read() (*buf.Buffer, bool, error) {
+func (r *Reader) Read() (*buf.Buffer, bool, error) {
 	b := buf.New()
 	var dataLen int
 	if r.remainingLength > 0 {
