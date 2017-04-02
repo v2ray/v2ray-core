@@ -52,11 +52,11 @@ type bufferToBytesReader struct {
 // fill fills in the internal buffer.
 func (v *bufferToBytesReader) fill() {
 	b, err := v.stream.Read()
-	v.current = b
 	if err != nil {
 		v.err = err
-		v.current = nil
+		return
 	}
+	v.current = b
 }
 
 func (v *bufferToBytesReader) Read(b []byte) (int, error) {
