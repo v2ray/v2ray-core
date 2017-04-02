@@ -56,13 +56,13 @@ func NewHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) (*H
 		}
 	}
 
-	if h.senderSettings != nil && h.senderSettings.MultiplexSettings != nil && h.senderSettings.MultiplexSettings.Enabled {
-		h.mux = mux.NewClientManager(h.proxy, h)
-	}
-
 	proxyHandler, err := config.GetProxyHandler(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	if h.senderSettings != nil && h.senderSettings.MultiplexSettings != nil && h.senderSettings.MultiplexSettings.Enabled {
+		h.mux = mux.NewClientManager(proxyHandler, h)
 	}
 
 	h.proxy = proxyHandler
