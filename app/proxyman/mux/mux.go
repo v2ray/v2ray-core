@@ -35,26 +35,26 @@ type session struct {
 	downlinkClosed bool
 }
 
-func (s *session) checkAndRemove() {
-	s.Lock()
-	if s.uplinkClosed && s.downlinkClosed {
-		s.parent.remove(s.id)
-	}
-	s.Unlock()
-}
-
 func (s *session) closeUplink() {
+	var allDone bool
 	s.Lock()
 	s.uplinkClosed = true
+	allDone = s.uplinkClosed && s.downlinkClosed
 	s.Unlock()
-	s.checkAndRemove()
+	if allDone {
+		s.parent.remove(s.id)
+	}
 }
 
 func (s *session) closeDownlink() {
+	var allDone bool
 	s.Lock()
 	s.downlinkClosed = true
+	allDone = s.uplinkClosed && s.downlinkClosed
 	s.Unlock()
-	s.checkAndRemove()
+	if allDone {
+		s.parent.remove(s.id)
+	}
 }
 
 type ClientManager struct {
@@ -177,7 +177,7 @@ func fetchInput(ctx context.Context, s *session, output buf.Writer) {
 			return
 		}
 	}
-	_, timer := signal.CancelAfterInactivity(ctx, time.Minute*5)
+	_, timer := signal.CancelAfterInactivity(ctx, time.Minute*30)
 	if err := buf.PipeUntilEOF(timer, s.input, writer); err != nil {
 		log.Info("Proxyman|Mux|Client: Failed to fetch all input: ", err)
 	}
