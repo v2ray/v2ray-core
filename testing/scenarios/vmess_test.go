@@ -222,11 +222,6 @@ func TestVMessGCM(t *testing.T) {
 		},
 		Outbound: []*proxyman.OutboundHandlerConfig{
 			{
-				SenderSettings: serial.ToTypedMessage(&proxyman.SenderConfig{
-					MultiplexSettings: &proxyman.MultiplexingConfig{
-						Enabled: true,
-					},
-				}),
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
