@@ -876,30 +876,33 @@ func TestVMessGCMMux(t *testing.T) {
 	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
 	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
 
-	var wg sync.WaitGroup
-	wg.Add(100)
-	for i := 0; i < 100; i++ {
-		go func() {
-			conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-				IP:   []byte{127, 0, 0, 1},
-				Port: int(clientPort),
-			})
-			assert.Error(err).IsNil()
+	for range "abcd" {
+		var wg sync.WaitGroup
+		const nConnection = 100
+		wg.Add(nConnection)
+		for i := 0; i < nConnection; i++ {
+			go func() {
+				conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
+					IP:   []byte{127, 0, 0, 1},
+					Port: int(clientPort),
+				})
+				assert.Error(err).IsNil()
 
-			payload := make([]byte, 10240)
-			rand.Read(payload)
+				payload := make([]byte, 10240)
+				rand.Read(payload)
 
-			nBytes, err := conn.Write([]byte(payload))
-			assert.Error(err).IsNil()
-			assert.Int(nBytes).Equals(len(payload))
+				nBytes, err := conn.Write([]byte(payload))
+				assert.Error(err).IsNil()
+				assert.Int(nBytes).Equals(len(payload))
 
-			response := readFrom(conn, time.Second*10, 10240)
-			assert.Bytes(response).Equals(xor([]byte(payload)))
-			assert.Error(conn.Close()).IsNil()
-			wg.Done()
-		}()
+				response := readFrom(conn, time.Second*10, 10240)
+				assert.Bytes(response).Equals(xor([]byte(payload)))
+				assert.Error(conn.Close()).IsNil()
+				wg.Done()
+			}()
+		}
+		wg.Wait()
 	}
-	wg.Wait()
 
 	CloseAllServers()
 }
