@@ -114,7 +114,7 @@ func (f FrameMetadata) AsSupplier() buf.Supplier {
 
 func ReadFrameFrom(b []byte) (*FrameMetadata, error) {
 	if len(b) < 4 {
-		return nil, errors.New("Proxyman|Mux: Insufficient buffer.")
+		return nil, errors.New("Proxyman|Mux: Insufficient buffer: ", len(b))
 	}
 
 	f := &FrameMetadata{
@@ -151,6 +151,8 @@ func ReadFrameFrom(b []byte) (*FrameMetadata, error) {
 			f.Target = net.TCPDestination(addr, port)
 		case TargetNetworkUDP:
 			f.Target = net.UDPDestination(addr, port)
+		default:
+			return nil, errors.New("Proxymann|Mux: Unknown network type: ", network)
 		}
 	}
 
