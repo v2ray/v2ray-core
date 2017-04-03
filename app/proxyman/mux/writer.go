@@ -21,6 +21,14 @@ func NewWriter(id uint16, dest net.Destination, writer buf.Writer) *Writer {
 	}
 }
 
+func NewResponseWriter(id uint16, writer buf.Writer) *Writer {
+	return &Writer{
+		id:       id,
+		writer:   writer,
+		followup: true,
+	}
+}
+
 func (w *Writer) writeInternal(b *buf.Buffer) error {
 	meta := FrameMetadata{
 		SessionID: w.id,
@@ -74,7 +82,6 @@ func (w *Writer) Write(b *buf.Buffer) error {
 func (w *Writer) Close() {
 	meta := FrameMetadata{
 		SessionID:     w.id,
-		Target:        w.dest,
 		SessionStatus: SessionStatusEnd,
 	}
 

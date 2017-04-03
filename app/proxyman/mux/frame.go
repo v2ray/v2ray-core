@@ -106,6 +106,7 @@ func (f FrameMetadata) AsSupplier() buf.Supplier {
 				length += nDomain + 2
 			}
 		}
+
 		serial.Uint16ToBytes(uint16(length), lengthBytes[:0])
 		return length + 2, nil
 	}
