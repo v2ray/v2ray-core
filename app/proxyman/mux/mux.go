@@ -291,20 +291,25 @@ func (w *ServerWorker) remove(id uint16) {
 	w.access.Unlock()
 }
 
-func (w *ServerWorker) handle(ctx context.Context, s *session) {
-	writer := NewResponseWriter(s.id, w.outboundRay.OutboundOutput())
+func handle(ctx context.Context, s *session, output buf.Writer) {
+	writer := NewResponseWriter(s.id, output)
 	defer writer.Close()
 
 	for {
 		select {
 		case <-ctx.Done():
+			log.Debug("Proxyman|Mux|ServerWorker: Session ", s.id, " ends by context.")
 			return
 		default:
 			data, err := s.input.Read()
 			if err != nil {
+				log.Info("Proxyman|Mux|ServerWorker: Session ", s.id, " ends: ", err)
 				return
 			}
-			writer.Write(data)
+			if err := writer.Write(data); err != nil {
+				log.Info("Proxyman|Mux|ServerWorker: Session ", s.id, " ends: ", err)
+				return
+			}
 		}
 	}
 }
@@ -349,7 +354,7 @@ func (w *ServerWorker) run(ctx context.Context) {
 			w.access.Lock()
 			w.sessions[meta.SessionID] = s
 			w.access.Unlock()
-			go w.handle(ctx, s)
+			go handle(ctx, s, w.outboundRay.OutboundOutput())
 		}
 
 		if meta.Option.Has(OptionData) {
