@@ -177,8 +177,7 @@ func fetchInput(ctx context.Context, s *session, output buf.Writer) {
 			return
 		}
 	}
-	_, timer := signal.CancelAfterInactivity(ctx, time.Minute*30)
-	if err := buf.PipeUntilEOF(timer, s.input, writer); err != nil {
+	if err := buf.PipeUntilEOF(signal.BackgroundTimer(), s.input, writer); err != nil {
 		log.Info("Proxyman|Mux|Client: Failed to fetch all input: ", err)
 	}
 }
@@ -324,8 +323,7 @@ func handle(ctx context.Context, s *session, output buf.Writer) {
 	writer := NewResponseWriter(s.id, output)
 	defer writer.Close()
 
-	_, timer := signal.CancelAfterInactivity(ctx, time.Minute*30)
-	if err := buf.PipeUntilEOF(timer, s.input, writer); err != nil {
+	if err := buf.PipeUntilEOF(signal.BackgroundTimer(), s.input, writer); err != nil {
 		log.Info("Proxyman|Mux|ServerWorker: Session ", s.id, " ends: ", err)
 	}
 }
