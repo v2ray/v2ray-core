@@ -878,7 +878,7 @@ func TestVMessGCMMux(t *testing.T) {
 
 	for range "abcd" {
 		var wg sync.WaitGroup
-		const nConnection = 100
+		const nConnection = 16
 		wg.Add(nConnection)
 		for i := 0; i < nConnection; i++ {
 			go func() {
@@ -902,6 +902,7 @@ func TestVMessGCMMux(t *testing.T) {
 			}()
 		}
 		wg.Wait()
+		time.Sleep(time.Second)
 	}
 
 	CloseAllServers()
