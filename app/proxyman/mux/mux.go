@@ -321,11 +321,11 @@ func (w *ServerWorker) remove(id uint16) {
 
 func handle(ctx context.Context, s *session, output buf.Writer) {
 	writer := NewResponseWriter(s.id, output)
-	defer writer.Close()
-
 	if err := buf.PipeUntilEOF(signal.BackgroundTimer(), s.input, writer); err != nil {
 		log.Info("Proxyman|Mux|ServerWorker: Session ", s.id, " ends: ", err)
 	}
+	writer.Close()
+	s.closeDownlink()
 }
 
 func (w *ServerWorker) run(ctx context.Context) {
