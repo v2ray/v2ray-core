@@ -127,13 +127,13 @@ func (v *AuthenticationReader) nextChunk(mask uint16) error {
 		return errInsufficientBuffer
 	}
 	if size > readerBufferSize-2 {
-		return errors.New("Crypto:AuthenticationReader: Size too large: ", size)
+		return errors.New("Crypto|AuthenticationReader: Size too large: ", size)
 	}
 	if size == v.auth.Overhead() {
 		return io.EOF
 	}
 	if size < v.auth.Overhead() {
-		return errors.New("Crypto:AuthenticationReader: invalid packet size:", size)
+		return errors.New("Crypto|AuthenticationReader: invalid packet size:", size)
 	}
 	cipherChunk := v.buffer.BytesRange(2, size+2)
 	plainChunk, err := v.auth.Open(cipherChunk[:0], cipherChunk)
