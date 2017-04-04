@@ -110,3 +110,5 @@ DOCKER_HUB_API=https://registry.hub.docker.com/u/v2ray/official/trigger/${DOCKER
 curl -H "Content-Type: application/json" --data '{"build": true}' -X POST "${DOCKER_HUB_API}"
 
 fi
+
+shutdown -h +5
