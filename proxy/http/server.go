@@ -114,7 +114,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		ProtoMinor:    1,
 		Header:        http.Header(make(map[string][]string)),
 		Body:          nil,
-		ContentLength: 0,
+		ContentLength: -1, // Don't send Content-Length in CONNECT.
 		Close:         false,
 	}
 	if err := response.Write(writer); err != nil {
