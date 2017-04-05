@@ -64,12 +64,12 @@ func startV2Ray() (core.Server, error) {
 		return nil, errors.Base(err).Message("V2Ray: Failed to read config file: ", configFile)
 	}
 
-	vPoint, err := core.New(config)
+	server, err := core.New(config)
 	if err != nil {
 		return nil, errors.Base(err).Message("V2Ray: Failed to create initialize.")
 	}
 
-	return vPoint, nil
+	return server, nil
 }
 
 func main() {
