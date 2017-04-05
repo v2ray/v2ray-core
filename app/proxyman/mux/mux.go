@@ -158,6 +158,8 @@ func (m *Client) Closed() bool {
 }
 
 func (m *Client) monitor() {
+	defer m.manager.onClientFinish()
+
 	for {
 		select {
 		case <-m.ctx.Done():
@@ -172,8 +174,6 @@ func (m *Client) monitor() {
 }
 
 func (m *Client) cleanup() {
-	defer m.manager.onClientFinish()
-
 	m.access.Lock()
 	defer m.access.Unlock()
 
