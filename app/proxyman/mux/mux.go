@@ -271,6 +271,15 @@ func (m *Client) fetchOutput() {
 			break
 		}
 	}
+
+	// Close all downlinks
+	m.access.RLock()
+	for _, s := range m.sessions {
+		s.closeUplink()
+		s.closeDownlink()
+		s.output.CloseError()
+	}
+	m.access.RUnlock()
 }
 
 type Server struct {
