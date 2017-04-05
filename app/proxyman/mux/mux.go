@@ -158,6 +158,8 @@ func (m *Client) Closed() bool {
 }
 
 func (m *Client) monitor() {
+	defer m.manager.onClientFinish()
+
 	for {
 		select {
 		case <-m.ctx.Done():
@@ -166,16 +168,20 @@ func (m *Client) monitor() {
 		case id := <-m.session2Remove:
 			m.access.Lock()
 			delete(m.sessions, id)
+			if len(m.sessions) == 0 {
+				m.cancel()
+			}
 			m.access.Unlock()
 		}
 	}
 }
 
 func (m *Client) cleanup() {
-	defer m.manager.onClientFinish()
-
 	m.access.Lock()
 	defer m.access.Unlock()
+
+	m.inboundRay.InboundInput().Close()
+	m.inboundRay.InboundOutput().CloseError()
 
 	for _, s := range m.sessions {
 		s.closeUplink()
