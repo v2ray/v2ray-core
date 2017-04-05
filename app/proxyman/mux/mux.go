@@ -42,7 +42,7 @@ func (s *session) closeUplink() {
 	allDone = s.uplinkClosed && s.downlinkClosed
 	s.Unlock()
 	if allDone {
-		s.parent.remove(s.id)
+		go s.parent.remove(s.id)
 	}
 }
 
@@ -53,7 +53,7 @@ func (s *session) closeDownlink() {
 	allDone = s.uplinkClosed && s.downlinkClosed
 	s.Unlock()
 	if allDone {
-		s.parent.remove(s.id)
+		go s.parent.remove(s.id)
 	}
 }
 
