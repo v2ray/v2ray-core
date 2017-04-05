@@ -375,6 +375,7 @@ func (w *ServerWorker) run(ctx context.Context) {
 
 		meta, err := reader.ReadMetadata()
 		if err != nil {
+			log.Info("Proxyman|Mux|ServerWorker: Failed to read metadata: ", err)
 			return
 		}
 
