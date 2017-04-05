@@ -172,6 +172,8 @@ func (m *Client) monitor() {
 }
 
 func (m *Client) cleanup() {
+	defer m.manager.onClientFinish()
+
 	m.access.Lock()
 	defer m.access.Unlock()
 
