@@ -205,6 +205,13 @@ func fetchInput(ctx context.Context, s *session, output buf.Writer) {
 	}
 }
 
+func waitForDone(ctx context.Context, s *session) {
+	<-ctx.Done()
+	s.closeUplink()
+	s.closeDownlink()
+	s.output.Close()
+}
+
 func (m *Client) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) bool {
 	m.access.Lock()
 	defer m.access.Unlock()
@@ -233,6 +240,7 @@ func (m *Client) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) bool
 	}
 	m.sessions[id] = s
 	go fetchInput(ctx, s, m.inboundRay.InboundInput())
+	go waitForDone(ctx, s)
 	return true
 }
 
