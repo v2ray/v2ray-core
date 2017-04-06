@@ -97,7 +97,7 @@ func (v *ChunkReader) Read() (*buf.Buffer, error) {
 	v.auth.Authenticate(payload)(actualAuthBytes)
 	if !bytes.Equal(authBytes, actualAuthBytes) {
 		buffer.Release()
-		return nil, errors.New("Shadowsocks|AuthenticationReader: Invalid auth.")
+		return nil, errors.New("invalid auth").Path("Proxy", "Shadowsocks", "ChunkReader")
 	}
 	buffer.SliceFrom(AuthSize)
 

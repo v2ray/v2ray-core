@@ -30,7 +30,7 @@ func (r *Reader) ReadMetadata() (*FrameMetadata, error) {
 	}
 	metaLen := serial.BytesToUint16(b.Bytes())
 	if metaLen > 512 {
-		return nil, errors.New("Proxyman|Mux|Reader: Invalid metalen ", metaLen)
+		return nil, errors.New("invalid metalen ", metaLen).Path("App", "Proxyman", "Mux", "Reader")
 	}
 	b.Clear()
 	if err := b.AppendSupplier(buf.ReadFullFrom(r.reader, int(metaLen))); err != nil {

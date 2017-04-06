@@ -238,7 +238,7 @@ func (w *udpWorker) callback(b *buf.Buffer, source v2net.Destination, originalDe
 			ctx = proxy.ContextWithSource(ctx, source)
 			ctx = proxy.ContextWithInboundEntryPoint(ctx, v2net.UDPDestination(w.address, w.port))
 			if err := w.proxy.Process(ctx, v2net.Network_UDP, conn, w.dispatcher); err != nil {
-				log.Trace(errors.New("connection ends").Base(err).Path("Proxymann|UDPWorker"))
+				log.Trace(errors.New("connection ends").Base(err).Path("App", "Proxymann", "Inbound", "UDPWorker"))
 			}
 			w.removeConn(source)
 			cancel()

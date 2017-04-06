@@ -53,12 +53,12 @@ func MarshalCommand(command interface{}, writer io.Writer) error {
 
 func UnmarshalCommand(cmdID byte, data []byte) (protocol.ResponseCommand, error) {
 	if len(data) <= 4 {
-		return nil, errors.New("VMess|Command: Insufficient length.")
+		return nil, errors.New("insufficient length").Path("Proxy", "VMess", "Encoding", "Command")
 	}
 	expectedAuth := Authenticate(data[4:])
 	actualAuth := serial.BytesToUint32(data[:4])
 	if expectedAuth != actualAuth {
-		return nil, errors.New("VMess|Command: Invalid auth.")
+		return nil, errors.New("invalid auth").Path("Proxy", "VMess", "Encoding", "Command")
 	}
 
 	var factory CommandFactory
