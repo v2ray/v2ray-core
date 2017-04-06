@@ -32,7 +32,7 @@ func Dial(ctx context.Context, dest v2net.Destination) (internet.Connection, err
 		var err error
 		conn, err = dialWebsocket(ctx, dest)
 		if err != nil {
-			return nil, errors.Base(err).Message("WebSocket|Dialer: Dial failed.")
+			return nil, errors.New("dial failed").Path("WebSocket", "Dialer")
 		}
 	}
 	return internal.NewConnection(id, conn, globalCache, internal.ReuseConnection(wsSettings.IsConnectionReuse())), nil
@@ -81,7 +81,7 @@ func dialWebsocket(ctx context.Context, dest v2net.Destination) (net.Conn, error
 		if resp != nil {
 			reason = resp.Status
 		}
-		return nil, errors.Base(err).Message("WebSocket|Dialer: Failed to dial to (", uri, "): ", reason)
+		return nil, errors.New("failed to dial to (", uri, "): ", reason).Base(err).Path("WebSocket", "Dialer")
 	}
 
 	return &connection{

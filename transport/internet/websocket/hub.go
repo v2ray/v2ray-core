@@ -84,13 +84,13 @@ func (ln *Listener) listenws(address v2net.Address, port v2net.Port) error {
 	if ln.tlsConfig == nil {
 		l, err := net.Listen("tcp", netAddr)
 		if err != nil {
-			return errors.Base(err).Message("WebSocket|Listener: Failed to listen TCP ", netAddr)
+			return errors.New("failed to listen TCP ", netAddr).Base(err).Path("WebSocket", "Listener")
 		}
 		listener = l
 	} else {
 		l, err := tls.Listen("tcp", netAddr, ln.tlsConfig)
 		if err != nil {
-			return errors.Base(err).Message("WebSocket|Listener: Failed to listen TLS ", netAddr)
+			return errors.New("failed to listen TLS ", netAddr).Base(err).Path("WebSocket", "Listener")
 		}
 		listener = l
 	}

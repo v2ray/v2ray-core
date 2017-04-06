@@ -73,23 +73,13 @@ func (h *Handler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
 	if h.mux != nil {
 		err := h.mux.Dispatch(ctx, outboundRay)
 		if err != nil {
-			err = errors.Base(err).Message("Proxyman|OutboundHandler: Failed to process outbound traffic.")
-			if errors.IsActionRequired(err) {
-				log.Warning(err)
-			} else {
-				log.Info(err)
-			}
+			log.Trace(errors.New("failed to process outbound traffic").Base(err).Path("Proxyman", "OutboundHandler"))
 		}
 	} else {
 		err := h.proxy.Process(ctx, outboundRay, h)
 		// Ensure outbound ray is properly closed.
 		if err != nil && errors.Cause(err) != io.EOF {
-			err = errors.Base(err).Message("Proxyman|OutboundHandler: Failed to process outbound traffic.")
-			if errors.IsActionRequired(err) {
-				log.Warning(err)
-			} else {
-				log.Info(err)
-			}
+			log.Trace(errors.New("failed to process outbound traffic").Base(err).Path("Proxyman", "OutboundHandler"))
 			outboundRay.OutboundOutput().CloseError()
 		} else {
 			outboundRay.OutboundOutput().Close()
@@ -105,7 +95,7 @@ func (h *Handler) Dial(ctx context.Context, dest v2net.Destination) (internet.Co
 			tag := h.senderSettings.ProxySettings.Tag
 			handler := h.outboundManager.GetHandler(tag)
 			if handler != nil {
-				log.Info("Proxyman|OutboundHandler: Proxying to ", tag)
+				log.Trace(errors.New("proxying to ", tag).AtDebug().Path("App", "Proxyman", "OutboundHandler"))
 				ctx = proxy.ContextWithTarget(ctx, dest)
 				stream := ray.NewRay(ctx)
 				go handler.Dispatch(ctx, stream)

@@ -48,7 +48,7 @@ func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, conn
 	}
 	listener, err := listenFunc(ctx, address, port, conns)
 	if err != nil {
-		return nil, errors.Base(err).Message("Internet|TCPHub: Failed to listen on address: ", address, ":", port)
+		return nil, errors.New("failed to listen on address: ", address, ":", port).Base(err).Path("Internet", "TCPHub")
 	}
 	return listener, nil
 }

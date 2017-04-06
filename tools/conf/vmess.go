@@ -95,11 +95,11 @@ func (v *VMessInboundConfig) Build() (*serial.TypedMessage, error) {
 	for idx, rawData := range v.Users {
 		user := new(protocol.User)
 		if err := json.Unmarshal(rawData, user); err != nil {
-			return nil, errors.Base(err).Message("Config: Invalid VMess user.")
+			return nil, errors.New("Config: Invalid VMess user.").Base(err)
 		}
 		account := new(VMessAccount)
 		if err := json.Unmarshal(rawData, account); err != nil {
-			return nil, errors.Base(err).Message("Config: Invalid VMess user.")
+			return nil, errors.New("Config: Invalid VMess user.").Base(err)
 		}
 		user.Account = serial.ToTypedMessage(account.Build())
 		config.User[idx] = user
@@ -141,11 +141,11 @@ func (v *VMessOutboundConfig) Build() (*serial.TypedMessage, error) {
 		for _, rawUser := range rec.Users {
 			user := new(protocol.User)
 			if err := json.Unmarshal(rawUser, user); err != nil {
-				return nil, errors.Base(err).Message("Config: Invalid VMess user.")
+				return nil, errors.New("Config: Invalid VMess user.").Base(err)
 			}
 			account := new(VMessAccount)
 			if err := json.Unmarshal(rawUser, account); err != nil {
-				return nil, errors.Base(err).Message("Config: Invalid VMess user.")
+				return nil, errors.New("Config: Invalid VMess user.").Base(err)
 			}
 			user.Account = serial.ToTypedMessage(account.Build())
 			spec.User = append(spec.User, user)

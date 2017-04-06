@@ -63,7 +63,7 @@ func (v *InboundConnectionConfig) Build() (*proxyman.InboundHandlerConfig, error
 
 	jsonConfig, err := inboundConfigLoader.LoadWithID(v.Settings, v.Protocol)
 	if err != nil {
-		return nil, errors.Base(err).Message("Config: Failed to load inbound config.")
+		return nil, errors.New("Config: Failed to load inbound config.").Base(err)
 	}
 	if dokodemoConfig, ok := jsonConfig.(*DokodemoConfig); ok {
 		receiverConfig.ReceiveOriginalDestination = dokodemoConfig.Redirect
@@ -114,7 +114,7 @@ func (v *OutboundConnectionConfig) Build() (*proxyman.OutboundHandlerConfig, err
 	if v.ProxySettings != nil {
 		ps, err := v.ProxySettings.Build()
 		if err != nil {
-			return nil, errors.Base(err).Message("Config: Invalid outbound proxy settings.")
+			return nil, errors.New("Config: Invalid outbound proxy settings.").Base(err)
 		}
 		senderSettings.ProxySettings = ps
 	}
@@ -127,7 +127,7 @@ func (v *OutboundConnectionConfig) Build() (*proxyman.OutboundHandlerConfig, err
 
 	rawConfig, err := outboundConfigLoader.LoadWithID(v.Settings, v.Protocol)
 	if err != nil {
-		return nil, errors.Base(err).Message("Config: Failed to parse outbound config.")
+		return nil, errors.New("Config: Failed to parse outbound config.").Base(err)
 	}
 	ts, err := rawConfig.(Buildable).Build()
 	if err != nil {
@@ -215,7 +215,7 @@ func (v *InboundDetourConfig) Build() (*proxyman.InboundHandlerConfig, error) {
 
 	rawConfig, err := inboundConfigLoader.LoadWithID(v.Settings, v.Protocol)
 	if err != nil {
-		return nil, errors.Base(err).Message("Config: Failed to load inbound detour config.")
+		return nil, errors.New("Config: Failed to load inbound detour config.").Base(err)
 	}
 	if dokodemoConfig, ok := rawConfig.(*DokodemoConfig); ok {
 		receiverSettings.ReceiveOriginalDestination = dokodemoConfig.Redirect
@@ -264,7 +264,7 @@ func (v *OutboundDetourConfig) Build() (*proxyman.OutboundHandlerConfig, error) 
 	if v.ProxySettings != nil {
 		ps, err := v.ProxySettings.Build()
 		if err != nil {
-			return nil, errors.Base(err).Message("Config: Invalid outbound detour proxy settings.")
+			return nil, errors.New("Config: Invalid outbound detour proxy settings.").Base(err)
 		}
 		senderSettings.ProxySettings = ps
 	}
@@ -277,7 +277,7 @@ func (v *OutboundDetourConfig) Build() (*proxyman.OutboundHandlerConfig, error) 
 
 	rawConfig, err := outboundConfigLoader.LoadWithID(v.Settings, v.Protocol)
 	if err != nil {
-		return nil, errors.Base(err).Message("Config: Failed to parse to outbound detour config.")
+		return nil, errors.New("Config: Failed to parse to outbound detour config.").Base(err)
 	}
 	ts, err := rawConfig.(Buildable).Build()
 	if err != nil {
@@ -380,7 +380,7 @@ func init() {
 		})
 		err := decoder.Decode(jsonConfig)
 		if err != nil {
-			return nil, errors.Base(err).Message("Config: Invalid V2Ray config.")
+			return nil, errors.New("Config: Invalid V2Ray config.").Base(err)
 		}
 
 		return jsonConfig.Build()

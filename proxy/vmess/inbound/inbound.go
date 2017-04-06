@@ -226,12 +226,12 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 		connection.SetReusable(false)
 		input.CloseError()
 		output.CloseError()
-		return errors.Base(err).Message("VMess|Inbound: Error during processing.")
+		return errors.New("error during processing").Base(err).Path("VMess", "Inbound")
 	}
 
 	if err := writer.Flush(); err != nil {
 		connection.SetReusable(false)
-		return errors.Base(err).Message("VMess|Inbound: Error during flushing remaining data.")
+		return errors.New("error during flushing remaining data").Base(err).Path("VMess", "Inbound")
 	}
 
 	runtime.KeepAlive(timer)

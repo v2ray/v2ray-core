@@ -97,11 +97,11 @@ func ListenUDP(address v2net.Address, port v2net.Port, option ListenOption) (*Hu
 	if option.ReceiveOriginalDest {
 		fd, err := internal.GetSysFd(udpConn)
 		if err != nil {
-			return nil, errors.Base(err).Message("UDP|Listener: Failed to get fd.")
+			return nil, errors.New("failed to get fd").Base(err).Path("UDP", "Listener")
 		}
 		err = SetOriginalDestOptions(fd)
 		if err != nil {
-			return nil, errors.Base(err).Message("UDP|Listener: Failed to set socket options.")
+			return nil, errors.New("failed to set socket options").Base(err).Path("UDP", "Listener")
 		}
 	}
 	ctx, cancel := context.WithCancel(context.Background())

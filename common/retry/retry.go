@@ -38,7 +38,7 @@ func (r *retryer) On(method func() error) error {
 		<-time.After(time.Duration(delay) * time.Millisecond)
 		attempt++
 	}
-	return errors.Base(ErrRetryFailed).Message(accumulatedError)
+	return errors.New(accumulatedError).Base(ErrRetryFailed)
 }
 
 // Timed returns a retry strategy with fixed interval.

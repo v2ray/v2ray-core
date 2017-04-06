@@ -45,7 +45,7 @@ func GetConfigFormat() core.ConfigFormat {
 
 func startV2Ray() (core.Server, error) {
 	if len(configFile) == 0 {
-		return nil, errors.New("V2Ray: Config file is not set.")
+		return nil, errors.New("config file is not set").Path("Core")
 	}
 	var configInput io.Reader
 	if configFile == "stdin:" {
@@ -54,19 +54,19 @@ func startV2Ray() (core.Server, error) {
 		fixedFile := os.ExpandEnv(configFile)
 		file, err := os.Open(fixedFile)
 		if err != nil {
-			return nil, errors.Base(err).Message("V2Ray: Config file not readable.")
+			return nil, errors.New("config file not readable").Path("Core").Base(err)
 		}
 		defer file.Close()
 		configInput = file
 	}
 	config, err := core.LoadConfig(GetConfigFormat(), configInput)
 	if err != nil {
-		return nil, errors.Base(err).Message("V2Ray: Failed to read config file: ", configFile)
+		return nil, errors.New("failed to read config file: ", configFile).Base(err).Path("Core")
 	}
 
 	server, err := core.New(config)
 	if err != nil {
-		return nil, errors.Base(err).Message("V2Ray: Failed to create initialize.")
+		return nil, errors.New("failed to create initialize").Base(err).Path("Core")
 	}
 
 	return server, nil
@@ -88,12 +88,12 @@ func main() {
 	}
 
 	if *test {
-		fmt.Println("V2Ray: Configuration OK.")
+		fmt.Println("Configuration OK.")
 		return
 	}
 
 	if err := server.Start(); err != nil {
-		fmt.Println("V2Ray: Failed to start. ", err)
+		fmt.Println("Failed to start", err)
 	}
 
 	osSignals := make(chan os.Signal, 1)

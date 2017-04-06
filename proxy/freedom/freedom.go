@@ -102,7 +102,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		return nil
 	})
 	if err != nil {
-		return errors.Base(err).Message("Freedom: Failed to open connection to ", destination)
+		return errors.New("failed to open connection to ", destination).Base(err).Path("Freedom")
 	}
 	defer conn.Close()
 
@@ -136,7 +136,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		input.CloseError()
 		output.CloseError()
-		return errors.Base(err).Message("Freedom: Connection ends.")
+		return errors.New("connection ends").Base(err).Path("Freedom")
 	}
 
 	runtime.KeepAlive(timer)

@@ -80,11 +80,11 @@ func (v *SocksClientConfig) Build() (*serial.TypedMessage, error) {
 		for _, rawUser := range serverConfig.Users {
 			user := new(protocol.User)
 			if err := json.Unmarshal(rawUser, user); err != nil {
-				return nil, errors.Base(err).Message("Config: Failed to parse Socks user.")
+				return nil, errors.New("Config: Failed to parse Socks user.").Base(err)
 			}
 			account := new(SocksAccount)
 			if err := json.Unmarshal(rawUser, account); err != nil {
-				return nil, errors.Base(err).Message("Config: Failed to parse socks account.")
+				return nil, errors.New("Config: Failed to parse socks account.").Base(err)
 			}
 			user.Account = serial.ToTypedMessage(account.Build())
 			server.User = append(server.User, user)

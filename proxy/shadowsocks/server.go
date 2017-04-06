@@ -28,15 +28,15 @@ type Server struct {
 func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
-		return nil, errors.New("Shadowsocks|Server: No space in context.")
+		return nil, errors.New("no space in context").Path("Shadowsocks", "Server")
 	}
 	if config.GetUser() == nil {
-		return nil, errors.New("Shadowsocks|Server: User is not specified.")
+		return nil, errors.New("user is not specified").Path("Shadowsocks", "Server")
 	}
 
 	rawAccount, err := config.User.GetTypedAccount()
 	if err != nil {
-		return nil, errors.Base(err).Message("Shadowsocks|Server: Failed to get user account.")
+		return nil, errors.New("failed to get user account").Base(err).Path("Shadowsocks", "Server")
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 
@@ -68,7 +68,7 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 	case net.Network_UDP:
 		return s.handlerUDPPayload(ctx, conn, dispatcher)
 	default:
-		return errors.New("Shadowsocks|Server: Unknown network: ", network)
+		return errors.New("unknown network: ", network).Path("Shadowsocks", "Server")
 	}
 }
 
@@ -85,7 +85,7 @@ func (v *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 		request, data, err := DecodeUDPPacket(v.user, payload)
 		if err != nil {
 			if source, ok := proxy.SourceFromContext(ctx); ok {
-				log.Info("Shadowsocks|Server: Skipping invalid UDP packet from: ", source, ": ", err)
+				log.Trace(errors.New("dropping invalid UDP packet from: ", source).Base(err).Path("Shadowsocks", "Server"))
 				log.Access(source, "", log.AccessRejected, err)
 			}
 			payload.Release()
@@ -93,13 +93,13 @@ func (v *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 		}
 
 		if request.Option.Has(RequestOptionOneTimeAuth) && v.account.OneTimeAuth == Account_Disabled {
-			log.Info("Shadowsocks|Server: Client payload enables OTA but server doesn't allow it.")
+			log.Trace(errors.New("client payload enables OTA but server doesn't allow it").Path("Shadowsocks", "Server"))
 			payload.Release()
 			continue
 		}
 
 		if !request.Option.Has(RequestOptionOneTimeAuth) && v.account.OneTimeAuth == Account_Enabled {
-			log.Info("Shadowsocks|Server: Client payload disables OTA but server forces it.")
+			log.Trace(errors.New("client payload disables OTA but server forces it").Path("Shadowsocks", "Server"))
 			payload.Release()
 			continue
 		}
@@ -108,7 +108,7 @@ func (v *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 		if source, ok := proxy.SourceFromContext(ctx); ok {
 			log.Access(source, dest, log.AccessAccepted, "")
 		}
-		log.Info("Shadowsocks|Server: Tunnelling request to ", dest)
+		log.Trace(errors.New("tunnelling request to ", dest).Path("Shadowsocks", "Server"))
 
 		ctx = protocol.ContextWithUser(ctx, request.User)
 		udpServer.Dispatch(ctx, dest, data, func(payload *buf.Buffer) {
@@ -116,7 +116,7 @@ func (v *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 
 			data, err := EncodeUDPPacket(request, payload)
 			if err != nil {
-				log.Warning("Shadowsocks|Server: Failed to encode UDP packet: ", err)
+				log.Trace(errors.New("failed to encode UDP packet").Base(err).Path("Shadowsocks", "Server").AtWarning())
 				return
 			}
 			defer data.Release()
@@ -134,7 +134,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 	request, bodyReader, err := ReadTCPSession(s.user, bufferedReader)
 	if err != nil {
 		log.Access(conn.RemoteAddr(), "", log.AccessRejected, err)
-		return errors.Base(err).Message("Shadowsocks|Server: Failed to create request from: ", conn.RemoteAddr())
+		return errors.New("failed to create request from: ", conn.RemoteAddr()).Base(err).Path("Shadowsocks", "Server")
 	}
 	conn.SetReadDeadline(time.Time{})
 
@@ -142,7 +142,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 
 	dest := request.Destination()
 	log.Access(conn.RemoteAddr(), dest, log.AccessAccepted, "")
-	log.Info("Shadowsocks|Server: Tunnelling request to ", dest)
+	log.Trace(errors.New("tunnelling request to ", dest).Path("Shadowsocks", "Server"))
 
 	ctx = protocol.ContextWithUser(ctx, request.User)
 
@@ -157,7 +157,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 		bufferedWriter := buf.NewBufferedWriter(conn)
 		responseWriter, err := WriteTCPResponse(request, bufferedWriter)
 		if err != nil {
-			return errors.Base(err).Message("Shadowsocks|Server: Failed to write response.")
+			return errors.New("failed to write response").Base(err).Path("Shadowsocks", "Server")
 		}
 
 		payload, err := ray.InboundOutput().Read()
@@ -174,7 +174,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 		}
 
 		if err := buf.PipeUntilEOF(timer, ray.InboundOutput(), responseWriter); err != nil {
-			return errors.Base(err).Message("Shadowsocks|Server: Failed to transport all TCP response.")
+			return errors.New("failed to transport all TCP response").Base(err).Path("Shadowsocks", "Server")
 		}
 
 		return nil
@@ -184,7 +184,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 		defer ray.InboundInput().Close()
 
 		if err := buf.PipeUntilEOF(timer, bodyReader, ray.InboundInput()); err != nil {
-			return errors.Base(err).Message("Shadowsocks|Server: Failed to transport all TCP request.")
+			return errors.New("failed to transport all TCP request").Base(err).Path("Shadowsocks", "Server")
 		}
 		return nil
 	})
@@ -192,7 +192,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		ray.InboundInput().CloseError()
 		ray.InboundOutput().CloseError()
-		return errors.Base(err).Message("Shadowsocks|Server: Connection ends.")
+		return errors.New("connection ends").Base(err).Path("Shadowsocks", "Server")
 	}
 
 	runtime.KeepAlive(timer)

@@ -83,7 +83,7 @@ func (m *ClientManager) Dispatch(ctx context.Context, outboundRay ray.OutboundRa
 
 	client, err := NewClient(m.proxy, m.dialer, m)
 	if err != nil {
-		return errors.Base(err).Message("Proxyman|Mux|ClientManager: Failed to create client.")
+		return errors.New("failed to create client").Base(err).Path("Proxymann", "Mux", "ClientManager")
 	}
 	m.clients = append(m.clients, client)
 	client.Dispatch(ctx, outboundRay)

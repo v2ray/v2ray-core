@@ -41,7 +41,7 @@ func (v *Account) GetCipher() (Cipher, error) {
 func (v *Account) AsAccount() (protocol.Account, error) {
 	cipher, err := v.GetCipher()
 	if err != nil {
-		return nil, errors.Base(err).Message("Shadowsocks|Account: Failed to get cipher.")
+		return nil, errors.New("failed to get cipher").Base(err).Path("Shadowsocks", "Account")
 	}
 	return &ShadowsocksAccount{
 		Cipher:      cipher,

@@ -61,7 +61,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		return nil
 	})
 	if err != nil {
-		return errors.Base(err).RequireUserAction().Message("VMess|Outbound: Failed to find an available destination.")
+		return errors.New("VMess|Outbound: Failed to find an available destination.").Base(err).AtWarning()
 	}
 	defer conn.Close()
 
@@ -86,7 +86,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 
 	rawAccount, err := request.User.GetTypedAccount()
 	if err != nil {
-		return errors.Base(err).RequireUserAction().Message("VMess|Outbound: Failed to get user account.")
+		return errors.New("VMess|Outbound: Failed to get user account.").Base(err).AtWarning()
 	}
 	account := rawAccount.(*vmess.InternalAccount)
 	request.Security = account.Security
@@ -114,11 +114,11 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		bodyWriter := session.EncodeRequestBody(request, writer)
 		firstPayload, err := input.ReadTimeout(time.Millisecond * 500)
 		if err != nil && err != buf.ErrReadTimeout {
-			return errors.Base(err).Message("VMess|Outbound: Failed to get first payload.")
+			return errors.New("failed to get first payload").Base(err).Path("VMess", "Outbound")
 		}
 		if !firstPayload.IsEmpty() {
 			if err := bodyWriter.Write(firstPayload); err != nil {
-				return errors.Base(err).Message("VMess|Outbound: Failed to write first payload.")
+				return errors.New("failed to write first payload").Base(err).Path("VMess", "Outbound")
 			}
 			firstPayload.Release()
 		}
@@ -166,9 +166,8 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	})
 
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
-		log.Info("VMess|Outbound: Connection ending with ", err)
 		conn.SetReusable(false)
-		return err
+		return errors.New("connection ends").Base(err).Path("VMess", "Outbound")
 	}
 	runtime.KeepAlive(timer)
 

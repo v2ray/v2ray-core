@@ -21,7 +21,7 @@ var (
 func InitAccessLogger(file string) error {
 	logger, err := internal.NewFileLogWriter(file)
 	if err != nil {
-		return errors.Base(err).Message("Failed to create access logger on file: ", file)
+		return errors.New("Failed to create access logger on file: ", file).Base(err).Path("App", "Log")
 	}
 	accessLoggerInstance = logger
 	return nil

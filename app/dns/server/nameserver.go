@@ -11,6 +11,7 @@ import (
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
+	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet/udp"
 )
@@ -200,7 +201,7 @@ func (v *LocalNameServer) QueryA(domain string) <-chan *ARecord {
 
 		ips, err := net.LookupIP(domain)
 		if err != nil {
-			log.Info("DNS: Failed to lookup IPs for domain ", domain)
+			log.Trace(errors.New("failed to lookup IPs for domain ", domain).Path("App", "DNS").Base(err))
 			return
 		}
 

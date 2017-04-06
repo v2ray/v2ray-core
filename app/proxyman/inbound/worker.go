@@ -54,12 +54,7 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 	ctx = proxy.ContextWithInboundEntryPoint(ctx, v2net.TCPDestination(w.address, w.port))
 	ctx = proxy.ContextWithSource(ctx, v2net.DestinationFromAddr(conn.RemoteAddr()))
 	if err := w.proxy.Process(ctx, v2net.Network_TCP, conn, w.dispatcher); err != nil {
-		err := errors.Base(err).Message("Proxyman|TCPWorker: Connection ends.")
-		if errors.IsActionRequired(err) {
-			log.Warning(err)
-		} else {
-			log.Info(err)
-		}
+		log.Trace(errors.New("connection ends").Base(err).Path("Proxyman", "TCPWorker"))
 	}
 	cancel()
 	conn.Close()
@@ -243,12 +238,7 @@ func (w *udpWorker) callback(b *buf.Buffer, source v2net.Destination, originalDe
 			ctx = proxy.ContextWithSource(ctx, source)
 			ctx = proxy.ContextWithInboundEntryPoint(ctx, v2net.UDPDestination(w.address, w.port))
 			if err := w.proxy.Process(ctx, v2net.Network_UDP, conn, w.dispatcher); err != nil {
-				err = errors.Base(err).Message("Proxyman|UDPWorker: Connection ends.")
-				if errors.IsActionRequired(err) {
-					log.Warning(err)
-				} else {
-					log.Info(err)
-				}
+				log.Trace(errors.New("connection ends").Base(err).Path("Proxymann|UDPWorker"))
 			}
 			w.removeConn(source)
 			cancel()

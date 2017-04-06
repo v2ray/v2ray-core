@@ -94,7 +94,7 @@ func (s *Server) Process(ctx context.Context, network v2net.Network, conn intern
 	}
 	dest, err := parseHost(host, defaultPort)
 	if err != nil {
-		return errors.Base(err).Message("HTTP: Malformed proxy host: ", host).RequireUserAction()
+		return errors.New("malformed proxy host: ", host).AtWarning().Base(err).Path("HTTP")
 	}
 	log.Access(conn.RemoteAddr(), request.URL, log.AccessAccepted, "")
 
@@ -118,7 +118,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		Close:         false,
 	}
 	if err := response.Write(writer); err != nil {
-		return errors.Base(err).Message("HTTP|Server: Failed to write back OK response.")
+		return errors.New("failed to write back OK response").Base(err).Path("HTTP", "Server")
 	}
 
 	timeout := time.Second * time.Duration(s.config.Timeout)
@@ -152,7 +152,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		ray.InboundInput().CloseError()
 		ray.InboundOutput().CloseError()
-		return errors.Base(err).Message("HTTP|Server: Connection ends.")
+		return errors.New("connection ends").Base(err).Path("HTTP", "Server")
 	}
 
 	runtime.KeepAlive(timer)
@@ -251,7 +251,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		input.CloseError()
 		output.CloseError()
-		return errors.Base(err).Message("HTTP|Server: Connection ends.")
+		return errors.New("connection ends").Base(err).Path("HTTP", "Server")
 	}
 
 	return nil

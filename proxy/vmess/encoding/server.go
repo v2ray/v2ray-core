@@ -123,7 +123,7 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 
 	_, err := io.ReadFull(reader, buffer[:protocol.IDBytesLen])
 	if err != nil {
-		return nil, errors.Base(err).Message("VMess|Server: Failed to read request header.")
+		return nil, errors.New("failed to read request header").Base(err).Path("VMess", "Server")
 	}
 
 	user, timestamp, valid := v.userValidator.Get(buffer[:protocol.IDBytesLen])
@@ -136,7 +136,7 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	iv := timestampHash.Sum(nil)
 	account, err := user.GetTypedAccount()
 	if err != nil {
-		return nil, errors.Base(err).Message("VMess|Server: Failed to get user account.")
+		return nil, errors.New("failed to get user account").Base(err).Path("VMess", "Server")
 	}
 	vmessAccount := account.(*vmess.InternalAccount)
 
@@ -145,7 +145,7 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 
 	nBytes, err := io.ReadFull(decryptor, buffer[:41])
 	if err != nil {
-		return nil, errors.Base(err).Message("VMess|Server: Failed to read request header.")
+		return nil, errors.New("failed to read request header").Base(err).Path("VMess", "Server")
 	}
 	bufferLen := nBytes
 
@@ -155,7 +155,7 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	}
 
 	if request.Version != Version {
-		return nil, errors.New("VMess|Server: Invalid protocol version ", request.Version)
+		return nil, errors.New("invalid protocol version ", request.Version).Path("VMess", "Server")
 	}
 
 	v.requestBodyIV = append([]byte(nil), buffer[1:17]...)   // 16 bytes
@@ -165,7 +165,7 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	copy(sid.key[:], v.requestBodyKey)
 	copy(sid.nonce[:], v.requestBodyIV)
 	if v.sessionHistory.has(sid) {
-		return nil, errors.New("VMess|Server: Duplicated session id. Possibly under replay attack.")
+		return nil, errors.New("duplicated session id, possibly under replay attack").Path("VMess", "Server")
 	}
 	v.sessionHistory.add(sid)
 
@@ -183,28 +183,28 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		_, err = io.ReadFull(decryptor, buffer[41:45]) // 4 bytes
 		bufferLen += 4
 		if err != nil {
-			return nil, errors.Base(err).Message("VMess|Server: Failed to read IPv4.")
+			return nil, errors.New("failed to read IPv4 address").Base(err).Path("VMess", "Server")
 		}
 		request.Address = net.IPAddress(buffer[41:45])
 	case AddrTypeIPv6:
 		_, err = io.ReadFull(decryptor, buffer[41:57]) // 16 bytes
 		bufferLen += 16
 		if err != nil {
-			return nil, errors.Base(err).Message("VMess|Server: Failed to read IPv6 address.")
+			return nil, errors.New("failed to read IPv6 address").Base(err).Path("VMess", "Server")
 		}
 		request.Address = net.IPAddress(buffer[41:57])
 	case AddrTypeDomain:
 		_, err = io.ReadFull(decryptor, buffer[41:42])
 		if err != nil {
-			return nil, errors.Base(err).Message("VMess:Server: Failed to read domain.")
+			return nil, errors.New("failed to read domain address").Base(err).Path("VMess", "Server")
 		}
 		domainLength := int(buffer[41])
 		if domainLength == 0 {
-			return nil, errors.New("VMess|Server: Zero length domain.")
+			return nil, errors.New("zero length domain").Base(err).Path("VMess", "Server")
 		}
 		_, err = io.ReadFull(decryptor, buffer[42:42+domainLength])
 		if err != nil {
-			return nil, errors.Base(err).Message("VMess|Server: Failed to read domain.")
+			return nil, errors.New("failed to read domain address").Base(err).Path("VMess", "Server")
 		}
 		bufferLen += 1 + domainLength
 		request.Address = net.DomainAddress(string(buffer[42 : 42+domainLength]))
@@ -213,14 +213,14 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	if padingLen > 0 {
 		_, err = io.ReadFull(decryptor, buffer[bufferLen:bufferLen+padingLen])
 		if err != nil {
-			return nil, errors.Base(err).Message("VMess|Server: Failed to read padding.")
+			return nil, errors.New("failed to read padding").Base(err).Path("VMess", "Server")
 		}
 		bufferLen += padingLen
 	}
 
 	_, err = io.ReadFull(decryptor, buffer[bufferLen:bufferLen+4])
 	if err != nil {
-		return nil, errors.Base(err).Message("VMess|Server: Failed to read checksum.")
+		return nil, errors.New("failed to read checksum").Base(err).Path("VMess", "Server")
 	}
 
 	fnv1a := fnv.New32a()

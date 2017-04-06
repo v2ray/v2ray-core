@@ -55,7 +55,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 	})
 
 	if err != nil {
-		return errors.Base(err).Message("Socks|Client: Failed to find an available destination.")
+		return errors.New("failed to find an available destination").Base(err).Path("Socks", "Client")
 	}
 
 	defer conn.Close()
@@ -78,7 +78,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 
 	udpRequest, err := ClientHandshake(request, conn, conn)
 	if err != nil {
-		return errors.Base(err).RequireUserAction().Message("Socks|Client: Failed to establish connection to server.")
+		return errors.New("failed to establish connection to server").AtWarning().Base(err).Path("Socks", "Client")
 	}
 
 	ctx, timer := signal.CancelAfterInactivity(ctx, time.Minute*2)
@@ -96,7 +96,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 	} else if request.Command == protocol.RequestCommandUDP {
 		udpConn, err := dialer.Dial(ctx, udpRequest.Destination())
 		if err != nil {
-			return errors.Base(err).Message("Socks|Client: Failed to create UDP connection.")
+			return errors.New("failed to create UDP connection").Base(err).Path("Socks", "Client")
 		}
 		defer udpConn.Close()
 		requestFunc = func() error {
@@ -112,7 +112,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 	requestDone := signal.ExecuteAsync(requestFunc)
 	responseDone := signal.ExecuteAsync(responseFunc)
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
-		return errors.Base(err).Message("Socks|Client: Connection ends.")
+		return errors.New("connection ends").Base(err).Path("Socks", "Client")
 	}
 
 	runtime.KeepAlive(timer)

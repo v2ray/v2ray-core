@@ -98,11 +98,11 @@ func NewListener(ctx context.Context, address v2net.Address, port v2net.Port, co
 
 	header, err := kcpSettings.GetPackerHeader()
 	if err != nil {
-		return nil, errors.Base(err).Message("KCP|Listener: Failed to create packet header.")
+		return nil, errors.New("KCP|Listener: Failed to create packet header.").Base(err)
 	}
 	security, err := kcpSettings.GetSecurity()
 	if err != nil {
-		return nil, errors.Base(err).Message("KCP|Listener: Failed to create security.")
+		return nil, errors.New("KCP|Listener: Failed to create security.").Base(err)
 	}
 	l := &Listener{
 		header:   header,

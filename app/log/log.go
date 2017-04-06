@@ -43,7 +43,7 @@ func SetLogLevel(level LogLevel) {
 func InitErrorLogger(file string) error {
 	logger, err := internal.NewFileLogWriter(file)
 	if err != nil {
-		return errors.Base(err).Message("Log: Failed to create error logger on file (", file, ")")
+		return errors.New("failed to create error logger on file (", file, ")").Base(err).Path("App", "Log")
 	}
 	streamLoggerInstance = logger
 	return nil
@@ -79,6 +79,22 @@ func Error(val ...interface{}) {
 		Prefix: "[Error]",
 		Values: val,
 	})
+}
+
+func Trace(err error) {
+	s := errors.GetSeverity(err)
+	switch s {
+	case errors.SeverityDebug:
+		Debug(err)
+	case errors.SeverityInfo:
+		Info(err)
+	case errors.SeverityWarning:
+		Warning(err)
+	case errors.SeverityError:
+		Error(err)
+	default:
+		Info(err)
+	}
 }
 
 type Instance struct {

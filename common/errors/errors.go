@@ -3,8 +3,18 @@ package errors
 
 import (
 	"fmt"
+	"strings"
 
 	"v2ray.com/core/common/serial"
+)
+
+type Severity int
+
+const (
+	SeverityDebug Severity = iota
+	SeverityInfo
+	SeverityWarning
+	SeverityError
 )
 
 type hasInnerError interface {
@@ -12,69 +22,93 @@ type hasInnerError interface {
 	Inner() error
 }
 
-type actionRequired interface {
-	ActionRequired() bool
+type hasSeverity interface {
+	Severity() Severity
 }
 
 // Error is an error object with underlying error.
 type Error struct {
-	message        string
-	inner          error
-	actionRequired bool
+	message  string
+	inner    error
+	severity Severity
+	path     []string
 }
 
 // Error implements error.Error().
-func (v Error) Error() string {
+func (v *Error) Error() string {
 	msg := v.message
 	if v.inner != nil {
 		msg += " > " + v.inner.Error()
+	}
+	if len(v.path) > 0 {
+		msg = strings.Join(v.path, "|") + ": " + msg
 	}
 	return msg
 }
 
 // Inner implements hasInnerError.Inner()
-func (v Error) Inner() error {
+func (v *Error) Inner() error {
 	if v.inner == nil {
 		return nil
 	}
 	return v.inner
 }
 
-func (v Error) ActionRequired() bool {
-	return v.actionRequired
-}
-
-func (v Error) RequireUserAction() Error {
-	v.actionRequired = true
+func (v *Error) Base(err error) *Error {
+	v.inner = err
 	return v
 }
 
-func (v Error) Message(msg ...interface{}) Error {
-	return Error{
-		inner:   v,
-		message: serial.Concat(msg...),
-	}
+func (v *Error) atSeverity(s Severity) *Error {
+	v.severity = s
+	return v
 }
 
-func (v Error) Format(format string, values ...interface{}) Error {
-	return v.Message(fmt.Sprintf(format, values...))
+func (v *Error) Severity() Severity {
+	if v.inner == nil {
+		return v.severity
+	}
+
+	if s, ok := v.inner.(hasSeverity); ok {
+		as := s.Severity()
+		if as > v.severity {
+			return as
+		}
+	}
+
+	return v.severity
+}
+
+func (v *Error) AtDebug() *Error {
+	return v.atSeverity(SeverityDebug)
+}
+
+func (v *Error) AtInfo() *Error {
+	return v.atSeverity(SeverityInfo)
+}
+
+func (v *Error) AtWarning() *Error {
+	return v.atSeverity(SeverityWarning)
+}
+
+func (v *Error) AtError() *Error {
+	return v.atSeverity(SeverityError)
+}
+
+func (v *Error) Path(path ...string) *Error {
+	v.path = path
+	return v
 }
 
 // New returns a new error object with message formed from given arguments.
-func New(msg ...interface{}) Error {
-	return Error{
-		message: serial.Concat(msg...),
+func New(msg ...interface{}) *Error {
+	return &Error{
+		message:  serial.Concat(msg...),
+		severity: SeverityInfo,
 	}
 }
 
-// Base returns an Error based on the given error.
-func Base(err error) Error {
-	return Error{
-		inner: err,
-	}
-}
-
-func Format(format string, values ...interface{}) error {
+func Format(format string, values ...interface{}) *Error {
 	return New(fmt.Sprintf(format, values...))
 }
 
@@ -93,16 +127,9 @@ func Cause(err error) error {
 	return err
 }
 
-func IsActionRequired(err error) bool {
-	for err != nil {
-		if ar, ok := err.(actionRequired); ok && ar.ActionRequired() {
-			return true
-		}
-		inner, ok := err.(hasInnerError)
-		if !ok || inner.Inner() == nil {
-			break
-		}
-		err = inner.Inner()
+func GetSeverity(err error) Severity {
+	if s, ok := err.(hasSeverity); ok {
+		return s.Severity()
 	}
-	return false
+	return SeverityInfo
 }

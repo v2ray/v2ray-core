@@ -60,7 +60,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 		return nil
 	})
 	if err != nil {
-		return errors.Base(err).RequireUserAction().Message("Shadowsocks|Client: Failed to find an available destination.")
+		return errors.New("failed to find an available destination").AtWarning().Base(err).Path("Shadowsocks", "Client")
 	}
 	log.Info("Shadowsocks|Client: Tunneling request to ", destination, " via ", server.Destination())
 
@@ -81,7 +81,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 	user := server.PickUser()
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
-		return errors.Base(err).Message("Shadowsocks|Client: Failed to get a valid user account.").RequireUserAction()
+		return errors.New("failed to get a valid user account").AtWarning().Base(err).Path("Shadowsocks", "Client")
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 	request.User = user
@@ -96,7 +96,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 		bufferedWriter := buf.NewBufferedWriter(conn)
 		bodyWriter, err := WriteTCPRequest(request, bufferedWriter)
 		if err != nil {
-			return errors.Base(err).Message("Shadowsocks|Client: Failed to write request")
+			return errors.New("failed to write request").Base(err).Path("Shadowsocks", "Client")
 		}
 
 		if err := bufferedWriter.SetBuffered(false); err != nil {
@@ -127,7 +127,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 		})
 
 		if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
-			return errors.Base(err).Message("Shadowsocks|Client: Connection ends.")
+			return errors.New("connection ends").Base(err).Path("Shadowsocks", "Client")
 		}
 
 		return nil
@@ -142,7 +142,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 
 		requestDone := signal.ExecuteAsync(func() error {
 			if err := buf.PipeUntilEOF(timer, outboundRay.OutboundInput(), writer); err != nil {
-				return errors.Base(err).Message("Shadowsocks|Client: Failed to transport all UDP request")
+				return errors.New("failed to transport all UDP request").Base(err).Path("Shadowsocks", "Client")
 			}
 			return nil
 		})
@@ -156,13 +156,13 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 			}
 
 			if err := buf.PipeUntilEOF(timer, reader, outboundRay.OutboundOutput()); err != nil {
-				return errors.Base(err).Message("Shadowsocks|Client: Failed to transport all UDP response.")
+				return errors.New("failed to transport all UDP response").Base(err).Path("Shadowsocks", "Client")
 			}
 			return nil
 		})
 
 		if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
-			return errors.Base(err).Message("Shadowsocks|Client: Connection ends.")
+			return errors.New("connection ends").Base(err).Path("Shadowsocks", "Client")
 		}
 
 		return nil

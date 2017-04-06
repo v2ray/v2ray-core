@@ -58,13 +58,13 @@ func (v *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	if v.router != nil {
 		if tag, err := v.router.TakeDetour(ctx); err == nil {
 			if handler := v.ohm.GetHandler(tag); handler != nil {
-				log.Info("DefaultDispatcher: Taking detour [", tag, "] for [", destination, "].")
+				log.Trace(errors.New("taking detour [", tag, "] for [", destination, "]").Path("App", "Dispatcher", "Default"))
 				dispatcher = handler
 			} else {
-				log.Warning("DefaultDispatcher: Nonexisting tag: ", tag)
+				log.Trace(errors.New("nonexisting tag: ", tag).AtWarning().Path("App", "Dispatcher", "Default"))
 			}
 		} else {
-			log.Info("DefaultDispatcher: Default route for ", destination)
+			log.Trace(errors.New("default route for ", destination).Path("App", "Dispatcher", "Default"))
 		}
 	}
 

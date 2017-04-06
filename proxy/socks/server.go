@@ -29,7 +29,7 @@ type Server struct {
 func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
-		return nil, errors.New("Socks|Server: No space in context.").RequireUserAction()
+		return nil, errors.New("Socks|Server: No space in context.").AtWarning()
 	}
 	s := &Server{
 		config: config,
@@ -129,7 +129,7 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 
 		v2reader := buf.NewReader(reader)
 		if err := buf.PipeUntilEOF(timer, v2reader, input); err != nil {
-			return errors.Base(err).Message("Socks|Server: Failed to transport all TCP request.")
+			return errors.New("failed to transport all TCP request").Base(err).Path("Socks", "Server")
 		}
 		return nil
 	})
@@ -137,7 +137,7 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 	responseDone := signal.ExecuteAsync(func() error {
 		v2writer := buf.NewWriter(writer)
 		if err := buf.PipeUntilEOF(timer, output, v2writer); err != nil {
-			return errors.Base(err).Message("Socks|Server: Failed to transport all TCP response.")
+			return errors.New("failed to transport all TCP response").Base(err).Path("Socks", "Server")
 		}
 		return nil
 	})
@@ -145,7 +145,7 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		input.CloseError()
 		output.CloseError()
-		return errors.Base(err).Message("Socks|Server: Connection ends.")
+		return errors.New("connection ends").Base(err).Path("Socks", "Server")
 	}
 
 	runtime.KeepAlive(timer)
@@ -157,7 +157,7 @@ func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 	udpServer := udp.NewDispatcher(dispatcher)
 
 	if source, ok := proxy.SourceFromContext(ctx); ok {
-		log.Info("Socks|Server: Client UDP connection from ", source)
+		log.Trace(errors.New("client UDP connection from ", source).Path("Socks", "Server"))
 	}
 
 	reader := buf.NewReader(conn)

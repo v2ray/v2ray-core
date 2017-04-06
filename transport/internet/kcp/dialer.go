@@ -135,11 +135,11 @@ func DialKCP(ctx context.Context, dest v2net.Destination) (internet.Connection, 
 	clientConn := conn.(*ClientConnection)
 	header, err := kcpSettings.GetPackerHeader()
 	if err != nil {
-		return nil, errors.Base(err).Message("KCP|Dialer: Failed to create packet header.")
+		return nil, errors.New("KCP|Dialer: Failed to create packet header.").Base(err)
 	}
 	security, err := kcpSettings.GetSecurity()
 	if err != nil {
-		return nil, errors.Base(err).Message("KCP|Dialer: Failed to create security.")
+		return nil, errors.New("KCP|Dialer: Failed to create security.").Base(err)
 	}
 	clientConn.ResetSecurity(header, security)
 	conv := uint16(atomic.AddUint32(&globalConv, 1))
