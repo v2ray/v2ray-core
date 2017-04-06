@@ -37,7 +37,7 @@ func NewAlwaysOnInboundHandler(ctx context.Context, tag string, receiverConfig *
 	}
 	for port := pr.From; port <= pr.To; port++ {
 		if nl.HasNetwork(net.Network_TCP) {
-			log.Trace(errors.New("Proxyman|DefaultInboundHandler: creating tcp worker on ", address, ":", port).AtDebug())
+			log.Trace(errors.New("creating tcp worker on ", address, ":", port).AtDebug().Path("App", "Proxyman", "Inbound", "AlwaysOnInboundHandler"))
 			worker := &tcpWorker{
 				address:      address,
 				port:         net.Port(port),

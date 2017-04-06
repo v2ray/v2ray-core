@@ -26,7 +26,7 @@ func (m *DefaultInboundHandlerManager) AddHandler(ctx context.Context, config *p
 	}
 	receiverSettings, ok := rawReceiverSettings.(*proxyman.ReceiverConfig)
 	if !ok {
-		return errors.New("Proxyman|DefaultInboundHandlerManager: Not a ReceiverConfig.")
+		return errors.New("not a ReceiverConfig").Path("App", "Proxyman", "Inbound", "DefaultInboundHandlerManager")
 	}
 	proxySettings, err := config.ProxySettings.GetInstance()
 	if err != nil {
@@ -50,7 +50,7 @@ func (m *DefaultInboundHandlerManager) AddHandler(ctx context.Context, config *p
 	}
 
 	if handler == nil {
-		return errors.New("Proxyman|DefaultInboundHandlerManager: Unknown allocation strategy: ", receiverSettings.AllocationStrategy.Type)
+		return errors.New("unknown allocation strategy: ", receiverSettings.AllocationStrategy.Type).Path("App", "Proxyman", "Inbound", "DefaultInboundHandlerManager")
 	}
 
 	m.handlers = append(m.handlers, handler)
@@ -63,7 +63,7 @@ func (m *DefaultInboundHandlerManager) AddHandler(ctx context.Context, config *p
 func (m *DefaultInboundHandlerManager) GetHandler(ctx context.Context, tag string) (proxyman.InboundHandler, error) {
 	handler, found := m.taggedHandlers[tag]
 	if !found {
-		return nil, errors.New("Proxymand|DefaultInboundHandlerManager: Handler not found: ", tag)
+		return nil, errors.New("handler not found: ", tag).Path("App", "Proxyman", "Inbound", "DefaultInboundHandlerManager")
 	}
 	return handler, nil
 }

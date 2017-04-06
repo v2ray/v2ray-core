@@ -23,13 +23,13 @@ type DefaultDispatcher struct {
 func NewDefaultDispatcher(ctx context.Context, config *dispatcher.Config) (*DefaultDispatcher, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
-		return nil, errors.New("DefaultDispatcher: No space in context.")
+		return nil, errors.New("no space in context").Path("App", "Dispatcher", "Default")
 	}
 	d := &DefaultDispatcher{}
 	space.OnInitialize(func() error {
 		d.ohm = proxyman.OutboundHandlerManagerFromSpace(space)
 		if d.ohm == nil {
-			return errors.New("DefaultDispatcher: OutboundHandlerManager is not found in the space.")
+			return errors.New("OutboundHandlerManager is not found in the space").Path("App", "Dispatcher", "Default")
 		}
 		d.router = router.FromSpace(space)
 		return nil

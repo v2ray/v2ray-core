@@ -54,7 +54,7 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 	ctx = proxy.ContextWithInboundEntryPoint(ctx, v2net.TCPDestination(w.address, w.port))
 	ctx = proxy.ContextWithSource(ctx, v2net.DestinationFromAddr(conn.RemoteAddr()))
 	if err := w.proxy.Process(ctx, v2net.Network_TCP, conn, w.dispatcher); err != nil {
-		log.Trace(errors.New("connection ends").Base(err).Path("Proxyman", "TCPWorker"))
+		log.Trace(errors.New("connection ends").Base(err).Path("App", "Proxyman", "Inbound", "TCPWorker"))
 	}
 	cancel()
 	conn.Close()

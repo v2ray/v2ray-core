@@ -35,7 +35,7 @@ type CacheServer struct {
 func NewCacheServer(ctx context.Context, config *dns.Config) (*CacheServer, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
-		return nil, errors.New("DNSCacheServer: No space in context.")
+		return nil, errors.New("no space in context").Path("App", "DNS", "CacheServer")
 	}
 	server := &CacheServer{
 		records: make(map[string]*DomainRecord),
@@ -45,7 +45,7 @@ func NewCacheServer(ctx context.Context, config *dns.Config) (*CacheServer, erro
 	space.OnInitialize(func() error {
 		disp := dispatcher.FromSpace(space)
 		if disp == nil {
-			return errors.New("DNS: Dispatcher is not found in the space.")
+			return errors.New("dispatcher is not found in the space").Path("App", "DNS", "CacheServer")
 		}
 		for idx, destPB := range config.NameServers {
 			address := destPB.Address.AsAddress()
@@ -113,13 +113,13 @@ func (v *CacheServer) Get(domain string) []net.IP {
 				A: a,
 			}
 			v.Unlock()
-			log.Trace(errors.New("DNS: Returning ", len(a.IPs), " IPs for domain ", domain).AtDebug())
+			log.Trace(errors.New("returning ", len(a.IPs), " IPs for domain ", domain).AtDebug().Path("App", "DNS", "CacheServer"))
 			return a.IPs
 		case <-time.After(QueryTimeout):
 		}
 	}
 
-	log.Trace(errors.New("DNS: Returning nil for domain ", domain).AtDebug())
+	log.Trace(errors.New("returning nil for domain ", domain).AtDebug().Path("App", "DNS", "CacheServer"))
 	return nil
 }
 

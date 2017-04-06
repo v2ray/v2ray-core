@@ -114,7 +114,7 @@ func (f FrameMetadata) AsSupplier() buf.Supplier {
 
 func ReadFrameFrom(b []byte) (*FrameMetadata, error) {
 	if len(b) < 4 {
-		return nil, errors.New("Proxyman|Mux: Insufficient buffer: ", len(b))
+		return nil, errors.New("insufficient buffer: ", len(b)).Path("App", "Proxyman", "Mux", "Frame")
 	}
 
 	f := &FrameMetadata{
@@ -144,7 +144,7 @@ func ReadFrameFrom(b []byte) (*FrameMetadata, error) {
 			addr = net.DomainAddress(string(b[1 : 1+nDomain]))
 			b = b[nDomain+1:]
 		default:
-			return nil, errors.New("Proxyman|Mux: Unknown address type: ", addrType)
+			return nil, errors.New("unknown address type: ", addrType).Path("App", "Proxyman", "Mux", "Frame")
 		}
 		switch network {
 		case TargetNetworkTCP:
@@ -152,7 +152,7 @@ func ReadFrameFrom(b []byte) (*FrameMetadata, error) {
 		case TargetNetworkUDP:
 			f.Target = net.UDPDestination(addr, port)
 		default:
-			return nil, errors.New("Proxymann|Mux: Unknown network type: ", network)
+			return nil, errors.New("unknown network type: ", network).Path("App", "Proxyman", "Mux", "Frame")
 		}
 	}
 

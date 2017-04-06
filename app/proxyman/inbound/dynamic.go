@@ -93,7 +93,7 @@ func (h *DynamicInboundHandler) refresh() error {
 		port := h.allocatePort()
 		p, err := proxy.CreateInboundHandler(ctx, h.proxyConfig)
 		if err != nil {
-			log.Trace(errors.New("failed to create proxy instance").Base(err).Path("Proxyman", "Inbound", "DynamicInboundHandler").AtWarning())
+			log.Trace(errors.New("failed to create proxy instance").Base(err).Path("App", "Proxyman", "Inbound", "DynamicInboundHandler").AtWarning())
 			continue
 		}
 		nl := p.Network()
@@ -108,7 +108,7 @@ func (h *DynamicInboundHandler) refresh() error {
 				dispatcher:   h.mux,
 			}
 			if err := worker.Start(); err != nil {
-				log.Trace(errors.New("Proxyman:InboundHandler: Failed to create TCP worker: ", err).AtWarning())
+				log.Trace(errors.New("failed to create TCP worker").Base(err).AtWarning().Path("App", "Proxyman", "Inbound", "DynamicInboundHandler"))
 				continue
 			}
 			workers = append(workers, worker)
@@ -124,7 +124,7 @@ func (h *DynamicInboundHandler) refresh() error {
 				dispatcher:   h.mux,
 			}
 			if err := worker.Start(); err != nil {
-				log.Trace(errors.New("Proxyman:InboundHandler: Failed to create UDP worker: ", err).AtWarning())
+				log.Trace(errors.New("failed to create UDP worker").Base(err).AtWarning().Path("App", "Proxyman", "Inbound", "DynamicInboundHandler"))
 				continue
 			}
 			workers = append(workers, worker)
