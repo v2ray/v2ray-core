@@ -64,8 +64,8 @@ func (v *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, idx in
 		idHash.Sum(hashValueRemoval[:0])
 		idHash.Reset()
 
-		v.userHash[hashValue] = &indexTimePair{idx, entry.lastSec}
 		delete(v.userHash, hashValueRemoval)
+		v.userHash[hashValue] = &indexTimePair{idx, entry.lastSec}
 
 		entry.lastSec++
 		entry.lastSecRemoval++
