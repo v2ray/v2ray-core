@@ -31,7 +31,7 @@ type Server struct {
 func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
-		return nil, errors.New("HTTP|Server: No space in context.")
+		return nil, errors.New("no space in context.").Path("Proxy", "HTTP", "Server")
 	}
 	s := &Server{
 		config: config,
@@ -77,7 +77,7 @@ func (s *Server) Process(ctx context.Context, network v2net.Network, conn intern
 	request, err := http.ReadRequest(reader)
 	if err != nil {
 		if errors.Cause(err) != io.EOF {
-			log.Trace(errors.New("HTTP: Failed to read http request: ", err).AtWarning())
+			log.Trace(errors.New("failed to read http request").Base(err).AtWarning().Path("Proxy", "HTTP", "Server"))
 		}
 		return err
 	}
@@ -94,7 +94,7 @@ func (s *Server) Process(ctx context.Context, network v2net.Network, conn intern
 	}
 	dest, err := parseHost(host, defaultPort)
 	if err != nil {
-		return errors.New("malformed proxy host: ", host).AtWarning().Base(err).Path("HTTP")
+		return errors.New("malformed proxy host: ", host).AtWarning().Base(err).Path("Proxy", "HTTP", "Server")
 	}
 	log.Access(conn.RemoteAddr(), request.URL, log.AccessAccepted, "")
 
@@ -118,7 +118,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		Close:         false,
 	}
 	if err := response.Write(writer); err != nil {
-		return errors.New("failed to write back OK response").Base(err).Path("HTTP", "Server")
+		return errors.New("failed to write back OK response").Base(err).Path("Proxy", "HTTP", "Server")
 	}
 
 	timeout := time.Second * time.Duration(s.config.Timeout)
@@ -152,7 +152,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		ray.InboundInput().CloseError()
 		ray.InboundOutput().CloseError()
-		return errors.New("connection ends").Base(err).Path("HTTP", "Server")
+		return errors.New("connection ends").Base(err).Path("Proxy", "HTTP", "Server")
 	}
 
 	runtime.KeepAlive(timer)
@@ -234,7 +234,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 		responseReader := bufio.NewReader(buf.ToBytesReader(ray.InboundOutput()))
 		response, err := http.ReadResponse(responseReader, request)
 		if err != nil {
-			log.Trace(errors.New("HTTP: Failed to read response: ", err).AtWarning())
+			log.Trace(errors.New("failed to read response").Base(err).AtWarning().Path("Proxy", "HTTP", "Server"))
 			response = generateResponse(503, "Service Unavailable")
 		}
 		responseWriter := buf.NewBufferedWriter(writer)
@@ -251,7 +251,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		input.CloseError()
 		output.CloseError()
-		return errors.New("connection ends").Base(err).Path("HTTP", "Server")
+		return errors.New("connection ends").Base(err).Path("Proxy", "HTTP", "Server")
 	}
 
 	return nil

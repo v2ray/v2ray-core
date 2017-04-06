@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"golang.org/x/crypto/sha3"
+
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
@@ -12,7 +13,7 @@ import (
 )
 
 var (
-	errInsufficientBuffer = errors.New("Insufficient buffer.")
+	errInsufficientBuffer = errors.New("insufficient buffer")
 )
 
 type BytesGenerator interface {
@@ -127,13 +128,13 @@ func (v *AuthenticationReader) nextChunk(mask uint16) error {
 		return errInsufficientBuffer
 	}
 	if size > readerBufferSize-2 {
-		return errors.New("Crypto|AuthenticationReader: Size too large: ", size)
+		return errors.New("size too large: ", size).Path("Common", "Crypto", "AuthenticationReader")
 	}
 	if size == v.auth.Overhead() {
 		return io.EOF
 	}
 	if size < v.auth.Overhead() {
-		return errors.New("Crypto|AuthenticationReader: invalid packet size:", size)
+		return errors.New("invalid packet size: ", size).Path("Common", "Crypto", "AuthenticationReader")
 	}
 	cipherChunk := v.buffer.BytesRange(2, size+2)
 	plainChunk, err := v.auth.Open(cipherChunk[:0], cipherChunk)

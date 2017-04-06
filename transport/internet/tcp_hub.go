@@ -14,7 +14,7 @@ var (
 
 func RegisterTransportListener(protocol TransportProtocol, listener ListenFunc) error {
 	if _, found := transportListenerCache[protocol]; found {
-		return errors.New("Internet|TCPHub: ", protocol, " listener already registered.")
+		return errors.New(protocol, " listener already registered.").AtError().Path("Transport", "Internet")
 	}
 	transportListenerCache[protocol] = listener
 	return nil
@@ -44,11 +44,11 @@ func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, conn
 	}
 	listenFunc := transportListenerCache[protocol]
 	if listenFunc == nil {
-		return nil, errors.New("Internet|TCPHub: ", protocol, " listener not registered.")
+		return nil, errors.New(protocol, " listener not registered.").AtError().Path("Transport", "Internet")
 	}
 	listener, err := listenFunc(ctx, address, port, conns)
 	if err != nil {
-		return nil, errors.New("failed to listen on address: ", address, ":", port).Base(err).Path("Internet", "TCPHub")
+		return nil, errors.New("failed to listen on address: ", address, ":", port).Base(err).Path("Transport", "Internet")
 	}
 	return listener, nil
 }
