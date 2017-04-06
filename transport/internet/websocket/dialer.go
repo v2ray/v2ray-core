@@ -19,7 +19,7 @@ var (
 )
 
 func Dial(ctx context.Context, dest v2net.Destination) (internet.Connection, error) {
-	log.Info("WebSocket|Dialer: Creating connection to ", dest)
+	log.Trace(errors.New("WebSocket|Dialer: Creating connection to ", dest))
 	src := internet.DialerSourceFromContext(ctx)
 	wsSettings := internet.TransportSettingsFromContext(ctx).(*Config)
 

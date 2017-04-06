@@ -19,7 +19,7 @@ var (
 )
 
 func Dial(ctx context.Context, dest v2net.Destination) (internet.Connection, error) {
-	log.Info("Internet|TCP: Dailing TCP to ", dest)
+	log.Trace(errors.New("Internet|TCP: Dailing TCP to ", dest))
 	src := internet.DialerSourceFromContext(ctx)
 
 	tcpSettings := internet.TransportSettingsFromContext(ctx).(*Config)

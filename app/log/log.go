@@ -49,32 +49,32 @@ func InitErrorLogger(file string) error {
 	return nil
 }
 
-// Debug outputs a debug log with given format and optional arguments.
-func Debug(val ...interface{}) {
+// writeDebug outputs a debug log with given format and optional arguments.
+func writeDebug(val ...interface{}) {
 	debugLogger.Log(&internal.ErrorLog{
 		Prefix: "[Debug]",
 		Values: val,
 	})
 }
 
-// Info outputs an info log with given format and optional arguments.
-func Info(val ...interface{}) {
+// writeInfo outputs an info log with given format and optional arguments.
+func writeInfo(val ...interface{}) {
 	infoLogger.Log(&internal.ErrorLog{
 		Prefix: "[Info]",
 		Values: val,
 	})
 }
 
-// Warning outputs a warning log with given format and optional arguments.
-func Warning(val ...interface{}) {
+// writeWarning outputs a warning log with given format and optional arguments.
+func writeWarning(val ...interface{}) {
 	warningLogger.Log(&internal.ErrorLog{
 		Prefix: "[Warning]",
 		Values: val,
 	})
 }
 
-// Error outputs an error log with given format and optional arguments.
-func Error(val ...interface{}) {
+// writeError outputs an error log with given format and optional arguments.
+func writeError(val ...interface{}) {
 	errorLogger.Log(&internal.ErrorLog{
 		Prefix: "[Error]",
 		Values: val,
@@ -85,15 +85,15 @@ func Trace(err error) {
 	s := errors.GetSeverity(err)
 	switch s {
 	case errors.SeverityDebug:
-		Debug(err)
+		writeDebug(err)
 	case errors.SeverityInfo:
-		Info(err)
+		writeInfo(err)
 	case errors.SeverityWarning:
-		Warning(err)
+		writeWarning(err)
 	case errors.SeverityError:
-		Error(err)
+		writeError(err)
 	default:
-		Info(err)
+		writeInfo(err)
 	}
 }
 

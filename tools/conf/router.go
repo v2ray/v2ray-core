@@ -228,7 +228,7 @@ func parseChinaSitesRule(data []byte) (*router.RoutingRule, error) {
 	rawRule := new(RouterRule)
 	err := json.Unmarshal(data, rawRule)
 	if err != nil {
-		log.Error("Router: Invalid router rule: ", err)
+		log.Trace(errors.New("Router: Invalid router rule: ", err).AtError())
 		return nil, err
 	}
 	return &router.RoutingRule{

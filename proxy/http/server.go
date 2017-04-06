@@ -77,11 +77,11 @@ func (s *Server) Process(ctx context.Context, network v2net.Network, conn intern
 	request, err := http.ReadRequest(reader)
 	if err != nil {
 		if errors.Cause(err) != io.EOF {
-			log.Warning("HTTP: Failed to read http request: ", err)
+			log.Trace(errors.New("HTTP: Failed to read http request: ", err).AtWarning())
 		}
 		return err
 	}
-	log.Info("HTTP: Request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]")
+	log.Trace(errors.New("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]").Path("Proxy", "HTTP", "Server"))
 	conn.SetReadDeadline(time.Time{})
 
 	defaultPort := v2net.Port(80)
@@ -234,7 +234,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 		responseReader := bufio.NewReader(buf.ToBytesReader(ray.InboundOutput()))
 		response, err := http.ReadResponse(responseReader, request)
 		if err != nil {
-			log.Warning("HTTP: Failed to read response: ", err)
+			log.Trace(errors.New("HTTP: Failed to read response: ", err).AtWarning())
 			response = generateResponse(503, "Service Unavailable")
 		}
 		responseWriter := buf.NewBufferedWriter(writer)

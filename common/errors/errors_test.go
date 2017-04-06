@@ -8,7 +8,7 @@ import (
 	"v2ray.com/core/testing/assert"
 )
 
-func TestActionRequired(t *testing.T) {
+func TestError(t *testing.T) {
 	assert := assert.On(t)
 
 	err := New("TestError")
@@ -24,4 +24,26 @@ func TestActionRequired(t *testing.T) {
 	err = New("TestError5").Base(err)
 	assert.Bool(GetSeverity(err) == SeverityWarning).IsTrue()
 	assert.String(err.Error()).Contains("EOF")
+}
+
+func TestErrorMessage(t *testing.T) {
+	assert := assert.On(t)
+
+	data := []struct {
+		err error
+		msg string
+	}{
+		{
+			err: New("a").Base(New("b")).Path("c", "d", "e"),
+			msg: "c|d|e: a > b",
+		},
+		{
+			err: New("a").Base(New("b").Path("c")).Path("d", "e"),
+			msg: "d|e: a > c: b",
+		},
+	}
+
+	for _, d := range data {
+		assert.String(d.err.Error()).Equals(d.msg)
+	}
 }

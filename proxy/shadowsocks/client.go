@@ -62,7 +62,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 	if err != nil {
 		return errors.New("failed to find an available destination").AtWarning().Base(err).Path("Shadowsocks", "Client")
 	}
-	log.Info("Shadowsocks|Client: Tunneling request to ", destination, " via ", server.Destination())
+	log.Trace(errors.New("Shadowsocks|Client: Tunneling request to ", destination, " via ", server.Destination()))
 
 	defer conn.Close()
 	conn.SetReusable(false)

@@ -4,6 +4,7 @@ import (
 	"net"
 
 	"v2ray.com/core/app/log"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/predicate"
 )
 
@@ -94,7 +95,7 @@ func IPAddress(ip []byte) Address {
 		}
 		return addr
 	default:
-		log.Error("Net: Invalid IP format: ", ip)
+		log.Trace(errors.New("Net: Invalid IP format: ", ip).AtError())
 		return nil
 	}
 }

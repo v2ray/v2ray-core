@@ -9,6 +9,7 @@ import (
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/proxyman/mux"
 	"v2ray.com/core/common/dice"
+	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 )
@@ -92,7 +93,7 @@ func (h *DynamicInboundHandler) refresh() error {
 		port := h.allocatePort()
 		p, err := proxy.CreateInboundHandler(ctx, h.proxyConfig)
 		if err != nil {
-			log.Warning("Proxyman|DefaultInboundHandler: Failed to create proxy instance: ", err)
+			log.Trace(errors.New("failed to create proxy instance").Base(err).Path("Proxyman", "Inbound", "DynamicInboundHandler").AtWarning())
 			continue
 		}
 		nl := p.Network()
@@ -107,7 +108,7 @@ func (h *DynamicInboundHandler) refresh() error {
 				dispatcher:   h.mux,
 			}
 			if err := worker.Start(); err != nil {
-				log.Warning("Proxyman:InboundHandler: Failed to create TCP worker: ", err)
+				log.Trace(errors.New("Proxyman:InboundHandler: Failed to create TCP worker: ", err).AtWarning())
 				continue
 			}
 			workers = append(workers, worker)
@@ -123,7 +124,7 @@ func (h *DynamicInboundHandler) refresh() error {
 				dispatcher:   h.mux,
 			}
 			if err := worker.Start(); err != nil {
-				log.Warning("Proxyman:InboundHandler: Failed to create UDP worker: ", err)
+				log.Trace(errors.New("Proxyman:InboundHandler: Failed to create UDP worker: ", err).AtWarning())
 				continue
 			}
 			workers = append(workers, worker)

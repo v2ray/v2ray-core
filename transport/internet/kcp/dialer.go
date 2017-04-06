@@ -111,7 +111,7 @@ func (o *ClientConnection) Run() {
 
 func DialKCP(ctx context.Context, dest v2net.Destination) (internet.Connection, error) {
 	dest.Network = v2net.Network_UDP
-	log.Info("KCP|Dialer: Dialing KCP to ", dest)
+	log.Trace(errors.New("KCP|Dialer: Dialing KCP to ", dest))
 
 	src := internet.DialerSourceFromContext(ctx)
 	id := internal.NewConnectionID(src, dest)
@@ -119,7 +119,7 @@ func DialKCP(ctx context.Context, dest v2net.Destination) (internet.Connection, 
 	if conn == nil {
 		rawConn, err := internet.DialSystem(ctx, src, dest)
 		if err != nil {
-			log.Error("KCP|Dialer: Failed to dial to dest: ", err)
+			log.Trace(errors.New("KCP|Dialer: Failed to dial to dest: ", err).AtError())
 			return nil, err
 		}
 		c := &ClientConnection{

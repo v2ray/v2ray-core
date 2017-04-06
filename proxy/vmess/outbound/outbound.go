@@ -69,7 +69,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	if !ok {
 		return errors.New("VMess|Outbound: Target not specified.")
 	}
-	log.Info("VMess|Outbound: Tunneling request to ", target, " via ", rec.Destination())
+	log.Trace(errors.New("VMess|Outbound: Tunneling request to ", target, " via ", rec.Destination()))
 
 	command := protocol.RequestCommandTCP
 	if target.Network == net.Network_UDP {

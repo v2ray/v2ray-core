@@ -179,13 +179,13 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 	if err != nil {
 		if errors.Cause(err) != io.EOF {
 			log.Access(connection.RemoteAddr(), "", log.AccessRejected, err)
-			log.Info("VMess|Inbound: Invalid request from ", connection.RemoteAddr(), ": ", err)
+			log.Trace(errors.New("VMess|Inbound: Invalid request from ", connection.RemoteAddr(), ": ", err))
 		}
 		connection.SetReusable(false)
 		return err
 	}
 	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, "")
-	log.Info("VMess|Inbound: Received request for ", request.Destination())
+	log.Trace(errors.New("VMess|Inbound: Received request for ", request.Destination()))
 
 	connection.SetReadDeadline(time.Time{})
 
@@ -245,7 +245,7 @@ func (v *Handler) generateCommand(ctx context.Context, request *protocol.Request
 		if v.inboundHandlerManager != nil {
 			handler, err := v.inboundHandlerManager.GetHandler(ctx, tag)
 			if err != nil {
-				log.Warning("VMess|Inbound: Failed to get detour handler: ", tag, err)
+				log.Trace(errors.New("VMess|Inbound: Failed to get detour handler: ", tag, err).AtWarning())
 				return nil
 			}
 			proxyHandler, port, availableMin := handler.GetRandomInboundProxy()
@@ -255,7 +255,7 @@ func (v *Handler) generateCommand(ctx context.Context, request *protocol.Request
 					availableMin = 255
 				}
 
-				log.Info("VMess|Inbound: Pick detour handler for port ", port, " for ", availableMin, " minutes.")
+				log.Trace(errors.New("VMess|Inbound: Pick detour handler for port ", port, " for ", availableMin, " minutes."))
 				user := inboundHandler.GetUser(request.User.Email)
 				if user == nil {
 					return nil

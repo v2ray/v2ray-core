@@ -203,7 +203,7 @@ type Connection struct {
 
 // NewConnection create a new KCP connection between local and remote.
 func NewConnection(conv uint16, sysConn SystemConnection, recycler internal.ConnectionRecyler, config *Config) *Connection {
-	log.Info("KCP|Connection: creating connection ", conv)
+	log.Trace(errors.New("KCP|Connection: creating connection ", conv))
 
 	conn := &Connection{
 		conv:         conv,
@@ -341,7 +341,7 @@ func (v *Connection) SetState(state State) {
 	current := v.Elapsed()
 	atomic.StoreInt32((*int32)(&v.state), int32(state))
 	atomic.StoreUint32(&v.stateBeginTime, current)
-	log.Debug("KCP|Connection: #", v.conv, " entering state ", state, " at ", current)
+	log.Trace(errors.New("KCP|Connection: #", v.conv, " entering state ", state, " at ", current).AtDebug())
 
 	switch state {
 	case StateReadyToClose:
@@ -378,7 +378,7 @@ func (v *Connection) Close() error {
 	if state.Is(StateReadyToClose, StateTerminating, StateTerminated) {
 		return ErrClosedConnection
 	}
-	log.Info("KCP|Connection: Closing connection to ", v.conn.RemoteAddr())
+	log.Trace(errors.New("KCP|Connection: Closing connection to ", v.conn.RemoteAddr()))
 
 	if state == StateActive {
 		v.SetState(StateReadyToClose)
@@ -455,7 +455,7 @@ func (v *Connection) Terminate() {
 	if v == nil {
 		return
 	}
-	log.Info("KCP|Connection: Terminating connection to ", v.RemoteAddr())
+	log.Trace(errors.New("KCP|Connection: Terminating connection to ", v.RemoteAddr()))
 
 	//v.SetState(StateTerminated)
 	v.OnDataInput()
@@ -549,7 +549,7 @@ func (v *Connection) flush() {
 	}
 
 	if v.State() == StateTerminating {
-		log.Debug("KCP|Connection: #", v.conv, " sending terminating cmd.")
+		log.Trace(errors.New("KCP|Connection: #", v.conv, " sending terminating cmd.").AtDebug())
 		v.Ping(current, CommandTerminate)
 
 		if current-atomic.LoadUint32(&v.stateBeginTime) > 8000 {

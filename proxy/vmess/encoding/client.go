@@ -63,7 +63,7 @@ func (v *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 	timestamp := protocol.NewTimestampGenerator(protocol.NowTime(), 30)()
 	account, err := header.User.GetTypedAccount()
 	if err != nil {
-		log.Error("VMess: Failed to get user account: ", err)
+		log.Trace(errors.New("VMess: Failed to get user account: ", err).AtError())
 		return
 	}
 	idHash := v.idHash(account.(*vmess.InternalAccount).AnyValidID().Bytes())
@@ -186,7 +186,7 @@ func (v *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 
 	_, err := io.ReadFull(v.responseReader, buffer[:4])
 	if err != nil {
-		log.Info("VMess|Client: Failed to read response header: ", err)
+		log.Trace(errors.New("VMess|Client: Failed to read response header: ", err))
 		return nil, err
 	}
 
@@ -203,7 +203,7 @@ func (v *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 		dataLen := int(buffer[3])
 		_, err := io.ReadFull(v.responseReader, buffer[:dataLen])
 		if err != nil {
-			log.Info("VMess|Client: Failed to read response command: ", err)
+			log.Trace(errors.New("VMess|Client: Failed to read response command: ", err))
 			return nil, err
 		}
 		data := buffer[:dataLen]

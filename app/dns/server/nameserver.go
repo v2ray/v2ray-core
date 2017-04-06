@@ -89,7 +89,7 @@ func (v *UDPNameServer) AssignUnusedID(response chan<- *ARecord) uint16 {
 		if _, found := v.requests[id]; found {
 			continue
 		}
-		log.Debug("DNS: Add pending request id ", id)
+		log.Trace(errors.New("DNS: Add pending request id ", id).AtDebug())
 		v.requests[id] = &PendingRequest{
 			expire:   time.Now().Add(time.Second * 8),
 			response: response,
@@ -105,7 +105,7 @@ func (v *UDPNameServer) HandleResponse(payload *buf.Buffer) {
 	msg := new(dns.Msg)
 	err := msg.Unpack(payload.Bytes())
 	if err != nil {
-		log.Warning("DNS: Failed to parse DNS response: ", err)
+		log.Trace(errors.New("DNS: Failed to parse DNS response: ", err).AtWarning())
 		return
 	}
 	record := &ARecord{
@@ -113,7 +113,7 @@ func (v *UDPNameServer) HandleResponse(payload *buf.Buffer) {
 	}
 	id := msg.Id
 	ttl := DefaultTTL
-	log.Debug("DNS: Handling response for id ", id, " content: ", msg.String())
+	log.Trace(errors.New("DNS: Handling response for id ", id, " content: ", msg.String()).AtDebug())
 
 	v.Lock()
 	request, found := v.requests[id]

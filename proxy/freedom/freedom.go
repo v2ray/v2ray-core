@@ -31,7 +31,7 @@ type Handler struct {
 func New(ctx context.Context, config *Config) (*Handler, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
-		return nil, errors.New("Freedom: No space in context.")
+		return nil, errors.New("no space in context").Path("Proxy", "Freedom")
 	}
 	f := &Handler{
 		domainStrategy: config.DomainStrategy,
@@ -42,7 +42,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		if config.DomainStrategy == Config_USE_IP {
 			f.dns = dns.FromSpace(space)
 			if f.dns == nil {
-				return errors.New("Freedom: DNS server is not found in the space.")
+				return errors.New("DNS server is not found in the space").Path("Proxy", "Freedom")
 			}
 		}
 		return nil
@@ -50,7 +50,6 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	return f, nil
 }
 
-// Private: Visible for testing.
 func (v *Handler) ResolveIP(destination net.Destination) net.Destination {
 	if !destination.Address.Family().IsDomain() {
 		return destination
@@ -58,7 +57,7 @@ func (v *Handler) ResolveIP(destination net.Destination) net.Destination {
 
 	ips := v.dns.Get(destination.Address.Domain())
 	if len(ips) == 0 {
-		log.Info("Freedom: DNS returns nil answer. Keep domain as is.")
+		log.Trace(errors.New("DNS returns nil answer. Keep domain as is.").Path("Proxy", "Freedom"))
 		return destination
 	}
 
@@ -69,7 +68,7 @@ func (v *Handler) ResolveIP(destination net.Destination) net.Destination {
 	} else {
 		newDest = net.UDPDestination(net.IPAddress(ip), destination.Port)
 	}
-	log.Info("Freedom: Changing destination from ", destination, " to ", newDest)
+	log.Trace(errors.New("changing destination from ", destination, " to ", newDest).Path("Proxy", "Freedom"))
 	return newDest
 }
 
@@ -83,7 +82,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 			Port:    net.Port(server.Port),
 		}
 	}
-	log.Info("Freedom: Opening connection to ", destination)
+	log.Trace(errors.New("opening connection to ", destination).Path("Proxy", "Freedom"))
 
 	input := outboundRay.OutboundInput()
 	output := outboundRay.OutboundOutput()
@@ -102,7 +101,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		return nil
 	})
 	if err != nil {
-		return errors.New("failed to open connection to ", destination).Base(err).Path("Freedom")
+		return errors.New("failed to open connection to ", destination).Base(err).Path("Proxy", "Freedom")
 	}
 	defer conn.Close()
 
@@ -112,7 +111,6 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	if timeout == 0 {
 		timeout = time.Minute * 5
 	}
-	log.Debug("Freedom: Cancel after ", timeout)
 	ctx, timer := signal.CancelAfterInactivity(ctx, timeout)
 
 	requestDone := signal.ExecuteAsync(func() error {
@@ -136,7 +134,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		input.CloseError()
 		output.CloseError()
-		return errors.New("connection ends").Base(err).Path("Freedom")
+		return errors.New("connection ends").Base(err).Path("Proxy", "Freedom")
 	}
 
 	runtime.KeepAlive(timer)

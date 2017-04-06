@@ -200,16 +200,16 @@ func fetchInput(ctx context.Context, s *session, output buf.Writer) {
 	defer writer.Close()
 	defer s.closeUplink()
 
-	log.Info("Proxyman|Mux|Client: Dispatching request to ", dest)
+	log.Trace(errors.New("dispatching request to ", dest).Path("Proxyman", "Mux", "Client"))
 	data, _ := s.input.ReadTimeout(time.Millisecond * 500)
 	if data != nil {
 		if err := writer.Write(data); err != nil {
-			log.Info("Proxyman|Mux|Client: Failed to write first payload: ", err)
+			log.Trace(errors.New("failed to write first payload").Base(err).Path("Proxyman", "Mux", "Client"))
 			return
 		}
 	}
 	if err := buf.PipeUntilEOF(signal.BackgroundTimer(), s.input, writer); err != nil {
-		log.Info("Proxyman|Mux|Client: Failed to fetch all input: ", err)
+		log.Trace(errors.New("failed to fetch all input").Base(err).Path("Proxyman", "Mux", "Client"))
 	}
 }
 
@@ -287,7 +287,7 @@ func (m *Client) fetchOutput() {
 	for {
 		meta, err := reader.ReadMetadata()
 		if err != nil {
-			log.Info("Proxyman|Mux|Client: Failed to read metadata: ", err)
+			log.Trace(errors.New("failed to read metadata").Base(err).Path("Proxyman", "Mux", "Client"))
 			break
 		}
 		m.access.RLock()
@@ -308,7 +308,7 @@ func (m *Client) fetchOutput() {
 		}
 
 		if err != nil {
-			log.Info("Proxyman|Mux|Client: Failed to read data: ", err)
+			log.Trace(errors.New("failed to read data").Base(err).Path("Proxyman", "Mux", "Client"))
 			break
 		}
 	}
@@ -324,7 +324,7 @@ func NewServer(ctx context.Context) *Server {
 	space.OnInitialize(func() error {
 		d := dispatcher.FromSpace(space)
 		if d == nil {
-			return errors.New("Proxyman|Mux: No dispatcher in space.")
+			return errors.New("no dispatcher in space").Path("Proxyman", "Mux", "Server")
 		}
 		s.dispatcher = d
 		return nil
@@ -363,7 +363,7 @@ func (w *ServerWorker) remove(id uint16) {
 func handle(ctx context.Context, s *session, output buf.Writer) {
 	writer := NewResponseWriter(s.id, output)
 	if err := buf.PipeUntilEOF(signal.BackgroundTimer(), s.input, writer); err != nil {
-		log.Info("Proxyman|Mux|ServerWorker: Session ", s.id, " ends: ", err)
+		log.Trace(errors.New("session ", s.id, " ends: ").Base(err).Path("Proxyman", "Mux", "ServerWorker"))
 	}
 	writer.Close()
 	s.closeDownlink()
@@ -381,7 +381,7 @@ func (w *ServerWorker) run(ctx context.Context) {
 
 		meta, err := reader.ReadMetadata()
 		if err != nil {
-			log.Info("Proxyman|Mux|ServerWorker: Failed to read metadata: ", err)
+			log.Trace(errors.New("failed to read metadata").Base(err).Path("Proxyman", "Mux", "ServerWorker"))
 			return
 		}
 
@@ -395,10 +395,10 @@ func (w *ServerWorker) run(ctx context.Context) {
 		}
 
 		if meta.SessionStatus == SessionStatusNew {
-			log.Info("Proxyman|Mux|Server: Received request for ", meta.Target)
+			log.Trace(errors.New("received request for ", meta.Target).Path("Proxyman", "Mux", "ServerWorker"))
 			inboundRay, err := w.dispatcher.Dispatch(ctx, meta.Target)
 			if err != nil {
-				log.Info("Proxyman|Mux: Failed to dispatch request: ", err)
+				log.Trace(errors.New("failed to dispatch request.").Base(err).Path("Proxymann", "Mux", "ServerWorker"))
 				continue
 			}
 			s = &session{
@@ -424,7 +424,7 @@ func (w *ServerWorker) run(ctx context.Context) {
 		}
 
 		if err != nil {
-			log.Info("Proxyman|Mux|ServerWorker: Failed to read data: ", err)
+			log.Trace(errors.New("failed to read data").Base(err).Path("Proxymann", "Mux", "ServerWorker"))
 			break
 		}
 	}

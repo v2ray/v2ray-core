@@ -130,7 +130,7 @@ func NewListener(ctx context.Context, address v2net.Address, port v2net.Port, co
 	l.Lock()
 	l.hub = hub
 	l.Unlock()
-	log.Info("KCP|Listener: listening on ", address, ":", port)
+	log.Trace(errors.New("KCP|Listener: listening on ", address, ":", port))
 	return l, nil
 }
 
@@ -139,7 +139,7 @@ func (v *Listener) OnReceive(payload *buf.Buffer, src v2net.Destination, origina
 
 	segments := v.reader.Read(payload.Bytes())
 	if len(segments) == 0 {
-		log.Info("KCP|Listener: discarding invalid payload from ", src)
+		log.Trace(errors.New("KCP|Listener: discarding invalid payload from ", src))
 		return
 	}
 

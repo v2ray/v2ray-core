@@ -113,13 +113,13 @@ func (v *CacheServer) Get(domain string) []net.IP {
 				A: a,
 			}
 			v.Unlock()
-			log.Debug("DNS: Returning ", len(a.IPs), " IPs for domain ", domain)
+			log.Trace(errors.New("DNS: Returning ", len(a.IPs), " IPs for domain ", domain).AtDebug())
 			return a.IPs
 		case <-time.After(QueryTimeout):
 		}
 	}
 
-	log.Debug("DNS: Returning nil for domain ", domain)
+	log.Trace(errors.New("DNS: Returning nil for domain ", domain).AtDebug())
 	return nil
 }
 

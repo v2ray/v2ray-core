@@ -44,7 +44,7 @@ func (d *DokodemoDoor) Network() net.NetworkList {
 }
 
 func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
-	log.Debug("Dokodemo: processing connection from: ", conn.RemoteAddr())
+	log.Trace(errors.New("Dokodemo: processing connection from: ", conn.RemoteAddr()).AtDebug())
 	conn.SetReusable(false)
 	dest := net.Destination{
 		Network: network,
@@ -57,8 +57,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		}
 	}
 	if !dest.IsValid() || dest.Address == nil {
-		log.Info("Dokodemo: Invalid destination. Discarding...")
-		return errors.New("Dokodemo: Unable to get destination.")
+		return errors.New("unable to get destination").Path("Proxy", "Dokodemo")
 	}
 
 	timeout := time.Second * time.Duration(d.config.Timeout)
@@ -78,8 +77,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		chunkReader := buf.NewReader(conn)
 
 		if err := buf.PipeUntilEOF(timer, chunkReader, inboundRay.InboundInput()); err != nil {
-			log.Info("Dokodemo: Failed to transport request: ", err)
-			return err
+			return errors.New("failed to transport request").Base(err).Path("Proxy", "Dokodemo")
 		}
 
 		return nil
@@ -89,8 +87,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		v2writer := buf.NewWriter(conn)
 
 		if err := buf.PipeUntilEOF(timer, inboundRay.InboundOutput(), v2writer); err != nil {
-			log.Info("Dokodemo: Failed to transport response: ", err)
-			return err
+			return errors.New("failed to transport response").Base(err).Path("Proxy", "Dokodemo")
 		}
 		return nil
 	})
@@ -98,8 +95,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		inboundRay.InboundInput().CloseError()
 		inboundRay.InboundOutput().CloseError()
-		log.Info("Dokodemo: Connection ends with ", err)
-		return err
+		return errors.New("connection ends").Base(err).Path("Proxy", "Dokodemo")
 	}
 
 	runtime.KeepAlive(timer)

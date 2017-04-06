@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 
 	"v2ray.com/core/app/log"
+	"v2ray.com/core/common/errors"
 )
 
 var (
@@ -15,7 +16,7 @@ func (v *Config) BuildCertificates() []tls.Certificate {
 	for _, entry := range v.Certificate {
 		keyPair, err := tls.X509KeyPair(entry.Certificate, entry.Key)
 		if err != nil {
-			log.Warning("TLS: ignoring invalid X509 key pair: ", err)
+			log.Trace(errors.New("TLS: ignoring invalid X509 key pair").Base(err).AtWarning())
 			continue
 		}
 		certs = append(certs, keyPair)

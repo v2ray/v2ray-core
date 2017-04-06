@@ -16,6 +16,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
 )
@@ -106,11 +107,11 @@ func GetSourcePath() string {
 }
 
 func CloseAllServers() {
-	log.Info("Closing all servers.")
+	log.Trace(errors.New("Closing all servers."))
 	for _, server := range runningServers {
 		server.Process.Signal(os.Interrupt)
 		server.Process.Wait()
 	}
 	runningServers = make([]*exec.Cmd, 0, 10)
-	log.Info("All server closed.")
+	log.Trace(errors.New("All server closed."))
 }

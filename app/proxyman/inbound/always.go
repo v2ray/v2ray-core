@@ -7,6 +7,7 @@ import (
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/proxyman/mux"
 	"v2ray.com/core/common/dice"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 )
@@ -36,7 +37,7 @@ func NewAlwaysOnInboundHandler(ctx context.Context, tag string, receiverConfig *
 	}
 	for port := pr.From; port <= pr.To; port++ {
 		if nl.HasNetwork(net.Network_TCP) {
-			log.Debug("Proxyman|DefaultInboundHandler: creating tcp worker on ", address, ":", port)
+			log.Trace(errors.New("Proxyman|DefaultInboundHandler: creating tcp worker on ", address, ":", port).AtDebug())
 			worker := &tcpWorker{
 				address:      address,
 				port:         net.Port(port),

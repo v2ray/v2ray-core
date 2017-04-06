@@ -93,7 +93,7 @@ func ListenUDP(address v2net.Address, port v2net.Port, option ListenOption) (*Hu
 	if err != nil {
 		return nil, err
 	}
-	log.Info("UDP|Hub: Listening on ", address, ":", port)
+	log.Trace(errors.New("UDP|Hub: Listening on ", address, ":", port))
 	if option.ReceiveOriginalDest {
 		fd, err := internal.GetSysFd(udpConn)
 		if err != nil {
@@ -148,7 +148,7 @@ L:
 		})
 
 		if err != nil {
-			log.Info("UDP|Hub: Failed to read UDP msg: ", err)
+			log.Trace(errors.New("UDP|Hub: Failed to read UDP msg: ", err))
 			buffer.Release()
 			continue
 		}

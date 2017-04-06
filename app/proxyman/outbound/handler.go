@@ -102,7 +102,7 @@ func (h *Handler) Dial(ctx context.Context, dest v2net.Destination) (internet.Co
 				return NewConnection(stream), nil
 			}
 
-			log.Warning("Proxyman|OutboundHandler: Failed to get outbound handler with tag: ", tag)
+			log.Trace(errors.New("Proxyman|OutboundHandler: Failed to get outbound handler with tag: ", tag).AtWarning())
 		}
 
 		if h.senderSettings.Via != nil {

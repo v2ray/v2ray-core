@@ -37,7 +37,7 @@ func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, conn
 	if err != nil {
 		return nil, err
 	}
-	log.Info("TCP|Listener: Listening on ", address, ":", port)
+	log.Trace(errors.New("TCP|Listener: Listening on ", address, ":", port))
 	networkSettings := internet.TransportSettingsFromContext(ctx)
 	tcpSettings := networkSettings.(*Config)
 
@@ -85,7 +85,7 @@ func (v *TCPListener) KeepAccepting() {
 			return nil
 		})
 		if err != nil {
-			log.Warning("TCP|Listener: Failed to accepted raw connections: ", err)
+			log.Trace(errors.New("TCP|Listener: Failed to accepted raw connections: ", err).AtWarning())
 			continue
 		}
 

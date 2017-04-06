@@ -78,14 +78,14 @@ func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispa
 		if source, ok := proxy.SourceFromContext(ctx); ok {
 			log.Access(source, "", log.AccessRejected, err)
 		}
-		log.Info("Socks|Server: Failed to read request: ", err)
+		log.Trace(errors.New("Socks|Server: Failed to read request: ", err))
 		return err
 	}
 	conn.SetReadDeadline(time.Time{})
 
 	if request.Command == protocol.RequestCommandTCP {
 		dest := request.Destination()
-		log.Info("Socks|Server: TCP Connect request to ", dest)
+		log.Trace(errors.New("Socks|Server: TCP Connect request to ", dest))
 		if source, ok := proxy.SourceFromContext(ctx); ok {
 			log.Access(source, dest, log.AccessAccepted, "")
 		}
@@ -169,7 +169,7 @@ func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 		request, data, err := DecodeUDPPacket(payload.Bytes())
 
 		if err != nil {
-			log.Info("Socks|Server: Failed to parse UDP request: ", err)
+			log.Trace(errors.New("Socks|Server: Failed to parse UDP request: ", err))
 			continue
 		}
 
@@ -177,7 +177,7 @@ func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 			continue
 		}
 
-		log.Info("Socks: Send packet to ", request.Destination(), " with ", len(data), " bytes")
+		log.Trace(errors.New("Socks: Send packet to ", request.Destination(), " with ", len(data), " bytes"))
 		if source, ok := proxy.SourceFromContext(ctx); ok {
 			log.Access(source, request.Destination, log.AccessAccepted, "")
 		}
@@ -187,7 +187,7 @@ func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 		udpServer.Dispatch(ctx, request.Destination(), dataBuf, func(payload *buf.Buffer) {
 			defer payload.Release()
 
-			log.Info("Socks|Server: Writing back UDP response with ", payload.Len(), " bytes")
+			log.Trace(errors.New("Socks|Server: Writing back UDP response with ", payload.Len(), " bytes"))
 
 			udpMessage := EncodeUDPPacket(request, payload.Bytes())
 			defer udpMessage.Release()
