@@ -29,23 +29,25 @@ type TimedUserValidator struct {
 	sync.RWMutex
 	ctx        context.Context
 	validUsers []*protocol.User
-	userHash   map[[16]byte]*indexTimePair
+	userHash   map[[16]byte]indexTimePair
 	ids        []*idEntry
 	hasher     protocol.IDHash
+	baseTime   protocol.Timestamp
 }
 
 type indexTimePair struct {
 	index   int
-	timeSec protocol.Timestamp
+	timeInc uint32
 }
 
 func NewTimedUserValidator(ctx context.Context, hasher protocol.IDHash) protocol.UserValidator {
 	tus := &TimedUserValidator{
 		ctx:        ctx,
 		validUsers: make([]*protocol.User, 0, 16),
-		userHash:   make(map[[16]byte]*indexTimePair, 512),
+		userHash:   make(map[[16]byte]indexTimePair, 512),
 		ids:        make([]*idEntry, 0, 512),
 		hasher:     hasher,
+		baseTime:   protocol.Timestamp(time.Now().Unix() - cacheDurationSec*3),
 	}
 	go tus.updateUserHash(updateIntervalSec * time.Second)
 	return tus
@@ -65,7 +67,10 @@ func (v *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, idx in
 		idHash.Reset()
 
 		delete(v.userHash, hashValueRemoval)
-		v.userHash[hashValue] = &indexTimePair{idx, entry.lastSec}
+		v.userHash[hashValue] = indexTimePair{
+			index:   idx,
+			timeInc: uint32(entry.lastSec - v.baseTime),
+		}
 
 		entry.lastSec++
 		entry.lastSecRemoval++
@@ -132,7 +137,7 @@ func (v *TimedUserValidator) Get(userHash []byte) (*protocol.User, protocol.Time
 	copy(fixedSizeHash[:], userHash)
 	pair, found := v.userHash[fixedSizeHash]
 	if found {
-		return v.validUsers[pair.index], pair.timeSec, true
+		return v.validUsers[pair.index], protocol.Timestamp(pair.timeInc) + v.baseTime, true
 	}
 	return nil, 0, false
 }
