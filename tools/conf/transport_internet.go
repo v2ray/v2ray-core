@@ -97,17 +97,11 @@ func (v *KCPConfig) Build() (*serial.TypedMessage, error) {
 }
 
 type TCPConfig struct {
-	ConnectionReuse *bool           `json:"connectionReuse"`
-	HeaderConfig    json.RawMessage `json:"header"`
+	HeaderConfig json.RawMessage `json:"header"`
 }
 
 func (v *TCPConfig) Build() (*serial.TypedMessage, error) {
 	config := new(tcp.Config)
-	if v.ConnectionReuse != nil {
-		config.ConnectionReuse = &tcp.ConnectionReuse{
-			Enable: *v.ConnectionReuse,
-		}
-	}
 	if len(v.HeaderConfig) > 0 {
 		headerConfig, _, err := tcpHeaderLoader.Load(v.HeaderConfig)
 		if err != nil {
@@ -124,18 +118,12 @@ func (v *TCPConfig) Build() (*serial.TypedMessage, error) {
 }
 
 type WebSocketConfig struct {
-	ConnectionReuse *bool  `json:"connectionReuse"`
-	Path            string `json:"Path"`
+	Path string `json:"Path"`
 }
 
 func (v *WebSocketConfig) Build() (*serial.TypedMessage, error) {
 	config := &websocket.Config{
 		Path: v.Path,
-	}
-	if v.ConnectionReuse != nil {
-		config.ConnectionReuse = &websocket.ConnectionReuse{
-			Enable: *v.ConnectionReuse,
-		}
 	}
 	return serial.ToTypedMessage(config), nil
 }

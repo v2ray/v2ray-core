@@ -69,8 +69,6 @@ func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error
 }
 
 func (s *Server) Process(ctx context.Context, network v2net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
-	conn.SetReusable(false)
-
 	conn.SetReadDeadline(time.Now().Add(time.Second * 8))
 	reader := bufio.NewReaderSize(conn, 2048)
 

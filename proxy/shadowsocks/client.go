@@ -65,7 +65,6 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 	log.Trace(errors.New("tunneling request to ", destination, " via ", server.Destination()).Path("Proxy", "Shadowsocks", "Client"))
 
 	defer conn.Close()
-	conn.SetReusable(false)
 
 	request := &protocol.RequestHeader{
 		Version: Version,

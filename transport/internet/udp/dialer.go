@@ -6,7 +6,6 @@ import (
 	"v2ray.com/core/common"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/internet/internal"
 )
 
 func init() {
@@ -18,6 +17,6 @@ func init() {
 				return nil, err
 			}
 			// TODO: handle dialer options
-			return internal.NewConnection(internal.NewConnectionID(src, dest), conn, internal.NoOpConnectionRecyler{}, internal.ReuseConnection(false)), nil
+			return internet.Connection(conn), nil
 		}))
 }

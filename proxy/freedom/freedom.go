@@ -105,8 +105,6 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	}
 	defer conn.Close()
 
-	conn.SetReusable(false)
-
 	timeout := time.Second * time.Duration(v.timeout)
 	if timeout == 0 {
 		timeout = time.Minute * 5

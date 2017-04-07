@@ -191,11 +191,3 @@ func (v *Connection) SetReadDeadline(t time.Time) error {
 func (v *Connection) SetWriteDeadline(t time.Time) error {
 	return nil
 }
-
-func (v *Connection) Reusable() bool {
-	return false
-}
-
-func (v *Connection) SetReusable(bool) {
-
-}

@@ -138,8 +138,9 @@ func transferResponse(timer signal.ActivityTimer, session *encoding.ServerSessio
 
 	bodyWriter := session.EncodeResponseBody(request, output)
 
+	mergeReader := buf.NewMergingReader(input)
 	// Optimize for small response packet
-	data, err := input.Read()
+	data, err := mergeReader.Read()
 	if err != nil {
 		return err
 	}
@@ -155,7 +156,7 @@ func transferResponse(timer signal.ActivityTimer, session *encoding.ServerSessio
 		}
 	}
 
-	if err := buf.PipeUntilEOF(timer, input, bodyWriter); err != nil {
+	if err := buf.PipeUntilEOF(timer, mergeReader, bodyWriter); err != nil {
 		return err
 	}
 
@@ -181,7 +182,6 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 			log.Access(connection.RemoteAddr(), "", log.AccessRejected, err)
 			log.Trace(errors.New("VMess|Inbound: Invalid request from ", connection.RemoteAddr(), ": ", err))
 		}
-		connection.SetReusable(false)
 		return err
 	}
 	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, "")
@@ -189,7 +189,6 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 
 	connection.SetReadDeadline(time.Time{})
 
-	connection.SetReusable(request.Option.Has(protocol.RequestOptionConnectionReuse))
 	userSettings := request.User.GetSettings()
 
 	ctx = protocol.ContextWithUser(ctx, request.User)
@@ -214,24 +213,18 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 		Command: v.generateCommand(ctx, request),
 	}
 
-	if connection.Reusable() {
-		response.Option.Set(protocol.ResponseOptionConnectionReuse)
-	}
-
 	responseDone := signal.ExecuteAsync(func() error {
 		return transferResponse(timer, session, request, response, output, writer)
 	})
 
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
-		connection.SetReusable(false)
 		input.CloseError()
 		output.CloseError()
-		return errors.New("error during processing").Base(err).Path("VMess", "Inbound")
+		return errors.New("error during processing").Base(err).Path("Proxy", "VMess", "Inbound")
 	}
 
 	if err := writer.Flush(); err != nil {
-		connection.SetReusable(false)
-		return errors.New("error during flushing remaining data").Base(err).Path("VMess", "Inbound")
+		return errors.New("error during flushing remaining data").Base(err).Path("Proxy", "VMess", "Inbound")
 	}
 
 	runtime.KeepAlive(timer)

@@ -16,8 +16,8 @@ func TestRequestOptionSet(t *testing.T) {
 	option.Set(RequestOptionChunkStream)
 	assert.Bool(option.Has(RequestOptionChunkStream)).IsTrue()
 
-	option.Set(RequestOptionConnectionReuse)
-	assert.Bool(option.Has(RequestOptionConnectionReuse)).IsTrue()
+	option.Set(RequestOptionChunkMasking)
+	assert.Bool(option.Has(RequestOptionChunkMasking)).IsTrue()
 	assert.Bool(option.Has(RequestOptionChunkStream)).IsTrue()
 }
 
@@ -26,9 +26,9 @@ func TestRequestOptionClear(t *testing.T) {
 
 	var option RequestOption
 	option.Set(RequestOptionChunkStream)
-	option.Set(RequestOptionConnectionReuse)
+	option.Set(RequestOptionChunkMasking)
 
 	option.Clear(RequestOptionChunkStream)
 	assert.Bool(option.Has(RequestOptionChunkStream)).IsFalse()
-	assert.Bool(option.Has(RequestOptionConnectionReuse)).IsTrue()
+	assert.Bool(option.Has(RequestOptionChunkMasking)).IsTrue()
 }

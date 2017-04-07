@@ -95,11 +95,6 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		request.Option.Set(protocol.RequestOptionChunkMasking)
 	}
 
-	conn.SetReusable(true)
-	if conn.Reusable() { // Conn reuse may be disabled on transportation layer
-		request.Option.Set(protocol.RequestOptionConnectionReuse)
-	}
-
 	input := outboundRay.OutboundInput()
 	output := outboundRay.OutboundOutput()
 
@@ -154,8 +149,6 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		}
 		v.handleCommand(rec.Destination(), header.Command)
 
-		conn.SetReusable(header.Option.Has(protocol.ResponseOptionConnectionReuse))
-
 		reader.SetBuffered(false)
 		bodyReader := session.DecodeResponseBody(request, reader)
 		if err := buf.PipeUntilEOF(timer, bodyReader, output); err != nil {
@@ -166,7 +159,6 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	})
 
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
-		conn.SetReusable(false)
 		return errors.New("connection ends").Base(err).Path("VMess", "Outbound")
 	}
 	runtime.KeepAlive(timer)

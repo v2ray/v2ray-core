@@ -88,7 +88,6 @@ func (w *tcpWorker) handleConnections(conns <-chan internet.Connection) {
 			for {
 				select {
 				case conn := <-conns:
-					conn.SetReusable(false)
 					conn.Close()
 				default:
 					break L
@@ -165,12 +164,6 @@ func (*udpConn) SetReadDeadline(time.Time) error {
 func (*udpConn) SetWriteDeadline(time.Time) error {
 	return nil
 }
-
-func (*udpConn) Reusable() bool {
-	return false
-}
-
-func (*udpConn) SetReusable(bool) {}
 
 type udpWorker struct {
 	sync.RWMutex

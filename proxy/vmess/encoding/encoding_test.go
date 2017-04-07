@@ -31,7 +31,6 @@ func TestRequestSerialization(t *testing.T) {
 		Version:  1,
 		User:     user,
 		Command:  protocol.RequestCommandTCP,
-		Option:   protocol.RequestOptionConnectionReuse,
 		Address:  v2net.DomainAddress("www.v2ray.com"),
 		Port:     v2net.Port(443),
 		Security: protocol.Security(protocol.SecurityType_AES128_GCM),

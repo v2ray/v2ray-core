@@ -59,7 +59,6 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 	}
 
 	defer conn.Close()
-	conn.SetReusable(false)
 
 	request := &protocol.RequestHeader{
 		Version: socks5Version,

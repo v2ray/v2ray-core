@@ -96,13 +96,6 @@ func (v *Config) GetReceivingBufferSize() uint32 {
 	return v.GetReadBufferSize() / v.GetMTUValue()
 }
 
-func (v *Config) IsConnectionReuse() bool {
-	if v == nil || v.ConnectionReuse == nil {
-		return true
-	}
-	return v.ConnectionReuse.Enable
-}
-
 func init() {
 	common.Must(internet.RegisterProtocolConfigCreator(internet.TransportProtocol_MKCP, func() interface{} {
 		return new(Config)

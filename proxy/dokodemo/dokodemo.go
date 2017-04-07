@@ -45,7 +45,6 @@ func (d *DokodemoDoor) Network() net.NetworkList {
 
 func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
 	log.Trace(errors.New("Dokodemo: processing connection from: ", conn.RemoteAddr()).AtDebug())
-	conn.SetReusable(false)
 	dest := net.Destination{
 		Network: network,
 		Address: d.address,

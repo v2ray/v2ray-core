@@ -10,32 +10,17 @@ import (
 	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/internet/internal"
 	v2tls "v2ray.com/core/transport/internet/tls"
 )
 
-var (
-	globalCache = internal.NewConnectionPool()
-)
-
 func Dial(ctx context.Context, dest v2net.Destination) (internet.Connection, error) {
-	log.Trace(errors.New("WebSocket|Dialer: Creating connection to ", dest))
-	src := internet.DialerSourceFromContext(ctx)
-	wsSettings := internet.TransportSettingsFromContext(ctx).(*Config)
+	log.Trace(errors.New("creating connection to ", dest).Path("Transport", "Internet", "WebSocket"))
 
-	id := internal.NewConnectionID(src, dest)
-	var conn net.Conn
-	if dest.Network == v2net.Network_TCP && wsSettings.IsConnectionReuse() {
-		conn = globalCache.Get(id)
+	conn, err := dialWebsocket(ctx, dest)
+	if err != nil {
+		return nil, errors.New("dial failed").Path("WebSocket", "Dialer")
 	}
-	if conn == nil {
-		var err error
-		conn, err = dialWebsocket(ctx, dest)
-		if err != nil {
-			return nil, errors.New("dial failed").Path("WebSocket", "Dialer")
-		}
-	}
-	return internal.NewConnection(id, conn, globalCache, internal.ReuseConnection(wsSettings.IsConnectionReuse())), nil
+	return internet.Connection(conn), nil
 }
 
 func init() {

@@ -5,13 +5,6 @@ import (
 	"v2ray.com/core/transport/internet"
 )
 
-func (c *Config) IsConnectionReuse() bool {
-	if c == nil || c.ConnectionReuse == nil {
-		return true
-	}
-	return c.ConnectionReuse.Enable
-}
-
 func (c *Config) GetNormailzedPath() string {
 	path := c.Path
 	if len(path) == 0 {

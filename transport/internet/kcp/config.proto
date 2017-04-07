@@ -51,5 +51,5 @@ message Config {
   WriteBuffer write_buffer = 6;
   ReadBuffer read_buffer = 7;
   v2ray.core.common.serial.TypedMessage header_config = 8;
-  ConnectionReuse connection_reuse = 9;
+  reserved 9;
 }

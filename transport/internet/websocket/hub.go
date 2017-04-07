@@ -15,7 +15,6 @@ import (
 	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/internet/internal"
 	v2tls "v2ray.com/core/transport/internet/tls"
 )
 
@@ -42,7 +41,7 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 	select {
 	case <-h.ln.ctx.Done():
 		conn.Close()
-	case h.ln.conns <- internal.NewConnection(internal.ConnectionID{}, conn, h.ln, internal.ReuseConnection(h.ln.config.IsConnectionReuse())):
+	case h.ln.conns <- internet.Connection(conn):
 	case <-time.After(time.Second * 5):
 		conn.Close()
 	}
@@ -118,16 +117,6 @@ func converttovws(w http.ResponseWriter, r *http.Request) (*connection, error) {
 	}
 
 	return &connection{wsc: conn}, nil
-}
-
-func (ln *Listener) Put(id internal.ConnectionID, conn net.Conn) {
-	select {
-	case <-ln.ctx.Done():
-		conn.Close()
-	case ln.conns <- internal.NewConnection(internal.ConnectionID{}, conn, ln, internal.ReuseConnection(ln.config.IsConnectionReuse())):
-	case <-time.After(time.Second * 5):
-		conn.Close()
-	}
 }
 
 func (ln *Listener) Addr() net.Addr {

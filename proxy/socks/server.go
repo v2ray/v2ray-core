@@ -48,8 +48,6 @@ func (s *Server) Network() net.NetworkList {
 }
 
 func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
-	conn.SetReusable(false)
-
 	switch network {
 	case net.Network_TCP:
 		return s.processTCP(ctx, conn, dispatcher)

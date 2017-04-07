@@ -15,7 +15,6 @@ import (
 	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/internet/internal"
 	v2tls "v2ray.com/core/transport/internet/tls"
 	"v2ray.com/core/transport/internet/udp"
 )
@@ -27,7 +26,6 @@ type ConnectionID struct {
 }
 
 type ServerConnection struct {
-	id     internal.ConnectionID
 	local  net.Addr
 	remote net.Addr
 	writer PacketWriter
@@ -73,10 +71,6 @@ func (*ServerConnection) SetWriteDeadline(time.Time) error {
 	return nil
 }
 
-func (c *ServerConnection) Id() internal.ConnectionID {
-	return c.id
-}
-
 // Listener defines a server listening for connections
 type Listener struct {
 	sync.Mutex
@@ -94,7 +88,6 @@ type Listener struct {
 func NewListener(ctx context.Context, address v2net.Address, port v2net.Port, conns chan<- internet.Connection) (*Listener, error) {
 	networkSettings := internet.TransportSettingsFromContext(ctx)
 	kcpSettings := networkSettings.(*Config)
-	kcpSettings.ConnectionReuse = &ConnectionReuse{Enable: false}
 
 	header, err := kcpSettings.GetPackerHeader()
 	if err != nil {
@@ -182,7 +175,6 @@ func (v *Listener) OnReceive(payload *buf.Buffer, src v2net.Destination, origina
 		}
 		localAddr := v.hub.Addr()
 		sConn := &ServerConnection{
-			id:     internal.NewConnectionID(v2net.LocalHostIP, src),
 			local:  localAddr,
 			remote: remoteAddr,
 			writer: &KCPPacketWriter{
@@ -192,17 +184,16 @@ func (v *Listener) OnReceive(payload *buf.Buffer, src v2net.Destination, origina
 			},
 			closer: writer,
 		}
-		conn = NewConnection(conv, sConn, v, v.config)
+		conn = NewConnection(conv, sConn, v.config)
 		var netConn internet.Connection = conn
 		if v.tlsConfig != nil {
 			tlsConn := tls.Server(conn, v.tlsConfig)
-			netConn = UnreusableConnection{Conn: tlsConn}
+			netConn = tlsConn
 		}
 
 		select {
 		case v.conns <- netConn:
 		case <-time.After(time.Second * 5):
-			conn.SetReusable(false)
 			conn.Close()
 			return
 		}
@@ -247,8 +238,6 @@ func (v *Listener) ActiveConnections() int {
 func (v *Listener) Addr() net.Addr {
 	return v.hub.Addr()
 }
-
-func (v *Listener) Put(internal.ConnectionID, net.Conn) {}
 
 type Writer struct {
 	id       ConnectionID

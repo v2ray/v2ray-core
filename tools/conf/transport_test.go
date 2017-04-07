@@ -19,7 +19,6 @@ func TestTransportConfig(t *testing.T) {
 
 	rawJson := `{
     "tcpSettings": {
-      "connectionReuse": true,
       "header": {
         "type": "http",
         "request": {
@@ -64,7 +63,6 @@ func TestTransportConfig(t *testing.T) {
 		case *tcp.Config:
 			settingsCount++
 			assert.Bool(settingsWithProtocol.Protocol == internet.TransportProtocol_TCP).IsTrue()
-			assert.Bool(settings.IsConnectionReuse()).IsTrue()
 			rawHeader, err := settings.HeaderSettings.GetInstance()
 			assert.Error(err).IsNil()
 			header := rawHeader.(*http.Config)

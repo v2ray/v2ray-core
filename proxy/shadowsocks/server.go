@@ -60,8 +60,6 @@ func (s *Server) Network() net.NetworkList {
 }
 
 func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
-	conn.SetReusable(false)
-
 	switch network {
 	case net.Network_TCP:
 		return s.handleConnection(ctx, conn, dispatcher)
@@ -183,7 +181,8 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 	responseDone := signal.ExecuteAsync(func() error {
 		defer ray.InboundInput().Close()
 
-		if err := buf.PipeUntilEOF(timer, bodyReader, ray.InboundInput()); err != nil {
+		mergeReader := buf.NewMergingReader(bodyReader)
+		if err := buf.PipeUntilEOF(timer, mergeReader, ray.InboundInput()); err != nil {
 			return errors.New("failed to transport all TCP request").Base(err).Path("Shadowsocks", "Server")
 		}
 		return nil

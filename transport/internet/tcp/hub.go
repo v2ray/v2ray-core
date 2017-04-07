@@ -12,7 +12,6 @@ import (
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/internet/internal"
 	v2tls "v2ray.com/core/transport/internet/tls"
 )
 
@@ -97,20 +96,10 @@ func (v *TCPListener) KeepAccepting() {
 		}
 
 		select {
-		case v.conns <- internal.NewConnection(internal.ConnectionID{}, conn, v, internal.ReuseConnection(v.config.IsConnectionReuse())):
+		case v.conns <- internet.Connection(conn):
 		case <-time.After(time.Second * 5):
 			conn.Close()
 		}
-	}
-}
-
-func (v *TCPListener) Put(id internal.ConnectionID, conn net.Conn) {
-	select {
-	case v.conns <- internal.NewConnection(internal.ConnectionID{}, conn, v, internal.ReuseConnection(v.config.IsConnectionReuse())):
-	case <-time.After(time.Second * 5):
-		conn.Close()
-	case <-v.ctx.Done():
-		conn.Close()
 	}
 }
 

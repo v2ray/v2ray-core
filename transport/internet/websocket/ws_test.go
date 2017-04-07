@@ -30,7 +30,6 @@ func Test_listenWSAndDial(t *testing.T) {
 				n, err := c.Read(b[:])
 				//assert.Error(err).IsNil()
 				if err != nil {
-					c.SetReusable(false)
 					return
 				}
 				assert.Bool(bytes.HasPrefix(b[:n], []byte("Test connection"))).IsTrue()
@@ -87,9 +86,6 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 
 	ctx := internet.ContextWithTransportSettings(context.Background(), &Config{
 		Path: "wss",
-		ConnectionReuse: &ConnectionReuse{
-			Enable: true,
-		},
 	})
 	ctx = internet.ContextWithSecuritySettings(ctx, &v2tls.Config{
 		AllowInsecure: true,
