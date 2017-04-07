@@ -28,6 +28,9 @@
           ]
         }
       ]
+    },
+    "mux": {
+      "enabled": true
     }
   },
   "outboundDetour": [
@@ -99,12 +102,6 @@
           "outboundTag": "direct"
         }
       ]
-    }
-  },
-  "transport": {
-    "kcpSettings": {
-      "uplinkCapacity": 1,
-      "downlinkCapacity": 10
     }
   }
 }
