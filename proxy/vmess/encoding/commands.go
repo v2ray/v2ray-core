@@ -110,38 +110,38 @@ func (v *CommandSwitchAccountFactory) Marshal(command interface{}, writer io.Wri
 func (v *CommandSwitchAccountFactory) Unmarshal(data []byte) (interface{}, error) {
 	cmd := new(protocol.CommandSwitchAccount)
 	if len(data) == 0 {
-		return nil, errors.New("VMess|SwitchAccountCommand: Insufficient length.")
+		return nil, errors.New("insufficient length.").Path("Proxy", "VMess", "Encoding", "Command")
 	}
 	lenHost := int(data[0])
 	if len(data) < lenHost+1 {
-		return nil, errors.New("VMess|SwitchAccountCommand: Insufficient length.")
+		return nil, errors.New("insufficient length.").Path("Proxy", "VMess", "Encoding", "Command")
 	}
 	if lenHost > 0 {
 		cmd.Host = net.ParseAddress(string(data[1 : 1+lenHost]))
 	}
 	portStart := 1 + lenHost
 	if len(data) < portStart+2 {
-		return nil, errors.New("VMess|SwitchAccountCommand: Insufficient length.")
+		return nil, errors.New("insufficient length.").Path("Proxy", "VMess", "Encoding", "Command")
 	}
 	cmd.Port = net.PortFromBytes(data[portStart : portStart+2])
 	idStart := portStart + 2
 	if len(data) < idStart+16 {
-		return nil, errors.New("VMess|SwitchAccountCommand: Insufficient length.")
+		return nil, errors.New("insufficient length.").Path("Proxy", "VMess", "Encoding", "Command")
 	}
 	cmd.ID, _ = uuid.ParseBytes(data[idStart : idStart+16])
 	alterIDStart := idStart + 16
 	if len(data) < alterIDStart+2 {
-		return nil, errors.New("VMess|SwitchAccountCommand: Insufficient length.")
+		return nil, errors.New("insufficient length.").Path("Proxy", "VMess", "Encoding", "Command")
 	}
 	cmd.AlterIds = serial.BytesToUint16(data[alterIDStart : alterIDStart+2])
 	levelStart := alterIDStart + 2
 	if len(data) < levelStart+1 {
-		return nil, errors.New("VMess|SwitchAccountCommand: Insufficient length.")
+		return nil, errors.New("insufficient length.").Path("Proxy", "VMess", "Encoding", "Command")
 	}
 	cmd.Level = uint32(data[levelStart])
 	timeStart := levelStart + 1
 	if len(data) < timeStart {
-		return nil, errors.New("VMess|SwitchAccountCommand: Insufficient length.")
+		return nil, errors.New("insufficient length.").Path("Proxy", "VMess", "Encoding", "Command")
 	}
 	cmd.ValidMin = data[timeStart]
 	return cmd, nil

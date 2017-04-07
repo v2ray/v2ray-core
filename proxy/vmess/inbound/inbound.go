@@ -82,7 +82,7 @@ type Handler struct {
 func New(ctx context.Context, config *Config) (*Handler, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
-		return nil, errors.New("VMess|Inbound: No space in context.")
+		return nil, errors.New("no space in context").Path("Proxy", "VMess", "Inbound")
 	}
 
 	allowedClients := vmess.NewTimedUserValidator(ctx, protocol.DefaultIDHash)
@@ -100,7 +100,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	space.OnInitialize(func() error {
 		handler.inboundHandlerManager = proxyman.InboundHandlerManagerFromSpace(space)
 		if handler.inboundHandlerManager == nil {
-			return errors.New("VMess|Inbound: InboundHandlerManager is not found is space.")
+			return errors.New("InboundHandlerManager is not found is space").Path("Proxy", "VMess", "Inbound")
 		}
 		return nil
 	})
@@ -180,12 +180,12 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 	if err != nil {
 		if errors.Cause(err) != io.EOF {
 			log.Access(connection.RemoteAddr(), "", log.AccessRejected, err)
-			log.Trace(errors.New("VMess|Inbound: Invalid request from ", connection.RemoteAddr(), ": ", err))
+			log.Trace(errors.New("invalid request from ", connection.RemoteAddr(), ": ", err).Path("Proxy", "VMess", "Inbound"))
 		}
 		return err
 	}
 	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, "")
-	log.Trace(errors.New("VMess|Inbound: Received request for ", request.Destination()))
+	log.Trace(errors.New("received request for ", request.Destination()).Path("Proxy", "VMess", "Inbound"))
 
 	connection.SetReadDeadline(time.Time{})
 
@@ -238,7 +238,7 @@ func (v *Handler) generateCommand(ctx context.Context, request *protocol.Request
 		if v.inboundHandlerManager != nil {
 			handler, err := v.inboundHandlerManager.GetHandler(ctx, tag)
 			if err != nil {
-				log.Trace(errors.New("VMess|Inbound: Failed to get detour handler: ", tag, err).AtWarning())
+				log.Trace(errors.New("failed to get detour handler: ", tag, err).AtWarning().Path("Proxy", "VMess", "Inbound"))
 				return nil
 			}
 			proxyHandler, port, availableMin := handler.GetRandomInboundProxy()
@@ -248,7 +248,7 @@ func (v *Handler) generateCommand(ctx context.Context, request *protocol.Request
 					availableMin = 255
 				}
 
-				log.Trace(errors.New("VMess|Inbound: Pick detour handler for port ", port, " for ", availableMin, " minutes."))
+				log.Trace(errors.New("pick detour handler for port ", port, " for ", availableMin, " minutes.").Path("Proxy", "VMess", "Inbound").AtDebug())
 				user := inboundHandler.GetUser(request.User.Email)
 				if user == nil {
 					return nil

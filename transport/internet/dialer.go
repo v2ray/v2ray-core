@@ -16,7 +16,7 @@ var (
 
 func RegisterTransportDialer(protocol TransportProtocol, dialer Dialer) error {
 	if _, found := transportDialerCache[protocol]; found {
-		return errors.New("Internet|Dialer: ", protocol, " dialer already registered.")
+		return errors.New(protocol, " dialer already registered").AtError().Path("Transport", "Internet")
 	}
 	transportDialerCache[protocol] = dialer
 	return nil
@@ -40,14 +40,14 @@ func Dial(ctx context.Context, dest v2net.Destination) (Connection, error) {
 		}
 		dialer := transportDialerCache[protocol]
 		if dialer == nil {
-			return nil, errors.New("Internet|Dialer: ", protocol, " dialer not registered.")
+			return nil, errors.New(protocol, " dialer not registered").AtError().Path("Transport", "Internet")
 		}
 		return dialer(ctx, dest)
 	}
 
 	udpDialer := transportDialerCache[TransportProtocol_UDP]
 	if udpDialer == nil {
-		return nil, errors.New("Internet|Dialer: UDP dialer not registered.")
+		return nil, errors.New("UDP dialer not registered").AtError().Path("Transport", "Internet")
 	}
 	return udpDialer(ctx, dest)
 }

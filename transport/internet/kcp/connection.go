@@ -198,7 +198,7 @@ type Connection struct {
 
 // NewConnection create a new KCP connection between local and remote.
 func NewConnection(conv uint16, sysConn SystemConnection, config *Config) *Connection {
-	log.Trace(errors.New("KCP|Connection: creating connection ", conv))
+	log.Trace(errors.New("creating connection ", conv).Path("Transport", "Internet", "mKCP", "Connection"))
 
 	conn := &Connection{
 		conv:       conv,
@@ -335,7 +335,7 @@ func (v *Connection) SetState(state State) {
 	current := v.Elapsed()
 	atomic.StoreInt32((*int32)(&v.state), int32(state))
 	atomic.StoreUint32(&v.stateBeginTime, current)
-	log.Trace(errors.New("KCP|Connection: #", v.conv, " entering state ", state, " at ", current).AtDebug())
+	log.Trace(errors.New("#", v.conv, " entering state ", state, " at ", current).AtDebug().Path("Transport", "Internet", "mKCP", "Connection"))
 
 	switch state {
 	case StateReadyToClose:
@@ -372,7 +372,7 @@ func (v *Connection) Close() error {
 	if state.Is(StateReadyToClose, StateTerminating, StateTerminated) {
 		return ErrClosedConnection
 	}
-	log.Trace(errors.New("KCP|Connection: Closing connection to ", v.conn.RemoteAddr()))
+	log.Trace(errors.New("closing connection to ", v.conn.RemoteAddr()).Path("Transport", "Internet", "mKCP", "Connection"))
 
 	if state == StateActive {
 		v.SetState(StateReadyToClose)
@@ -441,7 +441,7 @@ func (v *Connection) Terminate() {
 	if v == nil {
 		return
 	}
-	log.Trace(errors.New("KCP|Connection: Terminating connection to ", v.RemoteAddr()))
+	log.Trace(errors.New("terminating connection to ", v.RemoteAddr()).Path("Transport", "Internet", "mKCP", "Connection"))
 
 	//v.SetState(StateTerminated)
 	v.OnDataInput()
@@ -531,7 +531,7 @@ func (v *Connection) flush() {
 	}
 
 	if v.State() == StateTerminating {
-		log.Trace(errors.New("KCP|Connection: #", v.conv, " sending terminating cmd.").AtDebug())
+		log.Trace(errors.New("#", v.conv, " sending terminating cmd.").AtDebug().Path("Transport", "Internet", "mKCP", "Connection"))
 		v.Ping(current, CommandTerminate)
 
 		if current-atomic.LoadUint32(&v.stateBeginTime) > 8000 {
