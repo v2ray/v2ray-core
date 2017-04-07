@@ -151,14 +151,15 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 		return err
 	}
 
-	requestDone := signal.ExecuteAsync(func() error {
+	responseDone := signal.ExecuteAsync(func() error {
 		bufferedWriter := buf.NewBufferedWriter(conn)
 		responseWriter, err := WriteTCPResponse(request, bufferedWriter)
 		if err != nil {
 			return errors.New("failed to write response").Base(err).Path("Shadowsocks", "Server")
 		}
 
-		payload, err := ray.InboundOutput().Read()
+		mergeReader := buf.NewMergingReader(ray.InboundOutput())
+		payload, err := mergeReader.Read()
 		if err != nil {
 			return err
 		}
@@ -171,18 +172,17 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 			return err
 		}
 
-		if err := buf.PipeUntilEOF(timer, ray.InboundOutput(), responseWriter); err != nil {
+		if err := buf.PipeUntilEOF(timer, mergeReader, responseWriter); err != nil {
 			return errors.New("failed to transport all TCP response").Base(err).Path("Shadowsocks", "Server")
 		}
 
 		return nil
 	})
 
-	responseDone := signal.ExecuteAsync(func() error {
+	requestDone := signal.ExecuteAsync(func() error {
 		defer ray.InboundInput().Close()
 
-		mergeReader := buf.NewMergingReader(bodyReader)
-		if err := buf.PipeUntilEOF(timer, mergeReader, ray.InboundInput()); err != nil {
+		if err := buf.PipeUntilEOF(timer, bodyReader, ray.InboundInput()); err != nil {
 			return errors.New("failed to transport all TCP request").Base(err).Path("Shadowsocks", "Server")
 		}
 		return nil
