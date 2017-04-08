@@ -2,7 +2,6 @@
 package errors
 
 import (
-	"fmt"
 	"strings"
 
 	"v2ray.com/core/common/serial"
@@ -28,23 +27,15 @@ type hasSeverity interface {
 
 // Error is an error object with underlying error.
 type Error struct {
-	format   string
 	message  []interface{}
 	inner    error
 	severity Severity
 	path     []string
 }
 
-func (v *Error) formMessage() string {
-	if len(v.format) == 0 {
-		return serial.Concat(v.message...)
-	}
-	return fmt.Sprintf(v.format, v.message...)
-}
-
 // Error implements error.Error().
 func (v *Error) Error() string {
-	msg := v.formMessage()
+	msg := serial.Concat(v.message...)
 	if v.inner != nil {
 		msg += " > " + v.inner.Error()
 	}
@@ -112,14 +103,6 @@ func (v *Error) Path(path ...string) *Error {
 func New(msg ...interface{}) *Error {
 	return &Error{
 		message:  msg,
-		severity: SeverityInfo,
-	}
-}
-
-func Format(format string, values ...interface{}) *Error {
-	return &Error{
-		format:   format,
-		message:  values,
 		severity: SeverityInfo,
 	}
 }

@@ -191,7 +191,7 @@ func (v *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 	}
 
 	if buffer[0] != v.responseHeader {
-		return nil, errors.Format("unexpected response header. Expecting %d but actually %d", v.responseHeader, buffer[0]).Path("Proxy", "VMess", "Encoding", "ClientSession")
+		return nil, errors.New("unexpected response header. Expecting ", int(v.responseHeader), " but actually ", int(buffer[0])).Path("Proxy", "VMess", "Encoding", "ClientSession")
 	}
 
 	header := &protocol.ResponseHeader{

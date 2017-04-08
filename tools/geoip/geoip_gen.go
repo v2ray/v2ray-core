@@ -30,7 +30,7 @@ func main() {
 		panic(err)
 	}
 	if resp.StatusCode != 200 {
-		panic(errors.Format("Unexpected status %d", resp.StatusCode))
+		panic(errors.New("unexpected status ", resp.StatusCode))
 	}
 	defer resp.Body.Close()
 	scanner := bufio.NewScanner(resp.Body)
