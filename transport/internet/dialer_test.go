@@ -1,13 +1,13 @@
 package internet_test
 
 import (
+	"context"
 	"testing"
 
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/testing/servers/tcp"
 	. "v2ray.com/core/transport/internet"
-	"context"
 )
 
 func TestDialWithLocalAddr(t *testing.T) {
