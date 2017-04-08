@@ -9,6 +9,8 @@
 // connections.
 package core
 
+//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg core -path Core
+
 import (
 	"fmt"
 

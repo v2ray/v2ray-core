@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/kcp"
@@ -45,14 +44,14 @@ func (v *KCPConfig) Build() (*serial.TypedMessage, error) {
 	if v.Mtu != nil {
 		mtu := *v.Mtu
 		if mtu < 576 || mtu > 1460 {
-			return nil, errors.New("Config: Invalid mKCP MTU size: ", mtu)
+			return nil, newError("Config: Invalid mKCP MTU size: ", mtu)
 		}
 		config.Mtu = &kcp.MTU{Value: mtu}
 	}
 	if v.Tti != nil {
 		tti := *v.Tti
 		if tti < 10 || tti > 100 {
-			return nil, errors.New("Config: Invalid mKCP TTI: ", tti)
+			return nil, newError("Config: Invalid mKCP TTI: ", tti)
 		}
 		config.Tti = &kcp.TTI{Value: tti}
 	}
@@ -84,11 +83,11 @@ func (v *KCPConfig) Build() (*serial.TypedMessage, error) {
 	if len(v.HeaderConfig) > 0 {
 		headerConfig, _, err := kcpHeaderLoader.Load(v.HeaderConfig)
 		if err != nil {
-			return nil, errors.New("Config: Invalid mKCP header config.").Base(err)
+			return nil, newError("Config: Invalid mKCP header config.").Base(err)
 		}
 		ts, err := headerConfig.(Buildable).Build()
 		if err != nil {
-			return nil, errors.New("Config: Invalid mKCP header config.").Base(err)
+			return nil, newError("Config: Invalid mKCP header config.").Base(err)
 		}
 		config.HeaderConfig = ts
 	}
@@ -105,11 +104,11 @@ func (v *TCPConfig) Build() (*serial.TypedMessage, error) {
 	if len(v.HeaderConfig) > 0 {
 		headerConfig, _, err := tcpHeaderLoader.Load(v.HeaderConfig)
 		if err != nil {
-			return nil, errors.New("Config: Invalid TCP header config.").Base(err)
+			return nil, newError("Config: Invalid TCP header config.").Base(err)
 		}
 		ts, err := headerConfig.(Buildable).Build()
 		if err != nil {
-			return nil, errors.New("Config: Invalid TCP header config.").Base(err)
+			return nil, newError("Config: Invalid TCP header config.").Base(err)
 		}
 		config.HeaderSettings = ts
 	}
@@ -144,11 +143,11 @@ func (v *TLSConfig) Build() (*serial.TypedMessage, error) {
 	for idx, certConf := range v.Certs {
 		cert, err := ioutil.ReadFile(certConf.CertFile)
 		if err != nil {
-			return nil, errors.New("Failed to load TLS certificate file: ", certConf.CertFile).Base(err)
+			return nil, newError("Failed to load TLS certificate file: ", certConf.CertFile).Base(err)
 		}
 		key, err := ioutil.ReadFile(certConf.KeyFile)
 		if err != nil {
-			return nil, errors.New("Failed to load TLS key file: ", certConf.KeyFile).Base(err)
+			return nil, newError("Failed to load TLS key file: ", certConf.KeyFile).Base(err)
 		}
 		config.Certificate[idx] = &tls.Certificate{
 			Key:         key,
@@ -173,7 +172,7 @@ func (p TransportProtocol) Build() (internet.TransportProtocol, error) {
 	case "ws", "websocket":
 		return internet.TransportProtocol_WebSocket, nil
 	default:
-		return internet.TransportProtocol_TCP, errors.New("Config: unknown transport protocol: ", p)
+		return internet.TransportProtocol_TCP, newError("Config: unknown transport protocol: ", p)
 	}
 }
 
@@ -204,7 +203,7 @@ func (v *StreamConfig) Build() (*internet.StreamConfig, error) {
 		}
 		ts, err := tlsSettings.Build()
 		if err != nil {
-			return nil, errors.New("Failed to build TLS config.").Base(err)
+			return nil, newError("Failed to build TLS config.").Base(err)
 		}
 		config.SecuritySettings = append(config.SecuritySettings, ts)
 		config.SecurityType = ts.Type
@@ -212,7 +211,7 @@ func (v *StreamConfig) Build() (*internet.StreamConfig, error) {
 	if v.TCPSettings != nil {
 		ts, err := v.TCPSettings.Build()
 		if err != nil {
-			return nil, errors.New("Failed to build TCP config.").Base(err)
+			return nil, newError("Failed to build TCP config.").Base(err)
 		}
 		config.TransportSettings = append(config.TransportSettings, &internet.TransportConfig{
 			Protocol: internet.TransportProtocol_TCP,
@@ -222,7 +221,7 @@ func (v *StreamConfig) Build() (*internet.StreamConfig, error) {
 	if v.KCPSettings != nil {
 		ts, err := v.KCPSettings.Build()
 		if err != nil {
-			return nil, errors.New("Failed to build mKCP config.").Base(err)
+			return nil, newError("Failed to build mKCP config.").Base(err)
 		}
 		config.TransportSettings = append(config.TransportSettings, &internet.TransportConfig{
 			Protocol: internet.TransportProtocol_MKCP,
@@ -232,7 +231,7 @@ func (v *StreamConfig) Build() (*internet.StreamConfig, error) {
 	if v.WSSettings != nil {
 		ts, err := v.WSSettings.Build()
 		if err != nil {
-			return nil, errors.New("Failed to build WebSocket config.").Base(err)
+			return nil, newError("Failed to build WebSocket config.").Base(err)
 		}
 		config.TransportSettings = append(config.TransportSettings, &internet.TransportConfig{
 			Protocol: internet.TransportProtocol_WebSocket,
@@ -248,7 +247,7 @@ type ProxyConfig struct {
 
 func (v *ProxyConfig) Build() (*internet.ProxyConfig, error) {
 	if len(v.Tag) == 0 {
-		return nil, errors.New("Proxy tag is not set.")
+		return nil, newError("Proxy tag is not set.")
 	}
 	return &internet.ProxyConfig{
 		Tag: v.Tag,

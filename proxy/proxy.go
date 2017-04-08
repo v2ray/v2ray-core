@@ -5,6 +5,8 @@
 // 2. Register a config creator through common.RegisterConfig.
 package proxy
 
+//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg proxy -path Proxy
+
 import (
 	"context"
 

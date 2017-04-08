@@ -7,7 +7,6 @@ import (
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/ray"
 )
@@ -45,7 +44,7 @@ func (v *Dispatcher) getInboundRay(ctx context.Context, dest v2net.Destination) 
 		return entry, true
 	}
 
-	log.Trace(errors.New("establishing new connection for ", dest).Path("Transport", "Internet", "UDP", "Dispatcher"))
+	log.Trace(newError("establishing new connection for ", dest))
 	inboundRay, _ := v.dispatcher.Dispatch(ctx, dest)
 	v.conns[dest] = inboundRay
 	return inboundRay, false
@@ -53,7 +52,7 @@ func (v *Dispatcher) getInboundRay(ctx context.Context, dest v2net.Destination) 
 
 func (v *Dispatcher) Dispatch(ctx context.Context, destination v2net.Destination, payload *buf.Buffer, callback ResponseCallback) {
 	// TODO: Add user to destString
-	log.Trace(errors.New("dispatch request to: ", destination).AtDebug().Path("Transport", "Internet", "UDP", "Dispatcher"))
+	log.Trace(newError("dispatch request to: ", destination).AtDebug())
 
 	inboundRay, existing := v.getInboundRay(ctx, destination)
 	outputStream := inboundRay.InboundInput()

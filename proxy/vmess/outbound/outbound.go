@@ -1,5 +1,7 @@
 package outbound
 
+//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg outbound -path Proxy,VMess,Outbound
+
 import (
 	"context"
 	"runtime"
@@ -9,7 +11,6 @@ import (
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
@@ -30,7 +31,7 @@ type Handler struct {
 func New(ctx context.Context, config *Config) (*Handler, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
-		return nil, errors.New("no space in context.").Path("Proxy", "VMess", "Outbound")
+		return nil, newError("no space in context.")
 	}
 
 	serverList := protocol.NewServerList()
@@ -61,15 +62,15 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		return nil
 	})
 	if err != nil {
-		return errors.New("failed to find an available destination").Base(err).AtWarning().Path("Proxy", "VMess", "Outbound")
+		return newError("failed to find an available destination").Base(err).AtWarning()
 	}
 	defer conn.Close()
 
 	target, ok := proxy.TargetFromContext(ctx)
 	if !ok {
-		return errors.New("target not specified").Path("Proxy", "VMess", "Outbound").AtError()
+		return newError("target not specified").AtError()
 	}
-	log.Trace(errors.New("tunneling request to ", target, " via ", rec.Destination()).Path("Proxy", "VMess", "Outbound"))
+	log.Trace(newError("tunneling request to ", target, " via ", rec.Destination()))
 
 	command := protocol.RequestCommandTCP
 	if target.Network == net.Network_UDP {
@@ -86,7 +87,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 
 	rawAccount, err := request.User.GetTypedAccount()
 	if err != nil {
-		return errors.New("failed to get user account").Base(err).AtWarning().Path("Proxy", "VMess", "Outbound")
+		return newError("failed to get user account").Base(err).AtWarning()
 	}
 	account := rawAccount.(*vmess.InternalAccount)
 	request.Security = account.Security
@@ -109,11 +110,11 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		bodyWriter := session.EncodeRequestBody(request, writer)
 		firstPayload, err := input.ReadTimeout(time.Millisecond * 500)
 		if err != nil && err != buf.ErrReadTimeout {
-			return errors.New("failed to get first payload").Base(err).Path("Proxy", "VMess", "Outbound")
+			return newError("failed to get first payload").Base(err)
 		}
 		if !firstPayload.IsEmpty() {
 			if err := bodyWriter.Write(firstPayload); err != nil {
-				return errors.New("failed to write first payload").Base(err).Path("Proxy", "VMess", "Outbound")
+				return newError("failed to write first payload").Base(err)
 			}
 			firstPayload.Release()
 		}
@@ -159,7 +160,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	})
 
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
-		return errors.New("connection ends").Base(err).Path("Proxy", "VMess", "Outbound")
+		return newError("connection ends").Base(err)
 	}
 	runtime.KeepAlive(timer)
 

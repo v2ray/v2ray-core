@@ -1,5 +1,7 @@
 package main
 
+//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg main -path Main
+
 import (
 	"flag"
 	"fmt"
@@ -11,7 +13,6 @@ import (
 	"syscall"
 
 	"v2ray.com/core"
-	"v2ray.com/core/common/errors"
 
 	_ "v2ray.com/core/main/distro/all"
 )
@@ -45,7 +46,7 @@ func GetConfigFormat() core.ConfigFormat {
 
 func startV2Ray() (core.Server, error) {
 	if len(configFile) == 0 {
-		return nil, errors.New("config file is not set").Path("Core")
+		return nil, newError("config file is not set")
 	}
 	var configInput io.Reader
 	if configFile == "stdin:" {
@@ -54,19 +55,19 @@ func startV2Ray() (core.Server, error) {
 		fixedFile := os.ExpandEnv(configFile)
 		file, err := os.Open(fixedFile)
 		if err != nil {
-			return nil, errors.New("config file not readable").Path("Core").Base(err)
+			return nil, newError("config file not readable").Base(err)
 		}
 		defer file.Close()
 		configInput = file
 	}
 	config, err := core.LoadConfig(GetConfigFormat(), configInput)
 	if err != nil {
-		return nil, errors.New("failed to read config file: ", configFile).Base(err).Path("Core")
+		return nil, newError("failed to read config file: ", configFile).Base(err)
 	}
 
 	server, err := core.New(config)
 	if err != nil {
-		return nil, errors.New("failed to create initialize").Base(err).Path("Core")
+		return nil, newError("failed to create initialize").Base(err)
 	}
 
 	return server, nil

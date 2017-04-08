@@ -3,7 +3,6 @@ package conf
 import (
 	"strings"
 
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/shadowsocks"
@@ -23,7 +22,7 @@ func (v *ShadowsocksServerConfig) Build() (*serial.TypedMessage, error) {
 	config.UdpEnabled = v.UDP
 
 	if len(v.Password) == 0 {
-		return nil, errors.New("Shadowsocks password is not specified.")
+		return nil, newError("Shadowsocks password is not specified.")
 	}
 	account := &shadowsocks.Account{
 		Password: v.Password,
@@ -47,7 +46,7 @@ func (v *ShadowsocksServerConfig) Build() (*serial.TypedMessage, error) {
 	case "chacha20-ietf":
 		account.CipherType = shadowsocks.CipherType_CHACHA20_IETF
 	default:
-		return nil, errors.New("Unknown cipher method: " + cipher)
+		return nil, newError("Unknown cipher method: " + cipher)
 	}
 
 	config.User = &protocol.User{
@@ -76,19 +75,19 @@ func (v *ShadowsocksClientConfig) Build() (*serial.TypedMessage, error) {
 	config := new(shadowsocks.ClientConfig)
 
 	if len(v.Servers) == 0 {
-		return nil, errors.New("0 Shadowsocks server configured.")
+		return nil, newError("0 Shadowsocks server configured.")
 	}
 
 	serverSpecs := make([]*protocol.ServerEndpoint, len(v.Servers))
 	for idx, server := range v.Servers {
 		if server.Address == nil {
-			return nil, errors.New("Shadowsocks server address is not set.")
+			return nil, newError("Shadowsocks server address is not set.")
 		}
 		if server.Port == 0 {
-			return nil, errors.New("Invalid Shadowsocks port.")
+			return nil, newError("Invalid Shadowsocks port.")
 		}
 		if len(server.Password) == 0 {
-			return nil, errors.New("Shadowsocks password is not specified.")
+			return nil, newError("Shadowsocks password is not specified.")
 		}
 		account := &shadowsocks.Account{
 			Password: server.Password,
@@ -108,7 +107,7 @@ func (v *ShadowsocksClientConfig) Build() (*serial.TypedMessage, error) {
 		case "chacha20-ietf":
 			account.CipherType = shadowsocks.CipherType_CHACHA20_IETF
 		default:
-			return nil, errors.New("Unknown cipher method: " + cipher)
+			return nil, newError("Unknown cipher method: " + cipher)
 		}
 
 		ss := &protocol.ServerEndpoint{

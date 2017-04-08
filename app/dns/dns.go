@@ -1,5 +1,7 @@
 package dns
 
+//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg dns -path App,DNS
+
 import (
 	"net"
 

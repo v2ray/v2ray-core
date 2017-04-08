@@ -32,12 +32,12 @@ func NewHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) (*H
 	}
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
-		return nil, errors.New("no space in context").Path("App", "Proxyman", "Outbound", "Handler")
+		return nil, newError("no space in context")
 	}
 	space.OnInitialize(func() error {
 		ohm := proxyman.OutboundHandlerManagerFromSpace(space)
 		if ohm == nil {
-			return errors.New("no OutboundManager in space").Path("App", "Proxyman", "Outbound", "Handler")
+			return newError("no OutboundManager in space")
 		}
 		h.outboundManager = ohm
 		return nil
@@ -52,7 +52,7 @@ func NewHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) (*H
 		case *proxyman.SenderConfig:
 			h.senderSettings = s
 		default:
-			return nil, errors.New("settings is not SenderConfig").Path("App", "Proxyman", "Outbound", "Handler")
+			return nil, newError("settings is not SenderConfig")
 		}
 	}
 
@@ -73,13 +73,13 @@ func (h *Handler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
 	if h.mux != nil {
 		err := h.mux.Dispatch(ctx, outboundRay)
 		if err != nil {
-			log.Trace(errors.New("failed to process outbound traffic").Base(err).Path("App", "Proxyman", "Outbound", "Handler"))
+			log.Trace(newError("failed to process outbound traffic").Base(err))
 		}
 	} else {
 		err := h.proxy.Process(ctx, outboundRay, h)
 		// Ensure outbound ray is properly closed.
 		if err != nil && errors.Cause(err) != io.EOF {
-			log.Trace(errors.New("failed to process outbound traffic").Base(err).Path("App", "Proxyman", "Outbound", "Handler"))
+			log.Trace(newError("failed to process outbound traffic").Base(err))
 			outboundRay.OutboundOutput().CloseError()
 		} else {
 			outboundRay.OutboundOutput().Close()
@@ -95,14 +95,14 @@ func (h *Handler) Dial(ctx context.Context, dest v2net.Destination) (internet.Co
 			tag := h.senderSettings.ProxySettings.Tag
 			handler := h.outboundManager.GetHandler(tag)
 			if handler != nil {
-				log.Trace(errors.New("proxying to ", tag).AtDebug().Path("App", "Proxyman", "Outbound", "Handler"))
+				log.Trace(newError("proxying to ", tag).AtDebug())
 				ctx = proxy.ContextWithTarget(ctx, dest)
 				stream := ray.NewRay(ctx)
 				go handler.Dispatch(ctx, stream)
 				return NewConnection(stream), nil
 			}
 
-			log.Trace(errors.New("failed to get outbound handler with tag: ", tag).AtWarning().Path("App", "Proxyman", "Outbound", "Handler"))
+			log.Trace(newError("failed to get outbound handler with tag: ", tag).AtWarning())
 		}
 
 		if h.senderSettings.Via != nil {

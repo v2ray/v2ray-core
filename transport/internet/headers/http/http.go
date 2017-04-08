@@ -1,9 +1,10 @@
 package http
 
+//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg http -path Transport,Internet,Headers,HTTP
+
 import (
 	"bytes"
 	"context"
-	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -24,7 +25,7 @@ const (
 )
 
 var (
-	ErrHeaderToLong = errors.New("Header too long.")
+	ErrHeaderToLong = newError("Header too long.")
 	writeCRLF       = serial.WriteString(CRLF)
 )
 

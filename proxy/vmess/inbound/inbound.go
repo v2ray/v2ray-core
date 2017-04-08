@@ -1,5 +1,7 @@
 package inbound
 
+//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg inbound -path Proxy,VMess,Inbound
+
 import (
 	"context"
 	"io"
@@ -82,7 +84,7 @@ type Handler struct {
 func New(ctx context.Context, config *Config) (*Handler, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
-		return nil, errors.New("no space in context").Path("Proxy", "VMess", "Inbound")
+		return nil, newError("no space in context")
 	}
 
 	allowedClients := vmess.NewTimedUserValidator(ctx, protocol.DefaultIDHash)
@@ -100,7 +102,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	space.OnInitialize(func() error {
 		handler.inboundHandlerManager = proxyman.InboundHandlerManagerFromSpace(space)
 		if handler.inboundHandlerManager == nil {
-			return errors.New("InboundHandlerManager is not found is space").Path("Proxy", "VMess", "Inbound")
+			return newError("InboundHandlerManager is not found is space")
 		}
 		return nil
 	})
@@ -180,12 +182,12 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 	if err != nil {
 		if errors.Cause(err) != io.EOF {
 			log.Access(connection.RemoteAddr(), "", log.AccessRejected, err)
-			log.Trace(errors.New("invalid request from ", connection.RemoteAddr(), ": ", err).Path("Proxy", "VMess", "Inbound"))
+			log.Trace(newError("invalid request from ", connection.RemoteAddr(), ": ", err))
 		}
 		return err
 	}
 	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, "")
-	log.Trace(errors.New("received request for ", request.Destination()).Path("Proxy", "VMess", "Inbound"))
+	log.Trace(newError("received request for ", request.Destination()))
 
 	connection.SetReadDeadline(time.Time{})
 
@@ -220,11 +222,11 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		input.CloseError()
 		output.CloseError()
-		return errors.New("error during processing").Base(err).Path("Proxy", "VMess", "Inbound")
+		return newError("error during processing").Base(err)
 	}
 
 	if err := writer.Flush(); err != nil {
-		return errors.New("error during flushing remaining data").Base(err).Path("Proxy", "VMess", "Inbound")
+		return newError("error during flushing remaining data").Base(err)
 	}
 
 	runtime.KeepAlive(timer)
@@ -238,7 +240,7 @@ func (v *Handler) generateCommand(ctx context.Context, request *protocol.Request
 		if v.inboundHandlerManager != nil {
 			handler, err := v.inboundHandlerManager.GetHandler(ctx, tag)
 			if err != nil {
-				log.Trace(errors.New("failed to get detour handler: ", tag, err).AtWarning().Path("Proxy", "VMess", "Inbound"))
+				log.Trace(newError("failed to get detour handler: ", tag, err).AtWarning())
 				return nil
 			}
 			proxyHandler, port, availableMin := handler.GetRandomInboundProxy()
@@ -248,7 +250,7 @@ func (v *Handler) generateCommand(ctx context.Context, request *protocol.Request
 					availableMin = 255
 				}
 
-				log.Trace(errors.New("pick detour handler for port ", port, " for ", availableMin, " minutes.").Path("Proxy", "VMess", "Inbound").AtDebug())
+				log.Trace(newError("pick detour handler for port ", port, " for ", availableMin, " minutes.").AtDebug())
 				user := inboundHandler.GetUser(request.User.Email)
 				if user == nil {
 					return nil

@@ -1,4 +1,3 @@
-// GENERATED CODE. DO NOT MODIFY!
 package internal
 
 import "encoding/binary"

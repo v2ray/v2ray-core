@@ -4,7 +4,6 @@ import (
 	"context"
 	"net"
 
-	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 )
 
@@ -16,7 +15,7 @@ var (
 
 func RegisterTransportDialer(protocol TransportProtocol, dialer Dialer) error {
 	if _, found := transportDialerCache[protocol]; found {
-		return errors.New(protocol, " dialer already registered").AtError().Path("Transport", "Internet")
+		return newError(protocol, " dialer already registered").AtError()
 	}
 	transportDialerCache[protocol] = dialer
 	return nil
@@ -40,14 +39,14 @@ func Dial(ctx context.Context, dest v2net.Destination) (Connection, error) {
 		}
 		dialer := transportDialerCache[protocol]
 		if dialer == nil {
-			return nil, errors.New(protocol, " dialer not registered").AtError().Path("Transport", "Internet")
+			return nil, newError(protocol, " dialer not registered").AtError()
 		}
 		return dialer(ctx, dest)
 	}
 
 	udpDialer := transportDialerCache[TransportProtocol_UDP]
 	if udpDialer == nil {
-		return nil, errors.New("UDP dialer not registered").AtError().Path("Transport", "Internet")
+		return nil, newError("UDP dialer not registered").AtError()
 	}
 	return udpDialer(ctx, dest)
 }

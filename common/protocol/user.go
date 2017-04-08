@@ -1,15 +1,11 @@
 package protocol
 
-import (
-	"time"
-
-	"v2ray.com/core/common/errors"
-)
+import "time"
 
 var (
-	ErrAccountMissing     = errors.New("Account is not specified.")
-	ErrNonMessageType     = errors.New("Not a protobuf message.")
-	ErrUnknownAccountType = errors.New("Unknown account type.")
+	ErrAccountMissing     = newError("Account is not specified.")
+	ErrNonMessageType     = newError("Not a protobuf message.")
+	ErrUnknownAccountType = newError("Unknown account type.")
 )
 
 func (v *User) GetTypedAccount() (Account, error) {
@@ -27,7 +23,7 @@ func (v *User) GetTypedAccount() (Account, error) {
 	if account, ok := rawAccount.(Account); ok {
 		return account, nil
 	}
-	return nil, errors.New("Unknown account type: ", v.Account.Type)
+	return nil, newError("Unknown account type: ", v.Account.Type)
 }
 
 func (v *User) GetSettings() UserSettings {

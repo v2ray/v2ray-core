@@ -1,9 +1,6 @@
 package internet
 
-import (
-	"v2ray.com/core/common/errors"
-	"v2ray.com/core/common/serial"
-)
+import "v2ray.com/core/common/serial"
 
 type ConfigCreator func() interface{}
 
@@ -21,7 +18,7 @@ func RegisterProtocolConfigCreator(protocol TransportProtocol, creator ConfigCre
 func CreateTransportConfig(protocol TransportProtocol) (interface{}, error) {
 	creator, ok := globalTransportConfigCreatorCache[protocol]
 	if !ok {
-		return nil, errors.New("Internet: Unknown transport protocol: ", protocol)
+		return nil, newError("Internet: Unknown transport protocol: ", protocol)
 	}
 	return creator(), nil
 }

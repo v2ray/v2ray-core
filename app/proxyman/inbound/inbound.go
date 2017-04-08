@@ -1,11 +1,12 @@
 package inbound
 
+//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg inbound -path App,Proxyman,Inbound
+
 import (
 	"context"
 
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/errors"
 )
 
 type DefaultInboundHandlerManager struct {
@@ -26,7 +27,7 @@ func (m *DefaultInboundHandlerManager) AddHandler(ctx context.Context, config *p
 	}
 	receiverSettings, ok := rawReceiverSettings.(*proxyman.ReceiverConfig)
 	if !ok {
-		return errors.New("not a ReceiverConfig").Path("App", "Proxyman", "Inbound", "DefaultInboundHandlerManager")
+		return newError("not a ReceiverConfig")
 	}
 	proxySettings, err := config.ProxySettings.GetInstance()
 	if err != nil {
@@ -50,7 +51,7 @@ func (m *DefaultInboundHandlerManager) AddHandler(ctx context.Context, config *p
 	}
 
 	if handler == nil {
-		return errors.New("unknown allocation strategy: ", receiverSettings.AllocationStrategy.Type).Path("App", "Proxyman", "Inbound", "DefaultInboundHandlerManager")
+		return newError("unknown allocation strategy: ", receiverSettings.AllocationStrategy.Type)
 	}
 
 	m.handlers = append(m.handlers, handler)
@@ -63,7 +64,7 @@ func (m *DefaultInboundHandlerManager) AddHandler(ctx context.Context, config *p
 func (m *DefaultInboundHandlerManager) GetHandler(ctx context.Context, tag string) (proxyman.InboundHandler, error) {
 	handler, found := m.taggedHandlers[tag]
 	if !found {
-		return nil, errors.New("handler not found: ", tag).Path("App", "Proxyman", "Inbound", "DefaultInboundHandlerManager")
+		return nil, newError("handler not found: ", tag)
 	}
 	return handler, nil
 }

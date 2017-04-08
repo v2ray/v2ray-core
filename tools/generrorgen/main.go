@@ -40,5 +40,5 @@ func main() {
 	fmt.Fprintln(file, "")
 	fmt.Fprintln(file, "import \"v2ray.com/core/common/errors\"")
 	fmt.Fprintln(file, "")
-	fmt.Fprintln(file, "func newError(values ...interface{}) *errors.Error { return errors.New(values...).Path("+pathStr+") }")
+	fmt.Fprintln(file, "func newError(values ...interface{}) *errors.Error { return newError(values...).Path("+pathStr+") }")
 }

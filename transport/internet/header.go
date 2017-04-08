@@ -2,7 +2,6 @@ package internet
 
 import (
 	"context"
-	"errors"
 	"net"
 
 	"v2ray.com/core/common"
@@ -21,7 +20,7 @@ func CreatePacketHeader(config interface{}) (PacketHeader, error) {
 	if h, ok := header.(PacketHeader); ok {
 		return h, nil
 	}
-	return nil, errors.New("Internet: Not a packet header.")
+	return nil, newError("Internet: Not a packet header.")
 }
 
 type ConnectionAuthenticator interface {
@@ -37,5 +36,5 @@ func CreateConnectionAuthenticator(config interface{}) (ConnectionAuthenticator,
 	if a, ok := auth.(ConnectionAuthenticator); ok {
 		return a, nil
 	}
-	return nil, errors.New("Internet: Not a ConnectionAuthenticator.")
+	return nil, newError("Internet: Not a ConnectionAuthenticator.")
 }

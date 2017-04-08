@@ -1,6 +1,8 @@
 // Package blackhole is an outbound handler that blocks all connections.
 package blackhole
 
+//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg blackhole -path Proxy,Blackhole
+
 import (
 	"context"
 	"time"

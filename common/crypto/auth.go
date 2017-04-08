@@ -8,12 +8,11 @@ import (
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/serial"
 )
 
 var (
-	errInsufficientBuffer = errors.New("insufficient buffer")
+	errInsufficientBuffer = newError("insufficient buffer")
 )
 
 type BytesGenerator interface {
@@ -52,7 +51,7 @@ type AEADAuthenticator struct {
 func (v *AEADAuthenticator) Open(dst, cipherText []byte) ([]byte, error) {
 	iv := v.NonceGenerator.Next()
 	if len(iv) != v.AEAD.NonceSize() {
-		return nil, errors.New("Crypto:AEADAuthenticator: Invalid nonce size: ", len(iv))
+		return nil, newError("Crypto:AEADAuthenticator: Invalid nonce size: ", len(iv))
 	}
 
 	additionalData := v.AdditionalDataGenerator.Next()
@@ -62,7 +61,7 @@ func (v *AEADAuthenticator) Open(dst, cipherText []byte) ([]byte, error) {
 func (v *AEADAuthenticator) Seal(dst, plainText []byte) ([]byte, error) {
 	iv := v.NonceGenerator.Next()
 	if len(iv) != v.AEAD.NonceSize() {
-		return nil, errors.New("Crypto:AEADAuthenticator: Invalid nonce size: ", len(iv))
+		return nil, newError("Crypto:AEADAuthenticator: Invalid nonce size: ", len(iv))
 	}
 
 	additionalData := v.AdditionalDataGenerator.Next()
@@ -128,13 +127,13 @@ func (v *AuthenticationReader) nextChunk(mask uint16) error {
 		return errInsufficientBuffer
 	}
 	if size > readerBufferSize-2 {
-		return errors.New("size too large: ", size).Path("Common", "Crypto", "AuthenticationReader")
+		return newError("size too large: ", size)
 	}
 	if size == v.auth.Overhead() {
 		return io.EOF
 	}
 	if size < v.auth.Overhead() {
-		return errors.New("invalid packet size: ", size).Path("Common", "Crypto", "AuthenticationReader")
+		return newError("invalid packet size: ", size)
 	}
 	cipherChunk := v.buffer.BytesRange(2, size+2)
 	plainChunk, err := v.auth.Open(cipherChunk[:0], cipherChunk)

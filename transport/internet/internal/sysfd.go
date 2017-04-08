@@ -3,12 +3,10 @@ package internal
 import (
 	"net"
 	"reflect"
-
-	"v2ray.com/core/common/errors"
 )
 
 var (
-	errInvalidConn = errors.New("Invalid Connection.")
+	errInvalidConn = newError("Invalid Connection.")
 )
 
 // GetSysFd returns the underlying fd of a connection.

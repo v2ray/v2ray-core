@@ -3,7 +3,6 @@ package conf
 import (
 	"encoding/json"
 
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/blackhole"
 )
@@ -29,7 +28,7 @@ func (v *BlackholeConfig) Build() (*serial.TypedMessage, error) {
 	if v.Response != nil {
 		response, _, err := configLoader.Load(v.Response)
 		if err != nil {
-			return nil, errors.New("Config: Failed to parse Blackhole response config.").Base(err)
+			return nil, newError("Config: Failed to parse Blackhole response config.").Base(err)
 		}
 		responseSettings, err := response.(Buildable).Build()
 		if err != nil {

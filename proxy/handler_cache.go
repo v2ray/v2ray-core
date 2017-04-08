@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/errors"
 )
 
 func CreateInboundHandler(ctx context.Context, config interface{}) (Inbound, error) {
@@ -16,7 +15,7 @@ func CreateInboundHandler(ctx context.Context, config interface{}) (Inbound, err
 	case Inbound:
 		return h, nil
 	default:
-		return nil, errors.New("Proxy: Not a InboundHandler.")
+		return nil, newError("Proxy: Not a InboundHandler.")
 	}
 }
 
@@ -29,6 +28,6 @@ func CreateOutboundHandler(ctx context.Context, config interface{}) (Outbound, e
 	case Outbound:
 		return h, nil
 	default:
-		return nil, errors.New("Proxy: Not a OutboundHandler.")
+		return nil, newError("Proxy: Not a OutboundHandler.")
 	}
 }

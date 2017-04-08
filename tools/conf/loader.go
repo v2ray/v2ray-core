@@ -1,10 +1,6 @@
 package conf
 
-import (
-	"encoding/json"
-
-	"v2ray.com/core/common/errors"
-)
+import "encoding/json"
 
 type ConfigCreator func() interface{}
 
@@ -12,7 +8,7 @@ type ConfigCreatorCache map[string]ConfigCreator
 
 func (v ConfigCreatorCache) RegisterCreator(id string, creator ConfigCreator) error {
 	if _, found := v[id]; found {
-		return errors.New("Config: ", id, " already registered.")
+		return newError("Config: ", id, " already registered.")
 	}
 
 	v[id] = creator
@@ -22,7 +18,7 @@ func (v ConfigCreatorCache) RegisterCreator(id string, creator ConfigCreator) er
 func (v ConfigCreatorCache) CreateConfig(id string) (interface{}, error) {
 	creator, found := v[id]
 	if !found {
-		return nil, errors.New("Config: Unknown config id: ", id)
+		return nil, newError("Config: Unknown config id: ", id)
 	}
 	return creator(), nil
 }
@@ -44,7 +40,7 @@ func NewJSONConfigLoader(cache ConfigCreatorCache, idKey string, configKey strin
 func (v *JSONConfigLoader) LoadWithID(raw []byte, id string) (interface{}, error) {
 	creator, found := v.cache[id]
 	if !found {
-		return nil, errors.New("Config: Unknown config id: ", id)
+		return nil, newError("Config: Unknown config id: ", id)
 	}
 
 	config := creator()
@@ -61,7 +57,7 @@ func (v *JSONConfigLoader) Load(raw []byte) (interface{}, string, error) {
 	}
 	rawID, found := obj[v.idKey]
 	if !found {
-		return nil, "", errors.New("Config: ", v.idKey, " not found in JSON context.")
+		return nil, "", newError("Config: ", v.idKey, " not found in JSON context.")
 	}
 	var id string
 	if err := json.Unmarshal(rawID, &id); err != nil {
@@ -71,7 +67,7 @@ func (v *JSONConfigLoader) Load(raw []byte) (interface{}, string, error) {
 	if len(v.configKey) > 0 {
 		configValue, found := obj[v.configKey]
 		if !found {
-			return nil, "", errors.New("Config: ", v.configKey, " not found in JSON content.")
+			return nil, "", newError("Config: ", v.configKey, " not found in JSON content.")
 		}
 		rawConfig = configValue
 	}

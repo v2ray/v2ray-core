@@ -4,7 +4,6 @@ import (
 	"io"
 
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/serial"
 )
 
@@ -30,7 +29,7 @@ func (r *Reader) ReadMetadata() (*FrameMetadata, error) {
 	}
 	metaLen := serial.BytesToUint16(b.Bytes())
 	if metaLen > 512 {
-		return nil, errors.New("invalid metalen ", metaLen).Path("App", "Proxyman", "Mux", "Reader")
+		return nil, newError("invalid metalen ", metaLen)
 	}
 	b.Clear()
 	if err := b.AppendSupplier(buf.ReadFullFrom(r.reader, int(metaLen))); err != nil {

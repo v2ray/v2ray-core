@@ -6,7 +6,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/errors"
 )
 
 // ConfigLoader is an utility to load V2Ray config from external source.
@@ -24,7 +23,7 @@ func RegisterConfigLoader(format ConfigFormat, loader ConfigLoader) error {
 func LoadConfig(format ConfigFormat, input io.Reader) (*Config, error) {
 	loader, found := configLoaderCache[format]
 	if !found {
-		return nil, errors.New("Core: ", ConfigFormat_name[int32(format)], " is not loadable.")
+		return nil, newError("Core: ", ConfigFormat_name[int32(format)], " is not loadable.")
 	}
 	return loader(input)
 }

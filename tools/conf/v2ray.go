@@ -7,7 +7,6 @@ import (
 
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
-	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
 	json_reader "v2ray.com/core/tools/conf/json"
@@ -49,7 +48,7 @@ func (v *InboundConnectionConfig) Build() (*proxyman.InboundHandlerConfig, error
 	}
 	if v.Listen != nil {
 		if v.Listen.Family().IsDomain() {
-			return nil, errors.New("Config: Unable to listen on domain address: " + v.Listen.Domain())
+			return nil, newError("Config: Unable to listen on domain address: " + v.Listen.Domain())
 		}
 		receiverConfig.Listen = v.Listen.Build()
 	}
@@ -63,7 +62,7 @@ func (v *InboundConnectionConfig) Build() (*proxyman.InboundHandlerConfig, error
 
 	jsonConfig, err := inboundConfigLoader.LoadWithID(v.Settings, v.Protocol)
 	if err != nil {
-		return nil, errors.New("Config: Failed to load inbound config.").Base(err)
+		return nil, newError("Config: Failed to load inbound config.").Base(err)
 	}
 	if dokodemoConfig, ok := jsonConfig.(*DokodemoConfig); ok {
 		receiverConfig.ReceiveOriginalDestination = dokodemoConfig.Redirect
@@ -100,7 +99,7 @@ func (v *OutboundConnectionConfig) Build() (*proxyman.OutboundHandlerConfig, err
 	if v.SendThrough != nil {
 		address := v.SendThrough
 		if address.Family().IsDomain() {
-			return nil, errors.New("Config: Invalid sendThrough address: " + address.String())
+			return nil, newError("Config: Invalid sendThrough address: " + address.String())
 		}
 		senderSettings.Via = address.Build()
 	}
@@ -114,7 +113,7 @@ func (v *OutboundConnectionConfig) Build() (*proxyman.OutboundHandlerConfig, err
 	if v.ProxySettings != nil {
 		ps, err := v.ProxySettings.Build()
 		if err != nil {
-			return nil, errors.New("Config: Invalid outbound proxy settings.").Base(err)
+			return nil, newError("Config: Invalid outbound proxy settings.").Base(err)
 		}
 		senderSettings.ProxySettings = ps
 	}
@@ -127,7 +126,7 @@ func (v *OutboundConnectionConfig) Build() (*proxyman.OutboundHandlerConfig, err
 
 	rawConfig, err := outboundConfigLoader.LoadWithID(v.Settings, v.Protocol)
 	if err != nil {
-		return nil, errors.New("Config: Failed to parse outbound config.").Base(err)
+		return nil, newError("Config: Failed to parse outbound config.").Base(err)
 	}
 	ts, err := rawConfig.(Buildable).Build()
 	if err != nil {
@@ -157,7 +156,7 @@ func (v *InboundDetourAllocationConfig) Build() (*proxyman.AllocationStrategy, e
 	case "external":
 		config.Type = proxyman.AllocationStrategy_External
 	default:
-		return nil, errors.New("Config: Unknown allocation strategy: ", v.Strategy)
+		return nil, newError("Config: Unknown allocation strategy: ", v.Strategy)
 	}
 	if v.Concurrency != nil {
 		config.Concurrency = &proxyman.AllocationStrategy_AllocationStrategyConcurrency{
@@ -188,13 +187,13 @@ func (v *InboundDetourConfig) Build() (*proxyman.InboundHandlerConfig, error) {
 	receiverSettings := &proxyman.ReceiverConfig{}
 
 	if v.PortRange == nil {
-		return nil, errors.New("Config: Port range not specified in InboundDetour.")
+		return nil, newError("Config: Port range not specified in InboundDetour.")
 	}
 	receiverSettings.PortRange = v.PortRange.Build()
 
 	if v.ListenOn != nil {
 		if v.ListenOn.Family().IsDomain() {
-			return nil, errors.New("Config: Unable to listen on domain address: ", v.ListenOn.Domain())
+			return nil, newError("Config: Unable to listen on domain address: ", v.ListenOn.Domain())
 		}
 		receiverSettings.Listen = v.ListenOn.Build()
 	}
@@ -215,7 +214,7 @@ func (v *InboundDetourConfig) Build() (*proxyman.InboundHandlerConfig, error) {
 
 	rawConfig, err := inboundConfigLoader.LoadWithID(v.Settings, v.Protocol)
 	if err != nil {
-		return nil, errors.New("Config: Failed to load inbound detour config.").Base(err)
+		return nil, newError("Config: Failed to load inbound detour config.").Base(err)
 	}
 	if dokodemoConfig, ok := rawConfig.(*DokodemoConfig); ok {
 		receiverSettings.ReceiveOriginalDestination = dokodemoConfig.Redirect
@@ -248,7 +247,7 @@ func (v *OutboundDetourConfig) Build() (*proxyman.OutboundHandlerConfig, error) 
 	if v.SendThrough != nil {
 		address := v.SendThrough
 		if address.Family().IsDomain() {
-			return nil, errors.New("Config: Unable to send through: " + address.String())
+			return nil, newError("Config: Unable to send through: " + address.String())
 		}
 		senderSettings.Via = address.Build()
 	}
@@ -264,7 +263,7 @@ func (v *OutboundDetourConfig) Build() (*proxyman.OutboundHandlerConfig, error) 
 	if v.ProxySettings != nil {
 		ps, err := v.ProxySettings.Build()
 		if err != nil {
-			return nil, errors.New("Config: Invalid outbound detour proxy settings.").Base(err)
+			return nil, newError("Config: Invalid outbound detour proxy settings.").Base(err)
 		}
 		senderSettings.ProxySettings = ps
 	}
@@ -277,7 +276,7 @@ func (v *OutboundDetourConfig) Build() (*proxyman.OutboundHandlerConfig, error) 
 
 	rawConfig, err := outboundConfigLoader.LoadWithID(v.Settings, v.Protocol)
 	if err != nil {
-		return nil, errors.New("Config: Failed to parse to outbound detour config.").Base(err)
+		return nil, newError("Config: Failed to parse to outbound detour config.").Base(err)
 	}
 	ts, err := rawConfig.(Buildable).Build()
 	if err != nil {
@@ -331,7 +330,7 @@ func (v *Config) Build() (*core.Config, error) {
 	}
 
 	if v.InboundConfig == nil {
-		return nil, errors.New("Config: No inbound config specified.")
+		return nil, newError("Config: No inbound config specified.")
 	}
 
 	if v.InboundConfig.Port == 0 && v.Port > 0 {
@@ -353,7 +352,7 @@ func (v *Config) Build() (*core.Config, error) {
 	}
 
 	if v.OutboundConfig == nil {
-		return nil, errors.New("Config: No outbound config specified.")
+		return nil, newError("Config: No outbound config specified.")
 	}
 	oc, err := v.OutboundConfig.Build()
 	if err != nil {
@@ -380,7 +379,7 @@ func init() {
 		})
 		err := decoder.Decode(jsonConfig)
 		if err != nil {
-			return nil, errors.New("Config: Invalid V2Ray config.").Base(err)
+			return nil, newError("Config: Invalid V2Ray config.").Base(err)
 		}
 
 		return jsonConfig.Build()

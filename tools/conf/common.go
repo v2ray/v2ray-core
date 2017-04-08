@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"strings"
 
-	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 )
@@ -33,7 +32,7 @@ func (v *StringList) UnmarshalJSON(data []byte) error {
 		*v = *NewStringList(strlist)
 		return nil
 	}
-	return errors.New("Config: Unknown format of a string list: " + string(data))
+	return newError("Config: Unknown format of a string list: " + string(data))
 }
 
 type Address struct {
@@ -80,7 +79,7 @@ func (v *NetworkList) UnmarshalJSON(data []byte) error {
 		*v = nl
 		return nil
 	}
-	return errors.New("Config: Unknown format of a string list: " + string(data))
+	return newError("Config: Unknown format of a string list: " + string(data))
 }
 
 func (v *NetworkList) Build() *v2net.NetworkList {
@@ -114,7 +113,7 @@ func parseStringPort(data []byte) (v2net.Port, v2net.Port, error) {
 	}
 	pair := strings.SplitN(s, "-", 2)
 	if len(pair) == 0 {
-		return v2net.Port(0), v2net.Port(0), errors.New("Config: Invalid port range: ", s)
+		return v2net.Port(0), v2net.Port(0), newError("Config: Invalid port range: ", s)
 	}
 	if len(pair) == 1 {
 		port, err := v2net.PortFromString(pair[0])
@@ -158,12 +157,12 @@ func (v *PortRange) UnmarshalJSON(data []byte) error {
 		v.From = uint32(from)
 		v.To = uint32(to)
 		if v.From > v.To {
-			return errors.New("Config: Invalid port range ", v.From, " -> ", v.To)
+			return newError("Config: Invalid port range ", v.From, " -> ", v.To)
 		}
 		return nil
 	}
 
-	return errors.New("Config: Invalid port range: ", string(data))
+	return newError("Config: Invalid port range: ", string(data))
 }
 
 type User struct {

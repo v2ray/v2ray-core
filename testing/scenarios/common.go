@@ -1,6 +1,7 @@
 package scenarios
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -16,7 +17,6 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
 )

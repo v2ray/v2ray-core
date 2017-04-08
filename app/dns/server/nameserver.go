@@ -11,7 +11,6 @@ import (
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
-	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet/udp"
 )
@@ -89,7 +88,7 @@ func (v *UDPNameServer) AssignUnusedID(response chan<- *ARecord) uint16 {
 		if _, found := v.requests[id]; found {
 			continue
 		}
-		log.Trace(errors.New("add pending request id ", id).AtDebug().Path("App", "DNS", "UDPNameServer"))
+		log.Trace(newError("add pending request id ", id).AtDebug())
 		v.requests[id] = &PendingRequest{
 			expire:   time.Now().Add(time.Second * 8),
 			response: response,
@@ -105,7 +104,7 @@ func (v *UDPNameServer) HandleResponse(payload *buf.Buffer) {
 	msg := new(dns.Msg)
 	err := msg.Unpack(payload.Bytes())
 	if err != nil {
-		log.Trace(errors.New("failed to parse DNS response").Base(err).AtWarning().Path("App", "DNS", "UDPNameServer"))
+		log.Trace(newError("failed to parse DNS response").Base(err).AtWarning())
 		return
 	}
 	record := &ARecord{
@@ -113,7 +112,7 @@ func (v *UDPNameServer) HandleResponse(payload *buf.Buffer) {
 	}
 	id := msg.Id
 	ttl := DefaultTTL
-	log.Trace(errors.New("handling response for id ", id, " content: ", msg.String()).AtDebug().Path("App", "DNS", "UDPNameServer"))
+	log.Trace(newError("handling response for id ", id, " content: ", msg.String()).AtDebug())
 
 	v.Lock()
 	request, found := v.requests[id]
@@ -201,7 +200,7 @@ func (v *LocalNameServer) QueryA(domain string) <-chan *ARecord {
 
 		ips, err := net.LookupIP(domain)
 		if err != nil {
-			log.Trace(errors.New("failed to lookup IPs for domain ", domain).Path("App", "DNS", "LocalNameServer").Base(err))
+			log.Trace(newError("failed to lookup IPs for domain ", domain).Base(err))
 			return
 		}
 

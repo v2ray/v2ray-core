@@ -12,7 +12,6 @@ import (
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	v2tls "v2ray.com/core/transport/internet/tls"
@@ -91,11 +90,11 @@ func NewListener(ctx context.Context, address v2net.Address, port v2net.Port, co
 
 	header, err := kcpSettings.GetPackerHeader()
 	if err != nil {
-		return nil, errors.New("KCP|Listener: Failed to create packet header.").Base(err)
+		return nil, newError("KCP|Listener: Failed to create packet header.").Base(err)
 	}
 	security, err := kcpSettings.GetSecurity()
 	if err != nil {
-		return nil, errors.New("KCP|Listener: Failed to create security.").Base(err)
+		return nil, newError("KCP|Listener: Failed to create security.").Base(err)
 	}
 	l := &Listener{
 		header:   header,
@@ -123,7 +122,7 @@ func NewListener(ctx context.Context, address v2net.Address, port v2net.Port, co
 	l.Lock()
 	l.hub = hub
 	l.Unlock()
-	log.Trace(errors.New("KCP|Listener: listening on ", address, ":", port))
+	log.Trace(newError("KCP|Listener: listening on ", address, ":", port))
 	return l, nil
 }
 
@@ -132,7 +131,7 @@ func (v *Listener) OnReceive(payload *buf.Buffer, src v2net.Destination, origina
 
 	segments := v.reader.Read(payload.Bytes())
 	if len(segments) == 0 {
-		log.Trace(errors.New("KCP|Listener: discarding invalid payload from ", src))
+		log.Trace(newError("KCP|Listener: discarding invalid payload from ", src))
 		return
 	}
 

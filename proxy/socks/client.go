@@ -7,7 +7,6 @@ import (
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
@@ -36,7 +35,7 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.Dialer) error {
 	destination, ok := proxy.TargetFromContext(ctx)
 	if !ok {
-		return errors.New("target not specified.").Path("Proxy", "Socks", "Client")
+		return newError("target not specified.")
 	}
 
 	var server *protocol.ServerSpec
@@ -55,7 +54,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 	})
 
 	if err != nil {
-		return errors.New("failed to find an available destination").Base(err).Path("Proxy", "Socks", "Client")
+		return newError("failed to find an available destination").Base(err)
 	}
 
 	defer conn.Close()
@@ -77,7 +76,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 
 	udpRequest, err := ClientHandshake(request, conn, conn)
 	if err != nil {
-		return errors.New("failed to establish connection to server").AtWarning().Base(err).Path("Proxy", "Socks", "Client")
+		return newError("failed to establish connection to server").AtWarning().Base(err)
 	}
 
 	ctx, timer := signal.CancelAfterInactivity(ctx, time.Minute*2)
@@ -95,7 +94,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 	} else if request.Command == protocol.RequestCommandUDP {
 		udpConn, err := dialer.Dial(ctx, udpRequest.Destination())
 		if err != nil {
-			return errors.New("failed to create UDP connection").Base(err).Path("Proxy", "Socks", "Client")
+			return newError("failed to create UDP connection").Base(err)
 		}
 		defer udpConn.Close()
 		requestFunc = func() error {
@@ -111,7 +110,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 	requestDone := signal.ExecuteAsync(requestFunc)
 	responseDone := signal.ExecuteAsync(responseFunc)
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
-		return errors.New("connection ends").Base(err).Path("Proxy", "Socks", "Client")
+		return newError("connection ends").Base(err)
 	}
 
 	runtime.KeepAlive(timer)

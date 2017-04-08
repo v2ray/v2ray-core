@@ -7,7 +7,6 @@ import (
 
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/router"
-	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/tools/geoip"
 
@@ -25,7 +24,7 @@ type RouterConfig struct {
 
 func (v *RouterConfig) Build() (*router.Config, error) {
 	if v.Settings == nil {
-		return nil, errors.New("Config: Router settings is not specified.")
+		return nil, newError("Config: Router settings is not specified.")
 	}
 	config := new(router.Config)
 
@@ -69,12 +68,12 @@ func parseIP(s string) (*router.CIDR, error) {
 		if len(mask) > 0 {
 			bits64, err := strconv.ParseUint(mask, 10, 32)
 			if err != nil {
-				return nil, errors.New("Config: invalid network mask for router: ", mask).Base(err)
+				return nil, newError("Config: invalid network mask for router: ", mask).Base(err)
 			}
 			bits = uint32(bits64)
 		}
 		if bits > 32 {
-			return nil, errors.New("Config: invalid network mask for router: ", bits)
+			return nil, newError("Config: invalid network mask for router: ", bits)
 		}
 		return &router.CIDR{
 			Ip:     []byte(ip.IP()),
@@ -85,19 +84,19 @@ func parseIP(s string) (*router.CIDR, error) {
 		if len(mask) > 0 {
 			bits64, err := strconv.ParseUint(mask, 10, 32)
 			if err != nil {
-				return nil, errors.New("Config: invalid network mask for router: ", mask).Base(err)
+				return nil, newError("Config: invalid network mask for router: ", mask).Base(err)
 			}
 			bits = uint32(bits64)
 		}
 		if bits > 128 {
-			return nil, errors.New("Config: invalid network mask for router: ", bits)
+			return nil, newError("Config: invalid network mask for router: ", bits)
 		}
 		return &router.CIDR{
 			Ip:     []byte(ip.IP()),
 			Prefix: bits,
 		}, nil
 	default:
-		return nil, errors.New("Config: unsupported address for router: ", s)
+		return nil, newError("Config: unsupported address for router: ", s)
 	}
 }
 
@@ -139,7 +138,7 @@ func parseFieldRule(msg json.RawMessage) (*router.RoutingRule, error) {
 		for _, ip := range *rawFieldRule.IP {
 			ipRule, err := parseIP(ip)
 			if err != nil {
-				return nil, errors.New("Config: invalid IP: ", ip).Base(err)
+				return nil, newError("Config: invalid IP: ", ip).Base(err)
 			}
 			rule.Cidr = append(rule.Cidr, ipRule)
 		}
@@ -157,7 +156,7 @@ func parseFieldRule(msg json.RawMessage) (*router.RoutingRule, error) {
 		for _, ip := range *rawFieldRule.SourceIP {
 			ipRule, err := parseIP(ip)
 			if err != nil {
-				return nil, errors.New("Config: invalid IP: ", ip).Base(err)
+				return nil, newError("Config: invalid IP: ", ip).Base(err)
 			}
 			rule.SourceCidr = append(rule.SourceCidr, ipRule)
 		}
@@ -182,41 +181,41 @@ func ParseRule(msg json.RawMessage) (*router.RoutingRule, error) {
 	rawRule := new(RouterRule)
 	err := json.Unmarshal(msg, rawRule)
 	if err != nil {
-		return nil, errors.New("Config: Invalid router rule.").Base(err)
+		return nil, newError("Config: Invalid router rule.").Base(err)
 	}
 	if rawRule.Type == "field" {
 		fieldrule, err := parseFieldRule(msg)
 		if err != nil {
-			return nil, errors.New("Config: Invalid field rule.").Base(err)
+			return nil, newError("Config: Invalid field rule.").Base(err)
 		}
 		return fieldrule, nil
 	}
 	if rawRule.Type == "chinaip" {
 		chinaiprule, err := parseChinaIPRule(msg)
 		if err != nil {
-			return nil, errors.New("Config: Invalid chinaip rule.").Base(err)
+			return nil, newError("Config: Invalid chinaip rule.").Base(err)
 		}
 		return chinaiprule, nil
 	}
 	if rawRule.Type == "chinasites" {
 		chinasitesrule, err := parseChinaSitesRule(msg)
 		if err != nil {
-			return nil, errors.New("Config: Invalid chinasites rule.").Base(err)
+			return nil, newError("Config: Invalid chinasites rule.").Base(err)
 		}
 		return chinasitesrule, nil
 	}
-	return nil, errors.New("Config: Unknown router rule type: ", rawRule.Type)
+	return nil, newError("Config: Unknown router rule type: ", rawRule.Type)
 }
 
 func parseChinaIPRule(data []byte) (*router.RoutingRule, error) {
 	rawRule := new(RouterRule)
 	err := json.Unmarshal(data, rawRule)
 	if err != nil {
-		return nil, errors.New("Config: Invalid router rule.").Base(err)
+		return nil, newError("Config: Invalid router rule.").Base(err)
 	}
 	var chinaIPs geoip.CountryIPRange
 	if err := proto.Unmarshal(geoip.ChinaIPs, &chinaIPs); err != nil {
-		return nil, errors.New("Config: Invalid china ips.").Base(err)
+		return nil, newError("Config: Invalid china ips.").Base(err)
 	}
 	return &router.RoutingRule{
 		Tag:  rawRule.OutboundTag,
@@ -228,7 +227,7 @@ func parseChinaSitesRule(data []byte) (*router.RoutingRule, error) {
 	rawRule := new(RouterRule)
 	err := json.Unmarshal(data, rawRule)
 	if err != nil {
-		log.Trace(errors.New("Router: Invalid router rule: ", err).AtError())
+		log.Trace(newError("Router: Invalid router rule: ", err).AtError())
 		return nil, err
 	}
 	return &router.RoutingRule{

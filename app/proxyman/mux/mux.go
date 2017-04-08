@@ -1,5 +1,7 @@
 package mux
 
+//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg mux -path App,Proxyman,Mux
+
 import (
 	"context"
 	"sync"
@@ -9,7 +11,6 @@ import (
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
@@ -83,7 +84,7 @@ func (m *ClientManager) Dispatch(ctx context.Context, outboundRay ray.OutboundRa
 
 	client, err := NewClient(m.proxy, m.dialer, m)
 	if err != nil {
-		return errors.New("failed to create client").Base(err).Path("App", "Proxyman", "Mux", "ClientManager")
+		return newError("failed to create client").Base(err)
 	}
 	m.clients = append(m.clients, client)
 	client.Dispatch(ctx, outboundRay)
@@ -200,16 +201,16 @@ func fetchInput(ctx context.Context, s *session, output buf.Writer) {
 	defer writer.Close()
 	defer s.closeUplink()
 
-	log.Trace(errors.New("dispatching request to ", dest).Path("Proxyman", "Mux", "Client"))
+	log.Trace(newError("dispatching request to ", dest))
 	data, _ := s.input.ReadTimeout(time.Millisecond * 500)
 	if data != nil {
 		if err := writer.Write(data); err != nil {
-			log.Trace(errors.New("failed to write first payload").Base(err).Path("Proxyman", "Mux", "Client"))
+			log.Trace(newError("failed to write first payload").Base(err))
 			return
 		}
 	}
 	if err := buf.PipeUntilEOF(signal.BackgroundTimer(), s.input, writer); err != nil {
-		log.Trace(errors.New("failed to fetch all input").Base(err).Path("Proxyman", "Mux", "Client"))
+		log.Trace(newError("failed to fetch all input").Base(err))
 	}
 }
 
@@ -287,7 +288,7 @@ func (m *Client) fetchOutput() {
 	for {
 		meta, err := reader.ReadMetadata()
 		if err != nil {
-			log.Trace(errors.New("failed to read metadata").Base(err).Path("Proxyman", "Mux", "Client"))
+			log.Trace(newError("failed to read metadata").Base(err))
 			break
 		}
 		m.access.RLock()
@@ -308,7 +309,7 @@ func (m *Client) fetchOutput() {
 		}
 
 		if err != nil {
-			log.Trace(errors.New("failed to read data").Base(err).Path("Proxyman", "Mux", "Client"))
+			log.Trace(newError("failed to read data").Base(err))
 			break
 		}
 	}
@@ -324,7 +325,7 @@ func NewServer(ctx context.Context) *Server {
 	space.OnInitialize(func() error {
 		d := dispatcher.FromSpace(space)
 		if d == nil {
-			return errors.New("no dispatcher in space").Path("Proxyman", "Mux", "Server")
+			return newError("no dispatcher in space")
 		}
 		s.dispatcher = d
 		return nil
@@ -363,7 +364,7 @@ func (w *ServerWorker) remove(id uint16) {
 func handle(ctx context.Context, s *session, output buf.Writer) {
 	writer := NewResponseWriter(s.id, output)
 	if err := buf.PipeUntilEOF(signal.BackgroundTimer(), s.input, writer); err != nil {
-		log.Trace(errors.New("session ", s.id, " ends: ").Base(err).Path("Proxyman", "Mux", "ServerWorker"))
+		log.Trace(newError("session ", s.id, " ends: ").Base(err))
 	}
 	writer.Close()
 	s.closeDownlink()
@@ -381,7 +382,7 @@ func (w *ServerWorker) run(ctx context.Context) {
 
 		meta, err := reader.ReadMetadata()
 		if err != nil {
-			log.Trace(errors.New("failed to read metadata").Base(err).Path("Proxyman", "Mux", "ServerWorker"))
+			log.Trace(newError("failed to read metadata").Base(err))
 			return
 		}
 
@@ -395,10 +396,10 @@ func (w *ServerWorker) run(ctx context.Context) {
 		}
 
 		if meta.SessionStatus == SessionStatusNew {
-			log.Trace(errors.New("received request for ", meta.Target).Path("Proxyman", "Mux", "ServerWorker"))
+			log.Trace(newError("received request for ", meta.Target))
 			inboundRay, err := w.dispatcher.Dispatch(ctx, meta.Target)
 			if err != nil {
-				log.Trace(errors.New("failed to dispatch request.").Base(err).Path("Proxymann", "Mux", "ServerWorker"))
+				log.Trace(newError("failed to dispatch request.").Base(err))
 				continue
 			}
 			s = &session{
@@ -424,7 +425,7 @@ func (w *ServerWorker) run(ctx context.Context) {
 		}
 
 		if err != nil {
-			log.Trace(errors.New("failed to read data").Base(err).Path("Proxymann", "Mux", "ServerWorker"))
+			log.Trace(newError("failed to read data").Base(err))
 			break
 		}
 	}

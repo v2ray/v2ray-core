@@ -1,7 +1,6 @@
 package conf
 
 import (
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/transport/internet/headers/http"
 	"v2ray.com/core/transport/internet/headers/noop"
@@ -93,7 +92,7 @@ func (v *HTTPAuthenticatorRequest) Build() (*http.RequestConfig, error) {
 		config.Header = make([]*http.Header, 0, len(v.Headers))
 		for key, value := range v.Headers {
 			if value == nil {
-				return nil, errors.New("Config: Empty HTTP header value: " + key)
+				return nil, newError("Config: Empty HTTP header value: " + key)
 			}
 			config.Header = append(config.Header, &http.Header{
 				Name:  key,
@@ -159,7 +158,7 @@ func (v *HTTPAuthenticatorResponse) Build() (*http.ResponseConfig, error) {
 		config.Header = make([]*http.Header, 0, len(v.Headers))
 		for key, value := range v.Headers {
 			if value == nil {
-				return nil, errors.New("Config: Empty HTTP header value: " + key)
+				return nil, newError("Config: Empty HTTP header value: " + key)
 			}
 			config.Header = append(config.Header, &http.Header{
 				Name:  key,

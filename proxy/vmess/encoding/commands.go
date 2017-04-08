@@ -4,7 +4,6 @@ import (
 	"io"
 
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -12,9 +11,9 @@ import (
 )
 
 var (
-	ErrCommandTypeMismatch = errors.New("Command type mismatch.")
-	ErrUnknownCommand      = errors.New("Unknown command.")
-	ErrCommandTooLarge     = errors.New("Command too large.")
+	ErrCommandTypeMismatch = newError("Command type mismatch.")
+	ErrUnknownCommand      = newError("Unknown command.")
+	ErrCommandTooLarge     = newError("Command too large.")
 )
 
 func MarshalCommand(command interface{}, writer io.Writer) error {
@@ -53,12 +52,12 @@ func MarshalCommand(command interface{}, writer io.Writer) error {
 
 func UnmarshalCommand(cmdID byte, data []byte) (protocol.ResponseCommand, error) {
 	if len(data) <= 4 {
-		return nil, errors.New("insufficient length").Path("Proxy", "VMess", "Encoding", "Command")
+		return nil, newError("insufficient length")
 	}
 	expectedAuth := Authenticate(data[4:])
 	actualAuth := serial.BytesToUint32(data[:4])
 	if expectedAuth != actualAuth {
-		return nil, errors.New("invalid auth").Path("Proxy", "VMess", "Encoding", "Command")
+		return nil, newError("invalid auth")
 	}
 
 	var factory CommandFactory
@@ -110,38 +109,38 @@ func (v *CommandSwitchAccountFactory) Marshal(command interface{}, writer io.Wri
 func (v *CommandSwitchAccountFactory) Unmarshal(data []byte) (interface{}, error) {
 	cmd := new(protocol.CommandSwitchAccount)
 	if len(data) == 0 {
-		return nil, errors.New("insufficient length.").Path("Proxy", "VMess", "Encoding", "Command")
+		return nil, newError("insufficient length.")
 	}
 	lenHost := int(data[0])
 	if len(data) < lenHost+1 {
-		return nil, errors.New("insufficient length.").Path("Proxy", "VMess", "Encoding", "Command")
+		return nil, newError("insufficient length.")
 	}
 	if lenHost > 0 {
 		cmd.Host = net.ParseAddress(string(data[1 : 1+lenHost]))
 	}
 	portStart := 1 + lenHost
 	if len(data) < portStart+2 {
-		return nil, errors.New("insufficient length.").Path("Proxy", "VMess", "Encoding", "Command")
+		return nil, newError("insufficient length.")
 	}
 	cmd.Port = net.PortFromBytes(data[portStart : portStart+2])
 	idStart := portStart + 2
 	if len(data) < idStart+16 {
-		return nil, errors.New("insufficient length.").Path("Proxy", "VMess", "Encoding", "Command")
+		return nil, newError("insufficient length.")
 	}
 	cmd.ID, _ = uuid.ParseBytes(data[idStart : idStart+16])
 	alterIDStart := idStart + 16
 	if len(data) < alterIDStart+2 {
-		return nil, errors.New("insufficient length.").Path("Proxy", "VMess", "Encoding", "Command")
+		return nil, newError("insufficient length.")
 	}
 	cmd.AlterIds = serial.BytesToUint16(data[alterIDStart : alterIDStart+2])
 	levelStart := alterIDStart + 2
 	if len(data) < levelStart+1 {
-		return nil, errors.New("insufficient length.").Path("Proxy", "VMess", "Encoding", "Command")
+		return nil, newError("insufficient length.")
 	}
 	cmd.Level = uint32(data[levelStart])
 	timeStart := levelStart + 1
 	if len(data) < timeStart {
-		return nil, errors.New("insufficient length.").Path("Proxy", "VMess", "Encoding", "Command")
+		return nil, newError("insufficient length.")
 	}
 	cmd.ValidMin = data[timeStart]
 	return cmd, nil

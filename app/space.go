@@ -5,7 +5,6 @@ import (
 	"reflect"
 
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/errors"
 )
 
 type Application interface {
@@ -25,7 +24,7 @@ func CreateAppFromConfig(ctx context.Context, config interface{}) (Application, 
 	case Application:
 		return a, nil
 	default:
-		return nil, errors.New("App: Not an application.")
+		return nil, newError("App: Not an application.")
 	}
 }
 
@@ -82,7 +81,7 @@ func (v *spaceImpl) GetApplication(appInterface interface{}) Application {
 
 func (v *spaceImpl) AddApplication(app Application) error {
 	if v == nil {
-		return errors.New("App: Nil space.")
+		return newError("App: Nil space.")
 	}
 	appType := reflect.TypeOf(app.Interface())
 	v.cache[appType] = app
@@ -113,7 +112,7 @@ const (
 func AddApplicationToSpace(ctx context.Context, appConfig interface{}) error {
 	space := SpaceFromContext(ctx)
 	if space == nil {
-		return errors.New("App: No space in context.")
+		return newError("App: No space in context.")
 	}
 	application, err := CreateAppFromConfig(ctx, appConfig)
 	if err != nil {

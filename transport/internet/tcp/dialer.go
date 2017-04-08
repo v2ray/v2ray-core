@@ -6,14 +6,13 @@ import (
 
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	v2tls "v2ray.com/core/transport/internet/tls"
 )
 
 func Dial(ctx context.Context, dest v2net.Destination) (internet.Connection, error) {
-	log.Trace(errors.New("Internet|TCP: Dailing TCP to ", dest))
+	log.Trace(newError("Internet|TCP: Dailing TCP to ", dest))
 	src := internet.DialerSourceFromContext(ctx)
 
 	tcpSettings := internet.TransportSettingsFromContext(ctx).(*Config)
@@ -35,11 +34,11 @@ func Dial(ctx context.Context, dest v2net.Destination) (internet.Connection, err
 	if tcpSettings.HeaderSettings != nil {
 		headerConfig, err := tcpSettings.HeaderSettings.GetInstance()
 		if err != nil {
-			return nil, errors.New("Internet|TCP: Failed to get header settings.").Base(err)
+			return nil, newError("Internet|TCP: Failed to get header settings.").Base(err)
 		}
 		auth, err := internet.CreateConnectionAuthenticator(headerConfig)
 		if err != nil {
-			return nil, errors.New("Internet|TCP: Failed to create header authenticator.").Base(err)
+			return nil, newError("Internet|TCP: Failed to create header authenticator.").Base(err)
 		}
 		conn = auth.Client(conn)
 	}

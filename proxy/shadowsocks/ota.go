@@ -7,7 +7,6 @@ import (
 	"io"
 
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/serial"
 )
 
@@ -97,7 +96,7 @@ func (v *ChunkReader) Read() (*buf.Buffer, error) {
 	v.auth.Authenticate(payload)(actualAuthBytes)
 	if !bytes.Equal(authBytes, actualAuthBytes) {
 		buffer.Release()
-		return nil, errors.New("invalid auth").Path("Proxy", "Shadowsocks", "ChunkReader")
+		return nil, newError("invalid auth")
 	}
 	buffer.SliceFrom(AuthSize)
 

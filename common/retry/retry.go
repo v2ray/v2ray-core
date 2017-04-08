@@ -1,13 +1,13 @@
 package retry
 
+//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg retry -path Retry
+
 import (
 	"time"
-
-	"v2ray.com/core/common/errors"
 )
 
 var (
-	ErrRetryFailed = errors.New("Retry: All retry attempts failed.")
+	ErrRetryFailed = newError("Retry: All retry attempts failed.")
 )
 
 // Strategy is a way to retry on a specific function.
@@ -38,7 +38,7 @@ func (r *retryer) On(method func() error) error {
 		<-time.After(time.Duration(delay) * time.Millisecond)
 		attempt++
 	}
-	return errors.New(accumulatedError).Base(ErrRetryFailed)
+	return newError(accumulatedError).Base(ErrRetryFailed)
 }
 
 // Timed returns a retry strategy with fixed interval.

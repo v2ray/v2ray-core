@@ -12,7 +12,6 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
-	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	v2tls "v2ray.com/core/transport/internet/tls"
@@ -104,12 +103,12 @@ func (o *ClientConnection) Run() {
 
 func DialKCP(ctx context.Context, dest v2net.Destination) (internet.Connection, error) {
 	dest.Network = v2net.Network_UDP
-	log.Trace(errors.New("KCP|Dialer: Dialing KCP to ", dest))
+	log.Trace(newError("KCP|Dialer: Dialing KCP to ", dest))
 
 	src := internet.DialerSourceFromContext(ctx)
 	rawConn, err := internet.DialSystem(ctx, src, dest)
 	if err != nil {
-		log.Trace(errors.New("KCP|Dialer: Failed to dial to dest: ", err).AtError())
+		log.Trace(newError("KCP|Dialer: Failed to dial to dest: ", err).AtError())
 		return nil, err
 	}
 	conn := &ClientConnection{
@@ -121,11 +120,11 @@ func DialKCP(ctx context.Context, dest v2net.Destination) (internet.Connection, 
 
 	header, err := kcpSettings.GetPackerHeader()
 	if err != nil {
-		return nil, errors.New("KCP|Dialer: Failed to create packet header.").Base(err)
+		return nil, newError("KCP|Dialer: Failed to create packet header.").Base(err)
 	}
 	security, err := kcpSettings.GetSecurity()
 	if err != nil {
-		return nil, errors.New("KCP|Dialer: Failed to create security.").Base(err)
+		return nil, newError("KCP|Dialer: Failed to create security.").Base(err)
 	}
 	conn.ResetSecurity(header, security)
 	conv := uint16(atomic.AddUint32(&globalConv, 1))

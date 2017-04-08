@@ -1,5 +1,7 @@
 package server
 
+//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg server -path App,DNS,Server
+
 import (
 	"context"
 	"net"
@@ -12,7 +14,6 @@ import (
 	"v2ray.com/core/app/dns"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 )
 
@@ -35,7 +36,7 @@ type CacheServer struct {
 func NewCacheServer(ctx context.Context, config *dns.Config) (*CacheServer, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
-		return nil, errors.New("no space in context").Path("App", "DNS", "CacheServer")
+		return nil, newError("no space in context")
 	}
 	server := &CacheServer{
 		records: make(map[string]*DomainRecord),
@@ -45,7 +46,7 @@ func NewCacheServer(ctx context.Context, config *dns.Config) (*CacheServer, erro
 	space.OnInitialize(func() error {
 		disp := dispatcher.FromSpace(space)
 		if disp == nil {
-			return errors.New("dispatcher is not found in the space").Path("App", "DNS", "CacheServer")
+			return newError("dispatcher is not found in the space")
 		}
 		for idx, destPB := range config.NameServers {
 			address := destPB.Address.AsAddress()
@@ -113,13 +114,13 @@ func (v *CacheServer) Get(domain string) []net.IP {
 				A: a,
 			}
 			v.Unlock()
-			log.Trace(errors.New("returning ", len(a.IPs), " IPs for domain ", domain).AtDebug().Path("App", "DNS", "CacheServer"))
+			log.Trace(newError("returning ", len(a.IPs), " IPs for domain ", domain).AtDebug())
 			return a.IPs
 		case <-time.After(QueryTimeout):
 		}
 	}
 
-	log.Trace(errors.New("returning nil for domain ", domain).AtDebug().Path("App", "DNS", "CacheServer"))
+	log.Trace(newError("returning nil for domain ", domain).AtDebug())
 	return nil
 }
 

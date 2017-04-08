@@ -1,6 +1,8 @@
 // Package proxyman defines applications for manageing inbound and outbound proxies.
 package proxyman
 
+//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg proxyman -path App,Proxyman
+
 import (
 	"context"
 

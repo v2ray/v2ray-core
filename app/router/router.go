@@ -1,5 +1,7 @@
 package router
 
+//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg router -path App,Router
+
 import (
 	"context"
 
@@ -7,13 +9,12 @@ import (
 	"v2ray.com/core/app/dns"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 )
 
 var (
-	ErrNoRuleApplicable = errors.New("No rule applicable")
+	ErrNoRuleApplicable = newError("No rule applicable")
 )
 
 type Router struct {
@@ -25,7 +26,7 @@ type Router struct {
 func NewRouter(ctx context.Context, config *Config) (*Router, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
-		return nil, errors.New("Router: No space in context.")
+		return nil, newError("Router: No space in context.")
 	}
 	r := &Router{
 		domainStrategy: config.DomainStrategy,
@@ -44,7 +45,7 @@ func NewRouter(ctx context.Context, config *Config) (*Router, error) {
 
 		r.dnsServer = dns.FromSpace(space)
 		if r.dnsServer == nil {
-			return errors.New("Router: DNS is not found in the space.")
+			return newError("Router: DNS is not found in the space.")
 		}
 		return nil
 	})
@@ -76,7 +77,7 @@ func (v *Router) TakeDetour(ctx context.Context) (string, error) {
 	}
 
 	if v.domainStrategy == Config_IpIfNonMatch && dest.Address.Family().IsDomain() {
-		log.Trace(errors.New("looking up IP for ", dest).Path("App", "Router"))
+		log.Trace(newError("looking up IP for ", dest))
 		ipDests := v.resolveIP(dest)
 		if ipDests != nil {
 			ctx = proxy.ContextWithResolveIPs(ctx, ipDests)

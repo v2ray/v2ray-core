@@ -8,7 +8,6 @@ import (
 
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/transport/internet"
@@ -16,7 +15,7 @@ import (
 )
 
 var (
-	ErrClosedListener = errors.New("Listener is closed.")
+	ErrClosedListener = newError("Listener is closed.")
 )
 
 type TCPListener struct {
@@ -36,7 +35,7 @@ func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, conn
 	if err != nil {
 		return nil, err
 	}
-	log.Trace(errors.New("TCP|Listener: Listening on ", address, ":", port))
+	log.Trace(newError("TCP|Listener: Listening on ", address, ":", port))
 	networkSettings := internet.TransportSettingsFromContext(ctx)
 	tcpSettings := networkSettings.(*Config)
 
@@ -55,11 +54,11 @@ func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, conn
 	if tcpSettings.HeaderSettings != nil {
 		headerConfig, err := tcpSettings.HeaderSettings.GetInstance()
 		if err != nil {
-			return nil, errors.New("Internet|TCP: Invalid header settings.").Base(err)
+			return nil, newError("Internet|TCP: Invalid header settings.").Base(err)
 		}
 		auth, err := internet.CreateConnectionAuthenticator(headerConfig)
 		if err != nil {
-			return nil, errors.New("Internet|TCP: Invalid header settings.").Base(err)
+			return nil, newError("Internet|TCP: Invalid header settings.").Base(err)
 		}
 		l.authConfig = auth
 	}
@@ -84,7 +83,7 @@ func (v *TCPListener) KeepAccepting() {
 			return nil
 		})
 		if err != nil {
-			log.Trace(errors.New("TCP|Listener: Failed to accepted raw connections: ", err).AtWarning())
+			log.Trace(newError("TCP|Listener: Failed to accepted raw connections: ", err).AtWarning())
 			continue
 		}
 

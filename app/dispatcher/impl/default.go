@@ -1,5 +1,7 @@
 package impl
 
+//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg impl -path App,Dispatcher,Default
+
 import (
 	"context"
 
@@ -9,7 +11,6 @@ import (
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/router"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
@@ -23,13 +24,13 @@ type DefaultDispatcher struct {
 func NewDefaultDispatcher(ctx context.Context, config *dispatcher.Config) (*DefaultDispatcher, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
-		return nil, errors.New("no space in context").Path("App", "Dispatcher", "Default")
+		return nil, newError("no space in context")
 	}
 	d := &DefaultDispatcher{}
 	space.OnInitialize(func() error {
 		d.ohm = proxyman.OutboundHandlerManagerFromSpace(space)
 		if d.ohm == nil {
-			return errors.New("OutboundHandlerManager is not found in the space").Path("App", "Dispatcher", "Default")
+			return newError("OutboundHandlerManager is not found in the space")
 		}
 		d.router = router.FromSpace(space)
 		return nil
@@ -58,13 +59,13 @@ func (v *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	if v.router != nil {
 		if tag, err := v.router.TakeDetour(ctx); err == nil {
 			if handler := v.ohm.GetHandler(tag); handler != nil {
-				log.Trace(errors.New("taking detour [", tag, "] for [", destination, "]").Path("App", "Dispatcher", "Default"))
+				log.Trace(newError("taking detour [", tag, "] for [", destination, "]"))
 				dispatcher = handler
 			} else {
-				log.Trace(errors.New("nonexisting tag: ", tag).AtWarning().Path("App", "Dispatcher", "Default"))
+				log.Trace(newError("nonexisting tag: ", tag).AtWarning())
 			}
 		} else {
-			log.Trace(errors.New("default route for ", destination).Path("App", "Dispatcher", "Default"))
+			log.Trace(newError("default route for ", destination))
 		}
 	}
 

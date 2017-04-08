@@ -2,7 +2,6 @@ package mux
 
 import (
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
 )
@@ -114,7 +113,7 @@ func (f FrameMetadata) AsSupplier() buf.Supplier {
 
 func ReadFrameFrom(b []byte) (*FrameMetadata, error) {
 	if len(b) < 4 {
-		return nil, errors.New("insufficient buffer: ", len(b)).Path("App", "Proxyman", "Mux", "Frame")
+		return nil, newError("insufficient buffer: ", len(b))
 	}
 
 	f := &FrameMetadata{
@@ -144,7 +143,7 @@ func ReadFrameFrom(b []byte) (*FrameMetadata, error) {
 			addr = net.DomainAddress(string(b[1 : 1+nDomain]))
 			b = b[nDomain+1:]
 		default:
-			return nil, errors.New("unknown address type: ", addrType).Path("App", "Proxyman", "Mux", "Frame")
+			return nil, newError("unknown address type: ", addrType)
 		}
 		switch network {
 		case TargetNetworkTCP:
@@ -152,7 +151,7 @@ func ReadFrameFrom(b []byte) (*FrameMetadata, error) {
 		case TargetNetworkUDP:
 			f.Target = net.UDPDestination(addr, port)
 		default:
-			return nil, errors.New("unknown network type: ", network).Path("App", "Proxyman", "Mux", "Frame")
+			return nil, newError("unknown network type: ", network)
 		}
 	}
 

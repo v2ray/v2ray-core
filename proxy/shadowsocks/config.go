@@ -6,7 +6,6 @@ import (
 	"crypto/md5"
 
 	"v2ray.com/core/common/crypto"
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/protocol"
 )
 
@@ -34,14 +33,14 @@ func (v *Account) GetCipher() (Cipher, error) {
 	case CipherType_CHACHA20_IETF:
 		return &ChaCha20{IVBytes: 12}, nil
 	default:
-		return nil, errors.New("Unsupported cipher.")
+		return nil, newError("Unsupported cipher.")
 	}
 }
 
 func (v *Account) AsAccount() (protocol.Account, error) {
 	cipher, err := v.GetCipher()
 	if err != nil {
-		return nil, errors.New("failed to get cipher").Base(err).Path("Shadowsocks", "Account")
+		return nil, newError("failed to get cipher").Base(err)
 	}
 	return &ShadowsocksAccount{
 		Cipher:      cipher,

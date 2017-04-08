@@ -13,7 +13,6 @@ import (
 	"golang.org/x/crypto/chacha20poly1305"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -123,12 +122,12 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 
 	_, err := io.ReadFull(reader, buffer[:protocol.IDBytesLen])
 	if err != nil {
-		return nil, errors.New("failed to read request header").Base(err).Path("Proxy", "VMess", "Encoding", "ServerSession")
+		return nil, newError("failed to read request header").Base(err)
 	}
 
 	user, timestamp, valid := v.userValidator.Get(buffer[:protocol.IDBytesLen])
 	if !valid {
-		return nil, errors.New("invalid user").Path("Proxy", "VMess", "Encoding", "ServerSession")
+		return nil, newError("invalid user")
 	}
 
 	timestampHash := md5.New()
@@ -136,7 +135,7 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	iv := timestampHash.Sum(nil)
 	account, err := user.GetTypedAccount()
 	if err != nil {
-		return nil, errors.New("failed to get user account").Base(err).Path("Proxy", "VMess", "Encoding", "ServerSession")
+		return nil, newError("failed to get user account").Base(err)
 	}
 	vmessAccount := account.(*vmess.InternalAccount)
 
@@ -145,7 +144,7 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 
 	nBytes, err := io.ReadFull(decryptor, buffer[:41])
 	if err != nil {
-		return nil, errors.New("failed to read request header").Base(err).Path("Proxy", "VMess", "Encoding", "ServerSession")
+		return nil, newError("failed to read request header").Base(err)
 	}
 	bufferLen := nBytes
 
@@ -155,7 +154,7 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	}
 
 	if request.Version != Version {
-		return nil, errors.New("invalid protocol version ", request.Version).Path("Proxy", "VMess", "Encoding", "ServerSession")
+		return nil, newError("invalid protocol version ", request.Version)
 	}
 
 	v.requestBodyIV = append([]byte(nil), buffer[1:17]...)   // 16 bytes
@@ -165,7 +164,7 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	copy(sid.key[:], v.requestBodyKey)
 	copy(sid.nonce[:], v.requestBodyIV)
 	if v.sessionHistory.has(sid) {
-		return nil, errors.New("duplicated session id, possibly under replay attack").Path("Proxy", "VMess", "Encoding", "ServerSession")
+		return nil, newError("duplicated session id, possibly under replay attack")
 	}
 	v.sessionHistory.add(sid)
 
@@ -183,28 +182,28 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		_, err = io.ReadFull(decryptor, buffer[41:45]) // 4 bytes
 		bufferLen += 4
 		if err != nil {
-			return nil, errors.New("failed to read IPv4 address").Base(err).Path("Proxy", "VMess", "Encoding", "ServerSession")
+			return nil, newError("failed to read IPv4 address").Base(err)
 		}
 		request.Address = net.IPAddress(buffer[41:45])
 	case AddrTypeIPv6:
 		_, err = io.ReadFull(decryptor, buffer[41:57]) // 16 bytes
 		bufferLen += 16
 		if err != nil {
-			return nil, errors.New("failed to read IPv6 address").Base(err).Path("Proxy", "VMess", "Encoding", "ServerSession")
+			return nil, newError("failed to read IPv6 address").Base(err)
 		}
 		request.Address = net.IPAddress(buffer[41:57])
 	case AddrTypeDomain:
 		_, err = io.ReadFull(decryptor, buffer[41:42])
 		if err != nil {
-			return nil, errors.New("failed to read domain address").Base(err).Path("Proxy", "VMess", "Encoding", "ServerSession")
+			return nil, newError("failed to read domain address").Base(err)
 		}
 		domainLength := int(buffer[41])
 		if domainLength == 0 {
-			return nil, errors.New("zero length domain").Base(err).Path("Proxy", "VMess", "Encoding", "ServerSession")
+			return nil, newError("zero length domain").Base(err)
 		}
 		_, err = io.ReadFull(decryptor, buffer[42:42+domainLength])
 		if err != nil {
-			return nil, errors.New("failed to read domain address").Base(err).Path("Proxy", "VMess", "Encoding", "ServerSession")
+			return nil, newError("failed to read domain address").Base(err)
 		}
 		bufferLen += 1 + domainLength
 		request.Address = net.DomainAddress(string(buffer[42 : 42+domainLength]))
@@ -213,14 +212,14 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	if padingLen > 0 {
 		_, err = io.ReadFull(decryptor, buffer[bufferLen:bufferLen+padingLen])
 		if err != nil {
-			return nil, errors.New("failed to read padding").Base(err).Path("Proxy", "VMess", "Encoding", "ServerSession")
+			return nil, newError("failed to read padding").Base(err)
 		}
 		bufferLen += padingLen
 	}
 
 	_, err = io.ReadFull(decryptor, buffer[bufferLen:bufferLen+4])
 	if err != nil {
-		return nil, errors.New("failed to read checksum").Base(err).Path("Proxy", "VMess", "Encoding", "ServerSession")
+		return nil, newError("failed to read checksum").Base(err)
 	}
 
 	fnv1a := fnv.New32a()
@@ -229,11 +228,11 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	expectedHash := serial.BytesToUint32(buffer[bufferLen : bufferLen+4])
 
 	if actualHash != expectedHash {
-		return nil, errors.New("invalid auth").Path("Proxy", "VMess", "Encoding", "ServerSession")
+		return nil, newError("invalid auth")
 	}
 
 	if request.Address == nil {
-		return nil, errors.New("invalid remote address").Path("Proxy", "VMess", "Encoding", "ServerSession")
+		return nil, newError("invalid remote address")
 	}
 
 	return request, nil

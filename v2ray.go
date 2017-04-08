@@ -9,7 +9,6 @@ import (
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 )
 
@@ -68,7 +67,7 @@ func newSimpleServer(config *Config) (*simpleServer, error) {
 			AccessLogType: log.LogType_None,
 		})
 		if err != nil {
-			return nil, errors.New("failed apply default log settings").Base(err).Path("Core")
+			return nil, newError("failed apply default log settings").Base(err)
 		}
 		space.AddApplication(l)
 	}
@@ -80,7 +79,7 @@ func newSimpleServer(config *Config) (*simpleServer, error) {
 			return nil, err
 		}
 		if err := space.AddApplication(o); err != nil {
-			return nil, errors.New("failed to add default outbound handler manager").Base(err).Path("Core")
+			return nil, newError("failed to add default outbound handler manager").Base(err)
 		}
 		outboundHandlerManager = o.(proxyman.OutboundHandlerManager)
 	}
@@ -92,7 +91,7 @@ func newSimpleServer(config *Config) (*simpleServer, error) {
 			return nil, err
 		}
 		if err := space.AddApplication(o); err != nil {
-			return nil, errors.New("failed to add default inbound handler manager").Base(err).Path("Core")
+			return nil, newError("failed to add default inbound handler manager").Base(err)
 		}
 		inboundHandlerManager = o.(proxyman.InboundHandlerManager)
 	}
@@ -147,7 +146,7 @@ func (s *simpleServer) Start() error {
 	if err := s.space.Start(); err != nil {
 		return err
 	}
-	log.Trace(errors.New("V2Ray started").AtWarning())
+	log.Trace(newError("V2Ray started").AtWarning())
 
 	return nil
 }

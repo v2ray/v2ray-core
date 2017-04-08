@@ -1,10 +1,11 @@
 package freedom
 
+//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg freedom -path Proxy,Freedom
+
 import (
 	"context"
-	"time"
-
 	"runtime"
+	"time"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dns"
@@ -12,7 +13,6 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/common/signal"
@@ -31,7 +31,7 @@ type Handler struct {
 func New(ctx context.Context, config *Config) (*Handler, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
-		return nil, errors.New("no space in context").Path("Proxy", "Freedom")
+		return nil, newError("no space in context")
 	}
 	f := &Handler{
 		domainStrategy: config.DomainStrategy,
@@ -42,7 +42,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		if config.DomainStrategy == Config_USE_IP {
 			f.dns = dns.FromSpace(space)
 			if f.dns == nil {
-				return errors.New("DNS server is not found in the space").Path("Proxy", "Freedom")
+				return newError("DNS server is not found in the space")
 			}
 		}
 		return nil
@@ -57,7 +57,7 @@ func (v *Handler) ResolveIP(destination net.Destination) net.Destination {
 
 	ips := v.dns.Get(destination.Address.Domain())
 	if len(ips) == 0 {
-		log.Trace(errors.New("DNS returns nil answer. Keep domain as is.").Path("Proxy", "Freedom"))
+		log.Trace(newError("DNS returns nil answer. Keep domain as is."))
 		return destination
 	}
 
@@ -68,7 +68,7 @@ func (v *Handler) ResolveIP(destination net.Destination) net.Destination {
 	} else {
 		newDest = net.UDPDestination(net.IPAddress(ip), destination.Port)
 	}
-	log.Trace(errors.New("changing destination from ", destination, " to ", newDest).Path("Proxy", "Freedom"))
+	log.Trace(newError("changing destination from ", destination, " to ", newDest))
 	return newDest
 }
 
@@ -82,7 +82,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 			Port:    net.Port(server.Port),
 		}
 	}
-	log.Trace(errors.New("opening connection to ", destination).Path("Proxy", "Freedom"))
+	log.Trace(newError("opening connection to ", destination))
 
 	input := outboundRay.OutboundInput()
 	output := outboundRay.OutboundOutput()
@@ -101,7 +101,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		return nil
 	})
 	if err != nil {
-		return errors.New("failed to open connection to ", destination).Base(err).Path("Proxy", "Freedom")
+		return newError("failed to open connection to ", destination).Base(err)
 	}
 	defer conn.Close()
 
@@ -132,7 +132,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		input.CloseError()
 		output.CloseError()
-		return errors.New("connection ends").Base(err).Path("Proxy", "Freedom")
+		return newError("connection ends").Base(err)
 	}
 
 	runtime.KeepAlive(timer)

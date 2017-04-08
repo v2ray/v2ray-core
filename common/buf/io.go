@@ -14,7 +14,7 @@ type Reader interface {
 	Read() (*Buffer, error)
 }
 
-var ErrReadTimeout = errors.New("Buf: IO timeout.")
+var ErrReadTimeout = newError("Buf: IO timeout.")
 
 type TimeoutReader interface {
 	ReadTimeout(time.Duration) (*Buffer, error)

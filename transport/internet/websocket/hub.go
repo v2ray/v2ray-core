@@ -12,14 +12,13 @@ import (
 	"github.com/gorilla/websocket"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/errors"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	v2tls "v2ray.com/core/transport/internet/tls"
 )
 
 var (
-	ErrClosedListener = errors.New("Listener is closed.")
+	ErrClosedListener = newError("Listener is closed.")
 )
 
 type requestHandler struct {
@@ -34,7 +33,7 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 	}
 	conn, err := converttovws(writer, request)
 	if err != nil {
-		log.Trace(errors.New("WebSocket|Listener: Failed to convert to WebSocket connection: ", err))
+		log.Trace(newError("WebSocket|Listener: Failed to convert to WebSocket connection: ", err))
 		return
 	}
 
@@ -83,13 +82,13 @@ func (ln *Listener) listenws(address v2net.Address, port v2net.Port) error {
 	if ln.tlsConfig == nil {
 		l, err := net.Listen("tcp", netAddr)
 		if err != nil {
-			return errors.New("failed to listen TCP ", netAddr).Base(err).Path("WebSocket", "Listener")
+			return newError("failed to listen TCP ", netAddr).Base(err)
 		}
 		listener = l
 	} else {
 		l, err := tls.Listen("tcp", netAddr, ln.tlsConfig)
 		if err != nil {
-			return errors.New("failed to listen TLS ", netAddr).Base(err).Path("WebSocket", "Listener")
+			return newError("failed to listen TLS ", netAddr).Base(err)
 		}
 		listener = l
 	}

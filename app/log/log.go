@@ -1,5 +1,7 @@
 package log
 
+//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg log -path App,Log
+
 import (
 	"context"
 
@@ -43,7 +45,7 @@ func SetLogLevel(level LogLevel) {
 func InitErrorLogger(file string) error {
 	logger, err := internal.NewFileLogWriter(file)
 	if err != nil {
-		return errors.New("failed to create error logger on file (", file, ")").Base(err).Path("App", "Log")
+		return newError("failed to create error logger on file (", file, ")").Base(err)
 	}
 	streamLoggerInstance = logger
 	return nil
