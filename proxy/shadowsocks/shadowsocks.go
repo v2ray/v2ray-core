@@ -12,3 +12,5 @@
 //
 // R.I.P Shadowsocks
 package shadowsocks
+
+//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg shadowsocks -path Proxy,Shadowsocks
