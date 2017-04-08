@@ -37,7 +37,7 @@ type Error struct {
 
 func (v *Error) formMessage() string {
 	if len(v.format) == 0 {
-		return serial.Concat(v.message)
+		return serial.Concat(v.message...)
 	}
 	return fmt.Sprintf(v.format, v.message...)
 }
