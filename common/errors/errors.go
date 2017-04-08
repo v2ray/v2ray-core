@@ -28,15 +28,23 @@ type hasSeverity interface {
 
 // Error is an error object with underlying error.
 type Error struct {
-	message  string
+	format   string
+	message  []interface{}
 	inner    error
 	severity Severity
 	path     []string
 }
 
+func (v *Error) formMessage() string {
+	if len(v.format) == 0 {
+		return serial.Concat(v.message)
+	}
+	return fmt.Sprintf(v.format, v.message...)
+}
+
 // Error implements error.Error().
 func (v *Error) Error() string {
-	msg := v.message
+	msg := v.formMessage()
 	if v.inner != nil {
 		msg += " > " + v.inner.Error()
 	}
@@ -103,13 +111,17 @@ func (v *Error) Path(path ...string) *Error {
 // New returns a new error object with message formed from given arguments.
 func New(msg ...interface{}) *Error {
 	return &Error{
-		message:  serial.Concat(msg...),
+		message:  msg,
 		severity: SeverityInfo,
 	}
 }
 
 func Format(format string, values ...interface{}) *Error {
-	return New(fmt.Sprintf(format, values...))
+	return &Error{
+		format:   format,
+		message:  values,
+		severity: SeverityInfo,
+	}
 }
 
 // Cause returns the root cause of this error.
