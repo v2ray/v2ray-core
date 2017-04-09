@@ -22,13 +22,13 @@ func New(ctx context.Context, config *proxyman.OutboundConfig) (*DefaultOutbound
 	}, nil
 }
 
-func (DefaultOutboundHandlerManager) Interface() interface{} {
+func (*DefaultOutboundHandlerManager) Interface() interface{} {
 	return (*proxyman.OutboundHandlerManager)(nil)
 }
 
-func (DefaultOutboundHandlerManager) Start() error { return nil }
+func (*DefaultOutboundHandlerManager) Start() error { return nil }
 
-func (DefaultOutboundHandlerManager) Close() {}
+func (*DefaultOutboundHandlerManager) Close() {}
 
 func (v *DefaultOutboundHandlerManager) GetDefaultHandler() proxyman.OutboundHandler {
 	v.RLock()

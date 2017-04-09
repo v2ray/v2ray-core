@@ -70,15 +70,15 @@ func NewCacheServer(ctx context.Context, config *dns.Config) (*CacheServer, erro
 	return server, nil
 }
 
-func (CacheServer) Interface() interface{} {
+func (*CacheServer) Interface() interface{} {
 	return (*dns.Server)(nil)
 }
 
-func (CacheServer) Start() error {
+func (*CacheServer) Start() error {
 	return nil
 }
 
-func (CacheServer) Close() {}
+func (*CacheServer) Close() {}
 
 // Private: Visible for testing.
 func (v *CacheServer) GetCached(domain string) []net.IP {
