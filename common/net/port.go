@@ -19,7 +19,7 @@ func PortFromBytes(port []byte) Port {
 // @error when the integer is not positive or larger then 65535
 func PortFromInt(val uint32) (Port, error) {
 	if val > 65535 {
-		return Port(0), newError("Net: Invalid port range: ", val)
+		return Port(0), newError("invalid port range: ", val)
 	}
 	return Port(val), nil
 }
@@ -29,7 +29,7 @@ func PortFromInt(val uint32) (Port, error) {
 func PortFromString(s string) (Port, error) {
 	val, err := strconv.ParseUint(s, 10, 32)
 	if err != nil {
-		return Port(0), newError("Net: Invalid port range: ", s)
+		return Port(0), newError("invalid port range: ", s)
 	}
 	return PortFromInt(uint32(val))
 }

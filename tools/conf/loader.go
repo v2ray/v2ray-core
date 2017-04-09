@@ -8,7 +8,7 @@ type ConfigCreatorCache map[string]ConfigCreator
 
 func (v ConfigCreatorCache) RegisterCreator(id string, creator ConfigCreator) error {
 	if _, found := v[id]; found {
-		return newError("Config: ", id, " already registered.")
+		return newError(id, " already registered.").AtError()
 	}
 
 	v[id] = creator
@@ -18,7 +18,7 @@ func (v ConfigCreatorCache) RegisterCreator(id string, creator ConfigCreator) er
 func (v ConfigCreatorCache) CreateConfig(id string) (interface{}, error) {
 	creator, found := v[id]
 	if !found {
-		return nil, newError("Config: Unknown config id: ", id)
+		return nil, newError("unknown config id: ", id)
 	}
 	return creator(), nil
 }
@@ -40,7 +40,7 @@ func NewJSONConfigLoader(cache ConfigCreatorCache, idKey string, configKey strin
 func (v *JSONConfigLoader) LoadWithID(raw []byte, id string) (interface{}, error) {
 	creator, found := v.cache[id]
 	if !found {
-		return nil, newError("Config: Unknown config id: ", id)
+		return nil, newError("unknown config id: ", id).AtError()
 	}
 
 	config := creator()
@@ -57,7 +57,7 @@ func (v *JSONConfigLoader) Load(raw []byte) (interface{}, string, error) {
 	}
 	rawID, found := obj[v.idKey]
 	if !found {
-		return nil, "", newError("Config: ", v.idKey, " not found in JSON context.")
+		return nil, "", newError(v.idKey, " not found in JSON context").AtError()
 	}
 	var id string
 	if err := json.Unmarshal(rawID, &id); err != nil {
@@ -67,7 +67,7 @@ func (v *JSONConfigLoader) Load(raw []byte) (interface{}, string, error) {
 	if len(v.configKey) > 0 {
 		configValue, found := obj[v.configKey]
 		if !found {
-			return nil, "", newError("Config: ", v.configKey, " not found in JSON content.")
+			return nil, "", newError(v.configKey, " not found in JSON content").AtError()
 		}
 		rawConfig = configValue
 	}

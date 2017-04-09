@@ -20,7 +20,7 @@ func CreatePacketHeader(config interface{}) (PacketHeader, error) {
 	if h, ok := header.(PacketHeader); ok {
 		return h, nil
 	}
-	return nil, newError("Internet: Not a packet header.")
+	return nil, newError("not a packet header")
 }
 
 type ConnectionAuthenticator interface {
@@ -36,5 +36,5 @@ func CreateConnectionAuthenticator(config interface{}) (ConnectionAuthenticator,
 	if a, ok := auth.(ConnectionAuthenticator); ok {
 		return a, nil
 	}
-	return nil, newError("Internet: Not a ConnectionAuthenticator.")
+	return nil, newError("not a ConnectionAuthenticator")
 }

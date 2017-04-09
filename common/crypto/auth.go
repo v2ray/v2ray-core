@@ -51,7 +51,7 @@ type AEADAuthenticator struct {
 func (v *AEADAuthenticator) Open(dst, cipherText []byte) ([]byte, error) {
 	iv := v.NonceGenerator.Next()
 	if len(iv) != v.AEAD.NonceSize() {
-		return nil, newError("Crypto:AEADAuthenticator: Invalid nonce size: ", len(iv))
+		return nil, newError("invalid AEAD nonce size: ", len(iv))
 	}
 
 	additionalData := v.AdditionalDataGenerator.Next()
@@ -61,7 +61,7 @@ func (v *AEADAuthenticator) Open(dst, cipherText []byte) ([]byte, error) {
 func (v *AEADAuthenticator) Seal(dst, plainText []byte) ([]byte, error) {
 	iv := v.NonceGenerator.Next()
 	if len(iv) != v.AEAD.NonceSize() {
-		return nil, newError("Crypto:AEADAuthenticator: Invalid nonce size: ", len(iv))
+		return nil, newError("invalid AEAD nonce size: ", len(iv))
 	}
 
 	additionalData := v.AdditionalDataGenerator.Next()

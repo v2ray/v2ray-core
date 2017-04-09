@@ -46,7 +46,7 @@ func (v *ShadowsocksServerConfig) Build() (*serial.TypedMessage, error) {
 	case "chacha20-ietf":
 		account.CipherType = shadowsocks.CipherType_CHACHA20_IETF
 	default:
-		return nil, newError("Unknown cipher method: " + cipher)
+		return nil, newError("unknown cipher method: " + cipher)
 	}
 
 	config.User = &protocol.User{
@@ -107,7 +107,7 @@ func (v *ShadowsocksClientConfig) Build() (*serial.TypedMessage, error) {
 		case "chacha20-ietf":
 			account.CipherType = shadowsocks.CipherType_CHACHA20_IETF
 		default:
-			return nil, newError("Unknown cipher method: " + cipher)
+			return nil, newError("unknown cipher method: " + cipher)
 		}
 
 		ss := &protocol.ServerEndpoint{

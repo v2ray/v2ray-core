@@ -18,7 +18,7 @@ func RegisterProtocolConfigCreator(protocol TransportProtocol, creator ConfigCre
 func CreateTransportConfig(protocol TransportProtocol) (interface{}, error) {
 	creator, ok := globalTransportConfigCreatorCache[protocol]
 	if !ok {
-		return nil, newError("Internet: Unknown transport protocol: ", protocol)
+		return nil, newError("unknown transport protocol: ", protocol)
 	}
 	return creator(), nil
 }

@@ -44,14 +44,14 @@ func (v *KCPConfig) Build() (*serial.TypedMessage, error) {
 	if v.Mtu != nil {
 		mtu := *v.Mtu
 		if mtu < 576 || mtu > 1460 {
-			return nil, newError("Config: Invalid mKCP MTU size: ", mtu)
+			return nil, newError("invalid mKCP MTU size: ", mtu).AtError()
 		}
 		config.Mtu = &kcp.MTU{Value: mtu}
 	}
 	if v.Tti != nil {
 		tti := *v.Tti
 		if tti < 10 || tti > 100 {
-			return nil, newError("Config: Invalid mKCP TTI: ", tti)
+			return nil, newError("invalid mKCP TTI: ", tti).AtError()
 		}
 		config.Tti = &kcp.TTI{Value: tti}
 	}
@@ -83,11 +83,11 @@ func (v *KCPConfig) Build() (*serial.TypedMessage, error) {
 	if len(v.HeaderConfig) > 0 {
 		headerConfig, _, err := kcpHeaderLoader.Load(v.HeaderConfig)
 		if err != nil {
-			return nil, newError("Config: Invalid mKCP header config.").Base(err)
+			return nil, newError("invalid mKCP header config.").Base(err).AtError()
 		}
 		ts, err := headerConfig.(Buildable).Build()
 		if err != nil {
-			return nil, newError("Config: Invalid mKCP header config.").Base(err)
+			return nil, newError("invalid mKCP header config").Base(err).AtError()
 		}
 		config.HeaderConfig = ts
 	}
@@ -104,11 +104,11 @@ func (v *TCPConfig) Build() (*serial.TypedMessage, error) {
 	if len(v.HeaderConfig) > 0 {
 		headerConfig, _, err := tcpHeaderLoader.Load(v.HeaderConfig)
 		if err != nil {
-			return nil, newError("Config: Invalid TCP header config.").Base(err)
+			return nil, newError("invalid TCP header config").Base(err).AtError()
 		}
 		ts, err := headerConfig.(Buildable).Build()
 		if err != nil {
-			return nil, newError("Config: Invalid TCP header config.").Base(err)
+			return nil, newError("invalid TCP header config").Base(err).AtError()
 		}
 		config.HeaderSettings = ts
 	}
@@ -143,11 +143,11 @@ func (v *TLSConfig) Build() (*serial.TypedMessage, error) {
 	for idx, certConf := range v.Certs {
 		cert, err := ioutil.ReadFile(certConf.CertFile)
 		if err != nil {
-			return nil, newError("Failed to load TLS certificate file: ", certConf.CertFile).Base(err)
+			return nil, newError("failed to load TLS certificate file: ", certConf.CertFile).Base(err).AtError()
 		}
 		key, err := ioutil.ReadFile(certConf.KeyFile)
 		if err != nil {
-			return nil, newError("Failed to load TLS key file: ", certConf.KeyFile).Base(err)
+			return nil, newError("failed to load TLS key file: ", certConf.KeyFile).Base(err).AtError()
 		}
 		config.Certificate[idx] = &tls.Certificate{
 			Key:         key,

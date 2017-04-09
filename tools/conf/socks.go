@@ -40,7 +40,7 @@ func (v *SocksServerConfig) Build() (*serial.TypedMessage, error) {
 	} else if v.AuthMethod == AuthMethodUserPass {
 		config.AuthType = socks.AuthType_PASSWORD
 	} else {
-		return nil, newError("Config: Unknown socks auth method: " + v.AuthMethod)
+		return nil, newError("unknown socks auth method: " + v.AuthMethod).AtError()
 	}
 
 	if len(v.Accounts) > 0 {
@@ -79,11 +79,11 @@ func (v *SocksClientConfig) Build() (*serial.TypedMessage, error) {
 		for _, rawUser := range serverConfig.Users {
 			user := new(protocol.User)
 			if err := json.Unmarshal(rawUser, user); err != nil {
-				return nil, newError("Config: Failed to parse Socks user.").Base(err)
+				return nil, newError("failed to parse Socks user").Base(err).AtError()
 			}
 			account := new(SocksAccount)
 			if err := json.Unmarshal(rawUser, account); err != nil {
-				return nil, newError("Config: Failed to parse socks account.").Base(err)
+				return nil, newError("failed to parse socks account").Base(err).AtError()
 			}
 			user.Account = serial.ToTypedMessage(account.Build())
 			server.User = append(server.User, user)

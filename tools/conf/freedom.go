@@ -30,11 +30,11 @@ func (v *FreedomConfig) Build() (*serial.TypedMessage, error) {
 	if len(v.Redirect) > 0 {
 		host, portStr, err := net.SplitHostPort(v.Redirect)
 		if err != nil {
-			return nil, newError("Config: Invalid redirect address: ", v.Redirect, ": ", err).Base(err)
+			return nil, newError("invalid redirect address: ", v.Redirect, ": ", err).Base(err)
 		}
 		port, err := v2net.PortFromString(portStr)
 		if err != nil {
-			return nil, newError("Config: Invalid redirect port: ", v.Redirect, ": ", err).Base(err)
+			return nil, newError("invalid redirect port: ", v.Redirect, ": ", err).Base(err)
 		}
 		if len(host) == 0 {
 			host = "127.0.0.1"

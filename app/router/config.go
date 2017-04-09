@@ -52,7 +52,7 @@ func (v *RoutingRule) BuildCondition() (Condition, error) {
 				}
 				ipv6Cond.Add(matcher)
 			default:
-				return nil, newError("Router: Invalid IP length.")
+				return nil, newError("invalid IP length").AtError()
 			}
 		}
 
@@ -93,7 +93,7 @@ func (v *RoutingRule) BuildCondition() (Condition, error) {
 				}
 				ipv6Cond.Add(matcher)
 			default:
-				return nil, newError("Router: Invalid IP length.")
+				return nil, newError("invalid IP length").AtError()
 			}
 		}
 
@@ -118,7 +118,7 @@ func (v *RoutingRule) BuildCondition() (Condition, error) {
 	}
 
 	if conds.Len() == 0 {
-		return nil, newError("Router: This rule has no effective fields.")
+		return nil, newError("this rule has no effective fields").AtError()
 	}
 
 	return conds, nil

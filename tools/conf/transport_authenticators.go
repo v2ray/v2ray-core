@@ -92,7 +92,7 @@ func (v *HTTPAuthenticatorRequest) Build() (*http.RequestConfig, error) {
 		config.Header = make([]*http.Header, 0, len(v.Headers))
 		for key, value := range v.Headers {
 			if value == nil {
-				return nil, newError("Config: Empty HTTP header value: " + key)
+				return nil, newError("empty HTTP header value: " + key).AtError()
 			}
 			config.Header = append(config.Header, &http.Header{
 				Name:  key,
@@ -158,7 +158,7 @@ func (v *HTTPAuthenticatorResponse) Build() (*http.ResponseConfig, error) {
 		config.Header = make([]*http.Header, 0, len(v.Headers))
 		for key, value := range v.Headers {
 			if value == nil {
-				return nil, newError("Config: Empty HTTP header value: " + key)
+				return nil, newError("empty HTTP header value: " + key).AtError()
 			}
 			config.Header = append(config.Header, &http.Header{
 				Name:  key,

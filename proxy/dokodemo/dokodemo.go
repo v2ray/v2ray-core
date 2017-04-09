@@ -27,10 +27,10 @@ type DokodemoDoor struct {
 func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
-		return nil, newError("Dokodemo: No space in context.")
+		return nil, newError("no space in context")
 	}
 	if config.NetworkList == nil || config.NetworkList.Size() == 0 {
-		return nil, newError("DokodemoDoor: No network specified.")
+		return nil, newError("no network specified")
 	}
 	d := &DokodemoDoor{
 		config:  config,
@@ -45,7 +45,7 @@ func (d *DokodemoDoor) Network() net.NetworkList {
 }
 
 func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
-	log.Trace(newError("Dokodemo: processing connection from: ", conn.RemoteAddr()).AtDebug())
+	log.Trace(newError("processing connection from: ", conn.RemoteAddr()).AtDebug())
 	dest := net.Destination{
 		Network: network,
 		Address: d.address,

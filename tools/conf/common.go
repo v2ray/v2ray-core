@@ -32,7 +32,7 @@ func (v *StringList) UnmarshalJSON(data []byte) error {
 		*v = *NewStringList(strlist)
 		return nil
 	}
-	return newError("Config: Unknown format of a string list: " + string(data))
+	return newError("unknown format of a string list: " + string(data))
 }
 
 type Address struct {
@@ -79,7 +79,7 @@ func (v *NetworkList) UnmarshalJSON(data []byte) error {
 		*v = nl
 		return nil
 	}
-	return newError("Config: Unknown format of a string list: " + string(data))
+	return newError("unknown format of a string list: " + string(data))
 }
 
 func (v *NetworkList) Build() *v2net.NetworkList {
@@ -157,12 +157,12 @@ func (v *PortRange) UnmarshalJSON(data []byte) error {
 		v.From = uint32(from)
 		v.To = uint32(to)
 		if v.From > v.To {
-			return newError("Config: Invalid port range ", v.From, " -> ", v.To)
+			return newError("invalid port range ", v.From, " -> ", v.To)
 		}
 		return nil
 	}
 
-	return newError("Config: Invalid port range: ", string(data))
+	return newError("invalid port range: ", string(data))
 }
 
 type User struct {

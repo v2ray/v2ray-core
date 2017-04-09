@@ -26,7 +26,7 @@ type Router struct {
 func NewRouter(ctx context.Context, config *Config) (*Router, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
-		return nil, newError("Router: No space in context.")
+		return nil, newError("no space in context")
 	}
 	r := &Router{
 		domainStrategy: config.DomainStrategy,
@@ -45,7 +45,7 @@ func NewRouter(ctx context.Context, config *Config) (*Router, error) {
 
 		r.dnsServer = dns.FromSpace(space)
 		if r.dnsServer == nil {
-			return newError("Router: DNS is not found in the space.")
+			return newError("DNS is not found in the space")
 		}
 		return nil
 	})
