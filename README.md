@@ -11,7 +11,7 @@
 [7]: https://godoc.org/v2ray.com/core?status.svg "GoDoc badge"
 [8]: https://godoc.org/v2ray.com/core "GoDoc"
 [9]: https://codebeat.co/badges/f2354ca8-3e24-463d-a2e3-159af73b2477 "Codebeat badge"
-[10]: https://codebeat.co/projects/github-com-v2ray-v2ray-core "Codebeat"
+[10]: https://codebeat.co/projects/github-com-v2ray-v2ray-core-master "Codebeat"
 
 V2Ray 是一个模块化的代理软件包，它的目标是提供常用的代理软件模块，简化网络代理软件的开发。
 
