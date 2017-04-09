@@ -201,7 +201,7 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 	ctx, timer := signal.CancelAfterInactivity(ctx, userSettings.PayloadTimeout)
 	ray, err := dispatcher.Dispatch(ctx, request.Destination())
 	if err != nil {
-		return err
+		return newError("failed to dispatch request to ", request.Destination()).Base(err)
 	}
 
 	input := ray.InboundInput()
@@ -225,7 +225,7 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		input.CloseError()
 		output.CloseError()
-		return newError("error during processing").Base(err)
+		return newError("connection ends").Base(err)
 	}
 
 	if err := writer.Flush(); err != nil {
