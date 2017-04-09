@@ -9,18 +9,19 @@ import (
 	"v2ray.com/core/common"
 )
 
-type DefaultInboundHandlerManager struct {
+// Manager is to manage all inbound handlers.
+type Manager struct {
 	handlers       []proxyman.InboundHandler
 	taggedHandlers map[string]proxyman.InboundHandler
 }
 
-func New(ctx context.Context, config *proxyman.InboundConfig) (*DefaultInboundHandlerManager, error) {
-	return &DefaultInboundHandlerManager{
+func New(ctx context.Context, config *proxyman.InboundConfig) (*Manager, error) {
+	return &Manager{
 		taggedHandlers: make(map[string]proxyman.InboundHandler),
 	}, nil
 }
 
-func (m *DefaultInboundHandlerManager) AddHandler(ctx context.Context, config *proxyman.InboundHandlerConfig) error {
+func (m *Manager) AddHandler(ctx context.Context, config *proxyman.InboundHandlerConfig) error {
 	rawReceiverSettings, err := config.ReceiverSettings.GetInstance()
 	if err != nil {
 		return err
@@ -61,7 +62,7 @@ func (m *DefaultInboundHandlerManager) AddHandler(ctx context.Context, config *p
 	return nil
 }
 
-func (m *DefaultInboundHandlerManager) GetHandler(ctx context.Context, tag string) (proxyman.InboundHandler, error) {
+func (m *Manager) GetHandler(ctx context.Context, tag string) (proxyman.InboundHandler, error) {
 	handler, found := m.taggedHandlers[tag]
 	if !found {
 		return nil, newError("handler not found: ", tag)
@@ -69,7 +70,7 @@ func (m *DefaultInboundHandlerManager) GetHandler(ctx context.Context, tag strin
 	return handler, nil
 }
 
-func (m *DefaultInboundHandlerManager) Start() error {
+func (m *Manager) Start() error {
 	for _, handler := range m.handlers {
 		if err := handler.Start(); err != nil {
 			return err
@@ -78,13 +79,13 @@ func (m *DefaultInboundHandlerManager) Start() error {
 	return nil
 }
 
-func (m *DefaultInboundHandlerManager) Close() {
+func (m *Manager) Close() {
 	for _, handler := range m.handlers {
 		handler.Close()
 	}
 }
 
-func (m *DefaultInboundHandlerManager) Interface() interface{} {
+func (m *Manager) Interface() interface{} {
 	return (*proxyman.InboundHandlerManager)(nil)
 }
 

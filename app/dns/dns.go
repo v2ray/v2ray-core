@@ -13,6 +13,7 @@ type Server interface {
 	Get(domain string) []net.IP
 }
 
+// FromSpace fetches a DNS server from context.
 func FromSpace(space app.Space) Server {
 	app := space.GetApplication((*Server)(nil))
 	if app == nil {

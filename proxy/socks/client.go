@@ -16,10 +16,12 @@ import (
 	"v2ray.com/core/transport/ray"
 )
 
+// Client is a Socks5 client.
 type Client struct {
 	serverPicker protocol.ServerPicker
 }
 
+// NewClient create a new Socks5 client based on the given config.
 func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 	serverList := protocol.NewServerList()
 	for _, rec := range config.Server {
@@ -32,6 +34,7 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 	return client, nil
 }
 
+// Process implements proxy.Outbound.Process.
 func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.Dialer) error {
 	destination, ok := proxy.TargetFromContext(ctx)
 	if !ok {

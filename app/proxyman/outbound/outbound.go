@@ -10,27 +10,32 @@ import (
 	"v2ray.com/core/common"
 )
 
-type DefaultOutboundHandlerManager struct {
+// Manager is to manage all outbound handlers.
+type Manager struct {
 	sync.RWMutex
 	defaultHandler *Handler
 	taggedHandler  map[string]*Handler
 }
 
-func New(ctx context.Context, config *proxyman.OutboundConfig) (*DefaultOutboundHandlerManager, error) {
-	return &DefaultOutboundHandlerManager{
+// New creates a new Manager.
+func New(ctx context.Context, config *proxyman.OutboundConfig) (*Manager, error) {
+	return &Manager{
 		taggedHandler: make(map[string]*Handler),
 	}, nil
 }
 
-func (*DefaultOutboundHandlerManager) Interface() interface{} {
+// Interface implements Application.Interface.
+func (*Manager) Interface() interface{} {
 	return (*proxyman.OutboundHandlerManager)(nil)
 }
 
-func (*DefaultOutboundHandlerManager) Start() error { return nil }
+// Start implements Application.Start
+func (*Manager) Start() error { return nil }
 
-func (*DefaultOutboundHandlerManager) Close() {}
+// Close implements Application.Close
+func (*Manager) Close() {}
 
-func (v *DefaultOutboundHandlerManager) GetDefaultHandler() proxyman.OutboundHandler {
+func (v *Manager) GetDefaultHandler() proxyman.OutboundHandler {
 	v.RLock()
 	defer v.RUnlock()
 	if v.defaultHandler == nil {
@@ -39,7 +44,7 @@ func (v *DefaultOutboundHandlerManager) GetDefaultHandler() proxyman.OutboundHan
 	return v.defaultHandler
 }
 
-func (v *DefaultOutboundHandlerManager) GetHandler(tag string) proxyman.OutboundHandler {
+func (v *Manager) GetHandler(tag string) proxyman.OutboundHandler {
 	v.RLock()
 	defer v.RUnlock()
 	if handler, found := v.taggedHandler[tag]; found {
@@ -48,7 +53,7 @@ func (v *DefaultOutboundHandlerManager) GetHandler(tag string) proxyman.Outbound
 	return nil
 }
 
-func (v *DefaultOutboundHandlerManager) AddHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) error {
+func (v *Manager) AddHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) error {
 	v.Lock()
 	defer v.Unlock()
 
