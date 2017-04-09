@@ -12,7 +12,7 @@ import (
 )
 
 func Dial(ctx context.Context, dest v2net.Destination) (internet.Connection, error) {
-	log.Trace(newError("Internet|TCP: Dailing TCP to ", dest))
+	log.Trace(newError("dailing TCP to ", dest))
 	src := internet.DialerSourceFromContext(ctx)
 
 	tcpSettings := internet.TransportSettingsFromContext(ctx).(*Config)
@@ -34,11 +34,11 @@ func Dial(ctx context.Context, dest v2net.Destination) (internet.Connection, err
 	if tcpSettings.HeaderSettings != nil {
 		headerConfig, err := tcpSettings.HeaderSettings.GetInstance()
 		if err != nil {
-			return nil, newError("Internet|TCP: Failed to get header settings.").Base(err)
+			return nil, newError("failed to get header settings").Base(err).AtError()
 		}
 		auth, err := internet.CreateConnectionAuthenticator(headerConfig)
 		if err != nil {
-			return nil, newError("Internet|TCP: Failed to create header authenticator.").Base(err)
+			return nil, newError("failed to create header authenticator").Base(err).AtError()
 		}
 		conn = auth.Client(conn)
 	}

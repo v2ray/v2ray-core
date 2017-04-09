@@ -35,7 +35,7 @@ func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, conn
 	if err != nil {
 		return nil, err
 	}
-	log.Trace(newError("TCP|Listener: Listening on ", address, ":", port))
+	log.Trace(newError("listening TCP on ", address, ":", port))
 	networkSettings := internet.TransportSettingsFromContext(ctx)
 	tcpSettings := networkSettings.(*Config)
 
@@ -54,11 +54,11 @@ func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, conn
 	if tcpSettings.HeaderSettings != nil {
 		headerConfig, err := tcpSettings.HeaderSettings.GetInstance()
 		if err != nil {
-			return nil, newError("Internet|TCP: Invalid header settings.").Base(err)
+			return nil, newError("invalid header settings").Base(err).AtError()
 		}
 		auth, err := internet.CreateConnectionAuthenticator(headerConfig)
 		if err != nil {
-			return nil, newError("Internet|TCP: Invalid header settings.").Base(err)
+			return nil, newError("invalid header settings.").Base(err).AtError()
 		}
 		l.authConfig = auth
 	}
@@ -83,7 +83,7 @@ func (v *TCPListener) KeepAccepting() {
 			return nil
 		})
 		if err != nil {
-			log.Trace(newError("TCP|Listener: Failed to accepted raw connections: ", err).AtWarning())
+			log.Trace(newError("failed to accepted raw connections").Base(err).AtWarning())
 			continue
 		}
 

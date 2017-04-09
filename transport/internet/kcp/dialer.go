@@ -103,12 +103,12 @@ func (o *ClientConnection) Run() {
 
 func DialKCP(ctx context.Context, dest v2net.Destination) (internet.Connection, error) {
 	dest.Network = v2net.Network_UDP
-	log.Trace(newError("KCP|Dialer: Dialing KCP to ", dest))
+	log.Trace(newError("dialing mKCP to ", dest))
 
 	src := internet.DialerSourceFromContext(ctx)
 	rawConn, err := internet.DialSystem(ctx, src, dest)
 	if err != nil {
-		log.Trace(newError("KCP|Dialer: Failed to dial to dest: ", err).AtError())
+		log.Trace(newError("failed to dial to dest: ", err).AtError())
 		return nil, err
 	}
 	conn := &ClientConnection{
@@ -120,11 +120,11 @@ func DialKCP(ctx context.Context, dest v2net.Destination) (internet.Connection, 
 
 	header, err := kcpSettings.GetPackerHeader()
 	if err != nil {
-		return nil, newError("KCP|Dialer: Failed to create packet header.").Base(err)
+		return nil, newError("failed to create packet header").Base(err)
 	}
 	security, err := kcpSettings.GetSecurity()
 	if err != nil {
-		return nil, newError("KCP|Dialer: Failed to create security.").Base(err)
+		return nil, newError("failed to create security").Base(err)
 	}
 	conn.ResetSecurity(header, security)
 	conv := uint16(atomic.AddUint32(&globalConv, 1))

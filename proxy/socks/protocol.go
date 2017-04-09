@@ -77,7 +77,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 			return request, nil
 		default:
 			writeSocks4Response(writer, socks4RequestRejected, v2net.AnyIP, v2net.Port(0))
-			return nil, newError("Socks|Server: Unsupported command: ", buffer.Byte(1))
+			return nil, newError("unsupported command: ", buffer.Byte(1))
 		}
 	}
 
@@ -283,7 +283,7 @@ func writeSocks4Response(writer io.Writer, errCode byte, address v2net.Address, 
 
 func DecodeUDPPacket(packet []byte) (*protocol.RequestHeader, []byte, error) {
 	if len(packet) < 5 {
-		return nil, nil, newError("Socks|UDP: Insufficient length of packet.")
+		return nil, nil, newError("insufficient length of packet.")
 	}
 	request := &protocol.RequestHeader{
 		Version: socks5Version,
@@ -292,7 +292,7 @@ func DecodeUDPPacket(packet []byte) (*protocol.RequestHeader, []byte, error) {
 
 	// packet[0] and packet[1] are reserved
 	if packet[2] != 0 /* fragments */ {
-		return nil, nil, newError("Socks|UDP: Fragmented payload.")
+		return nil, nil, newError("discarding fragmented payload.")
 	}
 
 	addrType := packet[3]
@@ -301,7 +301,7 @@ func DecodeUDPPacket(packet []byte) (*protocol.RequestHeader, []byte, error) {
 	switch addrType {
 	case addrTypeIPv4:
 		if len(packet) < 10 {
-			return nil, nil, newError("Socks|UDP: Insufficient length of packet.")
+			return nil, nil, newError("insufficient length of packet")
 		}
 		ip := packet[4:8]
 		request.Port = v2net.PortFromBytes(packet[8:10])
@@ -309,7 +309,7 @@ func DecodeUDPPacket(packet []byte) (*protocol.RequestHeader, []byte, error) {
 		dataBegin = 10
 	case addrTypeIPv6:
 		if len(packet) < 22 {
-			return nil, nil, newError("Socks|UDP: Insufficient length of packet.")
+			return nil, nil, newError("insufficient length of packet")
 		}
 		ip := packet[4:20]
 		request.Port = v2net.PortFromBytes(packet[20:22])
@@ -318,14 +318,14 @@ func DecodeUDPPacket(packet []byte) (*protocol.RequestHeader, []byte, error) {
 	case addrTypeDomain:
 		domainLength := int(packet[4])
 		if len(packet) < 5+domainLength+2 {
-			return nil, nil, newError("Socks|UDP: Insufficient length of packet.")
+			return nil, nil, newError("insufficient length of packet")
 		}
 		domain := string(packet[5 : 5+domainLength])
 		request.Port = v2net.PortFromBytes(packet[5+domainLength : 5+domainLength+2])
 		request.Address = v2net.ParseAddress(domain)
 		dataBegin = 5 + domainLength + 2
 	default:
-		return nil, nil, newError("Socks|UDP: Unknown address type ", addrType)
+		return nil, nil, newError("unknown address type ", addrType)
 	}
 
 	return request, packet[dataBegin:], nil
@@ -399,10 +399,10 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 	}
 
 	if b.Byte(0) != socks5Version {
-		return nil, newError("Socks|Client: Unexpected server version: ", b.Byte(0)).AtWarning()
+		return nil, newError("unexpected server version: ", b.Byte(0)).AtWarning()
 	}
 	if b.Byte(1) != authByte {
-		return nil, newError("Socks|Client: auth method not supported.").AtWarning()
+		return nil, newError("auth method not supported.").AtWarning()
 	}
 
 	if authByte == authPassword {
@@ -425,7 +425,7 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 			return nil, err
 		}
 		if b.Byte(1) != 0x00 {
-			return nil, newError("Socks|Client: Server rejects account: ", b.Byte(1))
+			return nil, newError("server rejects account: ", b.Byte(1))
 		}
 	}
 
@@ -448,7 +448,7 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 
 	resp := b.Byte(1)
 	if resp != 0x00 {
-		return nil, newError("Socks|Client: Server rejects request: ", resp)
+		return nil, newError("server rejects request: ", resp)
 	}
 
 	addrType := b.Byte(3)
@@ -477,7 +477,7 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 		}
 		address = v2net.DomainAddress(string(b.BytesFrom(-domainLength)))
 	default:
-		return nil, newError("Socks|Server: Unknown address type: ", addrType)
+		return nil, newError("unknown address type: ", addrType)
 	}
 
 	if err := b.AppendSupplier(buf.ReadFullFrom(reader, 2)); err != nil {

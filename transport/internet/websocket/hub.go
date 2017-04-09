@@ -33,7 +33,7 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 	}
 	conn, err := converttovws(writer, request)
 	if err != nil {
-		log.Trace(newError("WebSocket|Listener: Failed to convert to WebSocket connection: ", err))
+		log.Trace(newError("failed to convert to WebSocket connection").Base(err))
 		return
 	}
 

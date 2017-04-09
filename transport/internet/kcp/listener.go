@@ -90,11 +90,11 @@ func NewListener(ctx context.Context, address v2net.Address, port v2net.Port, co
 
 	header, err := kcpSettings.GetPackerHeader()
 	if err != nil {
-		return nil, newError("KCP|Listener: Failed to create packet header.").Base(err)
+		return nil, newError("failed to create packet header").Base(err).AtError()
 	}
 	security, err := kcpSettings.GetSecurity()
 	if err != nil {
-		return nil, newError("KCP|Listener: Failed to create security.").Base(err)
+		return nil, newError("failed to create security").Base(err).AtError()
 	}
 	l := &Listener{
 		header:   header,
@@ -122,7 +122,7 @@ func NewListener(ctx context.Context, address v2net.Address, port v2net.Port, co
 	l.Lock()
 	l.hub = hub
 	l.Unlock()
-	log.Trace(newError("KCP|Listener: listening on ", address, ":", port))
+	log.Trace(newError("listening on ", address, ":", port))
 	return l, nil
 }
 
@@ -131,7 +131,7 @@ func (v *Listener) OnReceive(payload *buf.Buffer, src v2net.Destination, origina
 
 	segments := v.reader.Read(payload.Bytes())
 	if len(segments) == 0 {
-		log.Trace(newError("KCP|Listener: discarding invalid payload from ", src))
+		log.Trace(newError("discarding invalid payload from ", src))
 		return
 	}
 
