@@ -140,9 +140,12 @@ func transferResponse(timer signal.ActivityTimer, session *encoding.ServerSessio
 
 	bodyWriter := session.EncodeResponseBody(request, output)
 
-	mergeReader := buf.NewMergingReader(input)
+	var reader buf.Reader = input
+	if request.Command == protocol.RequestCommandTCP {
+		reader = buf.NewMergingReader(input)
+	}
 	// Optimize for small response packet
-	data, err := mergeReader.Read()
+	data, err := reader.Read()
 	if err != nil {
 		return err
 	}
@@ -158,7 +161,7 @@ func transferResponse(timer signal.ActivityTimer, session *encoding.ServerSessio
 		}
 	}
 
-	if err := buf.PipeUntilEOF(timer, mergeReader, bodyWriter); err != nil {
+	if err := buf.PipeUntilEOF(timer, reader, bodyWriter); err != nil {
 		return err
 	}
 
