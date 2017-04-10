@@ -7,6 +7,7 @@ import (
 	"v2ray.com/core/common/serial"
 )
 
+// Severity describes how severe the error is.
 type Severity int
 
 const (
