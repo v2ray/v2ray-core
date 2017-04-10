@@ -51,52 +51,28 @@ func InitErrorLogger(file string) error {
 	return nil
 }
 
-// writeDebug outputs a debug log with given format and optional arguments.
-func writeDebug(val ...interface{}) {
-	debugLogger.Log(&internal.ErrorLog{
-		Prefix: "[Debug]",
-		Values: val,
-	})
-}
-
-// writeInfo outputs an info log with given format and optional arguments.
-func writeInfo(val ...interface{}) {
-	infoLogger.Log(&internal.ErrorLog{
-		Prefix: "[Info]",
-		Values: val,
-	})
-}
-
-// writeWarning outputs a warning log with given format and optional arguments.
-func writeWarning(val ...interface{}) {
-	warningLogger.Log(&internal.ErrorLog{
-		Prefix: "[Warning]",
-		Values: val,
-	})
-}
-
-// writeError outputs an error log with given format and optional arguments.
-func writeError(val ...interface{}) {
-	errorLogger.Log(&internal.ErrorLog{
-		Prefix: "[Error]",
-		Values: val,
-	})
-}
-
-func Trace(err error) {
-	s := errors.GetSeverity(err)
+func getLoggerAndPrefix(s errors.Severity) (internal.LogWriter, string) {
 	switch s {
 	case errors.SeverityDebug:
-		writeDebug(err)
+		return debugLogger, "[Debug]"
 	case errors.SeverityInfo:
-		writeInfo(err)
+		return infoLogger, "[Info]"
 	case errors.SeverityWarning:
-		writeWarning(err)
+		return infoLogger, "[Warning]"
 	case errors.SeverityError:
-		writeError(err)
+		return errorLogger, "[Error]"
 	default:
-		writeInfo(err)
+		return infoLogger, "[Info]"
 	}
+}
+
+// Trace logs an error message based on its severity.
+func Trace(err error) {
+	logger, prefix := getLoggerAndPrefix(errors.GetSeverity(err))
+	logger.Log(&internal.ErrorLog{
+		Prefix: prefix,
+		Error:  err,
+	})
 }
 
 type Instance struct {
