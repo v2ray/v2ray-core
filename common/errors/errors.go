@@ -79,22 +79,27 @@ func (v *Error) Severity() Severity {
 	return v.severity
 }
 
+// AtDebug sets the severity to debug.
 func (v *Error) AtDebug() *Error {
 	return v.atSeverity(SeverityDebug)
 }
 
+// AtInfo sets the severity to info.
 func (v *Error) AtInfo() *Error {
 	return v.atSeverity(SeverityInfo)
 }
 
+// AtWarning sets the severity to warning.
 func (v *Error) AtWarning() *Error {
 	return v.atSeverity(SeverityWarning)
 }
 
+// AtError sets the severity to error.
 func (v *Error) AtError() *Error {
 	return v.atSeverity(SeverityError)
 }
 
+// Path sets the path to the location where this error happens.
 func (v *Error) Path(path ...string) *Error {
 	v.path = path
 	return v
