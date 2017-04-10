@@ -13,11 +13,11 @@ type LogEntry interface {
 
 type ErrorLog struct {
 	Prefix string
-	Values []interface{}
+	Error  error
 }
 
 func (v *ErrorLog) String() string {
-	return v.Prefix + serial.Concat(v.Values...)
+	return v.Prefix + v.Error.Error()
 }
 
 type AccessLog struct {
