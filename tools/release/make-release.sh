@@ -38,6 +38,6 @@ gcloud compute instances create "v2raycore-${RAND}" \
     --machine-type=n1-highcpu-2 \
     --metadata=release_tag=v${VER},prerelease=${PRE} \
     --metadata-from-file=startup-script=${DIR}/release-ci.sh \
-    --zone=us-west1-a \
+    --zone=us-central1-c \
     --preemptible \
     --project ${PROJECT}
