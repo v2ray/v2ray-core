@@ -28,6 +28,9 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 	for _, rec := range config.Server {
 		serverList.AddServer(protocol.NewServerSpecFromPB(*rec))
 	}
+	if serverList.Size() == 0 {
+		return nil, newError("0 server")
+	}
 	client := &Client{
 		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
 	}
