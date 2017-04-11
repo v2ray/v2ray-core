@@ -27,11 +27,13 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 	for _, rec := range config.Server {
 		serverList.AddServer(protocol.NewServerSpecFromPB(*rec))
 	}
-	client := &Client{
-		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
+	if serverList.Size() == 0 {
+		return nil, newError("0 target server")
 	}
 
-	return client, nil
+	return &Client{
+		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
+	}, nil
 }
 
 // Process implements proxy.Outbound.Process.
