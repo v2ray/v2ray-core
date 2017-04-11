@@ -58,7 +58,7 @@ func getLoggerAndPrefix(s errors.Severity) (internal.LogWriter, string) {
 	case errors.SeverityInfo:
 		return infoLogger, "[Info]"
 	case errors.SeverityWarning:
-		return infoLogger, "[Warning]"
+		return warningLogger, "[Warning]"
 	case errors.SeverityError:
 		return errorLogger, "[Error]"
 	default:
