@@ -38,7 +38,7 @@ Accept-Language: de,en;q=0.7,en-us;q=0.3
 	assert.String(req.Header.Get("Proxy-Connection")).Equals("keep-alive")
 	assert.String(req.Header.Get("Proxy-Authenticate")).Equals("abc")
 
-	StripHopByHopHeaders(req)
+	StripHopByHopHeaders(req.Header)
 	assert.String(req.Header.Get("Connection")).Equals("close")
 	assert.String(req.Header.Get("Foo")).Equals("")
 	assert.String(req.Header.Get("Bar")).Equals("")
