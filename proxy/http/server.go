@@ -68,15 +68,21 @@ func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error
 	return v2net.TCPDestination(v2net.DomainAddress(host), port), nil
 }
 
+func isTimeout(err error) bool {
+	nerr, ok := err.(net.Error)
+	return ok && nerr.Timeout()
+}
+
 func (s *Server) Process(ctx context.Context, network v2net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
+	reader := bufio.NewReaderSize(conn, 8192)
+
 Start:
-	conn.SetReadDeadline(time.Now().Add(time.Second * 8))
-	reader := bufio.NewReaderSize(conn, 2048)
+	conn.SetReadDeadline(time.Now().Add(time.Second * 16))
 
 	request, err := http.ReadRequest(reader)
 	if err != nil {
 		trace := newError("failed to read http request").Base(err)
-		if errors.Cause(err) != io.EOF {
+		if errors.Cause(err) != io.EOF && !isTimeout(errors.Cause(err)) {
 			trace.AtWarning()
 		}
 		return trace
@@ -186,13 +192,13 @@ func StripHopByHopHeaders(header http.Header) {
 	header.Del("Upgrade")
 
 	connections := header.Get("Connection")
+	header.Del("Connection")
 	if len(connections) == 0 {
 		return
 	}
 	for _, h := range strings.Split(connections, ",") {
 		header.Del(strings.TrimSpace(h))
 	}
-	header.Del("Connection")
 }
 
 var errWaitAnother = newError("keep alive")
@@ -246,8 +252,9 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 		if err == nil {
 			StripHopByHopHeaders(response.Header)
 			response.Header.Set("Proxy-Connection", "keep-alive")
-			response.Header.Set("Connection", "Keep-Alive")
+			response.Header.Set("Connection", "keep-alive")
 			response.Header.Set("Keep-Alive", "timeout=4")
+			response.Close = false
 		} else {
 			log.Trace(newError("failed to read response").Base(err).AtWarning())
 			response = &http.Response{

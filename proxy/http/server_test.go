@@ -40,8 +40,8 @@ Accept-Language: de,en;q=0.7,en-us;q=0.3
 
 	StripHopByHopHeaders(req.Header)
 	assert.String(req.Header.Get("Connection")).IsEmpty()
-	assert.String(req.Header.Get("Foo")).Equals("")
-	assert.String(req.Header.Get("Bar")).Equals("")
-	assert.String(req.Header.Get("Proxy-Connection")).Equals("")
-	assert.String(req.Header.Get("Proxy-Authenticate")).Equals("")
+	assert.String(req.Header.Get("Foo")).IsEmpty()
+	assert.String(req.Header.Get("Bar")).IsEmpty()
+	assert.String(req.Header.Get("Proxy-Connection")).IsEmpty()
+	assert.String(req.Header.Get("Proxy-Authenticate")).IsEmpty()
 }
