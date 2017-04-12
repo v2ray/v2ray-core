@@ -841,7 +841,8 @@ func TestVMessGCMMux(t *testing.T) {
 			{
 				SenderSettings: serial.ToTypedMessage(&proxyman.SenderConfig{
 					MultiplexSettings: &proxyman.MultiplexingConfig{
-						Enabled: true,
+						Enabled:     true,
+						Concurrency: 4,
 					},
 				}),
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
