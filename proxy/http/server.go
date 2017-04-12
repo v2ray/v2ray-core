@@ -247,7 +247,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
-		responseReader := bufio.NewReader(buf.ToBytesReader(ray.InboundOutput()))
+		responseReader := bufio.NewReaderSize(buf.ToBytesReader(ray.InboundOutput()), 8192)
 		response, err := http.ReadResponse(responseReader, request)
 		if err == nil {
 			StripHopByHopHeaders(response.Header)
