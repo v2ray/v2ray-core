@@ -10,8 +10,8 @@
 
   "protoc": {
     "options": [
-      "--proto_path=$GOPATH/src/",
-      "--proto_path=$GOPATH/src/github.com/google/protobuf/src"
+      "--proto_path=${env.GOPATH}/src/",
+      "--proto_path=${env.GOPATH}/src/github.com/google/protobuf/src"
     ]
   }
 }

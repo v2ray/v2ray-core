@@ -62,13 +62,18 @@ func NewHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) (*H
 	}
 
 	if h.senderSettings != nil && h.senderSettings.MultiplexSettings != nil && h.senderSettings.MultiplexSettings.Enabled {
-		h.mux = mux.NewClientManager(proxyHandler, h)
+		config := h.senderSettings.MultiplexSettings
+		if config.Concurrency < 1 || config.Concurrency > 1024 {
+			return nil, newError("invalid mux concurrency: ", config.Concurrency)
+		}
+		h.mux = mux.NewClientManager(proxyHandler, h, config)
 	}
 
 	h.proxy = proxyHandler
 	return h, nil
 }
 
+// Dispatch implements proxy.Outbound.Dispatch.
 func (h *Handler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
 	if h.mux != nil {
 		err := h.mux.Dispatch(ctx, outboundRay)
