@@ -9,9 +9,10 @@ import (
 type SessionStatus byte
 
 const (
-	SessionStatusNew  SessionStatus = 0x01
-	SessionStatusKeep SessionStatus = 0x02
-	SessionStatusEnd  SessionStatus = 0x03
+	SessionStatusNew       SessionStatus = 0x01
+	SessionStatusKeep      SessionStatus = 0x02
+	SessionStatusEnd       SessionStatus = 0x03
+	SessionStatusKeepAlive SessionStatus = 0x04
 )
 
 type Option byte

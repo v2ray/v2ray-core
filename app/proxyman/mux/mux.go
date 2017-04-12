@@ -295,6 +295,16 @@ func (m *Client) fetchOutput() {
 			log.Trace(newError("failed to read metadata").Base(err))
 			break
 		}
+		if meta.SessionStatus == SessionStatusKeepAlive {
+			if meta.Option.Has(OptionData) {
+				if err := drain(reader); err != nil {
+					log.Trace(newError("failed to read data").Base(err))
+					break
+				}
+			}
+			continue
+		}
+
 		m.access.RLock()
 		s, found := m.sessions[meta.SessionID]
 		m.access.RUnlock()
@@ -388,6 +398,16 @@ func (w *ServerWorker) run(ctx context.Context) {
 		if err != nil {
 			log.Trace(newError("failed to read metadata").Base(err))
 			return
+		}
+
+		if meta.SessionStatus == SessionStatusKeepAlive {
+			if meta.Option.Has(OptionData) {
+				if err := drain(reader); err != nil {
+					log.Trace(newError("failed to read data").Base(err))
+					break
+				}
+			}
+			continue
 		}
 
 		w.access.RLock()
