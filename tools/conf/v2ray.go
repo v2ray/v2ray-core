@@ -80,7 +80,15 @@ func (v *InboundConnectionConfig) Build() (*proxyman.InboundHandlerConfig, error
 }
 
 type MuxConfig struct {
-	Enabled bool `json:"enabled"`
+	Enabled     bool   `json:"enabled"`
+	Concurrency uint16 `json:"concurrency"`
+}
+
+func (c *MuxConfig) GetConcurrency() uint16 {
+	if c.Concurrency == 0 {
+		return 8
+	}
+	return c.Concurrency
 }
 
 type OutboundConnectionConfig struct {
@@ -120,7 +128,8 @@ func (v *OutboundConnectionConfig) Build() (*proxyman.OutboundHandlerConfig, err
 
 	if v.MuxSettings != nil && v.MuxSettings.Enabled {
 		senderSettings.MultiplexSettings = &proxyman.MultiplexingConfig{
-			Enabled: true,
+			Enabled:     true,
+			Concurrency: uint32(v.MuxSettings.GetConcurrency()),
 		}
 	}
 
@@ -270,7 +279,8 @@ func (v *OutboundDetourConfig) Build() (*proxyman.OutboundHandlerConfig, error) 
 
 	if v.MuxSettings != nil && v.MuxSettings.Enabled {
 		senderSettings.MultiplexSettings = &proxyman.MultiplexingConfig{
-			Enabled: true,
+			Enabled:     true,
+			Concurrency: uint32(v.MuxSettings.GetConcurrency()),
 		}
 	}
 

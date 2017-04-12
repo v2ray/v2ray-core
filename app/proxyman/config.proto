@@ -83,20 +83,8 @@ message OutboundHandlerConfig {
 }
 
 message MultiplexingConfig {
+  // Whether or not Mux is enabled.
   bool enabled = 1;
-}
-
-message SessionFrame {
-  uint32 id = 1;
-
-  enum FrameCommand {
-    SessionNew = 0;
-    SessionKeep = 1;
-    SessionEnd = 2;
-  }
-
-  FrameCommand command = 2;
-
-  v2ray.core.common.net.Endpoint target = 3;
-  bytes payload = 4;
+  // Max number of concurrent connections that one Mux connection can handle.
+  uint32 concurrency = 2;
 }

@@ -10,6 +10,7 @@ import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/log"
+	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/signal"
@@ -18,8 +19,7 @@ import (
 )
 
 const (
-	maxParallel = 8
-	maxTotal    = 128
+	maxTotal = 128
 )
 
 type manager interface {
@@ -63,12 +63,14 @@ type ClientManager struct {
 	clients []*Client
 	proxy   proxy.Outbound
 	dialer  proxy.Dialer
+	config  *proxyman.MultiplexingConfig
 }
 
-func NewClientManager(p proxy.Outbound, d proxy.Dialer) *ClientManager {
+func NewClientManager(p proxy.Outbound, d proxy.Dialer, c *proxyman.MultiplexingConfig) *ClientManager {
 	return &ClientManager{
 		proxy:  p,
 		dialer: d,
+		config: c,
 	}
 }
 
@@ -118,6 +120,7 @@ type Client struct {
 	cancel         context.CancelFunc
 	manager        *ClientManager
 	session2Remove chan uint16
+	concurrency    uint32
 }
 
 var muxCoolDestination = net.TCPDestination(net.DomainAddress("v1.mux.cool"), net.Port(9527))
@@ -135,6 +138,7 @@ func NewClient(p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client
 		manager:        m,
 		count:          0,
 		session2Remove: make(chan uint16, 16),
+		concurrency:    m.config.Concurrency,
 	}
 	go c.fetchOutput()
 	go c.monitor()
@@ -225,7 +229,7 @@ func (m *Client) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) bool
 	m.access.Lock()
 	defer m.access.Unlock()
 
-	if len(m.sessions) >= maxParallel {
+	if len(m.sessions) >= int(m.concurrency) {
 		return false
 	}
 
