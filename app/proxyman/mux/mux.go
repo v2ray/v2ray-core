@@ -229,7 +229,7 @@ func (m *Client) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) bool
 	m.access.Lock()
 	defer m.access.Unlock()
 
-	if len(m.sessions) >= m.concurrency {
+	if len(m.sessions) >= int(m.concurrency) {
 		return false
 	}
 
