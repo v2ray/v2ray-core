@@ -74,8 +74,24 @@ func (m *SessionManager) CloseIfNoSession() bool {
 	m.RLock()
 	defer m.RUnlock()
 
+	if m.closed {
+		return true
+	}
+
 	if len(m.sessions) == 0 {
 		return false
+	}
+
+	m.closed = true
+	return true
+}
+
+func (m *SessionManager) Close() {
+	m.RLock()
+	defer m.RUnlock()
+
+	if m.closed {
+		return
 	}
 
 	m.closed = true
@@ -86,8 +102,6 @@ func (m *SessionManager) CloseIfNoSession() bool {
 	}
 
 	m.sessions = make(map[uint16]*Session)
-
-	return true
 }
 
 type Session struct {

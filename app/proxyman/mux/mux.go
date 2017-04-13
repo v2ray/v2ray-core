@@ -121,6 +121,7 @@ func (m *Client) monitor() {
 	for {
 		select {
 		case <-m.ctx.Done():
+			m.sessionManager.Close()
 			m.inboundRay.InboundInput().Close()
 			m.inboundRay.InboundOutput().CloseError()
 			return
@@ -302,6 +303,8 @@ func handle(ctx context.Context, s *Session, output buf.Writer) {
 func (w *ServerWorker) run(ctx context.Context) {
 	input := w.outboundRay.OutboundInput()
 	reader := NewReader(input)
+
+	defer w.sessionManager.Close()
 L:
 	for {
 		select {
