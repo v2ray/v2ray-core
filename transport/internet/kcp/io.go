@@ -22,13 +22,13 @@ type KCPPacketReader struct {
 	Header   internet.PacketHeader
 }
 
-func (v *KCPPacketReader) Read(b []byte) []Segment {
-	if v.Header != nil {
-		b = b[v.Header.Size():]
+func (r *KCPPacketReader) Read(b []byte) []Segment {
+	if r.Header != nil {
+		b = b[r.Header.Size():]
 	}
-	if v.Security != nil {
-		nonceSize := v.Security.NonceSize()
-		out, err := v.Security.Open(b[nonceSize:nonceSize], b[:nonceSize], b[nonceSize:], nil)
+	if r.Security != nil {
+		nonceSize := r.Security.NonceSize()
+		out, err := r.Security.Open(b[nonceSize:nonceSize], b[:nonceSize], b[nonceSize:], nil)
 		if err != nil {
 			return nil
 		}
@@ -54,39 +54,39 @@ type KCPPacketWriter struct {
 	buffer [32 * 1024]byte
 }
 
-func (v *KCPPacketWriter) Overhead() int {
+func (w *KCPPacketWriter) Overhead() int {
 	overhead := 0
-	if v.Header != nil {
-		overhead += v.Header.Size()
+	if w.Header != nil {
+		overhead += w.Header.Size()
 	}
-	if v.Security != nil {
-		overhead += v.Security.Overhead()
+	if w.Security != nil {
+		overhead += w.Security.Overhead()
 	}
 	return overhead
 }
 
-func (v *KCPPacketWriter) Write(b []byte) (int, error) {
-	x := v.buffer[:]
+func (w *KCPPacketWriter) Write(b []byte) (int, error) {
+	x := w.buffer[:]
 	size := 0
-	if v.Header != nil {
-		nBytes, _ := v.Header.Write(x)
+	if w.Header != nil {
+		nBytes, _ := w.Header.Write(x)
 		size += nBytes
 		x = x[nBytes:]
 	}
-	if v.Security != nil {
-		nonceSize := v.Security.NonceSize()
+	if w.Security != nil {
+		nonceSize := w.Security.NonceSize()
 		var nonce []byte
 		if nonceSize > 0 {
 			nonce = x[:nonceSize]
 			rand.Read(nonce)
 			x = x[nonceSize:]
 		}
-		x = v.Security.Seal(x[:0], nonce, b, nil)
+		x = w.Security.Seal(x[:0], nonce, b, nil)
 		size += nonceSize + len(x)
 	} else {
 		size += copy(x, b)
 	}
 
-	_, err := v.Writer.Write(v.buffer[:size])
+	_, err := w.Writer.Write(w.buffer[:size])
 	return len(b), err
 }

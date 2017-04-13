@@ -29,75 +29,75 @@ type ClientConnection struct {
 	writer PacketWriter
 }
 
-func (o *ClientConnection) Overhead() int {
-	o.RLock()
-	defer o.RUnlock()
-	if o.writer == nil {
+func (c *ClientConnection) Overhead() int {
+	c.RLock()
+	defer c.RUnlock()
+	if c.writer == nil {
 		return 0
 	}
-	return o.writer.Overhead()
+	return c.writer.Overhead()
 }
 
-func (o *ClientConnection) Write(b []byte) (int, error) {
-	o.RLock()
-	defer o.RUnlock()
+func (c *ClientConnection) Write(b []byte) (int, error) {
+	c.RLock()
+	defer c.RUnlock()
 
-	if o.writer == nil {
+	if c.writer == nil {
 		return len(b), nil
 	}
 
-	return o.writer.Write(b)
+	return c.writer.Write(b)
 }
 
-func (o *ClientConnection) Read([]byte) (int, error) {
+func (*ClientConnection) Read([]byte) (int, error) {
 	panic("KCP|ClientConnection: Read should not be called.")
 }
 
-func (o *ClientConnection) Close() error {
-	return o.Conn.Close()
+func (c *ClientConnection) Close() error {
+	return c.Conn.Close()
 }
 
-func (o *ClientConnection) Reset(inputCallback func([]Segment)) {
-	o.Lock()
-	o.input = inputCallback
-	o.Unlock()
+func (c *ClientConnection) Reset(inputCallback func([]Segment)) {
+	c.Lock()
+	c.input = inputCallback
+	c.Unlock()
 }
 
-func (o *ClientConnection) ResetSecurity(header internet.PacketHeader, security cipher.AEAD) {
-	o.Lock()
-	if o.reader == nil {
-		o.reader = new(KCPPacketReader)
+func (c *ClientConnection) ResetSecurity(header internet.PacketHeader, security cipher.AEAD) {
+	c.Lock()
+	if c.reader == nil {
+		c.reader = new(KCPPacketReader)
 	}
-	o.reader.(*KCPPacketReader).Header = header
-	o.reader.(*KCPPacketReader).Security = security
-	if o.writer == nil {
-		o.writer = new(KCPPacketWriter)
+	c.reader.(*KCPPacketReader).Header = header
+	c.reader.(*KCPPacketReader).Security = security
+	if c.writer == nil {
+		c.writer = new(KCPPacketWriter)
 	}
-	o.writer.(*KCPPacketWriter).Header = header
-	o.writer.(*KCPPacketWriter).Security = security
-	o.writer.(*KCPPacketWriter).Writer = o.Conn
+	c.writer.(*KCPPacketWriter).Header = header
+	c.writer.(*KCPPacketWriter).Security = security
+	c.writer.(*KCPPacketWriter).Writer = c.Conn
 
-	o.Unlock()
+	c.Unlock()
 }
 
-func (o *ClientConnection) Run() {
+func (c *ClientConnection) Run() {
 	payload := buf.NewSmall()
 	defer payload.Release()
 
 	for {
-		err := payload.Reset(buf.ReadFrom(o.Conn))
+		err := payload.Reset(buf.ReadFrom(c.Conn))
 		if err != nil {
 			payload.Release()
 			return
 		}
-		o.RLock()
-		if o.input != nil {
-			segments := o.reader.Read(payload.Bytes())
+		c.RLock()
+		if c.input != nil {
+			segments := c.reader.Read(payload.Bytes())
 			if len(segments) > 0 {
-				o.input(segments)
+				c.input(segments)
 			}
 		}
-		o.RUnlock()
+		c.RUnlock()
 	}
 }
 

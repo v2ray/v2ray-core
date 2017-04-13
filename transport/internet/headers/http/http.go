@@ -95,13 +95,13 @@ func NewHeaderWriter(header *buf.Buffer) *HeaderWriter {
 	}
 }
 
-func (v *HeaderWriter) Write(writer io.Writer) error {
-	if v.header == nil {
+func (w *HeaderWriter) Write(writer io.Writer) error {
+	if w.header == nil {
 		return nil
 	}
-	_, err := writer.Write(v.header.Bytes())
-	v.header.Release()
-	v.header = nil
+	_, err := writer.Write(w.header.Bytes())
+	w.header.Release()
+	w.header = nil
 	return err
 }
 
@@ -123,49 +123,49 @@ func NewHttpConn(conn net.Conn, reader Reader, writer Writer, errorWriter Writer
 	}
 }
 
-func (v *HttpConn) Read(b []byte) (int, error) {
-	if v.oneTimeReader != nil {
-		buffer, err := v.oneTimeReader.Read(v.Conn)
+func (c *HttpConn) Read(b []byte) (int, error) {
+	if c.oneTimeReader != nil {
+		buffer, err := c.oneTimeReader.Read(c.Conn)
 		if err != nil {
 			return 0, err
 		}
-		v.readBuffer = buffer
-		v.oneTimeReader = nil
+		c.readBuffer = buffer
+		c.oneTimeReader = nil
 	}
 
-	if v.readBuffer.Len() > 0 {
-		nBytes, err := v.readBuffer.Read(b)
-		if nBytes == v.readBuffer.Len() {
-			v.readBuffer.Release()
-			v.readBuffer = nil
+	if c.readBuffer.Len() > 0 {
+		nBytes, err := c.readBuffer.Read(b)
+		if nBytes == c.readBuffer.Len() {
+			c.readBuffer.Release()
+			c.readBuffer = nil
 		}
 		return nBytes, err
 	}
 
-	return v.Conn.Read(b)
+	return c.Conn.Read(b)
 }
 
-func (v *HttpConn) Write(b []byte) (int, error) {
-	if v.oneTimeWriter != nil {
-		err := v.oneTimeWriter.Write(v.Conn)
-		v.oneTimeWriter = nil
+func (c *HttpConn) Write(b []byte) (int, error) {
+	if c.oneTimeWriter != nil {
+		err := c.oneTimeWriter.Write(c.Conn)
+		c.oneTimeWriter = nil
 		if err != nil {
 			return 0, err
 		}
 	}
 
-	return v.Conn.Write(b)
+	return c.Conn.Write(b)
 }
 
 // Close implements net.Conn.Close().
-func (v *HttpConn) Close() error {
-	if v.oneTimeWriter != nil && v.errorWriter != nil {
+func (c *HttpConn) Close() error {
+	if c.oneTimeWriter != nil && c.errorWriter != nil {
 		// Connection is being closed but header wasn't sent. This means the client request
 		// is probably not valid. Sending back a server error header in this case.
-		v.errorWriter.Write(v.Conn)
+		c.errorWriter.Write(c.Conn)
 	}
 
-	return v.Conn.Close()
+	return c.Conn.Close()
 }
 
 func formResponseHeader(config *ResponseConfig) *HeaderWriter {
@@ -193,9 +193,9 @@ type HttpAuthenticator struct {
 	config *Config
 }
 
-func (v HttpAuthenticator) GetClientWriter() *HeaderWriter {
+func (a HttpAuthenticator) GetClientWriter() *HeaderWriter {
 	header := buf.NewSmall()
-	config := v.config.Request
+	config := a.config.Request
 	header.AppendSupplier(serial.WriteString(strings.Join([]string{config.GetMethodValue(), config.PickUri(), config.GetFullVersion()}, " ")))
 	header.AppendSupplier(writeCRLF)
 
@@ -210,31 +210,31 @@ func (v HttpAuthenticator) GetClientWriter() *HeaderWriter {
 	}
 }
 
-func (v HttpAuthenticator) GetServerWriter() *HeaderWriter {
-	return formResponseHeader(v.config.Response)
+func (a HttpAuthenticator) GetServerWriter() *HeaderWriter {
+	return formResponseHeader(a.config.Response)
 }
 
-func (v HttpAuthenticator) Client(conn net.Conn) net.Conn {
-	if v.config.Request == nil && v.config.Response == nil {
+func (a HttpAuthenticator) Client(conn net.Conn) net.Conn {
+	if a.config.Request == nil && a.config.Response == nil {
 		return conn
 	}
 	var reader Reader = new(NoOpReader)
-	if v.config.Request != nil {
+	if a.config.Request != nil {
 		reader = new(HeaderReader)
 	}
 
 	var writer Writer = new(NoOpWriter)
-	if v.config.Response != nil {
-		writer = v.GetClientWriter()
+	if a.config.Response != nil {
+		writer = a.GetClientWriter()
 	}
 	return NewHttpConn(conn, reader, writer, new(NoOpWriter))
 }
 
-func (v HttpAuthenticator) Server(conn net.Conn) net.Conn {
-	if v.config.Request == nil && v.config.Response == nil {
+func (a HttpAuthenticator) Server(conn net.Conn) net.Conn {
+	if a.config.Request == nil && a.config.Response == nil {
 		return conn
 	}
-	return NewHttpConn(conn, new(HeaderReader), v.GetServerWriter(), formResponseHeader(&ResponseConfig{
+	return NewHttpConn(conn, new(HeaderReader), a.GetServerWriter(), formResponseHeader(&ResponseConfig{
 		Version: &Version{
 			Value: "1.1",
 		},

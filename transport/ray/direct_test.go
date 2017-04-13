@@ -1,10 +1,9 @@
 package ray_test
 
 import (
+	"context"
 	"io"
 	"testing"
-
-	"context"
 
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/testing/assert"

@@ -9,10 +9,10 @@ import (
 
 type NoOpHeader struct{}
 
-func (v NoOpHeader) Size() int {
+func (NoOpHeader) Size() int {
 	return 0
 }
-func (v NoOpHeader) Write([]byte) (int, error) {
+func (NoOpHeader) Write([]byte) (int, error) {
 	return 0, nil
 }
 

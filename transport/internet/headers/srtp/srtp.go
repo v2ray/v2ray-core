@@ -13,14 +13,14 @@ type SRTP struct {
 	number uint16
 }
 
-func (v *SRTP) Size() int {
+func (*SRTP) Size() int {
 	return 4
 }
 
-func (v *SRTP) Write(b []byte) (int, error) {
-	v.number++
-	serial.Uint16ToBytes(v.number, b[:0])
-	serial.Uint16ToBytes(v.number, b[:2])
+func (s *SRTP) Write(b []byte) (int, error) {
+	s.number++
+	serial.Uint16ToBytes(s.number, b[:0])
+	serial.Uint16ToBytes(s.number, b[:2])
 	return 4, nil
 }
 
