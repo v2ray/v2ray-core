@@ -12,12 +12,10 @@ func TestSessionManagerAdd(t *testing.T) {
 
 	m := NewSessionManager()
 
-	s := &Session{}
-	m.Allocate(s)
+	s := m.Allocate()
 	assert.Uint16(s.ID).Equals(1)
 
-	s = &Session{}
-	m.Allocate(s)
+	s = m.Allocate()
 	assert.Uint16(s.ID).Equals(2)
 
 	s = &Session{

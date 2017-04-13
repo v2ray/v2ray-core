@@ -121,13 +121,12 @@ func (m *Client) monitor() {
 	for {
 		select {
 		case <-m.ctx.Done():
-			m.sessionManager.Close()
 			m.inboundRay.InboundInput().Close()
 			m.inboundRay.InboundOutput().CloseError()
 			return
 		case <-time.After(time.Second * 6):
 			size := m.sessionManager.Size()
-			if size == 0 {
+			if size == 0 && m.sessionManager.CloseIfNoSession() {
 				m.cancel()
 			}
 		}
@@ -169,12 +168,12 @@ func (m *Client) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) bool
 	default:
 	}
 
-	s := &Session{
-		input:  outboundRay.OutboundInput(),
-		output: outboundRay.OutboundOutput(),
-		parent: m.sessionManager,
+	s := m.sessionManager.Allocate()
+	if s == nil {
+		return false
 	}
-	m.sessionManager.Allocate(s)
+	s.input = outboundRay.OutboundInput()
+	s.output = outboundRay.OutboundOutput()
 	go fetchInput(ctx, s, m.inboundRay.InboundInput())
 	return true
 }

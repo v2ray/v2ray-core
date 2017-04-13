@@ -10,6 +10,7 @@ type SessionManager struct {
 	sync.RWMutex
 	count    uint16
 	sessions map[uint16]*Session
+	closed   bool
 }
 
 func NewSessionManager() *SessionManager {
@@ -26,13 +27,21 @@ func (m *SessionManager) Size() int {
 	return len(m.sessions)
 }
 
-func (m *SessionManager) Allocate(s *Session) {
+func (m *SessionManager) Allocate() *Session {
 	m.Lock()
 	defer m.Unlock()
 
+	if m.closed {
+		return nil
+	}
+
 	m.count++
-	s.ID = m.count
+	s := &Session{
+		ID:     m.count,
+		parent: m,
+	}
 	m.sessions[s.ID] = s
+	return s
 }
 
 func (m *SessionManager) Add(s *Session) {
@@ -53,17 +62,32 @@ func (m *SessionManager) Get(id uint16) (*Session, bool) {
 	m.RLock()
 	defer m.RUnlock()
 
+	if m.closed {
+		return nil, false
+	}
+
 	s, found := m.sessions[id]
 	return s, found
 }
 
-func (m *SessionManager) Close() {
+func (m *SessionManager) CloseIfNoSession() bool {
 	m.RLock()
 	defer m.RUnlock()
 
+	if len(m.sessions) == 0 {
+		return false
+	}
+
+	m.closed = true
+
 	for _, s := range m.sessions {
+		s.input.CloseError()
 		s.output.CloseError()
 	}
+
+	m.sessions = make(map[uint16]*Session)
+
+	return true
 }
 
 type Session struct {
