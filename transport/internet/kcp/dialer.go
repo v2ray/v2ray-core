@@ -108,8 +108,7 @@ func DialKCP(ctx context.Context, dest v2net.Destination) (internet.Connection, 
 	src := internet.DialerSourceFromContext(ctx)
 	rawConn, err := internet.DialSystem(ctx, src, dest)
 	if err != nil {
-		log.Trace(newError("failed to dial to dest: ", err).AtError())
-		return nil, err
+		return nil, newError("failed to dial to dest: ", err).AtWarning().Base(err)
 	}
 	conn := &ClientConnection{
 		Conn: rawConn,
