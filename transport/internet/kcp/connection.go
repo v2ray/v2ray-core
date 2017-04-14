@@ -19,9 +19,9 @@ var (
 
 type State int32
 
-func (v State) Is(states ...State) bool {
+func (s State) Is(states ...State) bool {
 	for _, state := range states {
-		if v == state {
+		if s == state {
 			return true
 		}
 	}
