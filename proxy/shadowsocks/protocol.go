@@ -246,7 +246,7 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload *buf.Buffer) (*buf
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 
-	buffer := buf.NewSmall()
+	buffer := buf.New()
 	ivLen := account.Cipher.IVSize()
 	buffer.AppendSupplier(buf.ReadFullFrom(rand.Reader, ivLen))
 	iv := buffer.Bytes()
@@ -363,7 +363,7 @@ type UDPReader struct {
 }
 
 func (v *UDPReader) Read() (buf.MultiBuffer, error) {
-	buffer := buf.NewSmall()
+	buffer := buf.New()
 	err := buffer.AppendSupplier(buf.ReadFrom(v.Reader))
 	if err != nil {
 		buffer.Release()

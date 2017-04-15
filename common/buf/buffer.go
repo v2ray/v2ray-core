@@ -181,11 +181,6 @@ func New() *Buffer {
 	return mediumPool.Allocate()
 }
 
-// NewSmall returns a buffer with 0 length and 2K capacity.
-func NewSmall() *Buffer {
-	return smallPool.Allocate()
-}
-
 // NewLocal creates and returns a buffer with 0 length and given capacity on current thread.
 func NewLocal(size int) *Buffer {
 	return &Buffer{

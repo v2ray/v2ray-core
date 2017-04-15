@@ -136,7 +136,7 @@ L:
 		default:
 		}
 
-		buffer := buf.NewSmall()
+		buffer := buf.New()
 		var noob int
 		var addr *net.UDPAddr
 		err := buffer.AppendSupplier(func(b []byte) (int, error) {

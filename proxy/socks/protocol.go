@@ -332,7 +332,7 @@ func DecodeUDPPacket(packet []byte) (*protocol.RequestHeader, []byte, error) {
 }
 
 func EncodeUDPPacket(request *protocol.RequestHeader, data []byte) *buf.Buffer {
-	b := buf.NewSmall()
+	b := buf.New()
 	b.AppendBytes(0, 0, 0 /* Fragment */)
 	appendAddress(b, request.Address, request.Port)
 	b.Append(data)
@@ -348,7 +348,7 @@ func NewUDPReader(reader io.Reader) *UDPReader {
 }
 
 func (r *UDPReader) Read() (buf.MultiBuffer, error) {
-	b := buf.NewSmall()
+	b := buf.New()
 	if err := b.AppendSupplier(buf.ReadFrom(r.reader)); err != nil {
 		return nil, err
 	}

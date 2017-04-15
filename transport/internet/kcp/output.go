@@ -20,7 +20,7 @@ type SimpleSegmentWriter struct {
 func NewSegmentWriter(writer io.Writer) SegmentWriter {
 	return &SimpleSegmentWriter{
 		writer: writer,
-		buffer: buf.NewSmall(),
+		buffer: buf.New(),
 	}
 }
 

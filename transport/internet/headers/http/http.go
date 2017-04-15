@@ -53,7 +53,7 @@ type HeaderReader struct {
 }
 
 func (*HeaderReader) Read(reader io.Reader) (*buf.Buffer, error) {
-	buffer := buf.NewSmall()
+	buffer := buf.New()
 	totalBytes := 0
 	endingDetected := false
 	for totalBytes < maxHeaderLength {
@@ -169,7 +169,7 @@ func (c *HttpConn) Close() error {
 }
 
 func formResponseHeader(config *ResponseConfig) *HeaderWriter {
-	header := buf.NewSmall()
+	header := buf.New()
 	header.AppendSupplier(serial.WriteString(strings.Join([]string{config.GetFullVersion(), config.GetStatusValue().Code, config.GetStatusValue().Reason}, " ")))
 	header.AppendSupplier(writeCRLF)
 
@@ -194,7 +194,7 @@ type HttpAuthenticator struct {
 }
 
 func (a HttpAuthenticator) GetClientWriter() *HeaderWriter {
-	header := buf.NewSmall()
+	header := buf.New()
 	config := a.config.Request
 	header.AppendSupplier(serial.WriteString(strings.Join([]string{config.GetMethodValue(), config.PickUri(), config.GetFullVersion()}, " ")))
 	header.AppendSupplier(writeCRLF)

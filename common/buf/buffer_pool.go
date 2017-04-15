@@ -96,16 +96,13 @@ func (p *BufferPool) Free(buffer *Buffer) {
 
 const (
 	// Size of a regular buffer.
-	Size = 8 * 1024
-	// SizeSmall is the size of a small buffer.
-	SizeSmall = 2 * 1024
+	Size = 2 * 1024
 
 	poolSizeEnvKey = "v2ray.buffer.size"
 )
 
 var (
 	mediumPool Pool
-	smallPool  = NewSyncPool(SizeSmall)
 )
 
 func getDefaultPoolSize() uint32 {

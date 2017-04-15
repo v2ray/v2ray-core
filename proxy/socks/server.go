@@ -181,7 +181,7 @@ func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 				log.Access(source, request.Destination, log.AccessAccepted, "")
 			}
 
-			dataBuf := buf.NewSmall()
+			dataBuf := buf.New()
 			dataBuf.Append(data)
 			udpServer.Dispatch(ctx, request.Destination(), dataBuf, func(payload *buf.Buffer) {
 				defer payload.Release()

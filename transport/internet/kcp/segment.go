@@ -63,7 +63,7 @@ func (v *DataSegment) Command() Command {
 
 func (v *DataSegment) SetData(data []byte) {
 	if v.Data == nil {
-		v.Data = buf.NewSmall()
+		v.Data = buf.New()
 	}
 	v.Data.Reset(func(b []byte) (int, error) {
 		return copy(b, data), nil
