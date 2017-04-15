@@ -123,19 +123,19 @@ func NewChunkWriter(writer io.Writer, auth *Authenticator) *ChunkWriter {
 func (w *ChunkWriter) Write(mb buf.MultiBuffer) error {
 	defer mb.Release()
 
-	for _, b := range mb {
-		if err := w.writeInternal(b); err != nil {
+	for {
+		payloadLen, err := mb.Read(w.buffer[2+AuthSize:])
+		if err != nil {
 			return err
+		}
+		serial.Uint16ToBytes(uint16(payloadLen), w.buffer[:0])
+		w.auth.Authenticate(w.buffer[2+AuthSize : 2+AuthSize+payloadLen])(w.buffer[2:])
+		if _, err := w.writer.Write(w.buffer[:2+AuthSize+payloadLen]); err != nil {
+			return err
+		}
+		if mb.IsEmpty() {
+			break
 		}
 	}
 	return nil
-}
-
-func (w *ChunkWriter) writeInternal(payload *buf.Buffer) error {
-	totalLength := payload.Len()
-	serial.Uint16ToBytes(uint16(totalLength), w.buffer[:0])
-	w.auth.Authenticate(payload.Bytes())(w.buffer[2:])
-	copy(w.buffer[2+AuthSize:], payload.Bytes())
-	_, err := w.writer.Write(w.buffer[:2+AuthSize+payload.Len()])
-	return err
 }
