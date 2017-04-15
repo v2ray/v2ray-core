@@ -20,7 +20,7 @@ func TestReaderWriter(t *testing.T) {
 
 	payload := buf.New()
 	payload.AppendBytes('a', 'b', 'c', 'd')
-	assert.Error(writer.Write(payload)).IsNil()
+	assert.Error(writer.Write(buf.NewMultiBufferValue(payload))).IsNil()
 
 	writer.Close()
 
@@ -32,10 +32,9 @@ func TestReaderWriter(t *testing.T) {
 	assert.Destination(meta.Target).Equals(dest)
 	assert.Byte(byte(meta.Option)).Equals(byte(OptionData))
 
-	data, more, err := reader.Read()
+	data, err := reader.Read()
 	assert.Error(err).IsNil()
-	assert.Bool(more).IsFalse()
-	assert.String(data.String()).Equals("abcd")
+	assert.String(data[0].String()).Equals("abcd")
 
 	meta, err = reader.ReadMetadata()
 	assert.Error(err).IsNil()

@@ -57,7 +57,7 @@ func (v *Dispatcher) Dispatch(ctx context.Context, destination v2net.Destination
 	inboundRay, existing := v.getInboundRay(ctx, destination)
 	outputStream := inboundRay.InboundInput()
 	if outputStream != nil {
-		if err := outputStream.Write(payload); err != nil {
+		if err := outputStream.Write(buf.NewMultiBufferValue(payload)); err != nil {
 			v.RemoveRay(destination)
 		}
 	}
@@ -71,10 +71,12 @@ func (v *Dispatcher) Dispatch(ctx context.Context, destination v2net.Destination
 
 func handleInput(input ray.InputStream, callback ResponseCallback) {
 	for {
-		data, err := input.Read()
+		mb, err := input.Read()
 		if err != nil {
 			break
 		}
-		callback(data)
+		for _, b := range mb {
+			callback(b)
+		}
 	}
 }

@@ -215,14 +215,34 @@ func NewAuthenticationWriter(auth Authenticator, writer io.Writer, sizeMask Uint
 	}
 }
 
-func (v *AuthenticationWriter) Write(b []byte) (int, error) {
-	cipherChunk, err := v.auth.Seal(v.buffer[2:2], b)
+func (w *AuthenticationWriter) Write(b []byte) (int, error) {
+	cipherChunk, err := w.auth.Seal(w.buffer[2:2], b)
 	if err != nil {
 		return 0, err
 	}
 
-	size := uint16(len(cipherChunk)) ^ v.sizeMask.Next()
-	serial.Uint16ToBytes(size, v.buffer[:0])
-	_, err = v.writer.Write(v.buffer[:2+len(cipherChunk)])
+	size := uint16(len(cipherChunk)) ^ w.sizeMask.Next()
+	serial.Uint16ToBytes(size, w.buffer[:0])
+	_, err = w.writer.Write(w.buffer[:2+len(cipherChunk)])
 	return len(b), err
+}
+
+func (w *AuthenticationWriter) WriteMultiBuffer(mb buf.MultiBuffer) (int, error) {
+	const StartIndex = 17 * 1024
+	var totalBytes int
+	for {
+		payloadLen, err := mb.Read(w.buffer[StartIndex:])
+		if err != nil {
+			return 0, err
+		}
+		nBytes, err := w.Write(w.buffer[StartIndex : StartIndex+payloadLen])
+		totalBytes += nBytes
+		if err != nil {
+			return totalBytes, err
+		}
+		if mb.IsEmpty() {
+			break
+		}
+	}
+	return totalBytes, nil
 }

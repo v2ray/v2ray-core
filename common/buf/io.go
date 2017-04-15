@@ -11,19 +11,19 @@ import (
 // Reader extends io.Reader with alloc.Buffer.
 type Reader interface {
 	// Read reads content from underlying reader, and put it into an alloc.Buffer.
-	Read() (*Buffer, error)
+	Read() (MultiBuffer, error)
 }
 
 var ErrReadTimeout = newError("IO timeout")
 
 type TimeoutReader interface {
-	ReadTimeout(time.Duration) (*Buffer, error)
+	ReadTimeout(time.Duration) (MultiBuffer, error)
 }
 
 // Writer extends io.Writer with alloc.Buffer.
 type Writer interface {
 	// Write writes an alloc.Buffer into underlying writer.
-	Write(*Buffer) error
+	Write(MultiBuffer) error
 }
 
 // ReadFrom creates a Supplier to read from a given io.Reader.
@@ -78,6 +78,7 @@ func PipeUntilEOF(timer signal.ActivityTimer, reader Reader, writer Writer) erro
 func NewReader(reader io.Reader) Reader {
 	return &BytesToBufferReader{
 		reader: reader,
+		buffer: NewLocal(32 * 1024),
 	}
 }
 

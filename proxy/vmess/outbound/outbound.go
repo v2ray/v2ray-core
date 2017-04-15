@@ -133,7 +133,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		}
 
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
-			if err := bodyWriter.Write(buf.NewLocal(8)); err != nil {
+			if err := bodyWriter.Write(buf.NewMultiBuffer()); err != nil {
 				return err
 			}
 		}

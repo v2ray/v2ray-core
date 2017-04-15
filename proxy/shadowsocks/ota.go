@@ -68,7 +68,7 @@ func NewChunkReader(reader io.Reader, auth *Authenticator) *ChunkReader {
 	}
 }
 
-func (v *ChunkReader) Read() (*buf.Buffer, error) {
+func (v *ChunkReader) Read() (buf.MultiBuffer, error) {
 	buffer := buf.New()
 	if err := buffer.AppendSupplier(buf.ReadFullFrom(v.reader, 2)); err != nil {
 		buffer.Release()
@@ -100,7 +100,10 @@ func (v *ChunkReader) Read() (*buf.Buffer, error) {
 	}
 	buffer.SliceFrom(AuthSize)
 
-	return buffer, nil
+	mb := buf.NewMultiBuffer()
+	mb.Append(buffer)
+
+	return mb, nil
 }
 
 type ChunkWriter struct {
@@ -117,11 +120,22 @@ func NewChunkWriter(writer io.Writer, auth *Authenticator) *ChunkWriter {
 	}
 }
 
-func (v *ChunkWriter) Write(payload *buf.Buffer) error {
+func (w *ChunkWriter) Write(mb buf.MultiBuffer) error {
+	defer mb.Release()
+
+	for _, b := range mb {
+		if err := w.writeInternal(b); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (w *ChunkWriter) writeInternal(payload *buf.Buffer) error {
 	totalLength := payload.Len()
-	serial.Uint16ToBytes(uint16(totalLength), v.buffer[:0])
-	v.auth.Authenticate(payload.Bytes())(v.buffer[2:])
-	copy(v.buffer[2+AuthSize:], payload.Bytes())
-	_, err := v.writer.Write(v.buffer[:2+AuthSize+payload.Len()])
+	serial.Uint16ToBytes(uint16(totalLength), w.buffer[:0])
+	w.auth.Authenticate(payload.Bytes())(w.buffer[2:])
+	copy(w.buffer[2+AuthSize:], payload.Bytes())
+	_, err := w.writer.Write(w.buffer[:2+AuthSize+payload.Len()])
 	return err
 }

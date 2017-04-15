@@ -66,7 +66,7 @@ func TestTCPRequest(t *testing.T) {
 	writer, err := WriteTCPRequest(request, cache)
 	assert.Error(err).IsNil()
 
-	writer.Write(data)
+	writer.Write(buf.NewMultiBufferValue(data))
 
 	decodedRequest, reader, err := ReadTCPSession(request.User, cache)
 	assert.Error(err).IsNil()
@@ -75,7 +75,7 @@ func TestTCPRequest(t *testing.T) {
 
 	decodedData, err := reader.Read()
 	assert.Error(err).IsNil()
-	assert.String(decodedData.String()).Equals("test string")
+	assert.String(decodedData[0].String()).Equals("test string")
 }
 
 func TestUDPReaderWriter(t *testing.T) {
@@ -106,19 +106,19 @@ func TestUDPReaderWriter(t *testing.T) {
 
 	b := buf.New()
 	b.AppendSupplier(serial.WriteString("test payload"))
-	err := writer.Write(b)
+	err := writer.Write(buf.NewMultiBufferValue(b))
 	assert.Error(err).IsNil()
 
 	payload, err := reader.Read()
 	assert.Error(err).IsNil()
-	assert.String(payload.String()).Equals("test payload")
+	assert.String(payload[0].String()).Equals("test payload")
 
 	b = buf.New()
 	b.AppendSupplier(serial.WriteString("test payload 2"))
-	err = writer.Write(b)
+	err = writer.Write(buf.NewMultiBufferValue(b))
 	assert.Error(err).IsNil()
 
 	payload, err = reader.Read()
 	assert.Error(err).IsNil()
-	assert.String(payload.String()).Equals("test payload 2")
+	assert.String(payload[0].String()).Equals("test payload 2")
 }

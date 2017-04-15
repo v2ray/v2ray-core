@@ -75,52 +75,54 @@ func (v *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 
 	reader := buf.NewReader(conn)
 	for {
-		payload, err := reader.Read()
+		mpayload, err := reader.Read()
 		if err != nil {
 			break
 		}
 
-		request, data, err := DecodeUDPPacket(v.user, payload)
-		if err != nil {
-			if source, ok := proxy.SourceFromContext(ctx); ok {
-				log.Trace(newError("dropping invalid UDP packet from: ", source).Base(err))
-				log.Access(source, "", log.AccessRejected, err)
-			}
-			payload.Release()
-			continue
-		}
-
-		if request.Option.Has(RequestOptionOneTimeAuth) && v.account.OneTimeAuth == Account_Disabled {
-			log.Trace(newError("client payload enables OTA but server doesn't allow it"))
-			payload.Release()
-			continue
-		}
-
-		if !request.Option.Has(RequestOptionOneTimeAuth) && v.account.OneTimeAuth == Account_Enabled {
-			log.Trace(newError("client payload disables OTA but server forces it"))
-			payload.Release()
-			continue
-		}
-
-		dest := request.Destination()
-		if source, ok := proxy.SourceFromContext(ctx); ok {
-			log.Access(source, dest, log.AccessAccepted, "")
-		}
-		log.Trace(newError("tunnelling request to ", dest))
-
-		ctx = protocol.ContextWithUser(ctx, request.User)
-		udpServer.Dispatch(ctx, dest, data, func(payload *buf.Buffer) {
-			defer payload.Release()
-
-			data, err := EncodeUDPPacket(request, payload)
+		for _, payload := range mpayload {
+			request, data, err := DecodeUDPPacket(v.user, payload)
 			if err != nil {
-				log.Trace(newError("failed to encode UDP packet").Base(err).AtWarning())
-				return
+				if source, ok := proxy.SourceFromContext(ctx); ok {
+					log.Trace(newError("dropping invalid UDP packet from: ", source).Base(err))
+					log.Access(source, "", log.AccessRejected, err)
+				}
+				payload.Release()
+				continue
 			}
-			defer data.Release()
 
-			conn.Write(data.Bytes())
-		})
+			if request.Option.Has(RequestOptionOneTimeAuth) && v.account.OneTimeAuth == Account_Disabled {
+				log.Trace(newError("client payload enables OTA but server doesn't allow it"))
+				payload.Release()
+				continue
+			}
+
+			if !request.Option.Has(RequestOptionOneTimeAuth) && v.account.OneTimeAuth == Account_Enabled {
+				log.Trace(newError("client payload disables OTA but server forces it"))
+				payload.Release()
+				continue
+			}
+
+			dest := request.Destination()
+			if source, ok := proxy.SourceFromContext(ctx); ok {
+				log.Access(source, dest, log.AccessAccepted, "")
+			}
+			log.Trace(newError("tunnelling request to ", dest))
+
+			ctx = protocol.ContextWithUser(ctx, request.User)
+			udpServer.Dispatch(ctx, dest, data, func(payload *buf.Buffer) {
+				defer payload.Release()
+
+				data, err := EncodeUDPPacket(request, payload)
+				if err != nil {
+					log.Trace(newError("failed to encode UDP packet").Base(err).AtWarning())
+					return
+				}
+				defer data.Release()
+
+				conn.Write(data.Bytes())
+			})
+		}
 	}
 
 	return nil

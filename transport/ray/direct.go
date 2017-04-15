@@ -42,7 +42,7 @@ func (v *directRay) InboundOutput() InputStream {
 }
 
 type Stream struct {
-	buffer chan *buf.Buffer
+	buffer chan buf.MultiBuffer
 	ctx    context.Context
 	close  chan bool
 	err    chan bool
@@ -51,13 +51,13 @@ type Stream struct {
 func NewStream(ctx context.Context) *Stream {
 	return &Stream{
 		ctx:    ctx,
-		buffer: make(chan *buf.Buffer, bufferSize),
+		buffer: make(chan buf.MultiBuffer, bufferSize),
 		close:  make(chan bool),
 		err:    make(chan bool),
 	}
 }
 
-func (v *Stream) Read() (*buf.Buffer, error) {
+func (v *Stream) Read() (buf.MultiBuffer, error) {
 	select {
 	case <-v.ctx.Done():
 		return nil, io.ErrClosedPipe
@@ -79,7 +79,7 @@ func (v *Stream) Read() (*buf.Buffer, error) {
 	}
 }
 
-func (v *Stream) ReadTimeout(timeout time.Duration) (*buf.Buffer, error) {
+func (v *Stream) ReadTimeout(timeout time.Duration) (buf.MultiBuffer, error) {
 	select {
 	case <-v.ctx.Done():
 		return nil, io.ErrClosedPipe
@@ -107,7 +107,7 @@ func (v *Stream) ReadTimeout(timeout time.Duration) (*buf.Buffer, error) {
 	}
 }
 
-func (v *Stream) Write(data *buf.Buffer) (err error) {
+func (v *Stream) Write(data buf.MultiBuffer) (err error) {
 	if data.IsEmpty() {
 		return
 	}

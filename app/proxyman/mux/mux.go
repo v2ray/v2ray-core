@@ -180,31 +180,20 @@ func (m *Client) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) bool
 }
 
 func drain(reader *Reader) error {
-	for {
-		data, more, err := reader.Read()
-		if err != nil {
-			return err
-		}
-		data.Release()
-		if !more {
-			return nil
-		}
+	data, err := reader.Read()
+	if err != nil {
+		return err
 	}
+	data.Release()
+	return nil
 }
 
 func pipe(reader *Reader, writer buf.Writer) error {
-	for {
-		data, more, err := reader.Read()
-		if err != nil {
-			return err
-		}
-		if err := writer.Write(data); err != nil {
-			return err
-		}
-		if !more {
-			return nil
-		}
+	data, err := reader.Read()
+	if err != nil {
+		return err
 	}
+	return writer.Write(data)
 }
 
 func (m *Client) handleStatueKeepAlive(meta *FrameMetadata, reader *Reader) error {

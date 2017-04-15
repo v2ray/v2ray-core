@@ -29,7 +29,7 @@ func NewResponseWriter(id uint16, writer buf.Writer) *Writer {
 	}
 }
 
-func (w *Writer) writeInternal(b *buf.Buffer) error {
+func (w *Writer) Write(mb buf.MultiBuffer) error {
 	meta := FrameMetadata{
 		SessionID: w.id,
 		Target:    w.dest,
@@ -41,42 +41,21 @@ func (w *Writer) writeInternal(b *buf.Buffer) error {
 		meta.SessionStatus = SessionStatusNew
 	}
 
-	if b.Len() > 0 {
+	if mb.Len() > 0 {
 		meta.Option.Add(OptionData)
 	}
 
 	frame := buf.New()
 	frame.AppendSupplier(meta.AsSupplier())
 
-	if b.Len() > 0 {
-		frame.AppendSupplier(serial.WriteUint16(0))
-		lengthBytes := frame.BytesFrom(-2)
+	mb2 := buf.NewMultiBuffer()
+	mb2.Append(frame)
 
-		nBytes, err := frame.Write(b.Bytes())
-		if err != nil {
-			frame.Release()
-			return err
-		}
-
-		serial.Uint16ToBytes(uint16(nBytes), lengthBytes[:0])
-		b.SliceFrom(nBytes)
+	if mb.Len() > 0 {
+		frame.AppendSupplier(serial.WriteUint16(uint16(mb.Len())))
+		mb2.AppendMulti(mb)
 	}
-
-	return w.writer.Write(frame)
-}
-
-func (w *Writer) Write(b *buf.Buffer) error {
-	defer b.Release()
-
-	if err := w.writeInternal(b); err != nil {
-		return err
-	}
-	for !b.IsEmpty() {
-		if err := w.writeInternal(b); err != nil {
-			return err
-		}
-	}
-	return nil
+	return w.writer.Write(mb2)
 }
 
 func (w *Writer) Close() {
@@ -88,5 +67,8 @@ func (w *Writer) Close() {
 	frame := buf.New()
 	frame.AppendSupplier(meta.AsSupplier())
 
-	w.writer.Write(frame)
+	mb := buf.NewMultiBuffer()
+	mb.Append(frame)
+
+	w.writer.Write(mb)
 }

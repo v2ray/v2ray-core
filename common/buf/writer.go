@@ -8,39 +8,30 @@ type BufferToBytesWriter struct {
 }
 
 // Write implements Writer.Write(). Write() takes ownership of the given buffer.
-func (v *BufferToBytesWriter) Write(buffer *Buffer) error {
-	defer buffer.Release()
-	for {
-		nBytes, err := v.writer.Write(buffer.Bytes())
-		if err != nil {
-			return err
-		}
-		if nBytes == buffer.Len() {
-			break
-		}
-		buffer.SliceFrom(nBytes)
-	}
-	return nil
+func (v *BufferToBytesWriter) Write(buffer MultiBuffer) error {
+	_, err := buffer.WriteTo(v.writer)
+	//buffer.Release()
+	return err
 }
 
 type bytesToBufferWriter struct {
 	writer Writer
 }
 
-func (v *bytesToBufferWriter) Write(payload []byte) (int, error) {
-	bytesWritten := 0
-	size := len(payload)
-	for size > 0 {
-		buffer := New()
-		nBytes, _ := buffer.Write(payload)
-		size -= nBytes
-		payload = payload[nBytes:]
-		bytesWritten += nBytes
-		err := v.writer.Write(buffer)
-		if err != nil {
-			return bytesWritten, err
-		}
+func (w *bytesToBufferWriter) Write(payload []byte) (int, error) {
+	mb := NewMultiBuffer()
+	for p := payload; len(p) > 0; {
+		b := New()
+		nBytes, _ := b.Write(p)
+		p = p[nBytes:]
+		mb.Append(b)
 	}
+	if err := w.writer.Write(mb); err != nil {
+		return 0, err
+	}
+	return len(payload), nil
+}
 
-	return bytesWritten, nil
+func (w *bytesToBufferWriter) WriteMulteBuffer(mb MultiBuffer) (int, error) {
+	return mb.Len(), w.writer.Write(mb)
 }

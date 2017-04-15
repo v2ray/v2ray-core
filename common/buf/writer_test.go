@@ -20,7 +20,7 @@ func TestWriter(t *testing.T) {
 	writeBuffer := bytes.NewBuffer(make([]byte, 0, 1024*1024))
 
 	writer := NewWriter(NewBufferedWriter(writeBuffer))
-	err := writer.Write(lb)
+	err := writer.Write(NewMultiBufferValue(lb))
 	assert.Error(err).IsNil()
 	assert.Bytes(expectedBytes).Equals(writeBuffer.Bytes())
 }

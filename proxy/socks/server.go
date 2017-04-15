@@ -159,38 +159,41 @@ func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 
 	reader := buf.NewReader(conn)
 	for {
-		payload, err := reader.Read()
+		mpayload, err := reader.Read()
 		if err != nil {
 			return err
 		}
-		request, data, err := DecodeUDPPacket(payload.Bytes())
 
-		if err != nil {
-			log.Trace(newError("failed to parse UDP request").Base(err))
-			continue
+		for _, payload := range mpayload {
+			request, data, err := DecodeUDPPacket(payload.Bytes())
+
+			if err != nil {
+				log.Trace(newError("failed to parse UDP request").Base(err))
+				continue
+			}
+
+			if len(data) == 0 {
+				continue
+			}
+
+			log.Trace(newError("send packet to ", request.Destination(), " with ", len(data), " bytes").AtDebug())
+			if source, ok := proxy.SourceFromContext(ctx); ok {
+				log.Access(source, request.Destination, log.AccessAccepted, "")
+			}
+
+			dataBuf := buf.NewSmall()
+			dataBuf.Append(data)
+			udpServer.Dispatch(ctx, request.Destination(), dataBuf, func(payload *buf.Buffer) {
+				defer payload.Release()
+
+				log.Trace(newError("writing back UDP response with ", payload.Len(), " bytes").AtDebug())
+
+				udpMessage := EncodeUDPPacket(request, payload.Bytes())
+				defer udpMessage.Release()
+
+				conn.Write(udpMessage.Bytes())
+			})
 		}
-
-		if len(data) == 0 {
-			continue
-		}
-
-		log.Trace(newError("send packet to ", request.Destination(), " with ", len(data), " bytes").AtDebug())
-		if source, ok := proxy.SourceFromContext(ctx); ok {
-			log.Access(source, request.Destination, log.AccessAccepted, "")
-		}
-
-		dataBuf := buf.NewSmall()
-		dataBuf.Append(data)
-		udpServer.Dispatch(ctx, request.Destination(), dataBuf, func(payload *buf.Buffer) {
-			defer payload.Release()
-
-			log.Trace(newError("writing back UDP response with ", payload.Len(), " bytes").AtDebug())
-
-			udpMessage := EncodeUDPPacket(request, payload.Bytes())
-			defer udpMessage.Release()
-
-			conn.Write(udpMessage.Bytes())
-		})
 	}
 }
 

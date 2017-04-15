@@ -18,7 +18,7 @@ func TestNormalChunkReading(t *testing.T) {
 		[]byte{21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36})))
 	payload, err := reader.Read()
 	assert.Error(err).IsNil()
-	assert.Bytes(payload.Bytes()).Equals([]byte{11, 12, 13, 14, 15, 16, 17, 18})
+	assert.Bytes(payload[0].Bytes()).Equals([]byte{11, 12, 13, 14, 15, 16, 17, 18})
 }
 
 func TestNormalChunkWriting(t *testing.T) {
@@ -30,7 +30,7 @@ func TestNormalChunkWriting(t *testing.T) {
 
 	b := buf.NewLocal(256)
 	b.Append([]byte{11, 12, 13, 14, 15, 16, 17, 18})
-	err := writer.Write(b)
+	err := writer.Write(buf.NewMultiBufferValue(b))
 	assert.Error(err).IsNil()
 	assert.Bytes(buffer.Bytes()).Equals([]byte{0, 8, 39, 228, 69, 96, 133, 39, 254, 26, 201, 70, 11, 12, 13, 14, 15, 16, 17, 18})
 }

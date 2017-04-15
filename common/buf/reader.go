@@ -4,48 +4,28 @@ import "io"
 
 // BytesToBufferReader is a Reader that adjusts its reading speed automatically.
 type BytesToBufferReader struct {
-	reader      io.Reader
-	largeBuffer *Buffer
-	highVolumn  bool
+	reader io.Reader
+	buffer *Buffer
 }
 
 // Read implements Reader.Read().
-func (v *BytesToBufferReader) Read() (*Buffer, error) {
-	if v.highVolumn && v.largeBuffer.IsEmpty() {
-		if v.largeBuffer == nil {
-			v.largeBuffer = NewLocal(32 * 1024)
-		}
-		err := v.largeBuffer.AppendSupplier(ReadFrom(v.reader))
-		if err != nil {
-			return nil, err
-		}
-		if v.largeBuffer.Len() < Size {
-			v.highVolumn = false
-		}
-	}
-
-	buffer := New()
-	if !v.largeBuffer.IsEmpty() {
-		err := buffer.AppendSupplier(ReadFrom(v.largeBuffer))
-		return buffer, err
-	}
-
-	err := buffer.AppendSupplier(ReadFrom(v.reader))
-	if err != nil {
-		buffer.Release()
+func (v *BytesToBufferReader) Read() (MultiBuffer, error) {
+	if err := v.buffer.Reset(ReadFrom(v.reader)); err != nil {
 		return nil, err
 	}
 
-	if buffer.IsFull() {
-		v.highVolumn = true
+	mb := NewMultiBuffer()
+	for !v.buffer.IsEmpty() {
+		b := New()
+		b.AppendSupplier(ReadFrom(v.buffer))
+		mb.Append(b)
 	}
-
-	return buffer, nil
+	return mb, nil
 }
 
 type bufferToBytesReader struct {
 	stream  Reader
-	current *Buffer
+	current MultiBuffer
 	err     error
 }
 

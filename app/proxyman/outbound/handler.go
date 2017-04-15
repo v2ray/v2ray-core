@@ -129,7 +129,7 @@ type Connection struct {
 	remoteAddr net.Addr
 
 	reader io.Reader
-	writer io.Writer
+	writer buf.Writer
 }
 
 func NewConnection(stream ray.Ray) *Connection {
@@ -144,7 +144,7 @@ func NewConnection(stream ray.Ray) *Connection {
 			Port: 0,
 		},
 		reader: buf.ToBytesReader(stream.InboundOutput()),
-		writer: buf.ToBytesWriter(stream.InboundInput()),
+		writer: stream.InboundInput(),
 	}
 }
 
@@ -161,7 +161,14 @@ func (v *Connection) Write(b []byte) (int, error) {
 	if v.closed {
 		return 0, io.ErrClosedPipe
 	}
-	return v.writer.Write(b)
+	return buf.ToBytesWriter(v.writer).Write(b)
+}
+
+func (v *Connection) WriteMultiBuffer(mb buf.MultiBuffer) (int, error) {
+	if v.closed {
+		return 0, io.ErrClosedPipe
+	}
+	return mb.Len(), v.writer.Write(mb)
 }
 
 // Close implements net.Conn.Close().

@@ -16,18 +16,18 @@ func TestMergingReader(t *testing.T) {
 	stream := ray.NewStream(context.Background())
 	b1 := New()
 	b1.AppendBytes('a', 'b', 'c')
-	stream.Write(b1)
+	stream.Write(NewMultiBufferValue(b1))
 
 	b2 := New()
 	b2.AppendBytes('e', 'f', 'g')
-	stream.Write(b2)
+	stream.Write(NewMultiBufferValue(b2))
 
 	b3 := New()
 	b3.AppendBytes('h', 'i', 'j')
-	stream.Write(b3)
+	stream.Write(NewMultiBufferValue(b3))
 
 	reader := NewMergingReader(stream)
 	b, err := reader.Read()
 	assert.Error(err).IsNil()
-	assert.String(b.String()).Equals("abcefghij")
+	assert.Int(b.Len()).Equals(9)
 }

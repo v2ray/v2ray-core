@@ -347,7 +347,7 @@ func NewUDPReader(reader io.Reader) *UDPReader {
 	return &UDPReader{reader: reader}
 }
 
-func (r *UDPReader) Read() (*buf.Buffer, error) {
+func (r *UDPReader) Read() (buf.MultiBuffer, error) {
 	b := buf.NewSmall()
 	if err := b.AppendSupplier(buf.ReadFrom(r.reader)); err != nil {
 		return nil, err
@@ -358,7 +358,9 @@ func (r *UDPReader) Read() (*buf.Buffer, error) {
 	}
 	b.Clear()
 	b.Append(data)
-	return b, nil
+	mb := buf.NewMultiBuffer()
+	mb.Append(b)
+	return mb, nil
 }
 
 type UDPWriter struct {
@@ -373,12 +375,15 @@ func NewUDPWriter(request *protocol.RequestHeader, writer io.Writer) *UDPWriter 
 	}
 }
 
-func (w *UDPWriter) Write(b *buf.Buffer) error {
-	eb := EncodeUDPPacket(w.request, b.Bytes())
-	b.Release()
-	defer eb.Release()
-	if _, err := w.writer.Write(eb.Bytes()); err != nil {
-		return err
+func (w *UDPWriter) Write(mb buf.MultiBuffer) error {
+	defer mb.Release()
+
+	for _, b := range mb {
+		eb := EncodeUDPPacket(w.request, b.Bytes())
+		defer eb.Release()
+		if _, err := w.writer.Write(eb.Bytes()); err != nil {
+			return err
+		}
 	}
 	return nil
 }
