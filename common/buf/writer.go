@@ -1,6 +1,9 @@
 package buf
 
-import "io"
+import (
+	"io"
+	"net"
+)
 
 // BufferToBytesWriter is a Writer that writes alloc.Buffer into underlying writer.
 type BufferToBytesWriter struct {
@@ -8,9 +11,19 @@ type BufferToBytesWriter struct {
 }
 
 // Write implements Writer.Write(). Write() takes ownership of the given buffer.
-func (v *BufferToBytesWriter) Write(buffer MultiBuffer) error {
-	_, err := buffer.WriteTo(v.writer)
-	//buffer.Release()
+func (v *BufferToBytesWriter) Write(mb MultiBuffer) error {
+	if mw, ok := v.writer.(MultiBufferWriter); ok {
+		_, err := mw.WriteMultiBuffer(mb)
+		return err
+	}
+
+	defer mb.Release()
+	bs := make([][]byte, len(mb))
+	for i, b := range mb {
+		bs[i] = b.Bytes()
+	}
+	nbs := net.Buffers(bs)
+	_, err := nbs.WriteTo(v.writer)
 	return err
 }
 

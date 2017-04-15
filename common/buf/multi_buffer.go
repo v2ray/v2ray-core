@@ -1,9 +1,6 @@
 package buf
 
-import (
-	"io"
-	"net"
-)
+import "io"
 
 type MultiBufferWriter interface {
 	WriteMultiBuffer(MultiBuffer) (int, error)
@@ -49,19 +46,6 @@ func (mb *MultiBuffer) Read(b []byte) (int, error) {
 	}
 	*mb = (*mb)[endIndex:]
 	return totalBytes, nil
-}
-
-func (mb MultiBuffer) WriteTo(writer io.Writer) (int, error) {
-	if mw, ok := writer.(MultiBufferWriter); ok {
-		return mw.WriteMultiBuffer(mb)
-	}
-	bs := make([][]byte, len(mb))
-	for i, b := range mb {
-		bs[i] = b.Bytes()
-	}
-	nbs := net.Buffers(bs)
-	nBytes, err := nbs.WriteTo(writer)
-	return int(nBytes), err
 }
 
 func (mb MultiBuffer) Len() int {
