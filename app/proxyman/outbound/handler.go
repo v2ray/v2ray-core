@@ -128,8 +128,9 @@ type Connection struct {
 	localAddr  net.Addr
 	remoteAddr net.Addr
 
-	reader io.Reader
-	writer buf.Writer
+	bytesReader io.Reader
+	reader      buf.Reader
+	writer      buf.Writer
 }
 
 func NewConnection(stream ray.Ray) *Connection {
@@ -143,8 +144,9 @@ func NewConnection(stream ray.Ray) *Connection {
 			IP:   []byte{0, 0, 0, 0},
 			Port: 0,
 		},
-		reader: buf.ToBytesReader(stream.InboundOutput()),
-		writer: stream.InboundInput(),
+		bytesReader: buf.ToBytesReader(stream.InboundOutput()),
+		reader:      stream.InboundOutput(),
+		writer:      stream.InboundInput(),
 	}
 }
 
@@ -153,7 +155,11 @@ func (v *Connection) Read(b []byte) (int, error) {
 	if v.closed {
 		return 0, io.EOF
 	}
-	return v.reader.Read(b)
+	return v.bytesReader.Read(b)
+}
+
+func (v *Connection) ReadMultiBuffer() (buf.MultiBuffer, error) {
+	return v.reader.Read()
 }
 
 // Write implements net.Conn.Write().

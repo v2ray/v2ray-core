@@ -76,6 +76,12 @@ func PipeUntilEOF(timer signal.ActivityTimer, reader Reader, writer Writer) erro
 // NewReader creates a new Reader.
 // The Reader instance doesn't take the ownership of reader.
 func NewReader(reader io.Reader) Reader {
+	if mr, ok := reader.(MultiBufferReader); ok {
+		return &readerAdpater{
+			MultiBufferReader: mr,
+		}
+	}
+
 	return &BytesToBufferReader{
 		reader: reader,
 		buffer: NewLocal(32 * 1024),

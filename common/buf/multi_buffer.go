@@ -6,6 +6,10 @@ type MultiBufferWriter interface {
 	WriteMultiBuffer(MultiBuffer) (int, error)
 }
 
+type MultiBufferReader interface {
+	ReadMultiBuffer() (MultiBuffer, error)
+}
+
 type MultiBuffer []*Buffer
 
 func NewMultiBuffer() MultiBuffer {

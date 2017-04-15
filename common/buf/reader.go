@@ -23,6 +23,14 @@ func (v *BytesToBufferReader) Read() (MultiBuffer, error) {
 	return mb, nil
 }
 
+type readerAdpater struct {
+	MultiBufferReader
+}
+
+func (r *readerAdpater) Read() (MultiBuffer, error) {
+	return r.ReadMultiBuffer()
+}
+
 type bufferToBytesReader struct {
 	stream  Reader
 	current MultiBuffer
@@ -56,4 +64,19 @@ func (v *bufferToBytesReader) Read(b []byte) (int, error) {
 		v.current = nil
 	}
 	return nBytes, err
+}
+
+func (v *bufferToBytesReader) ReadMultiBuffer() (MultiBuffer, error) {
+	if v.err != nil {
+		return nil, v.err
+	}
+	if v.current == nil {
+		v.fill()
+		if v.err != nil {
+			return nil, v.err
+		}
+	}
+	b := v.current
+	v.current = nil
+	return b, nil
 }

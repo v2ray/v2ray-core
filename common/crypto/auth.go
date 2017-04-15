@@ -199,6 +199,23 @@ func (v *AuthenticationReader) Read(b []byte) (int, error) {
 	return v.copyChunk(b), nil
 }
 
+func (r *AuthenticationReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
+	err := r.ensureChunk()
+	if err != nil {
+		return nil, err
+	}
+
+	mb := buf.NewMultiBuffer()
+	for len(r.chunk) > 0 {
+		b := buf.New()
+		nBytes, _ := b.Write(r.chunk)
+		mb.Append(b)
+		r.chunk = r.chunk[nBytes:]
+	}
+	r.chunk = nil
+	return mb, nil
+}
+
 type AuthenticationWriter struct {
 	auth     Authenticator
 	buffer   []byte
