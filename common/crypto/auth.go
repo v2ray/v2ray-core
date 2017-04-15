@@ -245,6 +245,8 @@ func (w *AuthenticationWriter) Write(b []byte) (int, error) {
 }
 
 func (w *AuthenticationWriter) WriteMultiBuffer(mb buf.MultiBuffer) (int, error) {
+	defer mb.Release()
+
 	const StartIndex = 17 * 1024
 	var totalBytes int
 	for {

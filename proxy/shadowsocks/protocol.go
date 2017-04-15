@@ -385,6 +385,8 @@ type UDPWriter struct {
 }
 
 func (w *UDPWriter) Write(mb buf.MultiBuffer) error {
+	defer mb.Release()
+
 	for _, b := range mb {
 		if err := w.writeInternal(b); err != nil {
 			return err
