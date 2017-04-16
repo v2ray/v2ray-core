@@ -70,7 +70,8 @@ func (mb MultiBuffer) IsEmpty() bool {
 }
 
 func (mb MultiBuffer) Release() {
-	for _, b := range mb {
+	for i, b := range mb {
 		b.Release()
+		mb[i] = nil
 	}
 }
