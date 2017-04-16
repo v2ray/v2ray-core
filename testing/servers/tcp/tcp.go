@@ -2,6 +2,7 @@ package tcp
 
 import (
 	"fmt"
+	"io"
 	"net"
 
 	v2net "v2ray.com/core/common/net"
@@ -54,13 +55,19 @@ func (server *Server) handleConnection(conn net.Conn) {
 		conn.Write(server.SendFirst)
 	}
 	request := make([]byte, 4096)
-	for true {
+	for {
 		nBytes, err := conn.Read(request)
 		if err != nil {
+			if err != io.EOF {
+				fmt.Println("Failed to read request:", err)
+			}
 			break
 		}
 		response := server.MsgProcessor(request[:nBytes])
-		conn.Write(response)
+		if _, err := conn.Write(response); err != nil {
+			fmt.Println("Failed to write response:", err)
+			break
+		}
 	}
 	conn.Close()
 }
