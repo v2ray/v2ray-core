@@ -67,8 +67,5 @@ func (w *Writer) Close() {
 	frame := buf.New()
 	frame.AppendSupplier(meta.AsSupplier())
 
-	mb := buf.NewMultiBuffer()
-	mb.Append(frame)
-
-	w.writer.Write(mb)
+	w.writer.Write(buf.NewMultiBufferValue(frame))
 }

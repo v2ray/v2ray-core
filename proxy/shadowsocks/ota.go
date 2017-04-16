@@ -100,10 +100,7 @@ func (v *ChunkReader) Read() (buf.MultiBuffer, error) {
 	}
 	buffer.SliceFrom(AuthSize)
 
-	mb := buf.NewMultiBuffer()
-	mb.Append(buffer)
-
-	return mb, nil
+	return buf.NewMultiBufferValue(buffer), nil
 }
 
 type ChunkWriter struct {

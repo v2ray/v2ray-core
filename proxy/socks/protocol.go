@@ -358,9 +358,7 @@ func (r *UDPReader) Read() (buf.MultiBuffer, error) {
 	}
 	b.Clear()
 	b.Append(data)
-	mb := buf.NewMultiBuffer()
-	mb.Append(b)
-	return mb, nil
+	return buf.NewMultiBufferValue(b), nil
 }
 
 type UDPWriter struct {
