@@ -97,8 +97,8 @@ func (m *SessionManager) Close() {
 	m.closed = true
 
 	for _, s := range m.sessions {
-		s.input.CloseError()
-		s.output.CloseError()
+		s.input.Close()
+		s.output.Close()
 	}
 
 	m.sessions = make(map[uint16]*Session)

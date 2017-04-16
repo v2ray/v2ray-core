@@ -4,6 +4,7 @@ package mux
 
 import (
 	"context"
+	"io"
 	"sync"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
@@ -239,7 +241,9 @@ func (m *Client) fetchOutput() {
 	for {
 		meta, err := reader.ReadMetadata()
 		if err != nil {
-			log.Trace(newError("failed to read metadata").Base(err))
+			if errors.Cause(err) != io.EOF {
+				log.Trace(newError("failed to read metadata").Base(err))
+			}
 			break
 		}
 
