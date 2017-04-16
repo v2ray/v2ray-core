@@ -120,7 +120,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 			writer = &seqWriter{writer: conn}
 		}
 		if err := buf.PipeUntilEOF(timer, input, writer); err != nil {
-			return err
+			return newError("failed to process request").Base(err)
 		}
 		return nil
 	})
@@ -130,7 +130,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 
 		v2reader := buf.NewReader(conn)
 		if err := buf.PipeUntilEOF(timer, v2reader, output); err != nil {
-			return err
+			return newError("failed to process response").Base(err)
 		}
 		return nil
 	})

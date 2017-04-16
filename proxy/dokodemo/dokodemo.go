@@ -68,7 +68,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 
 	inboundRay, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
-		return err
+		return newError("failed to dispatch request").Base(err)
 	}
 
 	requestDone := signal.ExecuteAsync(func() error {
