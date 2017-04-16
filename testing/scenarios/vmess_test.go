@@ -271,7 +271,7 @@ func TestVMessGCM(t *testing.T) {
 			assert.Error(err).IsNil()
 			assert.Int(nBytes).Equals(len(payload))
 
-			response := readFrom(conn, time.Second*10, 10240*1024)
+			response := readFrom(conn, time.Second*20, 10240*1024)
 			assert.Bytes(response).Equals(xor([]byte(payload)))
 			assert.Error(conn.Close()).IsNil()
 			wg.Done()
@@ -394,7 +394,7 @@ func TestVMessChacha20(t *testing.T) {
 			assert.Error(err).IsNil()
 			assert.Int(nBytes).Equals(len(payload))
 
-			response := readFrom(conn, time.Second*10, 10240*1024)
+			response := readFrom(conn, time.Second*20, 10240*1024)
 			assert.Bytes(response).Equals(xor([]byte(payload)))
 			assert.Error(conn.Close()).IsNil()
 			wg.Done()
@@ -517,7 +517,7 @@ func TestVMessNone(t *testing.T) {
 			assert.Error(err).IsNil()
 			assert.Int(nBytes).Equals(len(payload))
 
-			response := readFrom(conn, time.Second*10, 10240*1024)
+			response := readFrom(conn, time.Second*20, 10240*1024)
 			assert.Bytes(response).Equals(xor([]byte(payload)))
 			assert.Error(conn.Close()).IsNil()
 			wg.Done()
@@ -769,7 +769,7 @@ func TestVMessIPv6(t *testing.T) {
 	assert.Error(err).IsNil()
 	assert.Int(nBytes).Equals(len(payload))
 
-	response := readFrom(conn, time.Second, 1024)
+	response := readFrom(conn, time.Second*20, 1024)
 	assert.Bytes(response).Equals(xor([]byte(payload)))
 	assert.Error(conn.Close()).IsNil()
 
@@ -896,7 +896,7 @@ func TestVMessGCMMux(t *testing.T) {
 				assert.Error(err).IsNil()
 				assert.Int(nBytes).Equals(len(payload))
 
-				response := readFrom(conn, time.Second*10, 10240)
+				response := readFrom(conn, time.Second*20, 10240)
 				assert.Bytes(response).Equals(xor([]byte(payload)))
 				assert.Error(conn.Close()).IsNil()
 				wg.Done()

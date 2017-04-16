@@ -371,7 +371,7 @@ func TestTLSOverWebSocket(t *testing.T) {
 	assert.Error(err).IsNil()
 	assert.Int(nBytes).Equals(len(payload))
 
-	response := readFrom(conn, time.Second*10, len(payload))
+	response := readFrom(conn, time.Second*20, len(payload))
 	assert.Bytes(response).Equals(xor([]byte(payload)))
 	assert.Error(conn.Close()).IsNil()
 
