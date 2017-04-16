@@ -1,6 +1,9 @@
 package buf
 
-import "io"
+import (
+	"io"
+	"net"
+)
 
 type MultiBufferWriter interface {
 	WriteMultiBuffer(MultiBuffer) (int, error)
@@ -74,4 +77,12 @@ func (mb MultiBuffer) Release() {
 		b.Release()
 		mb[i] = nil
 	}
+}
+
+func (mb MultiBuffer) ToNetBuffers() net.Buffers {
+	bs := make([][]byte, len(mb))
+	for i, b := range mb {
+		bs[i] = b.Bytes()
+	}
+	return bs
 }
