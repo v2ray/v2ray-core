@@ -88,7 +88,7 @@ func (s *Stream) Read() (buf.MultiBuffer, error) {
 
 		select {
 		case <-s.ctx.Done():
-			return nil, io.ErrClosedPipe
+			return nil, io.EOF
 		case <-s.wakeup:
 		}
 	}
@@ -107,7 +107,7 @@ func (s *Stream) ReadTimeout(timeout time.Duration) (buf.MultiBuffer, error) {
 
 		select {
 		case <-s.ctx.Done():
-			return nil, io.ErrClosedPipe
+			return nil, io.EOF
 		case <-time.After(timeout):
 			return nil, buf.ErrReadTimeout
 		case <-s.wakeup:
@@ -166,5 +166,3 @@ func (s *Stream) CloseError() {
 	s.wakeUp()
 	s.access.Unlock()
 }
-
-func (v *Stream) Release() {}
