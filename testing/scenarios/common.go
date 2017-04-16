@@ -110,6 +110,8 @@ func CloseAllServers() {
 	log.Trace(errors.New("Closing all servers."))
 	for _, server := range runningServers {
 		server.Process.Signal(os.Interrupt)
+	}
+	for _, server := range runningServers {
 		server.Process.Wait()
 	}
 	runningServers = make([]*exec.Cmd, 0, 10)
