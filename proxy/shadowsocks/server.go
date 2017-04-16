@@ -160,8 +160,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 			return newError("failed to write response").Base(err)
 		}
 
-		mergeReader := buf.NewMergingReader(ray.InboundOutput())
-		payload, err := mergeReader.Read()
+		payload, err := ray.InboundOutput().Read()
 		if err != nil {
 			return err
 		}
@@ -174,7 +173,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 			return err
 		}
 
-		if err := buf.PipeUntilEOF(timer, mergeReader, responseWriter); err != nil {
+		if err := buf.PipeUntilEOF(timer, ray.InboundOutput(), responseWriter); err != nil {
 			return newError("failed to transport all TCP response").Base(err)
 		}
 

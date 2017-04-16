@@ -13,7 +13,7 @@ type MultiBufferReader interface {
 type MultiBuffer []*Buffer
 
 func NewMultiBuffer() MultiBuffer {
-	return MultiBuffer(make([]*Buffer, 0, 8))
+	return MultiBuffer(make([]*Buffer, 0, 32))
 }
 
 func NewMultiBufferValue(b ...*Buffer) MultiBuffer {

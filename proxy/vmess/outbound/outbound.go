@@ -123,12 +123,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 			return err
 		}
 
-		var inputReader buf.Reader = input
-		if request.Command == protocol.RequestCommandTCP {
-			inputReader = buf.NewMergingReader(input)
-		}
-
-		if err := buf.PipeUntilEOF(timer, inputReader, bodyWriter); err != nil {
+		if err := buf.PipeUntilEOF(timer, input, bodyWriter); err != nil {
 			return err
 		}
 
