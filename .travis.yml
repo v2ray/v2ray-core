@@ -9,6 +9,6 @@ before_script:
 - sudo ntpdate -u time.google.com
 - date
 script:
-- go test -tags json -v v2ray.com/core/...
+- go test -p 1 -tags json -v v2ray.com/core/...
 after_success:
 - ./testing/coverage/coverall

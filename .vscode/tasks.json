@@ -21,7 +21,7 @@
     },
     {
       "taskName": "test",
-      "args": ["v2ray.com/core/..."],
+      "args": ["-p", "1", "v2ray.com/core/..."],
       "isBuildCommand": false
     }
   ]
