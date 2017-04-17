@@ -32,13 +32,13 @@ func ErrorOrFinish2(ctx context.Context, c1, c2 <-chan error) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
-	case err, failed := <-c1:
-		if failed {
+	case err := <-c1:
+		if err != nil {
 			return err
 		}
 		return ErrorOrFinish1(ctx, c2)
-	case err, failed := <-c2:
-		if failed {
+	case err := <-c2:
+		if err != nil {
 			return err
 		}
 		return ErrorOrFinish1(ctx, c1)
