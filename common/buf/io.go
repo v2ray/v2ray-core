@@ -40,9 +40,7 @@ func ReadFullFrom(reader io.Reader, size int) Supplier {
 	}
 }
 
-// Pipe dumps all payload from reader to writer, until an error occurs.
-// ActivityTimer gets updated as soon as there is a payload.
-func Pipe(timer signal.ActivityTimer, reader Reader, writer Writer) error {
+func copyInternal(timer signal.ActivityTimer, reader Reader, writer Writer) error {
 	for {
 		buffer, err := reader.Read()
 		if err != nil {
@@ -64,9 +62,10 @@ func Pipe(timer signal.ActivityTimer, reader Reader, writer Writer) error {
 	}
 }
 
-// PipeUntilEOF behaves the same as Pipe(). The only difference is PipeUntilEOF returns nil on EOF.
-func PipeUntilEOF(timer signal.ActivityTimer, reader Reader, writer Writer) error {
-	err := Pipe(timer, reader, writer)
+// Copy dumps all payload from reader to writer or stops when an error occurs.
+// ActivityTimer gets updated as soon as there is a payload.
+func Copy(timer signal.ActivityTimer, reader Reader, writer Writer) error {
+	err := copyInternal(timer, reader, writer)
 	if err != nil && errors.Cause(err) != io.EOF {
 		return err
 	}

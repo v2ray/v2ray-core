@@ -125,7 +125,7 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 		defer input.Close()
 
 		v2reader := buf.NewReader(reader)
-		if err := buf.PipeUntilEOF(timer, v2reader, input); err != nil {
+		if err := buf.Copy(timer, v2reader, input); err != nil {
 			return newError("failed to transport all TCP request").Base(err)
 		}
 		return nil
@@ -133,7 +133,7 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 
 	responseDone := signal.ExecuteAsync(func() error {
 		v2writer := buf.NewWriter(writer)
-		if err := buf.PipeUntilEOF(timer, output, v2writer); err != nil {
+		if err := buf.Copy(timer, output, v2writer); err != nil {
 			return newError("failed to transport all TCP response").Base(err)
 		}
 		return nil

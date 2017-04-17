@@ -154,7 +154,7 @@ func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
 			return
 		}
 	}
-	if err := buf.PipeUntilEOF(signal.BackgroundTimer(), s.input, writer); err != nil {
+	if err := buf.Copy(signal.BackgroundTimer(), s.input, writer); err != nil {
 		log.Trace(newError("failed to fetch all input").Base(err))
 	}
 }
@@ -309,7 +309,7 @@ type ServerWorker struct {
 
 func handle(ctx context.Context, s *Session, output buf.Writer) {
 	writer := NewResponseWriter(s.ID, output)
-	if err := buf.PipeUntilEOF(signal.BackgroundTimer(), s.input, writer); err != nil {
+	if err := buf.Copy(signal.BackgroundTimer(), s.input, writer); err != nil {
 		log.Trace(newError("session ", s.ID, " ends: ").Base(err))
 	}
 	writer.Close()

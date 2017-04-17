@@ -152,7 +152,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		defer ray.InboundInput().Close()
 
 		v2reader := buf.NewReader(reader)
-		if err := buf.PipeUntilEOF(timer, v2reader, ray.InboundInput()); err != nil {
+		if err := buf.Copy(timer, v2reader, ray.InboundInput()); err != nil {
 			return err
 		}
 		return nil
@@ -160,7 +160,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 
 	responseDone := signal.ExecuteAsync(func() error {
 		v2writer := buf.NewWriter(writer)
-		if err := buf.PipeUntilEOF(timer, ray.InboundOutput(), v2writer); err != nil {
+		if err := buf.Copy(timer, ray.InboundOutput(), v2writer); err != nil {
 			return err
 		}
 		return nil

@@ -173,7 +173,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 			return err
 		}
 
-		if err := buf.PipeUntilEOF(timer, ray.InboundOutput(), responseWriter); err != nil {
+		if err := buf.Copy(timer, ray.InboundOutput(), responseWriter); err != nil {
 			return newError("failed to transport all TCP response").Base(err)
 		}
 
@@ -183,7 +183,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 	requestDone := signal.ExecuteAsync(func() error {
 		defer ray.InboundInput().Close()
 
-		if err := buf.PipeUntilEOF(timer, bodyReader, ray.InboundInput()); err != nil {
+		if err := buf.Copy(timer, bodyReader, ray.InboundInput()); err != nil {
 			return newError("failed to transport all TCP request").Base(err)
 		}
 		return nil

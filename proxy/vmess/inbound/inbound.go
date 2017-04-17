@@ -129,7 +129,7 @@ func transferRequest(timer signal.ActivityTimer, session *encoding.ServerSession
 	defer output.Close()
 
 	bodyReader := session.DecodeRequestBody(request, input)
-	if err := buf.PipeUntilEOF(timer, bodyReader, output); err != nil {
+	if err := buf.Copy(timer, bodyReader, output); err != nil {
 		return err
 	}
 	return nil
@@ -157,7 +157,7 @@ func transferResponse(timer signal.ActivityTimer, session *encoding.ServerSessio
 		}
 	}
 
-	if err := buf.PipeUntilEOF(timer, input, bodyWriter); err != nil {
+	if err := buf.Copy(timer, input, bodyWriter); err != nil {
 		return err
 	}
 

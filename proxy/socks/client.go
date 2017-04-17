@@ -90,11 +90,11 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 	var responseFunc func() error
 	if request.Command == protocol.RequestCommandTCP {
 		requestFunc = func() error {
-			return buf.PipeUntilEOF(timer, ray.OutboundInput(), buf.NewWriter(conn))
+			return buf.Copy(timer, ray.OutboundInput(), buf.NewWriter(conn))
 		}
 		responseFunc = func() error {
 			defer ray.OutboundOutput().Close()
-			return buf.PipeUntilEOF(timer, buf.NewReader(conn), ray.OutboundOutput())
+			return buf.Copy(timer, buf.NewReader(conn), ray.OutboundOutput())
 		}
 	} else if request.Command == protocol.RequestCommandUDP {
 		udpConn, err := dialer.Dial(ctx, udpRequest.Destination())
@@ -103,12 +103,12 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 		}
 		defer udpConn.Close()
 		requestFunc = func() error {
-			return buf.PipeUntilEOF(timer, ray.OutboundInput(), &UDPWriter{request: request, writer: udpConn})
+			return buf.Copy(timer, ray.OutboundInput(), &UDPWriter{request: request, writer: udpConn})
 		}
 		responseFunc = func() error {
 			defer ray.OutboundOutput().Close()
 			reader := &UDPReader{reader: udpConn}
-			return buf.PipeUntilEOF(timer, reader, ray.OutboundOutput())
+			return buf.Copy(timer, reader, ray.OutboundOutput())
 		}
 	}
 
