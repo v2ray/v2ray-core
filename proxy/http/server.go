@@ -235,12 +235,8 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 	requestDone := signal.ExecuteAsync(func() error {
 		request.Header.Set("Connection", "close")
 
-		requestWriter := buf.NewBufferedWriter(buf.ToBytesWriter(ray.InboundInput()))
-		err := request.Write(requestWriter)
-		if err != nil {
-			return err
-		}
-		if err := requestWriter.Flush(); err != nil {
+		requestWriter := buf.ToBytesWriter(ray.InboundInput())
+		if err := request.Write(requestWriter); err != nil {
 			return err
 		}
 		return nil
@@ -271,12 +267,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 			response.Header.Set("Connection", "close")
 			response.Header.Set("Proxy-Connection", "close")
 		}
-		responseWriter := buf.NewBufferedWriter(writer)
-		if err := response.Write(responseWriter); err != nil {
-			return err
-		}
-
-		if err := responseWriter.Flush(); err != nil {
+		if err := response.Write(writer); err != nil {
 			return err
 		}
 		return nil

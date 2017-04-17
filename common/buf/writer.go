@@ -8,8 +8,8 @@ type BufferToBytesWriter struct {
 }
 
 // Write implements Writer.Write(). Write() takes ownership of the given buffer.
-func (v *BufferToBytesWriter) Write(mb MultiBuffer) error {
-	if mw, ok := v.writer.(MultiBufferWriter); ok {
+func (w *BufferToBytesWriter) Write(mb MultiBuffer) error {
+	if mw, ok := w.writer.(MultiBufferWriter); ok {
 		_, err := mw.WriteMultiBuffer(mb)
 		return err
 	}
@@ -17,7 +17,7 @@ func (v *BufferToBytesWriter) Write(mb MultiBuffer) error {
 	defer mb.Release()
 
 	bs := mb.ToNetBuffers()
-	_, err := bs.WriteTo(v.writer)
+	_, err := bs.WriteTo(w.writer)
 	return err
 }
 
@@ -41,4 +41,23 @@ func (w *bytesToBufferWriter) Write(payload []byte) (int, error) {
 
 func (w *bytesToBufferWriter) WriteMulteBuffer(mb MultiBuffer) (int, error) {
 	return mb.Len(), w.writer.Write(mb)
+}
+
+func (w *bytesToBufferWriter) ReadFrom(reader io.Reader) (int64, error) {
+	mbReader := NewReader(reader)
+	totalBytes := int64(0)
+	eof := false
+	for !eof {
+		mb, err := mbReader.Read()
+		if err == io.EOF {
+			eof = true
+		} else if err != nil {
+			return totalBytes, err
+		}
+		totalBytes += int64(mb.Len())
+		if err := w.writer.Write(mb); err != nil {
+			return totalBytes, err
+		}
+	}
+	return totalBytes, nil
 }
