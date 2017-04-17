@@ -1,10 +1,6 @@
 package buf
 
-import (
-	"io"
-
-	"v2ray.com/core/common/errors"
-)
+import "io"
 
 // BufferedWriter is an io.Writer with internal buffer. It writes to underlying writer when buffer is full or on demand.
 // This type is not thread safe.
@@ -20,25 +16,6 @@ func NewBufferedWriter(rawWriter io.Writer) *BufferedWriter {
 		writer:   rawWriter,
 		buffer:   NewLocal(1024),
 		buffered: true,
-	}
-}
-
-// ReadFrom implements io.ReaderFrom.ReadFrom().
-func (v *BufferedWriter) ReadFrom(reader io.Reader) (int64, error) {
-	totalBytes := int64(0)
-	for {
-		oriSize := v.buffer.Len()
-		err := v.buffer.AppendSupplier(ReadFrom(reader))
-		totalBytes += int64(v.buffer.Len() - oriSize)
-		if err != nil {
-			if errors.Cause(err) == io.EOF {
-				return totalBytes, nil
-			}
-			return totalBytes, err
-		}
-		if err := v.Flush(); err != nil {
-			return totalBytes, err
-		}
 	}
 }
 
