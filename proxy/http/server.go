@@ -252,7 +252,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 			response.Header.Set("Keep-Alive", "timeout=4")
 			response.Close = false
 		} else {
-			log.Trace(newError("failed to read response").Base(err).AtWarning())
+			log.Trace(newError("failed to read response from ", request.Host).Base(err).AtWarning())
 			response = &http.Response{
 				Status:        "Service Unavailable",
 				StatusCode:    503,
@@ -268,7 +268,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 			response.Header.Set("Proxy-Connection", "close")
 		}
 		if err := response.Write(writer); err != nil {
-			return err
+			return newError("failed to write response").Base(err)
 		}
 		return nil
 	})
