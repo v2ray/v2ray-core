@@ -40,8 +40,7 @@ func (v *BufferedReader) Read(b []byte) (int, error) {
 		return v.reader.Read(b)
 	}
 	if v.buffer.IsEmpty() {
-		err := v.buffer.AppendSupplier(ReadFrom(v.reader))
-		if err != nil {
+		if err := v.buffer.Reset(ReadFrom(v.reader)); err != nil {
 			return 0, err
 		}
 	}

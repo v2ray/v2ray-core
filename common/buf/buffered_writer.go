@@ -28,8 +28,7 @@ func (v *BufferedWriter) Write(b []byte) (int, error) {
 		return 0, err
 	}
 	if v.buffer.IsFull() {
-		err := v.Flush()
-		if err != nil {
+		if err := v.Flush(); err != nil {
 			return 0, err
 		}
 		if nBytes < len(b) {
