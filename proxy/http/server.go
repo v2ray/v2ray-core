@@ -74,7 +74,7 @@ func isTimeout(err error) bool {
 }
 
 func (s *Server) Process(ctx context.Context, network v2net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
-	reader := bufio.NewReaderSize(conn, 8192)
+	reader := bufio.NewReaderSize(conn, 2048)
 
 Start:
 	conn.SetReadDeadline(time.Now().Add(time.Second * 16))
@@ -234,7 +234,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
-		responseReader := bufio.NewReaderSize(buf.ToBytesReader(ray.InboundOutput()), 8192)
+		responseReader := bufio.NewReaderSize(buf.ToBytesReader(ray.InboundOutput()), 2048)
 		response, err := http.ReadResponse(responseReader, request)
 		if err == nil {
 			StripHopByHopHeaders(response.Header)
