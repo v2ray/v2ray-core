@@ -334,19 +334,14 @@ func (v *Connection) Write(b []byte) (int, error) {
 func (c *Connection) WriteMultiBuffer(mb buf.MultiBuffer) (int, error) {
 	defer mb.Release()
 
-	if len(mb) == 0 {
-		return 0, nil
-	}
-	if len(mb) == 1 {
-		return c.Write(mb[0].Bytes())
-	}
-
 	buffer := buf.New()
 	defer buffer.Release()
 
 	totalBytes := 0
 	for !mb.IsEmpty() {
-		buffer.Reset(buf.ReadFrom(&mb))
+		buffer.Reset(func(b []byte) (int, error) {
+			return mb.Read(b[:c.mss])
+		})
 		nBytes, err := c.Write(buffer.Bytes())
 		totalBytes += nBytes
 		if err != nil {
