@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	errInvalidConn = newError("Invalid Connection.")
+	errInvalidConn = newError("not a net.Conn")
 )
 
 // GetSysFd returns the underlying fd of a connection.
