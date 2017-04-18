@@ -8,6 +8,7 @@ import (
 
 	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/testing/servers/tcp"
+	"v2ray.com/core/transport/internet"
 	. "v2ray.com/core/transport/internet/tcp"
 )
 
@@ -19,7 +20,8 @@ func TestGetOriginalDestination(t *testing.T) {
 	assert.Error(err).IsNil()
 	defer tcpServer.Close()
 
-	conn, err := Dial(context.Background(), dest)
+	ctx := internet.ContextWithTransportSettings(context.Background, &Config{})
+	conn, err := Dial(ctx, dest)
 	assert.Error(err).IsNil()
 	defer conn.Close()
 
