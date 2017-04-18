@@ -27,26 +27,6 @@ func (r *BytesToBufferReader) Read() (MultiBuffer, error) {
 	return mb, nil
 }
 
-func (r *BytesToBufferReader) WriteTo(writer io.Writer) (int64, error) {
-	totalBytes := int64(0)
-	eof := false
-	for !eof {
-		if err := r.buffer.Reset(ReadFrom(r.reader)); err != nil {
-			if errors.Cause(err) == io.EOF {
-				eof = true
-			} else {
-				return totalBytes, err
-			}
-		}
-		nBytes, err := writer.Write(r.buffer.Bytes())
-		totalBytes += int64(nBytes)
-		if err != nil {
-			return totalBytes, err
-		}
-	}
-	return totalBytes, nil
-}
-
 type readerAdpater struct {
 	MultiBufferReader
 }
@@ -119,7 +99,7 @@ func (r *bufferToBytesReader) writeToInternal(writer io.Writer) (int64, error) {
 				return totalBytes, r.err
 			}
 		}
-		totalBytes := int64(r.current.Len())
+		totalBytes += int64(r.current.Len())
 		if err := mbWriter.Write(r.current); err != nil {
 			return totalBytes, err
 		}
