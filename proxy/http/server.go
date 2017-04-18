@@ -221,6 +221,8 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 	output := ray.InboundOutput()
 	defer input.Close()
 
+	var result error = errWaitAnother
+
 	requestDone := signal.ExecuteAsync(func() error {
 		request.Header.Set("Connection", "close")
 
@@ -241,6 +243,9 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 				response.Header.Set("Connection", "keep-alive")
 				response.Header.Set("Keep-Alive", "timeout=4")
 				response.Close = false
+			} else {
+				response.Close = true
+				result = nil
 			}
 		} else {
 			log.Trace(newError("failed to read response from ", request.Host).Base(err).AtWarning())
@@ -270,7 +275,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 		return newError("connection ends").Base(err)
 	}
 
-	return errWaitAnother
+	return result
 }
 
 func init() {
