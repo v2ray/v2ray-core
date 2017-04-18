@@ -75,8 +75,7 @@ func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispa
 		if source, ok := proxy.SourceFromContext(ctx); ok {
 			log.Access(source, "", log.AccessRejected, err)
 		}
-		log.Trace(newError("failed to read request").Base(err))
-		return err
+		return newError("failed to read request").Base(err)
 	}
 	conn.SetReadDeadline(time.Time{})
 
