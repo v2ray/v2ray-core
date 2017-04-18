@@ -23,6 +23,6 @@ func TestGetOriginalDestination(t *testing.T) {
 	assert.Error(err).IsNil()
 	defer conn.Close()
 
-	_, err := GetOriginalDestination(conn)
+	_, err = GetOriginalDestination(conn)
 	assert.String(err.Error()).Contains("failed to call getsockopt")
 }
