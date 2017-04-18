@@ -122,19 +122,8 @@ Start:
 }
 
 func (s *Server) handleConnect(ctx context.Context, request *http.Request, reader io.Reader, writer io.Writer, dest v2net.Destination, dispatcher dispatcher.Interface) error {
-	response := &http.Response{
-		Status:        "200 OK",
-		StatusCode:    200,
-		Proto:         "HTTP/1.1",
-		ProtoMajor:    1,
-		ProtoMinor:    1,
-		Header:        http.Header(make(map[string][]string)),
-		Body:          nil,
-		ContentLength: -1, // Don't send Content-Length in CONNECT.
-		Close:         false,
-	}
-	response.Header.Set("Proxy-Connection", "close")
-	if err := response.Write(writer); err != nil {
+	_, err := writer.Write([]byte("HTTP/1.1 200 Connection established\n\n"))
+	if err != nil {
 		return newError("failed to write back OK response").Base(err)
 	}
 
