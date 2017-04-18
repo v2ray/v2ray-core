@@ -116,8 +116,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 				return nil, newError("failed to write auth response").Base(err)
 			}
 		}
-		buffer.Clear()
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 4)); err != nil {
+		if err := buffer.Reset(buf.ReadFullFrom(reader, 4)); err != nil {
 			return nil, newError("failed to read request").Base(err)
 		}
 
@@ -192,24 +191,21 @@ func readUsernamePassword(reader io.Reader) (string, string, error) {
 	buffer := buf.NewLocal(512)
 	defer buffer.Release()
 
-	if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 2)); err != nil {
+	if err := buffer.Reset(buf.ReadFullFrom(reader, 2)); err != nil {
 		return "", "", err
 	}
 	nUsername := int(buffer.Byte(1))
 
-	buffer.Clear()
-	if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, nUsername)); err != nil {
+	if err := buffer.Reset(buf.ReadFullFrom(reader, nUsername)); err != nil {
 		return "", "", err
 	}
 	username := buffer.String()
-	buffer.Clear()
 
-	if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 1)); err != nil {
+	if err := buffer.Reset(buf.ReadFullFrom(reader, 1)); err != nil {
 		return "", "", err
 	}
 	nPassword := int(buffer.Byte(0))
-	buffer.Clear()
-	if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, nPassword)); err != nil {
+	if err := buffer.Reset(buf.ReadFullFrom(reader, nPassword)); err != nil {
 		return "", "", err
 	}
 	password := buffer.String()
