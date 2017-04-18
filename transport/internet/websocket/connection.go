@@ -6,13 +6,15 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 )
 
 // connection is a wrapper for net.Conn over WebSocket connection.
 type connection struct {
-	wsc    *websocket.Conn
-	reader io.Reader
+	wsc         *websocket.Conn
+	reader      io.Reader
+	writeBuffer []byte
 }
 
 // Read implements net.Conn.Read()
@@ -50,6 +52,26 @@ func (c *connection) Write(b []byte) (int, error) {
 		return 0, err
 	}
 	return len(b), nil
+}
+
+func (c *connection) WriteMultiBuffer(mb buf.MultiBuffer) (int, error) {
+	defer mb.Release()
+
+	if c.writeBuffer == nil {
+		c.writeBuffer = make([]byte, 4096)
+	}
+	totalBytes := 0
+	for !mb.IsEmpty() {
+		nBytes, err := mb.Read(c.writeBuffer)
+		if err != nil {
+			return totalBytes, err
+		}
+		totalBytes += nBytes
+		if _, err := c.Write(c.writeBuffer[:nBytes]); err != nil {
+			return totalBytes, err
+		}
+	}
+	return totalBytes, nil
 }
 
 func (c *connection) Close() error {
