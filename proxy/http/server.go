@@ -236,10 +236,12 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 		response, err := http.ReadResponse(responseReader, request)
 		if err == nil {
 			StripHopByHopHeaders(response.Header)
-			response.Header.Set("Proxy-Connection", "keep-alive")
-			response.Header.Set("Connection", "keep-alive")
-			response.Header.Set("Keep-Alive", "timeout=4")
-			response.Close = false
+			if response.ContentLength >= 0 {
+				response.Header.Set("Proxy-Connection", "keep-alive")
+				response.Header.Set("Connection", "keep-alive")
+				response.Header.Set("Keep-Alive", "timeout=4")
+				response.Close = false
+			}
 		} else {
 			log.Trace(newError("failed to read response from ", request.Host).Base(err).AtWarning())
 			response = &http.Response{
