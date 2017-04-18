@@ -42,7 +42,10 @@ type tcpWorker struct {
 func (w *tcpWorker) callback(conn internet.Connection) {
 	ctx, cancel := context.WithCancel(w.ctx)
 	if w.recvOrigDest {
-		dest := tcp.GetOriginalDestination(conn)
+		dest, err := tcp.GetOriginalDestination(conn)
+		if err != nil {
+			log.Trace(newError("failed to get original destination").Base(err))
+		}
 		if dest.IsValid() {
 			ctx = proxy.ContextWithOriginalTarget(ctx, dest)
 		}
