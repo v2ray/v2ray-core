@@ -11,11 +11,17 @@ import (
 	v2tls "v2ray.com/core/transport/internet/tls"
 )
 
+func getTCPSettingsFromContext(ctx context.Context) *Config {
+	rawTCPSettings := internet.TransportSettingsFromContext(ctx)
+	if rawTCPSettings == nil {
+		return nil
+	}
+	return rawTCPSettings.(*Config)
+}
+
 func Dial(ctx context.Context, dest v2net.Destination) (internet.Connection, error) {
 	log.Trace(newError("dailing TCP to ", dest))
 	src := internet.DialerSourceFromContext(ctx)
-
-	tcpSettings := internet.TransportSettingsFromContext(ctx).(*Config)
 
 	conn, err := internet.DialSystem(ctx, src, dest)
 	if err != nil {
@@ -31,7 +37,9 @@ func Dial(ctx context.Context, dest v2net.Destination) (internet.Connection, err
 			conn = tls.Client(conn, config)
 		}
 	}
-	if tcpSettings.HeaderSettings != nil {
+
+	tcpSettings := getTCPSettingsFromContext(ctx)
+	if tcpSettings != nil && tcpSettings.HeaderSettings != nil {
 		headerConfig, err := tcpSettings.HeaderSettings.GetInstance()
 		if err != nil {
 			return nil, newError("failed to get header settings").Base(err).AtError()
