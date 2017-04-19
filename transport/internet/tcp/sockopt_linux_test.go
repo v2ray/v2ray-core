@@ -4,6 +4,7 @@ package tcp_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"v2ray.com/core/testing/assert"
@@ -23,6 +24,6 @@ func TestGetOriginalDestination(t *testing.T) {
 	assert.Error(err).IsNil()
 	defer conn.Close()
 
-	_, err = GetOriginalDestination(conn)
-	assert.String(err.Error()).Contains("failed to call getsockopt")
+	originalDest, err := GetOriginalDestination(conn)
+	assert.Bool(dest == originalDest || strings.Contains(err.Error(), "failed to call getsockopt"))
 }
