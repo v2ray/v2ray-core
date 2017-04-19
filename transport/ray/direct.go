@@ -115,19 +115,15 @@ func (s *Stream) ReadTimeout(timeout time.Duration) (buf.MultiBuffer, error) {
 	}
 }
 
-func (s *Stream) Write(data buf.MultiBuffer) (err error) {
+func (s *Stream) Write(data buf.MultiBuffer) error {
 	if data.IsEmpty() {
-		return
+		return nil
 	}
 
 	s.access.Lock()
 	defer s.access.Unlock()
 
-	if s.err {
-		data.Release()
-		return io.ErrClosedPipe
-	}
-	if s.close {
+	if s.err || s.close {
 		data.Release()
 		return io.ErrClosedPipe
 	}

@@ -42,7 +42,9 @@ func (w *Writer) writeInternal(mb buf.MultiBuffer) error {
 		meta.SessionStatus = SessionStatusNew
 	}
 
-	if mb.Len() > 0 {
+	hasData := !mb.IsEmpty()
+
+	if hasData {
 		meta.Option.Add(OptionData)
 	}
 
@@ -52,7 +54,7 @@ func (w *Writer) writeInternal(mb buf.MultiBuffer) error {
 	mb2 := buf.NewMultiBuffer()
 	mb2.Append(frame)
 
-	if mb.Len() > 0 {
+	if hasData {
 		frame.AppendSupplier(serial.WriteUint16(uint16(mb.Len())))
 		mb2.AppendMulti(mb)
 	}
@@ -61,10 +63,13 @@ func (w *Writer) writeInternal(mb buf.MultiBuffer) error {
 
 func (w *Writer) Write(mb buf.MultiBuffer) error {
 	const chunkSize = 8 * 1024
-	for !mb.IsEmpty() {
+	for {
 		slice := mb.SliceBySize(chunkSize)
 		if err := w.writeInternal(slice); err != nil {
 			return err
+		}
+		if mb.IsEmpty() {
+			break
 		}
 	}
 	return nil
