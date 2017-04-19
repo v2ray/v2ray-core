@@ -36,74 +36,59 @@ func (r *readerAdpater) Read() (MultiBuffer, error) {
 }
 
 type bufferToBytesReader struct {
-	stream  Reader
-	current MultiBuffer
-	err     error
-}
-
-// fill fills in the internal buffer.
-func (r *bufferToBytesReader) fill() {
-	b, err := r.stream.Read()
-	if err != nil {
-		r.err = err
-		return
-	}
-	r.current = b
+	stream   Reader
+	leftOver MultiBuffer
 }
 
 func (r *bufferToBytesReader) Read(b []byte) (int, error) {
-	if r.err != nil {
-		return 0, r.err
+	if r.leftOver != nil {
+		nBytes, err := r.leftOver.Read(b)
+		if r.leftOver.IsEmpty() {
+			r.leftOver.Release()
+			r.leftOver = nil
+		}
+		return nBytes, err
 	}
 
-	if r.current == nil {
-		r.fill()
-		if r.err != nil {
-			return 0, r.err
-		}
+	mb, err := r.stream.Read()
+	if err != nil {
+		return 0, err
 	}
-	nBytes, err := r.current.Read(b)
-	if r.current.IsEmpty() {
-		r.current.Release()
-		r.current = nil
+
+	nBytes, err := mb.Read(b)
+	if !mb.IsEmpty() {
+		r.leftOver = mb
 	}
 	return nBytes, err
 }
 
 func (r *bufferToBytesReader) ReadMultiBuffer() (MultiBuffer, error) {
-	if r.err != nil {
-		return nil, r.err
+	if r.leftOver != nil {
+		mb := r.leftOver
+		r.leftOver = nil
+		return mb, nil
 	}
-	if r.current == nil {
-		r.fill()
-		if r.err != nil {
-			return nil, r.err
-		}
-	}
-	b := r.current
-	r.current = nil
-	return b, nil
+
+	return r.stream.Read()
 }
 
 func (r *bufferToBytesReader) writeToInternal(writer io.Writer) (int64, error) {
-	if r.err != nil {
-		return 0, r.err
-	}
-
 	mbWriter := NewWriter(writer)
 	totalBytes := int64(0)
+	if r.leftOver != nil {
+		mbWriter.Write(r.leftOver)
+		totalBytes += int64(r.leftOver.Len())
+	}
+
 	for {
-		if r.current == nil {
-			r.fill()
-			if r.err != nil {
-				return totalBytes, r.err
-			}
-		}
-		totalBytes += int64(r.current.Len())
-		if err := mbWriter.Write(r.current); err != nil {
+		mb, err := r.stream.Read()
+		if err != nil {
 			return totalBytes, err
 		}
-		r.current = nil
+		totalBytes += int64(mb.Len())
+		if err := mbWriter.Write(mb); err != nil {
+			return totalBytes, err
+		}
 	}
 }
 
