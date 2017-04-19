@@ -123,7 +123,7 @@ func (m *Client) monitor() {
 			m.inboundRay.InboundInput().Close()
 			m.inboundRay.InboundOutput().CloseError()
 			return
-		case <-time.After(time.Second * 6):
+		case <-time.After(time.Second * 16):
 			size := m.sessionManager.Size()
 			if size == 0 && m.sessionManager.CloseIfNoSession() {
 				m.cancel()
