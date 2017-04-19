@@ -24,3 +24,14 @@ func TestSessionManagerAdd(t *testing.T) {
 	m.Add(s)
 	assert.Uint16(s.ID).Equals(4)
 }
+
+func TestSessionManagerClose(t *testing.T) {
+	assert := assert.On(t)
+
+	m := NewSessionManager()
+	s := m.Allocate()
+
+	assert.Bool(m.CloseIfNoSession()).IsFalse()
+	m.Remove(s.ID)
+	assert.Bool(m.CloseIfNoSession()).IsTrue()
+}

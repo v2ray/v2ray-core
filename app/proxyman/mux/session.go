@@ -78,7 +78,7 @@ func (m *SessionManager) CloseIfNoSession() bool {
 		return true
 	}
 
-	if len(m.sessions) > 0 {
+	if len(m.sessions) != 0 {
 		return false
 	}
 
