@@ -86,3 +86,18 @@ func (mb MultiBuffer) ToNetBuffers() net.Buffers {
 	}
 	return bs
 }
+
+func (mb *MultiBuffer) SliceBySize(size int) MultiBuffer {
+	slice := NewMultiBuffer()
+	sliceSize := 0
+	endIndex := len(*mb)
+	for i, b := range *mb {
+		if b.Len()+sliceSize > size {
+			endIndex = i
+			break
+		}
+		slice.Append(b)
+	}
+	*mb = (*mb)[endIndex:]
+	return slice
+}
