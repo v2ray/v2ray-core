@@ -133,13 +133,13 @@ func (c *HttpConn) Read(b []byte) (int, error) {
 		c.oneTimeReader = nil
 	}
 
-	if c.readBuffer.Len() > 0 {
-		nBytes, err := c.readBuffer.Read(b)
-		if nBytes == c.readBuffer.Len() {
+	if !c.readBuffer.IsEmpty() {
+		nBytes, _ := c.readBuffer.Read(b)
+		if c.readBuffer.IsEmpty() {
 			c.readBuffer.Release()
 			c.readBuffer = nil
 		}
-		return nBytes, err
+		return nBytes, nil
 	}
 
 	return c.Conn.Read(b)

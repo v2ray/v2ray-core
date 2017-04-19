@@ -63,10 +63,6 @@ func (m *ClientManager) onClientFinish() {
 	m.access.Lock()
 	defer m.access.Unlock()
 
-	if len(m.clients) < 10 {
-		return
-	}
-
 	activeClients := make([]*Client, 0, len(m.clients))
 
 	for _, client := range m.clients {
@@ -158,8 +154,8 @@ func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
 }
 
 func (m *Client) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) bool {
-	numSession := m.sessionManager.Size()
-	if numSession >= int(m.concurrency) || numSession >= maxTotal {
+	sm := m.sessionManager
+	if sm.Size() >= int(m.concurrency) || sm.Count() >= maxTotal {
 		return false
 	}
 
@@ -169,7 +165,7 @@ func (m *Client) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) bool
 	default:
 	}
 
-	s := m.sessionManager.Allocate()
+	s := sm.Allocate()
 	if s == nil {
 		return false
 	}

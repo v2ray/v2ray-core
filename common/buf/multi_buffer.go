@@ -1,9 +1,6 @@
 package buf
 
-import (
-	"io"
-	"net"
-)
+import "net"
 
 type MultiBufferWriter interface {
 	WriteMultiBuffer(MultiBuffer) (int, error)
@@ -32,17 +29,11 @@ func (b *MultiBuffer) AppendMulti(mb MultiBuffer) {
 }
 
 func (mb *MultiBuffer) Read(b []byte) (int, error) {
-	if len(*mb) == 0 {
-		return 0, io.EOF
-	}
 	endIndex := len(*mb)
 	totalBytes := 0
 	for i, bb := range *mb {
-		nBytes, err := bb.Read(b)
+		nBytes, _ := bb.Read(b)
 		totalBytes += nBytes
-		if err != nil {
-			return totalBytes, err
-		}
 		b = b[nBytes:]
 		if bb.IsEmpty() {
 			bb.Release()
@@ -96,6 +87,7 @@ func (mb *MultiBuffer) SliceBySize(size int) MultiBuffer {
 			endIndex = i
 			break
 		}
+		sliceSize += b.Len()
 		slice.Append(b)
 	}
 	*mb = (*mb)[endIndex:]

@@ -62,10 +62,7 @@ func (c *connection) WriteMultiBuffer(mb buf.MultiBuffer) (int, error) {
 	}
 	totalBytes := 0
 	for !mb.IsEmpty() {
-		nBytes, err := mb.Read(c.writeBuffer)
-		if err != nil {
-			return totalBytes, err
-		}
+		nBytes, _ := mb.Read(c.writeBuffer)
 		totalBytes += nBytes
 		if _, err := c.Write(c.writeBuffer[:nBytes]); err != nil {
 			return totalBytes, err

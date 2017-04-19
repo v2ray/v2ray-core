@@ -66,14 +66,12 @@ func (w *Writer) writeData(mb buf.MultiBuffer) error {
 		return err
 	}
 	runtime.KeepAlive(meta)
-
-	mb2 := buf.NewMultiBuffer()
-	mb2.Append(frame)
-
 	if err := frame.AppendSupplier(serial.WriteUint16(uint16(mb.Len()))); err != nil {
 		return err
 	}
 
+	mb2 := buf.NewMultiBuffer()
+	mb2.Append(frame)
 	mb2.AppendMulti(mb)
 	return w.writer.Write(mb2)
 }

@@ -42,12 +42,12 @@ type bufferToBytesReader struct {
 
 func (r *bufferToBytesReader) Read(b []byte) (int, error) {
 	if r.leftOver != nil {
-		nBytes, err := r.leftOver.Read(b)
+		nBytes, _ := r.leftOver.Read(b)
 		if r.leftOver.IsEmpty() {
 			r.leftOver.Release()
 			r.leftOver = nil
 		}
-		return nBytes, err
+		return nBytes, nil
 	}
 
 	mb, err := r.stream.Read()
@@ -55,11 +55,11 @@ func (r *bufferToBytesReader) Read(b []byte) (int, error) {
 		return 0, err
 	}
 
-	nBytes, err := mb.Read(b)
+	nBytes, _ := mb.Read(b)
 	if !mb.IsEmpty() {
 		r.leftOver = mb
 	}
-	return nBytes, err
+	return nBytes, nil
 }
 
 func (r *bufferToBytesReader) ReadMultiBuffer() (MultiBuffer, error) {

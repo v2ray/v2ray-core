@@ -8,8 +8,8 @@ import (
 
 type SessionManager struct {
 	sync.RWMutex
-	count    uint16
 	sessions map[uint16]*Session
+	count    uint16
 	closed   bool
 }
 
@@ -25,6 +25,13 @@ func (m *SessionManager) Size() int {
 	defer m.RUnlock()
 
 	return len(m.sessions)
+}
+
+func (m *SessionManager) Count() int {
+	m.RLock()
+	defer m.RUnlock()
+
+	return int(m.count)
 }
 
 func (m *SessionManager) Allocate() *Session {
@@ -71,8 +78,8 @@ func (m *SessionManager) Get(id uint16) (*Session, bool) {
 }
 
 func (m *SessionManager) CloseIfNoSession() bool {
-	m.RLock()
-	defer m.RUnlock()
+	m.Lock()
+	defer m.Unlock()
 
 	if m.closed {
 		return true
@@ -87,8 +94,8 @@ func (m *SessionManager) CloseIfNoSession() bool {
 }
 
 func (m *SessionManager) Close() {
-	m.RLock()
-	defer m.RUnlock()
+	m.Lock()
+	defer m.Unlock()
 
 	if m.closed {
 		return

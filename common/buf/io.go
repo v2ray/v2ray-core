@@ -96,6 +96,12 @@ func ToBytesReader(stream Reader) io.Reader {
 
 // NewWriter creates a new Writer.
 func NewWriter(writer io.Writer) Writer {
+	if mw, ok := writer.(MultiBufferWriter); ok {
+		return &writerAdapter{
+			writer: mw,
+		}
+	}
+
 	return &BufferToBytesWriter{
 		writer: writer,
 	}

@@ -121,10 +121,7 @@ func (w *ChunkWriter) Write(mb buf.MultiBuffer) error {
 	defer mb.Release()
 
 	for {
-		payloadLen, err := mb.Read(w.buffer[2+AuthSize:])
-		if err != nil {
-			return err
-		}
+		payloadLen, _ := mb.Read(w.buffer[2+AuthSize:])
 		serial.Uint16ToBytes(uint16(payloadLen), w.buffer[:0])
 		w.auth.Authenticate(w.buffer[2+AuthSize : 2+AuthSize+payloadLen])(w.buffer[2:])
 		if _, err := w.writer.Write(w.buffer[:2+AuthSize+payloadLen]); err != nil {

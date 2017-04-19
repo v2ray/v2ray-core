@@ -9,15 +9,19 @@ type BufferToBytesWriter struct {
 
 // Write implements Writer.Write(). Write() takes ownership of the given buffer.
 func (w *BufferToBytesWriter) Write(mb MultiBuffer) error {
-	if mw, ok := w.writer.(MultiBufferWriter); ok {
-		_, err := mw.WriteMultiBuffer(mb)
-		return err
-	}
-
 	defer mb.Release()
 
 	bs := mb.ToNetBuffers()
 	_, err := bs.WriteTo(w.writer)
+	return err
+}
+
+type writerAdapter struct {
+	writer MultiBufferWriter
+}
+
+func (w *writerAdapter) Write(mb MultiBuffer) error {
+	_, err := w.writer.WriteMultiBuffer(mb)
 	return err
 }
 

@@ -250,10 +250,7 @@ func (w *AuthenticationWriter) WriteMultiBuffer(mb buf.MultiBuffer) (int, error)
 	const StartIndex = 17 * 1024
 	var totalBytes int
 	for {
-		payloadLen, err := mb.Read(w.buffer[StartIndex:])
-		if err != nil {
-			return 0, err
-		}
+		payloadLen, _ := mb.Read(w.buffer[StartIndex:])
 		nBytes, err := w.Write(w.buffer[StartIndex : StartIndex+payloadLen])
 		totalBytes += nBytes
 		if err != nil {
