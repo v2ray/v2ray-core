@@ -9,20 +9,23 @@ import (
 // BytesToBufferReader is a Reader that adjusts its reading speed automatically.
 type BytesToBufferReader struct {
 	reader io.Reader
-	buffer *Buffer
+	buffer []byte
 }
 
 // Read implements Reader.Read().
 func (r *BytesToBufferReader) Read() (MultiBuffer, error) {
-	if err := r.buffer.Reset(ReadFrom(r.reader)); err != nil {
+	nBytes, err := r.reader.Read(r.buffer)
+	if err != nil {
 		return nil, err
 	}
 
 	mb := NewMultiBuffer()
-	for !r.buffer.IsEmpty() {
+	p := r.buffer[:nBytes]
+	for len(p) > 0 {
 		b := New()
-		b.AppendSupplier(ReadFrom(r.buffer))
+		nBytes, _ := b.Write(p)
 		mb.Append(b)
+		p = p[nBytes:]
 	}
 	return mb, nil
 }

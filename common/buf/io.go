@@ -83,7 +83,7 @@ func NewReader(reader io.Reader) Reader {
 
 	return &BytesToBufferReader{
 		reader: reader,
-		buffer: NewLocal(32 * 1024),
+		buffer: make([]byte, 32*1024),
 	}
 }
 
