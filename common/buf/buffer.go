@@ -77,8 +77,8 @@ func (b *Buffer) Bytes() []byte {
 // Reset resets the content of the Buffer with a supplier.
 func (b *Buffer) Reset(writer Supplier) error {
 	b.start = 0
-	nBytes, err := writer(b.v[b.start:])
-	b.end = b.start + nBytes
+	nBytes, err := writer(b.v)
+	b.end = nBytes
 	return err
 }
 

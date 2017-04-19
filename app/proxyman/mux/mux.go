@@ -148,11 +148,9 @@ func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
 
 	log.Trace(newError("dispatching request to ", dest))
 	data, _ := s.input.ReadTimeout(time.Millisecond * 500)
-	if data != nil {
-		if err := writer.Write(data); err != nil {
-			log.Trace(newError("failed to write first payload").Base(err))
-			return
-		}
+	if err := writer.Write(data); err != nil {
+		log.Trace(newError("failed to write first payload").Base(err))
+		return
 	}
 	if err := buf.Copy(signal.BackgroundTimer(), s.input, writer); err != nil {
 		log.Trace(newError("failed to fetch all input").Base(err))

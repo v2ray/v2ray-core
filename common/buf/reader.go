@@ -76,7 +76,9 @@ func (r *bufferToBytesReader) writeToInternal(writer io.Writer) (int64, error) {
 	mbWriter := NewWriter(writer)
 	totalBytes := int64(0)
 	if r.leftOver != nil {
-		mbWriter.Write(r.leftOver)
+		if err := mbWriter.Write(r.leftOver); err != nil {
+			return 0, err
+		}
 		totalBytes += int64(r.leftOver.Len())
 	}
 

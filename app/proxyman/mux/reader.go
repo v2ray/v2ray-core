@@ -38,19 +38,18 @@ func (r *Reader) ReadMetadata() (*FrameMetadata, error) {
 }
 
 func (r *Reader) Read() (buf.MultiBuffer, error) {
-	r.buffer.Clear()
-	if err := r.buffer.AppendSupplier(buf.ReadFullFrom(r.reader, 2)); err != nil {
+	if err := r.buffer.Reset(buf.ReadFullFrom(r.reader, 2)); err != nil {
 		return nil, err
 	}
 
 	dataLen := int(serial.BytesToUint16(r.buffer.Bytes()))
 	mb := buf.NewMultiBuffer()
 	for dataLen > 0 {
-		b := buf.New()
 		readLen := buf.Size
 		if dataLen < readLen {
 			readLen = dataLen
 		}
+		b := buf.New()
 		if err := b.AppendSupplier(buf.ReadFullFrom(r.reader, readLen)); err != nil {
 			mb.Release()
 			return nil, err
