@@ -25,6 +25,23 @@ func (w *writerAdapter) Write(mb MultiBuffer) error {
 	return err
 }
 
+type mergingWriter struct {
+	writer io.Writer
+	buffer []byte
+}
+
+func (w *mergingWriter) Write(mb MultiBuffer) error {
+	defer mb.Release()
+
+	for !mb.IsEmpty() {
+		nBytes, _ := mb.Read(w.buffer)
+		if _, err := w.writer.Write(w.buffer[:nBytes]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type bytesToBufferWriter struct {
 	writer Writer
 }

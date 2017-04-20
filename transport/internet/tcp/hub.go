@@ -2,7 +2,7 @@ package tcp
 
 import (
 	"context"
-	"crypto/tls"
+	gotls "crypto/tls"
 	"net"
 	"time"
 
@@ -11,7 +11,7 @@ import (
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/transport/internet"
-	v2tls "v2ray.com/core/transport/internet/tls"
+	"v2ray.com/core/transport/internet/tls"
 )
 
 var (
@@ -21,7 +21,7 @@ var (
 type TCPListener struct {
 	ctx        context.Context
 	listener   *net.TCPListener
-	tlsConfig  *tls.Config
+	tlsConfig  *gotls.Config
 	authConfig internet.ConnectionAuthenticator
 	config     *Config
 	conns      chan<- internet.Connection
@@ -46,7 +46,7 @@ func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, conn
 		conns:    conns,
 	}
 	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
-		tlsConfig, ok := securitySettings.(*v2tls.Config)
+		tlsConfig, ok := securitySettings.(*tls.Config)
 		if ok {
 			l.tlsConfig = tlsConfig.GetTLSConfig()
 		}

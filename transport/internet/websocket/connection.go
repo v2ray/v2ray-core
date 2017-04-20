@@ -10,11 +10,18 @@ import (
 	"v2ray.com/core/common/errors"
 )
 
+var (
+	_ buf.MultiBufferReader = (*connection)(nil)
+	_ buf.MultiBufferWriter = (*connection)(nil)
+)
+
 // connection is a wrapper for net.Conn over WebSocket connection.
 type connection struct {
-	wsc         *websocket.Conn
-	reader      io.Reader
-	writeBuffer []byte
+	wsc    *websocket.Conn
+	reader io.Reader
+
+	mergingReader buf.Reader
+	mergingWriter buf.Writer
 }
 
 // Read implements net.Conn.Read()
@@ -32,6 +39,13 @@ func (c *connection) Read(b []byte) (int, error) {
 		}
 		return nBytes, err
 	}
+}
+
+func (c *connection) ReadMultiBuffer() (buf.MultiBuffer, error) {
+	if c.mergingReader == nil {
+		c.mergingReader = buf.NewMergingReader(c)
+	}
+	return c.mergingReader.Read()
 }
 
 func (c *connection) getReader() (io.Reader, error) {
@@ -55,20 +69,10 @@ func (c *connection) Write(b []byte) (int, error) {
 }
 
 func (c *connection) WriteMultiBuffer(mb buf.MultiBuffer) (int, error) {
-	defer mb.Release()
-
-	if c.writeBuffer == nil {
-		c.writeBuffer = make([]byte, 4096)
+	if c.mergingWriter == nil {
+		c.mergingWriter = buf.NewMergingWriter(c)
 	}
-	totalBytes := 0
-	for !mb.IsEmpty() {
-		nBytes, _ := mb.Read(c.writeBuffer)
-		totalBytes += nBytes
-		if _, err := c.Write(c.writeBuffer[:nBytes]); err != nil {
-			return totalBytes, err
-		}
-	}
-	return totalBytes, nil
+	return mb.Len(), c.mergingWriter.Write(mb)
 }
 
 func (c *connection) Close() error {

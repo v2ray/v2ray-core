@@ -87,6 +87,17 @@ func NewReader(reader io.Reader) Reader {
 	}
 }
 
+func NewMergingReader(reader io.Reader) Reader {
+	return NewMergingReaderSize(reader, 32*1024)
+}
+
+func NewMergingReaderSize(reader io.Reader, size uint32) Reader {
+	return &BytesToBufferReader{
+		reader: reader,
+		buffer: make([]byte, size),
+	}
+}
+
 // ToBytesReader converts a Reaaer to io.Reader.
 func ToBytesReader(stream Reader) io.Reader {
 	return &bufferToBytesReader{
@@ -104,6 +115,17 @@ func NewWriter(writer io.Writer) Writer {
 
 	return &BufferToBytesWriter{
 		writer: writer,
+	}
+}
+
+func NewMergingWriter(writer io.Writer) Writer {
+	return NewMergingWriterSize(writer, 4096)
+}
+
+func NewMergingWriterSize(writer io.Writer, size uint32) Writer {
+	return &mergingWriter{
+		writer: writer,
+		buffer: make([]byte, size),
 	}
 }
 

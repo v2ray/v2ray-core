@@ -2,13 +2,12 @@ package tcp
 
 import (
 	"context"
-	"crypto/tls"
 
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
-	v2tls "v2ray.com/core/transport/internet/tls"
+	"v2ray.com/core/transport/internet/tls"
 )
 
 func getTCPSettingsFromContext(ctx context.Context) *Config {
@@ -28,7 +27,7 @@ func Dial(ctx context.Context, dest v2net.Destination) (internet.Connection, err
 		return nil, err
 	}
 	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
-		tlsConfig, ok := securitySettings.(*v2tls.Config)
+		tlsConfig, ok := securitySettings.(*tls.Config)
 		if ok {
 			config := tlsConfig.GetTLSConfig()
 			if dest.Address.Family().IsDomain() {

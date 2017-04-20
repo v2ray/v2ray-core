@@ -168,6 +168,10 @@ type SystemConnection interface {
 	Overhead() int
 }
 
+var (
+	_ buf.MultiBufferWriter = (*Connection)(nil)
+)
+
 // Connection is a KCP connection over UDP.
 type Connection struct {
 	conn       SystemConnection
@@ -194,6 +198,8 @@ type Connection struct {
 
 	dataUpdater *Updater
 	pingUpdater *Updater
+
+	mergingWriter buf.Writer
 }
 
 // NewConnection create a new KCP connection between local and remote.
@@ -332,23 +338,10 @@ func (v *Connection) Write(b []byte) (int, error) {
 }
 
 func (c *Connection) WriteMultiBuffer(mb buf.MultiBuffer) (int, error) {
-	defer mb.Release()
-
-	buffer := buf.New()
-	defer buffer.Release()
-
-	totalBytes := 0
-	for !mb.IsEmpty() {
-		buffer.Reset(func(b []byte) (int, error) {
-			return mb.Read(b[:c.mss])
-		})
-		nBytes, err := c.Write(buffer.Bytes())
-		totalBytes += nBytes
-		if err != nil {
-			return totalBytes, err
-		}
+	if c.mergingWriter == nil {
+		c.mergingWriter = buf.NewMergingWriterSize(c, c.mss)
 	}
-	return totalBytes, nil
+	return mb.Len(), c.mergingWriter.Write(mb)
 }
 
 func (v *Connection) SetState(state State) {
