@@ -23,3 +23,13 @@ func TestMultiBufferRead(t *testing.T) {
 	assert.Int(nBytes).Equals(4)
 	assert.Bytes(bs[:nBytes]).Equals([]byte("abcd"))
 }
+
+func TestMultiBufferAppend(t *testing.T) {
+	assert := assert.On(t)
+
+	var mb MultiBuffer
+	b := New()
+	b.AppendBytes('a', 'b')
+	mb.Append(b)
+	assert.Int(mb.Len()).Equals(2)
+}

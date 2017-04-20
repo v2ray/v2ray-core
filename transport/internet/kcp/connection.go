@@ -169,6 +169,7 @@ type SystemConnection interface {
 }
 
 var (
+	_ buf.MultiBufferReader = (*Connection)(nil)
 	_ buf.MultiBufferWriter = (*Connection)(nil)
 )
 
@@ -261,6 +262,43 @@ func (v *Connection) OnDataOutput() {
 	select {
 	case v.dataOutput <- true:
 	default:
+	}
+}
+
+// ReadMultiBuffer implements buf.MultiBufferReader.
+func (v *Connection) ReadMultiBuffer() (buf.MultiBuffer, error) {
+	if v == nil {
+		return nil, io.EOF
+	}
+
+	for {
+		if v.State().Is(StateReadyToClose, StateTerminating, StateTerminated) {
+			return nil, io.EOF
+		}
+		mb := v.receivingWorker.ReadMultiBuffer()
+		if !mb.IsEmpty() {
+			return mb, nil
+		}
+
+		if v.State() == StatePeerTerminating {
+			return nil, io.EOF
+		}
+
+		duration := time.Minute
+		if !v.rd.IsZero() {
+			duration = v.rd.Sub(time.Now())
+			if duration < 0 {
+				return nil, ErrIOTimeout
+			}
+		}
+
+		select {
+		case <-v.dataInput:
+		case <-time.After(duration):
+			if !v.rd.IsZero() && v.rd.Before(time.Now()) {
+				return nil, ErrIOTimeout
+			}
+		}
 	}
 }
 
