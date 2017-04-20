@@ -14,10 +14,6 @@ import (
 	"v2ray.com/core/transport/internet/tls"
 )
 
-var (
-	ErrClosedListener = newError("Listener is closed.")
-)
-
 type TCPListener struct {
 	ctx        context.Context
 	listener   *net.TCPListener
@@ -107,8 +103,7 @@ func (v *TCPListener) Addr() net.Addr {
 }
 
 func (v *TCPListener) Close() error {
-	v.listener.Close()
-	return nil
+	return v.listener.Close()
 }
 
 func init() {
