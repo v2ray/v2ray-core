@@ -54,8 +54,7 @@ func copyInternal(timer signal.ActivityTimer, reader Reader, writer Writer) erro
 			continue
 		}
 
-		err = writer.Write(buffer)
-		if err != nil {
+		if err := writer.Write(buffer); err != nil {
 			buffer.Release()
 			return err
 		}

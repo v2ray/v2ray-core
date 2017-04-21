@@ -13,7 +13,8 @@ func buildV2Ray(targetFile string, version string, goOS GoOS, goArch GoArch, ext
 	if version != "custom" {
 		year, month, day := time.Now().UTC().Date()
 		today := fmt.Sprintf("%04d%02d%02d", year, int(month), day)
-		ldFlags = ldFlags + " -X v2ray.com/core.version=" + version + " -X v2ray.com/core.build=" + today
+		bUser := os.Getenv("V_USER")
+		ldFlags = ldFlags + " -X v2ray.com/core.version=" + version + " -X v2ray.com/core.build=" + today + " -X v2ray.core/core/tools/conf.bUser=" + bUser
 	}
 	cmd := exec.Command(
 		"go", "build",

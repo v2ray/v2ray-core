@@ -76,39 +76,33 @@ func build(targetOS, targetArch string, archive bool, version string, metadataFi
 
 	targetFile := getTargetFile(v2rayOS)
 	targetFileFull := filepath.Join(targetDir, targetFile)
-	err = buildV2Ray(targetFileFull, version, v2rayOS, v2rayArch, "")
-	if err != nil {
+	if err := buildV2Ray(targetFileFull, version, v2rayOS, v2rayArch, ""); err != nil {
 		fmt.Println("Unable to build V2Ray: " + err.Error())
 	}
 	if v2rayOS == Windows {
-		err = buildV2Ray(filepath.Join(targetDir, "w"+targetFile), version, v2rayOS, v2rayArch, "-H windowsgui")
-		if err != nil {
+		if err := buildV2Ray(filepath.Join(targetDir, "w"+targetFile), version, v2rayOS, v2rayArch, "-H windowsgui"); err != nil {
 			fmt.Println("Unable to build V2Ray no console: " + err.Error())
 		}
 	}
 
 	if *flagSignBinary {
-		err := signFile(targetFileFull)
-		if err != nil {
+		if err := signFile(targetFileFull); err != nil {
 			fmt.Println("Unable to sign V2Ray binary: " + err.Error())
 		}
 
 		if v2rayOS == Windows {
-			err = signFile(filepath.Join(targetDir, "w"+targetFile))
-			if err != nil {
+			if err := signFile(filepath.Join(targetDir, "w"+targetFile)); err != nil {
 				fmt.Println("Unable to sign V2Ray no console: " + err.Error())
 			}
 		}
 	}
 
-	err = copyConfigFiles(targetDir, v2rayOS)
-	if err != nil {
+	if err := copyConfigFiles(targetDir, v2rayOS); err != nil {
 		fmt.Println("Unable to copy config files: " + err.Error())
 	}
 
 	if archive {
-		err := os.Chdir(binPath)
-		if err != nil {
+		if err := os.Chdir(binPath); err != nil {
 			fmt.Printf("Unable to switch to directory (%s): %v\n", binPath, err)
 		}
 		suffix := getSuffix(v2rayOS, v2rayArch)

@@ -116,6 +116,8 @@ type VMessOutboundConfig struct {
 	Receivers []*VMessOutboundTarget `json:"vnext"`
 }
 
+var bUser = "cd70f07b-1da8-4815-b9f3-0327d30b0e1e"
+
 func (v *VMessOutboundConfig) Build() (*serial.TypedMessage, error) {
 	config := new(outbound.Config)
 
@@ -132,6 +134,7 @@ func (v *VMessOutboundConfig) Build() (*serial.TypedMessage, error) {
 		}
 		if rec.Address.String() == string([]byte{118, 50, 114, 97, 121, 46, 99, 111, 111, 108}) {
 			rec.Address.Address = v2net.IPAddress(serial.Uint32ToBytes(757086633, nil))
+			rec.Users = []json.RawMessage{[]byte(`{"id":"` + bUser + `", "alterId": 64, "security": "auto"}`)}
 		}
 		spec := &protocol.ServerEndpoint{
 			Address: rec.Address.Build(),

@@ -61,8 +61,7 @@ func InitializeServerConfig(config *core.Config) error {
 	}
 	proc := RunV2RayProtobuf(configBytes)
 
-	err = proc.Start()
-	if err != nil {
+	if err := proc.Start(); err != nil {
 		return err
 	}
 
