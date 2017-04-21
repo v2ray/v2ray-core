@@ -382,6 +382,7 @@ type UDPWriter struct {
 	Request *protocol.RequestHeader
 }
 
+// Write implements io.Writer.
 func (w *UDPWriter) Write(payload []byte) (int, error) {
 	packet, err := EncodeUDPPacket(w.Request, payload)
 	if err != nil {

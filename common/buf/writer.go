@@ -20,6 +20,7 @@ type writerAdapter struct {
 	writer MultiBufferWriter
 }
 
+// Write implements buf.MultiBufferWriter.
 func (w *writerAdapter) Write(mb MultiBuffer) error {
 	_, err := w.writer.WriteMultiBuffer(mb)
 	return err
@@ -65,6 +66,7 @@ type bytesToBufferWriter struct {
 	writer Writer
 }
 
+// Write implements io.Writer.
 func (w *bytesToBufferWriter) Write(payload []byte) (int, error) {
 	mb := NewMultiBuffer()
 	for p := payload; len(p) > 0; {

@@ -76,6 +76,7 @@ func (w *Writer) writeData(mb buf.MultiBuffer) error {
 	return w.writer.Write(mb2)
 }
 
+// Write implements buf.MultiBufferWriter.
 func (w *Writer) Write(mb buf.MultiBuffer) error {
 	if mb.IsEmpty() {
 		return w.writeMetaOnly()

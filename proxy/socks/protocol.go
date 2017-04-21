@@ -369,6 +369,7 @@ func NewUDPWriter(request *protocol.RequestHeader, writer io.Writer) *UDPWriter 
 	}
 }
 
+// Write implements io.Writer.
 func (w *UDPWriter) Write(b []byte) (int, error) {
 	eb := EncodeUDPPacket(w.request, b)
 	defer eb.Release()

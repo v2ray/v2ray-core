@@ -145,6 +145,7 @@ func (c *HttpConn) Read(b []byte) (int, error) {
 	return c.Conn.Read(b)
 }
 
+// Write implements io.Writer.
 func (c *HttpConn) Write(b []byte) (int, error) {
 	if c.oneTimeWriter != nil {
 		err := c.oneTimeWriter.Write(c.Conn)

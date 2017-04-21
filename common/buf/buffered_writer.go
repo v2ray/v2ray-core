@@ -19,6 +19,7 @@ func NewBufferedWriter(rawWriter io.Writer) *BufferedWriter {
 	}
 }
 
+// Write implements io.Writer.
 func (v *BufferedWriter) Write(b []byte) (int, error) {
 	if !v.buffered || v.buffer == nil {
 		return v.writer.Write(b)

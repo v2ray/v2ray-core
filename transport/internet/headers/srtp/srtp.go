@@ -17,6 +17,7 @@ func (*SRTP) Size() int {
 	return 4
 }
 
+// Write implements io.Writer.
 func (s *SRTP) Write(b []byte) (int, error) {
 	s.number++
 	serial.Uint16ToBytes(s.number, b[:0])

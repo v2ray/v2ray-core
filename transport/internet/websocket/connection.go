@@ -61,6 +61,7 @@ func (c *connection) getReader() (io.Reader, error) {
 	return reader, nil
 }
 
+// Write implements io.Writer.
 func (c *connection) Write(b []byte) (int, error) {
 	if err := c.wsc.WriteMessage(websocket.BinaryMessage, b); err != nil {
 		return 0, err

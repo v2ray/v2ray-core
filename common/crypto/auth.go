@@ -232,6 +232,7 @@ func NewAuthenticationWriter(auth Authenticator, writer io.Writer, sizeMask Uint
 	}
 }
 
+// Write implements io.Writer.
 func (w *AuthenticationWriter) Write(b []byte) (int, error) {
 	cipherChunk, err := w.auth.Seal(w.buffer[2:2], b)
 	if err != nil {

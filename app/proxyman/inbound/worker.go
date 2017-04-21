@@ -135,6 +135,7 @@ func (c *udpConn) Read(buf []byte) (int, error) {
 	return copy(buf, in.Bytes()), nil
 }
 
+// Write implements io.Writer.
 func (c *udpConn) Write(buf []byte) (int, error) {
 	n, err := c.output(buf)
 	if err == nil {
