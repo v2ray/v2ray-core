@@ -238,7 +238,7 @@ func WriteTCPResponse(request *protocol.RequestHeader, writer io.Writer) (buf.Wr
 	return buf.NewWriter(crypto.NewCryptionWriter(stream, writer)), nil
 }
 
-func EncodeUDPPacket(request *protocol.RequestHeader, payload *buf.Buffer) (*buf.Buffer, error) {
+func EncodeUDPPacket(request *protocol.RequestHeader, payload []byte) (*buf.Buffer, error) {
 	user := request.User
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
@@ -266,7 +266,7 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload *buf.Buffer) (*buf
 	}
 
 	buffer.AppendSupplier(serial.WriteUint16(uint16(request.Port)))
-	buffer.Append(payload.Bytes())
+	buffer.Append(payload)
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {
 		authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
@@ -382,23 +382,12 @@ type UDPWriter struct {
 	Request *protocol.RequestHeader
 }
 
-func (w *UDPWriter) Write(mb buf.MultiBuffer) error {
-	defer mb.Release()
-
-	for _, b := range mb {
-		if err := w.writeInternal(b); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (w *UDPWriter) writeInternal(buffer *buf.Buffer) error {
-	payload, err := EncodeUDPPacket(w.Request, buffer)
+func (w *UDPWriter) Write(payload []byte) (int, error) {
+	packet, err := EncodeUDPPacket(w.Request, payload)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	_, err = w.Writer.Write(payload.Bytes())
-	payload.Release()
-	return err
+	_, err = w.Writer.Write(packet.Bytes())
+	packet.Release()
+	return len(payload), err
 }

@@ -103,7 +103,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 		}
 		defer udpConn.Close()
 		requestFunc = func() error {
-			return buf.Copy(timer, ray.OutboundInput(), &UDPWriter{request: request, writer: udpConn})
+			return buf.Copy(timer, ray.OutboundInput(), buf.NewSequentialWriter(NewUDPWriter(request, udpConn)))
 		}
 		responseFunc = func() error {
 			defer ray.OutboundOutput().Close()

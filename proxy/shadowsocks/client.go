@@ -135,10 +135,10 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 
 	if request.Command == protocol.RequestCommandUDP {
 
-		writer := &UDPWriter{
+		writer := buf.NewSequentialWriter(&UDPWriter{
 			Writer:  conn,
 			Request: request,
-		}
+		})
 
 		requestDone := signal.ExecuteAsync(func() error {
 			if err := buf.Copy(timer, outboundRay.OutboundInput(), writer); err != nil {

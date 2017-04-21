@@ -4,7 +4,6 @@ package freedom
 
 import (
 	"context"
-	"io"
 	"runtime"
 	"time"
 
@@ -117,7 +116,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		if destination.Network == net.Network_TCP {
 			writer = buf.NewWriter(conn)
 		} else {
-			writer = &seqWriter{writer: conn}
+			writer = buf.NewSequentialWriter(conn)
 		}
 		if err := buf.Copy(timer, input, writer); err != nil {
 			return newError("failed to process request").Base(err)
@@ -150,20 +149,4 @@ func init() {
 	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
 		return New(ctx, config.(*Config))
 	}))
-}
-
-type seqWriter struct {
-	writer io.Writer
-}
-
-func (w *seqWriter) Write(mb buf.MultiBuffer) error {
-	defer mb.Release()
-
-	for _, b := range mb {
-		if _, err := w.writer.Write(b.Bytes()); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }

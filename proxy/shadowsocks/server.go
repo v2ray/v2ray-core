@@ -113,7 +113,7 @@ func (v *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 			udpServer.Dispatch(ctx, dest, data, func(payload *buf.Buffer) {
 				defer payload.Release()
 
-				data, err := EncodeUDPPacket(request, payload)
+				data, err := EncodeUDPPacket(request, payload.Bytes())
 				if err != nil {
 					log.Trace(newError("failed to encode UDP packet").Base(err).AtWarning())
 					return

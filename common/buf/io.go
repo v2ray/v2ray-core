@@ -128,6 +128,12 @@ func NewMergingWriterSize(writer io.Writer, size uint32) Writer {
 	}
 }
 
+func NewSequentialWriter(writer io.Writer) Writer {
+	return &seqWriter{
+		writer: writer,
+	}
+}
+
 // ToBytesWriter converts a Writer to io.Writer
 func ToBytesWriter(writer Writer) io.Writer {
 	return &bytesToBufferWriter{

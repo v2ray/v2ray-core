@@ -369,17 +369,13 @@ func NewUDPWriter(request *protocol.RequestHeader, writer io.Writer) *UDPWriter 
 	}
 }
 
-func (w *UDPWriter) Write(mb buf.MultiBuffer) error {
-	defer mb.Release()
-
-	for _, b := range mb {
-		eb := EncodeUDPPacket(w.request, b.Bytes())
-		defer eb.Release()
-		if _, err := w.writer.Write(eb.Bytes()); err != nil {
-			return err
-		}
+func (w *UDPWriter) Write(b []byte) (int, error) {
+	eb := EncodeUDPPacket(w.request, b)
+	defer eb.Release()
+	if _, err := w.writer.Write(eb.Bytes()); err != nil {
+		return 0, err
 	}
-	return nil
+	return len(b), nil
 }
 
 func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer io.Writer) (*protocol.RequestHeader, error) {

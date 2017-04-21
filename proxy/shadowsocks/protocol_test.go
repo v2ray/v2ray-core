@@ -31,7 +31,7 @@ func TestUDPEncoding(t *testing.T) {
 
 	data := buf.NewLocal(256)
 	data.AppendSupplier(serial.WriteString("test string"))
-	encodedData, err := EncodeUDPPacket(request, data)
+	encodedData, err := EncodeUDPPacket(request, data.Bytes())
 	assert.Error(err).IsNil()
 
 	decodedRequest, decodedData, err := DecodeUDPPacket(request.User, encodedData)
@@ -88,7 +88,7 @@ func TestUDPReaderWriter(t *testing.T) {
 		}),
 	}
 	cache := buf.New()
-	writer := &UDPWriter{
+	writer := buf.NewSequentialWriter(&UDPWriter{
 		Writer: cache,
 		Request: &protocol.RequestHeader{
 			Version: Version,
@@ -97,7 +97,7 @@ func TestUDPReaderWriter(t *testing.T) {
 			User:    user,
 			Option:  RequestOptionOneTimeAuth,
 		},
-	}
+	})
 
 	reader := &UDPReader{
 		Reader: cache,
