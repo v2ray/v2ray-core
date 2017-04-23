@@ -4,15 +4,7 @@ import (
 	"crypto/cipher"
 	"io"
 
-	"golang.org/x/crypto/sha3"
-
-	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/serial"
-)
-
-var (
-	errInsufficientBuffer = newError("insufficient buffer")
 )
 
 type BytesGenerator interface {
@@ -68,198 +60,111 @@ func (v *AEADAuthenticator) Seal(dst, plainText []byte) ([]byte, error) {
 	return v.AEAD.Seal(dst, iv, plainText, additionalData), nil
 }
 
-type Uint16Generator interface {
-	Next() uint16
-}
-
-type StaticUint16Generator uint16
-
-func (g StaticUint16Generator) Next() uint16 {
-	return uint16(g)
-}
-
-type ShakeUint16Generator struct {
-	shake  sha3.ShakeHash
-	buffer [2]byte
-}
-
-func NewShakeUint16Generator(nonce []byte) *ShakeUint16Generator {
-	shake := sha3.NewShake128()
-	shake.Write(nonce)
-	return &ShakeUint16Generator{
-		shake: shake,
-	}
-}
-
-func (g *ShakeUint16Generator) Next() uint16 {
-	g.shake.Read(g.buffer[:])
-	return serial.BytesToUint16(g.buffer[:])
-}
-
 type AuthenticationReader struct {
-	auth     Authenticator
-	buffer   *buf.Buffer
-	reader   io.Reader
-	sizeMask Uint16Generator
-
-	chunk []byte
+	auth       Authenticator
+	buffer     *buf.Buffer
+	reader     io.Reader
+	sizeParser ChunkSizeDecoder
 }
 
 const (
 	readerBufferSize = 32 * 1024
 )
 
-func NewAuthenticationReader(auth Authenticator, reader io.Reader, sizeMask Uint16Generator) *AuthenticationReader {
+func NewAuthenticationReader(auth Authenticator, sizeParser ChunkSizeDecoder, reader io.Reader) *AuthenticationReader {
 	return &AuthenticationReader{
-		auth:     auth,
-		buffer:   buf.NewLocal(readerBufferSize),
-		reader:   reader,
-		sizeMask: sizeMask,
+		auth:       auth,
+		buffer:     buf.NewLocal(readerBufferSize),
+		reader:     reader,
+		sizeParser: sizeParser,
 	}
 }
 
-func (v *AuthenticationReader) nextChunk(mask uint16) error {
-	if v.buffer.Len() < 2 {
-		return errInsufficientBuffer
+func (r *AuthenticationReader) readChunk() error {
+	if err := r.buffer.Reset(buf.ReadFullFrom(r.reader, r.sizeParser.SizeBytes())); err != nil {
+		return err
 	}
-	size := int(serial.BytesToUint16(v.buffer.BytesTo(2)) ^ mask)
-	if size > v.buffer.Len()-2 {
-		return errInsufficientBuffer
-	}
-	if size > readerBufferSize-2 {
-		return newError("size too large: ", size)
-	}
-	if size == v.auth.Overhead() {
-		return io.EOF
-	}
-	if size < v.auth.Overhead() {
-		return newError("invalid packet size: ", size)
-	}
-	cipherChunk := v.buffer.BytesRange(2, size+2)
-	plainChunk, err := v.auth.Open(cipherChunk[:0], cipherChunk)
+	size, err := r.sizeParser.Decode(r.buffer.Bytes())
 	if err != nil {
 		return err
 	}
-	v.chunk = plainChunk
-	v.buffer.SliceFrom(size + 2)
+	if size > readerBufferSize {
+		return newError("size too large ", size).AtWarning()
+	}
+
+	if int(size) == r.auth.Overhead() {
+		return io.EOF
+	}
+
+	if err := r.buffer.Reset(buf.ReadFullFrom(r.reader, int(size))); err != nil {
+		return err
+	}
+
+	b, err := r.auth.Open(r.buffer.BytesTo(0), r.buffer.Bytes())
+	if err != nil {
+		return err
+	}
+	r.buffer.Slice(0, len(b))
 	return nil
 }
 
-func (v *AuthenticationReader) copyChunk(b []byte) int {
-	if len(v.chunk) == 0 {
-		return 0
-	}
-	nBytes := copy(b, v.chunk)
-	if nBytes == len(v.chunk) {
-		v.chunk = nil
-	} else {
-		v.chunk = v.chunk[nBytes:]
-	}
-	return nBytes
-}
-
-func (v *AuthenticationReader) ensureChunk() error {
-	atHead := false
-	if v.buffer.IsEmpty() {
-		v.buffer.Clear()
-		atHead = true
-	}
-
-	mask := v.sizeMask.Next()
-	for {
-		err := v.nextChunk(mask)
-		if err != errInsufficientBuffer {
-			return err
+func (r *AuthenticationReader) Read() (buf.MultiBuffer, error) {
+	if r.buffer.IsEmpty() {
+		if err := r.readChunk(); err != nil {
+			return nil, err
 		}
-
-		leftover := v.buffer.Bytes()
-		if !atHead && len(leftover) > 0 {
-			common.Must(v.buffer.Reset(func(b []byte) (int, error) {
-				return copy(b, leftover), nil
-			}))
-		}
-
-		if err := v.buffer.AppendSupplier(buf.ReadFrom(v.reader)); err != nil {
-			return err
-		}
-	}
-}
-
-func (v *AuthenticationReader) Read(b []byte) (int, error) {
-	if len(v.chunk) > 0 {
-		nBytes := v.copyChunk(b)
-		return nBytes, nil
-	}
-
-	err := v.ensureChunk()
-	if err != nil {
-		return 0, err
-	}
-
-	return v.copyChunk(b), nil
-}
-
-func (r *AuthenticationReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
-	err := r.ensureChunk()
-	if err != nil {
-		return nil, err
 	}
 
 	mb := buf.NewMultiBuffer()
-	for len(r.chunk) > 0 {
+	for !r.buffer.IsEmpty() {
 		b := buf.New()
-		nBytes, _ := b.Write(r.chunk)
+		b.AppendSupplier(buf.ReadFrom(r.buffer))
 		mb.Append(b)
-		r.chunk = r.chunk[nBytes:]
 	}
-	r.chunk = nil
 	return mb, nil
 }
 
 type AuthenticationWriter struct {
-	auth     Authenticator
-	buffer   []byte
-	writer   io.Writer
-	sizeMask Uint16Generator
+	auth       Authenticator
+	buffer     []byte
+	writer     io.Writer
+	sizeParser ChunkSizeEncoder
 }
 
-func NewAuthenticationWriter(auth Authenticator, writer io.Writer, sizeMask Uint16Generator) *AuthenticationWriter {
+func NewAuthenticationWriter(auth Authenticator, sizeParser ChunkSizeEncoder, writer io.Writer) *AuthenticationWriter {
 	return &AuthenticationWriter{
-		auth:     auth,
-		buffer:   make([]byte, 32*1024),
-		writer:   writer,
-		sizeMask: sizeMask,
+		auth:       auth,
+		buffer:     make([]byte, 32*1024),
+		writer:     writer,
+		sizeParser: sizeParser,
 	}
 }
 
-// Write implements io.Writer.
-func (w *AuthenticationWriter) Write(b []byte) (int, error) {
-	cipherChunk, err := w.auth.Seal(w.buffer[2:2], b)
+func (w *AuthenticationWriter) writeInternal(b []byte) error {
+	sizeBytes := w.sizeParser.SizeBytes()
+	cipherChunk, err := w.auth.Seal(w.buffer[sizeBytes:sizeBytes], b)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	size := uint16(len(cipherChunk)) ^ w.sizeMask.Next()
-	serial.Uint16ToBytes(size, w.buffer[:0])
-	_, err = w.writer.Write(w.buffer[:2+len(cipherChunk)])
-	return len(b), err
+	w.sizeParser.Encode(uint16(len(cipherChunk)), w.buffer[:0])
+	_, err = w.writer.Write(w.buffer[:sizeBytes+len(cipherChunk)])
+	return err
 }
 
-func (w *AuthenticationWriter) WriteMultiBuffer(mb buf.MultiBuffer) (int, error) {
+func (w *AuthenticationWriter) Write(mb buf.MultiBuffer) error {
 	defer mb.Release()
 
 	const StartIndex = 17 * 1024
-	var totalBytes int
 	for {
 		payloadLen, _ := mb.Read(w.buffer[StartIndex:])
-		nBytes, err := w.Write(w.buffer[StartIndex : StartIndex+payloadLen])
-		totalBytes += nBytes
+		err := w.writeInternal(w.buffer[StartIndex : StartIndex+payloadLen])
 		if err != nil {
-			return totalBytes, err
+			return err
 		}
 		if mb.IsEmpty() {
 			break
 		}
 	}
-	return totalBytes, nil
+	return nil
 }

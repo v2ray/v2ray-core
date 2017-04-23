@@ -81,7 +81,7 @@ func (w *bytesToBufferWriter) Write(payload []byte) (int, error) {
 	return len(payload), nil
 }
 
-func (w *bytesToBufferWriter) WriteMulteBuffer(mb MultiBuffer) (int, error) {
+func (w *bytesToBufferWriter) WriteMultiBuffer(mb MultiBuffer) (int, error) {
 	return mb.Len(), w.writer.Write(mb)
 }
 

@@ -117,23 +117,19 @@ func (v *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 }
 
 func (v *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, writer io.Writer) buf.Writer {
-	var authWriter io.Writer
-	var sizeMask crypto.Uint16Generator = crypto.StaticUint16Generator(0)
+	var sizeParser crypto.ChunkSizeEncoder = crypto.PlainChunkSizeParser{}
 	if request.Option.Has(protocol.RequestOptionChunkMasking) {
-		sizeMask = getSizeMask(v.requestBodyIV)
+		sizeParser = NewShakeSizeParser(v.requestBodyIV)
 	}
 	if request.Security.Is(protocol.SecurityType_NONE) {
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
-			auth := &crypto.AEADAuthenticator{
-				AEAD:                    NoOpAuthenticator{},
-				NonceGenerator:          crypto.NoOpBytesGenerator{},
-				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
-			}
-			authWriter = crypto.NewAuthenticationWriter(auth, writer, sizeMask)
-		} else {
-			authWriter = writer
+			return crypto.NewChunkStreamWriter(sizeParser, writer)
 		}
-	} else if request.Security.Is(protocol.SecurityType_LEGACY) {
+
+		return buf.NewWriter(writer)
+	}
+
+	if request.Security.Is(protocol.SecurityType_LEGACY) {
 		aesStream := crypto.NewAesEncryptionStream(v.requestBodyKey, v.requestBodyIV)
 		cryptionWriter := crypto.NewCryptionWriter(aesStream, writer)
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
@@ -142,11 +138,13 @@ func (v *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 				NonceGenerator:          crypto.NoOpBytesGenerator{},
 				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 			}
-			authWriter = crypto.NewAuthenticationWriter(auth, cryptionWriter, sizeMask)
-		} else {
-			authWriter = cryptionWriter
+			return crypto.NewAuthenticationWriter(auth, sizeParser, cryptionWriter)
 		}
-	} else if request.Security.Is(protocol.SecurityType_AES128_GCM) {
+
+		return buf.NewWriter(cryptionWriter)
+	}
+
+	if request.Security.Is(protocol.SecurityType_AES128_GCM) {
 		block, _ := aes.NewCipher(v.requestBodyKey)
 		aead, _ := cipher.NewGCM(block)
 
@@ -158,8 +156,10 @@ func (v *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 		}
-		authWriter = crypto.NewAuthenticationWriter(auth, writer, sizeMask)
-	} else if request.Security.Is(protocol.SecurityType_CHACHA20_POLY1305) {
+		return crypto.NewAuthenticationWriter(auth, sizeParser, writer)
+	}
+
+	if request.Security.Is(protocol.SecurityType_CHACHA20_POLY1305) {
 		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(v.requestBodyKey))
 
 		auth := &crypto.AEADAuthenticator{
@@ -170,11 +170,10 @@ func (v *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 		}
-		authWriter = crypto.NewAuthenticationWriter(auth, writer, sizeMask)
+		return crypto.NewAuthenticationWriter(auth, sizeParser, writer)
 	}
 
-	return buf.NewWriter(authWriter)
-
+	panic("Unknown security type.")
 }
 
 func (v *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.ResponseHeader, error) {
@@ -216,34 +215,32 @@ func (v *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 }
 
 func (v *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, reader io.Reader) buf.Reader {
-	var authReader io.Reader
-	var sizeMask crypto.Uint16Generator = crypto.StaticUint16Generator(0)
+	var sizeParser crypto.ChunkSizeDecoder = crypto.PlainChunkSizeParser{}
 	if request.Option.Has(protocol.RequestOptionChunkMasking) {
-		sizeMask = getSizeMask(v.responseBodyIV)
+		sizeParser = NewShakeSizeParser(v.responseBodyIV)
 	}
 	if request.Security.Is(protocol.SecurityType_NONE) {
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
-			auth := &crypto.AEADAuthenticator{
-				AEAD:                    NoOpAuthenticator{},
-				NonceGenerator:          crypto.NoOpBytesGenerator{},
-				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
-			}
-			authReader = crypto.NewAuthenticationReader(auth, reader, sizeMask)
-		} else {
-			authReader = reader
+			return crypto.NewChunkStreamReader(sizeParser, reader)
 		}
-	} else if request.Security.Is(protocol.SecurityType_LEGACY) {
+
+		return buf.NewReader(reader)
+	}
+
+	if request.Security.Is(protocol.SecurityType_LEGACY) {
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
 			auth := &crypto.AEADAuthenticator{
 				AEAD:                    new(FnvAuthenticator),
 				NonceGenerator:          crypto.NoOpBytesGenerator{},
 				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 			}
-			authReader = crypto.NewAuthenticationReader(auth, v.responseReader, sizeMask)
-		} else {
-			authReader = v.responseReader
+			return crypto.NewAuthenticationReader(auth, sizeParser, v.responseReader)
 		}
-	} else if request.Security.Is(protocol.SecurityType_AES128_GCM) {
+
+		return buf.NewReader(v.responseReader)
+	}
+
+	if request.Security.Is(protocol.SecurityType_AES128_GCM) {
 		block, _ := aes.NewCipher(v.responseBodyKey)
 		aead, _ := cipher.NewGCM(block)
 
@@ -255,8 +252,10 @@ func (v *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 		}
-		authReader = crypto.NewAuthenticationReader(auth, reader, sizeMask)
-	} else if request.Security.Is(protocol.SecurityType_CHACHA20_POLY1305) {
+		return crypto.NewAuthenticationReader(auth, sizeParser, reader)
+	}
+
+	if request.Security.Is(protocol.SecurityType_CHACHA20_POLY1305) {
 		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(v.responseBodyKey))
 
 		auth := &crypto.AEADAuthenticator{
@@ -267,10 +266,10 @@ func (v *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 		}
-		authReader = crypto.NewAuthenticationReader(auth, reader, sizeMask)
+		return crypto.NewAuthenticationReader(auth, sizeParser, reader)
 	}
 
-	return buf.NewReader(authReader)
+	panic("Unknown security type.")
 }
 
 type ChunkNonceGenerator struct {
