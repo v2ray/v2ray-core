@@ -52,39 +52,39 @@ func NewSpace() Space {
 	}
 }
 
-func (v *spaceImpl) OnInitialize(f InitializationCallback) {
-	if v.initialized {
+func (s *spaceImpl) OnInitialize(f InitializationCallback) {
+	if s.initialized {
 		f()
 	} else {
-		v.appInit = append(v.appInit, f)
+		s.appInit = append(s.appInit, f)
 	}
 }
 
-func (v *spaceImpl) Initialize() error {
-	for _, f := range v.appInit {
+func (s *spaceImpl) Initialize() error {
+	for _, f := range s.appInit {
 		if err := f(); err != nil {
 			return err
 		}
 	}
-	v.appInit = nil
-	v.initialized = true
+	s.appInit = nil
+	s.initialized = true
 	return nil
 }
 
-func (v *spaceImpl) GetApplication(appInterface interface{}) Application {
-	if v == nil {
+func (s *spaceImpl) GetApplication(appInterface interface{}) Application {
+	if s == nil {
 		return nil
 	}
 	appType := reflect.TypeOf(appInterface)
-	return v.cache[appType]
+	return s.cache[appType]
 }
 
-func (v *spaceImpl) AddApplication(app Application) error {
-	if v == nil {
+func (s *spaceImpl) AddApplication(app Application) error {
+	if s == nil {
 		return newError("nil space").AtError()
 	}
 	appType := reflect.TypeOf(app.Interface())
-	v.cache[appType] = app
+	s.cache[appType] = app
 	return nil
 }
 

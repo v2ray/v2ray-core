@@ -48,17 +48,17 @@ func (DefaultDispatcher) Interface() interface{} {
 	return (*dispatcher.Interface)(nil)
 }
 
-func (v *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destination) (ray.InboundRay, error) {
-	dispatcher := v.ohm.GetDefaultHandler()
+func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destination) (ray.InboundRay, error) {
+	dispatcher := d.ohm.GetDefaultHandler()
 	if !destination.IsValid() {
 		panic("Dispatcher: Invalid destination.")
 	}
 
 	ctx = proxy.ContextWithTarget(ctx, destination)
 
-	if v.router != nil {
-		if tag, err := v.router.TakeDetour(ctx); err == nil {
-			if handler := v.ohm.GetHandler(tag); handler != nil {
+	if d.router != nil {
+		if tag, err := d.router.TakeDetour(ctx); err == nil {
+			if handler := d.ohm.GetHandler(tag); handler != nil {
 				log.Trace(newError("taking detour [", tag, "] for [", destination, "]"))
 				dispatcher = handler
 			} else {

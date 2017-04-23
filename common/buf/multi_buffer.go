@@ -10,22 +10,25 @@ type MultiBufferReader interface {
 	ReadMultiBuffer() (MultiBuffer, error)
 }
 
+// MultiBuffer is a list of Buffers. The order of Buffer matters.
 type MultiBuffer []*Buffer
 
+// NewMultiBuffer creates a new MultiBuffer instance.
 func NewMultiBuffer() MultiBuffer {
 	return MultiBuffer(make([]*Buffer, 0, 128))
 }
 
+// NewMultiBufferValue wraps a list of Buffers into MultiBuffer.
 func NewMultiBufferValue(b ...*Buffer) MultiBuffer {
 	return MultiBuffer(b)
 }
 
-func (b *MultiBuffer) Append(buf *Buffer) {
-	*b = append(*b, buf)
+func (mb *MultiBuffer) Append(buf *Buffer) {
+	*mb = append(*mb, buf)
 }
 
-func (b *MultiBuffer) AppendMulti(mb MultiBuffer) {
-	*b = append(*b, mb...)
+func (mb *MultiBuffer) AppendMulti(buf MultiBuffer) {
+	*mb = append(*mb, buf...)
 }
 
 func (mb *MultiBuffer) Read(b []byte) (int, error) {
@@ -46,6 +49,7 @@ func (mb *MultiBuffer) Read(b []byte) (int, error) {
 	return totalBytes, nil
 }
 
+// Len returns the total number of bytes in the MultiBuffer.
 func (mb MultiBuffer) Len() int {
 	size := 0
 	for _, b := range mb {
@@ -54,6 +58,7 @@ func (mb MultiBuffer) Len() int {
 	return size
 }
 
+// IsEmpty return true if the MultiBuffer has no content.
 func (mb MultiBuffer) IsEmpty() bool {
 	for _, b := range mb {
 		if !b.IsEmpty() {
@@ -63,6 +68,7 @@ func (mb MultiBuffer) IsEmpty() bool {
 	return true
 }
 
+// Release releases all Buffers in the MultiBuffer.
 func (mb MultiBuffer) Release() {
 	for i, b := range mb {
 		b.Release()
@@ -70,6 +76,7 @@ func (mb MultiBuffer) Release() {
 	}
 }
 
+// ToNetBuffers converts this MultiBuffer to net.Buffers. The return net.Buffers points to the same content of the MultiBuffer.
 func (mb MultiBuffer) ToNetBuffers() net.Buffers {
 	bs := make([][]byte, len(mb))
 	for i, b := range mb {
