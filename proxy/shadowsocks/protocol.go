@@ -24,7 +24,7 @@ const (
 func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHeader, buf.Reader, error) {
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
-		return nil, nil, newError("failed to parse account").Base(err)
+		return nil, nil, newError("failed to parse account").Base(err).AtError()
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 
@@ -137,7 +137,7 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (buf.Wri
 	user := request.User
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
-		return nil, newError("failed to parse account").Base(err)
+		return nil, newError("failed to parse account").Base(err).AtError()
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 
