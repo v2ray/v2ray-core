@@ -22,8 +22,7 @@ type writerAdapter struct {
 
 // Write implements buf.MultiBufferWriter.
 func (w *writerAdapter) Write(mb MultiBuffer) error {
-	_, err := w.writer.WriteMultiBuffer(mb)
-	return err
+	return w.writer.WriteMultiBuffer(mb)
 }
 
 type mergingWriter struct {
@@ -62,6 +61,10 @@ func (w *seqWriter) Write(mb MultiBuffer) error {
 	return nil
 }
 
+var (
+	_ MultiBufferWriter = (*bytesToBufferWriter)(nil)
+)
+
 type bytesToBufferWriter struct {
 	writer Writer
 }
@@ -81,8 +84,8 @@ func (w *bytesToBufferWriter) Write(payload []byte) (int, error) {
 	return len(payload), nil
 }
 
-func (w *bytesToBufferWriter) WriteMultiBuffer(mb MultiBuffer) (int, error) {
-	return mb.Len(), w.writer.Write(mb)
+func (w *bytesToBufferWriter) WriteMultiBuffer(mb MultiBuffer) error {
+	return w.writer.Write(mb)
 }
 
 func (w *bytesToBufferWriter) ReadFrom(reader io.Reader) (int64, error) {

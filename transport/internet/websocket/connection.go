@@ -69,11 +69,11 @@ func (c *connection) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
-func (c *connection) WriteMultiBuffer(mb buf.MultiBuffer) (int, error) {
+func (c *connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	if c.mergingWriter == nil {
 		c.mergingWriter = buf.NewMergingWriter(c)
 	}
-	return mb.Len(), c.mergingWriter.Write(mb)
+	return c.mergingWriter.Write(mb)
 }
 
 func (c *connection) Close() error {

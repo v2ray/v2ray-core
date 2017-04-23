@@ -375,11 +375,11 @@ func (v *Connection) Write(b []byte) (int, error) {
 	}
 }
 
-func (c *Connection) WriteMultiBuffer(mb buf.MultiBuffer) (int, error) {
+func (c *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	if c.mergingWriter == nil {
 		c.mergingWriter = buf.NewMergingWriterSize(c, c.mss)
 	}
-	return mb.Len(), c.mergingWriter.Write(mb)
+	return c.mergingWriter.Write(mb)
 }
 
 func (v *Connection) SetState(state State) {

@@ -3,7 +3,7 @@ package buf
 import "net"
 
 type MultiBufferWriter interface {
-	WriteMultiBuffer(MultiBuffer) (int, error)
+	WriteMultiBuffer(MultiBuffer) error
 }
 
 type MultiBufferReader interface {

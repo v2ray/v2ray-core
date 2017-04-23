@@ -122,6 +122,11 @@ func (h *Handler) Dial(ctx context.Context, dest v2net.Destination) (internet.Co
 	return internet.Dial(ctx, dest)
 }
 
+var (
+	_ buf.MultiBufferReader = (*Connection)(nil)
+	_ buf.MultiBufferWriter = (*Connection)(nil)
+)
+
 type Connection struct {
 	stream     ray.Ray
 	closed     bool
@@ -170,11 +175,11 @@ func (v *Connection) Write(b []byte) (int, error) {
 	return buf.ToBytesWriter(v.writer).Write(b)
 }
 
-func (v *Connection) WriteMultiBuffer(mb buf.MultiBuffer) (int, error) {
+func (v *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	if v.closed {
-		return 0, io.ErrClosedPipe
+		return io.ErrClosedPipe
 	}
-	return mb.Len(), v.writer.Write(mb)
+	return v.writer.Write(mb)
 }
 
 // Close implements net.Conn.Close().
