@@ -2,11 +2,14 @@ package scenarios
 
 import (
 	"net"
+	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
 	xproxy "golang.org/x/net/proxy"
 	"v2ray.com/core"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/router"
 	v2net "v2ray.com/core/common/net"
@@ -16,6 +19,7 @@ import (
 	"v2ray.com/core/proxy/blackhole"
 	"v2ray.com/core/proxy/dokodemo"
 	"v2ray.com/core/proxy/freedom"
+	v2http "v2ray.com/core/proxy/http"
 	"v2ray.com/core/proxy/socks"
 	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/inbound"
@@ -644,6 +648,96 @@ func TestUDPConnection(t *testing.T) {
 		assert.Error(err).IsNil()
 		assert.Bytes(response[:nBytes]).Equals(xor([]byte(payload)))
 		assert.Error(conn.Close()).IsNil()
+	}
+
+	CloseAllServers()
+}
+
+func TestDomainSniffing(t *testing.T) {
+	assert := assert.On(t)
+
+	sniffingPort := pickPort()
+	httpPort := pickPort()
+	serverConfig := &core.Config{
+		Inbound: []*proxyman.InboundHandlerConfig{
+			{
+				Tag: "snif",
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(sniffingPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					DomainOverride: []proxyman.KnownProtocols{
+						proxyman.KnownProtocols_TLS,
+					},
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
+					Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+					Port:    443,
+					NetworkList: &v2net.NetworkList{
+						Network: []v2net.Network{v2net.Network_TCP},
+					},
+				}),
+			},
+			{
+				Tag: "http",
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(httpPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&v2http.ServerConfig{}),
+			},
+		},
+		Outbound: []*proxyman.OutboundHandlerConfig{
+			{
+				Tag: "redir",
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{
+					DestinationOverride: &freedom.DestinationOverride{
+						Server: &protocol.ServerEndpoint{
+							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Port:    uint32(sniffingPort),
+						},
+					},
+				}),
+			},
+			{
+				Tag:           "direct",
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+		},
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&router.Config{
+				Rule: []*router.RoutingRule{
+					{
+						Tag:        "direct",
+						InboundTag: []string{"snif"},
+					}, {
+						Tag:        "redir",
+						InboundTag: []string{"http"},
+					},
+				},
+			}),
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
+	}
+
+	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
+
+	{
+		transport := &http.Transport{
+			Proxy: func(req *http.Request) (*url.URL, error) {
+				return url.Parse("http://127.0.0.1:" + httpPort.String())
+			},
+		}
+
+		client := &http.Client{
+			Transport: transport,
+		}
+
+		resp, err := client.Get("https://www.github.com/")
+		assert.Error(err).IsNil()
+		assert.Int(resp.StatusCode).Equals(200)
 	}
 
 	CloseAllServers()
