@@ -110,7 +110,7 @@ func snifer(ctx context.Context, sniferList []proxyman.KnownProtocols, outbound 
 			if mb.IsEmpty() {
 				continue
 			}
-			nBytes, _ := mb.Read(payload)
+			nBytes := mb.Copy(payload)
 			for _, protocol := range sniferList {
 				var f func([]byte) (string, error)
 				switch protocol {

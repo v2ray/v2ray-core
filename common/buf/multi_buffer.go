@@ -31,6 +31,18 @@ func (mb *MultiBuffer) AppendMulti(buf MultiBuffer) {
 	*mb = append(*mb, buf...)
 }
 
+func (mb MultiBuffer) Copy(b []byte) int {
+	total := 0
+	for _, bb := range mb {
+		nBytes := copy(b[total:], bb.Bytes())
+		total += nBytes
+		if nBytes < bb.Len() {
+			break
+		}
+	}
+	return total
+}
+
 func (mb *MultiBuffer) Read(b []byte) (int, error) {
 	endIndex := len(*mb)
 	totalBytes := 0
