@@ -42,9 +42,8 @@ func TestPassiveConnection(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange:              v2net.SinglePortRange(serverPort),
-					Listen:                 v2net.NewIPOrDomain(v2net.LocalHostIP),
-					AllowPassiveConnection: true,
+					PortRange: v2net.SinglePortRange(serverPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
 					Address: v2net.NewIPOrDomain(dest.Address),

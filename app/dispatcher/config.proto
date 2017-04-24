@@ -7,7 +7,8 @@ option java_package = "com.v2ray.core.app.dispatcher";
 option java_multiple_files = true;
 
 message SessionConfig {
-  bool allow_passive_connection = 1;
+  reserved 1;
+  
 }
 
 message Config {

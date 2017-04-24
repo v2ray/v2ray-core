@@ -105,6 +105,7 @@ func (h *DynamicInboundHandler) refresh() error {
 				stream:       h.receiverConfig.StreamSettings,
 				recvOrigDest: h.receiverConfig.ReceiveOriginalDestination,
 				dispatcher:   h.mux,
+				sniffers:     h.receiverConfig.DomainOverride,
 			}
 			if err := worker.Start(); err != nil {
 				log.Trace(newError("failed to create TCP worker").Base(err).AtWarning())

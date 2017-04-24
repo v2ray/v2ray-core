@@ -39,7 +39,7 @@ func (v *directRay) InboundOutput() InputStream {
 }
 
 type Stream struct {
-	access sync.Mutex
+	access sync.RWMutex
 	data   buf.MultiBuffer
 	ctx    context.Context
 	wakeup chan bool
@@ -73,6 +73,13 @@ func (s *Stream) getData() (buf.MultiBuffer, error) {
 	}
 
 	return nil, nil
+}
+
+func (s *Stream) Peek() buf.MultiBuffer {
+	s.access.RLock()
+	defer s.access.RUnlock()
+
+	return s.data
 }
 
 func (s *Stream) Read() (buf.MultiBuffer, error) {
