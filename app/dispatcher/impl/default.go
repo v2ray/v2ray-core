@@ -4,6 +4,7 @@ package impl
 
 import (
 	"context"
+	"time"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
@@ -14,6 +15,10 @@ import (
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
+)
+
+var (
+	errSniffingTimeout = newError("timeout on sniffing")
 )
 
 type DefaultDispatcher struct {
@@ -48,14 +53,85 @@ func (DefaultDispatcher) Interface() interface{} {
 	return (*dispatcher.Interface)(nil)
 }
 
+type domainOrError struct {
+	domain string
+	err    error
+}
+
 func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destination) (ray.InboundRay, error) {
-	dispatcher := d.ohm.GetDefaultHandler()
 	if !destination.IsValid() {
 		panic("Dispatcher: Invalid destination.")
 	}
-
 	ctx = proxy.ContextWithTarget(ctx, destination)
 
+	outbound := ray.NewRay(ctx)
+	sniferList := proxyman.ProtocoSniffersFromContext(ctx)
+	if len(sniferList) == 0 {
+		go d.routedDispatch(ctx, outbound, destination)
+	} else {
+		go func() {
+			done := make(chan domainOrError)
+			go snifer(ctx, sniferList, outbound, done)
+			de := <-done
+			if de.err != nil {
+				log.Trace(newError("failed to snif").Base(de.err))
+			}
+			destination.Address = net.ParseAddress(de.domain)
+			ctx = proxy.ContextWithTarget(ctx, destination)
+			d.routedDispatch(ctx, outbound, destination)
+		}()
+	}
+	return outbound, nil
+}
+
+func snifer(ctx context.Context, sniferList []proxyman.KnownProtocols, outbound ray.OutboundRay, done chan<- domainOrError) {
+	payload := make([]byte, 2048)
+	totalAttempt := 0
+	for {
+		select {
+		case <-ctx.Done():
+			done <- domainOrError{
+				domain: "",
+				err:    ctx.Err(),
+			}
+			return
+		case <-time.After(time.Millisecond * 100):
+			totalAttempt++
+			if totalAttempt > 5 {
+				done <- domainOrError{
+					domain: "",
+					err:    errSniffingTimeout,
+				}
+				return
+			}
+			mb := outbound.OutboundInput().Peek()
+			nBytes, _ := mb.Read(payload)
+			for _, protocol := range sniferList {
+				var f func([]byte) (string, error)
+				switch protocol {
+				case proxyman.KnownProtocols_HTTP:
+					f = SniffHTTP
+				case proxyman.KnownProtocols_TLS:
+					f = SniffTLS
+				default:
+					panic("Unsupported protocol")
+				}
+
+				domain, err := f(payload[:nBytes])
+				if err != ErrMoreData {
+					done <- domainOrError{
+						domain: domain,
+						err:    err,
+					}
+					return
+				}
+			}
+		}
+	}
+}
+
+func (d *DefaultDispatcher) routedDispatch(ctx context.Context, outbound ray.OutboundRay, destination net.Destination) {
+	dispatcher := d.ohm.GetDefaultHandler()
 	if d.router != nil {
 		if tag, err := d.router.TakeDetour(ctx); err == nil {
 			if handler := d.ohm.GetHandler(tag); handler != nil {
@@ -68,11 +144,7 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 			log.Trace(newError("default route for ", destination))
 		}
 	}
-
-	direct := ray.NewRay(ctx)
-	go dispatcher.Dispatch(ctx, direct)
-
-	return direct, nil
+	dispatcher.Dispatch(ctx, outbound)
 }
 
 func init() {
