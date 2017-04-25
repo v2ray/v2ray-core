@@ -13,33 +13,33 @@ type ValidationStrategy interface {
 	Invalidate()
 }
 
-type AlwaysValidStrategy struct{}
+type alwaysValidStrategy struct{}
 
 func AlwaysValid() ValidationStrategy {
-	return AlwaysValidStrategy{}
+	return alwaysValidStrategy{}
 }
 
-func (AlwaysValidStrategy) IsValid() bool {
+func (alwaysValidStrategy) IsValid() bool {
 	return true
 }
 
-func (AlwaysValidStrategy) Invalidate() {}
+func (alwaysValidStrategy) Invalidate() {}
 
-type TimeoutValidStrategy struct {
+type timeoutValidStrategy struct {
 	until time.Time
 }
 
 func BeforeTime(t time.Time) ValidationStrategy {
-	return &TimeoutValidStrategy{
+	return &timeoutValidStrategy{
 		until: t,
 	}
 }
 
-func (v *TimeoutValidStrategy) IsValid() bool {
+func (v *timeoutValidStrategy) IsValid() bool {
 	return v.until.After(time.Now())
 }
 
-func (v *TimeoutValidStrategy) Invalidate() {
+func (v *timeoutValidStrategy) Invalidate() {
 	v.until = time.Time{}
 }
 
