@@ -45,14 +45,13 @@ func NewSessionHistory(ctx context.Context) *SessionHistory {
 func (h *SessionHistory) add(session sessionId) {
 	h.Lock()
 	h.cache[session] = time.Now().Add(time.Minute * 3)
+	h.Unlock()
 
 	select {
 	case <-h.token.Wait():
 		go h.run()
 	default:
 	}
-
-	h.Unlock()
 }
 
 func (h *SessionHistory) has(session sessionId) bool {
