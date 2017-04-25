@@ -35,12 +35,12 @@ func BeforeTime(t time.Time) ValidationStrategy {
 	}
 }
 
-func (v *timeoutValidStrategy) IsValid() bool {
-	return v.until.After(time.Now())
+func (s *timeoutValidStrategy) IsValid() bool {
+	return s.until.After(time.Now())
 }
 
-func (v *timeoutValidStrategy) Invalidate() {
-	v.until = time.Time{}
+func (s *timeoutValidStrategy) Invalidate() {
+	s.until = time.Time{}
 }
 
 type ServerSpec struct {
@@ -63,19 +63,19 @@ func NewServerSpecFromPB(spec ServerEndpoint) *ServerSpec {
 	return NewServerSpec(dest, AlwaysValid(), spec.User...)
 }
 
-func (v *ServerSpec) Destination() net.Destination {
-	return v.dest
+func (s *ServerSpec) Destination() net.Destination {
+	return s.dest
 }
 
-func (v *ServerSpec) HasUser(user *User) bool {
-	v.RLock()
-	defer v.RUnlock()
+func (s *ServerSpec) HasUser(user *User) bool {
+	s.RLock()
+	defer s.RUnlock()
 
 	accountA, err := user.GetTypedAccount()
 	if err != nil {
 		return false
 	}
-	for _, u := range v.users {
+	for _, u := range s.users {
 		accountB, err := u.GetTypedAccount()
 		if err == nil && accountA.Equals(accountB) {
 			return true
@@ -84,26 +84,29 @@ func (v *ServerSpec) HasUser(user *User) bool {
 	return false
 }
 
-func (v *ServerSpec) AddUser(user *User) {
-	if v.HasUser(user) {
+func (s *ServerSpec) AddUser(user *User) {
+	if s.HasUser(user) {
 		return
 	}
 
-	v.Lock()
-	defer v.Unlock()
+	s.Lock()
+	defer s.Unlock()
 
-	v.users = append(v.users, user)
+	s.users = append(s.users, user)
 }
 
-func (v *ServerSpec) PickUser() *User {
-	userCount := len(v.users)
+func (s *ServerSpec) PickUser() *User {
+	s.RLock()
+	defer s.RUnlock()
+
+	userCount := len(s.users)
 	switch userCount {
 	case 0:
 		return nil
 	case 1:
-		return v.users[0]
+		return s.users[0]
 	default:
-		return v.users[dice.Roll(userCount)]
+		return s.users[dice.Roll(userCount)]
 	}
 }
 
