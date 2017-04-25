@@ -19,11 +19,11 @@ func AlwaysValid() ValidationStrategy {
 	return AlwaysValidStrategy{}
 }
 
-func (v AlwaysValidStrategy) IsValid() bool {
+func (AlwaysValidStrategy) IsValid() bool {
 	return true
 }
 
-func (v AlwaysValidStrategy) Invalidate() {}
+func (AlwaysValidStrategy) Invalidate() {}
 
 type TimeoutValidStrategy struct {
 	until time.Time
