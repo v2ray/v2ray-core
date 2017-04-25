@@ -45,7 +45,7 @@ func SniffHTTP(b []byte) (string, error) {
 		value := strings.ToLower(string(bytes.Trim(parts[1], " ")))
 		if key == "host" {
 			domain := strings.Split(value, ":")
-			return domain[0], nil
+			return strings.TrimSpace(domain[0]), nil
 		}
 	}
 	return "", ErrMoreData

@@ -70,13 +70,11 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	} else {
 		go func() {
 			domain, err := snifer(ctx, sniferList, outbound)
-			if err != nil {
-				log.Trace(newError("failed to snif").Base(err))
-				return
+			if err == nil {
+				log.Trace(newError("sniffed domain: ", domain))
+				destination.Address = net.ParseAddress(domain)
+				ctx = proxy.ContextWithTarget(ctx, destination)
 			}
-			log.Trace(newError("sniffed domain: ", domain))
-			destination.Address = net.ParseAddress(domain)
-			ctx = proxy.ContextWithTarget(ctx, destination)
 			d.routedDispatch(ctx, outbound, destination)
 		}()
 	}
