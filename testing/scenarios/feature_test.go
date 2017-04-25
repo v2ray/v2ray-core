@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"io/ioutil"
+
 	xproxy "golang.org/x/net/proxy"
 	"v2ray.com/core"
 	"v2ray.com/core/app/log"
@@ -738,6 +740,8 @@ func TestDomainSniffing(t *testing.T) {
 		resp, err := client.Get("https://www.github.com/")
 		assert.Error(err).IsNil()
 		assert.Int(resp.StatusCode).Equals(200)
+
+		assert.Error(resp.Write(ioutil.Discard)).IsNil()
 	}
 
 	CloseAllServers()
