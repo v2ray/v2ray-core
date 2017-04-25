@@ -75,11 +75,13 @@ func (s *Stream) getData() (buf.MultiBuffer, error) {
 	return nil, nil
 }
 
-func (s *Stream) Peek() buf.MultiBuffer {
+func (s *Stream) Peek(b *buf.Buffer) {
 	s.access.RLock()
 	defer s.access.RUnlock()
 
-	return s.data
+	b.Reset(func(data []byte) (int, error) {
+		return s.data.Copy(data), nil
+	})
 }
 
 func (s *Stream) Read() (buf.MultiBuffer, error) {

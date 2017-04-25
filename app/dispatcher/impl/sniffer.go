@@ -44,7 +44,8 @@ func SniffHTTP(b []byte) (string, error) {
 		key := strings.ToLower(string(parts[0]))
 		value := strings.ToLower(string(bytes.Trim(parts[1], " ")))
 		if key == "host" {
-			return value, nil
+			domain := strings.Split(value, ":")
+			return domain[0], nil
 		}
 	}
 	return "", ErrMoreData
@@ -60,11 +61,11 @@ func ReadClientHello(data []byte) (string, error) {
 	if len(data) < 42 {
 		return "", ErrMoreData
 	}
-	sessionIdLen := int(data[38])
-	if sessionIdLen > 32 || len(data) < 39+sessionIdLen {
+	sessionIDLen := int(data[38])
+	if sessionIDLen > 32 || len(data) < 39+sessionIDLen {
 		return "", ErrInvalidData
 	}
-	data = data[39+sessionIdLen:]
+	data = data[39+sessionIDLen:]
 	if len(data) < 2 {
 		return "", ErrMoreData
 	}
