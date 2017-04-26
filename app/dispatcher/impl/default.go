@@ -4,7 +4,6 @@ package impl
 
 import (
 	"context"
-
 	"time"
 
 	"v2ray.com/core/app"
@@ -21,6 +20,10 @@ import (
 
 var (
 	errSniffingTimeout = newError("timeout on sniffing")
+)
+
+var (
+	_ app.Application = (*DefaultDispatcher)(nil)
 )
 
 // DefaultDispatcher is a default implementation of Dispatcher.
@@ -47,12 +50,15 @@ func NewDefaultDispatcher(ctx context.Context, config *dispatcher.Config) (*Defa
 	return d, nil
 }
 
+// Start implements app.Application.
 func (*DefaultDispatcher) Start() error {
 	return nil
 }
 
+// Close implements app.Application.
 func (*DefaultDispatcher) Close() {}
 
+// Interface implements app.Application.
 func (*DefaultDispatcher) Interface() interface{} {
 	return (*dispatcher.Interface)(nil)
 }
