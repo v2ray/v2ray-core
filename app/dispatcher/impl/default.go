@@ -4,6 +4,7 @@ package impl
 
 import (
 	"context"
+
 	"time"
 
 	"v2ray.com/core/app"
@@ -81,6 +82,26 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	return outbound, nil
 }
 
+func trySnif(sniferList []proxyman.KnownProtocols, b []byte) (string, error) {
+	for _, protocol := range sniferList {
+		var f func([]byte) (string, error)
+		switch protocol {
+		case proxyman.KnownProtocols_HTTP:
+			f = SniffHTTP
+		case proxyman.KnownProtocols_TLS:
+			f = SniffTLS
+		default:
+			panic("Unsupported protocol")
+		}
+
+		domain, err := f(b)
+		if err != ErrMoreData {
+			return domain, err
+		}
+	}
+	return "", ErrMoreData
+}
+
 func snifer(ctx context.Context, sniferList []proxyman.KnownProtocols, outbound ray.OutboundRay) (string, error) {
 	payload := buf.New()
 	defer payload.Release()
@@ -90,27 +111,14 @@ func snifer(ctx context.Context, sniferList []proxyman.KnownProtocols, outbound 
 		select {
 		case <-ctx.Done():
 			return "", ctx.Err()
-		case <-time.After(time.Millisecond * 100):
+		default:
 			totalAttempt++
 			if totalAttempt > 5 {
 				return "", errSniffingTimeout
 			}
 			outbound.OutboundInput().Peek(payload)
-			if payload.IsEmpty() {
-				continue
-			}
-			for _, protocol := range sniferList {
-				var f func([]byte) (string, error)
-				switch protocol {
-				case proxyman.KnownProtocols_HTTP:
-					f = SniffHTTP
-				case proxyman.KnownProtocols_TLS:
-					f = SniffTLS
-				default:
-					panic("Unsupported protocol")
-				}
-
-				domain, err := f(payload.Bytes())
+			if !payload.IsEmpty() {
+				domain, err := trySnif(sniferList, payload.Bytes())
 				if err != ErrMoreData {
 					return domain, err
 				}
@@ -118,6 +126,7 @@ func snifer(ctx context.Context, sniferList []proxyman.KnownProtocols, outbound 
 			if payload.IsFull() {
 				return "", ErrInvalidData
 			}
+			time.Sleep(time.Millisecond * 100)
 		}
 	}
 }
