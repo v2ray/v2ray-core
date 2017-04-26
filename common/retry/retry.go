@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	ErrRetryFailed = newError("Retry: All retry attempts failed.")
+	ErrRetryFailed = newError("all retry attempts failed")
 )
 
 // Strategy is a way to retry on a specific function.
