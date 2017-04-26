@@ -9,15 +9,16 @@ import (
 	"v2ray.com/core/common"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
-	v2tls "v2ray.com/core/transport/internet/tls"
+	"v2ray.com/core/transport/internet/tls"
 )
 
+// Dial dials a WebSocket connection to the given destination.
 func Dial(ctx context.Context, dest v2net.Destination) (internet.Connection, error) {
 	log.Trace(newError("creating connection to ", dest))
 
 	conn, err := dialWebsocket(ctx, dest)
 	if err != nil {
-		return nil, newError("dial failed")
+		return nil, newError("failed to dial WebSocket")
 	}
 	return internet.Connection(conn), nil
 }
@@ -43,7 +44,7 @@ func dialWebsocket(ctx context.Context, dest v2net.Destination) (net.Conn, error
 	protocol := "ws"
 
 	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
-		tlsConfig, ok := securitySettings.(*v2tls.Config)
+		tlsConfig, ok := securitySettings.(*tls.Config)
 		if ok {
 			protocol = "wss"
 			dialer.TLSClientConfig = tlsConfig.GetTLSConfig()

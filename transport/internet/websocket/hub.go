@@ -17,10 +17,6 @@ import (
 	v2tls "v2ray.com/core/transport/internet/tls"
 )
 
-var (
-	ErrClosedListener = newError("Listener is closed.")
-)
-
 type requestHandler struct {
 	path string
 	ln   *Listener
