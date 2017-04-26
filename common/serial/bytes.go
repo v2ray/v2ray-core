@@ -1,10 +1,8 @@
 package serial
 
-import (
-	"encoding/hex"
-	"strings"
-)
+import "encoding/hex"
 
+// ByteToHexString converts a byte into hex string.
 func ByteToHexString(value byte) string {
 	return hex.EncodeToString([]byte{value})
 }
@@ -34,10 +32,22 @@ func BytesToInt64(value []byte) int64 {
 		int64(value[7])
 }
 
+// BytesToHexString converts a byte array into hex string.
 func BytesToHexString(value []byte) string {
-	strs := make([]string, len(value))
-	for i, b := range value {
-		strs[i] = hex.EncodeToString([]byte{b})
+	m := hex.EncodedLen(len(value))
+	if m == 0 {
+		return "[]"
 	}
-	return "[" + strings.Join(strs, ",") + "]"
+	n := 1 + m + m/2
+	b := make([]byte, n)
+	hex.Encode(b[1:], value)
+	b[0] = '['
+	for i, j := n-3, m-2+1; i > 0; i -= 3 {
+		b[i+2] = ','
+		b[i+1] = b[j+1]
+		b[i] = b[j]
+		j -= 2
+	}
+	b[n-1] = ']'
+	return string(b)
 }
