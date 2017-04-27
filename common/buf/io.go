@@ -71,7 +71,15 @@ func IgnoreWriterError() CopyOption {
 	}
 }
 
-func copyInternal(timer signal.ActivityTimer, reader Reader, writer Writer, handler copyHandler) error {
+func UpdateActivity(timer signal.ActivityTimer) CopyOption {
+	return func(handler *copyHandler) {
+		handler.onData = func() {
+			timer.Update()
+		}
+	}
+}
+
+func copyInternal(reader Reader, writer Writer, handler copyHandler) error {
 	for {
 		buffer, err := reader.Read()
 		if err != nil {
@@ -81,7 +89,6 @@ func copyInternal(timer signal.ActivityTimer, reader Reader, writer Writer, hand
 		}
 
 		handler.onData()
-		timer.Update()
 
 		if buffer.IsEmpty() {
 			buffer.Release()
@@ -99,12 +106,12 @@ func copyInternal(timer signal.ActivityTimer, reader Reader, writer Writer, hand
 
 // Copy dumps all payload from reader to writer or stops when an error occurs.
 // ActivityTimer gets updated as soon as there is a payload.
-func Copy(timer signal.ActivityTimer, reader Reader, writer Writer, options ...CopyOption) error {
+func Copy(reader Reader, writer Writer, options ...CopyOption) error {
 	handler := copyHandler{}
 	for _, option := range options {
 		option(&handler)
 	}
-	err := copyInternal(timer, reader, writer, handler)
+	err := copyInternal(reader, writer, handler)
 	if err != nil && errors.Cause(err) != io.EOF {
 		return err
 	}
