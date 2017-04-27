@@ -23,13 +23,13 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 	aead, err := cipher.NewGCM(block)
 	assert.Error(err).IsNil()
 
-	rawPayload := make([]byte, 8192)
+	rawPayload := make([]byte, 8192*10)
 	rand.Read(rawPayload)
 
-	payload := buf.NewLocal(8192)
+	payload := buf.NewLocal(8192 * 10)
 	payload.Append(rawPayload)
 
-	cache := buf.NewLocal(16 * 1024)
+	cache := buf.NewLocal(160 * 1024)
 	iv := make([]byte, 12)
 	rand.Read(iv)
 
@@ -42,7 +42,7 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 	}, PlainChunkSizeParser{}, cache)
 
 	assert.Error(writer.Write(buf.NewMultiBufferValue(payload))).IsNil()
-	assert.Int(cache.Len()).Equals(8210)
+	assert.Int(cache.Len()).Equals(83360)
 	assert.Error(writer.Write(buf.NewMultiBuffer())).IsNil()
 	assert.Error(err).IsNil()
 
@@ -54,11 +54,16 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 		AdditionalDataGenerator: &NoOpBytesGenerator{},
 	}, PlainChunkSizeParser{}, cache)
 
-	mb, err := reader.Read()
-	assert.Error(err).IsNil()
-	assert.Int(mb.Len()).Equals(len(rawPayload))
+	mb := buf.NewMultiBuffer()
 
-	mbContent := make([]byte, 8192)
+	for mb.Len() < len(rawPayload) {
+		mb2, err := reader.Read()
+		assert.Error(err).IsNil()
+
+		mb.AppendMulti(mb2)
+	}
+
+	mbContent := make([]byte, 8192*10)
 	mb.Read(mbContent)
 	assert.Bytes(mbContent).Equals(rawPayload)
 

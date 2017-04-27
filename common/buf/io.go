@@ -40,6 +40,13 @@ func ReadFullFrom(reader io.Reader, size int) Supplier {
 	}
 }
 
+// ReadAtLeastFrom create a Supplier to read at least size bytes from the given io.Reader.
+func ReadAtLeastFrom(reader io.Reader, size int) Supplier {
+	return func(b []byte) (int, error) {
+		return io.ReadAtLeast(reader, b, size)
+	}
+}
+
 func copyInternal(timer signal.ActivityTimer, reader Reader, writer Writer) error {
 	for {
 		buffer, err := reader.Read()

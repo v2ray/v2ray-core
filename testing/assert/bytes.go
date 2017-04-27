@@ -30,7 +30,7 @@ func (subject *BytesSubject) Equals(expectation []byte) {
 	}
 	for idx, b := range expectation {
 		if subject.value[idx] != b {
-			subject.FailWithMessage(fmt.Sprint("Bytes are different: ", b, " vs ", subject.value[idx]))
+			subject.FailWithMessage(fmt.Sprint("Bytes are different: ", b, " vs ", subject.value[idx], " at pos ", idx))
 			return
 		}
 	}
