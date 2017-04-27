@@ -175,20 +175,8 @@ func (m *Client) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) bool
 }
 
 func drain(reader *Reader) error {
-	data, err := reader.Read()
-	if err != nil {
-		return err
-	}
-	data.Release()
+	buf.Copy(signal.BackgroundTimer(), reader, buf.Discard)
 	return nil
-}
-
-func pipe(reader *Reader, writer buf.Writer) error {
-	data, err := reader.Read()
-	if err != nil {
-		return err
-	}
-	return writer.Write(data)
 }
 
 func (m *Client) handleStatueKeepAlive(meta *FrameMetadata, reader *Reader) error {
@@ -211,7 +199,7 @@ func (m *Client) handleStatusKeep(meta *FrameMetadata, reader *Reader) error {
 	}
 
 	if s, found := m.sessionManager.Get(meta.SessionID); found {
-		return pipe(reader, s.output)
+		return buf.Copy(signal.BackgroundTimer(), reader, s.output, buf.IgnoreWriterError())
 	}
 	return drain(reader)
 }
@@ -335,7 +323,7 @@ func (w *ServerWorker) handleStatusNew(ctx context.Context, meta *FrameMetadata,
 	w.sessionManager.Add(s)
 	go handle(ctx, s, w.outboundRay.OutboundOutput())
 	if meta.Option.Has(OptionData) {
-		return pipe(reader, s.output)
+		return buf.Copy(signal.BackgroundTimer(), reader, s.output, buf.IgnoreWriterError())
 	}
 	return nil
 }
@@ -345,7 +333,7 @@ func (w *ServerWorker) handleStatusKeep(meta *FrameMetadata, reader *Reader) err
 		return nil
 	}
 	if s, found := w.sessionManager.Get(meta.SessionID); found {
-		return pipe(reader, s.output)
+		return buf.Copy(signal.BackgroundTimer(), reader, s.output, buf.IgnoreWriterError())
 	}
 	return drain(reader)
 }

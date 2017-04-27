@@ -47,13 +47,40 @@ func ReadAtLeastFrom(reader io.Reader, size int) Supplier {
 	}
 }
 
-func copyInternal(timer signal.ActivityTimer, reader Reader, writer Writer) error {
+type copyHandler struct {
+	onReadError  func(error) error
+	onData       func()
+	onWriteError func(error) error
+}
+
+type CopyOption func(*copyHandler)
+
+func IgnoreReaderError() CopyOption {
+	return func(handler *copyHandler) {
+		handler.onReadError = func(err error) error {
+			return nil
+		}
+	}
+}
+
+func IgnoreWriterError() CopyOption {
+	return func(handler *copyHandler) {
+		handler.onWriteError = func(err error) error {
+			return nil
+		}
+	}
+}
+
+func copyInternal(timer signal.ActivityTimer, reader Reader, writer Writer, handler copyHandler) error {
 	for {
 		buffer, err := reader.Read()
 		if err != nil {
-			return err
+			if err = handler.onReadError(err); err != nil {
+				return err
+			}
 		}
 
+		handler.onData()
 		timer.Update()
 
 		if buffer.IsEmpty() {
@@ -62,16 +89,22 @@ func copyInternal(timer signal.ActivityTimer, reader Reader, writer Writer) erro
 		}
 
 		if err := writer.Write(buffer); err != nil {
-			buffer.Release()
-			return err
+			if err = handler.onWriteError(err); err != nil {
+				buffer.Release()
+				return err
+			}
 		}
 	}
 }
 
 // Copy dumps all payload from reader to writer or stops when an error occurs.
 // ActivityTimer gets updated as soon as there is a payload.
-func Copy(timer signal.ActivityTimer, reader Reader, writer Writer) error {
-	err := copyInternal(timer, reader, writer)
+func Copy(timer signal.ActivityTimer, reader Reader, writer Writer, options ...CopyOption) error {
+	handler := copyHandler{}
+	for _, option := range options {
+		option(&handler)
+	}
+	err := copyInternal(timer, reader, writer, handler)
 	if err != nil && errors.Cause(err) != io.EOF {
 		return err
 	}
