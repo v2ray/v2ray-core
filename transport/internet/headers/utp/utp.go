@@ -31,7 +31,7 @@ func NewUTP(ctx context.Context, config interface{}) (interface{}, error) {
 	return &UTP{
 		header:       1,
 		extension:    0,
-		connectionId: dice.RandomUint16(),
+		connectionId: dice.RollUint16(),
 	}, nil
 }
 

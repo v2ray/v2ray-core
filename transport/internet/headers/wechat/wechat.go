@@ -27,7 +27,7 @@ func (vc *VideoChat) Write(b []byte) (int, error) {
 
 func NewVideoChat(ctx context.Context, config interface{}) (interface{}, error) {
 	return &VideoChat{
-		sn: int(dice.RandomUint16()),
+		sn: int(dice.RollUint16()),
 	}, nil
 }
 

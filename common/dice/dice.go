@@ -15,8 +15,8 @@ func Roll(n int) int {
 	return rand.Intn(n)
 }
 
-// RandomUint16 returns a random uint16 value.
-func RandomUint16() uint16 {
+// RollUint16 returns a random uint16 value.
+func RollUint16() uint16 {
 	return uint16(rand.Intn(65536))
 }
 

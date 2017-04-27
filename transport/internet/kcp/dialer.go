@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	globalConv = uint32(dice.RandomUint16())
+	globalConv = uint32(dice.RollUint16())
 )
 
 type ClientConnection struct {
