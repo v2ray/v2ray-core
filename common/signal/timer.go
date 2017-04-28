@@ -52,11 +52,3 @@ func CancelAfterInactivity(ctx context.Context, timeout time.Duration) (context.
 	go timer.run()
 	return ctx, timer
 }
-
-type noOpActivityTimer struct{}
-
-func (noOpActivityTimer) Update() {}
-
-func BackgroundTimer() ActivityTimer {
-	return noOpActivityTimer{}
-}
