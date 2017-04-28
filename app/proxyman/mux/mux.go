@@ -15,7 +15,6 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
 )
@@ -147,7 +146,7 @@ func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
 		log.Trace(newError("failed to write first payload").Base(err))
 		return
 	}
-	if err := buf.Copy(signal.BackgroundTimer(), s.input, writer); err != nil {
+	if err := buf.Copy(s.input, writer); err != nil {
 		log.Trace(newError("failed to fetch all input").Base(err))
 	}
 }
@@ -175,20 +174,8 @@ func (m *Client) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) bool
 }
 
 func drain(reader *Reader) error {
-	data, err := reader.Read()
-	if err != nil {
-		return err
-	}
-	data.Release()
+	buf.Copy(reader, buf.Discard)
 	return nil
-}
-
-func pipe(reader *Reader, writer buf.Writer) error {
-	data, err := reader.Read()
-	if err != nil {
-		return err
-	}
-	return writer.Write(data)
 }
 
 func (m *Client) handleStatueKeepAlive(meta *FrameMetadata, reader *Reader) error {
@@ -211,7 +198,7 @@ func (m *Client) handleStatusKeep(meta *FrameMetadata, reader *Reader) error {
 	}
 
 	if s, found := m.sessionManager.Get(meta.SessionID); found {
-		return pipe(reader, s.output)
+		return buf.Copy(reader, s.output, buf.IgnoreWriterError())
 	}
 	return drain(reader)
 }
@@ -303,7 +290,7 @@ type ServerWorker struct {
 
 func handle(ctx context.Context, s *Session, output buf.Writer) {
 	writer := NewResponseWriter(s.ID, output)
-	if err := buf.Copy(signal.BackgroundTimer(), s.input, writer); err != nil {
+	if err := buf.Copy(s.input, writer); err != nil {
 		log.Trace(newError("session ", s.ID, " ends: ").Base(err))
 	}
 	writer.Close()
@@ -335,7 +322,7 @@ func (w *ServerWorker) handleStatusNew(ctx context.Context, meta *FrameMetadata,
 	w.sessionManager.Add(s)
 	go handle(ctx, s, w.outboundRay.OutboundOutput())
 	if meta.Option.Has(OptionData) {
-		return pipe(reader, s.output)
+		return buf.Copy(reader, s.output, buf.IgnoreWriterError())
 	}
 	return nil
 }
@@ -345,7 +332,7 @@ func (w *ServerWorker) handleStatusKeep(meta *FrameMetadata, reader *Reader) err
 		return nil
 	}
 	if s, found := w.sessionManager.Get(meta.SessionID); found {
-		return pipe(reader, s.output)
+		return buf.Copy(reader, s.output, buf.IgnoreWriterError())
 	}
 	return drain(reader)
 }

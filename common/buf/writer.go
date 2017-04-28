@@ -106,3 +106,14 @@ func (w *bytesToBufferWriter) ReadFrom(reader io.Reader) (int64, error) {
 	}
 	return totalBytes, nil
 }
+
+type noOpWriter struct{}
+
+func (noOpWriter) Write(b MultiBuffer) error {
+	b.Release()
+	return nil
+}
+
+var (
+	Discard Writer = noOpWriter{}
+)

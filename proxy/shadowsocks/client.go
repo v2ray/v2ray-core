@@ -105,7 +105,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 		}
 
 		requestDone := signal.ExecuteAsync(func() error {
-			if err := buf.Copy(timer, outboundRay.OutboundInput(), bodyWriter); err != nil {
+			if err := buf.Copy(outboundRay.OutboundInput(), bodyWriter, buf.UpdateActivity(timer)); err != nil {
 				return err
 			}
 			return nil
@@ -119,7 +119,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 				return err
 			}
 
-			if err := buf.Copy(timer, responseReader, outboundRay.OutboundOutput()); err != nil {
+			if err := buf.Copy(responseReader, outboundRay.OutboundOutput(), buf.UpdateActivity(timer)); err != nil {
 				return err
 			}
 
@@ -141,7 +141,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 		})
 
 		requestDone := signal.ExecuteAsync(func() error {
-			if err := buf.Copy(timer, outboundRay.OutboundInput(), writer); err != nil {
+			if err := buf.Copy(outboundRay.OutboundInput(), writer, buf.UpdateActivity(timer)); err != nil {
 				return newError("failed to transport all UDP request").Base(err)
 			}
 			return nil
@@ -155,7 +155,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 				User:   user,
 			}
 
-			if err := buf.Copy(timer, reader, outboundRay.OutboundOutput()); err != nil {
+			if err := buf.Copy(reader, outboundRay.OutboundOutput(), buf.UpdateActivity(timer)); err != nil {
 				return newError("failed to transport all UDP response").Base(err)
 			}
 			return nil

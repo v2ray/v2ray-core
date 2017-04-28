@@ -123,7 +123,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 			return err
 		}
 
-		if err := buf.Copy(timer, input, bodyWriter); err != nil {
+		if err := buf.Copy(input, bodyWriter, buf.UpdateActivity(timer)); err != nil {
 			return err
 		}
 
@@ -147,7 +147,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 
 		reader.SetBuffered(false)
 		bodyReader := session.DecodeResponseBody(request, reader)
-		if err := buf.Copy(timer, bodyReader, output); err != nil {
+		if err := buf.Copy(bodyReader, output, buf.UpdateActivity(timer)); err != nil {
 			return err
 		}
 
