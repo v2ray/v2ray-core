@@ -48,27 +48,26 @@ func NewChunkStreamReader(sizeDecoder ChunkSizeDecoder, reader io.Reader) *Chunk
 	}
 }
 
-func (r *ChunkStreamReader) readAtLeast(size int) (buf.MultiBuffer, error) {
+func (r *ChunkStreamReader) readAtLeast(size int) error {
 	mb := r.leftOver
 	for mb.Len() < size {
 		extra, err := r.reader.Read()
 		if err != nil {
 			mb.Release()
-			return nil, err
+			return err
 		}
 		mb.AppendMulti(extra)
 	}
+	r.leftOver = mb
 
-	return mb, nil
+	return nil
 }
 
 func (r *ChunkStreamReader) readSize() (uint16, error) {
 	if r.sizeDecoder.SizeBytes() > r.leftOver.Len() {
-		mb, err := r.readAtLeast(r.sizeDecoder.SizeBytes() - r.leftOver.Len())
-		if err != nil {
+		if err := r.readAtLeast(r.sizeDecoder.SizeBytes() - r.leftOver.Len()); err != nil {
 			return 0, err
 		}
-		r.leftOver.AppendMulti(mb)
 	}
 	r.leftOver.Read(r.buffer)
 	return r.sizeDecoder.Decode(r.buffer)
@@ -87,29 +86,26 @@ func (r *ChunkStreamReader) Read() (buf.MultiBuffer, error) {
 		size = int(nextSize)
 	}
 
-	leftOver := r.leftOver
-	if leftOver.IsEmpty() {
-		mb, err := r.readAtLeast(1)
-		if err != nil {
+	if r.leftOver.IsEmpty() {
+		if err := r.readAtLeast(1); err != nil {
 			return nil, err
 		}
-		leftOver = mb
 	}
 
-	if size >= leftOver.Len() {
-		r.leftOverSize = uint16(size - leftOver.Len())
+	if size >= r.leftOver.Len() {
+		mb := r.leftOver
+		r.leftOverSize = uint16(size - r.leftOver.Len())
 		r.leftOver = nil
-		return leftOver, nil
+		return mb, nil
 	}
 
-	mb := leftOver.SliceBySize(size)
+	mb := r.leftOver.SliceBySize(size)
 	if mb.Len() != size {
 		b := buf.New()
-		b.AppendSupplier(buf.ReadFullFrom(&leftOver, size-mb.Len()))
+		b.AppendSupplier(buf.ReadFullFrom(&r.leftOver, size-mb.Len()))
 		mb.Append(b)
 	}
 
-	r.leftOver = leftOver
 	r.leftOverSize = 0
 	return mb, nil
 }
