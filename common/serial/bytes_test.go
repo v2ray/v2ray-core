@@ -24,3 +24,12 @@ func TestBytesToHex(t *testing.T) {
 		assert.String(test.output).Equals(BytesToHexString(test.input))
 	}
 }
+
+func TestInt64(t *testing.T) {
+	assert := assert.On(t)
+
+	x := int64(375134875348)
+	b := Int64ToBytes(x, []byte{})
+	v := BytesToInt64(b)
+	assert.Int64(x).Equals(v)
+}
