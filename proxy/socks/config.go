@@ -1,9 +1,6 @@
 package socks
 
-import (
-	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/protocol"
-)
+import "v2ray.com/core/common/protocol"
 
 func (v *Account) Equals(another protocol.Account) bool {
 	if account, ok := another.(*Account); ok {
@@ -25,11 +22,4 @@ func (v *ServerConfig) HasAccount(username, password string) bool {
 		return false
 	}
 	return storedPassed == password
-}
-
-func (v *ServerConfig) GetNetAddress() net.Address {
-	if v.Address == nil {
-		return net.LocalHostIP
-	}
-	return v.Address.AsAddress()
 }
