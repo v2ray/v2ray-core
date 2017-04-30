@@ -20,6 +20,13 @@ func BytesToUint32(value []byte) uint32 {
 		uint32(value[3])
 }
 
+func BytesToInt(value []byte) int {
+	return int(value[0])<<24 |
+		int(value[1])<<16 |
+		int(value[2])<<8 |
+		int(value[3])
+}
+
 // BytesToInt64 deserializes a byte array to an int64 in big endian order. The byte array must have at least 8 elements.
 func BytesToInt64(value []byte) int64 {
 	return int64(value[0])<<56 |

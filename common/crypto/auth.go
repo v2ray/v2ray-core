@@ -60,6 +60,13 @@ func (v *AEADAuthenticator) Seal(dst, plainText []byte) ([]byte, error) {
 	return v.AEAD.Seal(dst, iv, plainText, additionalData), nil
 }
 
+type StreamMode int
+
+const (
+	ModeStream StreamMode = iota
+	ModePacket
+)
+
 type AuthenticationReader struct {
 	auth       Authenticator
 	buffer     *buf.Buffer
