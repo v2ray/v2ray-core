@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	effectiveSystemDialer SystemDialer
+	effectiveSystemDialer SystemDialer = DefaultSystemDialer{}
 )
 
 type SystemDialer interface {
@@ -19,7 +19,7 @@ type SystemDialer interface {
 type DefaultSystemDialer struct {
 }
 
-func (v *DefaultSystemDialer) Dial(ctx context.Context, src v2net.Address, dest v2net.Destination) (net.Conn, error) {
+func (DefaultSystemDialer) Dial(ctx context.Context, src v2net.Address, dest v2net.Destination) (net.Conn, error) {
 	dialer := &net.Dialer{
 		Timeout:   time.Second * 60,
 		DualStack: true,
@@ -64,11 +64,7 @@ func (v *SimpleSystemDialer) Dial(ctx context.Context, src v2net.Address, dest v
 // Caller must ensure there is no race condition.
 func UseAlternativeSystemDialer(dialer SystemDialer) {
 	if dialer == nil {
-		effectiveSystemDialer = &DefaultSystemDialer{}
+		effectiveSystemDialer = DefaultSystemDialer{}
 	}
 	effectiveSystemDialer = dialer
-}
-
-func init() {
-	UseAlternativeSystemDialer(nil)
 }
