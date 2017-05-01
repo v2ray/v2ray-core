@@ -6,6 +6,8 @@ import (
 
 	"golang.org/x/crypto/sha3"
 
+	"v2ray.com/core/common/crypto"
+	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 )
 
@@ -14,6 +16,26 @@ func Authenticate(b []byte) uint32 {
 	fnv1hash := fnv.New32a()
 	fnv1hash.Write(b)
 	return fnv1hash.Sum32()
+}
+
+type NoOpAuthenticator struct{}
+
+func (NoOpAuthenticator) NonceSize() int {
+	return 0
+}
+
+func (NoOpAuthenticator) Overhead() int {
+	return 0
+}
+
+// Seal implements AEAD.Seal().
+func (NoOpAuthenticator) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
+	return append(dst[:0], plaintext...)
+}
+
+// Open implements AEAD.Open().
+func (NoOpAuthenticator) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, error) {
+	return append(dst[:0], ciphertext...), nil
 }
 
 // FnvAuthenticator is an AEAD based on Fnv hash.
@@ -85,4 +107,12 @@ func (s *ShakeSizeParser) Decode(b []byte) (uint16, error) {
 func (s *ShakeSizeParser) Encode(size uint16, b []byte) []byte {
 	mask := s.next()
 	return serial.Uint16ToBytes(mask^size, b[:0])
+}
+
+func GetStreamMode(request *protocol.RequestHeader) crypto.StreamMode {
+	if request.Command == protocol.RequestCommandTCP {
+		return crypto.ModeStream
+	}
+
+	return crypto.ModePacket
 }

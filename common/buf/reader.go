@@ -20,14 +20,8 @@ func (r *BytesToBufferReader) Read() (MultiBuffer, error) {
 	}
 
 	mb := NewMultiBuffer()
-	p := r.buffer[:nBytes]
-	for len(p) > 0 {
-		b := New()
-		nBytes, _ := b.Write(p)
-		mb.Append(b)
-		p = p[nBytes:]
-	}
-	return mb, nil
+	mb.Write(r.buffer[:nBytes])
+  return mb, nil
 }
 
 type readerAdpater struct {

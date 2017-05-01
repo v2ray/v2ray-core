@@ -61,6 +61,21 @@ func (mb *MultiBuffer) Read(b []byte) (int, error) {
 	return totalBytes, nil
 }
 
+func (mb *MultiBuffer) Write(b []byte) {
+	n := len(*mb)
+	if n > 0 && !(*mb)[n-1].IsFull() {
+		nBytes, _ := (*mb)[n-1].Write(b)
+		b = b[nBytes:]
+	}
+
+	for len(b) > 0 {
+		bb := New()
+		nBytes, _ := bb.Write(b)
+		b = b[nBytes:]
+		mb.Append(bb)
+	}
+}
+
 // Len returns the total number of bytes in the MultiBuffer.
 func (mb MultiBuffer) Len() int {
 	size := 0
@@ -111,4 +126,13 @@ func (mb *MultiBuffer) SliceBySize(size int) MultiBuffer {
 	}
 	*mb = (*mb)[endIndex:]
 	return slice
+}
+
+func (mb *MultiBuffer) SplitFirst() *Buffer {
+	if len(*mb) == 0 {
+		return nil
+	}
+	b := (*mb)[0]
+	*mb = (*mb)[1:]
+	return b
 }

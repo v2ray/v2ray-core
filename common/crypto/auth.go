@@ -73,19 +73,21 @@ type AuthenticationReader struct {
 	reader     io.Reader
 	sizeParser ChunkSizeDecoder
 	size       int
+	mode       StreamMode
 }
 
 const (
 	readerBufferSize = 32 * 1024
 )
 
-func NewAuthenticationReader(auth Authenticator, sizeParser ChunkSizeDecoder, reader io.Reader) *AuthenticationReader {
+func NewAuthenticationReader(auth Authenticator, sizeParser ChunkSizeDecoder, reader io.Reader, mode StreamMode) *AuthenticationReader {
 	return &AuthenticationReader{
 		auth:       auth,
 		buffer:     buf.NewLocal(readerBufferSize),
 		reader:     reader,
 		sizeParser: sizeParser,
 		size:       -1,
+		mode:       mode,
 	}
 }
 
@@ -151,23 +153,36 @@ func (r *AuthenticationReader) Read() (buf.MultiBuffer, error) {
 	}
 
 	mb := buf.NewMultiBuffer()
-
-	appendBytes := func(b []byte) {
-		for len(b) > 0 {
-			buffer := buf.New()
-			n, _ := buffer.Write(b)
-			b = b[n:]
-			mb.Append(buffer)
+	if r.mode == ModeStream {
+		mb.Write(b)
+	} else {
+		var bb *buf.Buffer
+		if len(b) < buf.Size {
+			bb = buf.New()
+		} else {
+			bb = buf.NewLocal(len(b))
 		}
+		bb.Append(b)
+		mb.Append(bb)
 	}
-	appendBytes(b)
 
 	for r.buffer.Len() >= r.sizeParser.SizeBytes() {
 		b, err := r.readChunk(false)
 		if err != nil {
 			break
 		}
-		appendBytes(b)
+		if r.mode == ModeStream {
+			mb.Write(b)
+		} else {
+			var bb *buf.Buffer
+			if len(b) < buf.Size {
+				bb = buf.New()
+			} else {
+				bb = buf.NewLocal(len(b))
+			}
+			bb.Append(b)
+			mb.Append(bb)
+		}
 	}
 
 	return mb, nil
@@ -179,15 +194,17 @@ type AuthenticationWriter struct {
 	buffer     *buf.Buffer
 	writer     io.Writer
 	sizeParser ChunkSizeEncoder
+	mode       StreamMode
 }
 
-func NewAuthenticationWriter(auth Authenticator, sizeParser ChunkSizeEncoder, writer io.Writer) *AuthenticationWriter {
+func NewAuthenticationWriter(auth Authenticator, sizeParser ChunkSizeEncoder, writer io.Writer, mode StreamMode) *AuthenticationWriter {
 	return &AuthenticationWriter{
 		auth:       auth,
 		payload:    make([]byte, 1024),
 		buffer:     buf.NewLocal(readerBufferSize),
 		writer:     writer,
 		sizeParser: sizeParser,
+		mode:       mode,
 	}
 }
 
@@ -211,7 +228,7 @@ func (w *AuthenticationWriter) flush() error {
 	return err
 }
 
-func (w *AuthenticationWriter) Write(mb buf.MultiBuffer) error {
+func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
 	defer mb.Release()
 
 	for {
@@ -231,4 +248,40 @@ func (w *AuthenticationWriter) Write(mb buf.MultiBuffer) error {
 		return w.flush()
 	}
 	return nil
+}
+
+func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
+	defer mb.Release()
+
+	for {
+		b := mb.SplitFirst()
+		if b == nil {
+			b = buf.New()
+		}
+		if w.buffer.Len() > readerBufferSize-b.Len()-128 {
+			if err := w.flush(); err != nil {
+				b.Release()
+				return err
+			}
+		}
+		w.append(b.Bytes())
+		b.Release()
+		if mb.IsEmpty() {
+			break
+		}
+	}
+
+	if !w.buffer.IsEmpty() {
+		return w.flush()
+	}
+
+	return nil
+}
+
+func (w *AuthenticationWriter) Write(mb buf.MultiBuffer) error {
+	if w.mode == ModeStream {
+		return w.writeStream(mb)
+	}
+
+	return w.writePacket(mb)
 }
