@@ -1042,3 +1042,178 @@ func TestVMessGCMMux(t *testing.T) {
 
 	CloseAllServers()
 }
+
+func TestVMessGCMMuxUDP(t *testing.T) {
+	assert := assert.On(t)
+
+	tcpServer := tcp.Server{
+		MsgProcessor: xor,
+	}
+	dest, err := tcpServer.Start()
+	assert.Error(err).IsNil()
+	defer tcpServer.Close()
+
+	udpServer := udp.Server{
+		MsgProcessor: xor,
+	}
+	udpDest, err := udpServer.Start()
+	assert.Error(err).IsNil()
+	defer udpServer.Close()
+
+	userID := protocol.NewID(uuid.New())
+	serverPort := pickPort()
+	serverConfig := &core.Config{
+		Inbound: []*proxyman.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(serverPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&inbound.Config{
+					User: []*protocol.User{
+						{
+							Account: serial.ToTypedMessage(&vmess.Account{
+								Id:      userID.String(),
+								AlterId: 64,
+							}),
+						},
+					},
+				}),
+			},
+		},
+		Outbound: []*proxyman.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+		},
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
+	}
+
+	clientPort := pickPort()
+	clientUDPPort := pickPort()
+	clientConfig := &core.Config{
+		Inbound: []*proxyman.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(clientPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
+					Address: v2net.NewIPOrDomain(dest.Address),
+					Port:    uint32(dest.Port),
+					NetworkList: &v2net.NetworkList{
+						Network: []v2net.Network{v2net.Network_TCP},
+					},
+				}),
+			},
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(clientUDPPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
+					Address: v2net.NewIPOrDomain(udpDest.Address),
+					Port:    uint32(udpDest.Port),
+					NetworkList: &v2net.NetworkList{
+						Network: []v2net.Network{v2net.Network_UDP},
+					},
+				}),
+			},
+		},
+		Outbound: []*proxyman.OutboundHandlerConfig{
+			{
+				SenderSettings: serial.ToTypedMessage(&proxyman.SenderConfig{
+					MultiplexSettings: &proxyman.MultiplexingConfig{
+						Enabled:     true,
+						Concurrency: 4,
+					},
+				}),
+				ProxySettings: serial.ToTypedMessage(&outbound.Config{
+					Receiver: []*protocol.ServerEndpoint{
+						{
+							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vmess.Account{
+										Id:      userID.String(),
+										AlterId: 64,
+										SecuritySettings: &protocol.SecurityConfig{
+											Type: protocol.SecurityType_AES128_GCM,
+										},
+									}),
+								},
+							},
+						},
+					},
+				}),
+			},
+		},
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
+	}
+
+	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
+	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+
+	for range "abcd" {
+		var wg sync.WaitGroup
+		const nConnection = 16
+		wg.Add(nConnection * 2)
+		for i := 0; i < nConnection; i++ {
+			go func() {
+				conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
+					IP:   []byte{127, 0, 0, 1},
+					Port: int(clientPort),
+				})
+				assert.Error(err).IsNil()
+
+				payload := make([]byte, 10240)
+				rand.Read(payload)
+
+				nBytes, err := conn.Write([]byte(payload))
+				assert.Error(err).IsNil()
+				assert.Int(nBytes).Equals(len(payload))
+
+				response := readFrom(conn, time.Second*20, 10240)
+				assert.Bytes(response).Equals(xor([]byte(payload)))
+				assert.Error(conn.Close()).IsNil()
+				wg.Done()
+			}()
+		}
+		for i := 0; i < nConnection; i++ {
+			go func() {
+				conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
+					IP:   []byte{127, 0, 0, 1},
+					Port: int(clientUDPPort),
+				})
+				assert.Error(err).IsNil()
+
+				payload := make([]byte, 1024)
+				rand.Read(payload)
+
+				nBytes, err := conn.Write(payload)
+				assert.Error(err).IsNil()
+				assert.Int(nBytes).Equals(len(payload))
+
+				response := readFrom(conn, time.Second*5, 1024)
+				assert.Bytes(response).Equals(xor(payload))
+				assert.Error(conn.Close()).IsNil()
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+		time.Sleep(time.Second)
+	}
+
+	CloseAllServers()
+}
