@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/protocol"
 )
 
 type BytesGenerator interface {
@@ -60,34 +61,27 @@ func (v *AEADAuthenticator) Seal(dst, plainText []byte) ([]byte, error) {
 	return v.AEAD.Seal(dst, iv, plainText, additionalData), nil
 }
 
-type StreamMode int
-
-const (
-	ModeStream StreamMode = iota
-	ModePacket
-)
-
 type AuthenticationReader struct {
-	auth       Authenticator
-	buffer     *buf.Buffer
-	reader     io.Reader
-	sizeParser ChunkSizeDecoder
-	size       int
-	mode       StreamMode
+	auth         Authenticator
+	buffer       *buf.Buffer
+	reader       io.Reader
+	sizeParser   ChunkSizeDecoder
+	size         int
+	transferType protocol.TransferType
 }
 
 const (
 	readerBufferSize = 32 * 1024
 )
 
-func NewAuthenticationReader(auth Authenticator, sizeParser ChunkSizeDecoder, reader io.Reader, mode StreamMode) *AuthenticationReader {
+func NewAuthenticationReader(auth Authenticator, sizeParser ChunkSizeDecoder, reader io.Reader, transferType protocol.TransferType) *AuthenticationReader {
 	return &AuthenticationReader{
-		auth:       auth,
-		buffer:     buf.NewLocal(readerBufferSize),
-		reader:     reader,
-		sizeParser: sizeParser,
-		size:       -1,
-		mode:       mode,
+		auth:         auth,
+		buffer:       buf.NewLocal(readerBufferSize),
+		reader:       reader,
+		sizeParser:   sizeParser,
+		size:         -1,
+		transferType: transferType,
 	}
 }
 
@@ -153,7 +147,7 @@ func (r *AuthenticationReader) Read() (buf.MultiBuffer, error) {
 	}
 
 	mb := buf.NewMultiBuffer()
-	if r.mode == ModeStream {
+	if r.transferType == protocol.TransferTypeStream {
 		mb.Write(b)
 	} else {
 		var bb *buf.Buffer
@@ -171,7 +165,7 @@ func (r *AuthenticationReader) Read() (buf.MultiBuffer, error) {
 		if err != nil {
 			break
 		}
-		if r.mode == ModeStream {
+		if r.transferType == protocol.TransferTypeStream {
 			mb.Write(b)
 		} else {
 			var bb *buf.Buffer
@@ -189,22 +183,22 @@ func (r *AuthenticationReader) Read() (buf.MultiBuffer, error) {
 }
 
 type AuthenticationWriter struct {
-	auth       Authenticator
-	payload    []byte
-	buffer     *buf.Buffer
-	writer     io.Writer
-	sizeParser ChunkSizeEncoder
-	mode       StreamMode
+	auth         Authenticator
+	payload      []byte
+	buffer       *buf.Buffer
+	writer       io.Writer
+	sizeParser   ChunkSizeEncoder
+	transferType protocol.TransferType
 }
 
-func NewAuthenticationWriter(auth Authenticator, sizeParser ChunkSizeEncoder, writer io.Writer, mode StreamMode) *AuthenticationWriter {
+func NewAuthenticationWriter(auth Authenticator, sizeParser ChunkSizeEncoder, writer io.Writer, transferType protocol.TransferType) *AuthenticationWriter {
 	return &AuthenticationWriter{
-		auth:       auth,
-		payload:    make([]byte, 1024),
-		buffer:     buf.NewLocal(readerBufferSize),
-		writer:     writer,
-		sizeParser: sizeParser,
-		mode:       mode,
+		auth:         auth,
+		payload:      make([]byte, 1024),
+		buffer:       buf.NewLocal(readerBufferSize),
+		writer:       writer,
+		sizeParser:   sizeParser,
+		transferType: transferType,
 	}
 }
 
@@ -279,7 +273,7 @@ func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
 }
 
 func (w *AuthenticationWriter) Write(mb buf.MultiBuffer) error {
-	if w.mode == ModeStream {
+	if w.transferType == protocol.TransferTypeStream {
 		return w.writeStream(mb)
 	}
 

@@ -1,8 +1,11 @@
 package mux
 
 import (
+	"io"
 	"sync"
 
+	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/transport/ray"
 )
 
@@ -119,6 +122,7 @@ type Session struct {
 	ID             uint16
 	uplinkClosed   bool
 	downlinkClosed bool
+	transferType   protocol.TransferType
 }
 
 func (s *Session) CloseUplink() {
@@ -141,4 +145,11 @@ func (s *Session) CloseDownlink() {
 	if allDone {
 		s.parent.Remove(s.ID)
 	}
+}
+
+func (s *Session) NewReader(reader io.Reader) buf.Reader {
+	if s.transferType == protocol.TransferTypeStream {
+		return NewStreamReader(reader)
+	}
+	return NewPacketReader(reader)
 }

@@ -6,8 +6,6 @@ import (
 
 	"golang.org/x/crypto/sha3"
 
-	"v2ray.com/core/common/crypto"
-	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 )
 
@@ -107,12 +105,4 @@ func (s *ShakeSizeParser) Decode(b []byte) (uint16, error) {
 func (s *ShakeSizeParser) Encode(size uint16, b []byte) []byte {
 	mask := s.next()
 	return serial.Uint16ToBytes(mask^size, b[:0])
-}
-
-func GetStreamMode(request *protocol.RequestHeader) crypto.StreamMode {
-	if request.Command == protocol.RequestCommandTCP {
-		return crypto.ModeStream
-	}
-
-	return crypto.ModePacket
 }

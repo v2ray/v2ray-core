@@ -9,6 +9,7 @@ import (
 
 	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/common/crypto"
+	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/testing/assert"
 )
 
@@ -39,7 +40,7 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 			Content: iv,
 		},
 		AdditionalDataGenerator: &NoOpBytesGenerator{},
-	}, PlainChunkSizeParser{}, cache, ModeStream)
+	}, PlainChunkSizeParser{}, cache, protocol.TransferTypeStream)
 
 	assert.Error(writer.Write(buf.NewMultiBufferValue(payload))).IsNil()
 	assert.Int(cache.Len()).Equals(83360)
@@ -52,7 +53,7 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 			Content: iv,
 		},
 		AdditionalDataGenerator: &NoOpBytesGenerator{},
-	}, PlainChunkSizeParser{}, cache, ModeStream)
+	}, PlainChunkSizeParser{}, cache, protocol.TransferTypeStream)
 
 	mb := buf.NewMultiBuffer()
 
@@ -92,7 +93,7 @@ func TestAuthenticationReaderWriterPacket(t *testing.T) {
 			Content: iv,
 		},
 		AdditionalDataGenerator: &NoOpBytesGenerator{},
-	}, PlainChunkSizeParser{}, cache, ModePacket)
+	}, PlainChunkSizeParser{}, cache, protocol.TransferTypePacket)
 
 	payload := buf.NewMultiBuffer()
 	pb1 := buf.New()
@@ -114,7 +115,7 @@ func TestAuthenticationReaderWriterPacket(t *testing.T) {
 			Content: iv,
 		},
 		AdditionalDataGenerator: &NoOpBytesGenerator{},
-	}, PlainChunkSizeParser{}, cache, ModePacket)
+	}, PlainChunkSizeParser{}, cache, protocol.TransferTypePacket)
 
 	mb, err := reader.Read()
 	assert.Error(err).IsNil()

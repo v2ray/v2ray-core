@@ -7,57 +7,93 @@ import (
 	"v2ray.com/core/common/serial"
 )
 
-type Reader struct {
+type MetadataReader struct {
+	reader io.Reader
+	buffer []byte
+}
+
+func NewMetadataReader(reader io.Reader) *MetadataReader {
+	return &MetadataReader{
+		reader: reader,
+		buffer: make([]byte, 1024),
+	}
+}
+
+func (r *MetadataReader) Read() (*FrameMetadata, error) {
+	metaLen, err := serial.ReadUint16(r.reader)
+	if err != nil {
+		return nil, err
+	}
+	if metaLen > 512 {
+		return nil, newError("invalid metalen ", metaLen).AtWarning()
+	}
+
+	if _, err := io.ReadFull(r.reader, r.buffer[:metaLen]); err != nil {
+		return nil, err
+	}
+	return ReadFrameFrom(r.buffer)
+}
+
+type PacketReader struct {
+	reader io.Reader
+	eof    bool
+}
+
+func NewPacketReader(reader io.Reader) *PacketReader {
+	return &PacketReader{
+		reader: reader,
+		eof:    false,
+	}
+}
+
+func (r *PacketReader) Read() (buf.MultiBuffer, error) {
+	if r.eof {
+		return nil, io.EOF
+	}
+
+	size, err := serial.ReadUint16(r.reader)
+	if err != nil {
+		return nil, err
+	}
+
+	var b *buf.Buffer
+	if size <= buf.Size {
+		b = buf.New()
+	} else {
+		b = buf.NewLocal(int(size))
+	}
+	if err := b.AppendSupplier(buf.ReadFullFrom(r.reader, int(size))); err != nil {
+		b.Release()
+		return nil, err
+	}
+	r.eof = true
+	return buf.NewMultiBufferValue(b), nil
+}
+
+type StreamReader struct {
 	reader   io.Reader
-	buffer   *buf.Buffer
 	leftOver int
 }
 
-func NewReader(reader buf.Reader) *Reader {
-	return &Reader{
-		reader:   buf.ToBytesReader(reader),
-		buffer:   buf.NewLocal(1024),
+func NewStreamReader(reader io.Reader) *StreamReader {
+	return &StreamReader{
+		reader:   reader,
 		leftOver: -1,
 	}
 }
 
-func (r *Reader) ReadMetadata() (*FrameMetadata, error) {
-	r.leftOver = -1
-
-	b := r.buffer
-	b.Clear()
-
-	if err := b.AppendSupplier(buf.ReadFullFrom(r.reader, 2)); err != nil {
-		return nil, err
-	}
-	metaLen := serial.BytesToUint16(b.Bytes())
-	if metaLen > 512 {
-		return nil, newError("invalid metalen ", metaLen).AtWarning()
-	}
-	b.Clear()
-	if err := b.AppendSupplier(buf.ReadFullFrom(r.reader, int(metaLen))); err != nil {
-		return nil, err
-	}
-	return ReadFrameFrom(b.Bytes())
-}
-
-func (r *Reader) readSize() error {
-	if err := r.buffer.Reset(buf.ReadFullFrom(r.reader, 2)); err != nil {
-		return err
-	}
-	r.leftOver = int(serial.BytesToUint16(r.buffer.Bytes()))
-	return nil
-}
-
-func (r *Reader) Read() (buf.MultiBuffer, error) {
+func (r *StreamReader) Read() (buf.MultiBuffer, error) {
 	if r.leftOver == 0 {
 		r.leftOver = -1
 		return nil, io.EOF
 	}
+
 	if r.leftOver == -1 {
-		if err := r.readSize(); err != nil {
+		size, err := serial.ReadUint16(r.reader)
+		if err != nil {
 			return nil, err
 		}
+		r.leftOver = int(size)
 	}
 
 	mb := buf.NewMultiBuffer()
@@ -79,6 +115,5 @@ func (r *Reader) Read() (buf.MultiBuffer, error) {
 			break
 		}
 	}
-
 	return mb, nil
 }
