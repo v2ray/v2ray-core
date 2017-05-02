@@ -37,7 +37,7 @@ type ChunkStreamReader struct {
 
 	buffer       []byte
 	leftOver     buf.MultiBuffer
-	leftOverSize uint16
+	leftOverSize int
 }
 
 func NewChunkStreamReader(sizeDecoder ChunkSizeDecoder, reader io.Reader) *ChunkStreamReader {
@@ -50,6 +50,7 @@ func NewChunkStreamReader(sizeDecoder ChunkSizeDecoder, reader io.Reader) *Chunk
 
 func (r *ChunkStreamReader) readAtLeast(size int) error {
 	mb := r.leftOver
+	r.leftOver = nil
 	for mb.Len() < size {
 		extra, err := r.reader.Read()
 		if err != nil {
@@ -74,7 +75,7 @@ func (r *ChunkStreamReader) readSize() (uint16, error) {
 }
 
 func (r *ChunkStreamReader) Read() (buf.MultiBuffer, error) {
-	size := int(r.leftOverSize)
+	size := r.leftOverSize
 	if size == 0 {
 		nextSize, err := r.readSize()
 		if err != nil {
@@ -94,7 +95,7 @@ func (r *ChunkStreamReader) Read() (buf.MultiBuffer, error) {
 
 	if size >= r.leftOver.Len() {
 		mb := r.leftOver
-		r.leftOverSize = uint16(size - r.leftOver.Len())
+		r.leftOverSize = size - r.leftOver.Len()
 		r.leftOver = nil
 		return mb, nil
 	}
