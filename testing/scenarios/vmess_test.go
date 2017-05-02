@@ -1198,15 +1198,26 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 				})
 				assert.Error(err).IsNil()
 
+				conn.SetDeadline(time.Now().Add(time.Second * 10))
+
 				payload := make([]byte, 1024)
 				rand.Read(payload)
 
-				nBytes, err := conn.Write(payload)
-				assert.Error(err).IsNil()
-				assert.Int(nBytes).Equals(len(payload))
+				for j := 0; j < 10; j++ {
+					nBytes, _, err := conn.WriteMsgUDP(payload, nil, nil)
+					assert.Error(err).IsNil()
+					assert.Int(nBytes).Equals(len(payload))
+				}
 
-				response := readFrom(conn, time.Second*5, 1024)
-				assert.Bytes(response).Equals(xor(payload))
+				response := make([]byte, 1024)
+				oob := make([]byte, 16)
+				for j := 0; j < 10; j++ {
+					nBytes, _, _, _, err := conn.ReadMsgUDP(response, oob)
+					assert.Error(err).IsNil()
+					assert.Int(nBytes).Equals(1024)
+					assert.Bytes(response).Equals(xor(payload))
+				}
+
 				assert.Error(conn.Close()).IsNil()
 				wg.Done()
 			}()

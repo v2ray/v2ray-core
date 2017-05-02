@@ -84,9 +84,14 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
-		v2writer := buf.NewWriter(conn)
+		var writer buf.Writer
+		if network == net.Network_TCP {
+			writer = buf.NewWriter(conn)
+		} else {
+			writer = buf.NewSequentialWriter(conn)
+		}
 
-		if err := buf.Copy(inboundRay.InboundOutput(), v2writer, buf.UpdateActivity(timer)); err != nil {
+		if err := buf.Copy(inboundRay.InboundOutput(), writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport response").Base(err)
 		}
 		return nil

@@ -133,11 +133,12 @@ func (m *Client) monitor() {
 
 func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
 	dest, _ := proxy.TargetFromContext(ctx)
-	writer := &Writer{
-		dest:   dest,
-		id:     s.ID,
-		writer: output,
+	transferType := protocol.TransferTypeStream
+	if dest.Network == net.Network_UDP {
+		transferType = protocol.TransferTypePacket
 	}
+	s.transferType = transferType
+	writer := NewWriter(s.ID, dest, output, transferType)
 	defer writer.Close()
 	defer s.CloseUplink()
 
