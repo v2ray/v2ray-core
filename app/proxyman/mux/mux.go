@@ -140,7 +140,7 @@ func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
 	s.transferType = transferType
 	writer := NewWriter(s.ID, dest, output, transferType)
 	defer writer.Close()
-	defer s.CloseUplink()
+	defer s.Close()
 
 	log.Trace(newError("dispatching request to ", dest))
 	data, _ := s.input.ReadTimeout(time.Millisecond * 500)
@@ -207,8 +207,7 @@ func (m *Client) handleStatusKeep(meta *FrameMetadata, reader io.Reader) error {
 
 func (m *Client) handleStatusEnd(meta *FrameMetadata, reader io.Reader) error {
 	if s, found := m.sessionManager.Get(meta.SessionID); found {
-		s.CloseDownlink()
-		s.output.Close()
+		s.Close()
 	}
 	if meta.Option.Has(OptionData) {
 		return drain(reader)
@@ -298,7 +297,7 @@ func handle(ctx context.Context, s *Session, output buf.Writer) {
 		log.Trace(newError("session ", s.ID, " ends: ").Base(err))
 	}
 	writer.Close()
-	s.CloseDownlink()
+	s.Close()
 }
 
 func (w *ServerWorker) handleStatusKeepAlive(meta *FrameMetadata, reader io.Reader) error {
@@ -347,8 +346,7 @@ func (w *ServerWorker) handleStatusKeep(meta *FrameMetadata, reader io.Reader) e
 
 func (w *ServerWorker) handleStatusEnd(meta *FrameMetadata, reader io.Reader) error {
 	if s, found := w.sessionManager.Get(meta.SessionID); found {
-		s.CloseUplink()
-		s.output.Close()
+		s.Close()
 	}
 	if meta.Option.Has(OptionData) {
 		return drain(reader)
