@@ -30,6 +30,18 @@ func pickPort() v2net.Port {
 	return v2net.Port(addr.Port)
 }
 
+func pickUDPPort() v2net.Port {
+	conn, err := net.ListenUDP("udp4", &net.UDPAddr{
+		IP:   v2net.LocalHostIP.IP(),
+		Port: 0,
+	})
+	common.Must(err)
+	defer conn.Close()
+
+	addr := conn.LocalAddr().(*net.UDPAddr)
+	return v2net.Port(addr.Port)
+}
+
 func xor(b []byte) []byte {
 	r := make([]byte, len(b))
 	for i, v := range b {

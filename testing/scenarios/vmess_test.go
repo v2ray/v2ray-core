@@ -1095,7 +1095,7 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 	}
 
 	clientPort := pickPort()
-	clientUDPPort := pickPort()
+	clientUDPPort := pickUDPPort()
 	clientConfig := &core.Config{
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
@@ -1203,7 +1203,7 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 				payload := make([]byte, 1024)
 				rand.Read(payload)
 
-				for j := 0; j < 10; j++ {
+				for j := 0; j < 5; j++ {
 					nBytes, _, err := conn.WriteMsgUDP(payload, nil, nil)
 					assert.Error(err).IsNil()
 					assert.Int(nBytes).Equals(len(payload))
@@ -1211,7 +1211,7 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 
 				response := make([]byte, 1024)
 				oob := make([]byte, 16)
-				for j := 0; j < 10; j++ {
+				for j := 0; j < 5; j++ {
 					nBytes, _, _, _, err := conn.ReadMsgUDP(response, oob)
 					assert.Error(err).IsNil()
 					assert.Int(nBytes).Equals(1024)
