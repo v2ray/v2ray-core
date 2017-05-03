@@ -778,12 +778,12 @@ func TestVMessKCP(t *testing.T) {
 			payload := make([]byte, 10240*1024)
 			rand.Read(payload)
 
-			nBytes, err := conn.Write([]byte(payload))
+			nBytes, err := conn.Write(payload)
 			assert.Error(err).IsNil()
 			assert.Int(nBytes).Equals(len(payload))
 
 			response := readFrom(conn, time.Minute, 10240*1024)
-			assert.Bytes(response).Equals(xor([]byte(payload)))
+			assert.Bytes(response).Equals(xor(payload))
 			assert.Error(conn.Close()).IsNil()
 			wg.Done()
 		}()
@@ -899,12 +899,12 @@ func TestVMessIPv6(t *testing.T) {
 	payload := make([]byte, 1024)
 	rand.Read(payload)
 
-	nBytes, err := conn.Write([]byte(payload))
+	nBytes, err := conn.Write(payload)
 	assert.Error(err).IsNil()
 	assert.Int(nBytes).Equals(len(payload))
 
 	response := readFrom(conn, time.Second*20, 1024)
-	assert.Bytes(response).Equals(xor([]byte(payload)))
+	assert.Bytes(response).Equals(xor(payload))
 	assert.Error(conn.Close()).IsNil()
 
 	CloseAllServers()
@@ -1026,12 +1026,14 @@ func TestVMessGCMMux(t *testing.T) {
 				payload := make([]byte, 10240)
 				rand.Read(payload)
 
-				nBytes, err := conn.Write([]byte(payload))
+				xorpayload := xor(payload)
+
+				nBytes, err := conn.Write(payload)
 				assert.Error(err).IsNil()
 				assert.Int(nBytes).Equals(len(payload))
 
 				response := readFrom(conn, time.Second*20, 10240)
-				assert.Bytes(response).Equals(xor([]byte(payload)))
+				assert.Bytes(response).Equals(xorpayload)
 				assert.Error(conn.Close()).IsNil()
 				wg.Done()
 			}()
