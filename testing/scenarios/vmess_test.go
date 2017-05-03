@@ -1180,12 +1180,14 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 				payload := make([]byte, 10240)
 				rand.Read(payload)
 
-				nBytes, err := conn.Write([]byte(payload))
+				xorpayload := xor(payload)
+
+				nBytes, err := conn.Write(payload)
 				assert.Error(err).IsNil()
 				assert.Int(nBytes).Equals(len(payload))
 
 				response := readFrom(conn, time.Second*20, 10240)
-				assert.Bytes(response).Equals(xor([]byte(payload)))
+				assert.Bytes(response).Equals(xorpayload)
 				assert.Error(conn.Close()).IsNil()
 				wg.Done()
 			}()
@@ -1203,6 +1205,8 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 				payload := make([]byte, 1024)
 				rand.Read(payload)
 
+				xorpayload := xor(payload)
+
 				for j := 0; j < 5; j++ {
 					nBytes, _, err := conn.WriteMsgUDP(payload, nil, nil)
 					assert.Error(err).IsNil()
@@ -1215,7 +1219,7 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 					nBytes, _, _, _, err := conn.ReadMsgUDP(response, oob)
 					assert.Error(err).IsNil()
 					assert.Int(nBytes).Equals(1024)
-					assert.Bytes(response).Equals(xor(payload))
+					assert.Bytes(response).Equals(xorpayload)
 				}
 
 				assert.Error(conn.Close()).IsNil()
