@@ -644,14 +644,14 @@ func TestVMessNone(t *testing.T) {
 			})
 			assert.Error(err).IsNil()
 
-			payload := make([]byte, 10240*1024)
+			payload := make([]byte, 1024*1024)
 			rand.Read(payload)
 
 			nBytes, err := conn.Write(payload)
 			assert.Error(err).IsNil()
 			assert.Int(nBytes).Equals(len(payload))
 
-			response := readFrom(conn, time.Second*20, 10240*1024)
+			response := readFrom(conn, time.Second*20, 1024*1024)
 			assert.Bytes(response).Equals(xor(payload))
 			assert.Error(conn.Close()).IsNil()
 			wg.Done()
