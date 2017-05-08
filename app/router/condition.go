@@ -65,17 +65,13 @@ func (v *AnyCondition) Len() int {
 	return len(*v)
 }
 
-type PlainDomainMatcher struct {
-	pattern string
+type PlainDomainMatcher string
+
+func NewPlainDomainMatcher(pattern string) Condition {
+	return PlainDomainMatcher(pattern)
 }
 
-func NewPlainDomainMatcher(pattern string) *PlainDomainMatcher {
-	return &PlainDomainMatcher{
-		pattern: pattern,
-	}
-}
-
-func (v *PlainDomainMatcher) Apply(ctx context.Context) bool {
+func (v PlainDomainMatcher) Apply(ctx context.Context) bool {
 	dest, ok := proxy.TargetFromContext(ctx)
 	if !ok {
 		return false
@@ -85,7 +81,7 @@ func (v *PlainDomainMatcher) Apply(ctx context.Context) bool {
 		return false
 	}
 	domain := dest.Address.Domain()
-	return strings.Contains(domain, v.pattern)
+	return strings.Contains(domain, string(v))
 }
 
 type RegexpDomainMatcher struct {
@@ -114,17 +110,13 @@ func (v *RegexpDomainMatcher) Apply(ctx context.Context) bool {
 	return v.pattern.MatchString(strings.ToLower(domain))
 }
 
-type SubDomainMatcher struct {
-	pattern string
+type SubDomainMatcher string
+
+func NewSubDomainMatcher(p string) Condition {
+	return SubDomainMatcher(p)
 }
 
-func NewSubDomainMatcher(p string) *SubDomainMatcher {
-	return &SubDomainMatcher{
-		pattern: p,
-	}
-}
-
-func (m *SubDomainMatcher) Apply(ctx context.Context) bool {
+func (m SubDomainMatcher) Apply(ctx context.Context) bool {
 	dest, ok := proxy.TargetFromContext(ctx)
 	if !ok {
 		return false
@@ -133,10 +125,11 @@ func (m *SubDomainMatcher) Apply(ctx context.Context) bool {
 		return false
 	}
 	domain := dest.Address.Domain()
-	if !strings.HasSuffix(domain, m.pattern) {
+	pattern := string(m)
+	if !strings.HasSuffix(domain, pattern) {
 		return false
 	}
-	return len(domain) == len(m.pattern) || domain[len(domain)-len(m.pattern)-1] == '.'
+	return len(domain) == len(pattern) || domain[len(domain)-len(pattern)-1] == '.'
 }
 
 type CIDRMatcher struct {
