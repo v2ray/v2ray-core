@@ -22,14 +22,19 @@ func (rr *RoutingRule) BuildCondition() (Condition, error) {
 	if len(rr.Domain) > 0 {
 		anyCond := NewAnyCondition()
 		for _, domain := range rr.Domain {
-			if domain.Type == Domain_Plain {
+			switch domain.Type {
+			case Domain_Plain:
 				anyCond.Add(NewPlainDomainMatcher(domain.Value))
-			} else {
+			case Domain_Regex:
 				matcher, err := NewRegexpDomainMatcher(domain.Value)
 				if err != nil {
 					return nil, err
 				}
 				anyCond.Add(matcher)
+			case Domain_Domain:
+				anyCond.Add(NewSubDomainMatcher(domain.Value))
+			default:
+				panic("Unknown domain type.")
 			}
 		}
 		conds.Add(anyCond)

@@ -114,6 +114,31 @@ func (v *RegexpDomainMatcher) Apply(ctx context.Context) bool {
 	return v.pattern.MatchString(strings.ToLower(domain))
 }
 
+type SubDomainMatcher struct {
+	pattern string
+}
+
+func NewSubDomainMatcher(p string) *SubDomainMatcher {
+	return &SubDomainMatcher{
+		pattern: p,
+	}
+}
+
+func (m *SubDomainMatcher) Apply(ctx context.Context) bool {
+	dest, ok := proxy.TargetFromContext(ctx)
+	if !ok {
+		return false
+	}
+	if !dest.Address.Family().IsDomain() {
+		return false
+	}
+	domain := dest.Address.Domain()
+	if !strings.HasSuffix(domain, m.pattern) {
+		return false
+	}
+	return len(domain) == len(m.pattern) || domain[len(domain)-len(m.pattern)-1] == '.'
+}
+
 type CIDRMatcher struct {
 	cidr     *net.IPNet
 	onSource bool
