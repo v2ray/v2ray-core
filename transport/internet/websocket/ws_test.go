@@ -16,29 +16,26 @@ import (
 
 func Test_listenWSAndDial(t *testing.T) {
 	assert := assert.On(t)
-	conns := make(chan internet.Connection, 16)
 	listen, err := ListenWS(internet.ContextWithTransportSettings(context.Background(), &Config{
 		Path: "ws",
-	}), v2net.DomainAddress("localhost"), 13146, conns)
+	}), v2net.DomainAddress("localhost"), 13146, func(ctx context.Context, conn internet.Connection) bool {
+		go func(c internet.Connection) {
+			defer c.Close()
+
+			var b [1024]byte
+			n, err := c.Read(b[:])
+			//assert.Error(err).IsNil()
+			if err != nil {
+				return
+			}
+			assert.Bool(bytes.HasPrefix(b[:n], []byte("Test connection"))).IsTrue()
+
+			_, err = c.Write([]byte("Response"))
+			assert.Error(err).IsNil()
+		}(conn)
+		return true
+	})
 	assert.Error(err).IsNil()
-	go func() {
-		for conn := range conns {
-			go func(c internet.Connection) {
-				defer c.Close()
-
-				var b [1024]byte
-				n, err := c.Read(b[:])
-				//assert.Error(err).IsNil()
-				if err != nil {
-					return
-				}
-				assert.Bool(bytes.HasPrefix(b[:n], []byte("Test connection"))).IsTrue()
-
-				_, err = c.Write([]byte("Response"))
-				assert.Error(err).IsNil()
-			}(conn)
-		}
-	}()
 
 	ctx := internet.ContextWithTransportSettings(context.Background(), &Config{Path: "ws"})
 	conn, err := Dial(ctx, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13146))
@@ -73,8 +70,6 @@ func Test_listenWSAndDial(t *testing.T) {
 	assert.Error(conn.Close()).IsNil()
 
 	assert.Error(listen.Close()).IsNil()
-
-	close(conns)
 }
 
 func Test_listenWSAndDial_TLS(t *testing.T) {
@@ -91,14 +86,14 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 		AllowInsecure: true,
 		Certificate:   []*v2tls.Certificate{tlsgen.GenerateCertificateForTest()},
 	})
-	conns := make(chan internet.Connection, 16)
-	listen, err := ListenWS(ctx, v2net.DomainAddress("localhost"), 13143, conns)
+	listen, err := ListenWS(ctx, v2net.DomainAddress("localhost"), 13143, func(ctx context.Context, conn internet.Connection) bool {
+		go func() {
+			conn.Close()
+		}()
+		return true
+	})
 	assert.Error(err).IsNil()
-	go func() {
-		conn := <-conns
-		conn.Close()
-		listen.Close()
-	}()
+	defer listen.Close()
 
 	conn, err := Dial(ctx, v2net.TCPDestination(v2net.DomainAddress("localhost"), 13143))
 	assert.Error(err).IsNil()

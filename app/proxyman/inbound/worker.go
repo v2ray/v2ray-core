@@ -278,11 +278,14 @@ func (w *udpWorker) Close() {
 }
 
 func (w *udpWorker) monitor() {
+	timer := time.NewTicker(time.Second * 16)
+	defer timer.Stop()
+
 	for {
 		select {
 		case <-w.ctx.Done():
 			return
-		case <-time.After(time.Second * 16):
+		case <-timer.C:
 			nowSec := time.Now().Unix()
 			w.Lock()
 			for addr, conn := range w.activeConn {

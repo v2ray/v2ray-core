@@ -4,7 +4,6 @@ import (
 	"context"
 	gotls "crypto/tls"
 	"net"
-	"time"
 
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
@@ -20,10 +19,10 @@ type TCPListener struct {
 	tlsConfig  *gotls.Config
 	authConfig internet.ConnectionAuthenticator
 	config     *Config
-	conns      chan<- internet.Connection
+	addConn    internet.AddConnection
 }
 
-func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, conns chan<- internet.Connection) (internet.Listener, error) {
+func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, addConn internet.AddConnection) (internet.Listener, error) {
 	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   address.IP(),
 		Port: int(port),
@@ -39,7 +38,7 @@ func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, conn
 		ctx:      ctx,
 		listener: listener,
 		config:   tcpSettings,
-		conns:    conns,
+		addConn:  addConn,
 	}
 	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
 		tlsConfig, ok := securitySettings.(*tls.Config)
@@ -90,11 +89,7 @@ func (v *TCPListener) KeepAccepting() {
 			conn = v.authConfig.Server(conn)
 		}
 
-		select {
-		case v.conns <- internet.Connection(conn):
-		case <-time.After(time.Second * 5):
-			conn.Close()
-		}
+		v.addConn(context.Background(), internet.Connection(conn))
 	}
 }
 

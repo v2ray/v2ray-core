@@ -100,7 +100,7 @@ func (*Server) handleUDP() error {
 	// The TCP connection closes after v method returns. We need to wait until
 	// the client closes it.
 	// TODO: get notified from UDP part
-	<-time.After(5 * time.Minute)
+	time.Sleep(5 * time.Minute)
 
 	return nil
 }

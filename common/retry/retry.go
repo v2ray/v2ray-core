@@ -35,7 +35,7 @@ func (r *retryer) On(method func() error) error {
 			accumulatedError = append(accumulatedError, err)
 		}
 		delay := r.nextDelay()
-		<-time.After(time.Duration(delay) * time.Millisecond)
+		time.Sleep(time.Duration(delay) * time.Millisecond)
 		attempt++
 	}
 	return newError(accumulatedError).Base(ErrRetryFailed)

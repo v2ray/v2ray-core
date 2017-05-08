@@ -141,11 +141,14 @@ func (h *DynamicInboundHandler) refresh() error {
 }
 
 func (h *DynamicInboundHandler) monitor() {
+	timer := time.NewTicker(time.Minute * time.Duration(h.receiverConfig.AllocationStrategy.GetRefreshValue()))
+	defer timer.Stop()
+
 	for {
 		select {
 		case <-h.ctx.Done():
 			return
-		case <-time.After(time.Minute * time.Duration(h.receiverConfig.AllocationStrategy.GetRefreshValue())):
+		case <-timer.C:
 			h.refresh()
 		}
 	}

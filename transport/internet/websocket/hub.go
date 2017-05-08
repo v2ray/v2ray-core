@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
-	"time"
 
 	"github.com/gorilla/websocket"
 	"v2ray.com/core/app/log"
@@ -33,13 +32,7 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 		return
 	}
 
-	select {
-	case <-h.ln.ctx.Done():
-		conn.Close()
-	case h.ln.conns <- internet.Connection(conn):
-	case <-time.After(time.Second * 5):
-		conn.Close()
-	}
+	h.ln.addConn(h.ln.ctx, internet.Connection(conn))
 }
 
 type Listener struct {
@@ -48,17 +41,17 @@ type Listener struct {
 	listener  net.Listener
 	tlsConfig *tls.Config
 	config    *Config
-	conns     chan<- internet.Connection
+	addConn   internet.AddConnection
 }
 
-func ListenWS(ctx context.Context, address v2net.Address, port v2net.Port, conns chan<- internet.Connection) (internet.Listener, error) {
+func ListenWS(ctx context.Context, address v2net.Address, port v2net.Port, addConn internet.AddConnection) (internet.Listener, error) {
 	networkSettings := internet.TransportSettingsFromContext(ctx)
 	wsSettings := networkSettings.(*Config)
 
 	l := &Listener{
-		ctx:    ctx,
-		config: wsSettings,
-		conns:  conns,
+		ctx:     ctx,
+		config:  wsSettings,
+		addConn: addConn,
 	}
 	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
 		tlsConfig, ok := securitySettings.(*v2tls.Config)

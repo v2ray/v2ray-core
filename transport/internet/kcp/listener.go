@@ -81,10 +81,10 @@ type Listener struct {
 	reader    PacketReader
 	header    internet.PacketHeader
 	security  cipher.AEAD
-	conns     chan<- internet.Connection
+	addConn   internet.AddConnection
 }
 
-func NewListener(ctx context.Context, address v2net.Address, port v2net.Port, conns chan<- internet.Connection) (*Listener, error) {
+func NewListener(ctx context.Context, address v2net.Address, port v2net.Port, addConn internet.AddConnection) (*Listener, error) {
 	networkSettings := internet.TransportSettingsFromContext(ctx)
 	kcpSettings := networkSettings.(*Config)
 
@@ -106,7 +106,7 @@ func NewListener(ctx context.Context, address v2net.Address, port v2net.Port, co
 		sessions: make(map[ConnectionID]*Connection),
 		ctx:      ctx,
 		config:   kcpSettings,
-		conns:    conns,
+		addConn:  addConn,
 	}
 	securitySettings := internet.SecuritySettingsFromContext(ctx)
 	if securitySettings != nil {
@@ -190,10 +190,7 @@ func (v *Listener) OnReceive(payload *buf.Buffer, src v2net.Destination, origina
 			netConn = tlsConn
 		}
 
-		select {
-		case v.conns <- netConn:
-		case <-time.After(time.Second * 5):
-			conn.Close()
+		if !v.addConn(context.Background(), netConn) {
 			return
 		}
 		v.sessions[id] = conn
@@ -254,8 +251,8 @@ func (v *Writer) Close() error {
 	return nil
 }
 
-func ListenKCP(ctx context.Context, address v2net.Address, port v2net.Port, conns chan<- internet.Connection) (internet.Listener, error) {
-	return NewListener(ctx, address, port, conns)
+func ListenKCP(ctx context.Context, address v2net.Address, port v2net.Port, addConn internet.AddConnection) (internet.Listener, error) {
+	return NewListener(ctx, address, port, addConn)
 }
 
 func init() {

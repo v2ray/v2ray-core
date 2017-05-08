@@ -115,6 +115,9 @@ func (m *Client) Closed() bool {
 func (m *Client) monitor() {
 	defer m.manager.onClientFinish()
 
+	timer := time.NewTicker(time.Second * 16)
+	defer timer.Stop()
+
 	for {
 		select {
 		case <-m.ctx.Done():
@@ -122,7 +125,7 @@ func (m *Client) monitor() {
 			m.inboundRay.InboundInput().Close()
 			m.inboundRay.InboundOutput().CloseError()
 			return
-		case <-time.After(time.Second * 16):
+		case <-timer.C:
 			size := m.sessionManager.Size()
 			if size == 0 && m.sessionManager.CloseIfNoSession() {
 				m.cancel()
