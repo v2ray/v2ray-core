@@ -245,8 +245,14 @@ type UserMatcher struct {
 }
 
 func NewUserMatcher(users []string) *UserMatcher {
+	usersCopy := make([]string, 0, len(users))
+	for _, user := range users {
+		if len(user) > 0 {
+			usersCopy = append(usersCopy, user)
+		}
+	}
 	return &UserMatcher{
-		user: users,
+		user: usersCopy,
 	}
 }
 
@@ -268,8 +274,14 @@ type InboundTagMatcher struct {
 }
 
 func NewInboundTagMatcher(tags []string) *InboundTagMatcher {
+	tagsCopy := make([]string, 0, len(tags))
+	for _, tag := range tags {
+		if len(tag) > 0 {
+			tagsCopy = append(tagsCopy, tag)
+		}
+	}
 	return &InboundTagMatcher{
-		tags: tags,
+		tags: tagsCopy,
 	}
 }
 
