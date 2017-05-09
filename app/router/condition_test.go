@@ -38,6 +38,11 @@ func TestSubDomainMatcher(t *testing.T) {
 			input:   proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("2ray.com"), 80)),
 			output:  false,
 		},
+		{
+			pattern: "v2ray.com",
+			input:   proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("xv2ray.com"), 80)),
+			output:  false,
+		},
 	}
 	for _, test := range cases {
 		matcher := NewSubDomainMatcher(test.pattern)
