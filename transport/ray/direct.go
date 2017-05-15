@@ -3,6 +3,8 @@ package ray
 import (
 	"context"
 	"io"
+	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -38,9 +40,23 @@ func (v *directRay) InboundOutput() InputStream {
 	return v.Output
 }
 
+var streamSizeLimit uint64 = 20 * 1024 * 1024
+
+func init() {
+	const raySizeEnvKey = "v2ray.ray.buffer.size"
+	sizeStr := os.Getenv(raySizeEnvKey)
+	if len(sizeStr) > 0 {
+		customSize, err := strconv.ParseUint(sizeStr, 10, 32)
+		if err == nil {
+			streamSizeLimit = uint64(customSize) * 1024 * 1024
+		}
+	}
+}
+
 type Stream struct {
 	access sync.RWMutex
 	data   buf.MultiBuffer
+	size   uint64
 	ctx    context.Context
 	wakeup chan bool
 	close  bool
@@ -51,6 +67,7 @@ func NewStream(ctx context.Context) *Stream {
 	return &Stream{
 		ctx:    ctx,
 		wakeup: make(chan bool, 1),
+		size:   0,
 	}
 }
 
@@ -61,6 +78,7 @@ func (s *Stream) getData() (buf.MultiBuffer, error) {
 	if s.data != nil {
 		mb := s.data
 		s.data = nil
+		s.size = 0
 		return mb, nil
 	}
 
@@ -92,6 +110,7 @@ func (s *Stream) Read() (buf.MultiBuffer, error) {
 		}
 
 		if mb != nil {
+			s.wakeUp()
 			return mb, nil
 		}
 
@@ -111,6 +130,7 @@ func (s *Stream) ReadTimeout(timeout time.Duration) (buf.MultiBuffer, error) {
 		}
 
 		if mb != nil {
+			s.wakeUp()
 			return mb, nil
 		}
 
@@ -129,6 +149,16 @@ func (s *Stream) Write(data buf.MultiBuffer) error {
 		return nil
 	}
 
+L:
+	for streamSizeLimit > 0 && s.size >= streamSizeLimit {
+		select {
+		case <-s.ctx.Done():
+			return io.ErrClosedPipe
+		case <-s.wakeup:
+			break L
+		}
+	}
+
 	s.access.Lock()
 	defer s.access.Unlock()
 
@@ -142,6 +172,7 @@ func (s *Stream) Write(data buf.MultiBuffer) error {
 	} else {
 		s.data.AppendMulti(data)
 	}
+	s.size += uint64(data.Len())
 	s.wakeUp()
 
 	return nil
