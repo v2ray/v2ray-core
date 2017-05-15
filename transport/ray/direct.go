@@ -48,7 +48,7 @@ func init() {
 	if len(sizeStr) > 0 {
 		customSize, err := strconv.ParseUint(sizeStr, 10, 32)
 		if err == nil {
-			streamSizeLimit = uint64(customSize) * 1024 * 1024
+			streamSizeLimit = customSize * 1024 * 1024
 		}
 	}
 }
