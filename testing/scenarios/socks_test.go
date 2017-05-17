@@ -93,8 +93,8 @@ func TestSocksBridgeTCP(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 		IP:   []byte{127, 0, 0, 1},
@@ -113,7 +113,7 @@ func TestSocksBridgeTCP(t *testing.T) {
 	assert.Bytes(response[:nBytes]).Equals(xor([]byte(payload)))
 	assert.Error(conn.Close()).IsNil()
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestSocksBridageUDP(t *testing.T) {
@@ -190,8 +190,8 @@ func TestSocksBridageUDP(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
 		IP:   []byte{127, 0, 0, 1},
@@ -210,7 +210,7 @@ func TestSocksBridageUDP(t *testing.T) {
 	assert.Bytes(response[:nBytes]).Equals(xor([]byte(payload)))
 	assert.Error(conn.Close()).IsNil()
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestSocksConformance(t *testing.T) {
@@ -263,7 +263,8 @@ func TestSocksConformance(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig)
+	assert.Error(err).IsNil()
 
 	{
 		noAuthDialer, err := xproxy.SOCKS5("tcp", v2net.TCPDestination(v2net.LocalHostIP, noAuthPort).NetAddr(), nil, xproxy.Direct)
@@ -335,5 +336,5 @@ func TestSocksConformance(t *testing.T) {
 		assert.Error(conn.Close()).IsNil()
 	}
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }

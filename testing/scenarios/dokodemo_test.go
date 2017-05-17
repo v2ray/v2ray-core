@@ -96,8 +96,8 @@ func TestDokodemoTCP(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	for port := clientPort; port <= clientPort+clientPortRange; port++ {
 		conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
@@ -118,7 +118,7 @@ func TestDokodemoTCP(t *testing.T) {
 		assert.Error(conn.Close()).IsNil()
 	}
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestDokodemoUDP(t *testing.T) {
@@ -197,8 +197,8 @@ func TestDokodemoUDP(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	for port := clientPort; port <= clientPort+clientPortRange; port++ {
 		conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
@@ -219,5 +219,5 @@ func TestDokodemoUDP(t *testing.T) {
 		assert.Error(conn.Close()).IsNil()
 	}
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }

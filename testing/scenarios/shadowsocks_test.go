@@ -108,8 +108,8 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -136,7 +136,7 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 	}
 	wg.Wait()
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestShadowsocksAES128UDP(t *testing.T) {
@@ -227,8 +227,8 @@ func TestShadowsocksAES128UDP(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -255,7 +255,7 @@ func TestShadowsocksAES128UDP(t *testing.T) {
 	}
 	wg.Wait()
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestShadowsocksChacha20TCP(t *testing.T) {
@@ -345,8 +345,8 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -373,5 +373,5 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 	}
 	wg.Wait()
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }

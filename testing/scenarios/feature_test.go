@@ -1,13 +1,12 @@
 package scenarios
 
 import (
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
 	"testing"
 	"time"
-
-	"io/ioutil"
 
 	xproxy "golang.org/x/net/proxy"
 	"v2ray.com/core"
@@ -67,7 +66,8 @@ func TestPassiveConnection(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig)
+	assert.Error(err).IsNil()
 
 	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 		IP:   []byte{127, 0, 0, 1},
@@ -99,7 +99,7 @@ func TestPassiveConnection(t *testing.T) {
 
 	assert.Error(conn.Close()).IsNil()
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestProxy(t *testing.T) {
@@ -227,9 +227,8 @@ func TestProxy(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(proxyConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, proxyConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 		IP:   []byte{127, 0, 0, 1},
@@ -248,7 +247,7 @@ func TestProxy(t *testing.T) {
 	assert.Bytes(response[:nBytes]).Equals(xor([]byte(payload)))
 	assert.Error(conn.Close()).IsNil()
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestProxyOverKCP(t *testing.T) {
@@ -387,9 +386,8 @@ func TestProxyOverKCP(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(proxyConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, proxyConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 		IP:   []byte{127, 0, 0, 1},
@@ -408,7 +406,7 @@ func TestProxyOverKCP(t *testing.T) {
 	assert.Bytes(response[:nBytes]).Equals(xor([]byte(payload)))
 	assert.Error(conn.Close()).IsNil()
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestBlackhole(t *testing.T) {
@@ -481,7 +479,8 @@ func TestBlackhole(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig)
+	assert.Error(err).IsNil()
 
 	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 		IP:   []byte{127, 0, 0, 1},
@@ -505,7 +504,7 @@ func TestBlackhole(t *testing.T) {
 
 	assert.Error(conn.Close()).IsNil()
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestForward(t *testing.T) {
@@ -550,7 +549,8 @@ func TestForward(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig)
+	assert.Error(err).IsNil()
 
 	{
 		noAuthDialer, err := xproxy.SOCKS5("tcp", v2net.TCPDestination(v2net.LocalHostIP, serverPort).NetAddr(), nil, xproxy.Direct)
@@ -570,7 +570,7 @@ func TestForward(t *testing.T) {
 		assert.Error(conn.Close()).IsNil()
 	}
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestUDPConnection(t *testing.T) {
@@ -607,7 +607,8 @@ func TestUDPConnection(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(clientConfig)
+	assert.Error(err).IsNil()
 
 	{
 		conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
@@ -652,7 +653,7 @@ func TestUDPConnection(t *testing.T) {
 		assert.Error(conn.Close()).IsNil()
 	}
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestDomainSniffing(t *testing.T) {
@@ -724,7 +725,8 @@ func TestDomainSniffing(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig)
+	assert.Error(err).IsNil()
 
 	{
 		transport := &http.Transport{
@@ -744,5 +746,5 @@ func TestDomainSniffing(t *testing.T) {
 		assert.Error(resp.Write(ioutil.Discard)).IsNil()
 	}
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }

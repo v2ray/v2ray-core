@@ -61,31 +61,43 @@ func readFrom(conn net.Conn, timeout time.Duration, length int) []byte {
 	return b[:n]
 }
 
-func InitializeServerConfig(config *core.Config) error {
+func InitializeServerConfigs(configs ...*core.Config) ([]*exec.Cmd, error) {
+	servers := make([]*exec.Cmd, 0, 10)
+
+	for _, config := range configs {
+		server, err := InitializeServerConfig(config)
+		if err != nil {
+			CloseAllServers(servers)
+			return nil, err
+		}
+		servers = append(servers, server)
+	}
+
+	time.Sleep(time.Second * 2)
+
+	return servers, nil
+}
+
+func InitializeServerConfig(config *core.Config) (*exec.Cmd, error) {
 	err := BuildV2Ray()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	configBytes, err := proto.Marshal(config)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	proc := RunV2RayProtobuf(configBytes)
 
 	if err := proc.Start(); err != nil {
-		return err
+		return nil, err
 	}
 
-	time.Sleep(time.Second)
-
-	runningServers = append(runningServers, proc)
-
-	return nil
+	return proc, nil
 }
 
 var (
-	runningServers    = make([]*exec.Cmd, 0, 10)
 	testBinaryPath    string
 	testBinaryPathGen sync.Once
 )
@@ -114,14 +126,13 @@ func GetSourcePath() string {
 	return filepath.Join("v2ray.com", "core", "main")
 }
 
-func CloseAllServers() {
+func CloseAllServers(servers []*exec.Cmd) {
 	log.Trace(errors.New("Closing all servers."))
-	for _, server := range runningServers {
+	for _, server := range servers {
 		server.Process.Signal(os.Interrupt)
 	}
-	for _, server := range runningServers {
+	for _, server := range servers {
 		server.Process.Wait()
 	}
-	runningServers = make([]*exec.Cmd, 0, 10)
 	log.Trace(errors.New("All server closed."))
 }

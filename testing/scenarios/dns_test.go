@@ -80,7 +80,8 @@ func TestResolveIP(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig)
+	assert.Error(err).IsNil()
 
 	{
 		noAuthDialer, err := xproxy.SOCKS5("tcp", v2net.TCPDestination(v2net.LocalHostIP, serverPort).NetAddr(), nil, xproxy.Direct)
@@ -100,5 +101,5 @@ func TestResolveIP(t *testing.T) {
 		assert.Error(conn.Close()).IsNil()
 	}
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }

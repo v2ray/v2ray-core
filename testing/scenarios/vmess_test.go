@@ -135,8 +135,8 @@ func TestVMessDynamicPort(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	for i := 0; i < 10; i++ {
 		conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
@@ -157,7 +157,7 @@ func TestVMessDynamicPort(t *testing.T) {
 		assert.Error(conn.Close()).IsNil()
 	}
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestVMessGCM(t *testing.T) {
@@ -252,8 +252,8 @@ func TestVMessGCM(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -280,7 +280,7 @@ func TestVMessGCM(t *testing.T) {
 	}
 	wg.Wait()
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestVMessGCMUDP(t *testing.T) {
@@ -375,8 +375,8 @@ func TestVMessGCMUDP(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -413,7 +413,7 @@ func TestVMessGCMUDP(t *testing.T) {
 	}
 	wg.Wait()
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestVMessChacha20(t *testing.T) {
@@ -508,8 +508,8 @@ func TestVMessChacha20(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -536,7 +536,7 @@ func TestVMessChacha20(t *testing.T) {
 	}
 	wg.Wait()
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestVMessNone(t *testing.T) {
@@ -631,8 +631,8 @@ func TestVMessNone(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -659,7 +659,7 @@ func TestVMessNone(t *testing.T) {
 	}
 	wg.Wait()
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestVMessKCP(t *testing.T) {
@@ -673,7 +673,7 @@ func TestVMessKCP(t *testing.T) {
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
-	serverPort := pickPort()
+	serverPort := pickUDPPort()
 	serverConfig := &core.Config{
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
@@ -762,8 +762,8 @@ func TestVMessKCP(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	var wg sync.WaitGroup
 	for i := 0; i < 10; i++ {
@@ -790,7 +790,7 @@ func TestVMessKCP(t *testing.T) {
 	}
 	wg.Wait()
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestVMessIPv6(t *testing.T) {
@@ -887,8 +887,8 @@ func TestVMessIPv6(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 		IP:   v2net.LocalHostIPv6.IP(),
@@ -907,7 +907,7 @@ func TestVMessIPv6(t *testing.T) {
 	assert.Bytes(response).Equals(xor(payload))
 	assert.Error(conn.Close()).IsNil()
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestVMessGCMMux(t *testing.T) {
@@ -1008,8 +1008,8 @@ func TestVMessGCMMux(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	for range "abcd" {
 		var wg sync.WaitGroup
@@ -1042,7 +1042,7 @@ func TestVMessGCMMux(t *testing.T) {
 		time.Sleep(time.Second)
 	}
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestVMessGCMMuxUDP(t *testing.T) {
@@ -1164,8 +1164,8 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	for range "abcd" {
 		var wg sync.WaitGroup
@@ -1232,5 +1232,5 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 		time.Sleep(time.Second)
 	}
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }

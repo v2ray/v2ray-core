@@ -120,8 +120,8 @@ func TestHttpConnectionHeader(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 		IP:   []byte{127, 0, 0, 1},
@@ -138,5 +138,5 @@ func TestHttpConnectionHeader(t *testing.T) {
 	assert.Bytes(response).Equals(xor([]byte(payload)))
 	assert.Error(conn.Close()).IsNil()
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
