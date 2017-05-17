@@ -6,6 +6,7 @@ import (
 
 	. "v2ray.com/core/app/router"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/testing/assert"
 )
@@ -123,6 +124,23 @@ func TestRoutingRule(t *testing.T) {
 				ruleTest{
 					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.ParseAddress("2001:0db8:85a3:0000:0000:8a2e:0370:7334"), 80)),
 					output: true,
+				},
+			},
+		},
+		{
+			rule: &RoutingRule{
+				UserEmail: []string{
+					"admin@v2ray.com",
+				},
+			},
+			test: []ruleTest{
+				ruleTest{
+					input:  protocol.ContextWithUser(context.Background(), &protocol.User{Email: "admin@v2ray.com"}),
+					output: true,
+				},
+				ruleTest{
+					input:  protocol.ContextWithUser(context.Background(), &protocol.User{Email: "love@v2ray.com"}),
+					output: false,
 				},
 			},
 		},
