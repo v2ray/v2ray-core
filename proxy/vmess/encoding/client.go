@@ -81,18 +81,21 @@ func (v *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 	}
 	security := byte(padingLen<<4) | byte(header.Security)
 	buffer = append(buffer, security, byte(0), byte(header.Command))
-	buffer = header.Port.Bytes(buffer)
 
-	switch header.Address.Family() {
-	case net.AddressFamilyIPv4:
-		buffer = append(buffer, AddrTypeIPv4)
-		buffer = append(buffer, header.Address.IP()...)
-	case net.AddressFamilyIPv6:
-		buffer = append(buffer, AddrTypeIPv6)
-		buffer = append(buffer, header.Address.IP()...)
-	case net.AddressFamilyDomain:
-		buffer = append(buffer, AddrTypeDomain, byte(len(header.Address.Domain())))
-		buffer = append(buffer, header.Address.Domain()...)
+	if header.Command != protocol.RequestCommandMux {
+		buffer = header.Port.Bytes(buffer)
+
+		switch header.Address.Family() {
+		case net.AddressFamilyIPv4:
+			buffer = append(buffer, AddrTypeIPv4)
+			buffer = append(buffer, header.Address.IP()...)
+		case net.AddressFamilyIPv6:
+			buffer = append(buffer, AddrTypeIPv6)
+			buffer = append(buffer, header.Address.IP()...)
+		case net.AddressFamilyDomain:
+			buffer = append(buffer, AddrTypeDomain, byte(len(header.Address.Domain())))
+			buffer = append(buffer, header.Address.Domain()...)
+		}
 	}
 
 	if padingLen > 0 {

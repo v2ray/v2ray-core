@@ -82,12 +82,13 @@ type Client struct {
 	concurrency    uint32
 }
 
-var muxCoolDestination = net.TCPDestination(net.DomainAddress("v1.mux.cool"), net.Port(9527))
+var muxCoolAddress = net.DomainAddress("v1.mux.cool")
+var muxCoolPort = net.Port(9527)
 
 // NewClient creates a new mux.Client.
 func NewClient(p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	ctx = proxy.ContextWithTarget(ctx, muxCoolDestination)
+	ctx = proxy.ContextWithTarget(ctx, net.TCPDestination(muxCoolAddress, muxCoolPort))
 	pipe := ray.NewRay(ctx)
 	go p.Process(ctx, pipe, dialer)
 	c := &Client{
@@ -274,7 +275,7 @@ func NewServer(ctx context.Context) *Server {
 }
 
 func (s *Server) Dispatch(ctx context.Context, dest net.Destination) (ray.InboundRay, error) {
-	if dest != muxCoolDestination {
+	if dest.Address != muxCoolAddress {
 		return s.dispatcher.Dispatch(ctx, dest)
 	}
 

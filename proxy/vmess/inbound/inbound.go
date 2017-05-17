@@ -185,6 +185,12 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 		}
 		return err
 	}
+
+	if request.Command == protocol.RequestCommandMux {
+		request.Address = net.DomainAddress("v1.mux.com")
+		request.Port = net.Port(0)
+	}
+
 	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, "")
 	log.Trace(newError("received request for ", request.Destination()))
 
