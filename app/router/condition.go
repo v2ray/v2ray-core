@@ -140,7 +140,7 @@ type CIDRMatcher struct {
 func NewCIDRMatcher(ip []byte, mask uint32, onSource bool) (*CIDRMatcher, error) {
 	cidr := &net.IPNet{
 		IP:   net.IP(ip),
-		Mask: net.CIDRMask(int(mask), len(ip)),
+		Mask: net.CIDRMask(int(mask), len(ip)*8),
 	}
 	return &CIDRMatcher{
 		cidr:     cidr,

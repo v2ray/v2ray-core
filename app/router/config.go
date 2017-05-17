@@ -16,6 +16,39 @@ func (r *Rule) Apply(ctx context.Context) bool {
 	return r.Condition.Apply(ctx)
 }
 
+func cidrToCondition(cidr []*CIDR, source bool) (Condition, error) {
+	ipv4Net := v2net.NewIPNet()
+	ipv6Cond := NewAnyCondition()
+	hasIpv6 := false
+
+	for _, ip := range cidr {
+		switch len(ip.Ip) {
+		case net.IPv4len:
+			ipv4Net.AddIP(ip.Ip, byte(ip.Prefix))
+		case net.IPv6len:
+			hasIpv6 = true
+			matcher, err := NewCIDRMatcher(ip.Ip, ip.Prefix, source)
+			if err != nil {
+				return nil, err
+			}
+			ipv6Cond.Add(matcher)
+		default:
+			return nil, newError("invalid IP length").AtError()
+		}
+	}
+
+	if !ipv4Net.IsEmpty() && hasIpv6 {
+		cond := NewAnyCondition()
+		cond.Add(NewIPv4Matcher(ipv4Net, source))
+		cond.Add(ipv6Cond)
+		return cond, nil
+	} else if !ipv4Net.IsEmpty() {
+		return NewIPv4Matcher(ipv4Net, source), nil
+	} else {
+		return ipv6Cond, nil
+	}
+}
+
 func (rr *RoutingRule) BuildCondition() (Condition, error) {
 	conds := NewConditionChan()
 
@@ -41,36 +74,11 @@ func (rr *RoutingRule) BuildCondition() (Condition, error) {
 	}
 
 	if len(rr.Cidr) > 0 {
-		ipv4Net := v2net.NewIPNet()
-		ipv6Cond := NewAnyCondition()
-		hasIpv6 := false
-
-		for _, ip := range rr.Cidr {
-			switch len(ip.Ip) {
-			case net.IPv4len:
-				ipv4Net.AddIP(ip.Ip, byte(ip.Prefix))
-			case net.IPv6len:
-				hasIpv6 = true
-				matcher, err := NewCIDRMatcher(ip.Ip, ip.Prefix, false)
-				if err != nil {
-					return nil, err
-				}
-				ipv6Cond.Add(matcher)
-			default:
-				return nil, newError("invalid IP length").AtError()
-			}
+		cond, err := cidrToCondition(rr.Cidr, false)
+		if err != nil {
+			return nil, err
 		}
-
-		if !ipv4Net.IsEmpty() && hasIpv6 {
-			cond := NewAnyCondition()
-			cond.Add(NewIPv4Matcher(ipv4Net, false))
-			cond.Add(ipv6Cond)
-			conds.Add(cond)
-		} else if !ipv4Net.IsEmpty() {
-			conds.Add(NewIPv4Matcher(ipv4Net, false))
-		} else if hasIpv6 {
-			conds.Add(ipv6Cond)
-		}
+		conds.Add(cond)
 	}
 
 	if rr.PortRange != nil {
@@ -82,36 +90,11 @@ func (rr *RoutingRule) BuildCondition() (Condition, error) {
 	}
 
 	if len(rr.SourceCidr) > 0 {
-		ipv4Net := v2net.NewIPNet()
-		ipv6Cond := NewAnyCondition()
-		hasIpv6 := false
-
-		for _, ip := range rr.SourceCidr {
-			switch len(ip.Ip) {
-			case net.IPv4len:
-				ipv4Net.AddIP(ip.Ip, byte(ip.Prefix))
-			case net.IPv6len:
-				hasIpv6 = true
-				matcher, err := NewCIDRMatcher(ip.Ip, ip.Prefix, true)
-				if err != nil {
-					return nil, err
-				}
-				ipv6Cond.Add(matcher)
-			default:
-				return nil, newError("invalid IP length").AtError()
-			}
+		cond, err := cidrToCondition(rr.SourceCidr, true)
+		if err != nil {
+			return nil, err
 		}
-
-		if !ipv4Net.IsEmpty() && hasIpv6 {
-			cond := NewAnyCondition()
-			cond.Add(NewIPv4Matcher(ipv4Net, true))
-			cond.Add(ipv6Cond)
-			conds.Add(cond)
-		} else if !ipv4Net.IsEmpty() {
-			conds.Add(NewIPv4Matcher(ipv4Net, true))
-		} else if hasIpv6 {
-			conds.Add(ipv6Cond)
-		}
+		conds.Add(cond)
 	}
 
 	if len(rr.UserEmail) > 0 {
