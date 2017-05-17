@@ -74,6 +74,10 @@ func TestRoutingRule(t *testing.T) {
 						Value: "google.com",
 						Type:  Domain_Domain,
 					},
+					{
+						Value: "^facebook\\.com$",
+						Type:  Domain_Regex,
+					},
 				},
 			},
 			test: []ruleTest{
@@ -92,6 +96,18 @@ func TestRoutingRule(t *testing.T) {
 				ruleTest{
 					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("www.google.com"), 80)),
 					output: true,
+				},
+				ruleTest{
+					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("facebook.com"), 80)),
+					output: true,
+				},
+				ruleTest{
+					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("www.facebook.com"), 80)),
+					output: false,
+				},
+				ruleTest{
+					input:  context.Background(),
+					output: false,
 				},
 			},
 		},
@@ -125,6 +141,10 @@ func TestRoutingRule(t *testing.T) {
 					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.ParseAddress("2001:0db8:85a3:0000:0000:8a2e:0370:7334"), 80)),
 					output: true,
 				},
+				ruleTest{
+					input:  context.Background(),
+					output: false,
+				},
 			},
 		},
 		{
@@ -140,6 +160,10 @@ func TestRoutingRule(t *testing.T) {
 				},
 				ruleTest{
 					input:  protocol.ContextWithUser(context.Background(), &protocol.User{Email: "love@v2ray.com"}),
+					output: false,
+				},
+				ruleTest{
+					input:  context.Background(),
 					output: false,
 				},
 			},
