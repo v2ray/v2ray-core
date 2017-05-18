@@ -40,7 +40,7 @@ func (v *directRay) InboundOutput() InputStream {
 	return v.Output
 }
 
-var streamSizeLimit uint64 = 20 * 1024 * 1024
+var streamSizeLimit uint64 = 10 * 1024 * 1024
 
 func init() {
 	const raySizeEnvKey = "v2ray.ray.buffer.size"
