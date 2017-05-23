@@ -181,7 +181,7 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 	if err != nil {
 		if errors.Cause(err) != io.EOF {
 			log.Access(connection.RemoteAddr(), "", log.AccessRejected, err)
-			log.Trace(newError("invalid request from ", connection.RemoteAddr(), ": ", err))
+			log.Trace(newError("invalid request from ", connection.RemoteAddr(), ": ", err).AtInfo())
 		}
 		return err
 	}
@@ -194,7 +194,7 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, "")
 	log.Trace(newError("received request for ", request.Destination()))
 
-	connection.SetReadDeadline(time.Time{})
+	common.Must(connection.SetReadDeadline(time.Time{}))
 
 	userSettings := request.User.GetSettings()
 

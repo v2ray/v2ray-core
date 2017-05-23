@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"v2ray.com/core"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -55,6 +56,12 @@ func TestDokodemoTCP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
 	}
 
 	clientPort := uint32(pickPort())
@@ -93,6 +100,12 @@ func TestDokodemoTCP(t *testing.T) {
 					},
 				}),
 			},
+		},
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
 		},
 	}
 

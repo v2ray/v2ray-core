@@ -4,6 +4,7 @@ import (
 	"crypto/cipher"
 	"io"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/protocol"
 )
@@ -123,7 +124,12 @@ func (r *AuthenticationReader) readChunk(waitForData bool) ([]byte, error) {
 		if !waitForData {
 			return nil, io.ErrNoProgress
 		}
-		r.buffer.Reset(buf.ReadFrom(r.buffer))
+
+		if r.buffer.IsEmpty() {
+			r.buffer.Clear()
+		} else {
+			common.Must(r.buffer.Reset(buf.ReadFrom(r.buffer)))
+		}
 
 		delta := r.size - r.buffer.Len()
 		if err := r.buffer.AppendSupplier(buf.ReadAtLeastFrom(r.reader, delta)); err != nil {
@@ -184,42 +190,39 @@ func (r *AuthenticationReader) Read() (buf.MultiBuffer, error) {
 
 type AuthenticationWriter struct {
 	auth         Authenticator
+	buffer       []byte
 	payload      []byte
-	buffer       *buf.Buffer
-	writer       io.Writer
+	writer       *buf.BufferedWriter
 	sizeParser   ChunkSizeEncoder
 	transferType protocol.TransferType
 }
 
 func NewAuthenticationWriter(auth Authenticator, sizeParser ChunkSizeEncoder, writer io.Writer, transferType protocol.TransferType) *AuthenticationWriter {
+	const payloadSize = 1024
 	return &AuthenticationWriter{
 		auth:         auth,
-		payload:      make([]byte, 1024),
-		buffer:       buf.NewLocal(readerBufferSize),
-		writer:       writer,
+		buffer:       make([]byte, payloadSize+sizeParser.SizeBytes()+auth.Overhead()),
+		payload:      make([]byte, payloadSize),
+		writer:       buf.NewBufferedWriterSize(writer, readerBufferSize),
 		sizeParser:   sizeParser,
 		transferType: transferType,
 	}
 }
 
-func (w *AuthenticationWriter) append(b []byte) {
+func (w *AuthenticationWriter) append(b []byte) error {
 	encryptedSize := len(b) + w.auth.Overhead()
+	buffer := w.sizeParser.Encode(uint16(encryptedSize), w.buffer[:0])
 
-	w.buffer.AppendSupplier(func(bb []byte) (int, error) {
-		w.sizeParser.Encode(uint16(encryptedSize), bb[:0])
-		return w.sizeParser.SizeBytes(), nil
-	})
+	buffer, err := w.auth.Seal(buffer, b)
+	if err != nil {
+		return err
+	}
 
-	w.buffer.AppendSupplier(func(bb []byte) (int, error) {
-		w.auth.Seal(bb[:0], b)
-		return encryptedSize, nil
-	})
-}
+	if _, err := w.writer.Write(buffer); err != nil {
+		return err
+	}
 
-func (w *AuthenticationWriter) flush() error {
-	_, err := w.writer.Write(w.buffer.Bytes())
-	w.buffer.Clear()
-	return err
+	return nil
 }
 
 func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
@@ -227,21 +230,15 @@ func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
 
 	for {
 		n, _ := mb.Read(w.payload)
-		w.append(w.payload[:n])
-		if w.buffer.Len() > readerBufferSize-2*1024 {
-			if err := w.flush(); err != nil {
-				return err
-			}
+		if err := w.append(w.payload[:n]); err != nil {
+			return err
 		}
 		if mb.IsEmpty() {
 			break
 		}
 	}
 
-	if !w.buffer.IsEmpty() {
-		return w.flush()
-	}
-	return nil
+	return w.writer.Flush()
 }
 
 func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
@@ -252,24 +249,17 @@ func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
 		if b == nil {
 			b = buf.New()
 		}
-		if w.buffer.Len() > readerBufferSize-b.Len()-128 {
-			if err := w.flush(); err != nil {
-				b.Release()
-				return err
-			}
+		if err := w.append(b.Bytes()); err != nil {
+			b.Release()
+			return err
 		}
-		w.append(b.Bytes())
 		b.Release()
 		if mb.IsEmpty() {
 			break
 		}
 	}
 
-	if !w.buffer.IsEmpty() {
-		return w.flush()
-	}
-
-	return nil
+	return w.writer.Flush()
 }
 
 func (w *AuthenticationWriter) Write(mb buf.MultiBuffer) error {

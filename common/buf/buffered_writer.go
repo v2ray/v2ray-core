@@ -11,10 +11,14 @@ type BufferedWriter struct {
 }
 
 // NewBufferedWriter creates a new BufferedWriter.
-func NewBufferedWriter(rawWriter io.Writer) *BufferedWriter {
+func NewBufferedWriter(writer io.Writer) *BufferedWriter {
+	return NewBufferedWriterSize(writer, 1024)
+}
+
+func NewBufferedWriterSize(writer io.Writer, size uint32) *BufferedWriter {
 	return &BufferedWriter{
-		writer:   rawWriter,
-		buffer:   NewLocal(1024),
+		writer:   writer,
+		buffer:   NewLocal(int(size)),
 		buffered: true,
 	}
 }
@@ -24,21 +28,20 @@ func (w *BufferedWriter) Write(b []byte) (int, error) {
 	if !w.buffered || w.buffer == nil {
 		return w.writer.Write(b)
 	}
-	nBytes, err := w.buffer.Write(b)
-	if err != nil {
-		return 0, err
-	}
-	if w.buffer.IsFull() {
-		if err := w.Flush(); err != nil {
-			return 0, err
+	bytesWritten := 0
+	for bytesWritten < len(b) {
+		nBytes, err := w.buffer.Write(b[bytesWritten:])
+		if err != nil {
+			return bytesWritten, err
 		}
-		if nBytes < len(b) {
-			if _, err := w.writer.Write(b[nBytes:]); err != nil {
-				return nBytes, err
+		bytesWritten += nBytes
+		if w.buffer.IsFull() {
+			if err := w.Flush(); err != nil {
+				return bytesWritten, err
 			}
 		}
 	}
-	return len(b), nil
+	return bytesWritten, nil
 }
 
 // Flush writes all buffered content into underlying writer, if any.
