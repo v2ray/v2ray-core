@@ -1,10 +1,10 @@
 package buf
 
 import (
-	"os"
 	"runtime"
-	"strconv"
 	"sync"
+
+	"v2ray.com/core/common/platform"
 )
 
 // Pool provides functionality to generate and recycle buffers on demand.
@@ -99,7 +99,7 @@ var (
 	mediumPool Pool
 )
 
-func getDefaultPoolSize() uint32 {
+func getDefaultPoolSize() int {
 	switch runtime.GOARCH {
 	case "amd64", "386":
 		return 20
@@ -109,14 +109,11 @@ func getDefaultPoolSize() uint32 {
 }
 
 func init() {
-	size := getDefaultPoolSize()
-	sizeStr := os.Getenv(poolSizeEnvKey)
-	if len(sizeStr) > 0 {
-		customSize, err := strconv.ParseUint(sizeStr, 10, 32)
-		if err == nil {
-			size = uint32(customSize)
-		}
+	f := platform.EnvFlag{
+		Name:    poolSizeEnvKey,
+		AltName: platform.NormalizeEnvName(poolSizeEnvKey),
 	}
+	size := f.GetValueAsInt(getDefaultPoolSize())
 	if size > 0 {
 		totalByteSize := size * 1024 * 1024
 		mediumPool = NewBufferPool(Size, totalByteSize/Size)

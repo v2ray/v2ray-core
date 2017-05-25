@@ -3,12 +3,11 @@ package ray
 import (
 	"context"
 	"io"
-	"os"
-	"strconv"
 	"sync"
 	"time"
 
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/platform"
 )
 
 // NewRay creates a new Ray for direct traffic transport.
@@ -44,13 +43,11 @@ var streamSizeLimit uint64 = 10 * 1024 * 1024
 
 func init() {
 	const raySizeEnvKey = "v2ray.ray.buffer.size"
-	sizeStr := os.Getenv(raySizeEnvKey)
-	if len(sizeStr) > 0 {
-		customSize, err := strconv.ParseUint(sizeStr, 10, 32)
-		if err == nil {
-			streamSizeLimit = customSize * 1024 * 1024
-		}
-	}
+	size := platform.EnvFlag{
+		Name:    raySizeEnvKey,
+		AltName: platform.NormalizeEnvName(raySizeEnvKey),
+	}.GetValueAsInt(10)
+	streamSizeLimit = uint64(size) * 1024 * 1024
 }
 
 type Stream struct {
