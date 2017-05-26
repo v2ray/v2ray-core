@@ -115,7 +115,7 @@ func init() {
 	}
 	size := f.GetValueAsInt(getDefaultPoolSize())
 	if size > 0 {
-		totalByteSize := size * 1024 * 1024
+		totalByteSize := uint32(size) * 1024 * 1024
 		mediumPool = NewBufferPool(Size, totalByteSize/Size)
 	} else {
 		mediumPool = NewSyncPool(Size)
