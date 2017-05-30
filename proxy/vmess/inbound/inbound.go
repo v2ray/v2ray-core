@@ -174,7 +174,9 @@ func transferResponse(timer signal.ActivityTimer, session *encoding.ServerSessio
 
 // Process implements proxy.Inbound.Process().
 func (v *Handler) Process(ctx context.Context, network net.Network, connection internet.Connection, dispatcher dispatcher.Interface) error {
-	common.Must(connection.SetReadDeadline(time.Now().Add(time.Second * 8)))
+	if err := connection.SetReadDeadline(time.Now().Add(time.Second * 8)); err != nil {
+		return err
+	}
 
 	reader := buf.NewBufferedReader(connection)
 
