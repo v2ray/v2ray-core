@@ -17,6 +17,8 @@ message Domain {
     Plain = 0;
     // The value is used as a regular expression.
     Regex = 1;
+    // The value is a domain.
+    Domain = 2;
   }
 
   // Domain matching type.

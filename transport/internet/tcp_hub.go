@@ -3,6 +3,7 @@ package internet
 import (
 	"context"
 	"net"
+	"time"
 
 	v2net "v2ray.com/core/common/net"
 )
@@ -19,7 +20,9 @@ func RegisterTransportListener(protocol TransportProtocol, listener ListenFunc) 
 	return nil
 }
 
-type ListenFunc func(ctx context.Context, address v2net.Address, port v2net.Port, conns chan<- Connection) (Listener, error)
+type AddConnection func(context.Context, Connection) bool
+
+type ListenFunc func(ctx context.Context, address v2net.Address, port v2net.Port, addConn AddConnection) (Listener, error)
 
 type Listener interface {
 	Close() error
@@ -45,7 +48,26 @@ func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, conn
 	if listenFunc == nil {
 		return nil, newError(protocol, " listener not registered.").AtError()
 	}
-	listener, err := listenFunc(ctx, address, port, conns)
+	listener, err := listenFunc(ctx, address, port, func(ctx context.Context, conn Connection) bool {
+		select {
+		case <-ctx.Done():
+			conn.Close()
+			return false
+		case conns <- conn:
+			return true
+		default:
+			select {
+			case <-ctx.Done():
+				conn.Close()
+				return false
+			case conns <- conn:
+				return true
+			case <-time.After(time.Second * 5):
+				conn.Close()
+				return false
+			}
+		}
+	})
 	if err != nil {
 		return nil, newError("failed to listen on address: ", address, ":", port).Base(err)
 	}

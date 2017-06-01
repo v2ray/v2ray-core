@@ -45,6 +45,7 @@ func NewAlwaysOnInboundHandler(ctx context.Context, tag string, receiverConfig *
 				recvOrigDest: receiverConfig.ReceiveOriginalDestination,
 				tag:          tag,
 				dispatcher:   h.mux,
+				sniffers:     receiverConfig.DomainOverride,
 			}
 			h.workers = append(h.workers, worker)
 		}

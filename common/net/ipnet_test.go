@@ -4,15 +4,14 @@ import (
 	"net"
 	"testing"
 
+	"v2ray.com/core/common"
 	. "v2ray.com/core/common/net"
 	"v2ray.com/core/testing/assert"
 )
 
 func parseCIDR(str string) *net.IPNet {
 	_, ipNet, err := net.ParseCIDR(str)
-	if err != nil {
-		panic(err)
-	}
+	common.Must(err)
 	return ipNet
 }
 

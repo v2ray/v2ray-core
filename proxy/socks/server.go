@@ -100,7 +100,7 @@ func (*Server) handleUDP() error {
 	// The TCP connection closes after v method returns. We need to wait until
 	// the client closes it.
 	// TODO: get notified from UDP part
-	<-time.After(5 * time.Minute)
+	time.Sleep(5 * time.Minute)
 
 	return nil
 }
@@ -124,7 +124,7 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 		defer input.Close()
 
 		v2reader := buf.NewReader(reader)
-		if err := buf.Copy(timer, v2reader, input); err != nil {
+		if err := buf.Copy(v2reader, input, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport all TCP request").Base(err)
 		}
 		return nil
@@ -132,7 +132,7 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 
 	responseDone := signal.ExecuteAsync(func() error {
 		v2writer := buf.NewWriter(writer)
-		if err := buf.Copy(timer, output, v2writer); err != nil {
+		if err := buf.Copy(output, v2writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport all TCP response").Base(err)
 		}
 		return nil

@@ -105,6 +105,7 @@ func (h *DynamicInboundHandler) refresh() error {
 				stream:       h.receiverConfig.StreamSettings,
 				recvOrigDest: h.receiverConfig.ReceiveOriginalDestination,
 				dispatcher:   h.mux,
+				sniffers:     h.receiverConfig.DomainOverride,
 			}
 			if err := worker.Start(); err != nil {
 				log.Trace(newError("failed to create TCP worker").Base(err).AtWarning())
@@ -140,11 +141,14 @@ func (h *DynamicInboundHandler) refresh() error {
 }
 
 func (h *DynamicInboundHandler) monitor() {
+	timer := time.NewTicker(time.Minute * time.Duration(h.receiverConfig.AllocationStrategy.GetRefreshValue()))
+	defer timer.Stop()
+
 	for {
 		select {
 		case <-h.ctx.Done():
 			return
-		case <-time.After(time.Minute * time.Duration(h.receiverConfig.AllocationStrategy.GetRefreshValue())):
+		case <-timer.C:
 			h.refresh()
 		}
 	}

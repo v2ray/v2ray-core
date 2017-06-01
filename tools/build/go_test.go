@@ -34,7 +34,7 @@ func TestBuildAndRun(t *testing.T) {
 	cmd.Stderr = errBuffer
 	cmd.Start()
 
-	<-time.After(1 * time.Second)
+	time.Sleep(1 * time.Second)
 	cmd.Process.Kill()
 
 	outStr := string(outBuffer.Bytes())

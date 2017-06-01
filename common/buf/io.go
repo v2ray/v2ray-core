@@ -40,22 +40,78 @@ func ReadFullFrom(reader io.Reader, size int) Supplier {
 	}
 }
 
-func copyInternal(timer signal.ActivityTimer, reader Reader, writer Writer) error {
+// ReadAtLeastFrom create a Supplier to read at least size bytes from the given io.Reader.
+func ReadAtLeastFrom(reader io.Reader, size int) Supplier {
+	return func(b []byte) (int, error) {
+		return io.ReadAtLeast(reader, b, size)
+	}
+}
+
+type copyHandler struct {
+	onReadError  func(error) error
+	onData       func()
+	onWriteError func(error) error
+}
+
+func (h *copyHandler) readFrom(reader Reader) (MultiBuffer, error) {
+	mb, err := reader.Read()
+	if err != nil && h.onReadError != nil {
+		err = h.onReadError(err)
+	}
+	return mb, err
+}
+
+func (h *copyHandler) writeTo(writer Writer, mb MultiBuffer) error {
+	err := writer.Write(mb)
+	if err != nil && h.onWriteError != nil {
+		err = h.onWriteError(err)
+	}
+	return err
+}
+
+type CopyOption func(*copyHandler)
+
+func IgnoreReaderError() CopyOption {
+	return func(handler *copyHandler) {
+		handler.onReadError = func(err error) error {
+			return nil
+		}
+	}
+}
+
+func IgnoreWriterError() CopyOption {
+	return func(handler *copyHandler) {
+		handler.onWriteError = func(err error) error {
+			return nil
+		}
+	}
+}
+
+func UpdateActivity(timer signal.ActivityTimer) CopyOption {
+	return func(handler *copyHandler) {
+		handler.onData = func() {
+			timer.Update()
+		}
+	}
+}
+
+func copyInternal(reader Reader, writer Writer, handler *copyHandler) error {
 	for {
-		buffer, err := reader.Read()
+		buffer, err := handler.readFrom(reader)
 		if err != nil {
 			return err
 		}
-
-		timer.Update()
 
 		if buffer.IsEmpty() {
 			buffer.Release()
 			continue
 		}
 
-		err = writer.Write(buffer)
-		if err != nil {
+		if handler.onData != nil {
+			handler.onData()
+		}
+
+		if err := handler.writeTo(writer, buffer); err != nil {
 			buffer.Release()
 			return err
 		}
@@ -64,8 +120,12 @@ func copyInternal(timer signal.ActivityTimer, reader Reader, writer Writer) erro
 
 // Copy dumps all payload from reader to writer or stops when an error occurs.
 // ActivityTimer gets updated as soon as there is a payload.
-func Copy(timer signal.ActivityTimer, reader Reader, writer Writer) error {
-	err := copyInternal(timer, reader, writer)
+func Copy(reader Reader, writer Writer, options ...CopyOption) error {
+	handler := new(copyHandler)
+	for _, option := range options {
+		option(handler)
+	}
+	err := copyInternal(reader, writer, handler)
 	if err != nil && errors.Cause(err) != io.EOF {
 		return err
 	}
@@ -87,6 +147,17 @@ func NewReader(reader io.Reader) Reader {
 	}
 }
 
+func NewMergingReader(reader io.Reader) Reader {
+	return NewMergingReaderSize(reader, 32*1024)
+}
+
+func NewMergingReaderSize(reader io.Reader, size uint32) Reader {
+	return &BytesToBufferReader{
+		reader: reader,
+		buffer: make([]byte, size),
+	}
+}
+
 // ToBytesReader converts a Reaaer to io.Reader.
 func ToBytesReader(stream Reader) io.Reader {
 	return &bufferToBytesReader{
@@ -103,6 +174,23 @@ func NewWriter(writer io.Writer) Writer {
 	}
 
 	return &BufferToBytesWriter{
+		writer: writer,
+	}
+}
+
+func NewMergingWriter(writer io.Writer) Writer {
+	return NewMergingWriterSize(writer, 4096)
+}
+
+func NewMergingWriterSize(writer io.Writer, size uint32) Writer {
+	return &mergingWriter{
+		writer: writer,
+		buffer: make([]byte, size),
+	}
+}
+
+func NewSequentialWriter(writer io.Writer) Writer {
+	return &seqWriter{
 		writer: writer,
 	}
 }

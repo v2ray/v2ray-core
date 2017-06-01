@@ -149,7 +149,7 @@ func (v *AckList) Flush(current uint32, rto uint32) {
 type ReceivingWorker struct {
 	sync.RWMutex
 	conn       *Connection
-	leftOver   *buf.Buffer
+	leftOver   buf.MultiBuffer
 	window     *ReceivingWindow
 	acklist    *AckList
 	nextNumber uint32
@@ -196,42 +196,39 @@ func (v *ReceivingWorker) ProcessSegment(seg *DataSegment) {
 	}
 }
 
-func (v *ReceivingWorker) Read(b []byte) int {
-	v.Lock()
-	defer v.Unlock()
-
-	total := 0
+func (v *ReceivingWorker) ReadMultiBuffer() buf.MultiBuffer {
 	if v.leftOver != nil {
-		nBytes := copy(b, v.leftOver.Bytes())
-		if nBytes < v.leftOver.Len() {
-			v.leftOver.SliceFrom(nBytes)
-			return nBytes
-		}
-		v.leftOver.Release()
+		mb := v.leftOver
 		v.leftOver = nil
-		total += nBytes
+		return mb
 	}
 
-	for total < len(b) {
+	mb := buf.NewMultiBuffer()
+
+	v.Lock()
+	defer v.Unlock()
+	for {
 		seg := v.window.RemoveFirst()
 		if seg == nil {
 			break
 		}
 		v.window.Advance()
 		v.nextNumber++
-
-		nBytes := copy(b[total:], seg.Data.Bytes())
-		total += nBytes
-		if nBytes < seg.Data.Len() {
-			seg.Data.SliceFrom(nBytes)
-			v.leftOver = seg.Data
-			seg.Data = nil
-			seg.Release()
-			break
-		}
+		mb.Append(seg.Data)
+		seg.Data = nil
 		seg.Release()
 	}
-	return total
+
+	return mb
+}
+
+func (v *ReceivingWorker) Read(b []byte) int {
+	mb := v.ReadMultiBuffer()
+	nBytes, _ := mb.Read(b)
+	if !mb.IsEmpty() {
+		v.leftOver = mb
+	}
+	return nBytes
 }
 
 func (w *ReceivingWorker) IsDataAvailable() bool {

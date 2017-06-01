@@ -15,6 +15,7 @@ PRERELEASE=$(getattr "prerelease" "instance")
 DOCKER_HUB_KEY=$(getattr "docker_hub_key" "project")
 SIGN_KEY_PATH=$(getattr "sign_key_path" "project")
 SIGN_KEY_PASS=$(getattr "sign_key_pass" "project")
+VUSER=$(getattr "b_user" "project")
 
 mkdir -p /v2ray/build
 
@@ -24,7 +25,7 @@ gpg --import /v2ray/build/sign_key.asc
 curl -L -o /v2ray/build/releases https://api.github.com/repos/v2ray/v2ray-core/releases
 
 GO_INSTALL=golang.tar.gz
-curl -L -o ${GO_INSTALL} https://storage.googleapis.com/golang/go1.8.linux-amd64.tar.gz
+curl -L -o ${GO_INSTALL} https://storage.googleapis.com/golang/go1.8.3.linux-amd64.tar.gz
 tar -C /usr/local -xzf ${GO_INSTALL}
 export PATH=$PATH:/usr/local/go/bin
 
@@ -41,6 +42,7 @@ go install v2ray.com/core/tools/build
 
 export TRAVIS_TAG=${RELEASE_TAG}
 export GPG_SIGN_PASS=${SIGN_KEY_PASS}
+export V_USER=${VUSER}
 
 $GOPATH/bin/build --os=windows --arch=x86 --zip --sign
 $GOPATH/bin/build --os=windows --arch=x64 --zip --sign

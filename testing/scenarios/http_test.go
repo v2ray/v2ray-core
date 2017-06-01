@@ -46,7 +46,8 @@ func TestHttpConformance(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig)
+	assert.Error(err).IsNil()
 
 	{
 		transport := &http.Transport{
@@ -69,5 +70,5 @@ func TestHttpConformance(t *testing.T) {
 
 	}
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }

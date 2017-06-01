@@ -13,7 +13,16 @@ type RequestCommand byte
 const (
 	RequestCommandTCP = RequestCommand(0x01)
 	RequestCommandUDP = RequestCommand(0x02)
+	RequestCommandMux = RequestCommand(0x03)
 )
+
+func (c RequestCommand) TransferType() TransferType {
+	if c == RequestCommandTCP {
+		return TransferTypeStream
+	}
+
+	return TransferTypePacket
+}
 
 // RequestOption is the options of a request.
 type RequestOption byte

@@ -10,6 +10,7 @@ import (
 
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/log"
+	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common/buf"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
@@ -33,6 +34,7 @@ type tcpWorker struct {
 	recvOrigDest bool
 	tag          string
 	dispatcher   dispatcher.Interface
+	sniffers     []proxyman.KnownProtocols
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -55,6 +57,9 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 	}
 	ctx = proxy.ContextWithInboundEntryPoint(ctx, v2net.TCPDestination(w.address, w.port))
 	ctx = proxy.ContextWithSource(ctx, v2net.DestinationFromAddr(conn.RemoteAddr()))
+	if len(w.sniffers) > 0 {
+		ctx = proxyman.ContextWithProtocolSniffers(ctx, w.sniffers)
+	}
 	if err := w.proxy.Process(ctx, v2net.Network_TCP, conn, w.dispatcher); err != nil {
 		log.Trace(newError("connection ends").Base(err))
 	}
@@ -135,6 +140,7 @@ func (c *udpConn) Read(buf []byte) (int, error) {
 	return copy(buf, in.Bytes()), nil
 }
 
+// Write implements io.Writer.
 func (c *udpConn) Write(buf []byte) (int, error) {
 	n, err := c.output(buf)
 	if err == nil {
@@ -272,11 +278,14 @@ func (w *udpWorker) Close() {
 }
 
 func (w *udpWorker) monitor() {
+	timer := time.NewTicker(time.Second * 16)
+	defer timer.Stop()
+
 	for {
 		select {
 		case <-w.ctx.Done():
 			return
-		case <-time.After(time.Second * 16):
+		case <-timer.C:
 			nowSec := time.Now().Unix()
 			w.Lock()
 			for addr, conn := range w.activeConn {

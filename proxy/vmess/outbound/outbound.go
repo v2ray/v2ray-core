@@ -76,6 +76,9 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	if target.Network == net.Network_UDP {
 		command = protocol.RequestCommandUDP
 	}
+	//if target.Address.Family().IsDomain() && target.Address.Domain() == "v1.mux.com" {
+	//	command = protocol.RequestCommandMux
+	//}
 	request := &protocol.RequestHeader{
 		Version: encoding.Version,
 		User:    rec.PickUser(),
@@ -123,7 +126,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 			return err
 		}
 
-		if err := buf.Copy(timer, input, bodyWriter); err != nil {
+		if err := buf.Copy(input, bodyWriter, buf.UpdateActivity(timer)); err != nil {
 			return err
 		}
 
@@ -147,7 +150,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 
 		reader.SetBuffered(false)
 		bodyReader := session.DecodeResponseBody(request, reader)
-		if err := buf.Copy(timer, bodyReader, output); err != nil {
+		if err := buf.Copy(bodyReader, output, buf.UpdateActivity(timer)); err != nil {
 			return err
 		}
 

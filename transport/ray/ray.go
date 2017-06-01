@@ -42,6 +42,7 @@ type InputStream interface {
 	buf.Reader
 	buf.TimeoutReader
 	RayStream
+	Peek(*buf.Buffer)
 }
 
 type OutputStream interface {

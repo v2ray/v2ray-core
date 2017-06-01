@@ -1,11 +1,13 @@
 #!/bin/bash
 
 VER=$1
-PRE=$2
-PROJECT=$3
+PROJECT=$2
 
-if [ -z "$PRE" ]; then
+DOTCNT=$(echo $VER | grep -o "\." | wc -l)
+if [ "$DOTCNT" -gt 1 ]; then
   PRE="true"
+else
+  PRE="false"
 fi
 
 if [ -z "$PROJECT" ]; then
@@ -13,7 +15,7 @@ if [ -z "$PROJECT" ]; then
   exit 0
 fi
 
-echo Creating a new release: $VER: $MSG
+echo Creating a new release: $VER
 
 IFS="." read -a PARTS <<< "$VER"
 MAJOR=${PARTS[0]}
@@ -39,5 +41,4 @@ gcloud compute instances create "v2raycore-${RAND}" \
     --metadata=release_tag=v${VER},prerelease=${PRE} \
     --metadata-from-file=startup-script=${DIR}/release-ci.sh \
     --zone=us-central1-c \
-    --preemptible \
     --project ${PROJECT}

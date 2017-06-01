@@ -5,30 +5,34 @@ import (
 
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 )
 
 type Writer struct {
-	id       uint16
-	dest     net.Destination
-	writer   buf.Writer
-	followup bool
+	id           uint16
+	dest         net.Destination
+	writer       buf.Writer
+	followup     bool
+	transferType protocol.TransferType
 }
 
-func NewWriter(id uint16, dest net.Destination, writer buf.Writer) *Writer {
+func NewWriter(id uint16, dest net.Destination, writer buf.Writer, transferType protocol.TransferType) *Writer {
 	return &Writer{
-		id:       id,
-		dest:     dest,
-		writer:   writer,
-		followup: false,
+		id:           id,
+		dest:         dest,
+		writer:       writer,
+		followup:     false,
+		transferType: transferType,
 	}
 }
 
-func NewResponseWriter(id uint16, writer buf.Writer) *Writer {
+func NewResponseWriter(id uint16, writer buf.Writer, transferType protocol.TransferType) *Writer {
 	return &Writer{
-		id:       id,
-		writer:   writer,
-		followup: true,
+		id:           id,
+		writer:       writer,
+		followup:     true,
+		transferType: transferType,
 	}
 }
 
@@ -76,18 +80,28 @@ func (w *Writer) writeData(mb buf.MultiBuffer) error {
 	return w.writer.Write(mb2)
 }
 
+// Write implements buf.MultiBufferWriter.
 func (w *Writer) Write(mb buf.MultiBuffer) error {
 	if mb.IsEmpty() {
 		return w.writeMetaOnly()
 	}
 
-	const chunkSize = 8 * 1024
-	for !mb.IsEmpty() {
-		slice := mb.SliceBySize(chunkSize)
-		if err := w.writeData(slice); err != nil {
-			return err
+	if w.transferType == protocol.TransferTypeStream {
+		const chunkSize = 8 * 1024
+		for !mb.IsEmpty() {
+			slice := mb.SliceBySize(chunkSize)
+			if err := w.writeData(slice); err != nil {
+				return err
+			}
+		}
+	} else {
+		for _, b := range mb {
+			if err := w.writeData(buf.NewMultiBufferValue(b)); err != nil {
+				return err
+			}
 		}
 	}
+
 	return nil
 }
 

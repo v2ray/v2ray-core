@@ -90,11 +90,11 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 	var responseFunc func() error
 	if request.Command == protocol.RequestCommandTCP {
 		requestFunc = func() error {
-			return buf.Copy(timer, ray.OutboundInput(), buf.NewWriter(conn))
+			return buf.Copy(ray.OutboundInput(), buf.NewWriter(conn), buf.UpdateActivity(timer))
 		}
 		responseFunc = func() error {
 			defer ray.OutboundOutput().Close()
-			return buf.Copy(timer, buf.NewReader(conn), ray.OutboundOutput())
+			return buf.Copy(buf.NewReader(conn), ray.OutboundOutput(), buf.UpdateActivity(timer))
 		}
 	} else if request.Command == protocol.RequestCommandUDP {
 		udpConn, err := dialer.Dial(ctx, udpRequest.Destination())
@@ -103,12 +103,12 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 		}
 		defer udpConn.Close()
 		requestFunc = func() error {
-			return buf.Copy(timer, ray.OutboundInput(), &UDPWriter{request: request, writer: udpConn})
+			return buf.Copy(ray.OutboundInput(), buf.NewSequentialWriter(NewUDPWriter(request, udpConn)), buf.UpdateActivity(timer))
 		}
 		responseFunc = func() error {
 			defer ray.OutboundOutput().Close()
 			reader := &UDPReader{reader: udpConn}
-			return buf.Copy(timer, reader, ray.OutboundOutput())
+			return buf.Copy(reader, ray.OutboundOutput(), buf.UpdateActivity(timer))
 		}
 	}
 

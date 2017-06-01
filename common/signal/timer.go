@@ -24,12 +24,16 @@ func (t *realActivityTimer) Update() {
 }
 
 func (t *realActivityTimer) run() {
+	ticker := time.NewTicker(t.timeout)
+	defer ticker.Stop()
+
 	for {
 		select {
-		case <-time.After(t.timeout):
+		case <-ticker.C:
 		case <-t.ctx.Done():
 			return
 		}
+
 		select {
 		case <-t.updated:
 		// Updated keep waiting.
@@ -37,7 +41,6 @@ func (t *realActivityTimer) run() {
 			t.cancel()
 			return
 		}
-
 	}
 }
 
@@ -51,12 +54,4 @@ func CancelAfterInactivity(ctx context.Context, timeout time.Duration) (context.
 	}
 	go timer.run()
 	return ctx, timer
-}
-
-type noOpActivityTimer struct{}
-
-func (noOpActivityTimer) Update() {}
-
-func BackgroundTimer() ActivityTimer {
-	return noOpActivityTimer{}
 }

@@ -1,10 +1,10 @@
 package buf
 
 import (
-	"os"
 	"runtime"
-	"strconv"
 	"sync"
+
+	"v2ray.com/core/common/platform"
 )
 
 // Pool provides functionality to generate and recycle buffers on demand.
@@ -40,26 +40,22 @@ func (p *SyncPool) Allocate() *Buffer {
 
 // Free implements Pool.Free().
 func (p *SyncPool) Free(buffer *Buffer) {
-	rawBuffer := buffer.v
-	if rawBuffer == nil {
-		return
+	if buffer.v != nil {
+		p.allocator.Put(buffer.v)
 	}
-	p.allocator.Put(rawBuffer)
 }
 
 // BufferPool is a Pool that utilizes an internal cache.
 type BufferPool struct {
-	chain     chan []byte
-	allocator *sync.Pool
+	chain chan []byte
+	sub   Pool
 }
 
 // NewBufferPool creates a new BufferPool with given buffer size, and internal cache size.
 func NewBufferPool(bufferSize, poolSize uint32) *BufferPool {
 	pool := &BufferPool{
 		chain: make(chan []byte, poolSize),
-		allocator: &sync.Pool{
-			New: func() interface{} { return make([]byte, bufferSize) },
-		},
+		sub:   NewSyncPool(bufferSize),
 	}
 	for i := uint32(0); i < poolSize; i++ {
 		pool.chain <- make([]byte, bufferSize)
@@ -69,28 +65,26 @@ func NewBufferPool(bufferSize, poolSize uint32) *BufferPool {
 
 // Allocate implements Pool.Allocate().
 func (p *BufferPool) Allocate() *Buffer {
-	var b []byte
 	select {
-	case b = <-p.chain:
+	case b := <-p.chain:
+		return &Buffer{
+			v:    b,
+			pool: p,
+		}
 	default:
-		b = p.allocator.Get().([]byte)
-	}
-	return &Buffer{
-		v:    b,
-		pool: p,
+		return p.sub.Allocate()
 	}
 }
 
 // Free implements Pool.Free().
 func (p *BufferPool) Free(buffer *Buffer) {
-	rawBuffer := buffer.v
-	if rawBuffer == nil {
+	if buffer.v == nil {
 		return
 	}
 	select {
-	case p.chain <- rawBuffer:
+	case p.chain <- buffer.v:
 	default:
-		p.allocator.Put(rawBuffer)
+		p.sub.Free(buffer)
 	}
 }
 
@@ -105,7 +99,7 @@ var (
 	mediumPool Pool
 )
 
-func getDefaultPoolSize() uint32 {
+func getDefaultPoolSize() int {
 	switch runtime.GOARCH {
 	case "amd64", "386":
 		return 20
@@ -115,16 +109,13 @@ func getDefaultPoolSize() uint32 {
 }
 
 func init() {
-	size := getDefaultPoolSize()
-	sizeStr := os.Getenv(poolSizeEnvKey)
-	if len(sizeStr) > 0 {
-		customSize, err := strconv.ParseUint(sizeStr, 10, 32)
-		if err == nil {
-			size = uint32(customSize)
-		}
+	f := platform.EnvFlag{
+		Name:    poolSizeEnvKey,
+		AltName: platform.NormalizeEnvName(poolSizeEnvKey),
 	}
+	size := f.GetValueAsInt(getDefaultPoolSize())
 	if size > 0 {
-		totalByteSize := size * 1024 * 1024
+		totalByteSize := uint32(size) * 1024 * 1024
 		mediumPool = NewBufferPool(Size, totalByteSize/Size)
 	} else {
 		mediumPool = NewSyncPool(Size)

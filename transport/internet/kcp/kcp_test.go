@@ -18,29 +18,25 @@ import (
 func TestDialAndListen(t *testing.T) {
 	assert := assert.On(t)
 
-	conns := make(chan internet.Connection, 16)
-	listerner, err := NewListener(internet.ContextWithTransportSettings(context.Background(), &Config{}), v2net.LocalHostIP, v2net.Port(0), conns)
+	listerner, err := NewListener(internet.ContextWithTransportSettings(context.Background(), &Config{}), v2net.LocalHostIP, v2net.Port(0), func(ctx context.Context, conn internet.Connection) bool {
+		go func(c internet.Connection) {
+			payload := make([]byte, 4096)
+			for {
+				nBytes, err := c.Read(payload)
+				if err != nil {
+					break
+				}
+				for idx, b := range payload[:nBytes] {
+					payload[idx] = b ^ 'c'
+				}
+				c.Write(payload[:nBytes])
+			}
+			c.Close()
+		}(conn)
+		return true
+	})
 	assert.Error(err).IsNil()
 	port := v2net.Port(listerner.Addr().(*net.UDPAddr).Port)
-
-	go func() {
-		for conn := range conns {
-			go func(c internet.Connection) {
-				payload := make([]byte, 4096)
-				for {
-					nBytes, err := c.Read(payload)
-					if err != nil {
-						break
-					}
-					for idx, b := range payload[:nBytes] {
-						payload[idx] = b ^ 'c'
-					}
-					c.Write(payload[:nBytes])
-				}
-				c.Close()
-			}(conn)
-		}
-	}()
 
 	ctx := internet.ContextWithTransportSettings(context.Background(), &Config{})
 	wg := new(sync.WaitGroup)
@@ -76,5 +72,4 @@ func TestDialAndListen(t *testing.T) {
 	assert.Int(listerner.ActiveConnections()).Equals(0)
 
 	listerner.Close()
-	close(conns)
 }

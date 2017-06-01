@@ -80,40 +80,39 @@ func (*CacheServer) Start() error {
 
 func (*CacheServer) Close() {}
 
-// Private: Visible for testing.
-func (v *CacheServer) GetCached(domain string) []net.IP {
-	v.RLock()
-	defer v.RUnlock()
+func (s *CacheServer) GetCached(domain string) []net.IP {
+	s.RLock()
+	defer s.RUnlock()
 
-	if record, found := v.records[domain]; found && record.A.Expire.After(time.Now()) {
+	if record, found := s.records[domain]; found && record.A.Expire.After(time.Now()) {
 		return record.A.IPs
 	}
 	return nil
 }
 
-func (v *CacheServer) Get(domain string) []net.IP {
-	if ip, found := v.hosts[domain]; found {
+func (s *CacheServer) Get(domain string) []net.IP {
+	if ip, found := s.hosts[domain]; found {
 		return []net.IP{ip}
 	}
 
 	domain = dnsmsg.Fqdn(domain)
-	ips := v.GetCached(domain)
+	ips := s.GetCached(domain)
 	if ips != nil {
 		return ips
 	}
 
-	for _, server := range v.servers {
+	for _, server := range s.servers {
 		response := server.QueryA(domain)
 		select {
 		case a, open := <-response:
 			if !open || a == nil {
 				continue
 			}
-			v.Lock()
-			v.records[domain] = &DomainRecord{
+			s.Lock()
+			s.records[domain] = &DomainRecord{
 				A: a,
 			}
-			v.Unlock()
+			s.Unlock()
 			log.Trace(newError("returning ", len(a.IPs), " IPs for domain ", domain).AtDebug())
 			return a.IPs
 		case <-time.After(QueryTimeout):

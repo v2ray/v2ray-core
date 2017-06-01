@@ -31,7 +31,7 @@ func TestUDPEncoding(t *testing.T) {
 
 	data := buf.NewLocal(256)
 	data.AppendSupplier(serial.WriteString("test string"))
-	encodedData, err := EncodeUDPPacket(request, data)
+	encodedData, err := EncodeUDPPacket(request, data.Bytes())
 	assert.Error(err).IsNil()
 
 	decodedRequest, decodedData, err := DecodeUDPPacket(request.User, encodedData)
@@ -44,38 +44,90 @@ func TestUDPEncoding(t *testing.T) {
 func TestTCPRequest(t *testing.T) {
 	assert := assert.On(t)
 
-	request := &protocol.RequestHeader{
-		Version: Version,
-		Command: protocol.RequestCommandTCP,
-		Address: v2net.LocalHostIP,
-		Option:  RequestOptionOneTimeAuth,
-		Port:    1234,
-		User: &protocol.User{
-			Email: "love@v2ray.com",
-			Account: serial.ToTypedMessage(&Account{
-				Password:   "tcp-password",
-				CipherType: CipherType_CHACHA20,
-			}),
+	cases := []struct {
+		request *protocol.RequestHeader
+		payload []byte
+	}{
+		{
+			request: &protocol.RequestHeader{
+				Version: Version,
+				Command: protocol.RequestCommandTCP,
+				Address: v2net.LocalHostIP,
+				Option:  RequestOptionOneTimeAuth,
+				Port:    1234,
+				User: &protocol.User{
+					Email: "love@v2ray.com",
+					Account: serial.ToTypedMessage(&Account{
+						Password:   "tcp-password",
+						CipherType: CipherType_CHACHA20,
+					}),
+				},
+			},
+			payload: []byte("test string"),
+		},
+		{
+			request: &protocol.RequestHeader{
+				Version: Version,
+				Command: protocol.RequestCommandTCP,
+				Address: v2net.LocalHostIPv6,
+				Option:  RequestOptionOneTimeAuth,
+				Port:    1234,
+				User: &protocol.User{
+					Email: "love@v2ray.com",
+					Account: serial.ToTypedMessage(&Account{
+						Password:   "password",
+						CipherType: CipherType_AES_256_CFB,
+					}),
+				},
+			},
+			payload: []byte("test string"),
+		},
+		{
+			request: &protocol.RequestHeader{
+				Version: Version,
+				Command: protocol.RequestCommandTCP,
+				Address: v2net.DomainAddress("v2ray.com"),
+				Option:  RequestOptionOneTimeAuth,
+				Port:    1234,
+				User: &protocol.User{
+					Email: "love@v2ray.com",
+					Account: serial.ToTypedMessage(&Account{
+						Password:   "password",
+						CipherType: CipherType_CHACHA20_IETF,
+					}),
+				},
+			},
+			payload: []byte("test string"),
 		},
 	}
 
-	data := buf.NewLocal(256)
-	data.AppendSupplier(serial.WriteString("test string"))
-	cache := buf.New()
+	runTest := func(request *protocol.RequestHeader, payload []byte) {
+		data := buf.New()
+		defer data.Release()
+		data.Append(payload)
 
-	writer, err := WriteTCPRequest(request, cache)
-	assert.Error(err).IsNil()
+		cache := buf.New()
+		defer cache.Release()
 
-	writer.Write(buf.NewMultiBufferValue(data))
+		writer, err := WriteTCPRequest(request, cache)
+		assert.Error(err).IsNil()
 
-	decodedRequest, reader, err := ReadTCPSession(request.User, cache)
-	assert.Error(err).IsNil()
-	assert.Address(decodedRequest.Address).Equals(request.Address)
-	assert.Port(decodedRequest.Port).Equals(request.Port)
+		assert.Error(writer.Write(buf.NewMultiBufferValue(data))).IsNil()
 
-	decodedData, err := reader.Read()
-	assert.Error(err).IsNil()
-	assert.String(decodedData[0].String()).Equals("test string")
+		decodedRequest, reader, err := ReadTCPSession(request.User, cache)
+		assert.Error(err).IsNil()
+		assert.Address(decodedRequest.Address).Equals(request.Address)
+		assert.Port(decodedRequest.Port).Equals(request.Port)
+
+		decodedData, err := reader.Read()
+		assert.Error(err).IsNil()
+		assert.String(decodedData[0].String()).Equals(string(payload))
+	}
+
+	for _, test := range cases {
+		runTest(test.request, test.payload)
+	}
+
 }
 
 func TestUDPReaderWriter(t *testing.T) {
@@ -88,7 +140,7 @@ func TestUDPReaderWriter(t *testing.T) {
 		}),
 	}
 	cache := buf.New()
-	writer := &UDPWriter{
+	writer := buf.NewSequentialWriter(&UDPWriter{
 		Writer: cache,
 		Request: &protocol.RequestHeader{
 			Version: Version,
@@ -97,7 +149,7 @@ func TestUDPReaderWriter(t *testing.T) {
 			User:    user,
 			Option:  RequestOptionOneTimeAuth,
 		},
-	}
+	})
 
 	reader := &UDPReader{
 		Reader: cache,

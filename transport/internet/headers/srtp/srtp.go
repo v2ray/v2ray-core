@@ -17,6 +17,7 @@ func (*SRTP) Size() int {
 	return 4
 }
 
+// Write implements io.Writer.
 func (s *SRTP) Write(b []byte) (int, error) {
 	s.number++
 	serial.Uint16ToBytes(s.number, b[:0])
@@ -27,7 +28,7 @@ func (s *SRTP) Write(b []byte) (int, error) {
 func NewSRTP(ctx context.Context, config interface{}) (interface{}, error) {
 	return &SRTP{
 		header: 0xB5E8,
-		number: dice.RandomUint16(),
+		number: dice.RollUint16(),
 	}, nil
 }
 

@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"v2ray.com/core/app/router"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/tools/geoip"
 
@@ -26,9 +27,7 @@ const (
 
 func main() {
 	resp, err := http.Get(apnicFile)
-	if err != nil {
-		panic(err)
-	}
+	common.Must(err)
 	if resp.StatusCode != 200 {
 		panic(errors.New("unexpected status ", resp.StatusCode))
 	}

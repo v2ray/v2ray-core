@@ -1,8 +1,11 @@
 package mux
 
 import (
+	"io"
 	"sync"
 
+	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/transport/ray"
 )
 
@@ -112,33 +115,22 @@ func (m *SessionManager) Close() {
 }
 
 type Session struct {
-	sync.Mutex
-	input          ray.InputStream
-	output         ray.OutputStream
-	parent         *SessionManager
-	ID             uint16
-	uplinkClosed   bool
-	downlinkClosed bool
+	input        ray.InputStream
+	output       ray.OutputStream
+	parent       *SessionManager
+	ID           uint16
+	transferType protocol.TransferType
 }
 
-func (s *Session) CloseUplink() {
-	var allDone bool
-	s.Lock()
-	s.uplinkClosed = true
-	allDone = s.uplinkClosed && s.downlinkClosed
-	s.Unlock()
-	if allDone {
-		s.parent.Remove(s.ID)
-	}
+func (s *Session) Close() {
+	s.output.Close()
+	s.input.Close()
+	s.parent.Remove(s.ID)
 }
 
-func (s *Session) CloseDownlink() {
-	var allDone bool
-	s.Lock()
-	s.downlinkClosed = true
-	allDone = s.uplinkClosed && s.downlinkClosed
-	s.Unlock()
-	if allDone {
-		s.parent.Remove(s.ID)
+func (s *Session) NewReader(reader io.Reader) buf.Reader {
+	if s.transferType == protocol.TransferTypeStream {
+		return NewStreamReader(reader)
 	}
+	return NewPacketReader(reader)
 }

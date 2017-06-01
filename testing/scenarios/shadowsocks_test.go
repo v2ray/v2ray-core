@@ -18,6 +18,7 @@ import (
 	"v2ray.com/core/proxy/shadowsocks"
 	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/testing/servers/tcp"
+	"v2ray.com/core/testing/servers/udp"
 )
 
 func TestShadowsocksAES256TCP(t *testing.T) {
@@ -107,8 +108,8 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -135,7 +136,126 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 	}
 	wg.Wait()
 
-	CloseAllServers()
+	CloseAllServers(servers)
+}
+
+func TestShadowsocksAES128UDP(t *testing.T) {
+	assert := assert.On(t)
+
+	udpServer := udp.Server{
+		MsgProcessor: xor,
+	}
+	dest, err := udpServer.Start()
+	assert.Error(err).IsNil()
+	defer udpServer.Close()
+
+	account := serial.ToTypedMessage(&shadowsocks.Account{
+		Password:   "shadowsocks-password",
+		CipherType: shadowsocks.CipherType_AES_128_CFB,
+		Ota:        shadowsocks.Account_Enabled,
+	})
+
+	serverPort := pickPort()
+	serverConfig := &core.Config{
+		Inbound: []*proxyman.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(serverPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&shadowsocks.ServerConfig{
+					UdpEnabled: true,
+					User: &protocol.User{
+						Account: account,
+						Level:   1,
+					},
+				}),
+			},
+		},
+		Outbound: []*proxyman.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+		},
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
+	}
+
+	clientPort := pickPort()
+	clientConfig := &core.Config{
+		Inbound: []*proxyman.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: v2net.SinglePortRange(clientPort),
+					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
+					Address: v2net.NewIPOrDomain(dest.Address),
+					Port:    uint32(dest.Port),
+					NetworkList: &v2net.NetworkList{
+						Network: []v2net.Network{v2net.Network_UDP},
+					},
+				}),
+			},
+		},
+		Outbound: []*proxyman.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&shadowsocks.ClientConfig{
+					Server: []*protocol.ServerEndpoint{
+						{
+							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: account,
+								},
+							},
+						},
+					},
+				}),
+			},
+		},
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
+	}
+
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
+
+	var wg sync.WaitGroup
+	wg.Add(10)
+	for i := 0; i < 10; i++ {
+		go func() {
+			conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
+				IP:   []byte{127, 0, 0, 1},
+				Port: int(clientPort),
+			})
+			assert.Error(err).IsNil()
+
+			payload := make([]byte, 1024)
+			rand.Read(payload)
+
+			nBytes, err := conn.Write([]byte(payload))
+			assert.Error(err).IsNil()
+			assert.Int(nBytes).Equals(len(payload))
+
+			response := readFrom(conn, time.Second*5, 1024)
+			assert.Bytes(response).Equals(xor([]byte(payload)))
+			assert.Error(conn.Close()).IsNil()
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+
+	CloseAllServers(servers)
 }
 
 func TestShadowsocksChacha20TCP(t *testing.T) {
@@ -225,8 +345,8 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -253,5 +373,5 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 	}
 	wg.Wait()
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }

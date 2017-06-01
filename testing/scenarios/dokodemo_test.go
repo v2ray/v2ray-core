@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"v2ray.com/core"
+	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -55,6 +56,12 @@ func TestDokodemoTCP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
 	}
 
 	clientPort := uint32(pickPort())
@@ -94,10 +101,16 @@ func TestDokodemoTCP(t *testing.T) {
 				}),
 			},
 		},
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	for port := clientPort; port <= clientPort+clientPortRange; port++ {
 		conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
@@ -118,7 +131,7 @@ func TestDokodemoTCP(t *testing.T) {
 		assert.Error(conn.Close()).IsNil()
 	}
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestDokodemoUDP(t *testing.T) {
@@ -197,8 +210,8 @@ func TestDokodemoUDP(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	for port := clientPort; port <= clientPort+clientPortRange; port++ {
 		conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
@@ -219,5 +232,5 @@ func TestDokodemoUDP(t *testing.T) {
 		assert.Error(conn.Close()).IsNil()
 	}
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }

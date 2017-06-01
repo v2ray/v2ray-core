@@ -15,6 +15,7 @@ func (o *NoOpConn) Overhead() int {
 	return 0
 }
 
+// Write implements io.Writer.
 func (o *NoOpConn) Write(b []byte) (int, error) {
 	return len(b), nil
 }

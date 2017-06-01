@@ -52,8 +52,8 @@ func NewRouter(ctx context.Context, config *Config) (*Router, error) {
 	return r, nil
 }
 
-func (v *Router) resolveIP(dest net.Destination) []net.Address {
-	ips := v.dnsServer.Get(dest.Address.Domain())
+func (r *Router) resolveIP(dest net.Destination) []net.Address {
+	ips := r.dnsServer.Get(dest.Address.Domain())
 	if len(ips) == 0 {
 		return nil
 	}
@@ -64,8 +64,8 @@ func (v *Router) resolveIP(dest net.Destination) []net.Address {
 	return dests
 }
 
-func (v *Router) TakeDetour(ctx context.Context) (string, error) {
-	for _, rule := range v.rules {
+func (r *Router) TakeDetour(ctx context.Context) (string, error) {
+	for _, rule := range r.rules {
 		if rule.Apply(ctx) {
 			return rule.Tag, nil
 		}
@@ -76,12 +76,12 @@ func (v *Router) TakeDetour(ctx context.Context) (string, error) {
 		return "", ErrNoRuleApplicable
 	}
 
-	if v.domainStrategy == Config_IpIfNonMatch && dest.Address.Family().IsDomain() {
+	if r.domainStrategy == Config_IpIfNonMatch && dest.Address.Family().IsDomain() {
 		log.Trace(newError("looking up IP for ", dest))
-		ipDests := v.resolveIP(dest)
+		ipDests := r.resolveIP(dest)
 		if ipDests != nil {
 			ctx = proxy.ContextWithResolveIPs(ctx, ipDests)
-			for _, rule := range v.rules {
+			for _, rule := range r.rules {
 				if rule.Apply(ctx) {
 					return rule.Tag, nil
 				}
@@ -92,15 +92,15 @@ func (v *Router) TakeDetour(ctx context.Context) (string, error) {
 	return "", ErrNoRuleApplicable
 }
 
-func (Router) Interface() interface{} {
+func (*Router) Interface() interface{} {
 	return (*Router)(nil)
 }
 
-func (Router) Start() error {
+func (*Router) Start() error {
 	return nil
 }
 
-func (Router) Close() {}
+func (*Router) Close() {}
 
 func FromSpace(space app.Space) *Router {
 	app := space.GetApplication((*Router)(nil))

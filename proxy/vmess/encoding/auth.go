@@ -4,6 +4,8 @@ import (
 	"crypto/md5"
 	"hash/fnv"
 
+	"golang.org/x/crypto/sha3"
+
 	"v2ray.com/core/common/serial"
 )
 
@@ -70,4 +72,37 @@ func GenerateChacha20Poly1305Key(b []byte) []byte {
 	t = md5.Sum(key[:16])
 	copy(key[16:], t[:])
 	return key
+}
+
+type ShakeSizeParser struct {
+	shake  sha3.ShakeHash
+	buffer [2]byte
+}
+
+func NewShakeSizeParser(nonce []byte) *ShakeSizeParser {
+	shake := sha3.NewShake128()
+	shake.Write(nonce)
+	return &ShakeSizeParser{
+		shake: shake,
+	}
+}
+
+func (s *ShakeSizeParser) SizeBytes() int {
+	return 2
+}
+
+func (s *ShakeSizeParser) next() uint16 {
+	s.shake.Read(s.buffer[:])
+	return serial.BytesToUint16(s.buffer[:])
+}
+
+func (s *ShakeSizeParser) Decode(b []byte) (uint16, error) {
+	mask := s.next()
+	size := serial.BytesToUint16(b)
+	return mask ^ size, nil
+}
+
+func (s *ShakeSizeParser) Encode(size uint16, b []byte) []byte {
+	mask := s.next()
+	return serial.Uint16ToBytes(mask^size, b[:0])
 }

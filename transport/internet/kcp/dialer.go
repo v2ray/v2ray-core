@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	globalConv = uint32(dice.RandomUint16())
+	globalConv = uint32(dice.RollUint16())
 )
 
 type ClientConnection struct {
@@ -38,6 +38,7 @@ func (c *ClientConnection) Overhead() int {
 	return c.writer.Overhead()
 }
 
+// Write implements io.Writer.
 func (c *ClientConnection) Write(b []byte) (int, error) {
 	c.RLock()
 	defer c.RUnlock()

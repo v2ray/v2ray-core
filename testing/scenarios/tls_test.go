@@ -118,8 +118,8 @@ func TestSimpleTLSConnection(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 		IP:   []byte{127, 0, 0, 1},
@@ -136,7 +136,7 @@ func TestSimpleTLSConnection(t *testing.T) {
 	assert.Bytes(response).Equals(xor([]byte(payload)))
 	assert.Error(conn.Close()).IsNil()
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestTLSOverKCP(t *testing.T) {
@@ -150,7 +150,7 @@ func TestTLSOverKCP(t *testing.T) {
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
-	serverPort := pickPort()
+	serverPort := pickUDPPort()
 	serverConfig := &core.Config{
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
@@ -234,8 +234,8 @@ func TestTLSOverKCP(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 		IP:   []byte{127, 0, 0, 1},
@@ -252,7 +252,7 @@ func TestTLSOverKCP(t *testing.T) {
 	assert.Bytes(response).Equals(xor([]byte(payload)))
 	assert.Error(conn.Close()).IsNil()
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }
 
 func TestTLSOverWebSocket(t *testing.T) {
@@ -356,8 +356,8 @@ func TestTLSOverWebSocket(t *testing.T) {
 		},
 	}
 
-	assert.Error(InitializeServerConfig(serverConfig)).IsNil()
-	assert.Error(InitializeServerConfig(clientConfig)).IsNil()
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert.Error(err).IsNil()
 
 	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 		IP:   []byte{127, 0, 0, 1},
@@ -375,5 +375,5 @@ func TestTLSOverWebSocket(t *testing.T) {
 	assert.Bytes(response).Equals(xor([]byte(payload)))
 	assert.Error(conn.Close()).IsNil()
 
-	CloseAllServers()
+	CloseAllServers(servers)
 }

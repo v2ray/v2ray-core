@@ -113,7 +113,7 @@ func (v *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 			udpServer.Dispatch(ctx, dest, data, func(payload *buf.Buffer) {
 				defer payload.Release()
 
-				data, err := EncodeUDPPacket(request, payload)
+				data, err := EncodeUDPPacket(request, payload.Bytes())
 				if err != nil {
 					log.Trace(newError("failed to encode UDP packet").Base(err).AtWarning())
 					return
@@ -173,7 +173,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 			return err
 		}
 
-		if err := buf.Copy(timer, ray.InboundOutput(), responseWriter); err != nil {
+		if err := buf.Copy(ray.InboundOutput(), responseWriter, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport all TCP response").Base(err)
 		}
 
@@ -183,7 +183,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 	requestDone := signal.ExecuteAsync(func() error {
 		defer ray.InboundInput().Close()
 
-		if err := buf.Copy(timer, bodyReader, ray.InboundInput()); err != nil {
+		if err := buf.Copy(bodyReader, ray.InboundInput(), buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport all TCP request").Base(err)
 		}
 		return nil

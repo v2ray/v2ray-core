@@ -16,6 +16,7 @@ func (vc *VideoChat) Size() int {
 	return 13
 }
 
+// Write implements io.Writer.
 func (vc *VideoChat) Write(b []byte) (int, error) {
 	vc.sn++
 	b = append(b[:0], 0xa1, 0x08)
@@ -26,7 +27,7 @@ func (vc *VideoChat) Write(b []byte) (int, error) {
 
 func NewVideoChat(ctx context.Context, config interface{}) (interface{}, error) {
 	return &VideoChat{
-		sn: int(dice.RandomUint16()),
+		sn: int(dice.RollUint16()),
 	}, nil
 }
 

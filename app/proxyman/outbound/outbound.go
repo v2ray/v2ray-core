@@ -35,38 +35,38 @@ func (*Manager) Start() error { return nil }
 // Close implements Application.Close
 func (*Manager) Close() {}
 
-func (v *Manager) GetDefaultHandler() proxyman.OutboundHandler {
-	v.RLock()
-	defer v.RUnlock()
-	if v.defaultHandler == nil {
+func (m *Manager) GetDefaultHandler() proxyman.OutboundHandler {
+	m.RLock()
+	defer m.RUnlock()
+	if m.defaultHandler == nil {
 		return nil
 	}
-	return v.defaultHandler
+	return m.defaultHandler
 }
 
-func (v *Manager) GetHandler(tag string) proxyman.OutboundHandler {
-	v.RLock()
-	defer v.RUnlock()
-	if handler, found := v.taggedHandler[tag]; found {
+func (m *Manager) GetHandler(tag string) proxyman.OutboundHandler {
+	m.RLock()
+	defer m.RUnlock()
+	if handler, found := m.taggedHandler[tag]; found {
 		return handler
 	}
 	return nil
 }
 
-func (v *Manager) AddHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) error {
-	v.Lock()
-	defer v.Unlock()
+func (m *Manager) AddHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) error {
+	m.Lock()
+	defer m.Unlock()
 
 	handler, err := NewHandler(ctx, config)
 	if err != nil {
 		return err
 	}
-	if v.defaultHandler == nil {
-		v.defaultHandler = handler
+	if m.defaultHandler == nil {
+		m.defaultHandler = handler
 	}
 
 	if len(config.Tag) > 0 {
-		v.taggedHandler[config.Tag] = handler
+		m.taggedHandler[config.Tag] = handler
 	}
 
 	return nil

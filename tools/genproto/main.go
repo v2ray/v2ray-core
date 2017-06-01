@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"v2ray.com/core/common"
 )
 
 var protocMap = map[string]string{
@@ -64,7 +66,7 @@ func main() {
 		}
 	}
 
-	err := filepath.Walk(reporoot, func(path string, info os.FileInfo, err error) error {
+	common.Must(filepath.Walk(reporoot, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			fmt.Println(err)
 			return err
@@ -90,8 +92,5 @@ func main() {
 		}
 
 		return nil
-	})
-	if err != nil {
-		panic(err)
-	}
+	}))
 }

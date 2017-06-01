@@ -89,7 +89,9 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 
 	allowedClients := vmess.NewTimedUserValidator(ctx, protocol.DefaultIDHash)
 	for _, user := range config.User {
-		allowedClients.Add(user)
+		if err := allowedClients.Add(user); err != nil {
+			return nil, newError("failed to initiate user").Base(err)
+		}
 	}
 
 	handler := &Handler{
@@ -129,7 +131,7 @@ func transferRequest(timer signal.ActivityTimer, session *encoding.ServerSession
 	defer output.Close()
 
 	bodyReader := session.DecodeRequestBody(request, input)
-	if err := buf.Copy(timer, bodyReader, output); err != nil {
+	if err := buf.Copy(bodyReader, output, buf.UpdateActivity(timer)); err != nil {
 		return err
 	}
 	return nil
@@ -157,7 +159,7 @@ func transferResponse(timer signal.ActivityTimer, session *encoding.ServerSessio
 		}
 	}
 
-	if err := buf.Copy(timer, input, bodyWriter); err != nil {
+	if err := buf.Copy(input, bodyWriter, buf.UpdateActivity(timer)); err != nil {
 		return err
 	}
 
@@ -172,7 +174,10 @@ func transferResponse(timer signal.ActivityTimer, session *encoding.ServerSessio
 
 // Process implements proxy.Inbound.Process().
 func (v *Handler) Process(ctx context.Context, network net.Network, connection internet.Connection, dispatcher dispatcher.Interface) error {
-	connection.SetReadDeadline(time.Now().Add(time.Second * 8))
+	if err := connection.SetReadDeadline(time.Now().Add(time.Second * 8)); err != nil {
+		return err
+	}
+
 	reader := buf.NewBufferedReader(connection)
 
 	session := encoding.NewServerSession(v.clients, v.sessionHistory)
@@ -181,14 +186,20 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 	if err != nil {
 		if errors.Cause(err) != io.EOF {
 			log.Access(connection.RemoteAddr(), "", log.AccessRejected, err)
-			log.Trace(newError("invalid request from ", connection.RemoteAddr(), ": ", err))
+			log.Trace(newError("invalid request from ", connection.RemoteAddr(), ": ", err).AtInfo())
 		}
 		return err
 	}
+
+	if request.Command == protocol.RequestCommandMux {
+		request.Address = net.DomainAddress("v1.mux.com")
+		request.Port = net.Port(0)
+	}
+
 	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, "")
 	log.Trace(newError("received request for ", request.Destination()))
 
-	connection.SetReadDeadline(time.Time{})
+	common.Must(connection.SetReadDeadline(time.Time{}))
 
 	userSettings := request.User.GetSettings()
 
@@ -209,12 +220,13 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 		return transferRequest(timer, session, request, reader, input)
 	})
 
-	writer := buf.NewBufferedWriter(connection)
-	response := &protocol.ResponseHeader{
-		Command: v.generateCommand(ctx, request),
-	}
-
 	responseDone := signal.ExecuteAsync(func() error {
+		writer := buf.NewBufferedWriter(connection)
+		defer writer.Flush()
+
+		response := &protocol.ResponseHeader{
+			Command: v.generateCommand(ctx, request),
+		}
 		return transferResponse(timer, session, request, response, output, writer)
 	})
 
@@ -222,10 +234,6 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 		input.CloseError()
 		output.CloseError()
 		return newError("connection ends").Base(err)
-	}
-
-	if err := writer.Flush(); err != nil {
-		return newError("error during flushing remaining data").Base(err)
 	}
 
 	runtime.KeepAlive(timer)

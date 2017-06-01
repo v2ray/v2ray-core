@@ -2,32 +2,27 @@ package tcp
 
 import (
 	"context"
-	"crypto/tls"
+	gotls "crypto/tls"
 	"net"
-	"time"
 
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	v2net "v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/transport/internet"
-	v2tls "v2ray.com/core/transport/internet/tls"
-)
-
-var (
-	ErrClosedListener = newError("Listener is closed.")
+	"v2ray.com/core/transport/internet/tls"
 )
 
 type TCPListener struct {
 	ctx        context.Context
 	listener   *net.TCPListener
-	tlsConfig  *tls.Config
+	tlsConfig  *gotls.Config
 	authConfig internet.ConnectionAuthenticator
 	config     *Config
-	conns      chan<- internet.Connection
+	addConn    internet.AddConnection
 }
 
-func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, conns chan<- internet.Connection) (internet.Listener, error) {
+func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, addConn internet.AddConnection) (internet.Listener, error) {
 	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   address.IP(),
 		Port: int(port),
@@ -43,10 +38,10 @@ func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, conn
 		ctx:      ctx,
 		listener: listener,
 		config:   tcpSettings,
-		conns:    conns,
+		addConn:  addConn,
 	}
 	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
-		tlsConfig, ok := securitySettings.(*v2tls.Config)
+		tlsConfig, ok := securitySettings.(*tls.Config)
 		if ok {
 			l.tlsConfig = tlsConfig.GetTLSConfig()
 		}
@@ -94,11 +89,7 @@ func (v *TCPListener) KeepAccepting() {
 			conn = v.authConfig.Server(conn)
 		}
 
-		select {
-		case v.conns <- internet.Connection(conn):
-		case <-time.After(time.Second * 5):
-			conn.Close()
-		}
+		v.addConn(context.Background(), internet.Connection(conn))
 	}
 }
 
@@ -107,8 +98,7 @@ func (v *TCPListener) Addr() net.Addr {
 }
 
 func (v *TCPListener) Close() error {
-	v.listener.Close()
-	return nil
+	return v.listener.Close()
 }
 
 func init() {

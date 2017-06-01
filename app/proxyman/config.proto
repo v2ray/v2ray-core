@@ -8,7 +8,6 @@ option java_multiple_files = true;
 
 import "v2ray.com/core/common/serial/typed_message.proto";
 import "v2ray.com/core/common/net/address.proto";
-import "v2ray.com/core/common/net/destination.proto";
 import "v2ray.com/core/common/net/port.proto";
 import "v2ray.com/core/transport/internet/config.proto";
 
@@ -47,13 +46,19 @@ message AllocationStrategy {
   AllocationStrategyRefresh refresh = 3;
 }
 
+enum KnownProtocols {
+  HTTP = 0;
+  TLS = 1;
+}
+
 message ReceiverConfig {
   v2ray.core.common.net.PortRange port_range = 1;
   v2ray.core.common.net.IPOrDomain listen = 2;
   AllocationStrategy allocation_strategy = 3;
   v2ray.core.transport.internet.StreamConfig stream_settings = 4;
   bool receive_original_destination = 5;
-  bool allow_passive_connection = 6 [deprecated=true];
+  reserved 6;
+  repeated KnownProtocols domain_override = 7;
 }
 
 message InboundHandlerConfig {

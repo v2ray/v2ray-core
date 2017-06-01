@@ -117,6 +117,7 @@ func NewChunkWriter(writer io.Writer, auth *Authenticator) *ChunkWriter {
 	}
 }
 
+// Write implements buf.MultiBufferWriter.
 func (w *ChunkWriter) Write(mb buf.MultiBuffer) error {
 	defer mb.Release()
 

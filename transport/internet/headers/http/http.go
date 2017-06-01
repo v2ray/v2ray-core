@@ -17,7 +17,10 @@ import (
 )
 
 const (
-	CRLF   = "\r\n"
+	// CRLF is the line ending in HTTP header
+	CRLF = "\r\n"
+
+	// ENDING is the double line ending between HTTP header and body.
 	ENDING = CRLF + CRLF
 
 	// max length of HTTP header. Safety precaution for DDoS attack.
@@ -39,13 +42,13 @@ type Writer interface {
 
 type NoOpReader struct{}
 
-func (v *NoOpReader) Read(io.Reader) (*buf.Buffer, error) {
+func (NoOpReader) Read(io.Reader) (*buf.Buffer, error) {
 	return nil, nil
 }
 
 type NoOpWriter struct{}
 
-func (v *NoOpWriter) Write(io.Writer) error {
+func (NoOpWriter) Write(io.Writer) error {
 	return nil
 }
 
@@ -59,6 +62,7 @@ func (*HeaderReader) Read(reader io.Reader) (*buf.Buffer, error) {
 	for totalBytes < maxHeaderLength {
 		err := buffer.AppendSupplier(buf.ReadFrom(reader))
 		if err != nil {
+			buffer.Release()
 			return nil, err
 		}
 		if n := bytes.Index(buffer.Bytes(), []byte(ENDING)); n != -1 {
@@ -145,6 +149,7 @@ func (c *HttpConn) Read(b []byte) (int, error) {
 	return c.Conn.Read(b)
 }
 
+// Write implements io.Writer.
 func (c *HttpConn) Write(b []byte) (int, error) {
 	if c.oneTimeWriter != nil {
 		err := c.oneTimeWriter.Write(c.Conn)
@@ -218,16 +223,16 @@ func (a HttpAuthenticator) Client(conn net.Conn) net.Conn {
 	if a.config.Request == nil && a.config.Response == nil {
 		return conn
 	}
-	var reader Reader = new(NoOpReader)
+	var reader Reader = NoOpReader{}
 	if a.config.Request != nil {
 		reader = new(HeaderReader)
 	}
 
-	var writer Writer = new(NoOpWriter)
+	var writer Writer = NoOpWriter{}
 	if a.config.Response != nil {
 		writer = a.GetClientWriter()
 	}
-	return NewHttpConn(conn, reader, writer, new(NoOpWriter))
+	return NewHttpConn(conn, reader, writer, NoOpWriter{})
 }
 
 func (a HttpAuthenticator) Server(conn net.Conn) net.Conn {

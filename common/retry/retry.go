@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	ErrRetryFailed = newError("Retry: All retry attempts failed.")
+	ErrRetryFailed = newError("all retry attempts failed")
 )
 
 // Strategy is a way to retry on a specific function.
@@ -35,7 +35,7 @@ func (r *retryer) On(method func() error) error {
 			accumulatedError = append(accumulatedError, err)
 		}
 		delay := r.nextDelay()
-		<-time.After(time.Duration(delay) * time.Millisecond)
+		time.Sleep(time.Duration(delay) * time.Millisecond)
 		attempt++
 	}
 	return newError(accumulatedError).Base(ErrRetryFailed)

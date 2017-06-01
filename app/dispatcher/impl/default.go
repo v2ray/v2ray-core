@@ -4,6 +4,7 @@ package impl
 
 import (
 	"context"
+	"time"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
@@ -11,16 +12,27 @@ import (
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/router"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
 )
 
+var (
+	errSniffingTimeout = newError("timeout on sniffing")
+)
+
+var (
+	_ app.Application = (*DefaultDispatcher)(nil)
+)
+
+// DefaultDispatcher is a default implementation of Dispatcher.
 type DefaultDispatcher struct {
 	ohm    proxyman.OutboundHandlerManager
 	router *router.Router
 }
 
+// NewDefaultDispatcher create a new DefaultDispatcher.
 func NewDefaultDispatcher(ctx context.Context, config *dispatcher.Config) (*DefaultDispatcher, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
@@ -38,27 +50,98 @@ func NewDefaultDispatcher(ctx context.Context, config *dispatcher.Config) (*Defa
 	return d, nil
 }
 
-func (DefaultDispatcher) Start() error {
+// Start implements app.Application.
+func (*DefaultDispatcher) Start() error {
 	return nil
 }
 
-func (DefaultDispatcher) Close() {}
+// Close implements app.Application.
+func (*DefaultDispatcher) Close() {}
 
-func (DefaultDispatcher) Interface() interface{} {
+// Interface implements app.Application.
+func (*DefaultDispatcher) Interface() interface{} {
 	return (*dispatcher.Interface)(nil)
 }
 
-func (v *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destination) (ray.InboundRay, error) {
-	dispatcher := v.ohm.GetDefaultHandler()
+// Dispatch implements Dispatcher.Interface.
+func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destination) (ray.InboundRay, error) {
 	if !destination.IsValid() {
 		panic("Dispatcher: Invalid destination.")
 	}
-
 	ctx = proxy.ContextWithTarget(ctx, destination)
 
-	if v.router != nil {
-		if tag, err := v.router.TakeDetour(ctx); err == nil {
-			if handler := v.ohm.GetHandler(tag); handler != nil {
+	outbound := ray.NewRay(ctx)
+	sniferList := proxyman.ProtocoSniffersFromContext(ctx)
+	if destination.Address.Family().IsDomain() || len(sniferList) == 0 {
+		go d.routedDispatch(ctx, outbound, destination)
+	} else {
+		go func() {
+			domain, err := snifer(ctx, sniferList, outbound)
+			if err == nil {
+				log.Trace(newError("sniffed domain: ", domain))
+				destination.Address = net.ParseAddress(domain)
+				ctx = proxy.ContextWithTarget(ctx, destination)
+			}
+			d.routedDispatch(ctx, outbound, destination)
+		}()
+	}
+	return outbound, nil
+}
+
+func trySnif(sniferList []proxyman.KnownProtocols, b []byte) (string, error) {
+	for _, protocol := range sniferList {
+		var f func([]byte) (string, error)
+		switch protocol {
+		case proxyman.KnownProtocols_HTTP:
+			f = SniffHTTP
+		case proxyman.KnownProtocols_TLS:
+			f = SniffTLS
+		default:
+			panic("Unsupported protocol")
+		}
+
+		domain, err := f(b)
+		if err != ErrMoreData {
+			return domain, err
+		}
+	}
+	return "", ErrMoreData
+}
+
+func snifer(ctx context.Context, sniferList []proxyman.KnownProtocols, outbound ray.OutboundRay) (string, error) {
+	payload := buf.New()
+	defer payload.Release()
+
+	totalAttempt := 0
+	for {
+		select {
+		case <-ctx.Done():
+			return "", ctx.Err()
+		default:
+			totalAttempt++
+			if totalAttempt > 5 {
+				return "", errSniffingTimeout
+			}
+			outbound.OutboundInput().Peek(payload)
+			if !payload.IsEmpty() {
+				domain, err := trySnif(sniferList, payload.Bytes())
+				if err != ErrMoreData {
+					return domain, err
+				}
+			}
+			if payload.IsFull() {
+				return "", ErrInvalidData
+			}
+			time.Sleep(time.Millisecond * 100)
+		}
+	}
+}
+
+func (d *DefaultDispatcher) routedDispatch(ctx context.Context, outbound ray.OutboundRay, destination net.Destination) {
+	dispatcher := d.ohm.GetDefaultHandler()
+	if d.router != nil {
+		if tag, err := d.router.TakeDetour(ctx); err == nil {
+			if handler := d.ohm.GetHandler(tag); handler != nil {
 				log.Trace(newError("taking detour [", tag, "] for [", destination, "]"))
 				dispatcher = handler
 			} else {
@@ -68,11 +151,7 @@ func (v *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 			log.Trace(newError("default route for ", destination))
 		}
 	}
-
-	direct := ray.NewRay(ctx)
-	go dispatcher.Dispatch(ctx, direct)
-
-	return direct, nil
+	dispatcher.Dispatch(ctx, outbound)
 }
 
 func init() {

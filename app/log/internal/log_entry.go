@@ -16,8 +16,8 @@ type ErrorLog struct {
 	Error  error
 }
 
-func (v *ErrorLog) String() string {
-	return v.Prefix + v.Error.Error()
+func (l *ErrorLog) String() string {
+	return l.Prefix + l.Error.Error()
 }
 
 type AccessLog struct {
@@ -27,6 +27,6 @@ type AccessLog struct {
 	Reason interface{}
 }
 
-func (v *AccessLog) String() string {
-	return strings.Join([]string{serial.ToString(v.From), v.Status, serial.ToString(v.To), serial.ToString(v.Reason)}, " ")
+func (l *AccessLog) String() string {
+	return strings.Join([]string{serial.ToString(l.From), l.Status, serial.ToString(l.To), serial.ToString(l.Reason)}, " ")
 }

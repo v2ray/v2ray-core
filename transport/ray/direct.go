@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/platform"
 )
 
 // NewRay creates a new Ray for direct traffic transport.
@@ -38,19 +39,34 @@ func (v *directRay) InboundOutput() InputStream {
 	return v.Output
 }
 
+var streamSizeLimit uint64 = 10 * 1024 * 1024
+
+func init() {
+	const raySizeEnvKey = "v2ray.ray.buffer.size"
+	size := platform.EnvFlag{
+		Name:    raySizeEnvKey,
+		AltName: platform.NormalizeEnvName(raySizeEnvKey),
+	}.GetValueAsInt(10)
+	streamSizeLimit = uint64(size) * 1024 * 1024
+}
+
 type Stream struct {
-	access sync.Mutex
-	data   buf.MultiBuffer
-	ctx    context.Context
-	wakeup chan bool
-	close  bool
-	err    bool
+	access      sync.RWMutex
+	data        buf.MultiBuffer
+	size        uint64
+	ctx         context.Context
+	readSignal  chan bool
+	writeSignal chan bool
+	close       bool
+	err         bool
 }
 
 func NewStream(ctx context.Context) *Stream {
 	return &Stream{
-		ctx:    ctx,
-		wakeup: make(chan bool, 1),
+		ctx:         ctx,
+		readSignal:  make(chan bool, 1),
+		writeSignal: make(chan bool, 1),
+		size:        0,
 	}
 }
 
@@ -61,6 +77,7 @@ func (s *Stream) getData() (buf.MultiBuffer, error) {
 	if s.data != nil {
 		mb := s.data
 		s.data = nil
+		s.size = 0
 		return mb, nil
 	}
 
@@ -75,6 +92,15 @@ func (s *Stream) getData() (buf.MultiBuffer, error) {
 	return nil, nil
 }
 
+func (s *Stream) Peek(b *buf.Buffer) {
+	s.access.RLock()
+	defer s.access.RUnlock()
+
+	b.Reset(func(data []byte) (int, error) {
+		return s.data.Copy(data), nil
+	})
+}
+
 func (s *Stream) Read() (buf.MultiBuffer, error) {
 	for {
 		mb, err := s.getData()
@@ -83,13 +109,14 @@ func (s *Stream) Read() (buf.MultiBuffer, error) {
 		}
 
 		if mb != nil {
+			s.notifyRead()
 			return mb, nil
 		}
 
 		select {
 		case <-s.ctx.Done():
 			return nil, io.EOF
-		case <-s.wakeup:
+		case <-s.writeSignal:
 		}
 	}
 }
@@ -102,6 +129,7 @@ func (s *Stream) ReadTimeout(timeout time.Duration) (buf.MultiBuffer, error) {
 		}
 
 		if mb != nil {
+			s.notifyRead()
 			return mb, nil
 		}
 
@@ -110,7 +138,7 @@ func (s *Stream) ReadTimeout(timeout time.Duration) (buf.MultiBuffer, error) {
 			return nil, io.EOF
 		case <-time.After(timeout):
 			return nil, buf.ErrReadTimeout
-		case <-s.wakeup:
+		case <-s.writeSignal:
 		}
 	}
 }
@@ -118,6 +146,21 @@ func (s *Stream) ReadTimeout(timeout time.Duration) (buf.MultiBuffer, error) {
 func (s *Stream) Write(data buf.MultiBuffer) error {
 	if data.IsEmpty() {
 		return nil
+	}
+
+	for streamSizeLimit > 0 && s.size >= streamSizeLimit {
+		select {
+		case <-s.ctx.Done():
+			return io.ErrClosedPipe
+		case <-s.readSignal:
+			s.access.RLock()
+			if s.err || s.close {
+				data.Release()
+				s.access.RUnlock()
+				return io.ErrClosedPipe
+			}
+			s.access.RUnlock()
+		}
 	}
 
 	s.access.Lock()
@@ -133,14 +176,22 @@ func (s *Stream) Write(data buf.MultiBuffer) error {
 	} else {
 		s.data.AppendMulti(data)
 	}
-	s.wakeUp()
+	s.size += uint64(data.Len())
+	s.notifyWrite()
 
 	return nil
 }
 
-func (s *Stream) wakeUp() {
+func (s *Stream) notifyRead() {
 	select {
-	case s.wakeup <- true:
+	case s.readSignal <- true:
+	default:
+	}
+}
+
+func (s *Stream) notifyWrite() {
+	select {
+	case s.writeSignal <- true:
 	default:
 	}
 }
@@ -148,7 +199,8 @@ func (s *Stream) wakeUp() {
 func (s *Stream) Close() {
 	s.access.Lock()
 	s.close = true
-	s.wakeUp()
+	s.notifyRead()
+	s.notifyWrite()
 	s.access.Unlock()
 }
 
@@ -158,7 +210,9 @@ func (s *Stream) CloseError() {
 	if s.data != nil {
 		s.data.Release()
 		s.data = nil
+		s.size = 0
 	}
-	s.wakeUp()
+	s.notifyRead()
+	s.notifyWrite()
 	s.access.Unlock()
 }

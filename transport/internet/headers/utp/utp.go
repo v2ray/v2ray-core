@@ -18,6 +18,7 @@ func (*UTP) Size() int {
 	return 4
 }
 
+// Write implements io.Writer.
 func (u *UTP) Write(b []byte) (int, error) {
 	serial.Uint16ToBytes(u.connectionId, b[:0])
 	b[2] = u.header
@@ -30,7 +31,7 @@ func NewUTP(ctx context.Context, config interface{}) (interface{}, error) {
 	return &UTP{
 		header:       1,
 		extension:    0,
-		connectionId: dice.RandomUint16(),
+		connectionId: dice.RollUint16(),
 	}, nil
 }
 

@@ -16,10 +16,9 @@ type LogWriter interface {
 type NoOpLogWriter struct {
 }
 
-func (v *NoOpLogWriter) Log(entry LogEntry) {}
+func (*NoOpLogWriter) Log(entry LogEntry) {}
 
-func (v *NoOpLogWriter) Close() {
-}
+func (*NoOpLogWriter) Close() {}
 
 type StdOutLogWriter struct {
 	logger *log.Logger
@@ -31,11 +30,11 @@ func NewStdOutLogWriter() LogWriter {
 	}
 }
 
-func (v *StdOutLogWriter) Log(log LogEntry) {
-	v.logger.Print(log.String() + platform.LineSeparator())
+func (w *StdOutLogWriter) Log(log LogEntry) {
+	w.logger.Print(log.String() + platform.LineSeparator())
 }
 
-func (v *StdOutLogWriter) Close() {}
+func (*StdOutLogWriter) Close() {}
 
 type FileLogWriter struct {
 	queue  chan string
@@ -45,31 +44,30 @@ type FileLogWriter struct {
 	cancel context.CancelFunc
 }
 
-func (v *FileLogWriter) Log(log LogEntry) {
+func (w *FileLogWriter) Log(log LogEntry) {
 	select {
-	case <-v.ctx.Done():
+	case <-w.ctx.Done():
 		return
-	case v.queue <- log.String():
+	case w.queue <- log.String():
 	default:
 		// We don't expect this to happen, but don't want to block main thread as well.
 	}
 }
 
-func (v *FileLogWriter) run(ctx context.Context) {
-L:
+func (w *FileLogWriter) run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			break L
-		case entry := <-v.queue:
-			v.logger.Print(entry + platform.LineSeparator())
+			w.file.Close()
+			return
+		case entry := <-w.queue:
+			w.logger.Print(entry + platform.LineSeparator())
 		}
 	}
-	v.file.Close()
 }
 
-func (v *FileLogWriter) Close() {
-	v.cancel()
+func (w *FileLogWriter) Close() {
+	w.cancel()
 }
 
 func NewFileLogWriter(path string) (*FileLogWriter, error) {

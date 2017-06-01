@@ -5,15 +5,14 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"v2ray.com/core/common"
 	. "v2ray.com/core/common/crypto"
 	"v2ray.com/core/testing/assert"
 )
 
 func mustDecodeHex(s string) []byte {
 	b, err := hex.DecodeString(s)
-	if err != nil {
-		panic(err)
-	}
+	common.Must(err)
 	return b
 }
 

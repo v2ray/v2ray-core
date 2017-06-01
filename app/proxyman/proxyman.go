@@ -50,3 +50,20 @@ func OutboundHandlerManagerFromSpace(space app.Space) OutboundHandlerManager {
 	}
 	return app.(OutboundHandlerManager)
 }
+
+type key int
+
+const (
+	protocolsKey key = iota
+)
+
+func ContextWithProtocolSniffers(ctx context.Context, list []KnownProtocols) context.Context {
+	return context.WithValue(ctx, protocolsKey, list)
+}
+
+func ProtocoSniffersFromContext(ctx context.Context) []KnownProtocols {
+	if list, ok := ctx.Value(protocolsKey).([]KnownProtocols); ok {
+		return list
+	}
+	return nil
+}
