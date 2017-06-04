@@ -33,32 +33,33 @@ mkdir -p /v2ray/src
 export GOPATH=/v2ray
 
 go get -u v2ray.com/core/...
+go get -u v2ray.com/ext/...
 
 pushd $GOPATH/src/v2ray.com/core/
 git checkout tags/${RELEASE_TAG}
 popd
 
-go install v2ray.com/core/tools/build
+go install v2ray.com/ext/tools/build/vbuild
 
 export TRAVIS_TAG=${RELEASE_TAG}
 export GPG_SIGN_PASS=${SIGN_KEY_PASS}
 export V_USER=${VUSER}
 
-$GOPATH/bin/build --os=windows --arch=x86 --zip --sign
-$GOPATH/bin/build --os=windows --arch=x64 --zip --sign
-$GOPATH/bin/build --os=macos --arch=x64 --zip --sign
-$GOPATH/bin/build --os=linux --arch=x86 --zip --sign
-$GOPATH/bin/build --os=linux --arch=x64 --zip --sign
-$GOPATH/bin/build --os=linux --arch=arm --zip --sign
-$GOPATH/bin/build --os=linux --arch=arm64 --zip --sign
-$GOPATH/bin/build --os=linux --arch=mips64 --zip --sign
-$GOPATH/bin/build --os=linux --arch=mips64le --zip --sign
-$GOPATH/bin/build --os=linux --arch=mips --zip --sign
-$GOPATH/bin/build --os=linux --arch=mipsle --zip --sign
-$GOPATH/bin/build --os=freebsd --arch=x86 --zip --sign
-$GOPATH/bin/build --os=freebsd --arch=amd64 --zip --sign
-$GOPATH/bin/build --os=openbsd --arch=x86 --zip --sign
-$GOPATH/bin/build --os=openbsd --arch=amd64 --zip --sign
+$GOPATH/bin/vbuild --os=windows --arch=x86 --zip --sign
+$GOPATH/bin/vbuild --os=windows --arch=x64 --zip --sign
+$GOPATH/bin/vbuild --os=macos --arch=x64 --zip --sign
+$GOPATH/bin/vbuild --os=linux --arch=x86 --zip --sign
+$GOPATH/bin/vbuild --os=linux --arch=x64 --zip --sign
+$GOPATH/bin/vbuild --os=linux --arch=arm --zip --sign
+$GOPATH/bin/vbuild --os=linux --arch=arm64 --zip --sign
+$GOPATH/bin/vbuild --os=linux --arch=mips64 --zip --sign
+$GOPATH/bin/vbuild --os=linux --arch=mips64le --zip --sign
+$GOPATH/bin/vbuild --os=linux --arch=mips --zip --sign
+$GOPATH/bin/vbuild --os=linux --arch=mipsle --zip --sign
+$GOPATH/bin/vbuild --os=freebsd --arch=x86 --zip --sign
+$GOPATH/bin/vbuild --os=freebsd --arch=amd64 --zip --sign
+$GOPATH/bin/vbuild --os=openbsd --arch=x86 --zip --sign
+$GOPATH/bin/vbuild --os=openbsd --arch=amd64 --zip --sign
 
 JSON_DATA=$(printf '{"tag_name": "%s", "prerelease": %s}' ${RELEASE_TAG} ${PRERELEASE})
 RELEASE_ID=$(curl --data "${JSON_DATA}" -H "Authorization: token ${GITHUB_TOKEN}" -X POST https://api.github.com/repos/v2ray/v2ray-core/releases | jq ".id")
