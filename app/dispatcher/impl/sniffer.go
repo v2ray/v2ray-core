@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"strings"
 
+	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common/serial"
 )
 
@@ -165,4 +166,50 @@ func SniffTLS(b []byte) (string, error) {
 		return "", ErrMoreData
 	}
 	return ReadClientHello(b[5 : 5+headerLen])
+}
+
+type Sniffer struct {
+	slist []func([]byte) (string, error)
+	err   []error
+}
+
+func NewSniffer(sniferList []proxyman.KnownProtocols) *Sniffer {
+	s := new(Sniffer)
+
+	for _, protocol := range sniferList {
+		var f func([]byte) (string, error)
+		switch protocol {
+		case proxyman.KnownProtocols_HTTP:
+			f = SniffHTTP
+		case proxyman.KnownProtocols_TLS:
+			f = SniffTLS
+		default:
+			panic("Unsupported protocol")
+		}
+		s.slist = append(s.slist, f)
+	}
+	s.err = make([]error, len(s.slist))
+
+	return s
+}
+
+func (s *Sniffer) Sniff(payload []byte) (string, error) {
+	sniffed := false
+	for idx, sniffer := range s.slist {
+		if s.err[idx] != nil {
+			continue
+		}
+		sniffed = true
+		domain, err := sniffer(payload)
+		if err == nil {
+			return domain, nil
+		}
+		if err != ErrMoreData {
+			s.err[idx] = err
+		}
+	}
+	if sniffed {
+		return "", ErrMoreData
+	}
+	return "", s.err[0]
 }

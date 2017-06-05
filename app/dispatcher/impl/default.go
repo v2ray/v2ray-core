@@ -88,30 +88,11 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	return outbound, nil
 }
 
-func trySnif(sniferList []proxyman.KnownProtocols, b []byte) (string, error) {
-	for _, protocol := range sniferList {
-		var f func([]byte) (string, error)
-		switch protocol {
-		case proxyman.KnownProtocols_HTTP:
-			f = SniffHTTP
-		case proxyman.KnownProtocols_TLS:
-			f = SniffTLS
-		default:
-			panic("Unsupported protocol")
-		}
-
-		domain, err := f(b)
-		if err != ErrMoreData {
-			return domain, err
-		}
-	}
-	return "", ErrMoreData
-}
-
 func snifer(ctx context.Context, sniferList []proxyman.KnownProtocols, outbound ray.OutboundRay) (string, error) {
 	payload := buf.New()
 	defer payload.Release()
 
+	sniffer := NewSniffer(sniferList)
 	totalAttempt := 0
 	for {
 		select {
@@ -124,7 +105,7 @@ func snifer(ctx context.Context, sniferList []proxyman.KnownProtocols, outbound 
 			}
 			outbound.OutboundInput().Peek(payload)
 			if !payload.IsEmpty() {
-				domain, err := trySnif(sniferList, payload.Bytes())
+				domain, err := sniffer.Sniff(payload.Bytes())
 				if err != ErrMoreData {
 					return domain, err
 				}
