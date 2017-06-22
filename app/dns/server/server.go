@@ -27,7 +27,6 @@ type DomainRecord struct {
 
 type CacheServer struct {
 	sync.RWMutex
-	space   app.Space
 	hosts   map[string]net.IP
 	records map[string]*DomainRecord
 	servers []NameServer
