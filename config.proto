@@ -31,4 +31,9 @@ message Config {
 
   // Transport settings.
   v2ray.core.transport.Config transport = 5;
+
+  //Reserved for LibV2Ray Client
+  //Content of this section can be ignored by v2ray-core
+  reserved 12;
+  reserved "#libv2ray";
 }
