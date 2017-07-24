@@ -21,7 +21,7 @@ func (r *BytesToBufferReader) Read() (MultiBuffer, error) {
 
 	mb := NewMultiBuffer()
 	mb.Write(r.buffer[:nBytes])
-  return mb, nil
+	return mb, nil
 }
 
 type readerAdpater struct {
