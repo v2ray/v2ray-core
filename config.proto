@@ -31,4 +31,8 @@ message Config {
 
   // Transport settings.
   v2ray.core.transport.Config transport = 5;
+
+  // Configuration for extensions. The config may not work if corresponding extension is not loaded into V2Ray.
+  // V2Ray will ignore such config during initialization.
+  repeated v2ray.core.common.serial.TypedMessage extension = 6;
 }
