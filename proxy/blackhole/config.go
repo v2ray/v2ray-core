@@ -22,22 +22,22 @@ type ResponseConfig interface {
 }
 
 // WriteTo implements ResponseConfig.WriteTo().
-func (v *NoneResponse) WriteTo(buf.Writer) {}
+func (*NoneResponse) WriteTo(buf.Writer) {}
 
 // WriteTo implements ResponseConfig.WriteTo().
-func (v *HTTPResponse) WriteTo(writer buf.Writer) {
+func (*HTTPResponse) WriteTo(writer buf.Writer) {
 	b := buf.NewLocal(512)
 	b.AppendSupplier(serial.WriteString(http403response))
 	writer.Write(buf.NewMultiBufferValue(b))
 }
 
 // GetInternalResponse converts response settings from proto to internal data structure.
-func (v *Config) GetInternalResponse() (ResponseConfig, error) {
-	if v.GetResponse() == nil {
+func (c *Config) GetInternalResponse() (ResponseConfig, error) {
+	if c.GetResponse() == nil {
 		return new(NoneResponse), nil
 	}
 
-	config, err := v.GetResponse().GetInstance()
+	config, err := c.GetResponse().GetInstance()
 	if err != nil {
 		return nil, err
 	}
