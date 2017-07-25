@@ -9,7 +9,7 @@ import (
 func CreateInboundHandler(ctx context.Context, config interface{}) (Inbound, error) {
 	handler, err := common.CreateObject(ctx, config)
 	if err != nil {
-		return nil, err
+		return nil, newError("failed to create inbound handler").Base(err)
 	}
 	switch h := handler.(type) {
 	case Inbound:
@@ -22,7 +22,7 @@ func CreateInboundHandler(ctx context.Context, config interface{}) (Inbound, err
 func CreateOutboundHandler(ctx context.Context, config interface{}) (Outbound, error) {
 	handler, err := common.CreateObject(ctx, config)
 	if err != nil {
-		return nil, err
+		return nil, newError("failed to create outbound handler").Base(err)
 	}
 	switch h := handler.(type) {
 	case Outbound:

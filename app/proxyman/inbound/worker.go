@@ -79,7 +79,7 @@ func (w *tcpWorker) Start() error {
 	conns := make(chan internet.Connection, 16)
 	hub, err := internet.ListenTCP(ctx, w.address, w.port, conns)
 	if err != nil {
-		return err
+		return newError("failed to listen TCP on ", w.port).Base(err)
 	}
 	go w.handleConnections(conns)
 	w.hub = hub
