@@ -187,20 +187,20 @@ func (v *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 	panic("Unknown security type.")
 }
 
-func (v *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.ResponseHeader, error) {
-	aesStream := crypto.NewAesDecryptionStream(v.responseBodyKey, v.responseBodyIV)
-	v.responseReader = crypto.NewCryptionReader(aesStream, reader)
+func (c *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.ResponseHeader, error) {
+	aesStream := crypto.NewAesDecryptionStream(c.responseBodyKey, c.responseBodyIV)
+	c.responseReader = crypto.NewCryptionReader(aesStream, reader)
 
 	buffer := make([]byte, 256)
 
-	_, err := io.ReadFull(v.responseReader, buffer[:4])
+	_, err := io.ReadFull(c.responseReader, buffer[:4])
 	if err != nil {
 		log.Trace(newError("failed to read response header").Base(err))
 		return nil, err
 	}
 
-	if buffer[0] != v.responseHeader {
-		return nil, newError("unexpected response header. Expecting ", int(v.responseHeader), " but actually ", int(buffer[0]))
+	if buffer[0] != c.responseHeader {
+		return nil, newError("unexpected response header. Expecting ", int(c.responseHeader), " but actually ", int(buffer[0]))
 	}
 
 	header := &protocol.ResponseHeader{
@@ -210,7 +210,7 @@ func (v *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 	if buffer[2] != 0 {
 		cmdID := buffer[2]
 		dataLen := int(buffer[3])
-		_, err := io.ReadFull(v.responseReader, buffer[:dataLen])
+		_, err := io.ReadFull(c.responseReader, buffer[:dataLen])
 		if err != nil {
 			log.Trace(newError("failed to read response command").Base(err))
 			return nil, err
@@ -225,10 +225,10 @@ func (v *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 	return header, nil
 }
 
-func (v *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, reader io.Reader) buf.Reader {
+func (c *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, reader io.Reader) buf.Reader {
 	var sizeParser crypto.ChunkSizeDecoder = crypto.PlainChunkSizeParser{}
 	if request.Option.Has(protocol.RequestOptionChunkMasking) {
-		sizeParser = NewShakeSizeParser(v.responseBodyIV)
+		sizeParser = NewShakeSizeParser(c.responseBodyIV)
 	}
 	if request.Security.Is(protocol.SecurityType_NONE) {
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
@@ -255,20 +255,20 @@ func (v *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 				NonceGenerator:          crypto.NoOpBytesGenerator{},
 				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 			}
-			return crypto.NewAuthenticationReader(auth, sizeParser, v.responseReader, request.Command.TransferType())
+			return crypto.NewAuthenticationReader(auth, sizeParser, c.responseReader, request.Command.TransferType())
 		}
 
-		return buf.NewReader(v.responseReader)
+		return buf.NewReader(c.responseReader)
 	}
 
 	if request.Security.Is(protocol.SecurityType_AES128_GCM) {
-		block, _ := aes.NewCipher(v.responseBodyKey)
+		block, _ := aes.NewCipher(c.responseBodyKey)
 		aead, _ := cipher.NewGCM(block)
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD: aead,
 			NonceGenerator: &ChunkNonceGenerator{
-				Nonce: append([]byte(nil), v.responseBodyIV...),
+				Nonce: append([]byte(nil), c.responseBodyIV...),
 				Size:  aead.NonceSize(),
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
@@ -277,12 +277,12 @@ func (v *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 	}
 
 	if request.Security.Is(protocol.SecurityType_CHACHA20_POLY1305) {
-		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(v.responseBodyKey))
+		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(c.responseBodyKey))
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD: aead,
 			NonceGenerator: &ChunkNonceGenerator{
-				Nonce: append([]byte(nil), v.responseBodyIV...),
+				Nonce: append([]byte(nil), c.responseBodyIV...),
 				Size:  aead.NonceSize(),
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},

@@ -41,23 +41,23 @@ type FnvAuthenticator struct {
 }
 
 // NonceSize implements AEAD.NonceSize().
-func (v *FnvAuthenticator) NonceSize() int {
+func (*FnvAuthenticator) NonceSize() int {
 	return 0
 }
 
 // Overhead impelements AEAD.Overhead().
-func (v *FnvAuthenticator) Overhead() int {
+func (*FnvAuthenticator) Overhead() int {
 	return 4
 }
 
 // Seal implements AEAD.Seal().
-func (v *FnvAuthenticator) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
+func (*FnvAuthenticator) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 	dst = serial.Uint32ToBytes(Authenticate(plaintext), dst)
 	return append(dst, plaintext...)
 }
 
 // Open implements AEAD.Open().
-func (v *FnvAuthenticator) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, error) {
+func (*FnvAuthenticator) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, error) {
 	if serial.BytesToUint32(ciphertext[:4]) != Authenticate(ciphertext[4:]) {
 		return dst, newError("invalid authentication")
 	}
@@ -87,7 +87,7 @@ func NewShakeSizeParser(nonce []byte) *ShakeSizeParser {
 	}
 }
 
-func (s *ShakeSizeParser) SizeBytes() int {
+func (*ShakeSizeParser) SizeBytes() int {
 	return 2
 }
 

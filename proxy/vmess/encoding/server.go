@@ -112,7 +112,7 @@ func NewServerSession(validator protocol.UserValidator, sessionHistory *SessionH
 	}
 }
 
-func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.RequestHeader, error) {
+func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.RequestHeader, error) {
 	buffer := make([]byte, 512)
 
 	_, err := io.ReadFull(reader, buffer[:protocol.IDBytesLen])
@@ -120,7 +120,7 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		return nil, newError("failed to read request header").Base(err)
 	}
 
-	user, timestamp, valid := v.userValidator.Get(buffer[:protocol.IDBytesLen])
+	user, timestamp, valid := s.userValidator.Get(buffer[:protocol.IDBytesLen])
 	if !valid {
 		return nil, newError("invalid user")
 	}
@@ -152,18 +152,18 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		return nil, newError("invalid protocol version ", request.Version)
 	}
 
-	v.requestBodyIV = append([]byte(nil), buffer[1:17]...)   // 16 bytes
-	v.requestBodyKey = append([]byte(nil), buffer[17:33]...) // 16 bytes
+	s.requestBodyIV = append([]byte(nil), buffer[1:17]...)   // 16 bytes
+	s.requestBodyKey = append([]byte(nil), buffer[17:33]...) // 16 bytes
 	var sid sessionId
 	copy(sid.user[:], vmessAccount.ID.Bytes())
-	copy(sid.key[:], v.requestBodyKey)
-	copy(sid.nonce[:], v.requestBodyIV)
-	if v.sessionHistory.has(sid) {
+	copy(sid.key[:], s.requestBodyKey)
+	copy(sid.nonce[:], s.requestBodyIV)
+	if s.sessionHistory.has(sid) {
 		return nil, newError("duplicated session id, possibly under replay attack")
 	}
-	v.sessionHistory.add(sid)
+	s.sessionHistory.add(sid)
 
-	v.responseHeader = buffer[33]                       // 1 byte
+	s.responseHeader = buffer[33]                       // 1 byte
 	request.Option = protocol.RequestOption(buffer[34]) // 1 byte
 	padingLen := int(buffer[35] >> 4)
 	request.Security = protocol.NormSecurity(protocol.Security(buffer[35] & 0x0F))
@@ -235,10 +235,10 @@ func (v *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	return request, nil
 }
 
-func (v *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reader io.Reader) buf.Reader {
+func (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reader io.Reader) buf.Reader {
 	var sizeParser crypto.ChunkSizeDecoder = crypto.PlainChunkSizeParser{}
 	if request.Option.Has(protocol.RequestOptionChunkMasking) {
-		sizeParser = NewShakeSizeParser(v.requestBodyIV)
+		sizeParser = NewShakeSizeParser(s.requestBodyIV)
 	}
 	if request.Security.Is(protocol.SecurityType_NONE) {
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
@@ -258,7 +258,7 @@ func (v *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 	}
 
 	if request.Security.Is(protocol.SecurityType_LEGACY) {
-		aesStream := crypto.NewAesDecryptionStream(v.requestBodyKey, v.requestBodyIV)
+		aesStream := crypto.NewAesDecryptionStream(s.requestBodyKey, s.requestBodyIV)
 		cryptionReader := crypto.NewCryptionReader(aesStream, reader)
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
 			auth := &crypto.AEADAuthenticator{
@@ -273,13 +273,13 @@ func (v *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 	}
 
 	if request.Security.Is(protocol.SecurityType_AES128_GCM) {
-		block, _ := aes.NewCipher(v.requestBodyKey)
+		block, _ := aes.NewCipher(s.requestBodyKey)
 		aead, _ := cipher.NewGCM(block)
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD: aead,
 			NonceGenerator: &ChunkNonceGenerator{
-				Nonce: append([]byte(nil), v.requestBodyIV...),
+				Nonce: append([]byte(nil), s.requestBodyIV...),
 				Size:  aead.NonceSize(),
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
@@ -288,12 +288,12 @@ func (v *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 	}
 
 	if request.Security.Is(protocol.SecurityType_CHACHA20_POLY1305) {
-		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(v.requestBodyKey))
+		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(s.requestBodyKey))
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD: aead,
 			NonceGenerator: &ChunkNonceGenerator{
-				Nonce: append([]byte(nil), v.requestBodyIV...),
+				Nonce: append([]byte(nil), s.requestBodyIV...),
 				Size:  aead.NonceSize(),
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
@@ -304,27 +304,27 @@ func (v *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 	panic("Unknown security type.")
 }
 
-func (v *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, writer io.Writer) {
-	responseBodyKey := md5.Sum(v.requestBodyKey)
-	responseBodyIV := md5.Sum(v.requestBodyIV)
-	v.responseBodyKey = responseBodyKey[:]
-	v.responseBodyIV = responseBodyIV[:]
+func (s *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, writer io.Writer) {
+	responseBodyKey := md5.Sum(s.requestBodyKey)
+	responseBodyIV := md5.Sum(s.requestBodyIV)
+	s.responseBodyKey = responseBodyKey[:]
+	s.responseBodyIV = responseBodyIV[:]
 
-	aesStream := crypto.NewAesEncryptionStream(v.responseBodyKey, v.responseBodyIV)
+	aesStream := crypto.NewAesEncryptionStream(s.responseBodyKey, s.responseBodyIV)
 	encryptionWriter := crypto.NewCryptionWriter(aesStream, writer)
-	v.responseWriter = encryptionWriter
+	s.responseWriter = encryptionWriter
 
-	encryptionWriter.Write([]byte{v.responseHeader, byte(header.Option)})
+	encryptionWriter.Write([]byte{s.responseHeader, byte(header.Option)})
 	err := MarshalCommand(header.Command, encryptionWriter)
 	if err != nil {
 		encryptionWriter.Write([]byte{0x00, 0x00})
 	}
 }
 
-func (v *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writer io.Writer) buf.Writer {
+func (s *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writer io.Writer) buf.Writer {
 	var sizeParser crypto.ChunkSizeEncoder = crypto.PlainChunkSizeParser{}
 	if request.Option.Has(protocol.RequestOptionChunkMasking) {
-		sizeParser = NewShakeSizeParser(v.responseBodyIV)
+		sizeParser = NewShakeSizeParser(s.responseBodyIV)
 	}
 	if request.Security.Is(protocol.SecurityType_NONE) {
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
@@ -350,20 +350,20 @@ func (v *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 				NonceGenerator:          crypto.NoOpBytesGenerator{},
 				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 			}
-			return crypto.NewAuthenticationWriter(auth, sizeParser, v.responseWriter, request.Command.TransferType())
+			return crypto.NewAuthenticationWriter(auth, sizeParser, s.responseWriter, request.Command.TransferType())
 		}
 
-		return buf.NewWriter(v.responseWriter)
+		return buf.NewWriter(s.responseWriter)
 	}
 
 	if request.Security.Is(protocol.SecurityType_AES128_GCM) {
-		block, _ := aes.NewCipher(v.responseBodyKey)
+		block, _ := aes.NewCipher(s.responseBodyKey)
 		aead, _ := cipher.NewGCM(block)
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD: aead,
 			NonceGenerator: &ChunkNonceGenerator{
-				Nonce: append([]byte(nil), v.responseBodyIV...),
+				Nonce: append([]byte(nil), s.responseBodyIV...),
 				Size:  aead.NonceSize(),
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
@@ -372,12 +372,12 @@ func (v *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 	}
 
 	if request.Security.Is(protocol.SecurityType_CHACHA20_POLY1305) {
-		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(v.responseBodyKey))
+		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(s.responseBodyKey))
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD: aead,
 			NonceGenerator: &ChunkNonceGenerator{
-				Nonce: append([]byte(nil), v.responseBodyIV...),
+				Nonce: append([]byte(nil), s.responseBodyIV...),
 				Size:  aead.NonceSize(),
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
