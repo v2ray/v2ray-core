@@ -122,7 +122,7 @@ Start:
 }
 
 func (s *Server) handleConnect(ctx context.Context, request *http.Request, reader io.Reader, writer io.Writer, dest v2net.Destination, dispatcher dispatcher.Interface) error {
-	_, err := writer.Write([]byte("HTTP/1.1 200 Connection established\n\n"))
+	_, err := writer.Write([]byte("HTTP/1.1 200 Connection established\r\n\r\n"))
 	if err != nil {
 		return newError("failed to write back OK response").Base(err)
 	}
