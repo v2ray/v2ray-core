@@ -22,7 +22,7 @@ func ReadUint16(reader io.Reader) (uint16, error) {
 
 func WriteUint16(value uint16) func([]byte) (int, error) {
 	return func(b []byte) (int, error) {
-		b = Uint16ToBytes(value, b[:0])
+		Uint16ToBytes(value, b[:0])
 		return 2, nil
 	}
 }
@@ -37,7 +37,7 @@ func Uint32ToString(value uint32) string {
 
 func WriteUint32(value uint32) func([]byte) (int, error) {
 	return func(b []byte) (int, error) {
-		b = Uint32ToBytes(value, b[:0])
+		Uint32ToBytes(value, b[:0])
 		return 4, nil
 	}
 }
