@@ -8,7 +8,6 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/transport/internet/internal"
 )
 
 // Payload represents a single UDP payload.
@@ -94,13 +93,17 @@ func ListenUDP(address v2net.Address, port v2net.Port, option ListenOption) (*Hu
 	}
 	log.Trace(newError("listening UDP on ", address, ":", port))
 	if option.ReceiveOriginalDest {
-		fd, err := internal.GetSysFd(udpConn)
+		rawConn, err := udpConn.SyscallConn()
 		if err != nil {
 			return nil, newError("failed to get fd").Base(err)
 		}
-		err = SetOriginalDestOptions(fd)
+		err = rawConn.Control(func(fd uintptr) {
+			if err := SetOriginalDestOptions(int(fd)); err != nil {
+				log.Trace(newError("failed to set socket options").Base(err))
+			}
+		})
 		if err != nil {
-			return nil, newError("failed to set socket options").Base(err)
+			return nil, newError("failed to control socket").Base(err)
 		}
 	}
 	ctx, cancel := context.WithCancel(context.Background())
