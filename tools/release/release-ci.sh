@@ -20,7 +20,7 @@ VUSER=$(getattr "b_user" "project")
 mkdir -p /v2ray/build
 
 gsutil cp ${SIGN_KEY_PATH} /v2ray/build/sign_key.asc
-gpg --import /v2ray/build/sign_key.asc
+echo ${SIGN_KEY_PASS} | gpg --passphrase-fd 0 --batch --import /v2ray/build/sign_key.asc
 
 curl -L -o /v2ray/build/releases https://api.github.com/repos/v2ray/v2ray-core/releases
 
