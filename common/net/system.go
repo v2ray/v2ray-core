@@ -32,4 +32,4 @@ type AddrError = net.AddrError
 type Dialer = net.Dialer
 type Listener = net.Listener
 type TCPListener = net.TCPListener
-type UDPListener = net.UDPListener
+type UnixListener = net.UnixListener
