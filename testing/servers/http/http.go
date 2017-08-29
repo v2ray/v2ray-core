@@ -3,11 +3,11 @@ package tcp
 import (
 	"net/http"
 
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 )
 
 type Server struct {
-	Port        v2net.Port
+	Port        net.Port
 	PathHandler map[string]http.HandlerFunc
 	accepting   bool
 }
@@ -26,9 +26,9 @@ func (server *Server) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (server *Server) Start() (v2net.Destination, error) {
+func (server *Server) Start() (net.Destination, error) {
 	go http.ListenAndServe("127.0.0.1:"+server.Port.String(), server)
-	return v2net.TCPDestination(v2net.LocalHostIP, v2net.Port(server.Port)), nil
+	return net.TCPDestination(net.LocalHostIP, net.Port(server.Port)), nil
 }
 
 func (v *Server) Close() {

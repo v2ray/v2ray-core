@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"v2ray.com/core/common/buf"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/uuid"
@@ -31,8 +31,8 @@ func TestRequestSerialization(t *testing.T) {
 		Version:  1,
 		User:     user,
 		Command:  protocol.RequestCommandTCP,
-		Address:  v2net.DomainAddress("www.v2ray.com"),
-		Port:     v2net.Port(443),
+		Address:  net.DomainAddress("www.v2ray.com"),
+		Port:     net.Port(443),
 		Security: protocol.Security(protocol.SecurityType_AES128_GCM),
 	}
 

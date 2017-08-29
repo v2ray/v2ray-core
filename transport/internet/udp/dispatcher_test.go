@@ -7,17 +7,17 @@ import (
 	"time"
 
 	"v2ray.com/core/common/buf"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/testing/assert"
 	. "v2ray.com/core/transport/internet/udp"
 	"v2ray.com/core/transport/ray"
 )
 
 type TestDispatcher struct {
-	OnDispatch func(ctx context.Context, dest v2net.Destination) (ray.InboundRay, error)
+	OnDispatch func(ctx context.Context, dest net.Destination) (ray.InboundRay, error)
 }
 
-func (d *TestDispatcher) Dispatch(ctx context.Context, dest v2net.Destination) (ray.InboundRay, error) {
+func (d *TestDispatcher) Dispatch(ctx context.Context, dest net.Destination) (ray.InboundRay, error) {
 	return d.OnDispatch(ctx, dest)
 }
 
@@ -39,12 +39,12 @@ func TestSameDestinationDispatching(t *testing.T) {
 
 	var count uint32
 	td := &TestDispatcher{
-		OnDispatch: func(ctx context.Context, dest v2net.Destination) (ray.InboundRay, error) {
+		OnDispatch: func(ctx context.Context, dest net.Destination) (ray.InboundRay, error) {
 			atomic.AddUint32(&count, 1)
 			return link, nil
 		},
 	}
-	dest := v2net.UDPDestination(v2net.LocalHostIP, 53)
+	dest := net.UDPDestination(net.LocalHostIP, 53)
 
 	b := buf.New()
 	b.AppendBytes('a', 'b', 'c', 'd')

@@ -7,7 +7,7 @@ import (
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/buf"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/ray"
 )
 
@@ -15,18 +15,18 @@ type ResponseCallback func(payload *buf.Buffer)
 
 type Dispatcher struct {
 	sync.RWMutex
-	conns      map[v2net.Destination]ray.InboundRay
+	conns      map[net.Destination]ray.InboundRay
 	dispatcher dispatcher.Interface
 }
 
 func NewDispatcher(dispatcher dispatcher.Interface) *Dispatcher {
 	return &Dispatcher{
-		conns:      make(map[v2net.Destination]ray.InboundRay),
+		conns:      make(map[net.Destination]ray.InboundRay),
 		dispatcher: dispatcher,
 	}
 }
 
-func (v *Dispatcher) RemoveRay(dest v2net.Destination) {
+func (v *Dispatcher) RemoveRay(dest net.Destination) {
 	v.Lock()
 	defer v.Unlock()
 	if conn, found := v.conns[dest]; found {
@@ -36,7 +36,7 @@ func (v *Dispatcher) RemoveRay(dest v2net.Destination) {
 	}
 }
 
-func (v *Dispatcher) getInboundRay(ctx context.Context, dest v2net.Destination) (ray.InboundRay, bool) {
+func (v *Dispatcher) getInboundRay(ctx context.Context, dest net.Destination) (ray.InboundRay, bool) {
 	v.Lock()
 	defer v.Unlock()
 
@@ -50,7 +50,7 @@ func (v *Dispatcher) getInboundRay(ctx context.Context, dest v2net.Destination) 
 	return inboundRay, false
 }
 
-func (v *Dispatcher) Dispatch(ctx context.Context, destination v2net.Destination, payload *buf.Buffer, callback ResponseCallback) {
+func (v *Dispatcher) Dispatch(ctx context.Context, destination net.Destination, payload *buf.Buffer, callback ResponseCallback) {
 	// TODO: Add user to destString
 	log.Trace(newError("dispatch request to: ", destination).AtDebug())
 

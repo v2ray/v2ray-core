@@ -2,18 +2,17 @@ package websocket
 
 import (
 	"context"
-	"net"
 
 	"github.com/gorilla/websocket"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
 )
 
 // Dial dials a WebSocket connection to the given destination.
-func Dial(ctx context.Context, dest v2net.Destination) (internet.Connection, error) {
+func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {
 	log.Trace(newError("creating connection to ", dest))
 
 	conn, err := dialWebsocket(ctx, dest)
@@ -27,7 +26,7 @@ func init() {
 	common.Must(internet.RegisterTransportDialer(internet.TransportProtocol_WebSocket, Dial))
 }
 
-func dialWebsocket(ctx context.Context, dest v2net.Destination) (net.Conn, error) {
+func dialWebsocket(ctx context.Context, dest net.Destination) (net.Conn, error) {
 	src := internet.DialerSourceFromContext(ctx)
 	wsSettings := internet.TransportSettingsFromContext(ctx).(*Config)
 

@@ -2,10 +2,9 @@ package internet
 
 import (
 	"context"
-	"net"
 	"time"
 
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 )
 
 var (
@@ -22,14 +21,14 @@ func RegisterTransportListener(protocol TransportProtocol, listener ListenFunc) 
 
 type AddConnection func(context.Context, Connection) bool
 
-type ListenFunc func(ctx context.Context, address v2net.Address, port v2net.Port, addConn AddConnection) (Listener, error)
+type ListenFunc func(ctx context.Context, address net.Address, port net.Port, addConn AddConnection) (Listener, error)
 
 type Listener interface {
 	Close() error
 	Addr() net.Addr
 }
 
-func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, conns chan<- Connection) (Listener, error) {
+func ListenTCP(ctx context.Context, address net.Address, port net.Port, conns chan<- Connection) (Listener, error) {
 	settings := StreamSettingsFromContext(ctx)
 	protocol := settings.GetEffectiveProtocol()
 	transportSettings, err := settings.GetEffectiveTransportSettings()

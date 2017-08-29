@@ -23,7 +23,7 @@ type TCPListener struct {
 }
 
 func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, addConn internet.AddConnection) (internet.Listener, error) {
-	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
+	listener, err := net.ListenTCP("tcp", &v2net.TCPAddr{
 		IP:   address.IP(),
 		Port: int(port),
 	})

@@ -30,10 +30,10 @@ func (server *Server) Start() (v2net.Destination, error) {
 	if err != nil {
 		return v2net.Destination{}, err
 	}
-	server.Port = v2net.Port(listener.Addr().(*net.TCPAddr).Port)
+	server.Port = v2net.Port(listener.Addr().(*v2net.TCPAddr).Port)
 	server.listener = listener
 	go server.acceptConnections(listener)
-	localAddr := listener.Addr().(*net.TCPAddr)
+	localAddr := listener.Addr().(*v2net.TCPAddr)
 	return v2net.TCPDestination(v2net.IPAddress(localAddr.IP), v2net.Port(localAddr.Port)), nil
 }
 

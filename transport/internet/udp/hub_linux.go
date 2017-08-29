@@ -3,7 +3,6 @@
 package udp
 
 import (
-	"net"
 	"syscall"
 
 	v2net "v2ray.com/core/common/net"
@@ -38,6 +37,6 @@ func RetrieveOriginalDest(oob []byte) v2net.Destination {
 	return v2net.Destination{}
 }
 
-func ReadUDPMsg(conn *net.UDPConn, payload []byte, oob []byte) (int, int, int, *net.UDPAddr, error) {
+func ReadUDPMsg(conn *v2net.UDPConn, payload []byte, oob []byte) (int, int, int, *v2net.UDPAddr, error) {
 	return conn.ReadMsgUDP(payload, oob)
 }

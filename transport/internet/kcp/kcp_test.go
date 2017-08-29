@@ -4,12 +4,11 @@ import (
 	"context"
 	"crypto/rand"
 	"io"
-	"net"
 	"sync"
 	"testing"
 	"time"
 
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/transport/internet"
 	. "v2ray.com/core/transport/internet/kcp"
@@ -18,7 +17,7 @@ import (
 func TestDialAndListen(t *testing.T) {
 	assert := assert.On(t)
 
-	listerner, err := NewListener(internet.ContextWithTransportSettings(context.Background(), &Config{}), v2net.LocalHostIP, v2net.Port(0), func(ctx context.Context, conn internet.Connection) bool {
+	listerner, err := NewListener(internet.ContextWithTransportSettings(context.Background(), &Config{}), net.LocalHostIP, net.Port(0), func(ctx context.Context, conn internet.Connection) bool {
 		go func(c internet.Connection) {
 			payload := make([]byte, 4096)
 			for {
@@ -36,12 +35,12 @@ func TestDialAndListen(t *testing.T) {
 		return true
 	})
 	assert.Error(err).IsNil()
-	port := v2net.Port(listerner.Addr().(*net.UDPAddr).Port)
+	port := net.Port(listerner.Addr().(*net.UDPAddr).Port)
 
 	ctx := internet.ContextWithTransportSettings(context.Background(), &Config{})
 	wg := new(sync.WaitGroup)
 	for i := 0; i < 10; i++ {
-		clientConn, err := DialKCP(ctx, v2net.UDPDestination(v2net.LocalHostIP, port))
+		clientConn, err := DialKCP(ctx, net.UDPDestination(net.LocalHostIP, port))
 		assert.Error(err).IsNil()
 		wg.Add(1)
 

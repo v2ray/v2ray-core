@@ -2,32 +2,31 @@ package udp
 
 import (
 	"fmt"
-	"net"
 
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 )
 
 type Server struct {
-	Port         v2net.Port
+	Port         net.Port
 	MsgProcessor func(msg []byte) []byte
 	accepting    bool
 	conn         *net.UDPConn
 }
 
-func (server *Server) Start() (v2net.Destination, error) {
+func (server *Server) Start() (net.Destination, error) {
 	conn, err := net.ListenUDP("udp", &net.UDPAddr{
 		IP:   []byte{127, 0, 0, 1},
 		Port: int(server.Port),
 		Zone: "",
 	})
 	if err != nil {
-		return v2net.Destination{}, err
+		return net.Destination{}, err
 	}
-	server.Port = v2net.Port(conn.LocalAddr().(*net.UDPAddr).Port)
+	server.Port = net.Port(conn.LocalAddr().(*net.UDPAddr).Port)
 	server.conn = conn
 	go server.handleConnection(conn)
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
-	return v2net.UDPDestination(v2net.IPAddress(localAddr.IP), v2net.Port(localAddr.Port)), nil
+	return net.UDPDestination(net.IPAddress(localAddr.IP), net.Port(localAddr.Port)), nil
 }
 
 func (server *Server) handleConnection(conn *net.UDPConn) {
