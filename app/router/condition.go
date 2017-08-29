@@ -180,11 +180,11 @@ func (v *CIDRMatcher) Apply(ctx context.Context) bool {
 }
 
 type IPv4Matcher struct {
-	ipv4net  *v2net.IPNet
+	ipv4net  *v2net.IPNetTable
 	onSource bool
 }
 
-func NewIPv4Matcher(ipnet *v2net.IPNet, onSource bool) *IPv4Matcher {
+func NewIPv4Matcher(ipnet *v2net.IPNetTable, onSource bool) *IPv4Matcher {
 	return &IPv4Matcher{
 		ipv4net:  ipnet,
 		onSource: onSource,

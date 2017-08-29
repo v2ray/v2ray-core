@@ -5,17 +5,17 @@ import (
 	"net"
 )
 
-type IPNet struct {
+type IPNetTable struct {
 	cache map[uint32]byte
 }
 
-func NewIPNet() *IPNet {
-	return &IPNet{
+func NewIPNetTable() *IPNetTable {
+	return &IPNetTable{
 		cache: make(map[uint32]byte, 1024),
 	}
 }
 
-func ipToUint32(ip net.IP) uint32 {
+func ipToUint32(ip IP) uint32 {
 	value := uint32(0)
 	for _, b := range []byte(ip) {
 		value <<= 8
@@ -32,7 +32,7 @@ func ipMaskToByte(mask net.IPMask) byte {
 	return value
 }
 
-func (n *IPNet) Add(ipNet *net.IPNet) {
+func (n *IPNetTable) Add(ipNet *net.IPNet) {
 	ipv4 := ipNet.IP.To4()
 	if ipv4 == nil {
 		// For now, we don't support IPv6
@@ -42,7 +42,7 @@ func (n *IPNet) Add(ipNet *net.IPNet) {
 	n.AddIP(ipv4, mask)
 }
 
-func (n *IPNet) AddIP(ip []byte, mask byte) {
+func (n *IPNetTable) AddIP(ip []byte, mask byte) {
 	k := ipToUint32(ip)
 	existing, found := n.cache[k]
 	if !found || existing > mask {
@@ -50,7 +50,7 @@ func (n *IPNet) AddIP(ip []byte, mask byte) {
 	}
 }
 
-func (n *IPNet) Contains(ip net.IP) bool {
+func (n *IPNetTable) Contains(ip net.IP) bool {
 	ipv4 := ip.To4()
 	if ipv4 == nil {
 		return false
@@ -77,6 +77,6 @@ func (n *IPNet) Contains(ip net.IP) bool {
 	return false
 }
 
-func (n *IPNet) IsEmpty() bool {
+func (n *IPNetTable) IsEmpty() bool {
 	return len(n.cache) == 0
 }

@@ -17,7 +17,7 @@ func (r *Rule) Apply(ctx context.Context) bool {
 }
 
 func cidrToCondition(cidr []*CIDR, source bool) (Condition, error) {
-	ipv4Net := v2net.NewIPNet()
+	ipv4Net := v2net.NewIPNetTable()
 	ipv6Cond := NewAnyCondition()
 	hasIpv6 := false
 

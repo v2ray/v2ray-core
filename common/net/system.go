@@ -10,6 +10,7 @@ var ListenTCP = net.ListenTCP
 var ListenUDP = net.ListenUDP
 
 var LookupIP = net.LookupIP
+var ParseIP = net.ParseIP
 
 var SplitHostPort = net.SplitHostPort
 
@@ -25,6 +26,11 @@ type UDPConn = net.UDPConn
 type UnixConn = net.UnixConn
 
 type IP = net.IP
+type IPMask = net.IPMask
+type IPNet = net.IPNet
+
+const IPv4len = net.IPv4len
+const IPv6len = net.IPv6len
 
 type Error = net.Error
 type AddrError = net.AddrError
