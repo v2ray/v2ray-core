@@ -4,15 +4,20 @@ import "net"
 
 var DialTCP = net.DialTCP
 var DialUDP = net.DialUDP
+var DialUnix = net.DialUnix
 
 var Listen = net.Listen
 var ListenTCP = net.ListenTCP
 var ListenUDP = net.ListenUDP
 
+var FileConn = net.FileConn
+
 var LookupIP = net.LookupIP
 var ParseIP = net.ParseIP
 
 var SplitHostPort = net.SplitHostPort
+
+var CIDRMask = net.CIDRMask
 
 type Addr = net.Addr
 type Conn = net.Conn
@@ -23,6 +28,7 @@ type TCPConn = net.TCPConn
 type UDPAddr = net.UDPAddr
 type UDPConn = net.UDPConn
 
+type UnixAddr = net.UnixAddr
 type UnixConn = net.UnixConn
 
 type IP = net.IP

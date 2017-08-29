@@ -2,23 +2,22 @@ package udp
 
 import (
 	"context"
-	"net"
 
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 )
 
 // Payload represents a single UDP payload.
 type Payload struct {
 	payload      *buf.Buffer
-	source       v2net.Destination
-	originalDest v2net.Destination
+	source       net.Destination
+	originalDest net.Destination
 }
 
 // PayloadHandler is function to handle Payload.
-type PayloadHandler func(payload *buf.Buffer, source v2net.Destination, originalDest v2net.Destination)
+type PayloadHandler func(payload *buf.Buffer, source net.Destination, originalDest net.Destination)
 
 // PayloadQueue is a queue of Payload.
 type PayloadQueue struct {
@@ -80,7 +79,7 @@ type Hub struct {
 	option ListenOption
 }
 
-func ListenUDP(address v2net.Address, port v2net.Port, option ListenOption) (*Hub, error) {
+func ListenUDP(address net.Address, port net.Port, option ListenOption) (*Hub, error) {
 	if option.Concurrency < 1 {
 		option.Concurrency = 1
 	}
@@ -122,7 +121,7 @@ func (v *Hub) Close() {
 	v.conn.Close()
 }
 
-func (v *Hub) WriteTo(payload []byte, dest v2net.Destination) (int, error) {
+func (v *Hub) WriteTo(payload []byte, dest net.Destination) (int, error) {
 	return v.conn.WriteToUDP(payload, &net.UDPAddr{
 		IP:   dest.Address.IP(),
 		Port: int(dest.Port),
@@ -158,7 +157,7 @@ L:
 		payload := Payload{
 			payload: buffer,
 		}
-		payload.source = v2net.UDPDestination(v2net.IPAddress(addr.IP), v2net.Port(addr.Port))
+		payload.source = net.UDPDestination(net.IPAddress(addr.IP), net.Port(addr.Port))
 		if v.option.ReceiveOriginalDest && noob > 0 {
 			payload.originalDest = RetrieveOriginalDest(oobBytes[:noob])
 		}

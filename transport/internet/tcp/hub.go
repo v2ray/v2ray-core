@@ -3,11 +3,10 @@ package tcp
 import (
 	"context"
 	gotls "crypto/tls"
-	"net"
 
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
@@ -22,8 +21,8 @@ type TCPListener struct {
 	addConn    internet.AddConnection
 }
 
-func ListenTCP(ctx context.Context, address v2net.Address, port v2net.Port, addConn internet.AddConnection) (internet.Listener, error) {
-	listener, err := net.ListenTCP("tcp", &v2net.TCPAddr{
+func ListenTCP(ctx context.Context, address net.Address, port net.Port, addConn internet.AddConnection) (internet.Listener, error) {
+	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   address.IP(),
 		Port: int(port),
 	})

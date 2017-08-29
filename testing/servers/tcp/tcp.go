@@ -3,24 +3,23 @@ package tcp
 import (
 	"fmt"
 	"io"
-	"net"
 
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 )
 
 type Server struct {
-	Port         v2net.Port
+	Port         net.Port
 	MsgProcessor func(msg []byte) []byte
 	SendFirst    []byte
-	Listen       v2net.Address
+	Listen       net.Address
 	accepting    bool
 	listener     *net.TCPListener
 }
 
-func (server *Server) Start() (v2net.Destination, error) {
+func (server *Server) Start() (net.Destination, error) {
 	listenerAddr := server.Listen
 	if listenerAddr == nil {
-		listenerAddr = v2net.LocalHostIP
+		listenerAddr = net.LocalHostIP
 	}
 	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   listenerAddr.IP(),
@@ -28,13 +27,13 @@ func (server *Server) Start() (v2net.Destination, error) {
 		Zone: "",
 	})
 	if err != nil {
-		return v2net.Destination{}, err
+		return net.Destination{}, err
 	}
-	server.Port = v2net.Port(listener.Addr().(*v2net.TCPAddr).Port)
+	server.Port = net.Port(listener.Addr().(*net.TCPAddr).Port)
 	server.listener = listener
 	go server.acceptConnections(listener)
-	localAddr := listener.Addr().(*v2net.TCPAddr)
-	return v2net.TCPDestination(v2net.IPAddress(localAddr.IP), v2net.Port(localAddr.Port)), nil
+	localAddr := listener.Addr().(*net.TCPAddr)
+	return net.TCPDestination(net.IPAddress(localAddr.IP), net.Port(localAddr.Port)), nil
 }
 
 func (server *Server) acceptConnections(listener *net.TCPListener) {

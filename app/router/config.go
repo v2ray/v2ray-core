@@ -2,9 +2,8 @@ package router
 
 import (
 	"context"
-	"net"
 
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 )
 
 type Rule struct {
@@ -17,7 +16,7 @@ func (r *Rule) Apply(ctx context.Context) bool {
 }
 
 func cidrToCondition(cidr []*CIDR, source bool) (Condition, error) {
-	ipv4Net := v2net.NewIPNetTable()
+	ipv4Net := net.NewIPNetTable()
 	ipv6Cond := NewAnyCondition()
 	hasIpv6 := false
 

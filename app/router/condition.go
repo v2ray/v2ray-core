@@ -2,11 +2,10 @@ package router
 
 import (
 	"context"
-	"net"
 	"regexp"
 	"strings"
 
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/proxy"
 )
@@ -159,7 +158,7 @@ func (v *CIDRMatcher) Apply(ctx context.Context) bool {
 		}
 	}
 
-	var dest v2net.Destination
+	var dest net.Destination
 	var ok bool
 	if v.onSource {
 		dest, ok = proxy.SourceFromContext(ctx)
@@ -180,11 +179,11 @@ func (v *CIDRMatcher) Apply(ctx context.Context) bool {
 }
 
 type IPv4Matcher struct {
-	ipv4net  *v2net.IPNetTable
+	ipv4net  *net.IPNetTable
 	onSource bool
 }
 
-func NewIPv4Matcher(ipnet *v2net.IPNetTable, onSource bool) *IPv4Matcher {
+func NewIPv4Matcher(ipnet *net.IPNetTable, onSource bool) *IPv4Matcher {
 	return &IPv4Matcher{
 		ipv4net:  ipnet,
 		onSource: onSource,
@@ -202,7 +201,7 @@ func (v *IPv4Matcher) Apply(ctx context.Context) bool {
 		}
 	}
 
-	var dest v2net.Destination
+	var dest net.Destination
 	var ok bool
 	if v.onSource {
 		dest, ok = proxy.SourceFromContext(ctx)
@@ -223,10 +222,10 @@ func (v *IPv4Matcher) Apply(ctx context.Context) bool {
 }
 
 type PortMatcher struct {
-	port v2net.PortRange
+	port net.PortRange
 }
 
-func NewPortMatcher(portRange v2net.PortRange) *PortMatcher {
+func NewPortMatcher(portRange net.PortRange) *PortMatcher {
 	return &PortMatcher{
 		port: portRange,
 	}
@@ -241,10 +240,10 @@ func (v *PortMatcher) Apply(ctx context.Context) bool {
 }
 
 type NetworkMatcher struct {
-	network *v2net.NetworkList
+	network *net.NetworkList
 }
 
-func NewNetworkMatcher(network *v2net.NetworkList) *NetworkMatcher {
+func NewNetworkMatcher(network *net.NetworkList) *NetworkMatcher {
 	return &NetworkMatcher{
 		network: network,
 	}
