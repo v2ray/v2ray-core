@@ -1,11 +1,8 @@
 package net
 
 import (
+	"math/bits"
 	"net"
-)
-
-var (
-	onesCount = make(map[byte]byte)
 )
 
 type IPNet struct {
@@ -30,7 +27,7 @@ func ipToUint32(ip net.IP) uint32 {
 func ipMaskToByte(mask net.IPMask) byte {
 	value := byte(0)
 	for _, b := range []byte(mask) {
-		value += onesCount[b]
+		value += byte(bits.OnesCount8(b))
 	}
 	return value
 }
@@ -82,12 +79,4 @@ func (n *IPNet) Contains(ip net.IP) bool {
 
 func (n *IPNet) IsEmpty() bool {
 	return len(n.cache) == 0
-}
-
-func init() {
-	value := byte(0)
-	for mask := byte(1); mask <= 8; mask++ {
-		value += 1 << byte(8-mask)
-		onesCount[value] = mask
-	}
 }
