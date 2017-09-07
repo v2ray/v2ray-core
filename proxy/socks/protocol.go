@@ -389,7 +389,7 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 		return nil, err
 	}
 
-	b := buf.NewLocal(64)
+	b := buf.NewLocal(512)
 	if err := b.AppendSupplier(buf.ReadFullFrom(reader, 2)); err != nil {
 		return nil, err
 	}
