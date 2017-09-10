@@ -68,6 +68,9 @@ func getLoggerAndPrefix(s errors.Severity) (internal.LogWriter, string) {
 
 // Trace logs an error message based on its severity.
 func Trace(err error) {
+	if err == nil {
+		return
+	}
 	logger, prefix := getLoggerAndPrefix(errors.GetSeverity(err))
 	logger.Log(&internal.ErrorLog{
 		Prefix: prefix,

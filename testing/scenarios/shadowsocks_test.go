@@ -2,7 +2,6 @@ package scenarios
 
 import (
 	"crypto/rand"
-	"net"
 	"sync"
 	"testing"
 	"time"
@@ -10,7 +9,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/dokodemo"
@@ -42,8 +41,8 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&shadowsocks.ServerConfig{
 					User: &protocol.User{
@@ -71,14 +70,14 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
@@ -88,7 +87,7 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&shadowsocks.ClientConfig{
 					Server: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -160,8 +159,8 @@ func TestShadowsocksAES128UDP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&shadowsocks.ServerConfig{
 					UdpEnabled: true,
@@ -190,14 +189,14 @@ func TestShadowsocksAES128UDP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_UDP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_UDP},
 					},
 				}),
 			},
@@ -207,7 +206,7 @@ func TestShadowsocksAES128UDP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&shadowsocks.ClientConfig{
 					Server: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -279,8 +278,8 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&shadowsocks.ServerConfig{
 					User: &protocol.User{
@@ -308,14 +307,14 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
@@ -325,7 +324,7 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&shadowsocks.ClientConfig{
 					Server: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{

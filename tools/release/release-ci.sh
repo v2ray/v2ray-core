@@ -20,12 +20,12 @@ VUSER=$(getattr "b_user" "project")
 mkdir -p /v2ray/build
 
 gsutil cp ${SIGN_KEY_PATH} /v2ray/build/sign_key.asc
-gpg --import /v2ray/build/sign_key.asc
+echo ${SIGN_KEY_PASS} | gpg --passphrase-fd 0 --batch --import /v2ray/build/sign_key.asc
 
 curl -L -o /v2ray/build/releases https://api.github.com/repos/v2ray/v2ray-core/releases
 
 GO_INSTALL=golang.tar.gz
-curl -L -o ${GO_INSTALL} https://storage.googleapis.com/golang/go1.8.3.linux-amd64.tar.gz
+curl -L -o ${GO_INSTALL} https://storage.googleapis.com/golang/go1.9.linux-amd64.tar.gz
 tar -C /usr/local -xzf ${GO_INSTALL}
 export PATH=$PATH:/usr/local/go/bin
 

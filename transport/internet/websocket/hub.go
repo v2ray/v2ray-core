@@ -3,7 +3,6 @@ package websocket
 import (
 	"context"
 	"crypto/tls"
-	"net"
 	"net/http"
 	"strconv"
 	"sync"
@@ -11,7 +10,7 @@ import (
 	"github.com/gorilla/websocket"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	v2tls "v2ray.com/core/transport/internet/tls"
 )
@@ -44,7 +43,7 @@ type Listener struct {
 	addConn   internet.AddConnection
 }
 
-func ListenWS(ctx context.Context, address v2net.Address, port v2net.Port, addConn internet.AddConnection) (internet.Listener, error) {
+func ListenWS(ctx context.Context, address net.Address, port net.Port, addConn internet.AddConnection) (internet.Listener, error) {
 	networkSettings := internet.TransportSettingsFromContext(ctx)
 	wsSettings := networkSettings.(*Config)
 
@@ -65,7 +64,7 @@ func ListenWS(ctx context.Context, address v2net.Address, port v2net.Port, addCo
 	return l, err
 }
 
-func (ln *Listener) listenws(address v2net.Address, port v2net.Port) error {
+func (ln *Listener) listenws(address net.Address, port net.Port) error {
 	netAddr := address.String() + ":" + strconv.Itoa(int(port.Value()))
 	var listener net.Listener
 	if ln.tlsConfig == nil {

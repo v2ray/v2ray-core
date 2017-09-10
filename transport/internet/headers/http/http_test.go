@@ -2,11 +2,11 @@ package http_test
 
 import (
 	"context"
-	"net"
 	"testing"
 	"time"
 
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/testing/assert"
 	. "v2ray.com/core/transport/internet/headers/http"

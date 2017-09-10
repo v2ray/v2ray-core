@@ -2,13 +2,12 @@ package scenarios
 
 import (
 	"crypto/rand"
-	"net"
 	"testing"
 	"time"
 
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/uuid"
@@ -41,8 +40,8 @@ func TestSimpleTLSConnection(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 					StreamSettings: &internet.StreamConfig{
 						SecurityType: serial.GetMessageType(&tls.Config{}),
 						SecuritySettings: []*serial.TypedMessage{
@@ -75,14 +74,14 @@ func TestSimpleTLSConnection(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
@@ -92,7 +91,7 @@ func TestSimpleTLSConnection(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -155,8 +154,8 @@ func TestTLSOverKCP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 					StreamSettings: &internet.StreamConfig{
 						Protocol:     internet.TransportProtocol_MKCP,
 						SecurityType: serial.GetMessageType(&tls.Config{}),
@@ -190,14 +189,14 @@ func TestTLSOverKCP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
@@ -207,7 +206,7 @@ func TestTLSOverKCP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -271,8 +270,8 @@ func TestTLSOverWebSocket(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 					StreamSettings: &internet.StreamConfig{
 						Protocol:     internet.TransportProtocol_WebSocket,
 						SecurityType: serial.GetMessageType(&tls.Config{}),
@@ -306,14 +305,14 @@ func TestTLSOverWebSocket(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
@@ -323,7 +322,7 @@ func TestTLSOverWebSocket(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{

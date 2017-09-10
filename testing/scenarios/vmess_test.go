@@ -2,7 +2,6 @@ package scenarios
 
 import (
 	"crypto/rand"
-	"net"
 	"sync"
 	"testing"
 	"time"
@@ -10,7 +9,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/uuid"
@@ -41,8 +40,8 @@ func TestVMessDynamicPort(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
@@ -59,11 +58,11 @@ func TestVMessDynamicPort(t *testing.T) {
 			},
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: &v2net.PortRange{
+					PortRange: &net.PortRange{
 						From: uint32(serverPort + 1),
 						To:   uint32(serverPort + 100),
 					},
-					Listen: v2net.NewIPOrDomain(v2net.LocalHostIP),
+					Listen: net.NewIPOrDomain(net.LocalHostIP),
 					AllocationStrategy: &proxyman.AllocationStrategy{
 						Type: proxyman.AllocationStrategy_Random,
 						Concurrency: &proxyman.AllocationStrategy_AllocationStrategyConcurrency{
@@ -96,14 +95,14 @@ func TestVMessDynamicPort(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
@@ -113,7 +112,7 @@ func TestVMessDynamicPort(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -176,8 +175,8 @@ func TestVMessGCM(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
@@ -209,14 +208,14 @@ func TestVMessGCM(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
@@ -226,7 +225,7 @@ func TestVMessGCM(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -299,8 +298,8 @@ func TestVMessGCMUDP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
@@ -332,14 +331,14 @@ func TestVMessGCMUDP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_UDP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_UDP},
 					},
 				}),
 			},
@@ -349,7 +348,7 @@ func TestVMessGCMUDP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -432,8 +431,8 @@ func TestVMessChacha20(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
@@ -465,14 +464,14 @@ func TestVMessChacha20(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
@@ -482,7 +481,7 @@ func TestVMessChacha20(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -555,8 +554,8 @@ func TestVMessNone(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
@@ -588,14 +587,14 @@ func TestVMessNone(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
@@ -605,7 +604,7 @@ func TestVMessNone(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -678,8 +677,8 @@ func TestVMessKCP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 					StreamSettings: &internet.StreamConfig{
 						Protocol: internet.TransportProtocol_MKCP,
 					},
@@ -714,14 +713,14 @@ func TestVMessKCP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
@@ -731,7 +730,7 @@ func TestVMessKCP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -799,7 +798,7 @@ func TestVMessIPv6(t *testing.T) {
 
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
-		Listen:       v2net.LocalHostIPv6,
+		Listen:       net.LocalHostIPv6,
 	}
 	dest, err := tcpServer.Start()
 	assert.Error(err).IsNil()
@@ -811,8 +810,8 @@ func TestVMessIPv6(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIPv6),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIPv6),
 				}),
 				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
@@ -844,14 +843,14 @@ func TestVMessIPv6(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIPv6),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIPv6),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
@@ -861,7 +860,7 @@ func TestVMessIPv6(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIPv6),
+							Address: net.NewIPOrDomain(net.LocalHostIPv6),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -891,7 +890,7 @@ func TestVMessIPv6(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-		IP:   v2net.LocalHostIPv6.IP(),
+		IP:   net.LocalHostIPv6.IP(),
 		Port: int(clientPort),
 	})
 	assert.Error(err).IsNil()
@@ -926,8 +925,8 @@ func TestVMessGCMMux(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
@@ -959,14 +958,14 @@ func TestVMessGCMMux(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
@@ -982,7 +981,7 @@ func TestVMessGCMMux(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -1068,8 +1067,8 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
@@ -1102,27 +1101,27 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientUDPPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientUDPPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(udpDest.Address),
+					Address: net.NewIPOrDomain(udpDest.Address),
 					Port:    uint32(udpDest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_UDP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_UDP},
 					},
 				}),
 			},
@@ -1138,7 +1137,7 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{

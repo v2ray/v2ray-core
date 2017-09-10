@@ -6,7 +6,7 @@ option go_package = "serial";
 option java_package = "com.v2ray.core.common.serial";
 option java_multiple_files = true;
 
-// Serialized proto message along with its type name.
+// TypedMessage is a serialized proto message along with its type name.
 message TypedMessage {
   // The name of the message type, retrieved from protobuf API.
   string type = 1;

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"v2ray.com/core/common/buf"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	. "v2ray.com/core/proxy/shadowsocks"
@@ -17,7 +17,7 @@ func TestUDPEncoding(t *testing.T) {
 	request := &protocol.RequestHeader{
 		Version: Version,
 		Command: protocol.RequestCommandUDP,
-		Address: v2net.LocalHostIP,
+		Address: net.LocalHostIP,
 		Port:    1234,
 		User: &protocol.User{
 			Email: "love@v2ray.com",
@@ -52,7 +52,7 @@ func TestTCPRequest(t *testing.T) {
 			request: &protocol.RequestHeader{
 				Version: Version,
 				Command: protocol.RequestCommandTCP,
-				Address: v2net.LocalHostIP,
+				Address: net.LocalHostIP,
 				Option:  RequestOptionOneTimeAuth,
 				Port:    1234,
 				User: &protocol.User{
@@ -69,7 +69,7 @@ func TestTCPRequest(t *testing.T) {
 			request: &protocol.RequestHeader{
 				Version: Version,
 				Command: protocol.RequestCommandTCP,
-				Address: v2net.LocalHostIPv6,
+				Address: net.LocalHostIPv6,
 				Option:  RequestOptionOneTimeAuth,
 				Port:    1234,
 				User: &protocol.User{
@@ -86,7 +86,7 @@ func TestTCPRequest(t *testing.T) {
 			request: &protocol.RequestHeader{
 				Version: Version,
 				Command: protocol.RequestCommandTCP,
-				Address: v2net.DomainAddress("v2ray.com"),
+				Address: net.DomainAddress("v2ray.com"),
 				Option:  RequestOptionOneTimeAuth,
 				Port:    1234,
 				User: &protocol.User{
@@ -144,7 +144,7 @@ func TestUDPReaderWriter(t *testing.T) {
 		Writer: cache,
 		Request: &protocol.RequestHeader{
 			Version: Version,
-			Address: v2net.DomainAddress("v2ray.com"),
+			Address: net.DomainAddress("v2ray.com"),
 			Port:    123,
 			User:    user,
 			Option:  RequestOptionOneTimeAuth,

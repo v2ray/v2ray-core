@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/cipher"
 	"crypto/tls"
-	"net"
 	"sync"
 	"sync/atomic"
 
@@ -12,7 +11,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	v2tls "v2ray.com/core/transport/internet/tls"
 )
@@ -102,8 +101,8 @@ func (c *ClientConnection) Run() {
 	}
 }
 
-func DialKCP(ctx context.Context, dest v2net.Destination) (internet.Connection, error) {
-	dest.Network = v2net.Network_UDP
+func DialKCP(ctx context.Context, dest net.Destination) (internet.Connection, error) {
+	dest.Network = net.Network_UDP
 	log.Trace(newError("dialing mKCP to ", dest))
 
 	src := internet.DialerSourceFromContext(ctx)

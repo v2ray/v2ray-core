@@ -5,22 +5,21 @@ import (
 	"crypto/cipher"
 	"crypto/tls"
 	"io"
-	"net"
 	"sync"
 	"time"
 
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	v2tls "v2ray.com/core/transport/internet/tls"
 	"v2ray.com/core/transport/internet/udp"
 )
 
 type ConnectionID struct {
-	Remote v2net.Address
-	Port   v2net.Port
+	Remote net.Address
+	Port   net.Port
 	Conv   uint16
 }
 
@@ -84,7 +83,7 @@ type Listener struct {
 	addConn   internet.AddConnection
 }
 
-func NewListener(ctx context.Context, address v2net.Address, port v2net.Port, addConn internet.AddConnection) (*Listener, error) {
+func NewListener(ctx context.Context, address net.Address, port net.Port, addConn internet.AddConnection) (*Listener, error) {
 	networkSettings := internet.TransportSettingsFromContext(ctx)
 	kcpSettings := networkSettings.(*Config)
 
@@ -126,7 +125,7 @@ func NewListener(ctx context.Context, address v2net.Address, port v2net.Port, ad
 	return l, nil
 }
 
-func (v *Listener) OnReceive(payload *buf.Buffer, src v2net.Destination, originalDest v2net.Destination) {
+func (v *Listener) OnReceive(payload *buf.Buffer, src net.Destination, originalDest net.Destination) {
 	defer payload.Release()
 
 	segments := v.reader.Read(payload.Bytes())
@@ -237,7 +236,7 @@ func (v *Listener) Addr() net.Addr {
 
 type Writer struct {
 	id       ConnectionID
-	dest     v2net.Destination
+	dest     net.Destination
 	hub      *udp.Hub
 	listener *Listener
 }
@@ -251,7 +250,7 @@ func (v *Writer) Close() error {
 	return nil
 }
 
-func ListenKCP(ctx context.Context, address v2net.Address, port v2net.Port, addConn internet.AddConnection) (internet.Listener, error) {
+func ListenKCP(ctx context.Context, address net.Address, port net.Port, addConn internet.AddConnection) (internet.Listener, error) {
 	return NewListener(ctx, address, port, addConn)
 }
 

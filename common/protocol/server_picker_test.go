@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	. "v2ray.com/core/common/protocol"
 	"v2ray.com/core/testing/assert"
 )
@@ -13,9 +13,9 @@ func TestServerList(t *testing.T) {
 	assert := assert.On(t)
 
 	list := NewServerList()
-	list.AddServer(NewServerSpec(v2net.TCPDestination(v2net.LocalHostIP, v2net.Port(1)), AlwaysValid()))
+	list.AddServer(NewServerSpec(net.TCPDestination(net.LocalHostIP, net.Port(1)), AlwaysValid()))
 	assert.Uint32(list.Size()).Equals(1)
-	list.AddServer(NewServerSpec(v2net.TCPDestination(v2net.LocalHostIP, v2net.Port(2)), BeforeTime(time.Now().Add(time.Second))))
+	list.AddServer(NewServerSpec(net.TCPDestination(net.LocalHostIP, net.Port(2)), BeforeTime(time.Now().Add(time.Second))))
 	assert.Uint32(list.Size()).Equals(2)
 
 	server := list.GetServer(1)
@@ -32,9 +32,9 @@ func TestServerPicker(t *testing.T) {
 	assert := assert.On(t)
 
 	list := NewServerList()
-	list.AddServer(NewServerSpec(v2net.TCPDestination(v2net.LocalHostIP, v2net.Port(1)), AlwaysValid()))
-	list.AddServer(NewServerSpec(v2net.TCPDestination(v2net.LocalHostIP, v2net.Port(2)), BeforeTime(time.Now().Add(time.Second))))
-	list.AddServer(NewServerSpec(v2net.TCPDestination(v2net.LocalHostIP, v2net.Port(3)), BeforeTime(time.Now().Add(time.Second))))
+	list.AddServer(NewServerSpec(net.TCPDestination(net.LocalHostIP, net.Port(1)), AlwaysValid()))
+	list.AddServer(NewServerSpec(net.TCPDestination(net.LocalHostIP, net.Port(2)), BeforeTime(time.Now().Add(time.Second))))
+	list.AddServer(NewServerSpec(net.TCPDestination(net.LocalHostIP, net.Port(3)), BeforeTime(time.Now().Add(time.Second))))
 
 	picker := NewRoundRobinServerPicker(list)
 	server := picker.PickServer()

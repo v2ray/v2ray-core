@@ -1,14 +1,13 @@
 package scenarios
 
 import (
-	"net"
 	"testing"
 
 	xproxy "golang.org/x/net/proxy"
 	socks4 "h12.me/socks"
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/dokodemo"
@@ -34,15 +33,15 @@ func TestSocksBridgeTCP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&socks.ServerConfig{
 					AuthType: socks.AuthType_PASSWORD,
 					Accounts: map[string]string{
 						"Test Account": "Test Password",
 					},
-					Address:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					Address:    net.NewIPOrDomain(net.LocalHostIP),
 					UdpEnabled: false,
 				}),
 			},
@@ -59,14 +58,14 @@ func TestSocksBridgeTCP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
@@ -76,7 +75,7 @@ func TestSocksBridgeTCP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&socks.ClientConfig{
 					Server: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -131,15 +130,15 @@ func TestSocksBridageUDP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&socks.ServerConfig{
 					AuthType: socks.AuthType_PASSWORD,
 					Accounts: map[string]string{
 						"Test Account": "Test Password",
 					},
-					Address:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					Address:    net.NewIPOrDomain(net.LocalHostIP),
 					UdpEnabled: true,
 				}),
 			},
@@ -156,14 +155,14 @@ func TestSocksBridageUDP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP, v2net.Network_UDP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP, net.Network_UDP},
 					},
 				}),
 			},
@@ -173,7 +172,7 @@ func TestSocksBridageUDP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&socks.ClientConfig{
 					Server: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -229,29 +228,29 @@ func TestSocksConformance(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(authPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(authPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&socks.ServerConfig{
 					AuthType: socks.AuthType_PASSWORD,
 					Accounts: map[string]string{
 						"Test Account": "Test Password",
 					},
-					Address:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					Address:    net.NewIPOrDomain(net.LocalHostIP),
 					UdpEnabled: false,
 				}),
 			},
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(noAuthPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(noAuthPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&socks.ServerConfig{
 					AuthType: socks.AuthType_NO_AUTH,
 					Accounts: map[string]string{
 						"Test Account": "Test Password",
 					},
-					Address:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					Address:    net.NewIPOrDomain(net.LocalHostIP),
 					UdpEnabled: false,
 				}),
 			},
@@ -267,7 +266,7 @@ func TestSocksConformance(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	{
-		noAuthDialer, err := xproxy.SOCKS5("tcp", v2net.TCPDestination(v2net.LocalHostIP, noAuthPort).NetAddr(), nil, xproxy.Direct)
+		noAuthDialer, err := xproxy.SOCKS5("tcp", net.TCPDestination(net.LocalHostIP, noAuthPort).NetAddr(), nil, xproxy.Direct)
 		assert.Error(err).IsNil()
 		conn, err := noAuthDialer.Dial("tcp", dest.NetAddr())
 		assert.Error(err).IsNil()
@@ -285,7 +284,7 @@ func TestSocksConformance(t *testing.T) {
 	}
 
 	{
-		authDialer, err := xproxy.SOCKS5("tcp", v2net.TCPDestination(v2net.LocalHostIP, authPort).NetAddr(), &xproxy.Auth{User: "Test Account", Password: "Test Password"}, xproxy.Direct)
+		authDialer, err := xproxy.SOCKS5("tcp", net.TCPDestination(net.LocalHostIP, authPort).NetAddr(), &xproxy.Auth{User: "Test Account", Password: "Test Password"}, xproxy.Direct)
 		assert.Error(err).IsNil()
 		conn, err := authDialer.Dial("tcp", dest.NetAddr())
 		assert.Error(err).IsNil()
@@ -303,7 +302,7 @@ func TestSocksConformance(t *testing.T) {
 	}
 
 	{
-		dialer := socks4.DialSocksProxy(socks4.SOCKS4, v2net.TCPDestination(v2net.LocalHostIP, noAuthPort).NetAddr())
+		dialer := socks4.DialSocksProxy(socks4.SOCKS4, net.TCPDestination(net.LocalHostIP, noAuthPort).NetAddr())
 		conn, err := dialer("tcp", dest.NetAddr())
 		assert.Error(err).IsNil()
 
@@ -320,8 +319,8 @@ func TestSocksConformance(t *testing.T) {
 	}
 
 	{
-		dialer := socks4.DialSocksProxy(socks4.SOCKS4A, v2net.TCPDestination(v2net.LocalHostIP, noAuthPort).NetAddr())
-		conn, err := dialer("tcp", v2net.TCPDestination(v2net.LocalHostDomain, tcpServer.Port).NetAddr())
+		dialer := socks4.DialSocksProxy(socks4.SOCKS4A, net.TCPDestination(net.LocalHostIP, noAuthPort).NetAddr())
+		conn, err := dialer("tcp", net.TCPDestination(net.LocalHostDomain, tcpServer.Port).NetAddr())
 		assert.Error(err).IsNil()
 
 		payload := "test payload"

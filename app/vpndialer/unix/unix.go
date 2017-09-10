@@ -2,14 +2,13 @@ package unix
 
 import (
 	"context"
-	"net"
 	"os"
 	"sync"
 
 	"golang.org/x/sys/unix"
 	"v2ray.com/core/app/vpndialer"
 	"v2ray.com/core/common"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/transport/internet"
 )
@@ -161,19 +160,19 @@ type Dialer struct {
 	protect func(fd int) error
 }
 
-func socket(dest v2net.Destination) (int, error) {
+func socket(dest net.Destination) (int, error) {
 	switch dest.Network {
-	case v2net.Network_TCP:
+	case net.Network_TCP:
 		return unix.Socket(unix.AF_INET6, unix.SOCK_STREAM, unix.IPPROTO_TCP)
-	case v2net.Network_UDP:
+	case net.Network_UDP:
 		return unix.Socket(unix.AF_INET6, unix.SOCK_DGRAM, unix.IPPROTO_UDP)
 	default:
 		return 0, newError("unknown network ", dest.Network)
 	}
 }
 
-func getIP(addr v2net.Address) (net.IP, error) {
-	if addr.Family().Either(v2net.AddressFamilyIPv4, v2net.AddressFamilyIPv6) {
+func getIP(addr net.Address) (net.IP, error) {
+	if addr.Family().Either(net.AddressFamilyIPv4, net.AddressFamilyIPv6) {
 		return addr.IP(), nil
 	}
 	ips, err := net.LookupIP(addr.Domain())
@@ -183,7 +182,7 @@ func getIP(addr v2net.Address) (net.IP, error) {
 	return ips[0], nil
 }
 
-func (d *Dialer) Dial(ctx context.Context, source v2net.Address, dest v2net.Destination) (net.Conn, error) {
+func (d *Dialer) Dial(ctx context.Context, source net.Address, dest net.Destination) (net.Conn, error) {
 	fd, err := socket(dest)
 	if err != nil {
 		return nil, err

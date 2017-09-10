@@ -2,10 +2,9 @@ package internet
 
 import (
 	"context"
-	"net"
 	"time"
 
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 )
 
 var (
@@ -13,20 +12,20 @@ var (
 )
 
 type SystemDialer interface {
-	Dial(ctx context.Context, source v2net.Address, destination v2net.Destination) (net.Conn, error)
+	Dial(ctx context.Context, source net.Address, destination net.Destination) (net.Conn, error)
 }
 
 type DefaultSystemDialer struct {
 }
 
-func (DefaultSystemDialer) Dial(ctx context.Context, src v2net.Address, dest v2net.Destination) (net.Conn, error) {
+func (DefaultSystemDialer) Dial(ctx context.Context, src net.Address, dest net.Destination) (net.Conn, error) {
 	dialer := &net.Dialer{
 		Timeout:   time.Second * 60,
 		DualStack: true,
 	}
-	if src != nil && src != v2net.AnyIP {
+	if src != nil && src != net.AnyIP {
 		var addr net.Addr
-		if dest.Network == v2net.Network_TCP {
+		if dest.Network == net.Network_TCP {
 			addr = &net.TCPAddr{
 				IP:   src.IP(),
 				Port: 0,
@@ -56,7 +55,7 @@ func WithAdapter(dialer SystemDialerAdapter) SystemDialer {
 	}
 }
 
-func (v *SimpleSystemDialer) Dial(ctx context.Context, src v2net.Address, dest v2net.Destination) (net.Conn, error) {
+func (v *SimpleSystemDialer) Dial(ctx context.Context, src net.Address, dest net.Destination) (net.Conn, error) {
 	return v.adapter.Dial(dest.Network.SystemString(), dest.NetAddr())
 }
 

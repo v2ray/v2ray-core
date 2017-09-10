@@ -3,7 +3,6 @@ package outbound
 import (
 	"context"
 	"io"
-	"net"
 	"time"
 
 	"v2ray.com/core/app"
@@ -12,7 +11,7 @@ import (
 	"v2ray.com/core/app/proxyman/mux"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/ray"
@@ -94,7 +93,7 @@ func (h *Handler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
 }
 
 // Dial implements proxy.Dialer.Dial().
-func (h *Handler) Dial(ctx context.Context, dest v2net.Destination) (internet.Connection, error) {
+func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {
 	if h.senderSettings != nil {
 		if h.senderSettings.ProxySettings.HasTag() {
 			tag := h.senderSettings.ProxySettings.Tag

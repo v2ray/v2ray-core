@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,29 +16,29 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
 )
 
-func pickPort() v2net.Port {
+func pickPort() net.Port {
 	listener, err := net.Listen("tcp4", ":0")
 	common.Must(err)
 	defer listener.Close()
 
 	addr := listener.Addr().(*net.TCPAddr)
-	return v2net.Port(addr.Port)
+	return net.Port(addr.Port)
 }
 
-func pickUDPPort() v2net.Port {
+func pickUDPPort() net.Port {
 	conn, err := net.ListenUDP("udp4", &net.UDPAddr{
-		IP:   v2net.LocalHostIP.IP(),
+		IP:   net.LocalHostIP.IP(),
 		Port: 0,
 	})
 	common.Must(err)
 	defer conn.Close()
 
 	addr := conn.LocalAddr().(*net.UDPAddr)
-	return v2net.Port(addr.Port)
+	return net.Port(addr.Port)
 }
 
 func xor(b []byte) []byte {

@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"net"
 	"sync"
 	"time"
 
@@ -11,7 +10,7 @@ import (
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet/udp"
 )
 
@@ -22,7 +21,7 @@ const (
 )
 
 var (
-	pseudoDestination = v2net.UDPDestination(v2net.LocalHostIP, v2net.Port(53))
+	pseudoDestination = net.UDPDestination(net.LocalHostIP, net.Port(53))
 )
 
 type ARecord struct {
@@ -41,13 +40,13 @@ type PendingRequest struct {
 
 type UDPNameServer struct {
 	sync.Mutex
-	address     v2net.Destination
+	address     net.Destination
 	requests    map[uint16]*PendingRequest
 	udpServer   *udp.Dispatcher
 	nextCleanup time.Time
 }
 
-func NewUDPNameServer(address v2net.Destination, dispatcher dispatcher.Interface) *UDPNameServer {
+func NewUDPNameServer(address net.Destination, dispatcher dispatcher.Interface) *UDPNameServer {
 	s := &UDPNameServer{
 		address:   address,
 		requests:  make(map[uint16]*PendingRequest),

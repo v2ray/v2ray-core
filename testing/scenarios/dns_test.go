@@ -9,7 +9,7 @@ import (
 	"v2ray.com/core/app/dns"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/router"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/blackhole"
 	"v2ray.com/core/proxy/freedom"
@@ -32,8 +32,8 @@ func TestResolveIP(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&dns.Config{
-				Hosts: map[string]*v2net.IPOrDomain{
-					"google.com": v2net.NewIPOrDomain(dest.Address),
+				Hosts: map[string]*net.IPOrDomain{
+					"google.com": net.NewIPOrDomain(dest.Address),
 				},
 			}),
 			serial.ToTypedMessage(&router.Config{
@@ -54,15 +54,15 @@ func TestResolveIP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&socks.ServerConfig{
 					AuthType: socks.AuthType_NO_AUTH,
 					Accounts: map[string]string{
 						"Test Account": "Test Password",
 					},
-					Address:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					Address:    net.NewIPOrDomain(net.LocalHostIP),
 					UdpEnabled: false,
 				}),
 			},
@@ -84,7 +84,7 @@ func TestResolveIP(t *testing.T) {
 	assert.Error(err).IsNil()
 
 	{
-		noAuthDialer, err := xproxy.SOCKS5("tcp", v2net.TCPDestination(v2net.LocalHostIP, serverPort).NetAddr(), nil, xproxy.Direct)
+		noAuthDialer, err := xproxy.SOCKS5("tcp", net.TCPDestination(net.LocalHostIP, serverPort).NetAddr(), nil, xproxy.Direct)
 		assert.Error(err).IsNil()
 		conn, err := noAuthDialer.Dial("tcp", fmt.Sprintf("google.com:%d", dest.Port))
 		assert.Error(err).IsNil()
