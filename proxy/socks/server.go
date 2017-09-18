@@ -187,8 +187,11 @@ func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 
 				log.Trace(newError("writing back UDP response with ", payload.Len(), " bytes").AtDebug())
 
-				udpMessage := EncodeUDPPacket(request, payload.Bytes())
+				udpMessage, err := EncodeUDPPacket(request, payload.Bytes())
 				defer udpMessage.Release()
+				if err != nil {
+					log.Trace(newError("failed to write UDP response").AtWarning().Base(err))
+				}
 
 				conn.Write(udpMessage.Bytes())
 			})

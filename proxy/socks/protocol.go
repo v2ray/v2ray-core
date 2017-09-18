@@ -244,7 +244,7 @@ func writeSocks5AuthenticationResponse(writer io.Writer, version byte, auth byte
 	return err
 }
 
-func appendAddress(buffer *buf.Buffer, address net.Address, port net.Port) {
+func appendAddress(buffer *buf.Buffer, address net.Address, port net.Port) error {
 	switch address.Family() {
 	case net.AddressFamilyIPv4:
 		buffer.AppendBytes(0x01)
@@ -253,16 +253,23 @@ func appendAddress(buffer *buf.Buffer, address net.Address, port net.Port) {
 		buffer.AppendBytes(0x04)
 		buffer.Append(address.IP())
 	case net.AddressFamilyDomain:
+		n := byte(len(address.Domain()))
+		if int(n) != len(address.Domain()) {
+			return newError("Super long domain is not supported in Socks protocol. ", address.Domain())
+		}
 		buffer.AppendBytes(0x03, byte(len(address.Domain())))
 		buffer.AppendSupplier(serial.WriteString(address.Domain()))
 	}
 	buffer.AppendSupplier(serial.WriteUint16(port.Value()))
+	return nil
 }
 
 func writeSocks5Response(writer io.Writer, errCode byte, address net.Address, port net.Port) error {
 	buffer := buf.NewLocal(64)
 	buffer.AppendBytes(socks5Version, errCode, 0x00 /* reserved */)
-	appendAddress(buffer, address, port)
+	if err := appendAddress(buffer, address, port); err != nil {
+		return err
+	}
 
 	_, err := writer.Write(buffer.Bytes())
 	return err
@@ -327,12 +334,14 @@ func DecodeUDPPacket(packet []byte) (*protocol.RequestHeader, []byte, error) {
 	return request, packet[dataBegin:], nil
 }
 
-func EncodeUDPPacket(request *protocol.RequestHeader, data []byte) *buf.Buffer {
+func EncodeUDPPacket(request *protocol.RequestHeader, data []byte) (*buf.Buffer, error) {
 	b := buf.New()
 	b.AppendBytes(0, 0, 0 /* Fragment */)
-	appendAddress(b, request.Address, request.Port)
+	if err := appendAddress(b, request.Address, request.Port); err != nil {
+		return nil, err
+	}
 	b.Append(data)
-	return b
+	return b, nil
 }
 
 type UDPReader struct {
@@ -371,7 +380,10 @@ func NewUDPWriter(request *protocol.RequestHeader, writer io.Writer) *UDPWriter 
 
 // Write implements io.Writer.
 func (w *UDPWriter) Write(b []byte) (int, error) {
-	eb := EncodeUDPPacket(w.request, b)
+	eb, err := EncodeUDPPacket(w.request, b)
+	if err != nil {
+		return 0, err
+	}
 	defer eb.Release()
 	if _, err := w.writer.Write(eb.Bytes()); err != nil {
 		return 0, err
