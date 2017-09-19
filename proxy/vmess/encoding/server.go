@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"golang.org/x/crypto/chacha20poly1305"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/net"
@@ -126,7 +127,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	}
 
 	timestampHash := md5.New()
-	timestampHash.Write(hashTimestamp(timestamp))
+	common.Must2(timestampHash.Write(hashTimestamp(timestamp)))
 	iv := timestampHash.Sum(nil)
 	account, err := user.GetTypedAccount()
 	if err != nil {
@@ -220,7 +221,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	}
 
 	fnv1a := fnv.New32a()
-	fnv1a.Write(buffer[:bufferLen])
+	common.Must2(fnv1a.Write(buffer[:bufferLen]))
 	actualHash := fnv1a.Sum32()
 	expectedHash := serial.BytesToUint32(buffer[bufferLen : bufferLen+4])
 
@@ -314,10 +315,10 @@ func (s *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, wr
 	encryptionWriter := crypto.NewCryptionWriter(aesStream, writer)
 	s.responseWriter = encryptionWriter
 
-	encryptionWriter.Write([]byte{s.responseHeader, byte(header.Option)})
+	common.Must2(encryptionWriter.Write([]byte{s.responseHeader, byte(header.Option)}))
 	err := MarshalCommand(header.Command, encryptionWriter)
 	if err != nil {
-		encryptionWriter.Write([]byte{0x00, 0x00})
+		common.Must2(encryptionWriter.Write([]byte{0x00, 0x00}))
 	}
 }
 

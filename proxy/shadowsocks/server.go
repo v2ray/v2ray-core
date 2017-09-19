@@ -70,7 +70,7 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 	}
 }
 
-func (v *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection, dispatcher dispatcher.Interface) error {
+func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection, dispatcher dispatcher.Interface) error {
 	udpServer := udp.NewDispatcher(dispatcher)
 
 	reader := buf.NewReader(conn)
@@ -81,7 +81,7 @@ func (v *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 		}
 
 		for _, payload := range mpayload {
-			request, data, err := DecodeUDPPacket(v.user, payload)
+			request, data, err := DecodeUDPPacket(s.user, payload)
 			if err != nil {
 				if source, ok := proxy.SourceFromContext(ctx); ok {
 					log.Trace(newError("dropping invalid UDP packet from: ", source).Base(err))
@@ -91,13 +91,13 @@ func (v *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 				continue
 			}
 
-			if request.Option.Has(RequestOptionOneTimeAuth) && v.account.OneTimeAuth == Account_Disabled {
+			if request.Option.Has(RequestOptionOneTimeAuth) && s.account.OneTimeAuth == Account_Disabled {
 				log.Trace(newError("client payload enables OTA but server doesn't allow it"))
 				payload.Release()
 				continue
 			}
 
-			if !request.Option.Has(RequestOptionOneTimeAuth) && v.account.OneTimeAuth == Account_Enabled {
+			if !request.Option.Has(RequestOptionOneTimeAuth) && s.account.OneTimeAuth == Account_Enabled {
 				log.Trace(newError("client payload disables OTA but server forces it"))
 				payload.Release()
 				continue

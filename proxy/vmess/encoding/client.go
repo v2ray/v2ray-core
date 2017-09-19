@@ -11,6 +11,7 @@ import (
 	"golang.org/x/crypto/chacha20poly1305"
 
 	"v2ray.com/core/app/log"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/dice"
@@ -43,7 +44,7 @@ type ClientSession struct {
 // NewClientSession creates a new ClientSession.
 func NewClientSession(idHash protocol.IDHash) *ClientSession {
 	randomBytes := make([]byte, 33) // 16 + 16 + 1
-	rand.Read(randomBytes)
+	common.Must2(rand.Read(randomBytes))
 
 	session := &ClientSession{}
 	session.requestBodyKey = randomBytes[:16]
@@ -58,22 +59,22 @@ func NewClientSession(idHash protocol.IDHash) *ClientSession {
 	return session
 }
 
-func (v *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writer io.Writer) {
+func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writer io.Writer) {
 	timestamp := protocol.NewTimestampGenerator(protocol.NowTime(), 30)()
 	account, err := header.User.GetTypedAccount()
 	if err != nil {
 		log.Trace(newError("failed to get user account: ", err).AtError())
 		return
 	}
-	idHash := v.idHash(account.(*vmess.InternalAccount).AnyValidID().Bytes())
-	idHash.Write(timestamp.Bytes(nil))
-	writer.Write(idHash.Sum(nil))
+	idHash := c.idHash(account.(*vmess.InternalAccount).AnyValidID().Bytes())
+	common.Must2(idHash.Write(timestamp.Bytes(nil)))
+	common.Must2(writer.Write(idHash.Sum(nil)))
 
 	buffer := make([]byte, 0, 512)
 	buffer = append(buffer, Version)
-	buffer = append(buffer, v.requestBodyIV...)
-	buffer = append(buffer, v.requestBodyKey...)
-	buffer = append(buffer, v.responseHeader, byte(header.Option))
+	buffer = append(buffer, c.requestBodyIV...)
+	buffer = append(buffer, c.requestBodyKey...)
+	buffer = append(buffer, c.responseHeader, byte(header.Option))
 	padingLen := dice.Roll(16)
 	if header.Security.Is(protocol.SecurityType_LEGACY) {
 		// Disable padding in legacy mode for a smooth transition.
@@ -100,29 +101,27 @@ func (v *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 
 	if padingLen > 0 {
 		pading := make([]byte, padingLen)
-		rand.Read(pading)
+		common.Must2(rand.Read(pading))
 		buffer = append(buffer, pading...)
 	}
 
 	fnv1a := fnv.New32a()
-	fnv1a.Write(buffer)
+	common.Must2(fnv1a.Write(buffer))
 
 	buffer = fnv1a.Sum(buffer)
 
 	timestampHash := md5.New()
-	timestampHash.Write(hashTimestamp(timestamp))
+	common.Must2(timestampHash.Write(hashTimestamp(timestamp)))
 	iv := timestampHash.Sum(nil)
 	aesStream := crypto.NewAesEncryptionStream(account.(*vmess.InternalAccount).ID.CmdKey(), iv)
 	aesStream.XORKeyStream(buffer, buffer)
-	writer.Write(buffer)
-
-	return
+	common.Must2(writer.Write(buffer))
 }
 
-func (v *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, writer io.Writer) buf.Writer {
+func (c *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, writer io.Writer) buf.Writer {
 	var sizeParser crypto.ChunkSizeEncoder = crypto.PlainChunkSizeParser{}
 	if request.Option.Has(protocol.RequestOptionChunkMasking) {
-		sizeParser = NewShakeSizeParser(v.requestBodyIV)
+		sizeParser = NewShakeSizeParser(c.requestBodyIV)
 	}
 	if request.Security.Is(protocol.SecurityType_NONE) {
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
@@ -141,7 +140,7 @@ func (v *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 	}
 
 	if request.Security.Is(protocol.SecurityType_LEGACY) {
-		aesStream := crypto.NewAesEncryptionStream(v.requestBodyKey, v.requestBodyIV)
+		aesStream := crypto.NewAesEncryptionStream(c.requestBodyKey, c.requestBodyIV)
 		cryptionWriter := crypto.NewCryptionWriter(aesStream, writer)
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
 			auth := &crypto.AEADAuthenticator{
@@ -156,13 +155,13 @@ func (v *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 	}
 
 	if request.Security.Is(protocol.SecurityType_AES128_GCM) {
-		block, _ := aes.NewCipher(v.requestBodyKey)
+		block, _ := aes.NewCipher(c.requestBodyKey)
 		aead, _ := cipher.NewGCM(block)
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD: aead,
 			NonceGenerator: &ChunkNonceGenerator{
-				Nonce: append([]byte(nil), v.requestBodyIV...),
+				Nonce: append([]byte(nil), c.requestBodyIV...),
 				Size:  aead.NonceSize(),
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
@@ -171,12 +170,12 @@ func (v *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 	}
 
 	if request.Security.Is(protocol.SecurityType_CHACHA20_POLY1305) {
-		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(v.requestBodyKey))
+		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(c.requestBodyKey))
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD: aead,
 			NonceGenerator: &ChunkNonceGenerator{
-				Nonce: append([]byte(nil), v.requestBodyIV...),
+				Nonce: append([]byte(nil), c.requestBodyIV...),
 				Size:  aead.NonceSize(),
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
@@ -299,8 +298,8 @@ type ChunkNonceGenerator struct {
 	count uint16
 }
 
-func (v *ChunkNonceGenerator) Next() []byte {
-	serial.Uint16ToBytes(v.count, v.Nonce[:0])
-	v.count++
-	return v.Nonce[:v.Size]
+func (g *ChunkNonceGenerator) Next() []byte {
+	serial.Uint16ToBytes(g.count, g.Nonce[:0])
+	g.count++
+	return g.Nonce[:g.Size]
 }

@@ -132,7 +132,7 @@ func transferRequest(timer signal.ActivityTimer, session *encoding.ServerSession
 
 	bodyReader := session.DecodeRequestBody(request, input)
 	if err := buf.Copy(bodyReader, output, buf.UpdateActivity(timer)); err != nil {
-		return err
+		return newError("failed to transfer request").Base(err)
 	}
 	return nil
 }
