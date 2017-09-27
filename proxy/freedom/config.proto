@@ -20,5 +20,4 @@ message Config {
   DomainStrategy domain_strategy = 1;
   uint32 timeout = 2;
   DestinationOverride destination_override = 3;
-  bool keep_alive_on_response_close = 4;
 }
