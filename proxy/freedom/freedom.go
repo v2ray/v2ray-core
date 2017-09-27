@@ -22,10 +22,11 @@ import (
 )
 
 type Handler struct {
-	domainStrategy Config_DomainStrategy
-	timeout        uint32
-	dns            dns.Server
-	destOverride   *DestinationOverride
+	domainStrategy           Config_DomainStrategy
+	timeout                  uint32
+	dns                      dns.Server
+	destOverride             *DestinationOverride
+	keepAliveOnResponseClose bool
 }
 
 func New(ctx context.Context, config *Config) (*Handler, error) {
@@ -34,9 +35,10 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		return nil, newError("no space in context")
 	}
 	f := &Handler{
-		domainStrategy: config.DomainStrategy,
-		timeout:        config.Timeout,
-		destOverride:   config.DestinationOverride,
+		domainStrategy:           config.DomainStrategy,
+		timeout:                  config.Timeout,
+		destOverride:             config.DestinationOverride,
+		keepAliveOnResponseClose: config.KeepAliveOnResponseClose,
 	}
 	space.OnInitialize(func() error {
 		if config.DomainStrategy == Config_USE_IP {
@@ -50,12 +52,12 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	return f, nil
 }
 
-func (v *Handler) ResolveIP(destination net.Destination) net.Destination {
+func (h *Handler) ResolveIP(destination net.Destination) net.Destination {
 	if !destination.Address.Family().IsDomain() {
 		return destination
 	}
 
-	ips := v.dns.Get(destination.Address.Domain())
+	ips := h.dns.Get(destination.Address.Domain())
 	if len(ips) == 0 {
 		log.Trace(newError("DNS returns nil answer. Keep domain as is."))
 		return destination
@@ -71,10 +73,10 @@ func (v *Handler) ResolveIP(destination net.Destination) net.Destination {
 	return newDest
 }
 
-func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
+func (h *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
 	destination, _ := proxy.TargetFromContext(ctx)
-	if v.destOverride != nil {
-		server := v.destOverride.Server
+	if h.destOverride != nil {
+		server := h.destOverride.Server
 		destination = net.Destination{
 			Network: destination.Network,
 			Address: server.Address.AsAddress(),
@@ -87,8 +89,8 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	output := outboundRay.OutboundOutput()
 
 	var conn internet.Connection
-	if v.domainStrategy == Config_USE_IP && destination.Address.Family().IsDomain() {
-		destination = v.ResolveIP(destination)
+	if h.domainStrategy == Config_USE_IP && destination.Address.Family().IsDomain() {
+		destination = h.ResolveIP(destination)
 	}
 
 	err := retry.ExponentialBackoff(5, 100).On(func() error {
@@ -104,7 +106,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	}
 	defer conn.Close()
 
-	timeout := time.Second * time.Duration(v.timeout)
+	timeout := time.Second * time.Duration(h.timeout)
 	if timeout == 0 {
 		timeout = time.Minute * 5
 	}
@@ -124,7 +126,13 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
-		defer output.Close()
+		defer func() {
+			if h.keepAliveOnResponseClose {
+				output.Close()
+			} else {
+				output.CloseError()
+			}
+		}()
 
 		v2reader := buf.NewReader(conn)
 		if err := buf.Copy(v2reader, output, buf.UpdateActivity(timer)); err != nil {
