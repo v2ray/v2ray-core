@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"hash"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/uuid"
 )
 
@@ -25,31 +26,32 @@ type ID struct {
 }
 
 // Equals returns true if this ID equals to the other one.
-func (v *ID) Equals(another *ID) bool {
-	return v.uuid.Equals(another.uuid)
+func (id *ID) Equals(another *ID) bool {
+	return id.uuid.Equals(another.uuid)
 }
 
-func (v *ID) Bytes() []byte {
-	return v.uuid.Bytes()
+func (id *ID) Bytes() []byte {
+	return id.uuid.Bytes()
 }
 
-func (v *ID) String() string {
-	return v.uuid.String()
+func (id *ID) String() string {
+	return id.uuid.String()
 }
 
-func (v *ID) UUID() *uuid.UUID {
-	return v.uuid
+func (id *ID) UUID() *uuid.UUID {
+	return id.uuid
 }
 
-func (v ID) CmdKey() []byte {
-	return v.cmdKey[:]
+func (id ID) CmdKey() []byte {
+	return id.cmdKey[:]
 }
 
+// NewID returns an ID with given UUID.
 func NewID(uuid *uuid.UUID) *ID {
 	id := &ID{uuid: uuid}
 	md5hash := md5.New()
-	md5hash.Write(uuid.Bytes())
-	md5hash.Write([]byte("c48619fe-8f02-49e0-b9e9-edf763e17e21"))
+	common.Must2(md5hash.Write(uuid.Bytes()))
+	common.Must2(md5hash.Write([]byte("c48619fe-8f02-49e0-b9e9-edf763e17e21")))
 	md5hash.Sum(id.cmdKey[:0])
 	return id
 }
