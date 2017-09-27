@@ -177,6 +177,8 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 			return newError("failed to transport all TCP response").Base(err)
 		}
 
+		timer.SetTimeout(time.Second * 2)
+
 		return nil
 	})
 

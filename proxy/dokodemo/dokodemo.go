@@ -94,6 +94,9 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		if err := buf.Copy(inboundRay.InboundOutput(), writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport response").Base(err)
 		}
+
+		timer.SetTimeout(time.Second * 2)
+
 		return nil
 	})
 

@@ -135,6 +135,7 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 		if err := buf.Copy(output, v2writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport all TCP response").Base(err)
 		}
+		timer.SetTimeout(time.Second * 2)
 		return nil
 	})
 
