@@ -62,7 +62,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 
 	timeout := time.Second * time.Duration(d.config.Timeout)
 	if timeout == 0 {
-		timeout = time.Minute * 2
+		timeout = time.Minute * 5
 	}
 	ctx, timer := signal.CancelAfterInactivity(ctx, timeout)
 
