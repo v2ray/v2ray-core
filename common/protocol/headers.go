@@ -37,22 +37,22 @@ const (
 	RequestOptionChunkMasking = RequestOption(0x04)
 )
 
-func (v RequestOption) Has(option RequestOption) bool {
-	return (v & option) == option
+func (o RequestOption) Has(option RequestOption) bool {
+	return (o & option) == option
 }
 
-func (v *RequestOption) Set(option RequestOption) {
-	*v = (*v | option)
+func (o *RequestOption) Set(option RequestOption) {
+	*o = (*o | option)
 }
 
-func (v *RequestOption) Clear(option RequestOption) {
-	*v = (*v & (^option))
+func (o *RequestOption) Clear(option RequestOption) {
+	*o = (*o & (^option))
 }
 
 type Security byte
 
-func (v Security) Is(t SecurityType) bool {
-	return v == Security(t)
+func (s Security) Is(t SecurityType) bool {
+	return s == Security(t)
 }
 
 func NormSecurity(s Security) Security {
@@ -72,11 +72,11 @@ type RequestHeader struct {
 	User     *User
 }
 
-func (v *RequestHeader) Destination() net.Destination {
-	if v.Command == RequestCommandUDP {
-		return net.UDPDestination(v.Address, v.Port)
+func (h *RequestHeader) Destination() net.Destination {
+	if h.Command == RequestCommandUDP {
+		return net.UDPDestination(h.Address, h.Port)
 	}
-	return net.TCPDestination(v.Address, v.Port)
+	return net.TCPDestination(h.Address, h.Port)
 }
 
 type ResponseOption byte
@@ -85,16 +85,16 @@ const (
 	ResponseOptionConnectionReuse = ResponseOption(0x01)
 )
 
-func (v *ResponseOption) Set(option ResponseOption) {
-	*v = (*v | option)
+func (o *ResponseOption) Set(option ResponseOption) {
+	*o = (*o | option)
 }
 
-func (v ResponseOption) Has(option ResponseOption) bool {
-	return (v & option) == option
+func (o ResponseOption) Has(option ResponseOption) bool {
+	return (o & option) == option
 }
 
-func (v *ResponseOption) Clear(option ResponseOption) {
-	*v = (*v & (^option))
+func (o *ResponseOption) Clear(option ResponseOption) {
+	*o = (*o & (^option))
 }
 
 type ResponseCommand interface{}
@@ -113,15 +113,15 @@ type CommandSwitchAccount struct {
 	ValidMin byte
 }
 
-func (v *SecurityConfig) AsSecurity() Security {
-	if v == nil {
+func (sc *SecurityConfig) AsSecurity() Security {
+	if sc == nil {
 		return Security(SecurityType_LEGACY)
 	}
-	if v.Type == SecurityType_AUTO {
+	if sc.Type == SecurityType_AUTO {
 		if runtime.GOARCH == "amd64" || runtime.GOARCH == "s390x" {
 			return Security(SecurityType_AES128_GCM)
 		}
 		return Security(SecurityType_CHACHA20_POLY1305)
 	}
-	return NormSecurity(Security(v.Type))
+	return NormSecurity(Security(sc.Type))
 }
