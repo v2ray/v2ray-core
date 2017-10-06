@@ -29,7 +29,9 @@ func (t *ActivityTimer) SetTimeout(timeout time.Duration) {
 
 func (t *ActivityTimer) run() {
 	ticker := time.NewTicker(<-t.timeout)
-	defer ticker.Stop()
+	defer func() {
+		ticker.Stop()
+	}()
 
 	for {
 		select {
