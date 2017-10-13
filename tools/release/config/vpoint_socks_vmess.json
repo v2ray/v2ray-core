@@ -18,7 +18,7 @@
       "vnext": [
         {
           "address": "v2ray.cool",
-          "port": 10086,
+          "port": 443,
           "users": [
             {
               "id": "a3482e88-686a-4a58-8126-99c9df64b7bf",
@@ -31,6 +31,16 @@
     },
     "mux": {
       "enabled": true
+    },
+    "streamSettings": {
+      "network": "ws",
+      "security": "tls",
+      "tlsSettings": {
+        "allowInsecure": true
+      },
+      "wsSettings": {
+        "path": "/v2ray.cool/"
+      }
     }
   },
   "outboundDetour": [
