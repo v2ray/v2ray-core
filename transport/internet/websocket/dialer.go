@@ -59,7 +59,7 @@ func dialWebsocket(ctx context.Context, dest net.Destination) (net.Conn, error) 
 	}
 	uri := protocol + "://" + host + wsSettings.GetNormailzedPath()
 
-	conn, resp, err := dialer.Dial(uri, nil)
+	conn, resp, err := dialer.Dial(uri, wsSettings.GetRequestHeader())
 	if err != nil {
 		var reason string
 		if resp != nil {

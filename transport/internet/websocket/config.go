@@ -1,6 +1,8 @@
 package websocket
 
 import (
+	"net/http"
+
 	"v2ray.com/core/common"
 	"v2ray.com/core/transport/internet"
 )
@@ -14,6 +16,14 @@ func (c *Config) GetNormailzedPath() string {
 		return "/" + path
 	}
 	return path
+}
+
+func (c *Config) GetRequestHeader() http.Header {
+	header := http.Header{}
+	for _, h := range c.Header {
+		header.Add(h.Key, h.Value)
+	}
+	return header
 }
 
 func init() {
