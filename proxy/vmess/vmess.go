@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/protocol"
 )
 
@@ -60,11 +61,11 @@ func (v *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, idx in
 	var hashValueRemoval [16]byte
 	idHash := v.hasher(entry.id.Bytes())
 	for entry.lastSec <= nowSec {
-		idHash.Write(entry.lastSec.Bytes(nil))
+		common.Must2(idHash.Write(entry.lastSec.Bytes(nil)))
 		idHash.Sum(hashValue[:0])
 		idHash.Reset()
 
-		idHash.Write(entry.lastSecRemoval.Bytes(nil))
+		common.Must2(idHash.Write(entry.lastSecRemoval.Bytes(nil)))
 		idHash.Sum(hashValueRemoval[:0])
 		idHash.Reset()
 

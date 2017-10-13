@@ -5,33 +5,42 @@ import (
 	"time"
 )
 
-type ActivityTimer interface {
+type ActivityUpdater interface {
 	Update()
 }
 
-type realActivityTimer struct {
+type ActivityTimer struct {
 	updated chan bool
-	timeout time.Duration
+	timeout chan time.Duration
 	ctx     context.Context
 	cancel  context.CancelFunc
 }
 
-func (t *realActivityTimer) Update() {
+func (t *ActivityTimer) Update() {
 	select {
 	case t.updated <- true:
 	default:
 	}
 }
 
-func (t *realActivityTimer) run() {
-	ticker := time.NewTicker(t.timeout)
-	defer ticker.Stop()
+func (t *ActivityTimer) SetTimeout(timeout time.Duration) {
+	t.timeout <- timeout
+}
+
+func (t *ActivityTimer) run() {
+	ticker := time.NewTicker(<-t.timeout)
+	defer func() {
+		ticker.Stop()
+	}()
 
 	for {
 		select {
 		case <-ticker.C:
 		case <-t.ctx.Done():
 			return
+		case timeout := <-t.timeout:
+			ticker.Stop()
+			ticker = time.NewTicker(timeout)
 		}
 
 		select {
@@ -44,14 +53,15 @@ func (t *realActivityTimer) run() {
 	}
 }
 
-func CancelAfterInactivity(ctx context.Context, timeout time.Duration) (context.Context, ActivityTimer) {
+func CancelAfterInactivity(ctx context.Context, timeout time.Duration) (context.Context, *ActivityTimer) {
 	ctx, cancel := context.WithCancel(ctx)
-	timer := &realActivityTimer{
+	timer := &ActivityTimer{
 		ctx:     ctx,
 		cancel:  cancel,
-		timeout: timeout,
+		timeout: make(chan time.Duration, 1),
 		updated: make(chan bool, 1),
 	}
+	timer.timeout <- timeout
 	go timer.run()
 	return ctx, timer
 }

@@ -17,7 +17,7 @@ func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error
 
 	conn, err := dialWebsocket(ctx, dest)
 	if err != nil {
-		return nil, newError("failed to dial WebSocket")
+		return nil, newError("failed to dial WebSocket").Base(err)
 	}
 	return internet.Connection(conn), nil
 }

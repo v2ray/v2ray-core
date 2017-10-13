@@ -4,6 +4,9 @@ import (
 	"io"
 	"sync"
 
+	"v2ray.com/core/common/retry"
+
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 )
 
@@ -24,11 +27,27 @@ func NewSegmentWriter(writer io.Writer) SegmentWriter {
 	}
 }
 
-func (v *SimpleSegmentWriter) Write(seg Segment) error {
-	v.Lock()
-	defer v.Unlock()
+func (w *SimpleSegmentWriter) Write(seg Segment) error {
+	w.Lock()
+	defer w.Unlock()
 
-	v.buffer.Reset(seg.Bytes())
-	_, err := v.writer.Write(v.buffer.Bytes())
+	common.Must(w.buffer.Reset(seg.Bytes()))
+	_, err := w.writer.Write(w.buffer.Bytes())
 	return err
+}
+
+type RetryableWriter struct {
+	writer SegmentWriter
+}
+
+func NewRetryableWriter(writer SegmentWriter) SegmentWriter {
+	return &RetryableWriter{
+		writer: writer,
+	}
+}
+
+func (w *RetryableWriter) Write(seg Segment) error {
+	return retry.Timed(5, 100).On(func() error {
+		return w.writer.Write(seg)
+	})
 }
