@@ -36,6 +36,7 @@
       "network": "ws",
       "security": "tls",
       "tlsSettings": {
+        "serverName": "v2ray.cool",
         "allowInsecure": true
       },
       "wsSettings": {
