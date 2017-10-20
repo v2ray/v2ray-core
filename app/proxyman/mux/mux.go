@@ -90,7 +90,14 @@ func NewClient(p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client
 	ctx, cancel := context.WithCancel(context.Background())
 	ctx = proxy.ContextWithTarget(ctx, net.TCPDestination(muxCoolAddress, muxCoolPort))
 	pipe := ray.NewRay(ctx)
-	go p.Process(ctx, pipe, dialer)
+
+	go func() {
+		if err := p.Process(ctx, pipe, dialer); err != nil {
+			cancel()
+			log.Trace(errors.New("failed to handler mux client connection").Base(err).AtWarning())
+		}
+	}()
+
 	c := &Client{
 		sessionManager: NewSessionManager(),
 		inboundRay:     pipe,
