@@ -24,6 +24,12 @@ type connection struct {
 	mergingWriter buf.Writer
 }
 
+func newConnection(conn *websocket.Conn) *connection {
+	return &connection{
+		wsc: conn,
+	}
+}
+
 // Read implements net.Conn.Read()
 func (c *connection) Read(b []byte) (int, error) {
 	for {

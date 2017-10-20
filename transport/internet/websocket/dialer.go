@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"context"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"v2ray.com/core/app/log"
@@ -30,14 +31,13 @@ func dialWebsocket(ctx context.Context, dest net.Destination) (net.Conn, error) 
 	src := internet.DialerSourceFromContext(ctx)
 	wsSettings := internet.TransportSettingsFromContext(ctx).(*Config)
 
-	commonDial := func(network, addr string) (net.Conn, error) {
-		return internet.DialSystem(ctx, src, dest)
-	}
-
-	dialer := websocket.Dialer{
-		NetDial:         commonDial,
-		ReadBufferSize:  32 * 1024,
-		WriteBufferSize: 32 * 1024,
+	dialer := &websocket.Dialer{
+		NetDial: func(network, addr string) (net.Conn, error) {
+			return internet.DialSystem(ctx, src, dest)
+		},
+		ReadBufferSize:   32 * 1024,
+		WriteBufferSize:  32 * 1024,
+		HandshakeTimeout: time.Second * 8,
 	}
 
 	protocol := "ws"

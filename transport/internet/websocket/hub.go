@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"v2ray.com/core/app/log"
@@ -20,18 +21,24 @@ type requestHandler struct {
 	ln   *Listener
 }
 
+var upgrader = &websocket.Upgrader{
+	ReadBufferSize:   32 * 1024,
+	WriteBufferSize:  32 * 1024,
+	HandshakeTimeout: time.Second * 8,
+}
+
 func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	if request.URL.Path != h.path {
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
-	conn, err := converttovws(writer, request)
+	conn, err := upgrader.Upgrade(writer, request, nil)
 	if err != nil {
 		log.Trace(newError("failed to convert to WebSocket connection").Base(err))
 		return
 	}
 
-	h.ln.addConn(h.ln.ctx, internet.Connection(conn))
+	h.ln.addConn(h.ln.ctx, newConnection(conn))
 }
 
 type Listener struct {
@@ -90,20 +97,6 @@ func (ln *Listener) listenws(address net.Address, port net.Port) error {
 	}()
 
 	return nil
-}
-
-func converttovws(w http.ResponseWriter, r *http.Request) (*connection, error) {
-	var upgrader = websocket.Upgrader{
-		ReadBufferSize:  32 * 1024,
-		WriteBufferSize: 32 * 1024,
-	}
-	conn, err := upgrader.Upgrade(w, r, nil)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &connection{wsc: conn}, nil
 }
 
 func (ln *Listener) Addr() net.Addr {
