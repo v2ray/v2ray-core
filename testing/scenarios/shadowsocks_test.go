@@ -38,6 +38,12 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 
 	serverPort := pickPort()
 	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
@@ -57,16 +63,16 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
+	}
+
+	clientPort := pickPort()
+	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
 				ErrorLogLevel: log.LogLevel_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-	}
-
-	clientPort := pickPort()
-	clientConfig := &core.Config{
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
@@ -98,12 +104,6 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 					},
 				}),
 			},
-		},
-		App: []*serial.TypedMessage{
-			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
-				ErrorLogType:  log.LogType_Console,
-			}),
 		},
 	}
 
@@ -156,6 +156,12 @@ func TestShadowsocksAES128UDP(t *testing.T) {
 
 	serverPort := pickPort()
 	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
@@ -176,16 +182,16 @@ func TestShadowsocksAES128UDP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
+	}
+
+	clientPort := pickPort()
+	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
 				ErrorLogLevel: log.LogLevel_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-	}
-
-	clientPort := pickPort()
-	clientConfig := &core.Config{
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
@@ -217,12 +223,6 @@ func TestShadowsocksAES128UDP(t *testing.T) {
 					},
 				}),
 			},
-		},
-		App: []*serial.TypedMessage{
-			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
-				ErrorLogType:  log.LogType_Console,
-			}),
 		},
 	}
 
@@ -275,6 +275,12 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 
 	serverPort := pickPort()
 	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
@@ -294,16 +300,16 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
+	}
+
+	clientPort := pickPort()
+	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
 				ErrorLogLevel: log.LogLevel_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-	}
-
-	clientPort := pickPort()
-	clientConfig := &core.Config{
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
@@ -335,12 +341,6 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 					},
 				}),
 			},
-		},
-		App: []*serial.TypedMessage{
-			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
-				ErrorLogType:  log.LogType_Console,
-			}),
 		},
 	}
 

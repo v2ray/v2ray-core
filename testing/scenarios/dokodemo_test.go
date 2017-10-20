@@ -33,6 +33,12 @@ func TestDokodemoTCP(t *testing.T) {
 	userID := protocol.NewID(uuid.New())
 	serverPort := pickPort()
 	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
@@ -55,17 +61,17 @@ func TestDokodemoTCP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
+	}
+
+	clientPort := uint32(pickPort())
+	clientPortRange := uint32(5)
+	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
 				ErrorLogLevel: log.LogLevel_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-	}
-
-	clientPort := uint32(pickPort())
-	clientPortRange := uint32(5)
-	clientConfig := &core.Config{
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
@@ -99,12 +105,6 @@ func TestDokodemoTCP(t *testing.T) {
 					},
 				}),
 			},
-		},
-		App: []*serial.TypedMessage{
-			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
-				ErrorLogType:  log.LogType_Console,
-			}),
 		},
 	}
 
