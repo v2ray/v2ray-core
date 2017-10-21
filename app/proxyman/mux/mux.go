@@ -187,8 +187,7 @@ func (m *Client) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) bool
 }
 
 func drain(reader io.Reader) error {
-	buf.Copy(NewStreamReader(reader), buf.Discard)
-	return nil
+	return buf.Copy(NewStreamReader(reader), buf.Discard)
 }
 
 func (m *Client) handleStatueKeepAlive(meta *FrameMetadata, reader io.Reader) error {
