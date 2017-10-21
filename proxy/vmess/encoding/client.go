@@ -89,13 +89,13 @@ func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 
 		switch header.Address.Family() {
 		case net.AddressFamilyIPv4:
-			buffer = append(buffer, AddrTypeIPv4)
+			buffer = append(buffer, byte(protocol.AddressTypeIPv4))
 			buffer = append(buffer, header.Address.IP()...)
 		case net.AddressFamilyIPv6:
-			buffer = append(buffer, AddrTypeIPv6)
+			buffer = append(buffer, byte(protocol.AddressTypeIPv6))
 			buffer = append(buffer, header.Address.IP()...)
 		case net.AddressFamilyDomain:
-			buffer = append(buffer, AddrTypeDomain, byte(len(header.Address.Domain())))
+			buffer = append(buffer, byte(protocol.AddressTypeDomain), byte(len(header.Address.Domain())))
 			buffer = append(buffer, header.Address.Domain()...)
 		}
 	}

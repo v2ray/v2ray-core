@@ -175,22 +175,22 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	if request.Command != protocol.RequestCommandMux {
 		request.Port = net.PortFromBytes(buffer[38:40])
 
-		switch buffer[40] {
-		case AddrTypeIPv4:
+		switch protocol.AddressType(buffer[40]) {
+		case protocol.AddressTypeIPv4:
 			_, err = io.ReadFull(decryptor, buffer[41:45]) // 4 bytes
 			bufferLen += 4
 			if err != nil {
 				return nil, newError("failed to read IPv4 address").Base(err)
 			}
 			request.Address = net.IPAddress(buffer[41:45])
-		case AddrTypeIPv6:
+		case protocol.AddressTypeIPv6:
 			_, err = io.ReadFull(decryptor, buffer[41:57]) // 16 bytes
 			bufferLen += 16
 			if err != nil {
 				return nil, newError("failed to read IPv6 address").Base(err)
 			}
 			request.Address = net.IPAddress(buffer[41:57])
-		case AddrTypeDomain:
+		case protocol.AddressTypeDomain:
 			_, err = io.ReadFull(decryptor, buffer[41:42])
 			if err != nil {
 				return nil, newError("failed to read domain address").Base(err)
