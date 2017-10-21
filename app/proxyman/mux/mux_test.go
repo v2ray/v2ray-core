@@ -139,4 +139,5 @@ func TestReaderWriter(t *testing.T) {
 
 	meta, err = metaReader.Read()
 	assert.Error(err).IsNotNil()
+	assert.Pointer(meta).IsNil()
 }
