@@ -14,9 +14,11 @@ func TestSessionManagerAdd(t *testing.T) {
 
 	s := m.Allocate()
 	assert.Uint16(s.ID).Equals(1)
+	assert.Int(m.Size()).Equals(1)
 
 	s = m.Allocate()
 	assert.Uint16(s.ID).Equals(2)
+	assert.Int(m.Size()).Equals(2)
 
 	s = &Session{
 		ID: 4,
