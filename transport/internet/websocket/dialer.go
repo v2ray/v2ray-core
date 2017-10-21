@@ -68,7 +68,5 @@ func dialWebsocket(ctx context.Context, dest net.Destination) (net.Conn, error) 
 		return nil, newError("failed to dial to (", uri, "): ", reason).Base(err)
 	}
 
-	return &connection{
-		wsc: conn,
-	}, nil
+	return newConnection(conn), nil
 }

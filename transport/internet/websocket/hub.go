@@ -90,19 +90,24 @@ func (ln *Listener) listenws(address net.Address, port net.Port) error {
 	ln.listener = listener
 
 	go func() {
-		http.Serve(listener, &requestHandler{
+		err := http.Serve(listener, &requestHandler{
 			path: ln.config.GetNormailzedPath(),
 			ln:   ln,
 		})
+		if err != nil {
+			log.Trace(newError("failed to serve http for WebSocket").Base(err).AtWarning())
+		}
 	}()
 
 	return nil
 }
 
+// Addr implements net.Listener.Addr().
 func (ln *Listener) Addr() net.Addr {
 	return ln.listener.Addr()
 }
 
+// Close implements net.Listener.Close().
 func (ln *Listener) Close() error {
 	return ln.listener.Close()
 }
