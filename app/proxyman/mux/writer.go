@@ -10,9 +10,9 @@ import (
 )
 
 type Writer struct {
-	id           uint16
 	dest         net.Destination
 	writer       buf.Writer
+	id           uint16
 	followup     bool
 	transferType protocol.TransferType
 }
