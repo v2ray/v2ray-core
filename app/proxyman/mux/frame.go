@@ -63,9 +63,9 @@ n bytes - address
 
 type FrameMetadata struct {
 	SessionID     uint16
-	SessionStatus SessionStatus
 	Target        net.Destination
 	Option        Option
+	SessionStatus SessionStatus
 }
 
 func (f FrameMetadata) AsSupplier() buf.Supplier {
