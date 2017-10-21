@@ -8,7 +8,7 @@ func (b Byte) Has(bb Byte) bool {
 	return (b & bb) != 0
 }
 
-func (b *Byte) Add(bb Byte) {
+func (b *Byte) Set(bb Byte) {
 	*b |= bb
 }
 

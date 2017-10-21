@@ -63,7 +63,7 @@ func (w *Writer) writeMetaOnly() error {
 
 func (w *Writer) writeData(mb buf.MultiBuffer) error {
 	meta := w.getNextFrameMeta()
-	meta.Option.Add(OptionData)
+	meta.Option.Set(OptionData)
 
 	frame := buf.New()
 	if err := frame.AppendSupplier(meta.AsSupplier()); err != nil {

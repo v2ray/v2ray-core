@@ -12,6 +12,7 @@ import (
 
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/bitmask"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/dice"
@@ -203,7 +204,7 @@ func (c *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 	}
 
 	header := &protocol.ResponseHeader{
-		Option: protocol.ResponseOption(buffer[1]),
+		Option: bitmask.Byte(buffer[1]),
 	}
 
 	if buffer[2] != 0 {

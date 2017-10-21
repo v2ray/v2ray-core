@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"io"
 
+	"v2ray.com/core/common/bitmask"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/net"
@@ -13,8 +14,8 @@ import (
 )
 
 const (
-	Version                  = 1
-	RequestOptionOneTimeAuth = protocol.RequestOption(101)
+	Version                               = 1
+	RequestOptionOneTimeAuth bitmask.Byte = 0x01
 
 	AddrTypeIPv4   = 1
 	AddrTypeIPv6   = 4

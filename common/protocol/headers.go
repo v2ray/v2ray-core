@@ -3,6 +3,7 @@ package protocol
 import (
 	"runtime"
 
+	"v2ray.com/core/common/bitmask"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/uuid"
 )
@@ -24,30 +25,15 @@ func (c RequestCommand) TransferType() TransferType {
 	return TransferTypePacket
 }
 
-// RequestOption is the options of a request.
-type RequestOption byte
-
 const (
 	// RequestOptionChunkStream indicates request payload is chunked. Each chunk consists of length, authentication and payload.
-	RequestOptionChunkStream = RequestOption(0x01)
+	RequestOptionChunkStream bitmask.Byte = 0x01
 
 	// RequestOptionConnectionReuse indicates client side expects to reuse the connection.
-	RequestOptionConnectionReuse = RequestOption(0x02)
+	RequestOptionConnectionReuse bitmask.Byte = 0x02
 
-	RequestOptionChunkMasking = RequestOption(0x04)
+	RequestOptionChunkMasking bitmask.Byte = 0x04
 )
-
-func (o RequestOption) Has(option RequestOption) bool {
-	return (o & option) == option
-}
-
-func (o *RequestOption) Set(option RequestOption) {
-	*o = (*o | option)
-}
-
-func (o *RequestOption) Clear(option RequestOption) {
-	*o = (*o & (^option))
-}
 
 type Security byte
 
@@ -65,7 +51,7 @@ func NormSecurity(s Security) Security {
 type RequestHeader struct {
 	Version  byte
 	Command  RequestCommand
-	Option   RequestOption
+	Option   bitmask.Byte
 	Security Security
 	Port     net.Port
 	Address  net.Address
@@ -79,28 +65,14 @@ func (h *RequestHeader) Destination() net.Destination {
 	return net.TCPDestination(h.Address, h.Port)
 }
 
-type ResponseOption byte
-
 const (
-	ResponseOptionConnectionReuse = ResponseOption(0x01)
+	ResponseOptionConnectionReuse bitmask.Byte = 0x01
 )
-
-func (o *ResponseOption) Set(option ResponseOption) {
-	*o = (*o | option)
-}
-
-func (o ResponseOption) Has(option ResponseOption) bool {
-	return (o & option) == option
-}
-
-func (o *ResponseOption) Clear(option ResponseOption) {
-	*o = (*o & (^option))
-}
 
 type ResponseCommand interface{}
 
 type ResponseHeader struct {
-	Option  ResponseOption
+	Option  bitmask.Byte
 	Command ResponseCommand
 }
 

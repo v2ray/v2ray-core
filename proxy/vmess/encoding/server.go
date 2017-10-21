@@ -12,6 +12,7 @@ import (
 
 	"golang.org/x/crypto/chacha20poly1305"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/bitmask"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/net"
@@ -164,8 +165,8 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	}
 	s.sessionHistory.add(sid)
 
-	s.responseHeader = buffer[33]                       // 1 byte
-	request.Option = protocol.RequestOption(buffer[34]) // 1 byte
+	s.responseHeader = buffer[33]             // 1 byte
+	request.Option = bitmask.Byte(buffer[34]) // 1 byte
 	padingLen := int(buffer[35] >> 4)
 	request.Security = protocol.NormSecurity(protocol.Security(buffer[35] & 0x0F))
 	// 1 bytes reserved
