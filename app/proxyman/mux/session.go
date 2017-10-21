@@ -122,6 +122,7 @@ type Session struct {
 	transferType protocol.TransferType
 }
 
+// Close closes all resources associated with this session.
 func (s *Session) Close() {
 	s.output.Close()
 	s.input.Close()

@@ -1,6 +1,7 @@
 package mux
 
 import (
+	"v2ray.com/core/common/bitmask"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
@@ -15,23 +16,9 @@ const (
 	SessionStatusKeepAlive SessionStatus = 0x04
 )
 
-type Option byte
-
 const (
-	OptionData Option = 0x01
+	OptionData bitmask.Byte = 0x01
 )
-
-func (o Option) Has(x Option) bool {
-	return (o & x) == x
-}
-
-func (o *Option) Add(x Option) {
-	*o = (*o | x)
-}
-
-func (o *Option) Clear(x Option) {
-	*o = (*o & (^x))
-}
 
 type TargetNetwork byte
 
@@ -64,7 +51,7 @@ n bytes - address
 type FrameMetadata struct {
 	Target        net.Destination
 	SessionID     uint16
-	Option        Option
+	Option        bitmask.Byte
 	SessionStatus SessionStatus
 }
 
@@ -120,7 +107,7 @@ func ReadFrameFrom(b []byte) (*FrameMetadata, error) {
 	f := &FrameMetadata{
 		SessionID:     serial.BytesToUint16(b[:2]),
 		SessionStatus: SessionStatus(b[2]),
-		Option:        Option(b[3]),
+		Option:        bitmask.Byte(b[3]),
 	}
 
 	b = b[4:]
