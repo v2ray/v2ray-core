@@ -62,8 +62,8 @@ n bytes - address
 */
 
 type FrameMetadata struct {
-	SessionID     uint16
 	Target        net.Destination
+	SessionID     uint16
 	Option        Option
 	SessionStatus SessionStatus
 }
