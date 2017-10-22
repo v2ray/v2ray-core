@@ -108,7 +108,9 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 
 	requestDone := signal.ExecuteAsync(func() error {
 		writer := buf.NewBufferedWriter(conn)
-		session.EncodeRequestHeader(request, writer)
+		if err := session.EncodeRequestHeader(request, writer); err != nil {
+			return newError("failed to encode request").Base(err).AtWarning()
+		}
 
 		bodyWriter := session.EncodeRequestBody(request, writer)
 		firstPayload, err := input.ReadTimeout(time.Millisecond * 500)

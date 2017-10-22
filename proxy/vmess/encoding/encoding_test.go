@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -38,7 +39,7 @@ func TestRequestSerialization(t *testing.T) {
 
 	buffer := buf.New()
 	client := NewClientSession(protocol.DefaultIDHash)
-	client.EncodeRequestHeader(expectedRequest, buffer)
+	common.Must(client.EncodeRequestHeader(expectedRequest, buffer))
 
 	buffer2 := buf.New()
 	buffer2.Append(buffer.Bytes())

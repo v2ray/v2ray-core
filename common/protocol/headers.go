@@ -97,3 +97,7 @@ func (sc *SecurityConfig) AsSecurity() Security {
 	}
 	return NormSecurity(Security(sc.Type))
 }
+
+func IsDomainTooLong(domain string) bool {
+	return len(domain) > 256
+}

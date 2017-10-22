@@ -81,11 +81,10 @@ func (f FrameMetadata) AsSupplier() buf.Supplier {
 				length += 17
 			case net.AddressFamilyDomain:
 				domain := addr.Domain()
-				nDomain := len(domain)
-				if nDomain > 256 {
-					nDomain = 256
-					domain = domain[:256]
+				if protocol.IsDomainTooLong(domain) {
+					return 0, newError("domain name too long: ", domain)
 				}
+				nDomain := len(domain)
 				b = append(b, byte(protocol.AddressTypeDomain), byte(nDomain))
 				b = append(b, domain...)
 				length += nDomain + 2

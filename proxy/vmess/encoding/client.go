@@ -60,12 +60,12 @@ func NewClientSession(idHash protocol.IDHash) *ClientSession {
 	return session
 }
 
-func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writer io.Writer) {
+func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writer io.Writer) error {
 	timestamp := protocol.NewTimestampGenerator(protocol.NowTime(), 30)()
 	account, err := header.User.GetTypedAccount()
 	if err != nil {
 		log.Trace(newError("failed to get user account: ", err).AtError())
-		return
+		return nil
 	}
 	idHash := c.idHash(account.(*vmess.InternalAccount).AnyValidID().Bytes())
 	common.Must2(idHash.Write(timestamp.Bytes(nil)))
@@ -95,8 +95,13 @@ func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 			buffer = append(buffer, byte(protocol.AddressTypeIPv6))
 			buffer = append(buffer, header.Address.IP()...)
 		case net.AddressFamilyDomain:
-			buffer = append(buffer, byte(protocol.AddressTypeDomain), byte(len(header.Address.Domain())))
-			buffer = append(buffer, header.Address.Domain()...)
+			domain := header.Address.Domain()
+			if protocol.IsDomainTooLong(domain) {
+				return newError("long domain not supported: ", domain)
+			}
+			nDomain := len(domain)
+			buffer = append(buffer, byte(protocol.AddressTypeDomain), byte(nDomain))
+			buffer = append(buffer, domain...)
 		}
 	}
 
@@ -117,6 +122,7 @@ func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 	aesStream := crypto.NewAesEncryptionStream(account.(*vmess.InternalAccount).ID.CmdKey(), iv)
 	aesStream.XORKeyStream(buffer, buffer)
 	common.Must2(writer.Write(buffer))
+	return nil
 }
 
 func (c *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, writer io.Writer) buf.Writer {

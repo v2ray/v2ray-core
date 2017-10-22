@@ -3,6 +3,7 @@ package socks
 import (
 	"io"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -253,14 +254,13 @@ func appendAddress(buffer *buf.Buffer, address net.Address, port net.Port) error
 		buffer.AppendBytes(0x04)
 		buffer.Append(address.IP())
 	case net.AddressFamilyDomain:
-		n := byte(len(address.Domain()))
-		if int(n) != len(address.Domain()) {
-			return newError("Super long domain is not supported in Socks protocol. ", address.Domain())
+		if protocol.IsDomainTooLong(address.Domain()) {
+			return newError("Super long domain is not supported in Socks protocol: ", address.Domain())
 		}
 		buffer.AppendBytes(0x03, byte(len(address.Domain())))
-		buffer.AppendSupplier(serial.WriteString(address.Domain()))
+		common.Must(buffer.AppendSupplier(serial.WriteString(address.Domain())))
 	}
-	buffer.AppendSupplier(serial.WriteUint16(port.Value()))
+	common.Must(buffer.AppendSupplier(serial.WriteUint16(port.Value())))
 	return nil
 }
 

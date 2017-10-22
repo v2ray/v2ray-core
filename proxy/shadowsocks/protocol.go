@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"io"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/bitmask"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
@@ -160,19 +161,23 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (buf.Wri
 		header.AppendBytes(AddrTypeIPv6)
 		header.Append([]byte(request.Address.IP()))
 	case net.AddressFamilyDomain:
-		header.AppendBytes(AddrTypeDomain, byte(len(request.Address.Domain())))
-		header.Append([]byte(request.Address.Domain()))
+		domain := request.Address.Domain()
+		if protocol.IsDomainTooLong(domain) {
+			return nil, newError("domain name too long: ", domain)
+		}
+		header.AppendBytes(AddrTypeDomain, byte(len(domain)))
+		common.Must(header.AppendSupplier(serial.WriteString(domain)))
 	default:
 		return nil, newError("unsupported address type: ", request.Address.Family())
 	}
 
-	header.AppendSupplier(serial.WriteUint16(uint16(request.Port)))
+	common.Must(header.AppendSupplier(serial.WriteUint16(uint16(request.Port))))
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {
 		header.SetByte(0, header.Byte(0)|0x10)
 
 		authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
-		header.AppendSupplier(authenticator.Authenticate(header.Bytes()))
+		common.Must(header.AppendSupplier(authenticator.Authenticate(header.Bytes())))
 	}
 
 	_, err = writer.Write(header.Bytes())
