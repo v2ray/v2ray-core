@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/testing/assert"
 	tlsgen "v2ray.com/core/testing/tls"
@@ -89,7 +88,7 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 	})
 	listen, err := ListenWS(ctx, net.DomainAddress("localhost"), 13143, func(ctx context.Context, conn internet.Connection) bool {
 		go func() {
-			common.Must(conn.Close())
+			_ = conn.Close()
 		}()
 		return true
 	})
@@ -98,5 +97,5 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 
 	conn, err := Dial(ctx, net.TCPDestination(net.DomainAddress("localhost"), 13143))
 	assert.Error(err).IsNil()
-	common.Must(conn.Close())
+	_ = conn.Close()
 }
