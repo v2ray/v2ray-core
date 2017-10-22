@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"testing"
 
+	"v2ray.com/core/common"
 	. "v2ray.com/core/common/buf"
 	"v2ray.com/core/testing/assert"
 )
@@ -37,7 +38,7 @@ func TestBufferedWriterLargePayload(t *testing.T) {
 	assert.Bool(writer.IsBuffered()).IsTrue()
 
 	payload := make([]byte, 64*1024)
-	rand.Read(payload)
+	common.Must2(rand.Read(payload))
 
 	nBytes, err := writer.Write(payload[:512])
 	assert.Int(nBytes).Equals(512)

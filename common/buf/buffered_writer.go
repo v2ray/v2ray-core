@@ -15,6 +15,7 @@ func NewBufferedWriter(writer io.Writer) *BufferedWriter {
 	return NewBufferedWriterSize(writer, 1024)
 }
 
+// NewBufferedWriterSize creates a BufferedWriter with specified buffer size.
 func NewBufferedWriterSize(writer io.Writer, size uint32) *BufferedWriter {
 	return &BufferedWriter{
 		writer:   writer,

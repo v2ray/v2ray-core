@@ -11,6 +11,7 @@ type Reader interface {
 	Read() (MultiBuffer, error)
 }
 
+// ErrReadTimeout is an error that happens with IO timeout.
 var ErrReadTimeout = newError("IO timeout")
 
 type TimeoutReader interface {
