@@ -80,9 +80,14 @@ func (f FrameMetadata) AsSupplier() buf.Supplier {
 				b = append(b, addr.IP()...)
 				length += 17
 			case net.AddressFamilyDomain:
-				nDomain := len(addr.Domain())
+				domain := addr.Domain()
+				nDomain := len(domain)
+				if nDomain > 256 {
+					nDomain = 256
+					domain = domain[:256]
+				}
 				b = append(b, byte(protocol.AddressTypeDomain), byte(nDomain))
-				b = append(b, addr.Domain()...)
+				b = append(b, domain...)
 				length += nDomain + 2
 			}
 		}
