@@ -80,8 +80,8 @@ type CommandSwitchAccount struct {
 	Host     net.Address
 	Port     net.Port
 	ID       *uuid.UUID
-	AlterIds uint16
 	Level    uint32
+	AlterIds uint16
 	ValidMin byte
 }
 

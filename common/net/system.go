@@ -31,6 +31,7 @@ type UDPConn = net.UDPConn
 type UnixAddr = net.UnixAddr
 type UnixConn = net.UnixConn
 
+// IP is an alias for net.IP.
 type IP = net.IP
 type IPMask = net.IPMask
 type IPNet = net.IPNet
