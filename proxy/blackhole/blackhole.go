@@ -29,8 +29,8 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 }
 
 // Process implements OutboundHandler.Dispatch().
-func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
-	v.response.WriteTo(outboundRay.OutboundOutput())
+func (h *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
+	h.response.WriteTo(outboundRay.OutboundOutput())
 	// Sleep a little here to make sure the response is sent to client.
 	time.Sleep(time.Second)
 	outboundRay.OutboundOutput().CloseError()
