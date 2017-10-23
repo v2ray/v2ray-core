@@ -5,20 +5,22 @@ import (
 	"testing"
 
 	. "v2ray.com/core/common/net"
+	. "v2ray.com/core/common/net/testing"
 	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestIPv4Address(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	ip := []byte{byte(1), byte(2), byte(3), byte(4)}
 	addr := IPAddress(ip)
 
-	assert.Address(addr).IsIPv4()
-	assert.Address(addr).IsNotIPv6()
-	assert.Address(addr).IsNotDomain()
-	assert.Bytes(addr.IP()).Equals(ip)
-	assert.Address(addr).EqualsString("1.2.3.4")
+	assert(addr, IsIPv4)
+	assert(addr, Not(IsIPv6))
+	assert(addr, Not(IsDomain))
+	assert([]byte(addr.IP()), Equals, ip)
+	assert(addr.String(), Equals, "1.2.3.4")
 }
 
 func TestIPv6Address(t *testing.T) {
