@@ -17,10 +17,12 @@ const (
 	resolvedIPsKey
 )
 
+// ContextWithSource creates a new context with given source.
 func ContextWithSource(ctx context.Context, src net.Destination) context.Context {
 	return context.WithValue(ctx, sourceKey, src)
 }
 
+// SourceFromContext retreives source from the given context.
 func SourceFromContext(ctx context.Context) (net.Destination, bool) {
 	v, ok := ctx.Value(sourceKey).(net.Destination)
 	return v, ok
