@@ -94,7 +94,12 @@ func NewClient(p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client
 	go func() {
 		if err := p.Process(ctx, pipe, dialer); err != nil {
 			cancel()
-			log.Trace(errors.New("failed to handler mux client connection").Base(err).AtWarning())
+
+			traceErr := errors.New("failed to handler mux client connection").Base(err)
+			if err != io.EOF && err != context.Canceled {
+				traceErr = traceErr.AtWarning()
+			}
+			log.Trace(traceErr)
 		}
 	}()
 
@@ -111,6 +116,7 @@ func NewClient(p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client
 	return c, nil
 }
 
+// Closed returns true if this Client is closed.
 func (m *Client) Closed() bool {
 	select {
 	case <-m.ctx.Done():
