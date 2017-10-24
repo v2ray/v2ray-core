@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	. "v2ray.com/ext/assert"
 	"v2ray.com/core/testing/servers/tcp"
 	. "v2ray.com/core/transport/internet/tcp"
+	. "v2ray.com/ext/assert"
 )
 
 func TestGetOriginalDestination(t *testing.T) {
@@ -25,5 +25,5 @@ func TestGetOriginalDestination(t *testing.T) {
 	defer conn.Close()
 
 	originalDest, err := GetOriginalDestination(conn)
-	assert(dest == originalDest || strings.Contains(err.Error(), "failed to call getsockopt"))
+	assert(dest == originalDest || strings.Contains(err.Error(), "failed to call getsockopt"), IsTrue)
 }
