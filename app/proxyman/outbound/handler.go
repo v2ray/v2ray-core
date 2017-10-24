@@ -78,6 +78,7 @@ func (h *Handler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
 		err := h.mux.Dispatch(ctx, outboundRay)
 		if err != nil {
 			log.Trace(newError("failed to process outbound traffic").Base(err))
+			outboundRay.OutboundOutput().CloseError()
 		}
 	} else {
 		err := h.proxy.Process(ctx, outboundRay, h)
