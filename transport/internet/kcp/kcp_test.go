@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 	"v2ray.com/core/transport/internet"
 	. "v2ray.com/core/transport/internet/kcp"
 )
 
 func TestDialAndListen(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	listerner, err := NewListener(internet.ContextWithTransportSettings(context.Background(), &Config{}), net.LocalHostIP, net.Port(0), func(ctx context.Context, conn internet.Connection) bool {
 		go func(c internet.Connection) {
@@ -34,14 +34,14 @@ func TestDialAndListen(t *testing.T) {
 		}(conn)
 		return true
 	})
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	port := net.Port(listerner.Addr().(*net.UDPAddr).Port)
 
 	ctx := internet.ContextWithTransportSettings(context.Background(), &Config{})
 	wg := new(sync.WaitGroup)
 	for i := 0; i < 10; i++ {
 		clientConn, err := DialKCP(ctx, net.UDPDestination(net.LocalHostIP, port))
-		assert.Error(err).IsNil()
+		assert(err, IsNil)
 		wg.Add(1)
 
 		go func() {
@@ -51,14 +51,14 @@ func TestDialAndListen(t *testing.T) {
 
 			clientReceived := make([]byte, 1024*1024)
 			nBytes, _ := io.ReadFull(clientConn, clientReceived)
-			assert.Int(nBytes).Equals(len(clientReceived))
+			assert(nBytes, Equals, len(clientReceived))
 			clientConn.Close()
 
 			clientExpected := make([]byte, 1024*1024)
 			for idx, b := range clientSend {
 				clientExpected[idx] = b ^ 'c'
 			}
-			assert.Bytes(clientReceived).Equals(clientExpected)
+			assert(clientReceived, Equals, clientExpected)
 
 			wg.Done()
 		}()
@@ -68,7 +68,7 @@ func TestDialAndListen(t *testing.T) {
 	for i := 0; i < 60 && listerner.ActiveConnections() > 0; i++ {
 		time.Sleep(500 * time.Millisecond)
 	}
-	assert.Int(listerner.ActiveConnections()).Equals(0)
+	assert(listerner.ActiveConnections(), Equals, 0)
 
 	listerner.Close()
 }

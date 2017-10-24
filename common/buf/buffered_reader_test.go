@@ -5,32 +5,32 @@ import (
 	"testing"
 
 	. "v2ray.com/core/common/buf"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestBufferedReader(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	content := New()
-	assert.Error(content.AppendSupplier(ReadFrom(rand.Reader))).IsNil()
+	assert(content.AppendSupplier(ReadFrom(rand.Reader)), IsNil)
 
 	len := content.Len()
 
 	reader := NewBufferedReader(content)
-	assert.Bool(reader.IsBuffered()).IsTrue()
+	assert(reader.IsBuffered(), IsTrue)
 
 	payload := make([]byte, 16)
 
 	nBytes, err := reader.Read(payload)
-	assert.Int(nBytes).Equals(16)
-	assert.Error(err).IsNil()
+	assert(nBytes, Equals, 16)
+	assert(err, IsNil)
 
 	len2 := content.Len()
-	assert.Int(len - len2).GreaterThan(16)
+	assert(len - len2, GreaterThan, 16)
 
 	nBytes, err = reader.Read(payload)
-	assert.Int(nBytes).Equals(16)
-	assert.Error(err).IsNil()
+	assert(nBytes, Equals, 16)
+	assert(err, IsNil)
 
-	assert.Int(content.Len()).Equals(len2)
+	assert(content.Len(), Equals, len2)
 }

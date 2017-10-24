@@ -4,13 +4,13 @@ import (
 	"testing"
 
 	. "v2ray.com/core/common/serial"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestGetInstance(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	p, err := GetInstance("")
-	assert.Pointer(p).IsNil()
-	assert.Error(err).IsNotNil()
+	assert(p, IsNil)
+	assert(err, IsNotNil)
 }

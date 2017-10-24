@@ -6,7 +6,7 @@ import (
 
 	"v2ray.com/core/common/errors"
 	. "v2ray.com/core/common/retry"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 var (
@@ -14,7 +14,7 @@ var (
 )
 
 func TestNoRetry(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	startTime := time.Now().Unix()
 	err := Timed(10, 100000).On(func() error {
@@ -22,12 +22,12 @@ func TestNoRetry(t *testing.T) {
 	})
 	endTime := time.Now().Unix()
 
-	assert.Error(err).IsNil()
-	assert.Int64(endTime - startTime).AtLeast(0)
+	assert(err, IsNil)
+	assert(endTime-startTime, AtLeast, int64(0))
 }
 
 func TestRetryOnce(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	startTime := time.Now()
 	called := 0
@@ -40,12 +40,12 @@ func TestRetryOnce(t *testing.T) {
 	})
 	duration := time.Since(startTime)
 
-	assert.Error(err).IsNil()
-	assert.Int64(int64(duration / time.Millisecond)).AtLeast(900)
+	assert(err, IsNil)
+	assert(int64(duration/time.Millisecond), AtLeast, int64(900))
 }
 
 func TestRetryMultiple(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	startTime := time.Now()
 	called := 0
@@ -58,12 +58,12 @@ func TestRetryMultiple(t *testing.T) {
 	})
 	duration := time.Since(startTime)
 
-	assert.Error(err).IsNil()
-	assert.Int64(int64(duration / time.Millisecond)).AtLeast(4900)
+	assert(err, IsNil)
+	assert(int64(duration/time.Millisecond), AtLeast, int64(4900))
 }
 
 func TestRetryExhausted(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	startTime := time.Now()
 	called := 0
@@ -73,12 +73,12 @@ func TestRetryExhausted(t *testing.T) {
 	})
 	duration := time.Since(startTime)
 
-	assert.Error(errors.Cause(err)).Equals(ErrRetryFailed)
-	assert.Int64(int64(duration / time.Millisecond)).AtLeast(1900)
+	assert(errors.Cause(err), Equals, ErrRetryFailed)
+	assert(int64(duration/time.Millisecond), AtLeast, int64(1900))
 }
 
 func TestExponentialBackoff(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	startTime := time.Now()
 	called := 0
@@ -88,6 +88,6 @@ func TestExponentialBackoff(t *testing.T) {
 	})
 	duration := time.Since(startTime)
 
-	assert.Error(errors.Cause(err)).Equals(ErrRetryFailed)
-	assert.Int64(int64(duration / time.Millisecond)).AtLeast(4000)
+	assert(errors.Cause(err), Equals, ErrRetryFailed)
+	assert(int64(duration/time.Millisecond), AtLeast, int64(4000))
 }

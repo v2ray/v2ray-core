@@ -8,31 +8,31 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 	. "v2ray.com/core/transport/internet/headers/http"
 )
 
 func TestReaderWriter(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	cache := buf.New()
 	b := buf.NewLocal(256)
 	b.AppendSupplier(serial.WriteString("abcd" + ENDING))
 	writer := NewHeaderWriter(b)
 	err := writer.Write(cache)
-	assert.Error(err).IsNil()
-	assert.Int(cache.Len()).Equals(8)
+	assert(err, IsNil)
+	assert(cache.Len(), Equals, 8)
 	_, err = cache.Write([]byte{'e', 'f', 'g'})
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	reader := &HeaderReader{}
 	buffer, err := reader.Read(cache)
-	assert.Error(err).IsNil()
-	assert.Bytes(buffer.Bytes()).Equals([]byte{'e', 'f', 'g'})
+	assert(err, IsNil)
+	assert(buffer.Bytes(), Equals, []byte{'e', 'f', 'g'})
 }
 
 func TestRequestHeader(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	auth, err := NewHttpAuthenticator(context.Background(), &Config{
 		Request: &RequestConfig{
@@ -45,39 +45,39 @@ func TestRequestHeader(t *testing.T) {
 			},
 		},
 	})
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	cache := buf.New()
 	err = auth.GetClientWriter().Write(cache)
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
-	assert.String(cache.String()).Equals("GET / HTTP/1.1\r\nTest: Value\r\n\r\n")
+	assert(cache.String(), Equals, "GET / HTTP/1.1\r\nTest: Value\r\n\r\n")
 }
 
 func TestConnection(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	auth, err := NewHttpAuthenticator(context.Background(), new(Config))
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	go func() {
 		conn, err := listener.Accept()
-		assert.Error(err).IsNil()
+		assert(err, IsNil)
 		authConn := auth.Server(conn)
 		b := make([]byte, 256)
 		for {
 			n, err := authConn.Read(b)
-			assert.Error(err).IsNil()
+			assert(err, IsNil)
 			_, err = authConn.Write(b[:n])
-			assert.Error(err).IsNil()
+			assert(err, IsNil)
 		}
 	}()
 
 	conn, err := net.DialTCP("tcp", nil, listener.Addr().(*net.TCPAddr))
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	authConn := auth.Client(conn)
 	authConn.Write([]byte("Test payload"))
@@ -89,12 +89,12 @@ func TestConnection(t *testing.T) {
 	totalBytes := 0
 	for {
 		n, err := authConn.Read(actualResponse[totalBytes:])
-		assert.Error(err).IsNil()
+		assert(err, IsNil)
 		totalBytes += n
 		if totalBytes >= len(expectedResponse) || time.Now().After(deadline) {
 			break
 		}
 	}
 
-	assert.String(string(actualResponse[:totalBytes])).Equals(expectedResponse)
+	assert(string(actualResponse[:totalBytes]), Equals, expectedResponse)
 }

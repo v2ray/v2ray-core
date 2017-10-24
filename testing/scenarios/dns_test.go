@@ -14,18 +14,18 @@ import (
 	"v2ray.com/core/proxy/blackhole"
 	"v2ray.com/core/proxy/freedom"
 	"v2ray.com/core/proxy/socks"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 	"v2ray.com/core/testing/servers/tcp"
 )
 
 func TestResolveIP(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	defer tcpServer.Close()
 
 	serverPort := pickPort()
@@ -81,24 +81,24 @@ func TestResolveIP(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig)
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	{
 		noAuthDialer, err := xproxy.SOCKS5("tcp", net.TCPDestination(net.LocalHostIP, serverPort).NetAddr(), nil, xproxy.Direct)
-		assert.Error(err).IsNil()
+		assert(err, IsNil)
 		conn, err := noAuthDialer.Dial("tcp", fmt.Sprintf("google.com:%d", dest.Port))
-		assert.Error(err).IsNil()
+		assert(err, IsNil)
 
 		payload := "test payload"
 		nBytes, err := conn.Write([]byte(payload))
-		assert.Error(err).IsNil()
-		assert.Int(nBytes).Equals(len(payload))
+		assert(err, IsNil)
+		assert(nBytes, Equals, len(payload))
 
 		response := make([]byte, 1024)
 		nBytes, err = conn.Read(response)
-		assert.Error(err).IsNil()
-		assert.Bytes(response[:nBytes]).Equals(xor([]byte(payload)))
-		assert.Error(conn.Close()).IsNil()
+		assert(err, IsNil)
+		assert(response[:nBytes], Equals, xor([]byte(payload)))
+		assert(conn.Close(), IsNil)
 	}
 
 	CloseAllServers(servers)

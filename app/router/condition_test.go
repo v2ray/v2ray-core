@@ -8,11 +8,11 @@ import (
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/proxy"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestSubDomainMatcher(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	cases := []struct {
 		pattern string
@@ -47,12 +47,12 @@ func TestSubDomainMatcher(t *testing.T) {
 	}
 	for _, test := range cases {
 		matcher := NewSubDomainMatcher(test.pattern)
-		assert.Bool(matcher.Apply(test.input) == test.output).IsTrue()
+		assert(matcher.Apply(test.input) == test.output, IsTrue)
 	}
 }
 
 func TestRoutingRule(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	type ruleTest struct {
 		input  context.Context
@@ -172,10 +172,10 @@ func TestRoutingRule(t *testing.T) {
 
 	for _, test := range cases {
 		cond, err := test.rule.BuildCondition()
-		assert.Error(err).IsNil()
+		assert(err, IsNil)
 
 		for _, t := range test.test {
-			assert.Bool(cond.Apply(t.input)).Equals(t.output)
+			assert(cond.Apply(t.input), Equals, t.output)
 		}
 	}
 }

@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	. "v2ray.com/core/app/dispatcher/impl"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestHTTPHeaders(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	cases := []struct {
 		input  string
@@ -94,13 +94,13 @@ first_name=John&last_name=Doe&action=Submit`,
 
 	for _, test := range cases {
 		domain, err := SniffHTTP([]byte(test.input))
-		assert.String(domain).Equals(test.domain)
-		assert.Error(err).Equals(test.err)
+		assert(domain, Equals, test.domain)
+		assert(err, Equals, test.err)
 	}
 }
 
 func TestTLSHeaders(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	cases := []struct {
 		input  []byte
@@ -180,7 +180,7 @@ func TestTLSHeaders(t *testing.T) {
 
 	for _, test := range cases {
 		domain, err := SniffTLS(test.input)
-		assert.String(domain).Equals(test.domain)
-		assert.Error(err).Equals(test.err)
+		assert(domain, Equals, test.domain)
+		assert(err, Equals, test.err)
 	}
 }

@@ -14,11 +14,11 @@ import (
 	"v2ray.com/core/proxy/dokodemo"
 	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/outbound"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestV2RayClose(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	port := net.Port(dice.RollUint16())
 	config := &Config{
@@ -59,7 +59,7 @@ func TestV2RayClose(t *testing.T) {
 	}
 
 	server, err := New(config)
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	server.Close()
 }

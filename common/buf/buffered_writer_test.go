@@ -6,49 +6,49 @@ import (
 
 	"v2ray.com/core/common"
 	. "v2ray.com/core/common/buf"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestBufferedWriter(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	content := New()
 
 	writer := NewBufferedWriter(content)
-	assert.Bool(writer.IsBuffered()).IsTrue()
+	assert(writer.IsBuffered(), IsTrue)
 
 	payload := make([]byte, 16)
 
 	nBytes, err := writer.Write(payload)
-	assert.Int(nBytes).Equals(16)
-	assert.Error(err).IsNil()
+	assert(nBytes, Equals, 16)
+	assert(err, IsNil)
 
-	assert.Bool(content.IsEmpty()).IsTrue()
+	assert(content.IsEmpty(), IsTrue)
 
-	assert.Error(writer.SetBuffered(false)).IsNil()
-	assert.Int(content.Len()).Equals(16)
+	assert(writer.SetBuffered(false), IsNil)
+	assert(content.Len(), Equals, 16)
 }
 
 func TestBufferedWriterLargePayload(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	content := NewLocal(128 * 1024)
 
 	writer := NewBufferedWriter(content)
-	assert.Bool(writer.IsBuffered()).IsTrue()
+	assert(writer.IsBuffered(), IsTrue)
 
 	payload := make([]byte, 64*1024)
 	common.Must2(rand.Read(payload))
 
 	nBytes, err := writer.Write(payload[:512])
-	assert.Int(nBytes).Equals(512)
-	assert.Error(err).IsNil()
+	assert(nBytes, Equals, 512)
+	assert(err, IsNil)
 
-	assert.Bool(content.IsEmpty()).IsTrue()
+	assert(content.IsEmpty(), IsTrue)
 
 	nBytes, err = writer.Write(payload[512:])
-	assert.Error(err).IsNil()
-	assert.Error(writer.Flush()).IsNil()
-	assert.Int(nBytes).Equals(64*1024 - 512)
-	assert.Bytes(content.Bytes()).Equals(payload)
+	assert(err, IsNil)
+	assert(writer.Flush(), IsNil)
+	assert(nBytes, Equals, 64*1024 - 512)
+	assert(content.Bytes(), Equals, payload)
 }

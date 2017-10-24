@@ -1,46 +1,48 @@
 package testing
 
 import (
-	"reflect"
-
 	"v2ray.com/core/common/net"
 	"v2ray.com/ext/assert"
 )
 
-var IsIPv4 = assert.CreateMatcher(reflect.TypeOf(net.Address(nil)), reflect.ValueOf(func(a net.Address) bool {
+var IsIPv4 = assert.CreateMatcher(func(a net.Address) bool {
 	return a.Family().IsIPv4()
-}), 1, "is IPv4")
+}, "is IPv4")
 
-var IsIPv6 = assert.CreateMatcher(reflect.TypeOf(net.Address(nil)), reflect.ValueOf(func(a net.Address) bool {
+var IsIPv6 = assert.CreateMatcher(func(a net.Address) bool {
 	return a.Family().IsIPv6()
-}), 1, "is IPv6")
+}, "is IPv6")
 
-var IsIP = assert.CreateMatcher(reflect.TypeOf(net.Address(nil)), reflect.ValueOf(func(a net.Address) bool {
+var IsIP = assert.CreateMatcher(func(a net.Address) bool {
 	return a.Family().IsIPv4() || a.Family().IsIPv6()
-}), 1, "is IP")
+}, "is IP")
 
-var IsTCP = assert.CreateMatcher(reflect.TypeOf(net.Destination{}), reflect.ValueOf(func(a net.Destination) bool {
+var IsTCP = assert.CreateMatcher(func(a net.Destination) bool {
 	return a.Network == net.Network_TCP
-}), 1, "is TCP")
+}, "is TCP")
 
-var IsUDP = assert.CreateMatcher(reflect.TypeOf(net.Destination{}), reflect.ValueOf(func(a net.Destination) bool {
+var IsUDP = assert.CreateMatcher(func(a net.Destination) bool {
 	return a.Network == net.Network_UDP
-}), 1, "is UDP")
+}, "is UDP")
 
-var IsDomain = assert.CreateMatcher(reflect.TypeOf(net.Address(nil)), reflect.ValueOf(func(a net.Address) bool {
+var IsDomain = assert.CreateMatcher(func(a net.Address) bool {
 	return a.Family().IsDomain()
-}), 1, "is Domain")
+}, "is Domain")
 
 func init() {
-	assert.RegisterEqualsMatcher(reflect.TypeOf((*net.Address)(nil)).Elem(), reflect.ValueOf(func(a, b net.Address) bool {
+	assert.RegisterEqualsMatcher(func(a, b net.Address) bool {
 		return a == b
-	}))
+	})
 
-	assert.RegisterEqualsMatcher(reflect.TypeOf(net.Destination{}), reflect.ValueOf(func(a, b net.Destination) bool {
+	assert.RegisterEqualsMatcher(func(a, b net.Destination) bool {
 		return a == b
-	}))
+	})
 
-	assert.RegisterEqualsMatcher(reflect.TypeOf(net.Port(0)), reflect.ValueOf(func(a, b net.Port) bool {
+	assert.RegisterEqualsMatcher(func(a, b net.Port) bool {
 		return a == b
-	}))
+	})
+
+	assert.RegisterEqualsMatcher(func(a, b net.IP) bool {
+		return a.Equal(b)
+	})
 }

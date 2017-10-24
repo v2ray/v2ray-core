@@ -7,23 +7,23 @@ import (
 	"strings"
 	"testing"
 
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 	"v2ray.com/core/testing/servers/tcp"
 	. "v2ray.com/core/transport/internet/tcp"
 )
 
 func TestGetOriginalDestination(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	tcpServer := tcp.Server{}
 	dest, err := tcpServer.Start()
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	defer tcpServer.Close()
 
 	conn, err := Dial(context.Background(), dest)
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	defer conn.Close()
 
 	originalDest, err := GetOriginalDestination(conn)
-	assert.Bool(dest == originalDest || strings.Contains(err.Error(), "failed to call getsockopt"))
+	assert(dest == originalDest || strings.Contains(err.Error(), "failed to call getsockopt"))
 }

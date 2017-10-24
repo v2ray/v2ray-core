@@ -24,6 +24,17 @@ type DomainRecord struct {
 	A *ARecord
 }
 
+type Record struct {
+	IP         []net.IP
+	Expire     time.Time
+	LastAccess time.Time
+}
+
+func (r *Record) Expired() bool {
+	now := time.Now()
+	return r.Expire.Before(now) || r.LastAccess.Add(time.Hour).Before(now)
+}
+
 type CacheServer struct {
 	sync.RWMutex
 	hosts   map[string]net.IP

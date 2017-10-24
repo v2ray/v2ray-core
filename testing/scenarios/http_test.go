@@ -12,12 +12,12 @@ import (
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/freedom"
 	v2http "v2ray.com/core/proxy/http"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 	v2httptest "v2ray.com/core/testing/servers/http"
 )
 
 func TestHttpConformance(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	httpServerPort := pickPort()
 	httpServer := &v2httptest.Server{
@@ -25,7 +25,7 @@ func TestHttpConformance(t *testing.T) {
 		PathHandler: make(map[string]http.HandlerFunc),
 	}
 	_, err := httpServer.Start()
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	defer httpServer.Close()
 
 	serverPort := pickPort()
@@ -47,7 +47,7 @@ func TestHttpConformance(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig)
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	{
 		transport := &http.Transport{
@@ -61,12 +61,12 @@ func TestHttpConformance(t *testing.T) {
 		}
 
 		resp, err := client.Get("http://127.0.0.1:" + httpServerPort.String())
-		assert.Error(err).IsNil()
-		assert.Int(resp.StatusCode).Equals(200)
+		assert(err, IsNil)
+		assert(resp.StatusCode, Equals, 200)
 
 		content, err := ioutil.ReadAll(resp.Body)
-		assert.Error(err).IsNil()
-		assert.String(string(content)).Equals("Home")
+		assert(err, IsNil)
+		assert(string(content), Equals, "Home")
 
 	}
 

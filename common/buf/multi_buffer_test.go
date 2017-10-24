@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	. "v2ray.com/core/common/buf"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestMultiBufferRead(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	b1 := New()
 	b1.AppendBytes('a', 'b')
@@ -19,17 +19,17 @@ func TestMultiBufferRead(t *testing.T) {
 
 	bs := make([]byte, 32)
 	nBytes, err := mb.Read(bs)
-	assert.Error(err).IsNil()
-	assert.Int(nBytes).Equals(4)
-	assert.Bytes(bs[:nBytes]).Equals([]byte("abcd"))
+	assert(err, IsNil)
+	assert(nBytes, Equals, 4)
+	assert(bs[:nBytes], Equals, []byte("abcd"))
 }
 
 func TestMultiBufferAppend(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	var mb MultiBuffer
 	b := New()
 	b.AppendBytes('a', 'b')
 	mb.Append(b)
-	assert.Int(mb.Len()).Equals(2)
+	assert(mb.Len(), Equals, 2)
 }

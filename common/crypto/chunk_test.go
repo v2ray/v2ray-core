@@ -6,11 +6,11 @@ import (
 
 	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/common/crypto"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestChunkStreamIO(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	cache := buf.NewLocal(8192)
 
@@ -19,26 +19,26 @@ func TestChunkStreamIO(t *testing.T) {
 
 	b := buf.New()
 	b.AppendBytes('a', 'b', 'c', 'd')
-	assert.Error(writer.Write(buf.NewMultiBufferValue(b))).IsNil()
+	assert(writer.Write(buf.NewMultiBufferValue(b)), IsNil)
 
 	b = buf.New()
 	b.AppendBytes('e', 'f', 'g')
-	assert.Error(writer.Write(buf.NewMultiBufferValue(b))).IsNil()
+	assert(writer.Write(buf.NewMultiBufferValue(b)), IsNil)
 
-	assert.Error(writer.Write(buf.NewMultiBuffer())).IsNil()
+	assert(writer.Write(buf.NewMultiBuffer()), IsNil)
 
-	assert.Int(cache.Len()).Equals(13)
+	assert(cache.Len(), Equals, 13)
 
 	mb, err := reader.Read()
-	assert.Error(err).IsNil()
-	assert.Int(mb.Len()).Equals(4)
-	assert.Bytes(mb[0].Bytes()).Equals([]byte("abcd"))
+	assert(err, IsNil)
+	assert(mb.Len(), Equals, 4)
+	assert(mb[0].Bytes(), Equals, []byte("abcd"))
 
 	mb, err = reader.Read()
-	assert.Error(err).IsNil()
-	assert.Int(mb.Len()).Equals(3)
-	assert.Bytes(mb[0].Bytes()).Equals([]byte("efg"))
+	assert(err, IsNil)
+	assert(mb.Len(), Equals, 3)
+	assert(mb[0].Bytes(), Equals, []byte("efg"))
 
 	_, err = reader.Read()
-	assert.Error(err).Equals(io.EOF)
+	assert(err, Equals, io.EOF)
 }
