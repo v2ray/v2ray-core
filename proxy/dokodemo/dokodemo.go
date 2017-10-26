@@ -7,8 +7,6 @@ import (
 	"runtime"
 	"time"
 
-	gonet "net"
-
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/log"
@@ -95,14 +93,13 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 			if !d.config.FollowRedirect {
 				writer = buf.NewSequentialWriter(conn)
 			} else {
-				srca := gonet.UDPAddr{IP: dest.Address.IP(), Port: int(dest.Port.Value())}
+				srca := net.UDPAddr{IP: dest.Address.IP(), Port: int(dest.Port.Value())}
 				origsend, err := udp.TransmitSocket(&srca, conn.RemoteAddr())
 				if err != nil {
 					return err
 				}
 				writer = buf.NewSequentialWriter(origsend)
 			}
-
 		}
 
 		if err := buf.Copy(inboundRay.InboundOutput(), writer, buf.UpdateActivity(timer)); err != nil {

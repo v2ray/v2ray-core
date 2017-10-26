@@ -14,16 +14,16 @@ func TransmitSocket(src net.Addr, dst net.Addr) (net.Conn, error) {
 	var err error
 	fd, err = syscall.Socket(syscall.AF_INET, syscall.SOCK_DGRAM, 0)
 	if err != nil {
-		return nil, err
+		return nil, newError("failed to create fd").Base(err).AtWarning()
 	}
 	err = syscall.SetsockoptInt(fd, syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
 	if err != nil {
-		return nil, err
+		return nil, newError("failed to set resuse_addr").Base(err).AtWarning()
 	}
 
 	err = syscall.SetsockoptInt(fd, syscall.SOL_IP, syscall.IP_TRANSPARENT, 1)
 	if err != nil {
-		return nil, err
+		return nil, newError("failed to set transparent").Base(err).AtWarning()
 	}
 
 	ip := src.(*net.UDPAddr).IP.To4()
@@ -34,7 +34,7 @@ func TransmitSocket(src net.Addr, dst net.Addr) (net.Conn, error) {
 	srcaddr.Port = src.(*net.UDPAddr).Port
 	err = syscall.Bind(fd, &srcaddr)
 	if err != nil {
-		return nil, err
+		return nil, newError("failed to bind source address").Base(err).AtWarning()
 	}
 	ipd := dst.(*net.UDPAddr).IP.To4()
 	var ip2d [4]byte
@@ -44,12 +44,12 @@ func TransmitSocket(src net.Addr, dst net.Addr) (net.Conn, error) {
 	dstaddr.Port = dst.(*net.UDPAddr).Port
 	err = syscall.Connect(fd, &dstaddr)
 	if err != nil {
-		return nil, err
+		return nil, newError("failed to connect to source address").Base(err).AtWarning()
 	}
 	fdf := os.NewFile(uintptr(fd), "/dev/udp/")
 	c, err := net.FileConn(fdf)
 	if err != nil {
-		return nil, err
+		return nil, newError("failed to create file conn").Base(err).AtWarning()
 	}
 	return c, nil
 }
