@@ -46,10 +46,10 @@ func dialWebsocket(ctx context.Context, dest net.Destination) (net.Conn, error) 
 		tlsConfig, ok := securitySettings.(*tls.Config)
 		if ok {
 			protocol = "wss"
-			dialer.TLSClientConfig = tlsConfig.GetTLSConfig()
 			if dest.Address.Family().IsDomain() {
-				dialer.TLSClientConfig.ServerName = dest.Address.Domain()
+				tlsConfig.OverrideServerNameIfEmpty(dest.Address.Domain())
 			}
+			dialer.TLSClientConfig = tlsConfig.GetTLSConfig()
 		}
 	}
 

@@ -10,9 +10,9 @@ var (
 	globalSessionCache = tls.NewLRUClientSessionCache(128)
 )
 
-func (v *Config) BuildCertificates() []tls.Certificate {
-	certs := make([]tls.Certificate, 0, len(v.Certificate))
-	for _, entry := range v.Certificate {
+func (c *Config) BuildCertificates() []tls.Certificate {
+	certs := make([]tls.Certificate, 0, len(c.Certificate))
+	for _, entry := range c.Certificate {
 		keyPair, err := tls.X509KeyPair(entry.Certificate, entry.Key)
 		if err != nil {
 			log.Trace(newError("ignoring invalid X509 key pair").Base(err).AtWarning())
@@ -23,21 +23,27 @@ func (v *Config) BuildCertificates() []tls.Certificate {
 	return certs
 }
 
-func (v *Config) GetTLSConfig() *tls.Config {
+func (c *Config) GetTLSConfig() *tls.Config {
 	config := &tls.Config{
 		ClientSessionCache: globalSessionCache,
 		NextProtos:         []string{"http/1.1"},
 	}
-	if v == nil {
+	if c == nil {
 		return config
 	}
 
-	config.InsecureSkipVerify = v.AllowInsecure
-	config.Certificates = v.BuildCertificates()
+	config.InsecureSkipVerify = c.AllowInsecure
+	config.Certificates = c.BuildCertificates()
 	config.BuildNameToCertificate()
-	if len(v.ServerName) > 0 {
-		config.ServerName = v.ServerName
+	if len(c.ServerName) > 0 {
+		config.ServerName = c.ServerName
 	}
 
 	return config
+}
+
+func (c *Config) OverrideServerNameIfEmpty(serverName string) {
+	if len(c.ServerName) == 0 {
+		c.ServerName = serverName
+	}
 }

@@ -135,10 +135,10 @@ func DialKCP(ctx context.Context, dest net.Destination) (internet.Connection, er
 	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
 		switch securitySettings := securitySettings.(type) {
 		case *v2tls.Config:
-			config := securitySettings.GetTLSConfig()
 			if dest.Address.Family().IsDomain() {
-				config.ServerName = dest.Address.Domain()
+				securitySettings.OverrideServerNameIfEmpty(dest.Address.Domain())
 			}
+			config := securitySettings.GetTLSConfig()
 			tlsConn := tls.Client(iConn, config)
 			iConn = tlsConn
 		}
