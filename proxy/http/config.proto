@@ -9,6 +9,7 @@ option java_multiple_files = true;
 // Config for HTTP proxy server.
 message ServerConfig {
   uint32 timeout = 1;
+  map<string, string> accounts = 2;
 }
 
 // ClientConfig for HTTP proxy client.

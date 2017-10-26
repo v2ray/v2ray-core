@@ -83,6 +83,15 @@ Start:
 		}
 		return trace
 	}
+
+	if len(s.config.Accounts) > 0 {
+		user, pass, ok := request.BasicAuth()
+		if !ok || !s.config.HasAccount(user, pass) {
+			_, err := conn.Write([]byte("HTTP/1.1 401 UNAUTHORIZED\r\n\r\n"))
+			return err
+		}
+	}
+
 	log.Trace(newError("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]"))
 	conn.SetReadDeadline(time.Time{})
 
