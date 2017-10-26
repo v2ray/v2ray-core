@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"v2ray.com/core/common/buf"
-	. "v2ray.com/ext/assert"
 	. "v2ray.com/core/transport/internet/headers/srtp"
+	. "v2ray.com/ext/assert"
 )
 
 func TestSRTPWrite(t *testing.T) {
@@ -18,5 +18,5 @@ func TestSRTPWrite(t *testing.T) {
 	payload.AppendSupplier(srtp.Write)
 	payload.Append(content)
 
-	assert(payload.Len(), Equals, len(content) + srtp.Size())
+	assert(payload.Len(), Equals, len(content)+srtp.Size())
 }

@@ -14,8 +14,8 @@ import (
 	"v2ray.com/core/proxy/blackhole"
 	"v2ray.com/core/proxy/freedom"
 	"v2ray.com/core/proxy/socks"
-	. "v2ray.com/ext/assert"
 	"v2ray.com/core/testing/servers/tcp"
+	. "v2ray.com/ext/assert"
 )
 
 func TestResolveIP(t *testing.T) {

@@ -8,8 +8,8 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
-	. "v2ray.com/ext/assert"
 	. "v2ray.com/core/transport/internet/headers/http"
+	. "v2ray.com/ext/assert"
 )
 
 func TestReaderWriter(t *testing.T) {

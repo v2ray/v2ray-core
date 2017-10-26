@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	. "v2ray.com/ext/assert"
 	. "v2ray.com/core/transport/internet/kcp"
+	. "v2ray.com/ext/assert"
 )
 
 type NoOpConn struct{}

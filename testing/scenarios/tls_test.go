@@ -16,12 +16,12 @@ import (
 	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/inbound"
 	"v2ray.com/core/proxy/vmess/outbound"
-	. "v2ray.com/ext/assert"
 	"v2ray.com/core/testing/servers/tcp"
 	tlsgen "v2ray.com/core/testing/tls"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
 	"v2ray.com/core/transport/internet/websocket"
+	. "v2ray.com/ext/assert"
 )
 
 func TestSimpleTLSConnection(t *testing.T) {

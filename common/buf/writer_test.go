@@ -10,8 +10,8 @@ import (
 	"io"
 
 	. "v2ray.com/core/common/buf"
-	. "v2ray.com/ext/assert"
 	"v2ray.com/core/transport/ray"
+	. "v2ray.com/ext/assert"
 )
 
 func TestWriter(t *testing.T) {

@@ -26,7 +26,7 @@ func TestBufferedReader(t *testing.T) {
 	assert(err, IsNil)
 
 	len2 := content.Len()
-	assert(len - len2, GreaterThan, 16)
+	assert(len-len2, GreaterThan, 16)
 
 	nBytes, err = reader.Read(payload)
 	assert(nBytes, Equals, 16)

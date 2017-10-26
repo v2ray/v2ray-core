@@ -17,7 +17,7 @@ func TestGenerateRandomInt64InRange(t *testing.T) {
 
 	for i := 0; i < 100; i++ {
 		val := int64(generator())
-		assert(val, AtMost, base + int64(delta))
-		assert(val, AtLeast, base - int64(delta))
+		assert(val, AtMost, base+int64(delta))
+		assert(val, AtLeast, base-int64(delta))
 	}
 }

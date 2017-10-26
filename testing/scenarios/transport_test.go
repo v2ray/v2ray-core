@@ -15,11 +15,11 @@ import (
 	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/inbound"
 	"v2ray.com/core/proxy/vmess/outbound"
-	. "v2ray.com/ext/assert"
 	"v2ray.com/core/testing/servers/tcp"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/headers/http"
 	tcptransport "v2ray.com/core/transport/internet/tcp"
+	. "v2ray.com/ext/assert"
 )
 
 func TestHttpConnectionHeader(t *testing.T) {

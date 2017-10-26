@@ -49,6 +49,6 @@ func TestBufferedWriterLargePayload(t *testing.T) {
 	nBytes, err = writer.Write(payload[512:])
 	assert(err, IsNil)
 	assert(writer.Flush(), IsNil)
-	assert(nBytes, Equals, 64*1024 - 512)
+	assert(nBytes, Equals, 64*1024-512)
 	assert(content.Bytes(), Equals, payload)
 }

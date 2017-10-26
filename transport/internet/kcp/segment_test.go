@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"v2ray.com/core/common/buf"
-	. "v2ray.com/ext/assert"
 	. "v2ray.com/core/transport/internet/kcp"
+	. "v2ray.com/ext/assert"
 )
 
 func TestBadSegment(t *testing.T) {

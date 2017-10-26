@@ -24,10 +24,10 @@ import (
 	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/inbound"
 	"v2ray.com/core/proxy/vmess/outbound"
-	. "v2ray.com/ext/assert"
 	"v2ray.com/core/testing/servers/tcp"
 	"v2ray.com/core/testing/servers/udp"
 	"v2ray.com/core/transport/internet"
+	. "v2ray.com/ext/assert"
 )
 
 func TestPassiveConnection(t *testing.T) {

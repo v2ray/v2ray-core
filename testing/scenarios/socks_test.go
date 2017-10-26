@@ -13,9 +13,9 @@ import (
 	"v2ray.com/core/proxy/dokodemo"
 	"v2ray.com/core/proxy/freedom"
 	"v2ray.com/core/proxy/socks"
-	. "v2ray.com/ext/assert"
 	"v2ray.com/core/testing/servers/tcp"
 	"v2ray.com/core/testing/servers/udp"
+	. "v2ray.com/ext/assert"
 )
 
 func TestSocksBridgeTCP(t *testing.T) {

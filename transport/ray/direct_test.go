@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"v2ray.com/core/common/buf"
-	. "v2ray.com/ext/assert"
 	. "v2ray.com/core/transport/ray"
+	. "v2ray.com/ext/assert"
 )
 
 func TestStreamIO(t *testing.T) {

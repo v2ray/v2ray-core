@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"v2ray.com/core/common/net"
-	. "v2ray.com/ext/assert"
 	"v2ray.com/core/transport/internet"
 	. "v2ray.com/core/transport/internet/kcp"
+	. "v2ray.com/ext/assert"
 )
 
 func TestDialAndListen(t *testing.T) {

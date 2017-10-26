@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"v2ray.com/core/common/net"
-	. "v2ray.com/ext/assert"
 	"v2ray.com/core/testing/servers/tcp"
 	. "v2ray.com/core/transport/internet"
+	. "v2ray.com/ext/assert"
 )
 
 func TestDialWithLocalAddr(t *testing.T) {
@@ -20,6 +20,6 @@ func TestDialWithLocalAddr(t *testing.T) {
 
 	conn, err := DialSystem(context.Background(), net.LocalHostIP, net.TCPDestination(net.LocalHostIP, dest.Port))
 	assert(err, IsNil)
-	assert(conn.RemoteAddr().String(), Equals, "127.0.0.1:" + dest.Port.String())
+	assert(conn.RemoteAddr().String(), Equals, "127.0.0.1:"+dest.Port.String())
 	conn.Close()
 }

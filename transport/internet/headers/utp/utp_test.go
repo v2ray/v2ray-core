@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"v2ray.com/core/common/buf"
-	. "v2ray.com/ext/assert"
 	. "v2ray.com/core/transport/internet/headers/utp"
+	. "v2ray.com/ext/assert"
 )
 
 func TestUTPWrite(t *testing.T) {
@@ -18,5 +18,5 @@ func TestUTPWrite(t *testing.T) {
 	payload.AppendSupplier(utp.Write)
 	payload.Append(content)
 
-	assert(payload.Len(), Equals, len(content) + utp.Size())
+	assert(payload.Len(), Equals, len(content)+utp.Size())
 }

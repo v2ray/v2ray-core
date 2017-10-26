@@ -3,11 +3,11 @@ package internet_test
 import (
 	"testing"
 
-	. "v2ray.com/ext/assert"
 	. "v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/headers/noop"
 	"v2ray.com/core/transport/internet/headers/srtp"
 	"v2ray.com/core/transport/internet/headers/utp"
+	. "v2ray.com/ext/assert"
 )
 
 func TestAllHeadersLoadable(t *testing.T) {
