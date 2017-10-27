@@ -172,6 +172,11 @@ func (*udpConn) SetWriteDeadline(time.Time) error {
 	return nil
 }
 
+type connId struct {
+	src  net.Destination
+	dest net.Destination
+}
+
 type udpWorker struct {
 	sync.RWMutex
 
@@ -185,39 +190,43 @@ type udpWorker struct {
 
 	ctx        context.Context
 	cancel     context.CancelFunc
-	activeConn map[net.Destination]*udpConn
+	activeConn map[connId]*udpConn
 }
 
-func (w *udpWorker) getConnection(src net.Destination) (*udpConn, bool) {
+func (w *udpWorker) getConnection(id connId) (*udpConn, bool) {
 	w.Lock()
 	defer w.Unlock()
 
-	if conn, found := w.activeConn[src]; found {
+	if conn, found := w.activeConn[id]; found {
 		return conn, true
 	}
 
 	conn := &udpConn{
 		input: make(chan *buf.Buffer, 32),
 		output: func(b []byte) (int, error) {
-			return w.hub.WriteTo(b, src)
+			return w.hub.WriteTo(b, id.src)
 		},
 		remote: &net.UDPAddr{
-			IP:   src.Address.IP(),
-			Port: int(src.Port),
+			IP:   id.src.Address.IP(),
+			Port: int(id.src.Port),
 		},
 		local: &net.UDPAddr{
 			IP:   w.address.IP(),
 			Port: int(w.port),
 		},
 	}
-	w.activeConn[src] = conn
+	w.activeConn[id] = conn
 
 	conn.updateActivity()
 	return conn, false
 }
 
 func (w *udpWorker) callback(b *buf.Buffer, source net.Destination, originalDest net.Destination) {
-	conn, existing := w.getConnection(source)
+	id := connId{
+		src:  source,
+		dest: originalDest,
+	}
+	conn, existing := w.getConnection(id)
 	select {
 	case conn.input <- b:
 	default:
@@ -240,20 +249,20 @@ func (w *udpWorker) callback(b *buf.Buffer, source net.Destination, originalDest
 			if err := w.proxy.Process(ctx, net.Network_UDP, conn, w.dispatcher); err != nil {
 				log.Trace(newError("connection ends").Base(err))
 			}
-			w.removeConn(source)
+			w.removeConn(id)
 			cancel()
 		}()
 	}
 }
 
-func (w *udpWorker) removeConn(src net.Destination) {
+func (w *udpWorker) removeConn(id connId) {
 	w.Lock()
-	delete(w.activeConn, src)
+	delete(w.activeConn, id)
 	w.Unlock()
 }
 
 func (w *udpWorker) Start() error {
-	w.activeConn = make(map[net.Destination]*udpConn)
+	w.activeConn = make(map[connId]*udpConn, 16)
 	ctx, cancel := context.WithCancel(context.Background())
 	w.ctx = ctx
 	w.cancel = cancel
