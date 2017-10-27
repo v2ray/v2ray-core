@@ -19,7 +19,7 @@ type SessionManager struct {
 func NewSessionManager() *SessionManager {
 	return &SessionManager{
 		count:    0,
-		sessions: make(map[uint16]*Session, 32),
+		sessions: make(map[uint16]*Session, 16),
 	}
 }
 
@@ -58,12 +58,20 @@ func (m *SessionManager) Add(s *Session) {
 	m.Lock()
 	defer m.Unlock()
 
+	if m.closed {
+		return
+	}
+
 	m.sessions[s.ID] = s
 }
 
 func (m *SessionManager) Remove(id uint16) {
 	m.Lock()
 	defer m.Unlock()
+
+	if m.closed {
+		return
+	}
 
 	delete(m.sessions, id)
 }
@@ -111,7 +119,7 @@ func (m *SessionManager) Close() {
 		s.output.Close()
 	}
 
-	m.sessions = make(map[uint16]*Session)
+	m.sessions = nil
 }
 
 type Session struct {
