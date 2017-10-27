@@ -235,10 +235,9 @@ func (m *Client) fetchOutput() {
 	defer m.cancel()
 
 	reader := buf.ToBytesReader(m.inboundRay.InboundOutput())
-	metaReader := NewMetadataReader(reader)
 
 	for {
-		meta, err := metaReader.Read()
+		meta, err := ReadMetadata(reader)
 		if err != nil {
 			if errors.Cause(err) != io.EOF {
 				log.Trace(newError("failed to read metadata").Base(err))
@@ -370,8 +369,8 @@ func (w *ServerWorker) handleStatusEnd(meta *FrameMetadata, reader io.Reader) er
 	return nil
 }
 
-func (w *ServerWorker) handleFrame(ctx context.Context, reader io.Reader, metaReader *MetadataReader) error {
-	meta, err := metaReader.Read()
+func (w *ServerWorker) handleFrame(ctx context.Context, reader io.Reader) error {
+	meta, err := ReadMetadata(reader)
 	if err != nil {
 		return newError("failed to read metadata").Base(err)
 	}
@@ -398,7 +397,6 @@ func (w *ServerWorker) handleFrame(ctx context.Context, reader io.Reader, metaRe
 func (w *ServerWorker) run(ctx context.Context) {
 	input := w.outboundRay.OutboundInput()
 	reader := buf.ToBytesReader(input)
-	metaReader := NewMetadataReader(reader)
 
 	defer w.sessionManager.Close()
 
@@ -407,7 +405,7 @@ func (w *ServerWorker) run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
-			err := w.handleFrame(ctx, reader, metaReader)
+			err := w.handleFrame(ctx, reader)
 			if err != nil {
 				if errors.Cause(err) != io.EOF {
 					log.Trace(newError("unexpected EOF").Base(err))

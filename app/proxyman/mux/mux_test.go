@@ -61,10 +61,9 @@ func TestReaderWriter(t *testing.T) {
 	writer2.Close()
 
 	bytesReader := buf.ToBytesReader(stream)
-	metaReader := NewMetadataReader(bytesReader)
 	streamReader := NewStreamReader(bytesReader)
 
-	meta, err := metaReader.Read()
+	meta, err := ReadMetadata(bytesReader)
 	assert(err, IsNil)
 	assert(meta.SessionID, Equals, uint16(1))
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusNew))
@@ -76,14 +75,14 @@ func TestReaderWriter(t *testing.T) {
 	assert(len(data), Equals, 1)
 	assert(data[0].String(), Equals, "abcd")
 
-	meta, err = metaReader.Read()
+	meta, err = ReadMetadata(bytesReader)
 	assert(err, IsNil)
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusNew))
 	assert(meta.SessionID, Equals, uint16(2))
 	assert(byte(meta.Option), Equals, byte(0))
 	assert(meta.Target, Equals, dest2)
 
-	meta, err = metaReader.Read()
+	meta, err = ReadMetadata(bytesReader)
 	assert(err, IsNil)
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusKeep))
 	assert(meta.SessionID, Equals, uint16(1))
@@ -94,7 +93,7 @@ func TestReaderWriter(t *testing.T) {
 	assert(len(data), Equals, 1)
 	assert(data[0].String(), Equals, "efgh")
 
-	meta, err = metaReader.Read()
+	meta, err = ReadMetadata(bytesReader)
 	assert(err, IsNil)
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusNew))
 	assert(meta.SessionID, Equals, uint16(3))
@@ -106,19 +105,19 @@ func TestReaderWriter(t *testing.T) {
 	assert(len(data), Equals, 1)
 	assert(data[0].String(), Equals, "x")
 
-	meta, err = metaReader.Read()
+	meta, err = ReadMetadata(bytesReader)
 	assert(err, IsNil)
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusEnd))
 	assert(meta.SessionID, Equals, uint16(1))
 	assert(byte(meta.Option), Equals, byte(0))
 
-	meta, err = metaReader.Read()
+	meta, err = ReadMetadata(bytesReader)
 	assert(err, IsNil)
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusEnd))
 	assert(meta.SessionID, Equals, uint16(3))
 	assert(byte(meta.Option), Equals, byte(0))
 
-	meta, err = metaReader.Read()
+	meta, err = ReadMetadata(bytesReader)
 	assert(err, IsNil)
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusKeep))
 	assert(meta.SessionID, Equals, uint16(2))
@@ -129,7 +128,7 @@ func TestReaderWriter(t *testing.T) {
 	assert(len(data), Equals, 1)
 	assert(data[0].String(), Equals, "y")
 
-	meta, err = metaReader.Read()
+	meta, err = ReadMetadata(bytesReader)
 	assert(err, IsNil)
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusEnd))
 	assert(meta.SessionID, Equals, uint16(2))
@@ -137,7 +136,7 @@ func TestReaderWriter(t *testing.T) {
 
 	stream.Close()
 
-	meta, err = metaReader.Read()
+	meta, err = ReadMetadata(bytesReader)
 	assert(err, IsNotNil)
 	assert(meta, IsNil)
 }

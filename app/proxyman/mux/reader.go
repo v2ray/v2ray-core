@@ -7,20 +7,8 @@ import (
 	"v2ray.com/core/common/serial"
 )
 
-type MetadataReader struct {
-	reader io.Reader
-	buffer []byte
-}
-
-func NewMetadataReader(reader io.Reader) *MetadataReader {
-	return &MetadataReader{
-		reader: reader,
-		buffer: make([]byte, 1024),
-	}
-}
-
-func (r *MetadataReader) Read() (*FrameMetadata, error) {
-	metaLen, err := serial.ReadUint16(r.reader)
+func ReadMetadata(reader io.Reader) (*FrameMetadata, error) {
+	metaLen, err := serial.ReadUint16(reader)
 	if err != nil {
 		return nil, err
 	}
@@ -28,10 +16,13 @@ func (r *MetadataReader) Read() (*FrameMetadata, error) {
 		return nil, newError("invalid metalen ", metaLen).AtWarning()
 	}
 
-	if _, err := io.ReadFull(r.reader, r.buffer[:metaLen]); err != nil {
+	b := buf.New()
+	defer b.Release()
+
+	if err := b.Reset(buf.ReadFullFrom(reader, int(metaLen))); err != nil {
 		return nil, err
 	}
-	return ReadFrameFrom(r.buffer)
+	return ReadFrameFrom(b.Bytes())
 }
 
 type PacketReader struct {
