@@ -73,6 +73,12 @@ func TestHttpConformance(t *testing.T) {
 	CloseAllServers(servers)
 }
 
+func setProxyBasicAuth(req *http.Request, user, pass string) {
+	req.SetBasicAuth(user, pass)
+	req.Header.Set("Proxy-Authorization", req.Header.Get("Authorization"))
+	req.Header.Del("Authorization")
+}
+
 func TestHttpBasicAuth(t *testing.T) {
 	assert := With(t)
 
@@ -131,7 +137,7 @@ func TestHttpBasicAuth(t *testing.T) {
 			req, err := http.NewRequest("GET", "http://127.0.0.1:"+httpServerPort.String(), nil)
 			assert(err, IsNil)
 
-			req.SetBasicAuth("a", "c")
+			setProxyBasicAuth(req, "a", "c")
 			resp, err := client.Do(req)
 			assert(err, IsNil)
 			assert(resp.StatusCode, Equals, 401)
@@ -141,7 +147,7 @@ func TestHttpBasicAuth(t *testing.T) {
 			req, err := http.NewRequest("GET", "http://127.0.0.1:"+httpServerPort.String(), nil)
 			assert(err, IsNil)
 
-			req.SetBasicAuth("a", "b")
+			setProxyBasicAuth(req, "a", "b")
 			resp, err := client.Do(req)
 			assert(err, IsNil)
 			assert(resp.StatusCode, Equals, 200)
