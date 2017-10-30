@@ -122,6 +122,7 @@ func (m *SessionManager) Close() {
 	m.sessions = nil
 }
 
+// Session represents a client connection in a Mux connection.
 type Session struct {
 	input        ray.InputStream
 	output       ray.OutputStream
@@ -137,6 +138,7 @@ func (s *Session) Close() {
 	s.parent.Remove(s.ID)
 }
 
+// NewReader creates a buf.Reader based on the transfer type of this Session.
 func (s *Session) NewReader(reader io.Reader) buf.Reader {
 	if s.transferType == protocol.TransferTypeStream {
 		return NewStreamReader(reader)

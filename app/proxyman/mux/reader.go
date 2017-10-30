@@ -7,6 +7,7 @@ import (
 	"v2ray.com/core/common/serial"
 )
 
+// ReadMetadata reads FrameMetadata from the given reader.
 func ReadMetadata(reader io.Reader) (*FrameMetadata, error) {
 	metaLen, err := serial.ReadUint16(reader)
 	if err != nil {
@@ -25,11 +26,13 @@ func ReadMetadata(reader io.Reader) (*FrameMetadata, error) {
 	return ReadFrameFrom(b.Bytes())
 }
 
+// PacketReader is an io.Reader that reads whole chunk of Mux frames every time.
 type PacketReader struct {
 	reader io.Reader
 	eof    bool
 }
 
+// NewPacketReader creates a new PacketReader.
 func NewPacketReader(reader io.Reader) *PacketReader {
 	return &PacketReader{
 		reader: reader,
@@ -37,6 +40,7 @@ func NewPacketReader(reader io.Reader) *PacketReader {
 	}
 }
 
+// Read implements buf.Reader.
 func (r *PacketReader) Read() (buf.MultiBuffer, error) {
 	if r.eof {
 		return nil, io.EOF
@@ -61,11 +65,13 @@ func (r *PacketReader) Read() (buf.MultiBuffer, error) {
 	return buf.NewMultiBufferValue(b), nil
 }
 
+// StreamReader reads Mux frame as a stream.
 type StreamReader struct {
 	reader   io.Reader
 	leftOver int
 }
 
+// NewStreamReader creates a new StreamReader.
 func NewStreamReader(reader io.Reader) *StreamReader {
 	return &StreamReader{
 		reader:   reader,
@@ -73,6 +79,7 @@ func NewStreamReader(reader io.Reader) *StreamReader {
 	}
 }
 
+// Read implmenets buf.Reader.
 func (r *StreamReader) Read() (buf.MultiBuffer, error) {
 	if r.leftOver == 0 {
 		r.leftOver = -1
