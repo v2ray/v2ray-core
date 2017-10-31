@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package v2ray.core.internet.domainsocket;
 
+option go_package = "domainsocket";
+
 //Flag Array
 enum DomainSocketSecurityMode {
   Danger = 0;
