@@ -35,6 +35,6 @@ message DomainSocketSecurity{
 
 message DomainSocketSettings{
  //Path we should listen/dial
- String Path = 1;
+ string Path = 1;
  DomainSocketSecurity Security = 2;
 }
