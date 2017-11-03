@@ -54,7 +54,7 @@ func parseHost(rawHost string, defaultPort net.Port) (net.Destination, error) {
 		} else {
 			return net.Destination{}, err
 		}
-	} else {
+	} else if len(rawPort) > 0 {
 		intPort, err := strconv.Atoi(rawPort)
 		if err != nil {
 			return net.Destination{}, err
