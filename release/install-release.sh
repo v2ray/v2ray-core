@@ -191,15 +191,27 @@ startV2ray(){
     return 0
 }
 
-installV2Ray(){
-    # Install V2Ray binary to /usr/bin/v2ray
-    mkdir -p /usr/bin/v2ray
-    ERROR=`cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/v2ray" "/usr/bin/v2ray/v2ray"`
+copyFile() {
+    NAME=$1
+    ERROR=`cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/${NAME}" "/usr/bin/v2ray/${NAME}"`
     if [[ $? -ne 0 ]]; then
           colorEcho ${YELLOW} "${ERROR}"
           exit
     fi
-    chmod +x "/usr/bin/v2ray/v2ray"
+}
+
+makeExecutable() {
+    chmod +x "/usr/bin/v2ray/$1"
+}
+
+installV2Ray(){
+    # Install V2Ray binary to /usr/bin/v2ray
+    mkdir -p /usr/bin/v2ray
+    copyFile v2ray
+    makeExecutable v2ray
+    copyFile v2ctl
+    makeExecutable v2ctl
+    copyFile geoip.dat
 
     # Install V2Ray server config to /etc/v2ray
     mkdir -p /etc/v2ray
