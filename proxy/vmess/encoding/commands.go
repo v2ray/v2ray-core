@@ -3,6 +3,7 @@ package encoding
 import (
 	"io"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -45,8 +46,8 @@ func MarshalCommand(command interface{}, writer io.Writer) error {
 		return ErrCommandTooLarge
 	}
 
-	writer.Write([]byte{cmdID, byte(len), byte(auth >> 24), byte(auth >> 16), byte(auth >> 8), byte(auth)})
-	writer.Write(buffer.Bytes())
+	common.Must2(writer.Write([]byte{cmdID, byte(len), byte(auth >> 24), byte(auth >> 16), byte(auth >> 8), byte(auth)}))
+	common.Must2(writer.Write(buffer.Bytes()))
 	return nil
 }
 
@@ -78,7 +79,7 @@ type CommandFactory interface {
 type CommandSwitchAccountFactory struct {
 }
 
-func (v *CommandSwitchAccountFactory) Marshal(command interface{}, writer io.Writer) error {
+func (f *CommandSwitchAccountFactory) Marshal(command interface{}, writer io.Writer) error {
 	cmd, ok := command.(*protocol.CommandSwitchAccount)
 	if !ok {
 		return ErrCommandTypeMismatch
@@ -88,25 +89,25 @@ func (v *CommandSwitchAccountFactory) Marshal(command interface{}, writer io.Wri
 	if cmd.Host != nil {
 		hostStr = cmd.Host.String()
 	}
-	writer.Write([]byte{byte(len(hostStr))})
+	common.Must2(writer.Write([]byte{byte(len(hostStr))}))
 
 	if len(hostStr) > 0 {
-		writer.Write([]byte(hostStr))
+		common.Must2(writer.Write([]byte(hostStr)))
 	}
 
-	writer.Write(cmd.Port.Bytes(nil))
+	common.Must2(writer.Write(cmd.Port.Bytes(nil)))
 
 	idBytes := cmd.ID.Bytes()
-	writer.Write(idBytes)
+	common.Must2(writer.Write(idBytes))
 
-	writer.Write(serial.Uint16ToBytes(cmd.AlterIds, nil))
-	writer.Write([]byte{byte(cmd.Level)})
+	common.Must2(writer.Write(serial.Uint16ToBytes(cmd.AlterIds, nil)))
+	common.Must2(writer.Write([]byte{byte(cmd.Level)}))
 
-	writer.Write([]byte{cmd.ValidMin})
+	common.Must2(writer.Write([]byte{cmd.ValidMin}))
 	return nil
 }
 
-func (v *CommandSwitchAccountFactory) Unmarshal(data []byte) (interface{}, error) {
+func (f *CommandSwitchAccountFactory) Unmarshal(data []byte) (interface{}, error) {
 	cmd := new(protocol.CommandSwitchAccount)
 	if len(data) == 0 {
 		return nil, newError("insufficient length.")

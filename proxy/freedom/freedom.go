@@ -62,11 +62,10 @@ func (v *Handler) ResolveIP(destination net.Destination) net.Destination {
 	}
 
 	ip := ips[dice.Roll(len(ips))]
-	var newDest net.Destination
-	if destination.Network == net.Network_TCP {
-		newDest = net.TCPDestination(net.IPAddress(ip), destination.Port)
-	} else {
-		newDest = net.UDPDestination(net.IPAddress(ip), destination.Port)
+	newDest := net.Destination{
+		Network: destination.Network,
+		Address: net.IPAddress(ip),
+		Port:    destination.Port,
 	}
 	log.Trace(newError("changing destination from ", destination, " to ", newDest))
 	return newDest

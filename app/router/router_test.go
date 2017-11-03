@@ -14,11 +14,11 @@ import (
 	. "v2ray.com/core/app/router"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestSimpleRouter(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	config := &Config{
 		Rule: []*RoutingRule{
@@ -33,16 +33,16 @@ func TestSimpleRouter(t *testing.T) {
 
 	space := app.NewSpace()
 	ctx := app.ContextWithSpace(context.Background(), space)
-	assert.Error(app.AddApplicationToSpace(ctx, new(dns.Config))).IsNil()
-	assert.Error(app.AddApplicationToSpace(ctx, new(dispatcher.Config))).IsNil()
-	assert.Error(app.AddApplicationToSpace(ctx, new(proxyman.OutboundConfig))).IsNil()
-	assert.Error(app.AddApplicationToSpace(ctx, config)).IsNil()
-	assert.Error(space.Initialize()).IsNil()
+	assert(app.AddApplicationToSpace(ctx, new(dns.Config)), IsNil)
+	assert(app.AddApplicationToSpace(ctx, new(dispatcher.Config)), IsNil)
+	assert(app.AddApplicationToSpace(ctx, new(proxyman.OutboundConfig)), IsNil)
+	assert(app.AddApplicationToSpace(ctx, config), IsNil)
+	assert(space.Initialize(), IsNil)
 
 	r := FromSpace(space)
 
 	ctx = proxy.ContextWithTarget(ctx, net.TCPDestination(net.DomainAddress("v2ray.com"), 80))
 	tag, err := r.TakeDetour(ctx)
-	assert.Error(err).IsNil()
-	assert.String(tag).Equals("test")
+	assert(err, IsNil)
+	assert(tag, Equals, "test")
 }

@@ -69,7 +69,7 @@ func newSimpleServer(config *Config) (*simpleServer, error) {
 		if err != nil {
 			return nil, newError("failed apply default log settings").Base(err)
 		}
-		space.AddApplication(l)
+		common.Must(space.AddApplication(l))
 	}
 
 	outboundHandlerManager := proxyman.OutboundHandlerManagerFromSpace(space)
@@ -115,7 +115,7 @@ func newSimpleServer(config *Config) (*simpleServer, error) {
 		if err != nil {
 			return nil, err
 		}
-		space.AddApplication(d)
+		common.Must(space.AddApplication(d))
 		disp = d.(dispatcher.Interface)
 	}
 

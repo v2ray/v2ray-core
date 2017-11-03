@@ -90,7 +90,19 @@ func NewClient(p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client
 	ctx, cancel := context.WithCancel(context.Background())
 	ctx = proxy.ContextWithTarget(ctx, net.TCPDestination(muxCoolAddress, muxCoolPort))
 	pipe := ray.NewRay(ctx)
-	go p.Process(ctx, pipe, dialer)
+
+	go func() {
+		if err := p.Process(ctx, pipe, dialer); err != nil {
+			cancel()
+
+			traceErr := errors.New("failed to handler mux client connection").Base(err)
+			if err != io.EOF && err != context.Canceled {
+				traceErr = traceErr.AtWarning()
+			}
+			log.Trace(traceErr)
+		}
+	}()
+
 	c := &Client{
 		sessionManager: NewSessionManager(),
 		inboundRay:     pipe,
@@ -104,6 +116,7 @@ func NewClient(p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client
 	return c, nil
 }
 
+// Closed returns true if this Client is closed.
 func (m *Client) Closed() bool {
 	select {
 	case <-m.ctx.Done():
@@ -180,8 +193,7 @@ func (m *Client) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) bool
 }
 
 func drain(reader io.Reader) error {
-	buf.Copy(NewStreamReader(reader), buf.Discard)
-	return nil
+	return buf.Copy(NewStreamReader(reader), buf.Discard)
 }
 
 func (m *Client) handleStatueKeepAlive(meta *FrameMetadata, reader io.Reader) error {
@@ -223,10 +235,9 @@ func (m *Client) fetchOutput() {
 	defer m.cancel()
 
 	reader := buf.ToBytesReader(m.inboundRay.InboundOutput())
-	metaReader := NewMetadataReader(reader)
 
 	for {
-		meta, err := metaReader.Read()
+		meta, err := ReadMetadata(reader)
 		if err != nil {
 			if errors.Cause(err) != io.EOF {
 				log.Trace(newError("failed to read metadata").Base(err))
@@ -359,8 +370,7 @@ func (w *ServerWorker) handleStatusEnd(meta *FrameMetadata, reader io.Reader) er
 }
 
 func (w *ServerWorker) handleFrame(ctx context.Context, reader io.Reader) error {
-	metaReader := NewMetadataReader(reader)
-	meta, err := metaReader.Read()
+	meta, err := ReadMetadata(reader)
 	if err != nil {
 		return newError("failed to read metadata").Base(err)
 	}

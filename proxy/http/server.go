@@ -3,8 +3,8 @@ package http
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
 	"io"
-	"net"
 	"net/http"
 	"runtime"
 	"strconv"
@@ -17,7 +17,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/transport/internet"
 )
@@ -39,33 +39,30 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	return s, nil
 }
 
-func (*Server) Network() v2net.NetworkList {
-	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_TCP},
+func (*Server) Network() net.NetworkList {
+	return net.NetworkList{
+		Network: []net.Network{net.Network_TCP},
 	}
 }
 
-func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error) {
+func parseHost(rawHost string, defaultPort net.Port) (net.Destination, error) {
 	port := defaultPort
 	host, rawPort, err := net.SplitHostPort(rawHost)
 	if err != nil {
 		if addrError, ok := err.(*net.AddrError); ok && strings.Contains(addrError.Err, "missing port") {
 			host = rawHost
 		} else {
-			return v2net.Destination{}, err
+			return net.Destination{}, err
 		}
 	} else {
 		intPort, err := strconv.Atoi(rawPort)
 		if err != nil {
-			return v2net.Destination{}, err
+			return net.Destination{}, err
 		}
-		port = v2net.Port(intPort)
+		port = net.Port(intPort)
 	}
 
-	if ip := net.ParseIP(host); ip != nil {
-		return v2net.TCPDestination(v2net.IPAddress(ip), port), nil
-	}
-	return v2net.TCPDestination(v2net.DomainAddress(host), port), nil
+	return net.TCPDestination(net.ParseAddress(host), port), nil
 }
 
 func isTimeout(err error) bool {
@@ -73,7 +70,24 @@ func isTimeout(err error) bool {
 	return ok && nerr.Timeout()
 }
 
-func (s *Server) Process(ctx context.Context, network v2net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
+func parseBasicAuth(auth string) (username, password string, ok bool) {
+	const prefix = "Basic "
+	if !strings.HasPrefix(auth, prefix) {
+		return
+	}
+	c, err := base64.StdEncoding.DecodeString(auth[len(prefix):])
+	if err != nil {
+		return
+	}
+	cs := string(c)
+	s := strings.IndexByte(cs, ':')
+	if s < 0 {
+		return
+	}
+	return cs[:s], cs[s+1:], true
+}
+
+func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
 	reader := bufio.NewReaderSize(conn, 2048)
 
 Start:
@@ -87,12 +101,21 @@ Start:
 		}
 		return trace
 	}
+
+	if len(s.config.Accounts) > 0 {
+		user, pass, ok := parseBasicAuth(request.Header.Get("Proxy-Authorization"))
+		if !ok || !s.config.HasAccount(user, pass) {
+			_, err := conn.Write([]byte("HTTP/1.1 401 UNAUTHORIZED\r\n\r\n"))
+			return err
+		}
+	}
+
 	log.Trace(newError("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]"))
 	conn.SetReadDeadline(time.Time{})
 
-	defaultPort := v2net.Port(80)
+	defaultPort := net.Port(80)
 	if strings.ToLower(request.URL.Scheme) == "https" {
-		defaultPort = v2net.Port(443)
+		defaultPort = net.Port(443)
 	}
 	host := request.Host
 	if len(host) == 0 {
@@ -121,15 +144,15 @@ Start:
 	return err
 }
 
-func (s *Server) handleConnect(ctx context.Context, request *http.Request, reader io.Reader, writer io.Writer, dest v2net.Destination, dispatcher dispatcher.Interface) error {
-	_, err := writer.Write([]byte("HTTP/1.1 200 Connection established\n\n"))
+func (s *Server) handleConnect(ctx context.Context, request *http.Request, reader io.Reader, writer io.Writer, dest net.Destination, dispatcher dispatcher.Interface) error {
+	_, err := writer.Write([]byte("HTTP/1.1 200 Connection established\r\n\r\n"))
 	if err != nil {
 		return newError("failed to write back OK response").Base(err)
 	}
 
 	timeout := time.Second * time.Duration(s.config.Timeout)
 	if timeout == 0 {
-		timeout = time.Minute * 2
+		timeout = time.Minute * 5
 	}
 	ctx, timer := signal.CancelAfterInactivity(ctx, timeout)
 	ray, err := dispatcher.Dispatch(ctx, dest)
@@ -152,6 +175,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		if err := buf.Copy(ray.InboundOutput(), v2writer, buf.UpdateActivity(timer)); err != nil {
 			return err
 		}
+		timer.SetTimeout(time.Second * 2)
 		return nil
 	})
 
@@ -192,7 +216,7 @@ func StripHopByHopHeaders(header http.Header) {
 
 var errWaitAnother = newError("keep alive")
 
-func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, reader io.Reader, writer io.Writer, dest v2net.Destination, dispatcher dispatcher.Interface) error {
+func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, reader io.Reader, writer io.Writer, dest net.Destination, dispatcher dispatcher.Interface) error {
 	if len(request.URL.Host) <= 0 {
 		response := &http.Response{
 			Status:        "Bad Request",

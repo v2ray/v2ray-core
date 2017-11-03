@@ -9,7 +9,7 @@ import (
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/proxyman/mux"
 	"v2ray.com/core/common/dice"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 )
 
@@ -20,7 +20,7 @@ type DynamicInboundHandler struct {
 	proxyConfig    interface{}
 	receiverConfig *proxyman.ReceiverConfig
 	portMutex      sync.Mutex
-	portsInUse     map[v2net.Port]bool
+	portsInUse     map[net.Port]bool
 	workerMutex    sync.RWMutex
 	worker         []worker
 	lastRefresh    time.Time
@@ -35,14 +35,14 @@ func NewDynamicInboundHandler(ctx context.Context, tag string, receiverConfig *p
 		cancel:         cancel,
 		proxyConfig:    proxyConfig,
 		receiverConfig: receiverConfig,
-		portsInUse:     make(map[v2net.Port]bool),
+		portsInUse:     make(map[net.Port]bool),
 		mux:            mux.NewServer(ctx),
 	}
 
 	return h, nil
 }
 
-func (h *DynamicInboundHandler) allocatePort() v2net.Port {
+func (h *DynamicInboundHandler) allocatePort() net.Port {
 	from := int(h.receiverConfig.PortRange.From)
 	delta := int(h.receiverConfig.PortRange.To) - from + 1
 
@@ -51,7 +51,7 @@ func (h *DynamicInboundHandler) allocatePort() v2net.Port {
 
 	for {
 		r := dice.Roll(delta)
-		port := v2net.Port(from + r)
+		port := net.Port(from + r)
 		_, used := h.portsInUse[port]
 		if !used {
 			h.portsInUse[port] = true
@@ -63,7 +63,7 @@ func (h *DynamicInboundHandler) allocatePort() v2net.Port {
 func (h *DynamicInboundHandler) waitAnyCloseWorkers(ctx context.Context, cancel context.CancelFunc, workers []worker, duration time.Duration) {
 	time.Sleep(duration)
 	cancel()
-	ports2Del := make([]v2net.Port, len(workers))
+	ports2Del := make([]net.Port, len(workers))
 	for idx, worker := range workers {
 		ports2Del[idx] = worker.Port()
 		worker.Close()
@@ -86,7 +86,7 @@ func (h *DynamicInboundHandler) refresh() error {
 
 	address := h.receiverConfig.Listen.AsAddress()
 	if address == nil {
-		address = v2net.AnyIP
+		address = net.AnyIP
 	}
 	for i := uint32(0); i < concurrency; i++ {
 		port := h.allocatePort()
@@ -96,7 +96,7 @@ func (h *DynamicInboundHandler) refresh() error {
 			continue
 		}
 		nl := p.Network()
-		if nl.HasNetwork(v2net.Network_TCP) {
+		if nl.HasNetwork(net.Network_TCP) {
 			worker := &tcpWorker{
 				tag:          h.tag,
 				address:      address,
@@ -114,7 +114,7 @@ func (h *DynamicInboundHandler) refresh() error {
 			workers = append(workers, worker)
 		}
 
-		if nl.HasNetwork(v2net.Network_UDP) {
+		if nl.HasNetwork(net.Network_UDP) {
 			worker := &udpWorker{
 				tag:          h.tag,
 				proxy:        p,
@@ -164,7 +164,7 @@ func (h *DynamicInboundHandler) Close() {
 	h.cancel()
 }
 
-func (h *DynamicInboundHandler) GetRandomInboundProxy() (proxy.Inbound, v2net.Port, int) {
+func (h *DynamicInboundHandler) GetRandomInboundProxy() (proxy.Inbound, net.Port, int) {
 	h.workerMutex.RLock()
 	defer h.workerMutex.RUnlock()
 

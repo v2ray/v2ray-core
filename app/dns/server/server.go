@@ -4,7 +4,6 @@ package server
 
 import (
 	"context"
-	"net"
 	"sync"
 	"time"
 
@@ -14,7 +13,7 @@ import (
 	"v2ray.com/core/app/dns"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 )
 
 const (
@@ -23,6 +22,17 @@ const (
 
 type DomainRecord struct {
 	A *ARecord
+}
+
+type Record struct {
+	IP         []net.IP
+	Expire     time.Time
+	LastAccess time.Time
+}
+
+func (r *Record) Expired() bool {
+	now := time.Now()
+	return r.Expire.Before(now) || r.LastAccess.Add(time.Hour).Before(now)
 }
 
 type CacheServer struct {
@@ -53,10 +63,10 @@ func NewCacheServer(ctx context.Context, config *dns.Config) (*CacheServer, erro
 				server.servers[idx] = &LocalNameServer{}
 			} else {
 				dest := destPB.AsDestination()
-				if dest.Network == v2net.Network_Unknown {
-					dest.Network = v2net.Network_UDP
+				if dest.Network == net.Network_Unknown {
+					dest.Network = net.Network_UDP
 				}
-				if dest.Network == v2net.Network_UDP {
+				if dest.Network == net.Network_UDP {
 					server.servers[idx] = NewUDPNameServer(dest, disp)
 				}
 			}

@@ -7,11 +7,11 @@ import (
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	. "v2ray.com/core/proxy/socks"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestUDPEncoding(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	b := buf.New()
 
@@ -24,11 +24,11 @@ func TestUDPEncoding(t *testing.T) {
 	content := []byte{'a'}
 	payload := buf.New()
 	payload.Append(content)
-	assert.Error(writer.Write(buf.NewMultiBufferValue(payload))).IsNil()
+	assert(writer.Write(buf.NewMultiBufferValue(payload)), IsNil)
 
 	reader := NewUDPReader(b)
 
 	decodedPayload, err := reader.Read()
-	assert.Error(err).IsNil()
-	assert.Bytes(decodedPayload[0].Bytes()).Equals(content)
+	assert(err, IsNil)
+	assert(decodedPayload[0].Bytes(), Equals, content)
 }

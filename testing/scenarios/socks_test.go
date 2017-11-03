@@ -1,32 +1,31 @@
 package scenarios
 
 import (
-	"net"
 	"testing"
 
 	xproxy "golang.org/x/net/proxy"
 	socks4 "h12.me/socks"
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/dokodemo"
 	"v2ray.com/core/proxy/freedom"
 	"v2ray.com/core/proxy/socks"
-	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/testing/servers/tcp"
 	"v2ray.com/core/testing/servers/udp"
+	. "v2ray.com/ext/assert"
 )
 
 func TestSocksBridgeTCP(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	defer tcpServer.Close()
 
 	serverPort := pickPort()
@@ -34,15 +33,15 @@ func TestSocksBridgeTCP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&socks.ServerConfig{
 					AuthType: socks.AuthType_PASSWORD,
 					Accounts: map[string]string{
 						"Test Account": "Test Password",
 					},
-					Address:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					Address:    net.NewIPOrDomain(net.LocalHostIP),
 					UdpEnabled: false,
 				}),
 			},
@@ -59,14 +58,14 @@ func TestSocksBridgeTCP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
@@ -76,7 +75,7 @@ func TestSocksBridgeTCP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&socks.ClientConfig{
 					Server: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -94,36 +93,36 @@ func TestSocksBridgeTCP(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 		IP:   []byte{127, 0, 0, 1},
 		Port: int(clientPort),
 	})
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	payload := "test payload"
 	nBytes, err := conn.Write([]byte(payload))
-	assert.Error(err).IsNil()
-	assert.Int(nBytes).Equals(len(payload))
+	assert(err, IsNil)
+	assert(nBytes, Equals, len(payload))
 
 	response := make([]byte, 1024)
 	nBytes, err = conn.Read(response)
-	assert.Error(err).IsNil()
-	assert.Bytes(response[:nBytes]).Equals(xor([]byte(payload)))
-	assert.Error(conn.Close()).IsNil()
+	assert(err, IsNil)
+	assert(response[:nBytes], Equals, xor([]byte(payload)))
+	assert(conn.Close(), IsNil)
 
 	CloseAllServers(servers)
 }
 
 func TestSocksBridageUDP(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	udpServer := udp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := udpServer.Start()
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	defer udpServer.Close()
 
 	serverPort := pickPort()
@@ -131,15 +130,15 @@ func TestSocksBridageUDP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&socks.ServerConfig{
 					AuthType: socks.AuthType_PASSWORD,
 					Accounts: map[string]string{
 						"Test Account": "Test Password",
 					},
-					Address:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					Address:    net.NewIPOrDomain(net.LocalHostIP),
 					UdpEnabled: true,
 				}),
 			},
@@ -156,14 +155,14 @@ func TestSocksBridageUDP(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP, v2net.Network_UDP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP, net.Network_UDP},
 					},
 				}),
 			},
@@ -173,7 +172,7 @@ func TestSocksBridageUDP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&socks.ClientConfig{
 					Server: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -191,36 +190,36 @@ func TestSocksBridageUDP(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
 		IP:   []byte{127, 0, 0, 1},
 		Port: int(clientPort),
 	})
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	payload := "dokodemo request."
 	nBytes, err := conn.Write([]byte(payload))
-	assert.Error(err).IsNil()
-	assert.Int(nBytes).Equals(len(payload))
+	assert(err, IsNil)
+	assert(nBytes, Equals, len(payload))
 
 	response := make([]byte, 1024)
 	nBytes, err = conn.Read(response)
-	assert.Error(err).IsNil()
-	assert.Bytes(response[:nBytes]).Equals(xor([]byte(payload)))
-	assert.Error(conn.Close()).IsNil()
+	assert(err, IsNil)
+	assert(response[:nBytes], Equals, xor([]byte(payload)))
+	assert(conn.Close(), IsNil)
 
 	CloseAllServers(servers)
 }
 
 func TestSocksConformance(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	defer tcpServer.Close()
 
 	authPort := pickPort()
@@ -229,29 +228,29 @@ func TestSocksConformance(t *testing.T) {
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(authPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(authPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&socks.ServerConfig{
 					AuthType: socks.AuthType_PASSWORD,
 					Accounts: map[string]string{
 						"Test Account": "Test Password",
 					},
-					Address:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					Address:    net.NewIPOrDomain(net.LocalHostIP),
 					UdpEnabled: false,
 				}),
 			},
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(noAuthPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(noAuthPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&socks.ServerConfig{
 					AuthType: socks.AuthType_NO_AUTH,
 					Accounts: map[string]string{
 						"Test Account": "Test Password",
 					},
-					Address:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					Address:    net.NewIPOrDomain(net.LocalHostIP),
 					UdpEnabled: false,
 				}),
 			},
@@ -264,76 +263,76 @@ func TestSocksConformance(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig)
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	{
-		noAuthDialer, err := xproxy.SOCKS5("tcp", v2net.TCPDestination(v2net.LocalHostIP, noAuthPort).NetAddr(), nil, xproxy.Direct)
-		assert.Error(err).IsNil()
+		noAuthDialer, err := xproxy.SOCKS5("tcp", net.TCPDestination(net.LocalHostIP, noAuthPort).NetAddr(), nil, xproxy.Direct)
+		assert(err, IsNil)
 		conn, err := noAuthDialer.Dial("tcp", dest.NetAddr())
-		assert.Error(err).IsNil()
+		assert(err, IsNil)
 
 		payload := "test payload"
 		nBytes, err := conn.Write([]byte(payload))
-		assert.Error(err).IsNil()
-		assert.Int(nBytes).Equals(len(payload))
+		assert(err, IsNil)
+		assert(nBytes, Equals, len(payload))
 
 		response := make([]byte, 1024)
 		nBytes, err = conn.Read(response)
-		assert.Error(err).IsNil()
-		assert.Bytes(response[:nBytes]).Equals(xor([]byte(payload)))
-		assert.Error(conn.Close()).IsNil()
+		assert(err, IsNil)
+		assert(response[:nBytes], Equals, xor([]byte(payload)))
+		assert(conn.Close(), IsNil)
 	}
 
 	{
-		authDialer, err := xproxy.SOCKS5("tcp", v2net.TCPDestination(v2net.LocalHostIP, authPort).NetAddr(), &xproxy.Auth{User: "Test Account", Password: "Test Password"}, xproxy.Direct)
-		assert.Error(err).IsNil()
+		authDialer, err := xproxy.SOCKS5("tcp", net.TCPDestination(net.LocalHostIP, authPort).NetAddr(), &xproxy.Auth{User: "Test Account", Password: "Test Password"}, xproxy.Direct)
+		assert(err, IsNil)
 		conn, err := authDialer.Dial("tcp", dest.NetAddr())
-		assert.Error(err).IsNil()
+		assert(err, IsNil)
 
 		payload := "test payload"
 		nBytes, err := conn.Write([]byte(payload))
-		assert.Error(err).IsNil()
-		assert.Int(nBytes).Equals(len(payload))
+		assert(err, IsNil)
+		assert(nBytes, Equals, len(payload))
 
 		response := make([]byte, 1024)
 		nBytes, err = conn.Read(response)
-		assert.Error(err).IsNil()
-		assert.Bytes(response[:nBytes]).Equals(xor([]byte(payload)))
-		assert.Error(conn.Close()).IsNil()
+		assert(err, IsNil)
+		assert(response[:nBytes], Equals, xor([]byte(payload)))
+		assert(conn.Close(), IsNil)
 	}
 
 	{
-		dialer := socks4.DialSocksProxy(socks4.SOCKS4, v2net.TCPDestination(v2net.LocalHostIP, noAuthPort).NetAddr())
+		dialer := socks4.DialSocksProxy(socks4.SOCKS4, net.TCPDestination(net.LocalHostIP, noAuthPort).NetAddr())
 		conn, err := dialer("tcp", dest.NetAddr())
-		assert.Error(err).IsNil()
+		assert(err, IsNil)
 
 		payload := "test payload"
 		nBytes, err := conn.Write([]byte(payload))
-		assert.Error(err).IsNil()
-		assert.Int(nBytes).Equals(len(payload))
+		assert(err, IsNil)
+		assert(nBytes, Equals, len(payload))
 
 		response := make([]byte, 1024)
 		nBytes, err = conn.Read(response)
-		assert.Error(err).IsNil()
-		assert.Bytes(response[:nBytes]).Equals(xor([]byte(payload)))
-		assert.Error(conn.Close()).IsNil()
+		assert(err, IsNil)
+		assert(response[:nBytes], Equals, xor([]byte(payload)))
+		assert(conn.Close(), IsNil)
 	}
 
 	{
-		dialer := socks4.DialSocksProxy(socks4.SOCKS4A, v2net.TCPDestination(v2net.LocalHostIP, noAuthPort).NetAddr())
-		conn, err := dialer("tcp", v2net.TCPDestination(v2net.LocalHostDomain, tcpServer.Port).NetAddr())
-		assert.Error(err).IsNil()
+		dialer := socks4.DialSocksProxy(socks4.SOCKS4A, net.TCPDestination(net.LocalHostIP, noAuthPort).NetAddr())
+		conn, err := dialer("tcp", net.TCPDestination(net.LocalHostDomain, tcpServer.Port).NetAddr())
+		assert(err, IsNil)
 
 		payload := "test payload"
 		nBytes, err := conn.Write([]byte(payload))
-		assert.Error(err).IsNil()
-		assert.Int(nBytes).Equals(len(payload))
+		assert(err, IsNil)
+		assert(nBytes, Equals, len(payload))
 
 		response := make([]byte, 1024)
 		nBytes, err = conn.Read(response)
-		assert.Error(err).IsNil()
-		assert.Bytes(response[:nBytes]).Equals(xor([]byte(payload)))
-		assert.Error(conn.Close()).IsNil()
+		assert(err, IsNil)
+		assert(response[:nBytes], Equals, xor([]byte(payload)))
+		assert(conn.Close(), IsNil)
 	}
 
 	CloseAllServers(servers)

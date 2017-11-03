@@ -16,6 +16,7 @@ import (
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/internet/udp"
 )
 
 type DokodemoDoor struct {
@@ -62,7 +63,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 
 	timeout := time.Second * time.Duration(d.config.Timeout)
 	if timeout == 0 {
-		timeout = time.Minute * 2
+		timeout = time.Minute * 5
 	}
 	ctx, timer := signal.CancelAfterInactivity(ctx, timeout)
 
@@ -88,12 +89,25 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		if network == net.Network_TCP {
 			writer = buf.NewWriter(conn)
 		} else {
-			writer = buf.NewSequentialWriter(conn)
+			//if we are in TPROXY mode, use linux's udp forging functionality
+			if !d.config.FollowRedirect {
+				writer = buf.NewSequentialWriter(conn)
+			} else {
+				srca := net.UDPAddr{IP: dest.Address.IP(), Port: int(dest.Port.Value())}
+				origsend, err := udp.TransmitSocket(&srca, conn.RemoteAddr())
+				if err != nil {
+					return err
+				}
+				writer = buf.NewSequentialWriter(origsend)
+			}
 		}
 
 		if err := buf.Copy(inboundRay.InboundOutput(), writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport response").Base(err)
 		}
+
+		timer.SetTimeout(time.Second * 2)
+
 		return nil
 	})
 

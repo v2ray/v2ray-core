@@ -3,15 +3,15 @@ package websocket
 import (
 	"context"
 	"crypto/tls"
-	"net"
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	v2tls "v2ray.com/core/transport/internet/tls"
 )
@@ -21,18 +21,24 @@ type requestHandler struct {
 	ln   *Listener
 }
 
+var upgrader = &websocket.Upgrader{
+	ReadBufferSize:   32 * 1024,
+	WriteBufferSize:  32 * 1024,
+	HandshakeTimeout: time.Second * 8,
+}
+
 func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	if request.URL.Path != h.path {
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
-	conn, err := converttovws(writer, request)
+	conn, err := upgrader.Upgrade(writer, request, nil)
 	if err != nil {
 		log.Trace(newError("failed to convert to WebSocket connection").Base(err))
 		return
 	}
 
-	h.ln.addConn(h.ln.ctx, internet.Connection(conn))
+	h.ln.addConn(h.ln.ctx, newConnection(conn))
 }
 
 type Listener struct {
@@ -44,7 +50,7 @@ type Listener struct {
 	addConn   internet.AddConnection
 }
 
-func ListenWS(ctx context.Context, address v2net.Address, port v2net.Port, addConn internet.AddConnection) (internet.Listener, error) {
+func ListenWS(ctx context.Context, address net.Address, port net.Port, addConn internet.AddConnection) (internet.Listener, error) {
 	networkSettings := internet.TransportSettingsFromContext(ctx)
 	wsSettings := networkSettings.(*Config)
 
@@ -65,7 +71,7 @@ func ListenWS(ctx context.Context, address v2net.Address, port v2net.Port, addCo
 	return l, err
 }
 
-func (ln *Listener) listenws(address v2net.Address, port v2net.Port) error {
+func (ln *Listener) listenws(address net.Address, port net.Port) error {
 	netAddr := address.String() + ":" + strconv.Itoa(int(port.Value()))
 	var listener net.Listener
 	if ln.tlsConfig == nil {
@@ -84,33 +90,24 @@ func (ln *Listener) listenws(address v2net.Address, port v2net.Port) error {
 	ln.listener = listener
 
 	go func() {
-		http.Serve(listener, &requestHandler{
+		err := http.Serve(listener, &requestHandler{
 			path: ln.config.GetNormailzedPath(),
 			ln:   ln,
 		})
+		if err != nil {
+			log.Trace(newError("failed to serve http for WebSocket").Base(err).AtWarning())
+		}
 	}()
 
 	return nil
 }
 
-func converttovws(w http.ResponseWriter, r *http.Request) (*connection, error) {
-	var upgrader = websocket.Upgrader{
-		ReadBufferSize:  32 * 1024,
-		WriteBufferSize: 32 * 1024,
-	}
-	conn, err := upgrader.Upgrade(w, r, nil)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &connection{wsc: conn}, nil
-}
-
+// Addr implements net.Listener.Addr().
 func (ln *Listener) Addr() net.Addr {
 	return ln.listener.Addr()
 }
 
+// Close implements net.Listener.Close().
 func (ln *Listener) Close() error {
 	return ln.listener.Close()
 }

@@ -9,8 +9,8 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/transport/ray"
+	. "v2ray.com/ext/assert"
 )
 
 func readAll(reader buf.Reader) (buf.MultiBuffer, error) {
@@ -29,7 +29,7 @@ func readAll(reader buf.Reader) (buf.MultiBuffer, error) {
 }
 
 func TestReaderWriter(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	stream := ray.NewStream(context.Background())
 
@@ -48,95 +48,95 @@ func TestReaderWriter(t *testing.T) {
 		return writer.Write(buf.NewMultiBufferValue(b))
 	}
 
-	assert.Error(writePayload(writer, 'a', 'b', 'c', 'd')).IsNil()
-	assert.Error(writePayload(writer2)).IsNil()
+	assert(writePayload(writer, 'a', 'b', 'c', 'd'), IsNil)
+	assert(writePayload(writer2), IsNil)
 
-	assert.Error(writePayload(writer, 'e', 'f', 'g', 'h')).IsNil()
-	assert.Error(writePayload(writer3, 'x')).IsNil()
+	assert(writePayload(writer, 'e', 'f', 'g', 'h'), IsNil)
+	assert(writePayload(writer3, 'x'), IsNil)
 
 	writer.Close()
 	writer3.Close()
 
-	assert.Error(writePayload(writer2, 'y')).IsNil()
+	assert(writePayload(writer2, 'y'), IsNil)
 	writer2.Close()
 
 	bytesReader := buf.ToBytesReader(stream)
-	metaReader := NewMetadataReader(bytesReader)
 	streamReader := NewStreamReader(bytesReader)
 
-	meta, err := metaReader.Read()
-	assert.Error(err).IsNil()
-	assert.Uint16(meta.SessionID).Equals(1)
-	assert.Byte(byte(meta.SessionStatus)).Equals(byte(SessionStatusNew))
-	assert.Destination(meta.Target).Equals(dest)
-	assert.Byte(byte(meta.Option)).Equals(byte(OptionData))
+	meta, err := ReadMetadata(bytesReader)
+	assert(err, IsNil)
+	assert(meta.SessionID, Equals, uint16(1))
+	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusNew))
+	assert(meta.Target, Equals, dest)
+	assert(byte(meta.Option), Equals, byte(OptionData))
 
 	data, err := readAll(streamReader)
-	assert.Error(err).IsNil()
-	assert.Int(len(data)).Equals(1)
-	assert.String(data[0].String()).Equals("abcd")
+	assert(err, IsNil)
+	assert(len(data), Equals, 1)
+	assert(data[0].String(), Equals, "abcd")
 
-	meta, err = metaReader.Read()
-	assert.Error(err).IsNil()
-	assert.Byte(byte(meta.SessionStatus)).Equals(byte(SessionStatusNew))
-	assert.Uint16(meta.SessionID).Equals(2)
-	assert.Byte(byte(meta.Option)).Equals(0)
-	assert.Destination(meta.Target).Equals(dest2)
+	meta, err = ReadMetadata(bytesReader)
+	assert(err, IsNil)
+	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusNew))
+	assert(meta.SessionID, Equals, uint16(2))
+	assert(byte(meta.Option), Equals, byte(0))
+	assert(meta.Target, Equals, dest2)
 
-	meta, err = metaReader.Read()
-	assert.Error(err).IsNil()
-	assert.Byte(byte(meta.SessionStatus)).Equals(byte(SessionStatusKeep))
-	assert.Uint16(meta.SessionID).Equals(1)
-	assert.Byte(byte(meta.Option)).Equals(1)
-
-	data, err = readAll(streamReader)
-	assert.Error(err).IsNil()
-	assert.Int(len(data)).Equals(1)
-	assert.String(data[0].String()).Equals("efgh")
-
-	meta, err = metaReader.Read()
-	assert.Error(err).IsNil()
-	assert.Byte(byte(meta.SessionStatus)).Equals(byte(SessionStatusNew))
-	assert.Uint16(meta.SessionID).Equals(3)
-	assert.Byte(byte(meta.Option)).Equals(1)
-	assert.Destination(meta.Target).Equals(dest3)
+	meta, err = ReadMetadata(bytesReader)
+	assert(err, IsNil)
+	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusKeep))
+	assert(meta.SessionID, Equals, uint16(1))
+	assert(byte(meta.Option), Equals, byte(1))
 
 	data, err = readAll(streamReader)
-	assert.Error(err).IsNil()
-	assert.Int(len(data)).Equals(1)
-	assert.String(data[0].String()).Equals("x")
+	assert(err, IsNil)
+	assert(len(data), Equals, 1)
+	assert(data[0].String(), Equals, "efgh")
 
-	meta, err = metaReader.Read()
-	assert.Error(err).IsNil()
-	assert.Byte(byte(meta.SessionStatus)).Equals(byte(SessionStatusEnd))
-	assert.Uint16(meta.SessionID).Equals(1)
-	assert.Byte(byte(meta.Option)).Equals(0)
-
-	meta, err = metaReader.Read()
-	assert.Error(err).IsNil()
-	assert.Byte(byte(meta.SessionStatus)).Equals(byte(SessionStatusEnd))
-	assert.Uint16(meta.SessionID).Equals(3)
-	assert.Byte(byte(meta.Option)).Equals(0)
-
-	meta, err = metaReader.Read()
-	assert.Error(err).IsNil()
-	assert.Byte(byte(meta.SessionStatus)).Equals(byte(SessionStatusKeep))
-	assert.Uint16(meta.SessionID).Equals(2)
-	assert.Byte(byte(meta.Option)).Equals(1)
+	meta, err = ReadMetadata(bytesReader)
+	assert(err, IsNil)
+	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusNew))
+	assert(meta.SessionID, Equals, uint16(3))
+	assert(byte(meta.Option), Equals, byte(1))
+	assert(meta.Target, Equals, dest3)
 
 	data, err = readAll(streamReader)
-	assert.Error(err).IsNil()
-	assert.Int(len(data)).Equals(1)
-	assert.String(data[0].String()).Equals("y")
+	assert(err, IsNil)
+	assert(len(data), Equals, 1)
+	assert(data[0].String(), Equals, "x")
 
-	meta, err = metaReader.Read()
-	assert.Error(err).IsNil()
-	assert.Byte(byte(meta.SessionStatus)).Equals(byte(SessionStatusEnd))
-	assert.Uint16(meta.SessionID).Equals(2)
-	assert.Byte(byte(meta.Option)).Equals(0)
+	meta, err = ReadMetadata(bytesReader)
+	assert(err, IsNil)
+	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusEnd))
+	assert(meta.SessionID, Equals, uint16(1))
+	assert(byte(meta.Option), Equals, byte(0))
+
+	meta, err = ReadMetadata(bytesReader)
+	assert(err, IsNil)
+	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusEnd))
+	assert(meta.SessionID, Equals, uint16(3))
+	assert(byte(meta.Option), Equals, byte(0))
+
+	meta, err = ReadMetadata(bytesReader)
+	assert(err, IsNil)
+	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusKeep))
+	assert(meta.SessionID, Equals, uint16(2))
+	assert(byte(meta.Option), Equals, byte(1))
+
+	data, err = readAll(streamReader)
+	assert(err, IsNil)
+	assert(len(data), Equals, 1)
+	assert(data[0].String(), Equals, "y")
+
+	meta, err = ReadMetadata(bytesReader)
+	assert(err, IsNil)
+	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusEnd))
+	assert(meta.SessionID, Equals, uint16(2))
+	assert(byte(meta.Option), Equals, byte(0))
 
 	stream.Close()
 
-	meta, err = metaReader.Read()
-	assert.Error(err).IsNotNil()
+	meta, err = ReadMetadata(bytesReader)
+	assert(err, IsNotNil)
+	assert(meta, IsNil)
 }

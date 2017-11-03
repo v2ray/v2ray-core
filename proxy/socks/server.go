@@ -108,7 +108,7 @@ func (*Server) handleUDP() error {
 func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writer, dest net.Destination, dispatcher dispatcher.Interface) error {
 	timeout := time.Second * time.Duration(v.config.Timeout)
 	if timeout == 0 {
-		timeout = time.Minute * 2
+		timeout = time.Minute * 5
 	}
 	ctx, timer := signal.CancelAfterInactivity(ctx, timeout)
 
@@ -135,6 +135,7 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 		if err := buf.Copy(output, v2writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport all TCP response").Base(err)
 		}
+		timer.SetTimeout(time.Second * 2)
 		return nil
 	})
 
@@ -187,8 +188,11 @@ func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 
 				log.Trace(newError("writing back UDP response with ", payload.Len(), " bytes").AtDebug())
 
-				udpMessage := EncodeUDPPacket(request, payload.Bytes())
+				udpMessage, err := EncodeUDPPacket(request, payload.Bytes())
 				defer udpMessage.Release()
+				if err != nil {
+					log.Trace(newError("failed to write UDP response").AtWarning().Base(err))
+				}
 
 				conn.Write(udpMessage.Bytes())
 			})

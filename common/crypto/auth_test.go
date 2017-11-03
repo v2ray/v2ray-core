@@ -10,19 +10,19 @@ import (
 	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestAuthenticationReaderWriter(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	key := make([]byte, 16)
 	rand.Read(key)
 	block, err := aes.NewCipher(key)
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	aead, err := cipher.NewGCM(block)
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	rawPayload := make([]byte, 8192*10)
 	rand.Read(rawPayload)
@@ -42,10 +42,10 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 		AdditionalDataGenerator: &NoOpBytesGenerator{},
 	}, PlainChunkSizeParser{}, cache, protocol.TransferTypeStream)
 
-	assert.Error(writer.Write(buf.NewMultiBufferValue(payload))).IsNil()
-	assert.Int(cache.Len()).Equals(83360)
-	assert.Error(writer.Write(buf.NewMultiBuffer())).IsNil()
-	assert.Error(err).IsNil()
+	assert(writer.Write(buf.NewMultiBufferValue(payload)), IsNil)
+	assert(cache.Len(), Equals, 83360)
+	assert(writer.Write(buf.NewMultiBuffer()), IsNil)
+	assert(err, IsNil)
 
 	reader := NewAuthenticationReader(&AEADAuthenticator{
 		AEAD: aead,
@@ -59,29 +59,29 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 
 	for mb.Len() < len(rawPayload) {
 		mb2, err := reader.Read()
-		assert.Error(err).IsNil()
+		assert(err, IsNil)
 
 		mb.AppendMulti(mb2)
 	}
 
 	mbContent := make([]byte, 8192*10)
 	mb.Read(mbContent)
-	assert.Bytes(mbContent).Equals(rawPayload)
+	assert(mbContent, Equals, rawPayload)
 
 	_, err = reader.Read()
-	assert.Error(err).Equals(io.EOF)
+	assert(err, Equals, io.EOF)
 }
 
 func TestAuthenticationReaderWriterPacket(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	key := make([]byte, 16)
 	rand.Read(key)
 	block, err := aes.NewCipher(key)
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	aead, err := cipher.NewGCM(block)
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	cache := buf.NewLocal(1024)
 	iv := make([]byte, 12)
@@ -104,10 +104,10 @@ func TestAuthenticationReaderWriterPacket(t *testing.T) {
 	pb2.Append([]byte("efgh"))
 	payload.Append(pb2)
 
-	assert.Error(writer.Write(payload)).IsNil()
-	assert.Int(cache.Len()).GreaterThan(0)
-	assert.Error(writer.Write(buf.NewMultiBuffer())).IsNil()
-	assert.Error(err).IsNil()
+	assert(writer.Write(payload), IsNil)
+	assert(cache.Len(), GreaterThan, 0)
+	assert(writer.Write(buf.NewMultiBuffer()), IsNil)
+	assert(err, IsNil)
 
 	reader := NewAuthenticationReader(&AEADAuthenticator{
 		AEAD: aead,
@@ -118,14 +118,14 @@ func TestAuthenticationReaderWriterPacket(t *testing.T) {
 	}, PlainChunkSizeParser{}, cache, protocol.TransferTypePacket)
 
 	mb, err := reader.Read()
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	b1 := mb.SplitFirst()
-	assert.String(b1.String()).Equals("abcd")
+	assert(b1.String(), Equals, "abcd")
 	b2 := mb.SplitFirst()
-	assert.String(b2.String()).Equals("efgh")
-	assert.Bool(mb.IsEmpty()).IsTrue()
+	assert(b2.String(), Equals, "efgh")
+	assert(mb.IsEmpty(), IsTrue)
 
 	_, err = reader.Read()
-	assert.Error(err).Equals(io.EOF)
+	assert(err, Equals, io.EOF)
 }

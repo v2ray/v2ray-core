@@ -5,16 +5,18 @@ import (
 	"crypto/rand"
 	"io"
 
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/bitmask"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 )
 
 const (
-	Version                  = 1
-	RequestOptionOneTimeAuth = protocol.RequestOption(101)
+	Version                               = 1
+	RequestOptionOneTimeAuth bitmask.Byte = 0x01
 
 	AddrTypeIPv4   = 1
 	AddrTypeIPv6   = 4
@@ -73,12 +75,12 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 4)); err != nil {
 			return nil, nil, newError("failed to read IPv4 address").Base(err)
 		}
-		request.Address = v2net.IPAddress(buffer.BytesFrom(-4))
+		request.Address = net.IPAddress(buffer.BytesFrom(-4))
 	case AddrTypeIPv6:
 		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 16)); err != nil {
 			return nil, nil, newError("failed to read IPv6 address").Base(err)
 		}
-		request.Address = v2net.IPAddress(buffer.BytesFrom(-16))
+		request.Address = net.IPAddress(buffer.BytesFrom(-16))
 	case AddrTypeDomain:
 		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 1)); err != nil {
 			return nil, nil, newError("failed to read domain lenth.").Base(err)
@@ -88,7 +90,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 		if err != nil {
 			return nil, nil, newError("failed to read domain").Base(err)
 		}
-		request.Address = v2net.DomainAddress(string(buffer.BytesFrom(-domainLength)))
+		request.Address = net.DomainAddress(string(buffer.BytesFrom(-domainLength)))
 	default:
 		// Check address validity after OTA verification.
 	}
@@ -97,7 +99,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	if err != nil {
 		return nil, nil, newError("failed to read port").Base(err)
 	}
-	request.Port = v2net.PortFromBytes(buffer.BytesFrom(-2))
+	request.Port = net.PortFromBytes(buffer.BytesFrom(-2))
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {
 		actualAuth := make([]byte, AuthSize)
@@ -152,26 +154,30 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (buf.Wri
 	header := buf.NewLocal(512)
 
 	switch request.Address.Family() {
-	case v2net.AddressFamilyIPv4:
+	case net.AddressFamilyIPv4:
 		header.AppendBytes(AddrTypeIPv4)
 		header.Append([]byte(request.Address.IP()))
-	case v2net.AddressFamilyIPv6:
+	case net.AddressFamilyIPv6:
 		header.AppendBytes(AddrTypeIPv6)
 		header.Append([]byte(request.Address.IP()))
-	case v2net.AddressFamilyDomain:
-		header.AppendBytes(AddrTypeDomain, byte(len(request.Address.Domain())))
-		header.Append([]byte(request.Address.Domain()))
+	case net.AddressFamilyDomain:
+		domain := request.Address.Domain()
+		if protocol.IsDomainTooLong(domain) {
+			return nil, newError("domain name too long: ", domain)
+		}
+		header.AppendBytes(AddrTypeDomain, byte(len(domain)))
+		common.Must(header.AppendSupplier(serial.WriteString(domain)))
 	default:
 		return nil, newError("unsupported address type: ", request.Address.Family())
 	}
 
-	header.AppendSupplier(serial.WriteUint16(uint16(request.Port)))
+	common.Must(header.AppendSupplier(serial.WriteUint16(uint16(request.Port))))
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {
 		header.SetByte(0, header.Byte(0)|0x10)
 
 		authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
-		header.AppendSupplier(authenticator.Authenticate(header.Bytes()))
+		common.Must(header.AppendSupplier(authenticator.Authenticate(header.Bytes())))
 	}
 
 	_, err = writer.Write(header.Bytes())
@@ -246,13 +252,13 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload []byte) (*buf.Buff
 	iv := buffer.Bytes()
 
 	switch request.Address.Family() {
-	case v2net.AddressFamilyIPv4:
+	case net.AddressFamilyIPv4:
 		buffer.AppendBytes(AddrTypeIPv4)
 		buffer.Append([]byte(request.Address.IP()))
-	case v2net.AddressFamilyIPv6:
+	case net.AddressFamilyIPv6:
 		buffer.AppendBytes(AddrTypeIPv6)
 		buffer.Append([]byte(request.Address.IP()))
-	case v2net.AddressFamilyDomain:
+	case net.AddressFamilyDomain:
 		buffer.AppendBytes(AddrTypeDomain, byte(len(request.Address.Domain())))
 		buffer.Append([]byte(request.Address.Domain()))
 	default:
@@ -332,20 +338,20 @@ func DecodeUDPPacket(user *protocol.User, payload *buf.Buffer) (*protocol.Reques
 
 	switch addrType {
 	case AddrTypeIPv4:
-		request.Address = v2net.IPAddress(payload.BytesTo(4))
+		request.Address = net.IPAddress(payload.BytesTo(4))
 		payload.SliceFrom(4)
 	case AddrTypeIPv6:
-		request.Address = v2net.IPAddress(payload.BytesTo(16))
+		request.Address = net.IPAddress(payload.BytesTo(16))
 		payload.SliceFrom(16)
 	case AddrTypeDomain:
 		domainLength := int(payload.Byte(0))
-		request.Address = v2net.DomainAddress(string(payload.BytesRange(1, 1+domainLength)))
+		request.Address = net.DomainAddress(string(payload.BytesRange(1, 1+domainLength)))
 		payload.SliceFrom(1 + domainLength)
 	default:
 		return nil, nil, newError("unknown address type: ", addrType).AtError()
 	}
 
-	request.Port = v2net.PortFromBytes(payload.BytesTo(2))
+	request.Port = net.PortFromBytes(payload.BytesTo(2))
 	payload.SliceFrom(2)
 
 	return request, payload, nil

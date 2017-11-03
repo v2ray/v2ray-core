@@ -54,7 +54,7 @@ func IgnoreWriterError() CopyOption {
 	}
 }
 
-func UpdateActivity(timer signal.ActivityTimer) CopyOption {
+func UpdateActivity(timer signal.ActivityUpdater) CopyOption {
 	return func(handler *copyHandler) {
 		handler.onData = append(handler.onData, func(MultiBuffer) {
 			timer.Update()

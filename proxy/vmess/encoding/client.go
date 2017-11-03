@@ -11,6 +11,8 @@ import (
 	"golang.org/x/crypto/chacha20poly1305"
 
 	"v2ray.com/core/app/log"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/bitmask"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/dice"
@@ -43,7 +45,7 @@ type ClientSession struct {
 // NewClientSession creates a new ClientSession.
 func NewClientSession(idHash protocol.IDHash) *ClientSession {
 	randomBytes := make([]byte, 33) // 16 + 16 + 1
-	rand.Read(randomBytes)
+	common.Must2(rand.Read(randomBytes))
 
 	session := &ClientSession{}
 	session.requestBodyKey = randomBytes[:16]
@@ -58,71 +60,79 @@ func NewClientSession(idHash protocol.IDHash) *ClientSession {
 	return session
 }
 
-func (v *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writer io.Writer) {
+func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writer io.Writer) error {
 	timestamp := protocol.NewTimestampGenerator(protocol.NowTime(), 30)()
 	account, err := header.User.GetTypedAccount()
 	if err != nil {
 		log.Trace(newError("failed to get user account: ", err).AtError())
-		return
+		return nil
 	}
-	idHash := v.idHash(account.(*vmess.InternalAccount).AnyValidID().Bytes())
-	idHash.Write(timestamp.Bytes(nil))
-	writer.Write(idHash.Sum(nil))
+	idHash := c.idHash(account.(*vmess.InternalAccount).AnyValidID().Bytes())
+	common.Must2(idHash.Write(timestamp.Bytes(nil)))
+	common.Must2(writer.Write(idHash.Sum(nil)))
 
-	buffer := make([]byte, 0, 512)
-	buffer = append(buffer, Version)
-	buffer = append(buffer, v.requestBodyIV...)
-	buffer = append(buffer, v.requestBodyKey...)
-	buffer = append(buffer, v.responseHeader, byte(header.Option))
+	buffer := buf.New()
+	defer buffer.Release()
+
+	buffer.AppendBytes(Version)
+	buffer.Append(c.requestBodyIV)
+	buffer.Append(c.requestBodyKey)
+	buffer.AppendBytes(c.responseHeader, byte(header.Option))
+
 	padingLen := dice.Roll(16)
 	if header.Security.Is(protocol.SecurityType_LEGACY) {
 		// Disable padding in legacy mode for a smooth transition.
 		padingLen = 0
 	}
 	security := byte(padingLen<<4) | byte(header.Security)
-	buffer = append(buffer, security, byte(0), byte(header.Command))
+	buffer.AppendBytes(security, byte(0), byte(header.Command))
 
 	if header.Command != protocol.RequestCommandMux {
-		buffer = header.Port.Bytes(buffer)
+		common.Must(buffer.AppendSupplier(serial.WriteUint16(header.Port.Value())))
 
 		switch header.Address.Family() {
 		case net.AddressFamilyIPv4:
-			buffer = append(buffer, AddrTypeIPv4)
-			buffer = append(buffer, header.Address.IP()...)
+			buffer.AppendBytes(byte(protocol.AddressTypeIPv4))
+			buffer.Append(header.Address.IP())
 		case net.AddressFamilyIPv6:
-			buffer = append(buffer, AddrTypeIPv6)
-			buffer = append(buffer, header.Address.IP()...)
+			buffer.AppendBytes(byte(protocol.AddressTypeIPv6))
+			buffer.Append(header.Address.IP())
 		case net.AddressFamilyDomain:
-			buffer = append(buffer, AddrTypeDomain, byte(len(header.Address.Domain())))
-			buffer = append(buffer, header.Address.Domain()...)
+			domain := header.Address.Domain()
+			if protocol.IsDomainTooLong(domain) {
+				return newError("long domain not supported: ", domain)
+			}
+			nDomain := len(domain)
+			buffer.AppendBytes(byte(protocol.AddressTypeDomain), byte(nDomain))
+			common.Must(buffer.AppendSupplier(serial.WriteString(domain)))
 		}
 	}
 
 	if padingLen > 0 {
-		pading := make([]byte, padingLen)
-		rand.Read(pading)
-		buffer = append(buffer, pading...)
+		common.Must(buffer.AppendSupplier(buf.ReadFullFrom(rand.Reader, padingLen)))
 	}
 
 	fnv1a := fnv.New32a()
-	fnv1a.Write(buffer)
+	common.Must2(fnv1a.Write(buffer.Bytes()))
 
-	buffer = fnv1a.Sum(buffer)
+	common.Must(buffer.AppendSupplier(func(b []byte) (int, error) {
+		fnv1a.Sum(b[:0])
+		return fnv1a.Size(), nil
+	}))
 
 	timestampHash := md5.New()
-	timestampHash.Write(hashTimestamp(timestamp))
+	common.Must2(timestampHash.Write(hashTimestamp(timestamp)))
 	iv := timestampHash.Sum(nil)
 	aesStream := crypto.NewAesEncryptionStream(account.(*vmess.InternalAccount).ID.CmdKey(), iv)
-	aesStream.XORKeyStream(buffer, buffer)
-	writer.Write(buffer)
-
-	return
+	aesStream.XORKeyStream(buffer.Bytes(), buffer.Bytes())
+	common.Must2(writer.Write(buffer.Bytes()))
+	return nil
 }
 
-func (v *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, writer io.Writer) buf.Writer {
+func (c *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, writer io.Writer) buf.Writer {
 	var sizeParser crypto.ChunkSizeEncoder = crypto.PlainChunkSizeParser{}
 	if request.Option.Has(protocol.RequestOptionChunkMasking) {
-		sizeParser = NewShakeSizeParser(v.requestBodyIV)
+		sizeParser = NewShakeSizeParser(c.requestBodyIV)
 	}
 	if request.Security.Is(protocol.SecurityType_NONE) {
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
@@ -141,7 +151,7 @@ func (v *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 	}
 
 	if request.Security.Is(protocol.SecurityType_LEGACY) {
-		aesStream := crypto.NewAesEncryptionStream(v.requestBodyKey, v.requestBodyIV)
+		aesStream := crypto.NewAesEncryptionStream(c.requestBodyKey, c.requestBodyIV)
 		cryptionWriter := crypto.NewCryptionWriter(aesStream, writer)
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
 			auth := &crypto.AEADAuthenticator{
@@ -156,13 +166,13 @@ func (v *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 	}
 
 	if request.Security.Is(protocol.SecurityType_AES128_GCM) {
-		block, _ := aes.NewCipher(v.requestBodyKey)
+		block, _ := aes.NewCipher(c.requestBodyKey)
 		aead, _ := cipher.NewGCM(block)
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD: aead,
 			NonceGenerator: &ChunkNonceGenerator{
-				Nonce: append([]byte(nil), v.requestBodyIV...),
+				Nonce: append([]byte(nil), c.requestBodyIV...),
 				Size:  aead.NonceSize(),
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
@@ -171,12 +181,12 @@ func (v *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 	}
 
 	if request.Security.Is(protocol.SecurityType_CHACHA20_POLY1305) {
-		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(v.requestBodyKey))
+		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(c.requestBodyKey))
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD: aead,
 			NonceGenerator: &ChunkNonceGenerator{
-				Nonce: append([]byte(nil), v.requestBodyIV...),
+				Nonce: append([]byte(nil), c.requestBodyIV...),
 				Size:  aead.NonceSize(),
 			},
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
@@ -191,32 +201,31 @@ func (c *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 	aesStream := crypto.NewAesDecryptionStream(c.responseBodyKey, c.responseBodyIV)
 	c.responseReader = crypto.NewCryptionReader(aesStream, reader)
 
-	buffer := make([]byte, 256)
+	buffer := buf.New()
+	defer buffer.Release()
 
-	_, err := io.ReadFull(c.responseReader, buffer[:4])
-	if err != nil {
+	if err := buffer.AppendSupplier(buf.ReadFullFrom(c.responseReader, 4)); err != nil {
 		log.Trace(newError("failed to read response header").Base(err))
 		return nil, err
 	}
 
-	if buffer[0] != c.responseHeader {
-		return nil, newError("unexpected response header. Expecting ", int(c.responseHeader), " but actually ", int(buffer[0]))
+	if buffer.Byte(0) != c.responseHeader {
+		return nil, newError("unexpected response header. Expecting ", int(c.responseHeader), " but actually ", int(buffer.Byte(0)))
 	}
 
 	header := &protocol.ResponseHeader{
-		Option: protocol.ResponseOption(buffer[1]),
+		Option: bitmask.Byte(buffer.Byte(1)),
 	}
 
-	if buffer[2] != 0 {
-		cmdID := buffer[2]
-		dataLen := int(buffer[3])
-		_, err := io.ReadFull(c.responseReader, buffer[:dataLen])
-		if err != nil {
+	if buffer.Byte(2) != 0 {
+		cmdID := buffer.Byte(2)
+		dataLen := int(buffer.Byte(3))
+
+		if err := buffer.Reset(buf.ReadFullFrom(c.responseReader, dataLen)); err != nil {
 			log.Trace(newError("failed to read response command").Base(err))
 			return nil, err
 		}
-		data := buffer[:dataLen]
-		command, err := UnmarshalCommand(cmdID, data)
+		command, err := UnmarshalCommand(cmdID, buffer.Bytes())
 		if err == nil {
 			header.Command = command
 		}
@@ -299,8 +308,8 @@ type ChunkNonceGenerator struct {
 	count uint16
 }
 
-func (v *ChunkNonceGenerator) Next() []byte {
-	serial.Uint16ToBytes(v.count, v.Nonce[:0])
-	v.count++
-	return v.Nonce[:v.Size]
+func (g *ChunkNonceGenerator) Next() []byte {
+	serial.Uint16ToBytes(g.count, g.Nonce[:0])
+	g.count++
+	return g.Nonce[:g.Size]
 }

@@ -10,15 +10,15 @@ import (
 	"io"
 
 	. "v2ray.com/core/common/buf"
-	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/transport/ray"
+	. "v2ray.com/ext/assert"
 )
 
 func TestWriter(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	lb := New()
-	assert.Error(lb.AppendSupplier(ReadFrom(rand.Reader))).IsNil()
+	assert(lb.AppendSupplier(ReadFrom(rand.Reader)), IsNil)
 
 	expectedBytes := append([]byte(nil), lb.Bytes()...)
 
@@ -26,20 +26,20 @@ func TestWriter(t *testing.T) {
 
 	writer := NewWriter(NewBufferedWriter(writeBuffer))
 	err := writer.Write(NewMultiBufferValue(lb))
-	assert.Error(err).IsNil()
-	assert.Bytes(expectedBytes).Equals(writeBuffer.Bytes())
+	assert(err, IsNil)
+	assert(expectedBytes, Equals, writeBuffer.Bytes())
 }
 
 func TestBytesWriterReadFrom(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	cache := ray.NewStream(context.Background())
 	reader := bufio.NewReader(io.LimitReader(rand.Reader, 8192))
 	_, err := reader.WriteTo(ToBytesWriter(cache))
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	mb, err := cache.Read()
-	assert.Error(err).IsNil()
-	assert.Int(mb.Len()).Equals(8192)
-	assert.Int(len(mb)).Equals(4)
+	assert(err, IsNil)
+	assert(mb.Len(), Equals, 8192)
+	assert(len(mb), Equals, 4)
 }

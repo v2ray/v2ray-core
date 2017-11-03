@@ -214,7 +214,7 @@ func NewConnection(conv uint16, sysConn SystemConnection, config *Config) *Conne
 		dataInput:  make(chan bool, 1),
 		dataOutput: make(chan bool, 1),
 		Config:     config,
-		output:     NewSegmentWriter(sysConn),
+		output:     NewRetryableWriter(NewSegmentWriter(sysConn)),
 		mss:        config.GetMTUValue() - uint32(sysConn.Overhead()) - DataSegmentOverhead,
 		roundTrip: &RoundTripInfo{
 			rto:    100,

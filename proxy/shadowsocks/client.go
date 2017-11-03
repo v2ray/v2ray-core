@@ -91,7 +91,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 		request.Option |= RequestOptionOneTimeAuth
 	}
 
-	ctx, timer := signal.CancelAfterInactivity(ctx, time.Minute*2)
+	ctx, timer := signal.CancelAfterInactivity(ctx, time.Minute*5)
 
 	if request.Command == protocol.RequestCommandTCP {
 		bufferedWriter := buf.NewBufferedWriter(conn)

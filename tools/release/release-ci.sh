@@ -3,7 +3,7 @@
 set -x
 
 apt-get update
-apt-get -y install jq git file
+apt-get -y install jq git file p7zip-full
 
 function getattr() {
   curl -s -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/$2/attributes/$1
@@ -20,12 +20,12 @@ VUSER=$(getattr "b_user" "project")
 mkdir -p /v2ray/build
 
 gsutil cp ${SIGN_KEY_PATH} /v2ray/build/sign_key.asc
-gpg --import /v2ray/build/sign_key.asc
+echo ${SIGN_KEY_PASS} | gpg --passphrase-fd 0 --batch --import /v2ray/build/sign_key.asc
 
 curl -L -o /v2ray/build/releases https://api.github.com/repos/v2ray/v2ray-core/releases
 
 GO_INSTALL=golang.tar.gz
-curl -L -o ${GO_INSTALL} https://storage.googleapis.com/golang/go1.8.3.linux-amd64.tar.gz
+curl -L -o ${GO_INSTALL} https://storage.googleapis.com/golang/go1.9.linux-amd64.tar.gz
 tar -C /usr/local -xzf ${GO_INSTALL}
 export PATH=$PATH:/usr/local/go/bin
 
@@ -45,23 +45,26 @@ export TRAVIS_TAG=${RELEASE_TAG}
 export GPG_SIGN_PASS=${SIGN_KEY_PASS}
 export V_USER=${VUSER}
 
-$GOPATH/bin/vbuild --os=windows --arch=x86 --zip --sign
-$GOPATH/bin/vbuild --os=windows --arch=x64 --zip --sign
-$GOPATH/bin/vbuild --os=macos --arch=x64 --zip --sign
-$GOPATH/bin/vbuild --os=linux --arch=x86 --zip --sign
-$GOPATH/bin/vbuild --os=linux --arch=x64 --zip --sign
-$GOPATH/bin/vbuild --os=linux --arch=arm --zip --sign
-$GOPATH/bin/vbuild --os=linux --arch=arm64 --zip --sign
-$GOPATH/bin/vbuild --os=linux --arch=mips64 --zip --sign
-$GOPATH/bin/vbuild --os=linux --arch=mips64le --zip --sign
-$GOPATH/bin/vbuild --os=linux --arch=mips --zip --sign
-$GOPATH/bin/vbuild --os=linux --arch=mipsle --zip --sign
-$GOPATH/bin/vbuild --os=freebsd --arch=x86 --zip --sign
-$GOPATH/bin/vbuild --os=freebsd --arch=amd64 --zip --sign
-$GOPATH/bin/vbuild --os=openbsd --arch=x86 --zip --sign
-$GOPATH/bin/vbuild --os=openbsd --arch=amd64 --zip --sign
+$GOPATH/bin/vbuild --os=windows --arch=x86 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=windows --arch=x64 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=macos --arch=x64 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=linux --arch=x86 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=linux --arch=x64 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=linux --arch=arm --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=linux --arch=arm64 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=linux --arch=mips64 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=linux --arch=mips64le --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=linux --arch=mips --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=linux --arch=mipsle --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=freebsd --arch=x86 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=freebsd --arch=amd64 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=openbsd --arch=x86 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=openbsd --arch=amd64 --zip --sign #--encrypt
 
-JSON_DATA=$(printf '{"tag_name": "%s", "prerelease": %s}' ${RELEASE_TAG} ${PRERELEASE})
+#RELBODY=$(cat $GOPATH/bin/metadata.txt | jq -R -s -c .)
+JSON_DATA=$(echo "{}" | jq -c ".tag_name=\"${RELEASE_TAG}\"")
+JSON_DATA=$(echo ${JSON_DATA} | jq -c ".prerelease=${PRERELEASE}")
+#JSON_DATA=$(echo ${JSON_DATA} | jq -c ".body=${RELBODY}")
 RELEASE_ID=$(curl --data "${JSON_DATA}" -H "Authorization: token ${GITHUB_TOKEN}" -X POST https://api.github.com/repos/v2ray/v2ray-core/releases | jq ".id")
 
 function upload() {
@@ -86,6 +89,21 @@ upload $GOPATH/bin/v2ray-freebsd-32.zip
 upload $GOPATH/bin/v2ray-openbsd-64.zip
 upload $GOPATH/bin/v2ray-openbsd-32.zip
 upload $GOPATH/bin/metadata.txt
+#upload $GOPATH/bin/vencrypted-macos.7z
+#upload $GOPATH/bin/vencrypted-windows-64.7z
+#upload $GOPATH/bin/vencrypted-windows-32.7z
+#upload $GOPATH/bin/vencrypted-linux-64.7z
+#upload $GOPATH/bin/vencrypted-linux-32.7z
+#upload $GOPATH/bin/vencrypted-linux-arm.7z
+#upload $GOPATH/bin/vencrypted-linux-arm64.7z
+#upload $GOPATH/bin/vencrypted-linux-mips64.7z
+#upload $GOPATH/bin/vencrypted-linux-mips64le.7z
+#upload $GOPATH/bin/vencrypted-linux-mips.7z
+#upload $GOPATH/bin/vencrypted-linux-mipsle.7z
+#upload $GOPATH/bin/vencrypted-freebsd-64.7z
+#upload $GOPATH/bin/vencrypted-freebsd-32.7z
+#upload $GOPATH/bin/vencrypted-openbsd-64.7z
+#upload $GOPATH/bin/vencrypted-openbsd-32.7z
 
 if [[ "${PRERELEASE}" == "false" ]]; then
 

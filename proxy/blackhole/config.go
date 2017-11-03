@@ -1,6 +1,7 @@
 package blackhole
 
 import (
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/serial"
 )
@@ -27,7 +28,7 @@ func (*NoneResponse) WriteTo(buf.Writer) {}
 // WriteTo implements ResponseConfig.WriteTo().
 func (*HTTPResponse) WriteTo(writer buf.Writer) {
 	b := buf.NewLocal(512)
-	b.AppendSupplier(serial.WriteString(http403response))
+	common.Must(b.AppendSupplier(serial.WriteString(http403response)))
 	writer.Write(buf.NewMultiBufferValue(b))
 }
 

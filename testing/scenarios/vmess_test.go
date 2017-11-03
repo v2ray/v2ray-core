@@ -2,7 +2,6 @@ package scenarios
 
 import (
 	"crypto/rand"
-	"net"
 	"sync"
 	"testing"
 	"time"
@@ -10,7 +9,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/uuid"
@@ -19,30 +18,36 @@ import (
 	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/inbound"
 	"v2ray.com/core/proxy/vmess/outbound"
-	"v2ray.com/core/testing/assert"
 	"v2ray.com/core/testing/servers/tcp"
 	"v2ray.com/core/testing/servers/udp"
 	"v2ray.com/core/transport/internet"
+	. "v2ray.com/ext/assert"
 )
 
 func TestVMessDynamicPort(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
 	serverPort := pickPort()
 	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
@@ -59,11 +64,11 @@ func TestVMessDynamicPort(t *testing.T) {
 			},
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: &v2net.PortRange{
+					PortRange: &net.PortRange{
 						From: uint32(serverPort + 1),
 						To:   uint32(serverPort + 100),
 					},
-					Listen: v2net.NewIPOrDomain(v2net.LocalHostIP),
+					Listen: net.NewIPOrDomain(net.LocalHostIP),
 					AllocationStrategy: &proxyman.AllocationStrategy{
 						Type: proxyman.AllocationStrategy_Random,
 						Concurrency: &proxyman.AllocationStrategy_AllocationStrategyConcurrency{
@@ -83,27 +88,27 @@ func TestVMessDynamicPort(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
+	}
+
+	clientPort := pickPort()
+	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
 				ErrorLogLevel: log.LogLevel_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-	}
-
-	clientPort := pickPort()
-	clientConfig := &core.Config{
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
@@ -113,7 +118,7 @@ func TestVMessDynamicPort(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -127,57 +132,57 @@ func TestVMessDynamicPort(t *testing.T) {
 				}),
 			},
 		},
-		App: []*serial.TypedMessage{
-			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
-				ErrorLogType:  log.LogType_Console,
-			}),
-		},
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	for i := 0; i < 10; i++ {
 		conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 			IP:   []byte{127, 0, 0, 1},
 			Port: int(clientPort),
 		})
-		assert.Error(err).IsNil()
+		assert(err, IsNil)
 
 		payload := "dokodemo request."
 		nBytes, err := conn.Write([]byte(payload))
-		assert.Error(err).IsNil()
-		assert.Int(nBytes).Equals(len(payload))
+		assert(err, IsNil)
+		assert(nBytes, Equals, len(payload))
 
 		response := make([]byte, 1024)
 		nBytes, err = conn.Read(response)
-		assert.Error(err).IsNil()
-		assert.Bytes(response[:nBytes]).Equals(xor([]byte(payload)))
-		assert.Error(conn.Close()).IsNil()
+		assert(err, IsNil)
+		assert(response[:nBytes], Equals, xor([]byte(payload)))
+		assert(conn.Close(), IsNil)
 	}
 
 	CloseAllServers(servers)
 }
 
 func TestVMessGCM(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
 	serverPort := pickPort()
 	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
@@ -196,27 +201,27 @@ func TestVMessGCM(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
+	}
+
+	clientPort := pickPort()
+	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
 				ErrorLogLevel: log.LogLevel_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-	}
-
-	clientPort := pickPort()
-	clientConfig := &core.Config{
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
@@ -226,7 +231,7 @@ func TestVMessGCM(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -244,16 +249,10 @@ func TestVMessGCM(t *testing.T) {
 				}),
 			},
 		},
-		App: []*serial.TypedMessage{
-			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
-				ErrorLogType:  log.LogType_Console,
-			}),
-		},
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -263,18 +262,18 @@ func TestVMessGCM(t *testing.T) {
 				IP:   []byte{127, 0, 0, 1},
 				Port: int(clientPort),
 			})
-			assert.Error(err).IsNil()
+			assert(err, IsNil)
 
 			payload := make([]byte, 10240*1024)
 			rand.Read(payload)
 
 			nBytes, err := conn.Write([]byte(payload))
-			assert.Error(err).IsNil()
-			assert.Int(nBytes).Equals(len(payload))
+			assert(err, IsNil)
+			assert(nBytes, Equals, len(payload))
 
 			response := readFrom(conn, time.Second*20, 10240*1024)
-			assert.Bytes(response).Equals(xor([]byte(payload)))
-			assert.Error(conn.Close()).IsNil()
+			assert(response, Equals, xor([]byte(payload)))
+			assert(conn.Close(), IsNil)
 			wg.Done()
 		}()
 	}
@@ -284,23 +283,29 @@ func TestVMessGCM(t *testing.T) {
 }
 
 func TestVMessGCMUDP(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	udpServer := udp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := udpServer.Start()
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	defer udpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
 	serverPort := pickPort()
 	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
@@ -319,27 +324,27 @@ func TestVMessGCMUDP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
+	}
+
+	clientPort := pickPort()
+	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
 				ErrorLogLevel: log.LogLevel_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-	}
-
-	clientPort := pickPort()
-	clientConfig := &core.Config{
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_UDP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_UDP},
 					},
 				}),
 			},
@@ -349,7 +354,7 @@ func TestVMessGCMUDP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -367,16 +372,10 @@ func TestVMessGCMUDP(t *testing.T) {
 				}),
 			},
 		},
-		App: []*serial.TypedMessage{
-			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
-				ErrorLogType:  log.LogType_Console,
-			}),
-		},
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -386,28 +385,28 @@ func TestVMessGCMUDP(t *testing.T) {
 				IP:   []byte{127, 0, 0, 1},
 				Port: int(clientPort),
 			})
-			assert.Error(err).IsNil()
+			assert(err, IsNil)
 
 			payload := make([]byte, 1024)
 			rand.Read(payload)
 
 			nBytes, err := conn.Write([]byte(payload))
-			assert.Error(err).IsNil()
-			assert.Int(nBytes).Equals(len(payload))
+			assert(err, IsNil)
+			assert(nBytes, Equals, len(payload))
 
 			payload1 := make([]byte, 1024)
 			rand.Read(payload1)
 			nBytes, err = conn.Write([]byte(payload1))
-			assert.Error(err).IsNil()
-			assert.Int(nBytes).Equals(len(payload1))
+			assert(err, IsNil)
+			assert(nBytes, Equals, len(payload1))
 
 			response := readFrom(conn, time.Second*5, 1024)
-			assert.Bytes(response).Equals(xor([]byte(payload)))
+			assert(response, Equals, xor([]byte(payload)))
 
 			response = readFrom(conn, time.Second*5, 1024)
-			assert.Bytes(response).Equals(xor([]byte(payload1)))
+			assert(response, Equals, xor([]byte(payload1)))
 
-			assert.Error(conn.Close()).IsNil()
+			assert(conn.Close(), IsNil)
 			wg.Done()
 		}()
 	}
@@ -417,23 +416,29 @@ func TestVMessGCMUDP(t *testing.T) {
 }
 
 func TestVMessChacha20(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
 	serverPort := pickPort()
 	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
@@ -452,27 +457,27 @@ func TestVMessChacha20(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
+	}
+
+	clientPort := pickPort()
+	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
 				ErrorLogLevel: log.LogLevel_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-	}
-
-	clientPort := pickPort()
-	clientConfig := &core.Config{
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
@@ -482,7 +487,7 @@ func TestVMessChacha20(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -500,16 +505,10 @@ func TestVMessChacha20(t *testing.T) {
 				}),
 			},
 		},
-		App: []*serial.TypedMessage{
-			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
-				ErrorLogType:  log.LogType_Console,
-			}),
-		},
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -519,18 +518,18 @@ func TestVMessChacha20(t *testing.T) {
 				IP:   []byte{127, 0, 0, 1},
 				Port: int(clientPort),
 			})
-			assert.Error(err).IsNil()
+			assert(err, IsNil)
 
 			payload := make([]byte, 10240*1024)
 			rand.Read(payload)
 
 			nBytes, err := conn.Write([]byte(payload))
-			assert.Error(err).IsNil()
-			assert.Int(nBytes).Equals(len(payload))
+			assert(err, IsNil)
+			assert(nBytes, Equals, len(payload))
 
 			response := readFrom(conn, time.Second*20, 10240*1024)
-			assert.Bytes(response).Equals(xor([]byte(payload)))
-			assert.Error(conn.Close()).IsNil()
+			assert(response, Equals, xor([]byte(payload)))
+			assert(conn.Close(), IsNil)
 			wg.Done()
 		}()
 	}
@@ -540,23 +539,29 @@ func TestVMessChacha20(t *testing.T) {
 }
 
 func TestVMessNone(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
 	serverPort := pickPort()
 	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
@@ -575,27 +580,27 @@ func TestVMessNone(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
+	}
+
+	clientPort := pickPort()
+	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
 				ErrorLogLevel: log.LogLevel_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-	}
-
-	clientPort := pickPort()
-	clientConfig := &core.Config{
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
@@ -605,7 +610,7 @@ func TestVMessNone(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -623,16 +628,10 @@ func TestVMessNone(t *testing.T) {
 				}),
 			},
 		},
-		App: []*serial.TypedMessage{
-			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
-				ErrorLogType:  log.LogType_Console,
-			}),
-		},
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -642,18 +641,18 @@ func TestVMessNone(t *testing.T) {
 				IP:   []byte{127, 0, 0, 1},
 				Port: int(clientPort),
 			})
-			assert.Error(err).IsNil()
+			assert(err, IsNil)
 
 			payload := make([]byte, 1024*1024)
 			rand.Read(payload)
 
 			nBytes, err := conn.Write(payload)
-			assert.Error(err).IsNil()
-			assert.Int(nBytes).Equals(len(payload))
+			assert(err, IsNil)
+			assert(nBytes, Equals, len(payload))
 
 			response := readFrom(conn, time.Second*20, 1024*1024)
-			assert.Bytes(response).Equals(xor(payload))
-			assert.Error(conn.Close()).IsNil()
+			assert(response, Equals, xor(payload))
+			assert(conn.Close(), IsNil)
 			wg.Done()
 		}()
 	}
@@ -663,23 +662,29 @@ func TestVMessNone(t *testing.T) {
 }
 
 func TestVMessKCP(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
 	serverPort := pickUDPPort()
 	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 					StreamSettings: &internet.StreamConfig{
 						Protocol: internet.TransportProtocol_MKCP,
 					},
@@ -701,27 +706,27 @@ func TestVMessKCP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
+	}
+
+	clientPort := pickPort()
+	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
 				ErrorLogLevel: log.LogLevel_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-	}
-
-	clientPort := pickPort()
-	clientConfig := &core.Config{
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
@@ -731,7 +736,7 @@ func TestVMessKCP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -754,16 +759,10 @@ func TestVMessKCP(t *testing.T) {
 				}),
 			},
 		},
-		App: []*serial.TypedMessage{
-			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
-				ErrorLogType:  log.LogType_Console,
-			}),
-		},
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	var wg sync.WaitGroup
 	for i := 0; i < 10; i++ {
@@ -773,18 +772,18 @@ func TestVMessKCP(t *testing.T) {
 				IP:   []byte{127, 0, 0, 1},
 				Port: int(clientPort),
 			})
-			assert.Error(err).IsNil()
+			assert(err, IsNil)
 
 			payload := make([]byte, 10240*1024)
 			rand.Read(payload)
 
 			nBytes, err := conn.Write(payload)
-			assert.Error(err).IsNil()
-			assert.Int(nBytes).Equals(len(payload))
+			assert(err, IsNil)
+			assert(nBytes, Equals, len(payload))
 
 			response := readFrom(conn, time.Minute, 10240*1024)
-			assert.Bytes(response).Equals(xor(payload))
-			assert.Error(conn.Close()).IsNil()
+			assert(response, Equals, xor(payload))
+			assert(conn.Close(), IsNil)
 			wg.Done()
 		}()
 	}
@@ -795,24 +794,30 @@ func TestVMessKCP(t *testing.T) {
 
 func TestVMessIPv6(t *testing.T) {
 	t.SkipNow() // No IPv6 on travis-ci.
-	assert := assert.On(t)
+	assert := With(t)
 
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
-		Listen:       v2net.LocalHostIPv6,
+		Listen:       net.LocalHostIPv6,
 	}
 	dest, err := tcpServer.Start()
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
 	serverPort := pickPort()
 	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIPv6),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIPv6),
 				}),
 				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
@@ -831,27 +836,27 @@ func TestVMessIPv6(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
+	}
+
+	clientPort := pickPort()
+	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
 				ErrorLogLevel: log.LogLevel_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-	}
-
-	clientPort := pickPort()
-	clientConfig := &core.Config{
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIPv6),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIPv6),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
@@ -861,7 +866,7 @@ func TestVMessIPv6(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIPv6),
+							Address: net.NewIPOrDomain(net.LocalHostIPv6),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -879,55 +884,55 @@ func TestVMessIPv6(t *testing.T) {
 				}),
 			},
 		},
+	}
+
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert(err, IsNil)
+
+	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
+		IP:   net.LocalHostIPv6.IP(),
+		Port: int(clientPort),
+	})
+	assert(err, IsNil)
+
+	payload := make([]byte, 1024)
+	rand.Read(payload)
+
+	nBytes, err := conn.Write(payload)
+	assert(err, IsNil)
+	assert(nBytes, Equals, len(payload))
+
+	response := readFrom(conn, time.Second*20, 1024)
+	assert(response, Equals, xor(payload))
+	assert(conn.Close(), IsNil)
+
+	CloseAllServers(servers)
+}
+
+func TestVMessGCMMux(t *testing.T) {
+	assert := With(t)
+
+	tcpServer := tcp.Server{
+		MsgProcessor: xor,
+	}
+	dest, err := tcpServer.Start()
+	assert(err, IsNil)
+	defer tcpServer.Close()
+
+	userID := protocol.NewID(uuid.New())
+	serverPort := pickPort()
+	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
 				ErrorLogLevel: log.LogLevel_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-	}
-
-	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert.Error(err).IsNil()
-
-	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-		IP:   v2net.LocalHostIPv6.IP(),
-		Port: int(clientPort),
-	})
-	assert.Error(err).IsNil()
-
-	payload := make([]byte, 1024)
-	rand.Read(payload)
-
-	nBytes, err := conn.Write(payload)
-	assert.Error(err).IsNil()
-	assert.Int(nBytes).Equals(len(payload))
-
-	response := readFrom(conn, time.Second*20, 1024)
-	assert.Bytes(response).Equals(xor(payload))
-	assert.Error(conn.Close()).IsNil()
-
-	CloseAllServers(servers)
-}
-
-func TestVMessGCMMux(t *testing.T) {
-	assert := assert.On(t)
-
-	tcpServer := tcp.Server{
-		MsgProcessor: xor,
-	}
-	dest, err := tcpServer.Start()
-	assert.Error(err).IsNil()
-	defer tcpServer.Close()
-
-	userID := protocol.NewID(uuid.New())
-	serverPort := pickPort()
-	serverConfig := &core.Config{
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
@@ -946,27 +951,27 @@ func TestVMessGCMMux(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
+	}
+
+	clientPort := pickPort()
+	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
 				ErrorLogLevel: log.LogLevel_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-	}
-
-	clientPort := pickPort()
-	clientConfig := &core.Config{
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
@@ -982,7 +987,7 @@ func TestVMessGCMMux(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -1000,16 +1005,10 @@ func TestVMessGCMMux(t *testing.T) {
 				}),
 			},
 		},
-		App: []*serial.TypedMessage{
-			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
-				ErrorLogType:  log.LogType_Console,
-			}),
-		},
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	for range "abcd" {
 		var wg sync.WaitGroup
@@ -1021,7 +1020,7 @@ func TestVMessGCMMux(t *testing.T) {
 					IP:   []byte{127, 0, 0, 1},
 					Port: int(clientPort),
 				})
-				assert.Error(err).IsNil()
+				assert(err, IsNil)
 
 				payload := make([]byte, 10240)
 				rand.Read(payload)
@@ -1029,12 +1028,12 @@ func TestVMessGCMMux(t *testing.T) {
 				xorpayload := xor(payload)
 
 				nBytes, err := conn.Write(payload)
-				assert.Error(err).IsNil()
-				assert.Int(nBytes).Equals(len(payload))
+				assert(err, IsNil)
+				assert(nBytes, Equals, len(payload))
 
 				response := readFrom(conn, time.Second*20, 10240)
-				assert.Bytes(response).Equals(xorpayload)
-				assert.Error(conn.Close()).IsNil()
+				assert(response, Equals, xorpayload)
+				assert(conn.Close(), IsNil)
 				wg.Done()
 			}()
 		}
@@ -1046,30 +1045,36 @@ func TestVMessGCMMux(t *testing.T) {
 }
 
 func TestVMessGCMMuxUDP(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	defer tcpServer.Close()
 
 	udpServer := udp.Server{
 		MsgProcessor: xor,
 	}
 	udpDest, err := udpServer.Start()
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	defer udpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
 	serverPort := pickPort()
 	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(serverPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&inbound.Config{
 					User: []*protocol.User{
@@ -1088,41 +1093,41 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
+	}
+
+	clientPort := pickPort()
+	clientUDPPort := pickUDPPort()
+	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
 				ErrorLogLevel: log.LogLevel_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-	}
-
-	clientPort := pickPort()
-	clientUDPPort := pickUDPPort()
-	clientConfig := &core.Config{
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(dest.Address),
+					Address: net.NewIPOrDomain(dest.Address),
 					Port:    uint32(dest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_TCP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
 					},
 				}),
 			},
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
-					PortRange: v2net.SinglePortRange(clientUDPPort),
-					Listen:    v2net.NewIPOrDomain(v2net.LocalHostIP),
+					PortRange: net.SinglePortRange(clientUDPPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
 				}),
 				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
-					Address: v2net.NewIPOrDomain(udpDest.Address),
+					Address: net.NewIPOrDomain(udpDest.Address),
 					Port:    uint32(udpDest.Port),
-					NetworkList: &v2net.NetworkList{
-						Network: []v2net.Network{v2net.Network_UDP},
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_UDP},
 					},
 				}),
 			},
@@ -1138,7 +1143,7 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
 						{
-							Address: v2net.NewIPOrDomain(v2net.LocalHostIP),
+							Address: net.NewIPOrDomain(net.LocalHostIP),
 							Port:    uint32(serverPort),
 							User: []*protocol.User{
 								{
@@ -1156,16 +1161,10 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 				}),
 			},
 		},
-		App: []*serial.TypedMessage{
-			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
-				ErrorLogType:  log.LogType_Console,
-			}),
-		},
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	for range "abcd" {
 		var wg sync.WaitGroup
@@ -1177,7 +1176,7 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 					IP:   []byte{127, 0, 0, 1},
 					Port: int(clientPort),
 				})
-				assert.Error(err).IsNil()
+				assert(err, IsNil)
 
 				payload := make([]byte, 10240)
 				rand.Read(payload)
@@ -1185,12 +1184,12 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 				xorpayload := xor(payload)
 
 				nBytes, err := conn.Write(payload)
-				assert.Error(err).IsNil()
-				assert.Int(nBytes).Equals(len(payload))
+				assert(err, IsNil)
+				assert(nBytes, Equals, len(payload))
 
 				response := readFrom(conn, time.Second*20, 10240)
-				assert.Bytes(response).Equals(xorpayload)
-				assert.Error(conn.Close()).IsNil()
+				assert(response, Equals, xorpayload)
+				assert(conn.Close(), IsNil)
 				wg.Done()
 			}()
 		}
@@ -1200,7 +1199,7 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 					IP:   []byte{127, 0, 0, 1},
 					Port: int(clientUDPPort),
 				})
-				assert.Error(err).IsNil()
+				assert(err, IsNil)
 
 				conn.SetDeadline(time.Now().Add(time.Second * 10))
 
@@ -1211,20 +1210,20 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 
 				for j := 0; j < 2; j++ {
 					nBytes, _, err := conn.WriteMsgUDP(payload, nil, nil)
-					assert.Error(err).IsNil()
-					assert.Int(nBytes).Equals(len(payload))
+					assert(err, IsNil)
+					assert(nBytes, Equals, len(payload))
 				}
 
 				response := make([]byte, 1024)
 				oob := make([]byte, 16)
 				for j := 0; j < 2; j++ {
 					nBytes, _, _, _, err := conn.ReadMsgUDP(response, oob)
-					assert.Error(err).IsNil()
-					assert.Int(nBytes).Equals(1024)
-					assert.Bytes(response).Equals(xorpayload)
+					assert(err, IsNil)
+					assert(nBytes, Equals, 1024)
+					assert(response, Equals, xorpayload)
 				}
 
-				assert.Error(conn.Close()).IsNil()
+				assert(conn.Close(), IsNil)
 				wg.Done()
 			}()
 		}

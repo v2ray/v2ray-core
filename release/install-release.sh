@@ -284,6 +284,9 @@ remove(){
             colorEcho ${GREEN} "If necessary, please remove configuration file and log file manually."
             exit
         fi       
+    else
+        colorEcho ${GREEN} "V2Ray not found."
+        exit
     fi
 }
 

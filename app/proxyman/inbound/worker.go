@@ -3,7 +3,6 @@ package inbound
 import (
 	"context"
 	"io"
-	"net"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -12,7 +11,7 @@ import (
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common/buf"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tcp"
@@ -22,13 +21,13 @@ import (
 type worker interface {
 	Start() error
 	Close()
-	Port() v2net.Port
+	Port() net.Port
 	Proxy() proxy.Inbound
 }
 
 type tcpWorker struct {
-	address      v2net.Address
-	port         v2net.Port
+	address      net.Address
+	port         net.Port
 	proxy        proxy.Inbound
 	stream       *internet.StreamConfig
 	recvOrigDest bool
@@ -55,12 +54,12 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 	if len(w.tag) > 0 {
 		ctx = proxy.ContextWithInboundTag(ctx, w.tag)
 	}
-	ctx = proxy.ContextWithInboundEntryPoint(ctx, v2net.TCPDestination(w.address, w.port))
-	ctx = proxy.ContextWithSource(ctx, v2net.DestinationFromAddr(conn.RemoteAddr()))
+	ctx = proxy.ContextWithInboundEntryPoint(ctx, net.TCPDestination(w.address, w.port))
+	ctx = proxy.ContextWithSource(ctx, net.DestinationFromAddr(conn.RemoteAddr()))
 	if len(w.sniffers) > 0 {
 		ctx = proxyman.ContextWithProtocolSniffers(ctx, w.sniffers)
 	}
-	if err := w.proxy.Process(ctx, v2net.Network_TCP, conn, w.dispatcher); err != nil {
+	if err := w.proxy.Process(ctx, net.Network_TCP, conn, w.dispatcher); err != nil {
 		log.Trace(newError("connection ends").Base(err))
 	}
 	cancel()
@@ -79,7 +78,7 @@ func (w *tcpWorker) Start() error {
 	conns := make(chan internet.Connection, 16)
 	hub, err := internet.ListenTCP(ctx, w.address, w.port, conns)
 	if err != nil {
-		return err
+		return newError("failed to listen TCP on ", w.port).Base(err)
 	}
 	go w.handleConnections(conns)
 	w.hub = hub
@@ -113,7 +112,7 @@ func (w *tcpWorker) Close() {
 	}
 }
 
-func (w *tcpWorker) Port() v2net.Port {
+func (w *tcpWorker) Port() net.Port {
 	return w.port
 }
 
@@ -173,52 +172,61 @@ func (*udpConn) SetWriteDeadline(time.Time) error {
 	return nil
 }
 
+type connId struct {
+	src  net.Destination
+	dest net.Destination
+}
+
 type udpWorker struct {
 	sync.RWMutex
 
 	proxy        proxy.Inbound
 	hub          *udp.Hub
-	address      v2net.Address
-	port         v2net.Port
+	address      net.Address
+	port         net.Port
 	recvOrigDest bool
 	tag          string
 	dispatcher   dispatcher.Interface
 
 	ctx        context.Context
 	cancel     context.CancelFunc
-	activeConn map[v2net.Destination]*udpConn
+	activeConn map[connId]*udpConn
 }
 
-func (w *udpWorker) getConnection(src v2net.Destination) (*udpConn, bool) {
+func (w *udpWorker) getConnection(id connId) (*udpConn, bool) {
 	w.Lock()
 	defer w.Unlock()
 
-	if conn, found := w.activeConn[src]; found {
+	if conn, found := w.activeConn[id]; found {
 		return conn, true
 	}
 
 	conn := &udpConn{
 		input: make(chan *buf.Buffer, 32),
 		output: func(b []byte) (int, error) {
-			return w.hub.WriteTo(b, src)
+			return w.hub.WriteTo(b, id.src)
 		},
 		remote: &net.UDPAddr{
-			IP:   src.Address.IP(),
-			Port: int(src.Port),
+			IP:   id.src.Address.IP(),
+			Port: int(id.src.Port),
 		},
 		local: &net.UDPAddr{
 			IP:   w.address.IP(),
 			Port: int(w.port),
 		},
 	}
-	w.activeConn[src] = conn
+	w.activeConn[id] = conn
 
 	conn.updateActivity()
 	return conn, false
 }
 
-func (w *udpWorker) callback(b *buf.Buffer, source v2net.Destination, originalDest v2net.Destination) {
-	conn, existing := w.getConnection(source)
+func (w *udpWorker) callback(b *buf.Buffer, source net.Destination, originalDest net.Destination) {
+	id := connId{
+		src:  source,
+		dest: originalDest,
+	}
+	conn, existing := w.getConnection(id)
 	select {
 	case conn.input <- b:
 	default:
@@ -237,24 +245,24 @@ func (w *udpWorker) callback(b *buf.Buffer, source v2net.Destination, originalDe
 				ctx = proxy.ContextWithInboundTag(ctx, w.tag)
 			}
 			ctx = proxy.ContextWithSource(ctx, source)
-			ctx = proxy.ContextWithInboundEntryPoint(ctx, v2net.UDPDestination(w.address, w.port))
-			if err := w.proxy.Process(ctx, v2net.Network_UDP, conn, w.dispatcher); err != nil {
+			ctx = proxy.ContextWithInboundEntryPoint(ctx, net.UDPDestination(w.address, w.port))
+			if err := w.proxy.Process(ctx, net.Network_UDP, conn, w.dispatcher); err != nil {
 				log.Trace(newError("connection ends").Base(err))
 			}
-			w.removeConn(source)
+			w.removeConn(id)
 			cancel()
 		}()
 	}
 }
 
-func (w *udpWorker) removeConn(src v2net.Destination) {
+func (w *udpWorker) removeConn(id connId) {
 	w.Lock()
-	delete(w.activeConn, src)
+	delete(w.activeConn, id)
 	w.Unlock()
 }
 
 func (w *udpWorker) Start() error {
-	w.activeConn = make(map[v2net.Destination]*udpConn)
+	w.activeConn = make(map[connId]*udpConn, 16)
 	ctx, cancel := context.WithCancel(context.Background())
 	w.ctx = ctx
 	w.cancel = cancel
@@ -299,7 +307,7 @@ func (w *udpWorker) monitor() {
 	}
 }
 
-func (w *udpWorker) Port() v2net.Port {
+func (w *udpWorker) Port() net.Port {
 	return w.port
 }
 

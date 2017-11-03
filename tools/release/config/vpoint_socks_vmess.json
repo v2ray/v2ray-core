@@ -18,7 +18,7 @@
       "vnext": [
         {
           "address": "v2ray.cool",
-          "port": 10086,
+          "port": 443,
           "users": [
             {
               "id": "a3482e88-686a-4a58-8126-99c9df64b7bf",
@@ -31,6 +31,17 @@
     },
     "mux": {
       "enabled": true
+    },
+    "streamSettings": {
+      "network": "ws",
+      "security": "tls",
+      "tlsSettings": {
+        "serverName": "v2ray.cool",
+        "allowInsecure": true
+      },
+      "wsSettings": {
+        "path": "/v2ray.cool/"
+      }
     }
   },
   "outboundDetour": [
@@ -73,7 +84,8 @@
           "outboundTag": "direct"
         },
         {
-          "type": "chinasites",
+          "type": "field",
+          "domain": ["geosite:cn"],
           "outboundTag": "direct"
         },
         {
@@ -93,12 +105,9 @@
             "203.0.113.0/24",
             "::1/128",
             "fc00::/7",
-            "fe80::/10"
+            "fe80::/10",
+            "geoip:cn"
           ],
-          "outboundTag": "direct"
-        },
-        {
-          "type": "chinaip",
           "outboundTag": "direct"
         }
       ]

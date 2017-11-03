@@ -21,33 +21,33 @@ func NewBufferedReader(rawReader io.Reader) *BufferedReader {
 }
 
 // IsBuffered returns true if the internal cache is effective.
-func (v *BufferedReader) IsBuffered() bool {
-	return v.buffered
+func (r *BufferedReader) IsBuffered() bool {
+	return r.buffered
 }
 
 // SetBuffered is to enable or disable internal cache. If cache is disabled,
 // Read() calls will be delegated to the underlying io.Reader directly.
-func (v *BufferedReader) SetBuffered(cached bool) {
-	v.buffered = cached
+func (r *BufferedReader) SetBuffered(cached bool) {
+	r.buffered = cached
 }
 
 // Read implements io.Reader.Read().
-func (v *BufferedReader) Read(b []byte) (int, error) {
-	if !v.buffered || v.buffer == nil {
-		if !v.buffer.IsEmpty() {
-			return v.buffer.Read(b)
+func (r *BufferedReader) Read(b []byte) (int, error) {
+	if !r.buffered || r.buffer == nil {
+		if !r.buffer.IsEmpty() {
+			return r.buffer.Read(b)
 		}
-		return v.reader.Read(b)
+		return r.reader.Read(b)
 	}
-	if v.buffer.IsEmpty() {
-		if err := v.buffer.Reset(ReadFrom(v.reader)); err != nil {
+	if r.buffer.IsEmpty() {
+		if err := r.buffer.Reset(ReadFrom(r.reader)); err != nil {
 			return 0, err
 		}
 	}
 
-	if v.buffer.IsEmpty() {
+	if r.buffer.IsEmpty() {
 		return 0, nil
 	}
 
-	return v.buffer.Read(b)
+	return r.buffer.Read(b)
 }
