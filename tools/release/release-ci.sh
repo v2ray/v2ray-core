@@ -109,25 +109,9 @@ if [[ "${PRERELEASE}" == "false" ]]; then
 
 INSTALL_DIR=/v2ray/src/github.com/v2ray/install
 
-git clone "https://github.com/v2ray/install.git" ${INSTALL_DIR}
-
-#RELEASE_DIR=${INSTALL_DIR}/releases/${RELEASE_TAG}
-#mkdir -p ${RELEASE_DIR}/
-#cp $GOPATH/bin/metadata.txt ${RELEASE_DIR}/
-#cp $GOPATH/bin/v2ray-*.zip ${RELEASE_DIR}/
-#echo ${RELEASE_TAG} > ${INSTALL_DIR}/releases/latest.txt
-
-cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/v2ray ${INSTALL_DIR}/docker/official/
-cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/v2ctl ${INSTALL_DIR}/docker/official/
-cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/geoip.dat ${INSTALL_DIR}/docker/official/
-
-pushd ${INSTALL_DIR}
-git config user.name "V2Ray Auto Build"
-git config user.email "admin@v2ray.com"
-git add -A
-git commit -m "Update for ${RELEASE_TAG}"
-git push "https://${GITHUB_TOKEN}@github.com/v2ray/install.git" master
-popd
+gsutil cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/v2ray gs://v2ray-docker/
+gsutil cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/v2ctl gs://v2ray-docker/
+gsutil cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/geoip.dat gs://v2ray-docker/
 
 DOCKER_HUB_API=https://registry.hub.docker.com/u/v2ray/official/trigger/${DOCKER_HUB_KEY}/
 curl -H "Content-Type: application/json" --data '{"build": true}' -X POST "${DOCKER_HUB_API}"
