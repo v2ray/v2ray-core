@@ -89,25 +89,8 @@ upload $GOPATH/bin/v2ray-freebsd-32.zip
 upload $GOPATH/bin/v2ray-openbsd-64.zip
 upload $GOPATH/bin/v2ray-openbsd-32.zip
 upload $GOPATH/bin/metadata.txt
-#upload $GOPATH/bin/vencrypted-macos.7z
-#upload $GOPATH/bin/vencrypted-windows-64.7z
-#upload $GOPATH/bin/vencrypted-windows-32.7z
-#upload $GOPATH/bin/vencrypted-linux-64.7z
-#upload $GOPATH/bin/vencrypted-linux-32.7z
-#upload $GOPATH/bin/vencrypted-linux-arm.7z
-#upload $GOPATH/bin/vencrypted-linux-arm64.7z
-#upload $GOPATH/bin/vencrypted-linux-mips64.7z
-#upload $GOPATH/bin/vencrypted-linux-mips64le.7z
-#upload $GOPATH/bin/vencrypted-linux-mips.7z
-#upload $GOPATH/bin/vencrypted-linux-mipsle.7z
-#upload $GOPATH/bin/vencrypted-freebsd-64.7z
-#upload $GOPATH/bin/vencrypted-freebsd-32.7z
-#upload $GOPATH/bin/vencrypted-openbsd-64.7z
-#upload $GOPATH/bin/vencrypted-openbsd-32.7z
 
 if [[ "${PRERELEASE}" == "false" ]]; then
-
-INSTALL_DIR=/v2ray/src/github.com/v2ray/install
 
 gsutil cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/v2ray gs://v2ray-docker/
 gsutil cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/v2ctl gs://v2ray-docker/
