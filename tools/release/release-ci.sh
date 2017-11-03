@@ -118,6 +118,8 @@ git clone "https://github.com/v2ray/install.git" ${INSTALL_DIR}
 #echo ${RELEASE_TAG} > ${INSTALL_DIR}/releases/latest.txt
 
 cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/v2ray ${INSTALL_DIR}/docker/official/
+cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/v2ctl ${INSTALL_DIR}/docker/official/
+cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/geoip.dat ${INSTALL_DIR}/docker/official/
 
 pushd ${INSTALL_DIR}
 git config user.name "V2Ray Auto Build"
