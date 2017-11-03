@@ -73,7 +73,7 @@ sysAcrh(){
         VDIS="32"
     elif [[ "$ARCH" == *"armv7"* ]] || [[ "$ARCH" == "armv6l" ]]; then
         VDIS="arm"
-    elif [[ "$ARCH" == *"armv8"* ]]; then
+    elif [[ "$ARCH" == *"armv8"* ]] || [[ "$ARCH" == "aarch64" ]]; then
         VDIS="arm64"
     fi
     return 0
