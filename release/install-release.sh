@@ -67,7 +67,7 @@ colorEcho(){
     echo -e "\033[${COLOR}${@:2}\033[0m"
 }
 
-sysAcrh(){
+sysArch(){
     ARCH=$(uname -m)
     if [[ "$ARCH" == "i686" ]] || [[ "$ARCH" == "i386" ]]; then
         VDIS="32"
@@ -320,7 +320,7 @@ main(){
     [[ "$CHECK" == "1" ]] && checkUpdate
     [[ "$REMOVE" == "1" ]] && remove
     
-    sysAcrh
+    sysArch
     # extract local file
     if [[ $LOCAL_INSTALL -eq 1 ]]; then
         echo "Install V2Ray via local file"
