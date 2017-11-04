@@ -1,6 +1,10 @@
 package buf
 
-import "io"
+import (
+	"io"
+
+	"v2ray.com/core/common/errors"
+)
 
 // BufferToBytesWriter is a Writer that writes alloc.Buffer into underlying writer.
 type BufferToBytesWriter struct {
@@ -109,6 +113,30 @@ func (noOpWriter) Write(b MultiBuffer) error {
 	return nil
 }
 
+type noOpBytesWriter struct{}
+
+func (noOpBytesWriter) Write(b []byte) (int, error) {
+	return len(b), nil
+}
+
+func (noOpBytesWriter) ReadFrom(reader io.Reader) (int64, error) {
+	b := New()
+	defer b.Release()
+
+	totalBytes := int64(0)
+	for {
+		err := b.Reset(ReadFrom(reader))
+		totalBytes += int64(b.Len())
+		if err != nil {
+			if errors.Cause(err) == io.EOF {
+				return totalBytes, nil
+			}
+			return totalBytes, err
+		}
+	}
+}
+
 var (
-	Discard Writer = noOpWriter{}
+	Discard      Writer    = noOpWriter{}
+	DiscardBytes io.Writer = noOpBytesWriter{}
 )

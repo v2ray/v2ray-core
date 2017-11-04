@@ -9,6 +9,7 @@ import (
 	"context"
 	"io"
 
+	"v2ray.com/core/common"
 	. "v2ray.com/core/common/buf"
 	"v2ray.com/core/transport/ray"
 	. "v2ray.com/ext/assert"
@@ -42,4 +43,28 @@ func TestBytesWriterReadFrom(t *testing.T) {
 	assert(err, IsNil)
 	assert(mb.Len(), Equals, 8192)
 	assert(len(mb), Equals, 4)
+}
+
+func TestDiscardBytes(t *testing.T) {
+	assert := With(t)
+
+	b := New()
+	common.Must(b.Reset(ReadFrom(rand.Reader)))
+
+	nBytes, err := io.Copy(DiscardBytes, b)
+	assert(nBytes, Equals, int64(Size))
+	assert(err, IsNil)
+}
+
+func TestDiscardBytesMultiBuffer(t *testing.T) {
+	assert := With(t)
+
+	const size = 10240*1024 + 1
+	buffer := bytes.NewBuffer(make([]byte, 0, size))
+	common.Must2(buffer.ReadFrom(io.LimitReader(rand.Reader, size)))
+
+	r := NewReader(buffer)
+	nBytes, err := io.Copy(DiscardBytes, ToBytesReader(r))
+	assert(nBytes, Equals, int64(size))
+	assert(err, IsNil)
 }
