@@ -90,19 +90,17 @@ func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispa
 	}
 
 	if request.Command == protocol.RequestCommandUDP {
-		return s.handleUDP()
+		return s.handleUDP(conn)
 	}
 
 	return nil
 }
 
-func (*Server) handleUDP() error {
-	// The TCP connection closes after v method returns. We need to wait until
+func (*Server) handleUDP(c net.Conn) error {
+	// The TCP connection closes after this method returns. We need to wait until
 	// the client closes it.
-	// TODO: get notified from UDP part
-	time.Sleep(5 * time.Minute)
-
-	return nil
+	_, err := io.Copy(buf.DiscardBytes, c)
+	return err
 }
 
 func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writer, dest net.Destination, dispatcher dispatcher.Interface) error {
