@@ -217,7 +217,7 @@ func StripHopByHopHeaders(header http.Header) {
 var errWaitAnother = newError("keep alive")
 
 func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, reader io.Reader, writer io.Writer, dest net.Destination, dispatcher dispatcher.Interface) error {
-	if len(request.Host) <= 0 {
+	if len(request.URL.Host) <= 0 {
 		response := &http.Response{
 			Status:        "Bad Request",
 			StatusCode:    400,
