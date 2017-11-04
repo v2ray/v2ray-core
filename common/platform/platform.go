@@ -2,6 +2,7 @@ package platform
 
 import (
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -39,4 +40,20 @@ func (f EnvFlag) GetValueAsInt(defaultValue int) int {
 
 func NormalizeEnvName(name string) string {
 	return strings.Replace(strings.ToUpper(strings.TrimSpace(name)), ".", "_", -1)
+}
+
+var assetPath = "/"
+
+func init() {
+	defAssetLocation, err := os.Executable()
+	if err == nil {
+		defAssetLocation = filepath.Dir(defAssetLocation)
+		assetPath = (EnvFlag{
+			Name: "v2ray.location.asset",
+		}).GetValue(defAssetLocation)
+	}
+}
+
+func GetAssetLocation(file string) string {
+	return filepath.Join(assetPath, file)
 }
