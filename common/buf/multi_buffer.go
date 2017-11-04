@@ -1,6 +1,11 @@
 package buf
 
-import "net"
+import (
+	"io"
+	"net"
+
+	"v2ray.com/core/common/errors"
+)
 
 type MultiBufferWriter interface {
 	WriteMultiBuffer(MultiBuffer) error
@@ -8,6 +13,36 @@ type MultiBufferWriter interface {
 
 type MultiBufferReader interface {
 	ReadMultiBuffer() (MultiBuffer, error)
+}
+
+func ReadAllToMultiBuffer(reader io.Reader) (MultiBuffer, error) {
+	mb := NewMultiBuffer()
+
+	for {
+		b := New()
+		err := b.AppendSupplier(ReadFrom(reader))
+		if !b.IsEmpty() {
+			mb.Append(b)
+		}
+		if err != nil {
+			if errors.Cause(err) == io.EOF {
+				return mb, nil
+			}
+			mb.Release()
+			return nil, err
+		}
+	}
+}
+
+func ReadAllToBytes(reader io.Reader) ([]byte, error) {
+	mb, err := ReadAllToMultiBuffer(reader)
+	if err != nil {
+		return nil, err
+	}
+	b := make([]byte, mb.Len())
+	mb.Read(b)
+	mb.Release()
+	return b, nil
 }
 
 // MultiBuffer is a list of Buffers. The order of Buffer matters.
