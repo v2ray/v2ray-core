@@ -32,6 +32,7 @@ func TestIPNet(t *testing.T) {
 	ipNet.Add(parseCIDR(("198.51.100.0/24")))
 	ipNet.Add(parseCIDR(("203.0.113.0/24")))
 	ipNet.Add(parseCIDR(("8.8.8.8/32")))
+	ipNet.AddIP(net.ParseIP("91.108.4.0"), 16)
 	assert(ipNet.Contains(ParseIP("192.168.1.1")), IsTrue)
 	assert(ipNet.Contains(ParseIP("192.0.0.0")), IsTrue)
 	assert(ipNet.Contains(ParseIP("192.0.1.0")), IsFalse)
@@ -40,4 +41,5 @@ func TestIPNet(t *testing.T) {
 	assert(ipNet.Contains(ParseIP("8.8.8.7")), IsFalse)
 	assert(ipNet.Contains(ParseIP("8.8.8.8")), IsTrue)
 	assert(ipNet.Contains(ParseIP("2001:cdba::3257:9652")), IsFalse)
+	assert(ipNet.Contains(ParseIP("91.108.255.254")), IsTrue)
 }

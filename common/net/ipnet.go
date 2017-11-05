@@ -44,6 +44,7 @@ func (n *IPNetTable) Add(ipNet *net.IPNet) {
 
 func (n *IPNetTable) AddIP(ip []byte, mask byte) {
 	k := ipToUint32(ip)
+	k = (k >> (32 - mask)) << (32 - mask) // normalize ip
 	existing, found := n.cache[k]
 	if !found || existing > mask {
 		n.cache[k] = mask
