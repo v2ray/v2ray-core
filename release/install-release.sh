@@ -193,10 +193,13 @@ startV2ray(){
 
 copyFile() {
     NAME=$1
+    MANDATE=$2
     ERROR=`cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/${NAME}" "/usr/bin/v2ray/${NAME}"`
     if [[ $? -ne 0 ]]; then
-          colorEcho ${YELLOW} "${ERROR}"
-          exit
+        colorEcho ${YELLOW} "${ERROR}"
+        if [ "$MANDATE" = true ]; then
+            exit
+        fi
     fi
 }
 
@@ -207,11 +210,12 @@ makeExecutable() {
 installV2Ray(){
     # Install V2Ray binary to /usr/bin/v2ray
     mkdir -p /usr/bin/v2ray
-    copyFile v2ray
+    copyFile v2ray true
     makeExecutable v2ray
-    copyFile v2ctl
+    copyFile v2ctl false
     makeExecutable v2ctl
-    copyFile geoip.dat
+    copyFile geoip.dat false
+    copyFile geosite.dat false
 
     # Install V2Ray server config to /etc/v2ray
     mkdir -p /etc/v2ray
