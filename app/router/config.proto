@@ -46,6 +46,15 @@ message GeoIPList {
   repeated GeoIP entry = 1;
 }
 
+message GeoSite {
+  string country_code = 1;
+  repeated Domain domain = 2;
+}
+
+message GeoSiteList{
+  repeated GeoSite entry = 1;
+}
+
 message RoutingRule {
   string tag = 1;
   repeated Domain domain = 2;
