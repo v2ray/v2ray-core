@@ -10,6 +10,7 @@ option java_multiple_files = true;
 message ServerConfig {
   uint32 timeout = 1;
   map<string, string> accounts = 2;
+  bool allow_transparent = 3;
 }
 
 // ClientConfig for HTTP proxy client.

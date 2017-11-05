@@ -217,7 +217,8 @@ func StripHopByHopHeaders(header http.Header) {
 var errWaitAnother = newError("keep alive")
 
 func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, reader io.Reader, writer io.Writer, dest net.Destination, dispatcher dispatcher.Interface) error {
-	if len(request.URL.Host) <= 0 {
+	if !s.config.AllowTransparent && len(request.URL.Host) <= 0 {
+		// RFC 2068 (HTTP/1.1) requires URL to be absolute URL in HTTP proxy.
 		response := &http.Response{
 			Status:        "Bad Request",
 			StatusCode:    400,
@@ -234,7 +235,9 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 		return response.Write(writer)
 	}
 
-	request.Host = request.URL.Host
+	if len(request.URL.Host) > 0 {
+		request.Host = request.URL.Host
+	}
 	StripHopByHopHeaders(request.Header)
 
 	ray, err := dispatcher.Dispatch(ctx, dest)
