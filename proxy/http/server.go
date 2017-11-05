@@ -212,6 +212,11 @@ func StripHopByHopHeaders(header http.Header) {
 	for _, h := range strings.Split(connections, ",") {
 		header.Del(strings.TrimSpace(h))
 	}
+
+	// Prevent UA from being set to golang's default ones
+	if len(header.Get("User-Agent")) == 0 {
+		header.Set("User-Agent", "")
+	}
 }
 
 var errWaitAnother = newError("keep alive")

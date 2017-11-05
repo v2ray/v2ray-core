@@ -22,7 +22,6 @@ Foo: foo
 Bar: bar
 Proxy-Connection: keep-alive
 Proxy-Authenticate: abc
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X; de-de) AppleWebKit/523.10.3 (KHTML, like Gecko) Version/3.0.4 Safari/523.10
 Accept-Encoding: gzip
 Accept-Charset: ISO-8859-1,UTF-8;q=0.7,*;q=0.7
 Cache-Control: no-cache
@@ -37,6 +36,7 @@ Accept-Language: de,en;q=0.7,en-us;q=0.3
 	assert(req.Header.Get("Connection"), Equals, "keep-alive,Foo, Bar")
 	assert(req.Header.Get("Proxy-Connection"), Equals, "keep-alive")
 	assert(req.Header.Get("Proxy-Authenticate"), Equals, "abc")
+	assert(req.Header.Get("User-Agent"), IsEmpty)
 
 	StripHopByHopHeaders(req.Header)
 	assert(req.Header.Get("Connection"), IsEmpty)
@@ -44,4 +44,5 @@ Accept-Language: de,en;q=0.7,en-us;q=0.3
 	assert(req.Header.Get("Bar"), IsEmpty)
 	assert(req.Header.Get("Proxy-Connection"), IsEmpty)
 	assert(req.Header.Get("Proxy-Authenticate"), IsEmpty)
+	assert(req.Header.Get("User-Agent"), IsEmpty)
 }
