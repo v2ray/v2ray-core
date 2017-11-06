@@ -12,7 +12,7 @@ type EnvFlag struct {
 	AltName string
 }
 
-func (f EnvFlag) GetValue(defaultValue string) string {
+func (f EnvFlag) GetValue(defaultValue func() string) string {
 	if v, found := os.LookupEnv(f.Name); found {
 		return v
 	}
@@ -22,13 +22,16 @@ func (f EnvFlag) GetValue(defaultValue string) string {
 		}
 	}
 
-	return defaultValue
+	return defaultValue()
 }
 
 func (f EnvFlag) GetValueAsInt(defaultValue int) int {
-	const PlaceHolder = "xxxxxx"
-	s := f.GetValue(PlaceHolder)
-	if s == PlaceHolder {
+	useDefaultValue := false
+	s := f.GetValue(func() string {
+		useDefaultValue = true
+		return ""
+	})
+	if useDefaultValue {
 		return defaultValue
 	}
 	v, err := strconv.ParseInt(s, 10, 32)
@@ -42,18 +45,13 @@ func NormalizeEnvName(name string) string {
 	return strings.Replace(strings.ToUpper(strings.TrimSpace(name)), ".", "_", -1)
 }
 
-var assetPath = "/"
-
-func init() {
-	defAssetLocation, err := os.Executable()
-	if err == nil {
-		defAssetLocation = filepath.Dir(defAssetLocation)
-		assetPath = (EnvFlag{
-			Name: "v2ray.location.asset",
-		}).GetValue(defAssetLocation)
-	}
-}
-
 func GetAssetLocation(file string) string {
+	assetPath := EnvFlag{Name: "v2ray.location.asset"}.GetValue(func() string {
+		exec, err := os.Executable()
+		if err != nil {
+			return ""
+		}
+		return filepath.Dir(exec)
+	})
 	return filepath.Join(assetPath, file)
 }
