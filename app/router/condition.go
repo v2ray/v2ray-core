@@ -64,13 +64,35 @@ func (v *AnyCondition) Len() int {
 	return len(*v)
 }
 
-type PlainDomainMatcher string
-
-func NewPlainDomainMatcher(pattern string) Condition {
-	return PlainDomainMatcher(pattern)
+type CachableDomainMatcher struct {
+	matchers []domainMatcher
 }
 
-func (v PlainDomainMatcher) Apply(ctx context.Context) bool {
+func NewCachableDomainMatcher() *CachableDomainMatcher {
+	return &CachableDomainMatcher{
+		matchers: make([]domainMatcher, 0, 64),
+	}
+}
+
+func (m *CachableDomainMatcher) Add(domain *Domain) error {
+	switch domain.Type {
+	case Domain_Plain:
+		m.matchers = append(m.matchers, NewPlainDomainMatcher(domain.Value))
+	case Domain_Regex:
+		rm, err := NewRegexpDomainMatcher(domain.Value)
+		if err != nil {
+			return err
+		}
+		m.matchers = append(m.matchers, rm)
+	case Domain_Domain:
+		m.matchers = append(m.matchers, NewSubDomainMatcher(domain.Value))
+	default:
+		return newError("unknown domain type: ", domain.Type).AtError()
+	}
+	return nil
+}
+
+func (m *CachableDomainMatcher) Apply(ctx context.Context) bool {
 	dest, ok := proxy.TargetFromContext(ctx)
 	if !ok {
 		return false
@@ -80,6 +102,27 @@ func (v PlainDomainMatcher) Apply(ctx context.Context) bool {
 		return false
 	}
 	domain := dest.Address.Domain()
+
+	for _, matcher := range m.matchers {
+		if matcher.Apply(domain) {
+			return true
+		}
+	}
+
+	return false
+}
+
+type domainMatcher interface {
+	Apply(domain string) bool
+}
+
+type PlainDomainMatcher string
+
+func NewPlainDomainMatcher(pattern string) PlainDomainMatcher {
+	return PlainDomainMatcher(pattern)
+}
+
+func (v PlainDomainMatcher) Apply(domain string) bool {
 	return strings.Contains(domain, string(v))
 }
 
@@ -97,33 +140,17 @@ func NewRegexpDomainMatcher(pattern string) (*RegexpDomainMatcher, error) {
 	}, nil
 }
 
-func (v *RegexpDomainMatcher) Apply(ctx context.Context) bool {
-	dest, ok := proxy.TargetFromContext(ctx)
-	if !ok {
-		return false
-	}
-	if !dest.Address.Family().IsDomain() {
-		return false
-	}
-	domain := dest.Address.Domain()
+func (v *RegexpDomainMatcher) Apply(domain string) bool {
 	return v.pattern.MatchString(strings.ToLower(domain))
 }
 
 type SubDomainMatcher string
 
-func NewSubDomainMatcher(p string) Condition {
+func NewSubDomainMatcher(p string) SubDomainMatcher {
 	return SubDomainMatcher(p)
 }
 
-func (m SubDomainMatcher) Apply(ctx context.Context) bool {
-	dest, ok := proxy.TargetFromContext(ctx)
-	if !ok {
-		return false
-	}
-	if !dest.Address.Family().IsDomain() {
-		return false
-	}
-	domain := dest.Address.Domain()
+func (m SubDomainMatcher) Apply(domain string) bool {
 	pattern := string(m)
 	if !strings.HasSuffix(domain, pattern) {
 		return false

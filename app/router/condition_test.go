@@ -16,32 +16,32 @@ func TestSubDomainMatcher(t *testing.T) {
 
 	cases := []struct {
 		pattern string
-		input   context.Context
+		input   string
 		output  bool
 	}{
 		{
 			pattern: "v2ray.com",
-			input:   proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("www.v2ray.com"), 80)),
+			input:   "www.v2ray.com",
 			output:  true,
 		},
 		{
 			pattern: "v2ray.com",
-			input:   proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("v2ray.com"), 80)),
+			input:   "v2ray.com",
 			output:  true,
 		},
 		{
 			pattern: "v2ray.com",
-			input:   proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("www.v3ray.com"), 80)),
+			input:   "www.v3ray.com",
 			output:  false,
 		},
 		{
 			pattern: "v2ray.com",
-			input:   proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("2ray.com"), 80)),
+			input:   "2ray.com",
 			output:  false,
 		},
 		{
 			pattern: "v2ray.com",
-			input:   proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("xv2ray.com"), 80)),
+			input:   "xv2ray.com",
 			output:  false,
 		},
 	}
