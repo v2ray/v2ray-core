@@ -2,13 +2,22 @@ package router_test
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"strconv"
 	"testing"
+	"time"
 
+	proto "github.com/golang/protobuf/proto"
 	. "v2ray.com/core/app/router"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/platform"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/proxy"
 	. "v2ray.com/ext/assert"
+	"v2ray.com/ext/sysio"
 )
 
 func TestSubDomainMatcher(t *testing.T) {
@@ -177,5 +186,51 @@ func TestRoutingRule(t *testing.T) {
 		for _, t := range test.test {
 			assert(cond.Apply(t.input), Equals, t.output)
 		}
+	}
+}
+
+func loadGeoSite(country string) ([]*Domain, error) {
+	geositeBytes, err := sysio.ReadAsset("geosite.dat")
+	if err != nil {
+		return nil, err
+	}
+	var geositeList GeoSiteList
+	if err := proto.Unmarshal(geositeBytes, &geositeList); err != nil {
+		return nil, err
+	}
+
+	for _, site := range geositeList.Entry {
+		if site.CountryCode == country {
+			return site.Domain, nil
+		}
+	}
+
+	return nil, errors.New("country not found: " + country)
+}
+
+func TestChinaSites(t *testing.T) {
+	assert := With(t)
+
+	common.Must(sysio.CopyFile(platform.GetAssetLocation("geosite.dat"), filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", "tools", "release", "config", "geosite.dat")))
+
+	domains, err := loadGeoSite("CN")
+	assert(err, IsNil)
+
+	matcher := NewCachableDomainMatcher()
+	for _, d := range domains {
+		assert(matcher.Add(d), IsNil)
+	}
+
+	assert(matcher.ApplyDomain("163.com"), IsTrue)
+	assert(matcher.ApplyDomain("163.com"), IsTrue)
+	assert(matcher.ApplyDomain("164.com"), IsFalse)
+	assert(matcher.ApplyDomain("164.com"), IsFalse)
+
+	for i := 0; i < 1024; i++ {
+		assert(matcher.ApplyDomain(strconv.Itoa(i)+".not-exists.com"), IsFalse)
+	}
+	time.Sleep(time.Second * 10)
+	for i := 0; i < 1024; i++ {
+		assert(matcher.ApplyDomain(strconv.Itoa(i)+".not-exists2.com"), IsFalse)
 	}
 }

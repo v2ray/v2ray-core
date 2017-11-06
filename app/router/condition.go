@@ -4,6 +4,8 @@ import (
 	"context"
 	"regexp"
 	"strings"
+	"sync"
+	"time"
 
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -64,13 +66,22 @@ func (v *AnyCondition) Len() int {
 	return len(*v)
 }
 
+type timedResult struct {
+	timestamp time.Time
+	result    bool
+}
+
 type CachableDomainMatcher struct {
+	sync.Mutex
 	matchers []domainMatcher
+	cache    map[string]timedResult
+	lastScan time.Time
 }
 
 func NewCachableDomainMatcher() *CachableDomainMatcher {
 	return &CachableDomainMatcher{
 		matchers: make([]domainMatcher, 0, 64),
+		cache:    make(map[string]timedResult, 512),
 	}
 }
 
@@ -92,6 +103,85 @@ func (m *CachableDomainMatcher) Add(domain *Domain) error {
 	return nil
 }
 
+func (m *CachableDomainMatcher) applyInternal(domain string) bool {
+	for _, matcher := range m.matchers {
+		if matcher.Apply(domain) {
+			return true
+		}
+	}
+
+	return false
+}
+
+type cacheResult int
+
+const (
+	cacheMiss cacheResult = iota
+	cacheHitTrue
+	cacheHitFalse
+)
+
+func (m *CachableDomainMatcher) findInCache(domain string) cacheResult {
+	m.Lock()
+	defer m.Unlock()
+
+	r, f := m.cache[domain]
+	if !f {
+		return cacheMiss
+	}
+	r.timestamp = time.Now()
+	m.cache[domain] = r
+
+	if r.result {
+		return cacheHitTrue
+	}
+	return cacheHitFalse
+}
+
+func (m *CachableDomainMatcher) ApplyDomain(domain string) bool {
+	if len(m.matchers) < 64 {
+		return m.applyInternal(domain)
+	}
+
+	cr := m.findInCache(domain)
+
+	if cr == cacheHitTrue {
+		return true
+	}
+
+	if cr == cacheHitFalse {
+		return false
+	}
+
+	r := m.applyInternal(domain)
+	m.Lock()
+	defer m.Unlock()
+
+	m.cache[domain] = timedResult{
+		result:    r,
+		timestamp: time.Now(),
+	}
+
+	now := time.Now()
+	if len(m.cache) > 256 && now.Sub(m.lastScan)/time.Second > 5 {
+		remove := make([]string, 0, 128)
+
+		now := time.Now()
+
+		for k, v := range m.cache {
+			if now.Sub(v.timestamp)/time.Second > 60 {
+				remove = append(remove, k)
+			}
+		}
+		for _, v := range remove {
+			delete(m.cache, v)
+		}
+		m.lastScan = now
+	}
+
+	return r
+}
+
 func (m *CachableDomainMatcher) Apply(ctx context.Context) bool {
 	dest, ok := proxy.TargetFromContext(ctx)
 	if !ok {
@@ -101,15 +191,7 @@ func (m *CachableDomainMatcher) Apply(ctx context.Context) bool {
 	if !dest.Address.Family().IsDomain() {
 		return false
 	}
-	domain := dest.Address.Domain()
-
-	for _, matcher := range m.matchers {
-		if matcher.Apply(domain) {
-			return true
-		}
-	}
-
-	return false
+	return m.ApplyDomain(dest.Address.Domain())
 }
 
 type domainMatcher interface {
