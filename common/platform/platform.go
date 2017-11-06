@@ -44,7 +44,7 @@ func NormalizeEnvName(name string) string {
 
 var assetPath = "/"
 
-func init() {
+func loadAssetLocation() {
 	defAssetLocation, err := os.Executable()
 	if err == nil {
 		defAssetLocation = filepath.Dir(defAssetLocation)
@@ -52,6 +52,15 @@ func init() {
 			Name: "v2ray.location.asset",
 		}).GetValue(defAssetLocation)
 	}
+}
+
+func init() {
+	loadAssetLocation()
+}
+
+/*ForceReevaluate Force V2Ray to reevaluate environment Var*/
+func ForceReevaluate() {
+	loadAssetLocation()
 }
 
 func GetAssetLocation(file string) string {
