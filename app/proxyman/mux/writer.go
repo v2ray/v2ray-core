@@ -82,23 +82,21 @@ func (w *Writer) writeData(mb buf.MultiBuffer) error {
 
 // Write implements buf.MultiBufferWriter.
 func (w *Writer) Write(mb buf.MultiBuffer) error {
+	defer mb.Release()
+
 	if mb.IsEmpty() {
 		return w.writeMetaOnly()
 	}
 
-	if w.transferType == protocol.TransferTypeStream {
-		const chunkSize = 8 * 1024
-		for !mb.IsEmpty() {
-			slice := mb.SliceBySize(chunkSize)
-			if err := w.writeData(slice); err != nil {
-				return err
-			}
+	for !mb.IsEmpty() {
+		var chunk buf.MultiBuffer
+		if w.transferType == protocol.TransferTypeStream {
+			chunk = mb.SliceBySize(8 * 1024)
+		} else {
+			chunk = buf.NewMultiBufferValue(mb.SplitFirst())
 		}
-	} else {
-		for _, b := range mb {
-			if err := w.writeData(buf.NewMultiBufferValue(b)); err != nil {
-				return err
-			}
+		if err := w.writeData(chunk); err != nil {
+			return err
 		}
 	}
 
