@@ -52,6 +52,21 @@ func TestIPNet(t *testing.T) {
 	assert(ipNet.Contains(ParseIP("91.108.255.254")), IsTrue)
 }
 
+func TestGeoIPCN(t *testing.T) {
+	assert := With(t)
+	common.Must(sysio.CopyFile(platform.GetAssetLocation("geoip.dat"), filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", "tools", "release", "config", "geoip.dat")))
+
+	ips, err := loadGeoIP("CN")
+	common.Must(err)
+
+	ipNet := NewIPNetTable()
+	for _, ip := range ips {
+		ipNet.AddIP(ip.Ip, byte(ip.Prefix))
+	}
+
+	assert(ipNet.Contains([]byte{8, 8, 8, 8}), IsFalse)
+}
+
 func loadGeoIP(country string) ([]*router.CIDR, error) {
 	geoipBytes, err := sysio.ReadAsset("geoip.dat")
 	if err != nil {
