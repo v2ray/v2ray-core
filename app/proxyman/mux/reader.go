@@ -104,6 +104,7 @@ func (r *StreamReader) Read() (buf.MultiBuffer, error) {
 		if err := b.AppendSupplier(func(bb []byte) (int, error) {
 			return r.reader.Read(bb[:readLen])
 		}); err != nil {
+			b.Release()
 			mb.Release()
 			return nil, err
 		}
