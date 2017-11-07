@@ -3,6 +3,7 @@ package crypto
 import (
 	"io"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/serial"
 )
@@ -70,7 +71,7 @@ func (r *ChunkStreamReader) readSize() (uint16, error) {
 			return 0, err
 		}
 	}
-	r.leftOver.Read(r.buffer)
+	common.Must2(r.leftOver.Read(r.buffer))
 	return r.sizeDecoder.Decode(r.buffer)
 }
 
@@ -93,21 +94,23 @@ func (r *ChunkStreamReader) Read() (buf.MultiBuffer, error) {
 		}
 	}
 
-	if size >= r.leftOver.Len() {
+	leftOverLen := r.leftOver.Len()
+	if size >= leftOverLen {
 		mb := r.leftOver
-		r.leftOverSize = size - r.leftOver.Len()
+		r.leftOverSize = size - leftOverLen
 		r.leftOver = nil
 		return mb, nil
 	}
 
 	mb := r.leftOver.SliceBySize(size)
-	if mb.Len() != size {
+	mbLen := mb.Len()
+	if mbLen != size {
 		b := buf.New()
-		b.AppendSupplier(buf.ReadFullFrom(&r.leftOver, size-mb.Len()))
+		common.Must(b.Reset(buf.ReadFullFrom(&r.leftOver, size-mbLen)))
 		mb.Append(b)
 	}
-
 	r.leftOverSize = 0
+
 	return mb, nil
 }
 
@@ -131,10 +134,10 @@ func (w *ChunkStreamWriter) Write(mb buf.MultiBuffer) error {
 		slice := mb.SliceBySize(sliceSize)
 
 		b := buf.New()
-		b.AppendSupplier(func(buffer []byte) (int, error) {
+		common.Must(b.AppendSupplier(func(buffer []byte) (int, error) {
 			w.sizeEncoder.Encode(uint16(slice.Len()), buffer[:0])
 			return w.sizeEncoder.SizeBytes(), nil
-		})
+		}))
 		mb2Write.Append(b)
 		mb2Write.AppendMulti(slice)
 

@@ -637,6 +637,8 @@ func TestVMessNone(t *testing.T) {
 	wg.Add(10)
 	for i := 0; i < 10; i++ {
 		go func() {
+			defer wg.Done()
+
 			conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 				IP:   []byte{127, 0, 0, 1},
 				Port: int(clientPort),
@@ -651,9 +653,9 @@ func TestVMessNone(t *testing.T) {
 			assert(nBytes, Equals, len(payload))
 
 			response := readFrom(conn, time.Second*20, 1024*1024)
+
 			assert(response, Equals, xor(payload))
 			assert(conn.Close(), IsNil)
-			wg.Done()
 		}()
 	}
 	wg.Wait()
