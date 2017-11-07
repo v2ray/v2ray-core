@@ -4,6 +4,7 @@ import (
 	"io"
 	"net"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 )
 
@@ -34,13 +35,14 @@ func ReadAllToMultiBuffer(reader io.Reader) (MultiBuffer, error) {
 	}
 }
 
+// ReadAllToBytes reads all content from the reader into a byte array, until EOF.
 func ReadAllToBytes(reader io.Reader) ([]byte, error) {
 	mb, err := ReadAllToMultiBuffer(reader)
 	if err != nil {
 		return nil, err
 	}
 	b := make([]byte, mb.Len())
-	mb.Read(b)
+	common.Must2(mb.Read(b))
 	mb.Release()
 	return b, nil
 }
@@ -131,11 +133,12 @@ func (mb MultiBuffer) IsEmpty() bool {
 }
 
 // Release releases all Buffers in the MultiBuffer.
-func (mb MultiBuffer) Release() {
-	for i, b := range mb {
+func (mb *MultiBuffer) Release() {
+	for i, b := range *mb {
 		b.Release()
-		mb[i] = nil
+		(*mb)[i] = nil
 	}
+	*mb = (*mb)[:0]
 }
 
 // ToNetBuffers converts this MultiBuffer to net.Buffers. The return net.Buffers points to the same content of the MultiBuffer.
@@ -158,6 +161,7 @@ func (mb *MultiBuffer) SliceBySize(size int) MultiBuffer {
 		}
 		sliceSize += b.Len()
 		slice.Append(b)
+		(*mb)[i] = nil
 	}
 	*mb = (*mb)[endIndex:]
 	return slice
@@ -168,6 +172,7 @@ func (mb *MultiBuffer) SplitFirst() *Buffer {
 		return nil
 	}
 	b := (*mb)[0]
+	(*mb)[0] = nil
 	*mb = (*mb)[1:]
 	return b
 }
