@@ -93,7 +93,7 @@ func (r *AuthenticationReader) readSize() error {
 
 	sizeBytes := r.sizeParser.SizeBytes()
 	if r.buffer.Len() < sizeBytes {
-		r.buffer.Reset(buf.ReadFrom(r.buffer))
+		common.Must(r.buffer.Reset(buf.ReadFrom(r.buffer)))
 		delta := sizeBytes - r.buffer.Len()
 		if err := r.buffer.AppendSupplier(buf.ReadAtLeastFrom(r.reader, delta)); err != nil {
 			return err
