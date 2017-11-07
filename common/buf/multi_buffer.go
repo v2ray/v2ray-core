@@ -18,13 +18,16 @@ type MultiBufferReader interface {
 	ReadMultiBuffer() (MultiBuffer, error)
 }
 
+// ReadAllToMultiBuffer reads all content from the reader into a MultiBuffer, until EOF.
 func ReadAllToMultiBuffer(reader io.Reader) (MultiBuffer, error) {
 	mb := NewMultiBuffer()
 
 	for {
 		b := New()
-		err := b.AppendSupplier(ReadFrom(reader))
-		if !b.IsEmpty() {
+		err := b.Reset(ReadFrom(reader))
+		if b.IsEmpty() {
+			b.Release()
+		} else {
 			mb.Append(b)
 		}
 		if err != nil {
