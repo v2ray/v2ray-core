@@ -8,10 +8,12 @@ import (
 	"v2ray.com/core/common/errors"
 )
 
+// MultiBufferWriter is a writer that writes MultiBuffer.
 type MultiBufferWriter interface {
 	WriteMultiBuffer(MultiBuffer) error
 }
 
+// MultiBufferReader is a reader that reader payload as MultiBuffer.
 type MultiBufferReader interface {
 	ReadMultiBuffer() (MultiBuffer, error)
 }
@@ -60,14 +62,17 @@ func NewMultiBufferValue(b ...*Buffer) MultiBuffer {
 	return MultiBuffer(b)
 }
 
+// Append appends buffer to the end of this MultiBuffer
 func (mb *MultiBuffer) Append(buf *Buffer) {
 	*mb = append(*mb, buf)
 }
 
+// AppendMulti appends a MultiBuffer to the end of this one.
 func (mb *MultiBuffer) AppendMulti(buf MultiBuffer) {
 	*mb = append(*mb, buf...)
 }
 
+// Copy copied the begining part of the MultiBuffer into the given byte array.
 func (mb MultiBuffer) Copy(b []byte) int {
 	total := 0
 	for _, bb := range mb {
@@ -80,6 +85,7 @@ func (mb MultiBuffer) Copy(b []byte) int {
 	return total
 }
 
+// Read implements io.Reader.
 func (mb *MultiBuffer) Read(b []byte) (int, error) {
 	endIndex := len(*mb)
 	totalBytes := 0
@@ -98,6 +104,7 @@ func (mb *MultiBuffer) Read(b []byte) (int, error) {
 	return totalBytes, nil
 }
 
+// Write implements io.Writer.
 func (mb *MultiBuffer) Write(b []byte) {
 	n := len(*mb)
 	if n > 0 && !(*mb)[n-1].IsFull() {
