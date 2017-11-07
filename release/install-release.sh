@@ -171,7 +171,7 @@ stopV2ray(){
     SERVICE_CMD=$(command -v service)
 
     colorEcho ${BLUE} "Shutting down V2Ray service."
-    if [[ -n "${SYSTEMCTL_CMD}" ]] || [[ -f "/lib/systemd/system/v2ray.service" ]]; then
+    if [[ -n "${SYSTEMCTL_CMD}" ]] || [[ -f "/lib/systemd/system/v2ray.service" ]] || [[ -f "/etc/systemd/system/v2ray.service" ]]; then
         ${SYSTEMCTL_CMD} stop v2ray
     elif [[ -n "${SERVICE_CMD}" ]] || [[ -f "/etc/init.d/v2ray" ]]; then
         ${SERVICE_CMD} v2ray stop
@@ -184,6 +184,8 @@ startV2ray(){
     SERVICE_CMD=$(command -v service)
 
     if [ -n "${SYSTEMCTL_CMD}" ] && [ -f "/lib/systemd/system/v2ray.service" ]; then
+        ${SYSTEMCTL_CMD} start v2ray
+    elif [ -n "${SYSTEMCTL_CMD}" ] && [ -f "/etc/systemd/system/v2ray.service" ]; then
         ${SYSTEMCTL_CMD} start v2ray
     elif [ -n "${SERVICE_CMD}" ] && [ -f "/etc/init.d/v2ray" ]; then
         ${SERVICE_CMD} v2ray start
@@ -244,9 +246,11 @@ installInitScrip(){
     SERVICE_CMD=$(command -v service)
 
     if [[ -n "${SYSTEMCTL_CMD}" ]];then
-        if [[ ! -f "/lib/systemd/system/v2ray.service" ]]; then
-            cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/systemd/v2ray.service" "/lib/systemd/system/"
-            systemctl enable v2ray.service
+        if [[ ! -f "/etc/systemd/system/v2ray.service" ]]; then
+            if [[ ! -f "/lib/systemd/system/v2ray.service" ]]; then
+                cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/systemd/v2ray.service" "/etc/systemd/system/"
+                systemctl enable v2ray.service
+            fi
         fi
         return
     elif [[ -n "${SERVICE_CMD}" ]] && [[ ! -f "/etc/init.d/v2ray" ]]; then
@@ -273,7 +277,21 @@ Help(){
 remove(){
     SYSTEMCTL_CMD=$(command -v systemctl)
     SERVICE_CMD=$(command -v service)
-    if [[ -n "${SYSTEMCTL_CMD}" ]] && [[ -f "/lib/systemd/system/v2ray.service" ]];then
+    if [[ -n "${SYSTEMCTL_CMD}" ]] && [[ -f "/etc/systemd/system/v2ray.service" ]];then
+        if pgrep "v2ray" > /dev/null ; then
+            stopV2ray
+        fi
+        systemctl disable v2ray.service
+        rm -rf "/usr/bin/v2ray" "/etc/systemd/system/v2ray.service"
+        if [[ $? -ne 0 ]]; then
+            colorEcho ${RED} "Failed to remove V2Ray."
+            exit
+        else
+            colorEcho ${GREEN} "Removed V2Ray successfully."
+            colorEcho ${GREEN} "If necessary, please remove configuration file and log file manually."
+            exit
+        fi
+    elif [[ -n "${SYSTEMCTL_CMD}" ]] && [[ -f "/lib/systemd/system/v2ray.service" ]];then
         if pgrep "v2ray" > /dev/null ; then
             stopV2ray
         fi
