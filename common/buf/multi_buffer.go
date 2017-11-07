@@ -95,6 +95,7 @@ func (mb *MultiBuffer) Read(b []byte) (int, error) {
 		b = b[nBytes:]
 		if bb.IsEmpty() {
 			bb.Release()
+			(*mb)[i] = nil
 		} else {
 			endIndex = i
 			break
