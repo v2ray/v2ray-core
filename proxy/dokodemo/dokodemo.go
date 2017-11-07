@@ -4,7 +4,6 @@ package dokodemo
 
 import (
 	"context"
-	"runtime"
 	"time"
 
 	"v2ray.com/core/app"
@@ -116,8 +115,6 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		inboundRay.InboundOutput().CloseError()
 		return newError("connection ends").Base(err)
 	}
-
-	runtime.KeepAlive(timer)
 
 	return nil
 }

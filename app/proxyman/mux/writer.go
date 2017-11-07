@@ -1,8 +1,7 @@
 package mux
 
 import (
-	"runtime"
-
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -54,10 +53,9 @@ func (w *Writer) getNextFrameMeta() FrameMetadata {
 func (w *Writer) writeMetaOnly() error {
 	meta := w.getNextFrameMeta()
 	b := buf.New()
-	if err := b.AppendSupplier(meta.AsSupplier()); err != nil {
+	if err := b.Reset(meta.AsSupplier()); err != nil {
 		return err
 	}
-	runtime.KeepAlive(meta)
 	return w.writer.Write(buf.NewMultiBufferValue(b))
 }
 
@@ -66,10 +64,9 @@ func (w *Writer) writeData(mb buf.MultiBuffer) error {
 	meta.Option.Set(OptionData)
 
 	frame := buf.New()
-	if err := frame.AppendSupplier(meta.AsSupplier()); err != nil {
+	if err := frame.Reset(meta.AsSupplier()); err != nil {
 		return err
 	}
-	runtime.KeepAlive(meta)
 	if err := frame.AppendSupplier(serial.WriteUint16(uint16(mb.Len()))); err != nil {
 		return err
 	}
@@ -110,8 +107,7 @@ func (w *Writer) Close() {
 	}
 
 	frame := buf.New()
-	frame.AppendSupplier(meta.AsSupplier())
-	runtime.KeepAlive(meta)
+	common.Must(frame.Reset(meta.AsSupplier()))
 
 	w.writer.Write(buf.NewMultiBufferValue(frame))
 }

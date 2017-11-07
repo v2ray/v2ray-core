@@ -2,7 +2,6 @@ package socks
 
 import (
 	"context"
-	"runtime"
 	"time"
 
 	"v2ray.com/core/common"
@@ -117,8 +116,6 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		return newError("connection ends").Base(err)
 	}
-
-	runtime.KeepAlive(timer)
 
 	return nil
 }

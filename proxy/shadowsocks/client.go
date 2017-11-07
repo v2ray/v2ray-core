@@ -2,7 +2,6 @@ package shadowsocks
 
 import (
 	"context"
-	"runtime"
 	"time"
 
 	"v2ray.com/core/app/log"
@@ -167,8 +166,6 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 
 		return nil
 	}
-
-	runtime.KeepAlive(timer)
 
 	return nil
 }

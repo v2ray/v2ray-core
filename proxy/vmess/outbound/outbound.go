@@ -4,7 +4,6 @@ package outbound
 
 import (
 	"context"
-	"runtime"
 	"time"
 
 	"v2ray.com/core/app"
@@ -162,7 +161,6 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		return newError("connection ends").Base(err)
 	}
-	runtime.KeepAlive(timer)
 
 	return nil
 }

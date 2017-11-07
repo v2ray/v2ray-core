@@ -2,7 +2,6 @@ package shadowsocks
 
 import (
 	"context"
-	"runtime"
 	"time"
 
 	"v2ray.com/core/app"
@@ -196,8 +195,6 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 		ray.InboundOutput().CloseError()
 		return newError("connection ends").Base(err)
 	}
-
-	runtime.KeepAlive(timer)
 
 	return nil
 }

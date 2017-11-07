@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"io"
 	"net/http"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -184,8 +183,6 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		ray.InboundOutput().CloseError()
 		return newError("connection ends").Base(err)
 	}
-
-	runtime.KeepAlive(timer)
 
 	return nil
 }

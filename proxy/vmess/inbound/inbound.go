@@ -5,7 +5,6 @@ package inbound
 import (
 	"context"
 	"io"
-	"runtime"
 	"sync"
 	"time"
 
@@ -235,8 +234,6 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 		output.CloseError()
 		return newError("connection ends").Base(err)
 	}
-
-	runtime.KeepAlive(timer)
 
 	return nil
 }

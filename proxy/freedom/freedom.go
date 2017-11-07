@@ -4,7 +4,6 @@ package freedom
 
 import (
 	"context"
-	"runtime"
 	"time"
 
 	"v2ray.com/core/app"
@@ -138,8 +137,6 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		output.CloseError()
 		return newError("connection ends").Base(err)
 	}
-
-	runtime.KeepAlive(timer)
 
 	return nil
 }

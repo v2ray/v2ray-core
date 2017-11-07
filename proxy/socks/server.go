@@ -3,7 +3,6 @@ package socks
 import (
 	"context"
 	"io"
-	"runtime"
 	"time"
 
 	"v2ray.com/core/app"
@@ -142,8 +141,6 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 		output.CloseError()
 		return newError("connection ends").Base(err)
 	}
-
-	runtime.KeepAlive(timer)
 
 	return nil
 }
