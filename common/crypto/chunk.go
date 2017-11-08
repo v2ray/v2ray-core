@@ -73,7 +73,7 @@ func (r *ChunkStreamReader) readSize() (uint16, error) {
 			return 0, err
 		}
 	}
-	common.Must2(r.leftOver.Read(r.buffer))
+	common.Must2(io.ReadFull(&r.leftOver, r.buffer))
 	return r.sizeDecoder.Decode(r.buffer)
 }
 
