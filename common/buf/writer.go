@@ -137,6 +137,9 @@ func (noOpBytesWriter) ReadFrom(reader io.Reader) (int64, error) {
 }
 
 var (
-	Discard      Writer    = noOpWriter{}
+	// Discard is a Writer that swallows all contents written in.
+	Discard Writer = noOpWriter{}
+
+	// DiscardBytes is an io.Writer that swallows all contents written in.
 	DiscardBytes io.Writer = noOpBytesWriter{}
 )

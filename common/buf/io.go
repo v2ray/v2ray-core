@@ -14,6 +14,7 @@ type Reader interface {
 // ErrReadTimeout is an error that happens with IO timeout.
 var ErrReadTimeout = newError("IO timeout")
 
+// TimeoutReader is a reader that returns error if Read() operation takes longer than the given timeout.
 type TimeoutReader interface {
 	ReadTimeout(time.Duration) (MultiBuffer, error)
 }

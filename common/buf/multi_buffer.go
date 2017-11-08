@@ -161,6 +161,7 @@ func (mb MultiBuffer) ToNetBuffers() net.Buffers {
 	return bs
 }
 
+// SliceBySize splits the begining of this MultiBuffer into another one, for at most size bytes.
 func (mb *MultiBuffer) SliceBySize(size int) MultiBuffer {
 	slice := NewMultiBuffer()
 	sliceSize := 0
@@ -178,6 +179,7 @@ func (mb *MultiBuffer) SliceBySize(size int) MultiBuffer {
 	return slice
 }
 
+// SplitFirst splits out the first Buffer in this MultiBuffer.
 func (mb *MultiBuffer) SplitFirst() *Buffer {
 	if len(*mb) == 0 {
 		return nil
