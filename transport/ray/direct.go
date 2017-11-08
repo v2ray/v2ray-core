@@ -197,10 +197,10 @@ func (s *Stream) Write(data buf.MultiBuffer) error {
 	}
 
 	if s.data == nil {
-		s.data = data
-	} else {
-		s.data.AppendMulti(data)
+		s.data = buf.NewMultiBufferCap(128)
 	}
+
+	s.data.AppendMulti(data)
 	s.size += uint64(data.Len())
 	s.notifyWrite()
 

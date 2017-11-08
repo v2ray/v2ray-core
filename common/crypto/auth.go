@@ -157,7 +157,7 @@ func (r *AuthenticationReader) Read() (buf.MultiBuffer, error) {
 		return nil, err
 	}
 
-	mb := buf.NewMultiBuffer()
+	var mb buf.MultiBuffer
 	if r.transferType == protocol.TransferTypeStream {
 		mb.Write(b)
 	} else {

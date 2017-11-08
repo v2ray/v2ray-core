@@ -41,7 +41,7 @@ func (r *BytesToBufferReader) Read() (MultiBuffer, error) {
 		return nil, err
 	}
 
-	mb := NewMultiBuffer()
+	mb := NewMultiBufferCap(nBytes/Size + 1)
 	mb.Write(r.buffer[:nBytes])
 	return mb, nil
 }

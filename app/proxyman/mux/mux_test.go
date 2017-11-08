@@ -14,7 +14,7 @@ import (
 )
 
 func readAll(reader buf.Reader) (buf.MultiBuffer, error) {
-	mb := buf.NewMultiBuffer()
+	var mb buf.MultiBuffer
 	for {
 		b, err := reader.Read()
 		if err == io.EOF {

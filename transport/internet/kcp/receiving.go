@@ -203,7 +203,7 @@ func (v *ReceivingWorker) ReadMultiBuffer() buf.MultiBuffer {
 		return mb
 	}
 
-	mb := buf.NewMultiBuffer()
+	mb := buf.NewMultiBufferCap(32)
 
 	v.Lock()
 	defer v.Unlock()

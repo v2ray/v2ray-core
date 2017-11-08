@@ -25,7 +25,7 @@ func TestChunkStreamIO(t *testing.T) {
 	b.AppendBytes('e', 'f', 'g')
 	assert(writer.Write(buf.NewMultiBufferValue(b)), IsNil)
 
-	assert(writer.Write(buf.NewMultiBuffer()), IsNil)
+	assert(writer.Write(buf.MultiBuffer{}), IsNil)
 
 	assert(cache.Len(), Equals, 13)
 

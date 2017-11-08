@@ -75,7 +75,7 @@ type bytesToBufferWriter struct {
 
 // Write implements io.Writer.
 func (w *bytesToBufferWriter) Write(payload []byte) (int, error) {
-	mb := NewMultiBuffer()
+	mb := NewMultiBufferCap(len(payload)/Size + 1)
 	mb.Write(payload)
 	if err := w.writer.Write(mb); err != nil {
 		return 0, err

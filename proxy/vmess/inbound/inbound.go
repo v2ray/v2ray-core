@@ -163,7 +163,7 @@ func transferResponse(timer signal.ActivityUpdater, session *encoding.ServerSess
 	}
 
 	if request.Option.Has(protocol.RequestOptionChunkStream) {
-		if err := bodyWriter.Write(buf.NewMultiBuffer()); err != nil {
+		if err := bodyWriter.Write(buf.MultiBuffer{}); err != nil {
 			return err
 		}
 	}

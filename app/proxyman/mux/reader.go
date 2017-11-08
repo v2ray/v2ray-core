@@ -94,7 +94,7 @@ func (r *StreamReader) Read() (buf.MultiBuffer, error) {
 		r.leftOver = int(size)
 	}
 
-	mb := buf.NewMultiBuffer()
+	mb := buf.NewMultiBufferCap(32)
 	for r.leftOver > 0 {
 		readLen := buf.Size
 		if r.leftOver < readLen {
