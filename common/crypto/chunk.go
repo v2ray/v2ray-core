@@ -8,11 +8,13 @@ import (
 	"v2ray.com/core/common/serial"
 )
 
+// ChunkSizeDecoder is an utility class to decode size value from bytes.
 type ChunkSizeDecoder interface {
 	SizeBytes() int
 	Decode([]byte) (uint16, error)
 }
 
+// ChunkSizeEncoder is an utility class to encode size value into bytes.
 type ChunkSizeEncoder interface {
 	SizeBytes() int
 	Encode(uint16, []byte) []byte
@@ -134,7 +136,7 @@ func (w *ChunkStreamWriter) Write(mb buf.MultiBuffer) error {
 		slice := mb.SliceBySize(sliceSize)
 
 		b := buf.New()
-		common.Must(b.AppendSupplier(func(buffer []byte) (int, error) {
+		common.Must(b.Reset(func(buffer []byte) (int, error) {
 			w.sizeEncoder.Encode(uint16(slice.Len()), buffer[:0])
 			return w.sizeEncoder.SizeBytes(), nil
 		}))
