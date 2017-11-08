@@ -12,8 +12,30 @@ type BytesToBufferReader struct {
 	buffer []byte
 }
 
+func NewBytesToBufferReader(reader io.Reader) Reader {
+	return &BytesToBufferReader{
+		reader: reader,
+	}
+}
+
+func (r *BytesToBufferReader) readSmall() (MultiBuffer, error) {
+	b := New()
+	if err := b.Reset(ReadFrom(r.reader)); err != nil {
+		b.Release()
+		return nil, err
+	}
+	if b.IsFull() {
+		r.buffer = make([]byte, 32*1024)
+	}
+	return NewMultiBufferValue(b), nil
+}
+
 // Read implements Reader.Read().
 func (r *BytesToBufferReader) Read() (MultiBuffer, error) {
+	if r.buffer == nil {
+		return r.readSmall()
+	}
+
 	nBytes, err := r.reader.Read(r.buffer)
 	if err != nil {
 		return nil, err

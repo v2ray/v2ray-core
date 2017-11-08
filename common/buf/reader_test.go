@@ -14,11 +14,12 @@ import (
 func TestAdaptiveReader(t *testing.T) {
 	assert := With(t)
 
-	rawContent := make([]byte, 1024*1024)
-	buffer := bytes.NewBuffer(rawContent)
-
-	reader := NewReader(buffer)
+	reader := NewReader(bytes.NewReader(make([]byte, 1024*1024)))
 	b, err := reader.Read()
+	assert(err, IsNil)
+	assert(b.Len(), Equals, 2*1024)
+
+	b, err = reader.Read()
 	assert(err, IsNil)
 	assert(b.Len(), Equals, 32*1024)
 }

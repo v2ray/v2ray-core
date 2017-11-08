@@ -49,7 +49,7 @@ func (c *connection) Read(b []byte) (int, error) {
 
 func (c *connection) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	if c.mergingReader == nil {
-		c.mergingReader = buf.NewMergingReader(c)
+		c.mergingReader = buf.NewBytesToBufferReader(c)
 	}
 	return c.mergingReader.Read()
 }

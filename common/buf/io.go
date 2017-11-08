@@ -57,18 +57,6 @@ func NewReader(reader io.Reader) Reader {
 
 	return &BytesToBufferReader{
 		reader: reader,
-		buffer: make([]byte, 32*1024),
-	}
-}
-
-func NewMergingReader(reader io.Reader) Reader {
-	return NewMergingReaderSize(reader, 32*1024)
-}
-
-func NewMergingReaderSize(reader io.Reader, size uint32) Reader {
-	return &BytesToBufferReader{
-		reader: reader,
-		buffer: make([]byte, size),
 	}
 }
 

@@ -23,7 +23,7 @@ type conn struct {
 
 func (c *conn) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	if c.mergingReader == nil {
-		c.mergingReader = buf.NewMergingReaderSize(c.Conn, 16*1024)
+		c.mergingReader = buf.NewBytesToBufferReader(c.Conn)
 	}
 	return c.mergingReader.Read()
 }
