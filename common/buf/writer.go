@@ -90,11 +90,10 @@ func (w *bytesToBufferWriter) WriteMultiBuffer(mb MultiBuffer) error {
 func (w *bytesToBufferWriter) ReadFrom(reader io.Reader) (int64, error) {
 	mbReader := NewReader(reader)
 	totalBytes := int64(0)
-	eof := false
-	for !eof {
+	for {
 		mb, err := mbReader.Read()
-		if err == io.EOF {
-			eof = true
+		if errors.Cause(err) == io.EOF {
+			break
 		} else if err != nil {
 			return totalBytes, err
 		}
