@@ -75,6 +75,14 @@ sysArch(){
         VDIS="arm"
     elif [[ "$ARCH" == *"armv8"* ]] || [[ "$ARCH" == "aarch64" ]]; then
         VDIS="arm64"
+    elif [[ "$ARCH" == *"mips64le"* ]]; then
+        VDIS="mips64le"
+    elif [[ "$ARCH" == *"mips64"* ]]; then
+        VDIS="mips64"
+    elif [[ "$ARCH" == *"mipsle"* ]]; then
+        VDIS="mipsle"
+    elif [[ "$ARCH" == *"mips"* ]]; then
+        VDIS="mips"
     fi
     return 0
 }
