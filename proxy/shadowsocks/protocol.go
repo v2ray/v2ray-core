@@ -362,7 +362,7 @@ type UDPReader struct {
 	User   *protocol.User
 }
 
-func (v *UDPReader) Read() (buf.MultiBuffer, error) {
+func (v *UDPReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	buffer := buf.New()
 	err := buffer.AppendSupplier(buf.ReadFrom(v.Reader))
 	if err != nil {

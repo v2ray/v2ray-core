@@ -74,7 +74,7 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 
 	reader := buf.NewReader(conn)
 	for {
-		mpayload, err := reader.Read()
+		mpayload, err := reader.ReadMultiBuffer()
 		if err != nil {
 			break
 		}
@@ -129,7 +129,7 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 
 func (s *Server) handleConnection(ctx context.Context, conn internet.Connection, dispatcher dispatcher.Interface) error {
 	conn.SetReadDeadline(time.Now().Add(time.Second * 8))
-	bufferedReader := buf.NewBufferedReader(conn)
+	bufferedReader := buf.NewBufferedReader(buf.NewReader(conn))
 	request, bodyReader, err := ReadTCPSession(s.user, bufferedReader)
 	if err != nil {
 		log.Access(conn.RemoteAddr(), "", log.AccessRejected, err)
@@ -153,17 +153,17 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 	}
 
 	responseDone := signal.ExecuteAsync(func() error {
-		bufferedWriter := buf.NewBufferedWriter(conn)
+		bufferedWriter := buf.NewBufferedWriter(buf.NewWriter(conn))
 		responseWriter, err := WriteTCPResponse(request, bufferedWriter)
 		if err != nil {
 			return newError("failed to write response").Base(err)
 		}
 
-		payload, err := ray.InboundOutput().Read()
+		payload, err := ray.InboundOutput().ReadMultiBuffer()
 		if err != nil {
 			return err
 		}
-		if err := responseWriter.Write(payload); err != nil {
+		if err := responseWriter.WriteMultiBuffer(payload); err != nil {
 			return err
 		}
 		payload.Release()

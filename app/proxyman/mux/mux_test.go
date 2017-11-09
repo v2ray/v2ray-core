@@ -16,7 +16,7 @@ import (
 func readAll(reader buf.Reader) (buf.MultiBuffer, error) {
 	var mb buf.MultiBuffer
 	for {
-		b, err := reader.Read()
+		b, err := reader.ReadMultiBuffer()
 		if err == io.EOF {
 			break
 		}
@@ -45,7 +45,7 @@ func TestReaderWriter(t *testing.T) {
 	writePayload := func(writer *Writer, payload ...byte) error {
 		b := buf.New()
 		b.Append(payload)
-		return writer.Write(buf.NewMultiBufferValue(b))
+		return writer.WriteMultiBuffer(buf.NewMultiBufferValue(b))
 	}
 
 	assert(writePayload(writer, 'a', 'b', 'c', 'd'), IsNil)
@@ -60,7 +60,7 @@ func TestReaderWriter(t *testing.T) {
 	assert(writePayload(writer2, 'y'), IsNil)
 	writer2.Close()
 
-	bytesReader := buf.ToBytesReader(stream)
+	bytesReader := buf.NewBufferedReader(stream)
 	streamReader := NewStreamReader(bytesReader)
 
 	meta, err := ReadMetadata(bytesReader)

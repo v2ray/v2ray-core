@@ -15,11 +15,11 @@ func TestAdaptiveReader(t *testing.T) {
 	assert := With(t)
 
 	reader := NewReader(bytes.NewReader(make([]byte, 1024*1024)))
-	b, err := reader.Read()
+	b, err := reader.ReadMultiBuffer()
 	assert(err, IsNil)
 	assert(b.Len(), Equals, 2*1024)
 
-	b, err = reader.Read()
+	b, err = reader.ReadMultiBuffer()
 	assert(err, IsNil)
 	assert(b.Len(), Equals, 32*1024)
 }
@@ -28,22 +28,23 @@ func TestBytesReaderWriteTo(t *testing.T) {
 	assert := With(t)
 
 	stream := ray.NewStream(context.Background())
-	reader := ToBytesReader(stream)
+	reader := NewBufferedReader(stream)
 	b1 := New()
 	b1.AppendBytes('a', 'b', 'c')
 	b2 := New()
 	b2.AppendBytes('e', 'f', 'g')
-	assert(stream.Write(NewMultiBufferValue(b1, b2)), IsNil)
+	assert(stream.WriteMultiBuffer(NewMultiBufferValue(b1, b2)), IsNil)
 	stream.Close()
 
 	stream2 := ray.NewStream(context.Background())
-	writer := ToBytesWriter(stream2)
+	writer := NewBufferedWriter(stream2)
+	writer.SetBuffered(false)
 
 	nBytes, err := io.Copy(writer, reader)
 	assert(err, IsNil)
 	assert(nBytes, Equals, int64(6))
 
-	mb, err := stream2.Read()
+	mb, err := stream2.ReadMultiBuffer()
 	assert(err, IsNil)
 	assert(len(mb), Equals, 2)
 	assert(mb[0].String(), Equals, "abc")
@@ -54,16 +55,16 @@ func TestBytesReaderMultiBuffer(t *testing.T) {
 	assert := With(t)
 
 	stream := ray.NewStream(context.Background())
-	reader := ToBytesReader(stream)
+	reader := NewBufferedReader(stream)
 	b1 := New()
 	b1.AppendBytes('a', 'b', 'c')
 	b2 := New()
 	b2.AppendBytes('e', 'f', 'g')
-	assert(stream.Write(NewMultiBufferValue(b1, b2)), IsNil)
+	assert(stream.WriteMultiBuffer(NewMultiBufferValue(b1, b2)), IsNil)
 	stream.Close()
 
 	mbReader := NewReader(reader)
-	mb, err := mbReader.Read()
+	mb, err := mbReader.ReadMultiBuffer()
 	assert(err, IsNil)
 	assert(len(mb), Equals, 2)
 	assert(mb[0].String(), Equals, "abc")

@@ -11,8 +11,7 @@ import (
 )
 
 var (
-	_ buf.MultiBufferReader = (*connection)(nil)
-	_ buf.MultiBufferWriter = (*connection)(nil)
+	_ buf.Writer = (*connection)(nil)
 )
 
 // connection is a wrapper for net.Conn over WebSocket connection.
@@ -20,8 +19,7 @@ type connection struct {
 	conn   *websocket.Conn
 	reader io.Reader
 
-	mergingReader buf.Reader
-	mergingWriter buf.Writer
+	mergingWriter *buf.BufferedWriter
 }
 
 func newConnection(conn *websocket.Conn) *connection {
@@ -47,13 +45,6 @@ func (c *connection) Read(b []byte) (int, error) {
 	}
 }
 
-func (c *connection) ReadMultiBuffer() (buf.MultiBuffer, error) {
-	if c.mergingReader == nil {
-		c.mergingReader = buf.NewBytesToBufferReader(c)
-	}
-	return c.mergingReader.Read()
-}
-
 func (c *connection) getReader() (io.Reader, error) {
 	if c.reader != nil {
 		return c.reader, nil
@@ -77,9 +68,12 @@ func (c *connection) Write(b []byte) (int, error) {
 
 func (c *connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	if c.mergingWriter == nil {
-		c.mergingWriter = buf.NewMergingWriter(c)
+		c.mergingWriter = buf.NewBufferedWriter(buf.NewBufferToBytesWriter(c))
 	}
-	return c.mergingWriter.Write(mb)
+	if err := c.mergingWriter.WriteMultiBuffer(mb); err != nil {
+		return err
+	}
+	return c.mergingWriter.Flush()
 }
 
 func (c *connection) Close() error {

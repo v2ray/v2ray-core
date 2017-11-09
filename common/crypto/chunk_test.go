@@ -19,26 +19,26 @@ func TestChunkStreamIO(t *testing.T) {
 
 	b := buf.New()
 	b.AppendBytes('a', 'b', 'c', 'd')
-	assert(writer.Write(buf.NewMultiBufferValue(b)), IsNil)
+	assert(writer.WriteMultiBuffer(buf.NewMultiBufferValue(b)), IsNil)
 
 	b = buf.New()
 	b.AppendBytes('e', 'f', 'g')
-	assert(writer.Write(buf.NewMultiBufferValue(b)), IsNil)
+	assert(writer.WriteMultiBuffer(buf.NewMultiBufferValue(b)), IsNil)
 
-	assert(writer.Write(buf.MultiBuffer{}), IsNil)
+	assert(writer.WriteMultiBuffer(buf.MultiBuffer{}), IsNil)
 
 	assert(cache.Len(), Equals, 13)
 
-	mb, err := reader.Read()
+	mb, err := reader.ReadMultiBuffer()
 	assert(err, IsNil)
 	assert(mb.Len(), Equals, 4)
 	assert(mb[0].Bytes(), Equals, []byte("abcd"))
 
-	mb, err = reader.Read()
+	mb, err = reader.ReadMultiBuffer()
 	assert(err, IsNil)
 	assert(mb.Len(), Equals, 3)
 	assert(mb[0].Bytes(), Equals, []byte("efg"))
 
-	_, err = reader.Read()
+	_, err = reader.ReadMultiBuffer()
 	assert(err, Equals, io.EOF)
 }

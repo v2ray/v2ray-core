@@ -28,11 +28,11 @@ func TestSameDestinationDispatching(t *testing.T) {
 	link := ray.NewRay(ctx)
 	go func() {
 		for {
-			data, err := link.OutboundInput().Read()
+			data, err := link.OutboundInput().ReadMultiBuffer()
 			if err != nil {
 				break
 			}
-			err = link.OutboundOutput().Write(data)
+			err = link.OutboundOutput().WriteMultiBuffer(data)
 			assert(err, IsNil)
 		}
 	}()

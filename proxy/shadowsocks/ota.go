@@ -68,7 +68,7 @@ func NewChunkReader(reader io.Reader, auth *Authenticator) *ChunkReader {
 	}
 }
 
-func (v *ChunkReader) Read() (buf.MultiBuffer, error) {
+func (v *ChunkReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	buffer := buf.New()
 	if err := buffer.AppendSupplier(buf.ReadFullFrom(v.reader, 2)); err != nil {
 		buffer.Release()
@@ -117,8 +117,8 @@ func NewChunkWriter(writer io.Writer, auth *Authenticator) *ChunkWriter {
 	}
 }
 
-// Write implements buf.MultiBufferWriter.
-func (w *ChunkWriter) Write(mb buf.MultiBuffer) error {
+// WriteMultiBuffer implements buf.Writer.
+func (w *ChunkWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	defer mb.Release()
 
 	for {

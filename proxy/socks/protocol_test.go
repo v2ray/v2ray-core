@@ -24,11 +24,11 @@ func TestUDPEncoding(t *testing.T) {
 	content := []byte{'a'}
 	payload := buf.New()
 	payload.Append(content)
-	assert(writer.Write(buf.NewMultiBufferValue(payload)), IsNil)
+	assert(writer.WriteMultiBuffer(buf.NewMultiBufferValue(payload)), IsNil)
 
 	reader := NewUDPReader(b)
 
-	decodedPayload, err := reader.Read()
+	decodedPayload, err := reader.ReadMultiBuffer()
 	assert(err, IsNil)
 	assert(decodedPayload[0].Bytes(), Equals, content)
 }

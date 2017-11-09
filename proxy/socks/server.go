@@ -58,7 +58,7 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 
 func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispatcher dispatcher.Interface) error {
 	conn.SetReadDeadline(time.Now().Add(time.Second * 8))
-	reader := buf.NewBufferedReader(conn)
+	reader := buf.NewBufferedReader(buf.NewReader(conn))
 
 	inboundDest, ok := proxy.InboundEntryPointFromContext(ctx)
 	if !ok {
@@ -154,7 +154,7 @@ func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 
 	reader := buf.NewReader(conn)
 	for {
-		mpayload, err := reader.Read()
+		mpayload, err := reader.ReadMultiBuffer()
 		if err != nil {
 			return err
 		}

@@ -8,19 +8,19 @@ import (
 
 // BytesToBufferReader is a Reader that adjusts its reading speed automatically.
 type BytesToBufferReader struct {
-	reader io.Reader
+	io.Reader
 	buffer []byte
 }
 
 func NewBytesToBufferReader(reader io.Reader) Reader {
 	return &BytesToBufferReader{
-		reader: reader,
+		Reader: reader,
 	}
 }
 
 func (r *BytesToBufferReader) readSmall() (MultiBuffer, error) {
 	b := New()
-	if err := b.Reset(ReadFrom(r.reader)); err != nil {
+	if err := b.Reset(ReadFrom(r.Reader)); err != nil {
 		b.Release()
 		return nil, err
 	}
@@ -30,13 +30,13 @@ func (r *BytesToBufferReader) readSmall() (MultiBuffer, error) {
 	return NewMultiBufferValue(b), nil
 }
 
-// Read implements Reader.Read().
-func (r *BytesToBufferReader) Read() (MultiBuffer, error) {
+// ReadMultiBuffer implements Reader.
+func (r *BytesToBufferReader) ReadMultiBuffer() (MultiBuffer, error) {
 	if r.buffer == nil {
 		return r.readSmall()
 	}
 
-	nBytes, err := r.reader.Read(r.buffer)
+	nBytes, err := r.Reader.Read(r.buffer)
 	if err != nil {
 		return nil, err
 	}
@@ -46,20 +46,33 @@ func (r *BytesToBufferReader) Read() (MultiBuffer, error) {
 	return mb, nil
 }
 
-type readerAdpater struct {
-	MultiBufferReader
+type BufferedReader struct {
+	stream       Reader
+	legacyReader io.Reader
+	leftOver     MultiBuffer
+	buffered     bool
 }
 
-func (r *readerAdpater) Read() (MultiBuffer, error) {
-	return r.ReadMultiBuffer()
+func NewBufferedReader(reader Reader) *BufferedReader {
+	r := &BufferedReader{
+		stream:   reader,
+		buffered: true,
+	}
+	if lr, ok := reader.(io.Reader); ok {
+		r.legacyReader = lr
+	}
+	return r
 }
 
-type bufferToBytesReader struct {
-	stream   Reader
-	leftOver MultiBuffer
+func (r *BufferedReader) SetBuffered(f bool) {
+	r.buffered = f
 }
 
-func (r *bufferToBytesReader) Read(b []byte) (int, error) {
+func (r *BufferedReader) IsBuffered() bool {
+	return r.buffered
+}
+
+func (r *BufferedReader) Read(b []byte) (int, error) {
 	if r.leftOver != nil {
 		nBytes, _ := r.leftOver.Read(b)
 		if r.leftOver.IsEmpty() {
@@ -69,7 +82,11 @@ func (r *bufferToBytesReader) Read(b []byte) (int, error) {
 		return nBytes, nil
 	}
 
-	mb, err := r.stream.Read()
+	if !r.buffered && r.legacyReader != nil {
+		return r.legacyReader.Read(b)
+	}
+
+	mb, err := r.stream.ReadMultiBuffer()
 	if err != nil {
 		return 0, err
 	}
@@ -81,39 +98,39 @@ func (r *bufferToBytesReader) Read(b []byte) (int, error) {
 	return nBytes, nil
 }
 
-func (r *bufferToBytesReader) ReadMultiBuffer() (MultiBuffer, error) {
+func (r *BufferedReader) ReadMultiBuffer() (MultiBuffer, error) {
 	if r.leftOver != nil {
 		mb := r.leftOver
 		r.leftOver = nil
 		return mb, nil
 	}
 
-	return r.stream.Read()
+	return r.stream.ReadMultiBuffer()
 }
 
-func (r *bufferToBytesReader) writeToInternal(writer io.Writer) (int64, error) {
+func (r *BufferedReader) writeToInternal(writer io.Writer) (int64, error) {
 	mbWriter := NewWriter(writer)
 	totalBytes := int64(0)
 	if r.leftOver != nil {
 		totalBytes += int64(r.leftOver.Len())
-		if err := mbWriter.Write(r.leftOver); err != nil {
+		if err := mbWriter.WriteMultiBuffer(r.leftOver); err != nil {
 			return 0, err
 		}
 	}
 
 	for {
-		mb, err := r.stream.Read()
+		mb, err := r.stream.ReadMultiBuffer()
 		if err != nil {
 			return totalBytes, err
 		}
 		totalBytes += int64(mb.Len())
-		if err := mbWriter.Write(mb); err != nil {
+		if err := mbWriter.WriteMultiBuffer(mb); err != nil {
 			return totalBytes, err
 		}
 	}
 }
 
-func (r *bufferToBytesReader) WriteTo(writer io.Writer) (int64, error) {
+func (r *BufferedReader) WriteTo(writer io.Writer) (int64, error) {
 	nBytes, err := r.writeToInternal(writer)
 	if errors.Cause(err) == io.EOF {
 		return nBytes, nil

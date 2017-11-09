@@ -17,7 +17,7 @@ type copyHandler struct {
 }
 
 func (h *copyHandler) readFrom(reader Reader) (MultiBuffer, error) {
-	mb, err := reader.Read()
+	mb, err := reader.ReadMultiBuffer()
 	if err != nil {
 		for _, handler := range h.onReadError {
 			err = handler(err)
@@ -27,13 +27,17 @@ func (h *copyHandler) readFrom(reader Reader) (MultiBuffer, error) {
 }
 
 func (h *copyHandler) writeTo(writer Writer, mb MultiBuffer) error {
-	err := writer.Write(mb)
+	err := writer.WriteMultiBuffer(mb)
 	if err != nil {
 		for _, handler := range h.onWriteError {
 			err = handler(err)
 		}
 	}
 	return err
+}
+
+type SizeCounter struct {
+	Size int64
 }
 
 type CopyOption func(*copyHandler)
@@ -58,6 +62,14 @@ func UpdateActivity(timer signal.ActivityUpdater) CopyOption {
 	return func(handler *copyHandler) {
 		handler.onData = append(handler.onData, func(MultiBuffer) {
 			timer.Update()
+		})
+	}
+}
+
+func CountSize(sc *SizeCounter) CopyOption {
+	return func(handler *copyHandler) {
+		handler.onData = append(handler.onData, func(b MultiBuffer) {
+			sc.Size += int64(b.Len())
 		})
 	}
 }

@@ -25,9 +25,11 @@ func TestWriter(t *testing.T) {
 
 	writeBuffer := bytes.NewBuffer(make([]byte, 0, 1024*1024))
 
-	writer := NewWriter(NewBufferedWriter(writeBuffer))
-	err := writer.Write(NewMultiBufferValue(lb))
+	writer := NewBufferedWriter(NewWriter(writeBuffer))
+	writer.SetBuffered(false)
+	err := writer.WriteMultiBuffer(NewMultiBufferValue(lb))
 	assert(err, IsNil)
+	assert(writer.Flush(), IsNil)
 	assert(expectedBytes, Equals, writeBuffer.Bytes())
 }
 
@@ -36,20 +38,21 @@ func TestBytesWriterReadFrom(t *testing.T) {
 
 	cache := ray.NewStream(context.Background())
 	reader := bufio.NewReader(io.LimitReader(rand.Reader, 8192))
-	_, err := reader.WriteTo(ToBytesWriter(cache))
+	writer := NewBufferedWriter(cache)
+	writer.SetBuffered(false)
+	_, err := reader.WriteTo(writer)
 	assert(err, IsNil)
 
-	mb, err := cache.Read()
+	mb, err := cache.ReadMultiBuffer()
 	assert(err, IsNil)
 	assert(mb.Len(), Equals, 8192)
-	assert(len(mb), Equals, 4)
 }
 
 func TestDiscardBytes(t *testing.T) {
 	assert := With(t)
 
 	b := New()
-	common.Must(b.Reset(ReadFrom(rand.Reader)))
+	common.Must(b.Reset(ReadFullFrom(rand.Reader, Size)))
 
 	nBytes, err := io.Copy(DiscardBytes, b)
 	assert(nBytes, Equals, int64(Size))
@@ -64,7 +67,7 @@ func TestDiscardBytesMultiBuffer(t *testing.T) {
 	common.Must2(buffer.ReadFrom(io.LimitReader(rand.Reader, size)))
 
 	r := NewReader(buffer)
-	nBytes, err := io.Copy(DiscardBytes, ToBytesReader(r))
+	nBytes, err := io.Copy(DiscardBytes, NewBufferedReader(r))
 	assert(nBytes, Equals, int64(size))
 	assert(err, IsNil)
 }

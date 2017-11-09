@@ -93,7 +93,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 	ctx, timer := signal.CancelAfterInactivity(ctx, time.Minute*5)
 
 	if request.Command == protocol.RequestCommandTCP {
-		bufferedWriter := buf.NewBufferedWriter(conn)
+		bufferedWriter := buf.NewBufferedWriter(buf.NewWriter(conn))
 		bodyWriter, err := WriteTCPRequest(request, bufferedWriter)
 		if err != nil {
 			return newError("failed to write request").Base(err)

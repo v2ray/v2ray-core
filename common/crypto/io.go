@@ -28,7 +28,7 @@ func (r *CryptionReader) Read(data []byte) (int, error) {
 }
 
 var (
-	_ buf.MultiBufferWriter = (*CryptionWriter)(nil)
+	_ buf.Writer = (*CryptionWriter)(nil)
 )
 
 type CryptionWriter struct {

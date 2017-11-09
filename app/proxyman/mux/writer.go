@@ -56,7 +56,7 @@ func (w *Writer) writeMetaOnly() error {
 	if err := b.Reset(meta.AsSupplier()); err != nil {
 		return err
 	}
-	return w.writer.Write(buf.NewMultiBufferValue(b))
+	return w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(b))
 }
 
 func (w *Writer) writeData(mb buf.MultiBuffer) error {
@@ -74,11 +74,11 @@ func (w *Writer) writeData(mb buf.MultiBuffer) error {
 	mb2 := buf.NewMultiBufferCap(len(mb) + 1)
 	mb2.Append(frame)
 	mb2.AppendMulti(mb)
-	return w.writer.Write(mb2)
+	return w.writer.WriteMultiBuffer(mb2)
 }
 
-// Write implements buf.MultiBufferWriter.
-func (w *Writer) Write(mb buf.MultiBuffer) error {
+// WriteMultiBuffer implements buf.Writer.
+func (w *Writer) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	defer mb.Release()
 
 	if mb.IsEmpty() {
@@ -109,5 +109,5 @@ func (w *Writer) Close() {
 	frame := buf.New()
 	common.Must(frame.Reset(meta.AsSupplier()))
 
-	w.writer.Write(buf.NewMultiBufferValue(frame))
+	w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(frame))
 }

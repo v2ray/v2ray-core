@@ -16,18 +16,18 @@ func TestStreamIO(t *testing.T) {
 	stream := NewStream(context.Background())
 	b1 := buf.New()
 	b1.AppendBytes('a')
-	assert(stream.Write(buf.NewMultiBufferValue(b1)), IsNil)
+	assert(stream.WriteMultiBuffer(buf.NewMultiBufferValue(b1)), IsNil)
 
-	_, err := stream.Read()
+	_, err := stream.ReadMultiBuffer()
 	assert(err, IsNil)
 
 	stream.Close()
-	_, err = stream.Read()
+	_, err = stream.ReadMultiBuffer()
 	assert(err, Equals, io.EOF)
 
 	b2 := buf.New()
 	b2.AppendBytes('b')
-	err = stream.Write(buf.NewMultiBufferValue(b2))
+	err = stream.WriteMultiBuffer(buf.NewMultiBufferValue(b2))
 	assert(err, Equals, io.ErrClosedPipe)
 }
 
@@ -37,13 +37,13 @@ func TestStreamClose(t *testing.T) {
 	stream := NewStream(context.Background())
 	b1 := buf.New()
 	b1.AppendBytes('a')
-	assert(stream.Write(buf.NewMultiBufferValue(b1)), IsNil)
+	assert(stream.WriteMultiBuffer(buf.NewMultiBufferValue(b1)), IsNil)
 
 	stream.Close()
 
-	_, err := stream.Read()
+	_, err := stream.ReadMultiBuffer()
 	assert(err, IsNil)
 
-	_, err = stream.Read()
+	_, err = stream.ReadMultiBuffer()
 	assert(err, Equals, io.EOF)
 }

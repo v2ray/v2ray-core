@@ -48,7 +48,7 @@ func NewChunkStreamReader(sizeDecoder ChunkSizeDecoder, reader io.Reader) *Chunk
 		sizeDecoder: sizeDecoder,
 		reader:      buf.NewReader(reader),
 		buffer:      make([]byte, sizeDecoder.SizeBytes()),
-		leftOver: buf.NewMultiBufferCap(16),
+		leftOver:    buf.NewMultiBufferCap(16),
 	}
 }
 
@@ -56,7 +56,7 @@ func (r *ChunkStreamReader) readAtLeast(size int) error {
 	mb := r.leftOver
 	r.leftOver = nil
 	for mb.Len() < size {
-		extra, err := r.reader.Read()
+		extra, err := r.reader.ReadMultiBuffer()
 		if err != nil {
 			mb.Release()
 			return err
@@ -78,7 +78,7 @@ func (r *ChunkStreamReader) readSize() (uint16, error) {
 	return r.sizeDecoder.Decode(r.buffer)
 }
 
-func (r *ChunkStreamReader) Read() (buf.MultiBuffer, error) {
+func (r *ChunkStreamReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	size := r.leftOverSize
 	if size == 0 {
 		nextSize, err := r.readSize()
@@ -129,10 +129,10 @@ func NewChunkStreamWriter(sizeEncoder ChunkSizeEncoder, writer io.Writer) *Chunk
 	}
 }
 
-func (w *ChunkStreamWriter) Write(mb buf.MultiBuffer) error {
+func (w *ChunkStreamWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	const sliceSize = 8192
 	mbLen := mb.Len()
-	mb2Write := buf.NewMultiBufferCap(mbLen / buf.Size + mbLen / sliceSize + 2)
+	mb2Write := buf.NewMultiBufferCap(mbLen/buf.Size + mbLen/sliceSize + 2)
 
 	for {
 		slice := mb.SliceBySize(sliceSize)
@@ -150,5 +150,5 @@ func (w *ChunkStreamWriter) Write(mb buf.MultiBuffer) error {
 		}
 	}
 
-	return w.writer.Write(mb2Write)
+	return w.writer.WriteMultiBuffer(mb2Write)
 }

@@ -169,8 +169,7 @@ type SystemConnection interface {
 }
 
 var (
-	_ buf.MultiBufferReader = (*Connection)(nil)
-	_ buf.MultiBufferWriter = (*Connection)(nil)
+	_ buf.Reader = (*Connection)(nil)
 )
 
 // Connection is a KCP connection over UDP.
@@ -265,7 +264,7 @@ func (v *Connection) OnDataOutput() {
 	}
 }
 
-// ReadMultiBuffer implements buf.MultiBufferReader.
+// ReadMultiBuffer implements buf.Reader.
 func (v *Connection) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	if v == nil {
 		return nil, io.EOF
@@ -373,13 +372,6 @@ func (v *Connection) Write(b []byte) (int, error) {
 			}
 		}
 	}
-}
-
-func (c *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
-	if c.mergingWriter == nil {
-		c.mergingWriter = buf.NewMergingWriterSize(c, c.mss)
-	}
-	return c.mergingWriter.Write(mb)
 }
 
 func (v *Connection) SetState(state State) {

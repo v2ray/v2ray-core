@@ -255,15 +255,18 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 	requestDone := signal.ExecuteAsync(func() error {
 		request.Header.Set("Connection", "close")
 
-		requestWriter := buf.ToBytesWriter(ray.InboundInput())
+		requestWriter := buf.NewBufferedWriter(ray.InboundInput())
 		if err := request.Write(requestWriter); err != nil {
+			return err
+		}
+		if err := requestWriter.Flush(); err != nil {
 			return err
 		}
 		return nil
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
-		responseReader := bufio.NewReaderSize(buf.ToBytesReader(ray.InboundOutput()), 2048)
+		responseReader := bufio.NewReaderSize(buf.NewBufferedReader(ray.InboundOutput()), 2048)
 		response, err := http.ReadResponse(responseReader, request)
 		if err == nil {
 			StripHopByHopHeaders(response.Header)

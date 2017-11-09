@@ -106,7 +106,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	ctx, timer := signal.CancelAfterInactivity(ctx, time.Minute*5)
 
 	requestDone := signal.ExecuteAsync(func() error {
-		writer := buf.NewBufferedWriter(conn)
+		writer := buf.NewBufferedWriter(buf.NewWriter(conn))
 		if err := session.EncodeRequestHeader(request, writer); err != nil {
 			return newError("failed to encode request").Base(err).AtWarning()
 		}
@@ -117,7 +117,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 			return newError("failed to get first payload").Base(err)
 		}
 		if !firstPayload.IsEmpty() {
-			if err := bodyWriter.Write(firstPayload); err != nil {
+			if err := bodyWriter.WriteMultiBuffer(firstPayload); err != nil {
 				return newError("failed to write first payload").Base(err)
 			}
 			firstPayload.Release()
@@ -132,7 +132,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		}
 
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
-			if err := bodyWriter.Write(buf.MultiBuffer{}); err != nil {
+			if err := bodyWriter.WriteMultiBuffer(buf.MultiBuffer{}); err != nil {
 				return err
 			}
 		}
@@ -142,7 +142,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	responseDone := signal.ExecuteAsync(func() error {
 		defer output.Close()
 
-		reader := buf.NewBufferedReader(conn)
+		reader := buf.NewBufferedReader(buf.NewReader(conn))
 		header, err := session.DecodeResponseHeader(reader)
 		if err != nil {
 			return err

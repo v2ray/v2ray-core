@@ -10,29 +10,23 @@ import (
 //go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg tls -path Transport,Internet,TLS
 
 var (
-	_ buf.MultiBufferReader = (*conn)(nil)
-	_ buf.MultiBufferWriter = (*conn)(nil)
+	_ buf.Writer = (*conn)(nil)
 )
 
 type conn struct {
 	net.Conn
 
-	mergingReader buf.Reader
-	mergingWriter buf.Writer
-}
-
-func (c *conn) ReadMultiBuffer() (buf.MultiBuffer, error) {
-	if c.mergingReader == nil {
-		c.mergingReader = buf.NewBytesToBufferReader(c.Conn)
-	}
-	return c.mergingReader.Read()
+	mergingWriter *buf.BufferedWriter
 }
 
 func (c *conn) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	if c.mergingWriter == nil {
-		c.mergingWriter = buf.NewMergingWriter(c.Conn)
+		c.mergingWriter = buf.NewBufferedWriter(buf.NewWriter(c.Conn))
 	}
-	return c.mergingWriter.Write(mb)
+	if err := c.mergingWriter.WriteMultiBuffer(mb); err != nil {
+		return err
+	}
+	return c.mergingWriter.Flush()
 }
 
 func Client(c net.Conn, config *tls.Config) net.Conn {

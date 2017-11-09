@@ -161,7 +161,7 @@ func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
 
 	log.Trace(newError("dispatching request to ", dest))
 	data, _ := s.input.ReadTimeout(time.Millisecond * 500)
-	if err := writer.Write(data); err != nil {
+	if err := writer.WriteMultiBuffer(data); err != nil {
 		log.Trace(newError("failed to write first payload").Base(err))
 		return
 	}
@@ -234,7 +234,7 @@ func (m *Client) handleStatusEnd(meta *FrameMetadata, reader io.Reader) error {
 func (m *Client) fetchOutput() {
 	defer m.cancel()
 
-	reader := buf.ToBytesReader(m.inboundRay.InboundOutput())
+	reader := buf.NewBufferedReader(m.inboundRay.InboundOutput())
 
 	for {
 		meta, err := ReadMetadata(reader)
@@ -396,7 +396,7 @@ func (w *ServerWorker) handleFrame(ctx context.Context, reader io.Reader) error 
 
 func (w *ServerWorker) run(ctx context.Context) {
 	input := w.outboundRay.OutboundInput()
-	reader := buf.ToBytesReader(input)
+	reader := buf.NewBufferedReader(input)
 
 	defer w.sessionManager.Close()
 

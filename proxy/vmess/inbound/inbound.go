@@ -142,12 +142,12 @@ func transferResponse(timer signal.ActivityUpdater, session *encoding.ServerSess
 	bodyWriter := session.EncodeResponseBody(request, output)
 
 	// Optimize for small response packet
-	data, err := input.Read()
+	data, err := input.ReadMultiBuffer()
 	if err != nil {
 		return err
 	}
 
-	if err := bodyWriter.Write(data); err != nil {
+	if err := bodyWriter.WriteMultiBuffer(data); err != nil {
 		return err
 	}
 	data.Release()
@@ -163,7 +163,7 @@ func transferResponse(timer signal.ActivityUpdater, session *encoding.ServerSess
 	}
 
 	if request.Option.Has(protocol.RequestOptionChunkStream) {
-		if err := bodyWriter.Write(buf.MultiBuffer{}); err != nil {
+		if err := bodyWriter.WriteMultiBuffer(buf.MultiBuffer{}); err != nil {
 			return err
 		}
 	}
@@ -177,7 +177,7 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 		return err
 	}
 
-	reader := buf.NewBufferedReader(connection)
+	reader := buf.NewBufferedReader(buf.NewReader(connection))
 
 	session := encoding.NewServerSession(v.clients, v.sessionHistory)
 	request, err := session.DecodeRequestHeader(reader)
@@ -213,14 +213,12 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 
-	reader.SetBuffered(false)
-
 	requestDone := signal.ExecuteAsync(func() error {
 		return transferRequest(timer, session, request, reader, input)
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
-		writer := buf.NewBufferedWriter(connection)
+		writer := buf.NewBufferedWriter(buf.NewWriter(connection))
 		defer writer.Flush()
 
 		response := &protocol.ResponseHeader{

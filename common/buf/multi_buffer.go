@@ -8,16 +8,6 @@ import (
 	"v2ray.com/core/common/errors"
 )
 
-// MultiBufferWriter is a writer that writes MultiBuffer.
-type MultiBufferWriter interface {
-	WriteMultiBuffer(MultiBuffer) error
-}
-
-// MultiBufferReader is a reader that reader payload as MultiBuffer.
-type MultiBufferReader interface {
-	ReadMultiBuffer() (MultiBuffer, error)
-}
-
 // ReadAllToMultiBuffer reads all content from the reader into a MultiBuffer, until EOF.
 func ReadAllToMultiBuffer(reader io.Reader) (MultiBuffer, error) {
 	mb := NewMultiBufferCap(128)
