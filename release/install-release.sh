@@ -271,7 +271,7 @@ installInitScrip(){
 }
 
 Help(){
-    echo "./install-release.sh [-h] [-c] [-p proxy] [-f] [-v vx.y.z] [-l file]"
+    echo "./install-release.sh [-h] [-c] [-p proxy] [-f] [--version vx.y.z] [-l file]"
     echo "  -h, --help            Show help"
     echo "  -p, --proxy           To download through a proxy server, use -p socks5://127.0.0.1:1080 or -p http://127.0.0.1:3128 etc"
     echo "  -f, --force           Force install"
