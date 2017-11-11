@@ -4,6 +4,7 @@ package platform
 
 import (
 	"os"
+	"path/filepath"
 )
 
 func ExpandEnv(s string) string {
@@ -12,4 +13,10 @@ func ExpandEnv(s string) string {
 
 func LineSeparator() string {
 	return "\n"
+}
+
+func GetToolLocation(file string) string {
+	const name = "v2ray.location.tool"
+	toolPath := EnvFlag{Name: name, AltName: NormalizeEnvName(name)}.GetValue(getExecutableDir)
+	return filepath.Join(toolPath, file)
 }
