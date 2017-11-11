@@ -46,7 +46,8 @@ func NormalizeEnvName(name string) string {
 }
 
 func GetAssetLocation(file string) string {
-	assetPath := EnvFlag{Name: "v2ray.location.asset"}.GetValue(func() string {
+	const name = "v2ray.location.asset"
+	assetPath := EnvFlag{Name: name, AltName: NormalizeEnvName(name)}.GetValue(func() string {
 		exec, err := os.Executable()
 		if err != nil {
 			return ""
