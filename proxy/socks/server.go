@@ -107,7 +107,8 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 	if timeout == 0 {
 		timeout = time.Minute * 5
 	}
-	ctx, timer := signal.CancelAfterInactivity(ctx, timeout)
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, timeout)
 
 	ray, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {

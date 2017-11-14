@@ -204,7 +204,8 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 
 	ctx = protocol.ContextWithUser(ctx, request.User)
 
-	ctx, timer := signal.CancelAfterInactivity(ctx, userSettings.PayloadTimeout)
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, userSettings.PayloadTimeout)
 	ray, err := dispatcher.Dispatch(ctx, request.Destination())
 	if err != nil {
 		return newError("failed to dispatch request to ", request.Destination()).Base(err)

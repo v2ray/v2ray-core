@@ -64,7 +64,9 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 	if timeout == 0 {
 		timeout = time.Minute * 5
 	}
-	ctx, timer := signal.CancelAfterInactivity(ctx, timeout)
+
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, timeout)
 
 	inboundRay, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {

@@ -2,12 +2,14 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
 	"github.com/miekg/dns"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/log"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
@@ -15,7 +17,6 @@ import (
 )
 
 const (
-	DefaultTTL       = uint32(3600)
 	CleanupInterval  = time.Second * 120
 	CleanupThreshold = 512
 )
@@ -55,7 +56,6 @@ func NewUDPNameServer(address net.Destination, dispatcher dispatcher.Interface) 
 	return s
 }
 
-// Private: Visible for testing.
 func (v *UDPNameServer) Cleanup() {
 	expiredRequests := make([]uint16, 0, 16)
 	now := time.Now()
@@ -70,10 +70,8 @@ func (v *UDPNameServer) Cleanup() {
 		delete(v.requests, id)
 	}
 	v.Unlock()
-	expiredRequests = nil
 }
 
-// Private: Visible for testing.
 func (v *UDPNameServer) AssignUnusedID(response chan<- *ARecord) uint16 {
 	var id uint16
 	v.Lock()
@@ -98,7 +96,6 @@ func (v *UDPNameServer) AssignUnusedID(response chan<- *ARecord) uint16 {
 	return id
 }
 
-// Private: Visible for testing.
 func (v *UDPNameServer) HandleResponse(payload *buf.Buffer) {
 	msg := new(dns.Msg)
 	err := msg.Unpack(payload.Bytes())
@@ -110,8 +107,8 @@ func (v *UDPNameServer) HandleResponse(payload *buf.Buffer) {
 		IPs: make([]net.IP, 0, 16),
 	}
 	id := msg.Id
-	ttl := DefaultTTL
-	log.Trace(newError("handling response for id ", id, " content: ", msg.String()).AtDebug())
+	ttl := uint32(3600) // an hour
+	log.Trace(newError("handling response for id ", id, " content: ", msg).AtDebug())
 
 	v.Lock()
 	request, found := v.requests[id]
@@ -126,6 +123,7 @@ func (v *UDPNameServer) HandleResponse(payload *buf.Buffer) {
 		switch rr := rr.(type) {
 		case *dns.A:
 			record.IPs = append(record.IPs, rr.A)
+			fmt.Println("Adding ans:", rr.A)
 			if rr.Hdr.Ttl < ttl {
 				ttl = rr.Hdr.Ttl
 			}
@@ -152,13 +150,18 @@ func (v *UDPNameServer) BuildQueryA(domain string, id uint16) *buf.Buffer {
 			Name:   dns.Fqdn(domain),
 			Qtype:  dns.TypeA,
 			Qclass: dns.ClassINET,
+		},
+		{
+			Name:   dns.Fqdn(domain),
+			Qtype:  dns.TypeAAAA,
+			Qclass: dns.ClassINET,
 		}}
 
 	buffer := buf.New()
-	buffer.AppendSupplier(func(b []byte) (int, error) {
+	common.Must(buffer.Reset(func(b []byte) (int, error) {
 		writtenBuffer, err := msg.PackBuffer(b)
 		return len(writtenBuffer), err
-	})
+	}))
 
 	return buffer
 }
@@ -167,7 +170,7 @@ func (v *UDPNameServer) QueryA(domain string) <-chan *ARecord {
 	response := make(chan *ARecord, 1)
 	id := v.AssignUnusedID(response)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*8)
+	ctx, cancel := context.WithCancel(context.Background())
 	v.udpServer.Dispatch(ctx, v.address, v.BuildQueryA(domain, id), v.HandleResponse)
 
 	go func() {
@@ -176,11 +179,10 @@ func (v *UDPNameServer) QueryA(domain string) <-chan *ARecord {
 			v.Lock()
 			_, found := v.requests[id]
 			v.Unlock()
-			if found {
-				v.udpServer.Dispatch(ctx, v.address, v.BuildQueryA(domain, id), v.HandleResponse)
-			} else {
+			if !found {
 				break
 			}
+			v.udpServer.Dispatch(ctx, v.address, v.BuildQueryA(domain, id), v.HandleResponse)
 		}
 		cancel()
 	}()
@@ -205,7 +207,7 @@ func (v *LocalNameServer) QueryA(domain string) <-chan *ARecord {
 
 		response <- &ARecord{
 			IPs:    ips,
-			Expire: time.Now().Add(time.Second * time.Duration(DefaultTTL)),
+			Expire: time.Now().Add(time.Hour),
 		}
 	}()
 

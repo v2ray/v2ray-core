@@ -13,7 +13,8 @@ import (
 func TestActivityTimer(t *testing.T) {
 	assert := With(t)
 
-	ctx, timer := CancelAfterInactivity(context.Background(), time.Second*5)
+	ctx, cancel := context.WithCancel(context.Background())
+	timer := CancelAfterInactivity(ctx, cancel, time.Second*5)
 	time.Sleep(time.Second * 6)
 	assert(ctx.Err(), IsNotNil)
 	runtime.KeepAlive(timer)
@@ -22,7 +23,8 @@ func TestActivityTimer(t *testing.T) {
 func TestActivityTimerUpdate(t *testing.T) {
 	assert := With(t)
 
-	ctx, timer := CancelAfterInactivity(context.Background(), time.Second*10)
+	ctx, cancel := context.WithCancel(context.Background())
+	timer := CancelAfterInactivity(ctx, cancel, time.Second*10)
 	time.Sleep(time.Second * 3)
 	assert(ctx.Err(), IsNil)
 	timer.SetTimeout(time.Second * 1)

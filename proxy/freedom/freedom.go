@@ -107,7 +107,8 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	if timeout == 0 {
 		timeout = time.Minute * 5
 	}
-	ctx, timer := signal.CancelAfterInactivity(ctx, timeout)
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, timeout)
 
 	requestDone := signal.ExecuteAsync(func() error {
 		var writer buf.Writer

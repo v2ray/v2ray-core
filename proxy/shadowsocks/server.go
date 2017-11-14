@@ -146,7 +146,8 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 	ctx = protocol.ContextWithUser(ctx, request.User)
 
 	userSettings := s.user.GetSettings()
-	ctx, timer := signal.CancelAfterInactivity(ctx, userSettings.PayloadTimeout)
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, userSettings.PayloadTimeout)
 	ray, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return err
