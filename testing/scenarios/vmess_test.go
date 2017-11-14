@@ -674,7 +674,7 @@ func TestVMessKCP(t *testing.T) {
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
-	serverPort := pickUDPPort()
+	serverPort := udp.PickPort()
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
@@ -1098,7 +1098,7 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 	}
 
 	clientPort := pickPort()
-	clientUDPPort := pickUDPPort()
+	clientUDPPort := udp.PickPort()
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{

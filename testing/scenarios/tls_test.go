@@ -17,6 +17,7 @@ import (
 	"v2ray.com/core/proxy/vmess/inbound"
 	"v2ray.com/core/proxy/vmess/outbound"
 	"v2ray.com/core/testing/servers/tcp"
+	"v2ray.com/core/testing/servers/udp"
 	tlsgen "v2ray.com/core/testing/tls"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
@@ -149,7 +150,7 @@ func TestTLSOverKCP(t *testing.T) {
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
-	serverPort := pickUDPPort()
+	serverPort := udp.PickPort()
 	serverConfig := &core.Config{
 		Inbound: []*proxyman.InboundHandlerConfig{
 			{
