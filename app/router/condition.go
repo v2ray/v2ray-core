@@ -258,8 +258,9 @@ func NewCIDRMatcher(ip []byte, mask uint32, onSource bool) (*CIDRMatcher, error)
 
 func (v *CIDRMatcher) Apply(ctx context.Context) bool {
 	ips := make([]net.IP, 0, 4)
-	if resolveIPs, ok := proxy.ResolvedIPsFromContext(ctx); ok {
-		for _, rip := range resolveIPs {
+	if resolver, ok := proxy.ResolvedIPsFromContext(ctx); ok {
+		resolvedIPs := resolver.Resolve()
+		for _, rip := range resolvedIPs {
 			if !rip.Family().IsIPv6() {
 				continue
 			}
@@ -301,8 +302,9 @@ func NewIPv4Matcher(ipnet *net.IPNetTable, onSource bool) *IPv4Matcher {
 
 func (v *IPv4Matcher) Apply(ctx context.Context) bool {
 	ips := make([]net.IP, 0, 4)
-	if resolveIPs, ok := proxy.ResolvedIPsFromContext(ctx); ok {
-		for _, rip := range resolveIPs {
+	if resolver, ok := proxy.ResolvedIPsFromContext(ctx); ok {
+		resolvedIPs := resolver.Resolve()
+		for _, rip := range resolvedIPs {
 			if !rip.Family().IsIPv4() {
 				continue
 			}

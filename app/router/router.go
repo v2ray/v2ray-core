@@ -64,7 +64,42 @@ func (r *Router) resolveIP(dest net.Destination) []net.Address {
 	return dests
 }
 
+type ipResolver struct {
+	ip        []net.Address
+	domain    string
+	resolved  bool
+	dnsServer dns.Server
+}
+
+func (r *ipResolver) Resolve() []net.Address {
+	if r.resolved {
+		return r.ip
+	}
+
+	log.Trace(newError("looking for IP for domain: ", r.domain))
+	r.resolved = true
+	ips := r.dnsServer.Get(r.domain)
+	if len(ips) == 0 {
+		return nil
+	}
+	r.ip = make([]net.Address, len(ips))
+	for i, ip := range ips {
+		r.ip[i] = net.IPAddress(ip)
+	}
+	return r.ip
+}
+
 func (r *Router) TakeDetour(ctx context.Context) (string, error) {
+	resolver := &ipResolver{
+		dnsServer: r.dnsServer,
+	}
+	if r.domainStrategy == Config_IpOnDemand {
+		if dest, ok := proxy.TargetFromContext(ctx); ok && dest.Address.Family().IsDomain() {
+			resolver.domain = dest.Address.Domain()
+			ctx = proxy.ContextWithResolveIPs(ctx, resolver)
+		}
+	}
+
 	for _, rule := range r.rules {
 		if rule.Apply(ctx) {
 			return rule.Tag, nil
@@ -77,10 +112,10 @@ func (r *Router) TakeDetour(ctx context.Context) (string, error) {
 	}
 
 	if r.domainStrategy == Config_IpIfNonMatch && dest.Address.Family().IsDomain() {
-		log.Trace(newError("looking up IP for ", dest))
-		ipDests := r.resolveIP(dest)
-		if ipDests != nil {
-			ctx = proxy.ContextWithResolveIPs(ctx, ipDests)
+		resolver.domain = dest.Address.Domain()
+		ips := resolver.Resolve()
+		if len(ips) > 0 {
+			ctx = proxy.ContextWithResolveIPs(ctx, resolver)
 			for _, rule := range r.rules {
 				if rule.Apply(ctx) {
 					return rule.Tag, nil

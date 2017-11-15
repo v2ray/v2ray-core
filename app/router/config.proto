@@ -76,6 +76,9 @@ message Config {
 
     // Resolve to IP if the domain doesn't match any rules.
     IpIfNonMatch = 2;
+
+    // Resolve to IP if any rule requires IP matching.
+    IpOnDemand = 3;
   }
   DomainStrategy domain_strategy = 1;
   repeated RoutingRule rule = 2;
