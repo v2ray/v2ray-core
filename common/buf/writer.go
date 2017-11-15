@@ -67,13 +67,14 @@ func (w *BufferedWriter) Write(b []byte) (int, error) {
 		if err != nil {
 			return totalBytes, err
 		}
-		if w.buffer.IsFull() {
+		if !w.buffered || w.buffer.IsFull() {
 			if err := w.Flush(); err != nil {
 				return totalBytes, err
 			}
 		}
 		b = b[nBytes:]
 	}
+
 	return totalBytes, nil
 }
 
