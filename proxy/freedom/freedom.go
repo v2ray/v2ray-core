@@ -49,25 +49,20 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	return f, nil
 }
 
-func (v *Handler) ResolveIP(destination net.Destination) net.Destination {
-	if !destination.Address.Family().IsDomain() {
-		return destination
+func (v *Handler) ResolveIP(ctx context.Context, domain string) net.Address {
+	if resolver, ok := proxy.ResolvedIPsFromContext(ctx); ok {
+		ips := resolver.Resolve()
+		if len(ips) == 0 {
+			return nil
+		}
+		return ips[dice.Roll(len(ips))]
 	}
 
-	ips := v.dns.Get(destination.Address.Domain())
+	ips := v.dns.Get(domain)
 	if len(ips) == 0 {
-		log.Trace(newError("DNS returns nil answer. Keep domain as is."))
-		return destination
+		return nil
 	}
-
-	ip := ips[dice.Roll(len(ips))]
-	newDest := net.Destination{
-		Network: destination.Network,
-		Address: net.IPAddress(ip),
-		Port:    destination.Port,
-	}
-	log.Trace(newError("changing destination from ", destination, " to ", newDest))
-	return newDest
+	return net.IPAddress(ips[dice.Roll(len(ips))])
 }
 
 func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
@@ -87,7 +82,15 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 
 	var conn internet.Connection
 	if v.domainStrategy == Config_USE_IP && destination.Address.Family().IsDomain() {
-		destination = v.ResolveIP(destination)
+		ip := v.ResolveIP(ctx, destination.Address.Domain())
+		if ip != nil {
+			destination = net.Destination{
+				Network: destination.Network,
+				Address: ip,
+				Port:    destination.Port,
+			}
+			log.Trace(newError("changing destination to ", destination))
+		}
 	}
 
 	err := retry.ExponentialBackoff(5, 100).On(func() error {
