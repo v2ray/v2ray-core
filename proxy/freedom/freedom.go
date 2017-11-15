@@ -20,6 +20,7 @@ import (
 	"v2ray.com/core/transport/ray"
 )
 
+// Handler handles Freedom connections.
 type Handler struct {
 	domainStrategy Config_DomainStrategy
 	timeout        uint32
@@ -27,6 +28,7 @@ type Handler struct {
 	destOverride   *DestinationOverride
 }
 
+// New creates a new Freedom handler.
 func New(ctx context.Context, config *Config) (*Handler, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
@@ -49,7 +51,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	return f, nil
 }
 
-func (v *Handler) ResolveIP(ctx context.Context, domain string) net.Address {
+func (h *Handler) resolveIP(ctx context.Context, domain string) net.Address {
 	if resolver, ok := proxy.ResolvedIPsFromContext(ctx); ok {
 		ips := resolver.Resolve()
 		if len(ips) == 0 {
@@ -58,17 +60,18 @@ func (v *Handler) ResolveIP(ctx context.Context, domain string) net.Address {
 		return ips[dice.Roll(len(ips))]
 	}
 
-	ips := v.dns.Get(domain)
+	ips := h.dns.Get(domain)
 	if len(ips) == 0 {
 		return nil
 	}
 	return net.IPAddress(ips[dice.Roll(len(ips))])
 }
 
-func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
+// Process implements proxy.Outbound.
+func (h *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
 	destination, _ := proxy.TargetFromContext(ctx)
-	if v.destOverride != nil {
-		server := v.destOverride.Server
+	if h.destOverride != nil {
+		server := h.destOverride.Server
 		destination = net.Destination{
 			Network: destination.Network,
 			Address: server.Address.AsAddress(),
@@ -80,9 +83,8 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	input := outboundRay.OutboundInput()
 	output := outboundRay.OutboundOutput()
 
-	var conn internet.Connection
-	if v.domainStrategy == Config_USE_IP && destination.Address.Family().IsDomain() {
-		ip := v.ResolveIP(ctx, destination.Address.Domain())
+	if h.domainStrategy == Config_USE_IP && destination.Address.Family().IsDomain() {
+		ip := h.resolveIP(ctx, destination.Address.Domain())
 		if ip != nil {
 			destination = net.Destination{
 				Network: destination.Network,
@@ -93,6 +95,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		}
 	}
 
+	var conn internet.Connection
 	err := retry.ExponentialBackoff(5, 100).On(func() error {
 		rawConn, err := dialer.Dial(ctx, destination)
 		if err != nil {
@@ -106,7 +109,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	}
 	defer conn.Close()
 
-	timeout := time.Second * time.Duration(v.timeout)
+	timeout := time.Second * time.Duration(h.timeout)
 	if timeout == 0 {
 		timeout = time.Minute * 5
 	}
