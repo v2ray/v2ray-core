@@ -121,6 +121,7 @@ func (w *BufferedWriter) SetBuffered(f bool) error {
 	return nil
 }
 
+// ReadFrom implements io.ReaderFrom.
 func (w *BufferedWriter) ReadFrom(reader io.Reader) (int64, error) {
 	var sc SizeCounter
 	if !w.buffer.IsEmpty() {
@@ -130,11 +131,12 @@ func (w *BufferedWriter) ReadFrom(reader io.Reader) (int64, error) {
 		}
 	}
 
+	w.buffered = false
+
 	if readerFrom, ok := w.writer.(io.ReaderFrom); ok {
 		return readerFrom.ReadFrom(reader)
 	}
 
-	w.buffered = false
 	err := Copy(NewReader(reader), w, CountSize(&sc))
 	return sc.Size, err
 }

@@ -257,13 +257,8 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 		request.Header.Set("Connection", "close")
 
 		requestWriter := buf.NewBufferedWriter(ray.InboundInput())
-		if err := request.Write(requestWriter); err != nil {
-			return err
-		}
-		if err := requestWriter.Flush(); err != nil {
-			return err
-		}
-		return nil
+		common.Must(requestWriter.SetBuffered(false))
+		return request.Write(requestWriter)
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
