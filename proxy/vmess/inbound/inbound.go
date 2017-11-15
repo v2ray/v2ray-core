@@ -174,7 +174,7 @@ func transferResponse(timer signal.ActivityUpdater, session *encoding.ServerSess
 // Process implements proxy.Inbound.Process().
 func (v *Handler) Process(ctx context.Context, network net.Network, connection internet.Connection, dispatcher dispatcher.Interface) error {
 	if err := connection.SetReadDeadline(time.Now().Add(time.Second * 8)); err != nil {
-		return err
+		return newError("unable to set read deadline").Base(err).AtWarning()
 	}
 
 	reader := buf.NewBufferedReader(buf.NewReader(connection))
@@ -198,7 +198,9 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, "")
 	log.Trace(newError("received request for ", request.Destination()))
 
-	common.Must(connection.SetReadDeadline(time.Time{}))
+	if err := connection.SetReadDeadline(time.Time{}); err != nil {
+		log.Trace(newError("unable to set back read deadline").Base(err))
+	}
 
 	userSettings := request.User.GetSettings()
 
