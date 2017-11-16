@@ -65,7 +65,7 @@ func parseHost(rawHost string, defaultPort net.Port) (net.Destination, error) {
 }
 
 func isTimeout(err error) bool {
-	nerr, ok := err.(net.Error)
+	nerr, ok := errors.Cause(err).(net.Error)
 	return ok && nerr.Timeout()
 }
 
