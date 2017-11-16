@@ -60,6 +60,10 @@ func (w *BufferedWriter) Write(b []byte) (int, error) {
 		return w.legacyWriter.Write(b)
 	}
 
+	if w.buffer == nil {
+		w.buffer = New()
+	}
+
 	totalBytes := 0
 	for len(b) > 0 {
 		nBytes, err := w.buffer.Write(b)
