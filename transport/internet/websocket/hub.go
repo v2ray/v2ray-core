@@ -22,8 +22,8 @@ type requestHandler struct {
 }
 
 var upgrader = &websocket.Upgrader{
-	ReadBufferSize:   32 * 1024,
-	WriteBufferSize:  32 * 1024,
+	ReadBufferSize:   8 * 1024,
+	WriteBufferSize:  8 * 1024,
 	HandshakeTimeout: time.Second * 8,
 }
 

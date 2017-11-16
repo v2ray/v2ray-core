@@ -35,8 +35,8 @@ func dialWebsocket(ctx context.Context, dest net.Destination) (net.Conn, error) 
 		NetDial: func(network, addr string) (net.Conn, error) {
 			return internet.DialSystem(ctx, src, dest)
 		},
-		ReadBufferSize:   32 * 1024,
-		WriteBufferSize:  32 * 1024,
+		ReadBufferSize:   8 * 1024,
+		WriteBufferSize:  8 * 1024,
 		HandshakeTimeout: time.Second * 8,
 	}
 
