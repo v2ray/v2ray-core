@@ -52,18 +52,6 @@ func NewRouter(ctx context.Context, config *Config) (*Router, error) {
 	return r, nil
 }
 
-func (r *Router) resolveIP(dest net.Destination) []net.Address {
-	ips := r.dnsServer.Get(dest.Address.Domain())
-	if len(ips) == 0 {
-		return nil
-	}
-	dests := make([]net.Address, len(ips))
-	for idx, ip := range ips {
-		dests[idx] = net.IPAddress(ip)
-	}
-	return dests
-}
-
 type ipResolver struct {
 	ip        []net.Address
 	domain    string
