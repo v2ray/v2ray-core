@@ -26,7 +26,16 @@ func jsonToProto(input io.Reader) (*core.Config, error) {
 		return nil, err
 	}
 	defer stdoutReader.Close()
-	return core.LoadConfig(core.ConfigFormat_Protobuf, stdoutReader)
+
+	if err := cmd.Start(); err != nil {
+		return nil, err
+	}
+
+	config, err := core.LoadConfig(core.ConfigFormat_Protobuf, stdoutReader)
+
+	cmd.Wait()
+
+	return config, err
 }
 
 func init() {
