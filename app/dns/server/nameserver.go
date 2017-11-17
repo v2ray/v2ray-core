@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -123,7 +122,6 @@ func (v *UDPNameServer) HandleResponse(payload *buf.Buffer) {
 		switch rr := rr.(type) {
 		case *dns.A:
 			record.IPs = append(record.IPs, rr.A)
-			fmt.Println("Adding ans:", rr.A)
 			if rr.Hdr.Ttl < ttl {
 				ttl = rr.Hdr.Ttl
 			}
