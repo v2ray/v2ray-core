@@ -95,6 +95,7 @@ if [[ "${PRERELEASE}" == "false" ]]; then
 gsutil cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/v2ray gs://v2ray-docker/
 gsutil cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/v2ctl gs://v2ray-docker/
 gsutil cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/geoip.dat gs://v2ray-docker/
+gsutil cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/geosite.dat gs://v2ray-docker/
 
 DOCKER_HUB_API=https://registry.hub.docker.com/u/v2ray/official/trigger/${DOCKER_HUB_KEY}/
 curl -H "Content-Type: application/json" --data '{"build": true}' -X POST "${DOCKER_HUB_API}"
