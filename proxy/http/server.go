@@ -175,10 +175,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		defer ray.InboundInput().Close()
 
 		v2reader := buf.NewReader(conn)
-		if err := buf.Copy(v2reader, ray.InboundInput(), buf.UpdateActivity(timer)); err != nil {
-			return err
-		}
-		return nil
+		return buf.Copy(v2reader, ray.InboundInput(), buf.UpdateActivity(timer))
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
