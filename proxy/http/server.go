@@ -168,6 +168,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		if err := ray.InboundInput().WriteMultiBuffer(buf.NewMultiBufferValue(payload)); err != nil {
 			return err
 		}
+		reader = nil
 	}
 
 	requestDone := signal.ExecuteAsync(func() error {
