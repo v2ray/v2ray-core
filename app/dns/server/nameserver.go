@@ -98,7 +98,9 @@ func (v *UDPNameServer) AssignUnusedID(response chan<- *ARecord) uint16 {
 func (v *UDPNameServer) HandleResponse(payload *buf.Buffer) {
 	msg := new(dns.Msg)
 	err := msg.Unpack(payload.Bytes())
-	if err != nil {
+	if err == dns.ErrTruncated {
+		log.Trace(newError("truncated message received. DNS server should still work. If you see anything abnormal, please submit an issue to v2ray-core.").AtWarning())
+	} else if err != nil {
 		log.Trace(newError("failed to parse DNS response").Base(err).AtWarning())
 		return
 	}
