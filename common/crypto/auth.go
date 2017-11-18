@@ -162,7 +162,7 @@ func (r *AuthenticationReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 		mb.Write(b)
 	} else {
 		var bb *buf.Buffer
-		if len(b) < buf.Size {
+		if len(b) <= buf.Size {
 			bb = buf.New()
 		} else {
 			bb = buf.NewLocal(len(b))
@@ -180,7 +180,7 @@ func (r *AuthenticationReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 			mb.Write(b)
 		} else {
 			var bb *buf.Buffer
-			if len(b) < buf.Size {
+			if len(b) <= buf.Size {
 				bb = buf.New()
 			} else {
 				bb = buf.NewLocal(len(b))
