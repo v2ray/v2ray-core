@@ -6,9 +6,7 @@ import (
 	"os/exec"
 
 	"v2ray.com/core"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/platform"
-	jsonconf "v2ray.com/ext/tools/conf/serial"
 )
 
 func jsonToProto(input io.Reader) (*core.Config, error) {
@@ -42,8 +40,7 @@ func init() {
 	core.RegisterConfigLoader(core.ConfigFormat_JSON, func(input io.Reader) (*core.Config, error) {
 		config, err := jsonToProto(input)
 		if err != nil {
-			log.Trace(newError("failed to execute v2ctl to convert config file.").Base(err).AtWarning())
-			return jsonconf.LoadJSONConfig(input)
+			return nil, newError("failed to execute v2ctl to convert config file.").Base(err)
 		}
 		return config, nil
 	})
