@@ -22,6 +22,12 @@ const (
 
 var (
 	pseudoDestination = net.UDPDestination(net.LocalHostIP, net.Port(53))
+
+	multiQuestionDns = map[net.Address]bool{
+		net.IPAddress([]byte{8, 8, 8, 8}): true,
+		net.IPAddress([]byte{8, 8, 4, 4}): true,
+		net.IPAddress([]byte{9, 9, 9, 9}): true,
+	}
 )
 
 type ARecord struct {
@@ -150,12 +156,14 @@ func (v *UDPNameServer) BuildQueryA(domain string, id uint16) *buf.Buffer {
 			Name:   dns.Fqdn(domain),
 			Qtype:  dns.TypeA,
 			Qclass: dns.ClassINET,
-		},
-		{
+		}}
+	if multiQuestionDns[v.address.Address] {
+		msg.Question = append(msg.Question, dns.Question{
 			Name:   dns.Fqdn(domain),
 			Qtype:  dns.TypeAAAA,
 			Qclass: dns.ClassINET,
-		}}
+		})
+	}
 
 	buffer := buf.New()
 	common.Must(buffer.Reset(func(b []byte) (int, error) {
