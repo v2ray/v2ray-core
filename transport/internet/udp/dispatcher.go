@@ -99,7 +99,7 @@ func handleInput(ctx context.Context, conn *connEntry, callback ResponseCallback
 
 		mb, err := input.ReadMultiBuffer()
 		if err != nil {
-			log.Trace(newError("failed to handl UDP input").Base(err))
+			log.Trace(newError("failed to handle UDP input").Base(err))
 			conn.cancel()
 			return
 		}
