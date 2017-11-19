@@ -21,9 +21,7 @@ const (
 )
 
 var (
-	pseudoDestination = net.UDPDestination(net.LocalHostIP, net.Port(53))
-
-	multiQuestionDns = map[net.Address]bool{
+	multiQuestionDNS = map[net.Address]bool{
 		net.IPAddress([]byte{8, 8, 8, 8}): true,
 		net.IPAddress([]byte{8, 8, 4, 4}): true,
 		net.IPAddress([]byte{9, 9, 9, 9}): true,
@@ -61,47 +59,47 @@ func NewUDPNameServer(address net.Destination, dispatcher dispatcher.Interface) 
 	return s
 }
 
-func (v *UDPNameServer) Cleanup() {
+func (s *UDPNameServer) Cleanup() {
 	expiredRequests := make([]uint16, 0, 16)
 	now := time.Now()
-	v.Lock()
-	for id, r := range v.requests {
+	s.Lock()
+	for id, r := range s.requests {
 		if r.expire.Before(now) {
 			expiredRequests = append(expiredRequests, id)
 			close(r.response)
 		}
 	}
 	for _, id := range expiredRequests {
-		delete(v.requests, id)
+		delete(s.requests, id)
 	}
-	v.Unlock()
+	s.Unlock()
 }
 
-func (v *UDPNameServer) AssignUnusedID(response chan<- *ARecord) uint16 {
+func (s *UDPNameServer) AssignUnusedID(response chan<- *ARecord) uint16 {
 	var id uint16
-	v.Lock()
-	if len(v.requests) > CleanupThreshold && v.nextCleanup.Before(time.Now()) {
-		v.nextCleanup = time.Now().Add(CleanupInterval)
-		go v.Cleanup()
+	s.Lock()
+	if len(s.requests) > CleanupThreshold && s.nextCleanup.Before(time.Now()) {
+		s.nextCleanup = time.Now().Add(CleanupInterval)
+		go s.Cleanup()
 	}
 
 	for {
 		id = dice.RollUint16()
-		if _, found := v.requests[id]; found {
+		if _, found := s.requests[id]; found {
 			continue
 		}
 		log.Trace(newError("add pending request id ", id).AtDebug())
-		v.requests[id] = &PendingRequest{
+		s.requests[id] = &PendingRequest{
 			expire:   time.Now().Add(time.Second * 8),
 			response: response,
 		}
 		break
 	}
-	v.Unlock()
+	s.Unlock()
 	return id
 }
 
-func (v *UDPNameServer) HandleResponse(payload *buf.Buffer) {
+func (s *UDPNameServer) HandleResponse(payload *buf.Buffer) {
 	msg := new(dns.Msg)
 	err := msg.Unpack(payload.Bytes())
 	if err == dns.ErrTruncated {
@@ -117,14 +115,14 @@ func (v *UDPNameServer) HandleResponse(payload *buf.Buffer) {
 	ttl := uint32(3600) // an hour
 	log.Trace(newError("handling response for id ", id, " content: ", msg).AtDebug())
 
-	v.Lock()
-	request, found := v.requests[id]
+	s.Lock()
+	request, found := s.requests[id]
 	if !found {
-		v.Unlock()
+		s.Unlock()
 		return
 	}
-	delete(v.requests, id)
-	v.Unlock()
+	delete(s.requests, id)
+	s.Unlock()
 
 	for _, rr := range msg.Answer {
 		switch rr := rr.(type) {
@@ -146,8 +144,7 @@ func (v *UDPNameServer) HandleResponse(payload *buf.Buffer) {
 	close(request.response)
 }
 
-func (v *UDPNameServer) BuildQueryA(domain string, id uint16) *buf.Buffer {
-
+func (s *UDPNameServer) BuildQueryA(domain string, id uint16) *buf.Buffer {
 	msg := new(dns.Msg)
 	msg.Id = id
 	msg.RecursionDesired = true
@@ -157,7 +154,7 @@ func (v *UDPNameServer) BuildQueryA(domain string, id uint16) *buf.Buffer {
 			Qtype:  dns.TypeA,
 			Qclass: dns.ClassINET,
 		}}
-	if multiQuestionDns[v.address.Address] {
+	if multiQuestionDNS[s.address.Address] {
 		msg.Question = append(msg.Question, dns.Question{
 			Name:   dns.Fqdn(domain),
 			Qtype:  dns.TypeAAAA,
@@ -174,23 +171,23 @@ func (v *UDPNameServer) BuildQueryA(domain string, id uint16) *buf.Buffer {
 	return buffer
 }
 
-func (v *UDPNameServer) QueryA(domain string) <-chan *ARecord {
+func (s *UDPNameServer) QueryA(domain string) <-chan *ARecord {
 	response := make(chan *ARecord, 1)
-	id := v.AssignUnusedID(response)
+	id := s.AssignUnusedID(response)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	v.udpServer.Dispatch(ctx, v.address, v.BuildQueryA(domain, id), v.HandleResponse)
+	s.udpServer.Dispatch(ctx, s.address, s.BuildQueryA(domain, id), s.HandleResponse)
 
 	go func() {
 		for i := 0; i < 2; i++ {
 			time.Sleep(time.Second)
-			v.Lock()
-			_, found := v.requests[id]
-			v.Unlock()
+			s.Lock()
+			_, found := s.requests[id]
+			s.Unlock()
 			if !found {
 				break
 			}
-			v.udpServer.Dispatch(ctx, v.address, v.BuildQueryA(domain, id), v.HandleResponse)
+			s.udpServer.Dispatch(ctx, s.address, s.BuildQueryA(domain, id), s.HandleResponse)
 		}
 		cancel()
 	}()
@@ -201,7 +198,7 @@ func (v *UDPNameServer) QueryA(domain string) <-chan *ARecord {
 type LocalNameServer struct {
 }
 
-func (v *LocalNameServer) QueryA(domain string) <-chan *ARecord {
+func (*LocalNameServer) QueryA(domain string) <-chan *ARecord {
 	response := make(chan *ARecord, 1)
 
 	go func() {
