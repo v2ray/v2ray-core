@@ -272,7 +272,7 @@ func TestHttpBasicAuth(t *testing.T) {
 		{
 			resp, err := client.Get("http://127.0.0.1:" + httpServerPort.String())
 			assert(err, IsNil)
-			assert(resp.StatusCode, Equals, 401)
+			assert(resp.StatusCode, Equals, 407)
 		}
 
 		{
