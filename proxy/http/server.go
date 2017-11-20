@@ -167,7 +167,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 	if reader.Buffered() > 0 {
 		payload := buf.New()
 		common.Must(payload.Reset(func(b []byte) (int, error) {
-			return reader.Read(b[:reader.Buffered()])
+			return reader.Read(b)
 		}))
 		if err := ray.InboundInput().WriteMultiBuffer(buf.NewMultiBufferValue(payload)); err != nil {
 			return err
@@ -274,7 +274,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
-		responseReader := bufio.NewReaderSize(buf.NewBufferedReader(ray.InboundOutput()), 2048)
+		responseReader := bufio.NewReaderSize(buf.NewBufferedReader(ray.InboundOutput()), buf.Size)
 		response, err := http.ReadResponse(responseReader, request)
 		if err == nil {
 			StripHopByHopHeaders(response.Header)
