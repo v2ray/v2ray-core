@@ -73,6 +73,12 @@ type Address interface {
 // ParseAddress parses a string into an Address. The return value will be an IPAddress when
 // the string is in the form of IPv4 or IPv6 address, or a DomainAddress otherwise.
 func ParseAddress(addr string) Address {
+	// Handle IPv6 address in form as "[2001:4860:0:2001::68]"
+	lenAddr := len(addr)
+	if lenAddr > 0 && addr[0] == '[' && addr[lenAddr-1] == ']' {
+		addr = addr[1 : lenAddr-1]
+	}
+
 	ip := net.ParseIP(addr)
 	if ip != nil {
 		return IPAddress(ip)
