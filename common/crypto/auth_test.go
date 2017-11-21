@@ -43,7 +43,7 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 	}, PlainChunkSizeParser{}, cache, protocol.TransferTypeStream)
 
 	assert(writer.WriteMultiBuffer(buf.NewMultiBufferValue(payload)), IsNil)
-	assert(cache.Len(), Equals, 83360)
+	assert(cache.Len(), Equals, 82658)
 	assert(writer.WriteMultiBuffer(buf.MultiBuffer{}), IsNil)
 	assert(err, IsNil)
 

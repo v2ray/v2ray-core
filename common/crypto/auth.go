@@ -193,10 +193,6 @@ func (r *AuthenticationReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	return mb, nil
 }
 
-const (
-	WriteSize = 1024
-)
-
 type AuthenticationWriter struct {
 	auth         Authenticator
 	writer       buf.Writer
@@ -235,12 +231,13 @@ func (w *AuthenticationWriter) seal(b *buf.Buffer) (*buf.Buffer, error) {
 func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
 	defer mb.Release()
 
+	payloadSize := buf.Size - w.auth.Overhead() - w.sizeParser.SizeBytes()
 	mb2Write := buf.NewMultiBufferCap(len(mb) + 10)
 
 	for {
 		b := buf.New()
 		common.Must(b.Reset(func(bb []byte) (int, error) {
-			return mb.Read(bb[:WriteSize])
+			return mb.Read(bb[:payloadSize])
 		}))
 		eb, err := w.seal(b)
 		b.Release()
