@@ -109,14 +109,13 @@ func newSimpleServer(config *Config) (*simpleServer, error) {
 		common.Must(space.AddApplication(d))
 	}
 
-	disp := dispatcher.FromSpace(space)
-	if disp == nil {
+	if disp := dispatcher.FromSpace(space); disp == nil {
 		d, err := app.CreateAppFromConfig(ctx, new(dispatcher.Config))
 		if err != nil {
 			return nil, err
 		}
 		common.Must(space.AddApplication(d))
-		disp = d.(dispatcher.Interface)
+		// disp = d.(dispatcher.Interface)
 	}
 
 	for _, inbound := range config.Inbound {
