@@ -21,3 +21,13 @@ V provides building blocks for network proxy development. Read our [Wiki](https:
 
 ## License
 [The MIT License (MIT)](https://raw.githubusercontent.com/v2ray/v2ray-core/master/LICENSE)
+
+## Credits
+
+This repo relies on the following third-party projects:
+
+* In production:
+  * [miekg/dns](https://github.com/miekg/dns)
+  * [gorilla/websocket](https://github.com/gorilla/websocket)
+* For testing only:
+  * [h12w/socks](https://github.com/h12w/socks)
