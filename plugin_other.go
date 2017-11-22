@@ -2,6 +2,6 @@
 
 package core
 
-func LoadPlugins() error {
+func loadPluginsInternal() error {
 	return nil
 }

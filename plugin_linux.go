@@ -12,7 +12,7 @@ import (
 	"v2ray.com/core/common/platform"
 )
 
-func LoadPlugins() error {
+func loadPluginsInternal() error {
 	pluginPath := platform.GetPluginDirectory()
 
 	dir, err := os.Open(pluginPath)
