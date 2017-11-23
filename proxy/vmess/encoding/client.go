@@ -80,10 +80,6 @@ func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 	buffer.AppendBytes(c.responseHeader, byte(header.Option))
 
 	padingLen := dice.Roll(16)
-	if header.Security.Is(protocol.SecurityType_LEGACY) {
-		// Disable padding in legacy mode for a smooth transition.
-		padingLen = 0
-	}
 	security := byte(padingLen<<4) | byte(header.Security)
 	buffer.AppendBytes(security, byte(0), byte(header.Command))
 
