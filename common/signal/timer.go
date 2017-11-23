@@ -39,6 +39,11 @@ func (t *ActivityTimer) run() {
 		case <-t.ctx.Done():
 			return
 		case timeout := <-t.timeout:
+			if timeout == 0 {
+				t.cancel()
+				return
+			}
+
 			ticker.Stop()
 			ticker = time.NewTicker(timeout)
 		}
