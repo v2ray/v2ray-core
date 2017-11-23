@@ -86,23 +86,24 @@ func main() {
 	if *plugin {
 		if err := core.LoadPlugins(); err != nil {
 			fmt.Println("Failed to load plugins:", err.Error())
-			return
+			os.Exit(-1)
 		}
 	}
 
 	server, err := startV2Ray()
 	if err != nil {
 		fmt.Println(err.Error())
-		return
+		os.Exit(-1)
 	}
 
 	if *test {
 		fmt.Println("Configuration OK.")
-		return
+		os.Exit(0)
 	}
 
 	if err := server.Start(); err != nil {
 		fmt.Println("Failed to start", err)
+		os.Exit(-1)
 	}
 
 	osSignals := make(chan os.Signal, 1)
