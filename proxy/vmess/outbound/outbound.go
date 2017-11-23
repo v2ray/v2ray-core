@@ -152,11 +152,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 
 		reader.SetBuffered(false)
 		bodyReader := session.DecodeResponseBody(request, reader)
-		if err := buf.Copy(bodyReader, output, buf.UpdateActivity(timer)); err != nil {
-			return err
-		}
-
-		return nil
+		return buf.Copy(bodyReader, output, buf.UpdateActivity(timer))
 	})
 
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
