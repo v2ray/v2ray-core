@@ -3,6 +3,8 @@ package impl_test
 import (
 	"testing"
 
+	"v2ray.com/core/app/proxyman"
+
 	. "v2ray.com/core/app/dispatcher/impl"
 	. "v2ray.com/ext/assert"
 )
@@ -183,4 +185,10 @@ func TestTLSHeaders(t *testing.T) {
 		assert(domain, Equals, test.domain)
 		assert(err, Equals, test.err)
 	}
+}
+
+func TestUnknownSniffer(t *testing.T) {
+	assert := With(t)
+
+	assert(func() { NewSniffer([]proxyman.KnownProtocols{proxyman.KnownProtocols(-1)}) }, Panics)
 }
