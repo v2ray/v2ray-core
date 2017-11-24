@@ -86,8 +86,12 @@ func parseBasicAuth(auth string) (username, password string, ok bool) {
 	return cs[:s], cs[s+1:], true
 }
 
+type readerOnly struct {
+	io.Reader
+}
+
 func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
-	reader := bufio.NewReaderSize(conn, buf.Size)
+	reader := bufio.NewReaderSize(readerOnly{conn}, buf.Size)
 
 Start:
 	conn.SetReadDeadline(time.Now().Add(time.Second * 16))
