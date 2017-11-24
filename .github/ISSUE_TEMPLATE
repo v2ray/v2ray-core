@@ -1,44 +1,89 @@
-提交 Issue 之前请先阅读 [Issue 指引](https://www.v2ray.com/zh_cn/chapter_01/issue.html)，然后回答下面的问题，谢谢。
-Please read the [instruction](https://www.v2ray.com/en/get_started/issue.html) and answer the following questions before submitting your issue. Thank you.
+Please skip to the [English section](#english) if you don't write Chinese.
+
+#### 中文：
+提交 Issue 之前请先阅读 [Issue 指引](https://www.v2ray.com/chapter_01/issue.html)，然后回答下面的问题，谢谢。
+除非特殊情况，请完整填写所有问题，缺少信息将减慢Issue回复速度。
 
 1)  你正在使用哪个版本的 V2Ray？（如果服务器和客户端使用了不同版本，请注明）
-    What version of V2Ray are you using (If you deploy different version on server and client, please explicitly point out)?
 
 2)  你的使用场景是什么？比如使用 Chrome 通过 Socks/VMess 代理观看 YouTube 视频。
-    What's your scenario of using V2Ray? E.g., Watching YouTube videos in Chrome via Socks/VMess proxy.
 
-3)  你看到的不正常的现象是什么？
-    What did you see?
+3)  你看到的不正常的现象是什么？（请描述具体现象，比如访问超时，TLS 证书错误等）
 
 4)  你期待看到的正确表现是怎样的？
-    What's your expectation?
 
-5)  请附上你的配置文件（提交 Issue 前请隐藏服务器端IP地址）。
-    Please attach your configuration file (**Mask IP addresses before submit this issue**).
-
-    Server Configuration File（服务器端配置文件）:
+5)  请附上你的配置（提交 Issue 前请隐藏服务器端IP地址）。
+    
+    服务器端配置:
 ```javascript
     // 在这里附上服务器端配置文件
-    // Please attach your server configuration file here.
 ```
 
-    Client Configuration File（客户端配置文件）:
+    客户端配置:
 ```javascript
-    // 在这里附上客户端配置文件
-    // Please attach your client configuration file here.
+    // 在这里附上客户端配置
 ```
 
-6)  请附上出错时软件输出的日志。在 Linux 中，日志通常在 `/var/log/v2ray/error.log` 文件中。
-    Please attach the log file, especially the bottom lines if the file is large. Log file is usually `/var/log/v2ray/error.log` on Linux.
+6)  请附上出错时软件输出的错误日志。在 Linux 中，日志通常在 `/var/log/v2ray/error.log` 文件中。
 
-    Server Log File（服务器端日志）:
+    服务器端错误日志:
 ```
     // 在这里附上服务器端日志
-    // Please attach your server log here.
 ```
 
-    Client Log File（客户端日志）:
+    客户端错误日志:
 ```
     // 在这里附上客户端日志
-    // Please attach your client log here.
 ```
+
+7) 请附上访问日志。在 Linux 中，日志通常在 `/var/log/v2ray/error.log` 文件中。
+```
+    // 在这里附上服务器端日志
+```
+
+请预览一下你填的内容再提交。
+
+如果你已经填完上面的问卷，请把下面的英文部份删除，再提交 Issue。
+Please remove the Chinese section above.
+
+#### English:
+Please read the [instruction](https://www.v2ray.com/en/get_started/issue.html) and answer the following questions before submitting your issue. Thank you.
+Please answer all the questions with enough information. Lack of information will delay response.
+
+1) What version of V2Ray are you using (If you deploy different version on server and client, please explicitly point out)?
+
+2) What's your scenario of using V2Ray? E.g., Watching YouTube videos in Chrome via Socks/VMess proxy.
+
+3) What did you see? (Please describe in detail, such as timeout, fake TLS certificate etc)
+
+4) What's your expectation?
+
+5) Please attach your configuration file (**Mask IP addresses before submit this issue**).
+
+    Server configuration:
+```javascript
+    // Please attach your server configuration here.
+```
+
+    Client configuration:
+```javascript
+    // Please attach your client configuration here.
+```
+
+6) Please attach error logs, especially the bottom lines if the file is large. Error log file is usually at `/var/log/v2ray/error.log` on Linux.
+
+    Server error log:
+```
+    // Please attach your server error log here.
+```
+    Client error log:
+```
+    // Please attach your client error log here.
+```
+
+7) Please attach access log. Access log is usually at '/var/log/v2ray/access.log' on Linux.
+```
+    // Please attach your server access log here.
+```
+
+Please review your issue before submitting.
