@@ -82,21 +82,17 @@ func CountSize(sc *SizeCounter) CopyOption {
 func copyInternal(reader Reader, writer Writer, handler *copyHandler) error {
 	for {
 		buffer, err := handler.readFrom(reader)
+		if !buffer.IsEmpty() {
+			for _, handler := range handler.onData {
+				handler(buffer)
+			}
+
+			if werr := handler.writeTo(writer, buffer); werr != nil {
+				buffer.Release()
+				return werr
+			}
+		}
 		if err != nil {
-			return err
-		}
-
-		if buffer.IsEmpty() {
-			buffer.Release()
-			continue
-		}
-
-		for _, handler := range handler.onData {
-			handler(buffer)
-		}
-
-		if err := handler.writeTo(writer, buffer); err != nil {
-			buffer.Release()
 			return err
 		}
 	}

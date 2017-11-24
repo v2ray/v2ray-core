@@ -6,6 +6,11 @@ import (
 	"v2ray.com/core/common/errors"
 )
 
+var (
+	_ Reader    = (*BytesToBufferReader)(nil)
+	_ io.Reader = (*BytesToBufferReader)(nil)
+)
+
 // BytesToBufferReader is a Reader that adjusts its reading speed automatically.
 type BytesToBufferReader struct {
 	io.Reader
@@ -37,14 +42,20 @@ func (r *BytesToBufferReader) ReadMultiBuffer() (MultiBuffer, error) {
 	}
 
 	nBytes, err := r.Reader.Read(r.buffer)
-	if err != nil {
-		return nil, err
+	if nBytes > 0 {
+		mb := NewMultiBufferCap(nBytes/Size + 1)
+		mb.Write(r.buffer[:nBytes])
+		return mb, err
 	}
-
-	mb := NewMultiBufferCap(nBytes/Size + 1)
-	mb.Write(r.buffer[:nBytes])
-	return mb, nil
+	return nil, err
 }
+
+var (
+	_ Reader        = (*BufferedReader)(nil)
+	_ io.Reader     = (*BufferedReader)(nil)
+	_ io.ByteReader = (*BufferedReader)(nil)
+	_ io.WriterTo   = (*BufferedReader)(nil)
+)
 
 type BufferedReader struct {
 	stream       Reader
@@ -72,6 +83,12 @@ func (r *BufferedReader) IsBuffered() bool {
 	return r.buffered
 }
 
+func (r *BufferedReader) ReadByte() (byte, error) {
+	var b [1]byte
+	_, err := r.Read(b[:])
+	return b[0], err
+}
+
 func (r *BufferedReader) Read(b []byte) (int, error) {
 	if r.leftOver != nil {
 		nBytes, _ := r.leftOver.Read(b)
@@ -87,15 +104,14 @@ func (r *BufferedReader) Read(b []byte) (int, error) {
 	}
 
 	mb, err := r.stream.ReadMultiBuffer()
-	if err != nil {
-		return 0, err
+	if mb != nil {
+		nBytes, _ := mb.Read(b)
+		if !mb.IsEmpty() {
+			r.leftOver = mb
+		}
+		return nBytes, err
 	}
-
-	nBytes, _ := mb.Read(b)
-	if !mb.IsEmpty() {
-		r.leftOver = mb
-	}
-	return nBytes, nil
+	return 0, err
 }
 
 func (r *BufferedReader) ReadMultiBuffer() (MultiBuffer, error) {
@@ -120,11 +136,13 @@ func (r *BufferedReader) writeToInternal(writer io.Writer) (int64, error) {
 
 	for {
 		mb, err := r.stream.ReadMultiBuffer()
-		if err != nil {
-			return totalBytes, err
+		if mb != nil {
+			totalBytes += int64(mb.Len())
+			if werr := mbWriter.WriteMultiBuffer(mb); werr != nil {
+				return totalBytes, err
+			}
 		}
-		totalBytes += int64(mb.Len())
-		if err := mbWriter.WriteMultiBuffer(mb); err != nil {
+		if err != nil {
 			return totalBytes, err
 		}
 	}

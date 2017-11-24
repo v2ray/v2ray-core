@@ -6,6 +6,12 @@ import (
 	"v2ray.com/core/common/errors"
 )
 
+var (
+	_ io.ReaderFrom = (*BufferToBytesWriter)(nil)
+	_ io.Writer     = (*BufferToBytesWriter)(nil)
+	_ Writer        = (*BufferToBytesWriter)(nil)
+)
+
 // BufferToBytesWriter is a Writer that writes alloc.Buffer into underlying writer.
 type BufferToBytesWriter struct {
 	io.Writer
@@ -33,6 +39,13 @@ func (w *BufferToBytesWriter) ReadFrom(reader io.Reader) (int64, error) {
 	return sc.Size, err
 }
 
+var (
+	_ io.ReaderFrom = (*BufferedWriter)(nil)
+	_ io.Writer     = (*BufferedWriter)(nil)
+	_ Writer        = (*BufferedWriter)(nil)
+	_ io.ByteWriter = (*BufferedWriter)(nil)
+)
+
 // BufferedWriter is a Writer with internal buffer.
 type BufferedWriter struct {
 	writer       Writer
@@ -52,6 +65,11 @@ func NewBufferedWriter(writer Writer) *BufferedWriter {
 		w.legacyWriter = lw
 	}
 	return w
+}
+
+func (w *BufferedWriter) WriteByte(c byte) error {
+	_, err := w.Write([]byte{c})
+	return err
 }
 
 // Write implements io.Writer.
@@ -130,17 +148,12 @@ func (w *BufferedWriter) SetBuffered(f bool) error {
 
 // ReadFrom implements io.ReaderFrom.
 func (w *BufferedWriter) ReadFrom(reader io.Reader) (int64, error) {
-	var sc SizeCounter
-	if !w.buffer.IsEmpty() {
-		sc.Size += int64(w.buffer.Len())
-		if err := w.Flush(); err != nil {
-			return sc.Size, err
-		}
+	if err := w.SetBuffered(false); err != nil {
+		return 0, err
 	}
 
-	w.buffered = false
+	var sc SizeCounter
 	err := Copy(NewReader(reader), w, CountSize(&sc))
-
 	return sc.Size, err
 }
 

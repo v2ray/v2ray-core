@@ -37,15 +37,17 @@ func TestBytesWriterReadFrom(t *testing.T) {
 	assert := With(t)
 
 	cache := ray.NewStream(context.Background())
-	reader := bufio.NewReader(io.LimitReader(rand.Reader, 8192))
+	const size = 50000
+	reader := bufio.NewReader(io.LimitReader(rand.Reader, size))
 	writer := NewBufferedWriter(cache)
 	writer.SetBuffered(false)
-	_, err := reader.WriteTo(writer)
+	nBytes, err := reader.WriteTo(writer)
+	assert(nBytes, Equals, int64(size))
 	assert(err, IsNil)
 
 	mb, err := cache.ReadMultiBuffer()
 	assert(err, IsNil)
-	assert(mb.Len(), Equals, 8192)
+	assert(mb.Len(), Equals, size)
 }
 
 func TestDiscardBytes(t *testing.T) {
