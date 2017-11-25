@@ -61,7 +61,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 		request.Option.Set(RequestOptionOneTimeAuth)
 	}
 
-	if request.Option.Has(RequestOptionOneTimeAuth) && account.OneTimeAuth == Account_Disabled {
+	if request.Option.Has(RequestOptionOneTimeAuth) && (account.OneTimeAuth == Account_Disabled || account.Cipher.IsAEAD()) {
 		return nil, nil, newError("rejecting connection with OTA enabled, while server disables OTA")
 	}
 
@@ -136,8 +136,12 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (buf.Wri
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 
+	if account.Cipher.IsAEAD() {
+		request.Option.Clear(RequestOptionOneTimeAuth)
+	}
+
 	iv := make([]byte, account.Cipher.IVSize())
-	rand.Read(iv)
+	common.Must2(rand.Read(iv))
 	_, err = writer.Write(iv)
 	if err != nil {
 		return nil, newError("failed to write IV")

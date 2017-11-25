@@ -102,10 +102,15 @@ type Cipher interface {
 	IVSize() int
 	NewEncryptionWriter(key []byte, iv []byte, writer io.Writer) (buf.Writer, error)
 	NewDecryptionReader(key []byte, iv []byte, reader io.Reader) (buf.Reader, error)
+	IsAEAD() bool
 }
 
 type AesCfb struct {
 	KeyBytes int
+}
+
+func (*AesCfb) IsAEAD() bool {
+	return false
 }
 
 func (v *AesCfb) KeySize() int {
@@ -130,6 +135,10 @@ type AEADCipher struct {
 	KeyBytes        int
 	IVBytes         int
 	AEADAuthCreator func(key []byte) cipher.AEAD
+}
+
+func (*AEADCipher) IsAEAD() bool {
+	return true
 }
 
 func (c *AEADCipher) KeySize() int {
@@ -168,6 +177,10 @@ func (c *AEADCipher) NewDecryptionReader(key []byte, iv []byte, reader io.Reader
 
 type ChaCha20 struct {
 	IVBytes int
+}
+
+func (*ChaCha20) IsAEAD() bool {
+	return false
 }
 
 func (v *ChaCha20) KeySize() int {
