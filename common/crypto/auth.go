@@ -29,6 +29,26 @@ func (v StaticBytesGenerator) Next() []byte {
 	return v.Content
 }
 
+type IncreasingAEADNonceGenerator struct {
+	nonce []byte
+}
+
+func NewIncreasingAEADNonceGenerator() *IncreasingAEADNonceGenerator {
+	return &IncreasingAEADNonceGenerator{
+		nonce: []byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
+	}
+}
+
+func (g *IncreasingAEADNonceGenerator) Next() []byte {
+	for i := range g.nonce {
+		g.nonce[i]++
+		if g.nonce[i] != 0 {
+			break
+		}
+	}
+	return g.nonce
+}
+
 type Authenticator interface {
 	NonceSize() int
 	Overhead() int

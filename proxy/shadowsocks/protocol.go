@@ -8,7 +8,6 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/bitmask"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -40,11 +39,11 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 
 	iv := append([]byte(nil), buffer.BytesTo(ivLen)...)
 
-	stream, err := account.Cipher.NewDecodingStream(account.Key, iv)
+	r, err := account.Cipher.NewDecryptionReader(account.Key, iv, reader)
 	if err != nil {
 		return nil, nil, newError("failed to initialize decoding stream").Base(err).AtError()
 	}
-	reader = crypto.NewCryptionReader(stream, reader)
+	reader = r.(io.Reader)
 
 	authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
 	request := &protocol.RequestHeader{
@@ -144,12 +143,12 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (buf.Wri
 		return nil, newError("failed to write IV")
 	}
 
-	stream, err := account.Cipher.NewEncodingStream(account.Key, iv)
+	w, err := account.Cipher.NewEncryptionWriter(account.Key, iv, writer)
 	if err != nil {
 		return nil, newError("failed to create encoding stream").Base(err).AtError()
 	}
 
-	writer = crypto.NewCryptionWriter(stream, writer)
+	writer = w.(io.Writer)
 
 	header := buf.NewLocal(512)
 
@@ -208,11 +207,7 @@ func ReadTCPResponse(user *protocol.User, reader io.Reader) (buf.Reader, error) 
 		return nil, newError("failed to read IV").Base(err)
 	}
 
-	stream, err := account.Cipher.NewDecodingStream(account.Key, iv)
-	if err != nil {
-		return nil, newError("failed to initialize decoding stream").Base(err).AtError()
-	}
-	return buf.NewReader(crypto.NewCryptionReader(stream, reader)), nil
+	return account.Cipher.NewDecryptionReader(account.Key, iv, reader)
 }
 
 func WriteTCPResponse(request *protocol.RequestHeader, writer io.Writer) (buf.Writer, error) {
@@ -230,12 +225,7 @@ func WriteTCPResponse(request *protocol.RequestHeader, writer io.Writer) (buf.Wr
 		return nil, newError("failed to write IV.").Base(err)
 	}
 
-	stream, err := account.Cipher.NewEncodingStream(account.Key, iv)
-	if err != nil {
-		return nil, newError("failed to create encoding stream.").Base(err).AtError()
-	}
-
-	return buf.NewWriter(crypto.NewCryptionWriter(stream, writer)), nil
+	return account.Cipher.NewEncryptionWriter(account.Key, iv, writer)
 }
 
 func EncodeUDPPacket(request *protocol.RequestHeader, payload []byte) (*buf.Buffer, error) {
@@ -251,36 +241,41 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload []byte) (*buf.Buff
 	buffer.AppendSupplier(buf.ReadFullFrom(rand.Reader, ivLen))
 	iv := buffer.Bytes()
 
+	payloadBuffer := buf.NewLocal(512)
+	defer payloadBuffer.Release()
+
 	switch request.Address.Family() {
 	case net.AddressFamilyIPv4:
-		buffer.AppendBytes(AddrTypeIPv4)
-		buffer.Append([]byte(request.Address.IP()))
+		payloadBuffer.AppendBytes(AddrTypeIPv4)
+		payloadBuffer.Append([]byte(request.Address.IP()))
 	case net.AddressFamilyIPv6:
-		buffer.AppendBytes(AddrTypeIPv6)
-		buffer.Append([]byte(request.Address.IP()))
+		payloadBuffer.AppendBytes(AddrTypeIPv6)
+		payloadBuffer.Append([]byte(request.Address.IP()))
 	case net.AddressFamilyDomain:
-		buffer.AppendBytes(AddrTypeDomain, byte(len(request.Address.Domain())))
-		buffer.Append([]byte(request.Address.Domain()))
+		payloadBuffer.AppendBytes(AddrTypeDomain, byte(len(request.Address.Domain())))
+		payloadBuffer.Append([]byte(request.Address.Domain()))
 	default:
 		return nil, newError("unsupported address type: ", request.Address.Family()).AtError()
 	}
 
-	buffer.AppendSupplier(serial.WriteUint16(uint16(request.Port)))
-	buffer.Append(payload)
+	payloadBuffer.AppendSupplier(serial.WriteUint16(uint16(request.Port)))
+	payloadBuffer.Append(payload)
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {
 		authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
-		buffer.SetByte(ivLen, buffer.Byte(ivLen)|0x10)
+		payloadBuffer.SetByte(0, payloadBuffer.Byte(0)|0x10)
 
-		buffer.AppendSupplier(authenticator.Authenticate(buffer.BytesFrom(ivLen)))
+		payloadBuffer.AppendSupplier(authenticator.Authenticate(payloadBuffer.Bytes()))
 	}
 
-	stream, err := account.Cipher.NewEncodingStream(account.Key, iv)
+	w, err := account.Cipher.NewEncryptionWriter(account.Key, iv, buffer)
 	if err != nil {
 		return nil, newError("failed to create encoding stream").Base(err).AtError()
 	}
+	if err := w.WriteMultiBuffer(buf.NewMultiBufferValue(payloadBuffer)); err != nil {
+		return nil, newError("failed to encrypt UDP payload").Base(err).AtWarning()
+	}
 
-	stream.XORKeyStream(buffer.BytesFrom(ivLen), buffer.BytesFrom(ivLen))
 	return buffer, nil
 }
 
@@ -295,11 +290,17 @@ func DecodeUDPPacket(user *protocol.User, payload *buf.Buffer) (*protocol.Reques
 	iv := payload.BytesTo(ivLen)
 	payload.SliceFrom(ivLen)
 
-	stream, err := account.Cipher.NewDecodingStream(account.Key, iv)
+	r, err := account.Cipher.NewDecryptionReader(account.Key, iv, payload)
 	if err != nil {
 		return nil, nil, newError("failed to initialize decoding stream").Base(err).AtError()
 	}
-	stream.XORKeyStream(payload.Bytes(), payload.Bytes())
+	mb, err := r.ReadMultiBuffer()
+	if err != nil {
+		return nil, nil, newError("failed to decrypt UDP payload").Base(err).AtWarning()
+	}
+	payload.Release()
+	payload = mb.SplitFirst()
+	mb.Release()
 
 	authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
 	request := &protocol.RequestHeader{

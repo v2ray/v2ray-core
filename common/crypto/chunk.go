@@ -34,6 +34,29 @@ func (PlainChunkSizeParser) Decode(b []byte) (uint16, error) {
 	return serial.BytesToUint16(b), nil
 }
 
+type AEADChunkSizeParser struct {
+	Auth *AEADAuthenticator
+}
+
+func (p *AEADChunkSizeParser) SizeBytes() int {
+	return 2 + p.Auth.Overhead()
+}
+
+func (p *AEADChunkSizeParser) Encode(size uint16, b []byte) []byte {
+	b = serial.Uint16ToBytes(size, b)
+	b, err := p.Auth.Seal(b[:0], b)
+	common.Must(err)
+	return b
+}
+
+func (p *AEADChunkSizeParser) Decode(b []byte) (uint16, error) {
+	b, err := p.Auth.Open(b[:0], b)
+	if err != nil {
+		return 0, err
+	}
+	return serial.BytesToUint16(b), nil
+}
+
 type ChunkStreamReader struct {
 	sizeDecoder ChunkSizeDecoder
 	reader      buf.Reader
