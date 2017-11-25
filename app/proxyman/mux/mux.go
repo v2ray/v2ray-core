@@ -192,25 +192,25 @@ func (m *Client) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) bool
 	return true
 }
 
-func drain(reader io.Reader) error {
+func drain(reader *buf.BufferedReader) error {
 	return buf.Copy(NewStreamReader(reader), buf.Discard)
 }
 
-func (m *Client) handleStatueKeepAlive(meta *FrameMetadata, reader io.Reader) error {
+func (m *Client) handleStatueKeepAlive(meta *FrameMetadata, reader *buf.BufferedReader) error {
 	if meta.Option.Has(OptionData) {
 		return drain(reader)
 	}
 	return nil
 }
 
-func (m *Client) handleStatusNew(meta *FrameMetadata, reader io.Reader) error {
+func (m *Client) handleStatusNew(meta *FrameMetadata, reader *buf.BufferedReader) error {
 	if meta.Option.Has(OptionData) {
 		return drain(reader)
 	}
 	return nil
 }
 
-func (m *Client) handleStatusKeep(meta *FrameMetadata, reader io.Reader) error {
+func (m *Client) handleStatusKeep(meta *FrameMetadata, reader *buf.BufferedReader) error {
 	if !meta.Option.Has(OptionData) {
 		return nil
 	}
@@ -221,7 +221,7 @@ func (m *Client) handleStatusKeep(meta *FrameMetadata, reader io.Reader) error {
 	return drain(reader)
 }
 
-func (m *Client) handleStatusEnd(meta *FrameMetadata, reader io.Reader) error {
+func (m *Client) handleStatusEnd(meta *FrameMetadata, reader *buf.BufferedReader) error {
 	if s, found := m.sessionManager.Get(meta.SessionID); found {
 		s.Close()
 	}
@@ -315,14 +315,14 @@ func handle(ctx context.Context, s *Session, output buf.Writer) {
 	s.Close()
 }
 
-func (w *ServerWorker) handleStatusKeepAlive(meta *FrameMetadata, reader io.Reader) error {
+func (w *ServerWorker) handleStatusKeepAlive(meta *FrameMetadata, reader *buf.BufferedReader) error {
 	if meta.Option.Has(OptionData) {
 		return drain(reader)
 	}
 	return nil
 }
 
-func (w *ServerWorker) handleStatusNew(ctx context.Context, meta *FrameMetadata, reader io.Reader) error {
+func (w *ServerWorker) handleStatusNew(ctx context.Context, meta *FrameMetadata, reader *buf.BufferedReader) error {
 	log.Trace(newError("received request for ", meta.Target))
 	inboundRay, err := w.dispatcher.Dispatch(ctx, meta.Target)
 	if err != nil {
@@ -349,7 +349,7 @@ func (w *ServerWorker) handleStatusNew(ctx context.Context, meta *FrameMetadata,
 	return nil
 }
 
-func (w *ServerWorker) handleStatusKeep(meta *FrameMetadata, reader io.Reader) error {
+func (w *ServerWorker) handleStatusKeep(meta *FrameMetadata, reader *buf.BufferedReader) error {
 	if !meta.Option.Has(OptionData) {
 		return nil
 	}
@@ -359,7 +359,7 @@ func (w *ServerWorker) handleStatusKeep(meta *FrameMetadata, reader io.Reader) e
 	return drain(reader)
 }
 
-func (w *ServerWorker) handleStatusEnd(meta *FrameMetadata, reader io.Reader) error {
+func (w *ServerWorker) handleStatusEnd(meta *FrameMetadata, reader *buf.BufferedReader) error {
 	if s, found := w.sessionManager.Get(meta.SessionID); found {
 		s.Close()
 	}
@@ -369,7 +369,7 @@ func (w *ServerWorker) handleStatusEnd(meta *FrameMetadata, reader io.Reader) er
 	return nil
 }
 
-func (w *ServerWorker) handleFrame(ctx context.Context, reader io.Reader) error {
+func (w *ServerWorker) handleFrame(ctx context.Context, reader *buf.BufferedReader) error {
 	meta, err := ReadMetadata(reader)
 	if err != nil {
 		return newError("failed to read metadata").Base(err)

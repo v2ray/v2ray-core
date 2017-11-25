@@ -67,12 +67,12 @@ func (r *PacketReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 
 // StreamReader reads Mux frame as a stream.
 type StreamReader struct {
-	reader   io.Reader
+	reader   *buf.BufferedReader
 	leftOver int
 }
 
 // NewStreamReader creates a new StreamReader.
-func NewStreamReader(reader io.Reader) *StreamReader {
+func NewStreamReader(reader *buf.BufferedReader) *StreamReader {
 	return &StreamReader{
 		reader:   reader,
 		leftOver: -1,
@@ -94,25 +94,7 @@ func (r *StreamReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 		r.leftOver = int(size)
 	}
 
-	mb := buf.NewMultiBufferCap(32)
-	for r.leftOver > 0 {
-		readLen := buf.Size
-		if r.leftOver < readLen {
-			readLen = r.leftOver
-		}
-		b := buf.New()
-		if err := b.AppendSupplier(func(bb []byte) (int, error) {
-			return r.reader.Read(bb[:readLen])
-		}); err != nil {
-			b.Release()
-			mb.Release()
-			return nil, err
-		}
-		r.leftOver -= b.Len()
-		mb.Append(b)
-		if b.Len() < readLen {
-			break
-		}
-	}
-	return mb, nil
+	mb, err := r.reader.ReadAtMost(r.leftOver)
+	r.leftOver -= mb.Len()
+	return mb, err
 }

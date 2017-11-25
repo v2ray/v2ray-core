@@ -124,6 +124,20 @@ func (r *BufferedReader) ReadMultiBuffer() (MultiBuffer, error) {
 	return r.stream.ReadMultiBuffer()
 }
 
+// ReadAtMost returns a MultiBuffer with at most size.
+func (r *BufferedReader) ReadAtMost(size int) (mb MultiBuffer, err error) {
+	if r.leftOver == nil {
+		r.leftOver, err = r.stream.ReadMultiBuffer()
+	}
+	if r.leftOver != nil {
+		mb = r.leftOver.SliceBySize(size)
+		if r.leftOver.IsEmpty() {
+			r.leftOver = nil
+		}
+	}
+	return
+}
+
 func (r *BufferedReader) writeToInternal(writer io.Writer) (int64, error) {
 	mbWriter := NewWriter(writer)
 	totalBytes := int64(0)
