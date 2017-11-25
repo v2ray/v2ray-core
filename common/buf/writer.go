@@ -48,23 +48,18 @@ var (
 
 // BufferedWriter is a Writer with internal buffer.
 type BufferedWriter struct {
-	writer       Writer
-	legacyWriter io.Writer
-	buffer       *Buffer
-	buffered     bool
+	writer   Writer
+	buffer   *Buffer
+	buffered bool
 }
 
 // NewBufferedWriter creates a new BufferedWriter.
 func NewBufferedWriter(writer Writer) *BufferedWriter {
-	w := &BufferedWriter{
+	return &BufferedWriter{
 		writer:   writer,
 		buffer:   New(),
 		buffered: true,
 	}
-	if lw, ok := writer.(io.Writer); ok {
-		w.legacyWriter = lw
-	}
-	return w
 }
 
 func (w *BufferedWriter) WriteByte(c byte) error {
@@ -74,8 +69,10 @@ func (w *BufferedWriter) WriteByte(c byte) error {
 
 // Write implements io.Writer.
 func (w *BufferedWriter) Write(b []byte) (int, error) {
-	if !w.buffered && w.legacyWriter != nil {
-		return w.legacyWriter.Write(b)
+	if !w.buffered {
+		if writer, ok := w.writer.(io.Writer); ok {
+			return writer.Write(b)
+		}
 	}
 
 	totalBytes := 0

@@ -58,21 +58,16 @@ var (
 )
 
 type BufferedReader struct {
-	stream       Reader
-	legacyReader io.Reader
-	leftOver     MultiBuffer
-	buffered     bool
+	stream   Reader
+	leftOver MultiBuffer
+	buffered bool
 }
 
 func NewBufferedReader(reader Reader) *BufferedReader {
-	r := &BufferedReader{
+	return &BufferedReader{
 		stream:   reader,
 		buffered: true,
 	}
-	if lr, ok := reader.(io.Reader); ok {
-		r.legacyReader = lr
-	}
-	return r
 }
 
 func (r *BufferedReader) SetBuffered(f bool) {
@@ -99,8 +94,10 @@ func (r *BufferedReader) Read(b []byte) (int, error) {
 		return nBytes, nil
 	}
 
-	if !r.buffered && r.legacyReader != nil {
-		return r.legacyReader.Read(b)
+	if !r.buffered {
+		if reader, ok := r.stream.(io.Reader); ok {
+			return reader.Read(b)
+		}
 	}
 
 	mb, err := r.stream.ReadMultiBuffer()
