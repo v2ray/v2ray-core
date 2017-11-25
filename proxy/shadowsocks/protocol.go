@@ -65,7 +65,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 		return nil, nil, newError("rejecting connection with OTA enabled, while server disables OTA")
 	}
 
-	if !request.Option.Has(RequestOptionOneTimeAuth) && account.OneTimeAuth == Account_Enabled {
+	if !account.Cipher.IsAEAD() && !request.Option.Has(RequestOptionOneTimeAuth) && account.OneTimeAuth == Account_Enabled {
 		return nil, nil, newError("rejecting connection with OTA disabled, while server enables OTA")
 	}
 
