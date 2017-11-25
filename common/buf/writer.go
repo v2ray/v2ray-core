@@ -183,13 +183,11 @@ func (noOpWriter) WriteMultiBuffer(b MultiBuffer) error {
 	return nil
 }
 
-type noOpBytesWriter struct{}
-
-func (noOpBytesWriter) Write(b []byte) (int, error) {
+func (noOpWriter) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
-func (noOpBytesWriter) ReadFrom(reader io.Reader) (int64, error) {
+func (noOpWriter) ReadFrom(reader io.Reader) (int64, error) {
 	b := New()
 	defer b.Release()
 
@@ -211,5 +209,5 @@ var (
 	Discard Writer = noOpWriter{}
 
 	// DiscardBytes is an io.Writer that swallows all contents written in.
-	DiscardBytes io.Writer = noOpBytesWriter{}
+	DiscardBytes io.Writer = noOpWriter{}
 )
