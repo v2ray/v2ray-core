@@ -33,7 +33,7 @@ type userByEmail struct {
 	defaultAlterIDs uint16
 }
 
-func NewUserByEmail(users []*protocol.User, config *DefaultConfig) *userByEmail {
+func newUserByEmail(users []*protocol.User, config *DefaultConfig) *userByEmail {
 	cache := make(map[string]*protocol.User)
 	for _, user := range users {
 		cache[user.Email] = user
@@ -80,6 +80,7 @@ type Handler struct {
 	sessionHistory        *encoding.SessionHistory
 }
 
+// New creates a new VMess inbound handler.
 func New(ctx context.Context, config *Config) (*Handler, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
@@ -96,7 +97,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	handler := &Handler{
 		clients:        allowedClients,
 		detours:        config.Detour,
-		usersByEmail:   NewUserByEmail(config.User, config.GetDefaultValue()),
+		usersByEmail:   newUserByEmail(config.User, config.GetDefaultValue()),
 		sessionHistory: encoding.NewSessionHistory(ctx),
 	}
 
@@ -118,10 +119,10 @@ func (*Handler) Network() net.NetworkList {
 	}
 }
 
-func (v *Handler) GetUser(email string) *protocol.User {
-	user, existing := v.usersByEmail.Get(email)
+func (h *Handler) GetUser(email string) *protocol.User {
+	user, existing := h.usersByEmail.Get(email)
 	if !existing {
-		v.clients.Add(user)
+		h.clients.Add(user)
 	}
 	return user
 }
@@ -172,14 +173,14 @@ func transferResponse(timer signal.ActivityUpdater, session *encoding.ServerSess
 }
 
 // Process implements proxy.Inbound.Process().
-func (v *Handler) Process(ctx context.Context, network net.Network, connection internet.Connection, dispatcher dispatcher.Interface) error {
+func (h *Handler) Process(ctx context.Context, network net.Network, connection internet.Connection, dispatcher dispatcher.Interface) error {
 	if err := connection.SetReadDeadline(time.Now().Add(time.Second * 8)); err != nil {
 		return newError("unable to set read deadline").Base(err).AtWarning()
 	}
 
 	reader := buf.NewBufferedReader(buf.NewReader(connection))
 
-	session := encoding.NewServerSession(v.clients, v.sessionHistory)
+	session := encoding.NewServerSession(h.clients, h.sessionHistory)
 	request, err := session.DecodeRequestHeader(reader)
 
 	if err != nil {
@@ -203,7 +204,6 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 	}
 
 	userSettings := request.User.GetSettings()
-
 	ctx = protocol.ContextWithUser(ctx, request.User)
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -225,7 +225,7 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 		defer writer.Flush()
 
 		response := &protocol.ResponseHeader{
-			Command: v.generateCommand(ctx, request),
+			Command: h.generateCommand(ctx, request),
 		}
 		return transferResponse(timer, session, request, response, output, writer)
 	})
@@ -239,11 +239,11 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 	return nil
 }
 
-func (v *Handler) generateCommand(ctx context.Context, request *protocol.RequestHeader) protocol.ResponseCommand {
-	if v.detours != nil {
-		tag := v.detours.To
-		if v.inboundHandlerManager != nil {
-			handler, err := v.inboundHandlerManager.GetHandler(ctx, tag)
+func (h *Handler) generateCommand(ctx context.Context, request *protocol.RequestHeader) protocol.ResponseCommand {
+	if h.detours != nil {
+		tag := h.detours.To
+		if h.inboundHandlerManager != nil {
+			handler, err := h.inboundHandlerManager.GetHandler(ctx, tag)
 			if err != nil {
 				log.Trace(newError("failed to get detour handler: ", tag, err).AtWarning())
 				return nil
