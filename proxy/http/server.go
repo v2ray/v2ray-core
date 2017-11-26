@@ -274,7 +274,10 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 
 		requestWriter := buf.NewBufferedWriter(ray.InboundInput())
 		common.Must(requestWriter.SetBuffered(false))
-		return request.Write(requestWriter)
+		if err := request.Write(requestWriter); err != nil {
+			return newError("failed to write whole request").Base(err).AtWarning()
+		}
+		return nil
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
@@ -308,7 +311,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 			response.Header.Set("Proxy-Connection", "close")
 		}
 		if err := response.Write(writer); err != nil {
-			return newError("failed to write response").Base(err)
+			return newError("failed to write response").Base(err).AtWarning()
 		}
 		return nil
 	})
