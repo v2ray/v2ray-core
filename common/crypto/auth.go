@@ -68,7 +68,10 @@ func (v *AEADAuthenticator) Open(dst, cipherText []byte) ([]byte, error) {
 		return nil, newError("invalid AEAD nonce size: ", len(iv))
 	}
 
-	additionalData := v.AdditionalDataGenerator.Next()
+	var additionalData []byte
+	if v.AdditionalDataGenerator != nil {
+		additionalData = v.AdditionalDataGenerator.Next()
+	}
 	return v.AEAD.Open(dst, iv, cipherText, additionalData)
 }
 
@@ -78,7 +81,10 @@ func (v *AEADAuthenticator) Seal(dst, plainText []byte) ([]byte, error) {
 		return nil, newError("invalid AEAD nonce size: ", len(iv))
 	}
 
-	additionalData := v.AdditionalDataGenerator.Next()
+	var additionalData []byte
+	if v.AdditionalDataGenerator != nil {
+		additionalData = v.AdditionalDataGenerator.Next()
+	}
 	return v.AEAD.Seal(dst, iv, plainText, additionalData), nil
 }
 
