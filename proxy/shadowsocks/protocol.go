@@ -56,19 +56,21 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 		return nil, nil, newError("failed to read address type").Base(err)
 	}
 
+	if !account.Cipher.IsAEAD() {
+		if (buffer.Byte(0) & 0x10) == 0x10 {
+			request.Option.Set(RequestOptionOneTimeAuth)
+		}
+
+		if request.Option.Has(RequestOptionOneTimeAuth) && account.OneTimeAuth == Account_Disabled {
+			return nil, nil, newError("rejecting connection with OTA enabled, while server disables OTA")
+		}
+
+		if !request.Option.Has(RequestOptionOneTimeAuth) && account.OneTimeAuth == Account_Enabled {
+			return nil, nil, newError("rejecting connection with OTA disabled, while server enables OTA")
+		}
+	}
+
 	addrType := (buffer.Byte(0) & 0x0F)
-	if (buffer.Byte(0) & 0x10) == 0x10 {
-		request.Option.Set(RequestOptionOneTimeAuth)
-	}
-
-	if request.Option.Has(RequestOptionOneTimeAuth) && (account.OneTimeAuth == Account_Disabled || account.Cipher.IsAEAD()) {
-		return nil, nil, newError("rejecting connection with OTA enabled, while server disables OTA")
-	}
-
-	if !account.Cipher.IsAEAD() && !request.Option.Has(RequestOptionOneTimeAuth) && account.OneTimeAuth == Account_Enabled {
-		return nil, nil, newError("rejecting connection with OTA disabled, while server enables OTA")
-	}
-
 	switch addrType {
 	case AddrTypeIPv4:
 		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 4)); err != nil {
