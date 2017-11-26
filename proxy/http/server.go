@@ -171,7 +171,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 	if reader.Buffered() > 0 {
 		payload := buf.New()
 		common.Must(payload.Reset(func(b []byte) (int, error) {
-			return reader.Read(b)
+			return reader.Read(b[:reader.Buffered()])
 		}))
 		if err := ray.InboundInput().WriteMultiBuffer(buf.NewMultiBufferValue(payload)); err != nil {
 			return err

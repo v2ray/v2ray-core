@@ -225,7 +225,7 @@ func WriteTCPResponse(request *protocol.RequestHeader, writer io.Writer) (buf.Wr
 	account := rawAccount.(*ShadowsocksAccount)
 
 	iv := make([]byte, account.Cipher.IVSize())
-	rand.Read(iv)
+	common.Must2(rand.Read(iv))
 	_, err = writer.Write(iv)
 	if err != nil {
 		return nil, newError("failed to write IV.").Base(err)
