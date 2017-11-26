@@ -125,6 +125,8 @@ func TestHttpConnectMethod(t *testing.T) {
 		payload := make([]byte, 1024*64)
 		common.Must2(rand.Read(payload))
 		req, err := http.NewRequest("Connect", "http://"+dest.NetAddr()+"/", bytes.NewReader(payload))
+		req.Header.Set("X-a", "b")
+		req.Header.Set("X-b", "d")
 		common.Must(err)
 
 		resp, err := client.Do(req)
