@@ -43,7 +43,7 @@ func (p *AEADChunkSizeParser) SizeBytes() int {
 }
 
 func (p *AEADChunkSizeParser) Encode(size uint16, b []byte) []byte {
-	b = serial.Uint16ToBytes(size, b)
+	b = serial.Uint16ToBytes(size-uint16(p.Auth.Overhead()), b)
 	b, err := p.Auth.Seal(b[:0], b)
 	common.Must(err)
 	return b
@@ -54,7 +54,7 @@ func (p *AEADChunkSizeParser) Decode(b []byte) (uint16, error) {
 	if err != nil {
 		return 0, err
 	}
-	return serial.BytesToUint16(b), nil
+	return serial.BytesToUint16(b) + uint16(p.Auth.Overhead()), nil
 }
 
 type ChunkStreamReader struct {
