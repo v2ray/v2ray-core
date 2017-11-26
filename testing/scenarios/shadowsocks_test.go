@@ -10,6 +10,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -687,6 +688,88 @@ func TestShadowsocksAES256GCMConformance(t *testing.T) {
 		}()
 	}
 	wg.Wait()
+
+	CloseAllServers(servers)
+}
+
+func TestShadowsocksChacha20Poly1305UDPConformance(t *testing.T) {
+	assert := With(t)
+
+	udpServer := udp.Server{
+		MsgProcessor: xor,
+	}
+	dest, err := udpServer.Start()
+	assert(err, IsNil)
+	defer udpServer.Close()
+
+	account := serial.ToTypedMessage(&shadowsocks.Account{
+		Password:   "ss-password",
+		CipherType: shadowsocks.CipherType_CHACHA20_POLY1305,
+	})
+
+	serverPort := pickPort()
+	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
+		Inbound: []*proxyman.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&shadowsocks.ServerConfig{
+					UdpEnabled: true,
+					User: &protocol.User{
+						Account: account,
+						Level:   1,
+					},
+				}),
+			},
+		},
+		Outbound: []*proxyman.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+		},
+	}
+
+	servers, err := InitializeServerConfigs(serverConfig)
+	assert(err, IsNil)
+
+	cipher, err := ss.PickCipher("CHACHA20-IETF-POLY1305", nil, "ss-password")
+	assert(err, IsNil)
+	conn, err := ss.ListenPacket("udp", ":0", cipher)
+	assert(err, IsNil)
+
+	for i := 0; i < 100; i++ {
+
+		payload := buf.New()
+		payload.AppendBytes(1, 127, 0, 0, 1)
+		payload.AppendSupplier(serial.WriteUint16(dest.Port.Value()))
+
+		payload.AppendSupplier(buf.ReadFullFrom(rand.Reader, 10))
+
+		nBytes, err := conn.WriteTo(payload.Bytes(), &net.UDPAddr{
+			IP:   []byte{127, 0, 0, 1},
+			Port: int(serverPort),
+		})
+		assert(err, IsNil)
+		assert(nBytes, Equals, payload.Len())
+
+		conn.SetReadDeadline(time.Now().Add(time.Second * 10))
+		response := make([]byte, 10240)
+		nBytes, _, err = conn.ReadFrom(response)
+		assert(err, IsNil)
+		assert(response[:7], Equals, payload.BytesTo(7))
+		assert(response[7:nBytes], Equals, xor(payload.BytesFrom(7)))
+
+	}
+
+	assert(conn.Close(), IsNil)
 
 	CloseAllServers(servers)
 }

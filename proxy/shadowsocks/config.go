@@ -103,6 +103,8 @@ type Cipher interface {
 	NewEncryptionWriter(key []byte, iv []byte, writer io.Writer) (buf.Writer, error)
 	NewDecryptionReader(key []byte, iv []byte, reader io.Reader) (buf.Reader, error)
 	IsAEAD() bool
+	EncodePacket(key []byte, b *buf.Buffer) error
+	DecodePacket(key []byte, b *buf.Buffer) error
 }
 
 type AesCfb struct {
@@ -131,6 +133,21 @@ func (v *AesCfb) NewDecryptionReader(key []byte, iv []byte, reader io.Reader) (b
 	return buf.NewReader(crypto.NewCryptionReader(stream, reader)), nil
 }
 
+func (v *AesCfb) EncodePacket(key []byte, b *buf.Buffer) error {
+	iv := b.BytesTo(v.IVSize())
+	stream := crypto.NewAesEncryptionStream(key, iv)
+	stream.XORKeyStream(b.BytesFrom(v.IVSize()), b.BytesFrom(v.IVSize()))
+	return nil
+}
+
+func (v *AesCfb) DecodePacket(key []byte, b *buf.Buffer) error {
+	iv := b.BytesTo(v.IVSize())
+	stream := crypto.NewAesEncryptionStream(key, iv)
+	stream.XORKeyStream(b.BytesFrom(v.IVSize()), b.BytesFrom(v.IVSize()))
+	b.SliceFrom(v.IVSize())
+	return nil
+}
+
 type AEADCipher struct {
 	KeyBytes        int
 	IVBytes         int
@@ -149,30 +166,58 @@ func (c *AEADCipher) IVSize() int {
 	return c.IVBytes
 }
 
-func (c *AEADCipher) NewEncryptionWriter(key []byte, iv []byte, writer io.Writer) (buf.Writer, error) {
+func (c *AEADCipher) createAuthenticator(key []byte, iv []byte) *crypto.AEADAuthenticator {
 	nonce := crypto.NewIncreasingAEADNonceGenerator()
 	subkey := make([]byte, c.KeyBytes)
 	hkdfSHA1(key, iv, subkey)
-	auth := &crypto.AEADAuthenticator{
+	return &crypto.AEADAuthenticator{
 		AEAD:           c.AEADAuthCreator(subkey),
 		NonceGenerator: nonce,
 	}
+}
+
+func (c *AEADCipher) NewEncryptionWriter(key []byte, iv []byte, writer io.Writer) (buf.Writer, error) {
+	auth := c.createAuthenticator(key, iv)
 	return crypto.NewAuthenticationWriter(auth, &crypto.AEADChunkSizeParser{
 		Auth: auth,
 	}, writer, protocol.TransferTypeStream), nil
 }
 
 func (c *AEADCipher) NewDecryptionReader(key []byte, iv []byte, reader io.Reader) (buf.Reader, error) {
-	nonce := crypto.NewIncreasingAEADNonceGenerator()
-	subkey := make([]byte, c.KeyBytes)
-	hkdfSHA1(key, iv, subkey)
-	auth := &crypto.AEADAuthenticator{
-		AEAD:           c.AEADAuthCreator(subkey),
-		NonceGenerator: nonce,
-	}
+	auth := c.createAuthenticator(key, iv)
 	return crypto.NewAuthenticationReader(auth, &crypto.AEADChunkSizeParser{
 		Auth: auth,
 	}, reader, protocol.TransferTypeStream), nil
+}
+
+func (c *AEADCipher) EncodePacket(key []byte, b *buf.Buffer) error {
+	ivLen := c.IVSize()
+	payloadLen := b.Len()
+	auth := c.createAuthenticator(key, b.BytesTo(ivLen))
+	return b.Reset(func(bb []byte) (int, error) {
+		bbb, err := auth.Seal(bb[:ivLen], bb[ivLen:payloadLen])
+		if err != nil {
+			return 0, err
+		}
+		return len(bbb), nil
+	})
+}
+
+func (c *AEADCipher) DecodePacket(key []byte, b *buf.Buffer) error {
+	ivLen := c.IVSize()
+	payloadLen := b.Len()
+	auth := c.createAuthenticator(key, b.BytesTo(ivLen))
+	if err := b.Reset(func(bb []byte) (int, error) {
+		bbb, err := auth.Open(bb[:ivLen], bb[ivLen:payloadLen])
+		if err != nil {
+			return 0, err
+		}
+		return len(bbb), nil
+	}); err != nil {
+		return err
+	}
+	b.SliceFrom(ivLen)
+	return nil
 }
 
 type ChaCha20 struct {
@@ -199,6 +244,21 @@ func (v *ChaCha20) NewEncryptionWriter(key []byte, iv []byte, writer io.Writer) 
 func (v *ChaCha20) NewDecryptionReader(key []byte, iv []byte, reader io.Reader) (buf.Reader, error) {
 	stream := crypto.NewChaCha20Stream(key, iv)
 	return buf.NewReader(crypto.NewCryptionReader(stream, reader)), nil
+}
+
+func (v *ChaCha20) EncodePacket(key []byte, b *buf.Buffer) error {
+	iv := b.BytesTo(v.IVSize())
+	stream := crypto.NewChaCha20Stream(key, iv)
+	stream.XORKeyStream(b.BytesFrom(v.IVSize()), b.BytesFrom(v.IVSize()))
+	return nil
+}
+
+func (v *ChaCha20) DecodePacket(key []byte, b *buf.Buffer) error {
+	iv := b.BytesTo(v.IVSize())
+	stream := crypto.NewChaCha20Stream(key, iv)
+	stream.XORKeyStream(b.BytesFrom(v.IVSize()), b.BytesFrom(v.IVSize()))
+	b.SliceFrom(v.IVSize())
+	return nil
 }
 
 func PasswordToCipherKey(password string, keySize int) []byte {

@@ -247,39 +247,31 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload []byte) (*buf.Buff
 	common.Must(buffer.Reset(buf.ReadFullFrom(rand.Reader, ivLen)))
 	iv := buffer.Bytes()
 
-	payloadBuffer := buf.New()
-	defer payloadBuffer.Release()
-
 	switch request.Address.Family() {
 	case net.AddressFamilyIPv4:
-		payloadBuffer.AppendBytes(AddrTypeIPv4)
-		payloadBuffer.Append([]byte(request.Address.IP()))
+		buffer.AppendBytes(AddrTypeIPv4)
+		buffer.Append([]byte(request.Address.IP()))
 	case net.AddressFamilyIPv6:
-		payloadBuffer.AppendBytes(AddrTypeIPv6)
-		payloadBuffer.Append([]byte(request.Address.IP()))
+		buffer.AppendBytes(AddrTypeIPv6)
+		buffer.Append([]byte(request.Address.IP()))
 	case net.AddressFamilyDomain:
-		payloadBuffer.AppendBytes(AddrTypeDomain, byte(len(request.Address.Domain())))
-		payloadBuffer.Append([]byte(request.Address.Domain()))
+		buffer.AppendBytes(AddrTypeDomain, byte(len(request.Address.Domain())))
+		buffer.Append([]byte(request.Address.Domain()))
 	default:
 		return nil, newError("unsupported address type: ", request.Address.Family()).AtError()
 	}
 
-	common.Must(payloadBuffer.AppendSupplier(serial.WriteUint16(uint16(request.Port))))
-	payloadBuffer.Append(payload)
+	common.Must(buffer.AppendSupplier(serial.WriteUint16(uint16(request.Port))))
+	buffer.Append(payload)
 
 	if !account.Cipher.IsAEAD() && request.Option.Has(RequestOptionOneTimeAuth) {
 		authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
-		payloadBuffer.SetByte(0, payloadBuffer.Byte(0)|0x10)
+		buffer.SetByte(ivLen, buffer.Byte(ivLen)|0x10)
 
-		common.Must(payloadBuffer.AppendSupplier(authenticator.Authenticate(payloadBuffer.Bytes())))
+		common.Must(buffer.AppendSupplier(authenticator.Authenticate(buffer.BytesFrom(ivLen))))
 	}
-
-	w, err := account.Cipher.NewEncryptionWriter(account.Key, iv, buffer)
-	if err != nil {
-		return nil, newError("failed to create encoding stream").Base(err).AtError()
-	}
-	if err := w.WriteMultiBuffer(buf.NewMultiBufferValue(payloadBuffer)); err != nil {
-		return nil, newError("failed to encrypt UDP payload").Base(err).AtWarning()
+	if err := account.Cipher.EncodePacket(account.Key, buffer); err != nil {
+		return nil, newError("failed to encrypt UDP payload").Base(err)
 	}
 
 	return buffer, nil
@@ -292,24 +284,15 @@ func DecodeUDPPacket(user *protocol.User, payload *buf.Buffer) (*protocol.Reques
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 
-	ivLen := account.Cipher.IVSize()
-	iv := make([]byte, ivLen)
-	copy(iv, payload.BytesTo(ivLen))
-	payload.SliceFrom(ivLen)
-
-	r, err := account.Cipher.NewDecryptionReader(account.Key, iv, payload)
-	if err != nil {
-		return nil, nil, newError("failed to initialize decoding stream").Base(err).AtError()
+	var authenticator *Authenticator
+	if !account.Cipher.IsAEAD() {
+		authenticator = NewAuthenticator(HeaderKeyGenerator(account.Key, payload.BytesTo(account.Cipher.IVSize())))
 	}
-	mb, err := r.ReadMultiBuffer()
-	if err != nil {
-		return nil, nil, newError("failed to decrypt UDP payload").Base(err).AtWarning()
-	}
-	payload.Release()
-	payload = mb.SplitFirst()
-	mb.Release()
 
-	authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
+	if err := account.Cipher.DecodePacket(account.Key, payload); err != nil {
+		return nil, nil, newError("failed to decrypt UDP payload").Base(err)
+	}
+
 	request := &protocol.RequestHeader{
 		Version: Version,
 		User:    user,
