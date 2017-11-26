@@ -652,7 +652,7 @@ func TestVMessNone(t *testing.T) {
 			assert(err, IsNil)
 			assert(nBytes, Equals, len(payload))
 
-			response := readFrom(conn, time.Second*20, 1024*1024)
+			response := readFrom(conn, time.Second*30, 1024*1024)
 
 			assert(response, Equals, xor(payload))
 			assert(conn.Close(), IsNil)
