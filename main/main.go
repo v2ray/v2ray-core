@@ -68,7 +68,7 @@ func startV2Ray() (core.Server, error) {
 
 	server, err := core.New(config)
 	if err != nil {
-		return nil, newError("failed to create initialize").Base(err)
+		return nil, newError("failed to create server").Base(err)
 	}
 
 	return server, nil
