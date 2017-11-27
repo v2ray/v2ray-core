@@ -142,7 +142,7 @@ func (v *AesCfb) EncodePacket(key []byte, b *buf.Buffer) error {
 
 func (v *AesCfb) DecodePacket(key []byte, b *buf.Buffer) error {
 	iv := b.BytesTo(v.IVSize())
-	stream := crypto.NewAesEncryptionStream(key, iv)
+	stream := crypto.NewAesDecryptionStream(key, iv)
 	stream.XORKeyStream(b.BytesFrom(v.IVSize()), b.BytesFrom(v.IVSize()))
 	b.SliceFrom(v.IVSize())
 	return nil
