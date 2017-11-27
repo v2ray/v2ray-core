@@ -11,6 +11,7 @@ import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/log"
+	"v2ray.com/core/app/policy"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -78,6 +79,7 @@ type Handler struct {
 	usersByEmail          *userByEmail
 	detours               *DetourConfig
 	sessionHistory        *encoding.SessionHistory
+	policyManager         policy.Interface
 }
 
 // New creates a new VMess inbound handler.
@@ -104,7 +106,11 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	space.OnInitialize(func() error {
 		handler.inboundHandlerManager = proxyman.InboundHandlerManagerFromSpace(space)
 		if handler.inboundHandlerManager == nil {
-			return newError("InboundHandlerManager is not found is space")
+			return newError("InboundHandlerManager is not found is space.")
+		}
+		handler.policyManager = policy.PolicyFromSpace(space)
+		if handler.policyManager == nil {
+			return newError("Policy is not found in space.")
 		}
 		return nil
 	})
@@ -174,7 +180,8 @@ func transferResponse(timer signal.ActivityUpdater, session *encoding.ServerSess
 
 // Process implements proxy.Inbound.Process().
 func (h *Handler) Process(ctx context.Context, network net.Network, connection internet.Connection, dispatcher dispatcher.Interface) error {
-	if err := connection.SetReadDeadline(time.Now().Add(time.Second * 8)); err != nil {
+	sessionPolicy := h.policyManager.GetPolicy(0)
+	if err := connection.SetReadDeadline(time.Now().Add(sessionPolicy.Timeout.Handshake.Duration())); err != nil {
 		return newError("unable to set read deadline").Base(err).AtWarning()
 	}
 
@@ -203,11 +210,11 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 		log.Trace(newError("unable to set back read deadline").Base(err))
 	}
 
-	userSettings := request.User.GetSettings()
+	sessionPolicy = h.policyManager.GetPolicy(request.User.Level)
 	ctx = protocol.ContextWithUser(ctx, request.User)
 
 	ctx, cancel := context.WithCancel(ctx)
-	timer := signal.CancelAfterInactivity(ctx, cancel, userSettings.PayloadTimeout)
+	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeout.ConnectionIdle.Duration())
 	ray, err := dispatcher.Dispatch(ctx, request.Destination())
 	if err != nil {
 		return newError("failed to dispatch request to ", request.Destination()).Base(err)
@@ -217,12 +224,14 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	output := ray.InboundOutput()
 
 	requestDone := signal.ExecuteAsync(func() error {
+		defer timer.SetTimeout(sessionPolicy.Timeout.DownlinkOnly.Duration())
 		return transferRequest(timer, session, request, reader, input)
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
 		writer := buf.NewBufferedWriter(buf.NewWriter(connection))
 		defer writer.Flush()
+		defer timer.SetTimeout(sessionPolicy.Timeout.UplinkOnly.Duration())
 
 		response := &protocol.ResponseHeader{
 			Command: h.generateCommand(ctx, request),

@@ -4,11 +4,11 @@ package dokodemo
 
 import (
 	"context"
-	"time"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/log"
+	"v2ray.com/core/app/policy"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
@@ -22,6 +22,7 @@ type DokodemoDoor struct {
 	config  *Config
 	address net.Address
 	port    net.Port
+	policy  policy.Policy
 }
 
 func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
@@ -37,6 +38,17 @@ func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
 		address: config.GetPredefinedAddress(),
 		port:    net.Port(config.Port),
 	}
+	space.OnInitialize(func() error {
+		pm := policy.PolicyFromSpace(space)
+		if pm == nil {
+			return newError("Policy not found in space.")
+		}
+		d.policy = pm.GetPolicy(config.UserLevel)
+		if config.Timeout > 0 && config.UserLevel == 0 {
+			d.policy.Timeout.ConnectionIdle.Value = config.Timeout
+		}
+		return nil
+	})
 	return d, nil
 }
 
@@ -60,13 +72,8 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		return newError("unable to get destination")
 	}
 
-	timeout := time.Second * time.Duration(d.config.Timeout)
-	if timeout == 0 {
-		timeout = time.Minute * 5
-	}
-
 	ctx, cancel := context.WithCancel(ctx)
-	timer := signal.CancelAfterInactivity(ctx, cancel, timeout)
+	timer := signal.CancelAfterInactivity(ctx, cancel, d.policy.Timeout.ConnectionIdle.Duration())
 
 	inboundRay, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
@@ -81,6 +88,8 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		if err := buf.Copy(chunkReader, inboundRay.InboundInput(), buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport request").Base(err)
 		}
+
+		timer.SetTimeout(d.policy.Timeout.DownlinkOnly.Duration())
 
 		return nil
 	})
@@ -107,7 +116,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 			return newError("failed to transport response").Base(err)
 		}
 
-		timer.SetTimeout(time.Second * 2)
+		timer.SetTimeout(d.policy.Timeout.UplinkOnly.Duration())
 
 		return nil
 	})

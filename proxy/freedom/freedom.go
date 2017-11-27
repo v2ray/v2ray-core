@@ -4,11 +4,11 @@ package freedom
 
 import (
 	"context"
-	"time"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dns"
 	"v2ray.com/core/app/log"
+	"v2ray.com/core/app/policy"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
@@ -26,6 +26,7 @@ type Handler struct {
 	timeout        uint32
 	dns            dns.Server
 	destOverride   *DestinationOverride
+	policy         policy.Policy
 }
 
 // New creates a new Freedom handler.
@@ -45,6 +46,14 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 			if f.dns == nil {
 				return newError("DNS server is not found in the space")
 			}
+		}
+		pm := policy.PolicyFromSpace(space)
+		if pm == nil {
+			return newError("Policy not found in space.")
+		}
+		f.policy = pm.GetPolicy(config.UserLevel)
+		if config.Timeout > 0 && config.UserLevel == 0 {
+			f.policy.Timeout.ConnectionIdle.Value = config.Timeout
 		}
 		return nil
 	})
@@ -109,12 +118,8 @@ func (h *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	}
 	defer conn.Close()
 
-	timeout := time.Second * time.Duration(h.timeout)
-	if timeout == 0 {
-		timeout = time.Minute * 5
-	}
 	ctx, cancel := context.WithCancel(ctx)
-	timer := signal.CancelAfterInactivity(ctx, cancel, timeout)
+	timer := signal.CancelAfterInactivity(ctx, cancel, h.policy.Timeout.ConnectionIdle.Duration())
 
 	requestDone := signal.ExecuteAsync(func() error {
 		var writer buf.Writer
@@ -126,6 +131,7 @@ func (h *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		if err := buf.Copy(input, writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to process request").Base(err)
 		}
+		timer.SetTimeout(h.policy.Timeout.DownlinkOnly.Duration())
 		return nil
 	})
 
@@ -136,6 +142,7 @@ func (h *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		if err := buf.Copy(v2reader, output, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to process response").Base(err)
 		}
+		timer.SetTimeout(h.policy.Timeout.UplinkOnly.Duration())
 		return nil
 	})
 

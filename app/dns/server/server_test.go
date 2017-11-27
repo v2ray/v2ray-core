@@ -9,6 +9,8 @@ import (
 	_ "v2ray.com/core/app/dispatcher/impl"
 	. "v2ray.com/core/app/dns"
 	_ "v2ray.com/core/app/dns/server"
+	"v2ray.com/core/app/policy"
+	_ "v2ray.com/core/app/policy/manager"
 	"v2ray.com/core/app/proxyman"
 	_ "v2ray.com/core/app/proxyman/outbound"
 	"v2ray.com/core/common"
@@ -74,6 +76,7 @@ func TestUDPServer(t *testing.T) {
 	common.Must(app.AddApplicationToSpace(ctx, config))
 	common.Must(app.AddApplicationToSpace(ctx, &dispatcher.Config{}))
 	common.Must(app.AddApplicationToSpace(ctx, &proxyman.OutboundConfig{}))
+	common.Must(app.AddApplicationToSpace(ctx, &policy.Config{}))
 
 	om := proxyman.OutboundHandlerManagerFromSpace(space)
 	om.AddHandler(ctx, &proxyman.OutboundHandlerConfig{

@@ -7,6 +7,7 @@ import (
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/dns"
 	"v2ray.com/core/app/log"
+	"v2ray.com/core/app/policy"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
@@ -115,7 +116,24 @@ func newSimpleServer(config *Config) (*simpleServer, error) {
 			return nil, err
 		}
 		common.Must(space.AddApplication(d))
-		// disp = d.(dispatcher.Interface)
+	}
+
+	if p := policy.PolicyFromSpace(space); p == nil {
+		p, err := app.CreateAppFromConfig(ctx, &policy.Config{
+			Level: map[uint32]*policy.Policy{
+				1: &policy.Policy{
+					Timeout: &policy.Policy_Timeout{
+						ConnectionIdle: &policy.Second{
+							Value: 600,
+						},
+					},
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+		common.Must(space.AddApplication(p))
 	}
 
 	for _, inbound := range config.Inbound {

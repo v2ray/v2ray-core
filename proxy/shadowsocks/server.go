@@ -7,6 +7,7 @@ import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/log"
+	"v2ray.com/core/app/policy"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
@@ -18,9 +19,10 @@ import (
 )
 
 type Server struct {
-	config  *ServerConfig
-	user    *protocol.User
-	account *ShadowsocksAccount
+	config        *ServerConfig
+	user          *protocol.User
+	account       *ShadowsocksAccount
+	policyManager policy.Interface
 }
 
 // NewServer create a new Shadowsocks server.
@@ -44,6 +46,15 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 		user:    config.GetUser(),
 		account: account,
 	}
+
+	space.OnInitialize(func() error {
+		pm := policy.PolicyFromSpace(space)
+		if pm == nil {
+			return newError("Policy not found in space.")
+		}
+		s.policyManager = pm
+		return nil
+	})
 
 	return s, nil
 }
@@ -128,7 +139,8 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 }
 
 func (s *Server) handleConnection(ctx context.Context, conn internet.Connection, dispatcher dispatcher.Interface) error {
-	conn.SetReadDeadline(time.Now().Add(time.Second * 8))
+	sessionPolicy := s.policyManager.GetPolicy(s.user.Level)
+	conn.SetReadDeadline(time.Now().Add(sessionPolicy.Timeout.Handshake.Duration()))
 	bufferedReader := buf.NewBufferedReader(buf.NewReader(conn))
 	request, bodyReader, err := ReadTCPSession(s.user, bufferedReader)
 	if err != nil {
@@ -145,9 +157,8 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 
 	ctx = protocol.ContextWithUser(ctx, request.User)
 
-	userSettings := s.user.GetSettings()
 	ctx, cancel := context.WithCancel(ctx)
-	timer := signal.CancelAfterInactivity(ctx, cancel, userSettings.PayloadTimeout)
+	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeout.ConnectionIdle.Duration())
 	ray, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return err
@@ -177,7 +188,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 			return newError("failed to transport all TCP response").Base(err)
 		}
 
-		timer.SetTimeout(time.Second * 2)
+		timer.SetTimeout(sessionPolicy.Timeout.UplinkOnly.Duration())
 
 		return nil
 	})
@@ -188,6 +199,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 		if err := buf.Copy(bodyReader, ray.InboundInput(), buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport all TCP request").Base(err)
 		}
+		timer.SetTimeout(sessionPolicy.Timeout.DownlinkOnly.Duration())
 		return nil
 	})
 

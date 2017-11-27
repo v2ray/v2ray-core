@@ -8,6 +8,7 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/log"
+	"v2ray.com/core/app/policy"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
@@ -23,8 +24,9 @@ import (
 
 // Handler is an outbound connection handler for VMess protocol.
 type Handler struct {
-	serverList   *protocol.ServerList
-	serverPicker protocol.ServerPicker
+	serverList    *protocol.ServerList
+	serverPicker  protocol.ServerPicker
+	policyManager policy.Interface
 }
 
 func New(ctx context.Context, config *Config) (*Handler, error) {
@@ -41,6 +43,15 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		serverList:   serverList,
 		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
 	}
+
+	space.OnInitialize(func() error {
+		pm := policy.PolicyFromSpace(space)
+		if pm == nil {
+			return newError("Policy is not found in space.")
+		}
+		handler.policyManager = pm
+		return nil
+	})
 
 	return handler, nil
 }
@@ -102,9 +113,10 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	output := outboundRay.OutboundOutput()
 
 	session := encoding.NewClientSession(protocol.DefaultIDHash)
+	sessionPolicy := v.policyManager.GetPolicy(request.User.Level)
 
 	ctx, cancel := context.WithCancel(ctx)
-	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*5)
+	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeout.ConnectionIdle.Duration())
 
 	requestDone := signal.ExecuteAsync(func() error {
 		writer := buf.NewBufferedWriter(buf.NewWriter(conn))
@@ -137,11 +149,13 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 				return err
 			}
 		}
+		timer.SetTimeout(sessionPolicy.Timeout.DownlinkOnly.Duration())
 		return nil
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
 		defer output.Close()
+		defer timer.SetTimeout(sessionPolicy.Timeout.UplinkOnly.Duration())
 
 		reader := buf.NewBufferedReader(buf.NewReader(conn))
 		header, err := session.DecodeResponseHeader(reader)
