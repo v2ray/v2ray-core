@@ -52,7 +52,7 @@ func (m *Instance) Close() {
 }
 
 func (m *Instance) Interface() interface{} {
-	return (*policy.Interface)(nil)
+	return (*policy.Manager)(nil)
 }
 
 func init() {

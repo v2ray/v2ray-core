@@ -22,7 +22,7 @@ type Server struct {
 	config        *ServerConfig
 	user          *protocol.User
 	account       *ShadowsocksAccount
-	policyManager policy.Interface
+	policyManager policy.Manager
 }
 
 // NewServer create a new Shadowsocks server.
@@ -48,7 +48,7 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	}
 
 	space.OnInitialize(func() error {
-		pm := policy.PolicyFromSpace(space)
+		pm := policy.FromSpace(space)
 		if pm == nil {
 			return newError("Policy not found in space.")
 		}

@@ -118,7 +118,7 @@ func newSimpleServer(config *Config) (*simpleServer, error) {
 		common.Must(space.AddApplication(d))
 	}
 
-	if p := policy.PolicyFromSpace(space); p == nil {
+	if p := policy.FromSpace(space); p == nil {
 		p, err := app.CreateAppFromConfig(ctx, &policy.Config{
 			Level: map[uint32]*policy.Policy{
 				1: &policy.Policy{

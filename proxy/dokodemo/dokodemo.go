@@ -39,7 +39,7 @@ func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
 		port:    net.Port(config.Port),
 	}
 	space.OnInitialize(func() error {
-		pm := policy.PolicyFromSpace(space)
+		pm := policy.FromSpace(space)
 		if pm == nil {
 			return newError("Policy not found in space.")
 		}

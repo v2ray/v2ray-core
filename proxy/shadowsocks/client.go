@@ -20,7 +20,7 @@ import (
 // Client is a inbound handler for Shadowsocks protocol
 type Client struct {
 	serverPicker  protocol.ServerPicker
-	policyManager policy.Interface
+	policyManager policy.Manager
 }
 
 // NewClient create a new Shadowsocks client.
@@ -40,7 +40,7 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 		return nil, newError("Space not found.")
 	}
 	space.OnInitialize(func() error {
-		pm := policy.PolicyFromSpace(space)
+		pm := policy.FromSpace(space)
 		if pm == nil {
 			return newError("Policy not found in space.")
 		}

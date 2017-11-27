@@ -26,7 +26,7 @@ import (
 type Handler struct {
 	serverList    *protocol.ServerList
 	serverPicker  protocol.ServerPicker
-	policyManager policy.Interface
+	policyManager policy.Manager
 }
 
 func New(ctx context.Context, config *Config) (*Handler, error) {
@@ -45,7 +45,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	}
 
 	space.OnInitialize(func() error {
-		pm := policy.PolicyFromSpace(space)
+		pm := policy.FromSpace(space)
 		if pm == nil {
 			return newError("Policy is not found in space.")
 		}

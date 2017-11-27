@@ -79,7 +79,7 @@ type Handler struct {
 	usersByEmail          *userByEmail
 	detours               *DetourConfig
 	sessionHistory        *encoding.SessionHistory
-	policyManager         policy.Interface
+	policyManager         policy.Manager
 }
 
 // New creates a new VMess inbound handler.
@@ -108,7 +108,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		if handler.inboundHandlerManager == nil {
 			return newError("InboundHandlerManager is not found is space.")
 		}
-		handler.policyManager = policy.PolicyFromSpace(space)
+		handler.policyManager = policy.FromSpace(space)
 		if handler.policyManager == nil {
 			return newError("Policy is not found in space.")
 		}

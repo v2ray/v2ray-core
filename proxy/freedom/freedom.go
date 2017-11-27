@@ -47,7 +47,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 				return newError("DNS server is not found in the space")
 			}
 		}
-		pm := policy.PolicyFromSpace(space)
+		pm := policy.FromSpace(space)
 		if pm == nil {
 			return newError("Policy not found in space.")
 		}
