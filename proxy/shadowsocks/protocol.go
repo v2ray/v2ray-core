@@ -284,9 +284,12 @@ func DecodeUDPPacket(user *protocol.User, payload *buf.Buffer) (*protocol.Reques
 	}
 	account := rawAccount.(*ShadowsocksAccount)
 
+	var iv []byte
 	var authenticator *Authenticator
 	if !account.Cipher.IsAEAD() {
-		authenticator = NewAuthenticator(HeaderKeyGenerator(account.Key, payload.BytesTo(account.Cipher.IVSize())))
+		// Keep track of IV as it gets removed from payload in DecodePacket.
+		iv = make([]byte, account.Cipher.IVSize())
+		copy(iv, payload.BytesTo(account.Cipher.IVSize()))
 	}
 
 	if err := account.Cipher.DecodePacket(account.Key, payload); err != nil {
@@ -316,6 +319,7 @@ func DecodeUDPPacket(user *protocol.User, payload *buf.Buffer) (*protocol.Reques
 			payloadLen := payload.Len() - AuthSize
 			authBytes := payload.BytesFrom(payloadLen)
 
+			authenticator = NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
 			actualAuth := make([]byte, AuthSize)
 			authenticator.Authenticate(payload.BytesTo(payloadLen))(actualAuth)
 			if !bytes.Equal(actualAuth, authBytes) {
