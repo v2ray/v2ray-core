@@ -1,6 +1,6 @@
 # V2Ray 用户支持 (User Support)
 
-**English reader please skip to the English section below**
+**English reader please skip to the [English section](#way-to-get-support) below**
 
 ## 获得帮助信息的途径
 
