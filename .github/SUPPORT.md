@@ -14,12 +14,8 @@
 
 1. 请按模板填写 issue；
 1. 配置文件内容使用格式化代码段进行修饰（见下面的解释）；
-1. 在提交 issue 前尝试减化配置文件（如下）：
-  1. 删除不必要 inbound / outbound 模块；
-  1. 删除不必要的路由项；
-1. 在提交 issue 前尝试确定问题所在，比如：
-  1. 将 socks 代理换成 http 再次观察问题是否能重现；
-  1. 更改加密方式再次观察问题是否能重现；
+1. 在提交 issue 前尝试减化配置文件，比如删除不必要 inbound / outbound 模块；
+1. 在提交 issue 前尝试确定问题所在，比如将 socks 代理换成 http 再次观察问题是否能重现；
 1. 配置文件必须结构完整，即除了必要的隐私信息之外，配置文件可以直接拿来运行。
 
 **不按模板填写的 issue 将直接被关闭**
@@ -48,12 +44,8 @@ You may get help in the following ways:
 
 1. Please fill in the issue template.
 1. Decorate config file with Markdown formatter (See below).
-1. Try to simplify config file before submitting the issue, such as:
-  1. Removing unnecessary inbound / outbound blocks.
-  1. Removing unnecessary routing rules.
-1. Try to determine the cause of the issue, for example:
-  1. Replacing socks inbound with http inbound to see if the issue still exists.
-  1. Changing encryption methods to see if the issue still exists.
+1. Try to simplify config file before submitting the issue, such as removing unnecessary inbound / outbound blocks.
+1. Try to determine the cause of the issue, for example, replacing socks inbound with http inbound to see if the issue still exists.
 1. Config file must be structurally complete.
 
 **Any issue not following the issue template will be closed immediately.**
