@@ -44,7 +44,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
 	}
 
-	space.OnInitialize(func() error {
+	space.On(app.SpaceInitializing, func(interface{}) error {
 		pm := policy.FromSpace(space)
 		if pm == nil {
 			return newError("Policy is not found in space.")

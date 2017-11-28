@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/event"
 )
 
 type Application interface {
@@ -12,8 +13,6 @@ type Application interface {
 	Start() error
 	Close()
 }
-
-type InitializationCallback func() error
 
 func CreateAppFromConfig(ctx context.Context, config interface{}) (Application, error) {
 	application, err := common.CreateObject(ctx, config)
@@ -29,46 +28,45 @@ func CreateAppFromConfig(ctx context.Context, config interface{}) (Application, 
 }
 
 // A Space contains all apps that may be available in a V2Ray runtime.
-// Caller must check the availability of an app by calling HasXXX before getting its instance.
 type Space interface {
+	event.Registry
 	GetApplication(appInterface interface{}) Application
 	AddApplication(application Application) error
 	Initialize() error
-	OnInitialize(InitializationCallback)
 	Start() error
 	Close()
 }
 
+const (
+	SpaceInitializing event.Event = iota
+)
+
 type spaceImpl struct {
-	initialized bool
+	event.Listener
 	cache       map[reflect.Type]Application
-	appInit     []InitializationCallback
+	initialized bool
 }
 
 func NewSpace() Space {
 	return &spaceImpl{
-		cache:   make(map[reflect.Type]Application),
-		appInit: make([]InitializationCallback, 0, 32),
+		cache: make(map[reflect.Type]Application),
 	}
 }
 
-func (s *spaceImpl) OnInitialize(f InitializationCallback) {
-	if s.initialized {
-		f()
-	} else {
-		s.appInit = append(s.appInit, f)
+func (s *spaceImpl) On(e event.Event, h event.Handler) {
+	if e == SpaceInitializing && s.initialized {
+		_ = h(nil) // Ignore error
+		return
 	}
+	s.Listener.On(e, h)
 }
 
 func (s *spaceImpl) Initialize() error {
-	for _, f := range s.appInit {
-		if err := f(); err != nil {
-			return err
-		}
+	if s.initialized {
+		return nil
 	}
-	s.appInit = nil
 	s.initialized = true
-	return nil
+	return s.Fire(SpaceInitializing, nil)
 }
 
 func (s *spaceImpl) GetApplication(appInterface interface{}) Application {

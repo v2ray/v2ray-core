@@ -37,6 +37,7 @@ func global() policy.Policy {
 	}
 }
 
+// GetPolicy implements policy.Manager.
 func (m *Instance) GetPolicy(level uint32) policy.Policy {
 	if p, ok := m.levels[level]; ok {
 		return *p
@@ -44,13 +45,16 @@ func (m *Instance) GetPolicy(level uint32) policy.Policy {
 	return global()
 }
 
+// Start implements app.Application.Start().
 func (m *Instance) Start() error {
 	return nil
 }
 
+// Close implements app.Application.Close().
 func (m *Instance) Close() {
 }
 
+// Interface implement app.Application.Interface().
 func (m *Instance) Interface() interface{} {
 	return (*policy.Manager)(nil)
 }

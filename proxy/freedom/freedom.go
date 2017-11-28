@@ -40,7 +40,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		timeout:        config.Timeout,
 		destOverride:   config.DestinationOverride,
 	}
-	space.OnInitialize(func() error {
+	space.On(app.SpaceInitializing, func(interface{}) error {
 		if config.DomainStrategy == Config_USE_IP {
 			f.dns = dns.FromSpace(space)
 			if f.dns == nil {

@@ -39,7 +39,7 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 	if space == nil {
 		return nil, newError("Space not found.")
 	}
-	space.OnInitialize(func() error {
+	space.On(app.SpaceInitializing, func(interface{}) error {
 		pm := policy.FromSpace(space)
 		if pm == nil {
 			return newError("Policy not found in space.")

@@ -38,7 +38,7 @@ func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
 		address: config.GetPredefinedAddress(),
 		port:    net.Port(config.Port),
 	}
-	space.OnInitialize(func() error {
+	space.On(app.SpaceInitializing, func(interface{}) error {
 		pm := policy.FromSpace(space)
 		if pm == nil {
 			return newError("Policy not found in space.")

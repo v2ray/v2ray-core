@@ -33,7 +33,7 @@ func NewRouter(ctx context.Context, config *Config) (*Router, error) {
 		rules:          make([]Rule, len(config.Rule)),
 	}
 
-	space.OnInitialize(func() error {
+	space.On(app.SpaceInitializing, func(interface{}) error {
 		for idx, rule := range config.Rule {
 			r.rules[idx].Tag = rule.Tag
 			cond, err := rule.BuildCondition()

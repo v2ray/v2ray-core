@@ -274,7 +274,7 @@ type Server struct {
 func NewServer(ctx context.Context) *Server {
 	s := &Server{}
 	space := app.SpaceFromContext(ctx)
-	space.OnInitialize(func() error {
+	space.On(app.SpaceInitializing, func(interface{}) error {
 		d := dispatcher.FromSpace(space)
 		if d == nil {
 			return newError("no dispatcher in space")

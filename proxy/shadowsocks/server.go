@@ -47,7 +47,7 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 		account: account,
 	}
 
-	space.OnInitialize(func() error {
+	space.On(app.SpaceInitializing, func(interface{}) error {
 		pm := policy.FromSpace(space)
 		if pm == nil {
 			return newError("Policy not found in space.")

@@ -33,7 +33,7 @@ func NewHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) (*H
 	if space == nil {
 		return nil, newError("no space in context")
 	}
-	space.OnInitialize(func() error {
+	space.On(app.SpaceInitializing, func(interface{}) error {
 		ohm := proxyman.OutboundHandlerManagerFromSpace(space)
 		if ohm == nil {
 			return newError("no OutboundManager in space")

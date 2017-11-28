@@ -103,7 +103,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		sessionHistory: encoding.NewSessionHistory(ctx),
 	}
 
-	space.OnInitialize(func() error {
+	space.On(app.SpaceInitializing, func(interface{}) error {
 		handler.inboundHandlerManager = proxyman.InboundHandlerManagerFromSpace(space)
 		if handler.inboundHandlerManager == nil {
 			return newError("InboundHandlerManager is not found is space.")
