@@ -44,8 +44,8 @@ func createChacha20Poly1305(key []byte) cipher.AEAD {
 	return chacha20
 }
 
-func (v *Account) GetCipher() (Cipher, error) {
-	switch v.CipherType {
+func (a *Account) GetCipher() (Cipher, error) {
+	switch a.CipherType {
 	case CipherType_AES_128_CFB:
 		return &AesCfb{KeyBytes: 16}, nil
 	case CipherType_AES_256_CFB:
@@ -72,29 +72,23 @@ func (v *Account) GetCipher() (Cipher, error) {
 			IVBytes:         32,
 			AEADAuthCreator: createChacha20Poly1305,
 		}, nil
+	case CipherType_NONE:
+		return NoneCipher{}, nil
 	default:
 		return nil, newError("Unsupported cipher.")
 	}
 }
 
-func (v *Account) AsAccount() (protocol.Account, error) {
-	cipher, err := v.GetCipher()
+func (a *Account) AsAccount() (protocol.Account, error) {
+	cipher, err := a.GetCipher()
 	if err != nil {
 		return nil, newError("failed to get cipher").Base(err)
 	}
 	return &ShadowsocksAccount{
 		Cipher:      cipher,
-		Key:         v.GetCipherKey(),
-		OneTimeAuth: v.Ota,
+		Key:         PasswordToCipherKey([]byte(a.Password), cipher.KeySize()),
+		OneTimeAuth: a.Ota,
 	}, nil
-}
-
-func (v *Account) GetCipherKey() []byte {
-	ct, err := v.GetCipher()
-	if err != nil {
-		return nil
-	}
-	return PasswordToCipherKey(v.Password, ct.KeySize())
 }
 
 type Cipher interface {
@@ -261,17 +255,40 @@ func (v *ChaCha20) DecodePacket(key []byte, b *buf.Buffer) error {
 	return nil
 }
 
-func PasswordToCipherKey(password string, keySize int) []byte {
-	pwdBytes := []byte(password)
+type NoneCipher struct{}
+
+func (NoneCipher) KeySize() int { return 0 }
+func (NoneCipher) IVSize() int  { return 0 }
+func (NoneCipher) IsAEAD() bool {
+	return true // to avoid OTA
+}
+
+func (NoneCipher) NewDecryptionReader(key []byte, iv []byte, reader io.Reader) (buf.Reader, error) {
+	return buf.NewReader(reader), nil
+}
+
+func (NoneCipher) NewEncryptionWriter(key []byte, iv []byte, writer io.Writer) (buf.Writer, error) {
+	return buf.NewWriter(writer), nil
+}
+
+func (NoneCipher) EncodePacket(key []byte, b *buf.Buffer) error {
+	return nil
+}
+
+func (NoneCipher) DecodePacket(key []byte, b *buf.Buffer) error {
+	return nil
+}
+
+func PasswordToCipherKey(password []byte, keySize int) []byte {
 	key := make([]byte, 0, keySize)
 
-	md5Sum := md5.Sum(pwdBytes)
+	md5Sum := md5.Sum(password)
 	key = append(key, md5Sum[:]...)
 
 	for len(key) < keySize {
 		md5Hash := md5.New()
 		md5Hash.Write(md5Sum[:])
-		md5Hash.Write(pwdBytes)
+		md5Hash.Write(password)
 		md5Hash.Sum(md5Sum[:0])
 
 		key = append(key, md5Sum[:]...)
