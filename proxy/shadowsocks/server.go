@@ -21,7 +21,7 @@ import (
 type Server struct {
 	config        *ServerConfig
 	user          *protocol.User
-	account       *ShadowsocksAccount
+	account       *MemoryAccount
 	policyManager policy.Manager
 }
 
@@ -39,7 +39,7 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	if err != nil {
 		return nil, newError("failed to get user account").Base(err)
 	}
-	account := rawAccount.(*ShadowsocksAccount)
+	account := rawAccount.(*MemoryAccount)
 
 	s := &Server{
 		config:  config,

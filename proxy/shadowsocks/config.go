@@ -17,15 +17,17 @@ import (
 	"v2ray.com/core/common/protocol"
 )
 
-type ShadowsocksAccount struct {
+// MemoryAccount is an account type converted from Account.
+type MemoryAccount struct {
 	Cipher      Cipher
 	Key         []byte
 	OneTimeAuth Account_OneTimeAuth
 }
 
-func (v *ShadowsocksAccount) Equals(another protocol.Account) bool {
-	if account, ok := another.(*ShadowsocksAccount); ok {
-		return bytes.Equal(v.Key, account.Key)
+// Equals implements protocol.Account.Equals().
+func (a *MemoryAccount) Equals(another protocol.Account) bool {
+	if account, ok := another.(*MemoryAccount); ok {
+		return bytes.Equal(a.Key, account.Key)
 	}
 	return false
 }
@@ -44,7 +46,7 @@ func createChacha20Poly1305(key []byte) cipher.AEAD {
 	return chacha20
 }
 
-func (a *Account) GetCipher() (Cipher, error) {
+func (a *Account) getCipher() (Cipher, error) {
 	switch a.CipherType {
 	case CipherType_AES_128_CFB:
 		return &AesCfb{KeyBytes: 16}, nil
@@ -79,18 +81,20 @@ func (a *Account) GetCipher() (Cipher, error) {
 	}
 }
 
+// AsAccount implements protocol.AsAccount.
 func (a *Account) AsAccount() (protocol.Account, error) {
-	cipher, err := a.GetCipher()
+	cipher, err := a.getCipher()
 	if err != nil {
 		return nil, newError("failed to get cipher").Base(err)
 	}
-	return &ShadowsocksAccount{
+	return &MemoryAccount{
 		Cipher:      cipher,
-		Key:         PasswordToCipherKey([]byte(a.Password), cipher.KeySize()),
+		Key:         passwordToCipherKey([]byte(a.Password), cipher.KeySize()),
 		OneTimeAuth: a.Ota,
 	}, nil
 }
 
+// Cipher is an interface for all Shadowsocks ciphers.
 type Cipher interface {
 	KeySize() int
 	IVSize() int
@@ -101,6 +105,7 @@ type Cipher interface {
 	DecodePacket(key []byte, b *buf.Buffer) error
 }
 
+// AesCfb represents all AES-CFB ciphers.
 type AesCfb struct {
 	KeyBytes int
 }
@@ -279,7 +284,7 @@ func (NoneCipher) DecodePacket(key []byte, b *buf.Buffer) error {
 	return nil
 }
 
-func PasswordToCipherKey(password []byte, keySize int) []byte {
+func passwordToCipherKey(password []byte, keySize int) []byte {
 	key := make([]byte, 0, keySize)
 
 	md5Sum := md5.Sum(password)
@@ -287,8 +292,8 @@ func PasswordToCipherKey(password []byte, keySize int) []byte {
 
 	for len(key) < keySize {
 		md5Hash := md5.New()
-		md5Hash.Write(md5Sum[:])
-		md5Hash.Write(password)
+		common.Must2(md5Hash.Write(md5Sum[:]))
+		common.Must2(md5Hash.Write(password))
 		md5Hash.Sum(md5Sum[:0])
 
 		key = append(key, md5Sum[:]...)

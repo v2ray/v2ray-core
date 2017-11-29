@@ -27,7 +27,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	if err != nil {
 		return nil, nil, newError("failed to parse account").Base(err).AtError()
 	}
-	account := rawAccount.(*ShadowsocksAccount)
+	account := rawAccount.(*MemoryAccount)
 
 	buffer := buf.NewLocal(512)
 	defer buffer.Release()
@@ -142,7 +142,7 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (buf.Wri
 	if err != nil {
 		return nil, newError("failed to parse account").Base(err).AtError()
 	}
-	account := rawAccount.(*ShadowsocksAccount)
+	account := rawAccount.(*MemoryAccount)
 
 	if account.Cipher.IsAEAD() {
 		request.Option.Clear(RequestOptionOneTimeAuth)
@@ -211,7 +211,7 @@ func ReadTCPResponse(user *protocol.User, reader io.Reader) (buf.Reader, error) 
 	if err != nil {
 		return nil, newError("failed to parse account").Base(err).AtError()
 	}
-	account := rawAccount.(*ShadowsocksAccount)
+	account := rawAccount.(*MemoryAccount)
 
 	var iv []byte
 	if account.Cipher.IVSize() > 0 {
@@ -231,7 +231,7 @@ func WriteTCPResponse(request *protocol.RequestHeader, writer io.Writer) (buf.Wr
 	if err != nil {
 		return nil, newError("failed to parse account.").Base(err).AtError()
 	}
-	account := rawAccount.(*ShadowsocksAccount)
+	account := rawAccount.(*MemoryAccount)
 
 	var iv []byte
 	if account.Cipher.IVSize() > 0 {
@@ -252,7 +252,7 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload []byte) (*buf.Buff
 	if err != nil {
 		return nil, newError("failed to parse account.").Base(err).AtError()
 	}
-	account := rawAccount.(*ShadowsocksAccount)
+	account := rawAccount.(*MemoryAccount)
 
 	buffer := buf.New()
 	ivLen := account.Cipher.IVSize()
@@ -296,7 +296,7 @@ func DecodeUDPPacket(user *protocol.User, payload *buf.Buffer) (*protocol.Reques
 	if err != nil {
 		return nil, nil, newError("failed to parse account").Base(err).AtError()
 	}
-	account := rawAccount.(*ShadowsocksAccount)
+	account := rawAccount.(*MemoryAccount)
 
 	var iv []byte
 	var authenticator *Authenticator

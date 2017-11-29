@@ -97,7 +97,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 	if err != nil {
 		return newError("failed to get a valid user account").AtWarning().Base(err)
 	}
-	account := rawAccount.(*ShadowsocksAccount)
+	account := rawAccount.(*MemoryAccount)
 	request.User = user
 
 	if account.OneTimeAuth == Account_Auto || account.OneTimeAuth == Account_Enabled {
