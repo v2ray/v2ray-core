@@ -38,6 +38,7 @@ type Space interface {
 }
 
 const (
+	// SpaceInitializing is an event to be fired when Space is being initialized.
 	SpaceInitializing event.Event = iota
 )
 
@@ -47,6 +48,7 @@ type spaceImpl struct {
 	initialized bool
 }
 
+// NewSpace creates a new Space.
 func NewSpace() Space {
 	return &spaceImpl{
 		cache: make(map[reflect.Type]Application),
