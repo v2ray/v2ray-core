@@ -41,6 +41,8 @@ Please skip to the English section below if you don't write Chinese.
     // 在这里附上服务器端日志
 ```
 
+8) 其它相关的配置文件（如 Nginx）和相关日志。
+
 请预览一下你填的内容再提交。
 
 如果你已经填完上面的问卷，请把下面的英文部份删除，再提交 Issue。
@@ -87,3 +89,6 @@ Please answer all the questions with enough information. All issues not followin
 ```
 
 Please review your issue before submitting.
+
+8) Other configurations (such as Nginx) and logs.
+
