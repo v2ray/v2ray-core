@@ -3,7 +3,7 @@
 set -x
 
 apt-get update
-apt-get -y install jq git file
+apt-get -y install jq git file p7zip-full dbus
 
 function getattr() {
   curl -s -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/$2/attributes/$1
@@ -25,7 +25,7 @@ echo ${SIGN_KEY_PASS} | gpg --passphrase-fd 0 --batch --import /v2ray/build/sign
 curl -L -o /v2ray/build/releases https://api.github.com/repos/v2ray/v2ray-core/releases
 
 GO_INSTALL=golang.tar.gz
-curl -L -o ${GO_INSTALL} https://storage.googleapis.com/golang/go1.9.linux-amd64.tar.gz
+curl -L -o ${GO_INSTALL} https://storage.googleapis.com/golang/go1.9.2.linux-amd64.tar.gz
 tar -C /usr/local -xzf ${GO_INSTALL}
 export PATH=$PATH:/usr/local/go/bin
 
@@ -45,23 +45,26 @@ export TRAVIS_TAG=${RELEASE_TAG}
 export GPG_SIGN_PASS=${SIGN_KEY_PASS}
 export V_USER=${VUSER}
 
-$GOPATH/bin/vbuild --os=windows --arch=x86 --zip --sign
-$GOPATH/bin/vbuild --os=windows --arch=x64 --zip --sign
-$GOPATH/bin/vbuild --os=macos --arch=x64 --zip --sign
-$GOPATH/bin/vbuild --os=linux --arch=x86 --zip --sign
-$GOPATH/bin/vbuild --os=linux --arch=x64 --zip --sign
-$GOPATH/bin/vbuild --os=linux --arch=arm --zip --sign
-$GOPATH/bin/vbuild --os=linux --arch=arm64 --zip --sign
-$GOPATH/bin/vbuild --os=linux --arch=mips64 --zip --sign
-$GOPATH/bin/vbuild --os=linux --arch=mips64le --zip --sign
-$GOPATH/bin/vbuild --os=linux --arch=mips --zip --sign
-$GOPATH/bin/vbuild --os=linux --arch=mipsle --zip --sign
-$GOPATH/bin/vbuild --os=freebsd --arch=x86 --zip --sign
-$GOPATH/bin/vbuild --os=freebsd --arch=amd64 --zip --sign
-$GOPATH/bin/vbuild --os=openbsd --arch=x86 --zip --sign
-$GOPATH/bin/vbuild --os=openbsd --arch=amd64 --zip --sign
+$GOPATH/bin/vbuild --os=windows --arch=x86 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=windows --arch=x64 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=macos --arch=x64 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=linux --arch=x86 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=linux --arch=x64 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=linux --arch=arm --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=linux --arch=arm64 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=linux --arch=mips64 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=linux --arch=mips64le --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=linux --arch=mips --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=linux --arch=mipsle --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=freebsd --arch=x86 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=freebsd --arch=amd64 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=openbsd --arch=x86 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=openbsd --arch=amd64 --zip --sign #--encrypt
 
-JSON_DATA=$(printf '{"tag_name": "%s", "prerelease": %s}' ${RELEASE_TAG} ${PRERELEASE})
+#RELBODY=$(cat $GOPATH/bin/metadata.txt | jq -R -s -c .)
+JSON_DATA=$(echo "{}" | jq -c ".tag_name=\"${RELEASE_TAG}\"")
+JSON_DATA=$(echo ${JSON_DATA} | jq -c ".prerelease=${PRERELEASE}")
+#JSON_DATA=$(echo ${JSON_DATA} | jq -c ".body=${RELBODY}")
 RELEASE_ID=$(curl --data "${JSON_DATA}" -H "Authorization: token ${GITHUB_TOKEN}" -X POST https://api.github.com/repos/v2ray/v2ray-core/releases | jq ".id")
 
 function upload() {
@@ -89,25 +92,10 @@ upload $GOPATH/bin/metadata.txt
 
 if [[ "${PRERELEASE}" == "false" ]]; then
 
-INSTALL_DIR=/v2ray/src/github.com/v2ray/install
-
-git clone "https://github.com/v2ray/install.git" ${INSTALL_DIR}
-
-#RELEASE_DIR=${INSTALL_DIR}/releases/${RELEASE_TAG}
-#mkdir -p ${RELEASE_DIR}/
-#cp $GOPATH/bin/metadata.txt ${RELEASE_DIR}/
-#cp $GOPATH/bin/v2ray-*.zip ${RELEASE_DIR}/
-#echo ${RELEASE_TAG} > ${INSTALL_DIR}/releases/latest.txt
-
-cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/v2ray ${INSTALL_DIR}/docker/official/
-
-pushd ${INSTALL_DIR}
-git config user.name "V2Ray Auto Build"
-git config user.email "admin@v2ray.com"
-git add -A
-git commit -m "Update for ${RELEASE_TAG}"
-git push "https://${GITHUB_TOKEN}@github.com/v2ray/install.git" master
-popd
+gsutil cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/v2ray gs://v2ray-docker/
+gsutil cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/v2ctl gs://v2ray-docker/
+gsutil cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/geoip.dat gs://v2ray-docker/
+gsutil cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/geosite.dat gs://v2ray-docker/
 
 DOCKER_HUB_API=https://registry.hub.docker.com/u/v2ray/official/trigger/${DOCKER_HUB_KEY}/
 curl -H "Content-Type: application/json" --data '{"build": true}' -X POST "${DOCKER_HUB_API}"

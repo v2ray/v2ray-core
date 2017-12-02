@@ -29,10 +29,10 @@ func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error
 	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
 		tlsConfig, ok := securitySettings.(*tls.Config)
 		if ok {
-			config := tlsConfig.GetTLSConfig()
 			if dest.Address.Family().IsDomain() {
-				config.ServerName = dest.Address.Domain()
+				tlsConfig.OverrideServerNameIfEmpty(dest.Address.Domain())
 			}
+			config := tlsConfig.GetTLSConfig()
 			conn = tls.Client(conn, config)
 		}
 	}

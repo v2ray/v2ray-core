@@ -5,13 +5,13 @@ package inbound
 import (
 	"context"
 	"io"
-	"runtime"
 	"sync"
 	"time"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/log"
+	"v2ray.com/core/app/policy"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -34,7 +34,7 @@ type userByEmail struct {
 	defaultAlterIDs uint16
 }
 
-func NewUserByEmail(users []*protocol.User, config *DefaultConfig) *userByEmail {
+func newUserByEmail(users []*protocol.User, config *DefaultConfig) *userByEmail {
 	cache := make(map[string]*protocol.User)
 	for _, user := range users {
 		cache[user.Email] = user
@@ -79,8 +79,10 @@ type Handler struct {
 	usersByEmail          *userByEmail
 	detours               *DetourConfig
 	sessionHistory        *encoding.SessionHistory
+	policyManager         policy.Manager
 }
 
+// New creates a new VMess inbound handler.
 func New(ctx context.Context, config *Config) (*Handler, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
@@ -97,14 +99,18 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	handler := &Handler{
 		clients:        allowedClients,
 		detours:        config.Detour,
-		usersByEmail:   NewUserByEmail(config.User, config.GetDefaultValue()),
+		usersByEmail:   newUserByEmail(config.User, config.GetDefaultValue()),
 		sessionHistory: encoding.NewSessionHistory(ctx),
 	}
 
-	space.OnInitialize(func() error {
+	space.On(app.SpaceInitializing, func(interface{}) error {
 		handler.inboundHandlerManager = proxyman.InboundHandlerManagerFromSpace(space)
 		if handler.inboundHandlerManager == nil {
-			return newError("InboundHandlerManager is not found is space")
+			return newError("InboundHandlerManager is not found is space.")
+		}
+		handler.policyManager = policy.FromSpace(space)
+		if handler.policyManager == nil {
+			return newError("Policy is not found in space.")
 		}
 		return nil
 	})
@@ -119,10 +125,10 @@ func (*Handler) Network() net.NetworkList {
 	}
 }
 
-func (v *Handler) GetUser(email string) *protocol.User {
-	user, existing := v.usersByEmail.Get(email)
+func (h *Handler) GetUser(email string) *protocol.User {
+	user, existing := h.usersByEmail.Get(email)
 	if !existing {
-		v.clients.Add(user)
+		h.clients.Add(user)
 	}
 	return user
 }
@@ -143,12 +149,12 @@ func transferResponse(timer signal.ActivityUpdater, session *encoding.ServerSess
 	bodyWriter := session.EncodeResponseBody(request, output)
 
 	// Optimize for small response packet
-	data, err := input.Read()
+	data, err := input.ReadMultiBuffer()
 	if err != nil {
 		return err
 	}
 
-	if err := bodyWriter.Write(data); err != nil {
+	if err := bodyWriter.WriteMultiBuffer(data); err != nil {
 		return err
 	}
 	data.Release()
@@ -164,7 +170,7 @@ func transferResponse(timer signal.ActivityUpdater, session *encoding.ServerSess
 	}
 
 	if request.Option.Has(protocol.RequestOptionChunkStream) {
-		if err := bodyWriter.Write(buf.NewMultiBuffer()); err != nil {
+		if err := bodyWriter.WriteMultiBuffer(buf.MultiBuffer{}); err != nil {
 			return err
 		}
 	}
@@ -173,14 +179,15 @@ func transferResponse(timer signal.ActivityUpdater, session *encoding.ServerSess
 }
 
 // Process implements proxy.Inbound.Process().
-func (v *Handler) Process(ctx context.Context, network net.Network, connection internet.Connection, dispatcher dispatcher.Interface) error {
-	if err := connection.SetReadDeadline(time.Now().Add(time.Second * 8)); err != nil {
-		return err
+func (h *Handler) Process(ctx context.Context, network net.Network, connection internet.Connection, dispatcher dispatcher.Interface) error {
+	sessionPolicy := h.policyManager.GetPolicy(0)
+	if err := connection.SetReadDeadline(time.Now().Add(sessionPolicy.Timeout.Handshake.Duration())); err != nil {
+		return newError("unable to set read deadline").Base(err).AtWarning()
 	}
 
-	reader := buf.NewBufferedReader(connection)
+	reader := buf.NewBufferedReader(buf.NewReader(connection))
 
-	session := encoding.NewServerSession(v.clients, v.sessionHistory)
+	session := encoding.NewServerSession(h.clients, h.sessionHistory)
 	request, err := session.DecodeRequestHeader(reader)
 
 	if err != nil {
@@ -199,13 +206,15 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, "")
 	log.Trace(newError("received request for ", request.Destination()))
 
-	common.Must(connection.SetReadDeadline(time.Time{}))
+	if err := connection.SetReadDeadline(time.Time{}); err != nil {
+		log.Trace(newError("unable to set back read deadline").Base(err))
+	}
 
-	userSettings := request.User.GetSettings()
-
+	sessionPolicy = h.policyManager.GetPolicy(request.User.Level)
 	ctx = protocol.ContextWithUser(ctx, request.User)
 
-	ctx, timer := signal.CancelAfterInactivity(ctx, userSettings.PayloadTimeout)
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeout.ConnectionIdle.Duration())
 	ray, err := dispatcher.Dispatch(ctx, request.Destination())
 	if err != nil {
 		return newError("failed to dispatch request to ", request.Destination()).Base(err)
@@ -214,18 +223,18 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 
-	reader.SetBuffered(false)
-
 	requestDone := signal.ExecuteAsync(func() error {
+		defer timer.SetTimeout(sessionPolicy.Timeout.DownlinkOnly.Duration())
 		return transferRequest(timer, session, request, reader, input)
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
-		writer := buf.NewBufferedWriter(connection)
+		writer := buf.NewBufferedWriter(buf.NewWriter(connection))
 		defer writer.Flush()
+		defer timer.SetTimeout(sessionPolicy.Timeout.UplinkOnly.Duration())
 
 		response := &protocol.ResponseHeader{
-			Command: v.generateCommand(ctx, request),
+			Command: h.generateCommand(ctx, request),
 		}
 		return transferResponse(timer, session, request, response, output, writer)
 	})
@@ -236,16 +245,14 @@ func (v *Handler) Process(ctx context.Context, network net.Network, connection i
 		return newError("connection ends").Base(err)
 	}
 
-	runtime.KeepAlive(timer)
-
 	return nil
 }
 
-func (v *Handler) generateCommand(ctx context.Context, request *protocol.RequestHeader) protocol.ResponseCommand {
-	if v.detours != nil {
-		tag := v.detours.To
-		if v.inboundHandlerManager != nil {
-			handler, err := v.inboundHandlerManager.GetHandler(ctx, tag)
+func (h *Handler) generateCommand(ctx context.Context, request *protocol.RequestHeader) protocol.ResponseCommand {
+	if h.detours != nil {
+		tag := h.detours.To
+		if h.inboundHandlerManager != nil {
+			handler, err := h.inboundHandlerManager.GetHandler(ctx, tag)
 			if err != nil {
 				log.Trace(newError("failed to get detour handler: ", tag, err).AtWarning())
 				return nil

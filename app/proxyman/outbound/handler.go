@@ -33,7 +33,7 @@ func NewHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) (*H
 	if space == nil {
 		return nil, newError("no space in context")
 	}
-	space.OnInitialize(func() error {
+	space.On(app.SpaceInitializing, func(interface{}) error {
 		ohm := proxyman.OutboundHandlerManagerFromSpace(space)
 		if ohm == nil {
 			return newError("no OutboundManager in space")
@@ -78,6 +78,7 @@ func (h *Handler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
 		err := h.mux.Dispatch(ctx, outboundRay)
 		if err != nil {
 			log.Trace(newError("failed to process outbound traffic").Base(err))
+			outboundRay.OutboundOutput().CloseError()
 		}
 	} else {
 		err := h.proxy.Process(ctx, outboundRay, h)
@@ -122,8 +123,8 @@ func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Conn
 }
 
 var (
-	_ buf.MultiBufferReader = (*Connection)(nil)
-	_ buf.MultiBufferWriter = (*Connection)(nil)
+	_ buf.Reader = (*Connection)(nil)
+	_ buf.Writer = (*Connection)(nil)
 )
 
 type Connection struct {
@@ -132,9 +133,8 @@ type Connection struct {
 	localAddr  net.Addr
 	remoteAddr net.Addr
 
-	bytesReader io.Reader
-	reader      buf.Reader
-	writer      buf.Writer
+	reader *buf.BufferedReader
+	writer buf.Writer
 }
 
 func NewConnection(stream ray.Ray) *Connection {
@@ -148,9 +148,8 @@ func NewConnection(stream ray.Ray) *Connection {
 			IP:   []byte{0, 0, 0, 0},
 			Port: 0,
 		},
-		bytesReader: buf.ToBytesReader(stream.InboundOutput()),
-		reader:      stream.InboundOutput(),
-		writer:      stream.InboundInput(),
+		reader: buf.NewBufferedReader(stream.InboundOutput()),
+		writer: stream.InboundInput(),
 	}
 }
 
@@ -159,11 +158,11 @@ func (v *Connection) Read(b []byte) (int, error) {
 	if v.closed {
 		return 0, io.EOF
 	}
-	return v.bytesReader.Read(b)
+	return v.reader.Read(b)
 }
 
 func (v *Connection) ReadMultiBuffer() (buf.MultiBuffer, error) {
-	return v.reader.Read()
+	return v.reader.ReadMultiBuffer()
 }
 
 // Write implements net.Conn.Write().
@@ -171,14 +170,19 @@ func (v *Connection) Write(b []byte) (int, error) {
 	if v.closed {
 		return 0, io.ErrClosedPipe
 	}
-	return buf.ToBytesWriter(v.writer).Write(b)
+
+	l := len(b)
+	mb := buf.NewMultiBufferCap(l/buf.Size + 1)
+	mb.Write(b)
+	return l, v.writer.WriteMultiBuffer(mb)
 }
 
 func (v *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	if v.closed {
 		return io.ErrClosedPipe
 	}
-	return v.writer.Write(mb)
+
+	return v.writer.WriteMultiBuffer(mb)
 }
 
 // Close implements net.Conn.Close().

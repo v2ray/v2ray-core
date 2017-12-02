@@ -13,7 +13,6 @@ import (
 )
 
 type TCPListener struct {
-	ctx        context.Context
 	listener   *net.TCPListener
 	tlsConfig  *gotls.Config
 	authConfig internet.ConnectionAuthenticator
@@ -34,7 +33,6 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, addConn 
 	tcpSettings := networkSettings.(*Config)
 
 	l := &TCPListener{
-		ctx:      ctx,
 		listener: listener,
 		config:   tcpSettings,
 		addConn:  addConn,
@@ -56,14 +54,14 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, addConn 
 		}
 		l.authConfig = auth
 	}
-	go l.KeepAccepting()
+	go l.KeepAccepting(ctx)
 	return l, nil
 }
 
-func (v *TCPListener) KeepAccepting() {
+func (v *TCPListener) KeepAccepting(ctx context.Context) {
 	for {
 		select {
-		case <-v.ctx.Done():
+		case <-ctx.Done():
 			return
 		default:
 		}

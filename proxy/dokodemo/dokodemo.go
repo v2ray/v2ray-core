@@ -4,24 +4,25 @@ package dokodemo
 
 import (
 	"context"
-	"runtime"
-	"time"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/log"
+	"v2ray.com/core/app/policy"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/internet/udp"
 )
 
 type DokodemoDoor struct {
 	config  *Config
 	address net.Address
 	port    net.Port
+	policy  policy.Policy
 }
 
 func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
@@ -37,6 +38,17 @@ func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
 		address: config.GetPredefinedAddress(),
 		port:    net.Port(config.Port),
 	}
+	space.On(app.SpaceInitializing, func(interface{}) error {
+		pm := policy.FromSpace(space)
+		if pm == nil {
+			return newError("Policy not found in space.")
+		}
+		d.policy = pm.GetPolicy(config.UserLevel)
+		if config.Timeout > 0 && config.UserLevel == 0 {
+			d.policy.Timeout.ConnectionIdle.Value = config.Timeout
+		}
+		return nil
+	})
 	return d, nil
 }
 
@@ -60,11 +72,8 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		return newError("unable to get destination")
 	}
 
-	timeout := time.Second * time.Duration(d.config.Timeout)
-	if timeout == 0 {
-		timeout = time.Minute * 5
-	}
-	ctx, timer := signal.CancelAfterInactivity(ctx, timeout)
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, d.policy.Timeout.ConnectionIdle.Duration())
 
 	inboundRay, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
@@ -80,6 +89,8 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 			return newError("failed to transport request").Base(err)
 		}
 
+		timer.SetTimeout(d.policy.Timeout.DownlinkOnly.Duration())
+
 		return nil
 	})
 
@@ -88,14 +99,24 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		if network == net.Network_TCP {
 			writer = buf.NewWriter(conn)
 		} else {
-			writer = buf.NewSequentialWriter(conn)
+			//if we are in TPROXY mode, use linux's udp forging functionality
+			if !d.config.FollowRedirect {
+				writer = buf.NewSequentialWriter(conn)
+			} else {
+				srca := net.UDPAddr{IP: dest.Address.IP(), Port: int(dest.Port.Value())}
+				origsend, err := udp.TransmitSocket(&srca, conn.RemoteAddr())
+				if err != nil {
+					return err
+				}
+				writer = buf.NewSequentialWriter(origsend)
+			}
 		}
 
 		if err := buf.Copy(inboundRay.InboundOutput(), writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport response").Base(err)
 		}
 
-		timer.SetTimeout(time.Second * 2)
+		timer.SetTimeout(d.policy.Timeout.UplinkOnly.Duration())
 
 		return nil
 	})
@@ -105,8 +126,6 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		inboundRay.InboundOutput().CloseError()
 		return newError("connection ends").Base(err)
 	}
-
-	runtime.KeepAlive(timer)
 
 	return nil
 }

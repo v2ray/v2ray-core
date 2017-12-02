@@ -8,9 +8,9 @@ import (
 
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/testing/assert"
 	. "v2ray.com/core/transport/internet/udp"
 	"v2ray.com/core/transport/ray"
+	. "v2ray.com/ext/assert"
 )
 
 type TestDispatcher struct {
@@ -22,18 +22,18 @@ func (d *TestDispatcher) Dispatch(ctx context.Context, dest net.Destination) (ra
 }
 
 func TestSameDestinationDispatching(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	link := ray.NewRay(ctx)
 	go func() {
 		for {
-			data, err := link.OutboundInput().Read()
+			data, err := link.OutboundInput().ReadMultiBuffer()
 			if err != nil {
 				break
 			}
-			err = link.OutboundOutput().Write(data)
-			assert.Error(err).IsNil()
+			err = link.OutboundOutput().WriteMultiBuffer(data)
+			assert(err, IsNil)
 		}
 	}()
 
@@ -60,6 +60,6 @@ func TestSameDestinationDispatching(t *testing.T) {
 	time.Sleep(time.Second)
 	cancel()
 
-	assert.Uint32(count).Equals(1)
-	assert.Uint32(msgCount).Equals(6)
+	assert(count, Equals, uint32(1))
+	assert(msgCount, Equals, uint32(6))
 }

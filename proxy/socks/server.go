@@ -3,12 +3,12 @@ package socks
 import (
 	"context"
 	"io"
-	"runtime"
 	"time"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/log"
+	"v2ray.com/core/app/policy"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
@@ -22,6 +22,7 @@ import (
 // Server is a SOCKS 5 proxy server
 type Server struct {
 	config *ServerConfig
+	policy policy.Policy
 }
 
 // NewServer creates a new Server object.
@@ -33,6 +34,17 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	s := &Server{
 		config: config,
 	}
+	space.On(app.SpaceInitializing, func(interface{}) error {
+		pm := policy.FromSpace(space)
+		if pm == nil {
+			return newError("Policy not found in space.")
+		}
+		s.policy = pm.GetPolicy(config.UserLevel)
+		if config.Timeout > 0 && config.UserLevel == 0 {
+			s.policy.Timeout.ConnectionIdle.Value = config.Timeout
+		}
+		return nil
+	})
 	return s, nil
 }
 
@@ -58,8 +70,8 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 }
 
 func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispatcher dispatcher.Interface) error {
-	conn.SetReadDeadline(time.Now().Add(time.Second * 8))
-	reader := buf.NewBufferedReader(conn)
+	conn.SetReadDeadline(time.Now().Add(s.policy.Timeout.Handshake.Duration()))
+	reader := buf.NewBufferedReader(buf.NewReader(conn))
 
 	inboundDest, ok := proxy.InboundEntryPointFromContext(ctx)
 	if !ok {
@@ -90,27 +102,22 @@ func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispa
 	}
 
 	if request.Command == protocol.RequestCommandUDP {
-		return s.handleUDP()
+		return s.handleUDP(conn)
 	}
 
 	return nil
 }
 
-func (*Server) handleUDP() error {
-	// The TCP connection closes after v method returns. We need to wait until
+func (*Server) handleUDP(c net.Conn) error {
+	// The TCP connection closes after this method returns. We need to wait until
 	// the client closes it.
-	// TODO: get notified from UDP part
-	time.Sleep(5 * time.Minute)
-
-	return nil
+	_, err := io.Copy(buf.DiscardBytes, c)
+	return err
 }
 
 func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writer, dest net.Destination, dispatcher dispatcher.Interface) error {
-	timeout := time.Second * time.Duration(v.config.Timeout)
-	if timeout == 0 {
-		timeout = time.Minute * 5
-	}
-	ctx, timer := signal.CancelAfterInactivity(ctx, timeout)
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, v.policy.Timeout.ConnectionIdle.Duration())
 
 	ray, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
@@ -127,6 +134,7 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 		if err := buf.Copy(v2reader, input, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport all TCP request").Base(err)
 		}
+		timer.SetTimeout(v.policy.Timeout.DownlinkOnly.Duration())
 		return nil
 	})
 
@@ -135,7 +143,7 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 		if err := buf.Copy(output, v2writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport all TCP response").Base(err)
 		}
-		timer.SetTimeout(time.Second * 2)
+		timer.SetTimeout(v.policy.Timeout.UplinkOnly.Duration())
 		return nil
 	})
 
@@ -144,8 +152,6 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 		output.CloseError()
 		return newError("connection ends").Base(err)
 	}
-
-	runtime.KeepAlive(timer)
 
 	return nil
 }
@@ -159,7 +165,7 @@ func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 
 	reader := buf.NewReader(conn)
 	for {
-		mpayload, err := reader.Read()
+		mpayload, err := reader.ReadMultiBuffer()
 		if err != nil {
 			return err
 		}

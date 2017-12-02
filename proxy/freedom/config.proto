@@ -18,6 +18,7 @@ message Config {
     USE_IP = 1;
   }
   DomainStrategy domain_strategy = 1;
-  uint32 timeout = 2;
+  uint32 timeout = 2 [deprecated = true];
   DestinationOverride destination_override = 3;
+  uint32 user_level = 4;
 }

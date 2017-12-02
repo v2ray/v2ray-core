@@ -41,14 +41,17 @@ func UDPDestination(address Address, port Port) Destination {
 	}
 }
 
+// NetAddr returns the network address in this Destination in string form.
 func (d Destination) NetAddr() string {
 	return d.Address.String() + ":" + d.Port.String()
 }
 
+// String returns the strings form of this Destination.
 func (d Destination) String() string {
 	return d.Network.URLPrefix() + ":" + d.NetAddr()
 }
 
+// IsValid returns true if this Destination is valid.
 func (d Destination) IsValid() bool {
 	return d.Network != Network_Unknown
 }

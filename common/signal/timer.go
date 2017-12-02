@@ -12,8 +12,6 @@ type ActivityUpdater interface {
 type ActivityTimer struct {
 	updated chan bool
 	timeout chan time.Duration
-	ctx     context.Context
-	cancel  context.CancelFunc
 }
 
 func (t *ActivityTimer) Update() {
@@ -27,7 +25,7 @@ func (t *ActivityTimer) SetTimeout(timeout time.Duration) {
 	t.timeout <- timeout
 }
 
-func (t *ActivityTimer) run() {
+func (t *ActivityTimer) run(ctx context.Context, cancel context.CancelFunc) {
 	ticker := time.NewTicker(<-t.timeout)
 	defer func() {
 		ticker.Stop()
@@ -36,32 +34,35 @@ func (t *ActivityTimer) run() {
 	for {
 		select {
 		case <-ticker.C:
-		case <-t.ctx.Done():
+		case <-ctx.Done():
 			return
 		case timeout := <-t.timeout:
+			if timeout == 0 {
+				cancel()
+				return
+			}
+
 			ticker.Stop()
 			ticker = time.NewTicker(timeout)
+			continue
 		}
 
 		select {
 		case <-t.updated:
 		// Updated keep waiting.
 		default:
-			t.cancel()
+			cancel()
 			return
 		}
 	}
 }
 
-func CancelAfterInactivity(ctx context.Context, timeout time.Duration) (context.Context, *ActivityTimer) {
-	ctx, cancel := context.WithCancel(ctx)
+func CancelAfterInactivity(ctx context.Context, cancel context.CancelFunc, timeout time.Duration) *ActivityTimer {
 	timer := &ActivityTimer{
-		ctx:     ctx,
-		cancel:  cancel,
 		timeout: make(chan time.Duration, 1),
 		updated: make(chan bool, 1),
 	}
 	timer.timeout <- timeout
-	go timer.run()
-	return ctx, timer
+	go timer.run(ctx, cancel)
+	return timer
 }

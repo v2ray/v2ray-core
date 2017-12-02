@@ -30,7 +30,6 @@ type idEntry struct {
 
 type TimedUserValidator struct {
 	sync.RWMutex
-	ctx        context.Context
 	validUsers []*protocol.User
 	userHash   map[[16]byte]indexTimePair
 	ids        []*idEntry
@@ -45,14 +44,13 @@ type indexTimePair struct {
 
 func NewTimedUserValidator(ctx context.Context, hasher protocol.IDHash) protocol.UserValidator {
 	tus := &TimedUserValidator{
-		ctx:        ctx,
 		validUsers: make([]*protocol.User, 0, 16),
 		userHash:   make(map[[16]byte]indexTimePair, 512),
 		ids:        make([]*idEntry, 0, 512),
 		hasher:     hasher,
 		baseTime:   protocol.Timestamp(time.Now().Unix() - cacheDurationSec*3),
 	}
-	go tus.updateUserHash(updateIntervalSec * time.Second)
+	go tus.updateUserHash(ctx, updateIntervalSec*time.Second)
 	return tus
 }
 
@@ -80,7 +78,7 @@ func (v *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, idx in
 	}
 }
 
-func (v *TimedUserValidator) updateUserHash(interval time.Duration) {
+func (v *TimedUserValidator) updateUserHash(ctx context.Context, interval time.Duration) {
 	for {
 		select {
 		case now := <-time.After(interval):
@@ -90,7 +88,7 @@ func (v *TimedUserValidator) updateUserHash(interval time.Duration) {
 				v.generateNewHashes(nowSec, entry.userIdx, entry)
 			}
 			v.Unlock()
-		case <-v.ctx.Done():
+		case <-ctx.Done():
 			return
 		}
 	}

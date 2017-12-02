@@ -2,6 +2,7 @@ package net
 
 import "net"
 
+// DialTCP is an injectable function. Default to net.DialTCP
 var DialTCP = net.DialTCP
 var DialUDP = net.DialUDP
 var DialUnix = net.DialUnix
@@ -31,6 +32,7 @@ type UDPConn = net.UDPConn
 type UnixAddr = net.UnixAddr
 type UnixConn = net.UnixConn
 
+// IP is an alias for net.IP.
 type IP = net.IP
 type IPMask = net.IPMask
 type IPNet = net.IPNet

@@ -6,8 +6,9 @@ option go_package = "websocket";
 option java_package = "com.v2ray.core.transport.internet.websocket";
 option java_multiple_files = true;
 
-message ConnectionReuse {
-  bool enable = 1;
+message Header {
+  string key = 1;
+  string value = 2;
 }
 
 message Config {
@@ -15,4 +16,6 @@ message Config {
 
   // URL path to the WebSocket service. Empty value means root(/).
   string path = 2;
+
+  repeated Header header = 3;
 }

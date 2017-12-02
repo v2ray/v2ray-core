@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -11,11 +12,11 @@ import (
 	"v2ray.com/core/common/uuid"
 	"v2ray.com/core/proxy/vmess"
 	. "v2ray.com/core/proxy/vmess/encoding"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestRequestSerialization(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	user := &protocol.User{
 		Level: 0,
@@ -38,7 +39,7 @@ func TestRequestSerialization(t *testing.T) {
 
 	buffer := buf.New()
 	client := NewClientSession(protocol.DefaultIDHash)
-	client.EncodeRequestHeader(expectedRequest, buffer)
+	common.Must(client.EncodeRequestHeader(expectedRequest, buffer))
 
 	buffer2 := buf.New()
 	buffer2.Append(buffer.Bytes())
@@ -51,18 +52,18 @@ func TestRequestSerialization(t *testing.T) {
 
 	server := NewServerSession(userValidator, sessionHistory)
 	actualRequest, err := server.DecodeRequestHeader(buffer)
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
-	assert.Byte(expectedRequest.Version).Equals(actualRequest.Version)
-	assert.Byte(byte(expectedRequest.Command)).Equals(byte(actualRequest.Command))
-	assert.Byte(byte(expectedRequest.Option)).Equals(byte(actualRequest.Option))
-	assert.Address(expectedRequest.Address).Equals(actualRequest.Address)
-	assert.Port(expectedRequest.Port).Equals(actualRequest.Port)
-	assert.Byte(byte(expectedRequest.Security)).Equals(byte(actualRequest.Security))
+	assert(expectedRequest.Version, Equals, actualRequest.Version)
+	assert(byte(expectedRequest.Command), Equals, byte(actualRequest.Command))
+	assert(byte(expectedRequest.Option), Equals, byte(actualRequest.Option))
+	assert(expectedRequest.Address, Equals, actualRequest.Address)
+	assert(expectedRequest.Port, Equals, actualRequest.Port)
+	assert(byte(expectedRequest.Security), Equals, byte(actualRequest.Security))
 
 	_, err = server.DecodeRequestHeader(buffer2)
 	// anti replay attack
-	assert.Error(err).IsNotNil()
+	assert(err, IsNotNil)
 
 	cancel()
 }

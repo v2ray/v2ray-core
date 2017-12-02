@@ -21,11 +21,22 @@ const (
 )
 
 type DomainRecord struct {
-	A *ARecord
+	IP         []net.IP
+	Expire     time.Time
+	LastAccess time.Time
+}
+
+func (r *DomainRecord) Expired() bool {
+	return r.Expire.Before(time.Now())
+}
+
+func (r *DomainRecord) Inactive() bool {
+	now := time.Now()
+	return r.Expire.Before(now) || r.LastAccess.Add(time.Minute*5).Before(now)
 }
 
 type CacheServer struct {
-	sync.RWMutex
+	sync.Mutex
 	hosts   map[string]net.IP
 	records map[string]*DomainRecord
 	servers []NameServer
@@ -41,7 +52,7 @@ func NewCacheServer(ctx context.Context, config *dns.Config) (*CacheServer, erro
 		servers: make([]NameServer, len(config.NameServers)),
 		hosts:   config.GetInternalHosts(),
 	}
-	space.OnInitialize(func() error {
+	space.On(app.SpaceInitializing, func(interface{}) error {
 		disp := dispatcher.FromSpace(space)
 		if disp == nil {
 			return newError("dispatcher is not found in the space")
@@ -79,13 +90,31 @@ func (*CacheServer) Start() error {
 func (*CacheServer) Close() {}
 
 func (s *CacheServer) GetCached(domain string) []net.IP {
-	s.RLock()
-	defer s.RUnlock()
+	s.Lock()
+	defer s.Unlock()
 
-	if record, found := s.records[domain]; found && record.A.Expire.After(time.Now()) {
-		return record.A.IPs
+	if record, found := s.records[domain]; found && !record.Expired() {
+		record.LastAccess = time.Now()
+		return record.IP
 	}
 	return nil
+}
+
+func (s *CacheServer) tryCleanup() {
+	s.Lock()
+	defer s.Unlock()
+
+	if len(s.records) > 256 {
+		domains := make([]string, 0, 256)
+		for d, r := range s.records {
+			if r.Expired() {
+				domains = append(domains, d)
+			}
+		}
+		for _, d := range domains {
+			delete(s.records, d)
+		}
+	}
 }
 
 func (s *CacheServer) Get(domain string) []net.IP {
@@ -99,6 +128,8 @@ func (s *CacheServer) Get(domain string) []net.IP {
 		return ips
 	}
 
+	s.tryCleanup()
+
 	for _, server := range s.servers {
 		response := server.QueryA(domain)
 		select {
@@ -108,7 +139,9 @@ func (s *CacheServer) Get(domain string) []net.IP {
 			}
 			s.Lock()
 			s.records[domain] = &DomainRecord{
-				A: a,
+				IP:         a.IPs,
+				Expire:     a.Expire,
+				LastAccess: time.Now(),
 			}
 			s.Unlock()
 			log.Trace(newError("returning ", len(a.IPs), " IPs for domain ", domain).AtDebug())

@@ -2,12 +2,12 @@ package shadowsocks
 
 import (
 	"context"
-	"runtime"
 	"time"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/log"
+	"v2ray.com/core/app/policy"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
@@ -19,9 +19,10 @@ import (
 )
 
 type Server struct {
-	config  *ServerConfig
-	user    *protocol.User
-	account *ShadowsocksAccount
+	config        *ServerConfig
+	user          *protocol.User
+	account       *MemoryAccount
+	policyManager policy.Manager
 }
 
 // NewServer create a new Shadowsocks server.
@@ -38,13 +39,22 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	if err != nil {
 		return nil, newError("failed to get user account").Base(err)
 	}
-	account := rawAccount.(*ShadowsocksAccount)
+	account := rawAccount.(*MemoryAccount)
 
 	s := &Server{
 		config:  config,
 		user:    config.GetUser(),
 		account: account,
 	}
+
+	space.On(app.SpaceInitializing, func(interface{}) error {
+		pm := policy.FromSpace(space)
+		if pm == nil {
+			return newError("Policy not found in space.")
+		}
+		s.policyManager = pm
+		return nil
+	})
 
 	return s, nil
 }
@@ -75,7 +85,7 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 
 	reader := buf.NewReader(conn)
 	for {
-		mpayload, err := reader.Read()
+		mpayload, err := reader.ReadMultiBuffer()
 		if err != nil {
 			break
 		}
@@ -129,8 +139,9 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 }
 
 func (s *Server) handleConnection(ctx context.Context, conn internet.Connection, dispatcher dispatcher.Interface) error {
-	conn.SetReadDeadline(time.Now().Add(time.Second * 8))
-	bufferedReader := buf.NewBufferedReader(conn)
+	sessionPolicy := s.policyManager.GetPolicy(s.user.Level)
+	conn.SetReadDeadline(time.Now().Add(sessionPolicy.Timeout.Handshake.Duration()))
+	bufferedReader := buf.NewBufferedReader(buf.NewReader(conn))
 	request, bodyReader, err := ReadTCPSession(s.user, bufferedReader)
 	if err != nil {
 		log.Access(conn.RemoteAddr(), "", log.AccessRejected, err)
@@ -146,25 +157,25 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 
 	ctx = protocol.ContextWithUser(ctx, request.User)
 
-	userSettings := s.user.GetSettings()
-	ctx, timer := signal.CancelAfterInactivity(ctx, userSettings.PayloadTimeout)
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeout.ConnectionIdle.Duration())
 	ray, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return err
 	}
 
 	responseDone := signal.ExecuteAsync(func() error {
-		bufferedWriter := buf.NewBufferedWriter(conn)
+		bufferedWriter := buf.NewBufferedWriter(buf.NewWriter(conn))
 		responseWriter, err := WriteTCPResponse(request, bufferedWriter)
 		if err != nil {
 			return newError("failed to write response").Base(err)
 		}
 
-		payload, err := ray.InboundOutput().Read()
+		payload, err := ray.InboundOutput().ReadMultiBuffer()
 		if err != nil {
 			return err
 		}
-		if err := responseWriter.Write(payload); err != nil {
+		if err := responseWriter.WriteMultiBuffer(payload); err != nil {
 			return err
 		}
 		payload.Release()
@@ -177,7 +188,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 			return newError("failed to transport all TCP response").Base(err)
 		}
 
-		timer.SetTimeout(time.Second * 2)
+		timer.SetTimeout(sessionPolicy.Timeout.UplinkOnly.Duration())
 
 		return nil
 	})
@@ -188,6 +199,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 		if err := buf.Copy(bodyReader, ray.InboundInput(), buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport all TCP request").Base(err)
 		}
+		timer.SetTimeout(sessionPolicy.Timeout.DownlinkOnly.Duration())
 		return nil
 	})
 
@@ -196,8 +208,6 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 		ray.InboundOutput().CloseError()
 		return newError("connection ends").Base(err)
 	}
-
-	runtime.KeepAlive(timer)
 
 	return nil
 }

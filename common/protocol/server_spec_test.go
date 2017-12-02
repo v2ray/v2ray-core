@@ -5,27 +5,27 @@ import (
 	"time"
 
 	. "v2ray.com/core/common/protocol"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestAlwaysValidStrategy(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	strategy := AlwaysValid()
-	assert.Bool(strategy.IsValid()).IsTrue()
+	assert(strategy.IsValid(), IsTrue)
 	strategy.Invalidate()
-	assert.Bool(strategy.IsValid()).IsTrue()
+	assert(strategy.IsValid(), IsTrue)
 }
 
 func TestTimeoutValidStrategy(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	strategy := BeforeTime(time.Now().Add(2 * time.Second))
-	assert.Bool(strategy.IsValid()).IsTrue()
+	assert(strategy.IsValid(), IsTrue)
 	time.Sleep(3 * time.Second)
-	assert.Bool(strategy.IsValid()).IsFalse()
+	assert(strategy.IsValid(), IsFalse)
 
 	strategy = BeforeTime(time.Now().Add(2 * time.Second))
 	strategy.Invalidate()
-	assert.Bool(strategy.IsValid()).IsFalse()
+	assert(strategy.IsValid(), IsFalse)
 }

@@ -67,14 +67,22 @@ colorEcho(){
     echo -e "\033[${COLOR}${@:2}\033[0m"
 }
 
-sysAcrh(){
+sysArch(){
     ARCH=$(uname -m)
     if [[ "$ARCH" == "i686" ]] || [[ "$ARCH" == "i386" ]]; then
         VDIS="32"
     elif [[ "$ARCH" == *"armv7"* ]] || [[ "$ARCH" == "armv6l" ]]; then
         VDIS="arm"
-    elif [[ "$ARCH" == *"armv8"* ]]; then
+    elif [[ "$ARCH" == *"armv8"* ]] || [[ "$ARCH" == "aarch64" ]]; then
         VDIS="arm64"
+    elif [[ "$ARCH" == *"mips64le"* ]]; then
+        VDIS="mips64le"
+    elif [[ "$ARCH" == *"mips64"* ]]; then
+        VDIS="mips64"
+    elif [[ "$ARCH" == *"mipsle"* ]]; then
+        VDIS="mipsle"
+    elif [[ "$ARCH" == *"mips"* ]]; then
+        VDIS="mips"
     fi
     return 0
 }
@@ -171,7 +179,7 @@ stopV2ray(){
     SERVICE_CMD=$(command -v service)
 
     colorEcho ${BLUE} "Shutting down V2Ray service."
-    if [[ -n "${SYSTEMCTL_CMD}" ]] || [[ -f "/lib/systemd/system/v2ray.service" ]]; then
+    if [[ -n "${SYSTEMCTL_CMD}" ]] || [[ -f "/lib/systemd/system/v2ray.service" ]] || [[ -f "/etc/systemd/system/v2ray.service" ]]; then
         ${SYSTEMCTL_CMD} stop v2ray
     elif [[ -n "${SERVICE_CMD}" ]] || [[ -f "/etc/init.d/v2ray" ]]; then
         ${SERVICE_CMD} v2ray stop
@@ -185,21 +193,39 @@ startV2ray(){
 
     if [ -n "${SYSTEMCTL_CMD}" ] && [ -f "/lib/systemd/system/v2ray.service" ]; then
         ${SYSTEMCTL_CMD} start v2ray
+    elif [ -n "${SYSTEMCTL_CMD}" ] && [ -f "/etc/systemd/system/v2ray.service" ]; then
+        ${SYSTEMCTL_CMD} start v2ray
     elif [ -n "${SERVICE_CMD}" ] && [ -f "/etc/init.d/v2ray" ]; then
         ${SERVICE_CMD} v2ray start
     fi
     return 0
 }
 
+copyFile() {
+    NAME=$1
+    MANDATE=$2
+    ERROR=`cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/${NAME}" "/usr/bin/v2ray/${NAME}"`
+    if [[ $? -ne 0 ]]; then
+        colorEcho ${YELLOW} "${ERROR}"
+        if [ "$MANDATE" = true ]; then
+            exit
+        fi
+    fi
+}
+
+makeExecutable() {
+    chmod +x "/usr/bin/v2ray/$1"
+}
+
 installV2Ray(){
     # Install V2Ray binary to /usr/bin/v2ray
     mkdir -p /usr/bin/v2ray
-    ERROR=`cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/v2ray" "/usr/bin/v2ray/v2ray"`
-    if [[ $? -ne 0 ]]; then
-          colorEcho ${YELLOW} "${ERROR}"
-          exit
-    fi
-    chmod +x "/usr/bin/v2ray/v2ray"
+    copyFile v2ray true
+    makeExecutable v2ray
+    copyFile v2ctl false
+    makeExecutable v2ctl
+    copyFile geoip.dat false
+    copyFile geosite.dat false
 
     # Install V2Ray server config to /etc/v2ray
     mkdir -p /etc/v2ray
@@ -228,9 +254,11 @@ installInitScrip(){
     SERVICE_CMD=$(command -v service)
 
     if [[ -n "${SYSTEMCTL_CMD}" ]];then
-        if [[ ! -f "/lib/systemd/system/v2ray.service" ]]; then
-            cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/systemd/v2ray.service" "/lib/systemd/system/"
-            systemctl enable v2ray.service
+        if [[ ! -f "/etc/systemd/system/v2ray.service" ]]; then
+            if [[ ! -f "/lib/systemd/system/v2ray.service" ]]; then
+                cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/systemd/v2ray.service" "/etc/systemd/system/"
+                systemctl enable v2ray.service
+            fi
         fi
         return
     elif [[ -n "${SERVICE_CMD}" ]] && [[ ! -f "/etc/init.d/v2ray" ]]; then
@@ -243,7 +271,7 @@ installInitScrip(){
 }
 
 Help(){
-    echo "./install-release.sh [-h] [-c] [-p proxy] [-f] [-v vx.y.z] [-l file]"
+    echo "./install-release.sh [-h] [-c] [-p proxy] [-f] [--version vx.y.z] [-l file]"
     echo "  -h, --help            Show help"
     echo "  -p, --proxy           To download through a proxy server, use -p socks5://127.0.0.1:1080 or -p http://127.0.0.1:3128 etc"
     echo "  -f, --force           Force install"
@@ -257,7 +285,21 @@ Help(){
 remove(){
     SYSTEMCTL_CMD=$(command -v systemctl)
     SERVICE_CMD=$(command -v service)
-    if [[ -n "${SYSTEMCTL_CMD}" ]] && [[ -f "/lib/systemd/system/v2ray.service" ]];then
+    if [[ -n "${SYSTEMCTL_CMD}" ]] && [[ -f "/etc/systemd/system/v2ray.service" ]];then
+        if pgrep "v2ray" > /dev/null ; then
+            stopV2ray
+        fi
+        systemctl disable v2ray.service
+        rm -rf "/usr/bin/v2ray" "/etc/systemd/system/v2ray.service"
+        if [[ $? -ne 0 ]]; then
+            colorEcho ${RED} "Failed to remove V2Ray."
+            exit
+        else
+            colorEcho ${GREEN} "Removed V2Ray successfully."
+            colorEcho ${GREEN} "If necessary, please remove configuration file and log file manually."
+            exit
+        fi
+    elif [[ -n "${SYSTEMCTL_CMD}" ]] && [[ -f "/lib/systemd/system/v2ray.service" ]];then
         if pgrep "v2ray" > /dev/null ; then
             stopV2ray
         fi
@@ -308,7 +350,7 @@ main(){
     [[ "$CHECK" == "1" ]] && checkUpdate
     [[ "$REMOVE" == "1" ]] && remove
     
-    sysAcrh
+    sysArch
     # extract local file
     if [[ $LOCAL_INSTALL -eq 1 ]]; then
         echo "Install V2Ray via local file"

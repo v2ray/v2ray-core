@@ -28,7 +28,7 @@ func (r *CryptionReader) Read(data []byte) (int, error) {
 }
 
 var (
-	_ buf.MultiBufferWriter = (*CryptionWriter)(nil)
+	_ buf.Writer = (*CryptionWriter)(nil)
 )
 
 type CryptionWriter struct {
@@ -51,6 +51,8 @@ func (w *CryptionWriter) Write(data []byte) (int, error) {
 }
 
 func (w *CryptionWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
+	defer mb.Release()
+
 	bs := mb.ToNetBuffers()
 	for _, b := range bs {
 		w.stream.XORKeyStream(b, b)

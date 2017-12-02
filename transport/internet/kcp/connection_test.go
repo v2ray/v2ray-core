@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"v2ray.com/core/testing/assert"
 	. "v2ray.com/core/transport/internet/kcp"
+	. "v2ray.com/ext/assert"
 )
 
 type NoOpConn struct{}
@@ -51,15 +51,15 @@ func (o *NoOpConn) SetWriteDeadline(time.Time) error {
 func (o *NoOpConn) Reset(input func([]Segment)) {}
 
 func TestConnectionReadTimeout(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	conn := NewConnection(1, &NoOpConn{}, &Config{})
 	conn.SetReadDeadline(time.Now().Add(time.Second))
 
 	b := make([]byte, 1024)
 	nBytes, err := conn.Read(b)
-	assert.Int(nBytes).Equals(0)
-	assert.Error(err).IsNotNil()
+	assert(nBytes, Equals, 0)
+	assert(err, IsNotNil)
 
 	conn.Terminate()
 }

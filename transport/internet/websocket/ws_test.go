@@ -7,15 +7,15 @@ import (
 	"time"
 
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/testing/assert"
 	tlsgen "v2ray.com/core/testing/tls"
 	"v2ray.com/core/transport/internet"
 	v2tls "v2ray.com/core/transport/internet/tls"
 	. "v2ray.com/core/transport/internet/websocket"
+	. "v2ray.com/ext/assert"
 )
 
 func Test_listenWSAndDial(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 	listen, err := ListenWS(internet.ContextWithTransportSettings(context.Background(), &Config{
 		Path: "ws",
 	}), net.DomainAddress("localhost"), 13146, func(ctx context.Context, conn internet.Connection) bool {
@@ -24,60 +24,58 @@ func Test_listenWSAndDial(t *testing.T) {
 
 			var b [1024]byte
 			n, err := c.Read(b[:])
-			//assert.Error(err).IsNil()
+			//assert(err, IsNil)
 			if err != nil {
 				return
 			}
-			assert.Bool(bytes.HasPrefix(b[:n], []byte("Test connection"))).IsTrue()
+			assert(bytes.HasPrefix(b[:n], []byte("Test connection")), IsTrue)
 
 			_, err = c.Write([]byte("Response"))
-			assert.Error(err).IsNil()
+			assert(err, IsNil)
 		}(conn)
 		return true
 	})
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	ctx := internet.ContextWithTransportSettings(context.Background(), &Config{Path: "ws"})
 	conn, err := Dial(ctx, net.TCPDestination(net.DomainAddress("localhost"), 13146))
 
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	_, err = conn.Write([]byte("Test connection 1"))
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	var b [1024]byte
 	n, err := conn.Read(b[:])
-	assert.Error(err).IsNil()
-	assert.String(string(b[:n])).Equals("Response")
+	assert(err, IsNil)
+	assert(string(b[:n]), Equals, "Response")
 
-	assert.Error(conn.Close()).IsNil()
+	assert(conn.Close(), IsNil)
 	<-time.After(time.Second * 5)
 	conn, err = Dial(ctx, net.TCPDestination(net.DomainAddress("localhost"), 13146))
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	_, err = conn.Write([]byte("Test connection 2"))
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	n, err = conn.Read(b[:])
-	assert.Error(err).IsNil()
-	assert.String(string(b[:n])).Equals("Response")
-	assert.Error(conn.Close()).IsNil()
+	assert(err, IsNil)
+	assert(string(b[:n]), Equals, "Response")
+	assert(conn.Close(), IsNil)
 	<-time.After(time.Second * 15)
 	conn, err = Dial(ctx, net.TCPDestination(net.DomainAddress("localhost"), 13146))
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	_, err = conn.Write([]byte("Test connection 3"))
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	n, err = conn.Read(b[:])
-	assert.Error(err).IsNil()
-	assert.String(string(b[:n])).Equals("Response")
-	assert.Error(conn.Close()).IsNil()
+	assert(err, IsNil)
+	assert(string(b[:n]), Equals, "Response")
+	assert(conn.Close(), IsNil)
 
-	assert.Error(listen.Close()).IsNil()
+	assert(listen.Close(), IsNil)
 }
 
 func Test_listenWSAndDial_TLS(t *testing.T) {
-	assert := assert.On(t)
-	go func() {
-		<-time.After(time.Second * 5)
-		assert.Fail("Too slow")
-	}()
+	assert := With(t)
+
+	start := time.Now()
 
 	ctx := internet.ContextWithTransportSettings(context.Background(), &Config{
 		Path: "wss",
@@ -88,14 +86,17 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 	})
 	listen, err := ListenWS(ctx, net.DomainAddress("localhost"), 13143, func(ctx context.Context, conn internet.Connection) bool {
 		go func() {
-			conn.Close()
+			_ = conn.Close()
 		}()
 		return true
 	})
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 	defer listen.Close()
 
 	conn, err := Dial(ctx, net.TCPDestination(net.DomainAddress("localhost"), 13143))
-	assert.Error(err).IsNil()
-	conn.Close()
+	assert(err, IsNil)
+	_ = conn.Close()
+
+	end := time.Now()
+	assert(end.Before(start.Add(time.Second*5)), IsTrue)
 }

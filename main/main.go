@@ -22,6 +22,7 @@ var (
 	version    = flag.Bool("version", false, "Show current version of V2Ray.")
 	test       = flag.Bool("test", false, "Test config file only, without launching V2Ray server.")
 	format     = flag.String("format", "json", "Format of input file.")
+	plugin     = flag.Bool("plugin", false, "True to load plugins.")
 )
 
 func init() {
@@ -67,7 +68,7 @@ func startV2Ray() (core.Server, error) {
 
 	server, err := core.New(config)
 	if err != nil {
-		return nil, newError("failed to create initialize").Base(err)
+		return nil, newError("failed to create server").Base(err)
 	}
 
 	return server, nil
@@ -82,19 +83,27 @@ func main() {
 		return
 	}
 
+	if *plugin {
+		if err := core.LoadPlugins(); err != nil {
+			fmt.Println("Failed to load plugins:", err.Error())
+			os.Exit(-1)
+		}
+	}
+
 	server, err := startV2Ray()
 	if err != nil {
 		fmt.Println(err.Error())
-		return
+		os.Exit(-1)
 	}
 
 	if *test {
 		fmt.Println("Configuration OK.")
-		return
+		os.Exit(0)
 	}
 
 	if err := server.Start(); err != nil {
 		fmt.Println("Failed to start", err)
+		os.Exit(-1)
 	}
 
 	osSignals := make(chan os.Signal, 1)

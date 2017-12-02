@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	. "v2ray.com/core/app/log/internal"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestAccessLog(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	entry := &AccessLog{
 		From:   "test_from",
@@ -18,8 +18,8 @@ func TestAccessLog(t *testing.T) {
 	}
 
 	entryStr := entry.String()
-	assert.String(entryStr).Contains("test_from")
-	assert.String(entryStr).Contains("test_to")
-	assert.String(entryStr).Contains("test_reason")
-	assert.String(entryStr).Contains("Accepted")
+	assert(entryStr, HasSubstring, "test_from")
+	assert(entryStr, HasSubstring, "test_to")
+	assert(entryStr, HasSubstring, "test_reason")
+	assert(entryStr, HasSubstring, "Accepted")
 }

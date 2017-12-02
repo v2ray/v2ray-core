@@ -203,7 +203,7 @@ func (v *ReceivingWorker) ReadMultiBuffer() buf.MultiBuffer {
 		return mb
 	}
 
-	mb := buf.NewMultiBuffer()
+	mb := buf.NewMultiBufferCap(32)
 
 	v.Lock()
 	defer v.Unlock()
@@ -256,7 +256,7 @@ func (v *ReceivingWorker) Write(seg Segment) error {
 	ackSeg.Conv = v.conn.conv
 	ackSeg.ReceivingNext = v.nextNumber
 	ackSeg.ReceivingWindow = v.nextNumber + v.windowSize
-	if v.conn.state == StateReadyToClose {
+	if v.conn.State() == StateReadyToClose {
 		ackSeg.Option = SegmentOptionClose
 	}
 	return v.conn.output.Write(ackSeg)

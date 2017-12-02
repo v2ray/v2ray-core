@@ -12,6 +12,7 @@ import (
 
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/bitmask"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/dice"
@@ -59,63 +60,69 @@ func NewClientSession(idHash protocol.IDHash) *ClientSession {
 	return session
 }
 
-func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writer io.Writer) {
+func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writer io.Writer) error {
 	timestamp := protocol.NewTimestampGenerator(protocol.NowTime(), 30)()
 	account, err := header.User.GetTypedAccount()
 	if err != nil {
 		log.Trace(newError("failed to get user account: ", err).AtError())
-		return
+		return nil
 	}
 	idHash := c.idHash(account.(*vmess.InternalAccount).AnyValidID().Bytes())
 	common.Must2(idHash.Write(timestamp.Bytes(nil)))
 	common.Must2(writer.Write(idHash.Sum(nil)))
 
-	buffer := make([]byte, 0, 512)
-	buffer = append(buffer, Version)
-	buffer = append(buffer, c.requestBodyIV...)
-	buffer = append(buffer, c.requestBodyKey...)
-	buffer = append(buffer, c.responseHeader, byte(header.Option))
+	buffer := buf.New()
+	defer buffer.Release()
+
+	buffer.AppendBytes(Version)
+	buffer.Append(c.requestBodyIV)
+	buffer.Append(c.requestBodyKey)
+	buffer.AppendBytes(c.responseHeader, byte(header.Option))
+
 	padingLen := dice.Roll(16)
-	if header.Security.Is(protocol.SecurityType_LEGACY) {
-		// Disable padding in legacy mode for a smooth transition.
-		padingLen = 0
-	}
 	security := byte(padingLen<<4) | byte(header.Security)
-	buffer = append(buffer, security, byte(0), byte(header.Command))
+	buffer.AppendBytes(security, byte(0), byte(header.Command))
 
 	if header.Command != protocol.RequestCommandMux {
-		buffer = header.Port.Bytes(buffer)
+		common.Must(buffer.AppendSupplier(serial.WriteUint16(header.Port.Value())))
 
 		switch header.Address.Family() {
 		case net.AddressFamilyIPv4:
-			buffer = append(buffer, AddrTypeIPv4)
-			buffer = append(buffer, header.Address.IP()...)
+			buffer.AppendBytes(byte(protocol.AddressTypeIPv4))
+			buffer.Append(header.Address.IP())
 		case net.AddressFamilyIPv6:
-			buffer = append(buffer, AddrTypeIPv6)
-			buffer = append(buffer, header.Address.IP()...)
+			buffer.AppendBytes(byte(protocol.AddressTypeIPv6))
+			buffer.Append(header.Address.IP())
 		case net.AddressFamilyDomain:
-			buffer = append(buffer, AddrTypeDomain, byte(len(header.Address.Domain())))
-			buffer = append(buffer, header.Address.Domain()...)
+			domain := header.Address.Domain()
+			if protocol.IsDomainTooLong(domain) {
+				return newError("long domain not supported: ", domain)
+			}
+			nDomain := len(domain)
+			buffer.AppendBytes(byte(protocol.AddressTypeDomain), byte(nDomain))
+			common.Must(buffer.AppendSupplier(serial.WriteString(domain)))
 		}
 	}
 
 	if padingLen > 0 {
-		pading := make([]byte, padingLen)
-		common.Must2(rand.Read(pading))
-		buffer = append(buffer, pading...)
+		common.Must(buffer.AppendSupplier(buf.ReadFullFrom(rand.Reader, padingLen)))
 	}
 
 	fnv1a := fnv.New32a()
-	common.Must2(fnv1a.Write(buffer))
+	common.Must2(fnv1a.Write(buffer.Bytes()))
 
-	buffer = fnv1a.Sum(buffer)
+	common.Must(buffer.AppendSupplier(func(b []byte) (int, error) {
+		fnv1a.Sum(b[:0])
+		return fnv1a.Size(), nil
+	}))
 
 	timestampHash := md5.New()
 	common.Must2(timestampHash.Write(hashTimestamp(timestamp)))
 	iv := timestampHash.Sum(nil)
 	aesStream := crypto.NewAesEncryptionStream(account.(*vmess.InternalAccount).ID.CmdKey(), iv)
-	aesStream.XORKeyStream(buffer, buffer)
-	common.Must2(writer.Write(buffer))
+	aesStream.XORKeyStream(buffer.Bytes(), buffer.Bytes())
+	common.Must2(writer.Write(buffer.Bytes()))
+	return nil
 }
 
 func (c *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, writer io.Writer) buf.Writer {
@@ -190,32 +197,31 @@ func (c *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 	aesStream := crypto.NewAesDecryptionStream(c.responseBodyKey, c.responseBodyIV)
 	c.responseReader = crypto.NewCryptionReader(aesStream, reader)
 
-	buffer := make([]byte, 256)
+	buffer := buf.New()
+	defer buffer.Release()
 
-	_, err := io.ReadFull(c.responseReader, buffer[:4])
-	if err != nil {
+	if err := buffer.AppendSupplier(buf.ReadFullFrom(c.responseReader, 4)); err != nil {
 		log.Trace(newError("failed to read response header").Base(err))
 		return nil, err
 	}
 
-	if buffer[0] != c.responseHeader {
-		return nil, newError("unexpected response header. Expecting ", int(c.responseHeader), " but actually ", int(buffer[0]))
+	if buffer.Byte(0) != c.responseHeader {
+		return nil, newError("unexpected response header. Expecting ", int(c.responseHeader), " but actually ", int(buffer.Byte(0)))
 	}
 
 	header := &protocol.ResponseHeader{
-		Option: protocol.ResponseOption(buffer[1]),
+		Option: bitmask.Byte(buffer.Byte(1)),
 	}
 
-	if buffer[2] != 0 {
-		cmdID := buffer[2]
-		dataLen := int(buffer[3])
-		_, err := io.ReadFull(c.responseReader, buffer[:dataLen])
-		if err != nil {
+	if buffer.Byte(2) != 0 {
+		cmdID := buffer.Byte(2)
+		dataLen := int(buffer.Byte(3))
+
+		if err := buffer.Reset(buf.ReadFullFrom(c.responseReader, dataLen)); err != nil {
 			log.Trace(newError("failed to read response command").Base(err))
 			return nil, err
 		}
-		data := buffer[:dataLen]
-		command, err := UnmarshalCommand(cmdID, data)
+		command, err := UnmarshalCommand(cmdID, buffer.Bytes())
 		if err == nil {
 			header.Command = command
 		}

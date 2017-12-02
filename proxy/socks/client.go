@@ -2,7 +2,6 @@ package socks
 
 import (
 	"context"
-	"runtime"
 	"time"
 
 	"v2ray.com/core/common"
@@ -84,7 +83,8 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 		return newError("failed to establish connection to server").AtWarning().Base(err)
 	}
 
-	ctx, timer := signal.CancelAfterInactivity(ctx, time.Minute*5)
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, time.Minute*5)
 
 	var requestFunc func() error
 	var responseFunc func() error
@@ -117,8 +117,6 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
 		return newError("connection ends").Base(err)
 	}
-
-	runtime.KeepAlive(timer)
 
 	return nil
 }
