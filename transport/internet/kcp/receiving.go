@@ -166,54 +166,54 @@ func NewReceivingWorker(kcp *Connection) *ReceivingWorker {
 	return worker
 }
 
-func (v *ReceivingWorker) Release() {
-	v.Lock()
-	v.leftOver.Release()
-	v.Unlock()
+func (w *ReceivingWorker) Release() {
+	w.Lock()
+	w.leftOver.Release()
+	w.Unlock()
 }
 
-func (v *ReceivingWorker) ProcessSendingNext(number uint32) {
-	v.Lock()
-	defer v.Unlock()
+func (w *ReceivingWorker) ProcessSendingNext(number uint32) {
+	w.Lock()
+	defer w.Unlock()
 
-	v.acklist.Clear(number)
+	w.acklist.Clear(number)
 }
 
-func (v *ReceivingWorker) ProcessSegment(seg *DataSegment) {
-	v.Lock()
-	defer v.Unlock()
+func (w *ReceivingWorker) ProcessSegment(seg *DataSegment) {
+	w.Lock()
+	defer w.Unlock()
 
 	number := seg.Number
-	idx := number - v.nextNumber
-	if idx >= v.windowSize {
+	idx := number - w.nextNumber
+	if idx >= w.windowSize {
 		return
 	}
-	v.acklist.Clear(seg.SendingNext)
-	v.acklist.Add(number, seg.Timestamp)
+	w.acklist.Clear(seg.SendingNext)
+	w.acklist.Add(number, seg.Timestamp)
 
-	if !v.window.Set(idx, seg) {
+	if !w.window.Set(idx, seg) {
 		seg.Release()
 	}
 }
 
-func (v *ReceivingWorker) ReadMultiBuffer() buf.MultiBuffer {
-	if v.leftOver != nil {
-		mb := v.leftOver
-		v.leftOver = nil
+func (w *ReceivingWorker) ReadMultiBuffer() buf.MultiBuffer {
+	if w.leftOver != nil {
+		mb := w.leftOver
+		w.leftOver = nil
 		return mb
 	}
 
 	mb := buf.NewMultiBufferCap(32)
 
-	v.Lock()
-	defer v.Unlock()
+	w.Lock()
+	defer w.Unlock()
 	for {
-		seg := v.window.RemoveFirst()
+		seg := w.window.RemoveFirst()
 		if seg == nil {
 			break
 		}
-		v.window.Advance()
-		v.nextNumber++
+		w.window.Advance()
+		w.nextNumber++
 		mb.Append(seg.Data)
 		seg.Data = nil
 		seg.Release()
@@ -222,11 +222,11 @@ func (v *ReceivingWorker) ReadMultiBuffer() buf.MultiBuffer {
 	return mb
 }
 
-func (v *ReceivingWorker) Read(b []byte) int {
-	mb := v.ReadMultiBuffer()
+func (w *ReceivingWorker) Read(b []byte) int {
+	mb := w.ReadMultiBuffer()
 	nBytes, _ := mb.Read(b)
 	if !mb.IsEmpty() {
-		v.leftOver = mb
+		w.leftOver = mb
 	}
 	return nBytes
 }
@@ -244,30 +244,30 @@ func (w *ReceivingWorker) NextNumber() uint32 {
 	return w.nextNumber
 }
 
-func (v *ReceivingWorker) Flush(current uint32) {
-	v.Lock()
-	defer v.Unlock()
+func (w *ReceivingWorker) Flush(current uint32) {
+	w.Lock()
+	defer w.Unlock()
 
-	v.acklist.Flush(current, v.conn.roundTrip.Timeout())
+	w.acklist.Flush(current, w.conn.roundTrip.Timeout())
 }
 
-func (v *ReceivingWorker) Write(seg Segment) error {
+func (w *ReceivingWorker) Write(seg Segment) error {
 	ackSeg := seg.(*AckSegment)
-	ackSeg.Conv = v.conn.conv
-	ackSeg.ReceivingNext = v.nextNumber
-	ackSeg.ReceivingWindow = v.nextNumber + v.windowSize
-	if v.conn.State() == StateReadyToClose {
+	ackSeg.Conv = w.conn.conv
+	ackSeg.ReceivingNext = w.nextNumber
+	ackSeg.ReceivingWindow = w.nextNumber + w.windowSize
+	if w.conn.State() == StateReadyToClose {
 		ackSeg.Option = SegmentOptionClose
 	}
-	return v.conn.output.Write(ackSeg)
+	return w.conn.output.Write(ackSeg)
 }
 
-func (v *ReceivingWorker) CloseRead() {
+func (*ReceivingWorker) CloseRead() {
 }
 
-func (v *ReceivingWorker) UpdateNecessary() bool {
-	v.RLock()
-	defer v.RUnlock()
+func (w *ReceivingWorker) UpdateNecessary() bool {
+	w.RLock()
+	defer w.RUnlock()
 
-	return len(v.acklist.numbers) > 0
+	return len(w.acklist.numbers) > 0
 }

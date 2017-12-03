@@ -36,94 +36,94 @@ func NewSendingWindow(size uint32, writer SegmentWriter, onPacketLoss func(uint3
 	return window
 }
 
-func (v *SendingWindow) Release() {
-	if v == nil {
+func (sw *SendingWindow) Release() {
+	if sw == nil {
 		return
 	}
-	v.len = 0
-	for _, seg := range v.data {
+	sw.len = 0
+	for _, seg := range sw.data {
 		seg.Release()
 	}
 }
 
-func (v *SendingWindow) Len() int {
-	return int(v.len)
+func (sw *SendingWindow) Len() int {
+	return int(sw.len)
 }
 
-func (v *SendingWindow) IsEmpty() bool {
-	return v.len == 0
+func (sw *SendingWindow) IsEmpty() bool {
+	return sw.len == 0
 }
 
-func (v *SendingWindow) Size() uint32 {
-	return v.cap
+func (sw *SendingWindow) Size() uint32 {
+	return sw.cap
 }
 
-func (v *SendingWindow) IsFull() bool {
-	return v.len == v.cap
+func (sw *SendingWindow) IsFull() bool {
+	return sw.len == sw.cap
 }
 
-func (v *SendingWindow) Push(number uint32, data []byte) {
-	pos := (v.start + v.len) % v.cap
-	v.data[pos].SetData(data)
-	v.data[pos].Number = number
-	v.data[pos].timeout = 0
-	v.data[pos].transmit = 0
-	v.inuse[pos] = true
-	if v.len > 0 {
-		v.next[v.last] = pos
-		v.prev[pos] = v.last
+func (sw *SendingWindow) Push(number uint32, data []byte) {
+	pos := (sw.start + sw.len) % sw.cap
+	sw.data[pos].SetData(data)
+	sw.data[pos].Number = number
+	sw.data[pos].timeout = 0
+	sw.data[pos].transmit = 0
+	sw.inuse[pos] = true
+	if sw.len > 0 {
+		sw.next[sw.last] = pos
+		sw.prev[pos] = sw.last
 	}
-	v.last = pos
-	v.len++
+	sw.last = pos
+	sw.len++
 }
 
-func (v *SendingWindow) FirstNumber() uint32 {
-	return v.data[v.start].Number
+func (sw *SendingWindow) FirstNumber() uint32 {
+	return sw.data[sw.start].Number
 }
 
-func (v *SendingWindow) Clear(una uint32) {
-	for !v.IsEmpty() && v.data[v.start].Number < una {
-		v.Remove(0)
+func (sw *SendingWindow) Clear(una uint32) {
+	for !sw.IsEmpty() && sw.data[sw.start].Number < una {
+		sw.Remove(0)
 	}
 }
 
-func (v *SendingWindow) Remove(idx uint32) bool {
-	if v.IsEmpty() {
+func (sw *SendingWindow) Remove(idx uint32) bool {
+	if sw.IsEmpty() {
 		return false
 	}
 
-	pos := (v.start + idx) % v.cap
-	if !v.inuse[pos] {
+	pos := (sw.start + idx) % sw.cap
+	if !sw.inuse[pos] {
 		return false
 	}
-	v.inuse[pos] = false
-	v.totalInFlightSize--
-	if pos == v.start && pos == v.last {
-		v.len = 0
-		v.start = 0
-		v.last = 0
-	} else if pos == v.start {
-		delta := v.next[pos] - v.start
-		if v.next[pos] < v.start {
-			delta = v.next[pos] + v.cap - v.start
+	sw.inuse[pos] = false
+	sw.totalInFlightSize--
+	if pos == sw.start && pos == sw.last {
+		sw.len = 0
+		sw.start = 0
+		sw.last = 0
+	} else if pos == sw.start {
+		delta := sw.next[pos] - sw.start
+		if sw.next[pos] < sw.start {
+			delta = sw.next[pos] + sw.cap - sw.start
 		}
-		v.start = v.next[pos]
-		v.len -= delta
-	} else if pos == v.last {
-		v.last = v.prev[pos]
+		sw.start = sw.next[pos]
+		sw.len -= delta
+	} else if pos == sw.last {
+		sw.last = sw.prev[pos]
 	} else {
-		v.next[v.prev[pos]] = v.next[pos]
-		v.prev[v.next[pos]] = v.prev[pos]
+		sw.next[sw.prev[pos]] = sw.next[pos]
+		sw.prev[sw.next[pos]] = sw.prev[pos]
 	}
 	return true
 }
 
-func (v *SendingWindow) HandleFastAck(number uint32, rto uint32) {
-	if v.IsEmpty() {
+func (sw *SendingWindow) HandleFastAck(number uint32, rto uint32) {
+	if sw.IsEmpty() {
 		return
 	}
 
-	v.Visit(func(seg *DataSegment) bool {
+	sw.Visit(func(seg *DataSegment) bool {
 		if number == seg.Number || number-seg.Number > 0x7FFFFFFF {
 			return false
 		}
@@ -135,33 +135,33 @@ func (v *SendingWindow) HandleFastAck(number uint32, rto uint32) {
 	})
 }
 
-func (v *SendingWindow) Visit(visitor func(seg *DataSegment) bool) {
-	if v.IsEmpty() {
+func (sw *SendingWindow) Visit(visitor func(seg *DataSegment) bool) {
+	if sw.IsEmpty() {
 		return
 	}
 
-	for i := v.start; ; i = v.next[i] {
-		if !visitor(&v.data[i]) || i == v.last {
+	for i := sw.start; ; i = sw.next[i] {
+		if !visitor(&sw.data[i]) || i == sw.last {
 			break
 		}
 	}
 }
 
-func (v *SendingWindow) Flush(current uint32, rto uint32, maxInFlightSize uint32) {
-	if v.IsEmpty() {
+func (sw *SendingWindow) Flush(current uint32, rto uint32, maxInFlightSize uint32) {
+	if sw.IsEmpty() {
 		return
 	}
 
 	var lost uint32
 	var inFlightSize uint32
 
-	v.Visit(func(segment *DataSegment) bool {
+	sw.Visit(func(segment *DataSegment) bool {
 		if current-segment.timeout >= 0x7FFFFFFF {
 			return true
 		}
 		if segment.transmit == 0 {
 			// First time
-			v.totalInFlightSize++
+			sw.totalInFlightSize++
 		} else {
 			lost++
 		}
@@ -169,7 +169,7 @@ func (v *SendingWindow) Flush(current uint32, rto uint32, maxInFlightSize uint32
 
 		segment.Timestamp = current
 		segment.transmit++
-		v.writer.Write(segment)
+		sw.writer.Write(segment)
 		inFlightSize++
 		if inFlightSize >= maxInFlightSize {
 			return false
@@ -177,9 +177,9 @@ func (v *SendingWindow) Flush(current uint32, rto uint32, maxInFlightSize uint32
 		return true
 	})
 
-	if v.onPacketLoss != nil && inFlightSize > 0 && v.totalInFlightSize != 0 {
-		rate := lost * 100 / v.totalInFlightSize
-		v.onPacketLoss(rate)
+	if sw.onPacketLoss != nil && inFlightSize > 0 && sw.totalInFlightSize != 0 {
+		rate := lost * 100 / sw.totalInFlightSize
+		sw.onPacketLoss(rate)
 	}
 }
 
