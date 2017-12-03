@@ -6,12 +6,6 @@ import (
 	"v2ray.com/core/common/errors"
 )
 
-var (
-	_ io.ReaderFrom = (*BufferToBytesWriter)(nil)
-	_ io.Writer     = (*BufferToBytesWriter)(nil)
-	_ Writer        = (*BufferToBytesWriter)(nil)
-)
-
 // BufferToBytesWriter is a Writer that writes alloc.Buffer into underlying writer.
 type BufferToBytesWriter struct {
 	io.Writer
@@ -38,13 +32,6 @@ func (w *BufferToBytesWriter) ReadFrom(reader io.Reader) (int64, error) {
 	err := Copy(NewReader(reader), w, CountSize(&sc))
 	return sc.Size, err
 }
-
-var (
-	_ io.ReaderFrom = (*BufferedWriter)(nil)
-	_ io.Writer     = (*BufferedWriter)(nil)
-	_ Writer        = (*BufferedWriter)(nil)
-	_ io.ByteWriter = (*BufferedWriter)(nil)
-)
 
 // BufferedWriter is a Writer with internal buffer.
 type BufferedWriter struct {
@@ -173,7 +160,7 @@ func (w *seqWriter) WriteMultiBuffer(mb MultiBuffer) error {
 	return nil
 }
 
-type noOpWriter struct{}
+type noOpWriter byte
 
 func (noOpWriter) WriteMultiBuffer(b MultiBuffer) error {
 	b.Release()
@@ -203,8 +190,8 @@ func (noOpWriter) ReadFrom(reader io.Reader) (int64, error) {
 
 var (
 	// Discard is a Writer that swallows all contents written in.
-	Discard Writer = noOpWriter{}
+	Discard Writer = noOpWriter(0)
 
 	// DiscardBytes is an io.Writer that swallows all contents written in.
-	DiscardBytes io.Writer = noOpWriter{}
+	DiscardBytes io.Writer = noOpWriter(0)
 )

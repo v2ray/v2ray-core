@@ -70,3 +70,15 @@ func TestBytesReaderMultiBuffer(t *testing.T) {
 	assert(mb[0].String(), Equals, "abc")
 	assert(mb[1].String(), Equals, "efg")
 }
+
+func TestReaderInterface(t *testing.T) {
+	assert := With(t)
+
+	assert((*BytesToBufferReader)(nil), Implements, (*io.Reader)(nil))
+	assert((*BytesToBufferReader)(nil), Implements, (*Reader)(nil))
+
+	assert((*BufferedReader)(nil), Implements, (*Reader)(nil))
+	assert((*BufferedReader)(nil), Implements, (*io.Reader)(nil))
+	assert((*BufferedReader)(nil), Implements, (*io.ByteReader)(nil))
+	assert((*BufferedReader)(nil), Implements, (*io.WriterTo)(nil))
+}

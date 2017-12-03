@@ -6,11 +6,6 @@ import (
 	"v2ray.com/core/common/errors"
 )
 
-var (
-	_ Reader    = (*BytesToBufferReader)(nil)
-	_ io.Reader = (*BytesToBufferReader)(nil)
-)
-
 // BytesToBufferReader is a Reader that adjusts its reading speed automatically.
 type BytesToBufferReader struct {
 	io.Reader

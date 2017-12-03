@@ -38,4 +38,5 @@ func TestConnectionInterface(t *testing.T) {
 	assert((*Connection)(nil), Implements, (*io.Writer)(nil))
 	assert((*Connection)(nil), Implements, (*io.Reader)(nil))
 	assert((*Connection)(nil), Implements, (*buf.Reader)(nil))
+	assert((*Connection)(nil), Implements, (*buf.Writer)(nil))
 }
