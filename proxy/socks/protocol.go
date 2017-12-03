@@ -245,19 +245,20 @@ func writeSocks5AuthenticationResponse(writer io.Writer, version byte, auth byte
 	return err
 }
 
-func appendAddress(buffer *buf.Buffer, address net.Address, port net.Port) error {
+// AppendAddress appends Socks address into the given buffer.
+func AppendAddress(buffer *buf.Buffer, address net.Address, port net.Port) error {
 	switch address.Family() {
 	case net.AddressFamilyIPv4:
-		buffer.AppendBytes(0x01)
+		buffer.AppendBytes(addrTypeIPv4)
 		buffer.Append(address.IP())
 	case net.AddressFamilyIPv6:
-		buffer.AppendBytes(0x04)
+		buffer.AppendBytes(addrTypeIPv6)
 		buffer.Append(address.IP())
 	case net.AddressFamilyDomain:
 		if protocol.IsDomainTooLong(address.Domain()) {
 			return newError("Super long domain is not supported in Socks protocol: ", address.Domain())
 		}
-		buffer.AppendBytes(0x03, byte(len(address.Domain())))
+		buffer.AppendBytes(addrTypeDomain, byte(len(address.Domain())))
 		common.Must(buffer.AppendSupplier(serial.WriteString(address.Domain())))
 	}
 	common.Must(buffer.AppendSupplier(serial.WriteUint16(port.Value())))
@@ -267,7 +268,7 @@ func appendAddress(buffer *buf.Buffer, address net.Address, port net.Port) error
 func writeSocks5Response(writer io.Writer, errCode byte, address net.Address, port net.Port) error {
 	buffer := buf.NewLocal(64)
 	buffer.AppendBytes(socks5Version, errCode, 0x00 /* reserved */)
-	if err := appendAddress(buffer, address, port); err != nil {
+	if err := AppendAddress(buffer, address, port); err != nil {
 		return err
 	}
 
@@ -337,7 +338,7 @@ func DecodeUDPPacket(packet []byte) (*protocol.RequestHeader, []byte, error) {
 func EncodeUDPPacket(request *protocol.RequestHeader, data []byte) (*buf.Buffer, error) {
 	b := buf.New()
 	b.AppendBytes(0, 0, 0 /* Fragment */)
-	if err := appendAddress(b, request.Address, request.Port); err != nil {
+	if err := AppendAddress(b, request.Address, request.Port); err != nil {
 		return nil, err
 	}
 	b.Append(data)
@@ -444,7 +445,7 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 		command = byte(cmdUDPPort)
 	}
 	b.AppendBytes(socks5Version, command, 0x00 /* reserved */)
-	appendAddress(b, request.Address, request.Port)
+	AppendAddress(b, request.Address, request.Port)
 	if _, err := writer.Write(b.Bytes()); err != nil {
 		return nil, err
 	}
