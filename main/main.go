@@ -1,6 +1,6 @@
 package main
 
-//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg main -path Main
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg main -path Main
 
 import (
 	"flag"

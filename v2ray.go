@@ -121,7 +121,7 @@ func newSimpleServer(config *Config) (*simpleServer, error) {
 	if p := policy.FromSpace(space); p == nil {
 		p, err := app.CreateAppFromConfig(ctx, &policy.Config{
 			Level: map[uint32]*policy.Policy{
-				1: &policy.Policy{
+				1: {
 					Timeout: &policy.Policy_Timeout{
 						ConnectionIdle: &policy.Second{
 							Value: 600,

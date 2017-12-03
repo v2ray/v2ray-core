@@ -1,6 +1,6 @@
 package router
 
-//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg router -path App,Router
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg router -path App,Router
 
 import (
 	"context"

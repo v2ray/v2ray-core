@@ -2,7 +2,7 @@
 // See each sub-package for detail.
 package common
 
-//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg common -path Common
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg common -path Common
 
 // Must panics if err is not nil.
 func Must(err error) {
