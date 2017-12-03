@@ -18,8 +18,10 @@ var (
 	ErrClosedConnection = newError("Connection closed.")
 )
 
+// State of the connection
 type State int32
 
+// Is returns true if current State is one of the candidates.
 func (s State) Is(states ...State) bool {
 	for _, state := range states {
 		if s == state {
@@ -30,12 +32,12 @@ func (s State) Is(states ...State) bool {
 }
 
 const (
-	StateActive          State = 0
-	StateReadyToClose    State = 1
-	StatePeerClosed      State = 2
-	StateTerminating     State = 3
-	StatePeerTerminating State = 4
-	StateTerminated      State = 5
+	StateActive          State = 0 // Connection is active
+	StateReadyToClose    State = 1 // Connection is closed locally
+	StatePeerClosed      State = 2 // Connection is closed on remote
+	StateTerminating     State = 3 // Connection is ready to be destroyed locally
+	StatePeerTerminating State = 4 // Connection is ready to be destroyed on remote
+	StateTerminated      State = 5 // Connection is detroyed.
 )
 
 func nowMillisec() int64 {
@@ -52,66 +54,66 @@ type RoundTripInfo struct {
 	updatedTimestamp uint32
 }
 
-func (v *RoundTripInfo) UpdatePeerRTO(rto uint32, current uint32) {
-	v.Lock()
-	defer v.Unlock()
+func (info *RoundTripInfo) UpdatePeerRTO(rto uint32, current uint32) {
+	info.Lock()
+	defer info.Unlock()
 
-	if current-v.updatedTimestamp < 3000 {
+	if current-info.updatedTimestamp < 3000 {
 		return
 	}
 
-	v.updatedTimestamp = current
-	v.rto = rto
+	info.updatedTimestamp = current
+	info.rto = rto
 }
 
-func (v *RoundTripInfo) Update(rtt uint32, current uint32) {
+func (info *RoundTripInfo) Update(rtt uint32, current uint32) {
 	if rtt > 0x7FFFFFFF {
 		return
 	}
-	v.Lock()
-	defer v.Unlock()
+	info.Lock()
+	defer info.Unlock()
 
 	// https://tools.ietf.org/html/rfc6298
-	if v.srtt == 0 {
-		v.srtt = rtt
-		v.variation = rtt / 2
+	if info.srtt == 0 {
+		info.srtt = rtt
+		info.variation = rtt / 2
 	} else {
-		delta := rtt - v.srtt
-		if v.srtt > rtt {
-			delta = v.srtt - rtt
+		delta := rtt - info.srtt
+		if info.srtt > rtt {
+			delta = info.srtt - rtt
 		}
-		v.variation = (3*v.variation + delta) / 4
-		v.srtt = (7*v.srtt + rtt) / 8
-		if v.srtt < v.minRtt {
-			v.srtt = v.minRtt
+		info.variation = (3*info.variation + delta) / 4
+		info.srtt = (7*info.srtt + rtt) / 8
+		if info.srtt < info.minRtt {
+			info.srtt = info.minRtt
 		}
 	}
 	var rto uint32
-	if v.minRtt < 4*v.variation {
-		rto = v.srtt + 4*v.variation
+	if info.minRtt < 4*info.variation {
+		rto = info.srtt + 4*info.variation
 	} else {
-		rto = v.srtt + v.variation
+		rto = info.srtt + info.variation
 	}
 
 	if rto > 10000 {
 		rto = 10000
 	}
-	v.rto = rto * 5 / 4
-	v.updatedTimestamp = current
+	info.rto = rto * 5 / 4
+	info.updatedTimestamp = current
 }
 
-func (v *RoundTripInfo) Timeout() uint32 {
-	v.RLock()
-	defer v.RUnlock()
+func (info *RoundTripInfo) Timeout() uint32 {
+	info.RLock()
+	defer info.RUnlock()
 
-	return v.rto
+	return info.rto
 }
 
-func (v *RoundTripInfo) SmoothedTime() uint32 {
-	v.RLock()
-	defer v.RUnlock()
+func (info *RoundTripInfo) SmoothedTime() uint32 {
+	info.RLock()
+	defer info.RUnlock()
 
-	return v.srtt
+	return info.srtt
 }
 
 type Updater struct {
@@ -160,12 +162,6 @@ func (u *Updater) Interval() time.Duration {
 
 func (u *Updater) SetInterval(d time.Duration) {
 	atomic.StoreInt64(&u.interval, int64(d))
-}
-
-type SystemConnection interface {
-	net.Conn
-	Reset(func([]Segment))
-	Overhead() int
 }
 
 type ConnMetadata struct {
