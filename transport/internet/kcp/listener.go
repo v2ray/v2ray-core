@@ -4,9 +4,7 @@ import (
 	"context"
 	"crypto/cipher"
 	"crypto/tls"
-	"io"
 	"sync"
-	"time"
 
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
@@ -21,52 +19,6 @@ type ConnectionID struct {
 	Remote net.Address
 	Port   net.Port
 	Conv   uint16
-}
-
-type ServerConnection struct {
-	local  net.Addr
-	remote net.Addr
-	writer PacketWriter
-	closer io.Closer
-}
-
-func (c *ServerConnection) Overhead() int {
-	return c.writer.Overhead()
-}
-
-func (*ServerConnection) Read([]byte) (int, error) {
-	panic("KCP|ServerConnection: Read should not be called.")
-}
-
-func (c *ServerConnection) Write(b []byte) (int, error) {
-	return c.writer.Write(b)
-}
-
-func (c *ServerConnection) Close() error {
-	return c.closer.Close()
-}
-
-func (*ServerConnection) Reset(input func([]Segment)) {
-}
-
-func (c *ServerConnection) LocalAddr() net.Addr {
-	return c.local
-}
-
-func (c *ServerConnection) RemoteAddr() net.Addr {
-	return c.remote
-}
-
-func (*ServerConnection) SetDeadline(time.Time) error {
-	return nil
-}
-
-func (*ServerConnection) SetReadDeadline(time.Time) error {
-	return nil
-}
-
-func (*ServerConnection) SetWriteDeadline(time.Time) error {
-	return nil
 }
 
 // Listener defines a server listening for connections
@@ -172,17 +124,14 @@ func (v *Listener) OnReceive(payload *buf.Buffer, src net.Destination, originalD
 			Port: int(src.Port),
 		}
 		localAddr := v.hub.Addr()
-		sConn := &ServerConnection{
-			local:  localAddr,
-			remote: remoteAddr,
-			writer: &KCPPacketWriter{
-				Header:   v.header,
-				Writer:   writer,
-				Security: v.security,
-			},
-			closer: writer,
-		}
-		conn = NewConnection(conv, sConn, v.config)
+		conn = NewConnection(conv, &ConnMetadata{
+			LocalAddr:  localAddr,
+			RemoteAddr: remoteAddr,
+		}, &KCPPacketWriter{
+			Header:   v.header,
+			Security: v.security,
+			Writer:   writer,
+		}, writer, v.config)
 		var netConn internet.Connection = conn
 		if v.tlsConfig != nil {
 			tlsConn := tls.Server(conn, v.tlsConfig)

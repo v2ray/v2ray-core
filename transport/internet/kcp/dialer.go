@@ -2,9 +2,8 @@ package kcp
 
 import (
 	"context"
-	"crypto/cipher"
 	"crypto/tls"
-	"sync"
+	"io"
 	"sync/atomic"
 
 	"v2ray.com/core/app/log"
@@ -20,84 +19,20 @@ var (
 	globalConv = uint32(dice.RollUint16())
 )
 
-type ClientConnection struct {
-	sync.RWMutex
-	net.Conn
-	input  func([]Segment)
-	reader PacketReader
-	writer PacketWriter
-}
-
-func (c *ClientConnection) Overhead() int {
-	c.RLock()
-	defer c.RUnlock()
-	if c.writer == nil {
-		return 0
-	}
-	return c.writer.Overhead()
-}
-
-// Write implements io.Writer.
-func (c *ClientConnection) Write(b []byte) (int, error) {
-	c.RLock()
-	defer c.RUnlock()
-
-	if c.writer == nil {
-		return len(b), nil
-	}
-
-	return c.writer.Write(b)
-}
-
-func (*ClientConnection) Read([]byte) (int, error) {
-	panic("KCP|ClientConnection: Read should not be called.")
-}
-
-func (c *ClientConnection) Close() error {
-	return c.Conn.Close()
-}
-
-func (c *ClientConnection) Reset(inputCallback func([]Segment)) {
-	c.Lock()
-	c.input = inputCallback
-	c.Unlock()
-}
-
-func (c *ClientConnection) ResetSecurity(header internet.PacketHeader, security cipher.AEAD) {
-	c.Lock()
-	if c.reader == nil {
-		c.reader = new(KCPPacketReader)
-	}
-	c.reader.(*KCPPacketReader).Header = header
-	c.reader.(*KCPPacketReader).Security = security
-	if c.writer == nil {
-		c.writer = new(KCPPacketWriter)
-	}
-	c.writer.(*KCPPacketWriter).Header = header
-	c.writer.(*KCPPacketWriter).Security = security
-	c.writer.(*KCPPacketWriter).Writer = c.Conn
-
-	c.Unlock()
-}
-
-func (c *ClientConnection) Run() {
+func fetchInput(ctx context.Context, input io.Reader, reader PacketReader, conn *Connection) {
 	payload := buf.New()
 	defer payload.Release()
 
 	for {
-		err := payload.Reset(buf.ReadFrom(c.Conn))
+		err := payload.Reset(buf.ReadFrom(input))
 		if err != nil {
 			payload.Release()
 			return
 		}
-		c.RLock()
-		if c.input != nil {
-			segments := c.reader.Read(payload.Bytes())
-			if len(segments) > 0 {
-				c.input(segments)
-			}
+		segments := reader.Read(payload.Bytes())
+		if len(segments) > 0 {
+			conn.Input(segments)
 		}
-		c.RUnlock()
 	}
 }
 
@@ -110,10 +45,6 @@ func DialKCP(ctx context.Context, dest net.Destination) (internet.Connection, er
 	if err != nil {
 		return nil, newError("failed to dial to dest: ", err).AtWarning().Base(err)
 	}
-	conn := &ClientConnection{
-		Conn: rawConn,
-	}
-	go conn.Run()
 
 	kcpSettings := internet.TransportSettingsFromContext(ctx).(*Config)
 
@@ -125,9 +56,23 @@ func DialKCP(ctx context.Context, dest net.Destination) (internet.Connection, er
 	if err != nil {
 		return nil, newError("failed to create security").Base(err)
 	}
-	conn.ResetSecurity(header, security)
+	reader := &KCPPacketReader{
+		Header:   header,
+		Security: security,
+	}
+	writer := &KCPPacketWriter{
+		Header:   header,
+		Security: security,
+		Writer:   rawConn,
+	}
+
 	conv := uint16(atomic.AddUint32(&globalConv, 1))
-	session := NewConnection(conv, conn, kcpSettings)
+	session := NewConnection(conv, &ConnMetadata{
+		LocalAddr:  rawConn.LocalAddr(),
+		RemoteAddr: rawConn.RemoteAddr(),
+	}, writer, rawConn, kcpSettings)
+
+	go fetchInput(ctx, rawConn, reader, session)
 
 	var iConn internet.Connection = session
 

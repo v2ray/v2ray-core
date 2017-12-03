@@ -168,13 +168,15 @@ type SystemConnection interface {
 	Overhead() int
 }
 
-var (
-	_ buf.Reader = (*Connection)(nil)
-)
+type ConnMetadata struct {
+	LocalAddr  net.Addr
+	RemoteAddr net.Addr
+}
 
 // Connection is a KCP connection over UDP.
 type Connection struct {
-	conn       SystemConnection
+	meta       *ConnMetadata
+	closer     io.Closer
 	rd         time.Time
 	wd         time.Time // write deadline
 	since      int64
@@ -201,24 +203,24 @@ type Connection struct {
 }
 
 // NewConnection create a new KCP connection between local and remote.
-func NewConnection(conv uint16, sysConn SystemConnection, config *Config) *Connection {
+func NewConnection(conv uint16, meta *ConnMetadata, writer PacketWriter, closer io.Closer, config *Config) *Connection {
 	log.Trace(newError("creating connection ", conv))
 
 	conn := &Connection{
 		conv:       conv,
-		conn:       sysConn,
+		meta:       meta,
+		closer:     closer,
 		since:      nowMillisec(),
 		dataInput:  make(chan bool, 1),
 		dataOutput: make(chan bool, 1),
 		Config:     config,
-		output:     NewRetryableWriter(NewSegmentWriter(sysConn)),
-		mss:        config.GetMTUValue() - uint32(sysConn.Overhead()) - DataSegmentOverhead,
+		output:     NewRetryableWriter(NewSegmentWriter(writer)),
+		mss:        config.GetMTUValue() - uint32(writer.Overhead()) - DataSegmentOverhead,
 		roundTrip: &RoundTripInfo{
 			rto:    100,
 			minRtt: config.GetTTIValue(),
 		},
 	}
-	sysConn.Reset(conn.Input)
 
 	conn.receivingWorker = NewReceivingWorker(conn)
 	conn.sendingWorker = NewSendingWorker(conn)
@@ -413,7 +415,7 @@ func (v *Connection) Close() error {
 	if state.Is(StateReadyToClose, StateTerminating, StateTerminated) {
 		return ErrClosedConnection
 	}
-	log.Trace(newError("closing connection to ", v.conn.RemoteAddr()))
+	log.Trace(newError("closing connection to ", v.meta.RemoteAddr))
 
 	if state == StateActive {
 		v.SetState(StateReadyToClose)
@@ -433,7 +435,7 @@ func (v *Connection) LocalAddr() net.Addr {
 	if v == nil {
 		return nil
 	}
-	return v.conn.LocalAddr()
+	return v.meta.LocalAddr
 }
 
 // RemoteAddr returns the remote network address. The Addr returned is shared by all invocations of RemoteAddr, so do not modify it.
@@ -441,7 +443,7 @@ func (v *Connection) RemoteAddr() net.Addr {
 	if v == nil {
 		return nil
 	}
-	return v.conn.RemoteAddr()
+	return v.meta.RemoteAddr
 }
 
 // SetDeadline sets the deadline associated with the listener. A zero time value disables the deadline.
@@ -488,7 +490,7 @@ func (v *Connection) Terminate() {
 	v.OnDataInput()
 	v.OnDataOutput()
 
-	v.conn.Close()
+	v.closer.Close()
 	v.sendingWorker.Release()
 	v.receivingWorker.Release()
 }
