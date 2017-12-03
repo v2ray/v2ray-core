@@ -2,6 +2,8 @@ package kcp
 
 import (
 	"sync"
+
+	"v2ray.com/core/common/buf"
 )
 
 type SendingWindow struct {
@@ -62,9 +64,8 @@ func (sw *SendingWindow) IsFull() bool {
 	return sw.len == sw.cap
 }
 
-func (sw *SendingWindow) Push(number uint32, data []byte) {
+func (sw *SendingWindow) Push(number uint32) *buf.Buffer {
 	pos := (sw.start + sw.len) % sw.cap
-	sw.data[pos].SetData(data)
 	sw.data[pos].Number = number
 	sw.data[pos].timeout = 0
 	sw.data[pos].transmit = 0
@@ -75,6 +76,7 @@ func (sw *SendingWindow) Push(number uint32, data []byte) {
 	}
 	sw.last = pos
 	sw.len++
+	return sw.data[pos].Data()
 }
 
 func (sw *SendingWindow) FirstNumber() uint32 {
@@ -224,7 +226,6 @@ func (v *SendingWorker) ProcessReceivingNextWithoutLock(nextNumber uint32) {
 	v.FindFirstUnacknowledged()
 }
 
-// Private: Visible for testing.
 func (v *SendingWorker) FindFirstUnacknowledged() {
 	first := v.firstUnacknowledged
 	if !v.window.IsEmpty() {
@@ -283,24 +284,16 @@ func (v *SendingWorker) ProcessSegment(current uint32, seg *AckSegment, rto uint
 	}
 }
 
-func (v *SendingWorker) Push(b []byte) int {
-	nBytes := 0
+func (v *SendingWorker) Push() *buf.Buffer {
 	v.Lock()
 	defer v.Unlock()
 
-	for len(b) > 0 && !v.window.IsFull() {
-		var size int
-		if len(b) > int(v.conn.mss) {
-			size = int(v.conn.mss)
-		} else {
-			size = len(b)
-		}
-		v.window.Push(v.nextNumber, b[:size])
+	if !v.window.IsFull() {
+		b := v.window.Push(v.nextNumber)
 		v.nextNumber++
-		b = b[size:]
-		nBytes += size
+		return b
 	}
-	return nBytes
+	return nil
 }
 
 // Private: Visible for testing.

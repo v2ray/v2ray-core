@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"v2ray.com/core/app/log"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/predicate"
 )
@@ -343,10 +344,15 @@ func (v *Connection) Write(b []byte) (int, error) {
 			return totalWritten, io.ErrClosedPipe
 		}
 
-		nBytes := v.sendingWorker.Push(b[totalWritten:])
-		v.dataUpdater.WakeUp()
-		if nBytes > 0 {
-			totalWritten += nBytes
+		for {
+			rb := v.sendingWorker.Push()
+			if rb == nil {
+				break
+			}
+			common.Must(rb.Reset(func(bb []byte) (int, error) {
+				return copy(bb[:v.mss], b[totalWritten:]), nil
+			}))
+			totalWritten += rb.Len()
 			if totalWritten == len(b) {
 				return totalWritten, nil
 			}
@@ -365,6 +371,45 @@ func (v *Connection) Write(b []byte) (int, error) {
 		case <-time.After(duration):
 			if !v.wd.IsZero() && v.wd.Before(time.Now()) {
 				return totalWritten, ErrIOTimeout
+			}
+		}
+	}
+}
+
+func (v *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
+	defer mb.Release()
+
+	for {
+		if v == nil || v.State() != StateActive {
+			return io.ErrClosedPipe
+		}
+
+		for {
+			rb := v.sendingWorker.Push()
+			if rb == nil {
+				break
+			}
+			common.Must(rb.Reset(func(bb []byte) (int, error) {
+				return mb.Read(bb[:v.mss])
+			}))
+			if mb.IsEmpty() {
+				return nil
+			}
+		}
+
+		duration := time.Minute
+		if !v.wd.IsZero() {
+			duration = time.Until(v.wd)
+			if duration < 0 {
+				return ErrIOTimeout
+			}
+		}
+
+		select {
+		case <-v.dataOutput:
+		case <-time.After(duration):
+			if !v.wd.IsZero() && v.wd.Before(time.Now()) {
+				return ErrIOTimeout
 			}
 		}
 	}

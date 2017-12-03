@@ -1,7 +1,6 @@
 package kcp
 
 import (
-	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/serial"
 )
@@ -44,8 +43,8 @@ type DataSegment struct {
 	Timestamp   uint32
 	Number      uint32
 	SendingNext uint32
-	Data        *buf.Buffer
 
+	payload  *buf.Buffer
 	timeout  uint32
 	transmit uint32
 }
@@ -62,13 +61,17 @@ func (v *DataSegment) Command() Command {
 	return CommandData
 }
 
-func (v *DataSegment) SetData(data []byte) {
-	if v.Data == nil {
-		v.Data = buf.New()
+func (v *DataSegment) Detach() *buf.Buffer {
+	r := v.payload
+	v.payload = nil
+	return r
+}
+
+func (v *DataSegment) Data() *buf.Buffer {
+	if v.payload == nil {
+		v.payload = buf.New()
 	}
-	common.Must(v.Data.Reset(func(b []byte) (int, error) {
-		return copy(b, data), nil
-	}))
+	return v.payload
 }
 
 func (v *DataSegment) Bytes() buf.Supplier {
@@ -78,19 +81,19 @@ func (v *DataSegment) Bytes() buf.Supplier {
 		b = serial.Uint32ToBytes(v.Timestamp, b)
 		b = serial.Uint32ToBytes(v.Number, b)
 		b = serial.Uint32ToBytes(v.SendingNext, b)
-		b = serial.Uint16ToBytes(uint16(v.Data.Len()), b)
-		b = append(b, v.Data.Bytes()...)
+		b = serial.Uint16ToBytes(uint16(v.payload.Len()), b)
+		b = append(b, v.payload.Bytes()...)
 		return len(b), nil
 	}
 }
 
 func (v *DataSegment) ByteSize() int {
-	return 2 + 1 + 1 + 4 + 4 + 4 + 2 + v.Data.Len()
+	return 2 + 1 + 1 + 4 + 4 + 4 + 2 + v.payload.Len()
 }
 
 func (v *DataSegment) Release() {
-	v.Data.Release()
-	v.Data = nil
+	v.payload.Release()
+	v.payload = nil
 }
 
 type AckSegment struct {
@@ -233,7 +236,8 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 		if len(buf) < dataLen {
 			return nil, nil
 		}
-		seg.SetData(buf[:dataLen])
+		seg.Data().Clear()
+		seg.Data().Append(buf[:dataLen])
 		buf = buf[dataLen:]
 
 		return seg, buf
