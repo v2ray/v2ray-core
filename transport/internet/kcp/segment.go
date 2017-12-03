@@ -1,6 +1,7 @@
 package kcp
 
 import (
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/serial"
 )
@@ -65,9 +66,9 @@ func (v *DataSegment) SetData(data []byte) {
 	if v.Data == nil {
 		v.Data = buf.New()
 	}
-	v.Data.Reset(func(b []byte) (int, error) {
+	common.Must(v.Data.Reset(func(b []byte) (int, error) {
 		return copy(b, data), nil
-	})
+	}))
 }
 
 func (v *DataSegment) Bytes() buf.Supplier {

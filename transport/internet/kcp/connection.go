@@ -198,8 +198,6 @@ type Connection struct {
 
 	dataUpdater *Updater
 	pingUpdater *Updater
-
-	mergingWriter buf.Writer
 }
 
 // NewConnection create a new KCP connection between local and remote.
@@ -285,7 +283,7 @@ func (v *Connection) ReadMultiBuffer() (buf.MultiBuffer, error) {
 
 		duration := time.Minute
 		if !v.rd.IsZero() {
-			duration = v.rd.Sub(time.Now())
+			duration = time.Until(v.rd)
 			if duration < 0 {
 				return nil, ErrIOTimeout
 			}
@@ -322,7 +320,7 @@ func (v *Connection) Read(b []byte) (int, error) {
 
 		duration := time.Minute
 		if !v.rd.IsZero() {
-			duration = v.rd.Sub(time.Now())
+			duration = time.Until(v.rd)
 			if duration < 0 {
 				return 0, ErrIOTimeout
 			}
@@ -358,7 +356,7 @@ func (v *Connection) Write(b []byte) (int, error) {
 
 		duration := time.Minute
 		if !v.wd.IsZero() {
-			duration = v.wd.Sub(time.Now())
+			duration = time.Until(v.wd)
 			if duration < 0 {
 				return totalWritten, ErrIOTimeout
 			}
