@@ -284,7 +284,7 @@ func TestHttpBasicAuth(t *testing.T) {
 			setProxyBasicAuth(req, "a", "c")
 			resp, err := client.Do(req)
 			assert(err, IsNil)
-			assert(resp.StatusCode, Equals, 401)
+			assert(resp.StatusCode, Equals, 407)
 		}
 
 		{
