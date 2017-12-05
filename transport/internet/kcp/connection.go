@@ -335,7 +335,7 @@ func (v *Connection) Read(b []byte) (int, error) {
 	}
 }
 
-// Write implements the Conn Write method.
+// Write implements io.Writer.
 func (v *Connection) Write(b []byte) (int, error) {
 	totalWritten := 0
 
@@ -352,6 +352,7 @@ func (v *Connection) Write(b []byte) (int, error) {
 			common.Must(rb.Reset(func(bb []byte) (int, error) {
 				return copy(bb[:v.mss], b[totalWritten:]), nil
 			}))
+			v.dataUpdater.WakeUp()
 			totalWritten += rb.Len()
 			if totalWritten == len(b) {
 				return totalWritten, nil
@@ -376,6 +377,7 @@ func (v *Connection) Write(b []byte) (int, error) {
 	}
 }
 
+// WriteMultiBuffer implements buf.Writer.
 func (v *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	defer mb.Release()
 
@@ -392,6 +394,7 @@ func (v *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 			common.Must(rb.Reset(func(bb []byte) (int, error) {
 				return mb.Read(bb[:v.mss])
 			}))
+			v.dataUpdater.WakeUp()
 			if mb.IsEmpty() {
 				return nil
 			}

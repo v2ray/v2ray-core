@@ -288,15 +288,15 @@ func (v *SendingWorker) Push() *buf.Buffer {
 	v.Lock()
 	defer v.Unlock()
 
-	if !v.window.IsFull() {
-		b := v.window.Push(v.nextNumber)
-		v.nextNumber++
-		return b
+	if v.window.IsFull() {
+		return nil
 	}
-	return nil
+
+	b := v.window.Push(v.nextNumber)
+	v.nextNumber++
+	return b
 }
 
-// Private: Visible for testing.
 func (v *SendingWorker) Write(seg Segment) error {
 	dataSeg := seg.(*DataSegment)
 
