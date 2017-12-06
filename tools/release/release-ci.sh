@@ -3,7 +3,7 @@
 set -x
 
 apt-get update
-apt-get -y install jq git file p7zip-full dbus
+apt-get -y install jq git file p7zip-full
 
 function getattr() {
   curl -s -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/$2/attributes/$1
@@ -102,4 +102,4 @@ curl -H "Content-Type: application/json" --data '{"build": true}' -X POST "${DOC
 
 fi
 
-shutdown -h +5
+shutdown -h now
