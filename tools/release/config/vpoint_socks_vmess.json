@@ -112,5 +112,10 @@
         }
       ]
     }
+  },
+  "policy": {
+    "levels": {
+      "0": {"uplinkOnly": 0}
+    }
   }
 }
