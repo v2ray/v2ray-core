@@ -18,11 +18,14 @@ func NewBytesToBufferReader(reader io.Reader) Reader {
 	}
 }
 
+const mediumSize = 8 * 1024
+const largeSize = 64 * 1024
+
 func (r *BytesToBufferReader) readSmall() (MultiBuffer, error) {
 	b := New()
 	err := b.Reset(ReadFrom(r.Reader))
 	if b.IsFull() {
-		r.buffer = make([]byte, 32*1024)
+		r.buffer = make([]byte, mediumSize)
 	}
 	if !b.IsEmpty() {
 		return NewMultiBufferValue(b), nil
@@ -41,6 +44,9 @@ func (r *BytesToBufferReader) ReadMultiBuffer() (MultiBuffer, error) {
 	if nBytes > 0 {
 		mb := NewMultiBufferCap(nBytes/Size + 1)
 		mb.Write(r.buffer[:nBytes])
+		if nBytes == len(r.buffer) && len(r.buffer) == mediumSize {
+			r.buffer = make([]byte, largeSize)
+		}
 		return mb, nil
 	}
 	return nil, err
