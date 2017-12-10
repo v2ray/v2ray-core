@@ -2,6 +2,7 @@ package net
 
 import (
 	"net"
+	"strings"
 
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/predicate"
@@ -78,6 +79,7 @@ func ParseAddress(addr string) Address {
 	if lenAddr > 0 && addr[0] == '[' && addr[lenAddr-1] == ']' {
 		addr = addr[1 : lenAddr-1]
 	}
+	addr = strings.TrimSpace(addr)
 
 	ip := net.ParseIP(addr)
 	if ip != nil {
