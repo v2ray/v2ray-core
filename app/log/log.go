@@ -9,6 +9,7 @@ import (
 	"v2ray.com/core/app/log/internal"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
+	"v2ray.com/core/common/log"
 )
 
 var (
@@ -51,15 +52,15 @@ func InitErrorLogger(file string) error {
 	return nil
 }
 
-func getLoggerAndPrefix(s errors.Severity) (internal.LogWriter, string) {
+func getLoggerAndPrefix(s log.Severity) (internal.LogWriter, string) {
 	switch s {
-	case errors.SeverityDebug:
+	case log.Severity_Debug:
 		return debugLogger, "[Debug]"
-	case errors.SeverityInfo:
+	case log.Severity_Info:
 		return infoLogger, "[Info]"
-	case errors.SeverityWarning:
+	case log.Severity_Warning:
 		return warningLogger, "[Warning]"
-	case errors.SeverityError:
+	case log.Severity_Error:
 		return errorLogger, "[Error]"
 	default:
 		return infoLogger, "[Info]"
