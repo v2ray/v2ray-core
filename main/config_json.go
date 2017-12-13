@@ -18,6 +18,7 @@ func jsonToProto(input io.Reader) (*core.Config, error) {
 	cmd := exec.Command(v2ctl, "config")
 	cmd.Stdin = input
 	cmd.Stderr = os.Stderr
+	cmd.SysProcAttr = getSysProcAttr()
 
 	stdoutReader, err := cmd.StdoutPipe()
 	if err != nil {
