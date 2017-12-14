@@ -1,6 +1,6 @@
 # Project V
 
-[![Build Status][1]][2] [![codecov.io][3]][4] [![Go Report][5]][6] [![GoDoc][7]][8] [![codebeat][9]][10]
+[![Build Status][1]][2] [![codecov.io][3]][4] [![Go Report][5]][6] [![GoDoc][7]][8] [![codebeat][9]][10] [![Downloads][11]][12]
 
 [1]: https://travis-ci.org/v2ray/v2ray-core.svg?branch=master "Build Status badge"
 [2]: https://travis-ci.org/v2ray/v2ray-core "Travis-CI Build Status"
@@ -12,6 +12,8 @@
 [8]: https://godoc.org/v2ray.com/core "GoDoc"
 [9]: https://codebeat.co/badges/f2354ca8-3e24-463d-a2e3-159af73b2477 "Codebeat badge"
 [10]: https://codebeat.co/projects/github-com-v2ray-v2ray-core-master "Codebeat"
+[11]: https://img.shields.io/github/downloads/v2ray/v2ray-core/total.svg "All releases badge"
+[12]: https://github.com/v2ray/v2ray-core/releases/ "All releases number"
 
 Project V is a set of network tools that help you to build your own computer network. It secures your network connections and thus protects your privacy. See [our website](https://www.v2ray.com/) for more information.
 
