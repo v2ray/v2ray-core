@@ -33,7 +33,7 @@ func (t *ActivityTimer) run(ctx context.Context, cancel context.CancelFunc) {
 		return
 	}
 
-	ticker := time.NewTicker(<-t.timeout)
+	ticker := time.NewTicker(timeout)
 	defer func() {
 		ticker.Stop()
 	}()
