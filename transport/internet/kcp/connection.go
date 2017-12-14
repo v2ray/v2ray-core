@@ -166,13 +166,14 @@ func (u *Updater) SetInterval(d time.Duration) {
 }
 
 type ConnMetadata struct {
-	LocalAddr  net.Addr
-	RemoteAddr net.Addr
+	LocalAddr    net.Addr
+	RemoteAddr   net.Addr
+	Conversation uint16
 }
 
 // Connection is a KCP connection over UDP.
 type Connection struct {
-	meta       *ConnMetadata
+	meta       ConnMetadata
 	closer     io.Closer
 	rd         time.Time
 	wd         time.Time // write deadline
@@ -181,7 +182,6 @@ type Connection struct {
 	dataOutput chan bool
 	Config     *Config
 
-	conv             uint16
 	state            State
 	stateBeginTime   uint32
 	lastIncomingTime uint32
@@ -200,11 +200,10 @@ type Connection struct {
 }
 
 // NewConnection create a new KCP connection between local and remote.
-func NewConnection(conv uint16, meta *ConnMetadata, writer PacketWriter, closer io.Closer, config *Config) *Connection {
-	log.Trace(newError("creating connection ", conv))
+func NewConnection(meta ConnMetadata, writer PacketWriter, closer io.Closer, config *Config) *Connection {
+	log.Trace(newError("creating connection ", meta.Conversation))
 
 	conn := &Connection{
-		conv:       conv,
 		meta:       meta,
 		closer:     closer,
 		since:      nowMillisec(),
@@ -414,7 +413,7 @@ func (v *Connection) SetState(state State) {
 	current := v.Elapsed()
 	atomic.StoreInt32((*int32)(&v.state), int32(state))
 	atomic.StoreUint32(&v.stateBeginTime, current)
-	log.Trace(newError("#", v.conv, " entering state ", state, " at ", current).AtDebug())
+	log.Trace(newError("#", v.meta.Conversation, " entering state ", state, " at ", current).AtDebug())
 
 	switch state {
 	case StateReadyToClose:
@@ -553,7 +552,7 @@ func (v *Connection) Input(segments []Segment) {
 	atomic.StoreUint32(&v.lastIncomingTime, current)
 
 	for _, seg := range segments {
-		if seg.Conversation() != v.conv {
+		if seg.Conversation() != v.meta.Conversation {
 			break
 		}
 
@@ -610,7 +609,7 @@ func (v *Connection) flush() {
 	}
 
 	if v.State() == StateTerminating {
-		log.Trace(newError("#", v.conv, " sending terminating cmd.").AtDebug())
+		log.Trace(newError("#", v.meta.Conversation, " sending terminating cmd.").AtDebug())
 		v.Ping(current, CommandTerminate)
 
 		if current-atomic.LoadUint32(&v.stateBeginTime) > 8000 {
@@ -641,7 +640,7 @@ func (v *Connection) State() State {
 
 func (v *Connection) Ping(current uint32, cmd Command) {
 	seg := NewCmdOnlySegment()
-	seg.Conv = v.conv
+	seg.Conv = v.meta.Conversation
 	seg.Cmd = cmd
 	seg.ReceivinNext = v.receivingWorker.NextNumber()
 	seg.SendingNext = v.sendingWorker.FirstUnacknowledged()

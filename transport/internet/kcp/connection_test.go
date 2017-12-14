@@ -19,7 +19,7 @@ func (NoOpCloser) Close() error {
 func TestConnectionReadTimeout(t *testing.T) {
 	assert := With(t)
 
-	conn := NewConnection(1, &ConnMetadata{}, &KCPPacketWriter{
+	conn := NewConnection(ConnMetadata{Conversation: 1}, &KCPPacketWriter{
 		Writer: buf.DiscardBytes,
 	}, NoOpCloser(0), &Config{})
 	conn.SetReadDeadline(time.Now().Add(time.Second))

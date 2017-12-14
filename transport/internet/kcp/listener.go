@@ -124,9 +124,10 @@ func (v *Listener) OnReceive(payload *buf.Buffer, src net.Destination, originalD
 			Port: int(src.Port),
 		}
 		localAddr := v.hub.Addr()
-		conn = NewConnection(conv, &ConnMetadata{
-			LocalAddr:  localAddr,
-			RemoteAddr: remoteAddr,
+		conn = NewConnection(ConnMetadata{
+			LocalAddr:    localAddr,
+			RemoteAddr:   remoteAddr,
+			Conversation: conv,
 		}, &KCPPacketWriter{
 			Header:   v.header,
 			Security: v.security,

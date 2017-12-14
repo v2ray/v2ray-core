@@ -252,7 +252,7 @@ func (w *ReceivingWorker) Flush(current uint32) {
 
 func (w *ReceivingWorker) Write(seg Segment) error {
 	ackSeg := seg.(*AckSegment)
-	ackSeg.Conv = w.conn.conv
+	ackSeg.Conv = w.conn.meta.Conversation
 	ackSeg.ReceivingNext = w.nextNumber
 	ackSeg.ReceivingWindow = w.nextNumber + w.windowSize
 	if w.conn.State() == StateReadyToClose {

@@ -67,9 +67,10 @@ func DialKCP(ctx context.Context, dest net.Destination) (internet.Connection, er
 	}
 
 	conv := uint16(atomic.AddUint32(&globalConv, 1))
-	session := NewConnection(conv, &ConnMetadata{
-		LocalAddr:  rawConn.LocalAddr(),
-		RemoteAddr: rawConn.RemoteAddr(),
+	session := NewConnection(ConnMetadata{
+		LocalAddr:    rawConn.LocalAddr(),
+		RemoteAddr:   rawConn.RemoteAddr(),
+		Conversation: conv,
 	}, writer, rawConn, kcpSettings)
 
 	go fetchInput(ctx, rawConn, reader, session)

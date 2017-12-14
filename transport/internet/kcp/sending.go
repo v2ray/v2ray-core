@@ -300,7 +300,7 @@ func (v *SendingWorker) Push() *buf.Buffer {
 func (v *SendingWorker) Write(seg Segment) error {
 	dataSeg := seg.(*DataSegment)
 
-	dataSeg.Conv = v.conn.conv
+	dataSeg.Conv = v.conn.meta.Conversation
 	dataSeg.SendingNext = v.firstUnacknowledged
 	dataSeg.Option = 0
 	if v.conn.State() == StateReadyToClose {
