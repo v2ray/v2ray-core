@@ -7,10 +7,12 @@ import (
 	"v2ray.com/core/common"
 )
 
+// Instance is an instance of Policy manager.
 type Instance struct {
 	levels map[uint32]*policy.Policy
 }
 
+// New creates new Policy manager instance.
 func New(ctx context.Context, config *policy.Config) (*Instance, error) {
 	levels := config.Level
 	if levels == nil {

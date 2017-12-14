@@ -22,6 +22,7 @@ const (
 	AddrTypeDomain = 3
 )
 
+// ReadTCPSession reads a Shadowsocks TCP session from the given reader, returns its header and remaining parts.
 func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHeader, buf.Reader, error) {
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
@@ -136,6 +137,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	return request, chunkReader, nil
 }
 
+// WriteTCPRequest writes Shadowsocks request into the given writer, and returns a writer for body.
 func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (buf.Writer, error) {
 	user := request.User
 	rawAccount, err := user.GetTypedAccount()

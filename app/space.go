@@ -8,12 +8,14 @@ import (
 	"v2ray.com/core/common/event"
 )
 
+// Application is a component that runs in Space.
 type Application interface {
 	Interface() interface{}
 	Start() error
 	Close()
 }
 
+// CreateAppFromConfig creates an Application based on its config. Application must have been registered.
 func CreateAppFromConfig(ctx context.Context, config interface{}) (Application, error) {
 	application, err := common.CreateObject(ctx, config)
 	if err != nil {
