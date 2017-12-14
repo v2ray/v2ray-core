@@ -13,13 +13,10 @@
 [9]: https://codebeat.co/badges/f2354ca8-3e24-463d-a2e3-159af73b2477 "Codebeat badge"
 [10]: https://codebeat.co/projects/github-com-v2ray-v2ray-core-master "Codebeat"
 
-V 是一个模块化的代理软件包，它的目标是提供常用的代理软件模块，简化网络代理软件的开发。
-
-[官方网站](https://www.v2ray.com/)
-
-V provides building blocks for network proxy development. Read our [Wiki](https://www.v2ray.com/en/index.html) for more information.
+Project V is a set of network tools that help you to build your own computer network. It secures your network connections and thus protects your privacy. See [our website](https://www.v2ray.com/) for more information.
 
 ## License
+
 [The MIT License (MIT)](https://raw.githubusercontent.com/v2ray/v2ray-core/master/LICENSE)
 
 ## Credits
