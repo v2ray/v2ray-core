@@ -26,6 +26,13 @@ func (t *ActivityTimer) SetTimeout(timeout time.Duration) {
 }
 
 func (t *ActivityTimer) run(ctx context.Context, cancel context.CancelFunc) {
+	defer cancel()
+
+	timeout := <-t.timeout
+	if timeout == 0 {
+		return
+	}
+
 	ticker := time.NewTicker(<-t.timeout)
 	defer func() {
 		ticker.Stop()
@@ -38,7 +45,6 @@ func (t *ActivityTimer) run(ctx context.Context, cancel context.CancelFunc) {
 			return
 		case timeout := <-t.timeout:
 			if timeout == 0 {
-				cancel()
 				return
 			}
 
@@ -51,7 +57,6 @@ func (t *ActivityTimer) run(ctx context.Context, cancel context.CancelFunc) {
 		case <-t.updated:
 		// Updated keep waiting.
 		default:
-			cancel()
 			return
 		}
 	}
