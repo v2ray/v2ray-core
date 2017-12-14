@@ -149,11 +149,12 @@ func (u *Updater) Run() {
 		if u.shouldTerminate() {
 			return
 		}
-		interval := u.Interval()
+		ticker := time.NewTicker(u.Interval())
 		for u.shouldContinue() {
 			u.updateFunc()
-			time.Sleep(interval)
+			<-ticker.C
 		}
+		ticker.Stop()
 	}
 }
 
