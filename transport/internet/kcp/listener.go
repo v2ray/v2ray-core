@@ -59,13 +59,11 @@ func NewListener(ctx context.Context, address net.Address, port net.Port, addCon
 		config:   kcpSettings,
 		addConn:  addConn,
 	}
-	securitySettings := internet.SecuritySettingsFromContext(ctx)
-	if securitySettings != nil {
-		switch securitySettings := securitySettings.(type) {
-		case *v2tls.Config:
-			l.tlsConfig = securitySettings.GetTLSConfig()
-		}
+
+	if config := v2tls.ConfigFromContext(ctx); config != nil {
+		l.tlsConfig = config.GetTLSConfig()
 	}
+
 	hub, err := udp.ListenUDP(address, port, udp.ListenOption{Callback: l.OnReceive, Concurrency: 2})
 	if err != nil {
 		return nil, err

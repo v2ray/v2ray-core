@@ -42,15 +42,9 @@ func dialWebsocket(ctx context.Context, dest net.Destination) (net.Conn, error) 
 
 	protocol := "ws"
 
-	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
-		tlsConfig, ok := securitySettings.(*tls.Config)
-		if ok {
-			protocol = "wss"
-			if dest.Address.Family().IsDomain() {
-				tlsConfig.OverrideServerNameIfEmpty(dest.Address.Domain())
-			}
-			dialer.TLSClientConfig = tlsConfig.GetTLSConfig()
-		}
+	if config := tls.ConfigFromContext(ctx, tls.WithDestination(dest)); config != nil {
+		protocol = "wss"
+		dialer.TLSClientConfig = config.GetTLSConfig()
 	}
 
 	host := dest.NetAddr()

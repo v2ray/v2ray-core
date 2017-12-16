@@ -19,22 +19,16 @@ func getTCPSettingsFromContext(ctx context.Context) *Config {
 }
 
 func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {
-	log.Trace(newError("dailing TCP to ", dest))
+	log.Trace(newError("dialing TCP to ", dest))
 	src := internet.DialerSourceFromContext(ctx)
 
 	conn, err := internet.DialSystem(ctx, src, dest)
 	if err != nil {
 		return nil, err
 	}
-	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
-		tlsConfig, ok := securitySettings.(*tls.Config)
-		if ok {
-			if dest.Address.Family().IsDomain() {
-				tlsConfig.OverrideServerNameIfEmpty(dest.Address.Domain())
-			}
-			config := tlsConfig.GetTLSConfig()
-			conn = tls.Client(conn, config)
-		}
+
+	if config := tls.ConfigFromContext(ctx, tls.WithDestination(dest)); config != nil {
+		conn = tls.Client(conn, config.GetTLSConfig())
 	}
 
 	tcpSettings := getTCPSettingsFromContext(ctx)

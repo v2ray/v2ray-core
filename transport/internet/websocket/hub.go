@@ -59,11 +59,8 @@ func ListenWS(ctx context.Context, address net.Address, port net.Port, addConn i
 		config:  wsSettings,
 		addConn: addConn,
 	}
-	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
-		tlsConfig, ok := securitySettings.(*v2tls.Config)
-		if ok {
-			l.tlsConfig = tlsConfig.GetTLSConfig()
-		}
+	if config := v2tls.ConfigFromContext(ctx); config != nil {
+		l.tlsConfig = config.GetTLSConfig()
 	}
 
 	err := l.listenws(address, port)

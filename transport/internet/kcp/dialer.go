@@ -77,16 +77,9 @@ func DialKCP(ctx context.Context, dest net.Destination) (internet.Connection, er
 
 	var iConn internet.Connection = session
 
-	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
-		switch securitySettings := securitySettings.(type) {
-		case *v2tls.Config:
-			if dest.Address.Family().IsDomain() {
-				securitySettings.OverrideServerNameIfEmpty(dest.Address.Domain())
-			}
-			config := securitySettings.GetTLSConfig()
-			tlsConn := tls.Client(iConn, config)
-			iConn = tlsConn
-		}
+	if config := v2tls.ConfigFromContext(ctx, v2tls.WithDestination(dest)); config != nil {
+		tlsConn := tls.Client(iConn, config.GetTLSConfig())
+		iConn = tlsConn
 	}
 
 	return iConn, nil
