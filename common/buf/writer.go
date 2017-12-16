@@ -93,6 +93,9 @@ func (w *BufferedWriter) WriteMultiBuffer(b MultiBuffer) error {
 	defer b.Release()
 
 	for !b.IsEmpty() {
+		if w.buffer == nil {
+			w.buffer = New()
+		}
 		if err := w.buffer.AppendSupplier(ReadFrom(&b)); err != nil {
 			return err
 		}
@@ -113,11 +116,7 @@ func (w *BufferedWriter) Flush() error {
 			return err
 		}
 
-		if w.buffered {
-			w.buffer = New()
-		} else {
-			w.buffer = nil
-		}
+		w.buffer = nil
 	}
 	return nil
 }
