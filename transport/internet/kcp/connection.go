@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"v2ray.com/core/app/log"
-	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/predicate"
 )
@@ -360,16 +359,12 @@ func (v *Connection) Write(b []byte) (int, error) {
 			return totalWritten, io.ErrClosedPipe
 		}
 
-		for {
-			rb := v.sendingWorker.Push()
-			if rb == nil {
-				break
-			}
-			common.Must(rb.Reset(func(bb []byte) (int, error) {
-				return copy(bb[:v.mss], b[totalWritten:]), nil
-			}))
+		for v.sendingWorker.Push(func(bb []byte) (int, error) {
+			n := copy(bb[:v.mss], b[totalWritten:])
+			totalWritten += n
+			return n, nil
+		}) {
 			v.dataUpdater.WakeUp()
-			totalWritten += rb.Len()
 			if totalWritten == len(b) {
 				return totalWritten, nil
 			}
@@ -390,14 +385,9 @@ func (v *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 			return io.ErrClosedPipe
 		}
 
-		for {
-			rb := v.sendingWorker.Push()
-			if rb == nil {
-				break
-			}
-			common.Must(rb.Reset(func(bb []byte) (int, error) {
-				return mb.Read(bb[:v.mss])
-			}))
+		for v.sendingWorker.Push(func(bb []byte) (int, error) {
+			return mb.Read(bb[:v.mss])
+		}) {
 			v.dataUpdater.WakeUp()
 			if mb.IsEmpty() {
 				return nil

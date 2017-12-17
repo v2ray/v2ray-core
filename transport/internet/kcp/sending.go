@@ -3,6 +3,7 @@ package kcp
 import (
 	"sync"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 )
 
@@ -284,17 +285,18 @@ func (v *SendingWorker) ProcessSegment(current uint32, seg *AckSegment, rto uint
 	}
 }
 
-func (v *SendingWorker) Push() *buf.Buffer {
+func (v *SendingWorker) Push(f buf.Supplier) bool {
 	v.Lock()
 	defer v.Unlock()
 
 	if v.window.IsFull() {
-		return nil
+		return false
 	}
 
 	b := v.window.Push(v.nextNumber)
 	v.nextNumber++
-	return b
+	common.Must(b.Reset(f))
+	return true
 }
 
 func (v *SendingWorker) Write(seg Segment) error {
