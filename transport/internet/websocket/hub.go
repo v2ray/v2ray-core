@@ -12,6 +12,7 @@ import (
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
+	http_proto "v2ray.com/core/common/protocol/http"
 	"v2ray.com/core/transport/internet"
 	v2tls "v2ray.com/core/transport/internet/tls"
 )
@@ -38,7 +39,13 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 		return
 	}
 
-	h.ln.addConn(h.ln.ctx, newConnection(conn))
+	forwardedAddrs := http_proto.ParseXForwardedFor(request.Header)
+	remoteAddr := conn.RemoteAddr()
+	if len(forwardedAddrs) > 0 && forwardedAddrs[0].Family().Either(net.AddressFamilyIPv4, net.AddressFamilyIPv6) {
+		remoteAddr.(*net.TCPAddr).IP = forwardedAddrs[0].IP()
+	}
+
+	h.ln.addConn(h.ln.ctx, newConnection(conn, remoteAddr))
 }
 
 type Listener struct {

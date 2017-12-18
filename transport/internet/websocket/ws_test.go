@@ -59,15 +59,46 @@ func Test_listenWSAndDial(t *testing.T) {
 	assert(err, IsNil)
 	assert(string(b[:n]), Equals, "Response")
 	assert(conn.Close(), IsNil)
-	<-time.After(time.Second * 15)
-	conn, err = Dial(ctx, net.TCPDestination(net.DomainAddress("localhost"), 13146))
+
+	assert(listen.Close(), IsNil)
+}
+
+func TestDialWithRemoteAddr(t *testing.T) {
+	assert := With(t)
+	listen, err := ListenWS(internet.ContextWithTransportSettings(context.Background(), &Config{
+		Path: "ws",
+	}), net.DomainAddress("localhost"), 13146, func(ctx context.Context, conn internet.Connection) bool {
+		go func(c internet.Connection) {
+			defer c.Close()
+
+			assert(c.RemoteAddr().String(), HasPrefix, "1.1.1.1")
+
+			var b [1024]byte
+			n, err := c.Read(b[:])
+			//assert(err, IsNil)
+			if err != nil {
+				return
+			}
+			assert(bytes.HasPrefix(b[:n], []byte("Test connection")), IsTrue)
+
+			_, err = c.Write([]byte("Response"))
+			assert(err, IsNil)
+		}(conn)
+		return true
+	})
 	assert(err, IsNil)
-	_, err = conn.Write([]byte("Test connection 3"))
+
+	ctx := internet.ContextWithTransportSettings(context.Background(), &Config{Path: "ws", Header: []*Header{{Key: "X-Forwarded-For", Value: "1.1.1.1"}}})
+	conn, err := Dial(ctx, net.TCPDestination(net.DomainAddress("localhost"), 13146))
+
 	assert(err, IsNil)
-	n, err = conn.Read(b[:])
+	_, err = conn.Write([]byte("Test connection 1"))
+	assert(err, IsNil)
+
+	var b [1024]byte
+	n, err := conn.Read(b[:])
 	assert(err, IsNil)
 	assert(string(b[:n]), Equals, "Response")
-	assert(conn.Close(), IsNil)
 
 	assert(listen.Close(), IsNil)
 }
