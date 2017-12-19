@@ -11,6 +11,7 @@ import (
 	"v2ray.com/core/common/log"
 )
 
+// Instance is an app.Application that handles logs.
 type Instance struct {
 	sync.RWMutex
 	config       *Config
@@ -18,12 +19,14 @@ type Instance struct {
 	errorLogger  internal.LogWriter
 }
 
+// New creates a new log.Instance based on the given config.
 func New(ctx context.Context, config *Config) (*Instance, error) {
 	return &Instance{
 		config: config,
 	}, nil
 }
 
+// Interface implements app.Application.Interface().
 func (*Instance) Interface() interface{} {
 	return (*Instance)(nil)
 }
@@ -58,6 +61,7 @@ func (g *Instance) initErrorLogger() error {
 	return nil
 }
 
+// Start implements app.Application.Start().
 func (g *Instance) Start() error {
 	if err := g.initAccessLogger(); err != nil {
 		return newError("failed to initialize access logger").Base(err).AtWarning()
@@ -69,6 +73,7 @@ func (g *Instance) Start() error {
 	return nil
 }
 
+// Handle implements log.Handler.
 func (g *Instance) Handle(msg log.Message) {
 	switch msg := msg.(type) {
 	case *log.AccessMessage:
@@ -90,15 +95,20 @@ func (g *Instance) Handle(msg log.Message) {
 	}
 }
 
+// Close implement app.Application.Close().
 func (g *Instance) Close() {
 	g.Lock()
 	defer g.Unlock()
 
-	g.accessLogger.Close()
-	g.accessLogger = nil
+	if g.accessLogger != nil {
+		g.accessLogger.Close()
+		g.accessLogger = nil
+	}
 
-	g.errorLogger.Close()
-	g.errorLogger = nil
+	if g.errorLogger != nil {
+		g.errorLogger.Close()
+		g.errorLogger = nil
+	}
 }
 
 func init() {
