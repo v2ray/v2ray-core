@@ -96,6 +96,19 @@ func (v *Error) Path(path ...string) *Error {
 	return v
 }
 
+// String returns the string representation of this error.
+func (v *Error) String() string {
+	return v.Error()
+}
+
+// WriteToLog writes current error into log.
+func (v *Error) WriteToLog() {
+	log.Record(&log.GeneralMessage{
+		Severity: GetSeverity(v),
+		Content:  v,
+	})
+}
+
 // New returns a new error object with message formed from given arguments.
 func New(msg ...interface{}) *Error {
 	return &Error{
@@ -119,6 +132,7 @@ func Cause(err error) error {
 	return err
 }
 
+// GetSeverity returns the actual severity of the error, including inner errors.
 func GetSeverity(err error) log.Severity {
 	if s, ok := err.(hasSeverity); ok {
 		return s.Severity()

@@ -7,7 +7,6 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dns"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/policy"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -87,7 +86,7 @@ func (h *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 			Port:    net.Port(server.Port),
 		}
 	}
-	log.Trace(newError("opening connection to ", destination))
+	newError("opening connection to ", destination).WriteToLog()
 
 	input := outboundRay.OutboundInput()
 	output := outboundRay.OutboundOutput()
@@ -100,7 +99,7 @@ func (h *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 				Address: ip,
 				Port:    destination.Port,
 			}
-			log.Trace(newError("changing destination to ", destination))
+			newError("changing destination to ", destination).WriteToLog()
 		}
 	}
 

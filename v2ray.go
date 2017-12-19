@@ -6,7 +6,6 @@ import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/dns"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/policy"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
@@ -59,18 +58,6 @@ func newSimpleServer(config *Config) (*simpleServer, error) {
 		if err := space.AddApplication(application); err != nil {
 			return nil, err
 		}
-	}
-
-	if log.FromSpace(space) == nil {
-		l, err := app.CreateAppFromConfig(ctx, &log.Config{
-			ErrorLogType:  log.LogType_Console,
-			ErrorLogLevel: log.LogLevel_Warning,
-			AccessLogType: log.LogType_None,
-		})
-		if err != nil {
-			return nil, newError("failed apply default log settings").Base(err)
-		}
-		common.Must(space.AddApplication(l))
 	}
 
 	outboundHandlerManager := proxyman.OutboundHandlerManagerFromSpace(space)
@@ -163,7 +150,7 @@ func (s *simpleServer) Start() error {
 	if err := s.space.Start(); err != nil {
 		return err
 	}
-	log.Trace(newError("V2Ray started").AtWarning())
+	newError("V2Ray started").AtWarning().WriteToLog()
 
 	return nil
 }

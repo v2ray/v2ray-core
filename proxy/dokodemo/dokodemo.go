@@ -7,7 +7,6 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/policy"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -57,7 +56,7 @@ func (d *DokodemoDoor) Network() net.NetworkList {
 }
 
 func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
-	log.Trace(newError("processing connection from: ", conn.RemoteAddr()).AtDebug())
+	newError("processing connection from: ", conn.RemoteAddr()).AtDebug().WriteToLog()
 	dest := net.Destination{
 		Network: network,
 		Address: d.address,

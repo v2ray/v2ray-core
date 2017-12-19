@@ -6,7 +6,6 @@ import (
 	"io"
 	"sync/atomic"
 
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
@@ -38,7 +37,7 @@ func fetchInput(ctx context.Context, input io.Reader, reader PacketReader, conn 
 
 func DialKCP(ctx context.Context, dest net.Destination) (internet.Connection, error) {
 	dest.Network = net.Network_UDP
-	log.Trace(newError("dialing mKCP to ", dest))
+	newError("dialing mKCP to ", dest).WriteToLog()
 
 	src := internet.DialerSourceFromContext(ctx)
 	rawConn, err := internet.DialSystem(ctx, src, dest)

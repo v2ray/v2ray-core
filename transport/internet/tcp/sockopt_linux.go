@@ -5,7 +5,6 @@ package tcp
 import (
 	"syscall"
 
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 )
@@ -25,7 +24,7 @@ func GetOriginalDestination(conn internet.Connection) (net.Destination, error) {
 	err = rawConn.Control(func(fd uintptr) {
 		addr, err := syscall.GetsockoptIPv6Mreq(int(fd), syscall.IPPROTO_IP, SO_ORIGINAL_DST)
 		if err != nil {
-			log.Trace(newError("failed to call getsockopt").Base(err))
+			newError("failed to call getsockopt").Base(err).WriteToLog()
 			return
 		}
 		ip := net.IPAddress(addr.Multiaddr[4:8])

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"v2ray.com/core/app"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/policy"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -77,7 +76,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 	if err != nil {
 		return newError("failed to find an available destination").AtWarning().Base(err)
 	}
-	log.Trace(newError("tunneling request to ", destination, " via ", server.Destination()))
+	newError("tunneling request to ", destination, " via ", server.Destination()).WriteToLog()
 
 	defer conn.Close()
 

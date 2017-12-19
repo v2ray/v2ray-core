@@ -7,7 +7,6 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dns"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
@@ -64,7 +63,7 @@ func (r *ipResolver) Resolve() []net.Address {
 		return r.ip
 	}
 
-	log.Trace(newError("looking for IP for domain: ", r.domain))
+	newError("looking for IP for domain: ", r.domain).WriteToLog()
 	r.resolved = true
 	ips := r.dnsServer.Get(r.domain)
 	if len(ips) == 0 {

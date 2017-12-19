@@ -11,7 +11,6 @@ import (
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/dns"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 )
@@ -144,13 +143,13 @@ func (s *CacheServer) Get(domain string) []net.IP {
 				LastAccess: time.Now(),
 			}
 			s.Unlock()
-			log.Trace(newError("returning ", len(a.IPs), " IPs for domain ", domain).AtDebug())
+			newError("returning ", len(a.IPs), " IPs for domain ", domain).AtDebug().WriteToLog()
 			return a.IPs
 		case <-time.After(QueryTimeout):
 		}
 	}
 
-	log.Trace(newError("returning nil for domain ", domain).AtDebug())
+	newError("returning nil for domain ", domain).AtDebug().WriteToLog()
 	return nil
 }
 

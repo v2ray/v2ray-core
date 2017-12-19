@@ -7,7 +7,6 @@ import (
 
 	"github.com/miekg/dns"
 	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
@@ -88,7 +87,7 @@ func (s *UDPNameServer) AssignUnusedID(response chan<- *ARecord) uint16 {
 		if _, found := s.requests[id]; found {
 			continue
 		}
-		log.Trace(newError("add pending request id ", id).AtDebug())
+		newError("add pending request id ", id).AtDebug().WriteToLog()
 		s.requests[id] = &PendingRequest{
 			expire:   time.Now().Add(time.Second * 8),
 			response: response,
@@ -103,9 +102,9 @@ func (s *UDPNameServer) HandleResponse(payload *buf.Buffer) {
 	msg := new(dns.Msg)
 	err := msg.Unpack(payload.Bytes())
 	if err == dns.ErrTruncated {
-		log.Trace(newError("truncated message received. DNS server should still work. If you see anything abnormal, please submit an issue to v2ray-core.").AtWarning())
+		newError("truncated message received. DNS server should still work. If you see anything abnormal, please submit an issue to v2ray-core.").AtWarning().WriteToLog()
 	} else if err != nil {
-		log.Trace(newError("failed to parse DNS response").Base(err).AtWarning())
+		newError("failed to parse DNS response").Base(err).AtWarning().WriteToLog()
 		return
 	}
 	record := &ARecord{
@@ -113,7 +112,7 @@ func (s *UDPNameServer) HandleResponse(payload *buf.Buffer) {
 	}
 	id := msg.Id
 	ttl := uint32(3600) // an hour
-	log.Trace(newError("handling response for id ", id, " content: ", msg).AtDebug())
+	newError("handling response for id ", id, " content: ", msg).AtDebug().WriteToLog()
 
 	s.Lock()
 	request, found := s.requests[id]
@@ -206,7 +205,7 @@ func (*LocalNameServer) QueryA(domain string) <-chan *ARecord {
 
 		ips, err := net.LookupIP(domain)
 		if err != nil {
-			log.Trace(newError("failed to lookup IPs for domain ", domain).Base(err))
+			newError("failed to lookup IPs for domain ", domain).Base(err).WriteToLog()
 			return
 		}
 

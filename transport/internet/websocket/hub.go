@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	http_proto "v2ray.com/core/common/protocol/http"
@@ -35,7 +34,7 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 	}
 	conn, err := upgrader.Upgrade(writer, request, nil)
 	if err != nil {
-		log.Trace(newError("failed to convert to WebSocket connection").Base(err))
+		newError("failed to convert to WebSocket connection").Base(err).WriteToLog()
 		return
 	}
 
@@ -99,7 +98,7 @@ func (ln *Listener) listenws(address net.Address, port net.Port) error {
 			ln:   ln,
 		})
 		if err != nil {
-			log.Trace(newError("failed to serve http for WebSocket").Base(err).AtWarning())
+			newError("failed to serve http for WebSocket").Base(err).AtWarning().WriteToLog()
 		}
 	}()
 

@@ -3,7 +3,6 @@ package tcp
 import (
 	"context"
 
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
@@ -19,7 +18,7 @@ func getTCPSettingsFromContext(ctx context.Context) *Config {
 }
 
 func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {
-	log.Trace(newError("dialing TCP to ", dest))
+	newError("dialing TCP to ", dest).WriteToLog()
 	src := internet.DialerSourceFromContext(ctx)
 
 	conn, err := internet.DialSystem(ctx, src, dest)

@@ -8,7 +8,6 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/router"
 	"v2ray.com/core/common"
@@ -78,7 +77,7 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 		go func() {
 			domain, err := snifer(ctx, sniferList, outbound)
 			if err == nil {
-				log.Trace(newError("sniffed domain: ", domain))
+				newError("sniffed domain: ", domain).WriteToLog()
 				destination.Address = net.ParseAddress(domain)
 				ctx = proxy.ContextWithTarget(ctx, destination)
 			}
@@ -123,13 +122,13 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, outbound ray.Out
 	if d.router != nil {
 		if tag, err := d.router.TakeDetour(ctx); err == nil {
 			if handler := d.ohm.GetHandler(tag); handler != nil {
-				log.Trace(newError("taking detour [", tag, "] for [", destination, "]"))
+				newError("taking detour [", tag, "] for [", destination, "]").WriteToLog()
 				dispatcher = handler
 			} else {
-				log.Trace(newError("nonexisting tag: ", tag).AtWarning())
+				newError("nonexisting tag: ", tag).AtWarning().WriteToLog()
 			}
 		} else {
-			log.Trace(newError("default route for ", destination))
+			newError("default route for ", destination).WriteToLog()
 		}
 	}
 	dispatcher.Dispatch(ctx, outbound)

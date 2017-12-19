@@ -12,11 +12,11 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/policy"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
+	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	http_proto "v2ray.com/core/common/protocol/http"
 	"v2ray.com/core/common/signal"
@@ -127,7 +127,7 @@ Start:
 		}
 	}
 
-	log.Trace(newError("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]"))
+	newError("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]").WriteToLog()
 	conn.SetReadDeadline(time.Time{})
 
 	defaultPort := net.Port(80)
@@ -142,7 +142,11 @@ Start:
 	if err != nil {
 		return newError("malformed proxy host: ", host).AtWarning().Base(err)
 	}
-	log.Access(conn.RemoteAddr(), request.URL, log.AccessAccepted, "")
+	log.Record(&log.AccessMessage{
+		From:   conn.RemoteAddr(),
+		To:     request.URL,
+		Status: log.AccessAccepted,
+	})
 
 	if strings.ToUpper(request.Method) == "CONNECT" {
 		return s.handleConnect(ctx, request, reader, conn, dest, dispatcher)
@@ -278,7 +282,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 				result = nil
 			}
 		} else {
-			log.Trace(newError("failed to read response from ", request.Host).Base(err).AtWarning())
+			newError("failed to read response from ", request.Host).Base(err).AtWarning().WriteToLog()
 			response = &http.Response{
 				Status:        "Service Unavailable",
 				StatusCode:    503,

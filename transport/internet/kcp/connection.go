@@ -7,7 +7,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/predicate"
 )
@@ -201,7 +200,7 @@ type Connection struct {
 
 // NewConnection create a new KCP connection between local and remote.
 func NewConnection(meta ConnMetadata, writer PacketWriter, closer io.Closer, config *Config) *Connection {
-	log.Trace(newError("creating connection ", meta.Conversation))
+	newError("creating connection ", meta.Conversation).WriteToLog()
 
 	conn := &Connection{
 		meta:       meta,
@@ -404,7 +403,7 @@ func (v *Connection) SetState(state State) {
 	current := v.Elapsed()
 	atomic.StoreInt32((*int32)(&v.state), int32(state))
 	atomic.StoreUint32(&v.stateBeginTime, current)
-	log.Trace(newError("#", v.meta.Conversation, " entering state ", state, " at ", current).AtDebug())
+	newError("#", v.meta.Conversation, " entering state ", state, " at ", current).AtDebug().WriteToLog()
 
 	switch state {
 	case StateReadyToClose:
@@ -441,7 +440,7 @@ func (v *Connection) Close() error {
 	if state.Is(StateReadyToClose, StateTerminating, StateTerminated) {
 		return ErrClosedConnection
 	}
-	log.Trace(newError("closing connection to ", v.meta.RemoteAddr))
+	newError("closing connection to ", v.meta.RemoteAddr).WriteToLog()
 
 	if state == StateActive {
 		v.SetState(StateReadyToClose)
@@ -510,7 +509,7 @@ func (v *Connection) Terminate() {
 	if v == nil {
 		return
 	}
-	log.Trace(newError("terminating connection to ", v.RemoteAddr()))
+	newError("terminating connection to ", v.RemoteAddr()).WriteToLog()
 
 	//v.SetState(StateTerminated)
 	v.OnDataInput()
@@ -600,7 +599,7 @@ func (v *Connection) flush() {
 	}
 
 	if v.State() == StateTerminating {
-		log.Trace(newError("#", v.meta.Conversation, " sending terminating cmd.").AtDebug())
+		newError("#", v.meta.Conversation, " sending terminating cmd.").AtDebug().WriteToLog()
 		v.Ping(current, CommandTerminate)
 
 		if current-atomic.LoadUint32(&v.stateBeginTime) > 8000 {

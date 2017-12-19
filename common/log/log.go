@@ -28,6 +28,10 @@ func (m *GeneralMessage) String() string {
 	return serial.Concat("[", m.Severity, "]: ", m.Content)
 }
 
+func (s Severity) SevererThan(another Severity) bool {
+	return s <= another
+}
+
 func Record(msg Message) {
 	h := (*Handler)(atomic.LoadPointer(&logHandler))
 	(*h).Handle(msg)

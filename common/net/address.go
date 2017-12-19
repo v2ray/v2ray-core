@@ -4,7 +4,6 @@ import (
 	"net"
 	"strings"
 
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/predicate"
 )
 
@@ -36,7 +35,7 @@ const (
 	AddressFamilyDomain = AddressFamily(2)
 )
 
-// Either returns true if current AddressFamily matches any of the AddressFamilys provided.
+// Either returns true if current AddressFamily matches any of the AddressFamilies provided.
 func (af AddressFamily) Either(fs ...AddressFamily) bool {
 	for _, f := range fs {
 		if af == f {
@@ -106,7 +105,7 @@ func IPAddress(ip []byte) Address {
 		}
 		return addr
 	default:
-		log.Trace(newError("invalid IP format: ", ip).AtError())
+		newError("invalid IP format: ", ip).AtError().WriteToLog()
 		return nil
 	}
 }

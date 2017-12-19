@@ -3,7 +3,6 @@ package udp
 import (
 	"context"
 
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
@@ -91,7 +90,7 @@ func ListenUDP(address net.Address, port net.Port, option ListenOption) (*Hub, e
 	if err != nil {
 		return nil, err
 	}
-	log.Trace(newError("listening UDP on ", address, ":", port))
+	newError("listening UDP on ", address, ":", port).WriteToLog()
 	if option.ReceiveOriginalDest {
 		rawConn, err := udpConn.SyscallConn()
 		if err != nil {
@@ -99,7 +98,7 @@ func ListenUDP(address net.Address, port net.Port, option ListenOption) (*Hub, e
 		}
 		err = rawConn.Control(func(fd uintptr) {
 			if err := SetOriginalDestOptions(int(fd)); err != nil {
-				log.Trace(newError("failed to set socket options").Base(err))
+				newError("failed to set socket options").Base(err).WriteToLog()
 			}
 		})
 		if err != nil {
@@ -150,7 +149,7 @@ L:
 		})
 
 		if err != nil {
-			log.Trace(newError("failed to read UDP msg").Base(err))
+			newError("failed to read UDP msg").Base(err).WriteToLog()
 			buffer.Release()
 			continue
 		}

@@ -10,12 +10,12 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/policy"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
+	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -192,8 +192,13 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 
 	if err != nil {
 		if errors.Cause(err) != io.EOF {
-			log.Access(connection.RemoteAddr(), "", log.AccessRejected, err)
-			log.Trace(newError("invalid request from ", connection.RemoteAddr(), ": ", err).AtInfo())
+			log.Record(&log.AccessMessage{
+				From:   connection.RemoteAddr(),
+				To:     "",
+				Status: log.AccessRejected,
+				Reason: err,
+			})
+			newError("invalid request from ", connection.RemoteAddr(), ": ", err).AtInfo().WriteToLog()
 		}
 		return err
 	}
@@ -203,11 +208,17 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 		request.Port = net.Port(0)
 	}
 
-	log.Access(connection.RemoteAddr(), request.Destination(), log.AccessAccepted, "")
-	log.Trace(newError("received request for ", request.Destination()))
+	log.Record(&log.AccessMessage{
+		From:   connection.RemoteAddr(),
+		To:     request.Destination(),
+		Status: log.AccessAccepted,
+		Reason: "",
+	})
+
+	newError("received request for ", request.Destination()).WriteToLog()
 
 	if err := connection.SetReadDeadline(time.Time{}); err != nil {
-		log.Trace(newError("unable to set back read deadline").Base(err))
+		newError("unable to set back read deadline").Base(err).WriteToLog()
 	}
 
 	sessionPolicy = h.policyManager.GetPolicy(request.User.Level)
@@ -254,7 +265,7 @@ func (h *Handler) generateCommand(ctx context.Context, request *protocol.Request
 		if h.inboundHandlerManager != nil {
 			handler, err := h.inboundHandlerManager.GetHandler(ctx, tag)
 			if err != nil {
-				log.Trace(newError("failed to get detour handler: ", tag, err).AtWarning())
+				newError("failed to get detour handler: ", tag, err).AtWarning().WriteToLog()
 				return nil
 			}
 			proxyHandler, port, availableMin := handler.GetRandomInboundProxy()
@@ -264,7 +275,7 @@ func (h *Handler) generateCommand(ctx context.Context, request *protocol.Request
 					availableMin = 255
 				}
 
-				log.Trace(newError("pick detour handler for port ", port, " for ", availableMin, " minutes.").AtDebug())
+				newError("pick detour handler for port ", port, " for ", availableMin, " minutes.").AtDebug().WriteToLog()
 				user := inboundHandler.GetUser(request.User.Email)
 				if user == nil {
 					return nil

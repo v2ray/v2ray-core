@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"sync"
 
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
@@ -71,7 +70,7 @@ func NewListener(ctx context.Context, address net.Address, port net.Port, addCon
 	l.Lock()
 	l.hub = hub
 	l.Unlock()
-	log.Trace(newError("listening on ", address, ":", port))
+	newError("listening on ", address, ":", port).WriteToLog()
 	return l, nil
 }
 
@@ -80,7 +79,7 @@ func (v *Listener) OnReceive(payload *buf.Buffer, src net.Destination, originalD
 
 	segments := v.reader.Read(payload.Bytes())
 	if len(segments) == 0 {
-		log.Trace(newError("discarding invalid payload from ", src))
+		newError("discarding invalid payload from ", src).WriteToLog()
 		return
 	}
 

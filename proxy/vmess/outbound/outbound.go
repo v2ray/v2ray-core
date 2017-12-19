@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"v2ray.com/core/app"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/policy"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -80,7 +79,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	if !ok {
 		return newError("target not specified").AtError()
 	}
-	log.Trace(newError("tunneling request to ", target, " via ", rec.Destination()))
+	newError("tunneling request to ", target, " via ", rec.Destination()).WriteToLog()
 
 	command := protocol.RequestCommandTCP
 	if target.Network == net.Network_UDP {
