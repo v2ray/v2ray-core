@@ -66,6 +66,7 @@ func (g *Instance) Start() error {
 	if err := g.initErrorLogger(); err != nil {
 		return newError("failed to initialize error logger").Base(err).AtWarning()
 	}
+	log.RegisterHandler(g)
 	return nil
 }
 
