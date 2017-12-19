@@ -67,7 +67,7 @@ func TestDialWithRemoteAddr(t *testing.T) {
 	assert := With(t)
 	listen, err := ListenWS(internet.ContextWithTransportSettings(context.Background(), &Config{
 		Path: "ws",
-	}), net.DomainAddress("localhost"), 13146, func(ctx context.Context, conn internet.Connection) bool {
+	}), net.DomainAddress("localhost"), 13148, func(ctx context.Context, conn internet.Connection) bool {
 		go func(c internet.Connection) {
 			defer c.Close()
 
@@ -89,7 +89,7 @@ func TestDialWithRemoteAddr(t *testing.T) {
 	assert(err, IsNil)
 
 	ctx := internet.ContextWithTransportSettings(context.Background(), &Config{Path: "ws", Header: []*Header{{Key: "X-Forwarded-For", Value: "1.1.1.1"}}})
-	conn, err := Dial(ctx, net.TCPDestination(net.DomainAddress("localhost"), 13146))
+	conn, err := Dial(ctx, net.TCPDestination(net.DomainAddress("localhost"), 13148))
 
 	assert(err, IsNil)
 	_, err = conn.Write([]byte("Test connection 1"))
