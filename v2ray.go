@@ -5,11 +5,9 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/dns"
 	"v2ray.com/core/app/policy"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/net"
 )
 
 // Server is an instance of V2Ray. At any time, there must be at most one Server instance running.
@@ -82,19 +80,6 @@ func newSimpleServer(config *Config) (*simpleServer, error) {
 			return nil, newError("failed to add default inbound handler manager").Base(err)
 		}
 		inboundHandlerManager = o.(proxyman.InboundHandlerManager)
-	}
-
-	if dns.FromSpace(space) == nil {
-		dnsConfig := &dns.Config{
-			NameServers: []*net.Endpoint{{
-				Address: net.NewIPOrDomain(net.LocalHostDomain),
-			}},
-		}
-		d, err := app.CreateAppFromConfig(ctx, dnsConfig)
-		if err != nil {
-			return nil, err
-		}
-		common.Must(space.AddApplication(d))
 	}
 
 	if disp := dispatcher.FromSpace(space); disp == nil {

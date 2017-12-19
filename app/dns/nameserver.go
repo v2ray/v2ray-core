@@ -1,4 +1,4 @@
-package server
+package dns
 
 import (
 	"context"
@@ -203,7 +203,8 @@ func (*LocalNameServer) QueryA(domain string) <-chan *ARecord {
 	go func() {
 		defer close(response)
 
-		ips, err := net.LookupIP(domain)
+		resolver := net.SystemIPResolver()
+		ips, err := resolver.LookupIP(domain)
 		if err != nil {
 			newError("failed to lookup IPs for domain ", domain).Base(err).WriteToLog()
 			return

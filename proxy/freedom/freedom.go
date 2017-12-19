@@ -6,7 +6,6 @@ import (
 	"context"
 
 	"v2ray.com/core/app"
-	"v2ray.com/core/app/dns"
 	"v2ray.com/core/app/policy"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -23,7 +22,6 @@ import (
 type Handler struct {
 	domainStrategy Config_DomainStrategy
 	timeout        uint32
-	dns            dns.Server
 	destOverride   *DestinationOverride
 	policy         policy.Policy
 }
@@ -40,12 +38,6 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		destOverride:   config.DestinationOverride,
 	}
 	space.On(app.SpaceInitializing, func(interface{}) error {
-		if config.DomainStrategy == Config_USE_IP {
-			f.dns = dns.FromSpace(space)
-			if f.dns == nil {
-				return newError("DNS server is not found in the space")
-			}
-		}
 		pm := policy.FromSpace(space)
 		if pm == nil {
 			return newError("Policy not found in space.")
@@ -68,7 +60,10 @@ func (h *Handler) resolveIP(ctx context.Context, domain string) net.Address {
 		return ips[dice.Roll(len(ips))]
 	}
 
-	ips := h.dns.Get(domain)
+	ips, err := net.LookupIP(domain)
+	if err != nil {
+		newError("failed to get IP address for domain ", domain).Base(err).WriteToLog()
+	}
 	if len(ips) == 0 {
 		return nil
 	}

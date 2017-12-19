@@ -1,4 +1,4 @@
-package server_test
+package dns_test
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 	"v2ray.com/core/app/dispatcher"
 	_ "v2ray.com/core/app/dispatcher/impl"
 	. "v2ray.com/core/app/dns"
-	_ "v2ray.com/core/app/dns/server"
 	"v2ray.com/core/app/policy"
 	_ "v2ray.com/core/app/policy/manager"
 	"v2ray.com/core/app/proxyman"
