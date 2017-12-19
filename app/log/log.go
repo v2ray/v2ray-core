@@ -6,7 +6,6 @@ import (
 	"context"
 	"sync"
 
-	"v2ray.com/core/app"
 	"v2ray.com/core/app/log/internal"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/log"
@@ -100,14 +99,6 @@ func (g *Instance) Close() {
 
 	g.errorLogger.Close()
 	g.errorLogger = nil
-}
-
-func FromSpace(space app.Space) *Instance {
-	v := space.GetApplication((*Instance)(nil))
-	if logger, ok := v.(*Instance); ok && logger != nil {
-		return logger
-	}
-	return nil
 }
 
 func init() {
