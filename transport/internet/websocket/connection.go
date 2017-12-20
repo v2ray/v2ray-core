@@ -16,15 +16,16 @@ var (
 
 // connection is a wrapper for net.Conn over WebSocket connection.
 type connection struct {
-	conn   *websocket.Conn
-	reader io.Reader
-
+	conn          *websocket.Conn
+	reader        io.Reader
 	mergingWriter *buf.BufferedWriter
+	remoteAddr    net.Addr
 }
 
-func newConnection(conn *websocket.Conn) *connection {
+func newConnection(conn *websocket.Conn, remoteAddr net.Addr) *connection {
 	return &connection{
-		conn: conn,
+		conn:       conn,
+		remoteAddr: remoteAddr,
 	}
 }
 
@@ -86,7 +87,7 @@ func (c *connection) LocalAddr() net.Addr {
 }
 
 func (c *connection) RemoteAddr() net.Addr {
-	return c.conn.RemoteAddr()
+	return c.remoteAddr
 }
 
 func (c *connection) SetDeadline(t time.Time) error {

@@ -9,6 +9,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
+	clog "v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -39,7 +40,7 @@ func TestVMessDynamicPort(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -94,7 +95,7 @@ func TestVMessDynamicPort(t *testing.T) {
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -174,7 +175,7 @@ func TestVMessGCM(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -207,7 +208,7 @@ func TestVMessGCM(t *testing.T) {
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -297,7 +298,7 @@ func TestVMessGCMUDP(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -330,7 +331,7 @@ func TestVMessGCMUDP(t *testing.T) {
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -430,7 +431,7 @@ func TestVMessChacha20(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -463,7 +464,7 @@ func TestVMessChacha20(t *testing.T) {
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -553,7 +554,7 @@ func TestVMessNone(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -586,7 +587,7 @@ func TestVMessNone(t *testing.T) {
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -678,7 +679,7 @@ func TestVMessKCP(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -714,7 +715,7 @@ func TestVMessKCP(t *testing.T) {
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -811,7 +812,7 @@ func TestVMessIPv6(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -844,7 +845,7 @@ func TestVMessIPv6(t *testing.T) {
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -926,7 +927,7 @@ func TestVMessGCMMux(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -959,7 +960,7 @@ func TestVMessGCMMux(t *testing.T) {
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -1068,7 +1069,7 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -1102,7 +1103,7 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},

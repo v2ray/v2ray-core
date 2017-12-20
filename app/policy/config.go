@@ -4,10 +4,12 @@ import (
 	"time"
 )
 
+// Duration converts Second to time.Duration.
 func (s *Second) Duration() time.Duration {
 	return time.Second * time.Duration(s.Value)
 }
 
+// OverrideWith overrides current Policy with another one.
 func (p *Policy) OverrideWith(another *Policy) {
 	if another.Timeout != nil {
 		if another.Timeout.Handshake != nil {

@@ -1,6 +1,6 @@
-package server
+package dns
 
-//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg server -path App,DNS,Server
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg server -path App,DNS,Server
 
 import (
 	"context"
@@ -10,8 +10,6 @@ import (
 	dnsmsg "github.com/miekg/dns"
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/dns"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 )
@@ -42,7 +40,7 @@ type CacheServer struct {
 	servers []NameServer
 }
 
-func NewCacheServer(ctx context.Context, config *dns.Config) (*CacheServer, error) {
+func NewCacheServer(ctx context.Context, config *Config) (*CacheServer, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
 		return nil, newError("no space in context")
@@ -52,7 +50,7 @@ func NewCacheServer(ctx context.Context, config *dns.Config) (*CacheServer, erro
 		servers: make([]NameServer, len(config.NameServers)),
 		hosts:   config.GetInternalHosts(),
 	}
-	space.OnInitialize(func() error {
+	space.On(app.SpaceInitializing, func(interface{}) error {
 		disp := dispatcher.FromSpace(space)
 		if disp == nil {
 			return newError("dispatcher is not found in the space")
@@ -80,10 +78,11 @@ func NewCacheServer(ctx context.Context, config *dns.Config) (*CacheServer, erro
 }
 
 func (*CacheServer) Interface() interface{} {
-	return (*dns.Server)(nil)
+	return (*CacheServer)(nil)
 }
 
-func (*CacheServer) Start() error {
+func (s *CacheServer) Start() error {
+	net.RegisterIPResolver(s)
 	return nil
 }
 
@@ -117,15 +116,15 @@ func (s *CacheServer) tryCleanup() {
 	}
 }
 
-func (s *CacheServer) Get(domain string) []net.IP {
+func (s *CacheServer) LookupIP(domain string) ([]net.IP, error) {
 	if ip, found := s.hosts[domain]; found {
-		return []net.IP{ip}
+		return []net.IP{ip}, nil
 	}
 
 	domain = dnsmsg.Fqdn(domain)
 	ips := s.GetCached(domain)
 	if ips != nil {
-		return ips
+		return ips, nil
 	}
 
 	s.tryCleanup()
@@ -144,18 +143,17 @@ func (s *CacheServer) Get(domain string) []net.IP {
 				LastAccess: time.Now(),
 			}
 			s.Unlock()
-			log.Trace(newError("returning ", len(a.IPs), " IPs for domain ", domain).AtDebug())
-			return a.IPs
+			newError("returning ", len(a.IPs), " IPs for domain ", domain).AtDebug().WriteToLog()
+			return a.IPs, nil
 		case <-time.After(QueryTimeout):
 		}
 	}
 
-	log.Trace(newError("returning nil for domain ", domain).AtDebug())
-	return nil
+	return nil, newError("returning nil for domain ", domain)
 }
 
 func init() {
-	common.Must(common.RegisterConfig((*dns.Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
-		return NewCacheServer(ctx, config.(*dns.Config))
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return NewCacheServer(ctx, config.(*Config))
 	}))
 }

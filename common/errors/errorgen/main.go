@@ -1,3 +1,5 @@
+// +build generate
+
 package main
 
 import (
@@ -6,6 +8,8 @@ import (
 	"log"
 	"os"
 	"strings"
+
+	"v2ray.com/core/common"
 )
 
 var (
@@ -34,11 +38,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to generate errors.generated.go: %v", err)
 	}
-	defer file.Close()
 
-	fmt.Fprintln(file, "package", *pkg)
-	fmt.Fprintln(file, "")
-	fmt.Fprintln(file, "import \"v2ray.com/core/common/errors\"")
-	fmt.Fprintln(file, "")
-	fmt.Fprintln(file, "func newError(values ...interface{}) *errors.Error { return errors.New(values...).Path("+pathStr+") }")
+	common.Must2(fmt.Fprintln(file, "package", *pkg))
+	common.Must2(fmt.Fprintln(file, ""))
+	common.Must2(fmt.Fprintln(file, "import \"v2ray.com/core/common/errors\""))
+	common.Must2(fmt.Fprintln(file, ""))
+	common.Must2(fmt.Fprintln(file, "func newError(values ...interface{}) *errors.Error { return errors.New(values...).Path("+pathStr+") }"))
+
+	common.Must(file.Close())
 }

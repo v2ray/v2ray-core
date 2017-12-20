@@ -4,7 +4,6 @@ import (
 	"context"
 	gotls "crypto/tls"
 
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
@@ -13,7 +12,6 @@ import (
 )
 
 type TCPListener struct {
-	ctx        context.Context
 	listener   *net.TCPListener
 	tlsConfig  *gotls.Config
 	authConfig internet.ConnectionAuthenticator
@@ -29,22 +27,20 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, addConn 
 	if err != nil {
 		return nil, err
 	}
-	log.Trace(newError("listening TCP on ", address, ":", port))
+	newError("listening TCP on ", address, ":", port).WriteToLog()
 	networkSettings := internet.TransportSettingsFromContext(ctx)
 	tcpSettings := networkSettings.(*Config)
 
 	l := &TCPListener{
-		ctx:      ctx,
 		listener: listener,
 		config:   tcpSettings,
 		addConn:  addConn,
 	}
-	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
-		tlsConfig, ok := securitySettings.(*tls.Config)
-		if ok {
-			l.tlsConfig = tlsConfig.GetTLSConfig()
-		}
+
+	if config := tls.ConfigFromContext(ctx); config != nil {
+		l.tlsConfig = config.GetTLSConfig()
 	}
+
 	if tcpSettings.HeaderSettings != nil {
 		headerConfig, err := tcpSettings.HeaderSettings.GetInstance()
 		if err != nil {
@@ -56,14 +52,14 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, addConn 
 		}
 		l.authConfig = auth
 	}
-	go l.KeepAccepting()
+	go l.KeepAccepting(ctx)
 	return l, nil
 }
 
-func (v *TCPListener) KeepAccepting() {
+func (v *TCPListener) KeepAccepting(ctx context.Context) {
 	for {
 		select {
-		case <-v.ctx.Done():
+		case <-ctx.Done():
 			return
 		default:
 		}
@@ -77,7 +73,7 @@ func (v *TCPListener) KeepAccepting() {
 			return nil
 		})
 		if err != nil {
-			log.Trace(newError("failed to accepted raw connections").Base(err).AtWarning())
+			newError("failed to accepted raw connections").Base(err).AtWarning().WriteToLog()
 			continue
 		}
 

@@ -70,3 +70,9 @@ func GetPluginDirectory() string {
 	pluginDir := EnvFlag{Name: name, AltName: NormalizeEnvName(name)}.GetValue(getExecuableSubDir("plugins"))
 	return pluginDir
 }
+
+func GetConfigurationPath() string {
+	const name = "v2ray.location.config"
+	configPath := EnvFlag{Name: name, AltName: NormalizeEnvName(name)}.GetValue(getExecutableDir)
+	return filepath.Join(configPath, "config.json")
+}

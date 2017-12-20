@@ -12,12 +12,13 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/policy"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
+	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
+	http_proto "v2ray.com/core/common/protocol/http"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/transport/internet"
 )
@@ -37,7 +38,7 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	s := &Server{
 		config: config,
 	}
-	space.OnInitialize(func() error {
+	space.On(app.SpaceInitializing, func(interface{}) error {
 		pm := policy.FromSpace(space)
 		if pm == nil {
 			return newError("Policy not found in space.")
@@ -120,17 +121,13 @@ Start:
 
 	if len(s.config.Accounts) > 0 {
 		user, pass, ok := parseBasicAuth(request.Header.Get("Proxy-Authorization"))
-		if !ok {
-			_, err := conn.Write([]byte("HTTP/1.1 407 Proxy Authentication Required\r\n\r\n"))
-			return err
-		}
-		if !s.config.HasAccount(user, pass) {
-			_, err := conn.Write([]byte("HTTP/1.1 401 UNAUTHORIZED\r\n\r\n"))
+		if !ok || !s.config.HasAccount(user, pass) {
+			_, err := conn.Write([]byte("HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm=\"proxy\"\r\n\r\n"))
 			return err
 		}
 	}
 
-	log.Trace(newError("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]"))
+	newError("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]").WriteToLog()
 	conn.SetReadDeadline(time.Time{})
 
 	defaultPort := net.Port(80)
@@ -145,7 +142,11 @@ Start:
 	if err != nil {
 		return newError("malformed proxy host: ", host).AtWarning().Base(err)
 	}
-	log.Access(conn.RemoteAddr(), request.URL, log.AccessAccepted, "")
+	log.Record(&log.AccessMessage{
+		From:   conn.RemoteAddr(),
+		To:     request.URL,
+		Status: log.AccessAccepted,
+	})
 
 	if strings.ToUpper(request.Method) == "CONNECT" {
 		return s.handleConnect(ctx, request, reader, conn, dest, dispatcher)
@@ -214,35 +215,6 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 	return nil
 }
 
-// @VisibleForTesting
-func StripHopByHopHeaders(header http.Header) {
-	// Strip hop-by-hop header basaed on RFC:
-	// http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.5.1
-	// https://www.mnot.net/blog/2011/07/11/what_proxies_must_do
-
-	header.Del("Proxy-Connection")
-	header.Del("Proxy-Authenticate")
-	header.Del("Proxy-Authorization")
-	header.Del("TE")
-	header.Del("Trailers")
-	header.Del("Transfer-Encoding")
-	header.Del("Upgrade")
-
-	connections := header.Get("Connection")
-	header.Del("Connection")
-	if len(connections) == 0 {
-		return
-	}
-	for _, h := range strings.Split(connections, ",") {
-		header.Del(strings.TrimSpace(h))
-	}
-
-	// Prevent UA from being set to golang's default ones
-	if len(header.Get("User-Agent")) == 0 {
-		header.Set("User-Agent", "")
-	}
-}
-
 var errWaitAnother = newError("keep alive")
 
 func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, writer io.Writer, dest net.Destination, dispatcher dispatcher.Interface) error {
@@ -267,7 +239,12 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 	if len(request.URL.Host) > 0 {
 		request.Host = request.URL.Host
 	}
-	StripHopByHopHeaders(request.Header)
+	http_proto.RemoveHopByHopHeaders(request.Header)
+
+	// Prevent UA from being set to golang's default ones
+	if len(request.Header.Get("User-Agent")) == 0 {
+		request.Header.Set("User-Agent", "")
+	}
 
 	ray, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
@@ -294,7 +271,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 		responseReader := bufio.NewReaderSize(buf.NewBufferedReader(ray.InboundOutput()), buf.Size)
 		response, err := http.ReadResponse(responseReader, request)
 		if err == nil {
-			StripHopByHopHeaders(response.Header)
+			http_proto.RemoveHopByHopHeaders(response.Header)
 			if response.ContentLength >= 0 {
 				response.Header.Set("Proxy-Connection", "keep-alive")
 				response.Header.Set("Connection", "keep-alive")
@@ -305,7 +282,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 				result = nil
 			}
 		} else {
-			log.Trace(newError("failed to read response from ", request.Host).Base(err).AtWarning())
+			newError("failed to read response from ", request.Host).Base(err).AtWarning().WriteToLog()
 			response = &http.Response{
 				Status:        "Service Unavailable",
 				StatusCode:    503,

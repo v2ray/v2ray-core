@@ -6,13 +6,22 @@ import (
 	"strings"
 	"testing"
 
-	. "v2ray.com/core/proxy/http"
+	. "v2ray.com/core/common/protocol/http"
 	. "v2ray.com/ext/assert"
-
-	_ "v2ray.com/core/transport/internet/tcp"
 )
 
-func TestHopByHopHeadersStrip(t *testing.T) {
+func TestParseXForwardedFor(t *testing.T) {
+	assert := With(t)
+
+	header := http.Header{}
+	header.Add("X-Forwarded-For", "129.78.138.66, 129.78.64.103")
+	addrs := ParseXForwardedFor(header)
+	assert(len(addrs), Equals, 2)
+	assert(addrs[0].String(), Equals, "129.78.138.66")
+	assert(addrs[1].String(), Equals, "129.78.64.103")
+}
+
+func TestHopByHopHeadersRemoving(t *testing.T) {
 	assert := With(t)
 
 	rawRequest := `GET /pkg/net/http/ HTTP/1.1
@@ -36,13 +45,11 @@ Accept-Language: de,en;q=0.7,en-us;q=0.3
 	assert(req.Header.Get("Connection"), Equals, "keep-alive,Foo, Bar")
 	assert(req.Header.Get("Proxy-Connection"), Equals, "keep-alive")
 	assert(req.Header.Get("Proxy-Authenticate"), Equals, "abc")
-	assert(req.Header.Get("User-Agent"), IsEmpty)
 
-	StripHopByHopHeaders(req.Header)
+	RemoveHopByHopHeaders(req.Header)
 	assert(req.Header.Get("Connection"), IsEmpty)
 	assert(req.Header.Get("Foo"), IsEmpty)
 	assert(req.Header.Get("Bar"), IsEmpty)
 	assert(req.Header.Get("Proxy-Connection"), IsEmpty)
 	assert(req.Header.Get("Proxy-Authenticate"), IsEmpty)
-	assert(req.Header.Get("User-Agent"), IsEmpty)
 }

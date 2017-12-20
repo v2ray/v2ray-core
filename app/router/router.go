@@ -1,13 +1,11 @@
 package router
 
-//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg router -path App,Router
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg router -path App,Router
 
 import (
 	"context"
 
 	"v2ray.com/core/app"
-	"v2ray.com/core/app/dns"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
@@ -20,7 +18,6 @@ var (
 type Router struct {
 	domainStrategy Config_DomainStrategy
 	rules          []Rule
-	dnsServer      dns.Server
 }
 
 func NewRouter(ctx context.Context, config *Config) (*Router, error) {
@@ -33,7 +30,7 @@ func NewRouter(ctx context.Context, config *Config) (*Router, error) {
 		rules:          make([]Rule, len(config.Rule)),
 	}
 
-	space.OnInitialize(func() error {
+	space.On(app.SpaceInitializing, func(interface{}) error {
 		for idx, rule := range config.Rule {
 			r.rules[idx].Tag = rule.Tag
 			cond, err := rule.BuildCondition()
@@ -42,21 +39,15 @@ func NewRouter(ctx context.Context, config *Config) (*Router, error) {
 			}
 			r.rules[idx].Condition = cond
 		}
-
-		r.dnsServer = dns.FromSpace(space)
-		if r.dnsServer == nil {
-			return newError("DNS is not found in the space")
-		}
 		return nil
 	})
 	return r, nil
 }
 
 type ipResolver struct {
-	ip        []net.Address
-	domain    string
-	resolved  bool
-	dnsServer dns.Server
+	ip       []net.Address
+	domain   string
+	resolved bool
 }
 
 func (r *ipResolver) Resolve() []net.Address {
@@ -64,9 +55,12 @@ func (r *ipResolver) Resolve() []net.Address {
 		return r.ip
 	}
 
-	log.Trace(newError("looking for IP for domain: ", r.domain))
+	newError("looking for IP for domain: ", r.domain).WriteToLog()
 	r.resolved = true
-	ips := r.dnsServer.Get(r.domain)
+	ips, err := net.LookupIP(r.domain)
+	if err != nil {
+		newError("failed to get IP address").Base(err).WriteToLog()
+	}
 	if len(ips) == 0 {
 		return nil
 	}
@@ -78,9 +72,7 @@ func (r *ipResolver) Resolve() []net.Address {
 }
 
 func (r *Router) TakeDetour(ctx context.Context) (string, error) {
-	resolver := &ipResolver{
-		dnsServer: r.dnsServer,
-	}
+	resolver := &ipResolver{}
 	if r.domainStrategy == Config_IpOnDemand {
 		if dest, ok := proxy.TargetFromContext(ctx); ok && dest.Address.Family().IsDomain() {
 			resolver.domain = dest.Address.Domain()

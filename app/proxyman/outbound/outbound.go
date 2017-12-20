@@ -1,6 +1,6 @@
 package outbound
 
-//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg outbound -path App,Proxyman,Outbound
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg outbound -path App,Proxyman,Outbound
 
 import (
 	"context"

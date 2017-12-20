@@ -1,4 +1,4 @@
-package server_test
+package dns_test
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 	"v2ray.com/core/app/dispatcher"
 	_ "v2ray.com/core/app/dispatcher/impl"
 	. "v2ray.com/core/app/dns"
-	_ "v2ray.com/core/app/dns/server"
 	"v2ray.com/core/app/policy"
 	_ "v2ray.com/core/app/policy/manager"
 	"v2ray.com/core/app/proxyman"
@@ -86,20 +85,20 @@ func TestUDPServer(t *testing.T) {
 	common.Must(space.Initialize())
 	common.Must(space.Start())
 
-	server := FromSpace(space)
-	assert(server, IsNotNil)
-
-	ips := server.Get("google.com")
+	ips, err := net.LookupIP("google.com")
+	assert(err, IsNil)
 	assert(len(ips), Equals, 1)
 	assert([]byte(ips[0]), Equals, []byte{8, 8, 8, 8})
 
-	ips = server.Get("facebook.com")
+	ips, err = net.LookupIP("facebook.com")
+	assert(err, IsNil)
 	assert(len(ips), Equals, 1)
 	assert([]byte(ips[0]), Equals, []byte{9, 9, 9, 9})
 
 	dnsServer.Shutdown()
 
-	ips = server.Get("google.com")
+	ips, err = net.LookupIP("google.com")
+	assert(err, IsNil)
 	assert(len(ips), Equals, 1)
 	assert([]byte(ips[0]), Equals, []byte{8, 8, 8, 8})
 }

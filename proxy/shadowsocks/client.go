@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"v2ray.com/core/app"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/policy"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -39,7 +38,7 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 	if space == nil {
 		return nil, newError("Space not found.")
 	}
-	space.OnInitialize(func() error {
+	space.On(app.SpaceInitializing, func(interface{}) error {
 		pm := policy.FromSpace(space)
 		if pm == nil {
 			return newError("Policy not found in space.")
@@ -77,7 +76,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 	if err != nil {
 		return newError("failed to find an available destination").AtWarning().Base(err)
 	}
-	log.Trace(newError("tunneling request to ", destination, " via ", server.Destination()))
+	newError("tunneling request to ", destination, " via ", server.Destination()).WriteToLog()
 
 	defer conn.Close()
 
@@ -97,7 +96,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 	if err != nil {
 		return newError("failed to get a valid user account").AtWarning().Base(err)
 	}
-	account := rawAccount.(*ShadowsocksAccount)
+	account := rawAccount.(*MemoryAccount)
 	request.User = user
 
 	if account.OneTimeAuth == Account_Auto || account.OneTimeAuth == Account_Enabled {

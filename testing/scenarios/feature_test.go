@@ -12,6 +12,7 @@ import (
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/router"
+	clog "v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -718,7 +719,7 @@ func TestDomainSniffing(t *testing.T) {
 				},
 			}),
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},

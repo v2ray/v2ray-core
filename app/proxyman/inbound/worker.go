@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
@@ -45,7 +44,7 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 	if w.recvOrigDest {
 		dest, err := tcp.GetOriginalDestination(conn)
 		if err != nil {
-			log.Trace(newError("failed to get original destination").Base(err))
+			newError("failed to get original destination").Base(err).WriteToLog()
 		}
 		if dest.IsValid() {
 			ctx = proxy.ContextWithOriginalTarget(ctx, dest)
@@ -60,7 +59,7 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 		ctx = proxyman.ContextWithProtocolSniffers(ctx, w.sniffers)
 	}
 	if err := w.proxy.Process(ctx, net.Network_TCP, conn, w.dispatcher); err != nil {
-		log.Trace(newError("connection ends").Base(err))
+		newError("connection ends").Base(err).WriteToLog()
 	}
 	cancel()
 	conn.Close()
@@ -247,7 +246,7 @@ func (w *udpWorker) callback(b *buf.Buffer, source net.Destination, originalDest
 			ctx = proxy.ContextWithSource(ctx, source)
 			ctx = proxy.ContextWithInboundEntryPoint(ctx, net.UDPDestination(w.address, w.port))
 			if err := w.proxy.Process(ctx, net.Network_UDP, conn, w.dispatcher); err != nil {
-				log.Trace(newError("connection ends").Base(err))
+				newError("connection ends").Base(err).WriteToLog()
 			}
 			w.removeConn(id)
 			cancel()

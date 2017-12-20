@@ -51,7 +51,7 @@ type KCPPacketWriter struct {
 	Security cipher.AEAD
 	Writer   io.Writer
 
-	buffer [32 * 1024]byte
+	buffer [2048]byte
 }
 
 func (w *KCPPacketWriter) Overhead() int {

@@ -8,17 +8,14 @@ import (
 	"v2ray.com/core/common/platform"
 )
 
+type LogEntry interface {
+	String() string
+}
+
 type LogWriter interface {
 	Log(LogEntry)
 	Close()
 }
-
-type NoOpLogWriter struct {
-}
-
-func (*NoOpLogWriter) Log(entry LogEntry) {}
-
-func (*NoOpLogWriter) Close() {}
 
 type StdOutLogWriter struct {
 	logger *log.Logger

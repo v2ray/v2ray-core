@@ -83,6 +83,8 @@ sysArch(){
         VDIS="mipsle"
     elif [[ "$ARCH" == *"mips"* ]]; then
         VDIS="mips"
+    elif [[ "$ARCH" == *"s390x"* ]]; then
+        VDIS="s390x"
     fi
     return 0
 }

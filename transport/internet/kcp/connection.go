@@ -7,7 +7,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/predicate"
 )
@@ -18,8 +17,10 @@ var (
 	ErrClosedConnection = newError("Connection closed.")
 )
 
+// State of the connection
 type State int32
 
+// Is returns true if current State is one of the candidates.
 func (s State) Is(states ...State) bool {
 	for _, state := range states {
 		if s == state {
@@ -30,12 +31,12 @@ func (s State) Is(states ...State) bool {
 }
 
 const (
-	StateActive          State = 0
-	StateReadyToClose    State = 1
-	StatePeerClosed      State = 2
-	StateTerminating     State = 3
-	StatePeerTerminating State = 4
-	StateTerminated      State = 5
+	StateActive          State = 0 // Connection is active
+	StateReadyToClose    State = 1 // Connection is closed locally
+	StatePeerClosed      State = 2 // Connection is closed on remote
+	StateTerminating     State = 3 // Connection is ready to be destroyed locally
+	StatePeerTerminating State = 4 // Connection is ready to be destroyed on remote
+	StateTerminated      State = 5 // Connection is destroyed.
 )
 
 func nowMillisec() int64 {
@@ -52,66 +53,66 @@ type RoundTripInfo struct {
 	updatedTimestamp uint32
 }
 
-func (v *RoundTripInfo) UpdatePeerRTO(rto uint32, current uint32) {
-	v.Lock()
-	defer v.Unlock()
+func (info *RoundTripInfo) UpdatePeerRTO(rto uint32, current uint32) {
+	info.Lock()
+	defer info.Unlock()
 
-	if current-v.updatedTimestamp < 3000 {
+	if current-info.updatedTimestamp < 3000 {
 		return
 	}
 
-	v.updatedTimestamp = current
-	v.rto = rto
+	info.updatedTimestamp = current
+	info.rto = rto
 }
 
-func (v *RoundTripInfo) Update(rtt uint32, current uint32) {
+func (info *RoundTripInfo) Update(rtt uint32, current uint32) {
 	if rtt > 0x7FFFFFFF {
 		return
 	}
-	v.Lock()
-	defer v.Unlock()
+	info.Lock()
+	defer info.Unlock()
 
 	// https://tools.ietf.org/html/rfc6298
-	if v.srtt == 0 {
-		v.srtt = rtt
-		v.variation = rtt / 2
+	if info.srtt == 0 {
+		info.srtt = rtt
+		info.variation = rtt / 2
 	} else {
-		delta := rtt - v.srtt
-		if v.srtt > rtt {
-			delta = v.srtt - rtt
+		delta := rtt - info.srtt
+		if info.srtt > rtt {
+			delta = info.srtt - rtt
 		}
-		v.variation = (3*v.variation + delta) / 4
-		v.srtt = (7*v.srtt + rtt) / 8
-		if v.srtt < v.minRtt {
-			v.srtt = v.minRtt
+		info.variation = (3*info.variation + delta) / 4
+		info.srtt = (7*info.srtt + rtt) / 8
+		if info.srtt < info.minRtt {
+			info.srtt = info.minRtt
 		}
 	}
 	var rto uint32
-	if v.minRtt < 4*v.variation {
-		rto = v.srtt + 4*v.variation
+	if info.minRtt < 4*info.variation {
+		rto = info.srtt + 4*info.variation
 	} else {
-		rto = v.srtt + v.variation
+		rto = info.srtt + info.variation
 	}
 
 	if rto > 10000 {
 		rto = 10000
 	}
-	v.rto = rto * 5 / 4
-	v.updatedTimestamp = current
+	info.rto = rto * 5 / 4
+	info.updatedTimestamp = current
 }
 
-func (v *RoundTripInfo) Timeout() uint32 {
-	v.RLock()
-	defer v.RUnlock()
+func (info *RoundTripInfo) Timeout() uint32 {
+	info.RLock()
+	defer info.RUnlock()
 
-	return v.rto
+	return info.rto
 }
 
-func (v *RoundTripInfo) SmoothedTime() uint32 {
-	v.RLock()
-	defer v.RUnlock()
+func (info *RoundTripInfo) SmoothedTime() uint32 {
+	info.RLock()
+	defer info.RUnlock()
 
-	return v.srtt
+	return info.srtt
 }
 
 type Updater struct {
@@ -134,23 +135,24 @@ func NewUpdater(interval uint32, shouldContinue predicate.Predicate, shouldTermi
 	return u
 }
 
-func (v *Updater) WakeUp() {
+func (u *Updater) WakeUp() {
 	select {
-	case v.notifier <- true:
+	case u.notifier <- true:
 	default:
 	}
 }
 
-func (v *Updater) Run() {
-	for <-v.notifier {
-		if v.shouldTerminate() {
+func (u *Updater) Run() {
+	for <-u.notifier {
+		if u.shouldTerminate() {
 			return
 		}
-		interval := v.Interval()
-		for v.shouldContinue() {
-			v.updateFunc()
-			time.Sleep(interval)
+		ticker := time.NewTicker(u.Interval())
+		for u.shouldContinue() {
+			u.updateFunc()
+			<-ticker.C
 		}
+		ticker.Stop()
 	}
 }
 
@@ -162,19 +164,16 @@ func (u *Updater) SetInterval(d time.Duration) {
 	atomic.StoreInt64(&u.interval, int64(d))
 }
 
-type SystemConnection interface {
-	net.Conn
-	Reset(func([]Segment))
-	Overhead() int
+type ConnMetadata struct {
+	LocalAddr    net.Addr
+	RemoteAddr   net.Addr
+	Conversation uint16
 }
-
-var (
-	_ buf.Reader = (*Connection)(nil)
-)
 
 // Connection is a KCP connection over UDP.
 type Connection struct {
-	conn       SystemConnection
+	meta       ConnMetadata
+	closer     io.Closer
 	rd         time.Time
 	wd         time.Time // write deadline
 	since      int64
@@ -182,7 +181,6 @@ type Connection struct {
 	dataOutput chan bool
 	Config     *Config
 
-	conv             uint16
 	state            State
 	stateBeginTime   uint32
 	lastIncomingTime uint32
@@ -198,29 +196,26 @@ type Connection struct {
 
 	dataUpdater *Updater
 	pingUpdater *Updater
-
-	mergingWriter buf.Writer
 }
 
 // NewConnection create a new KCP connection between local and remote.
-func NewConnection(conv uint16, sysConn SystemConnection, config *Config) *Connection {
-	log.Trace(newError("creating connection ", conv))
+func NewConnection(meta ConnMetadata, writer PacketWriter, closer io.Closer, config *Config) *Connection {
+	newError("creating connection ", meta.Conversation).WriteToLog()
 
 	conn := &Connection{
-		conv:       conv,
-		conn:       sysConn,
+		meta:       meta,
+		closer:     closer,
 		since:      nowMillisec(),
 		dataInput:  make(chan bool, 1),
 		dataOutput: make(chan bool, 1),
 		Config:     config,
-		output:     NewRetryableWriter(NewSegmentWriter(sysConn)),
-		mss:        config.GetMTUValue() - uint32(sysConn.Overhead()) - DataSegmentOverhead,
+		output:     NewRetryableWriter(NewSegmentWriter(writer)),
+		mss:        config.GetMTUValue() - uint32(writer.Overhead()) - DataSegmentOverhead,
 		roundTrip: &RoundTripInfo{
 			rto:    100,
 			minRtt: config.GetTTIValue(),
 		},
 	}
-	sysConn.Reset(conn.Input)
 
 	conn.receivingWorker = NewReceivingWorker(conn)
 	conn.sendingWorker = NewSendingWorker(conn)
@@ -283,22 +278,34 @@ func (v *Connection) ReadMultiBuffer() (buf.MultiBuffer, error) {
 			return nil, io.EOF
 		}
 
-		duration := time.Minute
-		if !v.rd.IsZero() {
-			duration = v.rd.Sub(time.Now())
-			if duration < 0 {
-				return nil, ErrIOTimeout
-			}
-		}
-
-		select {
-		case <-v.dataInput:
-		case <-time.After(duration):
-			if !v.rd.IsZero() && v.rd.Before(time.Now()) {
-				return nil, ErrIOTimeout
-			}
+		if err := v.waitForDataInput(); err != nil {
+			return nil, err
 		}
 	}
+}
+
+func (v *Connection) waitForDataInput() error {
+	if v.State() == StatePeerTerminating {
+		return io.EOF
+	}
+
+	duration := time.Minute
+	if !v.rd.IsZero() {
+		duration = time.Until(v.rd)
+		if duration < 0 {
+			return ErrIOTimeout
+		}
+	}
+
+	select {
+	case <-v.dataInput:
+	case <-time.After(duration):
+		if !v.rd.IsZero() && v.rd.Before(time.Now()) {
+			return ErrIOTimeout
+		}
+	}
+
+	return nil
 }
 
 // Read implements the Conn Read method.
@@ -316,29 +323,33 @@ func (v *Connection) Read(b []byte) (int, error) {
 			return nBytes, nil
 		}
 
-		if v.State() == StatePeerTerminating {
-			return 0, io.EOF
-		}
-
-		duration := time.Minute
-		if !v.rd.IsZero() {
-			duration = v.rd.Sub(time.Now())
-			if duration < 0 {
-				return 0, ErrIOTimeout
-			}
-		}
-
-		select {
-		case <-v.dataInput:
-		case <-time.After(duration):
-			if !v.rd.IsZero() && v.rd.Before(time.Now()) {
-				return 0, ErrIOTimeout
-			}
+		if err := v.waitForDataInput(); err != nil {
+			return 0, err
 		}
 	}
 }
 
-// Write implements the Conn Write method.
+func (v *Connection) waitForDataOutput() error {
+	duration := time.Minute
+	if !v.wd.IsZero() {
+		duration = time.Until(v.wd)
+		if duration < 0 {
+			return ErrIOTimeout
+		}
+	}
+
+	select {
+	case <-v.dataOutput:
+	case <-time.After(duration):
+		if !v.wd.IsZero() && v.wd.Before(time.Now()) {
+			return ErrIOTimeout
+		}
+	}
+
+	return nil
+}
+
+// Write implements io.Writer.
 func (v *Connection) Write(b []byte) (int, error) {
 	totalWritten := 0
 
@@ -347,29 +358,43 @@ func (v *Connection) Write(b []byte) (int, error) {
 			return totalWritten, io.ErrClosedPipe
 		}
 
-		nBytes := v.sendingWorker.Push(b[totalWritten:])
-		v.dataUpdater.WakeUp()
-		if nBytes > 0 {
-			totalWritten += nBytes
+		for v.sendingWorker.Push(func(bb []byte) (int, error) {
+			n := copy(bb[:v.mss], b[totalWritten:])
+			totalWritten += n
+			return n, nil
+		}) {
+			v.dataUpdater.WakeUp()
 			if totalWritten == len(b) {
 				return totalWritten, nil
 			}
 		}
 
-		duration := time.Minute
-		if !v.wd.IsZero() {
-			duration = v.wd.Sub(time.Now())
-			if duration < 0 {
-				return totalWritten, ErrIOTimeout
+		if err := v.waitForDataOutput(); err != nil {
+			return totalWritten, err
+		}
+	}
+}
+
+// WriteMultiBuffer implements buf.Writer.
+func (v *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
+	defer mb.Release()
+
+	for {
+		if v == nil || v.State() != StateActive {
+			return io.ErrClosedPipe
+		}
+
+		for v.sendingWorker.Push(func(bb []byte) (int, error) {
+			return mb.Read(bb[:v.mss])
+		}) {
+			v.dataUpdater.WakeUp()
+			if mb.IsEmpty() {
+				return nil
 			}
 		}
 
-		select {
-		case <-v.dataOutput:
-		case <-time.After(duration):
-			if !v.wd.IsZero() && v.wd.Before(time.Now()) {
-				return totalWritten, ErrIOTimeout
-			}
+		if err := v.waitForDataOutput(); err != nil {
+			return err
 		}
 	}
 }
@@ -378,7 +403,7 @@ func (v *Connection) SetState(state State) {
 	current := v.Elapsed()
 	atomic.StoreInt32((*int32)(&v.state), int32(state))
 	atomic.StoreUint32(&v.stateBeginTime, current)
-	log.Trace(newError("#", v.conv, " entering state ", state, " at ", current).AtDebug())
+	newError("#", v.meta.Conversation, " entering state ", state, " at ", current).AtDebug().WriteToLog()
 
 	switch state {
 	case StateReadyToClose:
@@ -415,7 +440,7 @@ func (v *Connection) Close() error {
 	if state.Is(StateReadyToClose, StateTerminating, StateTerminated) {
 		return ErrClosedConnection
 	}
-	log.Trace(newError("closing connection to ", v.conn.RemoteAddr()))
+	newError("closing connection to ", v.meta.RemoteAddr).WriteToLog()
 
 	if state == StateActive {
 		v.SetState(StateReadyToClose)
@@ -435,7 +460,7 @@ func (v *Connection) LocalAddr() net.Addr {
 	if v == nil {
 		return nil
 	}
-	return v.conn.LocalAddr()
+	return v.meta.LocalAddr
 }
 
 // RemoteAddr returns the remote network address. The Addr returned is shared by all invocations of RemoteAddr, so do not modify it.
@@ -443,7 +468,7 @@ func (v *Connection) RemoteAddr() net.Addr {
 	if v == nil {
 		return nil
 	}
-	return v.conn.RemoteAddr()
+	return v.meta.RemoteAddr
 }
 
 // SetDeadline sets the deadline associated with the listener. A zero time value disables the deadline.
@@ -484,13 +509,13 @@ func (v *Connection) Terminate() {
 	if v == nil {
 		return
 	}
-	log.Trace(newError("terminating connection to ", v.RemoteAddr()))
+	newError("terminating connection to ", v.RemoteAddr()).WriteToLog()
 
 	//v.SetState(StateTerminated)
 	v.OnDataInput()
 	v.OnDataOutput()
 
-	v.conn.Close()
+	v.closer.Close()
 	v.sendingWorker.Release()
 	v.receivingWorker.Release()
 }
@@ -517,7 +542,7 @@ func (v *Connection) Input(segments []Segment) {
 	atomic.StoreUint32(&v.lastIncomingTime, current)
 
 	for _, seg := range segments {
-		if seg.Conversation() != v.conv {
+		if seg.Conversation() != v.meta.Conversation {
 			break
 		}
 
@@ -574,7 +599,7 @@ func (v *Connection) flush() {
 	}
 
 	if v.State() == StateTerminating {
-		log.Trace(newError("#", v.conv, " sending terminating cmd.").AtDebug())
+		newError("#", v.meta.Conversation, " sending terminating cmd.").AtDebug().WriteToLog()
 		v.Ping(current, CommandTerminate)
 
 		if current-atomic.LoadUint32(&v.stateBeginTime) > 8000 {
@@ -605,7 +630,7 @@ func (v *Connection) State() State {
 
 func (v *Connection) Ping(current uint32, cmd Command) {
 	seg := NewCmdOnlySegment()
-	seg.Conv = v.conv
+	seg.Conv = v.meta.Conversation
 	seg.Cmd = cmd
 	seg.ReceivinNext = v.receivingWorker.NextNumber()
 	seg.SendingNext = v.sendingWorker.FirstUnacknowledged()

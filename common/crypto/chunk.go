@@ -59,45 +59,24 @@ func (p *AEADChunkSizeParser) Decode(b []byte) (uint16, error) {
 
 type ChunkStreamReader struct {
 	sizeDecoder ChunkSizeDecoder
-	reader      buf.Reader
+	reader      *buf.BufferedReader
 
 	buffer       []byte
-	leftOver     buf.MultiBuffer
 	leftOverSize int
 }
 
 func NewChunkStreamReader(sizeDecoder ChunkSizeDecoder, reader io.Reader) *ChunkStreamReader {
 	return &ChunkStreamReader{
 		sizeDecoder: sizeDecoder,
-		reader:      buf.NewReader(reader),
+		reader:      buf.NewBufferedReader(buf.NewReader(reader)),
 		buffer:      make([]byte, sizeDecoder.SizeBytes()),
-		leftOver:    buf.NewMultiBufferCap(16),
 	}
-}
-
-func (r *ChunkStreamReader) readAtLeast(size int) error {
-	mb := r.leftOver
-	r.leftOver = nil
-	for mb.Len() < size {
-		extra, err := r.reader.ReadMultiBuffer()
-		if err != nil {
-			mb.Release()
-			return err
-		}
-		mb.AppendMulti(extra)
-	}
-	r.leftOver = mb
-
-	return nil
 }
 
 func (r *ChunkStreamReader) readSize() (uint16, error) {
-	if r.sizeDecoder.SizeBytes() > r.leftOver.Len() {
-		if err := r.readAtLeast(r.sizeDecoder.SizeBytes() - r.leftOver.Len()); err != nil {
-			return 0, err
-		}
+	if _, err := io.ReadFull(r.reader, r.buffer); err != nil {
+		return 0, err
 	}
-	common.Must2(io.ReadFull(&r.leftOver, r.buffer))
 	return r.sizeDecoder.Decode(r.buffer)
 }
 
@@ -113,31 +92,14 @@ func (r *ChunkStreamReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 		}
 		size = int(nextSize)
 	}
+	r.leftOverSize = size
 
-	if r.leftOver.IsEmpty() {
-		if err := r.readAtLeast(1); err != nil {
-			return nil, err
-		}
-	}
-
-	leftOverLen := r.leftOver.Len()
-	if size >= leftOverLen {
-		mb := r.leftOver
-		r.leftOverSize = size - leftOverLen
-		r.leftOver = nil
+	mb, err := r.reader.ReadAtMost(size)
+	if !mb.IsEmpty() {
+		r.leftOverSize -= mb.Len()
 		return mb, nil
 	}
-
-	mb := r.leftOver.SliceBySize(size)
-	mbLen := mb.Len()
-	if mbLen != size {
-		b := buf.New()
-		common.Must(b.Reset(buf.ReadFullFrom(&r.leftOver, size-mbLen)))
-		mb.Append(b)
-	}
-	r.leftOverSize = 0
-
-	return mb, nil
+	return nil, err
 }
 
 type ChunkStreamWriter struct {

@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/proxyman/mux"
 	"v2ray.com/core/common/dice"
@@ -92,7 +91,7 @@ func (h *DynamicInboundHandler) refresh() error {
 		port := h.allocatePort()
 		p, err := proxy.CreateInboundHandler(ctx, h.proxyConfig)
 		if err != nil {
-			log.Trace(newError("failed to create proxy instance").Base(err).AtWarning())
+			newError("failed to create proxy instance").Base(err).AtWarning().WriteToLog()
 			continue
 		}
 		nl := p.Network()
@@ -108,7 +107,7 @@ func (h *DynamicInboundHandler) refresh() error {
 				sniffers:     h.receiverConfig.DomainOverride,
 			}
 			if err := worker.Start(); err != nil {
-				log.Trace(newError("failed to create TCP worker").Base(err).AtWarning())
+				newError("failed to create TCP worker").Base(err).AtWarning().WriteToLog()
 				continue
 			}
 			workers = append(workers, worker)
@@ -124,7 +123,7 @@ func (h *DynamicInboundHandler) refresh() error {
 				dispatcher:   h.mux,
 			}
 			if err := worker.Start(); err != nil {
-				log.Trace(newError("failed to create UDP worker").Base(err).AtWarning())
+				newError("failed to create UDP worker").Base(err).AtWarning().WriteToLog()
 				continue
 			}
 			workers = append(workers, worker)

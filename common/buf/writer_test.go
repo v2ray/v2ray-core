@@ -73,3 +73,16 @@ func TestDiscardBytesMultiBuffer(t *testing.T) {
 	assert(nBytes, Equals, int64(size))
 	assert(err, IsNil)
 }
+
+func TestWriterInterface(t *testing.T) {
+	assert := With(t)
+
+	assert((*BufferToBytesWriter)(nil), Implements, (*Writer)(nil))
+	assert((*BufferToBytesWriter)(nil), Implements, (*io.Writer)(nil))
+	assert((*BufferToBytesWriter)(nil), Implements, (*io.ReaderFrom)(nil))
+
+	assert((*BufferedWriter)(nil), Implements, (*Writer)(nil))
+	assert((*BufferedWriter)(nil), Implements, (*io.Writer)(nil))
+	assert((*BufferedWriter)(nil), Implements, (*io.ReaderFrom)(nil))
+	assert((*BufferedWriter)(nil), Implements, (*io.ByteWriter)(nil))
+}

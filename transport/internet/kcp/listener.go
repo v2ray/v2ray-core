@@ -4,11 +4,8 @@ import (
 	"context"
 	"crypto/cipher"
 	"crypto/tls"
-	"io"
 	"sync"
-	"time"
 
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
@@ -21,52 +18,6 @@ type ConnectionID struct {
 	Remote net.Address
 	Port   net.Port
 	Conv   uint16
-}
-
-type ServerConnection struct {
-	local  net.Addr
-	remote net.Addr
-	writer PacketWriter
-	closer io.Closer
-}
-
-func (c *ServerConnection) Overhead() int {
-	return c.writer.Overhead()
-}
-
-func (*ServerConnection) Read([]byte) (int, error) {
-	panic("KCP|ServerConnection: Read should not be called.")
-}
-
-func (c *ServerConnection) Write(b []byte) (int, error) {
-	return c.writer.Write(b)
-}
-
-func (c *ServerConnection) Close() error {
-	return c.closer.Close()
-}
-
-func (*ServerConnection) Reset(input func([]Segment)) {
-}
-
-func (c *ServerConnection) LocalAddr() net.Addr {
-	return c.local
-}
-
-func (c *ServerConnection) RemoteAddr() net.Addr {
-	return c.remote
-}
-
-func (*ServerConnection) SetDeadline(time.Time) error {
-	return nil
-}
-
-func (*ServerConnection) SetReadDeadline(time.Time) error {
-	return nil
-}
-
-func (*ServerConnection) SetWriteDeadline(time.Time) error {
-	return nil
 }
 
 // Listener defines a server listening for connections
@@ -107,13 +58,11 @@ func NewListener(ctx context.Context, address net.Address, port net.Port, addCon
 		config:   kcpSettings,
 		addConn:  addConn,
 	}
-	securitySettings := internet.SecuritySettingsFromContext(ctx)
-	if securitySettings != nil {
-		switch securitySettings := securitySettings.(type) {
-		case *v2tls.Config:
-			l.tlsConfig = securitySettings.GetTLSConfig()
-		}
+
+	if config := v2tls.ConfigFromContext(ctx); config != nil {
+		l.tlsConfig = config.GetTLSConfig()
 	}
+
 	hub, err := udp.ListenUDP(address, port, udp.ListenOption{Callback: l.OnReceive, Concurrency: 2})
 	if err != nil {
 		return nil, err
@@ -121,7 +70,7 @@ func NewListener(ctx context.Context, address net.Address, port net.Port, addCon
 	l.Lock()
 	l.hub = hub
 	l.Unlock()
-	log.Trace(newError("listening on ", address, ":", port))
+	newError("listening on ", address, ":", port).WriteToLog()
 	return l, nil
 }
 
@@ -130,7 +79,7 @@ func (v *Listener) OnReceive(payload *buf.Buffer, src net.Destination, originalD
 
 	segments := v.reader.Read(payload.Bytes())
 	if len(segments) == 0 {
-		log.Trace(newError("discarding invalid payload from ", src))
+		newError("discarding invalid payload from ", src).WriteToLog()
 		return
 	}
 
@@ -172,17 +121,15 @@ func (v *Listener) OnReceive(payload *buf.Buffer, src net.Destination, originalD
 			Port: int(src.Port),
 		}
 		localAddr := v.hub.Addr()
-		sConn := &ServerConnection{
-			local:  localAddr,
-			remote: remoteAddr,
-			writer: &KCPPacketWriter{
-				Header:   v.header,
-				Writer:   writer,
-				Security: v.security,
-			},
-			closer: writer,
-		}
-		conn = NewConnection(conv, sConn, v.config)
+		conn = NewConnection(ConnMetadata{
+			LocalAddr:    localAddr,
+			RemoteAddr:   remoteAddr,
+			Conversation: conv,
+		}, &KCPPacketWriter{
+			Header:   v.header,
+			Security: v.security,
+			Writer:   writer,
+		}, writer, v.config)
 		var netConn internet.Connection = conn
 		if v.tlsConfig != nil {
 			tlsConn := tls.Server(conn, v.tlsConfig)

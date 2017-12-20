@@ -1,6 +1,7 @@
 package srtp_test
 
 import (
+	"context"
 	"testing"
 
 	"v2ray.com/core/common/buf"
@@ -12,7 +13,10 @@ func TestSRTPWrite(t *testing.T) {
 	assert := With(t)
 
 	content := []byte{'a', 'b', 'c', 'd', 'e', 'f', 'g'}
-	srtp := SRTP{}
+	srtpRaw, err := New(context.Background(), &Config{})
+	assert(err, IsNil)
+
+	srtp := srtpRaw.(*SRTP)
 
 	payload := buf.NewLocal(2048)
 	payload.AppendSupplier(srtp.Write)

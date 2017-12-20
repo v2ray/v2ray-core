@@ -10,7 +10,7 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/common/serial"
+	"v2ray.com/core/proxy/socks"
 )
 
 const (
@@ -22,22 +22,26 @@ const (
 	AddrTypeDomain = 3
 )
 
+// ReadTCPSession reads a Shadowsocks TCP session from the given reader, returns its header and remaining parts.
 func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHeader, buf.Reader, error) {
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
 		return nil, nil, newError("failed to parse account").Base(err).AtError()
 	}
-	account := rawAccount.(*ShadowsocksAccount)
+	account := rawAccount.(*MemoryAccount)
 
 	buffer := buf.NewLocal(512)
 	defer buffer.Release()
 
 	ivLen := account.Cipher.IVSize()
-	if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, ivLen)); err != nil {
-		return nil, nil, newError("failed to read IV").Base(err)
-	}
+	var iv []byte
+	if ivLen > 0 {
+		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, ivLen)); err != nil {
+			return nil, nil, newError("failed to read IV").Base(err)
+		}
 
-	iv := append([]byte(nil), buffer.BytesTo(ivLen)...)
+		iv = append([]byte(nil), buffer.BytesTo(ivLen)...)
+	}
 
 	r, err := account.Cipher.NewDecryptionReader(account.Key, iv, reader)
 	if err != nil {
@@ -133,23 +137,27 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	return request, chunkReader, nil
 }
 
+// WriteTCPRequest writes Shadowsocks request into the given writer, and returns a writer for body.
 func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (buf.Writer, error) {
 	user := request.User
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
 		return nil, newError("failed to parse account").Base(err).AtError()
 	}
-	account := rawAccount.(*ShadowsocksAccount)
+	account := rawAccount.(*MemoryAccount)
 
 	if account.Cipher.IsAEAD() {
 		request.Option.Clear(RequestOptionOneTimeAuth)
 	}
 
-	iv := make([]byte, account.Cipher.IVSize())
-	common.Must2(rand.Read(iv))
-	_, err = writer.Write(iv)
-	if err != nil {
-		return nil, newError("failed to write IV")
+	var iv []byte
+	if account.Cipher.IVSize() > 0 {
+		iv = make([]byte, account.Cipher.IVSize())
+		common.Must2(rand.Read(iv))
+		_, err = writer.Write(iv)
+		if err != nil {
+			return nil, newError("failed to write IV")
+		}
 	}
 
 	w, err := account.Cipher.NewEncryptionWriter(account.Key, iv, writer)
@@ -159,25 +167,9 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (buf.Wri
 
 	header := buf.NewLocal(512)
 
-	switch request.Address.Family() {
-	case net.AddressFamilyIPv4:
-		header.AppendBytes(AddrTypeIPv4)
-		header.Append([]byte(request.Address.IP()))
-	case net.AddressFamilyIPv6:
-		header.AppendBytes(AddrTypeIPv6)
-		header.Append([]byte(request.Address.IP()))
-	case net.AddressFamilyDomain:
-		domain := request.Address.Domain()
-		if protocol.IsDomainTooLong(domain) {
-			return nil, newError("domain name too long: ", domain)
-		}
-		header.AppendBytes(AddrTypeDomain, byte(len(domain)))
-		common.Must(header.AppendSupplier(serial.WriteString(domain)))
-	default:
-		return nil, newError("unsupported address type: ", request.Address.Family())
+	if err := socks.AppendAddress(header, request.Address, request.Port); err != nil {
+		return nil, newError("failed to write address").Base(err)
 	}
-
-	common.Must(header.AppendSupplier(serial.WriteUint16(uint16(request.Port))))
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {
 		header.SetByte(0, header.Byte(0)|0x10)
@@ -205,12 +197,15 @@ func ReadTCPResponse(user *protocol.User, reader io.Reader) (buf.Reader, error) 
 	if err != nil {
 		return nil, newError("failed to parse account").Base(err).AtError()
 	}
-	account := rawAccount.(*ShadowsocksAccount)
+	account := rawAccount.(*MemoryAccount)
 
-	iv := make([]byte, account.Cipher.IVSize())
-	_, err = io.ReadFull(reader, iv)
-	if err != nil {
-		return nil, newError("failed to read IV").Base(err)
+	var iv []byte
+	if account.Cipher.IVSize() > 0 {
+		iv = make([]byte, account.Cipher.IVSize())
+		_, err = io.ReadFull(reader, iv)
+		if err != nil {
+			return nil, newError("failed to read IV").Base(err)
+		}
 	}
 
 	return account.Cipher.NewDecryptionReader(account.Key, iv, reader)
@@ -222,13 +217,16 @@ func WriteTCPResponse(request *protocol.RequestHeader, writer io.Writer) (buf.Wr
 	if err != nil {
 		return nil, newError("failed to parse account.").Base(err).AtError()
 	}
-	account := rawAccount.(*ShadowsocksAccount)
+	account := rawAccount.(*MemoryAccount)
 
-	iv := make([]byte, account.Cipher.IVSize())
-	common.Must2(rand.Read(iv))
-	_, err = writer.Write(iv)
-	if err != nil {
-		return nil, newError("failed to write IV.").Base(err)
+	var iv []byte
+	if account.Cipher.IVSize() > 0 {
+		iv = make([]byte, account.Cipher.IVSize())
+		common.Must2(rand.Read(iv))
+		_, err = writer.Write(iv)
+		if err != nil {
+			return nil, newError("failed to write IV.").Base(err)
+		}
 	}
 
 	return account.Cipher.NewEncryptionWriter(account.Key, iv, writer)
@@ -240,28 +238,19 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload []byte) (*buf.Buff
 	if err != nil {
 		return nil, newError("failed to parse account.").Base(err).AtError()
 	}
-	account := rawAccount.(*ShadowsocksAccount)
+	account := rawAccount.(*MemoryAccount)
 
 	buffer := buf.New()
 	ivLen := account.Cipher.IVSize()
-	common.Must(buffer.Reset(buf.ReadFullFrom(rand.Reader, ivLen)))
+	if ivLen > 0 {
+		common.Must(buffer.Reset(buf.ReadFullFrom(rand.Reader, ivLen)))
+	}
 	iv := buffer.Bytes()
 
-	switch request.Address.Family() {
-	case net.AddressFamilyIPv4:
-		buffer.AppendBytes(AddrTypeIPv4)
-		buffer.Append([]byte(request.Address.IP()))
-	case net.AddressFamilyIPv6:
-		buffer.AppendBytes(AddrTypeIPv6)
-		buffer.Append([]byte(request.Address.IP()))
-	case net.AddressFamilyDomain:
-		buffer.AppendBytes(AddrTypeDomain, byte(len(request.Address.Domain())))
-		buffer.Append([]byte(request.Address.Domain()))
-	default:
-		return nil, newError("unsupported address type: ", request.Address.Family()).AtError()
+	if err := socks.AppendAddress(buffer, request.Address, request.Port); err != nil {
+		return nil, newError("failed to write address").Base(err)
 	}
 
-	common.Must(buffer.AppendSupplier(serial.WriteUint16(uint16(request.Port))))
 	buffer.Append(payload)
 
 	if !account.Cipher.IsAEAD() && request.Option.Has(RequestOptionOneTimeAuth) {
@@ -282,11 +271,10 @@ func DecodeUDPPacket(user *protocol.User, payload *buf.Buffer) (*protocol.Reques
 	if err != nil {
 		return nil, nil, newError("failed to parse account").Base(err).AtError()
 	}
-	account := rawAccount.(*ShadowsocksAccount)
+	account := rawAccount.(*MemoryAccount)
 
 	var iv []byte
-	var authenticator *Authenticator
-	if !account.Cipher.IsAEAD() {
+	if !account.Cipher.IsAEAD() && account.Cipher.IVSize() > 0 {
 		// Keep track of IV as it gets removed from payload in DecodePacket.
 		iv = make([]byte, account.Cipher.IVSize())
 		copy(iv, payload.BytesTo(account.Cipher.IVSize()))
@@ -319,7 +307,7 @@ func DecodeUDPPacket(user *protocol.User, payload *buf.Buffer) (*protocol.Reques
 			payloadLen := payload.Len() - AuthSize
 			authBytes := payload.BytesFrom(payloadLen)
 
-			authenticator = NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
+			authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
 			actualAuth := make([]byte, AuthSize)
 			authenticator.Authenticate(payload.BytesTo(payloadLen))(actualAuth)
 			if !bytes.Equal(actualAuth, authBytes) {

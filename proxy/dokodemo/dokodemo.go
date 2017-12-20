@@ -1,13 +1,12 @@
 package dokodemo
 
-//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg dokodemo -path Proxy,Dokodemo
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg dokodemo -path Proxy,Dokodemo
 
 import (
 	"context"
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/policy"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -38,7 +37,7 @@ func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
 		address: config.GetPredefinedAddress(),
 		port:    net.Port(config.Port),
 	}
-	space.OnInitialize(func() error {
+	space.On(app.SpaceInitializing, func(interface{}) error {
 		pm := policy.FromSpace(space)
 		if pm == nil {
 			return newError("Policy not found in space.")
@@ -57,7 +56,7 @@ func (d *DokodemoDoor) Network() net.NetworkList {
 }
 
 func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
-	log.Trace(newError("processing connection from: ", conn.RemoteAddr()).AtDebug())
+	newError("processing connection from: ", conn.RemoteAddr()).AtDebug().WriteToLog()
 	dest := net.Destination{
 		Network: network,
 		Address: d.address,

@@ -10,7 +10,6 @@ import (
 
 	"golang.org/x/crypto/chacha20poly1305"
 
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/bitmask"
 	"v2ray.com/core/common/buf"
@@ -64,7 +63,7 @@ func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 	timestamp := protocol.NewTimestampGenerator(protocol.NowTime(), 30)()
 	account, err := header.User.GetTypedAccount()
 	if err != nil {
-		log.Trace(newError("failed to get user account: ", err).AtError())
+		newError("failed to get user account: ", err).AtError().WriteToLog()
 		return nil
 	}
 	idHash := c.idHash(account.(*vmess.InternalAccount).AnyValidID().Bytes())
@@ -201,7 +200,7 @@ func (c *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 	defer buffer.Release()
 
 	if err := buffer.AppendSupplier(buf.ReadFullFrom(c.responseReader, 4)); err != nil {
-		log.Trace(newError("failed to read response header").Base(err))
+		newError("failed to read response header").Base(err).WriteToLog()
 		return nil, err
 	}
 
@@ -218,7 +217,7 @@ func (c *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 		dataLen := int(buffer.Byte(3))
 
 		if err := buffer.Reset(buf.ReadFullFrom(c.responseReader, dataLen)); err != nil {
-			log.Trace(newError("failed to read response command").Base(err))
+			newError("failed to read response command").Base(err).WriteToLog()
 			return nil, err
 		}
 		command, err := UnmarshalCommand(cmdID, buffer.Bytes())

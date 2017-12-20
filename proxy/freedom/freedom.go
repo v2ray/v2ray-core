@@ -1,13 +1,11 @@
 package freedom
 
-//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg freedom -path Proxy,Freedom
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg freedom -path Proxy,Freedom
 
 import (
 	"context"
 
 	"v2ray.com/core/app"
-	"v2ray.com/core/app/dns"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/policy"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -24,7 +22,6 @@ import (
 type Handler struct {
 	domainStrategy Config_DomainStrategy
 	timeout        uint32
-	dns            dns.Server
 	destOverride   *DestinationOverride
 	policy         policy.Policy
 }
@@ -40,13 +37,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		timeout:        config.Timeout,
 		destOverride:   config.DestinationOverride,
 	}
-	space.OnInitialize(func() error {
-		if config.DomainStrategy == Config_USE_IP {
-			f.dns = dns.FromSpace(space)
-			if f.dns == nil {
-				return newError("DNS server is not found in the space")
-			}
-		}
+	space.On(app.SpaceInitializing, func(interface{}) error {
 		pm := policy.FromSpace(space)
 		if pm == nil {
 			return newError("Policy not found in space.")
@@ -69,7 +60,10 @@ func (h *Handler) resolveIP(ctx context.Context, domain string) net.Address {
 		return ips[dice.Roll(len(ips))]
 	}
 
-	ips := h.dns.Get(domain)
+	ips, err := net.LookupIP(domain)
+	if err != nil {
+		newError("failed to get IP address for domain ", domain).Base(err).WriteToLog()
+	}
 	if len(ips) == 0 {
 		return nil
 	}
@@ -87,7 +81,7 @@ func (h *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 			Port:    net.Port(server.Port),
 		}
 	}
-	log.Trace(newError("opening connection to ", destination))
+	newError("opening connection to ", destination).WriteToLog()
 
 	input := outboundRay.OutboundInput()
 	output := outboundRay.OutboundOutput()
@@ -100,7 +94,7 @@ func (h *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 				Address: ip,
 				Port:    destination.Port,
 			}
-			log.Trace(newError("changing destination to ", destination))
+			newError("changing destination to ", destination).WriteToLog()
 		}
 	}
 

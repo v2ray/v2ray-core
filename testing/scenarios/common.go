@@ -1,7 +1,6 @@
 package scenarios
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,8 +13,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"v2ray.com/core"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
 )
@@ -114,12 +113,18 @@ func GetSourcePath() string {
 }
 
 func CloseAllServers(servers []*exec.Cmd) {
-	log.Trace(errors.New("Closing all servers."))
+	log.Record(&log.GeneralMessage{
+		Severity: log.Severity_Info,
+		Content:  "Closing all servers.",
+	})
 	for _, server := range servers {
 		server.Process.Signal(os.Interrupt)
 	}
 	for _, server := range servers {
 		server.Process.Wait()
 	}
-	log.Trace(errors.New("All server closed."))
+	log.Record(&log.GeneralMessage{
+		Severity: log.Severity_Info,
+		Content:  "All server closed.",
+	})
 }

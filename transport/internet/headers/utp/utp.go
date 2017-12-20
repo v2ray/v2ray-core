@@ -26,8 +26,8 @@ func (u *UTP) Write(b []byte) (int, error) {
 	return 4, nil
 }
 
-// NewUTP creates a new UTP header for the given config.
-func NewUTP(ctx context.Context, config interface{}) (interface{}, error) {
+// New creates a new UTP header for the given config.
+func New(ctx context.Context, config interface{}) (interface{}, error) {
 	return &UTP{
 		header:       1,
 		extension:    0,
@@ -36,5 +36,5 @@ func NewUTP(ctx context.Context, config interface{}) (interface{}, error) {
 }
 
 func init() {
-	common.Must(common.RegisterConfig((*Config)(nil), NewUTP))
+	common.Must(common.RegisterConfig((*Config)(nil), New))
 }

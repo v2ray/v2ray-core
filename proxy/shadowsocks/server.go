@@ -6,10 +6,10 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/policy"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/signal"
@@ -21,7 +21,7 @@ import (
 type Server struct {
 	config        *ServerConfig
 	user          *protocol.User
-	account       *ShadowsocksAccount
+	account       *MemoryAccount
 	policyManager policy.Manager
 }
 
@@ -39,7 +39,7 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	if err != nil {
 		return nil, newError("failed to get user account").Base(err)
 	}
-	account := rawAccount.(*ShadowsocksAccount)
+	account := rawAccount.(*MemoryAccount)
 
 	s := &Server{
 		config:  config,
@@ -47,7 +47,7 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 		account: account,
 	}
 
-	space.OnInitialize(func() error {
+	space.On(app.SpaceInitializing, func(interface{}) error {
 		pm := policy.FromSpace(space)
 		if pm == nil {
 			return newError("Policy not found in space.")
@@ -94,30 +94,40 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 			request, data, err := DecodeUDPPacket(s.user, payload)
 			if err != nil {
 				if source, ok := proxy.SourceFromContext(ctx); ok {
-					log.Trace(newError("dropping invalid UDP packet from: ", source).Base(err))
-					log.Access(source, "", log.AccessRejected, err)
+					newError("dropping invalid UDP packet from: ", source).Base(err).WriteToLog()
+					log.Record(&log.AccessMessage{
+						From:   source,
+						To:     "",
+						Status: log.AccessRejected,
+						Reason: err,
+					})
 				}
 				payload.Release()
 				continue
 			}
 
 			if request.Option.Has(RequestOptionOneTimeAuth) && s.account.OneTimeAuth == Account_Disabled {
-				log.Trace(newError("client payload enables OTA but server doesn't allow it"))
+				newError("client payload enables OTA but server doesn't allow it").WriteToLog()
 				payload.Release()
 				continue
 			}
 
 			if !request.Option.Has(RequestOptionOneTimeAuth) && s.account.OneTimeAuth == Account_Enabled {
-				log.Trace(newError("client payload disables OTA but server forces it"))
+				newError("client payload disables OTA but server forces it").WriteToLog()
 				payload.Release()
 				continue
 			}
 
 			dest := request.Destination()
 			if source, ok := proxy.SourceFromContext(ctx); ok {
-				log.Access(source, dest, log.AccessAccepted, "")
+				log.Record(&log.AccessMessage{
+					From:   source,
+					To:     dest,
+					Status: log.AccessAccepted,
+					Reason: "",
+				})
 			}
-			log.Trace(newError("tunnelling request to ", dest))
+			newError("tunnelling request to ", dest).WriteToLog()
 
 			ctx = protocol.ContextWithUser(ctx, request.User)
 			udpServer.Dispatch(ctx, dest, data, func(payload *buf.Buffer) {
@@ -125,7 +135,7 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 
 				data, err := EncodeUDPPacket(request, payload.Bytes())
 				if err != nil {
-					log.Trace(newError("failed to encode UDP packet").Base(err).AtWarning())
+					newError("failed to encode UDP packet").Base(err).AtWarning().WriteToLog()
 					return
 				}
 				defer data.Release()
@@ -144,7 +154,12 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 	bufferedReader := buf.NewBufferedReader(buf.NewReader(conn))
 	request, bodyReader, err := ReadTCPSession(s.user, bufferedReader)
 	if err != nil {
-		log.Access(conn.RemoteAddr(), "", log.AccessRejected, err)
+		log.Record(&log.AccessMessage{
+			From:   conn.RemoteAddr(),
+			To:     "",
+			Status: log.AccessRejected,
+			Reason: err,
+		})
 		return newError("failed to create request from: ", conn.RemoteAddr()).Base(err)
 	}
 	conn.SetReadDeadline(time.Time{})
@@ -152,8 +167,13 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 	bufferedReader.SetBuffered(false)
 
 	dest := request.Destination()
-	log.Access(conn.RemoteAddr(), dest, log.AccessAccepted, "")
-	log.Trace(newError("tunnelling request to ", dest))
+	log.Record(&log.AccessMessage{
+		From:   conn.RemoteAddr(),
+		To:     dest,
+		Status: log.AccessAccepted,
+		Reason: "",
+	})
+	newError("tunnelling request to ", dest).WriteToLog()
 
 	ctx = protocol.ContextWithUser(ctx, request.User)
 

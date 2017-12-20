@@ -1,13 +1,12 @@
 package outbound
 
-//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg outbound -path Proxy,VMess,Outbound
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg outbound -path Proxy,VMess,Outbound
 
 import (
 	"context"
 	"time"
 
 	"v2ray.com/core/app"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/policy"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -44,7 +43,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
 	}
 
-	space.OnInitialize(func() error {
+	space.On(app.SpaceInitializing, func(interface{}) error {
 		pm := policy.FromSpace(space)
 		if pm == nil {
 			return newError("Policy is not found in space.")
@@ -80,7 +79,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	if !ok {
 		return newError("target not specified").AtError()
 	}
-	log.Trace(newError("tunneling request to ", target, " via ", rec.Destination()))
+	newError("tunneling request to ", target, " via ", rec.Destination()).WriteToLog()
 
 	command := protocol.RequestCommandTCP
 	if target.Network == net.Network_UDP {

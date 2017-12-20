@@ -56,6 +56,7 @@ $GOPATH/bin/vbuild --os=linux --arch=mips64 --zip --sign #--encrypt
 $GOPATH/bin/vbuild --os=linux --arch=mips64le --zip --sign #--encrypt
 $GOPATH/bin/vbuild --os=linux --arch=mips --zip --sign #--encrypt
 $GOPATH/bin/vbuild --os=linux --arch=mipsle --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=linux --arch=s390x --zip --sign #--encrypt
 $GOPATH/bin/vbuild --os=freebsd --arch=x86 --zip --sign #--encrypt
 $GOPATH/bin/vbuild --os=freebsd --arch=amd64 --zip --sign #--encrypt
 $GOPATH/bin/vbuild --os=openbsd --arch=x86 --zip --sign #--encrypt
@@ -84,6 +85,7 @@ upload $GOPATH/bin/v2ray-linux-mips64.zip
 upload $GOPATH/bin/v2ray-linux-mips64le.zip
 upload $GOPATH/bin/v2ray-linux-mips.zip
 upload $GOPATH/bin/v2ray-linux-mipsle.zip
+upload $GOPATH/bin/v2ray-linux-s390x.zip
 upload $GOPATH/bin/v2ray-freebsd-64.zip
 upload $GOPATH/bin/v2ray-freebsd-32.zip
 upload $GOPATH/bin/v2ray-openbsd-64.zip
@@ -102,4 +104,4 @@ curl -H "Content-Type: application/json" --data '{"build": true}' -X POST "${DOC
 
 fi
 
-shutdown -h +5
+shutdown -h now

@@ -17,15 +17,17 @@ import (
 	"v2ray.com/core/common/protocol"
 )
 
-type ShadowsocksAccount struct {
+// MemoryAccount is an account type converted from Account.
+type MemoryAccount struct {
 	Cipher      Cipher
 	Key         []byte
 	OneTimeAuth Account_OneTimeAuth
 }
 
-func (v *ShadowsocksAccount) Equals(another protocol.Account) bool {
-	if account, ok := another.(*ShadowsocksAccount); ok {
-		return bytes.Equal(v.Key, account.Key)
+// Equals implements protocol.Account.Equals().
+func (a *MemoryAccount) Equals(another protocol.Account) bool {
+	if account, ok := another.(*MemoryAccount); ok {
+		return bytes.Equal(a.Key, account.Key)
 	}
 	return false
 }
@@ -44,8 +46,8 @@ func createChacha20Poly1305(key []byte) cipher.AEAD {
 	return chacha20
 }
 
-func (v *Account) GetCipher() (Cipher, error) {
-	switch v.CipherType {
+func (a *Account) getCipher() (Cipher, error) {
+	switch a.CipherType {
 	case CipherType_AES_128_CFB:
 		return &AesCfb{KeyBytes: 16}, nil
 	case CipherType_AES_256_CFB:
@@ -72,31 +74,27 @@ func (v *Account) GetCipher() (Cipher, error) {
 			IVBytes:         32,
 			AEADAuthCreator: createChacha20Poly1305,
 		}, nil
+	case CipherType_NONE:
+		return NoneCipher{}, nil
 	default:
 		return nil, newError("Unsupported cipher.")
 	}
 }
 
-func (v *Account) AsAccount() (protocol.Account, error) {
-	cipher, err := v.GetCipher()
+// AsAccount implements protocol.AsAccount.
+func (a *Account) AsAccount() (protocol.Account, error) {
+	cipher, err := a.getCipher()
 	if err != nil {
 		return nil, newError("failed to get cipher").Base(err)
 	}
-	return &ShadowsocksAccount{
+	return &MemoryAccount{
 		Cipher:      cipher,
-		Key:         v.GetCipherKey(),
-		OneTimeAuth: v.Ota,
+		Key:         passwordToCipherKey([]byte(a.Password), cipher.KeySize()),
+		OneTimeAuth: a.Ota,
 	}, nil
 }
 
-func (v *Account) GetCipherKey() []byte {
-	ct, err := v.GetCipher()
-	if err != nil {
-		return nil
-	}
-	return PasswordToCipherKey(v.Password, ct.KeySize())
-}
-
+// Cipher is an interface for all Shadowsocks ciphers.
 type Cipher interface {
 	KeySize() int
 	IVSize() int
@@ -107,6 +105,7 @@ type Cipher interface {
 	DecodePacket(key []byte, b *buf.Buffer) error
 }
 
+// AesCfb represents all AES-CFB ciphers.
 type AesCfb struct {
 	KeyBytes int
 }
@@ -261,17 +260,40 @@ func (v *ChaCha20) DecodePacket(key []byte, b *buf.Buffer) error {
 	return nil
 }
 
-func PasswordToCipherKey(password string, keySize int) []byte {
-	pwdBytes := []byte(password)
+type NoneCipher struct{}
+
+func (NoneCipher) KeySize() int { return 0 }
+func (NoneCipher) IVSize() int  { return 0 }
+func (NoneCipher) IsAEAD() bool {
+	return true // to avoid OTA
+}
+
+func (NoneCipher) NewDecryptionReader(key []byte, iv []byte, reader io.Reader) (buf.Reader, error) {
+	return buf.NewReader(reader), nil
+}
+
+func (NoneCipher) NewEncryptionWriter(key []byte, iv []byte, writer io.Writer) (buf.Writer, error) {
+	return buf.NewWriter(writer), nil
+}
+
+func (NoneCipher) EncodePacket(key []byte, b *buf.Buffer) error {
+	return nil
+}
+
+func (NoneCipher) DecodePacket(key []byte, b *buf.Buffer) error {
+	return nil
+}
+
+func passwordToCipherKey(password []byte, keySize int) []byte {
 	key := make([]byte, 0, keySize)
 
-	md5Sum := md5.Sum(pwdBytes)
+	md5Sum := md5.Sum(password)
 	key = append(key, md5Sum[:]...)
 
 	for len(key) < keySize {
 		md5Hash := md5.New()
-		md5Hash.Write(md5Sum[:])
-		md5Hash.Write(pwdBytes)
+		common.Must2(md5Hash.Write(md5Sum[:]))
+		common.Must2(md5Hash.Write(password))
 		md5Hash.Sum(md5Sum[:0])
 
 		key = append(key, md5Sum[:]...)

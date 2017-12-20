@@ -13,7 +13,6 @@ var ListenUDP = net.ListenUDP
 
 var FileConn = net.FileConn
 
-var LookupIP = net.LookupIP
 var ParseIP = net.ParseIP
 
 var SplitHostPort = net.SplitHostPort

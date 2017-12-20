@@ -6,6 +6,7 @@ import (
 	"crypto/sha1"
 	"io"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/serial"
 )
@@ -29,7 +30,7 @@ func NewAuthenticator(keygen KeyGenerator) *Authenticator {
 
 func (v *Authenticator) Authenticate(data []byte) buf.Supplier {
 	hasher := hmac.New(sha1.New, v.key())
-	hasher.Write(data)
+	common.Must2(hasher.Write(data))
 	res := hasher.Sum(nil)
 	return func(b []byte) (int, error) {
 		return copy(b, res[:AuthSize]), nil

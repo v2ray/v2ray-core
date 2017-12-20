@@ -90,31 +90,31 @@ func TestRoutingRule(t *testing.T) {
 				},
 			},
 			test: []ruleTest{
-				ruleTest{
+				{
 					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("v2ray.com"), 80)),
 					output: true,
 				},
-				ruleTest{
+				{
 					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("www.v2ray.com.www"), 80)),
 					output: true,
 				},
-				ruleTest{
+				{
 					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("v2ray.co"), 80)),
 					output: false,
 				},
-				ruleTest{
+				{
 					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("www.google.com"), 80)),
 					output: true,
 				},
-				ruleTest{
+				{
 					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("facebook.com"), 80)),
 					output: true,
 				},
-				ruleTest{
+				{
 					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("www.facebook.com"), 80)),
 					output: false,
 				},
-				ruleTest{
+				{
 					input:  context.Background(),
 					output: false,
 				},
@@ -138,19 +138,19 @@ func TestRoutingRule(t *testing.T) {
 				},
 			},
 			test: []ruleTest{
-				ruleTest{
+				{
 					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.ParseAddress("8.8.8.8"), 80)),
 					output: true,
 				},
-				ruleTest{
+				{
 					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.ParseAddress("8.8.4.4"), 80)),
 					output: false,
 				},
-				ruleTest{
+				{
 					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.ParseAddress("2001:0db8:85a3:0000:0000:8a2e:0370:7334"), 80)),
 					output: true,
 				},
-				ruleTest{
+				{
 					input:  context.Background(),
 					output: false,
 				},
@@ -163,15 +163,15 @@ func TestRoutingRule(t *testing.T) {
 				},
 			},
 			test: []ruleTest{
-				ruleTest{
+				{
 					input:  protocol.ContextWithUser(context.Background(), &protocol.User{Email: "admin@v2ray.com"}),
 					output: true,
 				},
-				ruleTest{
+				{
 					input:  protocol.ContextWithUser(context.Background(), &protocol.User{Email: "love@v2ray.com"}),
 					output: false,
 				},
-				ruleTest{
+				{
 					input:  context.Background(),
 					output: false,
 				},

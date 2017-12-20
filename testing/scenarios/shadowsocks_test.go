@@ -11,6 +11,7 @@ import (
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common/buf"
+	clog "v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -44,7 +45,7 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -73,7 +74,7 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -162,7 +163,7 @@ func TestShadowsocksAES128UDP(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -192,7 +193,7 @@ func TestShadowsocksAES128UDP(t *testing.T) {
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -281,7 +282,7 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -310,7 +311,7 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -398,7 +399,7 @@ func TestShadowsocksAES256GCMTCP(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -427,7 +428,7 @@ func TestShadowsocksAES256GCMTCP(t *testing.T) {
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -515,7 +516,7 @@ func TestShadowsocksAES128GCMUDP(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -545,7 +546,7 @@ func TestShadowsocksAES128GCMUDP(t *testing.T) {
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -633,7 +634,7 @@ func TestShadowsocksAES256GCMConformance(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -711,7 +712,7 @@ func TestShadowsocksChacha20Poly1305UDPConformance(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
@@ -770,6 +771,85 @@ func TestShadowsocksChacha20Poly1305UDPConformance(t *testing.T) {
 	}
 
 	assert(conn.Close(), IsNil)
+
+	CloseAllServers(servers)
+}
+
+func TestShadowsocksChacha20Conformance(t *testing.T) {
+	assert := With(t)
+
+	tcpServer := tcp.Server{
+		MsgProcessor: xor,
+	}
+	dest, err := tcpServer.Start()
+	assert(err, IsNil)
+	defer tcpServer.Close()
+
+	account := serial.ToTypedMessage(&shadowsocks.Account{
+		Password:   "ss-password",
+		CipherType: shadowsocks.CipherType_CHACHA20_IETF,
+		Ota:        shadowsocks.Account_Disabled,
+	})
+
+	serverPort := pickPort()
+	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: clog.Severity_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
+		Inbound: []*proxyman.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&shadowsocks.ServerConfig{
+					User: &protocol.User{
+						Account: account,
+						Level:   1,
+					},
+				}),
+			},
+		},
+		Outbound: []*proxyman.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+		},
+	}
+
+	servers, err := InitializeServerConfigs(serverConfig)
+	assert(err, IsNil)
+
+	var wg sync.WaitGroup
+	wg.Add(10)
+	for i := 0; i < 10; i++ {
+		go func() {
+			cipher, err := ss.PickCipher("CHACHA20-IETF", nil, "ss-password")
+			assert(err, IsNil)
+			conn, err := ss.Dial("tcp", fmt.Sprintf(":%d", serverPort), cipher)
+			assert(err, IsNil)
+			_, err = conn.Write([]byte{1, 127, 0, 0, 1})
+			assert(err, IsNil)
+			_, err = conn.Write(serial.Uint16ToBytes(dest.Port.Value(), nil))
+			assert(err, IsNil)
+
+			payload := make([]byte, 10240*1024)
+			rand.Read(payload)
+
+			nBytes, err := conn.Write([]byte(payload))
+			assert(err, IsNil)
+			assert(nBytes, Equals, len(payload))
+
+			response := readFrom(conn, time.Second*30, 10240*1024)
+			assert(response, Equals, xor([]byte(payload)))
+			assert(conn.Close(), IsNil)
+			wg.Done()
+		}()
+	}
+	wg.Wait()
 
 	CloseAllServers(servers)
 }

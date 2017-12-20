@@ -7,10 +7,10 @@ import (
 
 	"v2ray.com/core/app"
 	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/policy"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/signal"
@@ -34,7 +34,7 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	s := &Server{
 		config: config,
 	}
-	space.OnInitialize(func() error {
+	space.On(app.SpaceInitializing, func(interface{}) error {
 		pm := policy.FromSpace(space)
 		if pm == nil {
 			return newError("Policy not found in space.")
@@ -85,7 +85,12 @@ func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispa
 	request, err := session.Handshake(reader, conn)
 	if err != nil {
 		if source, ok := proxy.SourceFromContext(ctx); ok {
-			log.Access(source, "", log.AccessRejected, err)
+			log.Record(&log.AccessMessage{
+				From:   source,
+				To:     "",
+				Status: log.AccessRejected,
+				Reason: err,
+			})
 		}
 		return newError("failed to read request").Base(err)
 	}
@@ -93,9 +98,14 @@ func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispa
 
 	if request.Command == protocol.RequestCommandTCP {
 		dest := request.Destination()
-		log.Trace(newError("TCP Connect request to ", dest))
+		newError("TCP Connect request to ", dest).WriteToLog()
 		if source, ok := proxy.SourceFromContext(ctx); ok {
-			log.Access(source, dest, log.AccessAccepted, "")
+			log.Record(&log.AccessMessage{
+				From:   source,
+				To:     dest,
+				Status: log.AccessAccepted,
+				Reason: "",
+			})
 		}
 
 		return s.transport(ctx, reader, conn, dest, dispatcher)
@@ -160,7 +170,7 @@ func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 	udpServer := udp.NewDispatcher(dispatcher)
 
 	if source, ok := proxy.SourceFromContext(ctx); ok {
-		log.Trace(newError("client UDP connection from ", source))
+		newError("client UDP connection from ", source).WriteToLog()
 	}
 
 	reader := buf.NewReader(conn)
@@ -174,7 +184,7 @@ func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 			request, data, err := DecodeUDPPacket(payload.Bytes())
 
 			if err != nil {
-				log.Trace(newError("failed to parse UDP request").Base(err))
+				newError("failed to parse UDP request").Base(err).WriteToLog()
 				continue
 			}
 
@@ -182,9 +192,14 @@ func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 				continue
 			}
 
-			log.Trace(newError("send packet to ", request.Destination(), " with ", len(data), " bytes").AtDebug())
+			newError("send packet to ", request.Destination(), " with ", len(data), " bytes").AtDebug().WriteToLog()
 			if source, ok := proxy.SourceFromContext(ctx); ok {
-				log.Access(source, request.Destination, log.AccessAccepted, "")
+				log.Record(&log.AccessMessage{
+					From:   source,
+					To:     request.Destination,
+					Status: log.AccessAccepted,
+					Reason: "",
+				})
 			}
 
 			dataBuf := buf.New()
@@ -192,12 +207,12 @@ func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 			udpServer.Dispatch(ctx, request.Destination(), dataBuf, func(payload *buf.Buffer) {
 				defer payload.Release()
 
-				log.Trace(newError("writing back UDP response with ", payload.Len(), " bytes").AtDebug())
+				newError("writing back UDP response with ", payload.Len(), " bytes").AtDebug().WriteToLog()
 
 				udpMessage, err := EncodeUDPPacket(request, payload.Bytes())
 				defer udpMessage.Release()
 				if err != nil {
-					log.Trace(newError("failed to write UDP response").AtWarning().Base(err))
+					newError("failed to write UDP response").AtWarning().Base(err).WriteToLog()
 				}
 
 				conn.Write(udpMessage.Bytes())
