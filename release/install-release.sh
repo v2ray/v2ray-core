@@ -239,16 +239,16 @@ installV2Ray(){
       fi
       let PORT=$RANDOM+10000
       UUID=$(cat /proc/sys/kernel/random/uuid)
+      # Get public IP address
+      local IP=$( ip addr | egrep -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | egrep -v "^192\.168|^172\.1[6-9]\.|^172\.2[0-9]\.|^172\.3[0-2]\.|^10\.|^127\.|^255\.|^0\." | head -n 1 )
+      [ -z ${IP} ] && IP=$( wget -qO- -t1 -T2 ipv4.icanhazip.com )
+      [ -z ${IP} ] && IP=$( wget -qO- -t1 -T2 ipinfo.io/ip )
 
       sed -i "s/10086/${PORT}/g" "/etc/v2ray/config.json"
       sed -i "s/23ad6b10-8d1a-40f7-8ad0-e3e35cd38297/${UUID}/g" "/etc/v2ray/config.json"
 
       colorEcho ${GREEN} "PORT:${PORT}"
       colorEcho ${GREEN} "UUID:${UUID}"
-      # Get public IP address
-      local IP=$( ip addr | egrep -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | egrep -v "^192\.168|^172\.1[6-9]\.|^172\.2[0-9]\.|^172\.3[0-2]\.|^10\.|^127\.|^255\.|^0\." | head -n 1 )
-      [ -z ${IP} ] && IP=$( wget -qO- -t1 -T2 ipv4.icanhazip.com )
-      [ -z ${IP} ] && IP=$( wget -qO- -t1 -T2 ipinfo.io/ip )
       colorEcho ${GREEN} "IP:${IP}"
       mkdir -p /var/log/v2ray
     fi
