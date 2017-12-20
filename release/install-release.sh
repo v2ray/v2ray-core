@@ -253,9 +253,6 @@ installV2Ray(){
       mkdir -p /var/log/v2ray
     fi
     return 0
-    
-    
-
 }
 
 
