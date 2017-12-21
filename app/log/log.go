@@ -6,7 +6,6 @@ import (
 	"context"
 	"sync"
 
-	"v2ray.com/core/app/log/internal"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/log"
 )
@@ -15,15 +14,27 @@ import (
 type Instance struct {
 	sync.RWMutex
 	config       *Config
-	accessLogger internal.LogWriter
-	errorLogger  internal.LogWriter
+	accessLogger log.Handler
+	errorLogger  log.Handler
+	active       bool
 }
 
 // New creates a new log.Instance based on the given config.
 func New(ctx context.Context, config *Config) (*Instance, error) {
-	return &Instance{
+	g := &Instance{
 		config: config,
-	}, nil
+		active: true,
+	}
+
+	if err := g.initAccessLogger(); err != nil {
+		return nil, newError("failed to initialize access logger").Base(err).AtWarning()
+	}
+	if err := g.initErrorLogger(); err != nil {
+		return nil, newError("failed to initialize error logger").Base(err).AtWarning()
+	}
+	log.RegisterHandler(g)
+
+	return g, nil
 }
 
 // Interface implements app.Application.Interface().
@@ -34,13 +45,13 @@ func (*Instance) Interface() interface{} {
 func (g *Instance) initAccessLogger() error {
 	switch g.config.AccessLogType {
 	case LogType_File:
-		logger, err := internal.NewFileLogWriter(g.config.AccessLogPath)
+		creator, err := log.CreateFileLogWriter(g.config.AccessLogPath)
 		if err != nil {
 			return err
 		}
-		g.accessLogger = logger
+		g.accessLogger = log.NewLogger(creator)
 	case LogType_Console:
-		g.accessLogger = internal.NewStdOutLogWriter()
+		g.accessLogger = log.NewLogger(log.CreateStdoutLogWriter())
 	default:
 	}
 	return nil
@@ -49,13 +60,13 @@ func (g *Instance) initAccessLogger() error {
 func (g *Instance) initErrorLogger() error {
 	switch g.config.ErrorLogType {
 	case LogType_File:
-		logger, err := internal.NewFileLogWriter(g.config.ErrorLogPath)
+		creator, err := log.CreateFileLogWriter(g.config.ErrorLogPath)
 		if err != nil {
 			return err
 		}
-		g.errorLogger = logger
+		g.errorLogger = log.NewLogger(creator)
 	case LogType_Console:
-		g.errorLogger = internal.NewStdOutLogWriter()
+		g.errorLogger = log.NewLogger(log.CreateStdoutLogWriter())
 	default:
 	}
 	return nil
@@ -63,32 +74,33 @@ func (g *Instance) initErrorLogger() error {
 
 // Start implements app.Application.Start().
 func (g *Instance) Start() error {
-	if err := g.initAccessLogger(); err != nil {
-		return newError("failed to initialize access logger").Base(err).AtWarning()
-	}
-	if err := g.initErrorLogger(); err != nil {
-		return newError("failed to initialize error logger").Base(err).AtWarning()
-	}
-	log.RegisterHandler(g)
+	g.Lock()
+	defer g.Unlock()
+	g.active = true
 	return nil
+}
+
+func (g *Instance) isActive() bool {
+	g.RLock()
+	defer g.RUnlock()
+
+	return g.active
 }
 
 // Handle implements log.Handler.
 func (g *Instance) Handle(msg log.Message) {
+	if !g.isActive() {
+		return
+	}
+
 	switch msg := msg.(type) {
 	case *log.AccessMessage:
-		g.RLock()
-		defer g.RUnlock()
 		if g.accessLogger != nil {
-			g.accessLogger.Log(msg)
+			g.accessLogger.Handle(msg)
 		}
 	case *log.GeneralMessage:
-		if msg.Severity.SevererThan(g.config.ErrorLogLevel) {
-			g.RLock()
-			defer g.RUnlock()
-			if g.errorLogger != nil {
-				g.errorLogger.Log(msg)
-			}
+		if g.errorLogger != nil && msg.Severity <= g.config.ErrorLogLevel {
+			g.errorLogger.Handle(msg)
 		}
 	default:
 		// Swallow
@@ -100,15 +112,7 @@ func (g *Instance) Close() {
 	g.Lock()
 	defer g.Unlock()
 
-	if g.accessLogger != nil {
-		g.accessLogger.Close()
-		g.accessLogger = nil
-	}
-
-	if g.errorLogger != nil {
-		g.errorLogger.Close()
-		g.errorLogger = nil
-	}
+	g.active = true
 }
 
 func init() {

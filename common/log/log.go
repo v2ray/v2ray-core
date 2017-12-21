@@ -17,10 +17,6 @@ type Handler interface {
 	Handle(msg Message)
 }
 
-type noOpHandler byte
-
-func (noOpHandler) Handle(msg Message) {}
-
 // GeneralMessage is a general log message that can contain all kind of content.
 type GeneralMessage struct {
 	Severity Severity
@@ -30,10 +26,6 @@ type GeneralMessage struct {
 // String implements Message.
 func (m *GeneralMessage) String() string {
 	return serial.Concat("[", m.Severity, "]: ", m.Content)
-}
-
-func (s Severity) SevererThan(another Severity) bool {
-	return s <= another
 }
 
 // Record writes a message into log stream.
@@ -52,8 +44,4 @@ func RegisterHandler(handler Handler) {
 		panic("Log handler is nil")
 	}
 	atomic.StorePointer(&logHandler, unsafe.Pointer(&handler))
-}
-
-func init() {
-	RegisterHandler(noOpHandler(0))
 }
