@@ -112,7 +112,7 @@ func (g *Instance) Close() {
 	g.Lock()
 	defer g.Unlock()
 
-	g.active = true
+	g.active = false
 }
 
 func init() {
