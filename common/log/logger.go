@@ -11,7 +11,8 @@ import (
 )
 
 type LogWriter interface {
-	io.WriteCloser
+	Write(string) error
+	io.Closer
 }
 
 type LogWriterCreator func() LogWriter
@@ -44,13 +45,10 @@ func (l *generalLogger) run() {
 	}
 	defer logger.Close()
 
-	ls := []byte(platform.LineSeparator())
-
 	for {
 		select {
 		case msg := <-l.buffer:
-			logger.Write([]byte(msg.String()))
-			logger.Write(ls)
+			logger.Write(msg.String() + platform.LineSeparator())
 			dataWritten = true
 		case <-ticker.C:
 			if !dataWritten {
@@ -78,9 +76,9 @@ type consoleLogWriter struct {
 	logger *log.Logger
 }
 
-func (w *consoleLogWriter) Write(b []byte) (int, error) {
-	w.logger.Print(string(b))
-	return len(b), nil
+func (w *consoleLogWriter) Write(s string) error {
+	w.logger.Print(s)
+	return nil
 }
 
 func (w *consoleLogWriter) Close() error {
@@ -92,9 +90,9 @@ type fileLogWriter struct {
 	logger *log.Logger
 }
 
-func (w *fileLogWriter) Write(b []byte) (int, error) {
-	w.logger.Print(string(b))
-	return len(b), nil
+func (w *fileLogWriter) Write(s string) error {
+	w.logger.Print(s)
+	return nil
 }
 
 func (w *fileLogWriter) Close() error {
