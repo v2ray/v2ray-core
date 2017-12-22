@@ -10,11 +10,13 @@ import (
 	"v2ray.com/core/common/signal"
 )
 
+// LogWriter is the interface for writing logs.
 type LogWriter interface {
 	Write(string) error
 	io.Closer
 }
 
+// LogWriterCreator is a function to create LogWriters.
 type LogWriterCreator func() LogWriter
 
 type generalLogger struct {
@@ -99,6 +101,7 @@ func (w *fileLogWriter) Close() error {
 	return w.file.Close()
 }
 
+// CreateStdoutLogWriter returns a LogWriterCreator that creates LogWriter for stdout.
 func CreateStdoutLogWriter() LogWriterCreator {
 	return func() LogWriter {
 		return &consoleLogWriter{
@@ -107,6 +110,7 @@ func CreateStdoutLogWriter() LogWriterCreator {
 	}
 }
 
+// CreateFileLogWriter returns a LogWriterCreator that creates LogWriter for the given file.
 func CreateFileLogWriter(path string) (LogWriterCreator, error) {
 	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
