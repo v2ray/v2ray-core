@@ -10,23 +10,23 @@ import (
 	"v2ray.com/core/common/signal"
 )
 
-// LogWriter is the interface for writing logs.
-type LogWriter interface {
+// Writer is the interface for writing logs.
+type Writer interface {
 	Write(string) error
 	io.Closer
 }
 
-// LogWriterCreator is a function to create LogWriters.
-type LogWriterCreator func() LogWriter
+// WriterCreator is a function to create LogWriters.
+type WriterCreator func() Writer
 
 type generalLogger struct {
-	creator LogWriterCreator
+	creator WriterCreator
 	buffer  chan Message
 	access  *signal.Semaphore
 }
 
 // NewLogger returns a generic log handler that can handle all type of messages.
-func NewLogger(logWriterCreator LogWriterCreator) Handler {
+func NewLogger(logWriterCreator WriterCreator) Handler {
 	return &generalLogger{
 		creator: logWriterCreator,
 		buffer:  make(chan Message, 16),
@@ -102,8 +102,8 @@ func (w *fileLogWriter) Close() error {
 }
 
 // CreateStdoutLogWriter returns a LogWriterCreator that creates LogWriter for stdout.
-func CreateStdoutLogWriter() LogWriterCreator {
-	return func() LogWriter {
+func CreateStdoutLogWriter() WriterCreator {
+	return func() Writer {
 		return &consoleLogWriter{
 			logger: log.New(os.Stdout, "", log.Ldate|log.Ltime),
 		}
@@ -111,13 +111,13 @@ func CreateStdoutLogWriter() LogWriterCreator {
 }
 
 // CreateFileLogWriter returns a LogWriterCreator that creates LogWriter for the given file.
-func CreateFileLogWriter(path string) (LogWriterCreator, error) {
+func CreateFileLogWriter(path string) (WriterCreator, error) {
 	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		return nil, err
 	}
 	file.Close()
-	return func() LogWriter {
+	return func() Writer {
 		file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 		if err != nil {
 			return nil
