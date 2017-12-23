@@ -7,7 +7,6 @@ import (
 
 	"github.com/miekg/dns"
 	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
@@ -143,7 +142,7 @@ func (s *UDPNameServer) HandleResponse(payload *buf.Buffer) {
 	close(request.response)
 }
 
-func (s *UDPNameServer) BuildQueryA(domain string, id uint16) *buf.Buffer {
+func (s *UDPNameServer) buildAMsg(domain string, id uint16) *dns.Msg {
 	msg := new(dns.Msg)
 	msg.Id = id
 	msg.RecursionDesired = true
@@ -161,21 +160,34 @@ func (s *UDPNameServer) BuildQueryA(domain string, id uint16) *buf.Buffer {
 		})
 	}
 
+	return msg
+}
+
+func msgToBuffer(msg *dns.Msg) (*buf.Buffer, error) {
 	buffer := buf.New()
-	common.Must(buffer.Reset(func(b []byte) (int, error) {
+	if err := buffer.Reset(func(b []byte) (int, error) {
 		writtenBuffer, err := msg.PackBuffer(b)
 		return len(writtenBuffer), err
-	}))
-
-	return buffer
+	}); err != nil {
+		return nil, err
+	}
+	return buffer, nil
 }
 
 func (s *UDPNameServer) QueryA(domain string) <-chan *ARecord {
 	response := make(chan *ARecord, 1)
 	id := s.AssignUnusedID(response)
 
+	msg := s.buildAMsg(domain, id)
+	b, err := msgToBuffer(msg)
+	if err != nil {
+		newError("failed to build A query for domain ", domain).Base(err).WriteToLog()
+		close(response)
+		return response
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
-	s.udpServer.Dispatch(ctx, s.address, s.BuildQueryA(domain, id), s.HandleResponse)
+	s.udpServer.Dispatch(ctx, s.address, b, s.HandleResponse)
 
 	go func() {
 		for i := 0; i < 2; i++ {
@@ -186,7 +198,8 @@ func (s *UDPNameServer) QueryA(domain string) <-chan *ARecord {
 			if !found {
 				break
 			}
-			s.udpServer.Dispatch(ctx, s.address, s.BuildQueryA(domain, id), s.HandleResponse)
+			b, _ := msgToBuffer(msg)
+			s.udpServer.Dispatch(ctx, s.address, b, s.HandleResponse)
 		}
 		cancel()
 	}()
