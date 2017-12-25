@@ -54,7 +54,7 @@ func TestIPNet(t *testing.T) {
 
 func TestGeoIPCN(t *testing.T) {
 	assert := With(t)
-	common.Must(sysio.CopyFile(platform.GetAssetLocation("geoip.dat"), filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", "tools", "release", "config", "geoip.dat")))
+	common.Must(sysio.CopyFile(platform.GetAssetLocation("geoip.dat"), filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", "release", "config", "geoip.dat")))
 
 	ips, err := loadGeoIP("CN")
 	common.Must(err)
@@ -87,7 +87,7 @@ func loadGeoIP(country string) ([]*router.CIDR, error) {
 }
 
 func BenchmarkIPNetQuery(b *testing.B) {
-	common.Must(sysio.CopyFile(platform.GetAssetLocation("geoip.dat"), filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", "tools", "release", "config", "geoip.dat")))
+	common.Must(sysio.CopyFile(platform.GetAssetLocation("geoip.dat"), filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", "release", "config", "geoip.dat")))
 
 	ips, err := loadGeoIP("CN")
 	common.Must(err)
@@ -105,7 +105,7 @@ func BenchmarkIPNetQuery(b *testing.B) {
 }
 
 func BenchmarkCIDRQuery(b *testing.B) {
-	common.Must(sysio.CopyFile(platform.GetAssetLocation("geoip.dat"), filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", "tools", "release", "config", "geoip.dat")))
+	common.Must(sysio.CopyFile(platform.GetAssetLocation("geoip.dat"), filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", "release", "config", "geoip.dat")))
 
 	ips, err := loadGeoIP("CN")
 	common.Must(err)

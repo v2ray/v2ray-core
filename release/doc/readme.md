@@ -29,7 +29,7 @@ v2ray --config=<full path>
 
 压缩包中的 .sig 文件为 GPG 签名文件，用来验证对应程序文件的真实性。签名公钥可以在下面的链接找到：
 
-https://github.com/v2ray/v2ray-core/blob/master/tools/release/verify/official_release.asc
+https://github.com/v2ray/v2ray-core/blob/master/release/verify/official_release.asc
 
 ## 问题反馈
 
