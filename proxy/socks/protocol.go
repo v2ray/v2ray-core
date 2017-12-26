@@ -397,13 +397,27 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 	if request.User != nil {
 		authByte = byte(authPassword)
 	}
-	authRequest := []byte{socks5Version, 0x01, authByte}
-	if _, err := writer.Write(authRequest); err != nil {
+
+	b := buf.NewLocal(512)
+	b.AppendBytes(socks5Version, 0x01, authByte)
+	if authByte == authPassword {
+		rawAccount, err := request.User.GetTypedAccount()
+		if err != nil {
+			return nil, err
+		}
+		account := rawAccount.(*Account)
+
+		b.AppendBytes(0x01, byte(len(account.Username)))
+		b.Append([]byte(account.Username))
+		b.AppendBytes(byte(len(account.Password)))
+		b.Append([]byte(account.Password))
+	}
+
+	if _, err := writer.Write(b.Bytes()); err != nil {
 		return nil, err
 	}
 
-	b := buf.NewLocal(512)
-	if err := b.AppendSupplier(buf.ReadFullFrom(reader, 2)); err != nil {
+	if err := b.Reset(buf.ReadFullFrom(reader, 2)); err != nil {
 		return nil, err
 	}
 
@@ -415,22 +429,7 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 	}
 
 	if authByte == authPassword {
-		rawAccount, err := request.User.GetTypedAccount()
-		if err != nil {
-			return nil, err
-		}
-		account := rawAccount.(*Account)
-
-		b.Clear()
-		b.AppendBytes(socks5Version, byte(len(account.Username)))
-		b.Append([]byte(account.Username))
-		b.AppendBytes(byte(len(account.Password)))
-		b.Append([]byte(account.Password))
-		if _, err := writer.Write(b.Bytes()); err != nil {
-			return nil, err
-		}
-		b.Clear()
-		if err := b.AppendSupplier(buf.ReadFullFrom(reader, 2)); err != nil {
+		if err := b.Reset(buf.ReadFullFrom(reader, 2)); err != nil {
 			return nil, err
 		}
 		if b.Byte(1) != 0x00 {
