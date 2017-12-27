@@ -201,7 +201,7 @@ type Connection struct {
 
 // NewConnection create a new KCP connection between local and remote.
 func NewConnection(meta ConnMetadata, writer PacketWriter, closer io.Closer, config *Config) *Connection {
-	newError("creating connection ", meta.Conversation).WriteToLog()
+	newError("#", meta.Conversation, " creating connection to ", meta.RemoteAddr).WriteToLog()
 
 	conn := &Connection{
 		meta:       meta,
@@ -434,7 +434,7 @@ func (c *Connection) Close() error {
 		c.SetState(StateTerminated)
 	}
 
-	newError("closing connection to ", c.meta.RemoteAddr).WriteToLog()
+	newError("#", c.meta.Conversation, " closing connection to ", c.meta.RemoteAddr).WriteToLog()
 
 	return nil
 }
@@ -460,10 +460,7 @@ func (c *Connection) SetDeadline(t time.Time) error {
 	if err := c.SetReadDeadline(t); err != nil {
 		return err
 	}
-	if err := c.SetWriteDeadline(t); err != nil {
-		return err
-	}
-	return nil
+	return c.SetWriteDeadline(t)
 }
 
 // SetReadDeadline implements the Conn SetReadDeadline method.
@@ -493,7 +490,7 @@ func (c *Connection) Terminate() {
 	if c == nil {
 		return
 	}
-	newError("terminating connection to ", c.RemoteAddr()).WriteToLog()
+	newError("#", c.meta.Conversation, " terminating connection to ", c.RemoteAddr()).WriteToLog()
 
 	//v.SetState(StateTerminated)
 	c.dataInput.Signal()
