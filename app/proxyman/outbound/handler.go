@@ -62,7 +62,7 @@ func NewHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) (*H
 	if h.senderSettings != nil && h.senderSettings.MultiplexSettings != nil && h.senderSettings.MultiplexSettings.Enabled {
 		config := h.senderSettings.MultiplexSettings
 		if config.Concurrency < 1 || config.Concurrency > 1024 {
-			return nil, newError("invalid mux concurrency: ", config.Concurrency)
+			return nil, newError("invalid mux concurrency: ", config.Concurrency).AtWarning()
 		}
 		h.mux = mux.NewClientManager(proxyHandler, h, config)
 	}
@@ -99,7 +99,7 @@ func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Conn
 			tag := h.senderSettings.ProxySettings.Tag
 			handler := h.outboundManager.GetHandler(tag)
 			if handler != nil {
-				newError("proxying to ", tag).AtDebug().WriteToLog()
+				newError("proxying to ", tag, " for dest ", dest).AtDebug().WriteToLog()
 				ctx = proxy.ContextWithTarget(ctx, dest)
 				stream := ray.NewRay(ctx)
 				go handler.Dispatch(ctx, stream)

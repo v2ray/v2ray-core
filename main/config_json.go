@@ -41,7 +41,7 @@ func init() {
 	core.RegisterConfigLoader(core.ConfigFormat_JSON, func(input io.Reader) (*core.Config, error) {
 		config, err := jsonToProto(input)
 		if err != nil {
-			return nil, newError("failed to execute v2ctl to convert config file.").Base(err)
+			return nil, newError("failed to execute v2ctl to convert config file.").Base(err).AtWarning()
 		}
 		return config, nil
 	})

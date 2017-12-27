@@ -98,7 +98,7 @@ func (m *CachableDomainMatcher) Add(domain *Domain) error {
 	case Domain_Domain:
 		m.matchers = append(m.matchers, NewSubDomainMatcher(domain.Value))
 	default:
-		return newError("unknown domain type: ", domain.Type).AtError()
+		return newError("unknown domain type: ", domain.Type).AtWarning()
 	}
 	return nil
 }

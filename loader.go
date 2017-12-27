@@ -24,7 +24,7 @@ func RegisterConfigLoader(format ConfigFormat, loader ConfigLoader) error {
 func LoadConfig(format ConfigFormat, input io.Reader) (*Config, error) {
 	loader, found := configLoaderCache[format]
 	if !found {
-		return nil, newError(ConfigFormat_name[int32(format)], " is not loadable.")
+		return nil, newError(ConfigFormat_name[int32(format)], " is not loadable.").AtWarning()
 	}
 	return loader(input)
 }

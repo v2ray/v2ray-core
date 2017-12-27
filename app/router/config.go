@@ -32,7 +32,7 @@ func cidrToCondition(cidr []*CIDR, source bool) (Condition, error) {
 			}
 			ipv6Cond.Add(matcher)
 		default:
-			return nil, newError("invalid IP length").AtError()
+			return nil, newError("invalid IP length").AtWarning()
 		}
 	}
 
@@ -92,7 +92,7 @@ func (rr *RoutingRule) BuildCondition() (Condition, error) {
 	}
 
 	if conds.Len() == 0 {
-		return nil, newError("this rule has no effective fields").AtError()
+		return nil, newError("this rule has no effective fields").AtWarning()
 	}
 
 	return conds, nil

@@ -219,7 +219,7 @@ func (*LocalNameServer) QueryA(domain string) <-chan *ARecord {
 		resolver := net.SystemIPResolver()
 		ips, err := resolver.LookupIP(domain)
 		if err != nil {
-			newError("failed to lookup IPs for domain ", domain).Base(err).WriteToLog()
+			newError("failed to lookup IPs for domain ", domain).Base(err).AtWarning().WriteToLog()
 			return
 		}
 

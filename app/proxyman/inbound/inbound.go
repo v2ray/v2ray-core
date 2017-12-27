@@ -28,7 +28,7 @@ func (m *Manager) AddHandler(ctx context.Context, config *proxyman.InboundHandle
 	}
 	receiverSettings, ok := rawReceiverSettings.(*proxyman.ReceiverConfig)
 	if !ok {
-		return newError("not a ReceiverConfig")
+		return newError("not a ReceiverConfig").AtError()
 	}
 	proxySettings, err := config.ProxySettings.GetInstance()
 	if err != nil {
@@ -52,7 +52,7 @@ func (m *Manager) AddHandler(ctx context.Context, config *proxyman.InboundHandle
 	}
 
 	if handler == nil {
-		return newError("unknown allocation strategy: ", receiverSettings.AllocationStrategy.Type)
+		return newError("unknown allocation strategy: ", receiverSettings.AllocationStrategy.Type).AtError()
 	}
 
 	m.handlers = append(m.handlers, handler)

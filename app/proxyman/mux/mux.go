@@ -94,11 +94,7 @@ func NewClient(p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client
 		if err := p.Process(ctx, pipe, dialer); err != nil {
 			cancel()
 
-			traceErr := errors.New("failed to handler mux client connection").Base(err)
-			if err != io.EOF && err != context.Canceled {
-				traceErr = traceErr.AtWarning()
-			}
-			traceErr.WriteToLog()
+			errors.New("failed to handler mux client connection").Base(err).WriteToLog()
 		}
 	}()
 
@@ -254,7 +250,7 @@ func (m *Client) fetchOutput() {
 		case SessionStatusKeep:
 			err = m.handleStatusKeep(meta, reader)
 		default:
-			newError("unknown status: ", meta.SessionStatus).AtWarning().WriteToLog()
+			newError("unknown status: ", meta.SessionStatus).AtError().WriteToLog()
 			return
 		}
 
@@ -308,7 +304,7 @@ type ServerWorker struct {
 func handle(ctx context.Context, s *Session, output buf.Writer) {
 	writer := NewResponseWriter(s.ID, output, s.transferType)
 	if err := buf.Copy(s.input, writer); err != nil {
-		newError("session ", s.ID, " ends: ").Base(err).WriteToLog()
+		newError("session ", s.ID, " ends.").Base(err).WriteToLog()
 	}
 	writer.Close()
 	s.Close()
@@ -384,7 +380,7 @@ func (w *ServerWorker) handleFrame(ctx context.Context, reader *buf.BufferedRead
 	case SessionStatusKeep:
 		err = w.handleStatusKeep(meta, reader)
 	default:
-		return newError("unknown status: ", meta.SessionStatus).AtWarning()
+		return newError("unknown status: ", meta.SessionStatus).AtError()
 	}
 
 	if err != nil {
