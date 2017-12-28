@@ -2,6 +2,4 @@ package mux
 
 import "v2ray.com/core/common/errors"
 
-func newError(values ...interface{}) *errors.Error {
-	return errors.New(values...).Path("App", "Proxyman", "Mux")
-}
+func newError(values ...interface{}) *errors.Error { return errors.New(values...).Path("App", "Proxyman", "Mux") }
