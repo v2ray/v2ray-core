@@ -145,6 +145,7 @@ func NewHandler(ctx context.Context, config *core.InboundHandlerConfig) (core.In
 
 func (m *Manager) asUnixReceiverConfig(ctx context.Context, config *core.InboundHandlerConfig) {
 
+	return
 }
 
 func init() {
