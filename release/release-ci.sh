@@ -62,10 +62,10 @@ $GOPATH/bin/vbuild --os=freebsd --arch=amd64 --zip --sign #--encrypt
 $GOPATH/bin/vbuild --os=openbsd --arch=x86 --zip --sign #--encrypt
 $GOPATH/bin/vbuild --os=openbsd --arch=amd64 --zip --sign #--encrypt
 
-#RELBODY=$(cat $GOPATH/bin/metadata.txt | jq -R -s -c .)
+RELBODY="https://www.v2ray.com/chapter_00/01_versions.html"
 JSON_DATA=$(echo "{}" | jq -c ".tag_name=\"${RELEASE_TAG}\"")
 JSON_DATA=$(echo ${JSON_DATA} | jq -c ".prerelease=${PRERELEASE}")
-#JSON_DATA=$(echo ${JSON_DATA} | jq -c ".body=${RELBODY}")
+JSON_DATA=$(echo ${JSON_DATA} | jq -c ".body=${RELBODY}")
 RELEASE_ID=$(curl --data "${JSON_DATA}" -H "Authorization: token ${GITHUB_TOKEN}" -X POST https://api.github.com/repos/v2ray/v2ray-core/releases | jq ".id")
 
 function upload() {
