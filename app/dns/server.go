@@ -33,19 +33,19 @@ func (r *DomainRecord) Inactive() bool {
 	return r.Expire.Before(now) || r.LastAccess.Add(time.Minute*5).Before(now)
 }
 
-type CacheServer struct {
+type Server struct {
 	sync.Mutex
 	hosts   map[string]net.IP
 	records map[string]*DomainRecord
 	servers []NameServer
 }
 
-func NewCacheServer(ctx context.Context, config *Config) (*CacheServer, error) {
+func New(ctx context.Context, config *Config) (*Server, error) {
 	space := app.SpaceFromContext(ctx)
 	if space == nil {
 		return nil, newError("no space in context")
 	}
-	server := &CacheServer{
+	server := &Server{
 		records: make(map[string]*DomainRecord),
 		servers: make([]NameServer, len(config.NameServers)),
 		hosts:   config.GetInternalHosts(),
@@ -77,18 +77,20 @@ func NewCacheServer(ctx context.Context, config *Config) (*CacheServer, error) {
 	return server, nil
 }
 
-func (*CacheServer) Interface() interface{} {
-	return (*CacheServer)(nil)
+func (*Server) Interface() interface{} {
+	return (*Server)(nil)
 }
 
-func (s *CacheServer) Start() error {
+func (s *Server) Start() error {
 	net.RegisterIPResolver(s)
 	return nil
 }
 
-func (*CacheServer) Close() {}
+func (*Server) Close() {
+	net.RegisterIPResolver(net.SystemIPResolver())
+}
 
-func (s *CacheServer) GetCached(domain string) []net.IP {
+func (s *Server) GetCached(domain string) []net.IP {
 	s.Lock()
 	defer s.Unlock()
 
@@ -99,7 +101,7 @@ func (s *CacheServer) GetCached(domain string) []net.IP {
 	return nil
 }
 
-func (s *CacheServer) tryCleanup() {
+func (s *Server) tryCleanup() {
 	s.Lock()
 	defer s.Unlock()
 
@@ -116,7 +118,7 @@ func (s *CacheServer) tryCleanup() {
 	}
 }
 
-func (s *CacheServer) LookupIP(domain string) ([]net.IP, error) {
+func (s *Server) LookupIP(domain string) ([]net.IP, error) {
 	if ip, found := s.hosts[domain]; found {
 		return []net.IP{ip}, nil
 	}
@@ -154,6 +156,6 @@ func (s *CacheServer) LookupIP(domain string) ([]net.IP, error) {
 
 func init() {
 	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
-		return NewCacheServer(ctx, config.(*Config))
+		return New(ctx, config.(*Config))
 	}))
 }
