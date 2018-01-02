@@ -11,7 +11,8 @@ import (
 	"v2ray.com/core/transport/internet/tls"
 )
 
-type TCPListener struct {
+// Listener is an internet.Listener that listens for TCP connections.
+type Listener struct {
 	listener   *net.TCPListener
 	tlsConfig  *gotls.Config
 	authConfig internet.ConnectionAuthenticator
@@ -19,6 +20,7 @@ type TCPListener struct {
 	addConn    internet.AddConnection
 }
 
+// ListenTCP creates a new Listener based on configurations.
 func ListenTCP(ctx context.Context, address net.Address, port net.Port, addConn internet.AddConnection) (internet.Listener, error) {
 	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   address.IP(),
@@ -31,7 +33,7 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, addConn 
 	networkSettings := internet.TransportSettingsFromContext(ctx)
 	tcpSettings := networkSettings.(*Config)
 
-	l := &TCPListener{
+	l := &Listener{
 		listener: listener,
 		config:   tcpSettings,
 		addConn:  addConn,
@@ -52,11 +54,11 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, addConn 
 		}
 		l.authConfig = auth
 	}
-	go l.KeepAccepting(ctx)
+	go l.keepAccepting(ctx)
 	return l, nil
 }
 
-func (v *TCPListener) KeepAccepting(ctx context.Context) {
+func (v *Listener) keepAccepting(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -88,11 +90,13 @@ func (v *TCPListener) KeepAccepting(ctx context.Context) {
 	}
 }
 
-func (v *TCPListener) Addr() net.Addr {
+// Addr implements internet.Listener.Addr.
+func (v *Listener) Addr() net.Addr {
 	return v.listener.Addr()
 }
 
-func (v *TCPListener) Close() error {
+// Close implements internet.Listener.Close.
+func (v *Listener) Close() error {
 	return v.listener.Close()
 }
 
