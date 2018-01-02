@@ -40,6 +40,9 @@ func (c *Config) GetTLSConfig() *tls.Config {
 	if len(c.ServerName) > 0 {
 		config.ServerName = c.ServerName
 	}
+	if len(c.NextProtocol) > 0 {
+		config.NextProtos = c.NextProtocol
+	}
 
 	return config
 }
@@ -50,6 +53,14 @@ func WithDestination(dest net.Destination) Option {
 	return func(config *Config) {
 		if dest.Address.Family().IsDomain() && len(config.ServerName) == 0 {
 			config.ServerName = dest.Address.Domain()
+		}
+	}
+}
+
+func WithNextProto(protocol ...string) Option {
+	return func(config *Config) {
+		if len(config.NextProtocol) == 0 {
+			config.NextProtocol = protocol
 		}
 	}
 }

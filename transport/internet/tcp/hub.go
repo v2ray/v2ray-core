@@ -37,7 +37,7 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, addConn 
 		addConn:  addConn,
 	}
 
-	if config := tls.ConfigFromContext(ctx); config != nil {
+	if config := tls.ConfigFromContext(ctx, tls.WithNextProto("h2")); config != nil {
 		l.tlsConfig = config.GetTLSConfig()
 	}
 
