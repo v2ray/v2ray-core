@@ -62,8 +62,11 @@ message ReceiverConfig {
 }
 
 message InboundHandlerConfig {
+  // Tag of the inbound handler.
   string tag = 1;
+  // Settings for how this inbound proxy is handled. Must be ReceiverConfig above.
   v2ray.core.common.serial.TypedMessage receiver_settings = 2;
+  // Settings for inbound proxy. Must be one of the inbound proxies.
   v2ray.core.common.serial.TypedMessage proxy_settings = 3;
 }
 
@@ -80,10 +83,15 @@ message SenderConfig {
 }
 
 message OutboundHandlerConfig {
+  // Tag of this outbound handler.
   string tag = 1;
+  // Settings for how to dial connection for this outbound handler. Must be SenderConfig above.
   v2ray.core.common.serial.TypedMessage sender_settings = 2;
+  // Settings for this outbound proxy. Must be one of the outbound proxies.
   v2ray.core.common.serial.TypedMessage proxy_settings = 3;
+  // If not zero, this outbound will be expired in seconds. Not used for now.
   int64 expire = 4;
+  // Comment of this outbound handler. Not used for now.
   string comment = 5;
 }
 
