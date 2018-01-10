@@ -22,7 +22,11 @@ func TestV2RayClose(t *testing.T) {
 
 	port := net.Port(dice.RollUint16())
 	config := &Config{
-		Inbound: []*core.InboundHandlerConfig{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&proxyman.InboundConfig{}),
+			serial.ToTypedMessage(&proxyman.OutboundConfig{}),
+		},
+		Inbound: []*InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(port),
@@ -37,7 +41,7 @@ func TestV2RayClose(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*core.OutboundHandlerConfig{
+		Outbound: []*OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
