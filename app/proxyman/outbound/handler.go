@@ -3,12 +3,10 @@ package outbound
 import (
 	"context"
 	"io"
-	"time"
 
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/proxyman/mux"
-	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
@@ -94,6 +92,8 @@ func (h *Handler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
 	}
 }
 
+var zeroAddr net.Addr = &net.TCPAddr{IP: []byte{0, 0, 0, 0}, Port: 0}
+
 // Dial implements proxy.Dialer.Dial().
 func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {
 	if h.senderSettings != nil {
@@ -105,7 +105,7 @@ func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Conn
 				ctx = proxy.ContextWithTarget(ctx, dest)
 				stream := ray.NewRay(ctx)
 				go handler.Dispatch(ctx, stream)
-				return NewConnection(stream), nil
+				return ray.NewConnection(stream, zeroAddr, zeroAddr), nil
 			}
 
 			newError("failed to get outbound handler with tag: ", tag).AtWarning().WriteToLog()
@@ -121,100 +121,4 @@ func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Conn
 	}
 
 	return internet.Dial(ctx, dest)
-}
-
-var (
-	_ buf.Reader = (*Connection)(nil)
-	_ buf.Writer = (*Connection)(nil)
-)
-
-type Connection struct {
-	stream     ray.Ray
-	closed     bool
-	localAddr  net.Addr
-	remoteAddr net.Addr
-
-	reader *buf.BufferedReader
-	writer buf.Writer
-}
-
-func NewConnection(stream ray.Ray) *Connection {
-	return &Connection{
-		stream: stream,
-		localAddr: &net.TCPAddr{
-			IP:   []byte{0, 0, 0, 0},
-			Port: 0,
-		},
-		remoteAddr: &net.TCPAddr{
-			IP:   []byte{0, 0, 0, 0},
-			Port: 0,
-		},
-		reader: buf.NewBufferedReader(stream.InboundOutput()),
-		writer: stream.InboundInput(),
-	}
-}
-
-// Read implements net.Conn.Read().
-func (v *Connection) Read(b []byte) (int, error) {
-	if v.closed {
-		return 0, io.EOF
-	}
-	return v.reader.Read(b)
-}
-
-func (v *Connection) ReadMultiBuffer() (buf.MultiBuffer, error) {
-	return v.reader.ReadMultiBuffer()
-}
-
-// Write implements net.Conn.Write().
-func (v *Connection) Write(b []byte) (int, error) {
-	if v.closed {
-		return 0, io.ErrClosedPipe
-	}
-
-	l := len(b)
-	mb := buf.NewMultiBufferCap(l/buf.Size + 1)
-	mb.Write(b)
-	return l, v.writer.WriteMultiBuffer(mb)
-}
-
-func (v *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
-	if v.closed {
-		return io.ErrClosedPipe
-	}
-
-	return v.writer.WriteMultiBuffer(mb)
-}
-
-// Close implements net.Conn.Close().
-func (v *Connection) Close() error {
-	v.closed = true
-	v.stream.InboundInput().Close()
-	v.stream.InboundOutput().CloseError()
-	return nil
-}
-
-// LocalAddr implements net.Conn.LocalAddr().
-func (v *Connection) LocalAddr() net.Addr {
-	return v.localAddr
-}
-
-// RemoteAddr implements net.Conn.RemoteAddr().
-func (v *Connection) RemoteAddr() net.Addr {
-	return v.remoteAddr
-}
-
-// SetDeadline implements net.Conn.SetDeadline().
-func (v *Connection) SetDeadline(t time.Time) error {
-	return nil
-}
-
-// SetReadDeadline implements net.Conn.SetReadDeadline().
-func (v *Connection) SetReadDeadline(t time.Time) error {
-	return nil
-}
-
-// SetWriteDeadline implement net.Conn.SetWriteDeadline().
-func (v *Connection) SetWriteDeadline(t time.Time) error {
-	return nil
 }
