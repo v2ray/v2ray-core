@@ -47,15 +47,9 @@ func New(config *Config) (*Instance, error) {
 		if err != nil {
 			return nil, err
 		}
-		app, err := common.CreateObject(ctx, settings)
-		if err != nil {
+		if _, err := common.CreateObject(ctx, settings); err != nil {
 			return nil, err
 		}
-		f, ok := app.(Feature)
-		if !ok {
-			return nil, newError("not a feature")
-		}
-		server.features = append(server.features, f)
 	}
 
 	for _, inbound := range config.Inbound {
@@ -100,7 +94,7 @@ func (s *Instance) Close() {
 func (s *Instance) Start() error {
 	for _, f := range s.features {
 		if err := f.Start(); err != nil {
-			return nil
+			return err
 		}
 	}
 
