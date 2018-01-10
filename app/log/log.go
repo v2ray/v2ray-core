@@ -37,11 +37,6 @@ func New(ctx context.Context, config *Config) (*Instance, error) {
 	return g, nil
 }
 
-// Interface implements app.Application.Interface().
-func (*Instance) Interface() interface{} {
-	return (*Instance)(nil)
-}
-
 func (g *Instance) initAccessLogger() error {
 	switch g.config.AccessLogType {
 	case LogType_File:
