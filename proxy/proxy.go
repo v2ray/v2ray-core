@@ -10,7 +10,7 @@ package proxy
 import (
 	"context"
 
-	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/ray"
@@ -22,7 +22,7 @@ type Inbound interface {
 	Network() net.NetworkList
 
 	// Process processes a connection of given network. If necessary, the Inbound can dispatch the connection to an Outbound.
-	Process(context.Context, net.Network, internet.Connection, dispatcher.Interface) error
+	Process(context.Context, net.Network, internet.Connection, core.Dispatcher) error
 }
 
 // An Outbound process outbound connections.

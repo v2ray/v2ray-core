@@ -1,4 +1,4 @@
-package impl
+package dispatcher
 
 import (
 	"bytes"

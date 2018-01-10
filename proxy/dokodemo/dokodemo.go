@@ -4,10 +4,9 @@ package dokodemo
 
 import (
 	"context"
+	"time"
 
-	"v2ray.com/core/app"
-	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/policy"
+	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
@@ -18,36 +17,29 @@ import (
 )
 
 type DokodemoDoor struct {
-	config  *Config
-	address net.Address
-	port    net.Port
-	policy  policy.Policy
+	policyManager core.PolicyManager
+	config        *Config
+	address       net.Address
+	port          net.Port
+	v             *core.Instance
 }
 
 func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
-	space := app.SpaceFromContext(ctx)
-	if space == nil {
-		return nil, newError("no space in context")
-	}
 	if config.NetworkList == nil || config.NetworkList.Size() == 0 {
 		return nil, newError("no network specified")
 	}
-	d := &DokodemoDoor{
-		config:  config,
-		address: config.GetPredefinedAddress(),
-		port:    net.Port(config.Port),
+	v := core.FromContext(ctx)
+	if v == nil {
+		return nil, newError("V is not in context.")
 	}
-	space.On(app.SpaceInitializing, func(interface{}) error {
-		pm := policy.FromSpace(space)
-		if pm == nil {
-			return newError("Policy not found in space.")
-		}
-		d.policy = pm.GetPolicy(config.UserLevel)
-		if config.Timeout > 0 && config.UserLevel == 0 {
-			d.policy.Timeout.ConnectionIdle.Value = config.Timeout
-		}
-		return nil
-	})
+
+	d := &DokodemoDoor{
+		config:        config,
+		address:       config.GetPredefinedAddress(),
+		port:          net.Port(config.Port),
+		policyManager: v.PolicyManager(),
+	}
+
 	return d, nil
 }
 
@@ -55,7 +47,16 @@ func (d *DokodemoDoor) Network() net.NetworkList {
 	return *(d.config.NetworkList)
 }
 
-func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
+func (d *DokodemoDoor) policy() core.Policy {
+	config := d.config
+	p := d.policyManager.ForLevel(config.UserLevel)
+	if config.Timeout > 0 && config.UserLevel == 0 {
+		p.Timeouts.ConnectionIdle = time.Duration(config.Timeout) * time.Second
+	}
+	return p
+}
+
+func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher core.Dispatcher) error {
 	newError("processing connection from: ", conn.RemoteAddr()).AtDebug().WriteToLog()
 	dest := net.Destination{
 		Network: network,
@@ -72,7 +73,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	timer := signal.CancelAfterInactivity(ctx, cancel, d.policy.Timeout.ConnectionIdle.Duration())
+	timer := signal.CancelAfterInactivity(ctx, cancel, d.policy().Timeouts.ConnectionIdle)
 
 	inboundRay, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
@@ -88,7 +89,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 			return newError("failed to transport request").Base(err)
 		}
 
-		timer.SetTimeout(d.policy.Timeout.DownlinkOnly.Duration())
+		timer.SetTimeout(d.policy().Timeouts.DownlinkOnly)
 
 		return nil
 	})
@@ -115,7 +116,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 			return newError("failed to transport response").Base(err)
 		}
 
-		timer.SetTimeout(d.policy.Timeout.UplinkOnly.Duration())
+		timer.SetTimeout(d.policy().Timeouts.UplinkOnly)
 
 		return nil
 	})

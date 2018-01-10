@@ -1,11 +1,10 @@
-package impl_test
+package dispatcher_test
 
 import (
 	"testing"
 
+	. "v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/proxyman"
-
-	. "v2ray.com/core/app/dispatcher/impl"
 	. "v2ray.com/ext/assert"
 )
 

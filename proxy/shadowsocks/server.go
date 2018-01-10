@@ -4,9 +4,7 @@ import (
 	"context"
 	"time"
 
-	"v2ray.com/core/app"
-	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/policy"
+	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/log"
@@ -19,18 +17,14 @@ import (
 )
 
 type Server struct {
-	config        *ServerConfig
-	user          *protocol.User
-	account       *MemoryAccount
-	policyManager policy.Manager
+	config  *ServerConfig
+	user    *protocol.User
+	account *MemoryAccount
+	v       *core.Instance
 }
 
 // NewServer create a new Shadowsocks server.
 func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
-	space := app.SpaceFromContext(ctx)
-	if space == nil {
-		return nil, newError("no space in context")
-	}
 	if config.GetUser() == nil {
 		return nil, newError("user is not specified")
 	}
@@ -45,16 +39,12 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 		config:  config,
 		user:    config.GetUser(),
 		account: account,
+		v:       core.FromContext(ctx),
 	}
 
-	space.On(app.SpaceInitializing, func(interface{}) error {
-		pm := policy.FromSpace(space)
-		if pm == nil {
-			return newError("Policy not found in space.")
-		}
-		s.policyManager = pm
-		return nil
-	})
+	if s.v == nil {
+		return nil, newError("V is not in context.")
+	}
 
 	return s, nil
 }
@@ -69,7 +59,7 @@ func (s *Server) Network() net.NetworkList {
 	return list
 }
 
-func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
+func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher core.Dispatcher) error {
 	switch network {
 	case net.Network_TCP:
 		return s.handleConnection(ctx, conn, dispatcher)
@@ -80,7 +70,7 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 	}
 }
 
-func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection, dispatcher dispatcher.Interface) error {
+func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection, dispatcher core.Dispatcher) error {
 	udpServer := udp.NewDispatcher(dispatcher)
 
 	reader := buf.NewReader(conn)
@@ -148,9 +138,9 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 	return nil
 }
 
-func (s *Server) handleConnection(ctx context.Context, conn internet.Connection, dispatcher dispatcher.Interface) error {
-	sessionPolicy := s.policyManager.GetPolicy(s.user.Level)
-	conn.SetReadDeadline(time.Now().Add(sessionPolicy.Timeout.Handshake.Duration()))
+func (s *Server) handleConnection(ctx context.Context, conn internet.Connection, dispatcher core.Dispatcher) error {
+	sessionPolicy := s.v.PolicyManager().ForLevel(s.user.Level)
+	conn.SetReadDeadline(time.Now().Add(sessionPolicy.Timeouts.Handshake))
 	bufferedReader := buf.NewBufferedReader(buf.NewReader(conn))
 	request, bodyReader, err := ReadTCPSession(s.user, bufferedReader)
 	if err != nil {
@@ -178,7 +168,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 	ctx = protocol.ContextWithUser(ctx, request.User)
 
 	ctx, cancel := context.WithCancel(ctx)
-	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeout.ConnectionIdle.Duration())
+	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)
 	ray, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return err
@@ -208,7 +198,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 			return newError("failed to transport all TCP response").Base(err)
 		}
 
-		timer.SetTimeout(sessionPolicy.Timeout.UplinkOnly.Duration())
+		timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
 		return nil
 	})
@@ -219,7 +209,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 		if err := buf.Copy(bodyReader, ray.InboundInput(), buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport all TCP request").Base(err)
 		}
-		timer.SetTimeout(sessionPolicy.Timeout.DownlinkOnly.Duration())
+		timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
 		return nil
 	})
 

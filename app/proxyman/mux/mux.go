@@ -8,8 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"v2ray.com/core/app"
-	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
@@ -262,21 +261,14 @@ func (m *Client) fetchOutput() {
 }
 
 type Server struct {
-	dispatcher dispatcher.Interface
+	dispatcher core.Dispatcher
 }
 
 // NewServer creates a new mux.Server.
 func NewServer(ctx context.Context) *Server {
-	s := &Server{}
-	space := app.SpaceFromContext(ctx)
-	space.On(app.SpaceInitializing, func(interface{}) error {
-		d := dispatcher.FromSpace(space)
-		if d == nil {
-			return newError("no dispatcher in space")
-		}
-		s.dispatcher = d
-		return nil
-	})
+	s := &Server{
+		dispatcher: core.FromContext(ctx).Dispatcher(),
+	}
 	return s
 }
 
@@ -295,8 +287,15 @@ func (s *Server) Dispatch(ctx context.Context, dest net.Destination) (ray.Inboun
 	return ray, nil
 }
 
+func (s *Server) Start() error {
+	return nil
+}
+
+func (s *Server) Close() {
+}
+
 type ServerWorker struct {
-	dispatcher     dispatcher.Interface
+	dispatcher     core.Dispatcher
 	outboundRay    ray.OutboundRay
 	sessionManager *SessionManager
 }

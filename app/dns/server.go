@@ -1,6 +1,6 @@
 package dns
 
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg server -path App,DNS,Server
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg dns -path App,DNS
 
 import (
 	"context"
@@ -8,8 +8,7 @@ import (
 	"time"
 
 	dnsmsg "github.com/miekg/dns"
-	"v2ray.com/core/app"
-	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 )
@@ -41,39 +40,38 @@ type Server struct {
 }
 
 func New(ctx context.Context, config *Config) (*Server, error) {
-	space := app.SpaceFromContext(ctx)
-	if space == nil {
-		return nil, newError("no space in context")
-	}
 	server := &Server{
 		records: make(map[string]*DomainRecord),
 		servers: make([]NameServer, len(config.NameServers)),
 		hosts:   config.GetInternalHosts(),
 	}
-	space.On(app.SpaceInitializing, func(interface{}) error {
-		disp := dispatcher.FromSpace(space)
-		if disp == nil {
-			return newError("dispatcher is not found in the space")
-		}
-		for idx, destPB := range config.NameServers {
-			address := destPB.Address.AsAddress()
-			if address.Family().IsDomain() && address.Domain() == "localhost" {
-				server.servers[idx] = &LocalNameServer{}
-			} else {
-				dest := destPB.AsDestination()
-				if dest.Network == net.Network_Unknown {
-					dest.Network = net.Network_UDP
-				}
-				if dest.Network == net.Network_UDP {
-					server.servers[idx] = NewUDPNameServer(dest, disp)
-				}
+	v := core.FromContext(ctx)
+	if v == nil {
+		return nil, newError("V is not in context.")
+	}
+
+	if err := v.RegisterFeature((*core.DNSClient)(nil), server); err != nil {
+		return nil, newError("unable to register DNSClient.").Base(err)
+	}
+
+	for idx, destPB := range config.NameServers {
+		address := destPB.Address.AsAddress()
+		if address.Family().IsDomain() && address.Domain() == "localhost" {
+			server.servers[idx] = &LocalNameServer{}
+		} else {
+			dest := destPB.AsDestination()
+			if dest.Network == net.Network_Unknown {
+				dest.Network = net.Network_UDP
+			}
+			if dest.Network == net.Network_UDP {
+				server.servers[idx] = NewUDPNameServer(dest, v.Dispatcher())
 			}
 		}
-		if len(config.NameServers) == 0 {
-			server.servers = append(server.servers, &LocalNameServer{})
-		}
-		return nil
-	})
+	}
+	if len(config.NameServers) == 0 {
+		server.servers = append(server.servers, &LocalNameServer{})
+	}
+
 	return server, nil
 }
 
@@ -82,12 +80,10 @@ func (*Server) Interface() interface{} {
 }
 
 func (s *Server) Start() error {
-	net.RegisterIPResolver(s)
 	return nil
 }
 
 func (*Server) Close() {
-	net.RegisterIPResolver(net.SystemIPResolver())
 }
 
 func (s *Server) GetCached(domain string) []net.IP {

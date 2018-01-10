@@ -5,7 +5,7 @@ import (
 	"io"
 	"time"
 
-	"v2ray.com/core/app"
+	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/proxyman/mux"
 	"v2ray.com/core/common/buf"
@@ -17,29 +17,22 @@ import (
 )
 
 type Handler struct {
-	config          *proxyman.OutboundHandlerConfig
+	config          *core.OutboundHandlerConfig
 	senderSettings  *proxyman.SenderConfig
 	proxy           proxy.Outbound
-	outboundManager proxyman.OutboundHandlerManager
+	outboundManager core.OutboundHandlerManager
 	mux             *mux.ClientManager
 }
 
-func NewHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) (*Handler, error) {
+func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (*Handler, error) {
+	v := core.FromContext(ctx)
+	if v == nil {
+		return nil, newError("V is not in context")
+	}
 	h := &Handler{
-		config: config,
+		config:          config,
+		outboundManager: v.OutboundHandlerManager(),
 	}
-	space := app.SpaceFromContext(ctx)
-	if space == nil {
-		return nil, newError("no space in context")
-	}
-	space.On(app.SpaceInitializing, func(interface{}) error {
-		ohm := proxyman.OutboundHandlerManagerFromSpace(space)
-		if ohm == nil {
-			return newError("no OutboundManager in space")
-		}
-		h.outboundManager = ohm
-		return nil
-	})
 
 	if config.SenderSettings != nil {
 		senderSettings, err := config.SenderSettings.GetInstance()
@@ -54,7 +47,12 @@ func NewHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) (*H
 		}
 	}
 
-	proxyHandler, err := config.GetProxyHandler(ctx)
+	proxyConfig, err := config.ProxySettings.GetInstance()
+	if err != nil {
+		return nil, err
+	}
+
+	proxyHandler, err := proxy.CreateOutboundHandler(ctx, proxyConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -69,6 +67,10 @@ func NewHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) (*H
 
 	h.proxy = proxyHandler
 	return h, nil
+}
+
+func (h *Handler) Tag() string {
+	return h.config.Tag
 }
 
 // Dispatch implements proxy.Outbound.Dispatch.

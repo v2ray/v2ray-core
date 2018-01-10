@@ -1,18 +1,14 @@
 package dns_test
 
 import (
-	"context"
 	"testing"
 
-	"v2ray.com/core/app"
+	"v2ray.com/core"
 	"v2ray.com/core/app/dispatcher"
-	_ "v2ray.com/core/app/dispatcher/impl"
 	. "v2ray.com/core/app/dns"
-	"v2ray.com/core/app/policy"
-	_ "v2ray.com/core/app/policy/manager"
 	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/app/policy"
 	_ "v2ray.com/core/app/proxyman/outbound"
-	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/freedom"
@@ -54,50 +50,50 @@ func TestUDPServer(t *testing.T) {
 
 	go dnsServer.ListenAndServe()
 
-	config := &Config{
-		NameServers: []*net.Endpoint{
-			{
-				Network: net.Network_UDP,
-				Address: &net.IPOrDomain{
-					Address: &net.IPOrDomain_Ip{
-						Ip: []byte{127, 0, 0, 1},
+	config := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&Config{
+				NameServers: []*net.Endpoint{
+					{
+						Network: net.Network_UDP,
+						Address: &net.IPOrDomain{
+							Address: &net.IPOrDomain_Ip{
+								Ip: []byte{127, 0, 0, 1},
+							},
+						},
+						Port: uint32(port),
 					},
 				},
-				Port: uint32(port),
+			}),
+			serial.ToTypedMessage(&dispatcher.Config{}),
+			serial.ToTypedMessage(&proxyman.OutboundConfig{}),
+			serial.ToTypedMessage(&policy.Config{}),
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			&core.OutboundHandlerConfig{
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
 
-	ctx := context.Background()
-	space := app.NewSpace()
+	v, err := core.New(config)
+	assert(err, IsNil)
 
-	ctx = app.ContextWithSpace(ctx, space)
-	common.Must(app.AddApplicationToSpace(ctx, config))
-	common.Must(app.AddApplicationToSpace(ctx, &dispatcher.Config{}))
-	common.Must(app.AddApplicationToSpace(ctx, &proxyman.OutboundConfig{}))
-	common.Must(app.AddApplicationToSpace(ctx, &policy.Config{}))
+	client := v.DNSClient()
 
-	om := proxyman.OutboundHandlerManagerFromSpace(space)
-	om.AddHandler(ctx, &proxyman.OutboundHandlerConfig{
-		ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
-	})
-
-	common.Must(space.Initialize())
-	common.Must(space.Start())
-
-	ips, err := net.LookupIP("google.com")
+	ips, err := client.LookupIP("google.com")
 	assert(err, IsNil)
 	assert(len(ips), Equals, 1)
 	assert([]byte(ips[0]), Equals, []byte{8, 8, 8, 8})
 
-	ips, err = net.LookupIP("facebook.com")
+	ips, err = client.LookupIP("facebook.com")
 	assert(err, IsNil)
 	assert(len(ips), Equals, 1)
 	assert([]byte(ips[0]), Equals, []byte{9, 9, 9, 9})
 
 	dnsServer.Shutdown()
 
-	ips, err = net.LookupIP("google.com")
+	ips, err = client.LookupIP("google.com")
 	assert(err, IsNil)
 	assert(len(ips), Equals, 1)
 	assert([]byte(ips[0]), Equals, []byte{8, 8, 8, 8})

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
-	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
@@ -48,7 +48,7 @@ type UDPNameServer struct {
 	nextCleanup time.Time
 }
 
-func NewUDPNameServer(address net.Destination, dispatcher dispatcher.Interface) *UDPNameServer {
+func NewUDPNameServer(address net.Destination, dispatcher core.Dispatcher) *UDPNameServer {
 	s := &UDPNameServer{
 		address:   address,
 		requests:  make(map[uint16]*PendingRequest),

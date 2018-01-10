@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
@@ -31,7 +31,7 @@ type tcpWorker struct {
 	stream       *internet.StreamConfig
 	recvOrigDest bool
 	tag          string
-	dispatcher   dispatcher.Interface
+	dispatcher   core.Dispatcher
 	sniffers     []proxyman.KnownProtocols
 
 	ctx    context.Context
@@ -185,7 +185,7 @@ type udpWorker struct {
 	port         net.Port
 	recvOrigDest bool
 	tag          string
-	dispatcher   dispatcher.Interface
+	dispatcher   core.Dispatcher
 
 	ctx        context.Context
 	cancel     context.CancelFunc

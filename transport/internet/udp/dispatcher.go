@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/signal"
@@ -23,10 +23,10 @@ type connEntry struct {
 type Dispatcher struct {
 	sync.RWMutex
 	conns      map[net.Destination]*connEntry
-	dispatcher dispatcher.Interface
+	dispatcher core.Dispatcher
 }
 
-func NewDispatcher(dispatcher dispatcher.Interface) *Dispatcher {
+func NewDispatcher(dispatcher core.Dispatcher) *Dispatcher {
 	return &Dispatcher{
 		conns:      make(map[net.Destination]*connEntry),
 		dispatcher: dispatcher,

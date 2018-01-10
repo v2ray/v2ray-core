@@ -163,7 +163,7 @@ func (h *DynamicInboundHandler) Close() {
 	h.cancel()
 }
 
-func (h *DynamicInboundHandler) GetRandomInboundProxy() (proxy.Inbound, net.Port, int) {
+func (h *DynamicInboundHandler) GetRandomInboundProxy() (interface{}, net.Port, int) {
 	h.workerMutex.RLock()
 	defer h.workerMutex.RUnlock()
 
@@ -173,4 +173,8 @@ func (h *DynamicInboundHandler) GetRandomInboundProxy() (proxy.Inbound, net.Port
 	w := h.worker[dice.Roll(len(h.worker))]
 	expire := h.receiverConfig.AllocationStrategy.GetRefreshValue() - uint32(time.Since(h.lastRefresh)/time.Minute)
 	return w.Proxy(), w.Port(), int(expire)
+}
+
+func (h *DynamicInboundHandler) Tag() string {
+	return h.tag
 }

@@ -3,139 +3,160 @@ package core
 import (
 	"context"
 
-	"v2ray.com/core/app"
-	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/policy"
-	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
 )
 
 // Server is an instance of V2Ray. At any time, there must be at most one Server instance running.
+// Deprecated. Use Instance directly.
 type Server interface {
-	// Start starts the V2Ray server, and return any error during the process.
-	// In the case of any errors, the state of the server is unpredicatable.
-	Start() error
-
-	// Close closes the V2Ray server. All inbound and outbound connections will be closed immediately.
-	Close()
+	common.Runnable
 }
 
-// New creates a new V2Ray server with given config.
-func New(config *Config) (Server, error) {
-	return newSimpleServer(config)
+// Feature is the interface for V2Ray features. All features must implement this interface.
+// All existing features have an implementation in app directory. These features can be replaced by third-party ones.
+type Feature interface {
+	common.Runnable
 }
 
-// simpleServer shell of V2Ray.
-type simpleServer struct {
-	space app.Space
+// Instance combines all functionalities in V2Ray.
+type Instance struct {
+	dnsClient     syncDNSClient
+	policyManager syncPolicyManager
+	dispatcher    syncDispatcher
+	router        syncRouter
+	ihm           syncInboundHandlerManager
+	ohm           syncOutboundHandlerManager
+
+	features []Feature
 }
 
-// newSimpleServer returns a new Point server based on given configuration.
-// The server is not started at this point.
-func newSimpleServer(config *Config) (*simpleServer, error) {
-	var server = new(simpleServer)
+// New returns a new V2Ray instance based on given configuration.
+// The instance is not started at this point.
+// To make sure V2Ray instance works properly, the config must contain one Dispatcher, one InboundHandlerManager and one OutboundHandlerManager. Other features are optional.
+func New(config *Config) (*Instance, error) {
+	var server = new(Instance)
 
 	if err := config.Transport.Apply(); err != nil {
 		return nil, err
 	}
 
-	space := app.NewSpace()
-	ctx := app.ContextWithSpace(context.Background(), space)
-
-	server.space = space
+	ctx := context.WithValue(context.Background(), v2rayKey, server)
 
 	for _, appSettings := range config.App {
 		settings, err := appSettings.GetInstance()
 		if err != nil {
 			return nil, err
 		}
-		application, err := app.CreateAppFromConfig(ctx, settings)
+		app, err := common.CreateObject(ctx, settings)
 		if err != nil {
 			return nil, err
 		}
-		if err := space.AddApplication(application); err != nil {
-			return nil, err
+		f, ok := app.(Feature)
+		if !ok {
+			return nil, newError("not a feature")
 		}
-	}
-
-	outboundHandlerManager := proxyman.OutboundHandlerManagerFromSpace(space)
-	if outboundHandlerManager == nil {
-		o, err := app.CreateAppFromConfig(ctx, new(proxyman.OutboundConfig))
-		if err != nil {
-			return nil, err
-		}
-		if err := space.AddApplication(o); err != nil {
-			return nil, newError("failed to add default outbound handler manager").Base(err)
-		}
-		outboundHandlerManager = o.(proxyman.OutboundHandlerManager)
-	}
-
-	inboundHandlerManager := proxyman.InboundHandlerManagerFromSpace(space)
-	if inboundHandlerManager == nil {
-		o, err := app.CreateAppFromConfig(ctx, new(proxyman.InboundConfig))
-		if err != nil {
-			return nil, err
-		}
-		if err := space.AddApplication(o); err != nil {
-			return nil, newError("failed to add default inbound handler manager").Base(err)
-		}
-		inboundHandlerManager = o.(proxyman.InboundHandlerManager)
-	}
-
-	if disp := dispatcher.FromSpace(space); disp == nil {
-		d, err := app.CreateAppFromConfig(ctx, new(dispatcher.Config))
-		if err != nil {
-			return nil, err
-		}
-		common.Must(space.AddApplication(d))
-	}
-
-	if p := policy.FromSpace(space); p == nil {
-		p, err := app.CreateAppFromConfig(ctx, &policy.Config{
-			Level: map[uint32]*policy.Policy{
-				1: {
-					Timeout: &policy.Policy_Timeout{
-						ConnectionIdle: &policy.Second{
-							Value: 600,
-						},
-					},
-				},
-			},
-		})
-		if err != nil {
-			return nil, err
-		}
-		common.Must(space.AddApplication(p))
+		server.features = append(server.features, f)
 	}
 
 	for _, inbound := range config.Inbound {
-		if err := inboundHandlerManager.AddHandler(ctx, inbound); err != nil {
+		rawHandler, err := common.CreateObject(ctx, inbound)
+		if err != nil {
+			return nil, err
+		}
+		handler, ok := rawHandler.(InboundHandler)
+		if !ok {
+			return nil, newError("not an InboundHandler")
+		}
+		if err := server.InboundHandlerManager().AddHandler(ctx, handler); err != nil {
 			return nil, err
 		}
 	}
 
 	for _, outbound := range config.Outbound {
-		if err := outboundHandlerManager.AddHandler(ctx, outbound); err != nil {
+		rawHandler, err := common.CreateObject(ctx, outbound)
+		if err != nil {
 			return nil, err
 		}
-	}
-
-	if err := server.space.Initialize(); err != nil {
-		return nil, err
+		handler, ok := rawHandler.(OutboundHandler)
+		if !ok {
+			return nil, newError("not an OutboundHandler")
+		}
+		if err := server.OutboundHandlerManager().AddHandler(ctx, handler); err != nil {
+			return nil, err
+		}
 	}
 
 	return server, nil
 }
 
-func (s *simpleServer) Close() {
-	s.space.Close()
+// Close shutdown the V2Ray instance.
+func (s *Instance) Close() {
+	for _, f := range s.features {
+		f.Close()
+	}
 }
 
-func (s *simpleServer) Start() error {
-	if err := s.space.Start(); err != nil {
-		return err
+// Start starts the V2Ray instance, including all registered features. When Start returns error, the state of the instance is unknown.
+func (s *Instance) Start() error {
+	for _, f := range s.features {
+		if err := f.Start(); err != nil {
+			return nil
+		}
 	}
+
 	newError("V2Ray started").AtWarning().WriteToLog()
 
 	return nil
+}
+
+// RegisterFeature registers the given feature into V2Ray.
+// If feature is one of the following types, the corressponding feature in this Instance
+// will be replaced: DNSClient, PolicyManager, Router, Dispatcher, InboundHandlerManager, OutboundHandlerManager.
+func (s *Instance) RegisterFeature(feature interface{}, instance Feature) error {
+	switch feature.(type) {
+	case DNSClient, *DNSClient:
+		s.dnsClient.Set(instance.(DNSClient))
+	case PolicyManager, *PolicyManager:
+		s.policyManager.Set(instance.(PolicyManager))
+	case Router, *Router:
+		s.router.Set(instance.(Router))
+	case Dispatcher, *Dispatcher:
+		s.dispatcher.Set(instance.(Dispatcher))
+	case InboundHandlerManager, *InboundHandlerManager:
+		s.ihm.Set(instance.(InboundHandlerManager))
+	case OutboundHandlerManager, *OutboundHandlerManager:
+		s.ohm.Set(instance.(OutboundHandlerManager))
+	}
+	s.features = append(s.features, instance)
+	return nil
+}
+
+// DNSClient returns the DNSClient used by this Instance. The returned DNSClient is always functional.
+func (s *Instance) DNSClient() DNSClient {
+	return &(s.dnsClient)
+}
+
+// PolicyManager returns the PolicyManager used by this Instance. The returned PolicyManager is always functional.
+func (s *Instance) PolicyManager() PolicyManager {
+	return &(s.policyManager)
+}
+
+// Router returns the Router used by this Instance. The returned Router is always functional.
+func (s *Instance) Router() Router {
+	return &(s.router)
+}
+
+// Dispatcher returns the Dispatcher used by this Instance. If Dispatcher was not registered before, the returned value doesn't work, although it is not nil.
+func (s *Instance) Dispatcher() Dispatcher {
+	return &(s.dispatcher)
+}
+
+// InboundHandlerManager returns the InboundHandlerManager used by this Instance. If InboundHandlerManager was not registered before, the returned value doesn't work.
+func (s *Instance) InboundHandlerManager() InboundHandlerManager {
+	return &(s.ihm)
+}
+
+// OutboundHandlerManager returns the OutboundHandlerManager used by this Instance. If OutboundHandlerManager was not registered before, the returned value doesn't work.
+func (s *Instance) OutboundHandlerManager() OutboundHandlerManager {
+	return &(s.ohm)
 }
