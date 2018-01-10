@@ -9,7 +9,7 @@ import (
 )
 
 type connection struct {
-	stream     Ray
+	stream     InboundRay
 	closed     bool
 	localAddr  net.Addr
 	remoteAddr net.Addr
