@@ -6,8 +6,8 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/app/dispatcher"
 	. "v2ray.com/core/app/dns"
-	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/policy"
+	"v2ray.com/core/app/proxyman"
 	_ "v2ray.com/core/app/proxyman/outbound"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
@@ -70,7 +70,7 @@ func TestUDPServer(t *testing.T) {
 			serial.ToTypedMessage(&policy.Config{}),
 		},
 		Outbound: []*core.OutboundHandlerConfig{
-			&core.OutboundHandlerConfig{
+			{
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
