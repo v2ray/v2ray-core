@@ -87,7 +87,7 @@ type CommandSwitchAccount struct {
 
 func (sc *SecurityConfig) AsSecurity() Security {
 	if sc == nil || sc.Type == SecurityType_AUTO {
-		if runtime.GOARCH == "amd64" || runtime.GOARCH == "s390x" {
+		if runtime.GOARCH == "amd64" || runtime.GOARCH == "arm64" || runtime.GOARCH == "s390x" {
 			return Security(SecurityType_AES128_GCM)
 		}
 		return Security(SecurityType_CHACHA20_POLY1305)
