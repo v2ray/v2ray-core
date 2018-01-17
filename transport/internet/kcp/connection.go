@@ -341,19 +341,28 @@ func (c *Connection) Write(b []byte) (int, error) {
 	totalWritten := 0
 
 	for {
-		if c == nil || c.State() != StateActive {
-			return totalWritten, io.ErrClosedPipe
-		}
+		dataWritten := false
+		for {
+			if c == nil || c.State() != StateActive {
+				return totalWritten, io.ErrClosedPipe
+			}
+			if !c.sendingWorker.Push(func(bb []byte) (int, error) {
+				n := copy(bb[:c.mss], b[totalWritten:])
+				totalWritten += n
+				return n, nil
+			}) {
+				break
+			}
 
-		for c.sendingWorker.Push(func(bb []byte) (int, error) {
-			n := copy(bb[:c.mss], b[totalWritten:])
-			totalWritten += n
-			return n, nil
-		}) {
-			c.dataUpdater.WakeUp()
+			dataWritten = true
+
 			if totalWritten == len(b) {
 				return totalWritten, nil
 			}
+		}
+
+		if dataWritten {
+			c.dataUpdater.WakeUp()
 		}
 
 		if err := c.waitForDataOutput(); err != nil {
@@ -367,17 +376,25 @@ func (c *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	defer mb.Release()
 
 	for {
-		if c == nil || c.State() != StateActive {
-			return io.ErrClosedPipe
-		}
+		dataWritten := false
+		for {
+			if c == nil || c.State() != StateActive {
+				return io.ErrClosedPipe
+			}
 
-		for c.sendingWorker.Push(func(bb []byte) (int, error) {
-			return mb.Read(bb[:c.mss])
-		}) {
-			c.dataUpdater.WakeUp()
+			if !c.sendingWorker.Push(func(bb []byte) (int, error) {
+				return mb.Read(bb[:c.mss])
+			}) {
+				break
+			}
+			dataWritten = true
 			if mb.IsEmpty() {
 				return nil
 			}
+		}
+
+		if dataWritten {
+			c.dataUpdater.WakeUp()
 		}
 
 		if err := c.waitForDataOutput(); err != nil {
