@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/uuid"
 )
 
 // Server is an instance of V2Ray. At any time, there must be at most one Server instance running.
@@ -28,13 +29,16 @@ type Instance struct {
 	ohm           syncOutboundHandlerManager
 
 	features []Feature
+	id       uuid.UUID
 }
 
 // New returns a new V2Ray instance based on given configuration.
 // The instance is not started at this point.
 // To make sure V2Ray instance works properly, the config must contain one Dispatcher, one InboundHandlerManager and one OutboundHandlerManager. Other features are optional.
 func New(config *Config) (*Instance, error) {
-	var server = new(Instance)
+	var server = &Instance{
+		id: *(uuid.New()),
+	}
 
 	if err := config.Transport.Apply(); err != nil {
 		return nil, err
@@ -81,6 +85,11 @@ func New(config *Config) (*Instance, error) {
 	}
 
 	return server, nil
+}
+
+// ID returns an unique ID for this V2Ray instance.
+func (s *Instance) ID() uuid.UUID {
+	return s.id
 }
 
 // Close shutdown the V2Ray instance.
