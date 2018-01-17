@@ -572,7 +572,7 @@ func (c *Connection) Input(segments []Segment) {
 				c.dataInput.Signal()
 				c.dataOutput.Signal()
 			}
-			c.sendingWorker.ProcessReceivingNext(seg.ReceivinNext)
+			c.sendingWorker.ProcessReceivingNext(seg.ReceivingNext)
 			c.receivingWorker.ProcessSendingNext(seg.SendingNext)
 			c.roundTrip.UpdatePeerRTO(seg.PeerRTO, current)
 			seg.Release()
@@ -628,7 +628,7 @@ func (c *Connection) Ping(current uint32, cmd Command) {
 	seg := NewCmdOnlySegment()
 	seg.Conv = c.meta.Conversation
 	seg.Cmd = cmd
-	seg.ReceivinNext = c.receivingWorker.NextNumber()
+	seg.ReceivingNext = c.receivingWorker.NextNumber()
 	seg.SendingNext = c.sendingWorker.FirstUnacknowledged()
 	seg.PeerRTO = c.roundTrip.Timeout()
 	if c.State() == StateReadyToClose {

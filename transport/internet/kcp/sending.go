@@ -209,59 +209,59 @@ func NewSendingWorker(kcp *Connection) *SendingWorker {
 	return worker
 }
 
-func (v *SendingWorker) Release() {
-	v.Lock()
-	v.window.Release()
-	v.Unlock()
+func (w *SendingWorker) Release() {
+	w.Lock()
+	w.window.Release()
+	w.Unlock()
 }
 
-func (v *SendingWorker) ProcessReceivingNext(nextNumber uint32) {
-	v.Lock()
-	defer v.Unlock()
+func (w *SendingWorker) ProcessReceivingNext(nextNumber uint32) {
+	w.Lock()
+	defer w.Unlock()
 
-	v.ProcessReceivingNextWithoutLock(nextNumber)
+	w.ProcessReceivingNextWithoutLock(nextNumber)
 }
 
-func (v *SendingWorker) ProcessReceivingNextWithoutLock(nextNumber uint32) {
-	v.window.Clear(nextNumber)
-	v.FindFirstUnacknowledged()
+func (w *SendingWorker) ProcessReceivingNextWithoutLock(nextNumber uint32) {
+	w.window.Clear(nextNumber)
+	w.FindFirstUnacknowledged()
 }
 
-func (v *SendingWorker) FindFirstUnacknowledged() {
-	first := v.firstUnacknowledged
-	if !v.window.IsEmpty() {
-		v.firstUnacknowledged = v.window.FirstNumber()
+func (w *SendingWorker) FindFirstUnacknowledged() {
+	first := w.firstUnacknowledged
+	if !w.window.IsEmpty() {
+		w.firstUnacknowledged = w.window.FirstNumber()
 	} else {
-		v.firstUnacknowledged = v.nextNumber
+		w.firstUnacknowledged = w.nextNumber
 	}
-	if first != v.firstUnacknowledged {
-		v.firstUnacknowledgedUpdated = true
+	if first != w.firstUnacknowledged {
+		w.firstUnacknowledgedUpdated = true
 	}
 }
 
-func (v *SendingWorker) processAck(number uint32) bool {
+func (w *SendingWorker) processAck(number uint32) bool {
 	// number < v.firstUnacknowledged || number >= v.nextNumber
-	if number-v.firstUnacknowledged > 0x7FFFFFFF || number-v.nextNumber < 0x7FFFFFFF {
+	if number-w.firstUnacknowledged > 0x7FFFFFFF || number-w.nextNumber < 0x7FFFFFFF {
 		return false
 	}
 
-	removed := v.window.Remove(number - v.firstUnacknowledged)
+	removed := w.window.Remove(number - w.firstUnacknowledged)
 	if removed {
-		v.FindFirstUnacknowledged()
+		w.FindFirstUnacknowledged()
 	}
 	return removed
 }
 
-func (v *SendingWorker) ProcessSegment(current uint32, seg *AckSegment, rto uint32) {
+func (w *SendingWorker) ProcessSegment(current uint32, seg *AckSegment, rto uint32) {
 	defer seg.Release()
 
-	v.Lock()
-	defer v.Unlock()
+	w.Lock()
+	defer w.Unlock()
 
-	if v.remoteNextNumber < seg.ReceivingWindow {
-		v.remoteNextNumber = seg.ReceivingWindow
+	if w.remoteNextNumber < seg.ReceivingWindow {
+		w.remoteNextNumber = seg.ReceivingWindow
 	}
-	v.ProcessReceivingNextWithoutLock(seg.ReceivingNext)
+	w.ProcessReceivingNextWithoutLock(seg.ReceivingNext)
 
 	if seg.IsEmpty() {
 		return
@@ -270,7 +270,7 @@ func (v *SendingWorker) ProcessSegment(current uint32, seg *AckSegment, rto uint
 	var maxack uint32
 	var maxackRemoved bool
 	for _, number := range seg.NumberList {
-		removed := v.processAck(number)
+		removed := w.processAck(number)
 		if maxack < number {
 			maxack = number
 			maxackRemoved = removed
@@ -278,100 +278,100 @@ func (v *SendingWorker) ProcessSegment(current uint32, seg *AckSegment, rto uint
 	}
 
 	if maxackRemoved {
-		v.window.HandleFastAck(maxack, rto)
+		w.window.HandleFastAck(maxack, rto)
 		if current-seg.Timestamp < 10000 {
-			v.conn.roundTrip.Update(current-seg.Timestamp, current)
+			w.conn.roundTrip.Update(current-seg.Timestamp, current)
 		}
 	}
 }
 
-func (v *SendingWorker) Push(f buf.Supplier) bool {
-	v.Lock()
-	defer v.Unlock()
+func (w *SendingWorker) Push(f buf.Supplier) bool {
+	w.Lock()
+	defer w.Unlock()
 
-	if v.window.IsFull() {
+	if w.window.IsFull() {
 		return false
 	}
 
-	b := v.window.Push(v.nextNumber)
-	v.nextNumber++
+	b := w.window.Push(w.nextNumber)
+	w.nextNumber++
 	common.Must(b.Reset(f))
 	return true
 }
 
-func (v *SendingWorker) Write(seg Segment) error {
+func (w *SendingWorker) Write(seg Segment) error {
 	dataSeg := seg.(*DataSegment)
 
-	dataSeg.Conv = v.conn.meta.Conversation
-	dataSeg.SendingNext = v.firstUnacknowledged
+	dataSeg.Conv = w.conn.meta.Conversation
+	dataSeg.SendingNext = w.firstUnacknowledged
 	dataSeg.Option = 0
-	if v.conn.State() == StateReadyToClose {
+	if w.conn.State() == StateReadyToClose {
 		dataSeg.Option = SegmentOptionClose
 	}
 
-	return v.conn.output.Write(dataSeg)
+	return w.conn.output.Write(dataSeg)
 }
 
-func (v *SendingWorker) OnPacketLoss(lossRate uint32) {
-	if !v.conn.Config.Congestion || v.conn.roundTrip.Timeout() == 0 {
+func (w *SendingWorker) OnPacketLoss(lossRate uint32) {
+	if !w.conn.Config.Congestion || w.conn.roundTrip.Timeout() == 0 {
 		return
 	}
 
 	if lossRate >= 15 {
-		v.controlWindow = 3 * v.controlWindow / 4
+		w.controlWindow = 3 * w.controlWindow / 4
 	} else if lossRate <= 5 {
-		v.controlWindow += v.controlWindow / 4
+		w.controlWindow += w.controlWindow / 4
 	}
-	if v.controlWindow < 16 {
-		v.controlWindow = 16
+	if w.controlWindow < 16 {
+		w.controlWindow = 16
 	}
-	if v.controlWindow > 2*v.conn.Config.GetSendingInFlightSize() {
-		v.controlWindow = 2 * v.conn.Config.GetSendingInFlightSize()
+	if w.controlWindow > 2*w.conn.Config.GetSendingInFlightSize() {
+		w.controlWindow = 2 * w.conn.Config.GetSendingInFlightSize()
 	}
 }
 
-func (v *SendingWorker) Flush(current uint32) {
-	v.Lock()
+func (w *SendingWorker) Flush(current uint32) {
+	w.Lock()
 
-	cwnd := v.firstUnacknowledged + v.conn.Config.GetSendingInFlightSize()
-	if cwnd > v.remoteNextNumber {
-		cwnd = v.remoteNextNumber
+	cwnd := w.firstUnacknowledged + w.conn.Config.GetSendingInFlightSize()
+	if cwnd > w.remoteNextNumber {
+		cwnd = w.remoteNextNumber
 	}
-	if v.conn.Config.Congestion && cwnd > v.firstUnacknowledged+v.controlWindow {
-		cwnd = v.firstUnacknowledged + v.controlWindow
-	}
-
-	if !v.window.IsEmpty() {
-		v.window.Flush(current, v.conn.roundTrip.Timeout(), cwnd)
-		v.firstUnacknowledgedUpdated = false
+	if w.conn.Config.Congestion && cwnd > w.firstUnacknowledged+w.controlWindow {
+		cwnd = w.firstUnacknowledged + w.controlWindow
 	}
 
-	updated := v.firstUnacknowledgedUpdated
-	v.firstUnacknowledgedUpdated = false
+	if !w.window.IsEmpty() {
+		w.window.Flush(current, w.conn.roundTrip.Timeout(), cwnd)
+		w.firstUnacknowledgedUpdated = false
+	}
 
-	v.Unlock()
+	updated := w.firstUnacknowledgedUpdated
+	w.firstUnacknowledgedUpdated = false
+
+	w.Unlock()
 
 	if updated {
-		v.conn.Ping(current, CommandPing)
+		w.conn.Ping(current, CommandPing)
 	}
 }
 
-func (v *SendingWorker) CloseWrite() {
-	v.Lock()
-	defer v.Unlock()
+func (w *SendingWorker) CloseWrite() {
+	w.Lock()
+	defer w.Unlock()
 
-	v.window.Clear(0xFFFFFFFF)
+	w.window.Clear(0xFFFFFFFF)
 }
 
-func (v *SendingWorker) IsEmpty() bool {
-	v.RLock()
-	defer v.RUnlock()
+func (w *SendingWorker) IsEmpty() bool {
+  w.RLock()
+	defer w.RUnlock()
 
-	return v.window.IsEmpty()
+	return w.window.IsEmpty()
 }
 
-func (v *SendingWorker) UpdateNecessary() bool {
-	return !v.IsEmpty()
+func (w *SendingWorker) UpdateNecessary() bool {
+	return !w.IsEmpty()
 }
 
 func (w *SendingWorker) FirstUnacknowledged() uint32 {
