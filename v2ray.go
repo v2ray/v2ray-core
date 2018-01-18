@@ -37,7 +37,7 @@ type Instance struct {
 // To make sure V2Ray instance works properly, the config must contain one Dispatcher, one InboundHandlerManager and one OutboundHandlerManager. Other features are optional.
 func New(config *Config) (*Instance, error) {
 	var server = &Instance{
-		id: *(uuid.New()),
+		id: uuid.New(),
 	}
 
 	if err := config.Transport.Apply(); err != nil {

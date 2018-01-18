@@ -21,6 +21,7 @@ func TestV2RayClose(t *testing.T) {
 	assert := With(t)
 
 	port := net.Port(dice.RollUint16())
+	userId := uuid.New()
 	config := &Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&proxyman.InboundConfig{}),
@@ -51,7 +52,7 @@ func TestV2RayClose(t *testing.T) {
 							User: []*protocol.User{
 								{
 									Account: serial.ToTypedMessage(&vmess.Account{
-										Id: uuid.New().String(),
+										Id: userId.String(),
 									}),
 								},
 							},

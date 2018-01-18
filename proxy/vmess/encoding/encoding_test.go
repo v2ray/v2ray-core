@@ -22,8 +22,9 @@ func TestRequestSerialization(t *testing.T) {
 		Level: 0,
 		Email: "test@v2ray.com",
 	}
+	id := uuid.New()
 	account := &vmess.Account{
-		Id:      uuid.New().String(),
+		Id:      id.String(),
 		AlterId: 0,
 	}
 	user.Account = serial.ToTypedMessage(account)

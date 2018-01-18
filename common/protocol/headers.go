@@ -79,7 +79,7 @@ type ResponseHeader struct {
 type CommandSwitchAccount struct {
 	Host     net.Address
 	Port     net.Port
-	ID       *uuid.UUID
+	ID       uuid.UUID
 	Level    uint32
 	AlterIds uint16
 	ValidMin byte

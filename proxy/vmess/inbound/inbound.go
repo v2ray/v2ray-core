@@ -53,8 +53,9 @@ func (v *userByEmail) Get(email string) (*protocol.User, bool) {
 		v.Lock()
 		user, found = v.cache[email]
 		if !found {
+			id := uuid.New()
 			account := &vmess.Account{
-				Id:      uuid.New().String(),
+				Id:      id.String(),
 				AlterId: uint32(v.defaultAlterIDs),
 			}
 			user = &protocol.User{
