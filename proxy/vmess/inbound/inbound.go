@@ -185,7 +185,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 				Status: log.AccessRejected,
 				Reason: err,
 			})
-			newError("invalid request from ", connection.RemoteAddr(), ": ", err).AtInfo().WriteToLog()
+			err = newError("invalid request from ", connection.RemoteAddr()).Base(err).AtInfo()
 		}
 		return err
 	}
@@ -252,7 +252,7 @@ func (h *Handler) generateCommand(ctx context.Context, request *protocol.Request
 		if h.inboundHandlerManager != nil {
 			handler, err := h.inboundHandlerManager.GetHandler(ctx, tag)
 			if err != nil {
-				newError("failed to get detour handler: ", tag, err).AtWarning().WriteToLog()
+				newError("failed to get detour handler: ", tag).Base(err).AtWarning().WriteToLog()
 				return nil
 			}
 			proxyHandler, port, availableMin := handler.GetRandomInboundProxy()
