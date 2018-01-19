@@ -206,7 +206,7 @@ func (c *AEADCipher) EncodePacket(key []byte, b *buf.Buffer) error {
 }
 
 func (c *AEADCipher) DecodePacket(key []byte, b *buf.Buffer) error {
-	if b.Len() <= v.IVSize() {
+	if b.Len() <= c.IVSize() {
 		return newError("insufficient data: ", b.Len())
 	}
 	ivLen := c.IVSize()
