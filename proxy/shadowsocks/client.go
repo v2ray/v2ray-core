@@ -155,7 +155,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 				User:   user,
 			}
 
-			if err := buf.Copy(reader, outboundRay.OutboundOutput(), buf.UpdateActivity(timer)); err != nil {
+			if err := buf.Copy(reader, outboundRay.OutboundOutput(), buf.UpdateActivity(timer), buf.IgnoreReaderError()); err != nil {
 				return newError("failed to transport all UDP response").Base(err)
 			}
 			return nil
