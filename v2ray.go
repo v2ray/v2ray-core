@@ -27,6 +27,7 @@ type Instance struct {
 	router        syncRouter
 	ihm           syncInboundHandlerManager
 	ohm           syncOutboundHandlerManager
+	clock         syncClock
 
 	features []Feature
 	id       uuid.UUID
@@ -162,4 +163,9 @@ func (s *Instance) InboundHandlerManager() InboundHandlerManager {
 // OutboundHandlerManager returns the OutboundHandlerManager used by this Instance. If OutboundHandlerManager was not registered before, the returned value doesn't work.
 func (s *Instance) OutboundHandlerManager() OutboundHandlerManager {
 	return &(s.ohm)
+}
+
+// Clock returns the Clock used by this Instance. The returned Clock is always functional.
+func (s *Instance) Clock() Clock {
+	return &(s.clock)
 }
