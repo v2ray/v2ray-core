@@ -28,6 +28,7 @@ type Instance struct {
 	ihm           syncInboundHandlerManager
 	ohm           syncOutboundHandlerManager
 	clock         syncClock
+	cmd           syncCommander
 
 	features []Feature
 	id       uuid.UUID
@@ -130,6 +131,10 @@ func (s *Instance) RegisterFeature(feature interface{}, instance Feature) error 
 		s.ihm.Set(instance.(InboundHandlerManager))
 	case OutboundHandlerManager, *OutboundHandlerManager:
 		s.ohm.Set(instance.(OutboundHandlerManager))
+	case Clock, *Clock:
+		s.clock.Set(instance.(Clock))
+	case Commander, *Commander:
+		s.cmd.Set(instance.(Commander))
 	}
 	s.features = append(s.features, instance)
 	return nil
@@ -168,4 +173,9 @@ func (s *Instance) OutboundHandlerManager() OutboundHandlerManager {
 // Clock returns the Clock used by this Instance. The returned Clock is always functional.
 func (s *Instance) Clock() Clock {
 	return &(s.clock)
+}
+
+// Commander returns the Commander used by this Instance. The returned Commander is always functional.
+func (s *Instance) Commander() Commander {
+	return &(s.cmd)
 }
