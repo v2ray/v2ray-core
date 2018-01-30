@@ -25,7 +25,6 @@ type idEntry struct {
 	id             *protocol.ID
 	userIdx        int
 	lastSec        protocol.Timestamp
-	lastSecRemoval protocol.Timestamp
 }
 
 type TimedUserValidator struct {
@@ -56,25 +55,26 @@ func NewTimedUserValidator(ctx context.Context, hasher protocol.IDHash) protocol
 
 func (v *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, idx int, entry *idEntry) {
 	var hashValue [16]byte
-	var hashValueRemoval [16]byte
 	idHash := v.hasher(entry.id.Bytes())
 	for entry.lastSec <= nowSec {
 		common.Must2(idHash.Write(entry.lastSec.Bytes(nil)))
 		idHash.Sum(hashValue[:0])
 		idHash.Reset()
 
-		common.Must2(idHash.Write(entry.lastSecRemoval.Bytes(nil)))
-		idHash.Sum(hashValueRemoval[:0])
-		idHash.Reset()
-
-		delete(v.userHash, hashValueRemoval)
 		v.userHash[hashValue] = indexTimePair{
 			index:   idx,
 			timeInc: uint32(entry.lastSec - v.baseTime),
 		}
 
 		entry.lastSec++
-		entry.lastSecRemoval++
+	}
+}
+
+func (v *TimedUserValidator) removeExpiredHashes(expire uint32) {
+	for key, pair := range v.userHash {
+		if pair.timeInc < expire {
+			delete(v.userHash, key)
+		}
 	}
 }
 
@@ -86,6 +86,11 @@ func (v *TimedUserValidator) updateUserHash(ctx context.Context, interval time.D
 			v.Lock()
 			for _, entry := range v.ids {
 				v.generateNewHashes(nowSec, entry.userIdx, entry)
+			}
+
+			expire := protocol.Timestamp(now.Unix() - cacheDurationSec*3)
+			if expire > v.baseTime {
+				v.removeExpiredHashes(uint32(expire - v.baseTime))
 			}
 			v.Unlock()
 		case <-ctx.Done():
@@ -112,7 +117,6 @@ func (v *TimedUserValidator) Add(user *protocol.User) error {
 		id:             account.ID,
 		userIdx:        idx,
 		lastSec:        protocol.Timestamp(nowSec - cacheDurationSec),
-		lastSecRemoval: protocol.Timestamp(nowSec - cacheDurationSec*3),
 	}
 	v.generateNewHashes(protocol.Timestamp(nowSec+cacheDurationSec), idx, entry)
 	v.ids = append(v.ids, entry)
@@ -121,7 +125,6 @@ func (v *TimedUserValidator) Add(user *protocol.User) error {
 			id:             alterid,
 			userIdx:        idx,
 			lastSec:        protocol.Timestamp(nowSec - cacheDurationSec),
-			lastSecRemoval: protocol.Timestamp(nowSec - cacheDurationSec*3),
 		}
 		v.generateNewHashes(protocol.Timestamp(nowSec+cacheDurationSec), idx, entry)
 		v.ids = append(v.ids, entry)
