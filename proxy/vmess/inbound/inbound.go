@@ -82,13 +82,6 @@ type Handler struct {
 
 // New creates a new VMess inbound handler.
 func New(ctx context.Context, config *Config) (*Handler, error) {
-	allowedClients := vmess.NewTimedUserValidator(ctx, protocol.DefaultIDHash)
-	for _, user := range config.User {
-		if err := allowedClients.Add(user); err != nil {
-			return nil, newError("failed to initiate user").Base(err)
-		}
-	}
-
 	v := core.FromContext(ctx)
 	if v == nil {
 		return nil, newError("V is not in context.")
@@ -97,10 +90,16 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	handler := &Handler{
 		policyManager:         v.PolicyManager(),
 		inboundHandlerManager: v.InboundHandlerManager(),
-		clients:               allowedClients,
+		clients:               vmess.NewTimedUserValidator(ctx, protocol.DefaultIDHash),
 		detours:               config.Detour,
 		usersByEmail:          newUserByEmail(config.User, config.GetDefaultValue()),
 		sessionHistory:        encoding.NewSessionHistory(ctx),
+	}
+
+	for _, user := range config.User {
+		if err := handler.AddUser(ctx, user); err != nil {
+			return nil, newError("failed to initiate user").Base(err)
+		}
 	}
 
 	return handler, nil
@@ -119,6 +118,10 @@ func (h *Handler) GetUser(email string) *protocol.User {
 		h.clients.Add(user)
 	}
 	return user
+}
+
+func (h *Handler) AddUser(ctx context.Context, user *protocol.User) error {
+	return h.clients.Add(user)
 }
 
 func transferRequest(timer signal.ActivityUpdater, session *encoding.ServerSession, request *protocol.RequestHeader, input io.Reader, output ray.OutputStream) error {
