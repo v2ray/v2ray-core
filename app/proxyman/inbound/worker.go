@@ -121,6 +121,7 @@ type udpConn struct {
 	output           func([]byte) (int, error)
 	remote           net.Addr
 	local            net.Addr
+	ctx              context.Context
 	cancel           context.CancelFunc
 }
 
@@ -129,13 +130,14 @@ func (c *udpConn) updateActivity() {
 }
 
 func (c *udpConn) Read(buf []byte) (int, error) {
-	in, open := <-c.input
-	if !open {
+	select {
+	case in := <-c.input:
+		defer in.Release()
+		c.updateActivity()
+		return copy(buf, in.Bytes()), nil
+	case <-c.ctx.Done():
 		return 0, io.EOF
 	}
-	defer in.Release()
-	c.updateActivity()
-	return copy(buf, in.Bytes()), nil
 }
 
 // Write implements io.Writer.
@@ -236,6 +238,7 @@ func (w *udpWorker) callback(b *buf.Buffer, source net.Destination, originalDest
 		go func() {
 			ctx := w.ctx
 			ctx, cancel := context.WithCancel(ctx)
+			conn.ctx = ctx
 			conn.cancel = cancel
 			if originalDest.IsValid() {
 				ctx = proxy.ContextWithOriginalTarget(ctx, originalDest)
