@@ -364,7 +364,7 @@ func (w *SendingWorker) CloseWrite() {
 }
 
 func (w *SendingWorker) IsEmpty() bool {
-  w.RLock()
+	w.RLock()
 	defer w.RUnlock()
 
 	return w.window.IsEmpty()

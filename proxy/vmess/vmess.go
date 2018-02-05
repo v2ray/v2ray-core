@@ -22,9 +22,9 @@ const (
 )
 
 type idEntry struct {
-	id             *protocol.ID
-	userIdx        int
-	lastSec        protocol.Timestamp
+	id      *protocol.ID
+	userIdx int
+	lastSec protocol.Timestamp
 }
 
 type TimedUserValidator struct {
@@ -114,17 +114,17 @@ func (v *TimedUserValidator) Add(user *protocol.User) error {
 	nowSec := time.Now().Unix()
 
 	entry := &idEntry{
-		id:             account.ID,
-		userIdx:        idx,
-		lastSec:        protocol.Timestamp(nowSec - cacheDurationSec),
+		id:      account.ID,
+		userIdx: idx,
+		lastSec: protocol.Timestamp(nowSec - cacheDurationSec),
 	}
 	v.generateNewHashes(protocol.Timestamp(nowSec+cacheDurationSec), idx, entry)
 	v.ids = append(v.ids, entry)
 	for _, alterid := range account.AlterIDs {
 		entry := &idEntry{
-			id:             alterid,
-			userIdx:        idx,
-			lastSec:        protocol.Timestamp(nowSec - cacheDurationSec),
+			id:      alterid,
+			userIdx: idx,
+			lastSec: protocol.Timestamp(nowSec - cacheDurationSec),
 		}
 		v.generateNewHashes(protocol.Timestamp(nowSec+cacheDurationSec), idx, entry)
 		v.ids = append(v.ids, entry)
