@@ -32,6 +32,9 @@ type InboundHandlerManager interface {
 	GetHandler(ctx context.Context, tag string) (InboundHandler, error)
 	// AddHandler adds the given handler into this InboundHandlerManager.
 	AddHandler(ctx context.Context, handler InboundHandler) error
+
+	// RemoveHandler removes a handler from InboundHandlerManager.
+	RemoveHandler(ctx context.Context, tag string) error
 }
 
 type syncInboundHandlerManager struct {
@@ -97,6 +100,9 @@ type OutboundHandlerManager interface {
 	GetDefaultHandler() OutboundHandler
 	// AddHandler adds a handler into this OutboundHandlerManager.
 	AddHandler(ctx context.Context, handler OutboundHandler) error
+
+	// RemoveHandler removes a handler from OutboundHandlerManager.
+	RemoveHandler(ctx context.Context, tag string) error
 }
 
 type syncOutboundHandlerManager struct {

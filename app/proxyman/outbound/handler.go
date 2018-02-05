@@ -105,7 +105,7 @@ func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Conn
 				ctx = proxy.ContextWithTarget(ctx, dest)
 				stream := ray.NewRay(ctx)
 				go handler.Dispatch(ctx, stream)
-				return ray.NewConnection(stream, zeroAddr, zeroAddr), nil
+				return ray.NewConnection(stream.InboundOutput(), stream.InboundInput()), nil
 			}
 
 			newError("failed to get outbound handler with tag: ", tag).AtWarning().WriteToLog()
@@ -121,4 +121,8 @@ func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Conn
 	}
 
 	return internet.Dial(ctx, dest)
+}
+
+func (h *Handler) GetOutbound() proxy.Outbound {
+	return h.proxy
 }

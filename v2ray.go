@@ -46,20 +46,18 @@ func New(config *Config) (*Instance, error) {
 		return nil, err
 	}
 
-	ctx := context.WithValue(context.Background(), v2rayKey, server)
-
 	for _, appSettings := range config.App {
 		settings, err := appSettings.GetInstance()
 		if err != nil {
 			return nil, err
 		}
-		if _, err := common.CreateObject(ctx, settings); err != nil {
+		if _, err := server.CreateObject(settings); err != nil {
 			return nil, err
 		}
 	}
 
 	for _, inbound := range config.Inbound {
-		rawHandler, err := common.CreateObject(ctx, inbound)
+		rawHandler, err := server.CreateObject(inbound)
 		if err != nil {
 			return nil, err
 		}
@@ -67,13 +65,13 @@ func New(config *Config) (*Instance, error) {
 		if !ok {
 			return nil, newError("not an InboundHandler")
 		}
-		if err := server.InboundHandlerManager().AddHandler(ctx, handler); err != nil {
+		if err := server.InboundHandlerManager().AddHandler(context.Background(), handler); err != nil {
 			return nil, err
 		}
 	}
 
 	for _, outbound := range config.Outbound {
-		rawHandler, err := common.CreateObject(ctx, outbound)
+		rawHandler, err := server.CreateObject(outbound)
 		if err != nil {
 			return nil, err
 		}
@@ -81,12 +79,17 @@ func New(config *Config) (*Instance, error) {
 		if !ok {
 			return nil, newError("not an OutboundHandler")
 		}
-		if err := server.OutboundHandlerManager().AddHandler(ctx, handler); err != nil {
+		if err := server.OutboundHandlerManager().AddHandler(context.Background(), handler); err != nil {
 			return nil, err
 		}
 	}
 
 	return server, nil
+}
+
+func (s *Instance) CreateObject(config interface{}) (interface{}, error) {
+	ctx := context.WithValue(context.Background(), v2rayKey, s)
+	return common.CreateObject(ctx, config)
 }
 
 // ID returns an unique ID for this V2Ray instance.

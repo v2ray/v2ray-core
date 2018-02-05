@@ -16,5 +16,5 @@ func Dial(ctx context.Context, v *Instance, dest net.Destination) (net.Conn, err
 	if err != nil {
 		return nil, err
 	}
-	return ray.NewConnection(r, &net.TCPAddr{IP: []byte{0, 0, 0, 0}}, &net.TCPAddr{IP: []byte{0, 0, 0, 0}}), nil
+	return ray.NewConnection(r.InboundOutput(), r.InboundInput()), nil
 }

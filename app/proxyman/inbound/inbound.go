@@ -4,6 +4,7 @@ package inbound
 
 import (
 	"context"
+	"sync"
 
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
@@ -12,8 +13,9 @@ import (
 
 // Manager is to manage all inbound handlers.
 type Manager struct {
-	handlers       []core.InboundHandler
-	taggedHandlers map[string]core.InboundHandler
+	sync.RWMutex
+	untaggedHandler []core.InboundHandler
+	taggedHandlers  map[string]core.InboundHandler
 }
 
 func New(ctx context.Context, config *proxyman.InboundConfig) (*Manager, error) {
@@ -31,15 +33,22 @@ func New(ctx context.Context, config *proxyman.InboundConfig) (*Manager, error) 
 }
 
 func (m *Manager) AddHandler(ctx context.Context, handler core.InboundHandler) error {
-	m.handlers = append(m.handlers, handler)
+	m.Lock()
+	defer m.Unlock()
+
 	tag := handler.Tag()
 	if len(tag) > 0 {
 		m.taggedHandlers[tag] = handler
+	} else {
+		m.untaggedHandler = append(m.untaggedHandler, handler)
 	}
 	return nil
 }
 
 func (m *Manager) GetHandler(ctx context.Context, tag string) (core.InboundHandler, error) {
+	m.RLock()
+	defer m.RUnlock()
+
 	handler, found := m.taggedHandlers[tag]
 	if !found {
 		return nil, newError("handler not found: ", tag)
@@ -47,8 +56,31 @@ func (m *Manager) GetHandler(ctx context.Context, tag string) (core.InboundHandl
 	return handler, nil
 }
 
+func (m *Manager) RemoveHandler(ctx context.Context, tag string) error {
+	if len(tag) == 0 {
+		return core.ErrNoClue
+	}
+
+	m.Lock()
+	defer m.Unlock()
+
+	if handler, found := m.taggedHandlers[tag]; found {
+		handler.Close()
+		delete(m.taggedHandlers, tag)
+		return nil
+	}
+
+	return core.ErrNoClue
+}
+
 func (m *Manager) Start() error {
-	for _, handler := range m.handlers {
+	for _, handler := range m.taggedHandlers {
+		if err := handler.Start(); err != nil {
+			return err
+		}
+	}
+
+	for _, handler := range m.untaggedHandler {
 		if err := handler.Start(); err != nil {
 			return err
 		}
@@ -57,7 +89,10 @@ func (m *Manager) Start() error {
 }
 
 func (m *Manager) Close() {
-	for _, handler := range m.handlers {
+	for _, handler := range m.taggedHandlers {
+		handler.Close()
+	}
+	for _, handler := range m.untaggedHandler {
 		handler.Close()
 	}
 }

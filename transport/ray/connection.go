@@ -6,27 +6,57 @@ import (
 	"time"
 
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/signal"
 )
 
-type connection struct {
-	stream     InboundRay
-	closed     bool
-	localAddr  net.Addr
-	remoteAddr net.Addr
+type ConnectionOption func(*connection)
 
-	reader *buf.BufferedReader
-	writer buf.Writer
+func ConnLocalAddr(addr net.Addr) ConnectionOption {
+	return func(c *connection) {
+		c.localAddr = addr
+	}
 }
 
-// NewConnection wraps a Ray into net.Conn.
-func NewConnection(stream InboundRay, localAddr net.Addr, remoteAddr net.Addr) net.Conn {
-	return &connection{
-		stream:     stream,
-		localAddr:  localAddr,
-		remoteAddr: remoteAddr,
-		reader:     buf.NewBufferedReader(stream.InboundOutput()),
-		writer:     stream.InboundInput(),
+func ConnRemoteAddr(addr net.Addr) ConnectionOption {
+	return func(c *connection) {
+		c.remoteAddr = addr
 	}
+}
+
+func ConnCloseSignal(s *signal.Notifier) ConnectionOption {
+	return func(c *connection) {
+		c.closeSignal = s
+	}
+}
+
+type connection struct {
+	input       InputStream
+	output      OutputStream
+	closed      bool
+	localAddr   net.Addr
+	remoteAddr  net.Addr
+	closeSignal *signal.Notifier
+
+	reader *buf.BufferedReader
+}
+
+var zeroAddr net.Addr = &net.TCPAddr{IP: []byte{0, 0, 0, 0}}
+
+// NewConnection wraps a Ray into net.Conn.
+func NewConnection(input InputStream, output OutputStream, options ...ConnectionOption) net.Conn {
+	c := &connection{
+		input:      input,
+		output:     output,
+		localAddr:  zeroAddr,
+		remoteAddr: zeroAddr,
+		reader:     buf.NewBufferedReader(input),
+	}
+
+	for _, opt := range options {
+		opt(c)
+	}
+
+	return c
 }
 
 // Read implements net.Conn.Read().
@@ -51,7 +81,7 @@ func (c *connection) Write(b []byte) (int, error) {
 	l := len(b)
 	mb := buf.NewMultiBufferCap(l/buf.Size + 1)
 	mb.Write(b)
-	return l, c.writer.WriteMultiBuffer(mb)
+	return l, c.output.WriteMultiBuffer(mb)
 }
 
 func (c *connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
@@ -59,14 +89,17 @@ func (c *connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 		return io.ErrClosedPipe
 	}
 
-	return c.writer.WriteMultiBuffer(mb)
+	return c.output.WriteMultiBuffer(mb)
 }
 
 // Close implements net.Conn.Close().
 func (c *connection) Close() error {
 	c.closed = true
-	c.stream.InboundInput().Close()
-	c.stream.InboundOutput().CloseError()
+	c.output.Close()
+	c.input.CloseError()
+	if c.closeSignal != nil {
+		c.closeSignal.Signal()
+	}
 	return nil
 }
 

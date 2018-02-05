@@ -93,3 +93,7 @@ func (h *AlwaysOnInboundHandler) GetRandomInboundProxy() (interface{}, net.Port,
 func (h *AlwaysOnInboundHandler) Tag() string {
 	return h.tag
 }
+
+func (h *AlwaysOnInboundHandler) GetInbound() proxy.Inbound {
+	return h.proxy
+}

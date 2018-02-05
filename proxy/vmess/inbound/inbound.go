@@ -124,6 +124,10 @@ func (h *Handler) AddUser(ctx context.Context, user *protocol.User) error {
 	return h.clients.Add(user)
 }
 
+func (h *Handler) RemoveUser(ctx context.Context, email string) error {
+	return newError("not implemented")
+}
+
 func transferRequest(timer signal.ActivityUpdater, session *encoding.ServerSession, request *protocol.RequestHeader, input io.Reader, output ray.OutputStream) error {
 	defer output.Close()
 

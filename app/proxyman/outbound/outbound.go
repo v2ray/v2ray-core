@@ -73,6 +73,21 @@ func (m *Manager) AddHandler(ctx context.Context, handler core.OutboundHandler) 
 	return nil
 }
 
+func (m *Manager) RemoveHandler(ctx context.Context, tag string) error {
+	if len(tag) == 0 {
+		return core.ErrNoClue
+	}
+	m.Lock()
+	defer m.Unlock()
+
+	delete(m.taggedHandler, tag)
+	if m.defaultHandler.Tag() == tag {
+		m.defaultHandler = nil
+	}
+
+	return nil
+}
+
 func init() {
 	common.Must(common.RegisterConfig((*proxyman.OutboundConfig)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
 		return New(ctx, config.(*proxyman.OutboundConfig))
