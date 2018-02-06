@@ -14,8 +14,9 @@ import (
 // Manager is to manage all outbound handlers.
 type Manager struct {
 	sync.RWMutex
-	defaultHandler core.OutboundHandler
-	taggedHandler  map[string]core.OutboundHandler
+	defaultHandler   core.OutboundHandler
+	taggedHandler    map[string]core.OutboundHandler
+	untaggedHandlers []core.OutboundHandler
 }
 
 // New creates a new Manager.
@@ -68,6 +69,8 @@ func (m *Manager) AddHandler(ctx context.Context, handler core.OutboundHandler) 
 	tag := handler.Tag()
 	if len(tag) > 0 {
 		m.taggedHandler[tag] = handler
+	} else {
+		m.untaggedHandlers = append(m.untaggedHandlers, handler)
 	}
 
 	return nil

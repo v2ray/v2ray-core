@@ -9,6 +9,7 @@ import (
 
 	"google.golang.org/grpc"
 	"v2ray.com/core"
+	"v2ray.com/core/common"
 )
 
 type Commander struct {
@@ -17,6 +18,21 @@ type Commander struct {
 	config    Config
 	ohm       core.OutboundHandlerManager
 	callbacks []core.ServiceRegistryCallback
+}
+
+func NewCommander(ctx context.Context, config *Config) (*Commander, error) {
+	v := core.FromContext(ctx)
+	if v == nil {
+		return nil, newError("V is not in context.")
+	}
+	c := &Commander{
+		config: *config,
+		ohm:    v.OutboundHandlerManager(),
+	}
+	if err := v.RegisterFeature((*core.Commander)(nil), c); err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
 func (c *Commander) RegisterService(callback core.ServiceRegistryCallback) {
@@ -42,7 +58,11 @@ func (c *Commander) Start() error {
 		buffer: make(chan net.Conn, 4),
 	}
 
-	c.server.Serve(listener)
+	go func() {
+		if err := c.server.Serve(listener); err != nil {
+			newError("failed to start grpc server").Base(err).AtError().WriteToLog()
+		}
+	}()
 
 	c.ohm.RemoveHandler(context.Background(), c.config.Tag)
 	c.ohm.AddHandler(context.Background(), &CommanderOutbound{
@@ -60,4 +80,10 @@ func (c *Commander) Close() {
 		c.server.Stop()
 		c.server = nil
 	}
+}
+
+func init() {
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, cfg interface{}) (interface{}, error) {
+		return NewCommander(ctx, cfg.(*Config))
+	}))
 }
