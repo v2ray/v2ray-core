@@ -23,7 +23,7 @@ import (
 )
 
 func pickPort() net.Port {
-	listener, err := net.Listen("tcp4", ":0")
+	listener, err := net.Listen("tcp4", "127.0.0.1:0")
 	common.Must(err)
 	defer listener.Close()
 
