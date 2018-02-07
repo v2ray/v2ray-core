@@ -93,7 +93,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		clients:               vmess.NewTimedUserValidator(ctx, protocol.DefaultIDHash),
 		detours:               config.Detour,
 		usersByEmail:          newUserByEmail(config.User, config.GetDefaultValue()),
-		sessionHistory:        encoding.NewSessionHistory(ctx),
+		sessionHistory:        encoding.NewSessionHistory(),
 	}
 
 	for _, user := range config.User {
