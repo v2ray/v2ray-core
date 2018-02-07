@@ -41,6 +41,7 @@ func (*Manager) Start() error { return nil }
 // Close implements core.Feature
 func (*Manager) Close() {}
 
+// GetDefaultHandler implements core.OutboundHandlerManager.
 func (m *Manager) GetDefaultHandler() core.OutboundHandler {
 	m.access.RLock()
 	defer m.access.RUnlock()
@@ -51,6 +52,7 @@ func (m *Manager) GetDefaultHandler() core.OutboundHandler {
 	return m.defaultHandler
 }
 
+// GetHandler implements core.OutboundHandlerManager.
 func (m *Manager) GetHandler(tag string) core.OutboundHandler {
 	m.access.RLock()
 	defer m.access.RUnlock()
@@ -60,6 +62,7 @@ func (m *Manager) GetHandler(tag string) core.OutboundHandler {
 	return nil
 }
 
+// AddHandler implements core.OutboundHandlerManager.
 func (m *Manager) AddHandler(ctx context.Context, handler core.OutboundHandler) error {
 	m.access.Lock()
 	defer m.access.Unlock()
@@ -78,6 +81,7 @@ func (m *Manager) AddHandler(ctx context.Context, handler core.OutboundHandler) 
 	return nil
 }
 
+// RemoveHandler implements core.OutboundHandlerManager.
 func (m *Manager) RemoveHandler(ctx context.Context, tag string) error {
 	if len(tag) == 0 {
 		return core.ErrNoClue

@@ -67,6 +67,7 @@ func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (*Handl
 	return h, nil
 }
 
+// Tag implements core.OutboundHandler.
 func (h *Handler) Tag() string {
 	return h.config.Tag
 }

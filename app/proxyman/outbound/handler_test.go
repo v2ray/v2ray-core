@@ -12,4 +12,5 @@ func TestInterfaces(t *testing.T) {
 	assert := With(t)
 
 	assert((*Handler)(nil), Implements, (*core.OutboundHandler)(nil))
+	assert((*Manager)(nil), Implements, (*core.OutboundHandlerManager)(nil))
 }
