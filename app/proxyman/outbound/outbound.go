@@ -13,10 +13,11 @@ import (
 
 // Manager is to manage all outbound handlers.
 type Manager struct {
-	sync.RWMutex
+	access           sync.RWMutex
 	defaultHandler   core.OutboundHandler
 	taggedHandler    map[string]core.OutboundHandler
 	untaggedHandlers []core.OutboundHandler
+	running          bool
 }
 
 // New creates a new Manager.
@@ -34,15 +35,16 @@ func New(ctx context.Context, config *proxyman.OutboundConfig) (*Manager, error)
 	return m, nil
 }
 
-// Start implements Application.Start
+// Start implements core.Feature
 func (*Manager) Start() error { return nil }
 
-// Close implements Application.Close
+// Close implements core.Feature
 func (*Manager) Close() {}
 
 func (m *Manager) GetDefaultHandler() core.OutboundHandler {
-	m.RLock()
-	defer m.RUnlock()
+	m.access.RLock()
+	defer m.access.RUnlock()
+
 	if m.defaultHandler == nil {
 		return nil
 	}
@@ -50,8 +52,8 @@ func (m *Manager) GetDefaultHandler() core.OutboundHandler {
 }
 
 func (m *Manager) GetHandler(tag string) core.OutboundHandler {
-	m.RLock()
-	defer m.RUnlock()
+	m.access.RLock()
+	defer m.access.RUnlock()
 	if handler, found := m.taggedHandler[tag]; found {
 		return handler
 	}
@@ -59,8 +61,8 @@ func (m *Manager) GetHandler(tag string) core.OutboundHandler {
 }
 
 func (m *Manager) AddHandler(ctx context.Context, handler core.OutboundHandler) error {
-	m.Lock()
-	defer m.Unlock()
+	m.access.Lock()
+	defer m.access.Unlock()
 
 	if m.defaultHandler == nil {
 		m.defaultHandler = handler
@@ -80,8 +82,8 @@ func (m *Manager) RemoveHandler(ctx context.Context, tag string) error {
 	if len(tag) == 0 {
 		return core.ErrNoClue
 	}
-	m.Lock()
-	defer m.Unlock()
+	m.access.Lock()
+	defer m.access.Unlock()
 
 	delete(m.taggedHandler, tag)
 	if m.defaultHandler.Tag() == tag {

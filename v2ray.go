@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"sync"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/uuid"
@@ -30,8 +31,10 @@ type Instance struct {
 	clock         syncClock
 	cmd           syncCommander
 
+	access   sync.Mutex
 	features []Feature
 	id       uuid.UUID
+	running  bool
 }
 
 // New returns a new V2Ray instance based on given configuration.
@@ -99,6 +102,10 @@ func (s *Instance) ID() uuid.UUID {
 
 // Close shutdown the V2Ray instance.
 func (s *Instance) Close() {
+	s.access.Lock()
+	defer s.access.Unlock()
+
+	s.running = false
 	for _, f := range s.features {
 		f.Close()
 	}
@@ -106,6 +113,10 @@ func (s *Instance) Close() {
 
 // Start starts the V2Ray instance, including all registered features. When Start returns error, the state of the instance is unknown.
 func (s *Instance) Start() error {
+	s.access.Lock()
+	defer s.access.Unlock()
+
+	s.running = true
 	for _, f := range s.features {
 		if err := f.Start(); err != nil {
 			return err
@@ -139,7 +150,13 @@ func (s *Instance) RegisterFeature(feature interface{}, instance Feature) error 
 	case Commander, *Commander:
 		s.cmd.Set(instance.(Commander))
 	}
+	s.access.Lock()
+	defer s.access.Unlock()
+
 	s.features = append(s.features, instance)
+	if s.running {
+		return instance.Start()
+	}
 	return nil
 }
 

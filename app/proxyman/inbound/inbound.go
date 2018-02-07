@@ -13,9 +13,10 @@ import (
 
 // Manager is to manage all inbound handlers.
 type Manager struct {
-	sync.RWMutex
+	access          sync.RWMutex
 	untaggedHandler []core.InboundHandler
 	taggedHandlers  map[string]core.InboundHandler
+	running         bool
 }
 
 func New(ctx context.Context, config *proxyman.InboundConfig) (*Manager, error) {
@@ -33,8 +34,8 @@ func New(ctx context.Context, config *proxyman.InboundConfig) (*Manager, error) 
 }
 
 func (m *Manager) AddHandler(ctx context.Context, handler core.InboundHandler) error {
-	m.Lock()
-	defer m.Unlock()
+	m.access.Lock()
+	defer m.access.Unlock()
 
 	tag := handler.Tag()
 	if len(tag) > 0 {
@@ -42,12 +43,17 @@ func (m *Manager) AddHandler(ctx context.Context, handler core.InboundHandler) e
 	} else {
 		m.untaggedHandler = append(m.untaggedHandler, handler)
 	}
+
+	if m.running {
+		return handler.Start()
+	}
+
 	return nil
 }
 
 func (m *Manager) GetHandler(ctx context.Context, tag string) (core.InboundHandler, error) {
-	m.RLock()
-	defer m.RUnlock()
+	m.access.RLock()
+	defer m.access.RUnlock()
 
 	handler, found := m.taggedHandlers[tag]
 	if !found {
@@ -61,8 +67,8 @@ func (m *Manager) RemoveHandler(ctx context.Context, tag string) error {
 		return core.ErrNoClue
 	}
 
-	m.Lock()
-	defer m.Unlock()
+	m.access.Lock()
+	defer m.access.Unlock()
 
 	if handler, found := m.taggedHandlers[tag]; found {
 		handler.Close()
@@ -74,6 +80,11 @@ func (m *Manager) RemoveHandler(ctx context.Context, tag string) error {
 }
 
 func (m *Manager) Start() error {
+	m.access.Lock()
+	defer m.access.Unlock()
+
+	m.running = true
+
 	for _, handler := range m.taggedHandlers {
 		if err := handler.Start(); err != nil {
 			return err
@@ -89,6 +100,11 @@ func (m *Manager) Start() error {
 }
 
 func (m *Manager) Close() {
+	m.access.Lock()
+	defer m.access.Unlock()
+
+	m.running = false
+
 	for _, handler := range m.taggedHandlers {
 		handler.Close()
 	}
