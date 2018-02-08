@@ -11,26 +11,39 @@ import (
 
 type OutboundListener struct {
 	buffer chan net.Conn
+	done   *signal.Done
 }
 
 func (l *OutboundListener) add(conn net.Conn) {
 	select {
 	case l.buffer <- conn:
+	case <-l.done.C():
+		conn.Close()
 	default:
 		conn.Close()
 	}
 }
 
 func (l *OutboundListener) Accept() (net.Conn, error) {
-	c, open := <-l.buffer
-	if !open {
-		return nil, newError("listener closed")
+	select {
+	case <-l.done.C():
+		return nil, newError("listern closed")
+	case c := <-l.buffer:
+		return c, nil
 	}
-	return c, nil
 }
 
 func (l *OutboundListener) Close() error {
-	close(l.buffer)
+	l.done.Close()
+L:
+	for {
+		select {
+		case c := <-l.buffer:
+			c.Close()
+		default:
+			break L
+		}
+	}
 	return nil
 }
 

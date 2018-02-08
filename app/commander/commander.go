@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc"
 	"v2ray.com/core"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/signal"
 )
 
 type Commander struct {
@@ -58,6 +59,7 @@ func (c *Commander) Start() error {
 
 	listener := &OutboundListener{
 		buffer: make(chan net.Conn, 4),
+		done:   signal.NewDone(),
 	}
 
 	go func() {
