@@ -33,7 +33,12 @@ func TestCommanderRemoveHandler(t *testing.T) {
 	cmdPort := pickPort()
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
-			serial.ToTypedMessage(&commander.Config{Tag: "api"}),
+			serial.ToTypedMessage(&commander.Config{
+				Tag: "api",
+				Service: []*serial.TypedMessage{
+					serial.ToTypedMessage(&command.Config{}),
+				},
+			}),
 			serial.ToTypedMessage(&router.Config{
 				Rule: []*router.RoutingRule{
 					{
@@ -42,7 +47,6 @@ func TestCommanderRemoveHandler(t *testing.T) {
 					},
 				},
 			}),
-			serial.ToTypedMessage(&command.Config{}),
 		},
 		Inbound: []*core.InboundHandlerConfig{
 			{
