@@ -19,6 +19,7 @@ type Manager struct {
 	running         bool
 }
 
+// New returns a new Manager for inbound handlers.
 func New(ctx context.Context, config *proxyman.InboundConfig) (*Manager, error) {
 	m := &Manager{
 		taggedHandlers: make(map[string]core.InboundHandler),
@@ -33,6 +34,7 @@ func New(ctx context.Context, config *proxyman.InboundConfig) (*Manager, error) 
 	return m, nil
 }
 
+// AddHandler implements core.InboundHandlerManager.
 func (m *Manager) AddHandler(ctx context.Context, handler core.InboundHandler) error {
 	m.access.Lock()
 	defer m.access.Unlock()
@@ -51,6 +53,7 @@ func (m *Manager) AddHandler(ctx context.Context, handler core.InboundHandler) e
 	return nil
 }
 
+// GetHandler returns core.InboundHandlerManager.
 func (m *Manager) GetHandler(ctx context.Context, tag string) (core.InboundHandler, error) {
 	m.access.RLock()
 	defer m.access.RUnlock()

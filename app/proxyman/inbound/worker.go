@@ -152,7 +152,7 @@ func (*udpConn) SetWriteDeadline(time.Time) error {
 	return nil
 }
 
-type connId struct {
+type connID struct {
 	src  net.Destination
 	dest net.Destination
 }
@@ -169,10 +169,10 @@ type udpWorker struct {
 	dispatcher   core.Dispatcher
 
 	done       *signal.Done
-	activeConn map[connId]*udpConn
+	activeConn map[connID]*udpConn
 }
 
-func (w *udpWorker) getConnection(id connId) (*udpConn, bool) {
+func (w *udpWorker) getConnection(id connID) (*udpConn, bool) {
 	w.Lock()
 	defer w.Unlock()
 
@@ -202,7 +202,7 @@ func (w *udpWorker) getConnection(id connId) (*udpConn, bool) {
 }
 
 func (w *udpWorker) callback(b *buf.Buffer, source net.Destination, originalDest net.Destination) {
-	id := connId{
+	id := connID{
 		src:  source,
 		dest: originalDest,
 	}
@@ -235,14 +235,14 @@ func (w *udpWorker) callback(b *buf.Buffer, source net.Destination, originalDest
 	}
 }
 
-func (w *udpWorker) removeConn(id connId) {
+func (w *udpWorker) removeConn(id connID) {
 	w.Lock()
 	delete(w.activeConn, id)
 	w.Unlock()
 }
 
 func (w *udpWorker) Start() error {
-	w.activeConn = make(map[connId]*udpConn, 16)
+	w.activeConn = make(map[connID]*udpConn, 16)
 	w.done = signal.NewDone()
 	h, err := udp.ListenUDP(w.address, w.port, udp.ListenOption{
 		Callback:            w.callback,
