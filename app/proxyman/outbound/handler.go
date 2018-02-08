@@ -93,8 +93,6 @@ func (h *Handler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
 	}
 }
 
-var zeroAddr net.Addr = &net.TCPAddr{IP: []byte{0, 0, 0, 0}, Port: 0}
-
 // Dial implements proxy.Dialer.Dial().
 func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {
 	if h.senderSettings != nil {
@@ -124,14 +122,17 @@ func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Conn
 	return internet.Dial(ctx, dest)
 }
 
+// GetOutbound implements proxy.GetOutbound.
 func (h *Handler) GetOutbound() proxy.Outbound {
 	return h.proxy
 }
 
+// Start implements common.Runnable.
 func (h *Handler) Start() error {
 	return nil
 }
 
+// Close implements common.Runnable.
 func (h *Handler) Close() error {
 	return nil
 }
