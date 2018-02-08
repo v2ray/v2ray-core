@@ -9,20 +9,32 @@ import (
 	"v2ray.com/core/proxy"
 )
 
+// InboundOperation is the interface for operations that applies to inbound handlers.
 type InboundOperation interface {
+	// ApplyInbound appliess this operation to the given inbound handler.
 	ApplyInbound(context.Context, core.InboundHandler) error
 }
 
+// OutboundOperation is the interface for operations that applies to outbound handlers.
 type OutboundOperation interface {
+	// ApplyOutbound applies this operation to the given outbound handler.
 	ApplyOutbound(context.Context, core.OutboundHandler) error
 }
 
-func (op *AddUserOperation) ApplyInbound(ctx context.Context, handler core.InboundHandler) error {
-	getInbound, ok := handler.(proxy.GetInbound)
+func getInbound(handler core.InboundHandler) (proxy.Inbound, error) {
+	gi, ok := handler.(proxy.GetInbound)
 	if !ok {
-		return newError("can't get inbound proxy from handler")
+		return nil, newError("can't get inbound proxy from handler.")
 	}
-	p := getInbound.GetInbound()
+	return gi.GetInbound(), nil
+}
+
+// ApplyInbound implements InboundOperation.
+func (op *AddUserOperation) ApplyInbound(ctx context.Context, handler core.InboundHandler) error {
+	p, err := getInbound(handler)
+	if err != nil {
+		return err
+	}
 	um, ok := p.(proxy.UserManager)
 	if !ok {
 		return newError("proxy is not an UserManager")
@@ -30,17 +42,17 @@ func (op *AddUserOperation) ApplyInbound(ctx context.Context, handler core.Inbou
 	return um.AddUser(ctx, op.User)
 }
 
-func (op *AddUserOperation) ApplyOutbound(ctx context.Context, handler core.OutboundHandler) error {
-	getOutbound, ok := handler.(proxy.GetOutbound)
-	if !ok {
-		return newError("can't get outbound proxy from handler")
+// ApplyInbound implements InboundOperation.
+func (op *RemoveUserOperation) ApplyInbound(ctx context.Context, handler core.InboundHandler) error {
+	p, err := getInbound(handler)
+	if err != nil {
+		return err
 	}
-	p := getOutbound.GetOutbound()
 	um, ok := p.(proxy.UserManager)
 	if !ok {
-		return newError("proxy in not an UserManager")
+		return newError("proxy is not an UserManager")
 	}
-	return um.AddUser(ctx, op.User)
+	return um.RemoveUser(ctx, op.Email)
 }
 
 type handlerServer struct {
