@@ -1,7 +1,6 @@
 package encoding_test
 
 import (
-	"context"
 	"testing"
 
 	"v2ray.com/core/common"
@@ -45,8 +44,8 @@ func TestRequestSerialization(t *testing.T) {
 	buffer2 := buf.New()
 	buffer2.Append(buffer.Bytes())
 
-	ctx, cancel := context.WithCancel(context.Background())
 	sessionHistory := NewSessionHistory()
+	defer common.Close(sessionHistory)
 
 	userValidator := vmess.NewTimedUserValidator(protocol.DefaultIDHash)
 	userValidator.Add(user)
@@ -66,6 +65,4 @@ func TestRequestSerialization(t *testing.T) {
 	_, err = server.DecodeRequestHeader(buffer2)
 	// anti replay attack
 	assert(err, IsNotNil)
-
-	cancel()
 }
