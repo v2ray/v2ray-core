@@ -14,10 +14,10 @@ import (
 
 type Commander struct {
 	sync.Mutex
-	server    *grpc.Server
-	config    Config
-	ohm       core.OutboundHandlerManager
-	callbacks []core.ServiceRegistryCallback
+	server *grpc.Server
+	config Config
+	v      *core.Instance
+	ohm    core.OutboundHandlerManager
 }
 
 func NewCommander(ctx context.Context, config *Config) (*Commander, error) {
@@ -28,6 +28,7 @@ func NewCommander(ctx context.Context, config *Config) (*Commander, error) {
 	c := &Commander{
 		config: *config,
 		ohm:    v.OutboundHandlerManager(),
+		v:      v,
 	}
 	if err := v.RegisterFeature((*core.Commander)(nil), c); err != nil {
 		return nil, err
@@ -35,22 +36,23 @@ func NewCommander(ctx context.Context, config *Config) (*Commander, error) {
 	return c, nil
 }
 
-func (c *Commander) RegisterService(callback core.ServiceRegistryCallback) {
-	c.Lock()
-	defer c.Unlock()
-
-	if callback == nil {
-		return
-	}
-
-	c.callbacks = append(c.callbacks, callback)
-}
-
 func (c *Commander) Start() error {
 	c.Lock()
 	c.server = grpc.NewServer()
-	for _, callback := range c.callbacks {
-		callback(c.server)
+	for _, rawConfig := range c.config.Service {
+		config, err := rawConfig.GetInstance()
+		if err != nil {
+			return err
+		}
+		rawService, err := c.v.CreateObject(config)
+		if err != nil {
+			return err
+		}
+		service, ok := rawService.(Service)
+		if !ok {
+			return newError("not a Service.")
+		}
+		service.Register(c.server)
 	}
 	c.Unlock()
 

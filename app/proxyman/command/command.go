@@ -125,14 +125,16 @@ func (s *handlerServer) AlterOutbound(ctx context.Context, request *AlterOutboun
 	return &AlterOutboundResponse{}, operation.ApplyOutbound(ctx, handler)
 }
 
-type feature struct{}
-
-func (*feature) Start() error {
-	return nil
+type service struct {
+	v *core.Instance
 }
 
-func (*feature) Close() error {
-	return nil
+func (s *service) Register(server *grpc.Server) {
+	RegisterHandlerServiceServer(server, &handlerServer{
+		s:   s.v,
+		ihm: s.v.InboundHandlerManager(),
+		ohm: s.v.OutboundHandlerManager(),
+	})
 }
 
 func init() {
@@ -141,13 +143,6 @@ func init() {
 		if s == nil {
 			return nil, newError("V is not in context.")
 		}
-		s.Commander().RegisterService(func(server *grpc.Server) {
-			RegisterHandlerServiceServer(server, &handlerServer{
-				s:   s,
-				ihm: s.InboundHandlerManager(),
-				ohm: s.OutboundHandlerManager(),
-			})
-		})
-		return &feature{}, nil
+		return &service{v: s}, nil
 	}))
 }
