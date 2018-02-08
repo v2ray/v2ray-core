@@ -127,3 +127,11 @@ func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Conn
 func (h *Handler) GetOutbound() proxy.Outbound {
 	return h.proxy
 }
+
+func (h *Handler) Start() error {
+	return nil
+}
+
+func (h *Handler) Close() error {
+	return nil
+}
