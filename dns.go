@@ -1,7 +1,11 @@
 package core
 
-import "net"
-import "sync"
+import (
+	"net"
+	"sync"
+
+	"v2ray.com/core/common"
+)
 
 // DNSClient is a V2Ray feature for querying DNS information.
 type DNSClient interface {
@@ -36,13 +40,11 @@ func (d *syncDNSClient) Start() error {
 	return d.DNSClient.Start()
 }
 
-func (d *syncDNSClient) Close() {
+func (d *syncDNSClient) Close() error {
 	d.RLock()
 	defer d.RUnlock()
 
-	if d.DNSClient != nil {
-		d.DNSClient.Close()
-	}
+	return common.Close(d.DNSClient)
 }
 
 func (d *syncDNSClient) Set(client DNSClient) {

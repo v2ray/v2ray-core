@@ -72,7 +72,7 @@ func (c *Commander) Start() error {
 	return nil
 }
 
-func (c *Commander) Close() {
+func (c *Commander) Close() error {
 	c.Lock()
 	defer c.Unlock()
 
@@ -80,6 +80,8 @@ func (c *Commander) Close() {
 		c.server.Stop()
 		c.server = nil
 	}
+
+	return nil
 }
 
 func init() {

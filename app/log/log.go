@@ -103,11 +103,13 @@ func (g *Instance) Handle(msg log.Message) {
 }
 
 // Close implement app.Application.Close().
-func (g *Instance) Close() {
+func (g *Instance) Close() error {
 	g.Lock()
 	defer g.Unlock()
 
 	g.active = false
+
+	return nil
 }
 
 func init() {

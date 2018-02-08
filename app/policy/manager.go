@@ -51,7 +51,8 @@ func (m *Instance) Start() error {
 }
 
 // Close implements app.Application.Close().
-func (m *Instance) Close() {
+func (m *Instance) Close() error {
+	return nil
 }
 
 func init() {

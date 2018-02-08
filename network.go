@@ -21,6 +21,7 @@ type InboundHandler interface {
 
 // OutboundHandler is the interface for handlers that process outbound connections.
 type OutboundHandler interface {
+	common.Runnable
 	Tag() string
 	Dispatch(ctx context.Context, outboundRay ray.OutboundRay)
 }
@@ -75,13 +76,11 @@ func (m *syncInboundHandlerManager) Start() error {
 	return m.InboundHandlerManager.Start()
 }
 
-func (m *syncInboundHandlerManager) Close() {
+func (m *syncInboundHandlerManager) Close() error {
 	m.RLock()
 	defer m.RUnlock()
 
-	if m.InboundHandlerManager != nil {
-		m.InboundHandlerManager.Close()
-	}
+	return common.Close(m.InboundHandlerManager)
 }
 
 func (m *syncInboundHandlerManager) Set(manager InboundHandlerManager) {
@@ -154,13 +153,11 @@ func (m *syncOutboundHandlerManager) Start() error {
 	return m.OutboundHandlerManager.Start()
 }
 
-func (m *syncOutboundHandlerManager) Close() {
+func (m *syncOutboundHandlerManager) Close() error {
 	m.RLock()
 	defer m.RUnlock()
 
-	if m.OutboundHandlerManager != nil {
-		m.OutboundHandlerManager.Close()
-	}
+	return common.Close(m.OutboundHandlerManager)
 }
 
 func (m *syncOutboundHandlerManager) Set(manager OutboundHandlerManager) {

@@ -209,12 +209,13 @@ func (s *Stream) WriteMultiBuffer(data buf.MultiBuffer) error {
 }
 
 // Close closes the stream for writing. Read() still works until EOF.
-func (s *Stream) Close() {
+func (s *Stream) Close() error {
 	s.access.Lock()
 	s.close = true
 	s.readSignal.Signal()
 	s.writeSignal.Signal()
 	s.access.Unlock()
+	return nil
 }
 
 // CloseError closes the Stream with error. Read() will return an error afterwards.

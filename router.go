@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/ray"
@@ -45,13 +46,11 @@ func (d *syncDispatcher) Start() error {
 	return d.Dispatcher.Start()
 }
 
-func (d *syncDispatcher) Close() {
+func (d *syncDispatcher) Close() error {
 	d.RLock()
 	defer d.RUnlock()
 
-	if d.Dispatcher != nil {
-		d.Dispatcher.Close()
-	}
+	return common.Close(d.Dispatcher)
 }
 
 func (d *syncDispatcher) Set(disp Dispatcher) {
@@ -101,13 +100,11 @@ func (r *syncRouter) Start() error {
 	return r.Router.Start()
 }
 
-func (r *syncRouter) Close() {
+func (r *syncRouter) Close() error {
 	r.RLock()
 	defer r.RUnlock()
 
-	if r.Router != nil {
-		r.Router.Close()
-	}
+	return common.Close(r.Router)
 }
 
 func (r *syncRouter) Set(router Router) {

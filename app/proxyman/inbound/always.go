@@ -76,10 +76,11 @@ func (h *AlwaysOnInboundHandler) Start() error {
 	return nil
 }
 
-func (h *AlwaysOnInboundHandler) Close() {
+func (h *AlwaysOnInboundHandler) Close() error {
 	for _, worker := range h.workers {
 		worker.Close()
 	}
+	return nil
 }
 
 func (h *AlwaysOnInboundHandler) GetRandomInboundProxy() (interface{}, net.Port, int) {

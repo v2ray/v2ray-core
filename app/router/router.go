@@ -114,7 +114,9 @@ func (*Router) Start() error {
 	return nil
 }
 
-func (*Router) Close() {}
+func (*Router) Close() error {
+	return nil
+}
 
 func init() {
 	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {

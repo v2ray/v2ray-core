@@ -3,10 +3,10 @@ package tcp
 import (
 	"context"
 	gotls "crypto/tls"
+	"strings"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/retry"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
 )
@@ -17,11 +17,11 @@ type Listener struct {
 	tlsConfig  *gotls.Config
 	authConfig internet.ConnectionAuthenticator
 	config     *Config
-	addConn    internet.AddConnection
+	addConn    internet.ConnHandler
 }
 
 // ListenTCP creates a new Listener based on configurations.
-func ListenTCP(ctx context.Context, address net.Address, port net.Port, addConn internet.AddConnection) (internet.Listener, error) {
+func ListenTCP(ctx context.Context, address net.Address, port net.Port, handler internet.ConnHandler) (internet.Listener, error) {
 	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
 		IP:   address.IP(),
 		Port: int(port),
@@ -36,7 +36,7 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, addConn 
 	l := &Listener{
 		listener: listener,
 		config:   tcpSettings,
-		addConn:  addConn,
+		addConn:  handler,
 	}
 
 	if config := tls.ConfigFromContext(ctx, tls.WithNextProto("h2")); config != nil {
@@ -54,27 +54,17 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, addConn 
 		}
 		l.authConfig = auth
 	}
-	go l.keepAccepting(ctx)
+	go l.keepAccepting()
 	return l, nil
 }
 
-func (v *Listener) keepAccepting(ctx context.Context) {
+func (v *Listener) keepAccepting() {
 	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-		}
-		var conn net.Conn
-		err := retry.ExponentialBackoff(5, 200).On(func() error {
-			rawConn, err := v.listener.Accept()
-			if err != nil {
-				return err
-			}
-			conn = rawConn
-			return nil
-		})
+		conn, err := v.listener.Accept()
 		if err != nil {
+			if strings.Contains(err.Error(), "closed") {
+				break
+			}
 			newError("failed to accepted raw connections").Base(err).AtWarning().WriteToLog()
 			continue
 		}
@@ -86,7 +76,7 @@ func (v *Listener) keepAccepting(ctx context.Context) {
 			conn = v.authConfig.Server(conn)
 		}
 
-		v.addConn(context.Background(), internet.Connection(conn))
+		v.addConn(internet.Connection(conn))
 	}
 }
 

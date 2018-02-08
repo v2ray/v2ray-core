@@ -101,7 +101,7 @@ func (s *Instance) ID() uuid.UUID {
 }
 
 // Close shutdown the V2Ray instance.
-func (s *Instance) Close() {
+func (s *Instance) Close() error {
 	s.access.Lock()
 	defer s.access.Unlock()
 
@@ -109,6 +109,8 @@ func (s *Instance) Close() {
 	for _, f := range s.features {
 		f.Close()
 	}
+
+	return nil
 }
 
 // Start starts the V2Ray instance, including all registered features. When Start returns error, the state of the instance is unknown.

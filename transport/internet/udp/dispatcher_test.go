@@ -25,7 +25,9 @@ func (d *TestDispatcher) Start() error {
 	return nil
 }
 
-func (d *TestDispatcher) Close() {}
+func (d *TestDispatcher) Close() error {
+	return nil
+}
 
 func TestSameDestinationDispatching(t *testing.T) {
 	assert := With(t)

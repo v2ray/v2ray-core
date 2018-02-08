@@ -23,7 +23,6 @@ type ConnectionID struct {
 // Listener defines a server listening for connections
 type Listener struct {
 	sync.Mutex
-	ctx       context.Context
 	sessions  map[ConnectionID]*Connection
 	hub       *udp.Hub
 	tlsConfig *tls.Config
@@ -31,10 +30,10 @@ type Listener struct {
 	reader    PacketReader
 	header    internet.PacketHeader
 	security  cipher.AEAD
-	addConn   internet.AddConnection
+	addConn   internet.ConnHandler
 }
 
-func NewListener(ctx context.Context, address net.Address, port net.Port, addConn internet.AddConnection) (*Listener, error) {
+func NewListener(ctx context.Context, address net.Address, port net.Port, addConn internet.ConnHandler) (*Listener, error) {
 	networkSettings := internet.TransportSettingsFromContext(ctx)
 	kcpSettings := networkSettings.(*Config)
 
@@ -54,7 +53,6 @@ func NewListener(ctx context.Context, address net.Address, port net.Port, addCon
 			Security: security,
 		},
 		sessions: make(map[ConnectionID]*Connection),
-		ctx:      ctx,
 		config:   kcpSettings,
 		addConn:  addConn,
 	}
@@ -85,12 +83,6 @@ func (l *Listener) OnReceive(payload *buf.Buffer, src net.Destination, originalD
 
 	l.Lock()
 	defer l.Unlock()
-
-	select {
-	case <-l.ctx.Done():
-		return
-	default:
-	}
 
 	if l.hub == nil {
 		return
@@ -136,23 +128,16 @@ func (l *Listener) OnReceive(payload *buf.Buffer, src net.Destination, originalD
 			netConn = tlsConn
 		}
 
-		if !l.addConn(context.Background(), netConn) {
-			return
-		}
+		l.addConn(netConn)
 		l.sessions[id] = conn
 	}
 	conn.Input(segments)
 }
 
 func (l *Listener) Remove(id ConnectionID) {
-	select {
-	case <-l.ctx.Done():
-		return
-	default:
-		l.Lock()
-		delete(l.sessions, id)
-		l.Unlock()
-	}
+	l.Lock()
+	delete(l.sessions, id)
+	l.Unlock()
 }
 
 // Close stops listening on the UDP address. Already Accepted connections are not closed.
@@ -197,7 +182,7 @@ func (w *Writer) Close() error {
 	return nil
 }
 
-func ListenKCP(ctx context.Context, address net.Address, port net.Port, addConn internet.AddConnection) (internet.Listener, error) {
+func ListenKCP(ctx context.Context, address net.Address, port net.Port, addConn internet.ConnHandler) (internet.Listener, error) {
 	return NewListener(ctx, address, port, addConn)
 }
 

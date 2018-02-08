@@ -44,15 +44,15 @@ func (c *syncCommander) Start() error {
 	return c.Commander.Start()
 }
 
-func (c *syncCommander) Close() {
+func (c *syncCommander) Close() error {
 	c.RLock()
 	defer c.RUnlock()
 
 	if c.Commander == nil {
-		return
+		return nil
 	}
 
-	c.Commander.Close()
+	return c.Commander.Close()
 }
 
 func (c *syncCommander) Set(commander Commander) {

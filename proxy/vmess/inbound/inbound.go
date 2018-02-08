@@ -90,7 +90,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	handler := &Handler{
 		policyManager:         v.PolicyManager(),
 		inboundHandlerManager: v.InboundHandlerManager(),
-		clients:               vmess.NewTimedUserValidator(ctx, protocol.DefaultIDHash),
+		clients:               vmess.NewTimedUserValidator(protocol.DefaultIDHash),
 		detours:               config.Detour,
 		usersByEmail:          newUserByEmail(config.User, config.GetDefaultValue()),
 		sessionHistory:        encoding.NewSessionHistory(),
@@ -103,6 +103,14 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	}
 
 	return handler, nil
+}
+
+// Close implements common.Closable.
+func (h *Handler) Close() error {
+	common.Close(h.clients)
+	common.Close(h.sessionHistory)
+	common.Close(h.usersByEmail)
+	return nil
 }
 
 // Network implements proxy.Inbound.Network().

@@ -119,7 +119,9 @@ func (*feature) Start() error {
 	return nil
 }
 
-func (*feature) Close() {}
+func (*feature) Close() error {
+	return nil
+}
 
 func init() {
 	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, cfg interface{}) (interface{}, error) {

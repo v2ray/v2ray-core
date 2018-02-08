@@ -49,7 +49,7 @@ func (*DefaultDispatcher) Start() error {
 }
 
 // Close implements app.Application.
-func (*DefaultDispatcher) Close() {}
+func (*DefaultDispatcher) Close() error { return nil }
 
 // Dispatch implements core.Dispatcher.
 func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destination) (ray.InboundRay, error) {

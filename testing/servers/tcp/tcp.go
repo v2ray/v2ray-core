@@ -69,6 +69,6 @@ func (server *Server) handleConnection(conn net.Conn) {
 	conn.Close()
 }
 
-func (server *Server) Close() {
-	server.listener.Close()
+func (server *Server) Close() error {
+	return server.listener.Close()
 }

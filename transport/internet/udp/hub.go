@@ -60,10 +60,11 @@ func (q *PayloadQueue) Dequeue(queue <-chan Payload) {
 	}
 }
 
-func (q *PayloadQueue) Close() {
+func (q *PayloadQueue) Close() error {
 	for _, queue := range q.queue {
 		close(queue)
 	}
+	return nil
 }
 
 type ListenOption struct {
@@ -116,9 +117,10 @@ func ListenUDP(address net.Address, port net.Port, option ListenOption) (*Hub, e
 	return hub, nil
 }
 
-func (h *Hub) Close() {
+func (h *Hub) Close() error {
 	h.cancel()
 	h.conn.Close()
+	return nil
 }
 
 func (h *Hub) WriteTo(payload []byte, dest net.Destination) (int, error) {

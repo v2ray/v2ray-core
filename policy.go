@@ -3,6 +3,8 @@ package core
 import (
 	"sync"
 	"time"
+
+	"v2ray.com/core/common"
 )
 
 // TimeoutPolicy contains limits for connection timeout.
@@ -96,13 +98,11 @@ func (m *syncPolicyManager) Start() error {
 	return m.PolicyManager.Start()
 }
 
-func (m *syncPolicyManager) Close() {
+func (m *syncPolicyManager) Close() error {
 	m.RLock()
 	defer m.RUnlock()
 
-	if m.PolicyManager != nil {
-		m.PolicyManager.Close()
-	}
+	return common.Close(m.PolicyManager)
 }
 
 func (m *syncPolicyManager) Set(manager PolicyManager) {

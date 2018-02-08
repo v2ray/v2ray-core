@@ -1,22 +1,22 @@
 package signal
 
 type Notifier struct {
-	c chan bool
+	c chan struct{}
 }
 
 func NewNotifier() *Notifier {
 	return &Notifier{
-		c: make(chan bool, 1),
+		c: make(chan struct{}, 1),
 	}
 }
 
 func (n *Notifier) Signal() {
 	select {
-	case n.c <- true:
+	case n.c <- struct{}{}:
 	default:
 	}
 }
 
-func (n *Notifier) Wait() <-chan bool {
+func (n *Notifier) Wait() <-chan struct{} {
 	return n.c
 }

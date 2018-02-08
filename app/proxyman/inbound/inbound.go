@@ -99,7 +99,7 @@ func (m *Manager) Start() error {
 	return nil
 }
 
-func (m *Manager) Close() {
+func (m *Manager) Close() error {
 	m.access.Lock()
 	defer m.access.Unlock()
 
@@ -111,6 +111,8 @@ func (m *Manager) Close() {
 	for _, handler := range m.untaggedHandler {
 		handler.Close()
 	}
+
+	return nil
 }
 
 func NewHandler(ctx context.Context, config *core.InboundHandlerConfig) (core.InboundHandler, error) {

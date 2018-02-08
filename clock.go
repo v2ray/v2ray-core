@@ -40,15 +40,15 @@ func (c *syncClock) Start() error {
 	return c.Clock.Start()
 }
 
-func (c *syncClock) Close() {
+func (c *syncClock) Close() error {
 	c.RLock()
 	defer c.RUnlock()
 
 	if c.Clock == nil {
-		return
+		return nil
 	}
 
-	c.Clock.Close()
+	return c.Clock.Close()
 }
 
 func (c *syncClock) Set(clock Clock) {

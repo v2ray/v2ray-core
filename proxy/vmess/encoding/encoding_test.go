@@ -48,8 +48,9 @@ func TestRequestSerialization(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	sessionHistory := NewSessionHistory()
 
-	userValidator := vmess.NewTimedUserValidator(ctx, protocol.DefaultIDHash)
+	userValidator := vmess.NewTimedUserValidator(protocol.DefaultIDHash)
 	userValidator.Add(user)
+	defer common.Close(userValidator)
 
 	server := NewServerSession(userValidator, sessionHistory)
 	actualRequest, err := server.DecodeRequestHeader(buffer)

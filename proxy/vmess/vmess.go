@@ -8,17 +8,17 @@ package vmess
 //go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg vmess -path Proxy,VMess
 
 import (
-	"context"
 	"sync"
 	"time"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/signal"
 )
 
 const (
-	updateIntervalSec = 10
-	cacheDurationSec  = 120
+	updateInterval   = 10 * time.Second
+	cacheDurationSec = 120
 )
 
 type idEntry struct {
@@ -34,6 +34,7 @@ type TimedUserValidator struct {
 	ids        []*idEntry
 	hasher     protocol.IDHash
 	baseTime   protocol.Timestamp
+	task       *signal.PeriodicTask
 }
 
 type indexTimePair struct {
@@ -41,16 +42,23 @@ type indexTimePair struct {
 	timeInc uint32
 }
 
-func NewTimedUserValidator(ctx context.Context, hasher protocol.IDHash) protocol.UserValidator {
-	tus := &TimedUserValidator{
+func NewTimedUserValidator(hasher protocol.IDHash) protocol.UserValidator {
+	tuv := &TimedUserValidator{
 		validUsers: make([]*protocol.User, 0, 16),
 		userHash:   make(map[[16]byte]indexTimePair, 512),
 		ids:        make([]*idEntry, 0, 512),
 		hasher:     hasher,
 		baseTime:   protocol.Timestamp(time.Now().Unix() - cacheDurationSec*3),
 	}
-	go tus.updateUserHash(ctx, updateIntervalSec*time.Second)
-	return tus
+	tuv.task = &signal.PeriodicTask{
+		Interval: updateInterval,
+		Execute: func() error {
+			tuv.updateUserHash()
+			return nil
+		},
+	}
+	tuv.task.Start()
+	return tuv
 }
 
 func (v *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, idx int, entry *idEntry) {
@@ -78,24 +86,19 @@ func (v *TimedUserValidator) removeExpiredHashes(expire uint32) {
 	}
 }
 
-func (v *TimedUserValidator) updateUserHash(ctx context.Context, interval time.Duration) {
-	for {
-		select {
-		case now := <-time.After(interval):
-			nowSec := protocol.Timestamp(now.Unix() + cacheDurationSec)
-			v.Lock()
-			for _, entry := range v.ids {
-				v.generateNewHashes(nowSec, entry.userIdx, entry)
-			}
+func (v *TimedUserValidator) updateUserHash() {
+	now := time.Now()
+	nowSec := protocol.Timestamp(now.Unix() + cacheDurationSec)
+	v.Lock()
+	defer v.Unlock()
 
-			expire := protocol.Timestamp(now.Unix() - cacheDurationSec*3)
-			if expire > v.baseTime {
-				v.removeExpiredHashes(uint32(expire - v.baseTime))
-			}
-			v.Unlock()
-		case <-ctx.Done():
-			return
-		}
+	for _, entry := range v.ids {
+		v.generateNewHashes(nowSec, entry.userIdx, entry)
+	}
+
+	expire := protocol.Timestamp(now.Unix() - cacheDurationSec*3)
+	if expire > v.baseTime {
+		v.removeExpiredHashes(uint32(expire - v.baseTime))
 	}
 }
 
@@ -144,4 +147,9 @@ func (v *TimedUserValidator) Get(userHash []byte) (*protocol.User, protocol.Time
 		return v.validUsers[pair.index], protocol.Timestamp(pair.timeInc) + v.baseTime, true
 	}
 	return nil, 0, false
+}
+
+// Close implements common.Closable.
+func (v *TimedUserValidator) Close() error {
+	return v.task.Close()
 }

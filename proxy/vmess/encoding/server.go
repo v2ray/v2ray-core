@@ -30,16 +30,27 @@ type sessionId struct {
 type SessionHistory struct {
 	sync.RWMutex
 	cache map[sessionId]time.Time
-	token *signal.Semaphore
-	timer *time.Timer
+	task  *signal.PeriodicTask
 }
 
 func NewSessionHistory() *SessionHistory {
 	h := &SessionHistory{
 		cache: make(map[sessionId]time.Time, 128),
-		token: signal.NewSemaphore(1),
 	}
+	h.task = &signal.PeriodicTask{
+		Interval: time.Second * 30,
+		Execute: func() error {
+			h.removeExpiredEntries()
+			return nil
+		},
+	}
+	common.Must(h.task.Start())
 	return h
+}
+
+// Close implements common.Closable.
+func (h *SessionHistory) Close() error {
+	return h.task.Close()
 }
 
 func (h *SessionHistory) add(session sessionId) {
@@ -47,11 +58,6 @@ func (h *SessionHistory) add(session sessionId) {
 	defer h.Unlock()
 
 	h.cache[session] = time.Now().Add(time.Minute * 3)
-	select {
-	case <-h.token.Wait():
-		h.timer = time.AfterFunc(time.Minute*3, h.removeExpiredEntries)
-	default:
-	}
 }
 
 func (h *SessionHistory) has(session sessionId) bool {
@@ -74,11 +80,6 @@ func (h *SessionHistory) removeExpiredEntries() {
 		if expire.Before(now) {
 			delete(h.cache, session)
 		}
-	}
-
-	if h.timer != nil {
-		h.timer.Stop()
-		h.timer = nil
 	}
 }
 

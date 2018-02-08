@@ -39,7 +39,7 @@ func New(ctx context.Context, config *proxyman.OutboundConfig) (*Manager, error)
 func (*Manager) Start() error { return nil }
 
 // Close implements core.Feature
-func (*Manager) Close() {}
+func (*Manager) Close() error { return nil }
 
 // GetDefaultHandler implements core.OutboundHandlerManager.
 func (m *Manager) GetDefaultHandler() core.OutboundHandler {

@@ -83,7 +83,8 @@ func (s *Server) Start() error {
 	return nil
 }
 
-func (*Server) Close() {
+func (*Server) Close() error {
+	return nil
 }
 
 func (s *Server) GetCached(domain string) []net.IP {
