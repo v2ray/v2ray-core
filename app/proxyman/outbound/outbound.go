@@ -36,10 +36,44 @@ func New(ctx context.Context, config *proxyman.OutboundConfig) (*Manager, error)
 }
 
 // Start implements core.Feature
-func (*Manager) Start() error { return nil }
+func (m *Manager) Start() error {
+	m.access.Lock()
+	defer m.access.Unlock()
+
+	m.running = true
+
+	for _, h := range m.taggedHandler {
+		if err := h.Start(); err != nil {
+			return err
+		}
+	}
+
+	for _, h := range m.untaggedHandlers {
+		if err := h.Start(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 // Close implements core.Feature
-func (*Manager) Close() error { return nil }
+func (m *Manager) Close() error {
+	m.access.Lock()
+	defer m.access.Unlock()
+
+	m.running = false
+
+	for _, h := range m.taggedHandler {
+		h.Close()
+	}
+
+	for _, h := range m.untaggedHandlers {
+		h.Close()
+	}
+
+	return nil
+}
 
 // GetDefaultHandler implements core.OutboundHandlerManager.
 func (m *Manager) GetDefaultHandler() core.OutboundHandler {
@@ -76,6 +110,10 @@ func (m *Manager) AddHandler(ctx context.Context, handler core.OutboundHandler) 
 		m.taggedHandler[tag] = handler
 	} else {
 		m.untaggedHandlers = append(m.untaggedHandlers, handler)
+	}
+
+	if m.running {
+		return handler.Start()
 	}
 
 	return nil
