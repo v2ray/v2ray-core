@@ -75,7 +75,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	if target.Network == net.Network_UDP {
 		command = protocol.RequestCommandUDP
 	}
-	if target.Address.Family().IsDomain() && target.Address.Domain() == "v1.mux.com" {
+	if target.Address.Family().IsDomain() && target.Address.Domain() == "v1.mux.cool" {
 		command = protocol.RequestCommandMux
 	}
 	request := &protocol.RequestHeader{
