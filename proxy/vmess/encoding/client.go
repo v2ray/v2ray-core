@@ -131,7 +131,7 @@ func (c *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 	}
 	if request.Security.Is(protocol.SecurityType_NONE) {
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
-			if request.Command == protocol.RequestCommandTCP {
+			if request.Command.TransferType() == protocol.TransferTypeStream {
 				return crypto.NewChunkStreamWriter(sizeParser, writer)
 			}
 			auth := &crypto.AEADAuthenticator{
@@ -236,7 +236,7 @@ func (c *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 	}
 	if request.Security.Is(protocol.SecurityType_NONE) {
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
-			if request.Command == protocol.RequestCommandTCP {
+			if request.Command.TransferType() == protocol.TransferTypeStream {
 				return crypto.NewChunkStreamReader(sizeParser, reader)
 			}
 

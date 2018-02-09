@@ -252,7 +252,7 @@ func (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 	}
 	if request.Security.Is(protocol.SecurityType_NONE) {
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
-			if request.Command == protocol.RequestCommandTCP {
+			if request.Command.TransferType() == protocol.TransferTypeStream {
 				return crypto.NewChunkStreamReader(sizeParser, reader)
 			}
 
@@ -338,7 +338,7 @@ func (s *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 	}
 	if request.Security.Is(protocol.SecurityType_NONE) {
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
-			if request.Command == protocol.RequestCommandTCP {
+			if request.Command.TransferType() == protocol.TransferTypeStream {
 				return crypto.NewChunkStreamWriter(sizeParser, writer)
 			}
 

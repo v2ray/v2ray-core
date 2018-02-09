@@ -18,11 +18,14 @@ const (
 )
 
 func (c RequestCommand) TransferType() TransferType {
-	if c == RequestCommandTCP {
+	switch c {
+	case RequestCommandTCP, RequestCommandMux:
+		return TransferTypeStream
+	case RequestCommandUDP:
+		return TransferTypePacket
+	default:
 		return TransferTypeStream
 	}
-
-	return TransferTypePacket
 }
 
 const (
