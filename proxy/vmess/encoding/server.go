@@ -213,7 +213,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	}
 
 	if invalidRequest {
-		randomLen := dice.Roll(32)
+		randomLen := dice.Roll(32) + 1
 		// Read random number of bytes for prevent detection.
 		buffer.AppendSupplier(buf.ReadFullFrom(decryptor, randomLen))
 		return nil, newError("invalid request")
