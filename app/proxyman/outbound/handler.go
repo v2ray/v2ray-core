@@ -7,6 +7,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/proxyman/mux"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
@@ -50,9 +51,14 @@ func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (*Handl
 		return nil, err
 	}
 
-	proxyHandler, err := proxy.CreateOutboundHandler(ctx, proxyConfig)
+	rawProxyHandler, err := common.CreateObject(ctx, proxyConfig)
 	if err != nil {
 		return nil, err
+	}
+
+	proxyHandler, ok := rawProxyHandler.(proxy.Outbound)
+	if !ok {
+		return nil, newError("not an outbound handler")
 	}
 
 	if h.senderSettings != nil && h.senderSettings.MultiplexSettings != nil && h.senderSettings.MultiplexSettings.Enabled {
@@ -134,5 +140,6 @@ func (h *Handler) Start() error {
 
 // Close implements common.Runnable.
 func (h *Handler) Close() error {
+	common.Close(h.mux)
 	return nil
 }
