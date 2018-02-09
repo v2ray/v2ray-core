@@ -32,13 +32,9 @@ type userByEmail struct {
 	defaultAlterIDs uint16
 }
 
-func newUserByEmail(users []*protocol.User, config *DefaultConfig) *userByEmail {
-	cache := make(map[string]*protocol.User)
-	for _, user := range users {
-		cache[strings.ToLower(user.Email)] = user
-	}
+func newUserByEmail(config *DefaultConfig) *userByEmail {
 	return &userByEmail{
-		cache:           cache,
+		cache:           make(map[string]*protocol.User),
 		defaultLevel:    config.Level,
 		defaultAlterIDs: uint16(config.AlterId),
 	}
@@ -119,7 +115,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		inboundHandlerManager: v.InboundHandlerManager(),
 		clients:               vmess.NewTimedUserValidator(protocol.DefaultIDHash),
 		detours:               config.Detour,
-		usersByEmail:          newUserByEmail(config.User, config.GetDefaultValue()),
+		usersByEmail:          newUserByEmail(config.GetDefaultValue()),
 		sessionHistory:        encoding.NewSessionHistory(),
 	}
 
@@ -156,13 +152,16 @@ func (h *Handler) GetUser(email string) *protocol.User {
 }
 
 func (h *Handler) AddUser(ctx context.Context, user *protocol.User) error {
-	if !h.usersByEmail.Add(user) {
+	if len(user.Email) > 0 && !h.usersByEmail.Add(user) {
 		return newError("User ", user.Email, " already exists.")
 	}
 	return h.clients.Add(user)
 }
 
 func (h *Handler) RemoveUser(ctx context.Context, email string) error {
+	if len(email) == 0 {
+		return newError("Email must not be empty.")
+	}
 	if !h.usersByEmail.Remove(email) {
 		return newError("User ", email, " not found.")
 	}
