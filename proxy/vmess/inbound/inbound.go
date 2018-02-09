@@ -5,6 +5,7 @@ package inbound
 import (
 	"context"
 	"io"
+	"strings"
 	"sync"
 	"time"
 
@@ -25,7 +26,7 @@ import (
 )
 
 type userByEmail struct {
-	sync.RWMutex
+	sync.Mutex
 	cache           map[string]*protocol.User
 	defaultLevel    uint32
 	defaultAlterIDs uint16
@@ -34,7 +35,7 @@ type userByEmail struct {
 func newUserByEmail(users []*protocol.User, config *DefaultConfig) *userByEmail {
 	cache := make(map[string]*protocol.User)
 	for _, user := range users {
-		cache[user.Email] = user
+		cache[strings.ToLower(user.Email)] = user
 	}
 	return &userByEmail{
 		cache:           cache,
@@ -43,31 +44,57 @@ func newUserByEmail(users []*protocol.User, config *DefaultConfig) *userByEmail 
 	}
 }
 
+func (v *userByEmail) addNoLock(u *protocol.User) bool {
+	email := strings.ToLower(u.Email)
+	user, found := v.cache[email]
+	if found {
+		return false
+	}
+	v.cache[email] = user
+	return true
+}
+
+func (v *userByEmail) Add(u *protocol.User) bool {
+	v.Lock()
+	defer v.Unlock()
+
+	return v.addNoLock(u)
+}
+
 func (v *userByEmail) Get(email string) (*protocol.User, bool) {
-	var user *protocol.User
-	var found bool
-	v.RLock()
-	user, found = v.cache[email]
-	v.RUnlock()
+	email = strings.ToLower(email)
+
+	v.Lock()
+	defer v.Unlock()
+
+	user, found := v.cache[email]
 	if !found {
-		v.Lock()
-		user, found = v.cache[email]
-		if !found {
-			id := uuid.New()
-			account := &vmess.Account{
-				Id:      id.String(),
-				AlterId: uint32(v.defaultAlterIDs),
-			}
-			user = &protocol.User{
-				Level:   v.defaultLevel,
-				Email:   email,
-				Account: serial.ToTypedMessage(account),
-			}
-			v.cache[email] = user
+		id := uuid.New()
+		account := &vmess.Account{
+			Id:      id.String(),
+			AlterId: uint32(v.defaultAlterIDs),
 		}
-		v.Unlock()
+		user = &protocol.User{
+			Level:   v.defaultLevel,
+			Email:   email,
+			Account: serial.ToTypedMessage(account),
+		}
+		v.cache[email] = user
 	}
 	return user, found
+}
+
+func (v *userByEmail) Remove(email string) bool {
+	email = strings.ToLower(email)
+
+	v.Lock()
+	defer v.Unlock()
+
+	if _, found := v.cache[email]; !found {
+		return false
+	}
+	delete(v.cache, email)
+	return true
 }
 
 // Handler is an inbound connection handler that handles messages in VMess protocol.
@@ -129,11 +156,18 @@ func (h *Handler) GetUser(email string) *protocol.User {
 }
 
 func (h *Handler) AddUser(ctx context.Context, user *protocol.User) error {
+	if !h.usersByEmail.Add(user) {
+		return newError("User ", user.Email, " already exists.")
+	}
 	return h.clients.Add(user)
 }
 
 func (h *Handler) RemoveUser(ctx context.Context, email string) error {
-	return newError("not implemented")
+	if !h.usersByEmail.Remove(email) {
+		return newError("User ", email, " not found.")
+	}
+	h.clients.Remove(email)
+	return nil
 }
 
 func transferRequest(timer signal.ActivityUpdater, session *encoding.ServerSession, request *protocol.RequestHeader, input io.Reader, output ray.OutputStream) error {

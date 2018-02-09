@@ -8,6 +8,7 @@ package vmess
 //go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg vmess -path Proxy,VMess
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -21,34 +22,32 @@ const (
 	cacheDurationSec = 120
 )
 
-type idEntry struct {
-	id      *protocol.ID
-	userIdx int
+type user struct {
+	user    *protocol.User
+	account *InternalAccount
 	lastSec protocol.Timestamp
 }
 
 type TimedUserValidator struct {
 	sync.RWMutex
-	validUsers []*protocol.User
-	userHash   map[[16]byte]indexTimePair
-	ids        []*idEntry
-	hasher     protocol.IDHash
-	baseTime   protocol.Timestamp
-	task       *signal.PeriodicTask
+	users    []*user
+	userHash map[[16]byte]indexTimePair
+	hasher   protocol.IDHash
+	baseTime protocol.Timestamp
+	task     *signal.PeriodicTask
 }
 
 type indexTimePair struct {
-	index   int
+	user    *user
 	timeInc uint32
 }
 
 func NewTimedUserValidator(hasher protocol.IDHash) protocol.UserValidator {
 	tuv := &TimedUserValidator{
-		validUsers: make([]*protocol.User, 0, 16),
-		userHash:   make(map[[16]byte]indexTimePair, 512),
-		ids:        make([]*idEntry, 0, 512),
-		hasher:     hasher,
-		baseTime:   protocol.Timestamp(time.Now().Unix() - cacheDurationSec*3),
+		users:    make([]*user, 0, 16),
+		userHash: make(map[[16]byte]indexTimePair, 1024),
+		hasher:   hasher,
+		baseTime: protocol.Timestamp(time.Now().Unix() - cacheDurationSec*3),
 	}
 	tuv.task = &signal.PeriodicTask{
 		Interval: updateInterval,
@@ -61,21 +60,27 @@ func NewTimedUserValidator(hasher protocol.IDHash) protocol.UserValidator {
 	return tuv
 }
 
-func (v *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, idx int, entry *idEntry) {
+func (v *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, user *user) {
 	var hashValue [16]byte
-	idHash := v.hasher(entry.id.Bytes())
-	for entry.lastSec <= nowSec {
-		common.Must2(idHash.Write(entry.lastSec.Bytes(nil)))
-		idHash.Sum(hashValue[:0])
-		idHash.Reset()
+	genHashForID := func(id *protocol.ID) {
+		idHash := v.hasher(id.Bytes())
+		for ts := user.lastSec; ts <= nowSec; ts++ {
+			common.Must2(idHash.Write(ts.Bytes(nil)))
+			idHash.Sum(hashValue[:0])
+			idHash.Reset()
 
-		v.userHash[hashValue] = indexTimePair{
-			index:   idx,
-			timeInc: uint32(entry.lastSec - v.baseTime),
+			v.userHash[hashValue] = indexTimePair{
+				user:    user,
+				timeInc: uint32(ts - v.baseTime),
+			}
 		}
-
-		entry.lastSec++
 	}
+
+	genHashForID(user.account.ID)
+	for _, id := range user.account.AlterIDs {
+		genHashForID(id)
+	}
+	user.lastSec = nowSec
 }
 
 func (v *TimedUserValidator) removeExpiredHashes(expire uint32) {
@@ -92,8 +97,8 @@ func (v *TimedUserValidator) updateUserHash() {
 	v.Lock()
 	defer v.Unlock()
 
-	for _, entry := range v.ids {
-		v.generateNewHashes(nowSec, entry.userIdx, entry)
+	for _, user := range v.users {
+		v.generateNewHashes(nowSec, user)
 	}
 
 	expire := protocol.Timestamp(now.Unix() - cacheDurationSec*3)
@@ -102,13 +107,11 @@ func (v *TimedUserValidator) updateUserHash() {
 	}
 }
 
-func (v *TimedUserValidator) Add(user *protocol.User) error {
+func (v *TimedUserValidator) Add(u *protocol.User) error {
 	v.Lock()
 	defer v.Unlock()
 
-	idx := len(v.validUsers)
-	v.validUsers = append(v.validUsers, user)
-	rawAccount, err := user.GetTypedAccount()
+	rawAccount, err := u.GetTypedAccount()
 	if err != nil {
 		return err
 	}
@@ -116,22 +119,13 @@ func (v *TimedUserValidator) Add(user *protocol.User) error {
 
 	nowSec := time.Now().Unix()
 
-	entry := &idEntry{
-		id:      account.ID,
-		userIdx: idx,
+	uu := &user{
+		user:    u,
+		account: account,
 		lastSec: protocol.Timestamp(nowSec - cacheDurationSec),
 	}
-	v.generateNewHashes(protocol.Timestamp(nowSec+cacheDurationSec), idx, entry)
-	v.ids = append(v.ids, entry)
-	for _, alterid := range account.AlterIDs {
-		entry := &idEntry{
-			id:      alterid,
-			userIdx: idx,
-			lastSec: protocol.Timestamp(nowSec - cacheDurationSec),
-		}
-		v.generateNewHashes(protocol.Timestamp(nowSec+cacheDurationSec), idx, entry)
-		v.ids = append(v.ids, entry)
-	}
+	v.users = append(v.users, uu)
+	v.generateNewHashes(protocol.Timestamp(nowSec+cacheDurationSec), uu)
 
 	return nil
 }
@@ -144,9 +138,33 @@ func (v *TimedUserValidator) Get(userHash []byte) (*protocol.User, protocol.Time
 	copy(fixedSizeHash[:], userHash)
 	pair, found := v.userHash[fixedSizeHash]
 	if found {
-		return v.validUsers[pair.index], protocol.Timestamp(pair.timeInc) + v.baseTime, true
+		return pair.user.user, protocol.Timestamp(pair.timeInc) + v.baseTime, true
 	}
 	return nil, 0, false
+}
+
+func (v *TimedUserValidator) Remove(email string) bool {
+	v.Lock()
+	defer v.Unlock()
+
+	email = strings.ToLower(email)
+	idx := -1
+	for i, u := range v.users {
+		if strings.ToLower(u.user.Email) == email {
+			idx = i
+			break
+		}
+	}
+	if idx == -1 {
+		return false
+	}
+	ulen := len(v.users)
+	if idx < len(v.users) {
+		v.users[idx] = v.users[ulen-1]
+		v.users[ulen-1] = nil
+		v.users = v.users[:ulen-1]
+	}
+	return true
 }
 
 // Close implements common.Closable.
