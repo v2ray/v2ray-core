@@ -114,6 +114,7 @@ func (s *Instance) Close() error {
 }
 
 // Start starts the V2Ray instance, including all registered features. When Start returns error, the state of the instance is unknown.
+// A V2Ray instance can be started only once. Upon closing, the instance is not guaranteed to start again.
 func (s *Instance) Start() error {
 	s.access.Lock()
 	defer s.access.Unlock()
