@@ -5,9 +5,12 @@ import (
 	"time"
 )
 
+// PeriodicTask is a task that runs periodically.
 type PeriodicTask struct {
+	// Interval of the task being run
 	Interval time.Duration
-	Execute  func() error
+	// Execute is the task function
+	Execute func() error
 
 	access sync.Mutex
 	timer  *time.Timer
@@ -33,6 +36,7 @@ func (t *PeriodicTask) checkedExecute() error {
 	return nil
 }
 
+// Start implements common.Runnable. Start must not be called multiple times without Close being called.
 func (t *PeriodicTask) Start() error {
 	t.access.Lock()
 	t.closed = false
@@ -46,6 +50,7 @@ func (t *PeriodicTask) Start() error {
 	return nil
 }
 
+// Close implements common.Runnable.
 func (t *PeriodicTask) Close() error {
 	t.access.Lock()
 	defer t.access.Unlock()
