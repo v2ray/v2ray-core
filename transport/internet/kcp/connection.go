@@ -338,10 +338,15 @@ func (c *Connection) waitForDataOutput() error {
 
 // Write implements io.Writer.
 func (c *Connection) Write(b []byte) (int, error) {
-	totalWritten := 0
+	updatePending := false
+	defer func() {
+		if updatePending {
+			c.dataUpdater.WakeUp()
+		}
+	}()
 
 	for {
-		dataWritten := false
+		totalWritten := 0
 		for {
 			if c == nil || c.State() != StateActive {
 				return totalWritten, io.ErrClosedPipe
@@ -354,15 +359,16 @@ func (c *Connection) Write(b []byte) (int, error) {
 				break
 			}
 
-			dataWritten = true
+			updatePending = true
 
 			if totalWritten == len(b) {
 				return totalWritten, nil
 			}
 		}
 
-		if dataWritten {
+		if updatePending {
 			c.dataUpdater.WakeUp()
+			updatePending = false
 		}
 
 		if err := c.waitForDataOutput(); err != nil {
@@ -375,8 +381,14 @@ func (c *Connection) Write(b []byte) (int, error) {
 func (c *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	defer mb.Release()
 
+	updatePending := false
+	defer func() {
+		if updatePending {
+			c.dataUpdater.WakeUp()
+		}
+	}()
+
 	for {
-		dataWritten := false
 		for {
 			if c == nil || c.State() != StateActive {
 				return io.ErrClosedPipe
@@ -387,14 +399,15 @@ func (c *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 			}) {
 				break
 			}
-			dataWritten = true
+			updatePending = true
 			if mb.IsEmpty() {
 				return nil
 			}
 		}
 
-		if dataWritten {
+		if updatePending {
 			c.dataUpdater.WakeUp()
+			updatePending = false
 		}
 
 		if err := c.waitForDataOutput(); err != nil {
