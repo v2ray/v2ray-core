@@ -10,9 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"v2ray.com/core/app"
-	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/policy"
+	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
@@ -26,30 +24,29 @@ import (
 // Server is a HTTP proxy server.
 type Server struct {
 	config *ServerConfig
-	policy policy.Policy
+	v      *core.Instance
 }
 
 // NewServer creates a new HTTP inbound handler.
 func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
-	space := app.SpaceFromContext(ctx)
-	if space == nil {
-		return nil, newError("no space in context.")
-	}
 	s := &Server{
 		config: config,
+		v:      core.FromContext(ctx),
 	}
-	space.On(app.SpaceInitializing, func(interface{}) error {
-		pm := policy.FromSpace(space)
-		if pm == nil {
-			return newError("Policy not found in space.")
-		}
-		s.policy = pm.GetPolicy(config.UserLevel)
-		if config.Timeout > 0 && config.UserLevel == 0 {
-			s.policy.Timeout.ConnectionIdle.Value = config.Timeout
-		}
-		return nil
-	})
+	if s.v == nil {
+		return nil, newError("V is not in context.")
+	}
+
 	return s, nil
+}
+
+func (s *Server) policy() core.Policy {
+	config := s.config
+	p := s.v.PolicyManager().ForLevel(config.UserLevel)
+	if config.Timeout > 0 && config.UserLevel == 0 {
+		p.Timeouts.ConnectionIdle = time.Duration(config.Timeout) * time.Second
+	}
+	return p
 }
 
 func (*Server) Network() net.NetworkList {
@@ -104,11 +101,11 @@ type readerOnly struct {
 	io.Reader
 }
 
-func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
+func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher core.Dispatcher) error {
 	reader := bufio.NewReaderSize(readerOnly{conn}, buf.Size)
 
 Start:
-	conn.SetReadDeadline(time.Now().Add(s.policy.Timeout.Handshake.Duration()))
+	conn.SetReadDeadline(time.Now().Add(s.policy().Timeouts.Handshake))
 
 	request, err := http.ReadRequest(reader)
 	if err != nil {
@@ -165,14 +162,14 @@ Start:
 	return err
 }
 
-func (s *Server) handleConnect(ctx context.Context, request *http.Request, reader *bufio.Reader, conn internet.Connection, dest net.Destination, dispatcher dispatcher.Interface) error {
+func (s *Server) handleConnect(ctx context.Context, request *http.Request, reader *bufio.Reader, conn internet.Connection, dest net.Destination, dispatcher core.Dispatcher) error {
 	_, err := conn.Write([]byte("HTTP/1.1 200 Connection established\r\n\r\n"))
 	if err != nil {
 		return newError("failed to write back OK response").Base(err)
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	timer := signal.CancelAfterInactivity(ctx, cancel, s.policy.Timeout.ConnectionIdle.Duration())
+	timer := signal.CancelAfterInactivity(ctx, cancel, s.policy().Timeouts.ConnectionIdle)
 	ray, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return err
@@ -191,7 +188,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 
 	requestDone := signal.ExecuteAsync(func() error {
 		defer ray.InboundInput().Close()
-		defer timer.SetTimeout(s.policy.Timeout.DownlinkOnly.Duration())
+		defer timer.SetTimeout(s.policy().Timeouts.DownlinkOnly)
 
 		v2reader := buf.NewReader(conn)
 		return buf.Copy(v2reader, ray.InboundInput(), buf.UpdateActivity(timer))
@@ -202,7 +199,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		if err := buf.Copy(ray.InboundOutput(), v2writer, buf.UpdateActivity(timer)); err != nil {
 			return err
 		}
-		timer.SetTimeout(s.policy.Timeout.UplinkOnly.Duration())
+		timer.SetTimeout(s.policy().Timeouts.UplinkOnly)
 		return nil
 	})
 
@@ -217,7 +214,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 
 var errWaitAnother = newError("keep alive")
 
-func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, writer io.Writer, dest net.Destination, dispatcher dispatcher.Interface) error {
+func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, writer io.Writer, dest net.Destination, dispatcher core.Dispatcher) error {
 	if !s.config.AllowTransparent && len(request.URL.Host) <= 0 {
 		// RFC 2068 (HTTP/1.1) requires URL to be absolute URL in HTTP proxy.
 		response := &http.Response{

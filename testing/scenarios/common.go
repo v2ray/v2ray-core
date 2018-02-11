@@ -13,14 +13,17 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"v2ray.com/core"
+	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
+	"v2ray.com/core/common/serial"
 )
 
 func pickPort() net.Port {
-	listener, err := net.Listen("tcp4", ":0")
+	listener, err := net.Listen("tcp4", "127.0.0.1:0")
 	common.Must(err)
 	defer listener.Close()
 
@@ -70,6 +73,7 @@ func InitializeServerConfig(config *core.Config) (*exec.Cmd, error) {
 		return nil, err
 	}
 
+	config = withDefaultApps(config)
 	configBytes, err := proto.Marshal(config)
 	if err != nil {
 		return nil, err
@@ -127,4 +131,11 @@ func CloseAllServers(servers []*exec.Cmd) {
 		Severity: log.Severity_Info,
 		Content:  "All server closed.",
 	})
+}
+
+func withDefaultApps(config *core.Config) *core.Config {
+	config.App = append(config.App, serial.ToTypedMessage(&dispatcher.Config{}))
+	config.App = append(config.App, serial.ToTypedMessage(&proxyman.InboundConfig{}))
+	config.App = append(config.App, serial.ToTypedMessage(&proxyman.OutboundConfig{}))
+	return config
 }

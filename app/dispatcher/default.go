@@ -1,4 +1,4 @@
-package impl
+package dispatcher
 
 //go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg impl -path App,Dispatcher,Default
 
@@ -6,10 +6,8 @@ import (
 	"context"
 	"time"
 
-	"v2ray.com/core/app"
-	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
-	"v2ray.com/core/app/router"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
@@ -21,31 +19,27 @@ var (
 	errSniffingTimeout = newError("timeout on sniffing")
 )
 
-var (
-	_ app.Application = (*DefaultDispatcher)(nil)
-)
-
 // DefaultDispatcher is a default implementation of Dispatcher.
 type DefaultDispatcher struct {
-	ohm    proxyman.OutboundHandlerManager
-	router *router.Router
+	ohm    core.OutboundHandlerManager
+	router core.Router
 }
 
 // NewDefaultDispatcher create a new DefaultDispatcher.
-func NewDefaultDispatcher(ctx context.Context, config *dispatcher.Config) (*DefaultDispatcher, error) {
-	space := app.SpaceFromContext(ctx)
-	if space == nil {
-		return nil, newError("no space in context")
+func NewDefaultDispatcher(ctx context.Context, config *Config) (*DefaultDispatcher, error) {
+	v := core.FromContext(ctx)
+	if v == nil {
+		return nil, newError("V is not in context.")
 	}
-	d := &DefaultDispatcher{}
-	space.On(app.SpaceInitializing, func(interface{}) error {
-		d.ohm = proxyman.OutboundHandlerManagerFromSpace(space)
-		if d.ohm == nil {
-			return newError("OutboundHandlerManager is not found in the space")
-		}
-		d.router = router.FromSpace(space)
-		return nil
-	})
+
+	d := &DefaultDispatcher{
+		ohm:    v.OutboundHandlerManager(),
+		router: v.Router(),
+	}
+
+	if err := v.RegisterFeature((*core.Dispatcher)(nil), d); err != nil {
+		return nil, newError("unable to register Dispatcher")
+	}
 	return d, nil
 }
 
@@ -55,14 +49,9 @@ func (*DefaultDispatcher) Start() error {
 }
 
 // Close implements app.Application.
-func (*DefaultDispatcher) Close() {}
+func (*DefaultDispatcher) Close() error { return nil }
 
-// Interface implements app.Application.
-func (*DefaultDispatcher) Interface() interface{} {
-	return (*dispatcher.Interface)(nil)
-}
-
-// Dispatch implements Dispatcher.Interface.
+// Dispatch implements core.Dispatcher.
 func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destination) (ray.InboundRay, error) {
 	if !destination.IsValid() {
 		panic("Dispatcher: Invalid destination.")
@@ -120,7 +109,7 @@ func snifer(ctx context.Context, sniferList []proxyman.KnownProtocols, outbound 
 func (d *DefaultDispatcher) routedDispatch(ctx context.Context, outbound ray.OutboundRay, destination net.Destination) {
 	dispatcher := d.ohm.GetDefaultHandler()
 	if d.router != nil {
-		if tag, err := d.router.TakeDetour(ctx); err == nil {
+		if tag, err := d.router.PickRoute(ctx); err == nil {
 			if handler := d.ohm.GetHandler(tag); handler != nil {
 				newError("taking detour [", tag, "] for [", destination, "]").WriteToLog()
 				dispatcher = handler
@@ -135,7 +124,7 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, outbound ray.Out
 }
 
 func init() {
-	common.Must(common.RegisterConfig((*dispatcher.Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
-		return NewDefaultDispatcher(ctx, config.(*dispatcher.Config))
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return NewDefaultDispatcher(ctx, config.(*Config))
 	}))
 }

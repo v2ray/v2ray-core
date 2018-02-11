@@ -1,8 +1,7 @@
 package log
 
 import (
-	"sync/atomic"
-	"unsafe"
+	"sync"
 
 	"v2ray.com/core/common/serial"
 )
@@ -30,12 +29,11 @@ func (m *GeneralMessage) String() string {
 
 // Record writes a message into log stream.
 func Record(msg Message) {
-	h := (*Handler)(atomic.LoadPointer(&logHandler))
-	(*h).Handle(msg)
+	logHandler.Handle(msg)
 }
 
 var (
-	logHandler unsafe.Pointer
+	logHandler syncHandler
 )
 
 // RegisterHandler register a new handler as current log handler. Previous registered handler will be discarded.
@@ -43,5 +41,26 @@ func RegisterHandler(handler Handler) {
 	if handler == nil {
 		panic("Log handler is nil")
 	}
-	atomic.StorePointer(&logHandler, unsafe.Pointer(&handler))
+	logHandler.Set(handler)
+}
+
+type syncHandler struct {
+	sync.RWMutex
+	Handler
+}
+
+func (h *syncHandler) Handle(msg Message) {
+	h.RLock()
+	defer h.RUnlock()
+
+	if h.Handler != nil {
+		h.Handler.Handle(msg)
+	}
+}
+
+func (h *syncHandler) Set(handler Handler) {
+	h.Lock()
+	defer h.Unlock()
+
+	h.Handler = handler
 }

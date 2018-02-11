@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
-	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
@@ -48,7 +48,7 @@ type UDPNameServer struct {
 	nextCleanup time.Time
 }
 
-func NewUDPNameServer(address net.Destination, dispatcher dispatcher.Interface) *UDPNameServer {
+func NewUDPNameServer(address net.Destination, dispatcher core.Dispatcher) *UDPNameServer {
 	s := &UDPNameServer{
 		address:   address,
 		requests:  make(map[uint16]*PendingRequest),
@@ -216,8 +216,7 @@ func (*LocalNameServer) QueryA(domain string) <-chan *ARecord {
 	go func() {
 		defer close(response)
 
-		resolver := net.SystemIPResolver()
-		ips, err := resolver.LookupIP(domain)
+		ips, err := net.LookupIP(domain)
 		if err != nil {
 			newError("failed to lookup IPs for domain ", domain).Base(err).AtWarning().WriteToLog()
 			return

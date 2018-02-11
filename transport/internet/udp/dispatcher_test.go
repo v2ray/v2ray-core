@@ -21,6 +21,14 @@ func (d *TestDispatcher) Dispatch(ctx context.Context, dest net.Destination) (ra
 	return d.OnDispatch(ctx, dest)
 }
 
+func (d *TestDispatcher) Start() error {
+	return nil
+}
+
+func (d *TestDispatcher) Close() error {
+	return nil
+}
+
 func TestSameDestinationDispatching(t *testing.T) {
 	assert := With(t)
 

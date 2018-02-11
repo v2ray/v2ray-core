@@ -25,7 +25,7 @@ echo ${SIGN_KEY_PASS} | gpg --passphrase-fd 0 --batch --import /v2ray/build/sign
 curl -L -o /v2ray/build/releases https://api.github.com/repos/v2ray/v2ray-core/releases
 
 GO_INSTALL=golang.tar.gz
-curl -L -o ${GO_INSTALL} https://storage.googleapis.com/golang/go1.9.2.linux-amd64.tar.gz
+curl -L -o ${GO_INSTALL} https://storage.googleapis.com/golang/go1.9.4.linux-amd64.tar.gz
 tar -C /usr/local -xzf ${GO_INSTALL}
 export PATH=$PATH:/usr/local/go/bin
 
@@ -65,7 +65,7 @@ $GOPATH/bin/vbuild --os=openbsd --arch=amd64 --zip --sign #--encrypt
 RELBODY="https://www.v2ray.com/chapter_00/01_versions.html"
 JSON_DATA=$(echo "{}" | jq -c ".tag_name=\"${RELEASE_TAG}\"")
 JSON_DATA=$(echo ${JSON_DATA} | jq -c ".prerelease=${PRERELEASE}")
-JSON_DATA=$(echo ${JSON_DATA} | jq -c ".body=${RELBODY}")
+JSON_DATA=$(echo ${JSON_DATA} | jq -c ".body=\"${RELBODY}\"")
 RELEASE_ID=$(curl --data "${JSON_DATA}" -H "Authorization: token ${GITHUB_TOKEN}" -X POST https://api.github.com/repos/v2ray/v2ray-core/releases | jq ".id")
 
 function upload() {

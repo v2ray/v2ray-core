@@ -2,10 +2,12 @@ package all
 
 import (
 	// The following are necessary as they register handlers in their init functions.
-	_ "v2ray.com/core/app/dispatcher/impl"
+	_ "v2ray.com/core/app/commander"
+	_ "v2ray.com/core/app/dispatcher"
 	_ "v2ray.com/core/app/dns"
 	_ "v2ray.com/core/app/log"
-	_ "v2ray.com/core/app/policy/manager"
+	_ "v2ray.com/core/app/policy"
+	_ "v2ray.com/core/app/proxyman/command"
 	_ "v2ray.com/core/app/proxyman/inbound"
 	_ "v2ray.com/core/app/proxyman/outbound"
 	_ "v2ray.com/core/app/router"

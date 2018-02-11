@@ -100,12 +100,12 @@ func TestCmdSegment(t *testing.T) {
 	assert := With(t)
 
 	seg := &CmdOnlySegment{
-		Conv:         1,
-		Cmd:          CommandPing,
-		Option:       SegmentOptionClose,
-		SendingNext:  11,
-		ReceivinNext: 13,
-		PeerRTO:      15,
+		Conv:          1,
+		Cmd:           CommandPing,
+		Option:        SegmentOptionClose,
+		SendingNext:   11,
+		ReceivingNext: 13,
+		PeerRTO:       15,
 	}
 
 	nBytes := seg.ByteSize()
@@ -120,6 +120,6 @@ func TestCmdSegment(t *testing.T) {
 	assert(byte(seg2.Command()), Equals, byte(seg.Command()))
 	assert(byte(seg2.Option), Equals, byte(seg.Option))
 	assert(seg2.SendingNext, Equals, seg.SendingNext)
-	assert(seg2.ReceivinNext, Equals, seg.ReceivinNext)
+	assert(seg2.ReceivingNext, Equals, seg.ReceivingNext)
 	assert(seg2.PeerRTO, Equals, seg.PeerRTO)
 }

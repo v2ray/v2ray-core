@@ -31,8 +31,7 @@ func (a *InternalAccount) Equals(account protocol.Account) bool {
 func (a *Account) AsAccount() (protocol.Account, error) {
 	id, err := uuid.ParseString(a.Id)
 	if err != nil {
-		newError("failed to parse ID").Base(err).AtError().WriteToLog()
-		return nil, err
+		return nil, newError("failed to parse ID").Base(err).AtError()
 	}
 	protoID := protocol.NewID(id)
 	return &InternalAccount{

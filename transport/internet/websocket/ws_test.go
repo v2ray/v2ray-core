@@ -18,7 +18,7 @@ func Test_listenWSAndDial(t *testing.T) {
 	assert := With(t)
 	listen, err := ListenWS(internet.ContextWithTransportSettings(context.Background(), &Config{
 		Path: "ws",
-	}), net.DomainAddress("localhost"), 13146, func(ctx context.Context, conn internet.Connection) bool {
+	}), net.DomainAddress("localhost"), 13146, func(conn internet.Connection) {
 		go func(c internet.Connection) {
 			defer c.Close()
 
@@ -33,7 +33,6 @@ func Test_listenWSAndDial(t *testing.T) {
 			_, err = c.Write([]byte("Response"))
 			assert(err, IsNil)
 		}(conn)
-		return true
 	})
 	assert(err, IsNil)
 
@@ -67,7 +66,7 @@ func TestDialWithRemoteAddr(t *testing.T) {
 	assert := With(t)
 	listen, err := ListenWS(internet.ContextWithTransportSettings(context.Background(), &Config{
 		Path: "ws",
-	}), net.DomainAddress("localhost"), 13148, func(ctx context.Context, conn internet.Connection) bool {
+	}), net.DomainAddress("localhost"), 13148, func(conn internet.Connection) {
 		go func(c internet.Connection) {
 			defer c.Close()
 
@@ -84,7 +83,6 @@ func TestDialWithRemoteAddr(t *testing.T) {
 			_, err = c.Write([]byte("Response"))
 			assert(err, IsNil)
 		}(conn)
-		return true
 	})
 	assert(err, IsNil)
 
@@ -115,11 +113,10 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 		AllowInsecure: true,
 		Certificate:   []*v2tls.Certificate{tlsgen.GenerateCertificateForTest()},
 	})
-	listen, err := ListenWS(ctx, net.DomainAddress("localhost"), 13143, func(ctx context.Context, conn internet.Connection) bool {
+	listen, err := ListenWS(ctx, net.DomainAddress("localhost"), 13143, func(conn internet.Connection) {
 		go func() {
 			_ = conn.Close()
 		}()
-		return true
 	})
 	assert(err, IsNil)
 	defer listen.Close()

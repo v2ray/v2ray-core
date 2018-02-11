@@ -46,7 +46,7 @@ func (server *Server) handleConnection(conn *net.UDPConn) {
 	}
 }
 
-func (server *Server) Close() {
+func (server *Server) Close() error {
 	server.accepting = false
-	server.conn.Close()
+	return server.conn.Close()
 }

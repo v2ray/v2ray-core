@@ -5,13 +5,11 @@ package inbound
 import (
 	"context"
 	"io"
+	"strings"
 	"sync"
 	"time"
 
-	"v2ray.com/core/app"
-	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/policy"
-	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
@@ -28,94 +26,114 @@ import (
 )
 
 type userByEmail struct {
-	sync.RWMutex
+	sync.Mutex
 	cache           map[string]*protocol.User
 	defaultLevel    uint32
 	defaultAlterIDs uint16
 }
 
-func newUserByEmail(users []*protocol.User, config *DefaultConfig) *userByEmail {
-	cache := make(map[string]*protocol.User)
-	for _, user := range users {
-		cache[user.Email] = user
-	}
+func newUserByEmail(config *DefaultConfig) *userByEmail {
 	return &userByEmail{
-		cache:           cache,
+		cache:           make(map[string]*protocol.User),
 		defaultLevel:    config.Level,
 		defaultAlterIDs: uint16(config.AlterId),
 	}
 }
 
+func (v *userByEmail) addNoLock(u *protocol.User) bool {
+	email := strings.ToLower(u.Email)
+	user, found := v.cache[email]
+	if found {
+		return false
+	}
+	v.cache[email] = user
+	return true
+}
+
+func (v *userByEmail) Add(u *protocol.User) bool {
+	v.Lock()
+	defer v.Unlock()
+
+	return v.addNoLock(u)
+}
+
 func (v *userByEmail) Get(email string) (*protocol.User, bool) {
-	var user *protocol.User
-	var found bool
-	v.RLock()
-	user, found = v.cache[email]
-	v.RUnlock()
+	email = strings.ToLower(email)
+
+	v.Lock()
+	defer v.Unlock()
+
+	user, found := v.cache[email]
 	if !found {
-		v.Lock()
-		user, found = v.cache[email]
-		if !found {
-			account := &vmess.Account{
-				Id:      uuid.New().String(),
-				AlterId: uint32(v.defaultAlterIDs),
-			}
-			user = &protocol.User{
-				Level:   v.defaultLevel,
-				Email:   email,
-				Account: serial.ToTypedMessage(account),
-			}
-			v.cache[email] = user
+		id := uuid.New()
+		account := &vmess.Account{
+			Id:      id.String(),
+			AlterId: uint32(v.defaultAlterIDs),
 		}
-		v.Unlock()
+		user = &protocol.User{
+			Level:   v.defaultLevel,
+			Email:   email,
+			Account: serial.ToTypedMessage(account),
+		}
+		v.cache[email] = user
 	}
 	return user, found
 }
 
+func (v *userByEmail) Remove(email string) bool {
+	email = strings.ToLower(email)
+
+	v.Lock()
+	defer v.Unlock()
+
+	if _, found := v.cache[email]; !found {
+		return false
+	}
+	delete(v.cache, email)
+	return true
+}
+
 // Handler is an inbound connection handler that handles messages in VMess protocol.
 type Handler struct {
-	inboundHandlerManager proxyman.InboundHandlerManager
+	policyManager         core.PolicyManager
+	inboundHandlerManager core.InboundHandlerManager
 	clients               protocol.UserValidator
 	usersByEmail          *userByEmail
 	detours               *DetourConfig
 	sessionHistory        *encoding.SessionHistory
-	policyManager         policy.Manager
 }
 
 // New creates a new VMess inbound handler.
 func New(ctx context.Context, config *Config) (*Handler, error) {
-	space := app.SpaceFromContext(ctx)
-	if space == nil {
-		return nil, newError("no space in context")
+	v := core.FromContext(ctx)
+	if v == nil {
+		return nil, newError("V is not in context.")
 	}
 
-	allowedClients := vmess.NewTimedUserValidator(ctx, protocol.DefaultIDHash)
+	handler := &Handler{
+		policyManager:         v.PolicyManager(),
+		inboundHandlerManager: v.InboundHandlerManager(),
+		clients:               vmess.NewTimedUserValidator(protocol.DefaultIDHash),
+		detours:               config.Detour,
+		usersByEmail:          newUserByEmail(config.GetDefaultValue()),
+		sessionHistory:        encoding.NewSessionHistory(),
+	}
+
 	for _, user := range config.User {
-		if err := allowedClients.Add(user); err != nil {
+		if err := handler.AddUser(ctx, user); err != nil {
 			return nil, newError("failed to initiate user").Base(err)
 		}
 	}
 
-	handler := &Handler{
-		clients:        allowedClients,
-		detours:        config.Detour,
-		usersByEmail:   newUserByEmail(config.User, config.GetDefaultValue()),
-		sessionHistory: encoding.NewSessionHistory(ctx),
-	}
-
-	space.On(app.SpaceInitializing, func(interface{}) error {
-		handler.inboundHandlerManager = proxyman.InboundHandlerManagerFromSpace(space)
-		if handler.inboundHandlerManager == nil {
-			return newError("InboundHandlerManager is not found is space.")
-		}
-		handler.policyManager = policy.FromSpace(space)
-		if handler.policyManager == nil {
-			return newError("Policy is not found in space.")
-		}
-		return nil
-	})
-
 	return handler, nil
+}
+
+// Close implements common.Closable.
+func (h *Handler) Close() error {
+	common.Close(h.clients)
+	common.Close(h.sessionHistory)
+	common.Close(h.usersByEmail)
+	return nil
 }
 
 // Network implements proxy.Inbound.Network().
@@ -131,6 +149,24 @@ func (h *Handler) GetUser(email string) *protocol.User {
 		h.clients.Add(user)
 	}
 	return user
+}
+
+func (h *Handler) AddUser(ctx context.Context, user *protocol.User) error {
+	if len(user.Email) > 0 && !h.usersByEmail.Add(user) {
+		return newError("User ", user.Email, " already exists.")
+	}
+	return h.clients.Add(user)
+}
+
+func (h *Handler) RemoveUser(ctx context.Context, email string) error {
+	if len(email) == 0 {
+		return newError("Email must not be empty.")
+	}
+	if !h.usersByEmail.Remove(email) {
+		return newError("User ", email, " not found.")
+	}
+	h.clients.Remove(email)
+	return nil
 }
 
 func transferRequest(timer signal.ActivityUpdater, session *encoding.ServerSession, request *protocol.RequestHeader, input io.Reader, output ray.OutputStream) error {
@@ -179,9 +215,9 @@ func transferResponse(timer signal.ActivityUpdater, session *encoding.ServerSess
 }
 
 // Process implements proxy.Inbound.Process().
-func (h *Handler) Process(ctx context.Context, network net.Network, connection internet.Connection, dispatcher dispatcher.Interface) error {
-	sessionPolicy := h.policyManager.GetPolicy(0)
-	if err := connection.SetReadDeadline(time.Now().Add(sessionPolicy.Timeout.Handshake.Duration())); err != nil {
+func (h *Handler) Process(ctx context.Context, network net.Network, connection internet.Connection, dispatcher core.Dispatcher) error {
+	sessionPolicy := h.policyManager.ForLevel(0)
+	if err := connection.SetReadDeadline(time.Now().Add(sessionPolicy.Timeouts.Handshake)); err != nil {
 		return newError("unable to set read deadline").Base(err).AtWarning()
 	}
 
@@ -198,14 +234,9 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 				Status: log.AccessRejected,
 				Reason: err,
 			})
-			newError("invalid request from ", connection.RemoteAddr(), ": ", err).AtInfo().WriteToLog()
+			err = newError("invalid request from ", connection.RemoteAddr()).Base(err).AtInfo()
 		}
 		return err
-	}
-
-	if request.Command == protocol.RequestCommandMux {
-		request.Address = net.DomainAddress("v1.mux.com")
-		request.Port = net.Port(0)
 	}
 
 	log.Record(&log.AccessMessage{
@@ -221,11 +252,11 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 		newError("unable to set back read deadline").Base(err).WriteToLog()
 	}
 
-	sessionPolicy = h.policyManager.GetPolicy(request.User.Level)
+	sessionPolicy = h.policyManager.ForLevel(request.User.Level)
 	ctx = protocol.ContextWithUser(ctx, request.User)
 
 	ctx, cancel := context.WithCancel(ctx)
-	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeout.ConnectionIdle.Duration())
+	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)
 	ray, err := dispatcher.Dispatch(ctx, request.Destination())
 	if err != nil {
 		return newError("failed to dispatch request to ", request.Destination()).Base(err)
@@ -235,14 +266,14 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	output := ray.InboundOutput()
 
 	requestDone := signal.ExecuteAsync(func() error {
-		defer timer.SetTimeout(sessionPolicy.Timeout.DownlinkOnly.Duration())
+		defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
 		return transferRequest(timer, session, request, reader, input)
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
 		writer := buf.NewBufferedWriter(buf.NewWriter(connection))
 		defer writer.Flush()
-		defer timer.SetTimeout(sessionPolicy.Timeout.UplinkOnly.Duration())
+		defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
 		response := &protocol.ResponseHeader{
 			Command: h.generateCommand(ctx, request),
@@ -265,7 +296,7 @@ func (h *Handler) generateCommand(ctx context.Context, request *protocol.Request
 		if h.inboundHandlerManager != nil {
 			handler, err := h.inboundHandlerManager.GetHandler(ctx, tag)
 			if err != nil {
-				newError("failed to get detour handler: ", tag, err).AtWarning().WriteToLog()
+				newError("failed to get detour handler: ", tag).Base(err).AtWarning().WriteToLog()
 				return nil
 			}
 			proxyHandler, port, availableMin := handler.GetRandomInboundProxy()

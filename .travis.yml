@@ -1,7 +1,7 @@
 sudo: required
 language: go
 go:
-- 1.9.2
+- 1.9.4
 go_import_path: v2ray.com/core
 git:
   depth: 5

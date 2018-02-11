@@ -8,13 +8,13 @@ import (
 	"sync"
 	"time"
 
-	"v2ray.com/core/app"
-	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
 )
@@ -75,8 +75,7 @@ func (m *ClientManager) onClientFinish() {
 type Client struct {
 	sessionManager *SessionManager
 	inboundRay     ray.InboundRay
-	ctx            context.Context
-	cancel         context.CancelFunc
+	done           *signal.Done
 	manager        *ClientManager
 	concurrency    uint32
 }
@@ -86,26 +85,26 @@ var muxCoolPort = net.Port(9527)
 
 // NewClient creates a new mux.Client.
 func NewClient(p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client, error) {
-	ctx, cancel := context.WithCancel(context.Background())
-	ctx = proxy.ContextWithTarget(ctx, net.TCPDestination(muxCoolAddress, muxCoolPort))
+	ctx := proxy.ContextWithTarget(context.Background(), net.TCPDestination(muxCoolAddress, muxCoolPort))
+	ctx, cancel := context.WithCancel(ctx)
 	pipe := ray.NewRay(ctx)
-
-	go func() {
-		if err := p.Process(ctx, pipe, dialer); err != nil {
-			cancel()
-
-			errors.New("failed to handler mux client connection").Base(err).WriteToLog()
-		}
-	}()
 
 	c := &Client{
 		sessionManager: NewSessionManager(),
 		inboundRay:     pipe,
-		ctx:            ctx,
-		cancel:         cancel,
+		done:           signal.NewDone(),
 		manager:        m,
 		concurrency:    m.config.Concurrency,
 	}
+
+	go func() {
+		if err := p.Process(ctx, pipe, dialer); err != nil {
+			errors.New("failed to handler mux client connection").Base(err).WriteToLog()
+		}
+		c.done.Close()
+		cancel()
+	}()
+
 	go c.fetchOutput()
 	go c.monitor()
 	return c, nil
@@ -113,12 +112,7 @@ func NewClient(p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client
 
 // Closed returns true if this Client is closed.
 func (m *Client) Closed() bool {
-	select {
-	case <-m.ctx.Done():
-		return true
-	default:
-		return false
-	}
+	return m.done.Done()
 }
 
 func (m *Client) monitor() {
@@ -129,7 +123,7 @@ func (m *Client) monitor() {
 
 	for {
 		select {
-		case <-m.ctx.Done():
+		case <-m.done.C():
 			m.sessionManager.Close()
 			m.inboundRay.InboundInput().Close()
 			m.inboundRay.InboundOutput().CloseError()
@@ -137,7 +131,8 @@ func (m *Client) monitor() {
 		case <-timer.C:
 			size := m.sessionManager.Size()
 			if size == 0 && m.sessionManager.CloseIfNoSession() {
-				m.cancel()
+				m.done.Close()
+				return
 			}
 		}
 	}
@@ -171,10 +166,8 @@ func (m *Client) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) bool
 		return false
 	}
 
-	select {
-	case <-m.ctx.Done():
+	if m.done.Done() {
 		return false
-	default:
 	}
 
 	s := sm.Allocate()
@@ -227,7 +220,7 @@ func (m *Client) handleStatusEnd(meta *FrameMetadata, reader *buf.BufferedReader
 }
 
 func (m *Client) fetchOutput() {
-	defer m.cancel()
+	defer m.done.Close()
 
 	reader := buf.NewBufferedReader(m.inboundRay.InboundOutput())
 
@@ -262,21 +255,14 @@ func (m *Client) fetchOutput() {
 }
 
 type Server struct {
-	dispatcher dispatcher.Interface
+	dispatcher core.Dispatcher
 }
 
 // NewServer creates a new mux.Server.
 func NewServer(ctx context.Context) *Server {
-	s := &Server{}
-	space := app.SpaceFromContext(ctx)
-	space.On(app.SpaceInitializing, func(interface{}) error {
-		d := dispatcher.FromSpace(space)
-		if d == nil {
-			return newError("no dispatcher in space")
-		}
-		s.dispatcher = d
-		return nil
-	})
+	s := &Server{
+		dispatcher: core.FromContext(ctx).Dispatcher(),
+	}
 	return s
 }
 
@@ -295,8 +281,16 @@ func (s *Server) Dispatch(ctx context.Context, dest net.Destination) (ray.Inboun
 	return ray, nil
 }
 
+func (s *Server) Start() error {
+	return nil
+}
+
+func (s *Server) Close() error {
+	return nil
+}
+
 type ServerWorker struct {
-	dispatcher     dispatcher.Interface
+	dispatcher     core.Dispatcher
 	outboundRay    ray.OutboundRay
 	sessionManager *SessionManager
 }

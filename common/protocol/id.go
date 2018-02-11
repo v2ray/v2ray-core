@@ -21,13 +21,13 @@ func DefaultIDHash(key []byte) hash.Hash {
 
 // The ID of en entity, in the form of an UUID.
 type ID struct {
-	uuid   *uuid.UUID
+	uuid   uuid.UUID
 	cmdKey [IDBytesLen]byte
 }
 
 // Equals returns true if this ID equals to the other one.
 func (id *ID) Equals(another *ID) bool {
-	return id.uuid.Equals(another.uuid)
+	return id.uuid.Equals(&(another.uuid))
 }
 
 func (id *ID) Bytes() []byte {
@@ -38,7 +38,7 @@ func (id *ID) String() string {
 	return id.uuid.String()
 }
 
-func (id *ID) UUID() *uuid.UUID {
+func (id *ID) UUID() uuid.UUID {
 	return id.uuid
 }
 
@@ -47,7 +47,7 @@ func (id ID) CmdKey() []byte {
 }
 
 // NewID returns an ID with given UUID.
-func NewID(uuid *uuid.UUID) *ID {
+func NewID(uuid uuid.UUID) *ID {
 	id := &ID{uuid: uuid}
 	md5hash := md5.New()
 	common.Must2(md5hash.Write(uuid.Bytes()))

@@ -1,8 +1,6 @@
 package udp
 
 import (
-	"context"
-
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
@@ -60,10 +58,11 @@ func (q *PayloadQueue) Dequeue(queue <-chan Payload) {
 	}
 }
 
-func (q *PayloadQueue) Close() {
+func (q *PayloadQueue) Close() error {
 	for _, queue := range q.queue {
 		close(queue)
 	}
+	return nil
 }
 
 type ListenOption struct {
@@ -74,7 +73,6 @@ type ListenOption struct {
 
 type Hub struct {
 	conn   *net.UDPConn
-	cancel context.CancelFunc
 	queue  *PayloadQueue
 	option ListenOption
 }
@@ -105,20 +103,18 @@ func ListenUDP(address net.Address, port net.Port, option ListenOption) (*Hub, e
 			return nil, newError("failed to control socket").Base(err)
 		}
 	}
-	ctx, cancel := context.WithCancel(context.Background())
 	hub := &Hub{
 		conn:   udpConn,
 		queue:  NewPayloadQueue(option),
 		option: option,
-		cancel: cancel,
 	}
-	go hub.start(ctx)
+	go hub.start()
 	return hub, nil
 }
 
-func (h *Hub) Close() {
-	h.cancel()
+func (h *Hub) Close() error {
 	h.conn.Close()
+	return nil
 }
 
 func (h *Hub) WriteTo(payload []byte, dest net.Destination) (int, error) {
@@ -128,16 +124,10 @@ func (h *Hub) WriteTo(payload []byte, dest net.Destination) (int, error) {
 	})
 }
 
-func (h *Hub) start(ctx context.Context) {
+func (h *Hub) start() {
 	oobBytes := make([]byte, 256)
-L:
-	for {
-		select {
-		case <-ctx.Done():
-			break L
-		default:
-		}
 
+	for {
 		buffer := buf.New()
 		var noob int
 		var addr *net.UDPAddr
@@ -151,7 +141,7 @@ L:
 		if err != nil {
 			newError("failed to read UDP msg").Base(err).WriteToLog()
 			buffer.Release()
-			continue
+			break
 		}
 
 		payload := Payload{

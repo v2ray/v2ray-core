@@ -1,6 +1,6 @@
 package dns
 
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg server -path App,DNS,Server
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg dns -path App,DNS
 
 import (
 	"context"
@@ -8,10 +8,10 @@ import (
 	"time"
 
 	dnsmsg "github.com/miekg/dns"
-	"v2ray.com/core/app"
-	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/signal"
 )
 
 const (
@@ -38,56 +38,60 @@ type Server struct {
 	hosts   map[string]net.IP
 	records map[string]*DomainRecord
 	servers []NameServer
+	task    *signal.PeriodicTask
 }
 
 func New(ctx context.Context, config *Config) (*Server, error) {
-	space := app.SpaceFromContext(ctx)
-	if space == nil {
-		return nil, newError("no space in context")
-	}
 	server := &Server{
 		records: make(map[string]*DomainRecord),
 		servers: make([]NameServer, len(config.NameServers)),
 		hosts:   config.GetInternalHosts(),
 	}
-	space.On(app.SpaceInitializing, func(interface{}) error {
-		disp := dispatcher.FromSpace(space)
-		if disp == nil {
-			return newError("dispatcher is not found in the space")
-		}
-		for idx, destPB := range config.NameServers {
-			address := destPB.Address.AsAddress()
-			if address.Family().IsDomain() && address.Domain() == "localhost" {
-				server.servers[idx] = &LocalNameServer{}
-			} else {
-				dest := destPB.AsDestination()
-				if dest.Network == net.Network_Unknown {
-					dest.Network = net.Network_UDP
-				}
-				if dest.Network == net.Network_UDP {
-					server.servers[idx] = NewUDPNameServer(dest, disp)
-				}
+	server.task = &signal.PeriodicTask{
+		Interval: time.Minute * 10,
+		Execute: func() error {
+			server.cleanup()
+			return nil
+		},
+	}
+	v := core.FromContext(ctx)
+	if v == nil {
+		return nil, newError("V is not in context.")
+	}
+
+	if err := v.RegisterFeature((*core.DNSClient)(nil), server); err != nil {
+		return nil, newError("unable to register DNSClient.").Base(err)
+	}
+
+	for idx, destPB := range config.NameServers {
+		address := destPB.Address.AsAddress()
+		if address.Family().IsDomain() && address.Domain() == "localhost" {
+			server.servers[idx] = &LocalNameServer{}
+		} else {
+			dest := destPB.AsDestination()
+			if dest.Network == net.Network_Unknown {
+				dest.Network = net.Network_UDP
+			}
+			if dest.Network == net.Network_UDP {
+				server.servers[idx] = NewUDPNameServer(dest, v.Dispatcher())
 			}
 		}
-		if len(config.NameServers) == 0 {
-			server.servers = append(server.servers, &LocalNameServer{})
-		}
-		return nil
-	})
+	}
+	if len(config.NameServers) == 0 {
+		server.servers = append(server.servers, &LocalNameServer{})
+	}
+
 	return server, nil
 }
 
-func (*Server) Interface() interface{} {
-	return (*Server)(nil)
-}
-
+// Start implements common.Runnable.
 func (s *Server) Start() error {
-	net.RegisterIPResolver(s)
-	return nil
+	return s.task.Start()
 }
 
-func (*Server) Close() {
-	net.RegisterIPResolver(net.SystemIPResolver())
+// Close implements common.Runnable.
+func (s *Server) Close() error {
+	return s.task.Close()
 }
 
 func (s *Server) GetCached(domain string) []net.IP {
@@ -101,18 +105,12 @@ func (s *Server) GetCached(domain string) []net.IP {
 	return nil
 }
 
-func (s *Server) tryCleanup() {
+func (s *Server) cleanup() {
 	s.Lock()
 	defer s.Unlock()
 
-	if len(s.records) > 256 {
-		domains := make([]string, 0, 256)
-		for d, r := range s.records {
-			if r.Expired() {
-				domains = append(domains, d)
-			}
-		}
-		for _, d := range domains {
+	for d, r := range s.records {
+		if r.Expired() {
 			delete(s.records, d)
 		}
 	}
@@ -128,8 +126,6 @@ func (s *Server) LookupIP(domain string) ([]net.IP, error) {
 	if ips != nil {
 		return ips, nil
 	}
-
-	s.tryCleanup()
 
 	for _, server := range s.servers {
 		response := server.QueryA(domain)
