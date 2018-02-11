@@ -258,6 +258,7 @@ func (c *Connection) ReadMultiBuffer() (buf.MultiBuffer, error) {
 		}
 		mb := c.receivingWorker.ReadMultiBuffer()
 		if !mb.IsEmpty() {
+			c.dataUpdater.WakeUp()
 			return mb, nil
 		}
 
@@ -307,6 +308,7 @@ func (c *Connection) Read(b []byte) (int, error) {
 		}
 		nBytes := c.receivingWorker.Read(b)
 		if nBytes > 0 {
+			c.dataUpdater.WakeUp()
 			return nBytes, nil
 		}
 
