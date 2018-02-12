@@ -22,7 +22,7 @@ func (w *BufferToBytesWriter) WriteMultiBuffer(mb MultiBuffer) error {
 	defer mb.Release()
 
 	bs := mb.ToNetBuffers()
-	_, err := bs.WriteTo(w)
+	_, err := bs.WriteTo(w.Writer)
 	return err
 }
 
