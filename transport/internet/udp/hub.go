@@ -112,6 +112,7 @@ func ListenUDP(address net.Address, port net.Port, option ListenOption) (*Hub, e
 	return hub, nil
 }
 
+// Close implements net.Listener.
 func (h *Hub) Close() error {
 	h.conn.Close()
 	return nil
@@ -161,6 +162,7 @@ func (h *Hub) start() {
 	h.queue.Close()
 }
 
+// Addr implements net.Listener.
 func (h *Hub) Addr() net.Addr {
 	return h.conn.LocalAddr()
 }
