@@ -47,7 +47,7 @@ func ListenUDP(address net.Address, port net.Port, callback PayloadHandler, opti
 	newError("listening UDP on ", address, ":", port).WriteToLog()
 	hub := &Hub{
 		conn:         udpConn,
-		capacity:     16,
+		capacity:     256,
 		callback:     callback,
 		recvOrigDest: false,
 	}
