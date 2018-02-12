@@ -150,10 +150,10 @@ func (h *Hub) start() {
 		payload.source = net.UDPDestination(net.IPAddress(addr.IP), net.Port(addr.Port))
 		if h.option.ReceiveOriginalDest && noob > 0 {
 			payload.originalDest = RetrieveOriginalDest(oobBytes[:noob])
-			if !payload.originalDest.IsValid() {
-				newError("failed to read UDP Original Destination").WriteToLog()
+			if payload.originalDest.IsValid() {
+				newError("UDP original destination: ", payload.originalDest).AtDebug().WriteToLog()
 			} else {
-				newError("UDP Original Destination: ", payload.originalDest.String()).AtDebug().WriteToLog()
+				newError("failed to read UDP original destination").WriteToLog()
 			}
 		}
 		h.queue.Enqueue(payload)
