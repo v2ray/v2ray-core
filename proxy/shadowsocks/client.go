@@ -141,6 +141,8 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 		})
 
 		requestDone := signal.ExecuteAsync(func() error {
+			defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
+
 			if err := buf.Copy(outboundRay.OutboundInput(), writer, buf.UpdateActivity(timer)); err != nil {
 				return newError("failed to transport all UDP request").Base(err)
 			}
@@ -149,13 +151,14 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 
 		responseDone := signal.ExecuteAsync(func() error {
 			defer outboundRay.OutboundOutput().Close()
+			defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
 			reader := &UDPReader{
 				Reader: conn,
 				User:   user,
 			}
 
-			if err := buf.Copy(reader, outboundRay.OutboundOutput(), buf.UpdateActivity(timer), buf.IgnoreReaderError()); err != nil {
+			if err := buf.Copy(reader, outboundRay.OutboundOutput(), buf.UpdateActivity(timer)); err != nil {
 				return newError("failed to transport all UDP response").Base(err)
 			}
 			return nil
