@@ -62,7 +62,9 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 		newError("connection ends").Base(err).WriteToLog()
 	}
 	cancel()
-	conn.Close()
+	if err := conn.Close(); err != nil {
+		newError("failed to close connection").Base(err).WriteToLog()
+	}
 }
 
 func (w *tcpWorker) Proxy() proxy.Inbound {
@@ -128,7 +130,7 @@ func (c *udpConn) Write(buf []byte) (int, error) {
 }
 
 func (c *udpConn) Close() error {
-	common.Close(c.done)
+	common.Must(c.done.Close())
 	return nil
 }
 
@@ -254,11 +256,15 @@ func (w *udpWorker) Start() error {
 }
 
 func (w *udpWorker) Close() error {
+	w.Lock()
+	defer w.Unlock()
+
 	if w.hub != nil {
 		w.hub.Close()
-		w.done.Close()
-		common.Close(w.proxy)
 	}
+
+	common.Must(w.done.Close())
+	common.Close(w.proxy)
 	return nil
 }
 
