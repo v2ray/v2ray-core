@@ -10,6 +10,7 @@ import "v2ray.com/core/common/net/address.proto";
 import "v2ray.com/core/common/net/port.proto";
 import "v2ray.com/core/transport/internet/config.proto";
 import "v2ray.com/core/transport/internet/domainsocket/config.proto";
+import "v2ray.com/core/common/serial/typed_message.proto";
 
 message InboundConfig {
 }
