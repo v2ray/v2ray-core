@@ -12,6 +12,7 @@ type BytesToBufferReader struct {
 	buffer []byte
 }
 
+// NewBytesToBufferReader returns a new BytesToBufferReader.
 func NewBytesToBufferReader(reader io.Reader) Reader {
 	return &BytesToBufferReader{
 		Reader: reader,
@@ -52,19 +53,14 @@ func (r *BytesToBufferReader) ReadMultiBuffer() (MultiBuffer, error) {
 	return nil, err
 }
 
-var (
-	_ Reader        = (*BufferedReader)(nil)
-	_ io.Reader     = (*BufferedReader)(nil)
-	_ io.ByteReader = (*BufferedReader)(nil)
-	_ io.WriterTo   = (*BufferedReader)(nil)
-)
-
+// BufferedReader is a Reader that keeps its internal buffer.
 type BufferedReader struct {
 	stream   Reader
 	leftOver MultiBuffer
 	buffered bool
 }
 
+// NewBufferedReader returns a new BufferedReader.
 func NewBufferedReader(reader Reader) *BufferedReader {
 	return &BufferedReader{
 		stream:   reader,
@@ -72,20 +68,24 @@ func NewBufferedReader(reader Reader) *BufferedReader {
 	}
 }
 
+// SetBuffered sets whether to keep the interal buffer.
 func (r *BufferedReader) SetBuffered(f bool) {
 	r.buffered = f
 }
 
+// IsBuffered returns true if internal buffer is used.
 func (r *BufferedReader) IsBuffered() bool {
 	return r.buffered
 }
 
+// ReadByte implements io.ByteReader.
 func (r *BufferedReader) ReadByte() (byte, error) {
 	var b [1]byte
 	_, err := r.Read(b[:])
 	return b[0], err
 }
 
+// Read implements io.Reader. It reads from internal buffer first (if available) and then reads from the underlying reader.
 func (r *BufferedReader) Read(b []byte) (int, error) {
 	if r.leftOver != nil {
 		nBytes, _ := r.leftOver.Read(b)
@@ -113,6 +113,7 @@ func (r *BufferedReader) Read(b []byte) (int, error) {
 	return 0, err
 }
 
+// ReadMultiBuffer implements Reader.
 func (r *BufferedReader) ReadMultiBuffer() (MultiBuffer, error) {
 	if r.leftOver != nil {
 		mb := r.leftOver
@@ -164,6 +165,7 @@ func (r *BufferedReader) writeToInternal(writer io.Writer) (int64, error) {
 	}
 }
 
+// WriteTo implements io.WriterTo.
 func (r *BufferedReader) WriteTo(writer io.Writer) (int64, error) {
 	nBytes, err := r.writeToInternal(writer)
 	if errors.Cause(err) == io.EOF {
