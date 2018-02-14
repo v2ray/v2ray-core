@@ -164,6 +164,7 @@ func (s *Instance) RegisterFeature(feature interface{}, instance Feature) error 
 }
 
 // GetFeature returns a feature that was registered in this Instance. Nil if not found.
+// The returned Feature must implement common.HasType and whose type equals the given feature type.
 func (s *Instance) GetFeature(featureType interface{}) Feature {
 	for _, f := range s.features {
 		if hasType, ok := f.(common.HasType); ok {
