@@ -6,6 +6,7 @@ import (
 	"context"
 	"sync"
 
+	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/log"
 )
@@ -26,13 +27,10 @@ func New(ctx context.Context, config *Config) (*Instance, error) {
 		active: true,
 	}
 
-	if err := g.initAccessLogger(); err != nil {
-		return nil, newError("failed to initialize access logger").Base(err).AtWarning()
+	v := core.FromContext(ctx)
+	if v != nil {
+		common.Must(v.RegisterFeature((*log.Handler)(nil), g))
 	}
-	if err := g.initErrorLogger(); err != nil {
-		return nil, newError("failed to initialize error logger").Base(err).AtWarning()
-	}
-	log.RegisterHandler(g)
 
 	return g, nil
 }
@@ -67,24 +65,40 @@ func (g *Instance) initErrorLogger() error {
 	return nil
 }
 
-// Start implements app.Application.Start().
-func (g *Instance) Start() error {
-	g.Lock()
-	defer g.Unlock()
-	g.active = true
-	return nil
+func (*Instance) Type() interface{} {
+	return (*Instance)(nil)
 }
 
-func (g *Instance) isActive() bool {
-	g.RLock()
-	defer g.RUnlock()
+// Start implements app.Application.Start().
+func (g *Instance) Start() error {
+	newError("Logger starting").AtDebug().WriteToLog()
 
-	return g.active
+	g.Lock()
+	defer g.Unlock()
+
+	if g.active {
+		return nil
+	}
+
+	g.active = true
+
+	if err := g.initAccessLogger(); err != nil {
+		return newError("failed to initialize access logger").Base(err).AtWarning()
+	}
+	if err := g.initErrorLogger(); err != nil {
+		return newError("failed to initialize error logger").Base(err).AtWarning()
+	}
+	log.RegisterHandler(g)
+
+	return nil
 }
 
 // Handle implements log.Handler.
 func (g *Instance) Handle(msg log.Message) {
-	if !g.isActive() {
+	g.RLock()
+	defer g.RUnlock()
+
+	if !g.active {
 		return
 	}
 
@@ -104,10 +118,19 @@ func (g *Instance) Handle(msg log.Message) {
 
 // Close implement app.Application.Close().
 func (g *Instance) Close() error {
+	newError("Logger closing").AtDebug().WriteToLog()
+
 	g.Lock()
 	defer g.Unlock()
 
+	if !g.active {
+		return nil
+	}
+
 	g.active = false
+
+	common.Close(g.accessLogger)
+	common.Close(g.errorLogger)
 
 	return nil
 }

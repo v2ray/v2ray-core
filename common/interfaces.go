@@ -21,3 +21,9 @@ type Runnable interface {
 
 	Closable
 }
+
+// HasType is the interface for objects that knows its type.
+type HasType interface {
+	// Type returns the type of the object.
+	Type() interface{}
+}

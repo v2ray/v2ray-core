@@ -163,6 +163,18 @@ func (s *Instance) RegisterFeature(feature interface{}, instance Feature) error 
 	return nil
 }
 
+// GetFeature returns a feature that was registered in this Instance. Nil if not found.
+func (s *Instance) GetFeature(featureType interface{}) Feature {
+	for _, f := range s.features {
+		if hasType, ok := f.(common.HasType); ok {
+			if hasType.Type() == featureType {
+				return f
+			}
+		}
+	}
+	return nil
+}
+
 // DNSClient returns the DNSClient used by this Instance. The returned DNSClient is always functional.
 func (s *Instance) DNSClient() DNSClient {
 	return &(s.dnsClient)

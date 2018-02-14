@@ -1,0 +1,50 @@
+package command
+
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg command -path App,Log,Command
+
+import (
+	context "golang.org/x/net/context"
+	grpc "google.golang.org/grpc"
+
+	"v2ray.com/core"
+	"v2ray.com/core/app/log"
+	"v2ray.com/core/common"
+)
+
+type LoggerServer struct {
+	V *core.Instance
+}
+
+func (s *LoggerServer) RestartLogger(ctx context.Context, request *RestartLoggerRequest) (*RestartLoggerResponse, error) {
+	logger := s.V.GetFeature((*log.Instance)(nil))
+	if logger == nil {
+		return nil, newError("unable to get logger instance")
+	}
+	if err := logger.Close(); err != nil {
+		return nil, newError("failed to close logger").Base(err)
+	}
+	if err := logger.Start(); err != nil {
+		return nil, newError("failed to start logger").Base(err)
+	}
+	return &RestartLoggerResponse{}, nil
+}
+
+type service struct {
+	v *core.Instance
+}
+
+func (s *service) Register(server *grpc.Server) {
+	RegisterLoggerServiceServer(server, &LoggerServer{
+		V: s.v,
+	})
+}
+
+func init() {
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, cfg interface{}) (interface{}, error) {
+		s := core.FromContext(ctx)
+		if s == nil {
+			return nil, newError("V is not in context.")
+		}
+		return &service{v: s}, nil
+	}))
+}
