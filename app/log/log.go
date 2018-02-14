@@ -24,8 +24,9 @@ type Instance struct {
 func New(ctx context.Context, config *Config) (*Instance, error) {
 	g := &Instance{
 		config: config,
-		active: true,
+		active: false,
 	}
+	log.RegisterHandler(g)
 
 	v := core.FromContext(ctx)
 	if v != nil {
@@ -65,14 +66,12 @@ func (g *Instance) initErrorLogger() error {
 	return nil
 }
 
+// Type implements common.HasType.
 func (*Instance) Type() interface{} {
 	return (*Instance)(nil)
 }
 
-// Start implements app.Application.Start().
-func (g *Instance) Start() error {
-	newError("Logger starting").AtDebug().WriteToLog()
-
+func (g *Instance) startInternal() error {
 	g.Lock()
 	defer g.Unlock()
 
@@ -88,7 +87,17 @@ func (g *Instance) Start() error {
 	if err := g.initErrorLogger(); err != nil {
 		return newError("failed to initialize error logger").Base(err).AtWarning()
 	}
-	log.RegisterHandler(g)
+
+	return nil
+}
+
+// Start implements app.Application.Start().
+func (g *Instance) Start() error {
+	if err := g.startInternal(); err != nil {
+		return err
+	}
+
+	newError("Logger started").AtDebug().WriteToLog()
 
 	return nil
 }
@@ -130,7 +139,10 @@ func (g *Instance) Close() error {
 	g.active = false
 
 	common.Close(g.accessLogger)
+	g.accessLogger = nil
+
 	common.Close(g.errorLogger)
+	g.errorLogger = nil
 
 	return nil
 }
