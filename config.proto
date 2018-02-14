@@ -9,12 +9,6 @@ option java_multiple_files = true;
 import "v2ray.com/core/common/serial/typed_message.proto";
 import "v2ray.com/core/transport/config.proto";
 
-// Configuration serialization format.
-enum ConfigFormat {
-  Protobuf = 0;
-  JSON = 1;
-}
-
 // Master config of V2Ray. V2Ray takes this config as input and functions accordingly.
 message Config {
   // Inbound handler configurations. Must have at least one item.
