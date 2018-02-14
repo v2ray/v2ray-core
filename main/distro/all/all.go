@@ -10,6 +10,7 @@ import (
 
 	// Default commander and all its services.
 	_ "v2ray.com/core/app/commander"
+	_ "v2ray.com/core/app/log/command"
 	_ "v2ray.com/core/app/proxyman/command"
 
 	// Other optional features.
