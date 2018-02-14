@@ -263,7 +263,10 @@ func (w *udpWorker) Close() error {
 		w.hub.Close()
 	}
 
-	common.Must(w.done.Close())
+	if w.done != nil {
+		common.Must(w.done.Close())
+	}
+
 	common.Close(w.proxy)
 	return nil
 }
