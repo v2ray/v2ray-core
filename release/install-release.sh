@@ -393,7 +393,9 @@ main(){
     if [[ ${V2RAY_RUNNING} -eq 1 ]];then
         colorEcho ${BLUE} "Restarting V2Ray service."
         startV2ray
-
+    else
+        colorEcho ${BLUE} "Starting V2Ray service."
+        startV2ray
     fi
     colorEcho ${GREEN} "V2Ray ${NEW_VER} is installed."
     rm -rf /tmp/v2ray
