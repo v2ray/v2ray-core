@@ -10,7 +10,7 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/common/serial"
+	"v2ray.com/core/proxy/socks"
 )
 
 const (
@@ -22,6 +22,7 @@ const (
 	AddrTypeDomain = 3
 )
 
+// ReadTCPSession reads a Shadowsocks TCP session from the given reader, returns its header and remaining parts.
 func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHeader, buf.Reader, error) {
 	rawAccount, err := user.GetTypedAccount()
 	if err != nil {
@@ -136,6 +137,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	return request, chunkReader, nil
 }
 
+// WriteTCPRequest writes Shadowsocks request into the given writer, and returns a writer for body.
 func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (buf.Writer, error) {
 	user := request.User
 	rawAccount, err := user.GetTypedAccount()
@@ -165,25 +167,9 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (buf.Wri
 
 	header := buf.NewLocal(512)
 
-	switch request.Address.Family() {
-	case net.AddressFamilyIPv4:
-		header.AppendBytes(AddrTypeIPv4)
-		header.Append([]byte(request.Address.IP()))
-	case net.AddressFamilyIPv6:
-		header.AppendBytes(AddrTypeIPv6)
-		header.Append([]byte(request.Address.IP()))
-	case net.AddressFamilyDomain:
-		domain := request.Address.Domain()
-		if protocol.IsDomainTooLong(domain) {
-			return nil, newError("domain name too long: ", domain)
-		}
-		header.AppendBytes(AddrTypeDomain, byte(len(domain)))
-		common.Must(header.AppendSupplier(serial.WriteString(domain)))
-	default:
-		return nil, newError("unsupported address type: ", request.Address.Family())
+	if err := socks.AppendAddress(header, request.Address, request.Port); err != nil {
+		return nil, newError("failed to write address").Base(err)
 	}
-
-	common.Must(header.AppendSupplier(serial.WriteUint16(uint16(request.Port))))
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {
 		header.SetByte(0, header.Byte(0)|0x10)
@@ -261,21 +247,10 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload []byte) (*buf.Buff
 	}
 	iv := buffer.Bytes()
 
-	switch request.Address.Family() {
-	case net.AddressFamilyIPv4:
-		buffer.AppendBytes(AddrTypeIPv4)
-		buffer.Append([]byte(request.Address.IP()))
-	case net.AddressFamilyIPv6:
-		buffer.AppendBytes(AddrTypeIPv6)
-		buffer.Append([]byte(request.Address.IP()))
-	case net.AddressFamilyDomain:
-		buffer.AppendBytes(AddrTypeDomain, byte(len(request.Address.Domain())))
-		buffer.Append([]byte(request.Address.Domain()))
-	default:
-		return nil, newError("unsupported address type: ", request.Address.Family()).AtError()
+	if err := socks.AppendAddress(buffer, request.Address, request.Port); err != nil {
+		return nil, newError("failed to write address").Base(err)
 	}
 
-	common.Must(buffer.AppendSupplier(serial.WriteUint16(uint16(request.Port))))
 	buffer.Append(payload)
 
 	if !account.Cipher.IsAEAD() && request.Option.Has(RequestOptionOneTimeAuth) {

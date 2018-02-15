@@ -65,7 +65,7 @@ func (mb *MultiBuffer) AppendMulti(buf MultiBuffer) {
 	*mb = append(*mb, buf...)
 }
 
-// Copy copied the begining part of the MultiBuffer into the given byte array.
+// Copy copied the beginning part of the MultiBuffer into the given byte array.
 func (mb MultiBuffer) Copy(b []byte) int {
 	total := 0
 	for _, bb := range mb {
@@ -151,7 +151,7 @@ func (mb MultiBuffer) ToNetBuffers() net.Buffers {
 	return bs
 }
 
-// SliceBySize splits the begining of this MultiBuffer into another one, for at most size bytes.
+// SliceBySize splits the beginning of this MultiBuffer into another one, for at most size bytes.
 func (mb *MultiBuffer) SliceBySize(size int) MultiBuffer {
 	slice := NewMultiBufferCap(10)
 	sliceSize := 0

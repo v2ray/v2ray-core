@@ -46,7 +46,7 @@ func (TransportProtocol) EnumDescriptor() ([]byte, []int) { return fileDescripto
 type TransportConfig struct {
 	// Type of network that this settings supports.
 	Protocol TransportProtocol `protobuf:"varint,1,opt,name=protocol,enum=v2ray.core.transport.internet.TransportProtocol" json:"protocol,omitempty"`
-	// Specific settings.
+	// Specific settings. Must be of the transports.
 	Settings *v2ray_core_common_serial.TypedMessage `protobuf:"bytes,2,opt,name=settings" json:"settings,omitempty"`
 }
 
@@ -74,7 +74,8 @@ type StreamConfig struct {
 	Protocol          TransportProtocol  `protobuf:"varint,1,opt,name=protocol,enum=v2ray.core.transport.internet.TransportProtocol" json:"protocol,omitempty"`
 	TransportSettings []*TransportConfig `protobuf:"bytes,2,rep,name=transport_settings,json=transportSettings" json:"transport_settings,omitempty"`
 	// Type of security. Must be a message name of the settings proto.
-	SecurityType     string                                   `protobuf:"bytes,3,opt,name=security_type,json=securityType" json:"security_type,omitempty"`
+	SecurityType string `protobuf:"bytes,3,opt,name=security_type,json=securityType" json:"security_type,omitempty"`
+	// Settings for transport security. For now the only choice is TLS.
 	SecuritySettings []*v2ray_core_common_serial.TypedMessage `protobuf:"bytes,4,rep,name=security_settings,json=securitySettings" json:"security_settings,omitempty"`
 }
 

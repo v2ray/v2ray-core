@@ -36,6 +36,6 @@ func (s *Server) Start() (net.Destination, error) {
 	return net.TCPDestination(net.LocalHostIP, net.Port(s.Port)), nil
 }
 
-func (s *Server) Close() {
-	s.server.Close()
+func (s *Server) Close() error {
+	return s.server.Close()
 }

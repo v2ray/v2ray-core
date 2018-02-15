@@ -11,9 +11,9 @@ func TestSendingWindow(t *testing.T) {
 	assert := With(t)
 
 	window := NewSendingWindow(5, nil, nil)
-	window.Push(0, []byte{})
-	window.Push(1, []byte{})
-	window.Push(2, []byte{})
+	window.Push(0)
+	window.Push(1)
+	window.Push(2)
 	assert(window.Len(), Equals, 3)
 
 	window.Remove(1)
@@ -27,11 +27,11 @@ func TestSendingWindow(t *testing.T) {
 	window.Remove(0)
 	assert(window.Len(), Equals, 0)
 
-	window.Push(4, []byte{})
+	window.Push(4)
 	assert(window.Len(), Equals, 1)
 	assert(window.FirstNumber(), Equals, uint32(4))
 
-	window.Push(5, []byte{})
+	window.Push(5)
 	assert(window.Len(), Equals, 2)
 
 	window.Remove(1)

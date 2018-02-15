@@ -6,17 +6,12 @@ import (
 	"v2ray.com/core/common/errors"
 )
 
-var (
-	_ io.ReaderFrom = (*BufferToBytesWriter)(nil)
-	_ io.Writer     = (*BufferToBytesWriter)(nil)
-	_ Writer        = (*BufferToBytesWriter)(nil)
-)
-
 // BufferToBytesWriter is a Writer that writes alloc.Buffer into underlying writer.
 type BufferToBytesWriter struct {
 	io.Writer
 }
 
+// NewBufferToBytesWriter returns a new BufferToBytesWriter.
 func NewBufferToBytesWriter(writer io.Writer) *BufferToBytesWriter {
 	return &BufferToBytesWriter{
 		Writer: writer,
@@ -28,7 +23,7 @@ func (w *BufferToBytesWriter) WriteMultiBuffer(mb MultiBuffer) error {
 	defer mb.Release()
 
 	bs := mb.ToNetBuffers()
-	_, err := bs.WriteTo(w)
+	_, err := bs.WriteTo(w.Writer)
 	return err
 }
 
@@ -38,13 +33,6 @@ func (w *BufferToBytesWriter) ReadFrom(reader io.Reader) (int64, error) {
 	err := Copy(NewReader(reader), w, CountSize(&sc))
 	return sc.Size, err
 }
-
-var (
-	_ io.ReaderFrom = (*BufferedWriter)(nil)
-	_ io.Writer     = (*BufferedWriter)(nil)
-	_ Writer        = (*BufferedWriter)(nil)
-	_ io.ByteWriter = (*BufferedWriter)(nil)
-)
 
 // BufferedWriter is a Writer with internal buffer.
 type BufferedWriter struct {
@@ -62,6 +50,7 @@ func NewBufferedWriter(writer Writer) *BufferedWriter {
 	}
 }
 
+// WriteByte implements io.ByteWriter.
 func (w *BufferedWriter) WriteByte(c byte) error {
 	_, err := w.Write([]byte{c})
 	return err
@@ -106,6 +95,9 @@ func (w *BufferedWriter) WriteMultiBuffer(b MultiBuffer) error {
 	defer b.Release()
 
 	for !b.IsEmpty() {
+		if w.buffer == nil {
+			w.buffer = New()
+		}
 		if err := w.buffer.AppendSupplier(ReadFrom(&b)); err != nil {
 			return err
 		}
@@ -126,15 +118,12 @@ func (w *BufferedWriter) Flush() error {
 			return err
 		}
 
-		if w.buffered {
-			w.buffer = New()
-		} else {
-			w.buffer = nil
-		}
+		w.buffer = nil
 	}
 	return nil
 }
 
+// SetBuffered sets whether the internal buffer is used. If set to false, Flush() will be called to clear the buffer.
 func (w *BufferedWriter) SetBuffered(f bool) error {
 	w.buffered = f
 	if !f {
@@ -173,7 +162,7 @@ func (w *seqWriter) WriteMultiBuffer(mb MultiBuffer) error {
 	return nil
 }
 
-type noOpWriter struct{}
+type noOpWriter byte
 
 func (noOpWriter) WriteMultiBuffer(b MultiBuffer) error {
 	b.Release()
@@ -203,8 +192,8 @@ func (noOpWriter) ReadFrom(reader io.Reader) (int64, error) {
 
 var (
 	// Discard is a Writer that swallows all contents written in.
-	Discard Writer = noOpWriter{}
+	Discard Writer = noOpWriter(0)
 
 	// DiscardBytes is an io.Writer that swallows all contents written in.
-	DiscardBytes io.Writer = noOpWriter{}
+	DiscardBytes io.Writer = noOpWriter(0)
 )

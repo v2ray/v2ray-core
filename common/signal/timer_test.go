@@ -32,3 +32,15 @@ func TestActivityTimerUpdate(t *testing.T) {
 	assert(ctx.Err(), IsNotNil)
 	runtime.KeepAlive(timer)
 }
+
+func TestActivityTimerNonBlocking(t *testing.T) {
+	assert := With(t)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	timer := CancelAfterInactivity(ctx, cancel, 0)
+	time.Sleep(time.Second * 1)
+	assert(ctx, HasDone)
+	timer.SetTimeout(0)
+	timer.SetTimeout(1)
+	timer.SetTimeout(2)
+}

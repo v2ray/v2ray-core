@@ -83,6 +83,8 @@ sysArch(){
         VDIS="mipsle"
     elif [[ "$ARCH" == *"mips"* ]]; then
         VDIS="mips"
+    elif [[ "$ARCH" == *"s390x"* ]]; then
+        VDIS="s390x"
     fi
     return 0
 }
@@ -90,7 +92,7 @@ sysArch(){
 downloadV2Ray(){
     rm -rf /tmp/v2ray
     mkdir -p /tmp/v2ray
-    colorEcho ${BLUE} "Donwloading V2Ray."
+    colorEcho ${BLUE} "Downloading V2Ray."
     DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/${NEW_VER}/v2ray-linux-${VDIS}.zip"
     curl ${PROXY} -L -H "Cache-Control: no-cache" -o ${ZIPFILE} ${DOWNLOAD_LINK}
     if [ $? != 0 ];then

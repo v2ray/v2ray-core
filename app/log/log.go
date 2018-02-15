@@ -1,127 +1,149 @@
 package log
 
-//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg log -path App,Log
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg log -path App,Log
 
 import (
 	"context"
+	"sync"
 
-	"v2ray.com/core/app"
-	"v2ray.com/core/app/log/internal"
+	"v2ray.com/core"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/errors"
+	"v2ray.com/core/common/log"
 )
 
-var (
-	streamLoggerInstance internal.LogWriter = internal.NewStdOutLogWriter()
-
-	debugLogger   internal.LogWriter = streamLoggerInstance
-	infoLogger    internal.LogWriter = streamLoggerInstance
-	warningLogger internal.LogWriter = streamLoggerInstance
-	errorLogger   internal.LogWriter = streamLoggerInstance
-)
-
-func SetLogLevel(level LogLevel) {
-	debugLogger = new(internal.NoOpLogWriter)
-	if level >= LogLevel_Debug {
-		debugLogger = streamLoggerInstance
-	}
-
-	infoLogger = new(internal.NoOpLogWriter)
-	if level >= LogLevel_Info {
-		infoLogger = streamLoggerInstance
-	}
-
-	warningLogger = new(internal.NoOpLogWriter)
-	if level >= LogLevel_Warning {
-		warningLogger = streamLoggerInstance
-	}
-
-	errorLogger = new(internal.NoOpLogWriter)
-	if level >= LogLevel_Error {
-		errorLogger = streamLoggerInstance
-	}
+// Instance is an app.Application that handles logs.
+type Instance struct {
+	sync.RWMutex
+	config       *Config
+	accessLogger log.Handler
+	errorLogger  log.Handler
+	active       bool
 }
 
-func InitErrorLogger(file string) error {
-	logger, err := internal.NewFileLogWriter(file)
-	if err != nil {
-		return newError("failed to create error logger on file (", file, ")").Base(err)
+// New creates a new log.Instance based on the given config.
+func New(ctx context.Context, config *Config) (*Instance, error) {
+	g := &Instance{
+		config: config,
+		active: false,
 	}
-	streamLoggerInstance = logger
+	log.RegisterHandler(g)
+
+	v := core.FromContext(ctx)
+	if v != nil {
+		common.Must(v.RegisterFeature((*log.Handler)(nil), g))
+	}
+
+	return g, nil
+}
+
+func (g *Instance) initAccessLogger() error {
+	switch g.config.AccessLogType {
+	case LogType_File:
+		creator, err := log.CreateFileLogWriter(g.config.AccessLogPath)
+		if err != nil {
+			return err
+		}
+		g.accessLogger = log.NewLogger(creator)
+	case LogType_Console:
+		g.accessLogger = log.NewLogger(log.CreateStdoutLogWriter())
+	default:
+	}
 	return nil
 }
 
-func getLoggerAndPrefix(s errors.Severity) (internal.LogWriter, string) {
-	switch s {
-	case errors.SeverityDebug:
-		return debugLogger, "[Debug]"
-	case errors.SeverityInfo:
-		return infoLogger, "[Info]"
-	case errors.SeverityWarning:
-		return warningLogger, "[Warning]"
-	case errors.SeverityError:
-		return errorLogger, "[Error]"
+func (g *Instance) initErrorLogger() error {
+	switch g.config.ErrorLogType {
+	case LogType_File:
+		creator, err := log.CreateFileLogWriter(g.config.ErrorLogPath)
+		if err != nil {
+			return err
+		}
+		g.errorLogger = log.NewLogger(creator)
+	case LogType_Console:
+		g.errorLogger = log.NewLogger(log.CreateStdoutLogWriter())
 	default:
-		return infoLogger, "[Info]"
 	}
+	return nil
 }
 
-// Trace logs an error message based on its severity.
-func Trace(err error) {
-	if err == nil {
-		return
-	}
-	logger, prefix := getLoggerAndPrefix(errors.GetSeverity(err))
-	logger.Log(&internal.ErrorLog{
-		Prefix: prefix,
-		Error:  err,
-	})
-}
-
-type Instance struct {
-	config *Config
-}
-
-func New(ctx context.Context, config *Config) (*Instance, error) {
-	return &Instance{config: config}, nil
-}
-
-func (*Instance) Interface() interface{} {
+// Type implements common.HasType.
+func (*Instance) Type() interface{} {
 	return (*Instance)(nil)
 }
 
-func (g *Instance) Start() error {
-	config := g.config
-	if config.AccessLogType == LogType_File {
-		if err := InitAccessLogger(config.AccessLogPath); err != nil {
-			return err
-		}
+func (g *Instance) startInternal() error {
+	g.Lock()
+	defer g.Unlock()
+
+	if g.active {
+		return nil
 	}
 
-	if config.ErrorLogType == LogType_None {
-		SetLogLevel(LogLevel_Disabled)
-	} else {
-		if config.ErrorLogType == LogType_File {
-			if err := InitErrorLogger(config.ErrorLogPath); err != nil {
-				return err
-			}
-		}
-		SetLogLevel(config.ErrorLogLevel)
+	g.active = true
+
+	if err := g.initAccessLogger(); err != nil {
+		return newError("failed to initialize access logger").Base(err).AtWarning()
+	}
+	if err := g.initErrorLogger(); err != nil {
+		return newError("failed to initialize error logger").Base(err).AtWarning()
 	}
 
 	return nil
 }
 
-func (*Instance) Close() {
-	streamLoggerInstance.Close()
-	accessLoggerInstance.Close()
+// Start implements app.Application.Start().
+func (g *Instance) Start() error {
+	if err := g.startInternal(); err != nil {
+		return err
+	}
+
+	newError("Logger started").AtDebug().WriteToLog()
+
+	return nil
 }
 
-func FromSpace(space app.Space) *Instance {
-	v := space.GetApplication((*Instance)(nil))
-	if logger, ok := v.(*Instance); ok && logger != nil {
-		return logger
+// Handle implements log.Handler.
+func (g *Instance) Handle(msg log.Message) {
+	g.RLock()
+	defer g.RUnlock()
+
+	if !g.active {
+		return
 	}
+
+	switch msg := msg.(type) {
+	case *log.AccessMessage:
+		if g.accessLogger != nil {
+			g.accessLogger.Handle(msg)
+		}
+	case *log.GeneralMessage:
+		if g.errorLogger != nil && msg.Severity <= g.config.ErrorLogLevel {
+			g.errorLogger.Handle(msg)
+		}
+	default:
+		// Swallow
+	}
+}
+
+// Close implement app.Application.Close().
+func (g *Instance) Close() error {
+	newError("Logger closing").AtDebug().WriteToLog()
+
+	g.Lock()
+	defer g.Unlock()
+
+	if !g.active {
+		return nil
+	}
+
+	g.active = false
+
+	common.Close(g.accessLogger)
+	g.accessLogger = nil
+
+	common.Close(g.errorLogger)
+	g.errorLogger = nil
+
 	return nil
 }
 

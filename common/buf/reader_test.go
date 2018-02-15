@@ -21,7 +21,11 @@ func TestAdaptiveReader(t *testing.T) {
 
 	b, err = reader.ReadMultiBuffer()
 	assert(err, IsNil)
-	assert(b.Len(), Equals, 32*1024)
+	assert(b.Len(), Equals, 8*1024)
+
+	b, err = reader.ReadMultiBuffer()
+	assert(err, IsNil)
+	assert(b.Len(), Equals, 64*1024)
 }
 
 func TestBytesReaderWriteTo(t *testing.T) {
@@ -69,4 +73,16 @@ func TestBytesReaderMultiBuffer(t *testing.T) {
 	assert(len(mb), Equals, 2)
 	assert(mb[0].String(), Equals, "abc")
 	assert(mb[1].String(), Equals, "efg")
+}
+
+func TestReaderInterface(t *testing.T) {
+	assert := With(t)
+
+	assert((*BytesToBufferReader)(nil), Implements, (*io.Reader)(nil))
+	assert((*BytesToBufferReader)(nil), Implements, (*Reader)(nil))
+
+	assert((*BufferedReader)(nil), Implements, (*Reader)(nil))
+	assert((*BufferedReader)(nil), Implements, (*io.Reader)(nil))
+	assert((*BufferedReader)(nil), Implements, (*io.ByteReader)(nil))
+	assert((*BufferedReader)(nil), Implements, (*io.WriterTo)(nil))
 }

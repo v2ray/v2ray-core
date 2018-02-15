@@ -1,7 +1,6 @@
 package vmess
 
 import (
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/uuid"
@@ -32,8 +31,7 @@ func (a *InternalAccount) Equals(account protocol.Account) bool {
 func (a *Account) AsAccount() (protocol.Account, error) {
 	id, err := uuid.ParseString(a.Id)
 	if err != nil {
-		log.Trace(newError("failed to parse ID").Base(err).AtError())
-		return nil, err
+		return nil, newError("failed to parse ID").Base(err).AtError()
 	}
 	protoID := protocol.NewID(id)
 	return &InternalAccount{

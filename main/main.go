@@ -1,6 +1,6 @@
 package main
 
-//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg main -path Main
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg main -path Main
 
 import (
 	"flag"
@@ -13,42 +13,53 @@ import (
 	"syscall"
 
 	"v2ray.com/core"
-
+	"v2ray.com/core/common/platform"
 	_ "v2ray.com/core/main/distro/all"
 )
 
 var (
-	configFile string
+	configFile = flag.String("config", "", "Config file for V2Ray.")
 	version    = flag.Bool("version", false, "Show current version of V2Ray.")
 	test       = flag.Bool("test", false, "Test config file only, without launching V2Ray server.")
 	format     = flag.String("format", "json", "Format of input file.")
 	plugin     = flag.Bool("plugin", false, "True to load plugins.")
 )
 
-func init() {
-	defaultConfigFile := ""
-	workingDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err == nil {
-		defaultConfigFile = filepath.Join(workingDir, "config.json")
-	}
-	flag.StringVar(&configFile, "config", defaultConfigFile, "Config file for this Point server.")
+func fileExists(file string) bool {
+	info, err := os.Stat(file)
+	return err == nil && !info.IsDir()
 }
 
-func GetConfigFormat() core.ConfigFormat {
+func getConfigFilePath() string {
+	if len(*configFile) > 0 {
+		return *configFile
+	}
+
+	if workingDir, err := os.Getwd(); err == nil {
+		configFile := filepath.Join(workingDir, "config.json")
+		if fileExists(configFile) {
+			return configFile
+		}
+	}
+
+	if configFile := platform.GetConfigurationPath(); fileExists(configFile) {
+		return configFile
+	}
+
+	return ""
+}
+
+func GetConfigFormat() string {
 	switch strings.ToLower(*format) {
-	case "json":
-		return core.ConfigFormat_JSON
 	case "pb", "protobuf":
-		return core.ConfigFormat_Protobuf
+		return "protobuf"
 	default:
-		return core.ConfigFormat_JSON
+		return "json"
 	}
 }
 
 func startV2Ray() (core.Server, error) {
-	if len(configFile) == 0 {
-		return nil, newError("config file is not set")
-	}
+	configFile := getConfigFilePath()
 	var configInput io.Reader
 	if configFile == "stdin:" {
 		configInput = os.Stdin
@@ -61,7 +72,7 @@ func startV2Ray() (core.Server, error) {
 		defer file.Close()
 		configInput = file
 	}
-	config, err := core.LoadConfig(GetConfigFormat(), configInput)
+	config, err := core.LoadConfig(GetConfigFormat(), configFile, configInput)
 	if err != nil {
 		return nil, newError("failed to read config file: ", configFile).Base(err)
 	}

@@ -10,14 +10,13 @@ import (
 	"strings"
 	"time"
 
-	"v2ray.com/core/app"
-	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/log"
-	"v2ray.com/core/app/policy"
+	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
+	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
+	http_proto "v2ray.com/core/common/protocol/http"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/transport/internet"
 )
@@ -25,30 +24,29 @@ import (
 // Server is a HTTP proxy server.
 type Server struct {
 	config *ServerConfig
-	policy policy.Policy
+	v      *core.Instance
 }
 
 // NewServer creates a new HTTP inbound handler.
 func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
-	space := app.SpaceFromContext(ctx)
-	if space == nil {
-		return nil, newError("no space in context.")
-	}
 	s := &Server{
 		config: config,
+		v:      core.FromContext(ctx),
 	}
-	space.On(app.SpaceInitializing, func(interface{}) error {
-		pm := policy.FromSpace(space)
-		if pm == nil {
-			return newError("Policy not found in space.")
-		}
-		s.policy = pm.GetPolicy(config.UserLevel)
-		if config.Timeout > 0 && config.UserLevel == 0 {
-			s.policy.Timeout.ConnectionIdle.Value = config.Timeout
-		}
-		return nil
-	})
+	if s.v == nil {
+		return nil, newError("V is not in context.")
+	}
+
 	return s, nil
+}
+
+func (s *Server) policy() core.Policy {
+	config := s.config
+	p := s.v.PolicyManager().ForLevel(config.UserLevel)
+	if config.Timeout > 0 && config.UserLevel == 0 {
+		p.Timeouts.ConnectionIdle = time.Duration(config.Timeout) * time.Second
+	}
+	return p
 }
 
 func (*Server) Network() net.NetworkList {
@@ -103,11 +101,11 @@ type readerOnly struct {
 	io.Reader
 }
 
-func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
+func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher core.Dispatcher) error {
 	reader := bufio.NewReaderSize(readerOnly{conn}, buf.Size)
 
 Start:
-	conn.SetReadDeadline(time.Now().Add(s.policy.Timeout.Handshake.Duration()))
+	conn.SetReadDeadline(time.Now().Add(s.policy().Timeouts.Handshake))
 
 	request, err := http.ReadRequest(reader)
 	if err != nil {
@@ -118,16 +116,15 @@ Start:
 		return trace
 	}
 
-  	if len(s.config.Accounts) > 0 {
+	if len(s.config.Accounts) > 0 {
 		user, pass, ok := parseBasicAuth(request.Header.Get("Proxy-Authorization"))
 		if !ok || !s.config.HasAccount(user, pass) {
-			_, err := conn.Write([]byte("HTTP/1.1 407 Proxy Authentication Required\r\n" +
-			"Proxy-Authenticate: Basic realm=\"V2Ray\"\r\n\r\n"))
+			_, err := conn.Write([]byte("HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm=\"proxy\"\r\n\r\n"))
 			return err
 		}
 	}
 
-	log.Trace(newError("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]"))
+	newError("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]").WriteToLog()
 	conn.SetReadDeadline(time.Time{})
 
 	defaultPort := net.Port(80)
@@ -142,7 +139,11 @@ Start:
 	if err != nil {
 		return newError("malformed proxy host: ", host).AtWarning().Base(err)
 	}
-	log.Access(conn.RemoteAddr(), request.URL, log.AccessAccepted, "")
+	log.Record(&log.AccessMessage{
+		From:   conn.RemoteAddr(),
+		To:     request.URL,
+		Status: log.AccessAccepted,
+	})
 
 	if strings.ToUpper(request.Method) == "CONNECT" {
 		return s.handleConnect(ctx, request, reader, conn, dest, dispatcher)
@@ -161,14 +162,14 @@ Start:
 	return err
 }
 
-func (s *Server) handleConnect(ctx context.Context, request *http.Request, reader *bufio.Reader, conn internet.Connection, dest net.Destination, dispatcher dispatcher.Interface) error {
+func (s *Server) handleConnect(ctx context.Context, request *http.Request, reader *bufio.Reader, conn internet.Connection, dest net.Destination, dispatcher core.Dispatcher) error {
 	_, err := conn.Write([]byte("HTTP/1.1 200 Connection established\r\n\r\n"))
 	if err != nil {
 		return newError("failed to write back OK response").Base(err)
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	timer := signal.CancelAfterInactivity(ctx, cancel, s.policy.Timeout.ConnectionIdle.Duration())
+	timer := signal.CancelAfterInactivity(ctx, cancel, s.policy().Timeouts.ConnectionIdle)
 	ray, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return err
@@ -187,7 +188,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 
 	requestDone := signal.ExecuteAsync(func() error {
 		defer ray.InboundInput().Close()
-		defer timer.SetTimeout(s.policy.Timeout.DownlinkOnly.Duration())
+		defer timer.SetTimeout(s.policy().Timeouts.DownlinkOnly)
 
 		v2reader := buf.NewReader(conn)
 		return buf.Copy(v2reader, ray.InboundInput(), buf.UpdateActivity(timer))
@@ -198,7 +199,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		if err := buf.Copy(ray.InboundOutput(), v2writer, buf.UpdateActivity(timer)); err != nil {
 			return err
 		}
-		timer.SetTimeout(s.policy.Timeout.UplinkOnly.Duration())
+		timer.SetTimeout(s.policy().Timeouts.UplinkOnly)
 		return nil
 	})
 
@@ -211,38 +212,9 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 	return nil
 }
 
-// @VisibleForTesting
-func StripHopByHopHeaders(header http.Header) {
-	// Strip hop-by-hop header basaed on RFC:
-	// http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.5.1
-	// https://www.mnot.net/blog/2011/07/11/what_proxies_must_do
-
-	header.Del("Proxy-Connection")
-	header.Del("Proxy-Authenticate")
-	header.Del("Proxy-Authorization")
-	header.Del("TE")
-	header.Del("Trailers")
-	header.Del("Transfer-Encoding")
-	header.Del("Upgrade")
-
-	connections := header.Get("Connection")
-	header.Del("Connection")
-	if len(connections) == 0 {
-		return
-	}
-	for _, h := range strings.Split(connections, ",") {
-		header.Del(strings.TrimSpace(h))
-	}
-
-	// Prevent UA from being set to golang's default ones
-	if len(header.Get("User-Agent")) == 0 {
-		header.Set("User-Agent", "")
-	}
-}
-
 var errWaitAnother = newError("keep alive")
 
-func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, writer io.Writer, dest net.Destination, dispatcher dispatcher.Interface) error {
+func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, writer io.Writer, dest net.Destination, dispatcher core.Dispatcher) error {
 	if !s.config.AllowTransparent && len(request.URL.Host) <= 0 {
 		// RFC 2068 (HTTP/1.1) requires URL to be absolute URL in HTTP proxy.
 		response := &http.Response{
@@ -264,7 +236,12 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 	if len(request.URL.Host) > 0 {
 		request.Host = request.URL.Host
 	}
-	StripHopByHopHeaders(request.Header)
+	http_proto.RemoveHopByHopHeaders(request.Header)
+
+	// Prevent UA from being set to golang's default ones
+	if len(request.Header.Get("User-Agent")) == 0 {
+		request.Header.Set("User-Agent", "")
+	}
 
 	ray, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
@@ -291,7 +268,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 		responseReader := bufio.NewReaderSize(buf.NewBufferedReader(ray.InboundOutput()), buf.Size)
 		response, err := http.ReadResponse(responseReader, request)
 		if err == nil {
-			StripHopByHopHeaders(response.Header)
+			http_proto.RemoveHopByHopHeaders(response.Header)
 			if response.ContentLength >= 0 {
 				response.Header.Set("Proxy-Connection", "keep-alive")
 				response.Header.Set("Connection", "keep-alive")
@@ -302,7 +279,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 				result = nil
 			}
 		} else {
-			log.Trace(newError("failed to read response from ", request.Host).Base(err).AtWarning())
+			newError("failed to read response from ", request.Host).Base(err).AtWarning().WriteToLog()
 			response = &http.Response{
 				Status:        "Service Unavailable",
 				StatusCode:    503,

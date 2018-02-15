@@ -100,7 +100,7 @@ func (w *Writer) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	return nil
 }
 
-func (w *Writer) Close() {
+func (w *Writer) Close() error {
 	meta := FrameMetadata{
 		SessionID:     w.id,
 		SessionStatus: SessionStatusEnd,
@@ -110,4 +110,5 @@ func (w *Writer) Close() {
 	common.Must(frame.Reset(meta.AsSupplier()))
 
 	w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(frame))
+	return nil
 }

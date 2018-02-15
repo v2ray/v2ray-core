@@ -9,7 +9,7 @@
 // connections.
 package core
 
-//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg core -path Core
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg core -path Core
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	version  = "3.1"
+	version  = "3.9"
 	build    = "Custom"
 	codename = "die Commanderin"
 	intro    = "An unified platform for anti-censorship."

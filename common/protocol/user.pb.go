@@ -14,7 +14,7 @@ var _ = math.Inf
 type User struct {
 	Level uint32 `protobuf:"varint,1,opt,name=level" json:"level,omitempty"`
 	Email string `protobuf:"bytes,2,opt,name=email" json:"email,omitempty"`
-	// Protocol specific account information.
+	// Protocol specific account information. Must be the account proto in one of the proxies.
 	Account *v2ray_core_common_serial.TypedMessage `protobuf:"bytes,3,opt,name=account" json:"account,omitempty"`
 }
 

@@ -1,6 +1,6 @@
 package mux
 
-//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg mux -path App,Proxyman,Mux
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg mux -path App,Proxyman,Mux
 
 import (
 	"context"
@@ -8,14 +8,13 @@ import (
 	"sync"
 	"time"
 
-	"v2ray.com/core/app"
-	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/log"
+	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
 )
@@ -76,8 +75,7 @@ func (m *ClientManager) onClientFinish() {
 type Client struct {
 	sessionManager *SessionManager
 	inboundRay     ray.InboundRay
-	ctx            context.Context
-	cancel         context.CancelFunc
+	done           *signal.Done
 	manager        *ClientManager
 	concurrency    uint32
 }
@@ -87,30 +85,26 @@ var muxCoolPort = net.Port(9527)
 
 // NewClient creates a new mux.Client.
 func NewClient(p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client, error) {
-	ctx, cancel := context.WithCancel(context.Background())
-	ctx = proxy.ContextWithTarget(ctx, net.TCPDestination(muxCoolAddress, muxCoolPort))
+	ctx := proxy.ContextWithTarget(context.Background(), net.TCPDestination(muxCoolAddress, muxCoolPort))
+	ctx, cancel := context.WithCancel(ctx)
 	pipe := ray.NewRay(ctx)
-
-	go func() {
-		if err := p.Process(ctx, pipe, dialer); err != nil {
-			cancel()
-
-			traceErr := errors.New("failed to handler mux client connection").Base(err)
-			if err != io.EOF && err != context.Canceled {
-				traceErr = traceErr.AtWarning()
-			}
-			log.Trace(traceErr)
-		}
-	}()
 
 	c := &Client{
 		sessionManager: NewSessionManager(),
 		inboundRay:     pipe,
-		ctx:            ctx,
-		cancel:         cancel,
+		done:           signal.NewDone(),
 		manager:        m,
 		concurrency:    m.config.Concurrency,
 	}
+
+	go func() {
+		if err := p.Process(ctx, pipe, dialer); err != nil {
+			errors.New("failed to handler mux client connection").Base(err).WriteToLog()
+		}
+		c.done.Close()
+		cancel()
+	}()
+
 	go c.fetchOutput()
 	go c.monitor()
 	return c, nil
@@ -118,12 +112,7 @@ func NewClient(p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client
 
 // Closed returns true if this Client is closed.
 func (m *Client) Closed() bool {
-	select {
-	case <-m.ctx.Done():
-		return true
-	default:
-		return false
-	}
+	return m.done.Done()
 }
 
 func (m *Client) monitor() {
@@ -134,7 +123,7 @@ func (m *Client) monitor() {
 
 	for {
 		select {
-		case <-m.ctx.Done():
+		case <-m.done.C():
 			m.sessionManager.Close()
 			m.inboundRay.InboundInput().Close()
 			m.inboundRay.InboundOutput().CloseError()
@@ -142,7 +131,8 @@ func (m *Client) monitor() {
 		case <-timer.C:
 			size := m.sessionManager.Size()
 			if size == 0 && m.sessionManager.CloseIfNoSession() {
-				m.cancel()
+				m.done.Close()
+				return
 			}
 		}
 	}
@@ -159,14 +149,14 @@ func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
 	defer writer.Close()
 	defer s.Close()
 
-	log.Trace(newError("dispatching request to ", dest))
+	newError("dispatching request to ", dest).WriteToLog()
 	data, _ := s.input.ReadTimeout(time.Millisecond * 500)
 	if err := writer.WriteMultiBuffer(data); err != nil {
-		log.Trace(newError("failed to write first payload").Base(err))
+		newError("failed to write first payload").Base(err).WriteToLog()
 		return
 	}
 	if err := buf.Copy(s.input, writer); err != nil {
-		log.Trace(newError("failed to fetch all input").Base(err))
+		newError("failed to fetch all input").Base(err).WriteToLog()
 	}
 }
 
@@ -176,10 +166,8 @@ func (m *Client) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) bool
 		return false
 	}
 
-	select {
-	case <-m.ctx.Done():
+	if m.done.Done() {
 		return false
-	default:
 	}
 
 	s := sm.Allocate()
@@ -232,7 +220,7 @@ func (m *Client) handleStatusEnd(meta *FrameMetadata, reader *buf.BufferedReader
 }
 
 func (m *Client) fetchOutput() {
-	defer m.cancel()
+	defer m.done.Close()
 
 	reader := buf.NewBufferedReader(m.inboundRay.InboundOutput())
 
@@ -240,7 +228,7 @@ func (m *Client) fetchOutput() {
 		meta, err := ReadMetadata(reader)
 		if err != nil {
 			if errors.Cause(err) != io.EOF {
-				log.Trace(newError("failed to read metadata").Base(err))
+				newError("failed to read metadata").Base(err).WriteToLog()
 			}
 			break
 		}
@@ -255,33 +243,26 @@ func (m *Client) fetchOutput() {
 		case SessionStatusKeep:
 			err = m.handleStatusKeep(meta, reader)
 		default:
-			log.Trace(newError("unknown status: ", meta.SessionStatus).AtWarning())
+			newError("unknown status: ", meta.SessionStatus).AtError().WriteToLog()
 			return
 		}
 
 		if err != nil {
-			log.Trace(newError("failed to process data").Base(err))
+			newError("failed to process data").Base(err).WriteToLog()
 			return
 		}
 	}
 }
 
 type Server struct {
-	dispatcher dispatcher.Interface
+	dispatcher core.Dispatcher
 }
 
 // NewServer creates a new mux.Server.
 func NewServer(ctx context.Context) *Server {
-	s := &Server{}
-	space := app.SpaceFromContext(ctx)
-	space.On(app.SpaceInitializing, func(interface{}) error {
-		d := dispatcher.FromSpace(space)
-		if d == nil {
-			return newError("no dispatcher in space")
-		}
-		s.dispatcher = d
-		return nil
-	})
+	s := &Server{
+		dispatcher: core.FromContext(ctx).Dispatcher(),
+	}
 	return s
 }
 
@@ -300,8 +281,16 @@ func (s *Server) Dispatch(ctx context.Context, dest net.Destination) (ray.Inboun
 	return ray, nil
 }
 
+func (s *Server) Start() error {
+	return nil
+}
+
+func (s *Server) Close() error {
+	return nil
+}
+
 type ServerWorker struct {
-	dispatcher     dispatcher.Interface
+	dispatcher     core.Dispatcher
 	outboundRay    ray.OutboundRay
 	sessionManager *SessionManager
 }
@@ -309,7 +298,7 @@ type ServerWorker struct {
 func handle(ctx context.Context, s *Session, output buf.Writer) {
 	writer := NewResponseWriter(s.ID, output, s.transferType)
 	if err := buf.Copy(s.input, writer); err != nil {
-		log.Trace(newError("session ", s.ID, " ends: ").Base(err))
+		newError("session ", s.ID, " ends.").Base(err).WriteToLog()
 	}
 	writer.Close()
 	s.Close()
@@ -323,7 +312,7 @@ func (w *ServerWorker) handleStatusKeepAlive(meta *FrameMetadata, reader *buf.Bu
 }
 
 func (w *ServerWorker) handleStatusNew(ctx context.Context, meta *FrameMetadata, reader *buf.BufferedReader) error {
-	log.Trace(newError("received request for ", meta.Target))
+	newError("received request for ", meta.Target).WriteToLog()
 	inboundRay, err := w.dispatcher.Dispatch(ctx, meta.Target)
 	if err != nil {
 		if meta.Option.Has(OptionData) {
@@ -385,7 +374,7 @@ func (w *ServerWorker) handleFrame(ctx context.Context, reader *buf.BufferedRead
 	case SessionStatusKeep:
 		err = w.handleStatusKeep(meta, reader)
 	default:
-		return newError("unknown status: ", meta.SessionStatus).AtWarning()
+		return newError("unknown status: ", meta.SessionStatus).AtError()
 	}
 
 	if err != nil {
@@ -408,7 +397,7 @@ func (w *ServerWorker) run(ctx context.Context) {
 			err := w.handleFrame(ctx, reader)
 			if err != nil {
 				if errors.Cause(err) != io.EOF {
-					log.Trace(newError("unexpected EOF").Base(err))
+					newError("unexpected EOF").Base(err).WriteToLog()
 					input.CloseError()
 				}
 				return

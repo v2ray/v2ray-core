@@ -19,7 +19,7 @@ message TransportConfig {
   // Type of network that this settings supports.
   TransportProtocol protocol = 1;
 
-  // Specific settings.
+  // Specific settings. Must be of the transports.
   v2ray.core.common.serial.TypedMessage settings = 2;
 }
 
@@ -32,6 +32,7 @@ message StreamConfig {
   // Type of security. Must be a message name of the settings proto.
   string security_type = 3;
   
+  // Settings for transport security. For now the only choice is TLS.
   repeated v2ray.core.common.serial.TypedMessage security_settings = 4;
 }
 

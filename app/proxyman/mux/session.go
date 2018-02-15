@@ -103,12 +103,12 @@ func (m *SessionManager) CloseIfNoSession() bool {
 	return true
 }
 
-func (m *SessionManager) Close() {
+func (m *SessionManager) Close() error {
 	m.Lock()
 	defer m.Unlock()
 
 	if m.closed {
-		return
+		return nil
 	}
 
 	m.closed = true
@@ -119,6 +119,7 @@ func (m *SessionManager) Close() {
 	}
 
 	m.sessions = nil
+	return nil
 }
 
 // Session represents a client connection in a Mux connection.
@@ -131,10 +132,11 @@ type Session struct {
 }
 
 // Close closes all resources associated with this session.
-func (s *Session) Close() {
+func (s *Session) Close() error {
 	s.output.Close()
 	s.input.Close()
 	s.parent.Remove(s.ID)
+	return nil
 }
 
 // NewReader creates a buf.Reader based on the transfer type of this Session.

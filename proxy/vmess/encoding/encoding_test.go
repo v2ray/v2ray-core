@@ -1,7 +1,6 @@
 package encoding_test
 
 import (
-	"context"
 	"testing"
 
 	"v2ray.com/core/common"
@@ -22,8 +21,9 @@ func TestRequestSerialization(t *testing.T) {
 		Level: 0,
 		Email: "test@v2ray.com",
 	}
+	id := uuid.New()
 	account := &vmess.Account{
-		Id:      uuid.New().String(),
+		Id:      id.String(),
 		AlterId: 0,
 	}
 	user.Account = serial.ToTypedMessage(account)
@@ -44,11 +44,12 @@ func TestRequestSerialization(t *testing.T) {
 	buffer2 := buf.New()
 	buffer2.Append(buffer.Bytes())
 
-	ctx, cancel := context.WithCancel(context.Background())
-	sessionHistory := NewSessionHistory(ctx)
+	sessionHistory := NewSessionHistory()
+	defer common.Close(sessionHistory)
 
-	userValidator := vmess.NewTimedUserValidator(ctx, protocol.DefaultIDHash)
+	userValidator := vmess.NewTimedUserValidator(protocol.DefaultIDHash)
 	userValidator.Add(user)
+	defer common.Close(userValidator)
 
 	server := NewServerSession(userValidator, sessionHistory)
 	actualRequest, err := server.DecodeRequestHeader(buffer)
@@ -64,6 +65,91 @@ func TestRequestSerialization(t *testing.T) {
 	_, err = server.DecodeRequestHeader(buffer2)
 	// anti replay attack
 	assert(err, IsNotNil)
+}
 
-	cancel()
+func TestInvalidRequest(t *testing.T) {
+	assert := With(t)
+
+	user := &protocol.User{
+		Level: 0,
+		Email: "test@v2ray.com",
+	}
+	id := uuid.New()
+	account := &vmess.Account{
+		Id:      id.String(),
+		AlterId: 0,
+	}
+	user.Account = serial.ToTypedMessage(account)
+
+	expectedRequest := &protocol.RequestHeader{
+		Version:  1,
+		User:     user,
+		Command:  protocol.RequestCommand(100),
+		Address:  net.DomainAddress("www.v2ray.com"),
+		Port:     net.Port(443),
+		Security: protocol.Security(protocol.SecurityType_AES128_GCM),
+	}
+
+	buffer := buf.New()
+	client := NewClientSession(protocol.DefaultIDHash)
+	common.Must(client.EncodeRequestHeader(expectedRequest, buffer))
+
+	buffer2 := buf.New()
+	buffer2.Append(buffer.Bytes())
+
+	sessionHistory := NewSessionHistory()
+	defer common.Close(sessionHistory)
+
+	userValidator := vmess.NewTimedUserValidator(protocol.DefaultIDHash)
+	userValidator.Add(user)
+	defer common.Close(userValidator)
+
+	server := NewServerSession(userValidator, sessionHistory)
+	_, err := server.DecodeRequestHeader(buffer)
+	assert(err, IsNotNil)
+}
+
+func TestMuxRequest(t *testing.T) {
+	assert := With(t)
+
+	user := &protocol.User{
+		Level: 0,
+		Email: "test@v2ray.com",
+	}
+	id := uuid.New()
+	account := &vmess.Account{
+		Id:      id.String(),
+		AlterId: 0,
+	}
+	user.Account = serial.ToTypedMessage(account)
+
+	expectedRequest := &protocol.RequestHeader{
+		Version:  1,
+		User:     user,
+		Command:  protocol.RequestCommandMux,
+		Security: protocol.Security(protocol.SecurityType_AES128_GCM),
+	}
+
+	buffer := buf.New()
+	client := NewClientSession(protocol.DefaultIDHash)
+	common.Must(client.EncodeRequestHeader(expectedRequest, buffer))
+
+	buffer2 := buf.New()
+	buffer2.Append(buffer.Bytes())
+
+	sessionHistory := NewSessionHistory()
+	defer common.Close(sessionHistory)
+
+	userValidator := vmess.NewTimedUserValidator(protocol.DefaultIDHash)
+	userValidator.Add(user)
+	defer common.Close(userValidator)
+
+	server := NewServerSession(userValidator, sessionHistory)
+	actualRequest, err := server.DecodeRequestHeader(buffer)
+	assert(err, IsNil)
+
+	assert(expectedRequest.Version, Equals, actualRequest.Version)
+	assert(byte(expectedRequest.Command), Equals, byte(actualRequest.Command))
+	assert(byte(expectedRequest.Option), Equals, byte(actualRequest.Option))
+	assert(byte(expectedRequest.Security), Equals, byte(actualRequest.Security))
 }

@@ -14,7 +14,7 @@ func ReadMetadata(reader io.Reader) (*FrameMetadata, error) {
 		return nil, err
 	}
 	if metaLen > 512 {
-		return nil, newError("invalid metalen ", metaLen).AtWarning()
+		return nil, newError("invalid metalen ", metaLen).AtError()
 	}
 
 	b := buf.New()

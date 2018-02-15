@@ -5,8 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/log"
+	"v2ray.com/core"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/signal"
@@ -24,10 +23,10 @@ type connEntry struct {
 type Dispatcher struct {
 	sync.RWMutex
 	conns      map[net.Destination]*connEntry
-	dispatcher dispatcher.Interface
+	dispatcher core.Dispatcher
 }
 
-func NewDispatcher(dispatcher dispatcher.Interface) *Dispatcher {
+func NewDispatcher(dispatcher core.Dispatcher) *Dispatcher {
 	return &Dispatcher{
 		conns:      make(map[net.Destination]*connEntry),
 		dispatcher: dispatcher,
@@ -52,7 +51,7 @@ func (v *Dispatcher) getInboundRay(dest net.Destination, callback ResponseCallba
 		return entry
 	}
 
-	log.Trace(newError("establishing new connection for ", dest))
+	newError("establishing new connection for ", dest).WriteToLog()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	removeRay := func() {
@@ -73,13 +72,13 @@ func (v *Dispatcher) getInboundRay(dest net.Destination, callback ResponseCallba
 
 func (v *Dispatcher) Dispatch(ctx context.Context, destination net.Destination, payload *buf.Buffer, callback ResponseCallback) {
 	// TODO: Add user to destString
-	log.Trace(newError("dispatch request to: ", destination).AtDebug())
+	newError("dispatch request to: ", destination).AtDebug().WriteToLog()
 
 	conn := v.getInboundRay(destination, callback)
 	outputStream := conn.inbound.InboundInput()
 	if outputStream != nil {
 		if err := outputStream.WriteMultiBuffer(buf.NewMultiBufferValue(payload)); err != nil {
-			log.Trace(newError("failed to write first UDP payload").Base(err))
+			newError("failed to write first UDP payload").Base(err).WriteToLog()
 			conn.cancel()
 			return
 		}
@@ -99,7 +98,7 @@ func handleInput(ctx context.Context, conn *connEntry, callback ResponseCallback
 
 		mb, err := input.ReadMultiBuffer()
 		if err != nil {
-			log.Trace(newError("failed to handle UDP input").Base(err))
+			newError("failed to handle UDP input").Base(err).WriteToLog()
 			conn.cancel()
 			return
 		}

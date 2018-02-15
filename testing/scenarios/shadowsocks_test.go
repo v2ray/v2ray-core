@@ -11,6 +11,7 @@ import (
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common/buf"
+	clog "v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -44,11 +45,11 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(serverPort),
@@ -62,7 +63,7 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
@@ -73,11 +74,11 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(clientPort),
@@ -92,7 +93,7 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&shadowsocks.ClientConfig{
 					Server: []*protocol.ServerEndpoint{
@@ -162,11 +163,11 @@ func TestShadowsocksAES128UDP(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(serverPort),
@@ -181,7 +182,7 @@ func TestShadowsocksAES128UDP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
@@ -192,11 +193,11 @@ func TestShadowsocksAES128UDP(t *testing.T) {
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(clientPort),
@@ -211,7 +212,7 @@ func TestShadowsocksAES128UDP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&shadowsocks.ClientConfig{
 					Server: []*protocol.ServerEndpoint{
@@ -281,11 +282,11 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(serverPort),
@@ -299,7 +300,7 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
@@ -310,11 +311,11 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(clientPort),
@@ -329,7 +330,7 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&shadowsocks.ClientConfig{
 					Server: []*protocol.ServerEndpoint{
@@ -398,11 +399,11 @@ func TestShadowsocksAES256GCMTCP(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(serverPort),
@@ -416,7 +417,7 @@ func TestShadowsocksAES256GCMTCP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
@@ -427,11 +428,11 @@ func TestShadowsocksAES256GCMTCP(t *testing.T) {
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(clientPort),
@@ -446,7 +447,7 @@ func TestShadowsocksAES256GCMTCP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&shadowsocks.ClientConfig{
 					Server: []*protocol.ServerEndpoint{
@@ -515,11 +516,11 @@ func TestShadowsocksAES128GCMUDP(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(serverPort),
@@ -534,7 +535,7 @@ func TestShadowsocksAES128GCMUDP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
@@ -545,11 +546,11 @@ func TestShadowsocksAES128GCMUDP(t *testing.T) {
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(clientPort),
@@ -564,7 +565,7 @@ func TestShadowsocksAES128GCMUDP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&shadowsocks.ClientConfig{
 					Server: []*protocol.ServerEndpoint{
@@ -633,11 +634,11 @@ func TestShadowsocksAES256GCMConformance(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(serverPort),
@@ -651,7 +652,7 @@ func TestShadowsocksAES256GCMConformance(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
@@ -711,11 +712,11 @@ func TestShadowsocksChacha20Poly1305UDPConformance(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(serverPort),
@@ -730,7 +731,7 @@ func TestShadowsocksChacha20Poly1305UDPConformance(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
@@ -794,11 +795,11 @@ func TestShadowsocksChacha20Conformance(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(serverPort),
@@ -812,7 +813,7 @@ func TestShadowsocksChacha20Conformance(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},

@@ -18,11 +18,14 @@ const (
 )
 
 func (c RequestCommand) TransferType() TransferType {
-	if c == RequestCommandTCP {
+	switch c {
+	case RequestCommandTCP, RequestCommandMux:
+		return TransferTypeStream
+	case RequestCommandUDP:
+		return TransferTypePacket
+	default:
 		return TransferTypeStream
 	}
-
-	return TransferTypePacket
 }
 
 const (
@@ -79,7 +82,7 @@ type ResponseHeader struct {
 type CommandSwitchAccount struct {
 	Host     net.Address
 	Port     net.Port
-	ID       *uuid.UUID
+	ID       uuid.UUID
 	Level    uint32
 	AlterIds uint16
 	ValidMin byte

@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
+	http_proto "v2ray.com/core/common/protocol/http"
 	"v2ray.com/core/transport/internet"
 	v2tls "v2ray.com/core/transport/internet/tls"
 )
@@ -22,8 +22,8 @@ type requestHandler struct {
 }
 
 var upgrader = &websocket.Upgrader{
-	ReadBufferSize:   8 * 1024,
-	WriteBufferSize:  8 * 1024,
+	ReadBufferSize:   4 * 1024,
+	WriteBufferSize:  4 * 1024,
 	HandshakeTimeout: time.Second * 8,
 }
 
@@ -34,36 +34,37 @@ func (h *requestHandler) ServeHTTP(writer http.ResponseWriter, request *http.Req
 	}
 	conn, err := upgrader.Upgrade(writer, request, nil)
 	if err != nil {
-		log.Trace(newError("failed to convert to WebSocket connection").Base(err))
+		newError("failed to convert to WebSocket connection").Base(err).WriteToLog()
 		return
 	}
 
-	h.ln.addConn(h.ln.ctx, newConnection(conn))
+	forwardedAddrs := http_proto.ParseXForwardedFor(request.Header)
+	remoteAddr := conn.RemoteAddr()
+	if len(forwardedAddrs) > 0 && forwardedAddrs[0].Family().Either(net.AddressFamilyIPv4, net.AddressFamilyIPv6) {
+		remoteAddr.(*net.TCPAddr).IP = forwardedAddrs[0].IP()
+	}
+
+	h.ln.addConn(newConnection(conn, remoteAddr))
 }
 
 type Listener struct {
 	sync.Mutex
-	ctx       context.Context
 	listener  net.Listener
 	tlsConfig *tls.Config
 	config    *Config
-	addConn   internet.AddConnection
+	addConn   internet.ConnHandler
 }
 
-func ListenWS(ctx context.Context, address net.Address, port net.Port, addConn internet.AddConnection) (internet.Listener, error) {
+func ListenWS(ctx context.Context, address net.Address, port net.Port, addConn internet.ConnHandler) (internet.Listener, error) {
 	networkSettings := internet.TransportSettingsFromContext(ctx)
 	wsSettings := networkSettings.(*Config)
 
 	l := &Listener{
-		ctx:     ctx,
 		config:  wsSettings,
 		addConn: addConn,
 	}
-	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
-		tlsConfig, ok := securitySettings.(*v2tls.Config)
-		if ok {
-			l.tlsConfig = tlsConfig.GetTLSConfig()
-		}
+	if config := v2tls.ConfigFromContext(ctx); config != nil {
+		l.tlsConfig = config.GetTLSConfig()
 	}
 
 	err := l.listenws(address, port)
@@ -95,7 +96,7 @@ func (ln *Listener) listenws(address net.Address, port net.Port) error {
 			ln:   ln,
 		})
 		if err != nil {
-			log.Trace(newError("failed to serve http for WebSocket").Base(err).AtWarning())
+			newError("failed to serve http for WebSocket").Base(err).AtWarning().WriteToLog()
 		}
 	}()
 
