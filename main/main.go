@@ -85,10 +85,17 @@ func startV2Ray() (core.Server, error) {
 	return server, nil
 }
 
+func printVersion() {
+	version := core.VersionStatement()
+	for _, s := range version {
+		fmt.Println(s)
+	}
+}
+
 func main() {
 	flag.Parse()
 
-	core.PrintVersion()
+	printVersion()
 
 	if *version {
 		return
