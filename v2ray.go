@@ -28,7 +28,6 @@ type Instance struct {
 	router        syncRouter
 	ihm           syncInboundHandlerManager
 	ohm           syncOutboundHandlerManager
-	clock         syncClock
 	cmd           syncCommander
 
 	access   sync.Mutex
@@ -148,8 +147,6 @@ func (s *Instance) RegisterFeature(feature interface{}, instance Feature) error 
 		s.ihm.Set(instance.(InboundHandlerManager))
 	case OutboundHandlerManager, *OutboundHandlerManager:
 		s.ohm.Set(instance.(OutboundHandlerManager))
-	case Clock, *Clock:
-		s.clock.Set(instance.(Clock))
 	case Commander, *Commander:
 		s.cmd.Set(instance.(Commander))
 	}
@@ -204,11 +201,6 @@ func (s *Instance) InboundHandlerManager() InboundHandlerManager {
 // OutboundHandlerManager returns the OutboundHandlerManager used by this Instance. If OutboundHandlerManager was not registered before, the returned value doesn't work.
 func (s *Instance) OutboundHandlerManager() OutboundHandlerManager {
 	return &(s.ohm)
-}
-
-// Clock returns the Clock used by this Instance. The returned Clock is always functional.
-func (s *Instance) Clock() Clock {
-	return &(s.clock)
 }
 
 // Commander returns the Commander used by this Instance. The returned Commander is always functional.
