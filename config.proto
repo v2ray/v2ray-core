@@ -9,7 +9,7 @@ option java_multiple_files = true;
 import "v2ray.com/core/common/serial/typed_message.proto";
 import "v2ray.com/core/transport/config.proto";
 
-// Master config of V2Ray. V2Ray takes this config as input and functions accordingly.
+// Config is the master config of V2Ray. V2Ray takes this config as input and functions accordingly.
 message Config {
   // Inbound handler configurations. Must have at least one item.
   repeated InboundHandlerConfig inbound = 1;

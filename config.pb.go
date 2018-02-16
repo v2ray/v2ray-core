@@ -17,7 +17,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-// Master config of V2Ray. V2Ray takes this config as input and functions accordingly.
+// Config is the master config of V2Ray. V2Ray takes this config as input and functions accordingly.
 type Config struct {
 	// Inbound handler configurations. Must have at least one item.
 	Inbound []*InboundHandlerConfig `protobuf:"bytes,1,rep,name=inbound" json:"inbound,omitempty"`

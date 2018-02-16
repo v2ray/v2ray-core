@@ -9,6 +9,7 @@ import (
 	"v2ray.com/core/common/buf"
 )
 
+// ConfigFormat is a configurable format of V2Ray config file.
 type ConfigFormat struct {
 	Name      string
 	Extension []string
