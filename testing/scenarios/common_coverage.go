@@ -26,7 +26,8 @@ func RunV2RayProtobuf(config []byte) *exec.Cmd {
 
 	covDir := filepath.Join(os.Getenv("GOPATH"), "out", "v2ray", "cov")
 	os.MkdirAll(covDir, os.ModeDir)
-	profile := uuid.New().String() + ".out"
+	randomID := uuid.New()
+	profile := randomID.String() + ".out"
 	proc := exec.Command(testBinaryPath, "-config=stdin:", "-format=pb", "-test.run", "TestRunMainForCoverage", "-test.coverprofile", profile, "-test.outputdir", covDir)
 	proc.Stdin = bytes.NewBuffer(config)
 	proc.Stderr = os.Stderr
