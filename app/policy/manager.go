@@ -19,19 +19,15 @@ func New(ctx context.Context, config *Config) (*Instance, error) {
 	}
 	if len(config.Level) > 0 {
 		for lv, p := range config.Level {
-			dp := core.DefaultPolicy()
-			dp.OverrideWith(p.ToCorePolicy())
-			m.levels[lv] = dp
+			m.levels[lv] = p.ToCorePolicy().OverrideWith(core.DefaultPolicy())
 		}
 	}
 
 	v := core.FromContext(ctx)
-	if v == nil {
-		return nil, newError("V is not in context.")
-	}
-
-	if err := v.RegisterFeature((*core.PolicyManager)(nil), m); err != nil {
-		return nil, newError("unable to register PolicyManager in core").Base(err).AtError()
+	if v != nil {
+		if err := v.RegisterFeature((*core.PolicyManager)(nil), m); err != nil {
+			return nil, newError("unable to register PolicyManager in core").Base(err).AtError()
+		}
 	}
 
 	return m, nil

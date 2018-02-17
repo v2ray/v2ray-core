@@ -43,7 +43,7 @@ type Policy struct {
 
 // OverrideWith overrides the current Policy with another one. All values with default value will be overridden.
 func (p Policy) OverrideWith(another Policy) Policy {
-	p.Timeouts.OverrideWith(another.Timeouts)
+	p.Timeouts = p.Timeouts.OverrideWith(another.Timeouts)
 	return p
 }
 
