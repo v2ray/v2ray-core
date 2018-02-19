@@ -2,13 +2,11 @@ package outbound
 
 import (
 	"context"
-	"io"
 
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/proxyman/mux"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
@@ -89,7 +87,7 @@ func (h *Handler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
 	} else {
 		err := h.proxy.Process(ctx, outboundRay, h)
 		// Ensure outbound ray is properly closed.
-		if err != nil && errors.Cause(err) != io.EOF {
+		if err != nil {
 			newError("failed to process outbound traffic").Base(err).WriteToLog()
 			outboundRay.OutboundOutput().CloseError()
 		} else {
