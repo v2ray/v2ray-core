@@ -114,6 +114,8 @@ func (h *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	timer := signal.CancelAfterInactivity(ctx, cancel, h.policy().Timeouts.ConnectionIdle)
 
 	requestDone := signal.ExecuteAsync(func() error {
+		defer timer.SetTimeout(h.policy().Timeouts.DownlinkOnly)
+
 		var writer buf.Writer
 		if destination.Network == net.Network_TCP {
 			writer = buf.NewWriter(conn)
@@ -123,18 +125,18 @@ func (h *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		if err := buf.Copy(input, writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to process request").Base(err)
 		}
-		timer.SetTimeout(h.policy().Timeouts.DownlinkOnly)
+
 		return nil
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
-		defer output.Close()
+		defer timer.SetTimeout(h.policy().Timeouts.UplinkOnly)
 
 		v2reader := buf.NewReader(conn)
 		if err := buf.Copy(v2reader, output, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to process response").Base(err)
 		}
-		timer.SetTimeout(h.policy().Timeouts.UplinkOnly)
+
 		return nil
 	})
 

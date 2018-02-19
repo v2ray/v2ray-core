@@ -115,7 +115,6 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 		})
 
 		responseDone := signal.ExecuteAsync(func() error {
-			defer outboundRay.OutboundOutput().Close()
 			defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
 			responseReader, err := ReadTCPResponse(user, conn)
@@ -150,7 +149,6 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 		})
 
 		responseDone := signal.ExecuteAsync(func() error {
-			defer outboundRay.OutboundOutput().Close()
 			defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
 			reader := &UDPReader{
