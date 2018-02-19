@@ -82,6 +82,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 
 	requestDone := signal.ExecuteAsync(func() error {
 		defer inboundRay.InboundInput().Close()
+		defer timer.SetTimeout(d.policy().Timeouts.DownlinkOnly)
 
 		chunkReader := buf.NewReader(conn)
 
@@ -89,12 +90,12 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 			return newError("failed to transport request").Base(err)
 		}
 
-		timer.SetTimeout(d.policy().Timeouts.DownlinkOnly)
-
 		return nil
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
+		defer timer.SetTimeout(d.policy().Timeouts.UplinkOnly)
+
 		var writer buf.Writer
 		if network == net.Network_TCP {
 			writer = buf.NewWriter(conn)
@@ -115,8 +116,6 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		if err := buf.Copy(inboundRay.InboundOutput(), writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport response").Base(err)
 		}
-
-		timer.SetTimeout(d.policy().Timeouts.UplinkOnly)
 
 		return nil
 	})
