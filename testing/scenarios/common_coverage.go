@@ -17,7 +17,7 @@ func BuildV2Ray() error {
 		return nil
 	}
 
-	cmd := exec.Command("go", "test", "-tags", "json coverage coveragemain", "-coverpkg", "v2ray.com/core/...", "-c", "-o", testBinaryPath, GetSourcePath())
+	cmd := exec.Command("go", "test", "-tags", "coverage coveragemain", "-coverpkg", "v2ray.com/core/...", "-c", "-o", testBinaryPath, GetSourcePath())
 	return cmd.Run()
 }
 
