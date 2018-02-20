@@ -87,10 +87,9 @@ func (m *syncPolicyManager) Set(manager PolicyManager) {
 		return
 	}
 
-	m.Close()
-
 	m.Lock()
 	defer m.Unlock()
 
+	common.Close(m.PolicyManager)
 	m.PolicyManager = manager
 }

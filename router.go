@@ -58,10 +58,10 @@ func (d *syncDispatcher) Set(disp Dispatcher) {
 		return
 	}
 
-	d.Close()
 	d.Lock()
 	defer d.Unlock()
 
+	common.Close(d.Dispatcher)
 	d.Dispatcher = disp
 }
 
@@ -117,9 +117,9 @@ func (r *syncRouter) Set(router Router) {
 		return
 	}
 
-	r.Close()
 	r.Lock()
 	defer r.Unlock()
 
+	common.Close(r.Router)
 	r.Router = router
 }
