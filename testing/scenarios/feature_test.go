@@ -1,6 +1,7 @@
 package scenarios
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -9,8 +10,11 @@ import (
 
 	xproxy "golang.org/x/net/proxy"
 	"v2ray.com/core"
+	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
+	_ "v2ray.com/core/app/proxyman/inbound"
+	_ "v2ray.com/core/app/proxyman/outbound"
 	"v2ray.com/core/app/router"
 	clog "v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
@@ -745,6 +749,105 @@ func TestDomainSniffing(t *testing.T) {
 
 		assert(resp.Write(ioutil.Discard), IsNil)
 	}
+
+	CloseAllServers(servers)
+}
+
+func TestDialV2Ray(t *testing.T) {
+	assert := With(t)
+
+	tcpServer := tcp.Server{
+		MsgProcessor: xor,
+	}
+	dest, err := tcpServer.Start()
+	assert(err, IsNil)
+	defer tcpServer.Close()
+
+	userID := protocol.NewID(uuid.New())
+	serverPort := pickPort()
+	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&log.Config{
+				ErrorLogLevel: clog.Severity_Debug,
+				ErrorLogType:  log.LogType_Console,
+			}),
+		},
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&inbound.Config{
+					User: []*protocol.User{
+						{
+							Account: serial.ToTypedMessage(&vmess.Account{
+								Id:      userID.String(),
+								AlterId: 64,
+							}),
+						},
+					},
+				}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+		},
+	}
+
+	clientConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&dispatcher.Config{}),
+			serial.ToTypedMessage(&proxyman.InboundConfig{}),
+			serial.ToTypedMessage(&proxyman.OutboundConfig{}),
+		},
+		Inbound: []*core.InboundHandlerConfig{},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&outbound.Config{
+					Receiver: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vmess.Account{
+										Id:      userID.String(),
+										AlterId: 64,
+										SecuritySettings: &protocol.SecurityConfig{
+											Type: protocol.SecurityType_AES128_GCM,
+										},
+									}),
+								},
+							},
+						},
+					},
+				}),
+			},
+		},
+	}
+
+	servers, err := InitializeServerConfigs(serverConfig)
+	assert(err, IsNil)
+
+	client, err := core.New(clientConfig)
+	assert(err, IsNil)
+
+	conn, err := core.Dial(context.Background(), client, dest)
+	assert(err, IsNil)
+
+	payload := "commander request."
+	nBytes, err := conn.Write([]byte(payload))
+	assert(err, IsNil)
+	assert(nBytes, Equals, len(payload))
+
+	response := make([]byte, 1024)
+	nBytes, err = conn.Read(response)
+	assert(err, IsNil)
+	assert(response[:nBytes], Equals, xor([]byte(payload)))
+	assert(conn.Close(), IsNil)
 
 	CloseAllServers(servers)
 }
