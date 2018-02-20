@@ -31,10 +31,14 @@ func NewCommander(ctx context.Context, config *Config) (*Commander, error) {
 		ohm:    v.OutboundHandlerManager(),
 		v:      v,
 	}
-	if err := v.RegisterFeature((*core.Commander)(nil), c); err != nil {
+	if err := v.RegisterFeature((*Commander)(nil), c); err != nil {
 		return nil, err
 	}
 	return c, nil
+}
+
+func (c *Commander) Type() interface{} {
+	return (*Commander)(nil)
 }
 
 func (c *Commander) Start() error {

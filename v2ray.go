@@ -28,7 +28,6 @@ type Instance struct {
 	router        syncRouter
 	ihm           syncInboundHandlerManager
 	ohm           syncOutboundHandlerManager
-	cmd           syncCommander
 
 	access   sync.Mutex
 	features []Feature
@@ -105,7 +104,7 @@ func (s *Instance) Close() error {
 	defer s.access.Unlock()
 
 	s.running = false
-	for _, f := range s.features {
+	for _, f := range s.allFeatures() {
 		f.Close()
 	}
 
@@ -119,7 +118,7 @@ func (s *Instance) Start() error {
 	defer s.access.Unlock()
 
 	s.running = true
-	for _, f := range s.features {
+	for _, f := range s.allFeatures() {
 		if err := f.Start(); err != nil {
 			return err
 		}
@@ -134,6 +133,8 @@ func (s *Instance) Start() error {
 // If feature is one of the following types, the corressponding feature in this Instance
 // will be replaced: DNSClient, PolicyManager, Router, Dispatcher, InboundHandlerManager, OutboundHandlerManager.
 func (s *Instance) RegisterFeature(feature interface{}, instance Feature) error {
+	running := false
+
 	switch feature.(type) {
 	case DNSClient, *DNSClient:
 		s.dnsClient.Set(instance.(DNSClient))
@@ -147,17 +148,21 @@ func (s *Instance) RegisterFeature(feature interface{}, instance Feature) error 
 		s.ihm.Set(instance.(InboundHandlerManager))
 	case OutboundHandlerManager, *OutboundHandlerManager:
 		s.ohm.Set(instance.(OutboundHandlerManager))
-	case Commander, *Commander:
-		s.cmd.Set(instance.(Commander))
+	default:
+		s.access.Lock()
+		s.features = append(s.features, instance)
+		running = s.running
+		s.access.Unlock()
 	}
-	s.access.Lock()
-	defer s.access.Unlock()
 
-	s.features = append(s.features, instance)
-	if s.running {
+	if running {
 		return instance.Start()
 	}
 	return nil
+}
+
+func (s *Instance) allFeatures() []Feature {
+	return append([]Feature{s.DNSClient(), s.PolicyManager(), s.Dispatcher(), s.Router(), s.InboundHandlerManager(), s.OutboundHandlerManager()}, s.features...)
 }
 
 // GetFeature returns a feature that was registered in this Instance. Nil if not found.
@@ -201,9 +206,4 @@ func (s *Instance) InboundHandlerManager() InboundHandlerManager {
 // OutboundHandlerManager returns the OutboundHandlerManager used by this Instance. If OutboundHandlerManager was not registered before, the returned value doesn't work.
 func (s *Instance) OutboundHandlerManager() OutboundHandlerManager {
 	return &(s.ohm)
-}
-
-// Commander returns the Commander used by this Instance. The returned Commander is always functional.
-func (s *Instance) Commander() Commander {
-	return &(s.cmd)
 }
