@@ -14,6 +14,40 @@ func (s *Second) Duration() time.Duration {
 	return time.Second * time.Duration(s.Value)
 }
 
+func defaultPolicy() *Policy {
+	p := core.DefaultPolicy()
+
+	return &Policy{
+		Timeout: &Policy_Timeout{
+			Handshake:      &Second{Value: uint32(p.Timeouts.Handshake / time.Second)},
+			ConnectionIdle: &Second{Value: uint32(p.Timeouts.ConnectionIdle / time.Second)},
+			UplinkOnly:     &Second{Value: uint32(p.Timeouts.UplinkOnly / time.Second)},
+			DownlinkOnly:   &Second{Value: uint32(p.Timeouts.DownlinkOnly / time.Second)},
+		},
+	}
+}
+
+func (p *Policy_Timeout) overrideWith(another *Policy_Timeout) {
+	if another.Handshake != nil {
+		p.Handshake = &Second{Value: another.Handshake.Value}
+	}
+	if another.ConnectionIdle != nil {
+		p.ConnectionIdle = &Second{Value: another.ConnectionIdle.Value}
+	}
+	if another.UplinkOnly != nil {
+		p.UplinkOnly = &Second{Value: another.UplinkOnly.Value}
+	}
+	if another.DownlinkOnly != nil {
+		p.DownlinkOnly = &Second{Value: another.DownlinkOnly.Value}
+	}
+}
+
+func (p *Policy) overrideWith(another *Policy) {
+	if another.Timeout != nil {
+		p.Timeout.overrideWith(another.Timeout)
+	}
+}
+
 func (p *Policy) ToCorePolicy() core.Policy {
 	var cp core.Policy
 	if p.Timeout != nil {
