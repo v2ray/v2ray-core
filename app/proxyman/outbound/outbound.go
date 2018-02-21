@@ -25,10 +25,7 @@ func New(ctx context.Context, config *proxyman.OutboundConfig) (*Manager, error)
 	m := &Manager{
 		taggedHandler: make(map[string]core.OutboundHandler),
 	}
-	v := core.FromContext(ctx)
-	if v == nil {
-		return nil, newError("V is not in context")
-	}
+	v := core.MustFromContext(ctx)
 	if err := v.RegisterFeature((*core.OutboundHandlerManager)(nil), m); err != nil {
 		return nil, newError("unable to register OutboundHandlerManager").Base(err)
 	}

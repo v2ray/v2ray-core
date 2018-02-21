@@ -105,11 +105,7 @@ type Handler struct {
 
 // New creates a new VMess inbound handler.
 func New(ctx context.Context, config *Config) (*Handler, error) {
-	v := core.FromContext(ctx)
-	if v == nil {
-		return nil, newError("V is not in context.")
-	}
-
+	v := core.MustFromContext(ctx)
 	handler := &Handler{
 		policyManager:         v.PolicyManager(),
 		inboundHandlerManager: v.InboundHandlerManager(),

@@ -32,12 +32,8 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 	}
 	client := &Client{
 		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
-		v:            core.FromContext(ctx),
+		v:            core.MustFromContext(ctx),
 	}
-	if client.v == nil {
-		return nil, newError("V is not in context.")
-	}
-
 	return client, nil
 }
 

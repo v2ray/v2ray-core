@@ -22,10 +22,7 @@ type Commander struct {
 }
 
 func NewCommander(ctx context.Context, config *Config) (*Commander, error) {
-	v := core.FromContext(ctx)
-	if v == nil {
-		return nil, newError("V is not in context.")
-	}
+	v := core.MustFromContext(ctx)
 	c := &Commander{
 		config: *config,
 		ohm:    v.OutboundHandlerManager(),

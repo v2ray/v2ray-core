@@ -22,10 +22,7 @@ type Handler struct {
 }
 
 func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (*Handler, error) {
-	v := core.FromContext(ctx)
-	if v == nil {
-		return nil, newError("V is not in context")
-	}
+	v := core.MustFromContext(ctx)
 	h := &Handler{
 		config:          config,
 		outboundManager: v.OutboundHandlerManager(),

@@ -261,7 +261,7 @@ type Server struct {
 // NewServer creates a new mux.Server.
 func NewServer(ctx context.Context) *Server {
 	s := &Server{
-		dispatcher: core.FromContext(ctx).Dispatcher(),
+		dispatcher: core.MustFromContext(ctx).Dispatcher(),
 	}
 	return s
 }

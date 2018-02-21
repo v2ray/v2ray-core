@@ -35,11 +35,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	handler := &Handler{
 		serverList:   serverList,
 		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
-		v:            core.FromContext(ctx),
-	}
-
-	if handler.v == nil {
-		return nil, newError("V is not in context.")
+		v:            core.MustFromContext(ctx),
 	}
 
 	return handler, nil

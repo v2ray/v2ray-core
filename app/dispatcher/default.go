@@ -27,11 +27,7 @@ type DefaultDispatcher struct {
 
 // NewDefaultDispatcher create a new DefaultDispatcher.
 func NewDefaultDispatcher(ctx context.Context, config *Config) (*DefaultDispatcher, error) {
-	v := core.FromContext(ctx)
-	if v == nil {
-		return nil, newError("V is not in context.")
-	}
-
+	v := core.MustFromContext(ctx)
 	d := &DefaultDispatcher{
 		ohm:    v.OutboundHandlerManager(),
 		router: v.Router(),

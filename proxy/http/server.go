@@ -31,10 +31,7 @@ type Server struct {
 func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	s := &Server{
 		config: config,
-		v:      core.FromContext(ctx),
-	}
-	if s.v == nil {
-		return nil, newError("V is not in context.")
+		v:      core.MustFromContext(ctx),
 	}
 
 	return s, nil

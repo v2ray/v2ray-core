@@ -39,11 +39,7 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 		config:  config,
 		user:    config.GetUser(),
 		account: account,
-		v:       core.FromContext(ctx),
-	}
-
-	if s.v == nil {
-		return nil, newError("V is not in context.")
+		v:       core.MustFromContext(ctx),
 	}
 
 	return s, nil

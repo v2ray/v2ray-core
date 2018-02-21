@@ -54,11 +54,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 			return nil
 		},
 	}
-	v := core.FromContext(ctx)
-	if v == nil {
-		return nil, newError("V is not in context.")
-	}
-
+	v := core.MustFromContext(ctx)
 	if err := v.RegisterFeature((*core.DNSClient)(nil), server); err != nil {
 		return nil, newError("unable to register DNSClient.").Base(err)
 	}

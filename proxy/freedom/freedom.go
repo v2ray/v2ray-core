@@ -27,11 +27,7 @@ type Handler struct {
 
 // New creates a new Freedom handler.
 func New(ctx context.Context, config *Config) (*Handler, error) {
-	v := core.FromContext(ctx)
-	if v == nil {
-		return nil, newError("V is not found in context.")
-	}
-
+	v := core.MustFromContext(ctx)
 	f := &Handler{
 		config:        *config,
 		policyManager: v.PolicyManager(),

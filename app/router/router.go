@@ -18,11 +18,7 @@ type Router struct {
 }
 
 func NewRouter(ctx context.Context, config *Config) (*Router, error) {
-	v := core.FromContext(ctx)
-	if v == nil {
-		return nil, newError("V is not in context")
-	}
-
+	v := core.MustFromContext(ctx)
 	r := &Router{
 		domainStrategy: config.DomainStrategy,
 		rules:          make([]Rule, len(config.Rule)),

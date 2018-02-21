@@ -24,10 +24,7 @@ func New(ctx context.Context, config *proxyman.InboundConfig) (*Manager, error) 
 	m := &Manager{
 		taggedHandlers: make(map[string]core.InboundHandler),
 	}
-	v := core.FromContext(ctx)
-	if v == nil {
-		return nil, newError("V is not in context")
-	}
+	v := core.MustFromContext(ctx)
 	if err := v.RegisterFeature((*core.InboundHandlerManager)(nil), m); err != nil {
 		return nil, newError("unable to register InboundHandlerManager").Base(err)
 	}

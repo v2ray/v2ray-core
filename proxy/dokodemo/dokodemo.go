@@ -28,11 +28,7 @@ func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
 	if config.NetworkList == nil || config.NetworkList.Size() == 0 {
 		return nil, newError("no network specified")
 	}
-	v := core.FromContext(ctx)
-	if v == nil {
-		return nil, newError("V is not in context.")
-	}
-
+	v := core.MustFromContext(ctx)
 	d := &DokodemoDoor{
 		config:        config,
 		address:       config.GetPredefinedAddress(),
