@@ -195,7 +195,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	// 1 bytes reserved
 	request.Command = protocol.RequestCommand(buffer.Byte(37))
 
-	invalidRequest := false
+	var invalidRequestErr error
 	switch request.Command {
 	case protocol.RequestCommandMux:
 		request.Address = net.DomainAddress("v1.mux.cool")
@@ -205,18 +205,17 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 			request.Address = addr
 			request.Port = port
 		} else {
-			invalidRequest = true
-			newError("failed to read address").Base(err).WriteToLog()
+			invalidRequestErr = newError("invalid address").Base(err)
 		}
 	default:
-		invalidRequest = true
+		invalidRequestErr = newError("invalid request command: ", request.Command)
 	}
 
-	if invalidRequest {
+	if invalidRequestErr != nil {
 		randomLen := dice.Roll(32) + 1
 		// Read random number of bytes for prevent detection.
 		buffer.AppendSupplier(buf.ReadFullFrom(decryptor, randomLen))
-		return nil, newError("invalid request")
+		return nil, invalidRequestErr
 	}
 
 	if padingLen > 0 {
