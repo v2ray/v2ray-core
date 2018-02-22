@@ -8,6 +8,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/bitmask"
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/proxy/socks"
@@ -76,36 +77,18 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	}
 
 	addrType := (buffer.Byte(0) & 0x0F)
-	switch addrType {
-	case AddrTypeIPv4:
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(br, 4)); err != nil {
-			return nil, nil, newError("failed to read IPv4 address").Base(err)
-		}
-		request.Address = net.IPAddress(buffer.BytesFrom(-4))
-	case AddrTypeIPv6:
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(br, 16)); err != nil {
-			return nil, nil, newError("failed to read IPv6 address").Base(err)
-		}
-		request.Address = net.IPAddress(buffer.BytesFrom(-16))
-	case AddrTypeDomain:
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(br, 1)); err != nil {
-			return nil, nil, newError("failed to read domain lenth.").Base(err)
-		}
-		domainLength := int(buffer.BytesFrom(-1)[0])
-		err = buffer.AppendSupplier(buf.ReadFullFrom(br, domainLength))
-		if err != nil {
-			return nil, nil, newError("failed to read domain").Base(err)
-		}
-		request.Address = net.DomainAddress(string(buffer.BytesFrom(-domainLength)))
-	default:
-		// Check address validity after OTA verification.
+
+	addr, port, err := socks.ReadAddress(buffer, addrType, br)
+	if err != nil {
+		// Invalid address. Continue to read some bytes to confuse client.
+		nBytes := dice.Roll(32)
+		buffer.Clear()
+		buffer.AppendSupplier(buf.ReadFullFrom(br, nBytes))
+		return nil, nil, newError("failed to read address").Base(err)
 	}
 
-	err = buffer.AppendSupplier(buf.ReadFullFrom(br, 2))
-	if err != nil {
-		return nil, nil, newError("failed to read port").Base(err)
-	}
-	request.Port = net.PortFromBytes(buffer.BytesFrom(-2))
+	request.Address = addr
+	request.Port = port
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {
 		actualAuth := make([]byte, AuthSize)
@@ -320,6 +303,7 @@ func DecodeUDPPacket(user *protocol.User, payload *buf.Buffer) (*protocol.Reques
 
 	addrType := (payload.Byte(0) & 0x0F)
 	payload.SliceFrom(1)
+
 	switch addrType {
 	case AddrTypeIPv4:
 		request.Address = net.IPAddress(payload.BytesTo(4))

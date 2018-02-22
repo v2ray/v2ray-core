@@ -279,7 +279,7 @@ func writeSocks5Response(writer io.Writer, errCode byte, address net.Address, po
 func writeSocks4Response(writer io.Writer, errCode byte, address net.Address, port net.Port) error {
 	buffer := buf.NewLocal(32)
 	buffer.AppendBytes(0x00, errCode)
-	buffer.AppendSupplier(serial.WriteUint16(port.Value()))
+	common.Must(buffer.AppendSupplier(serial.WriteUint16(port.Value())))
 	buffer.Append(address.IP())
 	_, err := writer.Write(buffer.Bytes())
 	return err
@@ -392,6 +392,40 @@ func (w *UDPWriter) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
+func ReadAddress(b *buf.Buffer, addrType byte, reader io.Reader) (net.Address, net.Port, error) {
+	var address net.Address
+	switch addrType {
+	case addrTypeIPv4:
+		if err := b.AppendSupplier(buf.ReadFullFrom(reader, 4)); err != nil {
+			return nil, 0, err
+		}
+		address = net.IPAddress(b.BytesFrom(-4))
+	case addrTypeIPv6:
+		if err := b.AppendSupplier(buf.ReadFullFrom(reader, 16)); err != nil {
+			return nil, 0, err
+		}
+		address = net.IPAddress(b.BytesFrom(-16))
+	case addrTypeDomain:
+		if err := b.AppendSupplier(buf.ReadFullFrom(reader, 1)); err != nil {
+			return nil, 0, err
+		}
+		domainLength := int(b.Byte(b.Len() - 1))
+		if err := b.AppendSupplier(buf.ReadFullFrom(reader, domainLength)); err != nil {
+			return nil, 0, err
+		}
+		address = net.DomainAddress(string(b.BytesFrom(-domainLength)))
+	default:
+		return nil, 0, newError("unknown address type: ", addrType)
+	}
+
+	if err := b.AppendSupplier(buf.ReadFullFrom(reader, 2)); err != nil {
+		return nil, 0, err
+	}
+	port := net.PortFromBytes(b.BytesFrom(-2))
+
+	return address, port, nil
+}
+
 func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer io.Writer) (*protocol.RequestHeader, error) {
 	authByte := byte(authNotRequired)
 	if request.User != nil {
@@ -444,7 +478,10 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 		command = byte(cmdUDPPort)
 	}
 	b.AppendBytes(socks5Version, command, 0x00 /* reserved */)
-	AppendAddress(b, request.Address, request.Port)
+	if err := AppendAddress(b, request.Address, request.Port); err != nil {
+		return nil, err
+	}
+
 	if _, err := writer.Write(b.Bytes()); err != nil {
 		return nil, err
 	}
@@ -463,35 +500,10 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 
 	b.Clear()
 
-	var address net.Address
-	switch addrType {
-	case addrTypeIPv4:
-		if err := b.AppendSupplier(buf.ReadFullFrom(reader, 4)); err != nil {
-			return nil, err
-		}
-		address = net.IPAddress(b.Bytes())
-	case addrTypeIPv6:
-		if err := b.AppendSupplier(buf.ReadFullFrom(reader, 16)); err != nil {
-			return nil, err
-		}
-		address = net.IPAddress(b.Bytes())
-	case addrTypeDomain:
-		if err := b.AppendSupplier(buf.ReadFullFrom(reader, 1)); err != nil {
-			return nil, err
-		}
-		domainLength := int(b.Byte(0))
-		if err := b.AppendSupplier(buf.ReadFullFrom(reader, domainLength)); err != nil {
-			return nil, err
-		}
-		address = net.DomainAddress(string(b.BytesFrom(-domainLength)))
-	default:
-		return nil, newError("unknown address type: ", addrType)
-	}
-
-	if err := b.AppendSupplier(buf.ReadFullFrom(reader, 2)); err != nil {
+	address, port, err := ReadAddress(b, addrType, reader)
+	if err != nil {
 		return nil, err
 	}
-	port := net.PortFromBytes(b.BytesFrom(-2))
 
 	if request.Command == protocol.RequestCommandUDP {
 		udpRequest := &protocol.RequestHeader{
