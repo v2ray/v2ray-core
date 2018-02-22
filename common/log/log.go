@@ -24,7 +24,7 @@ type GeneralMessage struct {
 
 // String implements Message.
 func (m *GeneralMessage) String() string {
-	return serial.Concat("[", m.Severity, "]: ", m.Content)
+	return serial.Concat("[", m.Severity, "] ", m.Content)
 }
 
 // Record writes a message into log stream.
