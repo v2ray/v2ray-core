@@ -62,7 +62,7 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 		go func() {
 			domain, err := snifer(ctx, sniferList, outbound)
 			if err == nil {
-				newError("sniffed domain: ", domain).WriteToLog()
+				newError("sniffed domain: ", domain).WithContext(ctx).WriteToLog()
 				destination.Address = net.ParseAddress(domain)
 				ctx = proxy.ContextWithTarget(ctx, destination)
 			}
@@ -107,13 +107,13 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, outbound ray.Out
 	if d.router != nil {
 		if tag, err := d.router.PickRoute(ctx); err == nil {
 			if handler := d.ohm.GetHandler(tag); handler != nil {
-				newError("taking detour [", tag, "] for [", destination, "]").WriteToLog()
+				newError("taking detour [", tag, "] for [", destination, "]").WithContext(ctx).WriteToLog()
 				dispatcher = handler
 			} else {
-				newError("nonexisting tag: ", tag).AtWarning().WriteToLog()
+				newError("nonexisting tag: ", tag).AtWarning().WithContext(ctx).WriteToLog()
 			}
 		} else {
-			newError("default route for ", destination).WriteToLog()
+			newError("default route for ", destination).WithContext(ctx).WriteToLog()
 		}
 	}
 	dispatcher.Dispatch(ctx, outbound)

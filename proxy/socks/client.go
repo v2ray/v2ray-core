@@ -86,7 +86,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 	}
 
 	if err := conn.SetDeadline(time.Now().Add(p.Timeouts.Handshake)); err != nil {
-		newError("failed to set deadline for handshake").Base(err).WriteToLog()
+		newError("failed to set deadline for handshake").Base(err).WithContext(ctx).WriteToLog()
 	}
 	udpRequest, err := ClientHandshake(request, conn, conn)
 	if err != nil {
@@ -94,7 +94,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 	}
 
 	if err := conn.SetDeadline(time.Time{}); err != nil {
-		newError("failed to clear deadline after handshake").Base(err).WriteToLog()
+		newError("failed to clear deadline after handshake").Base(err).WithContext(ctx).WriteToLog()
 	}
 
 	ctx, cancel := context.WithCancel(ctx)

@@ -53,7 +53,7 @@ func (d *DokodemoDoor) policy() core.Policy {
 }
 
 func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher core.Dispatcher) error {
-	newError("processing connection from: ", conn.RemoteAddr()).AtDebug().WriteToLog()
+	newError("processing connection from: ", conn.RemoteAddr()).AtDebug().WithContext(ctx).WriteToLog()
 	dest := net.Destination{
 		Network: network,
 		Address: d.address,

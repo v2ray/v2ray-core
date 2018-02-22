@@ -63,8 +63,7 @@ func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 	timestamp := protocol.NewTimestampGenerator(protocol.NowTime(), 30)()
 	account, err := header.User.GetTypedAccount()
 	if err != nil {
-		newError("failed to get user account: ", err).AtError().WriteToLog()
-		return nil
+		return newError("failed to get user account: ", err).AtError()
 	}
 	idHash := c.idHash(account.(*vmess.InternalAccount).AnyValidID().Bytes())
 	common.Must2(idHash.Write(timestamp.Bytes(nil)))
@@ -200,8 +199,7 @@ func (c *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 	defer buffer.Release()
 
 	if err := buffer.AppendSupplier(buf.ReadFullFrom(c.responseReader, 4)); err != nil {
-		newError("failed to read response header").Base(err).WriteToLog()
-		return nil, err
+		return nil, newError("failed to read response header").Base(err)
 	}
 
 	if buffer.Byte(0) != c.responseHeader {
@@ -217,8 +215,7 @@ func (c *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 		dataLen := int(buffer.Byte(3))
 
 		if err := buffer.Reset(buf.ReadFullFrom(c.responseReader, dataLen)); err != nil {
-			newError("failed to read response command").Base(err).WriteToLog()
-			return nil, err
+			return nil, newError("failed to read response command").Base(err)
 		}
 		command, err := UnmarshalCommand(cmdID, buffer.Bytes())
 		if err == nil {

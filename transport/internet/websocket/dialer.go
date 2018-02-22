@@ -13,7 +13,7 @@ import (
 
 // Dial dials a WebSocket connection to the given destination.
 func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {
-	newError("creating connection to ", dest).WriteToLog()
+	newError("creating connection to ", dest).WithContext(ctx).WriteToLog()
 
 	conn, err := dialWebsocket(ctx, dest)
 	if err != nil {

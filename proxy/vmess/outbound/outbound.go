@@ -65,7 +65,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	if !ok {
 		return newError("target not specified").AtError()
 	}
-	newError("tunneling request to ", target, " via ", rec.Destination()).WriteToLog()
+	newError("tunneling request to ", target, " via ", rec.Destination()).WithContext(ctx).WriteToLog()
 
 	command := protocol.RequestCommandTCP
 	if target.Network == net.Network_UDP {

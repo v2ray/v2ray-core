@@ -121,7 +121,7 @@ Start:
 		}
 	}
 
-	newError("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]").WriteToLog()
+	newError("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]").WithContext(ctx).WriteToLog()
 	conn.SetReadDeadline(time.Time{})
 
 	defaultPort := net.Port(80)
@@ -276,7 +276,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 				result = nil
 			}
 		} else {
-			newError("failed to read response from ", request.Host).Base(err).AtWarning().WriteToLog()
+			newError("failed to read response from ", request.Host).Base(err).AtWarning().WithContext(ctx).WriteToLog()
 			response = &http.Response{
 				Status:        "Service Unavailable",
 				StatusCode:    503,

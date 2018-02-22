@@ -56,7 +56,7 @@ func (h *Handler) resolveIP(ctx context.Context, domain string) net.Address {
 
 	ips, err := h.dns.LookupIP(domain)
 	if err != nil {
-		newError("failed to get IP address for domain ", domain).Base(err).WriteToLog()
+		newError("failed to get IP address for domain ", domain).Base(err).WithContext(ctx).WriteToLog()
 	}
 	if len(ips) == 0 {
 		return nil
@@ -75,7 +75,7 @@ func (h *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 			Port:    net.Port(server.Port),
 		}
 	}
-	newError("opening connection to ", destination).WriteToLog()
+	newError("opening connection to ", destination).WithContext(ctx).WriteToLog()
 
 	input := outboundRay.OutboundInput()
 	output := outboundRay.OutboundOutput()
@@ -88,7 +88,7 @@ func (h *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 				Address: ip,
 				Port:    destination.Port,
 			}
-			newError("changing destination to ", destination).WriteToLog()
+			newError("changing destination to ", destination).WithContext(ctx).WriteToLog()
 		}
 	}
 

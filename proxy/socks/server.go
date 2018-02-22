@@ -91,7 +91,7 @@ func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispa
 
 	if request.Command == protocol.RequestCommandTCP {
 		dest := request.Destination()
-		newError("TCP Connect request to ", dest).WriteToLog()
+		newError("TCP Connect request to ", dest).WithContext(ctx).WriteToLog()
 		if source, ok := proxy.SourceFromContext(ctx); ok {
 			log.Record(&log.AccessMessage{
 				From:   source,
@@ -163,7 +163,7 @@ func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 	udpServer := udp.NewDispatcher(dispatcher)
 
 	if source, ok := proxy.SourceFromContext(ctx); ok {
-		newError("client UDP connection from ", source).WriteToLog()
+		newError("client UDP connection from ", source).WithContext(ctx).WriteToLog()
 	}
 
 	reader := buf.NewReader(conn)
@@ -177,7 +177,7 @@ func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 			request, data, err := DecodeUDPPacket(payload.Bytes())
 
 			if err != nil {
-				newError("failed to parse UDP request").Base(err).WriteToLog()
+				newError("failed to parse UDP request").Base(err).WithContext(ctx).WriteToLog()
 				continue
 			}
 
@@ -185,7 +185,7 @@ func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 				continue
 			}
 
-			newError("send packet to ", request.Destination(), " with ", len(data), " bytes").AtDebug().WriteToLog()
+			newError("send packet to ", request.Destination(), " with ", len(data), " bytes").AtDebug().WithContext(ctx).WriteToLog()
 			if source, ok := proxy.SourceFromContext(ctx); ok {
 				log.Record(&log.AccessMessage{
 					From:   source,
@@ -200,12 +200,12 @@ func (v *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 			udpServer.Dispatch(ctx, request.Destination(), dataBuf, func(payload *buf.Buffer) {
 				defer payload.Release()
 
-				newError("writing back UDP response with ", payload.Len(), " bytes").AtDebug().WriteToLog()
+				newError("writing back UDP response with ", payload.Len(), " bytes").AtDebug().WithContext(ctx).WriteToLog()
 
 				udpMessage, err := EncodeUDPPacket(request, payload.Bytes())
 				defer udpMessage.Release()
 				if err != nil {
-					newError("failed to write UDP response").AtWarning().Base(err).WriteToLog()
+					newError("failed to write UDP response").AtWarning().Base(err).WithContext(ctx).WriteToLog()
 				}
 
 				conn.Write(udpMessage.Bytes())

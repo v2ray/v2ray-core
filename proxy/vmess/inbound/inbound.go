@@ -242,10 +242,10 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 		Reason: "",
 	})
 
-	newError("received request for ", request.Destination()).WriteToLog()
+	newError("received request for ", request.Destination()).WithContext(ctx).WriteToLog()
 
 	if err := connection.SetReadDeadline(time.Time{}); err != nil {
-		newError("unable to set back read deadline").Base(err).WriteToLog()
+		newError("unable to set back read deadline").Base(err).WithContext(ctx).WriteToLog()
 	}
 
 	sessionPolicy = h.policyManager.ForLevel(request.User.Level)
@@ -292,7 +292,7 @@ func (h *Handler) generateCommand(ctx context.Context, request *protocol.Request
 		if h.inboundHandlerManager != nil {
 			handler, err := h.inboundHandlerManager.GetHandler(ctx, tag)
 			if err != nil {
-				newError("failed to get detour handler: ", tag).Base(err).AtWarning().WriteToLog()
+				newError("failed to get detour handler: ", tag).Base(err).AtWarning().WithContext(ctx).WriteToLog()
 				return nil
 			}
 			proxyHandler, port, availableMin := handler.GetRandomInboundProxy()
@@ -302,7 +302,7 @@ func (h *Handler) generateCommand(ctx context.Context, request *protocol.Request
 					availableMin = 255
 				}
 
-				newError("pick detour handler for port ", port, " for ", availableMin, " minutes.").AtDebug().WriteToLog()
+				newError("pick detour handler for port ", port, " for ", availableMin, " minutes.").AtDebug().WithContext(ctx).WriteToLog()
 				user := inboundHandler.GetUser(request.User.Email)
 				if user == nil {
 					return nil

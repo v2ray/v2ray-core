@@ -149,14 +149,14 @@ func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
 	defer writer.Close()
 	defer s.Close()
 
-	newError("dispatching request to ", dest).WriteToLog()
+	newError("dispatching request to ", dest).WithContext(ctx).WriteToLog()
 	data, _ := s.input.ReadTimeout(time.Millisecond * 500)
 	if err := writer.WriteMultiBuffer(data); err != nil {
-		newError("failed to write first payload").Base(err).WriteToLog()
+		newError("failed to write first payload").Base(err).WithContext(ctx).WriteToLog()
 		return
 	}
 	if err := buf.Copy(s.input, writer); err != nil {
-		newError("failed to fetch all input").Base(err).WriteToLog()
+		newError("failed to fetch all input").Base(err).WithContext(ctx).WriteToLog()
 	}
 }
 
@@ -298,7 +298,7 @@ type ServerWorker struct {
 func handle(ctx context.Context, s *Session, output buf.Writer) {
 	writer := NewResponseWriter(s.ID, output, s.transferType)
 	if err := buf.Copy(s.input, writer); err != nil {
-		newError("session ", s.ID, " ends.").Base(err).WriteToLog()
+		newError("session ", s.ID, " ends.").Base(err).WithContext(ctx).WriteToLog()
 	}
 	writer.Close()
 	s.Close()
@@ -312,7 +312,7 @@ func (w *ServerWorker) handleStatusKeepAlive(meta *FrameMetadata, reader *buf.Bu
 }
 
 func (w *ServerWorker) handleStatusNew(ctx context.Context, meta *FrameMetadata, reader *buf.BufferedReader) error {
-	newError("received request for ", meta.Target).WriteToLog()
+	newError("received request for ", meta.Target).WithContext(ctx).WriteToLog()
 	inboundRay, err := w.dispatcher.Dispatch(ctx, meta.Target)
 	if err != nil {
 		if meta.Option.Has(OptionData) {
@@ -397,7 +397,7 @@ func (w *ServerWorker) run(ctx context.Context) {
 			err := w.handleFrame(ctx, reader)
 			if err != nil {
 				if errors.Cause(err) != io.EOF {
-					newError("unexpected EOF").Base(err).WriteToLog()
+					newError("unexpected EOF").Base(err).WithContext(ctx).WriteToLog()
 					input.CloseError()
 				}
 				return
