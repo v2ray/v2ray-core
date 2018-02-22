@@ -54,7 +54,7 @@ func TestVMessClosing(t *testing.T) {
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&policy.Config{
 				Level: map[uint32]*policy.Policy{
-					0: &policy.Policy{
+					0: {
 						Timeout: &policy.Policy_Timeout{
 							UplinkOnly:   &policy.Second{Value: 0},
 							DownlinkOnly: &policy.Second{Value: 0},
@@ -93,7 +93,7 @@ func TestVMessClosing(t *testing.T) {
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&policy.Config{
 				Level: map[uint32]*policy.Policy{
-					0: &policy.Policy{
+					0: {
 						Timeout: &policy.Policy_Timeout{
 							UplinkOnly:   &policy.Second{Value: 0},
 							DownlinkOnly: &policy.Second{Value: 0},

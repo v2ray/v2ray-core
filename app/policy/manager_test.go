@@ -15,7 +15,7 @@ func TestPolicy(t *testing.T) {
 
 	manager, err := New(context.Background(), &Config{
 		Level: map[uint32]*Policy{
-			0: &Policy{
+			0: {
 				Timeout: &Policy_Timeout{
 					Handshake: &Second{
 						Value: 2,
