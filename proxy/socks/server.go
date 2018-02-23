@@ -140,7 +140,7 @@ func (s *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 
 	requestDone := signal.ExecuteAsync(func() error {
 		defer timer.SetTimeout(s.policy().Timeouts.DownlinkOnly)
-		defer common.Must(input.Close())
+		defer input.Close()
 
 		v2reader := buf.NewReader(reader)
 		if err := buf.Copy(v2reader, input, buf.UpdateActivity(timer)); err != nil {
