@@ -12,8 +12,8 @@ const (
 )
 
 var addrParser = protocol.NewAddressParser(
-	protocol.AddressFamilyByte(0x01, net.AddressFamilyIPv4),
-	protocol.AddressFamilyByte(0x02, net.AddressFamilyDomain),
-	protocol.AddressFamilyByte(0x03, net.AddressFamilyIPv6),
+	protocol.AddressFamilyByte(byte(protocol.AddressTypeIPv4), net.AddressFamilyIPv4),
+	protocol.AddressFamilyByte(byte(protocol.AddressTypeDomain), net.AddressFamilyDomain),
+	protocol.AddressFamilyByte(byte(protocol.AddressTypeIPv6), net.AddressFamilyIPv6),
 	protocol.PortThenAddress(),
 )

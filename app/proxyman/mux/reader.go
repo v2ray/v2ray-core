@@ -23,7 +23,7 @@ func ReadMetadata(reader io.Reader) (*FrameMetadata, error) {
 	if err := b.Reset(buf.ReadFullFrom(reader, int(metaLen))); err != nil {
 		return nil, err
 	}
-	return ReadFrameFrom(b.Bytes())
+	return ReadFrameFrom(b)
 }
 
 // PacketReader is an io.Reader that reads whole chunk of Mux frames every time.
