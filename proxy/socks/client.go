@@ -49,7 +49,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 	var server *protocol.ServerSpec
 	var conn internet.Connection
 
-	err := retry.ExponentialBackoff(5, 100).On(func() error {
+	if err := retry.ExponentialBackoff(5, 100).On(func() error {
 		server = c.serverPicker.PickServer()
 		dest := server.Destination()
 		rawConn, err := dialer.Dial(ctx, dest)
@@ -59,13 +59,15 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 		conn = rawConn
 
 		return nil
-	})
-
-	if err != nil {
+	}); err != nil {
 		return newError("failed to find an available destination").Base(err)
 	}
 
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			newError("failed to closed connection").Base(err).WithContext(ctx).WriteToLog()
+		}
+	}()
 
 	p := c.policyManager.ForLevel(0)
 
