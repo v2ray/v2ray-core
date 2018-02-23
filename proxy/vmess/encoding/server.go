@@ -105,44 +105,6 @@ func NewServerSession(validator protocol.UserValidator, sessionHistory *SessionH
 	}
 }
 
-func readAddress(buffer *buf.Buffer, reader io.Reader) (net.Address, net.Port, error) {
-	var address net.Address
-	var port net.Port
-	if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 3)); err != nil {
-		return address, port, newError("failed to read port and address type").Base(err)
-	}
-	port = net.PortFromBytes(buffer.BytesRange(-3, -1))
-
-	addressType := protocol.AddressType(buffer.Byte(buffer.Len() - 1))
-	switch addressType {
-	case protocol.AddressTypeIPv4:
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 4)); err != nil {
-			return address, port, newError("failed to read IPv4 address").Base(err)
-		}
-		address = net.IPAddress(buffer.BytesFrom(-4))
-	case protocol.AddressTypeIPv6:
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 16)); err != nil {
-			return address, port, newError("failed to read IPv6 address").Base(err)
-		}
-		address = net.IPAddress(buffer.BytesFrom(-16))
-	case protocol.AddressTypeDomain:
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 1)); err != nil {
-			return address, port, newError("failed to read domain address").Base(err)
-		}
-		domainLength := int(buffer.Byte(buffer.Len() - 1))
-		if domainLength == 0 {
-			return address, port, newError("zero length domain")
-		}
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, domainLength)); err != nil {
-			return address, port, newError("failed to read domain address").Base(err)
-		}
-		address = net.DomainAddress(string(buffer.BytesFrom(-domainLength)))
-	default:
-		return address, port, newError("invalid address type", addressType)
-	}
-	return address, port, nil
-}
-
 func parseSecurityType(b byte) protocol.SecurityType {
 	if _, f := protocol.SecurityType_name[int32(b)]; f {
 		return protocol.SecurityType(b)
@@ -221,7 +183,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		request.Address = net.DomainAddress("v1.mux.cool")
 		request.Port = 0
 	case protocol.RequestCommandTCP, protocol.RequestCommandUDP:
-		if addr, port, err := readAddress(buffer, decryptor); err == nil {
+		if addr, port, err := addrParser.ReadAddressPort(buffer, decryptor); err == nil {
 			request.Address = addr
 			request.Port = port
 		} else {

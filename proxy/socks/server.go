@@ -185,18 +185,20 @@ func (s *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 		}
 
 		for _, payload := range mpayload {
-			request, data, err := DecodeUDPPacket(payload.Bytes())
+			request, err := DecodeUDPPacket(payload)
 
 			if err != nil {
 				newError("failed to parse UDP request").Base(err).WithContext(ctx).WriteToLog()
+				payload.Release()
 				continue
 			}
 
-			if len(data) == 0 {
+			if payload.IsEmpty() {
+				payload.Release()
 				continue
 			}
 
-			newError("send packet to ", request.Destination(), " with ", len(data), " bytes").AtDebug().WithContext(ctx).WriteToLog()
+			newError("send packet to ", request.Destination(), " with ", payload.Len(), " bytes").AtDebug().WithContext(ctx).WriteToLog()
 			if source, ok := proxy.SourceFromContext(ctx); ok {
 				log.Record(&log.AccessMessage{
 					From:   source,
@@ -206,9 +208,7 @@ func (s *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 				})
 			}
 
-			dataBuf := buf.New()
-			dataBuf.Append(data)
-			udpServer.Dispatch(ctx, request.Destination(), dataBuf, func(payload *buf.Buffer) {
+			udpServer.Dispatch(ctx, request.Destination(), payload, func(payload *buf.Buffer) {
 				defer payload.Release()
 
 				newError("writing back UDP response with ", payload.Len(), " bytes").AtDebug().WithContext(ctx).WriteToLog()

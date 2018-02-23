@@ -11,16 +11,20 @@ import (
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/proxy/socks"
 )
 
 const (
 	Version                               = 1
 	RequestOptionOneTimeAuth bitmask.Byte = 0x01
+)
 
-	AddrTypeIPv4   = 1
-	AddrTypeIPv6   = 4
-	AddrTypeDomain = 3
+var addrParser = protocol.NewAddressParser(
+	protocol.AddressFamilyByte(0x01, net.AddressFamilyIPv4),
+	protocol.AddressFamilyByte(0x04, net.AddressFamilyIPv6),
+	protocol.AddressFamilyByte(0x03, net.AddressFamilyDomain),
+	protocol.WithAddressTypeParser(func(b byte) byte {
+		return b & 0x0F
+	}),
 )
 
 // ReadTCPSession reads a Shadowsocks TCP session from the given reader, returns its header and remaining parts.
@@ -58,9 +62,20 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 		Command: protocol.RequestCommandTCP,
 	}
 
-	if err := buffer.Reset(buf.ReadFullFrom(br, 1)); err != nil {
-		return nil, nil, newError("failed to read address type").Base(err)
+	buffer.Clear()
+
+	addr, port, err := addrParser.ReadAddressPort(buffer, br)
+
+	if err != nil {
+		// Invalid address. Continue to read some bytes to confuse client.
+		nBytes := dice.Roll(32)
+		buffer.Clear()
+		buffer.AppendSupplier(buf.ReadFullFrom(br, nBytes))
+		return nil, nil, newError("failed to read address").Base(err)
 	}
+
+	request.Address = addr
+	request.Port = port
 
 	if !account.Cipher.IsAEAD() {
 		if (buffer.Byte(0) & 0x10) == 0x10 {
@@ -75,20 +90,6 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 			return nil, nil, newError("rejecting connection with OTA disabled, while server enables OTA")
 		}
 	}
-
-	addrType := (buffer.Byte(0) & 0x0F)
-
-	addr, port, err := socks.ReadAddress(buffer, addrType, br)
-	if err != nil {
-		// Invalid address. Continue to read some bytes to confuse client.
-		nBytes := dice.Roll(32)
-		buffer.Clear()
-		buffer.AppendSupplier(buf.ReadFullFrom(br, nBytes))
-		return nil, nil, newError("failed to read address").Base(err)
-	}
-
-	request.Address = addr
-	request.Port = port
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {
 		actualAuth := make([]byte, AuthSize)
@@ -150,7 +151,7 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (buf.Wri
 
 	header := buf.NewLocal(512)
 
-	if err := socks.AppendAddress(header, request.Address, request.Port); err != nil {
+	if err := addrParser.WriteAddressPort(header, request.Address, request.Port); err != nil {
 		return nil, newError("failed to write address").Base(err)
 	}
 
@@ -230,7 +231,7 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload []byte) (*buf.Buff
 	}
 	iv := buffer.Bytes()
 
-	if err := socks.AppendAddress(buffer, request.Address, request.Port); err != nil {
+	if err := addrParser.WriteAddressPort(buffer, request.Address, request.Port); err != nil {
 		return nil, newError("failed to write address").Base(err)
 	}
 
@@ -301,26 +302,15 @@ func DecodeUDPPacket(user *protocol.User, payload *buf.Buffer) (*protocol.Reques
 		}
 	}
 
-	addrType := (payload.Byte(0) & 0x0F)
-	payload.SliceFrom(1)
+	payload.SetByte(0, payload.Byte(0)&0x0F)
 
-	switch addrType {
-	case AddrTypeIPv4:
-		request.Address = net.IPAddress(payload.BytesTo(4))
-		payload.SliceFrom(4)
-	case AddrTypeIPv6:
-		request.Address = net.IPAddress(payload.BytesTo(16))
-		payload.SliceFrom(16)
-	case AddrTypeDomain:
-		domainLength := int(payload.Byte(0))
-		request.Address = net.DomainAddress(string(payload.BytesRange(1, 1+domainLength)))
-		payload.SliceFrom(1 + domainLength)
-	default:
-		return nil, nil, newError("unknown address type: ", addrType).AtError()
+	addr, port, err := addrParser.ReadAddressPort(nil, payload)
+	if err != nil {
+		return nil, nil, newError("failed to parse address").Base(err)
 	}
 
-	request.Port = net.PortFromBytes(payload.BytesTo(2))
-	payload.SliceFrom(2)
+	request.Address = addr
+	request.Port = port
 
 	return request, payload, nil
 }

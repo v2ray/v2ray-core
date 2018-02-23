@@ -15,7 +15,6 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/dice"
-	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/vmess"
@@ -82,23 +81,8 @@ func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 	buffer.AppendBytes(security, byte(0), byte(header.Command))
 
 	if header.Command != protocol.RequestCommandMux {
-		common.Must(buffer.AppendSupplier(serial.WriteUint16(header.Port.Value())))
-
-		switch header.Address.Family() {
-		case net.AddressFamilyIPv4:
-			buffer.AppendBytes(byte(protocol.AddressTypeIPv4))
-			buffer.Append(header.Address.IP())
-		case net.AddressFamilyIPv6:
-			buffer.AppendBytes(byte(protocol.AddressTypeIPv6))
-			buffer.Append(header.Address.IP())
-		case net.AddressFamilyDomain:
-			domain := header.Address.Domain()
-			if protocol.IsDomainTooLong(domain) {
-				return newError("long domain not supported: ", domain)
-			}
-			nDomain := len(domain)
-			buffer.AppendBytes(byte(protocol.AddressTypeDomain), byte(nDomain))
-			common.Must(buffer.AppendSupplier(serial.WriteString(domain)))
+		if err := addrParser.WriteAddressPort(buffer, header.Address, header.Port); err != nil {
+			return newError("failed to writer address and port").Base(err)
 		}
 	}
 
