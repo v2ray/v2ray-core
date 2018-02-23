@@ -49,6 +49,11 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 
 	version := buffer.Byte(0)
 	if version == socks4Version {
+		if s.config.AuthType == AuthType_PASSWORD {
+			writeSocks4Response(writer, socks4RequestRejected, net.AnyIP, net.Port(0))
+			return nil, newError("socks 4 is not allowed when auth is required.")
+		}
+
 		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 6)); err != nil {
 			return nil, newError("insufficient header").Base(err)
 		}
