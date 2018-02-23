@@ -192,11 +192,13 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
+		defer timer.SetTimeout(s.policy().Timeouts.UplinkOnly)
+
 		v2writer := buf.NewWriter(conn)
 		if err := buf.Copy(ray.InboundOutput(), v2writer, buf.UpdateActivity(timer)); err != nil {
 			return err
 		}
-		timer.SetTimeout(s.policy().Timeouts.UplinkOnly)
+
 		return nil
 	})
 

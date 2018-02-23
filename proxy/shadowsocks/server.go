@@ -171,6 +171,8 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 	}
 
 	responseDone := signal.ExecuteAsync(func() error {
+		defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
+
 		bufferedWriter := buf.NewBufferedWriter(buf.NewWriter(conn))
 		responseWriter, err := WriteTCPResponse(request, bufferedWriter)
 		if err != nil {
@@ -194,18 +196,17 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 			return newError("failed to transport all TCP response").Base(err)
 		}
 
-		timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
-
 		return nil
 	})
 
 	requestDone := signal.ExecuteAsync(func() error {
+		defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
 		defer ray.InboundInput().Close()
 
 		if err := buf.Copy(bodyReader, ray.InboundInput(), buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport all TCP request").Base(err)
 		}
-		timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
+
 		return nil
 	})
 

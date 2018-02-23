@@ -131,22 +131,25 @@ func (v *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 	output := ray.InboundOutput()
 
 	requestDone := signal.ExecuteAsync(func() error {
+		defer timer.SetTimeout(v.policy().Timeouts.DownlinkOnly)
 		defer input.Close()
 
 		v2reader := buf.NewReader(reader)
 		if err := buf.Copy(v2reader, input, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport all TCP request").Base(err)
 		}
-		timer.SetTimeout(v.policy().Timeouts.DownlinkOnly)
+
 		return nil
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
+		defer timer.SetTimeout(v.policy().Timeouts.UplinkOnly)
+
 		v2writer := buf.NewWriter(writer)
 		if err := buf.Copy(output, v2writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport all TCP response").Base(err)
 		}
-		timer.SetTimeout(v.policy().Timeouts.UplinkOnly)
+
 		return nil
 	})
 
