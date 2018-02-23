@@ -9,7 +9,7 @@ import (
 type InternalAccount struct {
 	ID       *protocol.ID
 	AlterIDs []*protocol.ID
-	Security protocol.Security
+	Security protocol.SecurityType
 }
 
 func (a *InternalAccount) AnyValidID() *protocol.ID {
@@ -37,6 +37,6 @@ func (a *Account) AsAccount() (protocol.Account, error) {
 	return &InternalAccount{
 		ID:       protoID,
 		AlterIDs: protocol.NewAlterIDs(protoID, uint16(a.AlterId)),
-		Security: a.SecuritySettings.AsSecurity(),
+		Security: a.SecuritySettings.GetSecurityType(),
 	}, nil
 }

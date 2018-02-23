@@ -101,6 +101,7 @@ type Handler struct {
 	usersByEmail          *userByEmail
 	detours               *DetourConfig
 	sessionHistory        *encoding.SessionHistory
+	secure                bool
 }
 
 // New creates a new VMess inbound handler.
@@ -113,6 +114,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		detours:               config.Detour,
 		usersByEmail:          newUserByEmail(config.GetDefaultValue()),
 		sessionHistory:        encoding.NewSessionHistory(),
+		secure:                config.SecureEncryptionOnly,
 	}
 
 	for _, user := range config.User {
@@ -210,6 +212,10 @@ func transferResponse(timer signal.ActivityUpdater, session *encoding.ServerSess
 	return nil
 }
 
+func isInecureEncryption(s protocol.SecurityType) bool {
+	return s == protocol.SecurityType_NONE || s == protocol.SecurityType_LEGACY || s == protocol.SecurityType_UNKNOWN
+}
+
 // Process implements proxy.Inbound.Process().
 func (h *Handler) Process(ctx context.Context, network net.Network, connection internet.Connection, dispatcher core.Dispatcher) error {
 	sessionPolicy := h.policyManager.ForLevel(0)
@@ -233,6 +239,16 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 			err = newError("invalid request from ", connection.RemoteAddr()).Base(err).AtInfo()
 		}
 		return err
+	}
+
+	if h.secure && isInecureEncryption(request.Security) {
+		log.Record(&log.AccessMessage{
+			From:   connection.RemoteAddr(),
+			To:     "",
+			Status: log.AccessRejected,
+			Reason: "Insecure encryption",
+		})
+		return newError("client is using insecure encryption: ", request.Security)
 	}
 
 	log.Record(&log.AccessMessage{
