@@ -10,7 +10,7 @@ import (
 	. "v2ray.com/ext/assert"
 )
 
-func TestAddressParser(t *testing.T) {
+func TestAddressReading(t *testing.T) {
 	assert := With(t)
 
 	data := []struct {
@@ -20,6 +20,11 @@ func TestAddressParser(t *testing.T) {
 		Port    net.Port
 		Error   bool
 	}{
+		{
+			Options: []AddressOption{},
+			Input:   []byte{},
+			Error:   true,
+		},
 		{
 			Options: []AddressOption{},
 			Input:   []byte{0, 0, 0, 0, 0},
@@ -65,6 +70,38 @@ func TestAddressParser(t *testing.T) {
 		} else {
 			assert(addr, Equals, tc.Address)
 			assert(port, Equals, tc.Port)
+			assert(err, IsNil)
+		}
+	}
+}
+
+func TestAddressWriting(t *testing.T) {
+	assert := With(t)
+
+	data := []struct {
+		Options []AddressOption
+		Address net.Address
+		Port    net.Port
+		Bytes   []byte
+		Error   bool
+	}{
+		{
+			Options: []AddressOption{AddressFamilyByte(0x01, net.AddressFamilyIPv4)},
+			Address: net.LocalHostIP,
+			Port:    net.Port(80),
+			Bytes:   []byte{1, 127, 0, 0, 1, 0, 80},
+		},
+	}
+
+	for _, tc := range data {
+		parser := NewAddressParser(tc.Options...)
+
+		b := buf.New()
+		err := parser.WriteAddressPort(b, tc.Address, tc.Port)
+		if tc.Error {
+			assert(err, IsNotNil)
+		} else {
+			assert(b.Bytes(), Equals, tc.Bytes)
 		}
 	}
 }
