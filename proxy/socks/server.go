@@ -209,11 +209,11 @@ func (s *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 			}
 
 			udpServer.Dispatch(ctx, request.Destination(), payload, func(payload *buf.Buffer) {
-				defer payload.Release()
-
 				newError("writing back UDP response with ", payload.Len(), " bytes").AtDebug().WithContext(ctx).WriteToLog()
 
 				udpMessage, err := EncodeUDPPacket(request, payload.Bytes())
+				payload.Release()
+
 				defer udpMessage.Release()
 				if err != nil {
 					newError("failed to write UDP response").AtWarning().Base(err).WithContext(ctx).WriteToLog()

@@ -73,9 +73,9 @@ func NewListener(ctx context.Context, address net.Address, port net.Port, addCon
 }
 
 func (l *Listener) OnReceive(payload *buf.Buffer, src net.Destination, originalDest net.Destination) {
-	defer payload.Release()
-
 	segments := l.reader.Read(payload.Bytes())
+	payload.Release()
+
 	if len(segments) == 0 {
 		newError("discarding invalid payload from ", src).WriteToLog()
 		return
