@@ -31,7 +31,7 @@ func Version() string {
 // VersionStatement returns a list of strings representing the full version info.
 func VersionStatement() []string {
 	return []string{
-		serial.Concat("V2Ray ", Version(), "(", codename, ")", build),
+		serial.Concat("V2Ray ", Version(), " (", codename, ") ", build),
 		intro,
 	}
 }
