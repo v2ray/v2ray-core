@@ -124,7 +124,7 @@ func (s *Instance) Start() error {
 		}
 	}
 
-	newError("V2Ray started").AtWarning().WriteToLog()
+	newError("V2Ray started").AtInfo().WriteToLog()
 
 	return nil
 }

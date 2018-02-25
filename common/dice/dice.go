@@ -9,9 +9,6 @@ import (
 
 // Roll returns a non-negative number between 0 (inclusive) and n (exclusive).
 func Roll(n int) int {
-	if n == 1 {
-		return 0
-	}
 	return rand.Intn(n)
 }
 
