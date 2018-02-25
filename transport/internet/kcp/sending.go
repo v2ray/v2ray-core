@@ -191,11 +191,12 @@ type SendingWorker struct {
 	conn                       *Connection
 	window                     *SendingWindow
 	firstUnacknowledged        uint32
-	firstUnacknowledgedUpdated bool
 	nextNumber                 uint32
 	remoteNextNumber           uint32
 	controlWindow              uint32
 	fastResend                 uint32
+	firstUnacknowledgedUpdated bool
+	closed                     bool
 }
 
 func NewSendingWorker(kcp *Connection) *SendingWorker {
@@ -212,6 +213,7 @@ func NewSendingWorker(kcp *Connection) *SendingWorker {
 func (w *SendingWorker) Release() {
 	w.Lock()
 	w.window.Release()
+	w.closed = true
 	w.Unlock()
 }
 
@@ -258,6 +260,10 @@ func (w *SendingWorker) ProcessSegment(current uint32, seg *AckSegment, rto uint
 	w.Lock()
 	defer w.Unlock()
 
+	if w.closed {
+		return
+	}
+
 	if w.remoteNextNumber < seg.ReceivingWindow {
 		w.remoteNextNumber = seg.ReceivingWindow
 	}
@@ -288,6 +294,10 @@ func (w *SendingWorker) ProcessSegment(current uint32, seg *AckSegment, rto uint
 func (w *SendingWorker) Push(f buf.Supplier) bool {
 	w.Lock()
 	defer w.Unlock()
+
+	if w.closed {
+		return false
+	}
 
 	if w.window.IsFull() {
 		return false
@@ -332,6 +342,11 @@ func (w *SendingWorker) OnPacketLoss(lossRate uint32) {
 
 func (w *SendingWorker) Flush(current uint32) {
 	w.Lock()
+
+	if w.closed {
+		w.Unlock()
+		return
+	}
 
 	cwnd := w.firstUnacknowledged + w.conn.Config.GetSendingInFlightSize()
 	if cwnd > w.remoteNextNumber {
