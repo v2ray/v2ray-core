@@ -68,7 +68,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 
 	if err != nil {
 		// Invalid address. Continue to read some bytes to confuse client.
-		nBytes := dice.Roll(32)
+		nBytes := dice.Roll(32) + 1
 		buffer.Clear()
 		buffer.AppendSupplier(buf.ReadFullFrom(br, nBytes))
 		return nil, nil, newError("failed to read address").Base(err)
