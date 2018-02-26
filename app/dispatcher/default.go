@@ -55,12 +55,12 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	ctx = proxy.ContextWithTarget(ctx, destination)
 
 	outbound := ray.NewRay(ctx)
-	sniferList := proxyman.ProtocoSniffersFromContext(ctx)
-	if destination.Address.Family().IsDomain() || len(sniferList) == 0 {
+	snifferList := proxyman.ProtocoSniffersFromContext(ctx)
+	if destination.Address.Family().IsDomain() || len(snifferList) == 0 {
 		go d.routedDispatch(ctx, outbound, destination)
 	} else {
 		go func() {
-			domain, err := snifer(ctx, sniferList, outbound)
+			domain, err := sniffer(ctx, snifferList, outbound)
 			if err == nil {
 				newError("sniffed domain: ", domain).WithContext(ctx).WriteToLog()
 				destination.Address = net.ParseAddress(domain)
@@ -72,11 +72,11 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	return outbound, nil
 }
 
-func snifer(ctx context.Context, sniferList []proxyman.KnownProtocols, outbound ray.OutboundRay) (string, error) {
+func sniffer(ctx context.Context, snifferList []proxyman.KnownProtocols, outbound ray.OutboundRay) (string, error) {
 	payload := buf.New()
 	defer payload.Release()
 
-	sniffer := NewSniffer(sniferList)
+	sniffer := NewSniffer(snifferList)
 	totalAttempt := 0
 	for {
 		select {
