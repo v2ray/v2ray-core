@@ -86,8 +86,8 @@ func DialKCP(ctx context.Context, dest net.Destination) (internet.Connection, er
 
 	var iConn internet.Connection = session
 
-	if config := v2tls.ConfigFromContext(ctx, v2tls.WithDestination(dest)); config != nil {
-		tlsConn := tls.Client(iConn, config.GetTLSConfig())
+	if config := v2tls.ConfigFromContext(ctx); config != nil {
+		tlsConn := tls.Client(iConn, config.GetTLSConfig(v2tls.WithDestination(dest)))
 		iConn = tlsConn
 	}
 

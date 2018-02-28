@@ -27,8 +27,8 @@ func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error
 		return nil, err
 	}
 
-	if config := tls.ConfigFromContext(ctx, tls.WithDestination(dest), tls.WithNextProto("h2")); config != nil {
-		conn = tls.Client(conn, config.GetTLSConfig())
+	if config := tls.ConfigFromContext(ctx); config != nil {
+		conn = tls.Client(conn, config.GetTLSConfig(tls.WithDestination(dest), tls.WithNextProto("h2")))
 	}
 
 	tcpSettings := getTCPSettingsFromContext(ctx)
