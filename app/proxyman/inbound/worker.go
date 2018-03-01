@@ -210,8 +210,10 @@ func (w *udpWorker) getConnection(id connID) (*udpConn, bool) {
 
 func (w *udpWorker) callback(b *buf.Buffer, source net.Destination, originalDest net.Destination) {
 	id := connID{
-		src:  source,
-		dest: originalDest,
+		src: source,
+	}
+	if originalDest.IsValid() {
+		id.dest = originalDest
 	}
 	conn, existing := w.getConnection(id)
 	select {
