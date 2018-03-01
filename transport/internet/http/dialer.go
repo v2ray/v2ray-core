@@ -68,6 +68,12 @@ func getHTTPClient(ctx context.Context, dest net.Destination) (*http.Client, err
 
 // Dial dials a new TCP connection to the given destination.
 func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {
+	rawSettings := internet.TransportSettingsFromContext(ctx)
+	httpSettings, ok := rawSettings.(*Config)
+	if !ok {
+		return nil, newError("HTTP config is not set.").AtError()
+	}
+
 	client, err := getHTTPClient(ctx, dest)
 	if err != nil {
 		return nil, err
@@ -76,12 +82,12 @@ func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error
 	preader, pwriter := io.Pipe()
 	request := &http.Request{
 		Method: "PUT",
-		Host:   "www.v2ray.com",
+		Host:   httpSettings.getRandomHost(),
 		Body:   preader,
 		URL: &url.URL{
 			Scheme: "https",
 			Host:   dest.NetAddr(),
-			Path:   "/",
+			Path:   httpSettings.getNormalizedPath(),
 		},
 		Proto:      "HTTP/2",
 		ProtoMajor: 2,
