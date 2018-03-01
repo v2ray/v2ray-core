@@ -58,6 +58,17 @@ func TestAddressReading(t *testing.T) {
 			Input:   []byte{3, 9, 118, 50, 114, 97, 121, 46, 99, 111, 109, 0},
 			Error:   true,
 		},
+		{
+			Options: []AddressOption{AddressFamilyByte(0x03, net.AddressFamilyDomain)},
+			Input:   []byte{3, 7, 56, 46, 56, 46, 56, 46, 56, 0, 80},
+			Address: net.ParseAddress("8.8.8.8"),
+			Port:    net.Port(80),
+		},
+		{
+			Options: []AddressOption{AddressFamilyByte(0x03, net.AddressFamilyDomain)},
+			Input:   []byte{3, 7, 10, 46, 56, 46, 56, 46, 56, 0, 80},
+			Error:   true,
+		},
 	}
 
 	for _, tc := range data {
