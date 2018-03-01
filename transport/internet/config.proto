@@ -13,6 +13,7 @@ enum TransportProtocol {
   UDP = 1;
   MKCP = 2;
   WebSocket = 3;
+  HTTP = 4;
 }
 
 message TransportConfig {
