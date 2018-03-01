@@ -28,7 +28,7 @@ func TestSocksBridgeTCP(t *testing.T) {
 	assert(err, IsNil)
 	defer tcpServer.Close()
 
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
 			{
@@ -53,7 +53,7 @@ func TestSocksBridgeTCP(t *testing.T) {
 		},
 	}
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
 			{
@@ -125,7 +125,7 @@ func TestSocksBridageUDP(t *testing.T) {
 	assert(err, IsNil)
 	defer udpServer.Close()
 
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
 			{
@@ -150,7 +150,7 @@ func TestSocksBridageUDP(t *testing.T) {
 		},
 	}
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
 			{
@@ -222,8 +222,8 @@ func TestSocksConformance(t *testing.T) {
 	assert(err, IsNil)
 	defer tcpServer.Close()
 
-	authPort := pickPort()
-	noAuthPort := pickPort()
+	authPort := tcp.PickPort()
+	noAuthPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
 			{

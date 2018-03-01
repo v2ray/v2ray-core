@@ -32,7 +32,7 @@ func TestDokodemoTCP(t *testing.T) {
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
@@ -64,7 +64,7 @@ func TestDokodemoTCP(t *testing.T) {
 		},
 	}
 
-	clientPort := uint32(pickPort())
+	clientPort := uint32(tcp.PickPort())
 	clientPortRange := uint32(5)
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
@@ -145,7 +145,7 @@ func TestDokodemoUDP(t *testing.T) {
 	defer udpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
 			{
@@ -171,7 +171,7 @@ func TestDokodemoUDP(t *testing.T) {
 		},
 	}
 
-	clientPort := uint32(pickPort())
+	clientPort := uint32(tcp.PickPort())
 	clientPortRange := uint32(5)
 	clientConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{

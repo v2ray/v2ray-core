@@ -46,7 +46,7 @@ func TestPassiveConnection(t *testing.T) {
 	assert(err, IsNil)
 	defer tcpServer.Close()
 
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
 			{
@@ -117,7 +117,7 @@ func TestProxy(t *testing.T) {
 	defer tcpServer.Close()
 
 	serverUserID := protocol.NewID(uuid.New())
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
 			{
@@ -144,7 +144,7 @@ func TestProxy(t *testing.T) {
 	}
 
 	proxyUserID := protocol.NewID(uuid.New())
-	proxyPort := pickPort()
+	proxyPort := tcp.PickPort()
 	proxyConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
 			{
@@ -170,7 +170,7 @@ func TestProxy(t *testing.T) {
 		},
 	}
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
 			{
@@ -265,7 +265,7 @@ func TestProxyOverKCP(t *testing.T) {
 	defer tcpServer.Close()
 
 	serverUserID := protocol.NewID(uuid.New())
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
 			{
@@ -295,7 +295,7 @@ func TestProxyOverKCP(t *testing.T) {
 	}
 
 	proxyUserID := protocol.NewID(uuid.New())
-	proxyPort := pickPort()
+	proxyPort := tcp.PickPort()
 	proxyConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
 			{
@@ -326,7 +326,7 @@ func TestProxyOverKCP(t *testing.T) {
 		},
 	}
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
 			{
@@ -430,8 +430,8 @@ func TestBlackhole(t *testing.T) {
 	assert(err, IsNil)
 	defer tcpServer2.Close()
 
-	serverPort := pickPort()
-	serverPort2 := pickPort()
+	serverPort := tcp.PickPort()
+	serverPort2 := tcp.PickPort()
 	serverConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
 			{
@@ -521,7 +521,7 @@ func TestForward(t *testing.T) {
 	assert(err, IsNil)
 	defer tcpServer.Close()
 
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
 			{
@@ -587,7 +587,7 @@ func TestUDPConnection(t *testing.T) {
 	assert(err, IsNil)
 	defer udpServer.Close()
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
 			{
@@ -663,8 +663,8 @@ func TestUDPConnection(t *testing.T) {
 func TestDomainSniffing(t *testing.T) {
 	assert := With(t)
 
-	sniffingPort := pickPort()
-	httpPort := pickPort()
+	sniffingPort := tcp.PickPort()
+	httpPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
 			{
@@ -764,7 +764,7 @@ func TestDialV2Ray(t *testing.T) {
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{

@@ -41,7 +41,7 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 		Ota:        shadowsocks.Account_Enabled,
 	})
 
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
@@ -70,7 +70,7 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 		},
 	}
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
@@ -159,7 +159,7 @@ func TestShadowsocksAES128UDP(t *testing.T) {
 		Ota:        shadowsocks.Account_Enabled,
 	})
 
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
@@ -189,7 +189,7 @@ func TestShadowsocksAES128UDP(t *testing.T) {
 		},
 	}
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
@@ -278,7 +278,7 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 		Ota:        shadowsocks.Account_Enabled,
 	})
 
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
@@ -307,7 +307,7 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 		},
 	}
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
@@ -395,7 +395,7 @@ func TestShadowsocksAES256GCMTCP(t *testing.T) {
 		CipherType: shadowsocks.CipherType_AES_256_GCM,
 	})
 
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
@@ -424,7 +424,7 @@ func TestShadowsocksAES256GCMTCP(t *testing.T) {
 		},
 	}
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
@@ -512,7 +512,7 @@ func TestShadowsocksAES128GCMUDP(t *testing.T) {
 		CipherType: shadowsocks.CipherType_AES_128_GCM,
 	})
 
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
@@ -542,7 +542,7 @@ func TestShadowsocksAES128GCMUDP(t *testing.T) {
 		},
 	}
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
@@ -630,7 +630,7 @@ func TestShadowsocksAES256GCMConformance(t *testing.T) {
 		CipherType: shadowsocks.CipherType_AES_256_GCM,
 	})
 
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
@@ -708,7 +708,7 @@ func TestShadowsocksChacha20Poly1305UDPConformance(t *testing.T) {
 		CipherType: shadowsocks.CipherType_CHACHA20_POLY1305,
 	})
 
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
@@ -791,7 +791,7 @@ func TestShadowsocksChacha20Conformance(t *testing.T) {
 		Ota:        shadowsocks.Account_Disabled,
 	})
 
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{

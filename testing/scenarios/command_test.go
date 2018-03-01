@@ -37,8 +37,8 @@ func TestCommanderRemoveHandler(t *testing.T) {
 	assert(err, IsNil)
 	defer tcpServer.Close()
 
-	clientPort := pickPort()
-	cmdPort := pickPort()
+	clientPort := tcp.PickPort()
+	cmdPort := tcp.PickPort()
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&commander.Config{
@@ -150,8 +150,8 @@ func TestCommanderAddRemoveUser(t *testing.T) {
 	u1 := protocol.NewID(uuid.New())
 	u2 := protocol.NewID(uuid.New())
 
-	cmdPort := pickPort()
-	serverPort := pickPort()
+	cmdPort := tcp.PickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&commander.Config{
@@ -219,7 +219,7 @@ func TestCommanderAddRemoveUser(t *testing.T) {
 		},
 	}
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&policy.Config{

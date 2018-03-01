@@ -17,6 +17,7 @@ import (
 	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/inbound"
 	"v2ray.com/core/proxy/vmess/outbound"
+	"v2ray.com/core/testing/servers/tcp"
 	. "v2ray.com/ext/assert"
 )
 
@@ -49,7 +50,7 @@ func TestVMessClosing(t *testing.T) {
 	dest := net.DestinationFromAddr(tcpServer.Addr())
 
 	userID := protocol.NewID(uuid.New())
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&policy.Config{
@@ -88,7 +89,7 @@ func TestVMessClosing(t *testing.T) {
 		},
 	}
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&policy.Config{
