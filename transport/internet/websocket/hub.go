@@ -92,7 +92,7 @@ func (ln *Listener) listenws(address net.Address, port net.Port) error {
 
 	go func() {
 		err := http.Serve(listener, &requestHandler{
-			path: ln.config.GetNormailzedPath(),
+			path: ln.config.GetNormalizedPath(),
 			ln:   ln,
 		})
 		if err != nil {

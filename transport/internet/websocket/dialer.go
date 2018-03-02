@@ -50,7 +50,7 @@ func dialWebsocket(ctx context.Context, dest net.Destination) (net.Conn, error) 
 	if (protocol == "ws" && dest.Port == 80) || (protocol == "wss" && dest.Port == 443) {
 		host = dest.Address.String()
 	}
-	uri := protocol + "://" + host + wsSettings.GetNormailzedPath()
+	uri := protocol + "://" + host + wsSettings.GetNormalizedPath()
 
 	conn, resp, err := dialer.Dial(uri, wsSettings.GetRequestHeader())
 	if err != nil {
