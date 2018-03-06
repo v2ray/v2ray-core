@@ -102,7 +102,12 @@ func NewServerSession(validator protocol.UserValidator, sessionHistory *SessionH
 
 func parseSecurityType(b byte) protocol.SecurityType {
 	if _, f := protocol.SecurityType_name[int32(b)]; f {
-		return protocol.SecurityType(b)
+		st := protocol.SecurityType(b)
+		// For backward compatibility.
+		if st == protocol.SecurityType_UNKNOWN {
+			st = protocol.SecurityType_LEGACY
+		}
+		return st
 	}
 	return protocol.SecurityType_UNKNOWN
 }
