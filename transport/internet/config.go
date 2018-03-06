@@ -10,7 +10,9 @@ var (
 )
 
 func RegisterProtocolConfigCreator(protocol TransportProtocol, creator ConfigCreator) error {
-	// TODO: check duplicate
+	if _, found := globalTransportConfigCreatorCache[protocol]; found {
+		return newError("protocol: " + TransportProtocol_name[int32(protocol)]+ " is already registered").AtError()
+	}
 	globalTransportConfigCreatorCache[protocol] = creator
 	return nil
 }
