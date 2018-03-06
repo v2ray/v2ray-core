@@ -371,11 +371,11 @@ main(){
             NEW_VER=`ls /tmp/v2ray |grep v2ray-v |cut -d "-" -f2`
         fi
     else
-        # dowload via network and extract
+        # download via network and extract
         installSoftware "curl"
         getVersion
         if [[ $? == 0 ]] && [[ "$FORCE" != "1" ]]; then
-            colorEcho ${GREEN} "Lastest version ${NEW_VER} is already installed."
+            colorEcho ${GREEN} "Latest version ${NEW_VER} is already installed."
             exit
         else
             colorEcho ${BLUE} "Installing V2Ray ${NEW_VER} on ${ARCH}"
