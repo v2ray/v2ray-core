@@ -251,7 +251,7 @@ installV2Ray(){
 }
 
 
-installInitScrip(){
+installInitScript(){
     SYSTEMCTL_CMD=$(command -v systemctl)
     SERVICE_CMD=$(command -v service)
 
@@ -389,7 +389,7 @@ main(){
         stopV2ray
     fi
     installV2Ray
-    installInitScrip
+    installInitScript
     if [[ ${V2RAY_RUNNING} -eq 1 ]];then
         colorEcho ${BLUE} "Restarting V2Ray service."
         startV2ray
