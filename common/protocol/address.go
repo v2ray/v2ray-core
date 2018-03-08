@@ -150,10 +150,8 @@ func (p *AddressParser) ReadAddressPort(buffer *buf.Buffer, input io.Reader) (ne
 }
 
 func (p *AddressParser) writePort(writer io.Writer, port net.Port) error {
-	if _, err := writer.Write(port.Bytes(nil)); err != nil {
-		return err
-	}
-	return nil
+	_, err := writer.Write(port.Bytes(nil))
+	return err
 }
 
 func (p *AddressParser) writeAddress(writer io.Writer, address net.Address) error {

@@ -76,8 +76,6 @@ func (co *CommanderOutbound) Dispatch(ctx context.Context, r ray.OutboundRay) {
 	co.listener.add(c)
 	co.access.RUnlock()
 	<-closeSignal.Wait()
-
-	return
 }
 
 func (co *CommanderOutbound) Tag() string {
