@@ -116,7 +116,7 @@ func TestCommanderRemoveHandler(t *testing.T) {
 		assert(conn.Close(), IsNil)
 	}
 
-	cmdConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", cmdPort), grpc.WithInsecure())
+	cmdConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", cmdPort), grpc.WithInsecure(), grpc.WithBlock())
 	assert(err, IsNil)
 
 	hsClient := command.NewHandlerServiceClient(cmdConn)
@@ -296,7 +296,7 @@ func TestCommanderAddRemoveUser(t *testing.T) {
 		assert(conn.Close(), IsNil)
 	}
 
-	cmdConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", cmdPort), grpc.WithInsecure())
+	cmdConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", cmdPort), grpc.WithInsecure(), grpc.WithBlock())
 	assert(err, IsNil)
 
 	hsClient := command.NewHandlerServiceClient(cmdConn)
