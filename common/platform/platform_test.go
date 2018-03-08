@@ -1,14 +1,16 @@
 package platform_test
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	. "v2ray.com/core/common/platform"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestNormalizeEnvName(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	cases := []struct {
 		input  string
@@ -28,14 +30,40 @@ func TestNormalizeEnvName(t *testing.T) {
 		},
 	}
 	for _, test := range cases {
-		assert.String(NormalizeEnvName(test.input)).Equals(test.output)
+		assert(NormalizeEnvName(test.input), Equals, test.output)
 	}
 }
 
 func TestEnvFlag(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
-	assert.Int(EnvFlag{
+	assert(EnvFlag{
 		Name: "xxxxx.y",
-	}.GetValueAsInt(10)).Equals(10)
+	}.GetValueAsInt(10), Equals, 10)
+}
+
+func TestGetAssetLocation(t *testing.T) {
+	assert := With(t)
+
+	exec, err := os.Executable()
+	assert(err, IsNil)
+
+	loc := GetAssetLocation("t")
+	assert(filepath.Dir(loc), Equals, filepath.Dir(exec))
+
+	os.Setenv("v2ray.location.asset", "/v2ray")
+	assert(GetAssetLocation("t"), Equals, "/v2ray/t")
+}
+
+func TestGetPluginLocation(t *testing.T) {
+	assert := With(t)
+
+	exec, err := os.Executable()
+	assert(err, IsNil)
+
+	loc := GetPluginDirectory()
+	assert(loc, Equals, filepath.Join(filepath.Dir(exec), "plugins"))
+
+	os.Setenv("V2RAY_LOCATION_PLUGIN", "/v2ray")
+	assert(GetPluginDirectory(), Equals, "/v2ray")
 }

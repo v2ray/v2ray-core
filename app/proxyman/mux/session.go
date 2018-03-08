@@ -1,7 +1,6 @@
 package mux
 
 import (
-	"io"
 	"sync"
 
 	"v2ray.com/core/common/buf"
@@ -19,7 +18,7 @@ type SessionManager struct {
 func NewSessionManager() *SessionManager {
 	return &SessionManager{
 		count:    0,
-		sessions: make(map[uint16]*Session, 32),
+		sessions: make(map[uint16]*Session, 16),
 	}
 }
 
@@ -58,12 +57,20 @@ func (m *SessionManager) Add(s *Session) {
 	m.Lock()
 	defer m.Unlock()
 
+	if m.closed {
+		return
+	}
+
 	m.sessions[s.ID] = s
 }
 
 func (m *SessionManager) Remove(id uint16) {
 	m.Lock()
 	defer m.Unlock()
+
+	if m.closed {
+		return
+	}
 
 	delete(m.sessions, id)
 }
@@ -96,12 +103,12 @@ func (m *SessionManager) CloseIfNoSession() bool {
 	return true
 }
 
-func (m *SessionManager) Close() {
+func (m *SessionManager) Close() error {
 	m.Lock()
 	defer m.Unlock()
 
 	if m.closed {
-		return
+		return nil
 	}
 
 	m.closed = true
@@ -111,9 +118,11 @@ func (m *SessionManager) Close() {
 		s.output.Close()
 	}
 
-	m.sessions = make(map[uint16]*Session)
+	m.sessions = nil
+	return nil
 }
 
+// Session represents a client connection in a Mux connection.
 type Session struct {
 	input        ray.InputStream
 	output       ray.OutputStream
@@ -122,13 +131,16 @@ type Session struct {
 	transferType protocol.TransferType
 }
 
-func (s *Session) Close() {
+// Close closes all resources associated with this session.
+func (s *Session) Close() error {
 	s.output.Close()
 	s.input.Close()
 	s.parent.Remove(s.ID)
+	return nil
 }
 
-func (s *Session) NewReader(reader io.Reader) buf.Reader {
+// NewReader creates a buf.Reader based on the transfer type of this Session.
+func (s *Session) NewReader(reader *buf.BufferedReader) buf.Reader {
 	if s.transferType == protocol.TransferTypeStream {
 		return NewStreamReader(reader)
 	}

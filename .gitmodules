@@ -1,3 +1,9 @@
 [submodule "vendor/h12.me/socks"]
 	path = vendor/h12.me/socks
 	url = https://github.com/h12w/socks
+[submodule "vendor/github.com/shadowsocks/go-shadowsocks2"]
+	path = vendor/github.com/shadowsocks/go-shadowsocks2
+	url = https://github.com/shadowsocks/go-shadowsocks2
+[submodule "vendor/github.com/Yawning/chacha20"]
+	path = vendor/github.com/Yawning/chacha20
+	url = https://github.com/Yawning/chacha20

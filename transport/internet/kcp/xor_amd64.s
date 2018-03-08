@@ -3,7 +3,7 @@
 // func xorfwd(x []byte)
 TEXT ·xorfwd(SB),NOSPLIT,$0
   MOVQ x+0(FP), SI  // x[i]
-  MOVL x+8(FP), CX  // x.len
+  MOVQ x_len+8(FP), CX  // x.len
   MOVQ x+0(FP), DI
   ADDQ $4, DI       // x[i+4]
   SUBQ $4, CX
@@ -24,7 +24,7 @@ xorfwddone:
 // func xorbkd(x []byte)
 TEXT ·xorbkd(SB),NOSPLIT,$0
   MOVQ x+0(FP), SI
-  MOVL x+8(FP), CX  // x.len
+  MOVQ x_len+8(FP), CX  // x.len
   MOVQ x+0(FP), DI
   ADDQ CX, SI       // x[-8]
   SUBQ $8, SI

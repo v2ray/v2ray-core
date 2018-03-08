@@ -1,6 +1,9 @@
 package ray
 
-import "v2ray.com/core/common/buf"
+import (
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/buf"
+)
 
 // OutboundRay is a transport interface for outbound connections.
 type OutboundRay interface {
@@ -34,7 +37,7 @@ type Ray interface {
 }
 
 type RayStream interface {
-	Close()
+	common.Closable
 	CloseError()
 }
 

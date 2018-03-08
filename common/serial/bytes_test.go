@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	. "v2ray.com/core/common/serial"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestBytesToHex(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	cases := []struct {
 		input  []byte
@@ -21,15 +21,15 @@ func TestBytesToHex(t *testing.T) {
 	}
 
 	for _, test := range cases {
-		assert.String(test.output).Equals(BytesToHexString(test.input))
+		assert(test.output, Equals, BytesToHexString(test.input))
 	}
 }
 
 func TestInt64(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	x := int64(375134875348)
 	b := Int64ToBytes(x, []byte{})
 	v := BytesToInt64(b)
-	assert.Int64(x).Equals(v)
+	assert(x, Equals, v)
 }

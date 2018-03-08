@@ -6,64 +6,64 @@ import (
 
 	. "v2ray.com/core/common/buf"
 	"v2ray.com/core/common/serial"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestBufferClear(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	buffer := New()
 	defer buffer.Release()
 
 	payload := "Bytes"
 	buffer.Append([]byte(payload))
-	assert.Int(buffer.Len()).Equals(len(payload))
+	assert(buffer.Len(), Equals, len(payload))
 
 	buffer.Clear()
-	assert.Int(buffer.Len()).Equals(0)
+	assert(buffer.Len(), Equals, 0)
 }
 
 func TestBufferIsEmpty(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	buffer := New()
 	defer buffer.Release()
 
-	assert.Bool(buffer.IsEmpty()).IsTrue()
+	assert(buffer.IsEmpty(), IsTrue)
 }
 
 func TestBufferString(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	buffer := New()
 	defer buffer.Release()
 
-	assert.Error(buffer.AppendSupplier(serial.WriteString("Test String"))).IsNil()
-	assert.String(buffer.String()).Equals("Test String")
+	assert(buffer.AppendSupplier(serial.WriteString("Test String")), IsNil)
+	assert(buffer.String(), Equals, "Test String")
 }
 
 func TestBufferWrite(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	buffer := NewLocal(8)
 	nBytes, err := buffer.Write([]byte("abcd"))
-	assert.Error(err).IsNil()
-	assert.Int(nBytes).Equals(4)
+	assert(err, IsNil)
+	assert(nBytes, Equals, 4)
 	nBytes, err = buffer.Write([]byte("abcde"))
-	assert.Error(err).IsNil()
-	assert.Int(nBytes).Equals(4)
-	assert.String(buffer.String()).Equals("abcdabcd")
+	assert(err, IsNil)
+	assert(nBytes, Equals, 4)
+	assert(buffer.String(), Equals, "abcdabcd")
 }
 
 func TestSyncPool(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	p := NewSyncPool(32)
 	b := p.Allocate()
-	assert.Int(b.Len()).Equals(0)
+	assert(b.Len(), Equals, 0)
 
-	assert.Error(b.AppendSupplier(ReadFrom(rand.Reader))).IsNil()
-	assert.Int(b.Len()).Equals(32)
+	assert(b.AppendSupplier(ReadFrom(rand.Reader)), IsNil)
+	assert(b.Len(), Equals, 32)
 
 	b.Release()
 }

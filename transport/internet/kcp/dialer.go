@@ -2,17 +2,14 @@ package kcp
 
 import (
 	"context"
-	"crypto/cipher"
 	"crypto/tls"
-	"net"
-	"sync"
+	"io"
 	"sync/atomic"
 
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	v2tls "v2ray.com/core/transport/internet/tls"
 )
@@ -21,100 +18,42 @@ var (
 	globalConv = uint32(dice.RollUint16())
 )
 
-type ClientConnection struct {
-	sync.RWMutex
-	net.Conn
-	input  func([]Segment)
-	reader PacketReader
-	writer PacketWriter
-}
-
-func (c *ClientConnection) Overhead() int {
-	c.RLock()
-	defer c.RUnlock()
-	if c.writer == nil {
-		return 0
-	}
-	return c.writer.Overhead()
-}
-
-// Write implements io.Writer.
-func (c *ClientConnection) Write(b []byte) (int, error) {
-	c.RLock()
-	defer c.RUnlock()
-
-	if c.writer == nil {
-		return len(b), nil
-	}
-
-	return c.writer.Write(b)
-}
-
-func (*ClientConnection) Read([]byte) (int, error) {
-	panic("KCP|ClientConnection: Read should not be called.")
-}
-
-func (c *ClientConnection) Close() error {
-	return c.Conn.Close()
-}
-
-func (c *ClientConnection) Reset(inputCallback func([]Segment)) {
-	c.Lock()
-	c.input = inputCallback
-	c.Unlock()
-}
-
-func (c *ClientConnection) ResetSecurity(header internet.PacketHeader, security cipher.AEAD) {
-	c.Lock()
-	if c.reader == nil {
-		c.reader = new(KCPPacketReader)
-	}
-	c.reader.(*KCPPacketReader).Header = header
-	c.reader.(*KCPPacketReader).Security = security
-	if c.writer == nil {
-		c.writer = new(KCPPacketWriter)
-	}
-	c.writer.(*KCPPacketWriter).Header = header
-	c.writer.(*KCPPacketWriter).Security = security
-	c.writer.(*KCPPacketWriter).Writer = c.Conn
-
-	c.Unlock()
-}
-
-func (c *ClientConnection) Run() {
-	payload := buf.New()
-	defer payload.Release()
-
-	for {
-		err := payload.Reset(buf.ReadFrom(c.Conn))
-		if err != nil {
-			payload.Release()
-			return
-		}
-		c.RLock()
-		if c.input != nil {
-			segments := c.reader.Read(payload.Bytes())
-			if len(segments) > 0 {
-				c.input(segments)
+func fetchInput(ctx context.Context, input io.Reader, reader PacketReader, conn *Connection) {
+	cache := make(chan *buf.Buffer, 1024)
+	go func() {
+		for {
+			payload := buf.New()
+			if err := payload.Reset(buf.ReadFrom(input)); err != nil {
+				payload.Release()
+				close(cache)
+				return
+			}
+			select {
+			case cache <- payload:
+			default:
+				payload.Release()
 			}
 		}
-		c.RUnlock()
+	}()
+
+	for payload := range cache {
+		segments := reader.Read(payload.Bytes())
+		payload.Release()
+		if len(segments) > 0 {
+			conn.Input(segments)
+		}
 	}
 }
 
-func DialKCP(ctx context.Context, dest v2net.Destination) (internet.Connection, error) {
-	dest.Network = v2net.Network_UDP
-	log.Trace(newError("dialing mKCP to ", dest))
+func DialKCP(ctx context.Context, dest net.Destination) (internet.Connection, error) {
+	dest.Network = net.Network_UDP
+	newError("dialing mKCP to ", dest).WriteToLog()
 
 	src := internet.DialerSourceFromContext(ctx)
 	rawConn, err := internet.DialSystem(ctx, src, dest)
 	if err != nil {
 		return nil, newError("failed to dial to dest: ", err).AtWarning().Base(err)
 	}
-	conn := &ClientConnection{
-		Conn: rawConn,
-	}
-	go conn.Run()
 
 	kcpSettings := internet.TransportSettingsFromContext(ctx).(*Config)
 
@@ -126,23 +65,30 @@ func DialKCP(ctx context.Context, dest v2net.Destination) (internet.Connection, 
 	if err != nil {
 		return nil, newError("failed to create security").Base(err)
 	}
-	conn.ResetSecurity(header, security)
+	reader := &KCPPacketReader{
+		Header:   header,
+		Security: security,
+	}
+	writer := &KCPPacketWriter{
+		Header:   header,
+		Security: security,
+		Writer:   rawConn,
+	}
+
 	conv := uint16(atomic.AddUint32(&globalConv, 1))
-	session := NewConnection(conv, conn, kcpSettings)
+	session := NewConnection(ConnMetadata{
+		LocalAddr:    rawConn.LocalAddr(),
+		RemoteAddr:   rawConn.RemoteAddr(),
+		Conversation: conv,
+	}, writer, rawConn, kcpSettings)
 
-	var iConn internet.Connection
-	iConn = session
+	go fetchInput(ctx, rawConn, reader, session)
 
-	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
-		switch securitySettings := securitySettings.(type) {
-		case *v2tls.Config:
-			config := securitySettings.GetTLSConfig()
-			if dest.Address.Family().IsDomain() {
-				config.ServerName = dest.Address.Domain()
-			}
-			tlsConn := tls.Client(iConn, config)
-			iConn = tlsConn
-		}
+	var iConn internet.Connection = session
+
+	if config := v2tls.ConfigFromContext(ctx); config != nil {
+		tlsConn := tls.Client(iConn, config.GetTLSConfig(v2tls.WithDestination(dest)))
+		iConn = tlsConn
 	}
 
 	return iConn, nil

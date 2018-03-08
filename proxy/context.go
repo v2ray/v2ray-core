@@ -17,10 +17,12 @@ const (
 	resolvedIPsKey
 )
 
+// ContextWithSource creates a new context with given source.
 func ContextWithSource(ctx context.Context, src net.Destination) context.Context {
 	return context.WithValue(ctx, sourceKey, src)
 }
 
+// SourceFromContext retreives source from the given context.
 func SourceFromContext(ctx context.Context) (net.Destination, bool) {
 	v, ok := ctx.Value(sourceKey).(net.Destination)
 	return v, ok
@@ -62,11 +64,15 @@ func InboundTagFromContext(ctx context.Context) (string, bool) {
 	return v, ok
 }
 
-func ContextWithResolveIPs(ctx context.Context, ips []net.Address) context.Context {
-	return context.WithValue(ctx, resolvedIPsKey, ips)
+type IPResolver interface {
+	Resolve() []net.Address
 }
 
-func ResolvedIPsFromContext(ctx context.Context) ([]net.Address, bool) {
-	ips, ok := ctx.Value(resolvedIPsKey).([]net.Address)
+func ContextWithResolveIPs(ctx context.Context, f IPResolver) context.Context {
+	return context.WithValue(ctx, resolvedIPsKey, f)
+}
+
+func ResolvedIPsFromContext(ctx context.Context) (IPResolver, bool) {
+	ips, ok := ctx.Value(resolvedIPsKey).(IPResolver)
 	return ips, ok
 }

@@ -31,6 +31,7 @@ type Segment interface {
 	Command() Command
 	ByteSize() int
 	Bytes() buf.Supplier
+	parse(conv uint16, cmd Command, opt SegmentOption, buf []byte) (bool, []byte)
 }
 
 const (
@@ -43,8 +44,8 @@ type DataSegment struct {
 	Timestamp   uint32
 	Number      uint32
 	SendingNext uint32
-	Data        *buf.Buffer
 
+	payload  *buf.Buffer
 	timeout  uint32
 	transmit uint32
 }
@@ -53,43 +54,75 @@ func NewDataSegment() *DataSegment {
 	return new(DataSegment)
 }
 
-func (v *DataSegment) Conversation() uint16 {
-	return v.Conv
+func (s *DataSegment) parse(conv uint16, cmd Command, opt SegmentOption, buf []byte) (bool, []byte) {
+	s.Conv = conv
+	s.Option = opt
+	if len(buf) < 15 {
+		return false, nil
+	}
+	s.Timestamp = serial.BytesToUint32(buf)
+	buf = buf[4:]
+
+	s.Number = serial.BytesToUint32(buf)
+	buf = buf[4:]
+
+	s.SendingNext = serial.BytesToUint32(buf)
+	buf = buf[4:]
+
+	dataLen := int(serial.BytesToUint16(buf))
+	buf = buf[2:]
+
+	if len(buf) < dataLen {
+		return false, nil
+	}
+	s.Data().Clear()
+	s.Data().Append(buf[:dataLen])
+	buf = buf[dataLen:]
+
+	return true, buf
 }
 
-func (v *DataSegment) Command() Command {
+func (s *DataSegment) Conversation() uint16 {
+	return s.Conv
+}
+
+func (*DataSegment) Command() Command {
 	return CommandData
 }
 
-func (v *DataSegment) SetData(data []byte) {
-	if v.Data == nil {
-		v.Data = buf.New()
-	}
-	v.Data.Reset(func(b []byte) (int, error) {
-		return copy(b, data), nil
-	})
+func (s *DataSegment) Detach() *buf.Buffer {
+	r := s.payload
+	s.payload = nil
+	return r
 }
 
-func (v *DataSegment) Bytes() buf.Supplier {
+func (s *DataSegment) Data() *buf.Buffer {
+	if s.payload == nil {
+		s.payload = buf.New()
+	}
+	return s.payload
+}
+
+func (s *DataSegment) Bytes() buf.Supplier {
 	return func(b []byte) (int, error) {
-		b = serial.Uint16ToBytes(v.Conv, b[:0])
-		b = append(b, byte(CommandData), byte(v.Option))
-		b = serial.Uint32ToBytes(v.Timestamp, b)
-		b = serial.Uint32ToBytes(v.Number, b)
-		b = serial.Uint32ToBytes(v.SendingNext, b)
-		b = serial.Uint16ToBytes(uint16(v.Data.Len()), b)
-		b = append(b, v.Data.Bytes()...)
+		b = serial.Uint16ToBytes(s.Conv, b[:0])
+		b = append(b, byte(CommandData), byte(s.Option))
+		b = serial.Uint32ToBytes(s.Timestamp, b)
+		b = serial.Uint32ToBytes(s.Number, b)
+		b = serial.Uint32ToBytes(s.SendingNext, b)
+		b = serial.Uint16ToBytes(uint16(s.payload.Len()), b)
+		b = append(b, s.payload.Bytes()...)
 		return len(b), nil
 	}
 }
 
-func (v *DataSegment) ByteSize() int {
-	return 2 + 1 + 1 + 4 + 4 + 4 + 2 + v.Data.Len()
+func (s *DataSegment) ByteSize() int {
+	return 2 + 1 + 1 + 4 + 4 + 4 + 2 + s.payload.Len()
 }
 
-func (v *DataSegment) Release() {
-	v.Data.Release()
-	v.Data = nil
+func (s *DataSegment) Release() {
+	s.payload.Release()
+	s.payload = nil
 }
 
 type AckSegment struct {
@@ -109,94 +142,144 @@ func NewAckSegment() *AckSegment {
 	}
 }
 
-func (v *AckSegment) Conversation() uint16 {
-	return v.Conv
+func (s *AckSegment) parse(conv uint16, cmd Command, opt SegmentOption, buf []byte) (bool, []byte) {
+	s.Conv = conv
+	s.Option = opt
+	if len(buf) < 13 {
+		return false, nil
+	}
+
+	s.ReceivingWindow = serial.BytesToUint32(buf)
+	buf = buf[4:]
+
+	s.ReceivingNext = serial.BytesToUint32(buf)
+	buf = buf[4:]
+
+	s.Timestamp = serial.BytesToUint32(buf)
+	buf = buf[4:]
+
+	count := int(buf[0])
+	buf = buf[1:]
+
+	if len(buf) < count*4 {
+		return false, nil
+	}
+	for i := 0; i < count; i++ {
+		s.PutNumber(serial.BytesToUint32(buf))
+		buf = buf[4:]
+	}
+
+	return true, buf
 }
 
-func (v *AckSegment) Command() Command {
+func (s *AckSegment) Conversation() uint16 {
+	return s.Conv
+}
+
+func (*AckSegment) Command() Command {
 	return CommandACK
 }
 
-func (v *AckSegment) PutTimestamp(timestamp uint32) {
-	if timestamp-v.Timestamp < 0x7FFFFFFF {
-		v.Timestamp = timestamp
+func (s *AckSegment) PutTimestamp(timestamp uint32) {
+	if timestamp-s.Timestamp < 0x7FFFFFFF {
+		s.Timestamp = timestamp
 	}
 }
 
-func (v *AckSegment) PutNumber(number uint32) {
-	v.NumberList = append(v.NumberList, number)
+func (s *AckSegment) PutNumber(number uint32) {
+	s.NumberList = append(s.NumberList, number)
 }
 
-func (v *AckSegment) IsFull() bool {
-	return len(v.NumberList) == ackNumberLimit
+func (s *AckSegment) IsFull() bool {
+	return len(s.NumberList) == ackNumberLimit
 }
 
-func (v *AckSegment) IsEmpty() bool {
-	return len(v.NumberList) == 0
+func (s *AckSegment) IsEmpty() bool {
+	return len(s.NumberList) == 0
 }
 
-func (v *AckSegment) ByteSize() int {
-	return 2 + 1 + 1 + 4 + 4 + 4 + 1 + len(v.NumberList)*4
+func (s *AckSegment) ByteSize() int {
+	return 2 + 1 + 1 + 4 + 4 + 4 + 1 + len(s.NumberList)*4
 }
 
-func (v *AckSegment) Bytes() buf.Supplier {
+func (s *AckSegment) Bytes() buf.Supplier {
 	return func(b []byte) (int, error) {
-		b = serial.Uint16ToBytes(v.Conv, b[:0])
-		b = append(b, byte(CommandACK), byte(v.Option))
-		b = serial.Uint32ToBytes(v.ReceivingWindow, b)
-		b = serial.Uint32ToBytes(v.ReceivingNext, b)
-		b = serial.Uint32ToBytes(v.Timestamp, b)
-		count := byte(len(v.NumberList))
+		b = serial.Uint16ToBytes(s.Conv, b[:0])
+		b = append(b, byte(CommandACK), byte(s.Option))
+		b = serial.Uint32ToBytes(s.ReceivingWindow, b)
+		b = serial.Uint32ToBytes(s.ReceivingNext, b)
+		b = serial.Uint32ToBytes(s.Timestamp, b)
+		count := byte(len(s.NumberList))
 		b = append(b, count)
-		for _, number := range v.NumberList {
+		for _, number := range s.NumberList {
 			b = serial.Uint32ToBytes(number, b)
 		}
-		return v.ByteSize(), nil
+		return s.ByteSize(), nil
 	}
 }
 
-func (v *AckSegment) Release() {
-	v.NumberList = nil
+func (s *AckSegment) Release() {
+	s.NumberList = nil
 }
 
 type CmdOnlySegment struct {
-	Conv         uint16
-	Cmd          Command
-	Option       SegmentOption
-	SendingNext  uint32
-	ReceivinNext uint32
-	PeerRTO      uint32
+	Conv          uint16
+	Cmd           Command
+	Option        SegmentOption
+	SendingNext   uint32
+	ReceivingNext uint32
+	PeerRTO       uint32
 }
 
 func NewCmdOnlySegment() *CmdOnlySegment {
 	return new(CmdOnlySegment)
 }
 
-func (v *CmdOnlySegment) Conversation() uint16 {
-	return v.Conv
+func (s *CmdOnlySegment) parse(conv uint16, cmd Command, opt SegmentOption, buf []byte) (bool, []byte) {
+	s.Conv = conv
+	s.Cmd = cmd
+	s.Option = opt
+
+	if len(buf) < 12 {
+		return false, nil
+	}
+
+	s.SendingNext = serial.BytesToUint32(buf)
+	buf = buf[4:]
+
+	s.ReceivingNext = serial.BytesToUint32(buf)
+	buf = buf[4:]
+
+	s.PeerRTO = serial.BytesToUint32(buf)
+	buf = buf[4:]
+
+	return true, buf
 }
 
-func (v *CmdOnlySegment) Command() Command {
-	return v.Cmd
+func (s *CmdOnlySegment) Conversation() uint16 {
+	return s.Conv
 }
 
-func (v *CmdOnlySegment) ByteSize() int {
+func (s *CmdOnlySegment) Command() Command {
+	return s.Cmd
+}
+
+func (*CmdOnlySegment) ByteSize() int {
 	return 2 + 1 + 1 + 4 + 4 + 4
 }
 
-func (v *CmdOnlySegment) Bytes() buf.Supplier {
+func (s *CmdOnlySegment) Bytes() buf.Supplier {
 	return func(b []byte) (int, error) {
-		b = serial.Uint16ToBytes(v.Conv, b[:0])
-		b = append(b, byte(v.Cmd), byte(v.Option))
-		b = serial.Uint32ToBytes(v.SendingNext, b)
-		b = serial.Uint32ToBytes(v.ReceivinNext, b)
-		b = serial.Uint32ToBytes(v.PeerRTO, b)
+		b = serial.Uint16ToBytes(s.Conv, b[:0])
+		b = append(b, byte(s.Cmd), byte(s.Option))
+		b = serial.Uint32ToBytes(s.SendingNext, b)
+		b = serial.Uint32ToBytes(s.ReceivingNext, b)
+		b = serial.Uint32ToBytes(s.PeerRTO, b)
 		return len(b), nil
 	}
 }
 
-func (v *CmdOnlySegment) Release() {
-}
+func (*CmdOnlySegment) Release() {}
 
 func ReadSegment(buf []byte) (Segment, []byte) {
 	if len(buf) < 4 {
@@ -210,82 +293,19 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 	opt := SegmentOption(buf[1])
 	buf = buf[2:]
 
-	if cmd == CommandData {
-		seg := NewDataSegment()
-		seg.Conv = conv
-		seg.Option = opt
-		if len(buf) < 15 {
-			return nil, nil
-		}
-		seg.Timestamp = serial.BytesToUint32(buf)
-		buf = buf[4:]
-
-		seg.Number = serial.BytesToUint32(buf)
-		buf = buf[4:]
-
-		seg.SendingNext = serial.BytesToUint32(buf)
-		buf = buf[4:]
-
-		dataLen := int(serial.BytesToUint16(buf))
-		buf = buf[2:]
-
-		if len(buf) < dataLen {
-			return nil, nil
-		}
-		seg.SetData(buf[:dataLen])
-		buf = buf[dataLen:]
-
-		return seg, buf
+	var seg Segment
+	switch cmd {
+	case CommandData:
+		seg = NewDataSegment()
+	case CommandACK:
+		seg = NewAckSegment()
+	default:
+		seg = NewCmdOnlySegment()
 	}
 
-	if cmd == CommandACK {
-		seg := NewAckSegment()
-		seg.Conv = conv
-		seg.Option = opt
-		if len(buf) < 13 {
-			return nil, nil
-		}
-
-		seg.ReceivingWindow = serial.BytesToUint32(buf)
-		buf = buf[4:]
-
-		seg.ReceivingNext = serial.BytesToUint32(buf)
-		buf = buf[4:]
-
-		seg.Timestamp = serial.BytesToUint32(buf)
-		buf = buf[4:]
-
-		count := int(buf[0])
-		buf = buf[1:]
-
-		if len(buf) < count*4 {
-			return nil, nil
-		}
-		for i := 0; i < count; i++ {
-			seg.PutNumber(serial.BytesToUint32(buf))
-			buf = buf[4:]
-		}
-
-		return seg, buf
-	}
-
-	seg := NewCmdOnlySegment()
-	seg.Conv = conv
-	seg.Cmd = cmd
-	seg.Option = opt
-
-	if len(buf) < 12 {
+	valid, extra := seg.parse(conv, cmd, opt, buf)
+	if !valid {
 		return nil, nil
 	}
-
-	seg.SendingNext = serial.BytesToUint32(buf)
-	buf = buf[4:]
-
-	seg.ReceivinNext = serial.BytesToUint32(buf)
-	buf = buf[4:]
-
-	seg.PeerRTO = serial.BytesToUint32(buf)
-	buf = buf[4:]
-
-	return seg, buf
+	return seg, extra
 }

@@ -23,4 +23,7 @@ message Config {
 
   // Override server name.
   string server_name = 3;
+
+  // Lists of string as ALPN values.
+  repeated string next_protocol = 4;
 }

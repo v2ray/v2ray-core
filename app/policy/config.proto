@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package v2ray.core.app.policy;
+option csharp_namespace = "V2Ray.Core.App.Policy";
+option go_package = "policy";
+option java_package = "com.v2ray.core.app.policy";
+option java_multiple_files = true;
+
+message Second {
+  uint32 value = 1;
+}
+
+message Policy {
+  // Timeout is a message for timeout settings in various stages, in seconds.
+  message Timeout {
+    Second handshake = 1;
+    Second connection_idle = 2;
+    Second uplink_only = 3;
+    Second downlink_only = 4;
+  }
+
+  Timeout timeout = 1;
+}
+
+message Config {
+  map<uint32, Policy> level = 1;
+}

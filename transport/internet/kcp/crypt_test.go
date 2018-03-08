@@ -3,12 +3,12 @@ package kcp_test
 import (
 	"testing"
 
-	"v2ray.com/core/testing/assert"
 	. "v2ray.com/core/transport/internet/kcp"
+	. "v2ray.com/ext/assert"
 )
 
 func TestSimpleAuthenticator(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	cache := make([]byte, 512)
 
@@ -17,12 +17,12 @@ func TestSimpleAuthenticator(t *testing.T) {
 	auth := NewSimpleAuthenticator()
 	b := auth.Seal(cache[:0], nil, payload, nil)
 	c, err := auth.Open(cache[:0], nil, b, nil)
-	assert.Error(err).IsNil()
-	assert.Bytes(c).Equals(payload)
+	assert(err, IsNil)
+	assert(c, Equals, payload)
 }
 
 func TestSimpleAuthenticator2(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	cache := make([]byte, 512)
 
@@ -31,6 +31,6 @@ func TestSimpleAuthenticator2(t *testing.T) {
 	auth := NewSimpleAuthenticator()
 	b := auth.Seal(cache[:0], nil, payload, nil)
 	c, err := auth.Open(cache[:0], nil, b, nil)
-	assert.Error(err).IsNil()
-	assert.Bytes(c).Equals(payload)
+	assert(err, IsNil)
+	assert(c, Equals, payload)
 }

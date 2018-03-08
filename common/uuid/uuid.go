@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 )
 
@@ -46,11 +47,11 @@ func (u *UUID) Equals(another *UUID) bool {
 }
 
 // Next generates a deterministic random UUID based on this UUID.
-func (u *UUID) Next() *UUID {
+func (u *UUID) Next() UUID {
 	md5hash := md5.New()
 	md5hash.Write(u.Bytes())
 	md5hash.Write([]byte("16167dc8-16b6-4e6d-b8bb-65dd68113a81"))
-	newid := new(UUID)
+	var newid UUID
 	for {
 		md5hash.Sum(newid[:0])
 		if !newid.Equals(u) {
@@ -61,30 +62,31 @@ func (u *UUID) Next() *UUID {
 }
 
 // New creates an UUID with random value.
-func New() *UUID {
-	uuid := new(UUID)
-	rand.Read(uuid.Bytes())
+func New() UUID {
+	var uuid UUID
+	common.Must2(rand.Read(uuid.Bytes()))
 	return uuid
 }
 
 // ParseBytes converts an UUID in byte form to object.
-func ParseBytes(b []byte) (*UUID, error) {
+func ParseBytes(b []byte) (UUID, error) {
+	var uuid UUID
 	if len(b) != 16 {
-		return nil, errors.New("invalid UUID: ", b)
+		return uuid, errors.New("invalid UUID: ", b)
 	}
-	uuid := new(UUID)
 	copy(uuid[:], b)
 	return uuid, nil
 }
 
 // ParseString converts an UUID in string form to object.
-func ParseString(str string) (*UUID, error) {
+func ParseString(str string) (UUID, error) {
+	var uuid UUID
+
 	text := []byte(str)
 	if len(text) < 32 {
-		return nil, errors.New("invalid UUID: ", str)
+		return uuid, errors.New("invalid UUID: ", str)
 	}
 
-	uuid := new(UUID)
 	b := uuid.Bytes()
 
 	for _, byteGroup := range byteGroups {
@@ -95,7 +97,7 @@ func ParseString(str string) (*UUID, error) {
 		_, err := hex.Decode(b[:byteGroup/2], text[:byteGroup])
 
 		if err != nil {
-			return nil, err
+			return uuid, err
 		}
 
 		text = text[byteGroup:]

@@ -1,52 +1,153 @@
 package buf
 
-import "io"
+import (
+	"io"
+
+	"v2ray.com/core/common/errors"
+)
 
 // BufferToBytesWriter is a Writer that writes alloc.Buffer into underlying writer.
 type BufferToBytesWriter struct {
-	writer io.Writer
+	io.Writer
 }
 
-// Write implements Writer.Write(). Write() takes ownership of the given buffer.
-func (w *BufferToBytesWriter) Write(mb MultiBuffer) error {
+// NewBufferToBytesWriter returns a new BufferToBytesWriter.
+func NewBufferToBytesWriter(writer io.Writer) *BufferToBytesWriter {
+	return &BufferToBytesWriter{
+		Writer: writer,
+	}
+}
+
+// WriteMultiBuffer implements Writer. This method takes ownership of the given buffer.
+func (w *BufferToBytesWriter) WriteMultiBuffer(mb MultiBuffer) error {
 	defer mb.Release()
 
 	bs := mb.ToNetBuffers()
-	_, err := bs.WriteTo(w.writer)
+	_, err := bs.WriteTo(w.Writer)
 	return err
 }
 
-type writerAdapter struct {
-	writer MultiBufferWriter
+// ReadFrom implements io.ReaderFrom.
+func (w *BufferToBytesWriter) ReadFrom(reader io.Reader) (int64, error) {
+	var sc SizeCounter
+	err := Copy(NewReader(reader), w, CountSize(&sc))
+	return sc.Size, err
 }
 
-// Write implements buf.MultiBufferWriter.
-func (w *writerAdapter) Write(mb MultiBuffer) error {
-	return w.writer.WriteMultiBuffer(mb)
+// BufferedWriter is a Writer with internal buffer.
+type BufferedWriter struct {
+	writer   Writer
+	buffer   *Buffer
+	buffered bool
 }
 
-type mergingWriter struct {
-	writer io.Writer
-	buffer []byte
+// NewBufferedWriter creates a new BufferedWriter.
+func NewBufferedWriter(writer Writer) *BufferedWriter {
+	return &BufferedWriter{
+		writer:   writer,
+		buffer:   New(),
+		buffered: true,
+	}
 }
 
-func (w *mergingWriter) Write(mb MultiBuffer) error {
-	defer mb.Release()
+// WriteByte implements io.ByteWriter.
+func (w *BufferedWriter) WriteByte(c byte) error {
+	_, err := w.Write([]byte{c})
+	return err
+}
 
-	for !mb.IsEmpty() {
-		nBytes, _ := mb.Read(w.buffer)
-		if _, err := w.writer.Write(w.buffer[:nBytes]); err != nil {
-			return err
+// Write implements io.Writer.
+func (w *BufferedWriter) Write(b []byte) (int, error) {
+	if !w.buffered {
+		if writer, ok := w.writer.(io.Writer); ok {
+			return writer.Write(b)
 		}
 	}
+
+	totalBytes := 0
+	for len(b) > 0 {
+		if w.buffer == nil {
+			w.buffer = New()
+		}
+
+		nBytes, err := w.buffer.Write(b)
+		totalBytes += nBytes
+		if err != nil {
+			return totalBytes, err
+		}
+		if !w.buffered || w.buffer.IsFull() {
+			if err := w.Flush(); err != nil {
+				return totalBytes, err
+			}
+		}
+		b = b[nBytes:]
+	}
+
+	return totalBytes, nil
+}
+
+// WriteMultiBuffer implements Writer. It takes ownership of the given MultiBuffer.
+func (w *BufferedWriter) WriteMultiBuffer(b MultiBuffer) error {
+	if !w.buffered {
+		return w.writer.WriteMultiBuffer(b)
+	}
+
+	defer b.Release()
+
+	for !b.IsEmpty() {
+		if w.buffer == nil {
+			w.buffer = New()
+		}
+		if err := w.buffer.AppendSupplier(ReadFrom(&b)); err != nil {
+			return err
+		}
+		if w.buffer.IsFull() {
+			if err := w.Flush(); err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
+}
+
+// Flush flushes buffered content into underlying writer.
+func (w *BufferedWriter) Flush() error {
+	if !w.buffer.IsEmpty() {
+		if err := w.writer.WriteMultiBuffer(NewMultiBufferValue(w.buffer)); err != nil {
+			return err
+		}
+
+		w.buffer = nil
+	}
+	return nil
+}
+
+// SetBuffered sets whether the internal buffer is used. If set to false, Flush() will be called to clear the buffer.
+func (w *BufferedWriter) SetBuffered(f bool) error {
+	w.buffered = f
+	if !f {
+		return w.Flush()
+	}
+	return nil
+}
+
+// ReadFrom implements io.ReaderFrom.
+func (w *BufferedWriter) ReadFrom(reader io.Reader) (int64, error) {
+	if err := w.SetBuffered(false); err != nil {
+		return 0, err
+	}
+
+	var sc SizeCounter
+	err := Copy(NewReader(reader), w, CountSize(&sc))
+	return sc.Size, err
 }
 
 type seqWriter struct {
 	writer io.Writer
 }
 
-func (w *seqWriter) Write(mb MultiBuffer) error {
+func (w *seqWriter) WriteMultiBuffer(mb MultiBuffer) error {
 	defer mb.Release()
 
 	for _, b := range mb {
@@ -61,54 +162,38 @@ func (w *seqWriter) Write(mb MultiBuffer) error {
 	return nil
 }
 
-var (
-	_ MultiBufferWriter = (*bytesToBufferWriter)(nil)
-)
+type noOpWriter byte
 
-type bytesToBufferWriter struct {
-	writer Writer
-}
-
-// Write implements io.Writer.
-func (w *bytesToBufferWriter) Write(payload []byte) (int, error) {
-	mb := NewMultiBuffer()
-	mb.Write(payload)
-	if err := w.writer.Write(mb); err != nil {
-		return 0, err
-	}
-	return len(payload), nil
-}
-
-func (w *bytesToBufferWriter) WriteMultiBuffer(mb MultiBuffer) error {
-	return w.writer.Write(mb)
-}
-
-func (w *bytesToBufferWriter) ReadFrom(reader io.Reader) (int64, error) {
-	mbReader := NewReader(reader)
-	totalBytes := int64(0)
-	eof := false
-	for !eof {
-		mb, err := mbReader.Read()
-		if err == io.EOF {
-			eof = true
-		} else if err != nil {
-			return totalBytes, err
-		}
-		totalBytes += int64(mb.Len())
-		if err := w.writer.Write(mb); err != nil {
-			return totalBytes, err
-		}
-	}
-	return totalBytes, nil
-}
-
-type noOpWriter struct{}
-
-func (noOpWriter) Write(b MultiBuffer) error {
+func (noOpWriter) WriteMultiBuffer(b MultiBuffer) error {
 	b.Release()
 	return nil
 }
 
+func (noOpWriter) Write(b []byte) (int, error) {
+	return len(b), nil
+}
+
+func (noOpWriter) ReadFrom(reader io.Reader) (int64, error) {
+	b := New()
+	defer b.Release()
+
+	totalBytes := int64(0)
+	for {
+		err := b.Reset(ReadFrom(reader))
+		totalBytes += int64(b.Len())
+		if err != nil {
+			if errors.Cause(err) == io.EOF {
+				return totalBytes, nil
+			}
+			return totalBytes, err
+		}
+	}
+}
+
 var (
-	Discard Writer = noOpWriter{}
+	// Discard is a Writer that swallows all contents written in.
+	Discard Writer = noOpWriter(0)
+
+	// DiscardBytes is an io.Writer that swallows all contents written in.
+	DiscardBytes io.Writer = noOpWriter(0)
 )

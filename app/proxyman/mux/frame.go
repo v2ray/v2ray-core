@@ -1,8 +1,10 @@
 package mux
 
 import (
+	"v2ray.com/core/common/bitmask"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 )
 
@@ -15,23 +17,9 @@ const (
 	SessionStatusKeepAlive SessionStatus = 0x04
 )
 
-type Option byte
-
 const (
-	OptionData Option = 0x01
+	OptionData bitmask.Byte = 0x01
 )
-
-func (o Option) Has(x Option) bool {
-	return (o & x) == x
-}
-
-func (o *Option) Add(x Option) {
-	*o = (*o | x)
-}
-
-func (o *Option) Clear(x Option) {
-	*o = (*o & (^x))
-}
 
 type TargetNetwork byte
 
@@ -40,12 +28,11 @@ const (
 	TargetNetworkUDP TargetNetwork = 0x02
 )
 
-type AddressType byte
-
-const (
-	AddressTypeIPv4   AddressType = 0x01
-	AddressTypeDomain AddressType = 0x02
-	AddressTypeIPv6   AddressType = 0x03
+var addrParser = protocol.NewAddressParser(
+	protocol.AddressFamilyByte(byte(protocol.AddressTypeIPv4), net.AddressFamilyIPv4),
+	protocol.AddressFamilyByte(byte(protocol.AddressTypeDomain), net.AddressFamilyDomain),
+	protocol.AddressFamilyByte(byte(protocol.AddressTypeIPv6), net.AddressFamilyIPv6),
+	protocol.PortThenAddress(),
 )
 
 /*
@@ -62,90 +49,61 @@ n bytes - address
 */
 
 type FrameMetadata struct {
-	SessionID     uint16
-	SessionStatus SessionStatus
 	Target        net.Destination
-	Option        Option
+	SessionID     uint16
+	Option        bitmask.Byte
+	SessionStatus SessionStatus
 }
 
-func (f FrameMetadata) AsSupplier() buf.Supplier {
-	return func(b []byte) (int, error) {
-		lengthBytes := b
-		b = serial.Uint16ToBytes(uint16(0), b[:0]) // place holder for length
+func (f FrameMetadata) WriteTo(b *buf.Buffer) error {
+	lenBytes := b.Bytes()
+	b.AppendBytes(0x00, 0x00)
 
-		b = serial.Uint16ToBytes(f.SessionID, b)
-		b = append(b, byte(f.SessionStatus), byte(f.Option))
-		length := 4
+	len0 := b.Len()
+	if err := b.AppendSupplier(serial.WriteUint16(f.SessionID)); err != nil {
+		return err
+	}
 
-		if f.SessionStatus == SessionStatusNew {
-			switch f.Target.Network {
-			case net.Network_TCP:
-				b = append(b, byte(TargetNetworkTCP))
-			case net.Network_UDP:
-				b = append(b, byte(TargetNetworkUDP))
-			}
-			length++
+	b.AppendBytes(byte(f.SessionStatus), byte(f.Option))
 
-			b = serial.Uint16ToBytes(f.Target.Port.Value(), b)
-			length += 2
-
-			addr := f.Target.Address
-			switch addr.Family() {
-			case net.AddressFamilyIPv4:
-				b = append(b, byte(AddressTypeIPv4))
-				b = append(b, addr.IP()...)
-				length += 5
-			case net.AddressFamilyIPv6:
-				b = append(b, byte(AddressTypeIPv6))
-				b = append(b, addr.IP()...)
-				length += 17
-			case net.AddressFamilyDomain:
-				nDomain := len(addr.Domain())
-				b = append(b, byte(AddressTypeDomain), byte(nDomain))
-				b = append(b, addr.Domain()...)
-				length += nDomain + 2
-			}
+	if f.SessionStatus == SessionStatusNew {
+		switch f.Target.Network {
+		case net.Network_TCP:
+			b.AppendBytes(byte(TargetNetworkTCP))
+		case net.Network_UDP:
+			b.AppendBytes(byte(TargetNetworkUDP))
 		}
 
-		serial.Uint16ToBytes(uint16(length), lengthBytes[:0])
-		return length + 2, nil
+		if err := addrParser.WriteAddressPort(b, f.Target.Address, f.Target.Port); err != nil {
+			return err
+		}
 	}
+
+	len1 := b.Len()
+	serial.Uint16ToBytes(uint16(len1-len0), lenBytes)
+	return nil
 }
 
-func ReadFrameFrom(b []byte) (*FrameMetadata, error) {
-	if len(b) < 4 {
-		return nil, newError("insufficient buffer: ", len(b))
+func ReadFrameFrom(b *buf.Buffer) (*FrameMetadata, error) {
+	if b.Len() < 4 {
+		return nil, newError("insufficient buffer: ", b.Len())
 	}
 
 	f := &FrameMetadata{
-		SessionID:     serial.BytesToUint16(b[:2]),
-		SessionStatus: SessionStatus(b[2]),
-		Option:        Option(b[3]),
+		SessionID:     serial.BytesToUint16(b.BytesTo(2)),
+		SessionStatus: SessionStatus(b.Byte(2)),
+		Option:        bitmask.Byte(b.Byte(3)),
 	}
 
-	b = b[4:]
-
 	if f.SessionStatus == SessionStatusNew {
-		network := TargetNetwork(b[0])
-		port := net.PortFromBytes(b[1:3])
-		addrType := AddressType(b[3])
-		b = b[4:]
+		network := TargetNetwork(b.Byte(4))
+		b.SliceFrom(5)
 
-		var addr net.Address
-		switch addrType {
-		case AddressTypeIPv4:
-			addr = net.IPAddress(b[0:4])
-			b = b[4:]
-		case AddressTypeIPv6:
-			addr = net.IPAddress(b[0:16])
-			b = b[16:]
-		case AddressTypeDomain:
-			nDomain := int(b[0])
-			addr = net.DomainAddress(string(b[1 : 1+nDomain]))
-			b = b[nDomain+1:]
-		default:
-			return nil, newError("unknown address type: ", addrType)
+		addr, port, err := addrParser.ReadAddressPort(nil, b)
+		if err != nil {
+			return nil, newError("failed to parse address and port").Base(err)
 		}
+
 		switch network {
 		case TargetNetworkTCP:
 			f.Target = net.TCPDestination(addr, port)

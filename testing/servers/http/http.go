@@ -3,16 +3,17 @@ package tcp
 import (
 	"net/http"
 
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 )
 
 type Server struct {
-	Port        v2net.Port
+	Port        net.Port
 	PathHandler map[string]http.HandlerFunc
 	accepting   bool
+	server      *http.Server
 }
 
-func (server *Server) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+func (s *Server) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	if req.URL.Path == "/" {
 		resp.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		resp.WriteHeader(http.StatusOK)
@@ -20,17 +21,21 @@ func (server *Server) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	handler, found := server.PathHandler[req.URL.Path]
+	handler, found := s.PathHandler[req.URL.Path]
 	if found {
 		handler(resp, req)
 	}
 }
 
-func (server *Server) Start() (v2net.Destination, error) {
-	go http.ListenAndServe("127.0.0.1:"+server.Port.String(), server)
-	return v2net.TCPDestination(v2net.LocalHostIP, v2net.Port(server.Port)), nil
+func (s *Server) Start() (net.Destination, error) {
+	s.server = &http.Server{
+		Addr:    "127.0.0.1:" + s.Port.String(),
+		Handler: s,
+	}
+	go s.server.ListenAndServe()
+	return net.TCPDestination(net.LocalHostIP, net.Port(s.Port)), nil
 }
 
-func (v *Server) Close() {
-	v.accepting = false
+func (s *Server) Close() error {
+	return s.server.Close()
 }

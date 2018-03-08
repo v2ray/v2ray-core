@@ -41,23 +41,26 @@ func UDPDestination(address Address, port Port) Destination {
 	}
 }
 
-func (v Destination) NetAddr() string {
-	return v.Address.String() + ":" + v.Port.String()
+// NetAddr returns the network address in this Destination in string form.
+func (d Destination) NetAddr() string {
+	return d.Address.String() + ":" + d.Port.String()
 }
 
-func (v Destination) String() string {
-	return v.Network.URLPrefix() + ":" + v.NetAddr()
+// String returns the strings form of this Destination.
+func (d Destination) String() string {
+	return d.Network.URLPrefix() + ":" + d.NetAddr()
 }
 
-func (v Destination) IsValid() bool {
-	return v.Network != Network_Unknown
+// IsValid returns true if this Destination is valid.
+func (d Destination) IsValid() bool {
+	return d.Network != Network_Unknown
 }
 
 // AsDestination converts current Enpoint into Destination.
-func (v *Endpoint) AsDestination() Destination {
+func (p *Endpoint) AsDestination() Destination {
 	return Destination{
-		Network: v.Network,
-		Address: v.Address.AsAddress(),
-		Port:    Port(v.Port),
+		Network: p.Network,
+		Address: p.Address.AsAddress(),
+		Port:    Port(p.Port),
 	}
 }

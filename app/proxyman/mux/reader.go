@@ -7,38 +7,32 @@ import (
 	"v2ray.com/core/common/serial"
 )
 
-type MetadataReader struct {
-	reader io.Reader
-	buffer []byte
-}
-
-func NewMetadataReader(reader io.Reader) *MetadataReader {
-	return &MetadataReader{
-		reader: reader,
-		buffer: make([]byte, 1024),
-	}
-}
-
-func (r *MetadataReader) Read() (*FrameMetadata, error) {
-	metaLen, err := serial.ReadUint16(r.reader)
+// ReadMetadata reads FrameMetadata from the given reader.
+func ReadMetadata(reader io.Reader) (*FrameMetadata, error) {
+	metaLen, err := serial.ReadUint16(reader)
 	if err != nil {
 		return nil, err
 	}
 	if metaLen > 512 {
-		return nil, newError("invalid metalen ", metaLen).AtWarning()
+		return nil, newError("invalid metalen ", metaLen).AtError()
 	}
 
-	if _, err := io.ReadFull(r.reader, r.buffer[:metaLen]); err != nil {
+	b := buf.New()
+	defer b.Release()
+
+	if err := b.Reset(buf.ReadFullFrom(reader, int(metaLen))); err != nil {
 		return nil, err
 	}
-	return ReadFrameFrom(r.buffer)
+	return ReadFrameFrom(b)
 }
 
+// PacketReader is an io.Reader that reads whole chunk of Mux frames every time.
 type PacketReader struct {
 	reader io.Reader
 	eof    bool
 }
 
+// NewPacketReader creates a new PacketReader.
 func NewPacketReader(reader io.Reader) *PacketReader {
 	return &PacketReader{
 		reader: reader,
@@ -46,7 +40,8 @@ func NewPacketReader(reader io.Reader) *PacketReader {
 	}
 }
 
-func (r *PacketReader) Read() (buf.MultiBuffer, error) {
+// ReadMultiBuffer implements buf.Reader.
+func (r *PacketReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	if r.eof {
 		return nil, io.EOF
 	}
@@ -70,19 +65,22 @@ func (r *PacketReader) Read() (buf.MultiBuffer, error) {
 	return buf.NewMultiBufferValue(b), nil
 }
 
+// StreamReader reads Mux frame as a stream.
 type StreamReader struct {
-	reader   io.Reader
+	reader   *buf.BufferedReader
 	leftOver int
 }
 
-func NewStreamReader(reader io.Reader) *StreamReader {
+// NewStreamReader creates a new StreamReader.
+func NewStreamReader(reader *buf.BufferedReader) *StreamReader {
 	return &StreamReader{
 		reader:   reader,
 		leftOver: -1,
 	}
 }
 
-func (r *StreamReader) Read() (buf.MultiBuffer, error) {
+// ReadMultiBuffer implmenets buf.Reader.
+func (r *StreamReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	if r.leftOver == 0 {
 		r.leftOver = -1
 		return nil, io.EOF
@@ -96,24 +94,7 @@ func (r *StreamReader) Read() (buf.MultiBuffer, error) {
 		r.leftOver = int(size)
 	}
 
-	mb := buf.NewMultiBuffer()
-	for r.leftOver > 0 {
-		readLen := buf.Size
-		if r.leftOver < readLen {
-			readLen = r.leftOver
-		}
-		b := buf.New()
-		if err := b.AppendSupplier(func(bb []byte) (int, error) {
-			return r.reader.Read(bb[:readLen])
-		}); err != nil {
-			mb.Release()
-			return nil, err
-		}
-		r.leftOver -= b.Len()
-		mb.Append(b)
-		if b.Len() < readLen {
-			break
-		}
-	}
-	return mb, nil
+	mb, err := r.reader.ReadAtMost(r.leftOver)
+	r.leftOver -= mb.Len()
+	return mb, err
 }

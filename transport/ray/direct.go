@@ -6,8 +6,10 @@ import (
 	"sync"
 	"time"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/platform"
+	"v2ray.com/core/common/signal"
 )
 
 // NewRay creates a new Ray for direct traffic transport.
@@ -50,22 +52,24 @@ func init() {
 	streamSizeLimit = uint64(size) * 1024 * 1024
 }
 
+// Stream is a sequential container for data in bytes.
 type Stream struct {
 	access      sync.RWMutex
 	data        buf.MultiBuffer
 	size        uint64
 	ctx         context.Context
-	readSignal  chan bool
-	writeSignal chan bool
+	readSignal  *signal.Notifier
+	writeSignal *signal.Notifier
 	close       bool
 	err         bool
 }
 
+// NewStream creates a new Stream.
 func NewStream(ctx context.Context) *Stream {
 	return &Stream{
 		ctx:         ctx,
-		readSignal:  make(chan bool, 1),
-		writeSignal: make(chan bool, 1),
+		readSignal:  signal.NewNotifier(),
+		writeSignal: signal.NewNotifier(),
 		size:        0,
 	}
 }
@@ -81,27 +85,29 @@ func (s *Stream) getData() (buf.MultiBuffer, error) {
 		return mb, nil
 	}
 
-	if s.close {
-		return nil, io.EOF
-	}
-
 	if s.err {
 		return nil, io.ErrClosedPipe
+	}
+
+	if s.close {
+		return nil, io.EOF
 	}
 
 	return nil, nil
 }
 
+// Peek fills in the given buffer with data from head of the Stream.
 func (s *Stream) Peek(b *buf.Buffer) {
 	s.access.RLock()
 	defer s.access.RUnlock()
 
-	b.Reset(func(data []byte) (int, error) {
+	common.Must(b.Reset(func(data []byte) (int, error) {
 		return s.data.Copy(data), nil
-	})
+	}))
 }
 
-func (s *Stream) Read() (buf.MultiBuffer, error) {
+// ReadMultiBuffer reads data from the Stream.
+func (s *Stream) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	for {
 		mb, err := s.getData()
 		if err != nil {
@@ -109,18 +115,19 @@ func (s *Stream) Read() (buf.MultiBuffer, error) {
 		}
 
 		if mb != nil {
-			s.notifyRead()
+			s.readSignal.Signal()
 			return mb, nil
 		}
 
 		select {
 		case <-s.ctx.Done():
-			return nil, io.EOF
-		case <-s.writeSignal:
+			return nil, s.ctx.Err()
+		case <-s.writeSignal.Wait():
 		}
 	}
 }
 
+// ReadTimeout reads from the Stream with a specified timeout.
 func (s *Stream) ReadTimeout(timeout time.Duration) (buf.MultiBuffer, error) {
 	for {
 		mb, err := s.getData()
@@ -129,38 +136,57 @@ func (s *Stream) ReadTimeout(timeout time.Duration) (buf.MultiBuffer, error) {
 		}
 
 		if mb != nil {
-			s.notifyRead()
+			s.readSignal.Signal()
 			return mb, nil
 		}
 
 		select {
 		case <-s.ctx.Done():
-			return nil, io.EOF
+			return nil, s.ctx.Err()
 		case <-time.After(timeout):
 			return nil, buf.ErrReadTimeout
-		case <-s.writeSignal:
+		case <-s.writeSignal.Wait():
 		}
 	}
 }
 
-func (s *Stream) Write(data buf.MultiBuffer) error {
+// Size returns the number of bytes hold in the Stream.
+func (s *Stream) Size() uint64 {
+	s.access.RLock()
+	defer s.access.RUnlock()
+
+	return s.size
+}
+
+// waitForStreamSize waits until the Stream has room for more data, or any error happens.
+func (s *Stream) waitForStreamSize() error {
+	if streamSizeLimit == 0 {
+		return nil
+	}
+
+	for s.Size() >= streamSizeLimit {
+		select {
+		case <-s.ctx.Done():
+			return s.ctx.Err()
+		case <-s.readSignal.Wait():
+			if s.err || s.close {
+				return io.ErrClosedPipe
+			}
+		}
+	}
+
+	return nil
+}
+
+// WriteMultiBuffer writes more data into the Stream.
+func (s *Stream) WriteMultiBuffer(data buf.MultiBuffer) error {
 	if data.IsEmpty() {
 		return nil
 	}
 
-	for streamSizeLimit > 0 && s.size >= streamSizeLimit {
-		select {
-		case <-s.ctx.Done():
-			return io.ErrClosedPipe
-		case <-s.readSignal:
-			s.access.RLock()
-			if s.err || s.close {
-				data.Release()
-				s.access.RUnlock()
-				return io.ErrClosedPipe
-			}
-			s.access.RUnlock()
-		}
+	if err := s.waitForStreamSize(); err != nil {
+		data.Release()
+		return err
 	}
 
 	s.access.Lock()
@@ -172,38 +198,27 @@ func (s *Stream) Write(data buf.MultiBuffer) error {
 	}
 
 	if s.data == nil {
-		s.data = data
-	} else {
-		s.data.AppendMulti(data)
+		s.data = buf.NewMultiBufferCap(128)
 	}
+
+	s.data.AppendMulti(data)
 	s.size += uint64(data.Len())
-	s.notifyWrite()
+	s.writeSignal.Signal()
 
 	return nil
 }
 
-func (s *Stream) notifyRead() {
-	select {
-	case s.readSignal <- true:
-	default:
-	}
-}
-
-func (s *Stream) notifyWrite() {
-	select {
-	case s.writeSignal <- true:
-	default:
-	}
-}
-
-func (s *Stream) Close() {
+// Close closes the stream for writing. Read() still works until EOF.
+func (s *Stream) Close() error {
 	s.access.Lock()
 	s.close = true
-	s.notifyRead()
-	s.notifyWrite()
+	s.readSignal.Signal()
+	s.writeSignal.Signal()
 	s.access.Unlock()
+	return nil
 }
 
+// CloseError closes the Stream with error. Read() will return an error afterwards.
 func (s *Stream) CloseError() {
 	s.access.Lock()
 	s.err = true
@@ -212,7 +227,9 @@ func (s *Stream) CloseError() {
 		s.data = nil
 		s.size = 0
 	}
-	s.notifyRead()
-	s.notifyWrite()
 	s.access.Unlock()
+
+	s.readSignal.Signal()
+	s.writeSignal.Signal()
+
 }

@@ -7,44 +7,52 @@ import (
 	"time"
 
 	"v2ray.com/core/common/buf"
-	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/testing/assert"
+	"v2ray.com/core/common/net"
 	. "v2ray.com/core/transport/internet/udp"
 	"v2ray.com/core/transport/ray"
+	. "v2ray.com/ext/assert"
 )
 
 type TestDispatcher struct {
-	OnDispatch func(ctx context.Context, dest v2net.Destination) (ray.InboundRay, error)
+	OnDispatch func(ctx context.Context, dest net.Destination) (ray.InboundRay, error)
 }
 
-func (d *TestDispatcher) Dispatch(ctx context.Context, dest v2net.Destination) (ray.InboundRay, error) {
+func (d *TestDispatcher) Dispatch(ctx context.Context, dest net.Destination) (ray.InboundRay, error) {
 	return d.OnDispatch(ctx, dest)
 }
 
+func (d *TestDispatcher) Start() error {
+	return nil
+}
+
+func (d *TestDispatcher) Close() error {
+	return nil
+}
+
 func TestSameDestinationDispatching(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	link := ray.NewRay(ctx)
 	go func() {
 		for {
-			data, err := link.OutboundInput().Read()
+			data, err := link.OutboundInput().ReadMultiBuffer()
 			if err != nil {
 				break
 			}
-			err = link.OutboundOutput().Write(data)
-			assert.Error(err).IsNil()
+			err = link.OutboundOutput().WriteMultiBuffer(data)
+			assert(err, IsNil)
 		}
 	}()
 
 	var count uint32
 	td := &TestDispatcher{
-		OnDispatch: func(ctx context.Context, dest v2net.Destination) (ray.InboundRay, error) {
+		OnDispatch: func(ctx context.Context, dest net.Destination) (ray.InboundRay, error) {
 			atomic.AddUint32(&count, 1)
 			return link, nil
 		},
 	}
-	dest := v2net.UDPDestination(v2net.LocalHostIP, 53)
+	dest := net.UDPDestination(net.LocalHostIP, 53)
 
 	b := buf.New()
 	b.AppendBytes('a', 'b', 'c', 'd')
@@ -60,6 +68,6 @@ func TestSameDestinationDispatching(t *testing.T) {
 	time.Sleep(time.Second)
 	cancel()
 
-	assert.Uint32(count).Equals(1)
-	assert.Uint32(msgCount).Equals(6)
+	assert(count, Equals, uint32(1))
+	assert(msgCount, Equals, uint32(6))
 }

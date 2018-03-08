@@ -3,8 +3,9 @@ package socks
 import (
 	"io"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 )
@@ -33,9 +34,15 @@ const (
 	statusCmdNotSupport = 0x07
 )
 
+var addrParser = protocol.NewAddressParser(
+	protocol.AddressFamilyByte(0x01, net.AddressFamilyIPv4),
+	protocol.AddressFamilyByte(0x04, net.AddressFamilyIPv6),
+	protocol.AddressFamilyByte(0x03, net.AddressFamilyDomain),
+)
+
 type ServerSession struct {
 	config *ServerConfig
-	port   v2net.Port
+	port   net.Port
 }
 
 func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol.RequestHeader, error) {
@@ -48,11 +55,16 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 
 	version := buffer.Byte(0)
 	if version == socks4Version {
+		if s.config.AuthType == AuthType_PASSWORD {
+			writeSocks4Response(writer, socks4RequestRejected, net.AnyIP, net.Port(0))
+			return nil, newError("socks 4 is not allowed when auth is required.")
+		}
+
 		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 6)); err != nil {
 			return nil, newError("insufficient header").Base(err)
 		}
-		port := v2net.PortFromBytes(buffer.BytesRange(2, 4))
-		address := v2net.IPAddress(buffer.BytesRange(4, 8))
+		port := net.PortFromBytes(buffer.BytesRange(2, 4))
+		address := net.IPAddress(buffer.BytesRange(4, 8))
 		_, err := readUntilNull(reader) // user id
 		if err != nil {
 			return nil, err
@@ -62,7 +74,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 			if err != nil {
 				return nil, newError("failed to read domain for socks 4a").Base(err)
 			}
-			address = v2net.DomainAddress(domain)
+			address = net.DomainAddress(domain)
 		}
 
 		switch buffer.Byte(1) {
@@ -71,12 +83,12 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 			request.Address = address
 			request.Port = port
 			request.Version = socks4Version
-			if err := writeSocks4Response(writer, socks4RequestGranted, v2net.AnyIP, v2net.Port(0)); err != nil {
+			if err := writeSocks4Response(writer, socks4RequestGranted, net.AnyIP, net.Port(0)); err != nil {
 				return nil, err
 			}
 			return request, nil
 		default:
-			writeSocks4Response(writer, socks4RequestRejected, v2net.AnyIP, v2net.Port(0))
+			writeSocks4Response(writer, socks4RequestRejected, net.AnyIP, net.Port(0))
 			return nil, newError("unsupported command: ", buffer.Byte(1))
 		}
 	}
@@ -116,13 +128,13 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 				return nil, newError("failed to write auth response").Base(err)
 			}
 		}
-		if err := buffer.Reset(buf.ReadFullFrom(reader, 4)); err != nil {
+		if err := buffer.Reset(buf.ReadFullFrom(reader, 3)); err != nil {
 			return nil, newError("failed to read request").Base(err)
 		}
 
 		cmd := buffer.Byte(1)
 		if cmd == cmdTCPBind || (cmd == cmdUDPPort && !s.config.UdpEnabled) {
-			writeSocks5Response(writer, statusCmdNotSupport, v2net.AnyIP, v2net.Port(0))
+			writeSocks5Response(writer, statusCmdNotSupport, net.AnyIP, net.Port(0))
 			return nil, newError("unsupported command: ", cmd)
 		}
 
@@ -133,46 +145,23 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 			request.Command = protocol.RequestCommandUDP
 		}
 
-		addrType := buffer.Byte(3)
-
 		buffer.Clear()
 
 		request.Version = socks5Version
-		switch addrType {
-		case addrTypeIPv4:
-			if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 4)); err != nil {
-				return nil, err
-			}
-			request.Address = v2net.IPAddress(buffer.Bytes())
-		case addrTypeIPv6:
-			if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 16)); err != nil {
-				return nil, err
-			}
-			request.Address = v2net.IPAddress(buffer.Bytes())
-		case addrTypeDomain:
-			if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 1)); err != nil {
-				return nil, err
-			}
-			domainLength := int(buffer.Byte(0))
-			if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, domainLength)); err != nil {
-				return nil, err
-			}
-			request.Address = v2net.ParseAddress(string(buffer.BytesFrom(-domainLength)))
-		default:
-			return nil, newError("Unknown address type: ", addrType)
-		}
 
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 2)); err != nil {
-			return nil, err
+		addr, port, err := addrParser.ReadAddressPort(buffer, reader)
+		if err != nil {
+			return nil, newError("failed to read address").Base(err)
 		}
-		request.Port = v2net.PortFromBytes(buffer.BytesFrom(-2))
+		request.Address = addr
+		request.Port = port
 
-		responseAddress := v2net.AnyIP
-		responsePort := v2net.Port(1717)
+		responseAddress := net.AnyIP
+		responsePort := net.Port(1717)
 		if request.Command == protocol.RequestCommandUDP {
 			addr := s.config.Address.AsAddress()
 			if addr == nil {
-				addr = v2net.LocalHostIP
+				addr = net.LocalHostIP
 			}
 			responseAddress = addr
 			responsePort = s.port
@@ -244,42 +233,29 @@ func writeSocks5AuthenticationResponse(writer io.Writer, version byte, auth byte
 	return err
 }
 
-func appendAddress(buffer *buf.Buffer, address v2net.Address, port v2net.Port) {
-	switch address.Family() {
-	case v2net.AddressFamilyIPv4:
-		buffer.AppendBytes(0x01)
-		buffer.Append(address.IP())
-	case v2net.AddressFamilyIPv6:
-		buffer.AppendBytes(0x04)
-		buffer.Append(address.IP())
-	case v2net.AddressFamilyDomain:
-		buffer.AppendBytes(0x03, byte(len(address.Domain())))
-		buffer.AppendSupplier(serial.WriteString(address.Domain()))
-	}
-	buffer.AppendSupplier(serial.WriteUint16(port.Value()))
-}
-
-func writeSocks5Response(writer io.Writer, errCode byte, address v2net.Address, port v2net.Port) error {
+func writeSocks5Response(writer io.Writer, errCode byte, address net.Address, port net.Port) error {
 	buffer := buf.NewLocal(64)
 	buffer.AppendBytes(socks5Version, errCode, 0x00 /* reserved */)
-	appendAddress(buffer, address, port)
+	if err := addrParser.WriteAddressPort(buffer, address, port); err != nil {
+		return err
+	}
 
 	_, err := writer.Write(buffer.Bytes())
 	return err
 }
 
-func writeSocks4Response(writer io.Writer, errCode byte, address v2net.Address, port v2net.Port) error {
+func writeSocks4Response(writer io.Writer, errCode byte, address net.Address, port net.Port) error {
 	buffer := buf.NewLocal(32)
 	buffer.AppendBytes(0x00, errCode)
-	buffer.AppendSupplier(serial.WriteUint16(port.Value()))
+	common.Must(buffer.AppendSupplier(serial.WriteUint16(port.Value())))
 	buffer.Append(address.IP())
 	_, err := writer.Write(buffer.Bytes())
 	return err
 }
 
-func DecodeUDPPacket(packet []byte) (*protocol.RequestHeader, []byte, error) {
-	if len(packet) < 5 {
-		return nil, nil, newError("insufficient length of packet.")
+func DecodeUDPPacket(packet *buf.Buffer) (*protocol.RequestHeader, error) {
+	if packet.Len() < 5 {
+		return nil, newError("insufficient length of packet.")
 	}
 	request := &protocol.RequestHeader{
 		Version: socks5Version,
@@ -287,52 +263,29 @@ func DecodeUDPPacket(packet []byte) (*protocol.RequestHeader, []byte, error) {
 	}
 
 	// packet[0] and packet[1] are reserved
-	if packet[2] != 0 /* fragments */ {
-		return nil, nil, newError("discarding fragmented payload.")
+	if packet.Byte(2) != 0 /* fragments */ {
+		return nil, newError("discarding fragmented payload.")
 	}
 
-	addrType := packet[3]
-	var dataBegin int
+	packet.SliceFrom(3)
 
-	switch addrType {
-	case addrTypeIPv4:
-		if len(packet) < 10 {
-			return nil, nil, newError("insufficient length of packet")
-		}
-		ip := packet[4:8]
-		request.Port = v2net.PortFromBytes(packet[8:10])
-		request.Address = v2net.IPAddress(ip)
-		dataBegin = 10
-	case addrTypeIPv6:
-		if len(packet) < 22 {
-			return nil, nil, newError("insufficient length of packet")
-		}
-		ip := packet[4:20]
-		request.Port = v2net.PortFromBytes(packet[20:22])
-		request.Address = v2net.IPAddress(ip)
-		dataBegin = 22
-	case addrTypeDomain:
-		domainLength := int(packet[4])
-		if len(packet) < 5+domainLength+2 {
-			return nil, nil, newError("insufficient length of packet")
-		}
-		domain := string(packet[5 : 5+domainLength])
-		request.Port = v2net.PortFromBytes(packet[5+domainLength : 5+domainLength+2])
-		request.Address = v2net.ParseAddress(domain)
-		dataBegin = 5 + domainLength + 2
-	default:
-		return nil, nil, newError("unknown address type ", addrType)
+	addr, port, err := addrParser.ReadAddressPort(nil, packet)
+	if err != nil {
+		return nil, newError("failed to read UDP header").Base(err)
 	}
-
-	return request, packet[dataBegin:], nil
+	request.Address = addr
+	request.Port = port
+	return request, nil
 }
 
-func EncodeUDPPacket(request *protocol.RequestHeader, data []byte) *buf.Buffer {
+func EncodeUDPPacket(request *protocol.RequestHeader, data []byte) (*buf.Buffer, error) {
 	b := buf.New()
 	b.AppendBytes(0, 0, 0 /* Fragment */)
-	appendAddress(b, request.Address, request.Port)
+	if err := addrParser.WriteAddressPort(b, request.Address, request.Port); err != nil {
+		return nil, err
+	}
 	b.Append(data)
-	return b
+	return b, nil
 }
 
 type UDPReader struct {
@@ -343,17 +296,14 @@ func NewUDPReader(reader io.Reader) *UDPReader {
 	return &UDPReader{reader: reader}
 }
 
-func (r *UDPReader) Read() (buf.MultiBuffer, error) {
+func (r *UDPReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	b := buf.New()
 	if err := b.AppendSupplier(buf.ReadFrom(r.reader)); err != nil {
 		return nil, err
 	}
-	_, data, err := DecodeUDPPacket(b.Bytes())
-	if err != nil {
+	if _, err := DecodeUDPPacket(b); err != nil {
 		return nil, err
 	}
-	b.Clear()
-	b.Append(data)
 	return buf.NewMultiBufferValue(b), nil
 }
 
@@ -371,7 +321,10 @@ func NewUDPWriter(request *protocol.RequestHeader, writer io.Writer) *UDPWriter 
 
 // Write implements io.Writer.
 func (w *UDPWriter) Write(b []byte) (int, error) {
-	eb := EncodeUDPPacket(w.request, b)
+	eb, err := EncodeUDPPacket(w.request, b)
+	if err != nil {
+		return 0, err
+	}
 	defer eb.Release()
 	if _, err := w.writer.Write(eb.Bytes()); err != nil {
 		return 0, err
@@ -384,13 +337,27 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 	if request.User != nil {
 		authByte = byte(authPassword)
 	}
-	authRequest := []byte{socks5Version, 0x01, authByte}
-	if _, err := writer.Write(authRequest); err != nil {
+
+	b := buf.NewLocal(512)
+	b.AppendBytes(socks5Version, 0x01, authByte)
+	if authByte == authPassword {
+		rawAccount, err := request.User.GetTypedAccount()
+		if err != nil {
+			return nil, err
+		}
+		account := rawAccount.(*Account)
+
+		b.AppendBytes(0x01, byte(len(account.Username)))
+		b.Append([]byte(account.Username))
+		b.AppendBytes(byte(len(account.Password)))
+		b.Append([]byte(account.Password))
+	}
+
+	if _, err := writer.Write(b.Bytes()); err != nil {
 		return nil, err
 	}
 
-	b := buf.NewLocal(64)
-	if err := b.AppendSupplier(buf.ReadFullFrom(reader, 2)); err != nil {
+	if err := b.Reset(buf.ReadFullFrom(reader, 2)); err != nil {
 		return nil, err
 	}
 
@@ -402,22 +369,7 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 	}
 
 	if authByte == authPassword {
-		rawAccount, err := request.User.GetTypedAccount()
-		if err != nil {
-			return nil, err
-		}
-		account := rawAccount.(*Account)
-
-		b.Clear()
-		b.AppendBytes(socks5Version, byte(len(account.Username)))
-		b.Append([]byte(account.Username))
-		b.AppendBytes(byte(len(account.Password)))
-		b.Append([]byte(account.Password))
-		if _, err := writer.Write(b.Bytes()); err != nil {
-			return nil, err
-		}
-		b.Clear()
-		if err := b.AppendSupplier(buf.ReadFullFrom(reader, 2)); err != nil {
+		if err := b.Reset(buf.ReadFullFrom(reader, 2)); err != nil {
 			return nil, err
 		}
 		if b.Byte(1) != 0x00 {
@@ -432,13 +384,16 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 		command = byte(cmdUDPPort)
 	}
 	b.AppendBytes(socks5Version, command, 0x00 /* reserved */)
-	appendAddress(b, request.Address, request.Port)
+	if err := addrParser.WriteAddressPort(b, request.Address, request.Port); err != nil {
+		return nil, err
+	}
+
 	if _, err := writer.Write(b.Bytes()); err != nil {
 		return nil, err
 	}
 
 	b.Clear()
-	if err := b.AppendSupplier(buf.ReadFullFrom(reader, 4)); err != nil {
+	if err := b.AppendSupplier(buf.ReadFullFrom(reader, 3)); err != nil {
 		return nil, err
 	}
 
@@ -447,39 +402,12 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 		return nil, newError("server rejects request: ", resp)
 	}
 
-	addrType := b.Byte(3)
-
 	b.Clear()
 
-	var address v2net.Address
-	switch addrType {
-	case addrTypeIPv4:
-		if err := b.AppendSupplier(buf.ReadFullFrom(reader, 4)); err != nil {
-			return nil, err
-		}
-		address = v2net.IPAddress(b.Bytes())
-	case addrTypeIPv6:
-		if err := b.AppendSupplier(buf.ReadFullFrom(reader, 16)); err != nil {
-			return nil, err
-		}
-		address = v2net.IPAddress(b.Bytes())
-	case addrTypeDomain:
-		if err := b.AppendSupplier(buf.ReadFullFrom(reader, 1)); err != nil {
-			return nil, err
-		}
-		domainLength := int(b.Byte(0))
-		if err := b.AppendSupplier(buf.ReadFullFrom(reader, domainLength)); err != nil {
-			return nil, err
-		}
-		address = v2net.DomainAddress(string(b.BytesFrom(-domainLength)))
-	default:
-		return nil, newError("unknown address type: ", addrType)
-	}
-
-	if err := b.AppendSupplier(buf.ReadFullFrom(reader, 2)); err != nil {
+	address, port, err := addrParser.ReadAddressPort(b, reader)
+	if err != nil {
 		return nil, err
 	}
-	port := v2net.PortFromBytes(b.BytesFrom(-2))
 
 	if request.Command == protocol.RequestCommandUDP {
 		udpRequest := &protocol.RequestHeader{

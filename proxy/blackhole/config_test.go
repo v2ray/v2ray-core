@@ -7,11 +7,11 @@ import (
 
 	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/proxy/blackhole"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestHTTPResponse(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	buffer := buf.New()
 
@@ -20,6 +20,6 @@ func TestHTTPResponse(t *testing.T) {
 
 	reader := bufio.NewReader(buffer)
 	response, err := http.ReadResponse(reader, nil)
-	assert.Error(err).IsNil()
-	assert.Int(response.StatusCode).Equals(403)
+	assert(err, IsNil)
+	assert(response.StatusCode, Equals, 403)
 }

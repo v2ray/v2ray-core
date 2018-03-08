@@ -7,7 +7,7 @@ import (
 
 	"v2ray.com/core/common"
 	. "v2ray.com/core/common/crypto"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func mustDecodeHex(s string) []byte {
@@ -17,7 +17,7 @@ func mustDecodeHex(s string) []byte {
 }
 
 func TestChaCha20Stream(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	var cases = []struct {
 		key    []byte
@@ -51,12 +51,12 @@ func TestChaCha20Stream(t *testing.T) {
 		input := make([]byte, len(c.output))
 		actualOutout := make([]byte, len(c.output))
 		s.XORKeyStream(actualOutout, input)
-		assert.Bytes(c.output).Equals(actualOutout)
+		assert(c.output, Equals, actualOutout)
 	}
 }
 
 func TestChaCha20Decoding(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	key := make([]byte, 32)
 	rand.Read(key)
@@ -72,5 +72,5 @@ func TestChaCha20Decoding(t *testing.T) {
 
 	stream2 := NewChaCha20Stream(key, iv)
 	stream2.XORKeyStream(x, x)
-	assert.Bytes(x).Equals(payload)
+	assert(x, Equals, payload)
 }

@@ -6,11 +6,11 @@ import (
 	"testing"
 
 	. "v2ray.com/core/common/signal"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestErrorOrFinish2_Error(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	c1 := make(chan error, 1)
 	c2 := make(chan error, 2)
@@ -22,11 +22,11 @@ func TestErrorOrFinish2_Error(t *testing.T) {
 
 	c1 <- errors.New("test")
 	err := <-c
-	assert.String(err.Error()).Equals("test")
+	assert(err.Error(), Equals, "test")
 }
 
 func TestErrorOrFinish2_Error2(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	c1 := make(chan error, 1)
 	c2 := make(chan error, 2)
@@ -38,11 +38,11 @@ func TestErrorOrFinish2_Error2(t *testing.T) {
 
 	c2 <- errors.New("test")
 	err := <-c
-	assert.String(err.Error()).Equals("test")
+	assert(err.Error(), Equals, "test")
 }
 
 func TestErrorOrFinish2_NoneError(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	c1 := make(chan error, 1)
 	c2 := make(chan error, 2)
@@ -61,11 +61,11 @@ func TestErrorOrFinish2_NoneError(t *testing.T) {
 
 	close(c2)
 	err := <-c
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 }
 
 func TestErrorOrFinish2_NoneError2(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	c1 := make(chan error, 1)
 	c2 := make(chan error, 2)
@@ -84,5 +84,5 @@ func TestErrorOrFinish2_NoneError2(t *testing.T) {
 
 	close(c1)
 	err := <-c
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 }

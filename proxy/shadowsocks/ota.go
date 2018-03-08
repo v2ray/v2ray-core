@@ -6,6 +6,7 @@ import (
 	"crypto/sha1"
 	"io"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/serial"
 )
@@ -29,7 +30,7 @@ func NewAuthenticator(keygen KeyGenerator) *Authenticator {
 
 func (v *Authenticator) Authenticate(data []byte) buf.Supplier {
 	hasher := hmac.New(sha1.New, v.key())
-	hasher.Write(data)
+	common.Must2(hasher.Write(data))
 	res := hasher.Sum(nil)
 	return func(b []byte) (int, error) {
 		return copy(b, res[:AuthSize]), nil
@@ -68,7 +69,7 @@ func NewChunkReader(reader io.Reader, auth *Authenticator) *ChunkReader {
 	}
 }
 
-func (v *ChunkReader) Read() (buf.MultiBuffer, error) {
+func (v *ChunkReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	buffer := buf.New()
 	if err := buffer.AppendSupplier(buf.ReadFullFrom(v.reader, 2)); err != nil {
 		buffer.Release()
@@ -117,8 +118,8 @@ func NewChunkWriter(writer io.Writer, auth *Authenticator) *ChunkWriter {
 	}
 }
 
-// Write implements buf.MultiBufferWriter.
-func (w *ChunkWriter) Write(mb buf.MultiBuffer) error {
+// WriteMultiBuffer implements buf.Writer.
+func (w *ChunkWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	defer mb.Release()
 
 	for {
