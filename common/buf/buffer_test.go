@@ -58,7 +58,7 @@ func TestBufferWrite(t *testing.T) {
 func TestSyncPool(t *testing.T) {
 	assert := With(t)
 
-	p := NewSyncPool(32)
+	p := NewPool(32)
 	b := p.Allocate()
 	assert(b.Len(), Equals, 0)
 

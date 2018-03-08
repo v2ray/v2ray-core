@@ -13,10 +13,10 @@ type Supplier func([]byte) (int, error)
 // quickly.
 type Buffer struct {
 	v    []byte
-	pool Pool
+	pool *Pool
 
-	start int
-	end   int
+	start int32
+	end   int32
 }
 
 // Release recycles the buffer into an internal buffer pool.
@@ -48,25 +48,25 @@ func (b *Buffer) AppendBytes(bytes ...byte) int {
 // Append appends a byte array to the end of the buffer.
 func (b *Buffer) Append(data []byte) int {
 	nBytes := copy(b.v[b.end:], data)
-	b.end += nBytes
+	b.end += int32(nBytes)
 	return nBytes
 }
 
 // AppendSupplier appends the content of a BytesWriter to the buffer.
 func (b *Buffer) AppendSupplier(writer Supplier) error {
 	nBytes, err := writer(b.v[b.end:])
-	b.end += nBytes
+	b.end += int32(nBytes)
 	return err
 }
 
 // Byte returns the bytes at index.
 func (b *Buffer) Byte(index int) byte {
-	return b.v[b.start+index]
+	return b.v[b.start+int32(index)]
 }
 
 // SetByte sets the byte value at index.
 func (b *Buffer) SetByte(index int, value byte) {
-	b.v[b.start+index] = value
+	b.v[b.start+int32(index)] = value
 }
 
 // Bytes returns the content bytes of this Buffer.
@@ -78,7 +78,7 @@ func (b *Buffer) Bytes() []byte {
 func (b *Buffer) Reset(writer Supplier) error {
 	nBytes, err := writer(b.v)
 	b.start = 0
-	b.end = nBytes
+	b.end = int32(nBytes)
 	return err
 }
 
@@ -90,7 +90,7 @@ func (b *Buffer) BytesRange(from, to int) []byte {
 	if to < 0 {
 		to += b.Len()
 	}
-	return b.v[b.start+from : b.start+to]
+	return b.v[b.start+int32(from) : b.start+int32(to)]
 }
 
 // BytesFrom returns a slice of this Buffer starting from the given position.
@@ -98,7 +98,7 @@ func (b *Buffer) BytesFrom(from int) []byte {
 	if from < 0 {
 		from += b.Len()
 	}
-	return b.v[b.start+from : b.end]
+	return b.v[b.start+int32(from) : b.end]
 }
 
 // BytesTo returns a slice of this Buffer from start to the given position.
@@ -106,7 +106,7 @@ func (b *Buffer) BytesTo(to int) []byte {
 	if to < 0 {
 		to += b.Len()
 	}
-	return b.v[b.start : b.start+to]
+	return b.v[b.start : b.start+int32(to)]
 }
 
 // Slice cuts the buffer at the given position.
@@ -120,8 +120,8 @@ func (b *Buffer) Slice(from, to int) {
 	if to < from {
 		panic("Invalid slice")
 	}
-	b.end = b.start + to
-	b.start += from
+	b.end = b.start + int32(to)
+	b.start += int32(from)
 }
 
 // SliceFrom cuts the buffer at the given position.
@@ -129,7 +129,7 @@ func (b *Buffer) SliceFrom(from int) {
 	if from < 0 {
 		from += b.Len()
 	}
-	b.start += from
+	b.start += int32(from)
 }
 
 // Len returns the length of the buffer content.
@@ -137,7 +137,7 @@ func (b *Buffer) Len() int {
 	if b == nil {
 		return 0
 	}
-	return b.end - b.start
+	return int(b.end - b.start)
 }
 
 // IsEmpty returns true if the buffer is empty.
@@ -147,13 +147,13 @@ func (b *Buffer) IsEmpty() bool {
 
 // IsFull returns true if the buffer has no more room to grow.
 func (b *Buffer) IsFull() bool {
-	return b.end == len(b.v)
+	return b.end == int32(len(b.v))
 }
 
 // Write implements Write method in io.Writer.
 func (b *Buffer) Write(data []byte) (int, error) {
 	nBytes := copy(b.v[b.end:], data)
-	b.end += nBytes
+	b.end += int32(nBytes)
 	return nBytes, nil
 }
 
@@ -166,7 +166,7 @@ func (b *Buffer) Read(data []byte) (int, error) {
 	if nBytes == b.Len() {
 		b.Clear()
 	} else {
-		b.start += nBytes
+		b.start += int32(nBytes)
 	}
 	return nBytes, nil
 }
