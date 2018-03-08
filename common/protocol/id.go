@@ -59,11 +59,20 @@ func NewID(uuid uuid.UUID) *ID {
 func NewAlterIDs(primary *ID, alterIDCount uint16) []*ID {
 	alterIDs := make([]*ID, alterIDCount)
 	prevID := primary.UUID()
-	for idx := range alterIDs {
+
+	idSet := make(map[string]bool)
+	idx := 0
+	for uint16(len(idSet)) < alterIDCount {
 		newid := prevID.Next()
-		// TODO: check duplicates
-		alterIDs[idx] = NewID(newid)
+		id := NewID(newid)
+		if _, found := idSet[id.String()]; found {
+			// Duplicate ID, discard it
+			continue
+		}
+		idSet[id.String()] = true
+		alterIDs[idx] = id
 		prevID = newid
+		idx += 1
 	}
 	return alterIDs
 }
