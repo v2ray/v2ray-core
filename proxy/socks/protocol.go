@@ -46,7 +46,9 @@ type ServerSession struct {
 }
 
 func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol.RequestHeader, error) {
-	buffer := buf.NewLocal(512)
+	buffer := buf.New()
+	defer buffer.Release()
+
 	request := new(protocol.RequestHeader)
 
 	if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 2)); err != nil {
@@ -177,7 +179,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 }
 
 func readUsernamePassword(reader io.Reader) (string, string, error) {
-	buffer := buf.NewLocal(512)
+	buffer := buf.New()
 	defer buffer.Release()
 
 	if err := buffer.Reset(buf.ReadFullFrom(reader, 2)); err != nil {
@@ -234,7 +236,9 @@ func writeSocks5AuthenticationResponse(writer io.Writer, version byte, auth byte
 }
 
 func writeSocks5Response(writer io.Writer, errCode byte, address net.Address, port net.Port) error {
-	buffer := buf.NewLocal(64)
+	buffer := buf.New()
+	defer buffer.Release()
+
 	buffer.AppendBytes(socks5Version, errCode, 0x00 /* reserved */)
 	if err := addrParser.WriteAddressPort(buffer, address, port); err != nil {
 		return err
@@ -245,7 +249,9 @@ func writeSocks5Response(writer io.Writer, errCode byte, address net.Address, po
 }
 
 func writeSocks4Response(writer io.Writer, errCode byte, address net.Address, port net.Port) error {
-	buffer := buf.NewLocal(32)
+	buffer := buf.New()
+	defer buffer.Release()
+
 	buffer.AppendBytes(0x00, errCode)
 	common.Must(buffer.AppendSupplier(serial.WriteUint16(port.Value())))
 	buffer.Append(address.IP())
@@ -282,6 +288,7 @@ func EncodeUDPPacket(request *protocol.RequestHeader, data []byte) (*buf.Buffer,
 	b := buf.New()
 	b.AppendBytes(0, 0, 0 /* Fragment */)
 	if err := addrParser.WriteAddressPort(b, request.Address, request.Port); err != nil {
+		b.Release()
 		return nil, err
 	}
 	b.Append(data)
@@ -338,7 +345,9 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 		authByte = byte(authPassword)
 	}
 
-	b := buf.NewLocal(512)
+	b := buf.New()
+	defer b.Release()
+
 	b.AppendBytes(socks5Version, 0x01, authByte)
 	if authByte == authPassword {
 		rawAccount, err := request.User.GetTypedAccount()

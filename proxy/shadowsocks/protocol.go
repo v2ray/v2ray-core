@@ -35,7 +35,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	}
 	account := rawAccount.(*MemoryAccount)
 
-	buffer := buf.NewLocal(512)
+	buffer := buf.New()
 	defer buffer.Release()
 
 	ivLen := account.Cipher.IVSize()
@@ -149,7 +149,7 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (buf.Wri
 		return nil, newError("failed to create encoding stream").Base(err).AtError()
 	}
 
-	header := buf.NewLocal(512)
+	header := buf.New()
 
 	if err := addrParser.WriteAddressPort(header, request.Address, request.Port); err != nil {
 		return nil, newError("failed to write address").Base(err)

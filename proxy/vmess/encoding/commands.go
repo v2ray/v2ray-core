@@ -32,7 +32,7 @@ func MarshalCommand(command interface{}, writer io.Writer) error {
 		return ErrUnknownCommand
 	}
 
-	buffer := buf.NewLocal(512)
+	buffer := buf.New()
 	defer buffer.Release()
 
 	err := factory.Marshal(command, buffer)
