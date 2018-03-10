@@ -177,6 +177,9 @@ func (s *UDPNameServer) QueryA(domain string) <-chan *ARecord {
 	b, err := msgToBuffer(msg)
 	if err != nil {
 		newError("failed to build A query for domain ", domain).Base(err).WriteToLog()
+		s.Lock()
+		delete(s.requests, id)
+		s.Unlock()
 		close(response)
 		return response
 	}
