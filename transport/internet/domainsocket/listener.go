@@ -12,11 +12,15 @@ type Listener struct {
 func ListenDS(ctx context.Context, path string) (*Listener, error) {
 	addr := new(net.UnixAddr)
 	addr.Name = path
-	addr.Net = "unixpacket"
-	li, err := net.ListenUnix("unixpacket", addr)
+	addr.Net = "unix"
+	li, err := net.ListenUnix("unix", addr)
 	if err != nil {
 		return nil, err
 	}
 	vln := &Listener{ln: li}
 	return vln, nil
+}
+
+func (ls *Listener) Down() {
+	ls.ln.Close()
 }

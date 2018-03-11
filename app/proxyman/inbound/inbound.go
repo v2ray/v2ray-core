@@ -143,8 +143,7 @@ func NewHandler(ctx context.Context, config *core.InboundHandlerConfig) (core.In
 	return nil, newError("unknown allocation strategy: ", receiverSettings.AllocationStrategy.Type).AtError()
 }
 
-func (m *Manager) asUnixReceiverConfig(ctx context.Context, config *core.InboundHandlerConfig) {
-
+func (m *Manager) asUnixReceiverConfig(ctx context.Context, config *core.InboundHandlerConfig, unixrx proxyman.UnixReceiverConfig) {
 	return
 }
 
