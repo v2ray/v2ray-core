@@ -207,7 +207,7 @@ func NewBytes(size uint32) []byte {
 }
 
 func FreeBytes(b []byte) {
-	size := len(b)
+	size := cap(b)
 	switch {
 	case size >= 128*1024:
 		pool128k.Put(b)
