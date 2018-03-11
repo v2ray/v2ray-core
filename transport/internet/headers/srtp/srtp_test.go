@@ -18,7 +18,7 @@ func TestSRTPWrite(t *testing.T) {
 
 	srtp := srtpRaw.(*SRTP)
 
-	payload := buf.NewSize(2048)
+	payload := buf.New()
 	payload.AppendSupplier(srtp.Write)
 	payload.Append(content)
 

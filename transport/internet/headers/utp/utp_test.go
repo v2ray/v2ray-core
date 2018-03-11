@@ -18,7 +18,7 @@ func TestUTPWrite(t *testing.T) {
 
 	utp := utpRaw.(*UTP)
 
-	payload := buf.NewSize(2048)
+	payload := buf.New()
 	payload.AppendSupplier(utp.Write)
 	payload.Append(content)
 
