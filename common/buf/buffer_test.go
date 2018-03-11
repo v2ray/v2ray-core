@@ -1,7 +1,6 @@
 package buf_test
 
 import (
-	"crypto/rand"
 	"testing"
 
 	. "v2ray.com/core/common/buf"
@@ -40,32 +39,6 @@ func TestBufferString(t *testing.T) {
 
 	assert(buffer.AppendSupplier(serial.WriteString("Test String")), IsNil)
 	assert(buffer.String(), Equals, "Test String")
-}
-
-func TestBufferWrite(t *testing.T) {
-	assert := With(t)
-
-	buffer := NewLocal(8)
-	nBytes, err := buffer.Write([]byte("abcd"))
-	assert(err, IsNil)
-	assert(nBytes, Equals, 4)
-	nBytes, err = buffer.Write([]byte("abcde"))
-	assert(err, IsNil)
-	assert(nBytes, Equals, 4)
-	assert(buffer.String(), Equals, "abcdabcd")
-}
-
-func TestSyncPool(t *testing.T) {
-	assert := With(t)
-
-	p := NewPool(32)
-	b := p.Allocate()
-	assert(b.Len(), Equals, 0)
-
-	assert(b.AppendSupplier(ReadFrom(rand.Reader)), IsNil)
-	assert(b.Len(), Equals, 32)
-
-	b.Release()
 }
 
 func BenchmarkNewBuffer(b *testing.B) {

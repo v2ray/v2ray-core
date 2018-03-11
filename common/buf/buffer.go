@@ -12,8 +12,7 @@ type Supplier func([]byte) (int, error)
 // the buffer into an internal buffer pool, in order to recreate a buffer more
 // quickly.
 type Buffer struct {
-	v    []byte
-	pool *Pool
+	v []byte
 
 	start int32
 	end   int32
@@ -24,11 +23,8 @@ func (b *Buffer) Release() {
 	if b == nil || b.v == nil {
 		return
 	}
-	if b.pool != nil {
-		b.pool.Free(b)
-	}
+	FreeBytes(b.v)
 	b.v = nil
-	b.pool = nil
 	b.start = 0
 	b.end = 0
 }
@@ -178,13 +174,48 @@ func (b *Buffer) String() string {
 
 // New creates a Buffer with 0 length and 8K capacity.
 func New() *Buffer {
-	return mediumPool.Allocate()
+	return &Buffer{
+		v: pool2k.Get().([]byte),
+	}
 }
 
 // NewLocal creates and returns a buffer with 0 length and given capacity on current thread.
-func NewLocal(size int) *Buffer {
+func NewLocal(size uint32) *Buffer {
 	return &Buffer{
-		v:    make([]byte, size),
-		pool: nil,
+		v: NewBytes(size),
+	}
+}
+
+func NewBytes(size uint32) []byte {
+	if size > 128*1024 {
+		return make([]byte, size)
+	}
+
+	if size > 64*1024 {
+		return pool128k.Get().([]byte)
+	}
+
+	if size > 8*1024 {
+		return pool64k.Get().([]byte)
+	}
+
+	if size > 2*1024 {
+		return pool8k.Get().([]byte)
+	}
+
+	return pool2k.Get().([]byte)
+}
+
+func FreeBytes(b []byte) {
+	size := len(b)
+	switch {
+	case size >= 128*1024:
+		pool128k.Put(b)
+	case size >= 64*1024:
+		pool64k.Put(b)
+	case size >= 8*1024:
+		pool8k.Put(b)
+	case size >= 2*1024:
+		pool2k.Put(b)
 	}
 }
