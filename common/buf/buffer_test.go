@@ -50,7 +50,7 @@ func BenchmarkNewBuffer(b *testing.B) {
 
 func BenchmarkNewLocalBuffer(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		buffer := NewLocal(Size)
+		buffer := NewSize(Size)
 		buffer.Release()
 	}
 }

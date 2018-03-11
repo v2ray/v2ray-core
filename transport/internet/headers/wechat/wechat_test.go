@@ -17,7 +17,7 @@ func TestUTPWrite(t *testing.T) {
 
 	video := videoRaw.(*VideoChat)
 
-	payload := buf.NewLocal(2048)
+	payload := buf.NewSize(2048)
 	payload.AppendSupplier(video.Write)
 
 	assert(payload.Len(), Equals, video.Size())

@@ -81,7 +81,7 @@ func (v *ChunkReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	if length > buf.Size {
 		// Theoretically the size of a chunk is 64K, but most Shadowsocks implementations used <4K buffer.
 		buffer.Release()
-		buffer = buf.NewLocal(uint32(length) + 128)
+		buffer = buf.NewSize(uint32(length) + 128)
 	}
 
 	buffer.Clear()

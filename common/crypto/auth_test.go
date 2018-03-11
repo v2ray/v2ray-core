@@ -27,10 +27,10 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 	rawPayload := make([]byte, 8192*10)
 	rand.Read(rawPayload)
 
-	payload := buf.NewLocal(8192 * 10)
+	payload := buf.NewSize(8192 * 10)
 	payload.Append(rawPayload)
 
-	cache := buf.NewLocal(160 * 1024)
+	cache := buf.NewSize(160 * 1024)
 	iv := make([]byte, 12)
 	rand.Read(iv)
 
@@ -83,7 +83,7 @@ func TestAuthenticationReaderWriterPacket(t *testing.T) {
 	aead, err := cipher.NewGCM(block)
 	assert(err, IsNil)
 
-	cache := buf.NewLocal(1024)
+	cache := buf.NewSize(1024)
 	iv := make([]byte, 12)
 	rand.Read(iv)
 

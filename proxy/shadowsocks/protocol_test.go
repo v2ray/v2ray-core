@@ -29,7 +29,7 @@ func TestUDPEncoding(t *testing.T) {
 		},
 	}
 
-	data := buf.NewLocal(256)
+	data := buf.NewSize(256)
 	data.AppendSupplier(serial.WriteString("test string"))
 	encodedData, err := EncodeUDPPacket(request, data.Bytes())
 	assert(err, IsNil)

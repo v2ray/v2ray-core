@@ -172,15 +172,15 @@ func (b *Buffer) String() string {
 	return string(b.Bytes())
 }
 
-// New creates a Buffer with 0 length and 8K capacity.
+// New creates a Buffer with 0 length and 2K capacity.
 func New() *Buffer {
 	return &Buffer{
 		v: pool2k.Get().([]byte),
 	}
 }
 
-// NewLocal creates and returns a buffer with 0 length and given capacity on current thread.
-func NewLocal(size uint32) *Buffer {
+// NewSize creates and returns a buffer given capacity.
+func NewSize(size uint32) *Buffer {
 	return &Buffer{
 		v: NewBytes(size),
 	}
