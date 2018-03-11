@@ -56,7 +56,7 @@ func (d Destination) IsValid() bool {
 	return d.Network != Network_Unknown
 }
 
-// AsDestination converts current Enpoint into Destination.
+// AsDestination converts current Endpoint into Destination.
 func (p *Endpoint) AsDestination() Destination {
 	return Destination{
 		Network: p.Network,
