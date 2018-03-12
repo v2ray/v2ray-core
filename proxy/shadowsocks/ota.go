@@ -70,22 +70,14 @@ func NewChunkReader(reader io.Reader, auth *Authenticator) *ChunkReader {
 }
 
 func (v *ChunkReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
-	buffer := buf.New()
-	if err := buffer.AppendSupplier(buf.ReadFullFrom(v.reader, 2)); err != nil {
-		buffer.Release()
-		return nil, err
+	size, err := serial.ReadUint16(v.reader)
+	if err != nil {
+		return nil, newError("failed to read size")
 	}
-	// There is a potential buffer overflow here. Large buffer is 64K bytes,
-	// while uin16 + 10 will be more than that
-	length := serial.BytesToUint16(buffer.BytesTo(2)) + AuthSize
-	if length > buf.Size {
-		// Theoretically the size of a chunk is 64K, but most Shadowsocks implementations used <4K buffer.
-		buffer.Release()
-		buffer = buf.NewSize(uint32(length) + 128)
-	}
+	size += AuthSize
 
-	buffer.Clear()
-	if err := buffer.AppendSupplier(buf.ReadFullFrom(v.reader, int(length))); err != nil {
+	buffer := buf.NewSize(uint32(size))
+	if err := buffer.AppendSupplier(buf.ReadFullFrom(v.reader, int(size))); err != nil {
 		buffer.Release()
 		return nil, err
 	}

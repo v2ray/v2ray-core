@@ -124,12 +124,7 @@ func (r *AuthenticationReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 		return nil, io.EOF
 	}
 
-	var b *buf.Buffer
-	if size <= buf.Size {
-		b = buf.New()
-	} else {
-		b = buf.NewSize(uint32(size))
-	}
+	b := buf.NewSize(uint32(size))
 	if err := b.Reset(buf.ReadFullFrom(r.reader, size)); err != nil {
 		b.Release()
 		return nil, err

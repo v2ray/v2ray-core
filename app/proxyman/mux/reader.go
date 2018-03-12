@@ -51,12 +51,7 @@ func (r *PacketReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 		return nil, err
 	}
 
-	var b *buf.Buffer
-	if size <= buf.Size {
-		b = buf.New()
-	} else {
-		b = buf.NewSize(uint32(size))
-	}
+	b := buf.NewSize(uint32(size))
 	if err := b.AppendSupplier(buf.ReadFullFrom(r.reader, int(size))); err != nil {
 		b.Release()
 		return nil, err
