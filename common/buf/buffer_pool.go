@@ -15,18 +15,42 @@ func createAllocFunc(size uint32) func() interface{} {
 	}
 }
 
-var pool2k = &sync.Pool{
-	New: createAllocFunc(2 * 1024),
+const (
+	numPools  = 5
+	sizeMulti = 4
+)
+
+var (
+	pool     [numPools]*sync.Pool
+	poolSize [numPools]uint32
+)
+
+func init() {
+	size := uint32(Size)
+	for i := 0; i < numPools; i++ {
+		pool[i] = &sync.Pool{
+			New: createAllocFunc(size),
+		}
+		poolSize[i] = size
+		size *= sizeMulti
+	}
 }
 
-var pool8k = &sync.Pool{
-	New: createAllocFunc(8 * 1024),
+func newBytes(size uint32) []byte {
+	for idx, ps := range poolSize {
+		if size <= ps {
+			return pool[idx].Get().([]byte)
+		}
+	}
+	return make([]byte, size)
 }
 
-var pool64k = &sync.Pool{
-	New: createAllocFunc(64 * 1024),
-}
-
-var pool128k = &sync.Pool{
-	New: createAllocFunc(128 * 1024),
+func freeBytes(b []byte) {
+	size := uint32(cap(b))
+	for i := numPools - 1; i >= 0; i-- {
+		ps := poolSize[i]
+		if size >= ps {
+			pool[i].Put(b)
+		}
+	}
 }

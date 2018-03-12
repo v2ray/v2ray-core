@@ -23,7 +23,7 @@ func (b *Buffer) Release() {
 	if b == nil || b.v == nil {
 		return
 	}
-	FreeBytes(b.v)
+	freeBytes(b.v)
 	b.v = nil
 	b.start = 0
 	b.end = 0
@@ -175,48 +175,13 @@ func (b *Buffer) String() string {
 // New creates a Buffer with 0 length and 2K capacity.
 func New() *Buffer {
 	return &Buffer{
-		v: pool2k.Get().([]byte),
+		v: pool[0].Get().([]byte),
 	}
 }
 
 // NewSize creates and returns a buffer given capacity.
 func NewSize(size uint32) *Buffer {
 	return &Buffer{
-		v: NewBytes(size),
-	}
-}
-
-func NewBytes(size uint32) []byte {
-	if size > 128*1024 {
-		return make([]byte, size)
-	}
-
-	if size > 64*1024 {
-		return pool128k.Get().([]byte)
-	}
-
-	if size > 8*1024 {
-		return pool64k.Get().([]byte)
-	}
-
-	if size > 2*1024 {
-		return pool8k.Get().([]byte)
-	}
-
-	return pool2k.Get().([]byte)
-}
-
-func FreeBytes(b []byte) {
-	size := cap(b)
-	b = b[0:cap(b)]
-	switch {
-	case size >= 128*1024:
-		pool128k.Put(b)
-	case size >= 64*1024:
-		pool64k.Put(b)
-	case size >= 8*1024:
-		pool8k.Put(b)
-	case size >= 2*1024:
-		pool2k.Put(b)
+		v: newBytes(size),
 	}
 }
