@@ -22,7 +22,7 @@ var (
 )
 
 // AddressFamily is the type of address.
-type AddressFamily int
+type AddressFamily byte
 
 const (
 	// AddressFamilyIPv4 represents address as IPv4
