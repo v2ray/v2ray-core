@@ -19,7 +19,7 @@ message Config {
 
   reserved 3;
 
-  // App configuration. Must be one in the app directory.
+  // App is for configurations of all features in V2Ray. A feature must implement the Feature interface, and its config type must be registered through common.RegisterConfig.
   repeated v2ray.core.common.serial.TypedMessage app = 4;
 
   // Transport settings.
@@ -30,19 +30,21 @@ message Config {
   repeated v2ray.core.common.serial.TypedMessage extension = 6;
 }
 
+// InboundHandlerConfig is the configuration for inbound handler.
 message InboundHandlerConfig {
-  // Tag of the inbound handler.
+  // Tag of the inbound handler. The tag must be unique among all inbound handlers
   string tag = 1;
-  // Settings for how this inbound proxy is handled. Must be ReceiverConfig above.
+  // Settings for how this inbound proxy is handled.
   v2ray.core.common.serial.TypedMessage receiver_settings = 2;
   // Settings for inbound proxy. Must be one of the inbound proxies.
   v2ray.core.common.serial.TypedMessage proxy_settings = 3;
 }
 
+// OutboundHandlerConfig is the configuration for outbound handler.
 message OutboundHandlerConfig {
   // Tag of this outbound handler.
   string tag = 1;
-  // Settings for how to dial connection for this outbound handler. Must be SenderConfig above.
+  // Settings for how to dial connection for this outbound handler.
   v2ray.core.common.serial.TypedMessage sender_settings = 2;
   // Settings for this outbound proxy. Must be one of the outbound proxies.
   v2ray.core.common.serial.TypedMessage proxy_settings = 3;
