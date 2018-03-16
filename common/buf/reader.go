@@ -47,6 +47,9 @@ func (r *BytesToBufferReader) ReadMultiBuffer() (MultiBuffer, error) {
 		if nBytes == len(r.buffer) && nBytes < xlSize {
 			freeBytes(r.buffer)
 			r.buffer = newBytes(uint32(nBytes) + 1)
+		} else if nBytes < Size {
+			freeBytes(r.buffer)
+			r.buffer = nil
 		}
 		return mb, nil
 	}
