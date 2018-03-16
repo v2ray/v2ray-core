@@ -17,7 +17,7 @@ func ContextWithProtocolSniffers(ctx context.Context, list []KnownProtocols) con
 	return context.WithValue(ctx, protocolsKey, list)
 }
 
-func ProtocoSniffersFromContext(ctx context.Context) []KnownProtocols {
+func ProtocolSniffersFromContext(ctx context.Context) []KnownProtocols {
 	if list, ok := ctx.Value(protocolsKey).([]KnownProtocols); ok {
 		return list
 	}

@@ -11,7 +11,7 @@ import (
 
 // InboundOperation is the interface for operations that applies to inbound handlers.
 type InboundOperation interface {
-	// ApplyInbound appliess this operation to the given inbound handler.
+	// ApplyInbound applies this operation to the given inbound handler.
 	ApplyInbound(context.Context, core.InboundHandler) error
 }
 

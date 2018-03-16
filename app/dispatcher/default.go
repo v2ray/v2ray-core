@@ -55,7 +55,7 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	ctx = proxy.ContextWithTarget(ctx, destination)
 
 	outbound := ray.NewRay(ctx)
-	snifferList := proxyman.ProtocoSniffersFromContext(ctx)
+	snifferList := proxyman.ProtocolSniffersFromContext(ctx)
 	if destination.Address.Family().IsDomain() || len(snifferList) == 0 {
 		go d.routedDispatch(ctx, outbound, destination)
 	} else {
@@ -110,7 +110,7 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, outbound ray.Out
 				newError("taking detour [", tag, "] for [", destination, "]").WithContext(ctx).WriteToLog()
 				dispatcher = handler
 			} else {
-				newError("nonexisting tag: ", tag).AtWarning().WithContext(ctx).WriteToLog()
+				newError("non existing tag: ", tag).AtWarning().WithContext(ctx).WriteToLog()
 			}
 		} else {
 			newError("default route for ", destination).WithContext(ctx).WriteToLog()
