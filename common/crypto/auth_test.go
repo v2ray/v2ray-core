@@ -24,11 +24,13 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 	aead, err := cipher.NewGCM(block)
 	assert(err, IsNil)
 
-	rawPayload := make([]byte, 8192*10)
+	const payloadSize = 1024 * 80
+	rawPayload := make([]byte, payloadSize)
 	rand.Read(rawPayload)
 
-	payload := buf.NewSize(8192 * 10)
+	payload := buf.NewSize(payloadSize)
 	payload.Append(rawPayload)
+	assert(payload.Len(), Equals, payloadSize)
 
 	cache := buf.NewSize(160 * 1024)
 	iv := make([]byte, 12)
@@ -45,7 +47,6 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 	assert(writer.WriteMultiBuffer(buf.NewMultiBufferValue(payload)), IsNil)
 	assert(cache.Len(), Equals, 82658)
 	assert(writer.WriteMultiBuffer(buf.MultiBuffer{}), IsNil)
-	assert(err, IsNil)
 
 	reader := NewAuthenticationReader(&AEADAuthenticator{
 		AEAD: aead,
@@ -57,14 +58,16 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 
 	var mb buf.MultiBuffer
 
-	for mb.Len() < len(rawPayload) {
+	for mb.Len() < payloadSize {
 		mb2, err := reader.ReadMultiBuffer()
 		assert(err, IsNil)
 
 		mb.AppendMulti(mb2)
 	}
 
-	mbContent := make([]byte, 8192*10)
+	assert(mb.Len(), Equals, payloadSize)
+
+	mbContent := make([]byte, payloadSize)
 	mb.Read(mbContent)
 	assert(mbContent, Equals, rawPayload)
 

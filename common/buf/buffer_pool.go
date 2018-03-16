@@ -21,14 +21,14 @@ const (
 )
 
 var (
-	pool     [numPools]*sync.Pool
+	pool     [numPools]sync.Pool
 	poolSize [numPools]uint32
 )
 
 func init() {
 	size := uint32(Size)
 	for i := 0; i < numPools; i++ {
-		pool[i] = &sync.Pool{
+		pool[i] = sync.Pool{
 			New: createAllocFunc(size),
 		}
 		poolSize[i] = size
@@ -52,6 +52,7 @@ func freeBytes(b []byte) {
 		ps := poolSize[i]
 		if size >= ps {
 			pool[i].Put(b)
+			return
 		}
 	}
 }
