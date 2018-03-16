@@ -23,7 +23,10 @@ type UnixInboundHandler struct {
 func (uih *UnixInboundHandler) Start() {
 	var err error
 	uih.listenerHolder, err = domainsocket.ListenDS(uih.ctx, uih.path)
-	newError(err).AtError().WriteToLog()
+	if err != nil {
+		newError(err).AtError().WriteToLog()
+	}
+
 }
 func (uih *UnixInboundHandler) Close() {
 	if uih.listenerHolder != nil {
