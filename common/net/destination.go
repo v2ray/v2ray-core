@@ -6,9 +6,9 @@ import (
 
 // Destination represents a network destination including address and protocol (tcp / udp).
 type Destination struct {
-	Network Network
-	Port    Port
 	Address Address
+	Port    Port
+	Network Network
 }
 
 // DestinationFromAddr generates a Destination from a net address.
