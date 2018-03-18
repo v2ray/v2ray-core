@@ -26,7 +26,33 @@ func (uih *UnixInboundHandler) Start() {
 	if err != nil {
 		newError(err).AtError().WriteToLog()
 	}
-
+	err = uih.listenerHolder.LowerUP()
+	if err != nil {
+		newError(err).AtError().WriteToLog()
+	}
+	nchan := make(chan net.Conn, 2)
+	err = uih.listenerHolder.UP(nchan, false)
+	if err != nil {
+		newError(err).AtError().WriteToLog()
+	}
+	go uih.progressTraffic(nchan)
+	return
+}
+func (uih *UnixInboundHandler) progressTraffic(rece <-chan net.Conn) {
+	for {
+		conn := <-rece
+		go func(conn net.Conn) {
+			ctx, cancel := context.WithCancel(uih.ctx)
+			if len(uih.tag) > 0 {
+				ctx = proxy.ContextWithInboundTag(ctx, uih.tag)
+			}
+			if err := uih.proxy.Process(ctx, net.Network_TCP, conn, uih.mux); err != nil {
+				newError("connection ends").Base(err).WriteToLog()
+			}
+			cancel()
+			conn.Close()
+		}(conn)
+	}
 }
 func (uih *UnixInboundHandler) Close() {
 	if uih.listenerHolder != nil {
