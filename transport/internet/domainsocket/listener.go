@@ -128,6 +128,7 @@ func (ls *Listener) uploop(cctx context.Context) {
 	errortolerance := 5
 	for {
 		if cctx.Err() != nil {
+			close(ls.listenerChan)
 			return
 		}
 		conn, err := ls.ln.Accept()

@@ -39,8 +39,12 @@ func (uih *UnixInboundHandler) Start() {
 	return
 }
 func (uih *UnixInboundHandler) progressTraffic(rece <-chan net.Conn) {
+
 	for {
-		conn := <-rece
+		conn, notclosed := <-rece
+		if !notclosed {
+			return
+		}
 		go func(conn net.Conn) {
 			ctx, cancel := context.WithCancel(uih.ctx)
 			if len(uih.tag) > 0 {
