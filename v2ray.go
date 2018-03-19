@@ -130,7 +130,7 @@ func (s *Instance) Start() error {
 }
 
 // RegisterFeature registers the given feature into V2Ray.
-// If feature is one of the following types, the corressponding feature in this Instance
+// If feature is one of the following types, the corresponding feature in this Instance
 // will be replaced: DNSClient, PolicyManager, Router, Dispatcher, InboundHandlerManager, OutboundHandlerManager.
 func (s *Instance) RegisterFeature(feature interface{}, instance Feature) error {
 	running := false
