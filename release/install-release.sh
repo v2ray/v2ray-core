@@ -149,7 +149,7 @@ extract(){
     mkdir -p /tmp/v2ray
     unzip $1 -d "/tmp/v2ray/"
     if [[ $? -ne 0 ]]; then
-        colorEcho ${RED} "Extracting V2Ray faile!"
+        colorEcho ${RED} "Extracting V2Ray failed!"
         exit
     fi
     return 0
