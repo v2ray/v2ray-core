@@ -102,7 +102,12 @@ func Listen(ctx context.Context, address net.Address, port net.Port, handler int
 	}
 
 	listener.server = server
-	go server.ListenAndServeTLS("", "")
+	go func() {
+		err := server.ListenAndServeTLS("", "")
+		if err != nil {
+			newError("stoping serving TLS").Base(err).WriteToLog()
+		}
+	}()
 
 	return listener, nil
 }
