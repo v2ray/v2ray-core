@@ -31,9 +31,14 @@ func (l *Listener) Close() error {
 
 type flushWriter struct {
 	w io.Writer
+	d *signal.Done
 }
 
 func (fw flushWriter) Write(p []byte) (n int, err error) {
+	if fw.d.Done() {
+		return 0, io.ErrClosedPipe
+	}
+
 	n, err = fw.w.Write(p)
 	if f, ok := fw.w.(http.Flusher); ok {
 		f.Flush()
@@ -61,8 +66,8 @@ func (l *Listener) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 	done := signal.NewDone()
 	l.handler(&Connection{
 		Reader: request.Body,
-		Writer: flushWriter{writer},
-		Closer: common.NewChainedClosable(request.Body, done),
+		Writer: flushWriter{w: writer, d: done},
+		Closer: common.NewChainedClosable(done, request.Body),
 		Local:  l.Addr(),
 		Remote: l.Addr(),
 	})
