@@ -17,13 +17,17 @@ import (
 )
 
 var (
-	globalDialerMap    = make(map[net.Destination]*http.Client)
+	globalDialerMap    map[net.Destination]*http.Client
 	globalDailerAccess sync.Mutex
 )
 
 func getHTTPClient(ctx context.Context, dest net.Destination) (*http.Client, error) {
 	globalDailerAccess.Lock()
 	defer globalDailerAccess.Unlock()
+
+	if globalDialerMap == nil {
+		globalDialerMap = make(map[net.Destination]*http.Client)
+	}
 
 	if client, found := globalDialerMap[dest]; found {
 		return client, nil
