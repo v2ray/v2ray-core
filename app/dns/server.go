@@ -126,10 +126,16 @@ func (s *Server) LookupIP(domain string) ([]net.IP, error) {
 				continue
 			}
 			s.Lock()
-			s.records[domain] = &DomainRecord{
-				IP:         a.IPs,
-				Expire:     a.Expire,
-				LastAccess: time.Now(),
+			if _, found := s.records[domain]; found {
+				s.records[domain].IP = a.IPs
+				s.records[domain].Expire = a.Expire
+				s.records[domain].LastAccess = time.Now()
+			} else {
+				s.records[domain] = &DomainRecord{
+					IP:         a.IPs,
+					Expire:     a.Expire,
+					LastAccess: time.Now(),
+				}
 			}
 			s.Unlock()
 			newError("returning ", len(a.IPs), " IPs for domain ", domain).AtDebug().WriteToLog()
