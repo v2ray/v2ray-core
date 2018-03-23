@@ -78,7 +78,7 @@ func (b *Buffer) Reset(writer Supplier) error {
 	return err
 }
 
-// BytesRange returns a slice of this buffer with given from and to bounary.
+// BytesRange returns a slice of this buffer with given from and to boundary.
 func (b *Buffer) BytesRange(from, to int) []byte {
 	if from < 0 {
 		from += b.Len()
