@@ -135,16 +135,21 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 		}
 
 		cmd := buffer.Byte(1)
-		if cmd == cmdTCPBind || (cmd == cmdUDPPort && !s.config.UdpEnabled) {
-			writeSocks5Response(writer, statusCmdNotSupport, net.AnyIP, net.Port(0))
-			return nil, newError("unsupported command: ", cmd)
-		}
-
 		switch cmd {
 		case cmdTCPConnect:
 			request.Command = protocol.RequestCommandTCP
 		case cmdUDPPort:
+			if !s.config.UdpEnabled {
+				writeSocks5Response(writer, statusCmdNotSupport, net.AnyIP, net.Port(0))
+				return nil, newError("UDP is not enabled.")
+			}
 			request.Command = protocol.RequestCommandUDP
+		case cmdTCPBind:
+			writeSocks5Response(writer, statusCmdNotSupport, net.AnyIP, net.Port(0))
+			return nil, newError("TCP bind is not supported.")
+		default:
+			writeSocks5Response(writer, statusCmdNotSupport, net.AnyIP, net.Port(0))
+			return nil, newError("unknown command ", cmd)
 		}
 
 		buffer.Clear()
