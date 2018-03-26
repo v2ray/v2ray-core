@@ -70,7 +70,7 @@ var (
 	ErrNoClue = errors.New("not enough information for making a decision")
 )
 
-// Router is a feature to choose a outbound tag for the given request.
+// Router is a feature to choose an outbound tag for the given request.
 type Router interface {
 	Feature
 
