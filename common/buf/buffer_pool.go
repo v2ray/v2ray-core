@@ -49,8 +49,7 @@ func freeBytes(b []byte) {
 	size := uint32(cap(b))
 	b = b[0:cap(b)]
 	for i := numPools - 1; i >= 0; i-- {
-		ps := poolSize[i]
-		if size >= ps {
+		if size >= poolSize[i] {
 			pool[i].Put(b)
 			return
 		}
