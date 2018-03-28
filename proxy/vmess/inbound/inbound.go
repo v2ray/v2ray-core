@@ -182,16 +182,17 @@ func transferResponse(timer signal.ActivityUpdater, session *encoding.ServerSess
 
 	bodyWriter := session.EncodeResponseBody(request, output)
 
-	// Optimize for small response packet
-	data, err := input.ReadMultiBuffer()
-	if err != nil {
-		return err
-	}
+	{
+		// Optimize for small response packet
+		data, err := input.ReadMultiBuffer()
+		if err != nil {
+			return err
+		}
 
-	if err := bodyWriter.WriteMultiBuffer(data); err != nil {
-		return err
+		if err := bodyWriter.WriteMultiBuffer(data); err != nil {
+			return err
+		}
 	}
-	data.Release()
 
 	if bufferedWriter, ok := output.(*buf.BufferedWriter); ok {
 		if err := bufferedWriter.SetBuffered(false); err != nil {

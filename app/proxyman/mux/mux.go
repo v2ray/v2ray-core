@@ -150,11 +150,6 @@ func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
 	defer s.Close()
 
 	newError("dispatching request to ", dest).WithContext(ctx).WriteToLog()
-	data, _ := s.input.ReadTimeout(time.Millisecond * 500)
-	if err := writer.WriteMultiBuffer(data); err != nil {
-		newError("failed to write first payload").Base(err).WithContext(ctx).WriteToLog()
-		return
-	}
 	if err := buf.Copy(s.input, writer); err != nil {
 		newError("failed to fetch all input").Base(err).WithContext(ctx).WriteToLog()
 	}

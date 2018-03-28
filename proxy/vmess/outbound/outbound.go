@@ -113,15 +113,16 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		}
 
 		bodyWriter := session.EncodeRequestBody(request, writer)
-		firstPayload, err := input.ReadTimeout(time.Millisecond * 500)
-		if err != nil && err != buf.ErrReadTimeout {
-			return newError("failed to get first payload").Base(err)
-		}
-		if !firstPayload.IsEmpty() {
-			if err := bodyWriter.WriteMultiBuffer(firstPayload); err != nil {
-				return newError("failed to write first payload").Base(err)
+		{
+			firstPayload, err := input.ReadTimeout(time.Millisecond * 500)
+			if err != nil && err != buf.ErrReadTimeout {
+				return newError("failed to get first payload").Base(err)
 			}
-			firstPayload.Release()
+			if !firstPayload.IsEmpty() {
+				if err := bodyWriter.WriteMultiBuffer(firstPayload); err != nil {
+					return newError("failed to write first payload").Base(err)
+				}
+			}
 		}
 
 		if err := writer.SetBuffered(false); err != nil {

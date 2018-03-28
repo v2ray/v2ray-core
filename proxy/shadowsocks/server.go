@@ -178,14 +178,15 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 			return newError("failed to write response").Base(err)
 		}
 
-		payload, err := ray.InboundOutput().ReadMultiBuffer()
-		if err != nil {
-			return err
+		{
+			payload, err := ray.InboundOutput().ReadMultiBuffer()
+			if err != nil {
+				return err
+			}
+			if err := responseWriter.WriteMultiBuffer(payload); err != nil {
+				return err
+			}
 		}
-		if err := responseWriter.WriteMultiBuffer(payload); err != nil {
-			return err
-		}
-		payload.Release()
 
 		if err := bufferedWriter.SetBuffered(false); err != nil {
 			return err
