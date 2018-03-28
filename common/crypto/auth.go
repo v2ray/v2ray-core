@@ -204,7 +204,7 @@ func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
 func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
 	defer mb.Release()
 
-	mb2Write := buf.NewMultiBufferCap(len(mb) * 2)
+	mb2Write := buf.NewMultiBufferCap(len(mb) + 1)
 
 	for {
 		b := mb.SplitFirst()
