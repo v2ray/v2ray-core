@@ -18,6 +18,7 @@ type UnixInboundHandler struct {
 	path           string
 	proxy          proxy.Inbound
 	mux            *mux.Server
+	additional     *proxyman.UnixReceiverConfig
 }
 
 func (uih *UnixInboundHandler) Start() {
@@ -86,11 +87,12 @@ func NewUnixInboundHandler(ctx context.Context, tag string, receiverConfig *prox
 	}
 
 	h := &UnixInboundHandler{
-		proxy: p,
-		mux:   mux.NewServer(ctx),
-		tag:   tag,
-		ctx:   ctx,
-		path:  receiverConfig.DomainSockSettings.GetPath(),
+		proxy:      p,
+		mux:        mux.NewServer(ctx),
+		tag:        tag,
+		ctx:        ctx,
+		path:       receiverConfig.DomainSockSettings.GetPath(),
+		additional: receiverConfig,
 	}
 
 	return h, nil
