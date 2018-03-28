@@ -173,7 +173,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 	}
 
 	if reader.Buffered() > 0 {
-		payload := buf.New()
+		payload := buf.NewSize(uint32(reader.Buffered()))
 		common.Must(payload.Reset(func(b []byte) (int, error) {
 			return reader.Read(b[:reader.Buffered()])
 		}))
