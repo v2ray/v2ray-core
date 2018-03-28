@@ -154,6 +154,7 @@ func (r *BufferedReader) writeToInternal(writer io.Writer) (int64, error) {
 		if err := mbWriter.WriteMultiBuffer(r.leftOver); err != nil {
 			return 0, err
 		}
+		r.leftOver = nil
 	}
 
 	for {
