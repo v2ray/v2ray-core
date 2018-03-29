@@ -84,11 +84,11 @@ func (ls *Listener) LowerUP() error {
 			newError(err).AtDebug().WriteToLog()
 			return newError("Unable to acquire lock for filesystem based unix domain socket").Base(err)
 		}
-	}
 
-	err = cleansePath(ls.path)
-	if err != nil {
-		return newError("Unable to cleanse path for the creation of unix domain socket").Base(err)
+		err = cleansePath(ls.path)
+		if err != nil {
+			return newError("Unable to cleanse path for the creation of unix domain socket").Base(err)
+		}
 	}
 
 	addr := new(net.UnixAddr)
@@ -115,11 +115,12 @@ func (ls *Listener) UP(listener chan<- net.Conn, allowkick bool) error {
 		return err
 	}
 	ls.listenerChan = listener
-	if ls.state.Has(STATE_UP) {
+	if !ls.state.Has(STATE_UP) {
 		cctx, cancel := context.WithCancel(ls.ctx)
 		ls.cancal = cancel
 		go ls.uploop(cctx)
 	}
+	ls.state.Set(STATE_UP)
 	return nil
 }
 
@@ -200,7 +201,7 @@ func giveupLock(locker *os.File) error {
 
 func cleansePath(path string) error {
 	_, err := os.Stat(path)
-	if err == os.ErrNotExist {
+	if err != nil {
 		return nil
 	}
 	err = os.Remove(path)
