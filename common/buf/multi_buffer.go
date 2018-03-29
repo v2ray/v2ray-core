@@ -57,7 +57,9 @@ func NewMultiBufferValue(b ...*Buffer) MultiBuffer {
 
 // Append appends buffer to the end of this MultiBuffer
 func (mb *MultiBuffer) Append(buf *Buffer) {
-	*mb = append(*mb, buf)
+	if buf != nil {
+		*mb = append(*mb, buf)
+	}
 }
 
 // AppendMulti appends a MultiBuffer to the end of this one.
