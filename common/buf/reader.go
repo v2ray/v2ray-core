@@ -23,7 +23,7 @@ const xlSize = 128 * 1024
 
 func (r *BytesToBufferReader) readSmall() (MultiBuffer, error) {
 	b := New()
-	for {
+	for i := 0; i < 64; i++ {
 		err := b.Reset(ReadFrom(r.Reader))
 		if b.IsFull() {
 			r.buffer = newBytes(Size + 1)
@@ -36,6 +36,13 @@ func (r *BytesToBufferReader) readSmall() (MultiBuffer, error) {
 			return nil, err
 		}
 	}
+
+	return nil, newError("Reader returns too many empty payloads.")
+}
+
+func (r *BytesToBufferReader) freeBuffer() {
+	freeBytes(r.buffer)
+	r.buffer = nil
 }
 
 // ReadMultiBuffer implements Reader.
@@ -44,26 +51,27 @@ func (r *BytesToBufferReader) ReadMultiBuffer() (MultiBuffer, error) {
 		return r.readSmall()
 	}
 
-	for {
-		nBytes, err := r.Reader.Read(r.buffer)
-		if nBytes > 0 {
-			mb := NewMultiBufferCap(nBytes/Size + 1)
-			mb.Write(r.buffer[:nBytes])
-			if nBytes == len(r.buffer) && nBytes < xlSize {
-				freeBytes(r.buffer)
-				r.buffer = newBytes(uint32(nBytes) + 1)
-			} else if nBytes < Size {
-				freeBytes(r.buffer)
-				r.buffer = nil
-			}
-			return mb, nil
-		}
-		if err != nil {
+	nBytes, err := r.Reader.Read(r.buffer)
+	if nBytes > 0 {
+		mb := NewMultiBufferCap(nBytes/Size + 1)
+		mb.Write(r.buffer[:nBytes])
+		if nBytes == len(r.buffer) && nBytes < xlSize {
 			freeBytes(r.buffer)
-			r.buffer = nil
-			return nil, err
+			r.buffer = newBytes(uint32(nBytes) + 1)
+		} else if nBytes < Size {
+			r.freeBuffer()
 		}
+		return mb, nil
 	}
+
+	r.freeBuffer()
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Read() returns empty payload and nil err. We don't expect this to happen, but just in case.
+	return r.readSmall()
 }
 
 // BufferedReader is a Reader that keeps its internal buffer.
