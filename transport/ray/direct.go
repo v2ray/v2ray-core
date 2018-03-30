@@ -12,11 +12,25 @@ import (
 	"v2ray.com/core/common/signal"
 )
 
-// NewRay creates a new Ray for direct traffic transport.
-func NewRay(ctx context.Context) Ray {
+type Option func(*Stream)
+
+type addInt64 interface {
+	Add(int64) int64
+}
+
+func WithStatCounter(c addInt64) Option {
+	return func(s *Stream) {
+		s.onDataSize = append(s.onDataSize, func(delta uint64) {
+			c.Add(int64(delta))
+		})
+	}
+}
+
+// New creates a new Ray for direct traffic transport.
+func New(ctx context.Context, opts ...Option) Ray {
 	return &directRay{
-		Input:  NewStream(ctx),
-		Output: NewStream(ctx),
+		Input:  NewStream(ctx, opts...),
+		Output: NewStream(ctx, opts...),
 	}
 }
 
@@ -60,18 +74,23 @@ type Stream struct {
 	ctx         context.Context
 	readSignal  *signal.Notifier
 	writeSignal *signal.Notifier
+	onDataSize  []func(uint64)
 	close       bool
 	err         bool
 }
 
 // NewStream creates a new Stream.
-func NewStream(ctx context.Context) *Stream {
-	return &Stream{
+func NewStream(ctx context.Context, opts ...Option) *Stream {
+	s := &Stream{
 		ctx:         ctx,
 		readSignal:  signal.NewNotifier(),
 		writeSignal: signal.NewNotifier(),
 		size:        0,
 	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
 }
 
 func (s *Stream) getData() (buf.MultiBuffer, error) {
@@ -201,8 +220,13 @@ func (s *Stream) WriteMultiBuffer(data buf.MultiBuffer) error {
 		s.data = buf.NewMultiBufferCap(128)
 	}
 
+	dataSize := uint64(data.Len())
+	for _, f := range s.onDataSize {
+		f(dataSize)
+	}
+
 	s.data.AppendMulti(data)
-	s.size += uint64(data.Len())
+	s.size += dataSize
 	s.writeSignal.Signal()
 
 	return nil

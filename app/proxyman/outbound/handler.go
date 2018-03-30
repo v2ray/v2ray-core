@@ -103,7 +103,7 @@ func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Conn
 			if handler != nil {
 				newError("proxying to ", tag, " for dest ", dest).AtDebug().WithContext(ctx).WriteToLog()
 				ctx = proxy.ContextWithTarget(ctx, dest)
-				stream := ray.NewRay(ctx)
+				stream := ray.New(ctx)
 				go handler.Dispatch(ctx, stream)
 				return ray.NewConnection(stream.InboundOutput(), stream.InboundInput()), nil
 			}

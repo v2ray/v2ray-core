@@ -87,7 +87,7 @@ var muxCoolPort = net.Port(9527)
 func NewClient(p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client, error) {
 	ctx := proxy.ContextWithTarget(context.Background(), net.TCPDestination(muxCoolAddress, muxCoolPort))
 	ctx, cancel := context.WithCancel(ctx)
-	pipe := ray.NewRay(ctx)
+	pipe := ray.New(ctx)
 
 	c := &Client{
 		sessionManager: NewSessionManager(),
@@ -266,7 +266,7 @@ func (s *Server) Dispatch(ctx context.Context, dest net.Destination) (ray.Inboun
 		return s.dispatcher.Dispatch(ctx, dest)
 	}
 
-	ray := ray.NewRay(ctx)
+	ray := ray.New(ctx)
 	worker := &ServerWorker{
 		dispatcher:     s.dispatcher,
 		outboundRay:    ray,

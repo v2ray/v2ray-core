@@ -18,7 +18,7 @@ func (c *Counter) Value() int64 {
 	return atomic.LoadInt64(&c.value)
 }
 
-func (c *Counter) Exchange(newValue int64) int64 {
+func (c *Counter) Set(newValue int64) int64 {
 	return atomic.SwapInt64(&c.value, newValue)
 }
 

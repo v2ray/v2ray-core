@@ -6,7 +6,7 @@ import (
 
 type StatCounter interface {
 	Value() int64
-	Exchange(int64) int64
+	Set(int64) int64
 	Add(int64) int64
 }
 

@@ -54,7 +54,7 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	}
 	ctx = proxy.ContextWithTarget(ctx, destination)
 
-	outbound := ray.NewRay(ctx)
+	outbound := ray.New(ctx)
 	snifferList := proxyman.ProtocolSniffersFromContext(ctx)
 	if destination.Address.Family().IsDomain() || len(snifferList) == 0 {
 		go d.routedDispatch(ctx, outbound, destination)
