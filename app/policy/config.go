@@ -46,6 +46,10 @@ func (p *Policy) overrideWith(another *Policy) {
 	if another.Timeout != nil {
 		p.Timeout.overrideWith(another.Timeout)
 	}
+	if another.Stats != nil && p.Stats == nil {
+		p.Stats = new(Policy_Stats)
+		*p.Stats = *another.Stats
+	}
 }
 
 func (p *Policy) ToCorePolicy() core.Policy {
@@ -55,6 +59,9 @@ func (p *Policy) ToCorePolicy() core.Policy {
 		cp.Timeouts.Handshake = p.Timeout.Handshake.Duration()
 		cp.Timeouts.DownlinkOnly = p.Timeout.DownlinkOnly.Duration()
 		cp.Timeouts.UplinkOnly = p.Timeout.UplinkOnly.Duration()
+	}
+	if p.Stats != nil {
+		cp.Stats.EnablePerUser = p.Stats.EnablePerUser
 	}
 	return cp
 }

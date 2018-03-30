@@ -19,7 +19,12 @@ message Policy {
     Second downlink_only = 4;
   }
 
+  message Stats {
+    bool enable_per_user = 1;
+  }
+
   Timeout timeout = 1;
+  Stats stats = 2;
 }
 
 message Config {
