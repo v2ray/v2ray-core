@@ -28,6 +28,7 @@ type Instance struct {
 	router        syncRouter
 	ihm           syncInboundHandlerManager
 	ohm           syncOutboundHandlerManager
+	stats         syncStatManager
 
 	access   sync.Mutex
 	features []Feature
@@ -148,6 +149,8 @@ func (s *Instance) RegisterFeature(feature interface{}, instance Feature) error 
 		s.ihm.Set(instance.(InboundHandlerManager))
 	case OutboundHandlerManager, *OutboundHandlerManager:
 		s.ohm.Set(instance.(OutboundHandlerManager))
+	case StatManager, *StatManager:
+		s.stats.Set(instance.(StatManager))
 	default:
 		s.access.Lock()
 		s.features = append(s.features, instance)
@@ -162,7 +165,7 @@ func (s *Instance) RegisterFeature(feature interface{}, instance Feature) error 
 }
 
 func (s *Instance) allFeatures() []Feature {
-	return append([]Feature{s.DNSClient(), s.PolicyManager(), s.Dispatcher(), s.Router(), s.InboundHandlerManager(), s.OutboundHandlerManager()}, s.features...)
+	return append([]Feature{s.DNSClient(), s.PolicyManager(), s.Dispatcher(), s.Router(), s.InboundHandlerManager(), s.OutboundHandlerManager(), s.Stats()}, s.features...)
 }
 
 // GetFeature returns a feature that was registered in this Instance. Nil if not found.
@@ -206,4 +209,8 @@ func (s *Instance) InboundHandlerManager() InboundHandlerManager {
 // OutboundHandlerManager returns the OutboundHandlerManager used by this Instance. If OutboundHandlerManager was not registered before, the returned value doesn't work.
 func (s *Instance) OutboundHandlerManager() OutboundHandlerManager {
 	return &(s.ohm)
+}
+
+func (s *Instance) Stats() StatManager {
+	return &(s.stats)
 }
