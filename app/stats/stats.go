@@ -32,9 +32,18 @@ type Manager struct {
 }
 
 func NewManager(ctx context.Context, config *Config) (*Manager, error) {
-	return &Manager{
+	m := &Manager{
 		counters: make(map[string]*Counter),
-	}, nil
+	}
+
+	v := core.FromContext(ctx)
+	if v != nil {
+		if err := v.RegisterFeature((*core.StatManager)(nil), m); err != nil {
+			return nil, newError("failed to register StatManager").Base(err)
+		}
+	}
+
+	return m, nil
 }
 
 func (m *Manager) RegisterCounter(name string) (core.StatCounter, error) {
@@ -44,6 +53,7 @@ func (m *Manager) RegisterCounter(name string) (core.StatCounter, error) {
 	if _, found := m.counters[name]; found {
 		return nil, newError("Counter ", name, " already registered.")
 	}
+	newError("create new counter ", name).AtDebug().WriteToLog()
 	c := new(Counter)
 	m.counters[name] = c
 	return c, nil

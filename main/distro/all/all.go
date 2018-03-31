@@ -8,16 +8,18 @@ import (
 	_ "v2ray.com/core/app/proxyman/inbound"
 	_ "v2ray.com/core/app/proxyman/outbound"
 
-	// Default commander and all its services.
+	// Default commander and all its services. This is an optional feature.
 	_ "v2ray.com/core/app/commander"
 	_ "v2ray.com/core/app/log/command"
 	_ "v2ray.com/core/app/proxyman/command"
+	_ "v2ray.com/core/app/stats/command"
 
 	// Other optional features.
 	_ "v2ray.com/core/app/dns"
 	_ "v2ray.com/core/app/log"
 	_ "v2ray.com/core/app/policy"
 	_ "v2ray.com/core/app/router"
+	_ "v2ray.com/core/app/stats"
 
 	// Inbound and outbound proxies.
 	_ "v2ray.com/core/proxy/blackhole"

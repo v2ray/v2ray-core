@@ -2,18 +2,22 @@ package scenarios
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"io"
 	"testing"
-
-	"v2ray.com/core/app/policy"
+	"time"
 
 	"google.golang.org/grpc"
+
 	"v2ray.com/core"
 	"v2ray.com/core/app/commander"
+	"v2ray.com/core/app/policy"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/proxyman/command"
 	"v2ray.com/core/app/router"
+	"v2ray.com/core/app/stats"
+	statscmd "v2ray.com/core/app/stats/command"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -341,6 +345,180 @@ func TestCommanderAddRemoveUser(t *testing.T) {
 	})
 	assert(resp, IsNotNil)
 	assert(err, IsNil)
+
+	CloseAllServers(servers)
+}
+
+func TestCommanderStats(t *testing.T) {
+	assert := With(t)
+
+	tcpServer := tcp.Server{
+		MsgProcessor: xor,
+	}
+	dest, err := tcpServer.Start()
+	assert(err, IsNil)
+	defer tcpServer.Close()
+
+	userID := protocol.NewID(uuid.New())
+	serverPort := tcp.PickPort()
+	cmdPort := tcp.PickPort()
+
+	serverConfig := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&stats.Config{}),
+			serial.ToTypedMessage(&commander.Config{
+				Tag: "api",
+				Service: []*serial.TypedMessage{
+					serial.ToTypedMessage(&statscmd.Config{}),
+				},
+			}),
+			serial.ToTypedMessage(&router.Config{
+				Rule: []*router.RoutingRule{
+					{
+						InboundTag: []string{"api"},
+						Tag:        "api",
+					},
+				},
+			}),
+			serial.ToTypedMessage(&policy.Config{
+				Level: map[uint32]*policy.Policy{
+					0: {
+						Timeout: &policy.Policy_Timeout{
+							UplinkOnly:   &policy.Second{Value: 0},
+							DownlinkOnly: &policy.Second{Value: 0},
+						},
+					},
+					1: {
+						Stats: &policy.Policy_Stats{
+							EnablePerUser: true,
+						},
+					},
+				},
+			}),
+		},
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&inbound.Config{
+					User: []*protocol.User{
+						{
+							Level: 1,
+							Email: "test",
+							Account: serial.ToTypedMessage(&vmess.Account{
+								Id:      userID.String(),
+								AlterId: 64,
+							}),
+						},
+					},
+				}),
+			},
+			{
+				Tag: "api",
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(cmdPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
+					Address: net.NewIPOrDomain(dest.Address),
+					Port:    uint32(dest.Port),
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
+					},
+				}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+		},
+	}
+
+	clientPort := tcp.PickPort()
+	clientConfig := &core.Config{
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(clientPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&dokodemo.Config{
+					Address: net.NewIPOrDomain(dest.Address),
+					Port:    uint32(dest.Port),
+					NetworkList: &net.NetworkList{
+						Network: []net.Network{net.Network_TCP},
+					},
+				}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&outbound.Config{
+					Receiver: []*protocol.ServerEndpoint{
+						{
+							Address: net.NewIPOrDomain(net.LocalHostIP),
+							Port:    uint32(serverPort),
+							User: []*protocol.User{
+								{
+									Account: serial.ToTypedMessage(&vmess.Account{
+										Id:      userID.String(),
+										AlterId: 64,
+										SecuritySettings: &protocol.SecurityConfig{
+											Type: protocol.SecurityType_AES128_GCM,
+										},
+									}),
+								},
+							},
+						},
+					},
+				}),
+			},
+		},
+	}
+
+	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
+	assert(err, IsNil)
+
+	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
+		IP:   []byte{127, 0, 0, 1},
+		Port: int(clientPort),
+	})
+	assert(err, IsNil)
+
+	payload := make([]byte, 10240*1024)
+	rand.Read(payload)
+
+	nBytes, err := conn.Write([]byte(payload))
+	assert(err, IsNil)
+	assert(nBytes, Equals, len(payload))
+
+	response := readFrom(conn, time.Second*20, 10240*1024)
+	assert(response, Equals, xor([]byte(payload)))
+	assert(conn.Close(), IsNil)
+
+	cmdConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", cmdPort), grpc.WithInsecure(), grpc.WithBlock())
+	assert(err, IsNil)
+
+	const name = "user>traffic>test"
+	sClient := statscmd.NewStatsServiceClient(cmdConn)
+
+	sresp, err := sClient.GetStats(context.Background(), &statscmd.GetStatsRequest{
+		Name:   name,
+		Reset_: true,
+	})
+	assert(err, IsNil)
+	assert(sresp.Stat.Name, Equals, name)
+	assert(sresp.Stat.Value, Equals, int64(10240*1024*2))
+
+	sresp, err = sClient.GetStats(context.Background(), &statscmd.GetStatsRequest{
+		Name: name,
+	})
+	assert(err, IsNil)
+	assert(sresp.Stat.Name, Equals, name)
+	assert(sresp.Stat.Value, Equals, int64(0))
 
 	CloseAllServers(servers)
 }

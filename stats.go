@@ -27,7 +27,7 @@ func (s *syncStatManager) Start() error {
 	defer s.RUnlock()
 
 	if s.StatManager == nil {
-		return newError("StatManager not set.")
+		return nil
 	}
 
 	return s.StatManager.Start()
@@ -38,7 +38,7 @@ func (s *syncStatManager) Close() error {
 	defer s.RUnlock()
 
 	if s.StatManager == nil {
-		return newError("StatManager not set.")
+		return nil
 	}
 	return s.StatManager.Close()
 }
