@@ -56,6 +56,40 @@ func getStatsName(u *protocol.User) string {
 	return "user>traffic>" + u.Email
 }
 
+func (d *DefaultDispatcher) getStatCounter(name string) core.StatCounter {
+	c := d.stats.GetCounter(name)
+	if c != nil {
+		return c
+	}
+	c, err := d.stats.RegisterCounter(name)
+	if err != nil {
+		return nil
+	}
+	return c
+}
+
+func (d *DefaultDispatcher) getRayOption(user *protocol.User) []ray.Option {
+	var rayOptions []ray.Option
+
+	if user != nil && len(user.Email) > 0 {
+		p := d.policy.ForLevel(user.Level)
+		if p.Stats.UserUplink {
+			name := "user>>>" + user.Email + ">>>traffic>>>uplink"
+			if c := d.getStatCounter(name); c != nil {
+				rayOptions = append(rayOptions, ray.WithUplinkStatCounter(c))
+			}
+		}
+		if p.Stats.UserDownlink {
+			name := "user>>>" + user.Email + ">>>traffic>>>downlink"
+			if c := d.getStatCounter(name); c != nil {
+				rayOptions = append(rayOptions, ray.WithDownlinkStatCounter(c))
+			}
+		}
+	}
+
+	return rayOptions
+}
+
 // Dispatch implements core.Dispatcher.
 func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destination) (ray.InboundRay, error) {
 	if !destination.IsValid() {
@@ -63,24 +97,8 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	}
 	ctx = proxy.ContextWithTarget(ctx, destination)
 
-	var rayOptions []ray.Option
-
 	user := protocol.UserFromContext(ctx)
-	if user != nil && len(user.Email) > 0 {
-		name := getStatsName(user)
-		c, err := d.stats.RegisterCounter(name)
-		if err != nil {
-			c = d.stats.GetCounter(name)
-		}
-		if c == nil {
-			newError("failed to get stats counter ", name).AtWarning().WithContext(ctx).WriteToLog()
-		}
-
-		p := d.policy.ForLevel(user.Level)
-		if p.Stats.EnablePerUser {
-			rayOptions = append(rayOptions, ray.WithStatCounter(c))
-		}
-	}
+	rayOptions := d.getRayOption(user)
 
 	outbound := ray.New(ctx, rayOptions...)
 	snifferList := proxyman.ProtocolSniffersFromContext(ctx)

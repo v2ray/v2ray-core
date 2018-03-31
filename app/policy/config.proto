@@ -20,7 +20,8 @@ message Policy {
   }
 
   message Stats {
-    bool enable_per_user = 1;
+    bool user_uplink = 1;
+    bool user_downlink = 2;
   }
 
   Timeout timeout = 1;

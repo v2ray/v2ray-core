@@ -390,7 +390,8 @@ func TestCommanderStats(t *testing.T) {
 					},
 					1: {
 						Stats: &policy.Policy_Stats{
-							EnablePerUser: true,
+							UserUplink:   true,
+							UserDownlink: true,
 						},
 					},
 				},
@@ -502,7 +503,7 @@ func TestCommanderStats(t *testing.T) {
 	cmdConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", cmdPort), grpc.WithInsecure(), grpc.WithBlock())
 	assert(err, IsNil)
 
-	const name = "user>traffic>test"
+	const name = "user>>>test>>>traffic>>>uplink"
 	sClient := statscmd.NewStatsServiceClient(cmdConn)
 
 	sresp, err := sClient.GetStats(context.Background(), &statscmd.GetStatsRequest{
@@ -511,7 +512,7 @@ func TestCommanderStats(t *testing.T) {
 	})
 	assert(err, IsNil)
 	assert(sresp.Stat.Name, Equals, name)
-	assert(sresp.Stat.Value, Equals, int64(10240*1024*2))
+	assert(sresp.Stat.Value, Equals, int64(10240*1024))
 
 	sresp, err = sClient.GetStats(context.Background(), &statscmd.GetStatsRequest{
 		Name: name,

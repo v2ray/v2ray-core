@@ -20,7 +20,8 @@ type TimeoutPolicy struct {
 }
 
 type StatsPolicy struct {
-	EnablePerUser bool
+	UserUplink   bool
+	UserDownlink bool
 }
 
 // Policy is session based settings for controlling V2Ray requests. It contains various settings (or limits) that may differ for different users in the context.
@@ -47,7 +48,8 @@ func DefaultPolicy() Policy {
 			DownlinkOnly:   time.Second * 30,
 		},
 		Stats: StatsPolicy{
-			EnablePerUser: false,
+			UserUplink:   false,
+			UserDownlink: false,
 		},
 	}
 }

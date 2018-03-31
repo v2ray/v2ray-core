@@ -12,15 +12,23 @@ import (
 	"v2ray.com/core/common/signal"
 )
 
-type Option func(*Stream)
+type Option func(*directRay)
 
 type addInt64 interface {
 	Add(int64) int64
 }
 
-func WithStatCounter(c addInt64) Option {
-	return func(s *Stream) {
-		s.onDataSize = append(s.onDataSize, func(delta uint64) {
+func WithUplinkStatCounter(c addInt64) Option {
+	return func(s *directRay) {
+		s.Input.onDataSize = append(s.Input.onDataSize, func(delta uint64) {
+			c.Add(int64(delta))
+		})
+	}
+}
+
+func WithDownlinkStatCounter(c addInt64) Option {
+	return func(s *directRay) {
+		s.Output.onDataSize = append(s.Output.onDataSize, func(delta uint64) {
 			c.Add(int64(delta))
 		})
 	}
@@ -28,10 +36,14 @@ func WithStatCounter(c addInt64) Option {
 
 // New creates a new Ray for direct traffic transport.
 func New(ctx context.Context, opts ...Option) Ray {
-	return &directRay{
-		Input:  NewStream(ctx, opts...),
-		Output: NewStream(ctx, opts...),
+	r := &directRay{
+		Input:  NewStream(ctx),
+		Output: NewStream(ctx),
 	}
+	for _, opt := range opts {
+		opt(r)
+	}
+	return r
 }
 
 type directRay struct {
@@ -80,15 +92,12 @@ type Stream struct {
 }
 
 // NewStream creates a new Stream.
-func NewStream(ctx context.Context, opts ...Option) *Stream {
+func NewStream(ctx context.Context) *Stream {
 	s := &Stream{
 		ctx:         ctx,
 		readSignal:  signal.NewNotifier(),
 		writeSignal: signal.NewNotifier(),
 		size:        0,
-	}
-	for _, opt := range opts {
-		opt(s)
 	}
 	return s
 }

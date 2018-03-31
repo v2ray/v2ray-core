@@ -61,7 +61,8 @@ func (p *Policy) ToCorePolicy() core.Policy {
 		cp.Timeouts.UplinkOnly = p.Timeout.UplinkOnly.Duration()
 	}
 	if p.Stats != nil {
-		cp.Stats.EnablePerUser = p.Stats.EnablePerUser
+		cp.Stats.UserUplink = p.Stats.UserUplink
+		cp.Stats.UserDownlink = p.Stats.UserDownlink
 	}
 	return cp
 }
