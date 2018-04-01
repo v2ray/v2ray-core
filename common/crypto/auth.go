@@ -124,7 +124,7 @@ func (r *AuthenticationReader) readSize() (int32, error) {
 var errSoft = newError("waiting for more data")
 
 func (r *AuthenticationReader) readInternal(soft bool) (*buf.Buffer, error) {
-	if soft && r.reader.BufferedBytes() < 2 {
+	if soft && r.reader.BufferedBytes() < int32(r.sizeParser.SizeBytes()) {
 		return nil, errSoft
 	}
 
