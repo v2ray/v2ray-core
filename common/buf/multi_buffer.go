@@ -30,6 +30,26 @@ func ReadAllToMultiBuffer(reader io.Reader) (MultiBuffer, error) {
 	}
 }
 
+// ReadSizeToMultiBuffer reads specific number of bytes from reader into a MultiBuffer.
+func ReadSizeToMultiBuffer(reader io.Reader, size int32) (MultiBuffer, error) {
+	mb := NewMultiBufferCap(32)
+
+	for size > 0 {
+		bSize := size
+		if bSize > Size {
+			bSize = Size
+		}
+		b := NewSize(uint32(bSize))
+		if err := b.Reset(ReadFullFrom(reader, int(bSize))); err != nil {
+			mb.Release()
+			return nil, err
+		}
+		size -= bSize
+		mb.Append(b)
+	}
+	return mb, nil
+}
+
 // ReadAllToBytes reads all content from the reader into a byte array, until EOF.
 func ReadAllToBytes(reader io.Reader) ([]byte, error) {
 	mb, err := ReadAllToMultiBuffer(reader)
