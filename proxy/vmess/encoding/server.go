@@ -168,7 +168,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		if invalidRequestErr != nil {
 			randomLen := dice.Roll(64) + 1
 			// Read random number of bytes for prevent detection.
-			buffer.AppendSupplier(buf.ReadFullFrom(decryptor, randomLen))
+			buffer.AppendSupplier(buf.ReadFullFrom(decryptor, int32(randomLen)))
 		}
 	}()
 
@@ -195,7 +195,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	}
 
 	if padingLen > 0 {
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(decryptor, padingLen)); err != nil {
+		if err := buffer.AppendSupplier(buf.ReadFullFrom(decryptor, int32(padingLen))); err != nil {
 			return nil, newError("failed to read padding").Base(err)
 		}
 	}

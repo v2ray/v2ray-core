@@ -40,7 +40,7 @@ func ReadSizeToMultiBuffer(reader io.Reader, size int32) (MultiBuffer, error) {
 			bSize = Size
 		}
 		b := NewSize(uint32(bSize))
-		if err := b.Reset(ReadFullFrom(reader, int(bSize))); err != nil {
+		if err := b.Reset(ReadFullFrom(reader, bSize)); err != nil {
 			mb.Release()
 			return nil, err
 		}
@@ -174,12 +174,12 @@ func (mb MultiBuffer) ToNetBuffers() net.Buffers {
 }
 
 // SliceBySize splits the beginning of this MultiBuffer into another one, for at most size bytes.
-func (mb *MultiBuffer) SliceBySize(size int) MultiBuffer {
+func (mb *MultiBuffer) SliceBySize(size int32) MultiBuffer {
 	slice := NewMultiBufferCap(10)
 	sliceSize := 0
 	endIndex := len(*mb)
 	for i, b := range *mb {
-		if b.Len()+sliceSize > size {
+		if int32(b.Len()+sliceSize) > size {
 			endIndex = i
 			break
 		}

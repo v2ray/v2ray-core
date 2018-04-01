@@ -97,7 +97,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 
 	if version == socks5Version {
 		nMethod := int(buffer.Byte(1))
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, nMethod)); err != nil {
+		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, int32(nMethod))); err != nil {
 			return nil, newError("failed to read auth methods").Base(err)
 		}
 
@@ -190,7 +190,7 @@ func readUsernamePassword(reader io.Reader) (string, string, error) {
 	if err := buffer.Reset(buf.ReadFullFrom(reader, 2)); err != nil {
 		return "", "", err
 	}
-	nUsername := int(buffer.Byte(1))
+	nUsername := int32(buffer.Byte(1))
 
 	if err := buffer.Reset(buf.ReadFullFrom(reader, nUsername)); err != nil {
 		return "", "", err
@@ -200,7 +200,7 @@ func readUsernamePassword(reader io.Reader) (string, string, error) {
 	if err := buffer.Reset(buf.ReadFullFrom(reader, 1)); err != nil {
 		return "", "", err
 	}
-	nPassword := int(buffer.Byte(0))
+	nPassword := int32(buffer.Byte(0))
 	if err := buffer.Reset(buf.ReadFullFrom(reader, nPassword)); err != nil {
 		return "", "", err
 	}

@@ -87,7 +87,7 @@ func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 	}
 
 	if padingLen > 0 {
-		common.Must(buffer.AppendSupplier(buf.ReadFullFrom(rand.Reader, padingLen)))
+		common.Must(buffer.AppendSupplier(buf.ReadFullFrom(rand.Reader, int32(padingLen))))
 	}
 
 	fnv1a := fnv.New32a()
@@ -191,7 +191,7 @@ func (c *ClientSession) DecodeResponseHeader(reader io.Reader) (*protocol.Respon
 
 	if buffer.Byte(2) != 0 {
 		cmdID := buffer.Byte(2)
-		dataLen := int(buffer.Byte(3))
+		dataLen := int32(buffer.Byte(3))
 
 		if err := buffer.Reset(buf.ReadFullFrom(c.responseReader, dataLen)); err != nil {
 			return nil, newError("failed to read response command").Base(err)

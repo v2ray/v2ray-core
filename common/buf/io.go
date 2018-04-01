@@ -33,7 +33,7 @@ func ReadFrom(reader io.Reader) Supplier {
 }
 
 // ReadFullFrom creates a Supplier to read full buffer from a given io.Reader.
-func ReadFullFrom(reader io.Reader, size int) Supplier {
+func ReadFullFrom(reader io.Reader, size int32) Supplier {
 	return func(b []byte) (int, error) {
 		return io.ReadFull(reader, b[:size])
 	}

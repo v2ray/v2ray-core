@@ -158,7 +158,7 @@ func (r *BufferedReader) ReadAtMost(size int) (MultiBuffer, error) {
 		r.leftOver = mb
 	}
 
-	mb := r.leftOver.SliceBySize(size)
+	mb := r.leftOver.SliceBySize(int32(size))
 	if r.leftOver.IsEmpty() {
 		r.leftOver = nil
 	}

@@ -20,7 +20,7 @@ func ReadMetadata(reader io.Reader) (*FrameMetadata, error) {
 	b := buf.NewSize(uint32(metaLen))
 	defer b.Release()
 
-	if err := b.Reset(buf.ReadFullFrom(reader, int(metaLen))); err != nil {
+	if err := b.Reset(buf.ReadFullFrom(reader, int32(metaLen))); err != nil {
 		return nil, err
 	}
 	return ReadFrameFrom(b)
@@ -52,7 +52,7 @@ func (r *PacketReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	}
 
 	b := buf.NewSize(uint32(size))
-	if err := b.AppendSupplier(buf.ReadFullFrom(r.reader, int(size))); err != nil {
+	if err := b.Reset(buf.ReadFullFrom(r.reader, int32(size))); err != nil {
 		b.Release()
 		return nil, err
 	}

@@ -41,7 +41,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	ivLen := account.Cipher.IVSize()
 	var iv []byte
 	if ivLen > 0 {
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, ivLen)); err != nil {
+		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, int32(ivLen))); err != nil {
 			return nil, nil, newError("failed to read IV").Base(err)
 		}
 
@@ -70,7 +70,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 		// Invalid address. Continue to read some bytes to confuse client.
 		nBytes := dice.Roll(32) + 1
 		buffer.Clear()
-		buffer.AppendSupplier(buf.ReadFullFrom(br, nBytes))
+		buffer.AppendSupplier(buf.ReadFullFrom(br, int32(nBytes)))
 		return nil, nil, newError("failed to read address").Base(err)
 	}
 
@@ -227,7 +227,7 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload []byte) (*buf.Buff
 	buffer := buf.New()
 	ivLen := account.Cipher.IVSize()
 	if ivLen > 0 {
-		common.Must(buffer.Reset(buf.ReadFullFrom(rand.Reader, ivLen)))
+		common.Must(buffer.Reset(buf.ReadFullFrom(rand.Reader, int32(ivLen))))
 	}
 	iv := buffer.Bytes()
 
