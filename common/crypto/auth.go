@@ -204,12 +204,20 @@ func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
 func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
 	defer mb.Release()
 
+	if mb.IsEmpty() {
+		b := buf.New()
+		defer b.Release()
+
+		eb, _ := w.seal(b)
+		return w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(eb))
+	}
+
 	mb2Write := buf.NewMultiBufferCap(len(mb) + 1)
 
-	for {
+	for !mb.IsEmpty() {
 		b := mb.SplitFirst()
 		if b == nil {
-			b = buf.New()
+			continue
 		}
 		eb, err := w.seal(b)
 		b.Release()
@@ -218,9 +226,6 @@ func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
 			return err
 		}
 		mb2Write.Append(eb)
-		if mb.IsEmpty() {
-			break
-		}
 	}
 
 	return w.writer.WriteMultiBuffer(mb2Write)
