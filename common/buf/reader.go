@@ -19,8 +19,6 @@ func NewBytesToBufferReader(reader io.Reader) Reader {
 	}
 }
 
-const xlSize = 128 * 1024
-
 func (r *BytesToBufferReader) readSmall() (MultiBuffer, error) {
 	b := New()
 	for i := 0; i < 64; i++ {
@@ -55,7 +53,7 @@ func (r *BytesToBufferReader) ReadMultiBuffer() (MultiBuffer, error) {
 	if nBytes > 0 {
 		mb := NewMultiBufferCap(nBytes/Size + 1)
 		mb.Write(r.buffer[:nBytes])
-		if nBytes == len(r.buffer) && nBytes < xlSize {
+		if nBytes == len(r.buffer) && nBytes < int(largeSize) {
 			freeBytes(r.buffer)
 			r.buffer = newBytes(uint32(nBytes) + 1)
 		} else if nBytes < Size {

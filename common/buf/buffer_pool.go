@@ -15,14 +15,19 @@ func createAllocFunc(size uint32) func() interface{} {
 	}
 }
 
+// The following parameters controls the size of buffer pools.
+// There are numPools pools. Starting from 2k size, the size of each pool is sizeMulti of the previous one.
+// Package buf is guaranteed to not use buffers larger than the largest pool.
+// Other packets may use larger buffers.
 const (
 	numPools  = 5
 	sizeMulti = 4
 )
 
 var (
-	pool     [numPools]sync.Pool
-	poolSize [numPools]uint32
+	pool      [numPools]sync.Pool
+	poolSize  [numPools]uint32
+	largeSize uint32
 )
 
 func init() {
@@ -32,6 +37,7 @@ func init() {
 			New: createAllocFunc(size),
 		}
 		poolSize[i] = size
+		largeSize = size
 		size *= sizeMulti
 	}
 }
