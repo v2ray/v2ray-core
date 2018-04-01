@@ -97,6 +97,11 @@ func (r *BufferedReader) IsBuffered() bool {
 	return r.buffered
 }
 
+// BufferedBytes returns the number of bytes that is cached in this reader.
+func (r *BufferedReader) BufferedBytes() int32 {
+	return int32(r.leftOver.Len())
+}
+
 // ReadByte implements io.ByteReader.
 func (r *BufferedReader) ReadByte() (byte, error) {
 	var b [1]byte

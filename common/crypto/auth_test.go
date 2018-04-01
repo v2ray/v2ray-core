@@ -125,12 +125,10 @@ func TestAuthenticationReaderWriterPacket(t *testing.T) {
 
 	b1 := mb.SplitFirst()
 	assert(b1.String(), Equals, "abcd")
-	assert(mb.IsEmpty(), IsTrue)
 
-	mb, err = reader.ReadMultiBuffer()
-	assert(err, IsNil)
 	b2 := mb.SplitFirst()
 	assert(b2.String(), Equals, "efgh")
+
 	assert(mb.IsEmpty(), IsTrue)
 
 	_, err = reader.ReadMultiBuffer()
