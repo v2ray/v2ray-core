@@ -16,7 +16,7 @@ type ConfigFormat struct {
 	Loader    ConfigLoader
 }
 
-// ConfigLoader is an utility to load V2Ray config from external source.
+// ConfigLoader is a utility to load V2Ray config from external source.
 type ConfigLoader func(input io.Reader) (*Config, error)
 
 var (

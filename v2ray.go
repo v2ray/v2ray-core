@@ -94,7 +94,7 @@ func (s *Instance) CreateObject(config interface{}) (interface{}, error) {
 	return common.CreateObject(ctx, config)
 }
 
-// ID returns an unique ID for this V2Ray instance.
+// ID returns a unique ID for this V2Ray instance.
 func (s *Instance) ID() uuid.UUID {
 	return s.id
 }

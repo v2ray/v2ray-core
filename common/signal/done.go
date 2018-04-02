@@ -4,7 +4,7 @@ import (
 	"sync"
 )
 
-// Done is an utility for notifications of something being done.
+// Done is a utility for notifications of something being done.
 type Done struct {
 	access sync.Mutex
 	c      chan struct{}
