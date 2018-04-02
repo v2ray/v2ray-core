@@ -1,6 +1,6 @@
 package protocol
 
-// Account is an user identity used for authentication.
+// Account is a user identity used for authentication.
 type Account interface {
 	Equals(Account) bool
 }
