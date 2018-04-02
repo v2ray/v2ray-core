@@ -15,13 +15,13 @@ func TestAllHeadersLoadable(t *testing.T) {
 
 	noopAuth, err := CreatePacketHeader((*noop.Config)(nil))
 	assert(err, IsNil)
-	assert(noopAuth.Size(), Equals, 0)
+	assert(noopAuth.Size(), Equals, int32(0))
 
 	srtp, err := CreatePacketHeader((*srtp.Config)(nil))
 	assert(err, IsNil)
-	assert(srtp.Size(), Equals, 4)
+	assert(srtp.Size(), Equals, int32(4))
 
 	utp, err := CreatePacketHeader((*utp.Config)(nil))
 	assert(err, IsNil)
-	assert(utp.Size(), Equals, 4)
+	assert(utp.Size(), Equals, int32(4))
 }

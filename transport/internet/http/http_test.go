@@ -41,7 +41,7 @@ func TestHTTPConnection(t *testing.T) {
 				}
 				nBytes, err := conn.Write(b.Bytes())
 				assert(err, IsNil)
-				assert(nBytes, Equals, b.Len())
+				assert(int32(nBytes), Equals, b.Len())
 			}
 		}()
 	})
