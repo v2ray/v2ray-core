@@ -55,7 +55,7 @@ func (r *BytesToBufferReader) ReadMultiBuffer() (MultiBuffer, error) {
 		mb.Write(r.buffer[:nBytes])
 		if nBytes == len(r.buffer) && nBytes < int(largeSize) {
 			freeBytes(r.buffer)
-			r.buffer = newBytes(uint32(nBytes) + 1)
+			r.buffer = newBytes(int32(nBytes) + 1)
 		} else if nBytes < Size {
 			r.freeBuffer()
 		}

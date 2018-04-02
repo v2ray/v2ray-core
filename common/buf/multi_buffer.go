@@ -39,7 +39,7 @@ func ReadSizeToMultiBuffer(reader io.Reader, size int32) (MultiBuffer, error) {
 		if bSize > Size {
 			bSize = Size
 		}
-		b := NewSize(uint32(bSize))
+		b := NewSize(bSize)
 		if err := b.Reset(ReadFullFrom(reader, bSize)); err != nil {
 			mb.Release()
 			return nil, err
@@ -189,7 +189,7 @@ func (mb *MultiBuffer) SliceBySize(size int32) MultiBuffer {
 	}
 	*mb = (*mb)[endIndex:]
 	if endIndex == 0 && len(*mb) > 0 {
-		b := NewSize(uint32(size))
+		b := NewSize(size)
 		common.Must(b.Reset(ReadFullFrom((*mb)[0], size)))
 		return NewMultiBufferValue(b)
 	}

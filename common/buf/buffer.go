@@ -179,9 +179,9 @@ func New() *Buffer {
 	}
 }
 
-// NewSize creates and returns a buffer with 0 length and at least the given capacity.
-func NewSize(size uint32) *Buffer {
+// NewSize creates and returns a buffer with 0 length and at least the given capacity. Capacity must be positive.
+func NewSize(capacity int32) *Buffer {
 	return &Buffer{
-		v: newBytes(size),
+		v: newBytes(capacity),
 	}
 }

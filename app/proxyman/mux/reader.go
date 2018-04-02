@@ -17,7 +17,7 @@ func ReadMetadata(reader io.Reader) (*FrameMetadata, error) {
 		return nil, newError("invalid metalen ", metaLen).AtError()
 	}
 
-	b := buf.NewSize(uint32(metaLen))
+	b := buf.NewSize(int32(metaLen))
 	defer b.Release()
 
 	if err := b.Reset(buf.ReadFullFrom(reader, int32(metaLen))); err != nil {
@@ -51,7 +51,7 @@ func (r *PacketReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 		return nil, err
 	}
 
-	b := buf.NewSize(uint32(size))
+	b := buf.NewSize(int32(size))
 	if err := b.Reset(buf.ReadFullFrom(r.reader, int32(size))); err != nil {
 		b.Release()
 		return nil, err

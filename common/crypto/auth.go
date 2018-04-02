@@ -143,7 +143,7 @@ func (r *AuthenticationReader) readInternal(soft bool) (*buf.Buffer, error) {
 		return nil, errSoft
 	}
 
-	b := buf.NewSize(uint32(size))
+	b := buf.NewSize(size)
 	if err := b.Reset(buf.ReadFullFrom(r.reader, size)); err != nil {
 		b.Release()
 		return nil, err

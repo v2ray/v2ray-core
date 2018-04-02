@@ -76,7 +76,7 @@ func (v *ChunkReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	}
 	size += AuthSize
 
-	buffer := buf.NewSize(uint32(size))
+	buffer := buf.NewSize(int32(size))
 	if err := buffer.AppendSupplier(buf.ReadFullFrom(v.reader, int32(size))); err != nil {
 		buffer.Release()
 		return nil, err

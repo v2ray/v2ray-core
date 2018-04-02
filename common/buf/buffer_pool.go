@@ -9,7 +9,7 @@ const (
 	Size = 2 * 1024
 )
 
-func createAllocFunc(size uint32) func() interface{} {
+func createAllocFunc(size int32) func() interface{} {
 	return func() interface{} {
 		return make([]byte, size)
 	}
@@ -26,12 +26,12 @@ const (
 
 var (
 	pool      [numPools]sync.Pool
-	poolSize  [numPools]uint32
-	largeSize uint32
+	poolSize  [numPools]int32
+	largeSize int32
 )
 
 func init() {
-	size := uint32(Size)
+	size := int32(Size)
 	for i := 0; i < numPools; i++ {
 		pool[i] = sync.Pool{
 			New: createAllocFunc(size),
@@ -42,7 +42,7 @@ func init() {
 	}
 }
 
-func newBytes(size uint32) []byte {
+func newBytes(size int32) []byte {
 	for idx, ps := range poolSize {
 		if size <= ps {
 			return pool[idx].Get().([]byte)
@@ -52,7 +52,7 @@ func newBytes(size uint32) []byte {
 }
 
 func freeBytes(b []byte) {
-	size := uint32(cap(b))
+	size := int32(cap(b))
 	b = b[0:cap(b)]
 	for i := numPools - 1; i >= 0; i-- {
 		if size >= poolSize[i] {
