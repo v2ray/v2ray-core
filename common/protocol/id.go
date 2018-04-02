@@ -19,7 +19,7 @@ func DefaultIDHash(key []byte) hash.Hash {
 	return hmac.New(md5.New, key)
 }
 
-// The ID of en entity, in the form of an UUID.
+// The ID of en entity, in the form of a UUID.
 type ID struct {
 	uuid   uuid.UUID
 	cmdKey [IDBytesLen]byte

@@ -37,7 +37,7 @@ func (op *AddUserOperation) ApplyInbound(ctx context.Context, handler core.Inbou
 	}
 	um, ok := p.(proxy.UserManager)
 	if !ok {
-		return newError("proxy is not an UserManager")
+		return newError("proxy is not a UserManager")
 	}
 	return um.AddUser(ctx, op.User)
 }
@@ -50,7 +50,7 @@ func (op *RemoveUserOperation) ApplyInbound(ctx context.Context, handler core.In
 	}
 	um, ok := p.(proxy.UserManager)
 	if !ok {
-		return newError("proxy is not an UserManager")
+		return newError("proxy is not a UserManager")
 	}
 	return um.RemoveUser(ctx, op.Email)
 }

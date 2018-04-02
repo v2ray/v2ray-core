@@ -61,14 +61,14 @@ func (u *UUID) Next() UUID {
 	}
 }
 
-// New creates an UUID with random value.
+// New creates a UUID with random value.
 func New() UUID {
 	var uuid UUID
 	common.Must2(rand.Read(uuid.Bytes()))
 	return uuid
 }
 
-// ParseBytes converts an UUID in byte form to object.
+// ParseBytes converts a UUID in byte form to object.
 func ParseBytes(b []byte) (UUID, error) {
 	var uuid UUID
 	if len(b) != 16 {
@@ -78,7 +78,7 @@ func ParseBytes(b []byte) (UUID, error) {
 	return uuid, nil
 }
 
-// ParseString converts an UUID in string form to object.
+// ParseString converts a UUID in string form to object.
 func ParseString(str string) (UUID, error) {
 	var uuid UUID
 

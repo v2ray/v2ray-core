@@ -3,7 +3,7 @@ package serial
 import "strconv"
 import "io"
 
-// Uint16ToBytes serializes an uint16 into bytes in big endian order.
+// Uint16ToBytes serializes a uint16 into bytes in big endian order.
 func Uint16ToBytes(value uint16, b []byte) []byte {
 	return append(b, byte(value>>8), byte(value))
 }

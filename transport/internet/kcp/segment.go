@@ -9,7 +9,7 @@ import (
 type Command byte
 
 const (
-	// CommandACK indicates a AckSegment.
+	// CommandACK indicates an AckSegment.
 	CommandACK Command = 0
 	// CommandData indicates a DataSegment.
 	CommandData Command = 1
