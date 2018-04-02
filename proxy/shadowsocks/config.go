@@ -140,6 +140,9 @@ func (v *AesCfb) EncodePacket(key []byte, b *buf.Buffer) error {
 }
 
 func (v *AesCfb) DecodePacket(key []byte, b *buf.Buffer) error {
+	if b.Len() <= v.IVSize() {
+		return newError("insufficient data: ", b.Len())
+	}
 	iv := b.BytesTo(v.IVSize())
 	stream := crypto.NewAesDecryptionStream(key, iv)
 	stream.XORKeyStream(b.BytesFrom(v.IVSize()), b.BytesFrom(v.IVSize()))
@@ -203,6 +206,9 @@ func (c *AEADCipher) EncodePacket(key []byte, b *buf.Buffer) error {
 }
 
 func (c *AEADCipher) DecodePacket(key []byte, b *buf.Buffer) error {
+	if b.Len() <= c.IVSize() {
+		return newError("insufficient data: ", b.Len())
+	}
 	ivLen := c.IVSize()
 	payloadLen := b.Len()
 	auth := c.createAuthenticator(key, b.BytesTo(ivLen))
@@ -253,6 +259,9 @@ func (v *ChaCha20) EncodePacket(key []byte, b *buf.Buffer) error {
 }
 
 func (v *ChaCha20) DecodePacket(key []byte, b *buf.Buffer) error {
+	if b.Len() <= v.IVSize() {
+		return newError("insufficient data: ", b.Len())
+	}
 	iv := b.BytesTo(v.IVSize())
 	stream := crypto.NewChaCha20Stream(key, iv)
 	stream.XORKeyStream(b.BytesFrom(v.IVSize()), b.BytesFrom(v.IVSize()))

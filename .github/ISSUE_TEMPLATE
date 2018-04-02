@@ -1,7 +1,7 @@
 Please skip to the English section below if you don't write Chinese.
 
 中文：
-提交 Issue 之前请先阅读 [Issue 指引](https://www.v2ray.com/chapter_01/issue.html)，然后回答下面的问题，谢谢。
+提交 Issue 之前请先阅读 [Issue 指引](https://github.com/v2ray/v2ray-core/blob/master/.github/SUPPORT.md)，然后回答下面的问题，谢谢。
 除非特殊情况，请完整填写所有问题。不按模板发的 issue 将直接被关闭。
 
 1)  你正在使用哪个版本的 V2Ray？（如果服务器和客户端使用了不同版本，请注明）
@@ -36,7 +36,7 @@ Please skip to the English section below if you don't write Chinese.
     // 在这里附上客户端日志
 ```
 
-7) 请附上访问日志。在 Linux 中，日志通常在 `/var/log/v2ray/error.log` 文件中。
+7) 请附上访问日志。在 Linux 中，日志通常在 `/var/log/v2ray/access.log` 文件中。
 ```
     // 在这里附上服务器端日志
 ```
@@ -49,7 +49,7 @@ Please skip to the English section below if you don't write Chinese.
 Please remove the Chinese section above.
 
 English:
-Please read the [instruction](https://www.v2ray.com/en/get_started/issue.html) and answer the following questions before submitting your issue. Thank you.
+Please read the [instruction](https://github.com/v2ray/v2ray-core/blob/master/.github/SUPPORT.md) and answer the following questions before submitting your issue. Thank you.
 Please answer all the questions with enough information. All issues not following this template will be closed immediately.
 
 1) What version of V2Ray are you using (If you deploy different version on server and client, please explicitly point out)?

@@ -11,6 +11,7 @@ type BufferToBytesWriter struct {
 	io.Writer
 }
 
+// NewBufferToBytesWriter returns a new BufferToBytesWriter.
 func NewBufferToBytesWriter(writer io.Writer) *BufferToBytesWriter {
 	return &BufferToBytesWriter{
 		Writer: writer,
@@ -22,7 +23,7 @@ func (w *BufferToBytesWriter) WriteMultiBuffer(mb MultiBuffer) error {
 	defer mb.Release()
 
 	bs := mb.ToNetBuffers()
-	_, err := bs.WriteTo(w)
+	_, err := bs.WriteTo(w.Writer)
 	return err
 }
 
@@ -49,6 +50,7 @@ func NewBufferedWriter(writer Writer) *BufferedWriter {
 	}
 }
 
+// WriteByte implements io.ByteWriter.
 func (w *BufferedWriter) WriteByte(c byte) error {
 	_, err := w.Write([]byte{c})
 	return err
@@ -93,6 +95,9 @@ func (w *BufferedWriter) WriteMultiBuffer(b MultiBuffer) error {
 	defer b.Release()
 
 	for !b.IsEmpty() {
+		if w.buffer == nil {
+			w.buffer = New()
+		}
 		if err := w.buffer.AppendSupplier(ReadFrom(&b)); err != nil {
 			return err
 		}
@@ -113,15 +118,12 @@ func (w *BufferedWriter) Flush() error {
 			return err
 		}
 
-		if w.buffered {
-			w.buffer = New()
-		} else {
-			w.buffer = nil
-		}
+		w.buffer = nil
 	}
 	return nil
 }
 
+// SetBuffered sets whether the internal buffer is used. If set to false, Flush() will be called to clear the buffer.
 func (w *BufferedWriter) SetBuffered(f bool) error {
 	w.buffered = f
 	if !f {

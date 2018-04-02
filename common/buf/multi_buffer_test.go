@@ -1,8 +1,10 @@
 package buf_test
 
 import (
+	"crypto/rand"
 	"testing"
 
+	"v2ray.com/core/common"
 	. "v2ray.com/core/common/buf"
 	. "v2ray.com/ext/assert"
 )
@@ -32,4 +34,17 @@ func TestMultiBufferAppend(t *testing.T) {
 	b.AppendBytes('a', 'b')
 	mb.Append(b)
 	assert(mb.Len(), Equals, 2)
+}
+
+func TestMultiBufferSliceBySizeLarge(t *testing.T) {
+	assert := With(t)
+
+	lb := NewSize(8 * 1024)
+	common.Must(lb.Reset(ReadFrom(rand.Reader)))
+
+	var mb MultiBuffer
+	mb.Append(lb)
+
+	mb2 := mb.SliceBySize(4 * 1024)
+	assert(mb2.Len(), Equals, 4*1024)
 }

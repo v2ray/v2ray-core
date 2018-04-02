@@ -21,7 +21,19 @@ func TestAdaptiveReader(t *testing.T) {
 
 	b, err = reader.ReadMultiBuffer()
 	assert(err, IsNil)
+	assert(b.Len(), Equals, 8*1024)
+
+	b, err = reader.ReadMultiBuffer()
+	assert(err, IsNil)
 	assert(b.Len(), Equals, 32*1024)
+
+	b, err = reader.ReadMultiBuffer()
+	assert(err, IsNil)
+	assert(b.Len(), Equals, 128*1024)
+
+	b, err = reader.ReadMultiBuffer()
+	assert(err, IsNil)
+	assert(b.Len(), Equals, 512*1024)
 }
 
 func TestBytesReaderWriteTo(t *testing.T) {

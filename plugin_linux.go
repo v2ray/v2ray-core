@@ -8,7 +8,6 @@ import (
 	"plugin"
 	"strings"
 
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/platform"
 )
 
@@ -38,7 +37,7 @@ func loadPluginsInternal() error {
 			}
 			if gmf, ok := f.(GetMetadataFunc); ok {
 				metadata := gmf()
-				log.Trace(newError("plugin (", metadata.Name, ") loaded."))
+				newError("plugin (", metadata.Name, ") loaded.").WriteToLog()
 			}
 		}
 	}

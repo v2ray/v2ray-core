@@ -4,7 +4,11 @@ import (
 	"testing"
 	"time"
 
+	"v2ray.com/core/common/net"
 	. "v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common/uuid"
+	"v2ray.com/core/proxy/vmess"
 	. "v2ray.com/ext/assert"
 )
 
@@ -28,4 +32,34 @@ func TestTimeoutValidStrategy(t *testing.T) {
 	strategy = BeforeTime(time.Now().Add(2 * time.Second))
 	strategy.Invalidate()
 	assert(strategy.IsValid(), IsFalse)
+}
+
+func TestUserInServerSpec(t *testing.T) {
+	assert := With(t)
+
+	uuid1 := uuid.New()
+	uuid2 := uuid.New()
+
+	spec := NewServerSpec(net.Destination{}, AlwaysValid(), &User{
+		Email:   "test1@v2ray.com",
+		Account: serial.ToTypedMessage(&vmess.Account{Id: uuid1.String()}),
+	})
+	assert(spec.HasUser(&User{
+		Email:   "test1@v2ray.com",
+		Account: serial.ToTypedMessage(&vmess.Account{Id: uuid2.String()}),
+	}), IsFalse)
+
+	spec.AddUser(&User{Email: "test2@v2ray.com"})
+	assert(spec.HasUser(&User{
+		Email:   "test1@v2ray.com",
+		Account: serial.ToTypedMessage(&vmess.Account{Id: uuid1.String()}),
+	}), IsTrue)
+}
+
+func TestPickUser(t *testing.T) {
+	assert := With(t)
+
+	spec := NewServerSpec(net.Destination{}, AlwaysValid(), &User{Email: "test1@v2ray.com"}, &User{Email: "test2@v2ray.com"}, &User{Email: "test3@v2ray.com"})
+	user := spec.PickUser()
+	assert(user.Email, HasSuffix, "@v2ray.com")
 }

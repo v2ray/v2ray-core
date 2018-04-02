@@ -18,11 +18,14 @@ const (
 )
 
 func (c RequestCommand) TransferType() TransferType {
-	if c == RequestCommandTCP {
+	switch c {
+	case RequestCommandTCP, RequestCommandMux:
+		return TransferTypeStream
+	case RequestCommandUDP:
+		return TransferTypePacket
+	default:
 		return TransferTypeStream
 	}
-
-	return TransferTypePacket
 }
 
 const (
@@ -35,24 +38,11 @@ const (
 	RequestOptionChunkMasking bitmask.Byte = 0x04
 )
 
-type Security byte
-
-func (s Security) Is(t SecurityType) bool {
-	return s == Security(t)
-}
-
-func NormSecurity(s Security) Security {
-	if s.Is(SecurityType_UNKNOWN) {
-		return Security(SecurityType_LEGACY)
-	}
-	return s
-}
-
 type RequestHeader struct {
 	Version  byte
 	Command  RequestCommand
 	Option   bitmask.Byte
-	Security Security
+	Security SecurityType
 	Port     net.Port
 	Address  net.Address
 	User     *User
@@ -79,22 +69,22 @@ type ResponseHeader struct {
 type CommandSwitchAccount struct {
 	Host     net.Address
 	Port     net.Port
-	ID       *uuid.UUID
+	ID       uuid.UUID
 	Level    uint32
 	AlterIds uint16
 	ValidMin byte
 }
 
-func (sc *SecurityConfig) AsSecurity() Security {
+func (sc *SecurityConfig) GetSecurityType() SecurityType {
 	if sc == nil || sc.Type == SecurityType_AUTO {
 		if runtime.GOARCH == "amd64" || runtime.GOARCH == "s390x" {
-			return Security(SecurityType_AES128_GCM)
+			return SecurityType_AES128_GCM
 		}
-		return Security(SecurityType_CHACHA20_POLY1305)
+		return SecurityType_CHACHA20_POLY1305
 	}
-	return NormSecurity(Security(sc.Type))
+	return sc.Type
 }
 
-func IsDomainTooLong(domain string) bool {
+func isDomainTooLong(domain string) bool {
 	return len(domain) > 256
 }

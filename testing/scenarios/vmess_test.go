@@ -9,6 +9,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
+	clog "v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -35,15 +36,15 @@ func TestVMessDynamicPort(t *testing.T) {
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(serverPort),
@@ -83,22 +84,22 @@ func TestVMessDynamicPort(t *testing.T) {
 				Tag:           "detour",
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(clientPort),
@@ -113,7 +114,7 @@ func TestVMessDynamicPort(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
@@ -170,15 +171,15 @@ func TestVMessGCM(t *testing.T) {
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(serverPort),
@@ -196,22 +197,22 @@ func TestVMessGCM(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(clientPort),
@@ -226,7 +227,7 @@ func TestVMessGCM(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
@@ -293,15 +294,15 @@ func TestVMessGCMUDP(t *testing.T) {
 	defer udpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(serverPort),
@@ -319,22 +320,22 @@ func TestVMessGCMUDP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(clientPort),
@@ -349,7 +350,7 @@ func TestVMessGCMUDP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
@@ -426,15 +427,15 @@ func TestVMessChacha20(t *testing.T) {
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(serverPort),
@@ -452,22 +453,22 @@ func TestVMessChacha20(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(clientPort),
@@ -482,7 +483,7 @@ func TestVMessChacha20(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
@@ -549,15 +550,15 @@ func TestVMessNone(t *testing.T) {
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(serverPort),
@@ -575,22 +576,22 @@ func TestVMessNone(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(clientPort),
@@ -605,7 +606,7 @@ func TestVMessNone(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
@@ -678,11 +679,11 @@ func TestVMessKCP(t *testing.T) {
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(serverPort),
@@ -703,22 +704,22 @@ func TestVMessKCP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(clientPort),
@@ -733,7 +734,7 @@ func TestVMessKCP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
@@ -807,15 +808,15 @@ func TestVMessIPv6(t *testing.T) {
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(serverPort),
@@ -833,22 +834,22 @@ func TestVMessIPv6(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(clientPort),
@@ -863,7 +864,7 @@ func TestVMessIPv6(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
@@ -922,15 +923,15 @@ func TestVMessGCMMux(t *testing.T) {
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(serverPort),
@@ -948,22 +949,22 @@ func TestVMessGCMMux(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(clientPort),
@@ -978,7 +979,7 @@ func TestVMessGCMMux(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				SenderSettings: serial.ToTypedMessage(&proxyman.SenderConfig{
 					MultiplexSettings: &proxyman.MultiplexingConfig{
@@ -1064,15 +1065,15 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 	defer udpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(serverPort),
@@ -1090,23 +1091,23 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientUDPPort := udp.PickPort()
 	clientConfig := &core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{
-				ErrorLogLevel: log.LogLevel_Debug,
+				ErrorLogLevel: clog.Severity_Debug,
 				ErrorLogType:  log.LogType_Console,
 			}),
 		},
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(clientPort),
@@ -1134,7 +1135,7 @@ func TestVMessGCMMuxUDP(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				SenderSettings: serial.ToTypedMessage(&proxyman.SenderConfig{
 					MultiplexSettings: &proxyman.MultiplexingConfig{

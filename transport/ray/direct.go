@@ -9,14 +9,41 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/platform"
+	"v2ray.com/core/common/signal"
 )
 
-// NewRay creates a new Ray for direct traffic transport.
-func NewRay(ctx context.Context) Ray {
-	return &directRay{
+type Option func(*directRay)
+
+type addInt64 interface {
+	Add(int64) int64
+}
+
+func WithUplinkStatCounter(c addInt64) Option {
+	return func(s *directRay) {
+		s.Input.onDataSize = append(s.Input.onDataSize, func(delta uint64) {
+			c.Add(int64(delta))
+		})
+	}
+}
+
+func WithDownlinkStatCounter(c addInt64) Option {
+	return func(s *directRay) {
+		s.Output.onDataSize = append(s.Output.onDataSize, func(delta uint64) {
+			c.Add(int64(delta))
+		})
+	}
+}
+
+// New creates a new Ray for direct traffic transport.
+func New(ctx context.Context, opts ...Option) Ray {
+	r := &directRay{
 		Input:  NewStream(ctx),
 		Output: NewStream(ctx),
 	}
+	for _, opt := range opts {
+		opt(r)
+	}
+	return r
 }
 
 type directRay struct {
@@ -57,20 +84,22 @@ type Stream struct {
 	data        buf.MultiBuffer
 	size        uint64
 	ctx         context.Context
-	readSignal  chan bool
-	writeSignal chan bool
+	readSignal  *signal.Notifier
+	writeSignal *signal.Notifier
+	onDataSize  []func(uint64)
 	close       bool
 	err         bool
 }
 
 // NewStream creates a new Stream.
 func NewStream(ctx context.Context) *Stream {
-	return &Stream{
+	s := &Stream{
 		ctx:         ctx,
-		readSignal:  make(chan bool, 1),
-		writeSignal: make(chan bool, 1),
+		readSignal:  signal.NewNotifier(),
+		writeSignal: signal.NewNotifier(),
 		size:        0,
 	}
+	return s
 }
 
 func (s *Stream) getData() (buf.MultiBuffer, error) {
@@ -84,12 +113,12 @@ func (s *Stream) getData() (buf.MultiBuffer, error) {
 		return mb, nil
 	}
 
-	if s.close {
-		return nil, io.EOF
-	}
-
 	if s.err {
 		return nil, io.ErrClosedPipe
+	}
+
+	if s.close {
+		return nil, io.EOF
 	}
 
 	return nil, nil
@@ -105,7 +134,7 @@ func (s *Stream) Peek(b *buf.Buffer) {
 	}))
 }
 
-// Read reads data from the Stream.
+// ReadMultiBuffer reads data from the Stream.
 func (s *Stream) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	for {
 		mb, err := s.getData()
@@ -114,14 +143,14 @@ func (s *Stream) ReadMultiBuffer() (buf.MultiBuffer, error) {
 		}
 
 		if mb != nil {
-			s.notifyRead()
+			s.readSignal.Signal()
 			return mb, nil
 		}
 
 		select {
 		case <-s.ctx.Done():
-			return nil, io.EOF
-		case <-s.writeSignal:
+			return nil, s.ctx.Err()
+		case <-s.writeSignal.Wait():
 		}
 	}
 }
@@ -135,16 +164,16 @@ func (s *Stream) ReadTimeout(timeout time.Duration) (buf.MultiBuffer, error) {
 		}
 
 		if mb != nil {
-			s.notifyRead()
+			s.readSignal.Signal()
 			return mb, nil
 		}
 
 		select {
 		case <-s.ctx.Done():
-			return nil, io.EOF
+			return nil, s.ctx.Err()
 		case <-time.After(timeout):
 			return nil, buf.ErrReadTimeout
-		case <-s.writeSignal:
+		case <-s.writeSignal.Wait():
 		}
 	}
 }
@@ -166,8 +195,8 @@ func (s *Stream) waitForStreamSize() error {
 	for s.Size() >= streamSizeLimit {
 		select {
 		case <-s.ctx.Done():
-			return io.ErrClosedPipe
-		case <-s.readSignal:
+			return s.ctx.Err()
+		case <-s.readSignal.Wait():
 			if s.err || s.close {
 				return io.ErrClosedPipe
 			}
@@ -177,7 +206,7 @@ func (s *Stream) waitForStreamSize() error {
 	return nil
 }
 
-// Write writes more data into the Stream.
+// WriteMultiBuffer writes more data into the Stream.
 func (s *Stream) WriteMultiBuffer(data buf.MultiBuffer) error {
 	if data.IsEmpty() {
 		return nil
@@ -200,34 +229,26 @@ func (s *Stream) WriteMultiBuffer(data buf.MultiBuffer) error {
 		s.data = buf.NewMultiBufferCap(128)
 	}
 
+	dataSize := uint64(data.Len())
+	for _, f := range s.onDataSize {
+		f(dataSize)
+	}
+
 	s.data.AppendMulti(data)
-	s.size += uint64(data.Len())
-	s.notifyWrite()
+	s.size += dataSize
+	s.writeSignal.Signal()
 
 	return nil
 }
 
-func (s *Stream) notifyRead() {
-	select {
-	case s.readSignal <- true:
-	default:
-	}
-}
-
-func (s *Stream) notifyWrite() {
-	select {
-	case s.writeSignal <- true:
-	default:
-	}
-}
-
 // Close closes the stream for writing. Read() still works until EOF.
-func (s *Stream) Close() {
+func (s *Stream) Close() error {
 	s.access.Lock()
 	s.close = true
-	s.notifyRead()
-	s.notifyWrite()
+	s.readSignal.Signal()
+	s.writeSignal.Signal()
 	s.access.Unlock()
+	return nil
 }
 
 // CloseError closes the Stream with error. Read() will return an error afterwards.
@@ -239,7 +260,9 @@ func (s *Stream) CloseError() {
 		s.data = nil
 		s.size = 0
 	}
-	s.notifyRead()
-	s.notifyWrite()
 	s.access.Unlock()
+
+	s.readSignal.Signal()
+	s.writeSignal.Signal()
+
 }

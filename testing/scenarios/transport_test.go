@@ -33,9 +33,9 @@ func TestHttpConnectionHeader(t *testing.T) {
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(serverPort),
@@ -62,16 +62,16 @@ func TestHttpConnectionHeader(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
 
-	clientPort := pickPort()
+	clientPort := tcp.PickPort()
 	clientConfig := &core.Config{
-		Inbound: []*proxyman.InboundHandlerConfig{
+		Inbound: []*core.InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(clientPort),
@@ -86,7 +86,7 @@ func TestHttpConnectionHeader(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*core.OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{

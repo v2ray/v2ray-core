@@ -2,15 +2,11 @@ package outbound
 
 import (
 	"context"
-	"io"
-	"time"
 
-	"v2ray.com/core/app"
-	"v2ray.com/core/app/log"
+	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/proxyman/mux"
-	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/errors"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
@@ -18,29 +14,19 @@ import (
 )
 
 type Handler struct {
-	config          *proxyman.OutboundHandlerConfig
+	config          *core.OutboundHandlerConfig
 	senderSettings  *proxyman.SenderConfig
 	proxy           proxy.Outbound
-	outboundManager proxyman.OutboundHandlerManager
+	outboundManager core.OutboundHandlerManager
 	mux             *mux.ClientManager
 }
 
-func NewHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) (*Handler, error) {
+func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (*Handler, error) {
+	v := core.MustFromContext(ctx)
 	h := &Handler{
-		config: config,
+		config:          config,
+		outboundManager: v.OutboundHandlerManager(),
 	}
-	space := app.SpaceFromContext(ctx)
-	if space == nil {
-		return nil, newError("no space in context")
-	}
-	space.On(app.SpaceInitializing, func(interface{}) error {
-		ohm := proxyman.OutboundHandlerManagerFromSpace(space)
-		if ohm == nil {
-			return newError("no OutboundManager in space")
-		}
-		h.outboundManager = ohm
-		return nil
-	})
 
 	if config.SenderSettings != nil {
 		senderSettings, err := config.SenderSettings.GetInstance()
@@ -55,15 +41,25 @@ func NewHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) (*H
 		}
 	}
 
-	proxyHandler, err := config.GetProxyHandler(ctx)
+	proxyConfig, err := config.ProxySettings.GetInstance()
 	if err != nil {
 		return nil, err
+	}
+
+	rawProxyHandler, err := common.CreateObject(ctx, proxyConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	proxyHandler, ok := rawProxyHandler.(proxy.Outbound)
+	if !ok {
+		return nil, newError("not an outbound handler")
 	}
 
 	if h.senderSettings != nil && h.senderSettings.MultiplexSettings != nil && h.senderSettings.MultiplexSettings.Enabled {
 		config := h.senderSettings.MultiplexSettings
 		if config.Concurrency < 1 || config.Concurrency > 1024 {
-			return nil, newError("invalid mux concurrency: ", config.Concurrency)
+			return nil, newError("invalid mux concurrency: ", config.Concurrency).AtWarning()
 		}
 		h.mux = mux.NewClientManager(proxyHandler, h, config)
 	}
@@ -72,19 +68,24 @@ func NewHandler(ctx context.Context, config *proxyman.OutboundHandlerConfig) (*H
 	return h, nil
 }
 
+// Tag implements core.OutboundHandler.
+func (h *Handler) Tag() string {
+	return h.config.Tag
+}
+
 // Dispatch implements proxy.Outbound.Dispatch.
 func (h *Handler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
 	if h.mux != nil {
 		err := h.mux.Dispatch(ctx, outboundRay)
 		if err != nil {
-			log.Trace(newError("failed to process outbound traffic").Base(err))
+			newError("failed to process outbound traffic").Base(err).WithContext(ctx).WriteToLog()
 			outboundRay.OutboundOutput().CloseError()
 		}
 	} else {
 		err := h.proxy.Process(ctx, outboundRay, h)
 		// Ensure outbound ray is properly closed.
-		if err != nil && errors.Cause(err) != io.EOF {
-			log.Trace(newError("failed to process outbound traffic").Base(err))
+		if err != nil {
+			newError("failed to process outbound traffic").Base(err).WithContext(ctx).WriteToLog()
 			outboundRay.OutboundOutput().CloseError()
 		} else {
 			outboundRay.OutboundOutput().Close()
@@ -100,14 +101,14 @@ func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Conn
 			tag := h.senderSettings.ProxySettings.Tag
 			handler := h.outboundManager.GetHandler(tag)
 			if handler != nil {
-				log.Trace(newError("proxying to ", tag).AtDebug())
+				newError("proxying to ", tag, " for dest ", dest).AtDebug().WithContext(ctx).WriteToLog()
 				ctx = proxy.ContextWithTarget(ctx, dest)
-				stream := ray.NewRay(ctx)
+				stream := ray.New(ctx)
 				go handler.Dispatch(ctx, stream)
-				return NewConnection(stream), nil
+				return ray.NewConnection(stream.InboundOutput(), stream.InboundInput()), nil
 			}
 
-			log.Trace(newError("failed to get outbound handler with tag: ", tag).AtWarning())
+			newError("failed to get outbound handler with tag: ", tag).AtWarning().WithContext(ctx).WriteToLog()
 		}
 
 		if h.senderSettings.Via != nil {
@@ -122,98 +123,18 @@ func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Conn
 	return internet.Dial(ctx, dest)
 }
 
-var (
-	_ buf.Reader = (*Connection)(nil)
-	_ buf.Writer = (*Connection)(nil)
-)
-
-type Connection struct {
-	stream     ray.Ray
-	closed     bool
-	localAddr  net.Addr
-	remoteAddr net.Addr
-
-	reader *buf.BufferedReader
-	writer buf.Writer
+// GetOutbound implements proxy.GetOutbound.
+func (h *Handler) GetOutbound() proxy.Outbound {
+	return h.proxy
 }
 
-func NewConnection(stream ray.Ray) *Connection {
-	return &Connection{
-		stream: stream,
-		localAddr: &net.TCPAddr{
-			IP:   []byte{0, 0, 0, 0},
-			Port: 0,
-		},
-		remoteAddr: &net.TCPAddr{
-			IP:   []byte{0, 0, 0, 0},
-			Port: 0,
-		},
-		reader: buf.NewBufferedReader(stream.InboundOutput()),
-		writer: stream.InboundInput(),
-	}
-}
-
-// Read implements net.Conn.Read().
-func (v *Connection) Read(b []byte) (int, error) {
-	if v.closed {
-		return 0, io.EOF
-	}
-	return v.reader.Read(b)
-}
-
-func (v *Connection) ReadMultiBuffer() (buf.MultiBuffer, error) {
-	return v.reader.ReadMultiBuffer()
-}
-
-// Write implements net.Conn.Write().
-func (v *Connection) Write(b []byte) (int, error) {
-	if v.closed {
-		return 0, io.ErrClosedPipe
-	}
-
-	l := len(b)
-	mb := buf.NewMultiBufferCap(l/buf.Size + 1)
-	mb.Write(b)
-	return l, v.writer.WriteMultiBuffer(mb)
-}
-
-func (v *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
-	if v.closed {
-		return io.ErrClosedPipe
-	}
-
-	return v.writer.WriteMultiBuffer(mb)
-}
-
-// Close implements net.Conn.Close().
-func (v *Connection) Close() error {
-	v.closed = true
-	v.stream.InboundInput().Close()
-	v.stream.InboundOutput().CloseError()
+// Start implements common.Runnable.
+func (h *Handler) Start() error {
 	return nil
 }
 
-// LocalAddr implements net.Conn.LocalAddr().
-func (v *Connection) LocalAddr() net.Addr {
-	return v.localAddr
-}
-
-// RemoteAddr implements net.Conn.RemoteAddr().
-func (v *Connection) RemoteAddr() net.Addr {
-	return v.remoteAddr
-}
-
-// SetDeadline implements net.Conn.SetDeadline().
-func (v *Connection) SetDeadline(t time.Time) error {
-	return nil
-}
-
-// SetReadDeadline implements net.Conn.SetReadDeadline().
-func (v *Connection) SetReadDeadline(t time.Time) error {
-	return nil
-}
-
-// SetWriteDeadline implement net.Conn.SetWriteDeadline().
-func (v *Connection) SetWriteDeadline(t time.Time) error {
+// Close implements common.Runnable.
+func (h *Handler) Close() error {
+	common.Close(h.mux)
 	return nil
 }

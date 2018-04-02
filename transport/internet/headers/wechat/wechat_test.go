@@ -1,6 +1,7 @@
 package wechat_test
 
 import (
+	"context"
 	"testing"
 
 	"v2ray.com/core/common/buf"
@@ -11,9 +12,12 @@ import (
 func TestUTPWrite(t *testing.T) {
 	assert := With(t)
 
-	video := VideoChat{}
+	videoRaw, err := NewVideoChat(context.Background(), &VideoConfig{})
+	assert(err, IsNil)
 
-	payload := buf.NewLocal(2048)
+	video := videoRaw.(*VideoChat)
+
+	payload := buf.New()
 	payload.AppendSupplier(video.Write)
 
 	assert(payload.Len(), Equals, video.Size())

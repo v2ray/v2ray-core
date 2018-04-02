@@ -1,7 +1,6 @@
 package vmess
 
 import (
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/uuid"
@@ -10,7 +9,7 @@ import (
 type InternalAccount struct {
 	ID       *protocol.ID
 	AlterIDs []*protocol.ID
-	Security protocol.Security
+	Security protocol.SecurityType
 }
 
 func (a *InternalAccount) AnyValidID() *protocol.ID {
@@ -32,13 +31,12 @@ func (a *InternalAccount) Equals(account protocol.Account) bool {
 func (a *Account) AsAccount() (protocol.Account, error) {
 	id, err := uuid.ParseString(a.Id)
 	if err != nil {
-		log.Trace(newError("failed to parse ID").Base(err).AtError())
-		return nil, err
+		return nil, newError("failed to parse ID").Base(err).AtError()
 	}
 	protoID := protocol.NewID(id)
 	return &InternalAccount{
 		ID:       protoID,
 		AlterIDs: protocol.NewAlterIDs(protoID, uint16(a.AlterId)),
-		Security: a.SecuritySettings.AsSecurity(),
+		Security: a.SecuritySettings.GetSecurityType(),
 	}, nil
 }

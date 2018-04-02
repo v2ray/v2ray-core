@@ -53,7 +53,7 @@ func (w *Writer) getNextFrameMeta() FrameMetadata {
 func (w *Writer) writeMetaOnly() error {
 	meta := w.getNextFrameMeta()
 	b := buf.New()
-	if err := b.Reset(meta.AsSupplier()); err != nil {
+	if err := meta.WriteTo(b); err != nil {
 		return err
 	}
 	return w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(b))
@@ -64,7 +64,7 @@ func (w *Writer) writeData(mb buf.MultiBuffer) error {
 	meta.Option.Set(OptionData)
 
 	frame := buf.New()
-	if err := frame.Reset(meta.AsSupplier()); err != nil {
+	if err := meta.WriteTo(frame); err != nil {
 		return err
 	}
 	if err := frame.AppendSupplier(serial.WriteUint16(uint16(mb.Len()))); err != nil {
@@ -100,14 +100,15 @@ func (w *Writer) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	return nil
 }
 
-func (w *Writer) Close() {
+func (w *Writer) Close() error {
 	meta := FrameMetadata{
 		SessionID:     w.id,
 		SessionStatus: SessionStatusEnd,
 	}
 
 	frame := buf.New()
-	common.Must(frame.Reset(meta.AsSupplier()))
+	common.Must(meta.WriteTo(frame))
 
 	w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(frame))
+	return nil
 }

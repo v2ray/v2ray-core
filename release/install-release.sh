@@ -83,6 +83,8 @@ sysArch(){
         VDIS="mipsle"
     elif [[ "$ARCH" == *"mips"* ]]; then
         VDIS="mips"
+    elif [[ "$ARCH" == *"s390x"* ]]; then
+        VDIS="s390x"
     fi
     return 0
 }
@@ -90,7 +92,7 @@ sysArch(){
 downloadV2Ray(){
     rm -rf /tmp/v2ray
     mkdir -p /tmp/v2ray
-    colorEcho ${BLUE} "Donwloading V2Ray."
+    colorEcho ${BLUE} "Downloading V2Ray."
     DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/${NEW_VER}/v2ray-linux-${VDIS}.zip"
     curl ${PROXY} -L -H "Cache-Control: no-cache" -o ${ZIPFILE} ${DOWNLOAD_LINK}
     if [ $? != 0 ];then
@@ -147,7 +149,7 @@ extract(){
     mkdir -p /tmp/v2ray
     unzip $1 -d "/tmp/v2ray/"
     if [[ $? -ne 0 ]]; then
-        colorEcho ${RED} "Extracting V2Ray faile!"
+        colorEcho ${RED} "Extracting V2Ray failed!"
         exit
     fi
     return 0
@@ -204,7 +206,7 @@ startV2ray(){
 copyFile() {
     NAME=$1
     MANDATE=$2
-    ERROR=`cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/${NAME}" "/usr/bin/v2ray/${NAME}"`
+    ERROR=`cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/${NAME}" "/usr/bin/v2ray/${NAME}" 2>&1`
     if [[ $? -ne 0 ]]; then
         colorEcho ${YELLOW} "${ERROR}"
         if [ "$MANDATE" = true ]; then
@@ -249,7 +251,7 @@ installV2Ray(){
 }
 
 
-installInitScrip(){
+installInitScript(){
     SYSTEMCTL_CMD=$(command -v systemctl)
     SERVICE_CMD=$(command -v service)
 
@@ -369,11 +371,11 @@ main(){
             NEW_VER=`ls /tmp/v2ray |grep v2ray-v |cut -d "-" -f2`
         fi
     else
-        # dowload via network and extract
+        # download via network and extract
         installSoftware "curl"
         getVersion
         if [[ $? == 0 ]] && [[ "$FORCE" != "1" ]]; then
-            colorEcho ${GREEN} "Lastest version ${NEW_VER} is already installed."
+            colorEcho ${GREEN} "Latest version ${NEW_VER} is already installed."
             exit
         else
             colorEcho ${BLUE} "Installing V2Ray ${NEW_VER} on ${ARCH}"
@@ -387,7 +389,7 @@ main(){
         stopV2ray
     fi
     installV2Ray
-    installInitScrip
+    installInitScript
     if [[ ${V2RAY_RUNNING} -eq 1 ]];then
         colorEcho ${BLUE} "Restarting V2Ray service."
         startV2ray

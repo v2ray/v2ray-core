@@ -211,7 +211,7 @@ func loadGeoSite(country string) ([]*Domain, error) {
 func TestChinaSites(t *testing.T) {
 	assert := With(t)
 
-	common.Must(sysio.CopyFile(platform.GetAssetLocation("geosite.dat"), filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", "tools", "release", "config", "geosite.dat")))
+	common.Must(sysio.CopyFile(platform.GetAssetLocation("geosite.dat"), filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", "release", "config", "geosite.dat")))
 
 	domains, err := loadGeoSite("CN")
 	assert(err, IsNil)

@@ -21,8 +21,13 @@ func TestV2RayClose(t *testing.T) {
 	assert := With(t)
 
 	port := net.Port(dice.RollUint16())
+	userId := uuid.New()
 	config := &Config{
-		Inbound: []*proxyman.InboundHandlerConfig{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&proxyman.InboundConfig{}),
+			serial.ToTypedMessage(&proxyman.OutboundConfig{}),
+		},
+		Inbound: []*InboundHandlerConfig{
 			{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(port),
@@ -37,7 +42,7 @@ func TestV2RayClose(t *testing.T) {
 				}),
 			},
 		},
-		Outbound: []*proxyman.OutboundHandlerConfig{
+		Outbound: []*OutboundHandlerConfig{
 			{
 				ProxySettings: serial.ToTypedMessage(&outbound.Config{
 					Receiver: []*protocol.ServerEndpoint{
@@ -47,7 +52,7 @@ func TestV2RayClose(t *testing.T) {
 							User: []*protocol.User{
 								{
 									Account: serial.ToTypedMessage(&vmess.Account{
-										Id: uuid.New().String(),
+										Id: userId.String(),
 									}),
 								},
 							},

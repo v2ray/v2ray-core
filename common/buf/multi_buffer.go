@@ -30,6 +30,26 @@ func ReadAllToMultiBuffer(reader io.Reader) (MultiBuffer, error) {
 	}
 }
 
+// ReadSizeToMultiBuffer reads specific number of bytes from reader into a MultiBuffer.
+func ReadSizeToMultiBuffer(reader io.Reader, size int32) (MultiBuffer, error) {
+	mb := NewMultiBufferCap(32)
+
+	for size > 0 {
+		bSize := size
+		if bSize > Size {
+			bSize = Size
+		}
+		b := NewSize(uint32(bSize))
+		if err := b.Reset(ReadFullFrom(reader, bSize)); err != nil {
+			mb.Release()
+			return nil, err
+		}
+		size -= bSize
+		mb.Append(b)
+	}
+	return mb, nil
+}
+
 // ReadAllToBytes reads all content from the reader into a byte array, until EOF.
 func ReadAllToBytes(reader io.Reader) ([]byte, error) {
 	mb, err := ReadAllToMultiBuffer(reader)
@@ -57,7 +77,9 @@ func NewMultiBufferValue(b ...*Buffer) MultiBuffer {
 
 // Append appends buffer to the end of this MultiBuffer
 func (mb *MultiBuffer) Append(buf *Buffer) {
-	*mb = append(*mb, buf)
+	if buf != nil {
+		*mb = append(*mb, buf)
+	}
 }
 
 // AppendMulti appends a MultiBuffer to the end of this one.
@@ -65,7 +87,7 @@ func (mb *MultiBuffer) AppendMulti(buf MultiBuffer) {
 	*mb = append(*mb, buf...)
 }
 
-// Copy copied the begining part of the MultiBuffer into the given byte array.
+// Copy copied the beginning part of the MultiBuffer into the given byte array.
 func (mb MultiBuffer) Copy(b []byte) int {
 	total := 0
 	for _, bb := range mb {
@@ -151,13 +173,13 @@ func (mb MultiBuffer) ToNetBuffers() net.Buffers {
 	return bs
 }
 
-// SliceBySize splits the begining of this MultiBuffer into another one, for at most size bytes.
-func (mb *MultiBuffer) SliceBySize(size int) MultiBuffer {
+// SliceBySize splits the beginning of this MultiBuffer into another one, for at most size bytes.
+func (mb *MultiBuffer) SliceBySize(size int32) MultiBuffer {
 	slice := NewMultiBufferCap(10)
 	sliceSize := 0
 	endIndex := len(*mb)
 	for i, b := range *mb {
-		if b.Len()+sliceSize > size {
+		if int32(b.Len()+sliceSize) > size {
 			endIndex = i
 			break
 		}
@@ -167,7 +189,7 @@ func (mb *MultiBuffer) SliceBySize(size int) MultiBuffer {
 	}
 	*mb = (*mb)[endIndex:]
 	if endIndex == 0 && len(*mb) > 0 {
-		b := New()
+		b := NewSize(uint32(size))
 		common.Must(b.Reset(ReadFullFrom((*mb)[0], size)))
 		return NewMultiBufferValue(b)
 	}

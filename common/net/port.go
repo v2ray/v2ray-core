@@ -49,7 +49,7 @@ func (p Port) String() string {
 	return serial.Uint16ToString(p.Value())
 }
 
-// FromPort returns the begining port of this PortRange.
+// FromPort returns the beginning port of this PortRange.
 func (p PortRange) FromPort() Port {
 	return Port(p.From)
 }

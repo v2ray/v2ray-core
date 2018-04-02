@@ -54,3 +54,16 @@ func TestGetAssetLocation(t *testing.T) {
 	os.Setenv("v2ray.location.asset", "/v2ray")
 	assert(GetAssetLocation("t"), Equals, "/v2ray/t")
 }
+
+func TestGetPluginLocation(t *testing.T) {
+	assert := With(t)
+
+	exec, err := os.Executable()
+	assert(err, IsNil)
+
+	loc := GetPluginDirectory()
+	assert(loc, Equals, filepath.Join(filepath.Dir(exec), "plugins"))
+
+	os.Setenv("V2RAY_LOCATION_PLUGIN", "/v2ray")
+	assert(GetPluginDirectory(), Equals, "/v2ray")
+}

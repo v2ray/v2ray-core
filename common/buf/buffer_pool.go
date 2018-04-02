@@ -4,49 +4,60 @@ import (
 	"sync"
 )
 
-// Pool provides functionality to generate and recycle buffers on demand.
-type Pool interface {
-	// Allocate either returns a unused buffer from the pool, or generates a new one from system.
-	Allocate() *Buffer
-	// Free recycles the given buffer.
-	Free(*Buffer)
-}
-
-// SyncPool is a buffer pool based on sync.Pool
-type SyncPool struct {
-	allocator *sync.Pool
-}
-
-// NewSyncPool creates a SyncPool with given buffer size.
-func NewSyncPool(bufferSize uint32) *SyncPool {
-	pool := &SyncPool{
-		allocator: &sync.Pool{
-			New: func() interface{} { return make([]byte, bufferSize) },
-		},
-	}
-	return pool
-}
-
-// Allocate implements Pool.Allocate().
-func (p *SyncPool) Allocate() *Buffer {
-	return &Buffer{
-		v:    p.allocator.Get().([]byte),
-		pool: p,
-	}
-}
-
-// Free implements Pool.Free().
-func (p *SyncPool) Free(buffer *Buffer) {
-	if buffer.v != nil {
-		p.allocator.Put(buffer.v)
-	}
-}
-
 const (
 	// Size of a regular buffer.
 	Size = 2 * 1024
 )
 
-var (
-	mediumPool Pool = NewSyncPool(Size)
+func createAllocFunc(size uint32) func() interface{} {
+	return func() interface{} {
+		return make([]byte, size)
+	}
+}
+
+// The following parameters controls the size of buffer pools.
+// There are numPools pools. Starting from 2k size, the size of each pool is sizeMulti of the previous one.
+// Package buf is guaranteed to not use buffers larger than the largest pool.
+// Other packets may use larger buffers.
+const (
+	numPools  = 5
+	sizeMulti = 4
 )
+
+var (
+	pool      [numPools]sync.Pool
+	poolSize  [numPools]uint32
+	largeSize uint32
+)
+
+func init() {
+	size := uint32(Size)
+	for i := 0; i < numPools; i++ {
+		pool[i] = sync.Pool{
+			New: createAllocFunc(size),
+		}
+		poolSize[i] = size
+		largeSize = size
+		size *= sizeMulti
+	}
+}
+
+func newBytes(size uint32) []byte {
+	for idx, ps := range poolSize {
+		if size <= ps {
+			return pool[idx].Get().([]byte)
+		}
+	}
+	return make([]byte, size)
+}
+
+func freeBytes(b []byte) {
+	size := uint32(cap(b))
+	b = b[0:cap(b)]
+	for i := numPools - 1; i >= 0; i-- {
+		if size >= poolSize[i] {
+			pool[i].Put(b)
+			return
+		}
+	}
+}

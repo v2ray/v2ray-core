@@ -5,58 +5,46 @@ package router
 import (
 	"context"
 
-	"v2ray.com/core/app"
-	"v2ray.com/core/app/dns"
-	"v2ray.com/core/app/log"
+	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 )
 
-var (
-	ErrNoRuleApplicable = newError("No rule applicable")
-)
-
 type Router struct {
 	domainStrategy Config_DomainStrategy
 	rules          []Rule
-	dnsServer      dns.Server
+	dns            core.DNSClient
 }
 
 func NewRouter(ctx context.Context, config *Config) (*Router, error) {
-	space := app.SpaceFromContext(ctx)
-	if space == nil {
-		return nil, newError("no space in context")
-	}
+	v := core.MustFromContext(ctx)
 	r := &Router{
 		domainStrategy: config.DomainStrategy,
 		rules:          make([]Rule, len(config.Rule)),
+		dns:            v.DNSClient(),
 	}
 
-	space.On(app.SpaceInitializing, func(interface{}) error {
-		for idx, rule := range config.Rule {
-			r.rules[idx].Tag = rule.Tag
-			cond, err := rule.BuildCondition()
-			if err != nil {
-				return err
-			}
-			r.rules[idx].Condition = cond
+	for idx, rule := range config.Rule {
+		r.rules[idx].Tag = rule.Tag
+		cond, err := rule.BuildCondition()
+		if err != nil {
+			return nil, err
 		}
+		r.rules[idx].Condition = cond
+	}
 
-		r.dnsServer = dns.FromSpace(space)
-		if r.dnsServer == nil {
-			return newError("DNS is not found in the space")
-		}
-		return nil
-	})
+	if err := v.RegisterFeature((*core.Router)(nil), r); err != nil {
+		return nil, newError("unable to register Router").Base(err)
+	}
 	return r, nil
 }
 
 type ipResolver struct {
-	ip        []net.Address
-	domain    string
-	resolved  bool
-	dnsServer dns.Server
+	dns      core.DNSClient
+	ip       []net.Address
+	domain   string
+	resolved bool
 }
 
 func (r *ipResolver) Resolve() []net.Address {
@@ -64,9 +52,12 @@ func (r *ipResolver) Resolve() []net.Address {
 		return r.ip
 	}
 
-	log.Trace(newError("looking for IP for domain: ", r.domain))
+	newError("looking for IP for domain: ", r.domain).WriteToLog()
 	r.resolved = true
-	ips := r.dnsServer.Get(r.domain)
+	ips, err := r.dns.LookupIP(r.domain)
+	if err != nil {
+		newError("failed to get IP address").Base(err).WriteToLog()
+	}
 	if len(ips) == 0 {
 		return nil
 	}
@@ -77,9 +68,9 @@ func (r *ipResolver) Resolve() []net.Address {
 	return r.ip
 }
 
-func (r *Router) TakeDetour(ctx context.Context) (string, error) {
+func (r *Router) PickRoute(ctx context.Context) (string, error) {
 	resolver := &ipResolver{
-		dnsServer: r.dnsServer,
+		dns: r.dns,
 	}
 	if r.domainStrategy == Config_IpOnDemand {
 		if dest, ok := proxy.TargetFromContext(ctx); ok && dest.Address.Family().IsDomain() {
@@ -96,7 +87,7 @@ func (r *Router) TakeDetour(ctx context.Context) (string, error) {
 
 	dest, ok := proxy.TargetFromContext(ctx)
 	if !ok {
-		return "", ErrNoRuleApplicable
+		return "", core.ErrNoClue
 	}
 
 	if r.domainStrategy == Config_IpIfNonMatch && dest.Address.Family().IsDomain() {
@@ -112,25 +103,15 @@ func (r *Router) TakeDetour(ctx context.Context) (string, error) {
 		}
 	}
 
-	return "", ErrNoRuleApplicable
-}
-
-func (*Router) Interface() interface{} {
-	return (*Router)(nil)
+	return "", core.ErrNoClue
 }
 
 func (*Router) Start() error {
 	return nil
 }
 
-func (*Router) Close() {}
-
-func FromSpace(space app.Space) *Router {
-	app := space.GetApplication((*Router)(nil))
-	if app == nil {
-		return nil
-	}
-	return app.(*Router)
+func (*Router) Close() error {
+	return nil
 }
 
 func init() {

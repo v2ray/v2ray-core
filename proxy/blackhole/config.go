@@ -27,7 +27,7 @@ func (*NoneResponse) WriteTo(buf.Writer) {}
 
 // WriteTo implements ResponseConfig.WriteTo().
 func (*HTTPResponse) WriteTo(writer buf.Writer) {
-	b := buf.NewLocal(512)
+	b := buf.New()
 	common.Must(b.AppendSupplier(serial.WriteString(http403response)))
 	writer.WriteMultiBuffer(buf.NewMultiBufferValue(b))
 }

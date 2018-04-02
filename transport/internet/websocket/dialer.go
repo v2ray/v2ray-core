@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
@@ -14,7 +13,7 @@ import (
 
 // Dial dials a WebSocket connection to the given destination.
 func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {
-	log.Trace(newError("creating connection to ", dest))
+	newError("creating connection to ", dest).WithContext(ctx).WriteToLog()
 
 	conn, err := dialWebsocket(ctx, dest)
 	if err != nil {
@@ -35,29 +34,23 @@ func dialWebsocket(ctx context.Context, dest net.Destination) (net.Conn, error) 
 		NetDial: func(network, addr string) (net.Conn, error) {
 			return internet.DialSystem(ctx, src, dest)
 		},
-		ReadBufferSize:   8 * 1024,
-		WriteBufferSize:  8 * 1024,
+		ReadBufferSize:   4 * 1024,
+		WriteBufferSize:  4 * 1024,
 		HandshakeTimeout: time.Second * 8,
 	}
 
 	protocol := "ws"
 
-	if securitySettings := internet.SecuritySettingsFromContext(ctx); securitySettings != nil {
-		tlsConfig, ok := securitySettings.(*tls.Config)
-		if ok {
-			protocol = "wss"
-			if dest.Address.Family().IsDomain() {
-				tlsConfig.OverrideServerNameIfEmpty(dest.Address.Domain())
-			}
-			dialer.TLSClientConfig = tlsConfig.GetTLSConfig()
-		}
+	if config := tls.ConfigFromContext(ctx); config != nil {
+		protocol = "wss"
+		dialer.TLSClientConfig = config.GetTLSConfig(tls.WithDestination(dest))
 	}
 
 	host := dest.NetAddr()
 	if (protocol == "ws" && dest.Port == 80) || (protocol == "wss" && dest.Port == 443) {
 		host = dest.Address.String()
 	}
-	uri := protocol + "://" + host + wsSettings.GetNormailzedPath()
+	uri := protocol + "://" + host + wsSettings.GetNormalizedPath()
 
 	conn, resp, err := dialer.Dial(uri, wsSettings.GetRequestHeader())
 	if err != nil {
@@ -68,5 +61,5 @@ func dialWebsocket(ctx context.Context, dest net.Destination) (net.Conn, error) 
 		return nil, newError("failed to dial to (", uri, "): ", reason).Base(err)
 	}
 
-	return newConnection(conn), nil
+	return newConnection(conn, conn.RemoteAddr()), nil
 }
