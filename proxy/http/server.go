@@ -21,7 +21,7 @@ import (
 	"v2ray.com/core/transport/internet"
 )
 
-// Server is a HTTP proxy server.
+// Server is an HTTP proxy server.
 type Server struct {
 	config *ServerConfig
 	v      *core.Instance
