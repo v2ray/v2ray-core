@@ -66,7 +66,7 @@ func ReadAllToBytes(reader io.Reader) ([]byte, error) {
 type MultiBuffer []*Buffer
 
 // NewMultiBufferCap creates a new MultiBuffer instance.
-func NewMultiBufferCap(capacity int) MultiBuffer {
+func NewMultiBufferCap(capacity int32) MultiBuffer {
 	return MultiBuffer(make([]*Buffer, 0, capacity))
 }
 
@@ -93,7 +93,7 @@ func (mb MultiBuffer) Copy(b []byte) int {
 	for _, bb := range mb {
 		nBytes := copy(b[total:], bb.Bytes())
 		total += nBytes
-		if nBytes < bb.Len() {
+		if int32(nBytes) < bb.Len() {
 			break
 		}
 	}
@@ -137,8 +137,8 @@ func (mb *MultiBuffer) Write(b []byte) {
 }
 
 // Len returns the total number of bytes in the MultiBuffer.
-func (mb MultiBuffer) Len() int {
-	size := 0
+func (mb MultiBuffer) Len() int32 {
+	size := int32(0)
 	for _, b := range mb {
 		size += b.Len()
 	}
@@ -176,10 +176,10 @@ func (mb MultiBuffer) ToNetBuffers() net.Buffers {
 // SliceBySize splits the beginning of this MultiBuffer into another one, for at most size bytes.
 func (mb *MultiBuffer) SliceBySize(size int32) MultiBuffer {
 	slice := NewMultiBufferCap(10)
-	sliceSize := 0
+	sliceSize := int32(0)
 	endIndex := len(*mb)
 	for i, b := range *mb {
-		if int32(b.Len()+sliceSize) > size {
+		if b.Len()+sliceSize > size {
 			endIndex = i
 			break
 		}

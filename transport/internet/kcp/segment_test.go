@@ -30,7 +30,7 @@ func TestDataSegment(t *testing.T) {
 	bytes := make([]byte, nBytes)
 	seg.Bytes()(bytes)
 
-	assert(len(bytes), Equals, nBytes)
+	assert(int32(len(bytes)), Equals, nBytes)
 
 	iseg, _ := ReadSegment(bytes)
 	seg2 := iseg.(*DataSegment)
@@ -56,7 +56,7 @@ func Test1ByteDataSegment(t *testing.T) {
 	bytes := make([]byte, nBytes)
 	seg.Bytes()(bytes)
 
-	assert(len(bytes), Equals, nBytes)
+	assert(int32(len(bytes)), Equals, nBytes)
 
 	iseg, _ := ReadSegment(bytes)
 	seg2 := iseg.(*DataSegment)
@@ -82,7 +82,7 @@ func TestACKSegment(t *testing.T) {
 	bytes := make([]byte, nBytes)
 	seg.Bytes()(bytes)
 
-	assert(len(bytes), Equals, nBytes)
+	assert(int32(len(bytes)), Equals, nBytes)
 
 	iseg, _ := ReadSegment(bytes)
 	seg2 := iseg.(*AckSegment)
@@ -112,7 +112,7 @@ func TestCmdSegment(t *testing.T) {
 	bytes := make([]byte, nBytes)
 	seg.Bytes()(bytes)
 
-	assert(len(bytes), Equals, nBytes)
+	assert(int32(len(bytes)), Equals, nBytes)
 
 	iseg, _ := ReadSegment(bytes)
 	seg2 := iseg.(*CmdOnlySegment)

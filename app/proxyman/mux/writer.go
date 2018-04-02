@@ -71,7 +71,7 @@ func (w *Writer) writeData(mb buf.MultiBuffer) error {
 		return err
 	}
 
-	mb2 := buf.NewMultiBufferCap(len(mb) + 1)
+	mb2 := buf.NewMultiBufferCap(int32(len(mb)) + 1)
 	mb2.Append(frame)
 	mb2.AppendMulti(mb)
 	return w.writer.WriteMultiBuffer(mb2)

@@ -21,7 +21,7 @@ func TestReaderWriter(t *testing.T) {
 	writer := NewHeaderWriter(b)
 	err := writer.Write(cache)
 	assert(err, IsNil)
-	assert(cache.Len(), Equals, 8)
+	assert(cache.Len(), Equals, int32(8))
 	_, err = cache.Write([]byte{'e', 'f', 'g'})
 	assert(err, IsNil)
 

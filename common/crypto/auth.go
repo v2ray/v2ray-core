@@ -149,12 +149,12 @@ func (r *AuthenticationReader) readInternal(soft bool) (*buf.Buffer, error) {
 		return nil, err
 	}
 
-	rb, err := r.auth.Open(b.BytesTo(0), b.BytesTo(int(size)))
+	rb, err := r.auth.Open(b.BytesTo(0), b.BytesTo(size))
 	if err != nil {
 		b.Release()
 		return nil, err
 	}
-	b.Slice(0, len(rb))
+	b.Slice(0, int32(len(rb)))
 
 	return b, nil
 }
@@ -200,7 +200,7 @@ func NewAuthenticationWriter(auth Authenticator, sizeParser ChunkSizeEncoder, wr
 }
 
 func (w *AuthenticationWriter) seal(b *buf.Buffer) (*buf.Buffer, error) {
-	encryptedSize := b.Len() + w.auth.Overhead()
+	encryptedSize := int(b.Len()) + w.auth.Overhead()
 
 	eb := buf.New()
 	common.Must(eb.Reset(func(bb []byte) (int, error) {
@@ -222,7 +222,7 @@ func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
 	defer mb.Release()
 
 	payloadSize := buf.Size - w.auth.Overhead() - w.sizeParser.SizeBytes()
-	mb2Write := buf.NewMultiBufferCap(len(mb) + 10)
+	mb2Write := buf.NewMultiBufferCap(int32(len(mb) + 10))
 
 	for {
 		b := buf.New()
@@ -256,7 +256,7 @@ func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
 		return w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(eb))
 	}
 
-	mb2Write := buf.NewMultiBufferCap(len(mb) + 1)
+	mb2Write := buf.NewMultiBufferCap(int32(len(mb)) + 1)
 
 	for !mb.IsEmpty() {
 		b := mb.SplitFirst()

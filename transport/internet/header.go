@@ -8,7 +8,7 @@ import (
 )
 
 type PacketHeader interface {
-	Size() int
+	Size() int32
 	Write([]byte) (int, error)
 }
 

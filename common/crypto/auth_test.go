@@ -30,7 +30,7 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 
 	payload := buf.NewSize(payloadSize)
 	payload.Append(rawPayload)
-	assert(payload.Len(), Equals, payloadSize)
+	assert(payload.Len(), Equals, int32(payloadSize))
 
 	cache := buf.NewSize(160 * 1024)
 	iv := make([]byte, 12)
@@ -45,7 +45,7 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 	}, PlainChunkSizeParser{}, cache, protocol.TransferTypeStream)
 
 	assert(writer.WriteMultiBuffer(buf.NewMultiBufferValue(payload)), IsNil)
-	assert(cache.Len(), Equals, 82658)
+	assert(cache.Len(), Equals, int32(82658))
 	assert(writer.WriteMultiBuffer(buf.MultiBuffer{}), IsNil)
 
 	reader := NewAuthenticationReader(&AEADAuthenticator{
@@ -65,7 +65,7 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 		mb.AppendMulti(mb2)
 	}
 
-	assert(mb.Len(), Equals, payloadSize)
+	assert(mb.Len(), Equals, int32(payloadSize))
 
 	mbContent := make([]byte, payloadSize)
 	mb.Read(mbContent)
@@ -108,7 +108,7 @@ func TestAuthenticationReaderWriterPacket(t *testing.T) {
 	payload.Append(pb2)
 
 	assert(writer.WriteMultiBuffer(payload), IsNil)
-	assert(cache.Len(), GreaterThan, 0)
+	assert(cache.Len(), GreaterThan, int32(0))
 	assert(writer.WriteMultiBuffer(buf.MultiBuffer{}), IsNil)
 	assert(err, IsNil)
 

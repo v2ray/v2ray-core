@@ -9,7 +9,7 @@ import (
 
 type NoOpHeader struct{}
 
-func (NoOpHeader) Size() int {
+func (NoOpHeader) Size() int32 {
 	return 0
 }
 

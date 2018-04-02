@@ -22,5 +22,5 @@ func TestSRTPWrite(t *testing.T) {
 	payload.AppendSupplier(srtp.Write)
 	payload.Append(content)
 
-	assert(payload.Len(), Equals, len(content)+srtp.Size())
+	assert(payload.Len(), Equals, int32(len(content))+srtp.Size())
 }

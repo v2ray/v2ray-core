@@ -89,7 +89,7 @@ func (r *StreamReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 		r.leftOver = int32(size)
 	}
 
-	mb, err := r.reader.ReadAtMost(int(r.leftOver))
-	r.leftOver -= int32(mb.Len())
+	mb, err := r.reader.ReadAtMost(r.leftOver)
+	r.leftOver -= mb.Len()
 	return mb, err
 }

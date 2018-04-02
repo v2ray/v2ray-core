@@ -57,7 +57,7 @@ type HeaderReader struct {
 
 func (*HeaderReader) Read(reader io.Reader) (*buf.Buffer, error) {
 	buffer := buf.New()
-	totalBytes := 0
+	totalBytes := int32(0)
 	endingDetected := false
 	for totalBytes < maxHeaderLength {
 		err := buffer.AppendSupplier(buf.ReadFrom(reader))
@@ -66,13 +66,13 @@ func (*HeaderReader) Read(reader io.Reader) (*buf.Buffer, error) {
 			return nil, err
 		}
 		if n := bytes.Index(buffer.Bytes(), []byte(ENDING)); n != -1 {
-			buffer.SliceFrom(n + len(ENDING))
+			buffer.SliceFrom(int32(n + len(ENDING)))
 			endingDetected = true
 			break
 		}
-		if buffer.Len() >= len(ENDING) {
-			totalBytes += buffer.Len() - len(ENDING)
-			leftover := buffer.BytesFrom(-len(ENDING))
+		if buffer.Len() >= int32(len(ENDING)) {
+			totalBytes += buffer.Len() - int32(len(ENDING))
+			leftover := buffer.BytesFrom(-int32(len(ENDING)))
 			buffer.Reset(func(b []byte) (int, error) {
 				return copy(b, leftover), nil
 			})

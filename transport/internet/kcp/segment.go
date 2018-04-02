@@ -29,7 +29,7 @@ type Segment interface {
 	Release()
 	Conversation() uint16
 	Command() Command
-	ByteSize() int
+	ByteSize() int32
 	Bytes() buf.Supplier
 	parse(conv uint16, cmd Command, opt SegmentOption, buf []byte) (bool, []byte)
 }
@@ -116,7 +116,7 @@ func (s *DataSegment) Bytes() buf.Supplier {
 	}
 }
 
-func (s *DataSegment) ByteSize() int {
+func (s *DataSegment) ByteSize() int32 {
 	return 2 + 1 + 1 + 4 + 4 + 4 + 2 + s.payload.Len()
 }
 
@@ -198,8 +198,8 @@ func (s *AckSegment) IsEmpty() bool {
 	return len(s.NumberList) == 0
 }
 
-func (s *AckSegment) ByteSize() int {
-	return 2 + 1 + 1 + 4 + 4 + 4 + 1 + len(s.NumberList)*4
+func (s *AckSegment) ByteSize() int32 {
+	return 2 + 1 + 1 + 4 + 4 + 4 + 1 + int32(len(s.NumberList)*4)
 }
 
 func (s *AckSegment) Bytes() buf.Supplier {
@@ -214,7 +214,7 @@ func (s *AckSegment) Bytes() buf.Supplier {
 		for _, number := range s.NumberList {
 			b = serial.Uint32ToBytes(number, b)
 		}
-		return s.ByteSize(), nil
+		return int(s.ByteSize()), nil
 	}
 }
 
@@ -264,7 +264,7 @@ func (s *CmdOnlySegment) Command() Command {
 	return s.Cmd
 }
 
-func (*CmdOnlySegment) ByteSize() int {
+func (*CmdOnlySegment) ByteSize() int32 {
 	return 2 + 1 + 1 + 4 + 4 + 4
 }
 

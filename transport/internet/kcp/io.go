@@ -57,7 +57,7 @@ type KCPPacketWriter struct {
 func (w *KCPPacketWriter) Overhead() int {
 	overhead := 0
 	if w.Header != nil {
-		overhead += w.Header.Size()
+		overhead += int(w.Header.Size())
 	}
 	if w.Security != nil {
 		overhead += w.Security.Overhead()

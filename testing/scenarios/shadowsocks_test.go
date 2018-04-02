@@ -883,7 +883,7 @@ func TestShadowsocksChacha20Poly1305UDPConformance(t *testing.T) {
 			Port: int(serverPort),
 		})
 		assert(err, IsNil)
-		assert(nBytes, Equals, payload.Len())
+		assert(int32(nBytes), Equals, payload.Len())
 
 		conn.SetReadDeadline(time.Now().Add(time.Second * 10))
 		response := make([]byte, 10240)

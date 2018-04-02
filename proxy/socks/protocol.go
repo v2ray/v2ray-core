@@ -26,10 +26,6 @@ const (
 	authPassword         = 0x02
 	authNoMatchingMethod = 0xFF
 
-	addrTypeIPv4   = 0x01
-	addrTypeIPv6   = 0x04
-	addrTypeDomain = 0x03
-
 	statusSuccess       = 0x00
 	statusCmdNotSupport = 0x07
 )
@@ -96,8 +92,8 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 	}
 
 	if version == socks5Version {
-		nMethod := int(buffer.Byte(1))
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, int32(nMethod))); err != nil {
+		nMethod := int32(buffer.Byte(1))
+		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, nMethod)); err != nil {
 			return nil, newError("failed to read auth methods").Base(err)
 		}
 

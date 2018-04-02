@@ -14,7 +14,7 @@ type UTP struct {
 	connectionId uint16
 }
 
-func (*UTP) Size() int {
+func (*UTP) Size() int32 {
 	return 4
 }
 

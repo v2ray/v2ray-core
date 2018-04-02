@@ -51,7 +51,7 @@ func (r *BytesToBufferReader) ReadMultiBuffer() (MultiBuffer, error) {
 
 	nBytes, err := r.Reader.Read(r.buffer)
 	if nBytes > 0 {
-		mb := NewMultiBufferCap(nBytes/Size + 1)
+		mb := NewMultiBufferCap(int32(nBytes/Size) + 1)
 		mb.Write(r.buffer[:nBytes])
 		if nBytes == len(r.buffer) && nBytes < int(largeSize) {
 			freeBytes(r.buffer)
@@ -99,7 +99,7 @@ func (r *BufferedReader) IsBuffered() bool {
 
 // BufferedBytes returns the number of bytes that is cached in this reader.
 func (r *BufferedReader) BufferedBytes() int32 {
-	return int32(r.leftOver.Len())
+	return r.leftOver.Len()
 }
 
 // ReadByte implements io.ByteReader.
@@ -149,7 +149,7 @@ func (r *BufferedReader) ReadMultiBuffer() (MultiBuffer, error) {
 }
 
 // ReadAtMost returns a MultiBuffer with at most size.
-func (r *BufferedReader) ReadAtMost(size int) (MultiBuffer, error) {
+func (r *BufferedReader) ReadAtMost(size int32) (MultiBuffer, error) {
 	if r.leftOver == nil {
 		mb, err := r.stream.ReadMultiBuffer()
 		if mb.IsEmpty() && err != nil {
@@ -158,7 +158,7 @@ func (r *BufferedReader) ReadAtMost(size int) (MultiBuffer, error) {
 		r.leftOver = mb
 	}
 
-	mb := r.leftOver.SliceBySize(int32(size))
+	mb := r.leftOver.SliceBySize(size)
 	if r.leftOver.IsEmpty() {
 		r.leftOver = nil
 	}
