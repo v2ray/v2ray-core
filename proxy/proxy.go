@@ -41,7 +41,7 @@ type UserManager interface {
 	// AddUser adds a new user.
 	AddUser(context.Context, *protocol.User) error
 
-	// RemoveUser removes an user by email.
+	// RemoveUser removes a user by email.
 	RemoveUser(context.Context, string) error
 }
 
