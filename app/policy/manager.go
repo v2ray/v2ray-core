@@ -43,12 +43,12 @@ func (m *Instance) ForLevel(level uint32) core.Policy {
 	return core.DefaultPolicy()
 }
 
-// Start implements app.Application.Start().
+// Start implements common.Runnable.Start().
 func (m *Instance) Start() error {
 	return nil
 }
 
-// Close implements app.Application.Close().
+// Close implements common.Closable.Close().
 func (m *Instance) Close() error {
 	return nil
 }

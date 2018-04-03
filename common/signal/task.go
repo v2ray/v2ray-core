@@ -50,7 +50,7 @@ func (t *PeriodicTask) Start() error {
 	return nil
 }
 
-// Close implements common.Runnable.
+// Close implements common.Closable.
 func (t *PeriodicTask) Close() error {
 	t.access.Lock()
 	defer t.access.Unlock()

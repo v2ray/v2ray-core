@@ -133,7 +133,7 @@ func (h *Handler) Start() error {
 	return nil
 }
 
-// Close implements common.Runnable.
+// Close implements common.Closable.
 func (h *Handler) Close() error {
 	common.Close(h.mux)
 	return nil

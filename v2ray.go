@@ -38,7 +38,7 @@ type Instance struct {
 
 // New returns a new V2Ray instance based on given configuration.
 // The instance is not started at this point.
-// To make sure V2Ray instance works properly, the config must contain one Dispatcher, one InboundHandlerManager and one OutboundHandlerManager. Other features are optional.
+// To ensure V2Ray instance works properly, the config must contain one Dispatcher, one InboundHandlerManager and one OutboundHandlerManager. Other features are optional.
 func New(config *Config) (*Instance, error) {
 	var server = &Instance{
 		id: uuid.New(),
@@ -169,7 +169,7 @@ func (s *Instance) allFeatures() []Feature {
 }
 
 // GetFeature returns a feature that was registered in this Instance. Nil if not found.
-// The returned Feature must implement common.HasType and whose type equals the given feature type.
+// The returned Feature must implement common.HasType and whose type equals to the given feature type.
 func (s *Instance) GetFeature(featureType interface{}) Feature {
 	for _, f := range s.features {
 		if hasType, ok := f.(common.HasType); ok {
