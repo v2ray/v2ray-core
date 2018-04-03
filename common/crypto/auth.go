@@ -205,7 +205,7 @@ func (w *AuthenticationWriter) seal(b *buf.Buffer) (*buf.Buffer, error) {
 	eb := buf.New()
 	common.Must(eb.Reset(func(bb []byte) (int, error) {
 		w.sizeParser.Encode(uint16(encryptedSize), bb[:0])
-		return w.sizeParser.SizeBytes(), nil
+		return int(w.sizeParser.SizeBytes()), nil
 	}))
 	if err := eb.AppendSupplier(func(bb []byte) (int, error) {
 		_, err := w.auth.Seal(bb[:0], b.Bytes())
@@ -221,7 +221,7 @@ func (w *AuthenticationWriter) seal(b *buf.Buffer) (*buf.Buffer, error) {
 func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
 	defer mb.Release()
 
-	payloadSize := buf.Size - w.auth.Overhead() - w.sizeParser.SizeBytes()
+	payloadSize := buf.Size - int32(w.auth.Overhead()) - w.sizeParser.SizeBytes()
 	mb2Write := buf.NewMultiBufferCap(int32(len(mb) + 10))
 
 	for {

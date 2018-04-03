@@ -88,7 +88,7 @@ func NewShakeSizeParser(nonce []byte) *ShakeSizeParser {
 	}
 }
 
-func (*ShakeSizeParser) SizeBytes() int {
+func (*ShakeSizeParser) SizeBytes() int32 {
 	return 2
 }
 
