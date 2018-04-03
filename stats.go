@@ -70,6 +70,8 @@ func (s *syncStatManager) Set(m StatManager) {
 	s.Lock()
 	defer s.Unlock()
 
-	s.StatManager.Close()
+	if s.StatManager != nil {
+		s.StatManager.Close()
+	}
 	s.StatManager = m
 }
