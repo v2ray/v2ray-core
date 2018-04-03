@@ -49,15 +49,15 @@ func (u *UUID) Equals(another *UUID) bool {
 // Next generates a deterministic random UUID based on this UUID.
 func (u *UUID) Next() UUID {
 	md5hash := md5.New()
-	md5hash.Write(u.Bytes())
-	md5hash.Write([]byte("16167dc8-16b6-4e6d-b8bb-65dd68113a81"))
+	common.Must2(md5hash.Write(u.Bytes()))
+	common.Must2(md5hash.Write([]byte("16167dc8-16b6-4e6d-b8bb-65dd68113a81")))
 	var newid UUID
 	for {
 		md5hash.Sum(newid[:0])
 		if !newid.Equals(u) {
 			return newid
 		}
-		md5hash.Write([]byte("533eff8a-4113-4b10-b5ce-0f5d76b98cd2"))
+		common.Must2(md5hash.Write([]byte("533eff8a-4113-4b10-b5ce-0f5d76b98cd2")))
 	}
 }
 

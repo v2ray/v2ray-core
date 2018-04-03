@@ -21,7 +21,6 @@ type DokodemoDoor struct {
 	config        *Config
 	address       net.Address
 	port          net.Port
-	v             *core.Instance
 }
 
 func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {

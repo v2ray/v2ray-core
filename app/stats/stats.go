@@ -10,22 +10,27 @@ import (
 	"v2ray.com/core"
 )
 
+// Counter is an implementation of core.StatCounter.
 type Counter struct {
 	value int64
 }
 
+// Value implements core.StatCounter.
 func (c *Counter) Value() int64 {
 	return atomic.LoadInt64(&c.value)
 }
 
+// Set implements core.StatCounter.
 func (c *Counter) Set(newValue int64) int64 {
 	return atomic.SwapInt64(&c.value, newValue)
 }
 
+// Add implements core.StatCounter.
 func (c *Counter) Add(delta int64) int64 {
 	return atomic.AddInt64(&c.value, delta)
 }
 
+// Manager is an implementation of core.StatManager.
 type Manager struct {
 	access   sync.RWMutex
 	counters map[string]*Counter

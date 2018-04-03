@@ -34,10 +34,12 @@ func NewCommander(ctx context.Context, config *Config) (*Commander, error) {
 	return c, nil
 }
 
+// Type implements common.HasType.
 func (c *Commander) Type() interface{} {
 	return (*Commander)(nil)
 }
 
+// Start implements common.Runnable.
 func (c *Commander) Start() error {
 	c.Lock()
 	c.server = grpc.NewServer()
@@ -77,6 +79,7 @@ func (c *Commander) Start() error {
 	return nil
 }
 
+// Close implements common.Closable.
 func (c *Commander) Close() error {
 	c.Lock()
 	defer c.Unlock()

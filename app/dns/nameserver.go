@@ -7,6 +7,7 @@ import (
 
 	"github.com/miekg/dns"
 	"v2ray.com/core"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
@@ -54,7 +55,7 @@ func NewUDPNameServer(address net.Destination, dispatcher core.Dispatcher) *UDPN
 		Interval: time.Minute,
 		Execute:  s.Cleanup,
 	}
-	s.cleanup.Start()
+	common.Must(s.cleanup.Start())
 	return s
 }
 
