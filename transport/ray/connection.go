@@ -123,7 +123,7 @@ func (c *connection) SetReadDeadline(t time.Time) error {
 	return nil
 }
 
-// SetWriteDeadline implement net.Conn.SetWriteDeadline().
+// SetWriteDeadline implements net.Conn.SetWriteDeadline().
 func (c *connection) SetWriteDeadline(t time.Time) error {
 	return nil
 }

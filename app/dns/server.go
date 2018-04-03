@@ -80,7 +80,7 @@ func (s *Server) Start() error {
 	return s.task.Start()
 }
 
-// Close implements common.Runnable.
+// Close implements common.Closable.
 func (s *Server) Close() error {
 	return s.task.Close()
 }
