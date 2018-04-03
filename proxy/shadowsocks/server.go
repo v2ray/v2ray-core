@@ -17,7 +17,7 @@ import (
 )
 
 type Server struct {
-	config  *ServerConfig
+	config  ServerConfig
 	user    *protocol.User
 	account *MemoryAccount
 	v       *core.Instance
@@ -36,7 +36,7 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	account := rawAccount.(*MemoryAccount)
 
 	s := &Server{
-		config:  config,
+		config:  *config,
 		user:    config.GetUser(),
 		account: account,
 		v:       core.MustFromContext(ctx),
@@ -47,7 +47,10 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 
 func (s *Server) Network() net.NetworkList {
 	list := net.NetworkList{
-		Network: []net.Network{net.Network_TCP},
+		Network: s.config.Network,
+	}
+	if len(list.Network) == 0 {
+		list.Network = append(list.Network, net.Network_TCP)
 	}
 	if s.config.UdpEnabled {
 		list.Network = append(list.Network, net.Network_UDP)
