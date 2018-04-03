@@ -1,4 +1,4 @@
-package uuid
+package uuid // import "v2ray.com/core/common/uuid"
 
 import (
 	"bytes"

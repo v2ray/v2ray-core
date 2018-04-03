@@ -1,5 +1,5 @@
 // Package errors is a drop-in replacement for Golang lib 'errors'.
-package errors
+package errors // import "v2ray.com/core/common/errors"
 
 import (
 	"context"

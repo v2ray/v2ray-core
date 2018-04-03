@@ -1,4 +1,4 @@
-package log
+package log // import "v2ray.com/core/common/log"
 
 import (
 	"sync"
