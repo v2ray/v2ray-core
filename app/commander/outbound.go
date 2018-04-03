@@ -54,6 +54,7 @@ func (l *OutboundListener) Addr() net.Addr {
 	}
 }
 
+// CommanderOutbound is a core.OutboundHandler that handles gRPC connections.
 type CommanderOutbound struct {
 	tag      string
 	listener *OutboundListener
@@ -61,6 +62,7 @@ type CommanderOutbound struct {
 	closed   bool
 }
 
+// Dispatch implements core.OutboundHandler.
 func (co *CommanderOutbound) Dispatch(ctx context.Context, r ray.OutboundRay) {
 	co.access.RLock()
 
@@ -78,10 +80,12 @@ func (co *CommanderOutbound) Dispatch(ctx context.Context, r ray.OutboundRay) {
 	<-closeSignal.Wait()
 }
 
+// Tag implements core.OutboundHandler.
 func (co *CommanderOutbound) Tag() string {
 	return co.tag
 }
 
+// Start implements common.Runnable.
 func (co *CommanderOutbound) Start() error {
 	co.access.Lock()
 	co.closed = false
@@ -89,6 +93,7 @@ func (co *CommanderOutbound) Start() error {
 	return nil
 }
 
+// Close implements common.Closable.
 func (co *CommanderOutbound) Close() error {
 	co.access.Lock()
 	co.closed = true

@@ -13,6 +13,7 @@ import (
 	"v2ray.com/core/common/signal"
 )
 
+// Commander is a V2Ray feature that provides gRPC methods to external clients.
 type Commander struct {
 	sync.Mutex
 	server *grpc.Server
@@ -21,6 +22,7 @@ type Commander struct {
 	ohm    core.OutboundHandlerManager
 }
 
+// NewCommander creates a new Commander based on the given config.
 func NewCommander(ctx context.Context, config *Config) (*Commander, error) {
 	v := core.MustFromContext(ctx)
 	c := &Commander{

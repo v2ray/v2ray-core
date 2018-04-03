@@ -52,6 +52,7 @@ func (p *Policy) overrideWith(another *Policy) {
 	}
 }
 
+// ToCorePolicy converts this Policy to core.Policy.
 func (p *Policy) ToCorePolicy() core.Policy {
 	var cp core.Policy
 	if p.Timeout != nil {

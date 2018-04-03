@@ -19,8 +19,11 @@ type TimeoutPolicy struct {
 	DownlinkOnly time.Duration
 }
 
+// StatsPolicy contains settings for stats counters.
 type StatsPolicy struct {
-	UserUplink   bool
+	// Whether or not to enable stat counter for user uplink traffic.
+	UserUplink bool
+	// Whether or not to enable stat counter for user downlink traffic.
 	UserDownlink bool
 }
 

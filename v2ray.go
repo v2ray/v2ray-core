@@ -211,6 +211,7 @@ func (s *Instance) OutboundHandlerManager() OutboundHandlerManager {
 	return &(s.ohm)
 }
 
+// Stats returns the StatManager used by this Instance. If StatManager was not registered before, the returned value doesn't work.
 func (s *Instance) Stats() StatManager {
 	return &(s.stats)
 }
