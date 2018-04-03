@@ -64,8 +64,12 @@ func (s *syncStatManager) GetCounter(name string) StatCounter {
 }
 
 func (s *syncStatManager) Set(m StatManager) {
+	if m == nil {
+		return
+	}
 	s.Lock()
 	defer s.Unlock()
 
+	s.StatManager.Close()
 	s.StatManager = m
 }
