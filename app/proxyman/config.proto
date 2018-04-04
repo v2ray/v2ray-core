@@ -89,6 +89,14 @@ message SenderConfig {
   MultiplexingConfig multiplex_settings = 4;
 }
 
+
+message UnixSenderConfig {
+  v2ray.core.internet.domainsocket.DomainSocketSettings via = 1;
+  v2ray.core.transport.internet.StreamConfig stream_settings = 2;
+  v2ray.core.transport.internet.ProxyConfig proxy_settings = 3;
+  MultiplexingConfig multiplex_settings = 4;
+}
+
 message MultiplexingConfig {
   // Whether or not Mux is enabled.
   bool enabled = 1;
