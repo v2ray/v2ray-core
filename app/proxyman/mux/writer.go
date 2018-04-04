@@ -13,6 +13,7 @@ type Writer struct {
 	writer       buf.Writer
 	id           uint16
 	followup     bool
+	hasError     bool
 	transferType protocol.TransferType
 }
 
@@ -40,6 +41,7 @@ func (w *Writer) getNextFrameMeta() FrameMetadata {
 		SessionID: w.id,
 		Target:    w.dest,
 	}
+
 	if w.followup {
 		meta.SessionStatus = SessionStatusKeep
 	} else {
@@ -105,18 +107,8 @@ func (w *Writer) Close() error {
 		SessionID:     w.id,
 		SessionStatus: SessionStatusEnd,
 	}
-
-	frame := buf.New()
-	common.Must(meta.WriteTo(frame))
-
-	w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(frame))
-	return nil
-}
-
-func (w *Writer) Error() error {
-	meta := FrameMetadata{
-		SessionID:     w.id,
-		SessionStatus: SessionStatusError,
+	if w.hasError {
+		meta.Option.Set(OptionError)
 	}
 
 	frame := buf.New()
