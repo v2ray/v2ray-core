@@ -11,12 +11,14 @@ import (
 	"v2ray.com/core/proxy"
 )
 
+// Router is an implementation of core.Router.
 type Router struct {
 	domainStrategy Config_DomainStrategy
 	rules          []Rule
 	dns            core.DNSClient
 }
 
+// NewRouter creates a new Router based on the given config.
 func NewRouter(ctx context.Context, config *Config) (*Router, error) {
 	v := core.MustFromContext(ctx)
 	r := &Router{
@@ -68,6 +70,7 @@ func (r *ipResolver) Resolve() []net.Address {
 	return r.ip
 }
 
+// PickRoute implements core.Router.
 func (r *Router) PickRoute(ctx context.Context) (string, error) {
 	resolver := &ipResolver{
 		dns: r.dns,
@@ -106,10 +109,12 @@ func (r *Router) PickRoute(ctx context.Context) (string, error) {
 	return "", core.ErrNoClue
 }
 
+// Start implements common.Runnable.
 func (*Router) Start() error {
 	return nil
 }
 
+// Close implements common.Closable.
 func (*Router) Close() error {
 	return nil
 }

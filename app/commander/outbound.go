@@ -5,6 +5,7 @@ import (
 	"net"
 	"sync"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/transport/ray"
 )
@@ -24,6 +25,7 @@ func (l *OutboundListener) add(conn net.Conn) {
 	}
 }
 
+// Accept implements net.Listener.
 func (l *OutboundListener) Accept() (net.Conn, error) {
 	select {
 	case <-l.done.C():
@@ -33,8 +35,9 @@ func (l *OutboundListener) Accept() (net.Conn, error) {
 	}
 }
 
+// Close implement net.Listener.
 func (l *OutboundListener) Close() error {
-	l.done.Close()
+	common.Must(l.done.Close())
 L:
 	for {
 		select {
@@ -47,6 +50,7 @@ L:
 	return nil
 }
 
+// Addr implements net.Listener.
 func (l *OutboundListener) Addr() net.Addr {
 	return &net.TCPAddr{
 		IP:   net.IP{0, 0, 0, 0},
@@ -54,8 +58,8 @@ func (l *OutboundListener) Addr() net.Addr {
 	}
 }
 
-// CommanderOutbound is a core.OutboundHandler that handles gRPC connections.
-type CommanderOutbound struct {
+// Outbound is a core.OutboundHandler that handles gRPC connections.
+type Outbound struct {
 	tag      string
 	listener *OutboundListener
 	access   sync.RWMutex
@@ -63,7 +67,7 @@ type CommanderOutbound struct {
 }
 
 // Dispatch implements core.OutboundHandler.
-func (co *CommanderOutbound) Dispatch(ctx context.Context, r ray.OutboundRay) {
+func (co *Outbound) Dispatch(ctx context.Context, r ray.OutboundRay) {
 	co.access.RLock()
 
 	if co.closed {
@@ -81,12 +85,12 @@ func (co *CommanderOutbound) Dispatch(ctx context.Context, r ray.OutboundRay) {
 }
 
 // Tag implements core.OutboundHandler.
-func (co *CommanderOutbound) Tag() string {
+func (co *Outbound) Tag() string {
 	return co.tag
 }
 
 // Start implements common.Runnable.
-func (co *CommanderOutbound) Start() error {
+func (co *Outbound) Start() error {
 	co.access.Lock()
 	co.closed = false
 	co.access.Unlock()
@@ -94,11 +98,10 @@ func (co *CommanderOutbound) Start() error {
 }
 
 // Close implements common.Closable.
-func (co *CommanderOutbound) Close() error {
+func (co *Outbound) Close() error {
 	co.access.Lock()
-	co.closed = true
-	co.listener.Close()
-	co.access.Unlock()
+	defer co.access.Unlock()
 
-	return nil
+	co.closed = true
+	return co.listener.Close()
 }

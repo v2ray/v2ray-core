@@ -72,7 +72,9 @@ func (m *Manager) RemoveHandler(ctx context.Context, tag string) error {
 	defer m.access.Unlock()
 
 	if handler, found := m.taggedHandlers[tag]; found {
-		handler.Close()
+		if err := handler.Close(); err != nil {
+			newError("failed to close handler ", tag).Base(err).AtWarning().WithContext(ctx).WriteToLog()
+		}
 		delete(m.taggedHandlers, tag)
 		return nil
 	}

@@ -74,7 +74,7 @@ func (c *Commander) Start() error {
 	}()
 
 	c.ohm.RemoveHandler(context.Background(), c.config.Tag)
-	c.ohm.AddHandler(context.Background(), &CommanderOutbound{
+	c.ohm.AddHandler(context.Background(), &Outbound{
 		tag:      c.config.Tag,
 		listener: listener,
 	})
