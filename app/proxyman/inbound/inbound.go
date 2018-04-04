@@ -123,15 +123,21 @@ func NewHandler(ctx context.Context, config *core.InboundHandlerConfig) (core.In
 	if err != nil {
 		return nil, err
 	}
-	receiverSettings, ok := rawReceiverSettings.(*proxyman.ReceiverConfig)
-	if !ok {
-		return nil, newError("not a ReceiverConfig").AtError()
-	}
 	proxySettings, err := config.ProxySettings.GetInstance()
 	if err != nil {
 		return nil, err
 	}
 	tag := config.Tag
+
+	receiverSettings, ok := rawReceiverSettings.(*proxyman.ReceiverConfig)
+	if !ok {
+		receiverSettings, ok := rawReceiverSettings.(*proxyman.UnixReceiverConfig)
+		if ok {
+			return NewUnixInboundHandler(ctx, tag, receiverSettings, proxySettings)
+		}
+		return nil, newError("not a ReceiverConfig").AtError()
+	}
+
 	allocStrategy := receiverSettings.AllocationStrategy
 	if allocStrategy == nil || allocStrategy.Type == proxyman.AllocationStrategy_Always {
 		return NewAlwaysOnInboundHandler(ctx, tag, receiverSettings, proxySettings)

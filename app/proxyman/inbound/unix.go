@@ -21,23 +21,23 @@ type UnixInboundHandler struct {
 	additional     *proxyman.UnixReceiverConfig
 }
 
-func (uih *UnixInboundHandler) Start() {
+func (uih *UnixInboundHandler) Start() error {
 	var err error
 	uih.listenerHolder, err = domainsocket.ListenDS(uih.ctx, uih.path)
 	if err != nil {
-		newError(err).AtError().WriteToLog()
+		return newError(err).AtError()
 	}
 	err = uih.listenerHolder.LowerUP()
 	if err != nil {
-		newError(err).AtError().WriteToLog()
+		return newError(err).AtError()
 	}
 	nchan := make(chan net.Conn, 2)
 	err = uih.listenerHolder.UP(nchan, false)
 	if err != nil {
-		newError(err).AtError().WriteToLog()
+		return newError(err).AtError()
 	}
 	go uih.progressTraffic(nchan)
-	return
+	return nil
 }
 func (uih *UnixInboundHandler) progressTraffic(rece <-chan net.Conn) {
 
@@ -59,12 +59,12 @@ func (uih *UnixInboundHandler) progressTraffic(rece <-chan net.Conn) {
 		}(conn)
 	}
 }
-func (uih *UnixInboundHandler) Close() {
+func (uih *UnixInboundHandler) Close() error {
 	if uih.listenerHolder != nil {
 		uih.listenerHolder.Down()
-	} else {
-		newError("Called UnixInboundHandler.Close while listenerHolder is nil").AtDebug().WriteToLog()
+		return nil
 	}
+	return newError("Called UnixInboundHandler.Close while listenerHolder is nil")
 
 }
 func (uih *UnixInboundHandler) Tag() string {
