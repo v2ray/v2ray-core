@@ -15,6 +15,7 @@ const (
 	SessionStatusKeep      SessionStatus = 0x02
 	SessionStatusEnd       SessionStatus = 0x03
 	SessionStatusKeepAlive SessionStatus = 0x04
+	SessionStatusError     SessionStatus = 0x05
 )
 
 const (

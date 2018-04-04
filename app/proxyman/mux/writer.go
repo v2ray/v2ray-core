@@ -112,3 +112,16 @@ func (w *Writer) Close() error {
 	w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(frame))
 	return nil
 }
+
+func (w *Writer) Error() error {
+	meta := FrameMetadata{
+		SessionID:     w.id,
+		SessionStatus: SessionStatusError,
+	}
+
+	frame := buf.New()
+	common.Must(meta.WriteTo(frame))
+
+	w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(frame))
+	return nil
+}
