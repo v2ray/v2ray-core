@@ -23,7 +23,7 @@ type Handler struct {
 	mux             *mux.ClientManager
 }
 
-func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (*Handler, error) {
+func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (core.OutboundHandler, error) {
 	v := core.FromContext(ctx)
 	if v == nil {
 		return nil, newError("V is not in context")
