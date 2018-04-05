@@ -77,7 +77,6 @@ func NewStreamReader(reader *buf.BufferedReader) *StreamReader {
 // ReadMultiBuffer implmenets buf.Reader.
 func (r *StreamReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	if r.leftOver == 0 {
-		r.leftOver = -1
 		return nil, io.EOF
 	}
 

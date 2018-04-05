@@ -208,6 +208,7 @@ func (m *Client) handleStatusKeep(meta *FrameMetadata, reader *buf.BufferedReade
 			s.input.CloseError()
 			return s.Close()
 		}
+		return nil
 	}
 	return drain(reader)
 }
@@ -368,6 +369,7 @@ func (w *ServerWorker) handleStatusKeep(meta *FrameMetadata, reader *buf.Buffere
 			s.input.CloseError()
 			return s.Close()
 		}
+		return nil
 	}
 	return drain(reader)
 }
