@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	version  = "3.16"
+	version  = "3.17"
 	build    = "Custom"
 	codename = "die Commanderin"
 	intro    = "A unified platform for anti-censorship."
