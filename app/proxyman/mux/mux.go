@@ -203,7 +203,11 @@ func (m *Client) handleStatusKeep(meta *FrameMetadata, reader *buf.BufferedReade
 	}
 
 	if s, found := m.sessionManager.Get(meta.SessionID); found {
-		return buf.Copy(s.NewReader(reader), s.output, buf.IgnoreWriterError())
+		if err := buf.Copy(s.NewReader(reader), s.output); err != nil {
+			drain(reader)
+			s.input.CloseError()
+			return s.Close()
+		}
 	}
 	return drain(reader)
 }
@@ -359,7 +363,11 @@ func (w *ServerWorker) handleStatusKeep(meta *FrameMetadata, reader *buf.Buffere
 		return nil
 	}
 	if s, found := w.sessionManager.Get(meta.SessionID); found {
-		return buf.Copy(s.NewReader(reader), s.output, buf.IgnoreWriterError())
+		if err := buf.Copy(s.NewReader(reader), s.output); err != nil {
+			drain(reader)
+			s.input.CloseError()
+			return s.Close()
+		}
 	}
 	return drain(reader)
 }
