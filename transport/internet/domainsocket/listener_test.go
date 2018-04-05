@@ -18,7 +18,7 @@ func TestListenAbstract(t *testing.T) {
 }
 
 func TestListen(t *testing.T) {
-	listener, err := domainsocket.ListenDS(context.Background(), "/tmp/ts")
+	listener, err := domainsocket.ListenDS(context.Background(), "/tmp/ts3")
 	asrt := assert.With(t)
 	asrt(err, assert.IsNil)
 	asrt(listener, assert.IsNotNil)
@@ -42,7 +42,7 @@ func TestListen(t *testing.T) {
 		}
 	}()
 	listener.UP(chi, false)
-	con, erro := net.Dial("unix", "/tmp/ts")
+	con, erro := net.Dial("unix", "/tmp/ts3")
 	asrt(erro, assert.IsNil)
 	b := []byte("ABC")
 	c := []byte("XXX")
@@ -56,7 +56,7 @@ func TestListen(t *testing.T) {
 }
 
 func TestListenA(t *testing.T) {
-	listener, err := domainsocket.ListenDS(context.Background(), "\x00/tmp/ts")
+	listener, err := domainsocket.ListenDS(context.Background(), "\x00/tmp/ts2")
 	asrt := assert.With(t)
 	asrt(err, assert.IsNil)
 	asrt(listener, assert.IsNotNil)
@@ -80,7 +80,7 @@ func TestListenA(t *testing.T) {
 		}
 	}()
 	listener.UP(chi, false)
-	con, erro := net.Dial("unix", "\x00/tmp/ts")
+	con, erro := net.Dial("unix", "\x00/tmp/ts2")
 	asrt(erro, assert.IsNil)
 	b := []byte("ABC")
 	c := []byte("XXX")
