@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package v2ray.core.app.log.command;
+option csharp_namespace = "V2Ray.Core.App.Log.Command";
+option go_package = "command";
+option java_package = "com.v2ray.core.app.log.command";
+option java_multiple_files = true;
+
+message Config {
+}
+
+message RestartLoggerRequest {}
+
+message RestartLoggerResponse{}
+
+service LoggerService {
+  rpc RestartLogger(RestartLoggerRequest) returns (RestartLoggerResponse) {}
+}

@@ -26,7 +26,7 @@ import (
 func TestHttpConformance(t *testing.T) {
 	assert := With(t)
 
-	httpServerPort := pickPort()
+	httpServerPort := tcp.PickPort()
 	httpServer := &v2httptest.Server{
 		Port:        httpServerPort,
 		PathHandler: make(map[string]http.HandlerFunc),
@@ -35,7 +35,7 @@ func TestHttpConformance(t *testing.T) {
 	assert(err, IsNil)
 	defer httpServer.Close()
 
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
 			{
@@ -90,7 +90,7 @@ func TestHttpConnectMethod(t *testing.T) {
 	assert(err, IsNil)
 	defer tcpServer.Close()
 
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
 			{
@@ -146,7 +146,7 @@ func TestHttpConnectMethod(t *testing.T) {
 func TestHttpPost(t *testing.T) {
 	assert := With(t)
 
-	httpServerPort := pickPort()
+	httpServerPort := tcp.PickPort()
 	httpServer := &v2httptest.Server{
 		Port: httpServerPort,
 		PathHandler: map[string]http.HandlerFunc{
@@ -169,7 +169,7 @@ func TestHttpPost(t *testing.T) {
 	assert(err, IsNil)
 	defer httpServer.Close()
 
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
 			{
@@ -226,7 +226,7 @@ func setProxyBasicAuth(req *http.Request, user, pass string) {
 func TestHttpBasicAuth(t *testing.T) {
 	assert := With(t)
 
-	httpServerPort := pickPort()
+	httpServerPort := tcp.PickPort()
 	httpServer := &v2httptest.Server{
 		Port:        httpServerPort,
 		PathHandler: make(map[string]http.HandlerFunc),
@@ -235,7 +235,7 @@ func TestHttpBasicAuth(t *testing.T) {
 	assert(err, IsNil)
 	defer httpServer.Close()
 
-	serverPort := pickPort()
+	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
 			{

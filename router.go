@@ -54,9 +54,14 @@ func (d *syncDispatcher) Close() error {
 }
 
 func (d *syncDispatcher) Set(disp Dispatcher) {
+	if disp == nil {
+		return
+	}
+
 	d.Lock()
 	defer d.Unlock()
 
+	common.Close(d.Dispatcher)
 	d.Dispatcher = disp
 }
 
@@ -65,7 +70,7 @@ var (
 	ErrNoClue = errors.New("not enough information for making a decision")
 )
 
-// Router is a feature to choose a outbound tag for the given request.
+// Router is a feature to choose an outbound tag for the given request.
 type Router interface {
 	Feature
 
@@ -108,8 +113,13 @@ func (r *syncRouter) Close() error {
 }
 
 func (r *syncRouter) Set(router Router) {
+	if router == nil {
+		return
+	}
+
 	r.Lock()
 	defer r.Unlock()
 
+	common.Close(r.Router)
 	r.Router = router
 }

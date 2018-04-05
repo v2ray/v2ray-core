@@ -8,15 +8,18 @@ import (
 	_ "v2ray.com/core/app/proxyman/inbound"
 	_ "v2ray.com/core/app/proxyman/outbound"
 
-	// Default commander and all its services.
+	// Default commander and all its services. This is an optional feature.
 	_ "v2ray.com/core/app/commander"
+	_ "v2ray.com/core/app/log/command"
 	_ "v2ray.com/core/app/proxyman/command"
+	_ "v2ray.com/core/app/stats/command"
 
 	// Other optional features.
 	_ "v2ray.com/core/app/dns"
 	_ "v2ray.com/core/app/log"
 	_ "v2ray.com/core/app/policy"
 	_ "v2ray.com/core/app/router"
+	_ "v2ray.com/core/app/stats"
 
 	// Inbound and outbound proxies.
 	_ "v2ray.com/core/proxy/blackhole"
@@ -29,6 +32,7 @@ import (
 	_ "v2ray.com/core/proxy/vmess/outbound"
 
 	// Transports
+	_ "v2ray.com/core/transport/internet/http"
 	_ "v2ray.com/core/transport/internet/kcp"
 	_ "v2ray.com/core/transport/internet/tcp"
 	_ "v2ray.com/core/transport/internet/tls"
@@ -41,4 +45,7 @@ import (
 	_ "v2ray.com/core/transport/internet/headers/srtp"
 	_ "v2ray.com/core/transport/internet/headers/utp"
 	_ "v2ray.com/core/transport/internet/headers/wechat"
+
+	// JSON config format
+	_ "v2ray.com/core/main/json"
 )

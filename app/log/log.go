@@ -6,11 +6,12 @@ import (
 	"context"
 	"sync"
 
+	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/log"
 )
 
-// Instance is an app.Application that handles logs.
+// Instance is a log.Handler that handles logs.
 type Instance struct {
 	sync.RWMutex
 	config       *Config
@@ -23,16 +24,14 @@ type Instance struct {
 func New(ctx context.Context, config *Config) (*Instance, error) {
 	g := &Instance{
 		config: config,
-		active: true,
-	}
-
-	if err := g.initAccessLogger(); err != nil {
-		return nil, newError("failed to initialize access logger").Base(err).AtWarning()
-	}
-	if err := g.initErrorLogger(); err != nil {
-		return nil, newError("failed to initialize error logger").Base(err).AtWarning()
+		active: false,
 	}
 	log.RegisterHandler(g)
+
+	v := core.FromContext(ctx)
+	if v != nil {
+		common.Must(v.RegisterFeature((*log.Handler)(nil), g))
+	}
 
 	return g, nil
 }
@@ -67,24 +66,48 @@ func (g *Instance) initErrorLogger() error {
 	return nil
 }
 
-// Start implements app.Application.Start().
-func (g *Instance) Start() error {
+// Type implements common.HasType.
+func (*Instance) Type() interface{} {
+	return (*Instance)(nil)
+}
+
+func (g *Instance) startInternal() error {
 	g.Lock()
 	defer g.Unlock()
+
+	if g.active {
+		return nil
+	}
+
 	g.active = true
+
+	if err := g.initAccessLogger(); err != nil {
+		return newError("failed to initialize access logger").Base(err).AtWarning()
+	}
+	if err := g.initErrorLogger(); err != nil {
+		return newError("failed to initialize error logger").Base(err).AtWarning()
+	}
+
 	return nil
 }
 
-func (g *Instance) isActive() bool {
-	g.RLock()
-	defer g.RUnlock()
+// Start implements common.Runnable.Start().
+func (g *Instance) Start() error {
+	if err := g.startInternal(); err != nil {
+		return err
+	}
 
-	return g.active
+	newError("Logger started").AtDebug().WriteToLog()
+
+	return nil
 }
 
 // Handle implements log.Handler.
 func (g *Instance) Handle(msg log.Message) {
-	if !g.isActive() {
+	g.RLock()
+	defer g.RUnlock()
+
+	if !g.active {
 		return
 	}
 
@@ -102,12 +125,24 @@ func (g *Instance) Handle(msg log.Message) {
 	}
 }
 
-// Close implement app.Application.Close().
+// Close implements common.Closable.Close().
 func (g *Instance) Close() error {
+	newError("Logger closing").AtDebug().WriteToLog()
+
 	g.Lock()
 	defer g.Unlock()
 
+	if !g.active {
+		return nil
+	}
+
 	g.active = false
+
+	common.Close(g.accessLogger)
+	g.accessLogger = nil
+
+	common.Close(g.errorLogger)
+	g.errorLogger = nil
 
 	return nil
 }

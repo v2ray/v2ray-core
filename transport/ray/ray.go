@@ -13,7 +13,7 @@ type OutboundRay interface {
 
 	// OutboundOutput provides a stream to retrieve the response from the
 	// outbound connection. The outbound connection shall close the channel
-	// after all responses are receivced and put into the channel.
+	// after all responses are received and put into the channel.
 	OutboundOutput() OutputStream
 }
 
@@ -24,13 +24,13 @@ type InboundRay interface {
 	// is received and put into the channel.
 	InboundInput() OutputStream
 
-	// InboudBound provides a stream of data for the inbound connection to write
+	// InboundOutput provides a stream of data for the inbound connection to write
 	// as response. The inbound connection shall write all the data from the
 	// channel until it is closed.
 	InboundOutput() InputStream
 }
 
-// Ray is an internal tranport channel between inbound and outbound connection.
+// Ray is an internal transport channel between inbound and outbound connection.
 type Ray interface {
 	InboundRay
 	OutboundRay

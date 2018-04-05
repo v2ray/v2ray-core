@@ -1,4 +1,4 @@
-package predicate
+package predicate // import "v2ray.com/core/common/predicate"
 
 type Predicate func() bool
 

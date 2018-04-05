@@ -16,12 +16,12 @@ func TestReaderWriter(t *testing.T) {
 	assert := With(t)
 
 	cache := buf.New()
-	b := buf.NewLocal(256)
+	b := buf.NewSize(256)
 	b.AppendSupplier(serial.WriteString("abcd" + ENDING))
 	writer := NewHeaderWriter(b)
 	err := writer.Write(cache)
 	assert(err, IsNil)
-	assert(cache.Len(), Equals, 8)
+	assert(cache.Len(), Equals, int32(8))
 	_, err = cache.Write([]byte{'e', 'f', 'g'})
 	assert(err, IsNil)
 

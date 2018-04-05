@@ -19,7 +19,7 @@ func getTCPSettingsFromContext(ctx context.Context) *Config {
 
 // Dial dials a new TCP connection to the given destination.
 func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {
-	newError("dialing TCP to ", dest).WriteToLog()
+	newError("dialing TCP to ", dest).WithContext(ctx).WriteToLog()
 	src := internet.DialerSourceFromContext(ctx)
 
 	conn, err := internet.DialSystem(ctx, src, dest)
@@ -27,8 +27,8 @@ func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error
 		return nil, err
 	}
 
-	if config := tls.ConfigFromContext(ctx, tls.WithDestination(dest), tls.WithNextProto("h2")); config != nil {
-		conn = tls.Client(conn, config.GetTLSConfig())
+	if config := tls.ConfigFromContext(ctx); config != nil {
+		conn = tls.Client(conn, config.GetTLSConfig(tls.WithDestination(dest), tls.WithNextProto("h2")))
 	}
 
 	tcpSettings := getTCPSettingsFromContext(ctx)

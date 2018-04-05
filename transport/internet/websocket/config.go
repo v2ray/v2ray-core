@@ -7,7 +7,7 @@ import (
 	"v2ray.com/core/transport/internet"
 )
 
-func (c *Config) GetNormailzedPath() string {
+func (c *Config) GetNormalizedPath() string {
 	path := c.Path
 	if len(path) == 0 {
 		return "/"

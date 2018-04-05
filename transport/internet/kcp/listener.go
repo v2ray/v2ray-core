@@ -61,7 +61,7 @@ func NewListener(ctx context.Context, address net.Address, port net.Port, addCon
 		l.tlsConfig = config.GetTLSConfig()
 	}
 
-	hub, err := udp.ListenUDP(address, port, udp.ListenOption{Callback: l.OnReceive, Concurrency: 2})
+	hub, err := udp.ListenUDP(address, port, l.OnReceive, udp.HubCapacity(1024))
 	if err != nil {
 		return nil, err
 	}
@@ -73,9 +73,9 @@ func NewListener(ctx context.Context, address net.Address, port net.Port, addCon
 }
 
 func (l *Listener) OnReceive(payload *buf.Buffer, src net.Destination, originalDest net.Destination) {
-	defer payload.Release()
-
 	segments := l.reader.Read(payload.Bytes())
+	payload.Release()
+
 	if len(segments) == 0 {
 		newError("discarding invalid payload from ", src).WriteToLog()
 		return

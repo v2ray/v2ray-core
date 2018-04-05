@@ -29,12 +29,12 @@ func GenerateCertificateForTest() *v2tls.Certificate {
 		Subject: pkix.Name{
 			Organization: []string{"V2Ray Inc"},
 		},
-		NotBefore:             time.Now(),
+		NotBefore:             time.Now().Add(time.Hour * -1),
 		NotAfter:              time.Now().Add(time.Hour),
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
-		DNSNames:              []string{"www.v2ray.com"},
+		DNSNames:              []string{"www.v2ray.com", "v2ray.com"},
 	}
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &priv.PublicKey, priv)

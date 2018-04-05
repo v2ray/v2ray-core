@@ -12,16 +12,14 @@ package core
 //go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg core -path Core
 
 import (
-	"fmt"
-
-	"v2ray.com/core/common/platform"
+	"v2ray.com/core/common/serial"
 )
 
 var (
-	version  = "3.9"
+	version  = "3.16"
 	build    = "Custom"
 	codename = "die Commanderin"
-	intro    = "An unified platform for anti-censorship."
+	intro    = "A unified platform for anti-censorship."
 )
 
 // Version returns V2Ray's version as a string, in the form of "x.y.z" where x, y and z are numbers.
@@ -30,10 +28,12 @@ func Version() string {
 	return version
 }
 
-// PrintVersion prints current version into console.
-func PrintVersion() {
-	fmt.Printf("V2Ray %s (%s) %s%s", Version(), codename, build, platform.LineSeparator())
-	fmt.Printf("%s%s", intro, platform.LineSeparator())
+// VersionStatement returns a list of strings representing the full version info.
+func VersionStatement() []string {
+	return []string{
+		serial.Concat("V2Ray ", Version(), " (", codename, ") ", build),
+		intro,
+	}
 }
 
 /*

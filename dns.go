@@ -55,5 +55,6 @@ func (d *syncDNSClient) Set(client DNSClient) {
 	d.Lock()
 	defer d.Unlock()
 
+	common.Close(d.DNSClient)
 	d.DNSClient = client
 }

@@ -11,6 +11,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/ray"
 )
@@ -23,18 +24,18 @@ var (
 type DefaultDispatcher struct {
 	ohm    core.OutboundHandlerManager
 	router core.Router
+	policy core.PolicyManager
+	stats  core.StatManager
 }
 
 // NewDefaultDispatcher create a new DefaultDispatcher.
 func NewDefaultDispatcher(ctx context.Context, config *Config) (*DefaultDispatcher, error) {
-	v := core.FromContext(ctx)
-	if v == nil {
-		return nil, newError("V is not in context.")
-	}
-
+	v := core.MustFromContext(ctx)
 	d := &DefaultDispatcher{
 		ohm:    v.OutboundHandlerManager(),
 		router: v.Router(),
+		policy: v.PolicyManager(),
+		stats:  v.Stats(),
 	}
 
 	if err := v.RegisterFeature((*core.Dispatcher)(nil), d); err != nil {
@@ -43,13 +44,47 @@ func NewDefaultDispatcher(ctx context.Context, config *Config) (*DefaultDispatch
 	return d, nil
 }
 
-// Start implements app.Application.
+// Start implements common.Runnable.
 func (*DefaultDispatcher) Start() error {
 	return nil
 }
 
-// Close implements app.Application.
+// Close implements common.Closable.
 func (*DefaultDispatcher) Close() error { return nil }
+
+func (d *DefaultDispatcher) getStatCounter(name string) core.StatCounter {
+	c := d.stats.GetCounter(name)
+	if c != nil {
+		return c
+	}
+	c, err := d.stats.RegisterCounter(name)
+	if err != nil {
+		return nil
+	}
+	return c
+}
+
+func (d *DefaultDispatcher) getRayOption(user *protocol.User) []ray.Option {
+	var rayOptions []ray.Option
+
+	if user != nil && len(user.Email) > 0 {
+		p := d.policy.ForLevel(user.Level)
+		if p.Stats.UserUplink {
+			name := "user>>>" + user.Email + ">>>traffic>>>uplink"
+			if c := d.getStatCounter(name); c != nil {
+				rayOptions = append(rayOptions, ray.WithUplinkStatCounter(c))
+			}
+		}
+		if p.Stats.UserDownlink {
+			name := "user>>>" + user.Email + ">>>traffic>>>downlink"
+			if c := d.getStatCounter(name); c != nil {
+				rayOptions = append(rayOptions, ray.WithDownlinkStatCounter(c))
+			}
+		}
+	}
+
+	return rayOptions
+}
 
 // Dispatch implements core.Dispatcher.
 func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destination) (ray.InboundRay, error) {
@@ -58,15 +93,18 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	}
 	ctx = proxy.ContextWithTarget(ctx, destination)
 
-	outbound := ray.NewRay(ctx)
-	sniferList := proxyman.ProtocoSniffersFromContext(ctx)
-	if destination.Address.Family().IsDomain() || len(sniferList) == 0 {
+	user := protocol.UserFromContext(ctx)
+	rayOptions := d.getRayOption(user)
+
+	outbound := ray.New(ctx, rayOptions...)
+	snifferList := proxyman.ProtocolSniffersFromContext(ctx)
+	if destination.Address.Family().IsDomain() || len(snifferList) == 0 {
 		go d.routedDispatch(ctx, outbound, destination)
 	} else {
 		go func() {
-			domain, err := snifer(ctx, sniferList, outbound)
+			domain, err := sniffer(ctx, snifferList, outbound)
 			if err == nil {
-				newError("sniffed domain: ", domain).WriteToLog()
+				newError("sniffed domain: ", domain).WithContext(ctx).WriteToLog()
 				destination.Address = net.ParseAddress(domain)
 				ctx = proxy.ContextWithTarget(ctx, destination)
 			}
@@ -76,11 +114,11 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	return outbound, nil
 }
 
-func snifer(ctx context.Context, sniferList []proxyman.KnownProtocols, outbound ray.OutboundRay) (string, error) {
+func sniffer(ctx context.Context, snifferList []proxyman.KnownProtocols, outbound ray.OutboundRay) (string, error) {
 	payload := buf.New()
 	defer payload.Release()
 
-	sniffer := NewSniffer(sniferList)
+	sniffer := NewSniffer(snifferList)
 	totalAttempt := 0
 	for {
 		select {
@@ -111,13 +149,13 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, outbound ray.Out
 	if d.router != nil {
 		if tag, err := d.router.PickRoute(ctx); err == nil {
 			if handler := d.ohm.GetHandler(tag); handler != nil {
-				newError("taking detour [", tag, "] for [", destination, "]").WriteToLog()
+				newError("taking detour [", tag, "] for [", destination, "]").WithContext(ctx).WriteToLog()
 				dispatcher = handler
 			} else {
-				newError("nonexisting tag: ", tag).AtWarning().WriteToLog()
+				newError("non existing tag: ", tag).AtWarning().WithContext(ctx).WriteToLog()
 			}
 		} else {
-			newError("default route for ", destination).WriteToLog()
+			newError("default route for ", destination).WithContext(ctx).WriteToLog()
 		}
 	}
 	dispatcher.Dispatch(ctx, outbound)

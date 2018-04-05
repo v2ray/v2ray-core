@@ -36,6 +36,7 @@ func (h *copyHandler) writeTo(writer Writer, mb MultiBuffer) error {
 	return err
 }
 
+// SizeCounter is for counting bytes copied by Copy().
 type SizeCounter struct {
 	Size int64
 }
@@ -91,7 +92,9 @@ func copyInternal(reader Reader, writer Writer, handler *copyHandler) error {
 				buffer.Release()
 				return werr
 			}
-		} else if err != nil {
+		}
+
+		if err != nil {
 			return err
 		}
 	}

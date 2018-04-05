@@ -13,7 +13,7 @@ import (
 
 // Dial dials a WebSocket connection to the given destination.
 func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {
-	newError("creating connection to ", dest).WriteToLog()
+	newError("creating connection to ", dest).WithContext(ctx).WriteToLog()
 
 	conn, err := dialWebsocket(ctx, dest)
 	if err != nil {
@@ -41,16 +41,16 @@ func dialWebsocket(ctx context.Context, dest net.Destination) (net.Conn, error) 
 
 	protocol := "ws"
 
-	if config := tls.ConfigFromContext(ctx, tls.WithDestination(dest)); config != nil {
+	if config := tls.ConfigFromContext(ctx); config != nil {
 		protocol = "wss"
-		dialer.TLSClientConfig = config.GetTLSConfig()
+		dialer.TLSClientConfig = config.GetTLSConfig(tls.WithDestination(dest))
 	}
 
 	host := dest.NetAddr()
 	if (protocol == "ws" && dest.Port == 80) || (protocol == "wss" && dest.Port == 443) {
 		host = dest.Address.String()
 	}
-	uri := protocol + "://" + host + wsSettings.GetNormailzedPath()
+	uri := protocol + "://" + host + wsSettings.GetNormalizedPath()
 
 	conn, resp, err := dialer.Dial(uri, wsSettings.GetRequestHeader())
 	if err != nil {

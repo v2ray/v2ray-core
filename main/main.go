@@ -49,14 +49,12 @@ func getConfigFilePath() string {
 	return ""
 }
 
-func GetConfigFormat() core.ConfigFormat {
+func GetConfigFormat() string {
 	switch strings.ToLower(*format) {
-	case "json":
-		return core.ConfigFormat_JSON
 	case "pb", "protobuf":
-		return core.ConfigFormat_Protobuf
+		return "protobuf"
 	default:
-		return core.ConfigFormat_JSON
+		return "json"
 	}
 }
 
@@ -74,7 +72,7 @@ func startV2Ray() (core.Server, error) {
 		defer file.Close()
 		configInput = file
 	}
-	config, err := core.LoadConfig(GetConfigFormat(), configInput)
+	config, err := core.LoadConfig(GetConfigFormat(), configFile, configInput)
 	if err != nil {
 		return nil, newError("failed to read config file: ", configFile).Base(err)
 	}
@@ -87,10 +85,17 @@ func startV2Ray() (core.Server, error) {
 	return server, nil
 }
 
+func printVersion() {
+	version := core.VersionStatement()
+	for _, s := range version {
+		fmt.Println(s)
+	}
+}
+
 func main() {
 	flag.Parse()
 
-	core.PrintVersion()
+	printVersion()
 
 	if *version {
 		return

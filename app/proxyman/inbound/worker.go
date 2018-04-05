@@ -7,6 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"v2ray.com/core/common/session"
+
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
@@ -41,10 +43,13 @@ type tcpWorker struct {
 
 func (w *tcpWorker) callback(conn internet.Connection) {
 	ctx, cancel := context.WithCancel(context.Background())
+	sid := session.NewID()
+	ctx = session.ContextWithID(ctx, sid)
+
 	if w.recvOrigDest {
 		dest, err := tcp.GetOriginalDestination(conn)
 		if err != nil {
-			newError("failed to get original destination").Base(err).WriteToLog()
+			newError("failed to get original destination").WithContext(ctx).Base(err).WriteToLog()
 		}
 		if dest.IsValid() {
 			ctx = proxy.ContextWithOriginalTarget(ctx, dest)
@@ -59,10 +64,12 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 		ctx = proxyman.ContextWithProtocolSniffers(ctx, w.sniffers)
 	}
 	if err := w.proxy.Process(ctx, net.Network_TCP, conn, w.dispatcher); err != nil {
-		newError("connection ends").Base(err).WriteToLog()
+		newError("connection ends").Base(err).WithContext(ctx).WriteToLog()
 	}
 	cancel()
-	conn.Close()
+	if err := conn.Close(); err != nil {
+		newError("failed to close connection").Base(err).WithContext(ctx).WriteToLog()
+	}
 }
 
 func (w *tcpWorker) Proxy() proxy.Inbound {
@@ -128,7 +135,7 @@ func (c *udpConn) Write(buf []byte) (int, error) {
 }
 
 func (c *udpConn) Close() error {
-	common.Close(c.done)
+	common.Must(c.done.Close())
 	return nil
 }
 
@@ -203,8 +210,10 @@ func (w *udpWorker) getConnection(id connID) (*udpConn, bool) {
 
 func (w *udpWorker) callback(b *buf.Buffer, source net.Destination, originalDest net.Destination) {
 	id := connID{
-		src:  source,
-		dest: originalDest,
+		src: source,
+	}
+	if originalDest.IsValid() {
+		id.dest = originalDest
 	}
 	conn, existing := w.getConnection(id)
 	select {
@@ -218,6 +227,9 @@ func (w *udpWorker) callback(b *buf.Buffer, source net.Destination, originalDest
 	if !existing {
 		go func() {
 			ctx := context.Background()
+			sid := session.NewID()
+			ctx = session.ContextWithID(ctx, sid)
+
 			if originalDest.IsValid() {
 				ctx = proxy.ContextWithOriginalTarget(ctx, originalDest)
 			}
@@ -244,10 +256,7 @@ func (w *udpWorker) removeConn(id connID) {
 func (w *udpWorker) Start() error {
 	w.activeConn = make(map[connID]*udpConn, 16)
 	w.done = signal.NewDone()
-	h, err := udp.ListenUDP(w.address, w.port, udp.ListenOption{
-		Callback:            w.callback,
-		ReceiveOriginalDest: w.recvOrigDest,
-	})
+	h, err := udp.ListenUDP(w.address, w.port, w.callback, udp.HubReceiveOriginalDestination(w.recvOrigDest), udp.HubCapacity(256))
 	if err != nil {
 		return err
 	}
@@ -257,11 +266,18 @@ func (w *udpWorker) Start() error {
 }
 
 func (w *udpWorker) Close() error {
+	w.Lock()
+	defer w.Unlock()
+
 	if w.hub != nil {
 		w.hub.Close()
-		w.done.Close()
-		common.Close(w.proxy)
 	}
+
+	if w.done != nil {
+		common.Must(w.done.Close())
+	}
+
+	common.Close(w.proxy)
 	return nil
 }
 

@@ -13,7 +13,7 @@ type SRTP struct {
 	number uint16
 }
 
-func (*SRTP) Size() int {
+func (*SRTP) Size() int32 {
 	return 4
 }
 

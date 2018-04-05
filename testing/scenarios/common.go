@@ -22,15 +22,6 @@ import (
 	"v2ray.com/core/common/serial"
 )
 
-func pickPort() net.Port {
-	listener, err := net.Listen("tcp4", "127.0.0.1:0")
-	common.Must(err)
-	defer listener.Close()
-
-	addr := listener.Addr().(*net.TCPAddr)
-	return net.Port(addr.Port)
-}
-
 func xor(b []byte) []byte {
 	r := make([]byte, len(b))
 	for i, v := range b {

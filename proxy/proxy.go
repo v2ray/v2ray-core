@@ -5,8 +5,6 @@
 // 2. Register a config creator through common.RegisterConfig.
 package proxy
 
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg proxy -path Proxy
-
 import (
 	"context"
 
@@ -43,7 +41,7 @@ type UserManager interface {
 	// AddUser adds a new user.
 	AddUser(context.Context, *protocol.User) error
 
-	// RemoveUser removes an user by email.
+	// RemoveUser removes a user by email.
 	RemoveUser(context.Context, string) error
 }
 

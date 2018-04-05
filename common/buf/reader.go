@@ -12,26 +12,35 @@ type BytesToBufferReader struct {
 	buffer []byte
 }
 
+// NewBytesToBufferReader returns a new BytesToBufferReader.
 func NewBytesToBufferReader(reader io.Reader) Reader {
 	return &BytesToBufferReader{
 		Reader: reader,
 	}
 }
 
-const mediumSize = 8 * 1024
-const largeSize = 64 * 1024
-
 func (r *BytesToBufferReader) readSmall() (MultiBuffer, error) {
 	b := New()
-	err := b.Reset(ReadFrom(r.Reader))
-	if b.IsFull() {
-		r.buffer = make([]byte, mediumSize)
+	for i := 0; i < 64; i++ {
+		err := b.Reset(ReadFrom(r.Reader))
+		if b.IsFull() {
+			r.buffer = newBytes(Size + 1)
+		}
+		if !b.IsEmpty() {
+			return NewMultiBufferValue(b), nil
+		}
+		if err != nil {
+			b.Release()
+			return nil, err
+		}
 	}
-	if !b.IsEmpty() {
-		return NewMultiBufferValue(b), nil
-	}
-	b.Release()
-	return nil, err
+
+	return nil, newError("Reader returns too many empty payloads.")
+}
+
+func (r *BytesToBufferReader) freeBuffer() {
+	freeBytes(r.buffer)
+	r.buffer = nil
 }
 
 // ReadMultiBuffer implements Reader.
@@ -42,29 +51,35 @@ func (r *BytesToBufferReader) ReadMultiBuffer() (MultiBuffer, error) {
 
 	nBytes, err := r.Reader.Read(r.buffer)
 	if nBytes > 0 {
-		mb := NewMultiBufferCap(nBytes/Size + 1)
+		mb := NewMultiBufferCap(int32(nBytes/Size) + 1)
 		mb.Write(r.buffer[:nBytes])
-		if nBytes == len(r.buffer) && len(r.buffer) == mediumSize {
-			r.buffer = make([]byte, largeSize)
+		if nBytes == len(r.buffer) && nBytes < int(largeSize) {
+			freeBytes(r.buffer)
+			r.buffer = newBytes(int32(nBytes) + 1)
+		} else if nBytes < Size {
+			r.freeBuffer()
 		}
 		return mb, nil
 	}
-	return nil, err
+
+	r.freeBuffer()
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Read() returns empty payload and nil err. We don't expect this to happen, but just in case.
+	return r.readSmall()
 }
 
-var (
-	_ Reader        = (*BufferedReader)(nil)
-	_ io.Reader     = (*BufferedReader)(nil)
-	_ io.ByteReader = (*BufferedReader)(nil)
-	_ io.WriterTo   = (*BufferedReader)(nil)
-)
-
+// BufferedReader is a Reader that keeps its internal buffer.
 type BufferedReader struct {
 	stream   Reader
 	leftOver MultiBuffer
 	buffered bool
 }
 
+// NewBufferedReader returns a new BufferedReader.
 func NewBufferedReader(reader Reader) *BufferedReader {
 	return &BufferedReader{
 		stream:   reader,
@@ -72,20 +87,29 @@ func NewBufferedReader(reader Reader) *BufferedReader {
 	}
 }
 
+// SetBuffered sets whether to keep the interal buffer.
 func (r *BufferedReader) SetBuffered(f bool) {
 	r.buffered = f
 }
 
+// IsBuffered returns true if internal buffer is used.
 func (r *BufferedReader) IsBuffered() bool {
 	return r.buffered
 }
 
+// BufferedBytes returns the number of bytes that is cached in this reader.
+func (r *BufferedReader) BufferedBytes() int32 {
+	return r.leftOver.Len()
+}
+
+// ReadByte implements io.ByteReader.
 func (r *BufferedReader) ReadByte() (byte, error) {
 	var b [1]byte
 	_, err := r.Read(b[:])
 	return b[0], err
 }
 
+// Read implements io.Reader. It reads from internal buffer first (if available) and then reads from the underlying reader.
 func (r *BufferedReader) Read(b []byte) (int, error) {
 	if r.leftOver != nil {
 		nBytes, _ := r.leftOver.Read(b)
@@ -113,6 +137,7 @@ func (r *BufferedReader) Read(b []byte) (int, error) {
 	return 0, err
 }
 
+// ReadMultiBuffer implements Reader.
 func (r *BufferedReader) ReadMultiBuffer() (MultiBuffer, error) {
 	if r.leftOver != nil {
 		mb := r.leftOver
@@ -124,7 +149,7 @@ func (r *BufferedReader) ReadMultiBuffer() (MultiBuffer, error) {
 }
 
 // ReadAtMost returns a MultiBuffer with at most size.
-func (r *BufferedReader) ReadAtMost(size int) (MultiBuffer, error) {
+func (r *BufferedReader) ReadAtMost(size int32) (MultiBuffer, error) {
 	if r.leftOver == nil {
 		mb, err := r.stream.ReadMultiBuffer()
 		if mb.IsEmpty() && err != nil {
@@ -148,6 +173,7 @@ func (r *BufferedReader) writeToInternal(writer io.Writer) (int64, error) {
 		if err := mbWriter.WriteMultiBuffer(r.leftOver); err != nil {
 			return 0, err
 		}
+		r.leftOver = nil
 	}
 
 	for {
@@ -164,6 +190,7 @@ func (r *BufferedReader) writeToInternal(writer io.Writer) (int64, error) {
 	}
 }
 
+// WriteTo implements io.WriterTo.
 func (r *BufferedReader) WriteTo(writer io.Writer) (int64, error) {
 	nBytes, err := r.writeToInternal(writer)
 	if errors.Cause(err) == io.EOF {

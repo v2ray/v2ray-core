@@ -23,6 +23,7 @@ type generalLogger struct {
 	creator WriterCreator
 	buffer  chan Message
 	access  *signal.Semaphore
+	done    *signal.Done
 }
 
 // NewLogger returns a generic log handler that can handle all type of messages.
@@ -31,6 +32,7 @@ func NewLogger(logWriterCreator WriterCreator) Handler {
 		creator: logWriterCreator,
 		buffer:  make(chan Message, 16),
 		access:  signal.NewSemaphore(1),
+		done:    signal.NewDone(),
 	}
 }
 
@@ -49,6 +51,8 @@ func (l *generalLogger) run() {
 
 	for {
 		select {
+		case <-l.done.C():
+			return
 		case msg := <-l.buffer:
 			logger.Write(msg.String() + platform.LineSeparator())
 			dataWritten = true
@@ -72,6 +76,10 @@ func (l *generalLogger) Handle(msg Message) {
 		go l.run()
 	default:
 	}
+}
+
+func (l *generalLogger) Close() error {
+	return l.done.Close()
 }
 
 type consoleLogWriter struct {

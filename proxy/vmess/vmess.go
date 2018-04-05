@@ -159,7 +159,7 @@ func (v *TimedUserValidator) Remove(email string) bool {
 		return false
 	}
 	ulen := len(v.users)
-	if idx < len(v.users) {
+	if idx < ulen {
 		v.users[idx] = v.users[ulen-1]
 		v.users[ulen-1] = nil
 		v.users = v.users[:ulen-1]

@@ -24,11 +24,11 @@ func TestNormalChunkReading(t *testing.T) {
 func TestNormalChunkWriting(t *testing.T) {
 	assert := With(t)
 
-	buffer := buf.NewLocal(512)
+	buffer := buf.NewSize(512)
 	writer := NewChunkWriter(buffer, NewAuthenticator(ChunkKeyGenerator(
 		[]byte{21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36})))
 
-	b := buf.NewLocal(256)
+	b := buf.NewSize(256)
 	b.Append([]byte{11, 12, 13, 14, 15, 16, 17, 18})
 	err := writer.WriteMultiBuffer(buf.NewMultiBufferValue(b))
 	assert(err, IsNil)

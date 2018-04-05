@@ -101,15 +101,12 @@ type Handler struct {
 	usersByEmail          *userByEmail
 	detours               *DetourConfig
 	sessionHistory        *encoding.SessionHistory
+	secure                bool
 }
 
 // New creates a new VMess inbound handler.
 func New(ctx context.Context, config *Config) (*Handler, error) {
-	v := core.FromContext(ctx)
-	if v == nil {
-		return nil, newError("V is not in context.")
-	}
-
+	v := core.MustFromContext(ctx)
 	handler := &Handler{
 		policyManager:         v.PolicyManager(),
 		inboundHandlerManager: v.InboundHandlerManager(),
@@ -117,6 +114,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		detours:               config.Detour,
 		usersByEmail:          newUserByEmail(config.GetDefaultValue()),
 		sessionHistory:        encoding.NewSessionHistory(),
+		secure:                config.SecureEncryptionOnly,
 	}
 
 	for _, user := range config.User {
@@ -184,16 +182,17 @@ func transferResponse(timer signal.ActivityUpdater, session *encoding.ServerSess
 
 	bodyWriter := session.EncodeResponseBody(request, output)
 
-	// Optimize for small response packet
-	data, err := input.ReadMultiBuffer()
-	if err != nil {
-		return err
-	}
+	{
+		// Optimize for small response packet
+		data, err := input.ReadMultiBuffer()
+		if err != nil {
+			return err
+		}
 
-	if err := bodyWriter.WriteMultiBuffer(data); err != nil {
-		return err
+		if err := bodyWriter.WriteMultiBuffer(data); err != nil {
+			return err
+		}
 	}
-	data.Release()
 
 	if bufferedWriter, ok := output.(*buf.BufferedWriter); ok {
 		if err := bufferedWriter.SetBuffered(false); err != nil {
@@ -212,6 +211,10 @@ func transferResponse(timer signal.ActivityUpdater, session *encoding.ServerSess
 	}
 
 	return nil
+}
+
+func isInecureEncryption(s protocol.SecurityType) bool {
+	return s == protocol.SecurityType_NONE || s == protocol.SecurityType_LEGACY || s == protocol.SecurityType_UNKNOWN
 }
 
 // Process implements proxy.Inbound.Process().
@@ -239,17 +242,29 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 		return err
 	}
 
-	log.Record(&log.AccessMessage{
-		From:   connection.RemoteAddr(),
-		To:     request.Destination(),
-		Status: log.AccessAccepted,
-		Reason: "",
-	})
+	if h.secure && isInecureEncryption(request.Security) {
+		log.Record(&log.AccessMessage{
+			From:   connection.RemoteAddr(),
+			To:     "",
+			Status: log.AccessRejected,
+			Reason: "Insecure encryption",
+		})
+		return newError("client is using insecure encryption: ", request.Security)
+	}
 
-	newError("received request for ", request.Destination()).WriteToLog()
+	if request.Command != protocol.RequestCommandMux {
+		log.Record(&log.AccessMessage{
+			From:   connection.RemoteAddr(),
+			To:     request.Destination(),
+			Status: log.AccessAccepted,
+			Reason: "",
+		})
+	}
+
+	newError("received request for ", request.Destination()).WithContext(ctx).WriteToLog()
 
 	if err := connection.SetReadDeadline(time.Time{}); err != nil {
-		newError("unable to set back read deadline").Base(err).WriteToLog()
+		newError("unable to set back read deadline").Base(err).WithContext(ctx).WriteToLog()
 	}
 
 	sessionPolicy = h.policyManager.ForLevel(request.User.Level)
@@ -296,7 +311,7 @@ func (h *Handler) generateCommand(ctx context.Context, request *protocol.Request
 		if h.inboundHandlerManager != nil {
 			handler, err := h.inboundHandlerManager.GetHandler(ctx, tag)
 			if err != nil {
-				newError("failed to get detour handler: ", tag).Base(err).AtWarning().WriteToLog()
+				newError("failed to get detour handler: ", tag).Base(err).AtWarning().WithContext(ctx).WriteToLog()
 				return nil
 			}
 			proxyHandler, port, availableMin := handler.GetRandomInboundProxy()
@@ -306,7 +321,7 @@ func (h *Handler) generateCommand(ctx context.Context, request *protocol.Request
 					availableMin = 255
 				}
 
-				newError("pick detour handler for port ", port, " for ", availableMin, " minutes.").AtDebug().WriteToLog()
+				newError("pick detour handler for port ", port, " for ", availableMin, " minutes.").AtDebug().WithContext(ctx).WriteToLog()
 				user := inboundHandler.GetUser(request.User.Email)
 				if user == nil {
 					return nil

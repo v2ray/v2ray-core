@@ -6,9 +6,9 @@ import (
 
 // Destination represents a network destination including address and protocol (tcp / udp).
 type Destination struct {
-	Network Network
-	Port    Port
 	Address Address
+	Port    Port
+	Network Network
 }
 
 // DestinationFromAddr generates a Destination from a net address.
@@ -56,7 +56,7 @@ func (d Destination) IsValid() bool {
 	return d.Network != Network_Unknown
 }
 
-// AsDestination converts current Enpoint into Destination.
+// AsDestination converts current Endpoint into Destination.
 func (p *Endpoint) AsDestination() Destination {
 	return Destination{
 		Network: p.Network,

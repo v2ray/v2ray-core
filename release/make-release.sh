@@ -27,7 +27,7 @@ pushd $GOPATH/src/v2ray.com/core
 echo "Adding a new tag: " "v$VER"
 git tag -s -a "v$VER" -m "Version ${VER}"
 sed -i '' "s/\(version *= *\"\).*\(\"\)/\1$VERN\2/g" core.go
-echo "Commiting core.go (may not necessary)"
+echo "Committing core.go (may not necessary)"
 git commit core.go -S -m "Update version"
 echo "Pushing changes"
 git push --follow-tags

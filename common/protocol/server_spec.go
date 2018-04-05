@@ -110,10 +110,10 @@ func (s *ServerSpec) PickUser() *User {
 	}
 }
 
-func (v *ServerSpec) IsValid() bool {
-	return v.valid.IsValid()
+func (s *ServerSpec) IsValid() bool {
+	return s.valid.IsValid()
 }
 
-func (v *ServerSpec) Invalidate() {
-	v.valid.Invalidate()
+func (s *ServerSpec) Invalidate() {
+	s.valid.Invalidate()
 }
