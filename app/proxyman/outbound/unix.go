@@ -43,7 +43,7 @@ func NewUnixHandler(ctx context.Context, config *core.OutboundHandlerConfig) (co
 		case *proxyman.UnixSenderConfig:
 			h.senderSettings = s
 		default:
-			return nil, newError("settings is not SenderConfig")
+			return nil, newError("settings is not UnixSenderConfig")
 		}
 	}
 
