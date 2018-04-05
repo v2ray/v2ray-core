@@ -91,7 +91,7 @@ message SenderConfig {
 
 
 message UnixSenderConfig {
-  v2ray.core.internet.domainsocket.DomainSocketSettings via = 1;
+  v2ray.core.internet.domainsocket.DomainSocketSettings domainSockSettings = 1;
   v2ray.core.transport.internet.StreamConfig stream_settings = 2;
   v2ray.core.transport.internet.ProxyConfig proxy_settings = 3;
   MultiplexingConfig multiplex_settings = 4;

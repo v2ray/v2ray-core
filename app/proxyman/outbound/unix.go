@@ -112,7 +112,7 @@ func (h *UnixHandler) Dial(ctx context.Context, dest net.Destination) (internet.
 		}
 	}
 
-	return domainsocket.DialDS(ctx, h.senderSettings.GetVia().GetPath())
+	return domainsocket.DialDS(ctx, h.senderSettings.GetDomainSockSettings().GetPath())
 }
 
 // GetOutbound implements proxy.GetOutbound.
