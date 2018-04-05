@@ -6,14 +6,13 @@ import (
 )
 
 func DialDS(ctx context.Context, path string) (*net.UnixConn, error) {
-	resolvedAddress, err := net.ResolveUnixAddr("unixpacket", path)
+	resolvedAddress, err := net.ResolveUnixAddr("unix", path)
 	if err != nil {
 		return nil, err
 	}
-	dialedUnix, err := net.DialUnix("unixpacket", nil, resolvedAddress)
+	dialedUnix, err := net.DialUnix("unix", nil, resolvedAddress)
 	if err != nil {
 		return nil, err
 	}
 	return dialedUnix, nil
-
 }
