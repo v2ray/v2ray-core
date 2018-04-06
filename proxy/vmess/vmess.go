@@ -64,7 +64,11 @@ func (v *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, user *
 	var hashValue [16]byte
 	genHashForID := func(id *protocol.ID) {
 		idHash := v.hasher(id.Bytes())
-		for ts := user.lastSec; ts <= nowSec; ts++ {
+		lastSec := user.lastSec
+		if lastSec < nowSec-cacheDurationSec*2 {
+			lastSec = nowSec - cacheDurationSec*2
+		}
+		for ts := lastSec; ts <= nowSec; ts++ {
 			common.Must2(idHash.Write(ts.Bytes(nil)))
 			idHash.Sum(hashValue[:0])
 			idHash.Reset()
