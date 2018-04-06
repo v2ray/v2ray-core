@@ -77,7 +77,9 @@ func (ls *Listener) LowerUP() error {
 		}
 		return err
 	}
-
+	
+	//If the unix domain socket is filesystem based, an file lock must be used to claim the right for listening on respective file.
+	//https://gavv.github.io/blog/unix-socket-reuse/
 	if isUnixDomainSocketFileSystemBased(ls.path) && !___DEBUG_IGNORE_FLOCK {
 		ls.lockfile, err = acquireLock(ls.path + ".lock")
 		if err != nil {
@@ -136,6 +138,7 @@ func (ls *Listener) uploop(cctx context.Context) {
 
 		if err != nil {
 			newError("Cannot Accept socket from listener").Base(err).AtDebug().WriteToLog()
+			//Guard against too many open file error
 			if err == lasterror {
 				errortolerance--
 				if errortolerance == 0 {
