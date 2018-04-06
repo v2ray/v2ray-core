@@ -23,7 +23,7 @@ func (r *BytesToBufferReader) readSmall() (MultiBuffer, error) {
 	b := New()
 	for i := 0; i < 64; i++ {
 		err := b.Reset(ReadFrom(r.Reader))
-		if b.IsFull() {
+		if b.IsFull() && largeSize > Size {
 			r.buffer = newBytes(Size + 1)
 		}
 		if !b.IsEmpty() {
@@ -45,7 +45,7 @@ func (r *BytesToBufferReader) freeBuffer() {
 
 // ReadMultiBuffer implements Reader.
 func (r *BytesToBufferReader) ReadMultiBuffer() (MultiBuffer, error) {
-	if r.buffer == nil {
+	if r.buffer == nil || largeSize == Size {
 		return r.readSmall()
 	}
 
