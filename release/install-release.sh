@@ -131,7 +131,7 @@ installSoftware(){
 
 # return 1: not apt or yum
 getPMT(){
-    if [ -n `command -v apt-get` ];then
+    if [[ -n `command -v apt-get` ]];then
         CMD_INSTALL="apt-get -y -qq install"
         CMD_UPDATE="apt-get -qq update"
     elif [[ -n `command -v yum` ]]; then
