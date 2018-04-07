@@ -78,6 +78,10 @@ func (h *SessionHistory) removeExpiredEntries() {
 			delete(h.cache, session)
 		}
 	}
+
+	if len(h.cache) == 0 {
+		h.cache = make(map[sessionId]time.Time, 128)
+	}
 }
 
 type ServerSession struct {

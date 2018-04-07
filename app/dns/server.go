@@ -105,6 +105,10 @@ func (s *Server) cleanup() {
 			delete(s.records, d)
 		}
 	}
+
+	if len(s.records) == 0 {
+		s.records = make(map[string]*DomainRecord)
+	}
 }
 
 func (s *Server) LookupIP(domain string) ([]net.IP, error) {
