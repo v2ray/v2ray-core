@@ -47,7 +47,7 @@ func NewTimedUserValidator(hasher protocol.IDHash) protocol.UserValidator {
 		users:    make([]*user, 0, 16),
 		userHash: make(map[[16]byte]indexTimePair, 1024),
 		hasher:   hasher,
-		baseTime: protocol.Timestamp(time.Now().Unix() - cacheDurationSec*3),
+		baseTime: protocol.Timestamp(time.Now().Unix() - cacheDurationSec*2),
 	}
 	tuv.task = &signal.PeriodicTask{
 		Interval: updateInterval,
@@ -105,7 +105,7 @@ func (v *TimedUserValidator) updateUserHash() {
 		v.generateNewHashes(nowSec, user)
 	}
 
-	expire := protocol.Timestamp(now.Unix() - cacheDurationSec*3)
+	expire := protocol.Timestamp(now.Unix() - cacheDurationSec)
 	if expire > v.baseTime {
 		v.removeExpiredHashes(uint32(expire - v.baseTime))
 	}
