@@ -96,8 +96,8 @@ func (a *Account) AsAccount() (protocol.Account, error) {
 
 // Cipher is an interface for all Shadowsocks ciphers.
 type Cipher interface {
-	KeySize() int
-	IVSize() int
+	KeySize() int32
+	IVSize() int32
 	NewEncryptionWriter(key []byte, iv []byte, writer io.Writer) (buf.Writer, error)
 	NewDecryptionReader(key []byte, iv []byte, reader io.Reader) (buf.Reader, error)
 	IsAEAD() bool
@@ -107,18 +107,18 @@ type Cipher interface {
 
 // AesCfb represents all AES-CFB ciphers.
 type AesCfb struct {
-	KeyBytes int
+	KeyBytes int32
 }
 
 func (*AesCfb) IsAEAD() bool {
 	return false
 }
 
-func (v *AesCfb) KeySize() int {
+func (v *AesCfb) KeySize() int32 {
 	return v.KeyBytes
 }
 
-func (v *AesCfb) IVSize() int {
+func (v *AesCfb) IVSize() int32 {
 	return 16
 }
 
@@ -151,8 +151,8 @@ func (v *AesCfb) DecodePacket(key []byte, b *buf.Buffer) error {
 }
 
 type AEADCipher struct {
-	KeyBytes        int
-	IVBytes         int
+	KeyBytes        int32
+	IVBytes         int32
 	AEADAuthCreator func(key []byte) cipher.AEAD
 }
 
@@ -160,11 +160,11 @@ func (*AEADCipher) IsAEAD() bool {
 	return true
 }
 
-func (c *AEADCipher) KeySize() int {
+func (c *AEADCipher) KeySize() int32 {
 	return c.KeyBytes
 }
 
-func (c *AEADCipher) IVSize() int {
+func (c *AEADCipher) IVSize() int32 {
 	return c.IVBytes
 }
 
@@ -226,18 +226,18 @@ func (c *AEADCipher) DecodePacket(key []byte, b *buf.Buffer) error {
 }
 
 type ChaCha20 struct {
-	IVBytes int
+	IVBytes int32
 }
 
 func (*ChaCha20) IsAEAD() bool {
 	return false
 }
 
-func (v *ChaCha20) KeySize() int {
+func (v *ChaCha20) KeySize() int32 {
 	return 32
 }
 
-func (v *ChaCha20) IVSize() int {
+func (v *ChaCha20) IVSize() int32 {
 	return v.IVBytes
 }
 
@@ -271,8 +271,8 @@ func (v *ChaCha20) DecodePacket(key []byte, b *buf.Buffer) error {
 
 type NoneCipher struct{}
 
-func (NoneCipher) KeySize() int { return 0 }
-func (NoneCipher) IVSize() int  { return 0 }
+func (NoneCipher) KeySize() int32 { return 0 }
+func (NoneCipher) IVSize() int32  { return 0 }
 func (NoneCipher) IsAEAD() bool {
 	return true // to avoid OTA
 }
@@ -293,13 +293,13 @@ func (NoneCipher) DecodePacket(key []byte, b *buf.Buffer) error {
 	return nil
 }
 
-func passwordToCipherKey(password []byte, keySize int) []byte {
+func passwordToCipherKey(password []byte, keySize int32) []byte {
 	key := make([]byte, 0, keySize)
 
 	md5Sum := md5.Sum(password)
 	key = append(key, md5Sum[:]...)
 
-	for len(key) < keySize {
+	for int32(len(key)) < keySize {
 		md5Hash := md5.New()
 		common.Must2(md5Hash.Write(md5Sum[:]))
 		common.Must2(md5Hash.Write(password))

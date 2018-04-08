@@ -13,6 +13,7 @@ type Writer struct {
 	writer       buf.Writer
 	id           uint16
 	followup     bool
+	hasError     bool
 	transferType protocol.TransferType
 }
 
@@ -40,6 +41,7 @@ func (w *Writer) getNextFrameMeta() FrameMetadata {
 		SessionID: w.id,
 		Target:    w.dest,
 	}
+
 	if w.followup {
 		meta.SessionStatus = SessionStatusKeep
 	} else {
@@ -53,7 +55,7 @@ func (w *Writer) getNextFrameMeta() FrameMetadata {
 func (w *Writer) writeMetaOnly() error {
 	meta := w.getNextFrameMeta()
 	b := buf.New()
-	if err := b.Reset(meta.AsSupplier()); err != nil {
+	if err := meta.WriteTo(b); err != nil {
 		return err
 	}
 	return w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(b))
@@ -64,14 +66,14 @@ func (w *Writer) writeData(mb buf.MultiBuffer) error {
 	meta.Option.Set(OptionData)
 
 	frame := buf.New()
-	if err := frame.Reset(meta.AsSupplier()); err != nil {
+	if err := meta.WriteTo(frame); err != nil {
 		return err
 	}
 	if err := frame.AppendSupplier(serial.WriteUint16(uint16(mb.Len()))); err != nil {
 		return err
 	}
 
-	mb2 := buf.NewMultiBufferCap(len(mb) + 1)
+	mb2 := buf.NewMultiBufferCap(int32(len(mb)) + 1)
 	mb2.Append(frame)
 	mb2.AppendMulti(mb)
 	return w.writer.WriteMultiBuffer(mb2)
@@ -105,9 +107,12 @@ func (w *Writer) Close() error {
 		SessionID:     w.id,
 		SessionStatus: SessionStatusEnd,
 	}
+	if w.hasError {
+		meta.Option.Set(OptionError)
+	}
 
 	frame := buf.New()
-	common.Must(frame.Reset(meta.AsSupplier()))
+	common.Must(meta.WriteTo(frame))
 
 	w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(frame))
 	return nil

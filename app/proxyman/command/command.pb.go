@@ -8,7 +8,8 @@ import v2ray_core_common_serial "v2ray.com/core/common/serial"
 import v2ray_core "v2ray.com/core"
 
 import (
-	context "golang.org/x/net/context"
+	"context"
+
 	grpc "google.golang.org/grpc"
 )
 

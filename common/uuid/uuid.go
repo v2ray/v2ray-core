@@ -1,4 +1,4 @@
-package uuid
+package uuid // import "v2ray.com/core/common/uuid"
 
 import (
 	"bytes"
@@ -49,26 +49,26 @@ func (u *UUID) Equals(another *UUID) bool {
 // Next generates a deterministic random UUID based on this UUID.
 func (u *UUID) Next() UUID {
 	md5hash := md5.New()
-	md5hash.Write(u.Bytes())
-	md5hash.Write([]byte("16167dc8-16b6-4e6d-b8bb-65dd68113a81"))
+	common.Must2(md5hash.Write(u.Bytes()))
+	common.Must2(md5hash.Write([]byte("16167dc8-16b6-4e6d-b8bb-65dd68113a81")))
 	var newid UUID
 	for {
 		md5hash.Sum(newid[:0])
 		if !newid.Equals(u) {
 			return newid
 		}
-		md5hash.Write([]byte("533eff8a-4113-4b10-b5ce-0f5d76b98cd2"))
+		common.Must2(md5hash.Write([]byte("533eff8a-4113-4b10-b5ce-0f5d76b98cd2")))
 	}
 }
 
-// New creates an UUID with random value.
+// New creates a UUID with random value.
 func New() UUID {
 	var uuid UUID
 	common.Must2(rand.Read(uuid.Bytes()))
 	return uuid
 }
 
-// ParseBytes converts an UUID in byte form to object.
+// ParseBytes converts a UUID in byte form to object.
 func ParseBytes(b []byte) (UUID, error) {
 	var uuid UUID
 	if len(b) != 16 {
@@ -78,7 +78,7 @@ func ParseBytes(b []byte) (UUID, error) {
 	return uuid, nil
 }
 
-// ParseString converts an UUID in string form to object.
+// ParseString converts a UUID in string form to object.
 func ParseString(str string) (UUID, error) {
 	var uuid UUID
 

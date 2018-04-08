@@ -12,7 +12,7 @@ type VideoChat struct {
 	sn int
 }
 
-func (vc *VideoChat) Size() int {
+func (vc *VideoChat) Size() int32 {
 	return 13
 }
 

@@ -7,15 +7,12 @@ import (
 
 	"github.com/miekg/dns"
 	"v2ray.com/core"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/signal"
 	"v2ray.com/core/transport/internet/udp"
-)
-
-const (
-	CleanupInterval  = time.Second * 120
-	CleanupThreshold = 512
 )
 
 var (
@@ -42,10 +39,10 @@ type PendingRequest struct {
 
 type UDPNameServer struct {
 	sync.Mutex
-	address     net.Destination
-	requests    map[uint16]*PendingRequest
-	udpServer   *udp.Dispatcher
-	nextCleanup time.Time
+	address   net.Destination
+	requests  map[uint16]*PendingRequest
+	udpServer *udp.Dispatcher
+	cleanup   *signal.PeriodicTask
 }
 
 func NewUDPNameServer(address net.Destination, dispatcher core.Dispatcher) *UDPNameServer {
@@ -54,36 +51,35 @@ func NewUDPNameServer(address net.Destination, dispatcher core.Dispatcher) *UDPN
 		requests:  make(map[uint16]*PendingRequest),
 		udpServer: udp.NewDispatcher(dispatcher),
 	}
+	s.cleanup = &signal.PeriodicTask{
+		Interval: time.Minute,
+		Execute:  s.Cleanup,
+	}
+	common.Must(s.cleanup.Start())
 	return s
 }
 
-func (s *UDPNameServer) Cleanup() {
-	expiredRequests := make([]uint16, 0, 16)
+func (s *UDPNameServer) Cleanup() error {
 	now := time.Now()
 	s.Lock()
 	for id, r := range s.requests {
 		if r.expire.Before(now) {
-			expiredRequests = append(expiredRequests, id)
 			close(r.response)
+			delete(s.requests, id)
 		}
 	}
-	for _, id := range expiredRequests {
-		delete(s.requests, id)
-	}
 	s.Unlock()
+	return nil
 }
 
 func (s *UDPNameServer) AssignUnusedID(response chan<- *ARecord) uint16 {
 	var id uint16
 	s.Lock()
-	if len(s.requests) > CleanupThreshold && s.nextCleanup.Before(time.Now()) {
-		s.nextCleanup = time.Now().Add(CleanupInterval)
-		go s.Cleanup()
-	}
 
 	for {
 		id = dice.RollUint16()
 		if _, found := s.requests[id]; found {
+			time.Sleep(time.Millisecond * 500)
 			continue
 		}
 		newError("add pending request id ", id).AtDebug().WriteToLog()
@@ -182,6 +178,9 @@ func (s *UDPNameServer) QueryA(domain string) <-chan *ARecord {
 	b, err := msgToBuffer(msg)
 	if err != nil {
 		newError("failed to build A query for domain ", domain).Base(err).WriteToLog()
+		s.Lock()
+		delete(s.requests, id)
+		s.Unlock()
 		close(response)
 		return response
 	}

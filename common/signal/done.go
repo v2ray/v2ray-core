@@ -4,7 +4,7 @@ import (
 	"sync"
 )
 
-// Done is an utility for notifications of something being done.
+// Done is a utility for notifications of something being done.
 type Done struct {
 	access sync.Mutex
 	c      chan struct{}
@@ -38,7 +38,7 @@ func (d *Done) Wait() {
 	<-d.c
 }
 
-// Close marks this Done 'done'. This method may be called mutliple times. All calls after first call will have no effect on its status.
+// Close marks this Done 'done'. This method may be called multiple times. All calls after first call will have no effect on its status.
 func (d *Done) Close() error {
 	d.access.Lock()
 	defer d.access.Unlock()

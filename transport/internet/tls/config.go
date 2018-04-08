@@ -25,13 +25,16 @@ func (c *Config) BuildCertificates() []tls.Certificate {
 	return certs
 }
 
-func (c *Config) GetTLSConfig() *tls.Config {
+func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
 	config := &tls.Config{
 		ClientSessionCache: globalSessionCache,
-		NextProtos:         []string{"http/1.1"},
 	}
 	if c == nil {
 		return config
+	}
+
+	for _, opt := range opts {
+		opt(config)
 	}
 
 	config.InsecureSkipVerify = c.AllowInsecure
@@ -43,14 +46,17 @@ func (c *Config) GetTLSConfig() *tls.Config {
 	if len(c.NextProtocol) > 0 {
 		config.NextProtos = c.NextProtocol
 	}
+	if len(config.NextProtos) == 0 {
+		config.NextProtos = []string{"http/1.1"}
+	}
 
 	return config
 }
 
-type Option func(*Config)
+type Option func(*tls.Config)
 
 func WithDestination(dest net.Destination) Option {
-	return func(config *Config) {
+	return func(config *tls.Config) {
 		if dest.Address.Family().IsDomain() && len(config.ServerName) == 0 {
 			config.ServerName = dest.Address.Domain()
 		}
@@ -58,23 +64,21 @@ func WithDestination(dest net.Destination) Option {
 }
 
 func WithNextProto(protocol ...string) Option {
-	return func(config *Config) {
-		if len(config.NextProtocol) == 0 {
-			config.NextProtocol = protocol
+	return func(config *tls.Config) {
+		if len(config.NextProtos) == 0 {
+			config.NextProtos = protocol
 		}
 	}
 }
 
-func ConfigFromContext(ctx context.Context, opts ...Option) *Config {
+func ConfigFromContext(ctx context.Context) *Config {
 	securitySettings := internet.SecuritySettingsFromContext(ctx)
 	if securitySettings == nil {
 		return nil
 	}
-	if config, ok := securitySettings.(*Config); ok {
-		for _, opt := range opts {
-			opt(config)
-		}
-		return config
+	config, ok := securitySettings.(*Config)
+	if !ok {
+		return nil
 	}
-	return nil
+	return config
 }

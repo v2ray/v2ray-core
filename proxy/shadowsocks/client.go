@@ -32,17 +32,13 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 	}
 	client := &Client{
 		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
-		v:            core.FromContext(ctx),
+		v:            core.MustFromContext(ctx),
 	}
-	if client.v == nil {
-		return nil, newError("V is not in context.")
-	}
-
 	return client, nil
 }
 
 // Process implements OutboundHandler.Process().
-func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
+func (c *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
 	destination, ok := proxy.TargetFromContext(ctx)
 	if !ok {
 		return newError("target not specified")
@@ -53,7 +49,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 	var conn internet.Connection
 
 	err := retry.ExponentialBackoff(5, 100).On(func() error {
-		server = v.serverPicker.PickServer()
+		server = c.serverPicker.PickServer()
 		dest := server.Destination()
 		dest.Network = network
 		rawConn, err := dialer.Dial(ctx, dest)
@@ -67,7 +63,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 	if err != nil {
 		return newError("failed to find an available destination").AtWarning().Base(err)
 	}
-	newError("tunneling request to ", destination, " via ", server.Destination()).WriteToLog()
+	newError("tunneling request to ", destination, " via ", server.Destination()).WithContext(ctx).WriteToLog()
 
 	defer conn.Close()
 
@@ -94,7 +90,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 		request.Option |= RequestOptionOneTimeAuth
 	}
 
-	sessionPolicy := v.v.PolicyManager().ForLevel(user.Level)
+	sessionPolicy := c.v.PolicyManager().ForLevel(user.Level)
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)
 
@@ -115,7 +111,6 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 		})
 
 		responseDone := signal.ExecuteAsync(func() error {
-			defer outboundRay.OutboundOutput().Close()
 			defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
 			responseReader, err := ReadTCPResponse(user, conn)
@@ -150,7 +145,6 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 		})
 
 		responseDone := signal.ExecuteAsync(func() error {
-			defer outboundRay.OutboundOutput().Close()
 			defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
 			reader := &UDPReader{

@@ -9,13 +9,14 @@ import (
 	"v2ray.com/core/common/buf"
 )
 
+// ConfigFormat is a configurable format of V2Ray config file.
 type ConfigFormat struct {
 	Name      string
 	Extension []string
 	Loader    ConfigLoader
 }
 
-// ConfigLoader is an utility to load V2Ray config from external source.
+// ConfigLoader is a utility to load V2Ray config from external source.
 type ConfigLoader func(input io.Reader) (*Config, error)
 
 var (

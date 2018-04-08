@@ -28,11 +28,6 @@ func (r *DomainRecord) Expired() bool {
 	return r.Expire.Before(time.Now())
 }
 
-func (r *DomainRecord) Inactive() bool {
-	now := time.Now()
-	return r.Expire.Before(now) || r.LastAccess.Add(time.Minute*5).Before(now)
-}
-
 type Server struct {
 	sync.Mutex
 	hosts   map[string]net.IP
@@ -54,11 +49,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 			return nil
 		},
 	}
-	v := core.FromContext(ctx)
-	if v == nil {
-		return nil, newError("V is not in context.")
-	}
-
+	v := core.MustFromContext(ctx)
 	if err := v.RegisterFeature((*core.DNSClient)(nil), server); err != nil {
 		return nil, newError("unable to register DNSClient.").Base(err)
 	}
@@ -89,7 +80,7 @@ func (s *Server) Start() error {
 	return s.task.Start()
 }
 
-// Close implements common.Runnable.
+// Close implements common.Closable.
 func (s *Server) Close() error {
 	return s.task.Close()
 }
@@ -113,6 +104,10 @@ func (s *Server) cleanup() {
 		if r.Expired() {
 			delete(s.records, d)
 		}
+	}
+
+	if len(s.records) == 0 {
+		s.records = make(map[string]*DomainRecord)
 	}
 }
 

@@ -46,6 +46,15 @@ func (n Network) URLPrefix() string {
 	}
 }
 
+func HasNetwork(list []Network, network Network) bool {
+	for _, value := range list {
+		if string(value) == string(network) {
+			return true
+		}
+	}
+	return false
+}
+
 // HasNetwork returns true if the given network is in v NetworkList.
 func (l NetworkList) HasNetwork(network Network) bool {
 	for _, value := range l.Network {

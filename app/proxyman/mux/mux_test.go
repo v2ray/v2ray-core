@@ -61,7 +61,6 @@ func TestReaderWriter(t *testing.T) {
 	writer2.Close()
 
 	bytesReader := buf.NewBufferedReader(stream)
-	streamReader := NewStreamReader(bytesReader)
 
 	meta, err := ReadMetadata(bytesReader)
 	assert(err, IsNil)
@@ -70,7 +69,7 @@ func TestReaderWriter(t *testing.T) {
 	assert(meta.Target, Equals, dest)
 	assert(byte(meta.Option), Equals, byte(OptionData))
 
-	data, err := readAll(streamReader)
+	data, err := readAll(NewStreamReader(bytesReader))
 	assert(err, IsNil)
 	assert(len(data), Equals, 1)
 	assert(data[0].String(), Equals, "abcd")
@@ -88,7 +87,7 @@ func TestReaderWriter(t *testing.T) {
 	assert(meta.SessionID, Equals, uint16(1))
 	assert(byte(meta.Option), Equals, byte(1))
 
-	data, err = readAll(streamReader)
+	data, err = readAll(NewStreamReader(bytesReader))
 	assert(err, IsNil)
 	assert(len(data), Equals, 1)
 	assert(data[0].String(), Equals, "efgh")
@@ -100,7 +99,7 @@ func TestReaderWriter(t *testing.T) {
 	assert(byte(meta.Option), Equals, byte(1))
 	assert(meta.Target, Equals, dest3)
 
-	data, err = readAll(streamReader)
+	data, err = readAll(NewStreamReader(bytesReader))
 	assert(err, IsNil)
 	assert(len(data), Equals, 1)
 	assert(data[0].String(), Equals, "x")
@@ -123,7 +122,7 @@ func TestReaderWriter(t *testing.T) {
 	assert(meta.SessionID, Equals, uint16(2))
 	assert(byte(meta.Option), Equals, byte(1))
 
-	data, err = readAll(streamReader)
+	data, err = readAll(NewStreamReader(bytesReader))
 	assert(err, IsNil)
 	assert(len(data), Equals, 1)
 	assert(data[0].String(), Equals, "y")

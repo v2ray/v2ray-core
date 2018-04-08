@@ -29,10 +29,7 @@ type DynamicInboundHandler struct {
 }
 
 func NewDynamicInboundHandler(ctx context.Context, tag string, receiverConfig *proxyman.ReceiverConfig, proxyConfig interface{}) (*DynamicInboundHandler, error) {
-	v := core.FromContext(ctx)
-	if v == nil {
-		return nil, newError("V is not in context.")
-	}
+	v := core.MustFromContext(ctx)
 	h := &DynamicInboundHandler{
 		tag:            tag,
 		proxyConfig:    proxyConfig,

@@ -27,3 +27,16 @@ type HasType interface {
 	// Type returns the type of the object.
 	Type() interface{}
 }
+
+type ChainedClosable []Closable
+
+func NewChainedClosable(c ...Closable) ChainedClosable {
+	return ChainedClosable(c)
+}
+
+func (cc ChainedClosable) Close() error {
+	for _, c := range cc {
+		c.Close()
+	}
+	return nil
+}

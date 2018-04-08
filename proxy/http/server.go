@@ -21,7 +21,7 @@ import (
 	"v2ray.com/core/transport/internet"
 )
 
-// Server is a HTTP proxy server.
+// Server is an HTTP proxy server.
 type Server struct {
 	config *ServerConfig
 	v      *core.Instance
@@ -31,10 +31,7 @@ type Server struct {
 func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	s := &Server{
 		config: config,
-		v:      core.FromContext(ctx),
-	}
-	if s.v == nil {
-		return nil, newError("V is not in context.")
+		v:      core.MustFromContext(ctx),
 	}
 
 	return s, nil
@@ -124,7 +121,7 @@ Start:
 		}
 	}
 
-	newError("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]").WriteToLog()
+	newError("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]").WithContext(ctx).WriteToLog()
 	conn.SetReadDeadline(time.Time{})
 
 	defaultPort := net.Port(80)
@@ -176,11 +173,11 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 	}
 
 	if reader.Buffered() > 0 {
-		payload := buf.New()
-		common.Must(payload.Reset(func(b []byte) (int, error) {
-			return reader.Read(b[:reader.Buffered()])
-		}))
-		if err := ray.InboundInput().WriteMultiBuffer(buf.NewMultiBufferValue(payload)); err != nil {
+		payload, err := buf.ReadSizeToMultiBuffer(reader, int32(reader.Buffered()))
+		if err != nil {
+			return err
+		}
+		if err := ray.InboundInput().WriteMultiBuffer(payload); err != nil {
 			return err
 		}
 		reader = nil
@@ -195,11 +192,13 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
+		defer timer.SetTimeout(s.policy().Timeouts.UplinkOnly)
+
 		v2writer := buf.NewWriter(conn)
 		if err := buf.Copy(ray.InboundOutput(), v2writer, buf.UpdateActivity(timer)); err != nil {
 			return err
 		}
-		timer.SetTimeout(s.policy().Timeouts.UplinkOnly)
+
 		return nil
 	})
 
@@ -279,7 +278,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 				result = nil
 			}
 		} else {
-			newError("failed to read response from ", request.Host).Base(err).AtWarning().WriteToLog()
+			newError("failed to read response from ", request.Host).Base(err).AtWarning().WithContext(ctx).WriteToLog()
 			response = &http.Response{
 				Status:        "Service Unavailable",
 				StatusCode:    503,

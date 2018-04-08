@@ -3,7 +3,8 @@ package command
 //go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg command -path App,Log,Command
 
 import (
-	context "golang.org/x/net/context"
+	"context"
+
 	grpc "google.golang.org/grpc"
 
 	"v2ray.com/core"
@@ -41,10 +42,7 @@ func (s *service) Register(server *grpc.Server) {
 
 func init() {
 	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, cfg interface{}) (interface{}, error) {
-		s := core.FromContext(ctx)
-		if s == nil {
-			return nil, newError("V is not in context.")
-		}
+		s := core.MustFromContext(ctx)
 		return &service{v: s}, nil
 	}))
 }

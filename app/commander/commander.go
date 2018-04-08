@@ -13,6 +13,7 @@ import (
 	"v2ray.com/core/common/signal"
 )
 
+// Commander is a V2Ray feature that provides gRPC methods to external clients.
 type Commander struct {
 	sync.Mutex
 	server *grpc.Server
@@ -21,22 +22,26 @@ type Commander struct {
 	ohm    core.OutboundHandlerManager
 }
 
+// NewCommander creates a new Commander based on the given config.
 func NewCommander(ctx context.Context, config *Config) (*Commander, error) {
-	v := core.FromContext(ctx)
-	if v == nil {
-		return nil, newError("V is not in context.")
-	}
+	v := core.MustFromContext(ctx)
 	c := &Commander{
 		config: *config,
 		ohm:    v.OutboundHandlerManager(),
 		v:      v,
 	}
-	if err := v.RegisterFeature((*core.Commander)(nil), c); err != nil {
+	if err := v.RegisterFeature((*Commander)(nil), c); err != nil {
 		return nil, err
 	}
 	return c, nil
 }
 
+// Type implements common.HasType.
+func (c *Commander) Type() interface{} {
+	return (*Commander)(nil)
+}
+
+// Start implements common.Runnable.
 func (c *Commander) Start() error {
 	c.Lock()
 	c.server = grpc.NewServer()
@@ -69,13 +74,14 @@ func (c *Commander) Start() error {
 	}()
 
 	c.ohm.RemoveHandler(context.Background(), c.config.Tag)
-	c.ohm.AddHandler(context.Background(), &CommanderOutbound{
+	c.ohm.AddHandler(context.Background(), &Outbound{
 		tag:      c.config.Tag,
 		listener: listener,
 	})
 	return nil
 }
 
+// Close implements common.Closable.
 func (c *Commander) Close() error {
 	c.Lock()
 	defer c.Unlock()

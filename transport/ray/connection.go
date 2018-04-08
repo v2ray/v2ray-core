@@ -79,7 +79,7 @@ func (c *connection) Write(b []byte) (int, error) {
 	}
 
 	l := len(b)
-	mb := buf.NewMultiBufferCap(l/buf.Size + 1)
+	mb := buf.NewMultiBufferCap(int32(l)/buf.Size + 1)
 	mb.Write(b)
 	return l, c.output.WriteMultiBuffer(mb)
 }
@@ -123,7 +123,7 @@ func (c *connection) SetReadDeadline(t time.Time) error {
 	return nil
 }
 
-// SetWriteDeadline implement net.Conn.SetWriteDeadline().
+// SetWriteDeadline implements net.Conn.SetWriteDeadline().
 func (c *connection) SetWriteDeadline(t time.Time) error {
 	return nil
 }

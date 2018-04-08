@@ -1,6 +1,6 @@
 package signal
 
-// Notifier is an utility for notifying changes. The change producer may notify changes multiple time, and the consumer may get notified asychronously.
+// Notifier is a utility for notifying changes. The change producer may notify changes multiple time, and the consumer may get notified asynchronously.
 type Notifier struct {
 	c chan struct{}
 }

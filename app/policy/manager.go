@@ -9,29 +9,27 @@ import (
 
 // Instance is an instance of Policy manager.
 type Instance struct {
-	levels map[uint32]core.Policy
+	levels map[uint32]*Policy
 }
 
 // New creates new Policy manager instance.
 func New(ctx context.Context, config *Config) (*Instance, error) {
 	m := &Instance{
-		levels: make(map[uint32]core.Policy),
+		levels: make(map[uint32]*Policy),
 	}
 	if len(config.Level) > 0 {
 		for lv, p := range config.Level {
-			dp := core.DefaultPolicy()
-			dp.OverrideWith(p.ToCorePolicy())
-			m.levels[lv] = dp
+			pp := defaultPolicy()
+			pp.overrideWith(p)
+			m.levels[lv] = pp
 		}
 	}
 
 	v := core.FromContext(ctx)
-	if v == nil {
-		return nil, newError("V is not in context.")
-	}
-
-	if err := v.RegisterFeature((*core.PolicyManager)(nil), m); err != nil {
-		return nil, newError("unable to register PolicyManager in core").Base(err).AtError()
+	if v != nil {
+		if err := v.RegisterFeature((*core.PolicyManager)(nil), m); err != nil {
+			return nil, newError("unable to register PolicyManager in core").Base(err).AtError()
+		}
 	}
 
 	return m, nil
@@ -40,17 +38,17 @@ func New(ctx context.Context, config *Config) (*Instance, error) {
 // ForLevel implements core.PolicyManager.
 func (m *Instance) ForLevel(level uint32) core.Policy {
 	if p, ok := m.levels[level]; ok {
-		return p
+		return p.ToCorePolicy()
 	}
 	return core.DefaultPolicy()
 }
 
-// Start implements app.Application.Start().
+// Start implements common.Runnable.Start().
 func (m *Instance) Start() error {
 	return nil
 }
 
-// Close implements app.Application.Close().
+// Close implements common.Closable.Close().
 func (m *Instance) Close() error {
 	return nil
 }

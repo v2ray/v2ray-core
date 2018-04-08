@@ -28,5 +28,5 @@ func TestLogRecord(t *testing.T) {
 		Content:  net.ParseAddress(ip),
 	})
 
-	assert(logger.value, Equals, "[Error]: "+ip)
+	assert(logger.value, Equals, "[Error] "+ip)
 }

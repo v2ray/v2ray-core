@@ -26,7 +26,7 @@ type OutboundHandler interface {
 	Dispatch(ctx context.Context, outboundRay ray.OutboundRay)
 }
 
-// InboundHandlerManager is a feature that managers InboundHandlers.
+// InboundHandlerManager is a feature that manages InboundHandlers.
 type InboundHandlerManager interface {
 	Feature
 	// GetHandlers returns an InboundHandler for the given tag.
@@ -84,16 +84,21 @@ func (m *syncInboundHandlerManager) Close() error {
 }
 
 func (m *syncInboundHandlerManager) Set(manager InboundHandlerManager) {
+	if manager == nil {
+		return
+	}
+
 	m.Lock()
 	defer m.Unlock()
 
+	common.Close(m.InboundHandlerManager)
 	m.InboundHandlerManager = manager
 }
 
 // OutboundHandlerManager is a feature that manages OutboundHandlers.
 type OutboundHandlerManager interface {
 	Feature
-	// GetHandler returns an OutboundHandler will given tag.
+	// GetHandler returns an OutboundHandler for the given tag.
 	GetHandler(tag string) OutboundHandler
 	// GetDefaultHandler returns the default OutboundHandler. It is usually the first OutboundHandler specified in the configuration.
 	GetDefaultHandler() OutboundHandler
@@ -161,8 +166,13 @@ func (m *syncOutboundHandlerManager) Close() error {
 }
 
 func (m *syncOutboundHandlerManager) Set(manager OutboundHandlerManager) {
+	if manager == nil {
+		return
+	}
+
 	m.Lock()
 	defer m.Unlock()
 
+	common.Close(m.OutboundHandlerManager)
 	m.OutboundHandlerManager = manager
 }

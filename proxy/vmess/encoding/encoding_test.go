@@ -34,7 +34,7 @@ func TestRequestSerialization(t *testing.T) {
 		Command:  protocol.RequestCommandTCP,
 		Address:  net.DomainAddress("www.v2ray.com"),
 		Port:     net.Port(443),
-		Security: protocol.Security(protocol.SecurityType_AES128_GCM),
+		Security: protocol.SecurityType_AES128_GCM,
 	}
 
 	buffer := buf.New()
@@ -87,7 +87,7 @@ func TestInvalidRequest(t *testing.T) {
 		Command:  protocol.RequestCommand(100),
 		Address:  net.DomainAddress("www.v2ray.com"),
 		Port:     net.Port(443),
-		Security: protocol.Security(protocol.SecurityType_AES128_GCM),
+		Security: protocol.SecurityType_AES128_GCM,
 	}
 
 	buffer := buf.New()
@@ -127,7 +127,7 @@ func TestMuxRequest(t *testing.T) {
 		Version:  1,
 		User:     user,
 		Command:  protocol.RequestCommandMux,
-		Security: protocol.Security(protocol.SecurityType_AES128_GCM),
+		Security: protocol.SecurityType_AES128_GCM,
 	}
 
 	buffer := buf.New()

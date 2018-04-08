@@ -1,4 +1,3 @@
-// Package buf provides a light-weight memory allocation mechanism.
 package buf
 
 import (
@@ -12,11 +11,10 @@ type Supplier func([]byte) (int, error)
 // the buffer into an internal buffer pool, in order to recreate a buffer more
 // quickly.
 type Buffer struct {
-	v    []byte
-	pool Pool
+	v []byte
 
-	start int
-	end   int
+	start int32
+	end   int32
 }
 
 // Release recycles the buffer into an internal buffer pool.
@@ -24,11 +22,8 @@ func (b *Buffer) Release() {
 	if b == nil || b.v == nil {
 		return
 	}
-	if b.pool != nil {
-		b.pool.Free(b)
-	}
+	freeBytes(b.v)
 	b.v = nil
-	b.pool = nil
 	b.start = 0
 	b.end = 0
 }
@@ -48,24 +43,24 @@ func (b *Buffer) AppendBytes(bytes ...byte) int {
 // Append appends a byte array to the end of the buffer.
 func (b *Buffer) Append(data []byte) int {
 	nBytes := copy(b.v[b.end:], data)
-	b.end += nBytes
+	b.end += int32(nBytes)
 	return nBytes
 }
 
 // AppendSupplier appends the content of a BytesWriter to the buffer.
 func (b *Buffer) AppendSupplier(writer Supplier) error {
 	nBytes, err := writer(b.v[b.end:])
-	b.end += nBytes
+	b.end += int32(nBytes)
 	return err
 }
 
 // Byte returns the bytes at index.
-func (b *Buffer) Byte(index int) byte {
+func (b *Buffer) Byte(index int32) byte {
 	return b.v[b.start+index]
 }
 
 // SetByte sets the byte value at index.
-func (b *Buffer) SetByte(index int, value byte) {
+func (b *Buffer) SetByte(index int32, value byte) {
 	b.v[b.start+index] = value
 }
 
@@ -78,12 +73,12 @@ func (b *Buffer) Bytes() []byte {
 func (b *Buffer) Reset(writer Supplier) error {
 	nBytes, err := writer(b.v)
 	b.start = 0
-	b.end = nBytes
+	b.end = int32(nBytes)
 	return err
 }
 
-// BytesRange returns a slice of this buffer with given from and to bounary.
-func (b *Buffer) BytesRange(from, to int) []byte {
+// BytesRange returns a slice of this buffer with given from and to boundary.
+func (b *Buffer) BytesRange(from, to int32) []byte {
 	if from < 0 {
 		from += b.Len()
 	}
@@ -94,7 +89,7 @@ func (b *Buffer) BytesRange(from, to int) []byte {
 }
 
 // BytesFrom returns a slice of this Buffer starting from the given position.
-func (b *Buffer) BytesFrom(from int) []byte {
+func (b *Buffer) BytesFrom(from int32) []byte {
 	if from < 0 {
 		from += b.Len()
 	}
@@ -102,7 +97,7 @@ func (b *Buffer) BytesFrom(from int) []byte {
 }
 
 // BytesTo returns a slice of this Buffer from start to the given position.
-func (b *Buffer) BytesTo(to int) []byte {
+func (b *Buffer) BytesTo(to int32) []byte {
 	if to < 0 {
 		to += b.Len()
 	}
@@ -110,7 +105,7 @@ func (b *Buffer) BytesTo(to int) []byte {
 }
 
 // Slice cuts the buffer at the given position.
-func (b *Buffer) Slice(from, to int) {
+func (b *Buffer) Slice(from, to int32) {
 	if from < 0 {
 		from += b.Len()
 	}
@@ -125,7 +120,7 @@ func (b *Buffer) Slice(from, to int) {
 }
 
 // SliceFrom cuts the buffer at the given position.
-func (b *Buffer) SliceFrom(from int) {
+func (b *Buffer) SliceFrom(from int32) {
 	if from < 0 {
 		from += b.Len()
 	}
@@ -133,7 +128,7 @@ func (b *Buffer) SliceFrom(from int) {
 }
 
 // Len returns the length of the buffer content.
-func (b *Buffer) Len() int {
+func (b *Buffer) Len() int32 {
 	if b == nil {
 		return 0
 	}
@@ -147,13 +142,13 @@ func (b *Buffer) IsEmpty() bool {
 
 // IsFull returns true if the buffer has no more room to grow.
 func (b *Buffer) IsFull() bool {
-	return b.end == len(b.v)
+	return b.end == int32(len(b.v))
 }
 
 // Write implements Write method in io.Writer.
 func (b *Buffer) Write(data []byte) (int, error) {
 	nBytes := copy(b.v[b.end:], data)
-	b.end += nBytes
+	b.end += int32(nBytes)
 	return nBytes, nil
 }
 
@@ -163,10 +158,10 @@ func (b *Buffer) Read(data []byte) (int, error) {
 		return 0, io.EOF
 	}
 	nBytes := copy(data, b.v[b.start:b.end])
-	if nBytes == b.Len() {
+	if int32(nBytes) == b.Len() {
 		b.Clear()
 	} else {
-		b.start += nBytes
+		b.start += int32(nBytes)
 	}
 	return nBytes, nil
 }
@@ -176,15 +171,16 @@ func (b *Buffer) String() string {
 	return string(b.Bytes())
 }
 
-// New creates a Buffer with 0 length and 8K capacity.
+// New creates a Buffer with 0 length and 2K capacity.
 func New() *Buffer {
-	return mediumPool.Allocate()
+	return &Buffer{
+		v: pool[0].Get().([]byte),
+	}
 }
 
-// NewLocal creates and returns a buffer with 0 length and given capacity on current thread.
-func NewLocal(size int) *Buffer {
+// NewSize creates and returns a buffer with 0 length and at least the given capacity. Capacity must be positive.
+func NewSize(capacity int32) *Buffer {
 	return &Buffer{
-		v:    make([]byte, size),
-		pool: nil,
+		v: newBytes(capacity),
 	}
 }

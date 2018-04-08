@@ -7,6 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"v2ray.com/core/common/session"
+
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
@@ -41,10 +43,13 @@ type tcpWorker struct {
 
 func (w *tcpWorker) callback(conn internet.Connection) {
 	ctx, cancel := context.WithCancel(context.Background())
+	sid := session.NewID()
+	ctx = session.ContextWithID(ctx, sid)
+
 	if w.recvOrigDest {
 		dest, err := tcp.GetOriginalDestination(conn)
 		if err != nil {
-			newError("failed to get original destination").Base(err).WriteToLog()
+			newError("failed to get original destination").WithContext(ctx).Base(err).WriteToLog()
 		}
 		if dest.IsValid() {
 			ctx = proxy.ContextWithOriginalTarget(ctx, dest)
@@ -59,11 +64,11 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 		ctx = proxyman.ContextWithProtocolSniffers(ctx, w.sniffers)
 	}
 	if err := w.proxy.Process(ctx, net.Network_TCP, conn, w.dispatcher); err != nil {
-		newError("connection ends").Base(err).WriteToLog()
+		newError("connection ends").Base(err).WithContext(ctx).WriteToLog()
 	}
 	cancel()
 	if err := conn.Close(); err != nil {
-		newError("failed to close connection").Base(err).WriteToLog()
+		newError("failed to close connection").Base(err).WithContext(ctx).WriteToLog()
 	}
 }
 
@@ -205,8 +210,10 @@ func (w *udpWorker) getConnection(id connID) (*udpConn, bool) {
 
 func (w *udpWorker) callback(b *buf.Buffer, source net.Destination, originalDest net.Destination) {
 	id := connID{
-		src:  source,
-		dest: originalDest,
+		src: source,
+	}
+	if originalDest.IsValid() {
+		id.dest = originalDest
 	}
 	conn, existing := w.getConnection(id)
 	select {
@@ -220,6 +227,9 @@ func (w *udpWorker) callback(b *buf.Buffer, source net.Destination, originalDest
 	if !existing {
 		go func() {
 			ctx := context.Background()
+			sid := session.NewID()
+			ctx = session.ContextWithID(ctx, sid)
+
 			if originalDest.IsValid() {
 				ctx = proxy.ContextWithOriginalTarget(ctx, originalDest)
 			}

@@ -29,7 +29,7 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, handler 
 	if err != nil {
 		return nil, err
 	}
-	newError("listening TCP on ", address, ":", port).WriteToLog()
+	newError("listening TCP on ", address, ":", port).WithContext(ctx).WriteToLog()
 	networkSettings := internet.TransportSettingsFromContext(ctx)
 	tcpSettings := networkSettings.(*Config)
 
@@ -39,8 +39,8 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, handler 
 		addConn:  handler,
 	}
 
-	if config := tls.ConfigFromContext(ctx, tls.WithNextProto("h2")); config != nil {
-		l.tlsConfig = config.GetTLSConfig()
+	if config := tls.ConfigFromContext(ctx); config != nil {
+		l.tlsConfig = config.GetTLSConfig(tls.WithNextProto("h2"))
 	}
 
 	if tcpSettings.HeaderSettings != nil {

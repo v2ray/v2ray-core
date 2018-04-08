@@ -11,7 +11,7 @@ import (
 	"v2ray.com/core/common/log"
 )
 
-// Instance is an app.Application that handles logs.
+// Instance is a log.Handler that handles logs.
 type Instance struct {
 	sync.RWMutex
 	config       *Config
@@ -91,7 +91,7 @@ func (g *Instance) startInternal() error {
 	return nil
 }
 
-// Start implements app.Application.Start().
+// Start implements common.Runnable.Start().
 func (g *Instance) Start() error {
 	if err := g.startInternal(); err != nil {
 		return err
@@ -125,7 +125,7 @@ func (g *Instance) Handle(msg log.Message) {
 	}
 }
 
-// Close implement app.Application.Close().
+// Close implements common.Closable.Close().
 func (g *Instance) Close() error {
 	newError("Logger closing").AtDebug().WriteToLog()
 

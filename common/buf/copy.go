@@ -92,7 +92,9 @@ func copyInternal(reader Reader, writer Writer, handler *copyHandler) error {
 				buffer.Release()
 				return werr
 			}
-		} else if err != nil {
+		}
+
+		if err != nil {
 			return err
 		}
 	}

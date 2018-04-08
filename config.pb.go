@@ -17,13 +17,13 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-// Master config of V2Ray. V2Ray takes this config as input and functions accordingly.
+// Config is the master config of V2Ray. V2Ray takes this config as input and functions accordingly.
 type Config struct {
 	// Inbound handler configurations. Must have at least one item.
 	Inbound []*InboundHandlerConfig `protobuf:"bytes,1,rep,name=inbound" json:"inbound,omitempty"`
 	// Outbound handler configurations. Must have at least one item. The first item is used as default for routing.
 	Outbound []*OutboundHandlerConfig `protobuf:"bytes,2,rep,name=outbound" json:"outbound,omitempty"`
-	// App configuration. Must be one in the app directory.
+	// App is for configurations of all features in V2Ray. A feature must implement the Feature interface, and its config type must be registered through common.RegisterConfig.
 	App []*v2ray_core_common_serial.TypedMessage `protobuf:"bytes,4,rep,name=app" json:"app,omitempty"`
 	// Transport settings.
 	Transport *v2ray_core_transport.Config `protobuf:"bytes,5,opt,name=transport" json:"transport,omitempty"`
@@ -72,10 +72,11 @@ func (m *Config) GetExtension() []*v2ray_core_common_serial.TypedMessage {
 	return nil
 }
 
+// InboundHandlerConfig is the configuration for inbound handler.
 type InboundHandlerConfig struct {
-	// Tag of the inbound handler.
+	// Tag of the inbound handler. The tag must be unique among all inbound handlers
 	Tag string `protobuf:"bytes,1,opt,name=tag" json:"tag,omitempty"`
-	// Settings for how this inbound proxy is handled. Must be ReceiverConfig above.
+	// Settings for how this inbound proxy is handled.
 	ReceiverSettings *v2ray_core_common_serial.TypedMessage `protobuf:"bytes,2,opt,name=receiver_settings,json=receiverSettings" json:"receiver_settings,omitempty"`
 	// Settings for inbound proxy. Must be one of the inbound proxies.
 	ProxySettings *v2ray_core_common_serial.TypedMessage `protobuf:"bytes,3,opt,name=proxy_settings,json=proxySettings" json:"proxy_settings,omitempty"`
@@ -107,10 +108,11 @@ func (m *InboundHandlerConfig) GetProxySettings() *v2ray_core_common_serial.Type
 	return nil
 }
 
+// OutboundHandlerConfig is the configuration for outbound handler.
 type OutboundHandlerConfig struct {
 	// Tag of this outbound handler.
 	Tag string `protobuf:"bytes,1,opt,name=tag" json:"tag,omitempty"`
-	// Settings for how to dial connection for this outbound handler. Must be SenderConfig above.
+	// Settings for how to dial connection for this outbound handler.
 	SenderSettings *v2ray_core_common_serial.TypedMessage `protobuf:"bytes,2,opt,name=sender_settings,json=senderSettings" json:"sender_settings,omitempty"`
 	// Settings for this outbound proxy. Must be one of the outbound proxies.
 	ProxySettings *v2ray_core_common_serial.TypedMessage `protobuf:"bytes,3,opt,name=proxy_settings,json=proxySettings" json:"proxy_settings,omitempty"`

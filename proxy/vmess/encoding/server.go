@@ -55,21 +55,16 @@ func (h *SessionHistory) Close() error {
 	return h.task.Close()
 }
 
-func (h *SessionHistory) add(session sessionId) {
+func (h *SessionHistory) addIfNotExits(session sessionId) bool {
 	h.Lock()
 	defer h.Unlock()
 
-	h.cache[session] = time.Now().Add(time.Minute * 3)
-}
-
-func (h *SessionHistory) has(session sessionId) bool {
-	h.RLock()
-	defer h.RUnlock()
-
-	if expire, found := h.cache[session]; found {
-		return expire.After(time.Now())
+	if expire, found := h.cache[session]; found && expire.After(time.Now()) {
+		return false
 	}
-	return false
+
+	h.cache[session] = time.Now().Add(time.Minute * 3)
+	return true
 }
 
 func (h *SessionHistory) removeExpiredEntries() {
@@ -82,6 +77,10 @@ func (h *SessionHistory) removeExpiredEntries() {
 		if expire.Before(now) {
 			delete(h.cache, session)
 		}
+	}
+
+	if len(h.cache) == 0 {
+		h.cache = make(map[sessionId]time.Time, 128)
 	}
 }
 
@@ -105,42 +104,16 @@ func NewServerSession(validator protocol.UserValidator, sessionHistory *SessionH
 	}
 }
 
-func readAddress(buffer *buf.Buffer, reader io.Reader) (net.Address, net.Port, error) {
-	var address net.Address
-	var port net.Port
-	if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 3)); err != nil {
-		return address, port, newError("failed to read port and address type").Base(err)
+func parseSecurityType(b byte) protocol.SecurityType {
+	if _, f := protocol.SecurityType_name[int32(b)]; f {
+		st := protocol.SecurityType(b)
+		// For backward compatibility.
+		if st == protocol.SecurityType_UNKNOWN {
+			st = protocol.SecurityType_LEGACY
+		}
+		return st
 	}
-	port = net.PortFromBytes(buffer.BytesRange(-3, -1))
-
-	addressType := protocol.AddressType(buffer.Byte(buffer.Len() - 1))
-	switch addressType {
-	case protocol.AddressTypeIPv4:
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 4)); err != nil {
-			return address, port, newError("failed to read IPv4 address").Base(err)
-		}
-		address = net.IPAddress(buffer.BytesFrom(-4))
-	case protocol.AddressTypeIPv6:
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 16)); err != nil {
-			return address, port, newError("failed to read IPv6 address").Base(err)
-		}
-		address = net.IPAddress(buffer.BytesFrom(-16))
-	case protocol.AddressTypeDomain:
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 1)); err != nil {
-			return address, port, newError("failed to read domain address").Base(err)
-		}
-		domainLength := int(buffer.Byte(buffer.Len() - 1))
-		if domainLength == 0 {
-			return address, port, newError("zero length domain")
-		}
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, domainLength)); err != nil {
-			return address, port, newError("failed to read domain address").Base(err)
-		}
-		address = net.DomainAddress(string(buffer.BytesFrom(-domainLength)))
-	default:
-		return address, port, newError("invalid address type", addressType)
-	}
-	return address, port, nil
+	return protocol.SecurityType_UNKNOWN
 }
 
 func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.RequestHeader, error) {
@@ -183,44 +156,50 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	copy(sid.user[:], vmessAccount.ID.Bytes())
 	copy(sid.key[:], s.requestBodyKey)
 	copy(sid.nonce[:], s.requestBodyIV)
-	if s.sessionHistory.has(sid) {
+	if !s.sessionHistory.addIfNotExits(sid) {
 		return nil, newError("duplicated session id, possibly under replay attack")
 	}
-	s.sessionHistory.add(sid)
 
 	s.responseHeader = buffer.Byte(33)             // 1 byte
 	request.Option = bitmask.Byte(buffer.Byte(34)) // 1 byte
 	padingLen := int(buffer.Byte(35) >> 4)
-	request.Security = protocol.NormSecurity(protocol.Security(buffer.Byte(35) & 0x0F))
+	request.Security = parseSecurityType(buffer.Byte(35) & 0x0F)
 	// 1 bytes reserved
 	request.Command = protocol.RequestCommand(buffer.Byte(37))
 
-	invalidRequest := false
+	var invalidRequestErr error
+	defer func() {
+		if invalidRequestErr != nil {
+			randomLen := dice.Roll(64) + 1
+			// Read random number of bytes for prevent detection.
+			buffer.AppendSupplier(buf.ReadFullFrom(decryptor, int32(randomLen)))
+		}
+	}()
+
+	if request.Security == protocol.SecurityType_UNKNOWN || request.Security == protocol.SecurityType_AUTO {
+		invalidRequestErr = newError("unknown security type")
+		return nil, invalidRequestErr
+	}
+
 	switch request.Command {
 	case protocol.RequestCommandMux:
 		request.Address = net.DomainAddress("v1.mux.cool")
 		request.Port = 0
 	case protocol.RequestCommandTCP, protocol.RequestCommandUDP:
-		if addr, port, err := readAddress(buffer, decryptor); err == nil {
+		if addr, port, err := addrParser.ReadAddressPort(buffer, decryptor); err == nil {
 			request.Address = addr
 			request.Port = port
 		} else {
-			invalidRequest = true
-			newError("failed to read address").Base(err).WriteToLog()
+			invalidRequestErr = newError("invalid address").Base(err)
+			return nil, invalidRequestErr
 		}
 	default:
-		invalidRequest = true
-	}
-
-	if invalidRequest {
-		randomLen := dice.Roll(32) + 1
-		// Read random number of bytes for prevent detection.
-		buffer.AppendSupplier(buf.ReadFullFrom(decryptor, randomLen))
-		return nil, newError("invalid request")
+		invalidRequestErr = newError("invalid request command: ", request.Command)
+		return nil, invalidRequestErr
 	}
 
 	if padingLen > 0 {
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(decryptor, padingLen)); err != nil {
+		if err := buffer.AppendSupplier(buf.ReadFullFrom(decryptor, int32(padingLen))); err != nil {
 			return nil, newError("failed to read padding").Base(err)
 		}
 	}
@@ -250,7 +229,8 @@ func (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 	if request.Option.Has(protocol.RequestOptionChunkMasking) {
 		sizeParser = NewShakeSizeParser(s.requestBodyIV)
 	}
-	if request.Security.Is(protocol.SecurityType_NONE) {
+	switch request.Security {
+	case protocol.SecurityType_NONE:
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
 			if request.Command.TransferType() == protocol.TransferTypeStream {
 				return crypto.NewChunkStreamReader(sizeParser, reader)
@@ -265,9 +245,7 @@ func (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 		}
 
 		return buf.NewReader(reader)
-	}
-
-	if request.Security.Is(protocol.SecurityType_LEGACY) {
+	case protocol.SecurityType_LEGACY:
 		aesStream := crypto.NewAesDecryptionStream(s.requestBodyKey, s.requestBodyIV)
 		cryptionReader := crypto.NewCryptionReader(aesStream, reader)
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
@@ -280,9 +258,7 @@ func (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 		}
 
 		return buf.NewReader(cryptionReader)
-	}
-
-	if request.Security.Is(protocol.SecurityType_AES128_GCM) {
+	case protocol.SecurityType_AES128_GCM:
 		block, _ := aes.NewCipher(s.requestBodyKey)
 		aead, _ := cipher.NewGCM(block)
 
@@ -295,9 +271,7 @@ func (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 		}
 		return crypto.NewAuthenticationReader(auth, sizeParser, reader, request.Command.TransferType())
-	}
-
-	if request.Security.Is(protocol.SecurityType_CHACHA20_POLY1305) {
+	case protocol.SecurityType_CHACHA20_POLY1305:
 		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(s.requestBodyKey))
 
 		auth := &crypto.AEADAuthenticator{
@@ -309,9 +283,9 @@ func (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 		}
 		return crypto.NewAuthenticationReader(auth, sizeParser, reader, request.Command.TransferType())
+	default:
+		panic("Unknown security type.")
 	}
-
-	panic("Unknown security type.")
 }
 
 func (s *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, writer io.Writer) {
@@ -336,7 +310,8 @@ func (s *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 	if request.Option.Has(protocol.RequestOptionChunkMasking) {
 		sizeParser = NewShakeSizeParser(s.responseBodyIV)
 	}
-	if request.Security.Is(protocol.SecurityType_NONE) {
+	switch request.Security {
+	case protocol.SecurityType_NONE:
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
 			if request.Command.TransferType() == protocol.TransferTypeStream {
 				return crypto.NewChunkStreamWriter(sizeParser, writer)
@@ -351,9 +326,7 @@ func (s *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 		}
 
 		return buf.NewWriter(writer)
-	}
-
-	if request.Security.Is(protocol.SecurityType_LEGACY) {
+	case protocol.SecurityType_LEGACY:
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
 			auth := &crypto.AEADAuthenticator{
 				AEAD:                    new(FnvAuthenticator),
@@ -364,9 +337,7 @@ func (s *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 		}
 
 		return buf.NewWriter(s.responseWriter)
-	}
-
-	if request.Security.Is(protocol.SecurityType_AES128_GCM) {
+	case protocol.SecurityType_AES128_GCM:
 		block, _ := aes.NewCipher(s.responseBodyKey)
 		aead, _ := cipher.NewGCM(block)
 
@@ -379,9 +350,7 @@ func (s *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 		}
 		return crypto.NewAuthenticationWriter(auth, sizeParser, writer, request.Command.TransferType())
-	}
-
-	if request.Security.Is(protocol.SecurityType_CHACHA20_POLY1305) {
+	case protocol.SecurityType_CHACHA20_POLY1305:
 		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(s.responseBodyKey))
 
 		auth := &crypto.AEADAuthenticator{
@@ -393,7 +362,7 @@ func (s *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
 		}
 		return crypto.NewAuthenticationWriter(auth, sizeParser, writer, request.Command.TransferType())
+	default:
+		panic("Unknown security type.")
 	}
-
-	panic("Unknown security type.")
 }

@@ -47,7 +47,7 @@ func TestBytesWriterReadFrom(t *testing.T) {
 
 	mb, err := cache.ReadMultiBuffer()
 	assert(err, IsNil)
-	assert(mb.Len(), Equals, size)
+	assert(mb.Len(), Equals, int32(size))
 }
 
 func TestDiscardBytes(t *testing.T) {

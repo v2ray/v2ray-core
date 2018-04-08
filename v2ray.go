@@ -28,8 +28,7 @@ type Instance struct {
 	router        syncRouter
 	ihm           syncInboundHandlerManager
 	ohm           syncOutboundHandlerManager
-	clock         syncClock
-	cmd           syncCommander
+	stats         syncStatManager
 
 	access   sync.Mutex
 	features []Feature
@@ -39,7 +38,7 @@ type Instance struct {
 
 // New returns a new V2Ray instance based on given configuration.
 // The instance is not started at this point.
-// To make sure V2Ray instance works properly, the config must contain one Dispatcher, one InboundHandlerManager and one OutboundHandlerManager. Other features are optional.
+// To ensure V2Ray instance works properly, the config must contain one Dispatcher, one InboundHandlerManager and one OutboundHandlerManager. Other features are optional.
 func New(config *Config) (*Instance, error) {
 	var server = &Instance{
 		id: uuid.New(),
@@ -95,7 +94,7 @@ func (s *Instance) CreateObject(config interface{}) (interface{}, error) {
 	return common.CreateObject(ctx, config)
 }
 
-// ID returns an unique ID for this V2Ray instance.
+// ID returns a unique ID for this V2Ray instance.
 func (s *Instance) ID() uuid.UUID {
 	return s.id
 }
@@ -106,7 +105,7 @@ func (s *Instance) Close() error {
 	defer s.access.Unlock()
 
 	s.running = false
-	for _, f := range s.features {
+	for _, f := range s.allFeatures() {
 		f.Close()
 	}
 
@@ -120,21 +119,23 @@ func (s *Instance) Start() error {
 	defer s.access.Unlock()
 
 	s.running = true
-	for _, f := range s.features {
+	for _, f := range s.allFeatures() {
 		if err := f.Start(); err != nil {
 			return err
 		}
 	}
 
-	newError("V2Ray started").AtWarning().WriteToLog()
+	newError("V2Ray ", Version(), " started").AtWarning().WriteToLog()
 
 	return nil
 }
 
 // RegisterFeature registers the given feature into V2Ray.
-// If feature is one of the following types, the corressponding feature in this Instance
+// If feature is one of the following types, the corresponding feature in this Instance
 // will be replaced: DNSClient, PolicyManager, Router, Dispatcher, InboundHandlerManager, OutboundHandlerManager.
 func (s *Instance) RegisterFeature(feature interface{}, instance Feature) error {
+	running := false
+
 	switch feature.(type) {
 	case DNSClient, *DNSClient:
 		s.dnsClient.Set(instance.(DNSClient))
@@ -148,23 +149,27 @@ func (s *Instance) RegisterFeature(feature interface{}, instance Feature) error 
 		s.ihm.Set(instance.(InboundHandlerManager))
 	case OutboundHandlerManager, *OutboundHandlerManager:
 		s.ohm.Set(instance.(OutboundHandlerManager))
-	case Clock, *Clock:
-		s.clock.Set(instance.(Clock))
-	case Commander, *Commander:
-		s.cmd.Set(instance.(Commander))
+	case StatManager, *StatManager:
+		s.stats.Set(instance.(StatManager))
+	default:
+		s.access.Lock()
+		s.features = append(s.features, instance)
+		running = s.running
+		s.access.Unlock()
 	}
-	s.access.Lock()
-	defer s.access.Unlock()
 
-	s.features = append(s.features, instance)
-	if s.running {
+	if running {
 		return instance.Start()
 	}
 	return nil
 }
 
+func (s *Instance) allFeatures() []Feature {
+	return append([]Feature{s.DNSClient(), s.PolicyManager(), s.Dispatcher(), s.Router(), s.InboundHandlerManager(), s.OutboundHandlerManager(), s.Stats()}, s.features...)
+}
+
 // GetFeature returns a feature that was registered in this Instance. Nil if not found.
-// The returned Feature must implement common.HasType and whose type equals the given feature type.
+// The returned Feature must implement common.HasType and whose type equals to the given feature type.
 func (s *Instance) GetFeature(featureType interface{}) Feature {
 	for _, f := range s.features {
 		if hasType, ok := f.(common.HasType); ok {
@@ -206,12 +211,7 @@ func (s *Instance) OutboundHandlerManager() OutboundHandlerManager {
 	return &(s.ohm)
 }
 
-// Clock returns the Clock used by this Instance. The returned Clock is always functional.
-func (s *Instance) Clock() Clock {
-	return &(s.clock)
-}
-
-// Commander returns the Commander used by this Instance. The returned Commander is always functional.
-func (s *Instance) Commander() Commander {
-	return &(s.cmd)
+// Stats returns the StatManager used by this Instance. If StatManager was not registered before, the returned value doesn't work.
+func (s *Instance) Stats() StatManager {
+	return &(s.stats)
 }

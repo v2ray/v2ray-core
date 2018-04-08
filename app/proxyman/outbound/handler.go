@@ -2,13 +2,11 @@ package outbound
 
 import (
 	"context"
-	"io"
 
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/proxyman/mux"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
@@ -24,10 +22,7 @@ type Handler struct {
 }
 
 func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (*Handler, error) {
-	v := core.FromContext(ctx)
-	if v == nil {
-		return nil, newError("V is not in context")
-	}
+	v := core.MustFromContext(ctx)
 	h := &Handler{
 		config:          config,
 		outboundManager: v.OutboundHandlerManager(),
@@ -83,14 +78,14 @@ func (h *Handler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
 	if h.mux != nil {
 		err := h.mux.Dispatch(ctx, outboundRay)
 		if err != nil {
-			newError("failed to process outbound traffic").Base(err).WriteToLog()
+			newError("failed to process outbound traffic").Base(err).WithContext(ctx).WriteToLog()
 			outboundRay.OutboundOutput().CloseError()
 		}
 	} else {
 		err := h.proxy.Process(ctx, outboundRay, h)
 		// Ensure outbound ray is properly closed.
-		if err != nil && errors.Cause(err) != io.EOF {
-			newError("failed to process outbound traffic").Base(err).WriteToLog()
+		if err != nil {
+			newError("failed to process outbound traffic").Base(err).WithContext(ctx).WriteToLog()
 			outboundRay.OutboundOutput().CloseError()
 		} else {
 			outboundRay.OutboundOutput().Close()
@@ -106,14 +101,14 @@ func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Conn
 			tag := h.senderSettings.ProxySettings.Tag
 			handler := h.outboundManager.GetHandler(tag)
 			if handler != nil {
-				newError("proxying to ", tag, " for dest ", dest).AtDebug().WriteToLog()
+				newError("proxying to ", tag, " for dest ", dest).AtDebug().WithContext(ctx).WriteToLog()
 				ctx = proxy.ContextWithTarget(ctx, dest)
-				stream := ray.NewRay(ctx)
+				stream := ray.New(ctx)
 				go handler.Dispatch(ctx, stream)
 				return ray.NewConnection(stream.InboundOutput(), stream.InboundInput()), nil
 			}
 
-			newError("failed to get outbound handler with tag: ", tag).AtWarning().WriteToLog()
+			newError("failed to get outbound handler with tag: ", tag).AtWarning().WithContext(ctx).WriteToLog()
 		}
 
 		if h.senderSettings.Via != nil {
@@ -138,7 +133,7 @@ func (h *Handler) Start() error {
 	return nil
 }
 
-// Close implements common.Runnable.
+// Close implements common.Closable.
 func (h *Handler) Close() error {
 	common.Close(h.mux)
 	return nil

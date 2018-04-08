@@ -47,7 +47,7 @@ func NewTimedUserValidator(hasher protocol.IDHash) protocol.UserValidator {
 		users:    make([]*user, 0, 16),
 		userHash: make(map[[16]byte]indexTimePair, 1024),
 		hasher:   hasher,
-		baseTime: protocol.Timestamp(time.Now().Unix() - cacheDurationSec*3),
+		baseTime: protocol.Timestamp(time.Now().Unix() - cacheDurationSec*2),
 	}
 	tuv.task = &signal.PeriodicTask{
 		Interval: updateInterval,
@@ -64,7 +64,11 @@ func (v *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, user *
 	var hashValue [16]byte
 	genHashForID := func(id *protocol.ID) {
 		idHash := v.hasher(id.Bytes())
-		for ts := user.lastSec; ts <= nowSec; ts++ {
+		lastSec := user.lastSec
+		if lastSec < nowSec-cacheDurationSec*2 {
+			lastSec = nowSec - cacheDurationSec*2
+		}
+		for ts := lastSec; ts <= nowSec; ts++ {
 			common.Must2(idHash.Write(ts.Bytes(nil)))
 			idHash.Sum(hashValue[:0])
 			idHash.Reset()
@@ -101,7 +105,7 @@ func (v *TimedUserValidator) updateUserHash() {
 		v.generateNewHashes(nowSec, user)
 	}
 
-	expire := protocol.Timestamp(now.Unix() - cacheDurationSec*3)
+	expire := protocol.Timestamp(now.Unix() - cacheDurationSec)
 	if expire > v.baseTime {
 		v.removeExpiredHashes(uint32(expire - v.baseTime))
 	}
@@ -159,7 +163,7 @@ func (v *TimedUserValidator) Remove(email string) bool {
 		return false
 	}
 	ulen := len(v.users)
-	if idx < len(v.users) {
+	if idx < ulen {
 		v.users[idx] = v.users[ulen-1]
 		v.users[ulen-1] = nil
 		v.users = v.users[:ulen-1]

@@ -1,6 +1,6 @@
 package protocol
 
-type TransferType int
+type TransferType byte
 
 const (
 	TransferTypeStream TransferType = 0

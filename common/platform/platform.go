@@ -1,4 +1,4 @@
-package platform
+package platform // import "v2ray.com/core/common/platform"
 
 import (
 	"os"
@@ -53,7 +53,7 @@ func getExecutableDir() string {
 	return filepath.Dir(exec)
 }
 
-func getExecuableSubDir(dir string) func() string {
+func getExecutableSubDir(dir string) func() string {
 	return func() string {
 		return filepath.Join(getExecutableDir(), dir)
 	}
@@ -67,7 +67,7 @@ func GetAssetLocation(file string) string {
 
 func GetPluginDirectory() string {
 	const name = "v2ray.location.plugin"
-	pluginDir := EnvFlag{Name: name, AltName: NormalizeEnvName(name)}.GetValue(getExecuableSubDir("plugins"))
+	pluginDir := EnvFlag{Name: name, AltName: NormalizeEnvName(name)}.GetValue(getExecutableSubDir("plugins"))
 	return pluginDir
 }
 

@@ -35,11 +35,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	handler := &Handler{
 		serverList:   serverList,
 		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
-		v:            core.FromContext(ctx),
-	}
-
-	if handler.v == nil {
-		return nil, newError("V is not in context.")
+		v:            core.MustFromContext(ctx),
 	}
 
 	return handler, nil
@@ -69,7 +65,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	if !ok {
 		return newError("target not specified").AtError()
 	}
-	newError("tunneling request to ", target, " via ", rec.Destination()).WriteToLog()
+	newError("tunneling request to ", target, " via ", rec.Destination()).WithContext(ctx).WriteToLog()
 
 	command := protocol.RequestCommandTCP
 	if target.Network == net.Network_UDP {
@@ -95,7 +91,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	account := rawAccount.(*vmess.InternalAccount)
 	request.Security = account.Security
 
-	if request.Security.Is(protocol.SecurityType_AES128_GCM) || request.Security.Is(protocol.SecurityType_NONE) || request.Security.Is(protocol.SecurityType_CHACHA20_POLY1305) {
+	if request.Security == protocol.SecurityType_AES128_GCM || request.Security == protocol.SecurityType_NONE || request.Security == protocol.SecurityType_CHACHA20_POLY1305 {
 		request.Option.Set(protocol.RequestOptionChunkMasking)
 	}
 
@@ -109,21 +105,24 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)
 
 	requestDone := signal.ExecuteAsync(func() error {
+		defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
+
 		writer := buf.NewBufferedWriter(buf.NewWriter(conn))
 		if err := session.EncodeRequestHeader(request, writer); err != nil {
 			return newError("failed to encode request").Base(err).AtWarning()
 		}
 
 		bodyWriter := session.EncodeRequestBody(request, writer)
-		firstPayload, err := input.ReadTimeout(time.Millisecond * 500)
-		if err != nil && err != buf.ErrReadTimeout {
-			return newError("failed to get first payload").Base(err)
-		}
-		if !firstPayload.IsEmpty() {
-			if err := bodyWriter.WriteMultiBuffer(firstPayload); err != nil {
-				return newError("failed to write first payload").Base(err)
+		{
+			firstPayload, err := input.ReadTimeout(time.Millisecond * 500)
+			if err != nil && err != buf.ErrReadTimeout {
+				return newError("failed to get first payload").Base(err)
 			}
-			firstPayload.Release()
+			if !firstPayload.IsEmpty() {
+				if err := bodyWriter.WriteMultiBuffer(firstPayload); err != nil {
+					return newError("failed to write first payload").Base(err)
+				}
+			}
 		}
 
 		if err := writer.SetBuffered(false); err != nil {
@@ -139,23 +138,23 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 				return err
 			}
 		}
-		timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
+
 		return nil
 	})
 
 	responseDone := signal.ExecuteAsync(func() error {
-		defer output.Close()
 		defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
 		reader := buf.NewBufferedReader(buf.NewReader(conn))
 		header, err := session.DecodeResponseHeader(reader)
 		if err != nil {
-			return err
+			return newError("failed to read header").Base(err)
 		}
 		v.handleCommand(rec.Destination(), header.Command)
 
 		reader.SetBuffered(false)
 		bodyReader := session.DecodeResponseBody(request, reader)
+
 		return buf.Copy(bodyReader, output, buf.UpdateActivity(timer))
 	})
 

@@ -19,16 +19,26 @@ var (
 )
 
 func fetchInput(ctx context.Context, input io.Reader, reader PacketReader, conn *Connection) {
-	payload := buf.New()
-	defer payload.Release()
-
-	for {
-		err := payload.Reset(buf.ReadFrom(input))
-		if err != nil {
-			payload.Release()
-			return
+	cache := make(chan *buf.Buffer, 1024)
+	go func() {
+		for {
+			payload := buf.New()
+			if err := payload.Reset(buf.ReadFrom(input)); err != nil {
+				payload.Release()
+				close(cache)
+				return
+			}
+			select {
+			case cache <- payload:
+			default:
+				payload.Release()
+			}
 		}
+	}()
+
+	for payload := range cache {
 		segments := reader.Read(payload.Bytes())
+		payload.Release()
 		if len(segments) > 0 {
 			conn.Input(segments)
 		}
@@ -76,8 +86,8 @@ func DialKCP(ctx context.Context, dest net.Destination) (internet.Connection, er
 
 	var iConn internet.Connection = session
 
-	if config := v2tls.ConfigFromContext(ctx, v2tls.WithDestination(dest)); config != nil {
-		tlsConn := tls.Client(iConn, config.GetTLSConfig())
+	if config := v2tls.ConfigFromContext(ctx); config != nil {
+		tlsConn := tls.Client(iConn, config.GetTLSConfig(v2tls.WithDestination(dest)))
 		iConn = tlsConn
 	}
 

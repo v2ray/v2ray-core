@@ -173,10 +173,10 @@ type Sniffer struct {
 	err   []error
 }
 
-func NewSniffer(sniferList []proxyman.KnownProtocols) *Sniffer {
+func NewSniffer(snifferList []proxyman.KnownProtocols) *Sniffer {
 	s := new(Sniffer)
 
-	for _, protocol := range sniferList {
+	for _, protocol := range snifferList {
 		var f func([]byte) (string, error)
 		switch protocol {
 		case proxyman.KnownProtocols_HTTP:

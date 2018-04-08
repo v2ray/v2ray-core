@@ -29,7 +29,7 @@ func TestUDPEncoding(t *testing.T) {
 		},
 	}
 
-	data := buf.NewLocal(256)
+	data := buf.NewSize(256)
 	data.AppendSupplier(serial.WriteString("test string"))
 	encodedData, err := EncodeUDPPacket(request, data.Bytes())
 	assert(err, IsNil)
@@ -39,6 +39,7 @@ func TestUDPEncoding(t *testing.T) {
 	assert(decodedData.Bytes(), Equals, data.Bytes())
 	assert(decodedRequest.Address, Equals, request.Address)
 	assert(decodedRequest.Port, Equals, request.Port)
+	assert(decodedRequest.Command, Equals, request.Command)
 }
 
 func TestTCPRequest(t *testing.T) {
@@ -118,6 +119,7 @@ func TestTCPRequest(t *testing.T) {
 		assert(err, IsNil)
 		assert(decodedRequest.Address, Equals, request.Address)
 		assert(decodedRequest.Port, Equals, request.Port)
+		assert(decodedRequest.Command, Equals, request.Command)
 
 		decodedData, err := reader.ReadMultiBuffer()
 		assert(err, IsNil)
