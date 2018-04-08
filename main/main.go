@@ -14,6 +14,7 @@ import (
 
 	"v2ray.com/core"
 	"v2ray.com/core/common/platform"
+	"v2ray.com/core/common/platform/ctlcmd"
 	_ "v2ray.com/core/main/distro/all"
 )
 
@@ -63,6 +64,12 @@ func startV2Ray() (core.Server, error) {
 	var configInput io.Reader
 	if configFile == "stdin:" {
 		configInput = os.Stdin
+	} else if strings.HasPrefix(configFile, "http://") || strings.HasPrefix(configFile, "https://") {
+		content, err := ctlcmd.Run([]string{"fetch", configFile}, nil)
+		if err != nil {
+			return nil, err
+		}
+		configInput = &content
 	} else {
 		fixedFile := os.ExpandEnv(configFile)
 		file, err := os.Open(fixedFile)

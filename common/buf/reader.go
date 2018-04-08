@@ -3,6 +3,7 @@ package buf
 import (
 	"io"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 )
 
@@ -52,7 +53,7 @@ func (r *BytesToBufferReader) ReadMultiBuffer() (MultiBuffer, error) {
 	nBytes, err := r.Reader.Read(r.buffer)
 	if nBytes > 0 {
 		mb := NewMultiBufferCap(int32(nBytes/Size) + 1)
-		mb.Write(r.buffer[:nBytes])
+		common.Must2(mb.Write(r.buffer[:nBytes]))
 		if nBytes == len(r.buffer) && nBytes < int(largeSize) {
 			freeBytes(r.buffer)
 			r.buffer = newBytes(int32(nBytes) + 1)

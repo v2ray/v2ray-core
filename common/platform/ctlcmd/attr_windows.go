@@ -1,6 +1,6 @@
 // +build windows
 
-package json
+package ctlcmd
 
 import "syscall"
 
