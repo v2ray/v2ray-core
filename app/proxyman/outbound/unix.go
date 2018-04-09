@@ -2,28 +2,34 @@ package outbound
 
 import (
 	"context"
+	"io"
 
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/proxyman/mux"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/internet/domainsocket"
 	"v2ray.com/core/transport/ray"
 )
 
-type Handler struct {
+type UnixHandler struct {
 	config          *core.OutboundHandlerConfig
-	senderSettings  *proxyman.SenderConfig
+	senderSettings  *proxyman.UnixSenderConfig
 	proxy           proxy.Outbound
 	outboundManager core.OutboundHandlerManager
 	mux             *mux.ClientManager
 }
 
-func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (core.OutboundHandler, error) {
-	v := core.MustFromContext(ctx)
-	h := &Handler{
+func NewUnixHandler(ctx context.Context, config *core.OutboundHandlerConfig) (core.OutboundHandler, error) {
+	v := core.FromContext(ctx)
+	if v == nil {
+		return nil, newError("V is not in context")
+	}
+	h := &UnixHandler{
 		config:          config,
 		outboundManager: v.OutboundHandlerManager(),
 	}
@@ -34,12 +40,10 @@ func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (core.O
 			return nil, err
 		}
 		switch s := senderSettings.(type) {
-		case *proxyman.SenderConfig:
-			h.senderSettings = s
 		case *proxyman.UnixSenderConfig:
-			return NewUnixHandler(ctx, config)
+			h.senderSettings = s
 		default:
-			return nil, newError("settings is not SenderConfig")
+			return nil, newError("settings is not UnixSenderConfig")
 		}
 	}
 
@@ -71,23 +75,23 @@ func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (core.O
 }
 
 // Tag implements core.OutboundHandler.
-func (h *Handler) Tag() string {
+func (h *UnixHandler) Tag() string {
 	return h.config.Tag
 }
 
 // Dispatch implements proxy.Outbound.Dispatch.
-func (h *Handler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
+func (h *UnixHandler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
 	if h.mux != nil {
 		err := h.mux.Dispatch(ctx, outboundRay)
 		if err != nil {
-			newError("failed to process outbound traffic").Base(err).WithContext(ctx).WriteToLog()
+			newError("failed to process outbound traffic").Base(err).WriteToLog()
 			outboundRay.OutboundOutput().CloseError()
 		}
 	} else {
 		err := h.proxy.Process(ctx, outboundRay, h)
 		// Ensure outbound ray is properly closed.
-		if err != nil {
-			newError("failed to process outbound traffic").Base(err).WithContext(ctx).WriteToLog()
+		if err != nil && errors.Cause(err) != io.EOF {
+			newError("failed to process outbound traffic").Base(err).WriteToLog()
 			outboundRay.OutboundOutput().CloseError()
 		} else {
 			outboundRay.OutboundOutput().Close()
@@ -97,46 +101,32 @@ func (h *Handler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
 }
 
 // Dial implements proxy.Dialer.Dial().
-func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {
+func (h *UnixHandler) Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {
 	if h.senderSettings != nil {
 		if h.senderSettings.ProxySettings.HasTag() {
-			tag := h.senderSettings.ProxySettings.Tag
-			handler := h.outboundManager.GetHandler(tag)
-			if handler != nil {
-				newError("proxying to ", tag, " for dest ", dest).AtDebug().WithContext(ctx).WriteToLog()
-				ctx = proxy.ContextWithTarget(ctx, dest)
-				stream := ray.New(ctx)
-				go handler.Dispatch(ctx, stream)
-				return ray.NewConnection(stream.InboundOutput(), stream.InboundInput()), nil
-			}
-
-			newError("failed to get outbound handler with tag: ", tag).AtWarning().WithContext(ctx).WriteToLog()
-		}
-
-		if h.senderSettings.Via != nil {
-			ctx = internet.ContextWithDialerSource(ctx, h.senderSettings.Via.AsAddress())
+			newError("Unix domain socket does not support redirect").AtWarning().WriteToLog()
 		}
 
 		if h.senderSettings.StreamSettings != nil {
-			ctx = internet.ContextWithStreamSettings(ctx, h.senderSettings.StreamSettings)
+			newError("Unix domain socket does not support stream setting").AtWarning().WriteToLog()
 		}
 	}
 
-	return internet.Dial(ctx, dest)
+	return domainsocket.DialDS(ctx, h.senderSettings.GetDomainSockSettings().GetPath())
 }
 
 // GetOutbound implements proxy.GetOutbound.
-func (h *Handler) GetOutbound() proxy.Outbound {
+func (h *UnixHandler) GetOutbound() proxy.Outbound {
 	return h.proxy
 }
 
 // Start implements common.Runnable.
-func (h *Handler) Start() error {
+func (h *UnixHandler) Start() error {
 	return nil
 }
 
-// Close implements common.Closable.
-func (h *Handler) Close() error {
+// Close implements common.Runnable.
+func (h *UnixHandler) Close() error {
 	common.Close(h.mux)
 	return nil
 }

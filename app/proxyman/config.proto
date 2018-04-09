@@ -9,6 +9,8 @@ option java_multiple_files = true;
 import "v2ray.com/core/common/net/address.proto";
 import "v2ray.com/core/common/net/port.proto";
 import "v2ray.com/core/transport/internet/config.proto";
+import "v2ray.com/core/transport/internet/domainsocket/config.proto";
+import "v2ray.com/core/common/serial/typed_message.proto";
 
 message InboundConfig {
 }
@@ -60,13 +62,36 @@ message ReceiverConfig {
   repeated KnownProtocols domain_override = 7;
 }
 
+message UnixReceiverConfig {
+  reserved 1;
+  v2ray.core.internet.domainsocket.DomainSocketSettings domainSockSettings = 2;
+  reserved 3;
+  v2ray.core.transport.internet.StreamConfig stream_settings = 4;
+  reserved 5,6;
+  repeated KnownProtocols domain_override = 7;
+}
+
+message InboundHandlerConfig {
+  string tag = 1;
+  v2ray.core.common.serial.TypedMessage receiver_settings = 2;
+  v2ray.core.common.serial.TypedMessage proxy_settings = 3;
+}
+
 message OutboundConfig {
-  
+
 }
 
 message SenderConfig {
   // Send traffic through the given IP. Only IP is allowed.
   v2ray.core.common.net.IPOrDomain via = 1;
+  v2ray.core.transport.internet.StreamConfig stream_settings = 2;
+  v2ray.core.transport.internet.ProxyConfig proxy_settings = 3;
+  MultiplexingConfig multiplex_settings = 4;
+}
+
+
+message UnixSenderConfig {
+  v2ray.core.internet.domainsocket.DomainSocketSettings domainSockSettings = 1;
   v2ray.core.transport.internet.StreamConfig stream_settings = 2;
   v2ray.core.transport.internet.ProxyConfig proxy_settings = 3;
   MultiplexingConfig multiplex_settings = 4;

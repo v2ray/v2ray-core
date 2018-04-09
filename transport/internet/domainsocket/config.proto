@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package v2ray.core.internet.domainsocket;
+
+option go_package = "domainsocket";
+
+//Flag Array
+enum DomainSocketSecurityMode {
+  Danger = 0;
+  //Verfify is Dialer have a pid or ppid match pid file
+  VerifyPid = 1;
+  //Do not tolerance ppid match
+  DisqualifyPPIDMatch = 2;
+
+  //Enforce Uid Verify On euid
+  VerifyEUID = 4;
+
+  //Enforce Uid Verify On ruid
+  VerifyRUID = 8;
+
+  //Does not allow same user exception
+  DisqualifySameUser = 16;
+
+  //Does not allow root user exception
+  DisqualifyRootUser = 32;
+}
+
+message DomainSocketSecurity{
+ //Flag Array Type, User can set an integer to define various configure
+ DomainSocketSecurityMode Mode = 1;
+ //Set pid files to be allowed
+ repeated string AllowedPid = 2;
+ //Set uids to be allowed, either euid or ruid should match one of following
+ //uids AllowedUid, or user that v2ray is running or root.
+ repeated uint64 AllowedUid = 3;
+}
+
+message DomainSocketSettings{
+ //Path we should listen/dial
+ string Path = 1;
+ DomainSocketSecurity Security = 2;
+}
