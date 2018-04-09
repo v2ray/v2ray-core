@@ -248,14 +248,6 @@ func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
 func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
 	defer mb.Release()
 
-	if mb.IsEmpty() {
-		b := buf.New()
-		defer b.Release()
-
-		eb, _ := w.seal(b)
-		return w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(eb))
-	}
-
 	mb2Write := buf.NewMultiBufferCap(int32(len(mb)) + 1)
 
 	for !mb.IsEmpty() {
@@ -276,6 +268,14 @@ func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
 }
 
 func (w *AuthenticationWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
+	if mb.IsEmpty() {
+		b := buf.New()
+		defer b.Release()
+
+		eb, _ := w.seal(b)
+		return w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(eb))
+	}
+
 	if w.transferType == protocol.TransferTypeStream {
 		return w.writeStream(mb)
 	}
