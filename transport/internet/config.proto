@@ -14,6 +14,7 @@ enum TransportProtocol {
   MKCP = 2;
   WebSocket = 3;
   HTTP = 4;
+  DomainSocket = 5;
 }
 
 message TransportConfig {

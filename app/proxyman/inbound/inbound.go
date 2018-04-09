@@ -134,10 +134,6 @@ func NewHandler(ctx context.Context, config *core.InboundHandlerConfig) (core.In
 
 	receiverSettings, ok := rawReceiverSettings.(*proxyman.ReceiverConfig)
 	if !ok {
-		receiverSettings, ok := rawReceiverSettings.(*proxyman.UnixReceiverConfig)
-		if ok {
-			return NewUnixInboundHandler(ctx, tag, receiverSettings, proxySettings)
-		}
 		return nil, newError("not a ReceiverConfig").AtError()
 	}
 

@@ -10,6 +10,7 @@ var DialUnix = net.DialUnix
 var Listen = net.Listen
 var ListenTCP = net.ListenTCP
 var ListenUDP = net.ListenUDP
+var ListenUnix = net.ListenUnix
 
 var LookupIP = net.LookupIP
 
@@ -48,3 +49,5 @@ type Dialer = net.Dialer
 type Listener = net.Listener
 type TCPListener = net.TCPListener
 type UnixListener = net.UnixListener
+
+var ResolveUnixAddr = net.ResolveUnixAddr

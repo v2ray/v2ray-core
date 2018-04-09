@@ -36,8 +36,6 @@ func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (core.O
 		switch s := senderSettings.(type) {
 		case *proxyman.SenderConfig:
 			h.senderSettings = s
-		case *proxyman.UnixSenderConfig:
-			return NewUnixHandler(ctx, config)
 		default:
 			return nil, newError("settings is not SenderConfig")
 		}

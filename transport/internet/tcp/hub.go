@@ -30,8 +30,8 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, handler 
 		return nil, err
 	}
 	newError("listening TCP on ", address, ":", port).WithContext(ctx).WriteToLog()
-	networkSettings := internet.TransportSettingsFromContext(ctx)
-	tcpSettings := networkSettings.(*Config)
+
+	tcpSettings := getTCPSettingsFromContext(ctx)
 
 	l := &Listener{
 		listener: listener,
