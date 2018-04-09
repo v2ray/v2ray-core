@@ -277,6 +277,7 @@ Help(){
     echo "  -l, --local           Install from a local file"
     echo "      --remove          Remove installed V2Ray"
     echo "  -c, --check           Check for update"
+    return 0
 }
 
 remove(){
@@ -290,7 +291,7 @@ remove(){
         rm -rf "/usr/bin/v2ray" "/etc/systemd/system/v2ray.service"
         if [[ $? -ne 0 ]]; then
             colorEcho ${RED} "Failed to remove V2Ray."
-            return 1
+            return 0
         else
             colorEcho ${GREEN} "Removed V2Ray successfully."
             colorEcho ${GREEN} "If necessary, please remove configuration file and log file manually."
@@ -304,7 +305,7 @@ remove(){
         rm -rf "/usr/bin/v2ray" "/lib/systemd/system/v2ray.service"
         if [[ $? -ne 0 ]]; then
             colorEcho ${RED} "Failed to remove V2Ray."
-            return 1
+            return 0
         else
             colorEcho ${GREEN} "Removed V2Ray successfully."
             colorEcho ${GREEN} "If necessary, please remove configuration file and log file manually."
@@ -317,7 +318,7 @@ remove(){
         rm -rf "/usr/bin/v2ray" "/etc/init.d/v2ray"
         if [[ $? -ne 0 ]]; then
             colorEcho ${RED} "Failed to remove V2Ray."
-            return 1
+            return 0
         else
             colorEcho ${GREEN} "Removed V2Ray successfully."
             colorEcho ${GREEN} "If necessary, please remove configuration file and log file manually."
@@ -325,29 +326,26 @@ remove(){
         fi       
     else
         colorEcho ${GREEN} "V2Ray not found."
-        return 1
+        return 0
     fi
 }
 
 checkUpdate(){
-        echo "Checking for update."
-        getVersion
-        if [[ $? -eq 1 ]]; then
-            colorEcho ${GREEN} "Found new version ${NEW_VER} for V2Ray."
-            return
-        elif [[ $? -eq 3 ]]; then
-            return 3
-        else 
-            colorEcho ${GREEN} "No new version."
-            return 1
-        fi
+    echo "Checking for update."
+    getVersion
+    if [[ $? -eq 1 ]]; then
+        colorEcho ${GREEN} "Found new version ${NEW_VER} for V2Ray."
+    elif [[ $? -eq 0 ]]; then
+        colorEcho ${GREEN} "No new version."
+    fi
+    return 0
 }
 
 main(){
     #helping information
-    [[ "$HELP" == "1" ]] && Help && return $?
-    [[ "$CHECK" == "1" ]] && checkUpdate && return $?
-    [[ "$REMOVE" == "1" ]] && remove && return $?
+    [[ "$HELP" == "1" ]] && Help && return
+    [[ "$CHECK" == "1" ]] && checkUpdate && return
+    [[ "$REMOVE" == "1" ]] && remove && return
     
     sysArch
     # extract local file
