@@ -184,6 +184,7 @@ stopV2ray(){
     fi
     if [[ $? -ne 0 ]]; then
         colorEcho ${RED} "Failed to shutdown V2Ray service."
+        return 2
     fi
 }
 
