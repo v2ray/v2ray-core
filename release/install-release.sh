@@ -94,7 +94,7 @@ downloadV2Ray(){
     colorEcho ${BLUE} "Downloading V2Ray."
     DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/${NEW_VER}/v2ray-linux-${VDIS}.zip"
     curl ${PROXY} -L -H "Cache-Control: no-cache" -o ${ZIPFILE} ${DOWNLOAD_LINK}
-    if [ $? != 0 ];then
+    if [ $? -ne 0 ];then
         colorEcho ${RED} "Failed to download! Please check your network or try again."
         return 3
     fi
@@ -277,7 +277,6 @@ Help(){
     echo "  -l, --local           Install from a local file"
     echo "      --remove          Remove installed V2Ray"
     echo "  -c, --check           Check for update"
-    return 0
 }
 
 remove(){
@@ -333,9 +332,10 @@ remove(){
 checkUpdate(){
     echo "Checking for update."
     getVersion
-    if [[ $? -eq 1 ]]; then
+    RETVAL="$?"
+    if [[ $RETVAL -eq 1 ]]; then
         colorEcho ${GREEN} "Found new version ${NEW_VER} for V2Ray."
-    elif [[ $? -eq 0 ]]; then
+    elif [[ $RETVAL -eq 0 ]]; then
         colorEcho ${GREEN} "No new version."
     fi
     return 0
@@ -369,10 +369,11 @@ main(){
         # download via network and extract
         installSoftware "curl" || return $?
         getVersion
-        if [[ $? == 0 ]] && [[ "$FORCE" != "1" ]]; then
+        RETVAL="$?"
+        if [[ $RETVAL == 0 ]] && [[ "$FORCE" != "1" ]]; then
             colorEcho ${GREEN} "Latest version ${NEW_VER} is already installed."
             return
-        elif [[ $? == 3 ]]; then
+        elif [[ $RETVAL == 3 ]]; then
             return 3
         else
             colorEcho ${BLUE} "Installing V2Ray ${NEW_VER} on ${ARCH}"
