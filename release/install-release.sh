@@ -92,7 +92,7 @@ downloadV2Ray(){
     rm -rf /tmp/v2ray
     mkdir -p /tmp/v2ray
     colorEcho ${BLUE} "Downloading V2Ray."
-    DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/v${NEW_VER}/v2ray-linux-${VDIS}.zip"
+    DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/${NEW_VER}/v2ray-linux-${VDIS}.zip"
     curl ${PROXY} -L -H "Cache-Control: no-cache" -o ${ZIPFILE} ${DOWNLOAD_LINK}
     if [ $? -ne 0 ];then
         colorEcho ${RED} "Failed to download! Please check your network or try again."
@@ -152,11 +152,11 @@ extract(){
 }
 
 
-# 1: new V2Ray. 0: no. 2: not installed. 3: check failed.
+# 1: new V2Ray. 0: no. 2: not installed. 3: check failed. 4: don't check.
 getVersion(){
     if [[ -n "$VERSION" ]]; then
-        NEW_VER="$VERSION"
-        return 1
+        NEW_VER="v$VERSION"
+        return 4
     else
         VER=`/usr/bin/v2ray/v2ray -version 2>/dev/null`
         RETVAL="$?"
@@ -210,7 +210,7 @@ startV2ray(){
 
 copyFile() {
     NAME=$1
-    ERROR=`cp "/tmp/v2ray/v2ray-v${NEW_VER}-linux-${VDIS}/${NAME}" "/usr/bin/v2ray/${NAME}" 2>&1`
+    ERROR=`cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/${NAME}" "/usr/bin/v2ray/${NAME}" 2>&1`
     if [[ $? -ne 0 ]]; then
         colorEcho ${YELLOW} "${ERROR}"
         return 2
