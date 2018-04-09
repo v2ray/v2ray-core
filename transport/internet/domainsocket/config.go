@@ -1,6 +1,10 @@
 package domainsocket
 
-import "net"
+import (
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/net"
+	"v2ray.com/core/transport/internet"
+)
 
 func (c *Config) GetUnixAddr() (*net.UnixAddr, error) {
 	path := c.Path
@@ -14,4 +18,10 @@ func (c *Config) GetUnixAddr() (*net.UnixAddr, error) {
 		Name: path,
 		Net:  "unix",
 	}, nil
+}
+
+func init() {
+	common.Must(internet.RegisterProtocolConfigCreator(internet.TransportProtocol_DomainSocket, func() interface{} {
+		return new(Config)
+	}))
 }

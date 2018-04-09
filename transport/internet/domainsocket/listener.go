@@ -7,6 +7,7 @@ import (
 	"strings"
 	"syscall"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
@@ -121,4 +122,8 @@ func (fl *fileLocker) Release() {
 	if err := os.Remove(fl.path); err != nil {
 		newError("failed to remove file: ", fl.path).Base(err).WriteToLog()
 	}
+}
+
+func init() {
+	common.Must(internet.RegisterTransportListener(internet.TransportProtocol_DomainSocket, Listen))
 }

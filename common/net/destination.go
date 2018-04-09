@@ -18,6 +18,9 @@ func DestinationFromAddr(addr net.Addr) Destination {
 		return TCPDestination(IPAddress(addr.IP), Port(addr.Port))
 	case *net.UDPAddr:
 		return UDPDestination(IPAddress(addr.IP), Port(addr.Port))
+	case *net.UnixAddr:
+		// TODO: deal with Unix domain socket
+		return TCPDestination(LocalHostIP, Port(9))
 	default:
 		panic("Net: Unknown address type.")
 	}
