@@ -210,7 +210,7 @@ startV2ray(){
 
 copyFile() {
     NAME=$1
-    ERROR=`cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/${NAME}" "/usr/bin/v2ray/${NAME}" 2>&1`
+    ERROR=`cp "/tmp/v2ray/v2ray-v${NEW_VER}-linux-${VDIS}/${NAME}" "/usr/bin/v2ray/${NAME}" 2>&1`
     if [[ $? -ne 0 ]]; then
         colorEcho ${YELLOW} "${ERROR}"
         return 2
