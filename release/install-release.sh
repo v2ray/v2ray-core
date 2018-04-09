@@ -152,19 +152,22 @@ extract(){
 }
 
 
-# 1: new V2Ray. 0: no. 3: Check failed.
+# 1: new V2Ray. 0: no. 2: not installed. 3: check failed.
 getVersion(){
     if [[ -n "$VERSION" ]]; then
         NEW_VER="$VERSION"
         return 1
     else
-        CUR_VER=`/usr/bin/v2ray/v2ray -version 2>/dev/null | head -n 1 | cut -d " " -f2`
+        VER=`/usr/bin/v2ray/v2ray -version 2>/dev/null`
+        RETVAL="$?"
+        CUR_VER=`echo $VER | head -n 1 | cut -d " " -f2`
         TAG_URL="https://api.github.com/repos/v2ray/v2ray-core/releases/latest"
         NEW_VER=`curl ${PROXY} -s ${TAG_URL} --connect-timeout 10| grep 'tag_name' | cut -d\" -f4`
-
         if [[ $? -ne 0 ]] || [[ $NEW_VER == "" ]]; then
             colorEcho ${RED} "Network error! Please check your network or try again."
             return 3
+        elif [[ $RETVAL -ne 0 ]];then
+            return 2
         elif [[ "$NEW_VER" != "$CUR_VER" ]];then
             return 1
         fi
@@ -331,12 +334,16 @@ remove(){
 
 checkUpdate(){
     echo "Checking for update."
+    VERSION=""
     getVersion
     RETVAL="$?"
     if [[ $RETVAL -eq 1 ]]; then
         colorEcho ${GREEN} "Found new version ${NEW_VER} for V2Ray."
     elif [[ $RETVAL -eq 0 ]]; then
         colorEcho ${GREEN} "No new version."
+    elif [[ $RETVAL -eq 2 ]]; then
+        colorEcho ${RED} "No V2Ray installed."
+        colorEcho ${GREEN} "The newest version for V2Ray is ${NEW_VER}."
     fi
     return 0
 }
