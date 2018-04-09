@@ -48,4 +48,7 @@ import (
 
 	// JSON config format
 	_ "v2ray.com/core/main/json"
+
+	// Load config from file or http(s)
+	_ "v2ray.com/core/main/confloader/external"
 )
