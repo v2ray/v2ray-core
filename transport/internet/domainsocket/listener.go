@@ -68,7 +68,9 @@ func (ln *Listener) Addr() net.Addr {
 }
 
 func (ln *Listener) Close() error {
-	ln.locker.Release()
+	if ln.locker != nil {
+		ln.locker.Release()
+	}
 	return ln.ln.Close()
 }
 
