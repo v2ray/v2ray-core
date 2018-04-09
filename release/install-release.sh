@@ -163,6 +163,7 @@ getVersion(){
         NEW_VER=`curl ${PROXY} -s ${TAG_URL} --connect-timeout 10| grep 'tag_name' | cut -d\" -f4`
 
         if [[ $? -ne 0 ]] || [[ $NEW_VER == "" ]]; then
+            colorEcho ${RED} "Network error! Please check your network or try again."
             return 3
         elif [[ "$NEW_VER" != "$CUR_VER" ]];then
             return 1
@@ -334,7 +335,6 @@ checkUpdate(){
             colorEcho ${GREEN} "Found new version ${NEW_VER} for V2Ray."
             return
         elif [[ $? -eq 3 ]]; then
-            colorEcho ${RED} "Network error! Please check your network or try again."
             return 3
         else 
             colorEcho ${GREEN} "No new version."
@@ -374,7 +374,6 @@ main(){
             colorEcho ${GREEN} "Latest version ${NEW_VER} is already installed."
             return
         elif [[ $? == 3 ]]; then
-            colorEcho ${RED} "Network error! Please check your network or try again."
             return 3
         else
             colorEcho ${BLUE} "Installing V2Ray ${NEW_VER} on ${ARCH}"
