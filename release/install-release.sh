@@ -92,7 +92,7 @@ downloadV2Ray(){
     rm -rf /tmp/v2ray
     mkdir -p /tmp/v2ray
     colorEcho ${BLUE} "Downloading V2Ray."
-    DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/${NEW_VER}/v2ray-linux-${VDIS}.zip"
+    DOWNLOAD_LINK="https://github.com/v2ray/v2ray-core/releases/download/v${NEW_VER}/v2ray-linux-${VDIS}.zip"
     curl ${PROXY} -L -H "Cache-Control: no-cache" -o ${ZIPFILE} ${DOWNLOAD_LINK}
     if [ $? -ne 0 ];then
         colorEcho ${RED} "Failed to download! Please check your network or try again."
@@ -338,9 +338,9 @@ checkUpdate(){
     getVersion
     RETVAL="$?"
     if [[ $RETVAL -eq 1 ]]; then
-        colorEcho ${GREEN} "Found new version ${NEW_VER} for V2Ray."
+        colorEcho ${GREEN} "Found new version ${NEW_VER} for V2Ray.(Current version:$CUR_VER)"
     elif [[ $RETVAL -eq 0 ]]; then
-        colorEcho ${GREEN} "No new version."
+        colorEcho ${GREEN} "No new version. Current version is ${NEW_VER}."
     elif [[ $RETVAL -eq 2 ]]; then
         colorEcho ${RED} "No V2Ray installed."
         colorEcho ${GREEN} "The newest version for V2Ray is ${NEW_VER}."
@@ -382,12 +382,13 @@ main(){
             return
         elif [[ $RETVAL == 3 ]]; then
             return 3
-        else
-            colorEcho ${BLUE} "Installing V2Ray ${NEW_VER} on ${ARCH}"
-            downloadV2Ray || return $?
-            installSoftware unzip || return $?
-            extract ${ZIPFILE} || return $?
+        elif [[ $RETVAL == 1 ]]; then
+            colorEcho ${GREEN} "Found new version ${NEW_VER} for V2Ray.(Current version:$CUR_VER)"
         fi
+    colorEcho ${BLUE} "Installing V2Ray ${NEW_VER} on ${ARCH}"
+    downloadV2Ray || return $?
+    installSoftware unzip || return $?
+    extract ${ZIPFILE} || return $?
     fi 
     if pgrep "v2ray" > /dev/null ; then
         V2RAY_RUNNING=1
