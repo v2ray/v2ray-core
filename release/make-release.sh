@@ -33,6 +33,13 @@ echo "Pushing changes"
 git push --follow-tags
 popd
 
+pushd $GOPATH/src/v2ray.com/ext
+echo "Adding a new tag: " "v$VER" "to ext"
+git tag -s -a "v$VER" -m "Version ${VER}"
+echo "Pushing changes to ext"
+git push --follow-tags
+popd
+
 echo "Launching build machine."
 DIR="$(dirname "$0")"
 RAND="$(openssl rand -hex 5)"
