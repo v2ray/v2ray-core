@@ -15,6 +15,7 @@ var (
 	globalSessionCache = tls.NewLRUClientSessionCache(128)
 )
 
+// ParseCertificate converts a cert.Certificate to Certificate.
 func ParseCertificate(c *cert.Certificate) *Certificate {
 	certPEM, keyPEM := c.ToPEM()
 	return &Certificate{
