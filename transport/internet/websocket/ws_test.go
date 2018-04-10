@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"v2ray.com/core/common/net"
-	tlsgen "v2ray.com/core/testing/tls"
+	"v2ray.com/core/common/protocol/tls/cert"
 	"v2ray.com/core/transport/internet"
-	v2tls "v2ray.com/core/transport/internet/tls"
+	"v2ray.com/core/transport/internet/tls"
 	. "v2ray.com/core/transport/internet/websocket"
 	. "v2ray.com/ext/assert"
 )
@@ -109,9 +109,9 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 	ctx := internet.ContextWithTransportSettings(context.Background(), &Config{
 		Path: "wss",
 	})
-	ctx = internet.ContextWithSecuritySettings(ctx, &v2tls.Config{
+	ctx = internet.ContextWithSecuritySettings(ctx, &tls.Config{
 		AllowInsecure: true,
-		Certificate:   []*v2tls.Certificate{tlsgen.GenerateCertificateForTest()},
+		Certificate:   []*tls.Certificate{tls.ParseCertificate(cert.MustGenerate(nil, cert.CommonName("localhost")))},
 	})
 	listen, err := ListenWS(ctx, net.DomainAddress("localhost"), 13143, func(conn internet.Connection) {
 		go func() {

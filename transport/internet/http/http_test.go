@@ -9,8 +9,8 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol/tls/cert"
 	"v2ray.com/core/testing/servers/tcp"
-	tlsgen "v2ray.com/core/testing/tls"
 	"v2ray.com/core/transport/internet"
 	. "v2ray.com/core/transport/internet/http"
 	"v2ray.com/core/transport/internet/tls"
@@ -24,7 +24,7 @@ func TestHTTPConnection(t *testing.T) {
 
 	lctx := context.Background()
 	lctx = internet.ContextWithSecuritySettings(lctx, &tls.Config{
-		Certificate: []*tls.Certificate{tlsgen.GenerateCertificateForTest()},
+		Certificate: []*tls.Certificate{tls.ParseCertificate(cert.MustGenerate(nil, cert.CommonName("www.v2ray.com")))},
 	})
 	lctx = internet.ContextWithTransportSettings(lctx, &Config{})
 

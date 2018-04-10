@@ -12,6 +12,14 @@ message Certificate {
 
   // TLS key in x509 format.
   bytes Key = 2;
+
+  enum Usage {
+    ENCIPHERMENT = 0;
+    AUTHORITY_VERIFY = 1;
+    AUTHORITY_ISSUE = 2;
+  }
+
+  Usage usage = 3;
 }
 
 message Config {
