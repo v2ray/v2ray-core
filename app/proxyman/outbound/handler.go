@@ -76,15 +76,13 @@ func (h *Handler) Tag() string {
 // Dispatch implements proxy.Outbound.Dispatch.
 func (h *Handler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
 	if h.mux != nil {
-		err := h.mux.Dispatch(ctx, outboundRay)
-		if err != nil {
+		if err := h.mux.Dispatch(ctx, outboundRay); err != nil {
 			newError("failed to process outbound traffic").Base(err).WithContext(ctx).WriteToLog()
 			outboundRay.OutboundOutput().CloseError()
 		}
 	} else {
-		err := h.proxy.Process(ctx, outboundRay, h)
-		// Ensure outbound ray is properly closed.
-		if err != nil {
+		if err := h.proxy.Process(ctx, outboundRay, h); err != nil {
+			// Ensure outbound ray is properly closed.
 			newError("failed to process outbound traffic").Base(err).WithContext(ctx).WriteToLog()
 			outboundRay.OutboundOutput().CloseError()
 		} else {
