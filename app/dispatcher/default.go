@@ -39,7 +39,7 @@ func NewDefaultDispatcher(ctx context.Context, config *Config) (*DefaultDispatch
 	}
 
 	if err := v.RegisterFeature((*core.Dispatcher)(nil), d); err != nil {
-		return nil, newError("unable to register Dispatcher")
+		return nil, newError("unable to register Dispatcher").Base(err)
 	}
 	return d, nil
 }
