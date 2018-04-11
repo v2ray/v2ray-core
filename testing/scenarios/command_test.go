@@ -532,7 +532,7 @@ func TestCommanderStats(t *testing.T) {
 		Reset_: true,
 	})
 	assert(err, IsNil)
-	assert(sresp.Stat.Value, Equals, int64(10240*1024))
+	assert(sresp.Stat.Value, GreaterThan, int64(10240*1024))
 
 	CloseAllServers(servers)
 }
