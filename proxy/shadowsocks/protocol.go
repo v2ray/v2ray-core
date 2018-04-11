@@ -138,8 +138,7 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (buf.Wri
 	if account.Cipher.IVSize() > 0 {
 		iv = make([]byte, account.Cipher.IVSize())
 		common.Must2(rand.Read(iv))
-		_, err = writer.Write(iv)
-		if err != nil {
+		if _, err = writer.Write(iv); err != nil {
 			return nil, newError("failed to write IV")
 		}
 	}
@@ -186,8 +185,7 @@ func ReadTCPResponse(user *protocol.User, reader io.Reader) (buf.Reader, error) 
 	var iv []byte
 	if account.Cipher.IVSize() > 0 {
 		iv = make([]byte, account.Cipher.IVSize())
-		_, err = io.ReadFull(reader, iv)
-		if err != nil {
+		if _, err = io.ReadFull(reader, iv); err != nil {
 			return nil, newError("failed to read IV").Base(err)
 		}
 	}
@@ -207,8 +205,7 @@ func WriteTCPResponse(request *protocol.RequestHeader, writer io.Writer) (buf.Wr
 	if account.Cipher.IVSize() > 0 {
 		iv = make([]byte, account.Cipher.IVSize())
 		common.Must2(rand.Read(iv))
-		_, err = writer.Write(iv)
-		if err != nil {
+		if _, err = writer.Write(iv); err != nil {
 			return nil, newError("failed to write IV.").Base(err)
 		}
 	}

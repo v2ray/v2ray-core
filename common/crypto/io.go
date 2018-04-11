@@ -4,6 +4,7 @@ import (
 	"crypto/cipher"
 	"io"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 )
 
@@ -50,6 +51,7 @@ func (w *CryptionWriter) Write(data []byte) (int, error) {
 	return w.writer.Write(data)
 }
 
+// WriteMultiBuffer implements buf.Writer.
 func (w *CryptionWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	defer mb.Release()
 
@@ -57,6 +59,5 @@ func (w *CryptionWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	for _, b := range bs {
 		w.stream.XORKeyStream(b, b)
 	}
-	_, err := bs.WriteTo(w.writer)
-	return err
+	return common.Error2(bs.WriteTo(w.writer))
 }

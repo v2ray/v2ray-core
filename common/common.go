@@ -16,3 +16,8 @@ func Must2(v interface{}, err error) interface{} {
 	Must(err)
 	return v
 }
+
+// Error2 returns the err from the 2nd parameter.
+func Error2(v interface{}, err error) error {
+	return err
+}

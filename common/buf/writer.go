@@ -3,6 +3,7 @@ package buf
 import (
 	"io"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 )
 
@@ -23,8 +24,7 @@ func (w *BufferToBytesWriter) WriteMultiBuffer(mb MultiBuffer) error {
 	defer mb.Release()
 
 	bs := mb.ToNetBuffers()
-	_, err := bs.WriteTo(w.Writer)
-	return err
+	return common.Error2(bs.WriteTo(w.Writer))
 }
 
 // ReadFrom implements io.ReaderFrom.
@@ -52,8 +52,7 @@ func NewBufferedWriter(writer Writer) *BufferedWriter {
 
 // WriteByte implements io.ByteWriter.
 func (w *BufferedWriter) WriteByte(c byte) error {
-	_, err := w.Write([]byte{c})
-	return err
+	return common.Error2(w.Write([]byte{c}))
 }
 
 // Write implements io.Writer.

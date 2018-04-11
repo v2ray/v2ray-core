@@ -12,6 +12,16 @@ func executeAndFulfill(f func() error, done chan<- error) {
 	close(done)
 }
 
+// Execute runs a list of tasks sequentially, returns the first error encountered or nil if all tasks pass.
+func Execute(tasks ...func() error) error {
+	for _, task := range tasks {
+		if err := task(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // ExecuteAsync executes a function asynchronously and return its result.
 func ExecuteAsync(f func() error) <-chan error {
 	done := make(chan error, 1)

@@ -113,8 +113,7 @@ func (r *AuthenticationReader) readSize() (int32, error) {
 		return s, nil
 	}
 	sizeBytes := make([]byte, r.sizeParser.SizeBytes())
-	_, err := io.ReadFull(r.reader, sizeBytes)
-	if err != nil {
+	if _, err := io.ReadFull(r.reader, sizeBytes); err != nil {
 		return 0, err
 	}
 	size, err := r.sizeParser.Decode(sizeBytes)

@@ -94,9 +94,7 @@ func ParseString(str string) (UUID, error) {
 			text = text[1:]
 		}
 
-		_, err := hex.Decode(b[:byteGroup/2], text[:byteGroup])
-
-		if err != nil {
+		if _, err := hex.Decode(b[:byteGroup/2], text[:byteGroup]); err != nil {
 			return uuid, err
 		}
 

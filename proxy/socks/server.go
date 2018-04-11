@@ -122,8 +122,7 @@ func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispa
 func (*Server) handleUDP(c io.Reader) error {
 	// The TCP connection closes after this method returns. We need to wait until
 	// the client closes it.
-	_, err := io.Copy(buf.DiscardBytes, c)
-	return err
+	return common.Error2(io.Copy(buf.DiscardBytes, c))
 }
 
 func (s *Server) transport(ctx context.Context, reader io.Reader, writer io.Writer, dest net.Destination, dispatcher core.Dispatcher) error {
