@@ -34,7 +34,6 @@ func (h *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	// Sleep a little here to make sure the response is sent to client.
 	time.Sleep(time.Second)
 	outboundRay.OutboundOutput().CloseError()
-	time.Sleep(time.Second * 2)
 	return nil
 }
 
