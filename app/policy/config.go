@@ -67,3 +67,12 @@ func (p *Policy) ToCorePolicy() core.Policy {
 	}
 	return cp
 }
+
+func (p *SystemPolicy) ToCorePolicy() core.SystemPolicy {
+	return core.SystemPolicy{
+		Stats: core.SystemStatsPolicy{
+			InboundUplink:   p.Stats.InboundUplink,
+			InboundDownlink: p.Stats.InboundDownlink,
+		},
+	}
+}

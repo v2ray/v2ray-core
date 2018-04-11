@@ -52,18 +52,6 @@ func (*DefaultDispatcher) Start() error {
 // Close implements common.Closable.
 func (*DefaultDispatcher) Close() error { return nil }
 
-func (d *DefaultDispatcher) getStatCounter(name string) core.StatCounter {
-	c := d.stats.GetCounter(name)
-	if c != nil {
-		return c
-	}
-	c, err := d.stats.RegisterCounter(name)
-	if err != nil {
-		return nil
-	}
-	return c
-}
-
 func (d *DefaultDispatcher) getRayOption(user *protocol.User) []ray.Option {
 	var rayOptions []ray.Option
 
@@ -71,13 +59,13 @@ func (d *DefaultDispatcher) getRayOption(user *protocol.User) []ray.Option {
 		p := d.policy.ForLevel(user.Level)
 		if p.Stats.UserUplink {
 			name := "user>>>" + user.Email + ">>>traffic>>>uplink"
-			if c := d.getStatCounter(name); c != nil {
+			if c, _ := core.GetOrRegisterStatCounter(d.stats, name); c != nil {
 				rayOptions = append(rayOptions, ray.WithUplinkStatCounter(c))
 			}
 		}
 		if p.Stats.UserDownlink {
 			name := "user>>>" + user.Email + ">>>traffic>>>downlink"
-			if c := d.getStatCounter(name); c != nil {
+			if c, _ := core.GetOrRegisterStatCounter(d.stats, name); c != nil {
 				rayOptions = append(rayOptions, ray.WithDownlinkStatCounter(c))
 			}
 		}

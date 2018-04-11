@@ -27,6 +27,17 @@ type StatsPolicy struct {
 	UserDownlink bool
 }
 
+type SystemStatsPolicy struct {
+	// Whether or not to enable stat counter for uplink traffic in inbound handlers.
+	InboundUplink bool
+	// Whether or not to enable stat counter for downlink traffic in inbound handlers.
+	InboundDownlink bool
+}
+
+type SystemPolicy struct {
+	Stats SystemStatsPolicy
+}
+
 // Policy is session based settings for controlling V2Ray requests. It contains various settings (or limits) that may differ for different users in the context.
 type Policy struct {
 	Timeouts TimeoutPolicy // Timeout settings
@@ -39,6 +50,9 @@ type PolicyManager interface {
 
 	// ForLevel returns the Policy for the given user level.
 	ForLevel(level uint32) Policy
+
+	// ForSystem returns the Policy for V2Ray system.
+	ForSystem() SystemPolicy
 }
 
 // DefaultPolicy returns the Policy when user is not specified.
@@ -47,8 +61,8 @@ func DefaultPolicy() Policy {
 		Timeouts: TimeoutPolicy{
 			Handshake:      time.Second * 4,
 			ConnectionIdle: time.Second * 300,
-			UplinkOnly:     time.Second * 5,
-			DownlinkOnly:   time.Second * 30,
+			UplinkOnly:     time.Second * 2,
+			DownlinkOnly:   time.Second * 5,
 		},
 		Stats: StatsPolicy{
 			UserUplink:   false,

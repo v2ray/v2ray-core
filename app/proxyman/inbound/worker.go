@@ -7,13 +7,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"v2ray.com/core/common/session"
-
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
@@ -29,14 +28,16 @@ type worker interface {
 }
 
 type tcpWorker struct {
-	address      net.Address
-	port         net.Port
-	proxy        proxy.Inbound
-	stream       *internet.StreamConfig
-	recvOrigDest bool
-	tag          string
-	dispatcher   core.Dispatcher
-	sniffers     []proxyman.KnownProtocols
+	address         net.Address
+	port            net.Port
+	proxy           proxy.Inbound
+	stream          *internet.StreamConfig
+	recvOrigDest    bool
+	tag             string
+	dispatcher      core.Dispatcher
+	sniffers        []proxyman.KnownProtocols
+	uplinkCounter   core.StatCounter
+	downlinkCounter core.StatCounter
 
 	hub internet.Listener
 }
@@ -62,6 +63,13 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 	ctx = proxy.ContextWithSource(ctx, net.DestinationFromAddr(conn.RemoteAddr()))
 	if len(w.sniffers) > 0 {
 		ctx = proxyman.ContextWithProtocolSniffers(ctx, w.sniffers)
+	}
+	if w.uplinkCounter != nil || w.downlinkCounter != nil {
+		conn = &internet.StatCouterConnection{
+			Connection: conn,
+			Uplink:     w.uplinkCounter,
+			Downlink:   w.downlinkCounter,
+		}
 	}
 	if err := w.proxy.Process(ctx, net.Network_TCP, conn, w.dispatcher); err != nil {
 		newError("connection ends").Base(err).WithContext(ctx).WriteToLog()
@@ -108,6 +116,8 @@ type udpConn struct {
 	remote           net.Addr
 	local            net.Addr
 	done             *signal.Done
+	uplink           core.StatCounter
+	downlink         core.StatCounter
 }
 
 func (c *udpConn) updateActivity() {
@@ -119,7 +129,11 @@ func (c *udpConn) Read(buf []byte) (int, error) {
 	case in := <-c.input:
 		defer in.Release()
 		c.updateActivity()
-		return copy(buf, in.Bytes()), nil
+		nBytes := copy(buf, in.Bytes())
+		if c.uplink != nil {
+			c.uplink.Add(int64(nBytes))
+		}
+		return nBytes, nil
 	case <-c.done.C():
 		return 0, io.EOF
 	}
@@ -128,6 +142,9 @@ func (c *udpConn) Read(buf []byte) (int, error) {
 // Write implements io.Writer.
 func (c *udpConn) Write(buf []byte) (int, error) {
 	n, err := c.output(buf)
+	if c.downlink != nil {
+		c.downlink.Add(int64(n))
+	}
 	if err == nil {
 		c.updateActivity()
 	}
@@ -167,13 +184,15 @@ type connID struct {
 type udpWorker struct {
 	sync.RWMutex
 
-	proxy        proxy.Inbound
-	hub          *udp.Hub
-	address      net.Address
-	port         net.Port
-	recvOrigDest bool
-	tag          string
-	dispatcher   core.Dispatcher
+	proxy           proxy.Inbound
+	hub             *udp.Hub
+	address         net.Address
+	port            net.Port
+	recvOrigDest    bool
+	tag             string
+	dispatcher      core.Dispatcher
+	uplinkCounter   core.StatCounter
+	downlinkCounter core.StatCounter
 
 	done       *signal.Done
 	activeConn map[connID]*udpConn
@@ -200,7 +219,9 @@ func (w *udpWorker) getConnection(id connID) (*udpConn, bool) {
 			IP:   w.address.IP(),
 			Port: int(w.port),
 		},
-		done: signal.NewDone(),
+		done:     signal.NewDone(),
+		uplink:   w.uplinkCounter,
+		downlink: w.downlinkCounter,
 	}
 	w.activeConn[id] = conn
 

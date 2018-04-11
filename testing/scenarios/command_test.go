@@ -395,10 +395,16 @@ func TestCommanderStats(t *testing.T) {
 						},
 					},
 				},
+				System: &policy.SystemPolicy{
+					Stats: &policy.SystemPolicy_Stats{
+						InboundUplink: true,
+					},
+				},
 			}),
 		},
 		Inbound: []*core.InboundHandlerConfig{
 			{
+				Tag: "vmess",
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange: net.SinglePortRange(serverPort),
 					Listen:    net.NewIPOrDomain(net.LocalHostIP),
@@ -520,6 +526,13 @@ func TestCommanderStats(t *testing.T) {
 	assert(err, IsNil)
 	assert(sresp.Stat.Name, Equals, name)
 	assert(sresp.Stat.Value, Equals, int64(0))
+
+	sresp, err = sClient.GetStats(context.Background(), &statscmd.GetStatsRequest{
+		Name:   "inbound>>>vmess>>>traffic>>>uplink",
+		Reset_: true,
+	})
+	assert(err, IsNil)
+	assert(sresp.Stat.Value, Equals, int64(10240*1024))
 
 	CloseAllServers(servers)
 }
