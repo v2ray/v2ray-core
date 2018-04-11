@@ -104,7 +104,7 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)
 
-	requestDone := signal.ExecuteAsync(func() error {
+	requestDone := func() error {
 		defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
 
 		writer := buf.NewBufferedWriter(buf.NewWriter(conn))
@@ -140,9 +140,9 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		}
 
 		return nil
-	})
+	}
 
-	responseDone := signal.ExecuteAsync(func() error {
+	responseDone := func() error {
 		defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
 		reader := buf.NewBufferedReader(buf.NewReader(conn))
@@ -156,9 +156,9 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		bodyReader := session.DecodeResponseBody(request, reader)
 
 		return buf.Copy(bodyReader, output, buf.UpdateActivity(timer))
-	})
+	}
 
-	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
+	if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
 		return newError("connection ends").Base(err)
 	}
 

@@ -172,7 +172,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 		return err
 	}
 
-	responseDone := signal.ExecuteAsync(func() error {
+	responseDone := func() error {
 		defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
 		bufferedWriter := buf.NewBufferedWriter(buf.NewWriter(conn))
@@ -200,9 +200,9 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 		}
 
 		return nil
-	})
+	}
 
-	requestDone := signal.ExecuteAsync(func() error {
+	requestDone := func() error {
 		defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
 		defer ray.InboundInput().Close()
 
@@ -211,9 +211,9 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 		}
 
 		return nil
-	})
+	}
 
-	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
+	if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
 		ray.InboundInput().CloseError()
 		ray.InboundOutput().CloseError()
 		return newError("connection ends").Base(err)

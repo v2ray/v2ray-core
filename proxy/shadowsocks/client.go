@@ -105,12 +105,12 @@ func (c *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 			return err
 		}
 
-		requestDone := signal.ExecuteAsync(func() error {
+		requestDone := func() error {
 			defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
 			return buf.Copy(outboundRay.OutboundInput(), bodyWriter, buf.UpdateActivity(timer))
-		})
+		}
 
-		responseDone := signal.ExecuteAsync(func() error {
+		responseDone := func() error {
 			defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
 			responseReader, err := ReadTCPResponse(user, conn)
@@ -119,9 +119,9 @@ func (c *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 			}
 
 			return buf.Copy(responseReader, outboundRay.OutboundOutput(), buf.UpdateActivity(timer))
-		})
+		}
 
-		if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
+		if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
 			return newError("connection ends").Base(err)
 		}
 
@@ -135,16 +135,16 @@ func (c *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 			Request: request,
 		})
 
-		requestDone := signal.ExecuteAsync(func() error {
+		requestDone := func() error {
 			defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
 
 			if err := buf.Copy(outboundRay.OutboundInput(), writer, buf.UpdateActivity(timer)); err != nil {
 				return newError("failed to transport all UDP request").Base(err)
 			}
 			return nil
-		})
+		}
 
-		responseDone := signal.ExecuteAsync(func() error {
+		responseDone := func() error {
 			defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
 			reader := &UDPReader{
@@ -156,9 +156,9 @@ func (c *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 				return newError("failed to transport all UDP response").Base(err)
 			}
 			return nil
-		})
+		}
 
-		if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
+		if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
 			return newError("connection ends").Base(err)
 		}
 

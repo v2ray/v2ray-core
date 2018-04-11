@@ -130,9 +130,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 		}
 	}
 
-	requestDone := signal.ExecuteAsync(requestFunc)
-	responseDone := signal.ExecuteAsync(responseFunc)
-	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
+	if err := signal.ExecuteParallel(ctx, requestFunc, responseFunc); err != nil {
 		return newError("connection ends").Base(err)
 	}
 

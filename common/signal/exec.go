@@ -4,14 +4,6 @@ import (
 	"context"
 )
 
-func executeAndFulfill(f func() error, done chan<- error) {
-	err := f()
-	if err != nil {
-		done <- err
-	}
-	close(done)
-}
-
 // Execute runs a list of tasks sequentially, returns the first error encountered or nil if all tasks pass.
 func Execute(tasks ...func() error) error {
 	for _, task := range tasks {
@@ -22,35 +14,34 @@ func Execute(tasks ...func() error) error {
 	return nil
 }
 
-// ExecuteAsync executes a function asynchronously and return its result.
-func ExecuteAsync(f func() error) <-chan error {
+// ExecuteParallel executes a list of tasks asynchronously, returns the first error encountered or nil if all tasks pass.
+func ExecuteParallel(ctx context.Context, tasks ...func() error) error {
+	n := len(tasks)
+	s := NewSemaphore(n)
 	done := make(chan error, 1)
-	go executeAndFulfill(f, done)
-	return done
-}
 
-func ErrorOrFinish1(ctx context.Context, c <-chan error) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case err := <-c:
-		return err
+	for _, task := range tasks {
+		<-s.Wait()
+		go func(f func() error) {
+			if err := f(); err != nil {
+				select {
+				case done <- err:
+				default:
+				}
+			}
+			s.Signal()
+		}(task)
 	}
-}
 
-func ErrorOrFinish2(ctx context.Context, c1, c2 <-chan error) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case err := <-c1:
-		if err != nil {
+	for i := 0; i < n; i++ {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case err := <-done:
 			return err
+		case <-s.Wait():
 		}
-		return ErrorOrFinish1(ctx, c2)
-	case err := <-c2:
-		if err != nil {
-			return err
-		}
-		return ErrorOrFinish1(ctx, c1)
 	}
+
+	return nil
 }

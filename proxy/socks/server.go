@@ -137,7 +137,7 @@ func (s *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 
-	requestDone := signal.ExecuteAsync(func() error {
+	requestDone := func() error {
 		defer timer.SetTimeout(s.policy().Timeouts.DownlinkOnly)
 		defer input.Close()
 
@@ -147,9 +147,9 @@ func (s *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 		}
 
 		return nil
-	})
+	}
 
-	responseDone := signal.ExecuteAsync(func() error {
+	responseDone := func() error {
 		defer timer.SetTimeout(s.policy().Timeouts.UplinkOnly)
 
 		v2writer := buf.NewWriter(writer)
@@ -158,9 +158,9 @@ func (s *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 		}
 
 		return nil
-	})
+	}
 
-	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
+	if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
 		input.CloseError()
 		output.CloseError()
 		return newError("connection ends").Base(err)

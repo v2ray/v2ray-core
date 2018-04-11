@@ -182,15 +182,15 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		reader = nil
 	}
 
-	requestDone := signal.ExecuteAsync(func() error {
+	requestDone := func() error {
 		defer ray.InboundInput().Close()
 		defer timer.SetTimeout(s.policy().Timeouts.DownlinkOnly)
 
 		v2reader := buf.NewReader(conn)
 		return buf.Copy(v2reader, ray.InboundInput(), buf.UpdateActivity(timer))
-	})
+	}
 
-	responseDone := signal.ExecuteAsync(func() error {
+	responseDone := func() error {
 		defer timer.SetTimeout(s.policy().Timeouts.UplinkOnly)
 
 		v2writer := buf.NewWriter(conn)
@@ -199,9 +199,9 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		}
 
 		return nil
-	})
+	}
 
-	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
+	if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
 		ray.InboundInput().CloseError()
 		ray.InboundOutput().CloseError()
 		return newError("connection ends").Base(err)
@@ -251,7 +251,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 
 	var result error = errWaitAnother
 
-	requestDone := signal.ExecuteAsync(func() error {
+	requestDone := func() error {
 		request.Header.Set("Connection", "close")
 
 		requestWriter := buf.NewBufferedWriter(ray.InboundInput())
@@ -260,9 +260,9 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 			return newError("failed to write whole request").Base(err).AtWarning()
 		}
 		return nil
-	})
+	}
 
-	responseDone := signal.ExecuteAsync(func() error {
+	responseDone := func() error {
 		responseReader := bufio.NewReaderSize(buf.NewBufferedReader(ray.InboundOutput()), buf.Size)
 		response, err := http.ReadResponse(responseReader, request)
 		if err == nil {
@@ -296,9 +296,9 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 			return newError("failed to write response").Base(err).AtWarning()
 		}
 		return nil
-	})
+	}
 
-	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
+	if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
 		input.CloseError()
 		output.CloseError()
 		return newError("connection ends").Base(err)

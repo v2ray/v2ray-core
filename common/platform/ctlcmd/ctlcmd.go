@@ -39,16 +39,16 @@ func Run(args []string, input io.Reader) (buf.MultiBuffer, error) {
 	}
 
 	var content buf.MultiBuffer
-	loadTask := signal.ExecuteAsync(func() error {
+	loadTask := func() error {
 		c, err := buf.ReadAllToMultiBuffer(stdoutReader)
 		if err != nil {
 			return err
 		}
 		content = c
 		return nil
-	})
+	}
 
-	waitTask := signal.ExecuteAsync(func() error {
+	waitTask := func() error {
 		if err := cmd.Wait(); err != nil {
 			msg := "failed to execute v2ctl"
 			if errBuffer.Len() > 0 {
@@ -57,9 +57,9 @@ func Run(args []string, input io.Reader) (buf.MultiBuffer, error) {
 			return newError(msg).Base(err)
 		}
 		return nil
-	})
+	}
 
-	if err := signal.ErrorOrFinish2(context.Background(), loadTask, waitTask); err != nil {
+	if err := signal.ExecuteParallel(context.Background(), loadTask, waitTask); err != nil {
 		return nil, err
 	}
 

@@ -109,7 +109,7 @@ func (h *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, h.policy().Timeouts.ConnectionIdle)
 
-	requestDone := signal.ExecuteAsync(func() error {
+	requestDone := func() error {
 		defer timer.SetTimeout(h.policy().Timeouts.DownlinkOnly)
 
 		var writer buf.Writer
@@ -123,9 +123,9 @@ func (h *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		}
 
 		return nil
-	})
+	}
 
-	responseDone := signal.ExecuteAsync(func() error {
+	responseDone := func() error {
 		defer timer.SetTimeout(h.policy().Timeouts.UplinkOnly)
 
 		v2reader := buf.NewReader(conn)
@@ -134,9 +134,9 @@ func (h *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		}
 
 		return nil
-	})
+	}
 
-	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
+	if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
 		input.CloseError()
 		output.CloseError()
 		return newError("connection ends").Base(err)

@@ -280,12 +280,12 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	input := ray.InboundInput()
 	output := ray.InboundOutput()
 
-	requestDone := signal.ExecuteAsync(func() error {
+	requestDone := func() error {
 		defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
 		return transferRequest(timer, session, request, reader, input)
-	})
+	}
 
-	responseDone := signal.ExecuteAsync(func() error {
+	responseDone := func() error {
 		writer := buf.NewBufferedWriter(buf.NewWriter(connection))
 		defer writer.Flush()
 		defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
@@ -294,9 +294,9 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 			Command: h.generateCommand(ctx, request),
 		}
 		return transferResponse(timer, session, request, response, output, writer)
-	})
+	}
 
-	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
+	if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
 		input.CloseError()
 		output.CloseError()
 		return newError("connection ends").Base(err)
