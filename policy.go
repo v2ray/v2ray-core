@@ -91,6 +91,17 @@ func (m *syncPolicyManager) ForLevel(level uint32) Policy {
 	return m.PolicyManager.ForLevel(level)
 }
 
+func (m *syncPolicyManager) ForSystem() SystemPolicy {
+	m.RLock()
+	defer m.RUnlock()
+
+	if m.PolicyManager == nil {
+		return SystemPolicy{}
+	}
+
+	return m.PolicyManager.ForSystem()
+}
+
 func (m *syncPolicyManager) Start() error {
 	m.RLock()
 	defer m.RUnlock()
