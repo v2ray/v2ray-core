@@ -159,7 +159,7 @@ extract(){
 # 1: new V2Ray. 0: no. 2: not installed. 3: check failed. 4: don't check.
 getVersion(){
     if [[ -n "$VERSION" ]]; then
-        NEW_VER="v$VERSION"
+        NEW_VER="$VERSION"
         return 4
     else
         VER=`/usr/bin/v2ray/v2ray -version 2>/dev/null`
@@ -280,7 +280,7 @@ Help(){
     echo "  -h, --help            Show help"
     echo "  -p, --proxy           To download through a proxy server, use -p socks5://127.0.0.1:1080 or -p http://127.0.0.1:3128 etc"
     echo "  -f, --force           Force install"
-    echo "      --version         Install a particular version, use --version 3.15"
+    echo "      --version         Install a particular version, use --version v3.15"
     echo "  -l, --local           Install from a local file"
     echo "      --remove          Remove installed V2Ray"
     echo "  -c, --check           Check for update"
