@@ -230,22 +230,22 @@ installV2Ray(){
     copyFile geosite.dat false
 
     # Install V2Ray server config to /etc/v2ray
-    mkdir -p /etc/v2ray
     if [[ ! -f "/etc/v2ray/config.json" ]]; then
-      cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/vpoint_vmess_freedom.json" "/etc/v2ray/config.json"
-      if [[ $? -ne 0 ]]; then
-          colorEcho ${YELLOW} "Create V2Ray configuration file error, pleases create it manually."
-          return 1
-      fi
-      let PORT=$RANDOM+10000
-      UUID=$(cat /proc/sys/kernel/random/uuid)
+        mkdir -p /etc/v2ray
+        cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/vpoint_vmess_freedom.json" "/etc/v2ray/config.json"
+        if [[ $? -ne 0 ]]; then
+            colorEcho ${YELLOW} "Create V2Ray configuration file error, pleases create it manually."
+            return 1
+        fi
+        let PORT=$RANDOM+10000
+        UUID=$(cat /proc/sys/kernel/random/uuid)
 
-      sed -i "s/10086/${PORT}/g" "/etc/v2ray/config.json"
-      sed -i "s/23ad6b10-8d1a-40f7-8ad0-e3e35cd38297/${UUID}/g" "/etc/v2ray/config.json"
+        sed -i "s/10086/${PORT}/g" "/etc/v2ray/config.json"
+        sed -i "s/23ad6b10-8d1a-40f7-8ad0-e3e35cd38297/${UUID}/g" "/etc/v2ray/config.json"
 
-      colorEcho ${GREEN} "PORT:${PORT}"
-      colorEcho ${GREEN} "UUID:${UUID}"
-      mkdir -p /var/log/v2ray
+        colorEcho ${GREEN} "PORT:${PORT}"
+        colorEcho ${GREEN} "UUID:${UUID}"
+        mkdir -p /var/log/v2ray
     fi
     return 0
 }
