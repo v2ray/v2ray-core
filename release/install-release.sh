@@ -388,7 +388,7 @@ main(){
         V2RAY_RUNNING=1
         stopV2ray
     fi
-    installV2Ray || return $?
+    installV2Ray
     installInitScript || return $?
     if [[ ${V2RAY_RUNNING} -eq 1 ]];then
         colorEcho ${BLUE} "Restarting V2Ray service."
