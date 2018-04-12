@@ -156,21 +156,24 @@ extract(){
 }
 
 
-# 1: new V2Ray. 0: no
+# 1: new V2Ray. 0: no. 2: not installed. 3: check failed. 4: don't check.
 getVersion(){
     if [[ -n "$VERSION" ]]; then
-        NEW_VER="$VERSION"
-        return 1
+        NEW_VER="v$VERSION"
+        return 4
     else
-        CUR_VER=`/usr/bin/v2ray/v2ray -version 2>/dev/null | head -n 1 | cut -d " " -f2`
+        VER=`/usr/bin/v2ray/v2ray -version 2>/dev/null`
+        RETVAL="$?"
+        CUR_VER=`echo $VER | head -n 1 | cut -d " " -f2`
         TAG_URL="https://api.github.com/repos/v2ray/v2ray-core/releases/latest"
         NEW_VER=`curl ${PROXY} -s ${TAG_URL} --connect-timeout 10| grep 'tag_name' | cut -d\" -f4`
-
         if [[ $? -ne 0 ]] || [[ $NEW_VER == "" ]]; then
             colorEcho ${RED} "Network error! Please check your network or try again."
-            exit
+            return 3
+        elif [[ $RETVAL -ne 0 ]];then
+            return 2
         elif [[ "$NEW_VER" != "$CUR_VER" ]];then
-                return 1
+            return 1
         fi
         return 0
     fi
@@ -230,22 +233,22 @@ installV2Ray(){
     copyFile geosite.dat false
 
     # Install V2Ray server config to /etc/v2ray
-    mkdir -p /etc/v2ray
     if [[ ! -f "/etc/v2ray/config.json" ]]; then
-      cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/vpoint_vmess_freedom.json" "/etc/v2ray/config.json"
-      if [[ $? -ne 0 ]]; then
-          colorEcho ${YELLOW} "Create V2Ray configuration file error, pleases create it manually."
-          return 1
-      fi
-      let PORT=$RANDOM+10000
-      UUID=$(cat /proc/sys/kernel/random/uuid)
+        mkdir -p /etc/v2ray
+        cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/vpoint_vmess_freedom.json" "/etc/v2ray/config.json"
+        if [[ $? -ne 0 ]]; then
+            colorEcho ${YELLOW} "Create V2Ray configuration file error, pleases create it manually."
+            return 1
+        fi
+        let PORT=$RANDOM+10000
+        UUID=$(cat /proc/sys/kernel/random/uuid)
 
-      sed -i "s/10086/${PORT}/g" "/etc/v2ray/config.json"
-      sed -i "s/23ad6b10-8d1a-40f7-8ad0-e3e35cd38297/${UUID}/g" "/etc/v2ray/config.json"
+        sed -i "s/10086/${PORT}/g" "/etc/v2ray/config.json"
+        sed -i "s/23ad6b10-8d1a-40f7-8ad0-e3e35cd38297/${UUID}/g" "/etc/v2ray/config.json"
 
-      colorEcho ${GREEN} "PORT:${PORT}"
-      colorEcho ${GREEN} "UUID:${UUID}"
-      mkdir -p /var/log/v2ray
+        colorEcho ${GREEN} "PORT:${PORT}"
+        colorEcho ${GREEN} "UUID:${UUID}"
+        mkdir -p /var/log/v2ray
     fi
     return 0
 }
@@ -335,22 +338,26 @@ remove(){
 }
 
 checkUpdate(){
-        echo "Checking for update."
-        getVersion
-        if [[ $? -eq 1 ]]; then
-            colorEcho ${GREEN} "Found new version ${NEW_VER} for V2Ray."
-            exit 
-        else 
-            colorEcho ${GREEN} "No new version."
-            exit
-        fi
+    echo "Checking for update."
+    VERSION=""
+    getVersion
+    RETVAL="$?"
+    if [[ $RETVAL -eq 1 ]]; then
+        colorEcho ${GREEN} "Found new version ${NEW_VER} for V2Ray.(Current version:$CUR_VER)"
+    elif [[ $RETVAL -eq 0 ]]; then
+        colorEcho ${GREEN} "No new version. Current version is ${NEW_VER}."
+    elif [[ $RETVAL -eq 2 ]]; then
+        colorEcho ${RED} "No V2Ray installed."
+        colorEcho ${GREEN} "The newest version for V2Ray is ${NEW_VER}."
+    fi
+    return 0
 }
 
 main(){
     #helping information
     [[ "$HELP" == "1" ]] && Help
-    [[ "$CHECK" == "1" ]] && checkUpdate
     [[ "$REMOVE" == "1" ]] && remove
+    [[ "$CHECK" == "1" ]] && checkUpdate && return
     
     sysArch
     # extract local file
@@ -374,15 +381,19 @@ main(){
         # download via network and extract
         installSoftware "curl"
         getVersion
-        if [[ $? == 0 ]] && [[ "$FORCE" != "1" ]]; then
+        RETVAL="$?"
+        if [[ $RETVAL == 0 ]] && [[ "$FORCE" != "1" ]]; then
             colorEcho ${GREEN} "Latest version ${NEW_VER} is already installed."
-            exit
-        else
-            colorEcho ${BLUE} "Installing V2Ray ${NEW_VER} on ${ARCH}"
-            downloadV2Ray
-            installSoftware unzip
-            extract ${ZIPFILE}
+            return
+        elif [[ $RETVAL == 3 ]]; then
+            return 3
+        elif [[ $RETVAL == 1 ]]; then
+            colorEcho ${GREEN} "Found new version ${NEW_VER} for V2Ray.(Current version:$CUR_VER)"
         fi
+    colorEcho ${BLUE} "Installing V2Ray ${NEW_VER} on ${ARCH}"
+    downloadV2Ray || return $?
+    installSoftware unzip || return $?
+    extract ${ZIPFILE} || return $?
     fi 
     if pgrep "v2ray" > /dev/null ; then
         V2RAY_RUNNING=1
