@@ -210,6 +210,7 @@ copyFile() {
         colorEcho ${YELLOW} "${ERROR}"
         return 2
     fi
+    return 0
 }
 
 makeExecutable() {
