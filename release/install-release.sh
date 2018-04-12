@@ -99,7 +99,6 @@ downloadV2Ray(){
         colorEcho ${RED} "Failed to download! Please check your network or try again."
         return 3
     fi
-    return 0
 }
 
 installSoftware(){
