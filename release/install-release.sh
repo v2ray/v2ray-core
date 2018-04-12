@@ -97,7 +97,7 @@ downloadV2Ray(){
     curl ${PROXY} -L -H "Cache-Control: no-cache" -o ${ZIPFILE} ${DOWNLOAD_LINK}
     if [ $? != 0 ];then
         colorEcho ${RED} "Failed to download! Please check your network or try again."
-        return 3
+        exit 1
     fi
     return 0
 }
@@ -111,7 +111,7 @@ installSoftware(){
     getPMT
     if [[ $? -eq 1 ]]; then
         colorEcho $YELLOW "The system package manager tool isn't APT or YUM, please install ${COMPONENT} manually."
-        return 2 
+        exit 
     fi
     colorEcho $GREEN "Installing $COMPONENT" 
     if [[ $SOFTWARE_UPDATED -eq 0 ]]; then
@@ -124,7 +124,7 @@ installSoftware(){
     $CMD_INSTALL $COMPONENT
     if [[ $? -ne 0 ]]; then
         colorEcho ${RED} "Install ${COMPONENT} fail, please install it manually."
-        return 2
+        exit
     fi
     return 0
 }
@@ -150,7 +150,7 @@ extract(){
     unzip $1 -d "/tmp/v2ray/"
     if [[ $? -ne 0 ]]; then
         colorEcho ${RED} "Extracting V2Ray failed!"
-        return 2
+        exit
     fi
     return 0
 }
@@ -264,7 +264,7 @@ installInitScript(){
         fi
         return
     elif [[ -n "${SERVICE_CMD}" ]] && [[ ! -f "/etc/init.d/v2ray" ]]; then
-        installSoftware "daemon" || return $?
+        installSoftware "daemon"
         cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/systemv/v2ray" "/etc/init.d/v2ray"
         chmod +x "/etc/init.d/v2ray"
         update-rc.d v2ray defaults
@@ -281,6 +281,7 @@ Help(){
     echo "  -l, --local           Install from a local file"
     echo "      --remove          Remove installed V2Ray"
     echo "  -c, --check           Check for update"
+    exit  
 }
 
 remove(){
@@ -294,11 +295,11 @@ remove(){
         rm -rf "/usr/bin/v2ray" "/etc/systemd/system/v2ray.service"
         if [[ $? -ne 0 ]]; then
             colorEcho ${RED} "Failed to remove V2Ray."
-            return 0
+            exit
         else
             colorEcho ${GREEN} "Removed V2Ray successfully."
             colorEcho ${GREEN} "If necessary, please remove configuration file and log file manually."
-            return
+            exit
         fi
     elif [[ -n "${SYSTEMCTL_CMD}" ]] && [[ -f "/lib/systemd/system/v2ray.service" ]];then
         if pgrep "v2ray" > /dev/null ; then
@@ -308,11 +309,11 @@ remove(){
         rm -rf "/usr/bin/v2ray" "/lib/systemd/system/v2ray.service"
         if [[ $? -ne 0 ]]; then
             colorEcho ${RED} "Failed to remove V2Ray."
-            return 0
+            exit
         else
             colorEcho ${GREEN} "Removed V2Ray successfully."
             colorEcho ${GREEN} "If necessary, please remove configuration file and log file manually."
-            return
+            exit
         fi
     elif [[ -n "${SERVICE_CMD}" ]] && [[ -f "/etc/init.d/v2ray" ]]; then
         if pgrep "v2ray" > /dev/null ; then
@@ -321,15 +322,15 @@ remove(){
         rm -rf "/usr/bin/v2ray" "/etc/init.d/v2ray"
         if [[ $? -ne 0 ]]; then
             colorEcho ${RED} "Failed to remove V2Ray."
-            return 0
+            exit
         else
             colorEcho ${GREEN} "Removed V2Ray successfully."
             colorEcho ${GREEN} "If necessary, please remove configuration file and log file manually."
-            return
+            exit
         fi       
     else
         colorEcho ${GREEN} "V2Ray not found."
-        return 0
+        exit
     fi
 }
 
@@ -347,31 +348,31 @@ checkUpdate(){
 
 main(){
     #helping information
+    [[ "$HELP" == "1" ]] && Help
     [[ "$CHECK" == "1" ]] && checkUpdate
-    [[ "$HELP" == "1" ]] && Help && return
-    [[ "$REMOVE" == "1" ]] && remove && return
+    [[ "$REMOVE" == "1" ]] && remove
     
     sysArch
     # extract local file
     if [[ $LOCAL_INSTALL -eq 1 ]]; then
         echo "Install V2Ray via local file"
-        installSoftware unzip || return $?
+        installSoftware unzip
         rm -rf /tmp/v2ray
-        extract $LOCAL || return $?
+        extract $LOCAL
         FILEVDIS=`ls /tmp/v2ray |grep v2ray-v |cut -d "-" -f4`
         SYSTEM=`ls /tmp/v2ray |grep v2ray-v |cut -d "-" -f3`
         if [[ ${SYSTEM} != "linux" ]]; then
             colorEcho $RED "The local V2Ray can not be installed in linux."
-            return 1
+            exit
         elif [[ ${FILEVDIS} != ${VDIS} ]]; then
             colorEcho $RED "The local V2Ray can not be installed in ${ARCH} system."
-            return 1
+            exit
         else
             NEW_VER=`ls /tmp/v2ray |grep v2ray-v |cut -d "-" -f2`
         fi
     else
         # download via network and extract
-        installSoftware "curl" || return $?
+        installSoftware "curl"
         getVersion
         if [[ $? == 0 ]] && [[ "$FORCE" != "1" ]]; then
             colorEcho ${GREEN} "Latest version ${NEW_VER} is already installed."
@@ -387,11 +388,12 @@ main(){
         V2RAY_RUNNING=1
         stopV2ray
     fi
-    installV2Ray || return $?
-    installInitScript || return $?
+    installV2Ray
+    installInitScript
     if [[ ${V2RAY_RUNNING} -eq 1 ]];then
         colorEcho ${BLUE} "Restarting V2Ray service."
-        startV2ray || return $?
+        startV2ray
+
     fi
     colorEcho ${GREEN} "V2Ray ${NEW_VER} is installed."
     rm -rf /tmp/v2ray
