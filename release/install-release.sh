@@ -281,7 +281,6 @@ Help(){
     echo "  -l, --local           Install from a local file"
     echo "      --remove          Remove installed V2Ray"
     echo "  -c, --check           Check for update"
-    exit  
 }
 
 remove(){
