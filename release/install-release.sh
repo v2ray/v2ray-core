@@ -186,7 +186,10 @@ stopV2ray(){
     elif [[ -n "${SERVICE_CMD}" ]] || [[ -f "/etc/init.d/v2ray" ]]; then
         ${SERVICE_CMD} v2ray stop
     fi
-    return 0
+    if [[ $? -ne 0 ]]; then
+        colorEcho ${RED} "Failed to shutdown V2Ray service."
+        return 2
+    fi
 }
 
 startV2ray(){
@@ -200,7 +203,10 @@ startV2ray(){
     elif [ -n "${SERVICE_CMD}" ] && [ -f "/etc/init.d/v2ray" ]; then
         ${SERVICE_CMD} v2ray start
     fi
-    return 0
+    if [[ $? -ne 0 ]]; then
+        colorEcho ${RED} "Failed to start V2Ray service."
+        return 2
+    fi
 }
 
 copyFile() {
