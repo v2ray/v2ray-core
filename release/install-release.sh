@@ -389,11 +389,12 @@ main(){
             return 3
         elif [[ $RETVAL == 1 ]]; then
             colorEcho ${GREEN} "Found new version ${NEW_VER} for V2Ray.(Current version:$CUR_VER)"
+        else
+            colorEcho ${BLUE} "Installing V2Ray ${NEW_VER} on ${ARCH}"
+            downloadV2Ray || return $?
+            installSoftware unzip || return $?
+            extract ${ZIPFILE} || return $?
         fi
-    colorEcho ${BLUE} "Installing V2Ray ${NEW_VER} on ${ARCH}"
-    downloadV2Ray || return $?
-    installSoftware unzip || return $?
-    extract ${ZIPFILE} || return $?
     fi 
     if pgrep "v2ray" > /dev/null ; then
         V2RAY_RUNNING=1
