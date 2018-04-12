@@ -3,6 +3,11 @@
 # This file is accessible as https://install.direct/go.sh
 # Original source is located at github.com/v2ray/v2ray-core/release/install-release.sh
 
+# If not specify, default meaning of return value:
+# 1: System error
+# 2: Application error
+# 3: Network error
+
 CUR_VER=""
 NEW_VER=""
 ARCH=""
