@@ -399,8 +399,6 @@ main(){
             return
         elif [[ $RETVAL == 3 ]]; then
             return 3
-        elif [[ $RETVAL == 1 ]]; then
-            colorEcho ${GREEN} "Found new version ${NEW_VER} for V2Ray.(Current version:$CUR_VER)"
         else
             colorEcho ${BLUE} "Installing V2Ray ${NEW_VER} on ${ARCH}"
             downloadV2Ray || return $?
