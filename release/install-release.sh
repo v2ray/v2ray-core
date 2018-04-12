@@ -373,9 +373,9 @@ main(){
             exit
         else
             colorEcho ${BLUE} "Installing V2Ray ${NEW_VER} on ${ARCH}"
-            downloadV2Ray
-            installSoftware unzip
-            extract ${ZIPFILE}
+            downloadV2Ray || return $?
+            installSoftware unzip || return $?
+            extract ${ZIPFILE} || return $?
         fi
     fi 
     if pgrep "v2ray" > /dev/null ; then
@@ -386,7 +386,7 @@ main(){
     installInitScript || return $?
     if [[ ${V2RAY_RUNNING} -eq 1 ]];then
         colorEcho ${BLUE} "Restarting V2Ray service."
-        startV2ray || return $?
+        startV2ray
     fi
     colorEcho ${GREEN} "V2Ray ${NEW_VER} is installed."
     rm -rf /tmp/v2ray
