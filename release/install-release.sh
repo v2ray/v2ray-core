@@ -289,7 +289,7 @@ remove(){
         rm -rf "/usr/bin/v2ray" "/etc/systemd/system/v2ray.service"
         if [[ $? -ne 0 ]]; then
             colorEcho ${RED} "Failed to remove V2Ray."
-            return
+            return 0
         else
             colorEcho ${GREEN} "Removed V2Ray successfully."
             colorEcho ${GREEN} "If necessary, please remove configuration file and log file manually."
@@ -303,7 +303,7 @@ remove(){
         rm -rf "/usr/bin/v2ray" "/lib/systemd/system/v2ray.service"
         if [[ $? -ne 0 ]]; then
             colorEcho ${RED} "Failed to remove V2Ray."
-            return
+            return 0
         else
             colorEcho ${GREEN} "Removed V2Ray successfully."
             colorEcho ${GREEN} "If necessary, please remove configuration file and log file manually."
@@ -316,7 +316,7 @@ remove(){
         rm -rf "/usr/bin/v2ray" "/etc/init.d/v2ray"
         if [[ $? -ne 0 ]]; then
             colorEcho ${RED} "Failed to remove V2Ray."
-            return
+            return 0
         else
             colorEcho ${GREEN} "Removed V2Ray successfully."
             colorEcho ${GREEN} "If necessary, please remove configuration file and log file manually."
