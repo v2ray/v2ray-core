@@ -348,8 +348,8 @@ checkUpdate(){
 
 main(){
     #helping information
-    [[ "$CHECK" == "1" ]] && checkUpdate
     [[ "$HELP" == "1" ]] && Help && return
+    [[ "$CHECK" == "1" ]] && checkUpdate
     [[ "$REMOVE" == "1" ]] && remove && return
     
     sysArch
