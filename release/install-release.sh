@@ -190,6 +190,7 @@ stopV2ray(){
         colorEcho ${RED} "Failed to shutdown V2Ray service."
         return 2
     fi
+    return 0
 }
 
 startV2ray(){
@@ -207,6 +208,7 @@ startV2ray(){
         colorEcho ${RED} "Failed to start V2Ray service."
         return 2
     fi
+    return 0
 }
 
 copyFile() {
