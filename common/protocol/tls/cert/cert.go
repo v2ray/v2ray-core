@@ -78,6 +78,12 @@ func KeyUsage(usage x509.KeyUsage) Option {
 	}
 }
 
+func Organization(org string) Option {
+	return func(c *x509.Certificate) {
+		c.Subject.Organization = []string{org}
+	}
+}
+
 func MustGenerate(parent *Certificate, opts ...Option) *Certificate {
 	cert, err := Generate(parent, opts...)
 	common.Must(err)
