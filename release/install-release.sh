@@ -4,6 +4,7 @@
 # Original source is located at github.com/v2ray/v2ray-core/release/install-release.sh
 
 # If not specify, default meaning of return value:
+# 0: Success
 # 1: System error
 # 2: Application error
 # 3: Network error
@@ -116,7 +117,7 @@ installSoftware(){
     getPMT
     if [[ $? -eq 1 ]]; then
         colorEcho $YELLOW "The system package manager tool isn't APT or YUM, please install ${COMPONENT} manually."
-        return 2 
+        return 1 
     fi
     colorEcho $GREEN "Installing $COMPONENT" 
     if [[ $SOFTWARE_UPDATED -eq 0 ]]; then
@@ -129,7 +130,7 @@ installSoftware(){
     $CMD_INSTALL $COMPONENT
     if [[ $? -ne 0 ]]; then
         colorEcho ${RED} "Install ${COMPONENT} fail, please install it manually."
-        return 2
+        return 1
     fi
     return 0
 }
@@ -224,7 +225,7 @@ copyFile() {
     ERROR=`cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/${NAME}" "/usr/bin/v2ray/${NAME}" 2>&1`
     if [[ $? -ne 0 ]]; then
         colorEcho ${YELLOW} "${ERROR}"
-        return 2
+        return 1
     fi
     return 0
 }
@@ -367,7 +368,7 @@ checkUpdate(){
 main(){
     #helping information
     [[ "$HELP" == "1" ]] && Help && return
-    [[ "$CHECK" == "1" ]] && checkUpdate
+    [[ "$CHECK" == "1" ]] && checkUpdate && return
     [[ "$REMOVE" == "1" ]] && remove && return
     
     sysArch
