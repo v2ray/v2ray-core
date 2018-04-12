@@ -125,7 +125,6 @@ installSoftware(){
         colorEcho ${RED} "Install ${COMPONENT} fail, please install it manually."
         return 2
     fi
-    return 0
 }
 
 # return 1: not apt or yum
@@ -139,7 +138,6 @@ getPMT(){
     else
         return 1
     fi
-    return 0
 }
 
 
@@ -151,7 +149,6 @@ extract(){
         colorEcho ${RED} "Extracting V2Ray failed!"
         return 2
     fi
-    return 0
 }
 
 
@@ -246,7 +243,6 @@ installV2Ray(){
       colorEcho ${GREEN} "UUID:${UUID}"
       mkdir -p /var/log/v2ray
     fi
-    return 0
 }
 
 
