@@ -3,6 +3,11 @@
 # This file is accessible as https://install.direct/go.sh
 # Original source is located at github.com/v2ray/v2ray-core/release/install-release.sh
 
+# If not specify, default meaning of return value:
+# 1: System error
+# 2: Application error
+# 3: Network error
+
 CUR_VER=""
 NEW_VER=""
 ARCH=""
@@ -186,6 +191,10 @@ stopV2ray(){
     elif [[ -n "${SERVICE_CMD}" ]] || [[ -f "/etc/init.d/v2ray" ]]; then
         ${SERVICE_CMD} v2ray stop
     fi
+    if [[ $? -ne 0 ]]; then
+        colorEcho ${RED} "Failed to shutdown V2Ray service."
+        return 2
+    fi
     return 0
 }
 
@@ -199,6 +208,10 @@ startV2ray(){
         ${SYSTEMCTL_CMD} start v2ray
     elif [ -n "${SERVICE_CMD}" ] && [ -f "/etc/init.d/v2ray" ]; then
         ${SERVICE_CMD} v2ray start
+    fi
+    if [[ $? -ne 0 ]]; then
+        colorEcho ${RED} "Failed to start V2Ray service."
+        return 2
     fi
     return 0
 }
