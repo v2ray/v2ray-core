@@ -2,6 +2,7 @@ package buf_test
 
 import (
 	"crypto/rand"
+	"io"
 	"testing"
 
 	"v2ray.com/core/common"
@@ -47,4 +48,11 @@ func TestMultiBufferSliceBySizeLarge(t *testing.T) {
 
 	mb2 := mb.SliceBySize(4 * 1024)
 	assert(mb2.Len(), Equals, int32(4*1024))
+}
+
+func TestInterface(t *testing.T) {
+	assert := With(t)
+
+	assert((*MultiBuffer)(nil), Implements, (*io.WriterTo)(nil))
+	assert((*MultiBuffer)(nil), Implements, (*io.ReaderFrom)(nil))
 }
