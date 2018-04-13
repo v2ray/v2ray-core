@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"runtime"
 	"time"
 
 	"v2ray.com/core/common/net"
@@ -27,7 +28,9 @@ func ParseCertificate(c *cert.Certificate) *Certificate {
 func (c *Config) GetCertPool() *x509.CertPool {
 	pool, err := x509.SystemCertPool()
 	if err != nil {
-		newError("failed to get system cert pool.").Base(err).WriteToLog()
+		if runtime.GOOS != "windows" {
+			newError("failed to get system cert pool.").Base(err).WriteToLog()
+		}
 		return nil
 	}
 	if pool != nil {
