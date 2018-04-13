@@ -3,6 +3,7 @@ package buf
 import (
 	"io"
 	"net"
+	"os"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
@@ -22,7 +23,7 @@ func ReadAllToMultiBuffer(reader io.Reader) (MultiBuffer, error) {
 			mb.Append(b)
 		}
 		if err != nil {
-			if errors.Cause(err) == io.EOF {
+			if errors.Cause(err) == io.EOF || errors.Cause(err) == os.ErrClosed {
 				return mb, nil
 			}
 			mb.Release()

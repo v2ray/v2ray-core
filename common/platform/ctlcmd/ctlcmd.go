@@ -16,7 +16,7 @@ import (
 func Run(args []string, input io.Reader) (buf.MultiBuffer, error) {
 	v2ctl := platform.GetToolLocation("v2ctl")
 	if _, err := os.Stat(v2ctl); err != nil {
-		return nil, err
+		return nil, newError("v2ctl doesn't exist").Base(err)
 	}
 
 	errBuffer := &buf.MultiBuffer{}
@@ -30,19 +30,19 @@ func Run(args []string, input io.Reader) (buf.MultiBuffer, error) {
 
 	stdoutReader, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, err
+		return nil, newError("failed to get stdout from v2ctl").Base(err)
 	}
 	defer stdoutReader.Close()
 
 	if err := cmd.Start(); err != nil {
-		return nil, err
+		return nil, newError("failed to start v2ctl").Base(err)
 	}
 
 	var content buf.MultiBuffer
 	loadTask := func() error {
 		c, err := buf.ReadAllToMultiBuffer(stdoutReader)
 		if err != nil {
-			return err
+			return newError("failed to read config").Base(err)
 		}
 		content = c
 		return nil

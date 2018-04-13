@@ -3,6 +3,7 @@ package errors // import "v2ray.com/core/common/errors"
 
 import (
 	"context"
+	"os"
 	"strings"
 
 	"v2ray.com/core/common/log"
@@ -162,12 +163,27 @@ func Cause(err error) error {
 	if err == nil {
 		return nil
 	}
+L:
 	for {
-		inner, ok := err.(hasInnerError)
-		if !ok || inner.Inner() == nil {
-			break
+		switch inner := err.(type) {
+		case hasInnerError:
+			if inner.Inner() == nil {
+				break L
+			}
+			err = inner.Inner()
+		case *os.PathError:
+			if inner.Err == nil {
+				break L
+			}
+			err = inner.Err
+		case *os.SyscallError:
+			if inner.Err == nil {
+				break L
+			}
+			err = inner.Err
+		default:
+			break L
 		}
-		err = inner.Inner()
 	}
 	return err
 }
