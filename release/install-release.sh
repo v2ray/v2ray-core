@@ -25,10 +25,10 @@ FORCE=""
 HELP=""
 
 #######color code########
-RED="31m"
-GREEN="32m"
-YELLOW="33m"
-BLUE="36m"
+RED="31m"      # Error message
+GREEN="32m"    # Success message
+YELLOW="33m"   # Warning message
+BLUE="36m"     # Info message
 
 
 #########################
@@ -116,10 +116,9 @@ installSoftware(){
 
     getPMT
     if [[ $? -eq 1 ]]; then
-        colorEcho $YELLOW "The system package manager tool isn't APT or YUM, please install ${COMPONENT} manually."
+        colorEcho ${RED} "The system package manager tool isn't APT or YUM, please install ${COMPONENT} manually."
         return 1 
     fi
-    colorEcho $GREEN "Installing $COMPONENT" 
     if [[ $SOFTWARE_UPDATED -eq 0 ]]; then
         colorEcho ${BLUE} "Updating software repo"
         $CMD_UPDATE      
@@ -196,7 +195,7 @@ stopV2ray(){
         ${SERVICE_CMD} v2ray stop
     fi
     if [[ $? -ne 0 ]]; then
-        colorEcho ${RED} "Failed to shutdown V2Ray service."
+        colorEcho ${YELLOW} "Failed to shutdown V2Ray service."
         return 2
     fi
     return 0
@@ -214,7 +213,7 @@ startV2ray(){
         ${SERVICE_CMD} v2ray start
     fi
     if [[ $? -ne 0 ]]; then
-        colorEcho ${RED} "Failed to start V2Ray service."
+        colorEcho ${YELLOW} "Failed to start V2Ray service."
         return 2
     fi
     return 0
@@ -247,6 +246,7 @@ installV2Ray(){
     # Install V2Ray server config to /etc/v2ray
     if [[ ! -f "/etc/v2ray/config.json" ]]; then
         mkdir -p /etc/v2ray
+        mkdir -p /var/log/v2ray
         cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/vpoint_vmess_freedom.json" "/etc/v2ray/config.json"
         if [[ $? -ne 0 ]]; then
             colorEcho ${YELLOW} "Create V2Ray configuration file error, pleases create it manually."
@@ -258,9 +258,8 @@ installV2Ray(){
         sed -i "s/10086/${PORT}/g" "/etc/v2ray/config.json"
         sed -i "s/23ad6b10-8d1a-40f7-8ad0-e3e35cd38297/${UUID}/g" "/etc/v2ray/config.json"
 
-        colorEcho ${GREEN} "PORT:${PORT}"
-        colorEcho ${GREEN} "UUID:${UUID}"
-        mkdir -p /var/log/v2ray
+        colorEcho ${BLUE} "PORT:${PORT}"
+        colorEcho ${BLUE} "UUID:${UUID}"
     fi
     return 0
 }
@@ -313,7 +312,7 @@ remove(){
             return 0
         else
             colorEcho ${GREEN} "Removed V2Ray successfully."
-            colorEcho ${GREEN} "If necessary, please remove configuration file and log file manually."
+            colorEcho ${BLUE} "If necessary, please remove configuration file and log file manually."
             return 0
         fi
     elif [[ -n "${SYSTEMCTL_CMD}" ]] && [[ -f "/lib/systemd/system/v2ray.service" ]];then
@@ -327,7 +326,7 @@ remove(){
             return 0
         else
             colorEcho ${GREEN} "Removed V2Ray successfully."
-            colorEcho ${GREEN} "If necessary, please remove configuration file and log file manually."
+            colorEcho ${BLUE} "If necessary, please remove configuration file and log file manually."
             return 0
         fi
     elif [[ -n "${SERVICE_CMD}" ]] && [[ -f "/etc/init.d/v2ray" ]]; then
@@ -340,11 +339,11 @@ remove(){
             return 0
         else
             colorEcho ${GREEN} "Removed V2Ray successfully."
-            colorEcho ${GREEN} "If necessary, please remove configuration file and log file manually."
+            colorEcho ${BLUE} "If necessary, please remove configuration file and log file manually."
             return 0
         fi       
     else
-        colorEcho ${GREEN} "V2Ray not found."
+        colorEcho ${YELLOW} "V2Ray not found."
         return 0
     fi
 }
@@ -355,12 +354,12 @@ checkUpdate(){
     getVersion
     RETVAL="$?"
     if [[ $RETVAL -eq 1 ]]; then
-        colorEcho ${GREEN} "Found new version ${NEW_VER} for V2Ray.(Current version:$CUR_VER)"
+        colorEcho ${BLUE} "Found new version ${NEW_VER} for V2Ray.(Current version:$CUR_VER)"
     elif [[ $RETVAL -eq 0 ]]; then
-        colorEcho ${GREEN} "No new version. Current version is ${NEW_VER}."
+        colorEcho ${BLUE} "No new version. Current version is ${NEW_VER}."
     elif [[ $RETVAL -eq 2 ]]; then
-        colorEcho ${RED} "No V2Ray installed."
-        colorEcho ${GREEN} "The newest version for V2Ray is ${NEW_VER}."
+        colorEcho ${YELLOW} "No V2Ray installed."
+        colorEcho ${BLUE} "The newest version for V2Ray is ${NEW_VER}."
     fi
     return 0
 }
@@ -381,10 +380,10 @@ main(){
         FILEVDIS=`ls /tmp/v2ray |grep v2ray-v |cut -d "-" -f4`
         SYSTEM=`ls /tmp/v2ray |grep v2ray-v |cut -d "-" -f3`
         if [[ ${SYSTEM} != "linux" ]]; then
-            colorEcho $RED "The local V2Ray can not be installed in linux."
+            colorEcho ${RED} "The local V2Ray can not be installed in linux."
             return 1
         elif [[ ${FILEVDIS} != ${VDIS} ]]; then
-            colorEcho $RED "The local V2Ray can not be installed in ${ARCH} system."
+            colorEcho ${RED} "The local V2Ray can not be installed in ${ARCH} system."
             return 1
         else
             NEW_VER=`ls /tmp/v2ray |grep v2ray-v |cut -d "-" -f2`
@@ -395,7 +394,7 @@ main(){
         getVersion
         RETVAL="$?"
         if [[ $RETVAL == 0 ]] && [[ "$FORCE" != "1" ]]; then
-            colorEcho ${GREEN} "Latest version ${NEW_VER} is already installed."
+            colorEcho ${BLUE} "Latest version ${NEW_VER} is already installed."
             return
         elif [[ $RETVAL == 3 ]]; then
             return 3
