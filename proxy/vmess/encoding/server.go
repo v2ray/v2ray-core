@@ -29,12 +29,14 @@ type sessionId struct {
 	nonce [16]byte
 }
 
+// SessionHistory keeps track of historical session ids, to prevent replay attacks.
 type SessionHistory struct {
 	sync.RWMutex
 	cache map[sessionId]time.Time
 	task  *signal.PeriodicTask
 }
 
+// NewSessionHistory creates a new SessionHistory object.
 func NewSessionHistory() *SessionHistory {
 	h := &SessionHistory{
 		cache: make(map[sessionId]time.Time, 128),
@@ -84,6 +86,7 @@ func (h *SessionHistory) removeExpiredEntries() {
 	}
 }
 
+// ServerSession keeps information for a session in VMess server.
 type ServerSession struct {
 	userValidator   *vmess.TimedUserValidator
 	sessionHistory  *SessionHistory
@@ -116,6 +119,7 @@ func parseSecurityType(b byte) protocol.SecurityType {
 	return protocol.SecurityType_UNKNOWN
 }
 
+// DecodeRequestHeader decodes and returns (if successful) a RequestHeader from an input stream.
 func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.RequestHeader, error) {
 	buffer := buf.New()
 	defer buffer.Release()
@@ -172,7 +176,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		if invalidRequestErr != nil {
 			randomLen := dice.Roll(64) + 1
 			// Read random number of bytes for prevent detection.
-			buffer.AppendSupplier(buf.ReadFullFrom(decryptor, int32(randomLen)))
+			common.Ignore(buffer.AppendSupplier(buf.ReadFullFrom(decryptor, int32(randomLen))), "Error doesn't matter")
 		}
 	}()
 
@@ -224,6 +228,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	return request, nil
 }
 
+// DecodeRequestBody returns Reader from which caller can fetch decrypted body.
 func (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reader io.Reader) buf.Reader {
 	var sizeParser crypto.ChunkSizeDecoder = crypto.PlainChunkSizeParser{}
 	if request.Option.Has(protocol.RequestOptionChunkMasking) {
@@ -282,11 +287,10 @@ func (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 	}
 }
 
+// EncodeResponseHeader writes encoded response header into the given writer.
 func (s *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, writer io.Writer) {
-	responseBodyKey := md5.Sum(s.requestBodyKey[:])
-	responseBodyIV := md5.Sum(s.requestBodyIV[:])
-	s.responseBodyKey = responseBodyKey
-	s.responseBodyIV = responseBodyIV
+	s.responseBodyKey = md5.Sum(s.requestBodyKey[:])
+	s.responseBodyIV = md5.Sum(s.requestBodyIV[:])
 
 	aesStream := crypto.NewAesEncryptionStream(s.responseBodyKey[:], s.responseBodyIV[:])
 	encryptionWriter := crypto.NewCryptionWriter(aesStream, writer)
@@ -299,6 +303,7 @@ func (s *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, wr
 	}
 }
 
+// EncodeResponseBody returns a Writer that auto-encrypt content written by caller.
 func (s *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writer io.Writer) buf.Writer {
 	var sizeParser crypto.ChunkSizeEncoder = crypto.PlainChunkSizeParser{}
 	if request.Option.Has(protocol.RequestOptionChunkMasking) {
