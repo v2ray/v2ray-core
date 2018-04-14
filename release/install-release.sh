@@ -20,6 +20,9 @@ CMD_INSTALL=""
 CMD_UPDATE=""
 SOFTWARE_UPDATED=0
 
+SYSTEMCTL_CMD=$(command -v systemctl 2>/dev/null)
+SERVICE_CMD=$(command -v service 2>/dev/null)
+
 CHECK=""
 FORCE=""
 HELP=""
@@ -185,9 +188,6 @@ getVersion(){
 }
 
 stopV2ray(){
-    SYSTEMCTL_CMD=$(command -v systemctl)
-    SERVICE_CMD=$(command -v service)
-
     colorEcho ${BLUE} "Shutting down V2Ray service."
     if [[ -n "${SYSTEMCTL_CMD}" ]] || [[ -f "/lib/systemd/system/v2ray.service" ]] || [[ -f "/etc/systemd/system/v2ray.service" ]]; then
         ${SYSTEMCTL_CMD} stop v2ray
@@ -202,9 +202,6 @@ stopV2ray(){
 }
 
 startV2ray(){
-    SYSTEMCTL_CMD=$(command -v systemctl)
-    SERVICE_CMD=$(command -v service)
-
     if [ -n "${SYSTEMCTL_CMD}" ] && [ -f "/lib/systemd/system/v2ray.service" ]; then
         ${SYSTEMCTL_CMD} start v2ray
     elif [ -n "${SYSTEMCTL_CMD}" ] && [ -f "/etc/systemd/system/v2ray.service" ]; then
@@ -266,9 +263,6 @@ installV2Ray(){
 
 
 installInitScript(){
-    SYSTEMCTL_CMD=$(command -v systemctl)
-    SERVICE_CMD=$(command -v service)
-
     if [[ -n "${SYSTEMCTL_CMD}" ]];then
         if [[ ! -f "/etc/systemd/system/v2ray.service" ]]; then
             if [[ ! -f "/lib/systemd/system/v2ray.service" ]]; then
@@ -299,8 +293,6 @@ Help(){
 }
 
 remove(){
-    SYSTEMCTL_CMD=$(command -v systemctl)
-    SERVICE_CMD=$(command -v service)
     if [[ -n "${SYSTEMCTL_CMD}" ]] && [[ -f "/etc/systemd/system/v2ray.service" ]];then
         if pgrep "v2ray" > /dev/null ; then
             stopV2ray
