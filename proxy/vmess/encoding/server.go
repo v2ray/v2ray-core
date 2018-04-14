@@ -85,19 +85,19 @@ func (h *SessionHistory) removeExpiredEntries() {
 }
 
 type ServerSession struct {
-	userValidator   protocol.UserValidator
+	userValidator   *vmess.TimedUserValidator
 	sessionHistory  *SessionHistory
-	requestBodyKey  []byte
-	requestBodyIV   []byte
-	responseBodyKey []byte
-	responseBodyIV  []byte
-	responseHeader  byte
+	requestBodyKey  [16]byte
+	requestBodyIV   [16]byte
+	responseBodyKey [16]byte
+	responseBodyIV  [16]byte
 	responseWriter  io.Writer
+	responseHeader  byte
 }
 
 // NewServerSession creates a new ServerSession, using the given UserValidator.
 // The ServerSession instance doesn't take ownership of the validator.
-func NewServerSession(validator protocol.UserValidator, sessionHistory *SessionHistory) *ServerSession {
+func NewServerSession(validator *vmess.TimedUserValidator, sessionHistory *SessionHistory) *ServerSession {
 	return &ServerSession{
 		userValidator:  validator,
 		sessionHistory: sessionHistory,
@@ -150,12 +150,12 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		Version: buffer.Byte(0),
 	}
 
-	s.requestBodyIV = append([]byte(nil), buffer.BytesRange(1, 17)...)   // 16 bytes
-	s.requestBodyKey = append([]byte(nil), buffer.BytesRange(17, 33)...) // 16 bytes
+	copy(s.requestBodyIV[:], buffer.BytesRange(1, 17))   // 16 bytes
+	copy(s.requestBodyKey[:], buffer.BytesRange(17, 33)) // 16 bytes
 	var sid sessionId
 	copy(sid.user[:], vmessAccount.ID.Bytes())
-	copy(sid.key[:], s.requestBodyKey)
-	copy(sid.nonce[:], s.requestBodyIV)
+	sid.key = s.requestBodyKey
+	sid.nonce = s.requestBodyIV
 	if !s.sessionHistory.addIfNotExits(sid) {
 		return nil, newError("duplicated session id, possibly under replay attack")
 	}
@@ -227,7 +227,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 func (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reader io.Reader) buf.Reader {
 	var sizeParser crypto.ChunkSizeDecoder = crypto.PlainChunkSizeParser{}
 	if request.Option.Has(protocol.RequestOptionChunkMasking) {
-		sizeParser = NewShakeSizeParser(s.requestBodyIV)
+		sizeParser = NewShakeSizeParser(s.requestBodyIV[:])
 	}
 	switch request.Security {
 	case protocol.SecurityType_NONE:
@@ -246,7 +246,7 @@ func (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 
 		return buf.NewReader(reader)
 	case protocol.SecurityType_LEGACY:
-		aesStream := crypto.NewAesDecryptionStream(s.requestBodyKey, s.requestBodyIV)
+		aesStream := crypto.NewAesDecryptionStream(s.requestBodyKey[:], s.requestBodyIV[:])
 		cryptionReader := crypto.NewCryptionReader(aesStream, reader)
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
 			auth := &crypto.AEADAuthenticator{
@@ -259,21 +259,21 @@ func (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 
 		return buf.NewReader(cryptionReader)
 	case protocol.SecurityType_AES128_GCM:
-		block, _ := aes.NewCipher(s.requestBodyKey)
+		block, _ := aes.NewCipher(s.requestBodyKey[:])
 		aead, _ := cipher.NewGCM(block)
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD:                    aead,
-			NonceGenerator:          GenerateChunkNonce(s.requestBodyIV, uint32(aead.NonceSize())),
+			NonceGenerator:          GenerateChunkNonce(s.requestBodyIV[:], uint32(aead.NonceSize())),
 			AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 		}
 		return crypto.NewAuthenticationReader(auth, sizeParser, reader, request.Command.TransferType())
 	case protocol.SecurityType_CHACHA20_POLY1305:
-		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(s.requestBodyKey))
+		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(s.requestBodyKey[:]))
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD:                    aead,
-			NonceGenerator:          GenerateChunkNonce(s.requestBodyIV, uint32(aead.NonceSize())),
+			NonceGenerator:          GenerateChunkNonce(s.requestBodyIV[:], uint32(aead.NonceSize())),
 			AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 		}
 		return crypto.NewAuthenticationReader(auth, sizeParser, reader, request.Command.TransferType())
@@ -283,12 +283,12 @@ func (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 }
 
 func (s *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, writer io.Writer) {
-	responseBodyKey := md5.Sum(s.requestBodyKey)
-	responseBodyIV := md5.Sum(s.requestBodyIV)
-	s.responseBodyKey = responseBodyKey[:]
-	s.responseBodyIV = responseBodyIV[:]
+	responseBodyKey := md5.Sum(s.requestBodyKey[:])
+	responseBodyIV := md5.Sum(s.requestBodyIV[:])
+	s.responseBodyKey = responseBodyKey
+	s.responseBodyIV = responseBodyIV
 
-	aesStream := crypto.NewAesEncryptionStream(s.responseBodyKey, s.responseBodyIV)
+	aesStream := crypto.NewAesEncryptionStream(s.responseBodyKey[:], s.responseBodyIV[:])
 	encryptionWriter := crypto.NewCryptionWriter(aesStream, writer)
 	s.responseWriter = encryptionWriter
 
@@ -302,7 +302,7 @@ func (s *ServerSession) EncodeResponseHeader(header *protocol.ResponseHeader, wr
 func (s *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writer io.Writer) buf.Writer {
 	var sizeParser crypto.ChunkSizeEncoder = crypto.PlainChunkSizeParser{}
 	if request.Option.Has(protocol.RequestOptionChunkMasking) {
-		sizeParser = NewShakeSizeParser(s.responseBodyIV)
+		sizeParser = NewShakeSizeParser(s.responseBodyIV[:])
 	}
 	switch request.Security {
 	case protocol.SecurityType_NONE:
@@ -332,21 +332,21 @@ func (s *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 
 		return buf.NewWriter(s.responseWriter)
 	case protocol.SecurityType_AES128_GCM:
-		block, _ := aes.NewCipher(s.responseBodyKey)
+		block, _ := aes.NewCipher(s.responseBodyKey[:])
 		aead, _ := cipher.NewGCM(block)
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD:                    aead,
-			NonceGenerator:          GenerateChunkNonce(s.responseBodyIV, uint32(aead.NonceSize())),
+			NonceGenerator:          GenerateChunkNonce(s.responseBodyIV[:], uint32(aead.NonceSize())),
 			AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 		}
 		return crypto.NewAuthenticationWriter(auth, sizeParser, writer, request.Command.TransferType())
 	case protocol.SecurityType_CHACHA20_POLY1305:
-		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(s.responseBodyKey))
+		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(s.responseBodyKey[:]))
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD:                    aead,
-			NonceGenerator:          GenerateChunkNonce(s.responseBodyIV, uint32(aead.NonceSize())),
+			NonceGenerator:          GenerateChunkNonce(s.responseBodyIV[:], uint32(aead.NonceSize())),
 			AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 		}
 		return crypto.NewAuthenticationWriter(auth, sizeParser, writer, request.Command.TransferType())

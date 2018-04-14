@@ -42,7 +42,7 @@ type indexTimePair struct {
 	timeInc uint32
 }
 
-func NewTimedUserValidator(hasher protocol.IDHash) protocol.UserValidator {
+func NewTimedUserValidator(hasher protocol.IDHash) *TimedUserValidator {
 	tuv := &TimedUserValidator{
 		users:    make([]*user, 0, 16),
 		userHash: make(map[[16]byte]indexTimePair, 1024),

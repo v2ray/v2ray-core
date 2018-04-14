@@ -97,7 +97,7 @@ func (v *userByEmail) Remove(email string) bool {
 type Handler struct {
 	policyManager         core.PolicyManager
 	inboundHandlerManager core.InboundHandlerManager
-	clients               protocol.UserValidator
+	clients               *vmess.TimedUserValidator
 	usersByEmail          *userByEmail
 	detours               *DetourConfig
 	sessionHistory        *encoding.SessionHistory
