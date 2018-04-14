@@ -10,6 +10,7 @@ import (
 	"v2ray.com/core/transport/ray"
 )
 
+// OutboundListener is a net.Listener for listening gRPC connections.
 type OutboundListener struct {
 	buffer chan net.Conn
 	done   *signal.Done
@@ -19,9 +20,9 @@ func (l *OutboundListener) add(conn net.Conn) {
 	select {
 	case l.buffer <- conn:
 	case <-l.done.C():
-		conn.Close()
+		common.Ignore(conn.Close(), "We can do nothing if Close() returns error.")
 	default:
-		conn.Close()
+		common.Ignore(conn.Close(), "We can do nothing if Close() returns error.")
 	}
 }
 
@@ -42,7 +43,7 @@ L:
 	for {
 		select {
 		case c := <-l.buffer:
-			c.Close()
+			common.Ignore(c.Close(), "We can do nothing if errored.")
 		default:
 			break L
 		}

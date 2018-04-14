@@ -73,12 +73,14 @@ func (c *Commander) Start() error {
 		}
 	}()
 
-	c.ohm.RemoveHandler(context.Background(), c.config.Tag)
-	c.ohm.AddHandler(context.Background(), &Outbound{
+	if err := c.ohm.RemoveHandler(context.Background(), c.config.Tag); err != nil {
+		newError("failed to remove existing handler").WriteToLog()
+	}
+
+	return c.ohm.AddHandler(context.Background(), &Outbound{
 		tag:      c.config.Tag,
 		listener: listener,
 	})
-	return nil
 }
 
 // Close implements common.Closable.

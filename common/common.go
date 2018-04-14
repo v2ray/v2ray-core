@@ -21,3 +21,6 @@ func Must2(v interface{}, err error) interface{} {
 func Error2(v interface{}, err error) error {
 	return err
 }
+
+// Ignore an error with reason, for lint purpose.
+func Ignore(err error, reason string) {}
