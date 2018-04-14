@@ -3,6 +3,7 @@ package platform_test
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	. "v2ray.com/core/common/platform"
@@ -52,7 +53,11 @@ func TestGetAssetLocation(t *testing.T) {
 	assert(filepath.Dir(loc), Equals, filepath.Dir(exec))
 
 	os.Setenv("v2ray.location.asset", "/v2ray")
-	assert(GetAssetLocation("t"), Equals, "/v2ray/t")
+	if runtime.GOOS == "windows" {
+		assert(GetAssetLocation("t"), Equals, "\\v2ray\\t")
+	} else {
+		assert(GetAssetLocation("t"), Equals, "/v2ray/t")
+	}
 }
 
 func TestGetPluginLocation(t *testing.T) {
