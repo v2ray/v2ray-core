@@ -233,10 +233,13 @@ makeExecutable() {
 installV2Ray(){
     # Install V2Ray binary to /usr/bin/v2ray
     mkdir -p /usr/bin/v2ray
-    copyFile v2ray || return $?
+    copyFile v2ray
+    if [[ $? -ne 0 ]]; then
+        colorEcho ${RED} "Copy V2Ray binary failed."
+        return 1
+    fi
     makeExecutable v2ray
-    copyFile v2ctl
-    makeExecutable v2ctl
+    copyFile v2ctl && makeExecutable v2ctl
     copyFile geoip.dat
     copyFile geosite.dat
 
