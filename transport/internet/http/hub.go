@@ -26,7 +26,7 @@ func (l *Listener) Addr() net.Addr {
 }
 
 func (l *Listener) Close() error {
-	return l.server.Shutdown(context.Background())
+	return l.server.Close()
 }
 
 type flushWriter struct {
