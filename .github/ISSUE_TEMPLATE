@@ -43,6 +43,14 @@ Please skip to the English section below if you don't write Chinese.
 
 8) 其它相关的配置文件（如 Nginx）和相关日志。
 
+9) 如果 V2Ray 无法启动，请附上 `--test` 输出。
+
+通常的命令为 `/usr/bin/v2ray/v2ray --test --config /etc/v2ray/config.json`。请按实际情况修改。
+
+10) 如果 V2Ray 服务运行不正常，请附上 journal 日志。
+
+通常的命令为 `journalctl -u v2ray`。
+
 请预览一下你填的内容再提交。
 
 如果你已经填完上面的问卷，请把下面的英文部份删除，再提交 Issue。
@@ -92,3 +100,10 @@ Please review your issue before submitting.
 
 8) Other configurations (such as Nginx) and logs.
 
+9) If V2Ray doesn't run, please attach output from `--test`.
+
+The command is usually `/usr/bin/v2ray/v2ray --test --config /etc/v2ray/config.json`, but may vary according to your scenario.
+
+10) If V2Ray service doesn't run, please attach journal log.
+
+Usual command is `journalctl -u v2ray`.
