@@ -120,8 +120,8 @@ func (c *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 			}
 			auth := &crypto.AEADAuthenticator{
 				AEAD:                    new(NoOpAuthenticator),
-				NonceGenerator:          crypto.NoOpBytesGenerator{},
-				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
+				NonceGenerator:          crypto.GenerateEmptyBytes(),
+				AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 			}
 			return crypto.NewAuthenticationWriter(auth, sizeParser, writer, protocol.TransferTypePacket)
 		}
@@ -133,8 +133,8 @@ func (c *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
 			auth := &crypto.AEADAuthenticator{
 				AEAD:                    new(FnvAuthenticator),
-				NonceGenerator:          crypto.NoOpBytesGenerator{},
-				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
+				NonceGenerator:          crypto.GenerateEmptyBytes(),
+				AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 			}
 			return crypto.NewAuthenticationWriter(auth, sizeParser, cryptionWriter, request.Command.TransferType())
 		}
@@ -145,24 +145,18 @@ func (c *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 		aead, _ := cipher.NewGCM(block)
 
 		auth := &crypto.AEADAuthenticator{
-			AEAD: aead,
-			NonceGenerator: &ChunkNonceGenerator{
-				Nonce: append([]byte(nil), c.requestBodyIV...),
-				Size:  aead.NonceSize(),
-			},
-			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
+			AEAD:                    aead,
+			NonceGenerator:          GenerateChunkNonce(c.requestBodyIV, uint32(aead.NonceSize())),
+			AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 		}
 		return crypto.NewAuthenticationWriter(auth, sizeParser, writer, request.Command.TransferType())
 	case protocol.SecurityType_CHACHA20_POLY1305:
 		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(c.requestBodyKey))
 
 		auth := &crypto.AEADAuthenticator{
-			AEAD: aead,
-			NonceGenerator: &ChunkNonceGenerator{
-				Nonce: append([]byte(nil), c.requestBodyIV...),
-				Size:  aead.NonceSize(),
-			},
-			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
+			AEAD:                    aead,
+			NonceGenerator:          GenerateChunkNonce(c.requestBodyIV, uint32(aead.NonceSize())),
+			AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 		}
 		return crypto.NewAuthenticationWriter(auth, sizeParser, writer, request.Command.TransferType())
 	default:
@@ -219,8 +213,8 @@ func (c *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 
 			auth := &crypto.AEADAuthenticator{
 				AEAD:                    new(NoOpAuthenticator),
-				NonceGenerator:          crypto.NoOpBytesGenerator{},
-				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
+				NonceGenerator:          crypto.GenerateEmptyBytes(),
+				AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 			}
 
 			return crypto.NewAuthenticationReader(auth, sizeParser, reader, protocol.TransferTypePacket)
@@ -231,8 +225,8 @@ func (c *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
 			auth := &crypto.AEADAuthenticator{
 				AEAD:                    new(FnvAuthenticator),
-				NonceGenerator:          crypto.NoOpBytesGenerator{},
-				AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
+				NonceGenerator:          crypto.GenerateEmptyBytes(),
+				AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 			}
 			return crypto.NewAuthenticationReader(auth, sizeParser, c.responseReader, request.Command.TransferType())
 		}
@@ -243,24 +237,18 @@ func (c *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 		aead, _ := cipher.NewGCM(block)
 
 		auth := &crypto.AEADAuthenticator{
-			AEAD: aead,
-			NonceGenerator: &ChunkNonceGenerator{
-				Nonce: append([]byte(nil), c.responseBodyIV...),
-				Size:  aead.NonceSize(),
-			},
-			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
+			AEAD:                    aead,
+			NonceGenerator:          GenerateChunkNonce(c.responseBodyIV, uint32(aead.NonceSize())),
+			AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 		}
 		return crypto.NewAuthenticationReader(auth, sizeParser, reader, request.Command.TransferType())
 	case protocol.SecurityType_CHACHA20_POLY1305:
 		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(c.responseBodyKey))
 
 		auth := &crypto.AEADAuthenticator{
-			AEAD: aead,
-			NonceGenerator: &ChunkNonceGenerator{
-				Nonce: append([]byte(nil), c.responseBodyIV...),
-				Size:  aead.NonceSize(),
-			},
-			AdditionalDataGenerator: crypto.NoOpBytesGenerator{},
+			AEAD:                    aead,
+			NonceGenerator:          GenerateChunkNonce(c.responseBodyIV, uint32(aead.NonceSize())),
+			AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 		}
 		return crypto.NewAuthenticationReader(auth, sizeParser, reader, request.Command.TransferType())
 	default:
@@ -268,14 +256,12 @@ func (c *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 	}
 }
 
-type ChunkNonceGenerator struct {
-	Nonce []byte
-	Size  int
-	count uint16
-}
-
-func (g *ChunkNonceGenerator) Next() []byte {
-	serial.Uint16ToBytes(g.count, g.Nonce[:0])
-	g.count++
-	return g.Nonce[:g.Size]
+func GenerateChunkNonce(nonce []byte, size uint32) crypto.BytesGenerator {
+	c := append([]byte(nil), nonce...)
+	count := uint16(0)
+	return func() []byte {
+		serial.Uint16ToBytes(count, c[:0])
+		count++
+		return c[:size]
+	}
 }

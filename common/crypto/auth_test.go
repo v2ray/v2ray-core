@@ -37,11 +37,9 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 	rand.Read(iv)
 
 	writer := NewAuthenticationWriter(&AEADAuthenticator{
-		AEAD: aead,
-		NonceGenerator: &StaticBytesGenerator{
-			Content: iv,
-		},
-		AdditionalDataGenerator: &NoOpBytesGenerator{},
+		AEAD:                    aead,
+		NonceGenerator:          GenerateStaticBytes(iv),
+		AdditionalDataGenerator: GenerateEmptyBytes(),
 	}, PlainChunkSizeParser{}, cache, protocol.TransferTypeStream)
 
 	assert(writer.WriteMultiBuffer(buf.NewMultiBufferValue(payload)), IsNil)
@@ -49,11 +47,9 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 	assert(writer.WriteMultiBuffer(buf.MultiBuffer{}), IsNil)
 
 	reader := NewAuthenticationReader(&AEADAuthenticator{
-		AEAD: aead,
-		NonceGenerator: &StaticBytesGenerator{
-			Content: iv,
-		},
-		AdditionalDataGenerator: &NoOpBytesGenerator{},
+		AEAD:                    aead,
+		NonceGenerator:          GenerateStaticBytes(iv),
+		AdditionalDataGenerator: GenerateEmptyBytes(),
 	}, PlainChunkSizeParser{}, cache, protocol.TransferTypeStream)
 
 	var mb buf.MultiBuffer
@@ -91,11 +87,9 @@ func TestAuthenticationReaderWriterPacket(t *testing.T) {
 	rand.Read(iv)
 
 	writer := NewAuthenticationWriter(&AEADAuthenticator{
-		AEAD: aead,
-		NonceGenerator: &StaticBytesGenerator{
-			Content: iv,
-		},
-		AdditionalDataGenerator: &NoOpBytesGenerator{},
+		AEAD:                    aead,
+		NonceGenerator:          GenerateStaticBytes(iv),
+		AdditionalDataGenerator: GenerateEmptyBytes(),
 	}, PlainChunkSizeParser{}, cache, protocol.TransferTypePacket)
 
 	var payload buf.MultiBuffer
@@ -113,11 +107,9 @@ func TestAuthenticationReaderWriterPacket(t *testing.T) {
 	assert(err, IsNil)
 
 	reader := NewAuthenticationReader(&AEADAuthenticator{
-		AEAD: aead,
-		NonceGenerator: &StaticBytesGenerator{
-			Content: iv,
-		},
-		AdditionalDataGenerator: &NoOpBytesGenerator{},
+		AEAD:                    aead,
+		NonceGenerator:          GenerateStaticBytes(iv),
+		AdditionalDataGenerator: GenerateEmptyBytes(),
 	}, PlainChunkSizeParser{}, cache, protocol.TransferTypePacket)
 
 	mb, err := reader.ReadMultiBuffer()

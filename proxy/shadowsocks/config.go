@@ -169,7 +169,7 @@ func (c *AEADCipher) IVSize() int32 {
 }
 
 func (c *AEADCipher) createAuthenticator(key []byte, iv []byte) *crypto.AEADAuthenticator {
-	nonce := crypto.NewIncreasingAEADNonceGenerator()
+	nonce := crypto.GenerateInitialAEADNonce()
 	subkey := make([]byte, c.KeyBytes)
 	hkdfSHA1(key, iv, subkey)
 	return &crypto.AEADAuthenticator{
