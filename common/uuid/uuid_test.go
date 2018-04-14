@@ -69,11 +69,3 @@ func TestEquals(t *testing.T) {
 	uuid3 := New()
 	assert(uuid.Equals(&uuid3), IsFalse)
 }
-
-func TestNext(t *testing.T) {
-	assert := With(t)
-
-	uuid := New()
-	uuid2 := uuid.Next()
-	assert(uuid.Equals(&uuid2), IsFalse)
-}
