@@ -58,13 +58,64 @@ func issueCertificate(rawCA *Certificate, domain string) (*tls.Certificate, erro
 	return &cert, err
 }
 
-func (c *Config) hasCustomCA() bool {
+func (c *Config) getCustomCA() []*Certificate {
+	certs := make([]*Certificate, 0, len(c.Certificate))
 	for _, certificate := range c.Certificate {
 		if certificate.Usage == Certificate_AUTHORITY_ISSUE {
-			return true
+			certs = append(certs, certificate)
 		}
 	}
-	return false
+	return certs
+}
+
+func getGetCertificateFunc(c *tls.Config, ca []*Certificate) func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	return func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+		domain := hello.ServerName
+		certExpired := false
+		if certificate, found := c.NameToCertificate[domain]; found {
+			if !isCertificateExpired(certificate) {
+				return certificate, nil
+			}
+			certExpired = true
+		}
+
+		if certExpired {
+			newCerts := make([]tls.Certificate, 0, len(c.Certificates))
+
+			for _, certificate := range c.Certificates {
+				if !isCertificateExpired(&certificate) {
+					newCerts = append(newCerts, certificate)
+				}
+			}
+
+			c.Certificates = newCerts
+		}
+
+		var issuedCertificate *tls.Certificate
+
+		// Create a new certificate from existing CA if possible
+		for _, rawCert := range ca {
+			if rawCert.Usage == Certificate_AUTHORITY_ISSUE {
+				newCert, err := issueCertificate(rawCert, domain)
+				if err != nil {
+					newError("failed to issue new certificate for ", domain).Base(err).WriteToLog()
+					continue
+				}
+
+				c.Certificates = append(c.Certificates, *newCert)
+				issuedCertificate = &c.Certificates[len(c.Certificates)-1]
+				break
+			}
+		}
+
+		if issuedCertificate == nil {
+			return nil, newError("failed to create a new certificate for ", domain)
+		}
+
+		c.BuildNameToCertificate()
+
+		return issuedCertificate, nil
+	}
 }
 
 func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
@@ -83,54 +134,10 @@ func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
 	config.InsecureSkipVerify = c.AllowInsecure
 	config.Certificates = c.BuildCertificates()
 	config.BuildNameToCertificate()
-	if c.hasCustomCA() {
-		config.GetCertificate = func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
-			domain := hello.ServerName
-			certExpired := false
-			if certificate, found := config.NameToCertificate[domain]; found {
-				if !isCertificateExpired(certificate) {
-					return certificate, nil
-				}
-				certExpired = true
-			}
 
-			if certExpired {
-				newCerts := make([]tls.Certificate, 0, len(config.Certificates))
-
-				for _, certificate := range config.Certificates {
-					if !isCertificateExpired(&certificate) {
-						newCerts = append(newCerts, certificate)
-					}
-				}
-
-				config.Certificates = newCerts
-			}
-
-			var issuedCertificate *tls.Certificate
-
-			// Create a new certificate from existing CA if possible
-			for _, rawCert := range c.Certificate {
-				if rawCert.Usage == Certificate_AUTHORITY_ISSUE {
-					newCert, err := issueCertificate(rawCert, domain)
-					if err != nil {
-						newError("failed to issue new certificate for ", domain).Base(err).WriteToLog()
-						continue
-					}
-
-					config.Certificates = append(config.Certificates, *newCert)
-					issuedCertificate = &config.Certificates[len(config.Certificates)-1]
-					break
-				}
-			}
-
-			if issuedCertificate == nil {
-				return nil, newError("failed to create a new certificate for ", domain)
-			}
-
-			config.BuildNameToCertificate()
-
-			return issuedCertificate, nil
-		}
+	caCerts := c.getCustomCA()
+	if len(caCerts) > 0 {
+		config.GetCertificate = getGetCertificateFunc(config, caCerts)
 	}
 
 	if len(c.ServerName) > 0 {
