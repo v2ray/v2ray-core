@@ -19,7 +19,7 @@ type OutboundListener struct {
 func (l *OutboundListener) add(conn net.Conn) {
 	select {
 	case l.buffer <- conn:
-	case <-l.done.C():
+	case <-l.done.Wait():
 		common.Ignore(conn.Close(), "We can do nothing if Close() returns error.")
 	default:
 		common.Ignore(conn.Close(), "We can do nothing if Close() returns error.")
@@ -29,7 +29,7 @@ func (l *OutboundListener) add(conn net.Conn) {
 // Accept implements net.Listener.
 func (l *OutboundListener) Accept() (net.Conn, error) {
 	select {
-	case <-l.done.C():
+	case <-l.done.Wait():
 		return nil, newError("listen closed")
 	case c := <-l.buffer:
 		return c, nil

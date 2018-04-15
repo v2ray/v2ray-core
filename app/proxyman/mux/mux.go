@@ -125,7 +125,7 @@ func (m *Client) monitor() {
 
 	for {
 		select {
-		case <-m.done.C():
+		case <-m.done.Wait():
 			m.sessionManager.Close()
 			m.inboundRay.InboundInput().Close()
 			m.inboundRay.InboundOutput().CloseError()

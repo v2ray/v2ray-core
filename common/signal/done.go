@@ -21,21 +21,16 @@ func NewDone() *Done {
 // Done returns true if Close() is called.
 func (d *Done) Done() bool {
 	select {
-	case <-d.c:
+	case <-d.Wait():
 		return true
 	default:
 		return false
 	}
 }
 
-// C returns a channel for waiting for done.
-func (d *Done) C() chan struct{} {
+// Wait returns a channel for waiting for done.
+func (d *Done) Wait() <-chan struct{} {
 	return d.c
-}
-
-// Wait blocks until Close() is called.
-func (d *Done) Wait() {
-	<-d.c
 }
 
 // Close marks this Done 'done'. This method may be called multiple times. All calls after first call will have no effect on its status.

@@ -71,7 +71,7 @@ func (l *Listener) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 		Local:  l.Addr(),
 		Remote: l.Addr(),
 	})
-	<-done.C()
+	<-done.Wait()
 }
 
 func Listen(ctx context.Context, address net.Address, port net.Port, handler internet.ConnHandler) (internet.Listener, error) {

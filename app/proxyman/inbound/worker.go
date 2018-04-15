@@ -134,7 +134,7 @@ func (c *udpConn) Read(buf []byte) (int, error) {
 			c.uplink.Add(int64(nBytes))
 		}
 		return nBytes, nil
-	case <-c.done.C():
+	case <-c.done.Wait():
 		return 0, io.EOF
 	}
 }
@@ -239,7 +239,7 @@ func (w *udpWorker) callback(b *buf.Buffer, source net.Destination, originalDest
 	conn, existing := w.getConnection(id)
 	select {
 	case conn.input <- b:
-	case <-conn.done.C():
+	case <-conn.done.Wait():
 		b.Release()
 	default:
 		b.Release()
@@ -308,7 +308,7 @@ func (w *udpWorker) monitor() {
 
 	for {
 		select {
-		case <-w.done.C():
+		case <-w.done.Wait():
 			return
 		case <-timer.C:
 			nowSec := time.Now().Unix()

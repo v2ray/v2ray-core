@@ -51,7 +51,7 @@ func (l *generalLogger) run() {
 
 	for {
 		select {
-		case <-l.done.C():
+		case <-l.done.Wait():
 			return
 		case msg := <-l.buffer:
 			logger.Write(msg.String() + platform.LineSeparator())
