@@ -79,7 +79,7 @@ func (c *connection) Write(b []byte) (int, error) {
 	}
 
 	l := len(b)
-	mb := buf.NewMultiBufferCap(int32(l)/buf.Size + 1)
+	mb := buf.NewMultiBufferCap(l/buf.Size + 1)
 	mb.Write(b)
 	return l, c.output.WriteMultiBuffer(mb)
 }
