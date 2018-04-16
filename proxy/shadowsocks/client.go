@@ -12,7 +12,6 @@ import (
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/ray"
 )
 
 // Client is a inbound handler for Shadowsocks protocol
@@ -38,7 +37,7 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 }
 
 // Process implements OutboundHandler.Process().
-func (c *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
+func (c *Client) Process(ctx context.Context, link *core.Link, dialer proxy.Dialer) error {
 	destination, ok := proxy.TargetFromContext(ctx)
 	if !ok {
 		return newError("target not specified")
@@ -107,7 +106,7 @@ func (c *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 
 		requestDone := func() error {
 			defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
-			return buf.Copy(outboundRay.OutboundInput(), bodyWriter, buf.UpdateActivity(timer))
+			return buf.Copy(link.Reader, bodyWriter, buf.UpdateActivity(timer))
 		}
 
 		responseDone := func() error {
@@ -118,7 +117,7 @@ func (c *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 				return err
 			}
 
-			return buf.Copy(responseReader, outboundRay.OutboundOutput(), buf.UpdateActivity(timer))
+			return buf.Copy(responseReader, link.Writer, buf.UpdateActivity(timer))
 		}
 
 		if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
@@ -138,7 +137,7 @@ func (c *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 		requestDone := func() error {
 			defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
 
-			if err := buf.Copy(outboundRay.OutboundInput(), writer, buf.UpdateActivity(timer)); err != nil {
+			if err := buf.Copy(link.Reader, writer, buf.UpdateActivity(timer)); err != nil {
 				return newError("failed to transport all UDP request").Base(err)
 			}
 			return nil
@@ -152,7 +151,7 @@ func (c *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 				User:   user,
 			}
 
-			if err := buf.Copy(reader, outboundRay.OutboundOutput(), buf.UpdateActivity(timer)); err != nil {
+			if err := buf.Copy(reader, link.Writer, buf.UpdateActivity(timer)); err != nil {
 				return newError("failed to transport all UDP response").Base(err)
 			}
 			return nil

@@ -1,69 +1,81 @@
-package ray
+package net
 
 import (
 	"io"
 	"net"
 	"time"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/signal"
 )
 
 type ConnectionOption func(*connection)
 
-func ConnLocalAddr(addr net.Addr) ConnectionOption {
+func ConnectionLocalAddr(a net.Addr) ConnectionOption {
 	return func(c *connection) {
-		c.localAddr = addr
+		c.local = a
 	}
 }
 
-func ConnRemoteAddr(addr net.Addr) ConnectionOption {
+func ConnectionRemoteAddr(a net.Addr) ConnectionOption {
 	return func(c *connection) {
-		c.remoteAddr = addr
+		c.remote = a
 	}
 }
 
-func ConnCloseSignal(s *signal.Notifier) ConnectionOption {
+func ConnectionInput(writer io.Writer) ConnectionOption {
 	return func(c *connection) {
-		c.closeSignal = s
+		c.writer = buf.NewWriter(writer)
 	}
 }
 
-type connection struct {
-	input       InputStream
-	output      OutputStream
-	closed      bool
-	localAddr   net.Addr
-	remoteAddr  net.Addr
-	closeSignal *signal.Notifier
-
-	reader *buf.BufferedReader
+func ConnectionInputMulti(writer buf.Writer) ConnectionOption {
+	return func(c *connection) {
+		c.writer = writer
+	}
 }
 
-var zeroAddr net.Addr = &net.TCPAddr{IP: []byte{0, 0, 0, 0}}
+func ConnectionOutput(reader io.Reader) ConnectionOption {
+	return func(c *connection) {
+		c.reader = buf.NewBufferedReader(buf.NewReader(reader))
+	}
+}
 
-// NewConnection wraps a Ray into net.Conn.
-func NewConnection(input InputStream, output OutputStream, options ...ConnectionOption) net.Conn {
+func ConnectionOutputMulti(reader buf.Reader) ConnectionOption {
+	return func(c *connection) {
+		c.reader = buf.NewBufferedReader(reader)
+	}
+}
+
+func ConnectionOnClose(s *signal.Notifier) ConnectionOption {
+	return func(c *connection) {
+		c.onClose = s
+	}
+}
+
+func NewConnection(opts ...ConnectionOption) net.Conn {
 	c := &connection{
-		input:      input,
-		output:     output,
-		localAddr:  zeroAddr,
-		remoteAddr: zeroAddr,
-		reader:     buf.NewBufferedReader(input),
+		done: signal.NewDone(),
 	}
 
-	for _, opt := range options {
+	for _, opt := range opts {
 		opt(c)
 	}
 
 	return c
 }
 
-// Read implements net.Conn.Read().
+type connection struct {
+	reader  *buf.BufferedReader
+	writer  buf.Writer
+	done    *signal.Done
+	onClose *signal.Notifier
+	local   Addr
+	remote  Addr
+}
+
 func (c *connection) Read(b []byte) (int, error) {
-	if c.closed {
-		return 0, io.EOF
-	}
 	return c.reader.Read(b)
 }
 
@@ -74,43 +86,44 @@ func (c *connection) ReadMultiBuffer() (buf.MultiBuffer, error) {
 
 // Write implements net.Conn.Write().
 func (c *connection) Write(b []byte) (int, error) {
-	if c.closed {
+	if c.done.Done() {
 		return 0, io.ErrClosedPipe
 	}
 
 	l := len(b)
 	mb := buf.NewMultiBufferCap(int32(l)/buf.Size + 1)
-	mb.Write(b)
-	return l, c.output.WriteMultiBuffer(mb)
+	common.Must2(mb.Write(b))
+	return l, c.writer.WriteMultiBuffer(mb)
 }
 
 func (c *connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
-	if c.closed {
+	if c.done.Done() {
 		return io.ErrClosedPipe
 	}
 
-	return c.output.WriteMultiBuffer(mb)
+	return c.writer.WriteMultiBuffer(mb)
 }
 
 // Close implements net.Conn.Close().
 func (c *connection) Close() error {
-	c.closed = true
-	c.output.Close()
-	c.input.CloseError()
-	if c.closeSignal != nil {
-		c.closeSignal.Signal()
+	common.Must(c.done.Close())
+	common.Close(c.reader)
+	common.Close(c.writer)
+	if c.onClose != nil {
+		c.onClose.Signal()
 	}
+
 	return nil
 }
 
 // LocalAddr implements net.Conn.LocalAddr().
 func (c *connection) LocalAddr() net.Addr {
-	return c.localAddr
+	return c.local
 }
 
 // RemoteAddr implements net.Conn.RemoteAddr().
 func (c *connection) RemoteAddr() net.Addr {
-	return c.remoteAddr
+	return c.remote
 }
 
 // SetDeadline implements net.Conn.SetDeadline().

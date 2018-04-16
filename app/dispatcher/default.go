@@ -12,13 +12,44 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/stats"
 	"v2ray.com/core/proxy"
-	"v2ray.com/core/transport/ray"
+	"v2ray.com/core/transport/pipe"
 )
 
 var (
 	errSniffingTimeout = newError("timeout on sniffing")
 )
+
+type cachedReader struct {
+	reader *pipe.Reader
+	cache  buf.MultiBuffer
+}
+
+func (r *cachedReader) Cache(b *buf.Buffer) {
+	mb, _ := r.reader.ReadMultiBufferWithTimeout(time.Millisecond * 100)
+	if !mb.IsEmpty() {
+		r.cache.WriteMultiBuffer(mb)
+	}
+	common.Must(b.Reset(func(x []byte) (int, error) {
+		return r.cache.Copy(x), nil
+	}))
+}
+
+func (r *cachedReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
+	if !r.cache.IsEmpty() {
+		mb := r.cache
+		r.cache = nil
+		return mb, nil
+	}
+
+	return r.reader.ReadMultiBuffer()
+}
+
+func (r *cachedReader) CloseError() {
+	r.cache.Release()
+	r.reader.CloseError()
+}
 
 // DefaultDispatcher is a default implementation of Dispatcher.
 type DefaultDispatcher struct {
@@ -52,45 +83,64 @@ func (*DefaultDispatcher) Start() error {
 // Close implements common.Closable.
 func (*DefaultDispatcher) Close() error { return nil }
 
-func (d *DefaultDispatcher) getRayOption(user *protocol.User) []ray.Option {
-	var rayOptions []ray.Option
+func (d *DefaultDispatcher) getLink(ctx context.Context) (*core.Link, *core.Link) {
+	uplinkReader, uplinkWriter := pipe.New()
+	downlinkReader, downlinkWriter := pipe.New()
 
+	inboundLink := &core.Link{
+		Reader: downlinkReader,
+		Writer: uplinkWriter,
+	}
+
+	outboundLink := &core.Link{
+		Reader: uplinkReader,
+		Writer: downlinkWriter,
+	}
+
+	user := protocol.UserFromContext(ctx)
 	if user != nil && len(user.Email) > 0 {
 		p := d.policy.ForLevel(user.Level)
 		if p.Stats.UserUplink {
 			name := "user>>>" + user.Email + ">>>traffic>>>uplink"
 			if c, _ := core.GetOrRegisterStatCounter(d.stats, name); c != nil {
-				rayOptions = append(rayOptions, ray.WithUplinkStatCounter(c))
+				inboundLink.Writer = &stats.SizeStatWriter{
+					Counter: c,
+					Writer:  inboundLink.Writer,
+				}
 			}
 		}
 		if p.Stats.UserDownlink {
 			name := "user>>>" + user.Email + ">>>traffic>>>downlink"
 			if c, _ := core.GetOrRegisterStatCounter(d.stats, name); c != nil {
-				rayOptions = append(rayOptions, ray.WithDownlinkStatCounter(c))
+				outboundLink.Writer = &stats.SizeStatWriter{
+					Counter: c,
+					Writer:  outboundLink.Writer,
+				}
 			}
 		}
 	}
 
-	return rayOptions
+	return inboundLink, outboundLink
 }
 
 // Dispatch implements core.Dispatcher.
-func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destination) (ray.InboundRay, error) {
+func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destination) (*core.Link, error) {
 	if !destination.IsValid() {
 		panic("Dispatcher: Invalid destination.")
 	}
 	ctx = proxy.ContextWithTarget(ctx, destination)
 
-	user := protocol.UserFromContext(ctx)
-	rayOptions := d.getRayOption(user)
-
-	outbound := ray.New(ctx, rayOptions...)
+	inbound, outbound := d.getLink(ctx)
 	snifferList := proxyman.ProtocolSniffersFromContext(ctx)
 	if destination.Address.Family().IsDomain() || len(snifferList) == 0 {
 		go d.routedDispatch(ctx, outbound, destination)
 	} else {
 		go func() {
-			domain, err := sniffer(ctx, snifferList, outbound)
+			cReader := &cachedReader{
+				reader: outbound.Reader.(*pipe.Reader),
+			}
+			outbound.Reader = cReader
+			domain, err := sniffer(ctx, snifferList, cReader)
 			if err == nil {
 				newError("sniffed domain: ", domain).WithContext(ctx).WriteToLog()
 				destination.Address = net.ParseAddress(domain)
@@ -99,10 +149,10 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 			d.routedDispatch(ctx, outbound, destination)
 		}()
 	}
-	return outbound, nil
+	return inbound, nil
 }
 
-func sniffer(ctx context.Context, snifferList []proxyman.KnownProtocols, outbound ray.OutboundRay) (string, error) {
+func sniffer(ctx context.Context, snifferList []proxyman.KnownProtocols, cReader *cachedReader) (string, error) {
 	payload := buf.New()
 	defer payload.Release()
 
@@ -117,7 +167,8 @@ func sniffer(ctx context.Context, snifferList []proxyman.KnownProtocols, outboun
 			if totalAttempt > 5 {
 				return "", errSniffingTimeout
 			}
-			outbound.OutboundInput().Peek(payload)
+
+			cReader.Cache(payload)
 			if !payload.IsEmpty() {
 				domain, err := sniffer.Sniff(payload.Bytes())
 				if err != ErrMoreData {
@@ -132,7 +183,7 @@ func sniffer(ctx context.Context, snifferList []proxyman.KnownProtocols, outboun
 	}
 }
 
-func (d *DefaultDispatcher) routedDispatch(ctx context.Context, outbound ray.OutboundRay, destination net.Destination) {
+func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *core.Link, destination net.Destination) {
 	dispatcher := d.ohm.GetDefaultHandler()
 	if d.router != nil {
 		if tag, err := d.router.PickRoute(ctx); err == nil {
@@ -146,7 +197,7 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, outbound ray.Out
 			newError("default route for ", destination).WithContext(ctx).WriteToLog()
 		}
 	}
-	dispatcher.Dispatch(ctx, outbound)
+	dispatcher.Dispatch(ctx, link)
 }
 
 func init() {

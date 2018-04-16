@@ -37,6 +37,16 @@ func New(opts ...Option) (*Reader, *Writer) {
 		}
 }
 
+type closeError interface {
+	CloseError()
+}
+
+func CloseError(v interface{}) {
+	if c, ok := v.(closeError); ok {
+		c.CloseError()
+	}
+}
+
 var defaultLimit int32 = 10 * 1024 * 1024
 
 func init() {

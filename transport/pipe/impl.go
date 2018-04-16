@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/signal"
 )
 
@@ -70,8 +69,6 @@ func (p *pipe) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	}
 }
 
-var ErrTimeout = errors.New("Timeout on reading pipeline.")
-
 func (p *pipe) ReadMultiBufferWithTimeout(d time.Duration) (buf.MultiBuffer, error) {
 	timer := time.After(d)
 	for {
@@ -84,7 +81,7 @@ func (p *pipe) ReadMultiBufferWithTimeout(d time.Duration) (buf.MultiBuffer, err
 		select {
 		case <-p.readSignal.Wait():
 		case <-timer:
-			return nil, ErrTimeout
+			return nil, buf.ErrReadTimeout
 		}
 	}
 }
@@ -119,6 +116,10 @@ func (p *pipe) WriteMultiBuffer(mb buf.MultiBuffer) error {
 func (p *pipe) Close() error {
 	p.Lock()
 	defer p.Unlock()
+
+	if p.state == closed || p.state == errord {
+		return nil
+	}
 
 	p.state = closed
 	p.readSignal.Signal()

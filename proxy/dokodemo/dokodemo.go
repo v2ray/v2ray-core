@@ -14,6 +14,7 @@ import (
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/udp"
+	"v2ray.com/core/transport/pipe"
 )
 
 type DokodemoDoor struct {
@@ -70,18 +71,18 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, d.policy().Timeouts.ConnectionIdle)
 
-	inboundRay, err := dispatcher.Dispatch(ctx, dest)
+	link, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return newError("failed to dispatch request").Base(err)
 	}
 
 	requestDone := func() error {
-		defer inboundRay.InboundInput().Close()
+		defer common.Close(link.Writer)
 		defer timer.SetTimeout(d.policy().Timeouts.DownlinkOnly)
 
 		chunkReader := buf.NewReader(conn)
 
-		if err := buf.Copy(chunkReader, inboundRay.InboundInput(), buf.UpdateActivity(timer)); err != nil {
+		if err := buf.Copy(chunkReader, link.Writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport request").Base(err)
 		}
 
@@ -108,7 +109,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 			}
 		}
 
-		if err := buf.Copy(inboundRay.InboundOutput(), writer, buf.UpdateActivity(timer)); err != nil {
+		if err := buf.Copy(link.Reader, writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport response").Base(err)
 		}
 
@@ -116,8 +117,8 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 	}
 
 	if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
-		inboundRay.InboundInput().CloseError()
-		inboundRay.InboundOutput().CloseError()
+		pipe.CloseError(link.Reader)
+		pipe.CloseError(link.Writer)
 		return newError("connection ends").Base(err)
 	}
 

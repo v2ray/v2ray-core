@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"v2ray.com/core/transport/pipe"
+
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -166,7 +168,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, s.policy().Timeouts.ConnectionIdle)
-	ray, err := dispatcher.Dispatch(ctx, dest)
+	link, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return err
 	}
@@ -176,25 +178,25 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		if err != nil {
 			return err
 		}
-		if err := ray.InboundInput().WriteMultiBuffer(payload); err != nil {
+		if err := link.Writer.WriteMultiBuffer(payload); err != nil {
 			return err
 		}
 		reader = nil
 	}
 
 	requestDone := func() error {
-		defer ray.InboundInput().Close()
+		defer common.Close(link.Writer)
 		defer timer.SetTimeout(s.policy().Timeouts.DownlinkOnly)
 
 		v2reader := buf.NewReader(conn)
-		return buf.Copy(v2reader, ray.InboundInput(), buf.UpdateActivity(timer))
+		return buf.Copy(v2reader, link.Writer, buf.UpdateActivity(timer))
 	}
 
 	responseDone := func() error {
 		defer timer.SetTimeout(s.policy().Timeouts.UplinkOnly)
 
 		v2writer := buf.NewWriter(conn)
-		if err := buf.Copy(ray.InboundOutput(), v2writer, buf.UpdateActivity(timer)); err != nil {
+		if err := buf.Copy(link.Reader, v2writer, buf.UpdateActivity(timer)); err != nil {
 			return err
 		}
 
@@ -202,8 +204,8 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 	}
 
 	if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
-		ray.InboundInput().CloseError()
-		ray.InboundOutput().CloseError()
+		pipe.CloseError(link.Reader)
+		pipe.CloseError(link.Writer)
 		return newError("connection ends").Base(err)
 	}
 
@@ -241,20 +243,18 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 		request.Header.Set("User-Agent", "")
 	}
 
-	ray, err := dispatcher.Dispatch(ctx, dest)
+	link, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return err
 	}
-	input := ray.InboundInput()
-	output := ray.InboundOutput()
-	defer input.Close()
 
 	var result error = errWaitAnother
 
 	requestDone := func() error {
+		defer common.Close(link.Writer)
 		request.Header.Set("Connection", "close")
 
-		requestWriter := buf.NewBufferedWriter(ray.InboundInput())
+		requestWriter := buf.NewBufferedWriter(link.Writer)
 		common.Must(requestWriter.SetBuffered(false))
 		if err := request.Write(requestWriter); err != nil {
 			return newError("failed to write whole request").Base(err).AtWarning()
@@ -263,7 +263,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 	}
 
 	responseDone := func() error {
-		responseReader := bufio.NewReaderSize(buf.NewBufferedReader(ray.InboundOutput()), buf.Size)
+		responseReader := bufio.NewReaderSize(buf.NewBufferedReader(link.Reader), buf.Size)
 		response, err := http.ReadResponse(responseReader, request)
 		if err == nil {
 			http_proto.RemoveHopByHopHeaders(response.Header)
@@ -299,8 +299,8 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 	}
 
 	if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
-		input.CloseError()
-		output.CloseError()
+		pipe.CloseError(link.Reader)
+		pipe.CloseError(link.Writer)
 		return newError("connection ends").Base(err)
 	}
 

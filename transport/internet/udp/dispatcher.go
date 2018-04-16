@@ -6,18 +6,18 @@ import (
 	"time"
 
 	"v2ray.com/core"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/signal"
-	"v2ray.com/core/transport/ray"
 )
 
 type ResponseCallback func(payload *buf.Buffer)
 
 type connEntry struct {
-	inbound ray.InboundRay
-	timer   signal.ActivityUpdater
-	cancel  context.CancelFunc
+	link   *core.Link
+	timer  signal.ActivityUpdater
+	cancel context.CancelFunc
 }
 
 type Dispatcher struct {
@@ -37,8 +37,8 @@ func (v *Dispatcher) RemoveRay(dest net.Destination) {
 	v.Lock()
 	defer v.Unlock()
 	if conn, found := v.conns[dest]; found {
-		conn.inbound.InboundInput().Close()
-		conn.inbound.InboundOutput().Close()
+		common.Close(conn.link.Reader)
+		common.Close(conn.link.Writer)
 		delete(v.conns, dest)
 	}
 }
@@ -59,11 +59,11 @@ func (v *Dispatcher) getInboundRay(dest net.Destination, callback ResponseCallba
 		v.RemoveRay(dest)
 	}
 	timer := signal.CancelAfterInactivity(ctx, removeRay, time.Second*4)
-	inboundRay, _ := v.dispatcher.Dispatch(ctx, dest)
+	link, _ := v.dispatcher.Dispatch(ctx, dest)
 	entry := &connEntry{
-		inbound: inboundRay,
-		timer:   timer,
-		cancel:  removeRay,
+		link:   link,
+		timer:  timer,
+		cancel: removeRay,
 	}
 	v.conns[dest] = entry
 	go handleInput(ctx, entry, callback)
@@ -75,7 +75,7 @@ func (v *Dispatcher) Dispatch(ctx context.Context, destination net.Destination, 
 	newError("dispatch request to: ", destination).AtDebug().WithContext(ctx).WriteToLog()
 
 	conn := v.getInboundRay(destination, callback)
-	outputStream := conn.inbound.InboundInput()
+	outputStream := conn.link.Writer
 	if outputStream != nil {
 		if err := outputStream.WriteMultiBuffer(buf.NewMultiBufferValue(payload)); err != nil {
 			newError("failed to write first UDP payload").Base(err).WithContext(ctx).WriteToLog()
@@ -86,7 +86,7 @@ func (v *Dispatcher) Dispatch(ctx context.Context, destination net.Destination, 
 }
 
 func handleInput(ctx context.Context, conn *connEntry, callback ResponseCallback) {
-	input := conn.inbound.InboundOutput()
+	input := conn.link.Reader
 	timer := conn.timer
 
 	for {

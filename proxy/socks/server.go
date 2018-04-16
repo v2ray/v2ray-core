@@ -15,6 +15,7 @@ import (
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/udp"
+	"v2ray.com/core/transport/pipe"
 )
 
 // Server is a SOCKS 5 proxy server
@@ -129,20 +130,17 @@ func (s *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, s.policy().Timeouts.ConnectionIdle)
 
-	ray, err := dispatcher.Dispatch(ctx, dest)
+	link, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return err
 	}
 
-	input := ray.InboundInput()
-	output := ray.InboundOutput()
-
 	requestDone := func() error {
 		defer timer.SetTimeout(s.policy().Timeouts.DownlinkOnly)
-		defer input.Close()
+		defer common.Close(link.Writer)
 
 		v2reader := buf.NewReader(reader)
-		if err := buf.Copy(v2reader, input, buf.UpdateActivity(timer)); err != nil {
+		if err := buf.Copy(v2reader, link.Writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport all TCP request").Base(err)
 		}
 
@@ -153,7 +151,7 @@ func (s *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 		defer timer.SetTimeout(s.policy().Timeouts.UplinkOnly)
 
 		v2writer := buf.NewWriter(writer)
-		if err := buf.Copy(output, v2writer, buf.UpdateActivity(timer)); err != nil {
+		if err := buf.Copy(link.Reader, v2writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport all TCP response").Base(err)
 		}
 
@@ -161,8 +159,8 @@ func (s *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 	}
 
 	if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
-		input.CloseError()
-		output.CloseError()
+		pipe.CloseError(link.Reader)
+		pipe.CloseError(link.Writer)
 		return newError("connection ends").Base(err)
 	}
 

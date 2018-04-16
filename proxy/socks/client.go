@@ -13,7 +13,6 @@ import (
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/ray"
 )
 
 // Client is a Socks5 client.
@@ -40,7 +39,7 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 }
 
 // Process implements proxy.Outbound.Process.
-func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.Dialer) error {
+func (c *Client) Process(ctx context.Context, link *core.Link, dialer proxy.Dialer) error {
 	destination, ok := proxy.TargetFromContext(ctx)
 	if !ok {
 		return newError("target not specified.")
@@ -107,11 +106,11 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 	if request.Command == protocol.RequestCommandTCP {
 		requestFunc = func() error {
 			defer timer.SetTimeout(p.Timeouts.DownlinkOnly)
-			return buf.Copy(ray.OutboundInput(), buf.NewWriter(conn), buf.UpdateActivity(timer))
+			return buf.Copy(link.Reader, buf.NewWriter(conn), buf.UpdateActivity(timer))
 		}
 		responseFunc = func() error {
 			defer timer.SetTimeout(p.Timeouts.UplinkOnly)
-			return buf.Copy(buf.NewReader(conn), ray.OutboundOutput(), buf.UpdateActivity(timer))
+			return buf.Copy(buf.NewReader(conn), link.Writer, buf.UpdateActivity(timer))
 		}
 	} else if request.Command == protocol.RequestCommandUDP {
 		udpConn, err := dialer.Dial(ctx, udpRequest.Destination())
@@ -121,12 +120,12 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 		defer udpConn.Close()
 		requestFunc = func() error {
 			defer timer.SetTimeout(p.Timeouts.DownlinkOnly)
-			return buf.Copy(ray.OutboundInput(), buf.NewSequentialWriter(NewUDPWriter(request, udpConn)), buf.UpdateActivity(timer))
+			return buf.Copy(link.Reader, buf.NewSequentialWriter(NewUDPWriter(request, udpConn)), buf.UpdateActivity(timer))
 		}
 		responseFunc = func() error {
 			defer timer.SetTimeout(p.Timeouts.UplinkOnly)
 			reader := &UDPReader{reader: udpConn}
-			return buf.Copy(reader, ray.OutboundOutput(), buf.UpdateActivity(timer))
+			return buf.Copy(reader, link.Writer, buf.UpdateActivity(timer))
 		}
 	}
 

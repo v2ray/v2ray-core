@@ -6,7 +6,6 @@ import (
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/transport/ray"
 )
 
 // InboundHandler is the interface for handlers that process inbound connections.
@@ -23,7 +22,7 @@ type InboundHandler interface {
 type OutboundHandler interface {
 	common.Runnable
 	Tag() string
-	Dispatch(ctx context.Context, outboundRay ray.OutboundRay)
+	Dispatch(ctx context.Context, link *Link)
 }
 
 // InboundHandlerManager is a feature that manages InboundHandlers.

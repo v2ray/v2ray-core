@@ -2,12 +2,13 @@ package commander
 
 import (
 	"context"
-	"net"
 	"sync"
 
+	"v2ray.com/core"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/signal"
-	"v2ray.com/core/transport/ray"
+	"v2ray.com/core/transport/pipe"
 )
 
 // OutboundListener is a net.Listener for listening gRPC connections.
@@ -68,18 +69,18 @@ type Outbound struct {
 }
 
 // Dispatch implements core.OutboundHandler.
-func (co *Outbound) Dispatch(ctx context.Context, r ray.OutboundRay) {
+func (co *Outbound) Dispatch(ctx context.Context, link *core.Link) {
 	co.access.RLock()
 
 	if co.closed {
-		r.OutboundInput().CloseError()
-		r.OutboundOutput().CloseError()
+		pipe.CloseError(link.Reader)
+		pipe.CloseError(link.Writer)
 		co.access.RUnlock()
 		return
 	}
 
 	closeSignal := signal.NewNotifier()
-	c := ray.NewConnection(r.OutboundInput(), r.OutboundOutput(), ray.ConnCloseSignal(closeSignal))
+	c := net.NewConnection(net.ConnectionInputMulti(link.Writer), net.ConnectionOutputMulti(link.Reader), net.ConnectionOnClose(closeSignal))
 	co.listener.add(c)
 	co.access.RUnlock()
 	<-closeSignal.Wait()

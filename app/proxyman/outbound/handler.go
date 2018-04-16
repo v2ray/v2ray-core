@@ -10,7 +10,7 @@ import (
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/ray"
+	"v2ray.com/core/transport/pipe"
 )
 
 type Handler struct {
@@ -74,21 +74,21 @@ func (h *Handler) Tag() string {
 }
 
 // Dispatch implements proxy.Outbound.Dispatch.
-func (h *Handler) Dispatch(ctx context.Context, outboundRay ray.OutboundRay) {
+func (h *Handler) Dispatch(ctx context.Context, link *core.Link) {
 	if h.mux != nil {
-		if err := h.mux.Dispatch(ctx, outboundRay); err != nil {
+		if err := h.mux.Dispatch(ctx, link); err != nil {
 			newError("failed to process outbound traffic").Base(err).WithContext(ctx).WriteToLog()
-			outboundRay.OutboundOutput().CloseError()
+			pipe.CloseError(link.Writer)
 		}
 	} else {
-		if err := h.proxy.Process(ctx, outboundRay, h); err != nil {
+		if err := h.proxy.Process(ctx, link, h); err != nil {
 			// Ensure outbound ray is properly closed.
 			newError("failed to process outbound traffic").Base(err).WithContext(ctx).WriteToLog()
-			outboundRay.OutboundOutput().CloseError()
+			pipe.CloseError(link.Writer)
 		} else {
-			outboundRay.OutboundOutput().Close()
+			common.Close(link.Writer)
 		}
-		outboundRay.OutboundInput().CloseError()
+		pipe.CloseError(link.Reader)
 	}
 }
 
@@ -101,9 +101,12 @@ func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Conn
 			if handler != nil {
 				newError("proxying to ", tag, " for dest ", dest).AtDebug().WithContext(ctx).WriteToLog()
 				ctx = proxy.ContextWithTarget(ctx, dest)
-				stream := ray.New(ctx)
-				go handler.Dispatch(ctx, stream)
-				return ray.NewConnection(stream.InboundOutput(), stream.InboundInput()), nil
+
+				uplinkReader, uplinkWriter := pipe.New()
+				downlinkReader, downlinkWriter := pipe.New()
+
+				go handler.Dispatch(ctx, &core.Link{Reader: uplinkReader, Writer: downlinkWriter})
+				return net.NewConnection(net.ConnectionInputMulti(uplinkWriter), net.ConnectionOutputMulti(downlinkReader)), nil
 			}
 
 			newError("failed to get outbound handler with tag: ", tag).AtWarning().WithContext(ctx).WriteToLog()

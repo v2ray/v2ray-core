@@ -172,6 +172,12 @@ func (mb *MultiBuffer) Write(b []byte) (int, error) {
 	return totalBytes, nil
 }
 
+// WriteMultiBuffer implements Writer.
+func (mb *MultiBuffer) WriteMultiBuffer(b MultiBuffer) error {
+	*mb = append(*mb, b...)
+	return nil
+}
+
 // Len returns the total number of bytes in the MultiBuffer.
 func (mb MultiBuffer) Len() int32 {
 	size := int32(0)
