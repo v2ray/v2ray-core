@@ -4,14 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/rand"
-	"testing"
-
-	"context"
 	"io"
+	"testing"
 
 	"v2ray.com/core/common"
 	. "v2ray.com/core/common/buf"
-	"v2ray.com/core/transport/ray"
+	"v2ray.com/core/transport/pipe"
 	. "v2ray.com/ext/assert"
 )
 
@@ -36,16 +34,16 @@ func TestWriter(t *testing.T) {
 func TestBytesWriterReadFrom(t *testing.T) {
 	assert := With(t)
 
-	cache := ray.NewStream(context.Background())
+	pReader, pWriter := pipe.New()
 	const size = 50000
 	reader := bufio.NewReader(io.LimitReader(rand.Reader, size))
-	writer := NewBufferedWriter(cache)
+	writer := NewBufferedWriter(pWriter)
 	writer.SetBuffered(false)
 	nBytes, err := reader.WriteTo(writer)
 	assert(nBytes, Equals, int64(size))
 	assert(err, IsNil)
 
-	mb, err := cache.ReadMultiBuffer()
+	mb, err := pReader.ReadMultiBuffer()
 	assert(err, IsNil)
 	assert(mb.Len(), Equals, int32(size))
 }
