@@ -3,17 +3,17 @@ package http
 import (
 	"context"
 	gotls "crypto/tls"
-	"io"
 	"net/http"
 	"net/url"
 	"sync"
 
 	"golang.org/x/net/http2"
-
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
+	"v2ray.com/core/transport/pipe"
 )
 
 var (
@@ -83,11 +83,12 @@ func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error
 		return nil, err
 	}
 
-	preader, pwriter := io.Pipe()
+	preader, pwriter := pipe.New(pipe.WithSizeLimit(20 * 1024))
+	breader := buf.NewBufferedReader(preader)
 	request := &http.Request{
 		Method: "PUT",
 		Host:   httpSettings.getRandomHost(),
-		Body:   preader,
+		Body:   buf.NewBufferedReader(preader),
 		URL: &url.URL{
 			Scheme: "https",
 			Host:   dest.NetAddr(),
@@ -105,10 +106,12 @@ func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error
 		return nil, newError("unexpected status", response.StatusCode).AtWarning()
 	}
 
+	bwriter := buf.NewBufferedWriter(pwriter)
+	common.Must(bwriter.SetBuffered(false))
 	return &Connection{
 		Reader: response.Body,
-		Writer: pwriter,
-		Closer: common.NewChainedClosable(preader, pwriter, response.Body),
+		Writer: bwriter,
+		Closer: common.NewChainedClosable(breader, bwriter, response.Body),
 		Local: &net.TCPAddr{
 			IP:   []byte{0, 0, 0, 0},
 			Port: 0,

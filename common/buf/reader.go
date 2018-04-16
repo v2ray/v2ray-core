@@ -199,3 +199,11 @@ func (r *BufferedReader) WriteTo(writer io.Writer) (int64, error) {
 	}
 	return nBytes, err
 }
+
+// Close implements io.Closer.
+func (r *BufferedReader) Close() error {
+	if !r.leftOver.IsEmpty() {
+		r.leftOver.Release()
+	}
+	return common.Close(r.stream)
+}
