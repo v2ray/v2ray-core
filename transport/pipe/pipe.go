@@ -19,6 +19,7 @@ func WithSizeLimit(limit int32) Option {
 	}
 }
 
+// New creates a new Reader and Writer that connects to each other.
 func New(opts ...Option) (*Reader, *Writer) {
 	p := &pipe{
 		limit:       defaultLimit,

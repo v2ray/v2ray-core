@@ -62,6 +62,7 @@ func (p *pipe) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	for {
 		data, err := p.readMultiBufferInternal()
 		if data != nil || err != nil {
+			p.writeSignal.Signal()
 			return data, err
 		}
 
