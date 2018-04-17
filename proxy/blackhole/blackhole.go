@@ -31,9 +31,11 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 
 // Process implements OutboundHandler.Dispatch().
 func (h *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dialer) error {
-	h.response.WriteTo(link.Writer)
-	// Sleep a little here to make sure the response is sent to client.
-	time.Sleep(time.Second)
+	nBytes := h.response.WriteTo(link.Writer)
+	if nBytes > 0 {
+		// Sleep a little here to make sure the response is sent to client.
+		time.Sleep(time.Second)
+	}
 	pipe.CloseError(link.Writer)
 	return nil
 }
