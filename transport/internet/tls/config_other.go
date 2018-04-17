@@ -4,7 +4,7 @@ package tls
 
 import "crypto/x509"
 
-func (c *Config) GetCertPool() *x509.CertPool {
+func (c *Config) getCertPool() *x509.CertPool {
 	pool, err := x509.SystemCertPool()
 	if err != nil {
 		newError("failed to get system cert pool.").Base(err).WriteToLog()

@@ -23,6 +23,7 @@ func ParseCertificate(c *cert.Certificate) *Certificate {
 	}
 }
 
+// BuildCertificates builds a list of TLS certificates from proto definition.
 func (c *Config) BuildCertificates() []tls.Certificate {
 	certs := make([]tls.Certificate, 0, len(c.Certificate))
 	for _, entry := range c.Certificate {
@@ -118,10 +119,11 @@ func getGetCertificateFunc(c *tls.Config, ca []*Certificate) func(hello *tls.Cli
 	}
 }
 
+// GetTLSConfig converts this Config into tls.Config.
 func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
 	config := &tls.Config{
 		ClientSessionCache: globalSessionCache,
-		RootCAs:            c.GetCertPool(),
+		RootCAs:            c.getCertPool(),
 	}
 	if c == nil {
 		return config
@@ -153,8 +155,10 @@ func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
 	return config
 }
 
+// Option for building TLS config.
 type Option func(*tls.Config)
 
+// WithDestination sets the server name in TLS config.
 func WithDestination(dest net.Destination) Option {
 	return func(config *tls.Config) {
 		if dest.Address.Family().IsDomain() && len(config.ServerName) == 0 {
@@ -163,6 +167,7 @@ func WithDestination(dest net.Destination) Option {
 	}
 }
 
+// WithNextProto sets the ALPN values in TLS config.
 func WithNextProto(protocol ...string) Option {
 	return func(config *tls.Config) {
 		if len(config.NextProtos) == 0 {
@@ -171,6 +176,7 @@ func WithNextProto(protocol ...string) Option {
 	}
 }
 
+// ConfigFromContext fetches Config from context. Nil if not found.
 func ConfigFromContext(ctx context.Context) *Config {
 	securitySettings := internet.SecuritySettingsFromContext(ctx)
 	if securitySettings == nil {

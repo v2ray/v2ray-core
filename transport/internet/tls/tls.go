@@ -29,11 +29,13 @@ func (c *conn) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	return c.mergingWriter.Flush()
 }
 
+// Client initiates a TLS client handshake on the given connection.
 func Client(c net.Conn, config *tls.Config) net.Conn {
 	tlsConn := tls.Client(c, config)
 	return &conn{Conn: tlsConn}
 }
 
+// Server initiates a TLS server handshake on the given connection.
 func Server(c net.Conn, config *tls.Config) net.Conn {
 	tlsConn := tls.Server(c, config)
 	return &conn{Conn: tlsConn}

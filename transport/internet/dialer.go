@@ -20,6 +20,7 @@ func RegisterTransportDialer(protocol TransportProtocol, dialer Dialer) error {
 	return nil
 }
 
+// Dial dials a internet connection towards the given destination.
 func Dial(ctx context.Context, dest net.Destination) (Connection, error) {
 	if dest.Network == net.Network_TCP {
 		streamSettings := StreamSettingsFromContext(ctx)
