@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -16,7 +17,6 @@ import (
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
-	"v2ray.com/core/proxy/blackhole"
 	"v2ray.com/core/proxy/freedom"
 	v2http "v2ray.com/core/proxy/http"
 	v2httptest "v2ray.com/core/testing/servers/http"
@@ -84,6 +84,19 @@ func TestHttpConformance(t *testing.T) {
 func TestHttpError(t *testing.T) {
 	assert := With(t)
 
+	tcpServer := tcp.Server{
+		MsgProcessor: func(msg []byte) []byte {
+			return []byte{}
+		},
+	}
+	dest, err := tcpServer.Start()
+	assert(err, IsNil)
+	defer tcpServer.Close()
+
+	time.AfterFunc(time.Second*2, func() {
+		tcpServer.ShouldClose = true
+	})
+
 	serverPort := tcp.PickPort()
 	serverConfig := &core.Config{
 		Inbound: []*core.InboundHandlerConfig{
@@ -97,7 +110,7 @@ func TestHttpError(t *testing.T) {
 		},
 		Outbound: []*core.OutboundHandlerConfig{
 			{
-				ProxySettings: serial.ToTypedMessage(&blackhole.Config{}),
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
 			},
 		},
 	}
@@ -116,7 +129,7 @@ func TestHttpError(t *testing.T) {
 			Transport: transport,
 		}
 
-		resp, err := client.Get("http://127.0.0.1:80")
+		resp, err := client.Get("http://127.0.0.1:" + dest.Port.String())
 		assert(err, IsNil)
 		assert(resp.StatusCode, Equals, 503)
 	}

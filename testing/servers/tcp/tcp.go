@@ -10,6 +10,7 @@ import (
 type Server struct {
 	Port         net.Port
 	MsgProcessor func(msg []byte) []byte
+	ShouldClose  bool
 	SendFirst    []byte
 	Listen       net.Address
 	listener     *net.TCPListener
@@ -63,6 +64,9 @@ func (server *Server) handleConnection(conn net.Conn) {
 		response := server.MsgProcessor(request[:nBytes])
 		if _, err := conn.Write(response); err != nil {
 			fmt.Println("Failed to write response:", err)
+			break
+		}
+		if server.ShouldClose {
 			break
 		}
 	}
