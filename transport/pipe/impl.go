@@ -1,6 +1,7 @@
 package pipe
 
 import (
+	"errors"
 	"io"
 	"sync"
 	"time"
@@ -26,9 +27,14 @@ type pipe struct {
 	state       state
 }
 
+var errBufferFull = errors.New("buffer full")
+
 func (p *pipe) getState(forRead bool) error {
 	switch p.state {
 	case open:
+		if !forRead && p.limit >= 0 && p.data.Len() > p.limit {
+			return errBufferFull
+		}
 		return nil
 	case closed:
 		if forRead {
@@ -105,9 +111,10 @@ func (p *pipe) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	}
 
 	for {
-		if p.limit < 0 || p.data.Len()+mb.Len() <= p.limit {
-			defer p.readSignal.Signal()
-			return p.writeMultiBufferInternal(mb)
+		err := p.writeMultiBufferInternal(mb)
+		if err == nil || err != errBufferFull {
+			p.readSignal.Signal()
+			return err
 		}
 
 		<-p.writeSignal.Wait()
