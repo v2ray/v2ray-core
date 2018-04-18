@@ -254,7 +254,9 @@ func (m *Client) handleStatusEnd(meta *FrameMetadata, reader *buf.BufferedReader
 }
 
 func (m *Client) fetchOutput() {
-	defer common.Must(m.done.Close())
+	defer func() {
+		common.Must(m.done.Close())
+	}()
 
 	reader := buf.NewBufferedReader(m.link.Reader)
 
