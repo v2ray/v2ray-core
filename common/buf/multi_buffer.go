@@ -179,9 +179,13 @@ func (mb *MultiBuffer) WriteMultiBuffer(b MultiBuffer) error {
 }
 
 // Len returns the total number of bytes in the MultiBuffer.
-func (mb MultiBuffer) Len() int32 {
+func (mb *MultiBuffer) Len() int32 {
+	if mb == nil {
+		return 0
+	}
+
 	size := int32(0)
-	for _, b := range mb {
+	for _, b := range *mb {
 		size += b.Len()
 	}
 	return size
