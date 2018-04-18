@@ -107,7 +107,7 @@ func NewClient(p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client
 		if err := p.Process(ctx, &core.Link{Reader: uplinkReader, Writer: downlinkWriter}, dialer); err != nil {
 			errors.New("failed to handler mux client connection").Base(err).WriteToLog()
 		}
-		c.done.Close()
+		common.Must(c.done.Close())
 		cancel()
 	}()
 
@@ -253,7 +253,7 @@ func (m *Client) handleStatusEnd(meta *FrameMetadata, reader *buf.BufferedReader
 }
 
 func (m *Client) fetchOutput() {
-	defer m.done.Close()
+	defer common.Must(m.done.Close())
 
 	reader := buf.NewBufferedReader(m.link.Reader)
 
