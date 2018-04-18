@@ -3,6 +3,7 @@ package tls
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"time"
 
 	"v2ray.com/core/common/net"
@@ -41,8 +42,14 @@ func (c *Config) BuildCertificates() []tls.Certificate {
 }
 
 func isCertificateExpired(c *tls.Certificate) bool {
+	if c.Leaf == nil && len(c.Certificate) > 0 {
+		if pc, err := x509.ParseCertificate(c.Certificate[0]); err == nil {
+			c.Leaf = pc
+		}
+	}
+
 	// If leaf is not there, the certificate is probably not used yet. We trust user to provide a valid certificate.
-	return c.Leaf != nil && c.Leaf.NotAfter.After(time.Now().Add(-time.Minute))
+	return c.Leaf != nil && c.Leaf.NotAfter.Before(time.Now().Add(-time.Minute))
 }
 
 func issueCertificate(rawCA *Certificate, domain string) (*tls.Certificate, error) {
