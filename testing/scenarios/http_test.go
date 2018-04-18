@@ -16,6 +16,7 @@ import (
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
+	"v2ray.com/core/proxy/blackhole"
 	"v2ray.com/core/proxy/freedom"
 	v2http "v2ray.com/core/proxy/http"
 	v2httptest "v2ray.com/core/testing/servers/http"
@@ -75,6 +76,49 @@ func TestHttpConformance(t *testing.T) {
 		assert(err, IsNil)
 		assert(string(content), Equals, "Home")
 
+	}
+
+	CloseAllServers(servers)
+}
+
+func TestHttpError(t *testing.T) {
+	assert := With(t)
+
+	serverPort := tcp.PickPort()
+	serverConfig := &core.Config{
+		Inbound: []*core.InboundHandlerConfig{
+			{
+				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
+					PortRange: net.SinglePortRange(serverPort),
+					Listen:    net.NewIPOrDomain(net.LocalHostIP),
+				}),
+				ProxySettings: serial.ToTypedMessage(&v2http.ServerConfig{}),
+			},
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&blackhole.Config{}),
+			},
+		},
+	}
+
+	servers, err := InitializeServerConfigs(serverConfig)
+	assert(err, IsNil)
+
+	{
+		transport := &http.Transport{
+			Proxy: func(req *http.Request) (*url.URL, error) {
+				return url.Parse("http://127.0.0.1:" + serverPort.String())
+			},
+		}
+
+		client := &http.Client{
+			Transport: transport,
+		}
+
+		resp, err := client.Get("http://127.0.0.1:80")
+		assert(err, IsNil)
+		assert(resp.StatusCode, Equals, 503)
 	}
 
 	CloseAllServers(servers)
