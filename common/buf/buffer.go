@@ -97,8 +97,8 @@ func (b *Buffer) BytesTo(to int32) []byte {
 	return b.v[b.start : b.start+to]
 }
 
-// Slice cuts the buffer at the given position.
-func (b *Buffer) Slice(from, to int32) {
+// Resize cuts the buffer at the given position.
+func (b *Buffer) Resize(from, to int32) {
 	if from < 0 {
 		from += b.Len()
 	}
@@ -112,8 +112,8 @@ func (b *Buffer) Slice(from, to int32) {
 	b.start += from
 }
 
-// SliceFrom cuts the buffer at the given position.
-func (b *Buffer) SliceFrom(from int32) {
+// Advance cuts the buffer at the given position.
+func (b *Buffer) Advance(from int32) {
 	if from < 0 {
 		from += b.Len()
 	}

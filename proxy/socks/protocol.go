@@ -274,7 +274,7 @@ func DecodeUDPPacket(packet *buf.Buffer) (*protocol.RequestHeader, error) {
 		return nil, newError("discarding fragmented payload.")
 	}
 
-	packet.SliceFrom(3)
+	packet.Advance(3)
 
 	addr, port, err := addrParser.ReadAddressPort(nil, packet)
 	if err != nil {

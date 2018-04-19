@@ -145,7 +145,7 @@ func (r *AuthenticationReader) readInternal(soft bool) (*buf.Buffer, error) {
 		b.Release()
 		return nil, err
 	}
-	b.Slice(0, int32(len(rb)))
+	b.Resize(0, int32(len(rb)))
 
 	return b, nil
 }

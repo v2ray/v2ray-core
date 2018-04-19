@@ -98,7 +98,7 @@ func ReadFrameFrom(b *buf.Buffer) (*FrameMetadata, error) {
 
 	if f.SessionStatus == SessionStatusNew {
 		network := TargetNetwork(b.Byte(4))
-		b.SliceFrom(5)
+		b.Advance(5)
 
 		addr, port, err := addrParser.ReadAddressPort(nil, b)
 		if err != nil {

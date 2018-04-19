@@ -295,7 +295,7 @@ func DecodeUDPPacket(user *protocol.User, payload *buf.Buffer) (*protocol.Reques
 				return nil, nil, newError("invalid OTA")
 			}
 
-			payload.Slice(0, payloadLen)
+			payload.Resize(0, payloadLen)
 		}
 	}
 

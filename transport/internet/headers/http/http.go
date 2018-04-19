@@ -66,7 +66,7 @@ func (*HeaderReader) Read(reader io.Reader) (*buf.Buffer, error) {
 			return nil, err
 		}
 		if n := bytes.Index(buffer.Bytes(), []byte(ENDING)); n != -1 {
-			buffer.SliceFrom(int32(n + len(ENDING)))
+			buffer.Advance(int32(n + len(ENDING)))
 			endingDetected = true
 			break
 		}
