@@ -29,7 +29,7 @@ type cachedReader struct {
 func (r *cachedReader) Cache(b *buf.Buffer) {
 	mb, _ := r.reader.ReadMultiBufferWithTimeout(time.Millisecond * 100)
 	if !mb.IsEmpty() {
-		r.cache.WriteMultiBuffer(mb)
+		common.Must(r.cache.WriteMultiBuffer(mb))
 	}
 	common.Must(b.Reset(func(x []byte) (int, error) {
 		return r.cache.Copy(x), nil

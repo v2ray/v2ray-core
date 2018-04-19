@@ -45,6 +45,7 @@ func (m *Instance) ForLevel(level uint32) core.Policy {
 	return core.DefaultPolicy()
 }
 
+// ForSystem implements core.PolicyManager.
 func (m *Instance) ForSystem() core.SystemPolicy {
 	if m.system == nil {
 		return core.SystemPolicy{}

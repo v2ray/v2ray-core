@@ -68,6 +68,7 @@ func (p *Policy) ToCorePolicy() core.Policy {
 	return cp
 }
 
+// ToCorePolicy converts this SystemPolicy to core.SystemPolicy.
 func (p *SystemPolicy) ToCorePolicy() core.SystemPolicy {
 	return core.SystemPolicy{
 		Stats: core.SystemStatsPolicy{
