@@ -70,8 +70,8 @@ func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 	defer buffer.Release()
 
 	buffer.AppendBytes(Version)
-	buffer.Append(c.requestBodyIV[:])
-	buffer.Append(c.requestBodyKey[:])
+	buffer.Write(c.requestBodyIV[:])
+	buffer.Write(c.requestBodyKey[:])
 	buffer.AppendBytes(c.responseHeader, byte(header.Option))
 
 	padingLen := dice.Roll(16)

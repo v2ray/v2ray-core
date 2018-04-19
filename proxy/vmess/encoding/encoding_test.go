@@ -42,7 +42,7 @@ func TestRequestSerialization(t *testing.T) {
 	common.Must(client.EncodeRequestHeader(expectedRequest, buffer))
 
 	buffer2 := buf.New()
-	buffer2.Append(buffer.Bytes())
+	buffer2.Write(buffer.Bytes())
 
 	sessionHistory := NewSessionHistory()
 	defer common.Close(sessionHistory)
@@ -95,7 +95,7 @@ func TestInvalidRequest(t *testing.T) {
 	common.Must(client.EncodeRequestHeader(expectedRequest, buffer))
 
 	buffer2 := buf.New()
-	buffer2.Append(buffer.Bytes())
+	buffer2.Write(buffer.Bytes())
 
 	sessionHistory := NewSessionHistory()
 	defer common.Close(sessionHistory)
@@ -135,7 +135,7 @@ func TestMuxRequest(t *testing.T) {
 	common.Must(client.EncodeRequestHeader(expectedRequest, buffer))
 
 	buffer2 := buf.New()
-	buffer2.Append(buffer.Bytes())
+	buffer2.Write(buffer.Bytes())
 
 	sessionHistory := NewSessionHistory()
 	defer common.Close(sessionHistory)

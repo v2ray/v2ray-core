@@ -232,7 +232,7 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload []byte) (*buf.Buff
 		return nil, newError("failed to write address").Base(err)
 	}
 
-	buffer.Append(payload)
+	buffer.Write(payload)
 
 	if !account.Cipher.IsAEAD() && request.Option.Has(RequestOptionOneTimeAuth) {
 		authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))

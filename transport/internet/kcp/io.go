@@ -85,7 +85,7 @@ func (w *KCPPacketWriter) Write(b []byte) (int, error) {
 			return len(eb), nil
 		}))
 	} else {
-		bb.Append(b)
+		bb.Write(b)
 	}
 
 	_, err := w.Writer.Write(bb.Bytes())

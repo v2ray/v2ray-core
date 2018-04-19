@@ -76,7 +76,7 @@ func (s *DataSegment) parse(conv uint16, cmd Command, opt SegmentOption, buf []b
 		return false, nil
 	}
 	s.Data().Clear()
-	s.Data().Append(buf[:dataLen])
+	s.Data().Write(buf[:dataLen])
 	buf = buf[dataLen:]
 
 	return true, buf

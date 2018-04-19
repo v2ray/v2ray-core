@@ -43,7 +43,7 @@ func TestReaderWriter(t *testing.T) {
 
 	writePayload := func(writer *Writer, payload ...byte) error {
 		b := buf.New()
-		b.Append(payload)
+		b.Write(payload)
 		return writer.WriteMultiBuffer(buf.NewMultiBufferValue(b))
 	}
 

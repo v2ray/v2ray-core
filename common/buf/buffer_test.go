@@ -15,7 +15,7 @@ func TestBufferClear(t *testing.T) {
 	defer buffer.Release()
 
 	payload := "Bytes"
-	buffer.Append([]byte(payload))
+	buffer.Write([]byte(payload))
 	assert(buffer.Len(), Equals, int32(len(payload)))
 
 	buffer.Clear()

@@ -105,7 +105,7 @@ func TestTCPRequest(t *testing.T) {
 	runTest := func(request *protocol.RequestHeader, payload []byte) {
 		data := buf.New()
 		defer data.Release()
-		data.Append(payload)
+		data.Write(payload)
 
 		cache := buf.New()
 		defer cache.Release()

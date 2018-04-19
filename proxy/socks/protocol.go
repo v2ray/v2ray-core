@@ -255,7 +255,7 @@ func writeSocks4Response(writer io.Writer, errCode byte, address net.Address, po
 
 	buffer.AppendBytes(0x00, errCode)
 	common.Must(buffer.AppendSupplier(serial.WriteUint16(port.Value())))
-	buffer.Append(address.IP())
+	buffer.Write(address.IP())
 	_, err := writer.Write(buffer.Bytes())
 	return err
 }
@@ -292,7 +292,7 @@ func EncodeUDPPacket(request *protocol.RequestHeader, data []byte) (*buf.Buffer,
 		b.Release()
 		return nil, err
 	}
-	b.Append(data)
+	b.Write(data)
 	return b, nil
 }
 
@@ -358,9 +358,9 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 		account := rawAccount.(*Account)
 
 		b.AppendBytes(0x01, byte(len(account.Username)))
-		b.Append([]byte(account.Username))
+		b.Write([]byte(account.Username))
 		b.AppendBytes(byte(len(account.Password)))
-		b.Append([]byte(account.Password))
+		b.Write([]byte(account.Password))
 	}
 
 	if _, err := writer.Write(b.Bytes()); err != nil {

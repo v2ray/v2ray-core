@@ -24,7 +24,7 @@ func TestDataSegment(t *testing.T) {
 		Number:      4,
 		SendingNext: 5,
 	}
-	seg.Data().Append([]byte{'a', 'b', 'c', 'd'})
+	seg.Data().Write([]byte{'a', 'b', 'c', 'd'})
 
 	nBytes := seg.ByteSize()
 	bytes := make([]byte, nBytes)

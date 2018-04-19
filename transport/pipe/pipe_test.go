@@ -15,7 +15,7 @@ func TestPipeReadWrite(t *testing.T) {
 	pReader, pWriter := New()
 	payload := []byte{'a', 'b', 'c', 'd'}
 	b := buf.New()
-	b.Append(payload)
+	b.Write(payload)
 	assert(pWriter.WriteMultiBuffer(buf.NewMultiBufferValue(b)), IsNil)
 
 	rb, err := pReader.ReadMultiBuffer()
@@ -29,7 +29,7 @@ func TestPipeCloseError(t *testing.T) {
 	pReader, pWriter := New()
 	payload := []byte{'a', 'b', 'c', 'd'}
 	b := buf.New()
-	b.Append(payload)
+	b.Write(payload)
 	assert(pWriter.WriteMultiBuffer(buf.NewMultiBufferValue(b)), IsNil)
 	pWriter.CloseError()
 
@@ -44,7 +44,7 @@ func TestPipeClose(t *testing.T) {
 	pReader, pWriter := New()
 	payload := []byte{'a', 'b', 'c', 'd'}
 	b := buf.New()
-	b.Append(payload)
+	b.Write(payload)
 	assert(pWriter.WriteMultiBuffer(buf.NewMultiBufferValue(b)), IsNil)
 	assert(pWriter.Close(), IsNil)
 
