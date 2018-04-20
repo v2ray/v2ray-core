@@ -48,15 +48,23 @@ func ConnectionOutputMulti(reader buf.Reader) ConnectionOption {
 	}
 }
 
-func ConnectionOnClose(s *signal.Notifier) ConnectionOption {
+func ConnectionOnClose(n io.Closer) ConnectionOption {
 	return func(c *connection) {
-		c.onClose = s
+		c.onClose = n
 	}
 }
 
 func NewConnection(opts ...ConnectionOption) net.Conn {
 	c := &connection{
 		done: signal.NewDone(),
+		local: &net.TCPAddr{
+			IP:   []byte{0, 0, 0, 0},
+			Port: 0,
+		},
+		remote: &net.TCPAddr{
+			IP:   []byte{0, 0, 0, 0},
+			Port: 0,
+		},
 	}
 
 	for _, opt := range opts {
@@ -70,7 +78,7 @@ type connection struct {
 	reader  *buf.BufferedReader
 	writer  buf.Writer
 	done    *signal.Done
-	onClose *signal.Notifier
+	onClose io.Closer
 	local   Addr
 	remote  Addr
 }
@@ -110,7 +118,7 @@ func (c *connection) Close() error {
 	common.Close(c.reader)
 	common.Close(c.writer)
 	if c.onClose != nil {
-		c.onClose.Signal()
+		return c.onClose.Close()
 	}
 
 	return nil

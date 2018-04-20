@@ -112,19 +112,11 @@ func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error
 
 	bwriter := buf.NewBufferedWriter(pwriter)
 	common.Must(bwriter.SetBuffered(false))
-	return &Connection{
-		Reader: response.Body,
-		Writer: bwriter,
-		Closer: common.NewChainedClosable(breader, bwriter, response.Body),
-		Local: &net.TCPAddr{
-			IP:   []byte{0, 0, 0, 0},
-			Port: 0,
-		},
-		Remote: &net.TCPAddr{
-			IP:   []byte{0, 0, 0, 0},
-			Port: 0,
-		},
-	}, nil
+	return net.NewConnection(
+		net.ConnectionOutput(response.Body),
+		net.ConnectionInput(bwriter),
+		net.ConnectionOnClose(common.NewChainedClosable(breader, bwriter, response.Body)),
+	), nil
 }
 
 func init() {

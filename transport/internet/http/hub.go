@@ -64,13 +64,14 @@ func (l *Listener) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 		f.Flush()
 	}
 	done := signal.NewDone()
-	l.handler(&Connection{
-		Reader: request.Body,
-		Writer: flushWriter{w: writer, d: done},
-		Closer: common.NewChainedClosable(done, request.Body),
-		Local:  l.Addr(),
-		Remote: l.Addr(),
-	})
+	conn := net.NewConnection(
+		net.ConnectionOutput(request.Body),
+		net.ConnectionInput(flushWriter{w: writer, d: done}),
+		net.ConnectionOnClose(common.NewChainedClosable(done, request.Body)),
+		net.ConnectionLocalAddr(l.Addr()),
+		net.ConnectionRemoteAddr(l.Addr()),
+	)
+	l.handler(conn)
 	<-done.Wait()
 }
 

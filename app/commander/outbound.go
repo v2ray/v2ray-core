@@ -80,7 +80,7 @@ func (co *Outbound) Dispatch(ctx context.Context, link *core.Link) {
 	}
 
 	closeSignal := signal.NewNotifier()
-	c := net.NewConnection(net.ConnectionInputMulti(link.Writer), net.ConnectionOutputMulti(link.Reader), net.ConnectionOnClose(closeSignal))
+	c := net.NewConnection(net.ConnectionInputMulti(link.Writer), net.ConnectionOutputMulti(link.Reader), net.ConnectionOnClose(signal.NotifyClose(closeSignal)))
 	co.listener.add(c)
 	co.access.RUnlock()
 	<-closeSignal.Wait()
