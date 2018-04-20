@@ -97,7 +97,11 @@ func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error
 		Proto:      "HTTP/2",
 		ProtoMajor: 2,
 		ProtoMinor: 0,
+		Header:     make(http.Header),
 	}
+	// Disable any compression method from server.
+	request.Header.Set("Accept-Encoding", "identity")
+
 	response, err := client.Do(request)
 	if err != nil {
 		return nil, newError("failed to dial to ", dest).Base(err).AtWarning()
