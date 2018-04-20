@@ -104,7 +104,9 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 	reader := bufio.NewReaderSize(readerOnly{conn}, buf.Size)
 
 Start:
-	conn.SetReadDeadline(time.Now().Add(s.policy().Timeouts.Handshake))
+	if err := conn.SetReadDeadline(time.Now().Add(s.policy().Timeouts.Handshake)); err != nil {
+		newError("failed to set read deadline").Base(err).WithContext(ctx).WriteToLog()
+	}
 
 	request, err := http.ReadRequest(reader)
 	if err != nil {
@@ -123,7 +125,9 @@ Start:
 	}
 
 	newError("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]").WithContext(ctx).WriteToLog()
-	conn.SetReadDeadline(time.Time{})
+	if err := conn.SetReadDeadline(time.Time{}); err != nil {
+		newError("failed to clear read deadline").Base(err).WithContext(ctx).WriteToLog()
+	}
 
 	defaultPort := net.Port(80)
 	if strings.ToLower(request.URL.Scheme) == "https" {
@@ -248,10 +252,11 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 		return err
 	}
 
+	// Plain HTTP request is not a stream. The request always finishes before response. Hense request has to be closed later.
+	defer common.Close(link.Writer)
 	var result error = errWaitAnother
 
 	requestDone := func() error {
-		defer common.Close(link.Writer)
 		request.Header.Set("Connection", "close")
 
 		requestWriter := buf.NewBufferedWriter(link.Writer)
