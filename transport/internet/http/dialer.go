@@ -84,11 +84,11 @@ func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error
 	}
 
 	preader, pwriter := pipe.New(pipe.WithSizeLimit(20 * 1024))
-	breader := buf.NewBufferedReader(preader)
+	breader := &buf.BufferedReader{Reader: preader}
 	request := &http.Request{
 		Method: "PUT",
 		Host:   httpSettings.getRandomHost(),
-		Body:   buf.NewBufferedReader(preader),
+		Body:   breader,
 		URL: &url.URL{
 			Scheme: "https",
 			Host:   dest.NetAddr(),

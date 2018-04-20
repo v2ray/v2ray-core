@@ -38,13 +38,13 @@ func ConnectionInputMulti(writer buf.Writer) ConnectionOption {
 
 func ConnectionOutput(reader io.Reader) ConnectionOption {
 	return func(c *connection) {
-		c.reader = buf.NewBufferedReader(buf.NewReader(reader))
+		c.reader = &buf.BufferedReader{Reader: buf.NewReader(reader)}
 	}
 }
 
 func ConnectionOutputMulti(reader buf.Reader) ConnectionOption {
 	return func(c *connection) {
-		c.reader = buf.NewBufferedReader(reader)
+		c.reader = &buf.BufferedReader{Reader: reader}
 	}
 }
 

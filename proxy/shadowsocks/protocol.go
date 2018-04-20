@@ -52,7 +52,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	if err != nil {
 		return nil, nil, newError("failed to initialize decoding stream").Base(err).AtError()
 	}
-	br := buf.NewBufferedReader(r)
+	br := &buf.BufferedReader{Reader: r}
 	reader = nil
 
 	authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
@@ -109,7 +109,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 		return nil, nil, newError("invalid remote address.")
 	}
 
-	br.SetBuffered(false)
+	br.Direct = true
 
 	var chunkReader buf.Reader
 	if request.Option.Has(RequestOptionOneTimeAuth) {

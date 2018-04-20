@@ -67,7 +67,7 @@ func TestDiscardBytesMultiBuffer(t *testing.T) {
 	common.Must2(buffer.ReadFrom(io.LimitReader(rand.Reader, size)))
 
 	r := NewReader(buffer)
-	nBytes, err := io.Copy(DiscardBytes, NewBufferedReader(r))
+	nBytes, err := io.Copy(DiscardBytes, &BufferedReader{Reader: r})
 	assert(nBytes, Equals, int64(size))
 	assert(err, IsNil)
 }

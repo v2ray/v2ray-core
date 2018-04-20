@@ -39,7 +39,7 @@ func TestBytesReaderWriteTo(t *testing.T) {
 	assert := With(t)
 
 	pReader, pWriter := pipe.New()
-	reader := NewBufferedReader(pReader)
+	reader := &BufferedReader{Reader: pReader}
 	b1 := New()
 	b1.AppendBytes('a', 'b', 'c')
 	b2 := New()
@@ -66,7 +66,7 @@ func TestBytesReaderMultiBuffer(t *testing.T) {
 	assert := With(t)
 
 	pReader, pWriter := pipe.New()
-	reader := NewBufferedReader(pReader)
+	reader := &BufferedReader{Reader: pReader}
 	b1 := New()
 	b1.AppendBytes('a', 'b', 'c')
 	b2 := New()

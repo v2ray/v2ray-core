@@ -75,32 +75,17 @@ func (r *BytesToBufferReader) ReadMultiBuffer() (MultiBuffer, error) {
 
 // BufferedReader is a Reader that keeps its internal buffer.
 type BufferedReader struct {
-	stream   Reader
-	leftOver MultiBuffer
-	buffered bool
-}
-
-// NewBufferedReader returns a new BufferedReader.
-func NewBufferedReader(reader Reader) *BufferedReader {
-	return &BufferedReader{
-		stream:   reader,
-		buffered: true,
-	}
-}
-
-// SetBuffered sets whether to keep the interal buffer.
-func (r *BufferedReader) SetBuffered(f bool) {
-	r.buffered = f
-}
-
-// IsBuffered returns true if internal buffer is used.
-func (r *BufferedReader) IsBuffered() bool {
-	return r.buffered
+	// Reader is the underlying reader to be read from
+	Reader Reader
+	// Buffer is the internal buffer to be read from first
+	Buffer MultiBuffer
+	// Direct indicates whether or not to use the internal buffer
+	Direct bool
 }
 
 // BufferedBytes returns the number of bytes that is cached in this reader.
 func (r *BufferedReader) BufferedBytes() int32 {
-	return r.leftOver.Len()
+	return r.Buffer.Len()
 }
 
 // ReadByte implements io.ByteReader.
@@ -112,26 +97,26 @@ func (r *BufferedReader) ReadByte() (byte, error) {
 
 // Read implements io.Reader. It reads from internal buffer first (if available) and then reads from the underlying reader.
 func (r *BufferedReader) Read(b []byte) (int, error) {
-	if r.leftOver != nil {
-		nBytes, _ := r.leftOver.Read(b)
-		if r.leftOver.IsEmpty() {
-			r.leftOver.Release()
-			r.leftOver = nil
+	if r.Buffer != nil {
+		nBytes, _ := r.Buffer.Read(b)
+		if r.Buffer.IsEmpty() {
+			r.Buffer.Release()
+			r.Buffer = nil
 		}
 		return nBytes, nil
 	}
 
-	if !r.buffered {
-		if reader, ok := r.stream.(io.Reader); ok {
+	if r.Direct {
+		if reader, ok := r.Reader.(io.Reader); ok {
 			return reader.Read(b)
 		}
 	}
 
-	mb, err := r.stream.ReadMultiBuffer()
+	mb, err := r.Reader.ReadMultiBuffer()
 	if mb != nil {
 		nBytes, _ := mb.Read(b)
 		if !mb.IsEmpty() {
-			r.leftOver = mb
+			r.Buffer = mb
 		}
 		return nBytes, err
 	}
@@ -140,28 +125,28 @@ func (r *BufferedReader) Read(b []byte) (int, error) {
 
 // ReadMultiBuffer implements Reader.
 func (r *BufferedReader) ReadMultiBuffer() (MultiBuffer, error) {
-	if r.leftOver != nil {
-		mb := r.leftOver
-		r.leftOver = nil
+	if r.Buffer != nil {
+		mb := r.Buffer
+		r.Buffer = nil
 		return mb, nil
 	}
 
-	return r.stream.ReadMultiBuffer()
+	return r.Reader.ReadMultiBuffer()
 }
 
 // ReadAtMost returns a MultiBuffer with at most size.
 func (r *BufferedReader) ReadAtMost(size int32) (MultiBuffer, error) {
-	if r.leftOver == nil {
-		mb, err := r.stream.ReadMultiBuffer()
+	if r.Buffer == nil {
+		mb, err := r.Reader.ReadMultiBuffer()
 		if mb.IsEmpty() && err != nil {
 			return nil, err
 		}
-		r.leftOver = mb
+		r.Buffer = mb
 	}
 
-	mb := r.leftOver.SliceBySize(size)
-	if r.leftOver.IsEmpty() {
-		r.leftOver = nil
+	mb := r.Buffer.SliceBySize(size)
+	if r.Buffer.IsEmpty() {
+		r.Buffer = nil
 	}
 	return mb, nil
 }
@@ -169,16 +154,16 @@ func (r *BufferedReader) ReadAtMost(size int32) (MultiBuffer, error) {
 func (r *BufferedReader) writeToInternal(writer io.Writer) (int64, error) {
 	mbWriter := NewWriter(writer)
 	totalBytes := int64(0)
-	if r.leftOver != nil {
-		totalBytes += int64(r.leftOver.Len())
-		if err := mbWriter.WriteMultiBuffer(r.leftOver); err != nil {
+	if r.Buffer != nil {
+		totalBytes += int64(r.Buffer.Len())
+		if err := mbWriter.WriteMultiBuffer(r.Buffer); err != nil {
 			return 0, err
 		}
-		r.leftOver = nil
+		r.Buffer = nil
 	}
 
 	for {
-		mb, err := r.stream.ReadMultiBuffer()
+		mb, err := r.Reader.ReadMultiBuffer()
 		if mb != nil {
 			totalBytes += int64(mb.Len())
 			if werr := mbWriter.WriteMultiBuffer(mb); werr != nil {
@@ -202,8 +187,8 @@ func (r *BufferedReader) WriteTo(writer io.Writer) (int64, error) {
 
 // Close implements io.Closer.
 func (r *BufferedReader) Close() error {
-	if !r.leftOver.IsEmpty() {
-		r.leftOver.Release()
+	if !r.Buffer.IsEmpty() {
+		r.Buffer.Release()
 	}
-	return common.Close(r.stream)
+	return common.Close(r.Reader)
 }

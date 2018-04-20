@@ -224,7 +224,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 		return newError("unable to set read deadline").Base(err).AtWarning()
 	}
 
-	reader := buf.NewBufferedReader(buf.NewReader(connection))
+	reader := &buf.BufferedReader{Reader: buf.NewReader(connection)}
 
 	session := encoding.NewServerSession(h.clients, h.sessionHistory)
 	request, err := session.DecodeRequestHeader(reader)

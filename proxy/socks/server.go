@@ -70,7 +70,7 @@ func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispa
 		newError("failed to set deadline").Base(err).WithContext(ctx).WriteToLog()
 	}
 
-	reader := buf.NewBufferedReader(buf.NewReader(conn))
+	reader := &buf.BufferedReader{Reader: buf.NewReader(conn)}
 
 	inboundDest, ok := proxy.InboundEntryPointFromContext(ctx)
 	if !ok {

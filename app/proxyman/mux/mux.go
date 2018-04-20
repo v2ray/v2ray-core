@@ -258,7 +258,7 @@ func (m *Client) fetchOutput() {
 		common.Must(m.done.Close())
 	}()
 
-	reader := buf.NewBufferedReader(m.link.Reader)
+	reader := &buf.BufferedReader{Reader: m.link.Reader}
 
 	for {
 		meta, err := ReadMetadata(reader)
@@ -456,7 +456,7 @@ func (w *ServerWorker) handleFrame(ctx context.Context, reader *buf.BufferedRead
 
 func (w *ServerWorker) run(ctx context.Context) {
 	input := w.link.Reader
-	reader := buf.NewBufferedReader(input)
+	reader := &buf.BufferedReader{Reader: input}
 
 	defer w.sessionManager.Close()
 

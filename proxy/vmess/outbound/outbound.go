@@ -146,14 +146,14 @@ func (v *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 	responseDone := func() error {
 		defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
-		reader := buf.NewBufferedReader(buf.NewReader(conn))
+		reader := &buf.BufferedReader{Reader: buf.NewReader(conn)}
 		header, err := session.DecodeResponseHeader(reader)
 		if err != nil {
 			return newError("failed to read header").Base(err)
 		}
 		v.handleCommand(rec.Destination(), header.Command)
 
-		reader.SetBuffered(false)
+		reader.Direct = true
 		bodyReader := session.DecodeResponseBody(request, reader)
 
 		return buf.Copy(bodyReader, output, buf.UpdateActivity(timer))

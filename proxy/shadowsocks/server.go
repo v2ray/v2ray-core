@@ -140,8 +140,8 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 func (s *Server) handleConnection(ctx context.Context, conn internet.Connection, dispatcher core.Dispatcher) error {
 	sessionPolicy := s.v.PolicyManager().ForLevel(s.user.Level)
 	conn.SetReadDeadline(time.Now().Add(sessionPolicy.Timeouts.Handshake))
-	bufferedReader := buf.NewBufferedReader(buf.NewReader(conn))
-	request, bodyReader, err := ReadTCPSession(s.user, bufferedReader)
+	bufferedReader := buf.BufferedReader{Reader: buf.NewReader(conn)}
+	request, bodyReader, err := ReadTCPSession(s.user, &bufferedReader)
 	if err != nil {
 		log.Record(&log.AccessMessage{
 			From:   conn.RemoteAddr(),
@@ -153,7 +153,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 	}
 	conn.SetReadDeadline(time.Time{})
 
-	bufferedReader.SetBuffered(false)
+	bufferedReader.Direct = true
 
 	dest := request.Destination()
 	log.Record(&log.AccessMessage{

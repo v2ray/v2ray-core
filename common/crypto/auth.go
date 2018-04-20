@@ -91,7 +91,7 @@ type AuthenticationReader struct {
 func NewAuthenticationReader(auth Authenticator, sizeParser ChunkSizeDecoder, reader io.Reader, transferType protocol.TransferType) *AuthenticationReader {
 	return &AuthenticationReader{
 		auth:         auth,
-		reader:       buf.NewBufferedReader(buf.NewReader(reader)),
+		reader:       &buf.BufferedReader{Reader: buf.NewReader(reader)},
 		sizeParser:   sizeParser,
 		transferType: transferType,
 		size:         -1,

@@ -59,7 +59,7 @@ func TestReaderWriter(t *testing.T) {
 	assert(writePayload(writer2, 'y'), IsNil)
 	writer2.Close()
 
-	bytesReader := buf.NewBufferedReader(pReader)
+	bytesReader := &buf.BufferedReader{Reader: pReader}
 
 	meta, err := ReadMetadata(bytesReader)
 	assert(err, IsNil)
