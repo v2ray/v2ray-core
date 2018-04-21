@@ -2,6 +2,7 @@ package net
 
 import (
 	"net"
+	"strings"
 )
 
 // Destination represents a network destination including address and protocol (tcp / udp).
@@ -24,6 +25,37 @@ func DestinationFromAddr(addr net.Addr) Destination {
 	default:
 		panic("Net: Unknown address type.")
 	}
+}
+
+// ParseDestination converts a destination from its string presentation.
+func ParseDestination(dest string) (Destination, error) {
+	d := Destination{
+		Address: AnyIP,
+		Port:    Port(0),
+	}
+	if strings.HasPrefix(dest, "tcp:") {
+		d.Network = Network_TCP
+		dest = dest[4:]
+	} else if strings.HasPrefix(dest, "udp:") {
+		d.Network = Network_UDP
+		dest = dest[4:]
+	}
+
+	hstr, pstr, err := SplitHostPort(dest)
+	if err != nil {
+		return d, err
+	}
+	if len(hstr) > 0 {
+		d.Address = ParseAddress(hstr)
+	}
+	if len(pstr) > 0 {
+		port, err := PortFromString(pstr)
+		if err != nil {
+			return d, err
+		}
+		d.Port = port
+	}
+	return d, nil
 }
 
 // TCPDestination creates a TCP destination with given address

@@ -63,13 +63,25 @@ func (l *Listener) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 	if f, ok := writer.(http.Flusher); ok {
 		f.Flush()
 	}
+
+	remoteAddr := l.Addr()
+	dest, err := net.ParseDestination(request.RemoteAddr)
+	if err != nil {
+		newError("failed to parse request remote addr: ", request.RemoteAddr).Base(err).WriteToLog()
+	} else {
+		remoteAddr = &net.TCPAddr{
+			IP:   dest.Address.IP(),
+			Port: int(dest.Port),
+		}
+	}
+
 	done := signal.NewDone()
 	conn := net.NewConnection(
 		net.ConnectionOutput(request.Body),
 		net.ConnectionInput(flushWriter{w: writer, d: done}),
 		net.ConnectionOnClose(common.NewChainedClosable(done, request.Body)),
 		net.ConnectionLocalAddr(l.Addr()),
-		net.ConnectionRemoteAddr(l.Addr()),
+		net.ConnectionRemoteAddr(remoteAddr),
 	)
 	l.handler(conn)
 	<-done.Wait()
