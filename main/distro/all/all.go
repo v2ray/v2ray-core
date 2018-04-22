@@ -47,8 +47,11 @@ import (
 	_ "v2ray.com/core/transport/internet/headers/utp"
 	_ "v2ray.com/core/transport/internet/headers/wechat"
 
-	// JSON config format
+	// JSON config support. Choose only one from the two below.
+	// The following line loads JSON from v2ctl
 	_ "v2ray.com/core/main/json"
+	// The following line loads JSON internally
+	// _ "v2ray.com/core/main/jsonem"
 
 	// Load config from file or http(s)
 	_ "v2ray.com/core/main/confloader/external"
