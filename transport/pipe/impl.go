@@ -37,13 +37,13 @@ func (p *pipe) getState(forRead bool) error {
 		}
 		return nil
 	case closed:
-		if forRead {
-			if !p.data.IsEmpty() {
-				return nil
-			}
-			return io.EOF
+		if !forRead {
+			return io.ErrClosedPipe
 		}
-		return io.ErrClosedPipe
+		if !p.data.IsEmpty() {
+			return nil
+		}
+		return io.EOF
 	case errord:
 		return io.ErrClosedPipe
 	default:
@@ -139,7 +139,9 @@ func (p *pipe) CloseError() {
 	p.Lock()
 	defer p.Unlock()
 
-	p.state = errord
+	if p.state == closed || p.state == errord {
+		return
+	}
 
 	if !p.data.IsEmpty() {
 		p.data.Release()
