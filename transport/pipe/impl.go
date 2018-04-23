@@ -143,6 +143,8 @@ func (p *pipe) CloseError() {
 		return
 	}
 
+	p.state = errord
+
 	if !p.data.IsEmpty() {
 		p.data.Release()
 		p.data = nil

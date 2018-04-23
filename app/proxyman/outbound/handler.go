@@ -77,7 +77,7 @@ func (h *Handler) Tag() string {
 func (h *Handler) Dispatch(ctx context.Context, link *core.Link) {
 	if h.mux != nil {
 		if err := h.mux.Dispatch(ctx, link); err != nil {
-			newError("failed to process outbound traffic").Base(err).WithContext(ctx).WriteToLog()
+			newError("failed to process mux outbound traffic").Base(err).WithContext(ctx).WriteToLog()
 			pipe.CloseError(link.Writer)
 		}
 	} else {
@@ -86,7 +86,7 @@ func (h *Handler) Dispatch(ctx context.Context, link *core.Link) {
 			newError("failed to process outbound traffic").Base(err).WithContext(ctx).WriteToLog()
 			pipe.CloseError(link.Writer)
 		} else {
-			common.Close(link.Writer)
+			common.Must(common.Close(link.Writer))
 		}
 		pipe.CloseError(link.Reader)
 	}
