@@ -82,12 +82,10 @@ func (h *Handler) Dispatch(ctx context.Context, link *core.Link) {
 		}
 	} else {
 		if err := h.proxy.Process(ctx, link, h); err != nil {
-			// Ensure outbound ray is properly closed.
 			newError("failed to process outbound traffic").Base(err).WithContext(ctx).WriteToLog()
-			pipe.CloseError(link.Writer)
-		} else {
-			common.Must(common.Close(link.Writer))
 		}
+		// read the rest of buffer when any errors
+		common.Must(common.Close(link.Writer))
 		pipe.CloseError(link.Reader)
 	}
 }
