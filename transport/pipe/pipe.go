@@ -57,5 +57,7 @@ func init() {
 		Name:    raySizeEnvKey,
 		AltName: platform.NormalizeEnvName(raySizeEnvKey),
 	}.GetValueAsInt(10)
-	defaultLimit = int32(size) * 1024 * 1024
+	if size > 0 {
+		defaultLimit = int32(size) * 1024 * 1024
+	}
 }
