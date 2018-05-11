@@ -7,6 +7,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/functions"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
@@ -129,7 +130,7 @@ func (c *Client) Process(ctx context.Context, link *core.Link, dialer proxy.Dial
 		}
 	}
 
-	if err := signal.ExecuteParallel(ctx, requestFunc, responseFunc); err != nil {
+	if err := signal.ExecuteParallel(ctx, requestFunc, functions.CloseOnSuccess(responseFunc, functions.Close(link.Writer))); err != nil {
 		return newError("connection ends").Base(err)
 	}
 
