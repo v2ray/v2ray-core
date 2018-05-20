@@ -132,7 +132,7 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 
 	inbound, outbound := d.getLink(ctx)
 	snifferList := proxyman.ProtocolSniffersFromContext(ctx)
-	if destination.Address.Family().IsDomain() || len(snifferList) == 0 {
+	if destination.Address.Family().IsDomain() || destination.Network != net.Network_TCP || len(snifferList) == 0 {
 		go d.routedDispatch(ctx, outbound, destination)
 	} else {
 		go func() {
