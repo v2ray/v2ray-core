@@ -34,8 +34,8 @@ func TestWriter(t *testing.T) {
 func TestBytesWriterReadFrom(t *testing.T) {
 	assert := With(t)
 
-	pReader, pWriter := pipe.New()
 	const size = 50000
+	pReader, pWriter := pipe.New(pipe.WithSizeLimit(size))
 	reader := bufio.NewReader(io.LimitReader(rand.Reader, size))
 	writer := NewBufferedWriter(pWriter)
 	writer.SetBuffered(false)

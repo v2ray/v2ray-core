@@ -15,7 +15,7 @@ import (
 func TestPipeReadWrite(t *testing.T) {
 	assert := With(t)
 
-	pReader, pWriter := New()
+	pReader, pWriter := New(WithSizeLimit(1024))
 	payload := []byte{'a', 'b', 'c', 'd'}
 	b := buf.New()
 	b.Write(payload)
@@ -29,7 +29,7 @@ func TestPipeReadWrite(t *testing.T) {
 func TestPipeCloseError(t *testing.T) {
 	assert := With(t)
 
-	pReader, pWriter := New()
+	pReader, pWriter := New(WithSizeLimit(1024))
 	payload := []byte{'a', 'b', 'c', 'd'}
 	b := buf.New()
 	b.Write(payload)
@@ -44,7 +44,7 @@ func TestPipeCloseError(t *testing.T) {
 func TestPipeClose(t *testing.T) {
 	assert := With(t)
 
-	pReader, pWriter := New()
+	pReader, pWriter := New(WithSizeLimit(1024))
 	payload := []byte{'a', 'b', 'c', 'd'}
 	b := buf.New()
 	b.Write(payload)

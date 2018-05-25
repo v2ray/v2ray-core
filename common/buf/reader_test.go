@@ -38,7 +38,7 @@ func TestAdaptiveReader(t *testing.T) {
 func TestBytesReaderWriteTo(t *testing.T) {
 	assert := With(t)
 
-	pReader, pWriter := pipe.New()
+	pReader, pWriter := pipe.New(pipe.WithSizeLimit(1024))
 	reader := &BufferedReader{Reader: pReader}
 	b1 := New()
 	b1.AppendBytes('a', 'b', 'c')
@@ -47,7 +47,7 @@ func TestBytesReaderWriteTo(t *testing.T) {
 	assert(pWriter.WriteMultiBuffer(NewMultiBufferValue(b1, b2)), IsNil)
 	pWriter.Close()
 
-	pReader2, pWriter2 := pipe.New()
+	pReader2, pWriter2 := pipe.New(pipe.WithSizeLimit(1024))
 	writer := NewBufferedWriter(pWriter2)
 	writer.SetBuffered(false)
 
@@ -65,7 +65,7 @@ func TestBytesReaderWriteTo(t *testing.T) {
 func TestBytesReaderMultiBuffer(t *testing.T) {
 	assert := With(t)
 
-	pReader, pWriter := pipe.New()
+	pReader, pWriter := pipe.New(pipe.WithSizeLimit(1024))
 	reader := &BufferedReader{Reader: pReader}
 	b1 := New()
 	b1.AppendBytes('a', 'b', 'c')
