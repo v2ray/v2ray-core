@@ -194,7 +194,7 @@ func TestZeroBuffer(t *testing.T) {
 							DownlinkOnly: &policy.Second{Value: 0},
 						},
 						Buffer: &policy.Policy_Buffer{
-							Enabled: false,
+							Connection: 0,
 						},
 					},
 				},

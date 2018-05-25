@@ -31,10 +31,8 @@ type StatsPolicy struct {
 
 // BufferPolicy contains settings for internal buffer.
 type BufferPolicy struct {
-	// Whether or not to enable internal buffer.
-	Enabled bool
-	// Size of internal buffer, in bytes.
-	Size uint32
+	// Size of buffer per connection, in bytes. -1 for unlimited buffer.
+	PerConnection int32
 }
 
 type SystemStatsPolicy struct {
@@ -67,7 +65,7 @@ type PolicyManager interface {
 	ForSystem() SystemPolicy
 }
 
-var defaultBufferSize uint32 = 10 * 1024 * 1024
+var defaultBufferSize int32 = 10 * 1024 * 1024
 
 func init() {
 	const key = "v2ray.ray.buffer.size"
@@ -76,16 +74,15 @@ func init() {
 		AltName: platform.NormalizeEnvName(key),
 	}.GetValueAsInt(10)
 	if size == 0 {
-		defaultBufferSize = 2147483647
+		defaultBufferSize = -1
 	} else {
-		defaultBufferSize = uint32(size) * 1024 * 1024
+		defaultBufferSize = int32(size) * 1024 * 1024
 	}
 }
 
 func defaultBufferPolicy() BufferPolicy {
 	return BufferPolicy{
-		Enabled: true,
-		Size:    defaultBufferSize,
+		PerConnection: defaultBufferSize,
 	}
 }
 

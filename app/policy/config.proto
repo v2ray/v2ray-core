@@ -25,8 +25,8 @@ message Policy {
   }
 
   message Buffer {
-    bool enabled = 1;
-    uint32 size = 2;
+    // Buffer size per connection, in bytes. -1 for unlimited buffer.
+    int32 connection = 1;
   }
 
   Timeout timeout = 1;

@@ -25,8 +25,7 @@ func defaultPolicy() *Policy {
 			DownlinkOnly:   &Second{Value: uint32(p.Timeouts.DownlinkOnly / time.Second)},
 		},
 		Buffer: &Policy_Buffer{
-			Enabled: p.Buffer.Enabled,
-			Size:    p.Buffer.Size,
+			Connection: p.Buffer.PerConnection,
 		},
 	}
 }
@@ -71,8 +70,7 @@ func (p *Policy) ToCorePolicy() core.Policy {
 		cp.Stats.UserDownlink = p.Stats.UserDownlink
 	}
 	if p.Buffer != nil {
-		cp.Buffer.Enabled = p.Buffer.Enabled
-		cp.Buffer.Size = p.Buffer.Size
+		cp.Buffer.PerConnection = p.Buffer.Connection
 	}
 	return cp
 }
