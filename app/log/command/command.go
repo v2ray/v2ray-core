@@ -16,6 +16,7 @@ type LoggerServer struct {
 	V *core.Instance
 }
 
+// RestartLogger implements LoggerService.
 func (s *LoggerServer) RestartLogger(ctx context.Context, request *RestartLoggerRequest) (*RestartLoggerResponse, error) {
 	logger := s.V.GetFeature((*log.Instance)(nil))
 	if logger == nil {

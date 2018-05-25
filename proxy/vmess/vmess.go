@@ -56,7 +56,7 @@ func NewTimedUserValidator(hasher protocol.IDHash) *TimedUserValidator {
 			return nil
 		},
 	}
-	tuv.task.Start()
+	common.Must(tuv.task.Start())
 	return tuv
 }
 

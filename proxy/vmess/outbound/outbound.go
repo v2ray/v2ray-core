@@ -29,6 +29,7 @@ type Handler struct {
 	v            *core.Instance
 }
 
+// New creates a new VMess outbound handler.
 func New(ctx context.Context, config *Config) (*Handler, error) {
 	serverList := protocol.NewServerList()
 	for _, rec := range config.Receiver {

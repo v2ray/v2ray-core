@@ -10,8 +10,8 @@ import (
 // DTLS writes header as DTLS. See https://tools.ietf.org/html/rfc6347
 type DTLS struct {
 	epoch    uint16
-	sequence uint32
 	length   uint16
+	sequence uint32
 }
 
 // Size implements PacketHeader.

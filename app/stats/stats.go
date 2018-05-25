@@ -74,10 +74,12 @@ func (m *Manager) GetCounter(name string) core.StatCounter {
 	return nil
 }
 
+// Start implements common.Runnable.
 func (m *Manager) Start() error {
 	return nil
 }
 
+// Close implement common.Closable.
 func (m *Manager) Close() error {
 	return nil
 }

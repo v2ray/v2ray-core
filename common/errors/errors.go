@@ -63,6 +63,7 @@ func (v *Error) WithContext(ctx context.Context) *Error {
 	return v
 }
 
+// Context returns the context that associated with the Error.
 func (v *Error) Context() context.Context {
 	if v.ctx != nil {
 		return v.ctx

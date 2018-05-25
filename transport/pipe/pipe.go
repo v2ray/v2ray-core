@@ -7,6 +7,7 @@ import (
 	"v2ray.com/core/common/signal"
 )
 
+// Option for creating new Pipes.
 type Option func(*pipe)
 
 func WithoutSizeLimit() Option {
