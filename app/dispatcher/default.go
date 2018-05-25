@@ -84,8 +84,9 @@ func (*DefaultDispatcher) Start() error {
 func (*DefaultDispatcher) Close() error { return nil }
 
 func (d *DefaultDispatcher) getLink(ctx context.Context) (*core.Link, *core.Link) {
-	uplinkReader, uplinkWriter := pipe.New()
-	downlinkReader, downlinkWriter := pipe.New()
+	opt := pipe.OptionsFromContext(ctx)
+	uplinkReader, uplinkWriter := pipe.New(opt...)
+	downlinkReader, downlinkWriter := pipe.New(opt...)
 
 	inboundLink := &core.Link{
 		Reader: downlinkReader,

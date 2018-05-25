@@ -102,8 +102,9 @@ func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Conn
 				newError("proxying to ", tag, " for dest ", dest).AtDebug().WithContext(ctx).WriteToLog()
 				ctx = proxy.ContextWithTarget(ctx, dest)
 
-				uplinkReader, uplinkWriter := pipe.New()
-				downlinkReader, downlinkWriter := pipe.New()
+				opts := pipe.OptionsFromContext(ctx)
+				uplinkReader, uplinkWriter := pipe.New(opts...)
+				downlinkReader, downlinkWriter := pipe.New(opts...)
 
 				go handler.Dispatch(ctx, &core.Link{Reader: uplinkReader, Writer: downlinkWriter})
 				return net.NewConnection(net.ConnectionInputMulti(uplinkWriter), net.ConnectionOutputMulti(downlinkReader)), nil

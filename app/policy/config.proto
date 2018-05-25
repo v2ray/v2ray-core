@@ -24,8 +24,14 @@ message Policy {
     bool user_downlink = 2;
   }
 
+  message Buffer {
+    bool enabled = 1;
+    uint32 size = 2;
+  }
+
   Timeout timeout = 1;
   Stats stats = 2;
+  Buffer buffer = 3;
 }
 
 message SystemPolicy {

@@ -51,7 +51,7 @@ func (m *ClientManager) Dispatch(ctx context.Context, link *core.Link) error {
 		}
 	}
 
-	client, err := NewClient(m.proxy, m.dialer, m)
+	client, err := NewClient(ctx, m.proxy, m.dialer, m)
 	if err != nil {
 		return newError("failed to create client").Base(err)
 	}
@@ -86,11 +86,13 @@ var muxCoolAddress = net.DomainAddress("v1.mux.cool")
 var muxCoolPort = net.Port(9527)
 
 // NewClient creates a new mux.Client.
-func NewClient(p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client, error) {
+func NewClient(pctx context.Context, p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client, error) {
 	ctx := proxy.ContextWithTarget(context.Background(), net.TCPDestination(muxCoolAddress, muxCoolPort))
 	ctx, cancel := context.WithCancel(ctx)
-	uplinkReader, upLinkWriter := pipe.New()
-	downlinkReader, downlinkWriter := pipe.New()
+
+	opts := pipe.OptionsFromContext(pctx)
+	uplinkReader, upLinkWriter := pipe.New(opts...)
+	downlinkReader, downlinkWriter := pipe.New(opts...)
 
 	c := &Client{
 		sessionManager: NewSessionManager(),
@@ -307,8 +309,9 @@ func (s *Server) Dispatch(ctx context.Context, dest net.Destination) (*core.Link
 		return s.dispatcher.Dispatch(ctx, dest)
 	}
 
-	uplinkReader, uplinkWriter := pipe.New()
-	downlinkReader, downlinkWriter := pipe.New()
+	opts := pipe.OptionsFromContext(ctx)
+	uplinkReader, uplinkWriter := pipe.New(opts...)
+	downlinkReader, downlinkWriter := pipe.New(opts...)
 
 	worker := &ServerWorker{
 		dispatcher: s.dispatcher,

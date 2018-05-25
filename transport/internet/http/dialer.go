@@ -83,7 +83,8 @@ func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error
 		return nil, err
 	}
 
-	preader, pwriter := pipe.New(pipe.WithSizeLimit(20 * 1024))
+	opts := pipe.OptionsFromContext(ctx)
+	preader, pwriter := pipe.New(opts...)
 	breader := &buf.BufferedReader{Reader: preader}
 	request := &http.Request{
 		Method: "PUT",

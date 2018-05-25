@@ -130,13 +130,15 @@ func (s *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, s.policy().Timeouts.ConnectionIdle)
 
+	plcy := s.policy()
+	ctx = core.ContextWithBufferPolicy(ctx, plcy.Buffer)
 	link, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return err
 	}
 
 	requestDone := func() error {
-		defer timer.SetTimeout(s.policy().Timeouts.DownlinkOnly)
+		defer timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
 		defer common.Close(link.Writer)
 
 		v2reader := buf.NewReader(reader)
@@ -148,7 +150,7 @@ func (s *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 	}
 
 	responseDone := func() error {
-		defer timer.SetTimeout(s.policy().Timeouts.UplinkOnly)
+		defer timer.SetTimeout(plcy.Timeouts.UplinkOnly)
 
 		v2writer := buf.NewWriter(writer)
 		if err := buf.Copy(link.Reader, v2writer, buf.UpdateActivity(timer)); err != nil {

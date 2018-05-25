@@ -1,10 +1,12 @@
 package core
 
 import (
+	"context"
 	"sync"
 	"time"
 
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/platform"
 )
 
 // TimeoutPolicy contains limits for connection timeout.
@@ -27,6 +29,14 @@ type StatsPolicy struct {
 	UserDownlink bool
 }
 
+// BufferPolicy contains settings for internal buffer.
+type BufferPolicy struct {
+	// Whether or not to enable internal buffer.
+	Enabled bool
+	// Size of internal buffer, in bytes.
+	Size uint32
+}
+
 type SystemStatsPolicy struct {
 	// Whether or not to enable stat counter for uplink traffic in inbound handlers.
 	InboundUplink bool
@@ -35,13 +45,15 @@ type SystemStatsPolicy struct {
 }
 
 type SystemPolicy struct {
-	Stats SystemStatsPolicy
+	Stats  SystemStatsPolicy
+	Buffer BufferPolicy
 }
 
 // Policy is session based settings for controlling V2Ray requests. It contains various settings (or limits) that may differ for different users in the context.
 type Policy struct {
 	Timeouts TimeoutPolicy // Timeout settings
 	Stats    StatsPolicy
+	Buffer   BufferPolicy
 }
 
 // PolicyManager is a feature that provides Policy for the given user by its id or level.
@@ -53,6 +65,28 @@ type PolicyManager interface {
 
 	// ForSystem returns the Policy for V2Ray system.
 	ForSystem() SystemPolicy
+}
+
+var defaultBufferSize uint32 = 10 * 1024 * 1024
+
+func init() {
+	const key = "v2ray.ray.buffer.size"
+	size := platform.EnvFlag{
+		Name:    key,
+		AltName: platform.NormalizeEnvName(key),
+	}.GetValueAsInt(10)
+	if size == 0 {
+		defaultBufferSize = 2147483647
+	} else {
+		defaultBufferSize = uint32(size) * 1024 * 1024
+	}
+}
+
+func defaultBufferPolicy() BufferPolicy {
+	return BufferPolicy{
+		Enabled: true,
+		Size:    defaultBufferSize,
+	}
 }
 
 // DefaultPolicy returns the Policy when user is not specified.
@@ -68,7 +102,26 @@ func DefaultPolicy() Policy {
 			UserUplink:   false,
 			UserDownlink: false,
 		},
+		Buffer: defaultBufferPolicy(),
 	}
+}
+
+type policyKey int
+
+const (
+	bufferPolicyKey policyKey = 0
+)
+
+func ContextWithBufferPolicy(ctx context.Context, p BufferPolicy) context.Context {
+	return context.WithValue(ctx, bufferPolicyKey, p)
+}
+
+func BufferPolicyFromContext(ctx context.Context) BufferPolicy {
+	pPolicy := ctx.Value(bufferPolicyKey)
+	if pPolicy == nil {
+		return defaultBufferPolicy()
+	}
+	return pPolicy.(BufferPolicy)
 }
 
 type syncPolicyManager struct {
