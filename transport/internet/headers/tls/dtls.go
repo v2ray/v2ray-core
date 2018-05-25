@@ -11,6 +11,7 @@ import (
 type DTLS struct {
 	epoch    uint16
 	sequence uint32
+	length   uint16
 }
 
 // Size implements PacketHeader.
@@ -29,9 +30,12 @@ func (d *DTLS) Write(b []byte) (int, error) {
 	b[6] = byte(d.sequence >> 8)
 	b[7] = byte(d.sequence)
 	d.sequence++
-	l := dice.RollUint16()
-	b[8] = byte(l >> 8)
-	b[9] = byte(l)
+	b[8] = byte(d.length >> 8)
+	b[9] = byte(d.length)
+	d.length += 17
+	if d.length > 1024 {
+		d.length -= 1024
+	}
 	return 10, nil
 }
 
@@ -40,6 +44,7 @@ func New(ctx context.Context, config interface{}) (interface{}, error) {
 	return &DTLS{
 		epoch:    dice.RollUint16(),
 		sequence: 0,
+		length:   uint16(dice.Roll(1024) + 100),
 	}, nil
 }
 
