@@ -3,25 +3,53 @@ package protocol
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import v2ray_core_common_serial "v2ray.com/core/common/serial"
+import serial "v2ray.com/core/common/serial"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+
 // User is a generic user for all procotols.
 type User struct {
 	Level uint32 `protobuf:"varint,1,opt,name=level" json:"level,omitempty"`
 	Email string `protobuf:"bytes,2,opt,name=email" json:"email,omitempty"`
 	// Protocol specific account information. Must be the account proto in one of the proxies.
-	Account *v2ray_core_common_serial.TypedMessage `protobuf:"bytes,3,opt,name=account" json:"account,omitempty"`
+	Account              *serial.TypedMessage `protobuf:"bytes,3,opt,name=account" json:"account,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_unrecognized     []byte               `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
 }
 
-func (m *User) Reset()                    { *m = User{} }
-func (m *User) String() string            { return proto.CompactTextString(m) }
-func (*User) ProtoMessage()               {}
-func (*User) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{0} }
+func (m *User) Reset()         { *m = User{} }
+func (m *User) String() string { return proto.CompactTextString(m) }
+func (*User) ProtoMessage()    {}
+func (*User) Descriptor() ([]byte, []int) {
+	return fileDescriptor_user_a061b86ad22f3a1c, []int{0}
+}
+func (m *User) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_User.Unmarshal(m, b)
+}
+func (m *User) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_User.Marshal(b, m, deterministic)
+}
+func (dst *User) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_User.Merge(dst, src)
+}
+func (m *User) XXX_Size() int {
+	return xxx_messageInfo_User.Size(m)
+}
+func (m *User) XXX_DiscardUnknown() {
+	xxx_messageInfo_User.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_User proto.InternalMessageInfo
 
 func (m *User) GetLevel() uint32 {
 	if m != nil {
@@ -37,7 +65,7 @@ func (m *User) GetEmail() string {
 	return ""
 }
 
-func (m *User) GetAccount() *v2ray_core_common_serial.TypedMessage {
+func (m *User) GetAccount() *serial.TypedMessage {
 	if m != nil {
 		return m.Account
 	}
@@ -48,9 +76,11 @@ func init() {
 	proto.RegisterType((*User)(nil), "v2ray.core.common.protocol.User")
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/common/protocol/user.proto", fileDescriptor3) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/common/protocol/user.proto", fileDescriptor_user_a061b86ad22f3a1c)
+}
 
-var fileDescriptor3 = []byte{
+var fileDescriptor_user_a061b86ad22f3a1c = []byte{
 	// 218 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xd2, 0x2c, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x4f, 0xce, 0xcf, 0xcd, 0xcd,

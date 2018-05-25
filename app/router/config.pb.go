@@ -3,8 +3,7 @@ package router
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import v2ray_core_common_net "v2ray.com/core/common/net"
-import v2ray_core_common_net1 "v2ray.com/core/common/net"
+import net "v2ray.com/core/common/net"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -43,7 +42,9 @@ var Domain_Type_value = map[string]int32{
 func (x Domain_Type) String() string {
 	return proto.EnumName(Domain_Type_name, int32(x))
 }
-func (Domain_Type) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0, 0} }
+func (Domain_Type) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_config_bdac2d1c90ceb42f, []int{0, 0}
+}
 
 type Config_DomainStrategy int32
 
@@ -74,20 +75,44 @@ var Config_DomainStrategy_value = map[string]int32{
 func (x Config_DomainStrategy) String() string {
 	return proto.EnumName(Config_DomainStrategy_name, int32(x))
 }
-func (Config_DomainStrategy) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{7, 0} }
+func (Config_DomainStrategy) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_config_bdac2d1c90ceb42f, []int{7, 0}
+}
 
 // Domain for routing decision.
 type Domain struct {
 	// Domain matching type.
 	Type Domain_Type `protobuf:"varint,1,opt,name=type,enum=v2ray.core.app.router.Domain_Type" json:"type,omitempty"`
 	// Domain value.
-	Value string `protobuf:"bytes,2,opt,name=value" json:"value,omitempty"`
+	Value                string   `protobuf:"bytes,2,opt,name=value" json:"value,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Domain) Reset()                    { *m = Domain{} }
-func (m *Domain) String() string            { return proto.CompactTextString(m) }
-func (*Domain) ProtoMessage()               {}
-func (*Domain) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *Domain) Reset()         { *m = Domain{} }
+func (m *Domain) String() string { return proto.CompactTextString(m) }
+func (*Domain) ProtoMessage()    {}
+func (*Domain) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_bdac2d1c90ceb42f, []int{0}
+}
+func (m *Domain) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Domain.Unmarshal(m, b)
+}
+func (m *Domain) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Domain.Marshal(b, m, deterministic)
+}
+func (dst *Domain) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Domain.Merge(dst, src)
+}
+func (m *Domain) XXX_Size() int {
+	return xxx_messageInfo_Domain.Size(m)
+}
+func (m *Domain) XXX_DiscardUnknown() {
+	xxx_messageInfo_Domain.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Domain proto.InternalMessageInfo
 
 func (m *Domain) GetType() Domain_Type {
 	if m != nil {
@@ -108,13 +133,35 @@ type CIDR struct {
 	// IP address, should be either 4 or 16 bytes.
 	Ip []byte `protobuf:"bytes,1,opt,name=ip,proto3" json:"ip,omitempty"`
 	// Number of leading ones in the network mask.
-	Prefix uint32 `protobuf:"varint,2,opt,name=prefix" json:"prefix,omitempty"`
+	Prefix               uint32   `protobuf:"varint,2,opt,name=prefix" json:"prefix,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *CIDR) Reset()                    { *m = CIDR{} }
-func (m *CIDR) String() string            { return proto.CompactTextString(m) }
-func (*CIDR) ProtoMessage()               {}
-func (*CIDR) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (m *CIDR) Reset()         { *m = CIDR{} }
+func (m *CIDR) String() string { return proto.CompactTextString(m) }
+func (*CIDR) ProtoMessage()    {}
+func (*CIDR) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_bdac2d1c90ceb42f, []int{1}
+}
+func (m *CIDR) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CIDR.Unmarshal(m, b)
+}
+func (m *CIDR) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CIDR.Marshal(b, m, deterministic)
+}
+func (dst *CIDR) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CIDR.Merge(dst, src)
+}
+func (m *CIDR) XXX_Size() int {
+	return xxx_messageInfo_CIDR.Size(m)
+}
+func (m *CIDR) XXX_DiscardUnknown() {
+	xxx_messageInfo_CIDR.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CIDR proto.InternalMessageInfo
 
 func (m *CIDR) GetIp() []byte {
 	if m != nil {
@@ -131,14 +178,36 @@ func (m *CIDR) GetPrefix() uint32 {
 }
 
 type GeoIP struct {
-	CountryCode string  `protobuf:"bytes,1,opt,name=country_code,json=countryCode" json:"country_code,omitempty"`
-	Cidr        []*CIDR `protobuf:"bytes,2,rep,name=cidr" json:"cidr,omitempty"`
+	CountryCode          string   `protobuf:"bytes,1,opt,name=country_code,json=countryCode" json:"country_code,omitempty"`
+	Cidr                 []*CIDR  `protobuf:"bytes,2,rep,name=cidr" json:"cidr,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *GeoIP) Reset()                    { *m = GeoIP{} }
-func (m *GeoIP) String() string            { return proto.CompactTextString(m) }
-func (*GeoIP) ProtoMessage()               {}
-func (*GeoIP) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (m *GeoIP) Reset()         { *m = GeoIP{} }
+func (m *GeoIP) String() string { return proto.CompactTextString(m) }
+func (*GeoIP) ProtoMessage()    {}
+func (*GeoIP) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_bdac2d1c90ceb42f, []int{2}
+}
+func (m *GeoIP) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GeoIP.Unmarshal(m, b)
+}
+func (m *GeoIP) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GeoIP.Marshal(b, m, deterministic)
+}
+func (dst *GeoIP) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GeoIP.Merge(dst, src)
+}
+func (m *GeoIP) XXX_Size() int {
+	return xxx_messageInfo_GeoIP.Size(m)
+}
+func (m *GeoIP) XXX_DiscardUnknown() {
+	xxx_messageInfo_GeoIP.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GeoIP proto.InternalMessageInfo
 
 func (m *GeoIP) GetCountryCode() string {
 	if m != nil {
@@ -155,13 +224,35 @@ func (m *GeoIP) GetCidr() []*CIDR {
 }
 
 type GeoIPList struct {
-	Entry []*GeoIP `protobuf:"bytes,1,rep,name=entry" json:"entry,omitempty"`
+	Entry                []*GeoIP `protobuf:"bytes,1,rep,name=entry" json:"entry,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *GeoIPList) Reset()                    { *m = GeoIPList{} }
-func (m *GeoIPList) String() string            { return proto.CompactTextString(m) }
-func (*GeoIPList) ProtoMessage()               {}
-func (*GeoIPList) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+func (m *GeoIPList) Reset()         { *m = GeoIPList{} }
+func (m *GeoIPList) String() string { return proto.CompactTextString(m) }
+func (*GeoIPList) ProtoMessage()    {}
+func (*GeoIPList) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_bdac2d1c90ceb42f, []int{3}
+}
+func (m *GeoIPList) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GeoIPList.Unmarshal(m, b)
+}
+func (m *GeoIPList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GeoIPList.Marshal(b, m, deterministic)
+}
+func (dst *GeoIPList) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GeoIPList.Merge(dst, src)
+}
+func (m *GeoIPList) XXX_Size() int {
+	return xxx_messageInfo_GeoIPList.Size(m)
+}
+func (m *GeoIPList) XXX_DiscardUnknown() {
+	xxx_messageInfo_GeoIPList.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GeoIPList proto.InternalMessageInfo
 
 func (m *GeoIPList) GetEntry() []*GeoIP {
 	if m != nil {
@@ -171,14 +262,36 @@ func (m *GeoIPList) GetEntry() []*GeoIP {
 }
 
 type GeoSite struct {
-	CountryCode string    `protobuf:"bytes,1,opt,name=country_code,json=countryCode" json:"country_code,omitempty"`
-	Domain      []*Domain `protobuf:"bytes,2,rep,name=domain" json:"domain,omitempty"`
+	CountryCode          string    `protobuf:"bytes,1,opt,name=country_code,json=countryCode" json:"country_code,omitempty"`
+	Domain               []*Domain `protobuf:"bytes,2,rep,name=domain" json:"domain,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
 }
 
-func (m *GeoSite) Reset()                    { *m = GeoSite{} }
-func (m *GeoSite) String() string            { return proto.CompactTextString(m) }
-func (*GeoSite) ProtoMessage()               {}
-func (*GeoSite) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+func (m *GeoSite) Reset()         { *m = GeoSite{} }
+func (m *GeoSite) String() string { return proto.CompactTextString(m) }
+func (*GeoSite) ProtoMessage()    {}
+func (*GeoSite) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_bdac2d1c90ceb42f, []int{4}
+}
+func (m *GeoSite) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GeoSite.Unmarshal(m, b)
+}
+func (m *GeoSite) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GeoSite.Marshal(b, m, deterministic)
+}
+func (dst *GeoSite) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GeoSite.Merge(dst, src)
+}
+func (m *GeoSite) XXX_Size() int {
+	return xxx_messageInfo_GeoSite.Size(m)
+}
+func (m *GeoSite) XXX_DiscardUnknown() {
+	xxx_messageInfo_GeoSite.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GeoSite proto.InternalMessageInfo
 
 func (m *GeoSite) GetCountryCode() string {
 	if m != nil {
@@ -195,13 +308,35 @@ func (m *GeoSite) GetDomain() []*Domain {
 }
 
 type GeoSiteList struct {
-	Entry []*GeoSite `protobuf:"bytes,1,rep,name=entry" json:"entry,omitempty"`
+	Entry                []*GeoSite `protobuf:"bytes,1,rep,name=entry" json:"entry,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
+	XXX_unrecognized     []byte     `json:"-"`
+	XXX_sizecache        int32      `json:"-"`
 }
 
-func (m *GeoSiteList) Reset()                    { *m = GeoSiteList{} }
-func (m *GeoSiteList) String() string            { return proto.CompactTextString(m) }
-func (*GeoSiteList) ProtoMessage()               {}
-func (*GeoSiteList) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+func (m *GeoSiteList) Reset()         { *m = GeoSiteList{} }
+func (m *GeoSiteList) String() string { return proto.CompactTextString(m) }
+func (*GeoSiteList) ProtoMessage()    {}
+func (*GeoSiteList) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_bdac2d1c90ceb42f, []int{5}
+}
+func (m *GeoSiteList) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GeoSiteList.Unmarshal(m, b)
+}
+func (m *GeoSiteList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GeoSiteList.Marshal(b, m, deterministic)
+}
+func (dst *GeoSiteList) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GeoSiteList.Merge(dst, src)
+}
+func (m *GeoSiteList) XXX_Size() int {
+	return xxx_messageInfo_GeoSiteList.Size(m)
+}
+func (m *GeoSiteList) XXX_DiscardUnknown() {
+	xxx_messageInfo_GeoSiteList.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GeoSiteList proto.InternalMessageInfo
 
 func (m *GeoSiteList) GetEntry() []*GeoSite {
 	if m != nil {
@@ -211,20 +346,42 @@ func (m *GeoSiteList) GetEntry() []*GeoSite {
 }
 
 type RoutingRule struct {
-	Tag         string                              `protobuf:"bytes,1,opt,name=tag" json:"tag,omitempty"`
-	Domain      []*Domain                           `protobuf:"bytes,2,rep,name=domain" json:"domain,omitempty"`
-	Cidr        []*CIDR                             `protobuf:"bytes,3,rep,name=cidr" json:"cidr,omitempty"`
-	PortRange   *v2ray_core_common_net.PortRange    `protobuf:"bytes,4,opt,name=port_range,json=portRange" json:"port_range,omitempty"`
-	NetworkList *v2ray_core_common_net1.NetworkList `protobuf:"bytes,5,opt,name=network_list,json=networkList" json:"network_list,omitempty"`
-	SourceCidr  []*CIDR                             `protobuf:"bytes,6,rep,name=source_cidr,json=sourceCidr" json:"source_cidr,omitempty"`
-	UserEmail   []string                            `protobuf:"bytes,7,rep,name=user_email,json=userEmail" json:"user_email,omitempty"`
-	InboundTag  []string                            `protobuf:"bytes,8,rep,name=inbound_tag,json=inboundTag" json:"inbound_tag,omitempty"`
+	Tag                  string           `protobuf:"bytes,1,opt,name=tag" json:"tag,omitempty"`
+	Domain               []*Domain        `protobuf:"bytes,2,rep,name=domain" json:"domain,omitempty"`
+	Cidr                 []*CIDR          `protobuf:"bytes,3,rep,name=cidr" json:"cidr,omitempty"`
+	PortRange            *net.PortRange   `protobuf:"bytes,4,opt,name=port_range,json=portRange" json:"port_range,omitempty"`
+	NetworkList          *net.NetworkList `protobuf:"bytes,5,opt,name=network_list,json=networkList" json:"network_list,omitempty"`
+	SourceCidr           []*CIDR          `protobuf:"bytes,6,rep,name=source_cidr,json=sourceCidr" json:"source_cidr,omitempty"`
+	UserEmail            []string         `protobuf:"bytes,7,rep,name=user_email,json=userEmail" json:"user_email,omitempty"`
+	InboundTag           []string         `protobuf:"bytes,8,rep,name=inbound_tag,json=inboundTag" json:"inbound_tag,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_unrecognized     []byte           `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
 }
 
-func (m *RoutingRule) Reset()                    { *m = RoutingRule{} }
-func (m *RoutingRule) String() string            { return proto.CompactTextString(m) }
-func (*RoutingRule) ProtoMessage()               {}
-func (*RoutingRule) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
+func (m *RoutingRule) Reset()         { *m = RoutingRule{} }
+func (m *RoutingRule) String() string { return proto.CompactTextString(m) }
+func (*RoutingRule) ProtoMessage()    {}
+func (*RoutingRule) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_bdac2d1c90ceb42f, []int{6}
+}
+func (m *RoutingRule) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RoutingRule.Unmarshal(m, b)
+}
+func (m *RoutingRule) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RoutingRule.Marshal(b, m, deterministic)
+}
+func (dst *RoutingRule) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RoutingRule.Merge(dst, src)
+}
+func (m *RoutingRule) XXX_Size() int {
+	return xxx_messageInfo_RoutingRule.Size(m)
+}
+func (m *RoutingRule) XXX_DiscardUnknown() {
+	xxx_messageInfo_RoutingRule.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RoutingRule proto.InternalMessageInfo
 
 func (m *RoutingRule) GetTag() string {
 	if m != nil {
@@ -247,14 +404,14 @@ func (m *RoutingRule) GetCidr() []*CIDR {
 	return nil
 }
 
-func (m *RoutingRule) GetPortRange() *v2ray_core_common_net.PortRange {
+func (m *RoutingRule) GetPortRange() *net.PortRange {
 	if m != nil {
 		return m.PortRange
 	}
 	return nil
 }
 
-func (m *RoutingRule) GetNetworkList() *v2ray_core_common_net1.NetworkList {
+func (m *RoutingRule) GetNetworkList() *net.NetworkList {
 	if m != nil {
 		return m.NetworkList
 	}
@@ -283,14 +440,36 @@ func (m *RoutingRule) GetInboundTag() []string {
 }
 
 type Config struct {
-	DomainStrategy Config_DomainStrategy `protobuf:"varint,1,opt,name=domain_strategy,json=domainStrategy,enum=v2ray.core.app.router.Config_DomainStrategy" json:"domain_strategy,omitempty"`
-	Rule           []*RoutingRule        `protobuf:"bytes,2,rep,name=rule" json:"rule,omitempty"`
+	DomainStrategy       Config_DomainStrategy `protobuf:"varint,1,opt,name=domain_strategy,json=domainStrategy,enum=v2ray.core.app.router.Config_DomainStrategy" json:"domain_strategy,omitempty"`
+	Rule                 []*RoutingRule        `protobuf:"bytes,2,rep,name=rule" json:"rule,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
+	XXX_unrecognized     []byte                `json:"-"`
+	XXX_sizecache        int32                 `json:"-"`
 }
 
-func (m *Config) Reset()                    { *m = Config{} }
-func (m *Config) String() string            { return proto.CompactTextString(m) }
-func (*Config) ProtoMessage()               {}
-func (*Config) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
+func (m *Config) Reset()         { *m = Config{} }
+func (m *Config) String() string { return proto.CompactTextString(m) }
+func (*Config) ProtoMessage()    {}
+func (*Config) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_bdac2d1c90ceb42f, []int{7}
+}
+func (m *Config) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Config.Unmarshal(m, b)
+}
+func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
+}
+func (dst *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(dst, src)
+}
+func (m *Config) XXX_Size() int {
+	return xxx_messageInfo_Config.Size(m)
+}
+func (m *Config) XXX_DiscardUnknown() {
+	xxx_messageInfo_Config.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Config proto.InternalMessageInfo
 
 func (m *Config) GetDomainStrategy() Config_DomainStrategy {
 	if m != nil {
@@ -319,9 +498,11 @@ func init() {
 	proto.RegisterEnum("v2ray.core.app.router.Config_DomainStrategy", Config_DomainStrategy_name, Config_DomainStrategy_value)
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/app/router/config.proto", fileDescriptor0) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/app/router/config.proto", fileDescriptor_config_bdac2d1c90ceb42f)
+}
 
-var fileDescriptor0 = []byte{
+var fileDescriptor_config_bdac2d1c90ceb42f = []byte{
 	// 640 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x94, 0xcd, 0x6e, 0xd4, 0x3a,
 	0x14, 0xc7, 0x6f, 0xe6, 0xab, 0x9d, 0x93, 0xb9, 0x73, 0x23, 0xeb, 0x16, 0x0d, 0x85, 0xc2, 0x10,

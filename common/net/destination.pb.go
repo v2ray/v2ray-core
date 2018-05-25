@@ -9,17 +9,45 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+
 // Endpoint of a network connection.
 type Endpoint struct {
-	Network Network     `protobuf:"varint,1,opt,name=network,enum=v2ray.core.common.net.Network" json:"network,omitempty"`
-	Address *IPOrDomain `protobuf:"bytes,2,opt,name=address" json:"address,omitempty"`
-	Port    uint32      `protobuf:"varint,3,opt,name=port" json:"port,omitempty"`
+	Network              Network     `protobuf:"varint,1,opt,name=network,enum=v2ray.core.common.net.Network" json:"network,omitempty"`
+	Address              *IPOrDomain `protobuf:"bytes,2,opt,name=address" json:"address,omitempty"`
+	Port                 uint32      `protobuf:"varint,3,opt,name=port" json:"port,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
+	XXX_unrecognized     []byte      `json:"-"`
+	XXX_sizecache        int32       `json:"-"`
 }
 
-func (m *Endpoint) Reset()                    { *m = Endpoint{} }
-func (m *Endpoint) String() string            { return proto.CompactTextString(m) }
-func (*Endpoint) ProtoMessage()               {}
-func (*Endpoint) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
+func (m *Endpoint) Reset()         { *m = Endpoint{} }
+func (m *Endpoint) String() string { return proto.CompactTextString(m) }
+func (*Endpoint) ProtoMessage()    {}
+func (*Endpoint) Descriptor() ([]byte, []int) {
+	return fileDescriptor_destination_8cb120f3026d561e, []int{0}
+}
+func (m *Endpoint) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Endpoint.Unmarshal(m, b)
+}
+func (m *Endpoint) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Endpoint.Marshal(b, m, deterministic)
+}
+func (dst *Endpoint) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Endpoint.Merge(dst, src)
+}
+func (m *Endpoint) XXX_Size() int {
+	return xxx_messageInfo_Endpoint.Size(m)
+}
+func (m *Endpoint) XXX_DiscardUnknown() {
+	xxx_messageInfo_Endpoint.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Endpoint proto.InternalMessageInfo
 
 func (m *Endpoint) GetNetwork() Network {
 	if m != nil {
@@ -46,9 +74,11 @@ func init() {
 	proto.RegisterType((*Endpoint)(nil), "v2ray.core.common.net.Endpoint")
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/common/net/destination.proto", fileDescriptor1) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/common/net/destination.proto", fileDescriptor_destination_8cb120f3026d561e)
+}
 
-var fileDescriptor1 = []byte{
+var fileDescriptor_destination_8cb120f3026d561e = []byte{
 	// 230 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xd2, 0x2e, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x4f, 0xce, 0xcf, 0xcd, 0xcd,

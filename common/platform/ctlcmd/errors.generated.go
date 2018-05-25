@@ -2,4 +2,6 @@ package ctlcmd
 
 import "v2ray.com/core/common/errors"
 
-func newError(values ...interface{}) *errors.Error { return errors.New(values...).Path("Command", "Platform", "CtlCmd") }
+func newError(values ...interface{}) *errors.Error {
+	return errors.New(values...).Path("Command", "Platform", "CtlCmd")
+}

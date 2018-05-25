@@ -3,7 +3,7 @@ package blackhole
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import v2ray_core_common_serial "v2ray.com/core/common/serial"
+import serial "v2ray.com/core/common/serial"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -17,31 +17,97 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type NoneResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *NoneResponse) Reset()                    { *m = NoneResponse{} }
-func (m *NoneResponse) String() string            { return proto.CompactTextString(m) }
-func (*NoneResponse) ProtoMessage()               {}
-func (*NoneResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *NoneResponse) Reset()         { *m = NoneResponse{} }
+func (m *NoneResponse) String() string { return proto.CompactTextString(m) }
+func (*NoneResponse) ProtoMessage()    {}
+func (*NoneResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_9e2968d90a4a62fe, []int{0}
+}
+func (m *NoneResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_NoneResponse.Unmarshal(m, b)
+}
+func (m *NoneResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_NoneResponse.Marshal(b, m, deterministic)
+}
+func (dst *NoneResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_NoneResponse.Merge(dst, src)
+}
+func (m *NoneResponse) XXX_Size() int {
+	return xxx_messageInfo_NoneResponse.Size(m)
+}
+func (m *NoneResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_NoneResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_NoneResponse proto.InternalMessageInfo
 
 type HTTPResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *HTTPResponse) Reset()                    { *m = HTTPResponse{} }
-func (m *HTTPResponse) String() string            { return proto.CompactTextString(m) }
-func (*HTTPResponse) ProtoMessage()               {}
-func (*HTTPResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (m *HTTPResponse) Reset()         { *m = HTTPResponse{} }
+func (m *HTTPResponse) String() string { return proto.CompactTextString(m) }
+func (*HTTPResponse) ProtoMessage()    {}
+func (*HTTPResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_9e2968d90a4a62fe, []int{1}
+}
+func (m *HTTPResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_HTTPResponse.Unmarshal(m, b)
+}
+func (m *HTTPResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_HTTPResponse.Marshal(b, m, deterministic)
+}
+func (dst *HTTPResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HTTPResponse.Merge(dst, src)
+}
+func (m *HTTPResponse) XXX_Size() int {
+	return xxx_messageInfo_HTTPResponse.Size(m)
+}
+func (m *HTTPResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_HTTPResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_HTTPResponse proto.InternalMessageInfo
 
 type Config struct {
-	Response *v2ray_core_common_serial.TypedMessage `protobuf:"bytes,1,opt,name=response" json:"response,omitempty"`
+	Response             *serial.TypedMessage `protobuf:"bytes,1,opt,name=response" json:"response,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_unrecognized     []byte               `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
 }
 
-func (m *Config) Reset()                    { *m = Config{} }
-func (m *Config) String() string            { return proto.CompactTextString(m) }
-func (*Config) ProtoMessage()               {}
-func (*Config) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (m *Config) Reset()         { *m = Config{} }
+func (m *Config) String() string { return proto.CompactTextString(m) }
+func (*Config) ProtoMessage()    {}
+func (*Config) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_9e2968d90a4a62fe, []int{2}
+}
+func (m *Config) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Config.Unmarshal(m, b)
+}
+func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
+}
+func (dst *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(dst, src)
+}
+func (m *Config) XXX_Size() int {
+	return xxx_messageInfo_Config.Size(m)
+}
+func (m *Config) XXX_DiscardUnknown() {
+	xxx_messageInfo_Config.DiscardUnknown(m)
+}
 
-func (m *Config) GetResponse() *v2ray_core_common_serial.TypedMessage {
+var xxx_messageInfo_Config proto.InternalMessageInfo
+
+func (m *Config) GetResponse() *serial.TypedMessage {
 	if m != nil {
 		return m.Response
 	}
@@ -54,9 +120,11 @@ func init() {
 	proto.RegisterType((*Config)(nil), "v2ray.core.proxy.blackhole.Config")
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/proxy/blackhole/config.proto", fileDescriptor0) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/proxy/blackhole/config.proto", fileDescriptor_config_9e2968d90a4a62fe)
+}
 
-var fileDescriptor0 = []byte{
+var fileDescriptor_config_9e2968d90a4a62fe = []byte{
 	// 217 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xd2, 0x2e, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x2f, 0x28, 0xca, 0xaf, 0xa8,

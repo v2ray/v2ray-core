@@ -3,8 +3,7 @@ package dns
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import v2ray_core_common_net "v2ray.com/core/common/net"
-import v2ray_core_common_net2 "v2ray.com/core/common/net"
+import net "v2ray.com/core/common/net"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -20,24 +19,46 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 type Config struct {
 	// Nameservers used by this DNS. Only traditional UDP servers are support at the moment.
 	// A special value 'localhost' as a domain address can be set to use DNS on local system.
-	NameServers []*v2ray_core_common_net2.Endpoint `protobuf:"bytes,1,rep,name=NameServers" json:"NameServers,omitempty"`
+	NameServers []*net.Endpoint `protobuf:"bytes,1,rep,name=NameServers" json:"NameServers,omitempty"`
 	// Static hosts. Domain to IP.
-	Hosts map[string]*v2ray_core_common_net.IPOrDomain `protobuf:"bytes,2,rep,name=Hosts" json:"Hosts,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Hosts                map[string]*net.IPOrDomain `protobuf:"bytes,2,rep,name=Hosts" json:"Hosts,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
+	XXX_unrecognized     []byte                     `json:"-"`
+	XXX_sizecache        int32                      `json:"-"`
 }
 
-func (m *Config) Reset()                    { *m = Config{} }
-func (m *Config) String() string            { return proto.CompactTextString(m) }
-func (*Config) ProtoMessage()               {}
-func (*Config) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *Config) Reset()         { *m = Config{} }
+func (m *Config) String() string { return proto.CompactTextString(m) }
+func (*Config) ProtoMessage()    {}
+func (*Config) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_862435acfeec6b70, []int{0}
+}
+func (m *Config) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Config.Unmarshal(m, b)
+}
+func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
+}
+func (dst *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(dst, src)
+}
+func (m *Config) XXX_Size() int {
+	return xxx_messageInfo_Config.Size(m)
+}
+func (m *Config) XXX_DiscardUnknown() {
+	xxx_messageInfo_Config.DiscardUnknown(m)
+}
 
-func (m *Config) GetNameServers() []*v2ray_core_common_net2.Endpoint {
+var xxx_messageInfo_Config proto.InternalMessageInfo
+
+func (m *Config) GetNameServers() []*net.Endpoint {
 	if m != nil {
 		return m.NameServers
 	}
 	return nil
 }
 
-func (m *Config) GetHosts() map[string]*v2ray_core_common_net.IPOrDomain {
+func (m *Config) GetHosts() map[string]*net.IPOrDomain {
 	if m != nil {
 		return m.Hosts
 	}
@@ -46,11 +67,14 @@ func (m *Config) GetHosts() map[string]*v2ray_core_common_net.IPOrDomain {
 
 func init() {
 	proto.RegisterType((*Config)(nil), "v2ray.core.app.dns.Config")
+	proto.RegisterMapType((map[string]*net.IPOrDomain)(nil), "v2ray.core.app.dns.Config.HostsEntry")
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/app/dns/config.proto", fileDescriptor0) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/app/dns/config.proto", fileDescriptor_config_862435acfeec6b70)
+}
 
-var fileDescriptor0 = []byte{
+var fileDescriptor_config_862435acfeec6b70 = []byte{
 	// 286 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x90, 0x41, 0x4b, 0x33, 0x31,
 	0x10, 0x86, 0xc9, 0x96, 0x16, 0xbe, 0xf4, 0xf2, 0x91, 0x83, 0x2c, 0xbd, 0x58, 0x15, 0xb1, 0x20,

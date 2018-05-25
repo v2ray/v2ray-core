@@ -37,20 +37,44 @@ var Certificate_Usage_value = map[string]int32{
 func (x Certificate_Usage) String() string {
 	return proto.EnumName(Certificate_Usage_name, int32(x))
 }
-func (Certificate_Usage) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0, 0} }
+func (Certificate_Usage) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_config_094edd58cf826f66, []int{0, 0}
+}
 
 type Certificate struct {
 	// TLS certificate in x509 format.
 	Certificate []byte `protobuf:"bytes,1,opt,name=Certificate,proto3" json:"Certificate,omitempty"`
 	// TLS key in x509 format.
-	Key   []byte            `protobuf:"bytes,2,opt,name=Key,proto3" json:"Key,omitempty"`
-	Usage Certificate_Usage `protobuf:"varint,3,opt,name=usage,enum=v2ray.core.transport.internet.tls.Certificate_Usage" json:"usage,omitempty"`
+	Key                  []byte            `protobuf:"bytes,2,opt,name=Key,proto3" json:"Key,omitempty"`
+	Usage                Certificate_Usage `protobuf:"varint,3,opt,name=usage,enum=v2ray.core.transport.internet.tls.Certificate_Usage" json:"usage,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
 }
 
-func (m *Certificate) Reset()                    { *m = Certificate{} }
-func (m *Certificate) String() string            { return proto.CompactTextString(m) }
-func (*Certificate) ProtoMessage()               {}
-func (*Certificate) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *Certificate) Reset()         { *m = Certificate{} }
+func (m *Certificate) String() string { return proto.CompactTextString(m) }
+func (*Certificate) ProtoMessage()    {}
+func (*Certificate) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_094edd58cf826f66, []int{0}
+}
+func (m *Certificate) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Certificate.Unmarshal(m, b)
+}
+func (m *Certificate) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Certificate.Marshal(b, m, deterministic)
+}
+func (dst *Certificate) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Certificate.Merge(dst, src)
+}
+func (m *Certificate) XXX_Size() int {
+	return xxx_messageInfo_Certificate.Size(m)
+}
+func (m *Certificate) XXX_DiscardUnknown() {
+	xxx_messageInfo_Certificate.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Certificate proto.InternalMessageInfo
 
 func (m *Certificate) GetCertificate() []byte {
 	if m != nil {
@@ -81,13 +105,35 @@ type Config struct {
 	// Override server name.
 	ServerName string `protobuf:"bytes,3,opt,name=server_name,json=serverName" json:"server_name,omitempty"`
 	// Lists of string as ALPN values.
-	NextProtocol []string `protobuf:"bytes,4,rep,name=next_protocol,json=nextProtocol" json:"next_protocol,omitempty"`
+	NextProtocol         []string `protobuf:"bytes,4,rep,name=next_protocol,json=nextProtocol" json:"next_protocol,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Config) Reset()                    { *m = Config{} }
-func (m *Config) String() string            { return proto.CompactTextString(m) }
-func (*Config) ProtoMessage()               {}
-func (*Config) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (m *Config) Reset()         { *m = Config{} }
+func (m *Config) String() string { return proto.CompactTextString(m) }
+func (*Config) ProtoMessage()    {}
+func (*Config) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_094edd58cf826f66, []int{1}
+}
+func (m *Config) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Config.Unmarshal(m, b)
+}
+func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
+}
+func (dst *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(dst, src)
+}
+func (m *Config) XXX_Size() int {
+	return xxx_messageInfo_Config.Size(m)
+}
+func (m *Config) XXX_DiscardUnknown() {
+	xxx_messageInfo_Config.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Config proto.InternalMessageInfo
 
 func (m *Config) GetAllowInsecure() bool {
 	if m != nil {
@@ -123,9 +169,11 @@ func init() {
 	proto.RegisterEnum("v2ray.core.transport.internet.tls.Certificate_Usage", Certificate_Usage_name, Certificate_Usage_value)
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/transport/internet/tls/config.proto", fileDescriptor0) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/transport/internet/tls/config.proto", fileDescriptor_config_094edd58cf826f66)
+}
 
-var fileDescriptor0 = []byte{
+var fileDescriptor_config_094edd58cf826f66 = []byte{
 	// 358 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x91, 0xd1, 0x6e, 0xda, 0x30,
 	0x14, 0x40, 0x97, 0x64, 0xa0, 0xe1, 0x00, 0x8b, 0xbc, 0x3d, 0xe4, 0x6d, 0x81, 0x09, 0x29, 0x4f,

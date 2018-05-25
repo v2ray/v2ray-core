@@ -9,6 +9,12 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+
 type SecurityType int32
 
 const (
@@ -40,16 +46,40 @@ var SecurityType_value = map[string]int32{
 func (x SecurityType) String() string {
 	return proto.EnumName(SecurityType_name, int32(x))
 }
-func (SecurityType) EnumDescriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
-
-type SecurityConfig struct {
-	Type SecurityType `protobuf:"varint,1,opt,name=type,enum=v2ray.core.common.protocol.SecurityType" json:"type,omitempty"`
+func (SecurityType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_headers_22aa312cf9baa01e, []int{0}
 }
 
-func (m *SecurityConfig) Reset()                    { *m = SecurityConfig{} }
-func (m *SecurityConfig) String() string            { return proto.CompactTextString(m) }
-func (*SecurityConfig) ProtoMessage()               {}
-func (*SecurityConfig) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
+type SecurityConfig struct {
+	Type                 SecurityType `protobuf:"varint,1,opt,name=type,enum=v2ray.core.common.protocol.SecurityType" json:"type,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
+	XXX_unrecognized     []byte       `json:"-"`
+	XXX_sizecache        int32        `json:"-"`
+}
+
+func (m *SecurityConfig) Reset()         { *m = SecurityConfig{} }
+func (m *SecurityConfig) String() string { return proto.CompactTextString(m) }
+func (*SecurityConfig) ProtoMessage()    {}
+func (*SecurityConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_headers_22aa312cf9baa01e, []int{0}
+}
+func (m *SecurityConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_SecurityConfig.Unmarshal(m, b)
+}
+func (m *SecurityConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_SecurityConfig.Marshal(b, m, deterministic)
+}
+func (dst *SecurityConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SecurityConfig.Merge(dst, src)
+}
+func (m *SecurityConfig) XXX_Size() int {
+	return xxx_messageInfo_SecurityConfig.Size(m)
+}
+func (m *SecurityConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_SecurityConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SecurityConfig proto.InternalMessageInfo
 
 func (m *SecurityConfig) GetType() SecurityType {
 	if m != nil {
@@ -63,9 +93,11 @@ func init() {
 	proto.RegisterEnum("v2ray.core.common.protocol.SecurityType", SecurityType_name, SecurityType_value)
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/common/protocol/headers.proto", fileDescriptor1) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/common/protocol/headers.proto", fileDescriptor_headers_22aa312cf9baa01e)
+}
 
-var fileDescriptor1 = []byte{
+var fileDescriptor_headers_22aa312cf9baa01e = []byte{
 	// 252 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xd2, 0x29, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x4f, 0xce, 0xcf, 0xcd, 0xcd,

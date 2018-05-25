@@ -3,10 +3,9 @@ package proxyman
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import v2ray_core_common_net "v2ray.com/core/common/net"
-import v2ray_core_common_net1 "v2ray.com/core/common/net"
-import v2ray_core_transport_internet "v2ray.com/core/transport/internet"
-import v2ray_core_common_serial "v2ray.com/core/common/serial"
+import net "v2ray.com/core/common/net"
+import serial "v2ray.com/core/common/serial"
+import internet "v2ray.com/core/transport/internet"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -38,7 +37,9 @@ var KnownProtocols_value = map[string]int32{
 func (x KnownProtocols) String() string {
 	return proto.EnumName(KnownProtocols_name, int32(x))
 }
-func (KnownProtocols) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (KnownProtocols) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_config_8038bf3f86761ebe, []int{0}
+}
 
 type AllocationStrategy_Type int32
 
@@ -65,15 +66,39 @@ var AllocationStrategy_Type_value = map[string]int32{
 func (x AllocationStrategy_Type) String() string {
 	return proto.EnumName(AllocationStrategy_Type_name, int32(x))
 }
-func (AllocationStrategy_Type) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{1, 0} }
-
-type InboundConfig struct {
+func (AllocationStrategy_Type) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_config_8038bf3f86761ebe, []int{1, 0}
 }
 
-func (m *InboundConfig) Reset()                    { *m = InboundConfig{} }
-func (m *InboundConfig) String() string            { return proto.CompactTextString(m) }
-func (*InboundConfig) ProtoMessage()               {}
-func (*InboundConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+type InboundConfig struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *InboundConfig) Reset()         { *m = InboundConfig{} }
+func (m *InboundConfig) String() string { return proto.CompactTextString(m) }
+func (*InboundConfig) ProtoMessage()    {}
+func (*InboundConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_8038bf3f86761ebe, []int{0}
+}
+func (m *InboundConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_InboundConfig.Unmarshal(m, b)
+}
+func (m *InboundConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_InboundConfig.Marshal(b, m, deterministic)
+}
+func (dst *InboundConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_InboundConfig.Merge(dst, src)
+}
+func (m *InboundConfig) XXX_Size() int {
+	return xxx_messageInfo_InboundConfig.Size(m)
+}
+func (m *InboundConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_InboundConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_InboundConfig proto.InternalMessageInfo
 
 type AllocationStrategy struct {
 	Type AllocationStrategy_Type `protobuf:"varint,1,opt,name=type,enum=v2ray.core.app.proxyman.AllocationStrategy_Type" json:"type,omitempty"`
@@ -82,13 +107,35 @@ type AllocationStrategy struct {
 	Concurrency *AllocationStrategy_AllocationStrategyConcurrency `protobuf:"bytes,2,opt,name=concurrency" json:"concurrency,omitempty"`
 	// Number of minutes before a handler is regenerated.
 	// Default value is 5 if unset.
-	Refresh *AllocationStrategy_AllocationStrategyRefresh `protobuf:"bytes,3,opt,name=refresh" json:"refresh,omitempty"`
+	Refresh              *AllocationStrategy_AllocationStrategyRefresh `protobuf:"bytes,3,opt,name=refresh" json:"refresh,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                                      `json:"-"`
+	XXX_unrecognized     []byte                                        `json:"-"`
+	XXX_sizecache        int32                                         `json:"-"`
 }
 
-func (m *AllocationStrategy) Reset()                    { *m = AllocationStrategy{} }
-func (m *AllocationStrategy) String() string            { return proto.CompactTextString(m) }
-func (*AllocationStrategy) ProtoMessage()               {}
-func (*AllocationStrategy) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (m *AllocationStrategy) Reset()         { *m = AllocationStrategy{} }
+func (m *AllocationStrategy) String() string { return proto.CompactTextString(m) }
+func (*AllocationStrategy) ProtoMessage()    {}
+func (*AllocationStrategy) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_8038bf3f86761ebe, []int{1}
+}
+func (m *AllocationStrategy) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AllocationStrategy.Unmarshal(m, b)
+}
+func (m *AllocationStrategy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AllocationStrategy.Marshal(b, m, deterministic)
+}
+func (dst *AllocationStrategy) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AllocationStrategy.Merge(dst, src)
+}
+func (m *AllocationStrategy) XXX_Size() int {
+	return xxx_messageInfo_AllocationStrategy.Size(m)
+}
+func (m *AllocationStrategy) XXX_DiscardUnknown() {
+	xxx_messageInfo_AllocationStrategy.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AllocationStrategy proto.InternalMessageInfo
 
 func (m *AllocationStrategy) GetType() AllocationStrategy_Type {
 	if m != nil {
@@ -112,7 +159,10 @@ func (m *AllocationStrategy) GetRefresh() *AllocationStrategy_AllocationStrategy
 }
 
 type AllocationStrategy_AllocationStrategyConcurrency struct {
-	Value uint32 `protobuf:"varint,1,opt,name=value" json:"value,omitempty"`
+	Value                uint32   `protobuf:"varint,1,opt,name=value" json:"value,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *AllocationStrategy_AllocationStrategyConcurrency) Reset() {
@@ -123,8 +173,25 @@ func (m *AllocationStrategy_AllocationStrategyConcurrency) String() string {
 }
 func (*AllocationStrategy_AllocationStrategyConcurrency) ProtoMessage() {}
 func (*AllocationStrategy_AllocationStrategyConcurrency) Descriptor() ([]byte, []int) {
-	return fileDescriptor0, []int{1, 0}
+	return fileDescriptor_config_8038bf3f86761ebe, []int{1, 0}
 }
+func (m *AllocationStrategy_AllocationStrategyConcurrency) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AllocationStrategy_AllocationStrategyConcurrency.Unmarshal(m, b)
+}
+func (m *AllocationStrategy_AllocationStrategyConcurrency) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AllocationStrategy_AllocationStrategyConcurrency.Marshal(b, m, deterministic)
+}
+func (dst *AllocationStrategy_AllocationStrategyConcurrency) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AllocationStrategy_AllocationStrategyConcurrency.Merge(dst, src)
+}
+func (m *AllocationStrategy_AllocationStrategyConcurrency) XXX_Size() int {
+	return xxx_messageInfo_AllocationStrategy_AllocationStrategyConcurrency.Size(m)
+}
+func (m *AllocationStrategy_AllocationStrategyConcurrency) XXX_DiscardUnknown() {
+	xxx_messageInfo_AllocationStrategy_AllocationStrategyConcurrency.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AllocationStrategy_AllocationStrategyConcurrency proto.InternalMessageInfo
 
 func (m *AllocationStrategy_AllocationStrategyConcurrency) GetValue() uint32 {
 	if m != nil {
@@ -134,7 +201,10 @@ func (m *AllocationStrategy_AllocationStrategyConcurrency) GetValue() uint32 {
 }
 
 type AllocationStrategy_AllocationStrategyRefresh struct {
-	Value uint32 `protobuf:"varint,1,opt,name=value" json:"value,omitempty"`
+	Value                uint32   `protobuf:"varint,1,opt,name=value" json:"value,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *AllocationStrategy_AllocationStrategyRefresh) Reset() {
@@ -145,8 +215,25 @@ func (m *AllocationStrategy_AllocationStrategyRefresh) String() string {
 }
 func (*AllocationStrategy_AllocationStrategyRefresh) ProtoMessage() {}
 func (*AllocationStrategy_AllocationStrategyRefresh) Descriptor() ([]byte, []int) {
-	return fileDescriptor0, []int{1, 1}
+	return fileDescriptor_config_8038bf3f86761ebe, []int{1, 1}
 }
+func (m *AllocationStrategy_AllocationStrategyRefresh) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AllocationStrategy_AllocationStrategyRefresh.Unmarshal(m, b)
+}
+func (m *AllocationStrategy_AllocationStrategyRefresh) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AllocationStrategy_AllocationStrategyRefresh.Marshal(b, m, deterministic)
+}
+func (dst *AllocationStrategy_AllocationStrategyRefresh) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AllocationStrategy_AllocationStrategyRefresh.Merge(dst, src)
+}
+func (m *AllocationStrategy_AllocationStrategyRefresh) XXX_Size() int {
+	return xxx_messageInfo_AllocationStrategy_AllocationStrategyRefresh.Size(m)
+}
+func (m *AllocationStrategy_AllocationStrategyRefresh) XXX_DiscardUnknown() {
+	xxx_messageInfo_AllocationStrategy_AllocationStrategyRefresh.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AllocationStrategy_AllocationStrategyRefresh proto.InternalMessageInfo
 
 func (m *AllocationStrategy_AllocationStrategyRefresh) GetValue() uint32 {
 	if m != nil {
@@ -157,28 +244,50 @@ func (m *AllocationStrategy_AllocationStrategyRefresh) GetValue() uint32 {
 
 type ReceiverConfig struct {
 	// PortRange specifies the ports which the Receiver should listen on.
-	PortRange *v2ray_core_common_net1.PortRange `protobuf:"bytes,1,opt,name=port_range,json=portRange" json:"port_range,omitempty"`
+	PortRange *net.PortRange `protobuf:"bytes,1,opt,name=port_range,json=portRange" json:"port_range,omitempty"`
 	// Listen specifies the IP address that the Receiver should listen on.
-	Listen                     *v2ray_core_common_net.IPOrDomain           `protobuf:"bytes,2,opt,name=listen" json:"listen,omitempty"`
-	AllocationStrategy         *AllocationStrategy                         `protobuf:"bytes,3,opt,name=allocation_strategy,json=allocationStrategy" json:"allocation_strategy,omitempty"`
-	StreamSettings             *v2ray_core_transport_internet.StreamConfig `protobuf:"bytes,4,opt,name=stream_settings,json=streamSettings" json:"stream_settings,omitempty"`
-	ReceiveOriginalDestination bool                                        `protobuf:"varint,5,opt,name=receive_original_destination,json=receiveOriginalDestination" json:"receive_original_destination,omitempty"`
-	DomainOverride             []KnownProtocols                            `protobuf:"varint,7,rep,packed,name=domain_override,json=domainOverride,enum=v2ray.core.app.proxyman.KnownProtocols" json:"domain_override,omitempty"`
+	Listen                     *net.IPOrDomain        `protobuf:"bytes,2,opt,name=listen" json:"listen,omitempty"`
+	AllocationStrategy         *AllocationStrategy    `protobuf:"bytes,3,opt,name=allocation_strategy,json=allocationStrategy" json:"allocation_strategy,omitempty"`
+	StreamSettings             *internet.StreamConfig `protobuf:"bytes,4,opt,name=stream_settings,json=streamSettings" json:"stream_settings,omitempty"`
+	ReceiveOriginalDestination bool                   `protobuf:"varint,5,opt,name=receive_original_destination,json=receiveOriginalDestination" json:"receive_original_destination,omitempty"`
+	DomainOverride             []KnownProtocols       `protobuf:"varint,7,rep,packed,name=domain_override,json=domainOverride,enum=v2ray.core.app.proxyman.KnownProtocols" json:"domain_override,omitempty"`
+	XXX_NoUnkeyedLiteral       struct{}               `json:"-"`
+	XXX_unrecognized           []byte                 `json:"-"`
+	XXX_sizecache              int32                  `json:"-"`
 }
 
-func (m *ReceiverConfig) Reset()                    { *m = ReceiverConfig{} }
-func (m *ReceiverConfig) String() string            { return proto.CompactTextString(m) }
-func (*ReceiverConfig) ProtoMessage()               {}
-func (*ReceiverConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (m *ReceiverConfig) Reset()         { *m = ReceiverConfig{} }
+func (m *ReceiverConfig) String() string { return proto.CompactTextString(m) }
+func (*ReceiverConfig) ProtoMessage()    {}
+func (*ReceiverConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_8038bf3f86761ebe, []int{2}
+}
+func (m *ReceiverConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ReceiverConfig.Unmarshal(m, b)
+}
+func (m *ReceiverConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ReceiverConfig.Marshal(b, m, deterministic)
+}
+func (dst *ReceiverConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ReceiverConfig.Merge(dst, src)
+}
+func (m *ReceiverConfig) XXX_Size() int {
+	return xxx_messageInfo_ReceiverConfig.Size(m)
+}
+func (m *ReceiverConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_ReceiverConfig.DiscardUnknown(m)
+}
 
-func (m *ReceiverConfig) GetPortRange() *v2ray_core_common_net1.PortRange {
+var xxx_messageInfo_ReceiverConfig proto.InternalMessageInfo
+
+func (m *ReceiverConfig) GetPortRange() *net.PortRange {
 	if m != nil {
 		return m.PortRange
 	}
 	return nil
 }
 
-func (m *ReceiverConfig) GetListen() *v2ray_core_common_net.IPOrDomain {
+func (m *ReceiverConfig) GetListen() *net.IPOrDomain {
 	if m != nil {
 		return m.Listen
 	}
@@ -192,7 +301,7 @@ func (m *ReceiverConfig) GetAllocationStrategy() *AllocationStrategy {
 	return nil
 }
 
-func (m *ReceiverConfig) GetStreamSettings() *v2ray_core_transport_internet.StreamConfig {
+func (m *ReceiverConfig) GetStreamSettings() *internet.StreamConfig {
 	if m != nil {
 		return m.StreamSettings
 	}
@@ -214,15 +323,37 @@ func (m *ReceiverConfig) GetDomainOverride() []KnownProtocols {
 }
 
 type InboundHandlerConfig struct {
-	Tag              string                                 `protobuf:"bytes,1,opt,name=tag" json:"tag,omitempty"`
-	ReceiverSettings *v2ray_core_common_serial.TypedMessage `protobuf:"bytes,2,opt,name=receiver_settings,json=receiverSettings" json:"receiver_settings,omitempty"`
-	ProxySettings    *v2ray_core_common_serial.TypedMessage `protobuf:"bytes,3,opt,name=proxy_settings,json=proxySettings" json:"proxy_settings,omitempty"`
+	Tag                  string               `protobuf:"bytes,1,opt,name=tag" json:"tag,omitempty"`
+	ReceiverSettings     *serial.TypedMessage `protobuf:"bytes,2,opt,name=receiver_settings,json=receiverSettings" json:"receiver_settings,omitempty"`
+	ProxySettings        *serial.TypedMessage `protobuf:"bytes,3,opt,name=proxy_settings,json=proxySettings" json:"proxy_settings,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_unrecognized     []byte               `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
 }
 
-func (m *InboundHandlerConfig) Reset()                    { *m = InboundHandlerConfig{} }
-func (m *InboundHandlerConfig) String() string            { return proto.CompactTextString(m) }
-func (*InboundHandlerConfig) ProtoMessage()               {}
-func (*InboundHandlerConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+func (m *InboundHandlerConfig) Reset()         { *m = InboundHandlerConfig{} }
+func (m *InboundHandlerConfig) String() string { return proto.CompactTextString(m) }
+func (*InboundHandlerConfig) ProtoMessage()    {}
+func (*InboundHandlerConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_8038bf3f86761ebe, []int{3}
+}
+func (m *InboundHandlerConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_InboundHandlerConfig.Unmarshal(m, b)
+}
+func (m *InboundHandlerConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_InboundHandlerConfig.Marshal(b, m, deterministic)
+}
+func (dst *InboundHandlerConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_InboundHandlerConfig.Merge(dst, src)
+}
+func (m *InboundHandlerConfig) XXX_Size() int {
+	return xxx_messageInfo_InboundHandlerConfig.Size(m)
+}
+func (m *InboundHandlerConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_InboundHandlerConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_InboundHandlerConfig proto.InternalMessageInfo
 
 func (m *InboundHandlerConfig) GetTag() string {
 	if m != nil {
@@ -231,14 +362,14 @@ func (m *InboundHandlerConfig) GetTag() string {
 	return ""
 }
 
-func (m *InboundHandlerConfig) GetReceiverSettings() *v2ray_core_common_serial.TypedMessage {
+func (m *InboundHandlerConfig) GetReceiverSettings() *serial.TypedMessage {
 	if m != nil {
 		return m.ReceiverSettings
 	}
 	return nil
 }
 
-func (m *InboundHandlerConfig) GetProxySettings() *v2ray_core_common_serial.TypedMessage {
+func (m *InboundHandlerConfig) GetProxySettings() *serial.TypedMessage {
 	if m != nil {
 		return m.ProxySettings
 	}
@@ -246,41 +377,85 @@ func (m *InboundHandlerConfig) GetProxySettings() *v2ray_core_common_serial.Type
 }
 
 type OutboundConfig struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *OutboundConfig) Reset()                    { *m = OutboundConfig{} }
-func (m *OutboundConfig) String() string            { return proto.CompactTextString(m) }
-func (*OutboundConfig) ProtoMessage()               {}
-func (*OutboundConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+func (m *OutboundConfig) Reset()         { *m = OutboundConfig{} }
+func (m *OutboundConfig) String() string { return proto.CompactTextString(m) }
+func (*OutboundConfig) ProtoMessage()    {}
+func (*OutboundConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_8038bf3f86761ebe, []int{4}
+}
+func (m *OutboundConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_OutboundConfig.Unmarshal(m, b)
+}
+func (m *OutboundConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_OutboundConfig.Marshal(b, m, deterministic)
+}
+func (dst *OutboundConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OutboundConfig.Merge(dst, src)
+}
+func (m *OutboundConfig) XXX_Size() int {
+	return xxx_messageInfo_OutboundConfig.Size(m)
+}
+func (m *OutboundConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_OutboundConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_OutboundConfig proto.InternalMessageInfo
 
 type SenderConfig struct {
 	// Send traffic through the given IP. Only IP is allowed.
-	Via               *v2ray_core_common_net.IPOrDomain           `protobuf:"bytes,1,opt,name=via" json:"via,omitempty"`
-	StreamSettings    *v2ray_core_transport_internet.StreamConfig `protobuf:"bytes,2,opt,name=stream_settings,json=streamSettings" json:"stream_settings,omitempty"`
-	ProxySettings     *v2ray_core_transport_internet.ProxyConfig  `protobuf:"bytes,3,opt,name=proxy_settings,json=proxySettings" json:"proxy_settings,omitempty"`
-	MultiplexSettings *MultiplexingConfig                         `protobuf:"bytes,4,opt,name=multiplex_settings,json=multiplexSettings" json:"multiplex_settings,omitempty"`
+	Via                  *net.IPOrDomain        `protobuf:"bytes,1,opt,name=via" json:"via,omitempty"`
+	StreamSettings       *internet.StreamConfig `protobuf:"bytes,2,opt,name=stream_settings,json=streamSettings" json:"stream_settings,omitempty"`
+	ProxySettings        *internet.ProxyConfig  `protobuf:"bytes,3,opt,name=proxy_settings,json=proxySettings" json:"proxy_settings,omitempty"`
+	MultiplexSettings    *MultiplexingConfig    `protobuf:"bytes,4,opt,name=multiplex_settings,json=multiplexSettings" json:"multiplex_settings,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
+	XXX_unrecognized     []byte                 `json:"-"`
+	XXX_sizecache        int32                  `json:"-"`
 }
 
-func (m *SenderConfig) Reset()                    { *m = SenderConfig{} }
-func (m *SenderConfig) String() string            { return proto.CompactTextString(m) }
-func (*SenderConfig) ProtoMessage()               {}
-func (*SenderConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+func (m *SenderConfig) Reset()         { *m = SenderConfig{} }
+func (m *SenderConfig) String() string { return proto.CompactTextString(m) }
+func (*SenderConfig) ProtoMessage()    {}
+func (*SenderConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_8038bf3f86761ebe, []int{5}
+}
+func (m *SenderConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_SenderConfig.Unmarshal(m, b)
+}
+func (m *SenderConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_SenderConfig.Marshal(b, m, deterministic)
+}
+func (dst *SenderConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SenderConfig.Merge(dst, src)
+}
+func (m *SenderConfig) XXX_Size() int {
+	return xxx_messageInfo_SenderConfig.Size(m)
+}
+func (m *SenderConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_SenderConfig.DiscardUnknown(m)
+}
 
-func (m *SenderConfig) GetVia() *v2ray_core_common_net.IPOrDomain {
+var xxx_messageInfo_SenderConfig proto.InternalMessageInfo
+
+func (m *SenderConfig) GetVia() *net.IPOrDomain {
 	if m != nil {
 		return m.Via
 	}
 	return nil
 }
 
-func (m *SenderConfig) GetStreamSettings() *v2ray_core_transport_internet.StreamConfig {
+func (m *SenderConfig) GetStreamSettings() *internet.StreamConfig {
 	if m != nil {
 		return m.StreamSettings
 	}
 	return nil
 }
 
-func (m *SenderConfig) GetProxySettings() *v2ray_core_transport_internet.ProxyConfig {
+func (m *SenderConfig) GetProxySettings() *internet.ProxyConfig {
 	if m != nil {
 		return m.ProxySettings
 	}
@@ -298,13 +473,35 @@ type MultiplexingConfig struct {
 	// Whether or not Mux is enabled.
 	Enabled bool `protobuf:"varint,1,opt,name=enabled" json:"enabled,omitempty"`
 	// Max number of concurrent connections that one Mux connection can handle.
-	Concurrency uint32 `protobuf:"varint,2,opt,name=concurrency" json:"concurrency,omitempty"`
+	Concurrency          uint32   `protobuf:"varint,2,opt,name=concurrency" json:"concurrency,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *MultiplexingConfig) Reset()                    { *m = MultiplexingConfig{} }
-func (m *MultiplexingConfig) String() string            { return proto.CompactTextString(m) }
-func (*MultiplexingConfig) ProtoMessage()               {}
-func (*MultiplexingConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
+func (m *MultiplexingConfig) Reset()         { *m = MultiplexingConfig{} }
+func (m *MultiplexingConfig) String() string { return proto.CompactTextString(m) }
+func (*MultiplexingConfig) ProtoMessage()    {}
+func (*MultiplexingConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_8038bf3f86761ebe, []int{6}
+}
+func (m *MultiplexingConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_MultiplexingConfig.Unmarshal(m, b)
+}
+func (m *MultiplexingConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_MultiplexingConfig.Marshal(b, m, deterministic)
+}
+func (dst *MultiplexingConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MultiplexingConfig.Merge(dst, src)
+}
+func (m *MultiplexingConfig) XXX_Size() int {
+	return xxx_messageInfo_MultiplexingConfig.Size(m)
+}
+func (m *MultiplexingConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_MultiplexingConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MultiplexingConfig proto.InternalMessageInfo
 
 func (m *MultiplexingConfig) GetEnabled() bool {
 	if m != nil {
@@ -334,9 +531,11 @@ func init() {
 	proto.RegisterEnum("v2ray.core.app.proxyman.AllocationStrategy_Type", AllocationStrategy_Type_name, AllocationStrategy_Type_value)
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/app/proxyman/config.proto", fileDescriptor0) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/app/proxyman/config.proto", fileDescriptor_config_8038bf3f86761ebe)
+}
 
-var fileDescriptor0 = []byte{
+var fileDescriptor_config_8038bf3f86761ebe = []byte{
 	// 772 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x95, 0x5f, 0x6f, 0xeb, 0x34,
 	0x18, 0xc6, 0x4f, 0x9a, 0x9e, 0xb6, 0xe7, 0xdd, 0x69, 0x96, 0x63, 0x26, 0xad, 0x14, 0x90, 0x4a,

@@ -20,13 +20,35 @@ type Config struct {
 	Path string `protobuf:"bytes,1,opt,name=path" json:"path,omitempty"`
 	// Abstract speicifies whether to use abstract namespace or not.
 	// Traditionally Unix domain socket is file system based. Abstract domain socket can be used without acquiring file lock.
-	Abstract bool `protobuf:"varint,2,opt,name=abstract" json:"abstract,omitempty"`
+	Abstract             bool     `protobuf:"varint,2,opt,name=abstract" json:"abstract,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Config) Reset()                    { *m = Config{} }
-func (m *Config) String() string            { return proto.CompactTextString(m) }
-func (*Config) ProtoMessage()               {}
-func (*Config) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *Config) Reset()         { *m = Config{} }
+func (m *Config) String() string { return proto.CompactTextString(m) }
+func (*Config) ProtoMessage()    {}
+func (*Config) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_66b14c087c0230f8, []int{0}
+}
+func (m *Config) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Config.Unmarshal(m, b)
+}
+func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
+}
+func (dst *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(dst, src)
+}
+func (m *Config) XXX_Size() int {
+	return xxx_messageInfo_Config.Size(m)
+}
+func (m *Config) XXX_DiscardUnknown() {
+	xxx_messageInfo_Config.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Config proto.InternalMessageInfo
 
 func (m *Config) GetPath() string {
 	if m != nil {
@@ -47,10 +69,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/transport/internet/domainsocket/config.proto", fileDescriptor0)
+	proto.RegisterFile("v2ray.com/core/transport/internet/domainsocket/config.proto", fileDescriptor_config_66b14c087c0230f8)
 }
 
-var fileDescriptor0 = []byte{
+var fileDescriptor_config_66b14c087c0230f8 = []byte{
 	// 189 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xb2, 0x2e, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x2f, 0x29, 0x4a, 0xcc, 0x2b,

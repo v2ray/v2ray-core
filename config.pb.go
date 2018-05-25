@@ -3,8 +3,8 @@ package core
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import v2ray_core_common_serial "v2ray.com/core/common/serial"
-import v2ray_core_transport "v2ray.com/core/transport"
+import serial "v2ray.com/core/common/serial"
+import transport "v2ray.com/core/transport"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -24,18 +24,40 @@ type Config struct {
 	// Outbound handler configurations. Must have at least one item. The first item is used as default for routing.
 	Outbound []*OutboundHandlerConfig `protobuf:"bytes,2,rep,name=outbound" json:"outbound,omitempty"`
 	// App is for configurations of all features in V2Ray. A feature must implement the Feature interface, and its config type must be registered through common.RegisterConfig.
-	App []*v2ray_core_common_serial.TypedMessage `protobuf:"bytes,4,rep,name=app" json:"app,omitempty"`
+	App []*serial.TypedMessage `protobuf:"bytes,4,rep,name=app" json:"app,omitempty"`
 	// Transport settings.
-	Transport *v2ray_core_transport.Config `protobuf:"bytes,5,opt,name=transport" json:"transport,omitempty"`
+	Transport *transport.Config `protobuf:"bytes,5,opt,name=transport" json:"transport,omitempty"`
 	// Configuration for extensions. The config may not work if corresponding extension is not loaded into V2Ray.
 	// V2Ray will ignore such config during initialization.
-	Extension []*v2ray_core_common_serial.TypedMessage `protobuf:"bytes,6,rep,name=extension" json:"extension,omitempty"`
+	Extension            []*serial.TypedMessage `protobuf:"bytes,6,rep,name=extension" json:"extension,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
+	XXX_unrecognized     []byte                 `json:"-"`
+	XXX_sizecache        int32                  `json:"-"`
 }
 
-func (m *Config) Reset()                    { *m = Config{} }
-func (m *Config) String() string            { return proto.CompactTextString(m) }
-func (*Config) ProtoMessage()               {}
-func (*Config) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *Config) Reset()         { *m = Config{} }
+func (m *Config) String() string { return proto.CompactTextString(m) }
+func (*Config) ProtoMessage()    {}
+func (*Config) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_aee233fb2b85ca90, []int{0}
+}
+func (m *Config) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Config.Unmarshal(m, b)
+}
+func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
+}
+func (dst *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(dst, src)
+}
+func (m *Config) XXX_Size() int {
+	return xxx_messageInfo_Config.Size(m)
+}
+func (m *Config) XXX_DiscardUnknown() {
+	xxx_messageInfo_Config.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Config proto.InternalMessageInfo
 
 func (m *Config) GetInbound() []*InboundHandlerConfig {
 	if m != nil {
@@ -51,21 +73,21 @@ func (m *Config) GetOutbound() []*OutboundHandlerConfig {
 	return nil
 }
 
-func (m *Config) GetApp() []*v2ray_core_common_serial.TypedMessage {
+func (m *Config) GetApp() []*serial.TypedMessage {
 	if m != nil {
 		return m.App
 	}
 	return nil
 }
 
-func (m *Config) GetTransport() *v2ray_core_transport.Config {
+func (m *Config) GetTransport() *transport.Config {
 	if m != nil {
 		return m.Transport
 	}
 	return nil
 }
 
-func (m *Config) GetExtension() []*v2ray_core_common_serial.TypedMessage {
+func (m *Config) GetExtension() []*serial.TypedMessage {
 	if m != nil {
 		return m.Extension
 	}
@@ -77,15 +99,37 @@ type InboundHandlerConfig struct {
 	// Tag of the inbound handler. The tag must be unique among all inbound handlers
 	Tag string `protobuf:"bytes,1,opt,name=tag" json:"tag,omitempty"`
 	// Settings for how this inbound proxy is handled.
-	ReceiverSettings *v2ray_core_common_serial.TypedMessage `protobuf:"bytes,2,opt,name=receiver_settings,json=receiverSettings" json:"receiver_settings,omitempty"`
+	ReceiverSettings *serial.TypedMessage `protobuf:"bytes,2,opt,name=receiver_settings,json=receiverSettings" json:"receiver_settings,omitempty"`
 	// Settings for inbound proxy. Must be one of the inbound proxies.
-	ProxySettings *v2ray_core_common_serial.TypedMessage `protobuf:"bytes,3,opt,name=proxy_settings,json=proxySettings" json:"proxy_settings,omitempty"`
+	ProxySettings        *serial.TypedMessage `protobuf:"bytes,3,opt,name=proxy_settings,json=proxySettings" json:"proxy_settings,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_unrecognized     []byte               `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
 }
 
-func (m *InboundHandlerConfig) Reset()                    { *m = InboundHandlerConfig{} }
-func (m *InboundHandlerConfig) String() string            { return proto.CompactTextString(m) }
-func (*InboundHandlerConfig) ProtoMessage()               {}
-func (*InboundHandlerConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (m *InboundHandlerConfig) Reset()         { *m = InboundHandlerConfig{} }
+func (m *InboundHandlerConfig) String() string { return proto.CompactTextString(m) }
+func (*InboundHandlerConfig) ProtoMessage()    {}
+func (*InboundHandlerConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_aee233fb2b85ca90, []int{1}
+}
+func (m *InboundHandlerConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_InboundHandlerConfig.Unmarshal(m, b)
+}
+func (m *InboundHandlerConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_InboundHandlerConfig.Marshal(b, m, deterministic)
+}
+func (dst *InboundHandlerConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_InboundHandlerConfig.Merge(dst, src)
+}
+func (m *InboundHandlerConfig) XXX_Size() int {
+	return xxx_messageInfo_InboundHandlerConfig.Size(m)
+}
+func (m *InboundHandlerConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_InboundHandlerConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_InboundHandlerConfig proto.InternalMessageInfo
 
 func (m *InboundHandlerConfig) GetTag() string {
 	if m != nil {
@@ -94,14 +138,14 @@ func (m *InboundHandlerConfig) GetTag() string {
 	return ""
 }
 
-func (m *InboundHandlerConfig) GetReceiverSettings() *v2ray_core_common_serial.TypedMessage {
+func (m *InboundHandlerConfig) GetReceiverSettings() *serial.TypedMessage {
 	if m != nil {
 		return m.ReceiverSettings
 	}
 	return nil
 }
 
-func (m *InboundHandlerConfig) GetProxySettings() *v2ray_core_common_serial.TypedMessage {
+func (m *InboundHandlerConfig) GetProxySettings() *serial.TypedMessage {
 	if m != nil {
 		return m.ProxySettings
 	}
@@ -113,19 +157,41 @@ type OutboundHandlerConfig struct {
 	// Tag of this outbound handler.
 	Tag string `protobuf:"bytes,1,opt,name=tag" json:"tag,omitempty"`
 	// Settings for how to dial connection for this outbound handler.
-	SenderSettings *v2ray_core_common_serial.TypedMessage `protobuf:"bytes,2,opt,name=sender_settings,json=senderSettings" json:"sender_settings,omitempty"`
+	SenderSettings *serial.TypedMessage `protobuf:"bytes,2,opt,name=sender_settings,json=senderSettings" json:"sender_settings,omitempty"`
 	// Settings for this outbound proxy. Must be one of the outbound proxies.
-	ProxySettings *v2ray_core_common_serial.TypedMessage `protobuf:"bytes,3,opt,name=proxy_settings,json=proxySettings" json:"proxy_settings,omitempty"`
+	ProxySettings *serial.TypedMessage `protobuf:"bytes,3,opt,name=proxy_settings,json=proxySettings" json:"proxy_settings,omitempty"`
 	// If not zero, this outbound will be expired in seconds. Not used for now.
 	Expire int64 `protobuf:"varint,4,opt,name=expire" json:"expire,omitempty"`
 	// Comment of this outbound handler. Not used for now.
-	Comment string `protobuf:"bytes,5,opt,name=comment" json:"comment,omitempty"`
+	Comment              string   `protobuf:"bytes,5,opt,name=comment" json:"comment,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *OutboundHandlerConfig) Reset()                    { *m = OutboundHandlerConfig{} }
-func (m *OutboundHandlerConfig) String() string            { return proto.CompactTextString(m) }
-func (*OutboundHandlerConfig) ProtoMessage()               {}
-func (*OutboundHandlerConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (m *OutboundHandlerConfig) Reset()         { *m = OutboundHandlerConfig{} }
+func (m *OutboundHandlerConfig) String() string { return proto.CompactTextString(m) }
+func (*OutboundHandlerConfig) ProtoMessage()    {}
+func (*OutboundHandlerConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_aee233fb2b85ca90, []int{2}
+}
+func (m *OutboundHandlerConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_OutboundHandlerConfig.Unmarshal(m, b)
+}
+func (m *OutboundHandlerConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_OutboundHandlerConfig.Marshal(b, m, deterministic)
+}
+func (dst *OutboundHandlerConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OutboundHandlerConfig.Merge(dst, src)
+}
+func (m *OutboundHandlerConfig) XXX_Size() int {
+	return xxx_messageInfo_OutboundHandlerConfig.Size(m)
+}
+func (m *OutboundHandlerConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_OutboundHandlerConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_OutboundHandlerConfig proto.InternalMessageInfo
 
 func (m *OutboundHandlerConfig) GetTag() string {
 	if m != nil {
@@ -134,14 +200,14 @@ func (m *OutboundHandlerConfig) GetTag() string {
 	return ""
 }
 
-func (m *OutboundHandlerConfig) GetSenderSettings() *v2ray_core_common_serial.TypedMessage {
+func (m *OutboundHandlerConfig) GetSenderSettings() *serial.TypedMessage {
 	if m != nil {
 		return m.SenderSettings
 	}
 	return nil
 }
 
-func (m *OutboundHandlerConfig) GetProxySettings() *v2ray_core_common_serial.TypedMessage {
+func (m *OutboundHandlerConfig) GetProxySettings() *serial.TypedMessage {
 	if m != nil {
 		return m.ProxySettings
 	}
@@ -168,9 +234,9 @@ func init() {
 	proto.RegisterType((*OutboundHandlerConfig)(nil), "v2ray.core.OutboundHandlerConfig")
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/config.proto", fileDescriptor0) }
+func init() { proto.RegisterFile("v2ray.com/core/config.proto", fileDescriptor_config_aee233fb2b85ca90) }
 
-var fileDescriptor0 = []byte{
+var fileDescriptor_config_aee233fb2b85ca90 = []byte{
 	// 405 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x93, 0x41, 0x6f, 0x94, 0x40,
 	0x1c, 0xc5, 0x33, 0x0b, 0x6e, 0xcb, 0xbf, 0x71, 0x5d, 0x27, 0x6a, 0x26, 0xd5, 0x03, 0x6e, 0x52,

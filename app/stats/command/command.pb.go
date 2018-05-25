@@ -5,7 +5,8 @@ import fmt "fmt"
 import math "math"
 
 import (
-	context "golang.org/x/net/context"
+	"context"
+
 	grpc "google.golang.org/grpc"
 )
 
@@ -24,13 +25,35 @@ type GetStatsRequest struct {
 	// Name of the stat counter.
 	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
 	// Whether or not to reset the counter to fetching its value.
-	Reset_ bool `protobuf:"varint,2,opt,name=reset" json:"reset,omitempty"`
+	Reset_               bool     `protobuf:"varint,2,opt,name=reset" json:"reset,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *GetStatsRequest) Reset()                    { *m = GetStatsRequest{} }
-func (m *GetStatsRequest) String() string            { return proto.CompactTextString(m) }
-func (*GetStatsRequest) ProtoMessage()               {}
-func (*GetStatsRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *GetStatsRequest) Reset()         { *m = GetStatsRequest{} }
+func (m *GetStatsRequest) String() string { return proto.CompactTextString(m) }
+func (*GetStatsRequest) ProtoMessage()    {}
+func (*GetStatsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_command_a956deb495595f76, []int{0}
+}
+func (m *GetStatsRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetStatsRequest.Unmarshal(m, b)
+}
+func (m *GetStatsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetStatsRequest.Marshal(b, m, deterministic)
+}
+func (dst *GetStatsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetStatsRequest.Merge(dst, src)
+}
+func (m *GetStatsRequest) XXX_Size() int {
+	return xxx_messageInfo_GetStatsRequest.Size(m)
+}
+func (m *GetStatsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetStatsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetStatsRequest proto.InternalMessageInfo
 
 func (m *GetStatsRequest) GetName() string {
 	if m != nil {
@@ -47,14 +70,36 @@ func (m *GetStatsRequest) GetReset_() bool {
 }
 
 type Stat struct {
-	Name  string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Value int64  `protobuf:"varint,2,opt,name=value" json:"value,omitempty"`
+	Name                 string   `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	Value                int64    `protobuf:"varint,2,opt,name=value" json:"value,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Stat) Reset()                    { *m = Stat{} }
-func (m *Stat) String() string            { return proto.CompactTextString(m) }
-func (*Stat) ProtoMessage()               {}
-func (*Stat) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (m *Stat) Reset()         { *m = Stat{} }
+func (m *Stat) String() string { return proto.CompactTextString(m) }
+func (*Stat) ProtoMessage()    {}
+func (*Stat) Descriptor() ([]byte, []int) {
+	return fileDescriptor_command_a956deb495595f76, []int{1}
+}
+func (m *Stat) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Stat.Unmarshal(m, b)
+}
+func (m *Stat) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Stat.Marshal(b, m, deterministic)
+}
+func (dst *Stat) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Stat.Merge(dst, src)
+}
+func (m *Stat) XXX_Size() int {
+	return xxx_messageInfo_Stat.Size(m)
+}
+func (m *Stat) XXX_DiscardUnknown() {
+	xxx_messageInfo_Stat.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Stat proto.InternalMessageInfo
 
 func (m *Stat) GetName() string {
 	if m != nil {
@@ -71,13 +116,35 @@ func (m *Stat) GetValue() int64 {
 }
 
 type GetStatsResponse struct {
-	Stat *Stat `protobuf:"bytes,1,opt,name=stat" json:"stat,omitempty"`
+	Stat                 *Stat    `protobuf:"bytes,1,opt,name=stat" json:"stat,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *GetStatsResponse) Reset()                    { *m = GetStatsResponse{} }
-func (m *GetStatsResponse) String() string            { return proto.CompactTextString(m) }
-func (*GetStatsResponse) ProtoMessage()               {}
-func (*GetStatsResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (m *GetStatsResponse) Reset()         { *m = GetStatsResponse{} }
+func (m *GetStatsResponse) String() string { return proto.CompactTextString(m) }
+func (*GetStatsResponse) ProtoMessage()    {}
+func (*GetStatsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_command_a956deb495595f76, []int{2}
+}
+func (m *GetStatsResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetStatsResponse.Unmarshal(m, b)
+}
+func (m *GetStatsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetStatsResponse.Marshal(b, m, deterministic)
+}
+func (dst *GetStatsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetStatsResponse.Merge(dst, src)
+}
+func (m *GetStatsResponse) XXX_Size() int {
+	return xxx_messageInfo_GetStatsResponse.Size(m)
+}
+func (m *GetStatsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetStatsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetStatsResponse proto.InternalMessageInfo
 
 func (m *GetStatsResponse) GetStat() *Stat {
 	if m != nil {
@@ -87,12 +154,34 @@ func (m *GetStatsResponse) GetStat() *Stat {
 }
 
 type Config struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Config) Reset()                    { *m = Config{} }
-func (m *Config) String() string            { return proto.CompactTextString(m) }
-func (*Config) ProtoMessage()               {}
-func (*Config) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+func (m *Config) Reset()         { *m = Config{} }
+func (m *Config) String() string { return proto.CompactTextString(m) }
+func (*Config) ProtoMessage()    {}
+func (*Config) Descriptor() ([]byte, []int) {
+	return fileDescriptor_command_a956deb495595f76, []int{3}
+}
+func (m *Config) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Config.Unmarshal(m, b)
+}
+func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
+}
+func (dst *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(dst, src)
+}
+func (m *Config) XXX_Size() int {
+	return xxx_messageInfo_Config.Size(m)
+}
+func (m *Config) XXX_DiscardUnknown() {
+	xxx_messageInfo_Config.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Config proto.InternalMessageInfo
 
 func init() {
 	proto.RegisterType((*GetStatsRequest)(nil), "v2ray.core.app.stats.command.GetStatsRequest")
@@ -109,8 +198,9 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for StatsService service
-
+// StatsServiceClient is the client API for StatsService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type StatsServiceClient interface {
 	GetStats(ctx context.Context, in *GetStatsRequest, opts ...grpc.CallOption) (*GetStatsResponse, error)
 }
@@ -125,15 +215,14 @@ func NewStatsServiceClient(cc *grpc.ClientConn) StatsServiceClient {
 
 func (c *statsServiceClient) GetStats(ctx context.Context, in *GetStatsRequest, opts ...grpc.CallOption) (*GetStatsResponse, error) {
 	out := new(GetStatsResponse)
-	err := grpc.Invoke(ctx, "/v2ray.core.app.stats.command.StatsService/GetStats", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/v2ray.core.app.stats.command.StatsService/GetStats", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for StatsService service
-
+// StatsServiceServer is the server API for StatsService service.
 type StatsServiceServer interface {
 	GetStats(context.Context, *GetStatsRequest) (*GetStatsResponse, error)
 }
@@ -173,9 +262,11 @@ var _StatsService_serviceDesc = grpc.ServiceDesc{
 	Metadata: "v2ray.com/core/app/stats/command/command.proto",
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/app/stats/command/command.proto", fileDescriptor0) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/app/stats/command/command.proto", fileDescriptor_command_a956deb495595f76)
+}
 
-var fileDescriptor0 = []byte{
+var fileDescriptor_command_a956deb495595f76 = []byte{
 	// 267 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x91, 0x3f, 0x4b, 0x03, 0x31,
 	0x14, 0xc0, 0xbd, 0x5a, 0xeb, 0xf9, 0x14, 0x94, 0xe0, 0x50, 0xa4, 0xc3, 0x91, 0xa9, 0x8b, 0xef,

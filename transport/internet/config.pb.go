@@ -3,7 +3,7 @@ package internet
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import v2ray_core_common_serial "v2ray.com/core/common/serial"
+import serial "v2ray.com/core/common/serial"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -47,19 +47,43 @@ var TransportProtocol_value = map[string]int32{
 func (x TransportProtocol) String() string {
 	return proto.EnumName(TransportProtocol_name, int32(x))
 }
-func (TransportProtocol) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (TransportProtocol) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_config_6493eeef2ca10012, []int{0}
+}
 
 type TransportConfig struct {
 	// Type of network that this settings supports.
 	Protocol TransportProtocol `protobuf:"varint,1,opt,name=protocol,enum=v2ray.core.transport.internet.TransportProtocol" json:"protocol,omitempty"`
 	// Specific settings. Must be of the transports.
-	Settings *v2ray_core_common_serial.TypedMessage `protobuf:"bytes,2,opt,name=settings" json:"settings,omitempty"`
+	Settings             *serial.TypedMessage `protobuf:"bytes,2,opt,name=settings" json:"settings,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_unrecognized     []byte               `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
 }
 
-func (m *TransportConfig) Reset()                    { *m = TransportConfig{} }
-func (m *TransportConfig) String() string            { return proto.CompactTextString(m) }
-func (*TransportConfig) ProtoMessage()               {}
-func (*TransportConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *TransportConfig) Reset()         { *m = TransportConfig{} }
+func (m *TransportConfig) String() string { return proto.CompactTextString(m) }
+func (*TransportConfig) ProtoMessage()    {}
+func (*TransportConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_6493eeef2ca10012, []int{0}
+}
+func (m *TransportConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_TransportConfig.Unmarshal(m, b)
+}
+func (m *TransportConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_TransportConfig.Marshal(b, m, deterministic)
+}
+func (dst *TransportConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TransportConfig.Merge(dst, src)
+}
+func (m *TransportConfig) XXX_Size() int {
+	return xxx_messageInfo_TransportConfig.Size(m)
+}
+func (m *TransportConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_TransportConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TransportConfig proto.InternalMessageInfo
 
 func (m *TransportConfig) GetProtocol() TransportProtocol {
 	if m != nil {
@@ -68,7 +92,7 @@ func (m *TransportConfig) GetProtocol() TransportProtocol {
 	return TransportProtocol_TCP
 }
 
-func (m *TransportConfig) GetSettings() *v2ray_core_common_serial.TypedMessage {
+func (m *TransportConfig) GetSettings() *serial.TypedMessage {
 	if m != nil {
 		return m.Settings
 	}
@@ -82,13 +106,35 @@ type StreamConfig struct {
 	// Type of security. Must be a message name of the settings proto.
 	SecurityType string `protobuf:"bytes,3,opt,name=security_type,json=securityType" json:"security_type,omitempty"`
 	// Settings for transport security. For now the only choice is TLS.
-	SecuritySettings []*v2ray_core_common_serial.TypedMessage `protobuf:"bytes,4,rep,name=security_settings,json=securitySettings" json:"security_settings,omitempty"`
+	SecuritySettings     []*serial.TypedMessage `protobuf:"bytes,4,rep,name=security_settings,json=securitySettings" json:"security_settings,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
+	XXX_unrecognized     []byte                 `json:"-"`
+	XXX_sizecache        int32                  `json:"-"`
 }
 
-func (m *StreamConfig) Reset()                    { *m = StreamConfig{} }
-func (m *StreamConfig) String() string            { return proto.CompactTextString(m) }
-func (*StreamConfig) ProtoMessage()               {}
-func (*StreamConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (m *StreamConfig) Reset()         { *m = StreamConfig{} }
+func (m *StreamConfig) String() string { return proto.CompactTextString(m) }
+func (*StreamConfig) ProtoMessage()    {}
+func (*StreamConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_6493eeef2ca10012, []int{1}
+}
+func (m *StreamConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_StreamConfig.Unmarshal(m, b)
+}
+func (m *StreamConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_StreamConfig.Marshal(b, m, deterministic)
+}
+func (dst *StreamConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StreamConfig.Merge(dst, src)
+}
+func (m *StreamConfig) XXX_Size() int {
+	return xxx_messageInfo_StreamConfig.Size(m)
+}
+func (m *StreamConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_StreamConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StreamConfig proto.InternalMessageInfo
 
 func (m *StreamConfig) GetProtocol() TransportProtocol {
 	if m != nil {
@@ -111,7 +157,7 @@ func (m *StreamConfig) GetSecurityType() string {
 	return ""
 }
 
-func (m *StreamConfig) GetSecuritySettings() []*v2ray_core_common_serial.TypedMessage {
+func (m *StreamConfig) GetSecuritySettings() []*serial.TypedMessage {
 	if m != nil {
 		return m.SecuritySettings
 	}
@@ -119,13 +165,35 @@ func (m *StreamConfig) GetSecuritySettings() []*v2ray_core_common_serial.TypedMe
 }
 
 type ProxyConfig struct {
-	Tag string `protobuf:"bytes,1,opt,name=tag" json:"tag,omitempty"`
+	Tag                  string   `protobuf:"bytes,1,opt,name=tag" json:"tag,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *ProxyConfig) Reset()                    { *m = ProxyConfig{} }
-func (m *ProxyConfig) String() string            { return proto.CompactTextString(m) }
-func (*ProxyConfig) ProtoMessage()               {}
-func (*ProxyConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (m *ProxyConfig) Reset()         { *m = ProxyConfig{} }
+func (m *ProxyConfig) String() string { return proto.CompactTextString(m) }
+func (*ProxyConfig) ProtoMessage()    {}
+func (*ProxyConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_6493eeef2ca10012, []int{2}
+}
+func (m *ProxyConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ProxyConfig.Unmarshal(m, b)
+}
+func (m *ProxyConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ProxyConfig.Marshal(b, m, deterministic)
+}
+func (dst *ProxyConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProxyConfig.Merge(dst, src)
+}
+func (m *ProxyConfig) XXX_Size() int {
+	return xxx_messageInfo_ProxyConfig.Size(m)
+}
+func (m *ProxyConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProxyConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ProxyConfig proto.InternalMessageInfo
 
 func (m *ProxyConfig) GetTag() string {
 	if m != nil {
@@ -141,9 +209,11 @@ func init() {
 	proto.RegisterEnum("v2ray.core.transport.internet.TransportProtocol", TransportProtocol_name, TransportProtocol_value)
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/transport/internet/config.proto", fileDescriptor0) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/transport/internet/config.proto", fileDescriptor_config_6493eeef2ca10012)
+}
 
-var fileDescriptor0 = []byte{
+var fileDescriptor_config_6493eeef2ca10012 = []byte{
 	// 393 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x91, 0xcf, 0x6a, 0xdb, 0x40,
 	0x10, 0x87, 0x2b, 0xc9, 0x6d, 0xe5, 0xb1, 0xdd, 0xae, 0xf7, 0x64, 0x0a, 0xa6, 0xae, 0x0b, 0x45,
