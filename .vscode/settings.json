@@ -4,7 +4,11 @@
   
   "go.lintTool": "gometalinter",
   "go.lintFlags": [
-    "--enable-gc"
+    "--enable-gc",
+    "--no-config",
+    "--exclude=.*\\.pb\\.go",
+    "--concurrency=2",
+    "--disable=gas"
   ],
   "go.formatTool": "goimports",
 

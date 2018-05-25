@@ -176,7 +176,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		if invalidRequestErr != nil {
 			randomLen := dice.Roll(64) + 1
 			// Read random number of bytes for prevent detection.
-			common.Ignore(buffer.AppendSupplier(buf.ReadFullFrom(decryptor, int32(randomLen))), "Error doesn't matter")
+			buffer.AppendSupplier(buf.ReadFullFrom(decryptor, int32(randomLen))) // nolint: errcheck
 		}
 	}()
 

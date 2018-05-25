@@ -138,10 +138,10 @@ func (g *Instance) Close() error {
 
 	g.active = false
 
-	common.Ignore(common.Close(g.accessLogger), "Recycling it anyway")
+	common.Close(g.accessLogger) // nolint: errcheck
 	g.accessLogger = nil
 
-	common.Ignore(common.Close(g.errorLogger), "Recycling this too")
+	common.Close(g.errorLogger) // nolint: errcheck
 	g.errorLogger = nil
 
 	return nil

@@ -21,9 +21,9 @@ func (l *OutboundListener) add(conn net.Conn) {
 	select {
 	case l.buffer <- conn:
 	case <-l.done.Wait():
-		common.Ignore(conn.Close(), "We can do nothing if Close() returns error.")
+		conn.Close() // nolint: errcheck
 	default:
-		common.Ignore(conn.Close(), "We can do nothing if Close() returns error.")
+		conn.Close() // nolint: errcheck
 	}
 }
 
@@ -44,7 +44,7 @@ L:
 	for {
 		select {
 		case c := <-l.buffer:
-			common.Ignore(c.Close(), "We can do nothing if errored.")
+			c.Close() // nolint: errcheck
 		default:
 			break L
 		}
