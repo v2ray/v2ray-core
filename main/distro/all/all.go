@@ -44,6 +44,7 @@ import (
 	_ "v2ray.com/core/transport/internet/headers/http"
 	_ "v2ray.com/core/transport/internet/headers/noop"
 	_ "v2ray.com/core/transport/internet/headers/srtp"
+	_ "v2ray.com/core/transport/internet/headers/tls"
 	_ "v2ray.com/core/transport/internet/headers/utp"
 	_ "v2ray.com/core/transport/internet/headers/wechat"
 
