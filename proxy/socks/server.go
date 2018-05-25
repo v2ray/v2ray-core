@@ -201,7 +201,7 @@ func (s *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 			if source, ok := proxy.SourceFromContext(ctx); ok {
 				log.Record(&log.AccessMessage{
 					From:   source,
-					To:     request.Destination,
+					To:     request.Destination(),
 					Status: log.AccessAccepted,
 					Reason: "",
 				})
