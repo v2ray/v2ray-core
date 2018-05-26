@@ -102,6 +102,7 @@ func (w *Writer) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	return nil
 }
 
+// Close implements common.Closable.
 func (w *Writer) Close() error {
 	meta := FrameMetadata{
 		SessionID:     w.id,
@@ -114,6 +115,6 @@ func (w *Writer) Close() error {
 	frame := buf.New()
 	common.Must(meta.WriteTo(frame))
 
-	w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(frame))
+	w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(frame)) // nolint: errcheck
 	return nil
 }

@@ -133,8 +133,8 @@ func (m *Client) monitor() {
 		select {
 		case <-m.done.Wait():
 			m.sessionManager.Close()
-			common.Close(m.link.Writer)
-			pipe.CloseError(m.link.Reader)
+			common.Close(m.link.Writer)    // nolint: errcheck
+			pipe.CloseError(m.link.Reader) // nolint: errcheck
 			return
 		case <-timer.C:
 			size := m.sessionManager.Size()
@@ -167,14 +167,15 @@ func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
 	}
 	s.transferType = transferType
 	writer := NewWriter(s.ID, dest, output, transferType)
-	defer s.Close()
-	defer writer.Close()
+	defer s.Close()      // nolint: errcheck
+	defer writer.Close() // nolint: errcheck
 
 	newError("dispatching request to ", dest).WithContext(ctx).WriteToLog()
 	if pReader, ok := s.input.(*pipe.Reader); ok {
 		if err := copyFirstPayload(pReader, writer); err != nil {
 			newError("failed to fetch first payload").Base(err).WithContext(ctx).WriteToLog()
 			writer.hasError = true
+			pipe.CloseError(s.input)
 			return
 		}
 	}
@@ -182,6 +183,7 @@ func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
 	if err := buf.Copy(s.input, writer); err != nil {
 		newError("failed to fetch all input").Base(err).WithContext(ctx).WriteToLog()
 		writer.hasError = true
+		pipe.CloseError(s.input)
 		return
 	}
 }
