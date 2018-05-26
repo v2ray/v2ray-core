@@ -124,6 +124,32 @@ func (c *udpConn) updateActivity() {
 	atomic.StoreInt64(&c.lastActivityTime, time.Now().Unix())
 }
 
+// ReadMultiBuffer implements buf.Reader
+func (c *udpConn) ReadMultiBuffer() (buf.MultiBuffer, error) {
+	var payload buf.MultiBuffer
+
+	select {
+	case in := <-c.input:
+		payload.Append(in)
+	case <-c.done.Wait():
+		return nil, io.EOF
+	}
+
+L:
+	for {
+		select {
+		case in := <-c.input:
+			payload.Append(in)
+		case <-c.done.Wait():
+			break L
+		default:
+			break L
+		}
+	}
+
+	return payload, nil
+}
+
 func (c *udpConn) Read(buf []byte) (int, error) {
 	select {
 	case in := <-c.input:
@@ -202,7 +228,7 @@ func (w *udpWorker) getConnection(id connID) (*udpConn, bool) {
 	w.Lock()
 	defer w.Unlock()
 
-	if conn, found := w.activeConn[id]; found {
+	if conn, found := w.activeConn[id]; found && !conn.done.Done() {
 		return conn, true
 	}
 
