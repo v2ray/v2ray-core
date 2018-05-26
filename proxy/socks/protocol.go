@@ -54,7 +54,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 	version := buffer.Byte(0)
 	if version == socks4Version {
 		if s.config.AuthType == AuthType_PASSWORD {
-			writeSocks4Response(writer, socks4RequestRejected, net.AnyIP, net.Port(0))
+			writeSocks4Response(writer, socks4RequestRejected, net.AnyIP, net.Port(0)) // nolint: errcheck
 			return nil, newError("socks 4 is not allowed when auth is required.")
 		}
 
@@ -63,8 +63,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 		}
 		port := net.PortFromBytes(buffer.BytesRange(2, 4))
 		address := net.IPAddress(buffer.BytesRange(4, 8))
-		_, err := readUntilNull(reader) // user id
-		if err != nil {
+		if _, err := readUntilNull(reader); /* user id */ err != nil {
 			return nil, err
 		}
 		if address.IP()[0] == 0x00 {
@@ -86,7 +85,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 			}
 			return request, nil
 		default:
-			writeSocks4Response(writer, socks4RequestRejected, net.AnyIP, net.Port(0))
+			writeSocks4Response(writer, socks4RequestRejected, net.AnyIP, net.Port(0)) // nolint: errcheck
 			return nil, newError("unsupported command: ", buffer.Byte(1))
 		}
 	}
@@ -103,7 +102,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 		}
 
 		if !hasAuthMethod(expectedAuth, buffer.BytesRange(2, 2+nMethod)) {
-			writeSocks5AuthenticationResponse(writer, socks5Version, authNoMatchingMethod)
+			writeSocks5AuthenticationResponse(writer, socks5Version, authNoMatchingMethod) // nolint: errcheck
 			return nil, newError("no matching auth method")
 		}
 
@@ -118,7 +117,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 			}
 
 			if !s.config.HasAccount(username, password) {
-				writeSocks5AuthenticationResponse(writer, 0x01, 0xFF)
+				writeSocks5AuthenticationResponse(writer, 0x01, 0xFF) // nolint: errcheck
 				return nil, newError("invalid username or password")
 			}
 
@@ -136,15 +135,15 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 			request.Command = protocol.RequestCommandTCP
 		case cmdUDPPort:
 			if !s.config.UdpEnabled {
-				writeSocks5Response(writer, statusCmdNotSupport, net.AnyIP, net.Port(0))
+				writeSocks5Response(writer, statusCmdNotSupport, net.AnyIP, net.Port(0)) // nolint: errcheck
 				return nil, newError("UDP is not enabled.")
 			}
 			request.Command = protocol.RequestCommandUDP
 		case cmdTCPBind:
-			writeSocks5Response(writer, statusCmdNotSupport, net.AnyIP, net.Port(0))
+			writeSocks5Response(writer, statusCmdNotSupport, net.AnyIP, net.Port(0)) // nolint: errcheck
 			return nil, newError("TCP bind is not supported.")
 		default:
-			writeSocks5Response(writer, statusCmdNotSupport, net.AnyIP, net.Port(0))
+			writeSocks5Response(writer, statusCmdNotSupport, net.AnyIP, net.Port(0)) // nolint: errcheck
 			return nil, newError("unknown command ", cmd)
 		}
 
@@ -240,7 +239,7 @@ func writeSocks5Response(writer io.Writer, errCode byte, address net.Address, po
 	buffer := buf.New()
 	defer buffer.Release()
 
-	buffer.AppendBytes(socks5Version, errCode, 0x00 /* reserved */)
+	common.Must2(buffer.AppendBytes(socks5Version, errCode, 0x00 /* reserved */))
 	if err := addrParser.WriteAddressPort(buffer, address, port); err != nil {
 		return err
 	}
@@ -253,9 +252,9 @@ func writeSocks4Response(writer io.Writer, errCode byte, address net.Address, po
 	buffer := buf.New()
 	defer buffer.Release()
 
-	buffer.AppendBytes(0x00, errCode)
+	common.Must2(buffer.AppendBytes(0x00, errCode))
 	common.Must(buffer.AppendSupplier(serial.WriteUint16(port.Value())))
-	buffer.Write(address.IP())
+	common.Must2(buffer.Write(address.IP()))
 	_, err := writer.Write(buffer.Bytes())
 	return err
 }
@@ -287,12 +286,12 @@ func DecodeUDPPacket(packet *buf.Buffer) (*protocol.RequestHeader, error) {
 
 func EncodeUDPPacket(request *protocol.RequestHeader, data []byte) (*buf.Buffer, error) {
 	b := buf.New()
-	b.AppendBytes(0, 0, 0 /* Fragment */)
+	common.Must2(b.AppendBytes(0, 0, 0 /* Fragment */))
 	if err := addrParser.WriteAddressPort(b, request.Address, request.Port); err != nil {
 		b.Release()
 		return nil, err
 	}
-	b.Write(data)
+	common.Must2(b.Write(data))
 	return b, nil
 }
 
@@ -349,7 +348,7 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 	b := buf.New()
 	defer b.Release()
 
-	b.AppendBytes(socks5Version, 0x01, authByte)
+	common.Must2(b.AppendBytes(socks5Version, 0x01, authByte))
 	if authByte == authPassword {
 		rawAccount, err := request.User.GetTypedAccount()
 		if err != nil {
@@ -357,10 +356,10 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 		}
 		account := rawAccount.(*Account)
 
-		b.AppendBytes(0x01, byte(len(account.Username)))
-		b.Write([]byte(account.Username))
-		b.AppendBytes(byte(len(account.Password)))
-		b.Write([]byte(account.Password))
+		common.Must2(b.AppendBytes(0x01, byte(len(account.Username))))
+		common.Must2(b.Write([]byte(account.Username)))
+		common.Must2(b.AppendBytes(byte(len(account.Password))))
+		common.Must2(b.Write([]byte(account.Password)))
 	}
 
 	if _, err := writer.Write(b.Bytes()); err != nil {
@@ -393,7 +392,7 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 	if request.Command == protocol.RequestCommandUDP {
 		command = byte(cmdUDPPort)
 	}
-	b.AppendBytes(socks5Version, command, 0x00 /* reserved */)
+	common.Must2(b.AppendBytes(socks5Version, command, 0x00 /* reserved */))
 	if err := addrParser.WriteAddressPort(b, request.Address, request.Port); err != nil {
 		return nil, err
 	}

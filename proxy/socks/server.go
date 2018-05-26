@@ -139,7 +139,7 @@ func (s *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 
 	requestDone := func() error {
 		defer timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
-		defer common.Close(link.Writer)
+		defer common.Close(link.Writer) // nolint: errcheck
 
 		v2reader := buf.NewReader(reader)
 		if err := buf.Copy(v2reader, link.Writer, buf.UpdateActivity(timer)); err != nil {
@@ -218,7 +218,7 @@ func (s *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 					newError("failed to write UDP response").AtWarning().Base(err).WithContext(ctx).WriteToLog()
 				}
 
-				conn.Write(udpMessage.Bytes())
+				conn.Write(udpMessage.Bytes()) // nolint: errcheck
 			})
 		}
 	}
