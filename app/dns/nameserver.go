@@ -11,7 +11,7 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/task"
 	"v2ray.com/core/transport/internet/udp"
 )
 
@@ -42,7 +42,7 @@ type UDPNameServer struct {
 	address   net.Destination
 	requests  map[uint16]*PendingRequest
 	udpServer *udp.Dispatcher
-	cleanup   *signal.PeriodicTask
+	cleanup   *task.Periodic
 }
 
 func NewUDPNameServer(address net.Destination, dispatcher core.Dispatcher) *UDPNameServer {
@@ -51,7 +51,7 @@ func NewUDPNameServer(address net.Destination, dispatcher core.Dispatcher) *UDPN
 		requests:  make(map[uint16]*PendingRequest),
 		udpServer: udp.NewDispatcher(dispatcher),
 	}
-	s.cleanup = &signal.PeriodicTask{
+	s.cleanup = &task.Periodic{
 		Interval: time.Minute,
 		Execute:  s.Cleanup,
 	}

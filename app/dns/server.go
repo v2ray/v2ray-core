@@ -11,7 +11,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/task"
 )
 
 const (
@@ -33,7 +33,7 @@ type Server struct {
 	hosts   map[string]net.IP
 	records map[string]*DomainRecord
 	servers []NameServer
-	task    *signal.PeriodicTask
+	task    *task.Periodic
 }
 
 func New(ctx context.Context, config *Config) (*Server, error) {
@@ -42,7 +42,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 		servers: make([]NameServer, len(config.NameServers)),
 		hosts:   config.GetInternalHosts(),
 	}
-	server.task = &signal.PeriodicTask{
+	server.task = &task.Periodic{
 		Interval: time.Minute * 10,
 		Execute: func() error {
 			server.cleanup()

@@ -10,7 +10,7 @@ import (
 	"v2ray.com/core/app/proxyman/mux"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/task"
 	"v2ray.com/core/proxy"
 )
 
@@ -25,7 +25,7 @@ type DynamicInboundHandler struct {
 	worker         []worker
 	lastRefresh    time.Time
 	mux            *mux.Server
-	task           *signal.PeriodicTask
+	task           *task.Periodic
 }
 
 func NewDynamicInboundHandler(ctx context.Context, tag string, receiverConfig *proxyman.ReceiverConfig, proxyConfig interface{}) (*DynamicInboundHandler, error) {
@@ -39,7 +39,7 @@ func NewDynamicInboundHandler(ctx context.Context, tag string, receiverConfig *p
 		v:              v,
 	}
 
-	h.task = &signal.PeriodicTask{
+	h.task = &task.Periodic{
 		Interval: time.Minute * time.Duration(h.receiverConfig.AllocationStrategy.GetRefreshValue()),
 		Execute:  h.refresh,
 	}

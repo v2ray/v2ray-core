@@ -1,19 +1,20 @@
-package signal_test
+package task_test
 
 import (
 	"testing"
 	"time"
 
-	"v2ray.com/core/common"
-	. "v2ray.com/core/common/signal"
+	. "v2ray.com/core/common/task"
 	. "v2ray.com/ext/assert"
+
+	"v2ray.com/core/common"
 )
 
 func TestPeriodicTaskStop(t *testing.T) {
 	assert := With(t)
 
 	value := 0
-	task := &PeriodicTask{
+	task := &Periodic{
 		Interval: time.Second * 2,
 		Execute: func() error {
 			value++

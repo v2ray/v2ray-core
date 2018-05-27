@@ -1,12 +1,12 @@
-package signal
+package task
 
 import (
 	"sync"
 	"time"
 )
 
-// PeriodicTask is a task that runs periodically.
-type PeriodicTask struct {
+// Periodic is a task that runs periodically.
+type Periodic struct {
 	// Interval of the task being run
 	Interval time.Duration
 	// Execute is the task function
@@ -19,7 +19,7 @@ type PeriodicTask struct {
 	closed bool
 }
 
-func (t *PeriodicTask) checkedExecute() error {
+func (t *Periodic) checkedExecute() error {
 	t.access.Lock()
 	defer t.access.Unlock()
 
@@ -41,7 +41,7 @@ func (t *PeriodicTask) checkedExecute() error {
 }
 
 // Start implements common.Runnable. Start must not be called multiple times without Close being called.
-func (t *PeriodicTask) Start() error {
+func (t *Periodic) Start() error {
 	t.access.Lock()
 	t.closed = false
 	t.access.Unlock()
@@ -55,7 +55,7 @@ func (t *PeriodicTask) Start() error {
 }
 
 // Close implements common.Closable.
-func (t *PeriodicTask) Close() error {
+func (t *Periodic) Close() error {
 	t.access.Lock()
 	defer t.access.Unlock()
 

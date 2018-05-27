@@ -6,12 +6,13 @@ import (
 	"context"
 	"time"
 
+	"v2ray.com/core/common/task"
+
 	"v2ray.com/core/transport/pipe"
 
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/functions"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
@@ -161,7 +162,8 @@ func (v *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 		return buf.Copy(bodyReader, output, buf.UpdateActivity(timer))
 	}
 
-	if err := signal.ExecuteParallel(ctx, requestDone, functions.OnSuccess(responseDone, functions.Close(output))); err != nil {
+	var responseDonePost = task.Single(responseDone, task.OnSuccess(task.Close(output)))
+	if err := task.Run(task.WithContext(ctx), task.Parallel(requestDone, responseDonePost))(); err != nil {
 		return newError("connection ends").Base(err)
 	}
 
