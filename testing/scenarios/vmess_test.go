@@ -784,7 +784,7 @@ func TestVMessKCP(t *testing.T) {
 			assert(err, IsNil)
 			assert(nBytes, Equals, len(payload))
 
-			response := readFrom(conn, time.Minute, 10240*1024)
+			response := readFrom(conn, time.Minute*2, 10240*1024)
 			assert(response, Equals, xor(payload))
 			assert(conn.Close(), IsNil)
 			wg.Done()
