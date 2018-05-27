@@ -72,5 +72,5 @@ func TestSameDestinationDispatching(t *testing.T) {
 	cancel()
 
 	assert(count, Equals, uint32(1))
-	assert(msgCount, Equals, uint32(6))
+	assert(atomic.LoadUint32(&msgCount), Equals, uint32(6))
 }
