@@ -9,7 +9,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
-	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/signal/done"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
 )
@@ -31,7 +31,7 @@ func (l *Listener) Close() error {
 
 type flushWriter struct {
 	w io.Writer
-	d *signal.Done
+	d *done.Instance
 }
 
 func (fw flushWriter) Write(p []byte) (n int, err error) {
@@ -75,7 +75,7 @@ func (l *Listener) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 		}
 	}
 
-	done := signal.NewDone()
+	done := done.New()
 	conn := net.NewConnection(
 		net.ConnectionOutput(request.Body),
 		net.ConnectionInput(flushWriter{w: writer, d: done}),

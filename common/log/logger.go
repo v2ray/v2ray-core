@@ -7,7 +7,8 @@ import (
 	"time"
 
 	"v2ray.com/core/common/platform"
-	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/signal/done"
+	"v2ray.com/core/common/signal/semaphore"
 )
 
 // Writer is the interface for writing logs.
@@ -22,8 +23,8 @@ type WriterCreator func() Writer
 type generalLogger struct {
 	creator WriterCreator
 	buffer  chan Message
-	access  *signal.Semaphore
-	done    *signal.Done
+	access  *semaphore.Instance
+	done    *done.Instance
 }
 
 // NewLogger returns a generic log handler that can handle all type of messages.
@@ -31,8 +32,8 @@ func NewLogger(logWriterCreator WriterCreator) Handler {
 	return &generalLogger{
 		creator: logWriterCreator,
 		buffer:  make(chan Message, 16),
-		access:  signal.NewSemaphore(1),
-		done:    signal.NewDone(),
+		access:  semaphore.New(1),
+		done:    done.New(),
 	}
 }
 

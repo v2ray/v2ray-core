@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc"
 	"v2ray.com/core"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/signal/done"
 )
 
 // Commander is a V2Ray feature that provides gRPC methods to external clients.
@@ -64,7 +64,7 @@ func (c *Commander) Start() error {
 
 	listener := &OutboundListener{
 		buffer: make(chan net.Conn, 4),
-		done:   signal.NewDone(),
+		done:   done.New(),
 	}
 
 	go func() {

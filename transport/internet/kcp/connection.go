@@ -10,6 +10,7 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/predicate"
 	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/signal/semaphore"
 )
 
 var (
@@ -121,7 +122,7 @@ type Updater struct {
 	shouldContinue  predicate.Predicate
 	shouldTerminate predicate.Predicate
 	updateFunc      func()
-	notifier        *signal.Semaphore
+	notifier        *semaphore.Instance
 }
 
 func NewUpdater(interval uint32, shouldContinue predicate.Predicate, shouldTerminate predicate.Predicate, updateFunc func()) *Updater {
@@ -130,7 +131,7 @@ func NewUpdater(interval uint32, shouldContinue predicate.Predicate, shouldTermi
 		shouldContinue:  shouldContinue,
 		shouldTerminate: shouldTerminate,
 		updateFunc:      updateFunc,
-		notifier:        signal.NewSemaphore(1),
+		notifier:        semaphore.New(1),
 	}
 	return u
 }

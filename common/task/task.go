@@ -3,7 +3,7 @@ package task
 import (
 	"context"
 
-	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/signal/semaphore"
 )
 
 type Task func() error
@@ -109,7 +109,7 @@ func execute(tasks ...Task) error {
 // executeParallel executes a list of tasks asynchronously, returns the first error encountered or nil if all tasks pass.
 func executeParallel(tasks ...Task) error {
 	n := len(tasks)
-	s := signal.NewSemaphore(n)
+	s := semaphore.New(n)
 	done := make(chan error, 1)
 
 	for _, task := range tasks {

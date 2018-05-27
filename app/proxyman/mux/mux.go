@@ -16,7 +16,7 @@ import (
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/signal/done"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/pipe"
 )
@@ -77,7 +77,7 @@ func (m *ClientManager) onClientFinish() {
 type Client struct {
 	sessionManager *SessionManager
 	link           core.Link
-	done           *signal.Done
+	done           *done.Instance
 	manager        *ClientManager
 	concurrency    uint32
 }
@@ -100,7 +100,7 @@ func NewClient(pctx context.Context, p proxy.Outbound, dialer proxy.Dialer, m *C
 			Reader: downlinkReader,
 			Writer: upLinkWriter,
 		},
-		done:        signal.NewDone(),
+		done:        done.New(),
 		manager:     m,
 		concurrency: m.config.Concurrency,
 	}

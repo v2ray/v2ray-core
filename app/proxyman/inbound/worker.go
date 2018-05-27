@@ -13,7 +13,7 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
-	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/signal/done"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tcp"
@@ -115,7 +115,7 @@ type udpConn struct {
 	output           func([]byte) (int, error)
 	remote           net.Addr
 	local            net.Addr
-	done             *signal.Done
+	done             *done.Instance
 	uplink           core.StatCounter
 	downlink         core.StatCounter
 }
@@ -223,7 +223,7 @@ type udpWorker struct {
 	uplinkCounter   core.StatCounter
 	downlinkCounter core.StatCounter
 
-	done       *signal.Done
+	done       *done.Instance
 	activeConn map[connID]*udpConn
 }
 
@@ -248,7 +248,7 @@ func (w *udpWorker) getConnection(id connID) (*udpConn, bool) {
 			IP:   w.address.IP(),
 			Port: int(w.port),
 		},
-		done:     signal.NewDone(),
+		done:     done.New(),
 		uplink:   w.uplinkCounter,
 		downlink: w.downlinkCounter,
 	}
@@ -305,7 +305,7 @@ func (w *udpWorker) removeConn(id connID) {
 
 func (w *udpWorker) Start() error {
 	w.activeConn = make(map[connID]*udpConn, 16)
-	w.done = signal.NewDone()
+	w.done = done.New()
 	h, err := udp.ListenUDP(w.address, w.port, w.callback, udp.HubReceiveOriginalDestination(w.recvOrigDest), udp.HubCapacity(256))
 	if err != nil {
 		return err

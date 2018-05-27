@@ -3,10 +3,11 @@ package protocol
 import (
 	"io"
 
+	"v2ray.com/core/common/task"
+
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/signal"
 )
 
 type AddressOption func(*AddressParser)
@@ -153,9 +154,9 @@ func (p *AddressParser) ReadAddressPort(buffer *buf.Buffer, input io.Reader) (ne
 	var err error
 
 	if p.portFirst {
-		err = signal.Execute(pTask, aTask)
+		err = task.Run(task.Sequential(pTask, aTask))()
 	} else {
-		err = signal.Execute(aTask, pTask)
+		err = task.Run(task.Sequential(aTask, pTask))()
 	}
 
 	if err != nil {
@@ -177,21 +178,21 @@ func (p *AddressParser) writeAddress(writer io.Writer, address net.Address) erro
 
 	switch address.Family() {
 	case net.AddressFamilyIPv4, net.AddressFamilyIPv6:
-		return signal.Execute(func() error {
+		return task.Run(task.Sequential(func() error {
 			return common.Error2(writer.Write([]byte{tb}))
 		}, func() error {
 			return common.Error2(writer.Write(address.IP()))
-		})
+		}))()
 	case net.AddressFamilyDomain:
 		domain := address.Domain()
 		if isDomainTooLong(domain) {
 			return newError("Super long domain is not supported: ", domain)
 		}
-		return signal.Execute(func() error {
+		return task.Run(task.Sequential(func() error {
 			return common.Error2(writer.Write([]byte{tb, byte(len(domain))}))
 		}, func() error {
 			return common.Error2(writer.Write([]byte(domain)))
-		})
+		}))()
 	default:
 		panic("Unknown family type.")
 	}
@@ -207,8 +208,8 @@ func (p *AddressParser) WriteAddressPort(writer io.Writer, addr net.Address, por
 	}
 
 	if p.portFirst {
-		return signal.Execute(pTask, aTask)
+		return task.Run(task.Sequential(pTask, aTask))()
 	}
 
-	return signal.Execute(aTask, pTask)
+	return task.Run(task.Sequential(aTask, pTask))()
 }

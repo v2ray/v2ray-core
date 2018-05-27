@@ -122,7 +122,8 @@ func (c *Client) Process(ctx context.Context, link *core.Link, dialer proxy.Dial
 			return buf.Copy(responseReader, link.Writer, buf.UpdateActivity(timer))
 		}
 
-		if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
+		var responseDoneAndCloseWriter = task.Single(responseDone, task.OnSuccess(task.Close(link.Writer)))
+		if err := task.Run(task.WithContext(ctx), task.Parallel(requestDone, responseDoneAndCloseWriter))(); err != nil {
 			return newError("connection ends").Base(err)
 		}
 
