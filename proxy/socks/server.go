@@ -8,6 +8,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/functions"
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -139,7 +140,6 @@ func (s *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 
 	requestDone := func() error {
 		defer timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
-		defer common.Close(link.Writer) // nolint: errcheck
 
 		v2reader := buf.NewReader(reader)
 		if err := buf.Copy(v2reader, link.Writer, buf.UpdateActivity(timer)); err != nil {
@@ -160,7 +160,7 @@ func (s *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 		return nil
 	}
 
-	if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
+	if err := signal.ExecuteParallel(ctx, functions.OnSuccess(requestDone, functions.Close(link.Writer)), responseDone); err != nil {
 		pipe.CloseError(link.Reader)
 		pipe.CloseError(link.Writer)
 		return newError("connection ends").Base(err)

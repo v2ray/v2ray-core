@@ -7,6 +7,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/functions"
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -207,7 +208,6 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 
 	requestDone := func() error {
 		defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
-		defer common.Close(link.Writer)
 
 		if err := buf.Copy(bodyReader, link.Writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport all TCP request").Base(err)
@@ -216,7 +216,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 		return nil
 	}
 
-	if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
+	if err := signal.ExecuteParallel(ctx, functions.OnSuccess(requestDone, functions.Close(link.Writer)), responseDone); err != nil {
 		pipe.CloseError(link.Reader)
 		pipe.CloseError(link.Writer)
 		return newError("connection ends").Base(err)

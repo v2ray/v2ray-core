@@ -13,6 +13,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
+	"v2ray.com/core/common/functions"
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -168,8 +169,6 @@ func (h *Handler) RemoveUser(ctx context.Context, email string) error {
 }
 
 func transferRequest(timer signal.ActivityUpdater, session *encoding.ServerSession, request *protocol.RequestHeader, input io.Reader, output buf.Writer) error {
-	defer common.Close(output)
-
 	bodyReader := session.DecodeRequestBody(request, input)
 	if err := buf.Copy(bodyReader, output, buf.UpdateActivity(timer)); err != nil {
 		return newError("failed to transfer request").Base(err)
@@ -295,7 +294,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 		return transferResponse(timer, session, request, response, link.Reader, writer)
 	}
 
-	if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
+	if err := signal.ExecuteParallel(ctx, functions.OnSuccess(requestDone, functions.Close(link.Writer)), responseDone); err != nil {
 		pipe.CloseError(link.Reader)
 		pipe.CloseError(link.Writer)
 		return newError("connection ends").Base(err)

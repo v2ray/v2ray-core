@@ -16,6 +16,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
+	"v2ray.com/core/common/functions"
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	http_proto "v2ray.com/core/common/protocol/http"
@@ -192,7 +193,6 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 	}
 
 	requestDone := func() error {
-		defer common.Close(link.Writer)
 		defer timer.SetTimeout(s.policy().Timeouts.DownlinkOnly)
 
 		v2reader := buf.NewReader(conn)
@@ -210,7 +210,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		return nil
 	}
 
-	if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
+	if err := signal.ExecuteParallel(ctx, functions.OnSuccess(requestDone, functions.Close(link.Writer)), responseDone); err != nil {
 		pipe.CloseError(link.Reader)
 		pipe.CloseError(link.Writer)
 		return newError("connection ends").Base(err)

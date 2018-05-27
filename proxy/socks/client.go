@@ -130,7 +130,7 @@ func (c *Client) Process(ctx context.Context, link *core.Link, dialer proxy.Dial
 		}
 	}
 
-	if err := signal.ExecuteParallel(ctx, requestFunc, functions.CloseOnSuccess(responseFunc, functions.Close(link.Writer))); err != nil {
+	if err := signal.ExecuteParallel(ctx, requestFunc, functions.OnSuccess(responseFunc, functions.Close(link.Writer))); err != nil {
 		return newError("connection ends").Base(err)
 	}
 

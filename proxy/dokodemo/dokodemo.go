@@ -9,6 +9,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/functions"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
@@ -79,7 +80,6 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 	}
 
 	requestDone := func() error {
-		defer common.Close(link.Writer)
 		defer timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
 
 		chunkReader := buf.NewReader(conn)
@@ -118,7 +118,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		return nil
 	}
 
-	if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
+	if err := signal.ExecuteParallel(ctx, functions.OnSuccess(requestDone, functions.Close(link.Writer)), responseDone); err != nil {
 		pipe.CloseError(link.Reader)
 		pipe.CloseError(link.Writer)
 		return newError("connection ends").Base(err)

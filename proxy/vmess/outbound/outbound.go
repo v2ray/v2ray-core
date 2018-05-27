@@ -161,7 +161,7 @@ func (v *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 		return buf.Copy(bodyReader, output, buf.UpdateActivity(timer))
 	}
 
-	if err := signal.ExecuteParallel(ctx, requestDone, functions.CloseOnSuccess(responseDone, functions.Close(output))); err != nil {
+	if err := signal.ExecuteParallel(ctx, requestDone, functions.OnSuccess(responseDone, functions.Close(output))); err != nil {
 		return newError("connection ends").Base(err)
 	}
 
