@@ -26,6 +26,9 @@ message Config {
   // Whether or not to allow self-signed certificates.
   bool allow_insecure = 1;
 
+  // Whether or not to allow insecure cipher suites.
+  bool allow_insecure_ciphers = 5;
+
   // List of certificates to be served on server.
   repeated Certificate certificate = 2;
 
