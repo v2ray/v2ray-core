@@ -131,8 +131,13 @@ func (c *udpConn) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	select {
 	case in := <-c.input:
 		payload.Append(in)
-	case <-c.done.Wait():
-		return nil, io.EOF
+	default:
+		select {
+		case in := <-c.input:
+			payload.Append(in)
+		case <-c.done.Wait():
+			return nil, io.EOF
+		}
 	}
 
 L:
@@ -140,8 +145,6 @@ L:
 		select {
 		case in := <-c.input:
 			payload.Append(in)
-		case <-c.done.Wait():
-			break L
 		default:
 			break L
 		}
