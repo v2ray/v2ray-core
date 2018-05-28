@@ -47,6 +47,9 @@ func ReadAllToBytes(reader io.Reader) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	if mb.Len() == 0 {
+		return nil, nil
+	}
 	b := make([]byte, mb.Len())
 	common.Must2(mb.Read(b))
 	mb.Release()
