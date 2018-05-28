@@ -42,6 +42,7 @@ func (t *ActivityTimer) finish() {
 
 	if t.onTimeout != nil {
 		t.onTimeout()
+		t.onTimeout = nil
 	}
 	if t.checkTask != nil {
 		t.checkTask.Close() // nolint: errcheck
