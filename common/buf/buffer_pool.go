@@ -56,7 +56,7 @@ func freeBytes(b []byte) {
 	b = b[0:cap(b)]
 	for i := numPools - 1; i >= 0; i-- {
 		if size >= poolSize[i] {
-			pool[i].Put(b)
+			pool[i].Put(b) // nolint: megacheck
 			return
 		}
 	}
