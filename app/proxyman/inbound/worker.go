@@ -150,6 +150,10 @@ L:
 		}
 	}
 
+	if c.uplink != nil {
+		c.uplink.Add(int64(payload.Len()))
+	}
+
 	return payload, nil
 }
 
