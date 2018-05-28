@@ -44,7 +44,7 @@ func (t *ActivityTimer) finish() {
 		t.onTimeout()
 	}
 	if t.checkTask != nil {
-		t.checkTask.Close()
+		t.checkTask.Close() // nolint: errcheck
 		t.checkTask = nil
 	}
 }
@@ -52,6 +52,7 @@ func (t *ActivityTimer) finish() {
 func (t *ActivityTimer) SetTimeout(timeout time.Duration) {
 	if timeout == 0 {
 		t.finish()
+		return
 	}
 
 	t.Lock()
