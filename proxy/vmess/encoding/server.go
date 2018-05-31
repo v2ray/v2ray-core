@@ -75,6 +75,10 @@ func (h *SessionHistory) removeExpiredEntries() {
 	h.Lock()
 	defer h.Unlock()
 
+	if len(h.cache) == 0 {
+		return
+	}
+
 	for session, expire := range h.cache {
 		if expire.Before(now) {
 			delete(h.cache, session)

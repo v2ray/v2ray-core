@@ -164,18 +164,14 @@ func (m *CachableDomainMatcher) ApplyDomain(domain string) bool {
 
 	now := time.Now()
 	if len(m.cache) > 256 && now.Sub(m.lastScan)/time.Second > 5 {
-		remove := make([]string, 0, 128)
-
 		now := time.Now()
 
 		for k, v := range m.cache {
 			if now.Sub(v.timestamp)/time.Second > 60 {
-				remove = append(remove, k)
+				delete(m.cache, k)
 			}
 		}
-		for _, v := range remove {
-			delete(m.cache, v)
-		}
+
 		m.lastScan = now
 	}
 
