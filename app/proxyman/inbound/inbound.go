@@ -9,6 +9,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/serial"
 )
 
 // Manager is to manage all inbound handlers.
@@ -110,11 +111,20 @@ func (m *Manager) Close() error {
 
 	m.running = false
 
+	var errors []interface{}
 	for _, handler := range m.taggedHandlers {
-		handler.Close()
+		if err := handler.Close(); err != nil {
+			errors = append(errors, err)
+		}
 	}
 	for _, handler := range m.untaggedHandler {
-		handler.Close()
+		if err := handler.Close(); err != nil {
+			errors = append(errors, err)
+		}
+	}
+
+	if len(errors) > 0 {
+		return newError("failed to close all handlers").Base(newError(serial.Concat(errors...)))
 	}
 
 	return nil

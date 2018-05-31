@@ -12,8 +12,10 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal/done"
+	"v2ray.com/core/common/task"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tcp"
@@ -97,9 +99,17 @@ func (w *tcpWorker) Start() error {
 }
 
 func (w *tcpWorker) Close() error {
+	var errors []interface{}
 	if w.hub != nil {
-		common.Close(w.hub)
-		common.Close(w.proxy)
+		if err := common.Close(w.hub); err != nil {
+			errors = append(errors, err)
+		}
+		if err := common.Close(w.proxy); err != nil {
+			errors = append(errors, err)
+		}
+	}
+	if len(errors) > 0 {
+		return newError("failed to close all resources").Base(newError(serial.Concat(errors...)))
 	}
 
 	return nil
@@ -227,7 +237,7 @@ type udpWorker struct {
 	uplinkCounter   core.StatCounter
 	downlinkCounter core.StatCounter
 
-	done       *done.Instance
+	checker    *task.Periodic
 	activeConn map[connID]*udpConn
 }
 
@@ -295,7 +305,7 @@ func (w *udpWorker) callback(b *buf.Buffer, source net.Destination, originalDest
 			if err := w.proxy.Process(ctx, net.Network_UDP, conn, w.dispatcher); err != nil {
 				newError("connection ends").Base(err).WriteToLog()
 			}
-			conn.Close()
+			conn.Close() // nolint: errcheck
 			w.removeConn(id)
 		}()
 	}
@@ -309,12 +319,37 @@ func (w *udpWorker) removeConn(id connID) {
 
 func (w *udpWorker) Start() error {
 	w.activeConn = make(map[connID]*udpConn, 16)
-	w.done = done.New()
 	h, err := udp.ListenUDP(w.address, w.port, w.callback, udp.HubReceiveOriginalDestination(w.recvOrigDest), udp.HubCapacity(256))
 	if err != nil {
 		return err
 	}
-	go w.monitor()
+	w.checker = &task.Periodic{
+		Interval: time.Second * 16,
+		Execute: func() error {
+			nowSec := time.Now().Unix()
+			w.Lock()
+			if len(w.activeConn) == 0 {
+				return nil
+			}
+
+			for addr, conn := range w.activeConn {
+				if nowSec-atomic.LoadInt64(&conn.lastActivityTime) > 8 {
+					delete(w.activeConn, addr)
+					conn.Close() // nolint: errcheck
+				}
+			}
+
+			if len(w.activeConn) == 0 {
+				w.activeConn = make(map[connID]*udpConn, 16)
+			}
+			w.Unlock()
+
+			return nil
+		},
+	}
+	if err := w.checker.Start(); err != nil {
+		return err
+	}
 	w.hub = h
 	return nil
 }
@@ -323,38 +358,28 @@ func (w *udpWorker) Close() error {
 	w.Lock()
 	defer w.Unlock()
 
+	var errors []interface{}
+
 	if w.hub != nil {
-		w.hub.Close()
-	}
-
-	if w.done != nil {
-		common.Must(w.done.Close())
-	}
-
-	common.Close(w.proxy)
-	return nil
-}
-
-func (w *udpWorker) monitor() {
-	timer := time.NewTicker(time.Second * 16)
-	defer timer.Stop()
-
-	for {
-		select {
-		case <-w.done.Wait():
-			return
-		case <-timer.C:
-			nowSec := time.Now().Unix()
-			w.Lock()
-			for addr, conn := range w.activeConn {
-				if nowSec-atomic.LoadInt64(&conn.lastActivityTime) > 8 {
-					delete(w.activeConn, addr)
-					conn.Close()
-				}
-			}
-			w.Unlock()
+		if err := w.hub.Close(); err != nil {
+			errors = append(errors, err)
 		}
 	}
+
+	if w.checker != nil {
+		if err := w.checker.Close(); err != nil {
+			errors = append(errors, err)
+		}
+	}
+
+	if err := common.Close(w.proxy); err != nil {
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return newError("failed to close all resources").Base(newError(serial.Concat(errors...)))
+	}
+	return nil
 }
 
 func (w *udpWorker) Port() net.Port {

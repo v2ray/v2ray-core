@@ -50,7 +50,7 @@ func (c *Commander) Start() error {
 		if err != nil {
 			return err
 		}
-		rawService, err := c.v.CreateObject(config)
+		rawService, err := core.CreateObject(c.v, config)
 		if err != nil {
 			return err
 		}

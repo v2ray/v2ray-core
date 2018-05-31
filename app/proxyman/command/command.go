@@ -62,7 +62,7 @@ type handlerServer struct {
 }
 
 func (s *handlerServer) AddInbound(ctx context.Context, request *AddInboundRequest) (*AddInboundResponse, error) {
-	rawHandler, err := s.s.CreateObject(request.Inbound)
+	rawHandler, err := core.CreateObject(s.s, request.Inbound)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func (s *handlerServer) AlterInbound(ctx context.Context, request *AlterInboundR
 }
 
 func (s *handlerServer) AddOutbound(ctx context.Context, request *AddOutboundRequest) (*AddOutboundResponse, error) {
-	rawHandler, err := s.s.CreateObject(request.Outbound)
+	rawHandler, err := core.CreateObject(s.s, request.Outbound)
 	if err != nil {
 		return nil, err
 	}

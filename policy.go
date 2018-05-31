@@ -35,6 +35,7 @@ type BufferPolicy struct {
 	PerConnection int32
 }
 
+// SystemStatsPolicy contains stat policy settings on system level.
 type SystemStatsPolicy struct {
 	// Whether or not to enable stat counter for uplink traffic in inbound handlers.
 	InboundUplink bool
@@ -42,6 +43,7 @@ type SystemStatsPolicy struct {
 	InboundDownlink bool
 }
 
+// SystemPolicy contains policy settings at system level.
 type SystemPolicy struct {
 	Stats  SystemStatsPolicy
 	Buffer BufferPolicy
@@ -178,6 +180,6 @@ func (m *syncPolicyManager) Set(manager PolicyManager) {
 	m.Lock()
 	defer m.Unlock()
 
-	common.Close(m.PolicyManager)
+	common.Close(m.PolicyManager) // nolint: errcheck
 	m.PolicyManager = manager
 }

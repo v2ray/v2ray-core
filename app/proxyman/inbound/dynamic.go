@@ -69,7 +69,9 @@ func (h *DynamicInboundHandler) closeWorkers(workers []worker) {
 	ports2Del := make([]net.Port, len(workers))
 	for idx, worker := range workers {
 		ports2Del[idx] = worker.Port()
-		worker.Close()
+		if err := worker.Close(); err != nil {
+			newError("failed to close worker").Base(err).WriteToLog()
+		}
 	}
 
 	h.portMutex.Lock()
@@ -95,7 +97,7 @@ func (h *DynamicInboundHandler) refresh() error {
 
 	for i := uint32(0); i < concurrency; i++ {
 		port := h.allocatePort()
-		rawProxy, err := h.v.CreateObject(h.proxyConfig)
+		rawProxy, err := core.CreateObject(h.v, h.proxyConfig)
 		if err != nil {
 			newError("failed to create proxy instance").Base(err).AtWarning().WriteToLog()
 			continue

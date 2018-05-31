@@ -10,10 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"v2ray.com/core/common/task"
-
-	"v2ray.com/core/transport/pipe"
-
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -22,7 +18,9 @@ import (
 	"v2ray.com/core/common/net"
 	http_proto "v2ray.com/core/common/protocol/http"
 	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/task"
 	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/pipe"
 )
 
 // Server is an HTTP proxy server.
@@ -114,7 +112,7 @@ Start:
 	if err != nil {
 		trace := newError("failed to read http request").Base(err)
 		if errors.Cause(err) != io.EOF && !isTimeout(errors.Cause(err)) {
-			trace.AtWarning()
+			trace.AtWarning() // nolint: errcheck
 		}
 		return trace
 	}
@@ -258,7 +256,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 	}
 
 	// Plain HTTP request is not a stream. The request always finishes before response. Hense request has to be closed later.
-	defer common.Close(link.Writer)
+	defer common.Close(link.Writer) // nolint: errcheck
 	var result error = errWaitAnother
 
 	requestDone := func() error {

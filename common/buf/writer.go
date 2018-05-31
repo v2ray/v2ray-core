@@ -12,13 +12,6 @@ type BufferToBytesWriter struct {
 	io.Writer
 }
 
-// NewBufferToBytesWriter returns a new BufferToBytesWriter.
-func NewBufferToBytesWriter(writer io.Writer) *BufferToBytesWriter {
-	return &BufferToBytesWriter{
-		Writer: writer,
-	}
-}
-
 // WriteMultiBuffer implements Writer. This method takes ownership of the given buffer.
 func (w *BufferToBytesWriter) WriteMultiBuffer(mb MultiBuffer) error {
 	defer mb.Release()
@@ -113,7 +106,16 @@ func (w *BufferedWriter) WriteMultiBuffer(b MultiBuffer) error {
 // Flush flushes buffered content into underlying writer.
 func (w *BufferedWriter) Flush() error {
 	if !w.buffer.IsEmpty() {
-		if err := w.writer.WriteMultiBuffer(NewMultiBufferValue(w.buffer)); err != nil {
+		b := w.buffer
+		w.buffer = nil
+
+		if writer, ok := w.writer.(io.Writer); ok {
+			_, err := writer.Write(b.Bytes())
+			b.Release()
+			if err != nil {
+				return err
+			}
+		} else if err := w.writer.WriteMultiBuffer(NewMultiBufferValue(b)); err != nil {
 			return err
 		}
 

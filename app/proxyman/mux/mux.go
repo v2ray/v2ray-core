@@ -327,10 +327,12 @@ func (s *Server) Dispatch(ctx context.Context, dest net.Destination) (*core.Link
 	return &core.Link{Reader: downlinkReader, Writer: uplinkWriter}, nil
 }
 
+// Start implements common.Runnable.
 func (s *Server) Start() error {
 	return nil
 }
 
+// Close implements common.Closable.
 func (s *Server) Close() error {
 	return nil
 }
@@ -463,7 +465,7 @@ func (w *ServerWorker) run(ctx context.Context) {
 	input := w.link.Reader
 	reader := &buf.BufferedReader{Reader: input}
 
-	defer w.sessionManager.Close()
+	defer w.sessionManager.Close() // nolint: errcheck
 
 	for {
 		select {
