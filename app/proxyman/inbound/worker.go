@@ -328,6 +328,8 @@ func (w *udpWorker) Start() error {
 		Execute: func() error {
 			nowSec := time.Now().Unix()
 			w.Lock()
+			defer w.Unlock()
+
 			if len(w.activeConn) == 0 {
 				return nil
 			}
@@ -342,7 +344,6 @@ func (w *udpWorker) Start() error {
 			if len(w.activeConn) == 0 {
 				w.activeConn = make(map[connID]*udpConn, 16)
 			}
-			w.Unlock()
 
 			return nil
 		},
