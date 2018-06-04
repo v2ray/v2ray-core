@@ -104,6 +104,7 @@ func NewAlwaysOnInboundHandler(ctx context.Context, tag string, receiverConfig *
 	return h, nil
 }
 
+// Start implements common.Runnable.
 func (h *AlwaysOnInboundHandler) Start() error {
 	for _, worker := range h.workers {
 		if err := worker.Start(); err != nil {
@@ -113,6 +114,7 @@ func (h *AlwaysOnInboundHandler) Start() error {
 	return nil
 }
 
+// Close implements common.Closable.
 func (h *AlwaysOnInboundHandler) Close() error {
 	var errors []interface{}
 	for _, worker := range h.workers {

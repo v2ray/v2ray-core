@@ -48,14 +48,14 @@ func (l *generalLogger) run() {
 	if logger == nil {
 		return
 	}
-	defer logger.Close()
+	defer logger.Close() // nolint: errcheck
 
 	for {
 		select {
 		case <-l.done.Wait():
 			return
 		case msg := <-l.buffer:
-			logger.Write(msg.String() + platform.LineSeparator())
+			logger.Write(msg.String() + platform.LineSeparator()) // nolint: errcheck
 			dataWritten = true
 		case <-ticker.C:
 			if !dataWritten {
