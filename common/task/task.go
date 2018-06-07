@@ -56,6 +56,15 @@ func Parallel(tasks ...Task) ExecutionOption {
 
 func Sequential(tasks ...Task) ExecutionOption {
 	return func(c *executionContext) {
+		if len(tasks) == 0 {
+			return
+		}
+
+		if len(tasks) == 1 {
+			c.tasks = append(c.tasks, tasks[0])
+			return
+		}
+
 		c.tasks = append(c.tasks, func() error {
 			return execute(tasks...)
 		})
