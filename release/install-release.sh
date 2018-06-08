@@ -145,7 +145,7 @@ getPMT(){
     elif [[ -n `command -v yum` ]]; then
         CMD_INSTALL="yum -y -q install"
         CMD_UPDATE="yum -q makecache"
-    elif [ -n `command -v zypper` ];then
+    elif [[ -n `command -v zypper` ]]; then
         CMD_INSTALL="zypper -y install"
         CMD_UPDATE="zypper ref"
     else
