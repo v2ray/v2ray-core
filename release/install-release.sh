@@ -137,7 +137,7 @@ installSoftware(){
     return 0
 }
 
-# return 1: not apt or yum
+# return 1: not apt, yum, or zypper
 getPMT(){
     if [[ -n `command -v apt-get` ]];then
         CMD_INSTALL="apt-get -y -qq install"
@@ -145,6 +145,9 @@ getPMT(){
     elif [[ -n `command -v yum` ]]; then
         CMD_INSTALL="yum -y -q install"
         CMD_UPDATE="yum -q makecache"
+    elif [ -n `command -v zypper` ];then
+        CMD_INSTALL="zypper -y install"
+        CMD_UPDATE="zypper ref"
     else
         return 1
     fi
