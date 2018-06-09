@@ -5,6 +5,7 @@ import (
 
 	"v2ray.com/core"
 	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/signal/done"
 )
 
 // Option for creating new Pipes.
@@ -41,6 +42,7 @@ func New(opts ...Option) (*Reader, *Writer) {
 		limit:       -1,
 		readSignal:  signal.NewNotifier(),
 		writeSignal: signal.NewNotifier(),
+		done:        done.New(),
 	}
 
 	for _, opt := range opts {

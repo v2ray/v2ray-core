@@ -2,12 +2,12 @@ package pipe_test
 
 import (
 	"io"
+	"sync"
 	"testing"
 	"time"
 
-	"v2ray.com/core/common/task"
-
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/task"
 	. "v2ray.com/core/transport/pipe"
 	. "v2ray.com/ext/assert"
 )
@@ -90,4 +90,31 @@ func TestPipeLimitZero(t *testing.T) {
 	}))()
 
 	assert(err, IsNil)
+}
+
+func TestPipeWriteMultiThread(t *testing.T) {
+	assert := With(t)
+
+	pReader, pWriter := New(WithSizeLimit(0))
+
+	var wg sync.WaitGroup
+
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			b := buf.New()
+			b.AppendBytes('a', 'b', 'c', 'd')
+			pWriter.WriteMultiBuffer(buf.NewMultiBufferValue(b))
+			wg.Done()
+		}()
+	}
+
+	time.Sleep(time.Millisecond * 100)
+
+	pWriter.Close()
+	wg.Wait()
+
+	b, err := pReader.ReadMultiBuffer()
+	assert(err, IsNil)
+	assert(b[0].Bytes(), Equals, []byte{'a', 'b', 'c', 'd'})
 }
