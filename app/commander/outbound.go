@@ -7,7 +7,6 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/signal/done"
 	"v2ray.com/core/transport/pipe"
 )
@@ -80,8 +79,8 @@ func (co *Outbound) Dispatch(ctx context.Context, link *core.Link) {
 		return
 	}
 
-	closeSignal := signal.NewNotifier()
-	c := net.NewConnection(net.ConnectionInputMulti(link.Writer), net.ConnectionOutputMulti(link.Reader), net.ConnectionOnClose(signal.NotifyClose(closeSignal)))
+	closeSignal := done.New()
+	c := net.NewConnection(net.ConnectionInputMulti(link.Writer), net.ConnectionOutputMulti(link.Reader), net.ConnectionOnClose(closeSignal))
 	co.listener.add(c)
 	co.access.RUnlock()
 	<-closeSignal.Wait()
