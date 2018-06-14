@@ -61,6 +61,7 @@ $GOPATH/bin/vbuild --os=freebsd --arch=x86 --zip --sign #--encrypt
 $GOPATH/bin/vbuild --os=freebsd --arch=amd64 --zip --sign #--encrypt
 $GOPATH/bin/vbuild --os=openbsd --arch=x86 --zip --sign #--encrypt
 $GOPATH/bin/vbuild --os=openbsd --arch=amd64 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=dragonfly --arch=amd64 --zip --sign #--encrypt
 
 RELBODY="https://www.v2ray.com/chapter_00/01_versions.html"
 JSON_DATA=$(echo "{}" | jq -c ".tag_name=\"${RELEASE_TAG}\"")
@@ -90,6 +91,7 @@ upload $GOPATH/bin/v2ray-freebsd-64.zip
 upload $GOPATH/bin/v2ray-freebsd-32.zip
 upload $GOPATH/bin/v2ray-openbsd-64.zip
 upload $GOPATH/bin/v2ray-openbsd-32.zip
+upload $GOPATH/bin/v2ray-dragonfly-64.zip
 upload $GOPATH/bin/metadata.txt
 
 if [[ "${PRERELEASE}" == "false" ]]; then
