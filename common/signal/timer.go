@@ -56,18 +56,20 @@ func (t *ActivityTimer) SetTimeout(timeout time.Duration) {
 		return
 	}
 
+	checkTask := &task.Periodic{
+		Interval: timeout,
+		Execute:  t.check,
+	}
+
 	t.Lock()
 
 	if t.checkTask != nil {
 		t.checkTask.Close() // nolint: errcheck
 	}
-	t.checkTask = &task.Periodic{
-		Interval: timeout,
-		Execute:  t.check,
-	}
+	t.checkTask = checkTask
 	t.Unlock()
 	t.Update()
-	common.Must(t.checkTask.Start())
+	common.Must(checkTask.Start())
 }
 
 func CancelAfterInactivity(ctx context.Context, cancel context.CancelFunc, timeout time.Duration) *ActivityTimer {
