@@ -12,6 +12,7 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/stats"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/pipe"
@@ -143,7 +144,7 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 			outbound.Reader = cReader
 			domain, err := sniffer(ctx, snifferList, cReader)
 			if err == nil {
-				newError("sniffed domain: ", domain).WithContext(ctx).WriteToLog()
+				newError("sniffed domain: ", domain).WriteToLog(session.ExportIDToError(ctx))
 				destination.Address = net.ParseAddress(domain)
 				ctx = proxy.ContextWithTarget(ctx, destination)
 			}
@@ -189,13 +190,13 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *core.Link,
 	if d.router != nil {
 		if tag, err := d.router.PickRoute(ctx); err == nil {
 			if handler := d.ohm.GetHandler(tag); handler != nil {
-				newError("taking detour [", tag, "] for [", destination, "]").WithContext(ctx).WriteToLog()
+				newError("taking detour [", tag, "] for [", destination, "]").WriteToLog(session.ExportIDToError(ctx))
 				dispatcher = handler
 			} else {
-				newError("non existing tag: ", tag).AtWarning().WithContext(ctx).WriteToLog()
+				newError("non existing tag: ", tag).AtWarning().WriteToLog(session.ExportIDToError(ctx))
 			}
 		} else {
-			newError("default route for ", destination).WithContext(ctx).WriteToLog()
+			newError("default route for ", destination).WriteToLog(session.ExportIDToError(ctx))
 		}
 	}
 	dispatcher.Dispatch(ctx, link)

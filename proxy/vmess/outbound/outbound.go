@@ -6,6 +6,7 @@ import (
 	"context"
 	"time"
 
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/task"
 
 	"v2ray.com/core/transport/pipe"
@@ -69,7 +70,7 @@ func (v *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 	if !ok {
 		return newError("target not specified").AtError()
 	}
-	newError("tunneling request to ", target, " via ", rec.Destination()).WithContext(ctx).WriteToLog()
+	newError("tunneling request to ", target, " via ", rec.Destination()).WriteToLog(session.ExportIDToError(ctx))
 
 	command := protocol.RequestCommandTCP
 	if target.Network == net.Network_UDP {

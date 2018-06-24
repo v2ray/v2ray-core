@@ -4,6 +4,8 @@ package session // import "v2ray.com/core/common/session"
 import (
 	"context"
 	"math/rand"
+
+	"v2ray.com/core/common/errors"
 )
 
 // ID of a session.
@@ -37,4 +39,11 @@ func IDFromContext(ctx context.Context) ID {
 		return id
 	}
 	return 0
+}
+
+func ExportIDToError(ctx context.Context) errors.ExportOption {
+	id := IDFromContext(ctx)
+	return func(h *errors.ExportOptionHolder) {
+		h.SessionID = uint32(id)
+	}
 }

@@ -8,6 +8,7 @@ import (
 	"v2ray.com/core/app/proxyman/mux"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/pipe"
@@ -77,13 +78,13 @@ func (h *Handler) Tag() string {
 func (h *Handler) Dispatch(ctx context.Context, link *core.Link) {
 	if h.mux != nil {
 		if err := h.mux.Dispatch(ctx, link); err != nil {
-			newError("failed to process mux outbound traffic").Base(err).WithContext(ctx).WriteToLog()
+			newError("failed to process mux outbound traffic").Base(err).WriteToLog(session.ExportIDToError(ctx))
 			pipe.CloseError(link.Writer)
 		}
 	} else {
 		if err := h.proxy.Process(ctx, link, h); err != nil {
 			// Ensure outbound ray is properly closed.
-			newError("failed to process outbound traffic").Base(err).WithContext(ctx).WriteToLog()
+			newError("failed to process outbound traffic").Base(err).WriteToLog(session.ExportIDToError(ctx))
 			pipe.CloseError(link.Writer)
 		} else {
 			common.Must(common.Close(link.Writer))
@@ -99,7 +100,7 @@ func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Conn
 			tag := h.senderSettings.ProxySettings.Tag
 			handler := h.outboundManager.GetHandler(tag)
 			if handler != nil {
-				newError("proxying to ", tag, " for dest ", dest).AtDebug().WithContext(ctx).WriteToLog()
+				newError("proxying to ", tag, " for dest ", dest).AtDebug().WriteToLog(session.ExportIDToError(ctx))
 				ctx = proxy.ContextWithTarget(ctx, dest)
 
 				opts := pipe.OptionsFromContext(ctx)
@@ -110,7 +111,7 @@ func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Conn
 				return net.NewConnection(net.ConnectionInputMulti(uplinkWriter), net.ConnectionOutputMulti(downlinkReader)), nil
 			}
 
-			newError("failed to get outbound handler with tag: ", tag).AtWarning().WithContext(ctx).WriteToLog()
+			newError("failed to get outbound handler with tag: ", tag).AtWarning().WriteToLog(session.ExportIDToError(ctx))
 		}
 
 		if h.senderSettings.Via != nil {

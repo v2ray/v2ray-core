@@ -7,6 +7,7 @@ import (
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
 )
@@ -29,7 +30,7 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, handler 
 	if err != nil {
 		return nil, err
 	}
-	newError("listening TCP on ", address, ":", port).WithContext(ctx).WriteToLog()
+	newError("listening TCP on ", address, ":", port).WriteToLog(session.ExportIDToError(ctx))
 
 	tcpSettings := getTCPSettingsFromContext(ctx)
 

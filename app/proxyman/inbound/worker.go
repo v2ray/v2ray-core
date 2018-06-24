@@ -52,7 +52,7 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 	if w.recvOrigDest {
 		dest, err := tcp.GetOriginalDestination(conn)
 		if err != nil {
-			newError("failed to get original destination").WithContext(ctx).Base(err).WriteToLog()
+			newError("failed to get original destination").Base(err).WriteToLog(session.ExportIDToError(ctx))
 		}
 		if dest.IsValid() {
 			ctx = proxy.ContextWithOriginalTarget(ctx, dest)
@@ -74,11 +74,11 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 		}
 	}
 	if err := w.proxy.Process(ctx, net.Network_TCP, conn, w.dispatcher); err != nil {
-		newError("connection ends").Base(err).WithContext(ctx).WriteToLog()
+		newError("connection ends").Base(err).WriteToLog(session.ExportIDToError(ctx))
 	}
 	cancel()
 	if err := conn.Close(); err != nil {
-		newError("failed to close connection").Base(err).WithContext(ctx).WriteToLog()
+		newError("failed to close connection").Base(err).WriteToLog(session.ExportIDToError(ctx))
 	}
 }
 

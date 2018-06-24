@@ -2,13 +2,11 @@
 package errors // import "v2ray.com/core/common/errors"
 
 import (
-	"context"
 	"os"
 	"strings"
 
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/serial"
-	"v2ray.com/core/common/session"
 )
 
 type hasInnerError interface {
@@ -20,17 +18,13 @@ type hasSeverity interface {
 	Severity() log.Severity
 }
 
-type hasContext interface {
-	Context() context.Context
-}
-
 // Error is an error object with underlying error.
 type Error struct {
+	prefix   []interface{}
+	path     []string
 	message  []interface{}
 	inner    error
 	severity log.Severity
-	path     []string
-	ctx      context.Context
 }
 
 // Error implements error.Error().
@@ -42,7 +36,13 @@ func (v *Error) Error() string {
 	if len(v.path) > 0 {
 		msg = strings.Join(v.path, "|") + ": " + msg
 	}
-	return msg
+
+	var prefix string
+	for _, p := range v.prefix {
+		prefix += "[" + serial.ToString(p) + "] "
+	}
+
+	return prefix + msg
 }
 
 // Inner implements hasInnerError.Inner()
@@ -56,28 +56,6 @@ func (v *Error) Inner() error {
 func (v *Error) Base(err error) *Error {
 	v.inner = err
 	return v
-}
-
-func (v *Error) WithContext(ctx context.Context) *Error {
-	v.ctx = ctx
-	return v
-}
-
-// Context returns the context that associated with the Error.
-func (v *Error) Context() context.Context {
-	if v.ctx != nil {
-		return v.ctx
-	}
-
-	if v.inner == nil {
-		return nil
-	}
-
-	if c, ok := v.inner.(hasContext); ok {
-		return c.Context()
-	}
-
-	return nil
 }
 
 func (v *Error) atSeverity(s log.Severity) *Error {
@@ -132,24 +110,28 @@ func (v *Error) String() string {
 }
 
 // WriteToLog writes current error into log.
-func (v *Error) WriteToLog() {
-	ctx := v.Context()
-	var sid session.ID
-	if ctx != nil {
-		sid = session.IDFromContext(ctx)
+func (v *Error) WriteToLog(opts ...ExportOption) {
+	var holder ExportOptionHolder
+
+	for _, opt := range opts {
+		opt(&holder)
 	}
-	var c interface{} = v
-	if sid > 0 {
-		c = sessionLog{
-			id:      sid,
-			content: v,
-		}
+
+	if holder.SessionID > 0 {
+		v.prefix = append(v.prefix, holder.SessionID)
 	}
+
 	log.Record(&log.GeneralMessage{
 		Severity: GetSeverity(v),
-		Content:  c,
+		Content:  v,
 	})
 }
+
+type ExportOptionHolder struct {
+	SessionID uint32
+}
+
+type ExportOption func(*ExportOptionHolder)
 
 // New returns a new error object with message formed from given arguments.
 func New(msg ...interface{}) *Error {
@@ -195,13 +177,4 @@ func GetSeverity(err error) log.Severity {
 		return s.Severity()
 	}
 	return log.Severity_Info
-}
-
-type sessionLog struct {
-	id      session.ID
-	content interface{}
-}
-
-func (s sessionLog) String() string {
-	return serial.Concat("[", s.id, "] ", s.content)
 }

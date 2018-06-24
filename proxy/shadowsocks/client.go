@@ -3,6 +3,7 @@ package shadowsocks
 import (
 	"context"
 
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/task"
 
 	"v2ray.com/core"
@@ -64,7 +65,7 @@ func (c *Client) Process(ctx context.Context, link *core.Link, dialer proxy.Dial
 	if err != nil {
 		return newError("failed to find an available destination").AtWarning().Base(err)
 	}
-	newError("tunneling request to ", destination, " via ", server.Destination()).WithContext(ctx).WriteToLog()
+	newError("tunneling request to ", destination, " via ", server.Destination()).WriteToLog(session.ExportIDToError(ctx))
 
 	defer conn.Close()
 

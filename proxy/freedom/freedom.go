@@ -12,6 +12,7 @@ import (
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/task"
 	"v2ray.com/core/proxy"
@@ -56,7 +57,7 @@ func (h *Handler) resolveIP(ctx context.Context, domain string) net.Address {
 
 	ips, err := h.dns.LookupIP(domain)
 	if err != nil {
-		newError("failed to get IP address for domain ", domain).Base(err).WithContext(ctx).WriteToLog()
+		newError("failed to get IP address for domain ", domain).Base(err).WriteToLog(session.ExportIDToError(ctx))
 	}
 	if len(ips) == 0 {
 		return nil
@@ -75,7 +76,7 @@ func (h *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 			Port:    net.Port(server.Port),
 		}
 	}
-	newError("opening connection to ", destination).WithContext(ctx).WriteToLog()
+	newError("opening connection to ", destination).WriteToLog(session.ExportIDToError(ctx))
 
 	input := link.Reader
 	output := link.Writer
@@ -88,7 +89,7 @@ func (h *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 				Address: ip,
 				Port:    destination.Port,
 			}
-			newError("changing destination to ", destination).WithContext(ctx).WriteToLog()
+			newError("changing destination to ", destination).WriteToLog(session.ExportIDToError(ctx))
 		}
 	}
 

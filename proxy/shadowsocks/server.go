@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/task"
 
 	"v2ray.com/core"
@@ -86,7 +87,7 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 			request, data, err := DecodeUDPPacket(s.user, payload)
 			if err != nil {
 				if source, ok := proxy.SourceFromContext(ctx); ok {
-					newError("dropping invalid UDP packet from: ", source).Base(err).WithContext(ctx).WriteToLog()
+					newError("dropping invalid UDP packet from: ", source).Base(err).WriteToLog(session.ExportIDToError(ctx))
 					log.Record(&log.AccessMessage{
 						From:   source,
 						To:     "",
@@ -99,13 +100,13 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 			}
 
 			if request.Option.Has(RequestOptionOneTimeAuth) && s.account.OneTimeAuth == Account_Disabled {
-				newError("client payload enables OTA but server doesn't allow it").WithContext(ctx).WriteToLog()
+				newError("client payload enables OTA but server doesn't allow it").WriteToLog(session.ExportIDToError(ctx))
 				payload.Release()
 				continue
 			}
 
 			if !request.Option.Has(RequestOptionOneTimeAuth) && s.account.OneTimeAuth == Account_Enabled {
-				newError("client payload disables OTA but server forces it").WithContext(ctx).WriteToLog()
+				newError("client payload disables OTA but server forces it").WriteToLog(session.ExportIDToError(ctx))
 				payload.Release()
 				continue
 			}
@@ -119,14 +120,14 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 					Reason: "",
 				})
 			}
-			newError("tunnelling request to ", dest).WithContext(ctx).WriteToLog()
+			newError("tunnelling request to ", dest).WriteToLog(session.ExportIDToError(ctx))
 
 			ctx = protocol.ContextWithUser(ctx, request.User)
 			udpServer.Dispatch(ctx, dest, data, func(payload *buf.Buffer) {
 				data, err := EncodeUDPPacket(request, payload.Bytes())
 				payload.Release()
 				if err != nil {
-					newError("failed to encode UDP packet").Base(err).AtWarning().WithContext(ctx).WriteToLog()
+					newError("failed to encode UDP packet").Base(err).AtWarning().WriteToLog(session.ExportIDToError(ctx))
 					return
 				}
 				defer data.Release()
@@ -164,7 +165,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 		Status: log.AccessAccepted,
 		Reason: "",
 	})
-	newError("tunnelling request to ", dest).WithContext(ctx).WriteToLog()
+	newError("tunnelling request to ", dest).WriteToLog(session.ExportIDToError(ctx))
 
 	ctx = protocol.ContextWithUser(ctx, request.User)
 

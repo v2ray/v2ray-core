@@ -17,6 +17,7 @@ import (
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	http_proto "v2ray.com/core/common/protocol/http"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/task"
 	"v2ray.com/core/transport/internet"
@@ -105,7 +106,7 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 
 Start:
 	if err := conn.SetReadDeadline(time.Now().Add(s.policy().Timeouts.Handshake)); err != nil {
-		newError("failed to set read deadline").Base(err).WithContext(ctx).WriteToLog()
+		newError("failed to set read deadline").Base(err).WriteToLog(session.ExportIDToError(ctx))
 	}
 
 	request, err := http.ReadRequest(reader)
@@ -124,9 +125,9 @@ Start:
 		}
 	}
 
-	newError("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]").WithContext(ctx).WriteToLog()
+	newError("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]").WriteToLog(session.ExportIDToError(ctx))
 	if err := conn.SetReadDeadline(time.Time{}); err != nil {
-		newError("failed to clear read deadline").Base(err).WithContext(ctx).WriteToLog()
+		newError("failed to clear read deadline").Base(err).WriteToLog(session.ExportIDToError(ctx))
 	}
 
 	defaultPort := net.Port(80)
@@ -285,7 +286,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 				result = nil
 			}
 		} else {
-			newError("failed to read response from ", request.Host).Base(err).AtWarning().WithContext(ctx).WriteToLog()
+			newError("failed to read response from ", request.Host).Base(err).AtWarning().WriteToLog(session.ExportIDToError(ctx))
 			response = &http.Response{
 				Status:        "Service Unavailable",
 				StatusCode:    503,
