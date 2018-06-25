@@ -14,9 +14,11 @@ const (
 	socks5Version = 0x05
 	socks4Version = 0x04
 
-	cmdTCPConnect = 0x01
-	cmdTCPBind    = 0x02
-	cmdUDPPort    = 0x03
+	cmdTCPConnect    = 0x01
+	cmdTCPBind       = 0x02
+	cmdUDPPort       = 0x03
+	cmdTorResolve    = 0xF0
+	cmdTorResolvePTR = 0xF1
 
 	socks4RequestGranted  = 90
 	socks4RequestRejected = 91
@@ -131,7 +133,8 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 
 		cmd := buffer.Byte(1)
 		switch cmd {
-		case cmdTCPConnect:
+		case cmdTCPConnect, cmdTorResolve, cmdTorResolvePTR:
+			// We don't have a solution for Tor case now. Simply treat it as connect command.
 			request.Command = protocol.RequestCommandTCP
 		case cmdUDPPort:
 			if !s.config.UdpEnabled {
