@@ -15,7 +15,8 @@ message Config {
   repeated v2ray.core.common.net.Endpoint NameServers = 1;
 
   // Static hosts. Domain to IP.
-  map<string, v2ray.core.common.net.IPOrDomain> Hosts = 2;
+  // Deprecated. Use static_hosts.
+  map<string, v2ray.core.common.net.IPOrDomain> Hosts = 2 [deprecated = true];
 
   message ClientIP {
     // IPv4 address of the client. Must be 4 bytes.
@@ -26,4 +27,17 @@ message Config {
 
   // Client IP for EDNS client subnet.
   ClientIP client_ip = 3;
+
+  message HostMapping {
+    enum Type {
+      Full = 0;
+      SubDomain = 1;
+    }
+
+    Type type = 1;
+    string domain = 2;
+    repeated bytes ip = 3;
+  }
+
+  repeated HostMapping static_hosts = 4;
 }

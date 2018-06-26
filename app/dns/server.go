@@ -14,7 +14,7 @@ import (
 
 type Server struct {
 	sync.Mutex
-	hosts    map[string]net.IP
+	hosts    *StaticHosts
 	servers  []NameServer
 	clientIP *Config_ClientIP
 }
@@ -22,11 +22,16 @@ type Server struct {
 func New(ctx context.Context, config *Config) (*Server, error) {
 	server := &Server{
 		servers: make([]NameServer, len(config.NameServers)),
-		hosts:   config.GetInternalHosts(),
 	}
 	if config.ClientIp != nil {
 		server.clientIP = config.ClientIp
 	}
+
+	hosts, err := NewStaticHosts(config.StaticHosts, config.Hosts)
+	if err != nil {
+		return nil, newError("failed to create hosts").Base(err)
+	}
+	server.hosts = hosts
 
 	v := core.MustFromContext(ctx)
 	if err := v.RegisterFeature((*core.DNSClient)(nil), server); err != nil {
@@ -65,8 +70,8 @@ func (s *Server) Close() error {
 }
 
 func (s *Server) LookupIP(domain string) ([]net.IP, error) {
-	if ip, found := s.hosts[domain]; found {
-		return []net.IP{ip}, nil
+	if ip := s.hosts.LookupIP(domain); len(ip) > 0 {
+		return ip, nil
 	}
 
 	var lastErr error
