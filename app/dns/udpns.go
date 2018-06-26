@@ -16,6 +16,14 @@ import (
 	"v2ray.com/core/transport/internet/udp"
 )
 
+var (
+	multiQuestionDNS = map[net.Address]bool{
+		net.IPAddress([]byte{8, 8, 8, 8}): true,
+		net.IPAddress([]byte{8, 8, 4, 4}): true,
+		net.IPAddress([]byte{9, 9, 9, 9}): true,
+	}
+)
+
 type IPRecord struct {
 	IP     net.IP
 	Expire time.Time
