@@ -10,14 +10,12 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/task"
 )
 
 type Server struct {
 	sync.Mutex
 	hosts   map[string]net.IP
 	servers []NameServer
-	task    *task.Periodic
 }
 
 func New(ctx context.Context, config *Config) (*Server, error) {
@@ -53,12 +51,12 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 
 // Start implements common.Runnable.
 func (s *Server) Start() error {
-	return s.task.Start()
+	return nil
 }
 
 // Close implements common.Closable.
 func (s *Server) Close() error {
-	return s.task.Close()
+	return nil
 }
 
 func (s *Server) LookupIP(domain string) ([]net.IP, error) {
