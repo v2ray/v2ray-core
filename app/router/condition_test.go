@@ -20,46 +20,6 @@ import (
 	"v2ray.com/ext/sysio"
 )
 
-func TestSubDomainMatcher(t *testing.T) {
-	assert := With(t)
-
-	cases := []struct {
-		pattern string
-		input   string
-		output  bool
-	}{
-		{
-			pattern: "v2ray.com",
-			input:   "www.v2ray.com",
-			output:  true,
-		},
-		{
-			pattern: "v2ray.com",
-			input:   "v2ray.com",
-			output:  true,
-		},
-		{
-			pattern: "v2ray.com",
-			input:   "www.v3ray.com",
-			output:  false,
-		},
-		{
-			pattern: "v2ray.com",
-			input:   "2ray.com",
-			output:  false,
-		},
-		{
-			pattern: "v2ray.com",
-			input:   "xv2ray.com",
-			output:  false,
-		},
-	}
-	for _, test := range cases {
-		matcher := NewSubDomainMatcher(test.pattern)
-		assert(matcher.Apply(test.input) == test.output, IsTrue)
-	}
-}
-
 func TestRoutingRule(t *testing.T) {
 	assert := With(t)
 

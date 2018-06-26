@@ -2,13 +2,12 @@ package router
 
 import (
 	"context"
-	"regexp"
-	"strings"
 	"sync"
 	"time"
 
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/strmatcher"
 	"v2ray.com/core/proxy"
 )
 
@@ -73,44 +72,41 @@ type timedResult struct {
 
 type CachableDomainMatcher struct {
 	sync.Mutex
-	matchers []domainMatcher
+	matchers *strmatcher.MatcherGroup
 	cache    map[string]timedResult
 	lastScan time.Time
 }
 
 func NewCachableDomainMatcher() *CachableDomainMatcher {
 	return &CachableDomainMatcher{
-		matchers: make([]domainMatcher, 0, 64),
+		matchers: strmatcher.NewMatcherGroup(),
 		cache:    make(map[string]timedResult, 512),
 	}
 }
 
+var matcherTypeMap = map[Domain_Type]strmatcher.Type{
+	Domain_Plain:  strmatcher.Substr,
+	Domain_Regex:  strmatcher.Regex,
+	Domain_Domain: strmatcher.Domain,
+}
+
 func (m *CachableDomainMatcher) Add(domain *Domain) error {
-	switch domain.Type {
-	case Domain_Plain:
-		m.matchers = append(m.matchers, NewPlainDomainMatcher(domain.Value))
-	case Domain_Regex:
-		rm, err := NewRegexpDomainMatcher(domain.Value)
-		if err != nil {
-			return err
-		}
-		m.matchers = append(m.matchers, rm)
-	case Domain_Domain:
-		m.matchers = append(m.matchers, NewSubDomainMatcher(domain.Value))
-	default:
-		return newError("unknown domain type: ", domain.Type).AtWarning()
+	matcherType, f := matcherTypeMap[domain.Type]
+	if !f {
+		return newError("unsupported domain type", domain.Type)
 	}
+
+	matcher, err := matcherType.New(domain.Value)
+	if err != nil {
+		return newError("failed to create domain matcher").Base(err)
+	}
+
+	m.matchers.Add(matcher)
 	return nil
 }
 
 func (m *CachableDomainMatcher) applyInternal(domain string) bool {
-	for _, matcher := range m.matchers {
-		if matcher.Apply(domain) {
-			return true
-		}
-	}
-
-	return false
+	return m.matchers.Match(domain) > 0
 }
 
 type cacheResult int
@@ -139,7 +135,7 @@ func (m *CachableDomainMatcher) findInCache(domain string) cacheResult {
 }
 
 func (m *CachableDomainMatcher) ApplyDomain(domain string) bool {
-	if len(m.matchers) < 64 {
+	if m.matchers.Size() < 64 {
 		return m.applyInternal(domain)
 	}
 
@@ -188,52 +184,6 @@ func (m *CachableDomainMatcher) Apply(ctx context.Context) bool {
 		return false
 	}
 	return m.ApplyDomain(dest.Address.Domain())
-}
-
-type domainMatcher interface {
-	Apply(domain string) bool
-}
-
-type PlainDomainMatcher string
-
-func NewPlainDomainMatcher(pattern string) PlainDomainMatcher {
-	return PlainDomainMatcher(pattern)
-}
-
-func (v PlainDomainMatcher) Apply(domain string) bool {
-	return strings.Contains(domain, string(v))
-}
-
-type RegexpDomainMatcher struct {
-	pattern *regexp.Regexp
-}
-
-func NewRegexpDomainMatcher(pattern string) (*RegexpDomainMatcher, error) {
-	r, err := regexp.Compile(pattern)
-	if err != nil {
-		return nil, err
-	}
-	return &RegexpDomainMatcher{
-		pattern: r,
-	}, nil
-}
-
-func (v *RegexpDomainMatcher) Apply(domain string) bool {
-	return v.pattern.MatchString(strings.ToLower(domain))
-}
-
-type SubDomainMatcher string
-
-func NewSubDomainMatcher(p string) SubDomainMatcher {
-	return SubDomainMatcher(p)
-}
-
-func (m SubDomainMatcher) Apply(domain string) bool {
-	pattern := string(m)
-	if !strings.HasSuffix(domain, pattern) {
-		return false
-	}
-	return len(domain) == len(pattern) || domain[len(domain)-len(pattern)-1] == '.'
 }
 
 type CIDRMatcher struct {
