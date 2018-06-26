@@ -16,15 +16,18 @@ type Server struct {
 	sync.Mutex
 	hosts    *StaticHosts
 	servers  []NameServer
-	clientIP *Config_ClientIP
+	clientIP net.IP
 }
 
 func New(ctx context.Context, config *Config) (*Server, error) {
 	server := &Server{
 		servers: make([]NameServer, len(config.NameServers)),
 	}
-	if config.ClientIp != nil {
-		server.clientIP = config.ClientIp
+	if len(config.ClientIp) > 0 {
+		if len(config.ClientIp) != 4 && len(config.ClientIp) != 16 {
+			return nil, newError("unexpected IP length", len(config.ClientIp))
+		}
+		server.clientIP = net.IP(config.ClientIp)
 	}
 
 	hosts, err := NewStaticHosts(config.StaticHosts, config.Hosts)

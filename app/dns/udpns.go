@@ -37,10 +37,10 @@ type ClassicNameServer struct {
 	udpServer *udp.Dispatcher
 	cleanup   *task.Periodic
 	reqID     uint32
-	clientIP  *Config_ClientIP
+	clientIP  net.IP
 }
 
-func NewClassicNameServer(address net.Destination, dispatcher core.Dispatcher, clientIP *Config_ClientIP) *ClassicNameServer {
+func NewClassicNameServer(address net.Destination, dispatcher core.Dispatcher, clientIP net.IP) *ClassicNameServer {
 	s := &ClassicNameServer{
 		address:   address,
 		ips:       make(map[string][]IPRecord),
@@ -137,7 +137,7 @@ func (s *ClassicNameServer) updateIP(domain string, ips []IPRecord) {
 }
 
 func (s *ClassicNameServer) getMsgOptions() *dns.OPT {
-	if s.clientIP == nil {
+	if len(s.clientIP) == 0 {
 		return nil
 	}
 
@@ -146,25 +146,18 @@ func (s *ClassicNameServer) getMsgOptions() *dns.OPT {
 	o.Hdr.Rrtype = dns.TypeOPT
 	o.SetUDPSize(1280)
 
-	if len(s.clientIP.V4) == 4 {
-		e := new(dns.EDNS0_SUBNET)
-		e.Code = dns.EDNS0SUBNET
-		e.Family = 1         // 1 for IPv4 source address, 2 for IPv6
-		e.SourceNetmask = 24 // 32 for IPV4, 128 for IPv6
-		e.SourceScope = 0
-		e.Address = net.IP(s.clientIP.V4)
-		o.Option = append(o.Option, e)
+	e := new(dns.EDNS0_SUBNET)
+	e.Code = dns.EDNS0SUBNET
+	if len(s.clientIP) == 4 {
+		e.Family = 1 // 1 for IPv4 source address, 2 for IPv6
+	} else {
+		e.Family = 2
 	}
 
-	if len(s.clientIP.V6) == 16 {
-		e := new(dns.EDNS0_SUBNET)
-		e.Code = dns.EDNS0SUBNET
-		e.Family = 2         // 1 for IPv4 source address, 2 for IPv6
-		e.SourceNetmask = 24 // 32 for IPV4, 128 for IPv6
-		e.SourceScope = 0
-		e.Address = net.IP(s.clientIP.V6)
-		o.Option = append(o.Option, e)
-	}
+	e.SourceNetmask = 24 // 32 for IPV4, 128 for IPv6
+	e.SourceScope = 0
+	e.Address = s.clientIP
+	o.Option = append(o.Option, e)
 
 	return o
 

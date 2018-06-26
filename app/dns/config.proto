@@ -18,15 +18,8 @@ message Config {
   // Deprecated. Use static_hosts.
   map<string, v2ray.core.common.net.IPOrDomain> Hosts = 2 [deprecated = true];
 
-  message ClientIP {
-    // IPv4 address of the client. Must be 4 bytes.
-    bytes v4 = 1;
-    // IPv6 address of the client. Must be 4 bytes.
-    bytes v6 = 2;
-  }
-
-  // Client IP for EDNS client subnet.
-  ClientIP client_ip = 3;
+  // Client IP for EDNS client subnet. Must be 4 bytes (IPv4) or 16 bytes (IPv6). 
+  bytes client_ip = 3;
 
   message HostMapping {
     enum Type {
