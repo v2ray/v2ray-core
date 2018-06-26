@@ -144,6 +144,7 @@ func (s *ClassicNameServer) getMsgOptions() *dns.OPT {
 	o := new(dns.OPT)
 	o.Hdr.Name = "."
 	o.Hdr.Rrtype = dns.TypeOPT
+	o.SetUDPSize(1280)
 
 	if len(s.clientIP.V4) == 4 {
 		e := new(dns.EDNS0_SUBNET)
