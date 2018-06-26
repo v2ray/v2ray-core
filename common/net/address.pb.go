@@ -58,7 +58,7 @@ type IPOrDomain_Ip struct {
 	Ip []byte `protobuf:"bytes,1,opt,name=ip,proto3,oneof"`
 }
 type IPOrDomain_Domain struct {
-	Domain string `protobuf:"bytes,2,opt,name=domain,oneof"`
+	Domain string `protobuf:"bytes,2,opt,name=domain,proto3,oneof"`
 }
 
 func (*IPOrDomain_Ip) isIPOrDomain_Address()     {}

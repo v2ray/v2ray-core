@@ -18,7 +18,7 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 // TypedMessage is a serialized proto message along with its type name.
 type TypedMessage struct {
 	// The name of the message type, retrieved from protobuf API.
-	Type string `protobuf:"bytes,1,opt,name=type" json:"type,omitempty"`
+	Type string `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
 	// Serialized proto message.
 	Value                []byte   `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`

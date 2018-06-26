@@ -17,12 +17,12 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Config struct {
-	Address              *net.IPOrDomain  `protobuf:"bytes,1,opt,name=address" json:"address,omitempty"`
-	Port                 uint32           `protobuf:"varint,2,opt,name=port" json:"port,omitempty"`
-	NetworkList          *net.NetworkList `protobuf:"bytes,3,opt,name=network_list,json=networkList" json:"network_list,omitempty"`
-	Timeout              uint32           `protobuf:"varint,4,opt,name=timeout" json:"timeout,omitempty"` // Deprecated: Do not use.
-	FollowRedirect       bool             `protobuf:"varint,5,opt,name=follow_redirect,json=followRedirect" json:"follow_redirect,omitempty"`
-	UserLevel            uint32           `protobuf:"varint,6,opt,name=user_level,json=userLevel" json:"user_level,omitempty"`
+	Address              *net.IPOrDomain  `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	Port                 uint32           `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
+	NetworkList          *net.NetworkList `protobuf:"bytes,3,opt,name=network_list,json=networkList,proto3" json:"network_list,omitempty"`
+	Timeout              uint32           `protobuf:"varint,4,opt,name=timeout,proto3" json:"timeout,omitempty"` // Deprecated: Do not use.
+	FollowRedirect       bool             `protobuf:"varint,5,opt,name=follow_redirect,json=followRedirect,proto3" json:"follow_redirect,omitempty"`
+	UserLevel            uint32           `protobuf:"varint,6,opt,name=user_level,json=userLevel,proto3" json:"user_level,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`
 	XXX_sizecache        int32            `json:"-"`

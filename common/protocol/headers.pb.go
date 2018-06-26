@@ -51,7 +51,7 @@ func (SecurityType) EnumDescriptor() ([]byte, []int) {
 }
 
 type SecurityConfig struct {
-	Type                 SecurityType `protobuf:"varint,1,opt,name=type,enum=v2ray.core.common.protocol.SecurityType" json:"type,omitempty"`
+	Type                 SecurityType `protobuf:"varint,1,opt,name=type,proto3,enum=v2ray.core.common.protocol.SecurityType" json:"type,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
 	XXX_unrecognized     []byte       `json:"-"`
 	XXX_sizecache        int32        `json:"-"`

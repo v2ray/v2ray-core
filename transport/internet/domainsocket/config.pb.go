@@ -17,10 +17,10 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Config struct {
 	// Path of the domain socket. This overrides the IP/Port parameter from upstream caller.
-	Path string `protobuf:"bytes,1,opt,name=path" json:"path,omitempty"`
+	Path string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
 	// Abstract speicifies whether to use abstract namespace or not.
 	// Traditionally Unix domain socket is file system based. Abstract domain socket can be used without acquiring file lock.
-	Abstract             bool     `protobuf:"varint,2,opt,name=abstract" json:"abstract,omitempty"`
+	Abstract             bool     `protobuf:"varint,2,opt,name=abstract,proto3" json:"abstract,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

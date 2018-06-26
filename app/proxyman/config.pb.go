@@ -101,13 +101,13 @@ func (m *InboundConfig) XXX_DiscardUnknown() {
 var xxx_messageInfo_InboundConfig proto.InternalMessageInfo
 
 type AllocationStrategy struct {
-	Type AllocationStrategy_Type `protobuf:"varint,1,opt,name=type,enum=v2ray.core.app.proxyman.AllocationStrategy_Type" json:"type,omitempty"`
+	Type AllocationStrategy_Type `protobuf:"varint,1,opt,name=type,proto3,enum=v2ray.core.app.proxyman.AllocationStrategy_Type" json:"type,omitempty"`
 	// Number of handlers (ports) running in parallel.
 	// Default value is 3 if unset.
-	Concurrency *AllocationStrategy_AllocationStrategyConcurrency `protobuf:"bytes,2,opt,name=concurrency" json:"concurrency,omitempty"`
+	Concurrency *AllocationStrategy_AllocationStrategyConcurrency `protobuf:"bytes,2,opt,name=concurrency,proto3" json:"concurrency,omitempty"`
 	// Number of minutes before a handler is regenerated.
 	// Default value is 5 if unset.
-	Refresh              *AllocationStrategy_AllocationStrategyRefresh `protobuf:"bytes,3,opt,name=refresh" json:"refresh,omitempty"`
+	Refresh              *AllocationStrategy_AllocationStrategyRefresh `protobuf:"bytes,3,opt,name=refresh,proto3" json:"refresh,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                                      `json:"-"`
 	XXX_unrecognized     []byte                                        `json:"-"`
 	XXX_sizecache        int32                                         `json:"-"`
@@ -159,7 +159,7 @@ func (m *AllocationStrategy) GetRefresh() *AllocationStrategy_AllocationStrategy
 }
 
 type AllocationStrategy_AllocationStrategyConcurrency struct {
-	Value                uint32   `protobuf:"varint,1,opt,name=value" json:"value,omitempty"`
+	Value                uint32   `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -201,7 +201,7 @@ func (m *AllocationStrategy_AllocationStrategyConcurrency) GetValue() uint32 {
 }
 
 type AllocationStrategy_AllocationStrategyRefresh struct {
-	Value                uint32   `protobuf:"varint,1,opt,name=value" json:"value,omitempty"`
+	Value                uint32   `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -244,13 +244,13 @@ func (m *AllocationStrategy_AllocationStrategyRefresh) GetValue() uint32 {
 
 type ReceiverConfig struct {
 	// PortRange specifies the ports which the Receiver should listen on.
-	PortRange *net.PortRange `protobuf:"bytes,1,opt,name=port_range,json=portRange" json:"port_range,omitempty"`
+	PortRange *net.PortRange `protobuf:"bytes,1,opt,name=port_range,json=portRange,proto3" json:"port_range,omitempty"`
 	// Listen specifies the IP address that the Receiver should listen on.
-	Listen                     *net.IPOrDomain        `protobuf:"bytes,2,opt,name=listen" json:"listen,omitempty"`
-	AllocationStrategy         *AllocationStrategy    `protobuf:"bytes,3,opt,name=allocation_strategy,json=allocationStrategy" json:"allocation_strategy,omitempty"`
-	StreamSettings             *internet.StreamConfig `protobuf:"bytes,4,opt,name=stream_settings,json=streamSettings" json:"stream_settings,omitempty"`
-	ReceiveOriginalDestination bool                   `protobuf:"varint,5,opt,name=receive_original_destination,json=receiveOriginalDestination" json:"receive_original_destination,omitempty"`
-	DomainOverride             []KnownProtocols       `protobuf:"varint,7,rep,packed,name=domain_override,json=domainOverride,enum=v2ray.core.app.proxyman.KnownProtocols" json:"domain_override,omitempty"`
+	Listen                     *net.IPOrDomain        `protobuf:"bytes,2,opt,name=listen,proto3" json:"listen,omitempty"`
+	AllocationStrategy         *AllocationStrategy    `protobuf:"bytes,3,opt,name=allocation_strategy,json=allocationStrategy,proto3" json:"allocation_strategy,omitempty"`
+	StreamSettings             *internet.StreamConfig `protobuf:"bytes,4,opt,name=stream_settings,json=streamSettings,proto3" json:"stream_settings,omitempty"`
+	ReceiveOriginalDestination bool                   `protobuf:"varint,5,opt,name=receive_original_destination,json=receiveOriginalDestination,proto3" json:"receive_original_destination,omitempty"`
+	DomainOverride             []KnownProtocols       `protobuf:"varint,7,rep,packed,name=domain_override,json=domainOverride,proto3,enum=v2ray.core.app.proxyman.KnownProtocols" json:"domain_override,omitempty"`
 	XXX_NoUnkeyedLiteral       struct{}               `json:"-"`
 	XXX_unrecognized           []byte                 `json:"-"`
 	XXX_sizecache              int32                  `json:"-"`
@@ -323,9 +323,9 @@ func (m *ReceiverConfig) GetDomainOverride() []KnownProtocols {
 }
 
 type InboundHandlerConfig struct {
-	Tag                  string               `protobuf:"bytes,1,opt,name=tag" json:"tag,omitempty"`
-	ReceiverSettings     *serial.TypedMessage `protobuf:"bytes,2,opt,name=receiver_settings,json=receiverSettings" json:"receiver_settings,omitempty"`
-	ProxySettings        *serial.TypedMessage `protobuf:"bytes,3,opt,name=proxy_settings,json=proxySettings" json:"proxy_settings,omitempty"`
+	Tag                  string               `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
+	ReceiverSettings     *serial.TypedMessage `protobuf:"bytes,2,opt,name=receiver_settings,json=receiverSettings,proto3" json:"receiver_settings,omitempty"`
+	ProxySettings        *serial.TypedMessage `protobuf:"bytes,3,opt,name=proxy_settings,json=proxySettings,proto3" json:"proxy_settings,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
 	XXX_unrecognized     []byte               `json:"-"`
 	XXX_sizecache        int32                `json:"-"`
@@ -408,10 +408,10 @@ var xxx_messageInfo_OutboundConfig proto.InternalMessageInfo
 
 type SenderConfig struct {
 	// Send traffic through the given IP. Only IP is allowed.
-	Via                  *net.IPOrDomain        `protobuf:"bytes,1,opt,name=via" json:"via,omitempty"`
-	StreamSettings       *internet.StreamConfig `protobuf:"bytes,2,opt,name=stream_settings,json=streamSettings" json:"stream_settings,omitempty"`
-	ProxySettings        *internet.ProxyConfig  `protobuf:"bytes,3,opt,name=proxy_settings,json=proxySettings" json:"proxy_settings,omitempty"`
-	MultiplexSettings    *MultiplexingConfig    `protobuf:"bytes,4,opt,name=multiplex_settings,json=multiplexSettings" json:"multiplex_settings,omitempty"`
+	Via                  *net.IPOrDomain        `protobuf:"bytes,1,opt,name=via,proto3" json:"via,omitempty"`
+	StreamSettings       *internet.StreamConfig `protobuf:"bytes,2,opt,name=stream_settings,json=streamSettings,proto3" json:"stream_settings,omitempty"`
+	ProxySettings        *internet.ProxyConfig  `protobuf:"bytes,3,opt,name=proxy_settings,json=proxySettings,proto3" json:"proxy_settings,omitempty"`
+	MultiplexSettings    *MultiplexingConfig    `protobuf:"bytes,4,opt,name=multiplex_settings,json=multiplexSettings,proto3" json:"multiplex_settings,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
 	XXX_unrecognized     []byte                 `json:"-"`
 	XXX_sizecache        int32                  `json:"-"`
@@ -471,9 +471,9 @@ func (m *SenderConfig) GetMultiplexSettings() *MultiplexingConfig {
 
 type MultiplexingConfig struct {
 	// Whether or not Mux is enabled.
-	Enabled bool `protobuf:"varint,1,opt,name=enabled" json:"enabled,omitempty"`
+	Enabled bool `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	// Max number of concurrent connections that one Mux connection can handle.
-	Concurrency          uint32   `protobuf:"varint,2,opt,name=concurrency" json:"concurrency,omitempty"`
+	Concurrency          uint32   `protobuf:"varint,2,opt,name=concurrency,proto3" json:"concurrency,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

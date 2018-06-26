@@ -16,8 +16,8 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Header struct {
-	Key                  string   `protobuf:"bytes,1,opt,name=key" json:"key,omitempty"`
-	Value                string   `protobuf:"bytes,2,opt,name=value" json:"value,omitempty"`
+	Key                  string   `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Value                string   `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -63,8 +63,8 @@ func (m *Header) GetValue() string {
 
 type Config struct {
 	// URL path to the WebSocket service. Empty value means root(/).
-	Path                 string    `protobuf:"bytes,2,opt,name=path" json:"path,omitempty"`
-	Header               []*Header `protobuf:"bytes,3,rep,name=header" json:"header,omitempty"`
+	Path                 string    `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
+	Header               []*Header `protobuf:"bytes,3,rep,name=header,proto3" json:"header,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
 	XXX_unrecognized     []byte    `json:"-"`
 	XXX_sizecache        int32     `json:"-"`

@@ -16,8 +16,8 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Config struct {
-	Host                 []string `protobuf:"bytes,1,rep,name=host" json:"host,omitempty"`
-	Path                 string   `protobuf:"bytes,2,opt,name=path" json:"path,omitempty"`
+	Host                 []string `protobuf:"bytes,1,rep,name=host,proto3" json:"host,omitempty"`
+	Path                 string   `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

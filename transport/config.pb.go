@@ -18,7 +18,7 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 // Global transport settings. This affects all type of connections that go through V2Ray.
 type Config struct {
-	TransportSettings    []*internet.TransportConfig `protobuf:"bytes,1,rep,name=transport_settings,json=transportSettings" json:"transport_settings,omitempty"`
+	TransportSettings    []*internet.TransportConfig `protobuf:"bytes,1,rep,name=transport_settings,json=transportSettings,proto3" json:"transport_settings,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                    `json:"-"`
 	XXX_unrecognized     []byte                      `json:"-"`
 	XXX_sizecache        int32                       `json:"-"`

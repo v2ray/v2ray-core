@@ -46,7 +46,7 @@ func (m *SessionConfig) XXX_DiscardUnknown() {
 var xxx_messageInfo_SessionConfig proto.InternalMessageInfo
 
 type Config struct {
-	Settings             *SessionConfig `protobuf:"bytes,1,opt,name=settings" json:"settings,omitempty"`
+	Settings             *SessionConfig `protobuf:"bytes,1,opt,name=settings,proto3" json:"settings,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
 	XXX_sizecache        int32          `json:"-"`

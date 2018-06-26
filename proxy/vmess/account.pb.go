@@ -18,11 +18,11 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Account struct {
 	// ID of the account, in the form of a UUID, e.g., "66ad4540-b58c-4ad2-9926-ea63445a9b57".
-	Id string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// Number of alternative IDs. Client and server must share the same number.
-	AlterId uint32 `protobuf:"varint,2,opt,name=alter_id,json=alterId" json:"alter_id,omitempty"`
+	AlterId uint32 `protobuf:"varint,2,opt,name=alter_id,json=alterId,proto3" json:"alter_id,omitempty"`
 	// Security settings. Only applies to client side.
-	SecuritySettings     *protocol.SecurityConfig `protobuf:"bytes,3,opt,name=security_settings,json=securitySettings" json:"security_settings,omitempty"`
+	SecuritySettings     *protocol.SecurityConfig `protobuf:"bytes,3,opt,name=security_settings,json=securitySettings,proto3" json:"security_settings,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
 	XXX_unrecognized     []byte                   `json:"-"`
 	XXX_sizecache        int32                    `json:"-"`

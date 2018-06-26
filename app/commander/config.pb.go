@@ -19,9 +19,9 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 // Config is the settings for Commander.
 type Config struct {
 	// Tag of the outbound handler that handles grpc connections.
-	Tag string `protobuf:"bytes,1,opt,name=tag" json:"tag,omitempty"`
+	Tag string `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
 	// Services that supported by this server. All services must implement Service interface.
-	Service              []*serial.TypedMessage `protobuf:"bytes,2,rep,name=service" json:"service,omitempty"`
+	Service              []*serial.TypedMessage `protobuf:"bytes,2,rep,name=service,proto3" json:"service,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
 	XXX_unrecognized     []byte                 `json:"-"`
 	XXX_sizecache        int32                  `json:"-"`

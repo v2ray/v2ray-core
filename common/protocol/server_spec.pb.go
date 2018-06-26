@@ -17,9 +17,9 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type ServerEndpoint struct {
-	Address              *net.IPOrDomain `protobuf:"bytes,1,opt,name=address" json:"address,omitempty"`
-	Port                 uint32          `protobuf:"varint,2,opt,name=port" json:"port,omitempty"`
-	User                 []*User         `protobuf:"bytes,3,rep,name=user" json:"user,omitempty"`
+	Address              *net.IPOrDomain `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	Port                 uint32          `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
+	User                 []*User         `protobuf:"bytes,3,rep,name=user,proto3" json:"user,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
 	XXX_sizecache        int32           `json:"-"`

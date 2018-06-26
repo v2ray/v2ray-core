@@ -17,10 +17,10 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 // Config for HTTP proxy server.
 type ServerConfig struct {
-	Timeout              uint32            `protobuf:"varint,1,opt,name=timeout" json:"timeout,omitempty"` // Deprecated: Do not use.
-	Accounts             map[string]string `protobuf:"bytes,2,rep,name=accounts" json:"accounts,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	AllowTransparent     bool              `protobuf:"varint,3,opt,name=allow_transparent,json=allowTransparent" json:"allow_transparent,omitempty"`
-	UserLevel            uint32            `protobuf:"varint,4,opt,name=user_level,json=userLevel" json:"user_level,omitempty"`
+	Timeout              uint32            `protobuf:"varint,1,opt,name=timeout,proto3" json:"timeout,omitempty"` // Deprecated: Do not use.
+	Accounts             map[string]string `protobuf:"bytes,2,rep,name=accounts,proto3" json:"accounts,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	AllowTransparent     bool              `protobuf:"varint,3,opt,name=allow_transparent,json=allowTransparent,proto3" json:"allow_transparent,omitempty"`
+	UserLevel            uint32            `protobuf:"varint,4,opt,name=user_level,json=userLevel,proto3" json:"user_level,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`

@@ -46,7 +46,7 @@ type Certificate struct {
 	Certificate []byte `protobuf:"bytes,1,opt,name=Certificate,proto3" json:"Certificate,omitempty"`
 	// TLS key in x509 format.
 	Key                  []byte            `protobuf:"bytes,2,opt,name=Key,proto3" json:"Key,omitempty"`
-	Usage                Certificate_Usage `protobuf:"varint,3,opt,name=usage,enum=v2ray.core.transport.internet.tls.Certificate_Usage" json:"usage,omitempty"`
+	Usage                Certificate_Usage `protobuf:"varint,3,opt,name=usage,proto3,enum=v2ray.core.transport.internet.tls.Certificate_Usage" json:"usage,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
@@ -99,15 +99,15 @@ func (m *Certificate) GetUsage() Certificate_Usage {
 
 type Config struct {
 	// Whether or not to allow self-signed certificates.
-	AllowInsecure bool `protobuf:"varint,1,opt,name=allow_insecure,json=allowInsecure" json:"allow_insecure,omitempty"`
+	AllowInsecure bool `protobuf:"varint,1,opt,name=allow_insecure,json=allowInsecure,proto3" json:"allow_insecure,omitempty"`
 	// Whether or not to allow insecure cipher suites.
-	AllowInsecureCiphers bool `protobuf:"varint,5,opt,name=allow_insecure_ciphers,json=allowInsecureCiphers" json:"allow_insecure_ciphers,omitempty"`
+	AllowInsecureCiphers bool `protobuf:"varint,5,opt,name=allow_insecure_ciphers,json=allowInsecureCiphers,proto3" json:"allow_insecure_ciphers,omitempty"`
 	// List of certificates to be served on server.
-	Certificate []*Certificate `protobuf:"bytes,2,rep,name=certificate" json:"certificate,omitempty"`
+	Certificate []*Certificate `protobuf:"bytes,2,rep,name=certificate,proto3" json:"certificate,omitempty"`
 	// Override server name.
-	ServerName string `protobuf:"bytes,3,opt,name=server_name,json=serverName" json:"server_name,omitempty"`
+	ServerName string `protobuf:"bytes,3,opt,name=server_name,json=serverName,proto3" json:"server_name,omitempty"`
 	// Lists of string as ALPN values.
-	NextProtocol         []string `protobuf:"bytes,4,rep,name=next_protocol,json=nextProtocol" json:"next_protocol,omitempty"`
+	NextProtocol         []string `protobuf:"bytes,4,rep,name=next_protocol,json=nextProtocol,proto3" json:"next_protocol,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

@@ -41,8 +41,8 @@ func (AuthType) EnumDescriptor() ([]byte, []int) {
 }
 
 type Account struct {
-	Username             string   `protobuf:"bytes,1,opt,name=username" json:"username,omitempty"`
-	Password             string   `protobuf:"bytes,2,opt,name=password" json:"password,omitempty"`
+	Username             string   `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	Password             string   `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -87,12 +87,12 @@ func (m *Account) GetPassword() string {
 }
 
 type ServerConfig struct {
-	AuthType             AuthType          `protobuf:"varint,1,opt,name=auth_type,json=authType,enum=v2ray.core.proxy.socks.AuthType" json:"auth_type,omitempty"`
-	Accounts             map[string]string `protobuf:"bytes,2,rep,name=accounts" json:"accounts,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Address              *net.IPOrDomain   `protobuf:"bytes,3,opt,name=address" json:"address,omitempty"`
-	UdpEnabled           bool              `protobuf:"varint,4,opt,name=udp_enabled,json=udpEnabled" json:"udp_enabled,omitempty"`
-	Timeout              uint32            `protobuf:"varint,5,opt,name=timeout" json:"timeout,omitempty"` // Deprecated: Do not use.
-	UserLevel            uint32            `protobuf:"varint,6,opt,name=user_level,json=userLevel" json:"user_level,omitempty"`
+	AuthType             AuthType          `protobuf:"varint,1,opt,name=auth_type,json=authType,proto3,enum=v2ray.core.proxy.socks.AuthType" json:"auth_type,omitempty"`
+	Accounts             map[string]string `protobuf:"bytes,2,rep,name=accounts,proto3" json:"accounts,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Address              *net.IPOrDomain   `protobuf:"bytes,3,opt,name=address,proto3" json:"address,omitempty"`
+	UdpEnabled           bool              `protobuf:"varint,4,opt,name=udp_enabled,json=udpEnabled,proto3" json:"udp_enabled,omitempty"`
+	Timeout              uint32            `protobuf:"varint,5,opt,name=timeout,proto3" json:"timeout,omitempty"` // Deprecated: Do not use.
+	UserLevel            uint32            `protobuf:"varint,6,opt,name=user_level,json=userLevel,proto3" json:"user_level,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
@@ -166,7 +166,7 @@ func (m *ServerConfig) GetUserLevel() uint32 {
 }
 
 type ClientConfig struct {
-	Server               []*protocol.ServerEndpoint `protobuf:"bytes,1,rep,name=server" json:"server,omitempty"`
+	Server               []*protocol.ServerEndpoint `protobuf:"bytes,1,rep,name=server,proto3" json:"server,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
 	XXX_unrecognized     []byte                     `json:"-"`
 	XXX_sizecache        int32                      `json:"-"`

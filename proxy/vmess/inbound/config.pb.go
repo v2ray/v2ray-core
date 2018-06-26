@@ -17,7 +17,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type DetourConfig struct {
-	To                   string   `protobuf:"bytes,1,opt,name=to" json:"to,omitempty"`
+	To                   string   `protobuf:"bytes,1,opt,name=to,proto3" json:"to,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -55,8 +55,8 @@ func (m *DetourConfig) GetTo() string {
 }
 
 type DefaultConfig struct {
-	AlterId              uint32   `protobuf:"varint,1,opt,name=alter_id,json=alterId" json:"alter_id,omitempty"`
-	Level                uint32   `protobuf:"varint,2,opt,name=level" json:"level,omitempty"`
+	AlterId              uint32   `protobuf:"varint,1,opt,name=alter_id,json=alterId,proto3" json:"alter_id,omitempty"`
+	Level                uint32   `protobuf:"varint,2,opt,name=level,proto3" json:"level,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -101,10 +101,10 @@ func (m *DefaultConfig) GetLevel() uint32 {
 }
 
 type Config struct {
-	User                 []*protocol.User `protobuf:"bytes,1,rep,name=user" json:"user,omitempty"`
-	Default              *DefaultConfig   `protobuf:"bytes,2,opt,name=default" json:"default,omitempty"`
-	Detour               *DetourConfig    `protobuf:"bytes,3,opt,name=detour" json:"detour,omitempty"`
-	SecureEncryptionOnly bool             `protobuf:"varint,4,opt,name=secure_encryption_only,json=secureEncryptionOnly" json:"secure_encryption_only,omitempty"`
+	User                 []*protocol.User `protobuf:"bytes,1,rep,name=user,proto3" json:"user,omitempty"`
+	Default              *DefaultConfig   `protobuf:"bytes,2,opt,name=default,proto3" json:"default,omitempty"`
+	Detour               *DetourConfig    `protobuf:"bytes,3,opt,name=detour,proto3" json:"detour,omitempty"`
+	SecureEncryptionOnly bool             `protobuf:"varint,4,opt,name=secure_encryption_only,json=secureEncryptionOnly,proto3" json:"secure_encryption_only,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`
 	XXX_sizecache        int32            `json:"-"`

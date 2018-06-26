@@ -53,9 +53,9 @@ func (TransportProtocol) EnumDescriptor() ([]byte, []int) {
 
 type TransportConfig struct {
 	// Type of network that this settings supports.
-	Protocol TransportProtocol `protobuf:"varint,1,opt,name=protocol,enum=v2ray.core.transport.internet.TransportProtocol" json:"protocol,omitempty"`
+	Protocol TransportProtocol `protobuf:"varint,1,opt,name=protocol,proto3,enum=v2ray.core.transport.internet.TransportProtocol" json:"protocol,omitempty"`
 	// Specific settings. Must be of the transports.
-	Settings             *serial.TypedMessage `protobuf:"bytes,2,opt,name=settings" json:"settings,omitempty"`
+	Settings             *serial.TypedMessage `protobuf:"bytes,2,opt,name=settings,proto3" json:"settings,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
 	XXX_unrecognized     []byte               `json:"-"`
 	XXX_sizecache        int32                `json:"-"`
@@ -101,12 +101,12 @@ func (m *TransportConfig) GetSettings() *serial.TypedMessage {
 
 type StreamConfig struct {
 	// Effective network.
-	Protocol          TransportProtocol  `protobuf:"varint,1,opt,name=protocol,enum=v2ray.core.transport.internet.TransportProtocol" json:"protocol,omitempty"`
-	TransportSettings []*TransportConfig `protobuf:"bytes,2,rep,name=transport_settings,json=transportSettings" json:"transport_settings,omitempty"`
+	Protocol          TransportProtocol  `protobuf:"varint,1,opt,name=protocol,proto3,enum=v2ray.core.transport.internet.TransportProtocol" json:"protocol,omitempty"`
+	TransportSettings []*TransportConfig `protobuf:"bytes,2,rep,name=transport_settings,json=transportSettings,proto3" json:"transport_settings,omitempty"`
 	// Type of security. Must be a message name of the settings proto.
-	SecurityType string `protobuf:"bytes,3,opt,name=security_type,json=securityType" json:"security_type,omitempty"`
+	SecurityType string `protobuf:"bytes,3,opt,name=security_type,json=securityType,proto3" json:"security_type,omitempty"`
 	// Settings for transport security. For now the only choice is TLS.
-	SecuritySettings     []*serial.TypedMessage `protobuf:"bytes,4,rep,name=security_settings,json=securitySettings" json:"security_settings,omitempty"`
+	SecuritySettings     []*serial.TypedMessage `protobuf:"bytes,4,rep,name=security_settings,json=securitySettings,proto3" json:"security_settings,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
 	XXX_unrecognized     []byte                 `json:"-"`
 	XXX_sizecache        int32                  `json:"-"`
@@ -165,7 +165,7 @@ func (m *StreamConfig) GetSecuritySettings() []*serial.TypedMessage {
 }
 
 type ProxyConfig struct {
-	Tag                  string   `protobuf:"bytes,1,opt,name=tag" json:"tag,omitempty"`
+	Tag                  string   `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

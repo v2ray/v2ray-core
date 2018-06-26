@@ -46,7 +46,7 @@ func (Network) EnumDescriptor() ([]byte, []int) {
 
 // NetworkList is a list of Networks.
 type NetworkList struct {
-	Network              []Network `protobuf:"varint,1,rep,packed,name=network,enum=v2ray.core.common.net.Network" json:"network,omitempty"`
+	Network              []Network `protobuf:"varint,1,rep,packed,name=network,proto3,enum=v2ray.core.common.net.Network" json:"network,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
 	XXX_unrecognized     []byte    `json:"-"`
 	XXX_sizecache        int32     `json:"-"`

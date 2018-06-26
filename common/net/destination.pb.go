@@ -17,9 +17,9 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 // Endpoint of a network connection.
 type Endpoint struct {
-	Network              Network     `protobuf:"varint,1,opt,name=network,enum=v2ray.core.common.net.Network" json:"network,omitempty"`
-	Address              *IPOrDomain `protobuf:"bytes,2,opt,name=address" json:"address,omitempty"`
-	Port                 uint32      `protobuf:"varint,3,opt,name=port" json:"port,omitempty"`
+	Network              Network     `protobuf:"varint,1,opt,name=network,proto3,enum=v2ray.core.common.net.Network" json:"network,omitempty"`
+	Address              *IPOrDomain `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"`
+	Port                 uint32      `protobuf:"varint,3,opt,name=port,proto3" json:"port,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`

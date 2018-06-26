@@ -18,8 +18,8 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type AlternativeOutboundConfig struct {
-	Settings             *serial.TypedMessage   `protobuf:"bytes,1,opt,name=settings" json:"settings,omitempty"`
-	StreamSettings       *internet.StreamConfig `protobuf:"bytes,3,opt,name=stream_settings,json=streamSettings" json:"stream_settings,omitempty"`
+	Settings             *serial.TypedMessage   `protobuf:"bytes,1,opt,name=settings,proto3" json:"settings,omitempty"`
+	StreamSettings       *internet.StreamConfig `protobuf:"bytes,3,opt,name=stream_settings,json=streamSettings,proto3" json:"stream_settings,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
 	XXX_unrecognized     []byte                 `json:"-"`
 	XXX_sizecache        int32                  `json:"-"`

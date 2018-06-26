@@ -77,7 +77,7 @@ func (m *HTTPResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_HTTPResponse proto.InternalMessageInfo
 
 type Config struct {
-	Response             *serial.TypedMessage `protobuf:"bytes,1,opt,name=response" json:"response,omitempty"`
+	Response             *serial.TypedMessage `protobuf:"bytes,1,opt,name=response,proto3" json:"response,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
 	XXX_unrecognized     []byte               `json:"-"`
 	XXX_sizecache        int32                `json:"-"`

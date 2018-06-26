@@ -16,12 +16,12 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Config struct {
-	Version              uint32   `protobuf:"varint,1,opt,name=version" json:"version,omitempty"`
-	Padding              bool     `protobuf:"varint,2,opt,name=padding" json:"padding,omitempty"`
-	Extension            bool     `protobuf:"varint,3,opt,name=extension" json:"extension,omitempty"`
-	CsrcCount            uint32   `protobuf:"varint,4,opt,name=csrc_count,json=csrcCount" json:"csrc_count,omitempty"`
-	Marker               bool     `protobuf:"varint,5,opt,name=marker" json:"marker,omitempty"`
-	PayloadType          uint32   `protobuf:"varint,6,opt,name=payload_type,json=payloadType" json:"payload_type,omitempty"`
+	Version              uint32   `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
+	Padding              bool     `protobuf:"varint,2,opt,name=padding,proto3" json:"padding,omitempty"`
+	Extension            bool     `protobuf:"varint,3,opt,name=extension,proto3" json:"extension,omitempty"`
+	CsrcCount            uint32   `protobuf:"varint,4,opt,name=csrc_count,json=csrcCount,proto3" json:"csrc_count,omitempty"`
+	Marker               bool     `protobuf:"varint,5,opt,name=marker,proto3" json:"marker,omitempty"`
+	PayloadType          uint32   `protobuf:"varint,6,opt,name=payload_type,json=payloadType,proto3" json:"payload_type,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

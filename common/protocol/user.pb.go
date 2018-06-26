@@ -18,10 +18,10 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 // User is a generic user for all procotols.
 type User struct {
-	Level uint32 `protobuf:"varint,1,opt,name=level" json:"level,omitempty"`
-	Email string `protobuf:"bytes,2,opt,name=email" json:"email,omitempty"`
+	Level uint32 `protobuf:"varint,1,opt,name=level,proto3" json:"level,omitempty"`
+	Email string `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
 	// Protocol specific account information. Must be the account proto in one of the proxies.
-	Account              *serial.TypedMessage `protobuf:"bytes,3,opt,name=account" json:"account,omitempty"`
+	Account              *serial.TypedMessage `protobuf:"bytes,3,opt,name=account,proto3" json:"account,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
 	XXX_unrecognized     []byte               `json:"-"`
 	XXX_sizecache        int32                `json:"-"`

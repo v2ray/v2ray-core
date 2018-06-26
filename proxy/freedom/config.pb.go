@@ -40,7 +40,7 @@ func (Config_DomainStrategy) EnumDescriptor() ([]byte, []int) {
 }
 
 type DestinationOverride struct {
-	Server               *protocol.ServerEndpoint `protobuf:"bytes,1,opt,name=server" json:"server,omitempty"`
+	Server               *protocol.ServerEndpoint `protobuf:"bytes,1,opt,name=server,proto3" json:"server,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
 	XXX_unrecognized     []byte                   `json:"-"`
 	XXX_sizecache        int32                    `json:"-"`
@@ -78,10 +78,10 @@ func (m *DestinationOverride) GetServer() *protocol.ServerEndpoint {
 }
 
 type Config struct {
-	DomainStrategy       Config_DomainStrategy `protobuf:"varint,1,opt,name=domain_strategy,json=domainStrategy,enum=v2ray.core.proxy.freedom.Config_DomainStrategy" json:"domain_strategy,omitempty"`
-	Timeout              uint32                `protobuf:"varint,2,opt,name=timeout" json:"timeout,omitempty"` // Deprecated: Do not use.
-	DestinationOverride  *DestinationOverride  `protobuf:"bytes,3,opt,name=destination_override,json=destinationOverride" json:"destination_override,omitempty"`
-	UserLevel            uint32                `protobuf:"varint,4,opt,name=user_level,json=userLevel" json:"user_level,omitempty"`
+	DomainStrategy       Config_DomainStrategy `protobuf:"varint,1,opt,name=domain_strategy,json=domainStrategy,proto3,enum=v2ray.core.proxy.freedom.Config_DomainStrategy" json:"domain_strategy,omitempty"`
+	Timeout              uint32                `protobuf:"varint,2,opt,name=timeout,proto3" json:"timeout,omitempty"` // Deprecated: Do not use.
+	DestinationOverride  *DestinationOverride  `protobuf:"bytes,3,opt,name=destination_override,json=destinationOverride,proto3" json:"destination_override,omitempty"`
+	UserLevel            uint32                `protobuf:"varint,4,opt,name=user_level,json=userLevel,proto3" json:"user_level,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`

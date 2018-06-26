@@ -82,9 +82,9 @@ func (Config_DomainStrategy) EnumDescriptor() ([]byte, []int) {
 // Domain for routing decision.
 type Domain struct {
 	// Domain matching type.
-	Type Domain_Type `protobuf:"varint,1,opt,name=type,enum=v2ray.core.app.router.Domain_Type" json:"type,omitempty"`
+	Type Domain_Type `protobuf:"varint,1,opt,name=type,proto3,enum=v2ray.core.app.router.Domain_Type" json:"type,omitempty"`
 	// Domain value.
-	Value                string   `protobuf:"bytes,2,opt,name=value" json:"value,omitempty"`
+	Value                string   `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -133,7 +133,7 @@ type CIDR struct {
 	// IP address, should be either 4 or 16 bytes.
 	Ip []byte `protobuf:"bytes,1,opt,name=ip,proto3" json:"ip,omitempty"`
 	// Number of leading ones in the network mask.
-	Prefix               uint32   `protobuf:"varint,2,opt,name=prefix" json:"prefix,omitempty"`
+	Prefix               uint32   `protobuf:"varint,2,opt,name=prefix,proto3" json:"prefix,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -178,8 +178,8 @@ func (m *CIDR) GetPrefix() uint32 {
 }
 
 type GeoIP struct {
-	CountryCode          string   `protobuf:"bytes,1,opt,name=country_code,json=countryCode" json:"country_code,omitempty"`
-	Cidr                 []*CIDR  `protobuf:"bytes,2,rep,name=cidr" json:"cidr,omitempty"`
+	CountryCode          string   `protobuf:"bytes,1,opt,name=country_code,json=countryCode,proto3" json:"country_code,omitempty"`
+	Cidr                 []*CIDR  `protobuf:"bytes,2,rep,name=cidr,proto3" json:"cidr,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -224,7 +224,7 @@ func (m *GeoIP) GetCidr() []*CIDR {
 }
 
 type GeoIPList struct {
-	Entry                []*GeoIP `protobuf:"bytes,1,rep,name=entry" json:"entry,omitempty"`
+	Entry                []*GeoIP `protobuf:"bytes,1,rep,name=entry,proto3" json:"entry,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -262,8 +262,8 @@ func (m *GeoIPList) GetEntry() []*GeoIP {
 }
 
 type GeoSite struct {
-	CountryCode          string    `protobuf:"bytes,1,opt,name=country_code,json=countryCode" json:"country_code,omitempty"`
-	Domain               []*Domain `protobuf:"bytes,2,rep,name=domain" json:"domain,omitempty"`
+	CountryCode          string    `protobuf:"bytes,1,opt,name=country_code,json=countryCode,proto3" json:"country_code,omitempty"`
+	Domain               []*Domain `protobuf:"bytes,2,rep,name=domain,proto3" json:"domain,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
 	XXX_unrecognized     []byte    `json:"-"`
 	XXX_sizecache        int32     `json:"-"`
@@ -308,7 +308,7 @@ func (m *GeoSite) GetDomain() []*Domain {
 }
 
 type GeoSiteList struct {
-	Entry                []*GeoSite `protobuf:"bytes,1,rep,name=entry" json:"entry,omitempty"`
+	Entry                []*GeoSite `protobuf:"bytes,1,rep,name=entry,proto3" json:"entry,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
 	XXX_unrecognized     []byte     `json:"-"`
 	XXX_sizecache        int32      `json:"-"`
@@ -346,14 +346,14 @@ func (m *GeoSiteList) GetEntry() []*GeoSite {
 }
 
 type RoutingRule struct {
-	Tag                  string           `protobuf:"bytes,1,opt,name=tag" json:"tag,omitempty"`
-	Domain               []*Domain        `protobuf:"bytes,2,rep,name=domain" json:"domain,omitempty"`
-	Cidr                 []*CIDR          `protobuf:"bytes,3,rep,name=cidr" json:"cidr,omitempty"`
-	PortRange            *net.PortRange   `protobuf:"bytes,4,opt,name=port_range,json=portRange" json:"port_range,omitempty"`
-	NetworkList          *net.NetworkList `protobuf:"bytes,5,opt,name=network_list,json=networkList" json:"network_list,omitempty"`
-	SourceCidr           []*CIDR          `protobuf:"bytes,6,rep,name=source_cidr,json=sourceCidr" json:"source_cidr,omitempty"`
-	UserEmail            []string         `protobuf:"bytes,7,rep,name=user_email,json=userEmail" json:"user_email,omitempty"`
-	InboundTag           []string         `protobuf:"bytes,8,rep,name=inbound_tag,json=inboundTag" json:"inbound_tag,omitempty"`
+	Tag                  string           `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
+	Domain               []*Domain        `protobuf:"bytes,2,rep,name=domain,proto3" json:"domain,omitempty"`
+	Cidr                 []*CIDR          `protobuf:"bytes,3,rep,name=cidr,proto3" json:"cidr,omitempty"`
+	PortRange            *net.PortRange   `protobuf:"bytes,4,opt,name=port_range,json=portRange,proto3" json:"port_range,omitempty"`
+	NetworkList          *net.NetworkList `protobuf:"bytes,5,opt,name=network_list,json=networkList,proto3" json:"network_list,omitempty"`
+	SourceCidr           []*CIDR          `protobuf:"bytes,6,rep,name=source_cidr,json=sourceCidr,proto3" json:"source_cidr,omitempty"`
+	UserEmail            []string         `protobuf:"bytes,7,rep,name=user_email,json=userEmail,proto3" json:"user_email,omitempty"`
+	InboundTag           []string         `protobuf:"bytes,8,rep,name=inbound_tag,json=inboundTag,proto3" json:"inbound_tag,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`
 	XXX_sizecache        int32            `json:"-"`
@@ -440,8 +440,8 @@ func (m *RoutingRule) GetInboundTag() []string {
 }
 
 type Config struct {
-	DomainStrategy       Config_DomainStrategy `protobuf:"varint,1,opt,name=domain_strategy,json=domainStrategy,enum=v2ray.core.app.router.Config_DomainStrategy" json:"domain_strategy,omitempty"`
-	Rule                 []*RoutingRule        `protobuf:"bytes,2,rep,name=rule" json:"rule,omitempty"`
+	DomainStrategy       Config_DomainStrategy `protobuf:"varint,1,opt,name=domain_strategy,json=domainStrategy,proto3,enum=v2ray.core.app.router.Config_DomainStrategy" json:"domain_strategy,omitempty"`
+	Rule                 []*RoutingRule        `protobuf:"bytes,2,rep,name=rule,proto3" json:"rule,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
 	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`

@@ -46,11 +46,11 @@ func (LogType) EnumDescriptor() ([]byte, []int) {
 }
 
 type Config struct {
-	ErrorLogType         LogType      `protobuf:"varint,1,opt,name=error_log_type,json=errorLogType,enum=v2ray.core.app.log.LogType" json:"error_log_type,omitempty"`
-	ErrorLogLevel        log.Severity `protobuf:"varint,2,opt,name=error_log_level,json=errorLogLevel,enum=v2ray.core.common.log.Severity" json:"error_log_level,omitempty"`
-	ErrorLogPath         string       `protobuf:"bytes,3,opt,name=error_log_path,json=errorLogPath" json:"error_log_path,omitempty"`
-	AccessLogType        LogType      `protobuf:"varint,4,opt,name=access_log_type,json=accessLogType,enum=v2ray.core.app.log.LogType" json:"access_log_type,omitempty"`
-	AccessLogPath        string       `protobuf:"bytes,5,opt,name=access_log_path,json=accessLogPath" json:"access_log_path,omitempty"`
+	ErrorLogType         LogType      `protobuf:"varint,1,opt,name=error_log_type,json=errorLogType,proto3,enum=v2ray.core.app.log.LogType" json:"error_log_type,omitempty"`
+	ErrorLogLevel        log.Severity `protobuf:"varint,2,opt,name=error_log_level,json=errorLogLevel,proto3,enum=v2ray.core.common.log.Severity" json:"error_log_level,omitempty"`
+	ErrorLogPath         string       `protobuf:"bytes,3,opt,name=error_log_path,json=errorLogPath,proto3" json:"error_log_path,omitempty"`
+	AccessLogType        LogType      `protobuf:"varint,4,opt,name=access_log_type,json=accessLogType,proto3,enum=v2ray.core.app.log.LogType" json:"access_log_type,omitempty"`
+	AccessLogPath        string       `protobuf:"bytes,5,opt,name=access_log_path,json=accessLogPath,proto3" json:"access_log_path,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
 	XXX_unrecognized     []byte       `json:"-"`
 	XXX_sizecache        int32        `json:"-"`

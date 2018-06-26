@@ -88,9 +88,9 @@ func (Account_OneTimeAuth) EnumDescriptor() ([]byte, []int) {
 }
 
 type Account struct {
-	Password             string              `protobuf:"bytes,1,opt,name=password" json:"password,omitempty"`
-	CipherType           CipherType          `protobuf:"varint,2,opt,name=cipher_type,json=cipherType,enum=v2ray.core.proxy.shadowsocks.CipherType" json:"cipher_type,omitempty"`
-	Ota                  Account_OneTimeAuth `protobuf:"varint,3,opt,name=ota,enum=v2ray.core.proxy.shadowsocks.Account_OneTimeAuth" json:"ota,omitempty"`
+	Password             string              `protobuf:"bytes,1,opt,name=password,proto3" json:"password,omitempty"`
+	CipherType           CipherType          `protobuf:"varint,2,opt,name=cipher_type,json=cipherType,proto3,enum=v2ray.core.proxy.shadowsocks.CipherType" json:"cipher_type,omitempty"`
+	Ota                  Account_OneTimeAuth `protobuf:"varint,3,opt,name=ota,proto3,enum=v2ray.core.proxy.shadowsocks.Account_OneTimeAuth" json:"ota,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
 	XXX_unrecognized     []byte              `json:"-"`
 	XXX_sizecache        int32               `json:"-"`
@@ -144,9 +144,9 @@ func (m *Account) GetOta() Account_OneTimeAuth {
 type ServerConfig struct {
 	// UdpEnabled specified whether or not to enable UDP for Shadowsocks.
 	// Deprecated. Use 'network' field.
-	UdpEnabled           bool           `protobuf:"varint,1,opt,name=udp_enabled,json=udpEnabled" json:"udp_enabled,omitempty"` // Deprecated: Do not use.
-	User                 *protocol.User `protobuf:"bytes,2,opt,name=user" json:"user,omitempty"`
-	Network              []net.Network  `protobuf:"varint,3,rep,packed,name=network,enum=v2ray.core.common.net.Network" json:"network,omitempty"`
+	UdpEnabled           bool           `protobuf:"varint,1,opt,name=udp_enabled,json=udpEnabled,proto3" json:"udp_enabled,omitempty"` // Deprecated: Do not use.
+	User                 *protocol.User `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"`
+	Network              []net.Network  `protobuf:"varint,3,rep,packed,name=network,proto3,enum=v2ray.core.common.net.Network" json:"network,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
 	XXX_sizecache        int32          `json:"-"`
@@ -199,7 +199,7 @@ func (m *ServerConfig) GetNetwork() []net.Network {
 }
 
 type ClientConfig struct {
-	Server               []*protocol.ServerEndpoint `protobuf:"bytes,1,rep,name=server" json:"server,omitempty"`
+	Server               []*protocol.ServerEndpoint `protobuf:"bytes,1,rep,name=server,proto3" json:"server,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
 	XXX_unrecognized     []byte                     `json:"-"`
 	XXX_sizecache        int32                      `json:"-"`

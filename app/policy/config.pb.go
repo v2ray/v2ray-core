@@ -16,7 +16,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Second struct {
-	Value                uint32   `protobuf:"varint,1,opt,name=value" json:"value,omitempty"`
+	Value                uint32   `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -54,9 +54,9 @@ func (m *Second) GetValue() uint32 {
 }
 
 type Policy struct {
-	Timeout              *Policy_Timeout `protobuf:"bytes,1,opt,name=timeout" json:"timeout,omitempty"`
-	Stats                *Policy_Stats   `protobuf:"bytes,2,opt,name=stats" json:"stats,omitempty"`
-	Buffer               *Policy_Buffer  `protobuf:"bytes,3,opt,name=buffer" json:"buffer,omitempty"`
+	Timeout              *Policy_Timeout `protobuf:"bytes,1,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	Stats                *Policy_Stats   `protobuf:"bytes,2,opt,name=stats,proto3" json:"stats,omitempty"`
+	Buffer               *Policy_Buffer  `protobuf:"bytes,3,opt,name=buffer,proto3" json:"buffer,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
 	XXX_sizecache        int32           `json:"-"`
@@ -109,10 +109,10 @@ func (m *Policy) GetBuffer() *Policy_Buffer {
 
 // Timeout is a message for timeout settings in various stages, in seconds.
 type Policy_Timeout struct {
-	Handshake            *Second  `protobuf:"bytes,1,opt,name=handshake" json:"handshake,omitempty"`
-	ConnectionIdle       *Second  `protobuf:"bytes,2,opt,name=connection_idle,json=connectionIdle" json:"connection_idle,omitempty"`
-	UplinkOnly           *Second  `protobuf:"bytes,3,opt,name=uplink_only,json=uplinkOnly" json:"uplink_only,omitempty"`
-	DownlinkOnly         *Second  `protobuf:"bytes,4,opt,name=downlink_only,json=downlinkOnly" json:"downlink_only,omitempty"`
+	Handshake            *Second  `protobuf:"bytes,1,opt,name=handshake,proto3" json:"handshake,omitempty"`
+	ConnectionIdle       *Second  `protobuf:"bytes,2,opt,name=connection_idle,json=connectionIdle,proto3" json:"connection_idle,omitempty"`
+	UplinkOnly           *Second  `protobuf:"bytes,3,opt,name=uplink_only,json=uplinkOnly,proto3" json:"uplink_only,omitempty"`
+	DownlinkOnly         *Second  `protobuf:"bytes,4,opt,name=downlink_only,json=downlinkOnly,proto3" json:"downlink_only,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -171,8 +171,8 @@ func (m *Policy_Timeout) GetDownlinkOnly() *Second {
 }
 
 type Policy_Stats struct {
-	UserUplink           bool     `protobuf:"varint,1,opt,name=user_uplink,json=userUplink" json:"user_uplink,omitempty"`
-	UserDownlink         bool     `protobuf:"varint,2,opt,name=user_downlink,json=userDownlink" json:"user_downlink,omitempty"`
+	UserUplink           bool     `protobuf:"varint,1,opt,name=user_uplink,json=userUplink,proto3" json:"user_uplink,omitempty"`
+	UserDownlink         bool     `protobuf:"varint,2,opt,name=user_downlink,json=userDownlink,proto3" json:"user_downlink,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -218,7 +218,7 @@ func (m *Policy_Stats) GetUserDownlink() bool {
 
 type Policy_Buffer struct {
 	// Buffer size per connection, in bytes. -1 for unlimited buffer.
-	Connection           int32    `protobuf:"varint,1,opt,name=connection" json:"connection,omitempty"`
+	Connection           int32    `protobuf:"varint,1,opt,name=connection,proto3" json:"connection,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -256,7 +256,7 @@ func (m *Policy_Buffer) GetConnection() int32 {
 }
 
 type SystemPolicy struct {
-	Stats                *SystemPolicy_Stats `protobuf:"bytes,1,opt,name=stats" json:"stats,omitempty"`
+	Stats                *SystemPolicy_Stats `protobuf:"bytes,1,opt,name=stats,proto3" json:"stats,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
 	XXX_unrecognized     []byte              `json:"-"`
 	XXX_sizecache        int32               `json:"-"`
@@ -294,8 +294,8 @@ func (m *SystemPolicy) GetStats() *SystemPolicy_Stats {
 }
 
 type SystemPolicy_Stats struct {
-	InboundUplink        bool     `protobuf:"varint,1,opt,name=inbound_uplink,json=inboundUplink" json:"inbound_uplink,omitempty"`
-	InboundDownlink      bool     `protobuf:"varint,2,opt,name=inbound_downlink,json=inboundDownlink" json:"inbound_downlink,omitempty"`
+	InboundUplink        bool     `protobuf:"varint,1,opt,name=inbound_uplink,json=inboundUplink,proto3" json:"inbound_uplink,omitempty"`
+	InboundDownlink      bool     `protobuf:"varint,2,opt,name=inbound_downlink,json=inboundDownlink,proto3" json:"inbound_downlink,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -340,8 +340,8 @@ func (m *SystemPolicy_Stats) GetInboundDownlink() bool {
 }
 
 type Config struct {
-	Level                map[uint32]*Policy `protobuf:"bytes,1,rep,name=level" json:"level,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	System               *SystemPolicy      `protobuf:"bytes,2,opt,name=system" json:"system,omitempty"`
+	Level                map[uint32]*Policy `protobuf:"bytes,1,rep,name=level,proto3" json:"level,omitempty" protobuf_key:"varint,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	System               *SystemPolicy      `protobuf:"bytes,2,opt,name=system,proto3" json:"system,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
 	XXX_sizecache        int32              `json:"-"`

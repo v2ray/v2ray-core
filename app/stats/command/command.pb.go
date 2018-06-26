@@ -23,9 +23,9 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type GetStatsRequest struct {
 	// Name of the stat counter.
-	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Whether or not to reset the counter to fetching its value.
-	Reset_               bool     `protobuf:"varint,2,opt,name=reset" json:"reset,omitempty"`
+	Reset_               bool     `protobuf:"varint,2,opt,name=reset,proto3" json:"reset,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -70,8 +70,8 @@ func (m *GetStatsRequest) GetReset_() bool {
 }
 
 type Stat struct {
-	Name                 string   `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Value                int64    `protobuf:"varint,2,opt,name=value" json:"value,omitempty"`
+	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Value                int64    `protobuf:"varint,2,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -116,7 +116,7 @@ func (m *Stat) GetValue() int64 {
 }
 
 type GetStatsResponse struct {
-	Stat                 *Stat    `protobuf:"bytes,1,opt,name=stat" json:"stat,omitempty"`
+	Stat                 *Stat    `protobuf:"bytes,1,opt,name=stat,proto3" json:"stat,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

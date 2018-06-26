@@ -18,7 +18,7 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 // Maximum Transmission Unit, in bytes.
 type MTU struct {
-	Value                uint32   `protobuf:"varint,1,opt,name=value" json:"value,omitempty"`
+	Value                uint32   `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -57,7 +57,7 @@ func (m *MTU) GetValue() uint32 {
 
 // Transmission Time Interview, in milli-sec.
 type TTI struct {
-	Value                uint32   `protobuf:"varint,1,opt,name=value" json:"value,omitempty"`
+	Value                uint32   `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -96,7 +96,7 @@ func (m *TTI) GetValue() uint32 {
 
 // Uplink capacity, in MB.
 type UplinkCapacity struct {
-	Value                uint32   `protobuf:"varint,1,opt,name=value" json:"value,omitempty"`
+	Value                uint32   `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -135,7 +135,7 @@ func (m *UplinkCapacity) GetValue() uint32 {
 
 // Downlink capacity, in MB.
 type DownlinkCapacity struct {
-	Value                uint32   `protobuf:"varint,1,opt,name=value" json:"value,omitempty"`
+	Value                uint32   `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -174,7 +174,7 @@ func (m *DownlinkCapacity) GetValue() uint32 {
 
 type WriteBuffer struct {
 	// Buffer size in bytes.
-	Size                 uint32   `protobuf:"varint,1,opt,name=size" json:"size,omitempty"`
+	Size                 uint32   `protobuf:"varint,1,opt,name=size,proto3" json:"size,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -213,7 +213,7 @@ func (m *WriteBuffer) GetSize() uint32 {
 
 type ReadBuffer struct {
 	// Buffer size in bytes.
-	Size                 uint32   `protobuf:"varint,1,opt,name=size" json:"size,omitempty"`
+	Size                 uint32   `protobuf:"varint,1,opt,name=size,proto3" json:"size,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -251,7 +251,7 @@ func (m *ReadBuffer) GetSize() uint32 {
 }
 
 type ConnectionReuse struct {
-	Enable               bool     `protobuf:"varint,1,opt,name=enable" json:"enable,omitempty"`
+	Enable               bool     `protobuf:"varint,1,opt,name=enable,proto3" json:"enable,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -289,14 +289,14 @@ func (m *ConnectionReuse) GetEnable() bool {
 }
 
 type Config struct {
-	Mtu                  *MTU                 `protobuf:"bytes,1,opt,name=mtu" json:"mtu,omitempty"`
-	Tti                  *TTI                 `protobuf:"bytes,2,opt,name=tti" json:"tti,omitempty"`
-	UplinkCapacity       *UplinkCapacity      `protobuf:"bytes,3,opt,name=uplink_capacity,json=uplinkCapacity" json:"uplink_capacity,omitempty"`
-	DownlinkCapacity     *DownlinkCapacity    `protobuf:"bytes,4,opt,name=downlink_capacity,json=downlinkCapacity" json:"downlink_capacity,omitempty"`
-	Congestion           bool                 `protobuf:"varint,5,opt,name=congestion" json:"congestion,omitempty"`
-	WriteBuffer          *WriteBuffer         `protobuf:"bytes,6,opt,name=write_buffer,json=writeBuffer" json:"write_buffer,omitempty"`
-	ReadBuffer           *ReadBuffer          `protobuf:"bytes,7,opt,name=read_buffer,json=readBuffer" json:"read_buffer,omitempty"`
-	HeaderConfig         *serial.TypedMessage `protobuf:"bytes,8,opt,name=header_config,json=headerConfig" json:"header_config,omitempty"`
+	Mtu                  *MTU                 `protobuf:"bytes,1,opt,name=mtu,proto3" json:"mtu,omitempty"`
+	Tti                  *TTI                 `protobuf:"bytes,2,opt,name=tti,proto3" json:"tti,omitempty"`
+	UplinkCapacity       *UplinkCapacity      `protobuf:"bytes,3,opt,name=uplink_capacity,json=uplinkCapacity,proto3" json:"uplink_capacity,omitempty"`
+	DownlinkCapacity     *DownlinkCapacity    `protobuf:"bytes,4,opt,name=downlink_capacity,json=downlinkCapacity,proto3" json:"downlink_capacity,omitempty"`
+	Congestion           bool                 `protobuf:"varint,5,opt,name=congestion,proto3" json:"congestion,omitempty"`
+	WriteBuffer          *WriteBuffer         `protobuf:"bytes,6,opt,name=write_buffer,json=writeBuffer,proto3" json:"write_buffer,omitempty"`
+	ReadBuffer           *ReadBuffer          `protobuf:"bytes,7,opt,name=read_buffer,json=readBuffer,proto3" json:"read_buffer,omitempty"`
+	HeaderConfig         *serial.TypedMessage `protobuf:"bytes,8,opt,name=header_config,json=headerConfig,proto3" json:"header_config,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
 	XXX_unrecognized     []byte               `json:"-"`
 	XXX_sizecache        int32                `json:"-"`

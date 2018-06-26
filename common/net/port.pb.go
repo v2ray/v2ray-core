@@ -18,9 +18,9 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 // PortRange represents a range of ports.
 type PortRange struct {
 	// The port that this range starts from.
-	From uint32 `protobuf:"varint,1,opt,name=From" json:"From,omitempty"`
+	From uint32 `protobuf:"varint,1,opt,name=From,proto3" json:"From,omitempty"`
 	// The port that this range ends with (inclusive).
-	To                   uint32   `protobuf:"varint,2,opt,name=To" json:"To,omitempty"`
+	To                   uint32   `protobuf:"varint,2,opt,name=To,proto3" json:"To,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

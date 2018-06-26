@@ -25,7 +25,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type AddUserOperation struct {
-	User                 *protocol.User `protobuf:"bytes,1,opt,name=user" json:"user,omitempty"`
+	User                 *protocol.User `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
 	XXX_sizecache        int32          `json:"-"`
@@ -63,7 +63,7 @@ func (m *AddUserOperation) GetUser() *protocol.User {
 }
 
 type RemoveUserOperation struct {
-	Email                string   `protobuf:"bytes,1,opt,name=email" json:"email,omitempty"`
+	Email                string   `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -101,7 +101,7 @@ func (m *RemoveUserOperation) GetEmail() string {
 }
 
 type AddInboundRequest struct {
-	Inbound              *core.InboundHandlerConfig `protobuf:"bytes,1,opt,name=inbound" json:"inbound,omitempty"`
+	Inbound              *core.InboundHandlerConfig `protobuf:"bytes,1,opt,name=inbound,proto3" json:"inbound,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
 	XXX_unrecognized     []byte                     `json:"-"`
 	XXX_sizecache        int32                      `json:"-"`
@@ -169,7 +169,7 @@ func (m *AddInboundResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_AddInboundResponse proto.InternalMessageInfo
 
 type RemoveInboundRequest struct {
-	Tag                  string   `protobuf:"bytes,1,opt,name=tag" json:"tag,omitempty"`
+	Tag                  string   `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -237,8 +237,8 @@ func (m *RemoveInboundResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_RemoveInboundResponse proto.InternalMessageInfo
 
 type AlterInboundRequest struct {
-	Tag                  string               `protobuf:"bytes,1,opt,name=tag" json:"tag,omitempty"`
-	Operation            *serial.TypedMessage `protobuf:"bytes,2,opt,name=operation" json:"operation,omitempty"`
+	Tag                  string               `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
+	Operation            *serial.TypedMessage `protobuf:"bytes,2,opt,name=operation,proto3" json:"operation,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
 	XXX_unrecognized     []byte               `json:"-"`
 	XXX_sizecache        int32                `json:"-"`
@@ -313,7 +313,7 @@ func (m *AlterInboundResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_AlterInboundResponse proto.InternalMessageInfo
 
 type AddOutboundRequest struct {
-	Outbound             *core.OutboundHandlerConfig `protobuf:"bytes,1,opt,name=outbound" json:"outbound,omitempty"`
+	Outbound             *core.OutboundHandlerConfig `protobuf:"bytes,1,opt,name=outbound,proto3" json:"outbound,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                    `json:"-"`
 	XXX_unrecognized     []byte                      `json:"-"`
 	XXX_sizecache        int32                       `json:"-"`
@@ -381,7 +381,7 @@ func (m *AddOutboundResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_AddOutboundResponse proto.InternalMessageInfo
 
 type RemoveOutboundRequest struct {
-	Tag                  string   `protobuf:"bytes,1,opt,name=tag" json:"tag,omitempty"`
+	Tag                  string   `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -449,8 +449,8 @@ func (m *RemoveOutboundResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_RemoveOutboundResponse proto.InternalMessageInfo
 
 type AlterOutboundRequest struct {
-	Tag                  string               `protobuf:"bytes,1,opt,name=tag" json:"tag,omitempty"`
-	Operation            *serial.TypedMessage `protobuf:"bytes,2,opt,name=operation" json:"operation,omitempty"`
+	Tag                  string               `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
+	Operation            *serial.TypedMessage `protobuf:"bytes,2,opt,name=operation,proto3" json:"operation,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
 	XXX_unrecognized     []byte               `json:"-"`
 	XXX_sizecache        int32                `json:"-"`
