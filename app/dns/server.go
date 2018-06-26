@@ -14,8 +14,9 @@ import (
 
 type Server struct {
 	sync.Mutex
-	hosts   map[string]net.IP
-	servers []NameServer
+	hosts    map[string]net.IP
+	servers  []NameServer
+	clientIP *Config_ClientIP
 }
 
 func New(ctx context.Context, config *Config) (*Server, error) {
@@ -23,6 +24,10 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 		servers: make([]NameServer, len(config.NameServers)),
 		hosts:   config.GetInternalHosts(),
 	}
+	if config.ClientIp != nil {
+		server.clientIP = config.ClientIp
+	}
+
 	v := core.MustFromContext(ctx)
 	if err := v.RegisterFeature((*core.DNSClient)(nil), server); err != nil {
 		return nil, newError("unable to register DNSClient.").Base(err)
@@ -38,7 +43,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 				dest.Network = net.Network_UDP
 			}
 			if dest.Network == net.Network_UDP {
-				server.servers[idx] = NewClassicNameServer(dest, v.Dispatcher())
+				server.servers[idx] = NewClassicNameServer(dest, v.Dispatcher(), server.clientIP)
 			}
 		}
 	}

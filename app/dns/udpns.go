@@ -37,13 +37,15 @@ type ClassicNameServer struct {
 	udpServer *udp.Dispatcher
 	cleanup   *task.Periodic
 	reqID     uint32
+	clientIP  *Config_ClientIP
 }
 
-func NewClassicNameServer(address net.Destination, dispatcher core.Dispatcher) *ClassicNameServer {
+func NewClassicNameServer(address net.Destination, dispatcher core.Dispatcher, clientIP *Config_ClientIP) *ClassicNameServer {
 	s := &ClassicNameServer{
 		address:   address,
 		ips:       make(map[string][]IPRecord),
 		udpServer: udp.NewDispatcher(dispatcher),
+		clientIP:  clientIP,
 	}
 	s.cleanup = &task.Periodic{
 		Interval: time.Minute,
@@ -134,8 +136,53 @@ func (s *ClassicNameServer) updateIP(domain string, ips []IPRecord) {
 	s.updated.Signal()
 }
 
+func (s *ClassicNameServer) getMsgOptions() *dns.OPT {
+	if s.clientIP == nil {
+		return nil
+	}
+
+	o := new(dns.OPT)
+	o.Hdr.Name = "."
+	o.Hdr.Rrtype = dns.TypeOPT
+
+	if len(s.clientIP.V4) == 4 {
+		e := new(dns.EDNS0_SUBNET)
+		e.Code = dns.EDNS0SUBNET
+		e.Family = 1         // 1 for IPv4 source address, 2 for IPv6
+		e.SourceNetmask = 24 // 32 for IPV4, 128 for IPv6
+		e.SourceScope = 0
+		e.Address = net.IP(s.clientIP.V4)
+		o.Option = append(o.Option, e)
+	}
+
+	if len(s.clientIP.V6) == 16 {
+		e := new(dns.EDNS0_SUBNET)
+		e.Code = dns.EDNS0SUBNET
+		e.Family = 2         // 1 for IPv4 source address, 2 for IPv6
+		e.SourceNetmask = 24 // 32 for IPV4, 128 for IPv6
+		e.SourceScope = 0
+		e.Address = net.IP(s.clientIP.V6)
+		o.Option = append(o.Option, e)
+	}
+
+	return o
+
+}
+
 func (s *ClassicNameServer) buildMsgs(domain string) []*dns.Msg {
 	allowMulti := multiQuestionDNS[s.address.Address]
+
+	qA := dns.Question{
+		Name:   domain,
+		Qtype:  dns.TypeA,
+		Qclass: dns.ClassINET,
+	}
+
+	qAAAA := dns.Question{
+		Name:   domain,
+		Qtype:  dns.TypeAAAA,
+		Qclass: dns.ClassINET,
+	}
 
 	var msgs []*dns.Msg
 
@@ -143,18 +190,12 @@ func (s *ClassicNameServer) buildMsgs(domain string) []*dns.Msg {
 		msg := new(dns.Msg)
 		msg.Id = uint16(atomic.AddUint32(&s.reqID, 1))
 		msg.RecursionDesired = true
-		msg.Question = []dns.Question{
-			{
-				Name:   domain,
-				Qtype:  dns.TypeA,
-				Qclass: dns.ClassINET,
-			}}
+		msg.Question = []dns.Question{qA}
 		if allowMulti {
-			msg.Question = append(msg.Question, dns.Question{
-				Name:   domain,
-				Qtype:  dns.TypeAAAA,
-				Qclass: dns.ClassINET,
-			})
+			msg.Question = append(msg.Question, qAAAA)
+		}
+		if opt := s.getMsgOptions(); opt != nil {
+			msg.Extra = append(msg.Extra, opt)
 		}
 		msgs = append(msgs, msg)
 	}
@@ -163,12 +204,9 @@ func (s *ClassicNameServer) buildMsgs(domain string) []*dns.Msg {
 		msg := new(dns.Msg)
 		msg.Id = uint16(atomic.AddUint32(&s.reqID, 1))
 		msg.RecursionDesired = true
-		msg.Question = []dns.Question{
-			{
-				Name:   domain,
-				Qtype:  dns.TypeAAAA,
-				Qclass: dns.ClassINET,
-			},
+		msg.Question = []dns.Question{qAAAA}
+		if opt := s.getMsgOptions(); opt != nil {
+			msg.Extra = append(msg.Extra, opt)
 		}
 		msgs = append(msgs, msg)
 	}

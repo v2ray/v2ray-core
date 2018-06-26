@@ -16,4 +16,14 @@ message Config {
 
   // Static hosts. Domain to IP.
   map<string, v2ray.core.common.net.IPOrDomain> Hosts = 2;
+
+  message ClientIP {
+    // IPv4 address of the client. Must be 4 bytes.
+    bytes v4 = 1;
+    // IPv6 address of the client. Must be 4 bytes.
+    bytes v6 = 2;
+  }
+
+  // Client IP for EDNS client subnet.
+  ClientIP client_ip = 3;
 }
