@@ -230,7 +230,10 @@ func (s *ClassicNameServer) sendQuery(ctx context.Context, domain string) {
 }
 
 func (s *ClassicNameServer) findIPsForDomain(domain string) []net.IP {
+	s.RLock()
 	records, found := s.ips[domain]
+	s.RUnlock()
+
 	if found && len(records) > 0 {
 		var ips []net.IP
 		now := time.Now()
