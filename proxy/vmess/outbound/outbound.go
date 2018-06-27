@@ -9,8 +9,6 @@ import (
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/task"
 
-	"v2ray.com/core/transport/pipe"
-
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -118,16 +116,8 @@ func (v *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 		}
 
 		bodyWriter := session.EncodeRequestBody(request, writer)
-		if tReader, ok := input.(*pipe.Reader); ok {
-			firstPayload, err := tReader.ReadMultiBufferWithTimeout(time.Millisecond * 500)
-			if err != nil && err != buf.ErrReadTimeout {
-				return newError("failed to get first payload").Base(err)
-			}
-			if !firstPayload.IsEmpty() {
-				if err := bodyWriter.WriteMultiBuffer(firstPayload); err != nil {
-					return newError("failed to write first payload").Base(err)
-				}
-			}
+		if err := buf.CopyOnceTimeout(input, bodyWriter, time.Millisecond*500); err != nil && err != buf.ErrNotTimeoutReader && err != buf.ErrReadTimeout {
+			return newError("failed to write first payload").Base(err)
 		}
 
 		if err := writer.SetBuffered(false); err != nil {

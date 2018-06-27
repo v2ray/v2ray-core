@@ -147,17 +147,17 @@ func (m *Client) monitor() {
 	}
 }
 
-func copyFirstPayload(reader *pipe.Reader, writer *Writer) error {
-	data, err := reader.ReadMultiBufferWithTimeout(time.Millisecond * 200)
-	if err == buf.ErrReadTimeout {
-		return writer.writeMetaOnly()
+func writeFirstPayload(reader buf.Reader, writer *Writer) error {
+	err := buf.CopyOnceTimeout(reader, writer, time.Millisecond*200)
+	if err == buf.ErrNotTimeoutReader || err == buf.ErrReadTimeout {
+		return writer.WriteMultiBuffer(buf.MultiBuffer{})
 	}
 
 	if err != nil {
 		return err
 	}
 
-	return writer.WriteMultiBuffer(data)
+	return nil
 }
 
 func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
@@ -172,13 +172,11 @@ func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
 	defer writer.Close() // nolint: errcheck
 
 	newError("dispatching request to ", dest).WriteToLog(session.ExportIDToError(ctx))
-	if pReader, ok := s.input.(*pipe.Reader); ok {
-		if err := copyFirstPayload(pReader, writer); err != nil {
-			newError("failed to fetch first payload").Base(err).WriteToLog(session.ExportIDToError(ctx))
-			writer.hasError = true
-			pipe.CloseError(s.input)
-			return
-		}
+	if err := writeFirstPayload(s.input, writer); err != nil {
+		newError("failed to write first payload").Base(err).WriteToLog(session.ExportIDToError(ctx))
+		writer.hasError = true
+		pipe.CloseError(s.input)
+		return
 	}
 
 	if err := buf.Copy(s.input, writer); err != nil {

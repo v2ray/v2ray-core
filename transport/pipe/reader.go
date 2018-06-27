@@ -16,9 +16,9 @@ func (r *Reader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	return r.pipe.ReadMultiBuffer()
 }
 
-// ReadMultiBufferWithTimeout reads content from a pipe within the given duration, or returns buf.ErrTimeout otherwise.
-func (r *Reader) ReadMultiBufferWithTimeout(d time.Duration) (buf.MultiBuffer, error) {
-	return r.pipe.ReadMultiBufferWithTimeout(d)
+// ReadMultiBufferTimeout reads content from a pipe within the given duration, or returns buf.ErrTimeout otherwise.
+func (r *Reader) ReadMultiBufferTimeout(d time.Duration) (buf.MultiBuffer, error) {
+	return r.pipe.ReadMultiBufferTimeout(d)
 }
 
 // CloseError sets the pipe to error state. Both reading and writing from/to the pipe will return io.ErrClosedPipe.

@@ -81,7 +81,7 @@ func (p *pipe) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	}
 }
 
-func (p *pipe) ReadMultiBufferWithTimeout(d time.Duration) (buf.MultiBuffer, error) {
+func (p *pipe) ReadMultiBufferTimeout(d time.Duration) (buf.MultiBuffer, error) {
 	timer := time.After(d)
 	for {
 		data, err := p.readMultiBufferInternal()

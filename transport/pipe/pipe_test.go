@@ -118,3 +118,10 @@ func TestPipeWriteMultiThread(t *testing.T) {
 	assert(err, IsNil)
 	assert(b[0].Bytes(), Equals, []byte{'a', 'b', 'c', 'd'})
 }
+
+func TestInterfaces(t *testing.T) {
+	assert := With(t)
+
+	assert((*Reader)(nil), Implements, (*buf.Reader)(nil))
+	assert((*Reader)(nil), Implements, (*buf.TimeoutReader)(nil))
+}

@@ -28,7 +28,7 @@ type cachedReader struct {
 }
 
 func (r *cachedReader) Cache(b *buf.Buffer) {
-	mb, _ := r.reader.ReadMultiBufferWithTimeout(time.Millisecond * 100)
+	mb, _ := r.reader.ReadMultiBufferTimeout(time.Millisecond * 100)
 	if !mb.IsEmpty() {
 		common.Must(r.cache.WriteMultiBuffer(mb))
 	}
@@ -45,6 +45,16 @@ func (r *cachedReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	}
 
 	return r.reader.ReadMultiBuffer()
+}
+
+func (r *cachedReader) ReadMultiBufferTimeout(timeout time.Duration) (buf.MultiBuffer, error) {
+	if !r.cache.IsEmpty() {
+		mb := r.cache
+		r.cache = nil
+		return mb, nil
+	}
+
+	return r.reader.ReadMultiBufferTimeout(timeout)
 }
 
 func (r *cachedReader) CloseError() {
