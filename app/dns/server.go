@@ -44,7 +44,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 	for idx, destPB := range config.NameServers {
 		address := destPB.Address.AsAddress()
 		if address.Family().IsDomain() && address.Domain() == "localhost" {
-			server.servers[idx] = &LocalNameServer{}
+			server.servers[idx] = NewLocalNameServer()
 		} else {
 			dest := destPB.AsDestination()
 			if dest.Network == net.Network_Unknown {
@@ -56,7 +56,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 		}
 	}
 	if len(config.NameServers) == 0 {
-		server.servers = append(server.servers, &LocalNameServer{})
+		server.servers = append(server.servers, NewLocalNameServer())
 	}
 
 	return server, nil

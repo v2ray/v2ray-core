@@ -10,11 +10,11 @@ type NameServer interface {
 	QueryIP(ctx context.Context, domain string) ([]net.IP, error)
 }
 
-type LocalNameServer struct {
+type localNameServer struct {
 	resolver net.Resolver
 }
 
-func (s *LocalNameServer) QueryIP(ctx context.Context, domain string) ([]net.IP, error) {
+func (s *localNameServer) QueryIP(ctx context.Context, domain string) ([]net.IP, error) {
 	ipAddr, err := s.resolver.LookupIPAddr(ctx, domain)
 	if err != nil {
 		return nil, err
@@ -26,8 +26,8 @@ func (s *LocalNameServer) QueryIP(ctx context.Context, domain string) ([]net.IP,
 	return ips, nil
 }
 
-func NewLocalNameServer() *LocalNameServer {
-	return &LocalNameServer{
+func NewLocalNameServer() *localNameServer {
+	return &localNameServer{
 		resolver: net.Resolver{
 			PreferGo: true,
 		},
