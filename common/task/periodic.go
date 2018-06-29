@@ -42,12 +42,17 @@ func (t *Periodic) checkedExecute() error {
 	}
 
 	t.access.Lock()
+	defer t.access.Unlock()
+
+	if t.closed {
+		return nil
+	}
+
 	t.timer = time.AfterFunc(t.Interval, func() {
 		if err := t.checkedExecute(); err != nil && t.OnError != nil {
 			t.OnError(err)
 		}
 	})
-	t.access.Unlock()
 
 	return nil
 }
