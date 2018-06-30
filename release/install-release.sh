@@ -393,7 +393,7 @@ main(){
         RETVAL="$?"
         if [[ $RETVAL == 0 ]] && [[ "$FORCE" != "1" ]]; then
             colorEcho ${BLUE} "Latest version ${NEW_VER} is already installed."
-            return
+            return 99     # Take no action.
         elif [[ $RETVAL == 3 ]]; then
             return 3
         else
