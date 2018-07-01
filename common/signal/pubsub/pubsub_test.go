@@ -30,4 +30,6 @@ func TestPubsub(t *testing.T) {
 		t.Fail()
 	default:
 	}
+
+	service.Cleanup()
 }
