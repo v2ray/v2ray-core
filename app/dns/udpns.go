@@ -11,7 +11,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/signal/pubsub"
 	"v2ray.com/core/common/task"
 	"v2ray.com/core/transport/internet/udp"
 )
@@ -33,7 +33,7 @@ type ClassicNameServer struct {
 	sync.RWMutex
 	address   net.Destination
 	ips       map[string][]IPRecord
-	updated   signal.Notifier
+	pub       *pubsub.Service
 	udpServer *udp.Dispatcher
 	cleanup   *task.Periodic
 	reqID     uint32
@@ -46,6 +46,7 @@ func NewClassicNameServer(address net.Destination, dispatcher core.Dispatcher, c
 		ips:       make(map[string][]IPRecord),
 		udpServer: udp.NewDispatcher(dispatcher),
 		clientIP:  clientIP,
+		pub:       pubsub.NewService(),
 	}
 	s.cleanup = &task.Periodic{
 		Interval: time.Minute,
@@ -96,7 +97,10 @@ func (s *ClassicNameServer) HandleResponse(payload *buf.Buffer) {
 	now := time.Now()
 	for _, rr := range msg.Answer {
 		var ip net.IP
-		domain = rr.Header().Name
+		name := rr.Header().Name
+		if len(name) > 0 {
+			domain = rr.Header().Name
+		}
 		ttl := rr.Header().Ttl
 		switch rr := rr.(type) {
 		case *dns.A:
@@ -105,7 +109,7 @@ func (s *ClassicNameServer) HandleResponse(payload *buf.Buffer) {
 			ip = rr.AAAA
 		}
 		if ttl == 0 {
-			ttl = 300
+			ttl = 600
 		}
 		if len(ip) > 0 {
 			ips = append(ips, IPRecord{
@@ -133,7 +137,7 @@ func (s *ClassicNameServer) updateIP(domain string, ips []IPRecord) {
 		}
 	}
 	s.ips[domain] = ips
-	s.updated.Signal()
+	s.pub.Publish(domain, nil)
 }
 
 func (s *ClassicNameServer) getMsgOptions() *dns.OPT {
@@ -255,6 +259,9 @@ func (s *ClassicNameServer) QueryIP(ctx context.Context, domain string) ([]net.I
 		return ips, nil
 	}
 
+	sub := s.pub.Subscribe(fqdn)
+	defer sub.Close()
+
 	s.sendQuery(ctx, fqdn)
 
 	for {
@@ -266,7 +273,7 @@ func (s *ClassicNameServer) QueryIP(ctx context.Context, domain string) ([]net.I
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
-		case <-s.updated.Wait():
+		case <-sub.Wait():
 		}
 	}
 }

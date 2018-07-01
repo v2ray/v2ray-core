@@ -62,7 +62,7 @@ func (v *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 	if err != nil {
 		return newError("failed to find an available destination").Base(err).AtWarning()
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint: errcheck
 
 	target, ok := proxy.TargetFromContext(ctx)
 	if !ok {

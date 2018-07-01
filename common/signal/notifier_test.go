@@ -10,7 +10,7 @@ import (
 func TestNotifierSignal(t *testing.T) {
 	//assert := With(t)
 
-	var n Notifier
+	n := NewNotifier()
 
 	w := n.Wait()
 	n.Signal()
