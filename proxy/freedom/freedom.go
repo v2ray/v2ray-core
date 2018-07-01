@@ -81,21 +81,22 @@ func (h *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 	input := link.Reader
 	output := link.Writer
 
-	if h.config.DomainStrategy == Config_USE_IP && destination.Address.Family().IsDomain() {
-		ip := h.resolveIP(ctx, destination.Address.Domain())
-		if ip != nil {
-			destination = net.Destination{
-				Network: destination.Network,
-				Address: ip,
-				Port:    destination.Port,
-			}
-			newError("changing destination to ", destination).WriteToLog(session.ExportIDToError(ctx))
-		}
-	}
-
 	var conn internet.Connection
 	err := retry.ExponentialBackoff(5, 100).On(func() error {
-		rawConn, err := dialer.Dial(ctx, destination)
+		dialDest := destination
+		if h.config.DomainStrategy == Config_USE_IP && dialDest.Address.Family().IsDomain() {
+			ip := h.resolveIP(ctx, dialDest.Address.Domain())
+			if ip != nil {
+				dialDest = net.Destination{
+					Network: dialDest.Network,
+					Address: ip,
+					Port:    dialDest.Port,
+				}
+				newError("dialing to to ", dialDest).WriteToLog(session.ExportIDToError(ctx))
+			}
+		}
+
+		rawConn, err := dialer.Dial(ctx, dialDest)
 		if err != nil {
 			return err
 		}
@@ -105,7 +106,7 @@ func (h *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 	if err != nil {
 		return newError("failed to open connection to ", destination).Base(err)
 	}
-	defer conn.Close()
+	defer conn.Close() // nolint: errcheck
 
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, h.policy().Timeouts.ConnectionIdle)
