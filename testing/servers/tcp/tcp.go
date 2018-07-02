@@ -58,6 +58,8 @@ func (server *Server) handleConnection(conn net.Conn) {
 
 	pReader, pWriter := pipe.New(pipe.WithoutSizeLimit())
 	err := task.Run(task.Parallel(func() error {
+		defer pWriter.Close() // nolint: errcheck
+
 		for {
 			b := buf.New()
 			if err := b.AppendSupplier(buf.ReadFrom(conn)); err != nil {
@@ -72,6 +74,8 @@ func (server *Server) handleConnection(conn net.Conn) {
 			}
 		}
 	}, func() error {
+		defer pReader.CloseError()
+
 		w := buf.NewWriter(conn)
 		for {
 			mb, err := pReader.ReadMultiBuffer()
