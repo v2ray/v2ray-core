@@ -24,12 +24,18 @@ func (w *ReceivingWindow) Size() uint32 {
 	return w.size
 }
 
-func (w *ReceivingWindow) Position(idx uint32) uint32 {
-	return (idx + w.start) % w.size
+func (w *ReceivingWindow) Position(idx uint32) (uint32, bool) {
+	if idx >= w.size {
+		return 0, false
+	}
+	return (w.start + idx) % w.size, true
 }
 
 func (w *ReceivingWindow) Set(idx uint32, value *DataSegment) bool {
-	pos := w.Position(idx)
+	pos, ok := w.Position(idx)
+	if !ok {
+		return false
+	}
 	if w.list[pos] != nil {
 		return false
 	}
@@ -38,7 +44,10 @@ func (w *ReceivingWindow) Set(idx uint32, value *DataSegment) bool {
 }
 
 func (w *ReceivingWindow) Remove(idx uint32) *DataSegment {
-	pos := w.Position(idx)
+	pos, ok := w.Position(idx)
+	if !ok {
+		return nil
+	}
 	e := w.list[pos]
 	w.list[pos] = nil
 	return e
@@ -49,7 +58,8 @@ func (w *ReceivingWindow) RemoveFirst() *DataSegment {
 }
 
 func (w *ReceivingWindow) HasFirst() bool {
-	return w.list[w.Position(0)] != nil
+	pos, _ := w.Position(0)
+	return w.list[pos] != nil
 }
 
 func (w *ReceivingWindow) Advance() {
@@ -157,10 +167,15 @@ type ReceivingWorker struct {
 }
 
 func NewReceivingWorker(kcp *Connection) *ReceivingWorker {
+	windowsSize := kcp.Config.GetReceivingInFlightSize()
+	if windowsSize > kcp.Config.GetReceivingBufferSize() {
+		windowsSize = kcp.Config.GetReceivingBufferSize()
+	}
+
 	worker := &ReceivingWorker{
 		conn:       kcp,
 		window:     NewReceivingWindow(kcp.Config.GetReceivingBufferSize()),
-		windowSize: kcp.Config.GetReceivingInFlightSize(),
+		windowSize: windowsSize,
 	}
 	worker.acklist = NewAckList(worker)
 	return worker
