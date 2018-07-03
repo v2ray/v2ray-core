@@ -3,11 +3,10 @@ package protocol
 import (
 	"io"
 
-	"v2ray.com/core/common/task"
-
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/task"
 )
 
 type AddressOption func(*AddressParser)
@@ -110,7 +109,7 @@ func (p *AddressParser) readAddress(b *buf.Buffer, reader io.Reader) (net.Addres
 		domain := string(b.BytesFrom(-domainLength))
 		if maybeIPPrefix(domain[0]) {
 			addr := net.ParseAddress(domain)
-			if addr.Family().IsIPv4() || addrFamily.IsIPv6() {
+			if addr.Family().IsIPv4() || addr.Family().IsIPv6() {
 				return addr, nil
 			}
 		}

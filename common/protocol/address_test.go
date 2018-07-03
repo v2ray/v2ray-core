@@ -69,6 +69,12 @@ func TestAddressReading(t *testing.T) {
 			Input:   []byte{3, 7, 10, 46, 56, 46, 56, 46, 56, 0, 80},
 			Error:   true,
 		},
+		{
+			Options: []AddressOption{AddressFamilyByte(0x03, net.AddressFamilyDomain)},
+			Input:   append(append([]byte{3, 24}, []byte("2a00:1450:4007:816::200e")...), 0, 80),
+			Address: net.ParseAddress("2a00:1450:4007:816::200e"),
+			Port:    net.Port(80),
+		},
 	}
 
 	for _, tc := range data {
@@ -79,9 +85,9 @@ func TestAddressReading(t *testing.T) {
 		if tc.Error {
 			assert(err, IsNotNil)
 		} else {
+			assert(err, IsNil)
 			assert(addr, Equals, tc.Address)
 			assert(port, Equals, tc.Port)
-			assert(err, IsNil)
 		}
 	}
 }
