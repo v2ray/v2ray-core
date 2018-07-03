@@ -172,7 +172,23 @@ func (s *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 }
 
 func (s *Server) handleUDPPayload(ctx context.Context, conn internet.Connection, dispatcher core.Dispatcher) error {
-	udpServer := udp.NewDispatcher(dispatcher)
+	udpServer := udp.NewDispatcher(dispatcher, func(ctx context.Context, payload *buf.Buffer) {
+		newError("writing back UDP response with ", payload.Len(), " bytes").AtDebug().WriteToLog(session.ExportIDToError(ctx))
+
+		request := protocol.RequestHeaderFromContext(ctx)
+		if request == nil {
+			return
+		}
+		udpMessage, err := EncodeUDPPacket(request, payload.Bytes())
+		payload.Release()
+
+		defer udpMessage.Release()
+		if err != nil {
+			newError("failed to write UDP response").AtWarning().Base(err).WriteToLog(session.ExportIDToError(ctx))
+		}
+
+		conn.Write(udpMessage.Bytes()) // nolint: errcheck
+	})
 
 	if source, ok := proxy.SourceFromContext(ctx); ok {
 		newError("client UDP connection from ", source).WriteToLog(session.ExportIDToError(ctx))
@@ -209,19 +225,8 @@ func (s *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 				})
 			}
 
-			udpServer.Dispatch(ctx, request.Destination(), payload, func(payload *buf.Buffer) {
-				newError("writing back UDP response with ", payload.Len(), " bytes").AtDebug().WriteToLog(session.ExportIDToError(ctx))
-
-				udpMessage, err := EncodeUDPPacket(request, payload.Bytes())
-				payload.Release()
-
-				defer udpMessage.Release()
-				if err != nil {
-					newError("failed to write UDP response").AtWarning().Base(err).WriteToLog(session.ExportIDToError(ctx))
-				}
-
-				conn.Write(udpMessage.Bytes()) // nolint: errcheck
-			})
+			ctx = protocol.ContextWithRequestHeader(ctx, request)
+			udpServer.Dispatch(ctx, request.Destination(), payload)
 		}
 	}
 }

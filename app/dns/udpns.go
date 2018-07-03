@@ -48,17 +48,17 @@ type ClassicNameServer struct {
 
 func NewClassicNameServer(address net.Destination, dispatcher core.Dispatcher, clientIP net.IP) *ClassicNameServer {
 	s := &ClassicNameServer{
-		address:   address,
-		ips:       make(map[string][]IPRecord),
-		requests:  make(map[uint16]pendingRequest),
-		udpServer: udp.NewDispatcher(dispatcher),
-		clientIP:  clientIP,
-		pub:       pubsub.NewService(),
+		address:  address,
+		ips:      make(map[string][]IPRecord),
+		requests: make(map[uint16]pendingRequest),
+		clientIP: clientIP,
+		pub:      pubsub.NewService(),
 	}
 	s.cleanup = &task.Periodic{
 		Interval: time.Minute,
 		Execute:  s.Cleanup,
 	}
+	s.udpServer = udp.NewDispatcher(dispatcher, s.HandleResponse)
 	common.Must(s.cleanup.Start())
 	return s
 }
@@ -98,7 +98,7 @@ func (s *ClassicNameServer) Cleanup() error {
 	return nil
 }
 
-func (s *ClassicNameServer) HandleResponse(payload *buf.Buffer) {
+func (s *ClassicNameServer) HandleResponse(ctx context.Context, payload *buf.Buffer) {
 	msg := new(dns.Msg)
 	err := msg.Unpack(payload.Bytes())
 	if err == dns.ErrTruncated {
@@ -267,7 +267,7 @@ func (s *ClassicNameServer) sendQuery(ctx context.Context, domain string) {
 	for _, msg := range msgs {
 		b, err := msgToBuffer(msg)
 		common.Must(err)
-		s.udpServer.Dispatch(ctx, s.address, b, s.HandleResponse)
+		s.udpServer.Dispatch(context.Background(), s.address, b)
 	}
 }
 

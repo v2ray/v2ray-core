@@ -74,7 +74,22 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 }
 
 func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection, dispatcher core.Dispatcher) error {
-	udpServer := udp.NewDispatcher(dispatcher)
+	udpServer := udp.NewDispatcher(dispatcher, func(ctx context.Context, payload *buf.Buffer) {
+		request := protocol.RequestHeaderFromContext(ctx)
+		if request == nil {
+			return
+		}
+
+		data, err := EncodeUDPPacket(request, payload.Bytes())
+		payload.Release()
+		if err != nil {
+			newError("failed to encode UDP packet").Base(err).AtWarning().WriteToLog(session.ExportIDToError(ctx))
+			return
+		}
+		defer data.Release()
+
+		conn.Write(data.Bytes())
+	})
 
 	reader := buf.NewReader(conn)
 	for {
@@ -123,17 +138,8 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 			newError("tunnelling request to ", dest).WriteToLog(session.ExportIDToError(ctx))
 
 			ctx = protocol.ContextWithUser(ctx, request.User)
-			udpServer.Dispatch(ctx, dest, data, func(payload *buf.Buffer) {
-				data, err := EncodeUDPPacket(request, payload.Bytes())
-				payload.Release()
-				if err != nil {
-					newError("failed to encode UDP packet").Base(err).AtWarning().WriteToLog(session.ExportIDToError(ctx))
-					return
-				}
-				defer data.Release()
-
-				conn.Write(data.Bytes())
-			})
+			ctx = protocol.ContextWithRequestHeader(ctx, request)
+			udpServer.Dispatch(ctx, dest, data)
 		}
 	}
 
