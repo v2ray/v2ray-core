@@ -59,13 +59,15 @@ func TestSameDestinationDispatching(t *testing.T) {
 
 	b := buf.New()
 	b.AppendBytes('a', 'b', 'c', 'd')
-	dispatcher := NewDispatcher(td)
+
 	var msgCount uint32
-	dispatcher.Dispatch(ctx, dest, b, func(payload *buf.Buffer) {
+	dispatcher := NewDispatcher(td, func(ctx context.Context, payload *buf.Buffer) {
 		atomic.AddUint32(&msgCount, 1)
 	})
+
+	dispatcher.Dispatch(ctx, dest, b)
 	for i := 0; i < 5; i++ {
-		dispatcher.Dispatch(ctx, dest, b, func(payload *buf.Buffer) {})
+		dispatcher.Dispatch(ctx, dest, b)
 	}
 
 	time.Sleep(time.Second)
