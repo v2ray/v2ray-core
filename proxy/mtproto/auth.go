@@ -22,7 +22,7 @@ type Authentication struct {
 }
 
 func (a *Authentication) DataCenterID() uint16 {
-	return (uint16(a.Header[61]) << 8) | uint16(a.Header[60])
+	return ((uint16(a.Header[61]) << 8) | uint16(a.Header[60])) % uint16(len(dcList))
 }
 
 func (a *Authentication) ApplySecret(b []byte) {

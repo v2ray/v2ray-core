@@ -90,9 +90,6 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 	}
 
 	dcID := auth.DataCenterID()
-	if dcID >= uint16(len(dcList)) {
-		return newError("invalid data center id: ", dcID)
-	}
 
 	dest := net.Destination{
 		Network: net.Network_TCP,
