@@ -8,6 +8,7 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/predicate"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/task"
 	"v2ray.com/core/transport/internet"
@@ -61,11 +62,16 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 	if err != nil {
 		return newError("failed to read authentication header").Base(err)
 	}
+	defer putAuthenticationObject(auth)
 
 	auth.ApplySecret(s.account.Secret)
 
 	decryptor := crypto.NewAesCTRStream(auth.DecodingKey[:], auth.DecodingNonce[:])
 	decryptor.XORKeyStream(auth.Header[:], auth.Header[:])
+
+	if !predicate.BytesAll(auth.Header[56:60], 0xef) {
+		return newError("invalid connection type: ", auth.Header[56:60])
+	}
 
 	dcID := auth.DataCenterID()
 	if dcID >= uint16(len(dcList)) {
