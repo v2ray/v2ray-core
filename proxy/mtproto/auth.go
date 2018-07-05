@@ -22,7 +22,11 @@ type Authentication struct {
 }
 
 func (a *Authentication) DataCenterID() uint16 {
-	return ((uint16(a.Header[61]) << 8) | uint16(a.Header[60])) % uint16(len(dcList))
+	x := ((int16(a.Header[61]) << 8) | int16(a.Header[60]))
+	if x < 0 {
+		x = -x
+	}
+	return uint16(x) - 1
 }
 
 func (a *Authentication) ApplySecret(b []byte) {
@@ -46,6 +50,11 @@ func generateRandomBytes(random []byte) {
 		if 0x00000000 == (uint32(random[7])<<24)|(uint32(random[6])<<16)|(uint32(random[5])<<8)|uint32(random[4]) {
 			continue
 		}
+
+		random[56] = 0xef
+		random[57] = 0xef
+		random[58] = 0xef
+		random[59] = 0xef
 
 		return
 	}

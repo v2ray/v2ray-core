@@ -90,6 +90,9 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 	}
 
 	dcID := auth.DataCenterID()
+	if dcID >= uint16(len(dcList)) {
+		return newError("invalid datacenter id: ", dcID)
+	}
 
 	dest := net.Destination{
 		Network: net.Network_TCP,
@@ -110,7 +113,7 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 		defer timer.SetTimeout(sPolicy.Timeouts.DownlinkOnly)
 
 		reader := buf.NewReader(crypto.NewCryptionReader(decryptor, conn))
-		return buf.Copy(reader, link.Writer)
+		return buf.Copy(reader, link.Writer, buf.UpdateActivity(timer))
 	}
 
 	response := func() error {
@@ -118,7 +121,7 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 
 		encryptor := crypto.NewAesCTRStream(auth.EncodingKey[:], auth.EncodingNonce[:])
 		writer := buf.NewWriter(crypto.NewCryptionWriter(encryptor, conn))
-		return buf.Copy(link.Reader, writer)
+		return buf.Copy(link.Reader, writer, buf.UpdateActivity(timer))
 	}
 
 	var responseDoneAndCloseWriter = task.Single(response, task.OnSuccess(task.Close(link.Writer)))

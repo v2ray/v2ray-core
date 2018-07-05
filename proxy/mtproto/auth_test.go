@@ -1,6 +1,7 @@
 package mtproto_test
 
 import (
+	"bytes"
 	"crypto/rand"
 	"testing"
 
@@ -20,4 +21,18 @@ func TestInverse(t *testing.T) {
 
 	bii := Inverse(bi)
 	assert(bii, Equals, b)
+}
+
+func TestAuthenticationReadWrite(t *testing.T) {
+	assert := With(t)
+
+	a := NewAuthentication()
+	b := bytes.NewReader(a.Header[:])
+	a2, err := ReadAuthentication(b)
+	assert(err, IsNil)
+
+	assert(a.EncodingKey[:], Equals, a2.DecodingKey[:])
+	assert(a.EncodingNonce[:], Equals, a2.DecodingNonce[:])
+	assert(a.DecodingKey[:], Equals, a2.EncodingKey[:])
+	assert(a.DecodingNonce[:], Equals, a2.EncodingNonce[:])
 }
