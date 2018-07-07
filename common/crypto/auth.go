@@ -99,7 +99,6 @@ func NewAuthenticationReader(auth Authenticator, sizeParser ChunkSizeDecoder, re
 		transferType: transferType,
 		padding:      paddingLen,
 		size:         -1,
-		paddingLen:   -1,
 	}
 }
 
