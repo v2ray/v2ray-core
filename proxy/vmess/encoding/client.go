@@ -110,6 +110,11 @@ func (c *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 	if request.Option.Has(protocol.RequestOptionChunkMasking) {
 		sizeParser = NewShakeSizeParser(c.requestBodyIV[:])
 	}
+	var padding crypto.PaddingLengthGenerator = nil
+	if request.Option.Has(protocol.RequestOptionGlobalPadding) {
+		padding = sizeParser.(crypto.PaddingLengthGenerator)
+	}
+
 	switch request.Security {
 	case protocol.SecurityType_NONE:
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
@@ -121,7 +126,7 @@ func (c *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 				NonceGenerator:          crypto.GenerateEmptyBytes(),
 				AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 			}
-			return crypto.NewAuthenticationWriter(auth, sizeParser, writer, protocol.TransferTypePacket)
+			return crypto.NewAuthenticationWriter(auth, sizeParser, writer, protocol.TransferTypePacket, padding)
 		}
 
 		return buf.NewWriter(writer)
@@ -134,7 +139,7 @@ func (c *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 				NonceGenerator:          crypto.GenerateEmptyBytes(),
 				AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 			}
-			return crypto.NewAuthenticationWriter(auth, sizeParser, cryptionWriter, request.Command.TransferType())
+			return crypto.NewAuthenticationWriter(auth, sizeParser, cryptionWriter, request.Command.TransferType(), padding)
 		}
 
 		return buf.NewWriter(cryptionWriter)
@@ -147,7 +152,7 @@ func (c *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 			NonceGenerator:          GenerateChunkNonce(c.requestBodyIV[:], uint32(aead.NonceSize())),
 			AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 		}
-		return crypto.NewAuthenticationWriter(auth, sizeParser, writer, request.Command.TransferType())
+		return crypto.NewAuthenticationWriter(auth, sizeParser, writer, request.Command.TransferType(), padding)
 	case protocol.SecurityType_CHACHA20_POLY1305:
 		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(c.requestBodyKey[:]))
 
@@ -156,7 +161,7 @@ func (c *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 			NonceGenerator:          GenerateChunkNonce(c.requestBodyIV[:], uint32(aead.NonceSize())),
 			AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 		}
-		return crypto.NewAuthenticationWriter(auth, sizeParser, writer, request.Command.TransferType())
+		return crypto.NewAuthenticationWriter(auth, sizeParser, writer, request.Command.TransferType(), padding)
 	default:
 		panic("Unknown security type.")
 	}
@@ -202,6 +207,11 @@ func (c *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 	if request.Option.Has(protocol.RequestOptionChunkMasking) {
 		sizeParser = NewShakeSizeParser(c.responseBodyIV[:])
 	}
+	var padding crypto.PaddingLengthGenerator = nil
+	if request.Option.Has(protocol.RequestOptionGlobalPadding) {
+		padding = sizeParser.(crypto.PaddingLengthGenerator)
+	}
+
 	switch request.Security {
 	case protocol.SecurityType_NONE:
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
@@ -215,7 +225,7 @@ func (c *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 				AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 			}
 
-			return crypto.NewAuthenticationReader(auth, sizeParser, reader, protocol.TransferTypePacket)
+			return crypto.NewAuthenticationReader(auth, sizeParser, reader, protocol.TransferTypePacket, padding)
 		}
 
 		return buf.NewReader(reader)
@@ -226,7 +236,7 @@ func (c *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 				NonceGenerator:          crypto.GenerateEmptyBytes(),
 				AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 			}
-			return crypto.NewAuthenticationReader(auth, sizeParser, c.responseReader, request.Command.TransferType())
+			return crypto.NewAuthenticationReader(auth, sizeParser, c.responseReader, request.Command.TransferType(), padding)
 		}
 
 		return buf.NewReader(c.responseReader)
@@ -239,7 +249,7 @@ func (c *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 			NonceGenerator:          GenerateChunkNonce(c.responseBodyIV[:], uint32(aead.NonceSize())),
 			AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 		}
-		return crypto.NewAuthenticationReader(auth, sizeParser, reader, request.Command.TransferType())
+		return crypto.NewAuthenticationReader(auth, sizeParser, reader, request.Command.TransferType(), padding)
 	case protocol.SecurityType_CHACHA20_POLY1305:
 		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(c.responseBodyKey[:]))
 
@@ -248,7 +258,7 @@ func (c *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 			NonceGenerator:          GenerateChunkNonce(c.responseBodyIV[:], uint32(aead.NonceSize())),
 			AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 		}
-		return crypto.NewAuthenticationReader(auth, sizeParser, reader, request.Command.TransferType())
+		return crypto.NewAuthenticationReader(auth, sizeParser, reader, request.Command.TransferType(), padding)
 	default:
 		panic("Unknown security type.")
 	}

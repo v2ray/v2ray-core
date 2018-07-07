@@ -182,14 +182,14 @@ func (c *AEADCipher) NewEncryptionWriter(key []byte, iv []byte, writer io.Writer
 	auth := c.createAuthenticator(key, iv)
 	return crypto.NewAuthenticationWriter(auth, &crypto.AEADChunkSizeParser{
 		Auth: auth,
-	}, writer, protocol.TransferTypeStream), nil
+	}, writer, protocol.TransferTypeStream, nil), nil
 }
 
 func (c *AEADCipher) NewDecryptionReader(key []byte, iv []byte, reader io.Reader) (buf.Reader, error) {
 	auth := c.createAuthenticator(key, iv)
 	return crypto.NewAuthenticationReader(auth, &crypto.AEADChunkSizeParser{
 		Auth: auth,
-	}, reader, protocol.TransferTypeStream), nil
+	}, reader, protocol.TransferTypeStream, nil), nil
 }
 
 func (c *AEADCipher) EncodePacket(key []byte, b *buf.Buffer) error {

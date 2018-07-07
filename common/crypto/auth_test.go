@@ -40,17 +40,17 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 		AEAD:                    aead,
 		NonceGenerator:          GenerateStaticBytes(iv),
 		AdditionalDataGenerator: GenerateEmptyBytes(),
-	}, PlainChunkSizeParser{}, cache, protocol.TransferTypeStream)
+	}, PlainChunkSizeParser{}, cache, protocol.TransferTypeStream, nil)
 
 	assert(writer.WriteMultiBuffer(buf.NewMultiBufferValue(payload)), IsNil)
-	assert(cache.Len(), Equals, int32(82658))
+	assert(cache.Len(), Equals, int32(82676))
 	assert(writer.WriteMultiBuffer(buf.MultiBuffer{}), IsNil)
 
 	reader := NewAuthenticationReader(&AEADAuthenticator{
 		AEAD:                    aead,
 		NonceGenerator:          GenerateStaticBytes(iv),
 		AdditionalDataGenerator: GenerateEmptyBytes(),
-	}, PlainChunkSizeParser{}, cache, protocol.TransferTypeStream)
+	}, PlainChunkSizeParser{}, cache, protocol.TransferTypeStream, nil)
 
 	var mb buf.MultiBuffer
 
@@ -90,7 +90,7 @@ func TestAuthenticationReaderWriterPacket(t *testing.T) {
 		AEAD:                    aead,
 		NonceGenerator:          GenerateStaticBytes(iv),
 		AdditionalDataGenerator: GenerateEmptyBytes(),
-	}, PlainChunkSizeParser{}, cache, protocol.TransferTypePacket)
+	}, PlainChunkSizeParser{}, cache, protocol.TransferTypePacket, nil)
 
 	var payload buf.MultiBuffer
 	pb1 := buf.New()
@@ -110,7 +110,7 @@ func TestAuthenticationReaderWriterPacket(t *testing.T) {
 		AEAD:                    aead,
 		NonceGenerator:          GenerateStaticBytes(iv),
 		AdditionalDataGenerator: GenerateEmptyBytes(),
-	}, PlainChunkSizeParser{}, cache, protocol.TransferTypePacket)
+	}, PlainChunkSizeParser{}, cache, protocol.TransferTypePacket, nil)
 
 	mb, err := reader.ReadMultiBuffer()
 	assert(err, IsNil)
