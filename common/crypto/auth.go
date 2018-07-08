@@ -238,7 +238,12 @@ func (w *AuthenticationWriter) seal(b *buf.Buffer) (*buf.Buffer, error) {
 func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
 	defer mb.Release()
 
-	payloadSize := buf.Size - int32(w.auth.Overhead()) - w.sizeParser.SizeBytes() - 64 /* padding buffer */
+	var maxPadding int32
+	if w.padding != nil {
+		maxPadding = int32(w.padding.MaxPaddingLen())
+	}
+
+	payloadSize := buf.Size - int32(w.auth.Overhead()) - w.sizeParser.SizeBytes() - maxPadding
 	mb2Write := buf.NewMultiBufferCap(int32(len(mb) + 10))
 
 	for {

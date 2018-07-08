@@ -111,3 +111,7 @@ func (s *ShakeSizeParser) Encode(size uint16, b []byte) []byte {
 func (s *ShakeSizeParser) NextPaddingLen() uint16 {
 	return s.next() % 64
 }
+
+func (s *ShakeSizeParser) MaxPaddingLne() uint16 {
+	return 64
+}
