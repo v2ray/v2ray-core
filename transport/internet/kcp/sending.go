@@ -142,6 +142,11 @@ func (sw *SendingWindow) Remove(number uint32) bool {
 		if seg.Number > number {
 			return false
 		} else if seg.Number == number {
+			if sw.totalInFlightSize > 0 {
+				sw.totalInFlightSize--
+			}
+			seg.Release()
+			sw.cache.Remove(e)
 			return true
 		}
 	}
