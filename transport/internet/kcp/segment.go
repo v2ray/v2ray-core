@@ -1,6 +1,8 @@
 package kcp
 
 import (
+	"sync"
+
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/serial"
 )
@@ -38,6 +40,12 @@ const (
 	DataSegmentOverhead = 18
 )
 
+var dataSegmentPool = sync.Pool{
+	New: func() interface{} {
+		return new(DataSegment)
+	},
+}
+
 type DataSegment struct {
 	Conv        uint16
 	Option      SegmentOption
@@ -51,7 +59,11 @@ type DataSegment struct {
 }
 
 func NewDataSegment() *DataSegment {
-	return new(DataSegment)
+	seg := dataSegmentPool.Get().(*DataSegment)
+	seg.Conv = 0
+	seg.timeout = 0
+	seg.transmit = 0
+	return seg
 }
 
 func (s *DataSegment) parse(conv uint16, cmd Command, opt SegmentOption, buf []byte) (bool, []byte) {
@@ -123,6 +135,15 @@ func (s *DataSegment) ByteSize() int32 {
 func (s *DataSegment) Release() {
 	s.payload.Release()
 	s.payload = nil
+	dataSegmentPool.Put(s)
+}
+
+var ackSegmentPool = sync.Pool{
+	New: func() interface{} {
+		return &AckSegment{
+			NumberList: make([]uint32, 0, 16),
+		}
+	},
 }
 
 type AckSegment struct {
@@ -137,9 +158,9 @@ type AckSegment struct {
 const ackNumberLimit = 128
 
 func NewAckSegment() *AckSegment {
-	return &AckSegment{
-		NumberList: make([]uint32, 0, ackNumberLimit),
-	}
+	seg := ackSegmentPool.Get().(*AckSegment)
+	seg.NumberList = seg.NumberList[:0]
+	return seg
 }
 
 func (s *AckSegment) parse(conv uint16, cmd Command, opt SegmentOption, buf []byte) (bool, []byte) {
@@ -219,7 +240,7 @@ func (s *AckSegment) Bytes() buf.Supplier {
 }
 
 func (s *AckSegment) Release() {
-	s.NumberList = nil
+	ackSegmentPool.Put(s)
 }
 
 type CmdOnlySegment struct {

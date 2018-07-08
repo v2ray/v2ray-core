@@ -113,6 +113,7 @@ func (l *AckList) Flush(current uint32, rto uint32) {
 			l.dirty = false
 		}
 	}
+
 	if l.dirty || !seg.IsEmpty() {
 		for _, number := range l.flushCandidates {
 			if seg.IsFull() {
@@ -121,9 +122,10 @@ func (l *AckList) Flush(current uint32, rto uint32) {
 			seg.PutNumber(number)
 		}
 		l.writer.Write(seg)
-		seg.Release()
 		l.dirty = false
 	}
+
+	seg.Release()
 }
 
 type ReceivingWorker struct {
@@ -234,6 +236,7 @@ func (w *ReceivingWorker) Write(seg Segment) error {
 	ackSeg.Conv = w.conn.meta.Conversation
 	ackSeg.ReceivingNext = w.nextNumber
 	ackSeg.ReceivingWindow = w.nextNumber + w.windowSize
+	ackSeg.Option = 0
 	if w.conn.State() == StateReadyToClose {
 		ackSeg.Option = SegmentOptionClose
 	}
