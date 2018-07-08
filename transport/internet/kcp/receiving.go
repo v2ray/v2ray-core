@@ -7,66 +7,36 @@ import (
 )
 
 type ReceivingWindow struct {
-	start uint32
-	size  uint32
-	list  []*DataSegment
+	cache map[uint32]*DataSegment
 }
 
-func NewReceivingWindow(size uint32) *ReceivingWindow {
+func NewReceivingWindow() *ReceivingWindow {
 	return &ReceivingWindow{
-		start: 0,
-		size:  size,
-		list:  make([]*DataSegment, size),
+		cache: make(map[uint32]*DataSegment),
 	}
 }
 
-func (w *ReceivingWindow) Size() uint32 {
-	return w.size
-}
-
-func (w *ReceivingWindow) Position(idx uint32) (uint32, bool) {
-	if idx >= w.size {
-		return 0, false
-	}
-	return (w.start + idx) % w.size, true
-}
-
-func (w *ReceivingWindow) Set(idx uint32, value *DataSegment) bool {
-	pos, ok := w.Position(idx)
-	if !ok {
+func (w *ReceivingWindow) Set(id uint32, value *DataSegment) bool {
+	_, f := w.cache[id]
+	if f {
 		return false
 	}
-	if w.list[pos] != nil {
-		return false
-	}
-	w.list[pos] = value
+	w.cache[id] = value
 	return true
 }
 
-func (w *ReceivingWindow) Remove(idx uint32) *DataSegment {
-	pos, ok := w.Position(idx)
-	if !ok {
+func (w *ReceivingWindow) Has(id uint32) bool {
+	_, f := w.cache[id]
+	return f
+}
+
+func (w *ReceivingWindow) Remove(id uint32) *DataSegment {
+	v, f := w.cache[id]
+	if !f {
 		return nil
 	}
-	e := w.list[pos]
-	w.list[pos] = nil
-	return e
-}
-
-func (w *ReceivingWindow) RemoveFirst() *DataSegment {
-	return w.Remove(0)
-}
-
-func (w *ReceivingWindow) HasFirst() bool {
-	pos, _ := w.Position(0)
-	return w.list[pos] != nil
-}
-
-func (w *ReceivingWindow) Advance() {
-	w.start++
-	if w.start == w.size {
-		w.start = 0
-	}
+	delete(w.cache, id)
+	return v
 }
 
 type AckList struct {
@@ -167,15 +137,10 @@ type ReceivingWorker struct {
 }
 
 func NewReceivingWorker(kcp *Connection) *ReceivingWorker {
-	windowsSize := kcp.Config.GetReceivingInFlightSize()
-	if windowsSize > kcp.Config.GetReceivingBufferSize() {
-		windowsSize = kcp.Config.GetReceivingBufferSize()
-	}
-
 	worker := &ReceivingWorker{
 		conn:       kcp,
-		window:     NewReceivingWindow(kcp.Config.GetReceivingBufferSize()),
-		windowSize: windowsSize,
+		window:     NewReceivingWindow(),
+		windowSize: kcp.Config.GetReceivingInFlightSize(),
 	}
 	worker.acklist = NewAckList(worker)
 	return worker
@@ -206,7 +171,7 @@ func (w *ReceivingWorker) ProcessSegment(seg *DataSegment) {
 	w.acklist.Clear(seg.SendingNext)
 	w.acklist.Add(number, seg.Timestamp)
 
-	if !w.window.Set(idx, seg) {
+	if !w.window.Set(seg.Number, seg) {
 		seg.Release()
 	}
 }
@@ -223,11 +188,10 @@ func (w *ReceivingWorker) ReadMultiBuffer() buf.MultiBuffer {
 	w.Lock()
 	defer w.Unlock()
 	for {
-		seg := w.window.RemoveFirst()
+		seg := w.window.Remove(w.nextNumber)
 		if seg == nil {
 			break
 		}
-		w.window.Advance()
 		w.nextNumber++
 		mb.Append(seg.Detach())
 		seg.Release()
@@ -248,7 +212,7 @@ func (w *ReceivingWorker) Read(b []byte) int {
 func (w *ReceivingWorker) IsDataAvailable() bool {
 	w.RLock()
 	defer w.RUnlock()
-	return w.window.HasFirst()
+	return w.window.Has(w.nextNumber)
 }
 
 func (w *ReceivingWorker) NextNumber() uint32 {
