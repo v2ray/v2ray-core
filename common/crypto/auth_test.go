@@ -43,7 +43,7 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 	}, PlainChunkSizeParser{}, cache, protocol.TransferTypeStream, nil)
 
 	assert(writer.WriteMultiBuffer(buf.NewMultiBufferValue(payload)), IsNil)
-	assert(cache.Len(), Equals, int32(82676))
+	assert(cache.Len(), Equals, int32(82658))
 	assert(writer.WriteMultiBuffer(buf.MultiBuffer{}), IsNil)
 
 	reader := NewAuthenticationReader(&AEADAuthenticator{
