@@ -15,7 +15,6 @@ import (
 	"v2ray.com/core/common/bitmask"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
-	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -175,20 +174,6 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	// 1 bytes reserved
 	request.Command = protocol.RequestCommand(buffer.Byte(37))
 
-	var invalidRequestErr error
-	defer func() {
-		if invalidRequestErr != nil {
-			randomLen := dice.Roll(64) + 1
-			// Read random number of bytes for prevent detection.
-			buffer.AppendSupplier(buf.ReadFullFrom(decryptor, int32(randomLen))) // nolint: errcheck
-		}
-	}()
-
-	if request.Security == protocol.SecurityType_UNKNOWN || request.Security == protocol.SecurityType_AUTO {
-		invalidRequestErr = newError("unknown security type")
-		return nil, invalidRequestErr
-	}
-
 	switch request.Command {
 	case protocol.RequestCommandMux:
 		request.Address = net.DomainAddress("v1.mux.cool")
@@ -197,13 +182,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		if addr, port, err := addrParser.ReadAddressPort(buffer, decryptor); err == nil {
 			request.Address = addr
 			request.Port = port
-		} else {
-			invalidRequestErr = newError("invalid address").Base(err)
-			return nil, invalidRequestErr
 		}
-	default:
-		invalidRequestErr = newError("invalid request command: ", request.Command)
-		return nil, invalidRequestErr
 	}
 
 	if padingLen > 0 {
@@ -227,6 +206,10 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 
 	if request.Address == nil {
 		return nil, newError("invalid remote address")
+	}
+
+	if request.Security == protocol.SecurityType_UNKNOWN || request.Security == protocol.SecurityType_AUTO {
+		return nil, newError("unknown security type: ", request.Security)
 	}
 
 	return request, nil

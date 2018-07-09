@@ -8,7 +8,6 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/bitmask"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 )
@@ -65,12 +64,7 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 	buffer.Clear()
 
 	addr, port, err := addrParser.ReadAddressPort(buffer, br)
-
 	if err != nil {
-		// Invalid address. Continue to read some bytes to confuse client.
-		nBytes := dice.Roll(32) + 1
-		buffer.Clear()
-		buffer.AppendSupplier(buf.ReadFullFrom(br, int32(nBytes)))
 		return nil, nil, newError("failed to read address").Base(err)
 	}
 
