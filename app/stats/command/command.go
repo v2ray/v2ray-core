@@ -6,12 +6,20 @@ import (
 	"context"
 
 	grpc "google.golang.org/grpc"
+
 	"v2ray.com/core"
+	"v2ray.com/core/app/stats"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/strmatcher"
 )
 
+// statsServer is an implementation of StatsService.
 type statsServer struct {
 	stats core.StatManager
+}
+
+func NewStatsServer(manager core.StatManager) StatsServiceServer {
+	return &statsServer{stats: manager}
 }
 
 func (s *statsServer) GetStats(ctx context.Context, request *GetStatsRequest) (*GetStatsResponse, error) {
@@ -33,14 +41,44 @@ func (s *statsServer) GetStats(ctx context.Context, request *GetStatsRequest) (*
 	}, nil
 }
 
+func (s *statsServer) QueryStats(ctx context.Context, request *QueryStatsRequest) (*QueryStatsResponse, error) {
+	matcher, err := strmatcher.Substr.New(request.Pattern)
+	if err != nil {
+		return nil, err
+	}
+
+	response := &QueryStatsResponse{}
+
+	manager, ok := s.stats.(*stats.Manager)
+	if !ok {
+		return nil, newError("QueryStats only works its own stats.Manager.")
+	}
+
+	manager.Visit(func(name string, c core.StatCounter) bool {
+		if matcher.Match(name) {
+			var value int64
+			if request.Reset_ {
+				value = c.Set(0)
+			} else {
+				value = c.Value()
+			}
+			response.Stat = append(response.Stat, &Stat{
+				Name:  name,
+				Value: value,
+			})
+		}
+		return true
+	})
+
+	return response, nil
+}
+
 type service struct {
 	v *core.Instance
 }
 
 func (s *service) Register(server *grpc.Server) {
-	RegisterStatsServiceServer(server, &statsServer{
-		stats: s.v.Stats(),
-	})
+	RegisterStatsServiceServer(server, NewStatsServer(s.v.Stats()))
 }
 
 func init() {

@@ -74,6 +74,17 @@ func (m *Manager) GetCounter(name string) core.StatCounter {
 	return nil
 }
 
+func (m *Manager) Visit(visitor func(string, core.StatCounter) bool) {
+	m.access.RLock()
+	defer m.access.RUnlock()
+
+	for name, c := range m.counters {
+		if !visitor(name, c) {
+			break
+		}
+	}
+}
+
 // Start implements common.Runnable.
 func (m *Manager) Start() error {
 	return nil
