@@ -18,6 +18,7 @@ import (
 	"v2ray.com/core/app/router"
 	"v2ray.com/core/app/stats"
 	statscmd "v2ray.com/core/app/stats/command"
+	"v2ray.com/core/common/compare"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -101,12 +102,17 @@ func TestCommanderRemoveHandler(t *testing.T) {
 	servers, err := InitializeServerConfigs(clientConfig)
 	assert(err, IsNil)
 
+	defer CloseAllServers(servers)
+
 	{
 		conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 			IP:   []byte{127, 0, 0, 1},
 			Port: int(clientPort),
 		})
-		assert(err, IsNil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer conn.Close() // nolint: errcheck
 
 		payload := "commander request."
 		nBytes, err := conn.Write([]byte(payload))
@@ -116,8 +122,9 @@ func TestCommanderRemoveHandler(t *testing.T) {
 		response := make([]byte, 1024)
 		nBytes, err = conn.Read(response)
 		assert(err, IsNil)
-		assert(response[:nBytes], Equals, xor([]byte(payload)))
-		assert(conn.Close(), IsNil)
+		if err := compare.BytesEqualWithDetail(response[:nBytes], xor([]byte(payload))); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	cmdConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", cmdPort), grpc.WithInsecure(), grpc.WithBlock())
@@ -137,8 +144,6 @@ func TestCommanderRemoveHandler(t *testing.T) {
 		})
 		assert(err, IsNotNil)
 	}
-
-	CloseAllServers(servers)
 }
 
 func TestCommanderAddRemoveUser(t *testing.T) {
@@ -487,7 +492,10 @@ func TestCommanderStats(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	if err != nil {
+		t.Fatal("Failed to create all servers", err)
+	}
+	defer CloseAllServers(servers)
 
 	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 		IP:   []byte{127, 0, 0, 1},

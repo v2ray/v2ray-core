@@ -7,9 +7,9 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/compare"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/predicate"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
@@ -85,7 +85,7 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 	decryptor := crypto.NewAesCTRStream(auth.DecodingKey[:], auth.DecodingNonce[:])
 	decryptor.XORKeyStream(auth.Header[:], auth.Header[:])
 
-	if !predicate.BytesAll(auth.Header[56:60], 0xef) {
+	if !compare.BytesAll(auth.Header[56:60], 0xef) {
 		return newError("invalid connection type: ", auth.Header[56:60])
 	}
 

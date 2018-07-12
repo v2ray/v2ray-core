@@ -4,7 +4,7 @@ import (
 	"net"
 	"strings"
 
-	"v2ray.com/core/common/predicate"
+	"v2ray.com/core/common/compare"
 )
 
 var (
@@ -94,7 +94,7 @@ func IPAddress(ip []byte) Address {
 		var addr ipv4Address = [4]byte{ip[0], ip[1], ip[2], ip[3]}
 		return addr
 	case net.IPv6len:
-		if predicate.BytesAll(ip[0:10], 0) && predicate.BytesAll(ip[10:12], 0xff) {
+		if compare.BytesAll(ip[0:10], 0) && compare.BytesAll(ip[10:12], 0xff) {
 			return IPAddress(ip[12:16])
 		}
 		var addr ipv6Address = [16]byte{
