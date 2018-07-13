@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	"websocket"
+	"github.com/gorilla/websocket"
 
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"

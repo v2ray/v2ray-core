@@ -7,7 +7,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
-	"websocket"
+
+	"github.com/gorilla/websocket"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
