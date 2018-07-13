@@ -3,9 +3,9 @@ package log_test
 import (
 	"testing"
 
+	"v2ray.com/core/common/compare"
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
-	. "v2ray.com/ext/assert"
 )
 
 type testLogger struct {
@@ -17,8 +17,6 @@ func (l *testLogger) Handle(msg log.Message) {
 }
 
 func TestLogRecord(t *testing.T) {
-	assert := With(t)
-
 	var logger testLogger
 	log.RegisterHandler(&logger)
 
@@ -28,5 +26,7 @@ func TestLogRecord(t *testing.T) {
 		Content:  net.ParseAddress(ip),
 	})
 
-	assert(logger.value, Equals, "[Error] "+ip)
+	if err := compare.StringEqualWithDetail("[Error] "+ip, logger.value); err != nil {
+		t.Fatal(err)
+	}
 }

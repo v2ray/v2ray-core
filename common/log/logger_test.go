@@ -3,25 +3,23 @@ package log_test
 import (
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/common/log"
-	. "v2ray.com/ext/assert"
 )
 
 func TestFileLogger(t *testing.T) {
-	assert := With(t)
-
 	f, err := ioutil.TempFile("", "vtest")
-	assert(err, IsNil)
+	common.Must(err)
 	path := f.Name()
 	common.Must(f.Close())
 
 	creator, err := CreateFileLogWriter(path)
-	assert(err, IsNil)
+	common.Must(err)
 
 	handler := NewLogger(creator)
 	handler.Handle(&GeneralMessage{Content: "Test Log"})
@@ -30,11 +28,12 @@ func TestFileLogger(t *testing.T) {
 	common.Must(common.Close(handler))
 
 	f, err = os.Open(path)
-	assert(err, IsNil)
+	common.Must(err)
+	defer f.Close() // nolint: errcheck
 
 	b, err := buf.ReadAllToBytes(f)
-	assert(err, IsNil)
-	assert(string(b), HasSubstring, "Test Log")
-
-	common.Must(f.Close())
+	common.Must(err)
+	if !strings.Contains(string(b), "Test Log") {
+		t.Fatal("Expect log text contains 'Test Log', but actually: ", string(b))
+	}
 }

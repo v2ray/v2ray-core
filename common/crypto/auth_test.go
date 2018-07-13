@@ -7,6 +7,7 @@ import (
 	"io"
 	"testing"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/protocol"
@@ -75,7 +76,7 @@ func TestAuthenticationReaderWriterPacket(t *testing.T) {
 	assert := With(t)
 
 	key := make([]byte, 16)
-	rand.Read(key)
+	common.Must2(rand.Read(key))
 	block, err := aes.NewCipher(key)
 	assert(err, IsNil)
 
