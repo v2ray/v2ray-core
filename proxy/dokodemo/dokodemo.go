@@ -68,8 +68,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 	if d.config.FollowRedirect {
 		if origDest, ok := proxy.OriginalTargetFromContext(ctx); ok {
 			dest = origDest
-		}
-		if handshake, ok := conn.(hasHandshakeAddress); ok {
+		} else if handshake, ok := conn.(hasHandshakeAddress); ok {
 			addr := handshake.HandshakeAddress()
 			if addr != nil {
 				dest.Address = addr
