@@ -20,6 +20,11 @@ func (c *executionContext) executeTask() error {
 		return nil
 	}
 
+	// Reuse current goroutine if we only have one task to run.
+	if len(c.tasks) == 1 && c.ctx == nil {
+		return c.tasks[0]()
+	}
+
 	ctx := context.Background()
 
 	if c.ctx != nil {
