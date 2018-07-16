@@ -4,6 +4,7 @@ package dispatcher
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"v2ray.com/core"
@@ -135,6 +136,15 @@ func (d *DefaultDispatcher) getLink(ctx context.Context) (*core.Link, *core.Link
 	return inboundLink, outboundLink
 }
 
+func shouldOverride(result SniffResult, domainOverride []string) bool {
+	for _, p := range domainOverride {
+		if strings.HasPrefix(result.Protocol(), p) {
+			return true
+		}
+	}
+	return false
+}
+
 // Dispatch implements core.Dispatcher.
 func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destination) (*core.Link, error) {
 	if !destination.IsValid() {
@@ -143,8 +153,8 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	ctx = proxy.ContextWithTarget(ctx, destination)
 
 	inbound, outbound := d.getLink(ctx)
-	snifferList := proxyman.ProtocolSniffersFromContext(ctx)
-	if destination.Address.Family().IsDomain() || destination.Network != net.Network_TCP || len(snifferList) == 0 {
+	sniffingConfig := proxyman.SniffingConfigFromContext(ctx)
+	if destination.Network != net.Network_TCP || sniffingConfig == nil || !sniffingConfig.Enabled {
 		go d.routedDispatch(ctx, outbound, destination)
 	} else {
 		go func() {
@@ -152,8 +162,12 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 				reader: outbound.Reader.(*pipe.Reader),
 			}
 			outbound.Reader = cReader
-			domain, err := sniffer(ctx, snifferList, cReader)
+			result, err := sniffer(ctx, cReader)
 			if err == nil {
+				ctx = ContextWithSniffingResult(ctx, result)
+			}
+			if err == nil && shouldOverride(result, sniffingConfig.DomainOverride) {
+				domain := result.Domain()
 				newError("sniffed domain: ", domain).WriteToLog(session.ExportIDToError(ctx))
 				destination.Address = net.ParseAddress(domain)
 				ctx = proxy.ContextWithTarget(ctx, destination)
@@ -164,31 +178,31 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	return inbound, nil
 }
 
-func sniffer(ctx context.Context, snifferList []proxyman.KnownProtocols, cReader *cachedReader) (string, error) {
+func sniffer(ctx context.Context, cReader *cachedReader) (SniffResult, error) {
 	payload := buf.New()
 	defer payload.Release()
 
-	sniffer := NewSniffer(snifferList)
+	sniffer := NewSniffer()
 	totalAttempt := 0
 	for {
 		select {
 		case <-ctx.Done():
-			return "", ctx.Err()
+			return nil, ctx.Err()
 		default:
 			totalAttempt++
 			if totalAttempt > 5 {
-				return "", errSniffingTimeout
+				return nil, errSniffingTimeout
 			}
 
 			cReader.Cache(payload)
 			if !payload.IsEmpty() {
-				domain, err := sniffer.Sniff(payload.Bytes())
-				if err != ErrMoreData {
-					return domain, err
+				result, err := sniffer.Sniff(payload.Bytes())
+				if err != core.ErrNoClue {
+					return result, err
 				}
 			}
 			if payload.IsFull() {
-				return "", ErrInvalidData
+				return nil, errUnknownContent
 			}
 			time.Sleep(time.Millisecond * 100)
 		}

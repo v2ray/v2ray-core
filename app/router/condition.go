@@ -2,9 +2,11 @@ package router
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
+	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/strmatcher"
@@ -370,5 +372,40 @@ func (v *InboundTagMatcher) Apply(ctx context.Context) bool {
 			return true
 		}
 	}
+	return false
+}
+
+type ProtocolMatcher struct {
+	protocols []string
+}
+
+func NewProtocolMatcher(protocols []string) *ProtocolMatcher {
+	pCopy := make([]string, 0, len(protocols))
+
+	for _, p := range protocols {
+		if len(p) > 0 {
+			pCopy = append(pCopy, p)
+		}
+	}
+
+	return &ProtocolMatcher{
+		protocols: pCopy,
+	}
+}
+
+func (m *ProtocolMatcher) Apply(ctx context.Context) bool {
+	result := dispatcher.SniffingResultFromContext(ctx)
+
+	if result == nil {
+		return false
+	}
+
+	protocol := result.Protocol()
+	for _, p := range m.protocols {
+		if strings.HasPrefix(protocol, p) {
+			return true
+		}
+	}
+
 	return false
 }

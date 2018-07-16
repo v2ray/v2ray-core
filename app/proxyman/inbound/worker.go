@@ -37,7 +37,7 @@ type tcpWorker struct {
 	recvOrigDest    bool
 	tag             string
 	dispatcher      core.Dispatcher
-	sniffers        []proxyman.KnownProtocols
+	sniffingConfig  *proxyman.SniffingConfig
 	uplinkCounter   core.StatCounter
 	downlinkCounter core.StatCounter
 
@@ -63,8 +63,8 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 	}
 	ctx = proxy.ContextWithInboundEntryPoint(ctx, net.TCPDestination(w.address, w.port))
 	ctx = proxy.ContextWithSource(ctx, net.DestinationFromAddr(conn.RemoteAddr()))
-	if len(w.sniffers) > 0 {
-		ctx = proxyman.ContextWithProtocolSniffers(ctx, w.sniffers)
+	if w.sniffingConfig != nil {
+		ctx = proxyman.ContextWithSniffingConfig(ctx, w.sniffingConfig)
 	}
 	if w.uplinkCounter != nil || w.downlinkCounter != nil {
 		conn = &internet.StatCouterConnection{

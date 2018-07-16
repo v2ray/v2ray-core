@@ -8,16 +8,16 @@ import (
 type key int
 
 const (
-	protocolsKey key = iota
+	sniffing key = iota
 )
 
-func ContextWithProtocolSniffers(ctx context.Context, list []KnownProtocols) context.Context {
-	return context.WithValue(ctx, protocolsKey, list)
+func ContextWithSniffingConfig(ctx context.Context, c *SniffingConfig) context.Context {
+	return context.WithValue(ctx, sniffing, c)
 }
 
-func ProtocolSniffersFromContext(ctx context.Context) []KnownProtocols {
-	if list, ok := ctx.Value(protocolsKey).([]KnownProtocols); ok {
-		return list
+func SniffingConfigFromContext(ctx context.Context) *SniffingConfig {
+	if c, ok := ctx.Value(sniffing).(*SniffingConfig); ok {
+		return c
 	}
 	return nil
 }

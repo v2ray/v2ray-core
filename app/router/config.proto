@@ -64,6 +64,7 @@ message RoutingRule {
   repeated CIDR source_cidr = 6;
   repeated string user_email = 7;
   repeated string inbound_tag = 8;
+  repeated string protocol = 9;
 }
 
 message Config {

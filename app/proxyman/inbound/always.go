@@ -79,7 +79,7 @@ func NewAlwaysOnInboundHandler(ctx context.Context, tag string, receiverConfig *
 				recvOrigDest:    receiverConfig.ReceiveOriginalDestination,
 				tag:             tag,
 				dispatcher:      h.mux,
-				sniffers:        receiverConfig.DomainOverride,
+				sniffingConfig:  receiverConfig.GetEffectiveSniffingSettings(),
 				uplinkCounter:   uplinkCounter,
 				downlinkCounter: downlinkCounter,
 			}
