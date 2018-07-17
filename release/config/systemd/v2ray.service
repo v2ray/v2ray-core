@@ -13,6 +13,7 @@ Type=simple
 PIDFile=/var/run/v2ray.pid
 ExecStart=/usr/bin/v2ray/v2ray -config /etc/v2ray/config.json
 Restart=on-failure
+RestartPreventExitStatus=23  # Configuration error
 
 [Install]
 WantedBy=multi-user.target
