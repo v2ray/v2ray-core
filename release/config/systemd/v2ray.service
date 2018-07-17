@@ -16,7 +16,7 @@ Restart=on-failure
 RestartPreventExitStatus=23  # Configuration error
 # After unexpected exit, upload latest V2Ray log to official log service for future analysis.
 # Comment out the following line if you have privacy concerns.
-ExecStopPost=journalctl -u v2ray --since today | curl -X PUT --upload-file "-" https://transfer.sh/v2ray.log | awk '{print "{\"value1\":\""$1"\"}"}' | curl --header "Content-Type: application/json" --request POST --data @- https://www.v2ray.com/logupload/
+ExecStopPost=/usr/bin/v2ray/upload.sh
 
 [Install]
 WantedBy=multi-user.target

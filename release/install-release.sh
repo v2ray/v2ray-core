@@ -245,6 +245,7 @@ installV2Ray(){
     copyFile v2ctl && makeExecutable v2ctl
     copyFile geoip.dat
     copyFile geosite.dat
+    copyFile upload.sh && makeExecutable upload.sh
 
     # Install V2Ray server config to /etc/v2ray
     if [[ ! -f "/etc/v2ray/config.json" ]]; then
