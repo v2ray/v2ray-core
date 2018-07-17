@@ -15,8 +15,7 @@ ExecStart=/usr/bin/v2ray/v2ray -config /etc/v2ray/config.json
 Restart=on-failure
 RestartPreventExitStatus=23  # Configuration error
 # After unexpected exit, upload latest V2Ray log to official log service for future analysis.
-# Comment out the following line if you have privacy concerns.
-ExecStopPost=/usr/bin/v2ray/upload.sh
+# ExecStopPost=/usr/bin/v2ray/upload.sh
 
 [Install]
 WantedBy=multi-user.target
