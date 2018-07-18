@@ -6,16 +6,16 @@ import (
 	"context"
 	"time"
 
-	"v2ray.com/core/common/session"
-	"v2ray.com/core/common/task"
-
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/platform"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/task"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/encoding"
@@ -85,6 +85,10 @@ func (v *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 		Address: target.Address,
 		Port:    target.Port,
 		Option:  protocol.RequestOptionChunkStream,
+	}
+
+	if enablePadding {
+		request.Option.Set(protocol.RequestOptionGlobalPadding)
 	}
 
 	rawAccount, err := request.User.GetTypedAccount()
@@ -161,8 +165,18 @@ func (v *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 	return nil
 }
 
+var (
+	enablePadding = false
+)
+
 func init() {
 	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
 		return New(ctx, config.(*Config))
 	}))
+
+	const defaultFlagValue = "NOT_DEFINED_AT_ALL"
+	paddingValue := platform.NewEnvFlag("v2ray.vmess.padding").GetValue(func() string { return defaultFlagValue })
+	if paddingValue != defaultFlagValue {
+		enablePadding = true
+	}
 }

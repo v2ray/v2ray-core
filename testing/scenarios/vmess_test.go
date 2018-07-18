@@ -253,8 +253,15 @@ func TestVMessGCM(t *testing.T) {
 		},
 	}
 
+	/*
+		const envName = "V2RAY_VMESS_PADDING"
+		common.Must(os.Setenv(envName, "1"))
+		defer os.Unsetenv(envName)
+	*/
+
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
 	assert(err, IsNil)
+	defer CloseAllServers(servers)
 
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -280,8 +287,6 @@ func TestVMessGCM(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-
-	CloseAllServers(servers)
 }
 
 func TestVMessGCMUDP(t *testing.T) {

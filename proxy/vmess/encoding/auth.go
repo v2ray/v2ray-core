@@ -112,6 +112,6 @@ func (s *ShakeSizeParser) NextPaddingLen() uint16 {
 	return s.next() % 64
 }
 
-func (s *ShakeSizeParser) MaxPaddingLne() uint16 {
+func (s *ShakeSizeParser) MaxPaddingLen() uint16 {
 	return 64
 }
