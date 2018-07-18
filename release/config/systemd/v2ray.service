@@ -13,7 +13,8 @@ Type=simple
 PIDFile=/var/run/v2ray.pid
 ExecStart=/usr/bin/v2ray/v2ray -config /etc/v2ray/config.json
 Restart=on-failure
-RestartPreventExitStatus=23  # Configuration error
+# Don't restart in the case of configuration error
+RestartPreventExitStatus=23
 # After unexpected exit, upload latest V2Ray log to official log service for future analysis.
 # ExecStopPost=/usr/bin/v2ray/upload.sh
 
