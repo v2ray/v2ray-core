@@ -65,12 +65,21 @@ func (h *Handler) resolveIP(ctx context.Context, domain string) net.Address {
 	return net.IPAddress(ips[dice.Roll(len(ips))])
 }
 
+func isValidAddress(addr *net.IPOrDomain) bool {
+	if addr == nil {
+		return false
+	}
+
+	a := addr.AsAddress()
+	return a != net.AnyIP
+}
+
 // Process implements proxy.Outbound.
 func (h *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dialer) error {
 	destination, _ := proxy.TargetFromContext(ctx)
 	if h.config.DestinationOverride != nil {
 		server := h.config.DestinationOverride.Server
-		if server.Address != nil {
+		if isValidAddress(server.Address) {
 			destination.Address = server.Address.AsAddress()
 		}
 		if server.Port != 0 {
