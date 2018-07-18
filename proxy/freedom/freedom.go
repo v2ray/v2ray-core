@@ -70,10 +70,11 @@ func (h *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 	destination, _ := proxy.TargetFromContext(ctx)
 	if h.config.DestinationOverride != nil {
 		server := h.config.DestinationOverride.Server
-		destination = net.Destination{
-			Network: destination.Network,
-			Address: server.Address.AsAddress(),
-			Port:    net.Port(server.Port),
+		if server.Address != nil {
+			destination.Address = server.Address.AsAddress()
+		}
+		if server.Port != 0 {
+			destination.Port = net.Port(server.Port)
 		}
 	}
 	newError("opening connection to ", destination).WriteToLog(session.ExportIDToError(ctx))
