@@ -42,7 +42,7 @@ var (
 )
 
 func beginWithHTTPMethod(b []byte) error {
-	for _, m := range methods {
+	for _, m := range &methods {
 		if len(b) >= len(m) && strings.ToLower(string(b[:len(m)])) == m {
 			return nil
 		}

@@ -36,7 +36,7 @@ func (a *Authentication) ApplySecret(b []byte) {
 
 func generateRandomBytes(random []byte) {
 	for {
-		common.Must2(rand.Read(random[:]))
+		common.Must2(rand.Read(random))
 
 		if random[0] == 0xef {
 			continue
