@@ -55,9 +55,9 @@ message SniffingConfig {
   // Whether or not to enable content sniffing on an inbound connection.
   bool enabled = 1;
 
-  // Override target domain if sniff'ed protocol is in the given list.
+  // Override target destination if sniff'ed protocol is in the given list.
   // Supported values are "http", "tls".
-  repeated string domain_override = 2;
+  repeated string destination_override = 2;
 }
 
 message ReceiverConfig {

@@ -166,7 +166,7 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 			if err == nil {
 				ctx = ContextWithSniffingResult(ctx, result)
 			}
-			if err == nil && shouldOverride(result, sniffingConfig.DomainOverride) {
+			if err == nil && shouldOverride(result, sniffingConfig.DestinationOverride) {
 				domain := result.Domain()
 				newError("sniffed domain: ", domain).WriteToLog(session.ExportIDToError(ctx))
 				destination.Address = net.ParseAddress(domain)

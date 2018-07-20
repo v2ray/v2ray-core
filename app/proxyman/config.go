@@ -30,8 +30,8 @@ func (c *ReceiverConfig) GetEffectiveSniffingSettings() *SniffingConfig {
 			}
 		}
 		return &SniffingConfig{
-			Enabled:        true,
-			DomainOverride: p,
+			Enabled:             true,
+			DestinationOverride: p,
 		}
 	}
 
