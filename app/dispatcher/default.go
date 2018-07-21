@@ -5,6 +5,7 @@ package dispatcher
 import (
 	"context"
 	"strings"
+	"sync"
 	"time"
 
 	"v2ray.com/core"
@@ -24,21 +25,27 @@ var (
 )
 
 type cachedReader struct {
+	sync.Mutex
 	reader *pipe.Reader
 	cache  buf.MultiBuffer
 }
 
 func (r *cachedReader) Cache(b *buf.Buffer) {
 	mb, _ := r.reader.ReadMultiBufferTimeout(time.Millisecond * 100)
+	r.Lock()
 	if !mb.IsEmpty() {
 		common.Must(r.cache.WriteMultiBuffer(mb))
 	}
 	common.Must(b.Reset(func(x []byte) (int, error) {
 		return r.cache.Copy(x), nil
 	}))
+	r.Unlock()
 }
 
 func (r *cachedReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
+	r.Lock()
+	defer r.Unlock()
+
 	if !r.cache.IsEmpty() {
 		mb := r.cache
 		r.cache = nil
@@ -49,6 +56,9 @@ func (r *cachedReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 }
 
 func (r *cachedReader) ReadMultiBufferTimeout(timeout time.Duration) (buf.MultiBuffer, error) {
+	r.Lock()
+	defer r.Unlock()
+
 	if !r.cache.IsEmpty() {
 		mb := r.cache
 		r.cache = nil
@@ -59,7 +69,10 @@ func (r *cachedReader) ReadMultiBufferTimeout(timeout time.Duration) (buf.MultiB
 }
 
 func (r *cachedReader) CloseError() {
+	r.Lock()
 	r.cache.Release()
+	r.cache = nil
+	r.Unlock()
 	r.reader.CloseError()
 }
 
