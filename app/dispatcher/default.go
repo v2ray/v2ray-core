@@ -46,7 +46,7 @@ func (r *cachedReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	r.Lock()
 	defer r.Unlock()
 
-	if !r.cache.IsEmpty() {
+	if r.cache != nil && !r.cache.IsEmpty() {
 		mb := r.cache
 		r.cache = nil
 		return mb, nil
@@ -59,7 +59,7 @@ func (r *cachedReader) ReadMultiBufferTimeout(timeout time.Duration) (buf.MultiB
 	r.Lock()
 	defer r.Unlock()
 
-	if !r.cache.IsEmpty() {
+	if r.cache != nil && !r.cache.IsEmpty() {
 		mb := r.cache
 		r.cache = nil
 		return mb, nil
@@ -70,8 +70,10 @@ func (r *cachedReader) ReadMultiBufferTimeout(timeout time.Duration) (buf.MultiB
 
 func (r *cachedReader) CloseError() {
 	r.Lock()
-	r.cache.Release()
-	r.cache = nil
+	if r.cache != nil {
+		r.cache.Release()
+		r.cache = nil
+	}
 	r.Unlock()
 	r.reader.CloseError()
 }
