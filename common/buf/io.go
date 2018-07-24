@@ -54,14 +54,8 @@ var useReadv = false
 
 func init() {
 	const defaultFlagValue = "NOT_DEFINED_AT_ALL"
-	value := platform.NewEnvFlag("v2ray.buf.readv.disable").GetValue(func() string { return defaultFlagValue })
-	if value != defaultFlagValue {
-		useReadv = false
-		return
-	}
-
-	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-		newError("ReadV enabled").WriteToLog()
+	value := platform.NewEnvFlag("v2ray.buf.readv").GetValue(func() string { return defaultFlagValue })
+	if value != defaultFlagValue && (runtime.GOOS == "linux" || runtime.GOOS == "darwin") {
 		useReadv = true
 	}
 }
