@@ -9,6 +9,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/common/compare"
 	clog "v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -272,6 +273,7 @@ func TestVMessGCM(t *testing.T) {
 				Port: int(clientPort),
 			})
 			assert(err, IsNil)
+			defer conn.Close() // nolint: errcheck
 
 			payload := make([]byte, 10240*1024)
 			rand.Read(payload)
@@ -280,9 +282,10 @@ func TestVMessGCM(t *testing.T) {
 			assert(err, IsNil)
 			assert(nBytes, Equals, len(payload))
 
-			response := readFrom(conn, time.Second*20, 10240*1024)
-			assert(response, Equals, xor([]byte(payload)))
-			assert(conn.Close(), IsNil)
+			response := readFrom(conn, time.Second*40, 10240*1024)
+			if err := compare.BytesEqualWithDetail(response, xor([]byte(payload))); err != nil {
+				t.Error(err)
+			}
 			wg.Done()
 		}()
 	}

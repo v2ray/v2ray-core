@@ -2,7 +2,11 @@ package buf
 
 import (
 	"io"
+	"runtime"
+	"syscall"
 	"time"
+
+	"v2ray.com/core/common/platform"
 )
 
 // Reader extends io.Reader with MultiBuffer.
@@ -46,11 +50,38 @@ func ReadAtLeastFrom(reader io.Reader, size int) Supplier {
 	}
 }
 
+var useReadv = false
+
+func init() {
+	const defaultFlagValue = "NOT_DEFINED_AT_ALL"
+	value := platform.NewEnvFlag("v2ray.buf.readv.disable").GetValue(func() string { return defaultFlagValue })
+	if value != defaultFlagValue {
+		useReadv = false
+		return
+	}
+
+	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+		newError("ReadV enabled").WriteToLog()
+		useReadv = true
+	}
+}
+
 // NewReader creates a new Reader.
 // The Reader instance doesn't take the ownership of reader.
 func NewReader(reader io.Reader) Reader {
 	if mr, ok := reader.(Reader); ok {
 		return mr
+	}
+
+	if useReadv {
+		if sc, ok := reader.(syscall.Conn); ok {
+			rawConn, err := sc.SyscallConn()
+			if err != nil {
+				newError("failed to get sysconn").Base(err).WriteToLog()
+			} else {
+				return NewReadVReader(reader, rawConn)
+			}
+		}
 	}
 
 	return NewBytesToBufferReader(reader)
