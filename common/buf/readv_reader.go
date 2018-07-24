@@ -9,6 +9,7 @@ import (
 type ReadVReader struct {
 	io.Reader
 	rawConn syscall.RawConn
+	iovects []syscall.Iovec
 	nBuf    int32
 }
 
@@ -31,13 +32,17 @@ func allocN(n int32) []*Buffer {
 func (r *ReadVReader) ReadMultiBuffer() (MultiBuffer, error) {
 	bs := allocN(r.nBuf)
 
-	iovecs := make([]syscall.Iovec, r.nBuf)
+	var iovecs []syscall.Iovec
+	if r.iovects != nil {
+		iovecs = r.iovects
+	}
 	for idx, b := range bs {
-		iovecs[idx] = syscall.Iovec{
+		iovecs = append(iovecs, syscall.Iovec{
 			Base: &(b.v[0]),
-		}
+		})
 		iovecs[idx].SetLen(int(Size))
 	}
+	r.iovects = iovecs[:0]
 
 	var nBytes int
 
@@ -62,6 +67,8 @@ func (r *ReadVReader) ReadMultiBuffer() (MultiBuffer, error) {
 		return nil, io.EOF
 	}
 
+	var isFull bool = (nBytes == int(r.nBuf)*Size)
+
 	nBuf := 0
 	for nBuf < len(bs) {
 		if nBytes <= 0 {
@@ -81,7 +88,7 @@ func (r *ReadVReader) ReadMultiBuffer() (MultiBuffer, error) {
 		bs[i] = nil
 	}
 
-	if int32(nBuf) == r.nBuf && nBuf < 128 {
+	if isFull && nBuf < 128 {
 		r.nBuf *= 4
 	} else {
 		r.nBuf = int32(nBuf)
