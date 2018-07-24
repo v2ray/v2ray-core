@@ -29,7 +29,7 @@ func (m *Header) Reset()         { *m = Header{} }
 func (m *Header) String() string { return proto.CompactTextString(m) }
 func (*Header) ProtoMessage()    {}
 func (*Header) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_a2d5bfee7e39acaf, []int{0}
+	return fileDescriptor_config_110a2a8126ce35fd, []int{0}
 }
 func (m *Header) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Header.Unmarshal(m, b)
@@ -75,7 +75,7 @@ func (m *Version) Reset()         { *m = Version{} }
 func (m *Version) String() string { return proto.CompactTextString(m) }
 func (*Version) ProtoMessage()    {}
 func (*Version) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_a2d5bfee7e39acaf, []int{1}
+	return fileDescriptor_config_110a2a8126ce35fd, []int{1}
 }
 func (m *Version) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Version.Unmarshal(m, b)
@@ -114,7 +114,7 @@ func (m *Method) Reset()         { *m = Method{} }
 func (m *Method) String() string { return proto.CompactTextString(m) }
 func (*Method) ProtoMessage()    {}
 func (*Method) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_a2d5bfee7e39acaf, []int{2}
+	return fileDescriptor_config_110a2a8126ce35fd, []int{2}
 }
 func (m *Method) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Method.Unmarshal(m, b)
@@ -158,7 +158,7 @@ func (m *RequestConfig) Reset()         { *m = RequestConfig{} }
 func (m *RequestConfig) String() string { return proto.CompactTextString(m) }
 func (*RequestConfig) ProtoMessage()    {}
 func (*RequestConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_a2d5bfee7e39acaf, []int{3}
+	return fileDescriptor_config_110a2a8126ce35fd, []int{3}
 }
 func (m *RequestConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RequestConfig.Unmarshal(m, b)
@@ -220,7 +220,7 @@ func (m *Status) Reset()         { *m = Status{} }
 func (m *Status) String() string { return proto.CompactTextString(m) }
 func (*Status) ProtoMessage()    {}
 func (*Status) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_a2d5bfee7e39acaf, []int{4}
+	return fileDescriptor_config_110a2a8126ce35fd, []int{4}
 }
 func (m *Status) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Status.Unmarshal(m, b)
@@ -267,7 +267,7 @@ func (m *ResponseConfig) Reset()         { *m = ResponseConfig{} }
 func (m *ResponseConfig) String() string { return proto.CompactTextString(m) }
 func (*ResponseConfig) ProtoMessage()    {}
 func (*ResponseConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_a2d5bfee7e39acaf, []int{5}
+	return fileDescriptor_config_110a2a8126ce35fd, []int{5}
 }
 func (m *ResponseConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ResponseConfig.Unmarshal(m, b)
@@ -322,7 +322,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_a2d5bfee7e39acaf, []int{6}
+	return fileDescriptor_config_110a2a8126ce35fd, []int{6}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -367,10 +367,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/transport/internet/headers/http/config.proto", fileDescriptor_config_a2d5bfee7e39acaf)
+	proto.RegisterFile("v2ray.com/core/transport/internet/headers/http/config.proto", fileDescriptor_config_110a2a8126ce35fd)
 }
 
-var fileDescriptor_config_a2d5bfee7e39acaf = []byte{
+var fileDescriptor_config_110a2a8126ce35fd = []byte{
 	// 394 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x94, 0xbf, 0x8a, 0xdb, 0x40,
 	0x10, 0xc6, 0x91, 0xe4, 0xc8, 0xf1, 0x84, 0x84, 0xb0, 0x84, 0xa0, 0x2a, 0x31, 0xaa, 0x8c, 0x8b,

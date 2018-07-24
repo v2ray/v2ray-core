@@ -38,7 +38,7 @@ func (x KnownProtocols) String() string {
 	return proto.EnumName(KnownProtocols_name, int32(x))
 }
 func (KnownProtocols) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_6857cd20ab15680d, []int{0}
+	return fileDescriptor_config_4f352eea1fc05e76, []int{0}
 }
 
 type AllocationStrategy_Type int32
@@ -67,7 +67,7 @@ func (x AllocationStrategy_Type) String() string {
 	return proto.EnumName(AllocationStrategy_Type_name, int32(x))
 }
 func (AllocationStrategy_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_6857cd20ab15680d, []int{1, 0}
+	return fileDescriptor_config_4f352eea1fc05e76, []int{1, 0}
 }
 
 type InboundConfig struct {
@@ -80,7 +80,7 @@ func (m *InboundConfig) Reset()         { *m = InboundConfig{} }
 func (m *InboundConfig) String() string { return proto.CompactTextString(m) }
 func (*InboundConfig) ProtoMessage()    {}
 func (*InboundConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_6857cd20ab15680d, []int{0}
+	return fileDescriptor_config_4f352eea1fc05e76, []int{0}
 }
 func (m *InboundConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InboundConfig.Unmarshal(m, b)
@@ -117,7 +117,7 @@ func (m *AllocationStrategy) Reset()         { *m = AllocationStrategy{} }
 func (m *AllocationStrategy) String() string { return proto.CompactTextString(m) }
 func (*AllocationStrategy) ProtoMessage()    {}
 func (*AllocationStrategy) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_6857cd20ab15680d, []int{1}
+	return fileDescriptor_config_4f352eea1fc05e76, []int{1}
 }
 func (m *AllocationStrategy) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AllocationStrategy.Unmarshal(m, b)
@@ -173,7 +173,7 @@ func (m *AllocationStrategy_AllocationStrategyConcurrency) String() string {
 }
 func (*AllocationStrategy_AllocationStrategyConcurrency) ProtoMessage() {}
 func (*AllocationStrategy_AllocationStrategyConcurrency) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_6857cd20ab15680d, []int{1, 0}
+	return fileDescriptor_config_4f352eea1fc05e76, []int{1, 0}
 }
 func (m *AllocationStrategy_AllocationStrategyConcurrency) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AllocationStrategy_AllocationStrategyConcurrency.Unmarshal(m, b)
@@ -215,7 +215,7 @@ func (m *AllocationStrategy_AllocationStrategyRefresh) String() string {
 }
 func (*AllocationStrategy_AllocationStrategyRefresh) ProtoMessage() {}
 func (*AllocationStrategy_AllocationStrategyRefresh) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_6857cd20ab15680d, []int{1, 1}
+	return fileDescriptor_config_4f352eea1fc05e76, []int{1, 1}
 }
 func (m *AllocationStrategy_AllocationStrategyRefresh) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AllocationStrategy_AllocationStrategyRefresh.Unmarshal(m, b)
@@ -257,7 +257,7 @@ func (m *SniffingConfig) Reset()         { *m = SniffingConfig{} }
 func (m *SniffingConfig) String() string { return proto.CompactTextString(m) }
 func (*SniffingConfig) ProtoMessage()    {}
 func (*SniffingConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_6857cd20ab15680d, []int{2}
+	return fileDescriptor_config_4f352eea1fc05e76, []int{2}
 }
 func (m *SniffingConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SniffingConfig.Unmarshal(m, b)
@@ -312,7 +312,7 @@ func (m *ReceiverConfig) Reset()         { *m = ReceiverConfig{} }
 func (m *ReceiverConfig) String() string { return proto.CompactTextString(m) }
 func (*ReceiverConfig) ProtoMessage()    {}
 func (*ReceiverConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_6857cd20ab15680d, []int{3}
+	return fileDescriptor_config_4f352eea1fc05e76, []int{3}
 }
 func (m *ReceiverConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ReceiverConfig.Unmarshal(m, b)
@@ -395,7 +395,7 @@ func (m *InboundHandlerConfig) Reset()         { *m = InboundHandlerConfig{} }
 func (m *InboundHandlerConfig) String() string { return proto.CompactTextString(m) }
 func (*InboundHandlerConfig) ProtoMessage()    {}
 func (*InboundHandlerConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_6857cd20ab15680d, []int{4}
+	return fileDescriptor_config_4f352eea1fc05e76, []int{4}
 }
 func (m *InboundHandlerConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InboundHandlerConfig.Unmarshal(m, b)
@@ -446,7 +446,7 @@ func (m *OutboundConfig) Reset()         { *m = OutboundConfig{} }
 func (m *OutboundConfig) String() string { return proto.CompactTextString(m) }
 func (*OutboundConfig) ProtoMessage()    {}
 func (*OutboundConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_6857cd20ab15680d, []int{5}
+	return fileDescriptor_config_4f352eea1fc05e76, []int{5}
 }
 func (m *OutboundConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_OutboundConfig.Unmarshal(m, b)
@@ -481,7 +481,7 @@ func (m *SenderConfig) Reset()         { *m = SenderConfig{} }
 func (m *SenderConfig) String() string { return proto.CompactTextString(m) }
 func (*SenderConfig) ProtoMessage()    {}
 func (*SenderConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_6857cd20ab15680d, []int{6}
+	return fileDescriptor_config_4f352eea1fc05e76, []int{6}
 }
 func (m *SenderConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SenderConfig.Unmarshal(m, b)
@@ -543,7 +543,7 @@ func (m *MultiplexingConfig) Reset()         { *m = MultiplexingConfig{} }
 func (m *MultiplexingConfig) String() string { return proto.CompactTextString(m) }
 func (*MultiplexingConfig) ProtoMessage()    {}
 func (*MultiplexingConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_6857cd20ab15680d, []int{7}
+	return fileDescriptor_config_4f352eea1fc05e76, []int{7}
 }
 func (m *MultiplexingConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MultiplexingConfig.Unmarshal(m, b)
@@ -593,10 +593,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/app/proxyman/config.proto", fileDescriptor_config_6857cd20ab15680d)
+	proto.RegisterFile("v2ray.com/core/app/proxyman/config.proto", fileDescriptor_config_4f352eea1fc05e76)
 }
 
-var fileDescriptor_config_6857cd20ab15680d = []byte{
+var fileDescriptor_config_4f352eea1fc05e76 = []byte{
 	// 825 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x95, 0x4f, 0x6f, 0xdb, 0x36,
 	0x18, 0xc6, 0x6b, 0xcb, 0x8d, 0x9d, 0x37, 0x8d, 0xaa, 0xb0, 0x01, 0xaa, 0x79, 0x1b, 0xe0, 0x79,

@@ -32,7 +32,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_3c1cd7fe1501fc6c, []int{0}
+	return fileDescriptor_config_2e7b0f4424e753c0, []int{0}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -100,10 +100,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/proxy/dokodemo/config.proto", fileDescriptor_config_3c1cd7fe1501fc6c)
+	proto.RegisterFile("v2ray.com/core/proxy/dokodemo/config.proto", fileDescriptor_config_2e7b0f4424e753c0)
 }
 
-var fileDescriptor_config_3c1cd7fe1501fc6c = []byte{
+var fileDescriptor_config_2e7b0f4424e753c0 = []byte{
 	// 310 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x90, 0xcf, 0x4e, 0xc2, 0x40,
 	0x10, 0x87, 0xd3, 0x8a, 0x80, 0x8b, 0x7f, 0x92, 0x3d, 0x2d, 0x46, 0x12, 0xe4, 0x02, 0xf1, 0xb0,

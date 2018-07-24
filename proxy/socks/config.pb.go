@@ -37,7 +37,7 @@ func (x AuthType) String() string {
 	return proto.EnumName(AuthType_name, int32(x))
 }
 func (AuthType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_45beb3f2ac36b2a3, []int{0}
+	return fileDescriptor_config_5b5632820a3cc171, []int{0}
 }
 
 type Account struct {
@@ -52,7 +52,7 @@ func (m *Account) Reset()         { *m = Account{} }
 func (m *Account) String() string { return proto.CompactTextString(m) }
 func (*Account) ProtoMessage()    {}
 func (*Account) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_45beb3f2ac36b2a3, []int{0}
+	return fileDescriptor_config_5b5632820a3cc171, []int{0}
 }
 func (m *Account) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Account.Unmarshal(m, b)
@@ -102,7 +102,7 @@ func (m *ServerConfig) Reset()         { *m = ServerConfig{} }
 func (m *ServerConfig) String() string { return proto.CompactTextString(m) }
 func (*ServerConfig) ProtoMessage()    {}
 func (*ServerConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_45beb3f2ac36b2a3, []int{1}
+	return fileDescriptor_config_5b5632820a3cc171, []int{1}
 }
 func (m *ServerConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServerConfig.Unmarshal(m, b)
@@ -176,7 +176,7 @@ func (m *ClientConfig) Reset()         { *m = ClientConfig{} }
 func (m *ClientConfig) String() string { return proto.CompactTextString(m) }
 func (*ClientConfig) ProtoMessage()    {}
 func (*ClientConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_45beb3f2ac36b2a3, []int{2}
+	return fileDescriptor_config_5b5632820a3cc171, []int{2}
 }
 func (m *ClientConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ClientConfig.Unmarshal(m, b)
@@ -212,10 +212,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/proxy/socks/config.proto", fileDescriptor_config_45beb3f2ac36b2a3)
+	proto.RegisterFile("v2ray.com/core/proxy/socks/config.proto", fileDescriptor_config_5b5632820a3cc171)
 }
 
-var fileDescriptor_config_45beb3f2ac36b2a3 = []byte{
+var fileDescriptor_config_5b5632820a3cc171 = []byte{
 	// 470 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x52, 0x5d, 0x8b, 0xd3, 0x40,
 	0x14, 0x75, 0xb2, 0xb6, 0x4d, 0x6f, 0xbb, 0x52, 0x06, 0x59, 0x42, 0x51, 0x8c, 0x05, 0xb1, 0xec,

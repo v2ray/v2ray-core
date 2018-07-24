@@ -35,7 +35,7 @@ func (m *AddUserOperation) Reset()         { *m = AddUserOperation{} }
 func (m *AddUserOperation) String() string { return proto.CompactTextString(m) }
 func (*AddUserOperation) ProtoMessage()    {}
 func (*AddUserOperation) Descriptor() ([]byte, []int) {
-	return fileDescriptor_command_9f3931e07157223e, []int{0}
+	return fileDescriptor_command_fe406dbb59c1601f, []int{0}
 }
 func (m *AddUserOperation) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AddUserOperation.Unmarshal(m, b)
@@ -73,7 +73,7 @@ func (m *RemoveUserOperation) Reset()         { *m = RemoveUserOperation{} }
 func (m *RemoveUserOperation) String() string { return proto.CompactTextString(m) }
 func (*RemoveUserOperation) ProtoMessage()    {}
 func (*RemoveUserOperation) Descriptor() ([]byte, []int) {
-	return fileDescriptor_command_9f3931e07157223e, []int{1}
+	return fileDescriptor_command_fe406dbb59c1601f, []int{1}
 }
 func (m *RemoveUserOperation) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RemoveUserOperation.Unmarshal(m, b)
@@ -111,7 +111,7 @@ func (m *AddInboundRequest) Reset()         { *m = AddInboundRequest{} }
 func (m *AddInboundRequest) String() string { return proto.CompactTextString(m) }
 func (*AddInboundRequest) ProtoMessage()    {}
 func (*AddInboundRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_command_9f3931e07157223e, []int{2}
+	return fileDescriptor_command_fe406dbb59c1601f, []int{2}
 }
 func (m *AddInboundRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AddInboundRequest.Unmarshal(m, b)
@@ -148,7 +148,7 @@ func (m *AddInboundResponse) Reset()         { *m = AddInboundResponse{} }
 func (m *AddInboundResponse) String() string { return proto.CompactTextString(m) }
 func (*AddInboundResponse) ProtoMessage()    {}
 func (*AddInboundResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_command_9f3931e07157223e, []int{3}
+	return fileDescriptor_command_fe406dbb59c1601f, []int{3}
 }
 func (m *AddInboundResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AddInboundResponse.Unmarshal(m, b)
@@ -179,7 +179,7 @@ func (m *RemoveInboundRequest) Reset()         { *m = RemoveInboundRequest{} }
 func (m *RemoveInboundRequest) String() string { return proto.CompactTextString(m) }
 func (*RemoveInboundRequest) ProtoMessage()    {}
 func (*RemoveInboundRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_command_9f3931e07157223e, []int{4}
+	return fileDescriptor_command_fe406dbb59c1601f, []int{4}
 }
 func (m *RemoveInboundRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RemoveInboundRequest.Unmarshal(m, b)
@@ -216,7 +216,7 @@ func (m *RemoveInboundResponse) Reset()         { *m = RemoveInboundResponse{} }
 func (m *RemoveInboundResponse) String() string { return proto.CompactTextString(m) }
 func (*RemoveInboundResponse) ProtoMessage()    {}
 func (*RemoveInboundResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_command_9f3931e07157223e, []int{5}
+	return fileDescriptor_command_fe406dbb59c1601f, []int{5}
 }
 func (m *RemoveInboundResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RemoveInboundResponse.Unmarshal(m, b)
@@ -248,7 +248,7 @@ func (m *AlterInboundRequest) Reset()         { *m = AlterInboundRequest{} }
 func (m *AlterInboundRequest) String() string { return proto.CompactTextString(m) }
 func (*AlterInboundRequest) ProtoMessage()    {}
 func (*AlterInboundRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_command_9f3931e07157223e, []int{6}
+	return fileDescriptor_command_fe406dbb59c1601f, []int{6}
 }
 func (m *AlterInboundRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AlterInboundRequest.Unmarshal(m, b)
@@ -292,7 +292,7 @@ func (m *AlterInboundResponse) Reset()         { *m = AlterInboundResponse{} }
 func (m *AlterInboundResponse) String() string { return proto.CompactTextString(m) }
 func (*AlterInboundResponse) ProtoMessage()    {}
 func (*AlterInboundResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_command_9f3931e07157223e, []int{7}
+	return fileDescriptor_command_fe406dbb59c1601f, []int{7}
 }
 func (m *AlterInboundResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AlterInboundResponse.Unmarshal(m, b)
@@ -323,7 +323,7 @@ func (m *AddOutboundRequest) Reset()         { *m = AddOutboundRequest{} }
 func (m *AddOutboundRequest) String() string { return proto.CompactTextString(m) }
 func (*AddOutboundRequest) ProtoMessage()    {}
 func (*AddOutboundRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_command_9f3931e07157223e, []int{8}
+	return fileDescriptor_command_fe406dbb59c1601f, []int{8}
 }
 func (m *AddOutboundRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AddOutboundRequest.Unmarshal(m, b)
@@ -360,7 +360,7 @@ func (m *AddOutboundResponse) Reset()         { *m = AddOutboundResponse{} }
 func (m *AddOutboundResponse) String() string { return proto.CompactTextString(m) }
 func (*AddOutboundResponse) ProtoMessage()    {}
 func (*AddOutboundResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_command_9f3931e07157223e, []int{9}
+	return fileDescriptor_command_fe406dbb59c1601f, []int{9}
 }
 func (m *AddOutboundResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AddOutboundResponse.Unmarshal(m, b)
@@ -391,7 +391,7 @@ func (m *RemoveOutboundRequest) Reset()         { *m = RemoveOutboundRequest{} }
 func (m *RemoveOutboundRequest) String() string { return proto.CompactTextString(m) }
 func (*RemoveOutboundRequest) ProtoMessage()    {}
 func (*RemoveOutboundRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_command_9f3931e07157223e, []int{10}
+	return fileDescriptor_command_fe406dbb59c1601f, []int{10}
 }
 func (m *RemoveOutboundRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RemoveOutboundRequest.Unmarshal(m, b)
@@ -428,7 +428,7 @@ func (m *RemoveOutboundResponse) Reset()         { *m = RemoveOutboundResponse{}
 func (m *RemoveOutboundResponse) String() string { return proto.CompactTextString(m) }
 func (*RemoveOutboundResponse) ProtoMessage()    {}
 func (*RemoveOutboundResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_command_9f3931e07157223e, []int{11}
+	return fileDescriptor_command_fe406dbb59c1601f, []int{11}
 }
 func (m *RemoveOutboundResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RemoveOutboundResponse.Unmarshal(m, b)
@@ -460,7 +460,7 @@ func (m *AlterOutboundRequest) Reset()         { *m = AlterOutboundRequest{} }
 func (m *AlterOutboundRequest) String() string { return proto.CompactTextString(m) }
 func (*AlterOutboundRequest) ProtoMessage()    {}
 func (*AlterOutboundRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_command_9f3931e07157223e, []int{12}
+	return fileDescriptor_command_fe406dbb59c1601f, []int{12}
 }
 func (m *AlterOutboundRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AlterOutboundRequest.Unmarshal(m, b)
@@ -504,7 +504,7 @@ func (m *AlterOutboundResponse) Reset()         { *m = AlterOutboundResponse{} }
 func (m *AlterOutboundResponse) String() string { return proto.CompactTextString(m) }
 func (*AlterOutboundResponse) ProtoMessage()    {}
 func (*AlterOutboundResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_command_9f3931e07157223e, []int{13}
+	return fileDescriptor_command_fe406dbb59c1601f, []int{13}
 }
 func (m *AlterOutboundResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AlterOutboundResponse.Unmarshal(m, b)
@@ -534,7 +534,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_command_9f3931e07157223e, []int{14}
+	return fileDescriptor_command_fe406dbb59c1601f, []int{14}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -810,10 +810,10 @@ var _HandlerService_serviceDesc = grpc.ServiceDesc{
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/app/proxyman/command/command.proto", fileDescriptor_command_9f3931e07157223e)
+	proto.RegisterFile("v2ray.com/core/app/proxyman/command/command.proto", fileDescriptor_command_fe406dbb59c1601f)
 }
 
-var fileDescriptor_command_9f3931e07157223e = []byte{
+var fileDescriptor_command_fe406dbb59c1601f = []byte{
 	// 557 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x55, 0xdf, 0x6b, 0xd3, 0x40,
 	0x1c, 0xb7, 0x53, 0xbb, 0xed, 0x3b, 0x1d, 0xf3, 0xda, 0x6e, 0x25, 0x3e, 0x6c, 0x46, 0x90, 0x0d,

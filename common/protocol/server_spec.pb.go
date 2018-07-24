@@ -29,7 +29,7 @@ func (m *ServerEndpoint) Reset()         { *m = ServerEndpoint{} }
 func (m *ServerEndpoint) String() string { return proto.CompactTextString(m) }
 func (*ServerEndpoint) ProtoMessage()    {}
 func (*ServerEndpoint) Descriptor() ([]byte, []int) {
-	return fileDescriptor_server_spec_67a074b27d9006d6, []int{0}
+	return fileDescriptor_server_spec_5e5cfcdebad37378, []int{0}
 }
 func (m *ServerEndpoint) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServerEndpoint.Unmarshal(m, b)
@@ -75,10 +75,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/common/protocol/server_spec.proto", fileDescriptor_server_spec_67a074b27d9006d6)
+	proto.RegisterFile("v2ray.com/core/common/protocol/server_spec.proto", fileDescriptor_server_spec_5e5cfcdebad37378)
 }
 
-var fileDescriptor_server_spec_67a074b27d9006d6 = []byte{
+var fileDescriptor_server_spec_5e5cfcdebad37378 = []byte{
 	// 241 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0xcf, 0xbd, 0x4e, 0xc3, 0x30,
 	0x10, 0x07, 0x70, 0xb9, 0xad, 0x00, 0xb9, 0x82, 0xc1, 0x53, 0x94, 0x01, 0x05, 0x16, 0xc2, 0x72,

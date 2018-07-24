@@ -25,7 +25,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_682f76ee5345392b, []int{0}
+	return fileDescriptor_config_be1f5995116b489b, []int{0}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -55,7 +55,7 @@ func (m *ConnectionConfig) Reset()         { *m = ConnectionConfig{} }
 func (m *ConnectionConfig) String() string { return proto.CompactTextString(m) }
 func (*ConnectionConfig) ProtoMessage()    {}
 func (*ConnectionConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_682f76ee5345392b, []int{1}
+	return fileDescriptor_config_be1f5995116b489b, []int{1}
 }
 func (m *ConnectionConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ConnectionConfig.Unmarshal(m, b)
@@ -81,10 +81,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/transport/internet/headers/noop/config.proto", fileDescriptor_config_682f76ee5345392b)
+	proto.RegisterFile("v2ray.com/core/transport/internet/headers/noop/config.proto", fileDescriptor_config_be1f5995116b489b)
 }
 
-var fileDescriptor_config_682f76ee5345392b = []byte{
+var fileDescriptor_config_be1f5995116b489b = []byte{
 	// 170 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0xce, 0xb1, 0xaa, 0xc2, 0x40,
 	0x10, 0x85, 0x61, 0xee, 0x45, 0x82, 0x6c, 0x25, 0x79, 0x84, 0x94, 0x29, 0x66, 0x21, 0x96, 0x76,

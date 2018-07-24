@@ -43,7 +43,7 @@ func (x Domain_Type) String() string {
 	return proto.EnumName(Domain_Type_name, int32(x))
 }
 func (Domain_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_38b171a67be39168, []int{0, 0}
+	return fileDescriptor_config_227cf1ddacaf1282, []int{0, 0}
 }
 
 type Config_DomainStrategy int32
@@ -76,7 +76,7 @@ func (x Config_DomainStrategy) String() string {
 	return proto.EnumName(Config_DomainStrategy_name, int32(x))
 }
 func (Config_DomainStrategy) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_38b171a67be39168, []int{7, 0}
+	return fileDescriptor_config_227cf1ddacaf1282, []int{7, 0}
 }
 
 // Domain for routing decision.
@@ -94,7 +94,7 @@ func (m *Domain) Reset()         { *m = Domain{} }
 func (m *Domain) String() string { return proto.CompactTextString(m) }
 func (*Domain) ProtoMessage()    {}
 func (*Domain) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_38b171a67be39168, []int{0}
+	return fileDescriptor_config_227cf1ddacaf1282, []int{0}
 }
 func (m *Domain) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Domain.Unmarshal(m, b)
@@ -143,7 +143,7 @@ func (m *CIDR) Reset()         { *m = CIDR{} }
 func (m *CIDR) String() string { return proto.CompactTextString(m) }
 func (*CIDR) ProtoMessage()    {}
 func (*CIDR) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_38b171a67be39168, []int{1}
+	return fileDescriptor_config_227cf1ddacaf1282, []int{1}
 }
 func (m *CIDR) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CIDR.Unmarshal(m, b)
@@ -189,7 +189,7 @@ func (m *GeoIP) Reset()         { *m = GeoIP{} }
 func (m *GeoIP) String() string { return proto.CompactTextString(m) }
 func (*GeoIP) ProtoMessage()    {}
 func (*GeoIP) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_38b171a67be39168, []int{2}
+	return fileDescriptor_config_227cf1ddacaf1282, []int{2}
 }
 func (m *GeoIP) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GeoIP.Unmarshal(m, b)
@@ -234,7 +234,7 @@ func (m *GeoIPList) Reset()         { *m = GeoIPList{} }
 func (m *GeoIPList) String() string { return proto.CompactTextString(m) }
 func (*GeoIPList) ProtoMessage()    {}
 func (*GeoIPList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_38b171a67be39168, []int{3}
+	return fileDescriptor_config_227cf1ddacaf1282, []int{3}
 }
 func (m *GeoIPList) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GeoIPList.Unmarshal(m, b)
@@ -273,7 +273,7 @@ func (m *GeoSite) Reset()         { *m = GeoSite{} }
 func (m *GeoSite) String() string { return proto.CompactTextString(m) }
 func (*GeoSite) ProtoMessage()    {}
 func (*GeoSite) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_38b171a67be39168, []int{4}
+	return fileDescriptor_config_227cf1ddacaf1282, []int{4}
 }
 func (m *GeoSite) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GeoSite.Unmarshal(m, b)
@@ -318,7 +318,7 @@ func (m *GeoSiteList) Reset()         { *m = GeoSiteList{} }
 func (m *GeoSiteList) String() string { return proto.CompactTextString(m) }
 func (*GeoSiteList) ProtoMessage()    {}
 func (*GeoSiteList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_38b171a67be39168, []int{5}
+	return fileDescriptor_config_227cf1ddacaf1282, []int{5}
 }
 func (m *GeoSiteList) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GeoSiteList.Unmarshal(m, b)
@@ -364,7 +364,7 @@ func (m *RoutingRule) Reset()         { *m = RoutingRule{} }
 func (m *RoutingRule) String() string { return proto.CompactTextString(m) }
 func (*RoutingRule) ProtoMessage()    {}
 func (*RoutingRule) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_38b171a67be39168, []int{6}
+	return fileDescriptor_config_227cf1ddacaf1282, []int{6}
 }
 func (m *RoutingRule) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RoutingRule.Unmarshal(m, b)
@@ -459,7 +459,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_38b171a67be39168, []int{7}
+	return fileDescriptor_config_227cf1ddacaf1282, []int{7}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -507,10 +507,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/app/router/config.proto", fileDescriptor_config_38b171a67be39168)
+	proto.RegisterFile("v2ray.com/core/app/router/config.proto", fileDescriptor_config_227cf1ddacaf1282)
 }
 
-var fileDescriptor_config_38b171a67be39168 = []byte{
+var fileDescriptor_config_227cf1ddacaf1282 = []byte{
 	// 651 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x54, 0x5d, 0x6f, 0xd3, 0x4a,
 	0x10, 0xbd, 0xce, 0x57, 0xeb, 0x71, 0x6e, 0xae, 0xb5, 0xba, 0xbd, 0xf2, 0x2d, 0x14, 0x82, 0x85,

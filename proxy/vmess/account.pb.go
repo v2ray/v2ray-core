@@ -32,7 +32,7 @@ func (m *Account) Reset()         { *m = Account{} }
 func (m *Account) String() string { return proto.CompactTextString(m) }
 func (*Account) ProtoMessage()    {}
 func (*Account) Descriptor() ([]byte, []int) {
-	return fileDescriptor_account_c0bcd79d652bbf86, []int{0}
+	return fileDescriptor_account_6d7e6db8cd7c96ca, []int{0}
 }
 func (m *Account) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Account.Unmarshal(m, b)
@@ -78,10 +78,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/proxy/vmess/account.proto", fileDescriptor_account_c0bcd79d652bbf86)
+	proto.RegisterFile("v2ray.com/core/proxy/vmess/account.proto", fileDescriptor_account_6d7e6db8cd7c96ca)
 }
 
-var fileDescriptor_account_c0bcd79d652bbf86 = []byte{
+var fileDescriptor_account_6d7e6db8cd7c96ca = []byte{
 	// 244 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x8f, 0xc1, 0x4a, 0x03, 0x31,
 	0x10, 0x86, 0xc9, 0x8a, 0x56, 0x23, 0x8a, 0xee, 0xa1, 0xac, 0x3d, 0x2d, 0x9e, 0x16, 0x91, 0x09,

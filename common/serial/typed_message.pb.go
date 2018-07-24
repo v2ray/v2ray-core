@@ -30,7 +30,7 @@ func (m *TypedMessage) Reset()         { *m = TypedMessage{} }
 func (m *TypedMessage) String() string { return proto.CompactTextString(m) }
 func (*TypedMessage) ProtoMessage()    {}
 func (*TypedMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_typed_message_aa5625c6172fb59b, []int{0}
+	return fileDescriptor_typed_message_70293e724b066c70, []int{0}
 }
 func (m *TypedMessage) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TypedMessage.Unmarshal(m, b)
@@ -69,10 +69,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/common/serial/typed_message.proto", fileDescriptor_typed_message_aa5625c6172fb59b)
+	proto.RegisterFile("v2ray.com/core/common/serial/typed_message.proto", fileDescriptor_typed_message_70293e724b066c70)
 }
 
-var fileDescriptor_typed_message_aa5625c6172fb59b = []byte{
+var fileDescriptor_typed_message_70293e724b066c70 = []byte{
 	// 168 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x32, 0x28, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x4f, 0xce, 0xcf, 0xcd, 0xcd,

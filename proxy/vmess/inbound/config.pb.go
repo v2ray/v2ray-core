@@ -27,7 +27,7 @@ func (m *DetourConfig) Reset()         { *m = DetourConfig{} }
 func (m *DetourConfig) String() string { return proto.CompactTextString(m) }
 func (*DetourConfig) ProtoMessage()    {}
 func (*DetourConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_72992bea2627a574, []int{0}
+	return fileDescriptor_config_2ca0b8d34269ede7, []int{0}
 }
 func (m *DetourConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DetourConfig.Unmarshal(m, b)
@@ -66,7 +66,7 @@ func (m *DefaultConfig) Reset()         { *m = DefaultConfig{} }
 func (m *DefaultConfig) String() string { return proto.CompactTextString(m) }
 func (*DefaultConfig) ProtoMessage()    {}
 func (*DefaultConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_72992bea2627a574, []int{1}
+	return fileDescriptor_config_2ca0b8d34269ede7, []int{1}
 }
 func (m *DefaultConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DefaultConfig.Unmarshal(m, b)
@@ -114,7 +114,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_72992bea2627a574, []int{2}
+	return fileDescriptor_config_2ca0b8d34269ede7, []int{2}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -169,10 +169,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/proxy/vmess/inbound/config.proto", fileDescriptor_config_72992bea2627a574)
+	proto.RegisterFile("v2ray.com/core/proxy/vmess/inbound/config.proto", fileDescriptor_config_2ca0b8d34269ede7)
 }
 
-var fileDescriptor_config_72992bea2627a574 = []byte{
+var fileDescriptor_config_2ca0b8d34269ede7 = []byte{
 	// 333 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x90, 0x4f, 0x4f, 0xf2, 0x40,
 	0x10, 0xc6, 0xd3, 0xc2, 0x0b, 0xbc, 0x8b, 0x78, 0x68, 0x88, 0xa9, 0x1e, 0x48, 0xd3, 0x13, 0x26,

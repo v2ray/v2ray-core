@@ -38,7 +38,7 @@ func (x Certificate_Usage) String() string {
 	return proto.EnumName(Certificate_Usage_name, int32(x))
 }
 func (Certificate_Usage) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_257f0631bcf0ff71, []int{0, 0}
+	return fileDescriptor_config_a8a3761a78452100, []int{0, 0}
 }
 
 type Certificate struct {
@@ -56,7 +56,7 @@ func (m *Certificate) Reset()         { *m = Certificate{} }
 func (m *Certificate) String() string { return proto.CompactTextString(m) }
 func (*Certificate) ProtoMessage()    {}
 func (*Certificate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_257f0631bcf0ff71, []int{0}
+	return fileDescriptor_config_a8a3761a78452100, []int{0}
 }
 func (m *Certificate) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Certificate.Unmarshal(m, b)
@@ -119,7 +119,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_257f0631bcf0ff71, []int{1}
+	return fileDescriptor_config_a8a3761a78452100, []int{1}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -188,10 +188,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/transport/internet/tls/config.proto", fileDescriptor_config_257f0631bcf0ff71)
+	proto.RegisterFile("v2ray.com/core/transport/internet/tls/config.proto", fileDescriptor_config_a8a3761a78452100)
 }
 
-var fileDescriptor_config_257f0631bcf0ff71 = []byte{
+var fileDescriptor_config_a8a3761a78452100 = []byte{
 	// 413 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x91, 0xd1, 0x6e, 0xd3, 0x30,
 	0x14, 0x86, 0x49, 0x42, 0x2b, 0x76, 0xda, 0x8d, 0xc8, 0x4c, 0x28, 0xe2, 0x86, 0xac, 0x68, 0x52,

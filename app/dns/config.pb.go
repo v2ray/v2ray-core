@@ -36,7 +36,7 @@ func (x Config_HostMapping_Type) String() string {
 	return proto.EnumName(Config_HostMapping_Type_name, int32(x))
 }
 func (Config_HostMapping_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_2b74f789a4ce2a14, []int{0, 1, 0}
+	return fileDescriptor_config_b3d430ec01af18aa, []int{0, 1, 0}
 }
 
 type Config struct {
@@ -58,7 +58,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_2b74f789a4ce2a14, []int{0}
+	return fileDescriptor_config_b3d430ec01af18aa, []int{0}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -120,7 +120,7 @@ func (m *Config_HostMapping) Reset()         { *m = Config_HostMapping{} }
 func (m *Config_HostMapping) String() string { return proto.CompactTextString(m) }
 func (*Config_HostMapping) ProtoMessage()    {}
 func (*Config_HostMapping) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_2b74f789a4ce2a14, []int{0, 1}
+	return fileDescriptor_config_b3d430ec01af18aa, []int{0, 1}
 }
 func (m *Config_HostMapping) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config_HostMapping.Unmarshal(m, b)
@@ -169,10 +169,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/app/dns/config.proto", fileDescriptor_config_2b74f789a4ce2a14)
+	proto.RegisterFile("v2ray.com/core/app/dns/config.proto", fileDescriptor_config_b3d430ec01af18aa)
 }
 
-var fileDescriptor_config_2b74f789a4ce2a14 = []byte{
+var fileDescriptor_config_b3d430ec01af18aa = []byte{
 	// 416 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x92, 0xdd, 0x6a, 0x14, 0x31,
 	0x14, 0xc7, 0xcd, 0xcc, 0x76, 0xe9, 0x9e, 0x59, 0xcb, 0x92, 0x8b, 0x32, 0xac, 0x17, 0x5d, 0x2b,

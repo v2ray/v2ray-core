@@ -27,7 +27,7 @@ func (m *Header) Reset()         { *m = Header{} }
 func (m *Header) String() string { return proto.CompactTextString(m) }
 func (*Header) ProtoMessage()    {}
 func (*Header) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_0ec5fa9e0dc0ba05, []int{0}
+	return fileDescriptor_config_6884fbb2ab14733a, []int{0}
 }
 func (m *Header) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Header.Unmarshal(m, b)
@@ -74,7 +74,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_0ec5fa9e0dc0ba05, []int{1}
+	return fileDescriptor_config_6884fbb2ab14733a, []int{1}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -114,10 +114,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/transport/internet/websocket/config.proto", fileDescriptor_config_0ec5fa9e0dc0ba05)
+	proto.RegisterFile("v2ray.com/core/transport/internet/websocket/config.proto", fileDescriptor_config_6884fbb2ab14733a)
 }
 
-var fileDescriptor_config_0ec5fa9e0dc0ba05 = []byte{
+var fileDescriptor_config_6884fbb2ab14733a = []byte{
 	// 229 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xb2, 0x28, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x2f, 0x29, 0x4a, 0xcc, 0x2b,

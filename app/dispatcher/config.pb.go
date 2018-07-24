@@ -25,7 +25,7 @@ func (m *SessionConfig) Reset()         { *m = SessionConfig{} }
 func (m *SessionConfig) String() string { return proto.CompactTextString(m) }
 func (*SessionConfig) ProtoMessage()    {}
 func (*SessionConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_b04006b660896589, []int{0}
+	return fileDescriptor_config_0cc6435896f4bd54, []int{0}
 }
 func (m *SessionConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SessionConfig.Unmarshal(m, b)
@@ -56,7 +56,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_b04006b660896589, []int{1}
+	return fileDescriptor_config_0cc6435896f4bd54, []int{1}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -89,10 +89,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/app/dispatcher/config.proto", fileDescriptor_config_b04006b660896589)
+	proto.RegisterFile("v2ray.com/core/app/dispatcher/config.proto", fileDescriptor_config_0cc6435896f4bd54)
 }
 
-var fileDescriptor_config_b04006b660896589 = []byte{
+var fileDescriptor_config_0cc6435896f4bd54 = []byte{
 	// 176 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xd2, 0x2a, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x4f, 0x2c, 0x28, 0xd0, 0x4f,

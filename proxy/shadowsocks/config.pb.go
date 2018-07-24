@@ -58,7 +58,7 @@ func (x CipherType) String() string {
 	return proto.EnumName(CipherType_name, int32(x))
 }
 func (CipherType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_655e5edd5746da74, []int{0}
+	return fileDescriptor_config_a7d2e93dc7e58d6d, []int{0}
 }
 
 type Account_OneTimeAuth int32
@@ -84,7 +84,7 @@ func (x Account_OneTimeAuth) String() string {
 	return proto.EnumName(Account_OneTimeAuth_name, int32(x))
 }
 func (Account_OneTimeAuth) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_655e5edd5746da74, []int{0, 0}
+	return fileDescriptor_config_a7d2e93dc7e58d6d, []int{0, 0}
 }
 
 type Account struct {
@@ -100,7 +100,7 @@ func (m *Account) Reset()         { *m = Account{} }
 func (m *Account) String() string { return proto.CompactTextString(m) }
 func (*Account) ProtoMessage()    {}
 func (*Account) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_655e5edd5746da74, []int{0}
+	return fileDescriptor_config_a7d2e93dc7e58d6d, []int{0}
 }
 func (m *Account) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Account.Unmarshal(m, b)
@@ -156,7 +156,7 @@ func (m *ServerConfig) Reset()         { *m = ServerConfig{} }
 func (m *ServerConfig) String() string { return proto.CompactTextString(m) }
 func (*ServerConfig) ProtoMessage()    {}
 func (*ServerConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_655e5edd5746da74, []int{1}
+	return fileDescriptor_config_a7d2e93dc7e58d6d, []int{1}
 }
 func (m *ServerConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServerConfig.Unmarshal(m, b)
@@ -209,7 +209,7 @@ func (m *ClientConfig) Reset()         { *m = ClientConfig{} }
 func (m *ClientConfig) String() string { return proto.CompactTextString(m) }
 func (*ClientConfig) ProtoMessage()    {}
 func (*ClientConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_655e5edd5746da74, []int{2}
+	return fileDescriptor_config_a7d2e93dc7e58d6d, []int{2}
 }
 func (m *ClientConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ClientConfig.Unmarshal(m, b)
@@ -245,10 +245,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/proxy/shadowsocks/config.proto", fileDescriptor_config_655e5edd5746da74)
+	proto.RegisterFile("v2ray.com/core/proxy/shadowsocks/config.proto", fileDescriptor_config_a7d2e93dc7e58d6d)
 }
 
-var fileDescriptor_config_655e5edd5746da74 = []byte{
+var fileDescriptor_config_a7d2e93dc7e58d6d = []byte{
 	// 522 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x92, 0xc1, 0x6e, 0xd3, 0x4e,
 	0x10, 0xc6, 0xbb, 0x71, 0xff, 0x4d, 0xfe, 0xe3, 0x50, 0xdc, 0x95, 0x90, 0xac, 0xa8, 0x42, 0x56,

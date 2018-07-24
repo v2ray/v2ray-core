@@ -25,7 +25,7 @@ func (m *VideoConfig) Reset()         { *m = VideoConfig{} }
 func (m *VideoConfig) String() string { return proto.CompactTextString(m) }
 func (*VideoConfig) ProtoMessage()    {}
 func (*VideoConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_2f1af10d1ad0257a, []int{0}
+	return fileDescriptor_config_177a655b45ccb349, []int{0}
 }
 func (m *VideoConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_VideoConfig.Unmarshal(m, b)
@@ -50,10 +50,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/transport/internet/headers/wechat/config.proto", fileDescriptor_config_2f1af10d1ad0257a)
+	proto.RegisterFile("v2ray.com/core/transport/internet/headers/wechat/config.proto", fileDescriptor_config_177a655b45ccb349)
 }
 
-var fileDescriptor_config_2f1af10d1ad0257a = []byte{
+var fileDescriptor_config_177a655b45ccb349 = []byte{
 	// 163 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xb2, 0x2d, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x2f, 0x29, 0x4a, 0xcc, 0x2b,

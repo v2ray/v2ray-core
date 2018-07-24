@@ -27,7 +27,7 @@ func (m *Account) Reset()         { *m = Account{} }
 func (m *Account) String() string { return proto.CompactTextString(m) }
 func (*Account) ProtoMessage()    {}
 func (*Account) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_32dc1a2aa94bc2a8, []int{0}
+	return fileDescriptor_config_f07451dec64d403d, []int{0}
 }
 func (m *Account) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Account.Unmarshal(m, b)
@@ -67,7 +67,7 @@ func (m *ServerConfig) Reset()         { *m = ServerConfig{} }
 func (m *ServerConfig) String() string { return proto.CompactTextString(m) }
 func (*ServerConfig) ProtoMessage()    {}
 func (*ServerConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_32dc1a2aa94bc2a8, []int{1}
+	return fileDescriptor_config_f07451dec64d403d, []int{1}
 }
 func (m *ServerConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServerConfig.Unmarshal(m, b)
@@ -104,7 +104,7 @@ func (m *ClientConfig) Reset()         { *m = ClientConfig{} }
 func (m *ClientConfig) String() string { return proto.CompactTextString(m) }
 func (*ClientConfig) ProtoMessage()    {}
 func (*ClientConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_32dc1a2aa94bc2a8, []int{2}
+	return fileDescriptor_config_f07451dec64d403d, []int{2}
 }
 func (m *ClientConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ClientConfig.Unmarshal(m, b)
@@ -131,10 +131,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/proxy/mtproto/config.proto", fileDescriptor_config_32dc1a2aa94bc2a8)
+	proto.RegisterFile("v2ray.com/core/proxy/mtproto/config.proto", fileDescriptor_config_f07451dec64d403d)
 }
 
-var fileDescriptor_config_32dc1a2aa94bc2a8 = []byte{
+var fileDescriptor_config_f07451dec64d403d = []byte{
 	// 221 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x8f, 0xc1, 0x4a, 0xc4, 0x30,
 	0x10, 0x86, 0x89, 0xca, 0x2e, 0xc4, 0xe2, 0xa1, 0x07, 0x09, 0xe2, 0xa1, 0xf6, 0xb4, 0x5e, 0x26,

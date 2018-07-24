@@ -28,7 +28,7 @@ func (m *MTU) Reset()         { *m = MTU{} }
 func (m *MTU) String() string { return proto.CompactTextString(m) }
 func (*MTU) ProtoMessage()    {}
 func (*MTU) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_8c4538da0fc2252f, []int{0}
+	return fileDescriptor_config_4bc2f043099e7e59, []int{0}
 }
 func (m *MTU) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MTU.Unmarshal(m, b)
@@ -67,7 +67,7 @@ func (m *TTI) Reset()         { *m = TTI{} }
 func (m *TTI) String() string { return proto.CompactTextString(m) }
 func (*TTI) ProtoMessage()    {}
 func (*TTI) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_8c4538da0fc2252f, []int{1}
+	return fileDescriptor_config_4bc2f043099e7e59, []int{1}
 }
 func (m *TTI) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TTI.Unmarshal(m, b)
@@ -106,7 +106,7 @@ func (m *UplinkCapacity) Reset()         { *m = UplinkCapacity{} }
 func (m *UplinkCapacity) String() string { return proto.CompactTextString(m) }
 func (*UplinkCapacity) ProtoMessage()    {}
 func (*UplinkCapacity) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_8c4538da0fc2252f, []int{2}
+	return fileDescriptor_config_4bc2f043099e7e59, []int{2}
 }
 func (m *UplinkCapacity) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UplinkCapacity.Unmarshal(m, b)
@@ -145,7 +145,7 @@ func (m *DownlinkCapacity) Reset()         { *m = DownlinkCapacity{} }
 func (m *DownlinkCapacity) String() string { return proto.CompactTextString(m) }
 func (*DownlinkCapacity) ProtoMessage()    {}
 func (*DownlinkCapacity) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_8c4538da0fc2252f, []int{3}
+	return fileDescriptor_config_4bc2f043099e7e59, []int{3}
 }
 func (m *DownlinkCapacity) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DownlinkCapacity.Unmarshal(m, b)
@@ -184,7 +184,7 @@ func (m *WriteBuffer) Reset()         { *m = WriteBuffer{} }
 func (m *WriteBuffer) String() string { return proto.CompactTextString(m) }
 func (*WriteBuffer) ProtoMessage()    {}
 func (*WriteBuffer) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_8c4538da0fc2252f, []int{4}
+	return fileDescriptor_config_4bc2f043099e7e59, []int{4}
 }
 func (m *WriteBuffer) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WriteBuffer.Unmarshal(m, b)
@@ -223,7 +223,7 @@ func (m *ReadBuffer) Reset()         { *m = ReadBuffer{} }
 func (m *ReadBuffer) String() string { return proto.CompactTextString(m) }
 func (*ReadBuffer) ProtoMessage()    {}
 func (*ReadBuffer) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_8c4538da0fc2252f, []int{5}
+	return fileDescriptor_config_4bc2f043099e7e59, []int{5}
 }
 func (m *ReadBuffer) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ReadBuffer.Unmarshal(m, b)
@@ -261,7 +261,7 @@ func (m *ConnectionReuse) Reset()         { *m = ConnectionReuse{} }
 func (m *ConnectionReuse) String() string { return proto.CompactTextString(m) }
 func (*ConnectionReuse) ProtoMessage()    {}
 func (*ConnectionReuse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_8c4538da0fc2252f, []int{6}
+	return fileDescriptor_config_4bc2f043099e7e59, []int{6}
 }
 func (m *ConnectionReuse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ConnectionReuse.Unmarshal(m, b)
@@ -306,7 +306,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_8c4538da0fc2252f, []int{7}
+	return fileDescriptor_config_4bc2f043099e7e59, []int{7}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -394,10 +394,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/transport/internet/kcp/config.proto", fileDescriptor_config_8c4538da0fc2252f)
+	proto.RegisterFile("v2ray.com/core/transport/internet/kcp/config.proto", fileDescriptor_config_4bc2f043099e7e59)
 }
 
-var fileDescriptor_config_8c4538da0fc2252f = []byte{
+var fileDescriptor_config_4bc2f043099e7e59 = []byte{
 	// 471 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x53, 0x5f, 0x6f, 0xd3, 0x3e,
 	0x14, 0x55, 0xd7, 0xae, 0xbf, 0xfe, 0x6e, 0xf7, 0xa7, 0x44, 0x08, 0x45, 0x20, 0xa1, 0xb5, 0x12,

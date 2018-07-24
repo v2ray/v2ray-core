@@ -26,7 +26,7 @@ func (m *Second) Reset()         { *m = Second{} }
 func (m *Second) String() string { return proto.CompactTextString(m) }
 func (*Second) ProtoMessage()    {}
 func (*Second) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_700aba7c9186c0c0, []int{0}
+	return fileDescriptor_config_8c0ebdfbe2c533e6, []int{0}
 }
 func (m *Second) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Second.Unmarshal(m, b)
@@ -66,7 +66,7 @@ func (m *Policy) Reset()         { *m = Policy{} }
 func (m *Policy) String() string { return proto.CompactTextString(m) }
 func (*Policy) ProtoMessage()    {}
 func (*Policy) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_700aba7c9186c0c0, []int{1}
+	return fileDescriptor_config_8c0ebdfbe2c533e6, []int{1}
 }
 func (m *Policy) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Policy.Unmarshal(m, b)
@@ -122,7 +122,7 @@ func (m *Policy_Timeout) Reset()         { *m = Policy_Timeout{} }
 func (m *Policy_Timeout) String() string { return proto.CompactTextString(m) }
 func (*Policy_Timeout) ProtoMessage()    {}
 func (*Policy_Timeout) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_700aba7c9186c0c0, []int{1, 0}
+	return fileDescriptor_config_8c0ebdfbe2c533e6, []int{1, 0}
 }
 func (m *Policy_Timeout) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Policy_Timeout.Unmarshal(m, b)
@@ -182,7 +182,7 @@ func (m *Policy_Stats) Reset()         { *m = Policy_Stats{} }
 func (m *Policy_Stats) String() string { return proto.CompactTextString(m) }
 func (*Policy_Stats) ProtoMessage()    {}
 func (*Policy_Stats) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_700aba7c9186c0c0, []int{1, 1}
+	return fileDescriptor_config_8c0ebdfbe2c533e6, []int{1, 1}
 }
 func (m *Policy_Stats) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Policy_Stats.Unmarshal(m, b)
@@ -228,7 +228,7 @@ func (m *Policy_Buffer) Reset()         { *m = Policy_Buffer{} }
 func (m *Policy_Buffer) String() string { return proto.CompactTextString(m) }
 func (*Policy_Buffer) ProtoMessage()    {}
 func (*Policy_Buffer) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_700aba7c9186c0c0, []int{1, 2}
+	return fileDescriptor_config_8c0ebdfbe2c533e6, []int{1, 2}
 }
 func (m *Policy_Buffer) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Policy_Buffer.Unmarshal(m, b)
@@ -266,7 +266,7 @@ func (m *SystemPolicy) Reset()         { *m = SystemPolicy{} }
 func (m *SystemPolicy) String() string { return proto.CompactTextString(m) }
 func (*SystemPolicy) ProtoMessage()    {}
 func (*SystemPolicy) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_700aba7c9186c0c0, []int{2}
+	return fileDescriptor_config_8c0ebdfbe2c533e6, []int{2}
 }
 func (m *SystemPolicy) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SystemPolicy.Unmarshal(m, b)
@@ -305,7 +305,7 @@ func (m *SystemPolicy_Stats) Reset()         { *m = SystemPolicy_Stats{} }
 func (m *SystemPolicy_Stats) String() string { return proto.CompactTextString(m) }
 func (*SystemPolicy_Stats) ProtoMessage()    {}
 func (*SystemPolicy_Stats) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_700aba7c9186c0c0, []int{2, 0}
+	return fileDescriptor_config_8c0ebdfbe2c533e6, []int{2, 0}
 }
 func (m *SystemPolicy_Stats) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SystemPolicy_Stats.Unmarshal(m, b)
@@ -351,7 +351,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_700aba7c9186c0c0, []int{3}
+	return fileDescriptor_config_8c0ebdfbe2c533e6, []int{3}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -398,10 +398,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/app/policy/config.proto", fileDescriptor_config_700aba7c9186c0c0)
+	proto.RegisterFile("v2ray.com/core/app/policy/config.proto", fileDescriptor_config_8c0ebdfbe2c533e6)
 }
 
-var fileDescriptor_config_700aba7c9186c0c0 = []byte{
+var fileDescriptor_config_8c0ebdfbe2c533e6 = []byte{
 	// 513 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x94, 0xdb, 0x6a, 0x13, 0x41,
 	0x1c, 0xc6, 0xd9, 0xa4, 0xbb, 0xad, 0xff, 0x24, 0x6d, 0x19, 0x2c, 0xc4, 0x05, 0x6b, 0x49, 0xad,

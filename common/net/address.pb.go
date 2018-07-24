@@ -30,7 +30,7 @@ func (m *IPOrDomain) Reset()         { *m = IPOrDomain{} }
 func (m *IPOrDomain) String() string { return proto.CompactTextString(m) }
 func (*IPOrDomain) ProtoMessage()    {}
 func (*IPOrDomain) Descriptor() ([]byte, []int) {
-	return fileDescriptor_address_13498f847d6a1fae, []int{0}
+	return fileDescriptor_address_c500a1e2dec49a04, []int{0}
 }
 func (m *IPOrDomain) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_IPOrDomain.Unmarshal(m, b)
@@ -57,11 +57,13 @@ type isIPOrDomain_Address interface {
 type IPOrDomain_Ip struct {
 	Ip []byte `protobuf:"bytes,1,opt,name=ip,proto3,oneof"`
 }
+
 type IPOrDomain_Domain struct {
 	Domain string `protobuf:"bytes,2,opt,name=domain,proto3,oneof"`
 }
 
-func (*IPOrDomain_Ip) isIPOrDomain_Address()     {}
+func (*IPOrDomain_Ip) isIPOrDomain_Address() {}
+
 func (*IPOrDomain_Domain) isIPOrDomain_Address() {}
 
 func (m *IPOrDomain) GetAddress() isIPOrDomain_Address {
@@ -156,10 +158,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/common/net/address.proto", fileDescriptor_address_13498f847d6a1fae)
+	proto.RegisterFile("v2ray.com/core/common/net/address.proto", fileDescriptor_address_c500a1e2dec49a04)
 }
 
-var fileDescriptor_address_13498f847d6a1fae = []byte{
+var fileDescriptor_address_c500a1e2dec49a04 = []byte{
 	// 174 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x2f, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x4f, 0xce, 0xcf, 0xcd, 0xcd,
