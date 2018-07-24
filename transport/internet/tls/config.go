@@ -143,8 +143,9 @@ func getGetCertificateFunc(c *tls.Config, ca []*Certificate) func(hello *tls.Cli
 // GetTLSConfig converts this Config into tls.Config.
 func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
 	config := &tls.Config{
-		ClientSessionCache: globalSessionCache,
-		RootCAs:            c.getCertPool(),
+		ClientSessionCache:     globalSessionCache,
+		RootCAs:                c.getCertPool(),
+		SessionTicketsDisabled: c.DisableSessionResumption,
 	}
 	if c == nil {
 		return config
