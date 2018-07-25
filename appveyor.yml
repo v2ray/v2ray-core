@@ -1,0 +1,24 @@
+os: Visual Studio 2017
+
+platform: x64
+
+branches:
+  only:
+    - master
+
+version: "1.0.{build}"
+
+# Clone directly into GOPATH.
+clone_folder: C:\gopath\src\v2ray.com\core
+clone_depth: 5
+
+environment:
+  global:
+    GOPATH: C:\gopath
+
+install:
+  - git submodule update --init
+  - go version
+
+test_script:
+  - go test -p 1 -v v2ray.com/core/...
