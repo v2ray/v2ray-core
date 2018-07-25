@@ -20,5 +20,7 @@ install:
   - git submodule update --init
   - go version
 
+build: off
+
 test_script:
   - go test -p 1 -v v2ray.com/core/...
