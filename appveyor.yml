@@ -19,6 +19,8 @@ environment:
 install:
   - git submodule update --init
   - go version
+  - go get -u v2ray.com/core/...
+  - go get -u v2ray.com/ext/...
 
 build: off
 
