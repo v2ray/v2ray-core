@@ -68,7 +68,7 @@ func SniffHTTP(b []byte) (*SniffHeader, error) {
 	for i := 1; i < len(headers); i++ {
 		header := headers[i]
 		if len(header) == 0 {
-			return nil, core.ErrNoClue
+			break
 		}
 		parts := bytes.SplitN(header, []byte{':'}, 2)
 		if len(parts) != 2 {
