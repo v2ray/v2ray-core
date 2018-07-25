@@ -8,10 +8,6 @@ branches:
 
 version: "1.0.{build}"
 
-# Clone directly into GOPATH.
-clone_folder: C:\gopath\src\v2ray.com\core
-clone_depth: 5
-
 environment:
   global:
     GOPATH: C:\gopath
