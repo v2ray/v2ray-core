@@ -2,11 +2,8 @@ package buf
 
 import (
 	"io"
-	"runtime"
 	"syscall"
 	"time"
-
-	"v2ray.com/core/common/platform"
 )
 
 // Reader extends io.Reader with MultiBuffer.
@@ -47,16 +44,6 @@ func ReadFullFrom(reader io.Reader, size int32) Supplier {
 func ReadAtLeastFrom(reader io.Reader, size int) Supplier {
 	return func(b []byte) (int, error) {
 		return io.ReadAtLeast(reader, b, size)
-	}
-}
-
-var useReadv = false
-
-func init() {
-	const defaultFlagValue = "NOT_DEFINED_AT_ALL"
-	value := platform.NewEnvFlag("v2ray.buf.readv").GetValue(func() string { return defaultFlagValue })
-	if value != defaultFlagValue && (runtime.GOOS == "linux" || runtime.GOOS == "darwin") {
-		useReadv = true
 	}
 }
 

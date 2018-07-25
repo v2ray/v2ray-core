@@ -1,9 +1,13 @@
+// +build !windows
 package buf
 
 import (
 	"io"
+	"runtime"
 	"syscall"
 	"unsafe"
+
+	"v2ray.com/core/common/platform"
 )
 
 type ReadVReader struct {
@@ -95,4 +99,14 @@ func (r *ReadVReader) ReadMultiBuffer() (MultiBuffer, error) {
 	}
 
 	return MultiBuffer(bs[:nBuf]), nil
+}
+
+var useReadv = false
+
+func init() {
+	const defaultFlagValue = "NOT_DEFINED_AT_ALL"
+	value := platform.NewEnvFlag("v2ray.buf.readv").GetValue(func() string { return defaultFlagValue })
+	if value != defaultFlagValue && (runtime.GOOS == "linux" || runtime.GOOS == "darwin") {
+		useReadv = true
+	}
 }
