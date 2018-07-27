@@ -93,7 +93,7 @@ func (r *ReadVReader) ReadMultiBuffer() (MultiBuffer, error) {
 		bs[i] = nil
 	}
 
-	if isFull && nBuf < 128 {
+	if isFull && nBuf < 8 {
 		r.nBuf *= 4
 	} else {
 		r.nBuf = int32(nBuf)
