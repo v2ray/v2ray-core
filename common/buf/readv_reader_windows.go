@@ -7,8 +7,8 @@ import (
 	"syscall"
 )
 
-var useReadv = false
+const useReadv = false
 
 func NewReadVReader(reader io.Reader, rawConn syscall.RawConn) Reader {
-	return nil
+	panic("Shoud not happen")
 }
