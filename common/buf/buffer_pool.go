@@ -20,7 +20,7 @@ func createAllocFunc(size int32) func() interface{} {
 // Package buf is guaranteed to not use buffers larger than the largest pool.
 // Other packets may use larger buffers.
 const (
-	numPools  = 5
+	numPools  = 4
 	sizeMulti = 4
 )
 
