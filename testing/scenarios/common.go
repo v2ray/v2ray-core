@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -113,7 +113,7 @@ func CloseAllServers(servers []*exec.Cmd) {
 		Content:  "Closing all servers.",
 	})
 	for _, server := range servers {
-		server.Process.Signal(os.Interrupt)
+		server.Process.Signal(syscall.SIGTERM)
 	}
 	for _, server := range servers {
 		server.Process.Wait()
