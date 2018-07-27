@@ -113,7 +113,11 @@ func CloseAllServers(servers []*exec.Cmd) {
 		Content:  "Closing all servers.",
 	})
 	for _, server := range servers {
-		server.Process.Signal(syscall.SIGTERM)
+		if runtime.GOOS == "windows" {
+			server.Process.Kill()
+		} else {
+			server.Process.Signal(syscall.SIGTERM)
+		}
 	}
 	for _, server := range servers {
 		server.Process.Wait()
