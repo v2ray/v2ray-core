@@ -16,8 +16,22 @@ type BufferToBytesWriter struct {
 func (w *BufferToBytesWriter) WriteMultiBuffer(mb MultiBuffer) error {
 	defer mb.Release()
 
+	size := mb.Len()
+	if size == 0 {
+		return nil
+	}
+
 	bs := mb.ToNetBuffers()
-	return common.Error2(bs.WriteTo(w.Writer))
+
+	for size > 0 {
+		n, err := bs.WriteTo(w.Writer)
+		if err != nil {
+			return err
+		}
+		size -= int32(n)
+	}
+
+	return nil
 }
 
 // ReadFrom implements io.ReaderFrom.
@@ -105,23 +119,28 @@ func (w *BufferedWriter) WriteMultiBuffer(b MultiBuffer) error {
 
 // Flush flushes buffered content into underlying writer.
 func (w *BufferedWriter) Flush() error {
-	if !w.buffer.IsEmpty() {
-		b := w.buffer
-		w.buffer = nil
+	if w.buffer.IsEmpty() {
+		return nil
+	}
 
-		if writer, ok := w.writer.(io.Writer); ok {
-			_, err := writer.Write(b.Bytes())
-			b.Release()
+	b := w.buffer
+	w.buffer = nil
+
+	if writer, ok := w.writer.(io.Writer); ok {
+		defer b.Release()
+
+		for !b.IsEmpty() {
+			n, err := writer.Write(b.Bytes())
 			if err != nil {
 				return err
 			}
-		} else if err := w.writer.WriteMultiBuffer(NewMultiBufferValue(b)); err != nil {
-			return err
+			b.Advance(int32(n))
 		}
 
-		w.buffer = nil
+		return nil
 	}
-	return nil
+
+	return w.writer.WriteMultiBuffer(NewMultiBufferValue(b))
 }
 
 // SetBuffered sets whether the internal buffer is used. If set to false, Flush() will be called to clear the buffer.
