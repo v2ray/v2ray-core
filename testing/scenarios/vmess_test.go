@@ -946,16 +946,20 @@ func TestVMessKCPLarge(t *testing.T) {
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
 	assert(err, IsNil)
+	defer CloseAllServers(servers)
 
 	var wg sync.WaitGroup
 	for i := 0; i < 2; i++ {
 		wg.Add(1)
 		go func() {
+			defer wg.Done()
+
 			conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 				IP:   []byte{127, 0, 0, 1},
 				Port: int(clientPort),
 			})
 			assert(err, IsNil)
+			defer conn.Close()
 
 			payload := make([]byte, 10240*1024)
 			rand.Read(payload)
@@ -965,14 +969,12 @@ func TestVMessKCPLarge(t *testing.T) {
 			assert(nBytes, Equals, len(payload))
 
 			response := readFrom(conn, time.Minute*10, 10240*1024)
-			assert(response, Equals, xor(payload))
-			assert(conn.Close(), IsNil)
-			wg.Done()
+			if err := compare.BytesEqualWithDetail(response, xor(payload)); err != nil {
+				t.Error(err)
+			}
 		}()
 	}
 	wg.Wait()
-
-	CloseAllServers(servers)
 }
 
 func TestVMessIPv6(t *testing.T) {
