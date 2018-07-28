@@ -47,6 +47,17 @@ func ReadAtLeastFrom(reader io.Reader, size int) Supplier {
 	}
 }
 
+func WriteAllBytes(writer io.Writer, payload []byte) error {
+	for len(payload) > 0 {
+		n, err := writer.Write(payload)
+		if err != nil {
+			return err
+		}
+		payload = payload[n:]
+	}
+	return nil
+}
+
 // NewReader creates a new Reader.
 // The Reader instance doesn't take the ownership of reader.
 func NewReader(reader io.Reader) Reader {

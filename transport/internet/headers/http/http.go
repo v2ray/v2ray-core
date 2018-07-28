@@ -103,7 +103,7 @@ func (w *HeaderWriter) Write(writer io.Writer) error {
 	if w.header == nil {
 		return nil
 	}
-	_, err := writer.Write(w.header.Bytes())
+	err := buf.WriteAllBytes(writer, w.header.Bytes())
 	w.header.Release()
 	w.header = nil
 	return err

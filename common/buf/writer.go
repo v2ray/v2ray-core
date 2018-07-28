@@ -179,10 +179,7 @@ func (w *seqWriter) WriteMultiBuffer(mb MultiBuffer) error {
 	defer mb.Release()
 
 	for _, b := range mb {
-		if b.IsEmpty() {
-			continue
-		}
-		if _, err := w.writer.Write(b.Bytes()); err != nil {
+		if err := WriteAllBytes(w.writer, b.Bytes()); err != nil {
 			return err
 		}
 	}

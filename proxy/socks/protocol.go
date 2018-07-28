@@ -234,8 +234,7 @@ func hasAuthMethod(expectedAuth byte, authCandidates []byte) bool {
 }
 
 func writeSocks5AuthenticationResponse(writer io.Writer, version byte, auth byte) error {
-	_, err := writer.Write([]byte{version, auth})
-	return err
+	return buf.WriteAllBytes(writer, []byte{version, auth})
 }
 
 func writeSocks5Response(writer io.Writer, errCode byte, address net.Address, port net.Port) error {
@@ -247,8 +246,7 @@ func writeSocks5Response(writer io.Writer, errCode byte, address net.Address, po
 		return err
 	}
 
-	_, err := writer.Write(buffer.Bytes())
-	return err
+	return buf.WriteAllBytes(writer, buffer.Bytes())
 }
 
 func writeSocks4Response(writer io.Writer, errCode byte, address net.Address, port net.Port) error {
@@ -258,8 +256,7 @@ func writeSocks4Response(writer io.Writer, errCode byte, address net.Address, po
 	common.Must2(buffer.AppendBytes(0x00, errCode))
 	common.Must(buffer.AppendSupplier(serial.WriteUint16(port.Value())))
 	common.Must2(buffer.Write(address.IP()))
-	_, err := writer.Write(buffer.Bytes())
-	return err
+	return buf.WriteAllBytes(writer, buffer.Bytes())
 }
 
 func DecodeUDPPacket(packet *buf.Buffer) (*protocol.RequestHeader, error) {
@@ -365,7 +362,7 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 		common.Must2(b.Write([]byte(account.Password)))
 	}
 
-	if _, err := writer.Write(b.Bytes()); err != nil {
+	if err := buf.WriteAllBytes(writer, b.Bytes()); err != nil {
 		return nil, err
 	}
 
@@ -400,7 +397,7 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 		return nil, err
 	}
 
-	if _, err := writer.Write(b.Bytes()); err != nil {
+	if err := buf.WriteAllBytes(writer, b.Bytes()); err != nil {
 		return nil, err
 	}
 
