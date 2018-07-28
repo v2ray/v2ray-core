@@ -16,7 +16,7 @@ func BuildV2Ray() error {
 	}
 
 	fmt.Printf("Building V2Ray into path (%s)\n", testBinaryPath)
-	cmd := exec.Command("go", "build", "-race", "-o="+testBinaryPath, GetSourcePath())
+	cmd := exec.Command("go", "build", "-o="+testBinaryPath, GetSourcePath())
 	return cmd.Run()
 }
 
