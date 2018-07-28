@@ -168,8 +168,6 @@ func TestVMessClosing(t *testing.T) {
 	nBytes, err = conn.Read(resp)
 	assert(err, Equals, io.EOF)
 	assert(nBytes, Equals, 0)
-
-	CloseAllServers(servers)
 }
 
 func TestZeroBuffer(t *testing.T) {
@@ -275,6 +273,7 @@ func TestZeroBuffer(t *testing.T) {
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
 	assert(err, IsNil)
+	defer CloseAllServers(servers)
 
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -300,6 +299,4 @@ func TestZeroBuffer(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-
-	CloseAllServers(servers)
 }
