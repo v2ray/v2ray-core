@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/signal/semaphore"
@@ -342,43 +343,12 @@ func (c *Connection) waitForDataOutput() error {
 
 // Write implements io.Writer.
 func (c *Connection) Write(b []byte) (int, error) {
-	updatePending := false
-	defer func() {
-		if updatePending {
-			c.dataUpdater.WakeUp()
-		}
-	}()
-
-	for {
-		totalWritten := 0
-		for {
-			if c == nil || c.State() != StateActive {
-				return totalWritten, io.ErrClosedPipe
-			}
-			if !c.sendingWorker.Push(func(bb []byte) (int, error) {
-				n := copy(bb[:c.mss], b[totalWritten:])
-				totalWritten += n
-				return n, nil
-			}) {
-				break
-			}
-
-			updatePending = true
-
-			if totalWritten == len(b) {
-				return totalWritten, nil
-			}
-		}
-
-		if updatePending {
-			c.dataUpdater.WakeUp()
-			updatePending = false
-		}
-
-		if err := c.waitForDataOutput(); err != nil {
-			return totalWritten, err
-		}
+	var mb buf.MultiBuffer
+	common.Must2(mb.Write(b))
+	if err := c.WriteMultiBuffer(mb); err != nil {
+		return 0, err
 	}
+	return len(b), nil
 }
 
 // WriteMultiBuffer implements buf.Writer.
@@ -392,19 +362,13 @@ func (c *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 		}
 	}()
 
-	f := func(x *buf.MultiBuffer) buf.Supplier {
-		return func(bb []byte) (int, error) {
-			return x.Read(bb[:c.mss])
-		}
-	}(&mb)
-
 	for {
 		for {
 			if c == nil || c.State() != StateActive {
 				return io.ErrClosedPipe
 			}
 
-			if !c.sendingWorker.Push(f) {
+			if !c.sendingWorker.Push(&mb) {
 				break
 			}
 			updatePending = true
