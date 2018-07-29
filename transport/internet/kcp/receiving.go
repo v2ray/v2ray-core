@@ -205,6 +205,9 @@ func (w *ReceivingWorker) ReadMultiBuffer() buf.MultiBuffer {
 
 func (w *ReceivingWorker) Read(b []byte) int {
 	mb := w.ReadMultiBuffer()
+	if mb.IsEmpty() {
+		return 0
+	}
 	nBytes, err := mb.Read(b)
 	common.Must(err)
 	if !mb.IsEmpty() {
