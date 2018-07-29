@@ -3,6 +3,7 @@ package kcp
 import (
 	"sync"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 )
 
@@ -204,7 +205,8 @@ func (w *ReceivingWorker) ReadMultiBuffer() buf.MultiBuffer {
 
 func (w *ReceivingWorker) Read(b []byte) int {
 	mb := w.ReadMultiBuffer()
-	nBytes, _ := mb.Read(b)
+	nBytes, err := mb.Read(b)
+	common.Must(err)
 	if !mb.IsEmpty() {
 		w.leftOver = mb
 	}

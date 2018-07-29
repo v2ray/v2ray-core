@@ -118,7 +118,7 @@ func (mb *MultiBuffer) ReadFrom(reader io.Reader) (int64, error) {
 
 // Read implements io.Reader.
 func (mb *MultiBuffer) Read(b []byte) (int, error) {
-	if mb.Len() == 0 {
+	if mb.IsEmpty() {
 		return 0, io.EOF
 	}
 	endIndex := len(*mb)

@@ -97,8 +97,9 @@ func (r *BufferedReader) ReadByte() (byte, error) {
 
 // Read implements io.Reader. It reads from internal buffer first (if available) and then reads from the underlying reader.
 func (r *BufferedReader) Read(b []byte) (int, error) {
-	if r.Buffer != nil {
-		nBytes, _ := r.Buffer.Read(b)
+	if !r.Buffer.IsEmpty() {
+		nBytes, err := r.Buffer.Read(b)
+		common.Must(err)
 		if r.Buffer.IsEmpty() {
 			r.Buffer.Release()
 			r.Buffer = nil
@@ -113,19 +114,21 @@ func (r *BufferedReader) Read(b []byte) (int, error) {
 	}
 
 	mb, err := r.Reader.ReadMultiBuffer()
-	if mb != nil {
-		nBytes, _ := mb.Read(b)
-		if !mb.IsEmpty() {
-			r.Buffer = mb
-		}
-		return nBytes, err
+	if err != nil {
+		return 0, err
 	}
-	return 0, err
+
+	nBytes, err := mb.Read(b)
+	common.Must(err)
+	if !mb.IsEmpty() {
+		r.Buffer = mb
+	}
+	return nBytes, err
 }
 
 // ReadMultiBuffer implements Reader.
 func (r *BufferedReader) ReadMultiBuffer() (MultiBuffer, error) {
-	if r.Buffer != nil {
+	if !r.Buffer.IsEmpty() {
 		mb := r.Buffer
 		r.Buffer = nil
 		return mb, nil
@@ -136,7 +139,7 @@ func (r *BufferedReader) ReadMultiBuffer() (MultiBuffer, error) {
 
 // ReadAtMost returns a MultiBuffer with at most size.
 func (r *BufferedReader) ReadAtMost(size int32) (MultiBuffer, error) {
-	if r.Buffer == nil {
+	if r.Buffer.IsEmpty() {
 		mb, err := r.Reader.ReadMultiBuffer()
 		if mb.IsEmpty() && err != nil {
 			return nil, err
