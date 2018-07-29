@@ -398,8 +398,10 @@ func (c *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 				return io.ErrClosedPipe
 			}
 
+			mbPtr := &mb
+
 			if !c.sendingWorker.Push(func(bb []byte) (int, error) {
-				return mb.Read(bb[:c.mss])
+				return mbPtr.Read(bb[:c.mss])
 			}) {
 				break
 			}
