@@ -392,13 +392,13 @@ func (c *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 		}
 	}()
 
+	mbPtr := &mb
+
 	for {
 		for {
 			if c == nil || c.State() != StateActive {
 				return io.ErrClosedPipe
 			}
-
-			mbPtr := &mb
 
 			if !c.sendingWorker.Push(func(bb []byte) (int, error) {
 				return mbPtr.Read(bb[:c.mss])
@@ -406,7 +406,7 @@ func (c *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 				break
 			}
 			updatePending = true
-			if mb.IsEmpty() {
+			if mbPtr.IsEmpty() {
 				return nil
 			}
 		}
