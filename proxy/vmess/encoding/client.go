@@ -88,13 +88,11 @@ func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 		common.Must(buffer.AppendSupplier(buf.ReadFullFrom(rand.Reader, int32(padingLen))))
 	}
 
-	fnv1a := fnv.New32a()
-	common.Must2(fnv1a.Write(buffer.Bytes()))
-
-	common.Must(buffer.AppendSupplier(func(b []byte) (int, error) {
-		fnv1a.Sum(b[:0])
-		return fnv1a.Size(), nil
-	}))
+	{
+		fnv1a := fnv.New32a()
+		common.Must2(fnv1a.Write(buffer.Bytes()))
+		common.Must(buffer.AppendSupplier(serial.WriteHash(fnv1a)))
+	}
 
 	timestampHash := md5.New()
 	common.Must2(timestampHash.Write(hashTimestamp(timestamp)))
