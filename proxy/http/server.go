@@ -182,7 +182,8 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 	}
 
 	if reader.Buffered() > 0 {
-		payload, err := buf.ReadSizeToMultiBuffer(reader, int32(reader.Buffered()))
+		var payload buf.MultiBuffer
+		_, err := payload.ReadFrom(&io.LimitedReader{R: reader, N: int64(reader.Buffered())})
 		if err != nil {
 			return err
 		}

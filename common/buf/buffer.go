@@ -35,11 +35,6 @@ func (b *Buffer) Clear() {
 	b.end = 0
 }
 
-// AppendBytes appends one or more bytes to the end of the buffer.
-func (b *Buffer) AppendBytes(bytes ...byte) (int, error) {
-	return b.Write(bytes)
-}
-
 // AppendSupplier appends the content of a BytesWriter to the buffer.
 func (b *Buffer) AppendSupplier(writer Supplier) error {
 	nBytes, err := writer(b.v[b.end:])
@@ -143,6 +138,11 @@ func (b *Buffer) Write(data []byte) (int, error) {
 	nBytes := copy(b.v[b.end:], data)
 	b.end += int32(nBytes)
 	return nBytes, nil
+}
+
+// WriteBytes appends one or more bytes to the end of the buffer.
+func (b *Buffer) WriteBytes(bytes ...byte) (int, error) {
+	return b.Write(bytes)
 }
 
 // Read implements io.Reader.Read().

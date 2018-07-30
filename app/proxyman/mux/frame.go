@@ -59,21 +59,21 @@ type FrameMetadata struct {
 
 func (f FrameMetadata) WriteTo(b *buf.Buffer) error {
 	lenBytes := b.Bytes()
-	common.Must2(b.AppendBytes(0x00, 0x00))
+	common.Must2(b.WriteBytes(0x00, 0x00))
 
 	len0 := b.Len()
 	if err := b.AppendSupplier(serial.WriteUint16(f.SessionID)); err != nil {
 		return err
 	}
 
-	common.Must2(b.AppendBytes(byte(f.SessionStatus), byte(f.Option)))
+	common.Must2(b.WriteBytes(byte(f.SessionStatus), byte(f.Option)))
 
 	if f.SessionStatus == SessionStatusNew {
 		switch f.Target.Network {
 		case net.Network_TCP:
-			common.Must2(b.AppendBytes(byte(TargetNetworkTCP)))
+			common.Must2(b.WriteBytes(byte(TargetNetworkTCP)))
 		case net.Network_UDP:
-			common.Must2(b.AppendBytes(byte(TargetNetworkUDP)))
+			common.Must2(b.WriteBytes(byte(TargetNetworkUDP)))
 		}
 
 		if err := addrParser.WriteAddressPort(b, f.Target.Address, f.Target.Port); err != nil {

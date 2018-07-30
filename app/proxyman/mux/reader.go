@@ -17,7 +17,7 @@ func ReadMetadata(reader io.Reader) (*FrameMetadata, error) {
 		return nil, newError("invalid metalen ", metaLen).AtError()
 	}
 
-	b := buf.NewSize(int32(metaLen))
+	b := buf.New()
 	defer b.Release()
 
 	if err := b.Reset(buf.ReadFullFrom(reader, int32(metaLen))); err != nil {
