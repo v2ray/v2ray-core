@@ -210,7 +210,7 @@ func NewAuthenticationWriter(auth Authenticator, sizeParser ChunkSizeEncoder, wr
 
 func (w *AuthenticationWriter) seal(b *buf.Buffer) (*buf.Buffer, error) {
 	encryptedSize := int(b.Len()) + w.auth.Overhead()
-	paddingSize := 0
+	var paddingSize int
 	if w.padding != nil {
 		paddingSize = int(w.padding.NextPaddingLen())
 	}
@@ -228,13 +228,7 @@ func (w *AuthenticationWriter) seal(b *buf.Buffer) (*buf.Buffer, error) {
 		return nil, err
 	}
 	if paddingSize > 0 {
-		if err := eb.AppendSupplier(func(bb []byte) (int, error) {
-			common.Must2(rand.Read(bb[:paddingSize]))
-			return paddingSize, nil
-		}); err != nil {
-			eb.Release()
-			return nil, err
-		}
+		common.Must(eb.AppendSupplier(buf.ReadFullFrom(rand.Reader, int32(paddingSize))))
 	}
 
 	return eb, nil
