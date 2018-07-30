@@ -87,10 +87,6 @@ func (v *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 		Option:  protocol.RequestOptionChunkStream,
 	}
 
-	if enablePadding {
-		request.Option.Set(protocol.RequestOptionGlobalPadding)
-	}
-
 	rawAccount, err := request.User.GetTypedAccount()
 	if err != nil {
 		return newError("failed to get user account").Base(err).AtWarning()
@@ -100,6 +96,10 @@ func (v *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 
 	if request.Security == protocol.SecurityType_AES128_GCM || request.Security == protocol.SecurityType_NONE || request.Security == protocol.SecurityType_CHACHA20_POLY1305 {
 		request.Option.Set(protocol.RequestOptionChunkMasking)
+	}
+
+	if enablePadding && request.Option.Has(protocol.RequestOptionChunkMasking) {
+		request.Option.Set(protocol.RequestOptionGlobalPadding)
 	}
 
 	input := link.Reader
