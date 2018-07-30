@@ -67,7 +67,7 @@ type PolicyManager interface {
 	ForSystem() SystemPolicy
 }
 
-var defaultBufferSize int32 = 10 * 1024 * 1024
+var defaultBufferSize int32 = 2 * 1024 * 1024
 
 func init() {
 	const key = "v2ray.ray.buffer.size"
