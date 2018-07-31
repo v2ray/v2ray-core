@@ -80,6 +80,9 @@ func (server *Server) handleConnection(conn net.Conn) {
 		for {
 			mb, err := pReader.ReadMultiBuffer()
 			if err != nil {
+				if err == io.EOF {
+					return nil
+				}
 				return err
 			}
 			if err := w.WriteMultiBuffer(mb); err != nil {
