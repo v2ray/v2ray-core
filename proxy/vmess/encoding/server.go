@@ -332,7 +332,7 @@ func (s *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 			return crypto.NewAuthenticationWriter(auth, sizeParser, s.responseWriter, request.Command.TransferType(), padding)
 		}
 
-		return buf.NewWriter(s.responseWriter)
+		return &buf.SequentialWriter{Writer: s.responseWriter}
 	case protocol.SecurityType_AES128_GCM:
 		block, _ := aes.NewCipher(s.responseBodyKey[:])
 		aead, _ := cipher.NewGCM(block)

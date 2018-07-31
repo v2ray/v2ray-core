@@ -113,7 +113,13 @@ func (c *Client) Process(ctx context.Context, link *core.Link, dialer proxy.Dial
 		}
 		responseFunc = func() error {
 			defer timer.SetTimeout(p.Timeouts.UplinkOnly)
-			return buf.Copy(buf.NewReader(conn), link.Writer, buf.UpdateActivity(timer))
+			var reader buf.Reader
+			if p.Buffer.PerConnection == 0 {
+				reader = &buf.SingleReader{Reader: conn}
+			} else {
+				reader = buf.NewReader(conn)
+			}
+			return buf.Copy(reader, link.Writer, buf.UpdateActivity(timer))
 		}
 	} else if request.Command == protocol.RequestCommandUDP {
 		udpConn, err := dialer.Dial(ctx, udpRequest.Destination())

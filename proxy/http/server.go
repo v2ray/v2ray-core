@@ -194,14 +194,19 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 	}
 
 	requestDone := func() error {
-		defer timer.SetTimeout(s.policy().Timeouts.DownlinkOnly)
+		defer timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
 
-		v2reader := buf.NewReader(conn)
-		return buf.Copy(v2reader, link.Writer, buf.UpdateActivity(timer))
+		var reader buf.Reader
+		if plcy.Buffer.PerConnection == 0 {
+			reader = &buf.SingleReader{Reader: conn}
+		} else {
+			reader = buf.NewReader(conn)
+		}
+		return buf.Copy(reader, link.Writer, buf.UpdateActivity(timer))
 	}
 
 	responseDone := func() error {
-		defer timer.SetTimeout(s.policy().Timeouts.UplinkOnly)
+		defer timer.SetTimeout(plcy.Timeouts.UplinkOnly)
 
 		v2writer := buf.NewWriter(conn)
 		if err := buf.Copy(link.Reader, v2writer, buf.UpdateActivity(timer)); err != nil {

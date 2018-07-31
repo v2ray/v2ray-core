@@ -149,7 +149,17 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 func (s *Server) handleConnection(ctx context.Context, conn internet.Connection, dispatcher core.Dispatcher) error {
 	sessionPolicy := s.v.PolicyManager().ForLevel(s.user.Level)
 	conn.SetReadDeadline(time.Now().Add(sessionPolicy.Timeouts.Handshake))
-	bufferedReader := buf.BufferedReader{Reader: buf.NewReader(conn)}
+
+	var bufferedReader buf.BufferedReader
+	{
+		var reader buf.Reader
+		if sessionPolicy.Buffer.PerConnection == 0 {
+			reader = &buf.SingleReader{Reader: conn}
+		} else {
+			reader = buf.NewReader(conn)
+		}
+		bufferedReader = buf.BufferedReader{Reader: reader}
+	}
 	request, bodyReader, err := ReadTCPSession(s.user, &bufferedReader)
 	if err != nil {
 		log.Record(&log.AccessMessage{

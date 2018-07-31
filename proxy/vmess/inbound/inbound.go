@@ -224,7 +224,16 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 		return newError("unable to set read deadline").Base(err).AtWarning()
 	}
 
-	reader := &buf.BufferedReader{Reader: buf.NewReader(connection)}
+	var reader *buf.BufferedReader
+	{
+		var r buf.Reader
+		if sessionPolicy.Buffer.PerConnection == 0 {
+			r = &buf.SingleReader{Reader: connection}
+		} else {
+			r = buf.NewReader(connection)
+		}
+		reader = &buf.BufferedReader{Reader: r}
+	}
 
 	svrSession := encoding.NewServerSession(h.clients, h.sessionHistory)
 	request, err := svrSession.DecodeRequestHeader(reader)

@@ -118,11 +118,12 @@ func (h *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 	}
 	defer conn.Close() // nolint: errcheck
 
+	plcy := h.policy()
 	ctx, cancel := context.WithCancel(ctx)
-	timer := signal.CancelAfterInactivity(ctx, cancel, h.policy().Timeouts.ConnectionIdle)
+	timer := signal.CancelAfterInactivity(ctx, cancel, plcy.Timeouts.ConnectionIdle)
 
 	requestDone := func() error {
-		defer timer.SetTimeout(h.policy().Timeouts.DownlinkOnly)
+		defer timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
 
 		var writer buf.Writer
 		if destination.Network == net.Network_TCP {
@@ -138,10 +139,15 @@ func (h *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 	}
 
 	responseDone := func() error {
-		defer timer.SetTimeout(h.policy().Timeouts.UplinkOnly)
+		defer timer.SetTimeout(plcy.Timeouts.UplinkOnly)
 
-		v2reader := buf.NewReader(conn)
-		if err := buf.Copy(v2reader, output, buf.UpdateActivity(timer)); err != nil {
+		var reader buf.Reader
+		if plcy.Buffer.PerConnection == 0 {
+			reader = &buf.SingleReader{Reader: conn}
+		} else {
+			reader = buf.NewReader(conn)
+		}
+		if err := buf.Copy(reader, output, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to process response").Base(err)
 		}
 

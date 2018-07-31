@@ -68,11 +68,21 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 }
 
 func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispatcher core.Dispatcher) error {
-	if err := conn.SetReadDeadline(time.Now().Add(s.policy().Timeouts.Handshake)); err != nil {
+	plcy := s.policy()
+	if err := conn.SetReadDeadline(time.Now().Add(plcy.Timeouts.Handshake)); err != nil {
 		newError("failed to set deadline").Base(err).WriteToLog(session.ExportIDToError(ctx))
 	}
 
-	reader := &buf.BufferedReader{Reader: buf.NewReader(conn)}
+	var reader *buf.BufferedReader
+	{
+		var r buf.Reader
+		if plcy.Buffer.PerConnection == 0 {
+			r = &buf.SingleReader{Reader: conn}
+		} else {
+			r = buf.NewReader(conn)
+		}
+		reader = &buf.BufferedReader{Reader: r}
+	}
 
 	inboundDest, ok := proxy.InboundEntryPointFromContext(ctx)
 	if !ok {
@@ -141,9 +151,7 @@ func (s *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 
 	requestDone := func() error {
 		defer timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
-
-		v2reader := buf.NewReader(reader)
-		if err := buf.Copy(v2reader, link.Writer, buf.UpdateActivity(timer)); err != nil {
+		if err := buf.Copy(buf.NewReader(reader), link.Writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport all TCP request").Base(err)
 		}
 

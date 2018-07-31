@@ -144,7 +144,16 @@ func (v *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 	responseDone := func() error {
 		defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
-		reader := &buf.BufferedReader{Reader: buf.NewReader(conn)}
+		var reader *buf.BufferedReader
+		{
+			var r buf.Reader
+			if sessionPolicy.Buffer.PerConnection == 0 {
+				r = &buf.SingleReader{Reader: conn}
+			} else {
+				r = buf.NewReader(conn)
+			}
+			reader = &buf.BufferedReader{Reader: r}
+		}
 		header, err := session.DecodeResponseHeader(reader)
 		if err != nil {
 			return newError("failed to read header").Base(err)
