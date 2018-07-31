@@ -34,7 +34,7 @@ func allocN(n int32) []*Buffer {
 	return bs
 }
 
-func (r *ReadVReader) ReadMultiBuffer() (MultiBuffer, error) {
+func (r *ReadVReader) readMulti() (MultiBuffer, error) {
 	bs := allocN(r.nBuf)
 
 	var iovecs []syscall.Iovec
@@ -72,8 +72,6 @@ func (r *ReadVReader) ReadMultiBuffer() (MultiBuffer, error) {
 		return nil, io.EOF
 	}
 
-	var isFull bool = (nBytes == int(r.nBuf)*Size)
-
 	nBuf := 0
 	for nBuf < len(bs) {
 		if nBytes <= 0 {
@@ -93,13 +91,33 @@ func (r *ReadVReader) ReadMultiBuffer() (MultiBuffer, error) {
 		bs[i] = nil
 	}
 
-	if isFull && nBuf < 8 {
-		r.nBuf *= 4
-	} else {
-		r.nBuf = int32(nBuf)
+	return MultiBuffer(bs[:nBuf]), nil
+}
+
+// ReadMultiBuffer implements Reader.
+func (r *ReadVReader) ReadMultiBuffer() (MultiBuffer, error) {
+	if r.nBuf == 1 {
+		b, err := readOne(r.Reader)
+		if err != nil {
+			return nil, err
+		}
+		if b.IsFull() {
+			r.nBuf = 2
+		}
+		return NewMultiBufferValue(b), nil
 	}
 
-	return MultiBuffer(bs[:nBuf]), nil
+	mb, err := r.readMulti()
+	if err != nil {
+		return nil, err
+	}
+	nBuf := int32(len(mb))
+	if nBuf < r.nBuf {
+		r.nBuf = nBuf
+	} else if nBuf == r.nBuf && r.nBuf < 16 {
+		r.nBuf *= 4
+	}
+	return mb, nil
 }
 
 var useReadv = false

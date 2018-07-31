@@ -38,11 +38,11 @@ func NewBytesToBufferReader(reader io.Reader) Reader {
 
 func (r *BytesToBufferReader) readSmall() (MultiBuffer, error) {
 	b, err := readOne(r.Reader)
-	if b.IsFull() && largeSize > Size {
-		r.buffer = newBytes(Size + 1)
-	}
 	if err != nil {
 		return nil, err
+	}
+	if b.IsFull() && largeSize > Size {
+		r.buffer = newBytes(Size + 1)
 	}
 	return NewMultiBufferValue(b), nil
 }
