@@ -7,6 +7,22 @@ import (
 	"v2ray.com/core/common/errors"
 )
 
+func readOne(r io.Reader) (*Buffer, error) {
+	b := New()
+	for i := 0; i < 64; i++ {
+		err := b.Reset(ReadFrom(r))
+		if !b.IsEmpty() {
+			return b, nil
+		}
+		if err != nil {
+			b.Release()
+			return nil, err
+		}
+	}
+
+	return nil, newError("Reader returns too many empty payloads.")
+}
+
 // BytesToBufferReader is a Reader that adjusts its reading speed automatically.
 type BytesToBufferReader struct {
 	io.Reader
@@ -21,22 +37,14 @@ func NewBytesToBufferReader(reader io.Reader) Reader {
 }
 
 func (r *BytesToBufferReader) readSmall() (MultiBuffer, error) {
-	b := New()
-	for i := 0; i < 64; i++ {
-		err := b.Reset(ReadFrom(r.Reader))
-		if b.IsFull() && largeSize > Size {
-			r.buffer = newBytes(Size + 1)
-		}
-		if !b.IsEmpty() {
-			return NewMultiBufferValue(b), nil
-		}
-		if err != nil {
-			b.Release()
-			return nil, err
-		}
+	b, err := readOne(r.Reader)
+	if b.IsFull() && largeSize > Size {
+		r.buffer = newBytes(Size + 1)
 	}
-
-	return nil, newError("Reader returns too many empty payloads.")
+	if err != nil {
+		return nil, err
+	}
+	return NewMultiBufferValue(b), nil
 }
 
 func (r *BytesToBufferReader) freeBuffer() {
@@ -194,4 +202,16 @@ func (r *BufferedReader) Close() error {
 		r.Buffer.Release()
 	}
 	return common.Close(r.Reader)
+}
+
+type SingleReader struct {
+	io.Reader
+}
+
+func (r *SingleReader) ReadMultiBuffer() (MultiBuffer, error) {
+	b, err := readOne(r.Reader)
+	if err != nil {
+		return nil, err
+	}
+	return NewMultiBufferValue(b), nil
 }

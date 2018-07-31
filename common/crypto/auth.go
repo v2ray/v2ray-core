@@ -172,10 +172,11 @@ func (r *AuthenticationReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 		return nil, err
 	}
 
-	mb := buf.NewMultiBufferCap(32)
+	const readSize = 16
+	mb := buf.NewMultiBufferCap(readSize)
 	mb.Append(b)
 
-	for {
+	for i := 1; i < readSize; i++ {
 		b, err := r.readInternal(true)
 		if err == errSoft || err == io.EOF {
 			break
@@ -288,6 +289,7 @@ func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
 	return w.writer.WriteMultiBuffer(mb2Write)
 }
 
+// WriteMultiBuffer implements buf.Writer.
 func (w *AuthenticationWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	if mb.IsEmpty() {
 		b := buf.New()

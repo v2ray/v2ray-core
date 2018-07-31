@@ -171,15 +171,15 @@ func (w *BufferedWriter) Close() error {
 	return common.Close(w.writer)
 }
 
-type seqWriter struct {
-	writer io.Writer
+type SequentialWriter struct {
+	io.Writer
 }
 
-func (w *seqWriter) WriteMultiBuffer(mb MultiBuffer) error {
+func (w *SequentialWriter) WriteMultiBuffer(mb MultiBuffer) error {
 	defer mb.Release()
 
 	for _, b := range mb {
-		if err := WriteAllBytes(w.writer, b.Bytes()); err != nil {
+		if err := WriteAllBytes(w.Writer, b.Bytes()); err != nil {
 			return err
 		}
 	}

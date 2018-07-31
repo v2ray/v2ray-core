@@ -92,7 +92,7 @@ func NewWriter(writer io.Writer) Writer {
 
 // NewSequentialWriter returns a Writer that write Buffers in a MultiBuffer sequentially.
 func NewSequentialWriter(writer io.Writer) Writer {
-	return &seqWriter{
-		writer: writer,
+	return &SequentialWriter{
+		Writer: writer,
 	}
 }
