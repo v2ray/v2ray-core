@@ -53,6 +53,11 @@ func (p *Policy) overrideWith(another *Policy) {
 		p.Stats = new(Policy_Stats)
 		*p.Stats = *another.Stats
 	}
+	if another.Buffer != nil {
+		p.Buffer = &Policy_Buffer{
+			Connection: another.Buffer.Connection,
+		}
+	}
 }
 
 // ToCorePolicy converts this Policy to core.Policy.
