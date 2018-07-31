@@ -110,14 +110,14 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		} else {
 			//if we are in TPROXY mode, use linux's udp forging functionality
 			if !d.config.FollowRedirect {
-				writer = buf.NewSequentialWriter(conn)
+				writer = &buf.SequentialWriter{Writer: conn}
 			} else {
 				srca := net.UDPAddr{IP: dest.Address.IP(), Port: int(dest.Port.Value())}
 				origsend, err := udp.TransmitSocket(&srca, conn.RemoteAddr())
 				if err != nil {
 					return err
 				}
-				writer = buf.NewSequentialWriter(origsend)
+				writer = &buf.SequentialWriter{Writer: origsend}
 			}
 		}
 

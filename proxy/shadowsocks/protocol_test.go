@@ -142,7 +142,7 @@ func TestUDPReaderWriter(t *testing.T) {
 		}),
 	}
 	cache := buf.New()
-	writer := buf.NewSequentialWriter(&UDPWriter{
+	writer := &buf.SequentialWriter{Writer: &UDPWriter{
 		Writer: cache,
 		Request: &protocol.RequestHeader{
 			Version: Version,
@@ -151,7 +151,7 @@ func TestUDPReaderWriter(t *testing.T) {
 			User:    user,
 			Option:  RequestOptionOneTimeAuth,
 		},
-	})
+	}}
 
 	reader := &UDPReader{
 		Reader: cache,

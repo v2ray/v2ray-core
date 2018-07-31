@@ -73,14 +73,21 @@ func TestDiscardBytesMultiBuffer(t *testing.T) {
 }
 
 func TestWriterInterface(t *testing.T) {
-	assert := With(t)
+	{
+		var writer interface{} = (*BufferToBytesWriter)(nil)
+		switch writer.(type) {
+		case Writer, io.Writer, io.ReaderFrom:
+		default:
+			t.Error("BufferToBytesWriter is not Writer, io.Writer or io.ReaderFrom")
+		}
+	}
 
-	assert((*BufferToBytesWriter)(nil), Implements, (*Writer)(nil))
-	assert((*BufferToBytesWriter)(nil), Implements, (*io.Writer)(nil))
-	assert((*BufferToBytesWriter)(nil), Implements, (*io.ReaderFrom)(nil))
-
-	assert((*BufferedWriter)(nil), Implements, (*Writer)(nil))
-	assert((*BufferedWriter)(nil), Implements, (*io.Writer)(nil))
-	assert((*BufferedWriter)(nil), Implements, (*io.ReaderFrom)(nil))
-	assert((*BufferedWriter)(nil), Implements, (*io.ByteWriter)(nil))
+	{
+		var writer interface{} = (*BufferedWriter)(nil)
+		switch writer.(type) {
+		case Writer, io.Writer, io.ReaderFrom, io.ByteWriter:
+		default:
+			t.Error("BufferedWriter is not Writer, io.Writer, io.ReaderFrom or io.ByteWriter")
+		}
+	}
 }

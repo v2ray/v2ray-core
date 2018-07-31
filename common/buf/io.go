@@ -40,13 +40,7 @@ func ReadFullFrom(reader io.Reader, size int32) Supplier {
 	}
 }
 
-// ReadAtLeastFrom create a Supplier to read at least size bytes from the given io.Reader.
-func ReadAtLeastFrom(reader io.Reader, size int) Supplier {
-	return func(b []byte) (int, error) {
-		return io.ReadAtLeast(reader, b, size)
-	}
-}
-
+// WriteAllBytes ensures all bytes are written into the given writer.
 func WriteAllBytes(writer io.Writer, payload []byte) error {
 	for len(payload) > 0 {
 		n, err := writer.Write(payload)
@@ -86,13 +80,6 @@ func NewWriter(writer io.Writer) Writer {
 	}
 
 	return &BufferToBytesWriter{
-		Writer: writer,
-	}
-}
-
-// NewSequentialWriter returns a Writer that write Buffers in a MultiBuffer sequentially.
-func NewSequentialWriter(writer io.Writer) Writer {
-	return &SequentialWriter{
 		Writer: writer,
 	}
 }

@@ -133,10 +133,10 @@ func (c *Client) Process(ctx context.Context, link *core.Link, dialer proxy.Dial
 
 	if request.Command == protocol.RequestCommandUDP {
 
-		writer := buf.NewSequentialWriter(&UDPWriter{
+		writer := &buf.SequentialWriter{Writer: &UDPWriter{
 			Writer:  conn,
 			Request: request,
-		})
+		}}
 
 		requestDone := func() error {
 			defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
