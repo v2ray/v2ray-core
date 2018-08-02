@@ -96,12 +96,7 @@ upload $GOPATH/bin/metadata.txt
 
 if [[ "${PRERELEASE}" == "false" ]]; then
 
-gsutil cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/v2ray gs://v2ray-docker/
-gsutil cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/v2ctl gs://v2ray-docker/
-gsutil cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/geoip.dat gs://v2ray-docker/
-gsutil cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/geosite.dat gs://v2ray-docker/
-
-DOCKER_HUB_API=https://registry.hub.docker.com/u/v2ray/official/trigger/${DOCKER_HUB_KEY}/
+DOCKER_HUB_API=https://cloud.docker.com/api/build/v1/source/62bfa37d-18ef-4b66-8f1a-35f9f3d4438b/trigger/65027872-e73e-4177-8c6c-6448d2f00d5b/call/
 curl -H "Content-Type: application/json" --data '{"build": true}' -X POST "${DOCKER_HUB_API}"
 
 fi
