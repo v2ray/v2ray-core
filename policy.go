@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"runtime"
 	"sync"
 	"time"
 
@@ -67,17 +68,27 @@ type PolicyManager interface {
 	ForSystem() SystemPolicy
 }
 
-var defaultBufferSize int32 = 2 * 1024 * 1024
+var defaultBufferSize int32
 
 func init() {
 	const key = "v2ray.ray.buffer.size"
+	const defaultValue = -17
 	size := platform.EnvFlag{
 		Name:    key,
 		AltName: platform.NormalizeEnvName(key),
-	}.GetValueAsInt(10)
-	if size == 0 {
-		defaultBufferSize = -1
-	} else {
+	}.GetValueAsInt(defaultValue)
+
+	switch size {
+	case 0:
+		defaultBufferSize = -1 // For pipe to use unlimited size
+	case defaultValue: // Env flag not defined. Use default values per CPU-arch.
+		switch runtime.GOARCH {
+		case "arm", "mips", "mipsle", "mips64", "mips64le":
+			defaultBufferSize = 0 // Disable pipe caching for low-end devices
+		default:
+			defaultBufferSize = 2 * 1024 * 1024
+		}
+	default:
 		defaultBufferSize = int32(size) * 1024 * 1024
 	}
 }
