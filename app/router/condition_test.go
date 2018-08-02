@@ -9,12 +9,14 @@ import (
 	"time"
 
 	proto "github.com/golang/protobuf/proto"
+	"v2ray.com/core/app/dispatcher"
 	. "v2ray.com/core/app/router"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/platform"
 	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/protocol/http"
 	"v2ray.com/core/proxy"
 	. "v2ray.com/ext/assert"
 	"v2ray.com/ext/sysio"
@@ -134,6 +136,17 @@ func TestRoutingRule(t *testing.T) {
 				{
 					input:  context.Background(),
 					output: false,
+				},
+			},
+		},
+		{
+			rule: &RoutingRule{
+				Protocol: []string{"http"},
+			},
+			test: []ruleTest{
+				{
+					input:  dispatcher.ContextWithSniffingResult(context.Background(), &http.SniffHeader{}),
+					output: true,
 				},
 			},
 		},
