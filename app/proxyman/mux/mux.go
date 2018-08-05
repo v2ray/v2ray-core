@@ -141,7 +141,6 @@ func (m *Client) monitor() {
 			size := m.sessionManager.Size()
 			if size == 0 && m.sessionManager.CloseIfNoSession() {
 				common.Must(m.done.Close())
-				return
 			}
 		}
 	}
