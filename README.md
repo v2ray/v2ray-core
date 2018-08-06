@@ -12,7 +12,7 @@
 [8]: https://codecov.io/github/v2ray/v2ray-core?branch=master "Codecov Status"
 [9]: https://goreportcard.com/badge/v2ray.com/core "Go Report badge"
 [10]: https://goreportcard.com/report/v2ray.com/core "Go Report"
-[11: https://godoc.org/v2ray.com/core?status.svg "GoDoc badge"
+[11]: https://godoc.org/v2ray.com/core?status.svg "GoDoc badge"
 [12]: https://godoc.org/v2ray.com/core "GoDoc"
 [13]: https://codebeat.co/badges/f2354ca8-3e24-463d-a2e3-159af73b2477 "Codebeat badge"
 [14]: https://codebeat.co/projects/github-com-v2ray-v2ray-core-master "Codebeat"
