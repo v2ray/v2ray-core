@@ -1,5 +1,8 @@
 language: go
 
+runtime:
+  nodePool: shippable_shared_aarch64
+
 go:
   - "1.10"
 
