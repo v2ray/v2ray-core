@@ -1,0 +1,10 @@
+language: go
+
+go:
+  - 1.10
+
+build:
+  ci:
+    - go get -u v2ray.com/core/...
+    - go get -u v2ray.com/ext/...
+    - go test -p 1 -v v2ray.com/core/...
