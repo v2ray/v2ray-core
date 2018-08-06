@@ -1,10 +1,8 @@
-language: go
+# Golang is not supported on Shippable ARM64 images. We install it by ourself.
+language: c
 
 runtime:
   nodePool: shippable_shared_aarch64
-
-go:
-  - "1.10"
 
 branches:
   only:
@@ -12,6 +10,9 @@ branches:
 
 build:
   ci:
+    - curl -L -o golang.tar.gz https://dl.google.com/go/go1.10.3.linux-arm64.tar.gz
+    - tar -C /usr/local -xzf golang.tar.gz
+    - export PATH=$PATH:/usr/local/go/bin
     - go get -u v2ray.com/core/...
     - go get -u v2ray.com/ext/...
     - go test -p 1 -v v2ray.com/core/...
