@@ -187,5 +187,5 @@ func ListenKCP(ctx context.Context, address net.Address, port net.Port, addConn 
 }
 
 func init() {
-	common.Must(internet.RegisterTransportListener(internet.TransportProtocol_MKCP, ListenKCP))
+	common.Must(internet.RegisterTransportListener(protocolName, ListenKCP))
 }

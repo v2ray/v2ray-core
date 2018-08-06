@@ -7,10 +7,10 @@ import (
 )
 
 var (
-	transportListenerCache = make(map[TransportProtocol]ListenFunc)
+	transportListenerCache = make(map[string]ListenFunc)
 )
 
-func RegisterTransportListener(protocol TransportProtocol, listener ListenFunc) error {
+func RegisterTransportListener(protocol string, listener ListenFunc) error {
 	if _, found := transportListenerCache[protocol]; found {
 		return newError(protocol, " listener already registered.").AtError()
 	}

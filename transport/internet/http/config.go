@@ -6,6 +6,8 @@ import (
 	"v2ray.com/core/transport/internet"
 )
 
+const protocolName = "http"
+
 func (c *Config) getHosts() []string {
 	if len(c.Host) == 0 {
 		return []string{"www.example.com"}
@@ -39,7 +41,7 @@ func (c *Config) getNormalizedPath() string {
 }
 
 func init() {
-	common.Must(internet.RegisterProtocolConfigCreator(internet.TransportProtocol_HTTP, func() interface{} {
+	common.Must(internet.RegisterProtocolConfigCreatorByName(protocolName, func() interface{} {
 		return new(Config)
 	}))
 }

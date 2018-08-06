@@ -126,5 +126,5 @@ func Listen(ctx context.Context, address net.Address, port net.Port, handler int
 }
 
 func init() {
-	common.Must(internet.RegisterTransportListener(internet.TransportProtocol_HTTP, Listen))
+	common.Must(internet.RegisterTransportListener(protocolName, Listen))
 }

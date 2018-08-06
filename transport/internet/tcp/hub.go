@@ -92,5 +92,5 @@ func (v *Listener) Close() error {
 }
 
 func init() {
-	common.Must(internet.RegisterTransportListener(internet.TransportProtocol_TCP, ListenTCP))
+	common.Must(internet.RegisterTransportListener(protocolName, ListenTCP))
 }

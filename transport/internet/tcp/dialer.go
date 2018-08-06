@@ -48,5 +48,5 @@ func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error
 }
 
 func init() {
-	common.Must(internet.RegisterTransportDialer(internet.TransportProtocol_TCP, Dial))
+	common.Must(internet.RegisterTransportDialer(protocolName, Dial))
 }

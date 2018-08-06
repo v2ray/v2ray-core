@@ -9,10 +9,10 @@ import (
 type Dialer func(ctx context.Context, dest net.Destination) (Connection, error)
 
 var (
-	transportDialerCache = make(map[TransportProtocol]Dialer)
+	transportDialerCache = make(map[string]Dialer)
 )
 
-func RegisterTransportDialer(protocol TransportProtocol, dialer Dialer) error {
+func RegisterTransportDialer(protocol string, dialer Dialer) error {
 	if _, found := transportDialerCache[protocol]; found {
 		return newError(protocol, " dialer already registered").AtError()
 	}
@@ -44,7 +44,7 @@ func Dial(ctx context.Context, dest net.Destination) (Connection, error) {
 		return dialer(ctx, dest)
 	}
 
-	udpDialer := transportDialerCache[TransportProtocol_UDP]
+	udpDialer := transportDialerCache["udp"]
 	if udpDialer == nil {
 		return nil, newError("UDP dialer not registered").AtError()
 	}

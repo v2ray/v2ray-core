@@ -115,5 +115,5 @@ func (ln *Listener) Close() error {
 }
 
 func init() {
-	common.Must(internet.RegisterTransportListener(internet.TransportProtocol_WebSocket, ListenWS))
+	common.Must(internet.RegisterTransportListener(protocolName, ListenWS))
 }
