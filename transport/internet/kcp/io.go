@@ -30,6 +30,10 @@ func (r *KCPPacketReader) Read(b []byte) []Segment {
 	}
 	if r.Security != nil {
 		nonceSize := r.Security.NonceSize()
+		overhead := r.Security.Overhead()
+		if len(b) <= nonceSize+overhead {
+			return nil
+		}
 		out, err := r.Security.Open(b[nonceSize:nonceSize], b[:nonceSize], b[nonceSize:], nil)
 		if err != nil {
 			return nil
