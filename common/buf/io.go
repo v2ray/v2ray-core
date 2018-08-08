@@ -79,6 +79,13 @@ func NewWriter(writer io.Writer) Writer {
 		return mw
 	}
 
+	if _, ok := writer.(syscall.Conn); !ok {
+		// If the writer doesn't implement syscall.Conn, it is probably not a TCP connection.
+		return &SequentialWriter{
+			Writer: writer,
+		}
+	}
+
 	return &BufferToBytesWriter{
 		Writer: writer,
 	}
