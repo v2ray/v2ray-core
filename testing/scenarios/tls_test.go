@@ -260,20 +260,22 @@ func TestAutoIssuingCertificate(t *testing.T) {
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
 	assert(err, IsNil)
 
-	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-		IP:   []byte{127, 0, 0, 1},
-		Port: int(clientPort),
-	})
-	assert(err, IsNil)
+	for i := 0; i < 10; i++ {
+		conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
+			IP:   []byte{127, 0, 0, 1},
+			Port: int(clientPort),
+		})
+		assert(err, IsNil)
 
-	payload := "dokodemo request."
-	nBytes, err := conn.Write([]byte(payload))
-	assert(err, IsNil)
-	assert(nBytes, Equals, len(payload))
+		payload := "dokodemo request."
+		nBytes, err := conn.Write([]byte(payload))
+		assert(err, IsNil)
+		assert(nBytes, Equals, len(payload))
 
-	response := readFrom(conn, time.Second*2, len(payload))
-	assert(response, Equals, xor([]byte(payload)))
-	assert(conn.Close(), IsNil)
+		response := readFrom(conn, time.Second*2, len(payload))
+		assert(response, Equals, xor([]byte(payload)))
+		assert(conn.Close(), IsNil)
+	}
 
 	CloseAllServers(servers)
 }
