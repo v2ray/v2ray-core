@@ -103,11 +103,11 @@ func copyInternal(reader Reader, writer Writer, handler *copyHandler) error {
 
 // Copy dumps all payload from reader to writer or stops when an error occurs. It returns nil when EOF.
 func Copy(reader Reader, writer Writer, options ...CopyOption) error {
-	handler := new(copyHandler)
+	var handler copyHandler
 	for _, option := range options {
-		option(handler)
+		option(&handler)
 	}
-	err := copyInternal(reader, writer, handler)
+	err := copyInternal(reader, writer, &handler)
 	if err != nil && errors.Cause(err) != io.EOF {
 		return err
 	}
