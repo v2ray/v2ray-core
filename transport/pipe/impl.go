@@ -82,7 +82,9 @@ func (p *pipe) ReadMultiBuffer() (buf.MultiBuffer, error) {
 }
 
 func (p *pipe) ReadMultiBufferTimeout(d time.Duration) (buf.MultiBuffer, error) {
-	timer := time.After(d)
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+
 	for {
 		data, err := p.readMultiBufferInternal()
 		if data != nil || err != nil {
@@ -93,7 +95,7 @@ func (p *pipe) ReadMultiBufferTimeout(d time.Duration) (buf.MultiBuffer, error) 
 		select {
 		case <-p.readSignal.Wait():
 		case <-p.done.Wait():
-		case <-timer:
+		case <-timer.C:
 			return nil, buf.ErrReadTimeout
 		}
 	}
