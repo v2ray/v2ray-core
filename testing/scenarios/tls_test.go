@@ -149,6 +149,10 @@ func TestAutoIssuingCertificate(t *testing.T) {
 		return
 	}
 
+	if runtime.GOARCH == "arm64" {
+		return
+	}
+
 	assert := With(t)
 
 	tcpServer := tcp.Server{
