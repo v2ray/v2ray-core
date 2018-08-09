@@ -3,6 +3,7 @@ package websocket_test
 import (
 	"bytes"
 	"context"
+	"runtime"
 	"testing"
 	"time"
 
@@ -102,6 +103,10 @@ func TestDialWithRemoteAddr(t *testing.T) {
 }
 
 func Test_listenWSAndDial_TLS(t *testing.T) {
+	if runtime.GOARCH == "arm64" {
+		return
+	}
+
 	assert := With(t)
 
 	start := time.Now()
