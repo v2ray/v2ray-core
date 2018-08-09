@@ -3,6 +3,7 @@ package kcp
 import (
 	"io"
 	"net"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -280,7 +281,7 @@ func (c *Connection) waitForDataInput() error {
 		return io.EOF
 	}
 
-	duration := time.Minute
+	duration := time.Second * 8
 	if !c.rd.IsZero() {
 		duration = time.Until(c.rd)
 		if duration < 0 {
@@ -288,9 +289,21 @@ func (c *Connection) waitForDataInput() error {
 		}
 	}
 
+	for i := 0; i < 16; i++ {
+		select {
+		case <-c.dataInput.Wait():
+			return nil
+		default:
+			runtime.Gosched()
+		}
+	}
+
+	timeout := time.NewTimer(duration)
+	defer timeout.Stop()
+
 	select {
 	case <-c.dataInput.Wait():
-	case <-time.After(duration):
+	case <-timeout.C:
 		if !c.rd.IsZero() && c.rd.Before(time.Now()) {
 			return ErrIOTimeout
 		}
@@ -330,9 +343,21 @@ func (c *Connection) waitForDataOutput() error {
 		}
 	}
 
+	for i := 0; i < 16; i++ {
+		select {
+		case <-c.dataInput.Wait():
+			return nil
+		default:
+			runtime.Gosched()
+		}
+	}
+
+	timeout := time.NewTimer(duration)
+	defer timeout.Stop()
+
 	select {
 	case <-c.dataOutput.Wait():
-	case <-time.After(duration):
+	case <-timeout.C:
 		if !c.wd.IsZero() && c.wd.Before(time.Now()) {
 			return ErrIOTimeout
 		}
