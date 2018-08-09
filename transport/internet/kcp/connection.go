@@ -277,24 +277,20 @@ func (c *Connection) ReadMultiBuffer() (buf.MultiBuffer, error) {
 }
 
 func (c *Connection) waitForDataInput() error {
-	if c.State() == StatePeerTerminating {
-		return io.EOF
-	}
-
-	duration := time.Second * 8
-	if !c.rd.IsZero() {
-		duration = time.Until(c.rd)
-		if duration < 0 {
-			return ErrIOTimeout
-		}
-	}
-
 	for i := 0; i < 16; i++ {
 		select {
 		case <-c.dataInput.Wait():
 			return nil
 		default:
 			runtime.Gosched()
+		}
+	}
+
+	duration := time.Second * 16
+	if !c.rd.IsZero() {
+		duration = time.Until(c.rd)
+		if duration < 0 {
+			return ErrIOTimeout
 		}
 	}
 
@@ -335,20 +331,20 @@ func (c *Connection) Read(b []byte) (int, error) {
 }
 
 func (c *Connection) waitForDataOutput() error {
-	duration := time.Minute
+	for i := 0; i < 16; i++ {
+		select {
+		case <-c.dataOutput.Wait():
+			return nil
+		default:
+			runtime.Gosched()
+		}
+	}
+
+	duration := time.Second * 16
 	if !c.wd.IsZero() {
 		duration = time.Until(c.wd)
 		if duration < 0 {
 			return ErrIOTimeout
-		}
-	}
-
-	for i := 0; i < 16; i++ {
-		select {
-		case <-c.dataInput.Wait():
-			return nil
-		default:
-			runtime.Gosched()
 		}
 	}
 
