@@ -7,13 +7,10 @@ import (
 
 // Payload represents a single UDP payload.
 type Payload struct {
-	payload      *buf.Buffer
-	source       net.Destination
-	originalDest net.Destination
+	Content             *buf.Buffer
+	Source              net.Destination
+	OriginalDestination net.Destination
 }
-
-// PayloadHandler is function to handle Payload.
-type PayloadHandler func(payload *buf.Buffer, source net.Destination, originalDest net.Destination)
 
 type HubOption func(h *Hub)
 
@@ -31,12 +28,12 @@ func HubReceiveOriginalDestination(r bool) HubOption {
 
 type Hub struct {
 	conn         *net.UDPConn
-	callback     PayloadHandler
+	cache        chan *Payload
 	capacity     int
 	recvOrigDest bool
 }
 
-func ListenUDP(address net.Address, port net.Port, callback PayloadHandler, options ...HubOption) (*Hub, error) {
+func ListenUDP(address net.Address, port net.Port, options ...HubOption) (*Hub, error) {
 	udpConn, err := net.ListenUDP("udp", &net.UDPAddr{
 		IP:   address.IP(),
 		Port: int(port),
@@ -48,12 +45,13 @@ func ListenUDP(address net.Address, port net.Port, callback PayloadHandler, opti
 	hub := &Hub{
 		conn:         udpConn,
 		capacity:     256,
-		callback:     callback,
 		recvOrigDest: false,
 	}
 	for _, opt := range options {
 		opt(hub)
 	}
+
+	hub.cache = make(chan *Payload, hub.capacity)
 
 	if hub.recvOrigDest {
 		rawConn, err := udpConn.SyscallConn()
@@ -70,10 +68,7 @@ func ListenUDP(address net.Address, port net.Port, callback PayloadHandler, opti
 		}
 	}
 
-	c := make(chan *Payload, hub.capacity)
-
-	go hub.start(c)
-	go hub.process(c)
+	go hub.start()
 	return hub, nil
 }
 
@@ -90,13 +85,8 @@ func (h *Hub) WriteTo(payload []byte, dest net.Destination) (int, error) {
 	})
 }
 
-func (h *Hub) process(c <-chan *Payload) {
-	for p := range c {
-		h.callback(p.payload, p.source, p.originalDest)
-	}
-}
-
-func (h *Hub) start(c chan<- *Payload) {
+func (h *Hub) start() {
+	c := h.cache
 	defer close(c)
 
 	oobBytes := make([]byte, 256)
@@ -119,13 +109,13 @@ func (h *Hub) start(c chan<- *Payload) {
 		}
 
 		payload := &Payload{
-			payload: buffer,
+			Content: buffer,
+			Source:  net.UDPDestination(net.IPAddress(addr.IP), net.Port(addr.Port)),
 		}
-		payload.source = net.UDPDestination(net.IPAddress(addr.IP), net.Port(addr.Port))
 		if h.recvOrigDest && noob > 0 {
-			payload.originalDest = RetrieveOriginalDest(oobBytes[:noob])
-			if payload.originalDest.IsValid() {
-				newError("UDP original destination: ", payload.originalDest).AtDebug().WriteToLog()
+			payload.OriginalDestination = RetrieveOriginalDest(oobBytes[:noob])
+			if payload.OriginalDestination.IsValid() {
+				newError("UDP original destination: ", payload.OriginalDestination).AtDebug().WriteToLog()
 			} else {
 				newError("failed to read UDP original destination").WriteToLog()
 			}
@@ -142,4 +132,8 @@ func (h *Hub) start(c chan<- *Payload) {
 // Addr implements net.Listener.
 func (h *Hub) Addr() net.Addr {
 	return h.conn.LocalAddr()
+}
+
+func (h *Hub) Receive() <-chan *Payload {
+	return h.cache
 }

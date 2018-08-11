@@ -317,9 +317,16 @@ func (w *udpWorker) removeConn(id connID) {
 	w.Unlock()
 }
 
+func (w *udpWorker) handlePackets() {
+	receive := w.hub.Receive()
+	for payload := range receive {
+		w.callback(payload.Content, payload.Source, payload.OriginalDestination)
+	}
+}
+
 func (w *udpWorker) Start() error {
 	w.activeConn = make(map[connID]*udpConn, 16)
-	h, err := udp.ListenUDP(w.address, w.port, w.callback, udp.HubReceiveOriginalDestination(w.recvOrigDest), udp.HubCapacity(256))
+	h, err := udp.ListenUDP(w.address, w.port, udp.HubReceiveOriginalDestination(w.recvOrigDest), udp.HubCapacity(256))
 	if err != nil {
 		return err
 	}
@@ -352,6 +359,7 @@ func (w *udpWorker) Start() error {
 		return err
 	}
 	w.hub = h
+	go w.handlePackets()
 	return nil
 }
 
