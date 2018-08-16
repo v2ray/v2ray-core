@@ -1,6 +1,7 @@
 package crypto_test
 
 import (
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -29,11 +30,11 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 	rawPayload := make([]byte, payloadSize)
 	rand.Read(rawPayload)
 
-	payload := buf.NewSize(payloadSize)
+	var payload buf.MultiBuffer
 	payload.Write(rawPayload)
 	assert(payload.Len(), Equals, int32(payloadSize))
 
-	cache := buf.NewSize(160 * 1024)
+	cache := bytes.NewBuffer(nil)
 	iv := make([]byte, 12)
 	rand.Read(iv)
 
@@ -43,8 +44,8 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 		AdditionalDataGenerator: GenerateEmptyBytes(),
 	}, PlainChunkSizeParser{}, cache, protocol.TransferTypeStream, nil)
 
-	assert(writer.WriteMultiBuffer(buf.NewMultiBufferValue(payload)), IsNil)
-	assert(cache.Len(), Equals, int32(82658))
+	assert(writer.WriteMultiBuffer(payload), IsNil)
+	assert(cache.Len(), Equals, int(82658))
 	assert(writer.WriteMultiBuffer(buf.MultiBuffer{}), IsNil)
 
 	reader := NewAuthenticationReader(&AEADAuthenticator{
@@ -83,7 +84,7 @@ func TestAuthenticationReaderWriterPacket(t *testing.T) {
 	aead, err := cipher.NewGCM(block)
 	assert(err, IsNil)
 
-	cache := buf.NewSize(1024)
+	cache := buf.New()
 	iv := make([]byte, 12)
 	rand.Read(iv)
 

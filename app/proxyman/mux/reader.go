@@ -51,7 +51,11 @@ func (r *PacketReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 		return nil, err
 	}
 
-	b := buf.NewSize(int32(size))
+	if size > buf.Size {
+		return nil, newError("packet size too large: ", size)
+	}
+
+	b := buf.New()
 	if err := b.Reset(buf.ReadFullFrom(r.reader, int32(size))); err != nil {
 		b.Release()
 		return nil, err

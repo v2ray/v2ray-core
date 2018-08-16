@@ -1,13 +1,6 @@
-package buf
+package bytespool
 
-import (
-	"sync"
-)
-
-const (
-	// Size of a regular buffer.
-	Size = 2 * 1024
-)
+import "sync"
 
 func createAllocFunc(size int32) func() interface{} {
 	return func() interface{} {
@@ -25,24 +18,23 @@ const (
 )
 
 var (
-	pool      [numPools]sync.Pool
-	poolSize  [numPools]int32
-	largeSize int32
+	pool     [numPools]sync.Pool
+	poolSize [numPools]int32
 )
 
 func init() {
-	size := int32(Size)
+	size := int32(2048)
 	for i := 0; i < numPools; i++ {
 		pool[i] = sync.Pool{
 			New: createAllocFunc(size),
 		}
 		poolSize[i] = size
-		largeSize = size
 		size *= sizeMulti
 	}
 }
 
-func newBytes(size int32) []byte {
+// Alloc returns a byte slice with at least the given size. Minimum size of returned slice is 2048.
+func Alloc(size int32) []byte {
 	for idx, ps := range poolSize {
 		if size <= ps {
 			return pool[idx].Get().([]byte)
@@ -51,7 +43,8 @@ func newBytes(size int32) []byte {
 	return make([]byte, size)
 }
 
-func freeBytes(b []byte) {
+// Free puts a byte slice into the internal pool.
+func Free(b []byte) {
 	size := int32(cap(b))
 	b = b[0:cap(b)]
 	for i := numPools - 1; i >= 0; i-- {

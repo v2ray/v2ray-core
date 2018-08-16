@@ -40,14 +40,14 @@ func TestMultiBufferAppend(t *testing.T) {
 func TestMultiBufferSliceBySizeLarge(t *testing.T) {
 	assert := With(t)
 
-	lb := NewSize(8 * 1024)
-	common.Must(lb.Reset(ReadFrom(rand.Reader)))
+	lb := make([]byte, 8*1024)
+	common.Must2(io.ReadFull(rand.Reader, lb))
 
 	var mb MultiBuffer
-	mb.Append(lb)
+	common.Must2(mb.Write(lb))
 
-	mb2 := mb.SliceBySize(4 * 1024)
-	assert(mb2.Len(), Equals, int32(4*1024))
+	mb2 := mb.SliceBySize(1024)
+	assert(mb2.Len(), Equals, int32(1024))
 }
 
 func TestInterface(t *testing.T) {

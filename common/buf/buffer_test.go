@@ -47,10 +47,3 @@ func BenchmarkNewBuffer(b *testing.B) {
 		buffer.Release()
 	}
 }
-
-func BenchmarkNewLocalBuffer(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		buffer := NewSize(Size)
-		buffer.Release()
-	}
-}

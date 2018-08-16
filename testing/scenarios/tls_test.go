@@ -10,6 +10,7 @@ import (
 
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/protocol/tls/cert"
@@ -36,7 +37,7 @@ func TestSimpleTLSConnection(t *testing.T) {
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
@@ -123,24 +124,25 @@ func TestSimpleTLSConnection(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
+	defer CloseAllServers(servers)
 
-	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-		IP:   []byte{127, 0, 0, 1},
-		Port: int(clientPort),
-	})
-	assert(err, IsNil)
+	{
+		conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
+			IP:   []byte{127, 0, 0, 1},
+			Port: int(clientPort),
+		})
+		assert(err, IsNil)
 
-	payload := "dokodemo request."
-	nBytes, err := conn.Write([]byte(payload))
-	assert(err, IsNil)
-	assert(nBytes, Equals, len(payload))
+		payload := "dokodemo request."
+		nBytes, err := conn.Write([]byte(payload))
+		assert(err, IsNil)
+		assert(nBytes, Equals, len(payload))
 
-	response := readFrom(conn, time.Second*2, len(payload))
-	assert(response, Equals, xor([]byte(payload)))
-	assert(conn.Close(), IsNil)
-
-	CloseAllServers(servers)
+		response := readFrom(conn, time.Second*2, len(payload))
+		assert(response, Equals, xor([]byte(payload)))
+		assert(conn.Close(), IsNil)
+	}
 }
 
 func TestAutoIssuingCertificate(t *testing.T) {

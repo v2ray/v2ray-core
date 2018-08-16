@@ -3,6 +3,7 @@ package shadowsocks_test
 import (
 	"testing"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -29,7 +30,7 @@ func TestUDPEncoding(t *testing.T) {
 		},
 	}
 
-	data := buf.NewSize(256)
+	data := buf.New()
 	data.AppendSupplier(serial.WriteString("test string"))
 	encodedData, err := EncodeUDPPacket(request, data.Bytes())
 	assert(err, IsNil)
@@ -104,8 +105,7 @@ func TestTCPRequest(t *testing.T) {
 
 	runTest := func(request *protocol.RequestHeader, payload []byte) {
 		data := buf.New()
-		defer data.Release()
-		data.Write(payload)
+		common.Must2(data.Write(payload))
 
 		cache := buf.New()
 		defer cache.Release()
@@ -142,6 +142,8 @@ func TestUDPReaderWriter(t *testing.T) {
 		}),
 	}
 	cache := buf.New()
+	defer cache.Release()
+
 	writer := &buf.SequentialWriter{Writer: &UDPWriter{
 		Writer: cache,
 		Request: &protocol.RequestHeader{
@@ -158,21 +160,25 @@ func TestUDPReaderWriter(t *testing.T) {
 		User:   user,
 	}
 
-	b := buf.New()
-	b.AppendSupplier(serial.WriteString("test payload"))
-	err := writer.WriteMultiBuffer(buf.NewMultiBufferValue(b))
-	assert(err, IsNil)
+	{
+		b := buf.New()
+		b.AppendSupplier(serial.WriteString("test payload"))
+		err := writer.WriteMultiBuffer(buf.NewMultiBufferValue(b))
+		assert(err, IsNil)
 
-	payload, err := reader.ReadMultiBuffer()
-	assert(err, IsNil)
-	assert(payload[0].String(), Equals, "test payload")
+		payload, err := reader.ReadMultiBuffer()
+		assert(err, IsNil)
+		assert(payload[0].String(), Equals, "test payload")
+	}
 
-	b = buf.New()
-	b.AppendSupplier(serial.WriteString("test payload 2"))
-	err = writer.WriteMultiBuffer(buf.NewMultiBufferValue(b))
-	assert(err, IsNil)
+	{
+		b := buf.New()
+		b.AppendSupplier(serial.WriteString("test payload 2"))
+		err := writer.WriteMultiBuffer(buf.NewMultiBufferValue(b))
+		assert(err, IsNil)
 
-	payload, err = reader.ReadMultiBuffer()
-	assert(err, IsNil)
-	assert(payload[0].String(), Equals, "test payload 2")
+		payload, err := reader.ReadMultiBuffer()
+		assert(err, IsNil)
+		assert(payload[0].String(), Equals, "test payload 2")
+	}
 }

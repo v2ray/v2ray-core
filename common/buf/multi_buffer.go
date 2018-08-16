@@ -229,7 +229,7 @@ func (mb *MultiBuffer) SliceBySize(size int32) MultiBuffer {
 	}
 	*mb = (*mb)[endIndex:]
 	if endIndex == 0 && len(*mb) > 0 {
-		b := NewSize(size)
+		b := New()
 		common.Must(b.Reset(ReadFullFrom((*mb)[0], size)))
 		return NewMultiBufferValue(b)
 	}
