@@ -21,6 +21,10 @@ func (w *BufferToBytesWriter) WriteMultiBuffer(mb MultiBuffer) error {
 		return nil
 	}
 
+	if len(mb) == 1 {
+		return WriteAllBytes(w.Writer, mb[0].Bytes())
+	}
+
 	bs := mb.ToNetBuffers()
 
 	for size > 0 {
