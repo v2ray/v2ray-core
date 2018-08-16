@@ -5,8 +5,10 @@ import (
 	"v2ray.com/core/transport/internet"
 )
 
+const protocolName = "tcp"
+
 func init() {
-	common.Must(internet.RegisterProtocolConfigCreator(internet.TransportProtocol_TCP, func() interface{} {
+	common.Must(internet.RegisterProtocolConfigCreatorByName(protocolName, func() interface{} {
 		return new(Config)
 	}))
 }

@@ -9,18 +9,46 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+
 // PortRange represents a range of ports.
 type PortRange struct {
 	// The port that this range starts from.
-	From uint32 `protobuf:"varint,1,opt,name=From" json:"From,omitempty"`
+	From uint32 `protobuf:"varint,1,opt,name=From,proto3" json:"From,omitempty"`
 	// The port that this range ends with (inclusive).
-	To uint32 `protobuf:"varint,2,opt,name=To" json:"To,omitempty"`
+	To                   uint32   `protobuf:"varint,2,opt,name=To,proto3" json:"To,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *PortRange) Reset()                    { *m = PortRange{} }
-func (m *PortRange) String() string            { return proto.CompactTextString(m) }
-func (*PortRange) ProtoMessage()               {}
-func (*PortRange) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{0} }
+func (m *PortRange) Reset()         { *m = PortRange{} }
+func (m *PortRange) String() string { return proto.CompactTextString(m) }
+func (*PortRange) ProtoMessage()    {}
+func (*PortRange) Descriptor() ([]byte, []int) {
+	return fileDescriptor_port_673e4083b7b87399, []int{0}
+}
+func (m *PortRange) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_PortRange.Unmarshal(m, b)
+}
+func (m *PortRange) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_PortRange.Marshal(b, m, deterministic)
+}
+func (dst *PortRange) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PortRange.Merge(dst, src)
+}
+func (m *PortRange) XXX_Size() int {
+	return xxx_messageInfo_PortRange.Size(m)
+}
+func (m *PortRange) XXX_DiscardUnknown() {
+	xxx_messageInfo_PortRange.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PortRange proto.InternalMessageInfo
 
 func (m *PortRange) GetFrom() uint32 {
 	if m != nil {
@@ -40,9 +68,11 @@ func init() {
 	proto.RegisterType((*PortRange)(nil), "v2ray.core.common.net.PortRange")
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/common/net/port.proto", fileDescriptor3) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/common/net/port.proto", fileDescriptor_port_673e4083b7b87399)
+}
 
-var fileDescriptor3 = []byte{
+var fileDescriptor_port_673e4083b7b87399 = []byte{
 	// 158 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x29, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x4f, 0xce, 0xcf, 0xcd, 0xcd,

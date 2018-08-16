@@ -13,25 +13,35 @@ enum TransportProtocol {
   UDP = 1;
   MKCP = 2;
   WebSocket = 3;
+  HTTP = 4;
+  DomainSocket = 5;
 }
 
 message TransportConfig {
   // Type of network that this settings supports.
+  // Deprecated. Use the string form below.
   TransportProtocol protocol = 1;
 
-  // Specific settings.
+  // Type of network that this settings supports.
+  string protocol_name = 3;
+
+  // Specific settings. Must be of the transports.
   v2ray.core.common.serial.TypedMessage settings = 2;
 }
 
 message StreamConfig {
+  // Effective network. Deprecated. Use the string form below.
+  TransportProtocol protocol = 1 [deprecated = true];
+
   // Effective network.
-  TransportProtocol protocol = 1;
+  string protocol_name = 5;
 
   repeated TransportConfig transport_settings = 2;
 
   // Type of security. Must be a message name of the settings proto.
   string security_type = 3;
   
+  // Settings for transport security. For now the only choice is TLS.
   repeated v2ray.core.common.serial.TypedMessage security_settings = 4;
 }
 

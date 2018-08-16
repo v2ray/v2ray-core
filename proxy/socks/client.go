@@ -2,9 +2,12 @@ package socks
 
 import (
 	"context"
-	"runtime"
 	"time"
 
+	"v2ray.com/core/common/session"
+	"v2ray.com/core/common/task"
+
+	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
@@ -13,12 +16,12 @@ import (
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/ray"
 )
 
 // Client is a Socks5 client.
 type Client struct {
-	serverPicker protocol.ServerPicker
+	serverPicker  protocol.ServerPicker
+	policyManager core.PolicyManager
 }
 
 // NewClient create a new Socks5 client based on the given config.
@@ -31,13 +34,15 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 		return nil, newError("0 target server")
 	}
 
+	v := core.MustFromContext(ctx)
 	return &Client{
-		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
+		serverPicker:  protocol.NewRoundRobinServerPicker(serverList),
+		policyManager: v.PolicyManager(),
 	}, nil
 }
 
 // Process implements proxy.Outbound.Process.
-func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.Dialer) error {
+func (c *Client) Process(ctx context.Context, link *core.Link, dialer proxy.Dialer) error {
 	destination, ok := proxy.TargetFromContext(ctx)
 	if !ok {
 		return newError("target not specified.")
@@ -46,7 +51,7 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 	var server *protocol.ServerSpec
 	var conn internet.Connection
 
-	err := retry.ExponentialBackoff(5, 100).On(func() error {
+	if err := retry.ExponentialBackoff(5, 100).On(func() error {
 		server = c.serverPicker.PickServer()
 		dest := server.Destination()
 		rawConn, err := dialer.Dial(ctx, dest)
@@ -56,13 +61,17 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 		conn = rawConn
 
 		return nil
-	})
-
-	if err != nil {
+	}); err != nil {
 		return newError("failed to find an available destination").Base(err)
 	}
 
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			newError("failed to closed connection").Base(err).WriteToLog(session.ExportIDToError(ctx))
+		}
+	}()
+
+	p := c.policyManager.ForLevel(0)
 
 	request := &protocol.RequestHeader{
 		Version: socks5Version,
@@ -77,48 +86,62 @@ func (c *Client) Process(ctx context.Context, ray ray.OutboundRay, dialer proxy.
 	user := server.PickUser()
 	if user != nil {
 		request.User = user
+		p = c.policyManager.ForLevel(user.Level)
 	}
 
+	if err := conn.SetDeadline(time.Now().Add(p.Timeouts.Handshake)); err != nil {
+		newError("failed to set deadline for handshake").Base(err).WriteToLog(session.ExportIDToError(ctx))
+	}
 	udpRequest, err := ClientHandshake(request, conn, conn)
 	if err != nil {
 		return newError("failed to establish connection to server").AtWarning().Base(err)
 	}
 
-	ctx, timer := signal.CancelAfterInactivity(ctx, time.Minute*2)
+	if err := conn.SetDeadline(time.Time{}); err != nil {
+		newError("failed to clear deadline after handshake").Base(err).WriteToLog(session.ExportIDToError(ctx))
+	}
+
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, p.Timeouts.ConnectionIdle)
 
 	var requestFunc func() error
 	var responseFunc func() error
 	if request.Command == protocol.RequestCommandTCP {
 		requestFunc = func() error {
-			return buf.Copy(ray.OutboundInput(), buf.NewWriter(conn), buf.UpdateActivity(timer))
+			defer timer.SetTimeout(p.Timeouts.DownlinkOnly)
+			return buf.Copy(link.Reader, buf.NewWriter(conn), buf.UpdateActivity(timer))
 		}
 		responseFunc = func() error {
-			defer ray.OutboundOutput().Close()
-			return buf.Copy(buf.NewReader(conn), ray.OutboundOutput(), buf.UpdateActivity(timer))
+			defer timer.SetTimeout(p.Timeouts.UplinkOnly)
+			var reader buf.Reader
+			if p.Buffer.PerConnection == 0 {
+				reader = &buf.SingleReader{Reader: conn}
+			} else {
+				reader = buf.NewReader(conn)
+			}
+			return buf.Copy(reader, link.Writer, buf.UpdateActivity(timer))
 		}
 	} else if request.Command == protocol.RequestCommandUDP {
 		udpConn, err := dialer.Dial(ctx, udpRequest.Destination())
 		if err != nil {
 			return newError("failed to create UDP connection").Base(err)
 		}
-		defer udpConn.Close()
+		defer udpConn.Close() // nolint: errcheck
 		requestFunc = func() error {
-			return buf.Copy(ray.OutboundInput(), buf.NewSequentialWriter(NewUDPWriter(request, udpConn)), buf.UpdateActivity(timer))
+			defer timer.SetTimeout(p.Timeouts.DownlinkOnly)
+			return buf.Copy(link.Reader, &buf.SequentialWriter{Writer: NewUDPWriter(request, udpConn)}, buf.UpdateActivity(timer))
 		}
 		responseFunc = func() error {
-			defer ray.OutboundOutput().Close()
+			defer timer.SetTimeout(p.Timeouts.UplinkOnly)
 			reader := &UDPReader{reader: udpConn}
-			return buf.Copy(reader, ray.OutboundOutput(), buf.UpdateActivity(timer))
+			return buf.Copy(reader, link.Writer, buf.UpdateActivity(timer))
 		}
 	}
 
-	requestDone := signal.ExecuteAsync(requestFunc)
-	responseDone := signal.ExecuteAsync(responseFunc)
-	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
+	var responseDonePost = task.Single(responseFunc, task.OnSuccess(task.Close(link.Writer)))
+	if err := task.Run(task.WithContext(ctx), task.Parallel(requestFunc, responseDonePost))(); err != nil {
 		return newError("connection ends").Base(err)
 	}
-
-	runtime.KeepAlive(timer)
 
 	return nil
 }

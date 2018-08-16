@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package v2ray.core.app.proxyman.command;
+option csharp_namespace = "V2Ray.Core.App.Proxyman.Command";
+option go_package = "command";
+option java_package = "com.v2ray.core.app.proxyman.command";
+option java_multiple_files = true;
+
+import "v2ray.com/core/common/protocol/user.proto";
+import "v2ray.com/core/common/serial/typed_message.proto";
+import "v2ray.com/core/config.proto";
+
+message AddUserOperation {
+  v2ray.core.common.protocol.User user = 1;
+}
+
+message RemoveUserOperation {
+  string email = 1;
+}
+
+message AddInboundRequest {
+  core.InboundHandlerConfig inbound = 1;
+}
+
+message AddInboundResponse{
+
+}
+
+message RemoveInboundRequest {
+  string tag = 1;
+}
+
+message RemoveInboundResponse {}
+
+message AlterInboundRequest {
+  string tag = 1;
+  v2ray.core.common.serial.TypedMessage operation = 2;
+}
+
+message AlterInboundResponse {
+}
+
+message AddOutboundRequest {
+  core.OutboundHandlerConfig outbound = 1;
+}
+
+message AddOutboundResponse {
+
+}
+
+message RemoveOutboundRequest {
+  string tag = 1;
+}
+
+message RemoveOutboundResponse {
+}
+
+message AlterOutboundRequest {
+  string tag = 1;
+  v2ray.core.common.serial.TypedMessage operation = 2;
+}
+
+message AlterOutboundResponse {
+}
+
+service HandlerService {
+  rpc AddInbound(AddInboundRequest) returns (AddInboundResponse) {}
+
+  rpc RemoveInbound(RemoveInboundRequest) returns (RemoveInboundResponse) {}
+
+  rpc AlterInbound(AlterInboundRequest) returns (AlterInboundResponse) {}
+
+  rpc AddOutbound(AddOutboundRequest) returns (AddOutboundResponse) {}
+
+  rpc RemoveOutbound(RemoveOutboundRequest) returns (RemoveOutboundResponse) {}
+
+  rpc AlterOutbound(AlterOutboundRequest) returns (AlterOutboundResponse) {}
+}
+
+message Config {}

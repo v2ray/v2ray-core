@@ -3,96 +3,136 @@ package http
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
 	"io"
-	"net"
 	"net/http"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
-	"v2ray.com/core/app"
-	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/log"
+	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/log"
+	"v2ray.com/core/common/net"
+	http_proto "v2ray.com/core/common/protocol/http"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/task"
 	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/pipe"
 )
 
-// Server is a HTTP proxy server.
+// Server is an HTTP proxy server.
 type Server struct {
 	config *ServerConfig
+	v      *core.Instance
 }
 
 // NewServer creates a new HTTP inbound handler.
 func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
-	space := app.SpaceFromContext(ctx)
-	if space == nil {
-		return nil, newError("no space in context.")
-	}
 	s := &Server{
 		config: config,
+		v:      core.MustFromContext(ctx),
 	}
+
 	return s, nil
 }
 
-func (*Server) Network() v2net.NetworkList {
-	return v2net.NetworkList{
-		Network: []v2net.Network{v2net.Network_TCP},
+func (s *Server) policy() core.Policy {
+	config := s.config
+	p := s.v.PolicyManager().ForLevel(config.UserLevel)
+	if config.Timeout > 0 && config.UserLevel == 0 {
+		p.Timeouts.ConnectionIdle = time.Duration(config.Timeout) * time.Second
+	}
+	return p
+}
+
+func (*Server) Network() net.NetworkList {
+	return net.NetworkList{
+		Network: []net.Network{net.Network_TCP},
 	}
 }
 
-func parseHost(rawHost string, defaultPort v2net.Port) (v2net.Destination, error) {
+func parseHost(rawHost string, defaultPort net.Port) (net.Destination, error) {
 	port := defaultPort
 	host, rawPort, err := net.SplitHostPort(rawHost)
 	if err != nil {
 		if addrError, ok := err.(*net.AddrError); ok && strings.Contains(addrError.Err, "missing port") {
 			host = rawHost
 		} else {
-			return v2net.Destination{}, err
+			return net.Destination{}, err
 		}
-	} else {
+	} else if len(rawPort) > 0 {
 		intPort, err := strconv.Atoi(rawPort)
 		if err != nil {
-			return v2net.Destination{}, err
+			return net.Destination{}, err
 		}
-		port = v2net.Port(intPort)
+		port = net.Port(intPort)
 	}
 
-	if ip := net.ParseIP(host); ip != nil {
-		return v2net.TCPDestination(v2net.IPAddress(ip), port), nil
-	}
-	return v2net.TCPDestination(v2net.DomainAddress(host), port), nil
+	return net.TCPDestination(net.ParseAddress(host), port), nil
 }
 
 func isTimeout(err error) bool {
-	nerr, ok := err.(net.Error)
+	nerr, ok := errors.Cause(err).(net.Error)
 	return ok && nerr.Timeout()
 }
 
-func (s *Server) Process(ctx context.Context, network v2net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
-	reader := bufio.NewReaderSize(conn, 2048)
+func parseBasicAuth(auth string) (username, password string, ok bool) {
+	const prefix = "Basic "
+	if !strings.HasPrefix(auth, prefix) {
+		return
+	}
+	c, err := base64.StdEncoding.DecodeString(auth[len(prefix):])
+	if err != nil {
+		return
+	}
+	cs := string(c)
+	s := strings.IndexByte(cs, ':')
+	if s < 0 {
+		return
+	}
+	return cs[:s], cs[s+1:], true
+}
+
+type readerOnly struct {
+	io.Reader
+}
+
+func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher core.Dispatcher) error {
+	reader := bufio.NewReaderSize(readerOnly{conn}, buf.Size)
 
 Start:
-	conn.SetReadDeadline(time.Now().Add(time.Second * 16))
+	if err := conn.SetReadDeadline(time.Now().Add(s.policy().Timeouts.Handshake)); err != nil {
+		newError("failed to set read deadline").Base(err).WriteToLog(session.ExportIDToError(ctx))
+	}
 
 	request, err := http.ReadRequest(reader)
 	if err != nil {
 		trace := newError("failed to read http request").Base(err)
 		if errors.Cause(err) != io.EOF && !isTimeout(errors.Cause(err)) {
-			trace.AtWarning()
+			trace.AtWarning() // nolint: errcheck
 		}
 		return trace
 	}
-	log.Trace(newError("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]"))
-	conn.SetReadDeadline(time.Time{})
 
-	defaultPort := v2net.Port(80)
+	if len(s.config.Accounts) > 0 {
+		user, pass, ok := parseBasicAuth(request.Header.Get("Proxy-Authorization"))
+		if !ok || !s.config.HasAccount(user, pass) {
+			return common.Error2(conn.Write([]byte("HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm=\"proxy\"\r\n\r\n")))
+		}
+	}
+
+	newError("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]").WriteToLog(session.ExportIDToError(ctx))
+	if err := conn.SetReadDeadline(time.Time{}); err != nil {
+		newError("failed to clear read deadline").Base(err).WriteToLog(session.ExportIDToError(ctx))
+	}
+
+	defaultPort := net.Port(80)
 	if strings.ToLower(request.URL.Scheme) == "https" {
-		defaultPort = v2net.Port(443)
+		defaultPort = net.Port(443)
 	}
 	host := request.Host
 	if len(host) == 0 {
@@ -102,7 +142,11 @@ Start:
 	if err != nil {
 		return newError("malformed proxy host: ", host).AtWarning().Base(err)
 	}
-	log.Access(conn.RemoteAddr(), request.URL, log.AccessAccepted, "")
+	log.Record(&log.AccessMessage{
+		From:   conn.RemoteAddr(),
+		To:     request.URL,
+		Status: log.AccessAccepted,
+	})
 
 	if strings.ToUpper(request.Method) == "CONNECT" {
 		return s.handleConnect(ctx, request, reader, conn, dest, dispatcher)
@@ -110,7 +154,7 @@ Start:
 
 	keepAlive := (strings.TrimSpace(strings.ToLower(request.Header.Get("Proxy-Connection"))) == "keep-alive")
 
-	err = s.handlePlainHTTP(ctx, request, reader, conn, dest, dispatcher)
+	err = s.handlePlainHTTP(ctx, request, conn, dest, dispatcher)
 	if err == errWaitAnother {
 		if keepAlive {
 			goto Start
@@ -121,79 +165,72 @@ Start:
 	return err
 }
 
-func (s *Server) handleConnect(ctx context.Context, request *http.Request, reader io.Reader, writer io.Writer, dest v2net.Destination, dispatcher dispatcher.Interface) error {
-	_, err := writer.Write([]byte("HTTP/1.1 200 Connection established\n\n"))
+func (s *Server) handleConnect(ctx context.Context, request *http.Request, reader *bufio.Reader, conn internet.Connection, dest net.Destination, dispatcher core.Dispatcher) error {
+	_, err := conn.Write([]byte("HTTP/1.1 200 Connection established\r\n\r\n"))
 	if err != nil {
 		return newError("failed to write back OK response").Base(err)
 	}
 
-	timeout := time.Second * time.Duration(s.config.Timeout)
-	if timeout == 0 {
-		timeout = time.Minute * 2
-	}
-	ctx, timer := signal.CancelAfterInactivity(ctx, timeout)
-	ray, err := dispatcher.Dispatch(ctx, dest)
+	plcy := s.policy()
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, plcy.Timeouts.ConnectionIdle)
+
+	ctx = core.ContextWithBufferPolicy(ctx, plcy.Buffer)
+	link, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return err
 	}
 
-	requestDone := signal.ExecuteAsync(func() error {
-		defer ray.InboundInput().Close()
-
-		v2reader := buf.NewReader(reader)
-		if err := buf.Copy(v2reader, ray.InboundInput(), buf.UpdateActivity(timer)); err != nil {
+	if reader.Buffered() > 0 {
+		var payload buf.MultiBuffer
+		_, err := payload.ReadFrom(&io.LimitedReader{R: reader, N: int64(reader.Buffered())})
+		if err != nil {
 			return err
 		}
-		return nil
-	})
-
-	responseDone := signal.ExecuteAsync(func() error {
-		v2writer := buf.NewWriter(writer)
-		if err := buf.Copy(ray.InboundOutput(), v2writer, buf.UpdateActivity(timer)); err != nil {
+		if err := link.Writer.WriteMultiBuffer(payload); err != nil {
 			return err
 		}
-		return nil
-	})
-
-	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
-		ray.InboundInput().CloseError()
-		ray.InboundOutput().CloseError()
-		return newError("connection ends").Base(err)
+		reader = nil
 	}
 
-	runtime.KeepAlive(timer)
+	requestDone := func() error {
+		defer timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
+
+		var reader buf.Reader
+		if plcy.Buffer.PerConnection == 0 {
+			reader = &buf.SingleReader{Reader: conn}
+		} else {
+			reader = buf.NewReader(conn)
+		}
+		return buf.Copy(reader, link.Writer, buf.UpdateActivity(timer))
+	}
+
+	responseDone := func() error {
+		defer timer.SetTimeout(plcy.Timeouts.UplinkOnly)
+
+		v2writer := buf.NewWriter(conn)
+		if err := buf.Copy(link.Reader, v2writer, buf.UpdateActivity(timer)); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	var closeWriter = task.Single(requestDone, task.OnSuccess(task.Close(link.Writer)))
+	if err := task.Run(task.WithContext(ctx), task.Parallel(closeWriter, responseDone))(); err != nil {
+		pipe.CloseError(link.Reader)
+		pipe.CloseError(link.Writer)
+		return newError("connection ends").Base(err)
+	}
 
 	return nil
 }
 
-// @VisibleForTesting
-func StripHopByHopHeaders(header http.Header) {
-	// Strip hop-by-hop header basaed on RFC:
-	// http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html#sec13.5.1
-	// https://www.mnot.net/blog/2011/07/11/what_proxies_must_do
-
-	header.Del("Proxy-Connection")
-	header.Del("Proxy-Authenticate")
-	header.Del("Proxy-Authorization")
-	header.Del("TE")
-	header.Del("Trailers")
-	header.Del("Transfer-Encoding")
-	header.Del("Upgrade")
-
-	connections := header.Get("Connection")
-	header.Del("Connection")
-	if len(connections) == 0 {
-		return
-	}
-	for _, h := range strings.Split(connections, ",") {
-		header.Del(strings.TrimSpace(h))
-	}
-}
-
 var errWaitAnother = newError("keep alive")
 
-func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, reader io.Reader, writer io.Writer, dest v2net.Destination, dispatcher dispatcher.Interface) error {
-	if len(request.URL.Host) <= 0 {
+func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, writer io.Writer, dest net.Destination, dispatcher core.Dispatcher) error {
+	if !s.config.AllowTransparent && len(request.URL.Host) <= 0 {
+		// RFC 2068 (HTTP/1.1) requires URL to be absolute URL in HTTP proxy.
 		response := &http.Response{
 			Status:        "Bad Request",
 			StatusCode:    400,
@@ -210,34 +247,41 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 		return response.Write(writer)
 	}
 
-	request.Host = request.URL.Host
-	StripHopByHopHeaders(request.Header)
+	if len(request.URL.Host) > 0 {
+		request.Host = request.URL.Host
+	}
+	http_proto.RemoveHopByHopHeaders(request.Header)
 
-	ray, err := dispatcher.Dispatch(ctx, dest)
+	// Prevent UA from being set to golang's default ones
+	if len(request.Header.Get("User-Agent")) == 0 {
+		request.Header.Set("User-Agent", "")
+	}
+
+	link, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return err
 	}
-	input := ray.InboundInput()
-	output := ray.InboundOutput()
-	defer input.Close()
 
+	// Plain HTTP request is not a stream. The request always finishes before response. Hense request has to be closed later.
+	defer common.Close(link.Writer) // nolint: errcheck
 	var result error = errWaitAnother
 
-	requestDone := signal.ExecuteAsync(func() error {
+	requestDone := func() error {
 		request.Header.Set("Connection", "close")
 
-		requestWriter := buf.ToBytesWriter(ray.InboundInput())
+		requestWriter := buf.NewBufferedWriter(link.Writer)
+		common.Must(requestWriter.SetBuffered(false))
 		if err := request.Write(requestWriter); err != nil {
-			return err
+			return newError("failed to write whole request").Base(err).AtWarning()
 		}
 		return nil
-	})
+	}
 
-	responseDone := signal.ExecuteAsync(func() error {
-		responseReader := bufio.NewReaderSize(buf.ToBytesReader(ray.InboundOutput()), 2048)
+	responseDone := func() error {
+		responseReader := bufio.NewReaderSize(&buf.BufferedReader{Reader: link.Reader}, buf.Size)
 		response, err := http.ReadResponse(responseReader, request)
 		if err == nil {
-			StripHopByHopHeaders(response.Header)
+			http_proto.RemoveHopByHopHeaders(response.Header)
 			if response.ContentLength >= 0 {
 				response.Header.Set("Proxy-Connection", "keep-alive")
 				response.Header.Set("Connection", "keep-alive")
@@ -248,7 +292,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 				result = nil
 			}
 		} else {
-			log.Trace(newError("failed to read response from ", request.Host).Base(err).AtWarning())
+			newError("failed to read response from ", request.Host).Base(err).AtWarning().WriteToLog(session.ExportIDToError(ctx))
 			response = &http.Response{
 				Status:        "Service Unavailable",
 				StatusCode:    503,
@@ -264,14 +308,14 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, rea
 			response.Header.Set("Proxy-Connection", "close")
 		}
 		if err := response.Write(writer); err != nil {
-			return newError("failed to write response").Base(err)
+			return newError("failed to write response").Base(err).AtWarning()
 		}
 		return nil
-	})
+	}
 
-	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
-		input.CloseError()
-		output.CloseError()
+	if err := task.Run(task.WithContext(ctx), task.Parallel(requestDone, responseDone))(); err != nil {
+		pipe.CloseError(link.Reader)
+		pipe.CloseError(link.Writer)
 		return newError("connection ends").Base(err)
 	}
 

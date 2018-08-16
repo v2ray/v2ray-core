@@ -18,14 +18,14 @@ func ParseNetwork(nwStr string) Network {
 	}
 }
 
-func (v Network) AsList() *NetworkList {
+func (n Network) AsList() *NetworkList {
 	return &NetworkList{
-		Network: []Network{v},
+		Network: []Network{n},
 	}
 }
 
-func (v Network) SystemString() string {
-	switch v {
+func (n Network) SystemString() string {
+	switch n {
 	case Network_TCP:
 		return "tcp"
 	case Network_UDP:
@@ -35,8 +35,8 @@ func (v Network) SystemString() string {
 	}
 }
 
-func (v Network) URLPrefix() string {
-	switch v {
+func (n Network) URLPrefix() string {
+	switch n {
 	case Network_TCP:
 		return "tcp"
 	case Network_UDP:
@@ -46,9 +46,8 @@ func (v Network) URLPrefix() string {
 	}
 }
 
-// HasNetwork returns true if the given network is in v NetworkList.
-func (v NetworkList) HasNetwork(network Network) bool {
-	for _, value := range v.Network {
+func HasNetwork(list []Network, network Network) bool {
+	for _, value := range list {
 		if string(value) == string(network) {
 			return true
 		}
@@ -56,11 +55,21 @@ func (v NetworkList) HasNetwork(network Network) bool {
 	return false
 }
 
-func (v NetworkList) Get(idx int) Network {
-	return v.Network[idx]
+// HasNetwork returns true if the given network is in v NetworkList.
+func (l NetworkList) HasNetwork(network Network) bool {
+	for _, value := range l.Network {
+		if string(value) == string(network) {
+			return true
+		}
+	}
+	return false
+}
+
+func (l NetworkList) Get(idx int) Network {
+	return l.Network[idx]
 }
 
 // Size returns the number of networks in this network list.
-func (v NetworkList) Size() int {
-	return len(v.Network)
+func (l NetworkList) Size() int {
+	return len(l.Network)
 }

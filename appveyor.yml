@@ -1,0 +1,29 @@
+image: Visual Studio 2017
+
+platform:
+  - x64
+  - x86
+
+branches:
+  only:
+    - master
+
+version: "1.0.{build}"
+
+environment:
+  global:
+    GOPATH: C:\gopath
+
+install:
+  - go version
+  - go get -u v2ray.com/core/...
+  - go get -u v2ray.com/ext/...
+
+build_script:
+  - go build v2ray.com/core/main
+  - go build v2ray.com/ext/tools/control/main
+
+build: off
+
+test_script:
+  - go test -p 1 -v v2ray.com/core/...

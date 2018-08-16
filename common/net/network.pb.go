@@ -9,11 +9,17 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+
 type Network int32
 
 const (
 	Network_Unknown Network = 0
-	Network_RawTCP  Network = 1
+	Network_RawTCP  Network = 1 // Deprecated: Do not use.
 	Network_TCP     Network = 2
 	Network_UDP     Network = 3
 )
@@ -34,17 +40,41 @@ var Network_value = map[string]int32{
 func (x Network) String() string {
 	return proto.EnumName(Network_name, int32(x))
 }
-func (Network) EnumDescriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
+func (Network) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_network_a36c8cbc46b487e4, []int{0}
+}
 
 // NetworkList is a list of Networks.
 type NetworkList struct {
-	Network []Network `protobuf:"varint,1,rep,packed,name=network,enum=v2ray.core.common.net.Network" json:"network,omitempty"`
+	Network              []Network `protobuf:"varint,1,rep,packed,name=network,proto3,enum=v2ray.core.common.net.Network" json:"network,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
+	XXX_sizecache        int32     `json:"-"`
 }
 
-func (m *NetworkList) Reset()                    { *m = NetworkList{} }
-func (m *NetworkList) String() string            { return proto.CompactTextString(m) }
-func (*NetworkList) ProtoMessage()               {}
-func (*NetworkList) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
+func (m *NetworkList) Reset()         { *m = NetworkList{} }
+func (m *NetworkList) String() string { return proto.CompactTextString(m) }
+func (*NetworkList) ProtoMessage()    {}
+func (*NetworkList) Descriptor() ([]byte, []int) {
+	return fileDescriptor_network_a36c8cbc46b487e4, []int{0}
+}
+func (m *NetworkList) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_NetworkList.Unmarshal(m, b)
+}
+func (m *NetworkList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_NetworkList.Marshal(b, m, deterministic)
+}
+func (dst *NetworkList) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_NetworkList.Merge(dst, src)
+}
+func (m *NetworkList) XXX_Size() int {
+	return xxx_messageInfo_NetworkList.Size(m)
+}
+func (m *NetworkList) XXX_DiscardUnknown() {
+	xxx_messageInfo_NetworkList.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_NetworkList proto.InternalMessageInfo
 
 func (m *NetworkList) GetNetwork() []Network {
 	if m != nil {
@@ -58,9 +88,11 @@ func init() {
 	proto.RegisterEnum("v2ray.core.common.net.Network", Network_name, Network_value)
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/common/net/network.proto", fileDescriptor2) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/common/net/network.proto", fileDescriptor_network_a36c8cbc46b487e4)
+}
 
-var fileDescriptor2 = []byte{
+var fileDescriptor_network_a36c8cbc46b487e4 = []byte{
 	// 198 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x2f, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x4f, 0xce, 0xcf, 0xcd, 0xcd,

@@ -1,99 +1,112 @@
 package freedom
 
-//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg freedom -path Proxy,Freedom
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg freedom -path Proxy,Freedom
 
 import (
 	"context"
-	"runtime"
 	"time"
 
-	"v2ray.com/core/app"
-	"v2ray.com/core/app/dns"
-	"v2ray.com/core/app/log"
+	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/task"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/ray"
 )
 
+// Handler handles Freedom connections.
 type Handler struct {
-	domainStrategy Config_DomainStrategy
-	timeout        uint32
-	dns            dns.Server
-	destOverride   *DestinationOverride
+	policyManager core.PolicyManager
+	dns           core.DNSClient
+	config        Config
 }
 
+// New creates a new Freedom handler.
 func New(ctx context.Context, config *Config) (*Handler, error) {
-	space := app.SpaceFromContext(ctx)
-	if space == nil {
-		return nil, newError("no space in context")
-	}
+	v := core.MustFromContext(ctx)
 	f := &Handler{
-		domainStrategy: config.DomainStrategy,
-		timeout:        config.Timeout,
-		destOverride:   config.DestinationOverride,
+		config:        *config,
+		policyManager: v.PolicyManager(),
+		dns:           v.DNSClient(),
 	}
-	space.OnInitialize(func() error {
-		if config.DomainStrategy == Config_USE_IP {
-			f.dns = dns.FromSpace(space)
-			if f.dns == nil {
-				return newError("DNS server is not found in the space")
-			}
-		}
-		return nil
-	})
+
 	return f, nil
 }
 
-func (v *Handler) ResolveIP(destination net.Destination) net.Destination {
-	if !destination.Address.Family().IsDomain() {
-		return destination
+func (h *Handler) policy() core.Policy {
+	p := h.policyManager.ForLevel(h.config.UserLevel)
+	if h.config.Timeout > 0 && h.config.UserLevel == 0 {
+		p.Timeouts.ConnectionIdle = time.Duration(h.config.Timeout) * time.Second
 	}
-
-	ips := v.dns.Get(destination.Address.Domain())
-	if len(ips) == 0 {
-		log.Trace(newError("DNS returns nil answer. Keep domain as is."))
-		return destination
-	}
-
-	ip := ips[dice.Roll(len(ips))]
-	var newDest net.Destination
-	if destination.Network == net.Network_TCP {
-		newDest = net.TCPDestination(net.IPAddress(ip), destination.Port)
-	} else {
-		newDest = net.UDPDestination(net.IPAddress(ip), destination.Port)
-	}
-	log.Trace(newError("changing destination from ", destination, " to ", newDest))
-	return newDest
+	return p
 }
 
-func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
+func (h *Handler) resolveIP(ctx context.Context, domain string) net.Address {
+	if resolver, ok := proxy.ResolvedIPsFromContext(ctx); ok {
+		ips := resolver.Resolve()
+		if len(ips) == 0 {
+			return nil
+		}
+		return ips[dice.Roll(len(ips))]
+	}
+
+	ips, err := h.dns.LookupIP(domain)
+	if err != nil {
+		newError("failed to get IP address for domain ", domain).Base(err).WriteToLog(session.ExportIDToError(ctx))
+	}
+	if len(ips) == 0 {
+		return nil
+	}
+	return net.IPAddress(ips[dice.Roll(len(ips))])
+}
+
+func isValidAddress(addr *net.IPOrDomain) bool {
+	if addr == nil {
+		return false
+	}
+
+	a := addr.AsAddress()
+	return a != net.AnyIP
+}
+
+// Process implements proxy.Outbound.
+func (h *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dialer) error {
 	destination, _ := proxy.TargetFromContext(ctx)
-	if v.destOverride != nil {
-		server := v.destOverride.Server
-		destination = net.Destination{
-			Network: destination.Network,
-			Address: server.Address.AsAddress(),
-			Port:    net.Port(server.Port),
+	if h.config.DestinationOverride != nil {
+		server := h.config.DestinationOverride.Server
+		if isValidAddress(server.Address) {
+			destination.Address = server.Address.AsAddress()
+		}
+		if server.Port != 0 {
+			destination.Port = net.Port(server.Port)
 		}
 	}
-	log.Trace(newError("opening connection to ", destination))
+	newError("opening connection to ", destination).WriteToLog(session.ExportIDToError(ctx))
 
-	input := outboundRay.OutboundInput()
-	output := outboundRay.OutboundOutput()
+	input := link.Reader
+	output := link.Writer
 
 	var conn internet.Connection
-	if v.domainStrategy == Config_USE_IP && destination.Address.Family().IsDomain() {
-		destination = v.ResolveIP(destination)
-	}
-
 	err := retry.ExponentialBackoff(5, 100).On(func() error {
-		rawConn, err := dialer.Dial(ctx, destination)
+		dialDest := destination
+		if h.config.DomainStrategy == Config_USE_IP && dialDest.Address.Family().IsDomain() {
+			ip := h.resolveIP(ctx, dialDest.Address.Domain())
+			if ip != nil {
+				dialDest = net.Destination{
+					Network: dialDest.Network,
+					Address: ip,
+					Port:    dialDest.Port,
+				}
+				newError("dialing to to ", dialDest).WriteToLog(session.ExportIDToError(ctx))
+			}
+		}
+
+		rawConn, err := dialer.Dial(ctx, dialDest)
 		if err != nil {
 			return err
 		}
@@ -103,44 +116,47 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	if err != nil {
 		return newError("failed to open connection to ", destination).Base(err)
 	}
-	defer conn.Close()
+	defer conn.Close() // nolint: errcheck
 
-	timeout := time.Second * time.Duration(v.timeout)
-	if timeout == 0 {
-		timeout = time.Minute * 5
-	}
-	ctx, timer := signal.CancelAfterInactivity(ctx, timeout)
+	plcy := h.policy()
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, plcy.Timeouts.ConnectionIdle)
 
-	requestDone := signal.ExecuteAsync(func() error {
+	requestDone := func() error {
+		defer timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
+
 		var writer buf.Writer
 		if destination.Network == net.Network_TCP {
 			writer = buf.NewWriter(conn)
 		} else {
-			writer = buf.NewSequentialWriter(conn)
+			writer = &buf.SequentialWriter{Writer: conn}
 		}
 		if err := buf.Copy(input, writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to process request").Base(err)
 		}
+
 		return nil
-	})
-
-	responseDone := signal.ExecuteAsync(func() error {
-		defer output.Close()
-
-		v2reader := buf.NewReader(conn)
-		if err := buf.Copy(v2reader, output, buf.UpdateActivity(timer)); err != nil {
-			return newError("failed to process response").Base(err)
-		}
-		return nil
-	})
-
-	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
-		input.CloseError()
-		output.CloseError()
-		return newError("connection ends").Base(err)
 	}
 
-	runtime.KeepAlive(timer)
+	responseDone := func() error {
+		defer timer.SetTimeout(plcy.Timeouts.UplinkOnly)
+
+		var reader buf.Reader
+		if plcy.Buffer.PerConnection == 0 {
+			reader = &buf.SingleReader{Reader: conn}
+		} else {
+			reader = buf.NewReader(conn)
+		}
+		if err := buf.Copy(reader, output, buf.UpdateActivity(timer)); err != nil {
+			return newError("failed to process response").Base(err)
+		}
+
+		return nil
+	}
+
+	if err := task.Run(task.WithContext(ctx), task.Parallel(requestDone, task.Single(responseDone, task.OnSuccess(task.Close(output)))))(); err != nil {
+		return newError("connection ends").Base(err)
+	}
 
 	return nil
 }

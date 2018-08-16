@@ -6,10 +6,10 @@ option go_package = "proxyman";
 option java_package = "com.v2ray.core.app.proxyman";
 option java_multiple_files = true;
 
-import "v2ray.com/core/common/serial/typed_message.proto";
 import "v2ray.com/core/common/net/address.proto";
 import "v2ray.com/core/common/net/port.proto";
 import "v2ray.com/core/transport/internet/config.proto";
+import "v2ray.com/core/common/serial/typed_message.proto";
 
 message InboundConfig {
 }
@@ -51,14 +51,28 @@ enum KnownProtocols {
   TLS = 1;
 }
 
+message SniffingConfig {
+  // Whether or not to enable content sniffing on an inbound connection.
+  bool enabled = 1;
+
+  // Override target destination if sniff'ed protocol is in the given list.
+  // Supported values are "http", "tls".
+  repeated string destination_override = 2;
+}
+
 message ReceiverConfig {
+  // PortRange specifies the ports which the Receiver should listen on.
   v2ray.core.common.net.PortRange port_range = 1;
+  // Listen specifies the IP address that the Receiver should listen on.
   v2ray.core.common.net.IPOrDomain listen = 2;
   AllocationStrategy allocation_strategy = 3;
   v2ray.core.transport.internet.StreamConfig stream_settings = 4;
   bool receive_original_destination = 5;
   reserved 6;
-  repeated KnownProtocols domain_override = 7;
+  // Override domains for the given protocol.
+  // Deprecated. Use sniffing_settings.
+  repeated KnownProtocols domain_override = 7 [deprecated = true];
+  SniffingConfig sniffing_settings = 8;
 }
 
 message InboundHandlerConfig {
@@ -68,7 +82,7 @@ message InboundHandlerConfig {
 }
 
 message OutboundConfig {
-  
+
 }
 
 message SenderConfig {
@@ -77,14 +91,6 @@ message SenderConfig {
   v2ray.core.transport.internet.StreamConfig stream_settings = 2;
   v2ray.core.transport.internet.ProxyConfig proxy_settings = 3;
   MultiplexingConfig multiplex_settings = 4;
-}
-
-message OutboundHandlerConfig {
-  string tag = 1;
-  v2ray.core.common.serial.TypedMessage sender_settings = 2;
-  v2ray.core.common.serial.TypedMessage proxy_settings = 3;
-  int64 expire = 4;
-  string comment = 5;
 }
 
 message MultiplexingConfig {

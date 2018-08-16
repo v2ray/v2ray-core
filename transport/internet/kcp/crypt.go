@@ -4,6 +4,7 @@ import (
 	"crypto/cipher"
 	"hash/fnv"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/serial"
 )
 
@@ -32,17 +33,17 @@ func (a *SimpleAuthenticator) Seal(dst, nonce, plain, extra []byte) []byte {
 	dst = append(dst, plain...)
 
 	fnvHash := fnv.New32a()
-	fnvHash.Write(dst[4:])
+	common.Must2(fnvHash.Write(dst[4:]))
 	fnvHash.Sum(dst[:0])
 
-	len := len(dst)
-	xtra := 4 - len%4
+	dstLen := len(dst)
+	xtra := 4 - dstLen%4
 	if xtra != 4 {
 		dst = append(dst, make([]byte, xtra)...)
 	}
 	xorfwd(dst)
 	if xtra != 4 {
-		dst = dst[:len]
+		dst = dst[:dstLen]
 	}
 	return dst
 }
@@ -61,7 +62,7 @@ func (a *SimpleAuthenticator) Open(dst, nonce, cipherText, extra []byte) ([]byte
 	}
 
 	fnvHash := fnv.New32a()
-	fnvHash.Write(dst[4:])
+	common.Must2(fnvHash.Write(dst[4:]))
 	if serial.BytesToUint32(dst[:4]) != fnvHash.Sum32() {
 		return nil, newError("invalid auth")
 	}

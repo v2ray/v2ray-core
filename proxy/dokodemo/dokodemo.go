@@ -1,42 +1,43 @@
 package dokodemo
 
-//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg dokodemo -path Proxy,Dokodemo
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg dokodemo -path Proxy,Dokodemo
 
 import (
 	"context"
-	"runtime"
 	"time"
 
-	"v2ray.com/core/app"
-	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/log"
+	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/task"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/internet/udp"
+	"v2ray.com/core/transport/pipe"
 )
 
 type DokodemoDoor struct {
-	config  *Config
-	address net.Address
-	port    net.Port
+	policyManager core.PolicyManager
+	config        *Config
+	address       net.Address
+	port          net.Port
 }
 
 func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
-	space := app.SpaceFromContext(ctx)
-	if space == nil {
-		return nil, newError("no space in context")
-	}
 	if config.NetworkList == nil || config.NetworkList.Size() == 0 {
 		return nil, newError("no network specified")
 	}
+	v := core.MustFromContext(ctx)
 	d := &DokodemoDoor{
-		config:  config,
-		address: config.GetPredefinedAddress(),
-		port:    net.Port(config.Port),
+		config:        config,
+		address:       config.GetPredefinedAddress(),
+		port:          net.Port(config.Port),
+		policyManager: v.PolicyManager(),
 	}
+
 	return d, nil
 }
 
@@ -44,8 +45,21 @@ func (d *DokodemoDoor) Network() net.NetworkList {
 	return *(d.config.NetworkList)
 }
 
-func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher dispatcher.Interface) error {
-	log.Trace(newError("processing connection from: ", conn.RemoteAddr()).AtDebug())
+func (d *DokodemoDoor) policy() core.Policy {
+	config := d.config
+	p := d.policyManager.ForLevel(config.UserLevel)
+	if config.Timeout > 0 && config.UserLevel == 0 {
+		p.Timeouts.ConnectionIdle = time.Duration(config.Timeout) * time.Second
+	}
+	return p
+}
+
+type hasHandshakeAddress interface {
+	HandshakeAddress() net.Address
+}
+
+func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher core.Dispatcher) error {
+	newError("processing connection from: ", conn.RemoteAddr()).AtDebug().WriteToLog(session.ExportIDToError(ctx))
 	dest := net.Destination{
 		Network: network,
 		Address: d.address,
@@ -54,56 +68,79 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 	if d.config.FollowRedirect {
 		if origDest, ok := proxy.OriginalTargetFromContext(ctx); ok {
 			dest = origDest
+		} else if handshake, ok := conn.(hasHandshakeAddress); ok {
+			addr := handshake.HandshakeAddress()
+			if addr != nil {
+				dest.Address = addr
+			}
 		}
 	}
 	if !dest.IsValid() || dest.Address == nil {
 		return newError("unable to get destination")
 	}
 
-	timeout := time.Second * time.Duration(d.config.Timeout)
-	if timeout == 0 {
-		timeout = time.Minute * 2
-	}
-	ctx, timer := signal.CancelAfterInactivity(ctx, timeout)
+	plcy := d.policy()
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, plcy.Timeouts.ConnectionIdle)
 
-	inboundRay, err := dispatcher.Dispatch(ctx, dest)
+	ctx = core.ContextWithBufferPolicy(ctx, plcy.Buffer)
+	link, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return newError("failed to dispatch request").Base(err)
 	}
 
-	requestDone := signal.ExecuteAsync(func() error {
-		defer inboundRay.InboundInput().Close()
+	requestDone := func() error {
+		defer timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
 
-		chunkReader := buf.NewReader(conn)
+		var reader buf.Reader
+		if plcy.Buffer.PerConnection == 0 {
+			reader = &buf.SingleReader{Reader: conn}
+		} else {
+			reader = buf.NewReader(conn)
+		}
 
-		if err := buf.Copy(chunkReader, inboundRay.InboundInput(), buf.UpdateActivity(timer)); err != nil {
+		if err := buf.Copy(reader, link.Writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport request").Base(err)
 		}
 
 		return nil
-	})
+	}
 
-	responseDone := signal.ExecuteAsync(func() error {
+	responseDone := func() error {
+		defer timer.SetTimeout(plcy.Timeouts.UplinkOnly)
+
 		var writer buf.Writer
 		if network == net.Network_TCP {
 			writer = buf.NewWriter(conn)
 		} else {
-			writer = buf.NewSequentialWriter(conn)
+			//if we are in TPROXY mode, use linux's udp forging functionality
+			if !d.config.FollowRedirect {
+				writer = &buf.SequentialWriter{Writer: conn}
+			} else {
+				srca := net.UDPAddr{IP: dest.Address.IP(), Port: int(dest.Port.Value())}
+				origsend, err := udp.TransmitSocket(&srca, conn.RemoteAddr())
+				if err != nil {
+					return err
+				}
+				writer = &buf.SequentialWriter{Writer: origsend}
+			}
 		}
 
-		if err := buf.Copy(inboundRay.InboundOutput(), writer, buf.UpdateActivity(timer)); err != nil {
+		if err := buf.Copy(link.Reader, writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport response").Base(err)
 		}
-		return nil
-	})
 
-	if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
-		inboundRay.InboundInput().CloseError()
-		inboundRay.InboundOutput().CloseError()
-		return newError("connection ends").Base(err)
+		return nil
 	}
 
-	runtime.KeepAlive(timer)
+	if err := task.Run(task.WithContext(ctx),
+		task.Parallel(
+			task.Single(requestDone, task.OnSuccess(task.Close(link.Writer))),
+			responseDone))(); err != nil {
+		pipe.CloseError(link.Reader)
+		pipe.CloseError(link.Writer)
+		return newError("connection ends").Base(err)
+	}
 
 	return nil
 }

@@ -1,46 +1,26 @@
 package scenarios
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/golang/protobuf/proto"
 	"v2ray.com/core"
-	"v2ray.com/core/app/log"
+	"v2ray.com/core/app/dispatcher"
+	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/log"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
+	"v2ray.com/core/common/serial"
 )
-
-func pickPort() v2net.Port {
-	listener, err := net.Listen("tcp4", ":0")
-	common.Must(err)
-	defer listener.Close()
-
-	addr := listener.Addr().(*net.TCPAddr)
-	return v2net.Port(addr.Port)
-}
-
-func pickUDPPort() v2net.Port {
-	conn, err := net.ListenUDP("udp4", &net.UDPAddr{
-		IP:   v2net.LocalHostIP.IP(),
-		Port: 0,
-	})
-	common.Must(err)
-	defer conn.Close()
-
-	addr := conn.LocalAddr().(*net.UDPAddr)
-	return v2net.Port(addr.Port)
-}
 
 func xor(b []byte) []byte {
 	r := make([]byte, len(b))
@@ -84,6 +64,7 @@ func InitializeServerConfig(config *core.Config) (*exec.Cmd, error) {
 		return nil, err
 	}
 
+	config = withDefaultApps(config)
 	configBytes, err := proto.Marshal(config)
 	if err != nil {
 		return nil, err
@@ -127,12 +108,29 @@ func GetSourcePath() string {
 }
 
 func CloseAllServers(servers []*exec.Cmd) {
-	log.Trace(errors.New("Closing all servers."))
+	log.Record(&log.GeneralMessage{
+		Severity: log.Severity_Info,
+		Content:  "Closing all servers.",
+	})
 	for _, server := range servers {
-		server.Process.Signal(os.Interrupt)
+		if runtime.GOOS == "windows" {
+			server.Process.Kill()
+		} else {
+			server.Process.Signal(syscall.SIGTERM)
+		}
 	}
 	for _, server := range servers {
 		server.Process.Wait()
 	}
-	log.Trace(errors.New("All server closed."))
+	log.Record(&log.GeneralMessage{
+		Severity: log.Severity_Info,
+		Content:  "All server closed.",
+	})
+}
+
+func withDefaultApps(config *core.Config) *core.Config {
+	config.App = append(config.App, serial.ToTypedMessage(&dispatcher.Config{}))
+	config.App = append(config.App, serial.ToTypedMessage(&proxyman.InboundConfig{}))
+	config.App = append(config.App, serial.ToTypedMessage(&proxyman.OutboundConfig{}))
+	return config
 }

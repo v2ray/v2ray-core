@@ -3,25 +3,25 @@ package internet_test
 import (
 	"testing"
 
-	"v2ray.com/core/testing/assert"
 	. "v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/headers/noop"
 	"v2ray.com/core/transport/internet/headers/srtp"
 	"v2ray.com/core/transport/internet/headers/utp"
+	. "v2ray.com/ext/assert"
 )
 
 func TestAllHeadersLoadable(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	noopAuth, err := CreatePacketHeader((*noop.Config)(nil))
-	assert.Error(err).IsNil()
-	assert.Int(noopAuth.Size()).Equals(0)
+	assert(err, IsNil)
+	assert(noopAuth.Size(), Equals, int32(0))
 
 	srtp, err := CreatePacketHeader((*srtp.Config)(nil))
-	assert.Error(err).IsNil()
-	assert.Int(srtp.Size()).Equals(4)
+	assert(err, IsNil)
+	assert(srtp.Size(), Equals, int32(4))
 
 	utp, err := CreatePacketHeader((*utp.Config)(nil))
-	assert.Error(err).IsNil()
-	assert.Int(utp.Size()).Equals(4)
+	assert(err, IsNil)
+	assert(utp.Size(), Equals, int32(4))
 }

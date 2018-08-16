@@ -6,6 +6,7 @@ option go_package = "shadowsocks";
 option java_package = "com.v2ray.core.proxy.shadowsocks";
 option java_multiple_files = true;
 
+import "v2ray.com/core/common/net/network.proto";
 import "v2ray.com/core/common/protocol/user.proto";
 import "v2ray.com/core/common/protocol/server_spec.proto";
 
@@ -29,11 +30,15 @@ enum CipherType {
   AES_128_GCM = 5;
   AES_256_GCM = 6;
   CHACHA20_POLY1305 = 7;
+  NONE = 8;
 }
 
 message ServerConfig {
-  bool udp_enabled = 1;
+  // UdpEnabled specified whether or not to enable UDP for Shadowsocks.
+  // Deprecated. Use 'network' field.
+  bool udp_enabled = 1 [deprecated = true];
   v2ray.core.common.protocol.User user = 2;
+  repeated v2ray.core.common.net.Network network = 3;
 }
 
 message ClientConfig {

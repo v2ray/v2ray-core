@@ -1,90 +1,39 @@
 package udp
 
 import (
-	"context"
-	"net"
-
-	"v2ray.com/core/app/log"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/dice"
-	v2net "v2ray.com/core/common/net"
-	"v2ray.com/core/transport/internet/internal"
+	"v2ray.com/core/common/net"
 )
 
 // Payload represents a single UDP payload.
 type Payload struct {
-	payload      *buf.Buffer
-	source       v2net.Destination
-	originalDest v2net.Destination
+	Content             *buf.Buffer
+	Source              net.Destination
+	OriginalDestination net.Destination
 }
 
-// PayloadHandler is function to handle Payload.
-type PayloadHandler func(payload *buf.Buffer, source v2net.Destination, originalDest v2net.Destination)
+type HubOption func(h *Hub)
 
-// PayloadQueue is a queue of Payload.
-type PayloadQueue struct {
-	queue    []chan Payload
-	callback PayloadHandler
-}
-
-// NewPayloadQueue returns a new PayloadQueue.
-func NewPayloadQueue(option ListenOption) *PayloadQueue {
-	queue := &PayloadQueue{
-		callback: option.Callback,
-		queue:    make([]chan Payload, option.Concurrency),
-	}
-	for i := range queue.queue {
-		queue.queue[i] = make(chan Payload, 64)
-		go queue.Dequeue(queue.queue[i])
-	}
-	return queue
-}
-
-func (v *PayloadQueue) Enqueue(payload Payload) {
-	size := len(v.queue)
-	idx := 0
-	if size > 1 {
-		idx = dice.Roll(size)
-	}
-	for i := 0; i < size; i++ {
-		select {
-		case v.queue[idx%size] <- payload:
-			return
-		default:
-			idx++
-		}
+func HubCapacity(cap int) HubOption {
+	return func(h *Hub) {
+		h.capacity = cap
 	}
 }
 
-func (v *PayloadQueue) Dequeue(queue <-chan Payload) {
-	for payload := range queue {
-		v.callback(payload.payload, payload.source, payload.originalDest)
+func HubReceiveOriginalDestination(r bool) HubOption {
+	return func(h *Hub) {
+		h.recvOrigDest = r
 	}
-}
-
-func (v *PayloadQueue) Close() {
-	for _, queue := range v.queue {
-		close(queue)
-	}
-}
-
-type ListenOption struct {
-	Callback            PayloadHandler
-	ReceiveOriginalDest bool
-	Concurrency         int
 }
 
 type Hub struct {
-	conn   *net.UDPConn
-	cancel context.CancelFunc
-	queue  *PayloadQueue
-	option ListenOption
+	conn         *net.UDPConn
+	cache        chan *Payload
+	capacity     int
+	recvOrigDest bool
 }
 
-func ListenUDP(address v2net.Address, port v2net.Port, option ListenOption) (*Hub, error) {
-	if option.Concurrency < 1 {
-		option.Concurrency = 1
-	}
+func ListenUDP(address net.Address, port net.Port, options ...HubOption) (*Hub, error) {
 	udpConn, err := net.ListenUDP("udp", &net.UDPAddr{
 		IP:   address.IP(),
 		Port: int(port),
@@ -92,84 +41,99 @@ func ListenUDP(address v2net.Address, port v2net.Port, option ListenOption) (*Hu
 	if err != nil {
 		return nil, err
 	}
-	log.Trace(newError("listening UDP on ", address, ":", port))
-	if option.ReceiveOriginalDest {
-		fd, err := internal.GetSysFd(udpConn)
+	newError("listening UDP on ", address, ":", port).WriteToLog()
+	hub := &Hub{
+		conn:         udpConn,
+		capacity:     256,
+		recvOrigDest: false,
+	}
+	for _, opt := range options {
+		opt(hub)
+	}
+
+	hub.cache = make(chan *Payload, hub.capacity)
+
+	if hub.recvOrigDest {
+		rawConn, err := udpConn.SyscallConn()
 		if err != nil {
 			return nil, newError("failed to get fd").Base(err)
 		}
-		err = SetOriginalDestOptions(fd)
+		err = rawConn.Control(func(fd uintptr) {
+			if err := SetOriginalDestOptions(int(fd)); err != nil {
+				newError("failed to set socket options").Base(err).WriteToLog()
+			}
+		})
 		if err != nil {
-			return nil, newError("failed to set socket options").Base(err)
+			return nil, newError("failed to control socket").Base(err)
 		}
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	hub := &Hub{
-		conn:   udpConn,
-		queue:  NewPayloadQueue(option),
-		option: option,
-		cancel: cancel,
-	}
-	go hub.start(ctx)
+
+	go hub.start()
 	return hub, nil
 }
 
-func (v *Hub) Close() {
-	v.cancel()
-	v.conn.Close()
+// Close implements net.Listener.
+func (h *Hub) Close() error {
+	h.conn.Close()
+	return nil
 }
 
-func (v *Hub) WriteTo(payload []byte, dest v2net.Destination) (int, error) {
-	return v.conn.WriteToUDP(payload, &net.UDPAddr{
+func (h *Hub) WriteTo(payload []byte, dest net.Destination) (int, error) {
+	return h.conn.WriteToUDP(payload, &net.UDPAddr{
 		IP:   dest.Address.IP(),
 		Port: int(dest.Port),
 	})
 }
 
-func (v *Hub) start(ctx context.Context) {
-	oobBytes := make([]byte, 256)
-L:
-	for {
-		select {
-		case <-ctx.Done():
-			break L
-		default:
-		}
+func (h *Hub) start() {
+	c := h.cache
+	defer close(c)
 
+	oobBytes := make([]byte, 256)
+
+	for {
 		buffer := buf.New()
 		var noob int
 		var addr *net.UDPAddr
 		err := buffer.AppendSupplier(func(b []byte) (int, error) {
-			n, nb, _, a, e := ReadUDPMsg(v.conn, b, oobBytes)
+			n, nb, _, a, e := ReadUDPMsg(h.conn, b, oobBytes)
 			noob = nb
 			addr = a
 			return n, e
 		})
 
 		if err != nil {
-			log.Trace(newError("failed to read UDP msg").Base(err))
+			newError("failed to read UDP msg").Base(err).WriteToLog()
 			buffer.Release()
-			continue
+			break
 		}
 
-		payload := Payload{
-			payload: buffer,
+		payload := &Payload{
+			Content: buffer,
+			Source:  net.UDPDestination(net.IPAddress(addr.IP), net.Port(addr.Port)),
 		}
-		payload.source = v2net.UDPDestination(v2net.IPAddress(addr.IP), v2net.Port(addr.Port))
-		if v.option.ReceiveOriginalDest && noob > 0 {
-			payload.originalDest = RetrieveOriginalDest(oobBytes[:noob])
+		if h.recvOrigDest && noob > 0 {
+			payload.OriginalDestination = RetrieveOriginalDest(oobBytes[:noob])
+			if payload.OriginalDestination.IsValid() {
+				newError("UDP original destination: ", payload.OriginalDestination).AtDebug().WriteToLog()
+			} else {
+				newError("failed to read UDP original destination").WriteToLog()
+			}
 		}
-		v.queue.Enqueue(payload)
+
+		select {
+		case c <- payload:
+		default:
+		}
+
 	}
-	v.queue.Close()
 }
 
-// Connection returns the net.Conn underneath this hub.
-// Private: Visible for testing only
-func (v *Hub) Connection() net.Conn {
-	return v.conn
+// Addr implements net.Listener.
+func (h *Hub) Addr() net.Addr {
+	return h.conn.LocalAddr()
 }
 
-func (v *Hub) Addr() net.Addr {
-	return v.conn.LocalAddr()
+func (h *Hub) Receive() <-chan *Payload {
+	return h.cache
 }

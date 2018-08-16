@@ -2,44 +2,51 @@ package tls
 
 import (
 	"crypto/tls"
-	"net"
 
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/net"
 )
 
-//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg tls -path Transport,Internet,TLS
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg tls -path Transport,Internet,TLS
 
 var (
-	_ buf.MultiBufferReader = (*conn)(nil)
-	_ buf.MultiBufferWriter = (*conn)(nil)
+	_ buf.Writer = (*conn)(nil)
 )
 
 type conn struct {
-	net.Conn
+	*tls.Conn
 
-	mergingReader buf.Reader
-	mergingWriter buf.Writer
-}
-
-func (c *conn) ReadMultiBuffer() (buf.MultiBuffer, error) {
-	if c.mergingReader == nil {
-		c.mergingReader = buf.NewMergingReaderSize(c.Conn, 16*1024)
-	}
-	return c.mergingReader.Read()
+	mergingWriter *buf.BufferedWriter
 }
 
 func (c *conn) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	if c.mergingWriter == nil {
-		c.mergingWriter = buf.NewMergingWriter(c.Conn)
+		c.mergingWriter = buf.NewBufferedWriter(buf.NewWriter(c.Conn))
 	}
-	return c.mergingWriter.Write(mb)
+	if err := c.mergingWriter.WriteMultiBuffer(mb); err != nil {
+		return err
+	}
+	return c.mergingWriter.Flush()
 }
 
+func (c *conn) HandshakeAddress() net.Address {
+	if err := c.Handshake(); err != nil {
+		return nil
+	}
+	state := c.Conn.ConnectionState()
+	if len(state.ServerName) == 0 {
+		return nil
+	}
+	return net.ParseAddress(state.ServerName)
+}
+
+// Client initiates a TLS client handshake on the given connection.
 func Client(c net.Conn, config *tls.Config) net.Conn {
 	tlsConn := tls.Client(c, config)
 	return &conn{Conn: tlsConn}
 }
 
+// Server initiates a TLS server handshake on the given connection.
 func Server(c net.Conn, config *tls.Config) net.Conn {
 	tlsConn := tls.Server(c, config)
 	return &conn{Conn: tlsConn}

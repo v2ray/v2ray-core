@@ -3,7 +3,7 @@ package outbound
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import v2ray_core_common_protocol1 "v2ray.com/core/common/protocol"
+import protocol "v2ray.com/core/common/protocol"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -17,15 +17,37 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Config struct {
-	Receiver []*v2ray_core_common_protocol1.ServerEndpoint `protobuf:"bytes,1,rep,name=Receiver" json:"Receiver,omitempty"`
+	Receiver             []*protocol.ServerEndpoint `protobuf:"bytes,1,rep,name=Receiver,proto3" json:"Receiver,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
+	XXX_unrecognized     []byte                     `json:"-"`
+	XXX_sizecache        int32                      `json:"-"`
 }
 
-func (m *Config) Reset()                    { *m = Config{} }
-func (m *Config) String() string            { return proto.CompactTextString(m) }
-func (*Config) ProtoMessage()               {}
-func (*Config) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *Config) Reset()         { *m = Config{} }
+func (m *Config) String() string { return proto.CompactTextString(m) }
+func (*Config) ProtoMessage()    {}
+func (*Config) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_0177b8110f292a35, []int{0}
+}
+func (m *Config) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Config.Unmarshal(m, b)
+}
+func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
+}
+func (dst *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(dst, src)
+}
+func (m *Config) XXX_Size() int {
+	return xxx_messageInfo_Config.Size(m)
+}
+func (m *Config) XXX_DiscardUnknown() {
+	xxx_messageInfo_Config.DiscardUnknown(m)
+}
 
-func (m *Config) GetReceiver() []*v2ray_core_common_protocol1.ServerEndpoint {
+var xxx_messageInfo_Config proto.InternalMessageInfo
+
+func (m *Config) GetReceiver() []*protocol.ServerEndpoint {
 	if m != nil {
 		return m.Receiver
 	}
@@ -36,9 +58,11 @@ func init() {
 	proto.RegisterType((*Config)(nil), "v2ray.core.proxy.vmess.outbound.Config")
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/proxy/vmess/outbound/config.proto", fileDescriptor0) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/proxy/vmess/outbound/config.proto", fileDescriptor_config_0177b8110f292a35)
+}
 
-var fileDescriptor0 = []byte{
+var fileDescriptor_config_0177b8110f292a35 = []byte{
 	// 208 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x8e, 0xb1, 0x4a, 0xc4, 0x40,
 	0x10, 0x86, 0x39, 0x85, 0xe3, 0x58, 0xbb, 0xab, 0xc4, 0xe6, 0x44, 0x1b, 0xb1, 0x98, 0x95, 0xf8,

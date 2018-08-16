@@ -3,25 +3,53 @@ package protocol
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import v2ray_core_common_net "v2ray.com/core/common/net"
+import net "v2ray.com/core/common/net"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+
 type ServerEndpoint struct {
-	Address *v2ray_core_common_net.IPOrDomain `protobuf:"bytes,1,opt,name=address" json:"address,omitempty"`
-	Port    uint32                            `protobuf:"varint,2,opt,name=port" json:"port,omitempty"`
-	User    []*User                           `protobuf:"bytes,3,rep,name=user" json:"user,omitempty"`
+	Address              *net.IPOrDomain `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	Port                 uint32          `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
+	User                 []*User         `protobuf:"bytes,3,rep,name=user,proto3" json:"user,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
 }
 
-func (m *ServerEndpoint) Reset()                    { *m = ServerEndpoint{} }
-func (m *ServerEndpoint) String() string            { return proto.CompactTextString(m) }
-func (*ServerEndpoint) ProtoMessage()               {}
-func (*ServerEndpoint) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
+func (m *ServerEndpoint) Reset()         { *m = ServerEndpoint{} }
+func (m *ServerEndpoint) String() string { return proto.CompactTextString(m) }
+func (*ServerEndpoint) ProtoMessage()    {}
+func (*ServerEndpoint) Descriptor() ([]byte, []int) {
+	return fileDescriptor_server_spec_5e5cfcdebad37378, []int{0}
+}
+func (m *ServerEndpoint) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ServerEndpoint.Unmarshal(m, b)
+}
+func (m *ServerEndpoint) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ServerEndpoint.Marshal(b, m, deterministic)
+}
+func (dst *ServerEndpoint) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ServerEndpoint.Merge(dst, src)
+}
+func (m *ServerEndpoint) XXX_Size() int {
+	return xxx_messageInfo_ServerEndpoint.Size(m)
+}
+func (m *ServerEndpoint) XXX_DiscardUnknown() {
+	xxx_messageInfo_ServerEndpoint.DiscardUnknown(m)
+}
 
-func (m *ServerEndpoint) GetAddress() *v2ray_core_common_net.IPOrDomain {
+var xxx_messageInfo_ServerEndpoint proto.InternalMessageInfo
+
+func (m *ServerEndpoint) GetAddress() *net.IPOrDomain {
 	if m != nil {
 		return m.Address
 	}
@@ -46,9 +74,11 @@ func init() {
 	proto.RegisterType((*ServerEndpoint)(nil), "v2ray.core.common.protocol.ServerEndpoint")
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/common/protocol/server_spec.proto", fileDescriptor2) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/common/protocol/server_spec.proto", fileDescriptor_server_spec_5e5cfcdebad37378)
+}
 
-var fileDescriptor2 = []byte{
+var fileDescriptor_server_spec_5e5cfcdebad37378 = []byte{
 	// 241 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0xcf, 0xbd, 0x4e, 0xc3, 0x30,
 	0x10, 0x07, 0x70, 0xb9, 0xad, 0x00, 0xb9, 0x82, 0xc1, 0x53, 0x94, 0x01, 0x05, 0x16, 0xc2, 0x72,

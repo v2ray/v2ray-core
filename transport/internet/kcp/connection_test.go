@@ -1,65 +1,42 @@
 package kcp_test
 
 import (
-	"net"
+	"io"
 	"testing"
 	"time"
 
-	"v2ray.com/core/testing/assert"
+	"v2ray.com/core/common/buf"
 	. "v2ray.com/core/transport/internet/kcp"
+	. "v2ray.com/ext/assert"
 )
 
-type NoOpConn struct{}
+type NoOpCloser int
 
-func (o *NoOpConn) Overhead() int {
-	return 0
-}
-
-// Write implements io.Writer.
-func (o *NoOpConn) Write(b []byte) (int, error) {
-	return len(b), nil
-}
-
-func (o *NoOpConn) Close() error {
+func (NoOpCloser) Close() error {
 	return nil
 }
-
-func (o *NoOpConn) Read([]byte) (int, error) {
-	panic("Should not be called.")
-}
-
-func (o *NoOpConn) LocalAddr() net.Addr {
-	return nil
-}
-
-func (o *NoOpConn) RemoteAddr() net.Addr {
-	return nil
-}
-
-func (o *NoOpConn) SetDeadline(time.Time) error {
-	return nil
-}
-
-func (o *NoOpConn) SetReadDeadline(time.Time) error {
-	return nil
-}
-
-func (o *NoOpConn) SetWriteDeadline(time.Time) error {
-	return nil
-}
-
-func (o *NoOpConn) Reset(input func([]Segment)) {}
 
 func TestConnectionReadTimeout(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
-	conn := NewConnection(1, &NoOpConn{}, &Config{})
+	conn := NewConnection(ConnMetadata{Conversation: 1}, &KCPPacketWriter{
+		Writer: buf.DiscardBytes,
+	}, NoOpCloser(0), &Config{})
 	conn.SetReadDeadline(time.Now().Add(time.Second))
 
 	b := make([]byte, 1024)
 	nBytes, err := conn.Read(b)
-	assert.Int(nBytes).Equals(0)
-	assert.Error(err).IsNotNil()
+	assert(nBytes, Equals, 0)
+	assert(err, IsNotNil)
 
 	conn.Terminate()
+}
+
+func TestConnectionInterface(t *testing.T) {
+	assert := With(t)
+
+	assert((*Connection)(nil), Implements, (*io.Writer)(nil))
+	assert((*Connection)(nil), Implements, (*io.Reader)(nil))
+	assert((*Connection)(nil), Implements, (*buf.Reader)(nil))
+	assert((*Connection)(nil), Implements, (*buf.Writer)(nil))
 }

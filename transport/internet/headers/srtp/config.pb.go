@@ -16,18 +16,40 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Config struct {
-	Version     uint32 `protobuf:"varint,1,opt,name=version" json:"version,omitempty"`
-	Padding     bool   `protobuf:"varint,2,opt,name=padding" json:"padding,omitempty"`
-	Extension   bool   `protobuf:"varint,3,opt,name=extension" json:"extension,omitempty"`
-	CsrcCount   uint32 `protobuf:"varint,4,opt,name=csrc_count,json=csrcCount" json:"csrc_count,omitempty"`
-	Marker      bool   `protobuf:"varint,5,opt,name=marker" json:"marker,omitempty"`
-	PayloadType uint32 `protobuf:"varint,6,opt,name=payload_type,json=payloadType" json:"payload_type,omitempty"`
+	Version              uint32   `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
+	Padding              bool     `protobuf:"varint,2,opt,name=padding,proto3" json:"padding,omitempty"`
+	Extension            bool     `protobuf:"varint,3,opt,name=extension,proto3" json:"extension,omitempty"`
+	CsrcCount            uint32   `protobuf:"varint,4,opt,name=csrc_count,json=csrcCount,proto3" json:"csrc_count,omitempty"`
+	Marker               bool     `protobuf:"varint,5,opt,name=marker,proto3" json:"marker,omitempty"`
+	PayloadType          uint32   `protobuf:"varint,6,opt,name=payload_type,json=payloadType,proto3" json:"payload_type,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Config) Reset()                    { *m = Config{} }
-func (m *Config) String() string            { return proto.CompactTextString(m) }
-func (*Config) ProtoMessage()               {}
-func (*Config) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *Config) Reset()         { *m = Config{} }
+func (m *Config) String() string { return proto.CompactTextString(m) }
+func (*Config) ProtoMessage()    {}
+func (*Config) Descriptor() ([]byte, []int) {
+	return fileDescriptor_config_0f831e3f54b6bef6, []int{0}
+}
+func (m *Config) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Config.Unmarshal(m, b)
+}
+func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
+}
+func (dst *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(dst, src)
+}
+func (m *Config) XXX_Size() int {
+	return xxx_messageInfo_Config.Size(m)
+}
+func (m *Config) XXX_DiscardUnknown() {
+	xxx_messageInfo_Config.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Config proto.InternalMessageInfo
 
 func (m *Config) GetVersion() uint32 {
 	if m != nil {
@@ -76,10 +98,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/transport/internet/headers/srtp/config.proto", fileDescriptor0)
+	proto.RegisterFile("v2ray.com/core/transport/internet/headers/srtp/config.proto", fileDescriptor_config_0f831e3f54b6bef6)
 }
 
-var fileDescriptor0 = []byte{
+var fileDescriptor_config_0f831e3f54b6bef6 = []byte{
 	// 260 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0xd0, 0x31, 0x4b, 0x03, 0x31,
 	0x14, 0x07, 0x70, 0xae, 0xd6, 0xd3, 0x46, 0x5d, 0x32, 0x48, 0x06, 0x85, 0xea, 0x54, 0x3a, 0x24,

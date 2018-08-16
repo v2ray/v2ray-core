@@ -1,68 +1,62 @@
 package inbound
 
-//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg inbound -path App,Proxyman,Inbound
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg inbound -path App,Proxyman,Inbound
 
 import (
 	"context"
+	"sync"
 
+	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common/session"
 )
 
 // Manager is to manage all inbound handlers.
 type Manager struct {
-	handlers       []proxyman.InboundHandler
-	taggedHandlers map[string]proxyman.InboundHandler
+	access          sync.RWMutex
+	untaggedHandler []core.InboundHandler
+	taggedHandlers  map[string]core.InboundHandler
+	running         bool
 }
 
+// New returns a new Manager for inbound handlers.
 func New(ctx context.Context, config *proxyman.InboundConfig) (*Manager, error) {
-	return &Manager{
-		taggedHandlers: make(map[string]proxyman.InboundHandler),
-	}, nil
+	m := &Manager{
+		taggedHandlers: make(map[string]core.InboundHandler),
+	}
+	v := core.MustFromContext(ctx)
+	if err := v.RegisterFeature((*core.InboundHandlerManager)(nil), m); err != nil {
+		return nil, newError("unable to register InboundHandlerManager").Base(err)
+	}
+	return m, nil
 }
 
-func (m *Manager) AddHandler(ctx context.Context, config *proxyman.InboundHandlerConfig) error {
-	rawReceiverSettings, err := config.ReceiverSettings.GetInstance()
-	if err != nil {
-		return err
-	}
-	receiverSettings, ok := rawReceiverSettings.(*proxyman.ReceiverConfig)
-	if !ok {
-		return newError("not a ReceiverConfig")
-	}
-	proxySettings, err := config.ProxySettings.GetInstance()
-	if err != nil {
-		return err
-	}
-	var handler proxyman.InboundHandler
-	tag := config.Tag
-	allocStrategy := receiverSettings.AllocationStrategy
-	if allocStrategy == nil || allocStrategy.Type == proxyman.AllocationStrategy_Always {
-		h, err := NewAlwaysOnInboundHandler(ctx, tag, receiverSettings, proxySettings)
-		if err != nil {
-			return err
-		}
-		handler = h
-	} else if allocStrategy.Type == proxyman.AllocationStrategy_Random {
-		h, err := NewDynamicInboundHandler(ctx, tag, receiverSettings, proxySettings)
-		if err != nil {
-			return err
-		}
-		handler = h
-	}
+// AddHandler implements core.InboundHandlerManager.
+func (m *Manager) AddHandler(ctx context.Context, handler core.InboundHandler) error {
+	m.access.Lock()
+	defer m.access.Unlock()
 
-	if handler == nil {
-		return newError("unknown allocation strategy: ", receiverSettings.AllocationStrategy.Type)
-	}
-
-	m.handlers = append(m.handlers, handler)
+	tag := handler.Tag()
 	if len(tag) > 0 {
 		m.taggedHandlers[tag] = handler
+	} else {
+		m.untaggedHandler = append(m.untaggedHandler, handler)
 	}
+
+	if m.running {
+		return handler.Start()
+	}
+
 	return nil
 }
 
-func (m *Manager) GetHandler(ctx context.Context, tag string) (proxyman.InboundHandler, error) {
+// GetHandler implements core.InboundHandlerManager.
+func (m *Manager) GetHandler(ctx context.Context, tag string) (core.InboundHandler, error) {
+	m.access.RLock()
+	defer m.access.RUnlock()
+
 	handler, found := m.taggedHandlers[tag]
 	if !found {
 		return nil, newError("handler not found: ", tag)
@@ -70,8 +64,40 @@ func (m *Manager) GetHandler(ctx context.Context, tag string) (proxyman.InboundH
 	return handler, nil
 }
 
+// RemoveHandler implements core.InboundHandlerManager.
+func (m *Manager) RemoveHandler(ctx context.Context, tag string) error {
+	if len(tag) == 0 {
+		return core.ErrNoClue
+	}
+
+	m.access.Lock()
+	defer m.access.Unlock()
+
+	if handler, found := m.taggedHandlers[tag]; found {
+		if err := handler.Close(); err != nil {
+			newError("failed to close handler ", tag).Base(err).AtWarning().WriteToLog(session.ExportIDToError(ctx))
+		}
+		delete(m.taggedHandlers, tag)
+		return nil
+	}
+
+	return core.ErrNoClue
+}
+
+// Start implements common.Runnable.
 func (m *Manager) Start() error {
-	for _, handler := range m.handlers {
+	m.access.Lock()
+	defer m.access.Unlock()
+
+	m.running = true
+
+	for _, handler := range m.taggedHandlers {
+		if err := handler.Start(); err != nil {
+			return err
+		}
+	}
+
+	for _, handler := range m.untaggedHandler {
 		if err := handler.Start(); err != nil {
 			return err
 		}
@@ -79,18 +105,65 @@ func (m *Manager) Start() error {
 	return nil
 }
 
-func (m *Manager) Close() {
-	for _, handler := range m.handlers {
-		handler.Close()
+// Close implements common.Closable.
+func (m *Manager) Close() error {
+	m.access.Lock()
+	defer m.access.Unlock()
+
+	m.running = false
+
+	var errors []interface{}
+	for _, handler := range m.taggedHandlers {
+		if err := handler.Close(); err != nil {
+			errors = append(errors, err)
+		}
 	}
+	for _, handler := range m.untaggedHandler {
+		if err := handler.Close(); err != nil {
+			errors = append(errors, err)
+		}
+	}
+
+	if len(errors) > 0 {
+		return newError("failed to close all handlers").Base(newError(serial.Concat(errors...)))
+	}
+
+	return nil
 }
 
-func (m *Manager) Interface() interface{} {
-	return (*proxyman.InboundHandlerManager)(nil)
+// NewHandler creates a new core.InboundHandler based on the given config.
+func NewHandler(ctx context.Context, config *core.InboundHandlerConfig) (core.InboundHandler, error) {
+	rawReceiverSettings, err := config.ReceiverSettings.GetInstance()
+	if err != nil {
+		return nil, err
+	}
+	proxySettings, err := config.ProxySettings.GetInstance()
+	if err != nil {
+		return nil, err
+	}
+	tag := config.Tag
+
+	receiverSettings, ok := rawReceiverSettings.(*proxyman.ReceiverConfig)
+	if !ok {
+		return nil, newError("not a ReceiverConfig").AtError()
+	}
+
+	allocStrategy := receiverSettings.AllocationStrategy
+	if allocStrategy == nil || allocStrategy.Type == proxyman.AllocationStrategy_Always {
+		return NewAlwaysOnInboundHandler(ctx, tag, receiverSettings, proxySettings)
+	}
+
+	if allocStrategy.Type == proxyman.AllocationStrategy_Random {
+		return NewDynamicInboundHandler(ctx, tag, receiverSettings, proxySettings)
+	}
+	return nil, newError("unknown allocation strategy: ", receiverSettings.AllocationStrategy.Type).AtError()
 }
 
 func init() {
 	common.Must(common.RegisterConfig((*proxyman.InboundConfig)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
 		return New(ctx, config.(*proxyman.InboundConfig))
+	}))
+	common.Must(common.RegisterConfig((*core.InboundHandlerConfig)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		return NewHandler(ctx, config.(*core.InboundHandlerConfig))
 	}))
 }

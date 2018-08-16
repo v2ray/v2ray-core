@@ -15,18 +15,40 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-// Serialized proto message along with its type name.
+// TypedMessage is a serialized proto message along with its type name.
 type TypedMessage struct {
 	// The name of the message type, retrieved from protobuf API.
-	Type string `protobuf:"bytes,1,opt,name=type" json:"type,omitempty"`
+	Type string `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
 	// Serialized proto message.
-	Value []byte `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	Value                []byte   `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *TypedMessage) Reset()                    { *m = TypedMessage{} }
-func (m *TypedMessage) String() string            { return proto.CompactTextString(m) }
-func (*TypedMessage) ProtoMessage()               {}
-func (*TypedMessage) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *TypedMessage) Reset()         { *m = TypedMessage{} }
+func (m *TypedMessage) String() string { return proto.CompactTextString(m) }
+func (*TypedMessage) ProtoMessage()    {}
+func (*TypedMessage) Descriptor() ([]byte, []int) {
+	return fileDescriptor_typed_message_70293e724b066c70, []int{0}
+}
+func (m *TypedMessage) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_TypedMessage.Unmarshal(m, b)
+}
+func (m *TypedMessage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_TypedMessage.Marshal(b, m, deterministic)
+}
+func (dst *TypedMessage) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TypedMessage.Merge(dst, src)
+}
+func (m *TypedMessage) XXX_Size() int {
+	return xxx_messageInfo_TypedMessage.Size(m)
+}
+func (m *TypedMessage) XXX_DiscardUnknown() {
+	xxx_messageInfo_TypedMessage.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TypedMessage proto.InternalMessageInfo
 
 func (m *TypedMessage) GetType() string {
 	if m != nil {
@@ -46,9 +68,11 @@ func init() {
 	proto.RegisterType((*TypedMessage)(nil), "v2ray.core.common.serial.TypedMessage")
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/common/serial/typed_message.proto", fileDescriptor0) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/common/serial/typed_message.proto", fileDescriptor_typed_message_70293e724b066c70)
+}
 
-var fileDescriptor0 = []byte{
+var fileDescriptor_typed_message_70293e724b066c70 = []byte{
 	// 168 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x32, 0x28, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x4f, 0xce, 0xcf, 0xcd, 0xcd,

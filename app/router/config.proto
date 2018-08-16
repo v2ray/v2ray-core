@@ -37,6 +37,24 @@ message CIDR {
   uint32 prefix = 2;
 }
 
+message GeoIP {
+  string country_code = 1;
+  repeated CIDR cidr = 2;
+}
+
+message GeoIPList {
+  repeated GeoIP entry = 1;
+}
+
+message GeoSite {
+  string country_code = 1;
+  repeated Domain domain = 2;
+}
+
+message GeoSiteList{
+  repeated GeoSite entry = 1;
+}
+
 message RoutingRule {
   string tag = 1;
   repeated Domain domain = 2;
@@ -46,6 +64,7 @@ message RoutingRule {
   repeated CIDR source_cidr = 6;
   repeated string user_email = 7;
   repeated string inbound_tag = 8;
+  repeated string protocol = 9;
 }
 
 message Config {
@@ -58,6 +77,9 @@ message Config {
 
     // Resolve to IP if the domain doesn't match any rules.
     IpIfNonMatch = 2;
+
+    // Resolve to IP if any rule requires IP matching.
+    IpOnDemand = 3;
   }
   DomainStrategy domain_strategy = 1;
   repeated RoutingRule rule = 2;

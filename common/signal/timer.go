@@ -2,56 +2,81 @@ package signal
 
 import (
 	"context"
+	"sync"
 	"time"
+
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/task"
 )
 
-type ActivityTimer interface {
+type ActivityUpdater interface {
 	Update()
 }
 
-type realActivityTimer struct {
-	updated chan bool
-	timeout time.Duration
-	ctx     context.Context
-	cancel  context.CancelFunc
+type ActivityTimer struct {
+	sync.RWMutex
+	updated   chan struct{}
+	checkTask *task.Periodic
+	onTimeout func()
 }
 
-func (t *realActivityTimer) Update() {
+func (t *ActivityTimer) Update() {
 	select {
-	case t.updated <- true:
+	case t.updated <- struct{}{}:
 	default:
 	}
 }
 
-func (t *realActivityTimer) run() {
-	ticker := time.NewTicker(t.timeout)
-	defer ticker.Stop()
+func (t *ActivityTimer) check() error {
+	select {
+	case <-t.updated:
+	default:
+		t.finish()
+	}
+	return nil
+}
 
-	for {
-		select {
-		case <-ticker.C:
-		case <-t.ctx.Done():
-			return
-		}
+func (t *ActivityTimer) finish() {
+	t.Lock()
+	defer t.Unlock()
 
-		select {
-		case <-t.updated:
-		// Updated keep waiting.
-		default:
-			t.cancel()
-			return
-		}
+	if t.onTimeout != nil {
+		t.onTimeout()
+		t.onTimeout = nil
+	}
+	if t.checkTask != nil {
+		t.checkTask.Close() // nolint: errcheck
+		t.checkTask = nil
 	}
 }
 
-func CancelAfterInactivity(ctx context.Context, timeout time.Duration) (context.Context, ActivityTimer) {
-	ctx, cancel := context.WithCancel(ctx)
-	timer := &realActivityTimer{
-		ctx:     ctx,
-		cancel:  cancel,
-		timeout: timeout,
-		updated: make(chan bool, 1),
+func (t *ActivityTimer) SetTimeout(timeout time.Duration) {
+	if timeout == 0 {
+		t.finish()
+		return
 	}
-	go timer.run()
-	return ctx, timer
+
+	checkTask := &task.Periodic{
+		Interval: timeout,
+		Execute:  t.check,
+	}
+
+	t.Lock()
+
+	if t.checkTask != nil {
+		t.checkTask.Close() // nolint: errcheck
+	}
+	t.checkTask = checkTask
+	t.Unlock()
+	t.Update()
+	common.Must(checkTask.Start())
+}
+
+func CancelAfterInactivity(ctx context.Context, cancel context.CancelFunc, timeout time.Duration) *ActivityTimer {
+	timer := &ActivityTimer{
+		updated:   make(chan struct{}, 1),
+		onTimeout: cancel,
+	}
+	timer.SetTimeout(timeout)
+	return timer
 }

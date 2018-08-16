@@ -4,15 +4,15 @@ import (
 	"testing"
 
 	. "v2ray.com/core/common/net"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestPortRangeContains(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	portRange := &PortRange{
 		From: 53,
 		To:   53,
 	}
-	assert.Bool(portRange.Contains(Port(53))).IsTrue()
+	assert(portRange.Contains(Port(53)), IsTrue)
 }

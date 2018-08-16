@@ -4,45 +4,45 @@ import (
 	"context"
 	"testing"
 
-	"v2ray.com/core/app"
+	"v2ray.com/core"
 	"v2ray.com/core/app/dispatcher"
-	_ "v2ray.com/core/app/dispatcher/impl"
-	"v2ray.com/core/app/dns"
-	_ "v2ray.com/core/app/dns/server"
 	"v2ray.com/core/app/proxyman"
 	_ "v2ray.com/core/app/proxyman/outbound"
 	. "v2ray.com/core/app/router"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestSimpleRouter(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
-	config := &Config{
-		Rule: []*RoutingRule{
-			{
-				Tag: "test",
-				NetworkList: &net.NetworkList{
-					Network: []net.Network{net.Network_TCP},
+	config := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&Config{
+				Rule: []*RoutingRule{
+					{
+						Tag: "test",
+						NetworkList: &net.NetworkList{
+							Network: []net.Network{net.Network_TCP},
+						},
+					},
 				},
-			},
+			}),
+			serial.ToTypedMessage(&dispatcher.Config{}),
+			serial.ToTypedMessage(&proxyman.OutboundConfig{}),
 		},
 	}
 
-	space := app.NewSpace()
-	ctx := app.ContextWithSpace(context.Background(), space)
-	assert.Error(app.AddApplicationToSpace(ctx, new(dns.Config))).IsNil()
-	assert.Error(app.AddApplicationToSpace(ctx, new(dispatcher.Config))).IsNil()
-	assert.Error(app.AddApplicationToSpace(ctx, new(proxyman.OutboundConfig))).IsNil()
-	assert.Error(app.AddApplicationToSpace(ctx, config)).IsNil()
-	assert.Error(space.Initialize()).IsNil()
+	v, err := core.New(config)
+	common.Must(err)
 
-	r := FromSpace(space)
+	r := v.Router()
 
-	ctx = proxy.ContextWithTarget(ctx, net.TCPDestination(net.DomainAddress("v2ray.com"), 80))
-	tag, err := r.TakeDetour(ctx)
-	assert.Error(err).IsNil()
-	assert.String(tag).Equals("test")
+	ctx := proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("v2ray.com"), 80))
+	tag, err := r.PickRoute(ctx)
+	assert(err, IsNil)
+	assert(tag, Equals, "test")
 }

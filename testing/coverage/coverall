@@ -28,7 +28,7 @@ if [ -f ${TEST_FILES[0]} ]; then
   test_package ""
 fi
 
-for DIR in $(find * -type d -not -path "*.git*"); do
+for DIR in $(find * -type d ! -path "*.git*" ! -path "*vendor*"); do
   TEST_FILES=($DIR/*_test.go)
   if [ -f ${TEST_FILES[0]} ]; then
     test_package $DIR
@@ -45,7 +45,8 @@ cat ${COVERAGE_FILE} | sort -t: -k1 | grep -vw "testing" | grep -v ".pb.go" | gr
 echo "mode: set" | cat - ${COV_SORTED} > ${COVERAGE_FILE}
 
 if [ "$FAIL" -eq 0 ]; then
-  bash <(curl -s https://codecov.io/bash) -f ${COVERAGE_FILE} || echo "Codecov did not collect coverage reports."
+  echo "Uploading coverage datea to codecov."
+  bash <(curl -s https://codecov.io/bash) -f ${COVERAGE_FILE} -v || echo "Codecov did not collect coverage reports."
 fi
 
 exit $FAIL

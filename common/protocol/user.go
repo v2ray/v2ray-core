@@ -1,19 +1,11 @@
 package protocol
 
-import "time"
-
-var (
-	ErrAccountMissing     = newError("Account is not specified.")
-	ErrNonMessageType     = newError("Not a protobuf message.")
-	ErrUnknownAccountType = newError("Unknown account type.")
-)
-
-func (v *User) GetTypedAccount() (Account, error) {
-	if v.GetAccount() == nil {
-		return nil, ErrAccountMissing
+func (u *User) GetTypedAccount() (Account, error) {
+	if u.GetAccount() == nil {
+		return nil, newError("Account missing").AtWarning()
 	}
 
-	rawAccount, err := v.Account.GetInstance()
+	rawAccount, err := u.Account.GetInstance()
 	if err != nil {
 		return nil, err
 	}
@@ -23,22 +15,5 @@ func (v *User) GetTypedAccount() (Account, error) {
 	if account, ok := rawAccount.(Account); ok {
 		return account, nil
 	}
-	return nil, newError("Unknown account type: ", v.Account.Type)
-}
-
-func (v *User) GetSettings() UserSettings {
-	settings := UserSettings{}
-	switch v.Level {
-	case 0:
-		settings.PayloadTimeout = time.Second * 30
-	case 1:
-		settings.PayloadTimeout = time.Minute * 2
-	default:
-		settings.PayloadTimeout = time.Minute * 5
-	}
-	return settings
-}
-
-type UserSettings struct {
-	PayloadTimeout time.Duration
+	return nil, newError("Unknown account type: ", u.Account.Type)
 }

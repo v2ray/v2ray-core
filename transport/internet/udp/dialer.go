@@ -4,13 +4,13 @@ import (
 	"context"
 
 	"v2ray.com/core/common"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 )
 
 func init() {
-	common.Must(internet.RegisterTransportDialer(internet.TransportProtocol_UDP,
-		func(ctx context.Context, dest v2net.Destination) (internet.Connection, error) {
+	common.Must(internet.RegisterTransportDialer(protocolName,
+		func(ctx context.Context, dest net.Destination) (internet.Connection, error) {
 			src := internet.DialerSourceFromContext(ctx)
 			conn, err := internet.DialSystem(ctx, src, dest)
 			if err != nil {

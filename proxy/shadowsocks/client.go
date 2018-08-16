@@ -2,10 +2,11 @@ package shadowsocks
 
 import (
 	"context"
-	"runtime"
-	"time"
 
-	"v2ray.com/core/app/log"
+	"v2ray.com/core/common/session"
+	"v2ray.com/core/common/task"
+
+	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
@@ -14,12 +15,12 @@ import (
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/ray"
 )
 
 // Client is a inbound handler for Shadowsocks protocol
 type Client struct {
 	serverPicker protocol.ServerPicker
+	v            *core.Instance
 }
 
 // NewClient create a new Shadowsocks client.
@@ -33,13 +34,13 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 	}
 	client := &Client{
 		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
+		v:            core.MustFromContext(ctx),
 	}
-
 	return client, nil
 }
 
 // Process implements OutboundHandler.Process().
-func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
+func (c *Client) Process(ctx context.Context, link *core.Link, dialer proxy.Dialer) error {
 	destination, ok := proxy.TargetFromContext(ctx)
 	if !ok {
 		return newError("target not specified")
@@ -50,7 +51,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 	var conn internet.Connection
 
 	err := retry.ExponentialBackoff(5, 100).On(func() error {
-		server = v.serverPicker.PickServer()
+		server = c.serverPicker.PickServer()
 		dest := server.Destination()
 		dest.Network = network
 		rawConn, err := dialer.Dial(ctx, dest)
@@ -64,7 +65,7 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 	if err != nil {
 		return newError("failed to find an available destination").AtWarning().Base(err)
 	}
-	log.Trace(newError("tunneling request to ", destination, " via ", server.Destination()))
+	newError("tunneling request to ", destination, " via ", server.Destination()).WriteToLog(session.ExportIDToError(ctx))
 
 	defer conn.Close()
 
@@ -84,17 +85,19 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 	if err != nil {
 		return newError("failed to get a valid user account").AtWarning().Base(err)
 	}
-	account := rawAccount.(*ShadowsocksAccount)
+	account := rawAccount.(*MemoryAccount)
 	request.User = user
 
 	if account.OneTimeAuth == Account_Auto || account.OneTimeAuth == Account_Enabled {
 		request.Option |= RequestOptionOneTimeAuth
 	}
 
-	ctx, timer := signal.CancelAfterInactivity(ctx, time.Minute*2)
+	sessionPolicy := c.v.PolicyManager().ForLevel(user.Level)
+	ctx, cancel := context.WithCancel(ctx)
+	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)
 
 	if request.Command == protocol.RequestCommandTCP {
-		bufferedWriter := buf.NewBufferedWriter(conn)
+		bufferedWriter := buf.NewBufferedWriter(buf.NewWriter(conn))
 		bodyWriter, err := WriteTCPRequest(request, bufferedWriter)
 		if err != nil {
 			return newError("failed to write request").Base(err)
@@ -104,29 +107,24 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 			return err
 		}
 
-		requestDone := signal.ExecuteAsync(func() error {
-			if err := buf.Copy(outboundRay.OutboundInput(), bodyWriter, buf.UpdateActivity(timer)); err != nil {
-				return err
-			}
-			return nil
-		})
+		requestDone := func() error {
+			defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
+			return buf.Copy(link.Reader, bodyWriter, buf.UpdateActivity(timer))
+		}
 
-		responseDone := signal.ExecuteAsync(func() error {
-			defer outboundRay.OutboundOutput().Close()
+		responseDone := func() error {
+			defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
 			responseReader, err := ReadTCPResponse(user, conn)
 			if err != nil {
 				return err
 			}
 
-			if err := buf.Copy(responseReader, outboundRay.OutboundOutput(), buf.UpdateActivity(timer)); err != nil {
-				return err
-			}
+			return buf.Copy(responseReader, link.Writer, buf.UpdateActivity(timer))
+		}
 
-			return nil
-		})
-
-		if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
+		var responseDoneAndCloseWriter = task.Single(responseDone, task.OnSuccess(task.Close(link.Writer)))
+		if err := task.Run(task.WithContext(ctx), task.Parallel(requestDone, responseDoneAndCloseWriter))(); err != nil {
 			return newError("connection ends").Base(err)
 		}
 
@@ -135,40 +133,41 @@ func (v *Client) Process(ctx context.Context, outboundRay ray.OutboundRay, diale
 
 	if request.Command == protocol.RequestCommandUDP {
 
-		writer := buf.NewSequentialWriter(&UDPWriter{
+		writer := &buf.SequentialWriter{Writer: &UDPWriter{
 			Writer:  conn,
 			Request: request,
-		})
+		}}
 
-		requestDone := signal.ExecuteAsync(func() error {
-			if err := buf.Copy(outboundRay.OutboundInput(), writer, buf.UpdateActivity(timer)); err != nil {
+		requestDone := func() error {
+			defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
+
+			if err := buf.Copy(link.Reader, writer, buf.UpdateActivity(timer)); err != nil {
 				return newError("failed to transport all UDP request").Base(err)
 			}
 			return nil
-		})
+		}
 
-		responseDone := signal.ExecuteAsync(func() error {
-			defer outboundRay.OutboundOutput().Close()
+		responseDone := func() error {
+			defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
 			reader := &UDPReader{
 				Reader: conn,
 				User:   user,
 			}
 
-			if err := buf.Copy(reader, outboundRay.OutboundOutput(), buf.UpdateActivity(timer)); err != nil {
+			if err := buf.Copy(reader, link.Writer, buf.UpdateActivity(timer)); err != nil {
 				return newError("failed to transport all UDP response").Base(err)
 			}
 			return nil
-		})
+		}
 
-		if err := signal.ErrorOrFinish2(ctx, requestDone, responseDone); err != nil {
+		var responseDoneAndCloseWriter = task.Single(responseDone, task.OnSuccess(task.Close(link.Writer)))
+		if err := task.Run(task.WithContext(ctx), task.Parallel(requestDone, responseDoneAndCloseWriter))(); err != nil {
 			return newError("connection ends").Base(err)
 		}
 
 		return nil
 	}
-
-	runtime.KeepAlive(timer)
 
 	return nil
 }

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-GO_AMD64=https://storage.googleapis.com/golang/go1.8.3.linux-amd64.tar.gz
-GO_X86=https://storage.googleapis.com/golang/go1.8.3.linux-386.tar.gz
+GO_AMD64=https://storage.googleapis.com/golang/go1.10.linux-amd64.tar.gz
+GO_X86=https://storage.googleapis.com/golang/go1.10.linux-386.tar.gz
 ARCH=$(uname -m)
 GO_CUR=${GO_AMD64}
 

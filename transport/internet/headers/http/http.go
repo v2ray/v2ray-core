@@ -1,6 +1,6 @@
 package http
 
-//go:generate go run $GOPATH/src/v2ray.com/core/tools/generrorgen/main.go -pkg http -path Transport,Internet,Headers,HTTP
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg http -path Transport,Internet,Headers,HTTP
 
 import (
 	"bytes"
@@ -57,7 +57,7 @@ type HeaderReader struct {
 
 func (*HeaderReader) Read(reader io.Reader) (*buf.Buffer, error) {
 	buffer := buf.New()
-	totalBytes := 0
+	totalBytes := int32(0)
 	endingDetected := false
 	for totalBytes < maxHeaderLength {
 		err := buffer.AppendSupplier(buf.ReadFrom(reader))
@@ -66,13 +66,13 @@ func (*HeaderReader) Read(reader io.Reader) (*buf.Buffer, error) {
 			return nil, err
 		}
 		if n := bytes.Index(buffer.Bytes(), []byte(ENDING)); n != -1 {
-			buffer.SliceFrom(n + len(ENDING))
+			buffer.Advance(int32(n + len(ENDING)))
 			endingDetected = true
 			break
 		}
-		if buffer.Len() >= len(ENDING) {
-			totalBytes += buffer.Len() - len(ENDING)
-			leftover := buffer.BytesFrom(-len(ENDING))
+		if buffer.Len() >= int32(len(ENDING)) {
+			totalBytes += buffer.Len() - int32(len(ENDING))
+			leftover := buffer.BytesFrom(-int32(len(ENDING)))
 			buffer.Reset(func(b []byte) (int, error) {
 				return copy(b, leftover), nil
 			})
@@ -103,7 +103,7 @@ func (w *HeaderWriter) Write(writer io.Writer) error {
 	if w.header == nil {
 		return nil
 	}
-	_, err := writer.Write(w.header.Bytes())
+	err := buf.WriteAllBytes(writer, w.header.Bytes())
 	w.header.Release()
 	w.header = nil
 	return err

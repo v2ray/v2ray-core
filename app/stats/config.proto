@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package v2ray.core.app.stats;
+option csharp_namespace = "V2Ray.Core.App.Stats";
+option go_package = "stats";
+option java_package = "com.v2ray.core.app.stats";
+option java_multiple_files = true;
+
+message Config {
+  
+}

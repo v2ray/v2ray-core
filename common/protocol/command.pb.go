@@ -3,8 +3,8 @@ package protocol
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import v2ray_core_common_serial "v2ray.com/core/common/serial"
-import v2ray_core_transport_internet "v2ray.com/core/transport/internet"
+import serial "v2ray.com/core/common/serial"
+import internet "v2ray.com/core/transport/internet"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -18,23 +18,45 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type AlternativeOutboundConfig struct {
-	Settings       *v2ray_core_common_serial.TypedMessage      `protobuf:"bytes,1,opt,name=settings" json:"settings,omitempty"`
-	StreamSettings *v2ray_core_transport_internet.StreamConfig `protobuf:"bytes,3,opt,name=stream_settings,json=streamSettings" json:"stream_settings,omitempty"`
+	Settings             *serial.TypedMessage   `protobuf:"bytes,1,opt,name=settings,proto3" json:"settings,omitempty"`
+	StreamSettings       *internet.StreamConfig `protobuf:"bytes,3,opt,name=stream_settings,json=streamSettings,proto3" json:"stream_settings,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
+	XXX_unrecognized     []byte                 `json:"-"`
+	XXX_sizecache        int32                  `json:"-"`
 }
 
-func (m *AlternativeOutboundConfig) Reset()                    { *m = AlternativeOutboundConfig{} }
-func (m *AlternativeOutboundConfig) String() string            { return proto.CompactTextString(m) }
-func (*AlternativeOutboundConfig) ProtoMessage()               {}
-func (*AlternativeOutboundConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *AlternativeOutboundConfig) Reset()         { *m = AlternativeOutboundConfig{} }
+func (m *AlternativeOutboundConfig) String() string { return proto.CompactTextString(m) }
+func (*AlternativeOutboundConfig) ProtoMessage()    {}
+func (*AlternativeOutboundConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_command_73fe039ecf28347d, []int{0}
+}
+func (m *AlternativeOutboundConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AlternativeOutboundConfig.Unmarshal(m, b)
+}
+func (m *AlternativeOutboundConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AlternativeOutboundConfig.Marshal(b, m, deterministic)
+}
+func (dst *AlternativeOutboundConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AlternativeOutboundConfig.Merge(dst, src)
+}
+func (m *AlternativeOutboundConfig) XXX_Size() int {
+	return xxx_messageInfo_AlternativeOutboundConfig.Size(m)
+}
+func (m *AlternativeOutboundConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_AlternativeOutboundConfig.DiscardUnknown(m)
+}
 
-func (m *AlternativeOutboundConfig) GetSettings() *v2ray_core_common_serial.TypedMessage {
+var xxx_messageInfo_AlternativeOutboundConfig proto.InternalMessageInfo
+
+func (m *AlternativeOutboundConfig) GetSettings() *serial.TypedMessage {
 	if m != nil {
 		return m.Settings
 	}
 	return nil
 }
 
-func (m *AlternativeOutboundConfig) GetStreamSettings() *v2ray_core_transport_internet.StreamConfig {
+func (m *AlternativeOutboundConfig) GetStreamSettings() *internet.StreamConfig {
 	if m != nil {
 		return m.StreamSettings
 	}
@@ -45,9 +67,11 @@ func init() {
 	proto.RegisterType((*AlternativeOutboundConfig)(nil), "v2ray.core.common.protocol.AlternativeOutboundConfig")
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/common/protocol/command.proto", fileDescriptor0) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/common/protocol/command.proto", fileDescriptor_command_73fe039ecf28347d)
+}
 
-var fileDescriptor0 = []byte{
+var fileDescriptor_command_73fe039ecf28347d = []byte{
 	// 262 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x90, 0xcf, 0x4a, 0xc3, 0x40,
 	0x10, 0x87, 0x89, 0x82, 0x94, 0x08, 0x0a, 0x39, 0x69, 0x0e, 0x22, 0x1e, 0x44, 0x50, 0x66, 0x25,

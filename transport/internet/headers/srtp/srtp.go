@@ -13,7 +13,7 @@ type SRTP struct {
 	number uint16
 }
 
-func (*SRTP) Size() int {
+func (*SRTP) Size() int32 {
 	return 4
 }
 
@@ -25,7 +25,8 @@ func (s *SRTP) Write(b []byte) (int, error) {
 	return 4, nil
 }
 
-func NewSRTP(ctx context.Context, config interface{}) (interface{}, error) {
+// New returns a new SRTP instance based on the given config.
+func New(ctx context.Context, config interface{}) (interface{}, error) {
 	return &SRTP{
 		header: 0xB5E8,
 		number: dice.RollUint16(),
@@ -33,5 +34,5 @@ func NewSRTP(ctx context.Context, config interface{}) (interface{}, error) {
 }
 
 func init() {
-	common.Must(common.RegisterConfig((*Config)(nil), NewSRTP))
+	common.Must(common.RegisterConfig((*Config)(nil), New))
 }

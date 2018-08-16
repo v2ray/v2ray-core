@@ -1,21 +1,22 @@
 package dispatcher
 
-import (
-	"context"
+import "context"
 
-	"v2ray.com/core/app"
-	"v2ray.com/core/common/net"
-	"v2ray.com/core/transport/ray"
+//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg dispatcher -path App,Dispatcher
+
+type key int
+
+const (
+	sniffing key = iota
 )
 
-// Interface dispatch a packet and possibly further network payload to its destination.
-type Interface interface {
-	Dispatch(ctx context.Context, dest net.Destination) (ray.InboundRay, error)
+func ContextWithSniffingResult(ctx context.Context, r SniffResult) context.Context {
+	return context.WithValue(ctx, sniffing, r)
 }
 
-func FromSpace(space app.Space) Interface {
-	if app := space.GetApplication((*Interface)(nil)); app != nil {
-		return app.(Interface)
+func SniffingResultFromContext(ctx context.Context) SniffResult {
+	if c, ok := ctx.Value(sniffing).(SniffResult); ok {
+		return c
 	}
 	return nil
 }

@@ -7,20 +7,24 @@ func ByteToHexString(value byte) string {
 	return hex.EncodeToString([]byte{value})
 }
 
-// BytesToUint16 deserializes a byte array to an uint16 in big endian order. The byte array must have at least 2 elements.
+// BytesToUint16 deserializes a byte array to a uint16 in big endian order. The byte array must have at least 2 elements.
 func BytesToUint16(value []byte) uint16 {
+	_ = value[1] // bounds check hint to compiler; see golang.org/issue/14808
 	return uint16(value[0])<<8 | uint16(value[1])
 }
 
-// BytesToUint32 deserializes a byte array to an uint32 in big endian order. The byte array must have at least 4 elements.
+// BytesToUint32 deserializes a byte array to a uint32 in big endian order. The byte array must have at least 4 elements.
 func BytesToUint32(value []byte) uint32 {
+	_ = value[3]
 	return uint32(value[0])<<24 |
 		uint32(value[1])<<16 |
 		uint32(value[2])<<8 |
 		uint32(value[3])
 }
 
+// BytesToInt deserializes a bytes array (of at leat 4 bytes) to an int in big endian order.
 func BytesToInt(value []byte) int {
+	_ = value[3]
 	return int(value[0])<<24 |
 		int(value[1])<<16 |
 		int(value[2])<<8 |
@@ -29,6 +33,7 @@ func BytesToInt(value []byte) int {
 
 // BytesToInt64 deserializes a byte array to an int64 in big endian order. The byte array must have at least 8 elements.
 func BytesToInt64(value []byte) int64 {
+	_ = value[7]
 	return int64(value[0])<<56 |
 		int64(value[1])<<48 |
 		int64(value[2])<<40 |

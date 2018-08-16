@@ -4,15 +4,16 @@ import (
 	"crypto/md5"
 	"hash/fnv"
 
-	"golang.org/x/crypto/sha3"
-
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/serial"
+
+	"golang.org/x/crypto/sha3"
 )
 
 // Authenticate authenticates a byte array using Fnv hash.
 func Authenticate(b []byte) uint32 {
 	fnv1hash := fnv.New32a()
-	fnv1hash.Write(b)
+	common.Must2(fnv1hash.Write(b))
 	return fnv1hash.Sum32()
 }
 
@@ -81,18 +82,18 @@ type ShakeSizeParser struct {
 
 func NewShakeSizeParser(nonce []byte) *ShakeSizeParser {
 	shake := sha3.NewShake128()
-	shake.Write(nonce)
+	common.Must2(shake.Write(nonce))
 	return &ShakeSizeParser{
 		shake: shake,
 	}
 }
 
-func (*ShakeSizeParser) SizeBytes() int {
+func (*ShakeSizeParser) SizeBytes() int32 {
 	return 2
 }
 
 func (s *ShakeSizeParser) next() uint16 {
-	s.shake.Read(s.buffer[:])
+	common.Must2(s.shake.Read(s.buffer[:]))
 	return serial.BytesToUint16(s.buffer[:])
 }
 
@@ -105,4 +106,12 @@ func (s *ShakeSizeParser) Decode(b []byte) (uint16, error) {
 func (s *ShakeSizeParser) Encode(size uint16, b []byte) []byte {
 	mask := s.next()
 	return serial.Uint16ToBytes(mask^size, b[:0])
+}
+
+func (s *ShakeSizeParser) NextPaddingLen() uint16 {
+	return s.next() % 64
+}
+
+func (s *ShakeSizeParser) MaxPaddingLen() uint16 {
+	return 64
 }

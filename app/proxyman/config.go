@@ -1,11 +1,5 @@
 package proxyman
 
-import (
-	"context"
-
-	"v2ray.com/core/proxy"
-)
-
 func (s *AllocationStrategy) GetConcurrencyValue() uint32 {
 	if s == nil || s.Concurrency == nil {
 		return 3
@@ -20,13 +14,26 @@ func (s *AllocationStrategy) GetRefreshValue() uint32 {
 	return s.Refresh.Value
 }
 
-func (c *OutboundHandlerConfig) GetProxyHandler(ctx context.Context) (proxy.Outbound, error) {
-	if c == nil {
-		return nil, newError("OutboundHandlerConfig is nil")
+func (c *ReceiverConfig) GetEffectiveSniffingSettings() *SniffingConfig {
+	if c.SniffingSettings != nil {
+		return c.SniffingSettings
 	}
-	config, err := c.ProxySettings.GetInstance()
-	if err != nil {
-		return nil, err
+
+	if len(c.DomainOverride) > 0 {
+		var p []string
+		for _, kd := range c.DomainOverride {
+			switch kd {
+			case KnownProtocols_HTTP:
+				p = append(p, "http")
+			case KnownProtocols_TLS:
+				p = append(p, "tls")
+			}
+		}
+		return &SniffingConfig{
+			Enabled:             true,
+			DestinationOverride: p,
+		}
 	}
-	return proxy.CreateOutboundHandler(ctx, config)
+
+	return nil
 }

@@ -4,20 +4,20 @@ import (
 	"testing"
 
 	"v2ray.com/core/common/buf"
-	v2net "v2ray.com/core/common/net"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	. "v2ray.com/core/proxy/shadowsocks"
-	"v2ray.com/core/testing/assert"
+	. "v2ray.com/ext/assert"
 )
 
 func TestUDPEncoding(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	request := &protocol.RequestHeader{
 		Version: Version,
 		Command: protocol.RequestCommandUDP,
-		Address: v2net.LocalHostIP,
+		Address: net.LocalHostIP,
 		Port:    1234,
 		User: &protocol.User{
 			Email: "love@v2ray.com",
@@ -29,20 +29,21 @@ func TestUDPEncoding(t *testing.T) {
 		},
 	}
 
-	data := buf.NewLocal(256)
+	data := buf.NewSize(256)
 	data.AppendSupplier(serial.WriteString("test string"))
 	encodedData, err := EncodeUDPPacket(request, data.Bytes())
-	assert.Error(err).IsNil()
+	assert(err, IsNil)
 
 	decodedRequest, decodedData, err := DecodeUDPPacket(request.User, encodedData)
-	assert.Error(err).IsNil()
-	assert.Bytes(decodedData.Bytes()).Equals(data.Bytes())
-	assert.Address(decodedRequest.Address).Equals(request.Address)
-	assert.Port(decodedRequest.Port).Equals(request.Port)
+	assert(err, IsNil)
+	assert(decodedData.Bytes(), Equals, data.Bytes())
+	assert(decodedRequest.Address, Equals, request.Address)
+	assert(decodedRequest.Port, Equals, request.Port)
+	assert(decodedRequest.Command, Equals, request.Command)
 }
 
 func TestTCPRequest(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	cases := []struct {
 		request *protocol.RequestHeader
@@ -52,7 +53,7 @@ func TestTCPRequest(t *testing.T) {
 			request: &protocol.RequestHeader{
 				Version: Version,
 				Command: protocol.RequestCommandTCP,
-				Address: v2net.LocalHostIP,
+				Address: net.LocalHostIP,
 				Option:  RequestOptionOneTimeAuth,
 				Port:    1234,
 				User: &protocol.User{
@@ -69,7 +70,7 @@ func TestTCPRequest(t *testing.T) {
 			request: &protocol.RequestHeader{
 				Version: Version,
 				Command: protocol.RequestCommandTCP,
-				Address: v2net.LocalHostIPv6,
+				Address: net.LocalHostIPv6,
 				Option:  RequestOptionOneTimeAuth,
 				Port:    1234,
 				User: &protocol.User{
@@ -86,7 +87,7 @@ func TestTCPRequest(t *testing.T) {
 			request: &protocol.RequestHeader{
 				Version: Version,
 				Command: protocol.RequestCommandTCP,
-				Address: v2net.DomainAddress("v2ray.com"),
+				Address: net.DomainAddress("v2ray.com"),
 				Option:  RequestOptionOneTimeAuth,
 				Port:    1234,
 				User: &protocol.User{
@@ -104,24 +105,25 @@ func TestTCPRequest(t *testing.T) {
 	runTest := func(request *protocol.RequestHeader, payload []byte) {
 		data := buf.New()
 		defer data.Release()
-		data.Append(payload)
+		data.Write(payload)
 
 		cache := buf.New()
 		defer cache.Release()
 
 		writer, err := WriteTCPRequest(request, cache)
-		assert.Error(err).IsNil()
+		assert(err, IsNil)
 
-		assert.Error(writer.Write(buf.NewMultiBufferValue(data))).IsNil()
+		assert(writer.WriteMultiBuffer(buf.NewMultiBufferValue(data)), IsNil)
 
 		decodedRequest, reader, err := ReadTCPSession(request.User, cache)
-		assert.Error(err).IsNil()
-		assert.Address(decodedRequest.Address).Equals(request.Address)
-		assert.Port(decodedRequest.Port).Equals(request.Port)
+		assert(err, IsNil)
+		assert(decodedRequest.Address, Equals, request.Address)
+		assert(decodedRequest.Port, Equals, request.Port)
+		assert(decodedRequest.Command, Equals, request.Command)
 
-		decodedData, err := reader.Read()
-		assert.Error(err).IsNil()
-		assert.String(decodedData[0].String()).Equals(string(payload))
+		decodedData, err := reader.ReadMultiBuffer()
+		assert(err, IsNil)
+		assert(decodedData[0].String(), Equals, string(payload))
 	}
 
 	for _, test := range cases {
@@ -131,7 +133,7 @@ func TestTCPRequest(t *testing.T) {
 }
 
 func TestUDPReaderWriter(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	user := &protocol.User{
 		Account: serial.ToTypedMessage(&Account{
@@ -140,16 +142,16 @@ func TestUDPReaderWriter(t *testing.T) {
 		}),
 	}
 	cache := buf.New()
-	writer := buf.NewSequentialWriter(&UDPWriter{
+	writer := &buf.SequentialWriter{Writer: &UDPWriter{
 		Writer: cache,
 		Request: &protocol.RequestHeader{
 			Version: Version,
-			Address: v2net.DomainAddress("v2ray.com"),
+			Address: net.DomainAddress("v2ray.com"),
 			Port:    123,
 			User:    user,
 			Option:  RequestOptionOneTimeAuth,
 		},
-	})
+	}}
 
 	reader := &UDPReader{
 		Reader: cache,
@@ -158,19 +160,19 @@ func TestUDPReaderWriter(t *testing.T) {
 
 	b := buf.New()
 	b.AppendSupplier(serial.WriteString("test payload"))
-	err := writer.Write(buf.NewMultiBufferValue(b))
-	assert.Error(err).IsNil()
+	err := writer.WriteMultiBuffer(buf.NewMultiBufferValue(b))
+	assert(err, IsNil)
 
-	payload, err := reader.Read()
-	assert.Error(err).IsNil()
-	assert.String(payload[0].String()).Equals("test payload")
+	payload, err := reader.ReadMultiBuffer()
+	assert(err, IsNil)
+	assert(payload[0].String(), Equals, "test payload")
 
 	b = buf.New()
 	b.AppendSupplier(serial.WriteString("test payload 2"))
-	err = writer.Write(buf.NewMultiBufferValue(b))
-	assert.Error(err).IsNil()
+	err = writer.WriteMultiBuffer(buf.NewMultiBufferValue(b))
+	assert(err, IsNil)
 
-	payload, err = reader.Read()
-	assert.Error(err).IsNil()
-	assert.String(payload[0].String()).Equals("test payload 2")
+	payload, err = reader.ReadMultiBuffer()
+	assert(err, IsNil)
+	assert(payload[0].String(), Equals, "test payload 2")
 }

@@ -12,7 +12,7 @@ type VideoChat struct {
 	sn int
 }
 
-func (vc *VideoChat) Size() int {
+func (vc *VideoChat) Size() int32 {
 	return 13
 }
 
@@ -25,6 +25,7 @@ func (vc *VideoChat) Write(b []byte) (int, error) {
 	return 13, nil
 }
 
+// NewVideoChat returns a new VideoChat instance based on given config.
 func NewVideoChat(ctx context.Context, config interface{}) (interface{}, error) {
 	return &VideoChat{
 		sn: int(dice.RollUint16()),

@@ -4,31 +4,31 @@ import (
 	"io"
 	"testing"
 
+	"v2ray.com/core/common/compare"
 	. "v2ray.com/core/common/errors"
-	"v2ray.com/core/testing/assert"
+	"v2ray.com/core/common/log"
+	. "v2ray.com/ext/assert"
 )
 
 func TestError(t *testing.T) {
-	assert := assert.On(t)
+	assert := With(t)
 
 	err := New("TestError")
-	assert.Bool(GetSeverity(err) == SeverityInfo).IsTrue()
+	assert(GetSeverity(err), Equals, log.Severity_Info)
 
 	err = New("TestError2").Base(io.EOF)
-	assert.Bool(GetSeverity(err) == SeverityInfo).IsTrue()
+	assert(GetSeverity(err), Equals, log.Severity_Info)
 
 	err = New("TestError3").Base(io.EOF).AtWarning()
-	assert.Bool(GetSeverity(err) == SeverityWarning).IsTrue()
+	assert(GetSeverity(err), Equals, log.Severity_Warning)
 
 	err = New("TestError4").Base(io.EOF).AtWarning()
 	err = New("TestError5").Base(err)
-	assert.Bool(GetSeverity(err) == SeverityWarning).IsTrue()
-	assert.String(err.Error()).Contains("EOF")
+	assert(GetSeverity(err), Equals, log.Severity_Warning)
+	assert(err.Error(), HasSubstring, "EOF")
 }
 
 func TestErrorMessage(t *testing.T) {
-	assert := assert.On(t)
-
 	data := []struct {
 		err error
 		msg string
@@ -44,6 +44,8 @@ func TestErrorMessage(t *testing.T) {
 	}
 
 	for _, d := range data {
-		assert.String(d.err.Error()).Equals(d.msg)
+		if err := compare.StringEqualWithDetail(d.msg, d.err.Error()); err != nil {
+			t.Fatal(err)
+		}
 	}
 }
