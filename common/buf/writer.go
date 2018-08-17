@@ -2,6 +2,7 @@ package buf
 
 import (
 	"io"
+	"net"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
@@ -10,6 +11,8 @@ import (
 // BufferToBytesWriter is a Writer that writes alloc.Buffer into underlying writer.
 type BufferToBytesWriter struct {
 	io.Writer
+
+	cache [][]byte
 }
 
 // WriteMultiBuffer implements Writer. This method takes ownership of the given buffer.
@@ -25,10 +28,16 @@ func (w *BufferToBytesWriter) WriteMultiBuffer(mb MultiBuffer) error {
 		return WriteAllBytes(w.Writer, mb[0].Bytes())
 	}
 
-	bs := mb.ToNetBuffers()
+	bs := w.cache
+	for _, b := range mb {
+		bs = append(bs, b.Bytes())
+	}
+	w.cache = bs[:0]
+
+	nb := net.Buffers(bs)
 
 	for size > 0 {
-		n, err := bs.WriteTo(w.Writer)
+		n, err := nb.WriteTo(w.Writer)
 		if err != nil {
 			return err
 		}
