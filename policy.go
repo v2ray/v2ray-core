@@ -83,8 +83,8 @@ func init() {
 		defaultBufferSize = -1 // For pipe to use unlimited size
 	case defaultValue: // Env flag not defined. Use default values per CPU-arch.
 		switch runtime.GOARCH {
-		case "arm", "mips", "mipsle", "mips64", "mips64le":
-			defaultBufferSize = 0 // Disable pipe caching for low-end devices
+		case "arm", "arm64", "mips", "mipsle", "mips64", "mips64le":
+			defaultBufferSize = 16 * 1024 // 16k cache for low-end devices
 		default:
 			defaultBufferSize = 2 * 1024 * 1024
 		}
