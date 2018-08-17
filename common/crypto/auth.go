@@ -104,7 +104,6 @@ func NewAuthenticationReader(auth Authenticator, sizeParser ChunkSizeDecoder, re
 		sizeBytes:    make([]byte, sizeParser.SizeBytes()),
 	}
 	if breader, ok := reader.(*buf.BufferedReader); ok {
-		breader.Direct = false
 		r.reader = breader
 	} else {
 		r.reader = &buf.BufferedReader{Reader: buf.NewReader(reader)}

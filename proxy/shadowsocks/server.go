@@ -171,8 +171,6 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 	}
 	conn.SetReadDeadline(time.Time{})
 
-	bufferedReader.Direct = true
-
 	dest := request.Destination()
 	log.Record(&log.AccessMessage{
 		From:   conn.RemoteAddr(),

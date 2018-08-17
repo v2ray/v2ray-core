@@ -160,7 +160,6 @@ func (v *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 		}
 		v.handleCommand(rec.Destination(), header.Command)
 
-		reader.Direct = true
 		bodyReader := session.DecodeResponseBody(request, reader)
 
 		return buf.Copy(bodyReader, output, buf.UpdateActivity(timer))
