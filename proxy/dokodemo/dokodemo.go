@@ -92,13 +92,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 	requestDone := func() error {
 		defer timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
 
-		var reader buf.Reader
-		if plcy.Buffer.PerConnection == 0 {
-			reader = &buf.SingleReader{Reader: conn}
-		} else {
-			reader = buf.NewReader(conn)
-		}
-
+		reader := buf.NewReader(conn)
 		if err := buf.Copy(reader, link.Writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport request").Base(err)
 		}

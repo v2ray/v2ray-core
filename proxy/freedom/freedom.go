@@ -141,13 +141,7 @@ func (h *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 	responseDone := func() error {
 		defer timer.SetTimeout(plcy.Timeouts.UplinkOnly)
 
-		var reader buf.Reader
-		if plcy.Buffer.PerConnection == 0 {
-			reader = &buf.SingleReader{Reader: conn}
-		} else {
-			reader = buf.NewReader(conn)
-		}
-		if err := buf.Copy(reader, output, buf.UpdateActivity(timer)); err != nil {
+		if err := buf.Copy(buf.NewReader(conn), output, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to process response").Base(err)
 		}
 

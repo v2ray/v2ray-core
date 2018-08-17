@@ -73,17 +73,6 @@ func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispa
 		newError("failed to set deadline").Base(err).WriteToLog(session.ExportIDToError(ctx))
 	}
 
-	var reader *buf.BufferedReader
-	{
-		var r buf.Reader
-		if plcy.Buffer.PerConnection == 0 {
-			r = &buf.SingleReader{Reader: conn}
-		} else {
-			r = buf.NewReader(conn)
-		}
-		reader = &buf.BufferedReader{Reader: r}
-	}
-
 	inboundDest, ok := proxy.InboundEntryPointFromContext(ctx)
 	if !ok {
 		return newError("inbound entry point not specified")
@@ -93,6 +82,7 @@ func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispa
 		port:   inboundDest.Port,
 	}
 
+	reader := &buf.BufferedReader{Reader: buf.NewReader(conn)}
 	request, err := svrSession.Handshake(reader, conn)
 	if err != nil {
 		if source, ok := proxy.SourceFromContext(ctx); ok {

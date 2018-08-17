@@ -196,13 +196,7 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 	requestDone := func() error {
 		defer timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
 
-		var reader buf.Reader
-		if plcy.Buffer.PerConnection == 0 {
-			reader = &buf.SingleReader{Reader: conn}
-		} else {
-			reader = buf.NewReader(conn)
-		}
-		return buf.Copy(reader, link.Writer, buf.UpdateActivity(timer))
+		return buf.Copy(buf.NewReader(conn), link.Writer, buf.UpdateActivity(timer))
 	}
 
 	responseDone := func() error {
