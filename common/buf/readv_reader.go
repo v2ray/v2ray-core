@@ -1,64 +1,84 @@
-// +build !windows
-
 package buf
 
 import (
 	"io"
 	"runtime"
 	"syscall"
-	"unsafe"
 
 	"v2ray.com/core/common/platform"
 )
 
+type allocStrategy struct {
+	current uint32
+}
+
+func (s *allocStrategy) Current() uint32 {
+	return s.current
+}
+
+func (s *allocStrategy) Adjust(n uint32) {
+	if n >= s.current {
+		s.current *= 4
+	} else {
+		s.current = n
+	}
+
+	if s.current > 32 {
+		s.current = 32
+	}
+
+	if s.current == 0 {
+		s.current = 1
+	}
+}
+
+func (s *allocStrategy) Alloc() []*Buffer {
+	bs := make([]*Buffer, s.current)
+	for i := range bs {
+		bs[i] = New()
+	}
+	return bs
+}
+
+type multiReader interface {
+	Init([]*Buffer)
+	Read(fd uintptr) int32
+	Clear()
+}
+
 type ReadVReader struct {
 	io.Reader
 	rawConn syscall.RawConn
-	iovects []syscall.Iovec
-	nBuf    int32
+	mr      multiReader
+	alloc   allocStrategy
 }
 
 func NewReadVReader(reader io.Reader, rawConn syscall.RawConn) *ReadVReader {
 	return &ReadVReader{
 		Reader:  reader,
 		rawConn: rawConn,
-		nBuf:    1,
+		alloc: allocStrategy{
+			current: 1,
+		},
+		mr: newMultiReader(),
 	}
-}
-
-func allocN(n int32) []*Buffer {
-	bs := make([]*Buffer, 0, n)
-	for i := int32(0); i < n; i++ {
-		bs = append(bs, New())
-	}
-	return bs
 }
 
 func (r *ReadVReader) readMulti() (MultiBuffer, error) {
-	bs := allocN(r.nBuf)
+	bs := r.alloc.Alloc()
 
-	var iovecs []syscall.Iovec
-	if r.iovects != nil {
-		iovecs = r.iovects
-	}
-	for idx, b := range bs {
-		iovecs = append(iovecs, syscall.Iovec{
-			Base: &(b.v[0]),
-		})
-		iovecs[idx].SetLen(int(Size))
-	}
-	r.iovects = iovecs[:0]
-
-	var nBytes int
-
+	r.mr.Init(bs)
+	var nBytes int32
 	err := r.rawConn.Read(func(fd uintptr) bool {
-		n, _, e := syscall.Syscall(syscall.SYS_READV, fd, uintptr(unsafe.Pointer(&iovecs[0])), uintptr(len(iovecs)))
-		if e != 0 {
+		n := r.mr.Read(fd)
+		if n < 0 {
 			return false
 		}
-		nBytes = int(n)
+
+		nBytes = n
 		return true
 	})
+	r.mr.Clear()
 
 	if err != nil {
 		mb := MultiBuffer(bs)
@@ -82,7 +102,7 @@ func (r *ReadVReader) readMulti() (MultiBuffer, error) {
 			end = Size
 		}
 		bs[nBuf].end = end
-		nBytes -= int(end)
+		nBytes -= end
 		nBuf++
 	}
 
@@ -96,13 +116,13 @@ func (r *ReadVReader) readMulti() (MultiBuffer, error) {
 
 // ReadMultiBuffer implements Reader.
 func (r *ReadVReader) ReadMultiBuffer() (MultiBuffer, error) {
-	if r.nBuf == 1 {
+	if r.alloc.Current() == 1 {
 		b, err := readOne(r.Reader)
 		if err != nil {
 			return nil, err
 		}
 		if b.IsFull() {
-			r.nBuf = 2
+			r.alloc.Adjust(1)
 		}
 		return NewMultiBufferValue(b), nil
 	}
@@ -111,12 +131,7 @@ func (r *ReadVReader) ReadMultiBuffer() (MultiBuffer, error) {
 	if err != nil {
 		return nil, err
 	}
-	nBuf := int32(len(mb))
-	if nBuf < r.nBuf {
-		r.nBuf = nBuf
-	} else if nBuf == r.nBuf && r.nBuf < 16 {
-		r.nBuf *= 4
-	}
+	r.alloc.Adjust(uint32(len(mb)))
 	return mb, nil
 }
 
