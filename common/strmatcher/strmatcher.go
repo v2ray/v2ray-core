@@ -89,6 +89,10 @@ func (g *MatcherGroup) Match(pattern string) uint32 {
 		return c
 	}
 
+	if c := g.domainMatcher.Match(pattern); c > 0 {
+		return c
+	}
+
 	for _, e := range g.otherMatchers {
 		if e.m.Match(pattern) {
 			return e.id
