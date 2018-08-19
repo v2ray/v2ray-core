@@ -103,8 +103,6 @@ func ReadTCPSession(user *protocol.User, reader io.Reader) (*protocol.RequestHea
 		return nil, nil, newError("invalid remote address.")
 	}
 
-	br.Direct = true
-
 	var chunkReader buf.Reader
 	if request.Option.Has(RequestOptionOneTimeAuth) {
 		chunkReader = NewChunkReader(br, NewAuthenticator(ChunkKeyGenerator(iv)))

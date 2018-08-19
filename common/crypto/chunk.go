@@ -71,11 +71,17 @@ type ChunkStreamReader struct {
 }
 
 func NewChunkStreamReader(sizeDecoder ChunkSizeDecoder, reader io.Reader) *ChunkStreamReader {
-	return &ChunkStreamReader{
+	r := &ChunkStreamReader{
 		sizeDecoder: sizeDecoder,
-		reader:      &buf.BufferedReader{Reader: buf.NewReader(reader)},
 		buffer:      make([]byte, sizeDecoder.SizeBytes()),
 	}
+	if breader, ok := reader.(*buf.BufferedReader); ok {
+		r.reader = breader
+	} else {
+		r.reader = &buf.BufferedReader{Reader: buf.NewReader(reader)}
+	}
+
+	return r
 }
 
 func (r *ChunkStreamReader) readSize() (uint16, error) {

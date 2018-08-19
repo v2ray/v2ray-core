@@ -149,16 +149,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 	sessionPolicy := s.v.PolicyManager().ForLevel(s.user.Level)
 	conn.SetReadDeadline(time.Now().Add(sessionPolicy.Timeouts.Handshake))
 
-	var bufferedReader buf.BufferedReader
-	{
-		var reader buf.Reader
-		if sessionPolicy.Buffer.PerConnection == 0 {
-			reader = &buf.SingleReader{Reader: conn}
-		} else {
-			reader = buf.NewReader(conn)
-		}
-		bufferedReader = buf.BufferedReader{Reader: reader}
-	}
+	bufferedReader := buf.BufferedReader{Reader: buf.NewReader(conn)}
 	request, bodyReader, err := ReadTCPSession(s.user, &bufferedReader)
 	if err != nil {
 		log.Record(&log.AccessMessage{
@@ -170,8 +161,6 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 		return newError("failed to create request from: ", conn.RemoteAddr()).Base(err)
 	}
 	conn.SetReadDeadline(time.Time{})
-
-	bufferedReader.Direct = true
 
 	dest := request.Destination()
 	log.Record(&log.AccessMessage{

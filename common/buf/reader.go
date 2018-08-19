@@ -90,8 +90,6 @@ type BufferedReader struct {
 	Reader Reader
 	// Buffer is the internal buffer to be read from first
 	Buffer MultiBuffer
-	// Direct indicates whether or not to use the internal buffer
-	Direct bool
 }
 
 // BufferedBytes returns the number of bytes that is cached in this reader.
@@ -116,12 +114,6 @@ func (r *BufferedReader) Read(b []byte) (int, error) {
 			r.Buffer = nil
 		}
 		return nBytes, nil
-	}
-
-	if r.Direct {
-		if reader, ok := r.Reader.(io.Reader); ok {
-			return reader.Read(b)
-		}
 	}
 
 	mb, err := r.Reader.ReadMultiBuffer()
