@@ -112,7 +112,7 @@ type cacheEntry struct {
 }
 
 type CachedMatcherGroup struct {
-	sync.Mutex
+	sync.RWMutex
 	group   *MatcherGroup
 	cache   map[string]cacheEntry
 	cleanup *task.Periodic
@@ -129,7 +129,7 @@ func NewCachedMatcherGroup(g *MatcherGroup) *CachedMatcherGroup {
 			r.Lock()
 			defer r.Unlock()
 
-			expire := time.Now().Add(-1 * time.Second * 60)
+			expire := time.Now().Add(-1 * time.Second * 120)
 			for p, e := range r.cache {
 				if e.timestamp.Before(expire) {
 					delete(r.cache, p)
@@ -143,22 +143,21 @@ func NewCachedMatcherGroup(g *MatcherGroup) *CachedMatcherGroup {
 }
 
 func (g *CachedMatcherGroup) Match(pattern string) uint32 {
-	g.Lock()
-	defer g.Unlock()
-
+	g.RLock()
 	r, f := g.cache[pattern]
+	g.RUnlock()
 	if f {
-		r.timestamp = time.Now()
-		g.cache[pattern] = r
 		return r.result
 	}
 
 	mr := g.group.Match(pattern)
 
+	g.Lock()
 	g.cache[pattern] = cacheEntry{
 		result:    mr,
 		timestamp: time.Now(),
 	}
+	g.Unlock()
 
 	return mr
 }

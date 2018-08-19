@@ -34,3 +34,20 @@ func BenchmarkMarchGroup(b *testing.B) {
 		_ = g.Match("0.v2ray.com")
 	}
 }
+
+func BenchmarkCachedMarchGroup(b *testing.B) {
+	g := NewMatcherGroup()
+	for i := 1; i <= 1024; i++ {
+		m, err := Domain.New(strconv.Itoa(i) + ".v2ray.com")
+		common.Must(err)
+		g.Add(m)
+	}
+
+	cg := NewCachedMatcherGroup(g)
+	_ = cg.Match("0.v2ray.com")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = cg.Match("0.v2ray.com")
+	}
+}
