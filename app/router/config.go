@@ -52,11 +52,9 @@ func (rr *RoutingRule) BuildCondition() (Condition, error) {
 	conds := NewConditionChan()
 
 	if len(rr.Domain) > 0 {
-		matcher := NewCachableDomainMatcher()
-		for _, domain := range rr.Domain {
-			if err := matcher.Add(domain); err != nil {
-				return nil, newError("failed to build domain condition").Base(err)
-			}
+		matcher, err := NewCachableDomainMatcher(rr.Domain)
+		if err != nil {
+			return nil, newError("failed to build domain condition").Base(err)
 		}
 		conds.Add(matcher)
 	}
