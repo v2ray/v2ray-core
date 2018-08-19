@@ -1,6 +1,12 @@
 package strmatcher
 
-import "regexp"
+import (
+	"regexp"
+	"sync"
+	"time"
+
+	"v2ray.com/core/common/task"
+)
 
 type Matcher interface {
 	Match(string) bool
@@ -36,6 +42,10 @@ func (t Type) New(pattern string) (Matcher, error) {
 	}
 }
 
+type IndexMatcher interface {
+	Match(pattern string) uint32
+}
+
 type matcherEntry struct {
 	m  Matcher
 	id uint32
@@ -44,6 +54,7 @@ type matcherEntry struct {
 type MatcherGroup struct {
 	count         uint32
 	fullMatchers  map[string]uint32
+	domainMatcher DomainMatcherGroup
 	otherMatchers []matcherEntry
 }
 
@@ -58,9 +69,12 @@ func (g *MatcherGroup) Add(m Matcher) uint32 {
 	c := g.count
 	g.count++
 
-	if fm, ok := m.(fullMatcher); ok {
-		g.fullMatchers[string(fm)] = c
-	} else {
+	switch tm := m.(type) {
+	case fullMatcher:
+		g.fullMatchers[string(tm)] = c
+	case domainMatcher:
+		g.domainMatcher.Add(string(tm), c)
+	default:
 		g.otherMatchers = append(g.otherMatchers, matcherEntry{
 			m:  m,
 			id: c,
@@ -75,6 +89,10 @@ func (g *MatcherGroup) Match(pattern string) uint32 {
 		return c
 	}
 
+	if c := g.domainMatcher.Match(pattern); c > 0 {
+		return c
+	}
+
 	for _, e := range g.otherMatchers {
 		if e.m.Match(pattern) {
 			return e.id
@@ -86,4 +104,60 @@ func (g *MatcherGroup) Match(pattern string) uint32 {
 
 func (g *MatcherGroup) Size() uint32 {
 	return g.count
+}
+
+type cacheEntry struct {
+	timestamp time.Time
+	result    uint32
+}
+
+type CachedMatcherGroup struct {
+	sync.RWMutex
+	group   *MatcherGroup
+	cache   map[string]cacheEntry
+	cleanup *task.Periodic
+}
+
+func NewCachedMatcherGroup(g *MatcherGroup) *CachedMatcherGroup {
+	r := &CachedMatcherGroup{
+		group: g,
+		cache: make(map[string]cacheEntry),
+	}
+	r.cleanup = &task.Periodic{
+		Interval: time.Second * 30,
+		Execute: func() error {
+			r.Lock()
+			defer r.Unlock()
+
+			expire := time.Now().Add(-1 * time.Second * 120)
+			for p, e := range r.cache {
+				if e.timestamp.Before(expire) {
+					delete(r.cache, p)
+				}
+			}
+
+			return nil
+		},
+	}
+	return r
+}
+
+func (g *CachedMatcherGroup) Match(pattern string) uint32 {
+	g.RLock()
+	r, f := g.cache[pattern]
+	g.RUnlock()
+	if f {
+		return r.result
+	}
+
+	mr := g.group.Match(pattern)
+
+	g.Lock()
+	g.cache[pattern] = cacheEntry{
+		result:    mr,
+		timestamp: time.Now(),
+	}
+	g.Unlock()
+
+	return mr
 }

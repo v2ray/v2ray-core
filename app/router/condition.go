@@ -3,8 +3,6 @@ package router
 import (
 	"context"
 	"strings"
-	"sync"
-	"time"
 
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common/net"
@@ -67,116 +65,56 @@ func (v *AnyCondition) Len() int {
 	return len(*v)
 }
 
-type timedResult struct {
-	timestamp time.Time
-	result    bool
-}
-
-type CachableDomainMatcher struct {
-	sync.Mutex
-	matchers *strmatcher.MatcherGroup
-	cache    map[string]timedResult
-	lastScan time.Time
-}
-
-func NewCachableDomainMatcher() *CachableDomainMatcher {
-	return &CachableDomainMatcher{
-		matchers: strmatcher.NewMatcherGroup(),
-		cache:    make(map[string]timedResult, 512),
-	}
-}
-
 var matcherTypeMap = map[Domain_Type]strmatcher.Type{
 	Domain_Plain:  strmatcher.Substr,
 	Domain_Regex:  strmatcher.Regex,
 	Domain_Domain: strmatcher.Domain,
 }
 
-func (m *CachableDomainMatcher) Add(domain *Domain) error {
+func domainToMatcher(domain *Domain) (strmatcher.Matcher, error) {
 	matcherType, f := matcherTypeMap[domain.Type]
 	if !f {
-		return newError("unsupported domain type", domain.Type)
+		return nil, newError("unsupported domain type", domain.Type)
 	}
 
 	matcher, err := matcherType.New(domain.Value)
 	if err != nil {
-		return newError("failed to create domain matcher").Base(err)
+		return nil, newError("failed to create domain matcher").Base(err)
 	}
 
-	m.matchers.Add(matcher)
-	return nil
+	return matcher, nil
 }
 
-func (m *CachableDomainMatcher) applyInternal(domain string) bool {
+type DomainMatcher struct {
+	matchers strmatcher.IndexMatcher
+}
+
+func NewDomainMatcher(domains []*Domain) (*DomainMatcher, error) {
+	g := strmatcher.NewMatcherGroup()
+	for _, d := range domains {
+		m, err := domainToMatcher(d)
+		if err != nil {
+			return nil, err
+		}
+		g.Add(m)
+	}
+
+	if len(domains) < 64 {
+		return &DomainMatcher{
+			matchers: g,
+		}, nil
+	}
+
+	return &DomainMatcher{
+		matchers: strmatcher.NewCachedMatcherGroup(g),
+	}, nil
+}
+
+func (m *DomainMatcher) ApplyDomain(domain string) bool {
 	return m.matchers.Match(domain) > 0
 }
 
-type cacheResult int
-
-const (
-	cacheMiss cacheResult = iota
-	cacheHitTrue
-	cacheHitFalse
-)
-
-func (m *CachableDomainMatcher) findInCache(domain string) cacheResult {
-	m.Lock()
-	defer m.Unlock()
-
-	r, f := m.cache[domain]
-	if !f {
-		return cacheMiss
-	}
-	r.timestamp = time.Now()
-	m.cache[domain] = r
-
-	if r.result {
-		return cacheHitTrue
-	}
-	return cacheHitFalse
-}
-
-func (m *CachableDomainMatcher) ApplyDomain(domain string) bool {
-	if m.matchers.Size() < 64 {
-		return m.applyInternal(domain)
-	}
-
-	cr := m.findInCache(domain)
-
-	if cr == cacheHitTrue {
-		return true
-	}
-
-	if cr == cacheHitFalse {
-		return false
-	}
-
-	r := m.applyInternal(domain)
-	m.Lock()
-	defer m.Unlock()
-
-	m.cache[domain] = timedResult{
-		result:    r,
-		timestamp: time.Now(),
-	}
-
-	now := time.Now()
-	if len(m.cache) > 256 && now.Sub(m.lastScan)/time.Second > 5 {
-		now := time.Now()
-
-		for k, v := range m.cache {
-			if now.Sub(v.timestamp)/time.Second > 60 {
-				delete(m.cache, k)
-			}
-		}
-
-		m.lastScan = now
-	}
-
-	return r
-}
-
-func (m *CachableDomainMatcher) Apply(ctx context.Context) bool {
+func (m *DomainMatcher) Apply(ctx context.Context) bool {
 	dest, ok := proxy.TargetFromContext(ctx)
 	if !ok {
 		return false
