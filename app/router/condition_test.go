@@ -189,7 +189,7 @@ func TestChinaSites(t *testing.T) {
 	domains, err := loadGeoSite("CN")
 	assert(err, IsNil)
 
-	matcher, err := NewCachableDomainMatcher(domains)
+	matcher, err := NewDomainMatcher(domains)
 	common.Must(err)
 
 	assert(matcher.ApplyDomain("163.com"), IsTrue)
