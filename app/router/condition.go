@@ -90,7 +90,7 @@ type DomainMatcher struct {
 }
 
 func NewDomainMatcher(domains []*Domain) (*DomainMatcher, error) {
-	g := strmatcher.NewMatcherGroup()
+	g := new(strmatcher.MatcherGroup)
 	for _, d := range domains {
 		m, err := domainToMatcher(d)
 		if err != nil {

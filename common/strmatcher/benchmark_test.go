@@ -35,7 +35,7 @@ func BenchmarkFullMatcherGroup(b *testing.B) {
 }
 
 func BenchmarkMarchGroup(b *testing.B) {
-	g := NewMatcherGroup()
+	g := new(MatcherGroup)
 	for i := 1; i <= 1024; i++ {
 		m, err := Domain.New(strconv.Itoa(i) + ".v2ray.com")
 		common.Must(err)
@@ -49,7 +49,7 @@ func BenchmarkMarchGroup(b *testing.B) {
 }
 
 func BenchmarkCachedMarchGroup(b *testing.B) {
-	g := NewMatcherGroup()
+	g := new(MatcherGroup)
 	for i := 1; i <= 1024; i++ {
 		m, err := Domain.New(strconv.Itoa(i) + ".v2ray.com")
 		common.Must(err)

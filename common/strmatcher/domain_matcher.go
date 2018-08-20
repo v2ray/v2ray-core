@@ -11,6 +11,8 @@ type node struct {
 	sub   map[string]*node
 }
 
+// DomainMatcherGroup is a IndexMatcher for a large set of Domain matchers.
+// Visible for testing only.
 type DomainMatcherGroup struct {
 	root *node
 }

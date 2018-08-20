@@ -59,6 +59,12 @@ func TestMatcher(t *testing.T) {
 			input:   "xv2ray.com",
 			output:  false,
 		},
+		{
+			pattern: "v2ray.com",
+			mType:   Regex,
+			input:   "v2rayxcom",
+			output:  true,
+		},
 	}
 	for _, test := range cases {
 		matcher, err := test.mType.New(test.pattern)
