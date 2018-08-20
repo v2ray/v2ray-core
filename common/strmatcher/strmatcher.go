@@ -53,27 +53,24 @@ type matcherEntry struct {
 
 type MatcherGroup struct {
 	count         uint32
-	fullMatchers  map[string]uint32
+	fullMatcher   FullMatcherGroup
 	domainMatcher DomainMatcherGroup
 	otherMatchers []matcherEntry
 }
 
 func NewMatcherGroup() *MatcherGroup {
-	return &MatcherGroup{
-		count:        1,
-		fullMatchers: make(map[string]uint32),
-	}
+	return &MatcherGroup{}
 }
 
 func (g *MatcherGroup) Add(m Matcher) uint32 {
-	c := g.count
 	g.count++
+	c := g.count
 
 	switch tm := m.(type) {
 	case fullMatcher:
-		g.fullMatchers[string(tm)] = c
+		g.fullMatcher.addMatcher(tm, c)
 	case domainMatcher:
-		g.domainMatcher.Add(string(tm), c)
+		g.domainMatcher.addMatcher(tm, c)
 	default:
 		g.otherMatchers = append(g.otherMatchers, matcherEntry{
 			m:  m,
@@ -85,7 +82,7 @@ func (g *MatcherGroup) Add(m Matcher) uint32 {
 }
 
 func (g *MatcherGroup) Match(pattern string) uint32 {
-	if c, f := g.fullMatchers[pattern]; f {
+	if c := g.fullMatcher.Match(pattern); c > 0 {
 		return c
 	}
 

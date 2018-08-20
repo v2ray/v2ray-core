@@ -21,6 +21,19 @@ func BenchmarkDomainMatcherGroup(b *testing.B) {
 	}
 }
 
+func BenchmarkFullMatcherGroup(b *testing.B) {
+	g := new(FullMatcherGroup)
+
+	for i := 1; i <= 1024; i++ {
+		g.Add(strconv.Itoa(i)+".v2ray.com", uint32(i))
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = g.Match("0.v2ray.com")
+	}
+}
+
 func BenchmarkMarchGroup(b *testing.B) {
 	g := NewMatcherGroup()
 	for i := 1; i <= 1024; i++ {

@@ -37,6 +37,10 @@ func (g *DomainMatcherGroup) Add(domain string, value uint32) {
 	current.value = value
 }
 
+func (g *DomainMatcherGroup) addMatcher(m domainMatcher, value uint32) {
+	g.Add(string(m), value)
+}
+
 func (g *DomainMatcherGroup) Match(domain string) uint32 {
 	current := g.root
 	if current == nil {
