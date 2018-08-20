@@ -33,3 +33,11 @@ func TestDomainMatcherGroup(t *testing.T) {
 		}
 	}
 }
+
+func TestEmptyDomainMatcherGroup(t *testing.T) {
+	g := new(DomainMatcherGroup)
+	r := g.Match("v2ray.com")
+	if r != 0 {
+		t.Error("Expect 0, but ", r)
+	}
+}

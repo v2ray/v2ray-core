@@ -39,6 +39,10 @@ func (g *DomainMatcherGroup) Add(domain string, value uint32) {
 
 func (g *DomainMatcherGroup) Match(domain string) uint32 {
 	current := g.root
+	if current == nil {
+		return 0
+	}
+
 	parts := breakDomain(domain)
 	for i := len(parts) - 1; i >= 0; i-- {
 		part := parts[i]
