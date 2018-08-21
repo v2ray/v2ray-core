@@ -147,7 +147,7 @@ func (m *Client) monitor() {
 }
 
 func writeFirstPayload(reader buf.Reader, writer *Writer) error {
-	err := buf.CopyOnceTimeout(reader, writer, time.Millisecond*200)
+	err := buf.CopyOnceTimeout(reader, writer, time.Millisecond*100)
 	if err == buf.ErrNotTimeoutReader || err == buf.ErrReadTimeout {
 		return writer.WriteMultiBuffer(buf.MultiBuffer{})
 	}
