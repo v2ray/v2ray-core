@@ -19,18 +19,19 @@ type DomainMatcherGroup struct {
 
 func (g *DomainMatcherGroup) Add(domain string, value uint32) {
 	if g.root == nil {
-		g.root = &node{
-			sub: make(map[string]*node),
-		}
+		g.root = new(node)
 	}
 
 	current := g.root
 	parts := breakDomain(domain)
 	for i := len(parts) - 1; i >= 0; i-- {
 		part := parts[i]
+		if current.sub == nil {
+			current.sub = make(map[string]*node)
+		}
 		next := current.sub[part]
 		if next == nil {
-			next = &node{sub: make(map[string]*node)}
+			next = new(node)
 			current.sub[part] = next
 		}
 		current = next
@@ -52,6 +53,9 @@ func (g *DomainMatcherGroup) Match(domain string) uint32 {
 	parts := breakDomain(domain)
 	for i := len(parts) - 1; i >= 0; i-- {
 		part := parts[i]
+		if current.sub == nil {
+			break
+		}
 		next := current.sub[part]
 		if next == nil {
 			break
