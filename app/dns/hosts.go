@@ -17,7 +17,7 @@ var typeMap = map[Config_HostMapping_Type]strmatcher.Type{
 }
 
 func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDomain) (*StaticHosts, error) {
-	g := strmatcher.NewMatcherGroup()
+	g := new(strmatcher.MatcherGroup)
 	sh := &StaticHosts{
 		ips:      make(map[uint32][]net.IP),
 		matchers: g,

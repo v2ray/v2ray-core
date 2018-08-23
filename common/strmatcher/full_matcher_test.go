@@ -6,8 +6,8 @@ import (
 	. "v2ray.com/core/common/strmatcher"
 )
 
-func TestDomainMatcherGroup(t *testing.T) {
-	g := new(DomainMatcherGroup)
+func TestFullMatcherGroup(t *testing.T) {
+	g := new(FullMatcherGroup)
 	g.Add("v2ray.com", 1)
 	g.Add("google.com", 2)
 	g.Add("x.a.com", 3)
@@ -17,7 +17,7 @@ func TestDomainMatcherGroup(t *testing.T) {
 		Result uint32
 	}{
 		{
-			Domain: "x.v2ray.com",
+			Domain: "v2ray.com",
 			Result: 1,
 		},
 		{
@@ -34,8 +34,8 @@ func TestDomainMatcherGroup(t *testing.T) {
 	}
 }
 
-func TestEmptyDomainMatcherGroup(t *testing.T) {
-	g := new(DomainMatcherGroup)
+func TestEmptyFullMatcherGroup(t *testing.T) {
+	g := new(FullMatcherGroup)
 	r := g.Match("v2ray.com")
 	if r != 0 {
 		t.Error("Expect 0, but ", r)

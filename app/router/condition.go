@@ -69,6 +69,7 @@ var matcherTypeMap = map[Domain_Type]strmatcher.Type{
 	Domain_Plain:  strmatcher.Substr,
 	Domain_Regex:  strmatcher.Regex,
 	Domain_Domain: strmatcher.Domain,
+	Domain_Full:   strmatcher.Full,
 }
 
 func domainToMatcher(domain *Domain) (strmatcher.Matcher, error) {
@@ -90,7 +91,7 @@ type DomainMatcher struct {
 }
 
 func NewDomainMatcher(domains []*Domain) (*DomainMatcher, error) {
-	g := strmatcher.NewMatcherGroup()
+	g := new(strmatcher.MatcherGroup)
 	for _, d := range domains {
 		m, err := domainToMatcher(d)
 		if err != nil {
