@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/serial"
 )
 
@@ -64,35 +65,7 @@ func (r *PacketReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	return buf.NewMultiBufferValue(b), nil
 }
 
-// StreamReader reads Mux frame as a stream.
-type StreamReader struct {
-	reader   *buf.BufferedReader
-	leftOver int32
-}
-
 // NewStreamReader creates a new StreamReader.
-func NewStreamReader(reader *buf.BufferedReader) *StreamReader {
-	return &StreamReader{
-		reader:   reader,
-		leftOver: -1,
-	}
-}
-
-// ReadMultiBuffer implmenets buf.Reader.
-func (r *StreamReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
-	if r.leftOver == 0 {
-		return nil, io.EOF
-	}
-
-	if r.leftOver == -1 {
-		size, err := serial.ReadUint16(r.reader)
-		if err != nil {
-			return nil, err
-		}
-		r.leftOver = int32(size)
-	}
-
-	mb, err := r.reader.ReadAtMost(r.leftOver)
-	r.leftOver -= mb.Len()
-	return mb, err
+func NewStreamReader(reader *buf.BufferedReader) buf.Reader {
+	return crypto.NewChunkStreamReaderWithChunkCount(crypto.PlainChunkSizeParser{}, reader, 1)
 }
