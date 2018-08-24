@@ -6,7 +6,7 @@ import (
 	"v2ray.com/core/common/net"
 )
 
-type NameServer interface {
+type NameServerInterface interface {
 	QueryIP(ctx context.Context, domain string) ([]net.IP, error)
 }
 

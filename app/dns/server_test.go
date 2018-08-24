@@ -2,6 +2,7 @@ package dns_test
 
 import (
 	"testing"
+	"time"
 
 	"v2ray.com/core"
 	"v2ray.com/core/app/dispatcher"
@@ -97,4 +98,80 @@ func TestUDPServer(t *testing.T) {
 	assert(err, IsNil)
 	assert(len(ips), Equals, 1)
 	assert([]byte(ips[0]), Equals, []byte{8, 8, 8, 8})
+}
+
+func TestPrioritizedDomain(t *testing.T) {
+	assert := With(t)
+
+	port := udp.PickPort()
+
+	dnsServer := dns.Server{
+		Addr:    "127.0.0.1:" + port.String(),
+		Net:     "udp",
+		Handler: &staticHandler{},
+		UDPSize: 1200,
+	}
+
+	go dnsServer.ListenAndServe()
+
+	config := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&Config{
+				NameServers: []*net.Endpoint{
+					{
+						Network: net.Network_UDP,
+						Address: &net.IPOrDomain{
+							Address: &net.IPOrDomain_Ip{
+								Ip: []byte{127, 0, 0, 1},
+							},
+						},
+						Port: 9999, /* unreachable */
+					},
+				},
+				NameServer: []*NameServer{
+					{
+						Address: &net.Endpoint{
+							Network: net.Network_UDP,
+							Address: &net.IPOrDomain{
+								Address: &net.IPOrDomain_Ip{
+									Ip: []byte{127, 0, 0, 1},
+								},
+							},
+							Port: uint32(port),
+						},
+						PrioritizedDomain: []*NameServer_PriorityDomain{
+							{
+								Type:   DomainMatchingType_Full,
+								Domain: "google.com",
+							},
+						},
+					},
+				},
+			}),
+			serial.ToTypedMessage(&dispatcher.Config{}),
+			serial.ToTypedMessage(&proxyman.OutboundConfig{}),
+			serial.ToTypedMessage(&policy.Config{}),
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+		},
+	}
+
+	v, err := core.New(config)
+	assert(err, IsNil)
+
+	client := v.DNSClient()
+
+	startTime := time.Now()
+	ips, err := client.LookupIP("google.com")
+	assert(err, IsNil)
+	assert(len(ips), Equals, 1)
+	assert([]byte(ips[0]), Equals, []byte{8, 8, 8, 8})
+
+	endTime := time.Now()
+	if startTime.After(endTime.Add(time.Second * 2)) {
+		t.Error("DNS query doesn't finish in 2 seconds.")
+	}
 }

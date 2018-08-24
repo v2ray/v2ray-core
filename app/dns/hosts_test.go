@@ -12,14 +12,14 @@ func TestStaticHosts(t *testing.T) {
 
 	pb := []*Config_HostMapping{
 		{
-			Type:   Config_HostMapping_Full,
+			Type:   DomainMatchingType_Full,
 			Domain: "v2ray.com",
 			Ip: [][]byte{
 				{1, 1, 1, 1},
 			},
 		},
 		{
-			Type:   Config_HostMapping_SubDomain,
+			Type:   DomainMatchingType_Subdomain,
 			Domain: "v2ray.cn",
 			Ip: [][]byte{
 				{2, 2, 2, 2},
