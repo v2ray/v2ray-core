@@ -140,7 +140,12 @@ var useReadv = false
 func init() {
 	const defaultFlagValue = "NOT_DEFINED_AT_ALL"
 	value := platform.NewEnvFlag("v2ray.buf.readv").GetValue(func() string { return defaultFlagValue })
-	if value != defaultFlagValue && (runtime.GOOS == "linux" || runtime.GOOS == "darwin") {
+	switch value {
+	case defaultFlagValue, "auto":
+		if (runtime.GOARCH == "386" || runtime.GOARCH == "amd64" || runtime.GOARCH == "s390x") && (runtime.GOOS == "linux" || runtime.GOOS == "darwin") {
+			useReadv = true
+		}
+	case "enable":
 		useReadv = true
 	}
 }

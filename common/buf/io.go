@@ -59,7 +59,20 @@ func NewReader(reader io.Reader) Reader {
 		return mr
 	}
 
-	return newReaderPlatform(reader)
+	if useReadv {
+		if sc, ok := reader.(syscall.Conn); ok {
+			rawConn, err := sc.SyscallConn()
+			if err != nil {
+				newError("failed to get sysconn").Base(err).WriteToLog()
+			} else {
+				return NewReadVReader(reader, rawConn)
+			}
+		}
+	}
+
+	return &SingleReader{
+		Reader: reader,
+	}
 }
 
 // NewWriter creates a new Writer.

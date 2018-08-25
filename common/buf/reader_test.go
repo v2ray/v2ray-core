@@ -1,41 +1,13 @@
 package buf_test
 
 import (
-	"bytes"
 	"io"
-	"runtime"
 	"testing"
 
 	. "v2ray.com/core/common/buf"
 	"v2ray.com/core/transport/pipe"
 	. "v2ray.com/ext/assert"
 )
-
-func TestAdaptiveReader(t *testing.T) {
-	if runtime.GOARCH != "amd64" {
-		t.Skip("Smart reader only works on highend devices.")
-		return
-	}
-
-	assert := With(t)
-
-	reader := NewReader(bytes.NewReader(make([]byte, 1024*1024)))
-	b, err := reader.ReadMultiBuffer()
-	assert(err, IsNil)
-	assert(b.Len(), Equals, int32(Size))
-
-	b, err = reader.ReadMultiBuffer()
-	assert(err, IsNil)
-	assert(b.Len(), Equals, int32(8*1024))
-
-	b, err = reader.ReadMultiBuffer()
-	assert(err, IsNil)
-	assert(b.Len(), Equals, int32(32*1024))
-
-	b, err = reader.ReadMultiBuffer()
-	assert(err, IsNil)
-	assert(b.Len(), Equals, int32(128*1024))
-}
 
 func TestBytesReaderWriteTo(t *testing.T) {
 	assert := With(t)
@@ -87,8 +59,8 @@ func TestBytesReaderMultiBuffer(t *testing.T) {
 func TestReaderInterface(t *testing.T) {
 	assert := With(t)
 
-	assert((*BytesToBufferReader)(nil), Implements, (*io.Reader)(nil))
-	assert((*BytesToBufferReader)(nil), Implements, (*Reader)(nil))
+	assert((*ReadVReader)(nil), Implements, (*io.Reader)(nil))
+	assert((*ReadVReader)(nil), Implements, (*Reader)(nil))
 
 	assert((*BufferedReader)(nil), Implements, (*Reader)(nil))
 	assert((*BufferedReader)(nil), Implements, (*io.Reader)(nil))
