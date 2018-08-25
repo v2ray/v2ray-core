@@ -27,8 +27,7 @@ func (r *windowsReader) Clear() {
 func (r *windowsReader) Read(fd uintptr) int32 {
 	var nBytes uint32
 	var flags uint32
-	var o syscall.Overlapped
-	err := syscall.WSARecv(syscall.Handle(fd), &r.bufs[0], uint32(len(r.bufs)), &nBytes, &flags, &o, nil)
+	err := syscall.WSARecv(syscall.Handle(fd), &r.bufs[0], uint32(len(r.bufs)), &nBytes, &flags, nil, nil)
 	if err != nil {
 		return -1
 	}
