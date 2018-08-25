@@ -2,7 +2,10 @@
 
 package buf
 
-import "syscall"
+import (
+	"fmt"
+	"syscall"
+)
 
 type windowsReader struct {
 	bufs []syscall.WSABuf
@@ -29,6 +32,7 @@ func (r *windowsReader) Read(fd uintptr) int32 {
 	var flags uint32
 	err := syscall.WSARecv(syscall.Handle(fd), &r.bufs[0], uint32(len(r.bufs)), &nBytes, &flags, nil, nil)
 	if err != nil {
+		fmt.Println("Err=", err)
 		return -1
 	}
 	return int32(nBytes)
