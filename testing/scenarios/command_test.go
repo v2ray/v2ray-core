@@ -502,6 +502,7 @@ func TestCommanderStats(t *testing.T) {
 		Port: int(clientPort),
 	})
 	assert(err, IsNil)
+	defer conn.Close() // nolint: errcheck
 
 	payload := make([]byte, 10240*1024)
 	rand.Read(payload)
@@ -511,8 +512,9 @@ func TestCommanderStats(t *testing.T) {
 	assert(nBytes, Equals, len(payload))
 
 	response := readFrom(conn, time.Second*20, 10240*1024)
-	assert(response, Equals, xor([]byte(payload)))
-	assert(conn.Close(), IsNil)
+	if err := compare.BytesEqualWithDetail(response, xor([]byte(payload))); err != nil {
+		t.Fatal("failed to read response: ", err)
+	}
 
 	cmdConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", cmdPort), grpc.WithInsecure(), grpc.WithBlock())
 	assert(err, IsNil)
