@@ -10,6 +10,8 @@ branches:
 
 version: "1.0.{build}"
 
+stack: "go 1.11"
+
 environment:
   global:
     GOPATH: C:\gopath

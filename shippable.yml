@@ -10,7 +10,7 @@ branches:
 
 build:
   ci:
-    - curl -L -o golang.tar.gz https://dl.google.com/go/go1.10.3.linux-arm64.tar.gz
+    - curl -L -o golang.tar.gz https://dl.google.com/go/go1.11.linux-arm64.tar.gz
     - tar -C /usr/local -xzf golang.tar.gz
     - export PATH=$PATH:/usr/local/go/bin
     - export GOPATH=/v2ray
