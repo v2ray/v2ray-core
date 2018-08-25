@@ -13,7 +13,7 @@ version: "1.0.{build}"
 environment:
   global:
     GOPATH: C:\gopath
-    GOVERSION: "1.11"
+    GOVERSION: "1.10.4"
 
 install:
   - set PATH=%GOPATH%\bin;c:\go\bin;%PATH%
