@@ -2,6 +2,7 @@ package buf_test
 
 import (
 	"crypto/rand"
+	"fmt"
 	"net"
 	"testing"
 
@@ -50,6 +51,7 @@ func TestReadvReader(t *testing.T) {
 			t.Fatal("unexpected error: ", err)
 		}
 		rmb.AppendMulti(mb)
+		fmt.Println("Len=", rmb.Len())
 		if rmb.Len() == size {
 			break
 		}
