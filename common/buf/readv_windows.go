@@ -3,7 +3,6 @@
 package buf
 
 import (
-	"fmt"
 	"syscall"
 )
 
@@ -16,7 +15,7 @@ func (r *windowsReader) Init(bs []*Buffer) {
 		r.bufs = make([]syscall.WSABuf, 0, len(bs))
 	}
 	for _, b := range bs {
-		r.bufs = append(r.bufs, syscall.WSABuf{Len: uint32(b.Len()), Buf: &b.v[0]})
+		r.bufs = append(r.bufs, syscall.WSABuf{Len: uint32(Size), Buf: &b.v[0]})
 	}
 }
 
@@ -32,7 +31,6 @@ func (r *windowsReader) Read(fd uintptr) int32 {
 	var flags uint32
 	err := syscall.WSARecv(syscall.Handle(fd), &r.bufs[0], uint32(len(r.bufs)), &nBytes, &flags, nil, nil)
 	if err != nil {
-		fmt.Println("Err=", err)
 		return -1
 	}
 	return int32(nBytes)
