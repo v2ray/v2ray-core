@@ -5,10 +5,7 @@ package buf
 import "syscall"
 
 type windowsReader struct {
-	o     syscall.Overlapped
-	bufs  []syscall.WSABuf
-	flags uint32
-	qty   uint32
+	bufs []syscall.WSABuf
 }
 
 func (r *windowsReader) Init(bs []*Buffer) {
@@ -29,7 +26,9 @@ func (r *windowsReader) Clear() {
 
 func (r *windowsReader) Read(fd uintptr) int32 {
 	var nBytes uint32
-	err := syscall.WSARecv(syscall.Handle(fd), &r.bufs[0], uint32(len(r.bufs)), &nBytes, &r.flags, &r.o, nil)
+	var flags uint32
+	var o syscall.Overlapped
+	err := syscall.WSARecv(syscall.Handle(fd), &r.bufs[0], uint32(len(r.bufs)), &nBytes, &flags, &o, nil)
 	if err != nil {
 		return -1
 	}
