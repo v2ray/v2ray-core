@@ -11,9 +11,22 @@ type StaticHosts struct {
 	matchers *strmatcher.MatcherGroup
 }
 
-var typeMap = map[Config_HostMapping_Type]strmatcher.Type{
-	Config_HostMapping_Full:      strmatcher.Full,
-	Config_HostMapping_SubDomain: strmatcher.Domain,
+var typeMap = map[DomainMatchingType]strmatcher.Type{
+	DomainMatchingType_Full:      strmatcher.Full,
+	DomainMatchingType_Subdomain: strmatcher.Domain,
+	DomainMatchingType_Keyword:   strmatcher.Substr,
+}
+
+func toStrMatcher(t DomainMatchingType, domain string) (strmatcher.Matcher, error) {
+	strMType, f := typeMap[t]
+	if !f {
+		return nil, newError("unknown mapping type", t).AtWarning()
+	}
+	matcher, err := strMType.New(domain)
+	if err != nil {
+		return nil, newError("failed to create str matcher").Base(err)
+	}
+	return matcher, nil
 }
 
 func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDomain) (*StaticHosts, error) {
@@ -39,11 +52,7 @@ func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDoma
 	}
 
 	for _, mapping := range hosts {
-		strMType, f := typeMap[mapping.Type]
-		if !f {
-			return nil, newError("unknown mapping type", mapping.Type).AtWarning()
-		}
-		matcher, err := strMType.New(mapping.Domain)
+		matcher, err := toStrMatcher(mapping.Type, mapping.Domain)
 		if err != nil {
 			return nil, newError("failed to create domain matcher").Base(err)
 		}

@@ -4,7 +4,6 @@ import (
 	"io"
 
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/bytespool"
 	"v2ray.com/core/common/errors"
 )
 
@@ -22,66 +21,6 @@ func readOne(r io.Reader) (*Buffer, error) {
 	}
 
 	return nil, newError("Reader returns too many empty payloads.")
-}
-
-const largeSize = 128 * 1024
-
-// BytesToBufferReader is a Reader that adjusts its reading speed automatically.
-type BytesToBufferReader struct {
-	io.Reader
-	buffer []byte
-}
-
-// NewBytesToBufferReader returns a new BytesToBufferReader.
-func NewBytesToBufferReader(reader io.Reader) Reader {
-	return &BytesToBufferReader{
-		Reader: reader,
-	}
-}
-
-func (r *BytesToBufferReader) readSmall() (MultiBuffer, error) {
-	b, err := readOne(r.Reader)
-	if err != nil {
-		return nil, err
-	}
-	if b.IsFull() && largeSize > Size {
-		r.buffer = bytespool.Alloc(Size + 100)
-	}
-	return NewMultiBufferValue(b), nil
-}
-
-func (r *BytesToBufferReader) freeBuffer() {
-	bytespool.Free(r.buffer)
-	r.buffer = nil
-}
-
-// ReadMultiBuffer implements Reader.
-func (r *BytesToBufferReader) ReadMultiBuffer() (MultiBuffer, error) {
-	if r.buffer == nil || largeSize == Size {
-		return r.readSmall()
-	}
-
-	nBytes, err := r.Reader.Read(r.buffer)
-	if nBytes > 0 {
-		mb := NewMultiBufferCap(int32(nBytes/Size) + 1)
-		common.Must2(mb.Write(r.buffer[:nBytes]))
-		if nBytes == len(r.buffer) && nBytes < int(largeSize) {
-			bytespool.Free(r.buffer)
-			r.buffer = bytespool.Alloc(int32(nBytes) + 100)
-		} else if nBytes < Size {
-			r.freeBuffer()
-		}
-		return mb, nil
-	}
-
-	r.freeBuffer()
-
-	if err != nil {
-		return nil, err
-	}
-
-	// Read() returns empty payload and nil err. We don't expect this to happen, but just in case.
-	return r.readSmall()
 }
 
 // BufferedReader is a Reader that keeps its internal buffer.

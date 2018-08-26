@@ -9,10 +9,30 @@ option java_multiple_files = true;
 import "v2ray.com/core/common/net/address.proto";
 import "v2ray.com/core/common/net/destination.proto";
 
+message NameServer {
+  v2ray.core.common.net.Endpoint address = 1;
+
+  message PriorityDomain {
+    DomainMatchingType type = 1;
+    string domain = 2;
+  }
+
+  repeated PriorityDomain prioritized_domain = 2;
+}
+
+enum DomainMatchingType {
+  Full = 0;
+  Subdomain = 1;
+  Keyword = 2;
+}
+
 message Config {
   // Nameservers used by this DNS. Only traditional UDP servers are support at the moment.
   // A special value 'localhost' as a domain address can be set to use DNS on local system.
-  repeated v2ray.core.common.net.Endpoint NameServers = 1;
+  repeated v2ray.core.common.net.Endpoint NameServers = 1 [deprecated = true];
+
+  // NameServer list used by this DNS client.
+  repeated NameServer name_server = 5;
 
   // Static hosts. Domain to IP.
   // Deprecated. Use static_hosts.
@@ -22,12 +42,7 @@ message Config {
   bytes client_ip = 3;
 
   message HostMapping {
-    enum Type {
-      Full = 0;
-      SubDomain = 1;
-    }
-
-    Type type = 1;
+    DomainMatchingType type = 1;
     string domain = 2;
     repeated bytes ip = 3;
   }
