@@ -47,7 +47,7 @@ type RequestHeader struct {
 	Security SecurityType
 	Port     net.Port
 	Address  net.Address
-	User     *User
+	User     *MemoryUser
 }
 
 func (h *RequestHeader) Destination() net.Destination {

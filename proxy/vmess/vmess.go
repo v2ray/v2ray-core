@@ -23,8 +23,7 @@ const (
 )
 
 type user struct {
-	user    *protocol.User
-	account *InternalAccount
+	user    *protocol.MemoryUser
 	lastSec protocol.Timestamp
 }
 
@@ -80,8 +79,10 @@ func (v *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, user *
 		}
 	}
 
-	genHashForID(user.account.ID)
-	for _, id := range user.account.AlterIDs {
+	account := user.user.Account.(*InternalAccount)
+
+	genHashForID(account.ID)
+	for _, id := range account.AlterIDs {
 		genHashForID(id)
 	}
 	user.lastSec = nowSec
@@ -111,21 +112,14 @@ func (v *TimedUserValidator) updateUserHash() {
 	}
 }
 
-func (v *TimedUserValidator) Add(u *protocol.User) error {
+func (v *TimedUserValidator) Add(u *protocol.MemoryUser) error {
 	v.Lock()
 	defer v.Unlock()
-
-	rawAccount, err := u.GetTypedAccount()
-	if err != nil {
-		return err
-	}
-	account := rawAccount.(*InternalAccount)
 
 	nowSec := time.Now().Unix()
 
 	uu := &user{
 		user:    u,
-		account: account,
 		lastSec: protocol.Timestamp(nowSec - cacheDurationSec),
 	}
 	v.users = append(v.users, uu)
@@ -134,7 +128,7 @@ func (v *TimedUserValidator) Add(u *protocol.User) error {
 	return nil
 }
 
-func (v *TimedUserValidator) Get(userHash []byte) (*protocol.User, protocol.Timestamp, bool) {
+func (v *TimedUserValidator) Get(userHash []byte) (*protocol.MemoryUser, protocol.Timestamp, bool) {
 	defer v.RUnlock()
 	v.RLock()
 

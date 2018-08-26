@@ -20,10 +20,9 @@ import (
 )
 
 type Server struct {
-	config  ServerConfig
-	user    *protocol.User
-	account *MemoryAccount
-	v       *core.Instance
+	config ServerConfig
+	user   *protocol.MemoryUser
+	v      *core.Instance
 }
 
 // NewServer create a new Shadowsocks server.
@@ -32,17 +31,15 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 		return nil, newError("user is not specified")
 	}
 
-	rawAccount, err := config.User.GetTypedAccount()
+	mUser, err := config.User.ToMemoryUser()
 	if err != nil {
-		return nil, newError("failed to get user account").Base(err)
+		return nil, newError("failed to parse user account").Base(err)
 	}
-	account := rawAccount.(*MemoryAccount)
 
 	s := &Server{
-		config:  *config,
-		user:    config.GetUser(),
-		account: account,
-		v:       core.MustFromContext(ctx),
+		config: *config,
+		user:   mUser,
+		v:      core.MustFromContext(ctx),
 	}
 
 	return s, nil
@@ -90,6 +87,8 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 		conn.Write(data.Bytes())
 	})
 
+	account := s.user.Account.(*MemoryAccount)
+
 	reader := buf.NewReader(conn)
 	for {
 		mpayload, err := reader.ReadMultiBuffer()
@@ -113,13 +112,13 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 				continue
 			}
 
-			if request.Option.Has(RequestOptionOneTimeAuth) && s.account.OneTimeAuth == Account_Disabled {
+			if request.Option.Has(RequestOptionOneTimeAuth) && account.OneTimeAuth == Account_Disabled {
 				newError("client payload enables OTA but server doesn't allow it").WriteToLog(session.ExportIDToError(ctx))
 				payload.Release()
 				continue
 			}
 
-			if !request.Option.Has(RequestOptionOneTimeAuth) && s.account.OneTimeAuth == Account_Enabled {
+			if !request.Option.Has(RequestOptionOneTimeAuth) && account.OneTimeAuth == Account_Enabled {
 				newError("client payload disables OTA but server forces it").WriteToLog(session.ExportIDToError(ctx))
 				payload.Release()
 				continue

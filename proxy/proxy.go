@@ -38,7 +38,7 @@ type Dialer interface {
 // UserManager is the interface for Inbounds and Outbounds that can manage their users.
 type UserManager interface {
 	// AddUser adds a new user.
-	AddUser(context.Context, *protocol.User) error
+	AddUser(context.Context, *protocol.MemoryUser) error
 
 	// RemoveUser removes a user by email.
 	RemoveUser(context.Context, string) error

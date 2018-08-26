@@ -17,3 +17,21 @@ func (u *User) GetTypedAccount() (Account, error) {
 	}
 	return nil, newError("Unknown account type: ", u.Account.Type)
 }
+
+func (u *User) ToMemoryUser() (*MemoryUser, error) {
+	account, err := u.GetTypedAccount()
+	if err != nil {
+		return nil, err
+	}
+	return &MemoryUser{
+		Account: account,
+		Email:   u.Email,
+		Level:   u.Level,
+	}, nil
+}
+
+type MemoryUser struct {
+	Account Account
+	Email   string
+	Level   uint32
+}

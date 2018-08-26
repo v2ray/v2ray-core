@@ -12,6 +12,12 @@ import (
 	. "v2ray.com/ext/assert"
 )
 
+func toAccount(a *Account) protocol.Account {
+	account, err := a.AsAccount()
+	common.Must(err)
+	return account
+}
+
 func TestUDPEncoding(t *testing.T) {
 	assert := With(t)
 
@@ -20,9 +26,9 @@ func TestUDPEncoding(t *testing.T) {
 		Command: protocol.RequestCommandUDP,
 		Address: net.LocalHostIP,
 		Port:    1234,
-		User: &protocol.User{
+		User: &protocol.MemoryUser{
 			Email: "love@v2ray.com",
-			Account: serial.ToTypedMessage(&Account{
+			Account: toAccount(&Account{
 				Password:   "shadowsocks-password",
 				CipherType: CipherType_AES_128_CFB,
 				Ota:        Account_Disabled,
@@ -57,9 +63,9 @@ func TestTCPRequest(t *testing.T) {
 				Address: net.LocalHostIP,
 				Option:  RequestOptionOneTimeAuth,
 				Port:    1234,
-				User: &protocol.User{
+				User: &protocol.MemoryUser{
 					Email: "love@v2ray.com",
-					Account: serial.ToTypedMessage(&Account{
+					Account: toAccount(&Account{
 						Password:   "tcp-password",
 						CipherType: CipherType_CHACHA20,
 					}),
@@ -74,9 +80,9 @@ func TestTCPRequest(t *testing.T) {
 				Address: net.LocalHostIPv6,
 				Option:  RequestOptionOneTimeAuth,
 				Port:    1234,
-				User: &protocol.User{
+				User: &protocol.MemoryUser{
 					Email: "love@v2ray.com",
-					Account: serial.ToTypedMessage(&Account{
+					Account: toAccount(&Account{
 						Password:   "password",
 						CipherType: CipherType_AES_256_CFB,
 					}),
@@ -91,9 +97,9 @@ func TestTCPRequest(t *testing.T) {
 				Address: net.DomainAddress("v2ray.com"),
 				Option:  RequestOptionOneTimeAuth,
 				Port:    1234,
-				User: &protocol.User{
+				User: &protocol.MemoryUser{
 					Email: "love@v2ray.com",
-					Account: serial.ToTypedMessage(&Account{
+					Account: toAccount(&Account{
 						Password:   "password",
 						CipherType: CipherType_CHACHA20_IETF,
 					}),
@@ -135,8 +141,8 @@ func TestTCPRequest(t *testing.T) {
 func TestUDPReaderWriter(t *testing.T) {
 	assert := With(t)
 
-	user := &protocol.User{
-		Account: serial.ToTypedMessage(&Account{
+	user := &protocol.MemoryUser{
+		Account: toAccount(&Account{
 			Password:   "test-password",
 			CipherType: CipherType_CHACHA20_IETF,
 		}),

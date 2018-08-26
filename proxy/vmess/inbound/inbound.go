@@ -16,7 +16,6 @@ import (
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/task"
@@ -29,20 +28,20 @@ import (
 
 type userByEmail struct {
 	sync.Mutex
-	cache           map[string]*protocol.User
+	cache           map[string]*protocol.MemoryUser
 	defaultLevel    uint32
 	defaultAlterIDs uint16
 }
 
 func newUserByEmail(config *DefaultConfig) *userByEmail {
 	return &userByEmail{
-		cache:           make(map[string]*protocol.User),
+		cache:           make(map[string]*protocol.MemoryUser),
 		defaultLevel:    config.Level,
 		defaultAlterIDs: uint16(config.AlterId),
 	}
 }
 
-func (v *userByEmail) addNoLock(u *protocol.User) bool {
+func (v *userByEmail) addNoLock(u *protocol.MemoryUser) bool {
 	email := strings.ToLower(u.Email)
 	user, found := v.cache[email]
 	if found {
@@ -52,14 +51,14 @@ func (v *userByEmail) addNoLock(u *protocol.User) bool {
 	return true
 }
 
-func (v *userByEmail) Add(u *protocol.User) bool {
+func (v *userByEmail) Add(u *protocol.MemoryUser) bool {
 	v.Lock()
 	defer v.Unlock()
 
 	return v.addNoLock(u)
 }
 
-func (v *userByEmail) Get(email string) (*protocol.User, bool) {
+func (v *userByEmail) Get(email string) (*protocol.MemoryUser, bool) {
 	email = strings.ToLower(email)
 
 	v.Lock()
@@ -68,14 +67,16 @@ func (v *userByEmail) Get(email string) (*protocol.User, bool) {
 	user, found := v.cache[email]
 	if !found {
 		id := uuid.New()
-		account := &vmess.Account{
+		rawAccount := &vmess.Account{
 			Id:      id.String(),
 			AlterId: uint32(v.defaultAlterIDs),
 		}
-		user = &protocol.User{
+		account, err := rawAccount.AsAccount()
+		common.Must(err)
+		user = &protocol.MemoryUser{
 			Level:   v.defaultLevel,
 			Email:   email,
-			Account: serial.ToTypedMessage(account),
+			Account: account,
 		}
 		v.cache[email] = user
 	}
@@ -120,7 +121,12 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	}
 
 	for _, user := range config.User {
-		if err := handler.AddUser(ctx, user); err != nil {
+		mUser, err := user.ToMemoryUser()
+		if err != nil {
+			return nil, newError("failed to get VMess user").Base(err)
+		}
+
+		if err := handler.AddUser(ctx, mUser); err != nil {
 			return nil, newError("failed to initiate user").Base(err)
 		}
 	}
@@ -130,10 +136,9 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 
 // Close implements common.Closable.
 func (h *Handler) Close() error {
-	common.Close(h.clients)
-	common.Close(h.sessionHistory)
-	common.Close(h.usersByEmail)
-	return nil
+	return task.Run(
+		task.SequentialAll(
+			task.Close(h.clients), task.Close(h.sessionHistory), task.Close(h.usersByEmail)))()
 }
 
 // Network implements proxy.Inbound.Network().
@@ -143,7 +148,7 @@ func (*Handler) Network() net.NetworkList {
 	}
 }
 
-func (h *Handler) GetUser(email string) *protocol.User {
+func (h *Handler) GetUser(email string) *protocol.MemoryUser {
 	user, existing := h.usersByEmail.Get(email)
 	if !existing {
 		h.clients.Add(user)
@@ -151,7 +156,7 @@ func (h *Handler) GetUser(email string) *protocol.User {
 	return user
 }
 
-func (h *Handler) AddUser(ctx context.Context, user *protocol.User) error {
+func (h *Handler) AddUser(ctx context.Context, user *protocol.MemoryUser) error {
 	if len(user.Email) > 0 && !h.usersByEmail.Add(user) {
 		return newError("User ", user.Email, " already exists.")
 	}
@@ -325,11 +330,11 @@ func (h *Handler) generateCommand(ctx context.Context, request *protocol.Request
 				if user == nil {
 					return nil
 				}
-				account, _ := user.GetTypedAccount()
+				account := user.Account.(*vmess.InternalAccount)
 				return &protocol.CommandSwitchAccount{
 					Port:     port,
-					ID:       account.(*vmess.InternalAccount).ID.UUID(),
-					AlterIds: uint16(len(account.(*vmess.InternalAccount).AlterIDs)),
+					ID:       account.ID.UUID(),
+					AlterIds: uint16(len(account.AlterIDs)),
 					Level:    user.Level,
 					ValidMin: byte(availableMin),
 				}

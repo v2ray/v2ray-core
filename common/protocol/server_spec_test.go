@@ -6,7 +6,6 @@ import (
 
 	"v2ray.com/core/common/net"
 	. "v2ray.com/core/common/protocol"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/uuid"
 	"v2ray.com/core/proxy/vmess"
 	. "v2ray.com/ext/assert"
@@ -40,26 +39,26 @@ func TestUserInServerSpec(t *testing.T) {
 	uuid1 := uuid.New()
 	uuid2 := uuid.New()
 
-	spec := NewServerSpec(net.Destination{}, AlwaysValid(), &User{
+	spec := NewServerSpec(net.Destination{}, AlwaysValid(), &MemoryUser{
 		Email:   "test1@v2ray.com",
-		Account: serial.ToTypedMessage(&vmess.Account{Id: uuid1.String()}),
+		Account: &vmess.Account{Id: uuid1.String()},
 	})
-	assert(spec.HasUser(&User{
+	assert(spec.HasUser(&MemoryUser{
 		Email:   "test1@v2ray.com",
-		Account: serial.ToTypedMessage(&vmess.Account{Id: uuid2.String()}),
+		Account: &vmess.Account{Id: uuid2.String()},
 	}), IsFalse)
 
-	spec.AddUser(&User{Email: "test2@v2ray.com"})
-	assert(spec.HasUser(&User{
+	spec.AddUser(&MemoryUser{Email: "test2@v2ray.com"})
+	assert(spec.HasUser(&MemoryUser{
 		Email:   "test1@v2ray.com",
-		Account: serial.ToTypedMessage(&vmess.Account{Id: uuid1.String()}),
+		Account: &vmess.Account{Id: uuid1.String()},
 	}), IsTrue)
 }
 
 func TestPickUser(t *testing.T) {
 	assert := With(t)
 
-	spec := NewServerSpec(net.Destination{}, AlwaysValid(), &User{Email: "test1@v2ray.com"}, &User{Email: "test2@v2ray.com"}, &User{Email: "test3@v2ray.com"})
+	spec := NewServerSpec(net.Destination{}, AlwaysValid(), &MemoryUser{Email: "test1@v2ray.com"}, &MemoryUser{Email: "test2@v2ray.com"}, &MemoryUser{Email: "test3@v2ray.com"})
 	user := spec.PickUser()
 	assert(user.Email, HasSuffix, "@v2ray.com")
 }

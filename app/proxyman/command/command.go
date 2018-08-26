@@ -39,7 +39,11 @@ func (op *AddUserOperation) ApplyInbound(ctx context.Context, handler core.Inbou
 	if !ok {
 		return newError("proxy is not a UserManager")
 	}
-	return um.AddUser(ctx, op.User)
+	mUser, err := op.User.ToMemoryUser()
+	if err != nil {
+		return newError("failed to parse user").Base(err)
+	}
+	return um.AddUser(ctx, mUser)
 }
 
 // ApplyInbound implements InboundOperation.

@@ -350,11 +350,7 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 
 	common.Must2(b.WriteBytes(socks5Version, 0x01, authByte))
 	if authByte == authPassword {
-		rawAccount, err := request.User.GetTypedAccount()
-		if err != nil {
-			return nil, err
-		}
-		account := rawAccount.(*Account)
+		account := request.User.Account.(*Account)
 
 		common.Must2(b.WriteBytes(0x01, byte(len(account.Username))))
 		common.Must2(b.Write([]byte(account.Username)))

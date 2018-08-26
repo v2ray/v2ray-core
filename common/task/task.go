@@ -2,11 +2,25 @@ package task
 
 import (
 	"context"
+	"strings"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/signal/semaphore"
 )
 
 type Task func() error
+
+type MultiError []error
+
+func (e MultiError) Error() string {
+	var r strings.Builder
+	common.Must2(r.WriteString("multierr: "))
+	for _, err := range e {
+		common.Must2(r.WriteString(err.Error()))
+		common.Must2(r.WriteString(" | "))
+	}
+	return r.String()
+}
 
 type executionContext struct {
 	ctx       context.Context
@@ -59,20 +73,44 @@ func Parallel(tasks ...Task) ExecutionOption {
 	}
 }
 
+// Sequential runs all tasks sequentially, and returns the first error encountered.Sequential
+// Once a task returns an error, the following tasks will not run.
 func Sequential(tasks ...Task) ExecutionOption {
 	return func(c *executionContext) {
-		if len(tasks) == 0 {
+		switch len(tasks) {
+		case 0:
 			return
-		}
-
-		if len(tasks) == 1 {
+		case 1:
 			c.tasks = append(c.tasks, tasks[0])
-			return
+		default:
+			c.tasks = append(c.tasks, func() error {
+				return execute(tasks...)
+			})
 		}
+	}
+}
 
-		c.tasks = append(c.tasks, func() error {
-			return execute(tasks...)
-		})
+func SequentialAll(tasks ...Task) ExecutionOption {
+	return func(c *executionContext) {
+		switch len(tasks) {
+		case 0:
+			return
+		case 1:
+			c.tasks = append(c.tasks, tasks[0])
+		default:
+			c.tasks = append(c.tasks, func() error {
+				var merr MultiError
+				for _, task := range tasks {
+					if err := task(); err != nil {
+						merr = append(merr, err)
+					}
+				}
+				if len(merr) == 0 {
+					return nil
+				}
+				return merr
+			})
+		}
 	}
 }
 
