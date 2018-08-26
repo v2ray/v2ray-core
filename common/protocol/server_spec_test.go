@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	. "v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/uuid"
@@ -39,19 +40,25 @@ func TestUserInServerSpec(t *testing.T) {
 	uuid1 := uuid.New()
 	uuid2 := uuid.New()
 
+	toAccount := func(a *vmess.Account) Account {
+		account, err := a.AsAccount()
+		common.Must(err)
+		return account
+	}
+
 	spec := NewServerSpec(net.Destination{}, AlwaysValid(), &MemoryUser{
 		Email:   "test1@v2ray.com",
-		Account: &vmess.Account{Id: uuid1.String()},
+		Account: toAccount(&vmess.Account{Id: uuid1.String()}),
 	})
 	assert(spec.HasUser(&MemoryUser{
 		Email:   "test1@v2ray.com",
-		Account: &vmess.Account{Id: uuid2.String()},
+		Account: toAccount(&vmess.Account{Id: uuid2.String()}),
 	}), IsFalse)
 
 	spec.AddUser(&MemoryUser{Email: "test2@v2ray.com"})
 	assert(spec.HasUser(&MemoryUser{
 		Email:   "test1@v2ray.com",
-		Account: &vmess.Account{Id: uuid1.String()},
+		Account: toAccount(&vmess.Account{Id: uuid1.String()}),
 	}), IsTrue)
 }
 

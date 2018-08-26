@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/uuid"
 
 	"v2ray.com/core/common/protocol"
@@ -20,10 +19,16 @@ func TestUserValidator(t *testing.T) {
 	v := NewTimedUserValidator(hasher)
 	defer common.Close(v)
 
+	toAccount := func(a *Account) protocol.Account {
+		account, err := a.AsAccount()
+		common.Must(err)
+		return account
+	}
+
 	id := uuid.New()
-	user := &protocol.User{
+	user := &protocol.MemoryUser{
 		Email: "test",
-		Account: serial.ToTypedMessage(&Account{
+		Account: toAccount(&Account{
 			Id:      id.String(),
 			AlterId: 8,
 		}),
