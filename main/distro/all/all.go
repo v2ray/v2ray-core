@@ -48,6 +48,7 @@ import (
 	_ "v2ray.com/core/transport/internet/headers/tls"
 	_ "v2ray.com/core/transport/internet/headers/utp"
 	_ "v2ray.com/core/transport/internet/headers/wechat"
+	_ "v2ray.com/core/transport/internet/headers/wireguard"
 
 	// JSON config support. Choose only one from the two below.
 	// The following line loads JSON from v2ctl
