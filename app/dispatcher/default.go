@@ -205,7 +205,7 @@ func sniffer(ctx context.Context, cReader *cachedReader) (SniffResult, error) {
 			return nil, ctx.Err()
 		default:
 			totalAttempt++
-			if totalAttempt > 5 {
+			if totalAttempt > 2 {
 				return nil, errSniffingTimeout
 			}
 
@@ -219,7 +219,6 @@ func sniffer(ctx context.Context, cReader *cachedReader) (SniffResult, error) {
 			if payload.IsFull() {
 				return nil, errUnknownContent
 			}
-			time.Sleep(time.Millisecond * 100)
 		}
 	}
 }
