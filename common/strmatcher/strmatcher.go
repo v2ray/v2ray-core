@@ -140,11 +140,19 @@ func NewCachedMatcherGroup(g *MatcherGroup) *CachedMatcherGroup {
 			r.Lock()
 			defer r.Unlock()
 
+			if len(r.cache) == 0 {
+				return nil
+			}
+
 			expire := time.Now().Add(-1 * time.Second * 120)
 			for p, e := range r.cache {
 				if e.timestamp.Before(expire) {
 					delete(r.cache, p)
 				}
+			}
+
+			if len(r.cache) == 0 {
+				r.cache = make(map[string]cacheEntry)
 			}
 
 			return nil
