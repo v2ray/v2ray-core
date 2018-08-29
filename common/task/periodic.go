@@ -54,6 +54,7 @@ func (t *Periodic) checkedExecute() error {
 func (t *Periodic) Start() error {
 	t.access.Lock()
 	if t.running {
+		t.access.Unlock()
 		return nil
 	}
 	t.running = true
