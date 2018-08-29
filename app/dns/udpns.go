@@ -256,6 +256,7 @@ func msgToBuffer(msg *dns.Msg) (*buf.Buffer, error) {
 		writtenBuffer, err := msg.PackBuffer(b)
 		return len(writtenBuffer), err
 	}); err != nil {
+		buffer.Release()
 		return nil, err
 	}
 	return buffer, nil
