@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/task"
 )
 
@@ -149,6 +150,7 @@ func NewCachedMatcherGroup(g *MatcherGroup) *CachedMatcherGroup {
 			return nil
 		},
 	}
+	common.Must(r.cleanup.Start())
 	return r
 }
 
