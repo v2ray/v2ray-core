@@ -303,7 +303,7 @@ func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
 
 	for !mb.IsEmpty() {
 		b := mb.SplitFirst()
-		if b == nil {
+		if b.IsEmpty() {
 			continue
 		}
 		eb, err := w.seal(b)
