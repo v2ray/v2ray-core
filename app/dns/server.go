@@ -81,12 +81,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 			}
 		}
 
-		if domainMatcher.Size() > 64 {
-			server.domainMatcher = strmatcher.NewCachedMatcherGroup(domainMatcher)
-		} else {
-			server.domainMatcher = domainMatcher
-		}
-
+		server.domainMatcher = domainMatcher
 		server.domainIndexMap = domainIndexMap
 	}
 

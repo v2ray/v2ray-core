@@ -2,11 +2,6 @@ package strmatcher
 
 import (
 	"regexp"
-	"sync"
-	"time"
-
-	"v2ray.com/core/common"
-	"v2ray.com/core/common/task"
 )
 
 // Matcher is the interface to determine a string matches a pattern.
@@ -113,72 +108,4 @@ func (g *MatcherGroup) Match(pattern string) uint32 {
 // Size returns the number of matchers in the MatcherGroup.
 func (g *MatcherGroup) Size() uint32 {
 	return g.count
-}
-
-type cacheEntry struct {
-	timestamp time.Time
-	result    uint32
-}
-
-// CachedMatcherGroup is a IndexMatcher with cachable results.
-type CachedMatcherGroup struct {
-	sync.RWMutex
-	group   *MatcherGroup
-	cache   map[string]cacheEntry
-	cleanup *task.Periodic
-}
-
-// NewCachedMatcherGroup creats a new CachedMatcherGroup.
-func NewCachedMatcherGroup(g *MatcherGroup) *CachedMatcherGroup {
-	r := &CachedMatcherGroup{
-		group: g,
-		cache: make(map[string]cacheEntry),
-	}
-	r.cleanup = &task.Periodic{
-		Interval: time.Second * 30,
-		Execute: func() error {
-			r.Lock()
-			defer r.Unlock()
-
-			if len(r.cache) == 0 {
-				return nil
-			}
-
-			expire := time.Now().Add(-1 * time.Second * 120)
-			for p, e := range r.cache {
-				if e.timestamp.Before(expire) {
-					delete(r.cache, p)
-				}
-			}
-
-			if len(r.cache) == 0 {
-				r.cache = make(map[string]cacheEntry)
-			}
-
-			return nil
-		},
-	}
-	common.Must(r.cleanup.Start())
-	return r
-}
-
-// Match implements IndexMatcher.Match.
-func (g *CachedMatcherGroup) Match(pattern string) uint32 {
-	g.RLock()
-	r, f := g.cache[pattern]
-	g.RUnlock()
-	if f {
-		return r.result
-	}
-
-	mr := g.group.Match(pattern)
-
-	g.Lock()
-	g.cache[pattern] = cacheEntry{
-		result:    mr,
-		timestamp: time.Now(),
-	}
-	g.Unlock()
-
-	return mr
 }

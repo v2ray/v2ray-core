@@ -1,6 +1,7 @@
 package pubsub
 
 import (
+	"errors"
 	"sync"
 	"time"
 
@@ -47,7 +48,6 @@ func NewService() *Service {
 		Execute:  s.Cleanup,
 		Interval: time.Second * 30,
 	}
-	common.Must(s.ctask.Start())
 	return s
 }
 
@@ -56,6 +56,10 @@ func NewService() *Service {
 func (s *Service) Cleanup() error {
 	s.Lock()
 	defer s.Unlock()
+
+	if len(s.subs) == 0 {
+		return errors.New("nothing to do")
+	}
 
 	for name, subs := range s.subs {
 		newSub := make([]*Subscriber, 0, len(s.subs))
@@ -86,6 +90,7 @@ func (s *Service) Subscribe(name string) *Subscriber {
 	subs := append(s.subs[name], sub)
 	s.subs[name] = subs
 	s.Unlock()
+	common.Must(s.ctask.Start())
 	return sub
 }
 

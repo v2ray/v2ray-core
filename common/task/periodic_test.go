@@ -27,4 +27,10 @@ func TestPeriodicTaskStop(t *testing.T) {
 	assert(value, Equals, 3)
 	time.Sleep(time.Second * 4)
 	assert(value, Equals, 3)
+	common.Must(task.Start())
+	time.Sleep(time.Second * 3)
+	if value != 5 {
+		t.Fatal("Expected 5, but ", value)
+	}
+	common.Must(task.Close())
 }
