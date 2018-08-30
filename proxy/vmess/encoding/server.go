@@ -42,12 +42,8 @@ func NewSessionHistory() *SessionHistory {
 	}
 	h.task = &task.Periodic{
 		Interval: time.Second * 30,
-		Execute: func() error {
-			h.removeExpiredEntries()
-			return nil
-		},
+		Execute:  h.removeExpiredEntries,
 	}
-	common.Must(h.task.Start())
 	return h
 }
 
@@ -58,24 +54,26 @@ func (h *SessionHistory) Close() error {
 
 func (h *SessionHistory) addIfNotExits(session sessionId) bool {
 	h.Lock()
-	defer h.Unlock()
 
 	if expire, found := h.cache[session]; found && expire.After(time.Now()) {
+		h.Unlock()
 		return false
 	}
 
 	h.cache[session] = time.Now().Add(time.Minute * 3)
+	h.Unlock()
+	common.Must(h.task.Start())
 	return true
 }
 
-func (h *SessionHistory) removeExpiredEntries() {
+func (h *SessionHistory) removeExpiredEntries() error {
 	now := time.Now()
 
 	h.Lock()
 	defer h.Unlock()
 
 	if len(h.cache) == 0 {
-		return
+		return newError("nothing to do")
 	}
 
 	for session, expire := range h.cache {
@@ -87,6 +85,8 @@ func (h *SessionHistory) removeExpiredEntries() {
 	if len(h.cache) == 0 {
 		h.cache = make(map[sessionId]time.Time, 128)
 	}
+
+	return nil
 }
 
 // ServerSession keeps information for a session in VMess server.
@@ -139,11 +139,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	timestampHash := md5.New()
 	common.Must2(timestampHash.Write(hashTimestamp(timestamp)))
 	iv := timestampHash.Sum(nil)
-	account, err := user.GetTypedAccount()
-	if err != nil {
-		return nil, newError("failed to get user account").Base(err)
-	}
-	vmessAccount := account.(*vmess.InternalAccount)
+	vmessAccount := user.Account.(*vmess.InternalAccount)
 
 	aesStream := crypto.NewAesDecryptionStream(vmessAccount.ID.CmdKey(), iv)
 	decryptor := crypto.NewCryptionReader(aesStream, reader)

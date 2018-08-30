@@ -33,7 +33,11 @@ type Handler struct {
 func New(ctx context.Context, config *Config) (*Handler, error) {
 	serverList := protocol.NewServerList()
 	for _, rec := range config.Receiver {
-		serverList.AddServer(protocol.NewServerSpecFromPB(*rec))
+		s, err := protocol.NewServerSpecFromPB(*rec)
+		if err != nil {
+			return nil, newError("failed to parse server spec").Base(err)
+		}
+		serverList.AddServer(s)
 	}
 	handler := &Handler{
 		serverList:   serverList,
@@ -87,11 +91,7 @@ func (v *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 		Option:  protocol.RequestOptionChunkStream,
 	}
 
-	rawAccount, err := request.User.GetTypedAccount()
-	if err != nil {
-		return newError("failed to get user account").Base(err).AtWarning()
-	}
-	account := rawAccount.(*vmess.InternalAccount)
+	account := request.User.Account.(*vmess.InternalAccount)
 	request.Security = account.Security
 
 	if request.Security == protocol.SecurityType_AES128_GCM || request.Security == protocol.SecurityType_NONE || request.Security == protocol.SecurityType_CHACHA20_POLY1305 {

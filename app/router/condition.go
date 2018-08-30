@@ -100,14 +100,8 @@ func NewDomainMatcher(domains []*Domain) (*DomainMatcher, error) {
 		g.Add(m)
 	}
 
-	if len(domains) < 64 {
-		return &DomainMatcher{
-			matchers: g,
-		}, nil
-	}
-
 	return &DomainMatcher{
-		matchers: strmatcher.NewCachedMatcherGroup(g),
+		matchers: g,
 	}, nil
 }
 

@@ -289,6 +289,8 @@ func (w *udpWorker) callback(b *buf.Buffer, source net.Destination, originalDest
 	}
 
 	if !existing {
+		common.Must(w.checker.Start())
+
 		go func() {
 			ctx := context.Background()
 			sid := session.NewID()
@@ -324,40 +326,41 @@ func (w *udpWorker) handlePackets() {
 	}
 }
 
+func (w *udpWorker) clean() error {
+	nowSec := time.Now().Unix()
+	w.Lock()
+	defer w.Unlock()
+
+	if len(w.activeConn) == 0 {
+		return newError("no more connections. stopping...")
+	}
+
+	for addr, conn := range w.activeConn {
+		if nowSec-atomic.LoadInt64(&conn.lastActivityTime) > 8 {
+			delete(w.activeConn, addr)
+			conn.Close() // nolint: errcheck
+		}
+	}
+
+	if len(w.activeConn) == 0 {
+		w.activeConn = make(map[connID]*udpConn, 16)
+	}
+
+	return nil
+}
+
 func (w *udpWorker) Start() error {
 	w.activeConn = make(map[connID]*udpConn, 16)
 	h, err := udp.ListenUDP(w.address, w.port, udp.HubReceiveOriginalDestination(w.recvOrigDest), udp.HubCapacity(256))
 	if err != nil {
 		return err
 	}
+
 	w.checker = &task.Periodic{
 		Interval: time.Second * 16,
-		Execute: func() error {
-			nowSec := time.Now().Unix()
-			w.Lock()
-			defer w.Unlock()
-
-			if len(w.activeConn) == 0 {
-				return nil
-			}
-
-			for addr, conn := range w.activeConn {
-				if nowSec-atomic.LoadInt64(&conn.lastActivityTime) > 8 {
-					delete(w.activeConn, addr)
-					conn.Close() // nolint: errcheck
-				}
-			}
-
-			if len(w.activeConn) == 0 {
-				w.activeConn = make(map[connID]*udpConn, 16)
-			}
-
-			return nil
-		},
+		Execute:  w.clean,
 	}
-	if err := w.checker.Start(); err != nil {
-		return err
-	}
+
 	w.hub = h
 	go w.handlePackets()
 	return nil

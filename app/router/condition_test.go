@@ -126,11 +126,11 @@ func TestRoutingRule(t *testing.T) {
 			},
 			test: []ruleTest{
 				{
-					input:  protocol.ContextWithUser(context.Background(), &protocol.User{Email: "admin@v2ray.com"}),
+					input:  protocol.ContextWithUser(context.Background(), &protocol.MemoryUser{Email: "admin@v2ray.com"}),
 					output: true,
 				},
 				{
-					input:  protocol.ContextWithUser(context.Background(), &protocol.User{Email: "love@v2ray.com"}),
+					input:  protocol.ContextWithUser(context.Background(), &protocol.MemoryUser{Email: "love@v2ray.com"}),
 					output: false,
 				},
 				{

@@ -11,25 +11,17 @@ type Periodic struct {
 	Interval time.Duration
 	// Execute is the task function
 	Execute func() error
-	// OnFailure will be called when Execute returns non-nil error
-	OnError func(error)
 
-	access sync.RWMutex
-	timer  *time.Timer
-	closed bool
-}
-
-func (t *Periodic) setClosed(f bool) {
-	t.access.Lock()
-	t.closed = f
-	t.access.Unlock()
+	access  sync.Mutex
+	timer   *time.Timer
+	running bool
 }
 
 func (t *Periodic) hasClosed() bool {
-	t.access.RLock()
-	defer t.access.RUnlock()
+	t.access.Lock()
+	defer t.access.Unlock()
 
-	return t.closed
+	return !t.running
 }
 
 func (t *Periodic) checkedExecute() error {
@@ -38,31 +30,40 @@ func (t *Periodic) checkedExecute() error {
 	}
 
 	if err := t.Execute(); err != nil {
+		t.access.Lock()
+		t.running = false
+		t.access.Unlock()
 		return err
 	}
 
 	t.access.Lock()
 	defer t.access.Unlock()
 
-	if t.closed {
+	if !t.running {
 		return nil
 	}
 
 	t.timer = time.AfterFunc(t.Interval, func() {
-		if err := t.checkedExecute(); err != nil && t.OnError != nil {
-			t.OnError(err)
-		}
+		t.checkedExecute() // nolint: errcheck
 	})
 
 	return nil
 }
 
-// Start implements common.Runnable. Start must not be called multiple times without Close being called.
+// Start implements common.Runnable.
 func (t *Periodic) Start() error {
-	t.setClosed(false)
+	t.access.Lock()
+	if t.running {
+		t.access.Unlock()
+		return nil
+	}
+	t.running = true
+	t.access.Unlock()
 
 	if err := t.checkedExecute(); err != nil {
-		t.setClosed(true)
+		t.access.Lock()
+		t.running = false
+		t.access.Unlock()
 		return err
 	}
 
@@ -74,7 +75,7 @@ func (t *Periodic) Close() error {
 	t.access.Lock()
 	defer t.access.Unlock()
 
-	t.closed = true
+	t.running = false
 	if t.timer != nil {
 		t.timer.Stop()
 		t.timer = nil

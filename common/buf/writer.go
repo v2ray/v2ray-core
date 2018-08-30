@@ -140,17 +140,9 @@ func (w *BufferedWriter) Flush() error {
 	w.buffer = nil
 
 	if writer, ok := w.writer.(io.Writer); ok {
-		defer b.Release()
-
-		for !b.IsEmpty() {
-			n, err := writer.Write(b.Bytes())
-			if err != nil {
-				return err
-			}
-			b.Advance(int32(n))
-		}
-
-		return nil
+		err := WriteAllBytes(writer, b.Bytes())
+		b.Release()
+		return err
 	}
 
 	return w.writer.WriteMultiBuffer(NewMultiBufferValue(b))

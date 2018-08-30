@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package v2ray.core.transport.internet.headers.wireguard;
+option csharp_namespace = "V2Ray.Core.Transport.Internet.Headers.Wireguard";
+option go_package = "wireguard";
+option java_package = "com.v2ray.core.transport.internet.headers.wireguard";
+option java_multiple_files = true;
+
+message WireguardConfig {
+}

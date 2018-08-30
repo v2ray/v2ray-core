@@ -27,7 +27,11 @@ type Client struct {
 func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 	serverList := protocol.NewServerList()
 	for _, rec := range config.Server {
-		serverList.AddServer(protocol.NewServerSpecFromPB(*rec))
+		s, err := protocol.NewServerSpecFromPB(*rec)
+		if err != nil {
+			return nil, newError("failed to parse server spec").Base(err)
+		}
+		serverList.AddServer(s)
 	}
 	if serverList.Size() == 0 {
 		return nil, newError("0 server")
@@ -81,11 +85,10 @@ func (c *Client) Process(ctx context.Context, link *core.Link, dialer proxy.Dial
 	}
 
 	user := server.PickUser()
-	rawAccount, err := user.GetTypedAccount()
-	if err != nil {
-		return newError("failed to get a valid user account").AtWarning().Base(err)
+	account, ok := user.Account.(*MemoryAccount)
+	if !ok {
+		return newError("user account is not valid")
 	}
-	account := rawAccount.(*MemoryAccount)
 	request.User = user
 
 	if account.OneTimeAuth == Account_Auto || account.OneTimeAuth == Account_Enabled {

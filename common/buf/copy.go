@@ -90,7 +90,6 @@ func copyInternal(reader Reader, writer Writer, handler *copyHandler) error {
 			}
 
 			if werr := handler.writeTo(writer, buffer); werr != nil {
-				buffer.Release()
 				return werr
 			}
 		}
