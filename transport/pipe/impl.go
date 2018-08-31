@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/signal/done"
@@ -106,6 +107,7 @@ func (p *pipe) writeMultiBufferInternal(mb buf.MultiBuffer) error {
 	defer p.Unlock()
 
 	if err := p.getState(false); err != nil {
+		mb.Release()
 		return err
 	}
 
@@ -142,7 +144,7 @@ func (p *pipe) Close() error {
 	}
 
 	p.state = closed
-	p.done.Close()
+	common.Must(p.done.Close())
 	return nil
 }
 
@@ -161,5 +163,5 @@ func (p *pipe) CloseError() {
 		p.data = nil
 	}
 
-	p.done.Close()
+	common.Must(p.done.Close())
 }
