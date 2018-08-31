@@ -33,7 +33,14 @@ func (w *BufferToBytesWriter) WriteMultiBuffer(mb MultiBuffer) error {
 	for _, b := range mb {
 		bs = append(bs, b.Bytes())
 	}
-	w.cache = bs[:0]
+	w.cache = bs
+
+	defer func() {
+		for idx := range w.cache {
+			w.cache[idx] = nil
+		}
+		w.cache = w.cache[:0]
+	}()
 
 	nb := net.Buffers(bs)
 
