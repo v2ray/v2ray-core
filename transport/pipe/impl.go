@@ -107,7 +107,6 @@ func (p *pipe) writeMultiBufferInternal(mb buf.MultiBuffer) error {
 	defer p.Unlock()
 
 	if err := p.getState(false); err != nil {
-		mb.Release()
 		return err
 	}
 
@@ -122,7 +121,11 @@ func (p *pipe) WriteMultiBuffer(mb buf.MultiBuffer) error {
 
 	for {
 		err := p.writeMultiBufferInternal(mb)
-		if err == nil || err != errBufferFull {
+		if err == nil {
+			p.readSignal.Signal()
+			return nil
+		} else if err != errBufferFull {
+			mb.Release()
 			p.readSignal.Signal()
 			return err
 		}
