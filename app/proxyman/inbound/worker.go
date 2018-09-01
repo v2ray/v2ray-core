@@ -160,6 +160,8 @@ L:
 		}
 	}
 
+	c.updateActivity()
+
 	if c.uplink != nil {
 		c.uplink.Add(int64(payload.Len()))
 	}
