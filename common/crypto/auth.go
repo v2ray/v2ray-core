@@ -313,7 +313,6 @@ func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
 
 		eb, err := w.seal(b)
 		if err != nil {
-			newError("failed to encrypt packet").Base(err).AtWarning().WriteToLog()
 			continue
 		}
 
