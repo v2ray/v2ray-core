@@ -86,6 +86,10 @@ func (w *BufferedWriter) WriteByte(c byte) error {
 
 // Write implements io.Writer.
 func (w *BufferedWriter) Write(b []byte) (int, error) {
+	if len(b) == 0 {
+		return 0, nil
+	}
+
 	w.Lock()
 	defer w.Unlock()
 
@@ -119,6 +123,10 @@ func (w *BufferedWriter) Write(b []byte) (int, error) {
 
 // WriteMultiBuffer implements Writer. It takes ownership of the given MultiBuffer.
 func (w *BufferedWriter) WriteMultiBuffer(b MultiBuffer) error {
+	if b.IsEmpty() {
+		return nil
+	}
+
 	w.Lock()
 	defer w.Unlock()
 
@@ -211,6 +219,10 @@ func (w *SequentialWriter) WriteMultiBuffer(mb MultiBuffer) error {
 	defer mb.Release()
 
 	for _, b := range mb {
+		if b.IsEmpty() {
+			continue
+		}
+
 		if err := WriteAllBytes(w.Writer, b.Bytes()); err != nil {
 			return err
 		}
