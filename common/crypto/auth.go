@@ -319,6 +319,10 @@ func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
 		mb2Write.Append(eb)
 	}
 
+	if mb2Write.IsEmpty() {
+		return nil
+	}
+
 	return w.writer.WriteMultiBuffer(mb2Write)
 }
 
