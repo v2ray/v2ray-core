@@ -67,6 +67,9 @@ func (b *Buffer) Reset(writer Supplier) error {
 	nBytes, err := writer(b.v)
 	b.start = 0
 	b.end = int32(nBytes)
+	if b.end > int32(len(b.v)) {
+		b.end = int32(len(b.v))
+	}
 	return err
 }
 
