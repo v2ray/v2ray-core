@@ -22,12 +22,13 @@ const (
 
 type pipe struct {
 	sync.Mutex
-	data        buf.MultiBuffer
-	readSignal  *signal.Notifier
-	writeSignal *signal.Notifier
-	done        *done.Instance
-	limit       int32
-	state       state
+	data            buf.MultiBuffer
+	readSignal      *signal.Notifier
+	writeSignal     *signal.Notifier
+	done            *done.Instance
+	limit           int32
+	state           state
+	discardOverflow bool
 }
 
 var errBufferFull = errors.New("buffer full")
@@ -121,10 +122,14 @@ func (p *pipe) WriteMultiBuffer(mb buf.MultiBuffer) error {
 
 	for {
 		err := p.writeMultiBufferInternal(mb)
-		if err == nil {
+		switch {
+		case err == nil:
 			p.readSignal.Signal()
 			return nil
-		} else if err != errBufferFull {
+		case err == errBufferFull && p.discardOverflow:
+			mb.Release()
+			return nil
+		case err != errBufferFull:
 			mb.Release()
 			p.readSignal.Signal()
 			return err

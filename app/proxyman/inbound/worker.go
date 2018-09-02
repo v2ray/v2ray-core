@@ -2,7 +2,6 @@ package inbound
 
 import (
 	"context"
-	"io"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -20,6 +19,7 @@ import (
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tcp"
 	"v2ray.com/core/transport/internet/udp"
+	"v2ray.com/core/transport/pipe"
 )
 
 type worker interface {
@@ -121,7 +121,8 @@ func (w *tcpWorker) Port() net.Port {
 
 type udpConn struct {
 	lastActivityTime int64 // in seconds
-	input            chan *buf.Buffer
+	reader           buf.Reader
+	writer           buf.Writer
 	output           func([]byte) (int, error)
 	remote           net.Addr
 	local            net.Addr
@@ -136,52 +137,21 @@ func (c *udpConn) updateActivity() {
 
 // ReadMultiBuffer implements buf.Reader
 func (c *udpConn) ReadMultiBuffer() (buf.MultiBuffer, error) {
-	var payload buf.MultiBuffer
-
-	select {
-	case in := <-c.input:
-		payload.Append(in)
-	default:
-		select {
-		case in := <-c.input:
-			payload.Append(in)
-		case <-c.done.Wait():
-			return nil, io.EOF
-		}
+	mb, err := c.reader.ReadMultiBuffer()
+	if err != nil {
+		return nil, err
 	}
-
-L:
-	for {
-		select {
-		case in := <-c.input:
-			payload.Append(in)
-		default:
-			break L
-		}
-	}
-
 	c.updateActivity()
 
 	if c.uplink != nil {
-		c.uplink.Add(int64(payload.Len()))
+		c.uplink.Add(int64(mb.Len()))
 	}
 
-	return payload, nil
+	return mb, nil
 }
 
 func (c *udpConn) Read(buf []byte) (int, error) {
-	select {
-	case in := <-c.input:
-		defer in.Release()
-		c.updateActivity()
-		nBytes := copy(buf, in.Bytes())
-		if c.uplink != nil {
-			c.uplink.Add(int64(nBytes))
-		}
-		return nBytes, nil
-	case <-c.done.Wait():
-		return 0, io.EOF
-	}
+	panic("not implemented")
 }
 
 // Write implements io.Writer.
@@ -198,6 +168,7 @@ func (c *udpConn) Write(buf []byte) (int, error) {
 
 func (c *udpConn) Close() error {
 	common.Must(c.done.Close())
+	common.Must(common.Close(c.writer))
 	return nil
 }
 
@@ -251,8 +222,10 @@ func (w *udpWorker) getConnection(id connID) (*udpConn, bool) {
 		return conn, true
 	}
 
+	pReader, pWriter := pipe.New(pipe.DiscardOverflow(), pipe.WithSizeLimit(16*1024))
 	conn := &udpConn{
-		input: make(chan *buf.Buffer, 32),
+		reader: pReader,
+		writer: pWriter,
 		output: func(b []byte) (int, error) {
 			return w.hub.WriteTo(b, id.src)
 		},
@@ -282,13 +255,9 @@ func (w *udpWorker) callback(b *buf.Buffer, source net.Destination, originalDest
 		id.dest = originalDest
 	}
 	conn, existing := w.getConnection(id)
-	select {
-	case conn.input <- b:
-	case <-conn.done.Wait():
-		b.Release()
-	default:
-		b.Release()
-	}
+
+	// payload will be discarded in pipe is full.
+	conn.writer.WriteMultiBuffer(buf.NewMultiBufferValue(b)) // nolint: errcheck
 
 	if !existing {
 		common.Must(w.checker.Start())
