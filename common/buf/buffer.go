@@ -172,9 +172,11 @@ func (b *Buffer) String() string {
 	return string(b.Bytes())
 }
 
+var pool = bytespool.GetPool(Size)
+
 // New creates a Buffer with 0 length and 2K capacity.
 func New() *Buffer {
 	return &Buffer{
-		v: bytespool.Alloc(Size),
+		v: pool.Get().([]byte),
 	}
 }

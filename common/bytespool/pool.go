@@ -33,12 +33,22 @@ func init() {
 	}
 }
 
-// Alloc returns a byte slice with at least the given size. Minimum size of returned slice is 2048.
-func Alloc(size int32) []byte {
+// GetPool returns a sync.Pool that generates bytes array with at least the given size.
+// It may return nil if no such pool exists.
+func GetPool(size int32) *sync.Pool {
 	for idx, ps := range poolSize {
 		if size <= ps {
-			return pool[idx].Get().([]byte)
+			return &pool[idx]
 		}
+	}
+	return nil
+}
+
+// Alloc returns a byte slice with at least the given size. Minimum size of returned slice is 2048.
+func Alloc(size int32) []byte {
+	pool := GetPool(size)
+	if pool != nil {
+		return pool.Get().([]byte)
 	}
 	return make([]byte, size)
 }
