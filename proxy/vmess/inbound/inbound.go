@@ -174,15 +174,7 @@ func (h *Handler) RemoveUser(ctx context.Context, email string) error {
 	return nil
 }
 
-func transferRequest(timer signal.ActivityUpdater, session *encoding.ServerSession, request *protocol.RequestHeader, input io.Reader, output buf.Writer) error {
-	bodyReader := session.DecodeRequestBody(request, input)
-	if err := buf.Copy(bodyReader, output, buf.UpdateActivity(timer)); err != nil {
-		return newError("failed to transfer request").Base(err)
-	}
-	return nil
-}
-
-func transferResponse(timer signal.ActivityUpdater, session *encoding.ServerSession, request *protocol.RequestHeader, response *protocol.ResponseHeader, input buf.Reader, output io.Writer) error {
+func transferResponse(timer signal.ActivityUpdater, session *encoding.ServerSession, request *protocol.RequestHeader, response *protocol.ResponseHeader, input buf.Reader, output *buf.BufferedWriter) error {
 	session.EncodeResponseHeader(response, output)
 
 	bodyWriter := session.EncodeResponseBody(request, output)
@@ -199,10 +191,8 @@ func transferResponse(timer signal.ActivityUpdater, session *encoding.ServerSess
 		}
 	}
 
-	if bufferedWriter, ok := output.(*buf.BufferedWriter); ok {
-		if err := bufferedWriter.SetBuffered(false); err != nil {
-			return err
-		}
+	if err := output.SetBuffered(false); err != nil {
+		return err
 	}
 
 	if err := buf.Copy(input, bodyWriter, buf.UpdateActivity(timer)); err != nil {
@@ -285,7 +275,12 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 
 	requestDone := func() error {
 		defer timer.SetTimeout(sessionPolicy.Timeouts.DownlinkOnly)
-		return transferRequest(timer, svrSession, request, reader, link.Writer)
+
+		bodyReader := svrSession.DecodeRequestBody(request, reader)
+		if err := buf.Copy(bodyReader, link.Writer, buf.UpdateActivity(timer)); err != nil {
+			return newError("failed to transfer request").Base(err)
+		}
+		return nil
 	}
 
 	responseDone := func() error {

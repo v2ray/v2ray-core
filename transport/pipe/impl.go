@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/signal/done"
@@ -21,12 +22,13 @@ const (
 
 type pipe struct {
 	sync.Mutex
-	data        buf.MultiBuffer
-	readSignal  *signal.Notifier
-	writeSignal *signal.Notifier
-	done        *done.Instance
-	limit       int32
-	state       state
+	data            buf.MultiBuffer
+	readSignal      *signal.Notifier
+	writeSignal     *signal.Notifier
+	done            *done.Instance
+	limit           int32
+	state           state
+	discardOverflow bool
 }
 
 var errBufferFull = errors.New("buffer full")
@@ -120,7 +122,15 @@ func (p *pipe) WriteMultiBuffer(mb buf.MultiBuffer) error {
 
 	for {
 		err := p.writeMultiBufferInternal(mb)
-		if err == nil || err != errBufferFull {
+		switch {
+		case err == nil:
+			p.readSignal.Signal()
+			return nil
+		case err == errBufferFull && p.discardOverflow:
+			mb.Release()
+			return nil
+		case err != errBufferFull:
+			mb.Release()
 			p.readSignal.Signal()
 			return err
 		}
@@ -142,7 +152,7 @@ func (p *pipe) Close() error {
 	}
 
 	p.state = closed
-	p.done.Close()
+	common.Must(p.done.Close())
 	return nil
 }
 
@@ -161,5 +171,5 @@ func (p *pipe) CloseError() {
 		p.data = nil
 	}
 
-	p.done.Close()
+	common.Must(p.done.Close())
 }

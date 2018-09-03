@@ -95,7 +95,7 @@ func (h *Hub) start() {
 		buffer := buf.New()
 		var noob int
 		var addr *net.UDPAddr
-		err := buffer.AppendSupplier(func(b []byte) (int, error) {
+		err := buffer.Reset(func(b []byte) (int, error) {
 			n, nb, _, a, e := ReadUDPMsg(h.conn, b, oobBytes)
 			noob = nb
 			addr = a
@@ -106,6 +106,11 @@ func (h *Hub) start() {
 			newError("failed to read UDP msg").Base(err).WriteToLog()
 			buffer.Release()
 			break
+		}
+
+		if buffer.IsEmpty() {
+			buffer.Release()
+			continue
 		}
 
 		payload := &Payload{
@@ -124,6 +129,8 @@ func (h *Hub) start() {
 		select {
 		case c <- payload:
 		default:
+			buffer.Release()
+			payload.Content = nil
 		}
 
 	}

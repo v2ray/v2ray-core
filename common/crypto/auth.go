@@ -245,6 +245,11 @@ func (w *AuthenticationWriter) seal(b *buf.Buffer) (*buf.Buffer, error) {
 		paddingSize = int(w.padding.NextPaddingLen())
 	}
 
+	totalSize := encryptedSize + paddingSize
+	if totalSize > buf.Size {
+		return nil, newError("size too large: ", totalSize)
+	}
+
 	eb := buf.New()
 	common.Must(eb.Reset(func(bb []byte) (int, error) {
 		w.sizeParser.Encode(uint16(encryptedSize+paddingSize), bb[:0])
@@ -301,18 +306,21 @@ func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
 
 	mb2Write := buf.NewMultiBufferCap(int32(len(mb)) + 1)
 
-	for !mb.IsEmpty() {
-		b := mb.SplitFirst()
+	for _, b := range mb {
 		if b.IsEmpty() {
 			continue
 		}
+
 		eb, err := w.seal(b)
-		b.Release()
 		if err != nil {
-			mb2Write.Release()
-			return err
+			continue
 		}
+
 		mb2Write.Append(eb)
+	}
+
+	if mb2Write.IsEmpty() {
+		return nil
 	}
 
 	return w.writer.WriteMultiBuffer(mb2Write)
@@ -324,7 +332,8 @@ func (w *AuthenticationWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
 		b := buf.New()
 		defer b.Release()
 
-		eb, _ := w.seal(b)
+		eb, err := w.seal(b)
+		common.Must(err)
 		return w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(eb))
 	}
 

@@ -47,7 +47,7 @@ gcloud compute instances create "v2raycore-${RAND}" \
     --machine-type=n1-highcpu-2 \
     --metadata=release_tag=v${VER},prerelease=${PRE} \
     --metadata-from-file=startup-script=${DIR}/release-ci.sh \
-    --zone=us-central1-c \
+    --zone=europe-west4-c \
     --project ${PROJECT} \
     --scopes "https://www.googleapis.com/auth/compute,https://www.googleapis.com/auth/devstorage.read_write" \
 

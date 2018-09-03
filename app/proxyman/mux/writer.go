@@ -61,22 +61,26 @@ func (w *Writer) writeMetaOnly() error {
 	return w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(b))
 }
 
-func (w *Writer) writeData(mb buf.MultiBuffer) error {
-	meta := w.getNextFrameMeta()
-	meta.Option.Set(OptionData)
-
+func writeMetaWithFrame(writer buf.Writer, meta FrameMetadata, data buf.MultiBuffer) error {
 	frame := buf.New()
 	if err := meta.WriteTo(frame); err != nil {
 		return err
 	}
-	if err := frame.AppendSupplier(serial.WriteUint16(uint16(mb.Len()))); err != nil {
+	if err := frame.AppendSupplier(serial.WriteUint16(uint16(data.Len()))); err != nil {
 		return err
 	}
 
-	mb2 := buf.NewMultiBufferCap(int32(len(mb)) + 1)
+	mb2 := buf.NewMultiBufferCap(int32(len(data)) + 1)
 	mb2.Append(frame)
-	mb2.AppendMulti(mb)
-	return w.writer.WriteMultiBuffer(mb2)
+	mb2.AppendMulti(data)
+	return writer.WriteMultiBuffer(mb2)
+}
+
+func (w *Writer) writeData(mb buf.MultiBuffer) error {
+	meta := w.getNextFrameMeta()
+	meta.Option.Set(OptionData)
+
+	return writeMetaWithFrame(w.writer, meta, mb)
 }
 
 // WriteMultiBuffer implements buf.Writer.
