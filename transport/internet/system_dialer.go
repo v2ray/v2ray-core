@@ -2,9 +2,11 @@ package internet
 
 import (
 	"context"
+	"syscall"
 	"time"
 
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/session"
 )
 
 var (
@@ -23,6 +25,19 @@ func (DefaultSystemDialer) Dial(ctx context.Context, src net.Address, dest net.D
 		Timeout:   time.Second * 60,
 		DualStack: true,
 	}
+
+	streamSettings := StreamSettingsFromContext(ctx)
+	if streamSettings != nil && streamSettings.SocketSettings != nil {
+		config := streamSettings.SocketSettings
+		dialer.Control = func(network, address string, c syscall.RawConn) error {
+			return c.Control(func(fd uintptr) {
+				if err := applySocketOptions(fd, config); err != nil {
+					newError("failed to apply socket options").Base(err).WriteToLog(session.ExportIDToError(ctx))
+				}
+			})
+		}
+	}
+
 	if src != nil && src != net.AnyIP {
 		var addr net.Addr
 		if dest.Network == net.Network_TCP {

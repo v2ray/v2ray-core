@@ -43,8 +43,16 @@ message StreamConfig {
   
   // Settings for transport security. For now the only choice is TLS.
   repeated v2ray.core.common.serial.TypedMessage security_settings = 4;
+
+  SocketConfig socket_settings = 6;
 }
 
 message ProxyConfig {
   string tag = 1;
+}
+
+// SocketConfig is options to be applied on network sockets.
+message SocketConfig {
+  // Mark of the connection. If non-zero, the value will be set to SO_MARK.
+  int32 mark = 1;
 }
