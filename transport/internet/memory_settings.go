@@ -17,7 +17,10 @@ func ToMemoryStreamConfig(s *StreamConfig) (*MemoryStreamConfig, error) {
 	mss := &MemoryStreamConfig{
 		ProtocolName:     s.GetEffectiveProtocol(),
 		ProtocolSettings: ets,
-		SocketSettings:   s.SocketSettings,
+	}
+
+	if s != nil {
+		mss.SocketSettings = s.SocketSettings
 	}
 
 	if s != nil && s.HasSecuritySettings() {
