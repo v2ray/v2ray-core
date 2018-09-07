@@ -29,6 +29,15 @@ type Listener interface {
 
 func ListenTCP(ctx context.Context, address net.Address, port net.Port, handler ConnHandler) (Listener, error) {
 	settings := StreamSettingsFromContext(ctx)
+	if settings == nil {
+		s, err := ToMemoryStreamConfig(nil)
+		if err != nil {
+			return nil, newError("failed to create default stream settings").Base(err)
+		}
+		settings = s
+		ctx = ContextWithStreamSettings(ctx, settings)
+	}
+
 	protocol := settings.ProtocolName
 	listenFunc := transportListenerCache[protocol]
 	if listenFunc == nil {
