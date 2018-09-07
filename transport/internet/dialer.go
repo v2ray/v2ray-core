@@ -33,7 +33,7 @@ func Dial(ctx context.Context, dest net.Destination) (Connection, error) {
 			ctx = ContextWithStreamSettings(ctx, streamSettings)
 		}
 
-		protocol = streamSettings.ProtocolName
+		protocol := streamSettings.ProtocolName
 		dialer := transportDialerCache[protocol]
 		if dialer == nil {
 			return nil, newError(protocol, " dialer not registered").AtError()
