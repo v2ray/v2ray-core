@@ -33,7 +33,7 @@ type tcpWorker struct {
 	address         net.Address
 	port            net.Port
 	proxy           proxy.Inbound
-	stream          *internet.StreamConfig
+	stream          *internet.MemoryStreamConfig
 	recvOrigDest    bool
 	tag             string
 	dispatcher      core.Dispatcher

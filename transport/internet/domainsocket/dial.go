@@ -13,11 +13,11 @@ import (
 )
 
 func getSettingsFromContext(ctx context.Context) *Config {
-	rawSettings := internet.TransportSettingsFromContext(ctx)
+	rawSettings := internet.StreamSettingsFromContext(ctx)
 	if rawSettings == nil {
 		return nil
 	}
-	return rawSettings.(*Config)
+	return rawSettings.ProtocolSettings.(*Config)
 }
 
 func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {

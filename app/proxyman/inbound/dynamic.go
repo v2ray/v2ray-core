@@ -12,6 +12,7 @@ import (
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/task"
 	"v2ray.com/core/proxy"
+	"v2ray.com/core/transport/internet"
 )
 
 type DynamicInboundHandler struct {
@@ -19,6 +20,7 @@ type DynamicInboundHandler struct {
 	v              *core.Instance
 	proxyConfig    interface{}
 	receiverConfig *proxyman.ReceiverConfig
+	streamSettings *internet.MemoryStreamConfig
 	portMutex      sync.Mutex
 	portsInUse     map[net.Port]bool
 	workerMutex    sync.RWMutex
@@ -38,6 +40,13 @@ func NewDynamicInboundHandler(ctx context.Context, tag string, receiverConfig *p
 		mux:            mux.NewServer(ctx),
 		v:              v,
 	}
+
+	mss, err := internet.ToMemoryStreamConfig(receiverConfig.StreamSettings)
+	if err != nil {
+		return nil, newError("failed to parse stream settings").Base(err).AtWarning()
+	}
+
+	h.streamSettings = mss
 
 	h.task = &task.Periodic{
 		Interval: time.Minute * time.Duration(h.receiverConfig.AllocationStrategy.GetRefreshValue()),
@@ -110,7 +119,7 @@ func (h *DynamicInboundHandler) refresh() error {
 				address:         address,
 				port:            port,
 				proxy:           p,
-				stream:          h.receiverConfig.StreamSettings,
+				stream:          h.streamSettings,
 				recvOrigDest:    h.receiverConfig.ReceiveOriginalDestination,
 				dispatcher:      h.mux,
 				sniffingConfig:  h.receiverConfig.GetEffectiveSniffingSettings(),

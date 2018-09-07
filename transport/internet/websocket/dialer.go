@@ -30,7 +30,7 @@ func init() {
 
 func dialWebsocket(ctx context.Context, dest net.Destination) (net.Conn, error) {
 	src := internet.DialerSourceFromContext(ctx)
-	wsSettings := internet.TransportSettingsFromContext(ctx).(*Config)
+	wsSettings := internet.StreamSettingsFromContext(ctx).ProtocolSettings.(*Config)
 
 	dialer := &websocket.Dialer{
 		NetDial: func(network, addr string) (net.Conn, error) {

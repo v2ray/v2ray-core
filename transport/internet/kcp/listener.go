@@ -34,8 +34,8 @@ type Listener struct {
 }
 
 func NewListener(ctx context.Context, address net.Address, port net.Port, addConn internet.ConnHandler) (*Listener, error) {
-	networkSettings := internet.TransportSettingsFromContext(ctx)
-	kcpSettings := networkSettings.(*Config)
+	networkSettings := internet.StreamSettingsFromContext(ctx)
+	kcpSettings := networkSettings.ProtocolSettings.(*Config)
 
 	header, err := kcpSettings.GetPackerHeader()
 	if err != nil {

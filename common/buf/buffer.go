@@ -28,7 +28,7 @@ func (b *Buffer) Release() {
 	if b == nil || b.v == nil {
 		return
 	}
-	bytespool.Free(b.v)
+	pool.Put(b.v)
 	b.v = nil
 	b.Clear()
 }

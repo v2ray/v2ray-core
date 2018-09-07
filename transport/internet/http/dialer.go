@@ -72,8 +72,8 @@ func getHTTPClient(ctx context.Context, dest net.Destination) (*http.Client, err
 
 // Dial dials a new TCP connection to the given destination.
 func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {
-	rawSettings := internet.TransportSettingsFromContext(ctx)
-	httpSettings, ok := rawSettings.(*Config)
+	rawSettings := internet.StreamSettingsFromContext(ctx)
+	httpSettings, ok := rawSettings.ProtocolSettings.(*Config)
 	if !ok {
 		return nil, newError("HTTP config is not set.").AtError()
 	}

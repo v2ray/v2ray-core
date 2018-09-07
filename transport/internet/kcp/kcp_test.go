@@ -17,7 +17,11 @@ import (
 func TestDialAndListen(t *testing.T) {
 	assert := With(t)
 
-	listerner, err := NewListener(internet.ContextWithTransportSettings(context.Background(), &Config{}), net.LocalHostIP, net.Port(0), func(conn internet.Connection) {
+	lctx := internet.ContextWithStreamSettings(context.Background(), &internet.MemoryStreamConfig{
+		ProtocolName:     "mkcp",
+		ProtocolSettings: &Config{},
+	})
+	listerner, err := NewListener(lctx, net.LocalHostIP, net.Port(0), func(conn internet.Connection) {
 		go func(c internet.Connection) {
 			payload := make([]byte, 4096)
 			for {
@@ -36,7 +40,10 @@ func TestDialAndListen(t *testing.T) {
 	assert(err, IsNil)
 	port := net.Port(listerner.Addr().(*net.UDPAddr).Port)
 
-	ctx := internet.ContextWithTransportSettings(context.Background(), &Config{})
+	ctx := internet.ContextWithStreamSettings(context.Background(), &internet.MemoryStreamConfig{
+		ProtocolName:     "mkcp",
+		ProtocolSettings: &Config{},
+	})
 	wg := new(sync.WaitGroup)
 	for i := 0; i < 10; i++ {
 		clientConn, err := DialKCP(ctx, net.UDPDestination(net.LocalHostIP, port))

@@ -24,19 +24,16 @@ func RegisterTransportDialer(protocol string, dialer Dialer) error {
 func Dial(ctx context.Context, dest net.Destination) (Connection, error) {
 	if dest.Network == net.Network_TCP {
 		streamSettings := StreamSettingsFromContext(ctx)
-		protocol := streamSettings.GetEffectiveProtocol()
-		transportSettings, err := streamSettings.GetEffectiveTransportSettings()
-		if err != nil {
-			return nil, err
-		}
-		ctx = ContextWithTransportSettings(ctx, transportSettings)
-		if streamSettings != nil && streamSettings.HasSecuritySettings() {
-			securitySettings, err := streamSettings.GetEffectiveSecuritySettings()
+		if streamSettings == nil {
+			s, err := ToMemoryStreamConfig(nil)
 			if err != nil {
-				return nil, err
+				return nil, newError("failed to create default stream settings").Base(err)
 			}
-			ctx = ContextWithSecuritySettings(ctx, securitySettings)
+			streamSettings = s
+			ctx = ContextWithStreamSettings(ctx, streamSettings)
 		}
+
+		protocol := streamSettings.ProtocolName
 		dialer := transportDialerCache[protocol]
 		if dialer == nil {
 			return nil, newError(protocol, " dialer not registered").AtError()

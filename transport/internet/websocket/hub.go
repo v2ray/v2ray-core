@@ -57,8 +57,8 @@ type Listener struct {
 }
 
 func ListenWS(ctx context.Context, address net.Address, port net.Port, addConn internet.ConnHandler) (internet.Listener, error) {
-	networkSettings := internet.TransportSettingsFromContext(ctx)
-	wsSettings := networkSettings.(*Config)
+	networkSettings := internet.StreamSettingsFromContext(ctx)
+	wsSettings := networkSettings.ProtocolSettings.(*Config)
 
 	l := &Listener{
 		config:  wsSettings,
