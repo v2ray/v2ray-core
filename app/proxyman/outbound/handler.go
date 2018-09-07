@@ -17,6 +17,7 @@ import (
 type Handler struct {
 	config          *core.OutboundHandlerConfig
 	senderSettings  *proxyman.SenderConfig
+	streamSettings  *internet.MemoryStreamConfig
 	proxy           proxy.Outbound
 	outboundManager core.OutboundHandlerManager
 	mux             *mux.ClientManager
@@ -37,6 +38,11 @@ func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (core.O
 		switch s := senderSettings.(type) {
 		case *proxyman.SenderConfig:
 			h.senderSettings = s
+			mss, err := internet.ToMemoryStreamConfig(s.StreamSettings)
+			if err != nil {
+				return nil, newError("failed to parse stream settings").Base(err).AtWarning()
+			}
+			h.streamSettings = mss
 		default:
 			return nil, newError("settings is not SenderConfig")
 		}
@@ -118,9 +124,7 @@ func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Conn
 			ctx = internet.ContextWithDialerSource(ctx, h.senderSettings.Via.AsAddress())
 		}
 
-		if h.senderSettings.StreamSettings != nil {
-			ctx = internet.ContextWithStreamSettings(ctx, h.senderSettings.StreamSettings)
-		}
+		ctx = internet.ContextWithStreamSettings(ctx, h.streamSettings)
 	}
 
 	return internet.Dial(ctx, dest)

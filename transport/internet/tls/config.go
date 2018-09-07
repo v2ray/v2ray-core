@@ -217,11 +217,11 @@ func WithNextProto(protocol ...string) Option {
 
 // ConfigFromContext fetches Config from context. Nil if not found.
 func ConfigFromContext(ctx context.Context) *Config {
-	securitySettings := internet.SecuritySettingsFromContext(ctx)
-	if securitySettings == nil {
+	streamSettings := internet.StreamSettingsFromContext(ctx)
+	if streamSettings == nil {
 		return nil
 	}
-	config, ok := securitySettings.(*Config)
+	config, ok := streamSettings.SecuritySettings.(*Config)
 	if !ok {
 		return nil
 	}

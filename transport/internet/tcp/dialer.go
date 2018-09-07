@@ -11,11 +11,11 @@ import (
 )
 
 func getTCPSettingsFromContext(ctx context.Context) *Config {
-	rawTCPSettings := internet.TransportSettingsFromContext(ctx)
+	rawTCPSettings := internet.StreamSettingsFromContext(ctx)
 	if rawTCPSettings == nil {
 		return nil
 	}
-	return rawTCPSettings.(*Config)
+	return rawTCPSettings.ProtocolSettings.(*Config)
 }
 
 // Dial dials a new TCP connection to the given destination.

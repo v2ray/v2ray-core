@@ -88,8 +88,8 @@ func (l *Listener) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 }
 
 func Listen(ctx context.Context, address net.Address, port net.Port, handler internet.ConnHandler) (internet.Listener, error) {
-	rawSettings := internet.TransportSettingsFromContext(ctx)
-	httpSettings, ok := rawSettings.(*Config)
+	rawSettings := internet.StreamSettingsFromContext(ctx)
+	httpSettings, ok := rawSettings.ProtocolSettings.(*Config)
 	if !ok {
 		return nil, newError("HTTP config is not set.").AtError()
 	}

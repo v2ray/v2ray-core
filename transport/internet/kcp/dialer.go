@@ -55,7 +55,7 @@ func DialKCP(ctx context.Context, dest net.Destination) (internet.Connection, er
 		return nil, newError("failed to dial to dest: ", err).AtWarning().Base(err)
 	}
 
-	kcpSettings := internet.TransportSettingsFromContext(ctx).(*Config)
+	kcpSettings := internet.StreamSettingsFromContext(ctx).ProtocolSettings.(*Config)
 
 	header, err := kcpSettings.GetPackerHeader()
 	if err != nil {

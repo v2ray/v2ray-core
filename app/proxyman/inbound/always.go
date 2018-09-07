@@ -11,6 +11,7 @@ import (
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy"
+	"v2ray.com/core/transport/internet"
 )
 
 func getStatCounter(v *core.Instance, tag string) (core.StatCounter, core.StatCounter) {
@@ -71,11 +72,16 @@ func NewAlwaysOnInboundHandler(ctx context.Context, tag string, receiverConfig *
 	for port := pr.From; port <= pr.To; port++ {
 		if nl.HasNetwork(net.Network_TCP) {
 			newError("creating stream worker on ", address, ":", port).AtDebug().WriteToLog()
+			mss, err := internet.ToMemoryStreamConfig(receiverConfig.StreamSettings)
+			if err != nil {
+				return nil, newError("failed to parse stream config").Base(err).AtWarning()
+			}
+
 			worker := &tcpWorker{
 				address:         address,
 				port:            net.Port(port),
 				proxy:           p,
-				stream:          receiverConfig.StreamSettings,
+				stream:          mss,
 				recvOrigDest:    receiverConfig.ReceiveOriginalDestination,
 				tag:             tag,
 				dispatcher:      h.mux,

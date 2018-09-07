@@ -25,7 +25,7 @@ func TestSockOptMark(t *testing.T) {
 
 	const mark = 1
 	ctx := context.Background()
-	ctx = ContextWithStreamSettings(ctx, &StreamConfig{
+	ctx = ContextWithStreamSettings(ctx, &MemoryStreamConfig{
 		SocketSettings: &SocketConfig{
 			Mark: mark,
 		},

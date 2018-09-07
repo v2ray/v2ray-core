@@ -29,19 +29,7 @@ type Listener interface {
 
 func ListenTCP(ctx context.Context, address net.Address, port net.Port, handler ConnHandler) (Listener, error) {
 	settings := StreamSettingsFromContext(ctx)
-	protocol := settings.GetEffectiveProtocol()
-	transportSettings, err := settings.GetEffectiveTransportSettings()
-	if err != nil {
-		return nil, err
-	}
-	ctx = ContextWithTransportSettings(ctx, transportSettings)
-	if settings != nil && settings.HasSecuritySettings() {
-		securitySettings, err := settings.GetEffectiveSecuritySettings()
-		if err != nil {
-			return nil, err
-		}
-		ctx = ContextWithSecuritySettings(ctx, securitySettings)
-	}
+	protocol := settings.ProtocolName
 	listenFunc := transportListenerCache[protocol]
 	if listenFunc == nil {
 		return nil, newError(protocol, " listener not registered.").AtError()
