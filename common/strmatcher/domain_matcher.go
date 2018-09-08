@@ -25,6 +25,11 @@ func (g *DomainMatcherGroup) Add(domain string, value uint32) {
 	current := g.root
 	parts := breakDomain(domain)
 	for i := len(parts) - 1; i >= 0; i-- {
+		if current.value > 0 {
+			// if current node is already a match, it is not necessary to match further.
+			return
+		}
+
 		part := parts[i]
 		if current.sub == nil {
 			current.sub = make(map[string]*node)
@@ -38,6 +43,7 @@ func (g *DomainMatcherGroup) Add(domain string, value uint32) {
 	}
 
 	current.value = value
+	current.sub = nil // shortcut sub nodes as current node is a match.
 }
 
 func (g *DomainMatcherGroup) addMatcher(m domainMatcher, value uint32) {

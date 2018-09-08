@@ -11,6 +11,8 @@ func TestDomainMatcherGroup(t *testing.T) {
 	g.Add("v2ray.com", 1)
 	g.Add("google.com", 2)
 	g.Add("x.a.com", 3)
+	g.Add("a.b.com", 4)
+	g.Add("c.a.b.com", 5)
 
 	testCases := []struct {
 		Domain string
@@ -23,6 +25,14 @@ func TestDomainMatcherGroup(t *testing.T) {
 		{
 			Domain: "y.com",
 			Result: 0,
+		},
+		{
+			Domain: "a.b.com",
+			Result: 4,
+		},
+		{
+			Domain: "c.a.b.com",
+			Result: 4,
 		},
 	}
 
