@@ -50,6 +50,7 @@ func TestUDPServer(t *testing.T) {
 	}
 
 	go dnsServer.ListenAndServe()
+	time.Sleep(time.Second)
 
 	config := &core.Config{
 		App: []*serial.TypedMessage{
@@ -113,6 +114,7 @@ func TestPrioritizedDomain(t *testing.T) {
 	}
 
 	go dnsServer.ListenAndServe()
+	time.Sleep(time.Second)
 
 	config := &core.Config{
 		App: []*serial.TypedMessage{
