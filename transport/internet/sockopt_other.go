@@ -2,6 +2,10 @@
 
 package internet
 
-func applySocketOptions(fd uintptr, config *SocketConfig) error {
+func applyOutboundSocketOptions(network string, address string, fd uintptr, config *SocketConfig) error {
+	return nil
+}
+
+func applyInboundSocketOptions(network string, fd uintptr, config *SocketConfig) error {
 	return nil
 }

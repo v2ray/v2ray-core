@@ -9,6 +9,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal/done"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
@@ -116,9 +117,18 @@ func Listen(ctx context.Context, address net.Address, port net.Port, handler int
 
 	listener.server = server
 	go func() {
-		err := server.ListenAndServeTLS("", "")
+		tcpListener, err := internet.ListenSystemTCP(ctx, &net.TCPAddr{
+			IP:   address.IP(),
+			Port: int(port),
+		})
 		if err != nil {
-			newError("stoping serving TLS").Base(err).WriteToLog()
+			newError("failed to listen on", address, ":", port).Base(err).WriteToLog(session.ExportIDToError(ctx))
+			return
+		}
+
+		err = server.ServeTLS(tcpListener, "", "")
+		if err != nil {
+			newError("stoping serving TLS").Base(err).WriteToLog(session.ExportIDToError(ctx))
 		}
 	}()
 

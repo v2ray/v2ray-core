@@ -23,7 +23,7 @@ type Listener struct {
 
 // ListenTCP creates a new Listener based on configurations.
 func ListenTCP(ctx context.Context, address net.Address, port net.Port, handler internet.ConnHandler) (internet.Listener, error) {
-	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
+	listener, err := internet.ListenSystemTCP(ctx, &net.TCPAddr{
 		IP:   address.IP(),
 		Port: int(port),
 	})
