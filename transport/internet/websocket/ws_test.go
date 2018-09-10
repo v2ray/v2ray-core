@@ -79,7 +79,7 @@ func TestDialWithRemoteAddr(t *testing.T) {
 			Path: "ws",
 		},
 	})
-	listen, err := ListenWS(lctx, net.LocalHostIPv6, 13148, func(conn internet.Connection) {
+	listen, err := ListenWS(lctx, net.LocalHostIP, 13148, func(conn internet.Connection) {
 		go func(c internet.Connection) {
 			defer c.Close()
 
