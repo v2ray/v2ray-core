@@ -10,6 +10,7 @@ import (
 	"v2ray.com/core/app/policy"
 	"v2ray.com/core/app/proxyman"
 	_ "v2ray.com/core/app/proxyman/outbound"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/freedom"
@@ -42,14 +43,19 @@ func TestUDPServer(t *testing.T) {
 
 	port := udp.PickPort()
 
+	listener, err := net.ListenUDP("udp4", &net.UDPAddr{
+		IP:   net.IP{127, 0, 0, 1},
+		Port: int(port),
+	})
+	common.Must(err)
+
 	dnsServer := dns.Server{
-		Addr:    "127.0.0.1:" + port.String(),
-		Net:     "udp",
-		Handler: &staticHandler{},
-		UDPSize: 1200,
+		PacketConn: listener,
+		Handler:    &staticHandler{},
+		UDPSize:    1200,
 	}
 
-	go dnsServer.ListenAndServe()
+	go dnsServer.ActivateAndServe()
 	time.Sleep(time.Second)
 
 	config := &core.Config{
@@ -106,14 +112,19 @@ func TestPrioritizedDomain(t *testing.T) {
 
 	port := udp.PickPort()
 
+	listener, err := net.ListenUDP("udp4", &net.UDPAddr{
+		IP:   net.IP{127, 0, 0, 1},
+		Port: int(port),
+	})
+	common.Must(err)
+
 	dnsServer := dns.Server{
-		Addr:    "127.0.0.1:" + port.String(),
-		Net:     "udp",
-		Handler: &staticHandler{},
-		UDPSize: 1200,
+		PacketConn: listener,
+		Handler:    &staticHandler{},
+		UDPSize:    1200,
 	}
 
-	go dnsServer.ListenAndServe()
+	go dnsServer.ActivateAndServe()
 	time.Sleep(time.Second)
 
 	config := &core.Config{
