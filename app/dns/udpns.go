@@ -6,6 +6,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"v2ray.com/core/common/session"
+
 	"github.com/miekg/dns"
 	"v2ray.com/core"
 	"v2ray.com/core/common"
@@ -269,6 +271,8 @@ func msgToBuffer(msg *dns.Msg) (*buf.Buffer, error) {
 }
 
 func (s *ClassicNameServer) sendQuery(ctx context.Context, domain string) {
+	newError("querying DNS for: ", domain).AtDebug().WriteToLog(session.ExportIDToError(ctx))
+
 	msgs := s.buildMsgs(domain)
 
 	for _, msg := range msgs {
