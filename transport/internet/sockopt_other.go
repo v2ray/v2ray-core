@@ -1,4 +1,4 @@
-// +build !linux
+// +build js
 
 package internet
 
