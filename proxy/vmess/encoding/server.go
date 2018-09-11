@@ -101,13 +101,24 @@ type ServerSession struct {
 	responseHeader  byte
 }
 
+var serverSessionPool = sync.Pool{
+	New: func() interface{} { return &ServerSession{} },
+}
+
 // NewServerSession creates a new ServerSession, using the given UserValidator.
 // The ServerSession instance doesn't take ownership of the validator.
 func NewServerSession(validator *vmess.TimedUserValidator, sessionHistory *SessionHistory) *ServerSession {
-	return &ServerSession{
-		userValidator:  validator,
-		sessionHistory: sessionHistory,
-	}
+	session := serverSessionPool.Get().(*ServerSession)
+	session.userValidator = validator
+	session.sessionHistory = sessionHistory
+	return session
+}
+
+func ReleaseServerSession(session *ServerSession) {
+	session.responseWriter = nil
+	session.userValidator = nil
+	session.sessionHistory = nil
+	serverSessionPool.Put(session)
 }
 
 func parseSecurityType(b byte) protocol.SecurityType {

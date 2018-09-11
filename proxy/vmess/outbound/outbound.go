@@ -106,6 +106,8 @@ func (v *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 	output := link.Writer
 
 	session := encoding.NewClientSession(protocol.DefaultIDHash)
+	defer encoding.ReleaseClientSession(session)
+
 	sessionPolicy := v.v.PolicyManager().ForLevel(request.User.Level)
 
 	ctx, cancel := context.WithCancel(ctx)
