@@ -24,7 +24,7 @@ func setTFO(fd syscall.Handle, settings SocketConfig_TCPFastOpenState) error {
 
 func applyOutboundSocketOptions(network string, address string, fd uintptr, config *SocketConfig) error {
 	if isTCPSocket(network) {
-		if err := setTFO(syscall.Hanle(fd), config.Tfo); err != nil {
+		if err := setTFO(syscall.Handle(fd), config.Tfo); err != nil {
 			return err
 		}
 
@@ -35,7 +35,7 @@ func applyOutboundSocketOptions(network string, address string, fd uintptr, conf
 
 func applyInboundSocketOptions(network string, fd uintptr, config *SocketConfig) error {
 	if isTCPSocket(network) {
-		if err := setTFO(syscall.Hanle(fd), config.Tfo); err != nil {
+		if err := setTFO(syscall.Handle(fd), config.Tfo); err != nil {
 			return err
 		}
 	}
