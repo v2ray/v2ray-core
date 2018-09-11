@@ -1,7 +1,6 @@
 package internet
 
 import (
-	"strings"
 	"syscall"
 )
 
@@ -12,7 +11,7 @@ const (
 )
 
 func applyOutboundSocketOptions(network string, address string, fd uintptr, config *SocketConfig) error {
-	if strings.HasPrefix(network, "tcp") {
+	if isTCPSocket(network) {
 		switch config.Tfo {
 		case SocketConfig_Enable:
 			if err := syscall.SetsockoptInt(int(fd), syscall.IPPROTO_TCP, TCP_FASTOPEN, TCP_FASTOPEN_CLIENT); err != nil {
@@ -29,7 +28,7 @@ func applyOutboundSocketOptions(network string, address string, fd uintptr, conf
 }
 
 func applyInboundSocketOptions(network string, fd uintptr, config *SocketConfig) error {
-	if strings.HasPrefix(network, "tcp") {
+	if isTCPSocket(network) {
 		switch config.Tfo {
 		case SocketConfig_Enable:
 			if err := syscall.SetsockoptInt(int(fd), syscall.IPPROTO_TCP, TCP_FASTOPEN, TCP_FASTOPEN_SERVER); err != nil {
