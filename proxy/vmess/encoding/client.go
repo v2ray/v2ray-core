@@ -39,6 +39,8 @@ type ClientSession struct {
 	responseBodyIV  [16]byte
 	responseReader  io.Reader
 	responseHeader  byte
+
+	buffer [33]byte // 16 + 16 + 1
 }
 
 var clientSessionPool = sync.Pool{
@@ -47,10 +49,11 @@ var clientSessionPool = sync.Pool{
 
 // NewClientSession creates a new ClientSession.
 func NewClientSession(idHash protocol.IDHash) *ClientSession {
-	randomBytes := make([]byte, 33) // 16 + 16 + 1
+	session := clientSessionPool.Get().(*ClientSession)
+
+	randomBytes := session.buffer[:]
 	common.Must2(rand.Read(randomBytes))
 
-	session := clientSessionPool.Get().(*ClientSession)
 	copy(session.requestBodyKey[:], randomBytes[:16])
 	copy(session.requestBodyIV[:], randomBytes[16:32])
 	session.responseHeader = randomBytes[32]
