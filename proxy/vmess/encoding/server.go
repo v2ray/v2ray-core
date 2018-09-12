@@ -1,8 +1,6 @@
 package encoding
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/md5"
 	"hash/fnv"
 	"io"
@@ -147,12 +145,10 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		return nil, newError("invalid user")
 	}
 
-	timestampHash := md5.New()
-	common.Must2(timestampHash.Write(hashTimestamp(timestamp)))
-	iv := timestampHash.Sum(nil)
+	iv := md5.Sum(hashTimestamp(timestamp))
 	vmessAccount := user.Account.(*vmess.InternalAccount)
 
-	aesStream := crypto.NewAesDecryptionStream(vmessAccount.ID.CmdKey(), iv)
+	aesStream := crypto.NewAesDecryptionStream(vmessAccount.ID.CmdKey(), iv[:])
 	decryptor := crypto.NewCryptionReader(aesStream, reader)
 
 	if err := buffer.Reset(buf.ReadFullFrom(decryptor, 38)); err != nil {
@@ -263,8 +259,7 @@ func (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 
 		return buf.NewReader(cryptionReader)
 	case protocol.SecurityType_AES128_GCM:
-		block, _ := aes.NewCipher(s.requestBodyKey[:])
-		aead, _ := cipher.NewGCM(block)
+		aead := crypto.NewAesGcm(s.requestBodyKey[:])
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD:                    aead,
@@ -341,8 +336,7 @@ func (s *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 
 		return &buf.SequentialWriter{Writer: s.responseWriter}
 	case protocol.SecurityType_AES128_GCM:
-		block, _ := aes.NewCipher(s.responseBodyKey[:])
-		aead, _ := cipher.NewGCM(block)
+		aead := crypto.NewAesGcm(s.responseBodyKey[:])
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD:                    aead,
