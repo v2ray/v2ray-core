@@ -3,6 +3,7 @@ Please skip to the English section below if you don't write Chinese.
 中文：
 提交 Issue 之前请先阅读 [Issue 指引](https://github.com/v2ray/v2ray-core/blob/master/.github/SUPPORT.md)，然后回答下面的问题，谢谢。
 除非特殊情况，请完整填写所有问题。不按模板发的 issue 将直接被关闭。
+如果你遇到的问题不是 V2Ray 的 bug，比如你不清楚要如何配置，请使用[Discussion](https://github.com/v2ray/discussion/issues)进行讨论。
 
 1)  你正在使用哪个版本的 V2Ray？（如果服务器和客户端使用了不同版本，请注明）
 
@@ -59,6 +60,7 @@ Please remove the Chinese section above.
 English:
 Please read the [instruction](https://github.com/v2ray/v2ray-core/blob/master/.github/SUPPORT.md) and answer the following questions before submitting your issue. Thank you.
 Please answer all the questions with enough information. All issues not following this template will be closed immediately.
+If you are not sure if your question is truely a bug in V2Ray, please discuss it [here](https://github.com/v2ray/discussion/issues) first.
 
 1) What version of V2Ray are you using (If you deploy different version on server and client, please explicitly point out)?
 
