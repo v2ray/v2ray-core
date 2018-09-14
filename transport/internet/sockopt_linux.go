@@ -14,7 +14,7 @@ const (
 func applyOutboundSocketOptions(network string, address string, fd uintptr, config *SocketConfig) error {
 	if config.Mark != 0 {
 		if err := syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_MARK, int(config.Mark)); err != nil {
-			return err
+			return newError("failed to set SO_MARK").Base(err)
 		}
 	}
 
@@ -22,12 +22,18 @@ func applyOutboundSocketOptions(network string, address string, fd uintptr, conf
 		switch config.Tfo {
 		case SocketConfig_Enable:
 			if err := syscall.SetsockoptInt(int(fd), syscall.SOL_TCP, TCP_FASTOPEN_CONNECT, 1); err != nil {
-				return err
+				return newError("failed to set TCP_FASTOPEN_CONNECT=1").Base(err)
 			}
 		case SocketConfig_Disable:
 			if err := syscall.SetsockoptInt(int(fd), syscall.SOL_TCP, TCP_FASTOPEN_CONNECT, 0); err != nil {
-				return err
+				return newError("failed to set TCP_FASTOPEN_CONNECT=0").Base(err)
 			}
+		}
+	}
+
+	if config.Tproxy {
+		if err := syscall.SetsockoptInt(int(fd), syscall.SOL_IP, syscall.IP_TRANSPARENT, 1); err != nil {
+			return newError("failed to set IP_TRANSPARENT").Base(err)
 		}
 	}
 
@@ -39,12 +45,18 @@ func applyInboundSocketOptions(network string, fd uintptr, config *SocketConfig)
 		switch config.Tfo {
 		case SocketConfig_Enable:
 			if err := syscall.SetsockoptInt(int(fd), syscall.SOL_TCP, TCP_FASTOPEN, 1); err != nil {
-				return err
+				return newError("failed to set TCP_FASTOPEN=1").Base(err)
 			}
 		case SocketConfig_Disable:
 			if err := syscall.SetsockoptInt(int(fd), syscall.SOL_TCP, TCP_FASTOPEN, 0); err != nil {
-				return err
+				return newError("failed to set TCP_FASTOPEN=0").Base(err)
 			}
+		}
+	}
+
+	if config.Tproxy {
+		if err := syscall.SetsockoptInt(int(fd), syscall.SOL_IP, syscall.IP_TRANSPARENT, 1); err != nil {
+			return newError("failed to set IP_TRANSPARENT").Base(err)
 		}
 	}
 

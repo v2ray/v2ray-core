@@ -67,4 +67,7 @@ message SocketConfig {
 
   // TFO is the state of TFO settings.
   TCPFastOpenState tfo = 2;
+
+  // TProxy is for enabling TProxy socket option.
+  bool tproxy = 3;
 }
