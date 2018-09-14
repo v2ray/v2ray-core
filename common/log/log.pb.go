@@ -32,6 +32,7 @@ var Severity_name = map[int32]string{
 	3: "Info",
 	4: "Debug",
 }
+
 var Severity_value = map[string]int32{
 	"Unknown": 0,
 	"Error":   1,
@@ -43,8 +44,9 @@ var Severity_value = map[string]int32{
 func (x Severity) String() string {
 	return proto.EnumName(Severity_name, int32(x))
 }
+
 func (Severity) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_log_688a64b279e8a7c0, []int{0}
+	return fileDescriptor_903ab33e40dced38, []int{0}
 }
 
 func init() {
@@ -52,10 +54,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/common/log/log.proto", fileDescriptor_log_688a64b279e8a7c0)
+	proto.RegisterFile("v2ray.com/core/common/log/log.proto", fileDescriptor_903ab33e40dced38)
 }
 
-var fileDescriptor_log_688a64b279e8a7c0 = []byte{
+var fileDescriptor_903ab33e40dced38 = []byte{
 	// 178 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x2e, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x4f, 0xce, 0xcf, 0xcd, 0xcd,

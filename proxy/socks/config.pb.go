@@ -28,6 +28,7 @@ var AuthType_name = map[int32]string{
 	0: "NO_AUTH",
 	1: "PASSWORD",
 }
+
 var AuthType_value = map[string]int32{
 	"NO_AUTH":  0,
 	"PASSWORD": 1,
@@ -36,8 +37,9 @@ var AuthType_value = map[string]int32{
 func (x AuthType) String() string {
 	return proto.EnumName(AuthType_name, int32(x))
 }
+
 func (AuthType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_5b5632820a3cc171, []int{0}
+	return fileDescriptor_e86958e2cebd3303, []int{0}
 }
 
 type Account struct {
@@ -52,7 +54,7 @@ func (m *Account) Reset()         { *m = Account{} }
 func (m *Account) String() string { return proto.CompactTextString(m) }
 func (*Account) ProtoMessage()    {}
 func (*Account) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_5b5632820a3cc171, []int{0}
+	return fileDescriptor_e86958e2cebd3303, []int{0}
 }
 func (m *Account) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Account.Unmarshal(m, b)
@@ -60,8 +62,8 @@ func (m *Account) XXX_Unmarshal(b []byte) error {
 func (m *Account) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Account.Marshal(b, m, deterministic)
 }
-func (dst *Account) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Account.Merge(dst, src)
+func (m *Account) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Account.Merge(m, src)
 }
 func (m *Account) XXX_Size() int {
 	return xxx_messageInfo_Account.Size(m)
@@ -102,7 +104,7 @@ func (m *ServerConfig) Reset()         { *m = ServerConfig{} }
 func (m *ServerConfig) String() string { return proto.CompactTextString(m) }
 func (*ServerConfig) ProtoMessage()    {}
 func (*ServerConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_5b5632820a3cc171, []int{1}
+	return fileDescriptor_e86958e2cebd3303, []int{1}
 }
 func (m *ServerConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServerConfig.Unmarshal(m, b)
@@ -110,8 +112,8 @@ func (m *ServerConfig) XXX_Unmarshal(b []byte) error {
 func (m *ServerConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ServerConfig.Marshal(b, m, deterministic)
 }
-func (dst *ServerConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ServerConfig.Merge(dst, src)
+func (m *ServerConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ServerConfig.Merge(m, src)
 }
 func (m *ServerConfig) XXX_Size() int {
 	return xxx_messageInfo_ServerConfig.Size(m)
@@ -176,7 +178,7 @@ func (m *ClientConfig) Reset()         { *m = ClientConfig{} }
 func (m *ClientConfig) String() string { return proto.CompactTextString(m) }
 func (*ClientConfig) ProtoMessage()    {}
 func (*ClientConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_5b5632820a3cc171, []int{2}
+	return fileDescriptor_e86958e2cebd3303, []int{2}
 }
 func (m *ClientConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ClientConfig.Unmarshal(m, b)
@@ -184,8 +186,8 @@ func (m *ClientConfig) XXX_Unmarshal(b []byte) error {
 func (m *ClientConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ClientConfig.Marshal(b, m, deterministic)
 }
-func (dst *ClientConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ClientConfig.Merge(dst, src)
+func (m *ClientConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ClientConfig.Merge(m, src)
 }
 func (m *ClientConfig) XXX_Size() int {
 	return xxx_messageInfo_ClientConfig.Size(m)
@@ -212,10 +214,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/proxy/socks/config.proto", fileDescriptor_config_5b5632820a3cc171)
+	proto.RegisterFile("v2ray.com/core/proxy/socks/config.proto", fileDescriptor_e86958e2cebd3303)
 }
 
-var fileDescriptor_config_5b5632820a3cc171 = []byte{
+var fileDescriptor_e86958e2cebd3303 = []byte{
 	// 470 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x52, 0x5d, 0x8b, 0xd3, 0x40,
 	0x14, 0x75, 0xb2, 0xb6, 0x4d, 0x6f, 0xbb, 0x52, 0x06, 0x59, 0x42, 0x51, 0x8c, 0x05, 0xb1, 0xec,

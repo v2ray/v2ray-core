@@ -35,7 +35,7 @@ func (m *GetStatsRequest) Reset()         { *m = GetStatsRequest{} }
 func (m *GetStatsRequest) String() string { return proto.CompactTextString(m) }
 func (*GetStatsRequest) ProtoMessage()    {}
 func (*GetStatsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_command_bba6fe6bc2b51668, []int{0}
+	return fileDescriptor_c902411c4948f26b, []int{0}
 }
 func (m *GetStatsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetStatsRequest.Unmarshal(m, b)
@@ -43,8 +43,8 @@ func (m *GetStatsRequest) XXX_Unmarshal(b []byte) error {
 func (m *GetStatsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_GetStatsRequest.Marshal(b, m, deterministic)
 }
-func (dst *GetStatsRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GetStatsRequest.Merge(dst, src)
+func (m *GetStatsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetStatsRequest.Merge(m, src)
 }
 func (m *GetStatsRequest) XXX_Size() int {
 	return xxx_messageInfo_GetStatsRequest.Size(m)
@@ -81,7 +81,7 @@ func (m *Stat) Reset()         { *m = Stat{} }
 func (m *Stat) String() string { return proto.CompactTextString(m) }
 func (*Stat) ProtoMessage()    {}
 func (*Stat) Descriptor() ([]byte, []int) {
-	return fileDescriptor_command_bba6fe6bc2b51668, []int{1}
+	return fileDescriptor_c902411c4948f26b, []int{1}
 }
 func (m *Stat) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Stat.Unmarshal(m, b)
@@ -89,8 +89,8 @@ func (m *Stat) XXX_Unmarshal(b []byte) error {
 func (m *Stat) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Stat.Marshal(b, m, deterministic)
 }
-func (dst *Stat) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Stat.Merge(dst, src)
+func (m *Stat) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Stat.Merge(m, src)
 }
 func (m *Stat) XXX_Size() int {
 	return xxx_messageInfo_Stat.Size(m)
@@ -126,7 +126,7 @@ func (m *GetStatsResponse) Reset()         { *m = GetStatsResponse{} }
 func (m *GetStatsResponse) String() string { return proto.CompactTextString(m) }
 func (*GetStatsResponse) ProtoMessage()    {}
 func (*GetStatsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_command_bba6fe6bc2b51668, []int{2}
+	return fileDescriptor_c902411c4948f26b, []int{2}
 }
 func (m *GetStatsResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetStatsResponse.Unmarshal(m, b)
@@ -134,8 +134,8 @@ func (m *GetStatsResponse) XXX_Unmarshal(b []byte) error {
 func (m *GetStatsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_GetStatsResponse.Marshal(b, m, deterministic)
 }
-func (dst *GetStatsResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GetStatsResponse.Merge(dst, src)
+func (m *GetStatsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetStatsResponse.Merge(m, src)
 }
 func (m *GetStatsResponse) XXX_Size() int {
 	return xxx_messageInfo_GetStatsResponse.Size(m)
@@ -165,7 +165,7 @@ func (m *QueryStatsRequest) Reset()         { *m = QueryStatsRequest{} }
 func (m *QueryStatsRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryStatsRequest) ProtoMessage()    {}
 func (*QueryStatsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_command_bba6fe6bc2b51668, []int{3}
+	return fileDescriptor_c902411c4948f26b, []int{3}
 }
 func (m *QueryStatsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_QueryStatsRequest.Unmarshal(m, b)
@@ -173,8 +173,8 @@ func (m *QueryStatsRequest) XXX_Unmarshal(b []byte) error {
 func (m *QueryStatsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_QueryStatsRequest.Marshal(b, m, deterministic)
 }
-func (dst *QueryStatsRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryStatsRequest.Merge(dst, src)
+func (m *QueryStatsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryStatsRequest.Merge(m, src)
 }
 func (m *QueryStatsRequest) XXX_Size() int {
 	return xxx_messageInfo_QueryStatsRequest.Size(m)
@@ -210,7 +210,7 @@ func (m *QueryStatsResponse) Reset()         { *m = QueryStatsResponse{} }
 func (m *QueryStatsResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryStatsResponse) ProtoMessage()    {}
 func (*QueryStatsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_command_bba6fe6bc2b51668, []int{4}
+	return fileDescriptor_c902411c4948f26b, []int{4}
 }
 func (m *QueryStatsResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_QueryStatsResponse.Unmarshal(m, b)
@@ -218,8 +218,8 @@ func (m *QueryStatsResponse) XXX_Unmarshal(b []byte) error {
 func (m *QueryStatsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_QueryStatsResponse.Marshal(b, m, deterministic)
 }
-func (dst *QueryStatsResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryStatsResponse.Merge(dst, src)
+func (m *QueryStatsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryStatsResponse.Merge(m, src)
 }
 func (m *QueryStatsResponse) XXX_Size() int {
 	return xxx_messageInfo_QueryStatsResponse.Size(m)
@@ -247,7 +247,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_command_bba6fe6bc2b51668, []int{5}
+	return fileDescriptor_c902411c4948f26b, []int{5}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -255,8 +255,8 @@ func (m *Config) XXX_Unmarshal(b []byte) error {
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -382,10 +382,10 @@ var _StatsService_serviceDesc = grpc.ServiceDesc{
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/app/stats/command/command.proto", fileDescriptor_command_bba6fe6bc2b51668)
+	proto.RegisterFile("v2ray.com/core/app/stats/command/command.proto", fileDescriptor_c902411c4948f26b)
 }
 
-var fileDescriptor_command_bba6fe6bc2b51668 = []byte{
+var fileDescriptor_c902411c4948f26b = []byte{
 	// 321 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x92, 0xb1, 0x4e, 0xc3, 0x30,
 	0x10, 0x86, 0x49, 0x5b, 0xda, 0x72, 0x20, 0x01, 0x16, 0x43, 0x55, 0x75, 0x88, 0x3c, 0x75, 0xc1,

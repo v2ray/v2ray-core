@@ -27,7 +27,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_0177b8110f292a35, []int{0}
+	return fileDescriptor_bc22c8b653a4f7ef, []int{0}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -35,8 +35,8 @@ func (m *Config) XXX_Unmarshal(b []byte) error {
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -59,10 +59,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/proxy/vmess/outbound/config.proto", fileDescriptor_config_0177b8110f292a35)
+	proto.RegisterFile("v2ray.com/core/proxy/vmess/outbound/config.proto", fileDescriptor_bc22c8b653a4f7ef)
 }
 
-var fileDescriptor_config_0177b8110f292a35 = []byte{
+var fileDescriptor_bc22c8b653a4f7ef = []byte{
 	// 208 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x8e, 0xb1, 0x4a, 0xc4, 0x40,
 	0x10, 0x86, 0x39, 0x85, 0xe3, 0x58, 0xbb, 0xab, 0xc4, 0xe6, 0x44, 0x1b, 0xb1, 0x98, 0x95, 0xf8,

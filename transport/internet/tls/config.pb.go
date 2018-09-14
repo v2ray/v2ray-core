@@ -28,6 +28,7 @@ var Certificate_Usage_name = map[int32]string{
 	1: "AUTHORITY_VERIFY",
 	2: "AUTHORITY_ISSUE",
 }
+
 var Certificate_Usage_value = map[string]int32{
 	"ENCIPHERMENT":     0,
 	"AUTHORITY_VERIFY": 1,
@@ -37,8 +38,9 @@ var Certificate_Usage_value = map[string]int32{
 func (x Certificate_Usage) String() string {
 	return proto.EnumName(Certificate_Usage_name, int32(x))
 }
+
 func (Certificate_Usage) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_a8a3761a78452100, []int{0, 0}
+	return fileDescriptor_42ed70cad60a2736, []int{0, 0}
 }
 
 type Certificate struct {
@@ -56,7 +58,7 @@ func (m *Certificate) Reset()         { *m = Certificate{} }
 func (m *Certificate) String() string { return proto.CompactTextString(m) }
 func (*Certificate) ProtoMessage()    {}
 func (*Certificate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_a8a3761a78452100, []int{0}
+	return fileDescriptor_42ed70cad60a2736, []int{0}
 }
 func (m *Certificate) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Certificate.Unmarshal(m, b)
@@ -64,8 +66,8 @@ func (m *Certificate) XXX_Unmarshal(b []byte) error {
 func (m *Certificate) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Certificate.Marshal(b, m, deterministic)
 }
-func (dst *Certificate) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Certificate.Merge(dst, src)
+func (m *Certificate) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Certificate.Merge(m, src)
 }
 func (m *Certificate) XXX_Size() int {
 	return xxx_messageInfo_Certificate.Size(m)
@@ -119,7 +121,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_a8a3761a78452100, []int{1}
+	return fileDescriptor_42ed70cad60a2736, []int{1}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -127,8 +129,8 @@ func (m *Config) XXX_Unmarshal(b []byte) error {
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -188,10 +190,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/transport/internet/tls/config.proto", fileDescriptor_config_a8a3761a78452100)
+	proto.RegisterFile("v2ray.com/core/transport/internet/tls/config.proto", fileDescriptor_42ed70cad60a2736)
 }
 
-var fileDescriptor_config_a8a3761a78452100 = []byte{
+var fileDescriptor_42ed70cad60a2736 = []byte{
 	// 413 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x91, 0xd1, 0x6e, 0xd3, 0x30,
 	0x14, 0x86, 0x49, 0x42, 0x2b, 0x76, 0xda, 0x8d, 0xc8, 0x4c, 0x28, 0xe2, 0x86, 0xac, 0x68, 0x52,

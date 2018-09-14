@@ -29,6 +29,7 @@ var DomainMatchingType_name = map[int32]string{
 	1: "Subdomain",
 	2: "Keyword",
 }
+
 var DomainMatchingType_value = map[string]int32{
 	"Full":      0,
 	"Subdomain": 1,
@@ -38,8 +39,9 @@ var DomainMatchingType_value = map[string]int32{
 func (x DomainMatchingType) String() string {
 	return proto.EnumName(DomainMatchingType_name, int32(x))
 }
+
 func (DomainMatchingType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_6f85f947d5116df4, []int{0}
+	return fileDescriptor_ed5695198e3def8f, []int{0}
 }
 
 type NameServer struct {
@@ -54,7 +56,7 @@ func (m *NameServer) Reset()         { *m = NameServer{} }
 func (m *NameServer) String() string { return proto.CompactTextString(m) }
 func (*NameServer) ProtoMessage()    {}
 func (*NameServer) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_6f85f947d5116df4, []int{0}
+	return fileDescriptor_ed5695198e3def8f, []int{0}
 }
 func (m *NameServer) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_NameServer.Unmarshal(m, b)
@@ -62,8 +64,8 @@ func (m *NameServer) XXX_Unmarshal(b []byte) error {
 func (m *NameServer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_NameServer.Marshal(b, m, deterministic)
 }
-func (dst *NameServer) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_NameServer.Merge(dst, src)
+func (m *NameServer) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_NameServer.Merge(m, src)
 }
 func (m *NameServer) XXX_Size() int {
 	return xxx_messageInfo_NameServer.Size(m)
@@ -100,7 +102,7 @@ func (m *NameServer_PriorityDomain) Reset()         { *m = NameServer_PriorityDo
 func (m *NameServer_PriorityDomain) String() string { return proto.CompactTextString(m) }
 func (*NameServer_PriorityDomain) ProtoMessage()    {}
 func (*NameServer_PriorityDomain) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_6f85f947d5116df4, []int{0, 0}
+	return fileDescriptor_ed5695198e3def8f, []int{0, 0}
 }
 func (m *NameServer_PriorityDomain) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_NameServer_PriorityDomain.Unmarshal(m, b)
@@ -108,8 +110,8 @@ func (m *NameServer_PriorityDomain) XXX_Unmarshal(b []byte) error {
 func (m *NameServer_PriorityDomain) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_NameServer_PriorityDomain.Marshal(b, m, deterministic)
 }
-func (dst *NameServer_PriorityDomain) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_NameServer_PriorityDomain.Merge(dst, src)
+func (m *NameServer_PriorityDomain) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_NameServer_PriorityDomain.Merge(m, src)
 }
 func (m *NameServer_PriorityDomain) XXX_Size() int {
 	return xxx_messageInfo_NameServer_PriorityDomain.Size(m)
@@ -155,7 +157,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_6f85f947d5116df4, []int{1}
+	return fileDescriptor_ed5695198e3def8f, []int{1}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -163,8 +165,8 @@ func (m *Config) XXX_Unmarshal(b []byte) error {
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -225,7 +227,7 @@ func (m *Config_HostMapping) Reset()         { *m = Config_HostMapping{} }
 func (m *Config_HostMapping) String() string { return proto.CompactTextString(m) }
 func (*Config_HostMapping) ProtoMessage()    {}
 func (*Config_HostMapping) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_6f85f947d5116df4, []int{1, 1}
+	return fileDescriptor_ed5695198e3def8f, []int{1, 1}
 }
 func (m *Config_HostMapping) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config_HostMapping.Unmarshal(m, b)
@@ -233,8 +235,8 @@ func (m *Config_HostMapping) XXX_Unmarshal(b []byte) error {
 func (m *Config_HostMapping) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config_HostMapping.Marshal(b, m, deterministic)
 }
-func (dst *Config_HostMapping) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config_HostMapping.Merge(dst, src)
+func (m *Config_HostMapping) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config_HostMapping.Merge(m, src)
 }
 func (m *Config_HostMapping) XXX_Size() int {
 	return xxx_messageInfo_Config_HostMapping.Size(m)
@@ -276,10 +278,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/app/dns/config.proto", fileDescriptor_config_6f85f947d5116df4)
+	proto.RegisterFile("v2ray.com/core/app/dns/config.proto", fileDescriptor_ed5695198e3def8f)
 }
 
-var fileDescriptor_config_6f85f947d5116df4 = []byte{
+var fileDescriptor_ed5695198e3def8f = []byte{
 	// 516 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x93, 0xd1, 0x6e, 0xd3, 0x3e,
 	0x18, 0xc5, 0xff, 0x49, 0xda, 0x6e, 0xfd, 0xd2, 0x7f, 0x55, 0x7c, 0x31, 0x55, 0x45, 0x82, 0x32,

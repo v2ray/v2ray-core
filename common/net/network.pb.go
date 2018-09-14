@@ -30,6 +30,7 @@ var Network_name = map[int32]string{
 	2: "TCP",
 	3: "UDP",
 }
+
 var Network_value = map[string]int32{
 	"Unknown": 0,
 	"RawTCP":  1,
@@ -40,8 +41,9 @@ var Network_value = map[string]int32{
 func (x Network) String() string {
 	return proto.EnumName(Network_name, int32(x))
 }
+
 func (Network) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_network_a36c8cbc46b487e4, []int{0}
+	return fileDescriptor_6a103d5ccb9e785e, []int{0}
 }
 
 // NetworkList is a list of Networks.
@@ -56,7 +58,7 @@ func (m *NetworkList) Reset()         { *m = NetworkList{} }
 func (m *NetworkList) String() string { return proto.CompactTextString(m) }
 func (*NetworkList) ProtoMessage()    {}
 func (*NetworkList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_network_a36c8cbc46b487e4, []int{0}
+	return fileDescriptor_6a103d5ccb9e785e, []int{0}
 }
 func (m *NetworkList) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_NetworkList.Unmarshal(m, b)
@@ -64,8 +66,8 @@ func (m *NetworkList) XXX_Unmarshal(b []byte) error {
 func (m *NetworkList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_NetworkList.Marshal(b, m, deterministic)
 }
-func (dst *NetworkList) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_NetworkList.Merge(dst, src)
+func (m *NetworkList) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_NetworkList.Merge(m, src)
 }
 func (m *NetworkList) XXX_Size() int {
 	return xxx_messageInfo_NetworkList.Size(m)
@@ -89,10 +91,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/common/net/network.proto", fileDescriptor_network_a36c8cbc46b487e4)
+	proto.RegisterFile("v2ray.com/core/common/net/network.proto", fileDescriptor_6a103d5ccb9e785e)
 }
 
-var fileDescriptor_network_a36c8cbc46b487e4 = []byte{
+var fileDescriptor_6a103d5ccb9e785e = []byte{
 	// 198 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x2f, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x4f, 0xce, 0xcf, 0xcd, 0xcd,

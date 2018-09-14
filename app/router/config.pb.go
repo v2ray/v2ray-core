@@ -36,6 +36,7 @@ var Domain_Type_name = map[int32]string{
 	2: "Domain",
 	3: "Full",
 }
+
 var Domain_Type_value = map[string]int32{
 	"Plain":  0,
 	"Regex":  1,
@@ -46,8 +47,9 @@ var Domain_Type_value = map[string]int32{
 func (x Domain_Type) String() string {
 	return proto.EnumName(Domain_Type_name, int32(x))
 }
+
 func (Domain_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_e31761c0263e38b8, []int{0, 0}
+	return fileDescriptor_6b1608360690c5fc, []int{0, 0}
 }
 
 type Config_DomainStrategy int32
@@ -69,6 +71,7 @@ var Config_DomainStrategy_name = map[int32]string{
 	2: "IpIfNonMatch",
 	3: "IpOnDemand",
 }
+
 var Config_DomainStrategy_value = map[string]int32{
 	"AsIs":         0,
 	"UseIp":        1,
@@ -79,8 +82,9 @@ var Config_DomainStrategy_value = map[string]int32{
 func (x Config_DomainStrategy) String() string {
 	return proto.EnumName(Config_DomainStrategy_name, int32(x))
 }
+
 func (Config_DomainStrategy) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_e31761c0263e38b8, []int{7, 0}
+	return fileDescriptor_6b1608360690c5fc, []int{7, 0}
 }
 
 // Domain for routing decision.
@@ -98,7 +102,7 @@ func (m *Domain) Reset()         { *m = Domain{} }
 func (m *Domain) String() string { return proto.CompactTextString(m) }
 func (*Domain) ProtoMessage()    {}
 func (*Domain) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_e31761c0263e38b8, []int{0}
+	return fileDescriptor_6b1608360690c5fc, []int{0}
 }
 func (m *Domain) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Domain.Unmarshal(m, b)
@@ -106,8 +110,8 @@ func (m *Domain) XXX_Unmarshal(b []byte) error {
 func (m *Domain) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Domain.Marshal(b, m, deterministic)
 }
-func (dst *Domain) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Domain.Merge(dst, src)
+func (m *Domain) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Domain.Merge(m, src)
 }
 func (m *Domain) XXX_Size() int {
 	return xxx_messageInfo_Domain.Size(m)
@@ -147,7 +151,7 @@ func (m *CIDR) Reset()         { *m = CIDR{} }
 func (m *CIDR) String() string { return proto.CompactTextString(m) }
 func (*CIDR) ProtoMessage()    {}
 func (*CIDR) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_e31761c0263e38b8, []int{1}
+	return fileDescriptor_6b1608360690c5fc, []int{1}
 }
 func (m *CIDR) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CIDR.Unmarshal(m, b)
@@ -155,8 +159,8 @@ func (m *CIDR) XXX_Unmarshal(b []byte) error {
 func (m *CIDR) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CIDR.Marshal(b, m, deterministic)
 }
-func (dst *CIDR) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CIDR.Merge(dst, src)
+func (m *CIDR) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CIDR.Merge(m, src)
 }
 func (m *CIDR) XXX_Size() int {
 	return xxx_messageInfo_CIDR.Size(m)
@@ -193,7 +197,7 @@ func (m *GeoIP) Reset()         { *m = GeoIP{} }
 func (m *GeoIP) String() string { return proto.CompactTextString(m) }
 func (*GeoIP) ProtoMessage()    {}
 func (*GeoIP) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_e31761c0263e38b8, []int{2}
+	return fileDescriptor_6b1608360690c5fc, []int{2}
 }
 func (m *GeoIP) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GeoIP.Unmarshal(m, b)
@@ -201,8 +205,8 @@ func (m *GeoIP) XXX_Unmarshal(b []byte) error {
 func (m *GeoIP) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_GeoIP.Marshal(b, m, deterministic)
 }
-func (dst *GeoIP) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GeoIP.Merge(dst, src)
+func (m *GeoIP) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GeoIP.Merge(m, src)
 }
 func (m *GeoIP) XXX_Size() int {
 	return xxx_messageInfo_GeoIP.Size(m)
@@ -238,7 +242,7 @@ func (m *GeoIPList) Reset()         { *m = GeoIPList{} }
 func (m *GeoIPList) String() string { return proto.CompactTextString(m) }
 func (*GeoIPList) ProtoMessage()    {}
 func (*GeoIPList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_e31761c0263e38b8, []int{3}
+	return fileDescriptor_6b1608360690c5fc, []int{3}
 }
 func (m *GeoIPList) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GeoIPList.Unmarshal(m, b)
@@ -246,8 +250,8 @@ func (m *GeoIPList) XXX_Unmarshal(b []byte) error {
 func (m *GeoIPList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_GeoIPList.Marshal(b, m, deterministic)
 }
-func (dst *GeoIPList) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GeoIPList.Merge(dst, src)
+func (m *GeoIPList) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GeoIPList.Merge(m, src)
 }
 func (m *GeoIPList) XXX_Size() int {
 	return xxx_messageInfo_GeoIPList.Size(m)
@@ -277,7 +281,7 @@ func (m *GeoSite) Reset()         { *m = GeoSite{} }
 func (m *GeoSite) String() string { return proto.CompactTextString(m) }
 func (*GeoSite) ProtoMessage()    {}
 func (*GeoSite) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_e31761c0263e38b8, []int{4}
+	return fileDescriptor_6b1608360690c5fc, []int{4}
 }
 func (m *GeoSite) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GeoSite.Unmarshal(m, b)
@@ -285,8 +289,8 @@ func (m *GeoSite) XXX_Unmarshal(b []byte) error {
 func (m *GeoSite) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_GeoSite.Marshal(b, m, deterministic)
 }
-func (dst *GeoSite) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GeoSite.Merge(dst, src)
+func (m *GeoSite) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GeoSite.Merge(m, src)
 }
 func (m *GeoSite) XXX_Size() int {
 	return xxx_messageInfo_GeoSite.Size(m)
@@ -322,7 +326,7 @@ func (m *GeoSiteList) Reset()         { *m = GeoSiteList{} }
 func (m *GeoSiteList) String() string { return proto.CompactTextString(m) }
 func (*GeoSiteList) ProtoMessage()    {}
 func (*GeoSiteList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_e31761c0263e38b8, []int{5}
+	return fileDescriptor_6b1608360690c5fc, []int{5}
 }
 func (m *GeoSiteList) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GeoSiteList.Unmarshal(m, b)
@@ -330,8 +334,8 @@ func (m *GeoSiteList) XXX_Unmarshal(b []byte) error {
 func (m *GeoSiteList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_GeoSiteList.Marshal(b, m, deterministic)
 }
-func (dst *GeoSiteList) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GeoSiteList.Merge(dst, src)
+func (m *GeoSiteList) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GeoSiteList.Merge(m, src)
 }
 func (m *GeoSiteList) XXX_Size() int {
 	return xxx_messageInfo_GeoSiteList.Size(m)
@@ -368,7 +372,7 @@ func (m *RoutingRule) Reset()         { *m = RoutingRule{} }
 func (m *RoutingRule) String() string { return proto.CompactTextString(m) }
 func (*RoutingRule) ProtoMessage()    {}
 func (*RoutingRule) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_e31761c0263e38b8, []int{6}
+	return fileDescriptor_6b1608360690c5fc, []int{6}
 }
 func (m *RoutingRule) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RoutingRule.Unmarshal(m, b)
@@ -376,8 +380,8 @@ func (m *RoutingRule) XXX_Unmarshal(b []byte) error {
 func (m *RoutingRule) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_RoutingRule.Marshal(b, m, deterministic)
 }
-func (dst *RoutingRule) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RoutingRule.Merge(dst, src)
+func (m *RoutingRule) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RoutingRule.Merge(m, src)
 }
 func (m *RoutingRule) XXX_Size() int {
 	return xxx_messageInfo_RoutingRule.Size(m)
@@ -463,7 +467,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_e31761c0263e38b8, []int{7}
+	return fileDescriptor_6b1608360690c5fc, []int{7}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -471,8 +475,8 @@ func (m *Config) XXX_Unmarshal(b []byte) error {
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -511,10 +515,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/app/router/config.proto", fileDescriptor_config_e31761c0263e38b8)
+	proto.RegisterFile("v2ray.com/core/app/router/config.proto", fileDescriptor_6b1608360690c5fc)
 }
 
-var fileDescriptor_config_e31761c0263e38b8 = []byte{
+var fileDescriptor_6b1608360690c5fc = []byte{
 	// 656 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x54, 0xdd, 0x6e, 0xd3, 0x30,
 	0x14, 0x26, 0xfd, 0xdb, 0x72, 0x52, 0x4a, 0x64, 0x31, 0x14, 0x06, 0x83, 0x12, 0x21, 0xe8, 0x05,

@@ -30,7 +30,7 @@ func (m *PortRange) Reset()         { *m = PortRange{} }
 func (m *PortRange) String() string { return proto.CompactTextString(m) }
 func (*PortRange) ProtoMessage()    {}
 func (*PortRange) Descriptor() ([]byte, []int) {
-	return fileDescriptor_port_673e4083b7b87399, []int{0}
+	return fileDescriptor_166067e37a39f913, []int{0}
 }
 func (m *PortRange) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PortRange.Unmarshal(m, b)
@@ -38,8 +38,8 @@ func (m *PortRange) XXX_Unmarshal(b []byte) error {
 func (m *PortRange) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_PortRange.Marshal(b, m, deterministic)
 }
-func (dst *PortRange) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_PortRange.Merge(dst, src)
+func (m *PortRange) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PortRange.Merge(m, src)
 }
 func (m *PortRange) XXX_Size() int {
 	return xxx_messageInfo_PortRange.Size(m)
@@ -69,10 +69,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/common/net/port.proto", fileDescriptor_port_673e4083b7b87399)
+	proto.RegisterFile("v2ray.com/core/common/net/port.proto", fileDescriptor_166067e37a39f913)
 }
 
-var fileDescriptor_port_673e4083b7b87399 = []byte{
+var fileDescriptor_166067e37a39f913 = []byte{
 	// 158 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x29, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x4f, 0xce, 0xcf, 0xcd, 0xcd,

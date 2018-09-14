@@ -25,7 +25,7 @@ func (m *PacketConfig) Reset()         { *m = PacketConfig{} }
 func (m *PacketConfig) String() string { return proto.CompactTextString(m) }
 func (*PacketConfig) ProtoMessage()    {}
 func (*PacketConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_5113112ed8e87cff, []int{0}
+	return fileDescriptor_e55187b75c46dc0d, []int{0}
 }
 func (m *PacketConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PacketConfig.Unmarshal(m, b)
@@ -33,8 +33,8 @@ func (m *PacketConfig) XXX_Unmarshal(b []byte) error {
 func (m *PacketConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_PacketConfig.Marshal(b, m, deterministic)
 }
-func (dst *PacketConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_PacketConfig.Merge(dst, src)
+func (m *PacketConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PacketConfig.Merge(m, src)
 }
 func (m *PacketConfig) XXX_Size() int {
 	return xxx_messageInfo_PacketConfig.Size(m)
@@ -50,10 +50,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/transport/internet/headers/tls/config.proto", fileDescriptor_config_5113112ed8e87cff)
+	proto.RegisterFile("v2ray.com/core/transport/internet/headers/tls/config.proto", fileDescriptor_e55187b75c46dc0d)
 }
 
-var fileDescriptor_config_5113112ed8e87cff = []byte{
+var fileDescriptor_e55187b75c46dc0d = []byte{
 	// 163 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xb2, 0x2a, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x2f, 0x29, 0x4a, 0xcc, 0x2b,

@@ -31,7 +31,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_f0ea324480acd134, []int{0}
+	return fileDescriptor_46d95b63a682e4a6, []int{0}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -39,8 +39,8 @@ func (m *Config) XXX_Unmarshal(b []byte) error {
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -61,7 +61,7 @@ func (m *RestartLoggerRequest) Reset()         { *m = RestartLoggerRequest{} }
 func (m *RestartLoggerRequest) String() string { return proto.CompactTextString(m) }
 func (*RestartLoggerRequest) ProtoMessage()    {}
 func (*RestartLoggerRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_f0ea324480acd134, []int{1}
+	return fileDescriptor_46d95b63a682e4a6, []int{1}
 }
 func (m *RestartLoggerRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RestartLoggerRequest.Unmarshal(m, b)
@@ -69,8 +69,8 @@ func (m *RestartLoggerRequest) XXX_Unmarshal(b []byte) error {
 func (m *RestartLoggerRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_RestartLoggerRequest.Marshal(b, m, deterministic)
 }
-func (dst *RestartLoggerRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RestartLoggerRequest.Merge(dst, src)
+func (m *RestartLoggerRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RestartLoggerRequest.Merge(m, src)
 }
 func (m *RestartLoggerRequest) XXX_Size() int {
 	return xxx_messageInfo_RestartLoggerRequest.Size(m)
@@ -91,7 +91,7 @@ func (m *RestartLoggerResponse) Reset()         { *m = RestartLoggerResponse{} }
 func (m *RestartLoggerResponse) String() string { return proto.CompactTextString(m) }
 func (*RestartLoggerResponse) ProtoMessage()    {}
 func (*RestartLoggerResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_f0ea324480acd134, []int{2}
+	return fileDescriptor_46d95b63a682e4a6, []int{2}
 }
 func (m *RestartLoggerResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RestartLoggerResponse.Unmarshal(m, b)
@@ -99,8 +99,8 @@ func (m *RestartLoggerResponse) XXX_Unmarshal(b []byte) error {
 func (m *RestartLoggerResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_RestartLoggerResponse.Marshal(b, m, deterministic)
 }
-func (dst *RestartLoggerResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RestartLoggerResponse.Merge(dst, src)
+func (m *RestartLoggerResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RestartLoggerResponse.Merge(m, src)
 }
 func (m *RestartLoggerResponse) XXX_Size() int {
 	return xxx_messageInfo_RestartLoggerResponse.Size(m)
@@ -190,10 +190,10 @@ var _LoggerService_serviceDesc = grpc.ServiceDesc{
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/app/log/command/config.proto", fileDescriptor_config_f0ea324480acd134)
+	proto.RegisterFile("v2ray.com/core/app/log/command/config.proto", fileDescriptor_46d95b63a682e4a6)
 }
 
-var fileDescriptor_config_f0ea324480acd134 = []byte{
+var fileDescriptor_46d95b63a682e4a6 = []byte{
 	// 210 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xd2, 0x2e, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x4f, 0x2c, 0x28, 0xd0, 0xcf,

@@ -27,6 +27,7 @@ var Config_DomainStrategy_name = map[int32]string{
 	0: "AS_IS",
 	1: "USE_IP",
 }
+
 var Config_DomainStrategy_value = map[string]int32{
 	"AS_IS":  0,
 	"USE_IP": 1,
@@ -35,8 +36,9 @@ var Config_DomainStrategy_value = map[string]int32{
 func (x Config_DomainStrategy) String() string {
 	return proto.EnumName(Config_DomainStrategy_name, int32(x))
 }
+
 func (Config_DomainStrategy) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_232e04bef93b6842, []int{1, 0}
+	return fileDescriptor_66807b6fe2cca4da, []int{1, 0}
 }
 
 type DestinationOverride struct {
@@ -50,7 +52,7 @@ func (m *DestinationOverride) Reset()         { *m = DestinationOverride{} }
 func (m *DestinationOverride) String() string { return proto.CompactTextString(m) }
 func (*DestinationOverride) ProtoMessage()    {}
 func (*DestinationOverride) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_232e04bef93b6842, []int{0}
+	return fileDescriptor_66807b6fe2cca4da, []int{0}
 }
 func (m *DestinationOverride) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DestinationOverride.Unmarshal(m, b)
@@ -58,8 +60,8 @@ func (m *DestinationOverride) XXX_Unmarshal(b []byte) error {
 func (m *DestinationOverride) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DestinationOverride.Marshal(b, m, deterministic)
 }
-func (dst *DestinationOverride) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DestinationOverride.Merge(dst, src)
+func (m *DestinationOverride) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DestinationOverride.Merge(m, src)
 }
 func (m *DestinationOverride) XXX_Size() int {
 	return xxx_messageInfo_DestinationOverride.Size(m)
@@ -91,7 +93,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_232e04bef93b6842, []int{1}
+	return fileDescriptor_66807b6fe2cca4da, []int{1}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -99,8 +101,8 @@ func (m *Config) XXX_Unmarshal(b []byte) error {
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -147,10 +149,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/proxy/freedom/config.proto", fileDescriptor_config_232e04bef93b6842)
+	proto.RegisterFile("v2ray.com/core/proxy/freedom/config.proto", fileDescriptor_66807b6fe2cca4da)
 }
 
-var fileDescriptor_config_232e04bef93b6842 = []byte{
+var fileDescriptor_66807b6fe2cca4da = []byte{
 	// 340 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x91, 0x6f, 0x4b, 0x83, 0x50,
 	0x14, 0xc6, 0xd3, 0xca, 0xb1, 0x13, 0xad, 0xe1, 0x7a, 0x21, 0xb1, 0x60, 0xec, 0x4d, 0x2b, 0xe8,

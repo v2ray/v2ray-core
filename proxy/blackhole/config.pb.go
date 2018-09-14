@@ -26,7 +26,7 @@ func (m *NoneResponse) Reset()         { *m = NoneResponse{} }
 func (m *NoneResponse) String() string { return proto.CompactTextString(m) }
 func (*NoneResponse) ProtoMessage()    {}
 func (*NoneResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_720e5f73f2070b8d, []int{0}
+	return fileDescriptor_8c8b37c8ae1bdfea, []int{0}
 }
 func (m *NoneResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_NoneResponse.Unmarshal(m, b)
@@ -34,8 +34,8 @@ func (m *NoneResponse) XXX_Unmarshal(b []byte) error {
 func (m *NoneResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_NoneResponse.Marshal(b, m, deterministic)
 }
-func (dst *NoneResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_NoneResponse.Merge(dst, src)
+func (m *NoneResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_NoneResponse.Merge(m, src)
 }
 func (m *NoneResponse) XXX_Size() int {
 	return xxx_messageInfo_NoneResponse.Size(m)
@@ -56,7 +56,7 @@ func (m *HTTPResponse) Reset()         { *m = HTTPResponse{} }
 func (m *HTTPResponse) String() string { return proto.CompactTextString(m) }
 func (*HTTPResponse) ProtoMessage()    {}
 func (*HTTPResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_720e5f73f2070b8d, []int{1}
+	return fileDescriptor_8c8b37c8ae1bdfea, []int{1}
 }
 func (m *HTTPResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HTTPResponse.Unmarshal(m, b)
@@ -64,8 +64,8 @@ func (m *HTTPResponse) XXX_Unmarshal(b []byte) error {
 func (m *HTTPResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_HTTPResponse.Marshal(b, m, deterministic)
 }
-func (dst *HTTPResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_HTTPResponse.Merge(dst, src)
+func (m *HTTPResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HTTPResponse.Merge(m, src)
 }
 func (m *HTTPResponse) XXX_Size() int {
 	return xxx_messageInfo_HTTPResponse.Size(m)
@@ -87,7 +87,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_720e5f73f2070b8d, []int{2}
+	return fileDescriptor_8c8b37c8ae1bdfea, []int{2}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -95,8 +95,8 @@ func (m *Config) XXX_Unmarshal(b []byte) error {
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -121,10 +121,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/proxy/blackhole/config.proto", fileDescriptor_config_720e5f73f2070b8d)
+	proto.RegisterFile("v2ray.com/core/proxy/blackhole/config.proto", fileDescriptor_8c8b37c8ae1bdfea)
 }
 
-var fileDescriptor_config_720e5f73f2070b8d = []byte{
+var fileDescriptor_8c8b37c8ae1bdfea = []byte{
 	// 217 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xd2, 0x2e, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x2f, 0x28, 0xca, 0xaf, 0xa8,

@@ -30,7 +30,7 @@ func (m *IPOrDomain) Reset()         { *m = IPOrDomain{} }
 func (m *IPOrDomain) String() string { return proto.CompactTextString(m) }
 func (*IPOrDomain) ProtoMessage()    {}
 func (*IPOrDomain) Descriptor() ([]byte, []int) {
-	return fileDescriptor_address_c500a1e2dec49a04, []int{0}
+	return fileDescriptor_4ba9b4a4304e7c1f, []int{0}
 }
 func (m *IPOrDomain) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_IPOrDomain.Unmarshal(m, b)
@@ -38,8 +38,8 @@ func (m *IPOrDomain) XXX_Unmarshal(b []byte) error {
 func (m *IPOrDomain) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_IPOrDomain.Marshal(b, m, deterministic)
 }
-func (dst *IPOrDomain) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_IPOrDomain.Merge(dst, src)
+func (m *IPOrDomain) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_IPOrDomain.Merge(m, src)
 }
 func (m *IPOrDomain) XXX_Size() int {
 	return xxx_messageInfo_IPOrDomain.Size(m)
@@ -158,10 +158,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/common/net/address.proto", fileDescriptor_address_c500a1e2dec49a04)
+	proto.RegisterFile("v2ray.com/core/common/net/address.proto", fileDescriptor_4ba9b4a4304e7c1f)
 }
 
-var fileDescriptor_address_c500a1e2dec49a04 = []byte{
+var fileDescriptor_4ba9b4a4304e7c1f = []byte{
 	// 174 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x2f, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x4f, 0xce, 0xcf, 0xcd, 0xcd,
