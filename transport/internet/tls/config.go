@@ -155,7 +155,7 @@ func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
 		opt(config)
 	}
 
-	if c.AllowInsecureCiphers && len(config.CipherSuites) == 0 {
+	if !c.AllowInsecureCiphers && len(config.CipherSuites) == 0 {
 		config.CipherSuites = []uint16{
 			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
 			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,

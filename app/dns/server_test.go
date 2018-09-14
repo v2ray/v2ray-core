@@ -1,6 +1,7 @@
 package dns_test
 
 import (
+	"runtime"
 	"testing"
 	"time"
 
@@ -38,6 +39,9 @@ func (*staticHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 }
 
 func TestUDPServer(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("doesn't work on Windows due to miekg/dns changes.")
+	}
 	assert := With(t)
 
 	port := udp.PickPort()
@@ -50,6 +54,7 @@ func TestUDPServer(t *testing.T) {
 	}
 
 	go dnsServer.ListenAndServe()
+	time.Sleep(time.Second)
 
 	config := &core.Config{
 		App: []*serial.TypedMessage{
@@ -101,6 +106,9 @@ func TestUDPServer(t *testing.T) {
 }
 
 func TestPrioritizedDomain(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("doesn't work on Windows due to miekg/dns changes.")
+	}
 	assert := With(t)
 
 	port := udp.PickPort()
@@ -113,6 +121,7 @@ func TestPrioritizedDomain(t *testing.T) {
 	}
 
 	go dnsServer.ListenAndServe()
+	time.Sleep(time.Second)
 
 	config := &core.Config{
 		App: []*serial.TypedMessage{

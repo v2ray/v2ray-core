@@ -1,12 +1,14 @@
 package tcp
 
 import (
+	"context"
 	"fmt"
 	"io"
 
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/task"
+	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/pipe"
 )
 
@@ -20,14 +22,17 @@ type Server struct {
 }
 
 func (server *Server) Start() (net.Destination, error) {
+	return server.StartContext(context.Background())
+}
+
+func (server *Server) StartContext(ctx context.Context) (net.Destination, error) {
 	listenerAddr := server.Listen
 	if listenerAddr == nil {
 		listenerAddr = net.LocalHostIP
 	}
-	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
+	listener, err := internet.ListenSystemTCP(ctx, &net.TCPAddr{
 		IP:   listenerAddr.IP(),
 		Port: int(server.Port),
-		Zone: "",
 	})
 	if err != nil {
 		return net.Destination{}, err

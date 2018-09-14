@@ -28,3 +28,11 @@ func NewAesStreamMethod(key []byte, iv []byte, f func(cipher.Block, []byte) ciph
 func NewAesCTRStream(key []byte, iv []byte) cipher.Stream {
 	return NewAesStreamMethod(key, iv, cipher.NewCTR)
 }
+
+func NewAesGcm(key []byte) cipher.AEAD {
+	block, err := aes.NewCipher(key)
+	common.Must(err)
+	aead, err := cipher.NewGCM(block)
+	common.Must(err)
+	return aead
+}

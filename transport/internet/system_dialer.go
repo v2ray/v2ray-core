@@ -31,7 +31,7 @@ func (DefaultSystemDialer) Dial(ctx context.Context, src net.Address, dest net.D
 		config := streamSettings.SocketSettings
 		dialer.Control = func(network, address string, c syscall.RawConn) error {
 			return c.Control(func(fd uintptr) {
-				if err := applySocketOptions(fd, config); err != nil {
+				if err := applyOutboundSocketOptions(network, address, fd, config); err != nil {
 					newError("failed to apply socket options").Base(err).WriteToLog(session.ExportIDToError(ctx))
 				}
 			})

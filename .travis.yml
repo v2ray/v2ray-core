@@ -6,6 +6,7 @@ go_import_path: v2ray.com/core
 git:
   depth: 5
 before_script:
+- uname -a
 - sudo ntpdate -u time.google.com
 - date
 script:

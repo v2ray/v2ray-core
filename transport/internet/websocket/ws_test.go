@@ -24,7 +24,7 @@ func Test_listenWSAndDial(t *testing.T) {
 			Path: "ws",
 		},
 	})
-	listen, err := ListenWS(lctx, net.DomainAddress("localhost"), 13146, func(conn internet.Connection) {
+	listen, err := ListenWS(lctx, net.LocalHostIP, 13146, func(conn internet.Connection) {
 		go func(c internet.Connection) {
 			defer c.Close()
 
@@ -79,7 +79,7 @@ func TestDialWithRemoteAddr(t *testing.T) {
 			Path: "ws",
 		},
 	})
-	listen, err := ListenWS(lctx, net.DomainAddress("localhost"), 13148, func(conn internet.Connection) {
+	listen, err := ListenWS(lctx, net.LocalHostIP, 13148, func(conn internet.Connection) {
 		go func(c internet.Connection) {
 			defer c.Close()
 
@@ -138,7 +138,7 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 		},
 	})
 
-	listen, err := ListenWS(ctx, net.DomainAddress("localhost"), 13143, func(conn internet.Connection) {
+	listen, err := ListenWS(ctx, net.LocalHostIP, 13143, func(conn internet.Connection) {
 		go func() {
 			_ = conn.Close()
 		}()

@@ -44,6 +44,8 @@ func TestRequestSerialization(t *testing.T) {
 
 	buffer := buf.New()
 	client := NewClientSession(protocol.DefaultIDHash)
+	defer ReleaseClientSession(client)
+
 	common.Must(client.EncodeRequestHeader(expectedRequest, buffer))
 
 	buffer2 := buf.New()
@@ -57,6 +59,7 @@ func TestRequestSerialization(t *testing.T) {
 	defer common.Close(userValidator)
 
 	server := NewServerSession(userValidator, sessionHistory)
+	defer ReleaseServerSession(server)
 	actualRequest, err := server.DecodeRequestHeader(buffer)
 	assert(err, IsNil)
 
@@ -97,6 +100,8 @@ func TestInvalidRequest(t *testing.T) {
 
 	buffer := buf.New()
 	client := NewClientSession(protocol.DefaultIDHash)
+	defer ReleaseClientSession(client)
+
 	common.Must(client.EncodeRequestHeader(expectedRequest, buffer))
 
 	buffer2 := buf.New()
@@ -110,6 +115,7 @@ func TestInvalidRequest(t *testing.T) {
 	defer common.Close(userValidator)
 
 	server := NewServerSession(userValidator, sessionHistory)
+	defer ReleaseServerSession(server)
 	_, err := server.DecodeRequestHeader(buffer)
 	assert(err, IsNotNil)
 }
@@ -150,6 +156,7 @@ func TestMuxRequest(t *testing.T) {
 	defer common.Close(userValidator)
 
 	server := NewServerSession(userValidator, sessionHistory)
+	defer ReleaseServerSession(server)
 	actualRequest, err := server.DecodeRequestHeader(buffer)
 	assert(err, IsNil)
 

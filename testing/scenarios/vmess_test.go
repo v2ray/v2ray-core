@@ -3,7 +3,6 @@ package scenarios
 import (
 	"crypto/rand"
 	"os"
-	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -299,10 +298,6 @@ func TestVMessGCM(t *testing.T) {
 }
 
 func TestVMessGCMReadv(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Not supported on Windows yet.")
-		return
-	}
 	assert := With(t)
 
 	tcpServer := tcp.Server{
@@ -395,7 +390,7 @@ func TestVMessGCMReadv(t *testing.T) {
 	}
 
 	const envName = "V2RAY_BUF_READV"
-	common.Must(os.Setenv(envName, "1"))
+	common.Must(os.Setenv(envName, "enable"))
 	defer os.Unsetenv(envName)
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)

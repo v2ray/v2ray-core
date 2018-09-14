@@ -1,12 +1,11 @@
 package encoding
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/md5"
 	"crypto/rand"
 	"hash/fnv"
 	"io"
+	"sync"
 
 	"golang.org/x/crypto/chacha20poly1305"
 
@@ -38,14 +37,21 @@ type ClientSession struct {
 	responseBodyIV  [16]byte
 	responseReader  io.Reader
 	responseHeader  byte
+
+	buffer [33]byte // 16 + 16 + 1
+}
+
+var clientSessionPool = sync.Pool{
+	New: func() interface{} { return &ClientSession{} },
 }
 
 // NewClientSession creates a new ClientSession.
 func NewClientSession(idHash protocol.IDHash) *ClientSession {
-	randomBytes := make([]byte, 33) // 16 + 16 + 1
+	session := clientSessionPool.Get().(*ClientSession)
+
+	randomBytes := session.buffer[:]
 	common.Must2(rand.Read(randomBytes))
 
-	session := &ClientSession{}
 	copy(session.requestBodyKey[:], randomBytes[:16])
 	copy(session.requestBodyIV[:], randomBytes[16:32])
 	session.responseHeader = randomBytes[32]
@@ -54,6 +60,12 @@ func NewClientSession(idHash protocol.IDHash) *ClientSession {
 	session.idHash = idHash
 
 	return session
+}
+
+func ReleaseClientSession(session *ClientSession) {
+	session.idHash = nil
+	session.responseReader = nil
+	clientSessionPool.Put(session)
 }
 
 func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writer io.Writer) error {
@@ -91,10 +103,8 @@ func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 		common.Must(buffer.AppendSupplier(serial.WriteHash(fnv1a)))
 	}
 
-	timestampHash := md5.New()
-	common.Must2(timestampHash.Write(hashTimestamp(timestamp)))
-	iv := timestampHash.Sum(nil)
-	aesStream := crypto.NewAesEncryptionStream(account.ID.CmdKey(), iv)
+	iv := md5.Sum(hashTimestamp(timestamp))
+	aesStream := crypto.NewAesEncryptionStream(account.ID.CmdKey(), iv[:])
 	aesStream.XORKeyStream(buffer.Bytes(), buffer.Bytes())
 	common.Must2(writer.Write(buffer.Bytes()))
 	return nil
@@ -139,9 +149,7 @@ func (c *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 
 		return &buf.SequentialWriter{Writer: cryptionWriter}
 	case protocol.SecurityType_AES128_GCM:
-		block, _ := aes.NewCipher(c.requestBodyKey[:])
-		aead, _ := cipher.NewGCM(block)
-
+		aead := crypto.NewAesGcm(c.requestBodyKey[:])
 		auth := &crypto.AEADAuthenticator{
 			AEAD:                    aead,
 			NonceGenerator:          GenerateChunkNonce(c.requestBodyIV[:], uint32(aead.NonceSize())),
@@ -149,7 +157,8 @@ func (c *ClientSession) EncodeRequestBody(request *protocol.RequestHeader, write
 		}
 		return crypto.NewAuthenticationWriter(auth, sizeParser, writer, request.Command.TransferType(), padding)
 	case protocol.SecurityType_CHACHA20_POLY1305:
-		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(c.requestBodyKey[:]))
+		aead, err := chacha20poly1305.New(GenerateChacha20Poly1305Key(c.requestBodyKey[:]))
+		common.Must(err)
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD:                    aead,
@@ -236,8 +245,7 @@ func (c *ClientSession) DecodeResponseBody(request *protocol.RequestHeader, read
 
 		return buf.NewReader(c.responseReader)
 	case protocol.SecurityType_AES128_GCM:
-		block, _ := aes.NewCipher(c.responseBodyKey[:])
-		aead, _ := cipher.NewGCM(block)
+		aead := crypto.NewAesGcm(c.responseBodyKey[:])
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD:                    aead,

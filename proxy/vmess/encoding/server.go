@@ -1,8 +1,6 @@
 package encoding
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/md5"
 	"hash/fnv"
 	"io"
@@ -101,13 +99,24 @@ type ServerSession struct {
 	responseHeader  byte
 }
 
+var serverSessionPool = sync.Pool{
+	New: func() interface{} { return &ServerSession{} },
+}
+
 // NewServerSession creates a new ServerSession, using the given UserValidator.
 // The ServerSession instance doesn't take ownership of the validator.
 func NewServerSession(validator *vmess.TimedUserValidator, sessionHistory *SessionHistory) *ServerSession {
-	return &ServerSession{
-		userValidator:  validator,
-		sessionHistory: sessionHistory,
-	}
+	session := serverSessionPool.Get().(*ServerSession)
+	session.userValidator = validator
+	session.sessionHistory = sessionHistory
+	return session
+}
+
+func ReleaseServerSession(session *ServerSession) {
+	session.responseWriter = nil
+	session.userValidator = nil
+	session.sessionHistory = nil
+	serverSessionPool.Put(session)
 }
 
 func parseSecurityType(b byte) protocol.SecurityType {
@@ -136,12 +145,10 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		return nil, newError("invalid user")
 	}
 
-	timestampHash := md5.New()
-	common.Must2(timestampHash.Write(hashTimestamp(timestamp)))
-	iv := timestampHash.Sum(nil)
+	iv := md5.Sum(hashTimestamp(timestamp))
 	vmessAccount := user.Account.(*vmess.InternalAccount)
 
-	aesStream := crypto.NewAesDecryptionStream(vmessAccount.ID.CmdKey(), iv)
+	aesStream := crypto.NewAesDecryptionStream(vmessAccount.ID.CmdKey(), iv[:])
 	decryptor := crypto.NewCryptionReader(aesStream, reader)
 
 	if err := buffer.Reset(buf.ReadFullFrom(decryptor, 38)); err != nil {
@@ -252,8 +259,7 @@ func (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 
 		return buf.NewReader(cryptionReader)
 	case protocol.SecurityType_AES128_GCM:
-		block, _ := aes.NewCipher(s.requestBodyKey[:])
-		aead, _ := cipher.NewGCM(block)
+		aead := crypto.NewAesGcm(s.requestBodyKey[:])
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD:                    aead,
@@ -330,8 +336,7 @@ func (s *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 
 		return &buf.SequentialWriter{Writer: s.responseWriter}
 	case protocol.SecurityType_AES128_GCM:
-		block, _ := aes.NewCipher(s.responseBodyKey[:])
-		aead, _ := cipher.NewGCM(block)
+		aead := crypto.NewAesGcm(s.responseBodyKey[:])
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD:                    aead,

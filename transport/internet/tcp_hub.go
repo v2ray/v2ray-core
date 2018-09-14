@@ -38,6 +38,10 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, handler 
 		ctx = ContextWithStreamSettings(ctx, settings)
 	}
 
+	if address.Family().IsDomain() && address.Domain() == "localhost" {
+		address = net.LocalHostIP
+	}
+
 	protocol := settings.ProtocolName
 	listenFunc := transportListenerCache[protocol]
 	if listenFunc == nil {
@@ -48,4 +52,8 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, handler 
 		return nil, newError("failed to listen on address: ", address, ":", port).Base(err)
 	}
 	return listener, nil
+}
+
+func ListenSystemTCP(ctx context.Context, addr *net.TCPAddr) (*net.TCPListener, error) {
+	return effectiveTCPListener.Listen(ctx, addr)
 }
