@@ -221,8 +221,6 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 
 	reader := &buf.BufferedReader{Reader: buf.NewReader(connection)}
 	svrSession := encoding.NewServerSession(h.clients, h.sessionHistory)
-	defer encoding.ReleaseServerSession(svrSession)
-
 	request, err := svrSession.DecodeRequestHeader(reader)
 
 	if err != nil {
