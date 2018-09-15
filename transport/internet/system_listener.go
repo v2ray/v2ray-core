@@ -2,38 +2,48 @@ package internet
 
 import (
 	"context"
+	"syscall"
 
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
 )
 
 var (
-	effectiveTCPListener = DefaultTCPListener{}
+	effectiveListener = DefaultListener{}
 )
 
-type DefaultTCPListener struct{}
+type DefaultListener struct{}
 
-func (tl *DefaultTCPListener) Listen(ctx context.Context, addr *net.TCPAddr) (*net.TCPListener, error) {
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		return nil, err
-	}
+func (*DefaultListener) Listen(ctx context.Context, addr net.Addr) (net.Listener, error) {
+	var lc net.ListenConfig
 
-	streamSettings := StreamSettingsFromContext(ctx)
-	if streamSettings != nil && streamSettings.SocketSettings != nil {
-		config := streamSettings.SocketSettings
-		rawConn, err := l.SyscallConn()
-		if err != nil {
-			return nil, err
-		}
-		if err := rawConn.Control(func(fd uintptr) {
-			if err := applyInboundSocketOptions("tcp", fd, config); err != nil {
-				newError("failed to apply socket options to incoming connection").Base(err).WriteToLog(session.ExportIDToError(ctx))
-			}
-		}); err != nil {
-			return nil, err
+	sockopt := getSocketSettings(ctx)
+	if sockopt != nil {
+		lc.Control = func(network, address string, c syscall.RawConn) error {
+			return c.Control(func(fd uintptr) {
+				if err := applyInboundSocketOptions(network, fd, sockopt); err != nil {
+					newError("failed to apply socket options to incoming connection").Base(err).WriteToLog(session.ExportIDToError(ctx))
+				}
+			})
 		}
 	}
 
-	return l, nil
+	return lc.Listen(ctx, addr.Network(), addr.String())
+}
+
+func (*DefaultListener) ListenPacket(ctx context.Context, addr net.Addr) (net.PacketConn, error) {
+	var lc net.ListenConfig
+
+	sockopt := getSocketSettings(ctx)
+	if sockopt != nil {
+		lc.Control = func(network, address string, c syscall.RawConn) error {
+			return c.Control(func(fd uintptr) {
+				if err := applyInboundSocketOptions(network, fd, sockopt); err != nil {
+					newError("failed to apply socket options to incoming connection").Base(err).WriteToLog(session.ExportIDToError(ctx))
+				}
+			})
+		}
+	}
+
+	return lc.ListenPacket(ctx, addr.Network(), addr.String())
 }

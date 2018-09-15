@@ -117,7 +117,7 @@ func Listen(ctx context.Context, address net.Address, port net.Port, handler int
 
 	listener.server = server
 	go func() {
-		tcpListener, err := internet.ListenSystemTCP(ctx, &net.TCPAddr{
+		tcpListener, err := internet.ListenSystem(ctx, &net.TCPAddr{
 			IP:   address.IP(),
 			Port: int(port),
 		})

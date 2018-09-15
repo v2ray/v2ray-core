@@ -41,11 +41,15 @@ func Dial(ctx context.Context, dest net.Destination) (Connection, error) {
 		return dialer(ctx, dest)
 	}
 
-	udpDialer := transportDialerCache["udp"]
-	if udpDialer == nil {
-		return nil, newError("UDP dialer not registered").AtError()
+	if dest.Network == net.Network_UDP {
+		udpDialer := transportDialerCache["udp"]
+		if udpDialer == nil {
+			return nil, newError("UDP dialer not registered").AtError()
+		}
+		return udpDialer(ctx, dest)
 	}
-	return udpDialer(ctx, dest)
+
+	return nil, newError("unknown network ", dest.Network)
 }
 
 // DialSystem calls system dialer to create a network connection.

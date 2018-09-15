@@ -8,6 +8,8 @@ var DialUDP = net.DialUDP
 var DialUnix = net.DialUnix
 var Dial = net.Dial
 
+type ListenConfig = net.ListenConfig
+
 var Listen = net.Listen
 var ListenTCP = net.ListenTCP
 var ListenUDP = net.ListenUDP
@@ -25,6 +27,7 @@ var CIDRMask = net.CIDRMask
 
 type Addr = net.Addr
 type Conn = net.Conn
+type PacketConn = net.PacketConn
 
 type TCPAddr = net.TCPAddr
 type TCPConn = net.TCPConn

@@ -11,8 +11,6 @@ type key int
 const (
 	streamSettingsKey key = iota
 	dialerSrcKey
-	transportSettingsKey
-	securitySettingsKey
 )
 
 func ContextWithStreamSettings(ctx context.Context, streamSettings *MemoryStreamConfig) context.Context {
