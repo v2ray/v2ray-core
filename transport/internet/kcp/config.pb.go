@@ -1,9 +1,11 @@
 package kcp
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import serial "v2ray.com/core/common/serial"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+	serial "v2ray.com/core/common/serial"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal

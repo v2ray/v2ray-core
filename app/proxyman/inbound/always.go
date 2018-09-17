@@ -69,13 +69,25 @@ func NewAlwaysOnInboundHandler(ctx context.Context, tag string, receiverConfig *
 	if address == nil {
 		address = net.AnyIP
 	}
+
+	mss, err := internet.ToMemoryStreamConfig(receiverConfig.StreamSettings)
+	if err != nil {
+		return nil, newError("failed to parse stream config").Base(err).AtWarning()
+	}
+
+	if receiverConfig.ReceiveOriginalDestination {
+		if mss.SocketSettings == nil {
+			mss.SocketSettings = &internet.SocketConfig{}
+		}
+		if mss.SocketSettings.Tproxy == internet.SocketConfig_Off {
+			mss.SocketSettings.Tproxy = internet.SocketConfig_Redirect
+		}
+		mss.SocketSettings.ReceiveOriginalDestAddress = true
+	}
+
 	for port := pr.From; port <= pr.To; port++ {
 		if nl.HasNetwork(net.Network_TCP) {
 			newError("creating stream worker on ", address, ":", port).AtDebug().WriteToLog()
-			mss, err := internet.ToMemoryStreamConfig(receiverConfig.StreamSettings)
-			if err != nil {
-				return nil, newError("failed to parse stream config").Base(err).AtWarning()
-			}
 
 			worker := &tcpWorker{
 				address:         address,
@@ -98,10 +110,10 @@ func NewAlwaysOnInboundHandler(ctx context.Context, tag string, receiverConfig *
 				proxy:           p,
 				address:         address,
 				port:            net.Port(port),
-				recvOrigDest:    receiverConfig.ReceiveOriginalDestination,
 				dispatcher:      h.mux,
 				uplinkCounter:   uplinkCounter,
 				downlinkCounter: downlinkCounter,
+				stream:          mss,
 			}
 			h.workers = append(h.workers, worker)
 		}

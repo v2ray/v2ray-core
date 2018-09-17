@@ -11,6 +11,7 @@ type key int
 const (
 	streamSettingsKey key = iota
 	dialerSrcKey
+	bindAddrKey
 )
 
 func ContextWithStreamSettings(ctx context.Context, streamSettings *MemoryStreamConfig) context.Context {
@@ -34,4 +35,15 @@ func DialerSourceFromContext(ctx context.Context) net.Address {
 		return addr
 	}
 	return net.AnyIP
+}
+
+func ContextWithBindAddress(ctx context.Context, dest net.Destination) context.Context {
+	return context.WithValue(ctx, bindAddrKey, dest)
+}
+
+func BindAddressFromContext(ctx context.Context) net.Destination {
+	if addr, ok := ctx.Value(bindAddrKey).(net.Destination); ok {
+		return addr
+	}
+	return net.Destination{}
 }

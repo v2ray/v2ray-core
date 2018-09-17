@@ -1,9 +1,11 @@
 package router
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import net "v2ray.com/core/common/net"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+	net "v2ray.com/core/common/net"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal

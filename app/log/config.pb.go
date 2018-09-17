@@ -1,9 +1,11 @@
 package log
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import log "v2ray.com/core/common/log"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+	log "v2ray.com/core/common/log"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal

@@ -37,10 +37,16 @@ func (DefaultSystemDialer) Dial(ctx context.Context, src net.Address, dest net.D
 
 	sockopts := getSocketSettings(ctx)
 	if sockopts != nil {
+		bindAddress := BindAddressFromContext(ctx)
 		dialer.Control = func(network, address string, c syscall.RawConn) error {
 			return c.Control(func(fd uintptr) {
 				if err := applyOutboundSocketOptions(network, address, fd, sockopts); err != nil {
 					newError("failed to apply socket options").Base(err).WriteToLog(session.ExportIDToError(ctx))
+				}
+				if dest.Network == net.Network_UDP && bindAddress.IsValid() {
+					if err := bindAddr(fd, bindAddress.Address, bindAddress.Port); err != nil {
+						newError("failed to bind source address to ", bindAddress).Base(err).WriteToLog(session.ExportIDToError(ctx))
+					}
 				}
 			})
 		}

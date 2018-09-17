@@ -1,11 +1,14 @@
 package command
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import core "v2ray.com/core"
-import protocol "v2ray.com/core/common/protocol"
-import serial "v2ray.com/core/common/serial"
+import (
+	fmt "fmt"
+	math "math"
+
+	proto "github.com/golang/protobuf/proto"
+	core "v2ray.com/core"
+	protocol "v2ray.com/core/common/protocol"
+	serial "v2ray.com/core/common/serial"
+)
 
 import (
 	"context"

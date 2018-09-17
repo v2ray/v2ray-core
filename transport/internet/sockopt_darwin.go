@@ -2,6 +2,8 @@ package internet
 
 import (
 	"syscall"
+
+	"v2ray.com/core/common/net"
 )
 
 const (
@@ -41,5 +43,9 @@ func applyInboundSocketOptions(network string, fd uintptr, config *SocketConfig)
 		}
 	}
 
+	return nil
+}
+
+func bindAddr(fd uintptr, address net.Address, port net.Port) error {
 	return nil
 }

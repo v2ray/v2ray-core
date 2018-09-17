@@ -204,8 +204,8 @@ type udpWorker struct {
 	hub             *udp.Hub
 	address         net.Address
 	port            net.Port
-	recvOrigDest    bool
 	tag             string
+	stream          *internet.MemoryStreamConfig
 	dispatcher      core.Dispatcher
 	uplinkCounter   core.StatCounter
 	downlinkCounter core.StatCounter
@@ -322,7 +322,8 @@ func (w *udpWorker) clean() error {
 
 func (w *udpWorker) Start() error {
 	w.activeConn = make(map[connID]*udpConn, 16)
-	h, err := udp.ListenUDP(w.address, w.port, udp.HubReceiveOriginalDestination(w.recvOrigDest), udp.HubCapacity(256))
+	ctx := internet.ContextWithStreamSettings(context.Background(), w.stream)
+	h, err := udp.ListenUDP(ctx, w.address, w.port, udp.HubCapacity(256))
 	if err != nil {
 		return err
 	}
