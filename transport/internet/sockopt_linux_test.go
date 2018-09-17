@@ -12,8 +12,6 @@ import (
 )
 
 func TestSockOptMark(t *testing.T) {
-	t.Skip("requires CAP_NET_ADMIN")
-
 	tcpServer := tcp.Server{
 		MsgProcessor: func(b []byte) []byte {
 			return b
