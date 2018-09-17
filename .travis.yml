@@ -9,7 +9,6 @@ before_script:
 - uname -a
 - sudo ntpdate -u time.google.com
 - date
-- sudo setcap cap_net_admin=eip ${GOROOT}/bin/go
 script:
 - go test -p 1 -tags json -v v2ray.com/core/...
 after_success:
