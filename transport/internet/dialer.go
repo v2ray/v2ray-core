@@ -3,6 +3,8 @@ package internet
 import (
 	"context"
 
+	"v2ray.com/core/common/session"
+
 	"v2ray.com/core/common/net"
 )
 
@@ -53,6 +55,10 @@ func Dial(ctx context.Context, dest net.Destination) (Connection, error) {
 }
 
 // DialSystem calls system dialer to create a network connection.
-func DialSystem(ctx context.Context, src net.Address, dest net.Destination) (net.Conn, error) {
+func DialSystem(ctx context.Context, dest net.Destination) (net.Conn, error) {
+	var src net.Address
+	if outbound := session.OutboundFromContext(ctx); outbound != nil {
+		src = outbound.Gateway
+	}
 	return effectiveSystemDialer.Dial(ctx, src, dest)
 }

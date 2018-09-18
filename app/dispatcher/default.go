@@ -16,7 +16,6 @@ import (
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/stats"
-	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/pipe"
 )
 
@@ -165,7 +164,10 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 	if !destination.IsValid() {
 		panic("Dispatcher: Invalid destination.")
 	}
-	ctx = proxy.ContextWithTarget(ctx, destination)
+	ob := &session.Outbound{
+		Target: destination,
+	}
+	ctx = session.ContextWithOutbound(ctx, ob)
 
 	inbound, outbound := d.getLink(ctx)
 	sniffingConfig := proxyman.SniffingConfigFromContext(ctx)
@@ -185,7 +187,7 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 				domain := result.Domain()
 				newError("sniffed domain: ", domain).WriteToLog(session.ExportIDToError(ctx))
 				destination.Address = net.ParseAddress(domain)
-				ctx = proxy.ContextWithTarget(ctx, destination)
+				ob.Target = destination
 			}
 			d.routedDispatch(ctx, outbound, destination)
 		}()

@@ -11,8 +11,7 @@ import (
 func init() {
 	common.Must(internet.RegisterTransportDialer(protocolName,
 		func(ctx context.Context, dest net.Destination) (internet.Connection, error) {
-			src := internet.DialerSourceFromContext(ctx)
-			conn, err := internet.DialSystem(ctx, src, dest)
+			conn, err := internet.DialSystem(ctx, dest)
 			if err != nil {
 				return nil, err
 			}

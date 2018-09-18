@@ -47,10 +47,11 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 
 // Process implements proxy.Outbound.Process.
 func (c *Client) Process(ctx context.Context, link *core.Link, dialer proxy.Dialer) error {
-	destination, ok := proxy.TargetFromContext(ctx)
-	if !ok {
+	outbound := session.OutboundFromContext(ctx)
+	if outbound == nil || !outbound.Target.IsValid() {
 		return newError("target not specified.")
 	}
+	destination := outbound.Target
 
 	var server *protocol.ServerSpec
 	var conn internet.Connection

@@ -88,7 +88,9 @@ var muxCoolPort = net.Port(9527)
 
 // NewClient creates a new mux.Client.
 func NewClient(pctx context.Context, p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client, error) {
-	ctx := proxy.ContextWithTarget(context.Background(), net.TCPDestination(muxCoolAddress, muxCoolPort))
+	ctx := session.ContextWithOutbound(context.Background(), &session.Outbound{
+		Target: net.TCPDestination(muxCoolAddress, muxCoolPort),
+	})
 	ctx, cancel := context.WithCancel(ctx)
 
 	opts := pipe.OptionsFromContext(pctx)
@@ -160,7 +162,7 @@ func writeFirstPayload(reader buf.Reader, writer *Writer) error {
 }
 
 func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
-	dest, _ := proxy.TargetFromContext(ctx)
+	dest := session.OutboundFromContext(ctx).Target
 	transferType := protocol.TransferTypeStream
 	if dest.Network == net.Network_UDP {
 		transferType = protocol.TransferTypePacket
@@ -367,8 +369,8 @@ func (w *ServerWorker) handleStatusNew(ctx context.Context, meta *FrameMetadata,
 			Status: log.AccessAccepted,
 			Reason: "",
 		}
-		if src, f := proxy.SourceFromContext(ctx); f {
-			msg.From = src
+		if inbound := session.InboundFromContext(ctx); inbound != nil && inbound.Source.IsValid() {
+			msg.From = inbound.Source
 		}
 		log.Record(msg)
 	}
