@@ -24,6 +24,7 @@ enum DomainMatchingType {
   Full = 0;
   Subdomain = 1;
   Keyword = 2;
+  Regex = 3;
 }
 
 message Config {
