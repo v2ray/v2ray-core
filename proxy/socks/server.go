@@ -37,6 +37,9 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 func (s *Server) policy() core.Policy {
 	config := s.config
 	p := s.v.PolicyManager().ForLevel(config.UserLevel)
+	if config.Timeout > 0 {
+		core.PrintDeprecatedFeatureWarning("Socks timeout")
+	}
 	if config.Timeout > 0 && config.UserLevel == 0 {
 		p.Timeouts.ConnectionIdle = time.Duration(config.Timeout) * time.Second
 	}
