@@ -208,7 +208,7 @@ func transferResponse(timer signal.ActivityUpdater, session *encoding.ServerSess
 	return nil
 }
 
-func isInecureEncryption(s protocol.SecurityType) bool {
+func isInsecureEncryption(s protocol.SecurityType) bool {
 	return s == protocol.SecurityType_NONE || s == protocol.SecurityType_LEGACY || s == protocol.SecurityType_UNKNOWN
 }
 
@@ -221,8 +221,6 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 
 	reader := &buf.BufferedReader{Reader: buf.NewReader(connection)}
 	svrSession := encoding.NewServerSession(h.clients, h.sessionHistory)
-	defer encoding.ReleaseServerSession(svrSession)
-
 	request, err := svrSession.DecodeRequestHeader(reader)
 
 	if err != nil {
@@ -238,7 +236,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 		return err
 	}
 
-	if h.secure && isInecureEncryption(request.Security) {
+	if h.secure && isInsecureEncryption(request.Security) {
 		log.Record(&log.AccessMessage{
 			From:   connection.RemoteAddr(),
 			To:     "",

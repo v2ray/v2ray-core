@@ -45,6 +45,15 @@ func NewDynamicInboundHandler(ctx context.Context, tag string, receiverConfig *p
 	if err != nil {
 		return nil, newError("failed to parse stream settings").Base(err).AtWarning()
 	}
+	if receiverConfig.ReceiveOriginalDestination {
+		if mss.SocketSettings == nil {
+			mss.SocketSettings = &internet.SocketConfig{}
+		}
+		if mss.SocketSettings.Tproxy == internet.SocketConfig_Off {
+			mss.SocketSettings.Tproxy = internet.SocketConfig_Redirect
+		}
+		mss.SocketSettings.ReceiveOriginalDestAddress = true
+	}
 
 	h.streamSettings = mss
 
@@ -139,10 +148,10 @@ func (h *DynamicInboundHandler) refresh() error {
 				proxy:           p,
 				address:         address,
 				port:            port,
-				recvOrigDest:    h.receiverConfig.ReceiveOriginalDestination,
 				dispatcher:      h.mux,
 				uplinkCounter:   uplinkCounter,
 				downlinkCounter: downlinkCounter,
+				stream:          h.streamSettings,
 			}
 			if err := worker.Start(); err != nil {
 				newError("failed to create UDP worker").Base(err).AtWarning().WriteToLog()

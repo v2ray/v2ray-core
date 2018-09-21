@@ -8,6 +8,7 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/task"
 	"v2ray.com/core/proxy"
 )
@@ -20,11 +21,11 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 }
 
 func (c *Client) Process(ctx context.Context, link *core.Link, dialer proxy.Dialer) error {
-	dest, ok := proxy.TargetFromContext(ctx)
-	if !ok {
+	outbound := session.OutboundFromContext(ctx)
+	if outbound == nil || !outbound.Target.IsValid() {
 		return newError("unknown destination.")
 	}
-
+	dest := outbound.Target
 	if dest.Network != net.Network_TCP {
 		return newError("not TCP traffic", dest)
 	}

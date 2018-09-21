@@ -29,12 +29,11 @@ func init() {
 }
 
 func dialWebsocket(ctx context.Context, dest net.Destination) (net.Conn, error) {
-	src := internet.DialerSourceFromContext(ctx)
 	wsSettings := internet.StreamSettingsFromContext(ctx).ProtocolSettings.(*Config)
 
 	dialer := &websocket.Dialer{
 		NetDial: func(network, addr string) (net.Conn, error) {
-			return internet.DialSystem(ctx, src, dest)
+			return internet.DialSystem(ctx, dest)
 		},
 		ReadBufferSize:   4 * 1024,
 		WriteBufferSize:  4 * 1024,

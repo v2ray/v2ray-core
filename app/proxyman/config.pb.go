@@ -1,11 +1,13 @@
 package proxyman
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import net "v2ray.com/core/common/net"
-import serial "v2ray.com/core/common/serial"
-import internet "v2ray.com/core/transport/internet"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+	net "v2ray.com/core/common/net"
+	serial "v2ray.com/core/common/serial"
+	internet "v2ray.com/core/transport/internet"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -29,6 +31,7 @@ var KnownProtocols_name = map[int32]string{
 	0: "HTTP",
 	1: "TLS",
 }
+
 var KnownProtocols_value = map[string]int32{
 	"HTTP": 0,
 	"TLS":  1,
@@ -37,8 +40,9 @@ var KnownProtocols_value = map[string]int32{
 func (x KnownProtocols) String() string {
 	return proto.EnumName(KnownProtocols_name, int32(x))
 }
+
 func (KnownProtocols) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_4f352eea1fc05e76, []int{0}
+	return fileDescriptor_b07f45dd938bc1b0, []int{0}
 }
 
 type AllocationStrategy_Type int32
@@ -57,6 +61,7 @@ var AllocationStrategy_Type_name = map[int32]string{
 	1: "Random",
 	2: "External",
 }
+
 var AllocationStrategy_Type_value = map[string]int32{
 	"Always":   0,
 	"Random":   1,
@@ -66,8 +71,9 @@ var AllocationStrategy_Type_value = map[string]int32{
 func (x AllocationStrategy_Type) String() string {
 	return proto.EnumName(AllocationStrategy_Type_name, int32(x))
 }
+
 func (AllocationStrategy_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_4f352eea1fc05e76, []int{1, 0}
+	return fileDescriptor_b07f45dd938bc1b0, []int{1, 0}
 }
 
 type InboundConfig struct {
@@ -80,7 +86,7 @@ func (m *InboundConfig) Reset()         { *m = InboundConfig{} }
 func (m *InboundConfig) String() string { return proto.CompactTextString(m) }
 func (*InboundConfig) ProtoMessage()    {}
 func (*InboundConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_4f352eea1fc05e76, []int{0}
+	return fileDescriptor_b07f45dd938bc1b0, []int{0}
 }
 func (m *InboundConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InboundConfig.Unmarshal(m, b)
@@ -88,8 +94,8 @@ func (m *InboundConfig) XXX_Unmarshal(b []byte) error {
 func (m *InboundConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_InboundConfig.Marshal(b, m, deterministic)
 }
-func (dst *InboundConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_InboundConfig.Merge(dst, src)
+func (m *InboundConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_InboundConfig.Merge(m, src)
 }
 func (m *InboundConfig) XXX_Size() int {
 	return xxx_messageInfo_InboundConfig.Size(m)
@@ -117,7 +123,7 @@ func (m *AllocationStrategy) Reset()         { *m = AllocationStrategy{} }
 func (m *AllocationStrategy) String() string { return proto.CompactTextString(m) }
 func (*AllocationStrategy) ProtoMessage()    {}
 func (*AllocationStrategy) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_4f352eea1fc05e76, []int{1}
+	return fileDescriptor_b07f45dd938bc1b0, []int{1}
 }
 func (m *AllocationStrategy) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AllocationStrategy.Unmarshal(m, b)
@@ -125,8 +131,8 @@ func (m *AllocationStrategy) XXX_Unmarshal(b []byte) error {
 func (m *AllocationStrategy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_AllocationStrategy.Marshal(b, m, deterministic)
 }
-func (dst *AllocationStrategy) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AllocationStrategy.Merge(dst, src)
+func (m *AllocationStrategy) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AllocationStrategy.Merge(m, src)
 }
 func (m *AllocationStrategy) XXX_Size() int {
 	return xxx_messageInfo_AllocationStrategy.Size(m)
@@ -173,7 +179,7 @@ func (m *AllocationStrategy_AllocationStrategyConcurrency) String() string {
 }
 func (*AllocationStrategy_AllocationStrategyConcurrency) ProtoMessage() {}
 func (*AllocationStrategy_AllocationStrategyConcurrency) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_4f352eea1fc05e76, []int{1, 0}
+	return fileDescriptor_b07f45dd938bc1b0, []int{1, 0}
 }
 func (m *AllocationStrategy_AllocationStrategyConcurrency) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AllocationStrategy_AllocationStrategyConcurrency.Unmarshal(m, b)
@@ -181,8 +187,8 @@ func (m *AllocationStrategy_AllocationStrategyConcurrency) XXX_Unmarshal(b []byt
 func (m *AllocationStrategy_AllocationStrategyConcurrency) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_AllocationStrategy_AllocationStrategyConcurrency.Marshal(b, m, deterministic)
 }
-func (dst *AllocationStrategy_AllocationStrategyConcurrency) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AllocationStrategy_AllocationStrategyConcurrency.Merge(dst, src)
+func (m *AllocationStrategy_AllocationStrategyConcurrency) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AllocationStrategy_AllocationStrategyConcurrency.Merge(m, src)
 }
 func (m *AllocationStrategy_AllocationStrategyConcurrency) XXX_Size() int {
 	return xxx_messageInfo_AllocationStrategy_AllocationStrategyConcurrency.Size(m)
@@ -215,7 +221,7 @@ func (m *AllocationStrategy_AllocationStrategyRefresh) String() string {
 }
 func (*AllocationStrategy_AllocationStrategyRefresh) ProtoMessage() {}
 func (*AllocationStrategy_AllocationStrategyRefresh) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_4f352eea1fc05e76, []int{1, 1}
+	return fileDescriptor_b07f45dd938bc1b0, []int{1, 1}
 }
 func (m *AllocationStrategy_AllocationStrategyRefresh) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AllocationStrategy_AllocationStrategyRefresh.Unmarshal(m, b)
@@ -223,8 +229,8 @@ func (m *AllocationStrategy_AllocationStrategyRefresh) XXX_Unmarshal(b []byte) e
 func (m *AllocationStrategy_AllocationStrategyRefresh) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_AllocationStrategy_AllocationStrategyRefresh.Marshal(b, m, deterministic)
 }
-func (dst *AllocationStrategy_AllocationStrategyRefresh) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AllocationStrategy_AllocationStrategyRefresh.Merge(dst, src)
+func (m *AllocationStrategy_AllocationStrategyRefresh) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AllocationStrategy_AllocationStrategyRefresh.Merge(m, src)
 }
 func (m *AllocationStrategy_AllocationStrategyRefresh) XXX_Size() int {
 	return xxx_messageInfo_AllocationStrategy_AllocationStrategyRefresh.Size(m)
@@ -257,7 +263,7 @@ func (m *SniffingConfig) Reset()         { *m = SniffingConfig{} }
 func (m *SniffingConfig) String() string { return proto.CompactTextString(m) }
 func (*SniffingConfig) ProtoMessage()    {}
 func (*SniffingConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_4f352eea1fc05e76, []int{2}
+	return fileDescriptor_b07f45dd938bc1b0, []int{2}
 }
 func (m *SniffingConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SniffingConfig.Unmarshal(m, b)
@@ -265,8 +271,8 @@ func (m *SniffingConfig) XXX_Unmarshal(b []byte) error {
 func (m *SniffingConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_SniffingConfig.Marshal(b, m, deterministic)
 }
-func (dst *SniffingConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_SniffingConfig.Merge(dst, src)
+func (m *SniffingConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SniffingConfig.Merge(m, src)
 }
 func (m *SniffingConfig) XXX_Size() int {
 	return xxx_messageInfo_SniffingConfig.Size(m)
@@ -312,7 +318,7 @@ func (m *ReceiverConfig) Reset()         { *m = ReceiverConfig{} }
 func (m *ReceiverConfig) String() string { return proto.CompactTextString(m) }
 func (*ReceiverConfig) ProtoMessage()    {}
 func (*ReceiverConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_4f352eea1fc05e76, []int{3}
+	return fileDescriptor_b07f45dd938bc1b0, []int{3}
 }
 func (m *ReceiverConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ReceiverConfig.Unmarshal(m, b)
@@ -320,8 +326,8 @@ func (m *ReceiverConfig) XXX_Unmarshal(b []byte) error {
 func (m *ReceiverConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ReceiverConfig.Marshal(b, m, deterministic)
 }
-func (dst *ReceiverConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ReceiverConfig.Merge(dst, src)
+func (m *ReceiverConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ReceiverConfig.Merge(m, src)
 }
 func (m *ReceiverConfig) XXX_Size() int {
 	return xxx_messageInfo_ReceiverConfig.Size(m)
@@ -395,7 +401,7 @@ func (m *InboundHandlerConfig) Reset()         { *m = InboundHandlerConfig{} }
 func (m *InboundHandlerConfig) String() string { return proto.CompactTextString(m) }
 func (*InboundHandlerConfig) ProtoMessage()    {}
 func (*InboundHandlerConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_4f352eea1fc05e76, []int{4}
+	return fileDescriptor_b07f45dd938bc1b0, []int{4}
 }
 func (m *InboundHandlerConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InboundHandlerConfig.Unmarshal(m, b)
@@ -403,8 +409,8 @@ func (m *InboundHandlerConfig) XXX_Unmarshal(b []byte) error {
 func (m *InboundHandlerConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_InboundHandlerConfig.Marshal(b, m, deterministic)
 }
-func (dst *InboundHandlerConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_InboundHandlerConfig.Merge(dst, src)
+func (m *InboundHandlerConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_InboundHandlerConfig.Merge(m, src)
 }
 func (m *InboundHandlerConfig) XXX_Size() int {
 	return xxx_messageInfo_InboundHandlerConfig.Size(m)
@@ -446,7 +452,7 @@ func (m *OutboundConfig) Reset()         { *m = OutboundConfig{} }
 func (m *OutboundConfig) String() string { return proto.CompactTextString(m) }
 func (*OutboundConfig) ProtoMessage()    {}
 func (*OutboundConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_4f352eea1fc05e76, []int{5}
+	return fileDescriptor_b07f45dd938bc1b0, []int{5}
 }
 func (m *OutboundConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_OutboundConfig.Unmarshal(m, b)
@@ -454,8 +460,8 @@ func (m *OutboundConfig) XXX_Unmarshal(b []byte) error {
 func (m *OutboundConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_OutboundConfig.Marshal(b, m, deterministic)
 }
-func (dst *OutboundConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_OutboundConfig.Merge(dst, src)
+func (m *OutboundConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OutboundConfig.Merge(m, src)
 }
 func (m *OutboundConfig) XXX_Size() int {
 	return xxx_messageInfo_OutboundConfig.Size(m)
@@ -481,7 +487,7 @@ func (m *SenderConfig) Reset()         { *m = SenderConfig{} }
 func (m *SenderConfig) String() string { return proto.CompactTextString(m) }
 func (*SenderConfig) ProtoMessage()    {}
 func (*SenderConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_4f352eea1fc05e76, []int{6}
+	return fileDescriptor_b07f45dd938bc1b0, []int{6}
 }
 func (m *SenderConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SenderConfig.Unmarshal(m, b)
@@ -489,8 +495,8 @@ func (m *SenderConfig) XXX_Unmarshal(b []byte) error {
 func (m *SenderConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_SenderConfig.Marshal(b, m, deterministic)
 }
-func (dst *SenderConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_SenderConfig.Merge(dst, src)
+func (m *SenderConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SenderConfig.Merge(m, src)
 }
 func (m *SenderConfig) XXX_Size() int {
 	return xxx_messageInfo_SenderConfig.Size(m)
@@ -543,7 +549,7 @@ func (m *MultiplexingConfig) Reset()         { *m = MultiplexingConfig{} }
 func (m *MultiplexingConfig) String() string { return proto.CompactTextString(m) }
 func (*MultiplexingConfig) ProtoMessage()    {}
 func (*MultiplexingConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_4f352eea1fc05e76, []int{7}
+	return fileDescriptor_b07f45dd938bc1b0, []int{7}
 }
 func (m *MultiplexingConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MultiplexingConfig.Unmarshal(m, b)
@@ -551,8 +557,8 @@ func (m *MultiplexingConfig) XXX_Unmarshal(b []byte) error {
 func (m *MultiplexingConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_MultiplexingConfig.Marshal(b, m, deterministic)
 }
-func (dst *MultiplexingConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MultiplexingConfig.Merge(dst, src)
+func (m *MultiplexingConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MultiplexingConfig.Merge(m, src)
 }
 func (m *MultiplexingConfig) XXX_Size() int {
 	return xxx_messageInfo_MultiplexingConfig.Size(m)
@@ -593,10 +599,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/app/proxyman/config.proto", fileDescriptor_config_4f352eea1fc05e76)
+	proto.RegisterFile("v2ray.com/core/app/proxyman/config.proto", fileDescriptor_b07f45dd938bc1b0)
 }
 
-var fileDescriptor_config_4f352eea1fc05e76 = []byte{
+var fileDescriptor_b07f45dd938bc1b0 = []byte{
 	// 825 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x95, 0x4f, 0x6f, 0xdb, 0x36,
 	0x18, 0xc6, 0x6b, 0xcb, 0x8d, 0x9d, 0x37, 0x8d, 0xaa, 0xb0, 0x01, 0xaa, 0x79, 0x1b, 0xe0, 0x79,

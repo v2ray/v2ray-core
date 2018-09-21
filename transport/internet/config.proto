@@ -67,4 +67,20 @@ message SocketConfig {
 
   // TFO is the state of TFO settings.
   TCPFastOpenState tfo = 2;
+
+  enum TProxyMode {
+    // TProxy is off.
+    Off = 0;
+    // TProxy mode.
+    TProxy = 1;
+    // Redirect mode.
+    Redirect = 2;
+  }
+
+  // TProxy is for enabling TProxy socket option.
+  TProxyMode tproxy = 3;
+
+  // ReceiveOriginalDestAddress is for enabling IP_RECVORIGDSTADDR socket option.
+  // This option is for UDP only.
+  bool receive_original_dest_address = 4;
 }

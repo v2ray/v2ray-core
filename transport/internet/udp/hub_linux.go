@@ -8,16 +8,6 @@ import (
 	"v2ray.com/core/common/net"
 )
 
-func SetOriginalDestOptions(fd int) error {
-	if err := syscall.SetsockoptInt(fd, syscall.SOL_IP, syscall.IP_TRANSPARENT, 1); err != nil {
-		return err
-	}
-	if err := syscall.SetsockoptInt(fd, syscall.SOL_IP, syscall.IP_RECVORIGDSTADDR, 1); err != nil {
-		return err
-	}
-	return nil
-}
-
 func RetrieveOriginalDest(oob []byte) net.Destination {
 	msgs, err := syscall.ParseSocketControlMessage(oob)
 	if err != nil {

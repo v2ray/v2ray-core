@@ -14,7 +14,6 @@ import (
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/task"
-	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/udp"
 	"v2ray.com/core/transport/pipe"
@@ -73,21 +72,22 @@ func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispa
 		newError("failed to set deadline").Base(err).WriteToLog(session.ExportIDToError(ctx))
 	}
 
-	inboundDest, ok := proxy.InboundEntryPointFromContext(ctx)
-	if !ok {
-		return newError("inbound entry point not specified")
+	inbound := session.InboundFromContext(ctx)
+	if inbound == nil || !inbound.Gateway.IsValid() {
+		return newError("inbound gateway not specified")
 	}
+
 	svrSession := &ServerSession{
 		config: s.config,
-		port:   inboundDest.Port,
+		port:   inbound.Gateway.Port,
 	}
 
 	reader := &buf.BufferedReader{Reader: buf.NewReader(conn)}
 	request, err := svrSession.Handshake(reader, conn)
 	if err != nil {
-		if source, ok := proxy.SourceFromContext(ctx); ok {
+		if inbound != nil && inbound.Source.IsValid() {
 			log.Record(&log.AccessMessage{
-				From:   source,
+				From:   inbound.Source,
 				To:     "",
 				Status: log.AccessRejected,
 				Reason: err,
@@ -103,9 +103,9 @@ func (s *Server) processTCP(ctx context.Context, conn internet.Connection, dispa
 	if request.Command == protocol.RequestCommandTCP {
 		dest := request.Destination()
 		newError("TCP Connect request to ", dest).WriteToLog(session.ExportIDToError(ctx))
-		if source, ok := proxy.SourceFromContext(ctx); ok {
+		if inbound != nil && inbound.Source.IsValid() {
 			log.Record(&log.AccessMessage{
-				From:   source,
+				From:   inbound.Source,
 				To:     dest,
 				Status: log.AccessAccepted,
 				Reason: "",
@@ -188,8 +188,8 @@ func (s *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 		conn.Write(udpMessage.Bytes()) // nolint: errcheck
 	})
 
-	if source, ok := proxy.SourceFromContext(ctx); ok {
-		newError("client UDP connection from ", source).WriteToLog(session.ExportIDToError(ctx))
+	if inbound := session.InboundFromContext(ctx); inbound != nil && inbound.Source.IsValid() {
+		newError("client UDP connection from ", inbound.Source).WriteToLog(session.ExportIDToError(ctx))
 	}
 
 	reader := buf.NewReader(conn)
@@ -214,9 +214,9 @@ func (s *Server) handleUDPPayload(ctx context.Context, conn internet.Connection,
 			}
 
 			newError("send packet to ", request.Destination(), " with ", payload.Len(), " bytes").AtDebug().WriteToLog(session.ExportIDToError(ctx))
-			if source, ok := proxy.SourceFromContext(ctx); ok {
+			if inbound := session.InboundFromContext(ctx); inbound != nil && inbound.Source.IsValid() {
 				log.Record(&log.AccessMessage{
-					From:   source,
+					From:   inbound.Source,
 					To:     request.Destination(),
 					Status: log.AccessAccepted,
 					Reason: "",

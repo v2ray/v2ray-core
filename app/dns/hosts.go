@@ -15,6 +15,7 @@ var typeMap = map[DomainMatchingType]strmatcher.Type{
 	DomainMatchingType_Full:      strmatcher.Full,
 	DomainMatchingType_Subdomain: strmatcher.Domain,
 	DomainMatchingType_Keyword:   strmatcher.Substr,
+	DomainMatchingType_Regex:     strmatcher.Regex,
 }
 
 func toStrMatcher(t DomainMatchingType, domain string) (strmatcher.Matcher, error) {

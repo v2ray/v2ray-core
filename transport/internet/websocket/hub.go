@@ -85,7 +85,7 @@ func ListenWS(ctx context.Context, address net.Address, port net.Port, addConn i
 }
 
 func listenTCP(ctx context.Context, address net.Address, port net.Port, tlsConfig *tls.Config) (net.Listener, error) {
-	listener, err := internet.ListenSystemTCP(ctx, &net.TCPAddr{
+	listener, err := internet.ListenSystem(ctx, &net.TCPAddr{
 		IP:   address.IP(),
 		Port: int(port),
 	})

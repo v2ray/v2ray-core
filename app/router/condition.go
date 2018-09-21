@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"v2ray.com/core/common/session"
+
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -110,11 +112,11 @@ func (m *DomainMatcher) ApplyDomain(domain string) bool {
 }
 
 func (m *DomainMatcher) Apply(ctx context.Context) bool {
-	dest, ok := proxy.TargetFromContext(ctx)
-	if !ok {
+	outbound := session.OutboundFromContext(ctx)
+	if outbound == nil || !outbound.Target.IsValid() {
 		return false
 	}
-
+	dest := outbound.Target
 	if !dest.Address.Family().IsDomain() {
 		return false
 	}
@@ -137,6 +139,22 @@ func NewCIDRMatcher(ip []byte, mask uint32, onSource bool) (*CIDRMatcher, error)
 	}, nil
 }
 
+func sourceFromContext(ctx context.Context) net.Destination {
+	inbound := session.InboundFromContext(ctx)
+	if inbound == nil {
+		return net.Destination{}
+	}
+	return inbound.Source
+}
+
+func targetFromContent(ctx context.Context) net.Destination {
+	outbound := session.OutboundFromContext(ctx)
+	if outbound == nil {
+		return net.Destination{}
+	}
+	return outbound.Target
+}
+
 func (v *CIDRMatcher) Apply(ctx context.Context) bool {
 	ips := make([]net.IP, 0, 4)
 	if resolver, ok := proxy.ResolvedIPsFromContext(ctx); ok {
@@ -150,14 +168,13 @@ func (v *CIDRMatcher) Apply(ctx context.Context) bool {
 	}
 
 	var dest net.Destination
-	var ok bool
 	if v.onSource {
-		dest, ok = proxy.SourceFromContext(ctx)
+		dest = sourceFromContext(ctx)
 	} else {
-		dest, ok = proxy.TargetFromContext(ctx)
+		dest = targetFromContent(ctx)
 	}
 
-	if ok && dest.Address.Family().IsIPv6() {
+	if dest.IsValid() && dest.Address.Family().IsIPv6() {
 		ips = append(ips, dest.Address.IP())
 	}
 
@@ -194,14 +211,13 @@ func (v *IPv4Matcher) Apply(ctx context.Context) bool {
 	}
 
 	var dest net.Destination
-	var ok bool
 	if v.onSource {
-		dest, ok = proxy.SourceFromContext(ctx)
+		dest = sourceFromContext(ctx)
 	} else {
-		dest, ok = proxy.TargetFromContext(ctx)
+		dest = targetFromContent(ctx)
 	}
 
-	if ok && dest.Address.Family().IsIPv4() {
+	if dest.IsValid() && dest.Address.Family().IsIPv4() {
 		ips = append(ips, dest.Address.IP())
 	}
 
@@ -224,11 +240,11 @@ func NewPortMatcher(portRange net.PortRange) *PortMatcher {
 }
 
 func (v *PortMatcher) Apply(ctx context.Context) bool {
-	dest, ok := proxy.TargetFromContext(ctx)
-	if !ok {
+	outbound := session.OutboundFromContext(ctx)
+	if outbound == nil || !outbound.Target.IsValid() {
 		return false
 	}
-	return v.port.Contains(dest.Port)
+	return v.port.Contains(outbound.Target.Port)
 }
 
 type NetworkMatcher struct {
@@ -242,11 +258,11 @@ func NewNetworkMatcher(network *net.NetworkList) *NetworkMatcher {
 }
 
 func (v *NetworkMatcher) Apply(ctx context.Context) bool {
-	dest, ok := proxy.TargetFromContext(ctx)
-	if !ok {
+	outbound := session.OutboundFromContext(ctx)
+	if outbound == nil || !outbound.Target.IsValid() {
 		return false
 	}
-	return v.network.HasNetwork(dest.Network)
+	return v.network.HasNetwork(outbound.Target.Network)
 }
 
 type UserMatcher struct {
@@ -295,11 +311,11 @@ func NewInboundTagMatcher(tags []string) *InboundTagMatcher {
 }
 
 func (v *InboundTagMatcher) Apply(ctx context.Context) bool {
-	tag, ok := proxy.InboundTagFromContext(ctx)
-	if !ok {
+	inbound := session.InboundFromContext(ctx)
+	if inbound == nil || len(inbound.Tag) == 0 {
 		return false
 	}
-
+	tag := inbound.Tag
 	for _, t := range v.tags {
 		if t == tag {
 			return true

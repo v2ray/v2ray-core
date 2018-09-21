@@ -53,7 +53,7 @@ func getHTTPClient(ctx context.Context, dest net.Destination) (*http.Client, err
 			}
 			address := net.ParseAddress(rawHost)
 
-			pconn, err := internet.DialSystem(context.Background(), nil, net.TCPDestination(address, port))
+			pconn, err := internet.DialSystem(context.Background(), net.TCPDestination(address, port))
 			if err != nil {
 				return nil, err
 			}

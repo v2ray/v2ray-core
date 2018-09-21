@@ -18,7 +18,7 @@ type Server struct {
 	ShouldClose  bool
 	SendFirst    []byte
 	Listen       net.Address
-	listener     *net.TCPListener
+	listener     net.Listener
 }
 
 func (server *Server) Start() (net.Destination, error) {
@@ -30,17 +30,19 @@ func (server *Server) StartContext(ctx context.Context) (net.Destination, error)
 	if listenerAddr == nil {
 		listenerAddr = net.LocalHostIP
 	}
-	listener, err := internet.ListenSystemTCP(ctx, &net.TCPAddr{
+	listener, err := internet.ListenSystem(ctx, &net.TCPAddr{
 		IP:   listenerAddr.IP(),
 		Port: int(server.Port),
 	})
 	if err != nil {
 		return net.Destination{}, err
 	}
-	server.Port = net.Port(listener.Addr().(*net.TCPAddr).Port)
-	server.listener = listener
-	go server.acceptConnections(listener)
+
 	localAddr := listener.Addr().(*net.TCPAddr)
+	server.Port = net.Port(localAddr.Port)
+	server.listener = listener
+	go server.acceptConnections(listener.(*net.TCPListener))
+
 	return net.TCPDestination(net.IPAddress(localAddr.IP), net.Port(localAddr.Port)), nil
 }
 

@@ -1,9 +1,11 @@
 package inbound
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import protocol "v2ray.com/core/common/protocol"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+	protocol "v2ray.com/core/common/protocol"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -27,7 +29,7 @@ func (m *DetourConfig) Reset()         { *m = DetourConfig{} }
 func (m *DetourConfig) String() string { return proto.CompactTextString(m) }
 func (*DetourConfig) ProtoMessage()    {}
 func (*DetourConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_2ca0b8d34269ede7, []int{0}
+	return fileDescriptor_a47d4a41f33382d2, []int{0}
 }
 func (m *DetourConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DetourConfig.Unmarshal(m, b)
@@ -35,8 +37,8 @@ func (m *DetourConfig) XXX_Unmarshal(b []byte) error {
 func (m *DetourConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DetourConfig.Marshal(b, m, deterministic)
 }
-func (dst *DetourConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DetourConfig.Merge(dst, src)
+func (m *DetourConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DetourConfig.Merge(m, src)
 }
 func (m *DetourConfig) XXX_Size() int {
 	return xxx_messageInfo_DetourConfig.Size(m)
@@ -66,7 +68,7 @@ func (m *DefaultConfig) Reset()         { *m = DefaultConfig{} }
 func (m *DefaultConfig) String() string { return proto.CompactTextString(m) }
 func (*DefaultConfig) ProtoMessage()    {}
 func (*DefaultConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_2ca0b8d34269ede7, []int{1}
+	return fileDescriptor_a47d4a41f33382d2, []int{1}
 }
 func (m *DefaultConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DefaultConfig.Unmarshal(m, b)
@@ -74,8 +76,8 @@ func (m *DefaultConfig) XXX_Unmarshal(b []byte) error {
 func (m *DefaultConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DefaultConfig.Marshal(b, m, deterministic)
 }
-func (dst *DefaultConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DefaultConfig.Merge(dst, src)
+func (m *DefaultConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DefaultConfig.Merge(m, src)
 }
 func (m *DefaultConfig) XXX_Size() int {
 	return xxx_messageInfo_DefaultConfig.Size(m)
@@ -114,7 +116,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_2ca0b8d34269ede7, []int{2}
+	return fileDescriptor_a47d4a41f33382d2, []int{2}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -122,8 +124,8 @@ func (m *Config) XXX_Unmarshal(b []byte) error {
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -169,10 +171,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/proxy/vmess/inbound/config.proto", fileDescriptor_config_2ca0b8d34269ede7)
+	proto.RegisterFile("v2ray.com/core/proxy/vmess/inbound/config.proto", fileDescriptor_a47d4a41f33382d2)
 }
 
-var fileDescriptor_config_2ca0b8d34269ede7 = []byte{
+var fileDescriptor_a47d4a41f33382d2 = []byte{
 	// 333 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x90, 0x4f, 0x4f, 0xf2, 0x40,
 	0x10, 0xc6, 0xd3, 0xc2, 0x0b, 0xbc, 0x8b, 0x78, 0x68, 0x88, 0xa9, 0x1e, 0x48, 0xd3, 0x13, 0x26,

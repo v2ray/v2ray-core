@@ -1,9 +1,11 @@
 package log
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import log "v2ray.com/core/common/log"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+	log "v2ray.com/core/common/log"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -31,6 +33,7 @@ var LogType_name = map[int32]string{
 	2: "File",
 	3: "Event",
 }
+
 var LogType_value = map[string]int32{
 	"None":    0,
 	"Console": 1,
@@ -41,8 +44,9 @@ var LogType_value = map[string]int32{
 func (x LogType) String() string {
 	return proto.EnumName(LogType_name, int32(x))
 }
+
 func (LogType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_2fe3970bf77f5f95, []int{0}
+	return fileDescriptor_92dfeade43d9e989, []int{0}
 }
 
 type Config struct {
@@ -60,7 +64,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_2fe3970bf77f5f95, []int{0}
+	return fileDescriptor_92dfeade43d9e989, []int{0}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -68,8 +72,8 @@ func (m *Config) XXX_Unmarshal(b []byte) error {
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -121,10 +125,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/app/log/config.proto", fileDescriptor_config_2fe3970bf77f5f95)
+	proto.RegisterFile("v2ray.com/core/app/log/config.proto", fileDescriptor_92dfeade43d9e989)
 }
 
-var fileDescriptor_config_2fe3970bf77f5f95 = []byte{
+var fileDescriptor_92dfeade43d9e989 = []byte{
 	// 306 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x91, 0xcd, 0x4a, 0xfb, 0x40,
 	0x14, 0x47, 0xff, 0x49, 0xbf, 0xfe, 0x1d, 0x6d, 0x1b, 0x66, 0x21, 0x45, 0x17, 0x16, 0x15, 0x29,

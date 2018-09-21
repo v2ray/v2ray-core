@@ -1,10 +1,12 @@
 package core
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import serial "v2ray.com/core/common/serial"
-import transport "v2ray.com/core/transport"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+	serial "v2ray.com/core/common/serial"
+	transport "v2ray.com/core/transport"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -39,7 +41,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_9b890a9963e1ba9b, []int{0}
+	return fileDescriptor_13704400b1045c6b, []int{0}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -47,8 +49,8 @@ func (m *Config) XXX_Unmarshal(b []byte) error {
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -111,7 +113,7 @@ func (m *InboundHandlerConfig) Reset()         { *m = InboundHandlerConfig{} }
 func (m *InboundHandlerConfig) String() string { return proto.CompactTextString(m) }
 func (*InboundHandlerConfig) ProtoMessage()    {}
 func (*InboundHandlerConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_9b890a9963e1ba9b, []int{1}
+	return fileDescriptor_13704400b1045c6b, []int{1}
 }
 func (m *InboundHandlerConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InboundHandlerConfig.Unmarshal(m, b)
@@ -119,8 +121,8 @@ func (m *InboundHandlerConfig) XXX_Unmarshal(b []byte) error {
 func (m *InboundHandlerConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_InboundHandlerConfig.Marshal(b, m, deterministic)
 }
-func (dst *InboundHandlerConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_InboundHandlerConfig.Merge(dst, src)
+func (m *InboundHandlerConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_InboundHandlerConfig.Merge(m, src)
 }
 func (m *InboundHandlerConfig) XXX_Size() int {
 	return xxx_messageInfo_InboundHandlerConfig.Size(m)
@@ -173,7 +175,7 @@ func (m *OutboundHandlerConfig) Reset()         { *m = OutboundHandlerConfig{} }
 func (m *OutboundHandlerConfig) String() string { return proto.CompactTextString(m) }
 func (*OutboundHandlerConfig) ProtoMessage()    {}
 func (*OutboundHandlerConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_9b890a9963e1ba9b, []int{2}
+	return fileDescriptor_13704400b1045c6b, []int{2}
 }
 func (m *OutboundHandlerConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_OutboundHandlerConfig.Unmarshal(m, b)
@@ -181,8 +183,8 @@ func (m *OutboundHandlerConfig) XXX_Unmarshal(b []byte) error {
 func (m *OutboundHandlerConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_OutboundHandlerConfig.Marshal(b, m, deterministic)
 }
-func (dst *OutboundHandlerConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_OutboundHandlerConfig.Merge(dst, src)
+func (m *OutboundHandlerConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OutboundHandlerConfig.Merge(m, src)
 }
 func (m *OutboundHandlerConfig) XXX_Size() int {
 	return xxx_messageInfo_OutboundHandlerConfig.Size(m)
@@ -234,9 +236,9 @@ func init() {
 	proto.RegisterType((*OutboundHandlerConfig)(nil), "v2ray.core.OutboundHandlerConfig")
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/config.proto", fileDescriptor_config_9b890a9963e1ba9b) }
+func init() { proto.RegisterFile("v2ray.com/core/config.proto", fileDescriptor_13704400b1045c6b) }
 
-var fileDescriptor_config_9b890a9963e1ba9b = []byte{
+var fileDescriptor_13704400b1045c6b = []byte{
 	// 405 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x93, 0x41, 0x6f, 0x94, 0x40,
 	0x1c, 0xc5, 0x33, 0x0b, 0x6e, 0xcb, 0xbf, 0x71, 0x5d, 0x27, 0x6a, 0x26, 0xd5, 0x03, 0x6e, 0x52,

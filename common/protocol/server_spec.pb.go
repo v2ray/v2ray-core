@@ -1,9 +1,11 @@
 package protocol
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import net "v2ray.com/core/common/net"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+	net "v2ray.com/core/common/net"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -29,7 +31,7 @@ func (m *ServerEndpoint) Reset()         { *m = ServerEndpoint{} }
 func (m *ServerEndpoint) String() string { return proto.CompactTextString(m) }
 func (*ServerEndpoint) ProtoMessage()    {}
 func (*ServerEndpoint) Descriptor() ([]byte, []int) {
-	return fileDescriptor_server_spec_5e5cfcdebad37378, []int{0}
+	return fileDescriptor_8741b2fa976e72fc, []int{0}
 }
 func (m *ServerEndpoint) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServerEndpoint.Unmarshal(m, b)
@@ -37,8 +39,8 @@ func (m *ServerEndpoint) XXX_Unmarshal(b []byte) error {
 func (m *ServerEndpoint) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ServerEndpoint.Marshal(b, m, deterministic)
 }
-func (dst *ServerEndpoint) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ServerEndpoint.Merge(dst, src)
+func (m *ServerEndpoint) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ServerEndpoint.Merge(m, src)
 }
 func (m *ServerEndpoint) XXX_Size() int {
 	return xxx_messageInfo_ServerEndpoint.Size(m)
@@ -75,10 +77,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/common/protocol/server_spec.proto", fileDescriptor_server_spec_5e5cfcdebad37378)
+	proto.RegisterFile("v2ray.com/core/common/protocol/server_spec.proto", fileDescriptor_8741b2fa976e72fc)
 }
 
-var fileDescriptor_server_spec_5e5cfcdebad37378 = []byte{
+var fileDescriptor_8741b2fa976e72fc = []byte{
 	// 241 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0xcf, 0xbd, 0x4e, 0xc3, 0x30,
 	0x10, 0x07, 0x70, 0xb9, 0xad, 0x00, 0xb9, 0x82, 0xc1, 0x53, 0x94, 0x01, 0x05, 0x16, 0xc2, 0x72,

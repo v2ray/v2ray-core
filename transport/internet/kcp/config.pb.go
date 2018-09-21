@@ -1,9 +1,11 @@
 package kcp
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import serial "v2ray.com/core/common/serial"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+	serial "v2ray.com/core/common/serial"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -28,7 +30,7 @@ func (m *MTU) Reset()         { *m = MTU{} }
 func (m *MTU) String() string { return proto.CompactTextString(m) }
 func (*MTU) ProtoMessage()    {}
 func (*MTU) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_4bc2f043099e7e59, []int{0}
+	return fileDescriptor_3746d5d763e81577, []int{0}
 }
 func (m *MTU) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MTU.Unmarshal(m, b)
@@ -36,8 +38,8 @@ func (m *MTU) XXX_Unmarshal(b []byte) error {
 func (m *MTU) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_MTU.Marshal(b, m, deterministic)
 }
-func (dst *MTU) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MTU.Merge(dst, src)
+func (m *MTU) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MTU.Merge(m, src)
 }
 func (m *MTU) XXX_Size() int {
 	return xxx_messageInfo_MTU.Size(m)
@@ -67,7 +69,7 @@ func (m *TTI) Reset()         { *m = TTI{} }
 func (m *TTI) String() string { return proto.CompactTextString(m) }
 func (*TTI) ProtoMessage()    {}
 func (*TTI) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_4bc2f043099e7e59, []int{1}
+	return fileDescriptor_3746d5d763e81577, []int{1}
 }
 func (m *TTI) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TTI.Unmarshal(m, b)
@@ -75,8 +77,8 @@ func (m *TTI) XXX_Unmarshal(b []byte) error {
 func (m *TTI) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_TTI.Marshal(b, m, deterministic)
 }
-func (dst *TTI) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TTI.Merge(dst, src)
+func (m *TTI) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TTI.Merge(m, src)
 }
 func (m *TTI) XXX_Size() int {
 	return xxx_messageInfo_TTI.Size(m)
@@ -106,7 +108,7 @@ func (m *UplinkCapacity) Reset()         { *m = UplinkCapacity{} }
 func (m *UplinkCapacity) String() string { return proto.CompactTextString(m) }
 func (*UplinkCapacity) ProtoMessage()    {}
 func (*UplinkCapacity) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_4bc2f043099e7e59, []int{2}
+	return fileDescriptor_3746d5d763e81577, []int{2}
 }
 func (m *UplinkCapacity) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UplinkCapacity.Unmarshal(m, b)
@@ -114,8 +116,8 @@ func (m *UplinkCapacity) XXX_Unmarshal(b []byte) error {
 func (m *UplinkCapacity) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_UplinkCapacity.Marshal(b, m, deterministic)
 }
-func (dst *UplinkCapacity) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UplinkCapacity.Merge(dst, src)
+func (m *UplinkCapacity) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UplinkCapacity.Merge(m, src)
 }
 func (m *UplinkCapacity) XXX_Size() int {
 	return xxx_messageInfo_UplinkCapacity.Size(m)
@@ -145,7 +147,7 @@ func (m *DownlinkCapacity) Reset()         { *m = DownlinkCapacity{} }
 func (m *DownlinkCapacity) String() string { return proto.CompactTextString(m) }
 func (*DownlinkCapacity) ProtoMessage()    {}
 func (*DownlinkCapacity) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_4bc2f043099e7e59, []int{3}
+	return fileDescriptor_3746d5d763e81577, []int{3}
 }
 func (m *DownlinkCapacity) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DownlinkCapacity.Unmarshal(m, b)
@@ -153,8 +155,8 @@ func (m *DownlinkCapacity) XXX_Unmarshal(b []byte) error {
 func (m *DownlinkCapacity) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DownlinkCapacity.Marshal(b, m, deterministic)
 }
-func (dst *DownlinkCapacity) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DownlinkCapacity.Merge(dst, src)
+func (m *DownlinkCapacity) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DownlinkCapacity.Merge(m, src)
 }
 func (m *DownlinkCapacity) XXX_Size() int {
 	return xxx_messageInfo_DownlinkCapacity.Size(m)
@@ -184,7 +186,7 @@ func (m *WriteBuffer) Reset()         { *m = WriteBuffer{} }
 func (m *WriteBuffer) String() string { return proto.CompactTextString(m) }
 func (*WriteBuffer) ProtoMessage()    {}
 func (*WriteBuffer) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_4bc2f043099e7e59, []int{4}
+	return fileDescriptor_3746d5d763e81577, []int{4}
 }
 func (m *WriteBuffer) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WriteBuffer.Unmarshal(m, b)
@@ -192,8 +194,8 @@ func (m *WriteBuffer) XXX_Unmarshal(b []byte) error {
 func (m *WriteBuffer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_WriteBuffer.Marshal(b, m, deterministic)
 }
-func (dst *WriteBuffer) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WriteBuffer.Merge(dst, src)
+func (m *WriteBuffer) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WriteBuffer.Merge(m, src)
 }
 func (m *WriteBuffer) XXX_Size() int {
 	return xxx_messageInfo_WriteBuffer.Size(m)
@@ -223,7 +225,7 @@ func (m *ReadBuffer) Reset()         { *m = ReadBuffer{} }
 func (m *ReadBuffer) String() string { return proto.CompactTextString(m) }
 func (*ReadBuffer) ProtoMessage()    {}
 func (*ReadBuffer) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_4bc2f043099e7e59, []int{5}
+	return fileDescriptor_3746d5d763e81577, []int{5}
 }
 func (m *ReadBuffer) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ReadBuffer.Unmarshal(m, b)
@@ -231,8 +233,8 @@ func (m *ReadBuffer) XXX_Unmarshal(b []byte) error {
 func (m *ReadBuffer) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ReadBuffer.Marshal(b, m, deterministic)
 }
-func (dst *ReadBuffer) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ReadBuffer.Merge(dst, src)
+func (m *ReadBuffer) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ReadBuffer.Merge(m, src)
 }
 func (m *ReadBuffer) XXX_Size() int {
 	return xxx_messageInfo_ReadBuffer.Size(m)
@@ -261,7 +263,7 @@ func (m *ConnectionReuse) Reset()         { *m = ConnectionReuse{} }
 func (m *ConnectionReuse) String() string { return proto.CompactTextString(m) }
 func (*ConnectionReuse) ProtoMessage()    {}
 func (*ConnectionReuse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_4bc2f043099e7e59, []int{6}
+	return fileDescriptor_3746d5d763e81577, []int{6}
 }
 func (m *ConnectionReuse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ConnectionReuse.Unmarshal(m, b)
@@ -269,8 +271,8 @@ func (m *ConnectionReuse) XXX_Unmarshal(b []byte) error {
 func (m *ConnectionReuse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ConnectionReuse.Marshal(b, m, deterministic)
 }
-func (dst *ConnectionReuse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ConnectionReuse.Merge(dst, src)
+func (m *ConnectionReuse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ConnectionReuse.Merge(m, src)
 }
 func (m *ConnectionReuse) XXX_Size() int {
 	return xxx_messageInfo_ConnectionReuse.Size(m)
@@ -306,7 +308,7 @@ func (m *Config) Reset()         { *m = Config{} }
 func (m *Config) String() string { return proto.CompactTextString(m) }
 func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_4bc2f043099e7e59, []int{7}
+	return fileDescriptor_3746d5d763e81577, []int{7}
 }
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
@@ -314,8 +316,8 @@ func (m *Config) XXX_Unmarshal(b []byte) error {
 func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
 }
-func (dst *Config) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Config.Merge(dst, src)
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
 }
 func (m *Config) XXX_Size() int {
 	return xxx_messageInfo_Config.Size(m)
@@ -394,10 +396,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/transport/internet/kcp/config.proto", fileDescriptor_config_4bc2f043099e7e59)
+	proto.RegisterFile("v2ray.com/core/transport/internet/kcp/config.proto", fileDescriptor_3746d5d763e81577)
 }
 
-var fileDescriptor_config_4bc2f043099e7e59 = []byte{
+var fileDescriptor_3746d5d763e81577 = []byte{
 	// 471 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x53, 0x5f, 0x6f, 0xd3, 0x3e,
 	0x14, 0x55, 0xd7, 0xae, 0xbf, 0xfe, 0x6e, 0xf7, 0xa7, 0x44, 0x08, 0x45, 0x20, 0xa1, 0xb5, 0x12,

@@ -55,14 +55,16 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 			newError("failed to get original destination").Base(err).WriteToLog(session.ExportIDToError(ctx))
 		}
 		if dest.IsValid() {
-			ctx = proxy.ContextWithOriginalTarget(ctx, dest)
+			ctx = session.ContextWithOutbound(ctx, &session.Outbound{
+				Target: dest,
+			})
 		}
 	}
-	if len(w.tag) > 0 {
-		ctx = proxy.ContextWithInboundTag(ctx, w.tag)
-	}
-	ctx = proxy.ContextWithInboundEntryPoint(ctx, net.TCPDestination(w.address, w.port))
-	ctx = proxy.ContextWithSource(ctx, net.DestinationFromAddr(conn.RemoteAddr()))
+	ctx = session.ContextWithInbound(ctx, &session.Inbound{
+		Source:  net.DestinationFromAddr(conn.RemoteAddr()),
+		Gateway: net.TCPDestination(w.address, w.port),
+		Tag:     w.tag,
+	})
 	if w.sniffingConfig != nil {
 		ctx = proxyman.ContextWithSniffingConfig(ctx, w.sniffingConfig)
 	}
@@ -204,8 +206,8 @@ type udpWorker struct {
 	hub             *udp.Hub
 	address         net.Address
 	port            net.Port
-	recvOrigDest    bool
 	tag             string
+	stream          *internet.MemoryStreamConfig
 	dispatcher      core.Dispatcher
 	uplinkCounter   core.StatCounter
 	downlinkCounter core.StatCounter
@@ -268,15 +270,17 @@ func (w *udpWorker) callback(b *buf.Buffer, source net.Destination, originalDest
 			ctx = session.ContextWithID(ctx, sid)
 
 			if originalDest.IsValid() {
-				ctx = proxy.ContextWithOriginalTarget(ctx, originalDest)
+				ctx = session.ContextWithOutbound(ctx, &session.Outbound{
+					Target: originalDest,
+				})
 			}
-			if len(w.tag) > 0 {
-				ctx = proxy.ContextWithInboundTag(ctx, w.tag)
-			}
-			ctx = proxy.ContextWithSource(ctx, source)
-			ctx = proxy.ContextWithInboundEntryPoint(ctx, net.UDPDestination(w.address, w.port))
+			ctx = session.ContextWithInbound(ctx, &session.Inbound{
+				Source:  source,
+				Gateway: net.UDPDestination(w.address, w.port),
+				Tag:     w.tag,
+			})
 			if err := w.proxy.Process(ctx, net.Network_UDP, conn, w.dispatcher); err != nil {
-				newError("connection ends").Base(err).WriteToLog()
+				newError("connection ends").Base(err).WriteToLog(session.ExportIDToError(ctx))
 			}
 			conn.Close() // nolint: errcheck
 			w.removeConn(id)
@@ -322,7 +326,8 @@ func (w *udpWorker) clean() error {
 
 func (w *udpWorker) Start() error {
 	w.activeConn = make(map[connID]*udpConn, 16)
-	h, err := udp.ListenUDP(w.address, w.port, udp.HubReceiveOriginalDestination(w.recvOrigDest), udp.HubCapacity(256))
+	ctx := internet.ContextWithStreamSettings(context.Background(), w.stream)
+	h, err := udp.ListenUDP(ctx, w.address, w.port, udp.HubCapacity(256))
 	if err != nil {
 		return err
 	}

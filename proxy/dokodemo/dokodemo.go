@@ -13,9 +13,7 @@ import (
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/task"
-	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/internet/udp"
 	"v2ray.com/core/transport/pipe"
 )
 
@@ -66,8 +64,8 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		Port:    d.port,
 	}
 	if d.config.FollowRedirect {
-		if origDest, ok := proxy.OriginalTargetFromContext(ctx); ok {
-			dest = origDest
+		if outbound := session.OutboundFromContext(ctx); outbound != nil && outbound.Target.IsValid() {
+			dest = outbound.Target
 		} else if handshake, ok := conn.(hasHandshakeAddress); ok {
 			addr := handshake.HandshakeAddress()
 			if addr != nil {
@@ -111,12 +109,18 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 			if !d.config.FollowRedirect {
 				writer = &buf.SequentialWriter{Writer: conn}
 			} else {
-				srca := net.UDPAddr{IP: dest.Address.IP(), Port: int(dest.Port.Value())}
-				origsend, err := udp.TransmitSocket(&srca, conn.RemoteAddr())
+				tCtx := internet.ContextWithBindAddress(context.Background(), dest)
+				tCtx = internet.ContextWithStreamSettings(tCtx, &internet.MemoryStreamConfig{
+					ProtocolName: "udp",
+					SocketSettings: &internet.SocketConfig{
+						Tproxy: internet.SocketConfig_TProxy,
+					},
+				})
+				tConn, err := internet.DialSystem(tCtx, net.DestinationFromAddr(conn.RemoteAddr()))
 				if err != nil {
 					return err
 				}
-				writer = &buf.SequentialWriter{Writer: origsend}
+				writer = &buf.SequentialWriter{Writer: tConn}
 			}
 		}
 

@@ -6,6 +6,7 @@ import (
 	"math/rand"
 
 	"v2ray.com/core/common/errors"
+	"v2ray.com/core/common/net"
 )
 
 // ID of a session.
@@ -22,28 +23,21 @@ func NewID() ID {
 	}
 }
 
-type sessionKey int
-
-const (
-	idSessionKey sessionKey = iota
-)
-
-// ContextWithID returns a new context with the given ID.
-func ContextWithID(ctx context.Context, id ID) context.Context {
-	return context.WithValue(ctx, idSessionKey, id)
-}
-
-// IDFromContext returns ID in this context, or 0 if not contained.
-func IDFromContext(ctx context.Context) ID {
-	if id, ok := ctx.Value(idSessionKey).(ID); ok {
-		return id
-	}
-	return 0
-}
-
 func ExportIDToError(ctx context.Context) errors.ExportOption {
 	id := IDFromContext(ctx)
 	return func(h *errors.ExportOptionHolder) {
 		h.SessionID = uint32(id)
 	}
+}
+
+type Inbound struct {
+	Source  net.Destination
+	Gateway net.Destination
+	Tag     string
+}
+
+type Outbound struct {
+	Target      net.Destination
+	Gateway     net.Address
+	ResolvedIPs []net.IP
 }

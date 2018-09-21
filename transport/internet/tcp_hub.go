@@ -54,6 +54,10 @@ func ListenTCP(ctx context.Context, address net.Address, port net.Port, handler 
 	return listener, nil
 }
 
-func ListenSystemTCP(ctx context.Context, addr *net.TCPAddr) (*net.TCPListener, error) {
-	return effectiveTCPListener.Listen(ctx, addr)
+func ListenSystem(ctx context.Context, addr net.Addr) (net.Listener, error) {
+	return effectiveListener.Listen(ctx, addr)
+}
+
+func ListenSystemPacket(ctx context.Context, addr net.Addr) (net.PacketConn, error) {
+	return effectiveListener.ListenPacket(ctx, addr)
 }

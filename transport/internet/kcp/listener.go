@@ -61,7 +61,7 @@ func NewListener(ctx context.Context, address net.Address, port net.Port, addCon
 		l.tlsConfig = config.GetTLSConfig()
 	}
 
-	hub, err := udp.ListenUDP(address, port, udp.HubCapacity(1024))
+	hub, err := udp.ListenUDP(ctx, address, port, udp.HubCapacity(1024))
 	if err != nil {
 		return nil, err
 	}

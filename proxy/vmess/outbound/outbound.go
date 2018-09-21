@@ -68,10 +68,12 @@ func (v *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 	}
 	defer conn.Close() //nolint: errcheck
 
-	target, ok := proxy.TargetFromContext(ctx)
-	if !ok {
+	outbound := session.OutboundFromContext(ctx)
+	if outbound == nil || !outbound.Target.IsValid() {
 		return newError("target not specified").AtError()
 	}
+
+	target := outbound.Target
 	newError("tunneling request to ", target, " via ", rec.Destination()).WriteToLog(session.ExportIDToError(ctx))
 
 	command := protocol.RequestCommandTCP
@@ -106,8 +108,6 @@ func (v *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 	output := link.Writer
 
 	session := encoding.NewClientSession(protocol.DefaultIDHash)
-	defer encoding.ReleaseClientSession(session)
-
 	sessionPolicy := v.v.PolicyManager().ForLevel(request.User.Level)
 
 	ctx, cancel := context.WithCancel(ctx)

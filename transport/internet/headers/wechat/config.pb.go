@@ -1,8 +1,10 @@
 package wechat
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -25,7 +27,7 @@ func (m *VideoConfig) Reset()         { *m = VideoConfig{} }
 func (m *VideoConfig) String() string { return proto.CompactTextString(m) }
 func (*VideoConfig) ProtoMessage()    {}
 func (*VideoConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_177a655b45ccb349, []int{0}
+	return fileDescriptor_0ad582a12d5e4846, []int{0}
 }
 func (m *VideoConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_VideoConfig.Unmarshal(m, b)
@@ -33,8 +35,8 @@ func (m *VideoConfig) XXX_Unmarshal(b []byte) error {
 func (m *VideoConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_VideoConfig.Marshal(b, m, deterministic)
 }
-func (dst *VideoConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_VideoConfig.Merge(dst, src)
+func (m *VideoConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_VideoConfig.Merge(m, src)
 }
 func (m *VideoConfig) XXX_Size() int {
 	return xxx_messageInfo_VideoConfig.Size(m)
@@ -50,10 +52,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/transport/internet/headers/wechat/config.proto", fileDescriptor_config_177a655b45ccb349)
+	proto.RegisterFile("v2ray.com/core/transport/internet/headers/wechat/config.proto", fileDescriptor_0ad582a12d5e4846)
 }
 
-var fileDescriptor_config_177a655b45ccb349 = []byte{
+var fileDescriptor_0ad582a12d5e4846 = []byte{
 	// 163 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xb2, 0x2d, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x2f, 0x29, 0x4a, 0xcc, 0x2b,

@@ -1,10 +1,12 @@
 package shadowsocks
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import net "v2ray.com/core/common/net"
-import protocol "v2ray.com/core/common/protocol"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+	net "v2ray.com/core/common/net"
+	protocol "v2ray.com/core/common/protocol"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -42,6 +44,7 @@ var CipherType_name = map[int32]string{
 	7: "CHACHA20_POLY1305",
 	8: "NONE",
 }
+
 var CipherType_value = map[string]int32{
 	"UNKNOWN":           0,
 	"AES_128_CFB":       1,
@@ -57,8 +60,9 @@ var CipherType_value = map[string]int32{
 func (x CipherType) String() string {
 	return proto.EnumName(CipherType_name, int32(x))
 }
+
 func (CipherType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_a7d2e93dc7e58d6d, []int{0}
+	return fileDescriptor_8d089a30c2106007, []int{0}
 }
 
 type Account_OneTimeAuth int32
@@ -74,6 +78,7 @@ var Account_OneTimeAuth_name = map[int32]string{
 	1: "Disabled",
 	2: "Enabled",
 }
+
 var Account_OneTimeAuth_value = map[string]int32{
 	"Auto":     0,
 	"Disabled": 1,
@@ -83,8 +88,9 @@ var Account_OneTimeAuth_value = map[string]int32{
 func (x Account_OneTimeAuth) String() string {
 	return proto.EnumName(Account_OneTimeAuth_name, int32(x))
 }
+
 func (Account_OneTimeAuth) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_config_a7d2e93dc7e58d6d, []int{0, 0}
+	return fileDescriptor_8d089a30c2106007, []int{0, 0}
 }
 
 type Account struct {
@@ -100,7 +106,7 @@ func (m *Account) Reset()         { *m = Account{} }
 func (m *Account) String() string { return proto.CompactTextString(m) }
 func (*Account) ProtoMessage()    {}
 func (*Account) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_a7d2e93dc7e58d6d, []int{0}
+	return fileDescriptor_8d089a30c2106007, []int{0}
 }
 func (m *Account) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Account.Unmarshal(m, b)
@@ -108,8 +114,8 @@ func (m *Account) XXX_Unmarshal(b []byte) error {
 func (m *Account) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Account.Marshal(b, m, deterministic)
 }
-func (dst *Account) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Account.Merge(dst, src)
+func (m *Account) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Account.Merge(m, src)
 }
 func (m *Account) XXX_Size() int {
 	return xxx_messageInfo_Account.Size(m)
@@ -156,7 +162,7 @@ func (m *ServerConfig) Reset()         { *m = ServerConfig{} }
 func (m *ServerConfig) String() string { return proto.CompactTextString(m) }
 func (*ServerConfig) ProtoMessage()    {}
 func (*ServerConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_a7d2e93dc7e58d6d, []int{1}
+	return fileDescriptor_8d089a30c2106007, []int{1}
 }
 func (m *ServerConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServerConfig.Unmarshal(m, b)
@@ -164,8 +170,8 @@ func (m *ServerConfig) XXX_Unmarshal(b []byte) error {
 func (m *ServerConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ServerConfig.Marshal(b, m, deterministic)
 }
-func (dst *ServerConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ServerConfig.Merge(dst, src)
+func (m *ServerConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ServerConfig.Merge(m, src)
 }
 func (m *ServerConfig) XXX_Size() int {
 	return xxx_messageInfo_ServerConfig.Size(m)
@@ -209,7 +215,7 @@ func (m *ClientConfig) Reset()         { *m = ClientConfig{} }
 func (m *ClientConfig) String() string { return proto.CompactTextString(m) }
 func (*ClientConfig) ProtoMessage()    {}
 func (*ClientConfig) Descriptor() ([]byte, []int) {
-	return fileDescriptor_config_a7d2e93dc7e58d6d, []int{2}
+	return fileDescriptor_8d089a30c2106007, []int{2}
 }
 func (m *ClientConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ClientConfig.Unmarshal(m, b)
@@ -217,8 +223,8 @@ func (m *ClientConfig) XXX_Unmarshal(b []byte) error {
 func (m *ClientConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ClientConfig.Marshal(b, m, deterministic)
 }
-func (dst *ClientConfig) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ClientConfig.Merge(dst, src)
+func (m *ClientConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ClientConfig.Merge(m, src)
 }
 func (m *ClientConfig) XXX_Size() int {
 	return xxx_messageInfo_ClientConfig.Size(m)
@@ -245,10 +251,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("v2ray.com/core/proxy/shadowsocks/config.proto", fileDescriptor_config_a7d2e93dc7e58d6d)
+	proto.RegisterFile("v2ray.com/core/proxy/shadowsocks/config.proto", fileDescriptor_8d089a30c2106007)
 }
 
-var fileDescriptor_config_a7d2e93dc7e58d6d = []byte{
+var fileDescriptor_8d089a30c2106007 = []byte{
 	// 522 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x92, 0xc1, 0x6e, 0xd3, 0x4e,
 	0x10, 0xc6, 0xbb, 0x71, 0xff, 0x4d, 0xfe, 0xe3, 0x50, 0xdc, 0x95, 0x90, 0xac, 0xa8, 0x42, 0x56,

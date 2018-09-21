@@ -13,7 +13,6 @@ import (
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/task"
-	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/udp"
 	"v2ray.com/core/transport/pipe"
@@ -99,10 +98,10 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 		for _, payload := range mpayload {
 			request, data, err := DecodeUDPPacket(s.user, payload)
 			if err != nil {
-				if source, ok := proxy.SourceFromContext(ctx); ok {
-					newError("dropping invalid UDP packet from: ", source).Base(err).WriteToLog(session.ExportIDToError(ctx))
+				if inbound := session.InboundFromContext(ctx); inbound != nil && inbound.Source.IsValid() {
+					newError("dropping invalid UDP packet from: ", inbound.Source).Base(err).WriteToLog(session.ExportIDToError(ctx))
 					log.Record(&log.AccessMessage{
-						From:   source,
+						From:   inbound.Source,
 						To:     "",
 						Status: log.AccessRejected,
 						Reason: err,
@@ -125,9 +124,9 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 			}
 
 			dest := request.Destination()
-			if source, ok := proxy.SourceFromContext(ctx); ok {
+			if inbound := session.InboundFromContext(ctx); inbound != nil && inbound.Source.IsValid() {
 				log.Record(&log.AccessMessage{
-					From:   source,
+					From:   inbound.Source,
 					To:     dest,
 					Status: log.AccessAccepted,
 					Reason: "",

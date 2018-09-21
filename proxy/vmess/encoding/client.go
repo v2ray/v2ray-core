@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"hash/fnv"
 	"io"
-	"sync"
 
 	"golang.org/x/crypto/chacha20poly1305"
 
@@ -37,21 +36,14 @@ type ClientSession struct {
 	responseBodyIV  [16]byte
 	responseReader  io.Reader
 	responseHeader  byte
-
-	buffer [33]byte // 16 + 16 + 1
-}
-
-var clientSessionPool = sync.Pool{
-	New: func() interface{} { return &ClientSession{} },
 }
 
 // NewClientSession creates a new ClientSession.
 func NewClientSession(idHash protocol.IDHash) *ClientSession {
-	session := clientSessionPool.Get().(*ClientSession)
-
-	randomBytes := session.buffer[:]
+	randomBytes := make([]byte, 33) // 16 + 16 + 1
 	common.Must2(rand.Read(randomBytes))
 
+	session := &ClientSession{}
 	copy(session.requestBodyKey[:], randomBytes[:16])
 	copy(session.requestBodyIV[:], randomBytes[16:32])
 	session.responseHeader = randomBytes[32]
@@ -60,12 +52,6 @@ func NewClientSession(idHash protocol.IDHash) *ClientSession {
 	session.idHash = idHash
 
 	return session
-}
-
-func ReleaseClientSession(session *ClientSession) {
-	session.idHash = nil
-	session.responseReader = nil
-	clientSessionPool.Put(session)
 }
 
 func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writer io.Writer) error {
