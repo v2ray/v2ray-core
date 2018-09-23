@@ -44,15 +44,30 @@ type tcpWorker struct {
 	hub internet.Listener
 }
 
+func getTProxyType(s *internet.MemoryStreamConfig) internet.SocketConfig_TProxyMode {
+	if s == nil || s.SocketSettings == nil {
+		return internet.SocketConfig_Off
+	}
+	return s.SocketSettings.Tproxy
+}
+
 func (w *tcpWorker) callback(conn internet.Connection) {
 	ctx, cancel := context.WithCancel(context.Background())
 	sid := session.NewID()
 	ctx = session.ContextWithID(ctx, sid)
 
 	if w.recvOrigDest {
-		dest, err := tcp.GetOriginalDestination(conn)
-		if err != nil {
-			newError("failed to get original destination").Base(err).WriteToLog(session.ExportIDToError(ctx))
+		var dest net.Destination
+		switch getTProxyType(w.stream) {
+		case internet.SocketConfig_Redirect:
+			d, err := tcp.GetOriginalDestination(conn)
+			if err != nil {
+				newError("failed to get original destination").Base(err).WriteToLog(session.ExportIDToError(ctx))
+			} else {
+				dest = d
+			}
+		case internet.SocketConfig_TProxy:
+			dest = net.DestinationFromAddr(conn.LocalAddr())
 		}
 		if dest.IsValid() {
 			ctx = session.ContextWithOutbound(ctx, &session.Outbound{
