@@ -264,8 +264,9 @@ func (m *Client) fetchOutput() {
 
 	reader := &buf.BufferedReader{Reader: m.link.Reader}
 
+	var meta FrameMetadata
 	for {
-		meta, err := ReadMetadata(reader)
+		err := meta.ReadFrom(reader)
 		if err != nil {
 			if errors.Cause(err) != io.EOF {
 				newError("failed to read metadata").Base(err).WriteToLog()
@@ -275,15 +276,16 @@ func (m *Client) fetchOutput() {
 
 		switch meta.SessionStatus {
 		case SessionStatusKeepAlive:
-			err = m.handleStatueKeepAlive(meta, reader)
+			err = m.handleStatueKeepAlive(&meta, reader)
 		case SessionStatusEnd:
-			err = m.handleStatusEnd(meta, reader)
+			err = m.handleStatusEnd(&meta, reader)
 		case SessionStatusNew:
-			err = m.handleStatusNew(meta, reader)
+			err = m.handleStatusNew(&meta, reader)
 		case SessionStatusKeep:
-			err = m.handleStatusKeep(meta, reader)
+			err = m.handleStatusKeep(&meta, reader)
 		default:
-			newError("unknown status: ", meta.SessionStatus).AtError().WriteToLog()
+			status := meta.SessionStatus
+			newError("unknown status: ", status).AtError().WriteToLog()
 			return
 		}
 
@@ -437,22 +439,24 @@ func (w *ServerWorker) handleStatusEnd(meta *FrameMetadata, reader *buf.Buffered
 }
 
 func (w *ServerWorker) handleFrame(ctx context.Context, reader *buf.BufferedReader) error {
-	meta, err := ReadMetadata(reader)
+	var meta FrameMetadata
+	err := meta.ReadFrom(reader)
 	if err != nil {
 		return newError("failed to read metadata").Base(err)
 	}
 
 	switch meta.SessionStatus {
 	case SessionStatusKeepAlive:
-		err = w.handleStatusKeepAlive(meta, reader)
+		err = w.handleStatusKeepAlive(&meta, reader)
 	case SessionStatusEnd:
-		err = w.handleStatusEnd(meta, reader)
+		err = w.handleStatusEnd(&meta, reader)
 	case SessionStatusNew:
-		err = w.handleStatusNew(ctx, meta, reader)
+		err = w.handleStatusNew(ctx, &meta, reader)
 	case SessionStatusKeep:
-		err = w.handleStatusKeep(meta, reader)
+		err = w.handleStatusKeep(&meta, reader)
 	default:
-		return newError("unknown status: ", meta.SessionStatus).AtError()
+		status := meta.SessionStatus
+		return newError("unknown status: ", status).AtError()
 	}
 
 	if err != nil {

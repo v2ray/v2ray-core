@@ -8,25 +8,6 @@ import (
 	"v2ray.com/core/common/serial"
 )
 
-// ReadMetadata reads FrameMetadata from the given reader.
-func ReadMetadata(reader io.Reader) (*FrameMetadata, error) {
-	metaLen, err := serial.ReadUint16(reader)
-	if err != nil {
-		return nil, err
-	}
-	if metaLen > 512 {
-		return nil, newError("invalid metalen ", metaLen).AtError()
-	}
-
-	b := buf.New()
-	defer b.Release()
-
-	if err := b.Reset(buf.ReadFullFrom(reader, int32(metaLen))); err != nil {
-		return nil, err
-	}
-	return ReadFrameFrom(b)
-}
-
 // PacketReader is an io.Reader that reads whole chunk of Mux frames every time.
 type PacketReader struct {
 	reader io.Reader
