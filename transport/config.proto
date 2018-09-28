@@ -9,6 +9,7 @@ option java_multiple_files = true;
 import "v2ray.com/core/transport/internet/config.proto";
 
 // Global transport settings. This affects all type of connections that go through V2Ray.
+// Deprecated. Use each settings in StreamConfig.
 message Config {
   repeated v2ray.core.transport.internet.TransportConfig transport_settings = 1;
 }

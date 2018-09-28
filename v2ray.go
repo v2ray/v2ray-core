@@ -45,6 +45,9 @@ func New(config *Config) (*Instance, error) {
 		id: uuid.New(),
 	}
 
+	if config.Transport != nil {
+		PrintDeprecatedFeatureWarning("global tranport settings")
+	}
 	if err := config.Transport.Apply(); err != nil {
 		return nil, err
 	}

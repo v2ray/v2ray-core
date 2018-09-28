@@ -1,6 +1,8 @@
 package mux
 
 import (
+	"io"
+
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/bitmask"
 	"v2ray.com/core/common/buf"
@@ -86,18 +88,36 @@ func (f FrameMetadata) WriteTo(b *buf.Buffer) error {
 	return nil
 }
 
-// ReadFrameFrom reads a FrameMetadata from the given buffer.
-// Visible for testing only.
-func ReadFrameFrom(b *buf.Buffer) (*FrameMetadata, error) {
-	if b.Len() < 4 {
-		return nil, newError("insufficient buffer: ", b.Len())
+// ReadFrom reads FrameMetadata from the given reader.
+func (f *FrameMetadata) ReadFrom(reader io.Reader) error {
+	metaLen, err := serial.ReadUint16(reader)
+	if err != nil {
+		return err
+	}
+	if metaLen > 512 {
+		return newError("invalid metalen ", metaLen).AtError()
 	}
 
-	f := &FrameMetadata{
-		SessionID:     serial.BytesToUint16(b.BytesTo(2)),
-		SessionStatus: SessionStatus(b.Byte(2)),
-		Option:        bitmask.Byte(b.Byte(3)),
+	b := buf.New()
+	defer b.Release()
+
+	if err := b.Reset(buf.ReadFullFrom(reader, int32(metaLen))); err != nil {
+		return err
 	}
+	return f.ReadFromBuffer(b)
+}
+
+// ReadFromBuffer reads a FrameMetadata from the given buffer.
+// Visible for testing only.
+func (f *FrameMetadata) ReadFromBuffer(b *buf.Buffer) error {
+	if b.Len() < 4 {
+		return newError("insufficient buffer: ", b.Len())
+	}
+
+	f.SessionID = serial.BytesToUint16(b.BytesTo(2))
+	f.SessionStatus = SessionStatus(b.Byte(2))
+	f.Option = bitmask.Byte(b.Byte(3))
+	f.Target.Network = net.Network_Unknown
 
 	if f.SessionStatus == SessionStatusNew {
 		network := TargetNetwork(b.Byte(4))
@@ -105,7 +125,7 @@ func ReadFrameFrom(b *buf.Buffer) (*FrameMetadata, error) {
 
 		addr, port, err := addrParser.ReadAddressPort(nil, b)
 		if err != nil {
-			return nil, newError("failed to parse address and port").Base(err)
+			return newError("failed to parse address and port").Base(err)
 		}
 
 		switch network {
@@ -114,9 +134,9 @@ func ReadFrameFrom(b *buf.Buffer) (*FrameMetadata, error) {
 		case TargetNetworkUDP:
 			f.Target = net.UDPDestination(addr, port)
 		default:
-			return nil, newError("unknown network type: ", network)
+			return newError("unknown network type: ", network)
 		}
 	}
 
-	return f, nil
+	return nil
 }

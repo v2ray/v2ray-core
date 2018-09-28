@@ -23,7 +23,7 @@ const (
 )
 
 type user struct {
-	user    *protocol.MemoryUser
+	user    protocol.MemoryUser
 	lastSec protocol.Timestamp
 }
 
@@ -119,7 +119,7 @@ func (v *TimedUserValidator) Add(u *protocol.MemoryUser) error {
 	nowSec := time.Now().Unix()
 
 	uu := &user{
-		user:    u,
+		user:    *u,
 		lastSec: protocol.Timestamp(nowSec - cacheDurationSec),
 	}
 	v.users = append(v.users, uu)
@@ -136,7 +136,9 @@ func (v *TimedUserValidator) Get(userHash []byte) (*protocol.MemoryUser, protoco
 	copy(fixedSizeHash[:], userHash)
 	pair, found := v.userHash[fixedSizeHash]
 	if found {
-		return pair.user.user, protocol.Timestamp(pair.timeInc) + v.baseTime, true
+		var user protocol.MemoryUser
+		user = pair.user.user
+		return &user, protocol.Timestamp(pair.timeInc) + v.baseTime, true
 	}
 	return nil, 0, false
 }

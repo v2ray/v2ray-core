@@ -60,6 +60,10 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 		return len(server.servers) - 1
 	}
 
+	if len(config.NameServers) > 0 {
+		core.PrintDeprecatedFeatureWarning("simple DNS server")
+	}
+
 	for _, destPB := range config.NameServers {
 		addNameServer(destPB)
 	}
