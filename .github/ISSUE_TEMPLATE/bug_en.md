@@ -19,11 +19,13 @@ If you are not sure if your question is truely a bug in V2Ray, please discuss it
 5) Please attach your configuration file (**Mask IP addresses before submit this issue**).
 
 Server configuration:
+
 ```javascript
     // Please attach your server configuration here.
 ```
 
 Client configuration:
+
 ```javascript
     // Please attach your client configuration here.
 ```
@@ -31,17 +33,20 @@ Client configuration:
 6) Please attach error logs, especially the bottom lines if the file is large. Error log file is usually at `/var/log/v2ray/error.log` on Linux.
 
 Server error log:
-```
+
+```javascript
     // Please attach your server error log here.
 ```
 
 Client error log:
-```
+
+```javascript
     // Please attach your client error log here.
 ```
 
 7) Please attach access log. Access log is usually at '/var/log/v2ray/access.log' on Linux.
-```
+
+```javascript
     // Please attach your server access log here.
 ```
 
