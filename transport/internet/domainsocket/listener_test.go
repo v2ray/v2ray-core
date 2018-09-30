@@ -18,8 +18,11 @@ import (
 func TestListen(t *testing.T) {
 	assert := With(t)
 
-	ctx := internet.ContextWithTransportSettings(context.Background(), &Config{
-		Path: "/tmp/ts3",
+	ctx := internet.ContextWithStreamSettings(context.Background(), &internet.MemoryStreamConfig{
+		ProtocolName: "domainsocket",
+		ProtocolSettings: &Config{
+			Path: "/tmp/ts3",
+		},
 	})
 	listener, err := Listen(ctx, nil, net.Port(0), func(conn internet.Connection) {
 		defer conn.Close()
@@ -53,9 +56,12 @@ func TestListenAbstract(t *testing.T) {
 
 	assert := With(t)
 
-	ctx := internet.ContextWithTransportSettings(context.Background(), &Config{
-		Path:     "/tmp/ts3",
-		Abstract: true,
+	ctx := internet.ContextWithStreamSettings(context.Background(), &internet.MemoryStreamConfig{
+		ProtocolName: "domainsocket",
+		ProtocolSettings: &Config{
+			Path:     "/tmp/ts3",
+			Abstract: true,
+		},
 	})
 	listener, err := Listen(ctx, nil, net.Port(0), func(conn internet.Connection) {
 		defer conn.Close()

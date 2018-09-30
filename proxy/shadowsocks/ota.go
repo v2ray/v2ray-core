@@ -8,6 +8,7 @@ import (
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/bytespool"
 	"v2ray.com/core/common/serial"
 )
 
@@ -76,24 +77,26 @@ func (v *ChunkReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	}
 	size += AuthSize
 
-	buffer := buf.NewSize(int32(size))
-	if err := buffer.AppendSupplier(buf.ReadFullFrom(v.reader, int32(size))); err != nil {
-		buffer.Release()
+	buffer := bytespool.Alloc(int32(size))
+	defer bytespool.Free(buffer)
+
+	if _, err := io.ReadFull(v.reader, buffer[:size]); err != nil {
 		return nil, err
 	}
 
-	authBytes := buffer.BytesTo(AuthSize)
-	payload := buffer.BytesFrom(AuthSize)
+	authBytes := buffer[:AuthSize]
+	payload := buffer[AuthSize:size]
 
 	actualAuthBytes := make([]byte, AuthSize)
 	v.auth.Authenticate(payload)(actualAuthBytes)
 	if !bytes.Equal(authBytes, actualAuthBytes) {
-		buffer.Release()
 		return nil, newError("invalid auth")
 	}
-	buffer.SliceFrom(AuthSize)
 
-	return buf.NewMultiBufferValue(buffer), nil
+	var mb buf.MultiBuffer
+	common.Must2(mb.Write(payload))
+
+	return mb, nil
 }
 
 type ChunkWriter struct {
@@ -118,7 +121,7 @@ func (w *ChunkWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
 		payloadLen, _ := mb.Read(w.buffer[2+AuthSize:])
 		serial.Uint16ToBytes(uint16(payloadLen), w.buffer[:0])
 		w.auth.Authenticate(w.buffer[2+AuthSize : 2+AuthSize+payloadLen])(w.buffer[2:])
-		if _, err := w.writer.Write(w.buffer[:2+AuthSize+payloadLen]); err != nil {
+		if err := buf.WriteAllBytes(w.writer, w.buffer[:2+AuthSize+payloadLen]); err != nil {
 			return err
 		}
 		if mb.IsEmpty() {

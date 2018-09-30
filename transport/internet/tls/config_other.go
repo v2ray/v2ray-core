@@ -2,20 +2,62 @@
 
 package tls
 
-import "crypto/x509"
+import (
+	"crypto/x509"
+	"sync"
 
-func (c *Config) GetCertPool() *x509.CertPool {
-	pool, err := x509.SystemCertPool()
-	if err != nil {
-		newError("failed to get system cert pool.").Base(err).WriteToLog()
-		return nil
-	}
-	if pool != nil {
-		for _, cert := range c.Certificate {
-			if cert.Usage == Certificate_AUTHORITY_VERIFY {
-				pool.AppendCertsFromPEM(cert.Certificate)
-			}
+	"v2ray.com/core/common/compare"
+)
+
+type certPoolCache struct {
+	sync.Mutex
+	once       sync.Once
+	pool       *x509.CertPool
+	extraCerts [][]byte
+}
+
+func (c *certPoolCache) hasCert(cert []byte) bool {
+	for _, xCert := range c.extraCerts {
+		if compare.BytesEqual(xCert, cert) {
+			return true
 		}
 	}
-	return pool
+	return false
+}
+
+func (c *certPoolCache) get(extraCerts []*Certificate) *x509.CertPool {
+	c.once.Do(func() {
+		pool, err := x509.SystemCertPool()
+		if err != nil {
+			newError("failed to get system cert pool.").Base(err).WriteToLog()
+			return
+		}
+		c.pool = pool
+	})
+
+	if c.pool == nil {
+		return nil
+	}
+
+	if len(extraCerts) == 0 {
+		return c.pool
+	}
+
+	c.Lock()
+	defer c.Unlock()
+
+	for _, cert := range extraCerts {
+		if !c.hasCert(cert.Certificate) {
+			c.pool.AppendCertsFromPEM(cert.Certificate)
+			c.extraCerts = append(c.extraCerts, cert.Certificate)
+		}
+	}
+
+	return c.pool
+}
+
+var combineCertPool certPoolCache
+
+func (c *Config) getCertPool() *x509.CertPool {
+	return combineCertPool.get(c.Certificate)
 }

@@ -20,7 +20,7 @@ func TestUTPWrite(t *testing.T) {
 
 	payload := buf.New()
 	payload.AppendSupplier(utp.Write)
-	payload.Append(content)
+	payload.Write(content)
 
 	assert(payload.Len(), Equals, int32(len(content))+utp.Size())
 }

@@ -30,6 +30,10 @@ func (r *KCPPacketReader) Read(b []byte) []Segment {
 	}
 	if r.Security != nil {
 		nonceSize := r.Security.NonceSize()
+		overhead := r.Security.Overhead()
+		if len(b) <= nonceSize+overhead {
+			return nil
+		}
 		out, err := r.Security.Open(b[nonceSize:nonceSize], b[:nonceSize], b[nonceSize:], nil)
 		if err != nil {
 			return nil
@@ -66,7 +70,7 @@ func (w *KCPPacketWriter) Overhead() int {
 }
 
 func (w *KCPPacketWriter) Write(b []byte) (int, error) {
-	bb := buf.NewSize(int32(len(b) + w.Overhead()))
+	bb := buf.New()
 	defer bb.Release()
 
 	if w.Header != nil {
@@ -85,7 +89,7 @@ func (w *KCPPacketWriter) Write(b []byte) (int, error) {
 			return len(eb), nil
 		}))
 	} else {
-		bb.Append(b)
+		bb.Write(b)
 	}
 
 	_, err := w.Writer.Write(bb.Bytes())

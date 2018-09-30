@@ -7,9 +7,10 @@ import (
 	"context"
 	"time"
 
+	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/proxy"
-	"v2ray.com/core/transport/ray"
+	"v2ray.com/core/transport/pipe"
 )
 
 // Handler is an outbound connection that silently swallow the entire payload.
@@ -29,11 +30,13 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 }
 
 // Process implements OutboundHandler.Dispatch().
-func (h *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
-	h.response.WriteTo(outboundRay.OutboundOutput())
-	// Sleep a little here to make sure the response is sent to client.
-	time.Sleep(time.Second)
-	outboundRay.OutboundOutput().CloseError()
+func (h *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dialer) error {
+	nBytes := h.response.WriteTo(link.Writer)
+	if nBytes > 0 {
+		// Sleep a little here to make sure the response is sent to client.
+		time.Sleep(time.Second)
+	}
+	pipe.CloseError(link.Writer)
 	return nil
 }
 

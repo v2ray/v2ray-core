@@ -3,9 +3,9 @@ package mux
 import (
 	"sync"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/transport/ray"
 )
 
 type SessionManager struct {
@@ -118,8 +118,8 @@ func (m *SessionManager) Close() error {
 	m.closed = true
 
 	for _, s := range m.sessions {
-		s.input.Close()
-		s.output.Close()
+		common.Close(s.input)  // nolint: errcheck
+		common.Close(s.output) // nolint: errcheck
 	}
 
 	m.sessions = nil
@@ -128,8 +128,8 @@ func (m *SessionManager) Close() error {
 
 // Session represents a client connection in a Mux connection.
 type Session struct {
-	input        ray.InputStream
-	output       ray.OutputStream
+	input        buf.Reader
+	output       buf.Writer
 	parent       *SessionManager
 	ID           uint16
 	transferType protocol.TransferType
@@ -137,8 +137,8 @@ type Session struct {
 
 // Close closes all resources associated with this session.
 func (s *Session) Close() error {
-	s.output.Close()
-	s.input.Close()
+	common.Close(s.output) // nolint: errcheck
+	common.Close(s.input)  // nolint: errcheck
 	s.parent.Remove(s.ID)
 	return nil
 }

@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc"
 	"v2ray.com/core"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/signal/done"
 )
 
 // Commander is a V2Ray feature that provides gRPC methods to external clients.
@@ -50,7 +50,7 @@ func (c *Commander) Start() error {
 		if err != nil {
 			return err
 		}
-		rawService, err := c.v.CreateObject(config)
+		rawService, err := core.CreateObject(c.v, config)
 		if err != nil {
 			return err
 		}
@@ -64,7 +64,7 @@ func (c *Commander) Start() error {
 
 	listener := &OutboundListener{
 		buffer: make(chan net.Conn, 4),
-		done:   signal.NewDone(),
+		done:   done.New(),
 	}
 
 	go func() {
@@ -73,12 +73,14 @@ func (c *Commander) Start() error {
 		}
 	}()
 
-	c.ohm.RemoveHandler(context.Background(), c.config.Tag)
-	c.ohm.AddHandler(context.Background(), &Outbound{
+	if err := c.ohm.RemoveHandler(context.Background(), c.config.Tag); err != nil {
+		newError("failed to remove existing handler").WriteToLog()
+	}
+
+	return c.ohm.AddHandler(context.Background(), &Outbound{
 		tag:      c.config.Tag,
 		listener: listener,
 	})
-	return nil
 }
 
 // Close implements common.Closable.

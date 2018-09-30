@@ -5,6 +5,8 @@ package router
 import (
 	"context"
 
+	"v2ray.com/core/common/session"
+
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
@@ -75,9 +77,11 @@ func (r *Router) PickRoute(ctx context.Context) (string, error) {
 	resolver := &ipResolver{
 		dns: r.dns,
 	}
+
+	outbound := session.OutboundFromContext(ctx)
 	if r.domainStrategy == Config_IpOnDemand {
-		if dest, ok := proxy.TargetFromContext(ctx); ok && dest.Address.Family().IsDomain() {
-			resolver.domain = dest.Address.Domain()
+		if outbound != nil && outbound.Target.IsValid() && outbound.Target.Address.Family().IsDomain() {
+			resolver.domain = outbound.Target.Address.Domain()
 			ctx = proxy.ContextWithResolveIPs(ctx, resolver)
 		}
 	}
@@ -88,11 +92,11 @@ func (r *Router) PickRoute(ctx context.Context) (string, error) {
 		}
 	}
 
-	dest, ok := proxy.TargetFromContext(ctx)
-	if !ok {
+	if outbound == nil || !outbound.Target.IsValid() {
 		return "", core.ErrNoClue
 	}
 
+	dest := outbound.Target
 	if r.domainStrategy == Config_IpIfNonMatch && dest.Address.Family().IsDomain() {
 		resolver.domain = dest.Address.Domain()
 		ips := resolver.Resolve()

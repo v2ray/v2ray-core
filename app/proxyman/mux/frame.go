@@ -1,6 +1,9 @@
 package mux
 
 import (
+	"io"
+
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/bitmask"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
@@ -58,21 +61,21 @@ type FrameMetadata struct {
 
 func (f FrameMetadata) WriteTo(b *buf.Buffer) error {
 	lenBytes := b.Bytes()
-	b.AppendBytes(0x00, 0x00)
+	common.Must2(b.WriteBytes(0x00, 0x00))
 
 	len0 := b.Len()
 	if err := b.AppendSupplier(serial.WriteUint16(f.SessionID)); err != nil {
 		return err
 	}
 
-	b.AppendBytes(byte(f.SessionStatus), byte(f.Option))
+	common.Must2(b.WriteBytes(byte(f.SessionStatus), byte(f.Option)))
 
 	if f.SessionStatus == SessionStatusNew {
 		switch f.Target.Network {
 		case net.Network_TCP:
-			b.AppendBytes(byte(TargetNetworkTCP))
+			common.Must2(b.WriteBytes(byte(TargetNetworkTCP)))
 		case net.Network_UDP:
-			b.AppendBytes(byte(TargetNetworkUDP))
+			common.Must2(b.WriteBytes(byte(TargetNetworkUDP)))
 		}
 
 		if err := addrParser.WriteAddressPort(b, f.Target.Address, f.Target.Port); err != nil {
@@ -85,24 +88,44 @@ func (f FrameMetadata) WriteTo(b *buf.Buffer) error {
 	return nil
 }
 
-func ReadFrameFrom(b *buf.Buffer) (*FrameMetadata, error) {
-	if b.Len() < 4 {
-		return nil, newError("insufficient buffer: ", b.Len())
+// ReadFrom reads FrameMetadata from the given reader.
+func (f *FrameMetadata) ReadFrom(reader io.Reader) error {
+	metaLen, err := serial.ReadUint16(reader)
+	if err != nil {
+		return err
+	}
+	if metaLen > 512 {
+		return newError("invalid metalen ", metaLen).AtError()
 	}
 
-	f := &FrameMetadata{
-		SessionID:     serial.BytesToUint16(b.BytesTo(2)),
-		SessionStatus: SessionStatus(b.Byte(2)),
-		Option:        bitmask.Byte(b.Byte(3)),
+	b := buf.New()
+	defer b.Release()
+
+	if err := b.Reset(buf.ReadFullFrom(reader, int32(metaLen))); err != nil {
+		return err
 	}
+	return f.ReadFromBuffer(b)
+}
+
+// ReadFromBuffer reads a FrameMetadata from the given buffer.
+// Visible for testing only.
+func (f *FrameMetadata) ReadFromBuffer(b *buf.Buffer) error {
+	if b.Len() < 4 {
+		return newError("insufficient buffer: ", b.Len())
+	}
+
+	f.SessionID = serial.BytesToUint16(b.BytesTo(2))
+	f.SessionStatus = SessionStatus(b.Byte(2))
+	f.Option = bitmask.Byte(b.Byte(3))
+	f.Target.Network = net.Network_Unknown
 
 	if f.SessionStatus == SessionStatusNew {
 		network := TargetNetwork(b.Byte(4))
-		b.SliceFrom(5)
+		b.Advance(5)
 
 		addr, port, err := addrParser.ReadAddressPort(nil, b)
 		if err != nil {
-			return nil, newError("failed to parse address and port").Base(err)
+			return newError("failed to parse address and port").Base(err)
 		}
 
 		switch network {
@@ -111,9 +134,9 @@ func ReadFrameFrom(b *buf.Buffer) (*FrameMetadata, error) {
 		case TargetNetworkUDP:
 			f.Target = net.UDPDestination(addr, port)
 		default:
-			return nil, newError("unknown network type: ", network)
+			return newError("unknown network type: ", network)
 		}
 	}
 
-	return f, nil
+	return nil
 }

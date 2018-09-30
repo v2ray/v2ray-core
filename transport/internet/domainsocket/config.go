@@ -6,6 +6,8 @@ import (
 	"v2ray.com/core/transport/internet"
 )
 
+const protocolName = "domainsocket"
+
 func (c *Config) GetUnixAddr() (*net.UnixAddr, error) {
 	path := c.Path
 	if len(path) == 0 {
@@ -21,7 +23,7 @@ func (c *Config) GetUnixAddr() (*net.UnixAddr, error) {
 }
 
 func init() {
-	common.Must(internet.RegisterProtocolConfigCreator(internet.TransportProtocol_DomainSocket, func() interface{} {
+	common.Must(internet.RegisterProtocolConfigCreatorByName(protocolName, func() interface{} {
 		return new(Config)
 	}))
 }

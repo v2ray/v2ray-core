@@ -10,14 +10,16 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/platform"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/task"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/encoding"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/ray"
 )
 
 // Handler is an outbound connection handler for VMess protocol.
@@ -27,10 +29,15 @@ type Handler struct {
 	v            *core.Instance
 }
 
+// New creates a new VMess outbound handler.
 func New(ctx context.Context, config *Config) (*Handler, error) {
 	serverList := protocol.NewServerList()
 	for _, rec := range config.Receiver {
-		serverList.AddServer(protocol.NewServerSpecFromPB(*rec))
+		s, err := protocol.NewServerSpecFromPB(*rec)
+		if err != nil {
+			return nil, newError("failed to parse server spec").Base(err)
+		}
+		serverList.AddServer(s)
 	}
 	handler := &Handler{
 		serverList:   serverList,
@@ -42,7 +49,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 }
 
 // Process implements proxy.Outbound.Process().
-func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dialer proxy.Dialer) error {
+func (v *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dialer) error {
 	var rec *protocol.ServerSpec
 	var conn internet.Connection
 
@@ -59,13 +66,15 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	if err != nil {
 		return newError("failed to find an available destination").Base(err).AtWarning()
 	}
-	defer conn.Close()
+	defer conn.Close() //nolint: errcheck
 
-	target, ok := proxy.TargetFromContext(ctx)
-	if !ok {
+	outbound := session.OutboundFromContext(ctx)
+	if outbound == nil || !outbound.Target.IsValid() {
 		return newError("target not specified").AtError()
 	}
-	newError("tunneling request to ", target, " via ", rec.Destination()).WithContext(ctx).WriteToLog()
+
+	target := outbound.Target
+	newError("tunneling request to ", target, " via ", rec.Destination()).WriteToLog(session.ExportIDToError(ctx))
 
 	command := protocol.RequestCommandTCP
 	if target.Network == net.Network_UDP {
@@ -84,19 +93,19 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		Option:  protocol.RequestOptionChunkStream,
 	}
 
-	rawAccount, err := request.User.GetTypedAccount()
-	if err != nil {
-		return newError("failed to get user account").Base(err).AtWarning()
-	}
-	account := rawAccount.(*vmess.InternalAccount)
+	account := request.User.Account.(*vmess.InternalAccount)
 	request.Security = account.Security
 
 	if request.Security == protocol.SecurityType_AES128_GCM || request.Security == protocol.SecurityType_NONE || request.Security == protocol.SecurityType_CHACHA20_POLY1305 {
 		request.Option.Set(protocol.RequestOptionChunkMasking)
 	}
 
-	input := outboundRay.OutboundInput()
-	output := outboundRay.OutboundOutput()
+	if enablePadding && request.Option.Has(protocol.RequestOptionChunkMasking) {
+		request.Option.Set(protocol.RequestOptionGlobalPadding)
+	}
+
+	input := link.Reader
+	output := link.Writer
 
 	session := encoding.NewClientSession(protocol.DefaultIDHash)
 	sessionPolicy := v.v.PolicyManager().ForLevel(request.User.Level)
@@ -113,16 +122,8 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 		}
 
 		bodyWriter := session.EncodeRequestBody(request, writer)
-		{
-			firstPayload, err := input.ReadTimeout(time.Millisecond * 500)
-			if err != nil && err != buf.ErrReadTimeout {
-				return newError("failed to get first payload").Base(err)
-			}
-			if !firstPayload.IsEmpty() {
-				if err := bodyWriter.WriteMultiBuffer(firstPayload); err != nil {
-					return newError("failed to write first payload").Base(err)
-				}
-			}
+		if err := buf.CopyOnceTimeout(input, bodyWriter, time.Millisecond*100); err != nil && err != buf.ErrNotTimeoutReader && err != buf.ErrReadTimeout {
+			return newError("failed to write first payload").Base(err)
 		}
 
 		if err := writer.SetBuffered(false); err != nil {
@@ -145,28 +146,38 @@ func (v *Handler) Process(ctx context.Context, outboundRay ray.OutboundRay, dial
 	responseDone := func() error {
 		defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
-		reader := buf.NewBufferedReader(buf.NewReader(conn))
+		reader := &buf.BufferedReader{Reader: buf.NewReader(conn)}
 		header, err := session.DecodeResponseHeader(reader)
 		if err != nil {
 			return newError("failed to read header").Base(err)
 		}
 		v.handleCommand(rec.Destination(), header.Command)
 
-		reader.SetBuffered(false)
 		bodyReader := session.DecodeResponseBody(request, reader)
 
 		return buf.Copy(bodyReader, output, buf.UpdateActivity(timer))
 	}
 
-	if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
+	var responseDonePost = task.Single(responseDone, task.OnSuccess(task.Close(output)))
+	if err := task.Run(task.WithContext(ctx), task.Parallel(requestDone, responseDonePost))(); err != nil {
 		return newError("connection ends").Base(err)
 	}
 
 	return nil
 }
 
+var (
+	enablePadding = false
+)
+
 func init() {
 	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
 		return New(ctx, config.(*Config))
 	}))
+
+	const defaultFlagValue = "NOT_DEFINED_AT_ALL"
+	paddingValue := platform.NewEnvFlag("v2ray.vmess.padding").GetValue(func() string { return defaultFlagValue })
+	if paddingValue != defaultFlagValue {
+		enablePadding = true
+	}
 }

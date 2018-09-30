@@ -10,10 +10,11 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
-	"v2ray.com/core/proxy"
+	"v2ray.com/core/common/task"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/internet/udp"
+	"v2ray.com/core/transport/pipe"
 )
 
 type DokodemoDoor struct {
@@ -51,37 +52,46 @@ func (d *DokodemoDoor) policy() core.Policy {
 	return p
 }
 
+type hasHandshakeAddress interface {
+	HandshakeAddress() net.Address
+}
+
 func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher core.Dispatcher) error {
-	newError("processing connection from: ", conn.RemoteAddr()).AtDebug().WithContext(ctx).WriteToLog()
+	newError("processing connection from: ", conn.RemoteAddr()).AtDebug().WriteToLog(session.ExportIDToError(ctx))
 	dest := net.Destination{
 		Network: network,
 		Address: d.address,
 		Port:    d.port,
 	}
 	if d.config.FollowRedirect {
-		if origDest, ok := proxy.OriginalTargetFromContext(ctx); ok {
-			dest = origDest
+		if outbound := session.OutboundFromContext(ctx); outbound != nil && outbound.Target.IsValid() {
+			dest = outbound.Target
+		} else if handshake, ok := conn.(hasHandshakeAddress); ok {
+			addr := handshake.HandshakeAddress()
+			if addr != nil {
+				dest.Address = addr
+			}
 		}
 	}
 	if !dest.IsValid() || dest.Address == nil {
 		return newError("unable to get destination")
 	}
 
+	plcy := d.policy()
 	ctx, cancel := context.WithCancel(ctx)
-	timer := signal.CancelAfterInactivity(ctx, cancel, d.policy().Timeouts.ConnectionIdle)
+	timer := signal.CancelAfterInactivity(ctx, cancel, plcy.Timeouts.ConnectionIdle)
 
-	inboundRay, err := dispatcher.Dispatch(ctx, dest)
+	ctx = core.ContextWithBufferPolicy(ctx, plcy.Buffer)
+	link, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return newError("failed to dispatch request").Base(err)
 	}
 
 	requestDone := func() error {
-		defer inboundRay.InboundInput().Close()
-		defer timer.SetTimeout(d.policy().Timeouts.DownlinkOnly)
+		defer timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
 
-		chunkReader := buf.NewReader(conn)
-
-		if err := buf.Copy(chunkReader, inboundRay.InboundInput(), buf.UpdateActivity(timer)); err != nil {
+		reader := buf.NewReader(conn)
+		if err := buf.Copy(reader, link.Writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport request").Base(err)
 		}
 
@@ -89,7 +99,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 	}
 
 	responseDone := func() error {
-		defer timer.SetTimeout(d.policy().Timeouts.UplinkOnly)
+		defer timer.SetTimeout(plcy.Timeouts.UplinkOnly)
 
 		var writer buf.Writer
 		if network == net.Network_TCP {
@@ -97,27 +107,36 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		} else {
 			//if we are in TPROXY mode, use linux's udp forging functionality
 			if !d.config.FollowRedirect {
-				writer = buf.NewSequentialWriter(conn)
+				writer = &buf.SequentialWriter{Writer: conn}
 			} else {
-				srca := net.UDPAddr{IP: dest.Address.IP(), Port: int(dest.Port.Value())}
-				origsend, err := udp.TransmitSocket(&srca, conn.RemoteAddr())
+				tCtx := internet.ContextWithBindAddress(context.Background(), dest)
+				tCtx = internet.ContextWithStreamSettings(tCtx, &internet.MemoryStreamConfig{
+					ProtocolName: "udp",
+					SocketSettings: &internet.SocketConfig{
+						Tproxy: internet.SocketConfig_TProxy,
+					},
+				})
+				tConn, err := internet.DialSystem(tCtx, net.DestinationFromAddr(conn.RemoteAddr()))
 				if err != nil {
 					return err
 				}
-				writer = buf.NewSequentialWriter(origsend)
+				writer = &buf.SequentialWriter{Writer: tConn}
 			}
 		}
 
-		if err := buf.Copy(inboundRay.InboundOutput(), writer, buf.UpdateActivity(timer)); err != nil {
+		if err := buf.Copy(link.Reader, writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport response").Base(err)
 		}
 
 		return nil
 	}
 
-	if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
-		inboundRay.InboundInput().CloseError()
-		inboundRay.InboundOutput().CloseError()
+	if err := task.Run(task.WithContext(ctx),
+		task.Parallel(
+			task.Single(requestDone, task.OnSuccess(task.Close(link.Writer))),
+			responseDone))(); err != nil {
+		pipe.CloseError(link.Reader)
+		pipe.CloseError(link.Writer)
 		return newError("connection ends").Base(err)
 	}
 

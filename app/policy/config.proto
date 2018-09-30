@@ -24,8 +24,14 @@ message Policy {
     bool user_downlink = 2;
   }
 
+  message Buffer {
+    // Buffer size per connection, in bytes. -1 for unlimited buffer.
+    int32 connection = 1;
+  }
+
   Timeout timeout = 1;
   Stats stats = 2;
+  Buffer buffer = 3;
 }
 
 message SystemPolicy {

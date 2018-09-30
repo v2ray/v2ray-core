@@ -4,6 +4,7 @@ import (
 	"io"
 	"testing"
 
+	"v2ray.com/core/common/compare"
 	. "v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	. "v2ray.com/ext/assert"
@@ -28,8 +29,6 @@ func TestError(t *testing.T) {
 }
 
 func TestErrorMessage(t *testing.T) {
-	assert := With(t)
-
 	data := []struct {
 		err error
 		msg string
@@ -45,6 +44,8 @@ func TestErrorMessage(t *testing.T) {
 	}
 
 	for _, d := range data {
-		assert(d.err.Error(), Equals, d.msg)
+		if err := compare.StringEqualWithDetail(d.msg, d.err.Error()); err != nil {
+			t.Fatal(err)
+		}
 	}
 }

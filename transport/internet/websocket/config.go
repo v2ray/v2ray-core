@@ -7,6 +7,8 @@ import (
 	"v2ray.com/core/transport/internet"
 )
 
+const protocolName = "websocket"
+
 func (c *Config) GetNormalizedPath() string {
 	path := c.Path
 	if len(path) == 0 {
@@ -27,7 +29,7 @@ func (c *Config) GetRequestHeader() http.Header {
 }
 
 func init() {
-	common.Must(internet.RegisterProtocolConfigCreator(internet.TransportProtocol_WebSocket, func() interface{} {
+	common.Must(internet.RegisterProtocolConfigCreatorByName(protocolName, func() interface{} {
 		return new(Config)
 	}))
 }

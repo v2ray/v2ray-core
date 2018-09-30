@@ -105,7 +105,8 @@ func main() {
 	server, err := startV2Ray()
 	if err != nil {
 		fmt.Println(err.Error())
-		os.Exit(-1)
+		// Configuration error. Exit with a special value to prevent systemd from restarting.
+		os.Exit(23)
 	}
 
 	if *test {

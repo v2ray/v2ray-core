@@ -81,7 +81,7 @@ func (s *syncStatManager) Set(m StatManager) {
 	defer s.Unlock()
 
 	if s.StatManager != nil {
-		s.StatManager.Close()
+		s.StatManager.Close() // nolint: errcheck
 	}
 	s.StatManager = m
 }

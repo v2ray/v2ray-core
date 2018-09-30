@@ -4,15 +4,14 @@ import (
 	"bytes"
 	"testing"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/compare"
 	"v2ray.com/core/common/net"
 	. "v2ray.com/core/common/protocol"
-	. "v2ray.com/ext/assert"
 )
 
 func TestAddressReading(t *testing.T) {
-	assert := With(t)
-
 	data := []struct {
 		Options []AddressOption
 		Input   []byte
@@ -69,6 +68,12 @@ func TestAddressReading(t *testing.T) {
 			Input:   []byte{3, 7, 10, 46, 56, 46, 56, 46, 56, 0, 80},
 			Error:   true,
 		},
+		{
+			Options: []AddressOption{AddressFamilyByte(0x03, net.AddressFamilyDomain)},
+			Input:   append(append([]byte{3, 24}, []byte("2a00:1450:4007:816::200e")...), 0, 80),
+			Address: net.ParseAddress("2a00:1450:4007:816::200e"),
+			Port:    net.Port(80),
+		},
 	}
 
 	for _, tc := range data {
@@ -77,18 +82,26 @@ func TestAddressReading(t *testing.T) {
 		addr, port, err := parser.ReadAddressPort(b, bytes.NewReader(tc.Input))
 		b.Release()
 		if tc.Error {
-			assert(err, IsNotNil)
+			if err == nil {
+				t.Errorf("Expect error but not: %v", tc)
+			}
 		} else {
-			assert(addr, Equals, tc.Address)
-			assert(port, Equals, tc.Port)
-			assert(err, IsNil)
+			if err != nil {
+				t.Errorf("Expect no error but: %s %v", err.Error(), tc)
+			}
+
+			if addr != tc.Address {
+				t.Error("Got address ", addr.String(), " want ", tc.Address.String())
+			}
+
+			if tc.Port != port {
+				t.Error("Got port ", port, " want ", tc.Port)
+			}
 		}
 	}
 }
 
 func TestAddressWriting(t *testing.T) {
-	assert := With(t)
-
 	data := []struct {
 		Options []AddressOption
 		Address net.Address
@@ -110,9 +123,14 @@ func TestAddressWriting(t *testing.T) {
 		b := buf.New()
 		err := parser.WriteAddressPort(b, tc.Address, tc.Port)
 		if tc.Error {
-			assert(err, IsNotNil)
+			if err == nil {
+				t.Error("Expect error but nil")
+			}
 		} else {
-			assert(b.Bytes(), Equals, tc.Bytes)
+			common.Must(err)
+			if err := compare.BytesEqualWithDetail(tc.Bytes, b.Bytes()); err != nil {
+				t.Error(err)
+			}
 		}
 	}
 }

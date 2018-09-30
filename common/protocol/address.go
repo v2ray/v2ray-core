@@ -6,7 +6,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/task"
 )
 
 type AddressOption func(*AddressParser)
@@ -109,7 +109,7 @@ func (p *AddressParser) readAddress(b *buf.Buffer, reader io.Reader) (net.Addres
 		domain := string(b.BytesFrom(-domainLength))
 		if maybeIPPrefix(domain[0]) {
 			addr := net.ParseAddress(domain)
-			if addr.Family().IsIPv4() || addrFamily.IsIPv6() {
+			if addr.Family().IsIPv4() || addr.Family().IsIPv6() {
 				return addr, nil
 			}
 		}
@@ -153,9 +153,9 @@ func (p *AddressParser) ReadAddressPort(buffer *buf.Buffer, input io.Reader) (ne
 	var err error
 
 	if p.portFirst {
-		err = signal.Execute(pTask, aTask)
+		err = task.Run(task.Sequential(pTask, aTask))()
 	} else {
-		err = signal.Execute(aTask, pTask)
+		err = task.Run(task.Sequential(aTask, pTask))()
 	}
 
 	if err != nil {
@@ -177,21 +177,21 @@ func (p *AddressParser) writeAddress(writer io.Writer, address net.Address) erro
 
 	switch address.Family() {
 	case net.AddressFamilyIPv4, net.AddressFamilyIPv6:
-		return signal.Execute(func() error {
+		return task.Run(task.Sequential(func() error {
 			return common.Error2(writer.Write([]byte{tb}))
 		}, func() error {
 			return common.Error2(writer.Write(address.IP()))
-		})
+		}))()
 	case net.AddressFamilyDomain:
 		domain := address.Domain()
 		if isDomainTooLong(domain) {
 			return newError("Super long domain is not supported: ", domain)
 		}
-		return signal.Execute(func() error {
+		return task.Run(task.Sequential(func() error {
 			return common.Error2(writer.Write([]byte{tb, byte(len(domain))}))
 		}, func() error {
 			return common.Error2(writer.Write([]byte(domain)))
-		})
+		}))()
 	default:
 		panic("Unknown family type.")
 	}
@@ -207,8 +207,8 @@ func (p *AddressParser) WriteAddressPort(writer io.Writer, addr net.Address, por
 	}
 
 	if p.portFirst {
-		return signal.Execute(pTask, aTask)
+		return task.Run(task.Sequential(pTask, aTask))()
 	}
 
-	return signal.Execute(aTask, pTask)
+	return task.Run(task.Sequential(aTask, pTask))()
 }

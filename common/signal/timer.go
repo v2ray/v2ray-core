@@ -2,7 +2,11 @@ package signal
 
 import (
 	"context"
+	"sync"
 	"time"
+
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/task"
 )
 
 type ActivityUpdater interface {
@@ -10,9 +14,10 @@ type ActivityUpdater interface {
 }
 
 type ActivityTimer struct {
-	updated chan struct{}
-	timeout chan time.Duration
-	closing chan struct{}
+	sync.RWMutex
+	updated   chan struct{}
+	checkTask *task.Periodic
+	onTimeout func()
 }
 
 func (t *ActivityTimer) Update() {
@@ -22,60 +27,56 @@ func (t *ActivityTimer) Update() {
 	}
 }
 
-func (t *ActivityTimer) SetTimeout(timeout time.Duration) {
+func (t *ActivityTimer) check() error {
 	select {
-	case <-t.closing:
-	case t.timeout <- timeout:
+	case <-t.updated:
+	default:
+		t.finish()
+	}
+	return nil
+}
+
+func (t *ActivityTimer) finish() {
+	t.Lock()
+	defer t.Unlock()
+
+	if t.onTimeout != nil {
+		t.onTimeout()
+		t.onTimeout = nil
+	}
+	if t.checkTask != nil {
+		t.checkTask.Close() // nolint: errcheck
+		t.checkTask = nil
 	}
 }
 
-func (t *ActivityTimer) run(ctx context.Context, cancel context.CancelFunc) {
-	defer func() {
-		cancel()
-		close(t.closing)
-	}()
-
-	timeout := <-t.timeout
+func (t *ActivityTimer) SetTimeout(timeout time.Duration) {
 	if timeout == 0 {
+		t.finish()
 		return
 	}
 
-	ticker := time.NewTicker(timeout)
-	defer func() {
-		ticker.Stop()
-	}()
-
-	for {
-		select {
-		case <-ticker.C:
-		case <-ctx.Done():
-			return
-		case timeout := <-t.timeout:
-			if timeout == 0 {
-				return
-			}
-
-			ticker.Stop()
-			ticker = time.NewTicker(timeout)
-			continue
-		}
-
-		select {
-		case <-t.updated:
-		// Updated keep waiting.
-		default:
-			return
-		}
+	checkTask := &task.Periodic{
+		Interval: timeout,
+		Execute:  t.check,
 	}
+
+	t.Lock()
+
+	if t.checkTask != nil {
+		t.checkTask.Close() // nolint: errcheck
+	}
+	t.checkTask = checkTask
+	t.Unlock()
+	t.Update()
+	common.Must(checkTask.Start())
 }
 
 func CancelAfterInactivity(ctx context.Context, cancel context.CancelFunc, timeout time.Duration) *ActivityTimer {
 	timer := &ActivityTimer{
-		timeout: make(chan time.Duration, 1),
-		updated: make(chan struct{}, 1),
-		closing: make(chan struct{}),
+		updated:   make(chan struct{}, 1),
+		onTimeout: cancel,
 	}
-	timer.timeout <- timeout
-	go timer.run(ctx, cancel)
+	timer.SetTimeout(timeout)
 	return timer
 }

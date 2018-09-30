@@ -8,56 +8,23 @@ import (
 	"testing"
 	"time"
 
+	"v2ray.com/core/common/session"
+
 	proto "github.com/golang/protobuf/proto"
+	"v2ray.com/core/app/dispatcher"
 	. "v2ray.com/core/app/router"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/platform"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/proxy"
+	"v2ray.com/core/common/protocol/http"
 	. "v2ray.com/ext/assert"
 	"v2ray.com/ext/sysio"
 )
 
-func TestSubDomainMatcher(t *testing.T) {
-	assert := With(t)
-
-	cases := []struct {
-		pattern string
-		input   string
-		output  bool
-	}{
-		{
-			pattern: "v2ray.com",
-			input:   "www.v2ray.com",
-			output:  true,
-		},
-		{
-			pattern: "v2ray.com",
-			input:   "v2ray.com",
-			output:  true,
-		},
-		{
-			pattern: "v2ray.com",
-			input:   "www.v3ray.com",
-			output:  false,
-		},
-		{
-			pattern: "v2ray.com",
-			input:   "2ray.com",
-			output:  false,
-		},
-		{
-			pattern: "v2ray.com",
-			input:   "xv2ray.com",
-			output:  false,
-		},
-	}
-	for _, test := range cases {
-		matcher := NewSubDomainMatcher(test.pattern)
-		assert(matcher.Apply(test.input) == test.output, IsTrue)
-	}
+func withOutbound(outbound *session.Outbound) context.Context {
+	return session.ContextWithOutbound(context.Background(), outbound)
 }
 
 func TestRoutingRule(t *testing.T) {
@@ -91,27 +58,27 @@ func TestRoutingRule(t *testing.T) {
 			},
 			test: []ruleTest{
 				{
-					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("v2ray.com"), 80)),
+					input:  withOutbound(&session.Outbound{Target: net.TCPDestination(net.DomainAddress("v2ray.com"), 80)}),
 					output: true,
 				},
 				{
-					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("www.v2ray.com.www"), 80)),
+					input:  withOutbound(&session.Outbound{Target: net.TCPDestination(net.DomainAddress("www.v2ray.com.www"), 80)}),
 					output: true,
 				},
 				{
-					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("v2ray.co"), 80)),
+					input:  withOutbound(&session.Outbound{Target: net.TCPDestination(net.DomainAddress("v2ray.co"), 80)}),
 					output: false,
 				},
 				{
-					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("www.google.com"), 80)),
+					input:  withOutbound(&session.Outbound{Target: net.TCPDestination(net.DomainAddress("www.google.com"), 80)}),
 					output: true,
 				},
 				{
-					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("facebook.com"), 80)),
+					input:  withOutbound(&session.Outbound{Target: net.TCPDestination(net.DomainAddress("facebook.com"), 80)}),
 					output: true,
 				},
 				{
-					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.DomainAddress("www.facebook.com"), 80)),
+					input:  withOutbound(&session.Outbound{Target: net.TCPDestination(net.DomainAddress("www.facebook.com"), 80)}),
 					output: false,
 				},
 				{
@@ -139,15 +106,15 @@ func TestRoutingRule(t *testing.T) {
 			},
 			test: []ruleTest{
 				{
-					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.ParseAddress("8.8.8.8"), 80)),
+					input:  withOutbound(&session.Outbound{Target: net.TCPDestination(net.ParseAddress("8.8.8.8"), 80)}),
 					output: true,
 				},
 				{
-					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.ParseAddress("8.8.4.4"), 80)),
+					input:  withOutbound(&session.Outbound{Target: net.TCPDestination(net.ParseAddress("8.8.4.4"), 80)}),
 					output: false,
 				},
 				{
-					input:  proxy.ContextWithTarget(context.Background(), net.TCPDestination(net.ParseAddress("2001:0db8:85a3:0000:0000:8a2e:0370:7334"), 80)),
+					input:  withOutbound(&session.Outbound{Target: net.TCPDestination(net.ParseAddress("2001:0db8:85a3:0000:0000:8a2e:0370:7334"), 80)}),
 					output: true,
 				},
 				{
@@ -164,16 +131,27 @@ func TestRoutingRule(t *testing.T) {
 			},
 			test: []ruleTest{
 				{
-					input:  protocol.ContextWithUser(context.Background(), &protocol.User{Email: "admin@v2ray.com"}),
+					input:  protocol.ContextWithUser(context.Background(), &protocol.MemoryUser{Email: "admin@v2ray.com"}),
 					output: true,
 				},
 				{
-					input:  protocol.ContextWithUser(context.Background(), &protocol.User{Email: "love@v2ray.com"}),
+					input:  protocol.ContextWithUser(context.Background(), &protocol.MemoryUser{Email: "love@v2ray.com"}),
 					output: false,
 				},
 				{
 					input:  context.Background(),
 					output: false,
+				},
+			},
+		},
+		{
+			rule: &RoutingRule{
+				Protocol: []string{"http"},
+			},
+			test: []ruleTest{
+				{
+					input:  dispatcher.ContextWithSniffingResult(context.Background(), &http.SniffHeader{}),
+					output: true,
 				},
 			},
 		},
@@ -216,10 +194,8 @@ func TestChinaSites(t *testing.T) {
 	domains, err := loadGeoSite("CN")
 	assert(err, IsNil)
 
-	matcher := NewCachableDomainMatcher()
-	for _, d := range domains {
-		assert(matcher.Add(d), IsNil)
-	}
+	matcher, err := NewDomainMatcher(domains)
+	common.Must(err)
 
 	assert(matcher.ApplyDomain("163.com"), IsTrue)
 	assert(matcher.ApplyDomain("163.com"), IsTrue)

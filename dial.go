@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/transport/ray"
 )
 
 // Dial provides an easy way for upstream caller to create net.Conn through V2Ray.
@@ -16,5 +15,5 @@ func Dial(ctx context.Context, v *Instance, dest net.Destination) (net.Conn, err
 	if err != nil {
 		return nil, err
 	}
-	return ray.NewConnection(r.InboundOutput(), r.InboundInput()), nil
+	return net.NewConnection(net.ConnectionInputMulti(r.Writer), net.ConnectionOutputMulti(r.Reader)), nil
 }

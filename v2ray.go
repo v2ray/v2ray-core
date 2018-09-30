@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/uuid"
 )
 
@@ -44,6 +45,9 @@ func New(config *Config) (*Instance, error) {
 		id: uuid.New(),
 	}
 
+	if config.Transport != nil {
+		PrintDeprecatedFeatureWarning("global tranport settings")
+	}
 	if err := config.Transport.Apply(); err != nil {
 		return nil, err
 	}
@@ -53,13 +57,13 @@ func New(config *Config) (*Instance, error) {
 		if err != nil {
 			return nil, err
 		}
-		if _, err := server.CreateObject(settings); err != nil {
+		if _, err := CreateObject(server, settings); err != nil {
 			return nil, err
 		}
 	}
 
 	for _, inbound := range config.Inbound {
-		rawHandler, err := server.CreateObject(inbound)
+		rawHandler, err := CreateObject(server, inbound)
 		if err != nil {
 			return nil, err
 		}
@@ -73,7 +77,7 @@ func New(config *Config) (*Instance, error) {
 	}
 
 	for _, outbound := range config.Outbound {
-		rawHandler, err := server.CreateObject(outbound)
+		rawHandler, err := CreateObject(server, outbound)
 		if err != nil {
 			return nil, err
 		}
@@ -89,11 +93,6 @@ func New(config *Config) (*Instance, error) {
 	return server, nil
 }
 
-func (s *Instance) CreateObject(config interface{}) (interface{}, error) {
-	ctx := context.WithValue(context.Background(), v2rayKey, s)
-	return common.CreateObject(ctx, config)
-}
-
 // ID returns a unique ID for this V2Ray instance.
 func (s *Instance) ID() uuid.UUID {
 	return s.id
@@ -105,8 +104,15 @@ func (s *Instance) Close() error {
 	defer s.access.Unlock()
 
 	s.running = false
+
+	var errors []interface{}
 	for _, f := range s.allFeatures() {
-		f.Close()
+		if err := f.Close(); err != nil {
+			errors = append(errors, err)
+		}
+	}
+	if len(errors) > 0 {
+		return newError("failed to close all features").Base(newError(serial.Concat(errors...)))
 	}
 
 	return nil

@@ -7,6 +7,8 @@ import (
 	"v2ray.com/core/transport/internet"
 )
 
+const protocolName = "mkcp"
+
 // GetMTUValue returns the value of MTU settings.
 func (c *Config) GetMTUValue() uint32 {
 	if c == nil || c.Mtu == nil {
@@ -97,7 +99,7 @@ func (c *Config) GetReceivingBufferSize() uint32 {
 }
 
 func init() {
-	common.Must(internet.RegisterProtocolConfigCreator(internet.TransportProtocol_MKCP, func() interface{} {
+	common.Must(internet.RegisterProtocolConfigCreatorByName(protocolName, func() interface{} {
 		return new(Config)
 	}))
 }

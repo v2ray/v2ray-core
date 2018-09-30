@@ -107,3 +107,11 @@ func (s *ShakeSizeParser) Encode(size uint16, b []byte) []byte {
 	mask := s.next()
 	return serial.Uint16ToBytes(mask^size, b[:0])
 }
+
+func (s *ShakeSizeParser) NextPaddingLen() uint16 {
+	return s.next() % 64
+}
+
+func (s *ShakeSizeParser) MaxPaddingLen() uint16 {
+	return 64
+}

@@ -23,6 +23,8 @@ func (server *Server) Start() (net.Destination, error) {
 		return net.Destination{}, err
 	}
 	server.Port = net.Port(conn.LocalAddr().(*net.UDPAddr).Port)
+	fmt.Println("UDP server started on port ", server.Port)
+
 	server.conn = conn
 	go server.handleConnection(conn)
 	localAddr := conn.LocalAddr().(*net.UDPAddr)

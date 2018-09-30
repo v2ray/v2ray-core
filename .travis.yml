@@ -1,11 +1,12 @@
 sudo: required
 language: go
 go:
-- "1.10.1"
+- "1.11"
 go_import_path: v2ray.com/core
 git:
   depth: 5
 before_script:
+- uname -a
 - sudo ntpdate -u time.google.com
 - date
 script:

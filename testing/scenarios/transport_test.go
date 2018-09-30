@@ -2,6 +2,7 @@ package scenarios
 
 import (
 	"os"
+	"runtime"
 	"testing"
 	"time"
 
@@ -143,6 +144,10 @@ func TestHttpConnectionHeader(t *testing.T) {
 }
 
 func TestDomainSocket(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Not supported on windows")
+		return
+	}
 	assert := With(t)
 
 	tcpServer := tcp.Server{

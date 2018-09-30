@@ -25,15 +25,15 @@ echo ${SIGN_KEY_PASS} | gpg --passphrase-fd 0 --batch --import /v2ray/build/sign
 curl -L -o /v2ray/build/releases https://api.github.com/repos/v2ray/v2ray-core/releases
 
 GO_INSTALL=golang.tar.gz
-curl -L -o ${GO_INSTALL} https://storage.googleapis.com/golang/go1.10.1.linux-amd64.tar.gz
+curl -L -o ${GO_INSTALL} https://storage.googleapis.com/golang/go1.11.linux-amd64.tar.gz
 tar -C /usr/local -xzf ${GO_INSTALL}
 export PATH=$PATH:/usr/local/go/bin
 
 mkdir -p /v2ray/src
 export GOPATH=/v2ray
 
-go get -u v2ray.com/core/...
-go get -u v2ray.com/ext/...
+go get v2ray.com/core/...
+go get v2ray.com/ext/...
 
 pushd $GOPATH/src/v2ray.com/core/
 git checkout tags/${RELEASE_TAG}
@@ -61,6 +61,7 @@ $GOPATH/bin/vbuild --os=freebsd --arch=x86 --zip --sign #--encrypt
 $GOPATH/bin/vbuild --os=freebsd --arch=amd64 --zip --sign #--encrypt
 $GOPATH/bin/vbuild --os=openbsd --arch=x86 --zip --sign #--encrypt
 $GOPATH/bin/vbuild --os=openbsd --arch=amd64 --zip --sign #--encrypt
+$GOPATH/bin/vbuild --os=dragonfly --arch=amd64 --zip --sign #--encrypt
 
 RELBODY="https://www.v2ray.com/chapter_00/01_versions.html"
 JSON_DATA=$(echo "{}" | jq -c ".tag_name=\"${RELEASE_TAG}\"")
@@ -90,16 +91,12 @@ upload $GOPATH/bin/v2ray-freebsd-64.zip
 upload $GOPATH/bin/v2ray-freebsd-32.zip
 upload $GOPATH/bin/v2ray-openbsd-64.zip
 upload $GOPATH/bin/v2ray-openbsd-32.zip
+upload $GOPATH/bin/v2ray-dragonfly-64.zip
 upload $GOPATH/bin/metadata.txt
 
 if [[ "${PRERELEASE}" == "false" ]]; then
 
-gsutil cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/v2ray gs://v2ray-docker/
-gsutil cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/v2ctl gs://v2ray-docker/
-gsutil cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/geoip.dat gs://v2ray-docker/
-gsutil cp $GOPATH/bin/v2ray-${RELEASE_TAG}-linux-64/geosite.dat gs://v2ray-docker/
-
-DOCKER_HUB_API=https://registry.hub.docker.com/u/v2ray/official/trigger/${DOCKER_HUB_KEY}/
+DOCKER_HUB_API=https://cloud.docker.com/api/build/v1/source/62bfa37d-18ef-4b66-8f1a-35f9f3d4438b/trigger/65027872-e73e-4177-8c6c-6448d2f00d5b/call/
 curl -H "Content-Type: application/json" --data '{"build": true}' -X POST "${DOCKER_HUB_API}"
 
 fi

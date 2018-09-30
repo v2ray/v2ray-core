@@ -9,6 +9,8 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common/session"
 )
 
 // Manager is to manage all inbound handlers.
@@ -73,7 +75,7 @@ func (m *Manager) RemoveHandler(ctx context.Context, tag string) error {
 
 	if handler, found := m.taggedHandlers[tag]; found {
 		if err := handler.Close(); err != nil {
-			newError("failed to close handler ", tag).Base(err).AtWarning().WithContext(ctx).WriteToLog()
+			newError("failed to close handler ", tag).Base(err).AtWarning().WriteToLog(session.ExportIDToError(ctx))
 		}
 		delete(m.taggedHandlers, tag)
 		return nil
@@ -110,11 +112,20 @@ func (m *Manager) Close() error {
 
 	m.running = false
 
+	var errors []interface{}
 	for _, handler := range m.taggedHandlers {
-		handler.Close()
+		if err := handler.Close(); err != nil {
+			errors = append(errors, err)
+		}
 	}
 	for _, handler := range m.untaggedHandler {
-		handler.Close()
+		if err := handler.Close(); err != nil {
+			errors = append(errors, err)
+		}
+	}
+
+	if len(errors) > 0 {
+		return newError("failed to close all handlers").Base(newError(serial.Concat(errors...)))
 	}
 
 	return nil

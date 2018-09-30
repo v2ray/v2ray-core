@@ -15,7 +15,7 @@ func TestBufferClear(t *testing.T) {
 	defer buffer.Release()
 
 	payload := "Bytes"
-	buffer.Append([]byte(payload))
+	buffer.Write([]byte(payload))
 	assert(buffer.Len(), Equals, int32(len(payload)))
 
 	buffer.Clear()
@@ -44,13 +44,6 @@ func TestBufferString(t *testing.T) {
 func BenchmarkNewBuffer(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		buffer := New()
-		buffer.Release()
-	}
-}
-
-func BenchmarkNewLocalBuffer(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		buffer := NewSize(Size)
 		buffer.Release()
 	}
 }

@@ -1,8 +1,11 @@
 package command
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	math "math"
+
+	proto "github.com/golang/protobuf/proto"
+)
 
 import (
 	"context"
@@ -22,28 +25,94 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Config struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Config) Reset()                    { *m = Config{} }
-func (m *Config) String() string            { return proto.CompactTextString(m) }
-func (*Config) ProtoMessage()               {}
-func (*Config) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *Config) Reset()         { *m = Config{} }
+func (m *Config) String() string { return proto.CompactTextString(m) }
+func (*Config) ProtoMessage()    {}
+func (*Config) Descriptor() ([]byte, []int) {
+	return fileDescriptor_46d95b63a682e4a6, []int{0}
+}
+func (m *Config) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Config.Unmarshal(m, b)
+}
+func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
+}
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
+}
+func (m *Config) XXX_Size() int {
+	return xxx_messageInfo_Config.Size(m)
+}
+func (m *Config) XXX_DiscardUnknown() {
+	xxx_messageInfo_Config.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Config proto.InternalMessageInfo
 
 type RestartLoggerRequest struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *RestartLoggerRequest) Reset()                    { *m = RestartLoggerRequest{} }
-func (m *RestartLoggerRequest) String() string            { return proto.CompactTextString(m) }
-func (*RestartLoggerRequest) ProtoMessage()               {}
-func (*RestartLoggerRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (m *RestartLoggerRequest) Reset()         { *m = RestartLoggerRequest{} }
+func (m *RestartLoggerRequest) String() string { return proto.CompactTextString(m) }
+func (*RestartLoggerRequest) ProtoMessage()    {}
+func (*RestartLoggerRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_46d95b63a682e4a6, []int{1}
+}
+func (m *RestartLoggerRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RestartLoggerRequest.Unmarshal(m, b)
+}
+func (m *RestartLoggerRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RestartLoggerRequest.Marshal(b, m, deterministic)
+}
+func (m *RestartLoggerRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RestartLoggerRequest.Merge(m, src)
+}
+func (m *RestartLoggerRequest) XXX_Size() int {
+	return xxx_messageInfo_RestartLoggerRequest.Size(m)
+}
+func (m *RestartLoggerRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_RestartLoggerRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RestartLoggerRequest proto.InternalMessageInfo
 
 type RestartLoggerResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *RestartLoggerResponse) Reset()                    { *m = RestartLoggerResponse{} }
-func (m *RestartLoggerResponse) String() string            { return proto.CompactTextString(m) }
-func (*RestartLoggerResponse) ProtoMessage()               {}
-func (*RestartLoggerResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (m *RestartLoggerResponse) Reset()         { *m = RestartLoggerResponse{} }
+func (m *RestartLoggerResponse) String() string { return proto.CompactTextString(m) }
+func (*RestartLoggerResponse) ProtoMessage()    {}
+func (*RestartLoggerResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_46d95b63a682e4a6, []int{2}
+}
+func (m *RestartLoggerResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RestartLoggerResponse.Unmarshal(m, b)
+}
+func (m *RestartLoggerResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RestartLoggerResponse.Marshal(b, m, deterministic)
+}
+func (m *RestartLoggerResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RestartLoggerResponse.Merge(m, src)
+}
+func (m *RestartLoggerResponse) XXX_Size() int {
+	return xxx_messageInfo_RestartLoggerResponse.Size(m)
+}
+func (m *RestartLoggerResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_RestartLoggerResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RestartLoggerResponse proto.InternalMessageInfo
 
 func init() {
 	proto.RegisterType((*Config)(nil), "v2ray.core.app.log.command.Config")
@@ -59,8 +128,9 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for LoggerService service
-
+// LoggerServiceClient is the client API for LoggerService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type LoggerServiceClient interface {
 	RestartLogger(ctx context.Context, in *RestartLoggerRequest, opts ...grpc.CallOption) (*RestartLoggerResponse, error)
 }
@@ -75,15 +145,14 @@ func NewLoggerServiceClient(cc *grpc.ClientConn) LoggerServiceClient {
 
 func (c *loggerServiceClient) RestartLogger(ctx context.Context, in *RestartLoggerRequest, opts ...grpc.CallOption) (*RestartLoggerResponse, error) {
 	out := new(RestartLoggerResponse)
-	err := grpc.Invoke(ctx, "/v2ray.core.app.log.command.LoggerService/RestartLogger", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/v2ray.core.app.log.command.LoggerService/RestartLogger", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for LoggerService service
-
+// LoggerServiceServer is the server API for LoggerService service.
 type LoggerServiceServer interface {
 	RestartLogger(context.Context, *RestartLoggerRequest) (*RestartLoggerResponse, error)
 }
@@ -123,9 +192,11 @@ var _LoggerService_serviceDesc = grpc.ServiceDesc{
 	Metadata: "v2ray.com/core/app/log/command/config.proto",
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/app/log/command/config.proto", fileDescriptor0) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/app/log/command/config.proto", fileDescriptor_46d95b63a682e4a6)
+}
 
-var fileDescriptor0 = []byte{
+var fileDescriptor_46d95b63a682e4a6 = []byte{
 	// 210 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xd2, 0x2e, 0x33, 0x2a, 0x4a,
 	0xac, 0xd4, 0x4b, 0xce, 0xcf, 0xd5, 0x4f, 0xce, 0x2f, 0x4a, 0xd5, 0x4f, 0x2c, 0x28, 0xd0, 0xcf,

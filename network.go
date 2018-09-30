@@ -6,7 +6,6 @@ import (
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/transport/ray"
 )
 
 // InboundHandler is the interface for handlers that process inbound connections.
@@ -23,7 +22,7 @@ type InboundHandler interface {
 type OutboundHandler interface {
 	common.Runnable
 	Tag() string
-	Dispatch(ctx context.Context, outboundRay ray.OutboundRay)
+	Dispatch(ctx context.Context, link *Link)
 }
 
 // InboundHandlerManager is a feature that manages InboundHandlers.
@@ -91,7 +90,7 @@ func (m *syncInboundHandlerManager) Set(manager InboundHandlerManager) {
 	m.Lock()
 	defer m.Unlock()
 
-	common.Close(m.InboundHandlerManager)
+	common.Close(m.InboundHandlerManager) // nolint: errcheck
 	m.InboundHandlerManager = manager
 }
 
@@ -173,6 +172,6 @@ func (m *syncOutboundHandlerManager) Set(manager OutboundHandlerManager) {
 	m.Lock()
 	defer m.Unlock()
 
-	common.Close(m.OutboundHandlerManager)
+	common.Close(m.OutboundHandlerManager) // nolint: errcheck
 	m.OutboundHandlerManager = manager
 }

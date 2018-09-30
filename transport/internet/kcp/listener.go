@@ -34,8 +34,8 @@ type Listener struct {
 }
 
 func NewListener(ctx context.Context, address net.Address, port net.Port, addConn internet.ConnHandler) (*Listener, error) {
-	networkSettings := internet.TransportSettingsFromContext(ctx)
-	kcpSettings := networkSettings.(*Config)
+	networkSettings := internet.StreamSettingsFromContext(ctx)
+	kcpSettings := networkSettings.ProtocolSettings.(*Config)
 
 	header, err := kcpSettings.GetPackerHeader()
 	if err != nil {
@@ -61,7 +61,7 @@ func NewListener(ctx context.Context, address net.Address, port net.Port, addCon
 		l.tlsConfig = config.GetTLSConfig()
 	}
 
-	hub, err := udp.ListenUDP(address, port, l.OnReceive, udp.HubCapacity(1024))
+	hub, err := udp.ListenUDP(ctx, address, port, udp.HubCapacity(1024))
 	if err != nil {
 		return nil, err
 	}
@@ -69,22 +69,25 @@ func NewListener(ctx context.Context, address net.Address, port net.Port, addCon
 	l.hub = hub
 	l.Unlock()
 	newError("listening on ", address, ":", port).WriteToLog()
+
+	go l.handlePackets()
+
 	return l, nil
 }
 
-func (l *Listener) OnReceive(payload *buf.Buffer, src net.Destination, originalDest net.Destination) {
+func (l *Listener) handlePackets() {
+	receive := l.hub.Receive()
+	for payload := range receive {
+		l.OnReceive(payload.Content, payload.Source)
+	}
+}
+
+func (l *Listener) OnReceive(payload *buf.Buffer, src net.Destination) {
 	segments := l.reader.Read(payload.Bytes())
 	payload.Release()
 
 	if len(segments) == 0 {
 		newError("discarding invalid payload from ", src).WriteToLog()
-		return
-	}
-
-	l.Lock()
-	defer l.Unlock()
-
-	if l.hub == nil {
 		return
 	}
 
@@ -96,6 +99,10 @@ func (l *Listener) OnReceive(payload *buf.Buffer, src net.Destination, originalD
 		Port:   src.Port,
 		Conv:   conv,
 	}
+
+	l.Lock()
+	defer l.Unlock()
+
 	conn, found := l.sessions[id]
 
 	if !found {
@@ -187,5 +194,5 @@ func ListenKCP(ctx context.Context, address net.Address, port net.Port, addConn 
 }
 
 func init() {
-	common.Must(internet.RegisterTransportListener(internet.TransportProtocol_MKCP, ListenKCP))
+	common.Must(internet.RegisterTransportListener(protocolName, ListenKCP))
 }

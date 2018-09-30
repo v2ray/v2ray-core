@@ -76,7 +76,7 @@ func (s *DataSegment) parse(conv uint16, cmd Command, opt SegmentOption, buf []b
 		return false, nil
 	}
 	s.Data().Clear()
-	s.Data().Append(buf[:dataLen])
+	s.Data().Write(buf[:dataLen])
 	buf = buf[dataLen:]
 
 	return true, buf
@@ -137,9 +137,7 @@ type AckSegment struct {
 const ackNumberLimit = 128
 
 func NewAckSegment() *AckSegment {
-	return &AckSegment{
-		NumberList: make([]uint32, 0, ackNumberLimit),
-	}
+	return new(AckSegment)
 }
 
 func (s *AckSegment) parse(conv uint16, cmd Command, opt SegmentOption, buf []byte) (bool, []byte) {
@@ -218,9 +216,7 @@ func (s *AckSegment) Bytes() buf.Supplier {
 	}
 }
 
-func (s *AckSegment) Release() {
-	s.NumberList = nil
-}
+func (s *AckSegment) Release() {}
 
 type CmdOnlySegment struct {
 	Conv          uint16

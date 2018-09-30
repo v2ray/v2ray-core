@@ -1,12 +1,13 @@
 package proxyman
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import v2ray_core_common_net "v2ray.com/core/common/net"
-import v2ray_core_common_net1 "v2ray.com/core/common/net"
-import v2ray_core_transport_internet "v2ray.com/core/transport/internet"
-import v2ray_core_common_serial "v2ray.com/core/common/serial"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+	net "v2ray.com/core/common/net"
+	serial "v2ray.com/core/common/serial"
+	internet "v2ray.com/core/transport/internet"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -30,6 +31,7 @@ var KnownProtocols_name = map[int32]string{
 	0: "HTTP",
 	1: "TLS",
 }
+
 var KnownProtocols_value = map[string]int32{
 	"HTTP": 0,
 	"TLS":  1,
@@ -38,7 +40,10 @@ var KnownProtocols_value = map[string]int32{
 func (x KnownProtocols) String() string {
 	return proto.EnumName(KnownProtocols_name, int32(x))
 }
-func (KnownProtocols) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+
+func (KnownProtocols) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_b07f45dd938bc1b0, []int{0}
+}
 
 type AllocationStrategy_Type int32
 
@@ -56,6 +61,7 @@ var AllocationStrategy_Type_name = map[int32]string{
 	1: "Random",
 	2: "External",
 }
+
 var AllocationStrategy_Type_value = map[string]int32{
 	"Always":   0,
 	"Random":   1,
@@ -65,30 +71,77 @@ var AllocationStrategy_Type_value = map[string]int32{
 func (x AllocationStrategy_Type) String() string {
 	return proto.EnumName(AllocationStrategy_Type_name, int32(x))
 }
-func (AllocationStrategy_Type) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{1, 0} }
+
+func (AllocationStrategy_Type) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_b07f45dd938bc1b0, []int{1, 0}
+}
 
 type InboundConfig struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *InboundConfig) Reset()                    { *m = InboundConfig{} }
-func (m *InboundConfig) String() string            { return proto.CompactTextString(m) }
-func (*InboundConfig) ProtoMessage()               {}
-func (*InboundConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *InboundConfig) Reset()         { *m = InboundConfig{} }
+func (m *InboundConfig) String() string { return proto.CompactTextString(m) }
+func (*InboundConfig) ProtoMessage()    {}
+func (*InboundConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b07f45dd938bc1b0, []int{0}
+}
+func (m *InboundConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_InboundConfig.Unmarshal(m, b)
+}
+func (m *InboundConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_InboundConfig.Marshal(b, m, deterministic)
+}
+func (m *InboundConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_InboundConfig.Merge(m, src)
+}
+func (m *InboundConfig) XXX_Size() int {
+	return xxx_messageInfo_InboundConfig.Size(m)
+}
+func (m *InboundConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_InboundConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_InboundConfig proto.InternalMessageInfo
 
 type AllocationStrategy struct {
-	Type AllocationStrategy_Type `protobuf:"varint,1,opt,name=type,enum=v2ray.core.app.proxyman.AllocationStrategy_Type" json:"type,omitempty"`
+	Type AllocationStrategy_Type `protobuf:"varint,1,opt,name=type,proto3,enum=v2ray.core.app.proxyman.AllocationStrategy_Type" json:"type,omitempty"`
 	// Number of handlers (ports) running in parallel.
 	// Default value is 3 if unset.
-	Concurrency *AllocationStrategy_AllocationStrategyConcurrency `protobuf:"bytes,2,opt,name=concurrency" json:"concurrency,omitempty"`
+	Concurrency *AllocationStrategy_AllocationStrategyConcurrency `protobuf:"bytes,2,opt,name=concurrency,proto3" json:"concurrency,omitempty"`
 	// Number of minutes before a handler is regenerated.
 	// Default value is 5 if unset.
-	Refresh *AllocationStrategy_AllocationStrategyRefresh `protobuf:"bytes,3,opt,name=refresh" json:"refresh,omitempty"`
+	Refresh              *AllocationStrategy_AllocationStrategyRefresh `protobuf:"bytes,3,opt,name=refresh,proto3" json:"refresh,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                                      `json:"-"`
+	XXX_unrecognized     []byte                                        `json:"-"`
+	XXX_sizecache        int32                                         `json:"-"`
 }
 
-func (m *AllocationStrategy) Reset()                    { *m = AllocationStrategy{} }
-func (m *AllocationStrategy) String() string            { return proto.CompactTextString(m) }
-func (*AllocationStrategy) ProtoMessage()               {}
-func (*AllocationStrategy) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (m *AllocationStrategy) Reset()         { *m = AllocationStrategy{} }
+func (m *AllocationStrategy) String() string { return proto.CompactTextString(m) }
+func (*AllocationStrategy) ProtoMessage()    {}
+func (*AllocationStrategy) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b07f45dd938bc1b0, []int{1}
+}
+func (m *AllocationStrategy) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AllocationStrategy.Unmarshal(m, b)
+}
+func (m *AllocationStrategy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AllocationStrategy.Marshal(b, m, deterministic)
+}
+func (m *AllocationStrategy) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AllocationStrategy.Merge(m, src)
+}
+func (m *AllocationStrategy) XXX_Size() int {
+	return xxx_messageInfo_AllocationStrategy.Size(m)
+}
+func (m *AllocationStrategy) XXX_DiscardUnknown() {
+	xxx_messageInfo_AllocationStrategy.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AllocationStrategy proto.InternalMessageInfo
 
 func (m *AllocationStrategy) GetType() AllocationStrategy_Type {
 	if m != nil {
@@ -112,7 +165,10 @@ func (m *AllocationStrategy) GetRefresh() *AllocationStrategy_AllocationStrategy
 }
 
 type AllocationStrategy_AllocationStrategyConcurrency struct {
-	Value uint32 `protobuf:"varint,1,opt,name=value" json:"value,omitempty"`
+	Value                uint32   `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *AllocationStrategy_AllocationStrategyConcurrency) Reset() {
@@ -123,8 +179,25 @@ func (m *AllocationStrategy_AllocationStrategyConcurrency) String() string {
 }
 func (*AllocationStrategy_AllocationStrategyConcurrency) ProtoMessage() {}
 func (*AllocationStrategy_AllocationStrategyConcurrency) Descriptor() ([]byte, []int) {
-	return fileDescriptor0, []int{1, 0}
+	return fileDescriptor_b07f45dd938bc1b0, []int{1, 0}
 }
+func (m *AllocationStrategy_AllocationStrategyConcurrency) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AllocationStrategy_AllocationStrategyConcurrency.Unmarshal(m, b)
+}
+func (m *AllocationStrategy_AllocationStrategyConcurrency) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AllocationStrategy_AllocationStrategyConcurrency.Marshal(b, m, deterministic)
+}
+func (m *AllocationStrategy_AllocationStrategyConcurrency) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AllocationStrategy_AllocationStrategyConcurrency.Merge(m, src)
+}
+func (m *AllocationStrategy_AllocationStrategyConcurrency) XXX_Size() int {
+	return xxx_messageInfo_AllocationStrategy_AllocationStrategyConcurrency.Size(m)
+}
+func (m *AllocationStrategy_AllocationStrategyConcurrency) XXX_DiscardUnknown() {
+	xxx_messageInfo_AllocationStrategy_AllocationStrategyConcurrency.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AllocationStrategy_AllocationStrategyConcurrency proto.InternalMessageInfo
 
 func (m *AllocationStrategy_AllocationStrategyConcurrency) GetValue() uint32 {
 	if m != nil {
@@ -134,7 +207,10 @@ func (m *AllocationStrategy_AllocationStrategyConcurrency) GetValue() uint32 {
 }
 
 type AllocationStrategy_AllocationStrategyRefresh struct {
-	Value uint32 `protobuf:"varint,1,opt,name=value" json:"value,omitempty"`
+	Value                uint32   `protobuf:"varint,1,opt,name=value,proto3" json:"value,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *AllocationStrategy_AllocationStrategyRefresh) Reset() {
@@ -145,8 +221,25 @@ func (m *AllocationStrategy_AllocationStrategyRefresh) String() string {
 }
 func (*AllocationStrategy_AllocationStrategyRefresh) ProtoMessage() {}
 func (*AllocationStrategy_AllocationStrategyRefresh) Descriptor() ([]byte, []int) {
-	return fileDescriptor0, []int{1, 1}
+	return fileDescriptor_b07f45dd938bc1b0, []int{1, 1}
 }
+func (m *AllocationStrategy_AllocationStrategyRefresh) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AllocationStrategy_AllocationStrategyRefresh.Unmarshal(m, b)
+}
+func (m *AllocationStrategy_AllocationStrategyRefresh) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AllocationStrategy_AllocationStrategyRefresh.Marshal(b, m, deterministic)
+}
+func (m *AllocationStrategy_AllocationStrategyRefresh) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AllocationStrategy_AllocationStrategyRefresh.Merge(m, src)
+}
+func (m *AllocationStrategy_AllocationStrategyRefresh) XXX_Size() int {
+	return xxx_messageInfo_AllocationStrategy_AllocationStrategyRefresh.Size(m)
+}
+func (m *AllocationStrategy_AllocationStrategyRefresh) XXX_DiscardUnknown() {
+	xxx_messageInfo_AllocationStrategy_AllocationStrategyRefresh.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AllocationStrategy_AllocationStrategyRefresh proto.InternalMessageInfo
 
 func (m *AllocationStrategy_AllocationStrategyRefresh) GetValue() uint32 {
 	if m != nil {
@@ -155,30 +248,104 @@ func (m *AllocationStrategy_AllocationStrategyRefresh) GetValue() uint32 {
 	return 0
 }
 
-type ReceiverConfig struct {
-	// PortRange specifies the ports which the Receiver should listen on.
-	PortRange *v2ray_core_common_net1.PortRange `protobuf:"bytes,1,opt,name=port_range,json=portRange" json:"port_range,omitempty"`
-	// Listen specifies the IP address that the Receiver should listen on.
-	Listen                     *v2ray_core_common_net.IPOrDomain           `protobuf:"bytes,2,opt,name=listen" json:"listen,omitempty"`
-	AllocationStrategy         *AllocationStrategy                         `protobuf:"bytes,3,opt,name=allocation_strategy,json=allocationStrategy" json:"allocation_strategy,omitempty"`
-	StreamSettings             *v2ray_core_transport_internet.StreamConfig `protobuf:"bytes,4,opt,name=stream_settings,json=streamSettings" json:"stream_settings,omitempty"`
-	ReceiveOriginalDestination bool                                        `protobuf:"varint,5,opt,name=receive_original_destination,json=receiveOriginalDestination" json:"receive_original_destination,omitempty"`
-	DomainOverride             []KnownProtocols                            `protobuf:"varint,7,rep,packed,name=domain_override,json=domainOverride,enum=v2ray.core.app.proxyman.KnownProtocols" json:"domain_override,omitempty"`
+type SniffingConfig struct {
+	// Whether or not to enable content sniffing on an inbound connection.
+	Enabled bool `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	// Override target destination if sniff'ed protocol is in the given list.
+	// Supported values are "http", "tls".
+	DestinationOverride  []string `protobuf:"bytes,2,rep,name=destination_override,json=destinationOverride,proto3" json:"destination_override,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *ReceiverConfig) Reset()                    { *m = ReceiverConfig{} }
-func (m *ReceiverConfig) String() string            { return proto.CompactTextString(m) }
-func (*ReceiverConfig) ProtoMessage()               {}
-func (*ReceiverConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (m *SniffingConfig) Reset()         { *m = SniffingConfig{} }
+func (m *SniffingConfig) String() string { return proto.CompactTextString(m) }
+func (*SniffingConfig) ProtoMessage()    {}
+func (*SniffingConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b07f45dd938bc1b0, []int{2}
+}
+func (m *SniffingConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_SniffingConfig.Unmarshal(m, b)
+}
+func (m *SniffingConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_SniffingConfig.Marshal(b, m, deterministic)
+}
+func (m *SniffingConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SniffingConfig.Merge(m, src)
+}
+func (m *SniffingConfig) XXX_Size() int {
+	return xxx_messageInfo_SniffingConfig.Size(m)
+}
+func (m *SniffingConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_SniffingConfig.DiscardUnknown(m)
+}
 
-func (m *ReceiverConfig) GetPortRange() *v2ray_core_common_net1.PortRange {
+var xxx_messageInfo_SniffingConfig proto.InternalMessageInfo
+
+func (m *SniffingConfig) GetEnabled() bool {
+	if m != nil {
+		return m.Enabled
+	}
+	return false
+}
+
+func (m *SniffingConfig) GetDestinationOverride() []string {
+	if m != nil {
+		return m.DestinationOverride
+	}
+	return nil
+}
+
+type ReceiverConfig struct {
+	// PortRange specifies the ports which the Receiver should listen on.
+	PortRange *net.PortRange `protobuf:"bytes,1,opt,name=port_range,json=portRange,proto3" json:"port_range,omitempty"`
+	// Listen specifies the IP address that the Receiver should listen on.
+	Listen                     *net.IPOrDomain        `protobuf:"bytes,2,opt,name=listen,proto3" json:"listen,omitempty"`
+	AllocationStrategy         *AllocationStrategy    `protobuf:"bytes,3,opt,name=allocation_strategy,json=allocationStrategy,proto3" json:"allocation_strategy,omitempty"`
+	StreamSettings             *internet.StreamConfig `protobuf:"bytes,4,opt,name=stream_settings,json=streamSettings,proto3" json:"stream_settings,omitempty"`
+	ReceiveOriginalDestination bool                   `protobuf:"varint,5,opt,name=receive_original_destination,json=receiveOriginalDestination,proto3" json:"receive_original_destination,omitempty"`
+	// Override domains for the given protocol.
+	// Deprecated. Use sniffing_settings.
+	DomainOverride       []KnownProtocols `protobuf:"varint,7,rep,packed,name=domain_override,json=domainOverride,proto3,enum=v2ray.core.app.proxyman.KnownProtocols" json:"domain_override,omitempty"` // Deprecated: Do not use.
+	SniffingSettings     *SniffingConfig  `protobuf:"bytes,8,opt,name=sniffing_settings,json=sniffingSettings,proto3" json:"sniffing_settings,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_unrecognized     []byte           `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
+}
+
+func (m *ReceiverConfig) Reset()         { *m = ReceiverConfig{} }
+func (m *ReceiverConfig) String() string { return proto.CompactTextString(m) }
+func (*ReceiverConfig) ProtoMessage()    {}
+func (*ReceiverConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b07f45dd938bc1b0, []int{3}
+}
+func (m *ReceiverConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ReceiverConfig.Unmarshal(m, b)
+}
+func (m *ReceiverConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ReceiverConfig.Marshal(b, m, deterministic)
+}
+func (m *ReceiverConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ReceiverConfig.Merge(m, src)
+}
+func (m *ReceiverConfig) XXX_Size() int {
+	return xxx_messageInfo_ReceiverConfig.Size(m)
+}
+func (m *ReceiverConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_ReceiverConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ReceiverConfig proto.InternalMessageInfo
+
+func (m *ReceiverConfig) GetPortRange() *net.PortRange {
 	if m != nil {
 		return m.PortRange
 	}
 	return nil
 }
 
-func (m *ReceiverConfig) GetListen() *v2ray_core_common_net.IPOrDomain {
+func (m *ReceiverConfig) GetListen() *net.IPOrDomain {
 	if m != nil {
 		return m.Listen
 	}
@@ -192,7 +359,7 @@ func (m *ReceiverConfig) GetAllocationStrategy() *AllocationStrategy {
 	return nil
 }
 
-func (m *ReceiverConfig) GetStreamSettings() *v2ray_core_transport_internet.StreamConfig {
+func (m *ReceiverConfig) GetStreamSettings() *internet.StreamConfig {
 	if m != nil {
 		return m.StreamSettings
 	}
@@ -206,6 +373,7 @@ func (m *ReceiverConfig) GetReceiveOriginalDestination() bool {
 	return false
 }
 
+// Deprecated: Do not use.
 func (m *ReceiverConfig) GetDomainOverride() []KnownProtocols {
 	if m != nil {
 		return m.DomainOverride
@@ -213,16 +381,45 @@ func (m *ReceiverConfig) GetDomainOverride() []KnownProtocols {
 	return nil
 }
 
-type InboundHandlerConfig struct {
-	Tag              string                                 `protobuf:"bytes,1,opt,name=tag" json:"tag,omitempty"`
-	ReceiverSettings *v2ray_core_common_serial.TypedMessage `protobuf:"bytes,2,opt,name=receiver_settings,json=receiverSettings" json:"receiver_settings,omitempty"`
-	ProxySettings    *v2ray_core_common_serial.TypedMessage `protobuf:"bytes,3,opt,name=proxy_settings,json=proxySettings" json:"proxy_settings,omitempty"`
+func (m *ReceiverConfig) GetSniffingSettings() *SniffingConfig {
+	if m != nil {
+		return m.SniffingSettings
+	}
+	return nil
 }
 
-func (m *InboundHandlerConfig) Reset()                    { *m = InboundHandlerConfig{} }
-func (m *InboundHandlerConfig) String() string            { return proto.CompactTextString(m) }
-func (*InboundHandlerConfig) ProtoMessage()               {}
-func (*InboundHandlerConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+type InboundHandlerConfig struct {
+	Tag                  string               `protobuf:"bytes,1,opt,name=tag,proto3" json:"tag,omitempty"`
+	ReceiverSettings     *serial.TypedMessage `protobuf:"bytes,2,opt,name=receiver_settings,json=receiverSettings,proto3" json:"receiver_settings,omitempty"`
+	ProxySettings        *serial.TypedMessage `protobuf:"bytes,3,opt,name=proxy_settings,json=proxySettings,proto3" json:"proxy_settings,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
+	XXX_unrecognized     []byte               `json:"-"`
+	XXX_sizecache        int32                `json:"-"`
+}
+
+func (m *InboundHandlerConfig) Reset()         { *m = InboundHandlerConfig{} }
+func (m *InboundHandlerConfig) String() string { return proto.CompactTextString(m) }
+func (*InboundHandlerConfig) ProtoMessage()    {}
+func (*InboundHandlerConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b07f45dd938bc1b0, []int{4}
+}
+func (m *InboundHandlerConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_InboundHandlerConfig.Unmarshal(m, b)
+}
+func (m *InboundHandlerConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_InboundHandlerConfig.Marshal(b, m, deterministic)
+}
+func (m *InboundHandlerConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_InboundHandlerConfig.Merge(m, src)
+}
+func (m *InboundHandlerConfig) XXX_Size() int {
+	return xxx_messageInfo_InboundHandlerConfig.Size(m)
+}
+func (m *InboundHandlerConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_InboundHandlerConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_InboundHandlerConfig proto.InternalMessageInfo
 
 func (m *InboundHandlerConfig) GetTag() string {
 	if m != nil {
@@ -231,14 +428,14 @@ func (m *InboundHandlerConfig) GetTag() string {
 	return ""
 }
 
-func (m *InboundHandlerConfig) GetReceiverSettings() *v2ray_core_common_serial.TypedMessage {
+func (m *InboundHandlerConfig) GetReceiverSettings() *serial.TypedMessage {
 	if m != nil {
 		return m.ReceiverSettings
 	}
 	return nil
 }
 
-func (m *InboundHandlerConfig) GetProxySettings() *v2ray_core_common_serial.TypedMessage {
+func (m *InboundHandlerConfig) GetProxySettings() *serial.TypedMessage {
 	if m != nil {
 		return m.ProxySettings
 	}
@@ -246,41 +443,85 @@ func (m *InboundHandlerConfig) GetProxySettings() *v2ray_core_common_serial.Type
 }
 
 type OutboundConfig struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *OutboundConfig) Reset()                    { *m = OutboundConfig{} }
-func (m *OutboundConfig) String() string            { return proto.CompactTextString(m) }
-func (*OutboundConfig) ProtoMessage()               {}
-func (*OutboundConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+func (m *OutboundConfig) Reset()         { *m = OutboundConfig{} }
+func (m *OutboundConfig) String() string { return proto.CompactTextString(m) }
+func (*OutboundConfig) ProtoMessage()    {}
+func (*OutboundConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b07f45dd938bc1b0, []int{5}
+}
+func (m *OutboundConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_OutboundConfig.Unmarshal(m, b)
+}
+func (m *OutboundConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_OutboundConfig.Marshal(b, m, deterministic)
+}
+func (m *OutboundConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OutboundConfig.Merge(m, src)
+}
+func (m *OutboundConfig) XXX_Size() int {
+	return xxx_messageInfo_OutboundConfig.Size(m)
+}
+func (m *OutboundConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_OutboundConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_OutboundConfig proto.InternalMessageInfo
 
 type SenderConfig struct {
 	// Send traffic through the given IP. Only IP is allowed.
-	Via               *v2ray_core_common_net.IPOrDomain           `protobuf:"bytes,1,opt,name=via" json:"via,omitempty"`
-	StreamSettings    *v2ray_core_transport_internet.StreamConfig `protobuf:"bytes,2,opt,name=stream_settings,json=streamSettings" json:"stream_settings,omitempty"`
-	ProxySettings     *v2ray_core_transport_internet.ProxyConfig  `protobuf:"bytes,3,opt,name=proxy_settings,json=proxySettings" json:"proxy_settings,omitempty"`
-	MultiplexSettings *MultiplexingConfig                         `protobuf:"bytes,4,opt,name=multiplex_settings,json=multiplexSettings" json:"multiplex_settings,omitempty"`
+	Via                  *net.IPOrDomain        `protobuf:"bytes,1,opt,name=via,proto3" json:"via,omitempty"`
+	StreamSettings       *internet.StreamConfig `protobuf:"bytes,2,opt,name=stream_settings,json=streamSettings,proto3" json:"stream_settings,omitempty"`
+	ProxySettings        *internet.ProxyConfig  `protobuf:"bytes,3,opt,name=proxy_settings,json=proxySettings,proto3" json:"proxy_settings,omitempty"`
+	MultiplexSettings    *MultiplexingConfig    `protobuf:"bytes,4,opt,name=multiplex_settings,json=multiplexSettings,proto3" json:"multiplex_settings,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
+	XXX_unrecognized     []byte                 `json:"-"`
+	XXX_sizecache        int32                  `json:"-"`
 }
 
-func (m *SenderConfig) Reset()                    { *m = SenderConfig{} }
-func (m *SenderConfig) String() string            { return proto.CompactTextString(m) }
-func (*SenderConfig) ProtoMessage()               {}
-func (*SenderConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
+func (m *SenderConfig) Reset()         { *m = SenderConfig{} }
+func (m *SenderConfig) String() string { return proto.CompactTextString(m) }
+func (*SenderConfig) ProtoMessage()    {}
+func (*SenderConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b07f45dd938bc1b0, []int{6}
+}
+func (m *SenderConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_SenderConfig.Unmarshal(m, b)
+}
+func (m *SenderConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_SenderConfig.Marshal(b, m, deterministic)
+}
+func (m *SenderConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SenderConfig.Merge(m, src)
+}
+func (m *SenderConfig) XXX_Size() int {
+	return xxx_messageInfo_SenderConfig.Size(m)
+}
+func (m *SenderConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_SenderConfig.DiscardUnknown(m)
+}
 
-func (m *SenderConfig) GetVia() *v2ray_core_common_net.IPOrDomain {
+var xxx_messageInfo_SenderConfig proto.InternalMessageInfo
+
+func (m *SenderConfig) GetVia() *net.IPOrDomain {
 	if m != nil {
 		return m.Via
 	}
 	return nil
 }
 
-func (m *SenderConfig) GetStreamSettings() *v2ray_core_transport_internet.StreamConfig {
+func (m *SenderConfig) GetStreamSettings() *internet.StreamConfig {
 	if m != nil {
 		return m.StreamSettings
 	}
 	return nil
 }
 
-func (m *SenderConfig) GetProxySettings() *v2ray_core_transport_internet.ProxyConfig {
+func (m *SenderConfig) GetProxySettings() *internet.ProxyConfig {
 	if m != nil {
 		return m.ProxySettings
 	}
@@ -296,15 +537,37 @@ func (m *SenderConfig) GetMultiplexSettings() *MultiplexingConfig {
 
 type MultiplexingConfig struct {
 	// Whether or not Mux is enabled.
-	Enabled bool `protobuf:"varint,1,opt,name=enabled" json:"enabled,omitempty"`
+	Enabled bool `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	// Max number of concurrent connections that one Mux connection can handle.
-	Concurrency uint32 `protobuf:"varint,2,opt,name=concurrency" json:"concurrency,omitempty"`
+	Concurrency          uint32   `protobuf:"varint,2,opt,name=concurrency,proto3" json:"concurrency,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *MultiplexingConfig) Reset()                    { *m = MultiplexingConfig{} }
-func (m *MultiplexingConfig) String() string            { return proto.CompactTextString(m) }
-func (*MultiplexingConfig) ProtoMessage()               {}
-func (*MultiplexingConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
+func (m *MultiplexingConfig) Reset()         { *m = MultiplexingConfig{} }
+func (m *MultiplexingConfig) String() string { return proto.CompactTextString(m) }
+func (*MultiplexingConfig) ProtoMessage()    {}
+func (*MultiplexingConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b07f45dd938bc1b0, []int{7}
+}
+func (m *MultiplexingConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_MultiplexingConfig.Unmarshal(m, b)
+}
+func (m *MultiplexingConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_MultiplexingConfig.Marshal(b, m, deterministic)
+}
+func (m *MultiplexingConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MultiplexingConfig.Merge(m, src)
+}
+func (m *MultiplexingConfig) XXX_Size() int {
+	return xxx_messageInfo_MultiplexingConfig.Size(m)
+}
+func (m *MultiplexingConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_MultiplexingConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MultiplexingConfig proto.InternalMessageInfo
 
 func (m *MultiplexingConfig) GetEnabled() bool {
 	if m != nil {
@@ -325,6 +588,7 @@ func init() {
 	proto.RegisterType((*AllocationStrategy)(nil), "v2ray.core.app.proxyman.AllocationStrategy")
 	proto.RegisterType((*AllocationStrategy_AllocationStrategyConcurrency)(nil), "v2ray.core.app.proxyman.AllocationStrategy.AllocationStrategyConcurrency")
 	proto.RegisterType((*AllocationStrategy_AllocationStrategyRefresh)(nil), "v2ray.core.app.proxyman.AllocationStrategy.AllocationStrategyRefresh")
+	proto.RegisterType((*SniffingConfig)(nil), "v2ray.core.app.proxyman.SniffingConfig")
 	proto.RegisterType((*ReceiverConfig)(nil), "v2ray.core.app.proxyman.ReceiverConfig")
 	proto.RegisterType((*InboundHandlerConfig)(nil), "v2ray.core.app.proxyman.InboundHandlerConfig")
 	proto.RegisterType((*OutboundConfig)(nil), "v2ray.core.app.proxyman.OutboundConfig")
@@ -334,57 +598,62 @@ func init() {
 	proto.RegisterEnum("v2ray.core.app.proxyman.AllocationStrategy_Type", AllocationStrategy_Type_name, AllocationStrategy_Type_value)
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/app/proxyman/config.proto", fileDescriptor0) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/app/proxyman/config.proto", fileDescriptor_b07f45dd938bc1b0)
+}
 
-var fileDescriptor0 = []byte{
-	// 772 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x95, 0x5f, 0x6f, 0xeb, 0x34,
-	0x18, 0xc6, 0x4f, 0x9a, 0x9e, 0xb6, 0xe7, 0xdd, 0x69, 0x96, 0x63, 0x26, 0xad, 0x14, 0x90, 0x4a,
-	0x41, 0xac, 0x1a, 0x28, 0x19, 0x9d, 0xb8, 0xe0, 0x0a, 0x46, 0x37, 0x69, 0x03, 0xa6, 0x06, 0xb7,
-	0xe2, 0x62, 0x42, 0x8a, 0xbc, 0xc4, 0x0b, 0x11, 0x89, 0x1d, 0x39, 0x6e, 0xb7, 0x7c, 0x25, 0x3e,
-	0x05, 0x97, 0x5c, 0xf0, 0x09, 0xf8, 0x34, 0x28, 0x71, 0xd2, 0x3f, 0x6b, 0x3b, 0xce, 0xb4, 0x3b,
-	0x67, 0x7b, 0x9e, 0x9f, 0xed, 0xe7, 0x7d, 0xfd, 0x16, 0x06, 0xf3, 0xa1, 0x20, 0x99, 0xe5, 0xf1,
-	0xd8, 0xf6, 0xb8, 0xa0, 0x36, 0x49, 0x12, 0x3b, 0x11, 0xfc, 0x21, 0x8b, 0x09, 0xb3, 0x3d, 0xce,
-	0xee, 0xc2, 0xc0, 0x4a, 0x04, 0x97, 0x1c, 0x1d, 0x56, 0x4a, 0x41, 0x2d, 0x92, 0x24, 0x56, 0xa5,
-	0xea, 0x1e, 0x3d, 0x42, 0x78, 0x3c, 0x8e, 0x39, 0xb3, 0x19, 0x95, 0x36, 0xf1, 0x7d, 0x41, 0xd3,
-	0x54, 0x11, 0xba, 0x9f, 0xef, 0x16, 0x26, 0x5c, 0xc8, 0x52, 0x65, 0x3d, 0x52, 0x49, 0x41, 0x58,
-	0x9a, 0xff, 0xdf, 0x0e, 0x99, 0xa4, 0x22, 0x57, 0xaf, 0x9e, 0xab, 0x7b, 0xb2, 0x9d, 0x9a, 0x52,
-	0x11, 0x92, 0xc8, 0x96, 0x59, 0x42, 0x7d, 0x37, 0xa6, 0x69, 0x4a, 0x02, 0xaa, 0x1c, 0xfd, 0x7d,
-	0x68, 0x5f, 0xb1, 0x5b, 0x3e, 0x63, 0xfe, 0xa8, 0x00, 0xf5, 0xff, 0xd2, 0x01, 0x9d, 0x45, 0x11,
-	0xf7, 0x88, 0x0c, 0x39, 0x9b, 0x48, 0x41, 0x24, 0x0d, 0x32, 0x74, 0x0e, 0xf5, 0xdc, 0xde, 0xd1,
-	0x7a, 0xda, 0xc0, 0x18, 0x9e, 0x58, 0x3b, 0x02, 0xb0, 0x36, 0xad, 0xd6, 0x34, 0x4b, 0x28, 0x2e,
-	0xdc, 0xe8, 0x0f, 0xd8, 0xf3, 0x38, 0xf3, 0x66, 0x42, 0x50, 0xe6, 0x65, 0x9d, 0x5a, 0x4f, 0x1b,
-	0xec, 0x0d, 0xaf, 0x9e, 0x03, 0xdb, 0xfc, 0xd3, 0x68, 0x09, 0xc4, 0xab, 0x74, 0xe4, 0x42, 0x53,
-	0xd0, 0x3b, 0x41, 0xd3, 0xdf, 0x3b, 0x7a, 0xb1, 0xd1, 0xc5, 0xcb, 0x36, 0xc2, 0x0a, 0x86, 0x2b,
-	0x6a, 0xf7, 0x1b, 0xf8, 0xe4, 0xc9, 0xe3, 0xa0, 0x03, 0x78, 0x3d, 0x27, 0xd1, 0x4c, 0xa5, 0xd6,
-	0xc6, 0xea, 0xa3, 0xfb, 0x35, 0x7c, 0xb8, 0x13, 0xbe, 0xdd, 0xd2, 0xff, 0x0a, 0xea, 0x79, 0x8a,
-	0x08, 0xa0, 0x71, 0x16, 0xdd, 0x93, 0x2c, 0x35, 0x5f, 0xe5, 0x6b, 0x4c, 0x98, 0xcf, 0x63, 0x53,
-	0x43, 0x6f, 0xa1, 0x75, 0xf1, 0x90, 0x37, 0x04, 0x89, 0xcc, 0x5a, 0xff, 0x5f, 0x1d, 0x0c, 0x4c,
-	0x3d, 0x1a, 0xce, 0xa9, 0x50, 0x55, 0x45, 0xdf, 0x01, 0xe4, 0x6d, 0xe3, 0x0a, 0xc2, 0x02, 0xc5,
-	0xde, 0x1b, 0xf6, 0x56, 0xe3, 0x50, 0x9d, 0x62, 0x31, 0x2a, 0x2d, 0x87, 0x0b, 0x89, 0x73, 0x1d,
-	0x7e, 0x93, 0x54, 0x4b, 0xf4, 0x2d, 0x34, 0xa2, 0x30, 0x95, 0x94, 0x95, 0x45, 0xfb, 0x74, 0x87,
-	0xf9, 0xca, 0x19, 0x8b, 0x73, 0x1e, 0x93, 0x90, 0xe1, 0xd2, 0x80, 0x7e, 0x83, 0x0f, 0xc8, 0xe2,
-	0xbe, 0x6e, 0x5a, 0x5e, 0xb8, 0xac, 0xc9, 0x97, 0xcf, 0xa8, 0x09, 0x46, 0x64, 0xb3, 0x31, 0xa7,
-	0xb0, 0x9f, 0x4a, 0x41, 0x49, 0xec, 0xa6, 0x54, 0xca, 0x90, 0x05, 0x69, 0xa7, 0xbe, 0x49, 0x5e,
-	0x3c, 0x1c, 0xab, 0x7a, 0x38, 0xd6, 0xa4, 0x70, 0xa9, 0x7c, 0xb0, 0xa1, 0x18, 0x93, 0x12, 0x81,
-	0xbe, 0x87, 0x8f, 0x85, 0x4a, 0xd0, 0xe5, 0x22, 0x0c, 0x42, 0x46, 0x22, 0xd7, 0xa7, 0xa9, 0x0c,
-	0x59, 0xb1, 0x7b, 0xe7, 0x75, 0x4f, 0x1b, 0xb4, 0x70, 0xb7, 0xd4, 0x8c, 0x4b, 0xc9, 0xf9, 0x52,
-	0x81, 0x1c, 0xd8, 0xf7, 0x8b, 0x1c, 0x5c, 0x3e, 0xa7, 0x42, 0x84, 0x3e, 0xed, 0x34, 0x7b, 0xfa,
-	0xc0, 0x18, 0x1e, 0xed, 0xbc, 0xf1, 0x4f, 0x8c, 0xdf, 0x33, 0x27, 0x7f, 0x96, 0x1e, 0x8f, 0x52,
-	0x6c, 0x28, 0xff, 0xb8, 0xb4, 0xff, 0x58, 0x6f, 0x35, 0xcc, 0x66, 0xff, 0x1f, 0x0d, 0x0e, 0xca,
-	0x17, 0x7b, 0x49, 0x98, 0x1f, 0x2d, 0x4a, 0x6c, 0x82, 0x2e, 0x49, 0x50, 0xd4, 0xf6, 0x0d, 0xce,
-	0x97, 0x68, 0x02, 0xef, 0xca, 0x03, 0x8a, 0x65, 0x38, 0xaa, 0x7c, 0x5f, 0x6c, 0x29, 0x9f, 0x9a,
-	0x12, 0xc5, 0x73, 0xf5, 0xaf, 0xd5, 0x90, 0xc0, 0x66, 0x05, 0x58, 0x24, 0x73, 0x0d, 0x46, 0x71,
-	0xe0, 0x25, 0x51, 0x7f, 0x16, 0xb1, 0x5d, 0xb8, 0x2b, 0x5c, 0xdf, 0x04, 0x63, 0x3c, 0x93, 0xab,
-	0x03, 0xe8, 0xef, 0x1a, 0xbc, 0x9d, 0x50, 0xe6, 0x2f, 0x2e, 0x76, 0x0a, 0xfa, 0x3c, 0x24, 0x65,
-	0xd3, 0xbe, 0x47, 0xdf, 0xe5, 0xea, 0x6d, 0x6d, 0x51, 0x7b, 0x79, 0x5b, 0xfc, 0xb2, 0xe3, 0xf2,
-	0xc7, 0xff, 0x03, 0x75, 0x72, 0x53, 0xc9, 0x5c, 0x0f, 0x00, 0xdd, 0x00, 0x8a, 0x67, 0x91, 0x0c,
-	0x93, 0x88, 0x3e, 0x3c, 0xd9, 0xc2, 0x6b, 0xad, 0x72, 0x5d, 0x59, 0x42, 0x16, 0x94, 0xdc, 0x77,
-	0x0b, 0xcc, 0x22, 0x5c, 0x07, 0xd0, 0xa6, 0x10, 0x75, 0xa0, 0x49, 0x19, 0xb9, 0x8d, 0xa8, 0x5f,
-	0x64, 0xda, 0xc2, 0xd5, 0x27, 0xea, 0x6d, 0x8e, 0xe7, 0xf6, 0xda, 0x4c, 0x3d, 0xfe, 0x0c, 0x8c,
-	0xf5, 0x2e, 0x45, 0x2d, 0xa8, 0x5f, 0x4e, 0xa7, 0x8e, 0xf9, 0x0a, 0x35, 0x41, 0x9f, 0xfe, 0x3c,
-	0x31, 0xb5, 0x1f, 0x46, 0xf0, 0x91, 0xc7, 0xe3, 0x5d, 0x67, 0x77, 0xb4, 0x9b, 0x56, 0xb5, 0xfe,
-	0xb3, 0x76, 0xf8, 0xeb, 0x10, 0x93, 0xcc, 0x1a, 0xe5, 0xaa, 0xb3, 0x24, 0x51, 0x49, 0xc5, 0x84,
-	0xdd, 0x36, 0x8a, 0xdf, 0xa7, 0xd3, 0xff, 0x02, 0x00, 0x00, 0xff, 0xff, 0x6a, 0xe5, 0x6f, 0xed,
-	0x95, 0x07, 0x00, 0x00,
+var fileDescriptor_b07f45dd938bc1b0 = []byte{
+	// 825 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x95, 0x4f, 0x6f, 0xdb, 0x36,
+	0x18, 0xc6, 0x6b, 0xcb, 0x8d, 0x9d, 0x37, 0x8d, 0xaa, 0xb0, 0x01, 0xaa, 0x79, 0x1b, 0xe0, 0x79,
+	0xc3, 0x6a, 0x74, 0x83, 0xd4, 0xba, 0xd8, 0x61, 0xa7, 0x2d, 0x4d, 0x0a, 0x34, 0xdb, 0x82, 0x78,
+	0xb4, 0xb1, 0x43, 0xb1, 0x41, 0x60, 0x24, 0x46, 0x23, 0x26, 0x91, 0x02, 0x49, 0xbb, 0xd1, 0x57,
+	0xda, 0x79, 0x1f, 0x60, 0xc7, 0x1d, 0xf6, 0xa1, 0x06, 0x89, 0x92, 0xff, 0xd4, 0x56, 0xd6, 0xa0,
+	0x37, 0xda, 0x7a, 0xde, 0x9f, 0xde, 0xf7, 0xe1, 0x43, 0x0a, 0x46, 0x8b, 0xb1, 0x24, 0xb9, 0x17,
+	0x8a, 0xd4, 0x0f, 0x85, 0xa4, 0x3e, 0xc9, 0x32, 0x3f, 0x93, 0xe2, 0x26, 0x4f, 0x09, 0xf7, 0x43,
+	0xc1, 0xaf, 0x59, 0xec, 0x65, 0x52, 0x68, 0x81, 0x1e, 0xd7, 0x4a, 0x49, 0x3d, 0x92, 0x65, 0x5e,
+	0xad, 0xea, 0x3f, 0x79, 0x07, 0x11, 0x8a, 0x34, 0x15, 0xdc, 0xe7, 0x54, 0xfb, 0x24, 0x8a, 0x24,
+	0x55, 0xca, 0x10, 0xfa, 0x5f, 0x34, 0x0b, 0x33, 0x21, 0x75, 0xa5, 0xf2, 0xde, 0x51, 0x69, 0x49,
+	0xb8, 0x2a, 0x9e, 0xfb, 0x8c, 0x6b, 0x2a, 0x0b, 0xf5, 0x7a, 0x5f, 0xfd, 0x67, 0xbb, 0xa9, 0x8a,
+	0x4a, 0x46, 0x12, 0x5f, 0xe7, 0x19, 0x8d, 0x82, 0x94, 0x2a, 0x45, 0x62, 0x6a, 0x2a, 0x86, 0x0f,
+	0xe1, 0xf0, 0x9c, 0x5f, 0x89, 0x39, 0x8f, 0x4e, 0x4b, 0xd0, 0xf0, 0x6f, 0x0b, 0xd0, 0x49, 0x92,
+	0x88, 0x90, 0x68, 0x26, 0xf8, 0x54, 0x4b, 0xa2, 0x69, 0x9c, 0xa3, 0x33, 0xe8, 0x14, 0xe5, 0x6e,
+	0x6b, 0xd0, 0x1a, 0xd9, 0xe3, 0x67, 0x5e, 0x83, 0x01, 0xde, 0x76, 0xa9, 0x37, 0xcb, 0x33, 0x8a,
+	0xcb, 0x6a, 0xf4, 0x07, 0x1c, 0x84, 0x82, 0x87, 0x73, 0x29, 0x29, 0x0f, 0x73, 0xb7, 0x3d, 0x68,
+	0x8d, 0x0e, 0xc6, 0xe7, 0x77, 0x81, 0x6d, 0xff, 0x75, 0xba, 0x02, 0xe2, 0x75, 0x3a, 0x0a, 0xa0,
+	0x2b, 0xe9, 0xb5, 0xa4, 0xea, 0x77, 0xd7, 0x2a, 0x5f, 0xf4, 0xea, 0xc3, 0x5e, 0x84, 0x0d, 0x0c,
+	0xd7, 0xd4, 0xfe, 0x37, 0xf0, 0xe9, 0xad, 0xed, 0xa0, 0x63, 0xb8, 0xbf, 0x20, 0xc9, 0xdc, 0xb8,
+	0x76, 0x88, 0xcd, 0x8f, 0xfe, 0x73, 0xf8, 0xa8, 0x11, 0xbe, 0xbb, 0x64, 0xf8, 0x35, 0x74, 0x0a,
+	0x17, 0x11, 0xc0, 0xde, 0x49, 0xf2, 0x96, 0xe4, 0xca, 0xb9, 0x57, 0xac, 0x31, 0xe1, 0x91, 0x48,
+	0x9d, 0x16, 0x7a, 0x00, 0xbd, 0x57, 0x37, 0x45, 0x20, 0x48, 0xe2, 0xb4, 0x87, 0xbf, 0x81, 0x3d,
+	0xe5, 0xec, 0xfa, 0x9a, 0xf1, 0xd8, 0x6c, 0x2a, 0x72, 0xa1, 0x4b, 0x39, 0xb9, 0x4a, 0x68, 0x54,
+	0x72, 0x7b, 0xb8, 0xfe, 0x89, 0x9e, 0xc3, 0x71, 0x44, 0x95, 0x66, 0xbc, 0xec, 0x26, 0x10, 0x0b,
+	0x2a, 0x25, 0x8b, 0xa8, 0xdb, 0x1e, 0x58, 0xa3, 0x7d, 0xfc, 0x68, 0xed, 0xd9, 0x65, 0xf5, 0x68,
+	0xf8, 0x57, 0x07, 0x6c, 0x4c, 0x43, 0xca, 0x16, 0x54, 0x56, 0xfc, 0xef, 0x00, 0x8a, 0x54, 0x06,
+	0x92, 0xf0, 0xd8, 0xb4, 0x7e, 0x30, 0x1e, 0xac, 0xbb, 0x6d, 0x82, 0xe8, 0x71, 0xaa, 0xbd, 0x89,
+	0x90, 0x1a, 0x17, 0x3a, 0xbc, 0x9f, 0xd5, 0x4b, 0xf4, 0x2d, 0xec, 0x25, 0x4c, 0x69, 0xca, 0xab,
+	0x4c, 0x7c, 0xd6, 0x50, 0x7c, 0x3e, 0xb9, 0x94, 0x67, 0x22, 0x25, 0x8c, 0xe3, 0xaa, 0x00, 0xfd,
+	0x0a, 0x8f, 0xc8, 0xd2, 0xce, 0x40, 0x55, 0x7e, 0x56, 0x5b, 0xfe, 0xd5, 0x1d, 0xb6, 0x1c, 0x23,
+	0xb2, 0x9d, 0xfb, 0x19, 0x3c, 0x54, 0x5a, 0x52, 0x92, 0x06, 0x8a, 0x6a, 0xcd, 0x78, 0xac, 0xdc,
+	0xce, 0x36, 0x79, 0x79, 0x2e, 0xbd, 0xfa, 0x5c, 0x7a, 0xd3, 0xb2, 0xca, 0xf8, 0x83, 0x6d, 0xc3,
+	0x98, 0x56, 0x08, 0xf4, 0x3d, 0x7c, 0x22, 0x8d, 0x83, 0x81, 0x90, 0x2c, 0x66, 0x9c, 0x24, 0xc1,
+	0x9a, 0xd5, 0xee, 0xfd, 0x72, 0x93, 0xfa, 0x95, 0xe6, 0xb2, 0x92, 0x9c, 0xad, 0x14, 0x45, 0x5f,
+	0x51, 0xe9, 0xc3, 0x6a, 0xcb, 0xba, 0x03, 0x6b, 0x64, 0x8f, 0x9f, 0x34, 0x4e, 0xfc, 0x23, 0x17,
+	0x6f, 0xf9, 0xa4, 0x38, 0xf5, 0xa1, 0x48, 0xd4, 0xcb, 0xb6, 0xdb, 0xc2, 0xb6, 0x61, 0xd4, 0x5b,
+	0x8b, 0x66, 0x70, 0xa4, 0xaa, 0xe4, 0xac, 0xe6, 0xed, 0x95, 0xf3, 0x36, 0x73, 0x37, 0xb3, 0x86,
+	0x9d, 0x9a, 0x50, 0x4f, 0xfb, 0x43, 0xa7, 0xb7, 0xe7, 0x74, 0x87, 0xff, 0xb6, 0xe0, 0xb8, 0xba,
+	0x6a, 0x5e, 0x13, 0x1e, 0x25, 0xcb, 0xf0, 0x38, 0x60, 0x69, 0x12, 0x97, 0xa9, 0xd9, 0xc7, 0xc5,
+	0x12, 0x4d, 0xe1, 0xa8, 0x1a, 0x5d, 0xae, 0xda, 0x30, 0xc1, 0xf8, 0x72, 0x47, 0x30, 0xcc, 0xf5,
+	0x56, 0xde, 0x33, 0xd1, 0x85, 0xb9, 0xdd, 0xb0, 0x53, 0x03, 0x96, 0x9e, 0x5f, 0x80, 0x5d, 0xb6,
+	0xbc, 0x22, 0x5a, 0x77, 0x22, 0x1e, 0x96, 0xd5, 0x35, 0x6e, 0xe8, 0x80, 0x7d, 0x39, 0xd7, 0xeb,
+	0x37, 0xe7, 0x3f, 0x6d, 0x78, 0x30, 0xa5, 0x3c, 0x5a, 0x0e, 0xf6, 0x02, 0xac, 0x05, 0x23, 0xd5,
+	0x71, 0x78, 0x8f, 0x44, 0x17, 0xea, 0x5d, 0x81, 0x6b, 0x7f, 0x78, 0xe0, 0x7e, 0x6e, 0x18, 0xfe,
+	0xe9, 0xff, 0x40, 0x27, 0x45, 0x51, 0xc5, 0xdc, 0x34, 0x00, 0xbd, 0x01, 0x94, 0xce, 0x13, 0xcd,
+	0xb2, 0x84, 0xde, 0xdc, 0x7a, 0x38, 0x36, 0xc2, 0x72, 0x51, 0x97, 0xac, 0x02, 0x73, 0xb4, 0xc4,
+	0x2c, 0xcd, 0x9d, 0x00, 0xda, 0x16, 0xde, 0x72, 0x8b, 0x0d, 0xb6, 0xbf, 0x2b, 0x87, 0x1b, 0x1f,
+	0x83, 0xa7, 0x9f, 0x83, 0xbd, 0x99, 0x7f, 0xd4, 0x83, 0xce, 0xeb, 0xd9, 0x6c, 0xe2, 0xdc, 0x43,
+	0x5d, 0xb0, 0x66, 0x3f, 0x4d, 0x9d, 0xd6, 0xcb, 0x53, 0xf8, 0x38, 0x14, 0x69, 0x53, 0xef, 0x93,
+	0xd6, 0x9b, 0x5e, 0xbd, 0xfe, 0xb3, 0xfd, 0xf8, 0x97, 0x31, 0x26, 0xb9, 0x77, 0x5a, 0xa8, 0x4e,
+	0xb2, 0xcc, 0x38, 0x95, 0x12, 0x7e, 0xb5, 0x57, 0x7e, 0x58, 0x5f, 0xfc, 0x17, 0x00, 0x00, 0xff,
+	0xff, 0x4d, 0xe1, 0x89, 0x0d, 0x4e, 0x08, 0x00, 0x00,
 }

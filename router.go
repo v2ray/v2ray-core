@@ -5,10 +5,16 @@ import (
 	"sync"
 
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/transport/ray"
 )
+
+// Link is a utility for connecting between an inbound and an outbound proxy handler.
+type Link struct {
+	Reader buf.Reader
+	Writer buf.Writer
+}
 
 // Dispatcher is a feature that dispatches inbound requests to outbound handlers based on rules.
 // Dispatcher is required to be registered in a V2Ray instance to make V2Ray function properly.
@@ -16,7 +22,7 @@ type Dispatcher interface {
 	Feature
 
 	// Dispatch returns a Ray for transporting data for the given request.
-	Dispatch(ctx context.Context, dest net.Destination) (ray.InboundRay, error)
+	Dispatch(ctx context.Context, dest net.Destination) (*Link, error)
 }
 
 type syncDispatcher struct {
@@ -24,7 +30,7 @@ type syncDispatcher struct {
 	Dispatcher
 }
 
-func (d *syncDispatcher) Dispatch(ctx context.Context, dest net.Destination) (ray.InboundRay, error) {
+func (d *syncDispatcher) Dispatch(ctx context.Context, dest net.Destination) (*Link, error) {
 	d.RLock()
 	defer d.RUnlock()
 
@@ -61,7 +67,7 @@ func (d *syncDispatcher) Set(disp Dispatcher) {
 	d.Lock()
 	defer d.Unlock()
 
-	common.Close(d.Dispatcher)
+	common.Close(d.Dispatcher) // nolint: errorcheck
 	d.Dispatcher = disp
 }
 
@@ -120,6 +126,6 @@ func (r *syncRouter) Set(router Router) {
 	r.Lock()
 	defer r.Unlock()
 
-	common.Close(r.Router)
+	common.Close(r.Router) // nolint: errcheck
 	r.Router = router
 }

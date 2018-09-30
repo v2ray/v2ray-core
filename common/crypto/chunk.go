@@ -20,6 +20,11 @@ type ChunkSizeEncoder interface {
 	Encode(uint16, []byte) []byte
 }
 
+type PaddingLengthGenerator interface {
+	MaxPaddingLen() uint16
+	NextPaddingLen() uint16
+}
+
 type PlainChunkSizeParser struct{}
 
 func (PlainChunkSizeParser) SizeBytes() int32 {
@@ -63,14 +68,27 @@ type ChunkStreamReader struct {
 
 	buffer       []byte
 	leftOverSize int32
+	maxNumChunk  uint32
+	numChunk     uint32
 }
 
 func NewChunkStreamReader(sizeDecoder ChunkSizeDecoder, reader io.Reader) *ChunkStreamReader {
-	return &ChunkStreamReader{
+	return NewChunkStreamReaderWithChunkCount(sizeDecoder, reader, 0)
+}
+
+func NewChunkStreamReaderWithChunkCount(sizeDecoder ChunkSizeDecoder, reader io.Reader, maxNumChunk uint32) *ChunkStreamReader {
+	r := &ChunkStreamReader{
 		sizeDecoder: sizeDecoder,
-		reader:      buf.NewBufferedReader(buf.NewReader(reader)),
 		buffer:      make([]byte, sizeDecoder.SizeBytes()),
+		maxNumChunk: maxNumChunk,
 	}
+	if breader, ok := reader.(*buf.BufferedReader); ok {
+		r.reader = breader
+	} else {
+		r.reader = &buf.BufferedReader{Reader: buf.NewReader(reader)}
+	}
+
+	return r
 }
 
 func (r *ChunkStreamReader) readSize() (uint16, error) {
@@ -83,6 +101,10 @@ func (r *ChunkStreamReader) readSize() (uint16, error) {
 func (r *ChunkStreamReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	size := r.leftOverSize
 	if size == 0 {
+		r.numChunk++
+		if r.maxNumChunk > 0 && r.numChunk > r.maxNumChunk {
+			return nil, io.EOF
+		}
 		nextSize, err := r.readSize()
 		if err != nil {
 			return nil, err

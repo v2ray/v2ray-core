@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
+	"v2ray.com/core/common/serial"
 )
 
 var (
@@ -69,7 +71,7 @@ func (c *connection) Write(b []byte) (int, error) {
 
 func (c *connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	if c.mergingWriter == nil {
-		c.mergingWriter = buf.NewBufferedWriter(buf.NewBufferToBytesWriter(c))
+		c.mergingWriter = buf.NewBufferedWriter(&buf.BufferToBytesWriter{Writer: c})
 	}
 	if err := c.mergingWriter.WriteMultiBuffer(mb); err != nil {
 		return err
@@ -78,8 +80,17 @@ func (c *connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 }
 
 func (c *connection) Close() error {
-	c.conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add(time.Second*5))
-	return c.conn.Close()
+	var errors []interface{}
+	if err := c.conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add(time.Second*5)); err != nil {
+		errors = append(errors, err)
+	}
+	if err := c.conn.Close(); err != nil {
+		errors = append(errors, err)
+	}
+	if len(errors) > 0 {
+		return newError("failed to close connection").Base(newError(serial.Concat(errors...)))
+	}
+	return nil
 }
 
 func (c *connection) LocalAddr() net.Addr {
