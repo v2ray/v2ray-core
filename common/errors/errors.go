@@ -3,7 +3,7 @@ package errors // import "v2ray.com/core/common/errors"
 
 import (
 	"os"
-	"strings"
+	"reflect"
 
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/serial"
@@ -20,11 +20,23 @@ type hasSeverity interface {
 
 // Error is an error object with underlying error.
 type Error struct {
+	pathObj  interface{}
 	prefix   []interface{}
-	path     []string
 	message  []interface{}
 	inner    error
 	severity log.Severity
+}
+
+func (err *Error) WithPathObj(obj interface{}) *Error {
+	err.pathObj = obj
+	return err
+}
+
+func (err *Error) pkgPath() string {
+	if err.pathObj == nil {
+		return ""
+	}
+	return reflect.TypeOf(err.pathObj).PkgPath()
 }
 
 // Error implements error.Error().
@@ -33,8 +45,9 @@ func (v *Error) Error() string {
 	if v.inner != nil {
 		msg += " > " + v.inner.Error()
 	}
-	if len(v.path) > 0 {
-		msg = strings.Join(v.path, "|") + ": " + msg
+	path := v.pkgPath()
+	if len(path) > 0 {
+		msg = path + ": " + msg
 	}
 
 	var prefix string
@@ -96,12 +109,6 @@ func (v *Error) AtWarning() *Error {
 // AtError sets the severity to error.
 func (v *Error) AtError() *Error {
 	return v.atSeverity(log.Severity_Error)
-}
-
-// Path sets the path to the location where this error happens.
-func (v *Error) Path(path ...string) *Error {
-	v.path = path
-	return v
 }
 
 // String returns the string representation of this error.
