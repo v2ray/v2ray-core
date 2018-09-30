@@ -34,6 +34,7 @@ func (*PortRange) ProtoMessage()    {}
 func (*PortRange) Descriptor() ([]byte, []int) {
 	return fileDescriptor_166067e37a39f913, []int{0}
 }
+
 func (m *PortRange) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PortRange.Unmarshal(m, b)
 }

@@ -34,6 +34,7 @@ func (*IPOrDomain) ProtoMessage()    {}
 func (*IPOrDomain) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4ba9b4a4304e7c1f, []int{0}
 }
+
 func (m *IPOrDomain) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_IPOrDomain.Unmarshal(m, b)
 }

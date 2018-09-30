@@ -67,6 +67,7 @@ func (*SecurityConfig) ProtoMessage()    {}
 func (*SecurityConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_5931f958a3c1d408, []int{0}
 }
+
 func (m *SecurityConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SecurityConfig.Unmarshal(m, b)
 }
@@ -93,8 +94,8 @@ func (m *SecurityConfig) GetType() SecurityType {
 }
 
 func init() {
-	proto.RegisterType((*SecurityConfig)(nil), "v2ray.core.common.protocol.SecurityConfig")
 	proto.RegisterEnum("v2ray.core.common.protocol.SecurityType", SecurityType_name, SecurityType_value)
+	proto.RegisterType((*SecurityConfig)(nil), "v2ray.core.common.protocol.SecurityConfig")
 }
 
 func init() {

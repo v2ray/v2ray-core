@@ -34,6 +34,7 @@ func (*TypedMessage) ProtoMessage()    {}
 func (*TypedMessage) Descriptor() ([]byte, []int) {
 	return fileDescriptor_0bb3cdb51e9fc84d, []int{0}
 }
+
 func (m *TypedMessage) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TypedMessage.Unmarshal(m, b)
 }

@@ -31,6 +31,7 @@ func (*DetourConfig) ProtoMessage()    {}
 func (*DetourConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_a47d4a41f33382d2, []int{0}
 }
+
 func (m *DetourConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DetourConfig.Unmarshal(m, b)
 }
@@ -70,6 +71,7 @@ func (*DefaultConfig) ProtoMessage()    {}
 func (*DefaultConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_a47d4a41f33382d2, []int{1}
 }
+
 func (m *DefaultConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DefaultConfig.Unmarshal(m, b)
 }
@@ -118,6 +120,7 @@ func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
 	return fileDescriptor_a47d4a41f33382d2, []int{2}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }

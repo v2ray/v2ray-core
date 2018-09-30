@@ -31,6 +31,7 @@ func (*Account) ProtoMessage()    {}
 func (*Account) Descriptor() ([]byte, []int) {
 	return fileDescriptor_64514e21c693811b, []int{0}
 }
+
 func (m *Account) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Account.Unmarshal(m, b)
 }
@@ -71,6 +72,7 @@ func (*ServerConfig) ProtoMessage()    {}
 func (*ServerConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_64514e21c693811b, []int{1}
 }
+
 func (m *ServerConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServerConfig.Unmarshal(m, b)
 }
@@ -108,6 +110,7 @@ func (*ClientConfig) ProtoMessage()    {}
 func (*ClientConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_64514e21c693811b, []int{2}
 }
+
 func (m *ClientConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ClientConfig.Unmarshal(m, b)
 }

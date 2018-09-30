@@ -43,6 +43,7 @@ func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
 	return fileDescriptor_13704400b1045c6b, []int{0}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }
@@ -115,6 +116,7 @@ func (*InboundHandlerConfig) ProtoMessage()    {}
 func (*InboundHandlerConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_13704400b1045c6b, []int{1}
 }
+
 func (m *InboundHandlerConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InboundHandlerConfig.Unmarshal(m, b)
 }
@@ -177,6 +179,7 @@ func (*OutboundHandlerConfig) ProtoMessage()    {}
 func (*OutboundHandlerConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_13704400b1045c6b, []int{2}
 }
+
 func (m *OutboundHandlerConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_OutboundHandlerConfig.Unmarshal(m, b)
 }

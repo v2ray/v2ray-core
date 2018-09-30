@@ -34,6 +34,7 @@ func (*ServerConfig) ProtoMessage()    {}
 func (*ServerConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e66c3db3a635d8e4, []int{0}
 }
+
 func (m *ServerConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServerConfig.Unmarshal(m, b)
 }
@@ -94,6 +95,7 @@ func (*ClientConfig) ProtoMessage()    {}
 func (*ClientConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e66c3db3a635d8e4, []int{1}
 }
+
 func (m *ClientConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ClientConfig.Unmarshal(m, b)
 }

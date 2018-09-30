@@ -29,6 +29,7 @@ func (*WireguardConfig) ProtoMessage()    {}
 func (*WireguardConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_a4c21f616af3c531, []int{0}
 }
+
 func (m *WireguardConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WireguardConfig.Unmarshal(m, b)
 }

@@ -29,6 +29,7 @@ func (*SessionConfig) ProtoMessage()    {}
 func (*SessionConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_90b7c41cce355532, []int{0}
 }
+
 func (m *SessionConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SessionConfig.Unmarshal(m, b)
 }
@@ -60,6 +61,7 @@ func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
 	return fileDescriptor_90b7c41cce355532, []int{1}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }

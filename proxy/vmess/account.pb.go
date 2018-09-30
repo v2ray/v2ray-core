@@ -36,6 +36,7 @@ func (*Account) ProtoMessage()    {}
 func (*Account) Descriptor() ([]byte, []int) {
 	return fileDescriptor_d65dee31e5abbda0, []int{0}
 }
+
 func (m *Account) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Account.Unmarshal(m, b)
 }

@@ -33,6 +33,7 @@ func (*Header) ProtoMessage()    {}
 func (*Header) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e2685d0b4b039e80, []int{0}
 }
+
 func (m *Header) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Header.Unmarshal(m, b)
 }
@@ -79,6 +80,7 @@ func (*Version) ProtoMessage()    {}
 func (*Version) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e2685d0b4b039e80, []int{1}
 }
+
 func (m *Version) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Version.Unmarshal(m, b)
 }
@@ -118,6 +120,7 @@ func (*Method) ProtoMessage()    {}
 func (*Method) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e2685d0b4b039e80, []int{2}
 }
+
 func (m *Method) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Method.Unmarshal(m, b)
 }
@@ -162,6 +165,7 @@ func (*RequestConfig) ProtoMessage()    {}
 func (*RequestConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e2685d0b4b039e80, []int{3}
 }
+
 func (m *RequestConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RequestConfig.Unmarshal(m, b)
 }
@@ -224,6 +228,7 @@ func (*Status) ProtoMessage()    {}
 func (*Status) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e2685d0b4b039e80, []int{4}
 }
+
 func (m *Status) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Status.Unmarshal(m, b)
 }
@@ -271,6 +276,7 @@ func (*ResponseConfig) ProtoMessage()    {}
 func (*ResponseConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e2685d0b4b039e80, []int{5}
 }
+
 func (m *ResponseConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ResponseConfig.Unmarshal(m, b)
 }
@@ -326,6 +332,7 @@ func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e2685d0b4b039e80, []int{6}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }

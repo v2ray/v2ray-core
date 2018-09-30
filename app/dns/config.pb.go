@@ -278,12 +278,12 @@ func (m *Config_HostMapping) GetIp() [][]byte {
 }
 
 func init() {
+	proto.RegisterEnum("v2ray.core.app.dns.DomainMatchingType", DomainMatchingType_name, DomainMatchingType_value)
 	proto.RegisterType((*NameServer)(nil), "v2ray.core.app.dns.NameServer")
 	proto.RegisterType((*NameServer_PriorityDomain)(nil), "v2ray.core.app.dns.NameServer.PriorityDomain")
 	proto.RegisterType((*Config)(nil), "v2ray.core.app.dns.Config")
 	proto.RegisterMapType((map[string]*net.IPOrDomain)(nil), "v2ray.core.app.dns.Config.HostsEntry")
 	proto.RegisterType((*Config_HostMapping)(nil), "v2ray.core.app.dns.Config.HostMapping")
-	proto.RegisterEnum("v2ray.core.app.dns.DomainMatchingType", DomainMatchingType_name, DomainMatchingType_value)
 }
 
 func init() {

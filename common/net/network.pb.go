@@ -62,6 +62,7 @@ func (*NetworkList) ProtoMessage()    {}
 func (*NetworkList) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6a103d5ccb9e785e, []int{0}
 }
+
 func (m *NetworkList) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_NetworkList.Unmarshal(m, b)
 }
@@ -88,8 +89,8 @@ func (m *NetworkList) GetNetwork() []Network {
 }
 
 func init() {
-	proto.RegisterType((*NetworkList)(nil), "v2ray.core.common.net.NetworkList")
 	proto.RegisterEnum("v2ray.core.common.net.Network", Network_name, Network_value)
+	proto.RegisterType((*NetworkList)(nil), "v2ray.core.common.net.NetworkList")
 }
 
 func init() {
