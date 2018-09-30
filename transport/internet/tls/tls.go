@@ -7,7 +7,7 @@ import (
 	"v2ray.com/core/common/net"
 )
 
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg tls -path Transport,Internet,TLS
+//go:generate errorgen
 
 var (
 	_ buf.Writer = (*conn)(nil)

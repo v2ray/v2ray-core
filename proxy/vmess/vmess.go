@@ -5,7 +5,7 @@
 // clients with 'socks' for proxying.
 package vmess
 
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg vmess -path Proxy,VMess
+//go:generate errorgen
 
 import (
 	"strings"
