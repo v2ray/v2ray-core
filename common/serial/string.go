@@ -28,11 +28,11 @@ func ToString(v interface{}) string {
 }
 
 func Concat(v ...interface{}) string {
-	values := make([]string, len(v))
-	for i, value := range v {
-		values[i] = ToString(value)
+	builder := strings.Builder{}
+	for _, value := range v {
+		builder.WriteString(ToString(value))
 	}
-	return strings.Join(values, "")
+	return builder.String()
 }
 
 func WriteString(s string) func([]byte) (int, error) {

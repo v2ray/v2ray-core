@@ -4,6 +4,7 @@ package errors // import "v2ray.com/core/common/errors"
 import (
 	"os"
 	"reflect"
+	"strings"
 
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/serial"
@@ -41,21 +42,28 @@ func (err *Error) pkgPath() string {
 
 // Error implements error.Error().
 func (v *Error) Error() string {
-	msg := serial.Concat(v.message...)
-	if v.inner != nil {
-		msg += " > " + v.inner.Error()
+	builder := strings.Builder{}
+	for _, prefix := range v.prefix {
+		builder.WriteByte('[')
+		builder.WriteString(serial.ToString(prefix))
+		builder.WriteString("] ")
 	}
+
 	path := v.pkgPath()
 	if len(path) > 0 {
-		msg = path + ": " + msg
+		builder.WriteString(path)
+		builder.WriteString(": ")
 	}
 
-	var prefix string
-	for _, p := range v.prefix {
-		prefix += "[" + serial.ToString(p) + "] "
+	msg := serial.Concat(v.message...)
+	builder.WriteString(msg)
+
+	if v.inner != nil {
+		builder.WriteString(" > ")
+		builder.WriteString(v.inner.Error())
 	}
 
-	return prefix + msg
+	return builder.String()
 }
 
 // Inner implements hasInnerError.Inner()
