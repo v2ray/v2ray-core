@@ -17,9 +17,9 @@ type Payload struct {
 
 type HubOption func(h *Hub)
 
-func HubCapacity(cap int) HubOption {
+func HubCapacity(capacity int) HubOption {
 	return func(h *Hub) {
-		h.capacity = cap
+		h.capacity = capacity
 	}
 }
 
