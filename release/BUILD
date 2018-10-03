@@ -1,21 +1,6 @@
 package(default_visibility=["//visibility:public"])
 
-load("@v2ray_ext//bazel:build.bzl", "foreign_go_binary")
 load("@v2ray_ext//bazel:zip.bzl", "pkg_zip")
-load("@v2ray_ext//bazel:gpg.bzl", "gpg_sign")
-
-foreign_go_binary(
-  name = "v2ray_linux_amd64",
-  pkg = "v2ray.com/core/main",
-  output = "v2ray",
-  os = "linux",
-  arch = "amd64",
-)
-
-gpg_sign(
-  name = "v2ray_linux_amd64_sig",
-  base = ":v2ray_linux_amd64",
-)
 
 filegroup(
   name = "config_json",
@@ -43,10 +28,56 @@ filegroup(
 )
 
 pkg_zip(
+  name = "v2ray_darwin_amd64_package",
+  srcs = [
+    "//main:v2ray_darwin_amd64",
+    "//main:v2ray_darwin_amd64_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_darwin_amd64",
+    "@v2ray_ext//tools/control/main:v2ctl_darwin_amd64_sig",
+    ":config_json",
+    ":doc",
+    ":geodata",
+  ],
+  out = "v2ray-macos-64.zip",
+)
+
+pkg_zip(
+  name = "v2ray_windows_amd64_package",
+  srcs = [
+    "//main:v2ray_windows_amd64",
+    "//main:v2ray_lwindows_amd64_sig",
+    "//main:v2ray_windows_amd64_nowindow",
+    "//main:v2ray_lwindows_amd64_nowindow_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_windows_amd64",
+    "@v2ray_ext//tools/control/main:v2ctl_windows_amd64_sig",
+    ":config_json",
+    ":doc",
+    ":geodata",
+  ],
+  out = "v2ray-windows-64.zip",
+)
+
+pkg_zip(
+  name = "v2ray_windows_x86_package",
+  srcs = [
+    "//main:v2ray_windows_x86",
+    "//main:v2ray_windows_x86_sig",
+    "//main:v2ray_windows_x86_nowindow",
+    "//main:v2ray_windows_x86_nowindow_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_windows_x86",
+    "@v2ray_ext//tools/control/main:v2ctl_windows_x86_sig",
+    ":config_json",
+    ":doc",
+    ":geodata",
+  ],
+  out = "v2ray-windows-32.zip",
+)
+
+pkg_zip(
   name = "v2ray_linux_amd64_package",
   srcs = [
-    ":v2ray_linux_amd64",
-    ":v2ray_linux_amd64_sig",
+    "//main:v2ray_linux_amd64",
+    "//main:v2ray_linux_amd64_sig",
     "@v2ray_ext//tools/control/main:v2ctl_linux_amd64",
     "@v2ray_ext//tools/control/main:v2ctl_linux_amd64_sig",
     ":config_all",
@@ -55,4 +86,19 @@ pkg_zip(
     ":geodata",
   ],
   out = "v2ray-linux-64.zip",
+)
+
+pkg_zip(
+  name = "v2ray_linux_x86_package",
+  srcs = [
+    "//main:v2ray_linux_x86",
+    "//main:v2ray_linux_x86_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_x86",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_x86_sig",
+    ":config_all",
+    ":systemd",
+    ":doc",
+    ":geodata",
+  ],
+  out = "v2ray-linux-32.zip",
 )
