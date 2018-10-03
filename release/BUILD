@@ -13,6 +13,11 @@ foreign_go_binary(
   arch = "amd64",
 )
 
+gpg_sign(
+  name = "v2ray_linux_amd64_sig",
+  base = ":v2ray_linux_amd64",
+)
+
 filegroup(
   name = "config_json",
   srcs = ["config/config.json"],
@@ -37,7 +42,9 @@ pkg_zip(
   name = "v2ray_linux_amd64_package",
   srcs = [
     ":v2ray_linux_amd64",
+    ":v2ray_linux_amd64_sig",
     "@v2ray_ext//tools/control/main:v2ctl_linux_amd64",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_amd64_sig",
     ":config_all",
     ":systemd",
     ":doc",
