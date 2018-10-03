@@ -2,8 +2,7 @@ package(default_visibility=["//visibility:public"])
 
 load("@v2ray_ext//bazel:build.bzl", "foreign_go_binary")
 load("@v2ray_ext//bazel:zip.bzl", "pkg_zip")
-
-package(default_visibility=["//visibility:public"])
+load("@v2ray_ext//bazel:gpg.bzl", "gpg_sign")
 
 foreign_go_binary(
   name = "v2ray_linux_amd64",
@@ -30,12 +29,17 @@ filegroup(
 
 filegroup(
   name = "systemd",
-  srcs = ["config/systemd/v2ray.service", "config/systemv/v2ray"],
+  srcs = ["config/systemd_v2ray.service", "config/systemv_v2ray"],
 )
 
 filegroup(
   name = "doc",
   srcs = glob(["doc/*.md"]),
+)
+
+filegroup(
+  name = "geodata",
+  srcs = ["config/geoip.dat", "config/geosite.dat"],
 )
 
 pkg_zip(
@@ -48,6 +52,7 @@ pkg_zip(
     ":config_all",
     ":systemd",
     ":doc",
+    ":geodata",
   ],
   out = "v2ray-linux-64.zip",
 )

@@ -269,17 +269,23 @@ installV2Ray(){
 
 
 installInitScript(){
+    if [[ -f "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/systemd/v2ray.service" ]]; then
+        cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/systemd/v2ray.service" "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/systemd_v2ray.service"
+    fi
+    if [[ -f "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/systemv/v2ray" ]]; then
+        cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/systemv/v2ray" "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/systemv_v2ray"
+    fi
     if [[ -n "${SYSTEMCTL_CMD}" ]];then
         if [[ ! -f "/etc/systemd/system/v2ray.service" ]]; then
             if [[ ! -f "/lib/systemd/system/v2ray.service" ]]; then
-                cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/systemd/v2ray.service" "/etc/systemd/system/"
+                cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/systemd_v2ray.service" "/etc/systemd/system/"
                 systemctl enable v2ray.service
             fi
         fi
         return
     elif [[ -n "${SERVICE_CMD}" ]] && [[ ! -f "/etc/init.d/v2ray" ]]; then
         installSoftware "daemon" || return $?
-        cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/systemv/v2ray" "/etc/init.d/v2ray"
+        cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/systemv_v2ray" "/etc/init.d/v2ray"
         chmod +x "/etc/init.d/v2ray"
         update-rc.d v2ray defaults
     fi
