@@ -47,9 +47,9 @@ pkg_zip(
   name = "v2ray_windows_amd64_package",
   srcs = [
     "//main:v2ray_windows_amd64",
-    "//main:v2ray_lwindows_amd64_sig",
+    "//main:v2ray_windows_amd64_sig",
     "//main:v2ray_windows_amd64_nowindow",
-    "//main:v2ray_lwindows_amd64_nowindow_sig",
+    "//main:v2ray_windows_amd64_nowindow_sig",
     "@v2ray_ext//tools/control/main:v2ctl_windows_amd64",
     "@v2ray_ext//tools/control/main:v2ctl_windows_amd64_sig",
     ":config_json",
@@ -57,6 +57,7 @@ pkg_zip(
     ":geodata",
   ],
   out = "v2ray-windows-64.zip",
+  mappings = gen_mappings("windows", "amd64"),
 )
 
 pkg_zip(
@@ -73,6 +74,82 @@ pkg_zip(
     ":geodata",
   ],
   out = "v2ray-windows-32.zip",
+  mappings = gen_mappings("windows", "x86"),
+)
+
+pkg_zip(
+  name = "v2ray_freebsd_amd64_package",
+  srcs = [
+    "//main:v2ray_freebsd_amd64",
+    "//main:v2ray_freebsd_amd64_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_freebsd_amd64",
+    "@v2ray_ext//tools/control/main:v2ctl_freebsd_amd64_sig",
+    ":config_json",
+    ":doc",
+    ":geodata",
+  ],
+  out = "v2ray-freebsd-64.zip",
+  mappings = gen_mappings("freebsd", "amd64"),
+)
+
+pkg_zip(
+  name = "v2ray_freebsd_x86_package",
+  srcs = [
+    "//main:v2ray_freebsd_x86",
+    "//main:v2ray_freebsd_x86_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_freebsd_x86",
+    "@v2ray_ext//tools/control/main:v2ctl_freebsd_x86_sig",
+    ":config_json",
+    ":doc",
+    ":geodata",
+  ],
+  out = "v2ray-freebsd-32.zip",
+  mappings = gen_mappings("freebsd", "x86"),
+)
+
+pkg_zip(
+  name = "v2ray_openbsd_amd64_package",
+  srcs = [
+    "//main:v2ray_openbsd_amd64",
+    "//main:v2ray_openbsd_amd64_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_openbsd_amd64",
+    "@v2ray_ext//tools/control/main:v2ctl_openbsd_amd64_sig",
+    ":config_json",
+    ":doc",
+    ":geodata",
+  ],
+  out = "v2ray-openbsd-64.zip",
+  mappings = gen_mappings("openbsd", "amd64"),
+)
+
+pkg_zip(
+  name = "v2ray_openbsd_x86_package",
+  srcs = [
+    "//main:v2ray_openbsd_x86",
+    "//main:v2ray_openbsd_x86_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_openbsd_x86",
+    "@v2ray_ext//tools/control/main:v2ctl_openbsd_x86_sig",
+    ":config_json",
+    ":doc",
+    ":geodata",
+  ],
+  out = "v2ray-openbsd-32.zip",
+  mappings = gen_mappings("openbsd", "x86"),
+)
+
+pkg_zip(
+  name = "v2ray_dragonfly_amd64_package",
+  srcs = [
+    "//main:v2ray_dragonfly_amd64",
+    "//main:v2ray_dragonfly_amd64_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_dragonfly_amd64",
+    "@v2ray_ext//tools/control/main:v2ctl_dragonfly_amd64_sig",
+    ":config_json",
+    ":doc",
+    ":geodata",
+  ],
+  out = "v2ray-dragonfly-64.zip",
+  mappings = gen_mappings("dragonfly", "amd64"),
 )
 
 pkg_zip(
@@ -87,6 +164,7 @@ pkg_zip(
     ":doc",
   ],
   out = "v2ray-linux-64.zip",
+  mappings = gen_mappings("linux", "amd64"),
 )
 
 pkg_zip(
@@ -102,4 +180,130 @@ pkg_zip(
     ":geodata",
   ],
   out = "v2ray-linux-32.zip",
+  mappings = gen_mappings("linux", "x86"),
+)
+
+pkg_zip(
+  name = "v2ray_linux_arm_package",
+  srcs = [
+    "//main:v2ray_linux_arm",
+    "//main:v2ray_linux_arm_sig",
+    "//main:v2ray_linux_arm_armv7",
+    "//main:v2ray_linux_arm_armv7_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_arm",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_arm_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_arm_armv7",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_arm_armv7_sig",
+    ":config_all",
+    ":systemd",
+    ":doc",
+    ":geodata",
+  ],
+  out = "v2ray-linux-arm.zip",
+  mappings = gen_mappings("linux", "arm"),
+)
+
+pkg_zip(
+  name = "v2ray_linux_arm64_package",
+  srcs = [
+    "//main:v2ray_linux_arm64",
+    "//main:v2ray_linux_arm64_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_arm64",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_arm64_sig",
+    ":config_all",
+    ":systemd",
+    ":doc",
+    ":geodata",
+  ],
+  out = "v2ray-linux-arm64.zip",
+  mappings = gen_mappings("linux", "arm64"),
+)
+
+pkg_zip(
+  name = "v2ray_linux_mips_package",
+  srcs = [
+    "//main:v2ray_linux_mips",
+    "//main:v2ray_linux_mips_sig",
+    "//main:v2ray_linux_mips_softfloat",
+    "//main:v2ray_linux_mips_softfloat_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_mips",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_mips_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_mips_softfloat",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_mips_softfloat_sig",
+    ":config_all",
+    ":systemd",
+    ":doc",
+    ":geodata",
+  ],
+  out = "v2ray-linux-mips.zip",
+  mappings = gen_mappings("linux", "mips"),
+)
+
+pkg_zip(
+  name = "v2ray_linux_mipsle_package",
+  srcs = [
+    "//main:v2ray_linux_mipsle",
+    "//main:v2ray_linux_mipsle_sig",
+    "//main:v2ray_linux_mipsle_softfloat",
+    "//main:v2ray_linux_mipsle_softfloat_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_mipsle",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_mipsle_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_mipsle_softfloat",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_mipsle_softfloat_sig",
+    ":config_all",
+    ":systemd",
+    ":doc",
+    ":geodata",
+  ],
+  out = "v2ray-linux-mipsle.zip",
+  mappings = gen_mappings("linux", "mipsle"),
+)
+
+
+pkg_zip(
+  name = "v2ray_linux_mips64_package",
+  srcs = [
+    "//main:v2ray_linux_mips64",
+    "//main:v2ray_linux_mips64_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_mips64",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_mips64_sig",
+    ":config_all",
+    ":systemd",
+    ":doc",
+    ":geodata",
+  ],
+  out = "v2ray-linux-mips64.zip",
+  mappings = gen_mappings("linux", "mips64"),
+)
+
+pkg_zip(
+  name = "v2ray_linux_mips64le_package",
+  srcs = [
+    "//main:v2ray_linux_mips64le",
+    "//main:v2ray_linux_mips64le_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_mipsle64",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_mipsle64_sig",
+    ":config_all",
+    ":systemd",
+    ":doc",
+    ":geodata",
+  ],
+  out = "v2ray-linux-mips64le.zip",
+  mappings = gen_mappings("linux", "mips64le"),
+)
+
+pkg_zip(
+  name = "v2ray_linux_s390x_package",
+  srcs = [
+    "//main:v2ray_linux_s390x",
+    "//main:v2ray_linux_s390x_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_s390x",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_s390x_sig",
+    ":config_all",
+    ":systemd",
+    ":doc",
+    ":geodata",
+  ],
+  out = "v2ray-linux-s390x.zip",
+  mappings = gen_mappings("linux", "s390x"),
 )
