@@ -15,7 +15,7 @@ filegroup(
 
 filegroup(
   name = "systemd",
-  srcs = ["config/systemd_v2ray.service", "config/systemv_v2ray"],
+  srcs = ["config/systemd/v2ray.service", "config/systemv/v2ray"],
 )
 
 filegroup(
@@ -85,7 +85,6 @@ pkg_zip(
     ":config_all",
     ":systemd",
     ":doc",
-    ":geodata",
   ],
   out = "v2ray-linux-64.zip",
 )
