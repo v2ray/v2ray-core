@@ -63,18 +63,18 @@ pkg_zip(
 pkg_zip(
   name = "v2ray_windows_x86_package",
   srcs = [
-    "//main:v2ray_windows_x86",
-    "//main:v2ray_windows_x86_sig",
-    "//main:v2ray_windows_x86_nowindow",
-    "//main:v2ray_windows_x86_nowindow_sig",
-    "@v2ray_ext//tools/control/main:v2ctl_windows_x86",
-    "@v2ray_ext//tools/control/main:v2ctl_windows_x86_sig",
+    "//main:v2ray_windows_386",
+    "//main:v2ray_windows_386_sig",
+    "//main:v2ray_windows_386_nowindow",
+    "//main:v2ray_windows_386_nowindow_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_windows_386",
+    "@v2ray_ext//tools/control/main:v2ctl_windows_386_sig",
     ":config_json",
     ":doc",
     ":geodata",
   ],
   out = "v2ray-windows-32.zip",
-  mappings = gen_mappings("windows", "x86"),
+  mappings = gen_mappings("windows", "386"),
 )
 
 pkg_zip(
@@ -95,16 +95,16 @@ pkg_zip(
 pkg_zip(
   name = "v2ray_freebsd_x86_package",
   srcs = [
-    "//main:v2ray_freebsd_x86",
-    "//main:v2ray_freebsd_x86_sig",
-    "@v2ray_ext//tools/control/main:v2ctl_freebsd_x86",
-    "@v2ray_ext//tools/control/main:v2ctl_freebsd_x86_sig",
+    "//main:v2ray_freebsd_386",
+    "//main:v2ray_freebsd_386_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_freebsd_386",
+    "@v2ray_ext//tools/control/main:v2ctl_freebsd_386_sig",
     ":config_json",
     ":doc",
     ":geodata",
   ],
   out = "v2ray-freebsd-32.zip",
-  mappings = gen_mappings("freebsd", "x86"),
+  mappings = gen_mappings("freebsd", "386"),
 )
 
 pkg_zip(
@@ -125,16 +125,16 @@ pkg_zip(
 pkg_zip(
   name = "v2ray_openbsd_x86_package",
   srcs = [
-    "//main:v2ray_openbsd_x86",
-    "//main:v2ray_openbsd_x86_sig",
-    "@v2ray_ext//tools/control/main:v2ctl_openbsd_x86",
-    "@v2ray_ext//tools/control/main:v2ctl_openbsd_x86_sig",
+    "//main:v2ray_openbsd_386",
+    "//main:v2ray_openbsd_386_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_openbsd_386",
+    "@v2ray_ext//tools/control/main:v2ctl_openbsd_386_sig",
     ":config_json",
     ":doc",
     ":geodata",
   ],
   out = "v2ray-openbsd-32.zip",
-  mappings = gen_mappings("openbsd", "x86"),
+  mappings = gen_mappings("openbsd", "386"),
 )
 
 pkg_zip(
@@ -170,17 +170,17 @@ pkg_zip(
 pkg_zip(
   name = "v2ray_linux_x86_package",
   srcs = [
-    "//main:v2ray_linux_x86",
-    "//main:v2ray_linux_x86_sig",
-    "@v2ray_ext//tools/control/main:v2ctl_linux_x86",
-    "@v2ray_ext//tools/control/main:v2ctl_linux_x86_sig",
+    "//main:v2ray_linux_386",
+    "//main:v2ray_linux_386_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_386",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_386_sig",
     ":config_all",
     ":systemd",
     ":doc",
     ":geodata",
   ],
   out = "v2ray-linux-32.zip",
-  mappings = gen_mappings("linux", "x86"),
+  mappings = gen_mappings("linux", "386"),
 )
 
 pkg_zip(
@@ -281,8 +281,8 @@ pkg_zip(
   srcs = [
     "//main:v2ray_linux_mips64le",
     "//main:v2ray_linux_mips64le_sig",
-    "@v2ray_ext//tools/control/main:v2ctl_linux_mipsle64",
-    "@v2ray_ext//tools/control/main:v2ctl_linux_mipsle64_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_mips64le",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_mips64le_sig",
     ":config_all",
     ":systemd",
     ":doc",
