@@ -23,6 +23,5 @@ fi
 
 go get -u v2ray.com/core/...
 go get -u v2ray.com/ext/...
-rm $GOPATH/bin/vbuild
-go install v2ray.com/ext/tools/build/vbuild
-$GOPATH/bin/vbuild
+go build -o $GOPATH/bin/v2ray v2ray.com/core/main
+go build -o $GOPATH/bin/v2ctl v2ray.com/ext/tools/control/main
