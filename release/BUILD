@@ -1,6 +1,7 @@
 package(default_visibility=["//visibility:public"])
 
 load("@v2ray_ext//bazel:zip.bzl", "pkg_zip")
+load("//release:mapping.bzl", "gen_mappings")
 
 filegroup(
   name = "config_json",
@@ -39,6 +40,7 @@ pkg_zip(
     ":geodata",
   ],
   out = "v2ray-macos-64.zip",
+  mappings = gen_mappings("darwin", "amd64"),
 )
 
 pkg_zip(
