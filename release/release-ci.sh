@@ -3,7 +3,7 @@
 set -x
 
 apt-get update
-apt-get -y install jq git file p7zip-full
+apt-get -y install jq git file pkg-config zip g++ zlib1g-dev unzip python
 
 function getattr() {
   curl -s -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/$2/attributes/$1
@@ -17,7 +17,14 @@ SIGN_KEY_PATH=$(getattr "sign_key_path" "project")
 SIGN_KEY_PASS=$(getattr "sign_key_pass" "project")
 VUSER=$(getattr "b_user" "project")
 
-mkdir -p /v2ray/build
+mkdir -p /v2/build
+
+pushd /v2/build
+BAZEL_VER=0.17.2
+curl -L -O https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VER}/bazel-${BAZEL_VER}-installer-linux-x86_64.sh
+chmod +x bazel-${BAZEL_VER}-installer-linux-x86_64.sh
+./bazel-${BAZEL_VER}-installer-linux-x86_64.sh
+popd
 
 gsutil cp ${SIGN_KEY_PATH} /v2ray/build/sign_key.asc
 echo ${SIGN_KEY_PASS} | gpg --passphrase-fd 0 --batch --import /v2ray/build/sign_key.asc
@@ -29,39 +36,22 @@ curl -L -o ${GO_INSTALL} https://storage.googleapis.com/golang/go1.11.1.linux-am
 tar -C /usr/local -xzf ${GO_INSTALL}
 export PATH=$PATH:/usr/local/go/bin
 
-mkdir -p /v2ray/src
-export GOPATH=/v2ray
+mkdir -p /v2/src
+export GOPATH=/v2
 
 go get v2ray.com/core/...
 go get v2ray.com/ext/...
 
 pushd $GOPATH/src/v2ray.com/core/
 git checkout tags/${RELEASE_TAG}
+
+VERN=${RELEASE_TAG:1}
+BUILDN=`date +%Y%m%d`
+sed -i "s/\(version *= *\"\).*\(\"\)/\1$VERN\2/g" core.go
+sed -i "s/\(build *= *\"\).*\(\"\)/\1$BUILDN\2/g" core.go
+
+bazel build --action_env=GOPATH=$GOPATH --action_env=PATH=$PATH --action_env=GPG_PASS=${SIGN_KEY_PASS} //release:all
 popd
-
-go install v2ray.com/ext/tools/build/vbuild
-
-export TRAVIS_TAG=${RELEASE_TAG}
-export GPG_SIGN_PASS=${SIGN_KEY_PASS}
-export V_USER=${VUSER}
-
-$GOPATH/bin/vbuild --os=windows --arch=x86 --zip --sign #--encrypt
-$GOPATH/bin/vbuild --os=windows --arch=x64 --zip --sign #--encrypt
-$GOPATH/bin/vbuild --os=macos --arch=x64 --zip --sign #--encrypt
-$GOPATH/bin/vbuild --os=linux --arch=x86 --zip --sign #--encrypt
-$GOPATH/bin/vbuild --os=linux --arch=x64 --zip --sign #--encrypt
-$GOPATH/bin/vbuild --os=linux --arch=arm --zip --sign #--encrypt
-$GOPATH/bin/vbuild --os=linux --arch=arm64 --zip --sign #--encrypt
-$GOPATH/bin/vbuild --os=linux --arch=mips64 --zip --sign #--encrypt
-$GOPATH/bin/vbuild --os=linux --arch=mips64le --zip --sign #--encrypt
-$GOPATH/bin/vbuild --os=linux --arch=mips --zip --sign #--encrypt
-$GOPATH/bin/vbuild --os=linux --arch=mipsle --zip --sign #--encrypt
-$GOPATH/bin/vbuild --os=linux --arch=s390x --zip --sign #--encrypt
-$GOPATH/bin/vbuild --os=freebsd --arch=x86 --zip --sign #--encrypt
-$GOPATH/bin/vbuild --os=freebsd --arch=amd64 --zip --sign #--encrypt
-$GOPATH/bin/vbuild --os=openbsd --arch=x86 --zip --sign #--encrypt
-$GOPATH/bin/vbuild --os=openbsd --arch=amd64 --zip --sign #--encrypt
-$GOPATH/bin/vbuild --os=dragonfly --arch=amd64 --zip --sign #--encrypt
 
 RELBODY="https://www.v2ray.com/chapter_00/01_versions.html"
 JSON_DATA=$(echo "{}" | jq -c ".tag_name=\"${RELEASE_TAG}\"")
@@ -75,24 +65,25 @@ function upload() {
   curl -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: ${CTYPE}" --data-binary @$FILE "https://uploads.github.com/repos/v2ray/v2ray-core/releases/${RELEASE_ID}/assets?name=$(basename $FILE)"
 }
 
-upload $GOPATH/bin/v2ray-macos.zip
-upload $GOPATH/bin/v2ray-windows-64.zip
-upload $GOPATH/bin/v2ray-windows-32.zip
-upload $GOPATH/bin/v2ray-linux-64.zip
-upload $GOPATH/bin/v2ray-linux-32.zip
-upload $GOPATH/bin/v2ray-linux-arm.zip
-upload $GOPATH/bin/v2ray-linux-arm64.zip
-upload $GOPATH/bin/v2ray-linux-mips64.zip
-upload $GOPATH/bin/v2ray-linux-mips64le.zip
-upload $GOPATH/bin/v2ray-linux-mips.zip
-upload $GOPATH/bin/v2ray-linux-mipsle.zip
-upload $GOPATH/bin/v2ray-linux-s390x.zip
-upload $GOPATH/bin/v2ray-freebsd-64.zip
-upload $GOPATH/bin/v2ray-freebsd-32.zip
-upload $GOPATH/bin/v2ray-openbsd-64.zip
-upload $GOPATH/bin/v2ray-openbsd-32.zip
-upload $GOPATH/bin/v2ray-dragonfly-64.zip
-upload $GOPATH/bin/metadata.txt
+ART_ROOT=$GOPATH/src/v2ray.com/core/bazel-bin/release
+upload ${ART_ROOT}/v2ray-macos.zip
+upload ${ART_ROOT}/v2ray-windows-64.zip
+upload ${ART_ROOT}/v2ray-windows-32.zip
+upload ${ART_ROOT}/v2ray-linux-64.zip
+upload ${ART_ROOT}/v2ray-linux-32.zip
+upload ${ART_ROOT}/v2ray-linux-arm.zip
+upload ${ART_ROOT}/v2ray-linux-arm64.zip
+upload ${ART_ROOT}/v2ray-linux-mips64.zip
+upload ${ART_ROOT}/v2ray-linux-mips64le.zip
+upload ${ART_ROOT}/v2ray-linux-mips.zip
+upload ${ART_ROOT}/v2ray-linux-mipsle.zip
+upload ${ART_ROOT}/v2ray-linux-s390x.zip
+upload ${ART_ROOT}/v2ray-freebsd-64.zip
+upload ${ART_ROOT}/v2ray-freebsd-32.zip
+upload ${ART_ROOT}/v2ray-openbsd-64.zip
+upload ${ART_ROOT}/v2ray-openbsd-32.zip
+upload ${ART_ROOT}/v2ray-dragonfly-64.zip
+upload ${ART_ROOT}/metadata.txt
 
 if [[ "${PRERELEASE}" == "false" ]]; then
 
