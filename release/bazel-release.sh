@@ -65,7 +65,7 @@ function upload() {
   curl -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: ${CTYPE}" --data-binary @$FILE "https://uploads.github.com/repos/v2ray/v2ray-core/releases/${RELEASE_ID}/assets?name=$(basename $FILE)"
 }
 
-ART_ROOT=$GOPATH/src/v2ray/bazel-bin/release
+ART_ROOT=$GOPATH/src/v2ray.com/core/bazel-bin/release
 upload ${ART_ROOT}/v2ray-macos.zip
 upload ${ART_ROOT}/v2ray-windows-64.zip
 upload ${ART_ROOT}/v2ray-windows-32.zip
