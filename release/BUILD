@@ -39,7 +39,7 @@ pkg_zip(
     ":doc",
     ":geodata",
   ],
-  out = "v2ray-macos-64.zip",
+  out = "v2ray-macos.zip",
   mappings = gen_mappings("darwin", "amd64"),
 )
 
