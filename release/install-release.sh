@@ -154,7 +154,7 @@ getPMT(){
     return 0
 }
 
-VSRC_ROOT=/
+VSRC_ROOT=/tmp/v2ray
 
 extract(){
     colorEcho ${BLUE}"Extracting V2Ray package to /tmp/v2ray."
@@ -166,9 +166,6 @@ extract(){
     fi
     if [[ -d "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}" ]]; then
       VSRC_ROOT="/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}"
-    fi
-    if [[ -d "/tmp/v2ray/v2ray-linux-${VDIS}" ]]; then
-      VSRC_ROOT="/tmp/v2ray/v2ray-linux-${VDIS}"
     fi
     return 0
 }

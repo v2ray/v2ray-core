@@ -162,6 +162,7 @@ pkg_zip(
     ":config_all",
     ":systemd",
     ":doc",
+    ":geodata",
   ],
   out = "v2ray-linux-64.zip",
   mappings = gen_mappings("linux", "amd64"),
