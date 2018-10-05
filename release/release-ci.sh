@@ -5,6 +5,9 @@ set -x
 apt-get update
 apt-get -y install jq git file pkg-config zip g++ zlib1g-dev unzip python
 
+git config --global user.name "Darien Raymond"
+git config --global user.email "admin@v2ray.com"
+
 function getattr() {
   curl -s -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/$2/attributes/$1
 }
@@ -83,12 +86,37 @@ upload ${ART_ROOT}/v2ray-freebsd-32.zip
 upload ${ART_ROOT}/v2ray-openbsd-64.zip
 upload ${ART_ROOT}/v2ray-openbsd-32.zip
 upload ${ART_ROOT}/v2ray-dragonfly-64.zip
-upload ${ART_ROOT}/metadata.txt
 
 if [[ "${PRERELEASE}" == "false" ]]; then
 
 DOCKER_HUB_API=https://cloud.docker.com/api/build/v1/source/62bfa37d-18ef-4b66-8f1a-35f9f3d4438b/trigger/65027872-e73e-4177-8c6c-6448d2f00d5b/call/
 curl -H "Content-Type: application/json" --data '{"build": true}' -X POST "${DOCKER_HUB_API}"
+
+# Update homebrew
+pushd ${ART_ROOT}
+V_HASH256=$(sha256sum v2ray-macos.zip | cut  -d ' ' -f 1)
+popd
+
+echo "SHA256: ${V_HASH256}"
+echo "Version: ${VERN}"
+
+DOWNLOAD_URL="https://github.com/v2ray/v2ray-core/releases/download/v${VERN}/v2ray-macos.zip"
+
+cd $GOPATH/src/v2ray.com/
+git clone https://github.com/v2ray/homebrew-v2ray.git
+
+echo "Updating config"
+
+cd homebrew-v2ray
+
+sed -i "s#^\s*url.*#  url \"$DOWNLOAD_URL\"#g" Formula/v2ray-core.rb
+sed -i "s#^\s*sha256.*#  sha256 \"$V_HASH256\"#g" Formula/v2ray-core.rb
+sed -i "s#^\s*version.*#  version \"$VERN\"#g" Formula/v2ray-core.rb
+
+echo "Updating repo"
+
+git commit -am "update to version $VERN"
+git push  --quiet "https://${GITHUB_TOKEN}@github.com/v2ray/homebrew-v2ray" master:master
 
 fi
 
