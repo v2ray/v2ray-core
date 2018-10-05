@@ -46,7 +46,7 @@ func New(config *Config) (*Instance, error) {
 	}
 
 	if config.Transport != nil {
-		PrintDeprecatedFeatureWarning("global tranport settings")
+		PrintDeprecatedFeatureWarning("global transport settings")
 	}
 	if err := config.Transport.Apply(); err != nil {
 		return nil, err
