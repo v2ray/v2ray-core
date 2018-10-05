@@ -1,6 +1,6 @@
 package mux
 
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg mux -path App,Proxyman,Mux
+//go:generate errorgen
 
 import (
 	"context"
@@ -16,7 +16,8 @@ import (
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/session"
+	"v2ray.com/core/common/signal/done"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/pipe"
 )
@@ -51,7 +52,7 @@ func (m *ClientManager) Dispatch(ctx context.Context, link *core.Link) error {
 		}
 	}
 
-	client, err := NewClient(m.proxy, m.dialer, m)
+	client, err := NewClient(ctx, m.proxy, m.dialer, m)
 	if err != nil {
 		return newError("failed to create client").Base(err)
 	}
@@ -77,7 +78,7 @@ func (m *ClientManager) onClientFinish() {
 type Client struct {
 	sessionManager *SessionManager
 	link           core.Link
-	done           *signal.Done
+	done           *done.Instance
 	manager        *ClientManager
 	concurrency    uint32
 }
@@ -86,11 +87,15 @@ var muxCoolAddress = net.DomainAddress("v1.mux.cool")
 var muxCoolPort = net.Port(9527)
 
 // NewClient creates a new mux.Client.
-func NewClient(p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client, error) {
-	ctx := proxy.ContextWithTarget(context.Background(), net.TCPDestination(muxCoolAddress, muxCoolPort))
+func NewClient(pctx context.Context, p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client, error) {
+	ctx := session.ContextWithOutbound(context.Background(), &session.Outbound{
+		Target: net.TCPDestination(muxCoolAddress, muxCoolPort),
+	})
 	ctx, cancel := context.WithCancel(ctx)
-	uplinkReader, upLinkWriter := pipe.New()
-	downlinkReader, downlinkWriter := pipe.New()
+
+	opts := pipe.OptionsFromContext(pctx)
+	uplinkReader, upLinkWriter := pipe.New(opts...)
+	downlinkReader, downlinkWriter := pipe.New(opts...)
 
 	c := &Client{
 		sessionManager: NewSessionManager(),
@@ -98,7 +103,7 @@ func NewClient(p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client
 			Reader: downlinkReader,
 			Writer: upLinkWriter,
 		},
-		done:        signal.NewDone(),
+		done:        done.New(),
 		manager:     m,
 		concurrency: m.config.Concurrency,
 	}
@@ -131,55 +136,54 @@ func (m *Client) monitor() {
 		select {
 		case <-m.done.Wait():
 			m.sessionManager.Close()
-			common.Close(m.link.Writer)
-			pipe.CloseError(m.link.Reader)
+			common.Close(m.link.Writer)    // nolint: errcheck
+			pipe.CloseError(m.link.Reader) // nolint: errcheck
 			return
 		case <-timer.C:
 			size := m.sessionManager.Size()
 			if size == 0 && m.sessionManager.CloseIfNoSession() {
 				common.Must(m.done.Close())
-				return
 			}
 		}
 	}
 }
 
-func copyFirstPayload(reader *pipe.Reader, writer *Writer) error {
-	data, err := reader.ReadMultiBufferWithTimeout(time.Millisecond * 200)
-	if err == buf.ErrReadTimeout {
-		return writer.writeMetaOnly()
+func writeFirstPayload(reader buf.Reader, writer *Writer) error {
+	err := buf.CopyOnceTimeout(reader, writer, time.Millisecond*100)
+	if err == buf.ErrNotTimeoutReader || err == buf.ErrReadTimeout {
+		return writer.WriteMultiBuffer(buf.MultiBuffer{})
 	}
 
 	if err != nil {
 		return err
 	}
 
-	return writer.WriteMultiBuffer(data)
+	return nil
 }
 
 func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
-	dest, _ := proxy.TargetFromContext(ctx)
+	dest := session.OutboundFromContext(ctx).Target
 	transferType := protocol.TransferTypeStream
 	if dest.Network == net.Network_UDP {
 		transferType = protocol.TransferTypePacket
 	}
 	s.transferType = transferType
 	writer := NewWriter(s.ID, dest, output, transferType)
-	defer s.Close()
-	defer writer.Close()
+	defer s.Close()      // nolint: errcheck
+	defer writer.Close() // nolint: errcheck
 
-	newError("dispatching request to ", dest).WithContext(ctx).WriteToLog()
-	if pReader, ok := s.input.(*pipe.Reader); ok {
-		if err := copyFirstPayload(pReader, writer); err != nil {
-			newError("failed to fetch first payload").Base(err).WithContext(ctx).WriteToLog()
-			writer.hasError = true
-			return
-		}
+	newError("dispatching request to ", dest).WriteToLog(session.ExportIDToError(ctx))
+	if err := writeFirstPayload(s.input, writer); err != nil {
+		newError("failed to write first payload").Base(err).WriteToLog(session.ExportIDToError(ctx))
+		writer.hasError = true
+		pipe.CloseError(s.input)
+		return
 	}
 
 	if err := buf.Copy(s.input, writer); err != nil {
-		newError("failed to fetch all input").Base(err).WithContext(ctx).WriteToLog()
+		newError("failed to fetch all input").Base(err).WriteToLog(session.ExportIDToError(ctx))
 		writer.hasError = true
+		pipe.CloseError(s.input)
 		return
 	}
 }
@@ -260,8 +264,9 @@ func (m *Client) fetchOutput() {
 
 	reader := &buf.BufferedReader{Reader: m.link.Reader}
 
+	var meta FrameMetadata
 	for {
-		meta, err := ReadMetadata(reader)
+		err := meta.ReadFrom(reader)
 		if err != nil {
 			if errors.Cause(err) != io.EOF {
 				newError("failed to read metadata").Base(err).WriteToLog()
@@ -271,15 +276,16 @@ func (m *Client) fetchOutput() {
 
 		switch meta.SessionStatus {
 		case SessionStatusKeepAlive:
-			err = m.handleStatueKeepAlive(meta, reader)
+			err = m.handleStatueKeepAlive(&meta, reader)
 		case SessionStatusEnd:
-			err = m.handleStatusEnd(meta, reader)
+			err = m.handleStatusEnd(&meta, reader)
 		case SessionStatusNew:
-			err = m.handleStatusNew(meta, reader)
+			err = m.handleStatusNew(&meta, reader)
 		case SessionStatusKeep:
-			err = m.handleStatusKeep(meta, reader)
+			err = m.handleStatusKeep(&meta, reader)
 		default:
-			newError("unknown status: ", meta.SessionStatus).AtError().WriteToLog()
+			status := meta.SessionStatus
+			newError("unknown status: ", status).AtError().WriteToLog()
 			return
 		}
 
@@ -307,8 +313,9 @@ func (s *Server) Dispatch(ctx context.Context, dest net.Destination) (*core.Link
 		return s.dispatcher.Dispatch(ctx, dest)
 	}
 
-	uplinkReader, uplinkWriter := pipe.New()
-	downlinkReader, downlinkWriter := pipe.New()
+	opts := pipe.OptionsFromContext(ctx)
+	uplinkReader, uplinkWriter := pipe.New(opts...)
+	downlinkReader, downlinkWriter := pipe.New(opts...)
 
 	worker := &ServerWorker{
 		dispatcher: s.dispatcher,
@@ -322,10 +329,12 @@ func (s *Server) Dispatch(ctx context.Context, dest net.Destination) (*core.Link
 	return &core.Link{Reader: downlinkReader, Writer: uplinkWriter}, nil
 }
 
+// Start implements common.Runnable.
 func (s *Server) Start() error {
 	return nil
 }
 
+// Close implements common.Closable.
 func (s *Server) Close() error {
 	return nil
 }
@@ -339,7 +348,7 @@ type ServerWorker struct {
 func handle(ctx context.Context, s *Session, output buf.Writer) {
 	writer := NewResponseWriter(s.ID, output, s.transferType)
 	if err := buf.Copy(s.input, writer); err != nil {
-		newError("session ", s.ID, " ends.").Base(err).WithContext(ctx).WriteToLog()
+		newError("session ", s.ID, " ends.").Base(err).WriteToLog(session.ExportIDToError(ctx))
 		writer.hasError = true
 	}
 
@@ -355,15 +364,15 @@ func (w *ServerWorker) handleStatusKeepAlive(meta *FrameMetadata, reader *buf.Bu
 }
 
 func (w *ServerWorker) handleStatusNew(ctx context.Context, meta *FrameMetadata, reader *buf.BufferedReader) error {
-	newError("received request for ", meta.Target).WithContext(ctx).WriteToLog()
+	newError("received request for ", meta.Target).WriteToLog(session.ExportIDToError(ctx))
 	{
 		msg := &log.AccessMessage{
 			To:     meta.Target,
 			Status: log.AccessAccepted,
 			Reason: "",
 		}
-		if src, f := proxy.SourceFromContext(ctx); f {
-			msg.From = src
+		if inbound := session.InboundFromContext(ctx); inbound != nil && inbound.Source.IsValid() {
+			msg.From = inbound.Source
 		}
 		log.Record(msg)
 	}
@@ -430,22 +439,24 @@ func (w *ServerWorker) handleStatusEnd(meta *FrameMetadata, reader *buf.Buffered
 }
 
 func (w *ServerWorker) handleFrame(ctx context.Context, reader *buf.BufferedReader) error {
-	meta, err := ReadMetadata(reader)
+	var meta FrameMetadata
+	err := meta.ReadFrom(reader)
 	if err != nil {
 		return newError("failed to read metadata").Base(err)
 	}
 
 	switch meta.SessionStatus {
 	case SessionStatusKeepAlive:
-		err = w.handleStatusKeepAlive(meta, reader)
+		err = w.handleStatusKeepAlive(&meta, reader)
 	case SessionStatusEnd:
-		err = w.handleStatusEnd(meta, reader)
+		err = w.handleStatusEnd(&meta, reader)
 	case SessionStatusNew:
-		err = w.handleStatusNew(ctx, meta, reader)
+		err = w.handleStatusNew(ctx, &meta, reader)
 	case SessionStatusKeep:
-		err = w.handleStatusKeep(meta, reader)
+		err = w.handleStatusKeep(&meta, reader)
 	default:
-		return newError("unknown status: ", meta.SessionStatus).AtError()
+		status := meta.SessionStatus
+		return newError("unknown status: ", status).AtError()
 	}
 
 	if err != nil {
@@ -458,7 +469,7 @@ func (w *ServerWorker) run(ctx context.Context) {
 	input := w.link.Reader
 	reader := &buf.BufferedReader{Reader: input}
 
-	defer w.sessionManager.Close()
+	defer w.sessionManager.Close() // nolint: errcheck
 
 	for {
 		select {
@@ -468,7 +479,7 @@ func (w *ServerWorker) run(ctx context.Context) {
 			err := w.handleFrame(ctx, reader)
 			if err != nil {
 				if errors.Cause(err) != io.EOF {
-					newError("unexpected EOF").Base(err).WithContext(ctx).WriteToLog()
+					newError("unexpected EOF").Base(err).WriteToLog(session.ExportIDToError(ctx))
 					pipe.CloseError(input)
 				}
 				return

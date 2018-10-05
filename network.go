@@ -90,7 +90,7 @@ func (m *syncInboundHandlerManager) Set(manager InboundHandlerManager) {
 	m.Lock()
 	defer m.Unlock()
 
-	common.Close(m.InboundHandlerManager)
+	common.Close(m.InboundHandlerManager) // nolint: errcheck
 	m.InboundHandlerManager = manager
 }
 
@@ -172,6 +172,6 @@ func (m *syncOutboundHandlerManager) Set(manager OutboundHandlerManager) {
 	m.Lock()
 	defer m.Unlock()
 
-	common.Close(m.OutboundHandlerManager)
+	common.Close(m.OutboundHandlerManager) // nolint: errcheck
 	m.OutboundHandlerManager = manager
 }

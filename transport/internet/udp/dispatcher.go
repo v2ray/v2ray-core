@@ -9,10 +9,11 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
 )
 
-type ResponseCallback func(payload *buf.Buffer)
+type ResponseCallback func(ctx context.Context, payload *buf.Buffer)
 
 type connEntry struct {
 	link   *core.Link
@@ -24,12 +25,14 @@ type Dispatcher struct {
 	sync.RWMutex
 	conns      map[net.Destination]*connEntry
 	dispatcher core.Dispatcher
+	callback   ResponseCallback
 }
 
-func NewDispatcher(dispatcher core.Dispatcher) *Dispatcher {
+func NewDispatcher(dispatcher core.Dispatcher, callback ResponseCallback) *Dispatcher {
 	return &Dispatcher{
 		conns:      make(map[net.Destination]*connEntry),
 		dispatcher: dispatcher,
+		callback:   callback,
 	}
 }
 
@@ -43,7 +46,7 @@ func (v *Dispatcher) RemoveRay(dest net.Destination) {
 	}
 }
 
-func (v *Dispatcher) getInboundRay(dest net.Destination, callback ResponseCallback) *connEntry {
+func (v *Dispatcher) getInboundRay(ctx context.Context, dest net.Destination) *connEntry {
 	v.Lock()
 	defer v.Unlock()
 
@@ -53,7 +56,7 @@ func (v *Dispatcher) getInboundRay(dest net.Destination, callback ResponseCallba
 
 	newError("establishing new connection for ", dest).WriteToLog()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 	removeRay := func() {
 		cancel()
 		v.RemoveRay(dest)
@@ -66,19 +69,19 @@ func (v *Dispatcher) getInboundRay(dest net.Destination, callback ResponseCallba
 		cancel: removeRay,
 	}
 	v.conns[dest] = entry
-	go handleInput(ctx, entry, callback)
+	go handleInput(ctx, entry, v.callback)
 	return entry
 }
 
-func (v *Dispatcher) Dispatch(ctx context.Context, destination net.Destination, payload *buf.Buffer, callback ResponseCallback) {
+func (v *Dispatcher) Dispatch(ctx context.Context, destination net.Destination, payload *buf.Buffer) {
 	// TODO: Add user to destString
-	newError("dispatch request to: ", destination).AtDebug().WithContext(ctx).WriteToLog()
+	newError("dispatch request to: ", destination).AtDebug().WriteToLog(session.ExportIDToError(ctx))
 
-	conn := v.getInboundRay(destination, callback)
+	conn := v.getInboundRay(ctx, destination)
 	outputStream := conn.link.Writer
 	if outputStream != nil {
 		if err := outputStream.WriteMultiBuffer(buf.NewMultiBufferValue(payload)); err != nil {
-			newError("failed to write first UDP payload").Base(err).WithContext(ctx).WriteToLog()
+			newError("failed to write first UDP payload").Base(err).WriteToLog(session.ExportIDToError(ctx))
 			conn.cancel()
 			return
 		}
@@ -86,6 +89,8 @@ func (v *Dispatcher) Dispatch(ctx context.Context, destination net.Destination, 
 }
 
 func handleInput(ctx context.Context, conn *connEntry, callback ResponseCallback) {
+	defer conn.cancel()
+
 	input := conn.link.Reader
 	timer := conn.timer
 
@@ -98,13 +103,12 @@ func handleInput(ctx context.Context, conn *connEntry, callback ResponseCallback
 
 		mb, err := input.ReadMultiBuffer()
 		if err != nil {
-			newError("failed to handle UDP input").Base(err).WithContext(ctx).WriteToLog()
-			conn.cancel()
+			newError("failed to handle UDP input").Base(err).WriteToLog(session.ExportIDToError(ctx))
 			return
 		}
 		timer.Update()
 		for _, b := range mb {
-			callback(b)
+			callback(ctx, b)
 		}
 	}
 }

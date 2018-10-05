@@ -19,15 +19,22 @@ enum TransportProtocol {
 
 message TransportConfig {
   // Type of network that this settings supports.
+  // Deprecated. Use the string form below.
   TransportProtocol protocol = 1;
+
+  // Type of network that this settings supports.
+  string protocol_name = 3;
 
   // Specific settings. Must be of the transports.
   v2ray.core.common.serial.TypedMessage settings = 2;
 }
 
 message StreamConfig {
+  // Effective network. Deprecated. Use the string form below.
+  TransportProtocol protocol = 1 [deprecated = true];
+
   // Effective network.
-  TransportProtocol protocol = 1;
+  string protocol_name = 5;
 
   repeated TransportConfig transport_settings = 2;
 
@@ -36,8 +43,44 @@ message StreamConfig {
   
   // Settings for transport security. For now the only choice is TLS.
   repeated v2ray.core.common.serial.TypedMessage security_settings = 4;
+
+  SocketConfig socket_settings = 6;
 }
 
 message ProxyConfig {
   string tag = 1;
+}
+
+// SocketConfig is options to be applied on network sockets.
+message SocketConfig {
+  // Mark of the connection. If non-zero, the value will be set to SO_MARK.
+  int32 mark = 1;
+
+  enum TCPFastOpenState {
+    // AsIs is to leave the current TFO state as is, unmodified.
+    AsIs = 0;
+    // Enable is for enabling TFO explictly.
+    Enable = 1;
+    // Disable is for disabling TFO explictly.
+    Disable = 2;
+  }
+
+  // TFO is the state of TFO settings.
+  TCPFastOpenState tfo = 2;
+
+  enum TProxyMode {
+    // TProxy is off.
+    Off = 0;
+    // TProxy mode.
+    TProxy = 1;
+    // Redirect mode.
+    Redirect = 2;
+  }
+
+  // TProxy is for enabling TProxy socket option.
+  TProxyMode tproxy = 3;
+
+  // ReceiveOriginalDestAddress is for enabling IP_RECVORIGDSTADDR socket option.
+  // This option is for UDP only.
+  bool receive_original_dest_address = 4;
 }

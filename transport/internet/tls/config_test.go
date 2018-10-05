@@ -62,3 +62,14 @@ func TestExpiredCertificate(t *testing.T) {
 	assert(err, IsNil)
 	assert(x509Cert.NotAfter.After(time.Now()), IsTrue)
 }
+
+func TestInsecureCertificates(t *testing.T) {
+	c := &Config{
+		AllowInsecureCiphers: true,
+	}
+
+	tlsConfig := c.GetTLSConfig()
+	if len(tlsConfig.CipherSuites) > 0 {
+		t.Fatal("Unexpected tls cipher suites list: ", tlsConfig.CipherSuites)
+	}
+}

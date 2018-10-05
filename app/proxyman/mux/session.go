@@ -118,8 +118,8 @@ func (m *SessionManager) Close() error {
 	m.closed = true
 
 	for _, s := range m.sessions {
-		common.Close(s.input)
-		common.Close(s.output)
+		common.Close(s.input)  // nolint: errcheck
+		common.Close(s.output) // nolint: errcheck
 	}
 
 	m.sessions = nil
@@ -137,8 +137,8 @@ type Session struct {
 
 // Close closes all resources associated with this session.
 func (s *Session) Close() error {
-	common.Close(s.output)
-	common.Close(s.input)
+	common.Close(s.output) // nolint: errcheck
+	common.Close(s.input)  // nolint: errcheck
 	s.parent.Remove(s.ID)
 	return nil
 }

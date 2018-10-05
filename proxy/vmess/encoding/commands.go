@@ -41,12 +41,12 @@ func MarshalCommand(command interface{}, writer io.Writer) error {
 	}
 
 	auth := Authenticate(buffer.Bytes())
-	len := buffer.Len() + 4
-	if len > 255 {
+	length := buffer.Len() + 4
+	if length > 255 {
 		return ErrCommandTooLarge
 	}
 
-	common.Must2(writer.Write([]byte{cmdID, byte(len), byte(auth >> 24), byte(auth >> 16), byte(auth >> 8), byte(auth)}))
+	common.Must2(writer.Write([]byte{cmdID, byte(length), byte(auth >> 24), byte(auth >> 16), byte(auth >> 8), byte(auth)}))
 	common.Must2(writer.Write(buffer.Bytes()))
 	return nil
 }

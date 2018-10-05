@@ -2,9 +2,11 @@ package internet
 
 import (
 	"context"
+	"syscall"
 	"time"
 
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/session"
 )
 
 var (
@@ -18,11 +20,38 @@ type SystemDialer interface {
 type DefaultSystemDialer struct {
 }
 
+func getSocketSettings(ctx context.Context) *SocketConfig {
+	streamSettings := StreamSettingsFromContext(ctx)
+	if streamSettings != nil && streamSettings.SocketSettings != nil {
+		return streamSettings.SocketSettings
+	}
+
+	return nil
+}
+
 func (DefaultSystemDialer) Dial(ctx context.Context, src net.Address, dest net.Destination) (net.Conn, error) {
 	dialer := &net.Dialer{
 		Timeout:   time.Second * 60,
 		DualStack: true,
 	}
+
+	sockopts := getSocketSettings(ctx)
+	if sockopts != nil {
+		bindAddress := BindAddressFromContext(ctx)
+		dialer.Control = func(network, address string, c syscall.RawConn) error {
+			return c.Control(func(fd uintptr) {
+				if err := applyOutboundSocketOptions(network, address, fd, sockopts); err != nil {
+					newError("failed to apply socket options").Base(err).WriteToLog(session.ExportIDToError(ctx))
+				}
+				if dest.Network == net.Network_UDP && bindAddress.IsValid() {
+					if err := bindAddr(fd, bindAddress.Address, bindAddress.Port); err != nil {
+						newError("failed to bind source address to ", bindAddress).Base(err).WriteToLog(session.ExportIDToError(ctx))
+					}
+				}
+			})
+		}
+	}
+
 	if src != nil && src != net.AnyIP {
 		var addr net.Addr
 		if dest.Network == net.Network_TCP {

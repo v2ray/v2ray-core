@@ -131,13 +131,13 @@ installSoftware(){
     colorEcho ${BLUE} "Installing ${COMPONENT}"
     $CMD_INSTALL $COMPONENT
     if [[ $? -ne 0 ]]; then
-        colorEcho ${RED} "Install ${COMPONENT} fail, please install it manually."
+        colorEcho ${RED} "Failed to install ${COMPONENT}. Please install it manually."
         return 1
     fi
     return 0
 }
 
-# return 1: not apt or yum
+# return 1: not apt, yum, or zypper
 getPMT(){
     if [[ -n `command -v apt-get` ]];then
         CMD_INSTALL="apt-get -y -qq install"
@@ -145,6 +145,9 @@ getPMT(){
     elif [[ -n `command -v yum` ]]; then
         CMD_INSTALL="yum -y -q install"
         CMD_UPDATE="yum -q makecache"
+    elif [[ -n `command -v zypper` ]]; then
+        CMD_INSTALL="zypper -y install"
+        CMD_UPDATE="zypper ref"
     else
         return 1
     fi
@@ -157,7 +160,7 @@ extract(){
     mkdir -p /tmp/v2ray
     unzip $1 -d "/tmp/v2ray/"
     if [[ $? -ne 0 ]]; then
-        colorEcho ${RED} "Extracting V2Ray failed!"
+        colorEcho ${RED} "Failed to extract V2Ray."
         return 2
     fi
     return 0
@@ -176,7 +179,7 @@ getVersion(){
         TAG_URL="https://api.github.com/repos/v2ray/v2ray-core/releases/latest"
         NEW_VER=`curl ${PROXY} -s ${TAG_URL} --connect-timeout 10| grep 'tag_name' | cut -d\" -f4`
         if [[ $? -ne 0 ]] || [[ $NEW_VER == "" ]]; then
-            colorEcho ${RED} "Network error! Please check your network or try again."
+            colorEcho ${RED} "Failed to fetch release information. Please check your network or try again."
             return 3
         elif [[ $RETVAL -ne 0 ]];then
             return 2
@@ -235,7 +238,7 @@ installV2Ray(){
     mkdir -p /usr/bin/v2ray
     copyFile v2ray
     if [[ $? -ne 0 ]]; then
-        colorEcho ${RED} "Copy V2Ray binary failed."
+        colorEcho ${RED} "Failed to copy V2Ray binary and resources."
         return 1
     fi
     makeExecutable v2ray
@@ -249,7 +252,7 @@ installV2Ray(){
         mkdir -p /var/log/v2ray
         cp "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}/vpoint_vmess_freedom.json" "/etc/v2ray/config.json"
         if [[ $? -ne 0 ]]; then
-            colorEcho ${YELLOW} "Create V2Ray configuration file error, pleases create it manually."
+            colorEcho ${YELLOW} "Failed to create V2Ray configuration file. Please create it manually."
             return 1
         fi
         let PORT=$RANDOM+10000
@@ -368,7 +371,7 @@ main(){
     sysArch
     # extract local file
     if [[ $LOCAL_INSTALL -eq 1 ]]; then
-        echo "Install V2Ray via local file"
+        echo "Installing V2Ray via local file"
         installSoftware unzip || return $?
         rm -rf /tmp/v2ray
         extract $LOCAL || return $?

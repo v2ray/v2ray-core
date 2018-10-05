@@ -10,7 +10,7 @@ import (
 	"v2ray.com/core/main/confloader"
 )
 
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg external -path Main,ConfLoader,External
+//go:generate errorgen
 
 type ClosableMultiBuffer struct {
 	buf.MultiBuffer

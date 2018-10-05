@@ -1,0 +1,34 @@
+image: Visual Studio 2017
+
+platform:
+  - x64
+  - x86
+
+branches:
+  only:
+    - master
+
+version: "1.0.{build}"
+
+environment:
+  global:
+    GOPATH: C:\gopath
+    GOVERSION: "1.11.1"
+
+install:
+  - set PATH=%GOPATH%\bin;c:\go\bin;%PATH%
+  - rmdir c:\go /s /q
+  - appveyor DownloadFile https://storage.googleapis.com/golang/go%GOVERSION%.windows-amd64.zip
+  - 7z x go%GOVERSION%.windows-amd64.zip -y -oC:\ > NUL
+  - go version
+  - go get v2ray.com/core/...
+  - go get v2ray.com/ext/...
+
+build_script:
+  - go build v2ray.com/core/main
+  - go build v2ray.com/ext/tools/control/main
+
+build: off
+
+test_script:
+  - go test -p 1 -v v2ray.com/core/...

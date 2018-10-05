@@ -1,10 +1,15 @@
 package tcp
 
 import (
+	"context"
 	"fmt"
 	"io"
 
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/task"
+	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/pipe"
 )
 
 type Server struct {
@@ -13,26 +18,31 @@ type Server struct {
 	ShouldClose  bool
 	SendFirst    []byte
 	Listen       net.Address
-	listener     *net.TCPListener
+	listener     net.Listener
 }
 
 func (server *Server) Start() (net.Destination, error) {
+	return server.StartContext(context.Background())
+}
+
+func (server *Server) StartContext(ctx context.Context) (net.Destination, error) {
 	listenerAddr := server.Listen
 	if listenerAddr == nil {
 		listenerAddr = net.LocalHostIP
 	}
-	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
+	listener, err := internet.ListenSystem(ctx, &net.TCPAddr{
 		IP:   listenerAddr.IP(),
 		Port: int(server.Port),
-		Zone: "",
 	})
 	if err != nil {
 		return net.Destination{}, err
 	}
-	server.Port = net.Port(listener.Addr().(*net.TCPAddr).Port)
-	server.listener = listener
-	go server.acceptConnections(listener)
+
 	localAddr := listener.Addr().(*net.TCPAddr)
+	server.Port = net.Port(localAddr.Port)
+	server.listener = listener
+	go server.acceptConnections(listener.(*net.TCPListener))
+
 	return net.TCPDestination(net.IPAddress(localAddr.IP), net.Port(localAddr.Port)), nil
 }
 
@@ -52,25 +62,47 @@ func (server *Server) handleConnection(conn net.Conn) {
 	if len(server.SendFirst) > 0 {
 		conn.Write(server.SendFirst)
 	}
-	request := make([]byte, 4096)
-	for {
-		nBytes, err := conn.Read(request)
-		if err != nil {
-			if err != io.EOF {
-				fmt.Println("Failed to read request:", err)
+
+	pReader, pWriter := pipe.New(pipe.WithoutSizeLimit())
+	err := task.Run(task.Parallel(func() error {
+		defer pWriter.Close() // nolint: errcheck
+
+		for {
+			b := buf.New()
+			if err := b.AppendSupplier(buf.ReadFrom(conn)); err != nil {
+				if err == io.EOF {
+					return nil
+				}
+				return err
 			}
-			break
+			copy(b.Bytes(), server.MsgProcessor(b.Bytes()))
+			if err := pWriter.WriteMultiBuffer(buf.NewMultiBufferValue(b)); err != nil {
+				return err
+			}
 		}
-		response := server.MsgProcessor(request[:nBytes])
-		if _, err := conn.Write(response); err != nil {
-			fmt.Println("Failed to write response:", err)
-			break
+	}, func() error {
+		defer pReader.CloseError()
+
+		w := buf.NewWriter(conn)
+		for {
+			mb, err := pReader.ReadMultiBuffer()
+			if err != nil {
+				if err == io.EOF {
+					return nil
+				}
+				return err
+			}
+			if err := w.WriteMultiBuffer(mb); err != nil {
+				return err
+			}
 		}
-		if server.ShouldClose {
-			break
-		}
+	}))()
+
+	if err != nil {
+		fmt.Println("failed to transfer data: ", err.Error())
 	}
-	conn.Close()
+
+	conn.Close() // nolint: errcheck
 }
 
 func (server *Server) Close() error {

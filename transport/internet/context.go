@@ -11,45 +11,28 @@ type key int
 const (
 	streamSettingsKey key = iota
 	dialerSrcKey
-	transportSettingsKey
-	securitySettingsKey
+	bindAddrKey
 )
 
-func ContextWithStreamSettings(ctx context.Context, streamSettings *StreamConfig) context.Context {
+func ContextWithStreamSettings(ctx context.Context, streamSettings *MemoryStreamConfig) context.Context {
 	return context.WithValue(ctx, streamSettingsKey, streamSettings)
 }
 
-func StreamSettingsFromContext(ctx context.Context) *StreamConfig {
+func StreamSettingsFromContext(ctx context.Context) *MemoryStreamConfig {
 	ss := ctx.Value(streamSettingsKey)
 	if ss == nil {
 		return nil
 	}
-	return ss.(*StreamConfig)
+	return ss.(*MemoryStreamConfig)
 }
 
-func ContextWithDialerSource(ctx context.Context, addr net.Address) context.Context {
-	return context.WithValue(ctx, dialerSrcKey, addr)
+func ContextWithBindAddress(ctx context.Context, dest net.Destination) context.Context {
+	return context.WithValue(ctx, bindAddrKey, dest)
 }
 
-func DialerSourceFromContext(ctx context.Context) net.Address {
-	if addr, ok := ctx.Value(dialerSrcKey).(net.Address); ok {
+func BindAddressFromContext(ctx context.Context) net.Destination {
+	if addr, ok := ctx.Value(bindAddrKey).(net.Destination); ok {
 		return addr
 	}
-	return net.AnyIP
-}
-
-func ContextWithTransportSettings(ctx context.Context, transportSettings interface{}) context.Context {
-	return context.WithValue(ctx, transportSettingsKey, transportSettings)
-}
-
-func TransportSettingsFromContext(ctx context.Context) interface{} {
-	return ctx.Value(transportSettingsKey)
-}
-
-func ContextWithSecuritySettings(ctx context.Context, securitySettings interface{}) context.Context {
-	return context.WithValue(ctx, securitySettingsKey, securitySettings)
-}
-
-func SecuritySettingsFromContext(ctx context.Context) interface{} {
-	return ctx.Value(securitySettingsKey)
+	return net.Destination{}
 }

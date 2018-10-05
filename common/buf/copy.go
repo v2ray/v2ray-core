@@ -2,6 +2,7 @@ package buf
 
 import (
 	"io"
+	"time"
 
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/signal"
@@ -89,7 +90,6 @@ func copyInternal(reader Reader, writer Writer, handler *copyHandler) error {
 			}
 
 			if werr := handler.writeTo(writer, buffer); werr != nil {
-				buffer.Release()
 				return werr
 			}
 		}
@@ -102,13 +102,27 @@ func copyInternal(reader Reader, writer Writer, handler *copyHandler) error {
 
 // Copy dumps all payload from reader to writer or stops when an error occurs. It returns nil when EOF.
 func Copy(reader Reader, writer Writer, options ...CopyOption) error {
-	handler := new(copyHandler)
+	var handler copyHandler
 	for _, option := range options {
-		option(handler)
+		option(&handler)
 	}
-	err := copyInternal(reader, writer, handler)
+	err := copyInternal(reader, writer, &handler)
 	if err != nil && errors.Cause(err) != io.EOF {
 		return err
 	}
 	return nil
+}
+
+var ErrNotTimeoutReader = newError("not a TimeoutReader")
+
+func CopyOnceTimeout(reader Reader, writer Writer, timeout time.Duration) error {
+	timeoutReader, ok := reader.(TimeoutReader)
+	if !ok {
+		return ErrNotTimeoutReader
+	}
+	mb, err := timeoutReader.ReadMultiBufferTimeout(timeout)
+	if err != nil {
+		return err
+	}
+	return writer.WriteMultiBuffer(mb)
 }

@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"v2ray.com/core/transport/pipe"
-
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -19,8 +17,11 @@ import (
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	http_proto "v2ray.com/core/common/protocol/http"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/task"
 	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/pipe"
 )
 
 // Server is an HTTP proxy server.
@@ -105,14 +106,14 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 
 Start:
 	if err := conn.SetReadDeadline(time.Now().Add(s.policy().Timeouts.Handshake)); err != nil {
-		newError("failed to set read deadline").Base(err).WithContext(ctx).WriteToLog()
+		newError("failed to set read deadline").Base(err).WriteToLog(session.ExportIDToError(ctx))
 	}
 
 	request, err := http.ReadRequest(reader)
 	if err != nil {
 		trace := newError("failed to read http request").Base(err)
 		if errors.Cause(err) != io.EOF && !isTimeout(errors.Cause(err)) {
-			trace.AtWarning()
+			trace.AtWarning() // nolint: errcheck
 		}
 		return trace
 	}
@@ -124,9 +125,9 @@ Start:
 		}
 	}
 
-	newError("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]").WithContext(ctx).WriteToLog()
+	newError("request to Method [", request.Method, "] Host [", request.Host, "] with URL [", request.URL, "]").WriteToLog(session.ExportIDToError(ctx))
 	if err := conn.SetReadDeadline(time.Time{}); err != nil {
-		newError("failed to clear read deadline").Base(err).WithContext(ctx).WriteToLog()
+		newError("failed to clear read deadline").Base(err).WriteToLog(session.ExportIDToError(ctx))
 	}
 
 	defaultPort := net.Port(80)
@@ -170,15 +171,19 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		return newError("failed to write back OK response").Base(err)
 	}
 
+	plcy := s.policy()
 	ctx, cancel := context.WithCancel(ctx)
-	timer := signal.CancelAfterInactivity(ctx, cancel, s.policy().Timeouts.ConnectionIdle)
+	timer := signal.CancelAfterInactivity(ctx, cancel, plcy.Timeouts.ConnectionIdle)
+
+	ctx = core.ContextWithBufferPolicy(ctx, plcy.Buffer)
 	link, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return err
 	}
 
 	if reader.Buffered() > 0 {
-		payload, err := buf.ReadSizeToMultiBuffer(reader, int32(reader.Buffered()))
+		var payload buf.MultiBuffer
+		_, err := payload.ReadFrom(&io.LimitedReader{R: reader, N: int64(reader.Buffered())})
 		if err != nil {
 			return err
 		}
@@ -189,15 +194,13 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 	}
 
 	requestDone := func() error {
-		defer common.Close(link.Writer)
-		defer timer.SetTimeout(s.policy().Timeouts.DownlinkOnly)
+		defer timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
 
-		v2reader := buf.NewReader(conn)
-		return buf.Copy(v2reader, link.Writer, buf.UpdateActivity(timer))
+		return buf.Copy(buf.NewReader(conn), link.Writer, buf.UpdateActivity(timer))
 	}
 
 	responseDone := func() error {
-		defer timer.SetTimeout(s.policy().Timeouts.UplinkOnly)
+		defer timer.SetTimeout(plcy.Timeouts.UplinkOnly)
 
 		v2writer := buf.NewWriter(conn)
 		if err := buf.Copy(link.Reader, v2writer, buf.UpdateActivity(timer)); err != nil {
@@ -207,7 +210,8 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 		return nil
 	}
 
-	if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
+	var closeWriter = task.Single(requestDone, task.OnSuccess(task.Close(link.Writer)))
+	if err := task.Run(task.WithContext(ctx), task.Parallel(closeWriter, responseDone))(); err != nil {
 		pipe.CloseError(link.Reader)
 		pipe.CloseError(link.Writer)
 		return newError("connection ends").Base(err)
@@ -253,7 +257,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 	}
 
 	// Plain HTTP request is not a stream. The request always finishes before response. Hense request has to be closed later.
-	defer common.Close(link.Writer)
+	defer common.Close(link.Writer) // nolint: errcheck
 	var result error = errWaitAnother
 
 	requestDone := func() error {
@@ -282,7 +286,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 				result = nil
 			}
 		} else {
-			newError("failed to read response from ", request.Host).Base(err).AtWarning().WithContext(ctx).WriteToLog()
+			newError("failed to read response from ", request.Host).Base(err).AtWarning().WriteToLog(session.ExportIDToError(ctx))
 			response = &http.Response{
 				Status:        "Service Unavailable",
 				StatusCode:    503,
@@ -303,7 +307,7 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 		return nil
 	}
 
-	if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
+	if err := task.Run(task.WithContext(ctx), task.Parallel(requestDone, responseDone))(); err != nil {
 		pipe.CloseError(link.Reader)
 		pipe.CloseError(link.Writer)
 		return newError("connection ends").Base(err)

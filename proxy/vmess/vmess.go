@@ -5,7 +5,7 @@
 // clients with 'socks' for proxying.
 package vmess
 
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg vmess -path Proxy,VMess
+//go:generate errorgen
 
 import (
 	"strings"
@@ -14,7 +14,7 @@ import (
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/task"
 )
 
 const (
@@ -23,8 +23,7 @@ const (
 )
 
 type user struct {
-	user    *protocol.User
-	account *InternalAccount
+	user    protocol.MemoryUser
 	lastSec protocol.Timestamp
 }
 
@@ -34,7 +33,7 @@ type TimedUserValidator struct {
 	userHash map[[16]byte]indexTimePair
 	hasher   protocol.IDHash
 	baseTime protocol.Timestamp
-	task     *signal.PeriodicTask
+	task     *task.Periodic
 }
 
 type indexTimePair struct {
@@ -49,14 +48,14 @@ func NewTimedUserValidator(hasher protocol.IDHash) *TimedUserValidator {
 		hasher:   hasher,
 		baseTime: protocol.Timestamp(time.Now().Unix() - cacheDurationSec*2),
 	}
-	tuv.task = &signal.PeriodicTask{
+	tuv.task = &task.Periodic{
 		Interval: updateInterval,
 		Execute: func() error {
 			tuv.updateUserHash()
 			return nil
 		},
 	}
-	tuv.task.Start()
+	common.Must(tuv.task.Start())
 	return tuv
 }
 
@@ -80,8 +79,10 @@ func (v *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, user *
 		}
 	}
 
-	genHashForID(user.account.ID)
-	for _, id := range user.account.AlterIDs {
+	account := user.user.Account.(*InternalAccount)
+
+	genHashForID(account.ID)
+	for _, id := range account.AlterIDs {
 		genHashForID(id)
 	}
 	user.lastSec = nowSec
@@ -111,21 +112,14 @@ func (v *TimedUserValidator) updateUserHash() {
 	}
 }
 
-func (v *TimedUserValidator) Add(u *protocol.User) error {
+func (v *TimedUserValidator) Add(u *protocol.MemoryUser) error {
 	v.Lock()
 	defer v.Unlock()
-
-	rawAccount, err := u.GetTypedAccount()
-	if err != nil {
-		return err
-	}
-	account := rawAccount.(*InternalAccount)
 
 	nowSec := time.Now().Unix()
 
 	uu := &user{
-		user:    u,
-		account: account,
+		user:    *u,
 		lastSec: protocol.Timestamp(nowSec - cacheDurationSec),
 	}
 	v.users = append(v.users, uu)
@@ -134,7 +128,7 @@ func (v *TimedUserValidator) Add(u *protocol.User) error {
 	return nil
 }
 
-func (v *TimedUserValidator) Get(userHash []byte) (*protocol.User, protocol.Timestamp, bool) {
+func (v *TimedUserValidator) Get(userHash []byte) (*protocol.MemoryUser, protocol.Timestamp, bool) {
 	defer v.RUnlock()
 	v.RLock()
 
@@ -142,7 +136,9 @@ func (v *TimedUserValidator) Get(userHash []byte) (*protocol.User, protocol.Time
 	copy(fixedSizeHash[:], userHash)
 	pair, found := v.userHash[fixedSizeHash]
 	if found {
-		return pair.user.user, protocol.Timestamp(pair.timeInc) + v.baseTime, true
+		var user protocol.MemoryUser
+		user = pair.user.user
+		return &user, protocol.Timestamp(pair.timeInc) + v.baseTime, true
 	}
 	return nil, 0, false
 }

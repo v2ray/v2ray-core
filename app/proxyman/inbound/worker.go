@@ -2,7 +2,6 @@ package inbound
 
 import (
 	"context"
-	"io"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -12,12 +11,15 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/session"
-	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/signal/done"
+	"v2ray.com/core/common/task"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tcp"
 	"v2ray.com/core/transport/internet/udp"
+	"v2ray.com/core/transport/pipe"
 )
 
 type worker interface {
@@ -31,15 +33,22 @@ type tcpWorker struct {
 	address         net.Address
 	port            net.Port
 	proxy           proxy.Inbound
-	stream          *internet.StreamConfig
+	stream          *internet.MemoryStreamConfig
 	recvOrigDest    bool
 	tag             string
 	dispatcher      core.Dispatcher
-	sniffers        []proxyman.KnownProtocols
+	sniffingConfig  *proxyman.SniffingConfig
 	uplinkCounter   core.StatCounter
 	downlinkCounter core.StatCounter
 
 	hub internet.Listener
+}
+
+func getTProxyType(s *internet.MemoryStreamConfig) internet.SocketConfig_TProxyMode {
+	if s == nil || s.SocketSettings == nil {
+		return internet.SocketConfig_Off
+	}
+	return s.SocketSettings.Tproxy
 }
 
 func (w *tcpWorker) callback(conn internet.Connection) {
@@ -48,21 +57,31 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 	ctx = session.ContextWithID(ctx, sid)
 
 	if w.recvOrigDest {
-		dest, err := tcp.GetOriginalDestination(conn)
-		if err != nil {
-			newError("failed to get original destination").WithContext(ctx).Base(err).WriteToLog()
+		var dest net.Destination
+		switch getTProxyType(w.stream) {
+		case internet.SocketConfig_Redirect:
+			d, err := tcp.GetOriginalDestination(conn)
+			if err != nil {
+				newError("failed to get original destination").Base(err).WriteToLog(session.ExportIDToError(ctx))
+			} else {
+				dest = d
+			}
+		case internet.SocketConfig_TProxy:
+			dest = net.DestinationFromAddr(conn.LocalAddr())
 		}
 		if dest.IsValid() {
-			ctx = proxy.ContextWithOriginalTarget(ctx, dest)
+			ctx = session.ContextWithOutbound(ctx, &session.Outbound{
+				Target: dest,
+			})
 		}
 	}
-	if len(w.tag) > 0 {
-		ctx = proxy.ContextWithInboundTag(ctx, w.tag)
-	}
-	ctx = proxy.ContextWithInboundEntryPoint(ctx, net.TCPDestination(w.address, w.port))
-	ctx = proxy.ContextWithSource(ctx, net.DestinationFromAddr(conn.RemoteAddr()))
-	if len(w.sniffers) > 0 {
-		ctx = proxyman.ContextWithProtocolSniffers(ctx, w.sniffers)
+	ctx = session.ContextWithInbound(ctx, &session.Inbound{
+		Source:  net.DestinationFromAddr(conn.RemoteAddr()),
+		Gateway: net.TCPDestination(w.address, w.port),
+		Tag:     w.tag,
+	})
+	if w.sniffingConfig != nil {
+		ctx = proxyman.ContextWithSniffingConfig(ctx, w.sniffingConfig)
 	}
 	if w.uplinkCounter != nil || w.downlinkCounter != nil {
 		conn = &internet.StatCouterConnection{
@@ -72,11 +91,11 @@ func (w *tcpWorker) callback(conn internet.Connection) {
 		}
 	}
 	if err := w.proxy.Process(ctx, net.Network_TCP, conn, w.dispatcher); err != nil {
-		newError("connection ends").Base(err).WithContext(ctx).WriteToLog()
+		newError("connection ends").Base(err).WriteToLog(session.ExportIDToError(ctx))
 	}
 	cancel()
 	if err := conn.Close(); err != nil {
-		newError("failed to close connection").Base(err).WithContext(ctx).WriteToLog()
+		newError("failed to close connection").Base(err).WriteToLog(session.ExportIDToError(ctx))
 	}
 }
 
@@ -97,9 +116,17 @@ func (w *tcpWorker) Start() error {
 }
 
 func (w *tcpWorker) Close() error {
+	var errors []interface{}
 	if w.hub != nil {
-		common.Close(w.hub)
-		common.Close(w.proxy)
+		if err := common.Close(w.hub); err != nil {
+			errors = append(errors, err)
+		}
+		if err := common.Close(w.proxy); err != nil {
+			errors = append(errors, err)
+		}
+	}
+	if len(errors) > 0 {
+		return newError("failed to close all resources").Base(newError(serial.Concat(errors...)))
 	}
 
 	return nil
@@ -111,11 +138,12 @@ func (w *tcpWorker) Port() net.Port {
 
 type udpConn struct {
 	lastActivityTime int64 // in seconds
-	input            chan *buf.Buffer
+	reader           buf.Reader
+	writer           buf.Writer
 	output           func([]byte) (int, error)
 	remote           net.Addr
 	local            net.Addr
-	done             *signal.Done
+	done             *done.Instance
 	uplink           core.StatCounter
 	downlink         core.StatCounter
 }
@@ -124,19 +152,23 @@ func (c *udpConn) updateActivity() {
 	atomic.StoreInt64(&c.lastActivityTime, time.Now().Unix())
 }
 
-func (c *udpConn) Read(buf []byte) (int, error) {
-	select {
-	case in := <-c.input:
-		defer in.Release()
-		c.updateActivity()
-		nBytes := copy(buf, in.Bytes())
-		if c.uplink != nil {
-			c.uplink.Add(int64(nBytes))
-		}
-		return nBytes, nil
-	case <-c.done.Wait():
-		return 0, io.EOF
+// ReadMultiBuffer implements buf.Reader
+func (c *udpConn) ReadMultiBuffer() (buf.MultiBuffer, error) {
+	mb, err := c.reader.ReadMultiBuffer()
+	if err != nil {
+		return nil, err
 	}
+	c.updateActivity()
+
+	if c.uplink != nil {
+		c.uplink.Add(int64(mb.Len()))
+	}
+
+	return mb, nil
+}
+
+func (c *udpConn) Read(buf []byte) (int, error) {
+	panic("not implemented")
 }
 
 // Write implements io.Writer.
@@ -153,6 +185,7 @@ func (c *udpConn) Write(buf []byte) (int, error) {
 
 func (c *udpConn) Close() error {
 	common.Must(c.done.Close())
+	common.Must(common.Close(c.writer))
 	return nil
 }
 
@@ -188,13 +221,13 @@ type udpWorker struct {
 	hub             *udp.Hub
 	address         net.Address
 	port            net.Port
-	recvOrigDest    bool
 	tag             string
+	stream          *internet.MemoryStreamConfig
 	dispatcher      core.Dispatcher
 	uplinkCounter   core.StatCounter
 	downlinkCounter core.StatCounter
 
-	done       *signal.Done
+	checker    *task.Periodic
 	activeConn map[connID]*udpConn
 }
 
@@ -202,12 +235,14 @@ func (w *udpWorker) getConnection(id connID) (*udpConn, bool) {
 	w.Lock()
 	defer w.Unlock()
 
-	if conn, found := w.activeConn[id]; found {
+	if conn, found := w.activeConn[id]; found && !conn.done.Done() {
 		return conn, true
 	}
 
+	pReader, pWriter := pipe.New(pipe.DiscardOverflow(), pipe.WithSizeLimit(16*1024))
 	conn := &udpConn{
-		input: make(chan *buf.Buffer, 32),
+		reader: pReader,
+		writer: pWriter,
 		output: func(b []byte) (int, error) {
 			return w.hub.WriteTo(b, id.src)
 		},
@@ -219,7 +254,7 @@ func (w *udpWorker) getConnection(id connID) (*udpConn, bool) {
 			IP:   w.address.IP(),
 			Port: int(w.port),
 		},
-		done:     signal.NewDone(),
+		done:     done.New(),
 		uplink:   w.uplinkCounter,
 		downlink: w.downlinkCounter,
 	}
@@ -237,32 +272,32 @@ func (w *udpWorker) callback(b *buf.Buffer, source net.Destination, originalDest
 		id.dest = originalDest
 	}
 	conn, existing := w.getConnection(id)
-	select {
-	case conn.input <- b:
-	case <-conn.done.Wait():
-		b.Release()
-	default:
-		b.Release()
-	}
+
+	// payload will be discarded in pipe is full.
+	conn.writer.WriteMultiBuffer(buf.NewMultiBufferValue(b)) // nolint: errcheck
 
 	if !existing {
+		common.Must(w.checker.Start())
+
 		go func() {
 			ctx := context.Background()
 			sid := session.NewID()
 			ctx = session.ContextWithID(ctx, sid)
 
 			if originalDest.IsValid() {
-				ctx = proxy.ContextWithOriginalTarget(ctx, originalDest)
+				ctx = session.ContextWithOutbound(ctx, &session.Outbound{
+					Target: originalDest,
+				})
 			}
-			if len(w.tag) > 0 {
-				ctx = proxy.ContextWithInboundTag(ctx, w.tag)
-			}
-			ctx = proxy.ContextWithSource(ctx, source)
-			ctx = proxy.ContextWithInboundEntryPoint(ctx, net.UDPDestination(w.address, w.port))
+			ctx = session.ContextWithInbound(ctx, &session.Inbound{
+				Source:  source,
+				Gateway: net.UDPDestination(w.address, w.port),
+				Tag:     w.tag,
+			})
 			if err := w.proxy.Process(ctx, net.Network_UDP, conn, w.dispatcher); err != nil {
-				newError("connection ends").Base(err).WriteToLog()
+				newError("connection ends").Base(err).WriteToLog(session.ExportIDToError(ctx))
 			}
-			conn.Close()
+			conn.Close() // nolint: errcheck
 			w.removeConn(id)
 		}()
 	}
@@ -274,15 +309,51 @@ func (w *udpWorker) removeConn(id connID) {
 	w.Unlock()
 }
 
+func (w *udpWorker) handlePackets() {
+	receive := w.hub.Receive()
+	for payload := range receive {
+		w.callback(payload.Content, payload.Source, payload.OriginalDestination)
+	}
+}
+
+func (w *udpWorker) clean() error {
+	nowSec := time.Now().Unix()
+	w.Lock()
+	defer w.Unlock()
+
+	if len(w.activeConn) == 0 {
+		return newError("no more connections. stopping...")
+	}
+
+	for addr, conn := range w.activeConn {
+		if nowSec-atomic.LoadInt64(&conn.lastActivityTime) > 8 {
+			delete(w.activeConn, addr)
+			conn.Close() // nolint: errcheck
+		}
+	}
+
+	if len(w.activeConn) == 0 {
+		w.activeConn = make(map[connID]*udpConn, 16)
+	}
+
+	return nil
+}
+
 func (w *udpWorker) Start() error {
 	w.activeConn = make(map[connID]*udpConn, 16)
-	w.done = signal.NewDone()
-	h, err := udp.ListenUDP(w.address, w.port, w.callback, udp.HubReceiveOriginalDestination(w.recvOrigDest), udp.HubCapacity(256))
+	ctx := internet.ContextWithStreamSettings(context.Background(), w.stream)
+	h, err := udp.ListenUDP(ctx, w.address, w.port, udp.HubCapacity(256))
 	if err != nil {
 		return err
 	}
-	go w.monitor()
+
+	w.checker = &task.Periodic{
+		Interval: time.Second * 16,
+		Execute:  w.clean,
+	}
+
 	w.hub = h
+	go w.handlePackets()
 	return nil
 }
 
@@ -290,38 +361,28 @@ func (w *udpWorker) Close() error {
 	w.Lock()
 	defer w.Unlock()
 
+	var errors []interface{}
+
 	if w.hub != nil {
-		w.hub.Close()
-	}
-
-	if w.done != nil {
-		common.Must(w.done.Close())
-	}
-
-	common.Close(w.proxy)
-	return nil
-}
-
-func (w *udpWorker) monitor() {
-	timer := time.NewTicker(time.Second * 16)
-	defer timer.Stop()
-
-	for {
-		select {
-		case <-w.done.Wait():
-			return
-		case <-timer.C:
-			nowSec := time.Now().Unix()
-			w.Lock()
-			for addr, conn := range w.activeConn {
-				if nowSec-atomic.LoadInt64(&conn.lastActivityTime) > 8 {
-					delete(w.activeConn, addr)
-					conn.Close()
-				}
-			}
-			w.Unlock()
+		if err := w.hub.Close(); err != nil {
+			errors = append(errors, err)
 		}
 	}
+
+	if w.checker != nil {
+		if err := w.checker.Close(); err != nil {
+			errors = append(errors, err)
+		}
+	}
+
+	if err := common.Close(w.proxy); err != nil {
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return newError("failed to close all resources").Base(newError(serial.Concat(errors...)))
+	}
+	return nil
 }
 
 func (w *udpWorker) Port() net.Port {

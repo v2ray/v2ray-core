@@ -36,14 +36,14 @@ func (a *SimpleAuthenticator) Seal(dst, nonce, plain, extra []byte) []byte {
 	common.Must2(fnvHash.Write(dst[4:]))
 	fnvHash.Sum(dst[:0])
 
-	len := len(dst)
-	xtra := 4 - len%4
+	dstLen := len(dst)
+	xtra := 4 - dstLen%4
 	if xtra != 4 {
 		dst = append(dst, make([]byte, xtra)...)
 	}
 	xorfwd(dst)
 	if xtra != 4 {
-		dst = dst[:len]
+		dst = dst[:dstLen]
 	}
 	return dst
 }

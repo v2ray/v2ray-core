@@ -7,13 +7,14 @@ import (
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
 )
 
 // Listener is an internet.Listener that listens for TCP connections.
 type Listener struct {
-	listener   *net.TCPListener
+	listener   net.Listener
 	tlsConfig  *gotls.Config
 	authConfig internet.ConnectionAuthenticator
 	config     *Config
@@ -22,14 +23,14 @@ type Listener struct {
 
 // ListenTCP creates a new Listener based on configurations.
 func ListenTCP(ctx context.Context, address net.Address, port net.Port, handler internet.ConnHandler) (internet.Listener, error) {
-	listener, err := net.ListenTCP("tcp", &net.TCPAddr{
+	listener, err := internet.ListenSystem(ctx, &net.TCPAddr{
 		IP:   address.IP(),
 		Port: int(port),
 	})
 	if err != nil {
 		return nil, err
 	}
-	newError("listening TCP on ", address, ":", port).WithContext(ctx).WriteToLog()
+	newError("listening TCP on ", address, ":", port).WriteToLog(session.ExportIDToError(ctx))
 
 	tcpSettings := getTCPSettingsFromContext(ctx)
 
@@ -91,5 +92,5 @@ func (v *Listener) Close() error {
 }
 
 func init() {
-	common.Must(internet.RegisterTransportListener(internet.TransportProtocol_TCP, ListenTCP))
+	common.Must(internet.RegisterTransportListener(protocolName, ListenTCP))
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"sync"
 	"time"
 
 	"v2ray.com/core/common/net"
@@ -77,10 +78,17 @@ func (c *Config) getCustomCA() []*Certificate {
 }
 
 func getGetCertificateFunc(c *tls.Config, ca []*Certificate) func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	var access sync.RWMutex
+
 	return func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 		domain := hello.ServerName
 		certExpired := false
-		if certificate, found := c.NameToCertificate[domain]; found {
+
+		access.RLock()
+		certificate, found := c.NameToCertificate[domain]
+		access.RUnlock()
+
+		if found {
 			if !isCertificateExpired(certificate) {
 				return certificate, nil
 			}
@@ -90,6 +98,7 @@ func getGetCertificateFunc(c *tls.Config, ca []*Certificate) func(hello *tls.Cli
 		if certExpired {
 			newCerts := make([]tls.Certificate, 0, len(c.Certificates))
 
+			access.Lock()
 			for _, certificate := range c.Certificates {
 				if !isCertificateExpired(&certificate) {
 					newCerts = append(newCerts, certificate)
@@ -97,6 +106,7 @@ func getGetCertificateFunc(c *tls.Config, ca []*Certificate) func(hello *tls.Cli
 			}
 
 			c.Certificates = newCerts
+			access.Unlock()
 		}
 
 		var issuedCertificate *tls.Certificate
@@ -110,8 +120,10 @@ func getGetCertificateFunc(c *tls.Config, ca []*Certificate) func(hello *tls.Cli
 					continue
 				}
 
+				access.Lock()
 				c.Certificates = append(c.Certificates, *newCert)
 				issuedCertificate = &c.Certificates[len(c.Certificates)-1]
+				access.Unlock()
 				break
 			}
 		}
@@ -120,7 +132,9 @@ func getGetCertificateFunc(c *tls.Config, ca []*Certificate) func(hello *tls.Cli
 			return nil, newError("failed to create a new certificate for ", domain)
 		}
 
+		access.Lock()
 		c.BuildNameToCertificate()
+		access.Unlock()
 
 		return issuedCertificate, nil
 	}
@@ -129,8 +143,9 @@ func getGetCertificateFunc(c *tls.Config, ca []*Certificate) func(hello *tls.Cli
 // GetTLSConfig converts this Config into tls.Config.
 func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
 	config := &tls.Config{
-		ClientSessionCache: globalSessionCache,
-		RootCAs:            c.getCertPool(),
+		ClientSessionCache:     globalSessionCache,
+		RootCAs:                c.getCertPool(),
+		SessionTicketsDisabled: c.DisableSessionResumption,
 	}
 	if c == nil {
 		return config
@@ -138,6 +153,23 @@ func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
 
 	for _, opt := range opts {
 		opt(config)
+	}
+
+	if !c.AllowInsecureCiphers && len(config.CipherSuites) == 0 {
+		config.CipherSuites = []uint16{
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+		}
 	}
 
 	config.InsecureSkipVerify = c.AllowInsecure
@@ -185,11 +217,11 @@ func WithNextProto(protocol ...string) Option {
 
 // ConfigFromContext fetches Config from context. Nil if not found.
 func ConfigFromContext(ctx context.Context) *Config {
-	securitySettings := internet.SecuritySettingsFromContext(ctx)
-	if securitySettings == nil {
+	streamSettings := internet.StreamSettingsFromContext(ctx)
+	if streamSettings == nil {
 		return nil
 	}
-	config, ok := securitySettings.(*Config)
+	config, ok := streamSettings.SecuritySettings.(*Config)
 	if !ok {
 		return nil
 	}

@@ -53,7 +53,7 @@ func getHTTPClient(ctx context.Context, dest net.Destination) (*http.Client, err
 			}
 			address := net.ParseAddress(rawHost)
 
-			pconn, err := internet.DialSystem(context.Background(), nil, net.TCPDestination(address, port))
+			pconn, err := internet.DialSystem(context.Background(), net.TCPDestination(address, port))
 			if err != nil {
 				return nil, err
 			}
@@ -72,8 +72,8 @@ func getHTTPClient(ctx context.Context, dest net.Destination) (*http.Client, err
 
 // Dial dials a new TCP connection to the given destination.
 func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {
-	rawSettings := internet.TransportSettingsFromContext(ctx)
-	httpSettings, ok := rawSettings.(*Config)
+	rawSettings := internet.StreamSettingsFromContext(ctx)
+	httpSettings, ok := rawSettings.ProtocolSettings.(*Config)
 	if !ok {
 		return nil, newError("HTTP config is not set.").AtError()
 	}
@@ -83,7 +83,8 @@ func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error
 		return nil, err
 	}
 
-	preader, pwriter := pipe.New(pipe.WithSizeLimit(20 * 1024))
+	opts := pipe.OptionsFromContext(ctx)
+	preader, pwriter := pipe.New(opts...)
 	breader := &buf.BufferedReader{Reader: preader}
 	request := &http.Request{
 		Method: "PUT",
@@ -120,5 +121,5 @@ func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error
 }
 
 func init() {
-	common.Must(internet.RegisterTransportDialer(internet.TransportProtocol_HTTP, Dial))
+	common.Must(internet.RegisterTransportDialer(protocolName, Dial))
 }

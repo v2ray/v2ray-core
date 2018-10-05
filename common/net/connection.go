@@ -7,7 +7,7 @@ import (
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/signal/done"
 )
 
 type ConnectionOption func(*connection)
@@ -56,7 +56,7 @@ func ConnectionOnClose(n io.Closer) ConnectionOption {
 
 func NewConnection(opts ...ConnectionOption) net.Conn {
 	c := &connection{
-		done: signal.NewDone(),
+		done: done.New(),
 		local: &net.TCPAddr{
 			IP:   []byte{0, 0, 0, 0},
 			Port: 0,
@@ -77,7 +77,7 @@ func NewConnection(opts ...ConnectionOption) net.Conn {
 type connection struct {
 	reader  *buf.BufferedReader
 	writer  buf.Writer
-	done    *signal.Done
+	done    *done.Instance
 	onClose io.Closer
 	local   Addr
 	remote  Addr

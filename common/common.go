@@ -2,7 +2,7 @@
 // See each sub-package for detail.
 package common
 
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg common -path Common
+//go:generate errorgen
 
 // Must panics if err is not nil.
 func Must(err error) {
@@ -21,6 +21,3 @@ func Must2(v interface{}, err error) interface{} {
 func Error2(v interface{}, err error) error {
 	return err
 }
-
-// Ignore an error with reason, for lint purpose.
-func Ignore(err error, reason string) {}
