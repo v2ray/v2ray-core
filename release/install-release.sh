@@ -175,6 +175,9 @@ extract(){
 getVersion(){
     if [[ -n "$VERSION" ]]; then
         NEW_VER="$VERSION"
+        if [[ ${NEW_VER} != v* ]]; then
+          NEW_VER=v${NEW_VER}
+        fi
         return 4
     else
         VER=`/usr/bin/v2ray/v2ray -version 2>/dev/null`
