@@ -3,10 +3,7 @@
 set -x
 
 apt-get update
-apt-get -y install jq git file pkg-config zip g++ zlib1g-dev unzip python
-
-git config --global user.name "Darien Raymond"
-git config --global user.email "admin@v2ray.com"
+apt-get -y install jq git file pkg-config zip g++ zlib1g-dev unzip python openssl
 
 function getattr() {
   curl -s -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/$2/attributes/$1
@@ -42,8 +39,9 @@ export PATH=$PATH:/usr/local/go/bin
 mkdir -p /v2/src
 export GOPATH=/v2
 
-go get v2ray.com/core/...
-go get v2ray.com/ext/...
+# Download all source code
+go get -t v2ray.com/core/...
+go get -t v2ray.com/ext/...
 
 pushd $GOPATH/src/v2ray.com/core/
 git checkout tags/${RELEASE_TAG}
@@ -52,7 +50,14 @@ VERN=${RELEASE_TAG:1}
 BUILDN=`date +%Y%m%d`
 sed -i "s/\(version *= *\"\).*\(\"\)/\1$VERN\2/g" core.go
 sed -i "s/\(build *= *\"\).*\(\"\)/\1$BUILDN\2/g" core.go
+popd
 
+# Take a snapshot of all required source code
+pushd $GOPATH/src
+zip -9 -r /v2/build/src_all.zip * -x '*.git*'
+popd
+
+pushd $GOPATH/src/v2ray.com/core/
 bazel build --action_env=GOPATH=$GOPATH --action_env=PATH=$PATH --action_env=GPG_PASS=${SIGN_KEY_PASS} //release:all
 popd
 
@@ -62,13 +67,25 @@ JSON_DATA=$(echo ${JSON_DATA} | jq -c ".prerelease=${PRERELEASE}")
 JSON_DATA=$(echo ${JSON_DATA} | jq -c ".body=\"${RELBODY}\"")
 RELEASE_ID=$(curl --data "${JSON_DATA}" -H "Authorization: token ${GITHUB_TOKEN}" -X POST https://api.github.com/repos/v2ray/v2ray-core/releases | jq ".id")
 
-function upload() {
+function uploadfile() {
   FILE=$1
   CTYPE=$(file -b --mime-type $FILE)
   curl -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: ${CTYPE}" --data-binary @$FILE "https://uploads.github.com/repos/v2ray/v2ray-core/releases/${RELEASE_ID}/assets?name=$(basename $FILE)"
 }
 
+function upload() {
+  FILE=$1
+  DGST=$1.dgst
+  openssl dgst -md5 $FILE | sed 's/([^)]*)//g' >> $DGST
+  openssl dgst -sha1 $FILE | sed 's/([^)]*)//g' >> $DGST
+  openssl dgst -sha256 $FILE | sed 's/([^)]*)//g' >> $DGST
+  openssl dgst -sha512 $FILE | sed 's/([^)]*)//g' >> $DGST
+  uploadfile $FILE
+  uploadfile $DGST
+}
+
 ART_ROOT=$GOPATH/src/v2ray.com/core/bazel-bin/release
+
 upload ${ART_ROOT}/v2ray-macos.zip
 upload ${ART_ROOT}/v2ray-windows-64.zip
 upload ${ART_ROOT}/v2ray-windows-32.zip
@@ -86,6 +103,7 @@ upload ${ART_ROOT}/v2ray-freebsd-32.zip
 upload ${ART_ROOT}/v2ray-openbsd-64.zip
 upload ${ART_ROOT}/v2ray-openbsd-32.zip
 upload ${ART_ROOT}/v2ray-dragonfly-64.zip
+upload /v2/build/src_all.zip
 
 if [[ "${PRERELEASE}" == "false" ]]; then
 
@@ -114,6 +132,9 @@ sed -i "s#^\s*sha256.*#  sha256 \"$V_HASH256\"#g" Formula/v2ray-core.rb
 sed -i "s#^\s*version.*#  version \"$VERN\"#g" Formula/v2ray-core.rb
 
 echo "Updating repo"
+
+git config user.name "Darien Raymond"
+git config user.email "admin@v2ray.com"
 
 git commit -am "update to version $VERN"
 git push  --quiet "https://${GITHUB_TOKEN}@github.com/v2ray/homebrew-v2ray" master:master
