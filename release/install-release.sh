@@ -15,6 +15,8 @@ ARCH=""
 VDIS="64"
 ZIPFILE="/tmp/v2ray/v2ray.zip"
 V2RAY_RUNNING=0
+VSRC_ROOT="/tmp/v2ray"
+EXTRACT_ONLY=0
 
 CMD_INSTALL=""
 CMD_UPDATE=""
@@ -57,6 +59,13 @@ while [[ $# > 0 ]];do
         --version)
         VERSION="$2"
         shift
+        ;;
+        --extract)
+        VSRC_ROOT="$2"
+        shift
+        ;;
+        --extractonly)
+        EXTRACT_ONLY="1"
         ;;
         -l|--local)
         LOCAL="$2"
@@ -154,12 +163,10 @@ getPMT(){
     return 0
 }
 
-VSRC_ROOT=/tmp/v2ray
-
 extract(){
     colorEcho ${BLUE}"Extracting V2Ray package to /tmp/v2ray."
     mkdir -p /tmp/v2ray
-    unzip $1 -d "/tmp/v2ray/"
+    unzip $1 -d ${VSRC_ROOT}
     if [[ $? -ne 0 ]]; then
         colorEcho ${RED} "Failed to extract V2Ray."
         return 2
@@ -411,6 +418,12 @@ main(){
             extract ${ZIPFILE} || return $?
         fi
     fi 
+    
+    if [[ "${EXTRACT_ONLY}" == "1" ]]; then
+        colorEcho ${GREEN} "V2Ray extracted to ${VSRC_ROOT}, and exiting..."
+        return 0
+    fi
+
     if pgrep "v2ray" > /dev/null ; then
         V2RAY_RUNNING=1
         stopV2ray
