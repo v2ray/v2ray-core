@@ -17,6 +17,7 @@ ZIPFILE="/tmp/v2ray/v2ray.zip"
 V2RAY_RUNNING=0
 VSRC_ROOT="/tmp/v2ray"
 EXTRACT_ONLY=0
+ERROR_IF_UPTODATE=0
 
 CMD_INSTALL=""
 CMD_UPDATE=""
@@ -71,6 +72,9 @@ while [[ $# > 0 ]];do
         LOCAL="$2"
         LOCAL_INSTALL="1"
         shift
+        ;;
+        --errifuptodate)
+        ERROR_IF_UPTODATE="1"
         ;;
         *)
                 # unknown option
@@ -408,6 +412,9 @@ main(){
         RETVAL="$?"
         if [[ $RETVAL == 0 ]] && [[ "$FORCE" != "1" ]]; then
             colorEcho ${BLUE} "Latest version ${NEW_VER} is already installed."
+            if [[ "${ERROR_IF_UPTODATE}" == "1" ]]; then
+              return 10
+            fi
             return
         elif [[ $RETVAL == 3 ]]; then
             return 3
