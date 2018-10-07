@@ -3,7 +3,13 @@
 set -x
 
 apt-get update
-apt-get -y install jq git file pkg-config zip g++ zlib1g-dev unzip python openssl
+apt-get -y install \
+    jq `# for parsing Github API` \
+    git `# for go get` \
+    file `# for Github upload` \
+    pkg-config zip g++ zlib1g-dev unzip python `# for Bazel` \
+    openssl `# for binary digest` \
+
 
 function getattr() {
   curl -s -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/$2/attributes/$1
