@@ -13,7 +13,7 @@ version: "1.0.{build}"
 environment:
   global:
     GOPATH: C:\gopath
-    GOVERSION: "1.11"
+    GOVERSION: "1.11.1"
 
 install:
   - set PATH=%GOPATH%\bin;c:\go\bin;%PATH%
@@ -21,8 +21,8 @@ install:
   - appveyor DownloadFile https://storage.googleapis.com/golang/go%GOVERSION%.windows-amd64.zip
   - 7z x go%GOVERSION%.windows-amd64.zip -y -oC:\ > NUL
   - go version
-  - go get v2ray.com/core/...
-  - go get v2ray.com/ext/...
+  - go get -t v2ray.com/core/...
+  - go get -t v2ray.com/ext/...
 
 build_script:
   - go build v2ray.com/core/main

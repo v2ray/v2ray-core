@@ -136,6 +136,7 @@ func (*TransportConfig) ProtoMessage()    {}
 func (*TransportConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_91dbc815c3d97a05, []int{0}
 }
+
 func (m *TransportConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TransportConfig.Unmarshal(m, b)
 }
@@ -197,6 +198,7 @@ func (*StreamConfig) ProtoMessage()    {}
 func (*StreamConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_91dbc815c3d97a05, []int{1}
 }
+
 func (m *StreamConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StreamConfig.Unmarshal(m, b)
 }
@@ -271,6 +273,7 @@ func (*ProxyConfig) ProtoMessage()    {}
 func (*ProxyConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_91dbc815c3d97a05, []int{2}
 }
+
 func (m *ProxyConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ProxyConfig.Unmarshal(m, b)
 }
@@ -305,6 +308,7 @@ type SocketConfig struct {
 	// TProxy is for enabling TProxy socket option.
 	Tproxy SocketConfig_TProxyMode `protobuf:"varint,3,opt,name=tproxy,proto3,enum=v2ray.core.transport.internet.SocketConfig_TProxyMode" json:"tproxy,omitempty"`
 	// ReceiveOriginalDestAddress is for enabling IP_RECVORIGDSTADDR socket option.
+	// This option is for UDP only.
 	ReceiveOriginalDestAddress bool     `protobuf:"varint,4,opt,name=receive_original_dest_address,json=receiveOriginalDestAddress,proto3" json:"receive_original_dest_address,omitempty"`
 	XXX_NoUnkeyedLiteral       struct{} `json:"-"`
 	XXX_unrecognized           []byte   `json:"-"`
@@ -317,6 +321,7 @@ func (*SocketConfig) ProtoMessage()    {}
 func (*SocketConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_91dbc815c3d97a05, []int{3}
 }
+
 func (m *SocketConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SocketConfig.Unmarshal(m, b)
 }
@@ -364,13 +369,13 @@ func (m *SocketConfig) GetReceiveOriginalDestAddress() bool {
 }
 
 func init() {
+	proto.RegisterEnum("v2ray.core.transport.internet.TransportProtocol", TransportProtocol_name, TransportProtocol_value)
+	proto.RegisterEnum("v2ray.core.transport.internet.SocketConfig_TCPFastOpenState", SocketConfig_TCPFastOpenState_name, SocketConfig_TCPFastOpenState_value)
+	proto.RegisterEnum("v2ray.core.transport.internet.SocketConfig_TProxyMode", SocketConfig_TProxyMode_name, SocketConfig_TProxyMode_value)
 	proto.RegisterType((*TransportConfig)(nil), "v2ray.core.transport.internet.TransportConfig")
 	proto.RegisterType((*StreamConfig)(nil), "v2ray.core.transport.internet.StreamConfig")
 	proto.RegisterType((*ProxyConfig)(nil), "v2ray.core.transport.internet.ProxyConfig")
 	proto.RegisterType((*SocketConfig)(nil), "v2ray.core.transport.internet.SocketConfig")
-	proto.RegisterEnum("v2ray.core.transport.internet.TransportProtocol", TransportProtocol_name, TransportProtocol_value)
-	proto.RegisterEnum("v2ray.core.transport.internet.SocketConfig_TCPFastOpenState", SocketConfig_TCPFastOpenState_name, SocketConfig_TCPFastOpenState_value)
-	proto.RegisterEnum("v2ray.core.transport.internet.SocketConfig_TProxyMode", SocketConfig_TProxyMode_name, SocketConfig_TProxyMode_value)
 }
 
 func init() {

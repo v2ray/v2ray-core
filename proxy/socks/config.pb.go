@@ -58,6 +58,7 @@ func (*Account) ProtoMessage()    {}
 func (*Account) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e86958e2cebd3303, []int{0}
 }
+
 func (m *Account) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Account.Unmarshal(m, b)
 }
@@ -108,6 +109,7 @@ func (*ServerConfig) ProtoMessage()    {}
 func (*ServerConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e86958e2cebd3303, []int{1}
 }
+
 func (m *ServerConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServerConfig.Unmarshal(m, b)
 }
@@ -182,6 +184,7 @@ func (*ClientConfig) ProtoMessage()    {}
 func (*ClientConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e86958e2cebd3303, []int{2}
 }
+
 func (m *ClientConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ClientConfig.Unmarshal(m, b)
 }
@@ -208,11 +211,11 @@ func (m *ClientConfig) GetServer() []*protocol.ServerEndpoint {
 }
 
 func init() {
+	proto.RegisterEnum("v2ray.core.proxy.socks.AuthType", AuthType_name, AuthType_value)
 	proto.RegisterType((*Account)(nil), "v2ray.core.proxy.socks.Account")
 	proto.RegisterType((*ServerConfig)(nil), "v2ray.core.proxy.socks.ServerConfig")
 	proto.RegisterMapType((map[string]string)(nil), "v2ray.core.proxy.socks.ServerConfig.AccountsEntry")
 	proto.RegisterType((*ClientConfig)(nil), "v2ray.core.proxy.socks.ClientConfig")
-	proto.RegisterEnum("v2ray.core.proxy.socks.AuthType", AuthType_name, AuthType_value)
 }
 
 func init() {

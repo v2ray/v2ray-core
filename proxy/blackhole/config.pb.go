@@ -30,6 +30,7 @@ func (*NoneResponse) ProtoMessage()    {}
 func (*NoneResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_8c8b37c8ae1bdfea, []int{0}
 }
+
 func (m *NoneResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_NoneResponse.Unmarshal(m, b)
 }
@@ -60,6 +61,7 @@ func (*HTTPResponse) ProtoMessage()    {}
 func (*HTTPResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_8c8b37c8ae1bdfea, []int{1}
 }
+
 func (m *HTTPResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HTTPResponse.Unmarshal(m, b)
 }
@@ -91,6 +93,7 @@ func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
 	return fileDescriptor_8c8b37c8ae1bdfea, []int{2}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }

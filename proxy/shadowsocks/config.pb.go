@@ -108,6 +108,7 @@ func (*Account) ProtoMessage()    {}
 func (*Account) Descriptor() ([]byte, []int) {
 	return fileDescriptor_8d089a30c2106007, []int{0}
 }
+
 func (m *Account) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Account.Unmarshal(m, b)
 }
@@ -164,6 +165,7 @@ func (*ServerConfig) ProtoMessage()    {}
 func (*ServerConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_8d089a30c2106007, []int{1}
 }
+
 func (m *ServerConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ServerConfig.Unmarshal(m, b)
 }
@@ -217,6 +219,7 @@ func (*ClientConfig) ProtoMessage()    {}
 func (*ClientConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_8d089a30c2106007, []int{2}
 }
+
 func (m *ClientConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ClientConfig.Unmarshal(m, b)
 }
@@ -243,11 +246,11 @@ func (m *ClientConfig) GetServer() []*protocol.ServerEndpoint {
 }
 
 func init() {
+	proto.RegisterEnum("v2ray.core.proxy.shadowsocks.CipherType", CipherType_name, CipherType_value)
+	proto.RegisterEnum("v2ray.core.proxy.shadowsocks.Account_OneTimeAuth", Account_OneTimeAuth_name, Account_OneTimeAuth_value)
 	proto.RegisterType((*Account)(nil), "v2ray.core.proxy.shadowsocks.Account")
 	proto.RegisterType((*ServerConfig)(nil), "v2ray.core.proxy.shadowsocks.ServerConfig")
 	proto.RegisterType((*ClientConfig)(nil), "v2ray.core.proxy.shadowsocks.ClientConfig")
-	proto.RegisterEnum("v2ray.core.proxy.shadowsocks.CipherType", CipherType_name, CipherType_value)
-	proto.RegisterEnum("v2ray.core.proxy.shadowsocks.Account_OneTimeAuth", Account_OneTimeAuth_name, Account_OneTimeAuth_value)
 }
 
 func init() {

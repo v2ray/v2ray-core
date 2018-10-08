@@ -1,9 +1,9 @@
 package command_test
 
 import (
+	"context"
 	"testing"
 
-	context "golang.org/x/net/context"
 	"v2ray.com/core/app/stats"
 	. "v2ray.com/core/app/stats/command"
 	. "v2ray.com/ext/assert"

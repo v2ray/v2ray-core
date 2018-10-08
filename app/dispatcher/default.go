@@ -1,6 +1,6 @@
 package dispatcher
 
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg impl -path App,Dispatcher,Default
+//go:generate errorgen
 
 import (
 	"context"

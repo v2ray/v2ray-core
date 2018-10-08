@@ -36,14 +36,15 @@ func cidrToCondition(cidr []*CIDR, source bool) (Condition, error) {
 		}
 	}
 
-	if !ipv4Net.IsEmpty() && hasIpv6 {
+	switch {
+	case !ipv4Net.IsEmpty() && hasIpv6:
 		cond := NewAnyCondition()
 		cond.Add(NewIPv4Matcher(ipv4Net, source))
 		cond.Add(ipv6Cond)
 		return cond, nil
-	} else if !ipv4Net.IsEmpty() {
+	case !ipv4Net.IsEmpty():
 		return NewIPv4Matcher(ipv4Net, source), nil
-	} else {
+	default:
 		return ipv6Cond, nil
 	}
 }

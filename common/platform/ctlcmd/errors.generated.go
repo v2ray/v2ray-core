@@ -2,6 +2,8 @@ package ctlcmd
 
 import "v2ray.com/core/common/errors"
 
+type errPathObjHolder struct{}
+
 func newError(values ...interface{}) *errors.Error {
-	return errors.New(values...).Path("Command", "Platform", "CtlCmd")
+	return errors.New(values...).WithPathObj(errPathObjHolder{})
 }

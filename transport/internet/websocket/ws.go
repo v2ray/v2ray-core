@@ -4,4 +4,4 @@ Websocket transport implements an HTTP(S) compliable, surveillance proof transpo
 */
 package websocket
 
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg websocket -path Transport,Internet,WebSocket
+//go:generate errorgen

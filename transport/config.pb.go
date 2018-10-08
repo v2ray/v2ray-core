@@ -19,6 +19,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 // Global transport settings. This affects all type of connections that go through V2Ray.
+// Deprecated. Use each settings in StreamConfig.
 type Config struct {
 	TransportSettings    []*internet.TransportConfig `protobuf:"bytes,1,rep,name=transport_settings,json=transportSettings,proto3" json:"transport_settings,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                    `json:"-"`
@@ -32,6 +33,7 @@ func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e34c3c5557a3c999, []int{0}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }

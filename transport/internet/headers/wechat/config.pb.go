@@ -29,6 +29,7 @@ func (*VideoConfig) ProtoMessage()    {}
 func (*VideoConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_0ad582a12d5e4846, []int{0}
 }
+
 func (m *VideoConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_VideoConfig.Unmarshal(m, b)
 }

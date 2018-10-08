@@ -14,6 +14,11 @@ const (
 )
 
 func bindAddr(fd uintptr, address net.Address, port net.Port) error {
+	err := syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
+	if err != nil {
+		return newError("failed to set resuse_addr").Base(err).AtWarning()
+	}
+
 	var sockaddr syscall.Sockaddr
 
 	switch address.Family() {

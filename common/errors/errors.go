@@ -3,6 +3,7 @@ package errors // import "v2ray.com/core/common/errors"
 
 import (
 	"os"
+	"reflect"
 	"strings"
 
 	"v2ray.com/core/common/log"
@@ -20,97 +21,111 @@ type hasSeverity interface {
 
 // Error is an error object with underlying error.
 type Error struct {
+	pathObj  interface{}
 	prefix   []interface{}
-	path     []string
 	message  []interface{}
 	inner    error
 	severity log.Severity
 }
 
+func (err *Error) WithPathObj(obj interface{}) *Error {
+	err.pathObj = obj
+	return err
+}
+
+func (err *Error) pkgPath() string {
+	if err.pathObj == nil {
+		return ""
+	}
+	return reflect.TypeOf(err.pathObj).PkgPath()
+}
+
 // Error implements error.Error().
-func (v *Error) Error() string {
-	msg := serial.Concat(v.message...)
-	if v.inner != nil {
-		msg += " > " + v.inner.Error()
-	}
-	if len(v.path) > 0 {
-		msg = strings.Join(v.path, "|") + ": " + msg
-	}
-
-	var prefix string
-	for _, p := range v.prefix {
-		prefix += "[" + serial.ToString(p) + "] "
+func (err *Error) Error() string {
+	builder := strings.Builder{}
+	for _, prefix := range err.prefix {
+		builder.WriteByte('[')
+		builder.WriteString(serial.ToString(prefix))
+		builder.WriteString("] ")
 	}
 
-	return prefix + msg
+	path := err.pkgPath()
+	if len(path) > 0 {
+		builder.WriteString(path)
+		builder.WriteString(": ")
+	}
+
+	msg := serial.Concat(err.message...)
+	builder.WriteString(msg)
+
+	if err.inner != nil {
+		builder.WriteString(" > ")
+		builder.WriteString(err.inner.Error())
+	}
+
+	return builder.String()
 }
 
 // Inner implements hasInnerError.Inner()
-func (v *Error) Inner() error {
-	if v.inner == nil {
+func (err *Error) Inner() error {
+	if err.inner == nil {
 		return nil
 	}
-	return v.inner
+	return err.inner
 }
 
-func (v *Error) Base(err error) *Error {
-	v.inner = err
-	return v
+func (err *Error) Base(e error) *Error {
+	err.inner = e
+	return err
 }
 
-func (v *Error) atSeverity(s log.Severity) *Error {
-	v.severity = s
-	return v
+func (err *Error) atSeverity(s log.Severity) *Error {
+	err.severity = s
+	return err
 }
 
-func (v *Error) Severity() log.Severity {
-	if v.inner == nil {
-		return v.severity
+func (err *Error) Severity() log.Severity {
+	if err.inner == nil {
+		return err.severity
 	}
 
-	if s, ok := v.inner.(hasSeverity); ok {
+	if s, ok := err.inner.(hasSeverity); ok {
 		as := s.Severity()
-		if as < v.severity {
+		if as < err.severity {
 			return as
 		}
 	}
 
-	return v.severity
+	return err.severity
 }
 
 // AtDebug sets the severity to debug.
-func (v *Error) AtDebug() *Error {
-	return v.atSeverity(log.Severity_Debug)
+func (err *Error) AtDebug() *Error {
+	return err.atSeverity(log.Severity_Debug)
 }
 
 // AtInfo sets the severity to info.
-func (v *Error) AtInfo() *Error {
-	return v.atSeverity(log.Severity_Info)
+func (err *Error) AtInfo() *Error {
+	return err.atSeverity(log.Severity_Info)
 }
 
 // AtWarning sets the severity to warning.
-func (v *Error) AtWarning() *Error {
-	return v.atSeverity(log.Severity_Warning)
+func (err *Error) AtWarning() *Error {
+	return err.atSeverity(log.Severity_Warning)
 }
 
 // AtError sets the severity to error.
-func (v *Error) AtError() *Error {
-	return v.atSeverity(log.Severity_Error)
-}
-
-// Path sets the path to the location where this error happens.
-func (v *Error) Path(path ...string) *Error {
-	v.path = path
-	return v
+func (err *Error) AtError() *Error {
+	return err.atSeverity(log.Severity_Error)
 }
 
 // String returns the string representation of this error.
-func (v *Error) String() string {
-	return v.Error()
+func (err *Error) String() string {
+	return err.Error()
 }
 
 // WriteToLog writes current error into log.
-func (v *Error) WriteToLog(opts ...ExportOption) {
+func (err *Error) WriteToLog(opts ...ExportOption) {
 	var holder ExportOptionHolder
 
 	for _, opt := range opts {
@@ -118,12 +133,12 @@ func (v *Error) WriteToLog(opts ...ExportOption) {
 	}
 
 	if holder.SessionID > 0 {
-		v.prefix = append(v.prefix, holder.SessionID)
+		err.prefix = append(err.prefix, holder.SessionID)
 	}
 
 	log.Record(&log.GeneralMessage{
-		Severity: GetSeverity(v),
-		Content:  v,
+		Severity: GetSeverity(err),
+		Content:  err,
 	})
 }
 

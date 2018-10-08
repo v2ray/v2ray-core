@@ -56,6 +56,7 @@ func (*DestinationOverride) ProtoMessage()    {}
 func (*DestinationOverride) Descriptor() ([]byte, []int) {
 	return fileDescriptor_66807b6fe2cca4da, []int{0}
 }
+
 func (m *DestinationOverride) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DestinationOverride.Unmarshal(m, b)
 }
@@ -97,6 +98,7 @@ func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
 	return fileDescriptor_66807b6fe2cca4da, []int{1}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }
@@ -145,9 +147,9 @@ func (m *Config) GetUserLevel() uint32 {
 }
 
 func init() {
+	proto.RegisterEnum("v2ray.core.proxy.freedom.Config_DomainStrategy", Config_DomainStrategy_name, Config_DomainStrategy_value)
 	proto.RegisterType((*DestinationOverride)(nil), "v2ray.core.proxy.freedom.DestinationOverride")
 	proto.RegisterType((*Config)(nil), "v2ray.core.proxy.freedom.Config")
-	proto.RegisterEnum("v2ray.core.proxy.freedom.Config_DomainStrategy", Config_DomainStrategy_name, Config_DomainStrategy_value)
 }
 
 func init() {

@@ -88,6 +88,7 @@ func (*InboundConfig) ProtoMessage()    {}
 func (*InboundConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b07f45dd938bc1b0, []int{0}
 }
+
 func (m *InboundConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InboundConfig.Unmarshal(m, b)
 }
@@ -125,6 +126,7 @@ func (*AllocationStrategy) ProtoMessage()    {}
 func (*AllocationStrategy) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b07f45dd938bc1b0, []int{1}
 }
+
 func (m *AllocationStrategy) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AllocationStrategy.Unmarshal(m, b)
 }
@@ -181,6 +183,7 @@ func (*AllocationStrategy_AllocationStrategyConcurrency) ProtoMessage() {}
 func (*AllocationStrategy_AllocationStrategyConcurrency) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b07f45dd938bc1b0, []int{1, 0}
 }
+
 func (m *AllocationStrategy_AllocationStrategyConcurrency) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AllocationStrategy_AllocationStrategyConcurrency.Unmarshal(m, b)
 }
@@ -223,6 +226,7 @@ func (*AllocationStrategy_AllocationStrategyRefresh) ProtoMessage() {}
 func (*AllocationStrategy_AllocationStrategyRefresh) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b07f45dd938bc1b0, []int{1, 1}
 }
+
 func (m *AllocationStrategy_AllocationStrategyRefresh) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AllocationStrategy_AllocationStrategyRefresh.Unmarshal(m, b)
 }
@@ -265,6 +269,7 @@ func (*SniffingConfig) ProtoMessage()    {}
 func (*SniffingConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b07f45dd938bc1b0, []int{2}
 }
+
 func (m *SniffingConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SniffingConfig.Unmarshal(m, b)
 }
@@ -320,6 +325,7 @@ func (*ReceiverConfig) ProtoMessage()    {}
 func (*ReceiverConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b07f45dd938bc1b0, []int{3}
 }
+
 func (m *ReceiverConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ReceiverConfig.Unmarshal(m, b)
 }
@@ -403,6 +409,7 @@ func (*InboundHandlerConfig) ProtoMessage()    {}
 func (*InboundHandlerConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b07f45dd938bc1b0, []int{4}
 }
+
 func (m *InboundHandlerConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InboundHandlerConfig.Unmarshal(m, b)
 }
@@ -454,6 +461,7 @@ func (*OutboundConfig) ProtoMessage()    {}
 func (*OutboundConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b07f45dd938bc1b0, []int{5}
 }
+
 func (m *OutboundConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_OutboundConfig.Unmarshal(m, b)
 }
@@ -489,6 +497,7 @@ func (*SenderConfig) ProtoMessage()    {}
 func (*SenderConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b07f45dd938bc1b0, []int{6}
 }
+
 func (m *SenderConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SenderConfig.Unmarshal(m, b)
 }
@@ -551,6 +560,7 @@ func (*MultiplexingConfig) ProtoMessage()    {}
 func (*MultiplexingConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b07f45dd938bc1b0, []int{7}
 }
+
 func (m *MultiplexingConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MultiplexingConfig.Unmarshal(m, b)
 }
@@ -584,6 +594,8 @@ func (m *MultiplexingConfig) GetConcurrency() uint32 {
 }
 
 func init() {
+	proto.RegisterEnum("v2ray.core.app.proxyman.KnownProtocols", KnownProtocols_name, KnownProtocols_value)
+	proto.RegisterEnum("v2ray.core.app.proxyman.AllocationStrategy_Type", AllocationStrategy_Type_name, AllocationStrategy_Type_value)
 	proto.RegisterType((*InboundConfig)(nil), "v2ray.core.app.proxyman.InboundConfig")
 	proto.RegisterType((*AllocationStrategy)(nil), "v2ray.core.app.proxyman.AllocationStrategy")
 	proto.RegisterType((*AllocationStrategy_AllocationStrategyConcurrency)(nil), "v2ray.core.app.proxyman.AllocationStrategy.AllocationStrategyConcurrency")
@@ -594,8 +606,6 @@ func init() {
 	proto.RegisterType((*OutboundConfig)(nil), "v2ray.core.app.proxyman.OutboundConfig")
 	proto.RegisterType((*SenderConfig)(nil), "v2ray.core.app.proxyman.SenderConfig")
 	proto.RegisterType((*MultiplexingConfig)(nil), "v2ray.core.app.proxyman.MultiplexingConfig")
-	proto.RegisterEnum("v2ray.core.app.proxyman.KnownProtocols", KnownProtocols_name, KnownProtocols_value)
-	proto.RegisterEnum("v2ray.core.app.proxyman.AllocationStrategy_Type", AllocationStrategy_Type_name, AllocationStrategy_Type_value)
 }
 
 func init() {

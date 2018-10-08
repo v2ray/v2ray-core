@@ -29,6 +29,7 @@ func (*PacketConfig) ProtoMessage()    {}
 func (*PacketConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e55187b75c46dc0d, []int{0}
 }
+
 func (m *PacketConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PacketConfig.Unmarshal(m, b)
 }

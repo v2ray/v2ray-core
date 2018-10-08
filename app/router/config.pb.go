@@ -106,6 +106,7 @@ func (*Domain) ProtoMessage()    {}
 func (*Domain) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6b1608360690c5fc, []int{0}
 }
+
 func (m *Domain) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Domain.Unmarshal(m, b)
 }
@@ -155,6 +156,7 @@ func (*CIDR) ProtoMessage()    {}
 func (*CIDR) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6b1608360690c5fc, []int{1}
 }
+
 func (m *CIDR) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CIDR.Unmarshal(m, b)
 }
@@ -201,6 +203,7 @@ func (*GeoIP) ProtoMessage()    {}
 func (*GeoIP) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6b1608360690c5fc, []int{2}
 }
+
 func (m *GeoIP) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GeoIP.Unmarshal(m, b)
 }
@@ -246,6 +249,7 @@ func (*GeoIPList) ProtoMessage()    {}
 func (*GeoIPList) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6b1608360690c5fc, []int{3}
 }
+
 func (m *GeoIPList) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GeoIPList.Unmarshal(m, b)
 }
@@ -285,6 +289,7 @@ func (*GeoSite) ProtoMessage()    {}
 func (*GeoSite) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6b1608360690c5fc, []int{4}
 }
+
 func (m *GeoSite) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GeoSite.Unmarshal(m, b)
 }
@@ -330,6 +335,7 @@ func (*GeoSiteList) ProtoMessage()    {}
 func (*GeoSiteList) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6b1608360690c5fc, []int{5}
 }
+
 func (m *GeoSiteList) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GeoSiteList.Unmarshal(m, b)
 }
@@ -376,6 +382,7 @@ func (*RoutingRule) ProtoMessage()    {}
 func (*RoutingRule) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6b1608360690c5fc, []int{6}
 }
+
 func (m *RoutingRule) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RoutingRule.Unmarshal(m, b)
 }
@@ -471,6 +478,7 @@ func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6b1608360690c5fc, []int{7}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }
@@ -504,6 +512,8 @@ func (m *Config) GetRule() []*RoutingRule {
 }
 
 func init() {
+	proto.RegisterEnum("v2ray.core.app.router.Domain_Type", Domain_Type_name, Domain_Type_value)
+	proto.RegisterEnum("v2ray.core.app.router.Config_DomainStrategy", Config_DomainStrategy_name, Config_DomainStrategy_value)
 	proto.RegisterType((*Domain)(nil), "v2ray.core.app.router.Domain")
 	proto.RegisterType((*CIDR)(nil), "v2ray.core.app.router.CIDR")
 	proto.RegisterType((*GeoIP)(nil), "v2ray.core.app.router.GeoIP")
@@ -512,8 +522,6 @@ func init() {
 	proto.RegisterType((*GeoSiteList)(nil), "v2ray.core.app.router.GeoSiteList")
 	proto.RegisterType((*RoutingRule)(nil), "v2ray.core.app.router.RoutingRule")
 	proto.RegisterType((*Config)(nil), "v2ray.core.app.router.Config")
-	proto.RegisterEnum("v2ray.core.app.router.Domain_Type", Domain_Type_name, Domain_Type_value)
-	proto.RegisterEnum("v2ray.core.app.router.Config_DomainStrategy", Config_DomainStrategy_name, Config_DomainStrategy_value)
 }
 
 func init() {

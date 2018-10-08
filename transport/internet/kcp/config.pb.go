@@ -32,6 +32,7 @@ func (*MTU) ProtoMessage()    {}
 func (*MTU) Descriptor() ([]byte, []int) {
 	return fileDescriptor_3746d5d763e81577, []int{0}
 }
+
 func (m *MTU) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MTU.Unmarshal(m, b)
 }
@@ -71,6 +72,7 @@ func (*TTI) ProtoMessage()    {}
 func (*TTI) Descriptor() ([]byte, []int) {
 	return fileDescriptor_3746d5d763e81577, []int{1}
 }
+
 func (m *TTI) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TTI.Unmarshal(m, b)
 }
@@ -110,6 +112,7 @@ func (*UplinkCapacity) ProtoMessage()    {}
 func (*UplinkCapacity) Descriptor() ([]byte, []int) {
 	return fileDescriptor_3746d5d763e81577, []int{2}
 }
+
 func (m *UplinkCapacity) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UplinkCapacity.Unmarshal(m, b)
 }
@@ -149,6 +152,7 @@ func (*DownlinkCapacity) ProtoMessage()    {}
 func (*DownlinkCapacity) Descriptor() ([]byte, []int) {
 	return fileDescriptor_3746d5d763e81577, []int{3}
 }
+
 func (m *DownlinkCapacity) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DownlinkCapacity.Unmarshal(m, b)
 }
@@ -188,6 +192,7 @@ func (*WriteBuffer) ProtoMessage()    {}
 func (*WriteBuffer) Descriptor() ([]byte, []int) {
 	return fileDescriptor_3746d5d763e81577, []int{4}
 }
+
 func (m *WriteBuffer) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WriteBuffer.Unmarshal(m, b)
 }
@@ -227,6 +232,7 @@ func (*ReadBuffer) ProtoMessage()    {}
 func (*ReadBuffer) Descriptor() ([]byte, []int) {
 	return fileDescriptor_3746d5d763e81577, []int{5}
 }
+
 func (m *ReadBuffer) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ReadBuffer.Unmarshal(m, b)
 }
@@ -265,6 +271,7 @@ func (*ConnectionReuse) ProtoMessage()    {}
 func (*ConnectionReuse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_3746d5d763e81577, []int{6}
 }
+
 func (m *ConnectionReuse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ConnectionReuse.Unmarshal(m, b)
 }
@@ -310,6 +317,7 @@ func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
 	return fileDescriptor_3746d5d763e81577, []int{7}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }

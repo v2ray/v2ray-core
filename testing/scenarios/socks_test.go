@@ -6,7 +6,7 @@ import (
 	"v2ray.com/core/app/router"
 
 	xproxy "golang.org/x/net/proxy"
-	socks4 "h12.me/socks"
+	socks4 "h12.io/socks"
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common/net"

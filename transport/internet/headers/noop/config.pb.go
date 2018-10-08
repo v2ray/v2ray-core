@@ -29,6 +29,7 @@ func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b4a070eec05ae9a3, []int{0}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }
@@ -59,6 +60,7 @@ func (*ConnectionConfig) ProtoMessage()    {}
 func (*ConnectionConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_b4a070eec05ae9a3, []int{1}
 }
+
 func (m *ConnectionConfig) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ConnectionConfig.Unmarshal(m, b)
 }

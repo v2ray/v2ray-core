@@ -66,6 +66,7 @@ func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
 	return fileDescriptor_92dfeade43d9e989, []int{0}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }
@@ -120,8 +121,8 @@ func (m *Config) GetAccessLogPath() string {
 }
 
 func init() {
-	proto.RegisterType((*Config)(nil), "v2ray.core.app.log.Config")
 	proto.RegisterEnum("v2ray.core.app.log.LogType", LogType_name, LogType_value)
+	proto.RegisterType((*Config)(nil), "v2ray.core.app.log.Config")
 }
 
 func init() {

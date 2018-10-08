@@ -28,18 +28,20 @@ func TestError(t *testing.T) {
 	assert(err.Error(), HasSubstring, "EOF")
 }
 
+type e struct{}
+
 func TestErrorMessage(t *testing.T) {
 	data := []struct {
 		err error
 		msg string
 	}{
 		{
-			err: New("a").Base(New("b")).Path("c", "d", "e"),
-			msg: "c|d|e: a > b",
+			err: New("a").Base(New("b")).WithPathObj(e{}),
+			msg: "v2ray.com/core/common/errors_test: a > b",
 		},
 		{
-			err: New("a").Base(New("b").Path("c")).Path("d", "e"),
-			msg: "d|e: a > c: b",
+			err: New("a").Base(New("b").WithPathObj(e{})),
+			msg: "a > v2ray.com/core/common/errors_test: b",
 		},
 	}
 

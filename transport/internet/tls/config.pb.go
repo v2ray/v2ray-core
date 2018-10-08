@@ -62,6 +62,7 @@ func (*Certificate) ProtoMessage()    {}
 func (*Certificate) Descriptor() ([]byte, []int) {
 	return fileDescriptor_42ed70cad60a2736, []int{0}
 }
+
 func (m *Certificate) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Certificate.Unmarshal(m, b)
 }
@@ -125,6 +126,7 @@ func (*Config) ProtoMessage()    {}
 func (*Config) Descriptor() ([]byte, []int) {
 	return fileDescriptor_42ed70cad60a2736, []int{1}
 }
+
 func (m *Config) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Config.Unmarshal(m, b)
 }
@@ -186,9 +188,9 @@ func (m *Config) GetDisableSessionResumption() bool {
 }
 
 func init() {
+	proto.RegisterEnum("v2ray.core.transport.internet.tls.Certificate_Usage", Certificate_Usage_name, Certificate_Usage_value)
 	proto.RegisterType((*Certificate)(nil), "v2ray.core.transport.internet.tls.Certificate")
 	proto.RegisterType((*Config)(nil), "v2ray.core.transport.internet.tls.Config")
-	proto.RegisterEnum("v2ray.core.transport.internet.tls.Certificate_Usage", Certificate_Usage_name, Certificate_Usage_value)
 }
 
 func init() {

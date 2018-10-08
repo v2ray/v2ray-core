@@ -1,7 +1,7 @@
 #!/bin/bash
 
-GO_AMD64=https://storage.googleapis.com/golang/go1.11.linux-amd64.tar.gz
-GO_X86=https://storage.googleapis.com/golang/go1.11.linux-386.tar.gz
+GO_AMD64=https://storage.googleapis.com/golang/go1.11.1.linux-amd64.tar.gz
+GO_X86=https://storage.googleapis.com/golang/go1.11.1.linux-386.tar.gz
 ARCH=$(uname -m)
 GO_CUR=${GO_AMD64}
 
@@ -23,6 +23,5 @@ fi
 
 go get -u v2ray.com/core/...
 go get -u v2ray.com/ext/...
-rm $GOPATH/bin/vbuild
-go install v2ray.com/ext/tools/build/vbuild
-$GOPATH/bin/vbuild
+go build -o $GOPATH/bin/v2ray v2ray.com/core/main
+go build -o $GOPATH/bin/v2ctl v2ray.com/ext/tools/control/main
