@@ -193,7 +193,7 @@ getVersion(){
     else
         VER=`/usr/bin/v2ray/v2ray -version 2>/dev/null`
         RETVAL="$?"
-        CUR_VER=`echo $VER | head -n 1 | cut -d " " -f2`
+        CUR_VER=`echo $VER | head -n 1 | cut -d " " -f2 | cut -d. -f-2`
         TAG_URL="https://api.github.com/repos/v2ray/v2ray-core/releases/latest"
         NEW_VER=`curl ${PROXY} -s ${TAG_URL} --connect-timeout 10| grep 'tag_name' | cut -d\" -f4`
         if [[ $? -ne 0 ]] || [[ $NEW_VER == "" ]]; then
