@@ -11,30 +11,31 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/session"
+	"v2ray.com/core/features/inbound"
 )
 
 // Manager is to manage all inbound handlers.
 type Manager struct {
 	access          sync.RWMutex
-	untaggedHandler []core.InboundHandler
-	taggedHandlers  map[string]core.InboundHandler
+	untaggedHandler []inbound.Handler
+	taggedHandlers  map[string]inbound.Handler
 	running         bool
 }
 
 // New returns a new Manager for inbound handlers.
 func New(ctx context.Context, config *proxyman.InboundConfig) (*Manager, error) {
 	m := &Manager{
-		taggedHandlers: make(map[string]core.InboundHandler),
+		taggedHandlers: make(map[string]inbound.Handler),
 	}
 	v := core.MustFromContext(ctx)
-	if err := v.RegisterFeature((*core.InboundHandlerManager)(nil), m); err != nil {
+	if err := v.RegisterFeature((*inbound.Manager)(nil), m); err != nil {
 		return nil, newError("unable to register InboundHandlerManager").Base(err)
 	}
 	return m, nil
 }
 
-// AddHandler implements core.InboundHandlerManager.
-func (m *Manager) AddHandler(ctx context.Context, handler core.InboundHandler) error {
+// AddHandler implements inbound.Manager.
+func (m *Manager) AddHandler(ctx context.Context, handler inbound.Handler) error {
 	m.access.Lock()
 	defer m.access.Unlock()
 
@@ -52,8 +53,8 @@ func (m *Manager) AddHandler(ctx context.Context, handler core.InboundHandler) e
 	return nil
 }
 
-// GetHandler implements core.InboundHandlerManager.
-func (m *Manager) GetHandler(ctx context.Context, tag string) (core.InboundHandler, error) {
+// GetHandler implements inbound.Manager.
+func (m *Manager) GetHandler(ctx context.Context, tag string) (inbound.Handler, error) {
 	m.access.RLock()
 	defer m.access.RUnlock()
 
@@ -64,7 +65,7 @@ func (m *Manager) GetHandler(ctx context.Context, tag string) (core.InboundHandl
 	return handler, nil
 }
 
-// RemoveHandler implements core.InboundHandlerManager.
+// RemoveHandler implements inbound.Manager.
 func (m *Manager) RemoveHandler(ctx context.Context, tag string) error {
 	if len(tag) == 0 {
 		return common.ErrNoClue
@@ -131,8 +132,8 @@ func (m *Manager) Close() error {
 	return nil
 }
 
-// NewHandler creates a new core.InboundHandler based on the given config.
-func NewHandler(ctx context.Context, config *core.InboundHandlerConfig) (core.InboundHandler, error) {
+// NewHandler creates a new inbound.Handler based on the given config.
+func NewHandler(ctx context.Context, config *core.InboundHandlerConfig) (inbound.Handler, error) {
 	rawReceiverSettings, err := config.ReceiverSettings.GetInstance()
 	if err != nil {
 		return nil, err

@@ -7,8 +7,10 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/uuid"
+	"v2ray.com/core/features/inbound"
 	"v2ray.com/core/features/outbound"
 	"v2ray.com/core/features/routing"
+	"v2ray.com/core/features/stats"
 )
 
 // Server is an instance of V2Ray. At any time, there must be at most one Server instance running.
@@ -64,12 +66,12 @@ func New(config *Config) (*Instance, error) {
 		}
 	}
 
-	for _, inbound := range config.Inbound {
-		rawHandler, err := CreateObject(server, inbound)
+	for _, inboundConfig := range config.Inbound {
+		rawHandler, err := CreateObject(server, inboundConfig)
 		if err != nil {
 			return nil, err
 		}
-		handler, ok := rawHandler.(InboundHandler)
+		handler, ok := rawHandler.(inbound.Handler)
 		if !ok {
 			return nil, newError("not an InboundHandler")
 		}
@@ -153,12 +155,12 @@ func (s *Instance) RegisterFeature(feature interface{}, instance Feature) error 
 		s.router.Set(instance.(routing.Router))
 	case routing.Dispatcher, *routing.Dispatcher:
 		s.dispatcher.Set(instance.(routing.Dispatcher))
-	case InboundHandlerManager, *InboundHandlerManager:
-		s.ihm.Set(instance.(InboundHandlerManager))
+	case inbound.Manager, *inbound.Manager:
+		s.ihm.Set(instance.(inbound.Manager))
 	case outbound.HandlerManager, *outbound.HandlerManager:
 		s.ohm.Set(instance.(outbound.HandlerManager))
-	case StatManager, *StatManager:
-		s.stats.Set(instance.(StatManager))
+	case stats.Manager, *stats.Manager:
+		s.stats.Set(instance.(stats.Manager))
 	default:
 		s.access.Lock()
 		s.features = append(s.features, instance)
@@ -210,7 +212,7 @@ func (s *Instance) Dispatcher() routing.Dispatcher {
 }
 
 // InboundHandlerManager returns the InboundHandlerManager used by this Instance. If InboundHandlerManager was not registered before, the returned value doesn't work.
-func (s *Instance) InboundHandlerManager() InboundHandlerManager {
+func (s *Instance) InboundHandlerManager() inbound.Manager {
 	return &(s.ihm)
 }
 
@@ -219,7 +221,7 @@ func (s *Instance) OutboundHandlerManager() outbound.HandlerManager {
 	return &(s.ohm)
 }
 
-// Stats returns the StatManager used by this Instance. If StatManager was not registered before, the returned value doesn't work.
-func (s *Instance) Stats() StatManager {
+// Stats returns the stats.Manager used by this Instance. If StatManager was not registered before, the returned value doesn't work.
+func (s *Instance) Stats() stats.Manager {
 	return &(s.stats)
 }

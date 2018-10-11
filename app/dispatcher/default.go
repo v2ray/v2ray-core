@@ -19,6 +19,7 @@ import (
 	"v2ray.com/core/common/vio"
 	"v2ray.com/core/features/outbound"
 	"v2ray.com/core/features/routing"
+	feature_stats "v2ray.com/core/features/stats"
 	"v2ray.com/core/transport/pipe"
 )
 
@@ -85,7 +86,7 @@ type DefaultDispatcher struct {
 	ohm    outbound.HandlerManager
 	router routing.Router
 	policy core.PolicyManager
-	stats  core.StatManager
+	stats  feature_stats.Manager
 }
 
 // NewDefaultDispatcher create a new DefaultDispatcher.
@@ -132,7 +133,7 @@ func (d *DefaultDispatcher) getLink(ctx context.Context) (*vio.Link, *vio.Link) 
 		p := d.policy.ForLevel(user.Level)
 		if p.Stats.UserUplink {
 			name := "user>>>" + user.Email + ">>>traffic>>>uplink"
-			if c, _ := core.GetOrRegisterStatCounter(d.stats, name); c != nil {
+			if c, _ := feature_stats.GetOrRegisterCounter(d.stats, name); c != nil {
 				inboundLink.Writer = &stats.SizeStatWriter{
 					Counter: c,
 					Writer:  inboundLink.Writer,
@@ -141,7 +142,7 @@ func (d *DefaultDispatcher) getLink(ctx context.Context) (*vio.Link, *vio.Link) 
 		}
 		if p.Stats.UserDownlink {
 			name := "user>>>" + user.Email + ">>>traffic>>>downlink"
-			if c, _ := core.GetOrRegisterStatCounter(d.stats, name); c != nil {
+			if c, _ := feature_stats.GetOrRegisterCounter(d.stats, name); c != nil {
 				outboundLink.Writer = &stats.SizeStatWriter{
 					Counter: c,
 					Writer:  outboundLink.Writer,

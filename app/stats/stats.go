@@ -8,29 +8,30 @@ import (
 	"sync/atomic"
 
 	"v2ray.com/core"
+	"v2ray.com/core/features/stats"
 )
 
-// Counter is an implementation of core.StatCounter.
+// Counter is an implementation of stats.Counter.
 type Counter struct {
 	value int64
 }
 
-// Value implements core.StatCounter.
+// Value implements stats.Counter.
 func (c *Counter) Value() int64 {
 	return atomic.LoadInt64(&c.value)
 }
 
-// Set implements core.StatCounter.
+// Set implements stats.Counter.
 func (c *Counter) Set(newValue int64) int64 {
 	return atomic.SwapInt64(&c.value, newValue)
 }
 
-// Add implements core.StatCounter.
+// Add implements stats.Counter.
 func (c *Counter) Add(delta int64) int64 {
 	return atomic.AddInt64(&c.value, delta)
 }
 
-// Manager is an implementation of core.StatManager.
+// Manager is an implementation of stats.Manager.
 type Manager struct {
 	access   sync.RWMutex
 	counters map[string]*Counter
@@ -43,7 +44,7 @@ func NewManager(ctx context.Context, config *Config) (*Manager, error) {
 
 	v := core.FromContext(ctx)
 	if v != nil {
-		if err := v.RegisterFeature((*core.StatManager)(nil), m); err != nil {
+		if err := v.RegisterFeature((*stats.Manager)(nil), m); err != nil {
 			return nil, newError("failed to register StatManager").Base(err)
 		}
 	}
@@ -51,7 +52,7 @@ func NewManager(ctx context.Context, config *Config) (*Manager, error) {
 	return m, nil
 }
 
-func (m *Manager) RegisterCounter(name string) (core.StatCounter, error) {
+func (m *Manager) RegisterCounter(name string) (stats.Counter, error) {
 	m.access.Lock()
 	defer m.access.Unlock()
 
@@ -64,7 +65,7 @@ func (m *Manager) RegisterCounter(name string) (core.StatCounter, error) {
 	return c, nil
 }
 
-func (m *Manager) GetCounter(name string) core.StatCounter {
+func (m *Manager) GetCounter(name string) stats.Counter {
 	m.access.RLock()
 	defer m.access.RUnlock()
 
@@ -74,7 +75,7 @@ func (m *Manager) GetCounter(name string) core.StatCounter {
 	return nil
 }
 
-func (m *Manager) Visit(visitor func(string, core.StatCounter) bool) {
+func (m *Manager) Visit(visitor func(string, stats.Counter) bool) {
 	m.access.RLock()
 	defer m.access.RUnlock()
 

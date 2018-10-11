@@ -6,6 +6,7 @@ import (
 	grpc "google.golang.org/grpc"
 	"v2ray.com/core"
 	"v2ray.com/core/common"
+	"v2ray.com/core/features/inbound"
 	"v2ray.com/core/features/outbound"
 	"v2ray.com/core/proxy"
 )
@@ -13,7 +14,7 @@ import (
 // InboundOperation is the interface for operations that applies to inbound handlers.
 type InboundOperation interface {
 	// ApplyInbound applies this operation to the given inbound handler.
-	ApplyInbound(context.Context, core.InboundHandler) error
+	ApplyInbound(context.Context, inbound.Handler) error
 }
 
 // OutboundOperation is the interface for operations that applies to outbound handlers.
@@ -22,7 +23,7 @@ type OutboundOperation interface {
 	ApplyOutbound(context.Context, outbound.Handler) error
 }
 
-func getInbound(handler core.InboundHandler) (proxy.Inbound, error) {
+func getInbound(handler inbound.Handler) (proxy.Inbound, error) {
 	gi, ok := handler.(proxy.GetInbound)
 	if !ok {
 		return nil, newError("can't get inbound proxy from handler.")
@@ -31,7 +32,7 @@ func getInbound(handler core.InboundHandler) (proxy.Inbound, error) {
 }
 
 // ApplyInbound implements InboundOperation.
-func (op *AddUserOperation) ApplyInbound(ctx context.Context, handler core.InboundHandler) error {
+func (op *AddUserOperation) ApplyInbound(ctx context.Context, handler inbound.Handler) error {
 	p, err := getInbound(handler)
 	if err != nil {
 		return err
@@ -48,7 +49,7 @@ func (op *AddUserOperation) ApplyInbound(ctx context.Context, handler core.Inbou
 }
 
 // ApplyInbound implements InboundOperation.
-func (op *RemoveUserOperation) ApplyInbound(ctx context.Context, handler core.InboundHandler) error {
+func (op *RemoveUserOperation) ApplyInbound(ctx context.Context, handler inbound.Handler) error {
 	p, err := getInbound(handler)
 	if err != nil {
 		return err
@@ -62,7 +63,7 @@ func (op *RemoveUserOperation) ApplyInbound(ctx context.Context, handler core.In
 
 type handlerServer struct {
 	s   *core.Instance
-	ihm core.InboundHandlerManager
+	ihm inbound.Manager
 	ohm outbound.HandlerManager
 }
 
@@ -71,7 +72,7 @@ func (s *handlerServer) AddInbound(ctx context.Context, request *AddInboundReque
 	if err != nil {
 		return nil, err
 	}
-	handler, ok := rawHandler.(core.InboundHandler)
+	handler, ok := rawHandler.(inbound.Handler)
 	if !ok {
 		return nil, newError("not an InboundHandler.")
 	}

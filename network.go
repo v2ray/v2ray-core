@@ -5,78 +5,56 @@ import (
 	"sync"
 
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/net"
+	"v2ray.com/core/features/inbound"
 	"v2ray.com/core/features/outbound"
 )
 
-// InboundHandler is the interface for handlers that process inbound connections.
-type InboundHandler interface {
-	common.Runnable
-	// The tag of this handler.
-	Tag() string
-
-	// Deprecated. Do not use in new code.
-	GetRandomInboundProxy() (interface{}, net.Port, int)
-}
-
-// InboundHandlerManager is a feature that manages InboundHandlers.
-type InboundHandlerManager interface {
-	Feature
-	// GetHandlers returns an InboundHandler for the given tag.
-	GetHandler(ctx context.Context, tag string) (InboundHandler, error)
-	// AddHandler adds the given handler into this InboundHandlerManager.
-	AddHandler(ctx context.Context, handler InboundHandler) error
-
-	// RemoveHandler removes a handler from InboundHandlerManager.
-	RemoveHandler(ctx context.Context, tag string) error
-}
-
 type syncInboundHandlerManager struct {
 	sync.RWMutex
-	InboundHandlerManager
+	inbound.Manager
 }
 
-func (m *syncInboundHandlerManager) GetHandler(ctx context.Context, tag string) (InboundHandler, error) {
+func (m *syncInboundHandlerManager) GetHandler(ctx context.Context, tag string) (inbound.Handler, error) {
 	m.RLock()
 	defer m.RUnlock()
 
-	if m.InboundHandlerManager == nil {
-		return nil, newError("InboundHandlerManager not set.").AtError()
+	if m.Manager == nil {
+		return nil, newError("inbound.Manager not set.").AtError()
 	}
 
-	return m.InboundHandlerManager.GetHandler(ctx, tag)
+	return m.Manager.GetHandler(ctx, tag)
 }
 
-func (m *syncInboundHandlerManager) AddHandler(ctx context.Context, handler InboundHandler) error {
+func (m *syncInboundHandlerManager) AddHandler(ctx context.Context, handler inbound.Handler) error {
 	m.RLock()
 	defer m.RUnlock()
 
-	if m.InboundHandlerManager == nil {
-		return newError("InboundHandlerManager not set.").AtError()
+	if m.Manager == nil {
+		return newError("inbound.Manager not set.").AtError()
 	}
 
-	return m.InboundHandlerManager.AddHandler(ctx, handler)
+	return m.Manager.AddHandler(ctx, handler)
 }
 
 func (m *syncInboundHandlerManager) Start() error {
 	m.RLock()
 	defer m.RUnlock()
 
-	if m.InboundHandlerManager == nil {
-		return newError("InboundHandlerManager not set.").AtError()
+	if m.Manager == nil {
+		return newError("inbound.Manager not set.").AtError()
 	}
 
-	return m.InboundHandlerManager.Start()
+	return m.Manager.Start()
 }
 
 func (m *syncInboundHandlerManager) Close() error {
 	m.RLock()
 	defer m.RUnlock()
 
-	return common.Close(m.InboundHandlerManager)
+	return common.Close(m.Manager)
 }
 
-func (m *syncInboundHandlerManager) Set(manager InboundHandlerManager) {
+func (m *syncInboundHandlerManager) Set(manager inbound.Manager) {
 	if manager == nil {
 		return
 	}
@@ -84,8 +62,8 @@ func (m *syncInboundHandlerManager) Set(manager InboundHandlerManager) {
 	m.Lock()
 	defer m.Unlock()
 
-	common.Close(m.InboundHandlerManager) // nolint: errcheck
-	m.InboundHandlerManager = manager
+	common.Close(m.Manager) // nolint: errcheck
+	m.Manager = manager
 }
 
 type syncOutboundHandlerManager struct {
