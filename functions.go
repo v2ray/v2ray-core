@@ -16,8 +16,8 @@ func CreateObject(v *Instance, config interface{}) (interface{}, error) {
 	return common.CreateObject(ctx, config)
 }
 
-// StartInstance starts a new V2Ray instance with given serialized config, and return a handle for shutting down the instance.
-func StartInstance(configFormat string, configBytes []byte) (common.Closable, error) {
+// StartInstance starts a new V2Ray instance with given serialized config.
+func StartInstance(configFormat string, configBytes []byte) (*Instance, error) {
 	var mb buf.MultiBuffer
 	common.Must2(mb.Write(configBytes))
 	config, err := LoadConfig(configFormat, "", &mb)
