@@ -7,6 +7,7 @@ import (
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/task"
 	"v2ray.com/core/common/vio"
+	"v2ray.com/core/features/policy"
 
 	"v2ray.com/core"
 	"v2ray.com/core/common"
@@ -22,7 +23,7 @@ import (
 // Client is a Socks5 client.
 type Client struct {
 	serverPicker  protocol.ServerPicker
-	policyManager core.PolicyManager
+	policyManager policy.Manager
 }
 
 // NewClient create a new Socks5 client based on the given config.

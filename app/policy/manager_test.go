@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"v2ray.com/core"
 	. "v2ray.com/core/app/policy"
+	"v2ray.com/core/features/policy"
 	. "v2ray.com/ext/assert"
 )
 
@@ -26,7 +26,7 @@ func TestPolicy(t *testing.T) {
 	})
 	assert(err, IsNil)
 
-	pDefault := core.DefaultPolicy()
+	pDefault := policy.SessionDefault()
 
 	p0 := manager.ForLevel(0)
 	assert(p0.Timeouts.Handshake, Equals, 2*time.Second)

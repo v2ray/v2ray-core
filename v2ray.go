@@ -7,8 +7,11 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/uuid"
+	"v2ray.com/core/features"
+	"v2ray.com/core/features/dns"
 	"v2ray.com/core/features/inbound"
 	"v2ray.com/core/features/outbound"
+	"v2ray.com/core/features/policy"
 	"v2ray.com/core/features/routing"
 	"v2ray.com/core/features/stats"
 )
@@ -16,12 +19,6 @@ import (
 // Server is an instance of V2Ray. At any time, there must be at most one Server instance running.
 // Deprecated. Use Instance directly.
 type Server interface {
-	common.Runnable
-}
-
-// Feature is the interface for V2Ray features. All features must implement this interface.
-// All existing features have an implementation in app directory. These features can be replaced by third-party ones.
-type Feature interface {
 	common.Runnable
 }
 
@@ -36,7 +33,7 @@ type Instance struct {
 	stats         syncStatManager
 
 	access   sync.Mutex
-	features []Feature
+	features []features.Feature
 	id       uuid.UUID
 	running  bool
 }
@@ -143,14 +140,14 @@ func (s *Instance) Start() error {
 // RegisterFeature registers the given feature into V2Ray.
 // If feature is one of the following types, the corresponding feature in this Instance
 // will be replaced: DNSClient, PolicyManager, Router, Dispatcher, InboundHandlerManager, OutboundHandlerManager.
-func (s *Instance) RegisterFeature(feature interface{}, instance Feature) error {
+func (s *Instance) RegisterFeature(feature interface{}, instance features.Feature) error {
 	running := false
 
 	switch feature.(type) {
-	case DNSClient, *DNSClient:
-		s.dnsClient.Set(instance.(DNSClient))
-	case PolicyManager, *PolicyManager:
-		s.policyManager.Set(instance.(PolicyManager))
+	case dns.Client, *dns.Client:
+		s.dnsClient.Set(instance.(dns.Client))
+	case policy.Manager, *policy.Manager:
+		s.policyManager.Set(instance.(policy.Manager))
 	case routing.Router, *routing.Router:
 		s.router.Set(instance.(routing.Router))
 	case routing.Dispatcher, *routing.Dispatcher:
@@ -174,13 +171,13 @@ func (s *Instance) RegisterFeature(feature interface{}, instance Feature) error 
 	return nil
 }
 
-func (s *Instance) allFeatures() []Feature {
-	return append([]Feature{s.DNSClient(), s.PolicyManager(), s.Dispatcher(), s.Router(), s.InboundHandlerManager(), s.OutboundHandlerManager(), s.Stats()}, s.features...)
+func (s *Instance) allFeatures() []features.Feature {
+	return append([]features.Feature{s.DNSClient(), s.PolicyManager(), s.Dispatcher(), s.Router(), s.InboundHandlerManager(), s.OutboundHandlerManager(), s.Stats()}, s.features...)
 }
 
 // GetFeature returns a feature that was registered in this Instance. Nil if not found.
 // The returned Feature must implement common.HasType and whose type equals to the given feature type.
-func (s *Instance) GetFeature(featureType interface{}) Feature {
+func (s *Instance) GetFeature(featureType interface{}) features.Feature {
 	for _, f := range s.features {
 		if hasType, ok := f.(common.HasType); ok {
 			if hasType.Type() == featureType {
@@ -191,13 +188,13 @@ func (s *Instance) GetFeature(featureType interface{}) Feature {
 	return nil
 }
 
-// DNSClient returns the DNSClient used by this Instance. The returned DNSClient is always functional.
-func (s *Instance) DNSClient() DNSClient {
+// DNSClient returns the dns.Client used by this Instance. The returned dns.Client is always functional.
+func (s *Instance) DNSClient() dns.Client {
 	return &(s.dnsClient)
 }
 
-// PolicyManager returns the PolicyManager used by this Instance. The returned PolicyManager is always functional.
-func (s *Instance) PolicyManager() PolicyManager {
+// PolicyManager returns the policy.Manager used by this Instance. The returned policy.Manager is always functional.
+func (s *Instance) PolicyManager() policy.Manager {
 	return &(s.policyManager)
 }
 

@@ -21,6 +21,7 @@ import (
 	"v2ray.com/core/common/task"
 	"v2ray.com/core/common/uuid"
 	feature_inbound "v2ray.com/core/features/inbound"
+	"v2ray.com/core/features/policy"
 	"v2ray.com/core/features/routing"
 	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/encoding"
@@ -100,7 +101,7 @@ func (v *userByEmail) Remove(email string) bool {
 
 // Handler is an inbound connection handler that handles messages in VMess protocol.
 type Handler struct {
-	policyManager         core.PolicyManager
+	policyManager         policy.Manager
 	inboundHandlerManager feature_inbound.Manager
 	clients               *vmess.TimedUserValidator
 	usersByEmail          *userByEmail
@@ -269,7 +270,7 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)
 
-	ctx = core.ContextWithBufferPolicy(ctx, sessionPolicy.Buffer)
+	ctx = policy.ContextWithBufferPolicy(ctx, sessionPolicy.Buffer)
 	link, err := dispatcher.Dispatch(ctx, request.Destination())
 	if err != nil {
 		return newError("failed to dispatch request to ", request.Destination()).Base(err)

@@ -18,6 +18,7 @@ import (
 	"v2ray.com/core/common/stats"
 	"v2ray.com/core/common/vio"
 	"v2ray.com/core/features/outbound"
+	"v2ray.com/core/features/policy"
 	"v2ray.com/core/features/routing"
 	feature_stats "v2ray.com/core/features/stats"
 	"v2ray.com/core/transport/pipe"
@@ -85,7 +86,7 @@ func (r *cachedReader) CloseError() {
 type DefaultDispatcher struct {
 	ohm    outbound.HandlerManager
 	router routing.Router
-	policy core.PolicyManager
+	policy policy.Manager
 	stats  feature_stats.Manager
 }
 

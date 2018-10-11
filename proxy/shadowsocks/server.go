@@ -13,6 +13,7 @@ import (
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/task"
+	"v2ray.com/core/features/policy"
 	"v2ray.com/core/features/routing"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/udp"
@@ -175,7 +176,7 @@ func (s *Server) handleConnection(ctx context.Context, conn internet.Connection,
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)
 
-	ctx = core.ContextWithBufferPolicy(ctx, sessionPolicy.Buffer)
+	ctx = policy.ContextWithBufferPolicy(ctx, sessionPolicy.Buffer)
 	link, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return err

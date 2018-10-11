@@ -5,49 +5,44 @@ import (
 	"sync"
 
 	"v2ray.com/core/common"
+	"v2ray.com/core/features/dns"
 )
-
-// DNSClient is a V2Ray feature for querying DNS information.
-type DNSClient interface {
-	Feature
-	LookupIP(host string) ([]net.IP, error)
-}
 
 type syncDNSClient struct {
 	sync.RWMutex
-	DNSClient
+	dns.Client
 }
 
 func (d *syncDNSClient) LookupIP(host string) ([]net.IP, error) {
 	d.RLock()
 	defer d.RUnlock()
 
-	if d.DNSClient == nil {
+	if d.Client == nil {
 		return net.LookupIP(host)
 	}
 
-	return d.DNSClient.LookupIP(host)
+	return d.Client.LookupIP(host)
 }
 
 func (d *syncDNSClient) Start() error {
 	d.RLock()
 	defer d.RUnlock()
 
-	if d.DNSClient == nil {
+	if d.Client == nil {
 		return nil
 	}
 
-	return d.DNSClient.Start()
+	return d.Client.Start()
 }
 
 func (d *syncDNSClient) Close() error {
 	d.RLock()
 	defer d.RUnlock()
 
-	return common.Close(d.DNSClient)
+	return common.Close(d.Client)
 }
 
-func (d *syncDNSClient) Set(client DNSClient) {
+func (d *syncDNSClient) Set(client dns.Client) {
 	if client == nil {
 		return
 	}
@@ -55,6 +50,6 @@ func (d *syncDNSClient) Set(client DNSClient) {
 	d.Lock()
 	defer d.Unlock()
 
-	common.Close(d.DNSClient) // nolint: errcheck
-	d.DNSClient = client
+	common.Close(d.Client) // nolint: errcheck
+	d.Client = client
 }

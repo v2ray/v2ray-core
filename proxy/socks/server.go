@@ -14,6 +14,7 @@ import (
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/task"
+	"v2ray.com/core/features/policy"
 	"v2ray.com/core/features/routing"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/udp"
@@ -35,7 +36,7 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	return s, nil
 }
 
-func (s *Server) policy() core.Policy {
+func (s *Server) policy() policy.Session {
 	config := s.config
 	p := s.v.PolicyManager().ForLevel(config.UserLevel)
 	if config.Timeout > 0 {
@@ -137,7 +138,7 @@ func (s *Server) transport(ctx context.Context, reader io.Reader, writer io.Writ
 	timer := signal.CancelAfterInactivity(ctx, cancel, s.policy().Timeouts.ConnectionIdle)
 
 	plcy := s.policy()
-	ctx = core.ContextWithBufferPolicy(ctx, plcy.Buffer)
+	ctx = policy.ContextWithBufferPolicy(ctx, plcy.Buffer)
 	link, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return err

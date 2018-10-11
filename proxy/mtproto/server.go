@@ -14,6 +14,7 @@ import (
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/task"
+	"v2ray.com/core/features/policy"
 	"v2ray.com/core/features/routing"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/pipe"
@@ -32,7 +33,7 @@ var (
 type Server struct {
 	user    *protocol.User
 	account *Account
-	policy  core.PolicyManager
+	policy  policy.Manager
 }
 
 func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
@@ -114,7 +115,7 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, sPolicy.Timeouts.ConnectionIdle)
-	ctx = core.ContextWithBufferPolicy(ctx, sPolicy.Buffer)
+	ctx = policy.ContextWithBufferPolicy(ctx, sPolicy.Buffer)
 
 	sc := SessionContext{
 		ConnectionType: ct,

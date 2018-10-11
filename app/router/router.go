@@ -5,12 +5,12 @@ package router
 import (
 	"context"
 
-	"v2ray.com/core/common/session"
-	"v2ray.com/core/features/routing"
-
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/session"
+	"v2ray.com/core/features/dns"
+	"v2ray.com/core/features/routing"
 	"v2ray.com/core/proxy"
 )
 
@@ -18,7 +18,7 @@ import (
 type Router struct {
 	domainStrategy Config_DomainStrategy
 	rules          []Rule
-	dns            core.DNSClient
+	dns            dns.Client
 }
 
 // NewRouter creates a new Router based on the given config.
@@ -46,7 +46,7 @@ func NewRouter(ctx context.Context, config *Config) (*Router, error) {
 }
 
 type ipResolver struct {
-	dns      core.DNSClient
+	dns      dns.Client
 	ip       []net.Address
 	domain   string
 	resolved bool
