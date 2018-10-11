@@ -36,7 +36,8 @@ func (c *Client) Process(ctx context.Context, link *core.Link, dialer proxy.Dial
 	}
 	defer conn.Close() // nolint: errcheck
 
-	auth := NewAuthentication()
+	sc := SessionContextFromContext(ctx)
+	auth := NewAuthentication(sc)
 	defer putAuthenticationObject(auth)
 
 	request := func() error {

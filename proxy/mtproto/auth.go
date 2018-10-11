@@ -1,6 +1,7 @@
 package mtproto
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"io"
@@ -12,6 +13,35 @@ import (
 const (
 	HeaderSize = 64
 )
+
+type SessionContext struct {
+	ConnectionType [4]byte
+	DataCenterID   uint16
+}
+
+func DefaultSessionContext() SessionContext {
+	return SessionContext{
+		ConnectionType: [4]byte{0xef, 0xef, 0xef, 0xef},
+		DataCenterID:   0,
+	}
+}
+
+type contextKey int32
+
+const (
+	sessionContextKey contextKey = iota
+)
+
+func ContextWithSessionContext(ctx context.Context, c SessionContext) context.Context {
+	return context.WithValue(ctx, sessionContextKey, c)
+}
+
+func SessionContextFromContext(ctx context.Context) SessionContext {
+	if c := ctx.Value(sessionContextKey); c != nil {
+		return c.(SessionContext)
+	}
+	return DefaultSessionContext()
+}
 
 type Authentication struct {
 	Header        [HeaderSize]byte
@@ -29,12 +59,18 @@ func (a *Authentication) DataCenterID() uint16 {
 	return uint16(x) - 1
 }
 
+func (a *Authentication) ConnectionType() [4]byte {
+	var x [4]byte
+	copy(x[:], a.Header[56:60])
+	return x
+}
+
 func (a *Authentication) ApplySecret(b []byte) {
 	a.DecodingKey = sha256.Sum256(append(a.DecodingKey[:], b...))
 	a.EncodingKey = sha256.Sum256(append(a.EncodingKey[:], b...))
 }
 
-func generateRandomBytes(random []byte) {
+func generateRandomBytes(random []byte, connType [4]byte) {
 	for {
 		common.Must2(rand.Read(random))
 
@@ -51,19 +87,16 @@ func generateRandomBytes(random []byte) {
 			continue
 		}
 
-		random[56] = 0xef
-		random[57] = 0xef
-		random[58] = 0xef
-		random[59] = 0xef
+		copy(random[56:60], connType[:])
 
 		return
 	}
 }
 
-func NewAuthentication() *Authentication {
+func NewAuthentication(sc SessionContext) *Authentication {
 	auth := getAuthenticationObject()
 	random := auth.Header[:]
-	generateRandomBytes(random)
+	generateRandomBytes(random, sc.ConnectionType)
 	copy(auth.EncodingKey[:], random[8:])
 	copy(auth.EncodingNonce[:], random[8+32:])
 	keyivInverse := Inverse(random[8 : 8+32+16])
