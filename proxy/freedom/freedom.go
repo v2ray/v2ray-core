@@ -6,7 +6,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/miekg/dns"
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -17,6 +16,7 @@ import (
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/task"
 	"v2ray.com/core/common/vio"
+	"v2ray.com/core/features/dns"
 	"v2ray.com/core/features/policy"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
