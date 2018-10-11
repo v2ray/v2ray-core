@@ -1,8 +1,7 @@
 package dns
 
 import (
-	"net"
-
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/features"
 )
 

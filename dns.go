@@ -1,10 +1,10 @@
 package core
 
 import (
-	"net"
 	"sync"
 
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/features/dns"
 )
 
