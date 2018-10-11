@@ -6,6 +6,7 @@ import (
 	"context"
 
 	"v2ray.com/core/common/session"
+	"v2ray.com/core/features/routing"
 
 	"v2ray.com/core"
 	"v2ray.com/core/common"
@@ -13,7 +14,7 @@ import (
 	"v2ray.com/core/proxy"
 )
 
-// Router is an implementation of core.Router.
+// Router is an implementation of routing.Router.
 type Router struct {
 	domainStrategy Config_DomainStrategy
 	rules          []Rule
@@ -38,7 +39,7 @@ func NewRouter(ctx context.Context, config *Config) (*Router, error) {
 		r.rules[idx].Condition = cond
 	}
 
-	if err := v.RegisterFeature((*core.Router)(nil), r); err != nil {
+	if err := v.RegisterFeature((*routing.Router)(nil), r); err != nil {
 		return nil, newError("unable to register Router").Base(err)
 	}
 	return r, nil
@@ -72,7 +73,7 @@ func (r *ipResolver) Resolve() []net.Address {
 	return r.ip
 }
 
-// PickRoute implements core.Router.
+// PickRoute implements routing.Router.
 func (r *Router) PickRoute(ctx context.Context) (string, error) {
 	resolver := &ipResolver{
 		dns: r.dns,
@@ -93,7 +94,7 @@ func (r *Router) PickRoute(ctx context.Context) (string, error) {
 	}
 
 	if outbound == nil || !outbound.Target.IsValid() {
-		return "", core.ErrNoClue
+		return "", common.ErrNoClue
 	}
 
 	dest := outbound.Target
@@ -110,7 +111,7 @@ func (r *Router) PickRoute(ctx context.Context) (string, error) {
 		}
 	}
 
-	return "", core.ErrNoClue
+	return "", common.ErrNoClue
 }
 
 // Start implements common.Runnable.

@@ -8,9 +8,10 @@ package proxy
 import (
 	"context"
 
-	"v2ray.com/core"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/vio"
+	"v2ray.com/core/features/routing"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -20,13 +21,13 @@ type Inbound interface {
 	Network() net.NetworkList
 
 	// Process processes a connection of given network. If necessary, the Inbound can dispatch the connection to an Outbound.
-	Process(context.Context, net.Network, internet.Connection, core.Dispatcher) error
+	Process(context.Context, net.Network, internet.Connection, routing.Dispatcher) error
 }
 
 // An Outbound process outbound connections.
 type Outbound interface {
 	// Process processes the given connection. The given dialer may be used to dial a system outbound connection.
-	Process(context.Context, *core.Link, Dialer) error
+	Process(context.Context, *vio.Link, Dialer) error
 }
 
 // Dialer is used by OutboundHandler for creating outbound connections.

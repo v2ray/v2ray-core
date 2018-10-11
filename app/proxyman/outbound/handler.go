@@ -9,6 +9,8 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
+	"v2ray.com/core/common/vio"
+	"v2ray.com/core/features/outbound"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/pipe"
@@ -19,11 +21,11 @@ type Handler struct {
 	senderSettings  *proxyman.SenderConfig
 	streamSettings  *internet.MemoryStreamConfig
 	proxy           proxy.Outbound
-	outboundManager core.OutboundHandlerManager
+	outboundManager outbound.HandlerManager
 	mux             *mux.ClientManager
 }
 
-func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (core.OutboundHandler, error) {
+func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (outbound.Handler, error) {
 	v := core.MustFromContext(ctx)
 	h := &Handler{
 		config:          config,
@@ -75,13 +77,13 @@ func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (core.O
 	return h, nil
 }
 
-// Tag implements core.OutboundHandler.
+// Tag implements outbound.Handler.
 func (h *Handler) Tag() string {
 	return h.config.Tag
 }
 
 // Dispatch implements proxy.Outbound.Dispatch.
-func (h *Handler) Dispatch(ctx context.Context, link *core.Link) {
+func (h *Handler) Dispatch(ctx context.Context, link *vio.Link) {
 	if h.mux != nil {
 		if err := h.mux.Dispatch(ctx, link); err != nil {
 			newError("failed to process mux outbound traffic").Base(err).WriteToLog(session.ExportIDToError(ctx))
@@ -115,7 +117,7 @@ func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Conn
 				uplinkReader, uplinkWriter := pipe.New(opts...)
 				downlinkReader, downlinkWriter := pipe.New(opts...)
 
-				go handler.Dispatch(ctx, &core.Link{Reader: uplinkReader, Writer: downlinkWriter})
+				go handler.Dispatch(ctx, &vio.Link{Reader: uplinkReader, Writer: downlinkWriter})
 				return net.NewConnection(net.ConnectionInputMulti(uplinkWriter), net.ConnectionOutputMulti(downlinkReader)), nil
 			}
 

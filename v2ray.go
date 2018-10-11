@@ -7,6 +7,8 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/uuid"
+	"v2ray.com/core/features/outbound"
+	"v2ray.com/core/features/routing"
 )
 
 // Server is an instance of V2Ray. At any time, there must be at most one Server instance running.
@@ -76,12 +78,12 @@ func New(config *Config) (*Instance, error) {
 		}
 	}
 
-	for _, outbound := range config.Outbound {
-		rawHandler, err := CreateObject(server, outbound)
+	for _, outboundConfig := range config.Outbound {
+		rawHandler, err := CreateObject(server, outboundConfig)
 		if err != nil {
 			return nil, err
 		}
-		handler, ok := rawHandler.(OutboundHandler)
+		handler, ok := rawHandler.(outbound.Handler)
 		if !ok {
 			return nil, newError("not an OutboundHandler")
 		}
@@ -147,14 +149,14 @@ func (s *Instance) RegisterFeature(feature interface{}, instance Feature) error 
 		s.dnsClient.Set(instance.(DNSClient))
 	case PolicyManager, *PolicyManager:
 		s.policyManager.Set(instance.(PolicyManager))
-	case Router, *Router:
-		s.router.Set(instance.(Router))
-	case Dispatcher, *Dispatcher:
-		s.dispatcher.Set(instance.(Dispatcher))
+	case routing.Router, *routing.Router:
+		s.router.Set(instance.(routing.Router))
+	case routing.Dispatcher, *routing.Dispatcher:
+		s.dispatcher.Set(instance.(routing.Dispatcher))
 	case InboundHandlerManager, *InboundHandlerManager:
 		s.ihm.Set(instance.(InboundHandlerManager))
-	case OutboundHandlerManager, *OutboundHandlerManager:
-		s.ohm.Set(instance.(OutboundHandlerManager))
+	case outbound.HandlerManager, *outbound.HandlerManager:
+		s.ohm.Set(instance.(outbound.HandlerManager))
 	case StatManager, *StatManager:
 		s.stats.Set(instance.(StatManager))
 	default:
@@ -198,12 +200,12 @@ func (s *Instance) PolicyManager() PolicyManager {
 }
 
 // Router returns the Router used by this Instance. The returned Router is always functional.
-func (s *Instance) Router() Router {
+func (s *Instance) Router() routing.Router {
 	return &(s.router)
 }
 
 // Dispatcher returns the Dispatcher used by this Instance. If Dispatcher was not registered before, the returned value doesn't work, although it is not nil.
-func (s *Instance) Dispatcher() Dispatcher {
+func (s *Instance) Dispatcher() routing.Dispatcher {
 	return &(s.dispatcher)
 }
 
@@ -213,7 +215,7 @@ func (s *Instance) InboundHandlerManager() InboundHandlerManager {
 }
 
 // OutboundHandlerManager returns the OutboundHandlerManager used by this Instance. If OutboundHandlerManager was not registered before, the returned value doesn't work.
-func (s *Instance) OutboundHandlerManager() OutboundHandlerManager {
+func (s *Instance) OutboundHandlerManager() outbound.HandlerManager {
 	return &(s.ohm)
 }
 

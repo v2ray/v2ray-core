@@ -16,6 +16,9 @@ import (
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/stats"
+	"v2ray.com/core/common/vio"
+	"v2ray.com/core/features/outbound"
+	"v2ray.com/core/features/routing"
 	"v2ray.com/core/transport/pipe"
 )
 
@@ -79,8 +82,8 @@ func (r *cachedReader) CloseError() {
 
 // DefaultDispatcher is a default implementation of Dispatcher.
 type DefaultDispatcher struct {
-	ohm    core.OutboundHandlerManager
-	router core.Router
+	ohm    outbound.HandlerManager
+	router routing.Router
 	policy core.PolicyManager
 	stats  core.StatManager
 }
@@ -95,7 +98,7 @@ func NewDefaultDispatcher(ctx context.Context, config *Config) (*DefaultDispatch
 		stats:  v.Stats(),
 	}
 
-	if err := v.RegisterFeature((*core.Dispatcher)(nil), d); err != nil {
+	if err := v.RegisterFeature((*routing.Dispatcher)(nil), d); err != nil {
 		return nil, newError("unable to register Dispatcher").Base(err)
 	}
 	return d, nil
@@ -109,17 +112,17 @@ func (*DefaultDispatcher) Start() error {
 // Close implements common.Closable.
 func (*DefaultDispatcher) Close() error { return nil }
 
-func (d *DefaultDispatcher) getLink(ctx context.Context) (*core.Link, *core.Link) {
+func (d *DefaultDispatcher) getLink(ctx context.Context) (*vio.Link, *vio.Link) {
 	opt := pipe.OptionsFromContext(ctx)
 	uplinkReader, uplinkWriter := pipe.New(opt...)
 	downlinkReader, downlinkWriter := pipe.New(opt...)
 
-	inboundLink := &core.Link{
+	inboundLink := &vio.Link{
 		Reader: downlinkReader,
 		Writer: uplinkWriter,
 	}
 
-	outboundLink := &core.Link{
+	outboundLink := &vio.Link{
 		Reader: uplinkReader,
 		Writer: downlinkWriter,
 	}
@@ -159,8 +162,8 @@ func shouldOverride(result SniffResult, domainOverride []string) bool {
 	return false
 }
 
-// Dispatch implements core.Dispatcher.
-func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destination) (*core.Link, error) {
+// Dispatch implements routing.Dispatcher.
+func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destination) (*vio.Link, error) {
 	if !destination.IsValid() {
 		panic("Dispatcher: Invalid destination.")
 	}
@@ -214,7 +217,7 @@ func sniffer(ctx context.Context, cReader *cachedReader) (SniffResult, error) {
 			cReader.Cache(payload)
 			if !payload.IsEmpty() {
 				result, err := sniffer.Sniff(payload.Bytes())
-				if err != core.ErrNoClue {
+				if err != common.ErrNoClue {
 					return result, err
 				}
 			}
@@ -225,7 +228,7 @@ func sniffer(ctx context.Context, cReader *cachedReader) (SniffResult, error) {
 	}
 }
 
-func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *core.Link, destination net.Destination) {
+func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *vio.Link, destination net.Destination) {
 	dispatcher := d.ohm.GetDefaultHandler()
 	if d.router != nil {
 		if tag, err := d.router.PickRoute(ctx); err == nil {

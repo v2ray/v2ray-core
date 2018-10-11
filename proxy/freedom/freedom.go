@@ -15,6 +15,7 @@ import (
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/task"
+	"v2ray.com/core/common/vio"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 )
@@ -75,7 +76,7 @@ func isValidAddress(addr *net.IPOrDomain) bool {
 }
 
 // Process implements proxy.Outbound.
-func (h *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dialer) error {
+func (h *Handler) Process(ctx context.Context, link *vio.Link, dialer proxy.Dialer) error {
 	outbound := session.OutboundFromContext(ctx)
 	if outbound == nil || !outbound.Target.IsValid() {
 		return newError("target not specified.")

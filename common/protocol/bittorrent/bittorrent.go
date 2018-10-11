@@ -3,7 +3,7 @@ package bittorrent
 import (
 	"errors"
 
-	"v2ray.com/core"
+	"v2ray.com/core/common"
 )
 
 type SniffHeader struct {
@@ -21,7 +21,7 @@ var errNotBittorrent = errors.New("not bittorrent header")
 
 func SniffBittorrent(b []byte) (*SniffHeader, error) {
 	if len(b) < 20 {
-		return nil, core.ErrNoClue
+		return nil, common.ErrNoClue
 	}
 
 	if b[0] == 19 && string(b[1:20]) == "BitTorrent protocol" {

@@ -6,6 +6,7 @@ import (
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/features/outbound"
 )
 
 // InboundHandler is the interface for handlers that process inbound connections.
@@ -16,13 +17,6 @@ type InboundHandler interface {
 
 	// Deprecated. Do not use in new code.
 	GetRandomInboundProxy() (interface{}, net.Port, int)
-}
-
-// OutboundHandler is the interface for handlers that process outbound connections.
-type OutboundHandler interface {
-	common.Runnable
-	Tag() string
-	Dispatch(ctx context.Context, link *Link)
 }
 
 // InboundHandlerManager is a feature that manages InboundHandlers.
@@ -94,77 +88,63 @@ func (m *syncInboundHandlerManager) Set(manager InboundHandlerManager) {
 	m.InboundHandlerManager = manager
 }
 
-// OutboundHandlerManager is a feature that manages OutboundHandlers.
-type OutboundHandlerManager interface {
-	Feature
-	// GetHandler returns an OutboundHandler for the given tag.
-	GetHandler(tag string) OutboundHandler
-	// GetDefaultHandler returns the default OutboundHandler. It is usually the first OutboundHandler specified in the configuration.
-	GetDefaultHandler() OutboundHandler
-	// AddHandler adds a handler into this OutboundHandlerManager.
-	AddHandler(ctx context.Context, handler OutboundHandler) error
-
-	// RemoveHandler removes a handler from OutboundHandlerManager.
-	RemoveHandler(ctx context.Context, tag string) error
-}
-
 type syncOutboundHandlerManager struct {
 	sync.RWMutex
-	OutboundHandlerManager
+	outbound.HandlerManager
 }
 
-func (m *syncOutboundHandlerManager) GetHandler(tag string) OutboundHandler {
+func (m *syncOutboundHandlerManager) GetHandler(tag string) outbound.Handler {
 	m.RLock()
 	defer m.RUnlock()
 
-	if m.OutboundHandlerManager == nil {
+	if m.HandlerManager == nil {
 		return nil
 	}
 
-	return m.OutboundHandlerManager.GetHandler(tag)
+	return m.HandlerManager.GetHandler(tag)
 }
 
-func (m *syncOutboundHandlerManager) GetDefaultHandler() OutboundHandler {
+func (m *syncOutboundHandlerManager) GetDefaultHandler() outbound.Handler {
 	m.RLock()
 	defer m.RUnlock()
 
-	if m.OutboundHandlerManager == nil {
+	if m.HandlerManager == nil {
 		return nil
 	}
 
-	return m.OutboundHandlerManager.GetDefaultHandler()
+	return m.HandlerManager.GetDefaultHandler()
 }
 
-func (m *syncOutboundHandlerManager) AddHandler(ctx context.Context, handler OutboundHandler) error {
+func (m *syncOutboundHandlerManager) AddHandler(ctx context.Context, handler outbound.Handler) error {
 	m.RLock()
 	defer m.RUnlock()
 
-	if m.OutboundHandlerManager == nil {
+	if m.HandlerManager == nil {
 		return newError("OutboundHandlerManager not set.").AtError()
 	}
 
-	return m.OutboundHandlerManager.AddHandler(ctx, handler)
+	return m.HandlerManager.AddHandler(ctx, handler)
 }
 
 func (m *syncOutboundHandlerManager) Start() error {
 	m.RLock()
 	defer m.RUnlock()
 
-	if m.OutboundHandlerManager == nil {
+	if m.HandlerManager == nil {
 		return newError("OutboundHandlerManager not set.").AtError()
 	}
 
-	return m.OutboundHandlerManager.Start()
+	return m.HandlerManager.Start()
 }
 
 func (m *syncOutboundHandlerManager) Close() error {
 	m.RLock()
 	defer m.RUnlock()
 
-	return common.Close(m.OutboundHandlerManager)
+	return common.Close(m.HandlerManager)
 }
 
-func (m *syncOutboundHandlerManager) Set(manager OutboundHandlerManager) {
+func (m *syncOutboundHandlerManager) Set(manager outbound.HandlerManager) {
 	if manager == nil {
 		return
 	}
@@ -172,6 +152,6 @@ func (m *syncOutboundHandlerManager) Set(manager OutboundHandlerManager) {
 	m.Lock()
 	defer m.Unlock()
 
-	common.Close(m.OutboundHandlerManager) // nolint: errcheck
-	m.OutboundHandlerManager = manager
+	common.Close(m.HandlerManager) // nolint: errcheck
+	m.HandlerManager = manager
 }

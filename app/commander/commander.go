@@ -8,9 +8,11 @@ import (
 	"sync"
 
 	"google.golang.org/grpc"
+
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/signal/done"
+	"v2ray.com/core/features/outbound"
 )
 
 // Commander is a V2Ray feature that provides gRPC methods to external clients.
@@ -19,7 +21,7 @@ type Commander struct {
 	server *grpc.Server
 	config Config
 	v      *core.Instance
-	ohm    core.OutboundHandlerManager
+	ohm    outbound.HandlerManager
 }
 
 // NewCommander creates a new Commander based on the given config.

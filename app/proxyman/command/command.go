@@ -6,6 +6,7 @@ import (
 	grpc "google.golang.org/grpc"
 	"v2ray.com/core"
 	"v2ray.com/core/common"
+	"v2ray.com/core/features/outbound"
 	"v2ray.com/core/proxy"
 )
 
@@ -18,7 +19,7 @@ type InboundOperation interface {
 // OutboundOperation is the interface for operations that applies to outbound handlers.
 type OutboundOperation interface {
 	// ApplyOutbound applies this operation to the given outbound handler.
-	ApplyOutbound(context.Context, core.OutboundHandler) error
+	ApplyOutbound(context.Context, outbound.Handler) error
 }
 
 func getInbound(handler core.InboundHandler) (proxy.Inbound, error) {
@@ -62,7 +63,7 @@ func (op *RemoveUserOperation) ApplyInbound(ctx context.Context, handler core.In
 type handlerServer struct {
 	s   *core.Instance
 	ihm core.InboundHandlerManager
-	ohm core.OutboundHandlerManager
+	ohm outbound.HandlerManager
 }
 
 func (s *handlerServer) AddInbound(ctx context.Context, request *AddInboundRequest) (*AddInboundResponse, error) {
@@ -104,7 +105,7 @@ func (s *handlerServer) AddOutbound(ctx context.Context, request *AddOutboundReq
 	if err != nil {
 		return nil, err
 	}
-	handler, ok := rawHandler.(core.OutboundHandler)
+	handler, ok := rawHandler.(outbound.Handler)
 	if !ok {
 		return nil, newError("not an OutboundHandler.")
 	}

@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"v2ray.com/core/common/session"
+	"v2ray.com/core/features/routing"
 
 	"github.com/miekg/dns"
-	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
@@ -48,7 +48,7 @@ type ClassicNameServer struct {
 	clientIP  net.IP
 }
 
-func NewClassicNameServer(address net.Destination, dispatcher core.Dispatcher, clientIP net.IP) *ClassicNameServer {
+func NewClassicNameServer(address net.Destination, dispatcher routing.Dispatcher, clientIP net.IP) *ClassicNameServer {
 	s := &ClassicNameServer{
 		address:  address,
 		ips:      make(map[string][]IPRecord),

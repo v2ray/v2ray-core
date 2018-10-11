@@ -15,6 +15,7 @@ import (
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal/done"
 	"v2ray.com/core/common/task"
+	"v2ray.com/core/features/routing"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tcp"
@@ -36,7 +37,7 @@ type tcpWorker struct {
 	stream          *internet.MemoryStreamConfig
 	recvOrigDest    bool
 	tag             string
-	dispatcher      core.Dispatcher
+	dispatcher      routing.Dispatcher
 	sniffingConfig  *proxyman.SniffingConfig
 	uplinkCounter   core.StatCounter
 	downlinkCounter core.StatCounter
@@ -223,7 +224,7 @@ type udpWorker struct {
 	port            net.Port
 	tag             string
 	stream          *internet.MemoryStreamConfig
-	dispatcher      core.Dispatcher
+	dispatcher      routing.Dispatcher
 	uplinkCounter   core.StatCounter
 	downlinkCounter core.StatCounter
 

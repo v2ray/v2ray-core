@@ -1,7 +1,7 @@
 package dispatcher
 
 import (
-	"v2ray.com/core"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/protocol/bittorrent"
 	"v2ray.com/core/common/protocol/http"
 	"v2ray.com/core/common/protocol/tls"
@@ -34,7 +34,7 @@ func (s *Sniffer) Sniff(payload []byte) (SniffResult, error) {
 	var pendingSniffer []protocolSniffer
 	for _, s := range s.sniffer {
 		result, err := s(payload)
-		if err == core.ErrNoClue {
+		if err == common.ErrNoClue {
 			pendingSniffer = append(pendingSniffer, s)
 			continue
 		}
@@ -46,7 +46,7 @@ func (s *Sniffer) Sniff(payload []byte) (SniffResult, error) {
 
 	if len(pendingSniffer) > 0 {
 		s.sniffer = pendingSniffer
-		return nil, core.ErrNoClue
+		return nil, common.ErrNoClue
 	}
 
 	return nil, errUnknownContent

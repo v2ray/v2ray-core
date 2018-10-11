@@ -67,7 +67,7 @@ func (m *Manager) GetHandler(ctx context.Context, tag string) (core.InboundHandl
 // RemoveHandler implements core.InboundHandlerManager.
 func (m *Manager) RemoveHandler(ctx context.Context, tag string) error {
 	if len(tag) == 0 {
-		return core.ErrNoClue
+		return common.ErrNoClue
 	}
 
 	m.access.Lock()
@@ -81,7 +81,7 @@ func (m *Manager) RemoveHandler(ctx context.Context, tag string) error {
 		return nil
 	}
 
-	return core.ErrNoClue
+	return common.ErrNoClue
 }
 
 // Start implements common.Runnable.

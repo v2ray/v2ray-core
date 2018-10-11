@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"v2ray.com/core"
+	"v2ray.com/core/common"
 )
 
 type version byte
@@ -48,7 +48,7 @@ func beginWithHTTPMethod(b []byte) error {
 		}
 
 		if len(b) < len(m) {
-			return core.ErrNoClue
+			return common.ErrNoClue
 		}
 	}
 
@@ -86,5 +86,5 @@ func SniffHTTP(b []byte) (*SniffHeader, error) {
 		return sh, nil
 	}
 
-	return nil, core.ErrNoClue
+	return nil, common.ErrNoClue
 }
