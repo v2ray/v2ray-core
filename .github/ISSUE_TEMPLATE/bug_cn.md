@@ -1,7 +1,6 @@
 ---
-name: Bug 报告
-about: "提交一个 V2Ray 的 bug。"
-
+name: V2Ray程序问题
+about: "提交一个 V2Ray 的程序问题报告。"
 ---
 
 提交 Issue 之前请先阅读 [Issue 指引](https://github.com/v2ray/v2ray-core/blob/master/.github/SUPPORT.md)，然后回答下面的问题，谢谢。

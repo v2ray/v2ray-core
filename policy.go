@@ -1,189 +1,63 @@
 package core
 
 import (
-	"context"
-	"runtime"
 	"sync"
 	"time"
 
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/platform"
+	"v2ray.com/core/features/policy"
 )
-
-// TimeoutPolicy contains limits for connection timeout.
-type TimeoutPolicy struct {
-	// Timeout for handshake phase in a connection.
-	Handshake time.Duration
-	// Timeout for connection being idle, i.e., there is no egress or ingress traffic in this connection.
-	ConnectionIdle time.Duration
-	// Timeout for an uplink only connection, i.e., the downlink of the connection has been closed.
-	UplinkOnly time.Duration
-	// Timeout for an downlink only connection, i.e., the uplink of the connection has been closed.
-	DownlinkOnly time.Duration
-}
-
-// StatsPolicy contains settings for stats counters.
-type StatsPolicy struct {
-	// Whether or not to enable stat counter for user uplink traffic.
-	UserUplink bool
-	// Whether or not to enable stat counter for user downlink traffic.
-	UserDownlink bool
-}
-
-// BufferPolicy contains settings for internal buffer.
-type BufferPolicy struct {
-	// Size of buffer per connection, in bytes. -1 for unlimited buffer.
-	PerConnection int32
-}
-
-// SystemStatsPolicy contains stat policy settings on system level.
-type SystemStatsPolicy struct {
-	// Whether or not to enable stat counter for uplink traffic in inbound handlers.
-	InboundUplink bool
-	// Whether or not to enable stat counter for downlink traffic in inbound handlers.
-	InboundDownlink bool
-}
-
-// SystemPolicy contains policy settings at system level.
-type SystemPolicy struct {
-	Stats  SystemStatsPolicy
-	Buffer BufferPolicy
-}
-
-// Policy is session based settings for controlling V2Ray requests. It contains various settings (or limits) that may differ for different users in the context.
-type Policy struct {
-	Timeouts TimeoutPolicy // Timeout settings
-	Stats    StatsPolicy
-	Buffer   BufferPolicy
-}
-
-// PolicyManager is a feature that provides Policy for the given user by its id or level.
-type PolicyManager interface {
-	Feature
-
-	// ForLevel returns the Policy for the given user level.
-	ForLevel(level uint32) Policy
-
-	// ForSystem returns the Policy for V2Ray system.
-	ForSystem() SystemPolicy
-}
-
-var defaultBufferSize int32
-
-func init() {
-	const key = "v2ray.ray.buffer.size"
-	const defaultValue = -17
-	size := platform.EnvFlag{
-		Name:    key,
-		AltName: platform.NormalizeEnvName(key),
-	}.GetValueAsInt(defaultValue)
-
-	switch size {
-	case 0:
-		defaultBufferSize = -1 // For pipe to use unlimited size
-	case defaultValue: // Env flag not defined. Use default values per CPU-arch.
-		switch runtime.GOARCH {
-		case "arm", "arm64", "mips", "mipsle", "mips64", "mips64le":
-			defaultBufferSize = 16 * 1024 // 16k cache for low-end devices
-		default:
-			defaultBufferSize = 2 * 1024 * 1024
-		}
-	default:
-		defaultBufferSize = int32(size) * 1024 * 1024
-	}
-}
-
-func defaultBufferPolicy() BufferPolicy {
-	return BufferPolicy{
-		PerConnection: defaultBufferSize,
-	}
-}
-
-// DefaultPolicy returns the Policy when user is not specified.
-func DefaultPolicy() Policy {
-	return Policy{
-		Timeouts: TimeoutPolicy{
-			Handshake:      time.Second * 4,
-			ConnectionIdle: time.Second * 300,
-			UplinkOnly:     time.Second * 2,
-			DownlinkOnly:   time.Second * 5,
-		},
-		Stats: StatsPolicy{
-			UserUplink:   false,
-			UserDownlink: false,
-		},
-		Buffer: defaultBufferPolicy(),
-	}
-}
-
-type policyKey int
-
-const (
-	bufferPolicyKey policyKey = 0
-)
-
-func ContextWithBufferPolicy(ctx context.Context, p BufferPolicy) context.Context {
-	return context.WithValue(ctx, bufferPolicyKey, p)
-}
-
-func BufferPolicyFromContext(ctx context.Context) BufferPolicy {
-	pPolicy := ctx.Value(bufferPolicyKey)
-	if pPolicy == nil {
-		return defaultBufferPolicy()
-	}
-	return pPolicy.(BufferPolicy)
-}
 
 type syncPolicyManager struct {
 	sync.RWMutex
-	PolicyManager
+	policy.Manager
 }
 
-func (m *syncPolicyManager) ForLevel(level uint32) Policy {
+func (m *syncPolicyManager) ForLevel(level uint32) policy.Session {
 	m.RLock()
 	defer m.RUnlock()
 
-	if m.PolicyManager == nil {
-		p := DefaultPolicy()
+	if m.Manager == nil {
+		p := policy.SessionDefault()
 		if level == 1 {
 			p.Timeouts.ConnectionIdle = time.Second * 600
 		}
 		return p
 	}
 
-	return m.PolicyManager.ForLevel(level)
+	return m.Manager.ForLevel(level)
 }
 
-func (m *syncPolicyManager) ForSystem() SystemPolicy {
+func (m *syncPolicyManager) ForSystem() policy.System {
 	m.RLock()
 	defer m.RUnlock()
 
-	if m.PolicyManager == nil {
-		return SystemPolicy{}
+	if m.Manager == nil {
+		return policy.System{}
 	}
 
-	return m.PolicyManager.ForSystem()
+	return m.Manager.ForSystem()
 }
 
 func (m *syncPolicyManager) Start() error {
 	m.RLock()
 	defer m.RUnlock()
 
-	if m.PolicyManager == nil {
+	if m.Manager == nil {
 		return nil
 	}
 
-	return m.PolicyManager.Start()
+	return m.Manager.Start()
 }
 
 func (m *syncPolicyManager) Close() error {
 	m.RLock()
 	defer m.RUnlock()
 
-	return common.Close(m.PolicyManager)
+	return common.Close(m.Manager)
 }
 
-func (m *syncPolicyManager) Set(manager PolicyManager) {
+func (m *syncPolicyManager) Set(manager policy.Manager) {
 	if manager == nil {
 		return
 	}
@@ -191,6 +65,6 @@ func (m *syncPolicyManager) Set(manager PolicyManager) {
 	m.Lock()
 	defer m.Unlock()
 
-	common.Close(m.PolicyManager) // nolint: errcheck
-	m.PolicyManager = manager
+	common.Close(m.Manager) // nolint: errcheck
+	m.Manager = manager
 }

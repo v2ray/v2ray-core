@@ -3,8 +3,11 @@ package core_test
 import (
 	"testing"
 
+	proto "github.com/golang/protobuf/proto"
 	. "v2ray.com/core"
+	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -14,16 +17,14 @@ import (
 	"v2ray.com/core/proxy/dokodemo"
 	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/outbound"
-	. "v2ray.com/ext/assert"
 )
 
 func TestV2RayClose(t *testing.T) {
-	assert := With(t)
-
 	port := net.Port(dice.RollUint16())
 	userId := uuid.New()
 	config := &Config{
 		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&dispatcher.Config{}),
 			serial.ToTypedMessage(&proxyman.InboundConfig{}),
 			serial.ToTypedMessage(&proxyman.OutboundConfig{}),
 		},
@@ -63,8 +64,10 @@ func TestV2RayClose(t *testing.T) {
 		},
 	}
 
-	server, err := New(config)
-	assert(err, IsNil)
+	cfgBytes, err := proto.Marshal(config)
+	common.Must(err)
 
+	server, err := StartInstance("protobuf", cfgBytes)
+	common.Must(err)
 	server.Close()
 }

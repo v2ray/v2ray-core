@@ -11,14 +11,15 @@ import (
 	"v2ray.com/core/app/stats"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/strmatcher"
+	feature_stats "v2ray.com/core/features/stats"
 )
 
 // statsServer is an implementation of StatsService.
 type statsServer struct {
-	stats core.StatManager
+	stats feature_stats.Manager
 }
 
-func NewStatsServer(manager core.StatManager) StatsServiceServer {
+func NewStatsServer(manager feature_stats.Manager) StatsServiceServer {
 	return &statsServer{stats: manager}
 }
 
@@ -54,7 +55,7 @@ func (s *statsServer) QueryStats(ctx context.Context, request *QueryStatsRequest
 		return nil, newError("QueryStats only works its own stats.Manager.")
 	}
 
-	manager.Visit(func(name string, c core.StatCounter) bool {
+	manager.Visit(func(name string, c feature_stats.Counter) bool {
 		if matcher.Match(name) {
 			var value int64
 			if request.Reset_ {

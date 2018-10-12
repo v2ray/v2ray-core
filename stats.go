@@ -2,86 +2,65 @@ package core
 
 import (
 	"sync"
+
+	"v2ray.com/core/features/stats"
 )
-
-type StatCounter interface {
-	Value() int64
-	Set(int64) int64
-	Add(int64) int64
-}
-
-type StatManager interface {
-	Feature
-
-	RegisterCounter(string) (StatCounter, error)
-	GetCounter(string) StatCounter
-}
-
-// GetOrRegisterStatCounter tries to get the StatCounter first. If not exist, it then tries to create a new counter.
-func GetOrRegisterStatCounter(m StatManager, name string) (StatCounter, error) {
-	counter := m.GetCounter(name)
-	if counter != nil {
-		return counter, nil
-	}
-
-	return m.RegisterCounter(name)
-}
 
 type syncStatManager struct {
 	sync.RWMutex
-	StatManager
+	stats.Manager
 }
 
 func (s *syncStatManager) Start() error {
 	s.RLock()
 	defer s.RUnlock()
 
-	if s.StatManager == nil {
+	if s.Manager == nil {
 		return nil
 	}
 
-	return s.StatManager.Start()
+	return s.Manager.Start()
 }
 
 func (s *syncStatManager) Close() error {
 	s.RLock()
 	defer s.RUnlock()
 
-	if s.StatManager == nil {
+	if s.Manager == nil {
 		return nil
 	}
-	return s.StatManager.Close()
+	return s.Manager.Close()
 }
 
-func (s *syncStatManager) RegisterCounter(name string) (StatCounter, error) {
+func (s *syncStatManager) RegisterCounter(name string) (stats.Counter, error) {
 	s.RLock()
 	defer s.RUnlock()
 
-	if s.StatManager == nil {
+	if s.Manager == nil {
 		return nil, newError("StatManager not set.")
 	}
-	return s.StatManager.RegisterCounter(name)
+	return s.Manager.RegisterCounter(name)
 }
 
-func (s *syncStatManager) GetCounter(name string) StatCounter {
+func (s *syncStatManager) GetCounter(name string) stats.Counter {
 	s.RLock()
 	defer s.RUnlock()
 
-	if s.StatManager == nil {
+	if s.Manager == nil {
 		return nil
 	}
-	return s.StatManager.GetCounter(name)
+	return s.Manager.GetCounter(name)
 }
 
-func (s *syncStatManager) Set(m StatManager) {
+func (s *syncStatManager) Set(m stats.Manager) {
 	if m == nil {
 		return
 	}
 	s.Lock()
 	defer s.Unlock()
 
-	if s.StatManager != nil {
-		s.StatManager.Close() // nolint: errcheck
+	if s.Manager != nil {
+		s.Manager.Close() // nolint: errcheck
 	}
-	s.StatManager = m
+	s.Manager = m
 }

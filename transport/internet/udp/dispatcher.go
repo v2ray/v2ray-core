@@ -5,18 +5,19 @@ import (
 	"sync"
 	"time"
 
-	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/vio"
+	"v2ray.com/core/features/routing"
 )
 
 type ResponseCallback func(ctx context.Context, payload *buf.Buffer)
 
 type connEntry struct {
-	link   *core.Link
+	link   *vio.Link
 	timer  signal.ActivityUpdater
 	cancel context.CancelFunc
 }
@@ -24,11 +25,11 @@ type connEntry struct {
 type Dispatcher struct {
 	sync.RWMutex
 	conns      map[net.Destination]*connEntry
-	dispatcher core.Dispatcher
+	dispatcher routing.Dispatcher
 	callback   ResponseCallback
 }
 
-func NewDispatcher(dispatcher core.Dispatcher, callback ResponseCallback) *Dispatcher {
+func NewDispatcher(dispatcher routing.Dispatcher, callback ResponseCallback) *Dispatcher {
 	return &Dispatcher{
 		conns:      make(map[net.Destination]*connEntry),
 		dispatcher: dispatcher,

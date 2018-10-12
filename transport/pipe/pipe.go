@@ -3,9 +3,9 @@ package pipe
 import (
 	"context"
 
-	"v2ray.com/core"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/signal/done"
+	"v2ray.com/core/features/policy"
 )
 
 // Option for creating new Pipes.
@@ -36,7 +36,7 @@ func DiscardOverflow() Option {
 func OptionsFromContext(ctx context.Context) []Option {
 	var opt []Option
 
-	bp := core.BufferPolicyFromContext(ctx)
+	bp := policy.BufferPolicyFromContext(ctx)
 	if bp.PerConnection >= 0 {
 		opt = append(opt, WithSizeLimit(bp.PerConnection))
 	} else {

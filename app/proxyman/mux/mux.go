@@ -18,6 +18,8 @@ import (
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal/done"
+	"v2ray.com/core/common/vio"
+	"v2ray.com/core/features/routing"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/pipe"
 )
@@ -42,7 +44,7 @@ func NewClientManager(p proxy.Outbound, d proxy.Dialer, c *proxyman.Multiplexing
 	}
 }
 
-func (m *ClientManager) Dispatch(ctx context.Context, link *core.Link) error {
+func (m *ClientManager) Dispatch(ctx context.Context, link *vio.Link) error {
 	m.access.Lock()
 	defer m.access.Unlock()
 
@@ -77,7 +79,7 @@ func (m *ClientManager) onClientFinish() {
 
 type Client struct {
 	sessionManager *SessionManager
-	link           core.Link
+	link           vio.Link
 	done           *done.Instance
 	manager        *ClientManager
 	concurrency    uint32
@@ -99,7 +101,7 @@ func NewClient(pctx context.Context, p proxy.Outbound, dialer proxy.Dialer, m *C
 
 	c := &Client{
 		sessionManager: NewSessionManager(),
-		link: core.Link{
+		link: vio.Link{
 			Reader: downlinkReader,
 			Writer: upLinkWriter,
 		},
@@ -109,7 +111,7 @@ func NewClient(pctx context.Context, p proxy.Outbound, dialer proxy.Dialer, m *C
 	}
 
 	go func() {
-		if err := p.Process(ctx, &core.Link{Reader: uplinkReader, Writer: downlinkWriter}, dialer); err != nil {
+		if err := p.Process(ctx, &vio.Link{Reader: uplinkReader, Writer: downlinkWriter}, dialer); err != nil {
 			errors.New("failed to handler mux client connection").Base(err).WriteToLog()
 		}
 		common.Must(c.done.Close())
@@ -188,7 +190,7 @@ func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
 	}
 }
 
-func (m *Client) Dispatch(ctx context.Context, link *core.Link) bool {
+func (m *Client) Dispatch(ctx context.Context, link *vio.Link) bool {
 	sm := m.sessionManager
 	if sm.Size() >= int(m.concurrency) || sm.Count() >= maxTotal {
 		return false
@@ -297,7 +299,7 @@ func (m *Client) fetchOutput() {
 }
 
 type Server struct {
-	dispatcher core.Dispatcher
+	dispatcher routing.Dispatcher
 }
 
 // NewServer creates a new mux.Server.
@@ -308,7 +310,7 @@ func NewServer(ctx context.Context) *Server {
 	return s
 }
 
-func (s *Server) Dispatch(ctx context.Context, dest net.Destination) (*core.Link, error) {
+func (s *Server) Dispatch(ctx context.Context, dest net.Destination) (*vio.Link, error) {
 	if dest.Address != muxCoolAddress {
 		return s.dispatcher.Dispatch(ctx, dest)
 	}
@@ -319,14 +321,14 @@ func (s *Server) Dispatch(ctx context.Context, dest net.Destination) (*core.Link
 
 	worker := &ServerWorker{
 		dispatcher: s.dispatcher,
-		link: &core.Link{
+		link: &vio.Link{
 			Reader: uplinkReader,
 			Writer: downlinkWriter,
 		},
 		sessionManager: NewSessionManager(),
 	}
 	go worker.run(ctx)
-	return &core.Link{Reader: downlinkReader, Writer: uplinkWriter}, nil
+	return &vio.Link{Reader: downlinkReader, Writer: uplinkWriter}, nil
 }
 
 // Start implements common.Runnable.
@@ -340,8 +342,8 @@ func (s *Server) Close() error {
 }
 
 type ServerWorker struct {
-	dispatcher     core.Dispatcher
-	link           *core.Link
+	dispatcher     routing.Dispatcher
+	link           *vio.Link
 	sessionManager *SessionManager
 }
 

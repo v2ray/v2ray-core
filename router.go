@@ -5,32 +5,17 @@ import (
 	"sync"
 
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/vio"
+	"v2ray.com/core/features/routing"
 )
-
-// Link is a utility for connecting between an inbound and an outbound proxy handler.
-type Link struct {
-	Reader buf.Reader
-	Writer buf.Writer
-}
-
-// Dispatcher is a feature that dispatches inbound requests to outbound handlers based on rules.
-// Dispatcher is required to be registered in a V2Ray instance to make V2Ray function properly.
-type Dispatcher interface {
-	Feature
-
-	// Dispatch returns a Ray for transporting data for the given request.
-	Dispatch(ctx context.Context, dest net.Destination) (*Link, error)
-}
 
 type syncDispatcher struct {
 	sync.RWMutex
-	Dispatcher
+	routing.Dispatcher
 }
 
-func (d *syncDispatcher) Dispatch(ctx context.Context, dest net.Destination) (*Link, error) {
+func (d *syncDispatcher) Dispatch(ctx context.Context, dest net.Destination) (*vio.Link, error) {
 	d.RLock()
 	defer d.RUnlock()
 
@@ -59,7 +44,7 @@ func (d *syncDispatcher) Close() error {
 	return common.Close(d.Dispatcher)
 }
 
-func (d *syncDispatcher) Set(disp Dispatcher) {
+func (d *syncDispatcher) Set(disp routing.Dispatcher) {
 	if disp == nil {
 		return
 	}
@@ -71,22 +56,9 @@ func (d *syncDispatcher) Set(disp Dispatcher) {
 	d.Dispatcher = disp
 }
 
-var (
-	// ErrNoClue is for the situation that existing information is not enough to make a decision. For example, Router may return this error when there is no suitable route.
-	ErrNoClue = errors.New("not enough information for making a decision")
-)
-
-// Router is a feature to choose an outbound tag for the given request.
-type Router interface {
-	Feature
-
-	// PickRoute returns a tag of an OutboundHandler based on the given context.
-	PickRoute(ctx context.Context) (string, error)
-}
-
 type syncRouter struct {
 	sync.RWMutex
-	Router
+	routing.Router
 }
 
 func (r *syncRouter) PickRoute(ctx context.Context) (string, error) {
@@ -94,7 +66,7 @@ func (r *syncRouter) PickRoute(ctx context.Context) (string, error) {
 	defer r.RUnlock()
 
 	if r.Router == nil {
-		return "", ErrNoClue
+		return "", common.ErrNoClue
 	}
 
 	return r.Router.PickRoute(ctx)
@@ -118,7 +90,7 @@ func (r *syncRouter) Close() error {
 	return common.Close(r.Router)
 }
 
-func (r *syncRouter) Set(router Router) {
+func (r *syncRouter) Set(router routing.Router) {
 	if router == nil {
 		return
 	}

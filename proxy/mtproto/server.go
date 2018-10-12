@@ -14,6 +14,8 @@ import (
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/task"
+	"v2ray.com/core/features/policy"
+	"v2ray.com/core/features/routing"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/pipe"
 )
@@ -31,7 +33,7 @@ var (
 type Server struct {
 	user    *protocol.User
 	account *Account
-	policy  core.PolicyManager
+	policy  policy.Manager
 }
 
 func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
@@ -64,7 +66,17 @@ func (s *Server) Network() net.NetworkList {
 	}
 }
 
-func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher core.Dispatcher) error {
+func isValidConnectionType(c [4]byte) bool {
+	if compare.BytesAll(c[:], 0xef) {
+		return true
+	}
+	if compare.BytesAll(c[:], 0xee) {
+		return true
+	}
+	return false
+}
+
+func (s *Server) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher routing.Dispatcher) error {
 	sPolicy := s.policy.ForLevel(s.user.Level)
 
 	if err := conn.SetDeadline(time.Now().Add(sPolicy.Timeouts.Handshake)); err != nil {
@@ -85,8 +97,9 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 	decryptor := crypto.NewAesCTRStream(auth.DecodingKey[:], auth.DecodingNonce[:])
 	decryptor.XORKeyStream(auth.Header[:], auth.Header[:])
 
-	if !compare.BytesAll(auth.Header[56:60], 0xef) {
-		return newError("invalid connection type: ", auth.Header[56:60])
+	ct := auth.ConnectionType()
+	if !isValidConnectionType(ct) {
+		return newError("invalid connection type: ", ct)
 	}
 
 	dcID := auth.DataCenterID()
@@ -102,7 +115,13 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, sPolicy.Timeouts.ConnectionIdle)
-	ctx = core.ContextWithBufferPolicy(ctx, sPolicy.Buffer)
+	ctx = policy.ContextWithBufferPolicy(ctx, sPolicy.Buffer)
+
+	sc := SessionContext{
+		ConnectionType: ct,
+		DataCenterID:   dcID,
+	}
+	ctx = ContextWithSessionContext(ctx, sc)
 
 	link, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {

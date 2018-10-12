@@ -13,12 +13,14 @@ import (
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/task"
+	"v2ray.com/core/features/policy"
+	"v2ray.com/core/features/routing"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/pipe"
 )
 
 type DokodemoDoor struct {
-	policyManager core.PolicyManager
+	policyManager policy.Manager
 	config        *Config
 	address       net.Address
 	port          net.Port
@@ -43,7 +45,7 @@ func (d *DokodemoDoor) Network() net.NetworkList {
 	return *(d.config.NetworkList)
 }
 
-func (d *DokodemoDoor) policy() core.Policy {
+func (d *DokodemoDoor) policy() policy.Session {
 	config := d.config
 	p := d.policyManager.ForLevel(config.UserLevel)
 	if config.Timeout > 0 && config.UserLevel == 0 {
@@ -56,7 +58,7 @@ type hasHandshakeAddress interface {
 	HandshakeAddress() net.Address
 }
 
-func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher core.Dispatcher) error {
+func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher routing.Dispatcher) error {
 	newError("processing connection from: ", conn.RemoteAddr()).AtDebug().WriteToLog(session.ExportIDToError(ctx))
 	dest := net.Destination{
 		Network: network,
@@ -81,7 +83,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, plcy.Timeouts.ConnectionIdle)
 
-	ctx = core.ContextWithBufferPolicy(ctx, plcy.Buffer)
+	ctx = policy.ContextWithBufferPolicy(ctx, plcy.Buffer)
 	link, err := dispatcher.Dispatch(ctx, dest)
 	if err != nil {
 		return newError("failed to dispatch request").Base(err)

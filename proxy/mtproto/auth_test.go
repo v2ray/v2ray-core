@@ -32,7 +32,7 @@ func TestInverse(t *testing.T) {
 func TestAuthenticationReadWrite(t *testing.T) {
 	assert := With(t)
 
-	a := NewAuthentication()
+	a := NewAuthentication(DefaultSessionContext())
 	b := bytes.NewReader(a.Header[:])
 	a2, err := ReadAuthentication(b)
 	assert(err, IsNil)

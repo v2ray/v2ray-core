@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"v2ray.com/core"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/serial"
 )
 
@@ -31,15 +31,15 @@ func IsValidTLSVersion(major, minor byte) bool {
 // https://github.com/golang/go/blob/master/src/crypto/tls/handshake_messages.go#L300
 func ReadClientHello(data []byte, h *SniffHeader) error {
 	if len(data) < 42 {
-		return core.ErrNoClue
+		return common.ErrNoClue
 	}
 	sessionIDLen := int(data[38])
 	if sessionIDLen > 32 || len(data) < 39+sessionIDLen {
-		return core.ErrNoClue
+		return common.ErrNoClue
 	}
 	data = data[39+sessionIDLen:]
 	if len(data) < 2 {
-		return core.ErrNoClue
+		return common.ErrNoClue
 	}
 	// cipherSuiteLen is the number of bytes of cipher suite numbers. Since
 	// they are uint16s, the number must be even.
@@ -49,11 +49,11 @@ func ReadClientHello(data []byte, h *SniffHeader) error {
 	}
 	data = data[2+cipherSuiteLen:]
 	if len(data) < 1 {
-		return core.ErrNoClue
+		return common.ErrNoClue
 	}
 	compressionMethodsLen := int(data[0])
 	if len(data) < 1+compressionMethodsLen {
-		return core.ErrNoClue
+		return common.ErrNoClue
 	}
 	data = data[1+compressionMethodsLen:]
 
@@ -124,7 +124,7 @@ func ReadClientHello(data []byte, h *SniffHeader) error {
 
 func SniffTLS(b []byte) (*SniffHeader, error) {
 	if len(b) < 5 {
-		return nil, core.ErrNoClue
+		return nil, common.ErrNoClue
 	}
 
 	if b[0] != 0x16 /* TLS Handshake */ {
@@ -135,7 +135,7 @@ func SniffTLS(b []byte) (*SniffHeader, error) {
 	}
 	headerLen := int(serial.BytesToUint16(b[3:5]))
 	if 5+headerLen > len(b) {
-		return nil, core.ErrNoClue
+		return nil, common.ErrNoClue
 	}
 
 	h := &SniffHeader{}

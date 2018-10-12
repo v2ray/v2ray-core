@@ -6,19 +6,19 @@ import (
 	"testing"
 	"time"
 
-	"v2ray.com/core"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/vio"
 	. "v2ray.com/core/transport/internet/udp"
 	"v2ray.com/core/transport/pipe"
 	. "v2ray.com/ext/assert"
 )
 
 type TestDispatcher struct {
-	OnDispatch func(ctx context.Context, dest net.Destination) (*core.Link, error)
+	OnDispatch func(ctx context.Context, dest net.Destination) (*vio.Link, error)
 }
 
-func (d *TestDispatcher) Dispatch(ctx context.Context, dest net.Destination) (*core.Link, error) {
+func (d *TestDispatcher) Dispatch(ctx context.Context, dest net.Destination) (*vio.Link, error) {
 	return d.OnDispatch(ctx, dest)
 }
 
@@ -50,9 +50,9 @@ func TestSameDestinationDispatching(t *testing.T) {
 
 	var count uint32
 	td := &TestDispatcher{
-		OnDispatch: func(ctx context.Context, dest net.Destination) (*core.Link, error) {
+		OnDispatch: func(ctx context.Context, dest net.Destination) (*vio.Link, error) {
 			atomic.AddUint32(&count, 1)
-			return &core.Link{Reader: downlinkReader, Writer: uplinkWriter}, nil
+			return &vio.Link{Reader: downlinkReader, Writer: uplinkWriter}, nil
 		},
 	}
 	dest := net.UDPDestination(net.LocalHostIP, 53)

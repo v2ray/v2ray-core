@@ -6,7 +6,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -15,6 +14,8 @@ import (
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal/done"
 	"v2ray.com/core/common/task"
+	"v2ray.com/core/features/routing"
+	"v2ray.com/core/features/stats"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tcp"
@@ -36,10 +37,10 @@ type tcpWorker struct {
 	stream          *internet.MemoryStreamConfig
 	recvOrigDest    bool
 	tag             string
-	dispatcher      core.Dispatcher
+	dispatcher      routing.Dispatcher
 	sniffingConfig  *proxyman.SniffingConfig
-	uplinkCounter   core.StatCounter
-	downlinkCounter core.StatCounter
+	uplinkCounter   stats.Counter
+	downlinkCounter stats.Counter
 
 	hub internet.Listener
 }
@@ -144,8 +145,8 @@ type udpConn struct {
 	remote           net.Addr
 	local            net.Addr
 	done             *done.Instance
-	uplink           core.StatCounter
-	downlink         core.StatCounter
+	uplink           stats.Counter
+	downlink         stats.Counter
 }
 
 func (c *udpConn) updateActivity() {
@@ -223,9 +224,9 @@ type udpWorker struct {
 	port            net.Port
 	tag             string
 	stream          *internet.MemoryStreamConfig
-	dispatcher      core.Dispatcher
-	uplinkCounter   core.StatCounter
-	downlinkCounter core.StatCounter
+	dispatcher      routing.Dispatcher
+	uplinkCounter   stats.Counter
+	downlinkCounter stats.Counter
 
 	checker    *task.Periodic
 	activeConn map[connID]*udpConn

@@ -11,6 +11,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/strmatcher"
+	"v2ray.com/core/features/dns"
 )
 
 type Server struct {
@@ -40,7 +41,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 	server.hosts = hosts
 
 	v := core.MustFromContext(ctx)
-	if err := v.RegisterFeature((*core.DNSClient)(nil), server); err != nil {
+	if err := v.RegisterFeature((*dns.Client)(nil), server); err != nil {
 		return nil, newError("unable to register DNSClient.").Base(err)
 	}
 

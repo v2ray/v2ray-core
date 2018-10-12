@@ -15,14 +15,17 @@ import (
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/task"
+	"v2ray.com/core/common/vio"
+	"v2ray.com/core/features/dns"
+	"v2ray.com/core/features/policy"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 )
 
 // Handler handles Freedom connections.
 type Handler struct {
-	policyManager core.PolicyManager
-	dns           core.DNSClient
+	policyManager policy.Manager
+	dns           dns.Client
 	config        Config
 }
 
@@ -38,7 +41,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 	return f, nil
 }
 
-func (h *Handler) policy() core.Policy {
+func (h *Handler) policy() policy.Session {
 	p := h.policyManager.ForLevel(h.config.UserLevel)
 	if h.config.Timeout > 0 && h.config.UserLevel == 0 {
 		p.Timeouts.ConnectionIdle = time.Duration(h.config.Timeout) * time.Second
@@ -75,7 +78,7 @@ func isValidAddress(addr *net.IPOrDomain) bool {
 }
 
 // Process implements proxy.Outbound.
-func (h *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dialer) error {
+func (h *Handler) Process(ctx context.Context, link *vio.Link, dialer proxy.Dialer) error {
 	outbound := session.OutboundFromContext(ctx)
 	if outbound == nil || !outbound.Target.IsValid() {
 		return newError("target not specified.")
