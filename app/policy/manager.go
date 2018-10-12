@@ -30,12 +30,17 @@ func New(ctx context.Context, config *Config) (*Instance, error) {
 
 	v := core.FromContext(ctx)
 	if v != nil {
-		if err := v.RegisterFeature((*policy.Manager)(nil), m); err != nil {
+		if err := v.RegisterFeature(m); err != nil {
 			return nil, newError("unable to register PolicyManager in core").Base(err).AtError()
 		}
 	}
 
 	return m, nil
+}
+
+// Type implements common.HasType.
+func (*Instance) Type() interface{} {
+	return policy.ManagerType()
 }
 
 // ForLevel implements policy.Manager.

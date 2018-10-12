@@ -3,12 +3,12 @@ package scenarios
 import (
 	"testing"
 
-	"v2ray.com/core/app/router"
-
 	xproxy "golang.org/x/net/proxy"
 	socks4 "h12.io/socks"
+
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/app/router"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"

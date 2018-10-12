@@ -140,10 +140,10 @@ func (s *Instance) Start() error {
 // RegisterFeature registers the given feature into V2Ray.
 // If feature is one of the following types, the corresponding feature in this Instance
 // will be replaced: DNSClient, PolicyManager, Router, Dispatcher, InboundHandlerManager, OutboundHandlerManager.
-func (s *Instance) RegisterFeature(feature interface{}, instance features.Feature) error {
+func (s *Instance) RegisterFeature(instance features.Feature) error {
 	running := false
 
-	switch feature.(type) {
+	switch instance.Type().(type) {
 	case dns.Client, *dns.Client:
 		s.dnsClient.Set(instance.(dns.Client))
 	case policy.Manager, *policy.Manager:
@@ -154,8 +154,8 @@ func (s *Instance) RegisterFeature(feature interface{}, instance features.Featur
 		s.dispatcher.Set(instance.(routing.Dispatcher))
 	case inbound.Manager, *inbound.Manager:
 		s.ihm.Set(instance.(inbound.Manager))
-	case outbound.HandlerManager, *outbound.HandlerManager:
-		s.ohm.Set(instance.(outbound.HandlerManager))
+	case outbound.Manager, *outbound.Manager:
+		s.ohm.Set(instance.(outbound.Manager))
 	case stats.Manager, *stats.Manager:
 		s.stats.Set(instance.(stats.Manager))
 	default:
@@ -178,14 +178,29 @@ func (s *Instance) allFeatures() []features.Feature {
 // GetFeature returns a feature that was registered in this Instance. Nil if not found.
 // The returned Feature must implement common.HasType and whose type equals to the given feature type.
 func (s *Instance) GetFeature(featureType interface{}) features.Feature {
-	for _, f := range s.features {
-		if hasType, ok := f.(common.HasType); ok {
-			if hasType.Type() == featureType {
+	switch featureType.(type) {
+	case dns.Client, *dns.Client:
+		return s.DNSClient()
+	case policy.Manager, *policy.Manager:
+		return s.PolicyManager()
+	case routing.Router, *routing.Router:
+		return s.Router()
+	case routing.Dispatcher, *routing.Dispatcher:
+		return s.Dispatcher()
+	case inbound.Manager, *inbound.Manager:
+		return s.InboundHandlerManager()
+	case outbound.Manager, *outbound.Manager:
+		return s.OutboundHandlerManager()
+	case stats.Manager, *stats.Manager:
+		return s.Stats()
+	default:
+		for _, f := range s.features {
+			if f.Type() == featureType {
 				return f
 			}
 		}
+		return nil
 	}
-	return nil
 }
 
 // DNSClient returns the dns.Client used by this Instance. The returned dns.Client is always functional.
@@ -214,7 +229,7 @@ func (s *Instance) InboundHandlerManager() inbound.Manager {
 }
 
 // OutboundHandlerManager returns the OutboundHandlerManager used by this Instance. If OutboundHandlerManager was not registered before, the returned value doesn't work.
-func (s *Instance) OutboundHandlerManager() outbound.HandlerManager {
+func (s *Instance) OutboundHandlerManager() outbound.Manager {
 	return &(s.ohm)
 }
 

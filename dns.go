@@ -13,6 +13,10 @@ type syncDNSClient struct {
 	dns.Client
 }
 
+func (d *syncDNSClient) Type() interface{} {
+	return dns.ClientType()
+}
+
 func (d *syncDNSClient) LookupIP(host string) ([]net.IP, error) {
 	d.RLock()
 	defer d.RUnlock()

@@ -13,3 +13,7 @@ type Router interface {
 	// PickRoute returns a tag of an OutboundHandler based on the given context.
 	PickRoute(ctx context.Context) (string, error)
 }
+
+func RouterType() interface{} {
+	return (*Router)(nil)
+}

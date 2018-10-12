@@ -84,7 +84,7 @@ func (r *cachedReader) CloseError() {
 
 // DefaultDispatcher is a default implementation of Dispatcher.
 type DefaultDispatcher struct {
-	ohm    outbound.HandlerManager
+	ohm    outbound.Manager
 	router routing.Router
 	policy policy.Manager
 	stats  feature_stats.Manager
@@ -100,10 +100,14 @@ func NewDefaultDispatcher(ctx context.Context, config *Config) (*DefaultDispatch
 		stats:  v.Stats(),
 	}
 
-	if err := v.RegisterFeature((*routing.Dispatcher)(nil), d); err != nil {
+	if err := v.RegisterFeature(d); err != nil {
 		return nil, newError("unable to register Dispatcher").Base(err)
 	}
 	return d, nil
+}
+
+func (*DefaultDispatcher) Type() interface{} {
+	return routing.DispatcherType()
 }
 
 // Start implements common.Runnable.

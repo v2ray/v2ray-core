@@ -9,6 +9,7 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/vio"
+	"v2ray.com/core/features/routing"
 	. "v2ray.com/core/transport/internet/udp"
 	"v2ray.com/core/transport/pipe"
 	. "v2ray.com/ext/assert"
@@ -28,6 +29,10 @@ func (d *TestDispatcher) Start() error {
 
 func (d *TestDispatcher) Close() error {
 	return nil
+}
+
+func (*TestDispatcher) Type() interface{} {
+	return routing.DispatcherType()
 }
 
 func TestSameDestinationDispatching(t *testing.T) {

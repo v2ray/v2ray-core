@@ -11,6 +11,10 @@ type syncStatManager struct {
 	stats.Manager
 }
 
+func (*syncStatManager) Type() interface{} {
+	return stats.ManagerType()
+}
+
 func (s *syncStatManager) Start() error {
 	s.RLock()
 	defer s.RUnlock()

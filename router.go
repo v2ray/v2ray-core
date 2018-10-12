@@ -15,6 +15,10 @@ type syncDispatcher struct {
 	routing.Dispatcher
 }
 
+func (*syncDispatcher) Type() interface{} {
+	return routing.DispatcherType()
+}
+
 func (d *syncDispatcher) Dispatch(ctx context.Context, dest net.Destination) (*vio.Link, error) {
 	d.RLock()
 	defer d.RUnlock()
@@ -59,6 +63,10 @@ func (d *syncDispatcher) Set(disp routing.Dispatcher) {
 type syncRouter struct {
 	sync.RWMutex
 	routing.Router
+}
+
+func (*syncRouter) Type() interface{} {
+	return routing.RouterType()
 }
 
 func (r *syncRouter) PickRoute(ctx context.Context) (string, error) {

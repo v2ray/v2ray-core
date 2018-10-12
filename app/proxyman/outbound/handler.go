@@ -21,7 +21,7 @@ type Handler struct {
 	senderSettings  *proxyman.SenderConfig
 	streamSettings  *internet.MemoryStreamConfig
 	proxy           proxy.Outbound
-	outboundManager outbound.HandlerManager
+	outboundManager outbound.Manager
 	mux             *mux.ClientManager
 }
 

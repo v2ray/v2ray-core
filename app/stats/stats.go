@@ -44,12 +44,16 @@ func NewManager(ctx context.Context, config *Config) (*Manager, error) {
 
 	v := core.FromContext(ctx)
 	if v != nil {
-		if err := v.RegisterFeature((*stats.Manager)(nil), m); err != nil {
+		if err := v.RegisterFeature(m); err != nil {
 			return nil, newError("failed to register StatManager").Base(err)
 		}
 	}
 
 	return m, nil
+}
+
+func (*Manager) Type() interface{} {
+	return stats.ManagerType()
 }
 
 func (m *Manager) RegisterCounter(name string) (stats.Counter, error) {

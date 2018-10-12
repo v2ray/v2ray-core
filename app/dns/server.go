@@ -41,7 +41,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 	server.hosts = hosts
 
 	v := core.MustFromContext(ctx)
-	if err := v.RegisterFeature((*dns.Client)(nil), server); err != nil {
+	if err := v.RegisterFeature(server); err != nil {
 		return nil, newError("unable to register DNSClient.").Base(err)
 	}
 
@@ -95,6 +95,10 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 	}
 
 	return server, nil
+}
+
+func (*Server) Type() interface{} {
+	return dns.ClientType()
 }
 
 // Start implements common.Runnable.

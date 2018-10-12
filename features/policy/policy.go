@@ -67,6 +67,10 @@ type Manager interface {
 	ForSystem() System
 }
 
+func ManagerType() interface{} {
+	return (*Manager)(nil)
+}
+
 var defaultBufferSize int32
 
 func init() {

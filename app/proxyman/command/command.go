@@ -64,7 +64,7 @@ func (op *RemoveUserOperation) ApplyInbound(ctx context.Context, handler inbound
 type handlerServer struct {
 	s   *core.Instance
 	ihm inbound.Manager
-	ohm outbound.HandlerManager
+	ohm outbound.Manager
 }
 
 func (s *handlerServer) AddInbound(ctx context.Context, request *AddInboundRequest) (*AddInboundResponse, error) {

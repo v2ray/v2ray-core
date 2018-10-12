@@ -30,7 +30,7 @@ func New(ctx context.Context, config *Config) (*Instance, error) {
 
 	v := core.FromContext(ctx)
 	if v != nil {
-		common.Must(v.RegisterFeature((*log.Handler)(nil), g))
+		common.Must(v.RegisterFeature(g))
 	}
 
 	return g, nil

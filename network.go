@@ -14,6 +14,10 @@ type syncInboundHandlerManager struct {
 	inbound.Manager
 }
 
+func (*syncInboundHandlerManager) Type() interface{} {
+	return inbound.ManagerType()
+}
+
 func (m *syncInboundHandlerManager) GetHandler(ctx context.Context, tag string) (inbound.Handler, error) {
 	m.RLock()
 	defer m.RUnlock()
@@ -68,61 +72,65 @@ func (m *syncInboundHandlerManager) Set(manager inbound.Manager) {
 
 type syncOutboundHandlerManager struct {
 	sync.RWMutex
-	outbound.HandlerManager
+	outbound.Manager
+}
+
+func (*syncOutboundHandlerManager) Type() interface{} {
+	return outbound.ManagerType()
 }
 
 func (m *syncOutboundHandlerManager) GetHandler(tag string) outbound.Handler {
 	m.RLock()
 	defer m.RUnlock()
 
-	if m.HandlerManager == nil {
+	if m.Manager == nil {
 		return nil
 	}
 
-	return m.HandlerManager.GetHandler(tag)
+	return m.Manager.GetHandler(tag)
 }
 
 func (m *syncOutboundHandlerManager) GetDefaultHandler() outbound.Handler {
 	m.RLock()
 	defer m.RUnlock()
 
-	if m.HandlerManager == nil {
+	if m.Manager == nil {
 		return nil
 	}
 
-	return m.HandlerManager.GetDefaultHandler()
+	return m.Manager.GetDefaultHandler()
 }
 
 func (m *syncOutboundHandlerManager) AddHandler(ctx context.Context, handler outbound.Handler) error {
 	m.RLock()
 	defer m.RUnlock()
 
-	if m.HandlerManager == nil {
+	if m.Manager == nil {
 		return newError("OutboundHandlerManager not set.").AtError()
 	}
 
-	return m.HandlerManager.AddHandler(ctx, handler)
+	return m.Manager.AddHandler(ctx, handler)
 }
 
 func (m *syncOutboundHandlerManager) Start() error {
 	m.RLock()
 	defer m.RUnlock()
 
-	if m.HandlerManager == nil {
+	if m.Manager == nil {
 		return newError("OutboundHandlerManager not set.").AtError()
 	}
 
-	return m.HandlerManager.Start()
+	return m.Manager.Start()
 }
 
 func (m *syncOutboundHandlerManager) Close() error {
 	m.RLock()
 	defer m.RUnlock()
 
-	return common.Close(m.HandlerManager)
+	return common.Close(m.Manager)
 }
 
-func (m *syncOutboundHandlerManager) Set(manager outbound.HandlerManager) {
+func (m *syncOutboundHandlerManager) Set(manager outbound.Manager) {
 	if manager == nil {
 		return
 	}
@@ -130,6 +138,6 @@ func (m *syncOutboundHandlerManager) Set(manager outbound.HandlerManager) {
 	m.Lock()
 	defer m.Unlock()
 
-	common.Close(m.HandlerManager) // nolint: errcheck
-	m.HandlerManager = manager
+	common.Close(m.Manager) // nolint: errcheck
+	m.Manager = manager
 }

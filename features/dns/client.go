@@ -10,3 +10,7 @@ type Client interface {
 	features.Feature
 	LookupIP(host string) ([]net.IP, error)
 }
+
+func ClientType() interface{} {
+	return (*Client)(nil)
+}

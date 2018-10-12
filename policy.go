@@ -13,6 +13,10 @@ type syncPolicyManager struct {
 	policy.Manager
 }
 
+func (*syncPolicyManager) Type() interface{} {
+	return policy.ManagerType()
+}
+
 func (m *syncPolicyManager) ForLevel(level uint32) policy.Session {
 	m.RLock()
 	defer m.RUnlock()

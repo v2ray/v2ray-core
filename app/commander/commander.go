@@ -21,7 +21,7 @@ type Commander struct {
 	server *grpc.Server
 	config Config
 	v      *core.Instance
-	ohm    outbound.HandlerManager
+	ohm    outbound.Manager
 }
 
 // NewCommander creates a new Commander based on the given config.
@@ -32,7 +32,7 @@ func NewCommander(ctx context.Context, config *Config) (*Commander, error) {
 		ohm:    v.OutboundHandlerManager(),
 		v:      v,
 	}
-	if err := v.RegisterFeature((*Commander)(nil), c); err != nil {
+	if err := v.RegisterFeature(c); err != nil {
 		return nil, err
 	}
 	return c, nil

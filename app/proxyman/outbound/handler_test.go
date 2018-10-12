@@ -12,5 +12,5 @@ func TestInterfaces(t *testing.T) {
 	assert := With(t)
 
 	assert((*Handler)(nil), Implements, (*outbound.Handler)(nil))
-	assert((*Manager)(nil), Implements, (*outbound.HandlerManager)(nil))
+	assert((*Manager)(nil), Implements, (*outbound.Manager)(nil))
 }

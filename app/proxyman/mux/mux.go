@@ -310,6 +310,10 @@ func NewServer(ctx context.Context) *Server {
 	return s
 }
 
+func (s *Server) Type() interface{} {
+	return s.dispatcher.Type()
+}
+
 func (s *Server) Dispatch(ctx context.Context, dest net.Destination) (*vio.Link, error) {
 	if dest.Address != muxCoolAddress {
 		return s.dispatcher.Dispatch(ctx, dest)

@@ -23,9 +23,13 @@ type Manager interface {
 	features.Feature
 	// GetHandlers returns an InboundHandler for the given tag.
 	GetHandler(ctx context.Context, tag string) (Handler, error)
-	// AddHandler adds the given handler into this InboundHandlerManager.
+	// AddHandler adds the given handler into this Manager.
 	AddHandler(ctx context.Context, handler Handler) error
 
-	// RemoveHandler removes a handler from InboundHandlerManager.
+	// RemoveHandler removes a handler from Manager.
 	RemoveHandler(ctx context.Context, tag string) error
+}
+
+func ManagerType() interface{} {
+	return (*Manager)(nil)
 }

@@ -39,7 +39,7 @@ func NewRouter(ctx context.Context, config *Config) (*Router, error) {
 		r.rules[idx].Condition = cond
 	}
 
-	if err := v.RegisterFeature((*routing.Router)(nil), r); err != nil {
+	if err := v.RegisterFeature(r); err != nil {
 		return nil, newError("unable to register Router").Base(err)
 	}
 	return r, nil
@@ -122,6 +122,11 @@ func (*Router) Start() error {
 // Close implements common.Closable.
 func (*Router) Close() error {
 	return nil
+}
+
+// Type implement common.HasType.
+func (*Router) Type() interface{} {
+	return routing.RouterType()
 }
 
 func init() {

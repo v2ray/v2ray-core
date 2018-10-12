@@ -28,10 +28,15 @@ func New(ctx context.Context, config *proxyman.InboundConfig) (*Manager, error) 
 		taggedHandlers: make(map[string]inbound.Handler),
 	}
 	v := core.MustFromContext(ctx)
-	if err := v.RegisterFeature((*inbound.Manager)(nil), m); err != nil {
+	if err := v.RegisterFeature(m); err != nil {
 		return nil, newError("unable to register InboundHandlerManager").Base(err)
 	}
 	return m, nil
+}
+
+// Type implements common.HasType.
+func (*Manager) Type() interface{} {
+	return inbound.ManagerType()
 }
 
 // AddHandler implements inbound.Manager.

@@ -24,3 +24,7 @@ func GetOrRegisterCounter(m Manager, name string) (Counter, error) {
 
 	return m.RegisterCounter(name)
 }
+
+func ManagerType() interface{} {
+	return (*Manager)(nil)
+}

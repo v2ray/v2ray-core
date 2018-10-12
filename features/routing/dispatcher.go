@@ -16,3 +16,7 @@ type Dispatcher interface {
 	// Dispatch returns a Ray for transporting data for the given request.
 	Dispatch(ctx context.Context, dest net.Destination) (*vio.Link, error)
 }
+
+func DispatcherType() interface{} {
+	return (*Dispatcher)(nil)
+}
