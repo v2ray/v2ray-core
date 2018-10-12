@@ -1,15 +1,24 @@
 sudo: required
+
+os:
+  - osx
+  - linux
+  - windows
+
 language: go
 go:
-- "1.11.1"
+  - "1.11.1"
 go_import_path: v2ray.com/core
+
 git:
   depth: 5
+
 before_script:
-- uname -a
-- sudo ntpdate -u time.google.com
-- date
+  - uname -a
+  - date
+
 script:
-- go test -p 1 -tags json -v v2ray.com/core/...
+  - go test -p 1 -tags json -v v2ray.com/core/...
+
 after_success:
-- ./testing/coverage/coverall
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./testing/coverage/coverall; fi
