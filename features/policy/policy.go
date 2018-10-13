@@ -67,6 +67,7 @@ type Manager interface {
 	ForSystem() System
 }
 
+// ManagerType returns the type of Manager interface. Can be used to implement common.HasType.
 func ManagerType() interface{} {
 	return (*Manager)(nil)
 }

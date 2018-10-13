@@ -29,6 +29,7 @@ type Manager interface {
 	RemoveHandler(ctx context.Context, tag string) error
 }
 
+// ManagerType returns the type of Manager interface. Can be used to implement common.HasType.
 func ManagerType() interface{} {
 	return (*Manager)(nil)
 }

@@ -25,6 +25,7 @@ func GetOrRegisterCounter(m Manager, name string) (Counter, error) {
 	return m.RegisterCounter(name)
 }
 
+// ManagerType returns the type of Manager interface. Can be used to implement common.HasType.
 func ManagerType() interface{} {
 	return (*Manager)(nil)
 }

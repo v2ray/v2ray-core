@@ -1,10 +1,10 @@
 package dns
 
 import (
-	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/strmatcher"
+	"v2ray.com/core/features"
 )
 
 type StaticHosts struct {
@@ -39,7 +39,7 @@ func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDoma
 	}
 
 	if legacy != nil {
-		core.PrintDeprecatedFeatureWarning("simple host mapping")
+		features.PrintDeprecatedFeatureWarning("simple host mapping")
 
 		for domain, ip := range legacy {
 			matcher, err := strmatcher.Full.New(domain)

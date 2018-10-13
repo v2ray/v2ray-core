@@ -11,6 +11,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/strmatcher"
+	"v2ray.com/core/features"
 	"v2ray.com/core/features/dns"
 )
 
@@ -62,7 +63,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 	}
 
 	if len(config.NameServers) > 0 {
-		core.PrintDeprecatedFeatureWarning("simple DNS server")
+		features.PrintDeprecatedFeatureWarning("simple DNS server")
 	}
 
 	for _, destPB := range config.NameServers {

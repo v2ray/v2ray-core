@@ -17,6 +17,7 @@ type Dispatcher interface {
 	Dispatch(ctx context.Context, dest net.Destination) (*vio.Link, error)
 }
 
+// DispatcherType returns the type of Dispatcher interface. Can be used to implement common.HasType.
 func DispatcherType() interface{} {
 	return (*Dispatcher)(nil)
 }

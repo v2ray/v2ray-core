@@ -14,6 +14,7 @@ type Router interface {
 	PickRoute(ctx context.Context) (string, error)
 }
 
+// RouterType return the type of Router interface. Can be used to implement common.HasType.
 func RouterType() interface{} {
 	return (*Router)(nil)
 }
