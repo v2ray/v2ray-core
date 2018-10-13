@@ -11,6 +11,7 @@ type Client interface {
 	LookupIP(host string) ([]net.IP, error)
 }
 
+// ClientType returns the type of Client interface. Can be used for implementing common.HasType.
 func ClientType() interface{} {
 	return (*Client)(nil)
 }
