@@ -8,7 +8,9 @@
     "--no-config",
     "--exclude=.*\\.pb\\.go",
     "--disable=gas",
-    "--disable=gocyclo"
+    "--disable=gocyclo",
+    "--disable=gosec",
+    "--disable=interfacer"
   ],
   "go.formatTool": "goimports",
 
