@@ -366,7 +366,7 @@ func (c *Connection) waitForDataOutput() error {
 func (c *Connection) Write(b []byte) (int, error) {
 	// This involves multiple copies of the buffer. But we don't expect this method to be used often.
 	// Only wrapped connections such as TLS and WebSocket will call into this.
-	// TODO: improve effeciency.
+	// TODO: improve efficiency.
 	var mb buf.MultiBuffer
 	common.Must2(mb.Write(b))
 	if err := c.WriteMultiBuffer(mb); err != nil {

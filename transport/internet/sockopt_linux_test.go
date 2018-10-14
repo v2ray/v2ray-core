@@ -41,7 +41,7 @@ func TestSockOptMark(t *testing.T) {
 		m, err := syscall.GetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_MARK)
 		common.Must(err)
 		if mark != m {
-			t.Fatal("unexpected conneciton mark", m, " want ", mark)
+			t.Fatal("unexpected connection mark", m, " want ", mark)
 		}
 	})
 	common.Must(err)
