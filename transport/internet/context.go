@@ -10,7 +10,6 @@ type key int
 
 const (
 	streamSettingsKey key = iota
-	dialerSrcKey
 	bindAddrKey
 )
 
