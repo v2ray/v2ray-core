@@ -88,8 +88,8 @@ func (f FrameMetadata) WriteTo(b *buf.Buffer) error {
 	return nil
 }
 
-// ReadFrom reads FrameMetadata from the given reader.
-func (f *FrameMetadata) ReadFrom(reader io.Reader) error {
+// Unmarshal reads FrameMetadata from the given reader.
+func (f *FrameMetadata) Unmarshal(reader io.Reader) error {
 	metaLen, err := serial.ReadUint16(reader)
 	if err != nil {
 		return err
@@ -104,12 +104,12 @@ func (f *FrameMetadata) ReadFrom(reader io.Reader) error {
 	if err := b.Reset(buf.ReadFullFrom(reader, int32(metaLen))); err != nil {
 		return err
 	}
-	return f.ReadFromBuffer(b)
+	return f.UnmarshalFromBuffer(b)
 }
 
-// ReadFromBuffer reads a FrameMetadata from the given buffer.
+// UnmarshalFromBuffer reads a FrameMetadata from the given buffer.
 // Visible for testing only.
-func (f *FrameMetadata) ReadFromBuffer(b *buf.Buffer) error {
+func (f *FrameMetadata) UnmarshalFromBuffer(b *buf.Buffer) error {
 	if b.Len() < 4 {
 		return newError("insufficient buffer: ", b.Len())
 	}

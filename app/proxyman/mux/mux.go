@@ -268,7 +268,7 @@ func (m *Client) fetchOutput() {
 
 	var meta FrameMetadata
 	for {
-		err := meta.ReadFrom(reader)
+		err := meta.Unmarshal(reader)
 		if err != nil {
 			if errors.Cause(err) != io.EOF {
 				newError("failed to read metadata").Base(err).WriteToLog()
@@ -446,7 +446,7 @@ func (w *ServerWorker) handleStatusEnd(meta *FrameMetadata, reader *buf.Buffered
 
 func (w *ServerWorker) handleFrame(ctx context.Context, reader *buf.BufferedReader) error {
 	var meta FrameMetadata
-	err := meta.ReadFrom(reader)
+	err := meta.Unmarshal(reader)
 	if err != nil {
 		return newError("failed to read metadata").Base(err)
 	}

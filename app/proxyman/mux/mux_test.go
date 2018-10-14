@@ -62,7 +62,7 @@ func TestReaderWriter(t *testing.T) {
 	bytesReader := &buf.BufferedReader{Reader: pReader}
 
 	var meta FrameMetadata
-	err := meta.ReadFrom(bytesReader)
+	err := meta.Unmarshal(bytesReader)
 	assert(err, IsNil)
 	assert(meta.SessionID, Equals, uint16(1))
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusNew))
@@ -74,14 +74,14 @@ func TestReaderWriter(t *testing.T) {
 	assert(len(data), Equals, 1)
 	assert(data[0].String(), Equals, "abcd")
 
-	err = meta.ReadFrom(bytesReader)
+	err = meta.Unmarshal(bytesReader)
 	assert(err, IsNil)
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusNew))
 	assert(meta.SessionID, Equals, uint16(2))
 	assert(byte(meta.Option), Equals, byte(0))
 	assert(meta.Target, Equals, dest2)
 
-	err = meta.ReadFrom(bytesReader)
+	err = meta.Unmarshal(bytesReader)
 	assert(err, IsNil)
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusKeep))
 	assert(meta.SessionID, Equals, uint16(1))
@@ -92,7 +92,7 @@ func TestReaderWriter(t *testing.T) {
 	assert(len(data), Equals, 1)
 	assert(data[0].String(), Equals, "efgh")
 
-	err = meta.ReadFrom(bytesReader)
+	err = meta.Unmarshal(bytesReader)
 	assert(err, IsNil)
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusNew))
 	assert(meta.SessionID, Equals, uint16(3))
@@ -104,19 +104,19 @@ func TestReaderWriter(t *testing.T) {
 	assert(len(data), Equals, 1)
 	assert(data[0].String(), Equals, "x")
 
-	err = meta.ReadFrom(bytesReader)
+	err = meta.Unmarshal(bytesReader)
 	assert(err, IsNil)
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusEnd))
 	assert(meta.SessionID, Equals, uint16(1))
 	assert(byte(meta.Option), Equals, byte(0))
 
-	err = meta.ReadFrom(bytesReader)
+	err = meta.Unmarshal(bytesReader)
 	assert(err, IsNil)
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusEnd))
 	assert(meta.SessionID, Equals, uint16(3))
 	assert(byte(meta.Option), Equals, byte(0))
 
-	err = meta.ReadFrom(bytesReader)
+	err = meta.Unmarshal(bytesReader)
 	assert(err, IsNil)
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusKeep))
 	assert(meta.SessionID, Equals, uint16(2))
@@ -127,7 +127,7 @@ func TestReaderWriter(t *testing.T) {
 	assert(len(data), Equals, 1)
 	assert(data[0].String(), Equals, "y")
 
-	err = meta.ReadFrom(bytesReader)
+	err = meta.Unmarshal(bytesReader)
 	assert(err, IsNil)
 	assert(byte(meta.SessionStatus), Equals, byte(SessionStatusEnd))
 	assert(meta.SessionID, Equals, uint16(2))
@@ -135,6 +135,6 @@ func TestReaderWriter(t *testing.T) {
 
 	pWriter.Close()
 
-	err = meta.ReadFrom(bytesReader)
+	err = meta.Unmarshal(bytesReader)
 	assert(err, IsNotNil)
 }
