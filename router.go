@@ -56,7 +56,7 @@ func (d *syncDispatcher) Set(disp routing.Dispatcher) {
 	d.Lock()
 	defer d.Unlock()
 
-	common.Close(d.Dispatcher) // nolint: errorcheck
+	common.Close(d.Dispatcher) // nolint: errcheck
 	d.Dispatcher = disp
 }
 
