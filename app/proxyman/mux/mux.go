@@ -310,10 +310,12 @@ func NewServer(ctx context.Context) *Server {
 	return s
 }
 
+// Type implements common.HasType.
 func (s *Server) Type() interface{} {
 	return s.dispatcher.Type()
 }
 
+// Dispatch impliments routing.Dispatcher
 func (s *Server) Dispatch(ctx context.Context, dest net.Destination) (*vio.Link, error) {
 	if dest.Address != muxCoolAddress {
 		return s.dispatcher.Dispatch(ctx, dest)

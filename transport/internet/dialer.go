@@ -3,17 +3,18 @@ package internet
 import (
 	"context"
 
-	"v2ray.com/core/common/session"
-
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/session"
 )
 
+// Dialer is an interface to dial network connection to a specific destination.
 type Dialer func(ctx context.Context, dest net.Destination) (Connection, error)
 
 var (
 	transportDialerCache = make(map[string]Dialer)
 )
 
+// RegisterTransportDialer registers a Dialer with given name.
 func RegisterTransportDialer(protocol string, dialer Dialer) error {
 	if _, found := transportDialerCache[protocol]; found {
 		return newError(protocol, " dialer already registered").AtError()

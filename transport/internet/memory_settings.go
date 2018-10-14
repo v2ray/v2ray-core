@@ -1,5 +1,6 @@
 package internet
 
+// MemoryStreamConfig is a parsed form of StreamConfig. This is used to reduce number of Protobuf parsing.
 type MemoryStreamConfig struct {
 	ProtocolName     string
 	ProtocolSettings interface{}
@@ -8,6 +9,7 @@ type MemoryStreamConfig struct {
 	SocketSettings   *SocketConfig
 }
 
+// ToMemoryStreamConfig converts a StreamConfig to MemoryStreamConfig. It returns a default non-nil MemoryStreamConfig for nil input.
 func ToMemoryStreamConfig(s *StreamConfig) (*MemoryStreamConfig, error) {
 	ets, err := s.GetEffectiveTransportSettings()
 	if err != nil {
