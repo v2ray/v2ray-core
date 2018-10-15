@@ -106,6 +106,7 @@ func NewDefaultDispatcher(ctx context.Context, config *Config) (*DefaultDispatch
 	return d, nil
 }
 
+// Type implements common.HasType.
 func (*DefaultDispatcher) Type() interface{} {
 	return routing.DispatcherType()
 }
