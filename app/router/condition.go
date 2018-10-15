@@ -8,7 +8,6 @@ import (
 
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/strmatcher"
 	"v2ray.com/core/proxy"
 )
@@ -282,7 +281,12 @@ func NewUserMatcher(users []string) *UserMatcher {
 }
 
 func (v *UserMatcher) Apply(ctx context.Context) bool {
-	user := protocol.UserFromContext(ctx)
+	inbound := session.InboundFromContext(ctx)
+	if inbound == nil {
+		return false
+	}
+
+	user := inbound.User
 	if user == nil {
 		return false
 	}

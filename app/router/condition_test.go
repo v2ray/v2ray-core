@@ -27,6 +27,10 @@ func withOutbound(outbound *session.Outbound) context.Context {
 	return session.ContextWithOutbound(context.Background(), outbound)
 }
 
+func withInbound(inbound *session.Inbound) context.Context {
+	return session.ContextWithInbound(context.Background(), inbound)
+}
+
 func TestRoutingRule(t *testing.T) {
 	assert := With(t)
 
@@ -131,11 +135,11 @@ func TestRoutingRule(t *testing.T) {
 			},
 			test: []ruleTest{
 				{
-					input:  protocol.ContextWithUser(context.Background(), &protocol.MemoryUser{Email: "admin@v2ray.com"}),
+					input:  withInbound(&session.Inbound{User: &protocol.MemoryUser{Email: "admin@v2ray.com"}}),
 					output: true,
 				},
 				{
-					input:  protocol.ContextWithUser(context.Background(), &protocol.MemoryUser{Email: "love@v2ray.com"}),
+					input:  withInbound(&session.Inbound{User: &protocol.MemoryUser{Email: "love@v2ray.com"}}),
 					output: false,
 				},
 				{

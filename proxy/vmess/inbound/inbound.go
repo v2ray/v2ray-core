@@ -264,8 +264,13 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 		newError("unable to set back read deadline").Base(err).WriteToLog(session.ExportIDToError(ctx))
 	}
 
+	inbound := session.InboundFromContext(ctx)
+	if inbound == nil {
+		panic("no inbound metadata")
+	}
+	inbound.User = request.User
+
 	sessionPolicy = h.policyManager.ForLevel(request.User.Level)
-	ctx = protocol.ContextWithUser(ctx, request.User)
 
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)

@@ -7,23 +7,8 @@ import (
 type key int
 
 const (
-	userKey key = iota
-	requestKey
+	requestKey key = iota
 )
-
-// ContextWithUser returns a context combined with a User.
-func ContextWithUser(ctx context.Context, user *MemoryUser) context.Context {
-	return context.WithValue(ctx, userKey, user)
-}
-
-// UserFromContext extracts a User from the given context, if any.
-func UserFromContext(ctx context.Context) *MemoryUser {
-	v := ctx.Value(userKey)
-	if v == nil {
-		return nil
-	}
-	return v.(*MemoryUser)
-}
 
 func ContextWithRequestHeader(ctx context.Context, request *RequestHeader) context.Context {
 	return context.WithValue(ctx, requestKey, request)

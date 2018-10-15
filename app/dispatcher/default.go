@@ -133,7 +133,12 @@ func (d *DefaultDispatcher) getLink(ctx context.Context) (*vio.Link, *vio.Link) 
 		Writer: downlinkWriter,
 	}
 
-	user := protocol.UserFromContext(ctx)
+	sessionInbound := session.InboundFromContext(ctx)
+	var user *protocol.MemoryUser
+	if sessionInbound != nil {
+		user = sessionInbound.User
+	}
+
 	if user != nil && len(user.Email) > 0 {
 		p := d.policy.ForLevel(user.Level)
 		if p.Stats.UserUplink {

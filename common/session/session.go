@@ -7,6 +7,7 @@ import (
 
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol"
 )
 
 // ID of a session.
@@ -34,6 +35,8 @@ type Inbound struct {
 	Source  net.Destination
 	Gateway net.Destination
 	Tag     string
+	// User is the user that authencates for the inbound. May be nil if the protocol allows anounymous traffic.
+	User *protocol.MemoryUser
 }
 
 type Outbound struct {
