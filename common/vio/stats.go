@@ -1,4 +1,4 @@
-package stats
+package vio
 
 import (
 	"v2ray.com/core/common"
