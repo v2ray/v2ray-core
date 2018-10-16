@@ -18,6 +18,7 @@ func CreateObject(v *Instance, config interface{}) (interface{}, error) {
 }
 
 // StartInstance starts a new V2Ray instance with given serialized config.
+// By default V2Ray only support config in protobuf format, i.e., configFormat = "protobuf". Caller need to load other packages to add JSON support.
 func StartInstance(configFormat string, configBytes []byte) (*Instance, error) {
 	var mb buf.MultiBuffer
 	common.Must2(mb.Write(configBytes))
