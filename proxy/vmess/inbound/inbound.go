@@ -333,7 +333,7 @@ func (h *Handler) generateCommand(ctx context.Context, request *protocol.Request
 				if user == nil {
 					return nil
 				}
-				account := user.Account.(*vmess.InternalAccount)
+				account := user.Account.(*vmess.MemoryAccount)
 				return &protocol.CommandSwitchAccount{
 					Port:     port,
 					ID:       account.ID.UUID(),

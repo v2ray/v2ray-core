@@ -94,7 +94,7 @@ func (v *Handler) Process(ctx context.Context, link *vio.Link, dialer proxy.Dial
 		Option:  protocol.RequestOptionChunkStream,
 	}
 
-	account := request.User.Account.(*vmess.InternalAccount)
+	account := request.User.Account.(*vmess.MemoryAccount)
 	request.Security = account.Security
 
 	if request.Security == protocol.SecurityType_AES128_GCM || request.Security == protocol.SecurityType_NONE || request.Security == protocol.SecurityType_CHACHA20_POLY1305 {

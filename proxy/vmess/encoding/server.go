@@ -135,7 +135,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	}
 
 	iv := md5.Sum(hashTimestamp(timestamp))
-	vmessAccount := user.Account.(*vmess.InternalAccount)
+	vmessAccount := user.Account.(*vmess.MemoryAccount)
 
 	aesStream := crypto.NewAesDecryptionStream(vmessAccount.ID.CmdKey(), iv[:])
 	decryptor := crypto.NewCryptionReader(aesStream, reader)

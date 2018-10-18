@@ -79,7 +79,7 @@ func (v *TimedUserValidator) generateNewHashes(nowSec protocol.Timestamp, user *
 		}
 	}
 
-	account := user.user.Account.(*InternalAccount)
+	account := user.user.Account.(*MemoryAccount)
 
 	genHashForID(account.ID)
 	for _, id := range account.AlterIDs {

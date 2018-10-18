@@ -56,7 +56,7 @@ func NewClientSession(idHash protocol.IDHash) *ClientSession {
 
 func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writer io.Writer) error {
 	timestamp := protocol.NewTimestampGenerator(protocol.NowTime(), 30)()
-	account := header.User.Account.(*vmess.InternalAccount)
+	account := header.User.Account.(*vmess.MemoryAccount)
 	idHash := c.idHash(account.AnyValidID().Bytes())
 	common.Must2(idHash.Write(timestamp.Bytes(nil)))
 	common.Must2(writer.Write(idHash.Sum(nil)))

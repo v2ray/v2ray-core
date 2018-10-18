@@ -24,22 +24,23 @@ import (
 
 // Server is a SOCKS 5 proxy server
 type Server struct {
-	config *ServerConfig
-	v      *core.Instance
+	config        *ServerConfig
+	policyManager policy.Manager
 }
 
 // NewServer creates a new Server object.
 func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
+	v := core.MustFromContext(ctx)
 	s := &Server{
-		config: config,
-		v:      core.MustFromContext(ctx),
+		config:        config,
+		policyManager: v.PolicyManager(),
 	}
 	return s, nil
 }
 
 func (s *Server) policy() policy.Session {
 	config := s.config
-	p := s.v.PolicyManager().ForLevel(config.UserLevel)
+	p := s.policyManager.ForLevel(config.UserLevel)
 	if config.Timeout > 0 {
 		features.PrintDeprecatedFeatureWarning("Socks timeout")
 	}
