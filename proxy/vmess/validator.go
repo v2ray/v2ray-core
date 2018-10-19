@@ -20,6 +20,7 @@ type user struct {
 	lastSec protocol.Timestamp
 }
 
+// TimedUserValidator is a user Validator based on time.
 type TimedUserValidator struct {
 	sync.RWMutex
 	users    []*user
@@ -34,6 +35,7 @@ type indexTimePair struct {
 	timeInc uint32
 }
 
+// NewTimedUserValidator creates a new TimedUserValidator.
 func NewTimedUserValidator(hasher protocol.IDHash) *TimedUserValidator {
 	tuv := &TimedUserValidator{
 		users:    make([]*user, 0, 16),
