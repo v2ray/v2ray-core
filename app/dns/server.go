@@ -128,7 +128,7 @@ func (s *Server) LookupIP(domain string) ([]net.IP, error) {
 	if s.domainMatcher != nil {
 		idx := s.domainMatcher.Match(domain)
 		if idx > 0 {
-			ns := s.servers[idx]
+			ns := s.servers[s.domainIndexMap[idx]]
 			ips, err := s.queryIPTimeout(ns, domain)
 			if len(ips) > 0 {
 				return ips, nil
