@@ -7,7 +7,7 @@ os:
 
 language: go
 go:
-  - "1.11.1"
+  - "1.11.x"
 go_import_path: v2ray.com/core
 
 git:
