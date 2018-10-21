@@ -60,6 +60,52 @@ type Instance struct {
 	running            bool
 }
 
+func addInboundHandlers(server *Instance, configs []*InboundHandlerConfig) error {
+	if len(configs) == 0 {
+		return nil
+	}
+
+	inboundManager := server.GetFeature(inbound.ManagerType()).(inbound.Manager)
+	for _, inboundConfig := range configs {
+		rawHandler, err := CreateObject(server, inboundConfig)
+		if err != nil {
+			return err
+		}
+		handler, ok := rawHandler.(inbound.Handler)
+		if !ok {
+			return newError("not an InboundHandler")
+		}
+		if err := inboundManager.AddHandler(context.Background(), handler); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func addOutboundHandlers(server *Instance, configs []*OutboundHandlerConfig) error {
+	if len(configs) == 0 {
+		return nil
+	}
+
+	outboundManager := server.GetFeature(outbound.ManagerType()).(outbound.Manager)
+	for _, outboundConfig := range configs {
+		rawHandler, err := CreateObject(server, outboundConfig)
+		if err != nil {
+			return err
+		}
+		handler, ok := rawHandler.(outbound.Handler)
+		if !ok {
+			return newError("not an OutboundHandler")
+		}
+		if err := outboundManager.AddHandler(context.Background(), handler); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // New returns a new V2Ray instance based on given configuration.
 // The instance is not started at this point.
 // To ensure V2Ray instance works properly, the config must contain one Dispatcher, one InboundHandlerManager and one OutboundHandlerManager. Other features are optional.
@@ -106,38 +152,12 @@ func New(config *Config) (*Instance, error) {
 		return nil, newError("not all dependency are resolved.")
 	}
 
-	if len(config.Inbound) > 0 {
-		inboundManager := server.GetFeature(inbound.ManagerType()).(inbound.Manager)
-		for _, inboundConfig := range config.Inbound {
-			rawHandler, err := CreateObject(server, inboundConfig)
-			if err != nil {
-				return nil, err
-			}
-			handler, ok := rawHandler.(inbound.Handler)
-			if !ok {
-				return nil, newError("not an InboundHandler")
-			}
-			if err := inboundManager.AddHandler(context.Background(), handler); err != nil {
-				return nil, err
-			}
-		}
+	if err := addInboundHandlers(server, config.Inbound); err != nil {
+		return nil, err
 	}
 
-	if len(config.Outbound) > 0 {
-		outboundManager := server.GetFeature(outbound.ManagerType()).(outbound.Manager)
-		for _, outboundConfig := range config.Outbound {
-			rawHandler, err := CreateObject(server, outboundConfig)
-			if err != nil {
-				return nil, err
-			}
-			handler, ok := rawHandler.(outbound.Handler)
-			if !ok {
-				return nil, newError("not an OutboundHandler")
-			}
-			if err := outboundManager.AddHandler(context.Background(), handler); err != nil {
-				return nil, err
-			}
-		}
+	if err := addOutboundHandlers(server, config.Outbound); err != nil {
+		return nil, err
 	}
 
 	return server, nil
