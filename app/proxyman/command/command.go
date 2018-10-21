@@ -70,15 +70,11 @@ type handlerServer struct {
 }
 
 func (s *handlerServer) AddInbound(ctx context.Context, request *AddInboundRequest) (*AddInboundResponse, error) {
-	rawHandler, err := core.CreateObject(s.s, request.Inbound)
-	if err != nil {
+	if err := core.AddInboundHandler(s.s, request.Inbound); err != nil {
 		return nil, err
 	}
-	handler, ok := rawHandler.(inbound.Handler)
-	if !ok {
-		return nil, newError("not an InboundHandler.")
-	}
-	return &AddInboundResponse{}, s.ihm.AddHandler(ctx, handler)
+
+	return &AddInboundResponse{}, nil
 }
 
 func (s *handlerServer) RemoveInbound(ctx context.Context, request *RemoveInboundRequest) (*RemoveInboundResponse, error) {
@@ -104,15 +100,10 @@ func (s *handlerServer) AlterInbound(ctx context.Context, request *AlterInboundR
 }
 
 func (s *handlerServer) AddOutbound(ctx context.Context, request *AddOutboundRequest) (*AddOutboundResponse, error) {
-	rawHandler, err := core.CreateObject(s.s, request.Outbound)
-	if err != nil {
+	if err := core.AddOutboundHandler(s.s, request.Outbound); err != nil {
 		return nil, err
 	}
-	handler, ok := rawHandler.(outbound.Handler)
-	if !ok {
-		return nil, newError("not an OutboundHandler.")
-	}
-	return &AddOutboundResponse{}, s.ohm.AddHandler(ctx, handler)
+	return &AddOutboundResponse{}, nil
 }
 
 func (s *handlerServer) RemoveOutbound(ctx context.Context, request *RemoveOutboundRequest) (*RemoveOutboundResponse, error) {

@@ -60,22 +60,25 @@ type Instance struct {
 	running            bool
 }
 
-func addInboundHandlers(server *Instance, configs []*InboundHandlerConfig) error {
-	if len(configs) == 0 {
-		return nil
-	}
-
+func AddInboundHandler(server *Instance, config *InboundHandlerConfig) error {
 	inboundManager := server.GetFeature(inbound.ManagerType()).(inbound.Manager)
+	rawHandler, err := CreateObject(server, config)
+	if err != nil {
+		return err
+	}
+	handler, ok := rawHandler.(inbound.Handler)
+	if !ok {
+		return newError("not an InboundHandler")
+	}
+	if err := inboundManager.AddHandler(context.Background(), handler); err != nil {
+		return err
+	}
+	return nil
+}
+
+func addInboundHandlers(server *Instance, configs []*InboundHandlerConfig) error {
 	for _, inboundConfig := range configs {
-		rawHandler, err := CreateObject(server, inboundConfig)
-		if err != nil {
-			return err
-		}
-		handler, ok := rawHandler.(inbound.Handler)
-		if !ok {
-			return newError("not an InboundHandler")
-		}
-		if err := inboundManager.AddHandler(context.Background(), handler); err != nil {
+		if err := AddInboundHandler(server, inboundConfig); err != nil {
 			return err
 		}
 	}
@@ -83,22 +86,25 @@ func addInboundHandlers(server *Instance, configs []*InboundHandlerConfig) error
 	return nil
 }
 
-func addOutboundHandlers(server *Instance, configs []*OutboundHandlerConfig) error {
-	if len(configs) == 0 {
-		return nil
-	}
-
+func AddOutboundHandler(server *Instance, config *OutboundHandlerConfig) error {
 	outboundManager := server.GetFeature(outbound.ManagerType()).(outbound.Manager)
+	rawHandler, err := CreateObject(server, config)
+	if err != nil {
+		return err
+	}
+	handler, ok := rawHandler.(outbound.Handler)
+	if !ok {
+		return newError("not an OutboundHandler")
+	}
+	if err := outboundManager.AddHandler(context.Background(), handler); err != nil {
+		return err
+	}
+	return nil
+}
+
+func addOutboundHandlers(server *Instance, configs []*OutboundHandlerConfig) error {
 	for _, outboundConfig := range configs {
-		rawHandler, err := CreateObject(server, outboundConfig)
-		if err != nil {
-			return err
-		}
-		handler, ok := rawHandler.(outbound.Handler)
-		if !ok {
-			return newError("not an OutboundHandler")
-		}
-		if err := outboundManager.AddHandler(context.Background(), handler); err != nil {
+		if err := AddOutboundHandler(server, outboundConfig); err != nil {
 			return err
 		}
 	}
