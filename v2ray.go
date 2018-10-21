@@ -2,8 +2,6 @@ package core
 
 import (
 	"context"
-	fmt "fmt"
-	"reflect"
 	"sync"
 
 	"v2ray.com/core/common"
@@ -101,19 +99,10 @@ func New(config *Config) (*Instance, error) {
 		server.AddFeature(routing.DefaultRouter{})
 	}
 
+	// Add an empty instance at the end, for optional feature requirement.
 	server.AddFeature(&Instance{})
 
 	if server.featureResolutions != nil {
-		fmt.Println("registered")
-		for _, d := range server.features {
-			fmt.Println(reflect.TypeOf(d.Type()))
-		}
-		for idx, r := range server.featureResolutions {
-			fmt.Println(idx)
-			for _, d := range r.deps {
-				fmt.Println(reflect.TypeOf(d))
-			}
-		}
 		return nil, newError("not all dependency are resolved.")
 	}
 
