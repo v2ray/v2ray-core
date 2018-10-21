@@ -12,6 +12,7 @@ import (
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/session"
+	"v2ray.com/core/features/routing"
 	. "v2ray.com/ext/assert"
 )
 
@@ -38,7 +39,7 @@ func TestSimpleRouter(t *testing.T) {
 	v, err := core.New(config)
 	common.Must(err)
 
-	r := v.Router()
+	r := v.GetFeature(routing.RouterType()).(routing.Router)
 
 	ctx := withOutbound(&session.Outbound{Target: net.TCPDestination(net.DomainAddress("v2ray.com"), 80)})
 	tag, err := r.PickRoute(ctx)

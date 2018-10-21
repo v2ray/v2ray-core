@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"v2ray.com/core/features/routing"
+
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
@@ -42,9 +44,6 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 	server.hosts = hosts
 
 	v := core.MustFromContext(ctx)
-	if err := v.RegisterFeature(server); err != nil {
-		return nil, newError("unable to register DNSClient.").Base(err)
-	}
 
 	addNameServer := func(endpoint *net.Endpoint) int {
 		address := endpoint.Address.AsAddress()
@@ -56,7 +55,12 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 				dest.Network = net.Network_UDP
 			}
 			if dest.Network == net.Network_UDP {
-				server.servers = append(server.servers, NewClassicNameServer(dest, v.Dispatcher(), server.clientIP))
+				idx := len(server.servers)
+				server.servers = append(server.servers, nil)
+				v.RequireFeatures([]interface{}{routing.DispatcherType()}, func(fs []features.Feature) {
+					dispatcher := fs[0].(routing.Dispatcher)
+					server.servers[idx] = NewClassicNameServer(dest, dispatcher, server.clientIP)
+				})
 			}
 		}
 		return len(server.servers) - 1

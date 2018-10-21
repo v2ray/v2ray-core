@@ -6,6 +6,8 @@ import (
 	"context"
 	"time"
 
+	"v2ray.com/core/features"
+
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -31,12 +33,15 @@ type Handler struct {
 
 // New creates a new Freedom handler.
 func New(ctx context.Context, config *Config) (*Handler, error) {
-	v := core.MustFromContext(ctx)
 	f := &Handler{
-		config:        *config,
-		policyManager: v.PolicyManager(),
-		dns:           v.DNSClient(),
+		config: *config,
 	}
+
+	v := core.MustFromContext(ctx)
+	v.RequireFeatures([]interface{}{policy.ManagerType(), dns.ClientType()}, func(fs []features.Feature) {
+		f.policyManager = fs[0].(policy.Manager)
+		f.dns = fs[1].(dns.Client)
+	})
 
 	return f, nil
 }

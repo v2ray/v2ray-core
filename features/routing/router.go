@@ -3,6 +3,7 @@ package routing
 import (
 	"context"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/features"
 )
 
@@ -17,4 +18,22 @@ type Router interface {
 // RouterType return the type of Router interface. Can be used to implement common.HasType.
 func RouterType() interface{} {
 	return (*Router)(nil)
+}
+
+type DefaultRouter struct{}
+
+func (DefaultRouter) Type() interface{} {
+	return RouterType()
+}
+
+func (DefaultRouter) PickRoute(ctx context.Context) (string, error) {
+	return "", common.ErrNoClue
+}
+
+func (DefaultRouter) Start() error {
+	return nil
+}
+
+func (DefaultRouter) Close() error {
+	return nil
 }

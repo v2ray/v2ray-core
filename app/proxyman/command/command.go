@@ -4,8 +4,10 @@ import (
 	"context"
 
 	grpc "google.golang.org/grpc"
+
 	"v2ray.com/core"
 	"v2ray.com/core/common"
+	"v2ray.com/core/features"
 	"v2ray.com/core/features/inbound"
 	"v2ray.com/core/features/outbound"
 	"v2ray.com/core/proxy"
@@ -136,11 +138,14 @@ type service struct {
 }
 
 func (s *service) Register(server *grpc.Server) {
-	RegisterHandlerServiceServer(server, &handlerServer{
-		s:   s.v,
-		ihm: s.v.InboundHandlerManager(),
-		ohm: s.v.OutboundHandlerManager(),
+	hs := &handlerServer{
+		s: s.v,
+	}
+	s.v.RequireFeatures([]interface{}{inbound.ManagerType(), outbound.ManagerType()}, func(fs []features.Feature) {
+		hs.ihm = fs[0].(inbound.Manager)
+		hs.ohm = fs[1].(outbound.Manager)
 	})
+	RegisterHandlerServiceServer(server, hs)
 }
 
 func init() {

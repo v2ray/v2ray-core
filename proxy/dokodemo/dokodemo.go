@@ -35,7 +35,7 @@ func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
 		config:        config,
 		address:       config.GetPredefinedAddress(),
 		port:          net.Port(config.Port),
-		policyManager: v.PolicyManager(),
+		policyManager: v.GetFeature(policy.ManagerType()).(policy.Manager),
 	}
 
 	return d, nil

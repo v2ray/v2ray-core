@@ -21,9 +21,9 @@ import (
 )
 
 type Server struct {
-	config ServerConfig
-	user   *protocol.MemoryUser
-	v      *core.Instance
+	config        ServerConfig
+	user          *protocol.MemoryUser
+	policyManager policy.Manager
 }
 
 // NewServer create a new Shadowsocks server.
@@ -37,10 +37,11 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 		return nil, newError("failed to parse user account").Base(err)
 	}
 
+	v := core.MustFromContext(ctx)
 	s := &Server{
-		config: *config,
-		user:   mUser,
-		v:      core.MustFromContext(ctx),
+		config:        *config,
+		user:          mUser,
+		policyManager: v.GetFeature(policy.ManagerType()).(policy.Manager),
 	}
 
 	return s, nil
@@ -150,7 +151,7 @@ func (s *Server) handlerUDPPayload(ctx context.Context, conn internet.Connection
 }
 
 func (s *Server) handleConnection(ctx context.Context, conn internet.Connection, dispatcher routing.Dispatcher) error {
-	sessionPolicy := s.v.PolicyManager().ForLevel(s.user.Level)
+	sessionPolicy := s.policyManager.ForLevel(s.user.Level)
 	conn.SetReadDeadline(time.Now().Add(sessionPolicy.Timeouts.Handshake))
 
 	bufferedReader := buf.BufferedReader{Reader: buf.NewReader(conn)}

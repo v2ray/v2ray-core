@@ -28,15 +28,16 @@ import (
 
 // Server is an HTTP proxy server.
 type Server struct {
-	config *ServerConfig
-	v      *core.Instance
+	config        *ServerConfig
+	policyManager policy.Manager
 }
 
 // NewServer creates a new HTTP inbound handler.
 func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
+	v := core.MustFromContext(ctx)
 	s := &Server{
-		config: config,
-		v:      core.MustFromContext(ctx),
+		config:        config,
+		policyManager: v.GetFeature(policy.ManagerType()).(policy.Manager),
 	}
 
 	return s, nil
@@ -44,7 +45,7 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 
 func (s *Server) policy() policy.Session {
 	config := s.config
-	p := s.v.PolicyManager().ForLevel(config.UserLevel)
+	p := s.policyManager.ForLevel(config.UserLevel)
 	if config.Timeout > 0 && config.UserLevel == 0 {
 		p.Timeouts.ConnectionIdle = time.Duration(config.Timeout) * time.Second
 	}

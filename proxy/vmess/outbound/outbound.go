@@ -17,6 +17,7 @@ import (
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/task"
 	"v2ray.com/core/common/vio"
+	"v2ray.com/core/features/policy"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/encoding"
@@ -25,9 +26,9 @@ import (
 
 // Handler is an outbound connection handler for VMess protocol.
 type Handler struct {
-	serverList   *protocol.ServerList
-	serverPicker protocol.ServerPicker
-	v            *core.Instance
+	serverList    *protocol.ServerList
+	serverPicker  protocol.ServerPicker
+	policyManager policy.Manager
 }
 
 // New creates a new VMess outbound handler.
@@ -40,10 +41,12 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		}
 		serverList.AddServer(s)
 	}
+
+	v := core.MustFromContext(ctx)
 	handler := &Handler{
-		serverList:   serverList,
-		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
-		v:            core.MustFromContext(ctx),
+		serverList:    serverList,
+		serverPicker:  protocol.NewRoundRobinServerPicker(serverList),
+		policyManager: v.GetFeature(policy.ManagerType()).(policy.Manager),
 	}
 
 	return handler, nil
@@ -109,7 +112,7 @@ func (v *Handler) Process(ctx context.Context, link *vio.Link, dialer proxy.Dial
 	output := link.Writer
 
 	session := encoding.NewClientSession(protocol.DefaultIDHash)
-	sessionPolicy := v.v.PolicyManager().ForLevel(request.User.Level)
+	sessionPolicy := v.policyManager.ForLevel(request.User.Level)
 
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)

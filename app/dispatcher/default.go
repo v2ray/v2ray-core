@@ -16,6 +16,7 @@ import (
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/vio"
+	"v2ray.com/core/features"
 	"v2ray.com/core/features/outbound"
 	"v2ray.com/core/features/policy"
 	"v2ray.com/core/features/routing"
@@ -91,17 +92,22 @@ type DefaultDispatcher struct {
 
 // NewDefaultDispatcher create a new DefaultDispatcher.
 func NewDefaultDispatcher(ctx context.Context, config *Config) (*DefaultDispatcher, error) {
-	v := core.MustFromContext(ctx)
-	d := &DefaultDispatcher{
-		ohm:    v.OutboundHandlerManager(),
-		router: v.Router(),
-		policy: v.PolicyManager(),
-		stats:  v.Stats(),
-	}
+	d := &DefaultDispatcher{}
 
-	if err := v.RegisterFeature(d); err != nil {
-		return nil, newError("unable to register Dispatcher").Base(err)
-	}
+	v := core.MustFromContext(ctx)
+	v.RequireFeatures([]interface{}{outbound.ManagerType(), routing.RouterType(), policy.ManagerType()}, func(fs []features.Feature) {
+		d.ohm = fs[0].(outbound.Manager)
+		d.router = fs[1].(routing.Router)
+		d.policy = fs[2].(policy.Manager)
+	})
+	v.RequireFeatures([]interface{}{core.ServerType()}, func([]features.Feature) {
+		f := v.GetFeature(stats.ManagerType())
+		if f == nil {
+			return
+		}
+		d.stats = f.(stats.Manager)
+	})
+
 	return d, nil
 }
 

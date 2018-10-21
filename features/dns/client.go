@@ -15,3 +15,16 @@ type Client interface {
 func ClientType() interface{} {
 	return (*Client)(nil)
 }
+
+type LocalClient struct{}
+
+func (LocalClient) Type() interface{} {
+	return ClientType()
+}
+
+func (LocalClient) Start() error { return nil }
+func (LocalClient) Close() error { return nil }
+
+func (LocalClient) LookupIP(host string) ([]net.IP, error) {
+	return net.LookupIP(host)
+}

@@ -2,49 +2,71 @@ package core
 
 import (
 	"context"
+	fmt "fmt"
+	"reflect"
 	"sync"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/serial"
-	"v2ray.com/core/common/uuid"
 	"v2ray.com/core/features"
 	"v2ray.com/core/features/dns"
 	"v2ray.com/core/features/inbound"
 	"v2ray.com/core/features/outbound"
 	"v2ray.com/core/features/policy"
 	"v2ray.com/core/features/routing"
-	"v2ray.com/core/features/stats"
 )
 
 // Server is an instance of V2Ray. At any time, there must be at most one Server instance running.
-// Deprecated. Use Instance directly.
 type Server interface {
 	common.Runnable
 }
 
+// ServerType returns the type of the server.
+func ServerType() interface{} {
+	return (*Instance)(nil)
+}
+
+type resolution struct {
+	deps     []interface{}
+	callback func([]features.Feature)
+}
+
+func getFeature(allFeatures []features.Feature, t interface{}) features.Feature {
+	for _, f := range allFeatures {
+		if f.Type() == t {
+			return f
+		}
+	}
+	return nil
+}
+
+func (r *resolution) resolve(allFeatures []features.Feature) bool {
+	var fs []features.Feature
+	for _, d := range r.deps {
+		f := getFeature(allFeatures, d)
+		if f == nil {
+			return false
+		}
+		fs = append(fs, f)
+	}
+
+	r.callback(fs)
+	return true
+}
+
 // Instance combines all functionalities in V2Ray.
 type Instance struct {
-	dnsClient     syncDNSClient
-	policyManager syncPolicyManager
-	dispatcher    syncDispatcher
-	router        syncRouter
-	ihm           syncInboundHandlerManager
-	ohm           syncOutboundHandlerManager
-	stats         syncStatManager
-
-	access   sync.Mutex
-	features []features.Feature
-	id       uuid.UUID
-	running  bool
+	access             sync.Mutex
+	features           []features.Feature
+	featureResolutions []resolution
+	running            bool
 }
 
 // New returns a new V2Ray instance based on given configuration.
 // The instance is not started at this point.
 // To ensure V2Ray instance works properly, the config must contain one Dispatcher, one InboundHandlerManager and one OutboundHandlerManager. Other features are optional.
 func New(config *Config) (*Instance, error) {
-	var server = &Instance{
-		id: uuid.New(),
-	}
+	var server = &Instance{}
 
 	if config.Transport != nil {
 		features.PrintDeprecatedFeatureWarning("global transport settings")
@@ -58,45 +80,83 @@ func New(config *Config) (*Instance, error) {
 		if err != nil {
 			return nil, err
 		}
-		if _, err := CreateObject(server, settings); err != nil {
-			return nil, err
-		}
-	}
-
-	for _, inboundConfig := range config.Inbound {
-		rawHandler, err := CreateObject(server, inboundConfig)
+		obj, err := CreateObject(server, settings)
 		if err != nil {
 			return nil, err
 		}
-		handler, ok := rawHandler.(inbound.Handler)
-		if !ok {
-			return nil, newError("not an InboundHandler")
-		}
-		if err := server.InboundHandlerManager().AddHandler(context.Background(), handler); err != nil {
-			return nil, err
+		if feature, ok := obj.(features.Feature); ok {
+			server.AddFeature(feature)
 		}
 	}
 
-	for _, outboundConfig := range config.Outbound {
-		rawHandler, err := CreateObject(server, outboundConfig)
-		if err != nil {
-			return nil, err
+	if server.GetFeature(dns.ClientType()) == nil {
+		server.AddFeature(dns.LocalClient{})
+	}
+
+	if server.GetFeature(policy.ManagerType()) == nil {
+		server.AddFeature(policy.DefaultManager{})
+	}
+
+	if server.GetFeature(routing.RouterType()) == nil {
+		server.AddFeature(routing.DefaultRouter{})
+	}
+
+	server.AddFeature(&Instance{})
+
+	if server.featureResolutions != nil {
+		fmt.Println("registered")
+		for _, d := range server.features {
+			fmt.Println(reflect.TypeOf(d.Type()))
 		}
-		handler, ok := rawHandler.(outbound.Handler)
-		if !ok {
-			return nil, newError("not an OutboundHandler")
+		for idx, r := range server.featureResolutions {
+			fmt.Println(idx)
+			for _, d := range r.deps {
+				fmt.Println(reflect.TypeOf(d))
+			}
 		}
-		if err := server.OutboundHandlerManager().AddHandler(context.Background(), handler); err != nil {
-			return nil, err
+		return nil, newError("not all dependency are resolved.")
+	}
+
+	if len(config.Inbound) > 0 {
+		inboundManager := server.GetFeature(inbound.ManagerType()).(inbound.Manager)
+		for _, inboundConfig := range config.Inbound {
+			rawHandler, err := CreateObject(server, inboundConfig)
+			if err != nil {
+				return nil, err
+			}
+			handler, ok := rawHandler.(inbound.Handler)
+			if !ok {
+				return nil, newError("not an InboundHandler")
+			}
+			if err := inboundManager.AddHandler(context.Background(), handler); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if len(config.Outbound) > 0 {
+		outboundManager := server.GetFeature(outbound.ManagerType()).(outbound.Manager)
+		for _, outboundConfig := range config.Outbound {
+			rawHandler, err := CreateObject(server, outboundConfig)
+			if err != nil {
+				return nil, err
+			}
+			handler, ok := rawHandler.(outbound.Handler)
+			if !ok {
+				return nil, newError("not an OutboundHandler")
+			}
+			if err := outboundManager.AddHandler(context.Background(), handler); err != nil {
+				return nil, err
+			}
 		}
 	}
 
 	return server, nil
 }
 
-// ID returns a unique ID for this V2Ray instance.
-func (s *Instance) ID() uuid.UUID {
-	return s.id
+// Type implements common.HasType.
+func (s *Instance) Type() interface{} {
+	return ServerType()
 }
 
 // Close shutdown the V2Ray instance.
@@ -107,7 +167,7 @@ func (s *Instance) Close() error {
 	s.running = false
 
 	var errors []interface{}
-	for _, f := range s.allFeatures() {
+	for _, f := range s.features {
 		if err := f.Close(); err != nil {
 			errors = append(errors, err)
 		}
@@ -119,6 +179,51 @@ func (s *Instance) Close() error {
 	return nil
 }
 
+// RequireFeatures registers a callback, which will be called when all dependent features are registered.
+func (s *Instance) RequireFeatures(featureTypes []interface{}, callback func([]features.Feature)) {
+	r := resolution{
+		deps:     featureTypes,
+		callback: callback,
+	}
+	if r.resolve(s.features) {
+		return
+	}
+	s.featureResolutions = append(s.featureResolutions, r)
+}
+
+// AddFeature registers a feature into current Instance.
+func (s *Instance) AddFeature(feature features.Feature) {
+	s.features = append(s.features, feature)
+
+	if s.running {
+		if err := feature.Start(); err != nil {
+			newError("failed to start feature").Base(err).WriteToLog()
+		}
+		return
+	}
+
+	if s.featureResolutions == nil {
+		return
+	}
+
+	var pendingResolutions []resolution
+	for _, r := range s.featureResolutions {
+		if !r.resolve(s.features) {
+			pendingResolutions = append(pendingResolutions, r)
+		}
+	}
+	if len(pendingResolutions) == 0 {
+		s.featureResolutions = nil
+	} else if len(pendingResolutions) < len(s.featureResolutions) {
+		s.featureResolutions = pendingResolutions
+	}
+}
+
+// GetFeature returns a feature of the given type, or nil if such feature is not registered.
+func (s *Instance) GetFeature(featureType interface{}) features.Feature {
+	return getFeature(s.features, featureType)
+}
+
 // Start starts the V2Ray instance, including all registered features. When Start returns error, the state of the instance is unknown.
 // A V2Ray instance can be started only once. Upon closing, the instance is not guaranteed to start again.
 func (s *Instance) Start() error {
@@ -126,7 +231,7 @@ func (s *Instance) Start() error {
 	defer s.access.Unlock()
 
 	s.running = true
-	for _, f := range s.allFeatures() {
+	for _, f := range s.features {
 		if err := f.Start(); err != nil {
 			return err
 		}
@@ -135,105 +240,4 @@ func (s *Instance) Start() error {
 	newError("V2Ray ", Version(), " started").AtWarning().WriteToLog()
 
 	return nil
-}
-
-// RegisterFeature registers the given feature into V2Ray.
-// If feature is one of the following types, the corresponding feature in this Instance
-// will be replaced: DNSClient, PolicyManager, Router, Dispatcher, InboundHandlerManager, OutboundHandlerManager.
-func (s *Instance) RegisterFeature(instance features.Feature) error {
-	running := false
-
-	switch instance.Type().(type) {
-	case dns.Client, *dns.Client:
-		s.dnsClient.Set(instance.(dns.Client))
-	case policy.Manager, *policy.Manager:
-		s.policyManager.Set(instance.(policy.Manager))
-	case routing.Router, *routing.Router:
-		s.router.Set(instance.(routing.Router))
-	case routing.Dispatcher, *routing.Dispatcher:
-		s.dispatcher.Set(instance.(routing.Dispatcher))
-	case inbound.Manager, *inbound.Manager:
-		s.ihm.Set(instance.(inbound.Manager))
-	case outbound.Manager, *outbound.Manager:
-		s.ohm.Set(instance.(outbound.Manager))
-	case stats.Manager, *stats.Manager:
-		s.stats.Set(instance.(stats.Manager))
-	default:
-		s.access.Lock()
-		s.features = append(s.features, instance)
-		running = s.running
-		s.access.Unlock()
-	}
-
-	if running {
-		return instance.Start()
-	}
-	return nil
-}
-
-func (s *Instance) allFeatures() []features.Feature {
-	return append([]features.Feature{s.DNSClient(), s.PolicyManager(), s.Dispatcher(), s.Router(), s.InboundHandlerManager(), s.OutboundHandlerManager(), s.Stats()}, s.features...)
-}
-
-// GetFeature returns a feature that was registered in this Instance. Nil if not found.
-// The returned Feature must implement common.HasType and whose type equals to the given feature type.
-func (s *Instance) GetFeature(featureType interface{}) features.Feature {
-	switch featureType.(type) {
-	case dns.Client, *dns.Client:
-		return s.DNSClient()
-	case policy.Manager, *policy.Manager:
-		return s.PolicyManager()
-	case routing.Router, *routing.Router:
-		return s.Router()
-	case routing.Dispatcher, *routing.Dispatcher:
-		return s.Dispatcher()
-	case inbound.Manager, *inbound.Manager:
-		return s.InboundHandlerManager()
-	case outbound.Manager, *outbound.Manager:
-		return s.OutboundHandlerManager()
-	case stats.Manager, *stats.Manager:
-		return s.Stats()
-	default:
-		for _, f := range s.features {
-			if f.Type() == featureType {
-				return f
-			}
-		}
-		return nil
-	}
-}
-
-// DNSClient returns the dns.Client used by this Instance. The returned dns.Client is always functional.
-func (s *Instance) DNSClient() dns.Client {
-	return &(s.dnsClient)
-}
-
-// PolicyManager returns the policy.Manager used by this Instance. The returned policy.Manager is always functional.
-func (s *Instance) PolicyManager() policy.Manager {
-	return &(s.policyManager)
-}
-
-// Router returns the Router used by this Instance. The returned Router is always functional.
-func (s *Instance) Router() routing.Router {
-	return &(s.router)
-}
-
-// Dispatcher returns the Dispatcher used by this Instance. If Dispatcher was not registered before, the returned value doesn't work, although it is not nil.
-func (s *Instance) Dispatcher() routing.Dispatcher {
-	return &(s.dispatcher)
-}
-
-// InboundHandlerManager returns the InboundHandlerManager used by this Instance. If InboundHandlerManager was not registered before, the returned value doesn't work.
-func (s *Instance) InboundHandlerManager() inbound.Manager {
-	return &(s.ihm)
-}
-
-// OutboundHandlerManager returns the OutboundHandlerManager used by this Instance. If OutboundHandlerManager was not registered before, the returned value doesn't work.
-func (s *Instance) OutboundHandlerManager() outbound.Manager {
-	return &(s.ohm)
-}
-
-// Stats returns the stats.Manager used by this Instance. If StatManager was not registered before, the returned value doesn't work.
-func (s *Instance) Stats() stats.Manager {
-	return &(s.stats)
 }

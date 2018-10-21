@@ -6,6 +6,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/features/routing"
 )
 
 // CreateObject creates a new object based on the given V2Ray instance and config. The V2Ray instance may be nil.
@@ -41,7 +42,11 @@ func StartInstance(configFormat string, configBytes []byte) (*Instance, error) {
 // Since it is under a proxy context, the LocalAddr() and RemoteAddr() in returned net.Conn
 // will not show real addresses being used for communication.
 func Dial(ctx context.Context, v *Instance, dest net.Destination) (net.Conn, error) {
-	r, err := v.Dispatcher().Dispatch(ctx, dest)
+	dispatcher := v.GetFeature(routing.DispatcherType())
+	if dispatcher == nil {
+		return nil, newError("routing.Dispatcher is not registered in V2Ray core")
+	}
+	r, err := dispatcher.(routing.Dispatcher).Dispatch(ctx, dest)
 	if err != nil {
 		return nil, err
 	}

@@ -114,8 +114,8 @@ type Handler struct {
 func New(ctx context.Context, config *Config) (*Handler, error) {
 	v := core.MustFromContext(ctx)
 	handler := &Handler{
-		policyManager:         v.PolicyManager(),
-		inboundHandlerManager: v.InboundHandlerManager(),
+		policyManager:         v.GetFeature(policy.ManagerType()).(policy.Manager),
+		inboundHandlerManager: v.GetFeature(feature_inbound.ManagerType()).(feature_inbound.Manager),
 		clients:               vmess.NewTimedUserValidator(protocol.DefaultIDHash),
 		detours:               config.Detour,
 		usersByEmail:          newUserByEmail(config.GetDefaultValue()),

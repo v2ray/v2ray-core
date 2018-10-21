@@ -10,6 +10,7 @@ import (
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
+	"v2ray.com/core/features/policy"
 	"v2ray.com/core/features/stats"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
@@ -19,9 +20,9 @@ func getStatCounter(v *core.Instance, tag string) (stats.Counter, stats.Counter)
 	var uplinkCounter stats.Counter
 	var downlinkCounter stats.Counter
 
-	policy := v.PolicyManager()
-	statsManager := v.Stats()
+	policy := v.GetFeature(policy.ManagerType()).(policy.Manager)
 	if len(tag) > 0 && policy.ForSystem().Stats.InboundUplink {
+		statsManager := v.GetFeature(stats.ManagerType()).(stats.Manager)
 		name := "inbound>>>" + tag + ">>>traffic>>>uplink"
 		c, _ := stats.GetOrRegisterCounter(statsManager, name)
 		if c != nil {
@@ -29,6 +30,7 @@ func getStatCounter(v *core.Instance, tag string) (stats.Counter, stats.Counter)
 		}
 	}
 	if len(tag) > 0 && policy.ForSystem().Stats.InboundDownlink {
+		statsManager := v.GetFeature(stats.ManagerType()).(stats.Manager)
 		name := "inbound>>>" + tag + ">>>traffic>>>downlink"
 		c, _ := stats.GetOrRegisterCounter(statsManager, name)
 		if c != nil {

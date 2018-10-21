@@ -29,7 +29,7 @@ func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (outbou
 	v := core.MustFromContext(ctx)
 	h := &Handler{
 		config:          config,
-		outboundManager: v.OutboundHandlerManager(),
+		outboundManager: v.GetFeature(outbound.ManagerType()).(outbound.Manager),
 	}
 
 	if config.SenderSettings != nil {

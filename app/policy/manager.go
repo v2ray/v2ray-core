@@ -3,7 +3,6 @@ package policy
 import (
 	"context"
 
-	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/features/policy"
 )
@@ -25,13 +24,6 @@ func New(ctx context.Context, config *Config) (*Instance, error) {
 			pp := defaultPolicy()
 			pp.overrideWith(p)
 			m.levels[lv] = pp
-		}
-	}
-
-	v := core.FromContext(ctx)
-	if v != nil {
-		if err := v.RegisterFeature(m); err != nil {
-			return nil, newError("unable to register PolicyManager in core").Base(err).AtError()
 		}
 	}
 

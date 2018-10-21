@@ -33,7 +33,7 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	v := core.MustFromContext(ctx)
 	s := &Server{
 		config:        config,
-		policyManager: v.PolicyManager(),
+		policyManager: v.GetFeature(policy.ManagerType()).(policy.Manager),
 	}
 	return s, nil
 }

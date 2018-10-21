@@ -79,7 +79,8 @@ type service struct {
 }
 
 func (s *service) Register(server *grpc.Server) {
-	RegisterStatsServiceServer(server, NewStatsServer(s.v.Stats()))
+	f := s.v.GetFeature(feature_stats.ManagerType())
+	RegisterStatsServiceServer(server, NewStatsServer(f.(feature_stats.Manager)))
 }
 
 func init() {

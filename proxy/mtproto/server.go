@@ -56,7 +56,7 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	return &Server{
 		user:    user,
 		account: account,
-		policy:  v.PolicyManager(),
+		policy:  v.GetFeature(policy.ManagerType()).(policy.Manager),
 	}, nil
 }
 

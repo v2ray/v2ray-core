@@ -9,6 +9,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
+	"v2ray.com/core/features"
 	"v2ray.com/core/features/dns"
 	"v2ray.com/core/features/routing"
 	"v2ray.com/core/proxy"
@@ -23,11 +24,9 @@ type Router struct {
 
 // NewRouter creates a new Router based on the given config.
 func NewRouter(ctx context.Context, config *Config) (*Router, error) {
-	v := core.MustFromContext(ctx)
 	r := &Router{
 		domainStrategy: config.DomainStrategy,
 		rules:          make([]Rule, len(config.Rule)),
-		dns:            v.DNSClient(),
 	}
 
 	for idx, rule := range config.Rule {
@@ -39,9 +38,10 @@ func NewRouter(ctx context.Context, config *Config) (*Router, error) {
 		r.rules[idx].Condition = cond
 	}
 
-	if err := v.RegisterFeature(r); err != nil {
-		return nil, newError("unable to register Router").Base(err)
-	}
+	v := core.MustFromContext(ctx)
+	v.RequireFeatures([]interface{}{dns.ClientType()}, func(fs []features.Feature) {
+		r.dns = fs[0].(dns.Client)
+	})
 	return r, nil
 }
 

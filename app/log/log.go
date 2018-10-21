@@ -6,7 +6,6 @@ import (
 	"context"
 	"sync"
 
-	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/log"
 )
@@ -27,11 +26,6 @@ func New(ctx context.Context, config *Config) (*Instance, error) {
 		active: false,
 	}
 	log.RegisterHandler(g)
-
-	v := core.FromContext(ctx)
-	if v != nil {
-		common.Must(v.RegisterFeature(g))
-	}
 
 	return g, nil
 }

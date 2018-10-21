@@ -3,25 +3,25 @@ package shadowsocks
 import (
 	"context"
 
-	"v2ray.com/core/common/session"
-	"v2ray.com/core/common/task"
-	"v2ray.com/core/common/vio"
-
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/task"
+	"v2ray.com/core/common/vio"
+	"v2ray.com/core/features/policy"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 )
 
 // Client is a inbound handler for Shadowsocks protocol
 type Client struct {
-	serverPicker protocol.ServerPicker
-	v            *core.Instance
+	serverPicker  protocol.ServerPicker
+	policyManager policy.Manager
 }
 
 // NewClient create a new Shadowsocks client.
@@ -37,9 +37,11 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 	if serverList.Size() == 0 {
 		return nil, newError("0 server")
 	}
+
+	v := core.MustFromContext(ctx)
 	client := &Client{
-		serverPicker: protocol.NewRoundRobinServerPicker(serverList),
-		v:            core.MustFromContext(ctx),
+		serverPicker:  protocol.NewRoundRobinServerPicker(serverList),
+		policyManager: v.GetFeature(policy.ManagerType()).(policy.Manager),
 	}
 	return client, nil
 }
@@ -97,7 +99,7 @@ func (c *Client) Process(ctx context.Context, link *vio.Link, dialer proxy.Diale
 		request.Option |= RequestOptionOneTimeAuth
 	}
 
-	sessionPolicy := c.v.PolicyManager().ForLevel(user.Level)
+	sessionPolicy := c.policyManager.ForLevel(user.Level)
 	ctx, cancel := context.WithCancel(ctx)
 	timer := signal.CancelAfterInactivity(ctx, cancel, sessionPolicy.Timeouts.ConnectionIdle)
 
