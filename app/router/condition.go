@@ -4,10 +4,9 @@ import (
 	"context"
 	"strings"
 
-	"v2ray.com/core/common/session"
-
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/strmatcher"
 	"v2ray.com/core/proxy"
 )

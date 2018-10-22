@@ -31,8 +31,6 @@ func withInbound(inbound *session.Inbound) context.Context {
 }
 
 func TestRoutingRule(t *testing.T) {
-	assert := With(t)
-
 	type ruleTest struct {
 		input  context.Context
 		output bool
@@ -128,6 +126,26 @@ func TestRoutingRule(t *testing.T) {
 		},
 		{
 			rule: &RoutingRule{
+				SourceCidr: []*CIDR{
+					{
+						Ip:     []byte{192, 168, 0, 0},
+						Prefix: 16,
+					},
+				},
+			},
+			test: []ruleTest{
+				{
+					input:  withInbound(&session.Inbound{Source: net.TCPDestination(net.ParseAddress("192.168.0.1"), 80)}),
+					output: true,
+				},
+				{
+					input:  withInbound(&session.Inbound{Source: net.TCPDestination(net.ParseAddress("10.0.0.1"), 80)}),
+					output: false,
+				},
+			},
+		},
+		{
+			rule: &RoutingRule{
 				UserEmail: []string{
 					"admin@v2ray.com",
 				},
@@ -158,14 +176,32 @@ func TestRoutingRule(t *testing.T) {
 				},
 			},
 		},
+		{
+			rule: &RoutingRule{
+				InboundTag: []string{"test", "test1"},
+			},
+			test: []ruleTest{
+				{
+					input:  withInbound(&session.Inbound{Tag: "test"}),
+					output: true,
+				},
+				{
+					input:  withInbound(&session.Inbound{Tag: "test2"}),
+					output: false,
+				},
+			},
+		},
 	}
 
 	for _, test := range cases {
 		cond, err := test.rule.BuildCondition()
-		assert(err, IsNil)
+		common.Must(err)
 
-		for _, t := range test.test {
-			assert(cond.Apply(t.input), Equals, t.output)
+		for _, subtest := range test.test {
+			actual := cond.Apply(subtest.input)
+			if actual != subtest.output {
+				t.Error("test case failed: ", subtest.input, " expected ", subtest.output, " but got ", actual)
+			}
 		}
 	}
 }
