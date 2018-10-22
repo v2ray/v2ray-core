@@ -16,8 +16,9 @@ import (
 	"v2ray.com/core/transport/pipe"
 )
 
+// Handler is an implements of outbound.Handler.
 type Handler struct {
-	config          *core.OutboundHandlerConfig
+	tag             string
 	senderSettings  *proxyman.SenderConfig
 	streamSettings  *internet.MemoryStreamConfig
 	proxy           proxy.Outbound
@@ -25,10 +26,11 @@ type Handler struct {
 	mux             *mux.ClientManager
 }
 
+// NewHandler create a new Handler based on the given configuration.
 func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (outbound.Handler, error) {
 	v := core.MustFromContext(ctx)
 	h := &Handler{
-		config:          config,
+		tag:             config.Tag,
 		outboundManager: v.GetFeature(outbound.ManagerType()).(outbound.Manager),
 	}
 
@@ -79,7 +81,7 @@ func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (outbou
 
 // Tag implements outbound.Handler.
 func (h *Handler) Tag() string {
-	return h.config.Tag
+	return h.tag
 }
 
 // Dispatch implements proxy.Outbound.Dispatch.
