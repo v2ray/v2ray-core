@@ -6,11 +6,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"testing"
-	"time"
-
-	"v2ray.com/core/common/session"
 
 	proto "github.com/golang/protobuf/proto"
+
 	"v2ray.com/core/app/dispatcher"
 	. "v2ray.com/core/app/router"
 	"v2ray.com/core/common"
@@ -19,6 +17,7 @@ import (
 	"v2ray.com/core/common/platform"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/protocol/http"
+	"v2ray.com/core/common/session"
 	. "v2ray.com/ext/assert"
 	"v2ray.com/ext/sysio"
 )
@@ -208,9 +207,5 @@ func TestChinaSites(t *testing.T) {
 
 	for i := 0; i < 1024; i++ {
 		assert(matcher.ApplyDomain(strconv.Itoa(i)+".not-exists.com"), IsFalse)
-	}
-	time.Sleep(time.Second * 10)
-	for i := 0; i < 1024; i++ {
-		assert(matcher.ApplyDomain(strconv.Itoa(i)+".not-exists2.com"), IsFalse)
 	}
 }
