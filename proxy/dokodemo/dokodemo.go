@@ -19,6 +19,16 @@ import (
 	"v2ray.com/core/transport/pipe"
 )
 
+func init() {
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		d := new(DokodemoDoor)
+		err := core.RequireFeatures(ctx, func(pm policy.Manager) error {
+			return d.Init(config.(*Config), pm)
+		})
+		return d, err
+	}))
+}
+
 type DokodemoDoor struct {
 	policyManager policy.Manager
 	config        *Config
@@ -26,19 +36,17 @@ type DokodemoDoor struct {
 	port          net.Port
 }
 
-func New(ctx context.Context, config *Config) (*DokodemoDoor, error) {
+// Init initializes the DokodemoDoor instance with necessary parameters.
+func (d *DokodemoDoor) Init(config *Config, pm policy.Manager) error {
 	if config.NetworkList == nil || config.NetworkList.Size() == 0 {
-		return nil, newError("no network specified")
+		return newError("no network specified")
 	}
-	v := core.MustFromContext(ctx)
-	d := &DokodemoDoor{
-		config:        config,
-		address:       config.GetPredefinedAddress(),
-		port:          net.Port(config.Port),
-		policyManager: v.GetFeature(policy.ManagerType()).(policy.Manager),
-	}
+	d.config = config
+	d.address = config.GetPredefinedAddress()
+	d.port = net.Port(config.Port)
+	d.policyManager = pm
 
-	return d, nil
+	return nil
 }
 
 func (d *DokodemoDoor) Network() net.NetworkList {
@@ -143,10 +151,4 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 	}
 
 	return nil
-}
-
-func init() {
-	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
-		return New(ctx, config.(*Config))
-	}))
 }

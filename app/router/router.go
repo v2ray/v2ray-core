@@ -14,6 +14,18 @@ import (
 	"v2ray.com/core/proxy"
 )
 
+func init() {
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		r := new(Router)
+		if err := core.RequireFeatures(ctx, func(d dns.Client) error {
+			return r.Init(config.(*Config), d)
+		}); err != nil {
+			return nil, err
+		}
+		return r, nil
+	}))
+}
+
 // Router is an implementation of routing.Router.
 type Router struct {
 	domainStrategy Config_DomainStrategy
@@ -21,27 +33,22 @@ type Router struct {
 	dns            dns.Client
 }
 
-// NewRouter creates a new Router based on the given config.
-func NewRouter(ctx context.Context, config *Config) (*Router, error) {
-	r := &Router{
-		domainStrategy: config.DomainStrategy,
-		rules:          make([]Rule, len(config.Rule)),
-	}
+// Init initializes the Router.
+func (r *Router) Init(config *Config, d dns.Client) error {
+	r.domainStrategy = config.DomainStrategy
+	r.rules = make([]Rule, len(config.Rule))
+	r.dns = d
 
 	for idx, rule := range config.Rule {
 		r.rules[idx].Tag = rule.Tag
 		cond, err := rule.BuildCondition()
 		if err != nil {
-			return nil, err
+			return err
 		}
 		r.rules[idx].Condition = cond
 	}
 
-	core.RequireFeatures(ctx, func(d dns.Client) {
-		r.dns = d
-	})
-
-	return r, nil
+	return nil
 }
 
 type ipResolver struct {
@@ -126,10 +133,4 @@ func (*Router) Close() error {
 // Type implement common.HasType.
 func (*Router) Type() interface{} {
 	return routing.RouterType()
-}
-
-func init() {
-	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
-		return NewRouter(ctx, config.(*Config))
-	}))
 }

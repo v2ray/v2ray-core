@@ -3,46 +3,71 @@ package router_test
 import (
 	"testing"
 
-	"v2ray.com/core"
-	"v2ray.com/core/app/dispatcher"
-	"v2ray.com/core/app/proxyman"
-	_ "v2ray.com/core/app/proxyman/outbound"
+	"github.com/golang/mock/gomock"
 	. "v2ray.com/core/app/router"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/session"
-	"v2ray.com/core/features/routing"
-	. "v2ray.com/ext/assert"
+	"v2ray.com/core/features/mocks"
 )
 
 func TestSimpleRouter(t *testing.T) {
-	assert := With(t)
-
-	config := &core.Config{
-		App: []*serial.TypedMessage{
-			serial.ToTypedMessage(&Config{
-				Rule: []*RoutingRule{
-					{
-						Tag: "test",
-						NetworkList: &net.NetworkList{
-							Network: []net.Network{net.Network_TCP},
-						},
-					},
+	config := &Config{
+		Rule: []*RoutingRule{
+			{
+				Tag: "test",
+				NetworkList: &net.NetworkList{
+					Network: []net.Network{net.Network_TCP},
 				},
-			}),
-			serial.ToTypedMessage(&dispatcher.Config{}),
-			serial.ToTypedMessage(&proxyman.OutboundConfig{}),
+			},
 		},
 	}
 
-	v, err := core.New(config)
-	common.Must(err)
+	mockCtl := gomock.NewController(t)
+	defer mockCtl.Finish()
 
-	r := v.GetFeature(routing.RouterType()).(routing.Router)
+	mockDns := mocks.NewMockDNSClient(mockCtl)
+
+	r := new(Router)
+	common.Must(r.Init(config, mockDns))
 
 	ctx := withOutbound(&session.Outbound{Target: net.TCPDestination(net.DomainAddress("v2ray.com"), 80)})
 	tag, err := r.PickRoute(ctx)
-	assert(err, IsNil)
-	assert(tag, Equals, "test")
+	common.Must(err)
+	if tag != "test" {
+		t.Error("expect tag 'test', bug actually ", tag)
+	}
+}
+
+func TestIPOnDemand(t *testing.T) {
+	config := &Config{
+		DomainStrategy: Config_IpOnDemand,
+		Rule: []*RoutingRule{
+			{
+				Tag: "test",
+				Cidr: []*CIDR{
+					{
+						Ip:     []byte{192, 168, 0, 0},
+						Prefix: 16,
+					},
+				},
+			},
+		},
+	}
+
+	mockCtl := gomock.NewController(t)
+	defer mockCtl.Finish()
+
+	mockDns := mocks.NewMockDNSClient(mockCtl)
+	mockDns.EXPECT().LookupIP(gomock.Eq("v2ray.com")).Return([]net.IP{{192, 168, 0, 1}}, nil).AnyTimes()
+
+	r := new(Router)
+	common.Must(r.Init(config, mockDns))
+
+	ctx := withOutbound(&session.Outbound{Target: net.TCPDestination(net.DomainAddress("v2ray.com"), 80)})
+	tag, err := r.PickRoute(ctx)
+	common.Must(err)
+	if tag != "test" {
+		t.Error("expect tag 'test', bug actually ", tag)
+	}
 }

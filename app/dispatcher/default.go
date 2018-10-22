@@ -89,22 +89,25 @@ type DefaultDispatcher struct {
 	stats  stats.Manager
 }
 
-// NewDefaultDispatcher create a new DefaultDispatcher.
-func NewDefaultDispatcher(ctx context.Context, config *Config) (*DefaultDispatcher, error) {
-	d := &DefaultDispatcher{}
-
-	core.RequireFeatures(ctx, d.Init)
-
-	return d, nil
+func init() {
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		d := new(DefaultDispatcher)
+		if err := core.RequireFeatures(ctx, func(om outbound.Manager, router routing.Router, pm policy.Manager, sm stats.Manager) error {
+			return d.Init(config.(*Config), om, router, pm, sm)
+		}); err != nil {
+			return nil, err
+		}
+		return d, nil
+	}))
 }
 
 // Init initializes DefaultDispatcher.
-// This method is visible for testing purpose.
-func (d *DefaultDispatcher) Init(om outbound.Manager, router routing.Router, pm policy.Manager, sm stats.Manager) {
+func (d *DefaultDispatcher) Init(config *Config, om outbound.Manager, router routing.Router, pm policy.Manager, sm stats.Manager) error {
 	d.ohm = om
 	d.router = router
 	d.policy = pm
 	d.stats = sm
+	return nil
 }
 
 // Type implements common.HasType.
@@ -256,10 +259,4 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *vio.Link, 
 		}
 	}
 	dispatcher.Dispatch(ctx, link)
-}
-
-func init() {
-	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
-		return NewDefaultDispatcher(ctx, config.(*Config))
-	}))
 }

@@ -22,6 +22,18 @@ import (
 	"v2ray.com/core/transport/internet"
 )
 
+func init() {
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		h := new(Handler)
+		if err := core.RequireFeatures(ctx, func(pm policy.Manager, d dns.Client) error {
+			return h.Init(config.(*Config), pm, d)
+		}); err != nil {
+			return nil, err
+		}
+		return h, nil
+	}))
+}
+
 // Handler handles Freedom connections.
 type Handler struct {
 	policyManager policy.Manager
@@ -29,18 +41,13 @@ type Handler struct {
 	config        Config
 }
 
-// New creates a new Freedom handler.
-func New(ctx context.Context, config *Config) (*Handler, error) {
-	f := &Handler{
-		config: *config,
-	}
+// Init initializes the Handler with necessary parameters.
+func (h *Handler) Init(config *Config, pm policy.Manager, d dns.Client) error {
+	h.config = *config
+	h.policyManager = pm
+	h.dns = d
 
-	core.RequireFeatures(ctx, func(pm policy.Manager, d dns.Client) {
-		f.policyManager = pm
-		f.dns = d
-	})
-
-	return f, nil
+	return nil
 }
 
 func (h *Handler) policy() policy.Session {
@@ -162,10 +169,4 @@ func (h *Handler) Process(ctx context.Context, link *vio.Link, dialer proxy.Dial
 	}
 
 	return nil
-}
-
-func init() {
-	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
-		return New(ctx, config.(*Config))
-	}))
 }

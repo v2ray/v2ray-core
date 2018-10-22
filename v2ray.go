@@ -40,12 +40,12 @@ func getFeature(allFeatures []features.Feature, t reflect.Type) features.Feature
 	return nil
 }
 
-func (r *resolution) resolve(allFeatures []features.Feature) bool {
+func (r *resolution) resolve(allFeatures []features.Feature) (bool, error) {
 	var fs []features.Feature
 	for _, d := range r.deps {
 		f := getFeature(allFeatures, d)
 		if f == nil {
-			return false
+			return false, nil
 		}
 		fs = append(fs, f)
 	}
@@ -67,9 +67,16 @@ func (r *resolution) resolve(allFeatures []features.Feature) bool {
 		panic("Can't get all input parameters")
 	}
 
-	callback.Call(input)
+	var err error
+	ret := callback.Call(input)
+	errInterface := reflect.TypeOf((*error)(nil)).Elem()
+	for i := len(ret) - 1; i >= 0; i-- {
+		if ret[i].Type().Implements(errInterface) {
+			err = ret[i].Interface().(error)
+		}
+	}
 
-	return true
+	return true, err
 }
 
 // Instance combines all functionalities in V2Ray.
@@ -134,9 +141,9 @@ func addOutboundHandlers(server *Instance, configs []*OutboundHandlerConfig) err
 
 // RequireFeatures is a helper function to require features from Instance in context.
 // See Instance.RequireFeatures for more information.
-func RequireFeatures(ctx context.Context, callback interface{}) {
+func RequireFeatures(ctx context.Context, callback interface{}) error {
 	v := MustFromContext(ctx)
-	v.RequireFeatures(callback)
+	return v.RequireFeatures(callback)
 }
 
 // New returns a new V2Ray instance based on given configuration.
@@ -162,28 +169,29 @@ func New(config *Config) (*Instance, error) {
 			return nil, err
 		}
 		if feature, ok := obj.(features.Feature); ok {
-			server.AddFeature(feature)
+			if err := server.AddFeature(feature); err != nil {
+				return nil, err
+			}
 		}
 	}
 
-	if server.GetFeature(dns.ClientType()) == nil {
-		server.AddFeature(dns.LocalClient{})
+	essentialFeatures := []struct {
+		Type     interface{}
+		Instance features.Feature
+	}{
+		{dns.ClientType(), dns.LocalClient{}},
+		{policy.ManagerType(), policy.DefaultManager{}},
+		{routing.RouterType(), routing.DefaultRouter{}},
+		{stats.ManagerType(), stats.NoopManager{}},
 	}
 
-	if server.GetFeature(policy.ManagerType()) == nil {
-		server.AddFeature(policy.DefaultManager{})
+	for _, f := range essentialFeatures {
+		if server.GetFeature(f.Type) == nil {
+			if err := server.AddFeature(f.Instance); err != nil {
+				return nil, err
+			}
+		}
 	}
-
-	if server.GetFeature(routing.RouterType()) == nil {
-		server.AddFeature(routing.DefaultRouter{})
-	}
-
-	if server.GetFeature(stats.ManagerType()) == nil {
-		server.AddFeature(stats.NoopManager{})
-	}
-
-	// Add an empty instance at the end, for optional feature requirement.
-	server.AddFeature(&Instance{})
 
 	if server.featureResolutions != nil {
 		return nil, newError("not all dependency are resolved.")
@@ -227,7 +235,7 @@ func (s *Instance) Close() error {
 
 // RequireFeatures registers a callback, which will be called when all dependent features are registered.
 // The callback must be a func(). All its parameters must be features.Feature.
-func (s *Instance) RequireFeatures(callback interface{}) {
+func (s *Instance) RequireFeatures(callback interface{}) error {
 	callbackType := reflect.TypeOf(callback)
 	if callbackType.Kind() != reflect.Func {
 		panic("not a function")
@@ -242,30 +250,35 @@ func (s *Instance) RequireFeatures(callback interface{}) {
 		deps:     featureTypes,
 		callback: callback,
 	}
-	if r.resolve(s.features) {
-		return
+	if finished, err := r.resolve(s.features); finished {
+		return err
 	}
 	s.featureResolutions = append(s.featureResolutions, r)
+	return nil
 }
 
 // AddFeature registers a feature into current Instance.
-func (s *Instance) AddFeature(feature features.Feature) {
+func (s *Instance) AddFeature(feature features.Feature) error {
 	s.features = append(s.features, feature)
 
 	if s.running {
 		if err := feature.Start(); err != nil {
 			newError("failed to start feature").Base(err).WriteToLog()
 		}
-		return
+		return nil
 	}
 
 	if s.featureResolutions == nil {
-		return
+		return nil
 	}
 
 	var pendingResolutions []resolution
 	for _, r := range s.featureResolutions {
-		if !r.resolve(s.features) {
+		finished, err := r.resolve(s.features)
+		if finished && err != nil {
+			return err
+		}
+		if !finished {
 			pendingResolutions = append(pendingResolutions, r)
 		}
 	}
@@ -274,6 +287,8 @@ func (s *Instance) AddFeature(feature features.Feature) {
 	} else if len(pendingResolutions) < len(s.featureResolutions) {
 		s.featureResolutions = pendingResolutions
 	}
+
+	return nil
 }
 
 // GetFeature returns a feature of the given type, or nil if such feature is not registered.
