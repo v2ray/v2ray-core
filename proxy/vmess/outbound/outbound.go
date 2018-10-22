@@ -18,7 +18,6 @@ import (
 	"v2ray.com/core/common/task"
 	"v2ray.com/core/common/vio"
 	"v2ray.com/core/features/policy"
-	"v2ray.com/core/proxy"
 	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/encoding"
 	"v2ray.com/core/transport/internet"
@@ -53,7 +52,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 }
 
 // Process implements proxy.Outbound.Process().
-func (v *Handler) Process(ctx context.Context, link *vio.Link, dialer proxy.Dialer) error {
+func (v *Handler) Process(ctx context.Context, link *vio.Link, dialer internet.Dialer) error {
 	var rec *protocol.ServerSpec
 	var conn internet.Connection
 

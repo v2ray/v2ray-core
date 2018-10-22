@@ -10,7 +10,7 @@ import (
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/task"
 	"v2ray.com/core/common/vio"
-	"v2ray.com/core/proxy"
+	"v2ray.com/core/transport/internet"
 )
 
 type Client struct {
@@ -20,7 +20,7 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 	return &Client{}, nil
 }
 
-func (c *Client) Process(ctx context.Context, link *vio.Link, dialer proxy.Dialer) error {
+func (c *Client) Process(ctx context.Context, link *vio.Link, dialer internet.Dialer) error {
 	outbound := session.OutboundFromContext(ctx)
 	if outbound == nil || !outbound.Target.IsValid() {
 		return newError("unknown destination.")

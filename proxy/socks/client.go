@@ -4,19 +4,17 @@ import (
 	"context"
 	"time"
 
-	"v2ray.com/core/common/session"
-	"v2ray.com/core/common/task"
-	"v2ray.com/core/common/vio"
-	"v2ray.com/core/features/policy"
-
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/retry"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
-	"v2ray.com/core/proxy"
+	"v2ray.com/core/common/task"
+	"v2ray.com/core/common/vio"
+	"v2ray.com/core/features/policy"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -48,7 +46,7 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 }
 
 // Process implements proxy.Outbound.Process.
-func (c *Client) Process(ctx context.Context, link *vio.Link, dialer proxy.Dialer) error {
+func (c *Client) Process(ctx context.Context, link *vio.Link, dialer internet.Dialer) error {
 	outbound := session.OutboundFromContext(ctx)
 	if outbound == nil || !outbound.Target.IsValid() {
 		return newError("target not specified.")

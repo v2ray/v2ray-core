@@ -21,6 +21,7 @@ import (
 	"v2ray.com/core/common/vio"
 	"v2ray.com/core/features/routing"
 	"v2ray.com/core/proxy"
+	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/pipe"
 )
 
@@ -32,11 +33,11 @@ type ClientManager struct {
 	access  sync.Mutex
 	clients []*Client
 	proxy   proxy.Outbound
-	dialer  proxy.Dialer
+	dialer  internet.Dialer
 	config  *proxyman.MultiplexingConfig
 }
 
-func NewClientManager(p proxy.Outbound, d proxy.Dialer, c *proxyman.MultiplexingConfig) *ClientManager {
+func NewClientManager(p proxy.Outbound, d internet.Dialer, c *proxyman.MultiplexingConfig) *ClientManager {
 	return &ClientManager{
 		proxy:  p,
 		dialer: d,
@@ -89,7 +90,7 @@ var muxCoolAddress = net.DomainAddress("v1.mux.cool")
 var muxCoolPort = net.Port(9527)
 
 // NewClient creates a new mux.Client.
-func NewClient(pctx context.Context, p proxy.Outbound, dialer proxy.Dialer, m *ClientManager) (*Client, error) {
+func NewClient(pctx context.Context, p proxy.Outbound, dialer internet.Dialer, m *ClientManager) (*Client, error) {
 	ctx := session.ContextWithOutbound(context.Background(), &session.Outbound{
 		Target: net.TCPDestination(muxCoolAddress, muxCoolPort),
 	})

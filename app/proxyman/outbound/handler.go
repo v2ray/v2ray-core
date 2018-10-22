@@ -103,7 +103,7 @@ func (h *Handler) Dispatch(ctx context.Context, link *vio.Link) {
 	}
 }
 
-// Dial implements proxy.Dialer.Dial().
+// Dial implements internet.Dialer.
 func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {
 	if h.senderSettings != nil {
 		if h.senderSettings.ProxySettings.HasTag() {

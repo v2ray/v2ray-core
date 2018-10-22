@@ -7,15 +7,21 @@ import (
 	"v2ray.com/core/common/session"
 )
 
-// Dialer is an interface to dial network connection to a specific destination.
-type Dialer func(ctx context.Context, dest net.Destination) (Connection, error)
+// Dialer is the interface for dialing outbound connections.
+type Dialer interface {
+	// Dial dials a system connection to the given destination.
+	Dial(ctx context.Context, destination net.Destination) (Connection, error)
+}
+
+// dialFunc is an interface to dial network connection to a specific destination.
+type dialFunc func(ctx context.Context, dest net.Destination) (Connection, error)
 
 var (
-	transportDialerCache = make(map[string]Dialer)
+	transportDialerCache = make(map[string]dialFunc)
 )
 
 // RegisterTransportDialer registers a Dialer with given name.
-func RegisterTransportDialer(protocol string, dialer Dialer) error {
+func RegisterTransportDialer(protocol string, dialer dialFunc) error {
 	if _, found := transportDialerCache[protocol]; found {
 		return newError(protocol, " dialer already registered").AtError()
 	}

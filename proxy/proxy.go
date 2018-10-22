@@ -27,13 +27,7 @@ type Inbound interface {
 // An Outbound process outbound connections.
 type Outbound interface {
 	// Process processes the given connection. The given dialer may be used to dial a system outbound connection.
-	Process(context.Context, *vio.Link, Dialer) error
-}
-
-// Dialer is used by OutboundHandler for creating outbound connections.
-type Dialer interface {
-	// Dial dials a system connection to the given destination.
-	Dial(ctx context.Context, destination net.Destination) (internet.Connection, error)
+	Process(context.Context, *vio.Link, internet.Dialer) error
 }
 
 // UserManager is the interface for Inbounds and Outbounds that can manage their users.
