@@ -71,8 +71,12 @@ func (r *resolution) resolve(allFeatures []features.Feature) (bool, error) {
 	ret := callback.Call(input)
 	errInterface := reflect.TypeOf((*error)(nil)).Elem()
 	for i := len(ret) - 1; i >= 0; i-- {
-		if ret[i].Type().Implements(errInterface) {
-			err = ret[i].Interface().(error)
+		if ret[i].Type() == errInterface {
+			v := ret[i].Interface()
+			if v != nil {
+				err = v.(error)
+			}
+			break
 		}
 	}
 
