@@ -9,7 +9,6 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
-	"v2ray.com/core/features"
 	"v2ray.com/core/features/dns"
 	"v2ray.com/core/features/routing"
 	"v2ray.com/core/proxy"
@@ -38,10 +37,10 @@ func NewRouter(ctx context.Context, config *Config) (*Router, error) {
 		r.rules[idx].Condition = cond
 	}
 
-	v := core.MustFromContext(ctx)
-	v.RequireFeatures([]interface{}{dns.ClientType()}, func(fs []features.Feature) {
-		r.dns = fs[0].(dns.Client)
+	core.RequireFeatures(ctx, func(d dns.Client) {
+		r.dns = d
 	})
+
 	return r, nil
 }
 

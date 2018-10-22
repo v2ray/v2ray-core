@@ -13,11 +13,26 @@ import (
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/uuid"
+	"v2ray.com/core/features/dns"
 	_ "v2ray.com/core/main/distro/all"
 	"v2ray.com/core/proxy/dokodemo"
 	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/outbound"
 )
+
+func TestV2RayDependency(t *testing.T) {
+	instance := new(Instance)
+
+	wait := make(chan bool, 1)
+	instance.RequireFeatures(func(d dns.Client) {
+		if d == nil {
+			t.Error("expected dns client fulfilled, but actually nil")
+		}
+		wait <- true
+	})
+	instance.AddFeature(dns.LocalClient{})
+	<-wait
+}
 
 func TestV2RayClose(t *testing.T) {
 	port := net.Port(dice.RollUint16())

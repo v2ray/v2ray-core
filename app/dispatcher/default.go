@@ -16,7 +16,6 @@ import (
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/vio"
-	"v2ray.com/core/features"
 	"v2ray.com/core/features/outbound"
 	"v2ray.com/core/features/policy"
 	"v2ray.com/core/features/routing"
@@ -94,21 +93,18 @@ type DefaultDispatcher struct {
 func NewDefaultDispatcher(ctx context.Context, config *Config) (*DefaultDispatcher, error) {
 	d := &DefaultDispatcher{}
 
-	v := core.MustFromContext(ctx)
-	v.RequireFeatures([]interface{}{outbound.ManagerType(), routing.RouterType(), policy.ManagerType()}, func(fs []features.Feature) {
-		d.ohm = fs[0].(outbound.Manager)
-		d.router = fs[1].(routing.Router)
-		d.policy = fs[2].(policy.Manager)
-	})
-	v.RequireFeatures([]interface{}{core.ServerType()}, func([]features.Feature) {
-		f := v.GetFeature(stats.ManagerType())
-		if f == nil {
-			return
-		}
-		d.stats = f.(stats.Manager)
-	})
+	core.RequireFeatures(ctx, d.Init)
 
 	return d, nil
+}
+
+// Init initializes DefaultDispatcher.
+// This method is visible for testing purpose.
+func (d *DefaultDispatcher) Init(om outbound.Manager, router routing.Router, pm policy.Manager, sm stats.Manager) {
+	d.ohm = om
+	d.router = router
+	d.policy = pm
+	d.stats = sm
 }
 
 // Type implements common.HasType.

@@ -7,14 +7,13 @@ import (
 	"sync"
 	"time"
 
-	"v2ray.com/core/features/routing"
-
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/strmatcher"
 	"v2ray.com/core/features"
 	"v2ray.com/core/features/dns"
+	"v2ray.com/core/features/routing"
 )
 
 type Server struct {
@@ -43,8 +42,6 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 	}
 	server.hosts = hosts
 
-	v := core.MustFromContext(ctx)
-
 	addNameServer := func(endpoint *net.Endpoint) int {
 		address := endpoint.Address.AsAddress()
 		if address.Family().IsDomain() && address.Domain() == "localhost" {
@@ -57,9 +54,9 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 			if dest.Network == net.Network_UDP {
 				idx := len(server.servers)
 				server.servers = append(server.servers, nil)
-				v.RequireFeatures([]interface{}{routing.DispatcherType()}, func(fs []features.Feature) {
-					dispatcher := fs[0].(routing.Dispatcher)
-					server.servers[idx] = NewClassicNameServer(dest, dispatcher, server.clientIP)
+
+				core.RequireFeatures(ctx, func(d routing.Dispatcher) {
+					server.servers[idx] = NewClassicNameServer(dest, d, server.clientIP)
 				})
 			}
 		}
@@ -102,6 +99,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 	return server, nil
 }
 
+// Type implements common.HasType.
 func (*Server) Type() interface{} {
 	return dns.ClientType()
 }
@@ -123,6 +121,7 @@ func (s *Server) queryIPTimeout(server NameServerInterface, domain string) ([]ne
 	return ips, err
 }
 
+// LookupIP implements dns.Client.
 func (s *Server) LookupIP(domain string) ([]net.IP, error) {
 	if ip := s.hosts.LookupIP(domain); len(ip) > 0 {
 		return ip, nil

@@ -8,8 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"v2ray.com/core/features"
-
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
@@ -307,9 +305,8 @@ type Server struct {
 // NewServer creates a new mux.Server.
 func NewServer(ctx context.Context) *Server {
 	s := &Server{}
-	v := core.MustFromContext(ctx)
-	v.RequireFeatures([]interface{}{routing.DispatcherType()}, func(fs []features.Feature) {
-		s.dispatcher = fs[0].(routing.Dispatcher)
+	core.RequireFeatures(ctx, func(d routing.Dispatcher) {
+		s.dispatcher = d
 	})
 	return s
 }

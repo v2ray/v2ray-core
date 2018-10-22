@@ -12,7 +12,6 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/signal/done"
-	"v2ray.com/core/features"
 	"v2ray.com/core/features/outbound"
 )
 
@@ -31,9 +30,8 @@ func NewCommander(ctx context.Context, config *Config) (*Commander, error) {
 		tag: config.Tag,
 	}
 
-	v := core.MustFromContext(ctx)
-	v.RequireFeatures([]interface{}{outbound.ManagerType()}, func(fs []features.Feature) {
-		c.ohm = fs[0].(outbound.Manager)
+	core.RequireFeatures(ctx, func(om outbound.Manager) {
+		c.ohm = om
 	})
 
 	for _, rawConfig := range config.Service {

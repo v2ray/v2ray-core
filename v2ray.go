@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"reflect"
 	"sync"
 
 	"v2ray.com/core/common"
@@ -12,6 +13,7 @@ import (
 	"v2ray.com/core/features/outbound"
 	"v2ray.com/core/features/policy"
 	"v2ray.com/core/features/routing"
+	"v2ray.com/core/features/stats"
 )
 
 // Server is an instance of V2Ray. At any time, there must be at most one Server instance running.
@@ -25,13 +27,13 @@ func ServerType() interface{} {
 }
 
 type resolution struct {
-	deps     []interface{}
-	callback func([]features.Feature)
+	deps     []reflect.Type
+	callback interface{}
 }
 
-func getFeature(allFeatures []features.Feature, t interface{}) features.Feature {
+func getFeature(allFeatures []features.Feature, t reflect.Type) features.Feature {
 	for _, f := range allFeatures {
-		if f.Type() == t {
+		if reflect.TypeOf(f.Type()) == t {
 			return f
 		}
 	}
@@ -48,7 +50,25 @@ func (r *resolution) resolve(allFeatures []features.Feature) bool {
 		fs = append(fs, f)
 	}
 
-	r.callback(fs)
+	callback := reflect.ValueOf(r.callback)
+	var input []reflect.Value
+	callbackType := callback.Type()
+	for i := 0; i < callbackType.NumIn(); i++ {
+		pt := callbackType.In(i)
+		for _, f := range fs {
+			if reflect.TypeOf(f).AssignableTo(pt) {
+				input = append(input, reflect.ValueOf(f))
+				break
+			}
+		}
+	}
+
+	if len(input) != callbackType.NumIn() {
+		panic("Can't get all input parameters")
+	}
+
+	callback.Call(input)
+
 	return true
 }
 
@@ -112,6 +132,13 @@ func addOutboundHandlers(server *Instance, configs []*OutboundHandlerConfig) err
 	return nil
 }
 
+// RequireFeatures is a helper function to require features from Instance in context.
+// See Instance.RequireFeatures for more information.
+func RequireFeatures(ctx context.Context, callback interface{}) {
+	v := MustFromContext(ctx)
+	v.RequireFeatures(callback)
+}
+
 // New returns a new V2Ray instance based on given configuration.
 // The instance is not started at this point.
 // To ensure V2Ray instance works properly, the config must contain one Dispatcher, one InboundHandlerManager and one OutboundHandlerManager. Other features are optional.
@@ -149,6 +176,10 @@ func New(config *Config) (*Instance, error) {
 
 	if server.GetFeature(routing.RouterType()) == nil {
 		server.AddFeature(routing.DefaultRouter{})
+	}
+
+	if server.GetFeature(stats.ManagerType()) == nil {
+		server.AddFeature(stats.NoopManager{})
 	}
 
 	// Add an empty instance at the end, for optional feature requirement.
@@ -195,7 +226,18 @@ func (s *Instance) Close() error {
 }
 
 // RequireFeatures registers a callback, which will be called when all dependent features are registered.
-func (s *Instance) RequireFeatures(featureTypes []interface{}, callback func([]features.Feature)) {
+// The callback must be a func(). All its parameters must be features.Feature.
+func (s *Instance) RequireFeatures(callback interface{}) {
+	callbackType := reflect.TypeOf(callback)
+	if callbackType.Kind() != reflect.Func {
+		panic("not a function")
+	}
+
+	var featureTypes []reflect.Type
+	for i := 0; i < callbackType.NumIn(); i++ {
+		featureTypes = append(featureTypes, reflect.PtrTo(callbackType.In(i)))
+	}
+
 	r := resolution{
 		deps:     featureTypes,
 		callback: callback,
@@ -236,7 +278,7 @@ func (s *Instance) AddFeature(feature features.Feature) {
 
 // GetFeature returns a feature of the given type, or nil if such feature is not registered.
 func (s *Instance) GetFeature(featureType interface{}) features.Feature {
-	return getFeature(s.features, featureType)
+	return getFeature(s.features, reflect.TypeOf(featureType))
 }
 
 // Start starts the V2Ray instance, including all registered features. When Start returns error, the state of the instance is unknown.

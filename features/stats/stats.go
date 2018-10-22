@@ -1,5 +1,7 @@
 package stats
 
+//go:generate errorgen
+
 import "v2ray.com/core/features"
 
 // Counter is the interface for stats counters.
@@ -36,3 +38,27 @@ func GetOrRegisterCounter(m Manager, name string) (Counter, error) {
 func ManagerType() interface{} {
 	return (*Manager)(nil)
 }
+
+// NoopManager is an implementation of Manager, which doesn't has actual functionalities.
+type NoopManager struct{}
+
+// Type implements common.HasType.
+func (NoopManager) Type() interface{} {
+	return ManagerType()
+}
+
+// RegisterCounter implements Manager.
+func (NoopManager) RegisterCounter(string) (Counter, error) {
+	return nil, newError("not implemented")
+}
+
+// GetCounter implements Manager.
+func (NoopManager) GetCounter(string) Counter {
+	return nil
+}
+
+// Start implements common.Runnable.
+func (NoopManager) Start() error { return nil }
+
+// Close implements common.Closable.
+func (NoopManager) Close() error { return nil }

@@ -6,8 +6,6 @@ import (
 	"context"
 	"time"
 
-	"v2ray.com/core/features"
-
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -37,10 +35,9 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 		config: *config,
 	}
 
-	v := core.MustFromContext(ctx)
-	v.RequireFeatures([]interface{}{policy.ManagerType(), dns.ClientType()}, func(fs []features.Feature) {
-		f.policyManager = fs[0].(policy.Manager)
-		f.dns = fs[1].(dns.Client)
+	core.RequireFeatures(ctx, func(pm policy.Manager, d dns.Client) {
+		f.policyManager = pm
+		f.dns = d
 	})
 
 	return f, nil
