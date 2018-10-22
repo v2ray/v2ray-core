@@ -20,20 +20,25 @@ func RouterType() interface{} {
 	return (*Router)(nil)
 }
 
+// DefaultRouter is an implementation of Router, which always returns ErrNoClue for routing decisions.
 type DefaultRouter struct{}
 
+// Type implements common.HasType.
 func (DefaultRouter) Type() interface{} {
 	return RouterType()
 }
 
+// PickRoute implements Router.
 func (DefaultRouter) PickRoute(ctx context.Context) (string, error) {
 	return "", common.ErrNoClue
 }
 
+// Start implements common.Runnable.
 func (DefaultRouter) Start() error {
 	return nil
 }
 
+// Close implements common.Closable.
 func (DefaultRouter) Close() error {
 	return nil
 }

@@ -2,16 +2,23 @@ package stats
 
 import "v2ray.com/core/features"
 
+// Counter is the interface for stats counters.
 type Counter interface {
+	// Value is the current value of the counter.
 	Value() int64
+	// Set sets a new value to the counter, and returns the previous one.
 	Set(int64) int64
+	// Add adds a value to the current counter value, and returns the previous value.
 	Add(int64) int64
 }
 
+// Manager is the interface for stats manager.
 type Manager interface {
 	features.Feature
 
+	// RegisterCounter registers a new counter to the manager. The identifier string must not be emtpy, and unique among other counters.
 	RegisterCounter(string) (Counter, error)
+	// GetCounter returns a counter by its identifier.
 	GetCounter(string) Counter
 }
 

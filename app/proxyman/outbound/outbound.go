@@ -29,6 +29,7 @@ func New(ctx context.Context, config *proxyman.OutboundConfig) (*Manager, error)
 	return m, nil
 }
 
+// Type implements common.HasType.
 func (m *Manager) Type() interface{} {
 	return outbound.ManagerType()
 }
