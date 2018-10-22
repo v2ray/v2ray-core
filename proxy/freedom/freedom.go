@@ -18,7 +18,6 @@ import (
 	"v2ray.com/core/common/vio"
 	"v2ray.com/core/features/dns"
 	"v2ray.com/core/features/policy"
-	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -59,14 +58,6 @@ func (h *Handler) policy() policy.Session {
 }
 
 func (h *Handler) resolveIP(ctx context.Context, domain string) net.Address {
-	if resolver, ok := proxy.ResolvedIPsFromContext(ctx); ok {
-		ips := resolver.Resolve()
-		if len(ips) == 0 {
-			return nil
-		}
-		return ips[dice.Roll(len(ips))]
-	}
-
 	ips, err := h.dns.LookupIP(domain)
 	if err != nil {
 		newError("failed to get IP address for domain ", domain).Base(err).WriteToLog(session.ExportIDToError(ctx))

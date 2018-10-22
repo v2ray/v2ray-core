@@ -11,8 +11,26 @@ import (
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/features/dns"
 	"v2ray.com/core/features/routing"
-	"v2ray.com/core/proxy"
 )
+
+type key uint32
+
+const (
+	resolvedIPsKey key = iota
+)
+
+type IPResolver interface {
+	Resolve() []net.Address
+}
+
+func ContextWithResolveIPs(ctx context.Context, f IPResolver) context.Context {
+	return context.WithValue(ctx, resolvedIPsKey, f)
+}
+
+func ResolvedIPsFromContext(ctx context.Context) (IPResolver, bool) {
+	ips, ok := ctx.Value(resolvedIPsKey).(IPResolver)
+	return ips, ok
+}
 
 func init() {
 	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
@@ -89,7 +107,7 @@ func (r *Router) PickRoute(ctx context.Context) (string, error) {
 	if r.domainStrategy == Config_IpOnDemand {
 		if outbound != nil && outbound.Target.IsValid() && outbound.Target.Address.Family().IsDomain() {
 			resolver.domain = outbound.Target.Address.Domain()
-			ctx = proxy.ContextWithResolveIPs(ctx, resolver)
+			ctx = ContextWithResolveIPs(ctx, resolver)
 		}
 	}
 
@@ -108,7 +126,7 @@ func (r *Router) PickRoute(ctx context.Context) (string, error) {
 		resolver.domain = dest.Address.Domain()
 		ips := resolver.Resolve()
 		if len(ips) > 0 {
-			ctx = proxy.ContextWithResolveIPs(ctx, resolver)
+			ctx = ContextWithResolveIPs(ctx, resolver)
 			for _, rule := range r.rules {
 				if rule.Apply(ctx) {
 					return rule.Tag, nil

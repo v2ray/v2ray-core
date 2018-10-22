@@ -8,7 +8,6 @@ import (
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/strmatcher"
-	"v2ray.com/core/proxy"
 )
 
 type Condition interface {
@@ -155,7 +154,7 @@ func targetFromContent(ctx context.Context) net.Destination {
 
 func (v *CIDRMatcher) Apply(ctx context.Context) bool {
 	ips := make([]net.IP, 0, 4)
-	if resolver, ok := proxy.ResolvedIPsFromContext(ctx); ok {
+	if resolver, ok := ResolvedIPsFromContext(ctx); ok {
 		resolvedIPs := resolver.Resolve()
 		for _, rip := range resolvedIPs {
 			if !rip.Family().IsIPv6() {
@@ -198,7 +197,7 @@ func NewIPv4Matcher(ipnet *net.IPNetTable, onSource bool) *IPv4Matcher {
 
 func (v *IPv4Matcher) Apply(ctx context.Context) bool {
 	ips := make([]net.IP, 0, 4)
-	if resolver, ok := proxy.ResolvedIPsFromContext(ctx); ok {
+	if resolver, ok := ResolvedIPsFromContext(ctx); ok {
 		resolvedIPs := resolver.Resolve()
 		for _, rip := range resolvedIPs {
 			if !rip.Family().IsIPv4() {
