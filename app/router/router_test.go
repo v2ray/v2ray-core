@@ -8,7 +8,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
-	"v2ray.com/core/features/mocks"
+	"v2ray.com/core/testing/mocks"
 )
 
 func TestSimpleRouter(t *testing.T) {
