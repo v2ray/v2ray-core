@@ -26,7 +26,7 @@ func TestSimpleRouter(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
 
-	mockDns := mocks.NewMockDNSClient(mockCtl)
+	mockDns := mocks.NewDNSClient(mockCtl)
 
 	r := new(Router)
 	common.Must(r.Init(config, mockDns))
@@ -58,7 +58,7 @@ func TestIPOnDemand(t *testing.T) {
 	mockCtl := gomock.NewController(t)
 	defer mockCtl.Finish()
 
-	mockDns := mocks.NewMockDNSClient(mockCtl)
+	mockDns := mocks.NewDNSClient(mockCtl)
 	mockDns.EXPECT().LookupIP(gomock.Eq("v2ray.com")).Return([]net.IP{{192, 168, 0, 1}}, nil).AnyTimes()
 
 	r := new(Router)

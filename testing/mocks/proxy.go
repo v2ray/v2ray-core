@@ -14,84 +14,84 @@ import (
 	internet "v2ray.com/core/transport/internet"
 )
 
-// MockProxyInbound is a mock of Inbound interface
-type MockProxyInbound struct {
+// ProxyInbound is a mock of Inbound interface
+type ProxyInbound struct {
 	ctrl     *gomock.Controller
-	recorder *MockProxyInboundMockRecorder
+	recorder *ProxyInboundMockRecorder
 }
 
-// MockProxyInboundMockRecorder is the mock recorder for MockProxyInbound
-type MockProxyInboundMockRecorder struct {
-	mock *MockProxyInbound
+// ProxyInboundMockRecorder is the mock recorder for ProxyInbound
+type ProxyInboundMockRecorder struct {
+	mock *ProxyInbound
 }
 
-// NewMockProxyInbound creates a new mock instance
-func NewMockProxyInbound(ctrl *gomock.Controller) *MockProxyInbound {
-	mock := &MockProxyInbound{ctrl: ctrl}
-	mock.recorder = &MockProxyInboundMockRecorder{mock}
+// NewProxyInbound creates a new mock instance
+func NewProxyInbound(ctrl *gomock.Controller) *ProxyInbound {
+	mock := &ProxyInbound{ctrl: ctrl}
+	mock.recorder = &ProxyInboundMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockProxyInbound) EXPECT() *MockProxyInboundMockRecorder {
+func (m *ProxyInbound) EXPECT() *ProxyInboundMockRecorder {
 	return m.recorder
 }
 
 // Network mocks base method
-func (m *MockProxyInbound) Network() net.NetworkList {
+func (m *ProxyInbound) Network() net.NetworkList {
 	ret := m.ctrl.Call(m, "Network")
 	ret0, _ := ret[0].(net.NetworkList)
 	return ret0
 }
 
 // Network indicates an expected call of Network
-func (mr *MockProxyInboundMockRecorder) Network() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Network", reflect.TypeOf((*MockProxyInbound)(nil).Network))
+func (mr *ProxyInboundMockRecorder) Network() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Network", reflect.TypeOf((*ProxyInbound)(nil).Network))
 }
 
 // Process mocks base method
-func (m *MockProxyInbound) Process(arg0 context.Context, arg1 net.Network, arg2 internet.Connection, arg3 routing.Dispatcher) error {
+func (m *ProxyInbound) Process(arg0 context.Context, arg1 net.Network, arg2 internet.Connection, arg3 routing.Dispatcher) error {
 	ret := m.ctrl.Call(m, "Process", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Process indicates an expected call of Process
-func (mr *MockProxyInboundMockRecorder) Process(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Process", reflect.TypeOf((*MockProxyInbound)(nil).Process), arg0, arg1, arg2, arg3)
+func (mr *ProxyInboundMockRecorder) Process(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Process", reflect.TypeOf((*ProxyInbound)(nil).Process), arg0, arg1, arg2, arg3)
 }
 
-// MockProxyOutbound is a mock of Outbound interface
-type MockProxyOutbound struct {
+// ProxyOutbound is a mock of Outbound interface
+type ProxyOutbound struct {
 	ctrl     *gomock.Controller
-	recorder *MockProxyOutboundMockRecorder
+	recorder *ProxyOutboundMockRecorder
 }
 
-// MockProxyOutboundMockRecorder is the mock recorder for MockProxyOutbound
-type MockProxyOutboundMockRecorder struct {
-	mock *MockProxyOutbound
+// ProxyOutboundMockRecorder is the mock recorder for ProxyOutbound
+type ProxyOutboundMockRecorder struct {
+	mock *ProxyOutbound
 }
 
-// NewMockProxyOutbound creates a new mock instance
-func NewMockProxyOutbound(ctrl *gomock.Controller) *MockProxyOutbound {
-	mock := &MockProxyOutbound{ctrl: ctrl}
-	mock.recorder = &MockProxyOutboundMockRecorder{mock}
+// NewProxyOutbound creates a new mock instance
+func NewProxyOutbound(ctrl *gomock.Controller) *ProxyOutbound {
+	mock := &ProxyOutbound{ctrl: ctrl}
+	mock.recorder = &ProxyOutboundMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockProxyOutbound) EXPECT() *MockProxyOutboundMockRecorder {
+func (m *ProxyOutbound) EXPECT() *ProxyOutboundMockRecorder {
 	return m.recorder
 }
 
 // Process mocks base method
-func (m *MockProxyOutbound) Process(arg0 context.Context, arg1 *vio.Link, arg2 internet.Dialer) error {
+func (m *ProxyOutbound) Process(arg0 context.Context, arg1 *vio.Link, arg2 internet.Dialer) error {
 	ret := m.ctrl.Call(m, "Process", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Process indicates an expected call of Process
-func (mr *MockProxyOutboundMockRecorder) Process(arg0, arg1, arg2 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Process", reflect.TypeOf((*MockProxyOutbound)(nil).Process), arg0, arg1, arg2)
+func (mr *ProxyOutboundMockRecorder) Process(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Process", reflect.TypeOf((*ProxyOutbound)(nil).Process), arg0, arg1, arg2)
 }
