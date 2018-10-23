@@ -5,8 +5,8 @@ import (
 
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
-	"v2ray.com/core/app/proxyman/mux"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/mux"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/vio"
@@ -72,7 +72,7 @@ func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (outbou
 		if config.Concurrency < 1 || config.Concurrency > 1024 {
 			return nil, newError("invalid mux concurrency: ", config.Concurrency).AtWarning()
 		}
-		h.mux = mux.NewClientManager(proxyHandler, h, config)
+		h.mux = mux.NewClientManager(proxyHandler, h, config.Concurrency)
 	}
 
 	h.proxy = proxyHandler

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"v2ray.com/core"
-	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/errors"
@@ -30,18 +29,18 @@ const (
 )
 
 type ClientManager struct {
-	access  sync.Mutex
-	clients []*Client
-	proxy   proxy.Outbound
-	dialer  internet.Dialer
-	config  *proxyman.MultiplexingConfig
+	access      sync.Mutex
+	clients     []*Client
+	proxy       proxy.Outbound
+	dialer      internet.Dialer
+	concurrency uint32
 }
 
-func NewClientManager(p proxy.Outbound, d internet.Dialer, c *proxyman.MultiplexingConfig) *ClientManager {
+func NewClientManager(p proxy.Outbound, d internet.Dialer, c uint32) *ClientManager {
 	return &ClientManager{
-		proxy:  p,
-		dialer: d,
-		config: c,
+		proxy:       p,
+		dialer:      d,
+		concurrency: c,
 	}
 }
 
@@ -108,7 +107,7 @@ func NewClient(pctx context.Context, p proxy.Outbound, dialer internet.Dialer, m
 		},
 		done:        done.New(),
 		manager:     m,
-		concurrency: m.config.Concurrency,
+		concurrency: m.concurrency,
 	}
 
 	go func() {

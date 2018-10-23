@@ -3,7 +3,7 @@ package mux_test
 import (
 	"testing"
 
-	. "v2ray.com/core/app/proxyman/mux"
+	. "v2ray.com/core/common/mux"
 	. "v2ray.com/ext/assert"
 )
 
