@@ -3,6 +3,9 @@ package buf_test
 import (
 	"testing"
 
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/compare"
+
 	. "v2ray.com/core/common/buf"
 	"v2ray.com/core/common/serial"
 	. "v2ray.com/ext/assert"
@@ -39,6 +42,35 @@ func TestBufferString(t *testing.T) {
 
 	assert(buffer.AppendSupplier(serial.WriteString("Test String")), IsNil)
 	assert(buffer.String(), Equals, "Test String")
+}
+
+func TestBufferSlice(t *testing.T) {
+	{
+		b := New()
+		common.Must2(b.Write([]byte("abcd")))
+		bytes := b.BytesFrom(-2)
+		if err := compare.BytesEqualWithDetail(bytes, []byte{'c', 'd'}); err != nil {
+			t.Error(err)
+		}
+	}
+
+	{
+		b := New()
+		common.Must2(b.Write([]byte("abcd")))
+		bytes := b.BytesTo(-2)
+		if err := compare.BytesEqualWithDetail(bytes, []byte{'a', 'b'}); err != nil {
+			t.Error(err)
+		}
+	}
+
+	{
+		b := New()
+		common.Must2(b.Write([]byte("abcd")))
+		bytes := b.BytesRange(-3, -1)
+		if err := compare.BytesEqualWithDetail(bytes, []byte{'b', 'c'}); err != nil {
+			t.Error(err)
+		}
+	}
 }
 
 func BenchmarkNewBuffer(b *testing.B) {

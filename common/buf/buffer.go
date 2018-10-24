@@ -65,11 +65,11 @@ func (b *Buffer) Bytes() []byte {
 // Reset resets the content of the Buffer with a supplier.
 func (b *Buffer) Reset(writer Supplier) error {
 	nBytes, err := writer(b.v)
+	if nBytes > len(b.v) {
+		return newError("too many bytes written: ", nBytes, " > ", len(b.v))
+	}
 	b.start = 0
 	b.end = int32(nBytes)
-	if b.end > int32(len(b.v)) {
-		b.end = int32(len(b.v))
-	}
 	return err
 }
 
