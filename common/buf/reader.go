@@ -98,27 +98,17 @@ func (r *BufferedReader) ReadAtMost(size int32) (MultiBuffer, error) {
 
 func (r *BufferedReader) writeToInternal(writer io.Writer) (int64, error) {
 	mbWriter := NewWriter(writer)
-	totalBytes := int64(0)
+	var sc SizeCounter
 	if r.Buffer != nil {
-		totalBytes += int64(r.Buffer.Len())
+		sc.Size = int64(r.Buffer.Len())
 		if err := mbWriter.WriteMultiBuffer(r.Buffer); err != nil {
 			return 0, err
 		}
 		r.Buffer = nil
 	}
 
-	for {
-		mb, err := r.Reader.ReadMultiBuffer()
-		if mb != nil {
-			totalBytes += int64(mb.Len())
-			if werr := mbWriter.WriteMultiBuffer(mb); werr != nil {
-				return totalBytes, err
-			}
-		}
-		if err != nil {
-			return totalBytes, err
-		}
-	}
+	err := Copy(r.Reader, mbWriter, CountSize(&sc))
+	return sc.Size, err
 }
 
 // WriteTo implements io.WriterTo.

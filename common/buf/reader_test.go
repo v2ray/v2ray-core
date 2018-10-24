@@ -2,8 +2,10 @@ package buf_test
 
 import (
 	"io"
+	"strings"
 	"testing"
 
+	"v2ray.com/core/common"
 	. "v2ray.com/core/common/buf"
 	"v2ray.com/core/transport/pipe"
 	. "v2ray.com/ext/assert"
@@ -54,6 +56,25 @@ func TestBytesReaderMultiBuffer(t *testing.T) {
 	assert(len(mb), Equals, 2)
 	assert(mb[0].String(), Equals, "abc")
 	assert(mb[1].String(), Equals, "efg")
+}
+
+func TestReadByte(t *testing.T) {
+	sr := strings.NewReader("abcd")
+	reader := &BufferedReader{
+		Reader: NewReader(sr),
+	}
+	b, err := reader.ReadByte()
+	common.Must(err)
+	if b != 'a' {
+		t.Error("unexpected byte: ", b, " want a")
+	}
+
+	var mb MultiBuffer
+	nBytes, err := reader.WriteTo(&mb)
+	common.Must(err)
+	if nBytes != 3 {
+		t.Error("unexpect bytes written: ", nBytes)
+	}
 }
 
 func TestReaderInterface(t *testing.T) {
