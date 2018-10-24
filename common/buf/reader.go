@@ -128,10 +128,12 @@ func (r *BufferedReader) Close() error {
 	return common.Close(r.Reader)
 }
 
+// SingleReader is a Reader that read one Buffer every time.
 type SingleReader struct {
 	io.Reader
 }
 
+// ReadMultiBuffer implements Reader.
 func (r *SingleReader) ReadMultiBuffer() (MultiBuffer, error) {
 	b, err := readOne(r.Reader)
 	if err != nil {
