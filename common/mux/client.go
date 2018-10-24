@@ -201,20 +201,16 @@ func (m *Client) Dispatch(ctx context.Context, link *vio.Link) bool {
 	return true
 }
 
-func drain(reader buf.Reader) error {
-	return buf.Copy(reader, buf.Discard)
-}
-
 func (m *Client) handleStatueKeepAlive(meta *FrameMetadata, reader *buf.BufferedReader) error {
 	if meta.Option.Has(OptionData) {
-		return drain(NewStreamReader(reader))
+		return buf.Copy(NewStreamReader(reader), buf.Discard)
 	}
 	return nil
 }
 
 func (m *Client) handleStatusNew(meta *FrameMetadata, reader *buf.BufferedReader) error {
 	if meta.Option.Has(OptionData) {
-		return drain(NewStreamReader(reader))
+		return buf.Copy(NewStreamReader(reader), buf.Discard)
 	}
 	return nil
 }
@@ -224,16 +220,23 @@ func (m *Client) handleStatusKeep(meta *FrameMetadata, reader *buf.BufferedReade
 		return nil
 	}
 
-	if s, found := m.sessionManager.Get(meta.SessionID); found {
-		rr := s.NewReader(reader)
-		if err := buf.Copy(rr, s.output); err != nil {
-			drain(rr)
-			pipe.CloseError(s.input)
-			return s.Close()
-		}
-		return nil
+	s, found := m.sessionManager.Get(meta.SessionID)
+	if !found {
+		return buf.Copy(NewStreamReader(reader), buf.Discard)
 	}
-	return drain(NewStreamReader(reader))
+
+	rr := s.NewReader(reader)
+	err := buf.Copy(rr, s.output)
+	if err != nil && buf.IsWriteError(err) {
+		newError("failed to write to downstream. closing session ", s.ID).Base(err).WriteToLog()
+
+		drainErr := buf.Copy(rr, buf.Discard)
+		pipe.CloseError(s.input)
+		s.Close()
+		return drainErr
+	}
+
+	return err
 }
 
 func (m *Client) handleStatusEnd(meta *FrameMetadata, reader *buf.BufferedReader) error {
@@ -245,7 +248,7 @@ func (m *Client) handleStatusEnd(meta *FrameMetadata, reader *buf.BufferedReader
 		s.Close()
 	}
 	if meta.Option.Has(OptionData) {
-		return drain(NewStreamReader(reader))
+		return buf.Copy(NewStreamReader(reader), buf.Discard)
 	}
 	return nil
 }
