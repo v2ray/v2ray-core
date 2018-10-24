@@ -41,7 +41,9 @@ func TestBytesWriterReadFrom(t *testing.T) {
 	writer.SetBuffered(false)
 	nBytes, err := reader.WriteTo(writer)
 	assert(nBytes, Equals, int64(size))
-	assert(err, IsNil)
+	if err != nil {
+		t.Fatal("expect success, but actually error: ", err.Error())
+	}
 
 	mb, err := pReader.ReadMultiBuffer()
 	assert(err, IsNil)

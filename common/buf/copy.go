@@ -45,24 +45,6 @@ type SizeCounter struct {
 // CopyOption is an option for copying data.
 type CopyOption func(*copyHandler)
 
-// IgnoreReaderError is a CopyOption that ignores errors from reader. Copy will continue in such case.
-func IgnoreReaderError() CopyOption {
-	return func(handler *copyHandler) {
-		handler.onReadError = append(handler.onReadError, func(err error) error {
-			return nil
-		})
-	}
-}
-
-// IgnoreWriterError is a CopyOption that ignores errors from writer. Copy will continue in such case.
-func IgnoreWriterError() CopyOption {
-	return func(handler *copyHandler) {
-		handler.onWriteError = append(handler.onWriteError, func(err error) error {
-			return nil
-		})
-	}
-}
-
 // UpdateActivity is a CopyOption to update activity on each data copy operation.
 func UpdateActivity(timer signal.ActivityUpdater) CopyOption {
 	return func(handler *copyHandler) {
@@ -81,6 +63,40 @@ func CountSize(sc *SizeCounter) CopyOption {
 	}
 }
 
+type readError struct {
+	error
+}
+
+func (e readError) Error() string {
+	return e.error.Error()
+}
+
+func (e readError) Inner() error {
+	return e.error
+}
+
+func IsReadError(err error) bool {
+	_, ok := err.(readError)
+	return ok
+}
+
+type writeError struct {
+	error
+}
+
+func (e writeError) Error() string {
+	return e.error.Error()
+}
+
+func (e writeError) Inner() error {
+	return e.error
+}
+
+func IsWriteError(err error) bool {
+	_, ok := err.(writeError)
+	return ok
+}
+
 func copyInternal(reader Reader, writer Writer, handler *copyHandler) error {
 	for {
 		buffer, err := handler.readFrom(reader)
@@ -90,12 +106,12 @@ func copyInternal(reader Reader, writer Writer, handler *copyHandler) error {
 			}
 
 			if werr := handler.writeTo(writer, buffer); werr != nil {
-				return werr
+				return writeError{werr}
 			}
 		}
 
 		if err != nil {
-			return err
+			return readError{err}
 		}
 	}
 }
