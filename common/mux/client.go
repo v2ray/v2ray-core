@@ -13,6 +13,7 @@ import (
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal/done"
+	"v2ray.com/core/common/task"
 	"v2ray.com/core/common/vio"
 	"v2ray.com/core/proxy"
 	"v2ray.com/core/transport/internet"
@@ -20,85 +21,126 @@ import (
 )
 
 type ClientManager struct {
-	access      sync.Mutex
-	clients     []*Client
-	proxy       proxy.Outbound
-	dialer      internet.Dialer
-	concurrency uint32
-}
-
-func NewClientManager(p proxy.Outbound, d internet.Dialer, c uint32) *ClientManager {
-	return &ClientManager{
-		proxy:       p,
-		dialer:      d,
-		concurrency: c,
-	}
+	Picker WorkerPicker
 }
 
 func (m *ClientManager) Dispatch(ctx context.Context, link *vio.Link) error {
-	m.access.Lock()
-	defer m.access.Unlock()
-
-	for _, client := range m.clients {
-		if client.Dispatch(ctx, link) {
+	for {
+		worker, err := m.Picker.PickAvailable()
+		if err != nil {
+			return err
+		}
+		if worker.Dispatch(ctx, link) {
 			return nil
 		}
 	}
+}
 
-	client, err := NewClient(ctx, m.proxy, m.dialer, m)
-	if err != nil {
-		return newError("failed to create client").Base(err)
+type WorkerPicker interface {
+	PickAvailable() (*ClientWorker, error)
+}
+
+type IncrementalWorkerPicker struct {
+	New func() (*ClientWorker, error)
+
+	access      sync.Mutex
+	workers     []*ClientWorker
+	cleanupTask *task.Periodic
+}
+
+func (p *IncrementalWorkerPicker) cleanupFunc() error {
+	p.access.Lock()
+	defer p.access.Unlock()
+
+	if len(p.workers) == 0 {
+		return newError("no worker")
 	}
-	m.clients = append(m.clients, client)
-	client.Dispatch(ctx, link)
+
+	p.cleanup()
 	return nil
 }
 
-func (m *ClientManager) onClientFinish() {
-	m.access.Lock()
-	defer m.access.Unlock()
-
-	activeClients := make([]*Client, 0, len(m.clients))
-
-	for _, client := range m.clients {
-		if !client.Closed() {
-			activeClients = append(activeClients, client)
+func (p *IncrementalWorkerPicker) cleanup() {
+	var activeWorkers []*ClientWorker
+	for _, w := range p.workers {
+		if !w.Closed() {
+			activeWorkers = append(activeWorkers, w)
 		}
 	}
-	m.clients = activeClients
+	p.workers = activeWorkers
 }
 
-type Client struct {
+func (p *IncrementalWorkerPicker) pickInternal() (*ClientWorker, error, bool) {
+	p.access.Lock()
+	defer p.access.Unlock()
+
+	for _, w := range p.workers {
+		if !w.IsFull() {
+			return w, nil, false
+		}
+	}
+
+	p.cleanup()
+
+	worker, err := p.New()
+	if err != nil {
+		return nil, err, false
+	}
+	p.workers = append(p.workers, worker)
+
+	if p.cleanupTask == nil {
+		p.cleanupTask = &task.Periodic{
+			Interval: time.Second * 30,
+			Execute:  p.cleanupFunc,
+		}
+	}
+
+	return worker, nil, true
+}
+
+func (p *IncrementalWorkerPicker) PickAvailable() (*ClientWorker, error) {
+	worker, err, start := p.pickInternal()
+	if start {
+		p.cleanupTask.Start()
+	}
+
+	return worker, err
+}
+
+type ClientStrategy struct {
+	MaxConcurrency uint32
+	MaxConnection  uint32
+}
+
+type ClientWorker struct {
 	sessionManager *SessionManager
 	link           vio.Link
 	done           *done.Instance
-	manager        *ClientManager
-	concurrency    uint32
+	strategy       ClientStrategy
 }
 
 var muxCoolAddress = net.DomainAddress("v1.mux.cool")
 var muxCoolPort = net.Port(9527)
 
-// NewClient creates a new mux.Client.
-func NewClient(pctx context.Context, p proxy.Outbound, dialer internet.Dialer, m *ClientManager) (*Client, error) {
+// NewClientWorker creates a new mux.Client.
+func NewClientWorker(p proxy.Outbound, dialer internet.Dialer, s ClientStrategy) (*ClientWorker, error) {
 	ctx := session.ContextWithOutbound(context.Background(), &session.Outbound{
 		Target: net.TCPDestination(muxCoolAddress, muxCoolPort),
 	})
 	ctx, cancel := context.WithCancel(ctx)
 
-	opts := pipe.OptionsFromContext(pctx)
+	opts := []pipe.Option{pipe.WithSizeLimit(64 * 1024)}
 	uplinkReader, upLinkWriter := pipe.New(opts...)
 	downlinkReader, downlinkWriter := pipe.New(opts...)
 
-	c := &Client{
+	c := &ClientWorker{
 		sessionManager: NewSessionManager(),
 		link: vio.Link{
 			Reader: downlinkReader,
 			Writer: upLinkWriter,
 		},
-		done:        done.New(),
-		manager:     m,
-		concurrency: m.concurrency,
+		done:     done.New(),
+		strategy: s,
 	}
 
 	go func() {
@@ -115,13 +157,11 @@ func NewClient(pctx context.Context, p proxy.Outbound, dialer internet.Dialer, m
 }
 
 // Closed returns true if this Client is closed.
-func (m *Client) Closed() bool {
+func (m *ClientWorker) Closed() bool {
 	return m.done.Done()
 }
 
-func (m *Client) monitor() {
-	defer m.manager.onClientFinish()
-
+func (m *ClientWorker) monitor() {
 	timer := time.NewTicker(time.Second * 16)
 	defer timer.Stop()
 
@@ -181,16 +221,23 @@ func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
 	}
 }
 
-func (m *Client) Dispatch(ctx context.Context, link *vio.Link) bool {
+func (m *ClientWorker) IsFull() bool {
 	sm := m.sessionManager
-	if sm.Size() >= int(m.concurrency) || sm.Count() >= maxTotal {
+	if m.strategy.MaxConcurrency > 0 && sm.Size() >= int(m.strategy.MaxConcurrency) {
+		return true
+	}
+	if m.strategy.MaxConnection > 0 && sm.Count() >= int(m.strategy.MaxConnection) {
+		return true
+	}
+	return false
+}
+
+func (m *ClientWorker) Dispatch(ctx context.Context, link *vio.Link) bool {
+	if m.IsFull() || m.Closed() {
 		return false
 	}
 
-	if m.done.Done() {
-		return false
-	}
-
+	sm := m.sessionManager
 	s := sm.Allocate()
 	if s == nil {
 		return false
@@ -201,21 +248,21 @@ func (m *Client) Dispatch(ctx context.Context, link *vio.Link) bool {
 	return true
 }
 
-func (m *Client) handleStatueKeepAlive(meta *FrameMetadata, reader *buf.BufferedReader) error {
+func (m *ClientWorker) handleStatueKeepAlive(meta *FrameMetadata, reader *buf.BufferedReader) error {
 	if meta.Option.Has(OptionData) {
 		return buf.Copy(NewStreamReader(reader), buf.Discard)
 	}
 	return nil
 }
 
-func (m *Client) handleStatusNew(meta *FrameMetadata, reader *buf.BufferedReader) error {
+func (m *ClientWorker) handleStatusNew(meta *FrameMetadata, reader *buf.BufferedReader) error {
 	if meta.Option.Has(OptionData) {
 		return buf.Copy(NewStreamReader(reader), buf.Discard)
 	}
 	return nil
 }
 
-func (m *Client) handleStatusKeep(meta *FrameMetadata, reader *buf.BufferedReader) error {
+func (m *ClientWorker) handleStatusKeep(meta *FrameMetadata, reader *buf.BufferedReader) error {
 	if !meta.Option.Has(OptionData) {
 		return nil
 	}
@@ -239,7 +286,7 @@ func (m *Client) handleStatusKeep(meta *FrameMetadata, reader *buf.BufferedReade
 	return err
 }
 
-func (m *Client) handleStatusEnd(meta *FrameMetadata, reader *buf.BufferedReader) error {
+func (m *ClientWorker) handleStatusEnd(meta *FrameMetadata, reader *buf.BufferedReader) error {
 	if s, found := m.sessionManager.Get(meta.SessionID); found {
 		if meta.Option.Has(OptionError) {
 			pipe.CloseError(s.input)
@@ -253,7 +300,7 @@ func (m *Client) handleStatusEnd(meta *FrameMetadata, reader *buf.BufferedReader
 	return nil
 }
 
-func (m *Client) fetchOutput() {
+func (m *ClientWorker) fetchOutput() {
 	defer func() {
 		common.Must(m.done.Close())
 	}()

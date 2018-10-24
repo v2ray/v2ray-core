@@ -72,7 +72,16 @@ func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (outbou
 		if config.Concurrency < 1 || config.Concurrency > 1024 {
 			return nil, newError("invalid mux concurrency: ", config.Concurrency).AtWarning()
 		}
-		h.mux = mux.NewClientManager(proxyHandler, h, config.Concurrency)
+		h.mux = &mux.ClientManager{
+			Picker: &mux.IncrementalWorkerPicker{
+				New: func() (*mux.ClientWorker, error) {
+					return mux.NewClientWorker(proxyHandler, h, mux.ClientStrategy{
+						MaxConcurrency: config.Concurrency,
+						MaxConnection:  128,
+					})
+				},
+			},
+		}
 	}
 
 	h.proxy = proxyHandler
