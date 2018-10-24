@@ -57,13 +57,11 @@ func TestBytesReaderMultiBuffer(t *testing.T) {
 }
 
 func TestReaderInterface(t *testing.T) {
-	assert := With(t)
+	_ = (io.Reader)(new(ReadVReader))
+	_ = (Reader)(new(ReadVReader))
 
-	assert((*ReadVReader)(nil), Implements, (*io.Reader)(nil))
-	assert((*ReadVReader)(nil), Implements, (*Reader)(nil))
-
-	assert((*BufferedReader)(nil), Implements, (*Reader)(nil))
-	assert((*BufferedReader)(nil), Implements, (*io.Reader)(nil))
-	assert((*BufferedReader)(nil), Implements, (*io.ByteReader)(nil))
-	assert((*BufferedReader)(nil), Implements, (*io.WriterTo)(nil))
+	_ = (Reader)(new(BufferedReader))
+	_ = (io.Reader)(new(BufferedReader))
+	_ = (io.ByteReader)(new(BufferedReader))
+	_ = (io.WriterTo)(new(BufferedReader))
 }
