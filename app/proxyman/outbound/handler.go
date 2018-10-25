@@ -74,11 +74,13 @@ func NewHandler(ctx context.Context, config *core.OutboundHandlerConfig) (outbou
 		}
 		h.mux = &mux.ClientManager{
 			Picker: &mux.IncrementalWorkerPicker{
-				New: func() (*mux.ClientWorker, error) {
-					return mux.NewClientWorker(proxyHandler, h, mux.ClientStrategy{
+				Factory: &mux.DialingWorkerFactory{
+					Proxy:  proxyHandler,
+					Dialer: h,
+					Strategy: mux.ClientStrategy{
 						MaxConcurrency: config.Concurrency,
 						MaxConnection:  128,
-					})
+					},
 				},
 			},
 		}

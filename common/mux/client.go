@@ -41,7 +41,7 @@ type WorkerPicker interface {
 }
 
 type IncrementalWorkerPicker struct {
-	New func() (*ClientWorker, error)
+	Factory ClientWorkerFactory
 
 	access      sync.Mutex
 	workers     []*ClientWorker
@@ -82,7 +82,7 @@ func (p *IncrementalWorkerPicker) pickInternal() (*ClientWorker, error, bool) {
 
 	p.cleanup()
 
-	worker, err := p.New()
+	worker, err := p.Factory.Create()
 	if err != nil {
 		return nil, err, false
 	}
@@ -107,6 +107,46 @@ func (p *IncrementalWorkerPicker) PickAvailable() (*ClientWorker, error) {
 	return worker, err
 }
 
+type ClientWorkerFactory interface {
+	Create() (*ClientWorker, error)
+}
+
+type DialingWorkerFactory struct {
+	Proxy    proxy.Outbound
+	Dialer   internet.Dialer
+	Strategy ClientStrategy
+}
+
+func (f *DialingWorkerFactory) Create() (*ClientWorker, error) {
+	opts := []pipe.Option{pipe.WithSizeLimit(64 * 1024)}
+	uplinkReader, upLinkWriter := pipe.New(opts...)
+	downlinkReader, downlinkWriter := pipe.New(opts...)
+
+	c, err := NewClientWorker(vio.Link{
+		Reader: downlinkReader,
+		Writer: upLinkWriter,
+	}, f.Strategy)
+
+	if err != nil {
+		return nil, err
+	}
+
+	go func(p proxy.Outbound, d internet.Dialer, c common.Closable) {
+		ctx := session.ContextWithOutbound(context.Background(), &session.Outbound{
+			Target: net.TCPDestination(muxCoolAddress, muxCoolPort),
+		})
+		ctx, cancel := context.WithCancel(ctx)
+
+		if err := p.Process(ctx, &vio.Link{Reader: uplinkReader, Writer: downlinkWriter}, d); err != nil {
+			errors.New("failed to handler mux client connection").Base(err).WriteToLog()
+		}
+		common.Must(c.Close())
+		cancel()
+	}(f.Proxy, f.Dialer, c.done)
+
+	return c, nil
+}
+
 type ClientStrategy struct {
 	MaxConcurrency uint32
 	MaxConnection  uint32
@@ -123,36 +163,17 @@ var muxCoolAddress = net.DomainAddress("v1.mux.cool")
 var muxCoolPort = net.Port(9527)
 
 // NewClientWorker creates a new mux.Client.
-func NewClientWorker(p proxy.Outbound, dialer internet.Dialer, s ClientStrategy) (*ClientWorker, error) {
-	ctx := session.ContextWithOutbound(context.Background(), &session.Outbound{
-		Target: net.TCPDestination(muxCoolAddress, muxCoolPort),
-	})
-	ctx, cancel := context.WithCancel(ctx)
-
-	opts := []pipe.Option{pipe.WithSizeLimit(64 * 1024)}
-	uplinkReader, upLinkWriter := pipe.New(opts...)
-	downlinkReader, downlinkWriter := pipe.New(opts...)
-
+func NewClientWorker(stream vio.Link, s ClientStrategy) (*ClientWorker, error) {
 	c := &ClientWorker{
 		sessionManager: NewSessionManager(),
-		link: vio.Link{
-			Reader: downlinkReader,
-			Writer: upLinkWriter,
-		},
-		done:     done.New(),
-		strategy: s,
+		link:           stream,
+		done:           done.New(),
+		strategy:       s,
 	}
-
-	go func() {
-		if err := p.Process(ctx, &vio.Link{Reader: uplinkReader, Writer: downlinkWriter}, dialer); err != nil {
-			errors.New("failed to handler mux client connection").Base(err).WriteToLog()
-		}
-		common.Must(c.done.Close())
-		cancel()
-	}()
 
 	go c.fetchOutput()
 	go c.monitor()
+
 	return c, nil
 }
 
@@ -221,12 +242,21 @@ func fetchInput(ctx context.Context, s *Session, output buf.Writer) {
 	}
 }
 
-func (m *ClientWorker) IsFull() bool {
+func (m *ClientWorker) IsClosing() bool {
 	sm := m.sessionManager
-	if m.strategy.MaxConcurrency > 0 && sm.Size() >= int(m.strategy.MaxConcurrency) {
+	if m.strategy.MaxConnection > 0 && sm.Count() >= int(m.strategy.MaxConnection) {
 		return true
 	}
-	if m.strategy.MaxConnection > 0 && sm.Count() >= int(m.strategy.MaxConnection) {
+	return false
+}
+
+func (m *ClientWorker) IsFull() bool {
+	if m.IsClosing() {
+		return true
+	}
+
+	sm := m.sessionManager
+	if m.strategy.MaxConcurrency > 0 && sm.Size() >= int(m.strategy.MaxConcurrency) {
 		return true
 	}
 	return false
