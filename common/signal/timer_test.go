@@ -14,7 +14,7 @@ func TestActivityTimer(t *testing.T) {
 	assert := With(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	timer := CancelAfterInactivity(ctx, cancel, time.Second*5)
+	timer := CancelAfterInactivity(ctx, cancel, time.Second*4)
 	time.Sleep(time.Second * 6)
 	assert(ctx.Err(), IsNotNil)
 	runtime.KeepAlive(timer)
