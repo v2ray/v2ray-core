@@ -70,14 +70,27 @@ func (p *IncrementalWorkerPicker) cleanup() {
 	p.workers = activeWorkers
 }
 
+func (p *IncrementalWorkerPicker) findAvailable() int {
+	for idx, w := range p.workers {
+		if !w.IsFull() {
+			return idx
+		}
+	}
+
+	return -1
+}
+
 func (p *IncrementalWorkerPicker) pickInternal() (*ClientWorker, error, bool) {
 	p.access.Lock()
 	defer p.access.Unlock()
 
-	for _, w := range p.workers {
-		if !w.IsFull() {
-			return w, nil, false
+	idx := p.findAvailable()
+	if idx >= 0 {
+		n := len(p.workers)
+		if n > 1 && idx != n-1 {
+			p.workers[n-1], p.workers[idx] = p.workers[idx], p.workers[n-1]
 		}
+		return p.workers[idx], nil, false
 	}
 
 	p.cleanup()
