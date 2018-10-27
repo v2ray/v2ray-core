@@ -92,6 +92,10 @@ func handle(ctx context.Context, s *Session, output buf.Writer) {
 	s.Close()
 }
 
+func (w *ServerWorker) ActiveConnections() uint32 {
+	return uint32(w.sessionManager.Size())
+}
+
 func (w *ServerWorker) handleStatusKeepAlive(meta *FrameMetadata, reader *buf.BufferedReader) error {
 	if meta.Option.Has(OptionData) {
 		return buf.Copy(NewStreamReader(reader), buf.Discard)
