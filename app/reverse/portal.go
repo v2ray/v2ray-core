@@ -68,10 +68,7 @@ func (s *Portal) HandleConnection(ctx context.Context, link *vio.Link) error {
 	}
 
 	if isDomain(outboundMeta.Target, s.domain) {
-		muxClient, err := mux.NewClientWorker(*link, mux.ClientStrategy{
-			MaxConcurrency: 0,
-			MaxConnection:  256,
-		})
+		muxClient, err := mux.NewClientWorker(*link, mux.ClientStrategy{})
 		if err != nil {
 			return newError("failed to create mux client worker").Base(err).AtWarning()
 		}
@@ -157,12 +154,24 @@ func (p *StaticMuxPicker) PickAvailable() (*mux.ClientWorker, error) {
 	var minIdx int = -1
 	var minConn uint32 = 9999
 	for i, w := range p.workers {
-		if w.IsFull() {
+		if w.draining {
 			continue
 		}
 		if w.client.ActiveConnections() < minConn {
 			minConn = w.client.ActiveConnections()
 			minIdx = i
+		}
+	}
+
+	if minIdx == -1 {
+		for i, w := range p.workers {
+			if w.IsFull() {
+				continue
+			}
+			if w.client.ActiveConnections() < minConn {
+				minConn = w.client.ActiveConnections()
+				minIdx = i
+			}
 		}
 	}
 
@@ -181,10 +190,11 @@ func (p *StaticMuxPicker) AddWorker(worker *PortalWorker) {
 }
 
 type PortalWorker struct {
-	client  *mux.ClientWorker
-	control *task.Periodic
-	writer  buf.Writer
-	reader  buf.Reader
+	client   *mux.ClientWorker
+	control  *task.Periodic
+	writer   buf.Writer
+	reader   buf.Reader
+	draining bool
 }
 
 func NewPortalWorker(client *mux.ClientWorker) (*PortalWorker, error) {
@@ -221,14 +231,15 @@ func (w *PortalWorker) heartbeat() error {
 		return newError("client worker stopped")
 	}
 
-	if w.writer == nil {
+	if w.draining || w.writer == nil {
 		return newError("already disposed")
 	}
 
 	msg := &Control{}
 	msg.FillInRandom()
 
-	if w.client.IsClosing() {
+	if w.client.TotalConnections() > 256 {
+		w.draining = true
 		msg.State = Control_DRAIN
 
 		defer func() {

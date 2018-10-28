@@ -190,6 +190,10 @@ func NewClientWorker(stream vio.Link, s ClientStrategy) (*ClientWorker, error) {
 	return c, nil
 }
 
+func (m *ClientWorker) TotalConnections() uint32 {
+	return uint32(m.sessionManager.Count())
+}
+
 func (m *ClientWorker) ActiveConnections() uint32 {
 	return uint32(m.sessionManager.Size())
 }

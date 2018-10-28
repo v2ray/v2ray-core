@@ -61,6 +61,7 @@ func (m *SessionManager) Add(s *Session) {
 		return
 	}
 
+	m.count++
 	m.sessions[s.ID] = s
 }
 
