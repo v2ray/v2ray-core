@@ -42,7 +42,23 @@ func NewBridge(config *BridgeConfig, dispatcher routing.Dispatcher) (*Bridge, er
 	return b, nil
 }
 
+func (b *Bridge) cleanup() {
+	var activeWorkers []*BridgeWorker
+
+	for _, w := range b.workers {
+		if w.IsActive() {
+			activeWorkers = append(activeWorkers, w)
+		}
+	}
+
+	if len(activeWorkers) != len(b.workers) {
+		b.workers = activeWorkers
+	}
+}
+
 func (b *Bridge) monitor() error {
+	b.cleanup()
+
 	var numConnections uint32
 	var numWorker uint32
 

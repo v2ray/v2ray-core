@@ -182,7 +182,7 @@ func TestReverseProxy(t *testing.T) {
 	defer CloseAllServers(servers)
 
 	var wg sync.WaitGroup
-	wg.Add(10)
+	wg.Add(32)
 	for i := 0; i < 32; i++ {
 		go func() {
 			defer wg.Done()
