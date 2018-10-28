@@ -32,6 +32,8 @@ func NewBridge(config *BridgeConfig, dispatcher routing.Dispatcher) (*Bridge, er
 
 	b := &Bridge{
 		dispatcher: dispatcher,
+		tag:        config.Tag,
+		domain:     config.Domain,
 	}
 	b.monitorTask = &task.Periodic{
 		Execute:  b.monitor,

@@ -8,8 +8,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/mux"
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/task"
 	"v2ray.com/core/common/vio"
@@ -53,6 +53,7 @@ func NewPortal(config *PortalConfig, ohm outbound.Manager) (*Portal, error) {
 func (p *Portal) Start() error {
 	return p.ohm.AddHandler(context.Background(), &Outbound{
 		portal: p,
+		tag:    p.tag,
 	})
 }
 
@@ -66,7 +67,7 @@ func (s *Portal) HandleConnection(ctx context.Context, link *vio.Link) error {
 		return newError("outbound metadata not found").AtError()
 	}
 
-	if isInternalDomain(outboundMeta.Target) {
+	if isDomain(outboundMeta.Target, s.domain) {
 		muxClient, err := mux.NewClientWorker(*link, mux.ClientStrategy{
 			MaxConcurrency: 0,
 			MaxConnection:  256,
@@ -149,17 +150,24 @@ func (p *StaticMuxPicker) PickAvailable() (*mux.ClientWorker, error) {
 	p.access.Lock()
 	defer p.access.Unlock()
 
-	n := len(p.workers)
-	if n == 0 {
+	if len(p.workers) == 0 {
 		return nil, newError("empty worker list")
 	}
 
-	idx := dice.Roll(n)
-	for i := 0; i < n; i++ {
-		w := p.workers[(i+idx)%n]
-		if !w.IsFull() {
-			return w.client, nil
+	var minIdx int = -1
+	var minConn uint32 = 9999
+	for i, w := range p.workers {
+		if w.IsFull() {
+			continue
 		}
+		if w.client.ActiveConnections() < minConn {
+			minConn = w.client.ActiveConnections()
+			minIdx = i
+		}
+	}
+
+	if minIdx != -1 {
+		return p.workers[minIdx].client, nil
 	}
 
 	return nil, newError("no mux client worker available")
@@ -184,7 +192,11 @@ func NewPortalWorker(client *mux.ClientWorker) (*PortalWorker, error) {
 	uplinkReader, uplinkWriter := pipe.New(opt...)
 	downlinkReader, downlinkWriter := pipe.New(opt...)
 
-	f := client.Dispatch(context.Background(), &vio.Link{
+	ctx := context.Background()
+	ctx = session.ContextWithOutbound(ctx, &session.Outbound{
+		Target: net.UDPDestination(net.DomainAddress(internalDomain), 0),
+	})
+	f := client.Dispatch(ctx, &vio.Link{
 		Reader: uplinkReader,
 		Writer: downlinkWriter,
 	})

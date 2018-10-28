@@ -16,8 +16,12 @@ const (
 	internalDomain = "reverse.internal.v2ray.com"
 )
 
+func isDomain(dest net.Destination, domain string) bool {
+	return dest.Address.Family().IsDomain() && dest.Address.Domain() == domain
+}
+
 func isInternalDomain(dest net.Destination) bool {
-	return dest.Address.Family().IsDomain() && dest.Address.Domain() == internalDomain
+	return isDomain(dest, internalDomain)
 }
 
 func init() {
@@ -52,6 +56,42 @@ func (r *Reverse) Init(config *Config, d routing.Dispatcher, ohm outbound.Manage
 			return err
 		}
 		r.portals = append(r.portals, p)
+	}
+
+	return nil
+}
+
+func (r *Reverse) Type() interface{} {
+	return (*Reverse)(nil)
+}
+
+func (r *Reverse) Start() error {
+	for _, b := range r.bridges {
+		if err := b.Start(); err != nil {
+			return err
+		}
+	}
+
+	for _, p := range r.portals {
+		if err := p.Start(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (r *Reverse) Close() error {
+	for _, b := range r.bridges {
+		if err := b.Close(); err != nil {
+			return err
+		}
+	}
+
+	for _, p := range r.portals {
+		if err := p.Close(); err != nil {
+			return err
+		}
 	}
 
 	return nil

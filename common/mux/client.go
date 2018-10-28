@@ -190,6 +190,10 @@ func NewClientWorker(stream vio.Link, s ClientStrategy) (*ClientWorker, error) {
 	return c, nil
 }
 
+func (m *ClientWorker) ActiveConnections() uint32 {
+	return uint32(m.sessionManager.Size())
+}
+
 // Closed returns true if this Client is closed.
 func (m *ClientWorker) Closed() bool {
 	return m.done.Done()
