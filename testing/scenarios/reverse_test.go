@@ -2,6 +2,7 @@ package scenarios
 
 import (
 	"crypto/rand"
+	"sync"
 	"testing"
 	"time"
 
@@ -178,34 +179,34 @@ func TestReverseProxy(t *testing.T) {
 
 	defer CloseAllServers(servers)
 
-	//var wg sync.WaitGroup
-	//wg.Add(10)
-	//for i := 0; i < 10; i++ {
-	//go func() {
-	//defer wg.Done()
+	var wg sync.WaitGroup
+	wg.Add(10)
+	for i := 0; i < 32; i++ {
+		go func() {
+			defer wg.Done()
 
-	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-		IP:   []byte{127, 0, 0, 1},
-		Port: int(externalPort),
-	})
-	common.Must(err)
-	defer conn.Close()
+			conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
+				IP:   []byte{127, 0, 0, 1},
+				Port: int(externalPort),
+			})
+			common.Must(err)
+			defer conn.Close()
 
-	payload := make([]byte, 10240*1024)
-	rand.Read(payload)
+			payload := make([]byte, 10240*1024)
+			rand.Read(payload)
 
-	nBytes, err := conn.Write([]byte(payload))
-	common.Must(err)
+			nBytes, err := conn.Write([]byte(payload))
+			common.Must(err)
 
-	if nBytes != len(payload) {
-		t.Error("only part of payload is written: ", nBytes)
+			if nBytes != len(payload) {
+				t.Error("only part of payload is written: ", nBytes)
+			}
+
+			response := readFrom(conn, time.Second*20, 10240*1024)
+			if err := compare.BytesEqualWithDetail(response, xor([]byte(payload))); err != nil {
+				t.Error(err)
+			}
+		}()
 	}
-
-	response := readFrom(conn, time.Second*20, 10240*1024)
-	if err := compare.BytesEqualWithDetail(response, xor([]byte(payload))); err != nil {
-		t.Error(err)
-	}
-	//}()
-	//}
-	//wg.Wait()
+	wg.Wait()
 }
