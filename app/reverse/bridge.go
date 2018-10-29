@@ -137,7 +137,7 @@ func (w *BridgeWorker) Close() error {
 }
 
 func (w *BridgeWorker) IsActive() bool {
-	return w.state == Control_ACTIVE
+	return w.state == Control_ACTIVE && !w.worker.Closed()
 }
 
 func (w *BridgeWorker) Connections() uint32 {

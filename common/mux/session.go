@@ -22,6 +22,13 @@ func NewSessionManager() *SessionManager {
 	}
 }
 
+func (m *SessionManager) Closed() bool {
+	m.RLock()
+	defer m.RUnlock()
+
+	return m.closed
+}
+
 func (m *SessionManager) Size() int {
 	m.RLock()
 	defer m.RUnlock()

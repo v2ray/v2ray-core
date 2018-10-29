@@ -96,6 +96,10 @@ func (w *ServerWorker) ActiveConnections() uint32 {
 	return uint32(w.sessionManager.Size())
 }
 
+func (w *ServerWorker) Closed() bool {
+	return w.sessionManager.Closed()
+}
+
 func (w *ServerWorker) handleStatusKeepAlive(meta *FrameMetadata, reader *buf.BufferedReader) error {
 	if meta.Option.Has(OptionData) {
 		return buf.Copy(NewStreamReader(reader), buf.Discard)
