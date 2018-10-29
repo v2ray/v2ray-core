@@ -81,7 +81,7 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 			for _, domain := range ns.PrioritizedDomain {
 				matcher, err := toStrMatcher(domain.Type, domain.Domain)
 				if err != nil {
-					return nil, newError("failed to create proritized domain").Base(err).AtWarning()
+					return nil, newError("failed to create prioritized domain").Base(err).AtWarning()
 				}
 				midx := domainMatcher.Add(matcher)
 				domainIndexMap[midx] = uint32(idx)
