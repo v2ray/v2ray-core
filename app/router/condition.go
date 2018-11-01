@@ -226,6 +226,57 @@ func (v *IPv4Matcher) Apply(ctx context.Context) bool {
 	return false
 }
 
+type MultiGeoIPMatcher struct {
+	matchers []*GeoIPMatcher
+	onSource bool
+}
+
+func NewMultiGeoIPMatcher(geoips []*GeoIP, onSource bool) (*MultiGeoIPMatcher, error) {
+	var matchers []*GeoIPMatcher
+	for _, geoip := range geoips {
+		matcher, err := globalGeoIPContainer.Add(geoip)
+		if err != nil {
+			return nil, err
+		}
+		matchers = append(matchers, matcher)
+	}
+
+	return &MultiGeoIPMatcher{
+		matchers: matchers,
+		onSource: onSource,
+	}, nil
+}
+
+func (m *MultiGeoIPMatcher) Apply(ctx context.Context) bool {
+	ips := make([]net.IP, 0, 4)
+	if resolver, ok := ResolvedIPsFromContext(ctx); ok {
+		resolvedIPs := resolver.Resolve()
+		for _, rip := range resolvedIPs {
+			ips = append(ips, rip.IP())
+		}
+	}
+
+	var dest net.Destination
+	if m.onSource {
+		dest = sourceFromContext(ctx)
+	} else {
+		dest = targetFromContent(ctx)
+	}
+
+	if dest.IsValid() && (dest.Address.Family().IsIPv4() || dest.Address.Family().IsIPv6()) {
+		ips = append(ips, dest.Address.IP())
+	}
+
+	for _, ip := range ips {
+		for _, matcher := range m.matchers {
+			if matcher.Match(ip) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 type PortMatcher struct {
 	port net.PortRange
 }

@@ -44,6 +44,18 @@ func BytesToInt64(value []byte) int64 {
 		int64(value[7])
 }
 
+func BytesToUint64(value []byte) uint64 {
+	_ = value[7]
+	return uint64(value[0])<<56 |
+		uint64(value[1])<<48 |
+		uint64(value[2])<<40 |
+		uint64(value[3])<<32 |
+		uint64(value[4])<<24 |
+		uint64(value[5])<<16 |
+		uint64(value[6])<<8 |
+		uint64(value[7])
+}
+
 // BytesToHexString converts a byte array into hex string.
 func BytesToHexString(value []byte) string {
 	m := hex.EncodedLen(len(value))

@@ -111,7 +111,13 @@ func (rr *RoutingRule) BuildCondition() (Condition, error) {
 		conds.Add(NewNetworkMatcher(rr.NetworkList))
 	}
 
-	if len(rr.Cidr) > 0 {
+	if len(rr.Geoip) > 0 {
+		cond, err := NewMultiGeoIPMatcher(rr.Geoip, false)
+		if err != nil {
+			return nil, err
+		}
+		conds.Add(cond)
+	} else if len(rr.Cidr) > 0 {
 		cond, err := cidrToCondition(rr.Cidr, false)
 		if err != nil {
 			return nil, err
@@ -119,7 +125,13 @@ func (rr *RoutingRule) BuildCondition() (Condition, error) {
 		conds.Add(cond)
 	}
 
-	if len(rr.SourceCidr) > 0 {
+	if len(rr.SourceGeoip) > 0 {
+		cond, err := NewMultiGeoIPMatcher(rr.SourceGeoip, true)
+		if err != nil {
+			return nil, err
+		}
+		conds.Add(cond)
+	} else if len(rr.SourceCidr) > 0 {
 		cond, err := cidrToCondition(rr.SourceCidr, true)
 		if err != nil {
 			return nil, err

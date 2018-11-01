@@ -58,12 +58,31 @@ message GeoSiteList{
 }
 
 message RoutingRule {
+  // Tag of outbound that this rule is pointing to.
   string tag = 1;
   repeated Domain domain = 2;
-  repeated CIDR cidr = 3;
+
+  // List of CIDRs for target IP address matching.
+  // The list must be sorted beforehand.
+  repeated CIDR cidr = 3 [deprecated = true];
+  
+  // List of GeoIPs for target IP address matching. If this entry exists, the cidr above will have no effect.
+  // GeoIP fields with the same country code are supposed to contain exactly same content. They will be merged during runtime.
+  // For customized GeoIPs, please leave country code empty.
+  // The CIDR list in the GeoIP must be sorted beforehand.
+  repeated GeoIP geoip = 10;
+
   v2ray.core.common.net.PortRange port_range = 4;
   v2ray.core.common.net.NetworkList network_list = 5;
-  repeated CIDR source_cidr = 6;
+
+  // List of CIDRs for source IP address matching.
+  // The list must be sorted beforehand.
+  repeated CIDR source_cidr = 6 [deprecated = true];
+
+  // List of GeoIPs for source IP address matching. If this entry exists, the source_cidr above will have no effect.
+  // The CIDR list in the GeoIP must be sorted beforehand.
+  repeated GeoIP source_geoip = 11;
+
   repeated string user_email = 7;
   repeated string inbound_tag = 8;
   repeated string protocol = 9;
