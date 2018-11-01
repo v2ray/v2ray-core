@@ -120,22 +120,6 @@ func (m *DomainMatcher) Apply(ctx context.Context) bool {
 	return m.ApplyDomain(dest.Address.Domain())
 }
 
-type CIDRMatcher struct {
-	cidr     *net.IPNet
-	onSource bool
-}
-
-func NewCIDRMatcher(ip []byte, mask uint32, onSource bool) (*CIDRMatcher, error) {
-	cidr := &net.IPNet{
-		IP:   net.IP(ip),
-		Mask: net.CIDRMask(int(mask), len(ip)*8),
-	}
-	return &CIDRMatcher{
-		cidr:     cidr,
-		onSource: onSource,
-	}, nil
-}
-
 func sourceFromContext(ctx context.Context) net.Destination {
 	inbound := session.InboundFromContext(ctx)
 	if inbound == nil {
@@ -150,80 +134,6 @@ func targetFromContent(ctx context.Context) net.Destination {
 		return net.Destination{}
 	}
 	return outbound.Target
-}
-
-func (v *CIDRMatcher) Apply(ctx context.Context) bool {
-	ips := make([]net.IP, 0, 4)
-	if resolver, ok := ResolvedIPsFromContext(ctx); ok {
-		resolvedIPs := resolver.Resolve()
-		for _, rip := range resolvedIPs {
-			if !rip.Family().IsIPv6() {
-				continue
-			}
-			ips = append(ips, rip.IP())
-		}
-	}
-
-	var dest net.Destination
-	if v.onSource {
-		dest = sourceFromContext(ctx)
-	} else {
-		dest = targetFromContent(ctx)
-	}
-
-	if dest.IsValid() && dest.Address.Family().IsIPv6() {
-		ips = append(ips, dest.Address.IP())
-	}
-
-	for _, ip := range ips {
-		if v.cidr.Contains(ip) {
-			return true
-		}
-	}
-	return false
-}
-
-type IPv4Matcher struct {
-	ipv4net  *net.IPNetTable
-	onSource bool
-}
-
-func NewIPv4Matcher(ipnet *net.IPNetTable, onSource bool) *IPv4Matcher {
-	return &IPv4Matcher{
-		ipv4net:  ipnet,
-		onSource: onSource,
-	}
-}
-
-func (v *IPv4Matcher) Apply(ctx context.Context) bool {
-	ips := make([]net.IP, 0, 4)
-	if resolver, ok := ResolvedIPsFromContext(ctx); ok {
-		resolvedIPs := resolver.Resolve()
-		for _, rip := range resolvedIPs {
-			if !rip.Family().IsIPv4() {
-				continue
-			}
-			ips = append(ips, rip.IP())
-		}
-	}
-
-	var dest net.Destination
-	if v.onSource {
-		dest = sourceFromContext(ctx)
-	} else {
-		dest = targetFromContent(ctx)
-	}
-
-	if dest.IsValid() && dest.Address.Family().IsIPv4() {
-		ips = append(ips, dest.Address.IP())
-	}
-
-	for _, ip := range ips {
-		if v.ipv4net.Contains(ip) {
-			return true
-		}
-	}
-	return false
 }
 
 type MultiGeoIPMatcher struct {

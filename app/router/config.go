@@ -2,8 +2,6 @@ package router
 
 import (
 	"context"
-
-	"v2ray.com/core/common/net"
 )
 
 // CIDRList is an alias of []*CIDR to provide sort.Interface.
@@ -54,40 +52,6 @@ func (r *Rule) Apply(ctx context.Context) bool {
 	return r.Condition.Apply(ctx)
 }
 
-func cidrToCondition(cidr []*CIDR, source bool) (Condition, error) {
-	ipv4Net := net.NewIPNetTable()
-	ipv6Cond := NewAnyCondition()
-	hasIpv6 := false
-
-	for _, ip := range cidr {
-		switch len(ip.Ip) {
-		case net.IPv4len:
-			ipv4Net.AddIP(ip.Ip, byte(ip.Prefix))
-		case net.IPv6len:
-			hasIpv6 = true
-			matcher, err := NewCIDRMatcher(ip.Ip, ip.Prefix, source)
-			if err != nil {
-				return nil, err
-			}
-			ipv6Cond.Add(matcher)
-		default:
-			return nil, newError("invalid IP length").AtWarning()
-		}
-	}
-
-	switch {
-	case !ipv4Net.IsEmpty() && hasIpv6:
-		cond := NewAnyCondition()
-		cond.Add(NewIPv4Matcher(ipv4Net, source))
-		cond.Add(ipv6Cond)
-		return cond, nil
-	case !ipv4Net.IsEmpty():
-		return NewIPv4Matcher(ipv4Net, source), nil
-	default:
-		return ipv6Cond, nil
-	}
-}
-
 func (rr *RoutingRule) BuildCondition() (Condition, error) {
 	conds := NewConditionChan()
 
@@ -122,7 +86,7 @@ func (rr *RoutingRule) BuildCondition() (Condition, error) {
 		}
 		conds.Add(cond)
 	} else if len(rr.Cidr) > 0 {
-		cond, err := cidrToCondition(rr.Cidr, false)
+		cond, err := NewMultiGeoIPMatcher([]*GeoIP{{Cidr: rr.Cidr}}, false)
 		if err != nil {
 			return nil, err
 		}
@@ -136,7 +100,7 @@ func (rr *RoutingRule) BuildCondition() (Condition, error) {
 		}
 		conds.Add(cond)
 	} else if len(rr.SourceCidr) > 0 {
-		cond, err := cidrToCondition(rr.SourceCidr, true)
+		cond, err := NewMultiGeoIPMatcher([]*GeoIP{{Cidr: rr.SourceCidr}}, true)
 		if err != nil {
 			return nil, err
 		}
