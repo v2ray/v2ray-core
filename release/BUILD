@@ -303,3 +303,35 @@ pkg_zip(
   out = "v2ray-linux-s390x.zip",
   mappings = gen_mappings("linux", "s390x"),
 )
+
+pkg_zip(
+  name = "v2ray_linux_ppc64_package",
+  srcs = [
+    "//main:v2ray_linux_ppc64",
+    "//main:v2ray_linux_ppc64_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_ppc64",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_ppc64_sig",
+    ":config_json",
+    ":systemd",
+    ":doc",
+    ":geodata",
+  ],
+  out = "v2ray-linux-ppc64.zip",
+  mappings = gen_mappings("linux", "ppc64"),
+)
+
+pkg_zip(
+  name = "v2ray_linux_ppc64le_package",
+  srcs = [
+    "//main:v2ray_linux_ppc64le",
+    "//main:v2ray_linux_ppc64le_sig",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_ppc64le",
+    "@v2ray_ext//tools/control/main:v2ctl_linux_ppc64le_sig",
+    ":config_json",
+    ":systemd",
+    ":doc",
+    ":geodata",
+  ],
+  out = "v2ray-linux-ppc64le.zip",
+  mappings = gen_mappings("linux", "ppc64le"),
+)
