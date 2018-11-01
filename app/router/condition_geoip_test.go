@@ -3,7 +3,6 @@ package router_test
 import (
 	"os"
 	"path/filepath"
-	"sort"
 	"testing"
 
 	proto "github.com/golang/protobuf/proto"
@@ -31,8 +30,6 @@ func TestGeoIPMatcher(t *testing.T) {
 		{Ip: []byte{8, 8, 8, 8}, Prefix: 32},
 		{Ip: []byte{91, 108, 4, 0}, Prefix: 16},
 	}
-
-	sort.Sort(&cidrList)
 
 	matcher := &router.GeoIPMatcher{}
 	common.Must(matcher.Init(cidrList))

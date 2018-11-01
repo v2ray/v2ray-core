@@ -1,6 +1,8 @@
 package router
 
 import (
+	"sort"
+
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
 )
@@ -51,6 +53,9 @@ func (m *GeoIPMatcher) Init(cidrs []*CIDR) error {
 			return newError("unexpect ip length: ", len(ip))
 		}
 	}
+
+	cidrList := CIDRList(cidrs)
+	sort.Sort(&cidrList)
 
 	m.ip4 = make([]uint32, 0, ip4Count)
 	m.prefix4 = make([]uint8, 0, ip4Count)
