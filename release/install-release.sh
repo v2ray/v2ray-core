@@ -107,6 +107,10 @@ sysArch(){
         VDIS="mips"
     elif [[ "$ARCH" == *"s390x"* ]]; then
         VDIS="s390x"
+    elif [[ "$ARCH" == "ppc64le" ]]; then
+        VDIS="ppc64le"
+    elif [[ "$ARCH" == "ppc64" ]]; then
+        VDIS="ppc64"
     fi
     return 0
 }

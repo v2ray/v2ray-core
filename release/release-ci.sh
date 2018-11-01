@@ -103,6 +103,8 @@ upload ${ART_ROOT}/v2ray-linux-mips64.zip
 upload ${ART_ROOT}/v2ray-linux-mips64le.zip
 upload ${ART_ROOT}/v2ray-linux-mips.zip
 upload ${ART_ROOT}/v2ray-linux-mipsle.zip
+upload ${ART_ROOT}/v2ray-linux-ppc64.zip
+upload ${ART_ROOT}/v2ray-linux-ppc64le.zip
 upload ${ART_ROOT}/v2ray-linux-s390x.zip
 upload ${ART_ROOT}/v2ray-freebsd-64.zip
 upload ${ART_ROOT}/v2ray-freebsd-32.zip
