@@ -60,6 +60,8 @@ message GeoSiteList{
 message RoutingRule {
   // Tag of outbound that this rule is pointing to.
   string tag = 1;
+
+  // List of domains for target domain matching.
   repeated Domain domain = 2;
 
   // List of CIDRs for target IP address matching.

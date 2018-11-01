@@ -153,6 +153,7 @@ func (m *GeoIPMatcher) match6(ip ipv6) bool {
 	return normalize6(ip, m.prefix6[l]) == m.ip6[l]
 }
 
+// Match returns true if the given ip is included by the GeoIP.
 func (m *GeoIPMatcher) Match(ip net.IP) bool {
 	switch len(ip) {
 	case 4:
@@ -167,11 +168,14 @@ func (m *GeoIPMatcher) Match(ip net.IP) bool {
 	}
 }
 
-type GlobalGeoIPContainer struct {
+// GeoIPMatcherContainer is a container for GeoIPMatchers. It keeps unique copies of GeoIPMatcher by country code.
+type GeoIPMatcherContainer struct {
 	matchers []*GeoIPMatcher
 }
 
-func (c *GlobalGeoIPContainer) Add(geoip *GeoIP) (*GeoIPMatcher, error) {
+// Add adds a new GeoIP set into the container.
+// If the country code of GeoIP is not empty, GeoIPMatcherContainer will try to find an existing one, instead of adding a new one.
+func (c *GeoIPMatcherContainer) Add(geoip *GeoIP) (*GeoIPMatcher, error) {
 	if len(geoip.CountryCode) > 0 {
 		for _, m := range c.matchers {
 			if m.countryCode == geoip.CountryCode {
@@ -193,5 +197,5 @@ func (c *GlobalGeoIPContainer) Add(geoip *GeoIP) (*GeoIPMatcher, error) {
 }
 
 var (
-	globalGeoIPContainer GlobalGeoIPContainer
+	globalGeoIPContainer GeoIPMatcherContainer
 )

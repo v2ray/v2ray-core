@@ -6,12 +6,15 @@ import (
 	"v2ray.com/core/common/net"
 )
 
+// CIDRList is an alias of []*CIDR to provide sort.Interface.
 type CIDRList []*CIDR
 
+// Len implements sort.Interface.
 func (l *CIDRList) Len() int {
 	return len(*l)
 }
 
+// Less implements sort.Interface.
 func (l *CIDRList) Less(i int, j int) bool {
 	ci := (*l)[i]
 	cj := (*l)[j]
@@ -37,6 +40,7 @@ func (l *CIDRList) Less(i int, j int) bool {
 	return ci.Prefix < cj.Prefix
 }
 
+// Swap implements sort.Interface.
 func (l *CIDRList) Swap(i int, j int) {
 	(*l)[i], (*l)[j] = (*l)[j], (*l)[i]
 }
