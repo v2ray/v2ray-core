@@ -25,16 +25,12 @@ func normalize4(ip uint32, prefix uint8) uint32 {
 }
 
 func normalize6(ip ipv6, prefix uint8) ipv6 {
-	if prefix < 64 {
-		ip.a = (ip.a >> (64 - prefix)) << (64 - prefix)
-	}
-
 	if prefix <= 64 {
+		ip.a = (ip.a >> (64 - prefix)) << (64 - prefix)
 		ip.b = 0
 	} else {
 		ip.b = (ip.b >> (128 - prefix)) << (128 - prefix)
 	}
-
 	return ip
 }
 
@@ -94,15 +90,10 @@ func (m *GeoIPMatcher) match4(ip uint32) bool {
 	}
 
 	size := uint32(len(m.ip4))
-	if ip > m.ip4[size-1] {
-		nip := normalize4(ip, m.prefix4[size-1])
-		return nip == m.ip4[size-1]
-	}
-
 	l := uint32(0)
-	r := size - 1
-	for l < r-1 {
-		x := (l + r) / 2
+	r := size
+	for l < r {
+		x := ((l + r) >> 1)
 		if ip < m.ip4[x] {
 			r = x
 			continue
@@ -113,10 +104,10 @@ func (m *GeoIPMatcher) match4(ip uint32) bool {
 			return true
 		}
 
-		l = x
+		l = x + 1
 	}
 
-	return normalize4(ip, m.prefix4[l]) == m.ip4[l]
+	return l > 0 && normalize4(ip, m.prefix4[l-1]) == m.ip4[l-1]
 }
 
 func less6(a ipv6, b ipv6) bool {
@@ -133,29 +124,23 @@ func (m *GeoIPMatcher) match6(ip ipv6) bool {
 	}
 
 	size := uint32(len(m.ip6))
-	if less6(m.ip6[size-1], ip) {
-		nip := normalize6(ip, m.prefix6[size-1])
-		return nip == m.ip6[size-1]
-	}
-
 	l := uint32(0)
-	r := size - 1
-	for l < r-1 {
+	r := size
+	for l < r {
 		x := (l + r) / 2
 		if less6(ip, m.ip6[x]) {
 			r = x
 			continue
 		}
 
-		nip := normalize6(ip, m.prefix6[x])
-		if nip == m.ip6[x] {
+		if normalize6(ip, m.prefix6[x]) == m.ip6[x] {
 			return true
 		}
 
-		l = x
+		l = x + 1
 	}
 
-	return normalize6(ip, m.prefix6[l]) == m.ip6[l]
+	return l > 0 && normalize6(ip, m.prefix6[l-1]) == m.ip6[l-1]
 }
 
 // Match returns true if the given ip is included by the GeoIP.
