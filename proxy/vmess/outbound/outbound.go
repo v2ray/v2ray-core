@@ -103,7 +103,7 @@ func (v *Handler) Process(ctx context.Context, link *vio.Link, dialer internet.D
 		request.Option.Set(protocol.RequestOptionChunkMasking)
 	}
 
-	if enablePadding && request.Option.Has(protocol.RequestOptionChunkMasking) {
+	if shouldEnablePadding(request.Security) && request.Option.Has(protocol.RequestOptionChunkMasking) {
 		request.Option.Set(protocol.RequestOptionGlobalPadding)
 	}
 
@@ -172,6 +172,10 @@ func (v *Handler) Process(ctx context.Context, link *vio.Link, dialer internet.D
 var (
 	enablePadding = false
 )
+
+func shouldEnablePadding(s protocol.SecurityType) bool {
+	return enablePadding || s == protocol.SecurityType_AES128_GCM || s == protocol.SecurityType_CHACHA20_POLY1305 || s == protocol.SecurityType_AUTO
+}
 
 func init() {
 	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
