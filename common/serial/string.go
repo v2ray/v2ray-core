@@ -20,8 +20,6 @@ func ToString(v interface{}) string {
 		return value.String()
 	case error:
 		return value.Error()
-	case []byte:
-		return BytesToHexString(value)
 	default:
 		return fmt.Sprintf("%+v", value)
 	}

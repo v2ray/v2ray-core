@@ -1,6 +1,8 @@
 package kcp
 
 import (
+	"encoding/binary"
+
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/serial"
 )
@@ -60,16 +62,16 @@ func (s *DataSegment) parse(conv uint16, cmd Command, opt SegmentOption, buf []b
 	if len(buf) < 15 {
 		return false, nil
 	}
-	s.Timestamp = serial.BytesToUint32(buf)
+	s.Timestamp = binary.BigEndian.Uint32(buf)
 	buf = buf[4:]
 
-	s.Number = serial.BytesToUint32(buf)
+	s.Number = binary.BigEndian.Uint32(buf)
 	buf = buf[4:]
 
-	s.SendingNext = serial.BytesToUint32(buf)
+	s.SendingNext = binary.BigEndian.Uint32(buf)
 	buf = buf[4:]
 
-	dataLen := int(serial.BytesToUint16(buf))
+	dataLen := int(binary.BigEndian.Uint16(buf))
 	buf = buf[2:]
 
 	if len(buf) < dataLen {
@@ -147,13 +149,13 @@ func (s *AckSegment) parse(conv uint16, cmd Command, opt SegmentOption, buf []by
 		return false, nil
 	}
 
-	s.ReceivingWindow = serial.BytesToUint32(buf)
+	s.ReceivingWindow = binary.BigEndian.Uint32(buf)
 	buf = buf[4:]
 
-	s.ReceivingNext = serial.BytesToUint32(buf)
+	s.ReceivingNext = binary.BigEndian.Uint32(buf)
 	buf = buf[4:]
 
-	s.Timestamp = serial.BytesToUint32(buf)
+	s.Timestamp = binary.BigEndian.Uint32(buf)
 	buf = buf[4:]
 
 	count := int(buf[0])
@@ -163,7 +165,7 @@ func (s *AckSegment) parse(conv uint16, cmd Command, opt SegmentOption, buf []by
 		return false, nil
 	}
 	for i := 0; i < count; i++ {
-		s.PutNumber(serial.BytesToUint32(buf))
+		s.PutNumber(binary.BigEndian.Uint32(buf))
 		buf = buf[4:]
 	}
 
@@ -240,13 +242,13 @@ func (s *CmdOnlySegment) parse(conv uint16, cmd Command, opt SegmentOption, buf 
 		return false, nil
 	}
 
-	s.SendingNext = serial.BytesToUint32(buf)
+	s.SendingNext = binary.BigEndian.Uint32(buf)
 	buf = buf[4:]
 
-	s.ReceivingNext = serial.BytesToUint32(buf)
+	s.ReceivingNext = binary.BigEndian.Uint32(buf)
 	buf = buf[4:]
 
-	s.PeerRTO = serial.BytesToUint32(buf)
+	s.PeerRTO = binary.BigEndian.Uint32(buf)
 	buf = buf[4:]
 
 	return true, buf
@@ -282,7 +284,7 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 		return nil, nil
 	}
 
-	conv := serial.BytesToUint16(buf)
+	conv := binary.BigEndian.Uint16(buf)
 	buf = buf[2:]
 
 	cmd := Command(buf[0])

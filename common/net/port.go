@@ -1,6 +1,7 @@
 package net
 
 import (
+	"encoding/binary"
 	"strconv"
 
 	"v2ray.com/core/common/serial"
@@ -12,7 +13,7 @@ type Port uint16
 // PortFromBytes converts a byte array to a Port, assuming bytes are in big endian order.
 // @unsafe Caller must ensure that the byte array has at least 2 elements.
 func PortFromBytes(port []byte) Port {
-	return Port(serial.BytesToUint16(port))
+	return Port(binary.BigEndian.Uint16(port))
 }
 
 // PortFromInt converts an integer to a Port.

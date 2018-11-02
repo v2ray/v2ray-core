@@ -2,6 +2,7 @@ package encoding
 
 import (
 	"crypto/md5"
+	"encoding/binary"
 	"hash/fnv"
 
 	"v2ray.com/core/common"
@@ -59,7 +60,7 @@ func (*FnvAuthenticator) Seal(dst, nonce, plaintext, additionalData []byte) []by
 
 // Open implements AEAD.Open().
 func (*FnvAuthenticator) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, error) {
-	if serial.BytesToUint32(ciphertext[:4]) != Authenticate(ciphertext[4:]) {
+	if binary.BigEndian.Uint32(ciphertext[:4]) != Authenticate(ciphertext[4:]) {
 		return dst, newError("invalid authentication")
 	}
 	return append(dst, ciphertext[4:]...), nil
@@ -94,12 +95,12 @@ func (*ShakeSizeParser) SizeBytes() int32 {
 
 func (s *ShakeSizeParser) next() uint16 {
 	common.Must2(s.shake.Read(s.buffer[:]))
-	return serial.BytesToUint16(s.buffer[:])
+	return binary.BigEndian.Uint16(s.buffer[:])
 }
 
 func (s *ShakeSizeParser) Decode(b []byte) (uint16, error) {
 	mask := s.next()
-	size := serial.BytesToUint16(b)
+	size := binary.BigEndian.Uint16(b)
 	return mask ^ size, nil
 }
 

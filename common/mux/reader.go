@@ -5,7 +5,7 @@ import (
 
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
-	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common/vio"
 )
 
 // PacketReader is an io.Reader that reads whole chunk of Mux frames every time.
@@ -28,7 +28,7 @@ func (r *PacketReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 		return nil, io.EOF
 	}
 
-	size, err := serial.ReadUint16(r.reader)
+	size, err := vio.ReadUint16(r.reader)
 	if err != nil {
 		return nil, err
 	}

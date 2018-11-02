@@ -1,10 +1,10 @@
 package router
 
 import (
+	"encoding/binary"
 	"sort"
 
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/serial"
 )
 
 type ipv6 struct {
@@ -63,12 +63,12 @@ func (m *GeoIPMatcher) Init(cidrs []*CIDR) error {
 		prefix := uint8(cidr.Prefix)
 		switch len(ip) {
 		case 4:
-			m.ip4 = append(m.ip4, normalize4(serial.BytesToUint32(ip), prefix))
+			m.ip4 = append(m.ip4, normalize4(binary.BigEndian.Uint32(ip), prefix))
 			m.prefix4 = append(m.prefix4, prefix)
 		case 16:
 			ip6 := ipv6{
-				a: serial.BytesToUint64(ip[0:8]),
-				b: serial.BytesToUint64(ip[8:16]),
+				a: binary.BigEndian.Uint64(ip[0:8]),
+				b: binary.BigEndian.Uint64(ip[8:16]),
 			}
 			ip6 = normalize6(ip6, prefix)
 
@@ -147,11 +147,11 @@ func (m *GeoIPMatcher) match6(ip ipv6) bool {
 func (m *GeoIPMatcher) Match(ip net.IP) bool {
 	switch len(ip) {
 	case 4:
-		return m.match4(serial.BytesToUint32(ip))
+		return m.match4(binary.BigEndian.Uint32(ip))
 	case 16:
 		return m.match6(ipv6{
-			a: serial.BytesToUint64(ip[0:8]),
-			b: serial.BytesToUint64(ip[8:16]),
+			a: binary.BigEndian.Uint64(ip[0:8]),
+			b: binary.BigEndian.Uint64(ip[8:16]),
 		})
 	default:
 		return false

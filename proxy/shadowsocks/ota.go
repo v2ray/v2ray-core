@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha1"
+	"encoding/binary"
 	"io"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bytespool"
 	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common/vio"
 )
 
 const (
@@ -48,11 +50,11 @@ func HeaderKeyGenerator(key []byte, iv []byte) func() []byte {
 }
 
 func ChunkKeyGenerator(iv []byte) func() []byte {
-	chunkID := 0
+	chunkID := uint32(0)
 	return func() []byte {
-		newKey := make([]byte, 0, len(iv)+4)
-		newKey = append(newKey, iv...)
-		newKey = serial.IntToBytes(chunkID, newKey)
+		newKey := make([]byte, len(iv)+4)
+		copy(newKey, iv)
+		binary.BigEndian.PutUint32(newKey[len(iv):], newKey)
 		chunkID++
 		return newKey
 	}
@@ -71,7 +73,7 @@ func NewChunkReader(reader io.Reader, auth *Authenticator) *ChunkReader {
 }
 
 func (v *ChunkReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
-	size, err := serial.ReadUint16(v.reader)
+	size, err := vio.ReadUint16(v.reader)
 	if err != nil {
 		return nil, newError("failed to read size")
 	}

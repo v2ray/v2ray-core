@@ -1,11 +1,11 @@
 package tls
 
 import (
+	"encoding/binary"
 	"errors"
 	"strings"
 
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/serial"
 )
 
 type SniffHeader struct {
@@ -133,7 +133,7 @@ func SniffTLS(b []byte) (*SniffHeader, error) {
 	if !IsValidTLSVersion(b[1], b[2]) {
 		return nil, errNotTLS
 	}
-	headerLen := int(serial.BytesToUint16(b[3:5]))
+	headerLen := int(binary.BigEndian.Uint16(b[3:5]))
 	if 5+headerLen > len(b) {
 		return nil, common.ErrNoClue
 	}

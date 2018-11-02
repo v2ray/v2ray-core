@@ -9,7 +9,6 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/vio"
 )
 
@@ -92,7 +91,7 @@ func (f FrameMetadata) WriteTo(b *buf.Buffer) error {
 
 // Unmarshal reads FrameMetadata from the given reader.
 func (f *FrameMetadata) Unmarshal(reader io.Reader) error {
-	metaLen, err := serial.ReadUint16(reader)
+	metaLen, err := vio.ReadUint16(reader)
 	if err != nil {
 		return err
 	}
@@ -116,7 +115,7 @@ func (f *FrameMetadata) UnmarshalFromBuffer(b *buf.Buffer) error {
 		return newError("insufficient buffer: ", b.Len())
 	}
 
-	f.SessionID = serial.BytesToUint16(b.BytesTo(2))
+	f.SessionID = binary.BigEndian.Uint16(b.BytesTo(2))
 	f.SessionStatus = SessionStatus(b.Byte(2))
 	f.Option = bitmask.Byte(b.Byte(3))
 	f.Target.Network = net.Network_Unknown

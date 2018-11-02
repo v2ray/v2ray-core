@@ -1,6 +1,7 @@
 package encoding
 
 import (
+	"encoding/binary"
 	"io"
 
 	"v2ray.com/core/common"
@@ -57,7 +58,7 @@ func UnmarshalCommand(cmdID byte, data []byte) (protocol.ResponseCommand, error)
 		return nil, newError("insufficient length")
 	}
 	expectedAuth := Authenticate(data[4:])
-	actualAuth := serial.BytesToUint32(data[:4])
+	actualAuth := binary.BigEndian.Uint32(data[:4])
 	if expectedAuth != actualAuth {
 		return nil, newError("invalid auth")
 	}
@@ -134,7 +135,7 @@ func (f *CommandSwitchAccountFactory) Unmarshal(data []byte) (interface{}, error
 	if len(data) < alterIDStart+2 {
 		return nil, newError("insufficient length.")
 	}
-	cmd.AlterIds = serial.BytesToUint16(data[alterIDStart : alterIDStart+2])
+	cmd.AlterIds = binary.BigEndian.Uint16(data[alterIDStart : alterIDStart+2])
 	levelStart := alterIDStart + 2
 	if len(data) < levelStart+1 {
 		return nil, newError("insufficient length.")

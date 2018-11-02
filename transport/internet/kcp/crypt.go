@@ -2,6 +2,7 @@ package kcp
 
 import (
 	"crypto/cipher"
+	"encoding/binary"
 	"hash/fnv"
 
 	"v2ray.com/core/common"
@@ -63,11 +64,11 @@ func (a *SimpleAuthenticator) Open(dst, nonce, cipherText, extra []byte) ([]byte
 
 	fnvHash := fnv.New32a()
 	common.Must2(fnvHash.Write(dst[4:]))
-	if serial.BytesToUint32(dst[:4]) != fnvHash.Sum32() {
+	if binary.BigEndian.Uint32(dst[:4]) != fnvHash.Sum32() {
 		return nil, newError("invalid auth")
 	}
 
-	length := serial.BytesToUint16(dst[4:6])
+	length := binary.BigEndian.Uint16(dst[4:6])
 	if len(dst)-6 != int(length) {
 		return nil, newError("invalid auth")
 	}

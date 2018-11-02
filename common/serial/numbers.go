@@ -1,7 +1,6 @@
 package serial
 
 import "strconv"
-import "io"
 
 // Uint16ToBytes serializes a uint16 into bytes in big endian order.
 func Uint16ToBytes(value uint16, b []byte) []byte {
@@ -10,14 +9,6 @@ func Uint16ToBytes(value uint16, b []byte) []byte {
 
 func Uint16ToString(value uint16) string {
 	return strconv.Itoa(int(value))
-}
-
-func ReadUint16(reader io.Reader) (uint16, error) {
-	var b [2]byte
-	if _, err := io.ReadFull(reader, b[:]); err != nil {
-		return 0, err
-	}
-	return BytesToUint16(b[:]), nil
 }
 
 func Uint32ToBytes(value uint32, b []byte) []byte {
@@ -33,14 +24,6 @@ func WriteUint32(value uint32) func([]byte) (int, error) {
 		Uint32ToBytes(value, b[:0])
 		return 4, nil
 	}
-}
-
-func IntToBytes(value int, b []byte) []byte {
-	return append(b, byte(value>>24), byte(value>>16), byte(value>>8), byte(value))
-}
-
-func IntToString(value int) string {
-	return Int64ToString(int64(value))
 }
 
 func Int64ToBytes(value int64, b []byte) []byte {

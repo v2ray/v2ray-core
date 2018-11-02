@@ -2,6 +2,7 @@ package encoding
 
 import (
 	"crypto/md5"
+	"encoding/binary"
 	"hash/fnv"
 	"io"
 	"sync"
@@ -15,7 +16,6 @@ import (
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/task"
 	"v2ray.com/core/proxy/vmess"
 )
@@ -191,7 +191,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	fnv1a := fnv.New32a()
 	common.Must2(fnv1a.Write(buffer.BytesTo(-4)))
 	actualHash := fnv1a.Sum32()
-	expectedHash := serial.BytesToUint32(buffer.BytesFrom(-4))
+	expectedHash := binary.BigEndian.Uint32(buffer.BytesFrom(-4))
 
 	if actualHash != expectedHash {
 		return nil, newError("invalid auth")

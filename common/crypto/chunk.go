@@ -1,6 +1,7 @@
 package crypto
 
 import (
+	"encoding/binary"
 	"io"
 
 	"v2ray.com/core/common"
@@ -36,7 +37,7 @@ func (PlainChunkSizeParser) Encode(size uint16, b []byte) []byte {
 }
 
 func (PlainChunkSizeParser) Decode(b []byte) (uint16, error) {
-	return serial.BytesToUint16(b), nil
+	return binary.BigEndian.Uint16(b), nil
 }
 
 type AEADChunkSizeParser struct {
@@ -59,7 +60,7 @@ func (p *AEADChunkSizeParser) Decode(b []byte) (uint16, error) {
 	if err != nil {
 		return 0, err
 	}
-	return serial.BytesToUint16(b) + uint16(p.Auth.Overhead()), nil
+	return binary.BigEndian.Uint16(b) + uint16(p.Auth.Overhead()), nil
 }
 
 type ChunkStreamReader struct {
