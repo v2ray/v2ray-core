@@ -83,7 +83,7 @@ func ReadTCPSession(user *protocol.MemoryUser, reader io.Reader) (*protocol.Requ
 
 	if request.Option.Has(RequestOptionOneTimeAuth) {
 		actualAuth := make([]byte, AuthSize)
-		authenticator.Authenticate(buffer.Bytes())(actualAuth)
+		authenticator.Authenticate(buffer.Bytes(), actualAuth)
 
 		_, err := buffer.ReadFullFrom(br, AuthSize)
 		if err != nil {
@@ -261,7 +261,7 @@ func DecodeUDPPacket(user *protocol.MemoryUser, payload *buf.Buffer) (*protocol.
 
 			authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
 			actualAuth := make([]byte, AuthSize)
-			common.Must2(authenticator.Authenticate(payload.BytesTo(payloadLen))(actualAuth))
+			authenticator.Authenticate(payload.BytesTo(payloadLen), actualAuth)
 			if !bytes.Equal(actualAuth, authBytes) {
 				return nil, nil, newError("invalid OTA")
 			}
