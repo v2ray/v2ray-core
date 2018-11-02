@@ -36,26 +36,45 @@ func TestUserValidator(t *testing.T) {
 	common.Must(v.Add(user))
 
 	{
-		ts := protocol.Timestamp(time.Now().Unix())
-		idHash := hasher(id.Bytes())
-		idHash.Write(ts.Bytes(nil))
-		userHash := idHash.Sum(nil)
+		testSmallLag := func(lag time.Duration) {
+			ts := protocol.Timestamp(time.Now().Add(time.Second * lag).Unix())
+			idHash := hasher(id.Bytes())
+			idHash.Write(ts.Bytes(nil))
+			userHash := idHash.Sum(nil)
 
-		euser, ets, found := v.Get(userHash)
-		assert(found, IsTrue)
-		assert(euser.Email, Equals, user.Email)
-		assert(int64(ets), Equals, int64(ts))
+			euser, ets, found := v.Get(userHash)
+			assert(found, IsTrue)
+			assert(euser.Email, Equals, user.Email)
+			assert(int64(ets), Equals, int64(ts))
+		}
+
+		testSmallLag(0)
+		testSmallLag(40)
+		testSmallLag(-40)
+		testSmallLag(80)
+		testSmallLag(-80)
+		testSmallLag(120)
+		testSmallLag(-120)
 	}
 
 	{
-		ts := protocol.Timestamp(time.Now().Add(time.Second * 500).Unix())
-		idHash := hasher(id.Bytes())
-		idHash.Write(ts.Bytes(nil))
-		userHash := idHash.Sum(nil)
+		testBigLag := func(lag time.Duration) {
+			ts := protocol.Timestamp(time.Now().Add(time.Second * lag).Unix())
+			idHash := hasher(id.Bytes())
+			idHash.Write(ts.Bytes(nil))
+			userHash := idHash.Sum(nil)
 
-		euser, _, found := v.Get(userHash)
-		assert(found, IsFalse)
-		assert(euser, IsNil)
+			euser, _, found := v.Get(userHash)
+			assert(found, IsFalse)
+			assert(euser, IsNil)
+		}
+
+		testBigLag(121)
+		testBigLag(-121)
+		testBigLag(310)
+		testBigLag(-310)
+		testBigLag(500)
+		testBigLag(-500)
 	}
 
 	assert(v.Remove(user.Email), IsTrue)
