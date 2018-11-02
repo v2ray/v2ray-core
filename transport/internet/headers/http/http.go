@@ -13,7 +13,6 @@ import (
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/serial"
 )
 
 const (
@@ -29,7 +28,6 @@ const (
 
 var (
 	ErrHeaderToLong = newError("Header too long.")
-	writeCRLF       = serial.WriteString(CRLF)
 )
 
 type Reader interface {
@@ -70,12 +68,12 @@ func (*HeaderReader) Read(reader io.Reader) (*buf.Buffer, error) {
 			endingDetected = true
 			break
 		}
-		if buffer.Len() >= int32(len(ENDING)) {
-			totalBytes += buffer.Len() - int32(len(ENDING))
-			leftover := buffer.BytesFrom(-int32(len(ENDING)))
-			buffer.Reset(func(b []byte) (int, error) {
-				return copy(b, leftover), nil
-			})
+		lenEnding := int32(len(ENDING))
+		if buffer.Len() >= lenEnding {
+			totalBytes += buffer.Len() - lenEnding
+			leftover := buffer.BytesFrom(-lenEnding)
+			buffer.Clear()
+			copy(buffer.Extend(lenEnding), leftover)
 		}
 	}
 	if buffer.IsEmpty() {
@@ -175,20 +173,20 @@ func (c *HttpConn) Close() error {
 
 func formResponseHeader(config *ResponseConfig) *HeaderWriter {
 	header := buf.New()
-	header.AppendSupplier(serial.WriteString(strings.Join([]string{config.GetFullVersion(), config.GetStatusValue().Code, config.GetStatusValue().Reason}, " ")))
-	header.AppendSupplier(writeCRLF)
+	common.Must2(header.WriteString(strings.Join([]string{config.GetFullVersion(), config.GetStatusValue().Code, config.GetStatusValue().Reason}, " ")))
+	common.Must2(header.WriteString(CRLF))
 
 	headers := config.PickHeaders()
 	for _, h := range headers {
-		header.AppendSupplier(serial.WriteString(h))
-		header.AppendSupplier(writeCRLF)
+		common.Must2(header.WriteString(h))
+		common.Must2(header.WriteString(CRLF))
 	}
 	if !config.HasHeader("Date") {
-		header.AppendSupplier(serial.WriteString("Date: "))
-		header.AppendSupplier(serial.WriteString(time.Now().Format(http.TimeFormat)))
-		header.AppendSupplier(writeCRLF)
+		common.Must2(header.WriteString("Date: "))
+		common.Must2(header.WriteString(time.Now().Format(http.TimeFormat)))
+		common.Must2(header.WriteString(CRLF))
 	}
-	header.AppendSupplier(writeCRLF)
+	common.Must2(header.WriteString(CRLF))
 	return &HeaderWriter{
 		header: header,
 	}
@@ -201,15 +199,15 @@ type HttpAuthenticator struct {
 func (a HttpAuthenticator) GetClientWriter() *HeaderWriter {
 	header := buf.New()
 	config := a.config.Request
-	header.AppendSupplier(serial.WriteString(strings.Join([]string{config.GetMethodValue(), config.PickUri(), config.GetFullVersion()}, " ")))
-	header.AppendSupplier(writeCRLF)
+	common.Must2(header.WriteString(strings.Join([]string{config.GetMethodValue(), config.PickUri(), config.GetFullVersion()}, " ")))
+	common.Must2(header.WriteString(CRLF))
 
 	headers := config.PickHeaders()
 	for _, h := range headers {
-		header.AppendSupplier(serial.WriteString(h))
-		header.AppendSupplier(writeCRLF)
+		common.Must2(header.WriteString(h))
+		common.Must2(header.WriteString(CRLF))
 	}
-	header.AppendSupplier(writeCRLF)
+	common.Must2(header.WriteString(CRLF))
 	return &HeaderWriter{
 		header: header,
 	}

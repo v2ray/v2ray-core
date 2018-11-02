@@ -74,20 +74,15 @@ func (w *KCPPacketWriter) Write(b []byte) (int, error) {
 	defer bb.Release()
 
 	if w.Header != nil {
-		common.Must(bb.AppendSupplier(func(x []byte) (int, error) {
-			return w.Header.Write(x)
-		}))
+		w.Header.Serialize(bb.Extend(w.Header.Size()))
 	}
 	if w.Security != nil {
 		nonceSize := w.Security.NonceSize()
-		common.Must(bb.AppendSupplier(func(x []byte) (int, error) {
-			return rand.Read(x[:nonceSize])
-		}))
+		common.Must2(bb.ReadFullFrom(rand.Reader, int32(nonceSize)))
 		nonce := bb.BytesFrom(int32(-nonceSize))
-		common.Must(bb.AppendSupplier(func(x []byte) (int, error) {
-			eb := w.Security.Seal(x[:0], nonce, b, nil)
-			return len(eb), nil
-		}))
+
+		encrypted := bb.Extend(int32(w.Security.Overhead() + len(b)))
+		w.Security.Seal(encrypted[:0], nonce, b, nil)
 	} else {
 		bb.Write(b)
 	}

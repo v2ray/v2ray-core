@@ -17,12 +17,11 @@ func (*SRTP) Size() int32 {
 	return 4
 }
 
-// Write implements io.Writer.
-func (s *SRTP) Write(b []byte) (int, error) {
+// Serialize implements PacketHeader.
+func (s *SRTP) Serialize(b []byte) {
 	s.number++
 	binary.BigEndian.PutUint16(b, s.number)
 	binary.BigEndian.PutUint16(b[2:], s.number)
-	return 4, nil
 }
 
 // New returns a new SRTP instance based on the given config.

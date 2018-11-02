@@ -19,8 +19,8 @@ func (*DTLS) Size() int32 {
 	return 1 + 2 + 2 + 6 + 2
 }
 
-// Write implements PacketHeader.
-func (d *DTLS) Write(b []byte) (int, error) {
+// Serialize implements PacketHeader.
+func (d *DTLS) Serialize(b []byte) {
 	b[0] = 23 // application data
 	b[1] = 254
 	b[2] = 253
@@ -39,7 +39,6 @@ func (d *DTLS) Write(b []byte) (int, error) {
 	if d.length > 100 {
 		d.length -= 50
 	}
-	return 13, nil
 }
 
 // New creates a new UTP header for the given config.

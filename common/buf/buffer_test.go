@@ -8,7 +8,6 @@ import (
 	"v2ray.com/core/common"
 	. "v2ray.com/core/common/buf"
 	"v2ray.com/core/common/compare"
-	"v2ray.com/core/common/serial"
 	. "v2ray.com/ext/assert"
 )
 
@@ -41,7 +40,7 @@ func TestBufferString(t *testing.T) {
 	buffer := New()
 	defer buffer.Release()
 
-	assert(buffer.AppendSupplier(serial.WriteString("Test String")), IsNil)
+	common.Must2(buffer.WriteString("Test String"))
 	assert(buffer.String(), Equals, "Test String")
 }
 

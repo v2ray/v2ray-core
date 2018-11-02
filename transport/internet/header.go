@@ -9,7 +9,7 @@ import (
 
 type PacketHeader interface {
 	Size() int32
-	Write([]byte) (int, error)
+	Serialize([]byte)
 }
 
 func CreatePacketHeader(config interface{}) (PacketHeader, error) {

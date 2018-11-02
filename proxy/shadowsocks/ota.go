@@ -30,13 +30,11 @@ func NewAuthenticator(keygen KeyGenerator) *Authenticator {
 	}
 }
 
-func (v *Authenticator) Authenticate(data []byte) buf.Supplier {
+func (v *Authenticator) Authenticate(data []byte, dest []byte) {
 	hasher := hmac.New(sha1.New, v.key())
 	common.Must2(hasher.Write(data))
 	res := hasher.Sum(nil)
-	return func(b []byte) (int, error) {
-		return copy(b, res[:AuthSize]), nil
-	}
+	copy(dest, res[:AuthSize])
 }
 
 func HeaderKeyGenerator(key []byte, iv []byte) func() []byte {
@@ -89,7 +87,7 @@ func (v *ChunkReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	payload := buffer[AuthSize:size]
 
 	actualAuthBytes := make([]byte, AuthSize)
-	v.auth.Authenticate(payload)(actualAuthBytes)
+	v.auth.Authenticate(payload, actualAuthBytes)
 	if !bytes.Equal(authBytes, actualAuthBytes) {
 		return nil, newError("invalid auth")
 	}
@@ -121,7 +119,7 @@ func (w *ChunkWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	for {
 		payloadLen, _ := mb.Read(w.buffer[2+AuthSize:])
 		binary.BigEndian.PutUint16(w.buffer, uint16(payloadLen))
-		w.auth.Authenticate(w.buffer[2+AuthSize : 2+AuthSize+payloadLen])(w.buffer[2:])
+		w.auth.Authenticate(w.buffer[2+AuthSize:2+AuthSize+payloadLen], w.buffer[2:])
 		if err := buf.WriteAllBytes(w.writer, w.buffer[:2+AuthSize+payloadLen]); err != nil {
 			return err
 		}

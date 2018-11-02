@@ -16,8 +16,8 @@ func (vc *VideoChat) Size() int32 {
 	return 13
 }
 
-// Write implements io.Writer.
-func (vc *VideoChat) Write(b []byte) (int, error) {
+// Serialize implements PacketHeader.
+func (vc *VideoChat) Serialize(b []byte) {
 	vc.sn++
 	b[0] = 0xa1
 	b[1] = 0x08
@@ -29,7 +29,6 @@ func (vc *VideoChat) Write(b []byte) (int, error) {
 	b[10] = 0x30
 	b[11] = 0x22
 	b[12] = 0x30
-	return 13, nil
 }
 
 // NewVideoChat returns a new VideoChat instance based on given config.

@@ -142,7 +142,8 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (buf.Wri
 		header.SetByte(0, header.Byte(0)|0x10)
 
 		authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
-		common.Must(header.AppendSupplier(authenticator.Authenticate(header.Bytes())))
+		authBuffer := header.Extend(AuthSize)
+		authenticator.Authenticate(header.Bytes(), authBuffer)
 	}
 
 	if err := w.WriteMultiBuffer(buf.NewMultiBufferValue(header)); err != nil {
@@ -210,7 +211,9 @@ func EncodeUDPPacket(request *protocol.RequestHeader, payload []byte) (*buf.Buff
 		authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
 		buffer.SetByte(ivLen, buffer.Byte(ivLen)|0x10)
 
-		common.Must(buffer.AppendSupplier(authenticator.Authenticate(buffer.BytesFrom(ivLen))))
+		authPayload := buffer.BytesFrom(ivLen)
+		authBuffer := buffer.Extend(AuthSize)
+		authenticator.Authenticate(authPayload, authBuffer)
 	}
 	if err := account.Cipher.EncodePacket(account.Key, buffer); err != nil {
 		return nil, newError("failed to encrypt UDP payload").Base(err)

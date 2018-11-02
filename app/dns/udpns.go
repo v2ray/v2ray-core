@@ -260,13 +260,13 @@ func (s *ClassicNameServer) buildMsgs(domain string) []*dns.Msg {
 
 func msgToBuffer(msg *dns.Msg) (*buf.Buffer, error) {
 	buffer := buf.New()
-	if err := buffer.Reset(func(b []byte) (int, error) {
-		writtenBuffer, err := msg.PackBuffer(b)
-		return len(writtenBuffer), err
-	}); err != nil {
+	rawBytes := buffer.Extend(buf.Size)
+	packed, err := msg.PackBuffer(rawBytes)
+	if err != nil {
 		buffer.Release()
 		return nil, err
 	}
+	buffer.Resize(0, int32(len(packed)))
 	return buffer, nil
 }
 

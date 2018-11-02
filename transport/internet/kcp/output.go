@@ -6,7 +6,6 @@ import (
 
 	"v2ray.com/core/common/retry"
 
-	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 )
 
@@ -31,7 +30,9 @@ func (w *SimpleSegmentWriter) Write(seg Segment) error {
 	w.Lock()
 	defer w.Unlock()
 
-	common.Must(w.buffer.Reset(seg.Bytes()))
+	w.buffer.Clear()
+	rawBytes := w.buffer.Extend(seg.ByteSize())
+	seg.Serialize(rawBytes)
 	_, err := w.writer.Write(w.buffer.Bytes())
 	return err
 }

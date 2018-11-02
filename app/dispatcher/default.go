@@ -39,9 +39,10 @@ func (r *cachedReader) Cache(b *buf.Buffer) {
 	if !mb.IsEmpty() {
 		common.Must(r.cache.WriteMultiBuffer(mb))
 	}
-	common.Must(b.Reset(func(x []byte) (int, error) {
-		return r.cache.Copy(x), nil
-	}))
+	b.Clear()
+	rawBytes := b.Extend(buf.Size)
+	n := r.cache.Copy(rawBytes)
+	b.Resize(0, int32(n))
 	r.Unlock()
 }
 

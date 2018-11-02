@@ -16,7 +16,6 @@ import (
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/vio"
 	"v2ray.com/core/proxy/vmess"
 )
@@ -88,7 +87,8 @@ func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 	{
 		fnv1a := fnv.New32a()
 		common.Must2(fnv1a.Write(buffer.Bytes()))
-		common.Must(buffer.AppendSupplier(serial.WriteHash(fnv1a)))
+		hashBytes := buffer.Extend(int32(fnv1a.Size()))
+		fnv1a.Sum(hashBytes[:0])
 	}
 
 	iv := hashTimestamp(md5.New(), timestamp)

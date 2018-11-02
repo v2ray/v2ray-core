@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/serial"
 	. "v2ray.com/core/transport/internet/headers/http"
 	. "v2ray.com/ext/assert"
 )
@@ -17,7 +17,7 @@ func TestReaderWriter(t *testing.T) {
 
 	cache := buf.New()
 	b := buf.New()
-	b.AppendSupplier(serial.WriteString("abcd" + ENDING))
+	common.Must2(b.WriteString("abcd" + ENDING))
 	writer := NewHeaderWriter(b)
 	err := writer.Write(cache)
 	assert(err, IsNil)

@@ -11,9 +11,6 @@ const (
 	Size = 2048
 )
 
-// Supplier is a writer that writes contents into the given buffer.
-type Supplier func([]byte) (int, error)
-
 // Buffer is a recyclable allocation of a byte array. Buffer.Release() recycles
 // the buffer into an internal buffer pool, in order to recreate a buffer more
 // quickly.
@@ -40,13 +37,6 @@ func (b *Buffer) Clear() {
 	b.end = 0
 }
 
-// AppendSupplier appends the content of a BytesWriter to the buffer.
-func (b *Buffer) AppendSupplier(writer Supplier) error {
-	nBytes, err := writer(b.v[b.end:])
-	b.end += int32(nBytes)
-	return err
-}
-
 // Byte returns the bytes at index.
 func (b *Buffer) Byte(index int32) byte {
 	return b.v[b.start+index]
@@ -62,15 +52,16 @@ func (b *Buffer) Bytes() []byte {
 	return b.v[b.start:b.end]
 }
 
-// Reset resets the content of the Buffer with a supplier.
-func (b *Buffer) Reset(writer Supplier) error {
-	nBytes, err := writer(b.v)
-	if nBytes > len(b.v) {
-		return newError("too many bytes written: ", nBytes, " > ", len(b.v))
+// Extend increases the buffer size by n bytes, and returns the extended part.
+// It panics if result size is larger than buf.Size.
+func (b *Buffer) Extend(n int32) []byte {
+	end := b.end + n
+	if end > int32(len(b.v)) {
+		panic(newError("out of bound: ", end))
 	}
-	b.start = 0
-	b.end = int32(nBytes)
-	return err
+	ext := b.v[b.end:end]
+	b.end = end
+	return ext
 }
 
 // BytesRange returns a slice of this buffer with given from and to boundary.
@@ -153,6 +144,11 @@ func (b *Buffer) WriteBytes(bytes ...byte) (int, error) {
 	return b.Write(bytes)
 }
 
+// WriteString implements io.StringWriter.
+func (b *Buffer) WriteString(s string) (int, error) {
+	return b.Write([]byte(s))
+}
+
 // Read implements io.Reader.Read().
 func (b *Buffer) Read(data []byte) (int, error) {
 	if b.Len() == 0 {
@@ -174,6 +170,7 @@ func (b *Buffer) ReadFrom(reader io.Reader) (int64, error) {
 	return int64(n), err
 }
 
+// ReadFullFrom reads exact size of bytes from given reader, or until error occurs.
 func (b *Buffer) ReadFullFrom(reader io.Reader, size int32) (int64, error) {
 	end := b.end + size
 	if end > int32(len(b.v)) {

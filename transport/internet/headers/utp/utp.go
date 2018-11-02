@@ -18,12 +18,11 @@ func (*UTP) Size() int32 {
 	return 4
 }
 
-// Write implements io.Writer.
-func (u *UTP) Write(b []byte) (int, error) {
+// Serialize implements PacketHeader.
+func (u *UTP) Serialize(b []byte) {
 	binary.BigEndian.PutUint16(b, u.connectionId)
 	b[2] = u.header
 	b[3] = u.extension
-	return 4, nil
 }
 
 // New creates a new UTP header for the given config.

@@ -88,18 +88,15 @@ func (h *Hub) start() {
 		buffer := buf.New()
 		var noob int
 		var addr *net.UDPAddr
-		err := buffer.Reset(func(b []byte) (int, error) {
-			n, nb, _, a, e := ReadUDPMsg(h.conn, b, oobBytes)
-			noob = nb
-			addr = a
-			return n, e
-		})
+		rawBytes := buffer.Extend(buf.Size)
 
+		n, noob, _, addr, err := ReadUDPMsg(h.conn, rawBytes, oobBytes)
 		if err != nil {
 			newError("failed to read UDP msg").Base(err).WriteToLog()
 			buffer.Release()
 			break
 		}
+		buffer.Resize(0, int32(n))
 
 		if buffer.IsEmpty() {
 			buffer.Release()

@@ -146,10 +146,7 @@ func (w *ChunkStreamWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
 		slice := mb.SliceBySize(sliceSize)
 
 		b := buf.New()
-		common.Must(b.Reset(func(buffer []byte) (int, error) {
-			w.sizeEncoder.Encode(uint16(slice.Len()), buffer)
-			return int(w.sizeEncoder.SizeBytes()), nil
-		}))
+		w.sizeEncoder.Encode(uint16(slice.Len()), b.Extend(w.sizeEncoder.SizeBytes()))
 		mb2Write.Append(b)
 		mb2Write.AppendMulti(slice)
 

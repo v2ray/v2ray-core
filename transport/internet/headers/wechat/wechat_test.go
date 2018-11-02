@@ -18,7 +18,7 @@ func TestUTPWrite(t *testing.T) {
 	video := videoRaw.(*VideoChat)
 
 	payload := buf.New()
-	payload.AppendSupplier(video.Write)
+	video.Serialize(payload.Extend(video.Size()))
 
 	assert(payload.Len(), Equals, video.Size())
 }

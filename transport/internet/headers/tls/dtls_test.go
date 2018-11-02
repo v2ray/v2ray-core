@@ -19,7 +19,7 @@ func TestDTLSWrite(t *testing.T) {
 	dtls := dtlsRaw.(*DTLS)
 
 	payload := buf.New()
-	payload.AppendSupplier(dtls.Write)
+	dtls.Serialize(payload.Extend(dtls.Size()))
 	payload.Write(content)
 
 	assert(payload.Len(), Equals, int32(len(content))+dtls.Size())

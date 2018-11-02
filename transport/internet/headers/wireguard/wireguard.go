@@ -12,10 +12,12 @@ func (Wireguard) Size() int32 {
 	return 4
 }
 
-// Write implements io.Writer.
-func (Wireguard) Write(b []byte) (int, error) {
-	b = append(b[:0], 0x04, 0x00, 0x00, 0x00)
-	return 4, nil
+// Serialize implements PacketHeader.
+func (Wireguard) Serialize(b []byte) {
+	b[0] = 0x04
+	b[1] = 0x00
+	b[2] = 0x00
+	b[3] = 0x00
 }
 
 // NewWireguard returns a new VideoChat instance based on given config.

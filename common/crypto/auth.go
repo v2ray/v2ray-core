@@ -245,10 +245,10 @@ func NewAuthenticationWriter(auth Authenticator, sizeParser ChunkSizeEncoder, wr
 }
 
 func (w *AuthenticationWriter) seal(b *buf.Buffer) (*buf.Buffer, error) {
-	encryptedSize := int(b.Len()) + w.auth.Overhead()
-	var paddingSize int
+	encryptedSize := b.Len() + int32(w.auth.Overhead())
+	var paddingSize int32
 	if w.padding != nil {
-		paddingSize = int(w.padding.NextPaddingLen())
+		paddingSize = int32(w.padding.NextPaddingLen())
 	}
 
 	totalSize := encryptedSize + paddingSize
@@ -257,14 +257,8 @@ func (w *AuthenticationWriter) seal(b *buf.Buffer) (*buf.Buffer, error) {
 	}
 
 	eb := buf.New()
-	common.Must(eb.Reset(func(bb []byte) (int, error) {
-		w.sizeParser.Encode(uint16(encryptedSize+paddingSize), bb)
-		return int(w.sizeParser.SizeBytes()), nil
-	}))
-	if err := eb.AppendSupplier(func(bb []byte) (int, error) {
-		_, err := w.auth.Seal(bb[:0], b.Bytes())
-		return encryptedSize, err
-	}); err != nil {
+	w.sizeParser.Encode(uint16(encryptedSize+paddingSize), eb.Extend(w.sizeParser.SizeBytes()))
+	if _, err := w.auth.Seal(eb.Extend(encryptedSize)[:0], b.Bytes()); err != nil {
 		eb.Release()
 		return nil, err
 	}

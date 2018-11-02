@@ -3,7 +3,6 @@ package blackhole
 import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/serial"
 )
 
 const (
@@ -28,7 +27,7 @@ func (*NoneResponse) WriteTo(buf.Writer) int32 { return 0 }
 // WriteTo implements ResponseConfig.WriteTo().
 func (*HTTPResponse) WriteTo(writer buf.Writer) int32 {
 	b := buf.New()
-	common.Must(b.Reset(serial.WriteString(http403response)))
+	common.Must2(b.Write([]byte(http403response)))
 	n := b.Len()
 	writer.WriteMultiBuffer(buf.NewMultiBufferValue(b))
 	return n

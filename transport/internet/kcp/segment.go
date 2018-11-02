@@ -31,7 +31,7 @@ type Segment interface {
 	Conversation() uint16
 	Command() Command
 	ByteSize() int32
-	Bytes() buf.Supplier
+	Serialize([]byte)
 	parse(conv uint16, cmd Command, opt SegmentOption, buf []byte) (bool, []byte)
 }
 
@@ -104,18 +104,15 @@ func (s *DataSegment) Data() *buf.Buffer {
 	return s.payload
 }
 
-func (s *DataSegment) Bytes() buf.Supplier {
-	return func(b []byte) (int, error) {
-		binary.BigEndian.PutUint16(b, s.Conv)
-		b[2] = byte(CommandData)
-		b[3] = byte(s.Option)
-		binary.BigEndian.PutUint32(b[4:], s.Timestamp)
-		binary.BigEndian.PutUint32(b[8:], s.Number)
-		binary.BigEndian.PutUint32(b[12:], s.SendingNext)
-		binary.BigEndian.PutUint16(b[16:], uint16(s.payload.Len()))
-		n := copy(b[18:], s.payload.Bytes())
-		return 18 + n, nil
-	}
+func (s *DataSegment) Serialize(b []byte) {
+	binary.BigEndian.PutUint16(b, s.Conv)
+	b[2] = byte(CommandData)
+	b[3] = byte(s.Option)
+	binary.BigEndian.PutUint32(b[4:], s.Timestamp)
+	binary.BigEndian.PutUint32(b[8:], s.Number)
+	binary.BigEndian.PutUint32(b[12:], s.SendingNext)
+	binary.BigEndian.PutUint16(b[16:], uint16(s.payload.Len()))
+	copy(b[18:], s.payload.Bytes())
 }
 
 func (s *DataSegment) ByteSize() int32 {
@@ -202,21 +199,18 @@ func (s *AckSegment) ByteSize() int32 {
 	return 2 + 1 + 1 + 4 + 4 + 4 + 1 + int32(len(s.NumberList)*4)
 }
 
-func (s *AckSegment) Bytes() buf.Supplier {
-	return func(b []byte) (int, error) {
-		binary.BigEndian.PutUint16(b, s.Conv)
-		b[2] = byte(CommandACK)
-		b[3] = byte(s.Option)
-		binary.BigEndian.PutUint32(b[4:], s.ReceivingWindow)
-		binary.BigEndian.PutUint32(b[8:], s.ReceivingNext)
-		binary.BigEndian.PutUint32(b[12:], s.Timestamp)
-		b[16] = byte(len(s.NumberList))
-		n := 17
-		for _, number := range s.NumberList {
-			binary.BigEndian.PutUint32(b[n:], number)
-			n += 4
-		}
-		return n, nil
+func (s *AckSegment) Serialize(b []byte) {
+	binary.BigEndian.PutUint16(b, s.Conv)
+	b[2] = byte(CommandACK)
+	b[3] = byte(s.Option)
+	binary.BigEndian.PutUint32(b[4:], s.ReceivingWindow)
+	binary.BigEndian.PutUint32(b[8:], s.ReceivingNext)
+	binary.BigEndian.PutUint32(b[12:], s.Timestamp)
+	b[16] = byte(len(s.NumberList))
+	n := 17
+	for _, number := range s.NumberList {
+		binary.BigEndian.PutUint32(b[n:], number)
+		n += 4
 	}
 }
 
@@ -268,16 +262,13 @@ func (*CmdOnlySegment) ByteSize() int32 {
 	return 2 + 1 + 1 + 4 + 4 + 4
 }
 
-func (s *CmdOnlySegment) Bytes() buf.Supplier {
-	return func(b []byte) (int, error) {
-		binary.BigEndian.PutUint16(b, s.Conv)
-		b[2] = byte(s.Cmd)
-		b[3] = byte(s.Option)
-		binary.BigEndian.PutUint32(b[4:], s.SendingNext)
-		binary.BigEndian.PutUint32(b[8:], s.ReceivingNext)
-		binary.BigEndian.PutUint32(b[12:], s.PeerRTO)
-		return 16, nil
-	}
+func (s *CmdOnlySegment) Serialize(b []byte) {
+	binary.BigEndian.PutUint16(b, s.Conv)
+	b[2] = byte(s.Cmd)
+	b[3] = byte(s.Option)
+	binary.BigEndian.PutUint32(b[4:], s.SendingNext)
+	binary.BigEndian.PutUint32(b[8:], s.ReceivingNext)
+	binary.BigEndian.PutUint32(b[12:], s.PeerRTO)
 }
 
 func (*CmdOnlySegment) Release() {}
