@@ -19,7 +19,7 @@ func TestToString(t *testing.T) {
 		{Value: s, String: s},
 		{Value: &s, String: s},
 		{Value: errors.New("t"), String: "t"},
-		{Value: []byte{'b', 'c'}, String: "[62,63]"},
+		{Value: []byte{'b', 'c'}, String: "[98 99]"},
 	}
 
 	for _, c := range data {
