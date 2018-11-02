@@ -10,7 +10,7 @@ import (
 func readOne(r io.Reader) (*Buffer, error) {
 	b := New()
 	for i := 0; i < 64; i++ {
-		err := b.Reset(ReadFrom(r))
+		_, err := b.ReadFrom(r)
 		if !b.IsEmpty() {
 			return b, nil
 		}

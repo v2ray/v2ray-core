@@ -40,7 +40,7 @@ func TestTCPFastOpen(t *testing.T) {
 	common.Must(err)
 
 	b := buf.New()
-	common.Must(b.Reset(buf.ReadFrom(conn)))
+	common.Must2(b.ReadFrom(conn))
 	if err := compare.BytesEqualWithDetail(b.Bytes(), []byte("abcd")); err != nil {
 		t.Fatal(err)
 	}

@@ -79,7 +79,7 @@ func (mb *MultiBuffer) ReadFrom(reader io.Reader) (int64, error) {
 
 	for {
 		b := New()
-		err := b.Reset(ReadFullFrom(reader, Size))
+		_, err := b.ReadFullFrom(reader, Size)
 		if b.IsEmpty() {
 			b.Release()
 		} else {
@@ -220,7 +220,7 @@ func (mb *MultiBuffer) SliceBySize(size int32) MultiBuffer {
 	*mb = (*mb)[endIndex:]
 	if endIndex == 0 && len(*mb) > 0 {
 		b := New()
-		common.Must(b.Reset(ReadFullFrom((*mb)[0], size)))
+		common.Must2(b.ReadFullFrom((*mb)[0], size))
 		return NewMultiBufferValue(b)
 	}
 	return slice

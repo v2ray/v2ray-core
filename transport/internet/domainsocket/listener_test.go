@@ -28,7 +28,7 @@ func TestListen(t *testing.T) {
 		defer conn.Close()
 
 		b := buf.New()
-		common.Must(b.Reset(buf.ReadFrom(conn)))
+		common.Must2(b.ReadFrom(conn))
 		assert(b.String(), Equals, "Request")
 
 		common.Must2(conn.Write([]byte("Response")))
@@ -44,7 +44,7 @@ func TestListen(t *testing.T) {
 	assert(err, IsNil)
 
 	b := buf.New()
-	common.Must(b.Reset(buf.ReadFrom(conn)))
+	common.Must2(b.ReadFrom(conn))
 
 	assert(b.String(), Equals, "Response")
 }
@@ -67,7 +67,7 @@ func TestListenAbstract(t *testing.T) {
 		defer conn.Close()
 
 		b := buf.New()
-		common.Must(b.Reset(buf.ReadFrom(conn)))
+		common.Must2(b.ReadFrom(conn))
 		assert(b.String(), Equals, "Request")
 
 		common.Must2(conn.Write([]byte("Response")))
@@ -83,7 +83,7 @@ func TestListenAbstract(t *testing.T) {
 	assert(err, IsNil)
 
 	b := buf.New()
-	common.Must(b.Reset(buf.ReadFrom(conn)))
+	common.Must2(b.ReadFrom(conn))
 
 	assert(b.String(), Equals, "Response")
 }

@@ -26,20 +26,6 @@ type Writer interface {
 	WriteMultiBuffer(MultiBuffer) error
 }
 
-// ReadFrom creates a Supplier to read from a given io.Reader.
-func ReadFrom(reader io.Reader) Supplier {
-	return func(b []byte) (int, error) {
-		return reader.Read(b)
-	}
-}
-
-// ReadFullFrom creates a Supplier to read full buffer from a given io.Reader.
-func ReadFullFrom(reader io.Reader, size int32) Supplier {
-	return func(b []byte) (int, error) {
-		return io.ReadFull(reader, b[:size])
-	}
-}
-
 // WriteAllBytes ensures all bytes are written into the given writer.
 func WriteAllBytes(writer io.Writer, payload []byte) error {
 	for len(payload) > 0 {

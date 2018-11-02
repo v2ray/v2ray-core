@@ -69,7 +69,7 @@ func (server *Server) handleConnection(conn net.Conn) {
 
 		for {
 			b := buf.New()
-			if err := b.AppendSupplier(buf.ReadFrom(conn)); err != nil {
+			if _, err := b.ReadFrom(conn); err != nil {
 				if err == io.EOF {
 					return nil
 				}

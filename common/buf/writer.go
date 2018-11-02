@@ -140,7 +140,7 @@ func (w *BufferedWriter) WriteMultiBuffer(b MultiBuffer) error {
 		if w.buffer == nil {
 			w.buffer = New()
 		}
-		if err := w.buffer.AppendSupplier(ReadFrom(&b)); err != nil {
+		if _, err := w.buffer.ReadFrom(&b); err != nil {
 			return err
 		}
 		if w.buffer.IsFull() {
@@ -248,7 +248,8 @@ func (noOpWriter) ReadFrom(reader io.Reader) (int64, error) {
 
 	totalBytes := int64(0)
 	for {
-		err := b.Reset(ReadFrom(reader))
+		b.Clear()
+		_, err := b.ReadFrom(reader)
 		totalBytes += int64(b.Len())
 		if err != nil {
 			if errors.Cause(err) == io.EOF {

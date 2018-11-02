@@ -6,15 +6,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"v2ray.com/core/common/session"
-	"v2ray.com/core/features/routing"
-
 	"github.com/miekg/dns"
+
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal/pubsub"
 	"v2ray.com/core/common/task"
+	"v2ray.com/core/features/routing"
 	"v2ray.com/core/transport/internet/udp"
 )
 

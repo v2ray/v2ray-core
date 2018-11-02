@@ -7,7 +7,7 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common/vio"
 )
 
 const (
@@ -49,7 +49,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 
 	request := new(protocol.RequestHeader)
 
-	if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 2)); err != nil {
+	if _, err := buffer.ReadFullFrom(reader, 2); err != nil {
 		return nil, newError("insufficient header").Base(err)
 	}
 
@@ -60,7 +60,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 			return nil, newError("socks 4 is not allowed when auth is required.")
 		}
 
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, 6)); err != nil {
+		if _, err := buffer.ReadFullFrom(reader, 6); err != nil {
 			return nil, newError("insufficient header").Base(err)
 		}
 		port := net.PortFromBytes(buffer.BytesRange(2, 4))
@@ -94,7 +94,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 
 	if version == socks5Version {
 		nMethod := int32(buffer.Byte(1))
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, nMethod)); err != nil {
+		if _, err := buffer.ReadFullFrom(reader, nMethod); err != nil {
 			return nil, newError("failed to read auth methods").Base(err)
 		}
 
@@ -127,7 +127,9 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 				return nil, newError("failed to write auth response").Base(err)
 			}
 		}
-		if err := buffer.Reset(buf.ReadFullFrom(reader, 3)); err != nil {
+
+		buffer.Clear()
+		if _, err := buffer.ReadFullFrom(reader, 3); err != nil {
 			return nil, newError("failed to read request").Base(err)
 		}
 
@@ -185,21 +187,25 @@ func readUsernamePassword(reader io.Reader) (string, string, error) {
 	buffer := buf.New()
 	defer buffer.Release()
 
-	if err := buffer.Reset(buf.ReadFullFrom(reader, 2)); err != nil {
+	if _, err := buffer.ReadFullFrom(reader, 2); err != nil {
 		return "", "", err
 	}
 	nUsername := int32(buffer.Byte(1))
 
-	if err := buffer.Reset(buf.ReadFullFrom(reader, nUsername)); err != nil {
+	buffer.Clear()
+	if _, err := buffer.ReadFullFrom(reader, nUsername); err != nil {
 		return "", "", err
 	}
 	username := buffer.String()
 
-	if err := buffer.Reset(buf.ReadFullFrom(reader, 1)); err != nil {
+	buffer.Clear()
+	if _, err := buffer.ReadFullFrom(reader, 1); err != nil {
 		return "", "", err
 	}
 	nPassword := int32(buffer.Byte(0))
-	if err := buffer.Reset(buf.ReadFullFrom(reader, nPassword)); err != nil {
+
+	buffer.Clear()
+	if _, err := buffer.ReadFullFrom(reader, nPassword); err != nil {
 		return "", "", err
 	}
 	password := buffer.String()
@@ -254,7 +260,7 @@ func writeSocks4Response(writer io.Writer, errCode byte, address net.Address, po
 	defer buffer.Release()
 
 	common.Must2(buffer.WriteBytes(0x00, errCode))
-	common.Must(buffer.AppendSupplier(serial.WriteUint16(port.Value())))
+	common.Must2(vio.WriteUint16(buffer, port.Value()))
 	common.Must2(buffer.Write(address.IP()))
 	return buf.WriteAllBytes(writer, buffer.Bytes())
 }
@@ -305,7 +311,7 @@ func NewUDPReader(reader io.Reader) *UDPReader {
 
 func (r *UDPReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	b := buf.New()
-	if err := b.AppendSupplier(buf.ReadFrom(r.reader)); err != nil {
+	if _, err := b.ReadFrom(r.reader); err != nil {
 		return nil, err
 	}
 	if _, err := DecodeUDPPacket(b); err != nil {
@@ -362,7 +368,8 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 		return nil, err
 	}
 
-	if err := b.Reset(buf.ReadFullFrom(reader, 2)); err != nil {
+	b.Clear()
+	if _, err := b.ReadFullFrom(reader, 2); err != nil {
 		return nil, err
 	}
 
@@ -374,7 +381,8 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 	}
 
 	if authByte == authPassword {
-		if err := b.Reset(buf.ReadFullFrom(reader, 2)); err != nil {
+		b.Clear()
+		if _, err := b.ReadFullFrom(reader, 2); err != nil {
 			return nil, err
 		}
 		if b.Byte(1) != 0x00 {
@@ -398,7 +406,7 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 	}
 
 	b.Clear()
-	if err := b.AppendSupplier(buf.ReadFullFrom(reader, 3)); err != nil {
+	if _, err := b.ReadFullFrom(reader, 3); err != nil {
 		return nil, err
 	}
 

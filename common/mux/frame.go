@@ -1,6 +1,7 @@
 package mux
 
 import (
+	"encoding/binary"
 	"io"
 
 	"v2ray.com/core/common"
@@ -9,6 +10,7 @@ import (
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common/vio"
 )
 
 type SessionStatus byte
@@ -60,11 +62,11 @@ type FrameMetadata struct {
 }
 
 func (f FrameMetadata) WriteTo(b *buf.Buffer) error {
-	lenBytes := b.Bytes()
 	common.Must2(b.WriteBytes(0x00, 0x00))
+	lenBytes := b.Bytes()
 
 	len0 := b.Len()
-	if err := b.AppendSupplier(serial.WriteUint16(f.SessionID)); err != nil {
+	if _, err := vio.WriteUint16(b, f.SessionID); err != nil {
 		return err
 	}
 
@@ -84,7 +86,7 @@ func (f FrameMetadata) WriteTo(b *buf.Buffer) error {
 	}
 
 	len1 := b.Len()
-	serial.Uint16ToBytes(uint16(len1-len0), lenBytes)
+	binary.BigEndian.PutUint16(lenBytes, uint16(len1-len0))
 	return nil
 }
 
@@ -101,7 +103,7 @@ func (f *FrameMetadata) Unmarshal(reader io.Reader) error {
 	b := buf.New()
 	defer b.Release()
 
-	if err := b.Reset(buf.ReadFullFrom(reader, int32(metaLen))); err != nil {
+	if _, err := b.ReadFullFrom(reader, int32(metaLen)); err != nil {
 		return err
 	}
 	return f.UnmarshalFromBuffer(b)

@@ -1,12 +1,13 @@
 package buf_test
 
 import (
+	"bytes"
+	"crypto/rand"
 	"testing"
 
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/compare"
-
 	. "v2ray.com/core/common/buf"
+	"v2ray.com/core/common/compare"
 	"v2ray.com/core/common/serial"
 	. "v2ray.com/ext/assert"
 )
@@ -70,6 +71,23 @@ func TestBufferSlice(t *testing.T) {
 		if err := compare.BytesEqualWithDetail(bytes, []byte{'b', 'c'}); err != nil {
 			t.Error(err)
 		}
+	}
+}
+
+func TestBufferReadFullFrom(t *testing.T) {
+	payload := make([]byte, 1024)
+	common.Must2(rand.Read(payload))
+
+	reader := bytes.NewReader(payload)
+	b := New()
+	n, err := b.ReadFullFrom(reader, 1024)
+	common.Must(err)
+	if n != 1024 {
+		t.Error("expect reading 1024 bytes, but actually ", n)
+	}
+
+	if err := compare.BytesEqualWithDetail(payload, b.Bytes()); err != nil {
+		t.Error(err)
 	}
 }
 

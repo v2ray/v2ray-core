@@ -5,7 +5,7 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common/vio"
 )
 
 type Writer struct {
@@ -66,7 +66,7 @@ func writeMetaWithFrame(writer buf.Writer, meta FrameMetadata, data buf.MultiBuf
 	if err := meta.WriteTo(frame); err != nil {
 		return err
 	}
-	if err := frame.AppendSupplier(serial.WriteUint16(uint16(data.Len()))); err != nil {
+	if _, err := vio.WriteUint16(frame, uint16(data.Len())); err != nil {
 		return err
 	}
 

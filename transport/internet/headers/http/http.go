@@ -60,7 +60,7 @@ func (*HeaderReader) Read(reader io.Reader) (*buf.Buffer, error) {
 	totalBytes := int32(0)
 	endingDetected := false
 	for totalBytes < maxHeaderLength {
-		err := buffer.AppendSupplier(buf.ReadFrom(reader))
+		_, err := buffer.ReadFrom(reader)
 		if err != nil {
 			buffer.Release()
 			return nil, err

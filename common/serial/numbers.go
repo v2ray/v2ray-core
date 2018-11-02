@@ -20,13 +20,6 @@ func ReadUint16(reader io.Reader) (uint16, error) {
 	return BytesToUint16(b[:]), nil
 }
 
-func WriteUint16(value uint16) func([]byte) (int, error) {
-	return func(b []byte) (int, error) {
-		Uint16ToBytes(value, b[:0])
-		return 2, nil
-	}
-}
-
 func Uint32ToBytes(value uint32, b []byte) []byte {
 	return append(b, byte(value>>24), byte(value>>16), byte(value>>8), byte(value))
 }

@@ -125,7 +125,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	buffer := buf.New()
 	defer buffer.Release()
 
-	if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, protocol.IDBytesLen)); err != nil {
+	if _, err := buffer.ReadFullFrom(reader, protocol.IDBytesLen); err != nil {
 		return nil, newError("failed to read request header").Base(err)
 	}
 
@@ -140,7 +140,8 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	aesStream := crypto.NewAesDecryptionStream(vmessAccount.ID.CmdKey(), iv[:])
 	decryptor := crypto.NewCryptionReader(aesStream, reader)
 
-	if err := buffer.Reset(buf.ReadFullFrom(decryptor, 38)); err != nil {
+	buffer.Clear()
+	if _, err := buffer.ReadFullFrom(decryptor, 38); err != nil {
 		return nil, newError("failed to read request header").Base(err)
 	}
 
@@ -178,12 +179,12 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	}
 
 	if padingLen > 0 {
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(decryptor, int32(padingLen))); err != nil {
+		if _, err := buffer.ReadFullFrom(decryptor, int32(padingLen)); err != nil {
 			return nil, newError("failed to read padding").Base(err)
 		}
 	}
 
-	if err := buffer.AppendSupplier(buf.ReadFullFrom(decryptor, 4)); err != nil {
+	if _, err := buffer.ReadFullFrom(decryptor, 4); err != nil {
 		return nil, newError("failed to read checksum").Base(err)
 	}
 

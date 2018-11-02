@@ -167,6 +167,23 @@ func (b *Buffer) Read(data []byte) (int, error) {
 	return nBytes, nil
 }
 
+// ReadFrom implements io.ReaderFrom.
+func (b *Buffer) ReadFrom(reader io.Reader) (int64, error) {
+	n, err := reader.Read(b.v[b.end:])
+	b.end += int32(n)
+	return int64(n), err
+}
+
+func (b *Buffer) ReadFullFrom(reader io.Reader, size int32) (int64, error) {
+	end := b.end + size
+	if end > int32(len(b.v)) {
+		return 0, newError("out of bound: ", end)
+	}
+	n, err := io.ReadFull(reader, b.v[b.end:end])
+	b.end += int32(n)
+	return int64(n), err
+}
+
 // String returns the string form of this Buffer.
 func (b *Buffer) String() string {
 	return string(b.Bytes())

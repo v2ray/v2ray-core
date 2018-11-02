@@ -39,7 +39,7 @@ func TestHTTPConnection(t *testing.T) {
 			defer b.Release()
 
 			for {
-				if err := b.Reset(buf.ReadFrom(conn)); err != nil {
+				if _, err := b.ReadFrom(conn); err != nil {
 					return
 				}
 				nBytes, err := conn.Write(b.Bytes())
@@ -76,13 +76,15 @@ func TestHTTPConnection(t *testing.T) {
 	assert(nBytes, Equals, N)
 	assert(err, IsNil)
 
-	assert(b2.Reset(buf.ReadFullFrom(conn, N)), IsNil)
+	b2.Clear()
+	common.Must2(b2.ReadFullFrom(conn, N))
 	assert(b2.Bytes(), Equals, b1)
 
 	nBytes, err = conn.Write(b1)
 	assert(nBytes, Equals, N)
 	assert(err, IsNil)
 
-	assert(b2.Reset(buf.ReadFullFrom(conn, N)), IsNil)
+	b2.Clear()
+	common.Must2(b2.ReadFullFrom(conn, N))
 	assert(b2.Bytes(), Equals, b1)
 }

@@ -2,6 +2,7 @@ package kcp
 
 import (
 	"container/list"
+	"io"
 	"sync"
 
 	"v2ray.com/core/common"
@@ -274,9 +275,7 @@ func (w *SendingWorker) Push(mb *buf.MultiBuffer) bool {
 	}
 
 	b := buf.New()
-	common.Must(b.Reset(func(v []byte) (int, error) {
-		return mb.Read(v[:w.conn.mss])
-	}))
+	common.Must2(b.ReadFrom(io.LimitReader(mb, int64(w.conn.mss))))
 	w.window.Push(w.nextNumber, b)
 	w.nextNumber++
 	return true

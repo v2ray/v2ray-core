@@ -17,7 +17,7 @@ func TestWriter(t *testing.T) {
 	assert := With(t)
 
 	lb := New()
-	assert(lb.AppendSupplier(ReadFrom(rand.Reader)), IsNil)
+	common.Must2(lb.ReadFrom(rand.Reader))
 
 	expectedBytes := append([]byte(nil), lb.Bytes()...)
 
@@ -54,7 +54,7 @@ func TestDiscardBytes(t *testing.T) {
 	assert := With(t)
 
 	b := New()
-	common.Must(b.Reset(ReadFullFrom(rand.Reader, Size)))
+	common.Must2(b.ReadFullFrom(rand.Reader, Size))
 
 	nBytes, err := io.Copy(DiscardBytes, b)
 	assert(nBytes, Equals, int64(Size))

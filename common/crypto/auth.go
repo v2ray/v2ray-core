@@ -132,7 +132,7 @@ var errSoft = newError("waiting for more data")
 
 func (r *AuthenticationReader) readBuffer(size int32, padding int32) (*buf.Buffer, error) {
 	b := buf.New()
-	if err := b.Reset(buf.ReadFullFrom(r.reader, size)); err != nil {
+	if _, err := b.ReadFullFrom(r.reader, size); err != nil {
 		b.Release()
 		return nil, err
 	}
@@ -270,7 +270,7 @@ func (w *AuthenticationWriter) seal(b *buf.Buffer) (*buf.Buffer, error) {
 	}
 	if paddingSize > 0 {
 		// With size of the chunk and padding length encrypted, the content of padding doesn't matter much.
-		common.Must(eb.AppendSupplier(buf.ReadFullFrom(w.randReader, int32(paddingSize))))
+		common.Must2(eb.ReadFullFrom(w.randReader, int32(paddingSize)))
 	}
 
 	return eb, nil
@@ -289,9 +289,7 @@ func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
 
 	for {
 		b := buf.New()
-		common.Must(b.Reset(func(bb []byte) (int, error) {
-			return mb.Read(bb[:payloadSize])
-		}))
+		common.Must2(b.ReadFrom(io.LimitReader(&mb, int64(payloadSize))))
 		eb, err := w.seal(b)
 		b.Release()
 

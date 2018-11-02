@@ -23,7 +23,7 @@ func fetchInput(ctx context.Context, input io.Reader, reader PacketReader, conn 
 	go func() {
 		for {
 			payload := buf.New()
-			if err := payload.Reset(buf.ReadFrom(input)); err != nil {
+			if _, err := payload.ReadFrom(input); err != nil {
 				payload.Release()
 				close(cache)
 				return
