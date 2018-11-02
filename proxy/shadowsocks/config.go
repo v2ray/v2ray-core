@@ -216,7 +216,7 @@ func (c *AEADCipher) DecodePacket(key []byte, b *buf.Buffer) error {
 	if err != nil {
 		return err
 	}
-	b.Resize(ivLen, ivLen+int32(len(bbb)))
+	b.Resize(ivLen, int32(len(bbb)))
 	return nil
 }
 

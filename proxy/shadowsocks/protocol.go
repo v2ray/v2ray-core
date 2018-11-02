@@ -142,8 +142,9 @@ func WriteTCPRequest(request *protocol.RequestHeader, writer io.Writer) (buf.Wri
 		header.SetByte(0, header.Byte(0)|0x10)
 
 		authenticator := NewAuthenticator(HeaderKeyGenerator(account.Key, iv))
+		authPayload := header.Bytes()
 		authBuffer := header.Extend(AuthSize)
-		authenticator.Authenticate(header.Bytes(), authBuffer)
+		authenticator.Authenticate(authPayload, authBuffer)
 	}
 
 	if err := w.WriteMultiBuffer(buf.NewMultiBufferValue(header)); err != nil {
