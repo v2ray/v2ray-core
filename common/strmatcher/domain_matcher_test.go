@@ -34,6 +34,22 @@ func TestDomainMatcherGroup(t *testing.T) {
 			Domain: "c.a.b.com",
 			Result: 4,
 		},
+		{
+			Domain: "c.a..b.com",
+			Result: 0,
+		},
+		{
+			Domain: ".com",
+			Result: 0,
+		},
+		{
+			Domain: "com",
+			Result: 0,
+		},
+		{
+			Domain: "",
+			Result: 0,
+		},
 	}
 
 	for _, testCase := range testCases {

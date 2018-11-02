@@ -51,22 +51,38 @@ func (g *DomainMatcherGroup) addMatcher(m domainMatcher, value uint32) {
 }
 
 func (g *DomainMatcherGroup) Match(domain string) uint32 {
+	if len(domain) == 0 {
+		return 0
+	}
+
 	current := g.root
 	if current == nil {
 		return 0
 	}
 
-	parts := breakDomain(domain)
-	for i := len(parts) - 1; i >= 0; i-- {
-		part := parts[i]
-		if current.sub == nil {
+	nextPart := func(idx int) int {
+		for i := idx - 1; i >= 0; i-- {
+			if domain[i] == '.' {
+				return i
+			}
+		}
+		return -1
+	}
+
+	idx := len(domain)
+	for {
+		if idx == -1 || current.sub == nil {
 			break
 		}
+
+		nidx := nextPart(idx)
+		part := domain[nidx+1 : idx]
 		next := current.sub[part]
 		if next == nil {
 			break
 		}
 		current = next
+		idx = nidx
 	}
 	return current.value
 }
