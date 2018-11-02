@@ -6,7 +6,6 @@ import (
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/serial"
 )
 
 // ChunkSizeDecoder is a utility class to decode size value from bytes.
@@ -33,7 +32,8 @@ func (PlainChunkSizeParser) SizeBytes() int32 {
 }
 
 func (PlainChunkSizeParser) Encode(size uint16, b []byte) []byte {
-	return serial.Uint16ToBytes(size, b)
+	binary.BigEndian.PutUint16(b, size)
+	return b[:2]
 }
 
 func (PlainChunkSizeParser) Decode(b []byte) (uint16, error) {
@@ -49,8 +49,8 @@ func (p *AEADChunkSizeParser) SizeBytes() int32 {
 }
 
 func (p *AEADChunkSizeParser) Encode(size uint16, b []byte) []byte {
-	b = serial.Uint16ToBytes(size-uint16(p.Auth.Overhead()), b)
-	b, err := p.Auth.Seal(b[:0], b)
+	binary.BigEndian.PutUint16(b, size-uint16(p.Auth.Overhead()))
+	b, err := p.Auth.Seal(b[:0], b[:2])
 	common.Must(err)
 	return b
 }
@@ -147,7 +147,7 @@ func (w *ChunkStreamWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
 
 		b := buf.New()
 		common.Must(b.Reset(func(buffer []byte) (int, error) {
-			w.sizeEncoder.Encode(uint16(slice.Len()), buffer[:0])
+			w.sizeEncoder.Encode(uint16(slice.Len()), buffer)
 			return int(w.sizeEncoder.SizeBytes()), nil
 		}))
 		mb2Write.Append(b)

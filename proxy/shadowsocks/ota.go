@@ -10,7 +10,6 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bytespool"
-	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/vio"
 )
 
@@ -54,7 +53,7 @@ func ChunkKeyGenerator(iv []byte) func() []byte {
 	return func() []byte {
 		newKey := make([]byte, len(iv)+4)
 		copy(newKey, iv)
-		binary.BigEndian.PutUint32(newKey[len(iv):], newKey)
+		binary.BigEndian.PutUint32(newKey[len(iv):], chunkID)
 		chunkID++
 		return newKey
 	}
@@ -121,7 +120,7 @@ func (w *ChunkWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
 
 	for {
 		payloadLen, _ := mb.Read(w.buffer[2+AuthSize:])
-		serial.Uint16ToBytes(uint16(payloadLen), w.buffer[:0])
+		binary.BigEndian.PutUint16(w.buffer, uint16(payloadLen))
 		w.auth.Authenticate(w.buffer[2+AuthSize : 2+AuthSize+payloadLen])(w.buffer[2:])
 		if err := buf.WriteAllBytes(w.writer, w.buffer[:2+AuthSize+payloadLen]); err != nil {
 			return err

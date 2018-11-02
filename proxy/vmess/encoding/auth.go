@@ -6,7 +6,6 @@ import (
 	"hash/fnv"
 
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/serial"
 
 	"golang.org/x/crypto/sha3"
 )
@@ -54,7 +53,8 @@ func (*FnvAuthenticator) Overhead() int {
 
 // Seal implements AEAD.Seal().
 func (*FnvAuthenticator) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
-	dst = serial.Uint32ToBytes(Authenticate(plaintext), dst)
+	dst = append(dst, 0, 0, 0, 0)
+	binary.BigEndian.PutUint32(dst, Authenticate(plaintext))
 	return append(dst, plaintext...)
 }
 
@@ -106,7 +106,8 @@ func (s *ShakeSizeParser) Decode(b []byte) (uint16, error) {
 
 func (s *ShakeSizeParser) Encode(size uint16, b []byte) []byte {
 	mask := s.next()
-	return serial.Uint16ToBytes(mask^size, b[:0])
+	binary.BigEndian.PutUint16(b, mask^size)
+	return b[:2]
 }
 
 func (s *ShakeSizeParser) NextPaddingLen() uint16 {

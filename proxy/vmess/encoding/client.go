@@ -3,6 +3,8 @@ package encoding
 import (
 	"crypto/md5"
 	"crypto/rand"
+	"encoding/binary"
+	"hash"
 	"hash/fnv"
 	"io"
 
@@ -15,16 +17,16 @@ import (
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common/vio"
 	"v2ray.com/core/proxy/vmess"
 )
 
-func hashTimestamp(t protocol.Timestamp) []byte {
-	bytes := make([]byte, 0, 32)
-	bytes = t.Bytes(bytes)
-	bytes = t.Bytes(bytes)
-	bytes = t.Bytes(bytes)
-	bytes = t.Bytes(bytes)
-	return bytes
+func hashTimestamp(h hash.Hash, t protocol.Timestamp) []byte {
+	vio.WriteUint64(h, uint64(t))
+	vio.WriteUint64(h, uint64(t))
+	vio.WriteUint64(h, uint64(t))
+	vio.WriteUint64(h, uint64(t))
+	return h.Sum(nil)
 }
 
 // ClientSession stores connection session info for VMess client.
@@ -58,7 +60,7 @@ func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 	timestamp := protocol.NewTimestampGenerator(protocol.NowTime(), 30)()
 	account := header.User.Account.(*vmess.MemoryAccount)
 	idHash := c.idHash(account.AnyValidID().Bytes())
-	common.Must2(idHash.Write(timestamp.Bytes(nil)))
+	common.Must2(vio.WriteUint64(idHash, uint64(timestamp)))
 	common.Must2(writer.Write(idHash.Sum(nil)))
 
 	buffer := buf.New()
@@ -89,7 +91,7 @@ func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 		common.Must(buffer.AppendSupplier(serial.WriteHash(fnv1a)))
 	}
 
-	iv := md5.Sum(hashTimestamp(timestamp))
+	iv := hashTimestamp(md5.New(), timestamp)
 	aesStream := crypto.NewAesEncryptionStream(account.ID.CmdKey(), iv[:])
 	aesStream.XORKeyStream(buffer.Bytes(), buffer.Bytes())
 	common.Must2(writer.Write(buffer.Bytes()))
@@ -258,7 +260,7 @@ func GenerateChunkNonce(nonce []byte, size uint32) crypto.BytesGenerator {
 	c := append([]byte(nil), nonce...)
 	count := uint16(0)
 	return func() []byte {
-		serial.Uint16ToBytes(count, c[:0])
+		binary.BigEndian.PutUint16(c, count)
 		count++
 		return c[:size]
 	}

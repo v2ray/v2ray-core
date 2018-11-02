@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/serial"
 )
 
 // Command is a KCP command that indicate the purpose of a Segment.
@@ -107,14 +106,15 @@ func (s *DataSegment) Data() *buf.Buffer {
 
 func (s *DataSegment) Bytes() buf.Supplier {
 	return func(b []byte) (int, error) {
-		b = serial.Uint16ToBytes(s.Conv, b[:0])
-		b = append(b, byte(CommandData), byte(s.Option))
-		b = serial.Uint32ToBytes(s.Timestamp, b)
-		b = serial.Uint32ToBytes(s.Number, b)
-		b = serial.Uint32ToBytes(s.SendingNext, b)
-		b = serial.Uint16ToBytes(uint16(s.payload.Len()), b)
-		b = append(b, s.payload.Bytes()...)
-		return len(b), nil
+		binary.BigEndian.PutUint16(b, s.Conv)
+		b[2] = byte(CommandData)
+		b[3] = byte(s.Option)
+		binary.BigEndian.PutUint32(b[4:], s.Timestamp)
+		binary.BigEndian.PutUint32(b[8:], s.Number)
+		binary.BigEndian.PutUint32(b[12:], s.SendingNext)
+		binary.BigEndian.PutUint16(b[16:], uint16(s.payload.Len()))
+		n := copy(b[18:], s.payload.Bytes())
+		return 18 + n, nil
 	}
 }
 
@@ -204,17 +204,19 @@ func (s *AckSegment) ByteSize() int32 {
 
 func (s *AckSegment) Bytes() buf.Supplier {
 	return func(b []byte) (int, error) {
-		b = serial.Uint16ToBytes(s.Conv, b[:0])
-		b = append(b, byte(CommandACK), byte(s.Option))
-		b = serial.Uint32ToBytes(s.ReceivingWindow, b)
-		b = serial.Uint32ToBytes(s.ReceivingNext, b)
-		b = serial.Uint32ToBytes(s.Timestamp, b)
-		count := byte(len(s.NumberList))
-		b = append(b, count)
+		binary.BigEndian.PutUint16(b, s.Conv)
+		b[2] = byte(CommandACK)
+		b[3] = byte(s.Option)
+		binary.BigEndian.PutUint32(b[4:], s.ReceivingWindow)
+		binary.BigEndian.PutUint32(b[8:], s.ReceivingNext)
+		binary.BigEndian.PutUint32(b[12:], s.Timestamp)
+		b[16] = byte(len(s.NumberList))
+		n := 17
 		for _, number := range s.NumberList {
-			b = serial.Uint32ToBytes(number, b)
+			binary.BigEndian.PutUint32(b[n:], number)
+			n += 4
 		}
-		return int(s.ByteSize()), nil
+		return n, nil
 	}
 }
 
@@ -268,12 +270,13 @@ func (*CmdOnlySegment) ByteSize() int32 {
 
 func (s *CmdOnlySegment) Bytes() buf.Supplier {
 	return func(b []byte) (int, error) {
-		b = serial.Uint16ToBytes(s.Conv, b[:0])
-		b = append(b, byte(s.Cmd), byte(s.Option))
-		b = serial.Uint32ToBytes(s.SendingNext, b)
-		b = serial.Uint32ToBytes(s.ReceivingNext, b)
-		b = serial.Uint32ToBytes(s.PeerRTO, b)
-		return len(b), nil
+		binary.BigEndian.PutUint16(b, s.Conv)
+		b[2] = byte(s.Cmd)
+		b[3] = byte(s.Option)
+		binary.BigEndian.PutUint32(b[4:], s.SendingNext)
+		binary.BigEndian.PutUint32(b[8:], s.ReceivingNext)
+		binary.BigEndian.PutUint32(b[12:], s.PeerRTO)
+		return 16, nil
 	}
 }
 

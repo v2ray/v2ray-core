@@ -2,10 +2,10 @@ package srtp
 
 import (
 	"context"
+	"encoding/binary"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/dice"
-	"v2ray.com/core/common/serial"
 )
 
 type SRTP struct {
@@ -20,8 +20,8 @@ func (*SRTP) Size() int32 {
 // Write implements io.Writer.
 func (s *SRTP) Write(b []byte) (int, error) {
 	s.number++
-	serial.Uint16ToBytes(s.number, b[:0])
-	serial.Uint16ToBytes(s.number, b[:2])
+	binary.BigEndian.PutUint16(b, s.number)
+	binary.BigEndian.PutUint16(b[2:], s.number)
 	return 4, nil
 }
 

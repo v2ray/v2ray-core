@@ -3,8 +3,6 @@ package net
 import (
 	"encoding/binary"
 	"strconv"
-
-	"v2ray.com/core/common/serial"
 )
 
 // Port represents a network port in TCP and UDP protocol.
@@ -42,7 +40,7 @@ func (p Port) Value() uint16 {
 
 // String returns the string presentation of a Port.
 func (p Port) String() string {
-	return serial.Uint16ToString(p.Value())
+	return strconv.Itoa(int(p))
 }
 
 // FromPort returns the beginning port of this PortRange.

@@ -258,7 +258,7 @@ func (w *AuthenticationWriter) seal(b *buf.Buffer) (*buf.Buffer, error) {
 
 	eb := buf.New()
 	common.Must(eb.Reset(func(bb []byte) (int, error) {
-		w.sizeParser.Encode(uint16(encryptedSize+paddingSize), bb[:0])
+		w.sizeParser.Encode(uint16(encryptedSize+paddingSize), bb)
 		return int(w.sizeParser.SizeBytes()), nil
 	}))
 	if err := eb.AppendSupplier(func(bb []byte) (int, error) {

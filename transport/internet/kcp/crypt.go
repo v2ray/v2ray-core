@@ -6,7 +6,6 @@ import (
 	"hash/fnv"
 
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/serial"
 )
 
 // SimpleAuthenticator is a legacy AEAD used for KCP encryption.
@@ -29,8 +28,8 @@ func (*SimpleAuthenticator) Overhead() int {
 
 // Seal implements cipher.AEAD.Seal().
 func (a *SimpleAuthenticator) Seal(dst, nonce, plain, extra []byte) []byte {
-	dst = append(dst, 0, 0, 0, 0)
-	dst = serial.Uint16ToBytes(uint16(len(plain)), dst)
+	dst = append(dst, 0, 0, 0, 0, 0, 0) // 4 bytes for hash, and then 2 bytes for length
+	binary.BigEndian.PutUint16(dst[4:], uint16(len(plain)))
 	dst = append(dst, plain...)
 
 	fnvHash := fnv.New32a()

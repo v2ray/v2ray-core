@@ -134,7 +134,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		return nil, newError("invalid user")
 	}
 
-	iv := md5.Sum(hashTimestamp(timestamp))
+	iv := hashTimestamp(md5.New(), timestamp)
 	vmessAccount := user.Account.(*vmess.MemoryAccount)
 
 	aesStream := crypto.NewAesDecryptionStream(vmessAccount.ID.CmdKey(), iv[:])

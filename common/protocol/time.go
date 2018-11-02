@@ -4,14 +4,9 @@ import (
 	"time"
 
 	"v2ray.com/core/common/dice"
-	"v2ray.com/core/common/serial"
 )
 
 type Timestamp int64
-
-func (v Timestamp) Bytes(b []byte) []byte {
-	return serial.Int64ToBytes(int64(v), b)
-}
 
 type TimestampGenerator func() Timestamp
 

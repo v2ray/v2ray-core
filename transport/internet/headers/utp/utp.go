@@ -2,10 +2,10 @@ package utp
 
 import (
 	"context"
+	"encoding/binary"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/dice"
-	"v2ray.com/core/common/serial"
 )
 
 type UTP struct {
@@ -20,7 +20,7 @@ func (*UTP) Size() int32 {
 
 // Write implements io.Writer.
 func (u *UTP) Write(b []byte) (int, error) {
-	serial.Uint16ToBytes(u.connectionId, b[:0])
+	binary.BigEndian.PutUint16(b, u.connectionId)
 	b[2] = u.header
 	b[3] = u.extension
 	return 4, nil
