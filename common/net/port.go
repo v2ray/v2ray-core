@@ -39,11 +39,6 @@ func (p Port) Value() uint16 {
 	return uint16(p)
 }
 
-// Bytes returns the correspoding bytes of a Port, in big endian order.
-func (p Port) Bytes(b []byte) []byte {
-	return serial.Uint16ToBytes(p.Value(), b)
-}
-
 // String returns the string presentation of a Port.
 func (p Port) String() string {
 	return serial.Uint16ToString(p.Value())

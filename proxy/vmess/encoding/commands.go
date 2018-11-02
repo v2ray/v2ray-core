@@ -9,6 +9,7 @@ import (
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/uuid"
+	"v2ray.com/core/common/vio"
 )
 
 var (
@@ -95,7 +96,7 @@ func (f *CommandSwitchAccountFactory) Marshal(command interface{}, writer io.Wri
 		common.Must2(writer.Write([]byte(hostStr)))
 	}
 
-	common.Must2(writer.Write(cmd.Port.Bytes(nil)))
+	common.Must2(vio.WriteUint16(writer, cmd.Port.Value()))
 
 	idBytes := cmd.ID.Bytes()
 	common.Must2(writer.Write(idBytes))
