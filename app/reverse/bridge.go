@@ -9,8 +9,8 @@ import (
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/task"
-	"v2ray.com/core/common/vio"
 	"v2ray.com/core/features/routing"
+	"v2ray.com/core/transport"
 	"v2ray.com/core/transport/pipe"
 )
 
@@ -144,7 +144,7 @@ func (w *BridgeWorker) Connections() uint32 {
 	return w.worker.ActiveConnections()
 }
 
-func (w *BridgeWorker) handleInternalConn(link vio.Link) {
+func (w *BridgeWorker) handleInternalConn(link transport.Link) {
 	go func() {
 		reader := link.Reader
 		for {
@@ -166,7 +166,7 @@ func (w *BridgeWorker) handleInternalConn(link vio.Link) {
 	}()
 }
 
-func (w *BridgeWorker) Dispatch(ctx context.Context, dest net.Destination) (*vio.Link, error) {
+func (w *BridgeWorker) Dispatch(ctx context.Context, dest net.Destination) (*transport.Link, error) {
 	if !isInternalDomain(dest) {
 		ctx = session.ContextWithInbound(ctx, &session.Inbound{
 			Tag: w.tag,
@@ -178,12 +178,12 @@ func (w *BridgeWorker) Dispatch(ctx context.Context, dest net.Destination) (*vio
 	uplinkReader, uplinkWriter := pipe.New(opt...)
 	downlinkReader, downlinkWriter := pipe.New(opt...)
 
-	w.handleInternalConn(vio.Link{
+	w.handleInternalConn(transport.Link{
 		Reader: downlinkReader,
 		Writer: uplinkWriter,
 	})
 
-	return &vio.Link{
+	return &transport.Link{
 		Reader: uplinkReader,
 		Writer: downlinkWriter,
 	}, nil

@@ -11,8 +11,8 @@ import (
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/session"
-	"v2ray.com/core/common/vio"
 	"v2ray.com/core/features/routing"
+	"v2ray.com/core/transport"
 	"v2ray.com/core/transport/pipe"
 )
 
@@ -35,7 +35,7 @@ func (s *Server) Type() interface{} {
 }
 
 // Dispatch impliments routing.Dispatcher
-func (s *Server) Dispatch(ctx context.Context, dest net.Destination) (*vio.Link, error) {
+func (s *Server) Dispatch(ctx context.Context, dest net.Destination) (*transport.Link, error) {
 	if dest.Address != muxCoolAddress {
 		return s.dispatcher.Dispatch(ctx, dest)
 	}
@@ -44,7 +44,7 @@ func (s *Server) Dispatch(ctx context.Context, dest net.Destination) (*vio.Link,
 	uplinkReader, uplinkWriter := pipe.New(opts...)
 	downlinkReader, downlinkWriter := pipe.New(opts...)
 
-	_, err := NewServerWorker(ctx, s.dispatcher, &vio.Link{
+	_, err := NewServerWorker(ctx, s.dispatcher, &transport.Link{
 		Reader: uplinkReader,
 		Writer: downlinkWriter,
 	})
@@ -52,7 +52,7 @@ func (s *Server) Dispatch(ctx context.Context, dest net.Destination) (*vio.Link,
 		return nil, err
 	}
 
-	return &vio.Link{Reader: downlinkReader, Writer: uplinkWriter}, nil
+	return &transport.Link{Reader: downlinkReader, Writer: uplinkWriter}, nil
 }
 
 // Start implements common.Runnable.
@@ -67,11 +67,11 @@ func (s *Server) Close() error {
 
 type ServerWorker struct {
 	dispatcher     routing.Dispatcher
-	link           *vio.Link
+	link           *transport.Link
 	sessionManager *SessionManager
 }
 
-func NewServerWorker(ctx context.Context, d routing.Dispatcher, link *vio.Link) (*ServerWorker, error) {
+func NewServerWorker(ctx context.Context, d routing.Dispatcher, link *transport.Link) (*ServerWorker, error) {
 	worker := &ServerWorker{
 		dispatcher:     d,
 		link:           link,

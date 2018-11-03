@@ -7,8 +7,8 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/serial"
-	"v2ray.com/core/common/vio"
 	"v2ray.com/core/proxy/blackhole"
+	"v2ray.com/core/transport"
 	"v2ray.com/core/transport/pipe"
 )
 
@@ -28,7 +28,7 @@ func TestBlackholeHTTPResponse(t *testing.T) {
 		rerr = e
 	}()
 
-	link := vio.Link{
+	link := transport.Link{
 		Reader: reader,
 		Writer: writer,
 	}

@@ -4,15 +4,15 @@ import (
 	"context"
 
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/vio"
 	"v2ray.com/core/features"
+	"v2ray.com/core/transport"
 )
 
 // Handler is the interface for handlers that process outbound connections.
 type Handler interface {
 	common.Runnable
 	Tag() string
-	Dispatch(ctx context.Context, link *vio.Link)
+	Dispatch(ctx context.Context, link *transport.Link)
 }
 
 // Manager is a feature that manages outbound.Handlers.

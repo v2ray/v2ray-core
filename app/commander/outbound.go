@@ -7,7 +7,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/signal/done"
-	"v2ray.com/core/common/vio"
+	"v2ray.com/core/transport"
 	"v2ray.com/core/transport/pipe"
 )
 
@@ -69,7 +69,7 @@ type Outbound struct {
 }
 
 // Dispatch implements outbound.Handler.
-func (co *Outbound) Dispatch(ctx context.Context, link *vio.Link) {
+func (co *Outbound) Dispatch(ctx context.Context, link *transport.Link) {
 	co.access.RLock()
 
 	if co.closed {

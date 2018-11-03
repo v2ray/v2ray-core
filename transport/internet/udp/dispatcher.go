@@ -10,14 +10,14 @@ import (
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
-	"v2ray.com/core/common/vio"
 	"v2ray.com/core/features/routing"
+	"v2ray.com/core/transport"
 )
 
 type ResponseCallback func(ctx context.Context, payload *buf.Buffer)
 
 type connEntry struct {
-	link   *vio.Link
+	link   *transport.Link
 	timer  signal.ActivityUpdater
 	cancel context.CancelFunc
 }

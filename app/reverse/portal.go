@@ -12,8 +12,8 @@ import (
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/task"
-	"v2ray.com/core/common/vio"
 	"v2ray.com/core/features/outbound"
+	"v2ray.com/core/transport"
 	"v2ray.com/core/transport/pipe"
 )
 
@@ -61,7 +61,7 @@ func (p *Portal) Close() error {
 	return p.ohm.RemoveHandler(context.Background(), p.tag)
 }
 
-func (s *Portal) HandleConnection(ctx context.Context, link *vio.Link) error {
+func (s *Portal) HandleConnection(ctx context.Context, link *transport.Link) error {
 	outboundMeta := session.OutboundFromContext(ctx)
 	if outboundMeta == nil {
 		return newError("outbound metadata not found").AtError()
@@ -94,7 +94,7 @@ func (o *Outbound) Tag() string {
 	return o.tag
 }
 
-func (o *Outbound) Dispatch(ctx context.Context, link *vio.Link) {
+func (o *Outbound) Dispatch(ctx context.Context, link *transport.Link) {
 	if err := o.portal.HandleConnection(ctx, link); err != nil {
 		newError("failed to process reverse connection").Base(err).WriteToLog(session.ExportIDToError(ctx))
 		pipe.CloseError(link.Writer)
@@ -206,7 +206,7 @@ func NewPortalWorker(client *mux.ClientWorker) (*PortalWorker, error) {
 	ctx = session.ContextWithOutbound(ctx, &session.Outbound{
 		Target: net.UDPDestination(net.DomainAddress(internalDomain), 0),
 	})
-	f := client.Dispatch(ctx, &vio.Link{
+	f := client.Dispatch(ctx, &transport.Link{
 		Reader: uplinkReader,
 		Writer: downlinkWriter,
 	})

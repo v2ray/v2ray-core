@@ -372,15 +372,12 @@ type RoutingRule struct {
 	// List of GeoIPs for target IP address matching. If this entry exists, the cidr above will have no effect.
 	// GeoIP fields with the same country code are supposed to contain exactly same content. They will be merged during runtime.
 	// For customized GeoIPs, please leave country code empty.
-	// The CIDR list in the GeoIP must be sorted beforehand.
 	Geoip       []*GeoIP         `protobuf:"bytes,10,rep,name=geoip,proto3" json:"geoip,omitempty"`
 	PortRange   *net.PortRange   `protobuf:"bytes,4,opt,name=port_range,json=portRange,proto3" json:"port_range,omitempty"`
 	NetworkList *net.NetworkList `protobuf:"bytes,5,opt,name=network_list,json=networkList,proto3" json:"network_list,omitempty"`
 	// List of CIDRs for source IP address matching.
-	// The list must be sorted beforehand.
 	SourceCidr []*CIDR `protobuf:"bytes,6,rep,name=source_cidr,json=sourceCidr,proto3" json:"source_cidr,omitempty"` // Deprecated: Do not use.
 	// List of GeoIPs for source IP address matching. If this entry exists, the source_cidr above will have no effect.
-	// The CIDR list in the GeoIP must be sorted beforehand.
 	SourceGeoip          []*GeoIP `protobuf:"bytes,11,rep,name=source_geoip,json=sourceGeoip,proto3" json:"source_geoip,omitempty"`
 	UserEmail            []string `protobuf:"bytes,7,rep,name=user_email,json=userEmail,proto3" json:"user_email,omitempty"`
 	InboundTag           []string `protobuf:"bytes,8,rep,name=inbound_tag,json=inboundTag,proto3" json:"inbound_tag,omitempty"`

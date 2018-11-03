@@ -14,8 +14,8 @@ import (
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal/done"
 	"v2ray.com/core/common/task"
-	"v2ray.com/core/common/vio"
 	"v2ray.com/core/proxy"
+	"v2ray.com/core/transport"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/pipe"
 )
@@ -24,7 +24,7 @@ type ClientManager struct {
 	Picker WorkerPicker
 }
 
-func (m *ClientManager) Dispatch(ctx context.Context, link *vio.Link) error {
+func (m *ClientManager) Dispatch(ctx context.Context, link *transport.Link) error {
 	for {
 		worker, err := m.Picker.PickAvailable()
 		if err != nil {
@@ -114,7 +114,7 @@ func (p *IncrementalWorkerPicker) pickInternal() (*ClientWorker, error, bool) {
 func (p *IncrementalWorkerPicker) PickAvailable() (*ClientWorker, error) {
 	worker, err, start := p.pickInternal()
 	if start {
-		p.cleanupTask.Start()
+		common.Must(p.cleanupTask.Start())
 	}
 
 	return worker, err
@@ -135,7 +135,7 @@ func (f *DialingWorkerFactory) Create() (*ClientWorker, error) {
 	uplinkReader, upLinkWriter := pipe.New(opts...)
 	downlinkReader, downlinkWriter := pipe.New(opts...)
 
-	c, err := NewClientWorker(vio.Link{
+	c, err := NewClientWorker(transport.Link{
 		Reader: downlinkReader,
 		Writer: upLinkWriter,
 	}, f.Strategy)
@@ -150,7 +150,7 @@ func (f *DialingWorkerFactory) Create() (*ClientWorker, error) {
 		})
 		ctx, cancel := context.WithCancel(ctx)
 
-		if err := p.Process(ctx, &vio.Link{Reader: uplinkReader, Writer: downlinkWriter}, d); err != nil {
+		if err := p.Process(ctx, &transport.Link{Reader: uplinkReader, Writer: downlinkWriter}, d); err != nil {
 			errors.New("failed to handler mux client connection").Base(err).WriteToLog()
 		}
 		common.Must(c.Close())
@@ -167,7 +167,7 @@ type ClientStrategy struct {
 
 type ClientWorker struct {
 	sessionManager *SessionManager
-	link           vio.Link
+	link           transport.Link
 	done           *done.Instance
 	strategy       ClientStrategy
 }
@@ -176,7 +176,7 @@ var muxCoolAddress = net.DomainAddress("v1.mux.cool")
 var muxCoolPort = net.Port(9527)
 
 // NewClientWorker creates a new mux.Client.
-func NewClientWorker(stream vio.Link, s ClientStrategy) (*ClientWorker, error) {
+func NewClientWorker(stream transport.Link, s ClientStrategy) (*ClientWorker, error) {
 	c := &ClientWorker{
 		sessionManager: NewSessionManager(),
 		link:           stream,
@@ -283,7 +283,7 @@ func (m *ClientWorker) IsFull() bool {
 	return false
 }
 
-func (m *ClientWorker) Dispatch(ctx context.Context, link *vio.Link) bool {
+func (m *ClientWorker) Dispatch(ctx context.Context, link *transport.Link) bool {
 	if m.IsFull() || m.Closed() {
 		return false
 	}

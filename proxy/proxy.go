@@ -10,8 +10,8 @@ import (
 
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/common/vio"
 	"v2ray.com/core/features/routing"
+	"v2ray.com/core/transport"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -27,7 +27,7 @@ type Inbound interface {
 // An Outbound process outbound connections.
 type Outbound interface {
 	// Process processes the given connection. The given dialer may be used to dial a system outbound connection.
-	Process(context.Context, *vio.Link, internet.Dialer) error
+	Process(context.Context, *transport.Link, internet.Dialer) error
 }
 
 // UserManager is the interface for Inbounds and Outbounds that can manage their users.

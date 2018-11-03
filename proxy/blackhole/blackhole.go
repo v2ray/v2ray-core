@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/vio"
+	"v2ray.com/core/transport"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/pipe"
 )
@@ -30,7 +30,7 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 }
 
 // Process implements OutboundHandler.Dispatch().
-func (h *Handler) Process(ctx context.Context, link *vio.Link, dialer internet.Dialer) error {
+func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer internet.Dialer) error {
 	nBytes := h.response.WriteTo(link.Writer)
 	if nBytes > 0 {
 		// Sleep a little here to make sure the response is sent to client.

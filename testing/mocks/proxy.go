@@ -9,8 +9,8 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 	net "v2ray.com/core/common/net"
-	vio "v2ray.com/core/common/vio"
 	routing "v2ray.com/core/features/routing"
+	transport "v2ray.com/core/transport"
 	internet "v2ray.com/core/transport/internet"
 )
 
@@ -85,7 +85,7 @@ func (m *ProxyOutbound) EXPECT() *ProxyOutboundMockRecorder {
 }
 
 // Process mocks base method
-func (m *ProxyOutbound) Process(arg0 context.Context, arg1 *vio.Link, arg2 internet.Dialer) error {
+func (m *ProxyOutbound) Process(arg0 context.Context, arg1 *transport.Link, arg2 internet.Dialer) error {
 	ret := m.ctrl.Call(m, "Process", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
