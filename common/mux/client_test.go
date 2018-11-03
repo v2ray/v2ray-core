@@ -9,8 +9,8 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/mux"
-	"v2ray.com/core/common/vio"
 	"v2ray.com/core/testing/mocks"
+	"v2ray.com/core/transport"
 	"v2ray.com/core/transport/pipe"
 )
 
