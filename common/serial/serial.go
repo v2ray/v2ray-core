@@ -1,4 +1,4 @@
-package vio
+package serial
 
 import (
 	"encoding/binary"

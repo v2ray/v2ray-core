@@ -6,8 +6,8 @@ import (
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/uuid"
-	"v2ray.com/core/common/vio"
 	. "v2ray.com/core/proxy/vmess"
 	. "v2ray.com/ext/assert"
 )
@@ -39,7 +39,7 @@ func TestUserValidator(t *testing.T) {
 		testSmallLag := func(lag time.Duration) {
 			ts := protocol.Timestamp(time.Now().Add(time.Second * lag).Unix())
 			idHash := hasher(id.Bytes())
-			common.Must2(vio.WriteUint64(idHash, uint64(ts)))
+			common.Must2(serial.WriteUint64(idHash, uint64(ts)))
 			userHash := idHash.Sum(nil)
 
 			euser, ets, found := v.Get(userHash)
@@ -61,7 +61,7 @@ func TestUserValidator(t *testing.T) {
 		testBigLag := func(lag time.Duration) {
 			ts := protocol.Timestamp(time.Now().Add(time.Second * lag).Unix())
 			idHash := hasher(id.Bytes())
-			common.Must2(vio.WriteUint64(idHash, uint64(ts)))
+			common.Must2(serial.WriteUint64(idHash, uint64(ts)))
 			userHash := idHash.Sum(nil)
 
 			euser, _, found := v.Get(userHash)

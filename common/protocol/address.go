@@ -6,8 +6,8 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/task"
-	"v2ray.com/core/common/vio"
 )
 
 type AddressOption func(*AddressParser)
@@ -167,7 +167,7 @@ func (p *AddressParser) ReadAddressPort(buffer *buf.Buffer, input io.Reader) (ne
 }
 
 func (p *AddressParser) writePort(writer io.Writer, port net.Port) error {
-	return common.Error2(vio.WriteUint16(writer, port.Value()))
+	return common.Error2(serial.WriteUint16(writer, port.Value()))
 }
 
 func (p *AddressParser) writeAddress(writer io.Writer, address net.Address) error {

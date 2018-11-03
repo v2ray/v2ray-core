@@ -9,7 +9,7 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/common/vio"
+	"v2ray.com/core/common/serial"
 )
 
 type SessionStatus byte
@@ -65,7 +65,7 @@ func (f FrameMetadata) WriteTo(b *buf.Buffer) error {
 	lenBytes := b.Bytes()
 
 	len0 := b.Len()
-	if _, err := vio.WriteUint16(b, f.SessionID); err != nil {
+	if _, err := serial.WriteUint16(b, f.SessionID); err != nil {
 		return err
 	}
 
@@ -91,7 +91,7 @@ func (f FrameMetadata) WriteTo(b *buf.Buffer) error {
 
 // Unmarshal reads FrameMetadata from the given reader.
 func (f *FrameMetadata) Unmarshal(reader io.Reader) error {
-	metaLen, err := vio.ReadUint16(reader)
+	metaLen, err := serial.ReadUint16(reader)
 	if err != nil {
 		return err
 	}

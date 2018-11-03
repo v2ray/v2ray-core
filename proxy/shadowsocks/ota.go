@@ -10,7 +10,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/bytespool"
-	"v2ray.com/core/common/vio"
+	"v2ray.com/core/common/serial"
 )
 
 const (
@@ -70,7 +70,7 @@ func NewChunkReader(reader io.Reader, auth *Authenticator) *ChunkReader {
 }
 
 func (v *ChunkReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
-	size, err := vio.ReadUint16(v.reader)
+	size, err := serial.ReadUint16(v.reader)
 	if err != nil {
 		return nil, newError("failed to read size")
 	}

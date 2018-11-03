@@ -16,15 +16,15 @@ import (
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/common/vio"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/vmess"
 )
 
 func hashTimestamp(h hash.Hash, t protocol.Timestamp) []byte {
-	vio.WriteUint64(h, uint64(t))
-	vio.WriteUint64(h, uint64(t))
-	vio.WriteUint64(h, uint64(t))
-	vio.WriteUint64(h, uint64(t))
+	serial.WriteUint64(h, uint64(t))
+	serial.WriteUint64(h, uint64(t))
+	serial.WriteUint64(h, uint64(t))
+	serial.WriteUint64(h, uint64(t))
 	return h.Sum(nil)
 }
 
@@ -59,7 +59,7 @@ func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 	timestamp := protocol.NewTimestampGenerator(protocol.NowTime(), 30)()
 	account := header.User.Account.(*vmess.MemoryAccount)
 	idHash := c.idHash(account.AnyValidID().Bytes())
-	common.Must2(vio.WriteUint64(idHash, uint64(timestamp)))
+	common.Must2(serial.WriteUint64(idHash, uint64(timestamp)))
 	common.Must2(writer.Write(idHash.Sum(nil)))
 
 	buffer := buf.New()

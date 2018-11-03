@@ -8,8 +8,8 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/uuid"
-	"v2ray.com/core/common/vio"
 )
 
 var (
@@ -96,11 +96,11 @@ func (f *CommandSwitchAccountFactory) Marshal(command interface{}, writer io.Wri
 		common.Must2(writer.Write([]byte(hostStr)))
 	}
 
-	common.Must2(vio.WriteUint16(writer, cmd.Port.Value()))
+	common.Must2(serial.WriteUint16(writer, cmd.Port.Value()))
 
 	idBytes := cmd.ID.Bytes()
 	common.Must2(writer.Write(idBytes))
-	common.Must2(vio.WriteUint16(writer, cmd.AlterIds))
+	common.Must2(serial.WriteUint16(writer, cmd.AlterIds))
 	common.Must2(writer.Write([]byte{byte(cmd.Level)}))
 
 	common.Must2(writer.Write([]byte{cmd.ValidMin}))

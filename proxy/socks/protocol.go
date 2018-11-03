@@ -7,7 +7,7 @@ import (
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/common/vio"
+	"v2ray.com/core/common/serial"
 )
 
 const (
@@ -260,7 +260,7 @@ func writeSocks4Response(writer io.Writer, errCode byte, address net.Address, po
 	defer buffer.Release()
 
 	common.Must2(buffer.WriteBytes(0x00, errCode))
-	common.Must2(vio.WriteUint16(buffer, port.Value()))
+	common.Must2(serial.WriteUint16(buffer, port.Value()))
 	common.Must2(buffer.Write(address.IP()))
 	return buf.WriteAllBytes(writer, buffer.Bytes())
 }
