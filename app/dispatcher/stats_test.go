@@ -1,11 +1,11 @@
-package vio_test
+package dispatcher_test
 
 import (
 	"testing"
 
+	. "v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	. "v2ray.com/core/common/vio"
 )
 
 type TestCounter int64

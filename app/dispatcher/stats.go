@@ -1,4 +1,4 @@
-package vio
+package dispatcher
 
 import (
 	"v2ray.com/core/common"
