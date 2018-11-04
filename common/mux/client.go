@@ -25,7 +25,7 @@ type ClientManager struct {
 }
 
 func (m *ClientManager) Dispatch(ctx context.Context, link *transport.Link) error {
-	for {
+	for i := 0; i < 16; i++ {
 		worker, err := m.Picker.PickAvailable()
 		if err != nil {
 			return err
@@ -34,6 +34,8 @@ func (m *ClientManager) Dispatch(ctx context.Context, link *transport.Link) erro
 			return nil
 		}
 	}
+
+	return newError("unable to find an available mux client")
 }
 
 type WorkerPicker interface {
