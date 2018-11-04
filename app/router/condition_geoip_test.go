@@ -13,6 +13,33 @@ import (
 	"v2ray.com/ext/sysio"
 )
 
+func TestGeoIPMatcherContainer(t *testing.T) {
+	container := &router.GeoIPMatcherContainer{}
+
+	m1, err := container.Add(&router.GeoIP{
+		CountryCode: "CN",
+	})
+	common.Must(err)
+
+	m2, err := container.Add(&router.GeoIP{
+		CountryCode: "US",
+	})
+	common.Must(err)
+
+	m3, err := container.Add(&router.GeoIP{
+		CountryCode: "CN",
+	})
+	common.Must(err)
+
+	if m1 != m3 {
+		t.Error("expect same matcher for same geoip, but not")
+	}
+
+	if m1 == m2 {
+		t.Error("expect different matcher for different geoip, but actually same")
+	}
+}
+
 func TestGeoIPMatcher(t *testing.T) {
 	cidrList := router.CIDRList{
 		{Ip: []byte{0, 0, 0, 0}, Prefix: 8},
