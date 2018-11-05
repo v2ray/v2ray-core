@@ -39,31 +39,6 @@ func (v *ConditionChan) Len() int {
 	return len(*v)
 }
 
-type AnyCondition []Condition
-
-func NewAnyCondition() *AnyCondition {
-	var anyCond AnyCondition = make([]Condition, 0, 8)
-	return &anyCond
-}
-
-func (v *AnyCondition) Add(cond Condition) *AnyCondition {
-	*v = append(*v, cond)
-	return v
-}
-
-func (v *AnyCondition) Apply(ctx context.Context) bool {
-	for _, cond := range *v {
-		if cond.Apply(ctx) {
-			return true
-		}
-	}
-	return false
-}
-
-func (v *AnyCondition) Len() int {
-	return len(*v)
-}
-
 var matcherTypeMap = map[Domain_Type]strmatcher.Type{
 	Domain_Plain:  strmatcher.Substr,
 	Domain_Regex:  strmatcher.Regex,
