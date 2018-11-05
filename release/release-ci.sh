@@ -32,10 +32,10 @@ chmod +x bazel-${BAZEL_VER}-installer-linux-x86_64.sh
 ./bazel-${BAZEL_VER}-installer-linux-x86_64.sh
 popd
 
-gsutil cp ${SIGN_KEY_PATH} /v2ray/build/sign_key.asc
-echo ${SIGN_KEY_PASS} | gpg --passphrase-fd 0 --batch --import /v2ray/build/sign_key.asc
+gsutil cp ${SIGN_KEY_PATH} /v2/build/sign_key.asc
+echo ${SIGN_KEY_PASS} | gpg --passphrase-fd 0 --batch --import /v2/build/sign_key.asc
 
-curl -L -o /v2ray/build/releases https://api.github.com/repos/v2ray/v2ray-core/releases
+curl -L -o /v2/build/releases https://api.github.com/repos/v2ray/v2ray-core/releases
 
 GO_INSTALL=golang.tar.gz
 curl -L -o ${GO_INSTALL} https://storage.googleapis.com/golang/go1.11.1.linux-amd64.tar.gz
