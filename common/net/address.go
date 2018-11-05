@@ -70,6 +70,10 @@ type Address interface {
 	String() string // String representation of this Address
 }
 
+func isAlphaNum(c byte) bool {
+	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+}
+
 // ParseAddress parses a string into an Address. The return value will be an IPAddress when
 // the string is in the form of IPv4 or IPv6 address, or a DomainAddress otherwise.
 func ParseAddress(addr string) Address {
@@ -77,8 +81,12 @@ func ParseAddress(addr string) Address {
 	lenAddr := len(addr)
 	if lenAddr > 0 && addr[0] == '[' && addr[lenAddr-1] == ']' {
 		addr = addr[1 : lenAddr-1]
+		lenAddr -= 2
 	}
-	addr = strings.TrimSpace(addr)
+
+	if lenAddr > 0 && (!isAlphaNum(addr[0]) || !isAlphaNum(addr[len(addr)-1])) {
+		addr = strings.TrimSpace(addr)
+	}
 
 	ip := net.ParseIP(addr)
 	if ip != nil {

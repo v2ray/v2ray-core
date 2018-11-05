@@ -101,3 +101,21 @@ func TestIPOrDomain(t *testing.T) {
 	assert(NewIPOrDomain(ParseAddress("8.8.8.8")).AsAddress(), Equals, ParseAddress("8.8.8.8"))
 	assert(NewIPOrDomain(ParseAddress("2001:4860:0:2001::68")).AsAddress(), Equals, ParseAddress("2001:4860:0:2001::68"))
 }
+
+func BenchmarkParseAddressIPv4(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = ParseAddress("8.8.8.8")
+	}
+}
+
+func BenchmarkParseAddressIPv6(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = ParseAddress("2001:4860:0:2001::68")
+	}
+}
+
+func BenchmarkParseAddressDomain(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = ParseAddress("v2ray.com")
+	}
+}
