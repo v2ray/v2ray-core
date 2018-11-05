@@ -76,7 +76,7 @@
         "port": 53,
         "domains": [
           "domain:v2ray.com"
-        ],
+        ]
       },
       "8.8.8.8",
       "localhost"
