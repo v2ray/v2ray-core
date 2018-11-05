@@ -72,13 +72,15 @@
     },
     "servers": [
       {
-        "address": "1.1.1.1",
+        "address": "114.114.114.114",
         "port": 53,
+        // List of domains that use this DNS first.
         "domains": [
           "domain:v2ray.com"
         ]
       },
       "8.8.8.8",
+      "1.1.1.1",
       "localhost"
     ]
   },
