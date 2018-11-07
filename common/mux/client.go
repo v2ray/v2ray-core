@@ -322,6 +322,10 @@ func (m *ClientWorker) handleStatusKeep(meta *FrameMetadata, reader *buf.Buffere
 
 	s, found := m.sessionManager.Get(meta.SessionID)
 	if !found {
+		// Notify remote peer to close this session.
+		closingWriter := NewResponseWriter(meta.SessionID, m.link.Writer, protocol.TransferTypeStream)
+		closingWriter.Close()
+
 		return buf.Copy(NewStreamReader(reader), buf.Discard)
 	}
 
@@ -329,6 +333,10 @@ func (m *ClientWorker) handleStatusKeep(meta *FrameMetadata, reader *buf.Buffere
 	err := buf.Copy(rr, s.output)
 	if err != nil && buf.IsWriteError(err) {
 		newError("failed to write to downstream. closing session ", s.ID).Base(err).WriteToLog()
+
+		// Notify remote peer to close this session.
+		closingWriter := NewResponseWriter(meta.SessionID, m.link.Writer, protocol.TransferTypeStream)
+		closingWriter.Close()
 
 		drainErr := buf.Copy(rr, buf.Discard)
 		pipe.CloseError(s.input)
