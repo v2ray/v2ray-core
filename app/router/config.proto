@@ -58,8 +58,14 @@ message GeoSiteList{
 }
 
 message RoutingRule {
-  // Tag of outbound that this rule is pointing to.
-  string tag = 1;
+  oneof target_tag {
+    // Tag of outbound that this rule is pointing to.
+    string tag = 1;
+
+    // Tag of routing balancer.
+    string balancing_tag = 12;
+  }
+  
 
   // List of domains for target domain matching.
   repeated Domain domain = 2;
@@ -87,6 +93,11 @@ message RoutingRule {
   repeated string protocol = 9;
 }
 
+message BalancingRule {
+  string tag = 1;
+  repeated string outbound_selector = 2;
+}
+
 message Config {
   enum DomainStrategy {
     // Use domain as is.
@@ -103,4 +114,5 @@ message Config {
   }
   DomainStrategy domain_strategy = 1;
   repeated RoutingRule rule = 2;
+  repeated BalancingRule balancing_rule = 3;
 }

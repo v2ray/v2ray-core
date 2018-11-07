@@ -15,6 +15,10 @@ type Handler interface {
 	Dispatch(ctx context.Context, link *transport.Link)
 }
 
+type HandlerSelector interface {
+	Select([]string) []string
+}
+
 // Manager is a feature that manages outbound.Handlers.
 type Manager interface {
 	features.Feature

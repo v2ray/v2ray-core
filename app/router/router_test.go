@@ -15,7 +15,9 @@ func TestSimpleRouter(t *testing.T) {
 	config := &Config{
 		Rule: []*RoutingRule{
 			{
-				Tag: "test",
+				TargetTag: &RoutingRule_Tag{
+					Tag: "test",
+				},
 				NetworkList: &net.NetworkList{
 					Network: []net.Network{net.Network_TCP},
 				},
@@ -29,7 +31,7 @@ func TestSimpleRouter(t *testing.T) {
 	mockDns := mocks.NewDNSClient(mockCtl)
 
 	r := new(Router)
-	common.Must(r.Init(config, mockDns))
+	common.Must(r.Init(config, mockDns, nil))
 
 	ctx := withOutbound(&session.Outbound{Target: net.TCPDestination(net.DomainAddress("v2ray.com"), 80)})
 	tag, err := r.PickRoute(ctx)
@@ -44,7 +46,9 @@ func TestIPOnDemand(t *testing.T) {
 		DomainStrategy: Config_IpOnDemand,
 		Rule: []*RoutingRule{
 			{
-				Tag: "test",
+				TargetTag: &RoutingRule_Tag{
+					Tag: "test",
+				},
 				Cidr: []*CIDR{
 					{
 						Ip:     []byte{192, 168, 0, 0},
@@ -62,7 +66,7 @@ func TestIPOnDemand(t *testing.T) {
 	mockDns.EXPECT().LookupIP(gomock.Eq("v2ray.com")).Return([]net.IP{{192, 168, 0, 1}}, nil).AnyTimes()
 
 	r := new(Router)
-	common.Must(r.Init(config, mockDns))
+	common.Must(r.Init(config, mockDns, nil))
 
 	ctx := withOutbound(&session.Outbound{Target: net.TCPDestination(net.DomainAddress("v2ray.com"), 80)})
 	tag, err := r.PickRoute(ctx)

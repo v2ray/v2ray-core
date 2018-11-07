@@ -10,6 +10,7 @@ import (
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/features/dns"
+	"v2ray.com/core/features/outbound"
 	"v2ray.com/core/features/routing"
 )
 
@@ -35,8 +36,8 @@ func ResolvedIPsFromContext(ctx context.Context) (IPResolver, bool) {
 func init() {
 	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
 		r := new(Router)
-		if err := core.RequireFeatures(ctx, func(d dns.Client) error {
-			return r.Init(config.(*Config), d)
+		if err := core.RequireFeatures(ctx, func(d dns.Client, ohm outbound.Manager) error {
+			return r.Init(config.(*Config), d, ohm)
 		}); err != nil {
 			return nil, err
 		}
@@ -47,23 +48,44 @@ func init() {
 // Router is an implementation of routing.Router.
 type Router struct {
 	domainStrategy Config_DomainStrategy
-	rules          []Rule
+	rules          []*Rule
+	balancers      map[string]*Balancer
 	dns            dns.Client
 }
 
 // Init initializes the Router.
-func (r *Router) Init(config *Config, d dns.Client) error {
+func (r *Router) Init(config *Config, d dns.Client, ohm outbound.Manager) error {
 	r.domainStrategy = config.DomainStrategy
-	r.rules = make([]Rule, len(config.Rule))
 	r.dns = d
 
-	for idx, rule := range config.Rule {
-		r.rules[idx].Tag = rule.Tag
+	r.balancers = make(map[string]*Balancer, len(config.BalancingRule))
+	for _, rule := range config.BalancingRule {
+		balancer, err := rule.Build(ohm)
+		if err != nil {
+			return err
+		}
+		r.balancers[rule.Tag] = balancer
+	}
+
+	r.rules = make([]*Rule, 0, len(config.Rule))
+	for _, rule := range config.Rule {
 		cond, err := rule.BuildCondition()
 		if err != nil {
 			return err
 		}
-		r.rules[idx].Condition = cond
+		rr := &Rule{
+			Condition: cond,
+			Tag:       rule.GetTag(),
+		}
+		btag := rule.GetBalancingTag()
+		if len(btag) > 0 {
+			brule, found := r.balancers[btag]
+			if !found {
+				return newError("balancer ", btag, " not found")
+			}
+			rr.Balancer = brule
+		}
+		r.rules = append(r.rules, rr)
 	}
 
 	return nil
@@ -97,8 +119,16 @@ func (r *ipResolver) Resolve() []net.Address {
 	return r.ip
 }
 
-// PickRoute implements routing.Router.
 func (r *Router) PickRoute(ctx context.Context) (string, error) {
+	rule, err := r.pickRouteInternal(ctx)
+	if err != nil {
+		return "", err
+	}
+	return rule.GetTag()
+}
+
+// PickRoute implements routing.Router.
+func (r *Router) pickRouteInternal(ctx context.Context) (*Rule, error) {
 	resolver := &ipResolver{
 		dns: r.dns,
 	}
@@ -113,12 +143,12 @@ func (r *Router) PickRoute(ctx context.Context) (string, error) {
 
 	for _, rule := range r.rules {
 		if rule.Apply(ctx) {
-			return rule.Tag, nil
+			return rule, nil
 		}
 	}
 
 	if outbound == nil || !outbound.Target.IsValid() {
-		return "", common.ErrNoClue
+		return nil, common.ErrNoClue
 	}
 
 	dest := outbound.Target
@@ -129,13 +159,13 @@ func (r *Router) PickRoute(ctx context.Context) (string, error) {
 			ctx = ContextWithResolveIPs(ctx, resolver)
 			for _, rule := range r.rules {
 				if rule.Apply(ctx) {
-					return rule.Tag, nil
+					return rule, nil
 				}
 			}
 		}
 	}
 
-	return "", common.ErrNoClue
+	return nil, common.ErrNoClue
 }
 
 // Start implements common.Runnable.
