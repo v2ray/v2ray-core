@@ -113,7 +113,7 @@ func targetFromContent(ctx context.Context) net.Destination {
 
 type MultiGeoIPMatcher struct {
 	matchers []*GeoIPMatcher
-	onSource bool
+	destFunc func(context.Context) net.Destination
 }
 
 func NewMultiGeoIPMatcher(geoips []*GeoIP, onSource bool) (*MultiGeoIPMatcher, error) {
@@ -126,30 +126,31 @@ func NewMultiGeoIPMatcher(geoips []*GeoIP, onSource bool) (*MultiGeoIPMatcher, e
 		matchers = append(matchers, matcher)
 	}
 
+	var destFunc func(context.Context) net.Destination
+	if onSource {
+		destFunc = sourceFromContext
+	} else {
+		destFunc = targetFromContent
+	}
+
 	return &MultiGeoIPMatcher{
 		matchers: matchers,
-		onSource: onSource,
+		destFunc: destFunc,
 	}, nil
 }
 
 func (m *MultiGeoIPMatcher) Apply(ctx context.Context) bool {
 	ips := make([]net.IP, 0, 4)
-	if resolver, ok := ResolvedIPsFromContext(ctx); ok {
+
+	dest := m.destFunc(ctx)
+
+	if dest.IsValid() && (dest.Address.Family().IsIPv4() || dest.Address.Family().IsIPv6()) {
+		ips = append(ips, dest.Address.IP())
+	} else if resolver, ok := ResolvedIPsFromContext(ctx); ok {
 		resolvedIPs := resolver.Resolve()
 		for _, rip := range resolvedIPs {
 			ips = append(ips, rip.IP())
 		}
-	}
-
-	var dest net.Destination
-	if m.onSource {
-		dest = sourceFromContext(ctx)
-	} else {
-		dest = targetFromContent(ctx)
-	}
-
-	if dest.IsValid() && (dest.Address.Family().IsIPv4() || dest.Address.Family().IsIPv6()) {
-		ips = append(ips, dest.Address.IP())
 	}
 
 	for _, ip := range ips {

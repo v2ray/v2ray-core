@@ -285,3 +285,56 @@ func TestChinaSites(t *testing.T) {
 		assert(matcher.ApplyDomain(strconv.Itoa(i)+".not-exists.com"), IsFalse)
 	}
 }
+
+func BenchmarkMultiGeoIPMatcher(b *testing.B) {
+	common.Must(sysio.CopyFile(platform.GetAssetLocation("geoip.dat"), filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", "release", "config", "geoip.dat")))
+
+	var geoips []*GeoIP
+
+	{
+		ips, err := loadGeoIP("CN")
+		common.Must(err)
+		geoips = append(geoips, &GeoIP{
+			CountryCode: "CN",
+			Cidr:        ips,
+		})
+	}
+
+	{
+		ips, err := loadGeoIP("JP")
+		common.Must(err)
+		geoips = append(geoips, &GeoIP{
+			CountryCode: "JP",
+			Cidr:        ips,
+		})
+	}
+
+	{
+		ips, err := loadGeoIP("CA")
+		common.Must(err)
+		geoips = append(geoips, &GeoIP{
+			CountryCode: "CA",
+			Cidr:        ips,
+		})
+	}
+
+	{
+		ips, err := loadGeoIP("US")
+		common.Must(err)
+		geoips = append(geoips, &GeoIP{
+			CountryCode: "US",
+			Cidr:        ips,
+		})
+	}
+
+	matcher, err := NewMultiGeoIPMatcher(geoips, false)
+	common.Must(err)
+
+	ctx := withOutbound(&session.Outbound{Target: net.TCPDestination(net.ParseAddress("8.8.8.8"), 80)})
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_ = matcher.Apply(ctx)
+	}
+}
