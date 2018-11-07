@@ -132,5 +132,6 @@ func (br *BalancingRule) Build(ohm outbound.Manager) (*Balancer, error) {
 	return &Balancer{
 		selectors: br.OutboundSelector,
 		strategy:  &RandomStrategy{},
+		ohm:       ohm,
 	}, nil
 }
