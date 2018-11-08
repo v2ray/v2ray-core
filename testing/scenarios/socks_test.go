@@ -231,7 +231,9 @@ func TestSocksBridageUDPWithRouting(t *testing.T) {
 			serial.ToTypedMessage(&router.Config{
 				Rule: []*router.RoutingRule{
 					{
-						Tag:        "out",
+						TargetTag: &router.RoutingRule_Tag{
+							Tag: "out",
+						},
 						InboundTag: []string{"socks"},
 					},
 				},

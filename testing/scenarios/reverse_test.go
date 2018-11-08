@@ -57,11 +57,15 @@ func TestReverseProxy(t *testing.T) {
 						Domain: []*router.Domain{
 							{Type: router.Domain_Full, Value: "test.v2ray.com"},
 						},
-						Tag: "portal",
+						TargetTag: &router.RoutingRule_Tag{
+							Tag: "portal",
+						},
 					},
 					{
 						InboundTag: []string{"external"},
-						Tag:        "portal",
+						TargetTag: &router.RoutingRule_Tag{
+							Tag: "portal",
+						},
 					},
 				},
 			}),
@@ -122,11 +126,15 @@ func TestReverseProxy(t *testing.T) {
 						Domain: []*router.Domain{
 							{Type: router.Domain_Full, Value: "test.v2ray.com"},
 						},
-						Tag: "reverse",
+						TargetTag: &router.RoutingRule_Tag{
+							Tag: "reverse",
+						},
 					},
 					{
 						InboundTag: []string{"bridge"},
-						Tag:        "freedom",
+						TargetTag: &router.RoutingRule_Tag{
+							Tag: "freedom",
+						},
 					},
 				},
 			}),
@@ -256,11 +264,15 @@ func TestReverseProxyLongRunning(t *testing.T) {
 						Domain: []*router.Domain{
 							{Type: router.Domain_Full, Value: "test.v2ray.com"},
 						},
-						Tag: "portal",
+						TargetTag: &router.RoutingRule_Tag{
+							Tag: "portal",
+						},
 					},
 					{
 						InboundTag: []string{"external"},
-						Tag:        "portal",
+						TargetTag: &router.RoutingRule_Tag{
+							Tag: "portal",
+						},
 					},
 				},
 			}),
@@ -335,11 +347,15 @@ func TestReverseProxyLongRunning(t *testing.T) {
 						Domain: []*router.Domain{
 							{Type: router.Domain_Full, Value: "test.v2ray.com"},
 						},
-						Tag: "reverse",
+						TargetTag: &router.RoutingRule_Tag{
+							Tag: "reverse",
+						},
 					},
 					{
 						InboundTag: []string{"bridge"},
-						Tag:        "freedom",
+						TargetTag: &router.RoutingRule_Tag{
+							Tag: "freedom",
+						},
 					},
 				},
 			}),

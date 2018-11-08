@@ -46,7 +46,9 @@ func TestResolveIP(t *testing.T) {
 								Prefix: 8,
 							},
 						},
-						Tag: "direct",
+						TargetTag: &router.RoutingRule_Tag{
+							Tag: "direct",
+						},
 					},
 				},
 			}),

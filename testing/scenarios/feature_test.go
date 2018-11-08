@@ -475,7 +475,9 @@ func TestBlackhole(t *testing.T) {
 			serial.ToTypedMessage(&router.Config{
 				Rule: []*router.RoutingRule{
 					{
-						Tag:       "blocked",
+						TargetTag: &router.RoutingRule_Tag{
+							Tag: "blocked",
+						},
 						PortRange: net.SinglePortRange(dest2.Port),
 					},
 				},
@@ -714,10 +716,14 @@ func TestDomainSniffing(t *testing.T) {
 			serial.ToTypedMessage(&router.Config{
 				Rule: []*router.RoutingRule{
 					{
-						Tag:        "direct",
+						TargetTag: &router.RoutingRule_Tag{
+							Tag: "direct",
+						},
 						InboundTag: []string{"snif"},
 					}, {
-						Tag:        "redir",
+						TargetTag: &router.RoutingRule_Tag{
+							Tag: "redir",
+						},
 						InboundTag: []string{"http"},
 					},
 				},
