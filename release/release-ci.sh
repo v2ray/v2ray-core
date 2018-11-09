@@ -58,6 +58,10 @@ sed -i "s/\(version *= *\"\).*\(\"\)/\1$VERN\2/g" core.go
 sed -i "s/\(build *= *\"\).*\(\"\)/\1$BUILDN\2/g" core.go
 popd
 
+# Update geoip.dat
+GEOIP_TAG=$(curl --silent "https://api.github.com/repos/v2ray/geoip/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+curl -L -o release/config/geoip.dat "https://github.com/v2ray/geoip/releases/download/${GEOIP_TAG}/geoip.dat"
+
 # Take a snapshot of all required source code
 pushd $GOPATH/src
 zip -9 -r /v2/build/src_all.zip * -x '*.git*'
