@@ -4,7 +4,6 @@ import (
 	"crypto/cipher"
 	"io"
 	"math/rand"
-	"time"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
@@ -227,7 +226,6 @@ type AuthenticationWriter struct {
 	sizeParser   ChunkSizeEncoder
 	transferType protocol.TransferType
 	padding      PaddingLengthGenerator
-	randReader   *rand.Rand
 }
 
 func NewAuthenticationWriter(auth Authenticator, sizeParser ChunkSizeEncoder, writer io.Writer, transferType protocol.TransferType, padding PaddingLengthGenerator) *AuthenticationWriter {
@@ -239,7 +237,6 @@ func NewAuthenticationWriter(auth Authenticator, sizeParser ChunkSizeEncoder, wr
 	}
 	if padding != nil {
 		w.padding = padding
-		w.randReader = rand.New(rand.NewSource(time.Now().Unix()))
 	}
 	return w
 }
@@ -264,7 +261,8 @@ func (w *AuthenticationWriter) seal(b *buf.Buffer) (*buf.Buffer, error) {
 	}
 	if paddingSize > 0 {
 		// With size of the chunk and padding length encrypted, the content of padding doesn't matter much.
-		common.Must2(eb.ReadFullFrom(w.randReader, int32(paddingSize)))
+		paddingBytes := eb.Extend(paddingSize)
+		common.Must2(rand.Read(paddingBytes))
 	}
 
 	return eb, nil
