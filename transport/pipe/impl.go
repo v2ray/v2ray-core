@@ -3,6 +3,7 @@ package pipe
 import (
 	"errors"
 	"io"
+	"runtime"
 	"sync"
 	"time"
 
@@ -125,6 +126,9 @@ func (p *pipe) WriteMultiBuffer(mb buf.MultiBuffer) error {
 		switch {
 		case err == nil:
 			p.readSignal.Signal()
+
+			// Yield current goroutine. Hopefully the reading counterpart can pick up the payload.
+			runtime.Gosched()
 			return nil
 		case err == errBufferFull && p.discardOverflow:
 			mb.Release()
