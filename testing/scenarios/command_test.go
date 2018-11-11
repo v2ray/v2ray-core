@@ -131,6 +131,7 @@ func TestCommanderRemoveHandler(t *testing.T) {
 
 	cmdConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", cmdPort), grpc.WithInsecure(), grpc.WithBlock())
 	assert(err, IsNil)
+	defer cmdConn.Close()
 
 	hsClient := command.NewHandlerServiceClient(cmdConn)
 	resp, err := hsClient.RemoveInbound(context.Background(), &command.RemoveInboundRequest{
@@ -311,6 +312,7 @@ func TestCommanderAddRemoveUser(t *testing.T) {
 
 	cmdConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", cmdPort), grpc.WithInsecure(), grpc.WithBlock())
 	assert(err, IsNil)
+	defer cmdConn.Close()
 
 	hsClient := command.NewHandlerServiceClient(cmdConn)
 	resp, err := hsClient.AlterInbound(context.Background(), &command.AlterInboundRequest{
@@ -524,6 +526,7 @@ func TestCommanderStats(t *testing.T) {
 
 	cmdConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", cmdPort), grpc.WithInsecure(), grpc.WithBlock())
 	assert(err, IsNil)
+	defer cmdConn.Close()
 
 	const name = "user>>>test>>>traffic>>>uplink"
 	sClient := statscmd.NewStatsServiceClient(cmdConn)
