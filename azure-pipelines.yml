@@ -20,7 +20,7 @@ jobs:
     workingDirectory: '$(system.defaultWorkingDirectory)'
     displayName: 'Test'
 
-- job: Linux Coverage
+- job: Linux_Coverage
   dependsOn: Linux
 
   pool:
