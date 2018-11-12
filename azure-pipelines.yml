@@ -23,6 +23,7 @@ jobs:
 
   variables:
     GOPATH: '$(system.defaultWorkingDirectory)'
+    CODECOV_TOKEN: '$(coverage.token)'
 
   steps:
   - checkout: none
