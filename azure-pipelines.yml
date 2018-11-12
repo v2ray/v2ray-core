@@ -16,6 +16,7 @@ jobs:
 
 - job: linux_coverage
   dependsOn: linux
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
   timeoutInMinutes: 30
 
   pool:

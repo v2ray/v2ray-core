@@ -10,6 +10,9 @@ jobs:
 
   steps:
   - checkout: none
+  - task: GoTool@0
+      inputs:
+        version: '1.11.2'
   - script: |
       go version
       go get -v -t -d v2ray.com/core/...
