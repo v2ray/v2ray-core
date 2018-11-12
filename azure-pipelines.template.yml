@@ -17,6 +17,6 @@ jobs:
     workingDirectory: '$(system.defaultWorkingDirectory)'
     displayName: 'Fetch sources'
   - script: |
-      go test -p 1 -tags json -v v2ray.com/core/...
+      go test -p 1 -timeout 30m -v v2ray.com/core/...
     workingDirectory: '$(system.defaultWorkingDirectory)'
     displayName: 'Test'
