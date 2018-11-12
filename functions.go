@@ -22,6 +22,8 @@ func CreateObject(v *Instance, config interface{}) (interface{}, error) {
 // By default V2Ray only support config in protobuf format, i.e., configFormat = "protobuf". Caller need to load other packages to add JSON support.
 func StartInstance(configFormat string, configBytes []byte) (*Instance, error) {
 	var mb buf.MultiBuffer
+	defer mb.Release()
+
 	common.Must2(mb.Write(configBytes))
 	config, err := LoadConfig(configFormat, "", &mb)
 	if err != nil {
