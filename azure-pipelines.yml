@@ -1,27 +1,22 @@
 jobs:
-- job: Linux
+- template: azure-pipelines.template.yml
+  parameters:
+    name: linux
+    vmImage: 'ubuntu-16.04'
 
-  pool:
-    vmImage: 'Ubuntu 16.04'
+- template: azure-pipelines.template.yml
+  parameters:
+    name: windows
+    vmImage: 'vs2017-win2016'
 
-  variables:
-    GOPATH: '$(system.defaultWorkingDirectory)'
+- template: azure-pipelines.template.yml
+  parameters:
+    name: macos
+    vmImage: 'macOS-10.13'
 
-  steps:
-  - checkout: none
-  - script: |
-      go version
-      go get -v -t -d v2ray.com/core/...
-      go get -v -t -d v2ray.com/ext/...
-    workingDirectory: '$(system.defaultWorkingDirectory)'
-    displayName: 'Fetch sources'
-  - script: |
-      go test -p 1 -tags json -v v2ray.com/core/...
-    workingDirectory: '$(system.defaultWorkingDirectory)'
-    displayName: 'Test'
-
-- job: Linux_Coverage
-  dependsOn: Linux
+- job: linux_coverage
+  dependsOn: linux
+  timeoutInMinutes: 30
 
   pool:
     vmImage: 'Ubuntu 16.04'
@@ -42,45 +37,3 @@ jobs:
       bash ./testing/coverage/coverall
     workingDirectory: '$(system.defaultWorkingDirectory)'
     displayName: 'Coverage'
-
-- job: MacOS
-
-  pool:
-    vmImage: 'macOS-10.13'
-
-  variables:
-    GOPATH: '$(system.defaultWorkingDirectory)'
-
-  steps:
-  - checkout: none
-  - script: |
-      go version
-      go get -v -t -d v2ray.com/core/...
-      go get -v -t -d v2ray.com/ext/...
-    workingDirectory: '$(system.defaultWorkingDirectory)'
-    displayName: 'Fetch sources'
-  - script: |
-      go test -p 1 -tags json -v v2ray.com/core/...
-    workingDirectory: '$(system.defaultWorkingDirectory)'
-    displayName: 'Test'
-
-- job: Windows
-
-  pool:
-    vmImage: 'vs2017-win2016'
-
-  variables:
-    GOPATH: '$(system.defaultWorkingDirectory)'
-
-  steps:
-  - checkout: none
-  - script: |
-      go version
-      go get -v -t -d v2ray.com/core/...
-      go get -v -t -d v2ray.com/ext/...
-    workingDirectory: '$(system.defaultWorkingDirectory)'
-    displayName: 'Fetch sources'
-  - script: |
-      go test -p 1 -tags json -v v2ray.com/core/...
-    workingDirectory: '$(system.defaultWorkingDirectory)'
-    displayName: 'Test'

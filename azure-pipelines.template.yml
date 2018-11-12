@@ -1,0 +1,22 @@
+jobs:
+- job: ${{ parameters.name }}
+  timeoutInMinutes: 30
+
+  pool:
+    vmImage: ${{ parameters.vmImage }}
+
+  variables:
+    GOPATH: '$(system.defaultWorkingDirectory)'
+
+  steps:
+  - checkout: none
+  - script: |
+      go version
+      go get -v -t -d v2ray.com/core/...
+      go get -v -t -d v2ray.com/ext/...
+    workingDirectory: '$(system.defaultWorkingDirectory)'
+    displayName: 'Fetch sources'
+  - script: |
+      go test -p 1 -tags json -v v2ray.com/core/...
+    workingDirectory: '$(system.defaultWorkingDirectory)'
+    displayName: 'Test'

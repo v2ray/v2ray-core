@@ -1,9 +1,5 @@
 #!/bin/bash
 
-if [ -n "${TRAVIS_TAG}" ]; then
-  exit 0
-fi
-
 FAIL=0
 
 V2RAY_OUT=${GOPATH}/out/v2ray
