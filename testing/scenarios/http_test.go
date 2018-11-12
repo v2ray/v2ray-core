@@ -10,11 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"v2ray.com/core/common"
-	"v2ray.com/core/common/buf"
-
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/proxy/freedom"
