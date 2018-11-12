@@ -3,26 +3,68 @@
 # Add steps that test, save build artifacts, deploy, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/go
 
-pool:
-  vmImage: 'Ubuntu 16.04'
+jobs:
+- job: Linux
 
-variables:
-  GOPATH: '$(system.defaultWorkingDirectory)/gopath' # Go workspace path
-  modulePath: '$(GOPATH)/src/v2ray.com/core' # Path to the module's code
+  pool:
+    vmImage: 'Ubuntu 16.04'
 
-steps:
-- script: |
-    mkdir -p '$(modulePath)'
-    shopt -s extglob
-    mv !(gopath) '$(modulePath)'
-    echo '##vso[task.prependpath]$(GOBIN)'
-    echo '##vso[task.prependpath]$(GOROOT)/bin'
-  displayName: 'Set up the Go workspace'
+  variables:
+    GOPATH: '$(system.defaultWorkingDirectory)'
 
-- script: |
-    set -x
-    go version
-    go get -v -t -d ./...
-    go test -p 1 -tags json -v v2ray.com/core/...
-  workingDirectory: '$(modulePath)'
-  displayName: 'Get dependencies, then build'
+  steps:
+  - checkout: none
+  - script: |
+      go version
+      go get -v -t -d v2ray.com/core/...
+      go get -v -t -d v2ray.com/ext/...
+    workingDirectory: '$(system.defaultWorkingDirectory)'
+    displayName: 'Fetch sources'
+  - script: |
+      go test -p 1 -tags json -v v2ray.com/core/...
+    workingDirectory: '$(system.defaultWorkingDirectory)'
+    displayName: 'Test'
+
+jobs:
+- job: MacOS
+
+  pool:
+    vmImage: 'macOS-10.13'
+
+  variables:
+    GOPATH: '$(system.defaultWorkingDirectory)'
+
+  steps:
+  - checkout: none
+  - script: |
+      go version
+      go get -v -t -d v2ray.com/core/...
+      go get -v -t -d v2ray.com/ext/...
+    workingDirectory: '$(system.defaultWorkingDirectory)'
+    displayName: 'Fetch sources'
+  - script: |
+      go test -p 1 -tags json -v v2ray.com/core/...
+    workingDirectory: '$(system.defaultWorkingDirectory)'
+    displayName: 'Test'
+
+jobs:
+- job: Windows
+
+  pool:
+    vmImage: 'vs2017-win2016'
+
+  variables:
+    GOPATH: '$(system.defaultWorkingDirectory)'
+
+  steps:
+  - checkout: none
+  - script: |
+      go version
+      go get -v -t -d v2ray.com/core/...
+      go get -v -t -d v2ray.com/ext/...
+    workingDirectory: '$(system.defaultWorkingDirectory)'
+    displayName: 'Fetch sources'
+  - script: |
+      go test -p 1 -tags json -v v2ray.com/core/...
+    workingDirectory: '$(system.defaultWorkingDirectory)'
+    displayName: 'Test'
