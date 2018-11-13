@@ -7,6 +7,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
+// ToTypeMessage converts a proto Message into TypedMessage.
 func ToTypedMessage(message proto.Message) *TypedMessage {
 	if message == nil {
 		return nil
@@ -18,10 +19,12 @@ func ToTypedMessage(message proto.Message) *TypedMessage {
 	}
 }
 
+// GetMessageType returns the name of this proto Message.
 func GetMessageType(message proto.Message) string {
 	return proto.MessageName(message)
 }
 
+// GetInstance creates a new instance of the message with messageType.
 func GetInstance(messageType string) (interface{}, error) {
 	mType := proto.MessageType(messageType)
 	if mType == nil || mType.Elem() == nil {
@@ -30,6 +33,7 @@ func GetInstance(messageType string) (interface{}, error) {
 	return reflect.New(mType.Elem()).Interface(), nil
 }
 
+// GetInstance converts current TypedMessage into a proto Message.
 func (v *TypedMessage) GetInstance() (proto.Message, error) {
 	instance, err := GetInstance(v.Type)
 	if err != nil {
