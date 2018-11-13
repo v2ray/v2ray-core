@@ -70,8 +70,8 @@ func TestRandom(t *testing.T) {
 func TestEquals(t *testing.T) {
 	assert := With(t)
 
-	var uuid *UUID = nil
-	var uuid2 *UUID = nil
+	var uuid *UUID
+	var uuid2 *UUID
 	assert(uuid.Equals(uuid2), IsTrue)
 
 	uuid3 := New()

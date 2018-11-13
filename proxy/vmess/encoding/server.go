@@ -214,7 +214,7 @@ func (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 	if request.Option.Has(protocol.RequestOptionChunkMasking) {
 		sizeParser = NewShakeSizeParser(s.requestBodyIV[:])
 	}
-	var padding crypto.PaddingLengthGenerator = nil
+	var padding crypto.PaddingLengthGenerator
 	if request.Option.Has(protocol.RequestOptionGlobalPadding) {
 		padding = sizeParser.(crypto.PaddingLengthGenerator)
 	}
@@ -293,7 +293,7 @@ func (s *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 	if request.Option.Has(protocol.RequestOptionChunkMasking) {
 		sizeParser = NewShakeSizeParser(s.responseBodyIV[:])
 	}
-	var padding crypto.PaddingLengthGenerator = nil
+	var padding crypto.PaddingLengthGenerator
 	if request.Option.Has(protocol.RequestOptionGlobalPadding) {
 		padding = sizeParser.(crypto.PaddingLengthGenerator)
 	}
