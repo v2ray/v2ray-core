@@ -99,7 +99,7 @@ func (r *ReadVReader) readMulti() (MultiBuffer, error) {
 		if nBytes <= 0 {
 			break
 		}
-		end := int32(nBytes)
+		end := nBytes
 		if end > Size {
 			end = Size
 		}

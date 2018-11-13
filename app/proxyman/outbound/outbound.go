@@ -135,6 +135,7 @@ func (m *Manager) RemoveHandler(ctx context.Context, tag string) error {
 	return nil
 }
 
+// Select implements outbound.HandlerSelector.
 func (m *Manager) Select(selectors []string) []string {
 	m.access.RLock()
 	defer m.access.RUnlock()

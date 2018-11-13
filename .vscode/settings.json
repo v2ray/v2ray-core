@@ -10,7 +10,8 @@
     "--disable=gas",
     "--disable=gocyclo",
     "--disable=gosec",
-    "--disable=interfacer"
+    "--disable=interfacer",
+    "--deadline=5m"
   ],
   "go.formatTool": "goimports",
 

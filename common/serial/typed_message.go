@@ -7,7 +7,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-// ToTypeMessage converts a proto Message into TypedMessage.
+// ToTypedMessage converts a proto Message into TypedMessage.
 func ToTypedMessage(message proto.Message) *TypedMessage {
 	if message == nil {
 		return nil

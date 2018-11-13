@@ -16,6 +16,7 @@ import (
 	"v2ray.com/core/features/routing"
 )
 
+// Server is a DNS rely server.
 type Server struct {
 	sync.Mutex
 	hosts          *StaticHosts
@@ -25,6 +26,7 @@ type Server struct {
 	domainIndexMap map[uint32]uint32
 }
 
+// New creates a new DNS server with given configuration.
 func New(ctx context.Context, config *Config) (*Server, error) {
 	server := &Server{
 		servers: make([]NameServerInterface, 0, len(config.NameServers)+len(config.NameServer)),
@@ -55,9 +57,9 @@ func New(ctx context.Context, config *Config) (*Server, error) {
 				idx := len(server.servers)
 				server.servers = append(server.servers, nil)
 
-				core.RequireFeatures(ctx, func(d routing.Dispatcher) {
+				common.Must(core.RequireFeatures(ctx, func(d routing.Dispatcher) {
 					server.servers[idx] = NewClassicNameServer(dest, d, server.clientIP)
-				})
+				}))
 			}
 		}
 		return len(server.servers) - 1

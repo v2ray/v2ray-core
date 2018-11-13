@@ -7,6 +7,7 @@ import (
 	"v2ray.com/core/features"
 )
 
+// StaticHosts represents static domain-ip mapping in DNS server.
 type StaticHosts struct {
 	ips      map[uint32][]net.IP
 	matchers *strmatcher.MatcherGroup
@@ -31,6 +32,7 @@ func toStrMatcher(t DomainMatchingType, domain string) (strmatcher.Matcher, erro
 	return matcher, nil
 }
 
+// NewStaticHosts creates a new StaticHosts instance.
 func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDomain) (*StaticHosts, error) {
 	g := new(strmatcher.MatcherGroup)
 	sh := &StaticHosts{
@@ -71,6 +73,7 @@ func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDoma
 	return sh, nil
 }
 
+// LookupIP returns IP address for the given domain, if exists in this StaticHosts.
 func (h *StaticHosts) LookupIP(domain string) []net.IP {
 	id := h.matchers.Match(domain)
 	if id == 0 {

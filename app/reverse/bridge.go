@@ -14,6 +14,7 @@ import (
 	"v2ray.com/core/transport/pipe"
 )
 
+// Bridge is a component in reverse proxy, that relays connections from Portal to local address.
 type Bridge struct {
 	dispatcher  routing.Dispatcher
 	tag         string
@@ -22,6 +23,7 @@ type Bridge struct {
 	monitorTask *task.Periodic
 }
 
+// NewBridge creates a new Bridge instance.
 func NewBridge(config *BridgeConfig, dispatcher routing.Dispatcher) (*Bridge, error) {
 	if len(config.Tag) == 0 {
 		return nil, newError("bridge tag is empty")

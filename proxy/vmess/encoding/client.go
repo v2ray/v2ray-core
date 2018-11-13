@@ -21,10 +21,10 @@ import (
 )
 
 func hashTimestamp(h hash.Hash, t protocol.Timestamp) []byte {
-	serial.WriteUint64(h, uint64(t))
-	serial.WriteUint64(h, uint64(t))
-	serial.WriteUint64(h, uint64(t))
-	serial.WriteUint64(h, uint64(t))
+	common.Must2(serial.WriteUint64(h, uint64(t)))
+	common.Must2(serial.WriteUint64(h, uint64(t)))
+	common.Must2(serial.WriteUint64(h, uint64(t)))
+	common.Must2(serial.WriteUint64(h, uint64(t)))
 	return h.Sum(nil)
 }
 
