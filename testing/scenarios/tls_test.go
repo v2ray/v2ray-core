@@ -500,25 +500,33 @@ func TestTLSOverWebSocket(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
+	defer CloseAllServers(servers)
 
-	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-		IP:   []byte{127, 0, 0, 1},
-		Port: int(clientPort),
-	})
-	assert(err, IsNil)
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 
-	payload := make([]byte, 10240*1024)
-	rand.Read(payload)
-	nBytes, err := conn.Write([]byte(payload))
-	assert(err, IsNil)
-	assert(nBytes, Equals, len(payload))
+			conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
+				IP:   []byte{127, 0, 0, 1},
+				Port: int(clientPort),
+			})
+			common.Must(err)
 
-	response := readFrom(conn, time.Second*20, len(payload))
-	assert(response, Equals, xor([]byte(payload)))
-	assert(conn.Close(), IsNil)
+			payload := make([]byte, 10240*1024)
+			rand.Read(payload)
+			nBytes, err := conn.Write([]byte(payload))
+			assert(err, IsNil)
+			assert(nBytes, Equals, len(payload))
 
-	CloseAllServers(servers)
+			response := readFrom(conn, time.Second*20, len(payload))
+			assert(response, Equals, xor([]byte(payload)))
+			assert(conn.Close(), IsNil)
+		}()
+	}
+	wg.Wait()
 }
 
 func TestHTTP2(t *testing.T) {
