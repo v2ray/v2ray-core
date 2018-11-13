@@ -1,5 +1,5 @@
 {
-  "inbound": {
+  "inbounds": [{
     "port": 10086,
     "protocol": "vmess",
     "settings": {
@@ -11,28 +11,22 @@
         }
       ]
     }
-  },
-  "outbound": {
+  }],
+  "outbounds": [{
     "protocol": "freedom",
     "settings": {}
-  },
-  "outboundDetour": [
-    {
-      "protocol": "blackhole",
-      "settings": {},
-      "tag": "blocked"
-    }
-  ],
+  },{
+    "protocol": "blackhole",
+    "settings": {},
+    "tag": "blocked"
+  }],
   "routing": {
-    "strategy": "rules",
-    "settings": {
-      "rules": [
-        {
-          "type": "field",
-          "ip": ["geoip:private"],
-          "outboundTag": "blocked"
-        }
-      ]
-    }
+    "rules": [
+      {
+        "type": "field",
+        "ip": ["geoip:private"],
+        "outboundTag": "blocked"
+      }
+    ]
   }
 }
