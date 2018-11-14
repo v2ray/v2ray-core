@@ -120,6 +120,9 @@ func (f *FrameMetadata) UnmarshalFromBuffer(b *buf.Buffer) error {
 	f.Target.Network = net.Network_Unknown
 
 	if f.SessionStatus == SessionStatusNew {
+		if b.Len() < 8 {
+			return newError("insufficient buffer: ", b.Len())
+		}
 		network := TargetNetwork(b.Byte(4))
 		b.Advance(5)
 
