@@ -14,10 +14,10 @@ func TestMultiBufferRead(t *testing.T) {
 	assert := With(t)
 
 	b1 := New()
-	b1.WriteBytes('a', 'b')
+	b1.WriteString("ab")
 
 	b2 := New()
-	b2.WriteBytes('c', 'd')
+	b2.WriteString("cd")
 	mb := NewMultiBufferValue(b1, b2)
 
 	bs := make([]byte, 32)
@@ -32,7 +32,7 @@ func TestMultiBufferAppend(t *testing.T) {
 
 	var mb MultiBuffer
 	b := New()
-	b.WriteBytes('a', 'b')
+	b.WriteString("ab")
 	mb.Append(b)
 	assert(mb.Len(), Equals, int32(2))
 }

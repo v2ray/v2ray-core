@@ -65,14 +65,15 @@ func (c *ClientSession) EncodeRequestHeader(header *protocol.RequestHeader, writ
 	buffer := buf.New()
 	defer buffer.Release()
 
-	common.Must2(buffer.WriteBytes(Version))
+	common.Must(buffer.WriteByte(Version))
 	common.Must2(buffer.Write(c.requestBodyIV[:]))
 	common.Must2(buffer.Write(c.requestBodyKey[:]))
-	common.Must2(buffer.WriteBytes(c.responseHeader, byte(header.Option)))
+	common.Must(buffer.WriteByte(c.responseHeader))
+	common.Must(buffer.WriteByte(byte(header.Option)))
 
 	padingLen := dice.Roll(16)
 	security := byte(padingLen<<4) | byte(header.Security)
-	common.Must2(buffer.WriteBytes(security, byte(0), byte(header.Command)))
+	common.Must2(buffer.Write([]byte{security, byte(0), byte(header.Command)}))
 
 	if header.Command != protocol.RequestCommandMux {
 		if err := addrParser.WriteAddressPort(buffer, header.Address, header.Port); err != nil {

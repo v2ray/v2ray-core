@@ -27,7 +27,7 @@ func (*NoneResponse) WriteTo(buf.Writer) int32 { return 0 }
 // WriteTo implements ResponseConfig.WriteTo().
 func (*HTTPResponse) WriteTo(writer buf.Writer) int32 {
 	b := buf.New()
-	common.Must2(b.Write([]byte(http403response)))
+	common.Must2(b.WriteString(http403response))
 	n := b.Len()
 	writer.WriteMultiBuffer(buf.NewMultiBufferValue(b))
 	return n

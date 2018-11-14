@@ -103,7 +103,7 @@ func TestPipeWriteMultiThread(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			b := buf.New()
-			b.WriteBytes('a', 'b', 'c', 'd')
+			b.WriteString("abcd")
 			pWriter.WriteMultiBuffer(buf.NewMultiBufferValue(b))
 			wg.Done()
 		}()

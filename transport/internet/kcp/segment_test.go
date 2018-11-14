@@ -50,7 +50,7 @@ func Test1ByteDataSegment(t *testing.T) {
 		Number:      4,
 		SendingNext: 5,
 	}
-	seg.Data().WriteBytes('a')
+	seg.Data().WriteByte('a')
 
 	nBytes := seg.ByteSize()
 	bytes := make([]byte, nBytes)

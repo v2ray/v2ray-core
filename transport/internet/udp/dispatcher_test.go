@@ -63,7 +63,7 @@ func TestSameDestinationDispatching(t *testing.T) {
 	dest := net.UDPDestination(net.LocalHostIP, 53)
 
 	b := buf.New()
-	b.WriteBytes('a', 'b', 'c', 'd')
+	b.WriteString("abcd")
 
 	var msgCount uint32
 	dispatcher := NewDispatcher(td, func(ctx context.Context, payload *buf.Buffer) {

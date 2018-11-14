@@ -255,7 +255,7 @@ func writeSocks5Response(writer io.Writer, errCode byte, address net.Address, po
 	buffer := buf.New()
 	defer buffer.Release()
 
-	common.Must2(buffer.WriteBytes(socks5Version, errCode, 0x00 /* reserved */))
+	common.Must2(buffer.Write([]byte{socks5Version, errCode, 0x00 /* reserved */}))
 	if err := addrParser.WriteAddressPort(buffer, address, port); err != nil {
 		return err
 	}
@@ -267,7 +267,8 @@ func writeSocks4Response(writer io.Writer, errCode byte, address net.Address, po
 	buffer := buf.New()
 	defer buffer.Release()
 
-	common.Must2(buffer.WriteBytes(0x00, errCode))
+	common.Must(buffer.WriteByte(0x00))
+	common.Must(buffer.WriteByte(errCode))
 	common.Must2(serial.WriteUint16(buffer, port.Value()))
 	common.Must2(buffer.Write(address.IP()))
 	return buf.WriteAllBytes(writer, buffer.Bytes())
@@ -300,7 +301,7 @@ func DecodeUDPPacket(packet *buf.Buffer) (*protocol.RequestHeader, error) {
 
 func EncodeUDPPacket(request *protocol.RequestHeader, data []byte) (*buf.Buffer, error) {
 	b := buf.New()
-	common.Must2(b.WriteBytes(0, 0, 0 /* Fragment */))
+	common.Must2(b.Write([]byte{0, 0, 0 /* Fragment */}))
 	if err := addrParser.WriteAddressPort(b, request.Address, request.Port); err != nil {
 		b.Release()
 		return nil, err
@@ -362,14 +363,15 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 	b := buf.New()
 	defer b.Release()
 
-	common.Must2(b.WriteBytes(socks5Version, 0x01, authByte))
+	common.Must2(b.Write([]byte{socks5Version, 0x01, authByte}))
 	if authByte == authPassword {
 		account := request.User.Account.(*Account)
 
-		common.Must2(b.WriteBytes(0x01, byte(len(account.Username))))
-		common.Must2(b.Write([]byte(account.Username)))
-		common.Must2(b.WriteBytes(byte(len(account.Password))))
-		common.Must2(b.Write([]byte(account.Password)))
+		common.Must(b.WriteByte(0x01))
+		common.Must(b.WriteByte(byte(len(account.Username))))
+		common.Must2(b.WriteString(account.Username))
+		common.Must(b.WriteByte(byte(len(account.Password))))
+		common.Must2(b.WriteString(account.Password))
 	}
 
 	if err := buf.WriteAllBytes(writer, b.Bytes()); err != nil {
@@ -404,7 +406,7 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 	if request.Command == protocol.RequestCommandUDP {
 		command = byte(cmdUDPPort)
 	}
-	common.Must2(b.WriteBytes(socks5Version, command, 0x00 /* reserved */))
+	common.Must2(b.Write([]byte{socks5Version, command, 0x00 /* reserved */}))
 	if err := addrParser.WriteAddressPort(b, request.Address, request.Port); err != nil {
 		return nil, err
 	}

@@ -17,9 +17,9 @@ func TestBytesReaderWriteTo(t *testing.T) {
 	pReader, pWriter := pipe.New(pipe.WithSizeLimit(1024))
 	reader := &BufferedReader{Reader: pReader}
 	b1 := New()
-	b1.WriteBytes('a', 'b', 'c')
+	b1.WriteString("abc")
 	b2 := New()
-	b2.WriteBytes('e', 'f', 'g')
+	b2.WriteString("efg")
 	assert(pWriter.WriteMultiBuffer(NewMultiBufferValue(b1, b2)), IsNil)
 	pWriter.Close()
 
@@ -44,9 +44,9 @@ func TestBytesReaderMultiBuffer(t *testing.T) {
 	pReader, pWriter := pipe.New(pipe.WithSizeLimit(1024))
 	reader := &BufferedReader{Reader: pReader}
 	b1 := New()
-	b1.WriteBytes('a', 'b', 'c')
+	b1.WriteString("abc")
 	b2 := New()
-	b2.WriteBytes('e', 'f', 'g')
+	b2.WriteString("efg")
 	assert(pWriter.WriteMultiBuffer(NewMultiBufferValue(b1, b2)), IsNil)
 	pWriter.Close()
 

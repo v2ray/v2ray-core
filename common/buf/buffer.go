@@ -139,11 +139,6 @@ func (b *Buffer) Write(data []byte) (int, error) {
 	return nBytes, nil
 }
 
-// WriteBytes appends one or more bytes to the end of the buffer.
-func (b *Buffer) WriteBytes(bytes ...byte) (int, error) {
-	return b.Write(bytes)
-}
-
 // WriteByte writes a single byte into the buffer.
 func (b *Buffer) WriteByte(v byte) error {
 	if b.IsFull() {

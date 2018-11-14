@@ -96,3 +96,63 @@ func BenchmarkNewBuffer(b *testing.B) {
 		buffer.Release()
 	}
 }
+
+func BenchmarkWrite2(b *testing.B) {
+	buffer := New()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = buffer.Write([]byte{'a', 'b'})
+		buffer.Clear()
+	}
+}
+
+func BenchmarkWrite8(b *testing.B) {
+	buffer := New()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = buffer.Write([]byte{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'})
+		buffer.Clear()
+	}
+}
+
+func BenchmarkWrite32(b *testing.B) {
+	buffer := New()
+	payload := make([]byte, 32)
+	rand.Read(payload)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _ = buffer.Write(payload)
+		buffer.Clear()
+	}
+}
+
+func BenchmarkWriteByte2(b *testing.B) {
+	buffer := New()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = buffer.WriteByte('a')
+		_ = buffer.WriteByte('b')
+		buffer.Clear()
+	}
+}
+
+func BenchmarkWriteByte8(b *testing.B) {
+	buffer := New()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = buffer.WriteByte('a')
+		_ = buffer.WriteByte('b')
+		_ = buffer.WriteByte('c')
+		_ = buffer.WriteByte('d')
+		_ = buffer.WriteByte('e')
+		_ = buffer.WriteByte('f')
+		_ = buffer.WriteByte('g')
+		_ = buffer.WriteByte('h')
+		buffer.Clear()
+	}
+}
