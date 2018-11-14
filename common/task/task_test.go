@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"v2ray.com/core/common"
 	. "v2ray.com/core/common/task"
 	. "v2ray.com/ext/assert"
 )
@@ -40,4 +41,33 @@ func TestExecuteParallelContextCancel(t *testing.T) {
 	}))()
 
 	assert(err.Error(), HasSubstring, "canceled")
+}
+
+func BenchmarkExecuteOne(b *testing.B) {
+	noop := func() error {
+		return nil
+	}
+	for i := 0; i < b.N; i++ {
+		common.Must(Run(Parallel(noop))())
+	}
+}
+
+func BenchmarkExecuteTwo(b *testing.B) {
+	noop := func() error {
+		return nil
+	}
+	for i := 0; i < b.N; i++ {
+		common.Must(Run(Parallel(noop, noop))())
+	}
+}
+
+func BenchmarkExecuteContext(b *testing.B) {
+	noop := func() error {
+		return nil
+	}
+	background := context.Background()
+
+	for i := 0; i < b.N; i++ {
+		common.Must(Run(WithContext(background), Parallel(noop, noop))())
+	}
 }
