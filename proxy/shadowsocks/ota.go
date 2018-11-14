@@ -72,7 +72,7 @@ func NewChunkReader(reader io.Reader, auth *Authenticator) *ChunkReader {
 func (v *ChunkReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	size, err := serial.ReadUint16(v.reader)
 	if err != nil {
-		return nil, newError("failed to read size")
+		return nil, newError("failed to read size").Base(err)
 	}
 	size += AuthSize
 
