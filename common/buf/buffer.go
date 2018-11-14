@@ -144,6 +144,16 @@ func (b *Buffer) WriteBytes(bytes ...byte) (int, error) {
 	return b.Write(bytes)
 }
 
+// WriteByte writes a single byte into the buffer.
+func (b *Buffer) WriteByte(v byte) error {
+	if b.IsFull() {
+		return newError("buffer full")
+	}
+	b.v[b.end] = v
+	b.end++
+	return nil
+}
+
 // WriteString implements io.StringWriter.
 func (b *Buffer) WriteString(s string) (int, error) {
 	return b.Write([]byte(s))

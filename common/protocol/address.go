@@ -246,7 +246,7 @@ func (p *addressParser) writeAddress(writer io.Writer, address net.Address) erro
 		if _, err := writer.Write([]byte{tb, byte(len(domain))}); err != nil {
 			return err
 		}
-		if _, err := writer.Write([]byte(domain)); err != nil {
+		if _, err := io.WriteString(writer, domain); err != nil {
 			return err
 		}
 	default:
