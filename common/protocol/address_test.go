@@ -36,6 +36,12 @@ func TestAddressReading(t *testing.T) {
 			Port:    net.Port(53),
 		},
 		{
+			Options: []AddressOption{AddressFamilyByte(0x01, net.AddressFamilyIPv4), PortThenAddress()},
+			Input:   []byte{0, 53, 1, 0, 0, 0, 0},
+			Address: net.IPAddress([]byte{0, 0, 0, 0}),
+			Port:    net.Port(53),
+		},
+		{
 			Options: []AddressOption{AddressFamilyByte(0x01, net.AddressFamilyIPv4)},
 			Input:   []byte{1, 0, 0, 0, 0},
 			Error:   true,
@@ -132,5 +138,104 @@ func TestAddressWriting(t *testing.T) {
 				t.Error(err)
 			}
 		}
+	}
+}
+
+func BenchmarkAddressReadingIPv4(b *testing.B) {
+	parser := NewAddressParser(AddressFamilyByte(0x01, net.AddressFamilyIPv4))
+	cache := buf.New()
+	defer cache.Release()
+
+	payload := buf.New()
+	defer payload.Release()
+
+	raw := []byte{1, 0, 0, 0, 0, 0, 53}
+	payload.Write(raw)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _, err := parser.ReadAddressPort(cache, payload)
+		common.Must(err)
+		cache.Clear()
+		payload.Clear()
+		payload.Extend(int32(len(raw)))
+	}
+}
+
+func BenchmarkAddressReadingIPv6(b *testing.B) {
+	parser := NewAddressParser(AddressFamilyByte(0x04, net.AddressFamilyIPv6))
+	cache := buf.New()
+	defer cache.Release()
+
+	payload := buf.New()
+	defer payload.Release()
+
+	raw := []byte{4, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 0, 80}
+	payload.Write(raw)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _, err := parser.ReadAddressPort(cache, payload)
+		common.Must(err)
+		cache.Clear()
+		payload.Clear()
+		payload.Extend(int32(len(raw)))
+	}
+}
+
+func BenchmarkAddressReadingDomain(b *testing.B) {
+	parser := NewAddressParser(AddressFamilyByte(0x03, net.AddressFamilyDomain))
+	cache := buf.New()
+	defer cache.Release()
+
+	payload := buf.New()
+	defer payload.Release()
+
+	raw := []byte{3, 9, 118, 50, 114, 97, 121, 46, 99, 111, 109, 0, 80}
+	payload.Write(raw)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _, err := parser.ReadAddressPort(cache, payload)
+		common.Must(err)
+		cache.Clear()
+		payload.Clear()
+		payload.Extend(int32(len(raw)))
+	}
+}
+
+func BenchmarkAddressWritingIPv4(b *testing.B) {
+	parser := NewAddressParser(AddressFamilyByte(0x01, net.AddressFamilyIPv4))
+	writer := buf.New()
+	defer writer.Release()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		common.Must(parser.WriteAddressPort(writer, net.LocalHostIP, net.Port(80)))
+		writer.Clear()
+	}
+}
+
+func BenchmarkAddressWritingIPv6(b *testing.B) {
+	parser := NewAddressParser(AddressFamilyByte(0x04, net.AddressFamilyIPv6))
+	writer := buf.New()
+	defer writer.Release()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		common.Must(parser.WriteAddressPort(writer, net.LocalHostIPv6, net.Port(80)))
+		writer.Clear()
+	}
+}
+
+func BenchmarkAddressWritingDomain(b *testing.B) {
+	parser := NewAddressParser(AddressFamilyByte(0x02, net.AddressFamilyDomain))
+	writer := buf.New()
+	defer writer.Release()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		common.Must(parser.WriteAddressPort(writer, net.DomainAddress("www.v2ray.com"), net.Port(80)))
+		writer.Clear()
 	}
 }
