@@ -21,15 +21,23 @@ const (
 	errord
 )
 
+type pipeOption struct {
+	limit           int32 // maximum buffer size in bytes
+	discardOverflow bool
+}
+
+func (o *pipeOption) isFull(curSize int32) bool {
+	return o.limit >= 0 && curSize > o.limit
+}
+
 type pipe struct {
 	sync.Mutex
-	data            buf.MultiBuffer
-	readSignal      *signal.Notifier
-	writeSignal     *signal.Notifier
-	done            *done.Instance
-	limit           int32
-	state           state
-	discardOverflow bool
+	data        buf.MultiBuffer
+	readSignal  *signal.Notifier
+	writeSignal *signal.Notifier
+	done        *done.Instance
+	option      pipeOption
+	state       state
 }
 
 var errBufferFull = errors.New("buffer full")
@@ -37,7 +45,7 @@ var errBufferFull = errors.New("buffer full")
 func (p *pipe) getState(forRead bool) error {
 	switch p.state {
 	case open:
-		if !forRead && p.limit >= 0 && p.data.Len() > p.limit {
+		if !forRead && p.option.isFull(p.data.Len()) {
 			return errBufferFull
 		}
 		return nil
@@ -130,7 +138,7 @@ func (p *pipe) WriteMultiBuffer(mb buf.MultiBuffer) error {
 			// Yield current goroutine. Hopefully the reading counterpart can pick up the payload.
 			runtime.Gosched()
 			return nil
-		case err == errBufferFull && p.discardOverflow:
+		case err == errBufferFull && p.option.discardOverflow:
 			mb.Release()
 			return nil
 		case err != errBufferFull:
