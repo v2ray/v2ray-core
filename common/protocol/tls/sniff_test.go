@@ -3,7 +3,6 @@ package tls_test
 import (
 	"testing"
 
-	"v2ray.com/core/common/compare"
 	. "v2ray.com/core/common/protocol/tls"
 )
 
@@ -94,8 +93,8 @@ func TestTLSHeaders(t *testing.T) {
 			if err != nil {
 				t.Errorf("Expect no error but actually %s in test %v", err.Error(), test)
 			}
-			if err := compare.StringEqualWithDetail(header.Domain(), test.domain); err != nil {
-				t.Error(err)
+			if header.Domain() != test.domain {
+				t.Error("expect domain ", test.domain, " but got ", header.Domain())
 			}
 		}
 	}

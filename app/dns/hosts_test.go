@@ -3,13 +3,13 @@ package dns_test
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	. "v2ray.com/core/app/dns"
-	. "v2ray.com/ext/assert"
+	"v2ray.com/core/common"
 )
 
 func TestStaticHosts(t *testing.T) {
-	assert := With(t)
-
 	pb := []*Config_HostMapping{
 		{
 			Type:   DomainMatchingType_Full,
@@ -28,17 +28,25 @@ func TestStaticHosts(t *testing.T) {
 	}
 
 	hosts, err := NewStaticHosts(pb, nil)
-	assert(err, IsNil)
+	common.Must(err)
 
 	{
 		ips := hosts.LookupIP("v2ray.com")
-		assert(len(ips), Equals, 1)
-		assert([]byte(ips[0]), Equals, []byte{1, 1, 1, 1})
+		if len(ips) != 1 {
+			t.Error("expect 1 IP, but got ", len(ips))
+		}
+		if diff := cmp.Diff([]byte(ips[0]), []byte{1, 1, 1, 1}); diff != "" {
+			t.Error(diff)
+		}
 	}
 
 	{
 		ips := hosts.LookupIP("www.v2ray.cn")
-		assert(len(ips), Equals, 1)
-		assert([]byte(ips[0]), Equals, []byte{2, 2, 2, 2})
+		if len(ips) != 1 {
+			t.Error("expect 1 IP, but got ", len(ips))
+		}
+		if diff := cmp.Diff([]byte(ips[0]), []byte{2, 2, 2, 2}); diff != "" {
+			t.Error(diff)
+		}
 	}
 }

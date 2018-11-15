@@ -3,7 +3,8 @@ package log_test
 import (
 	"testing"
 
-	"v2ray.com/core/common/compare"
+	"github.com/google/go-cmp/cmp"
+
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 )
@@ -26,7 +27,7 @@ func TestLogRecord(t *testing.T) {
 		Content:  net.ParseAddress(ip),
 	})
 
-	if err := compare.StringEqualWithDetail("[Error] "+ip, logger.value); err != nil {
-		t.Fatal(err)
+	if diff := cmp.Diff("[Error] "+ip, logger.value); diff != "" {
+		t.Error(diff)
 	}
 }

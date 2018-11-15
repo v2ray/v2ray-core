@@ -6,16 +6,16 @@ import (
 	"time"
 
 	. "v2ray.com/core/app/dns"
-	. "v2ray.com/ext/assert"
+	"v2ray.com/core/common"
 )
 
 func TestLocalNameServer(t *testing.T) {
-	assert := With(t)
-
 	s := NewLocalNameServer()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
 	ips, err := s.QueryIP(ctx, "google.com")
 	cancel()
-	assert(err, IsNil)
-	assert(len(ips), GreaterThan, 0)
+	common.Must(err)
+	if len(ips) == 0 {
+		t.Error("expect some ips, but got 0")
+	}
 }

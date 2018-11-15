@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/compare"
 	"v2ray.com/core/common/net"
 	. "v2ray.com/core/common/protocol"
 )
@@ -134,7 +135,7 @@ func TestAddressWriting(t *testing.T) {
 			}
 		} else {
 			common.Must(err)
-			if err := compare.BytesEqualWithDetail(tc.Bytes, b.Bytes()); err != nil {
+			if diff := cmp.Diff(tc.Bytes, b.Bytes()); diff != "" {
 				t.Error(err)
 			}
 		}

@@ -3,7 +3,6 @@ package http_test
 import (
 	"testing"
 
-	"v2ray.com/core/common/compare"
 	. "v2ray.com/core/common/protocol/http"
 )
 
@@ -98,8 +97,8 @@ first_name=John&last_name=Doe&action=Submit`,
 			if err != nil {
 				t.Errorf("Expect no error but actually %s in test %v", err.Error(), test)
 			}
-			if err := compare.StringEqualWithDetail(header.Domain(), test.domain); err != nil {
-				t.Error(err)
+			if header.Domain() != test.domain {
+				t.Error("expected domain ", test.domain, " but got ", header.Domain())
 			}
 		}
 	}

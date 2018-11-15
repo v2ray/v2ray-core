@@ -4,7 +4,8 @@ import (
 	"io"
 	"testing"
 
-	"v2ray.com/core/common/compare"
+	"github.com/google/go-cmp/cmp"
+
 	. "v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	. "v2ray.com/ext/assert"
@@ -46,8 +47,8 @@ func TestErrorMessage(t *testing.T) {
 	}
 
 	for _, d := range data {
-		if err := compare.StringEqualWithDetail(d.msg, d.err.Error()); err != nil {
-			t.Fatal(err)
+		if diff := cmp.Diff(d.msg, d.err.Error()); diff != "" {
+			t.Error(diff)
 		}
 	}
 }
