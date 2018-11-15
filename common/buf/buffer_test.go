@@ -99,6 +99,13 @@ func BenchmarkNewBuffer(b *testing.B) {
 	}
 }
 
+func BenchmarkNewBufferStack(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		buffer := StackNew()
+		buffer.Release()
+	}
+}
+
 func BenchmarkWrite2(b *testing.B) {
 	buffer := New()
 
