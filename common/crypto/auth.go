@@ -241,8 +241,8 @@ func NewAuthenticationWriter(auth Authenticator, sizeParser ChunkSizeEncoder, wr
 	return w
 }
 
-func (w *AuthenticationWriter) seal(b *buf.Buffer) (*buf.Buffer, error) {
-	encryptedSize := b.Len() + int32(w.auth.Overhead())
+func (w *AuthenticationWriter) seal(b []byte) (*buf.Buffer, error) {
+	encryptedSize := int32(len(b) + w.auth.Overhead())
 	var paddingSize int32
 	if w.padding != nil {
 		paddingSize = int32(w.padding.NextPaddingLen())
@@ -255,7 +255,7 @@ func (w *AuthenticationWriter) seal(b *buf.Buffer) (*buf.Buffer, error) {
 
 	eb := buf.New()
 	w.sizeParser.Encode(uint16(encryptedSize+paddingSize), eb.Extend(w.sizeParser.SizeBytes()))
-	if _, err := w.auth.Seal(eb.Extend(encryptedSize)[:0], b.Bytes()); err != nil {
+	if _, err := w.auth.Seal(eb.Extend(encryptedSize)[:0], b); err != nil {
 		eb.Release()
 		return nil, err
 	}
@@ -282,7 +282,7 @@ func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
 	for {
 		b := buf.New()
 		common.Must2(b.ReadFrom(io.LimitReader(&mb, int64(payloadSize))))
-		eb, err := w.seal(b)
+		eb, err := w.seal(b.Bytes())
 		b.Release()
 
 		if err != nil {
@@ -308,7 +308,7 @@ func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
 			continue
 		}
 
-		eb, err := w.seal(b)
+		eb, err := w.seal(b.Bytes())
 		if err != nil {
 			continue
 		}
@@ -326,10 +326,7 @@ func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
 // WriteMultiBuffer implements buf.Writer.
 func (w *AuthenticationWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	if mb.IsEmpty() {
-		b := buf.New()
-		defer b.Release()
-
-		eb, err := w.seal(b)
+		eb, err := w.seal([]byte{})
 		common.Must(err)
 		return w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(eb))
 	}
