@@ -3,7 +3,6 @@ package buf
 import (
 	"io"
 	"time"
-	"unsafe"
 
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/signal"
@@ -11,7 +10,6 @@ import (
 
 type dataHandler func(MultiBuffer)
 
-//go:notinheap
 type copyHandler struct {
 	onData []dataHandler
 }
@@ -98,13 +96,10 @@ func copyInternal(reader Reader, writer Writer, handler *copyHandler) error {
 // Copy dumps all payload from reader to writer or stops when an error occurs. It returns nil when EOF.
 func Copy(reader Reader, writer Writer, options ...CopyOption) error {
 	var handler copyHandler
-	p := uintptr(unsafe.Pointer(&handler))
-	h := (*copyHandler)(unsafe.Pointer(p))
-
 	for _, option := range options {
-		option(h)
+		option(&handler)
 	}
-	err := copyInternal(reader, writer, h)
+	err := copyInternal(reader, writer, &handler)
 	if err != nil && errors.Cause(err) != io.EOF {
 		return err
 	}
