@@ -9,6 +9,7 @@ import (
 )
 
 // ReadUint16 reads first two bytes from the reader, and then coverts them to an uint16 value.
+//go:nosplit
 func ReadUint16(reader io.Reader) (uint16, error) {
 	var b stack.TwoBytes
 	s := b[:]
@@ -22,6 +23,7 @@ func ReadUint16(reader io.Reader) (uint16, error) {
 }
 
 // WriteUint16 writes an uint16 value into writer.
+//go:nosplit
 func WriteUint16(writer io.Writer, value uint16) (int, error) {
 	var b stack.TwoBytes
 	s := b[:]
@@ -33,6 +35,7 @@ func WriteUint16(writer io.Writer, value uint16) (int, error) {
 }
 
 // WriteUint64 writes an uint64 value into writer.
+//go:nosplit
 func WriteUint64(writer io.Writer, value uint64) (int, error) {
 	var b stack.EightBytes
 	s := b[:]

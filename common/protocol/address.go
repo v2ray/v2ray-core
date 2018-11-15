@@ -226,6 +226,7 @@ func (p *addressParser) readAddress(b *buf.Buffer, reader io.Reader) (net.Addres
 	}
 }
 
+//go:nosplit
 func (p *addressParser) writeAddress(writer io.Writer, address net.Address) error {
 	tb := p.addrByteMap[address.Family()]
 	if tb == afInvalid {
