@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	_ "v2ray.com/core/common/net/testing"
@@ -105,5 +106,19 @@ func TestReadUntilNull(t *testing.T) {
 				t.Error("for input: ", testCase.Input, " expect output ", testCase.Output, " but actually ", value)
 			}
 		}
+	}
+}
+
+func BenchmarkReadUsernamePassword(b *testing.B) {
+	input := []byte{0x05, 0x01, 'a', 0x02, 'b', 'c'}
+	buffer := buf.New()
+	buffer.Write(input)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _, err := ReadUsernamePassword(buffer)
+		common.Must(err)
+		buffer.Clear()
+		buffer.Extend(int32(len(input)))
 	}
 }

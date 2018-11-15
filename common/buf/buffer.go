@@ -199,3 +199,11 @@ func New() *Buffer {
 		v: pool.Get().([]byte),
 	}
 }
+
+// StackNew creates a new Buffer object on stack.
+// This method is for buffers that is released in the same function.
+func StackNew() Buffer {
+	return Buffer{
+		v: pool.Get().([]byte),
+	}
+}

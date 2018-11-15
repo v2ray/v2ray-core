@@ -70,7 +70,7 @@ func (w *KCPPacketWriter) Overhead() int {
 }
 
 func (w *KCPPacketWriter) Write(b []byte) (int, error) {
-	bb := buf.New()
+	bb := buf.StackNew()
 	defer bb.Release()
 
 	if w.Header != nil {

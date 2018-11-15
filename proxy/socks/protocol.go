@@ -190,7 +190,7 @@ func (s *ServerSession) Handshake(reader io.Reader, writer io.Writer) (*protocol
 // | 1  |  1   | 1 to 255 |  1   | 1 to 255 |
 // +----+------+----------+------+----------+
 func ReadUsernamePassword(reader io.Reader) (string, string, error) {
-	buffer := buf.New()
+	buffer := buf.StackNew()
 	defer buffer.Release()
 
 	if _, err := buffer.ReadFullFrom(reader, 2); err != nil {
@@ -220,7 +220,7 @@ func ReadUsernamePassword(reader io.Reader) (string, string, error) {
 
 // ReadUntilNull reads content from given reader, until a null (0x00) byte.
 func ReadUntilNull(reader io.Reader) (string, error) {
-	b := buf.New()
+	b := buf.StackNew()
 	defer b.Release()
 
 	for {
