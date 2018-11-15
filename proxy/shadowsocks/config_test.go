@@ -4,9 +4,10 @@ import (
 	"crypto/rand"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/compare"
 	"v2ray.com/core/proxy/shadowsocks"
 )
 
@@ -32,7 +33,7 @@ func TestAEADCipherUDP(t *testing.T) {
 	common.Must(cipher.EncodePacket(key, b1))
 
 	common.Must(cipher.DecodePacket(key, b1))
-	if err := compare.BytesEqualWithDetail(b1.Bytes(), payload); err != nil {
-		t.Error(err)
+	if diff := cmp.Diff(b1.Bytes(), payload); diff != "" {
+		t.Error(diff)
 	}
 }
