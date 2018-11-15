@@ -16,7 +16,7 @@ func TestBufferClear(t *testing.T) {
 
 	payload := "Bytes"
 	buffer.Write([]byte(payload))
-	if diff := cmp.Diff(buffer.Bytes(), payload); diff != "" {
+	if diff := cmp.Diff(buffer.Bytes(), []byte(payload)); diff != "" {
 		t.Error(diff)
 	}
 
