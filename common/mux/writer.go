@@ -58,7 +58,7 @@ func (w *Writer) writeMetaOnly() error {
 	if err := meta.WriteTo(b); err != nil {
 		return err
 	}
-	return w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(b))
+	return w.writer.WriteMultiBuffer(buf.MultiBuffer{b})
 }
 
 func writeMetaWithFrame(writer buf.Writer, meta FrameMetadata, data buf.MultiBuffer) error {
@@ -96,7 +96,7 @@ func (w *Writer) WriteMultiBuffer(mb buf.MultiBuffer) error {
 		if w.transferType == protocol.TransferTypeStream {
 			chunk = mb.SliceBySize(8 * 1024)
 		} else {
-			chunk = buf.NewMultiBufferValue(mb.SplitFirst())
+			chunk = buf.MultiBuffer{mb.SplitFirst()}
 		}
 		if err := w.writeData(chunk); err != nil {
 			return err
@@ -119,6 +119,6 @@ func (w *Writer) Close() error {
 	frame := buf.New()
 	common.Must(meta.WriteTo(frame))
 
-	w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(frame)) // nolint: errcheck
+	w.writer.WriteMultiBuffer(buf.MultiBuffer{frame}) // nolint: errcheck
 	return nil
 }

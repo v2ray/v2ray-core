@@ -126,7 +126,7 @@ func (r *ReadVReader) ReadMultiBuffer() (MultiBuffer, error) {
 		if b.IsFull() {
 			r.alloc.Adjust(1)
 		}
-		return NewMultiBufferValue(b), nil
+		return MultiBuffer{b}, nil
 	}
 
 	mb, err := r.readMulti()

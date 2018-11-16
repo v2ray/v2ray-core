@@ -81,7 +81,7 @@ func (v *Dispatcher) Dispatch(ctx context.Context, destination net.Destination, 
 	conn := v.getInboundRay(ctx, destination)
 	outputStream := conn.link.Writer
 	if outputStream != nil {
-		if err := outputStream.WriteMultiBuffer(buf.NewMultiBufferValue(payload)); err != nil {
+		if err := outputStream.WriteMultiBuffer(buf.MultiBuffer{payload}); err != nil {
 			newError("failed to write first UDP payload").Base(err).WriteToLog(session.ExportIDToError(ctx))
 			conn.cancel()
 			return

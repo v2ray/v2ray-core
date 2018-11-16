@@ -275,7 +275,7 @@ func (w *udpWorker) callback(b *buf.Buffer, source net.Destination, originalDest
 	conn, existing := w.getConnection(id)
 
 	// payload will be discarded in pipe is full.
-	conn.writer.WriteMultiBuffer(buf.NewMultiBufferValue(b)) // nolint: errcheck
+	conn.writer.WriteMultiBuffer(buf.MultiBuffer{b}) // nolint: errcheck
 
 	if !existing {
 		common.Must(w.checker.Start())

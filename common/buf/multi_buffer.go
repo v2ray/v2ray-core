@@ -43,11 +43,6 @@ func NewMultiBufferCap(capacity int32) MultiBuffer {
 	return MultiBuffer(make([]*Buffer, 0, capacity))
 }
 
-// NewMultiBufferValue wraps a list of Buffers into MultiBuffer.
-func NewMultiBufferValue(b ...*Buffer) MultiBuffer {
-	return MultiBuffer(b)
-}
-
 // Append appends buffer to the end of this MultiBuffer
 func (mb *MultiBuffer) Append(buf *Buffer) {
 	if buf != nil {
@@ -221,7 +216,7 @@ func (mb *MultiBuffer) SliceBySize(size int32) MultiBuffer {
 	if endIndex == 0 && len(*mb) > 0 {
 		b := New()
 		common.Must2(b.ReadFullFrom((*mb)[0], size))
-		return NewMultiBufferValue(b)
+		return MultiBuffer{b}
 	}
 	return slice
 }

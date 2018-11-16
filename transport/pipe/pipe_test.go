@@ -19,7 +19,7 @@ func TestPipeReadWrite(t *testing.T) {
 	payload := []byte{'a', 'b', 'c', 'd'}
 	b := buf.New()
 	b.Write(payload)
-	assert(pWriter.WriteMultiBuffer(buf.NewMultiBufferValue(b)), IsNil)
+	assert(pWriter.WriteMultiBuffer(buf.MultiBuffer{b}), IsNil)
 
 	rb, err := pReader.ReadMultiBuffer()
 	assert(err, IsNil)
@@ -33,7 +33,7 @@ func TestPipeCloseError(t *testing.T) {
 	payload := []byte{'a', 'b', 'c', 'd'}
 	b := buf.New()
 	b.Write(payload)
-	assert(pWriter.WriteMultiBuffer(buf.NewMultiBufferValue(b)), IsNil)
+	assert(pWriter.WriteMultiBuffer(buf.MultiBuffer{b}), IsNil)
 	pWriter.CloseError()
 
 	rb, err := pReader.ReadMultiBuffer()
@@ -48,7 +48,7 @@ func TestPipeClose(t *testing.T) {
 	payload := []byte{'a', 'b', 'c', 'd'}
 	b := buf.New()
 	b.Write(payload)
-	assert(pWriter.WriteMultiBuffer(buf.NewMultiBufferValue(b)), IsNil)
+	assert(pWriter.WriteMultiBuffer(buf.MultiBuffer{b}), IsNil)
 	assert(pWriter.Close(), IsNil)
 
 	rb, err := pReader.ReadMultiBuffer()
@@ -66,12 +66,12 @@ func TestPipeLimitZero(t *testing.T) {
 	pReader, pWriter := New(WithSizeLimit(0))
 	bb := buf.New()
 	bb.Write([]byte{'a', 'b'})
-	assert(pWriter.WriteMultiBuffer(buf.NewMultiBufferValue(bb)), IsNil)
+	assert(pWriter.WriteMultiBuffer(buf.MultiBuffer{bb}), IsNil)
 
 	err := task.Run(task.Parallel(func() error {
 		b := buf.New()
 		b.Write([]byte{'c', 'd'})
-		return pWriter.WriteMultiBuffer(buf.NewMultiBufferValue(b))
+		return pWriter.WriteMultiBuffer(buf.MultiBuffer{b})
 	}, func() error {
 		time.Sleep(time.Second)
 
@@ -104,7 +104,7 @@ func TestPipeWriteMultiThread(t *testing.T) {
 		go func() {
 			b := buf.New()
 			b.WriteString("abcd")
-			pWriter.WriteMultiBuffer(buf.NewMultiBufferValue(b))
+			pWriter.WriteMultiBuffer(buf.MultiBuffer{b})
 			wg.Done()
 		}()
 	}

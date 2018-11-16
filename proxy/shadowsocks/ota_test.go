@@ -30,7 +30,7 @@ func TestNormalChunkWriting(t *testing.T) {
 
 	b := buf.New()
 	b.Write([]byte{11, 12, 13, 14, 15, 16, 17, 18})
-	common.Must(writer.WriteMultiBuffer(buf.NewMultiBufferValue(b)))
+	common.Must(writer.WriteMultiBuffer(buf.MultiBuffer{b}))
 	if diff := cmp.Diff(buffer.Bytes(), []byte{0, 8, 39, 228, 69, 96, 133, 39, 254, 26, 201, 70, 11, 12, 13, 14, 15, 16, 17, 18}); diff != "" {
 		t.Error(diff)
 	}

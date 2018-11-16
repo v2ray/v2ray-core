@@ -29,7 +29,7 @@ func (*HTTPResponse) WriteTo(writer buf.Writer) int32 {
 	b := buf.New()
 	common.Must2(b.WriteString(http403response))
 	n := b.Len()
-	writer.WriteMultiBuffer(buf.NewMultiBufferValue(b))
+	writer.WriteMultiBuffer(buf.MultiBuffer{b})
 	return n
 }
 

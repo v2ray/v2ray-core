@@ -328,7 +328,7 @@ func (w *AuthenticationWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	if mb.IsEmpty() {
 		eb, err := w.seal([]byte{})
 		common.Must(err)
-		return w.writer.WriteMultiBuffer(buf.NewMultiBufferValue(eb))
+		return w.writer.WriteMultiBuffer(buf.MultiBuffer{eb})
 	}
 
 	if w.transferType == protocol.TransferTypeStream {

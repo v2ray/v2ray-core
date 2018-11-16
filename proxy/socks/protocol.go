@@ -360,7 +360,7 @@ func (r *UDPReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	if _, err := DecodeUDPPacket(b); err != nil {
 		return nil, err
 	}
-	return buf.NewMultiBufferValue(b), nil
+	return buf.MultiBuffer{b}, nil
 }
 
 type UDPWriter struct {

@@ -118,7 +118,7 @@ func TestTCPRequest(t *testing.T) {
 		writer, err := WriteTCPRequest(request, cache)
 		assert(err, IsNil)
 
-		assert(writer.WriteMultiBuffer(buf.NewMultiBufferValue(data)), IsNil)
+		assert(writer.WriteMultiBuffer(buf.MultiBuffer{data}), IsNil)
 
 		decodedRequest, reader, err := ReadTCPSession(request.User, cache)
 		assert(err, IsNil)
@@ -168,7 +168,7 @@ func TestUDPReaderWriter(t *testing.T) {
 	{
 		b := buf.New()
 		common.Must2(b.WriteString("test payload"))
-		err := writer.WriteMultiBuffer(buf.NewMultiBufferValue(b))
+		err := writer.WriteMultiBuffer(buf.MultiBuffer{b})
 		assert(err, IsNil)
 
 		payload, err := reader.ReadMultiBuffer()
@@ -179,7 +179,7 @@ func TestUDPReaderWriter(t *testing.T) {
 	{
 		b := buf.New()
 		common.Must2(b.WriteString("test payload 2"))
-		err := writer.WriteMultiBuffer(buf.NewMultiBufferValue(b))
+		err := writer.WriteMultiBuffer(buf.MultiBuffer{b})
 		assert(err, IsNil)
 
 		payload, err := reader.ReadMultiBuffer()

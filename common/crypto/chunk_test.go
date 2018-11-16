@@ -21,11 +21,11 @@ func TestChunkStreamIO(t *testing.T) {
 
 	b := buf.New()
 	b.WriteString("abcd")
-	common.Must(writer.WriteMultiBuffer(buf.NewMultiBufferValue(b)))
+	common.Must(writer.WriteMultiBuffer(buf.MultiBuffer{b}))
 
 	b = buf.New()
 	b.WriteString("efg")
-	common.Must(writer.WriteMultiBuffer(buf.NewMultiBufferValue(b)))
+	common.Must(writer.WriteMultiBuffer(buf.MultiBuffer{b}))
 
 	common.Must(writer.WriteMultiBuffer(buf.MultiBuffer{}))
 

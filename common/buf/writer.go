@@ -175,7 +175,7 @@ func (w *BufferedWriter) flushInternal() error {
 		return err
 	}
 
-	return w.writer.WriteMultiBuffer(NewMultiBufferValue(b))
+	return w.writer.WriteMultiBuffer(MultiBuffer{b})
 }
 
 // SetBuffered sets whether the internal buffer is used. If set to false, Flush() will be called to clear the buffer.

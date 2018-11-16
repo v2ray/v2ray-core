@@ -18,7 +18,7 @@ func TestMultiBufferRead(t *testing.T) {
 
 	b2 := New()
 	b2.WriteString("cd")
-	mb := NewMultiBufferValue(b1, b2)
+	mb := MultiBuffer{b1, b2}
 
 	bs := make([]byte, 32)
 	nBytes, err := mb.Read(bs)

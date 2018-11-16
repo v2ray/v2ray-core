@@ -76,7 +76,7 @@ func (server *Server) handleConnection(conn net.Conn) {
 				return err
 			}
 			copy(b.Bytes(), server.MsgProcessor(b.Bytes()))
-			if err := pWriter.WriteMultiBuffer(buf.NewMultiBufferValue(b)); err != nil {
+			if err := pWriter.WriteMultiBuffer(buf.MultiBuffer{b}); err != nil {
 				return err
 			}
 		}
