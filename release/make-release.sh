@@ -8,6 +8,7 @@ if [ "$DOTCNT" -gt 1 ]; then
   PRE="true"
 else
   PRE="false"
+  VER="${VER}.0"
 fi
 
 if [ -z "$PROJECT" ]; then
