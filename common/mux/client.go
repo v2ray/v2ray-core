@@ -35,7 +35,7 @@ func (m *ClientManager) Dispatch(ctx context.Context, link *transport.Link) erro
 		}
 	}
 
-	return newError("unable to find an available mux client")
+	return newError("unable to find an available mux client").AtWarning()
 }
 
 type WorkerPicker interface {
@@ -274,7 +274,7 @@ func (m *ClientWorker) IsClosing() bool {
 }
 
 func (m *ClientWorker) IsFull() bool {
-	if m.IsClosing() {
+	if m.IsClosing() || m.Closed() {
 		return true
 	}
 
