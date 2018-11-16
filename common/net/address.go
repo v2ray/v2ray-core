@@ -35,16 +35,6 @@ const (
 	AddressFamilyDomain = AddressFamily(2)
 )
 
-// Either returns true if current AddressFamily matches any of the AddressFamilies provided.
-func (af AddressFamily) Either(fs ...AddressFamily) bool {
-	for _, f := range fs {
-		if af == f {
-			return true
-		}
-	}
-	return false
-}
-
 // IsIPv4 returns true if current AddressFamily is IPv4.
 func (af AddressFamily) IsIPv4() bool {
 	return af == AddressFamilyIPv4
@@ -53,6 +43,11 @@ func (af AddressFamily) IsIPv4() bool {
 // IsIPv6 returns true if current AddressFamily is IPv6.
 func (af AddressFamily) IsIPv6() bool {
 	return af == AddressFamilyIPv6
+}
+
+// IsIP returns true if current AddressFamily is IPv6 or IPv4.
+func (af AddressFamily) IsIP() bool {
+	return af == AddressFamilyIPv4 || af == AddressFamilyIPv6
 }
 
 // IsDomain returns true if current AddressFamily is Domain.

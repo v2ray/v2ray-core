@@ -213,7 +213,7 @@ func (p *addressParser) readAddress(b *buf.Buffer, reader io.Reader) (net.Addres
 		domain := string(b.BytesFrom(-domainLength))
 		if maybeIPPrefix(domain[0]) {
 			addr := net.ParseAddress(domain)
-			if addr.Family().IsIPv4() || addr.Family().IsIPv6() {
+			if addr.Family().IsIP() {
 				return addr, nil
 			}
 		}

@@ -144,7 +144,7 @@ func (m *MultiGeoIPMatcher) Apply(ctx context.Context) bool {
 
 	dest := m.destFunc(ctx)
 
-	if dest.IsValid() && (dest.Address.Family().IsIPv4() || dest.Address.Family().IsIPv6()) {
+	if dest.IsValid() && dest.Address.Family().IsIP() {
 		ips = append(ips, dest.Address.IP())
 	} else if resolver, ok := ResolvedIPsFromContext(ctx); ok {
 		resolvedIPs := resolver.Resolve()
