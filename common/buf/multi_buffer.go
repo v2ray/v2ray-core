@@ -10,7 +10,7 @@ import (
 
 // ReadAllToMultiBuffer reads all content from the reader into a MultiBuffer, until EOF.
 func ReadAllToMultiBuffer(reader io.Reader) (MultiBuffer, error) {
-	mb := NewMultiBufferCap(128)
+	mb := make(MultiBuffer, 0, 128)
 
 	if _, err := mb.ReadFrom(reader); err != nil {
 		mb.Release()
@@ -37,11 +37,6 @@ func ReadAllToBytes(reader io.Reader) ([]byte, error) {
 
 // MultiBuffer is a list of Buffers. The order of Buffer matters.
 type MultiBuffer []*Buffer
-
-// NewMultiBufferCap creates a new MultiBuffer instance.
-func NewMultiBufferCap(capacity int32) MultiBuffer {
-	return MultiBuffer(make([]*Buffer, 0, capacity))
-}
 
 // Append appends buffer to the end of this MultiBuffer
 func (mb *MultiBuffer) Append(buf *Buffer) {
@@ -159,13 +154,13 @@ func (mb *MultiBuffer) WriteMultiBuffer(b MultiBuffer) error {
 }
 
 // Len returns the total number of bytes in the MultiBuffer.
-func (mb *MultiBuffer) Len() int32 {
+func (mb MultiBuffer) Len() int32 {
 	if mb == nil {
 		return 0
 	}
 
 	size := int32(0)
-	for _, b := range *mb {
+	for _, b := range mb {
 		size += b.Len()
 	}
 	return size
@@ -200,7 +195,7 @@ func (mb MultiBuffer) String() string {
 
 // SliceBySize splits the beginning of this MultiBuffer into another one, for at most size bytes.
 func (mb *MultiBuffer) SliceBySize(size int32) MultiBuffer {
-	slice := NewMultiBufferCap(10)
+	slice := make(MultiBuffer, 0, 10)
 	sliceSize := int32(0)
 	endIndex := len(*mb)
 	for i, b := range *mb {

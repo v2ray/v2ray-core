@@ -186,7 +186,7 @@ func (w *ReceivingWorker) ReadMultiBuffer() buf.MultiBuffer {
 		return mb
 	}
 
-	mb := buf.NewMultiBufferCap(32)
+	mb := make(buf.MultiBuffer, 0, 32)
 
 	w.Lock()
 	defer w.Unlock()

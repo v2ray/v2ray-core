@@ -139,5 +139,5 @@ func (r *SingleReader) ReadMultiBuffer() (MultiBuffer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewMultiBufferValue(b), nil
+	return MultiBuffer{b}, nil
 }

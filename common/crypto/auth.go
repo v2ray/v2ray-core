@@ -200,7 +200,7 @@ func (r *AuthenticationReader) readInternal(soft bool, mb *buf.MultiBuffer) erro
 
 func (r *AuthenticationReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	const readSize = 16
-	mb := buf.NewMultiBufferCap(readSize)
+	mb := make(buf.MultiBuffer, 0, readSize)
 	if err := r.readInternal(false, &mb); err != nil {
 		mb.Release()
 		return nil, err
@@ -277,7 +277,7 @@ func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
 	}
 
 	payloadSize := buf.Size - int32(w.auth.Overhead()) - w.sizeParser.SizeBytes() - maxPadding
-	mb2Write := buf.NewMultiBufferCap(int32(len(mb) + 10))
+	mb2Write := make(buf.MultiBuffer, 0, len(mb)+10)
 
 	for {
 		b := buf.New()
@@ -301,7 +301,7 @@ func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
 func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
 	defer mb.Release()
 
-	mb2Write := buf.NewMultiBufferCap(int32(len(mb)) + 1)
+	mb2Write := make(buf.MultiBuffer, 0, len(mb)+1)
 
 	for _, b := range mb {
 		if b.IsEmpty() {

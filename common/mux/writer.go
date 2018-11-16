@@ -70,7 +70,7 @@ func writeMetaWithFrame(writer buf.Writer, meta FrameMetadata, data buf.MultiBuf
 		return err
 	}
 
-	mb2 := buf.NewMultiBufferCap(int32(len(data)) + 1)
+	mb2 := make(buf.MultiBuffer, 0, len(data)+1)
 	mb2.Append(frame)
 	mb2.AppendMulti(data)
 	return writer.WriteMultiBuffer(mb2)
