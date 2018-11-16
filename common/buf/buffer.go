@@ -25,9 +25,11 @@ func (b *Buffer) Release() {
 	if b == nil || b.v == nil {
 		return
 	}
-	pool.Put(b.v)
+
+	p := b.v
 	b.v = nil
 	b.Clear()
+	pool.Put(p)
 }
 
 // Clear clears the content of the buffer, results an empty buffer with
@@ -57,7 +59,7 @@ func (b *Buffer) Bytes() []byte {
 func (b *Buffer) Extend(n int32) []byte {
 	end := b.end + n
 	if end > int32(len(b.v)) {
-		panic(newError("out of bound: ", end))
+		panic("extending out of bound")
 	}
 	ext := b.v[b.end:end]
 	b.end = end
@@ -179,7 +181,8 @@ func (b *Buffer) ReadFrom(reader io.Reader) (int64, error) {
 func (b *Buffer) ReadFullFrom(reader io.Reader, size int32) (int64, error) {
 	end := b.end + size
 	if end > int32(len(b.v)) {
-		return 0, newError("out of bound: ", end)
+		v := end
+		return 0, newError("out of bound: ", v)
 	}
 	n, err := io.ReadFull(reader, b.v[b.end:end])
 	b.end += int32(n)
