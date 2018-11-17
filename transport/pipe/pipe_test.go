@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/task"
 	. "v2ray.com/core/transport/pipe"
@@ -124,4 +125,19 @@ func TestInterfaces(t *testing.T) {
 
 	assert((*Reader)(nil), Implements, (*buf.Reader)(nil))
 	assert((*Reader)(nil), Implements, (*buf.TimeoutReader)(nil))
+}
+
+func BenchmarkPipeReadWrite(b *testing.B) {
+	reader, writer := New(WithoutSizeLimit())
+	a := buf.New()
+	a.Extend(buf.Size)
+	c := buf.MultiBuffer{a}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		common.Must(writer.WriteMultiBuffer(c))
+		d, err := reader.ReadMultiBuffer()
+		common.Must(err)
+		c = d
+	}
 }
