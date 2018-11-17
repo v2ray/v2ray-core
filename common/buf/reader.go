@@ -49,7 +49,6 @@ func (r *BufferedReader) Read(b []byte) (int, error) {
 		nBytes, err := r.Buffer.Read(b)
 		common.Must(err)
 		if r.Buffer.IsEmpty() {
-			r.Buffer.Release()
 			r.Buffer = nil
 		}
 		return nBytes, nil
@@ -123,7 +122,8 @@ func (r *BufferedReader) WriteTo(writer io.Writer) (int64, error) {
 // Close implements io.Closer.
 func (r *BufferedReader) Close() error {
 	if !r.Buffer.IsEmpty() {
-		r.Buffer.Release()
+		ReleaseMulti(r.Buffer)
+		r.Buffer = nil
 	}
 	return common.Close(r.Reader)
 }

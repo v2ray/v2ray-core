@@ -202,7 +202,7 @@ func (r *AuthenticationReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	const readSize = 16
 	mb := make(buf.MultiBuffer, 0, readSize)
 	if err := r.readInternal(false, &mb); err != nil {
-		mb.Release()
+		buf.ReleaseMulti(mb)
 		return nil, err
 	}
 
@@ -212,7 +212,7 @@ func (r *AuthenticationReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 			break
 		}
 		if err != nil {
-			mb.Release()
+			buf.ReleaseMulti(mb)
 			return nil, err
 		}
 	}
@@ -269,7 +269,7 @@ func (w *AuthenticationWriter) seal(b []byte) (*buf.Buffer, error) {
 }
 
 func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
-	defer mb.Release()
+	defer buf.ReleaseMulti(mb)
 
 	var maxPadding int32
 	if w.padding != nil {
@@ -286,7 +286,7 @@ func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
 		b.Release()
 
 		if err != nil {
-			mb2Write.Release()
+			buf.ReleaseMulti(mb2Write)
 			return err
 		}
 		mb2Write = append(mb2Write, eb)
@@ -299,7 +299,7 @@ func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
 }
 
 func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
-	defer mb.Release()
+	defer buf.ReleaseMulti(mb)
 
 	mb2Write := make(buf.MultiBuffer, 0, len(mb)+1)
 

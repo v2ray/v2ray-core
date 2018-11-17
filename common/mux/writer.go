@@ -85,7 +85,7 @@ func (w *Writer) writeData(mb buf.MultiBuffer) error {
 
 // WriteMultiBuffer implements buf.Writer.
 func (w *Writer) WriteMultiBuffer(mb buf.MultiBuffer) error {
-	defer mb.Release()
+	defer buf.ReleaseMulti(mb)
 
 	if mb.IsEmpty() {
 		return w.writeMetaOnly()

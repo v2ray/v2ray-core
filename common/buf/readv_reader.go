@@ -83,14 +83,12 @@ func (r *ReadVReader) readMulti() (MultiBuffer, error) {
 	r.mr.Clear()
 
 	if err != nil {
-		mb := MultiBuffer(bs)
-		mb.Release()
+		ReleaseMulti(MultiBuffer(bs))
 		return nil, err
 	}
 
 	if nBytes == 0 {
-		mb := MultiBuffer(bs)
-		mb.Release()
+		ReleaseMulti(MultiBuffer(bs))
 		return nil, io.EOF
 	}
 

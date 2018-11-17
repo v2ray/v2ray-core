@@ -17,7 +17,8 @@ type ClosableMultiBuffer struct {
 }
 
 func (c *ClosableMultiBuffer) Close() error {
-	c.MultiBuffer.Release()
+	buf.ReleaseMulti(c.MultiBuffer)
+	c.MultiBuffer = nil
 	return nil
 }
 

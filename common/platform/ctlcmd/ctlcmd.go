@@ -37,8 +37,8 @@ func Run(args []string, input io.Reader) (buf.MultiBuffer, error) {
 		if errBuffer.Len() > 0 {
 			msg += ": " + errBuffer.String()
 		}
-		errBuffer.Release()
-		outBuffer.Release()
+		buf.ReleaseMulti(errBuffer)
+		buf.ReleaseMulti(outBuffer)
 		return nil, newError(msg).Base(err)
 	}
 

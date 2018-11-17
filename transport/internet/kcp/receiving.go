@@ -151,7 +151,8 @@ func NewReceivingWorker(kcp *Connection) *ReceivingWorker {
 
 func (w *ReceivingWorker) Release() {
 	w.Lock()
-	w.leftOver.Release()
+	buf.ReleaseMulti(w.leftOver)
+	w.leftOver = nil
 	w.Unlock()
 }
 

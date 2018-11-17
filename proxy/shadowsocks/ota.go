@@ -114,7 +114,7 @@ func NewChunkWriter(writer io.Writer, auth *Authenticator) *ChunkWriter {
 
 // WriteMultiBuffer implements buf.Writer.
 func (w *ChunkWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
-	defer mb.Release()
+	defer buf.ReleaseMulti(mb)
 
 	for {
 		payloadLen, _ := mb.Read(w.buffer[2+AuthSize:])

@@ -18,7 +18,7 @@ type BufferToBytesWriter struct {
 
 // WriteMultiBuffer implements Writer. This method takes ownership of the given buffer.
 func (w *BufferToBytesWriter) WriteMultiBuffer(mb MultiBuffer) error {
-	defer mb.Release()
+	defer ReleaseMulti(mb)
 
 	size := mb.Len()
 	if size == 0 {
@@ -134,7 +134,7 @@ func (w *BufferedWriter) WriteMultiBuffer(b MultiBuffer) error {
 		return w.writer.WriteMultiBuffer(b)
 	}
 
-	defer b.Release()
+	defer ReleaseMulti(b)
 
 	for !b.IsEmpty() {
 		if w.buffer == nil {
@@ -216,7 +216,7 @@ type SequentialWriter struct {
 
 // WriteMultiBuffer implements Writer.
 func (w *SequentialWriter) WriteMultiBuffer(mb MultiBuffer) error {
-	defer mb.Release()
+	defer ReleaseMulti(mb)
 
 	for _, b := range mb {
 		if b.IsEmpty() {
@@ -234,7 +234,7 @@ func (w *SequentialWriter) WriteMultiBuffer(mb MultiBuffer) error {
 type noOpWriter byte
 
 func (noOpWriter) WriteMultiBuffer(b MultiBuffer) error {
-	b.Release()
+	ReleaseMulti(b)
 	return nil
 }
 

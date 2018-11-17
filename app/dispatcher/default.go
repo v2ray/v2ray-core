@@ -37,7 +37,7 @@ func (r *cachedReader) Cache(b *buf.Buffer) {
 	mb, _ := r.reader.ReadMultiBufferTimeout(time.Millisecond * 100)
 	r.Lock()
 	if !mb.IsEmpty() {
-		common.Must(r.cache.WriteMultiBuffer(mb))
+		r.cache, _ = buf.MergeMulti(r.cache, mb)
 	}
 	b.Clear()
 	rawBytes := b.Extend(buf.Size)
@@ -75,8 +75,7 @@ func (r *cachedReader) ReadMultiBufferTimeout(timeout time.Duration) (buf.MultiB
 func (r *cachedReader) CloseError() {
 	r.Lock()
 	if r.cache != nil {
-		r.cache.Release()
-		r.cache = nil
+		r.cache = buf.ReleaseMulti(r.cache)
 	}
 	r.Unlock()
 	r.reader.CloseError()

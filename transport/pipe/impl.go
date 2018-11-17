@@ -144,10 +144,10 @@ func (p *pipe) WriteMultiBuffer(mb buf.MultiBuffer) error {
 			runtime.Gosched()
 			return nil
 		case err == errBufferFull && p.option.discardOverflow:
-			mb.Release()
+			buf.ReleaseMulti(mb)
 			return nil
 		case err != errBufferFull:
-			mb.Release()
+			buf.ReleaseMulti(mb)
 			p.readSignal.Signal()
 			return err
 		}
@@ -184,7 +184,7 @@ func (p *pipe) CloseError() {
 	p.state = errord
 
 	if !p.data.IsEmpty() {
-		p.data.Release()
+		buf.ReleaseMulti(p.data)
 		p.data = nil
 	}
 

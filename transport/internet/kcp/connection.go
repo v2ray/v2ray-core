@@ -377,7 +377,7 @@ func (c *Connection) Write(b []byte) (int, error) {
 
 // WriteMultiBuffer implements buf.Writer.
 func (c *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
-	defer mb.Release()
+	defer buf.ReleaseMulti(mb)
 
 	updatePending := false
 	defer func() {

@@ -13,7 +13,7 @@ func ReadAllToMultiBuffer(reader io.Reader) (MultiBuffer, error) {
 	mb := make(MultiBuffer, 0, 128)
 
 	if _, err := mb.ReadFrom(reader); err != nil {
-		mb.Release()
+		ReleaseMulti(mb)
 		return nil, err
 	}
 
@@ -31,7 +31,7 @@ func ReadAllToBytes(reader io.Reader) ([]byte, error) {
 	}
 	b := make([]byte, mb.Len())
 	common.Must2(mb.Read(b))
-	mb.Release()
+	ReleaseMulti(mb)
 	return b, nil
 }
 
@@ -45,6 +45,15 @@ func MergeMulti(dest MultiBuffer, src MultiBuffer) (MultiBuffer, MultiBuffer) {
 		src[idx] = nil
 	}
 	return dest, src[:0]
+}
+
+// ReleaseMulti release all content of the MultiBuffer, and returns an empty MultiBuffer.
+func ReleaseMulti(mb MultiBuffer) MultiBuffer {
+	for i := range mb {
+		mb[i].Release()
+		mb[i] = nil
+	}
+	return mb[:0]
 }
 
 // Copy copied the beginning part of the MultiBuffer into the given byte array.
@@ -107,7 +116,9 @@ func (mb *MultiBuffer) Read(b []byte) (int, error) {
 
 // WriteTo implements io.WriterTo.
 func (mb *MultiBuffer) WriteTo(writer io.Writer) (int64, error) {
-	defer mb.Release()
+	defer func() {
+		*mb = ReleaseMulti(*mb)
+	}()
 
 	totalBytes := int64(0)
 	for _, b := range *mb {
@@ -143,10 +154,7 @@ func (mb *MultiBuffer) Write(b []byte) (int, error) {
 
 // WriteMultiBuffer implements Writer.
 func (mb *MultiBuffer) WriteMultiBuffer(b MultiBuffer) error {
-	*mb = append(*mb, b...)
-	for i := range b {
-		b[i] = nil
-	}
+	*mb, _ = MergeMulti(*mb, b)
 	return nil
 }
 
@@ -173,15 +181,7 @@ func (mb MultiBuffer) IsEmpty() bool {
 	return true
 }
 
-// Release releases all Buffers in the MultiBuffer.
-func (mb *MultiBuffer) Release() {
-	for i, b := range *mb {
-		b.Release()
-		(*mb)[i] = nil
-	}
-	*mb = nil
-}
-
+// String returns the content of the MultiBuffer in string.
 func (mb MultiBuffer) String() string {
 	v := make([]interface{}, len(mb))
 	for i, b := range mb {

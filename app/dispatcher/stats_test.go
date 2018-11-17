@@ -36,7 +36,7 @@ func TestStatsWriter(t *testing.T) {
 	common.Must2(mb.Write([]byte("abcd")))
 	common.Must(writer.WriteMultiBuffer(mb))
 
-	mb.Release()
+	mb = buf.ReleaseMulti(mb)
 	common.Must2(mb.Write([]byte("efg")))
 	common.Must(writer.WriteMultiBuffer(mb))
 
