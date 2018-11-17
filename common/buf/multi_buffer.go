@@ -38,16 +38,13 @@ func ReadAllToBytes(reader io.Reader) ([]byte, error) {
 // MultiBuffer is a list of Buffers. The order of Buffer matters.
 type MultiBuffer []*Buffer
 
-// Append appends buffer to the end of this MultiBuffer
-func (mb *MultiBuffer) Append(buf *Buffer) {
-	if buf != nil {
-		*mb = append(*mb, buf)
+// MergeMulti merges content from src to dest, and returns the new address of dest and src
+func MergeMulti(dest MultiBuffer, src MultiBuffer) (MultiBuffer, MultiBuffer) {
+	dest = append(dest, src...)
+	for idx := range src {
+		src[idx] = nil
 	}
-}
-
-// AppendMulti appends a MultiBuffer to the end of this one.
-func (mb *MultiBuffer) AppendMulti(buf MultiBuffer) {
-	*mb = append(*mb, buf...)
+	return dest, src[:0]
 }
 
 // Copy copied the beginning part of the MultiBuffer into the given byte array.
@@ -73,7 +70,7 @@ func (mb *MultiBuffer) ReadFrom(reader io.Reader) (int64, error) {
 		if b.IsEmpty() {
 			b.Release()
 		} else {
-			mb.Append(b)
+			*mb = append(*mb, b)
 		}
 		totalBytes += int64(b.Len())
 		if err != nil {
@@ -138,7 +135,7 @@ func (mb *MultiBuffer) Write(b []byte) (int, error) {
 		bb := New()
 		nBytes, _ := bb.Write(b)
 		b = b[nBytes:]
-		mb.Append(bb)
+		*mb = append(*mb, bb)
 	}
 
 	return totalBytes, nil
@@ -204,7 +201,7 @@ func (mb *MultiBuffer) SliceBySize(size int32) MultiBuffer {
 			break
 		}
 		sliceSize += b.Len()
-		slice.Append(b)
+		slice = append(slice, b)
 		(*mb)[i] = nil
 	}
 	*mb = (*mb)[endIndex:]

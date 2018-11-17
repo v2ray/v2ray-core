@@ -196,7 +196,7 @@ func (w *ReceivingWorker) ReadMultiBuffer() buf.MultiBuffer {
 			break
 		}
 		w.nextNumber++
-		mb.Append(seg.Detach())
+		mb = append(mb, seg.Detach())
 		seg.Release()
 	}
 

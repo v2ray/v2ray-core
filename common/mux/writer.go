@@ -71,8 +71,8 @@ func writeMetaWithFrame(writer buf.Writer, meta FrameMetadata, data buf.MultiBuf
 	}
 
 	mb2 := make(buf.MultiBuffer, 0, len(data)+1)
-	mb2.Append(frame)
-	mb2.AppendMulti(data)
+	mb2 = append(mb2, frame)
+	mb2 = append(mb2, data...)
 	return writer.WriteMultiBuffer(mb2)
 }
 

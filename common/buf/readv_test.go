@@ -51,7 +51,7 @@ func TestReadvReader(t *testing.T) {
 		if err != nil {
 			t.Fatal("unexpected error: ", err)
 		}
-		rmb.AppendMulti(mb)
+		rmb, _ = MergeMulti(rmb, mb)
 		if rmb.Len() == size {
 			break
 		}

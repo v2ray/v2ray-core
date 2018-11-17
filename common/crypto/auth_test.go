@@ -60,7 +60,7 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 		mb2, err := reader.ReadMultiBuffer()
 		assert(err, IsNil)
 
-		mb.AppendMulti(mb2)
+		mb, _ = buf.MergeMulti(mb, mb2)
 	}
 
 	assert(mb.Len(), Equals, int32(payloadSize))
@@ -97,11 +97,11 @@ func TestAuthenticationReaderWriterPacket(t *testing.T) {
 	var payload buf.MultiBuffer
 	pb1 := buf.New()
 	pb1.Write([]byte("abcd"))
-	payload.Append(pb1)
+	payload = append(payload, pb1)
 
 	pb2 := buf.New()
 	pb2.Write([]byte("efgh"))
-	payload.Append(pb2)
+	payload = append(payload, pb2)
 
 	assert(writer.WriteMultiBuffer(payload), IsNil)
 	assert(cache.Len(), GreaterThan, int32(0))

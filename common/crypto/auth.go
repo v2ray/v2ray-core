@@ -176,7 +176,7 @@ func (r *AuthenticationReader) readInternal(soft bool, mb *buf.MultiBuffer) erro
 		if err != nil {
 			return nil
 		}
-		mb.Append(b)
+		*mb = append(*mb, b)
 		return nil
 	}
 
@@ -289,7 +289,7 @@ func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
 			mb2Write.Release()
 			return err
 		}
-		mb2Write.Append(eb)
+		mb2Write = append(mb2Write, eb)
 		if mb.IsEmpty() {
 			break
 		}
@@ -313,7 +313,7 @@ func (w *AuthenticationWriter) writePacket(mb buf.MultiBuffer) error {
 			continue
 		}
 
-		mb2Write.Append(eb)
+		mb2Write = append(mb2Write, eb)
 	}
 
 	if mb2Write.IsEmpty() {

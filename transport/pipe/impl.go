@@ -120,7 +120,7 @@ func (p *pipe) writeMultiBufferInternal(mb buf.MultiBuffer) error {
 		return err
 	}
 
-	p.data.AppendMulti(mb)
+	p.data, _ = buf.MergeMulti(p.data, mb)
 	return nil
 }
 

@@ -22,7 +22,7 @@ func readAll(reader buf.Reader) (buf.MultiBuffer, error) {
 		if err != nil {
 			return nil, err
 		}
-		mb.AppendMulti(b)
+		mb = append(mb, b...)
 	}
 	return mb, nil
 }

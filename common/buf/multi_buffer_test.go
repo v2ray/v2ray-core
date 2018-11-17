@@ -33,7 +33,7 @@ func TestMultiBufferAppend(t *testing.T) {
 	var mb MultiBuffer
 	b := New()
 	b.WriteString("ab")
-	mb.Append(b)
+	mb = append(mb, b)
 	assert(mb.Len(), Equals, int32(2))
 }
 
