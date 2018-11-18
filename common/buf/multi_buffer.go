@@ -141,16 +141,17 @@ func SplitSize(mb MultiBuffer, size int32) (MultiBuffer, MultiBuffer) {
 
 	totalBytes := int32(0)
 	var r MultiBuffer
-	endIndex := 0
+	endIndex := -1
 	for i := range mb {
 		if totalBytes+mb[i].Len() > size {
 			endIndex = i
 			break
 		}
+		totalBytes += mb[i].Len()
 		r = append(r, mb[i])
 		mb[i] = nil
 	}
-	if endIndex == len(mb) {
+	if endIndex == -1 {
 		// To reuse mb array
 		mb = mb[:0]
 	} else {
