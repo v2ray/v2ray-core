@@ -87,7 +87,8 @@ func (r *BufferedReader) ReadAtMost(size int32) (MultiBuffer, error) {
 		r.Buffer = mb
 	}
 
-	mb := r.Buffer.SliceBySize(size)
+	rb, mb := SplitSize(r.Buffer, size)
+	r.Buffer = rb
 	if r.Buffer.IsEmpty() {
 		r.Buffer = nil
 	}

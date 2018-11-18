@@ -143,7 +143,8 @@ func (w *ChunkStreamWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	mb2Write := make(buf.MultiBuffer, 0, mbLen/buf.Size+mbLen/sliceSize+2)
 
 	for {
-		slice := mb.SliceBySize(sliceSize)
+		mb2, slice := buf.SplitSize(mb, sliceSize)
+		mb = mb2
 
 		b := buf.New()
 		w.sizeEncoder.Encode(uint16(slice.Len()), b.Extend(w.sizeEncoder.SizeBytes()))

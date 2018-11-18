@@ -94,7 +94,7 @@ func (w *Writer) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	for !mb.IsEmpty() {
 		var chunk buf.MultiBuffer
 		if w.transferType == protocol.TransferTypeStream {
-			chunk = mb.SliceBySize(8 * 1024)
+			mb, chunk = buf.SplitSize(mb, 8*1024)
 		} else {
 			mb2, b := buf.SplitFirst(mb)
 			mb = mb2

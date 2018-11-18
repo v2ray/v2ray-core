@@ -44,6 +44,6 @@ func TestMultiBufferSliceBySizeLarge(t *testing.T) {
 
 	mb := MergeBytes(nil, lb)
 
-	mb2 := mb.SliceBySize(1024)
+	mb, mb2 := SplitSize(mb, 1024)
 	assert(mb2.Len(), Equals, int32(1024))
 }

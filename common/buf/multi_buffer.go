@@ -3,7 +3,6 @@ package buf
 import (
 	"io"
 
-	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/serial"
 )
@@ -127,6 +126,39 @@ func SplitFirst(mb MultiBuffer) (MultiBuffer, *Buffer) {
 	return mb, b
 }
 
+// SplitSize splits the beginning of the MultiBuffer into another one, for at most size bytes.
+func SplitSize(mb MultiBuffer, size int32) (MultiBuffer, MultiBuffer) {
+	if len(mb) == 0 {
+		return mb, nil
+	}
+
+	if mb[0].Len() > size {
+		b := New()
+		copy(b.Extend(size), mb[0].BytesTo(size))
+		mb[0].Advance(size)
+		return mb, MultiBuffer{b}
+	}
+
+	totalBytes := int32(0)
+	var r MultiBuffer
+	endIndex := 0
+	for i := range mb {
+		if totalBytes+mb[i].Len() > size {
+			endIndex = i
+			break
+		}
+		r = append(r, mb[i])
+		mb[i] = nil
+	}
+	if endIndex == len(mb) {
+		// To reuse mb array
+		mb = mb[:0]
+	} else {
+		mb = mb[endIndex:]
+	}
+	return mb, r
+}
+
 // Len returns the total number of bytes in the MultiBuffer.
 func (mb MultiBuffer) Len() int32 {
 	if mb == nil {
@@ -157,29 +189,6 @@ func (mb MultiBuffer) String() string {
 		v[i] = b
 	}
 	return serial.Concat(v...)
-}
-
-// SliceBySize splits the beginning of this MultiBuffer into another one, for at most size bytes.
-func (mb *MultiBuffer) SliceBySize(size int32) MultiBuffer {
-	slice := make(MultiBuffer, 0, 10)
-	sliceSize := int32(0)
-	endIndex := len(*mb)
-	for i, b := range *mb {
-		if b.Len()+sliceSize > size {
-			endIndex = i
-			break
-		}
-		sliceSize += b.Len()
-		slice = append(slice, b)
-		(*mb)[i] = nil
-	}
-	*mb = (*mb)[endIndex:]
-	if endIndex == 0 && len(*mb) > 0 {
-		b := New()
-		common.Must2(b.ReadFullFrom((*mb)[0], size))
-		return MultiBuffer{b}
-	}
-	return slice
 }
 
 // MultiBufferContainer is a ReadWriteCloser wrapper over MultiBuffer.
