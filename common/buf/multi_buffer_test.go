@@ -94,3 +94,16 @@ func TestMultiBufferSplitFirst(t *testing.T) {
 		t.Error("expect empty buffer, but got ", mb.String())
 	}
 }
+
+func BenchmarkSplitBytes(b *testing.B) {
+	var mb MultiBuffer
+	raw := make([]byte, Size)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		buffer := StackNew()
+		buffer.Extend(Size)
+		mb = append(mb, &buffer)
+		mb, _ = SplitBytes(mb, raw)
+	}
+}

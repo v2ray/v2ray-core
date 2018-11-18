@@ -98,17 +98,24 @@ func ReadFrom(reader io.Reader) (MultiBuffer, error) {
 // It returns the new address of MultiBuffer leftover, and number of bytes written into the input byte slice.
 func SplitBytes(mb MultiBuffer, b []byte) (MultiBuffer, int) {
 	totalBytes := 0
-
-	for len(mb) > 0 {
-		bb := mb[0]
-		nBytes, _ := bb.Read(b)
+	endIndex := -1
+	for i := range mb {
+		pBuffer := mb[i]
+		nBytes, _ := pBuffer.Read(b)
 		totalBytes += nBytes
 		b = b[nBytes:]
-		if !bb.IsEmpty() {
+		if !pBuffer.IsEmpty() {
+			endIndex = i
 			break
 		}
-		bb.Release()
-		mb = mb[1:]
+		pBuffer.Release()
+		mb[i] = nil
+	}
+
+	if endIndex == -1 {
+		mb = mb[:0]
+	} else {
+		mb = mb[endIndex:]
 	}
 
 	return mb, totalBytes

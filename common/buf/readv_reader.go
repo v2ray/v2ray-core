@@ -48,6 +48,7 @@ type multiReader interface {
 	Clear()
 }
 
+// ReadVReader is a Reader that uses readv(2) syscall to read data.
 type ReadVReader struct {
 	io.Reader
 	rawConn syscall.RawConn
@@ -55,6 +56,7 @@ type ReadVReader struct {
 	alloc   allocStrategy
 }
 
+// NewReadVReader creates a new ReadVReader.
 func NewReadVReader(reader io.Reader, rawConn syscall.RawConn) *ReadVReader {
 	return &ReadVReader{
 		Reader:  reader,
