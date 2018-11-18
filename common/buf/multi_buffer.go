@@ -35,6 +35,7 @@ func MergeMulti(dest MultiBuffer, src MultiBuffer) (MultiBuffer, MultiBuffer) {
 	return dest, src[:0]
 }
 
+// MergeBytes merges the given bytes into MultiBuffer and return the new address of the merged MultiBuffer.
 func MergeBytes(dest MultiBuffer, src []byte) MultiBuffer {
 	n := len(dest)
 	if n > 0 && !(dest)[n-1].IsFull() {
@@ -94,6 +95,8 @@ func ReadFrom(reader io.Reader) (MultiBuffer, error) {
 	}
 }
 
+// SplitBytes splits the given amount of bytes from the beginning of the MultiBuffer.
+// It returns the new address of MultiBuffer leftover, and number of bytes written into the input byte slice.
 func SplitBytes(mb MultiBuffer, b []byte) (MultiBuffer, int) {
 	totalBytes := 0
 
@@ -110,6 +113,18 @@ func SplitBytes(mb MultiBuffer, b []byte) (MultiBuffer, int) {
 	}
 
 	return mb, totalBytes
+}
+
+// SplitFirst splits the first Buffer from the beginning of the MultiBuffer.
+func SplitFirst(mb MultiBuffer) (MultiBuffer, *Buffer) {
+	if len(mb) == 0 {
+		return mb, nil
+	}
+
+	b := mb[0]
+	mb[0] = nil
+	mb = mb[1:]
+	return mb, b
 }
 
 // Len returns the total number of bytes in the MultiBuffer.
@@ -167,21 +182,12 @@ func (mb *MultiBuffer) SliceBySize(size int32) MultiBuffer {
 	return slice
 }
 
-// SplitFirst splits out the first Buffer in this MultiBuffer.
-func (mb *MultiBuffer) SplitFirst() *Buffer {
-	if len(*mb) == 0 {
-		return nil
-	}
-	b := (*mb)[0]
-	(*mb)[0] = nil
-	*mb = (*mb)[1:]
-	return b
-}
-
+// MultiBufferContainer is a ReadWriteCloser wrapper over MultiBuffer.
 type MultiBufferContainer struct {
 	MultiBuffer
 }
 
+// Read implements io.Reader.
 func (c *MultiBufferContainer) Read(b []byte) (int, error) {
 	if c.MultiBuffer.IsEmpty() {
 		return 0, io.EOF
@@ -192,23 +198,27 @@ func (c *MultiBufferContainer) Read(b []byte) (int, error) {
 	return nBytes, nil
 }
 
+// ReadMultiBuffer implements Reader.
 func (c *MultiBufferContainer) ReadMultiBuffer() (MultiBuffer, error) {
 	mb := c.MultiBuffer
 	c.MultiBuffer = nil
 	return mb, nil
 }
 
+// Write implements io.Writer.
 func (c *MultiBufferContainer) Write(b []byte) (int, error) {
 	c.MultiBuffer = MergeBytes(c.MultiBuffer, b)
 	return len(b), nil
 }
 
+// WriteMultiBuffer implement Writer.
 func (c *MultiBufferContainer) WriteMultiBuffer(b MultiBuffer) error {
 	mb, _ := MergeMulti(c.MultiBuffer, b)
 	c.MultiBuffer = mb
 	return nil
 }
 
+// Close implement io.Closer.
 func (c *MultiBufferContainer) Close() error {
 	c.MultiBuffer = ReleaseMulti(c.MultiBuffer)
 	return nil
