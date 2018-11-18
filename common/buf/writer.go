@@ -134,15 +134,16 @@ func (w *BufferedWriter) WriteMultiBuffer(b MultiBuffer) error {
 		return w.writer.WriteMultiBuffer(b)
 	}
 
-	defer ReleaseMulti(b)
+	reader := MultiBufferContainer{
+		MultiBuffer: b,
+	}
+	defer reader.Close()
 
-	for !b.IsEmpty() {
+	for !reader.MultiBuffer.IsEmpty() {
 		if w.buffer == nil {
 			w.buffer = New()
 		}
-		if _, err := w.buffer.ReadFrom(&b); err != nil {
-			return err
-		}
+		common.Must2(w.buffer.ReadFrom(&reader))
 		if w.buffer.IsFull() {
 			if err := w.flushInternal(); err != nil {
 				return err

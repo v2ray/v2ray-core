@@ -209,7 +209,7 @@ func (w *ReceivingWorker) Read(b []byte) int {
 	if mb.IsEmpty() {
 		return 0
 	}
-	nBytes, err := mb.Read(b)
+	mb, nBytes, err := buf.SplitBytes(mb, b)
 	common.Must(err)
 	if !mb.IsEmpty() {
 		w.leftOver = mb

@@ -1,6 +1,7 @@
 package kcp
 
 import (
+	"bytes"
 	"io"
 	"net"
 	"runtime"
@@ -8,7 +9,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/signal"
 	"v2ray.com/core/common/signal/semaphore"
@@ -364,12 +364,8 @@ func (c *Connection) waitForDataOutput() error {
 
 // Write implements io.Writer.
 func (c *Connection) Write(b []byte) (int, error) {
-	// This involves multiple copies of the buffer. But we don't expect this method to be used often.
-	// Only wrapped connections such as TLS and WebSocket will call into this.
-	// TODO: improve efficiency.
-	var mb buf.MultiBuffer
-	common.Must2(mb.Write(b))
-	if err := c.WriteMultiBuffer(mb); err != nil {
+	reader := bytes.NewReader(b)
+	if err := c.writeMultiBufferInternal(reader); err != nil {
 		return 0, err
 	}
 	return len(b), nil
@@ -377,8 +373,15 @@ func (c *Connection) Write(b []byte) (int, error) {
 
 // WriteMultiBuffer implements buf.Writer.
 func (c *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
-	defer buf.ReleaseMulti(mb)
+	reader := &buf.MultiBufferContainer{
+		MultiBuffer: mb,
+	}
+	defer reader.Close()
 
+	return c.writeMultiBufferInternal(reader)
+}
+
+func (c *Connection) writeMultiBufferInternal(reader io.Reader) error {
 	updatePending := false
 	defer func() {
 		if updatePending {
@@ -386,19 +389,28 @@ func (c *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 		}
 	}()
 
+	var b *buf.Buffer
+	defer b.Release()
+
 	for {
 		for {
 			if c == nil || c.State() != StateActive {
 				return io.ErrClosedPipe
 			}
 
-			if !c.sendingWorker.Push(&mb) {
+			if b == nil {
+				b = buf.New()
+				_, err := b.ReadFrom(io.LimitReader(reader, int64(c.mss)))
+				if err != nil {
+					return nil
+				}
+			}
+
+			if !c.sendingWorker.Push(b) {
 				break
 			}
 			updatePending = true
-			if mb.IsEmpty() {
-				return nil
-			}
+			b = nil
 		}
 
 		if updatePending {

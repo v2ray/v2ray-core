@@ -30,8 +30,7 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 	rawPayload := make([]byte, payloadSize)
 	rand.Read(rawPayload)
 
-	var payload buf.MultiBuffer
-	payload.Write(rawPayload)
+	payload := buf.MergeBytes(nil, rawPayload)
 	assert(payload.Len(), Equals, int32(payloadSize))
 
 	cache := bytes.NewBuffer(nil)
@@ -66,7 +65,7 @@ func TestAuthenticationReaderWriter(t *testing.T) {
 	assert(mb.Len(), Equals, int32(payloadSize))
 
 	mbContent := make([]byte, payloadSize)
-	mb.Read(mbContent)
+	buf.SplitBytes(mb, mbContent)
 	assert(mbContent, Equals, rawPayload)
 
 	_, err = reader.ReadMultiBuffer()

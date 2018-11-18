@@ -33,8 +33,7 @@ func TestReadvReader(t *testing.T) {
 
 	go func() {
 		writer := NewWriter(conn)
-		var mb MultiBuffer
-		common.Must2(mb.Write(data))
+		mb := MergeBytes(nil, data)
 
 		if err := writer.WriteMultiBuffer(mb); err != nil {
 			t.Fatal("failed to write data: ", err)
@@ -58,7 +57,8 @@ func TestReadvReader(t *testing.T) {
 	}
 
 	rdata := make([]byte, size)
-	common.Must2(rmb.Read(rdata))
+	_, _, err = SplitBytes(rmb, rdata)
+	common.Must(err)
 
 	if err := compare.BytesEqualWithDetail(data, rdata); err != nil {
 		t.Fatal(err)

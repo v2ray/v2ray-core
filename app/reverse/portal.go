@@ -251,8 +251,7 @@ func (w *PortalWorker) heartbeat() error {
 
 	b, err := proto.Marshal(msg)
 	common.Must(err)
-	var mb buf.MultiBuffer
-	common.Must2(mb.Write(b))
+	mb := buf.MergeBytes(nil, b)
 	return w.writer.WriteMultiBuffer(mb)
 }
 

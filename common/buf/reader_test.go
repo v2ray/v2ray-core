@@ -69,8 +69,7 @@ func TestReadByte(t *testing.T) {
 		t.Error("unexpected byte: ", b, " want a")
 	}
 
-	var mb MultiBuffer
-	nBytes, err := reader.WriteTo(&mb)
+	nBytes, err := reader.WriteTo(DiscardBytes)
 	common.Must(err)
 	if nBytes != 3 {
 		t.Error("unexpect bytes written: ", nBytes)

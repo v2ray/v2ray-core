@@ -21,7 +21,7 @@ func TestMultiBufferRead(t *testing.T) {
 	mb := MultiBuffer{b1, b2}
 
 	bs := make([]byte, 32)
-	nBytes, err := mb.Read(bs)
+	_, nBytes, err := SplitBytes(mb, bs)
 	assert(err, IsNil)
 	assert(nBytes, Equals, 4)
 	assert(bs[:nBytes], Equals, []byte("abcd"))
@@ -43,16 +43,8 @@ func TestMultiBufferSliceBySizeLarge(t *testing.T) {
 	lb := make([]byte, 8*1024)
 	common.Must2(io.ReadFull(rand.Reader, lb))
 
-	var mb MultiBuffer
-	common.Must2(mb.Write(lb))
+	mb := MergeBytes(nil, lb)
 
 	mb2 := mb.SliceBySize(1024)
 	assert(mb2.Len(), Equals, int32(1024))
-}
-
-func TestInterface(t *testing.T) {
-	assert := With(t)
-
-	assert((*MultiBuffer)(nil), Implements, (*io.WriterTo)(nil))
-	assert((*MultiBuffer)(nil), Implements, (*io.ReaderFrom)(nil))
 }

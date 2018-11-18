@@ -194,7 +194,7 @@ func (r *AuthenticationReader) readInternal(soft bool, mb *buf.MultiBuffer) erro
 		return err
 	}
 
-	common.Must2(mb.Write(rb))
+	*mb = buf.MergeBytes(*mb, rb)
 	return nil
 }
 
@@ -279,11 +279,17 @@ func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
 	payloadSize := buf.Size - int32(w.auth.Overhead()) - w.sizeParser.SizeBytes() - maxPadding
 	mb2Write := make(buf.MultiBuffer, 0, len(mb)+10)
 
+	temp := buf.New()
+	defer temp.Release()
+
+	rawBytes := temp.Extend(payloadSize)
+
 	for {
-		b := buf.New()
-		common.Must2(b.ReadFrom(io.LimitReader(&mb, int64(payloadSize))))
-		eb, err := w.seal(b.Bytes())
-		b.Release()
+		nb, nBytes, err := buf.SplitBytes(mb, rawBytes)
+		common.Must(err)
+		mb = nb
+
+		eb, err := w.seal(rawBytes[:nBytes])
 
 		if err != nil {
 			buf.ReleaseMulti(mb2Write)

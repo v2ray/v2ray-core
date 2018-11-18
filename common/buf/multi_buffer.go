@@ -8,21 +8,9 @@ import (
 	"v2ray.com/core/common/serial"
 )
 
-// ReadAllToMultiBuffer reads all content from the reader into a MultiBuffer, until EOF.
-func ReadAllToMultiBuffer(reader io.Reader) (MultiBuffer, error) {
-	mb := make(MultiBuffer, 0, 128)
-
-	if _, err := mb.ReadFrom(reader); err != nil {
-		ReleaseMulti(mb)
-		return nil, err
-	}
-
-	return mb, nil
-}
-
 // ReadAllToBytes reads all content from the reader into a byte array, until EOF.
 func ReadAllToBytes(reader io.Reader) ([]byte, error) {
-	mb, err := ReadAllToMultiBuffer(reader)
+	mb, err := ReadFrom(reader)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +18,8 @@ func ReadAllToBytes(reader io.Reader) ([]byte, error) {
 		return nil, nil
 	}
 	b := make([]byte, mb.Len())
-	common.Must2(mb.Read(b))
+	mb, _, err = SplitBytes(mb, b)
+	common.Must(err)
 	ReleaseMulti(mb)
 	return b, nil
 }
@@ -45,6 +34,23 @@ func MergeMulti(dest MultiBuffer, src MultiBuffer) (MultiBuffer, MultiBuffer) {
 		src[idx] = nil
 	}
 	return dest, src[:0]
+}
+
+func MergeBytes(dest MultiBuffer, src []byte) MultiBuffer {
+	n := len(dest)
+	if n > 0 && !(dest)[n-1].IsFull() {
+		nBytes, _ := (dest)[n-1].Write(src)
+		src = src[nBytes:]
+	}
+
+	for len(src) > 0 {
+		b := New()
+		nBytes, _ := b.Write(src)
+		src = src[nBytes:]
+		dest = append(dest, b)
+	}
+
+	return dest
 }
 
 // ReleaseMulti release all content of the MultiBuffer, and returns an empty MultiBuffer.
@@ -69,93 +75,42 @@ func (mb MultiBuffer) Copy(b []byte) int {
 	return total
 }
 
-// ReadFrom implements io.ReaderFrom.
-func (mb *MultiBuffer) ReadFrom(reader io.Reader) (int64, error) {
-	totalBytes := int64(0)
-
+// ReadFrom reads all content from reader until EOF.
+func ReadFrom(reader io.Reader) (MultiBuffer, error) {
+	mb := make(MultiBuffer, 0, 16)
 	for {
 		b := New()
 		_, err := b.ReadFullFrom(reader, Size)
 		if b.IsEmpty() {
 			b.Release()
 		} else {
-			*mb = append(*mb, b)
+			mb = append(mb, b)
 		}
-		totalBytes += int64(b.Len())
 		if err != nil {
 			if errors.Cause(err) == io.EOF || errors.Cause(err) == io.ErrUnexpectedEOF {
-				return totalBytes, nil
+				return mb, nil
 			}
-			return totalBytes, err
+			return mb, err
 		}
 	}
 }
 
-// Read implements io.Reader.
-func (mb *MultiBuffer) Read(b []byte) (int, error) {
-	if mb.IsEmpty() {
-		return 0, io.EOF
-	}
-	endIndex := len(*mb)
+func SplitBytes(mb MultiBuffer, b []byte) (MultiBuffer, int, error) {
 	totalBytes := 0
-	for i, bb := range *mb {
+
+	for len(mb) > 0 {
+		bb := mb[0]
 		nBytes, _ := bb.Read(b)
 		totalBytes += nBytes
 		b = b[nBytes:]
-		if bb.IsEmpty() {
-			bb.Release()
-			(*mb)[i] = nil
-		} else {
-			endIndex = i
+		if !bb.IsEmpty() {
 			break
 		}
-	}
-	*mb = (*mb)[endIndex:]
-	return totalBytes, nil
-}
-
-// WriteTo implements io.WriterTo.
-func (mb *MultiBuffer) WriteTo(writer io.Writer) (int64, error) {
-	defer func() {
-		*mb = ReleaseMulti(*mb)
-	}()
-
-	totalBytes := int64(0)
-	for _, b := range *mb {
-		nBytes, err := writer.Write(b.Bytes())
-		totalBytes += int64(nBytes)
-		if err != nil {
-			return totalBytes, err
-		}
+		bb.Release()
+		mb = mb[1:]
 	}
 
-	return totalBytes, nil
-}
-
-// Write implements io.Writer.
-func (mb *MultiBuffer) Write(b []byte) (int, error) {
-	totalBytes := len(b)
-
-	n := len(*mb)
-	if n > 0 && !(*mb)[n-1].IsFull() {
-		nBytes, _ := (*mb)[n-1].Write(b)
-		b = b[nBytes:]
-	}
-
-	for len(b) > 0 {
-		bb := New()
-		nBytes, _ := bb.Write(b)
-		b = b[nBytes:]
-		*mb = append(*mb, bb)
-	}
-
-	return totalBytes, nil
-}
-
-// WriteMultiBuffer implements Writer.
-func (mb *MultiBuffer) WriteMultiBuffer(b MultiBuffer) error {
-	*mb, _ = MergeMulti(*mb, b)
-	return nil
+	return mb, totalBytes, nil
 }
 
 // Len returns the total number of bytes in the MultiBuffer.
@@ -222,4 +177,40 @@ func (mb *MultiBuffer) SplitFirst() *Buffer {
 	(*mb)[0] = nil
 	*mb = (*mb)[1:]
 	return b
+}
+
+type MultiBufferContainer struct {
+	MultiBuffer
+}
+
+func (c *MultiBufferContainer) Read(b []byte) (int, error) {
+	if c.MultiBuffer.IsEmpty() {
+		return 0, io.EOF
+	}
+
+	mb, nBytes, err := SplitBytes(c.MultiBuffer, b)
+	c.MultiBuffer = mb
+	return nBytes, err
+}
+
+func (c *MultiBufferContainer) ReadMultiBuffer() (MultiBuffer, error) {
+	mb := c.MultiBuffer
+	c.MultiBuffer = nil
+	return mb, nil
+}
+
+func (c *MultiBufferContainer) Write(b []byte) (int, error) {
+	c.MultiBuffer = MergeBytes(c.MultiBuffer, b)
+	return len(b), nil
+}
+
+func (c *MultiBufferContainer) WriteMultiBuffer(b MultiBuffer) error {
+	mb, _ := MergeMulti(c.MultiBuffer, b)
+	c.MultiBuffer = mb
+	return nil
+}
+
+func (c *MultiBufferContainer) Close() error {
+	c.MultiBuffer = ReleaseMulti(c.MultiBuffer)
+	return nil
 }
