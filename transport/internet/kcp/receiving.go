@@ -3,7 +3,6 @@ package kcp
 import (
 	"sync"
 
-	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 )
 
@@ -209,8 +208,7 @@ func (w *ReceivingWorker) Read(b []byte) int {
 	if mb.IsEmpty() {
 		return 0
 	}
-	mb, nBytes, err := buf.SplitBytes(mb, b)
-	common.Must(err)
+	mb, nBytes := buf.SplitBytes(mb, b)
 	if !mb.IsEmpty() {
 		w.leftOver = mb
 	}

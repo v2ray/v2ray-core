@@ -18,8 +18,7 @@ func ReadAllToBytes(reader io.Reader) ([]byte, error) {
 		return nil, nil
 	}
 	b := make([]byte, mb.Len())
-	mb, _, err = SplitBytes(mb, b)
-	common.Must(err)
+	mb, _ = SplitBytes(mb, b)
 	ReleaseMulti(mb)
 	return b, nil
 }
@@ -95,7 +94,7 @@ func ReadFrom(reader io.Reader) (MultiBuffer, error) {
 	}
 }
 
-func SplitBytes(mb MultiBuffer, b []byte) (MultiBuffer, int, error) {
+func SplitBytes(mb MultiBuffer, b []byte) (MultiBuffer, int) {
 	totalBytes := 0
 
 	for len(mb) > 0 {
@@ -110,7 +109,7 @@ func SplitBytes(mb MultiBuffer, b []byte) (MultiBuffer, int, error) {
 		mb = mb[1:]
 	}
 
-	return mb, totalBytes, nil
+	return mb, totalBytes
 }
 
 // Len returns the total number of bytes in the MultiBuffer.
@@ -188,9 +187,9 @@ func (c *MultiBufferContainer) Read(b []byte) (int, error) {
 		return 0, io.EOF
 	}
 
-	mb, nBytes, err := SplitBytes(c.MultiBuffer, b)
+	mb, nBytes := SplitBytes(c.MultiBuffer, b)
 	c.MultiBuffer = mb
-	return nBytes, err
+	return nBytes, nil
 }
 
 func (c *MultiBufferContainer) ReadMultiBuffer() (MultiBuffer, error) {

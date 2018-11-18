@@ -285,8 +285,7 @@ func (w *AuthenticationWriter) writeStream(mb buf.MultiBuffer) error {
 	rawBytes := temp.Extend(payloadSize)
 
 	for {
-		nb, nBytes, err := buf.SplitBytes(mb, rawBytes)
-		common.Must(err)
+		nb, nBytes := buf.SplitBytes(mb, rawBytes)
 		mb = nb
 
 		eb, err := w.seal(rawBytes[:nBytes])

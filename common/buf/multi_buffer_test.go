@@ -21,8 +21,7 @@ func TestMultiBufferRead(t *testing.T) {
 	mb := MultiBuffer{b1, b2}
 
 	bs := make([]byte, 32)
-	_, nBytes, err := SplitBytes(mb, bs)
-	assert(err, IsNil)
+	_, nBytes := SplitBytes(mb, bs)
 	assert(nBytes, Equals, 4)
 	assert(bs[:nBytes], Equals, []byte("abcd"))
 }

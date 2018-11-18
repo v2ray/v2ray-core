@@ -57,8 +57,7 @@ func TestReadvReader(t *testing.T) {
 	}
 
 	rdata := make([]byte, size)
-	_, _, err = SplitBytes(rmb, rdata)
-	common.Must(err)
+	SplitBytes(rmb, rdata)
 
 	if err := compare.BytesEqualWithDetail(data, rdata); err != nil {
 		t.Fatal(err)

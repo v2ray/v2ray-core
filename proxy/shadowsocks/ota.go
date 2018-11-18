@@ -116,7 +116,7 @@ func (w *ChunkWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	defer buf.ReleaseMulti(mb)
 
 	for {
-		mb, payloadLen, _ := buf.SplitBytes(mb, w.buffer[2+AuthSize:])
+		mb, payloadLen := buf.SplitBytes(mb, w.buffer[2+AuthSize:])
 		binary.BigEndian.PutUint16(w.buffer, uint16(payloadLen))
 		w.auth.Authenticate(w.buffer[2+AuthSize:2+AuthSize+payloadLen], w.buffer[2:])
 		if err := buf.WriteAllBytes(w.writer, w.buffer[:2+AuthSize+payloadLen]); err != nil {
