@@ -73,11 +73,24 @@ func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDoma
 	return sh, nil
 }
 
+func filterIP(ips []net.IP, option IPOption) []net.IP {
+	filtered := make([]net.IP, 0, len(ips))
+	for _, ip := range ips {
+		if (len(ip) == net.IPv4len && option.IPv4Enable) || (len(ip) == net.IPv6len && option.IPv6Enable) {
+			filtered = append(filtered, ip)
+		}
+	}
+	if len(filtered) == 0 {
+		return nil
+	}
+	return filtered
+}
+
 // LookupIP returns IP address for the given domain, if exists in this StaticHosts.
-func (h *StaticHosts) LookupIP(domain string) []net.IP {
+func (h *StaticHosts) LookupIP(domain string, option IPOption) []net.IP {
 	id := h.matchers.Match(domain)
 	if id == 0 {
 		return nil
 	}
-	return h.ips[id]
+	return filterIP(h.ips[id], option)
 }

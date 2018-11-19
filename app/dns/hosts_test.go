@@ -31,7 +31,10 @@ func TestStaticHosts(t *testing.T) {
 	common.Must(err)
 
 	{
-		ips := hosts.LookupIP("v2ray.com")
+		ips := hosts.LookupIP("v2ray.com", IPOption{
+			IPv4Enable: true,
+			IPv6Enable: true,
+		})
 		if len(ips) != 1 {
 			t.Error("expect 1 IP, but got ", len(ips))
 		}
@@ -41,7 +44,10 @@ func TestStaticHosts(t *testing.T) {
 	}
 
 	{
-		ips := hosts.LookupIP("www.v2ray.cn")
+		ips := hosts.LookupIP("www.v2ray.cn", IPOption{
+			IPv4Enable: true,
+			IPv6Enable: true,
+		})
 		if len(ips) != 1 {
 			t.Error("expect 1 IP, but got ", len(ips))
 		}

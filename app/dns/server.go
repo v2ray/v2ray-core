@@ -116,16 +116,39 @@ func (s *Server) Close() error {
 	return nil
 }
 
-func (s *Server) queryIPTimeout(server NameServerInterface, domain string) ([]net.IP, error) {
+func (s *Server) queryIPTimeout(server NameServerInterface, domain string, option IPOption) ([]net.IP, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*4)
-	ips, err := server.QueryIP(ctx, domain)
+	ips, err := server.QueryIP(ctx, domain, option)
 	cancel()
 	return ips, err
 }
 
 // LookupIP implements dns.Client.
 func (s *Server) LookupIP(domain string) ([]net.IP, error) {
-	if ip := s.hosts.LookupIP(domain); len(ip) > 0 {
+	return s.lookupIPInternal(domain, IPOption{
+		IPv4Enable: true,
+		IPv6Enable: true,
+	})
+}
+
+// LookupIPv4 implements dns.IPv4Lookup.
+func (s *Server) LookupIPv4(domain string) ([]net.IP, error) {
+	return s.lookupIPInternal(domain, IPOption{
+		IPv4Enable: true,
+		IPv6Enable: false,
+	})
+}
+
+// LookupIPv6 implements dns.IPv6Lookup.
+func (s *Server) LookupIPv6(domain string) ([]net.IP, error) {
+	return s.lookupIPInternal(domain, IPOption{
+		IPv4Enable: false,
+		IPv6Enable: true,
+	})
+}
+
+func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, error) {
+	if ip := s.hosts.LookupIP(domain, option); len(ip) > 0 {
 		return ip, nil
 	}
 
@@ -134,7 +157,7 @@ func (s *Server) LookupIP(domain string) ([]net.IP, error) {
 		idx := s.domainMatcher.Match(domain)
 		if idx > 0 {
 			ns := s.servers[s.domainIndexMap[idx]]
-			ips, err := s.queryIPTimeout(ns, domain)
+			ips, err := s.queryIPTimeout(ns, domain, option)
 			if len(ips) > 0 {
 				return ips, nil
 			}
@@ -145,7 +168,7 @@ func (s *Server) LookupIP(domain string) ([]net.IP, error) {
 	}
 
 	for _, server := range s.servers {
-		ips, err := s.queryIPTimeout(server, domain)
+		ips, err := s.queryIPTimeout(server, domain, option)
 		if len(ips) > 0 {
 			return ips, nil
 		}

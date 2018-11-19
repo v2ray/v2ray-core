@@ -9,6 +9,7 @@ import (
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/features"
 	"v2ray.com/core/features/dns"
+	"v2ray.com/core/features/dns/localdns"
 	"v2ray.com/core/features/inbound"
 	"v2ray.com/core/features/outbound"
 	"v2ray.com/core/features/policy"
@@ -183,7 +184,7 @@ func New(config *Config) (*Instance, error) {
 		Type     interface{}
 		Instance features.Feature
 	}{
-		{dns.ClientType(), dns.LocalClient{}},
+		{dns.ClientType(), localdns.New()},
 		{policy.ManagerType(), policy.DefaultManager{}},
 		{routing.RouterType(), routing.DefaultRouter{}},
 		{stats.ManagerType(), stats.NoopManager{}},

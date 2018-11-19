@@ -4,32 +4,40 @@ import (
 	"context"
 
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/features/dns/localdns"
 )
 
+type IPOption struct {
+	IPv4Enable bool
+	IPv6Enable bool
+}
+
 type NameServerInterface interface {
-	QueryIP(ctx context.Context, domain string) ([]net.IP, error)
+	QueryIP(ctx context.Context, domain string, option IPOption) ([]net.IP, error)
 }
 
 type localNameServer struct {
-	resolver net.Resolver
+	client *localdns.Client
 }
 
-func (s *localNameServer) QueryIP(ctx context.Context, domain string) ([]net.IP, error) {
-	ipAddr, err := s.resolver.LookupIPAddr(ctx, domain)
-	if err != nil {
-		return nil, err
+func (s *localNameServer) QueryIP(ctx context.Context, domain string, option IPOption) ([]net.IP, error) {
+	if option.IPv4Enable && option.IPv6Enable {
+		return s.client.LookupIP(domain)
 	}
-	var ips []net.IP
-	for _, addr := range ipAddr {
-		ips = append(ips, addr.IP)
+
+	if option.IPv4Enable {
+		return s.client.LookupIPv4(domain)
 	}
-	return ips, nil
+
+	if option.IPv6Enable {
+		return s.client.LookupIPv6(domain)
+	}
+
+	return nil, newError("neither IPv4 nor IPv6 is enabled")
 }
 
 func NewLocalNameServer() *localNameServer {
 	return &localNameServer{
-		resolver: net.Resolver{
-			PreferGo: true,
-		},
+		client: localdns.New(),
 	}
 }
