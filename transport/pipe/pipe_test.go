@@ -76,17 +76,16 @@ func TestPipeLimitZero(t *testing.T) {
 	}, func() error {
 		time.Sleep(time.Second)
 
-		rb, err := pReader.ReadMultiBuffer()
-		if err != nil {
+		var container buf.MultiBufferContainer
+		if err := buf.Copy(pReader, &container); err != nil {
 			return err
 		}
-		assert(rb.String(), Equals, "ab")
 
-		rb, err = pReader.ReadMultiBuffer()
-		if err != nil {
-			return err
-		}
-		assert(rb.String(), Equals, "cd")
+		assert(container.String(), Equals, "abcd")
+		return nil
+	}, func() error {
+		time.Sleep(time.Second * 2)
+		pWriter.Close()
 		return nil
 	}))()
 
