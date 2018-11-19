@@ -14,6 +14,7 @@ import (
 	"v2ray.com/core/common/serial"
 	"v2ray.com/core/common/uuid"
 	"v2ray.com/core/features/dns"
+	"v2ray.com/core/features/dns/localdns"
 	_ "v2ray.com/core/main/distro/all"
 	"v2ray.com/core/proxy/dokodemo"
 	"v2ray.com/core/proxy/vmess"
@@ -30,7 +31,7 @@ func TestV2RayDependency(t *testing.T) {
 		}
 		wait <- true
 	})
-	instance.AddFeature(dns.LocalClient{})
+	instance.AddFeature(localdns.New())
 	<-wait
 }
 
