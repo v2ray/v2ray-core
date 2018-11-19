@@ -104,7 +104,10 @@ func (s *ClassicNameServer) HandleResponse(ctx context.Context, payload *buf.Buf
 		newError("failed to parse DNS response").Base(err).AtWarning().WriteToLog()
 		return
 	}
-	parser.SkipAllQuestions()
+	if err := parser.SkipAllQuestions(); err != nil {
+		newError("failed to skip questions in DNS response").Base(err).AtWarning().WriteToLog()
+		return
+	}
 
 	id := header.ID
 	s.Lock()
