@@ -114,6 +114,14 @@ func (h *Handler) Dispatch(ctx context.Context, link *transport.Link) {
 	}
 }
 
+// Address implements internet.Dialer.
+func (h *Handler) Address() net.Address {
+	if h.senderSettings == nil || h.senderSettings.Via == nil {
+		return nil
+	}
+	return h.senderSettings.Via.AsAddress()
+}
+
 // Dial implements internet.Dialer.
 func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {
 	if h.senderSettings != nil {

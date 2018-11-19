@@ -11,6 +11,9 @@ import (
 type Dialer interface {
 	// Dial dials a system connection to the given destination.
 	Dial(ctx context.Context, destination net.Destination) (Connection, error)
+
+	// Address returns the address used by this Dialer. Maybe nil if not known.
+	Address() net.Address
 }
 
 // dialFunc is an interface to dial network connection to a specific destination.
