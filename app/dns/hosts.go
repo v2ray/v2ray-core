@@ -9,7 +9,7 @@ import (
 
 // StaticHosts represents static domain-ip mapping in DNS server.
 type StaticHosts struct {
-	ips      map[uint32][]net.IP
+	ips      [][]net.IP
 	matchers *strmatcher.MatcherGroup
 }
 
@@ -36,7 +36,7 @@ func toStrMatcher(t DomainMatchingType, domain string) (strmatcher.Matcher, erro
 func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDomain) (*StaticHosts, error) {
 	g := new(strmatcher.MatcherGroup)
 	sh := &StaticHosts{
-		ips:      make(map[uint32][]net.IP),
+		ips:      make([][]net.IP, len(hosts)+len(legacy)+16),
 		matchers: g,
 	}
 
