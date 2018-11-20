@@ -38,7 +38,7 @@ type DokodemoDoor struct {
 
 // Init initializes the DokodemoDoor instance with necessary parameters.
 func (d *DokodemoDoor) Init(config *Config, pm policy.Manager) error {
-	if (config.NetworkList == nil || config.NetworkList.Size() == 0) && len(config.Networks) == 0 {
+	if (config.NetworkList == nil || len(config.NetworkList.Network) == 0) && len(config.Networks) == 0 {
 		return newError("no network specified")
 	}
 	d.config = config
