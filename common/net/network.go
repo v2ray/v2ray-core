@@ -1,23 +1,5 @@
 package net
 
-import (
-	"strings"
-)
-
-func ParseNetwork(nwStr string) Network {
-	if network, found := Network_value[nwStr]; found {
-		return Network(network)
-	}
-	switch strings.ToLower(nwStr) {
-	case "tcp":
-		return Network_TCP
-	case "udp":
-		return Network_UDP
-	default:
-		return Network_Unknown
-	}
-}
-
 func (n Network) AsList() *NetworkList {
 	return &NetworkList{
 		Network: []Network{n},
@@ -25,17 +7,6 @@ func (n Network) AsList() *NetworkList {
 }
 
 func (n Network) SystemString() string {
-	switch n {
-	case Network_TCP:
-		return "tcp"
-	case Network_UDP:
-		return "udp"
-	default:
-		return "unknown"
-	}
-}
-
-func (n Network) URLPrefix() string {
 	switch n {
 	case Network_TCP:
 		return "tcp"
