@@ -51,12 +51,10 @@ func (s *Server) policy() policy.Session {
 }
 
 // Network implements proxy.Inbound.
-func (s *Server) Network() net.NetworkList {
-	list := net.NetworkList{
-		Network: []net.Network{net.Network_TCP},
-	}
+func (s *Server) Network() []net.Network {
+	list := []net.Network{net.Network_TCP}
 	if s.config.UdpEnabled {
-		list.Network = append(list.Network, net.Network_UDP)
+		list = append(list, net.Network_UDP)
 	}
 	return list
 }

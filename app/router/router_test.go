@@ -24,9 +24,7 @@ func TestSimpleRouter(t *testing.T) {
 				TargetTag: &RoutingRule_Tag{
 					Tag: "test",
 				},
-				NetworkList: &net.NetworkList{
-					Network: []net.Network{net.Network_TCP},
-				},
+				Networks: []net.Network{net.Network_TCP},
 			},
 		},
 	}
@@ -59,9 +57,7 @@ func TestSimpleBalancer(t *testing.T) {
 				TargetTag: &RoutingRule_BalancingTag{
 					BalancingTag: "balance",
 				},
-				NetworkList: &net.NetworkList{
-					Network: []net.Network{net.Network_TCP},
-				},
+				Networks: []net.Network{net.Network_TCP},
 			},
 		},
 		BalancingRule: []*BalancingRule{

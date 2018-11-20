@@ -80,7 +80,12 @@ message RoutingRule {
   repeated GeoIP geoip = 10;
 
   v2ray.core.common.net.PortRange port_range = 4;
-  v2ray.core.common.net.NetworkList network_list = 5;
+
+  // List of networks. Deprecated. Use networks.
+  v2ray.core.common.net.NetworkList network_list = 5 [deprecated = true];
+
+  // List of networks for matching.
+  repeated v2ray.core.common.net.Network networks = 13;
 
   // List of CIDRs for source IP address matching.
   repeated CIDR source_cidr = 6 [deprecated = true];

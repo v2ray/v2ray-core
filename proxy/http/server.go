@@ -52,10 +52,8 @@ func (s *Server) policy() policy.Session {
 	return p
 }
 
-func (*Server) Network() net.NetworkList {
-	return net.NetworkList{
-		Network: []net.Network{net.Network_TCP},
-	}
+func (*Server) Network() []net.Network {
+	return []net.Network{net.Network_TCP}
 }
 
 func parseHost(rawHost string, defaultPort net.Port) (net.Destination, error) {

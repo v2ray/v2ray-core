@@ -89,7 +89,7 @@ func NewAlwaysOnInboundHandler(ctx context.Context, tag string, receiverConfig *
 	}
 
 	for port := pr.From; port <= pr.To; port++ {
-		if nl.HasNetwork(net.Network_TCP) {
+		if net.HasNetwork(nl, net.Network_TCP) {
 			newError("creating stream worker on ", address, ":", port).AtDebug().WriteToLog()
 
 			worker := &tcpWorker{
@@ -107,7 +107,7 @@ func NewAlwaysOnInboundHandler(ctx context.Context, tag string, receiverConfig *
 			h.workers = append(h.workers, worker)
 		}
 
-		if nl.HasNetwork(net.Network_UDP) {
+		if net.HasNetwork(nl, net.Network_UDP) {
 			worker := &udpWorker{
 				tag:             tag,
 				proxy:           p,

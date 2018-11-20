@@ -145,10 +145,8 @@ func (h *Handler) Close() error {
 }
 
 // Network implements proxy.Inbound.Network().
-func (*Handler) Network() net.NetworkList {
-	return net.NetworkList{
-		Network: []net.Network{net.Network_TCP},
-	}
+func (*Handler) Network() []net.Network {
+	return []net.Network{net.Network_TCP}
 }
 
 func (h *Handler) GetUser(email string) *protocol.MemoryUser {

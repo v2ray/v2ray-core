@@ -1,11 +1,5 @@
 package net
 
-func (n Network) AsList() *NetworkList {
-	return &NetworkList{
-		Network: []Network{n},
-	}
-}
-
 func (n Network) SystemString() string {
 	switch n {
 	case Network_TCP:
@@ -19,7 +13,7 @@ func (n Network) SystemString() string {
 
 func HasNetwork(list []Network, network Network) bool {
 	for _, value := range list {
-		if string(value) == string(network) {
+		if value == network {
 			return true
 		}
 	}
@@ -34,10 +28,6 @@ func (l NetworkList) HasNetwork(network Network) bool {
 		}
 	}
 	return false
-}
-
-func (l NetworkList) Get(idx int) Network {
-	return l.Network[idx]
 }
 
 // Size returns the number of networks in this network list.

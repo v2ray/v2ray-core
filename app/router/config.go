@@ -85,7 +85,9 @@ func (rr *RoutingRule) BuildCondition() (Condition, error) {
 		conds.Add(NewPortMatcher(*rr.PortRange))
 	}
 
-	if rr.NetworkList != nil {
+	if len(rr.Networks) > 0 {
+		conds.Add(NewNetworkMatcher(rr.Networks))
+	} else if rr.NetworkList != nil {
 		conds.Add(NewNetworkMatcher(rr.NetworkList.Network))
 	}
 

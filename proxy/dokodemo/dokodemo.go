@@ -38,7 +38,7 @@ type DokodemoDoor struct {
 
 // Init initializes the DokodemoDoor instance with necessary parameters.
 func (d *DokodemoDoor) Init(config *Config, pm policy.Manager) error {
-	if config.NetworkList == nil || config.NetworkList.Size() == 0 {
+	if (config.NetworkList == nil || config.NetworkList.Size() == 0) && len(config.Networks) == 0 {
 		return newError("no network specified")
 	}
 	d.config = config
@@ -49,8 +49,13 @@ func (d *DokodemoDoor) Init(config *Config, pm policy.Manager) error {
 	return nil
 }
 
-func (d *DokodemoDoor) Network() net.NetworkList {
-	return *(d.config.NetworkList)
+// Network implements proxy.Inbound.
+func (d *DokodemoDoor) Network() []net.Network {
+	if len(d.config.Networks) > 0 {
+		return d.config.Networks
+	}
+
+	return d.config.NetworkList.Network
 }
 
 func (d *DokodemoDoor) policy() policy.Session {
@@ -66,6 +71,7 @@ type hasHandshakeAddress interface {
 	HandshakeAddress() net.Address
 }
 
+// Process implements proxy.Inbound.
 func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn internet.Connection, dispatcher routing.Dispatcher) error {
 	newError("processing connection from: ", conn.RemoteAddr()).AtDebug().WriteToLog(session.ExportIDToError(ctx))
 	dest := net.Destination{

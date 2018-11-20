@@ -47,15 +47,13 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	return s, nil
 }
 
-func (s *Server) Network() net.NetworkList {
-	list := net.NetworkList{
-		Network: s.config.Network,
-	}
-	if len(list.Network) == 0 {
-		list.Network = append(list.Network, net.Network_TCP)
+func (s *Server) Network() []net.Network {
+	list := s.config.Network
+	if len(list) == 0 {
+		list = append(list, net.Network_TCP)
 	}
 	if s.config.UdpEnabled {
-		list.Network = append(list.Network, net.Network_UDP)
+		list = append(list, net.Network_UDP)
 	}
 	return list
 }

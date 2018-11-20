@@ -17,8 +17,8 @@ import (
 
 // An Inbound processes inbound connections.
 type Inbound interface {
-	// Network returns a list of network that this inbound supports. Connections with not-supported networks will not be passed into Process().
-	Network() net.NetworkList
+	// Network returns a list of networks that this inbound supports. Connections with not-supported networks will not be passed into Process().
+	Network() []net.Network
 
 	// Process processes a connection of given network. If necessary, the Inbound can dispatch the connection to an Outbound.
 	Process(context.Context, net.Network, internet.Connection, routing.Dispatcher) error

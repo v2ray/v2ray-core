@@ -60,10 +60,8 @@ func NewServer(ctx context.Context, config *ServerConfig) (*Server, error) {
 	}, nil
 }
 
-func (s *Server) Network() net.NetworkList {
-	return net.NetworkList{
-		Network: []net.Network{net.Network_TCP},
-	}
+func (s *Server) Network() []net.Network {
+	return []net.Network{net.Network_TCP}
 }
 
 func isValidConnectionType(c [4]byte) bool {

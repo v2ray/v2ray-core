@@ -38,9 +38,9 @@ func (m *ProxyInbound) EXPECT() *ProxyInboundMockRecorder {
 }
 
 // Network mocks base method
-func (m *ProxyInbound) Network() net.NetworkList {
+func (m *ProxyInbound) Network() []net.Network {
 	ret := m.ctrl.Call(m, "Network")
-	ret0, _ := ret[0].(net.NetworkList)
+	ret0, _ := ret[0].([]net.Network)
 	return ret0
 }
 

@@ -122,7 +122,7 @@ func (h *DynamicInboundHandler) refresh() error {
 		}
 		p := rawProxy.(proxy.Inbound)
 		nl := p.Network()
-		if nl.HasNetwork(net.Network_TCP) {
+		if net.HasNetwork(nl, net.Network_TCP) {
 			worker := &tcpWorker{
 				tag:             h.tag,
 				address:         address,
@@ -142,7 +142,7 @@ func (h *DynamicInboundHandler) refresh() error {
 			workers = append(workers, worker)
 		}
 
-		if nl.HasNetwork(net.Network_UDP) {
+		if net.HasNetwork(nl, net.Network_UDP) {
 			worker := &udpWorker{
 				tag:             h.tag,
 				proxy:           p,
