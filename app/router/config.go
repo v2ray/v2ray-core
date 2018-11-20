@@ -86,7 +86,7 @@ func (rr *RoutingRule) BuildCondition() (Condition, error) {
 	}
 
 	if rr.NetworkList != nil {
-		conds.Add(NewNetworkMatcher(rr.NetworkList))
+		conds.Add(NewNetworkMatcher(rr.NetworkList.Network))
 	}
 
 	if len(rr.Geoip) > 0 {
