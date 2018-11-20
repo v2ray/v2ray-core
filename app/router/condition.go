@@ -185,9 +185,9 @@ type NetworkMatcher struct {
 	list [8]bool
 }
 
-func NewNetworkMatcher(network *net.NetworkList) NetworkMatcher {
+func NewNetworkMatcher(network []net.Network) NetworkMatcher {
 	var matcher NetworkMatcher
-	for _, n := range network.Network {
+	for _, n := range network {
 		matcher.list[int(n)] = true
 	}
 	return matcher
