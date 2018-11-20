@@ -182,21 +182,23 @@ func (v *PortMatcher) Apply(ctx context.Context) bool {
 }
 
 type NetworkMatcher struct {
-	network *net.NetworkList
+	list [8]bool
 }
 
-func NewNetworkMatcher(network *net.NetworkList) *NetworkMatcher {
-	return &NetworkMatcher{
-		network: network,
+func NewNetworkMatcher(network *net.NetworkList) NetworkMatcher {
+	var matcher NetworkMatcher
+	for _, n := range network.Network {
+		matcher.list[int(n)] = true
 	}
+	return matcher
 }
 
-func (v *NetworkMatcher) Apply(ctx context.Context) bool {
+func (v NetworkMatcher) Apply(ctx context.Context) bool {
 	outbound := session.OutboundFromContext(ctx)
 	if outbound == nil || !outbound.Target.IsValid() {
 		return false
 	}
-	return v.network.HasNetwork(outbound.Target.Network)
+	return v.list[int(outbound.Target.Network)]
 }
 
 type UserMatcher struct {
