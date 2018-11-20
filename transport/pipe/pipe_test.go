@@ -17,14 +17,18 @@ func TestPipeReadWrite(t *testing.T) {
 	assert := With(t)
 
 	pReader, pWriter := New(WithSizeLimit(1024))
-	payload := []byte{'a', 'b', 'c', 'd'}
+
 	b := buf.New()
-	b.Write(payload)
+	b.WriteString("abcd")
 	assert(pWriter.WriteMultiBuffer(buf.MultiBuffer{b}), IsNil)
+
+	b2 := buf.New()
+	b2.WriteString("efg")
+	assert(pWriter.WriteMultiBuffer(buf.MultiBuffer{b2}), IsNil)
 
 	rb, err := pReader.ReadMultiBuffer()
 	assert(err, IsNil)
-	assert(rb.String(), Equals, b.String())
+	assert(rb.String(), Equals, "abcdefg")
 }
 
 func TestPipeCloseError(t *testing.T) {
