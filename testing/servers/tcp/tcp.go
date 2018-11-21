@@ -22,10 +22,10 @@ type Server struct {
 }
 
 func (server *Server) Start() (net.Destination, error) {
-	return server.StartContext(context.Background())
+	return server.StartContext(context.Background(), nil)
 }
 
-func (server *Server) StartContext(ctx context.Context) (net.Destination, error) {
+func (server *Server) StartContext(ctx context.Context, sockopt *internet.SocketConfig) (net.Destination, error) {
 	listenerAddr := server.Listen
 	if listenerAddr == nil {
 		listenerAddr = net.LocalHostIP
@@ -33,7 +33,7 @@ func (server *Server) StartContext(ctx context.Context) (net.Destination, error)
 	listener, err := internet.ListenSystem(ctx, &net.TCPAddr{
 		IP:   listenerAddr.IP(),
 		Port: int(server.Port),
-	})
+	}, sockopt)
 	if err != nil {
 		return net.Destination{}, err
 	}

@@ -18,13 +18,12 @@ import (
 func Test_listenWSAndDial(t *testing.T) {
 	assert := With(t)
 
-	lctx := internet.ContextWithStreamSettings(context.Background(), &internet.MemoryStreamConfig{
+	listen, err := ListenWS(context.Background(), net.LocalHostIP, 13146, &internet.MemoryStreamConfig{
 		ProtocolName: "websocket",
 		ProtocolSettings: &Config{
 			Path: "ws",
 		},
-	})
-	listen, err := ListenWS(lctx, net.LocalHostIP, 13146, func(conn internet.Connection) {
+	}, func(conn internet.Connection) {
 		go func(c internet.Connection) {
 			defer c.Close()
 
@@ -42,11 +41,12 @@ func Test_listenWSAndDial(t *testing.T) {
 	})
 	assert(err, IsNil)
 
-	ctx := internet.ContextWithStreamSettings(context.Background(), &internet.MemoryStreamConfig{
+	ctx := context.Background()
+	streamSettings := &internet.MemoryStreamConfig{
 		ProtocolName:     "websocket",
 		ProtocolSettings: &Config{Path: "ws"},
-	})
-	conn, err := Dial(ctx, net.TCPDestination(net.DomainAddress("localhost"), 13146))
+	}
+	conn, err := Dial(ctx, net.TCPDestination(net.DomainAddress("localhost"), 13146), streamSettings)
 
 	assert(err, IsNil)
 	_, err = conn.Write([]byte("Test connection 1"))
@@ -59,7 +59,7 @@ func Test_listenWSAndDial(t *testing.T) {
 
 	assert(conn.Close(), IsNil)
 	<-time.After(time.Second * 5)
-	conn, err = Dial(ctx, net.TCPDestination(net.DomainAddress("localhost"), 13146))
+	conn, err = Dial(ctx, net.TCPDestination(net.DomainAddress("localhost"), 13146), streamSettings)
 	assert(err, IsNil)
 	_, err = conn.Write([]byte("Test connection 2"))
 	assert(err, IsNil)
@@ -73,13 +73,12 @@ func Test_listenWSAndDial(t *testing.T) {
 
 func TestDialWithRemoteAddr(t *testing.T) {
 	assert := With(t)
-	lctx := internet.ContextWithStreamSettings(context.Background(), &internet.MemoryStreamConfig{
+	listen, err := ListenWS(context.Background(), net.LocalHostIP, 13148, &internet.MemoryStreamConfig{
 		ProtocolName: "websocket",
 		ProtocolSettings: &Config{
 			Path: "ws",
 		},
-	})
-	listen, err := ListenWS(lctx, net.LocalHostIP, 13148, func(conn internet.Connection) {
+	}, func(conn internet.Connection) {
 		go func(c internet.Connection) {
 			defer c.Close()
 
@@ -99,11 +98,10 @@ func TestDialWithRemoteAddr(t *testing.T) {
 	})
 	assert(err, IsNil)
 
-	ctx := internet.ContextWithStreamSettings(context.Background(), &internet.MemoryStreamConfig{
+	conn, err := Dial(context.Background(), net.TCPDestination(net.DomainAddress("localhost"), 13148), &internet.MemoryStreamConfig{
 		ProtocolName:     "websocket",
 		ProtocolSettings: &Config{Path: "ws", Header: []*Header{{Key: "X-Forwarded-For", Value: "1.1.1.1"}}},
 	})
-	conn, err := Dial(ctx, net.TCPDestination(net.DomainAddress("localhost"), 13148))
 
 	assert(err, IsNil)
 	_, err = conn.Write([]byte("Test connection 1"))
@@ -126,7 +124,7 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 
 	start := time.Now()
 
-	ctx := internet.ContextWithStreamSettings(context.Background(), &internet.MemoryStreamConfig{
+	streamSettings := &internet.MemoryStreamConfig{
 		ProtocolName: "websocket",
 		ProtocolSettings: &Config{
 			Path: "wss",
@@ -136,9 +134,8 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 			AllowInsecure: true,
 			Certificate:   []*tls.Certificate{tls.ParseCertificate(cert.MustGenerate(nil, cert.CommonName("localhost")))},
 		},
-	})
-
-	listen, err := ListenWS(ctx, net.LocalHostIP, 13143, func(conn internet.Connection) {
+	}
+	listen, err := ListenWS(context.Background(), net.LocalHostIP, 13143, streamSettings, func(conn internet.Connection) {
 		go func() {
 			_ = conn.Close()
 		}()
@@ -146,7 +143,7 @@ func Test_listenWSAndDial_TLS(t *testing.T) {
 	assert(err, IsNil)
 	defer listen.Close()
 
-	conn, err := Dial(ctx, net.TCPDestination(net.DomainAddress("localhost"), 13143))
+	conn, err := Dial(context.Background(), net.TCPDestination(net.DomainAddress("localhost"), 13143), streamSettings)
 	assert(err, IsNil)
 	_ = conn.Close()
 

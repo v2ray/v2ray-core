@@ -17,22 +17,15 @@ func TestTCPFastOpen(t *testing.T) {
 			return b
 		},
 	}
-	dest, err := tcpServer.StartContext(ContextWithStreamSettings(context.Background(), &MemoryStreamConfig{
-		SocketSettings: &SocketConfig{
-			Tfo: SocketConfig_Enable,
-		},
-	}))
+	dest, err := tcpServer.StartContext(context.Background(), &SocketConfig{Tfo: SocketConfig_Enable})
 	common.Must(err)
 	defer tcpServer.Close()
 
 	ctx := context.Background()
-	ctx = ContextWithStreamSettings(ctx, &MemoryStreamConfig{
-		SocketSettings: &SocketConfig{
-			Tfo: SocketConfig_Enable,
-		},
-	})
 	dialer := DefaultSystemDialer{}
-	conn, err := dialer.Dial(ctx, nil, dest)
+	conn, err := dialer.Dial(ctx, nil, dest, &SocketConfig{
+		Tfo: SocketConfig_Enable,
+	})
 	common.Must(err)
 	defer conn.Close()
 

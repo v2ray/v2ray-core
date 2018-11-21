@@ -36,7 +36,7 @@ type Hub struct {
 	recvOrigDest bool
 }
 
-func ListenUDP(ctx context.Context, address net.Address, port net.Port, options ...HubOption) (*Hub, error) {
+func ListenUDP(ctx context.Context, address net.Address, port net.Port, streamSettings *internet.MemoryStreamConfig, options ...HubOption) (*Hub, error) {
 	hub := &Hub{
 		capacity:     256,
 		recvOrigDest: false,
@@ -45,15 +45,18 @@ func ListenUDP(ctx context.Context, address net.Address, port net.Port, options 
 		opt(hub)
 	}
 
-	streamSettings := internet.StreamSettingsFromContext(ctx)
-	if streamSettings != nil && streamSettings.SocketSettings != nil && streamSettings.SocketSettings.ReceiveOriginalDestAddress {
+	var sockopt *internet.SocketConfig
+	if streamSettings != nil {
+		sockopt = streamSettings.SocketSettings
+	}
+	if sockopt != nil && sockopt.ReceiveOriginalDestAddress {
 		hub.recvOrigDest = true
 	}
 
 	udpConn, err := internet.ListenSystemPacket(ctx, &net.UDPAddr{
 		IP:   address.IP(),
 		Port: int(port),
-	})
+	}, sockopt)
 	if err != nil {
 		return nil, err
 	}

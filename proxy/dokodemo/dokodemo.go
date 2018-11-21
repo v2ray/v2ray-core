@@ -125,14 +125,14 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 			if !d.config.FollowRedirect {
 				writer = &buf.SequentialWriter{Writer: conn}
 			} else {
-				tCtx := internet.ContextWithBindAddress(context.Background(), dest)
-				tCtx = internet.ContextWithStreamSettings(tCtx, &internet.MemoryStreamConfig{
-					ProtocolName: "udp",
-					SocketSettings: &internet.SocketConfig{
-						Tproxy: internet.SocketConfig_TProxy,
-					},
-				})
-				tConn, err := internet.DialSystem(tCtx, net.DestinationFromAddr(conn.RemoteAddr()))
+				sockopt := &internet.SocketConfig{
+					Tproxy: internet.SocketConfig_TProxy,
+				}
+				if dest.Address.Family().IsIP() {
+					sockopt.BindAddress = dest.Address.IP()
+					sockopt.BindPort = uint32(dest.Port)
+				}
+				tConn, err := internet.DialSystem(ctx, net.DestinationFromAddr(conn.RemoteAddr()), sockopt)
 				if err != nil {
 					return err
 				}

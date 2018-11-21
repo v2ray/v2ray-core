@@ -14,10 +14,9 @@ var (
 
 type DefaultListener struct{}
 
-func (*DefaultListener) Listen(ctx context.Context, addr net.Addr) (net.Listener, error) {
+func (*DefaultListener) Listen(ctx context.Context, addr net.Addr, sockopt *SocketConfig) (net.Listener, error) {
 	var lc net.ListenConfig
 
-	sockopt := getSocketSettings(ctx)
 	if sockopt != nil {
 		lc.Control = func(network, address string, c syscall.RawConn) error {
 			return c.Control(func(fd uintptr) {
@@ -31,10 +30,9 @@ func (*DefaultListener) Listen(ctx context.Context, addr net.Addr) (net.Listener
 	return lc.Listen(ctx, addr.Network(), addr.String())
 }
 
-func (*DefaultListener) ListenPacket(ctx context.Context, addr net.Addr) (net.PacketConn, error) {
+func (*DefaultListener) ListenPacket(ctx context.Context, addr net.Addr, sockopt *SocketConfig) (net.PacketConn, error) {
 	var lc net.ListenConfig
 
-	sockopt := getSocketSettings(ctx)
 	if sockopt != nil {
 		lc.Control = func(network, address string, c syscall.RawConn) error {
 			return c.Control(func(fd uintptr) {

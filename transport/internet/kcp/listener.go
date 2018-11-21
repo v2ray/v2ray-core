@@ -33,10 +33,8 @@ type Listener struct {
 	addConn   internet.ConnHandler
 }
 
-func NewListener(ctx context.Context, address net.Address, port net.Port, addConn internet.ConnHandler) (*Listener, error) {
-	networkSettings := internet.StreamSettingsFromContext(ctx)
-	kcpSettings := networkSettings.ProtocolSettings.(*Config)
-
+func NewListener(ctx context.Context, address net.Address, port net.Port, streamSettings *internet.MemoryStreamConfig, addConn internet.ConnHandler) (*Listener, error) {
+	kcpSettings := streamSettings.ProtocolSettings.(*Config)
 	header, err := kcpSettings.GetPackerHeader()
 	if err != nil {
 		return nil, newError("failed to create packet header").Base(err).AtError()
@@ -57,11 +55,11 @@ func NewListener(ctx context.Context, address net.Address, port net.Port, addCon
 		addConn:  addConn,
 	}
 
-	if config := v2tls.ConfigFromContext(ctx); config != nil {
+	if config := v2tls.ConfigFromStreamSettings(streamSettings); config != nil {
 		l.tlsConfig = config.GetTLSConfig()
 	}
 
-	hub, err := udp.ListenUDP(ctx, address, port, udp.HubCapacity(1024))
+	hub, err := udp.ListenUDP(ctx, address, port, streamSettings, udp.HubCapacity(1024))
 	if err != nil {
 		return nil, err
 	}
@@ -189,8 +187,8 @@ func (w *Writer) Close() error {
 	return nil
 }
 
-func ListenKCP(ctx context.Context, address net.Address, port net.Port, addConn internet.ConnHandler) (internet.Listener, error) {
-	return NewListener(ctx, address, port, addConn)
+func ListenKCP(ctx context.Context, address net.Address, port net.Port, streamSettings *internet.MemoryStreamConfig, addConn internet.ConnHandler) (internet.Listener, error) {
+	return NewListener(ctx, address, port, streamSettings, addConn)
 }
 
 func init() {

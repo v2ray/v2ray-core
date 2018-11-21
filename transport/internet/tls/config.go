@@ -1,7 +1,6 @@
 package tls
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"sync"
@@ -215,13 +214,12 @@ func WithNextProto(protocol ...string) Option {
 	}
 }
 
-// ConfigFromContext fetches Config from context. Nil if not found.
-func ConfigFromContext(ctx context.Context) *Config {
-	streamSettings := internet.StreamSettingsFromContext(ctx)
-	if streamSettings == nil {
+// ConfigFromStreamSettings fetches Config from stream settings. Nil if not found.
+func ConfigFromStreamSettings(settings *internet.MemoryStreamConfig) *Config {
+	if settings == nil {
 		return nil
 	}
-	config, ok := streamSettings.SecuritySettings.(*Config)
+	config, ok := settings.SecuritySettings.(*Config)
 	if !ok {
 		return nil
 	}

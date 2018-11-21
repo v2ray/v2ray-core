@@ -18,13 +18,14 @@ import (
 func TestListen(t *testing.T) {
 	assert := With(t)
 
-	ctx := internet.ContextWithStreamSettings(context.Background(), &internet.MemoryStreamConfig{
+	ctx := context.Background()
+	streamSettings := &internet.MemoryStreamConfig{
 		ProtocolName: "domainsocket",
 		ProtocolSettings: &Config{
 			Path: "/tmp/ts3",
 		},
-	})
-	listener, err := Listen(ctx, nil, net.Port(0), func(conn internet.Connection) {
+	}
+	listener, err := Listen(ctx, nil, net.Port(0), streamSettings, func(conn internet.Connection) {
 		defer conn.Close()
 
 		b := buf.New()
@@ -36,7 +37,7 @@ func TestListen(t *testing.T) {
 	assert(err, IsNil)
 	defer listener.Close()
 
-	conn, err := Dial(ctx, net.Destination{})
+	conn, err := Dial(ctx, net.Destination{}, streamSettings)
 	assert(err, IsNil)
 	defer conn.Close()
 
@@ -56,14 +57,15 @@ func TestListenAbstract(t *testing.T) {
 
 	assert := With(t)
 
-	ctx := internet.ContextWithStreamSettings(context.Background(), &internet.MemoryStreamConfig{
+	ctx := context.Background()
+	streamSettings := &internet.MemoryStreamConfig{
 		ProtocolName: "domainsocket",
 		ProtocolSettings: &Config{
 			Path:     "/tmp/ts3",
 			Abstract: true,
 		},
-	})
-	listener, err := Listen(ctx, nil, net.Port(0), func(conn internet.Connection) {
+	}
+	listener, err := Listen(ctx, nil, net.Port(0), streamSettings, func(conn internet.Connection) {
 		defer conn.Close()
 
 		b := buf.New()
@@ -75,7 +77,7 @@ func TestListenAbstract(t *testing.T) {
 	assert(err, IsNil)
 	defer listener.Close()
 
-	conn, err := Dial(ctx, net.Destination{})
+	conn, err := Dial(ctx, net.Destination{}, streamSettings)
 	assert(err, IsNil)
 	defer conn.Close()
 

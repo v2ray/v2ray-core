@@ -21,7 +21,7 @@ var (
 	globalDailerAccess sync.Mutex
 )
 
-func getHTTPClient(ctx context.Context, dest net.Destination) (*http.Client, error) {
+func getHTTPClient(ctx context.Context, dest net.Destination, tlsSettings *tls.Config) (*http.Client, error) {
 	globalDailerAccess.Lock()
 	defer globalDailerAccess.Unlock()
 
@@ -31,11 +31,6 @@ func getHTTPClient(ctx context.Context, dest net.Destination) (*http.Client, err
 
 	if client, found := globalDialerMap[dest]; found {
 		return client, nil
-	}
-
-	config := tls.ConfigFromContext(ctx)
-	if config == nil {
-		return nil, newError("TLS must be enabled for http transport.").AtWarning()
 	}
 
 	transport := &http2.Transport{
@@ -53,13 +48,13 @@ func getHTTPClient(ctx context.Context, dest net.Destination) (*http.Client, err
 			}
 			address := net.ParseAddress(rawHost)
 
-			pconn, err := internet.DialSystem(context.Background(), net.TCPDestination(address, port))
+			pconn, err := internet.DialSystem(context.Background(), net.TCPDestination(address, port), nil)
 			if err != nil {
 				return nil, err
 			}
 			return gotls.Client(pconn, tlsConfig), nil
 		},
-		TLSClientConfig: config.GetTLSConfig(tls.WithDestination(dest), tls.WithNextProto("h2")),
+		TLSClientConfig: tlsSettings.GetTLSConfig(tls.WithDestination(dest), tls.WithNextProto("h2")),
 	}
 
 	client := &http.Client{
@@ -71,14 +66,13 @@ func getHTTPClient(ctx context.Context, dest net.Destination) (*http.Client, err
 }
 
 // Dial dials a new TCP connection to the given destination.
-func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {
-	rawSettings := internet.StreamSettingsFromContext(ctx)
-	httpSettings, ok := rawSettings.ProtocolSettings.(*Config)
-	if !ok {
-		return nil, newError("HTTP config is not set.").AtError()
+func Dial(ctx context.Context, dest net.Destination, streamSettings *internet.MemoryStreamConfig) (internet.Connection, error) {
+	httpSettings := streamSettings.ProtocolSettings.(*Config)
+	tlsConfig := tls.ConfigFromStreamSettings(streamSettings)
+	if tlsConfig == nil {
+		return nil, newError("TLS must be enabled for http transport.").AtWarning()
 	}
-
-	client, err := getHTTPClient(ctx, dest)
+	client, err := getHTTPClient(ctx, dest, tlsConfig)
 	if err != nil {
 		return nil, err
 	}

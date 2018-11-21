@@ -14,38 +14,27 @@ var (
 )
 
 type SystemDialer interface {
-	Dial(ctx context.Context, source net.Address, destination net.Destination) (net.Conn, error)
+	Dial(ctx context.Context, source net.Address, destination net.Destination, sockopt *SocketConfig) (net.Conn, error)
 }
 
 type DefaultSystemDialer struct {
 }
 
-func getSocketSettings(ctx context.Context) *SocketConfig {
-	streamSettings := StreamSettingsFromContext(ctx)
-	if streamSettings != nil && streamSettings.SocketSettings != nil {
-		return streamSettings.SocketSettings
-	}
-
-	return nil
-}
-
-func (DefaultSystemDialer) Dial(ctx context.Context, src net.Address, dest net.Destination) (net.Conn, error) {
+func (DefaultSystemDialer) Dial(ctx context.Context, src net.Address, dest net.Destination, sockopt *SocketConfig) (net.Conn, error) {
 	dialer := &net.Dialer{
 		Timeout:   time.Second * 60,
 		DualStack: true,
 	}
 
-	sockopts := getSocketSettings(ctx)
-	if sockopts != nil {
-		bindAddress := BindAddressFromContext(ctx)
+	if sockopt != nil {
 		dialer.Control = func(network, address string, c syscall.RawConn) error {
 			return c.Control(func(fd uintptr) {
-				if err := applyOutboundSocketOptions(network, address, fd, sockopts); err != nil {
+				if err := applyOutboundSocketOptions(network, address, fd, sockopt); err != nil {
 					newError("failed to apply socket options").Base(err).WriteToLog(session.ExportIDToError(ctx))
 				}
-				if dest.Network == net.Network_UDP && bindAddress.IsValid() {
-					if err := bindAddr(fd, bindAddress.Address, bindAddress.Port); err != nil {
-						newError("failed to bind source address to ", bindAddress).Base(err).WriteToLog(session.ExportIDToError(ctx))
+				if dest.Network == net.Network_UDP && len(sockopt.BindAddress) > 0 && sockopt.BindPort > 0 {
+					if err := bindAddr(fd, sockopt.BindAddress, sockopt.BindPort); err != nil {
+						newError("failed to bind source address to ", sockopt.BindAddress).Base(err).WriteToLog(session.ExportIDToError(ctx))
 					}
 				}
 			})
@@ -84,7 +73,7 @@ func WithAdapter(dialer SystemDialerAdapter) SystemDialer {
 	}
 }
 
-func (v *SimpleSystemDialer) Dial(ctx context.Context, src net.Address, dest net.Destination) (net.Conn, error) {
+func (v *SimpleSystemDialer) Dial(ctx context.Context, src net.Address, dest net.Destination, sockopt *SocketConfig) (net.Conn, error) {
 	return v.adapter.Dial(dest.Network.SystemString(), dest.NetAddr())
 }
 

@@ -1,9 +1,8 @@
 package internet
 
 import (
+	"net"
 	"syscall"
-
-	"v2ray.com/core/common/net"
 )
 
 const (
@@ -13,7 +12,7 @@ const (
 	TCP_FASTOPEN_CONNECT = 30
 )
 
-func bindAddr(fd uintptr, address net.Address, port net.Port) error {
+func bindAddr(fd uintptr, ip []byte, port uint32) error {
 	err := syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_REUSEADDR, 1)
 	if err != nil {
 		return newError("failed to set resuse_addr").Base(err).AtWarning()
@@ -21,21 +20,21 @@ func bindAddr(fd uintptr, address net.Address, port net.Port) error {
 
 	var sockaddr syscall.Sockaddr
 
-	switch address.Family() {
-	case net.AddressFamilyIPv4:
+	switch len(ip) {
+	case net.IPv4len:
 		a4 := &syscall.SockaddrInet4{
 			Port: int(port),
 		}
-		copy(a4.Addr[:], address.IP())
+		copy(a4.Addr[:], ip)
 		sockaddr = a4
-	case net.AddressFamilyIPv6:
+	case net.IPv6len:
 		a6 := &syscall.SockaddrInet6{
 			Port: int(port),
 		}
-		copy(a6.Addr[:], address.IP())
+		copy(a6.Addr[:], ip)
 		sockaddr = a6
 	default:
-		return newError("unsupported address family: ", address.Family())
+		return newError("unexpected length of ip")
 	}
 
 	return syscall.Bind(int(fd), sockaddr)

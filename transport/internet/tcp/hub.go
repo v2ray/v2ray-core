@@ -22,25 +22,24 @@ type Listener struct {
 }
 
 // ListenTCP creates a new Listener based on configurations.
-func ListenTCP(ctx context.Context, address net.Address, port net.Port, handler internet.ConnHandler) (internet.Listener, error) {
+func ListenTCP(ctx context.Context, address net.Address, port net.Port, streamSettings *internet.MemoryStreamConfig, handler internet.ConnHandler) (internet.Listener, error) {
 	listener, err := internet.ListenSystem(ctx, &net.TCPAddr{
 		IP:   address.IP(),
 		Port: int(port),
-	})
+	}, streamSettings.SocketSettings)
 	if err != nil {
 		return nil, err
 	}
 	newError("listening TCP on ", address, ":", port).WriteToLog(session.ExportIDToError(ctx))
 
-	tcpSettings := getTCPSettingsFromContext(ctx)
-
+	tcpSettings := streamSettings.ProtocolSettings.(*Config)
 	l := &Listener{
 		listener: listener,
 		config:   tcpSettings,
 		addConn:  handler,
 	}
 
-	if config := tls.ConfigFromContext(ctx); config != nil {
+	if config := tls.ConfigFromStreamSettings(streamSettings); config != nil {
 		l.tlsConfig = config.GetTLSConfig(tls.WithNextProto("h2"))
 	}
 

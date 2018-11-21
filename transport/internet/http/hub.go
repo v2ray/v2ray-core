@@ -88,13 +88,8 @@ func (l *Listener) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 	<-done.Wait()
 }
 
-func Listen(ctx context.Context, address net.Address, port net.Port, handler internet.ConnHandler) (internet.Listener, error) {
-	rawSettings := internet.StreamSettingsFromContext(ctx)
-	httpSettings, ok := rawSettings.ProtocolSettings.(*Config)
-	if !ok {
-		return nil, newError("HTTP config is not set.").AtError()
-	}
-
+func Listen(ctx context.Context, address net.Address, port net.Port, streamSettings *internet.MemoryStreamConfig, handler internet.ConnHandler) (internet.Listener, error) {
+	httpSettings := streamSettings.ProtocolSettings.(*Config)
 	listener := &Listener{
 		handler: handler,
 		local: &net.TCPAddr{
@@ -104,7 +99,7 @@ func Listen(ctx context.Context, address net.Address, port net.Port, handler int
 		config: *httpSettings,
 	}
 
-	config := tls.ConfigFromContext(ctx)
+	config := tls.ConfigFromStreamSettings(streamSettings)
 	if config == nil {
 		return nil, newError("TLS must be enabled for http transport.").AtWarning()
 	}
@@ -120,7 +115,7 @@ func Listen(ctx context.Context, address net.Address, port net.Port, handler int
 		tcpListener, err := internet.ListenSystem(ctx, &net.TCPAddr{
 			IP:   address.IP(),
 			Port: int(port),
-		})
+		}, streamSettings.SocketSettings)
 		if err != nil {
 			newError("failed to listen on", address, ":", port).Base(err).WriteToLog(session.ExportIDToError(ctx))
 			return

@@ -2,8 +2,6 @@
 
 package internet
 
-import "v2ray.com/core/common/net"
-
 func applyOutboundSocketOptions(network string, address string, fd uintptr, config *SocketConfig) error {
 	return nil
 }
@@ -12,6 +10,6 @@ func applyInboundSocketOptions(network string, fd uintptr, config *SocketConfig)
 	return nil
 }
 
-func bindAddr(fd uintptr, address net.Address, port net.Port) error {
+func bindAddr(fd uintptr, ip []byte, port uint32) error {
 	return nil
 }

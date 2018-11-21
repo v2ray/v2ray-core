@@ -10,28 +10,20 @@ import (
 	"v2ray.com/core/transport/internet/tls"
 )
 
-func getTCPSettingsFromContext(ctx context.Context) *Config {
-	rawTCPSettings := internet.StreamSettingsFromContext(ctx)
-	if rawTCPSettings == nil {
-		return nil
-	}
-	return rawTCPSettings.ProtocolSettings.(*Config)
-}
-
 // Dial dials a new TCP connection to the given destination.
-func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {
+func Dial(ctx context.Context, dest net.Destination, streamSettings *internet.MemoryStreamConfig) (internet.Connection, error) {
 	newError("dialing TCP to ", dest).WriteToLog(session.ExportIDToError(ctx))
-	conn, err := internet.DialSystem(ctx, dest)
+	conn, err := internet.DialSystem(ctx, dest, streamSettings.SocketSettings)
 	if err != nil {
 		return nil, err
 	}
 
-	if config := tls.ConfigFromContext(ctx); config != nil {
+	if config := tls.ConfigFromStreamSettings(streamSettings); config != nil {
 		conn = tls.Client(conn, config.GetTLSConfig(tls.WithDestination(dest), tls.WithNextProto("h2")))
 	}
 
-	tcpSettings := getTCPSettingsFromContext(ctx)
-	if tcpSettings != nil && tcpSettings.HeaderSettings != nil {
+	tcpSettings := streamSettings.ProtocolSettings.(*Config)
+	if tcpSettings.HeaderSettings != nil {
 		headerConfig, err := tcpSettings.HeaderSettings.GetInstance()
 		if err != nil {
 			return nil, newError("failed to get header settings").Base(err).AtError()
