@@ -18,7 +18,7 @@ type clientSessions struct {
 	sessions map[net.Destination]quic.Session
 }
 
-func (s *clientSessions) getSession(destAddr net.Addr, tlsConfig *tls.Config, sockopt *internet.SocketConfig) (quic.Session, error) {
+func (s *clientSessions) getSession(destAddr net.Addr, config *Config, tlsConfig *tls.Config, sockopt *internet.SocketConfig) (quic.Session, error) {
 	s.access.Lock()
 	defer s.access.Unlock()
 
@@ -32,7 +32,7 @@ func (s *clientSessions) getSession(destAddr net.Addr, tlsConfig *tls.Config, so
 		return session, nil
 	}
 
-	conn, err := internet.ListenSystemPacket(context.Background(), &net.UDPAddr{
+	rawConn, err := internet.ListenSystemPacket(context.Background(), &net.UDPAddr{
 		IP:   []byte{0, 0, 0, 0},
 		Port: 0,
 	}, sockopt)
@@ -40,14 +40,21 @@ func (s *clientSessions) getSession(destAddr net.Addr, tlsConfig *tls.Config, so
 		return nil, err
 	}
 
-	config := &quic.Config{
+	quicConfig := &quic.Config{
 		Versions:           []quic.VersionNumber{quic.VersionMilestone0_10_0},
 		ConnectionIDLength: 12,
 		KeepAlive:          true,
 	}
 
-	session, err := quic.DialContext(context.Background(), conn, destAddr, "", tlsConfig.GetTLSConfig(tls.WithDestination(dest)), config)
+	conn, err := wrapSysConn(rawConn, config)
 	if err != nil {
+		rawConn.Close()
+		return nil, err
+	}
+
+	session, err := quic.DialContext(context.Background(), conn, destAddr, "", tlsConfig.GetTLSConfig(tls.WithDestination(dest)), quicConfig)
+	if err != nil {
+		rawConn.Close()
 		return nil, err
 	}
 
@@ -60,7 +67,10 @@ var client clientSessions
 func Dial(ctx context.Context, dest net.Destination, streamSettings *internet.MemoryStreamConfig) (internet.Connection, error) {
 	tlsConfig := tls.ConfigFromStreamSettings(streamSettings)
 	if tlsConfig == nil {
-		return nil, newError("TLS not enabled for QUIC")
+		tlsConfig = &tls.Config{
+			ServerName:    internalDomain,
+			AllowInsecure: true,
+		}
 	}
 
 	destAddr, err := net.ResolveUDPAddr("udp", dest.NetAddr())
@@ -68,7 +78,9 @@ func Dial(ctx context.Context, dest net.Destination, streamSettings *internet.Me
 		return nil, err
 	}
 
-	session, err := client.getSession(destAddr, tlsConfig, streamSettings.SocketSettings)
+	config := streamSettings.ProtocolSettings.(*Config)
+
+	session, err := client.getSession(destAddr, config, tlsConfig, streamSettings.SocketSettings)
 	if err != nil {
 		return nil, err
 	}

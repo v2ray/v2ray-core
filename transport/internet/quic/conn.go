@@ -1,10 +1,14 @@
 package quic
 
 import (
+	"crypto/cipher"
+	"crypto/rand"
+	"errors"
 	"time"
 
 	quic "github.com/lucas-clemente/quic-go"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 )
@@ -12,43 +16,100 @@ import (
 type sysConn struct {
 	conn   net.PacketConn
 	header internet.PacketHeader
+	auth   cipher.AEAD
 }
 
-func (c *sysConn) ReadFrom(p []byte) (int, net.Addr, error) {
-	if c.header == nil {
-		return c.conn.ReadFrom(p)
+func wrapSysConn(rawConn net.PacketConn, config *Config) (*sysConn, error) {
+	header, err := getHeader(config)
+	if err != nil {
+		return nil, err
 	}
+	auth, err := getAuth(config)
+	if err != nil {
+		return nil, err
+	}
+	return &sysConn{
+		conn:   rawConn,
+		header: header,
+		auth:   auth,
+	}, nil
+}
 
-	overhead := int(c.header.Size())
+var errCipherError = errors.New("cipher error")
+
+func (c *sysConn) readFromInternal(p []byte) (int, net.Addr, error) {
 	buffer := getBuffer()
 	defer putBuffer(buffer)
 
-	nBytes, addr, err := c.conn.ReadFrom(buffer[:len(p)+overhead])
+	nBytes, addr, err := c.conn.ReadFrom(buffer)
 	if err != nil {
 		return 0, nil, err
 	}
 
-	copy(p, buffer[overhead:nBytes])
+	payload := buffer[:nBytes]
+	if c.header != nil {
+		payload = payload[c.header.Size():]
+	}
 
-	return nBytes - overhead, addr, nil
+	if c.auth == nil {
+		n := copy(p, payload)
+		return n, addr, nil
+	}
+
+	nonce := payload[:c.auth.NonceSize()]
+	payload = payload[c.auth.NonceSize():]
+
+	p, err = c.auth.Open(p[:0], nonce, payload, nil)
+	if err != nil {
+		return 0, nil, errCipherError
+	}
+
+	return len(p), addr, nil
+}
+
+func (c *sysConn) ReadFrom(p []byte) (int, net.Addr, error) {
+	if c.header == nil && c.auth == nil {
+		return c.conn.ReadFrom(p)
+	}
+
+	for {
+		n, addr, err := c.readFromInternal(p)
+		if err != nil && err != errCipherError {
+			return 0, nil, err
+		}
+		if err == nil {
+			return n, addr, nil
+		}
+	}
 }
 
 func (c *sysConn) WriteTo(p []byte, addr net.Addr) (int, error) {
-	if c.header == nil {
+	if c.header == nil && c.auth == nil {
 		return c.conn.WriteTo(p, addr)
 	}
 
 	buffer := getBuffer()
 	defer putBuffer(buffer)
 
-	overhead := int(c.header.Size())
-	c.header.Serialize(buffer)
-	copy(buffer[overhead:], p)
-	nBytes, err := c.conn.WriteTo(buffer[:len(p)+overhead], addr)
-	if err != nil {
-		return 0, err
+	payload := buffer
+	n := 0
+	if c.header != nil {
+		c.header.Serialize(payload)
+		n = int(c.header.Size())
 	}
-	return nBytes - overhead, nil
+
+	if c.auth == nil {
+		nBytes := copy(payload[n:], p)
+		n += nBytes
+	} else {
+		nounce := payload[n : n+c.auth.NonceSize()]
+		common.Must2(rand.Read(nounce))
+		n += c.auth.NonceSize()
+		pp := c.auth.Seal(payload[:n], nounce, p, nil)
+		n = len(pp)
+	}
+
+	return c.conn.WriteTo(payload[:n], addr)
 }
 
 func (c *sysConn) Close() error {

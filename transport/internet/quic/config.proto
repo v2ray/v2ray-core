@@ -7,8 +7,10 @@ option java_package = "com.v2ray.core.transport.internet.quic";
 option java_multiple_files = true;
 
 import "v2ray.com/core/common/serial/typed_message.proto";
+import "v2ray.com/core/common/protocol/headers.proto";
 
 message Config {
   string key = 1;
-  v2ray.core.common.serial.TypedMessage header = 2;
+  v2ray.core.common.protocol.SecurityConfig security = 2;
+  v2ray.core.common.serial.TypedMessage header = 3;
 }

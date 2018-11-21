@@ -6,6 +6,7 @@ import (
 	quic "github.com/lucas-clemente/quic-go"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol/tls/cert"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
 )
@@ -66,10 +67,13 @@ func Listen(ctx context.Context, address net.Address, port net.Port, streamSetti
 
 	tlsConfig := tls.ConfigFromStreamSettings(streamSettings)
 	if tlsConfig == nil {
-		return nil, newError("TLS config not enabled for QUIC")
+		tlsConfig = &tls.Config{
+			Certificate: []*tls.Certificate{tls.ParseCertificate(cert.MustGenerate(nil, cert.DNSNames(internalDomain), cert.CommonName(internalDomain)))},
+		}
 	}
 
-	conn, err := internet.ListenSystemPacket(context.Background(), &net.UDPAddr{
+	config := streamSettings.ProtocolSettings.(*Config)
+	rawConn, err := internet.ListenSystemPacket(context.Background(), &net.UDPAddr{
 		IP:   address.IP(),
 		Port: int(port),
 	}, streamSettings.SocketSettings)
@@ -78,15 +82,22 @@ func Listen(ctx context.Context, address net.Address, port net.Port, streamSetti
 		return nil, err
 	}
 
-	config := &quic.Config{
+	quicConfig := &quic.Config{
 		Versions:           []quic.VersionNumber{quic.VersionMilestone0_10_0},
 		ConnectionIDLength: 12,
 		KeepAlive:          true,
 		AcceptCookie:       func(net.Addr, *quic.Cookie) bool { return true },
 	}
 
-	qListener, err := quic.Listen(conn, tlsConfig.GetTLSConfig(), config)
+	conn, err := wrapSysConn(rawConn, config)
 	if err != nil {
+		conn.Close()
+		return nil, err
+	}
+
+	qListener, err := quic.Listen(conn, tlsConfig.GetTLSConfig(), quicConfig)
+	if err != nil {
+		rawConn.Close()
 		return nil, err
 	}
 

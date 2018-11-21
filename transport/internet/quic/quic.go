@@ -14,6 +14,7 @@ import (
 //
 
 const protocolName = "quic"
+const internalDomain = "quic.internal.v2ray.com"
 
 func init() {
 	common.Must(internet.RegisterProtocolConfigCreatorByName(protocolName, func() interface{} {
