@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"v2ray.com/core/transport/internet/headers/wechat"
+
 	"v2ray.com/core"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
@@ -305,7 +307,9 @@ func TestVMessQuic(t *testing.T) {
 						TransportSettings: []*internet.TransportConfig{
 							{
 								ProtocolName: "quic",
-								Settings:     serial.ToTypedMessage(&quic.Config{}),
+								Settings: serial.ToTypedMessage(&quic.Config{
+									Header: serial.ToTypedMessage(&wechat.VideoConfig{}),
+								}),
 							},
 						},
 					},
@@ -360,7 +364,9 @@ func TestVMessQuic(t *testing.T) {
 						TransportSettings: []*internet.TransportConfig{
 							{
 								ProtocolName: "quic",
-								Settings:     serial.ToTypedMessage(&quic.Config{}),
+								Settings: serial.ToTypedMessage(&quic.Config{
+									Header: serial.ToTypedMessage(&wechat.VideoConfig{}),
+								}),
 							},
 						},
 					},
