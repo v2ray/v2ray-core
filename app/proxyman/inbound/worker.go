@@ -105,8 +105,8 @@ func (w *tcpWorker) Proxy() proxy.Inbound {
 }
 
 func (w *tcpWorker) Start() error {
-	ctx := internet.ContextWithStreamSettings(context.Background(), w.stream)
-	hub, err := internet.ListenTCP(ctx, w.address, w.port, func(conn internet.Connection) {
+	ctx := context.Background()
+	hub, err := internet.ListenTCP(ctx, w.address, w.port, w.stream, func(conn internet.Connection) {
 		go w.callback(conn)
 	})
 	if err != nil {
@@ -342,8 +342,8 @@ func (w *udpWorker) clean() error {
 
 func (w *udpWorker) Start() error {
 	w.activeConn = make(map[connID]*udpConn, 16)
-	ctx := internet.ContextWithStreamSettings(context.Background(), w.stream)
-	h, err := udp.ListenUDP(ctx, w.address, w.port, udp.HubCapacity(256))
+	ctx := context.Background()
+	h, err := udp.ListenUDP(ctx, w.address, w.port, w.stream, udp.HubCapacity(256))
 	if err != nil {
 		return err
 	}

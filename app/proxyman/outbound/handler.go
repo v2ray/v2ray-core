@@ -153,11 +153,9 @@ func (h *Handler) Dial(ctx context.Context, dest net.Destination) (internet.Conn
 			}
 			outbound.Gateway = h.senderSettings.Via.AsAddress()
 		}
-
-		ctx = internet.ContextWithStreamSettings(ctx, h.streamSettings)
 	}
 
-	return internet.Dial(ctx, dest)
+	return internet.Dial(ctx, dest, h.streamSettings)
 }
 
 // GetOutbound implements proxy.GetOutbound.
