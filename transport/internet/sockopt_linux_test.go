@@ -25,11 +25,7 @@ func TestSockOptMark(t *testing.T) {
 
 	const mark = 1
 	dialer := DefaultSystemDialer{}
-	conn, err := dialer.Dial(context.Background(), nil, dest, &MemoryStreamConfig{
-		SocketSettings: &SocketConfig{
-			Mark: mark,
-		},
-	})
+	conn, err := dialer.Dial(context.Background(), nil, dest, &SocketConfig{Mark: mark})
 	common.Must(err)
 	defer conn.Close()
 
