@@ -23,5 +23,5 @@ func putPacketBuffer(buf *[]byte) {
 }
 
 func init() {
-	bufferPool = bytespool.GetPool(protocol.MaxReceivePacketSize)
+	bufferPool = bytespool.GetPool(int32(protocol.MaxReceivePacketSize))
 }
