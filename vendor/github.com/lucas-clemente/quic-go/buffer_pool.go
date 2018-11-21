@@ -16,10 +16,11 @@ func getPacketBuffer() *[]byte {
 }
 
 func putPacketBuffer(buf *[]byte) {
-	if cap(*buf) < int(protocol.MaxReceivePacketSize) {
-		panic("putPacketBuffer called with packet of wrong size!")
+	b := *buf
+	if cap(b) < 2048 {
+		return
 	}
-	bufferPool.Put(*buf)
+	bufferPool.Put(b[:cap(b)])
 }
 
 func init() {
