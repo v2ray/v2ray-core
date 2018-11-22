@@ -9,7 +9,6 @@ import (
 	quic "github.com/lucas-clemente/quic-go"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/bytespool"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
 )
@@ -154,8 +153,8 @@ func (c *interConn) WriteMultiBuffer(mb buf.MultiBuffer) error {
 		return err
 	}
 
-	b := bytespool.Alloc(32 * 1024)
-	defer bytespool.Free(b)
+	b := getBuffer()
+	defer putBuffer(b)
 
 	reader := buf.MultiBufferContainer{
 		MultiBuffer: mb,
@@ -163,7 +162,7 @@ func (c *interConn) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	defer reader.Close()
 
 	for {
-		nBytes, err := reader.Read(b)
+		nBytes, err := reader.Read(b[:1380])
 		if err != nil {
 			break
 		}
