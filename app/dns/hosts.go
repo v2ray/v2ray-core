@@ -76,8 +76,9 @@ func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDoma
 func filterIP(ips []net.IP, option IPOption) []net.IP {
 	filtered := make([]net.IP, 0, len(ips))
 	for _, ip := range ips {
-		if (len(ip) == net.IPv4len && option.IPv4Enable) || (len(ip) == net.IPv6len && option.IPv6Enable) {
-			filtered = append(filtered, ip)
+		parsed := net.IPAddress(ip)
+		if (parsed.Family().IsIPv4() && option.IPv4Enable) || (parsed.Family().IsIPv6() && option.IPv6Enable) {
+			filtered = append(filtered, parsed.IP())
 		}
 	}
 	if len(filtered) == 0 {

@@ -2,8 +2,8 @@ package localdns
 
 import (
 	"context"
-	"net"
 
+	"v2ray.com/core/common/net"
 	"v2ray.com/core/features/dns"
 )
 
@@ -43,8 +43,9 @@ func (c *Client) LookupIPv4(host string) ([]net.IP, error) {
 	}
 	var ipv4 []net.IP
 	for _, ip := range ips {
-		if len(ip) == net.IPv4len {
-			ipv4 = append(ipv4, ip)
+		parsed := net.IPAddress(ip)
+		if parsed.Family().IsIPv4() {
+			ipv4 = append(ipv4, parsed.IP())
 		}
 	}
 	return ipv4, nil
@@ -57,8 +58,9 @@ func (c *Client) LookupIPv6(host string) ([]net.IP, error) {
 	}
 	var ipv6 []net.IP
 	for _, ip := range ips {
-		if len(ip) == net.IPv6len {
-			ipv6 = append(ipv6, ip)
+		parsed := net.IPAddress(ip)
+		if parsed.Family().IsIPv6() {
+			ipv6 = append(ipv6, parsed.IP())
 		}
 	}
 	return ipv6, nil
