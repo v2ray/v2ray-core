@@ -309,6 +309,9 @@ func TestVMessQuic(t *testing.T) {
 								ProtocolName: "quic",
 								Settings: serial.ToTypedMessage(&quic.Config{
 									Header: serial.ToTypedMessage(&wechat.VideoConfig{}),
+									Security: &protocol.SecurityConfig{
+										Type: protocol.SecurityType_NONE,
+									},
 								}),
 							},
 						},
@@ -366,6 +369,9 @@ func TestVMessQuic(t *testing.T) {
 								ProtocolName: "quic",
 								Settings: serial.ToTypedMessage(&quic.Config{
 									Header: serial.ToTypedMessage(&wechat.VideoConfig{}),
+									Security: &protocol.SecurityConfig{
+										Type: protocol.SecurityType_NONE,
+									},
 								}),
 							},
 						},
