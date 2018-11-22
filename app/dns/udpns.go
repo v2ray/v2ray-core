@@ -57,6 +57,10 @@ func NewClassicNameServer(address net.Destination, dispatcher routing.Dispatcher
 	return s
 }
 
+func (s *ClassicNameServer) Name() string {
+	return s.address.String()
+}
+
 func (s *ClassicNameServer) Cleanup() error {
 	now := time.Now()
 	s.Lock()

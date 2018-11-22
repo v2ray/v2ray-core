@@ -13,6 +13,7 @@ type IPOption struct {
 }
 
 type NameServerInterface interface {
+	Name() string
 	QueryIP(ctx context.Context, domain string, option IPOption) ([]net.IP, error)
 }
 
@@ -34,6 +35,10 @@ func (s *localNameServer) QueryIP(ctx context.Context, domain string, option IPO
 	}
 
 	return nil, newError("neither IPv4 nor IPv6 is enabled")
+}
+
+func (s *localNameServer) Name() string {
+	return "localhost"
 }
 
 func NewLocalNameServer() *localNameServer {
