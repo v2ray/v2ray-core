@@ -2,6 +2,7 @@ package quic
 
 import (
 	"context"
+	"time"
 
 	quic "github.com/lucas-clemente/quic-go"
 	"v2ray.com/core/common"
@@ -50,13 +51,13 @@ func (l *Listener) keepAccepting() {
 }
 
 // Addr implements internet.Listener.Addr.
-func (v *Listener) Addr() net.Addr {
-	return v.listener.Addr()
+func (l *Listener) Addr() net.Addr {
+	return l.listener.Addr()
 }
 
 // Close implements internet.Listener.Close.
-func (v *Listener) Close() error {
-	return v.listener.Close()
+func (l *Listener) Close() error {
+	return l.listener.Close()
 }
 
 // Listen creates a new Listener based on configurations.
@@ -83,10 +84,15 @@ func Listen(ctx context.Context, address net.Address, port net.Port, streamSetti
 	}
 
 	quicConfig := &quic.Config{
-		Versions:           []quic.VersionNumber{quic.VersionMilestone0_10_0},
-		ConnectionIDLength: 12,
-		KeepAlive:          true,
-		AcceptCookie:       func(net.Addr, *quic.Cookie) bool { return true },
+		Versions:                              []quic.VersionNumber{quic.VersionMilestone0_10_0},
+		ConnectionIDLength:                    12,
+		KeepAlive:                             true,
+		HandshakeTimeout:                      time.Second * 4,
+		IdleTimeout:                           time.Second * 300,
+		MaxReceiveStreamFlowControlWindow:     128 * 1024,
+		MaxReceiveConnectionFlowControlWindow: 512 * 1024,
+		MaxIncomingStreams:                    256,
+		MaxIncomingUniStreams:                 -1,
 	}
 
 	conn, err := wrapSysConn(rawConn, config)

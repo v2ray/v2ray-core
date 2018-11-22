@@ -3,6 +3,7 @@ package quic
 import (
 	"context"
 	"sync"
+	"time"
 
 	"v2ray.com/core/transport/internet/tls"
 
@@ -29,7 +30,12 @@ func (s *clientSessions) getSession(destAddr net.Addr, config *Config, tlsConfig
 	dest := net.DestinationFromAddr(destAddr)
 
 	if session, found := s.sessions[dest]; found {
-		return session, nil
+		select {
+		case <-session.Context().Done():
+			// Session has been closed. Creating a new one.
+		default:
+			return session, nil
+		}
 	}
 
 	rawConn, err := internet.ListenSystemPacket(context.Background(), &net.UDPAddr{
@@ -41,9 +47,14 @@ func (s *clientSessions) getSession(destAddr net.Addr, config *Config, tlsConfig
 	}
 
 	quicConfig := &quic.Config{
-		Versions:           []quic.VersionNumber{quic.VersionMilestone0_10_0},
-		ConnectionIDLength: 12,
-		KeepAlive:          true,
+		Versions:                              []quic.VersionNumber{quic.VersionMilestone0_10_0},
+		ConnectionIDLength:                    12,
+		KeepAlive:                             true,
+		HandshakeTimeout:                      time.Second * 4,
+		IdleTimeout:                           time.Second * 300,
+		MaxReceiveStreamFlowControlWindow:     128 * 1024,
+		MaxReceiveConnectionFlowControlWindow: 512 * 1024,
+		MaxIncomingUniStreams:                 -1,
 	}
 
 	conn, err := wrapSysConn(rawConn, config)
