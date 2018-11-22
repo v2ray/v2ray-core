@@ -2,4 +2,8 @@ package common
 
 import "v2ray.com/core/common/errors"
 
-func newError(values ...interface{}) *errors.Error { return errors.New(values...).Path("Common") }
+type errPathObjHolder struct{}
+
+func newError(values ...interface{}) *errors.Error {
+	return errors.New(values...).WithPathObj(errPathObjHolder{})
+}

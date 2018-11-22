@@ -7,56 +7,36 @@ import (
 )
 
 type ReceivingWindow struct {
-	start uint32
-	size  uint32
-	list  []*DataSegment
+	cache map[uint32]*DataSegment
 }
 
-func NewReceivingWindow(size uint32) *ReceivingWindow {
+func NewReceivingWindow() *ReceivingWindow {
 	return &ReceivingWindow{
-		start: 0,
-		size:  size,
-		list:  make([]*DataSegment, size),
+		cache: make(map[uint32]*DataSegment),
 	}
 }
 
-func (w *ReceivingWindow) Size() uint32 {
-	return w.size
-}
-
-func (w *ReceivingWindow) Position(idx uint32) uint32 {
-	return (idx + w.start) % w.size
-}
-
-func (w *ReceivingWindow) Set(idx uint32, value *DataSegment) bool {
-	pos := w.Position(idx)
-	if w.list[pos] != nil {
+func (w *ReceivingWindow) Set(id uint32, value *DataSegment) bool {
+	_, f := w.cache[id]
+	if f {
 		return false
 	}
-	w.list[pos] = value
+	w.cache[id] = value
 	return true
 }
 
-func (w *ReceivingWindow) Remove(idx uint32) *DataSegment {
-	pos := w.Position(idx)
-	e := w.list[pos]
-	w.list[pos] = nil
-	return e
+func (w *ReceivingWindow) Has(id uint32) bool {
+	_, f := w.cache[id]
+	return f
 }
 
-func (w *ReceivingWindow) RemoveFirst() *DataSegment {
-	return w.Remove(0)
-}
-
-func (w *ReceivingWindow) HasFirst() bool {
-	return w.list[w.Position(0)] != nil
-}
-
-func (w *ReceivingWindow) Advance() {
-	w.start++
-	if w.start == w.size {
-		w.start = 0
+func (w *ReceivingWindow) Remove(id uint32) *DataSegment {
+	v, f := w.cache[id]
+	if !f {
+		return nil
 	}
+	delete(w.cache, id)
+	return v
 }
 
 type AckList struct {
@@ -133,6 +113,7 @@ func (l *AckList) Flush(current uint32, rto uint32) {
 			l.dirty = false
 		}
 	}
+
 	if l.dirty || !seg.IsEmpty() {
 		for _, number := range l.flushCandidates {
 			if seg.IsFull() {
@@ -141,9 +122,10 @@ func (l *AckList) Flush(current uint32, rto uint32) {
 			seg.PutNumber(number)
 		}
 		l.writer.Write(seg)
-		seg.Release()
 		l.dirty = false
 	}
+
+	seg.Release()
 }
 
 type ReceivingWorker struct {
@@ -159,7 +141,7 @@ type ReceivingWorker struct {
 func NewReceivingWorker(kcp *Connection) *ReceivingWorker {
 	worker := &ReceivingWorker{
 		conn:       kcp,
-		window:     NewReceivingWindow(kcp.Config.GetReceivingBufferSize()),
+		window:     NewReceivingWindow(),
 		windowSize: kcp.Config.GetReceivingInFlightSize(),
 	}
 	worker.acklist = NewAckList(worker)
@@ -168,7 +150,8 @@ func NewReceivingWorker(kcp *Connection) *ReceivingWorker {
 
 func (w *ReceivingWorker) Release() {
 	w.Lock()
-	w.leftOver.Release()
+	buf.ReleaseMulti(w.leftOver)
+	w.leftOver = nil
 	w.Unlock()
 }
 
@@ -191,7 +174,7 @@ func (w *ReceivingWorker) ProcessSegment(seg *DataSegment) {
 	w.acklist.Clear(seg.SendingNext)
 	w.acklist.Add(number, seg.Timestamp)
 
-	if !w.window.Set(idx, seg) {
+	if !w.window.Set(seg.Number, seg) {
 		seg.Release()
 	}
 }
@@ -203,18 +186,17 @@ func (w *ReceivingWorker) ReadMultiBuffer() buf.MultiBuffer {
 		return mb
 	}
 
-	mb := buf.NewMultiBufferCap(32)
+	mb := make(buf.MultiBuffer, 0, 32)
 
 	w.Lock()
 	defer w.Unlock()
 	for {
-		seg := w.window.RemoveFirst()
+		seg := w.window.Remove(w.nextNumber)
 		if seg == nil {
 			break
 		}
-		w.window.Advance()
 		w.nextNumber++
-		mb.Append(seg.Detach())
+		mb = append(mb, seg.Detach())
 		seg.Release()
 	}
 
@@ -223,7 +205,10 @@ func (w *ReceivingWorker) ReadMultiBuffer() buf.MultiBuffer {
 
 func (w *ReceivingWorker) Read(b []byte) int {
 	mb := w.ReadMultiBuffer()
-	nBytes, _ := mb.Read(b)
+	if mb.IsEmpty() {
+		return 0
+	}
+	mb, nBytes := buf.SplitBytes(mb, b)
 	if !mb.IsEmpty() {
 		w.leftOver = mb
 	}
@@ -233,7 +218,7 @@ func (w *ReceivingWorker) Read(b []byte) int {
 func (w *ReceivingWorker) IsDataAvailable() bool {
 	w.RLock()
 	defer w.RUnlock()
-	return w.window.HasFirst()
+	return w.window.Has(w.nextNumber)
 }
 
 func (w *ReceivingWorker) NextNumber() uint32 {
@@ -255,6 +240,7 @@ func (w *ReceivingWorker) Write(seg Segment) error {
 	ackSeg.Conv = w.conn.meta.Conversation
 	ackSeg.ReceivingNext = w.nextNumber
 	ackSeg.ReceivingWindow = w.nextNumber + w.windowSize
+	ackSeg.Option = 0
 	if w.conn.State() == StateReadyToClose {
 		ackSeg.Option = SegmentOptionClose
 	}

@@ -1,12 +1,11 @@
 package log
 
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg log -path App,Log
+//go:generate errorgen
 
 import (
 	"context"
 	"sync"
 
-	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/log"
 )
@@ -27,11 +26,6 @@ func New(ctx context.Context, config *Config) (*Instance, error) {
 		active: false,
 	}
 	log.RegisterHandler(g)
-
-	v := core.FromContext(ctx)
-	if v != nil {
-		common.Must(v.RegisterFeature((*log.Handler)(nil), g))
-	}
 
 	return g, nil
 }
@@ -138,10 +132,10 @@ func (g *Instance) Close() error {
 
 	g.active = false
 
-	common.Close(g.accessLogger)
+	common.Close(g.accessLogger) // nolint: errcheck
 	g.accessLogger = nil
 
-	common.Close(g.errorLogger)
+	common.Close(g.errorLogger) // nolint: errcheck
 	g.errorLogger = nil
 
 	return nil

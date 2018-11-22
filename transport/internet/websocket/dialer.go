@@ -4,19 +4,20 @@ import (
 	"context"
 	"time"
 
-	"websocket"
+	"github.com/gorilla/websocket"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
 )
 
 // Dial dials a WebSocket connection to the given destination.
-func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {
-	newError("creating connection to ", dest).WithContext(ctx).WriteToLog()
+func Dial(ctx context.Context, dest net.Destination, streamSettings *internet.MemoryStreamConfig) (internet.Connection, error) {
+	newError("creating connection to ", dest).WriteToLog(session.ExportIDToError(ctx))
 
-	conn, err := dialWebsocket(ctx, dest)
+	conn, err := dialWebsocket(ctx, dest, streamSettings)
 	if err != nil {
 		return nil, newError("failed to dial WebSocket").Base(err)
 	}
@@ -24,16 +25,15 @@ func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error
 }
 
 func init() {
-	common.Must(internet.RegisterTransportDialer(internet.TransportProtocol_WebSocket, Dial))
+	common.Must(internet.RegisterTransportDialer(protocolName, Dial))
 }
 
-func dialWebsocket(ctx context.Context, dest net.Destination) (net.Conn, error) {
-	src := internet.DialerSourceFromContext(ctx)
-	wsSettings := internet.TransportSettingsFromContext(ctx).(*Config)
+func dialWebsocket(ctx context.Context, dest net.Destination, streamSettings *internet.MemoryStreamConfig) (net.Conn, error) {
+	wsSettings := streamSettings.ProtocolSettings.(*Config)
 
 	dialer := &websocket.Dialer{
 		NetDial: func(network, addr string) (net.Conn, error) {
-			return internet.DialSystem(ctx, src, dest)
+			return internet.DialSystem(ctx, dest, streamSettings.SocketSettings)
 		},
 		ReadBufferSize:   4 * 1024,
 		WriteBufferSize:  4 * 1024,
@@ -42,7 +42,7 @@ func dialWebsocket(ctx context.Context, dest net.Destination) (net.Conn, error) 
 
 	protocol := "ws"
 
-	if config := tls.ConfigFromContext(ctx); config != nil {
+	if config := tls.ConfigFromStreamSettings(streamSettings); config != nil {
 		protocol = "wss"
 		dialer.TLSClientConfig = config.GetTLSConfig(tls.WithDestination(dest))
 	}

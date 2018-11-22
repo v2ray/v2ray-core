@@ -1,9 +1,8 @@
 package encoding
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/md5"
+	"encoding/binary"
 	"hash/fnv"
 	"io"
 	"sync"
@@ -15,11 +14,9 @@ import (
 	"v2ray.com/core/common/bitmask"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/crypto"
-	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
-	"v2ray.com/core/common/serial"
-	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/task"
 	"v2ray.com/core/proxy/vmess"
 )
 
@@ -33,7 +30,7 @@ type sessionId struct {
 type SessionHistory struct {
 	sync.RWMutex
 	cache map[sessionId]time.Time
-	task  *signal.PeriodicTask
+	task  *task.Periodic
 }
 
 // NewSessionHistory creates a new SessionHistory object.
@@ -41,14 +38,10 @@ func NewSessionHistory() *SessionHistory {
 	h := &SessionHistory{
 		cache: make(map[sessionId]time.Time, 128),
 	}
-	h.task = &signal.PeriodicTask{
+	h.task = &task.Periodic{
 		Interval: time.Second * 30,
-		Execute: func() error {
-			h.removeExpiredEntries()
-			return nil
-		},
+		Execute:  h.removeExpiredEntries,
 	}
-	common.Must(h.task.Start())
 	return h
 }
 
@@ -59,21 +52,27 @@ func (h *SessionHistory) Close() error {
 
 func (h *SessionHistory) addIfNotExits(session sessionId) bool {
 	h.Lock()
-	defer h.Unlock()
 
 	if expire, found := h.cache[session]; found && expire.After(time.Now()) {
+		h.Unlock()
 		return false
 	}
 
 	h.cache[session] = time.Now().Add(time.Minute * 3)
+	h.Unlock()
+	common.Must(h.task.Start())
 	return true
 }
 
-func (h *SessionHistory) removeExpiredEntries() {
+func (h *SessionHistory) removeExpiredEntries() error {
 	now := time.Now()
 
 	h.Lock()
 	defer h.Unlock()
+
+	if len(h.cache) == 0 {
+		return newError("nothing to do")
+	}
 
 	for session, expire := range h.cache {
 		if expire.Before(now) {
@@ -84,6 +83,8 @@ func (h *SessionHistory) removeExpiredEntries() {
 	if len(h.cache) == 0 {
 		h.cache = make(map[sessionId]time.Time, 128)
 	}
+
+	return nil
 }
 
 // ServerSession keeps information for a session in VMess server.
@@ -124,7 +125,7 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	buffer := buf.New()
 	defer buffer.Release()
 
-	if err := buffer.AppendSupplier(buf.ReadFullFrom(reader, protocol.IDBytesLen)); err != nil {
+	if _, err := buffer.ReadFullFrom(reader, protocol.IDBytesLen); err != nil {
 		return nil, newError("failed to read request header").Base(err)
 	}
 
@@ -133,19 +134,14 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		return nil, newError("invalid user")
 	}
 
-	timestampHash := md5.New()
-	common.Must2(timestampHash.Write(hashTimestamp(timestamp)))
-	iv := timestampHash.Sum(nil)
-	account, err := user.GetTypedAccount()
-	if err != nil {
-		return nil, newError("failed to get user account").Base(err)
-	}
-	vmessAccount := account.(*vmess.InternalAccount)
+	iv := hashTimestamp(md5.New(), timestamp)
+	vmessAccount := user.Account.(*vmess.MemoryAccount)
 
-	aesStream := crypto.NewAesDecryptionStream(vmessAccount.ID.CmdKey(), iv)
+	aesStream := crypto.NewAesDecryptionStream(vmessAccount.ID.CmdKey(), iv[:])
 	decryptor := crypto.NewCryptionReader(aesStream, reader)
 
-	if err := buffer.Reset(buf.ReadFullFrom(decryptor, 38)); err != nil {
+	buffer.Clear()
+	if _, err := buffer.ReadFullFrom(decryptor, 38); err != nil {
 		return nil, newError("failed to read request header").Base(err)
 	}
 
@@ -171,20 +167,6 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 	// 1 bytes reserved
 	request.Command = protocol.RequestCommand(buffer.Byte(37))
 
-	var invalidRequestErr error
-	defer func() {
-		if invalidRequestErr != nil {
-			randomLen := dice.Roll(64) + 1
-			// Read random number of bytes for prevent detection.
-			common.Ignore(buffer.AppendSupplier(buf.ReadFullFrom(decryptor, int32(randomLen))), "Error doesn't matter")
-		}
-	}()
-
-	if request.Security == protocol.SecurityType_UNKNOWN || request.Security == protocol.SecurityType_AUTO {
-		invalidRequestErr = newError("unknown security type")
-		return nil, invalidRequestErr
-	}
-
 	switch request.Command {
 	case protocol.RequestCommandMux:
 		request.Address = net.DomainAddress("v1.mux.cool")
@@ -193,29 +175,23 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 		if addr, port, err := addrParser.ReadAddressPort(buffer, decryptor); err == nil {
 			request.Address = addr
 			request.Port = port
-		} else {
-			invalidRequestErr = newError("invalid address").Base(err)
-			return nil, invalidRequestErr
 		}
-	default:
-		invalidRequestErr = newError("invalid request command: ", request.Command)
-		return nil, invalidRequestErr
 	}
 
 	if padingLen > 0 {
-		if err := buffer.AppendSupplier(buf.ReadFullFrom(decryptor, int32(padingLen))); err != nil {
+		if _, err := buffer.ReadFullFrom(decryptor, int32(padingLen)); err != nil {
 			return nil, newError("failed to read padding").Base(err)
 		}
 	}
 
-	if err := buffer.AppendSupplier(buf.ReadFullFrom(decryptor, 4)); err != nil {
+	if _, err := buffer.ReadFullFrom(decryptor, 4); err != nil {
 		return nil, newError("failed to read checksum").Base(err)
 	}
 
 	fnv1a := fnv.New32a()
 	common.Must2(fnv1a.Write(buffer.BytesTo(-4)))
 	actualHash := fnv1a.Sum32()
-	expectedHash := serial.BytesToUint32(buffer.BytesFrom(-4))
+	expectedHash := binary.BigEndian.Uint32(buffer.BytesFrom(-4))
 
 	if actualHash != expectedHash {
 		return nil, newError("invalid auth")
@@ -223,6 +199,10 @@ func (s *ServerSession) DecodeRequestHeader(reader io.Reader) (*protocol.Request
 
 	if request.Address == nil {
 		return nil, newError("invalid remote address")
+	}
+
+	if request.Security == protocol.SecurityType_UNKNOWN || request.Security == protocol.SecurityType_AUTO {
+		return nil, newError("unknown security type: ", request.Security)
 	}
 
 	return request, nil
@@ -234,6 +214,11 @@ func (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 	if request.Option.Has(protocol.RequestOptionChunkMasking) {
 		sizeParser = NewShakeSizeParser(s.requestBodyIV[:])
 	}
+	var padding crypto.PaddingLengthGenerator
+	if request.Option.Has(protocol.RequestOptionGlobalPadding) {
+		padding = sizeParser.(crypto.PaddingLengthGenerator)
+	}
+
 	switch request.Security {
 	case protocol.SecurityType_NONE:
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
@@ -246,7 +231,7 @@ func (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 				NonceGenerator:          crypto.GenerateEmptyBytes(),
 				AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 			}
-			return crypto.NewAuthenticationReader(auth, sizeParser, reader, protocol.TransferTypePacket)
+			return crypto.NewAuthenticationReader(auth, sizeParser, reader, protocol.TransferTypePacket, padding)
 		}
 
 		return buf.NewReader(reader)
@@ -259,20 +244,19 @@ func (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 				NonceGenerator:          crypto.GenerateEmptyBytes(),
 				AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 			}
-			return crypto.NewAuthenticationReader(auth, sizeParser, cryptionReader, request.Command.TransferType())
+			return crypto.NewAuthenticationReader(auth, sizeParser, cryptionReader, request.Command.TransferType(), padding)
 		}
 
 		return buf.NewReader(cryptionReader)
 	case protocol.SecurityType_AES128_GCM:
-		block, _ := aes.NewCipher(s.requestBodyKey[:])
-		aead, _ := cipher.NewGCM(block)
+		aead := crypto.NewAesGcm(s.requestBodyKey[:])
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD:                    aead,
 			NonceGenerator:          GenerateChunkNonce(s.requestBodyIV[:], uint32(aead.NonceSize())),
 			AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 		}
-		return crypto.NewAuthenticationReader(auth, sizeParser, reader, request.Command.TransferType())
+		return crypto.NewAuthenticationReader(auth, sizeParser, reader, request.Command.TransferType(), padding)
 	case protocol.SecurityType_CHACHA20_POLY1305:
 		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(s.requestBodyKey[:]))
 
@@ -281,7 +265,7 @@ func (s *ServerSession) DecodeRequestBody(request *protocol.RequestHeader, reade
 			NonceGenerator:          GenerateChunkNonce(s.requestBodyIV[:], uint32(aead.NonceSize())),
 			AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 		}
-		return crypto.NewAuthenticationReader(auth, sizeParser, reader, request.Command.TransferType())
+		return crypto.NewAuthenticationReader(auth, sizeParser, reader, request.Command.TransferType(), padding)
 	default:
 		panic("Unknown security type.")
 	}
@@ -309,6 +293,11 @@ func (s *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 	if request.Option.Has(protocol.RequestOptionChunkMasking) {
 		sizeParser = NewShakeSizeParser(s.responseBodyIV[:])
 	}
+	var padding crypto.PaddingLengthGenerator
+	if request.Option.Has(protocol.RequestOptionGlobalPadding) {
+		padding = sizeParser.(crypto.PaddingLengthGenerator)
+	}
+
 	switch request.Security {
 	case protocol.SecurityType_NONE:
 		if request.Option.Has(protocol.RequestOptionChunkStream) {
@@ -321,7 +310,7 @@ func (s *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 				NonceGenerator:          crypto.GenerateEmptyBytes(),
 				AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 			}
-			return crypto.NewAuthenticationWriter(auth, sizeParser, writer, protocol.TransferTypePacket)
+			return crypto.NewAuthenticationWriter(auth, sizeParser, writer, protocol.TransferTypePacket, padding)
 		}
 
 		return buf.NewWriter(writer)
@@ -332,20 +321,19 @@ func (s *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 				NonceGenerator:          crypto.GenerateEmptyBytes(),
 				AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 			}
-			return crypto.NewAuthenticationWriter(auth, sizeParser, s.responseWriter, request.Command.TransferType())
+			return crypto.NewAuthenticationWriter(auth, sizeParser, s.responseWriter, request.Command.TransferType(), padding)
 		}
 
-		return buf.NewWriter(s.responseWriter)
+		return &buf.SequentialWriter{Writer: s.responseWriter}
 	case protocol.SecurityType_AES128_GCM:
-		block, _ := aes.NewCipher(s.responseBodyKey[:])
-		aead, _ := cipher.NewGCM(block)
+		aead := crypto.NewAesGcm(s.responseBodyKey[:])
 
 		auth := &crypto.AEADAuthenticator{
 			AEAD:                    aead,
 			NonceGenerator:          GenerateChunkNonce(s.responseBodyIV[:], uint32(aead.NonceSize())),
 			AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 		}
-		return crypto.NewAuthenticationWriter(auth, sizeParser, writer, request.Command.TransferType())
+		return crypto.NewAuthenticationWriter(auth, sizeParser, writer, request.Command.TransferType(), padding)
 	case protocol.SecurityType_CHACHA20_POLY1305:
 		aead, _ := chacha20poly1305.New(GenerateChacha20Poly1305Key(s.responseBodyKey[:]))
 
@@ -354,7 +342,7 @@ func (s *ServerSession) EncodeResponseBody(request *protocol.RequestHeader, writ
 			NonceGenerator:          GenerateChunkNonce(s.responseBodyIV[:], uint32(aead.NonceSize())),
 			AdditionalDataGenerator: crypto.GenerateEmptyBytes(),
 		}
-		return crypto.NewAuthenticationWriter(auth, sizeParser, writer, request.Command.TransferType())
+		return crypto.NewAuthenticationWriter(auth, sizeParser, writer, request.Command.TransferType(), padding)
 	default:
 		panic("Unknown security type.")
 	}

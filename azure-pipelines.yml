@@ -1,0 +1,41 @@
+jobs:
+- template: azure-pipelines.template.yml
+  parameters:
+    name: linux
+    vmImage: 'ubuntu-16.04'
+
+- template: azure-pipelines.template.yml
+  parameters:
+    name: windows
+    vmImage: 'vs2017-win2016'
+
+- template: azure-pipelines.template.yml
+  parameters:
+    name: macos
+    vmImage: 'macOS-10.13'
+
+- job: linux_coverage
+  dependsOn: linux
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+  timeoutInMinutes: 30
+
+  pool:
+    vmImage: 'Ubuntu 16.04'
+
+  variables:
+    GOPATH: '$(system.defaultWorkingDirectory)'
+    CODECOV_TOKEN: '$(coverage.token)'
+
+  steps:
+  - checkout: none
+  - script: |
+      go version
+      go get -v -t -d v2ray.com/core/...
+      go get -v -t -d v2ray.com/ext/...
+    workingDirectory: '$(system.defaultWorkingDirectory)'
+    displayName: 'Fetch sources'
+  - script: |
+      cd ./src/v2ray.com/core
+      bash ./testing/coverage/coverall
+    workingDirectory: '$(system.defaultWorkingDirectory)'
+    displayName: 'Coverage'

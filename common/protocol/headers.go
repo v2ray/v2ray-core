@@ -36,6 +36,8 @@ const (
 	RequestOptionConnectionReuse bitmask.Byte = 0x02
 
 	RequestOptionChunkMasking bitmask.Byte = 0x04
+
+	RequestOptionGlobalPadding bitmask.Byte = 0x08
 )
 
 type RequestHeader struct {
@@ -45,7 +47,7 @@ type RequestHeader struct {
 	Security SecurityType
 	Port     net.Port
 	Address  net.Address
-	User     *User
+	User     *MemoryUser
 }
 
 func (h *RequestHeader) Destination() net.Destination {
@@ -77,7 +79,7 @@ type CommandSwitchAccount struct {
 
 func (sc *SecurityConfig) GetSecurityType() SecurityType {
 	if sc == nil || sc.Type == SecurityType_AUTO {
-		if runtime.GOARCH == "amd64" || runtime.GOARCH == "s390x" {
+		if runtime.GOARCH == "amd64" || runtime.GOARCH == "s390x" || runtime.GOARCH == "arm64" {
 			return SecurityType_AES128_GCM
 		}
 		return SecurityType_CHACHA20_POLY1305

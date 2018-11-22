@@ -1,10 +1,12 @@
 package socks
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import v2ray_core_common_net "v2ray.com/core/common/net"
-import v2ray_core_common_protocol1 "v2ray.com/core/common/protocol"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+	net "v2ray.com/core/common/net"
+	protocol "v2ray.com/core/common/protocol"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -17,10 +19,13 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
+// AuthType is the authentication type of Socks proxy.
 type AuthType int32
 
 const (
-	AuthType_NO_AUTH  AuthType = 0
+	// NO_AUTH is for anounymous authentication.
+	AuthType_NO_AUTH AuthType = 0
+	// PASSWORD is for username/password authentication.
 	AuthType_PASSWORD AuthType = 1
 )
 
@@ -28,6 +33,7 @@ var AuthType_name = map[int32]string{
 	0: "NO_AUTH",
 	1: "PASSWORD",
 }
+
 var AuthType_value = map[string]int32{
 	"NO_AUTH":  0,
 	"PASSWORD": 1,
@@ -36,17 +42,44 @@ var AuthType_value = map[string]int32{
 func (x AuthType) String() string {
 	return proto.EnumName(AuthType_name, int32(x))
 }
-func (AuthType) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
-type Account struct {
-	Username string `protobuf:"bytes,1,opt,name=username" json:"username,omitempty"`
-	Password string `protobuf:"bytes,2,opt,name=password" json:"password,omitempty"`
+func (AuthType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_e86958e2cebd3303, []int{0}
 }
 
-func (m *Account) Reset()                    { *m = Account{} }
-func (m *Account) String() string            { return proto.CompactTextString(m) }
-func (*Account) ProtoMessage()               {}
-func (*Account) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+// Account represents a Socks account.
+type Account struct {
+	Username             string   `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	Password             string   `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Account) Reset()         { *m = Account{} }
+func (m *Account) String() string { return proto.CompactTextString(m) }
+func (*Account) ProtoMessage()    {}
+func (*Account) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e86958e2cebd3303, []int{0}
+}
+
+func (m *Account) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Account.Unmarshal(m, b)
+}
+func (m *Account) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Account.Marshal(b, m, deterministic)
+}
+func (m *Account) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Account.Merge(m, src)
+}
+func (m *Account) XXX_Size() int {
+	return xxx_messageInfo_Account.Size(m)
+}
+func (m *Account) XXX_DiscardUnknown() {
+	xxx_messageInfo_Account.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Account proto.InternalMessageInfo
 
 func (m *Account) GetUsername() string {
 	if m != nil {
@@ -62,19 +95,43 @@ func (m *Account) GetPassword() string {
 	return ""
 }
 
+// ServerConfig is the protobuf config for Socks server.
 type ServerConfig struct {
-	AuthType   AuthType                          `protobuf:"varint,1,opt,name=auth_type,json=authType,enum=v2ray.core.proxy.socks.AuthType" json:"auth_type,omitempty"`
-	Accounts   map[string]string                 `protobuf:"bytes,2,rep,name=accounts" json:"accounts,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Address    *v2ray_core_common_net.IPOrDomain `protobuf:"bytes,3,opt,name=address" json:"address,omitempty"`
-	UdpEnabled bool                              `protobuf:"varint,4,opt,name=udp_enabled,json=udpEnabled" json:"udp_enabled,omitempty"`
-	Timeout    uint32                            `protobuf:"varint,5,opt,name=timeout" json:"timeout,omitempty"`
-	UserLevel  uint32                            `protobuf:"varint,6,opt,name=user_level,json=userLevel" json:"user_level,omitempty"`
+	AuthType             AuthType          `protobuf:"varint,1,opt,name=auth_type,json=authType,proto3,enum=v2ray.core.proxy.socks.AuthType" json:"auth_type,omitempty"`
+	Accounts             map[string]string `protobuf:"bytes,2,rep,name=accounts,proto3" json:"accounts,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Address              *net.IPOrDomain   `protobuf:"bytes,3,opt,name=address,proto3" json:"address,omitempty"`
+	UdpEnabled           bool              `protobuf:"varint,4,opt,name=udp_enabled,json=udpEnabled,proto3" json:"udp_enabled,omitempty"`
+	Timeout              uint32            `protobuf:"varint,5,opt,name=timeout,proto3" json:"timeout,omitempty"` // Deprecated: Do not use.
+	UserLevel            uint32            `protobuf:"varint,6,opt,name=user_level,json=userLevel,proto3" json:"user_level,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
 }
 
-func (m *ServerConfig) Reset()                    { *m = ServerConfig{} }
-func (m *ServerConfig) String() string            { return proto.CompactTextString(m) }
-func (*ServerConfig) ProtoMessage()               {}
-func (*ServerConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (m *ServerConfig) Reset()         { *m = ServerConfig{} }
+func (m *ServerConfig) String() string { return proto.CompactTextString(m) }
+func (*ServerConfig) ProtoMessage()    {}
+func (*ServerConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e86958e2cebd3303, []int{1}
+}
+
+func (m *ServerConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ServerConfig.Unmarshal(m, b)
+}
+func (m *ServerConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ServerConfig.Marshal(b, m, deterministic)
+}
+func (m *ServerConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ServerConfig.Merge(m, src)
+}
+func (m *ServerConfig) XXX_Size() int {
+	return xxx_messageInfo_ServerConfig.Size(m)
+}
+func (m *ServerConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_ServerConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ServerConfig proto.InternalMessageInfo
 
 func (m *ServerConfig) GetAuthType() AuthType {
 	if m != nil {
@@ -90,7 +147,7 @@ func (m *ServerConfig) GetAccounts() map[string]string {
 	return nil
 }
 
-func (m *ServerConfig) GetAddress() *v2ray_core_common_net.IPOrDomain {
+func (m *ServerConfig) GetAddress() *net.IPOrDomain {
 	if m != nil {
 		return m.Address
 	}
@@ -104,6 +161,7 @@ func (m *ServerConfig) GetUdpEnabled() bool {
 	return false
 }
 
+// Deprecated: Do not use.
 func (m *ServerConfig) GetTimeout() uint32 {
 	if m != nil {
 		return m.Timeout
@@ -118,16 +176,41 @@ func (m *ServerConfig) GetUserLevel() uint32 {
 	return 0
 }
 
+// ClientConfig is the protobuf config for Socks client.
 type ClientConfig struct {
-	Server []*v2ray_core_common_protocol1.ServerEndpoint `protobuf:"bytes,1,rep,name=server" json:"server,omitempty"`
+	// Sever is a list of Socks server addresses.
+	Server               []*protocol.ServerEndpoint `protobuf:"bytes,1,rep,name=server,proto3" json:"server,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
+	XXX_unrecognized     []byte                     `json:"-"`
+	XXX_sizecache        int32                      `json:"-"`
 }
 
-func (m *ClientConfig) Reset()                    { *m = ClientConfig{} }
-func (m *ClientConfig) String() string            { return proto.CompactTextString(m) }
-func (*ClientConfig) ProtoMessage()               {}
-func (*ClientConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (m *ClientConfig) Reset()         { *m = ClientConfig{} }
+func (m *ClientConfig) String() string { return proto.CompactTextString(m) }
+func (*ClientConfig) ProtoMessage()    {}
+func (*ClientConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e86958e2cebd3303, []int{2}
+}
 
-func (m *ClientConfig) GetServer() []*v2ray_core_common_protocol1.ServerEndpoint {
+func (m *ClientConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ClientConfig.Unmarshal(m, b)
+}
+func (m *ClientConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ClientConfig.Marshal(b, m, deterministic)
+}
+func (m *ClientConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ClientConfig.Merge(m, src)
+}
+func (m *ClientConfig) XXX_Size() int {
+	return xxx_messageInfo_ClientConfig.Size(m)
+}
+func (m *ClientConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_ClientConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ClientConfig proto.InternalMessageInfo
+
+func (m *ClientConfig) GetServer() []*protocol.ServerEndpoint {
 	if m != nil {
 		return m.Server
 	}
@@ -135,15 +218,18 @@ func (m *ClientConfig) GetServer() []*v2ray_core_common_protocol1.ServerEndpoint
 }
 
 func init() {
+	proto.RegisterEnum("v2ray.core.proxy.socks.AuthType", AuthType_name, AuthType_value)
 	proto.RegisterType((*Account)(nil), "v2ray.core.proxy.socks.Account")
 	proto.RegisterType((*ServerConfig)(nil), "v2ray.core.proxy.socks.ServerConfig")
+	proto.RegisterMapType((map[string]string)(nil), "v2ray.core.proxy.socks.ServerConfig.AccountsEntry")
 	proto.RegisterType((*ClientConfig)(nil), "v2ray.core.proxy.socks.ClientConfig")
-	proto.RegisterEnum("v2ray.core.proxy.socks.AuthType", AuthType_name, AuthType_value)
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/proxy/socks/config.proto", fileDescriptor0) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/proxy/socks/config.proto", fileDescriptor_e86958e2cebd3303)
+}
 
-var fileDescriptor0 = []byte{
+var fileDescriptor_e86958e2cebd3303 = []byte{
 	// 470 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x52, 0x5d, 0x8b, 0xd3, 0x40,
 	0x14, 0x75, 0xb2, 0xb6, 0x4d, 0x6f, 0xbb, 0x52, 0x06, 0x59, 0x42, 0x51, 0x8c, 0x05, 0xb1, 0xec,

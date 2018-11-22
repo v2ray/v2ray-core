@@ -8,37 +8,32 @@ package proxy
 import (
 	"context"
 
-	"v2ray.com/core"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
+	"v2ray.com/core/features/routing"
+	"v2ray.com/core/transport"
 	"v2ray.com/core/transport/internet"
 )
 
 // An Inbound processes inbound connections.
 type Inbound interface {
-	// Network returns a list of network that this inbound supports. Connections with not-supported networks will not be passed into Process().
-	Network() net.NetworkList
+	// Network returns a list of networks that this inbound supports. Connections with not-supported networks will not be passed into Process().
+	Network() []net.Network
 
 	// Process processes a connection of given network. If necessary, the Inbound can dispatch the connection to an Outbound.
-	Process(context.Context, net.Network, internet.Connection, core.Dispatcher) error
+	Process(context.Context, net.Network, internet.Connection, routing.Dispatcher) error
 }
 
 // An Outbound process outbound connections.
 type Outbound interface {
 	// Process processes the given connection. The given dialer may be used to dial a system outbound connection.
-	Process(context.Context, *core.Link, Dialer) error
-}
-
-// Dialer is used by OutboundHandler for creating outbound connections.
-type Dialer interface {
-	// Dial dials a system connection to the given destination.
-	Dial(ctx context.Context, destination net.Destination) (internet.Connection, error)
+	Process(context.Context, *transport.Link, internet.Dialer) error
 }
 
 // UserManager is the interface for Inbounds and Outbounds that can manage their users.
 type UserManager interface {
 	// AddUser adds a new user.
-	AddUser(context.Context, *protocol.User) error
+	AddUser(context.Context, *protocol.MemoryUser) error
 
 	// RemoveUser removes a user by email.
 	RemoveUser(context.Context, string) error

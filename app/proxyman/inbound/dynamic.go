@@ -7,11 +7,12 @@ import (
 
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
-	"v2ray.com/core/app/proxyman/mux"
 	"v2ray.com/core/common/dice"
+	"v2ray.com/core/common/mux"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/task"
 	"v2ray.com/core/proxy"
+	"v2ray.com/core/transport/internet"
 )
 
 type DynamicInboundHandler struct {
@@ -19,13 +20,14 @@ type DynamicInboundHandler struct {
 	v              *core.Instance
 	proxyConfig    interface{}
 	receiverConfig *proxyman.ReceiverConfig
+	streamSettings *internet.MemoryStreamConfig
 	portMutex      sync.Mutex
 	portsInUse     map[net.Port]bool
 	workerMutex    sync.RWMutex
 	worker         []worker
 	lastRefresh    time.Time
 	mux            *mux.Server
-	task           *signal.PeriodicTask
+	task           *task.Periodic
 }
 
 func NewDynamicInboundHandler(ctx context.Context, tag string, receiverConfig *proxyman.ReceiverConfig, proxyConfig interface{}) (*DynamicInboundHandler, error) {
@@ -39,7 +41,23 @@ func NewDynamicInboundHandler(ctx context.Context, tag string, receiverConfig *p
 		v:              v,
 	}
 
-	h.task = &signal.PeriodicTask{
+	mss, err := internet.ToMemoryStreamConfig(receiverConfig.StreamSettings)
+	if err != nil {
+		return nil, newError("failed to parse stream settings").Base(err).AtWarning()
+	}
+	if receiverConfig.ReceiveOriginalDestination {
+		if mss.SocketSettings == nil {
+			mss.SocketSettings = &internet.SocketConfig{}
+		}
+		if mss.SocketSettings.Tproxy == internet.SocketConfig_Off {
+			mss.SocketSettings.Tproxy = internet.SocketConfig_Redirect
+		}
+		mss.SocketSettings.ReceiveOriginalDestAddress = true
+	}
+
+	h.streamSettings = mss
+
+	h.task = &task.Periodic{
 		Interval: time.Minute * time.Duration(h.receiverConfig.AllocationStrategy.GetRefreshValue()),
 		Execute:  h.refresh,
 	}
@@ -69,7 +87,9 @@ func (h *DynamicInboundHandler) closeWorkers(workers []worker) {
 	ports2Del := make([]net.Port, len(workers))
 	for idx, worker := range workers {
 		ports2Del[idx] = worker.Port()
-		worker.Close()
+		if err := worker.Close(); err != nil {
+			newError("failed to close worker").Base(err).WriteToLog()
+		}
 	}
 
 	h.portMutex.Lock()
@@ -95,23 +115,23 @@ func (h *DynamicInboundHandler) refresh() error {
 
 	for i := uint32(0); i < concurrency; i++ {
 		port := h.allocatePort()
-		rawProxy, err := h.v.CreateObject(h.proxyConfig)
+		rawProxy, err := core.CreateObject(h.v, h.proxyConfig)
 		if err != nil {
 			newError("failed to create proxy instance").Base(err).AtWarning().WriteToLog()
 			continue
 		}
 		p := rawProxy.(proxy.Inbound)
 		nl := p.Network()
-		if nl.HasNetwork(net.Network_TCP) {
+		if net.HasNetwork(nl, net.Network_TCP) {
 			worker := &tcpWorker{
 				tag:             h.tag,
 				address:         address,
 				port:            port,
 				proxy:           p,
-				stream:          h.receiverConfig.StreamSettings,
+				stream:          h.streamSettings,
 				recvOrigDest:    h.receiverConfig.ReceiveOriginalDestination,
 				dispatcher:      h.mux,
-				sniffers:        h.receiverConfig.DomainOverride,
+				sniffingConfig:  h.receiverConfig.GetEffectiveSniffingSettings(),
 				uplinkCounter:   uplinkCounter,
 				downlinkCounter: downlinkCounter,
 			}
@@ -122,16 +142,16 @@ func (h *DynamicInboundHandler) refresh() error {
 			workers = append(workers, worker)
 		}
 
-		if nl.HasNetwork(net.Network_UDP) {
+		if net.HasNetwork(nl, net.Network_UDP) {
 			worker := &udpWorker{
 				tag:             h.tag,
 				proxy:           p,
 				address:         address,
 				port:            port,
-				recvOrigDest:    h.receiverConfig.ReceiveOriginalDestination,
 				dispatcher:      h.mux,
 				uplinkCounter:   uplinkCounter,
 				downlinkCounter: downlinkCounter,
+				stream:          h.streamSettings,
 			}
 			if err := worker.Start(); err != nil {
 				newError("failed to create UDP worker").Base(err).AtWarning().WriteToLog()

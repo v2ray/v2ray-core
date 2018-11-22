@@ -2,20 +2,18 @@ package internet
 
 import (
 	"net"
+
+	"v2ray.com/core/features/stats"
 )
 
 type Connection interface {
 	net.Conn
 }
 
-type addInt64 interface {
-	Add(int64) int64
-}
-
 type StatCouterConnection struct {
 	Connection
-	Uplink   addInt64
-	Downlink addInt64
+	Uplink   stats.Counter
+	Downlink stats.Counter
 }
 
 func (c *StatCouterConnection) Read(b []byte) (int, error) {

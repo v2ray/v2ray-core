@@ -1,6 +1,6 @@
 package main
 
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg main -path Main
+//go:generate errorgen
 
 import (
 	"flag"
@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 
@@ -105,7 +106,8 @@ func main() {
 	server, err := startV2Ray()
 	if err != nil {
 		fmt.Println(err.Error())
-		os.Exit(-1)
+		// Configuration error. Exit with a special value to prevent systemd from restarting.
+		os.Exit(23)
 	}
 
 	if *test {
@@ -117,6 +119,9 @@ func main() {
 		fmt.Println("Failed to start", err)
 		os.Exit(-1)
 	}
+
+	// Explicitly triggering GC to remove garbage from config loading.
+	runtime.GC()
 
 	osSignals := make(chan os.Signal, 1)
 	signal.Notify(osSignals, os.Interrupt, os.Kill, syscall.SIGTERM)

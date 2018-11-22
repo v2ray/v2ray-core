@@ -1,9 +1,11 @@
 package vmess
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import v2ray_core_common_protocol "v2ray.com/core/common/protocol"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+	protocol "v2ray.com/core/common/protocol"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -18,17 +20,40 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Account struct {
 	// ID of the account, in the form of a UUID, e.g., "66ad4540-b58c-4ad2-9926-ea63445a9b57".
-	Id string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// Number of alternative IDs. Client and server must share the same number.
-	AlterId uint32 `protobuf:"varint,2,opt,name=alter_id,json=alterId" json:"alter_id,omitempty"`
+	AlterId uint32 `protobuf:"varint,2,opt,name=alter_id,json=alterId,proto3" json:"alter_id,omitempty"`
 	// Security settings. Only applies to client side.
-	SecuritySettings *v2ray_core_common_protocol.SecurityConfig `protobuf:"bytes,3,opt,name=security_settings,json=securitySettings" json:"security_settings,omitempty"`
+	SecuritySettings     *protocol.SecurityConfig `protobuf:"bytes,3,opt,name=security_settings,json=securitySettings,proto3" json:"security_settings,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
+	XXX_unrecognized     []byte                   `json:"-"`
+	XXX_sizecache        int32                    `json:"-"`
 }
 
-func (m *Account) Reset()                    { *m = Account{} }
-func (m *Account) String() string            { return proto.CompactTextString(m) }
-func (*Account) ProtoMessage()               {}
-func (*Account) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *Account) Reset()         { *m = Account{} }
+func (m *Account) String() string { return proto.CompactTextString(m) }
+func (*Account) ProtoMessage()    {}
+func (*Account) Descriptor() ([]byte, []int) {
+	return fileDescriptor_d65dee31e5abbda0, []int{0}
+}
+
+func (m *Account) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Account.Unmarshal(m, b)
+}
+func (m *Account) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Account.Marshal(b, m, deterministic)
+}
+func (m *Account) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Account.Merge(m, src)
+}
+func (m *Account) XXX_Size() int {
+	return xxx_messageInfo_Account.Size(m)
+}
+func (m *Account) XXX_DiscardUnknown() {
+	xxx_messageInfo_Account.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Account proto.InternalMessageInfo
 
 func (m *Account) GetId() string {
 	if m != nil {
@@ -44,7 +69,7 @@ func (m *Account) GetAlterId() uint32 {
 	return 0
 }
 
-func (m *Account) GetSecuritySettings() *v2ray_core_common_protocol.SecurityConfig {
+func (m *Account) GetSecuritySettings() *protocol.SecurityConfig {
 	if m != nil {
 		return m.SecuritySettings
 	}
@@ -55,9 +80,11 @@ func init() {
 	proto.RegisterType((*Account)(nil), "v2ray.core.proxy.vmess.Account")
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/proxy/vmess/account.proto", fileDescriptor0) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/proxy/vmess/account.proto", fileDescriptor_d65dee31e5abbda0)
+}
 
-var fileDescriptor0 = []byte{
+var fileDescriptor_d65dee31e5abbda0 = []byte{
 	// 244 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x8f, 0xc1, 0x4a, 0x03, 0x31,
 	0x10, 0x86, 0xc9, 0x8a, 0x56, 0x23, 0x8a, 0xee, 0xa1, 0xac, 0x3d, 0x2d, 0x9e, 0x16, 0x91, 0x09,

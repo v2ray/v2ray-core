@@ -4,26 +4,26 @@ import (
 	"context"
 	"sync"
 
-	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/signal/done"
+	"v2ray.com/core/transport"
 	"v2ray.com/core/transport/pipe"
 )
 
 // OutboundListener is a net.Listener for listening gRPC connections.
 type OutboundListener struct {
 	buffer chan net.Conn
-	done   *signal.Done
+	done   *done.Instance
 }
 
 func (l *OutboundListener) add(conn net.Conn) {
 	select {
 	case l.buffer <- conn:
 	case <-l.done.Wait():
-		common.Ignore(conn.Close(), "We can do nothing if Close() returns error.")
+		conn.Close() // nolint: errcheck
 	default:
-		common.Ignore(conn.Close(), "We can do nothing if Close() returns error.")
+		conn.Close() // nolint: errcheck
 	}
 }
 
@@ -44,7 +44,7 @@ L:
 	for {
 		select {
 		case c := <-l.buffer:
-			common.Ignore(c.Close(), "We can do nothing if errored.")
+			c.Close() // nolint: errcheck
 		default:
 			break L
 		}
@@ -60,7 +60,7 @@ func (l *OutboundListener) Addr() net.Addr {
 	}
 }
 
-// Outbound is a core.OutboundHandler that handles gRPC connections.
+// Outbound is a outbound.Handler that handles gRPC connections.
 type Outbound struct {
 	tag      string
 	listener *OutboundListener
@@ -68,8 +68,8 @@ type Outbound struct {
 	closed   bool
 }
 
-// Dispatch implements core.OutboundHandler.
-func (co *Outbound) Dispatch(ctx context.Context, link *core.Link) {
+// Dispatch implements outbound.Handler.
+func (co *Outbound) Dispatch(ctx context.Context, link *transport.Link) {
 	co.access.RLock()
 
 	if co.closed {
@@ -79,14 +79,14 @@ func (co *Outbound) Dispatch(ctx context.Context, link *core.Link) {
 		return
 	}
 
-	closeSignal := signal.NewNotifier()
-	c := net.NewConnection(net.ConnectionInputMulti(link.Writer), net.ConnectionOutputMulti(link.Reader), net.ConnectionOnClose(signal.NotifyClose(closeSignal)))
+	closeSignal := done.New()
+	c := net.NewConnection(net.ConnectionInputMulti(link.Writer), net.ConnectionOutputMulti(link.Reader), net.ConnectionOnClose(closeSignal))
 	co.listener.add(c)
 	co.access.RUnlock()
 	<-closeSignal.Wait()
 }
 
-// Tag implements core.OutboundHandler.
+// Tag implements outbound.Handler.
 func (co *Outbound) Tag() string {
 	return co.tag
 }

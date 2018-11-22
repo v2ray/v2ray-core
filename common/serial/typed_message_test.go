@@ -14,3 +14,10 @@ func TestGetInstance(t *testing.T) {
 	assert(p, IsNil)
 	assert(err, IsNotNil)
 }
+
+func TestConvertingNilMessage(t *testing.T) {
+	x := ToTypedMessage(nil)
+	if x != nil {
+		t.Error("expect nil, but actually not")
+	}
+}

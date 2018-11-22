@@ -1,9 +1,11 @@
 package inbound
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import v2ray_core_common_protocol "v2ray.com/core/common/protocol"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+	protocol "v2ray.com/core/common/protocol"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -17,13 +19,36 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type DetourConfig struct {
-	To string `protobuf:"bytes,1,opt,name=to" json:"to,omitempty"`
+	To                   string   `protobuf:"bytes,1,opt,name=to,proto3" json:"to,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *DetourConfig) Reset()                    { *m = DetourConfig{} }
-func (m *DetourConfig) String() string            { return proto.CompactTextString(m) }
-func (*DetourConfig) ProtoMessage()               {}
-func (*DetourConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *DetourConfig) Reset()         { *m = DetourConfig{} }
+func (m *DetourConfig) String() string { return proto.CompactTextString(m) }
+func (*DetourConfig) ProtoMessage()    {}
+func (*DetourConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a47d4a41f33382d2, []int{0}
+}
+
+func (m *DetourConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DetourConfig.Unmarshal(m, b)
+}
+func (m *DetourConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DetourConfig.Marshal(b, m, deterministic)
+}
+func (m *DetourConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DetourConfig.Merge(m, src)
+}
+func (m *DetourConfig) XXX_Size() int {
+	return xxx_messageInfo_DetourConfig.Size(m)
+}
+func (m *DetourConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_DetourConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DetourConfig proto.InternalMessageInfo
 
 func (m *DetourConfig) GetTo() string {
 	if m != nil {
@@ -33,14 +58,37 @@ func (m *DetourConfig) GetTo() string {
 }
 
 type DefaultConfig struct {
-	AlterId uint32 `protobuf:"varint,1,opt,name=alter_id,json=alterId" json:"alter_id,omitempty"`
-	Level   uint32 `protobuf:"varint,2,opt,name=level" json:"level,omitempty"`
+	AlterId              uint32   `protobuf:"varint,1,opt,name=alter_id,json=alterId,proto3" json:"alter_id,omitempty"`
+	Level                uint32   `protobuf:"varint,2,opt,name=level,proto3" json:"level,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *DefaultConfig) Reset()                    { *m = DefaultConfig{} }
-func (m *DefaultConfig) String() string            { return proto.CompactTextString(m) }
-func (*DefaultConfig) ProtoMessage()               {}
-func (*DefaultConfig) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (m *DefaultConfig) Reset()         { *m = DefaultConfig{} }
+func (m *DefaultConfig) String() string { return proto.CompactTextString(m) }
+func (*DefaultConfig) ProtoMessage()    {}
+func (*DefaultConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a47d4a41f33382d2, []int{1}
+}
+
+func (m *DefaultConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DefaultConfig.Unmarshal(m, b)
+}
+func (m *DefaultConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DefaultConfig.Marshal(b, m, deterministic)
+}
+func (m *DefaultConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DefaultConfig.Merge(m, src)
+}
+func (m *DefaultConfig) XXX_Size() int {
+	return xxx_messageInfo_DefaultConfig.Size(m)
+}
+func (m *DefaultConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_DefaultConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DefaultConfig proto.InternalMessageInfo
 
 func (m *DefaultConfig) GetAlterId() uint32 {
 	if m != nil {
@@ -57,18 +105,41 @@ func (m *DefaultConfig) GetLevel() uint32 {
 }
 
 type Config struct {
-	User                 []*v2ray_core_common_protocol.User `protobuf:"bytes,1,rep,name=user" json:"user,omitempty"`
-	Default              *DefaultConfig                     `protobuf:"bytes,2,opt,name=default" json:"default,omitempty"`
-	Detour               *DetourConfig                      `protobuf:"bytes,3,opt,name=detour" json:"detour,omitempty"`
-	SecureEncryptionOnly bool                               `protobuf:"varint,4,opt,name=secure_encryption_only,json=secureEncryptionOnly" json:"secure_encryption_only,omitempty"`
+	User                 []*protocol.User `protobuf:"bytes,1,rep,name=user,proto3" json:"user,omitempty"`
+	Default              *DefaultConfig   `protobuf:"bytes,2,opt,name=default,proto3" json:"default,omitempty"`
+	Detour               *DetourConfig    `protobuf:"bytes,3,opt,name=detour,proto3" json:"detour,omitempty"`
+	SecureEncryptionOnly bool             `protobuf:"varint,4,opt,name=secure_encryption_only,json=secureEncryptionOnly,proto3" json:"secure_encryption_only,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_unrecognized     []byte           `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
 }
 
-func (m *Config) Reset()                    { *m = Config{} }
-func (m *Config) String() string            { return proto.CompactTextString(m) }
-func (*Config) ProtoMessage()               {}
-func (*Config) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (m *Config) Reset()         { *m = Config{} }
+func (m *Config) String() string { return proto.CompactTextString(m) }
+func (*Config) ProtoMessage()    {}
+func (*Config) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a47d4a41f33382d2, []int{2}
+}
 
-func (m *Config) GetUser() []*v2ray_core_common_protocol.User {
+func (m *Config) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_Config.Unmarshal(m, b)
+}
+func (m *Config) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_Config.Marshal(b, m, deterministic)
+}
+func (m *Config) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Config.Merge(m, src)
+}
+func (m *Config) XXX_Size() int {
+	return xxx_messageInfo_Config.Size(m)
+}
+func (m *Config) XXX_DiscardUnknown() {
+	xxx_messageInfo_Config.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Config proto.InternalMessageInfo
+
+func (m *Config) GetUser() []*protocol.User {
 	if m != nil {
 		return m.User
 	}
@@ -102,9 +173,11 @@ func init() {
 	proto.RegisterType((*Config)(nil), "v2ray.core.proxy.vmess.inbound.Config")
 }
 
-func init() { proto.RegisterFile("v2ray.com/core/proxy/vmess/inbound/config.proto", fileDescriptor0) }
+func init() {
+	proto.RegisterFile("v2ray.com/core/proxy/vmess/inbound/config.proto", fileDescriptor_a47d4a41f33382d2)
+}
 
-var fileDescriptor0 = []byte{
+var fileDescriptor_a47d4a41f33382d2 = []byte{
 	// 333 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x90, 0x4f, 0x4f, 0xf2, 0x40,
 	0x10, 0xc6, 0xd3, 0xc2, 0x0b, 0xbc, 0x8b, 0x78, 0x68, 0x88, 0xa9, 0x1e, 0x48, 0xd3, 0x13, 0x26,

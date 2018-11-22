@@ -1,4 +1,5 @@
 // +build !windows
+// +build !wasm
 
 package domainsocket
 
@@ -11,20 +12,8 @@ import (
 	"v2ray.com/core/transport/internet/tls"
 )
 
-func getSettingsFromContext(ctx context.Context) *Config {
-	rawSettings := internet.TransportSettingsFromContext(ctx)
-	if rawSettings == nil {
-		return nil
-	}
-	return rawSettings.(*Config)
-}
-
-func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error) {
-	settings := getSettingsFromContext(ctx)
-	if settings == nil {
-		return nil, newError("domain socket settings is not specified.").AtError()
-	}
-
+func Dial(ctx context.Context, dest net.Destination, streamSettings *internet.MemoryStreamConfig) (internet.Connection, error) {
+	settings := streamSettings.ProtocolSettings.(*Config)
 	addr, err := settings.GetUnixAddr()
 	if err != nil {
 		return nil, err
@@ -35,7 +24,7 @@ func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error
 		return nil, newError("failed to dial unix: ", settings.Path).Base(err).AtWarning()
 	}
 
-	if config := tls.ConfigFromContext(ctx); config != nil {
+	if config := tls.ConfigFromStreamSettings(streamSettings); config != nil {
 		return tls.Client(conn, config.GetTLSConfig(tls.WithDestination(dest))), nil
 	}
 
@@ -43,5 +32,5 @@ func Dial(ctx context.Context, dest net.Destination) (internet.Connection, error
 }
 
 func init() {
-	common.Must(internet.RegisterTransportDialer(internet.TransportProtocol_DomainSocket, Dial))
+	common.Must(internet.RegisterTransportDialer(protocolName, Dial))
 }

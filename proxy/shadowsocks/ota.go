@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha1"
+	"encoding/binary"
 	"io"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
+	"v2ray.com/core/common/bytespool"
 	"v2ray.com/core/common/serial"
 )
 
@@ -28,13 +30,11 @@ func NewAuthenticator(keygen KeyGenerator) *Authenticator {
 	}
 }
 
-func (v *Authenticator) Authenticate(data []byte) buf.Supplier {
+func (v *Authenticator) Authenticate(data []byte, dest []byte) {
 	hasher := hmac.New(sha1.New, v.key())
 	common.Must2(hasher.Write(data))
 	res := hasher.Sum(nil)
-	return func(b []byte) (int, error) {
-		return copy(b, res[:AuthSize]), nil
-	}
+	copy(dest, res[:AuthSize])
 }
 
 func HeaderKeyGenerator(key []byte, iv []byte) func() []byte {
@@ -47,11 +47,11 @@ func HeaderKeyGenerator(key []byte, iv []byte) func() []byte {
 }
 
 func ChunkKeyGenerator(iv []byte) func() []byte {
-	chunkID := 0
+	chunkID := uint32(0)
 	return func() []byte {
-		newKey := make([]byte, 0, len(iv)+4)
-		newKey = append(newKey, iv...)
-		newKey = serial.IntToBytes(chunkID, newKey)
+		newKey := make([]byte, len(iv)+4)
+		copy(newKey, iv)
+		binary.BigEndian.PutUint32(newKey[len(iv):], chunkID)
 		chunkID++
 		return newKey
 	}
@@ -72,28 +72,29 @@ func NewChunkReader(reader io.Reader, auth *Authenticator) *ChunkReader {
 func (v *ChunkReader) ReadMultiBuffer() (buf.MultiBuffer, error) {
 	size, err := serial.ReadUint16(v.reader)
 	if err != nil {
-		return nil, newError("failed to read size")
+		return nil, newError("failed to read size").Base(err)
 	}
 	size += AuthSize
 
-	buffer := buf.NewSize(int32(size))
-	if err := buffer.AppendSupplier(buf.ReadFullFrom(v.reader, int32(size))); err != nil {
-		buffer.Release()
+	buffer := bytespool.Alloc(int32(size))
+	defer bytespool.Free(buffer)
+
+	if _, err := io.ReadFull(v.reader, buffer[:size]); err != nil {
 		return nil, err
 	}
 
-	authBytes := buffer.BytesTo(AuthSize)
-	payload := buffer.BytesFrom(AuthSize)
+	authBytes := buffer[:AuthSize]
+	payload := buffer[AuthSize:size]
 
 	actualAuthBytes := make([]byte, AuthSize)
-	v.auth.Authenticate(payload)(actualAuthBytes)
+	v.auth.Authenticate(payload, actualAuthBytes)
 	if !bytes.Equal(authBytes, actualAuthBytes) {
-		buffer.Release()
 		return nil, newError("invalid auth")
 	}
-	buffer.Advance(AuthSize)
 
-	return buf.NewMultiBufferValue(buffer), nil
+	mb := buf.MergeBytes(nil, payload)
+
+	return mb, nil
 }
 
 type ChunkWriter struct {
@@ -112,13 +113,13 @@ func NewChunkWriter(writer io.Writer, auth *Authenticator) *ChunkWriter {
 
 // WriteMultiBuffer implements buf.Writer.
 func (w *ChunkWriter) WriteMultiBuffer(mb buf.MultiBuffer) error {
-	defer mb.Release()
+	defer buf.ReleaseMulti(mb)
 
 	for {
-		payloadLen, _ := mb.Read(w.buffer[2+AuthSize:])
-		serial.Uint16ToBytes(uint16(payloadLen), w.buffer[:0])
-		w.auth.Authenticate(w.buffer[2+AuthSize : 2+AuthSize+payloadLen])(w.buffer[2:])
-		if _, err := w.writer.Write(w.buffer[:2+AuthSize+payloadLen]); err != nil {
+		mb, payloadLen := buf.SplitBytes(mb, w.buffer[2+AuthSize:])
+		binary.BigEndian.PutUint16(w.buffer, uint16(payloadLen))
+		w.auth.Authenticate(w.buffer[2+AuthSize:2+AuthSize+payloadLen], w.buffer[2:])
+		if err := buf.WriteAllBytes(w.writer, w.buffer[:2+AuthSize+payloadLen]); err != nil {
 			return err
 		}
 		if mb.IsEmpty() {

@@ -1,4 +1,5 @@
 // +build !windows
+// +build !wasm
 
 package domainsocket
 
@@ -24,12 +25,8 @@ type Listener struct {
 	locker    *fileLocker
 }
 
-func Listen(ctx context.Context, address net.Address, port net.Port, handler internet.ConnHandler) (internet.Listener, error) {
-	settings := getSettingsFromContext(ctx)
-	if settings == nil {
-		return nil, newError("domain socket settings not specified.")
-	}
-
+func Listen(ctx context.Context, address net.Address, port net.Port, streamSettings *internet.MemoryStreamConfig, handler internet.ConnHandler) (internet.Listener, error) {
+	settings := streamSettings.ProtocolSettings.(*Config)
 	addr, err := settings.GetUnixAddr()
 	if err != nil {
 		return nil, err
@@ -57,7 +54,7 @@ func Listen(ctx context.Context, address net.Address, port net.Port, handler int
 		}
 	}
 
-	if config := tls.ConfigFromContext(ctx); config != nil {
+	if config := tls.ConfigFromStreamSettings(streamSettings); config != nil {
 		ln.tlsConfig = config.GetTLSConfig()
 	}
 
@@ -127,5 +124,5 @@ func (fl *fileLocker) Release() {
 }
 
 func init() {
-	common.Must(internet.RegisterTransportListener(internet.TransportProtocol_DomainSocket, Listen))
+	common.Must(internet.RegisterTransportListener(protocolName, Listen))
 }

@@ -1,6 +1,6 @@
 package freedom
 
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg freedom -path Proxy,Freedom
+//go:generate errorgen
 
 import (
 	"context"
@@ -12,31 +12,44 @@ import (
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal"
-	"v2ray.com/core/proxy"
+	"v2ray.com/core/common/task"
+	"v2ray.com/core/features/dns"
+	"v2ray.com/core/features/policy"
+	"v2ray.com/core/transport"
 	"v2ray.com/core/transport/internet"
 )
 
+func init() {
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		h := new(Handler)
+		if err := core.RequireFeatures(ctx, func(pm policy.Manager, d dns.Client) error {
+			return h.Init(config.(*Config), pm, d)
+		}); err != nil {
+			return nil, err
+		}
+		return h, nil
+	}))
+}
+
 // Handler handles Freedom connections.
 type Handler struct {
-	policyManager core.PolicyManager
-	dns           core.DNSClient
+	policyManager policy.Manager
+	dns           dns.Client
 	config        Config
 }
 
-// New creates a new Freedom handler.
-func New(ctx context.Context, config *Config) (*Handler, error) {
-	v := core.MustFromContext(ctx)
-	f := &Handler{
-		config:        *config,
-		policyManager: v.PolicyManager(),
-		dns:           v.DNSClient(),
-	}
+// Init initializes the Handler with necessary parameters.
+func (h *Handler) Init(config *Config, pm policy.Manager, d dns.Client) error {
+	h.config = *config
+	h.policyManager = pm
+	h.dns = d
 
-	return f, nil
+	return nil
 }
 
-func (h *Handler) policy() core.Policy {
+func (h *Handler) policy() policy.Session {
 	p := h.policyManager.ForLevel(h.config.UserLevel)
 	if h.config.Timeout > 0 && h.config.UserLevel == 0 {
 		p.Timeouts.ConnectionIdle = time.Duration(h.config.Timeout) * time.Second
@@ -44,18 +57,22 @@ func (h *Handler) policy() core.Policy {
 	return p
 }
 
-func (h *Handler) resolveIP(ctx context.Context, domain string) net.Address {
-	if resolver, ok := proxy.ResolvedIPsFromContext(ctx); ok {
-		ips := resolver.Resolve()
-		if len(ips) == 0 {
-			return nil
+func (h *Handler) resolveIP(ctx context.Context, domain string, localAddr net.Address) net.Address {
+	var lookupFunc func(string) ([]net.IP, error) = h.dns.LookupIP
+
+	if h.config.DomainStrategy == Config_USE_IP4 || (localAddr != nil && localAddr.Family().IsIPv4()) {
+		if lookupIPv4, ok := h.dns.(dns.IPv4Lookup); ok {
+			lookupFunc = lookupIPv4.LookupIPv4
 		}
-		return ips[dice.Roll(len(ips))]
+	} else if h.config.DomainStrategy == Config_USE_IP6 || (localAddr != nil && localAddr.Family().IsIPv6()) {
+		if lookupIPv6, ok := h.dns.(dns.IPv6Lookup); ok {
+			lookupFunc = lookupIPv6.LookupIPv6
+		}
 	}
 
-	ips, err := h.dns.LookupIP(domain)
+	ips, err := lookupFunc(domain)
 	if err != nil {
-		newError("failed to get IP address for domain ", domain).Base(err).WithContext(ctx).WriteToLog()
+		newError("failed to get IP address for domain ", domain).Base(err).WriteToLog(session.ExportIDToError(ctx))
 	}
 	if len(ips) == 0 {
 		return nil
@@ -63,37 +80,52 @@ func (h *Handler) resolveIP(ctx context.Context, domain string) net.Address {
 	return net.IPAddress(ips[dice.Roll(len(ips))])
 }
 
+func isValidAddress(addr *net.IPOrDomain) bool {
+	if addr == nil {
+		return false
+	}
+
+	a := addr.AsAddress()
+	return a != net.AnyIP
+}
+
 // Process implements proxy.Outbound.
-func (h *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dialer) error {
-	destination, _ := proxy.TargetFromContext(ctx)
+func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer internet.Dialer) error {
+	outbound := session.OutboundFromContext(ctx)
+	if outbound == nil || !outbound.Target.IsValid() {
+		return newError("target not specified.")
+	}
+	destination := outbound.Target
 	if h.config.DestinationOverride != nil {
 		server := h.config.DestinationOverride.Server
-		destination = net.Destination{
-			Network: destination.Network,
-			Address: server.Address.AsAddress(),
-			Port:    net.Port(server.Port),
+		if isValidAddress(server.Address) {
+			destination.Address = server.Address.AsAddress()
+		}
+		if server.Port != 0 {
+			destination.Port = net.Port(server.Port)
 		}
 	}
-	newError("opening connection to ", destination).WithContext(ctx).WriteToLog()
+	newError("opening connection to ", destination).WriteToLog(session.ExportIDToError(ctx))
 
 	input := link.Reader
 	output := link.Writer
 
-	if h.config.DomainStrategy == Config_USE_IP && destination.Address.Family().IsDomain() {
-		ip := h.resolveIP(ctx, destination.Address.Domain())
-		if ip != nil {
-			destination = net.Destination{
-				Network: destination.Network,
-				Address: ip,
-				Port:    destination.Port,
-			}
-			newError("changing destination to ", destination).WithContext(ctx).WriteToLog()
-		}
-	}
-
 	var conn internet.Connection
 	err := retry.ExponentialBackoff(5, 100).On(func() error {
-		rawConn, err := dialer.Dial(ctx, destination)
+		dialDest := destination
+		if h.config.useIP() && dialDest.Address.Family().IsDomain() {
+			ip := h.resolveIP(ctx, dialDest.Address.Domain(), dialer.Address())
+			if ip != nil {
+				dialDest = net.Destination{
+					Network: dialDest.Network,
+					Address: ip,
+					Port:    dialDest.Port,
+				}
+				newError("dialing to to ", dialDest).WriteToLog(session.ExportIDToError(ctx))
+			}
+		}
+
+		rawConn, err := dialer.Dial(ctx, dialDest)
 		if err != nil {
 			return err
 		}
@@ -103,19 +135,20 @@ func (h *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 	if err != nil {
 		return newError("failed to open connection to ", destination).Base(err)
 	}
-	defer conn.Close()
+	defer conn.Close() // nolint: errcheck
 
+	plcy := h.policy()
 	ctx, cancel := context.WithCancel(ctx)
-	timer := signal.CancelAfterInactivity(ctx, cancel, h.policy().Timeouts.ConnectionIdle)
+	timer := signal.CancelAfterInactivity(ctx, cancel, plcy.Timeouts.ConnectionIdle)
 
 	requestDone := func() error {
-		defer timer.SetTimeout(h.policy().Timeouts.DownlinkOnly)
+		defer timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
 
 		var writer buf.Writer
 		if destination.Network == net.Network_TCP {
 			writer = buf.NewWriter(conn)
 		} else {
-			writer = buf.NewSequentialWriter(conn)
+			writer = &buf.SequentialWriter{Writer: conn}
 		}
 		if err := buf.Copy(input, writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to process request").Base(err)
@@ -125,25 +158,18 @@ func (h *Handler) Process(ctx context.Context, link *core.Link, dialer proxy.Dia
 	}
 
 	responseDone := func() error {
-		defer timer.SetTimeout(h.policy().Timeouts.UplinkOnly)
+		defer timer.SetTimeout(plcy.Timeouts.UplinkOnly)
 
-		v2reader := buf.NewReader(conn)
-		if err := buf.Copy(v2reader, output, buf.UpdateActivity(timer)); err != nil {
+		if err := buf.Copy(buf.NewReader(conn), output, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to process response").Base(err)
 		}
 
 		return nil
 	}
 
-	if err := signal.ExecuteParallel(ctx, requestDone, responseDone); err != nil {
+	if err := task.Run(task.WithContext(ctx), task.Parallel(requestDone, task.Single(responseDone, task.OnSuccess(task.Close(output)))))(); err != nil {
 		return newError("connection ends").Base(err)
 	}
 
 	return nil
-}
-
-func init() {
-	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
-		return New(ctx, config.(*Config))
-	}))
 }

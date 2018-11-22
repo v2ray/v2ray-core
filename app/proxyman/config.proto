@@ -51,6 +51,15 @@ enum KnownProtocols {
   TLS = 1;
 }
 
+message SniffingConfig {
+  // Whether or not to enable content sniffing on an inbound connection.
+  bool enabled = 1;
+
+  // Override target destination if sniff'ed protocol is in the given list.
+  // Supported values are "http", "tls".
+  repeated string destination_override = 2;
+}
+
 message ReceiverConfig {
   // PortRange specifies the ports which the Receiver should listen on.
   v2ray.core.common.net.PortRange port_range = 1;
@@ -60,7 +69,10 @@ message ReceiverConfig {
   v2ray.core.transport.internet.StreamConfig stream_settings = 4;
   bool receive_original_destination = 5;
   reserved 6;
-  repeated KnownProtocols domain_override = 7;
+  // Override domains for the given protocol.
+  // Deprecated. Use sniffing_settings.
+  repeated KnownProtocols domain_override = 7 [deprecated = true];
+  SniffingConfig sniffing_settings = 8;
 }
 
 message InboundHandlerConfig {

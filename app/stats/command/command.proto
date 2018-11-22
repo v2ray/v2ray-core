@@ -22,8 +22,18 @@ message GetStatsResponse {
   Stat stat = 1;
 }
 
+message QueryStatsRequest {
+  string pattern = 1;
+  bool reset = 2;
+}
+
+message QueryStatsResponse {
+  repeated Stat stat = 1;
+}
+
 service StatsService {
   rpc GetStats(GetStatsRequest) returns (GetStatsResponse) {}
+  rpc QueryStats(QueryStatsRequest) returns (QueryStatsResponse) {}
 }
 
 message Config {}

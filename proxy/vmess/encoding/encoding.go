@@ -5,7 +5,7 @@ import (
 	"v2ray.com/core/common/protocol"
 )
 
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg encoding -path Proxy,VMess,Encoding
+//go:generate errorgen
 
 const (
 	Version = byte(1)

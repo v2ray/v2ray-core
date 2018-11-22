@@ -13,10 +13,8 @@ func (NoOpHeader) Size() int32 {
 	return 0
 }
 
-// Write implements io.Writer.
-func (NoOpHeader) Write([]byte) (int, error) {
-	return 0, nil
-}
+// Serialize implements PacketHeader.
+func (NoOpHeader) Serialize([]byte) {}
 
 func NewNoOpHeader(context.Context, interface{}) (interface{}, error) {
 	return NoOpHeader{}, nil

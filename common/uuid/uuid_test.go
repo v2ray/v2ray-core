@@ -3,39 +3,49 @@ package uuid_test
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/compare"
 	. "v2ray.com/core/common/uuid"
 	. "v2ray.com/ext/assert"
 )
 
 func TestParseBytes(t *testing.T) {
-	assert := With(t)
-
 	str := "2418d087-648d-4990-86e8-19dca1d006d3"
 	bytes := []byte{0x24, 0x18, 0xd0, 0x87, 0x64, 0x8d, 0x49, 0x90, 0x86, 0xe8, 0x19, 0xdc, 0xa1, 0xd0, 0x06, 0xd3}
 
 	uuid, err := ParseBytes(bytes)
-	assert(err, IsNil)
-	assert(uuid.String(), Equals, str)
+	common.Must(err)
+	if diff := cmp.Diff(uuid.String(), str); diff != "" {
+		t.Error(diff)
+	}
 
 	_, err = ParseBytes([]byte{1, 3, 2, 4})
-	assert(err, IsNotNil)
+	if err == nil {
+		t.Fatal("Expect error but nil")
+	}
 }
 
 func TestParseString(t *testing.T) {
-	assert := With(t)
-
 	str := "2418d087-648d-4990-86e8-19dca1d006d3"
 	expectedBytes := []byte{0x24, 0x18, 0xd0, 0x87, 0x64, 0x8d, 0x49, 0x90, 0x86, 0xe8, 0x19, 0xdc, 0xa1, 0xd0, 0x06, 0xd3}
 
 	uuid, err := ParseString(str)
-	assert(err, IsNil)
-	assert(uuid.Bytes(), Equals, expectedBytes)
+	common.Must(err)
+	if err := compare.BytesEqualWithDetail(expectedBytes, uuid.Bytes()); err != nil {
+		t.Fatal(err)
+	}
 
-	uuid, err = ParseString("2418d087")
-	assert(err, IsNotNil)
+	_, err = ParseString("2418d087")
+	if err == nil {
+		t.Fatal("Expect error but nil")
+	}
 
-	uuid, err = ParseString("2418d087-648k-4990-86e8-19dca1d006d3")
-	assert(err, IsNotNil)
+	_, err = ParseString("2418d087-648k-4990-86e8-19dca1d006d3")
+	if err == nil {
+		t.Fatal("Expect error but nil")
+	}
 }
 
 func TestNewUUID(t *testing.T) {
@@ -62,8 +72,8 @@ func TestRandom(t *testing.T) {
 func TestEquals(t *testing.T) {
 	assert := With(t)
 
-	var uuid *UUID = nil
-	var uuid2 *UUID = nil
+	var uuid *UUID
+	var uuid2 *UUID
 	assert(uuid.Equals(uuid2), IsTrue)
 
 	uuid3 := New()

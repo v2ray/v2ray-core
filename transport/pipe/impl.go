@@ -3,11 +3,14 @@ package pipe
 import (
 	"errors"
 	"io"
+	"runtime"
 	"sync"
 	"time"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/signal/done"
 )
 
 type state byte
@@ -18,21 +21,32 @@ const (
 	errord
 )
 
+type pipeOption struct {
+	limit           int32 // maximum buffer size in bytes
+	discardOverflow bool
+}
+
+func (o *pipeOption) isFull(curSize int32) bool {
+	return o.limit >= 0 && curSize > o.limit
+}
+
 type pipe struct {
 	sync.Mutex
 	data        buf.MultiBuffer
 	readSignal  *signal.Notifier
 	writeSignal *signal.Notifier
-	limit       int32
+	done        *done.Instance
+	option      pipeOption
 	state       state
 }
 
 var errBufferFull = errors.New("buffer full")
+var errSlowDown = errors.New("slow down")
 
 func (p *pipe) getState(forRead bool) error {
 	switch p.state {
 	case open:
-		if !forRead && p.limit >= 0 && p.data.Len() > p.limit {
+		if !forRead && p.option.isFull(p.data.Len()) {
 			return errBufferFull
 		}
 		return nil
@@ -72,12 +86,17 @@ func (p *pipe) ReadMultiBuffer() (buf.MultiBuffer, error) {
 			return data, err
 		}
 
-		<-p.readSignal.Wait()
+		select {
+		case <-p.readSignal.Wait():
+		case <-p.done.Wait():
+		}
 	}
 }
 
-func (p *pipe) ReadMultiBufferWithTimeout(d time.Duration) (buf.MultiBuffer, error) {
-	timer := time.After(d)
+func (p *pipe) ReadMultiBufferTimeout(d time.Duration) (buf.MultiBuffer, error) {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+
 	for {
 		data, err := p.readMultiBufferInternal()
 		if data != nil || err != nil {
@@ -87,7 +106,8 @@ func (p *pipe) ReadMultiBufferWithTimeout(d time.Duration) (buf.MultiBuffer, err
 
 		select {
 		case <-p.readSignal.Wait():
-		case <-timer:
+		case <-p.done.Wait():
+		case <-timer.C:
 			return nil, buf.ErrReadTimeout
 		}
 	}
@@ -101,8 +121,13 @@ func (p *pipe) writeMultiBufferInternal(mb buf.MultiBuffer) error {
 		return err
 	}
 
-	p.data.AppendMulti(mb)
-	return nil
+	if p.data == nil {
+		p.data = mb
+		return nil
+	}
+
+	p.data, _ = buf.MergeMulti(p.data, mb)
+	return errSlowDown
 }
 
 func (p *pipe) WriteMultiBuffer(mb buf.MultiBuffer) error {
@@ -112,12 +137,35 @@ func (p *pipe) WriteMultiBuffer(mb buf.MultiBuffer) error {
 
 	for {
 		err := p.writeMultiBufferInternal(mb)
-		if err == nil || err != errBufferFull {
+		if err == nil {
+			p.readSignal.Signal()
+			return nil
+		}
+
+		if err == errSlowDown {
+			p.readSignal.Signal()
+
+			// Yield current goroutine. Hopefully the reading counterpart can pick up the payload.
+			runtime.Gosched()
+			return nil
+		}
+
+		if err == errBufferFull && p.option.discardOverflow {
+			buf.ReleaseMulti(mb)
+			return nil
+		}
+
+		if err != errBufferFull {
+			buf.ReleaseMulti(mb)
 			p.readSignal.Signal()
 			return err
 		}
 
-		<-p.writeSignal.Wait()
+		select {
+		case <-p.writeSignal.Wait():
+		case <-p.done.Wait():
+			return io.ErrClosedPipe
+		}
 	}
 }
 
@@ -130,8 +178,7 @@ func (p *pipe) Close() error {
 	}
 
 	p.state = closed
-	p.readSignal.Signal()
-	p.writeSignal.Signal()
+	common.Must(p.done.Close())
 	return nil
 }
 
@@ -146,10 +193,9 @@ func (p *pipe) CloseError() {
 	p.state = errord
 
 	if !p.data.IsEmpty() {
-		p.data.Release()
+		buf.ReleaseMulti(p.data)
 		p.data = nil
 	}
 
-	p.readSignal.Signal()
-	p.writeSignal.Signal()
+	common.Must(p.done.Close())
 }

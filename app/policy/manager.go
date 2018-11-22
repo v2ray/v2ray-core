@@ -3,8 +3,8 @@ package policy
 import (
 	"context"
 
-	"v2ray.com/core"
 	"v2ray.com/core/common"
+	"v2ray.com/core/features/policy"
 )
 
 // Instance is an instance of Policy manager.
@@ -27,28 +27,26 @@ func New(ctx context.Context, config *Config) (*Instance, error) {
 		}
 	}
 
-	v := core.FromContext(ctx)
-	if v != nil {
-		if err := v.RegisterFeature((*core.PolicyManager)(nil), m); err != nil {
-			return nil, newError("unable to register PolicyManager in core").Base(err).AtError()
-		}
-	}
-
 	return m, nil
 }
 
-// ForLevel implements core.PolicyManager.
-func (m *Instance) ForLevel(level uint32) core.Policy {
+// Type implements common.HasType.
+func (*Instance) Type() interface{} {
+	return policy.ManagerType()
+}
+
+// ForLevel implements policy.Manager.
+func (m *Instance) ForLevel(level uint32) policy.Session {
 	if p, ok := m.levels[level]; ok {
 		return p.ToCorePolicy()
 	}
-	return core.DefaultPolicy()
+	return policy.SessionDefault()
 }
 
-// ForSystem implements core.PolicyManager.
-func (m *Instance) ForSystem() core.SystemPolicy {
+// ForSystem implements policy.Manager.
+func (m *Instance) ForSystem() policy.System {
 	if m.system == nil {
-		return core.SystemPolicy{}
+		return policy.System{}
 	}
 	return m.system.ToCorePolicy()
 }

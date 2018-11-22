@@ -1,6 +1,6 @@
 package router
 
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg router -path App,Router
+//go:generate errorgen
 
 import (
 	"context"
@@ -8,42 +8,91 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/proxy"
+	"v2ray.com/core/common/session"
+	"v2ray.com/core/features/dns"
+	"v2ray.com/core/features/outbound"
+	"v2ray.com/core/features/routing"
 )
 
-// Router is an implementation of core.Router.
-type Router struct {
-	domainStrategy Config_DomainStrategy
-	rules          []Rule
-	dns            core.DNSClient
+type key uint32
+
+const (
+	resolvedIPsKey key = iota
+)
+
+type IPResolver interface {
+	Resolve() []net.Address
 }
 
-// NewRouter creates a new Router based on the given config.
-func NewRouter(ctx context.Context, config *Config) (*Router, error) {
-	v := core.MustFromContext(ctx)
-	r := &Router{
-		domainStrategy: config.DomainStrategy,
-		rules:          make([]Rule, len(config.Rule)),
-		dns:            v.DNSClient(),
-	}
+func ContextWithResolveIPs(ctx context.Context, f IPResolver) context.Context {
+	return context.WithValue(ctx, resolvedIPsKey, f)
+}
 
-	for idx, rule := range config.Rule {
-		r.rules[idx].Tag = rule.Tag
-		cond, err := rule.BuildCondition()
-		if err != nil {
+func ResolvedIPsFromContext(ctx context.Context) (IPResolver, bool) {
+	ips, ok := ctx.Value(resolvedIPsKey).(IPResolver)
+	return ips, ok
+}
+
+func init() {
+	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
+		r := new(Router)
+		if err := core.RequireFeatures(ctx, func(d dns.Client, ohm outbound.Manager) error {
+			return r.Init(config.(*Config), d, ohm)
+		}); err != nil {
 			return nil, err
 		}
-		r.rules[idx].Condition = cond
+		return r, nil
+	}))
+}
+
+// Router is an implementation of routing.Router.
+type Router struct {
+	domainStrategy Config_DomainStrategy
+	rules          []*Rule
+	balancers      map[string]*Balancer
+	dns            dns.Client
+}
+
+// Init initializes the Router.
+func (r *Router) Init(config *Config, d dns.Client, ohm outbound.Manager) error {
+	r.domainStrategy = config.DomainStrategy
+	r.dns = d
+
+	r.balancers = make(map[string]*Balancer, len(config.BalancingRule))
+	for _, rule := range config.BalancingRule {
+		balancer, err := rule.Build(ohm)
+		if err != nil {
+			return err
+		}
+		r.balancers[rule.Tag] = balancer
 	}
 
-	if err := v.RegisterFeature((*core.Router)(nil), r); err != nil {
-		return nil, newError("unable to register Router").Base(err)
+	r.rules = make([]*Rule, 0, len(config.Rule))
+	for _, rule := range config.Rule {
+		cond, err := rule.BuildCondition()
+		if err != nil {
+			return err
+		}
+		rr := &Rule{
+			Condition: cond,
+			Tag:       rule.GetTag(),
+		}
+		btag := rule.GetBalancingTag()
+		if len(btag) > 0 {
+			brule, found := r.balancers[btag]
+			if !found {
+				return newError("balancer ", btag, " not found")
+			}
+			rr.Balancer = brule
+		}
+		r.rules = append(r.rules, rr)
 	}
-	return r, nil
+
+	return nil
 }
 
 type ipResolver struct {
-	dns      core.DNSClient
+	dns      dns.Client
 	ip       []net.Address
 	domain   string
 	resolved bool
@@ -70,43 +119,53 @@ func (r *ipResolver) Resolve() []net.Address {
 	return r.ip
 }
 
-// PickRoute implements core.Router.
 func (r *Router) PickRoute(ctx context.Context) (string, error) {
+	rule, err := r.pickRouteInternal(ctx)
+	if err != nil {
+		return "", err
+	}
+	return rule.GetTag()
+}
+
+// PickRoute implements routing.Router.
+func (r *Router) pickRouteInternal(ctx context.Context) (*Rule, error) {
 	resolver := &ipResolver{
 		dns: r.dns,
 	}
+
+	outbound := session.OutboundFromContext(ctx)
 	if r.domainStrategy == Config_IpOnDemand {
-		if dest, ok := proxy.TargetFromContext(ctx); ok && dest.Address.Family().IsDomain() {
-			resolver.domain = dest.Address.Domain()
-			ctx = proxy.ContextWithResolveIPs(ctx, resolver)
+		if outbound != nil && outbound.Target.IsValid() && outbound.Target.Address.Family().IsDomain() {
+			resolver.domain = outbound.Target.Address.Domain()
+			ctx = ContextWithResolveIPs(ctx, resolver)
 		}
 	}
 
 	for _, rule := range r.rules {
 		if rule.Apply(ctx) {
-			return rule.Tag, nil
+			return rule, nil
 		}
 	}
 
-	dest, ok := proxy.TargetFromContext(ctx)
-	if !ok {
-		return "", core.ErrNoClue
+	if outbound == nil || !outbound.Target.IsValid() {
+		return nil, common.ErrNoClue
 	}
 
+	dest := outbound.Target
 	if r.domainStrategy == Config_IpIfNonMatch && dest.Address.Family().IsDomain() {
 		resolver.domain = dest.Address.Domain()
 		ips := resolver.Resolve()
 		if len(ips) > 0 {
-			ctx = proxy.ContextWithResolveIPs(ctx, resolver)
+			ctx = ContextWithResolveIPs(ctx, resolver)
 			for _, rule := range r.rules {
 				if rule.Apply(ctx) {
-					return rule.Tag, nil
+					return rule, nil
 				}
 			}
 		}
 	}
 
-	return "", core.ErrNoClue
+	return nil, common.ErrNoClue
 }
 
 // Start implements common.Runnable.
@@ -119,8 +178,7 @@ func (*Router) Close() error {
 	return nil
 }
 
-func init() {
-	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
-		return NewRouter(ctx, config.(*Config))
-	}))
+// Type implement common.HasType.
+func (*Router) Type() interface{} {
+	return routing.RouterType()
 }

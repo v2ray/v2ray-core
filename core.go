@@ -9,16 +9,17 @@
 // connections.
 package core
 
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg core -path Core
+//go:generate go install "v2ray.com/core/common/errors/errorgen"
+//go:generate errorgen
 
 import (
 	"v2ray.com/core/common/serial"
 )
 
-var (
-	version  = "3.22"
+const (
+	version  = "4.6"
 	build    = "Custom"
-	codename = "die Commanderin"
+	codename = "Po"
 	intro    = "A unified platform for anti-censorship."
 )
 

@@ -28,6 +28,24 @@
       "label": "test",
       "args": ["-p", "1", "v2ray.com/core/..."],
       "group": "test"
+    },
+    {
+      "label": "Escape Analysis",
+      "type": "shell",
+      "command": "go build -gcflags -m .",
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^(.*):(.*):(.*): (.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "message": 4
+        },
+        "fileLocation": ["relative", "${fileDirname}"]
+      },
+      "options": {
+        "cwd": "${fileDirname}"
+      }
     }
   ]
 }

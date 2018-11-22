@@ -2,23 +2,28 @@ package protocol
 
 import (
 	"io"
+	"unsafe"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/serial"
+	"v2ray.com/core/common/stack"
 )
 
-type AddressOption func(*AddressParser)
+type AddressOption func(*option)
 
 func PortThenAddress() AddressOption {
-	return func(p *AddressParser) {
+	return func(p *option) {
 		p.portFirst = true
 	}
 }
 
 func AddressFamilyByte(b byte, f net.AddressFamily) AddressOption {
-	return func(p *AddressParser) {
+	if b >= 16 {
+		panic("address family byte too big")
+	}
+	return func(p *option) {
 		p.addrTypeMap[b] = f
 		p.addrByteMap[f] = b
 	}
@@ -27,36 +32,125 @@ func AddressFamilyByte(b byte, f net.AddressFamily) AddressOption {
 type AddressTypeParser func(byte) byte
 
 func WithAddressTypeParser(atp AddressTypeParser) AddressOption {
-	return func(p *AddressParser) {
+	return func(p *option) {
 		p.typeParser = atp
 	}
 }
 
-// AddressParser is a utility for reading and writer addresses.
-type AddressParser struct {
-	addrTypeMap map[byte]net.AddressFamily
-	addrByteMap map[net.AddressFamily]byte
+type AddressSerializer interface {
+	ReadAddressPort(buffer *buf.Buffer, input io.Reader) (net.Address, net.Port, error)
+
+	WriteAddressPort(writer io.Writer, addr net.Address, port net.Port) error
+}
+
+const afInvalid = 255
+
+type option struct {
+	addrTypeMap [16]net.AddressFamily
+	addrByteMap [16]byte
 	portFirst   bool
 	typeParser  AddressTypeParser
 }
 
 // NewAddressParser creates a new AddressParser
-func NewAddressParser(options ...AddressOption) *AddressParser {
-	p := &AddressParser{
-		addrTypeMap: make(map[byte]net.AddressFamily, 8),
-		addrByteMap: make(map[net.AddressFamily]byte, 8),
+func NewAddressParser(options ...AddressOption) AddressSerializer {
+	var o option
+	for i := range o.addrByteMap {
+		o.addrByteMap[i] = afInvalid
+	}
+	for i := range o.addrTypeMap {
+		o.addrTypeMap[i] = net.AddressFamily(afInvalid)
 	}
 	for _, opt := range options {
-		opt(p)
+		opt(&o)
 	}
-	return p
+
+	ap := &addressParser{
+		addrByteMap: o.addrByteMap,
+		addrTypeMap: o.addrTypeMap,
+	}
+
+	if o.typeParser != nil {
+		ap.typeParser = o.typeParser
+	}
+
+	if o.portFirst {
+		return portFirstAddressParser{ap: ap}
+	}
+
+	return portLastAddressParser{ap: ap}
 }
 
-func (p *AddressParser) readPort(b *buf.Buffer, reader io.Reader) (net.Port, error) {
-	if err := b.AppendSupplier(buf.ReadFullFrom(reader, 2)); err != nil {
+type portFirstAddressParser struct {
+	ap *addressParser
+}
+
+func (p portFirstAddressParser) ReadAddressPort(buffer *buf.Buffer, input io.Reader) (net.Address, net.Port, error) {
+	if buffer == nil {
+		buffer = buf.New()
+		defer buffer.Release()
+	}
+
+	port, err := readPort(buffer, input)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	addr, err := p.ap.readAddress(buffer, input)
+	if err != nil {
+		return nil, 0, err
+	}
+	return addr, port, nil
+}
+
+func (p portFirstAddressParser) WriteAddressPort(writer io.Writer, addr net.Address, port net.Port) error {
+	if err := writePort(writer, port); err != nil {
+		return err
+	}
+
+	return p.ap.writeAddress(writer, addr)
+}
+
+type portLastAddressParser struct {
+	ap *addressParser
+}
+
+func (p portLastAddressParser) ReadAddressPort(buffer *buf.Buffer, input io.Reader) (net.Address, net.Port, error) {
+	if buffer == nil {
+		buffer = buf.New()
+		defer buffer.Release()
+	}
+
+	addr, err := p.ap.readAddress(buffer, input)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	port, err := readPort(buffer, input)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return addr, port, nil
+}
+
+func (p portLastAddressParser) WriteAddressPort(writer io.Writer, addr net.Address, port net.Port) error {
+	if err := p.ap.writeAddress(writer, addr); err != nil {
+		return err
+	}
+
+	return writePort(writer, port)
+}
+
+func readPort(b *buf.Buffer, reader io.Reader) (net.Port, error) {
+	if _, err := b.ReadFullFrom(reader, 2); err != nil {
 		return 0, err
 	}
 	return net.PortFromBytes(b.BytesFrom(-2)), nil
+}
+
+func writePort(writer io.Writer, port net.Port) error {
+	return common.Error2(serial.WriteUint16(writer, port.Value()))
 }
 
 func maybeIPPrefix(b byte) bool {
@@ -72,8 +166,14 @@ func isValidDomain(d string) bool {
 	return true
 }
 
-func (p *AddressParser) readAddress(b *buf.Buffer, reader io.Reader) (net.Address, error) {
-	if err := b.AppendSupplier(buf.ReadFullFrom(reader, 1)); err != nil {
+type addressParser struct {
+	addrTypeMap [16]net.AddressFamily
+	addrByteMap [16]byte
+	typeParser  AddressTypeParser
+}
+
+func (p *addressParser) readAddress(b *buf.Buffer, reader io.Reader) (net.Address, error) {
+	if _, err := b.ReadFullFrom(reader, 1); err != nil {
 		return nil, err
 	}
 
@@ -82,34 +182,38 @@ func (p *AddressParser) readAddress(b *buf.Buffer, reader io.Reader) (net.Addres
 		addrType = p.typeParser(addrType)
 	}
 
-	addrFamily, valid := p.addrTypeMap[addrType]
-	if !valid {
+	if addrType >= 16 {
+		return nil, newError("unknown address type: ", addrType)
+	}
+
+	addrFamily := p.addrTypeMap[addrType]
+	if addrFamily == net.AddressFamily(afInvalid) {
 		return nil, newError("unknown address type: ", addrType)
 	}
 
 	switch addrFamily {
 	case net.AddressFamilyIPv4:
-		if err := b.AppendSupplier(buf.ReadFullFrom(reader, 4)); err != nil {
+		if _, err := b.ReadFullFrom(reader, 4); err != nil {
 			return nil, err
 		}
 		return net.IPAddress(b.BytesFrom(-4)), nil
 	case net.AddressFamilyIPv6:
-		if err := b.AppendSupplier(buf.ReadFullFrom(reader, 16)); err != nil {
+		if _, err := b.ReadFullFrom(reader, 16); err != nil {
 			return nil, err
 		}
 		return net.IPAddress(b.BytesFrom(-16)), nil
 	case net.AddressFamilyDomain:
-		if err := b.AppendSupplier(buf.ReadFullFrom(reader, 1)); err != nil {
+		if _, err := b.ReadFullFrom(reader, 1); err != nil {
 			return nil, err
 		}
 		domainLength := int32(b.Byte(b.Len() - 1))
-		if err := b.AppendSupplier(buf.ReadFullFrom(reader, domainLength)); err != nil {
+		if _, err := b.ReadFullFrom(reader, domainLength); err != nil {
 			return nil, err
 		}
 		domain := string(b.BytesFrom(-domainLength))
 		if maybeIPPrefix(domain[0]) {
 			addr := net.ParseAddress(domain)
-			if addr.Family().IsIPv4() || addrFamily.IsIPv6() {
+			if addr.Family().IsIP() {
 				return addr, nil
 			}
 		}
@@ -122,93 +226,49 @@ func (p *AddressParser) readAddress(b *buf.Buffer, reader io.Reader) (net.Addres
 	}
 }
 
-// ReadAddressPort reads address and port from the given input.
-func (p *AddressParser) ReadAddressPort(buffer *buf.Buffer, input io.Reader) (net.Address, net.Port, error) {
-	if buffer == nil {
-		buffer = buf.New()
-		defer buffer.Release()
-	}
-
-	var addr net.Address
-	var port net.Port
-
-	pTask := func() error {
-		lp, err := p.readPort(buffer, input)
-		if err != nil {
-			return err
-		}
-		port = lp
-		return nil
-	}
-
-	aTask := func() error {
-		a, err := p.readAddress(buffer, input)
-		if err != nil {
-			return err
-		}
-		addr = a
-		return nil
-	}
-
-	var err error
-
-	if p.portFirst {
-		err = signal.Execute(pTask, aTask)
-	} else {
-		err = signal.Execute(aTask, pTask)
-	}
-
-	if err != nil {
-		return nil, 0, err
-	}
-
-	return addr, port, nil
-}
-
-func (p *AddressParser) writePort(writer io.Writer, port net.Port) error {
-	return common.Error2(writer.Write(port.Bytes(nil)))
-}
-
-func (p *AddressParser) writeAddress(writer io.Writer, address net.Address) error {
-	tb, valid := p.addrByteMap[address.Family()]
-	if !valid {
+//go:nosplit
+func (p *addressParser) writeAddress(writer io.Writer, address net.Address) error {
+	tb := p.addrByteMap[address.Family()]
+	if tb == afInvalid {
 		return newError("unknown address family", address.Family())
 	}
 
 	switch address.Family() {
 	case net.AddressFamilyIPv4, net.AddressFamilyIPv6:
-		return signal.Execute(func() error {
-			return common.Error2(writer.Write([]byte{tb}))
-		}, func() error {
-			return common.Error2(writer.Write(address.IP()))
-		})
+		var bytes stack.TwoBytes
+		s := bytes[:1]
+		s[0] = tb
+		p := uintptr(unsafe.Pointer(&s))
+		v := (*[]byte)(unsafe.Pointer(p))
+
+		if _, err := writer.Write(*v); err != nil {
+			return err
+		}
+		if _, err := writer.Write(address.IP()); err != nil {
+			return err
+		}
 	case net.AddressFamilyDomain:
 		domain := address.Domain()
 		if isDomainTooLong(domain) {
 			return newError("Super long domain is not supported: ", domain)
 		}
-		return signal.Execute(func() error {
-			return common.Error2(writer.Write([]byte{tb, byte(len(domain))}))
-		}, func() error {
-			return common.Error2(writer.Write([]byte(domain)))
-		})
+
+		var bytes stack.TwoBytes
+		s := bytes[:]
+		s[0] = tb
+		s[1] = byte(len(domain))
+		p := uintptr(unsafe.Pointer(&s))
+		v := (*[]byte)(unsafe.Pointer(p))
+
+		if _, err := writer.Write(*v); err != nil {
+			return err
+		}
+		if _, err := io.WriteString(writer, domain); err != nil {
+			return err
+		}
 	default:
 		panic("Unknown family type.")
 	}
-}
 
-// WriteAddressPort writes address and port into the given writer.
-func (p *AddressParser) WriteAddressPort(writer io.Writer, addr net.Address, port net.Port) error {
-	pTask := func() error {
-		return p.writePort(writer, port)
-	}
-	aTask := func() error {
-		return p.writeAddress(writer, addr)
-	}
-
-	if p.portFirst {
-		return signal.Execute(pTask, aTask)
-	}
-
-	return signal.Execute(aTask, pTask)
+	return nil
 }

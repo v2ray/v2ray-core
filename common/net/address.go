@@ -4,7 +4,7 @@ import (
 	"net"
 	"strings"
 
-	"v2ray.com/core/common/predicate"
+	"v2ray.com/core/common/compare"
 )
 
 var (
@@ -35,16 +35,6 @@ const (
 	AddressFamilyDomain = AddressFamily(2)
 )
 
-// Either returns true if current AddressFamily matches any of the AddressFamilies provided.
-func (af AddressFamily) Either(fs ...AddressFamily) bool {
-	for _, f := range fs {
-		if af == f {
-			return true
-		}
-	}
-	return false
-}
-
 // IsIPv4 returns true if current AddressFamily is IPv4.
 func (af AddressFamily) IsIPv4() bool {
 	return af == AddressFamilyIPv4
@@ -53,6 +43,11 @@ func (af AddressFamily) IsIPv4() bool {
 // IsIPv6 returns true if current AddressFamily is IPv6.
 func (af AddressFamily) IsIPv6() bool {
 	return af == AddressFamilyIPv6
+}
+
+// IsIP returns true if current AddressFamily is IPv6 or IPv4.
+func (af AddressFamily) IsIP() bool {
+	return af == AddressFamilyIPv4 || af == AddressFamilyIPv6
 }
 
 // IsDomain returns true if current AddressFamily is Domain.
@@ -70,6 +65,10 @@ type Address interface {
 	String() string // String representation of this Address
 }
 
+func isAlphaNum(c byte) bool {
+	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+}
+
 // ParseAddress parses a string into an Address. The return value will be an IPAddress when
 // the string is in the form of IPv4 or IPv6 address, or a DomainAddress otherwise.
 func ParseAddress(addr string) Address {
@@ -77,8 +76,12 @@ func ParseAddress(addr string) Address {
 	lenAddr := len(addr)
 	if lenAddr > 0 && addr[0] == '[' && addr[lenAddr-1] == ']' {
 		addr = addr[1 : lenAddr-1]
+		lenAddr -= 2
 	}
-	addr = strings.TrimSpace(addr)
+
+	if lenAddr > 0 && (!isAlphaNum(addr[0]) || !isAlphaNum(addr[len(addr)-1])) {
+		addr = strings.TrimSpace(addr)
+	}
 
 	ip := net.ParseIP(addr)
 	if ip != nil {
@@ -94,7 +97,7 @@ func IPAddress(ip []byte) Address {
 		var addr ipv4Address = [4]byte{ip[0], ip[1], ip[2], ip[3]}
 		return addr
 	case net.IPv6len:
-		if predicate.BytesAll(ip[0:10], 0) && predicate.BytesAll(ip[10:12], 0xff) {
+		if compare.BytesAll(ip[0:10], 0) && compare.BytesAll(ip[10:12], 0xff) {
 			return IPAddress(ip[12:16])
 		}
 		var addr ipv6Address = [16]byte{

@@ -1,8 +1,9 @@
 package kcp
 
 import (
+	"encoding/binary"
+
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/serial"
 )
 
 // Command is a KCP command that indicate the purpose of a Segment.
@@ -30,7 +31,7 @@ type Segment interface {
 	Conversation() uint16
 	Command() Command
 	ByteSize() int32
-	Bytes() buf.Supplier
+	Serialize([]byte)
 	parse(conv uint16, cmd Command, opt SegmentOption, buf []byte) (bool, []byte)
 }
 
@@ -60,16 +61,16 @@ func (s *DataSegment) parse(conv uint16, cmd Command, opt SegmentOption, buf []b
 	if len(buf) < 15 {
 		return false, nil
 	}
-	s.Timestamp = serial.BytesToUint32(buf)
+	s.Timestamp = binary.BigEndian.Uint32(buf)
 	buf = buf[4:]
 
-	s.Number = serial.BytesToUint32(buf)
+	s.Number = binary.BigEndian.Uint32(buf)
 	buf = buf[4:]
 
-	s.SendingNext = serial.BytesToUint32(buf)
+	s.SendingNext = binary.BigEndian.Uint32(buf)
 	buf = buf[4:]
 
-	dataLen := int(serial.BytesToUint16(buf))
+	dataLen := int(binary.BigEndian.Uint16(buf))
 	buf = buf[2:]
 
 	if len(buf) < dataLen {
@@ -103,17 +104,15 @@ func (s *DataSegment) Data() *buf.Buffer {
 	return s.payload
 }
 
-func (s *DataSegment) Bytes() buf.Supplier {
-	return func(b []byte) (int, error) {
-		b = serial.Uint16ToBytes(s.Conv, b[:0])
-		b = append(b, byte(CommandData), byte(s.Option))
-		b = serial.Uint32ToBytes(s.Timestamp, b)
-		b = serial.Uint32ToBytes(s.Number, b)
-		b = serial.Uint32ToBytes(s.SendingNext, b)
-		b = serial.Uint16ToBytes(uint16(s.payload.Len()), b)
-		b = append(b, s.payload.Bytes()...)
-		return len(b), nil
-	}
+func (s *DataSegment) Serialize(b []byte) {
+	binary.BigEndian.PutUint16(b, s.Conv)
+	b[2] = byte(CommandData)
+	b[3] = byte(s.Option)
+	binary.BigEndian.PutUint32(b[4:], s.Timestamp)
+	binary.BigEndian.PutUint32(b[8:], s.Number)
+	binary.BigEndian.PutUint32(b[12:], s.SendingNext)
+	binary.BigEndian.PutUint16(b[16:], uint16(s.payload.Len()))
+	copy(b[18:], s.payload.Bytes())
 }
 
 func (s *DataSegment) ByteSize() int32 {
@@ -137,9 +136,7 @@ type AckSegment struct {
 const ackNumberLimit = 128
 
 func NewAckSegment() *AckSegment {
-	return &AckSegment{
-		NumberList: make([]uint32, 0, ackNumberLimit),
-	}
+	return new(AckSegment)
 }
 
 func (s *AckSegment) parse(conv uint16, cmd Command, opt SegmentOption, buf []byte) (bool, []byte) {
@@ -149,13 +146,13 @@ func (s *AckSegment) parse(conv uint16, cmd Command, opt SegmentOption, buf []by
 		return false, nil
 	}
 
-	s.ReceivingWindow = serial.BytesToUint32(buf)
+	s.ReceivingWindow = binary.BigEndian.Uint32(buf)
 	buf = buf[4:]
 
-	s.ReceivingNext = serial.BytesToUint32(buf)
+	s.ReceivingNext = binary.BigEndian.Uint32(buf)
 	buf = buf[4:]
 
-	s.Timestamp = serial.BytesToUint32(buf)
+	s.Timestamp = binary.BigEndian.Uint32(buf)
 	buf = buf[4:]
 
 	count := int(buf[0])
@@ -165,7 +162,7 @@ func (s *AckSegment) parse(conv uint16, cmd Command, opt SegmentOption, buf []by
 		return false, nil
 	}
 	for i := 0; i < count; i++ {
-		s.PutNumber(serial.BytesToUint32(buf))
+		s.PutNumber(binary.BigEndian.Uint32(buf))
 		buf = buf[4:]
 	}
 
@@ -202,25 +199,22 @@ func (s *AckSegment) ByteSize() int32 {
 	return 2 + 1 + 1 + 4 + 4 + 4 + 1 + int32(len(s.NumberList)*4)
 }
 
-func (s *AckSegment) Bytes() buf.Supplier {
-	return func(b []byte) (int, error) {
-		b = serial.Uint16ToBytes(s.Conv, b[:0])
-		b = append(b, byte(CommandACK), byte(s.Option))
-		b = serial.Uint32ToBytes(s.ReceivingWindow, b)
-		b = serial.Uint32ToBytes(s.ReceivingNext, b)
-		b = serial.Uint32ToBytes(s.Timestamp, b)
-		count := byte(len(s.NumberList))
-		b = append(b, count)
-		for _, number := range s.NumberList {
-			b = serial.Uint32ToBytes(number, b)
-		}
-		return int(s.ByteSize()), nil
+func (s *AckSegment) Serialize(b []byte) {
+	binary.BigEndian.PutUint16(b, s.Conv)
+	b[2] = byte(CommandACK)
+	b[3] = byte(s.Option)
+	binary.BigEndian.PutUint32(b[4:], s.ReceivingWindow)
+	binary.BigEndian.PutUint32(b[8:], s.ReceivingNext)
+	binary.BigEndian.PutUint32(b[12:], s.Timestamp)
+	b[16] = byte(len(s.NumberList))
+	n := 17
+	for _, number := range s.NumberList {
+		binary.BigEndian.PutUint32(b[n:], number)
+		n += 4
 	}
 }
 
-func (s *AckSegment) Release() {
-	s.NumberList = nil
-}
+func (s *AckSegment) Release() {}
 
 type CmdOnlySegment struct {
 	Conv          uint16
@@ -244,13 +238,13 @@ func (s *CmdOnlySegment) parse(conv uint16, cmd Command, opt SegmentOption, buf 
 		return false, nil
 	}
 
-	s.SendingNext = serial.BytesToUint32(buf)
+	s.SendingNext = binary.BigEndian.Uint32(buf)
 	buf = buf[4:]
 
-	s.ReceivingNext = serial.BytesToUint32(buf)
+	s.ReceivingNext = binary.BigEndian.Uint32(buf)
 	buf = buf[4:]
 
-	s.PeerRTO = serial.BytesToUint32(buf)
+	s.PeerRTO = binary.BigEndian.Uint32(buf)
 	buf = buf[4:]
 
 	return true, buf
@@ -268,15 +262,13 @@ func (*CmdOnlySegment) ByteSize() int32 {
 	return 2 + 1 + 1 + 4 + 4 + 4
 }
 
-func (s *CmdOnlySegment) Bytes() buf.Supplier {
-	return func(b []byte) (int, error) {
-		b = serial.Uint16ToBytes(s.Conv, b[:0])
-		b = append(b, byte(s.Cmd), byte(s.Option))
-		b = serial.Uint32ToBytes(s.SendingNext, b)
-		b = serial.Uint32ToBytes(s.ReceivingNext, b)
-		b = serial.Uint32ToBytes(s.PeerRTO, b)
-		return len(b), nil
-	}
+func (s *CmdOnlySegment) Serialize(b []byte) {
+	binary.BigEndian.PutUint16(b, s.Conv)
+	b[2] = byte(s.Cmd)
+	b[3] = byte(s.Option)
+	binary.BigEndian.PutUint32(b[4:], s.SendingNext)
+	binary.BigEndian.PutUint32(b[8:], s.ReceivingNext)
+	binary.BigEndian.PutUint32(b[12:], s.PeerRTO)
 }
 
 func (*CmdOnlySegment) Release() {}
@@ -286,7 +278,7 @@ func ReadSegment(buf []byte) (Segment, []byte) {
 		return nil, nil
 	}
 
-	conv := serial.BytesToUint16(buf)
+	conv := binary.BigEndian.Uint16(buf)
 	buf = buf[2:]
 
 	cmd := Command(buf[0])

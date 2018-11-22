@@ -1,35 +1,38 @@
 package outbound
 
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg outbound -path App,Proxyman,Outbound
+//go:generate errorgen
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
+	"v2ray.com/core/features/outbound"
 )
 
 // Manager is to manage all outbound handlers.
 type Manager struct {
 	access           sync.RWMutex
-	defaultHandler   core.OutboundHandler
-	taggedHandler    map[string]core.OutboundHandler
-	untaggedHandlers []core.OutboundHandler
+	defaultHandler   outbound.Handler
+	taggedHandler    map[string]outbound.Handler
+	untaggedHandlers []outbound.Handler
 	running          bool
 }
 
 // New creates a new Manager.
 func New(ctx context.Context, config *proxyman.OutboundConfig) (*Manager, error) {
 	m := &Manager{
-		taggedHandler: make(map[string]core.OutboundHandler),
-	}
-	v := core.MustFromContext(ctx)
-	if err := v.RegisterFeature((*core.OutboundHandlerManager)(nil), m); err != nil {
-		return nil, newError("unable to register OutboundHandlerManager").Base(err)
+		taggedHandler: make(map[string]outbound.Handler),
 	}
 	return m, nil
+}
+
+// Type implements common.HasType.
+func (m *Manager) Type() interface{} {
+	return outbound.ManagerType()
 }
 
 // Start implements core.Feature
@@ -72,8 +75,8 @@ func (m *Manager) Close() error {
 	return nil
 }
 
-// GetDefaultHandler implements core.OutboundHandlerManager.
-func (m *Manager) GetDefaultHandler() core.OutboundHandler {
+// GetDefaultHandler implements outbound.Manager.
+func (m *Manager) GetDefaultHandler() outbound.Handler {
 	m.access.RLock()
 	defer m.access.RUnlock()
 
@@ -83,8 +86,8 @@ func (m *Manager) GetDefaultHandler() core.OutboundHandler {
 	return m.defaultHandler
 }
 
-// GetHandler implements core.OutboundHandlerManager.
-func (m *Manager) GetHandler(tag string) core.OutboundHandler {
+// GetHandler implements outbound.Manager.
+func (m *Manager) GetHandler(tag string) outbound.Handler {
 	m.access.RLock()
 	defer m.access.RUnlock()
 	if handler, found := m.taggedHandler[tag]; found {
@@ -93,8 +96,8 @@ func (m *Manager) GetHandler(tag string) core.OutboundHandler {
 	return nil
 }
 
-// AddHandler implements core.OutboundHandlerManager.
-func (m *Manager) AddHandler(ctx context.Context, handler core.OutboundHandler) error {
+// AddHandler implements outbound.Manager.
+func (m *Manager) AddHandler(ctx context.Context, handler outbound.Handler) error {
 	m.access.Lock()
 	defer m.access.Unlock()
 
@@ -116,10 +119,10 @@ func (m *Manager) AddHandler(ctx context.Context, handler core.OutboundHandler) 
 	return nil
 }
 
-// RemoveHandler implements core.OutboundHandlerManager.
+// RemoveHandler implements outbound.Manager.
 func (m *Manager) RemoveHandler(ctx context.Context, tag string) error {
 	if len(tag) == 0 {
-		return core.ErrNoClue
+		return common.ErrNoClue
 	}
 	m.access.Lock()
 	defer m.access.Unlock()
@@ -130,6 +133,29 @@ func (m *Manager) RemoveHandler(ctx context.Context, tag string) error {
 	}
 
 	return nil
+}
+
+// Select implements outbound.HandlerSelector.
+func (m *Manager) Select(selectors []string) []string {
+	m.access.RLock()
+	defer m.access.RUnlock()
+
+	tags := make([]string, 0, len(selectors))
+
+	for tag := range m.taggedHandler {
+		match := false
+		for _, selector := range selectors {
+			if strings.HasPrefix(tag, selector) {
+				match = true
+				break
+			}
+		}
+		if match {
+			tags = append(tags, tag)
+		}
+	}
+
+	return tags
 }
 
 func init() {

@@ -83,7 +83,14 @@ func (d Destination) NetAddr() string {
 
 // String returns the strings form of this Destination.
 func (d Destination) String() string {
-	return d.Network.URLPrefix() + ":" + d.NetAddr()
+	prefix := "unknown:"
+	switch d.Network {
+	case Network_TCP:
+		prefix = "tcp:"
+	case Network_UDP:
+		prefix = "udp:"
+	}
+	return prefix + d.NetAddr()
 }
 
 // IsValid returns true if this Destination is valid.

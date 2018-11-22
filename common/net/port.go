@@ -1,9 +1,8 @@
 package net
 
 import (
+	"encoding/binary"
 	"strconv"
-
-	"v2ray.com/core/common/serial"
 )
 
 // Port represents a network port in TCP and UDP protocol.
@@ -12,7 +11,7 @@ type Port uint16
 // PortFromBytes converts a byte array to a Port, assuming bytes are in big endian order.
 // @unsafe Caller must ensure that the byte array has at least 2 elements.
 func PortFromBytes(port []byte) Port {
-	return Port(serial.BytesToUint16(port))
+	return Port(binary.BigEndian.Uint16(port))
 }
 
 // PortFromInt converts an integer to a Port.
@@ -39,14 +38,9 @@ func (p Port) Value() uint16 {
 	return uint16(p)
 }
 
-// Bytes returns the correspoding bytes of a Port, in big endian order.
-func (p Port) Bytes(b []byte) []byte {
-	return serial.Uint16ToBytes(p.Value(), b)
-}
-
 // String returns the string presentation of a Port.
 func (p Port) String() string {
-	return serial.Uint16ToString(p.Value())
+	return strconv.Itoa(int(p))
 }
 
 // FromPort returns the beginning port of this PortRange.

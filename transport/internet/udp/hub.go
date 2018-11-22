@@ -1,25 +1,25 @@
 package udp
 
 import (
+	"context"
+
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/transport/internet"
 )
 
 // Payload represents a single UDP payload.
 type Payload struct {
-	payload      *buf.Buffer
-	source       net.Destination
-	originalDest net.Destination
+	Content             *buf.Buffer
+	Source              net.Destination
+	OriginalDestination net.Destination
 }
-
-// PayloadHandler is function to handle Payload.
-type PayloadHandler func(payload *buf.Buffer, source net.Destination, originalDest net.Destination)
 
 type HubOption func(h *Hub)
 
-func HubCapacity(cap int) HubOption {
+func HubCapacity(capacity int) HubOption {
 	return func(h *Hub) {
-		h.capacity = cap
+		h.capacity = capacity
 	}
 }
 
@@ -31,49 +31,40 @@ func HubReceiveOriginalDestination(r bool) HubOption {
 
 type Hub struct {
 	conn         *net.UDPConn
-	callback     PayloadHandler
+	cache        chan *Payload
 	capacity     int
 	recvOrigDest bool
 }
 
-func ListenUDP(address net.Address, port net.Port, callback PayloadHandler, options ...HubOption) (*Hub, error) {
-	udpConn, err := net.ListenUDP("udp", &net.UDPAddr{
-		IP:   address.IP(),
-		Port: int(port),
-	})
-	if err != nil {
-		return nil, err
-	}
-	newError("listening UDP on ", address, ":", port).WriteToLog()
+func ListenUDP(ctx context.Context, address net.Address, port net.Port, streamSettings *internet.MemoryStreamConfig, options ...HubOption) (*Hub, error) {
 	hub := &Hub{
-		conn:         udpConn,
 		capacity:     256,
-		callback:     callback,
 		recvOrigDest: false,
 	}
 	for _, opt := range options {
 		opt(hub)
 	}
 
-	if hub.recvOrigDest {
-		rawConn, err := udpConn.SyscallConn()
-		if err != nil {
-			return nil, newError("failed to get fd").Base(err)
-		}
-		err = rawConn.Control(func(fd uintptr) {
-			if err := SetOriginalDestOptions(int(fd)); err != nil {
-				newError("failed to set socket options").Base(err).WriteToLog()
-			}
-		})
-		if err != nil {
-			return nil, newError("failed to control socket").Base(err)
-		}
+	var sockopt *internet.SocketConfig
+	if streamSettings != nil {
+		sockopt = streamSettings.SocketSettings
+	}
+	if sockopt != nil && sockopt.ReceiveOriginalDestAddress {
+		hub.recvOrigDest = true
 	}
 
-	c := make(chan *Payload, hub.capacity)
+	udpConn, err := internet.ListenSystemPacket(ctx, &net.UDPAddr{
+		IP:   address.IP(),
+		Port: int(port),
+	}, sockopt)
+	if err != nil {
+		return nil, err
+	}
+	newError("listening UDP on ", address, ":", port).WriteToLog()
+	hub.conn = udpConn.(*net.UDPConn)
+	hub.cache = make(chan *Payload, hub.capacity)
 
-	go hub.start(c)
-	go hub.process(c)
+	go hub.start()
 	return hub, nil
 }
 
@@ -90,13 +81,8 @@ func (h *Hub) WriteTo(payload []byte, dest net.Destination) (int, error) {
 	})
 }
 
-func (h *Hub) process(c <-chan *Payload) {
-	for p := range c {
-		h.callback(p.payload, p.source, p.originalDest)
-	}
-}
-
-func (h *Hub) start(c chan<- *Payload) {
+func (h *Hub) start() {
+	c := h.cache
 	defer close(c)
 
 	oobBytes := make([]byte, 256)
@@ -105,27 +91,29 @@ func (h *Hub) start(c chan<- *Payload) {
 		buffer := buf.New()
 		var noob int
 		var addr *net.UDPAddr
-		err := buffer.AppendSupplier(func(b []byte) (int, error) {
-			n, nb, _, a, e := ReadUDPMsg(h.conn, b, oobBytes)
-			noob = nb
-			addr = a
-			return n, e
-		})
+		rawBytes := buffer.Extend(buf.Size)
 
+		n, noob, _, addr, err := ReadUDPMsg(h.conn, rawBytes, oobBytes)
 		if err != nil {
 			newError("failed to read UDP msg").Base(err).WriteToLog()
 			buffer.Release()
 			break
 		}
+		buffer.Resize(0, int32(n))
+
+		if buffer.IsEmpty() {
+			buffer.Release()
+			continue
+		}
 
 		payload := &Payload{
-			payload: buffer,
+			Content: buffer,
+			Source:  net.UDPDestination(net.IPAddress(addr.IP), net.Port(addr.Port)),
 		}
-		payload.source = net.UDPDestination(net.IPAddress(addr.IP), net.Port(addr.Port))
 		if h.recvOrigDest && noob > 0 {
-			payload.originalDest = RetrieveOriginalDest(oobBytes[:noob])
-			if payload.originalDest.IsValid() {
-				newError("UDP original destination: ", payload.originalDest).AtDebug().WriteToLog()
+			payload.OriginalDestination = RetrieveOriginalDest(oobBytes[:noob])
+			if payload.OriginalDestination.IsValid() {
+				newError("UDP original destination: ", payload.OriginalDestination).AtDebug().WriteToLog()
 			} else {
 				newError("failed to read UDP original destination").WriteToLog()
 			}
@@ -134,6 +122,8 @@ func (h *Hub) start(c chan<- *Payload) {
 		select {
 		case c <- payload:
 		default:
+			buffer.Release()
+			payload.Content = nil
 		}
 
 	}
@@ -142,4 +132,8 @@ func (h *Hub) start(c chan<- *Payload) {
 // Addr implements net.Listener.
 func (h *Hub) Addr() net.Addr {
 	return h.conn.LocalAddr()
+}
+
+func (h *Hub) Receive() <-chan *Payload {
+	return h.cache
 }

@@ -18,7 +18,7 @@ func TestDialWithLocalAddr(t *testing.T) {
 	assert(err, IsNil)
 	defer server.Close()
 
-	conn, err := DialSystem(context.Background(), net.LocalHostIP, net.TCPDestination(net.LocalHostIP, dest.Port))
+	conn, err := DialSystem(context.Background(), net.TCPDestination(net.LocalHostIP, dest.Port), nil)
 	assert(err, IsNil)
 	assert(conn.RemoteAddr().String(), Equals, "127.0.0.1:"+dest.Port.String())
 	conn.Close()

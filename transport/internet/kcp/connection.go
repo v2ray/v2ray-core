@@ -1,15 +1,17 @@
 package kcp
 
 import (
+	"bytes"
 	"io"
 	"net"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/predicate"
 	"v2ray.com/core/common/signal"
+	"v2ray.com/core/common/signal/semaphore"
 )
 
 var (
@@ -118,19 +120,19 @@ func (info *RoundTripInfo) SmoothedTime() uint32 {
 
 type Updater struct {
 	interval        int64
-	shouldContinue  predicate.Predicate
-	shouldTerminate predicate.Predicate
+	shouldContinue  func() bool
+	shouldTerminate func() bool
 	updateFunc      func()
-	notifier        *signal.Semaphore
+	notifier        *semaphore.Instance
 }
 
-func NewUpdater(interval uint32, shouldContinue predicate.Predicate, shouldTerminate predicate.Predicate, updateFunc func()) *Updater {
+func NewUpdater(interval uint32, shouldContinue func() bool, shouldTerminate func() bool, updateFunc func()) *Updater {
 	u := &Updater{
 		interval:        int64(time.Duration(interval) * time.Millisecond),
 		shouldContinue:  shouldContinue,
 		shouldTerminate: shouldTerminate,
 		updateFunc:      updateFunc,
-		notifier:        signal.NewSemaphore(1),
+		notifier:        semaphore.New(1),
 	}
 	return u
 }
@@ -229,12 +231,14 @@ func NewConnection(meta ConnMetadata, writer PacketWriter, closer io.Closer, con
 	}
 	conn.dataUpdater = NewUpdater(
 		config.GetTTIValue(),
-		predicate.Not(isTerminating).And(predicate.Any(conn.sendingWorker.UpdateNecessary, conn.receivingWorker.UpdateNecessary)),
+		func() bool {
+			return !isTerminating() && (conn.sendingWorker.UpdateNecessary() || conn.receivingWorker.UpdateNecessary())
+		},
 		isTerminating,
 		conn.updateTask)
 	conn.pingUpdater = NewUpdater(
 		5000, // 5 seconds
-		predicate.Not(isTerminated),
+		func() bool { return !isTerminated() },
 		isTerminated,
 		conn.updateTask)
 	conn.pingUpdater.WakeUp()
@@ -273,11 +277,16 @@ func (c *Connection) ReadMultiBuffer() (buf.MultiBuffer, error) {
 }
 
 func (c *Connection) waitForDataInput() error {
-	if c.State() == StatePeerTerminating {
-		return io.EOF
+	for i := 0; i < 16; i++ {
+		select {
+		case <-c.dataInput.Wait():
+			return nil
+		default:
+			runtime.Gosched()
+		}
 	}
 
-	duration := time.Minute
+	duration := time.Second * 16
 	if !c.rd.IsZero() {
 		duration = time.Until(c.rd)
 		if duration < 0 {
@@ -285,9 +294,12 @@ func (c *Connection) waitForDataInput() error {
 		}
 	}
 
+	timeout := time.NewTimer(duration)
+	defer timeout.Stop()
+
 	select {
 	case <-c.dataInput.Wait():
-	case <-time.After(duration):
+	case <-timeout.C:
 		if !c.rd.IsZero() && c.rd.Before(time.Now()) {
 			return ErrIOTimeout
 		}
@@ -319,7 +331,16 @@ func (c *Connection) Read(b []byte) (int, error) {
 }
 
 func (c *Connection) waitForDataOutput() error {
-	duration := time.Minute
+	for i := 0; i < 16; i++ {
+		select {
+		case <-c.dataOutput.Wait():
+			return nil
+		default:
+			runtime.Gosched()
+		}
+	}
+
+	duration := time.Second * 16
 	if !c.wd.IsZero() {
 		duration = time.Until(c.wd)
 		if duration < 0 {
@@ -327,9 +348,12 @@ func (c *Connection) waitForDataOutput() error {
 		}
 	}
 
+	timeout := time.NewTimer(duration)
+	defer timeout.Stop()
+
 	select {
 	case <-c.dataOutput.Wait():
-	case <-time.After(duration):
+	case <-timeout.C:
 		if !c.wd.IsZero() && c.wd.Before(time.Now()) {
 			return ErrIOTimeout
 		}
@@ -340,55 +364,33 @@ func (c *Connection) waitForDataOutput() error {
 
 // Write implements io.Writer.
 func (c *Connection) Write(b []byte) (int, error) {
-	updatePending := false
-	defer func() {
-		if updatePending {
-			c.dataUpdater.WakeUp()
-		}
-	}()
-
-	for {
-		totalWritten := 0
-		for {
-			if c == nil || c.State() != StateActive {
-				return totalWritten, io.ErrClosedPipe
-			}
-			if !c.sendingWorker.Push(func(bb []byte) (int, error) {
-				n := copy(bb[:c.mss], b[totalWritten:])
-				totalWritten += n
-				return n, nil
-			}) {
-				break
-			}
-
-			updatePending = true
-
-			if totalWritten == len(b) {
-				return totalWritten, nil
-			}
-		}
-
-		if updatePending {
-			c.dataUpdater.WakeUp()
-			updatePending = false
-		}
-
-		if err := c.waitForDataOutput(); err != nil {
-			return totalWritten, err
-		}
+	reader := bytes.NewReader(b)
+	if err := c.writeMultiBufferInternal(reader); err != nil {
+		return 0, err
 	}
+	return len(b), nil
 }
 
 // WriteMultiBuffer implements buf.Writer.
 func (c *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
-	defer mb.Release()
+	reader := &buf.MultiBufferContainer{
+		MultiBuffer: mb,
+	}
+	defer reader.Close()
 
+	return c.writeMultiBufferInternal(reader)
+}
+
+func (c *Connection) writeMultiBufferInternal(reader io.Reader) error {
 	updatePending := false
 	defer func() {
 		if updatePending {
 			c.dataUpdater.WakeUp()
 		}
 	}()
+
+	var b *buf.Buffer
+	defer b.Release()
 
 	for {
 		for {
@@ -396,15 +398,19 @@ func (c *Connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
 				return io.ErrClosedPipe
 			}
 
-			if !c.sendingWorker.Push(func(bb []byte) (int, error) {
-				return mb.Read(bb[:c.mss])
-			}) {
+			if b == nil {
+				b = buf.New()
+				_, err := b.ReadFrom(io.LimitReader(reader, int64(c.mss)))
+				if err != nil {
+					return nil
+				}
+			}
+
+			if !c.sendingWorker.Push(b) {
 				break
 			}
 			updatePending = true
-			if mb.IsEmpty() {
-				return nil
-			}
+			b = nil
 		}
 
 		if updatePending {

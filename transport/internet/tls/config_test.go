@@ -62,3 +62,38 @@ func TestExpiredCertificate(t *testing.T) {
 	assert(err, IsNil)
 	assert(x509Cert.NotAfter.After(time.Now()), IsTrue)
 }
+
+func TestInsecureCertificates(t *testing.T) {
+	c := &Config{
+		AllowInsecureCiphers: true,
+	}
+
+	tlsConfig := c.GetTLSConfig()
+	if len(tlsConfig.CipherSuites) > 0 {
+		t.Fatal("Unexpected tls cipher suites list: ", tlsConfig.CipherSuites)
+	}
+}
+
+func BenchmarkCertificateIssuing(b *testing.B) {
+	certificate := ParseCertificate(cert.MustGenerate(nil, cert.Authority(true), cert.KeyUsage(x509.KeyUsageCertSign)))
+	certificate.Usage = Certificate_AUTHORITY_ISSUE
+
+	c := &Config{
+		Certificate: []*Certificate{
+			certificate,
+		},
+	}
+
+	tlsConfig := c.GetTLSConfig()
+	lenCerts := len(tlsConfig.Certificates)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, _ = tlsConfig.GetCertificate(&gotls.ClientHelloInfo{
+			ServerName: "www.v2ray.com",
+		})
+		delete(tlsConfig.NameToCertificate, "www.v2ray.com")
+		tlsConfig.Certificates = tlsConfig.Certificates[:lenCerts]
+	}
+}

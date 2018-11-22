@@ -11,13 +11,11 @@ import (
 	"v2ray.com/core/app/proxyman"
 	_ "v2ray.com/core/app/proxyman/inbound"
 	_ "v2ray.com/core/app/proxyman/outbound"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/serial"
-	. "v2ray.com/ext/assert"
 )
 
 func TestLoggerRestart(t *testing.T) {
-	assert := With(t)
-
 	v, err := core.New(&core.Config{
 		App: []*serial.TypedMessage{
 			serial.ToTypedMessage(&log.Config{}),
@@ -26,13 +24,11 @@ func TestLoggerRestart(t *testing.T) {
 			serial.ToTypedMessage(&proxyman.OutboundConfig{}),
 		},
 	})
-
-	assert(err, IsNil)
-	assert(v.Start(), IsNil)
+	common.Must(err)
+	common.Must(v.Start())
 
 	server := &LoggerServer{
 		V: v,
 	}
-	_, err = server.RestartLogger(context.Background(), &RestartLoggerRequest{})
-	assert(err, IsNil)
+	common.Must2(server.RestartLogger(context.Background(), &RestartLoggerRequest{}))
 }

@@ -1,4 +1,4 @@
-// Package policy is an implementation of core.PolicyManager feature.
+// Package policy is an implementation of policy.Manager feature.
 package policy
 
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg policy -path App,Policy
+//go:generate errorgen

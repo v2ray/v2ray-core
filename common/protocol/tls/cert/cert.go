@@ -11,7 +11,7 @@ import (
 	"v2ray.com/core/common"
 )
 
-//go:generate go run $GOPATH/src/v2ray.com/core/common/errors/errorgen/main.go -pkg cert -path Protocol,TLS,Cert
+//go:generate errorgen
 
 type Certificate struct {
 	// Cerificate in ASN.1 DER format

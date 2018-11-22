@@ -28,7 +28,7 @@ func TestDataSegment(t *testing.T) {
 
 	nBytes := seg.ByteSize()
 	bytes := make([]byte, nBytes)
-	seg.Bytes()(bytes)
+	seg.Serialize(bytes)
 
 	assert(int32(len(bytes)), Equals, nBytes)
 
@@ -50,11 +50,11 @@ func Test1ByteDataSegment(t *testing.T) {
 		Number:      4,
 		SendingNext: 5,
 	}
-	seg.Data().AppendBytes('a')
+	seg.Data().WriteByte('a')
 
 	nBytes := seg.ByteSize()
 	bytes := make([]byte, nBytes)
-	seg.Bytes()(bytes)
+	seg.Serialize(bytes)
 
 	assert(int32(len(bytes)), Equals, nBytes)
 
@@ -80,7 +80,7 @@ func TestACKSegment(t *testing.T) {
 
 	nBytes := seg.ByteSize()
 	bytes := make([]byte, nBytes)
-	seg.Bytes()(bytes)
+	seg.Serialize(bytes)
 
 	assert(int32(len(bytes)), Equals, nBytes)
 
@@ -110,7 +110,7 @@ func TestCmdSegment(t *testing.T) {
 
 	nBytes := seg.ByteSize()
 	bytes := make([]byte, nBytes)
-	seg.Bytes()(bytes)
+	seg.Serialize(bytes)
 
 	assert(int32(len(bytes)), Equals, nBytes)
 

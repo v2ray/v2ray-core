@@ -4,24 +4,27 @@ import (
 	"context"
 
 	grpc "google.golang.org/grpc"
+
 	"v2ray.com/core"
 	"v2ray.com/core/common"
+	"v2ray.com/core/features/inbound"
+	"v2ray.com/core/features/outbound"
 	"v2ray.com/core/proxy"
 )
 
 // InboundOperation is the interface for operations that applies to inbound handlers.
 type InboundOperation interface {
 	// ApplyInbound applies this operation to the given inbound handler.
-	ApplyInbound(context.Context, core.InboundHandler) error
+	ApplyInbound(context.Context, inbound.Handler) error
 }
 
 // OutboundOperation is the interface for operations that applies to outbound handlers.
 type OutboundOperation interface {
 	// ApplyOutbound applies this operation to the given outbound handler.
-	ApplyOutbound(context.Context, core.OutboundHandler) error
+	ApplyOutbound(context.Context, outbound.Handler) error
 }
 
-func getInbound(handler core.InboundHandler) (proxy.Inbound, error) {
+func getInbound(handler inbound.Handler) (proxy.Inbound, error) {
 	gi, ok := handler.(proxy.GetInbound)
 	if !ok {
 		return nil, newError("can't get inbound proxy from handler.")
@@ -30,7 +33,7 @@ func getInbound(handler core.InboundHandler) (proxy.Inbound, error) {
 }
 
 // ApplyInbound implements InboundOperation.
-func (op *AddUserOperation) ApplyInbound(ctx context.Context, handler core.InboundHandler) error {
+func (op *AddUserOperation) ApplyInbound(ctx context.Context, handler inbound.Handler) error {
 	p, err := getInbound(handler)
 	if err != nil {
 		return err
@@ -39,11 +42,15 @@ func (op *AddUserOperation) ApplyInbound(ctx context.Context, handler core.Inbou
 	if !ok {
 		return newError("proxy is not a UserManager")
 	}
-	return um.AddUser(ctx, op.User)
+	mUser, err := op.User.ToMemoryUser()
+	if err != nil {
+		return newError("failed to parse user").Base(err)
+	}
+	return um.AddUser(ctx, mUser)
 }
 
 // ApplyInbound implements InboundOperation.
-func (op *RemoveUserOperation) ApplyInbound(ctx context.Context, handler core.InboundHandler) error {
+func (op *RemoveUserOperation) ApplyInbound(ctx context.Context, handler inbound.Handler) error {
 	p, err := getInbound(handler)
 	if err != nil {
 		return err
@@ -57,20 +64,16 @@ func (op *RemoveUserOperation) ApplyInbound(ctx context.Context, handler core.In
 
 type handlerServer struct {
 	s   *core.Instance
-	ihm core.InboundHandlerManager
-	ohm core.OutboundHandlerManager
+	ihm inbound.Manager
+	ohm outbound.Manager
 }
 
 func (s *handlerServer) AddInbound(ctx context.Context, request *AddInboundRequest) (*AddInboundResponse, error) {
-	rawHandler, err := s.s.CreateObject(request.Inbound)
-	if err != nil {
+	if err := core.AddInboundHandler(s.s, request.Inbound); err != nil {
 		return nil, err
 	}
-	handler, ok := rawHandler.(core.InboundHandler)
-	if !ok {
-		return nil, newError("not an InboundHandler.")
-	}
-	return &AddInboundResponse{}, s.ihm.AddHandler(ctx, handler)
+
+	return &AddInboundResponse{}, nil
 }
 
 func (s *handlerServer) RemoveInbound(ctx context.Context, request *RemoveInboundRequest) (*RemoveInboundResponse, error) {
@@ -96,15 +99,10 @@ func (s *handlerServer) AlterInbound(ctx context.Context, request *AlterInboundR
 }
 
 func (s *handlerServer) AddOutbound(ctx context.Context, request *AddOutboundRequest) (*AddOutboundResponse, error) {
-	rawHandler, err := s.s.CreateObject(request.Outbound)
-	if err != nil {
+	if err := core.AddOutboundHandler(s.s, request.Outbound); err != nil {
 		return nil, err
 	}
-	handler, ok := rawHandler.(core.OutboundHandler)
-	if !ok {
-		return nil, newError("not an OutboundHandler.")
-	}
-	return &AddOutboundResponse{}, s.ohm.AddHandler(ctx, handler)
+	return &AddOutboundResponse{}, nil
 }
 
 func (s *handlerServer) RemoveOutbound(ctx context.Context, request *RemoveOutboundRequest) (*RemoveOutboundResponse, error) {
@@ -130,11 +128,14 @@ type service struct {
 }
 
 func (s *service) Register(server *grpc.Server) {
-	RegisterHandlerServiceServer(server, &handlerServer{
-		s:   s.v,
-		ihm: s.v.InboundHandlerManager(),
-		ohm: s.v.OutboundHandlerManager(),
-	})
+	hs := &handlerServer{
+		s: s.v,
+	}
+	common.Must(s.v.RequireFeatures(func(im inbound.Manager, om outbound.Manager) {
+		hs.ihm = im
+		hs.ohm = om
+	}))
+	RegisterHandlerServiceServer(server, hs)
 }
 
 func init() {

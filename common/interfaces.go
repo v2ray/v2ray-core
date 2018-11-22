@@ -25,6 +25,7 @@ type Runnable interface {
 // HasType is the interface for objects that knows its type.
 type HasType interface {
 	// Type returns the type of the object.
+	// Usually it returns (*Type)(nil) of the object.
 	Type() interface{}
 }
 
