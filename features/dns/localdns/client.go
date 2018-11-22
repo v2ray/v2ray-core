@@ -36,6 +36,7 @@ func (c *Client) LookupIP(host string) ([]net.IP, error) {
 	return ips, nil
 }
 
+// LookupIPv4 implements IPv4Lookup.
 func (c *Client) LookupIPv4(host string) ([]net.IP, error) {
 	ips, err := c.LookupIP(host)
 	if err != nil {
@@ -51,6 +52,7 @@ func (c *Client) LookupIPv4(host string) ([]net.IP, error) {
 	return ipv4, nil
 }
 
+// LookupIPv6 implements IPv6Lookup.
 func (c *Client) LookupIPv6(host string) ([]net.IP, error) {
 	ips, err := c.LookupIP(host)
 	if err != nil {
@@ -66,6 +68,7 @@ func (c *Client) LookupIPv6(host string) ([]net.IP, error) {
 	return ipv6, nil
 }
 
+// New create a new dns.Client that queries localhost for DNS.
 func New() *Client {
 	return &Client{
 		resolver: net.Resolver{
