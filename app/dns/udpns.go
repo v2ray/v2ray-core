@@ -132,6 +132,9 @@ func (s *ClassicNameServer) HandleResponse(ctx context.Context, payload *buf.Buf
 	for {
 		header, err := parser.AnswerHeader()
 		if err != nil {
+			if err != dnsmessage.ErrSectionDone {
+				newError("failed to parse answer section for domain: ", domain).Base(err).WriteToLog()
+			}
 			break
 		}
 		ttl := header.TTL
@@ -142,6 +145,7 @@ func (s *ClassicNameServer) HandleResponse(ctx context.Context, payload *buf.Buf
 		case dnsmessage.TypeA:
 			ans, err := parser.AResource()
 			if err != nil {
+				newError("failed to parse A record for domain: ", domain).Base(err).WriteToLog()
 				break
 			}
 			ips = append(ips, IPRecord{
@@ -151,6 +155,7 @@ func (s *ClassicNameServer) HandleResponse(ctx context.Context, payload *buf.Buf
 		case dnsmessage.TypeAAAA:
 			ans, err := parser.AAAAResource()
 			if err != nil {
+				newError("failed to parse A record for domain: ", domain).Base(err).WriteToLog()
 				break
 			}
 			ips = append(ips, IPRecord{
@@ -158,6 +163,9 @@ func (s *ClassicNameServer) HandleResponse(ctx context.Context, payload *buf.Buf
 				Expire: now.Add(time.Duration(ttl) * time.Second),
 			})
 		default:
+			if err := parser.SkipAnswer(); err != nil {
+				newError("failed to skip answer").Base(err).WriteToLog()
+			}
 		}
 	}
 
