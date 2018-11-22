@@ -20,7 +20,7 @@ func TestGetOriginalDestination(t *testing.T) {
 	assert(err, IsNil)
 	defer tcpServer.Close()
 
-	conn, err := Dial(context.Background(), dest)
+	conn, err := Dial(context.Background(), dest, nil)
 	assert(err, IsNil)
 	defer conn.Close()
 
