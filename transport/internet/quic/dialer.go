@@ -34,7 +34,7 @@ func removeInactiveSessions(sessions []quic.Session) []quic.Session {
 	}
 
 	if lastActive < len(sessions) {
-		for i := 0; i < len(sessions); i++ {
+		for i := lastActive; i < len(sessions); i++ {
 			sessions[i] = nil
 		}
 		sessions = sessions[:lastActive]
