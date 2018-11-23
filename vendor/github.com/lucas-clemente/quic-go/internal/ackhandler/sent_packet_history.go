@@ -35,7 +35,7 @@ func (h *sentPacketHistory) sentPacketImpl(p *Packet) *PacketElement {
 	}
 	if p.canBeRetransmitted {
 		h.numOutstandingPackets++
-		if p.EncryptionLevel < protocol.EncryptionForwardSecure {
+		if p.EncryptionLevel != protocol.Encryption1RTT {
 			h.numOutstandingHandshakePackets++
 		}
 	}
@@ -106,7 +106,7 @@ func (h *sentPacketHistory) MarkCannotBeRetransmitted(pn protocol.PacketNumber) 
 		if h.numOutstandingPackets < 0 {
 			panic("numOutstandingHandshakePackets negative")
 		}
-		if el.Value.EncryptionLevel < protocol.EncryptionForwardSecure {
+		if el.Value.EncryptionLevel != protocol.Encryption1RTT {
 			h.numOutstandingHandshakePackets--
 			if h.numOutstandingHandshakePackets < 0 {
 				panic("numOutstandingHandshakePackets negative")
@@ -147,7 +147,7 @@ func (h *sentPacketHistory) Remove(p protocol.PacketNumber) error {
 		if h.numOutstandingPackets < 0 {
 			panic("numOutstandingHandshakePackets negative")
 		}
-		if el.Value.EncryptionLevel < protocol.EncryptionForwardSecure {
+		if el.Value.EncryptionLevel != protocol.Encryption1RTT {
 			h.numOutstandingHandshakePackets--
 			if h.numOutstandingHandshakePackets < 0 {
 				panic("numOutstandingHandshakePackets negative")

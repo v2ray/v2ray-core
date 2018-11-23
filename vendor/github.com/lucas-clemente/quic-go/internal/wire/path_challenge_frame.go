@@ -27,8 +27,7 @@ func parsePathChallengeFrame(r *bytes.Reader, version protocol.VersionNumber) (*
 }
 
 func (f *PathChallengeFrame) Write(b *bytes.Buffer, _ protocol.VersionNumber) error {
-	typeByte := uint8(0x0e)
-	b.WriteByte(typeByte)
+	b.WriteByte(0x1a)
 	b.Write(f.Data[:])
 	return nil
 }

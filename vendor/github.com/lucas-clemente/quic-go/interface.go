@@ -16,19 +16,11 @@ type StreamID = protocol.StreamID
 // A VersionNumber is a QUIC version number.
 type VersionNumber = protocol.VersionNumber
 
-const (
-	// VersionGQUIC39 is gQUIC version 39.
-	VersionGQUIC39 = protocol.Version39
-	// VersionGQUIC43 is gQUIC version 43.
-	VersionGQUIC43 = protocol.Version43
-	// VersionGQUIC44 is gQUIC version 44.
-	VersionGQUIC44 = protocol.Version44
-	// VersionMilestone0_10_0 uses TLS
-	VersionMilestone0_10_0 = protocol.VersionMilestone0_10_0
-)
-
 // A Cookie can be used to verify the ownership of the client address.
-type Cookie = handshake.Cookie
+type Cookie struct {
+	RemoteAddr string
+	SentTime   time.Time
+}
 
 // ConnectionState records basic details about the QUIC connection.
 type ConnectionState = handshake.ConnectionState
@@ -166,11 +158,7 @@ type Config struct {
 	// If not set, it uses all versions available.
 	// Warning: This API should not be considered stable and will change soon.
 	Versions []VersionNumber
-	// Ask the server to omit the connection ID sent in the Public Header.
-	// This saves 8 bytes in the Public Header in every packet. However, if the IP address of the server changes, the connection cannot be migrated.
-	// Currently only valid for the client.
-	RequestConnectionIDOmission bool
-	// The length of the connection ID in bytes. Only valid for IETF QUIC.
+	// The length of the connection ID in bytes.
 	// It can be 0, or any value between 4 and 18.
 	// If not set, the interpretation depends on where the Config is used:
 	// If used for dialing an address, a 0 byte connection ID will be used.
@@ -200,13 +188,10 @@ type Config struct {
 	// MaxIncomingStreams is the maximum number of concurrent bidirectional streams that a peer is allowed to open.
 	// If not set, it will default to 100.
 	// If set to a negative value, it doesn't allow any bidirectional streams.
-	// Values larger than 65535 (math.MaxUint16) are invalid.
 	MaxIncomingStreams int
 	// MaxIncomingUniStreams is the maximum number of concurrent unidirectional streams that a peer is allowed to open.
-	// This value doesn't have any effect in Google QUIC.
 	// If not set, it will default to 100.
 	// If set to a negative value, it doesn't allow any unidirectional streams.
-	// Values larger than 65535 (math.MaxUint16) are invalid.
 	MaxIncomingUniStreams int
 	// KeepAlive defines whether this peer will periodically send PING frames to keep the connection alive.
 	KeepAlive bool

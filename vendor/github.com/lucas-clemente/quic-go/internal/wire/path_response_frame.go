@@ -27,8 +27,7 @@ func parsePathResponseFrame(r *bytes.Reader, version protocol.VersionNumber) (*P
 }
 
 func (f *PathResponseFrame) Write(b *bytes.Buffer, _ protocol.VersionNumber) error {
-	typeByte := uint8(0x0f)
-	b.WriteByte(typeByte)
+	b.WriteByte(0x1b)
 	b.Write(f.Data[:])
 	return nil
 }

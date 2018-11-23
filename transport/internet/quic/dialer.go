@@ -5,37 +5,85 @@ import (
 	"sync"
 	"time"
 
-	"v2ray.com/core/transport/internet/tls"
-
 	quic "github.com/lucas-clemente/quic-go"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
+	"v2ray.com/core/transport/internet/tls"
 )
 
 type clientSessions struct {
 	access   sync.Mutex
-	sessions map[net.Destination]quic.Session
+	sessions map[net.Destination][]quic.Session
 }
 
-func (s *clientSessions) getSession(destAddr net.Addr, config *Config, tlsConfig *tls.Config, sockopt *internet.SocketConfig) (quic.Session, error) {
+func removeInactiveSessions(sessions []quic.Session) []quic.Session {
+	lastActive := 0
+	for _, s := range sessions {
+		active := true
+		select {
+		case <-s.Context().Done():
+			active = false
+		default:
+		}
+		if active {
+			sessions[lastActive] = s
+			lastActive++
+		}
+	}
+
+	if lastActive < len(sessions) {
+		for i := 0; i < len(sessions); i++ {
+			sessions[i] = nil
+		}
+		sessions = sessions[:lastActive]
+	}
+
+	return sessions
+}
+
+func openStream(sessions []quic.Session) (quic.Stream, net.Addr, error) {
+	for _, s := range sessions {
+		stream, err := s.OpenStream()
+		if err != nil {
+			newError("failed to create stream").Base(err).WriteToLog()
+			continue
+		}
+		return stream, s.LocalAddr(), nil
+	}
+
+	return nil, nil, nil
+}
+
+func (s *clientSessions) openConnection(destAddr net.Addr, config *Config, tlsConfig *tls.Config, sockopt *internet.SocketConfig) (internet.Connection, error) {
 	s.access.Lock()
 	defer s.access.Unlock()
 
 	if s.sessions == nil {
-		s.sessions = make(map[net.Destination]quic.Session)
+		s.sessions = make(map[net.Destination][]quic.Session)
 	}
 
 	dest := net.DestinationFromAddr(destAddr)
 
-	if session, found := s.sessions[dest]; found {
-		select {
-		case <-session.Context().Done():
-			// Session has been closed. Creating a new one.
-		default:
-			return session, nil
-		}
+	var sessions []quic.Session
+	if s, found := s.sessions[dest]; found {
+		sessions = s
+	}
+
+	sessions = removeInactiveSessions(sessions)
+	s.sessions[dest] = sessions
+
+	stream, local, err := openStream(sessions)
+	if err != nil {
+		return nil, err
+	}
+	if stream != nil {
+		return &interConn{
+			stream: stream,
+			local:  local,
+			remote: destAddr,
+		}, nil
 	}
 
 	rawConn, err := internet.ListenSystemPacket(context.Background(), &net.UDPAddr{
@@ -47,13 +95,12 @@ func (s *clientSessions) getSession(destAddr net.Addr, config *Config, tlsConfig
 	}
 
 	quicConfig := &quic.Config{
-		Versions:                              []quic.VersionNumber{quic.VersionMilestone0_10_0},
 		ConnectionIDLength:                    12,
 		KeepAlive:                             true,
 		HandshakeTimeout:                      time.Second * 4,
-		IdleTimeout:                           time.Second * 300,
-		MaxReceiveStreamFlowControlWindow:     128 * 1024,
-		MaxReceiveConnectionFlowControlWindow: 512 * 1024,
+		IdleTimeout:                           time.Second * 60,
+		MaxReceiveStreamFlowControlWindow:     256 * 1024,
+		MaxReceiveConnectionFlowControlWindow: 2 * 1024 * 1024,
 		MaxIncomingUniStreams:                 -1,
 	}
 
@@ -69,8 +116,16 @@ func (s *clientSessions) getSession(destAddr net.Addr, config *Config, tlsConfig
 		return nil, err
 	}
 
-	s.sessions[dest] = session
-	return session, nil
+	s.sessions[dest] = append(sessions, session)
+	stream, err = session.OpenStream()
+	if err != nil {
+		return nil, err
+	}
+	return &interConn{
+		stream: stream,
+		local:  session.LocalAddr(),
+		remote: destAddr,
+	}, nil
 }
 
 var client clientSessions
@@ -91,21 +146,7 @@ func Dial(ctx context.Context, dest net.Destination, streamSettings *internet.Me
 
 	config := streamSettings.ProtocolSettings.(*Config)
 
-	session, err := client.getSession(destAddr, config, tlsConfig, streamSettings.SocketSettings)
-	if err != nil {
-		return nil, err
-	}
-
-	conn, err := session.OpenStreamSync()
-	if err != nil {
-		return nil, err
-	}
-
-	return &interConn{
-		stream: conn,
-		local:  session.LocalAddr(),
-		remote: destAddr,
-	}, nil
+	return client.openConnection(destAddr, config, tlsConfig, streamSettings.SocketSettings)
 }
 
 func init() {

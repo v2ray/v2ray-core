@@ -8,17 +8,13 @@ func InferPacketNumber(
 	version VersionNumber,
 ) PacketNumber {
 	var epochDelta PacketNumber
-	if version.UsesVarintPacketNumbers() {
-		switch packetNumberLength {
-		case PacketNumberLen1:
-			epochDelta = PacketNumber(1) << 7
-		case PacketNumberLen2:
-			epochDelta = PacketNumber(1) << 14
-		case PacketNumberLen4:
-			epochDelta = PacketNumber(1) << 30
-		}
-	} else {
-		epochDelta = PacketNumber(1) << (uint8(packetNumberLength) * 8)
+	switch packetNumberLength {
+	case PacketNumberLen1:
+		epochDelta = PacketNumber(1) << 7
+	case PacketNumberLen2:
+		epochDelta = PacketNumber(1) << 14
+	case PacketNumberLen4:
+		epochDelta = PacketNumber(1) << 30
 	}
 	epoch := lastPacketNumber & ^(epochDelta - 1)
 	prevEpochBegin := epoch - epochDelta
@@ -48,8 +44,7 @@ func delta(a, b PacketNumber) PacketNumber {
 // it never chooses a PacketNumberLen of 1 byte, since this is too short under certain circumstances
 func GetPacketNumberLengthForHeader(packetNumber, leastUnacked PacketNumber, version VersionNumber) PacketNumberLen {
 	diff := uint64(packetNumber - leastUnacked)
-	if version.UsesVarintPacketNumbers() && diff < (1<<(14-1)) ||
-		!version.UsesVarintPacketNumbers() && diff < (1<<(16-1)) {
+	if diff < (1 << (14 - 1)) {
 		return PacketNumberLen2
 	}
 	return PacketNumberLen4
@@ -63,8 +58,5 @@ func GetPacketNumberLength(packetNumber PacketNumber) PacketNumberLen {
 	if packetNumber < (1 << (uint8(PacketNumberLen2) * 8)) {
 		return PacketNumberLen2
 	}
-	if packetNumber < (1 << (uint8(PacketNumberLen4) * 8)) {
-		return PacketNumberLen4
-	}
-	return PacketNumberLen6
+	return PacketNumberLen4
 }

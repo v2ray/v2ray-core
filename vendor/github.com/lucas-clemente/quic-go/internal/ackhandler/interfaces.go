@@ -27,11 +27,12 @@ type SentPacketHandler interface {
 	// Before sending any packet, SendingAllowed() must be called to learn if we can actually send it.
 	ShouldSendNumPackets() int
 
-	GetStopWaitingFrame(force bool) *wire.StopWaitingFrame
 	GetLowestPacketNotConfirmedAcked() protocol.PacketNumber
 	DequeuePacketForRetransmission() *Packet
 	DequeueProbePacket() (*Packet, error)
-	GetPacketNumberLen(protocol.PacketNumber) protocol.PacketNumberLen
+
+	PeekPacketNumber() (protocol.PacketNumber, protocol.PacketNumberLen)
+	PopPacketNumber() protocol.PacketNumber
 
 	GetAlarmTimeout() time.Time
 	OnAlarm() error

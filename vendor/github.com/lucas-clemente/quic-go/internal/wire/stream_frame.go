@@ -6,8 +6,8 @@ import (
 	"io"
 
 	"github.com/lucas-clemente/quic-go/internal/protocol"
+	"github.com/lucas-clemente/quic-go/internal/qerr"
 	"github.com/lucas-clemente/quic-go/internal/utils"
-	"github.com/lucas-clemente/quic-go/qerr"
 )
 
 // A StreamFrame of QUIC
@@ -19,22 +19,17 @@ type StreamFrame struct {
 	Data           []byte
 }
 
-// parseStreamFrame reads a STREAM frame
 func parseStreamFrame(r *bytes.Reader, version protocol.VersionNumber) (*StreamFrame, error) {
-	if !version.UsesIETFFrameFormat() {
-		return parseLegacyStreamFrame(r, version)
-	}
-
-	frame := &StreamFrame{}
-
 	typeByte, err := r.ReadByte()
 	if err != nil {
 		return nil, err
 	}
 
-	frame.FinBit = typeByte&0x1 > 0
-	frame.DataLenPresent = typeByte&0x2 > 0
 	hasOffset := typeByte&0x4 > 0
+	frame := &StreamFrame{
+		FinBit:         typeByte&0x1 > 0,
+		DataLenPresent: typeByte&0x2 > 0,
+	}
 
 	streamID, err := utils.ReadVarInt(r)
 	if err != nil {
@@ -81,15 +76,11 @@ func parseStreamFrame(r *bytes.Reader, version protocol.VersionNumber) (*StreamF
 
 // Write writes a STREAM frame
 func (f *StreamFrame) Write(b *bytes.Buffer, version protocol.VersionNumber) error {
-	if !version.UsesIETFFrameFormat() {
-		return f.writeLegacy(b, version)
-	}
-
 	if len(f.Data) == 0 && !f.FinBit {
 		return errors.New("StreamFrame: attempting to write empty frame without FIN")
 	}
 
-	typeByte := byte(0x10)
+	typeByte := byte(0x8)
 	if f.FinBit {
 		typeByte ^= 0x1
 	}
@@ -114,9 +105,6 @@ func (f *StreamFrame) Write(b *bytes.Buffer, version protocol.VersionNumber) err
 
 // Length returns the total length of the STREAM frame
 func (f *StreamFrame) Length(version protocol.VersionNumber) protocol.ByteCount {
-	if !version.UsesIETFFrameFormat() {
-		return f.lengthLegacy(version)
-	}
 	length := 1 + utils.VarIntLen(uint64(f.StreamID))
 	if f.Offset != 0 {
 		length += utils.VarIntLen(uint64(f.Offset))
@@ -127,13 +115,14 @@ func (f *StreamFrame) Length(version protocol.VersionNumber) protocol.ByteCount 
 	return length + f.DataLen()
 }
 
+// DataLen gives the length of data in bytes
+func (f *StreamFrame) DataLen() protocol.ByteCount {
+	return protocol.ByteCount(len(f.Data))
+}
+
 // MaxDataLen returns the maximum data length
 // If 0 is returned, writing will fail (a STREAM frame must contain at least 1 byte of data).
 func (f *StreamFrame) MaxDataLen(maxSize protocol.ByteCount, version protocol.VersionNumber) protocol.ByteCount {
-	if !version.UsesIETFFrameFormat() {
-		return f.maxDataLenLegacy(maxSize, version)
-	}
-
 	headerLen := 1 + utils.VarIntLen(uint64(f.StreamID))
 	if f.Offset != 0 {
 		headerLen += utils.VarIntLen(uint64(f.Offset))

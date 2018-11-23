@@ -156,3 +156,8 @@ func (s *frameSorter) Pop() ([]byte /* data */, bool /* fin */) {
 	s.readPos += protocol.ByteCount(len(data))
 	return data, s.readPos >= s.finalOffset
 }
+
+// HasMoreData says if there is any more data queued at *any* offset.
+func (s *frameSorter) HasMoreData() bool {
+	return len(s.queue) > 0
+}

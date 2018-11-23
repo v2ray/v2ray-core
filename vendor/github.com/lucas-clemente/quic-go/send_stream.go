@@ -15,6 +15,7 @@ import (
 type sendStreamI interface {
 	SendStream
 	handleStopSendingFrame(*wire.StopSendingFrame)
+	hasData() bool
 	popStreamFrame(maxBytes protocol.ByteCount) (*wire.StreamFrame, bool)
 	closeForShutdown(error)
 	handleMaxStreamDataFrame(*wire.MaxStreamDataFrame)
@@ -40,8 +41,10 @@ type sendStream struct {
 	finSent           bool // set when a STREAM_FRAME with FIN bit has b
 
 	dataForWriting []byte
-	writeChan      chan struct{}
-	writeDeadline  time.Time
+
+	writeChan     chan struct{}
+	deadline      time.Time
+	deadlineTimer *time.Timer // initialized by SetReadDeadline()
 
 	flowController flowcontrol.StreamFlowController
 
@@ -85,7 +88,7 @@ func (s *sendStream) Write(p []byte) (int, error) {
 	if s.closeForShutdownErr != nil {
 		return 0, s.closeForShutdownErr
 	}
-	if !s.writeDeadline.IsZero() && !time.Now().Before(s.writeDeadline) {
+	if !s.deadline.IsZero() && !time.Now().Before(s.deadline) {
 		return 0, errDeadline
 	}
 	if len(p) == 0 {
@@ -100,8 +103,7 @@ func (s *sendStream) Write(p []byte) (int, error) {
 	var err error
 	for {
 		bytesWritten = len(p) - len(s.dataForWriting)
-		deadline := s.writeDeadline
-		if !deadline.IsZero() && !time.Now().Before(deadline) {
+		if !s.deadline.IsZero() && !time.Now().Before(s.deadline) {
 			s.dataForWriting = nil
 			err = errDeadline
 			break
@@ -111,12 +113,12 @@ func (s *sendStream) Write(p []byte) (int, error) {
 		}
 
 		s.mutex.Unlock()
-		if deadline.IsZero() {
+		if s.deadline.IsZero() {
 			<-s.writeChan
 		} else {
 			select {
 			case <-s.writeChan:
-			case <-time.After(time.Until(deadline)):
+			case <-s.deadlineTimer.C:
 			}
 		}
 		s.mutex.Lock()
@@ -167,9 +169,9 @@ func (s *sendStream) popStreamFrameImpl(maxBytes protocol.ByteCount) (bool /* co
 			return false, nil, false
 		}
 		if isBlocked, offset := s.flowController.IsNewlyBlocked(); isBlocked {
-			s.sender.queueControlFrame(&wire.StreamBlockedFrame{
-				StreamID: s.streamID,
-				Offset:   offset,
+			s.sender.queueControlFrame(&wire.StreamDataBlockedFrame{
+				StreamID:  s.streamID,
+				DataLimit: offset,
 			})
 			return false, nil, false
 		}
@@ -181,15 +183,19 @@ func (s *sendStream) popStreamFrameImpl(maxBytes protocol.ByteCount) (bool /* co
 	return frame.FinBit, frame, s.dataForWriting != nil
 }
 
+func (s *sendStream) hasData() bool {
+	s.mutex.Lock()
+	hasData := len(s.dataForWriting) > 0
+	s.mutex.Unlock()
+	return hasData
+}
+
 func (s *sendStream) getDataForWriting(maxBytes protocol.ByteCount) ([]byte, bool /* should send FIN */) {
 	if s.dataForWriting == nil {
 		return nil, s.finishedWriting && !s.finSent
 	}
 
-	// TODO(#657): Flow control for the crypto stream
-	if s.streamID != s.version.CryptoStreamID() {
-		maxBytes = utils.MinByteCount(maxBytes, s.flowController.SendWindowSize())
-	}
+	maxBytes = utils.MinByteCount(maxBytes, s.flowController.SendWindowSize())
 	if maxBytes == 0 {
 		return nil, false
 	}
@@ -243,7 +249,7 @@ func (s *sendStream) cancelWriteImpl(errorCode protocol.ApplicationErrorCode, wr
 	s.canceledWrite = true
 	s.cancelWriteErr = writeErr
 	s.signalWrite()
-	s.sender.queueControlFrame(&wire.RstStreamFrame{
+	s.sender.queueControlFrame(&wire.ResetStreamFrame{
 		StreamID:   s.streamID,
 		ByteOffset: s.writeOffset,
 		ErrorCode:  errorCode,
@@ -278,9 +284,6 @@ func (s *sendStream) handleStopSendingFrameImpl(frame *wire.StopSendingFrame) bo
 		error:     fmt.Errorf("Stream %d was reset with error code %d", s.streamID, frame.ErrorCode),
 	}
 	errorCode := errorCodeStopping
-	if !s.version.UsesIETFFrameFormat() {
-		errorCode = errorCodeStoppingGQUIC
-	}
 	completed, _ := s.cancelWriteImpl(errorCode, writeErr)
 	return completed
 }
@@ -291,12 +294,22 @@ func (s *sendStream) Context() context.Context {
 
 func (s *sendStream) SetWriteDeadline(t time.Time) error {
 	s.mutex.Lock()
-	oldDeadline := s.writeDeadline
-	s.writeDeadline = t
-	s.mutex.Unlock()
-	if t.Before(oldDeadline) {
+	defer s.mutex.Unlock()
+	s.deadline = t
+	if s.deadline.IsZero() { // skip if there's no deadline to set
 		s.signalWrite()
+		return nil
 	}
+	// Lazily initialize the deadline timer.
+	if s.deadlineTimer == nil {
+		s.deadlineTimer = time.NewTimer(time.Until(t))
+		return nil
+	}
+	// reset the timer to the new deadline
+	if !s.deadlineTimer.Stop() {
+		<-s.deadlineTimer.C
+	}
+	s.deadlineTimer.Reset(time.Until(t))
 	return nil
 }
 

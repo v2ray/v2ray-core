@@ -16,8 +16,6 @@ func stripNonRetransmittableFrames(fs []wire.Frame) []wire.Frame {
 // IsFrameRetransmittable returns true if the frame should be retransmitted.
 func IsFrameRetransmittable(f wire.Frame) bool {
 	switch f.(type) {
-	case *wire.StopWaitingFrame:
-		return false
 	case *wire.AckFrame:
 		return false
 	default:

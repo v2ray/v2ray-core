@@ -8,18 +8,7 @@ import (
 	"github.com/lucas-clemente/quic-go/internal/utils"
 )
 
-// ComposeGQUICVersionNegotiation composes a Version Negotiation Packet for gQUIC
-func ComposeGQUICVersionNegotiation(connID protocol.ConnectionID, versions []protocol.VersionNumber) []byte {
-	buf := bytes.NewBuffer(make([]byte, 0, 1+8+len(versions)*4))
-	buf.Write([]byte{0x1 | 0x8}) // type byte
-	buf.Write(connID)
-	for _, v := range versions {
-		utils.BigEndian.WriteUint32(buf, uint32(v))
-	}
-	return buf.Bytes()
-}
-
-// ComposeVersionNegotiation composes a Version Negotiation according to the IETF draft
+// ComposeVersionNegotiation composes a Version Negotiation
 func ComposeVersionNegotiation(destConnID, srcConnID protocol.ConnectionID, versions []protocol.VersionNumber) ([]byte, error) {
 	greasedVersions := protocol.GetGreasedVersions(versions)
 	expectedLen := 1 /* type byte */ + 4 /* version field */ + 1 /* connection ID length field */ + destConnID.Len() + srcConnID.Len() + len(greasedVersions)*4

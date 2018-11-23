@@ -15,7 +15,7 @@ type receiveStreamI interface {
 	ReceiveStream
 
 	handleStreamFrame(*wire.StreamFrame) error
-	handleRstStreamFrame(*wire.RstStreamFrame) error
+	handleResetStreamFrame(*wire.ResetStreamFrame) error
 	closeForShutdown(error)
 	getWindowUpdate() protocol.ByteCount
 }
@@ -41,10 +41,11 @@ type receiveStream struct {
 	closedForShutdown bool // set when CloseForShutdown() is called
 	finRead           bool // set once we read a frame with a FinBit
 	canceledRead      bool // set when CancelRead() is called
-	resetRemotely     bool // set when HandleRstStreamFrame() is called
+	resetRemotely     bool // set when HandleResetStreamFrame() is called
 
-	readChan     chan struct{}
-	readDeadline time.Time
+	readChan      chan struct{}
+	deadline      time.Time
+	deadlineTimer *time.Timer // initialized by SetReadDeadline()
 
 	flowController flowcontrol.StreamFlowController
 	version        protocol.VersionNumber
@@ -120,8 +121,7 @@ func (s *receiveStream) readImpl(p []byte) (bool /*stream completed */, int, err
 				return false, bytesRead, s.resetRemotelyErr
 			}
 
-			deadline := s.readDeadline
-			if !deadline.IsZero() && !time.Now().Before(deadline) {
+			if !s.deadline.IsZero() && !time.Now().Before(s.deadline) {
 				return false, bytesRead, errDeadline
 			}
 
@@ -130,12 +130,12 @@ func (s *receiveStream) readImpl(p []byte) (bool /*stream completed */, int, err
 			}
 
 			s.mutex.Unlock()
-			if deadline.IsZero() {
+			if s.deadline.IsZero() {
 				<-s.readChan
 			} else {
 				select {
 				case <-s.readChan:
-				case <-time.After(time.Until(deadline)):
+				case <-s.deadlineTimer.C:
 				}
 			}
 			s.mutex.Lock()
@@ -159,7 +159,7 @@ func (s *receiveStream) readImpl(p []byte) (bool /*stream completed */, int, err
 		s.readOffset += protocol.ByteCount(m)
 
 		s.mutex.Lock()
-		// when a RST_STREAM was received, the was already informed about the final byteOffset for this stream
+		// when a RESET_STREAM was received, the was already informed about the final byteOffset for this stream
 		if !s.resetRemotely {
 			s.flowController.AddBytesRead(protocol.ByteCount(m))
 		}
@@ -192,12 +192,10 @@ func (s *receiveStream) CancelRead(errorCode protocol.ApplicationErrorCode) erro
 	s.canceledRead = true
 	s.cancelReadErr = fmt.Errorf("Read on stream %d canceled with error code %d", s.streamID, errorCode)
 	s.signalRead()
-	if s.version.UsesIETFFrameFormat() {
-		s.sender.queueControlFrame(&wire.StopSendingFrame{
-			StreamID:  s.streamID,
-			ErrorCode: errorCode,
-		})
-	}
+	s.sender.queueControlFrame(&wire.StopSendingFrame{
+		StreamID:  s.streamID,
+		ErrorCode: errorCode,
+	})
 	return nil
 }
 
@@ -216,15 +214,15 @@ func (s *receiveStream) handleStreamFrame(frame *wire.StreamFrame) error {
 	return nil
 }
 
-func (s *receiveStream) handleRstStreamFrame(frame *wire.RstStreamFrame) error {
-	completed, err := s.handleRstStreamFrameImpl(frame)
+func (s *receiveStream) handleResetStreamFrame(frame *wire.ResetStreamFrame) error {
+	completed, err := s.handleResetStreamFrameImpl(frame)
 	if completed {
 		s.sender.onStreamCompleted(s.streamID)
 	}
 	return err
 }
 
-func (s *receiveStream) handleRstStreamFrameImpl(frame *wire.RstStreamFrame) (bool /*completed */, error) {
+func (s *receiveStream) handleResetStreamFrameImpl(frame *wire.ResetStreamFrame) (bool /*completed */, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -234,14 +232,8 @@ func (s *receiveStream) handleRstStreamFrameImpl(frame *wire.RstStreamFrame) (bo
 	if err := s.flowController.UpdateHighestReceived(frame.ByteOffset, true); err != nil {
 		return false, err
 	}
-	// In gQUIC, error code 0 has a special meaning.
-	// The peer will reliably continue transmitting, but is not interested in reading from the stream.
-	// We should therefore just continue reading from the stream, until we encounter the FIN bit.
-	if !s.version.UsesIETFFrameFormat() && frame.ErrorCode == 0 {
-		return false, nil
-	}
 
-	// ignore duplicate RST_STREAM frames for this stream (after checking their final offset)
+	// ignore duplicate RESET_STREAM frames for this stream (after checking their final offset)
 	if s.resetRemotely {
 		return false, nil
 	}
@@ -258,31 +250,30 @@ func (s *receiveStream) CloseRemote(offset protocol.ByteCount) {
 	s.handleStreamFrame(&wire.StreamFrame{FinBit: true, Offset: offset})
 }
 
-func (s *receiveStream) onClose(offset protocol.ByteCount) {
-	if s.canceledRead && !s.version.UsesIETFFrameFormat() {
-		s.sender.queueControlFrame(&wire.RstStreamFrame{
-			StreamID:   s.streamID,
-			ByteOffset: offset,
-			ErrorCode:  0,
-		})
-	}
-}
-
 func (s *receiveStream) SetReadDeadline(t time.Time) error {
 	s.mutex.Lock()
-	oldDeadline := s.readDeadline
-	s.readDeadline = t
-	s.mutex.Unlock()
-	// if the new deadline is before the currently set deadline, wake up Read()
-	if t.Before(oldDeadline) {
+	defer s.mutex.Unlock()
+	s.deadline = t
+	if s.deadline.IsZero() { // skip if there's no deadline to set
 		s.signalRead()
+		return nil
 	}
+	// Lazily initialize the deadline timer.
+	if s.deadlineTimer == nil {
+		s.deadlineTimer = time.NewTimer(time.Until(t))
+		return nil
+	}
+	// reset the timer to the new deadline
+	if !s.deadlineTimer.Stop() {
+		<-s.deadlineTimer.C
+	}
+	s.deadlineTimer.Reset(time.Until(t))
 	return nil
 }
 
 // CloseForShutdown closes a stream abruptly.
 // It makes Read unblock (and return the error) immediately.
-// The peer will NOT be informed about this: the stream is closed without sending a FIN or RST.
+// The peer will NOT be informed about this: the stream is closed without sending a FIN or RESET.
 func (s *receiveStream) closeForShutdown(err error) {
 	s.mutex.Lock()
 	s.closedForShutdown = true

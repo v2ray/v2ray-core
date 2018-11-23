@@ -86,30 +86,6 @@ func (mr *MockSentPacketHandlerMockRecorder) GetLowestPacketNotConfirmedAcked() 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLowestPacketNotConfirmedAcked", reflect.TypeOf((*MockSentPacketHandler)(nil).GetLowestPacketNotConfirmedAcked))
 }
 
-// GetPacketNumberLen mocks base method
-func (m *MockSentPacketHandler) GetPacketNumberLen(arg0 protocol.PacketNumber) protocol.PacketNumberLen {
-	ret := m.ctrl.Call(m, "GetPacketNumberLen", arg0)
-	ret0, _ := ret[0].(protocol.PacketNumberLen)
-	return ret0
-}
-
-// GetPacketNumberLen indicates an expected call of GetPacketNumberLen
-func (mr *MockSentPacketHandlerMockRecorder) GetPacketNumberLen(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPacketNumberLen", reflect.TypeOf((*MockSentPacketHandler)(nil).GetPacketNumberLen), arg0)
-}
-
-// GetStopWaitingFrame mocks base method
-func (m *MockSentPacketHandler) GetStopWaitingFrame(arg0 bool) *wire.StopWaitingFrame {
-	ret := m.ctrl.Call(m, "GetStopWaitingFrame", arg0)
-	ret0, _ := ret[0].(*wire.StopWaitingFrame)
-	return ret0
-}
-
-// GetStopWaitingFrame indicates an expected call of GetStopWaitingFrame
-func (mr *MockSentPacketHandlerMockRecorder) GetStopWaitingFrame(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStopWaitingFrame", reflect.TypeOf((*MockSentPacketHandler)(nil).GetStopWaitingFrame), arg0)
-}
-
 // OnAlarm mocks base method
 func (m *MockSentPacketHandler) OnAlarm() error {
 	ret := m.ctrl.Call(m, "OnAlarm")
@@ -120,6 +96,31 @@ func (m *MockSentPacketHandler) OnAlarm() error {
 // OnAlarm indicates an expected call of OnAlarm
 func (mr *MockSentPacketHandlerMockRecorder) OnAlarm() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnAlarm", reflect.TypeOf((*MockSentPacketHandler)(nil).OnAlarm))
+}
+
+// PeekPacketNumber mocks base method
+func (m *MockSentPacketHandler) PeekPacketNumber() (protocol.PacketNumber, protocol.PacketNumberLen) {
+	ret := m.ctrl.Call(m, "PeekPacketNumber")
+	ret0, _ := ret[0].(protocol.PacketNumber)
+	ret1, _ := ret[1].(protocol.PacketNumberLen)
+	return ret0, ret1
+}
+
+// PeekPacketNumber indicates an expected call of PeekPacketNumber
+func (mr *MockSentPacketHandlerMockRecorder) PeekPacketNumber() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeekPacketNumber", reflect.TypeOf((*MockSentPacketHandler)(nil).PeekPacketNumber))
+}
+
+// PopPacketNumber mocks base method
+func (m *MockSentPacketHandler) PopPacketNumber() protocol.PacketNumber {
+	ret := m.ctrl.Call(m, "PopPacketNumber")
+	ret0, _ := ret[0].(protocol.PacketNumber)
+	return ret0
+}
+
+// PopPacketNumber indicates an expected call of PopPacketNumber
+func (mr *MockSentPacketHandlerMockRecorder) PopPacketNumber() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PopPacketNumber", reflect.TypeOf((*MockSentPacketHandler)(nil).PopPacketNumber))
 }
 
 // ReceivedAck mocks base method

@@ -10,6 +10,9 @@ environment:
     - GOARCH: 386
     - GOARCH: amd64
 
+hosts:
+  quic.clemente.io: 127.0.0.1
+
 clone_folder: c:\gopath\src\github.com\lucas-clemente\quic-go
 
 install:
@@ -19,7 +22,6 @@ install:
   - set PATH=%PATH%;%GOPATH%\bin\windows_%GOARCH%;%GOPATH%\bin
   - echo %PATH%
   - echo %GOPATH%
-  - git submodule update --init --recursive
   - go get github.com/onsi/ginkgo/ginkgo
   - go get github.com/onsi/gomega
   - go version

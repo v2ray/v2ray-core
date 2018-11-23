@@ -33,20 +33,16 @@ func (s *serverSession) handlePacket(p *receivedPacket) {
 
 func (s *serverSession) handlePacketImpl(p *receivedPacket) error {
 	hdr := p.header
-	// ignore all Public Reset packets
-	if hdr.ResetFlag {
-		return fmt.Errorf("Received unexpected Public Reset for connection %s", hdr.DestConnectionID)
-	}
 
 	// Probably an old packet that was sent by the client before the version was negotiated.
 	// It is safe to drop it.
-	if (hdr.VersionFlag || hdr.IsLongHeader) && hdr.Version != s.quicSession.GetVersion() {
+	if hdr.IsLongHeader && hdr.Version != s.quicSession.GetVersion() {
 		return nil
 	}
 
 	if hdr.IsLongHeader {
 		switch hdr.Type {
-		case protocol.PacketTypeHandshake, protocol.PacketType0RTT: // 0-RTT accepted for gQUIC 44
+		case protocol.PacketTypeInitial, protocol.PacketTypeHandshake:
 			// nothing to do here. Packet will be passed to the session.
 		default:
 			// Note that this also drops 0-RTT packets.

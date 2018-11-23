@@ -15,7 +15,7 @@ type StopSendingFrame struct {
 
 // parseStopSendingFrame parses a STOP_SENDING frame
 func parseStopSendingFrame(r *bytes.Reader, _ protocol.VersionNumber) (*StopSendingFrame, error) {
-	if _, err := r.ReadByte(); err != nil { // read the TypeByte
+	if _, err := r.ReadByte(); err != nil {
 		return nil, err
 	}
 
@@ -40,7 +40,7 @@ func (f *StopSendingFrame) Length(_ protocol.VersionNumber) protocol.ByteCount {
 }
 
 func (f *StopSendingFrame) Write(b *bytes.Buffer, _ protocol.VersionNumber) error {
-	b.WriteByte(0x0c)
+	b.WriteByte(0x5)
 	utils.WriteVarInt(b, uint64(f.StreamID))
 	utils.BigEndian.WriteUint16(b, uint16(f.ErrorCode))
 	return nil
