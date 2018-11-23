@@ -96,10 +96,9 @@ func (s *clientSessions) openConnection(destAddr net.Addr, config *Config, tlsCo
 
 	quicConfig := &quic.Config{
 		ConnectionIDLength:                    12,
-		KeepAlive:                             true,
 		HandshakeTimeout:                      time.Second * 4,
 		IdleTimeout:                           time.Second * 60,
-		MaxReceiveStreamFlowControlWindow:     256 * 1024,
+		MaxReceiveStreamFlowControlWindow:     512 * 1024,
 		MaxReceiveConnectionFlowControlWindow: 2 * 1024 * 1024,
 		MaxIncomingUniStreams:                 -1,
 	}

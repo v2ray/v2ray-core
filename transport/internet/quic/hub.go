@@ -43,8 +43,8 @@ func (l *Listener) keepAccepting() {
 		conn, err := l.listener.Accept()
 		if err != nil {
 			newError("failed to accept QUIC sessions").Base(err).WriteToLog()
-			l.listener.Close()
-			return
+			time.Sleep(time.Second)
+			continue
 		}
 		go l.acceptStreams(conn)
 	}
@@ -85,11 +85,10 @@ func Listen(ctx context.Context, address net.Address, port net.Port, streamSetti
 
 	quicConfig := &quic.Config{
 		ConnectionIDLength:                    12,
-		KeepAlive:                             true,
 		HandshakeTimeout:                      time.Second * 4,
 		IdleTimeout:                           time.Second * 60,
-		MaxReceiveStreamFlowControlWindow:     256 * 1024,
-		MaxReceiveConnectionFlowControlWindow: 2 * 1024 * 1024,
+		MaxReceiveStreamFlowControlWindow:     512 * 1024,
+		MaxReceiveConnectionFlowControlWindow: 4 * 1024 * 1024,
 		MaxIncomingStreams:                    64,
 		MaxIncomingUniStreams:                 -1,
 	}
