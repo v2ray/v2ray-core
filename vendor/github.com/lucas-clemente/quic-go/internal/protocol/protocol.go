@@ -65,11 +65,11 @@ type ApplicationErrorCode uint16
 // ethernet's max size, minus the IP and UDP headers. IPv6 has a 40 byte header,
 // UDP adds an additional 8 bytes.  This is a total overhead of 48 bytes.
 // Ethernet's max packet size is 1500 bytes,  1500 - 48 = 1452.
-const MaxReceivePacketSize ByteCount = 1452 - 64
+const MaxReceivePacketSize ByteCount = 1300
 
 // DefaultTCPMSS is the default maximum packet size used in the Linux TCP implementation.
 // Used in QUIC for congestion window computations in bytes.
-const DefaultTCPMSS ByteCount = 1460
+const DefaultTCPMSS ByteCount = 1350
 
 // MinClientHelloSize is the minimum size the server expects an inchoate CHLO to have (in gQUIC)
 const MinClientHelloSize = 1024
