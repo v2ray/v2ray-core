@@ -8,13 +8,16 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol/tls/cert"
+	"v2ray.com/core/common/signal/done"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
 )
 
 // Listener is an internet.Listener that listens for TCP connections.
 type Listener struct {
+	rawConn  *sysConn
 	listener quic.Listener
+	done     *done.Instance
 	addConn  internet.ConnHandler
 }
 
@@ -22,9 +25,17 @@ func (l *Listener) acceptStreams(session quic.Session) {
 	for {
 		stream, err := session.AcceptStream()
 		if err != nil {
-			newError("failed to accept stream").Base(err).WriteToLog()
-			session.Close()
-			return
+			newError("failed to accept stream").Base(err).AtWarning().WriteToLog()
+			select {
+			case <-session.Context().Done():
+				return
+			case <-l.done.Wait():
+				session.Close()
+				return
+			default:
+				time.Sleep(time.Second)
+				continue
+			}
 		}
 
 		conn := &interConn{
@@ -42,7 +53,10 @@ func (l *Listener) keepAccepting() {
 	for {
 		conn, err := l.listener.Accept()
 		if err != nil {
-			newError("failed to accept QUIC sessions").Base(err).WriteToLog()
+			newError("failed to accept QUIC sessions").Base(err).AtWarning().WriteToLog()
+			if l.done.Done() {
+				break
+			}
 			time.Sleep(time.Second)
 			continue
 		}
@@ -57,7 +71,10 @@ func (l *Listener) Addr() net.Addr {
 
 // Close implements internet.Listener.Close.
 func (l *Listener) Close() error {
-	return l.listener.Close()
+	l.done.Close()
+	l.listener.Close()
+	l.rawConn.Close()
+	return nil
 }
 
 // Listen creates a new Listener based on configurations.
@@ -85,11 +102,11 @@ func Listen(ctx context.Context, address net.Address, port net.Port, streamSetti
 
 	quicConfig := &quic.Config{
 		ConnectionIDLength:                    12,
-		HandshakeTimeout:                      time.Second * 4,
-		IdleTimeout:                           time.Second * 60,
+		HandshakeTimeout:                      time.Second * 8,
+		IdleTimeout:                           time.Second * 600,
 		MaxReceiveStreamFlowControlWindow:     512 * 1024,
 		MaxReceiveConnectionFlowControlWindow: 4 * 1024 * 1024,
-		MaxIncomingStreams:                    64,
+		MaxIncomingStreams:                    8192,
 		MaxIncomingUniStreams:                 -1,
 	}
 
@@ -101,11 +118,13 @@ func Listen(ctx context.Context, address net.Address, port net.Port, streamSetti
 
 	qListener, err := quic.Listen(conn, tlsConfig.GetTLSConfig(), quicConfig)
 	if err != nil {
-		rawConn.Close()
+		conn.Close()
 		return nil, err
 	}
 
 	listener := &Listener{
+		done:     done.New(),
+		rawConn:  conn,
 		listener: qListener,
 		addConn:  handler,
 	}
