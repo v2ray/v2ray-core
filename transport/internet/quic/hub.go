@@ -101,12 +101,12 @@ func Listen(ctx context.Context, address net.Address, port net.Port, streamSetti
 	}
 
 	quicConfig := &quic.Config{
-		ConnectionIDLength:                    12,
+		ConnectionIDLength:                    8,
 		HandshakeTimeout:                      time.Second * 8,
-		IdleTimeout:                           time.Second * 600,
-		MaxReceiveStreamFlowControlWindow:     512 * 1024,
-		MaxReceiveConnectionFlowControlWindow: 4 * 1024 * 1024,
-		MaxIncomingStreams:                    8192,
+		IdleTimeout:                           time.Second * 30,
+		MaxReceiveStreamFlowControlWindow:     128 * 1024,
+		MaxReceiveConnectionFlowControlWindow: 2 * 1024 * 1024,
+		MaxIncomingStreams:                    32,
 		MaxIncomingUniStreams:                 -1,
 	}
 

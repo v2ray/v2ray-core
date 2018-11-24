@@ -39,7 +39,6 @@ func removeInactiveSessions(sessions []*sessionContext) []*sessionContext {
 			activeSessions = append(activeSessions, s)
 		} else {
 			s.rawConn.Close()
-			s.session.Close()
 		}
 	}
 
@@ -52,6 +51,10 @@ func removeInactiveSessions(sessions []*sessionContext) []*sessionContext {
 
 func openStream(sessions []*sessionContext) (quic.Stream, net.Addr) {
 	for _, s := range sessions {
+		if !isActive(s.session) {
+			continue
+		}
+
 		stream, err := s.session.OpenStream()
 		if err != nil {
 			newError("failed to create stream").Base(err).AtWarning().WriteToLog()
@@ -78,17 +81,18 @@ func (s *clientSessions) openConnection(destAddr net.Addr, config *Config, tlsCo
 		sessions = s
 	}
 
-	sessions = removeInactiveSessions(sessions)
-	s.sessions[dest] = sessions
-
-	stream, local := openStream(sessions)
-	if stream != nil {
-		return &interConn{
-			stream: stream,
-			local:  local,
-			remote: destAddr,
-		}, nil
+	{
+		stream, local := openStream(sessions)
+		if stream != nil {
+			return &interConn{
+				stream: stream,
+				local:  local,
+				remote: destAddr,
+			}, nil
+		}
 	}
+
+	sessions = removeInactiveSessions(sessions)
 
 	rawConn, err := internet.ListenSystemPacket(context.Background(), &net.UDPAddr{
 		IP:   []byte{0, 0, 0, 0},
@@ -99,12 +103,13 @@ func (s *clientSessions) openConnection(destAddr net.Addr, config *Config, tlsCo
 	}
 
 	quicConfig := &quic.Config{
-		ConnectionIDLength:                    12,
+		ConnectionIDLength:                    8,
 		HandshakeTimeout:                      time.Second * 8,
-		IdleTimeout:                           time.Second * 600,
-		MaxReceiveStreamFlowControlWindow:     512 * 1024,
+		IdleTimeout:                           time.Second * 30,
+		MaxReceiveStreamFlowControlWindow:     128 * 1024,
 		MaxReceiveConnectionFlowControlWindow: 2 * 1024 * 1024,
 		MaxIncomingUniStreams:                 -1,
+		MaxIncomingStreams:                    32,
 	}
 
 	conn, err := wrapSysConn(rawConn, config)
@@ -123,7 +128,7 @@ func (s *clientSessions) openConnection(destAddr net.Addr, config *Config, tlsCo
 		session: session,
 		rawConn: conn,
 	})
-	stream, err = session.OpenStream()
+	stream, err := session.OpenStream()
 	if err != nil {
 		return nil, err
 	}
