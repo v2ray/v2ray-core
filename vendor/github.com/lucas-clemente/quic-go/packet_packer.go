@@ -409,9 +409,9 @@ func (p *packetPacker) getHeader(encLevel protocol.EncryptionLevel) *wire.Header
 	if encLevel != protocol.Encryption1RTT {
 		header.IsLongHeader = true
 		header.SrcConnectionID = p.srcConnID
-		// Set the payload len to maximum size.
+		// Set the length to the maximum packet size.
 		// Since it is encoded as a varint, this guarantees us that the header will end up at most as big as GetLength() returns.
-		header.PayloadLen = p.maxPacketSize
+		header.Length = p.maxPacketSize
 		switch encLevel {
 		case protocol.EncryptionInitial:
 			header.Type = protocol.PacketTypeInitial
@@ -433,20 +433,20 @@ func (p *packetPacker) writeAndSealPacket(
 
 	addPadding := p.perspective == protocol.PerspectiveClient && header.Type == protocol.PacketTypeInitial && !p.hasSentPacket
 
-	// the payload length is only needed for Long Headers
+	// the length is only needed for Long Headers
 	if header.IsLongHeader {
 		if p.perspective == protocol.PerspectiveClient && header.Type == protocol.PacketTypeInitial {
 			header.Token = p.token
 		}
 		if addPadding {
 			headerLen := header.GetLength(p.version)
-			header.PayloadLen = protocol.ByteCount(protocol.MinInitialPacketSize) - headerLen
+			header.Length = protocol.ByteCount(header.PacketNumberLen) + protocol.MinInitialPacketSize - headerLen
 		} else {
-			payloadLen := protocol.ByteCount(sealer.Overhead())
+			length := protocol.ByteCount(sealer.Overhead()) + protocol.ByteCount(header.PacketNumberLen)
 			for _, frame := range frames {
-				payloadLen += frame.Length(p.version)
+				length += frame.Length(p.version)
 			}
-			header.PayloadLen = payloadLen
+			header.Length = length
 		}
 	}
 

@@ -141,7 +141,7 @@ func (iv *InvariantHeader) parseLongHeader(b *bytes.Reader, sentBy protocol.Pers
 	if err != nil {
 		return nil, err
 	}
-	h.PayloadLen = protocol.ByteCount(pl)
+	h.Length = protocol.ByteCount(pl)
 	pn, pnLen, err := utils.ReadVarIntPacketNumber(b)
 	if err != nil {
 		return nil, err

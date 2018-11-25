@@ -28,7 +28,7 @@ type Header struct {
 	Type         protocol.PacketType
 	IsLongHeader bool
 	KeyPhase     int
-	PayloadLen   protocol.ByteCount
+	Length       protocol.ByteCount
 	Token        []byte
 }
 
@@ -72,7 +72,7 @@ func (h *Header) writeLongHeader(b *bytes.Buffer, v protocol.VersionNumber) erro
 		return nil
 	}
 
-	utils.WriteVarInt(b, uint64(h.PayloadLen))
+	utils.WriteVarInt(b, uint64(h.Length))
 	return utils.WriteVarIntPacketNumber(b, h.PacketNumber, h.PacketNumberLen)
 }
 
@@ -88,7 +88,7 @@ func (h *Header) writeShortHeader(b *bytes.Buffer, v protocol.VersionNumber) err
 // GetLength determines the length of the Header.
 func (h *Header) GetLength(v protocol.VersionNumber) protocol.ByteCount {
 	if h.IsLongHeader {
-		length := 1 /* type byte */ + 4 /* version */ + 1 /* conn id len byte */ + protocol.ByteCount(h.DestConnectionID.Len()+h.SrcConnectionID.Len()) + protocol.ByteCount(h.PacketNumberLen) + utils.VarIntLen(uint64(h.PayloadLen))
+		length := 1 /* type byte */ + 4 /* version */ + 1 /* conn id len byte */ + protocol.ByteCount(h.DestConnectionID.Len()+h.SrcConnectionID.Len()) + protocol.ByteCount(h.PacketNumberLen) + utils.VarIntLen(uint64(h.Length))
 		if h.Type == protocol.PacketTypeInitial {
 			length += utils.VarIntLen(uint64(len(h.Token))) + protocol.ByteCount(len(h.Token))
 		}
@@ -118,7 +118,7 @@ func (h *Header) Log(logger utils.Logger) {
 				logger.Debugf("\tLong Header{Type: %s, DestConnectionID: %s, SrcConnectionID: %s, %sOrigDestConnectionID: %s, Version: %s}", h.Type, h.DestConnectionID, h.SrcConnectionID, token, h.OrigDestConnectionID, h.Version)
 				return
 			}
-			logger.Debugf("\tLong Header{Type: %s, DestConnectionID: %s, SrcConnectionID: %s, %sPacketNumber: %#x, PacketNumberLen: %d, PayloadLen: %d, Version: %s}", h.Type, h.DestConnectionID, h.SrcConnectionID, token, h.PacketNumber, h.PacketNumberLen, h.PayloadLen, h.Version)
+			logger.Debugf("\tLong Header{Type: %s, DestConnectionID: %s, SrcConnectionID: %s, %sPacketNumber: %#x, PacketNumberLen: %d, Length: %d, Version: %s}", h.Type, h.DestConnectionID, h.SrcConnectionID, token, h.PacketNumber, h.PacketNumberLen, h.Length, h.Version)
 		}
 	} else {
 		logger.Debugf("\tShort Header{DestConnectionID: %s, PacketNumber: %#x, PacketNumberLen: %d, KeyPhase: %d}", h.DestConnectionID, h.PacketNumber, h.PacketNumberLen, h.KeyPhase)

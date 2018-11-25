@@ -216,10 +216,13 @@ func (h *packetHandlerMap) handlePacket(addr net.Addr, data []byte) error {
 	packetData := data[len(data)-r.Len():]
 
 	if hdr.IsLongHeader {
-		if protocol.ByteCount(len(packetData)) < hdr.PayloadLen {
-			return fmt.Errorf("packet payload (%d bytes) is smaller than the expected payload length (%d bytes)", len(packetData), hdr.PayloadLen)
+		if hdr.Length < protocol.ByteCount(hdr.PacketNumberLen) {
+			return fmt.Errorf("packet length (%d bytes) shorter than packet number (%d bytes)", hdr.Length, hdr.PacketNumberLen)
 		}
-		packetData = packetData[:int(hdr.PayloadLen)]
+		if protocol.ByteCount(len(packetData))+protocol.ByteCount(hdr.PacketNumberLen) < hdr.Length {
+			return fmt.Errorf("packet length (%d bytes) is smaller than the expected length (%d bytes)", len(packetData)+int(hdr.PacketNumberLen), hdr.Length)
+		}
+		packetData = packetData[:int(hdr.Length)-int(hdr.PacketNumberLen)]
 		// TODO(#1312): implement parsing of compound packets
 	}
 
