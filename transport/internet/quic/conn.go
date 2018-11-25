@@ -10,6 +10,7 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/signal/done"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -133,9 +134,11 @@ func (c *sysConn) SetWriteDeadline(t time.Time) error {
 }
 
 type interConn struct {
-	stream quic.Stream
-	local  net.Addr
-	remote net.Addr
+	context *sessionContext
+	stream  quic.Stream
+	done    *done.Instance
+	local   net.Addr
+	remote  net.Addr
 }
 
 func (c *interConn) Read(b []byte) (int, error) {
@@ -162,9 +165,12 @@ func (c *interConn) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	defer reader.Close()
 
 	for {
-		nBytes, err := reader.Read(b[:1380])
+		nBytes, err := reader.Read(b[:1200])
 		if err != nil {
 			break
+		}
+		if nBytes == 0 {
+			continue
 		}
 		if _, err := c.Write(b[:nBytes]); err != nil {
 			return err
@@ -179,7 +185,14 @@ func (c *interConn) Write(b []byte) (int, error) {
 }
 
 func (c *interConn) Close() error {
-	return c.stream.Close()
+	if c.context != nil {
+		defer c.context.onInterConnClose()
+	}
+
+	common.Must(c.done.Close())
+	c.stream.CancelRead(1)
+	c.stream.CancelWrite(1)
+	return nil
 }
 
 func (c *interConn) LocalAddr() net.Addr {

@@ -40,6 +40,7 @@ func (l *Listener) acceptStreams(session quic.Session) {
 
 		conn := &interConn{
 			stream: stream,
+			done:   done.New(),
 			local:  session.LocalAddr(),
 			remote: session.RemoteAddr(),
 		}
@@ -101,13 +102,11 @@ func Listen(ctx context.Context, address net.Address, port net.Port, streamSetti
 	}
 
 	quicConfig := &quic.Config{
-		ConnectionIDLength:                    8,
-		HandshakeTimeout:                      time.Second * 8,
-		IdleTimeout:                           time.Second * 30,
-		MaxReceiveStreamFlowControlWindow:     128 * 1024,
-		MaxReceiveConnectionFlowControlWindow: 2 * 1024 * 1024,
-		MaxIncomingStreams:                    32,
-		MaxIncomingUniStreams:                 -1,
+		ConnectionIDLength:    12,
+		HandshakeTimeout:      time.Second * 8,
+		IdleTimeout:           time.Second * 30,
+		MaxIncomingStreams:    256,
+		MaxIncomingUniStreams: -1,
 	}
 
 	conn, err := wrapSysConn(rawConn, config)
