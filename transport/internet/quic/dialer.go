@@ -8,27 +8,20 @@ import (
 	quic "github.com/lucas-clemente/quic-go"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/signal/done"
 	"v2ray.com/core/common/task"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
 )
 
 type sessionContext struct {
-	access     sync.Mutex
-	done       *done.Instance
-	rawConn    *sysConn
-	session    quic.Session
-	interConns []*interConn
+	rawConn *sysConn
+	session quic.Session
 }
 
 var errSessionClosed = newError("session closed")
 
 func (c *sessionContext) openStream(destAddr net.Addr) (*interConn, error) {
-	c.access.Lock()
-	defer c.access.Unlock()
-
-	if c.done.Done() {
+	if !isActive(c.session) {
 		return nil, errSessionClosed
 	}
 
@@ -38,39 +31,12 @@ func (c *sessionContext) openStream(destAddr net.Addr) (*interConn, error) {
 	}
 
 	conn := &interConn{
-		stream:  stream,
-		done:    done.New(),
-		local:   c.session.LocalAddr(),
-		remote:  destAddr,
-		context: c,
+		stream: stream,
+		local:  c.session.LocalAddr(),
+		remote: destAddr,
 	}
 
-	c.interConns = append(c.interConns, conn)
 	return conn, nil
-}
-
-func (c *sessionContext) onInterConnClose() {
-	c.access.Lock()
-	defer c.access.Unlock()
-
-	if c.done.Done() {
-		return
-	}
-
-	activeConns := 0
-	for _, conn := range c.interConns {
-		if !conn.done.Done() {
-			activeConns++
-		}
-	}
-
-	if activeConns > 0 {
-		return
-	}
-
-	c.done.Close()
-	c.session.Close()
-	c.rawConn.Close()
 }
 
 type clientSessions struct {
@@ -96,10 +62,10 @@ func removeInactiveSessions(sessions []*sessionContext) []*sessionContext {
 			continue
 		}
 		if err := s.session.Close(); err != nil {
-			newError("failed to close session").Base(err).AtWarning().WriteToLog()
+			newError("failed to close session").Base(err).WriteToLog()
 		}
 		if err := s.rawConn.Close(); err != nil {
-			newError("failed to close raw connection").Base(err).AtWarning().WriteToLog()
+			newError("failed to close raw connection").Base(err).WriteToLog()
 		}
 	}
 
@@ -203,7 +169,6 @@ func (s *clientSessions) openConnection(destAddr net.Addr, config *Config, tlsCo
 	context := &sessionContext{
 		session: session,
 		rawConn: conn,
-		done:    done.New(),
 	}
 	s.sessions[dest] = append(sessions, context)
 	return context.openStream(destAddr)

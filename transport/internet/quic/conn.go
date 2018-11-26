@@ -10,7 +10,6 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
-	"v2ray.com/core/common/signal/done"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -134,11 +133,9 @@ func (c *sysConn) SetWriteDeadline(t time.Time) error {
 }
 
 type interConn struct {
-	context *sessionContext
-	stream  quic.Stream
-	done    *done.Instance
-	local   net.Addr
-	remote  net.Addr
+	stream quic.Stream
+	local  net.Addr
+	remote net.Addr
 }
 
 func (c *interConn) Read(b []byte) (int, error) {
@@ -185,11 +182,6 @@ func (c *interConn) Write(b []byte) (int, error) {
 }
 
 func (c *interConn) Close() error {
-	if c.context != nil {
-		defer c.context.onInterConnClose()
-	}
-
-	common.Must(c.done.Close())
 	c.stream.CancelRead(1)
 	c.stream.CancelWrite(1)
 	return nil

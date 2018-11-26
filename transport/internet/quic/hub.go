@@ -25,7 +25,7 @@ func (l *Listener) acceptStreams(session quic.Session) {
 	for {
 		stream, err := session.AcceptStream()
 		if err != nil {
-			newError("failed to accept stream").Base(err).AtWarning().WriteToLog()
+			newError("failed to accept stream").Base(err).WriteToLog()
 			select {
 			case <-session.Context().Done():
 				return
@@ -40,7 +40,6 @@ func (l *Listener) acceptStreams(session quic.Session) {
 
 		conn := &interConn{
 			stream: stream,
-			done:   done.New(),
 			local:  session.LocalAddr(),
 			remote: session.RemoteAddr(),
 		}
@@ -54,7 +53,7 @@ func (l *Listener) keepAccepting() {
 	for {
 		conn, err := l.listener.Accept()
 		if err != nil {
-			newError("failed to accept QUIC sessions").Base(err).AtWarning().WriteToLog()
+			newError("failed to accept QUIC sessions").Base(err).WriteToLog()
 			if l.done.Done() {
 				break
 			}
