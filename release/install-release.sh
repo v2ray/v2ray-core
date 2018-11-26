@@ -197,7 +197,7 @@ getVersion(){
     else
         VER=`/usr/bin/v2ray/v2ray -version 2>/dev/null`
         RETVAL="$?"
-        CUR_VER=`echo $VER | head -n 1 | cut -d " " -f2 | cut -d. -f-2`
+        CUR_VER=`echo $VER | head -n 1 | cut -d " " -f2`
         if [[ ${CUR_VER} != v* ]]; then
             CUR_VER=v${CUR_VER}
         fi
@@ -211,7 +211,7 @@ getVersion(){
             return 3
         elif [[ $RETVAL -ne 0 ]];then
             return 2
-        elif [[ "$NEW_VER" != "$CUR_VER" ]];then
+        elif [[ `echo $NEW_VER | cut -d. -f-2` != `echo $CUR_VER | cut -d. -f-2` ]];then
             return 1
         fi
         return 0
