@@ -182,9 +182,8 @@ func (c *interConn) Write(b []byte) (int, error) {
 }
 
 func (c *interConn) Close() error {
-	c.stream.CancelRead(1)
-	c.stream.CancelWrite(1)
-	return nil
+	c.stream.CancelRead(0x00)
+	return c.stream.Close()
 }
 
 func (c *interConn) LocalAddr() net.Addr {
