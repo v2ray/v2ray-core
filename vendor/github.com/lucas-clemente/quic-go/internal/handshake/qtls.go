@@ -11,11 +11,13 @@ func tlsConfigToQtlsConfig(c *tls.Config) *qtls.Config {
 		c = &tls.Config{}
 	}
 	// QUIC requires TLS 1.3 or newer
-	if c.MinVersion < qtls.VersionTLS13 {
-		c.MinVersion = qtls.VersionTLS13
+	minVersion := c.MinVersion
+	if minVersion < qtls.VersionTLS13 {
+		minVersion = qtls.VersionTLS13
 	}
-	if c.MaxVersion < qtls.VersionTLS13 {
-		c.MaxVersion = qtls.VersionTLS13
+	maxVersion := c.MaxVersion
+	if maxVersion < qtls.VersionTLS13 {
+		maxVersion = qtls.VersionTLS13
 	}
 	return &qtls.Config{
 		Rand:              c.Rand,
@@ -38,8 +40,8 @@ func tlsConfigToQtlsConfig(c *tls.Config) *qtls.Config {
 		PreferServerCipherSuites:    c.PreferServerCipherSuites,
 		SessionTicketsDisabled:      c.SessionTicketsDisabled,
 		SessionTicketKey:            c.SessionTicketKey,
-		MinVersion:                  c.MinVersion,
-		MaxVersion:                  c.MaxVersion,
+		MinVersion:                  minVersion,
+		MaxVersion:                  maxVersion,
 		CurvePreferences:            c.CurvePreferences,
 		DynamicRecordSizingDisabled: c.DynamicRecordSizingDisabled,
 		Renegotiation:               c.Renegotiation,

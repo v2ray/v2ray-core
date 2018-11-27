@@ -32,7 +32,7 @@ func (s *serverSession) handlePacket(p *receivedPacket) {
 }
 
 func (s *serverSession) handlePacketImpl(p *receivedPacket) error {
-	hdr := p.header
+	hdr := p.hdr
 
 	// Probably an old packet that was sent by the client before the version was negotiated.
 	// It is safe to drop it.

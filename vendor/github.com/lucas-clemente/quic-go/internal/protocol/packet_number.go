@@ -1,20 +1,37 @@
 package protocol
 
+// PacketNumberLen is the length of the packet number in bytes
+type PacketNumberLen uint8
+
+const (
+	// PacketNumberLenInvalid is the default value and not a valid length for a packet number
+	PacketNumberLenInvalid PacketNumberLen = 0
+	// PacketNumberLen1 is a packet number length of 1 byte
+	PacketNumberLen1 PacketNumberLen = 1
+	// PacketNumberLen2 is a packet number length of 2 bytes
+	PacketNumberLen2 PacketNumberLen = 2
+	// PacketNumberLen3 is a packet number length of 3 bytes
+	PacketNumberLen3 PacketNumberLen = 3
+	// PacketNumberLen4 is a packet number length of 4 bytes
+	PacketNumberLen4 PacketNumberLen = 4
+)
+
 // InferPacketNumber calculates the packet number based on the received packet number, its length and the last seen packet number
 func InferPacketNumber(
 	packetNumberLength PacketNumberLen,
 	lastPacketNumber PacketNumber,
 	wirePacketNumber PacketNumber,
-	version VersionNumber,
 ) PacketNumber {
 	var epochDelta PacketNumber
 	switch packetNumberLength {
 	case PacketNumberLen1:
-		epochDelta = PacketNumber(1) << 7
+		epochDelta = PacketNumber(1) << 8
 	case PacketNumberLen2:
-		epochDelta = PacketNumber(1) << 14
+		epochDelta = PacketNumber(1) << 16
+	case PacketNumberLen3:
+		epochDelta = PacketNumber(1) << 24
 	case PacketNumberLen4:
-		epochDelta = PacketNumber(1) << 30
+		epochDelta = PacketNumber(1) << 32
 	}
 	epoch := lastPacketNumber & ^(epochDelta - 1)
 	prevEpochBegin := epoch - epochDelta
@@ -42,10 +59,13 @@ func delta(a, b PacketNumber) PacketNumber {
 
 // GetPacketNumberLengthForHeader gets the length of the packet number for the public header
 // it never chooses a PacketNumberLen of 1 byte, since this is too short under certain circumstances
-func GetPacketNumberLengthForHeader(packetNumber, leastUnacked PacketNumber, version VersionNumber) PacketNumberLen {
+func GetPacketNumberLengthForHeader(packetNumber, leastUnacked PacketNumber) PacketNumberLen {
 	diff := uint64(packetNumber - leastUnacked)
-	if diff < (1 << (14 - 1)) {
+	if diff < (1 << (16 - 1)) {
 		return PacketNumberLen2
+	}
+	if diff < (1 << (24 - 1)) {
+		return PacketNumberLen3
 	}
 	return PacketNumberLen4
 }
@@ -57,6 +77,9 @@ func GetPacketNumberLength(packetNumber PacketNumber) PacketNumberLen {
 	}
 	if packetNumber < (1 << (uint8(PacketNumberLen2) * 8)) {
 		return PacketNumberLen2
+	}
+	if packetNumber < (1 << (uint8(PacketNumberLen3) * 8)) {
+		return PacketNumberLen3
 	}
 	return PacketNumberLen4
 }

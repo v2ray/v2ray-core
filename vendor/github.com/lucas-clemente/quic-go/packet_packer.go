@@ -25,7 +25,7 @@ type packer interface {
 }
 
 type packedPacket struct {
-	header          *wire.Header
+	header          *wire.ExtendedHeader
 	raw             []byte
 	frames          []wire.Frame
 	encryptionLevel protocol.EncryptionLevel
@@ -397,14 +397,13 @@ func (p *packetPacker) composeNextPacket(
 	return frames, nil
 }
 
-func (p *packetPacker) getHeader(encLevel protocol.EncryptionLevel) *wire.Header {
+func (p *packetPacker) getHeader(encLevel protocol.EncryptionLevel) *wire.ExtendedHeader {
 	pn, pnLen := p.pnManager.PeekPacketNumber()
-	header := &wire.Header{
-		PacketNumber:     pn,
-		PacketNumberLen:  pnLen,
-		Version:          p.version,
-		DestConnectionID: p.destConnID,
-	}
+	header := &wire.ExtendedHeader{}
+	header.PacketNumber = pn
+	header.PacketNumberLen = pnLen
+	header.Version = p.version
+	header.DestConnectionID = p.destConnID
 
 	if encLevel != protocol.Encryption1RTT {
 		header.IsLongHeader = true
@@ -424,8 +423,7 @@ func (p *packetPacker) getHeader(encLevel protocol.EncryptionLevel) *wire.Header
 }
 
 func (p *packetPacker) writeAndSealPacket(
-	header *wire.Header,
-	frames []wire.Frame,
+	header *wire.ExtendedHeader, frames []wire.Frame,
 	sealer handshake.Sealer,
 ) ([]byte, error) {
 	raw := *getPacketBuffer()
@@ -450,7 +448,7 @@ func (p *packetPacker) writeAndSealPacket(
 		}
 	}
 
-	if err := header.Write(buffer, p.perspective, p.version); err != nil {
+	if err := header.Write(buffer, p.version); err != nil {
 		return nil, err
 	}
 	payloadStartIndex := buffer.Len()

@@ -75,12 +75,10 @@ type sentPacketHandler struct {
 	alarm time.Time
 
 	logger utils.Logger
-
-	version protocol.VersionNumber
 }
 
 // NewSentPacketHandler creates a new sentPacketHandler
-func NewSentPacketHandler(rttStats *congestion.RTTStats, logger utils.Logger, version protocol.VersionNumber) SentPacketHandler {
+func NewSentPacketHandler(rttStats *congestion.RTTStats, logger utils.Logger) SentPacketHandler {
 	congestion := congestion.NewCubicSender(
 		congestion.DefaultClock{},
 		rttStats,
@@ -95,7 +93,6 @@ func NewSentPacketHandler(rttStats *congestion.RTTStats, logger utils.Logger, ve
 		rttStats:              rttStats,
 		congestion:            congestion,
 		logger:                logger,
-		version:               version,
 	}
 }
 
@@ -516,7 +513,7 @@ func (h *sentPacketHandler) DequeueProbePacket() (*Packet, error) {
 
 func (h *sentPacketHandler) PeekPacketNumber() (protocol.PacketNumber, protocol.PacketNumberLen) {
 	pn := h.packetNumberGenerator.Peek()
-	return pn, protocol.GetPacketNumberLengthForHeader(pn, h.lowestUnacked(), h.version)
+	return pn, protocol.GetPacketNumberLengthForHeader(pn, h.lowestUnacked())
 }
 
 func (h *sentPacketHandler) PopPacketNumber() protocol.PacketNumber {

@@ -27,7 +27,7 @@ type client struct {
 
 	token []byte
 
-	versionNegotiated                bool // has the server accepted our version
+	versionNegotiated                utils.AtomicBool // has the server accepted our version
 	receivedVersionNegotiationPacket bool
 	negotiatedVersions               []protocol.VersionNumber // the list of versions from the version negotiation packet
 
@@ -59,6 +59,7 @@ var (
 )
 
 // DialAddr establishes a new QUIC connection to a server.
+// It uses a new UDP connection and closes this connection when the QUIC session is closed.
 // The hostname for SNI is taken from the given address.
 func DialAddr(
 	addr string,
@@ -69,7 +70,7 @@ func DialAddr(
 }
 
 // DialAddrContext establishes a new QUIC connection to a server using the provided context.
-// The hostname for SNI is taken from the given address.
+// See DialAddr for details.
 func DialAddrContext(
 	ctx context.Context,
 	addr string,
@@ -88,6 +89,8 @@ func DialAddrContext(
 }
 
 // Dial establishes a new QUIC connection to a server using a net.PacketConn.
+// The same PacketConn can be used for multiple calls to Dial and Listen,
+// QUIC connection IDs are used for demultiplexing the different connections.
 // The host parameter is used for SNI.
 func Dial(
 	pconn net.PacketConn,
@@ -100,7 +103,7 @@ func Dial(
 }
 
 // DialContext establishes a new QUIC connection to a server using a net.PacketConn using the provided context.
-// The host parameter is used for SNI.
+// See Dial for details.
 func DialContext(
 	ctx context.Context,
 	pconn net.PacketConn,
@@ -164,7 +167,18 @@ func newClient(
 			}
 		}
 	}
+
+	srcConnID, err := generateConnectionID(config.ConnectionIDLength)
+	if err != nil {
+		return nil, err
+	}
+	destConnID, err := generateConnectionIDForInitial()
+	if err != nil {
+		return nil, err
+	}
 	c := &client{
+		srcConnID:         srcConnID,
+		destConnID:        destConnID,
 		conn:              &conn{pconn: pconn, currentAddr: remoteAddr},
 		createdPacketConn: createdPacketConn,
 		tlsConf:           tlsConf,
@@ -173,7 +187,7 @@ func newClient(
 		handshakeChan:     make(chan struct{}),
 		logger:            utils.DefaultLogger.WithPrefix("client"),
 	}
-	return c, c.generateConnectionIDs()
+	return c, nil
 }
 
 // populateClientConfig populates fields in the quic.Config with their default values, if none are set
@@ -234,20 +248,6 @@ func populateClientConfig(config *Config, createdPacketConn bool) *Config {
 	}
 }
 
-func (c *client) generateConnectionIDs() error {
-	srcConnID, err := generateConnectionID(c.config.ConnectionIDLength)
-	if err != nil {
-		return err
-	}
-	destConnID, err := generateConnectionIDForInitial()
-	if err != nil {
-		return err
-	}
-	c.srcConnID = srcConnID
-	c.destConnID = destConnID
-	return nil
-}
-
 func (c *client) dial(ctx context.Context) error {
 	c.logger.Infof("Starting new connection to %s (%s -> %s), source connection ID %s, destination connection ID %s, version %s", c.tlsConf.ServerName, c.conn.LocalAddr(), c.conn.RemoteAddr(), c.srcConnID, c.destConnID, c.version)
 
@@ -292,65 +292,49 @@ func (c *client) establishSecureConnection(ctx context.Context) error {
 }
 
 func (c *client) handlePacket(p *receivedPacket) {
-	if err := c.handlePacketImpl(p); err != nil {
-		c.logger.Errorf("error handling packet: %s", err)
-	}
-}
-
-func (c *client) handlePacketImpl(p *receivedPacket) error {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
-	// handle Version Negotiation Packets
-	if p.header.IsVersionNegotiation {
-		err := c.handleVersionNegotiationPacket(p.header)
-		if err != nil {
-			c.session.destroy(err)
-		}
-		// version negotiation packets have no payload
-		return err
+	if p.hdr.IsVersionNegotiation() {
+		go c.handleVersionNegotiationPacket(p.hdr)
+		return
 	}
 
-	// reject packets with the wrong connection ID
-	if !p.header.DestConnectionID.Equal(c.srcConnID) {
-		return fmt.Errorf("received a packet with an unexpected connection ID (%s, expected %s)", p.header.DestConnectionID, c.srcConnID)
-	}
-
-	if p.header.Type == protocol.PacketTypeRetry {
-		c.handleRetryPacket(p.header)
-		return nil
+	if p.hdr.Type == protocol.PacketTypeRetry {
+		go c.handleRetryPacket(p.hdr)
+		return
 	}
 
 	// this is the first packet we are receiving
 	// since it is not a Version Negotiation Packet, this means the server supports the suggested version
-	if !c.versionNegotiated {
-		c.versionNegotiated = true
+	if !c.versionNegotiated.Get() {
+		c.versionNegotiated.Set(true)
 	}
 
 	c.session.handlePacket(p)
-	return nil
 }
 
-func (c *client) handleVersionNegotiationPacket(hdr *wire.Header) error {
+func (c *client) handleVersionNegotiationPacket(hdr *wire.Header) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
 	// ignore delayed / duplicated version negotiation packets
-	if c.receivedVersionNegotiationPacket || c.versionNegotiated {
-		c.logger.Debugf("Received a delayed Version Negotiation Packet.")
-		return nil
+	if c.receivedVersionNegotiationPacket || c.versionNegotiated.Get() {
+		c.logger.Debugf("Received a delayed Version Negotiation packet.")
+		return
 	}
 
 	for _, v := range hdr.SupportedVersions {
 		if v == c.version {
-			// the version negotiation packet contains the version that we offered
-			// this might be a packet sent by an attacker (or by a terribly broken server implementation)
-			// ignore it
-			return nil
+			// The Version Negotiation packet contains the version that we offered.
+			// This might be a packet sent by an attacker (or by a terribly broken server implementation).
+			return
 		}
 	}
 
-	c.logger.Infof("Received a Version Negotiation Packet. Supported Versions: %s", hdr.SupportedVersions)
+	c.logger.Infof("Received a Version Negotiation packet. Supported Versions: %s", hdr.SupportedVersions)
 	newVersion, ok := protocol.ChooseSupportedVersion(c.config.Versions, hdr.SupportedVersions)
 	if !ok {
-		return qerr.InvalidVersion
+		c.session.destroy(qerr.InvalidVersion)
+		c.logger.Debugf("No compatible version found.")
+		return
 	}
 	c.receivedVersionNegotiationPacket = true
 	c.negotiatedVersions = hdr.SupportedVersions
@@ -358,18 +342,17 @@ func (c *client) handleVersionNegotiationPacket(hdr *wire.Header) error {
 	// switch to negotiated version
 	c.initialVersion = c.version
 	c.version = newVersion
-	if err := c.generateConnectionIDs(); err != nil {
-		return err
-	}
 
 	c.logger.Infof("Switching to QUIC version %s. New connection ID: %s", newVersion, c.destConnID)
 	c.session.destroy(errCloseSessionForNewVersion)
-	return nil
 }
 
 func (c *client) handleRetryPacket(hdr *wire.Header) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
 	c.logger.Debugf("<- Received Retry")
-	hdr.Log(c.logger)
+	(&wire.ExtendedHeader{Header: *hdr}).Log(c.logger)
 	if !hdr.OrigDestConnectionID.Equal(c.destConnID) {
 		c.logger.Debugf("Ignoring spoofed Retry. Original Destination Connection ID: %s, expected: %s", hdr.OrigDestConnectionID, c.destConnID)
 		return

@@ -21,7 +21,6 @@ type packetHandler interface {
 	handlePacket(*receivedPacket)
 	io.Closer
 	destroy(error)
-	GetVersion() protocol.VersionNumber
 	GetPerspective() protocol.Perspective
 }
 
@@ -99,7 +98,8 @@ var _ Listener = &server{}
 var _ unknownPacketHandler = &server{}
 
 // ListenAddr creates a QUIC server listening on a given address.
-// The tls.Config must not be nil, the quic.Config may be nil.
+// The tls.Config must not be nil and must contain a certificate configuration.
+// The quic.Config may be nil, in that case the default values will be used.
 func ListenAddr(addr string, tlsConf *tls.Config, config *Config) (Listener, error) {
 	udpAddr, err := net.ResolveUDPAddr("udp", addr)
 	if err != nil {
@@ -118,7 +118,11 @@ func ListenAddr(addr string, tlsConf *tls.Config, config *Config) (Listener, err
 }
 
 // Listen listens for QUIC connections on a given net.PacketConn.
-// The tls.Config must not be nil, the quic.Config may be nil.
+// A single PacketConn only be used for a single call to Listen.
+// The PacketConn can be used for simultaneous calls to Dial.
+// QUIC connection IDs are used for demultiplexing the different connections.
+// The tls.Config must not be nil and must contain a certificate configuration.
+// The quic.Config may be nil, in that case the default values will be used.
 func Listen(conn net.PacketConn, tlsConf *tls.Config, config *Config) (Listener, error) {
 	return listen(conn, tlsConf, config)
 }
@@ -300,23 +304,17 @@ func (s *server) Addr() net.Addr {
 }
 
 func (s *server) handlePacket(p *receivedPacket) {
-	if err := s.handlePacketImpl(p); err != nil {
-		s.logger.Debugf("error handling packet from %s: %s", p.remoteAddr, err)
-	}
-}
-
-func (s *server) handlePacketImpl(p *receivedPacket) error {
-	hdr := p.header
+	hdr := p.hdr
 
 	// send a Version Negotiation Packet if the client is speaking a different protocol version
 	if !protocol.IsSupportedVersion(s.config.Versions, hdr.Version) {
-		return s.sendVersionNegotiationPacket(p)
+		go s.sendVersionNegotiationPacket(p)
+		return
 	}
 	if hdr.Type == protocol.PacketTypeInitial {
 		go s.handleInitial(p)
 	}
 	// TODO(#943): send Stateless Reset
-	return nil
 }
 
 func (s *server) handleInitial(p *receivedPacket) {
@@ -335,11 +333,11 @@ func (s *server) handleInitial(p *receivedPacket) {
 }
 
 func (s *server) handleInitialImpl(p *receivedPacket) (quicSession, protocol.ConnectionID, error) {
-	hdr := p.header
+	hdr := p.hdr
 	if len(hdr.Token) == 0 && hdr.DestConnectionID.Len() < protocol.MinConnectionIDLenInitial {
 		return nil, nil, errors.New("dropping Initial packet with too short connection ID")
 	}
-	if len(hdr.Raw)+len(p.data) < protocol.MinInitialPacketSize {
+	if len(p.data) < protocol.MinInitialPacketSize {
 		return nil, nil, errors.New("dropping too small Initial packet")
 	}
 
@@ -358,7 +356,7 @@ func (s *server) handleInitialImpl(p *receivedPacket) (quicSession, protocol.Con
 	if !s.config.AcceptCookie(p.remoteAddr, cookie) {
 		// Log the Initial packet now.
 		// If no Retry is sent, the packet will be logged by the session.
-		p.header.Log(s.logger)
+		(&wire.ExtendedHeader{Header: *p.hdr}).Log(s.logger)
 		return nil, nil, s.sendRetry(p.remoteAddr, hdr)
 	}
 
@@ -431,19 +429,18 @@ func (s *server) sendRetry(remoteAddr net.Addr, hdr *wire.Header) error {
 	if err != nil {
 		return err
 	}
-	replyHdr := &wire.Header{
-		IsLongHeader:         true,
-		Type:                 protocol.PacketTypeRetry,
-		Version:              hdr.Version,
-		SrcConnectionID:      connID,
-		DestConnectionID:     hdr.SrcConnectionID,
-		OrigDestConnectionID: hdr.DestConnectionID,
-		Token:                token,
-	}
+	replyHdr := &wire.ExtendedHeader{}
+	replyHdr.IsLongHeader = true
+	replyHdr.Type = protocol.PacketTypeRetry
+	replyHdr.Version = hdr.Version
+	replyHdr.SrcConnectionID = connID
+	replyHdr.DestConnectionID = hdr.SrcConnectionID
+	replyHdr.OrigDestConnectionID = hdr.DestConnectionID
+	replyHdr.Token = token
 	s.logger.Debugf("Changing connection ID to %s.\n-> Sending Retry", connID)
 	replyHdr.Log(s.logger)
 	buf := &bytes.Buffer{}
-	if err := replyHdr.Write(buf, protocol.PerspectiveServer, hdr.Version); err != nil {
+	if err := replyHdr.Write(buf, hdr.Version); err != nil {
 		return err
 	}
 	if _, err := s.conn.WriteTo(buf.Bytes(), remoteAddr); err != nil {
@@ -452,14 +449,15 @@ func (s *server) sendRetry(remoteAddr net.Addr, hdr *wire.Header) error {
 	return nil
 }
 
-func (s *server) sendVersionNegotiationPacket(p *receivedPacket) error {
-	hdr := p.header
-	s.logger.Debugf("Client offered version %s, sending VersionNegotiationPacket", hdr.Version)
-
+func (s *server) sendVersionNegotiationPacket(p *receivedPacket) {
+	hdr := p.hdr
+	s.logger.Debugf("Client offered version %s, sending Version Negotiation", hdr.Version)
 	data, err := wire.ComposeVersionNegotiation(hdr.SrcConnectionID, hdr.DestConnectionID, s.config.Versions)
 	if err != nil {
-		return err
+		s.logger.Debugf("Error composing Version Negotiation: %s", err)
+		return
 	}
-	_, err = s.conn.WriteTo(data, p.remoteAddr)
-	return err
+	if _, err := s.conn.WriteTo(data, p.remoteAddr); err != nil {
+		s.logger.Debugf("Error sending Version Negotiation: %s", err)
+	}
 }
