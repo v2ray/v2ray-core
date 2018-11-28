@@ -1,4 +1,4 @@
-// +build linux
+// +build linux,cgo darwin,cgo
 
 package core
 
@@ -35,9 +35,11 @@ func loadPluginsInternal() error {
 			if err != nil {
 				return err
 			}
-			if gmf, ok := f.(GetMetadataFunc); ok {
-				metadata := gmf()
+			if gmf, ok := f.(func() PluginMetadata); ok {
+				metadata := GetMetadataFunc(gmf)()
 				newError("plugin (", metadata.Name, ") loaded.").WriteToLog()
+			} else {
+				return newError(file.Name(), " is not a valid plugin.")
 			}
 		}
 	}

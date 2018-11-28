@@ -1,11 +1,17 @@
 load("@v2ray_ext//bazel:build.bzl", "foreign_go_binary")
 load("@v2ray_ext//bazel:gpg.bzl", "gpg_sign")
+load("@v2ray_ext//bazel:plugin.bzl", "PLUGIN_SUPPORTED_OS")
 
 def gen_targets(matrix):
   pkg = "v2ray.com/core/main"
   output = "v2ray"
 
   for (os, arch) in matrix:
+
+    cgo_enabled = "0"
+    if os in PLUGIN_SUPPORTED_OS:
+      cgo_enabled = "1"
+
     bin_name = "v2ray_" + os + "_" + arch
     foreign_go_binary(
       name = bin_name,
@@ -13,6 +19,7 @@ def gen_targets(matrix):
       output = output,
       os = os,
       arch = arch,
+      cgo_enabled = cgo_enabled,
     )
 
     gpg_sign(
