@@ -182,7 +182,6 @@ func (c *interConn) Write(b []byte) (int, error) {
 }
 
 func (c *interConn) Close() error {
-	c.stream.CancelRead(0x00)
 	return c.stream.Close()
 }
 
