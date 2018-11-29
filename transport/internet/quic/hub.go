@@ -104,8 +104,8 @@ func Listen(ctx context.Context, address net.Address, port net.Port, streamSetti
 		ConnectionIDLength:    12,
 		HandshakeTimeout:      time.Second * 8,
 		IdleTimeout:           time.Second * 30,
-		MaxIncomingStreams:    32,
-		MaxIncomingUniStreams: -1,
+		MaxIncomingStreams:    128,
+		MaxIncomingUniStreams: 32,
 	}
 
 	conn, err := wrapSysConn(rawConn, config)

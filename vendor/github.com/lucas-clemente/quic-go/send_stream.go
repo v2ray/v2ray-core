@@ -97,7 +97,7 @@ func (s *sendStream) Write(p []byte) (int, error) {
 
 	s.dataForWriting = make([]byte, len(p))
 	copy(s.dataForWriting, p)
-	s.sender.onHasStreamData(s.streamID)
+	go s.sender.onHasStreamData(s.streamID)
 
 	var bytesWritten int
 	var err error
@@ -222,7 +222,7 @@ func (s *sendStream) Close() error {
 		return fmt.Errorf("Close called for canceled stream %d", s.streamID)
 	}
 	s.finishedWriting = true
-	s.sender.onHasStreamData(s.streamID) // need to send the FIN
+	go s.sender.onHasStreamData(s.streamID) // need to send the FIN
 	s.ctxCancel()
 	return nil
 }
@@ -268,10 +268,14 @@ func (s *sendStream) handleStopSendingFrame(frame *wire.StopSendingFrame) {
 func (s *sendStream) handleMaxStreamDataFrame(frame *wire.MaxStreamDataFrame) {
 	s.flowController.UpdateSendWindow(frame.ByteOffset)
 	s.mutex.Lock()
+	hasData := false
 	if s.dataForWriting != nil {
-		s.sender.onHasStreamData(s.streamID)
+		hasData = true
 	}
 	s.mutex.Unlock()
+	if hasData {
+		s.sender.onHasStreamData(s.streamID)
+	}
 }
 
 // must be called after locking the mutex
