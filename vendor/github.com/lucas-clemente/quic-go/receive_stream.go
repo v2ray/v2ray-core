@@ -83,6 +83,13 @@ func (s *receiveStream) Read(p []byte) (int, error) {
 	return n, err
 }
 
+func (s *receiveStream) HasMoreData() bool {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	return s.currentFrame != nil
+}
+
 func (s *receiveStream) readImpl(p []byte) (bool /*stream completed */, int, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
