@@ -20,7 +20,7 @@ func (*SRTP) Size() int32 {
 // Serialize implements PacketHeader.
 func (s *SRTP) Serialize(b []byte) {
 	s.number++
-	binary.BigEndian.PutUint16(b, s.number)
+	binary.BigEndian.PutUint16(b, s.header)
 	binary.BigEndian.PutUint16(b[2:], s.number)
 }
 
