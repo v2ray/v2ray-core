@@ -128,6 +128,10 @@ func Listen(conn net.PacketConn, tlsConf *tls.Config, config *Config) (Listener,
 }
 
 func listen(conn net.PacketConn, tlsConf *tls.Config, config *Config) (*server, error) {
+	// TODO(#1655): only require that tls.Config.Certificates or tls.Config.GetCertificate is set
+	if tlsConf == nil || len(tlsConf.Certificates) == 0 {
+		return nil, errors.New("quic: Certificates not set in tls.Config")
+	}
 	config = populateServerConfig(config)
 	for _, v := range config.Versions {
 		if !protocol.IsValidVersion(v) {

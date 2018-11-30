@@ -8,13 +8,6 @@ const MaxPacketSizeIPv4 = 1252
 // MaxPacketSizeIPv6 is the maximum packet size that we use for sending IPv6 packets.
 const MaxPacketSizeIPv6 = 1232
 
-// MinStatelessResetSize is the minimum size of a stateless reset packet
-const MinStatelessResetSize = 1 + 20 + 16
-
-// NonForwardSecurePacketSizeReduction is the number of bytes a non forward-secure packet has to be smaller than a forward-secure packet
-// This makes sure that those packets can always be retransmitted without splitting the contained StreamFrames
-const NonForwardSecurePacketSizeReduction = 50
-
 const defaultMaxCongestionWindowPackets = 1000
 
 // DefaultMaxCongestionWindow is the default for the max congestion window
@@ -23,8 +16,7 @@ const DefaultMaxCongestionWindow ByteCount = defaultMaxCongestionWindowPackets *
 // InitialCongestionWindow is the initial congestion window in QUIC packets
 const InitialCongestionWindow ByteCount = 32 * DefaultTCPMSS
 
-// MaxUndecryptablePackets limits the number of undecryptable packets that a
-// session queues for later until it sends a public reset.
+// MaxUndecryptablePackets limits the number of undecryptable packets that are queued in the session.
 const MaxUndecryptablePackets = 10
 
 // ConnectionFlowControlMultiplier determines how much larger the connection flow control windows needs to be relative to any stream's flow control window

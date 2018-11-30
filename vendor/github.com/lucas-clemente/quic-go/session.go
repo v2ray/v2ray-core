@@ -114,9 +114,7 @@ type session struct {
 
 	receivedFirstPacket              bool // since packet numbers start at 0, we can't use largestRcvdPacketNumber != 0 for this
 	receivedFirstForwardSecurePacket bool
-	// Used to calculate the next packet number from the truncated wire
-	// representation, and sent back in public reset packets
-	largestRcvdPacketNumber protocol.PacketNumber
+	largestRcvdPacketNumber          protocol.PacketNumber // used to calculate the next packet number
 
 	sessionCreationTime     time.Time
 	lastNetworkActivityTime time.Time
@@ -905,12 +903,7 @@ func (s *session) maybeSendRetransmission() (bool, error) {
 		break
 	}
 
-	if retransmitPacket.EncryptionLevel != protocol.Encryption1RTT {
-		s.logger.Debugf("Dequeueing handshake retransmission for packet 0x%x", retransmitPacket.PacketNumber)
-	} else {
-		s.logger.Debugf("Dequeueing retransmission for packet 0x%x", retransmitPacket.PacketNumber)
-	}
-
+	s.logger.Debugf("Dequeueing retransmission for packet 0x%x", retransmitPacket.PacketNumber)
 	packets, err := s.packer.PackRetransmission(retransmitPacket)
 	if err != nil {
 		return false, err

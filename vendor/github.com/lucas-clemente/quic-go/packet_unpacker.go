@@ -58,7 +58,6 @@ func (u *packetUnpacker) Unpack(headerBinary []byte, hdr *wire.ExtendedHeader, d
 		encryptionLevel = protocol.Encryption1RTT
 	}
 	if err != nil {
-		// Wrap err in quicError so that public reset is sent by session
 		return nil, qerr.Error(qerr.DecryptionFailure, err.Error())
 	}
 
