@@ -28,6 +28,18 @@ message Domain {
 
   // Domain value.
   string value = 2;
+
+  message Attribute {
+    string key = 1;
+
+    oneof typed_value {
+      bool bool_value = 2;
+      int64 int_value = 3;
+    }
+  }
+
+  // Attributes of this domain. May be used for filtering.
+  repeated Attribute attribute = 3;
 }
 
 // IP for routing decision, in CIDR form.
