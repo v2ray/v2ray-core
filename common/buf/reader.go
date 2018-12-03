@@ -8,7 +8,17 @@ import (
 )
 
 func readOne(r io.Reader) (*Buffer, error) {
+	// Use an one-byte buffer to wait for incoming payload.
+	var firstByte [1]byte
+	nBytes, err := r.Read(firstByte[:])
+	if err != nil {
+		return nil, err
+	}
+
 	b := New()
+	if nBytes > 0 {
+		copy(b.Extend(int32(nBytes)), firstByte[:])
+	}
 	for i := 0; i < 64; i++ {
 		_, err := b.ReadFrom(r)
 		if !b.IsEmpty() {
@@ -20,6 +30,7 @@ func readOne(r io.Reader) (*Buffer, error) {
 		}
 	}
 
+	b.Release()
 	return nil, newError("Reader returns too many empty payloads.")
 }
 
