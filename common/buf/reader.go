@@ -24,7 +24,8 @@ func readOneUDP(r io.Reader) (*Buffer, error) {
 	return nil, newError("Reader returns too many empty payloads.")
 }
 
-func readOne(r io.Reader) (*Buffer, error) {
+// ReadBuffer reads a Buffer from the given reader, without allocating large buffer in advance.
+func ReadBuffer(r io.Reader) (*Buffer, error) {
 	// Use an one-byte buffer to wait for incoming payload.
 	var firstByte [1]byte
 	nBytes, err := r.Read(firstByte[:])
@@ -163,7 +164,7 @@ type SingleReader struct {
 
 // ReadMultiBuffer implements Reader.
 func (r *SingleReader) ReadMultiBuffer() (MultiBuffer, error) {
-	b, err := readOne(r.Reader)
+	b, err := ReadBuffer(r.Reader)
 	if err != nil {
 		return nil, err
 	}

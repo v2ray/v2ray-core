@@ -150,17 +150,14 @@ func (c *interConn) Read(b []byte) (int, error) {
 }
 
 func (c *interConn) ReadMultiBuffer() (buf.MultiBuffer, error) {
-	const BufferCount = 16
-	mb := make(buf.MultiBuffer, 0, BufferCount)
-	{
-		b := buf.New()
-		if _, err := b.ReadFrom(c.stream); err != nil {
-			b.Release()
-			return nil, err
-		}
-		mb = append(mb, b)
+	firstBuffer, err := buf.ReadBuffer(c)
+	if err != nil {
+		return nil, err
 	}
 
+	const BufferCount = 16
+	mb := make(buf.MultiBuffer, 0, BufferCount)
+	mb = append(mb, firstBuffer)
 	for len(mb) < BufferCount && c.stream.HasMoreData() {
 		b := buf.New()
 		if _, err := b.ReadFrom(c.stream); err != nil {

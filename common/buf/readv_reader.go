@@ -119,7 +119,7 @@ func (r *ReadVReader) readMulti() (MultiBuffer, error) {
 // ReadMultiBuffer implements Reader.
 func (r *ReadVReader) ReadMultiBuffer() (MultiBuffer, error) {
 	if r.alloc.Current() == 1 {
-		b, err := readOne(r.Reader)
+		b, err := ReadBuffer(r.Reader)
 		if err != nil {
 			return nil, err
 		}
