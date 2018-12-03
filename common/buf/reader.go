@@ -17,7 +17,7 @@ func readOne(r io.Reader) (*Buffer, error) {
 
 	b := New()
 	if nBytes > 0 {
-		copy(b.Extend(int32(nBytes)), firstByte[:])
+		common.Must(b.WriteByte(firstByte[0]))
 	}
 	for i := 0; i < 64; i++ {
 		_, err := b.ReadFrom(r)
