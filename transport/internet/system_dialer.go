@@ -79,6 +79,8 @@ func (v *SimpleSystemDialer) Dial(ctx context.Context, src net.Address, dest net
 
 // UseAlternativeSystemDialer replaces the current system dialer with a given one.
 // Caller must ensure there is no race condition.
+//
+// v2ray:api:stable
 func UseAlternativeSystemDialer(dialer SystemDialer) {
 	if dialer == nil {
 		effectiveSystemDialer = DefaultSystemDialer{}

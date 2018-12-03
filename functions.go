@@ -20,6 +20,8 @@ func CreateObject(v *Instance, config interface{}) (interface{}, error) {
 
 // StartInstance starts a new V2Ray instance with given serialized config.
 // By default V2Ray only support config in protobuf format, i.e., configFormat = "protobuf". Caller need to load other packages to add JSON support.
+//
+// v2ray:api:stable
 func StartInstance(configFormat string, configBytes []byte) (*Instance, error) {
 	config, err := LoadConfig(configFormat, "", bytes.NewReader(configBytes))
 	if err != nil {
@@ -39,6 +41,8 @@ func StartInstance(configFormat string, configBytes []byte) (*Instance, error) {
 // It dispatches the request to the given destination by the given V2Ray instance.
 // Since it is under a proxy context, the LocalAddr() and RemoteAddr() in returned net.Conn
 // will not show real addresses being used for communication.
+//
+// v2ray:api:stable
 func Dial(ctx context.Context, v *Instance, dest net.Destination) (net.Conn, error) {
 	dispatcher := v.GetFeature(routing.DispatcherType())
 	if dispatcher == nil {

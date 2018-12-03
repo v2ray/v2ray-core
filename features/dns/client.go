@@ -6,6 +6,8 @@ import (
 )
 
 // Client is a V2Ray feature for querying DNS information.
+//
+// v2ray:api:stable
 type Client interface {
 	features.Feature
 
@@ -14,16 +16,22 @@ type Client interface {
 }
 
 // IPv4Lookup is an optional feature for querying IPv4 addresses only.
+//
+// v2ray:api:beta
 type IPv4Lookup interface {
 	LookupIPv4(domain string) ([]net.IP, error)
 }
 
 // IPv6Lookup is an optional feature for querying IPv6 addresses only.
+//
+// v2ray:api:beta
 type IPv6Lookup interface {
 	LookupIPv6(domain string) ([]net.IP, error)
 }
 
 // ClientType returns the type of Client interface. Can be used for implementing common.HasType.
+//
+// v2ray:api:beta
 func ClientType() interface{} {
 	return (*Client)(nil)
 }

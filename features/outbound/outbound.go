@@ -9,6 +9,8 @@ import (
 )
 
 // Handler is the interface for handlers that process outbound connections.
+//
+// v2ray:api:stable
 type Handler interface {
 	common.Runnable
 	Tag() string
@@ -20,6 +22,8 @@ type HandlerSelector interface {
 }
 
 // Manager is a feature that manages outbound.Handlers.
+//
+// v2ray:api:stable
 type Manager interface {
 	features.Feature
 	// GetHandler returns an outbound.Handler for the given tag.
@@ -34,6 +38,8 @@ type Manager interface {
 }
 
 // ManagerType returns the type of Manager interface. Can be used to implement common.HasType.
+//
+// v2ray:api:stable
 func ManagerType() interface{} {
 	return (*Manager)(nil)
 }
