@@ -66,9 +66,9 @@ curl -L -o release/config/geoip.dat "https://github.com/v2ray/geoip/releases/dow
 pushd $GOPATH/src
 
 # Flatten vendor directories
-cp -r v2ray.com/core/vendor/github.com/ ./github.com/
+cp -r v2ray.com/core/vendor/github.com/ .
 rm -rf v2ray.com/core/vendor/
-cp -r github.com/lucas-clemente/quic-go/vendor/github.com/ ./github.com/
+cp -r github.com/lucas-clemente/quic-go/vendor/github.com/ .
 rm -rf github.com/lucas-clemente/quic-go/vendor/
 
 # Create zip file for all sources
