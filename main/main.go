@@ -109,6 +109,7 @@ func main() {
 		// Configuration error. Exit with a special value to prevent systemd from restarting.
 		os.Exit(23)
 	}
+	defer server.Close()
 
 	if *test {
 		fmt.Println("Configuration OK.")
@@ -123,9 +124,9 @@ func main() {
 	// Explicitly triggering GC to remove garbage from config loading.
 	runtime.GC()
 
-	osSignals := make(chan os.Signal, 1)
-	signal.Notify(osSignals, os.Interrupt, os.Kill, syscall.SIGTERM)
-
-	<-osSignals
-	server.Close()
+	{
+		osSignals := make(chan os.Signal, 1)
+		signal.Notify(osSignals, os.Interrupt, os.Kill, syscall.SIGTERM)
+		<-osSignals
+	}
 }
