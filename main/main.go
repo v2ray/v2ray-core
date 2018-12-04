@@ -109,7 +109,6 @@ func main() {
 		// Configuration error. Exit with a special value to prevent systemd from restarting.
 		os.Exit(23)
 	}
-	defer server.Close()
 
 	if *test {
 		fmt.Println("Configuration OK.")
@@ -120,6 +119,7 @@ func main() {
 		fmt.Println("Failed to start", err)
 		os.Exit(-1)
 	}
+	defer server.Close()
 
 	// Explicitly triggering GC to remove garbage from config loading.
 	runtime.GC()
