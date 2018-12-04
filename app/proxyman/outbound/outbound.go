@@ -10,6 +10,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/features/outbound"
 )
 
@@ -64,15 +65,16 @@ func (m *Manager) Close() error {
 
 	m.running = false
 
+	var errs []error
 	for _, h := range m.taggedHandler {
-		h.Close()
+		errs = append(errs, h.Close())
 	}
 
 	for _, h := range m.untaggedHandlers {
-		h.Close()
+		errs = append(errs, h.Close())
 	}
 
-	return nil
+	return errors.Combine(errs...)
 }
 
 // GetDefaultHandler implements outbound.Manager.

@@ -7,6 +7,7 @@ import (
 
 	"v2ray.com/core"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/features/outbound"
 	"v2ray.com/core/features/routing"
@@ -82,17 +83,14 @@ func (r *Reverse) Start() error {
 }
 
 func (r *Reverse) Close() error {
+	var errs []error
 	for _, b := range r.bridges {
-		if err := b.Close(); err != nil {
-			return err
-		}
+		errs = append(errs, b.Close())
 	}
 
 	for _, p := range r.portals {
-		if err := p.Close(); err != nil {
-			return err
-		}
+		errs = append(errs, p.Close())
 	}
 
-	return nil
+	return errors.Combine(errs...)
 }

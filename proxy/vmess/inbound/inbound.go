@@ -139,9 +139,10 @@ func New(ctx context.Context, config *Config) (*Handler, error) {
 
 // Close implements common.Closable.
 func (h *Handler) Close() error {
-	return task.Run(
-		task.SequentialAll(
-			task.Close(h.clients), task.Close(h.sessionHistory), task.Close(h.usersByEmail)))()
+	return errors.Combine(
+		h.clients.Close(),
+		h.sessionHistory.Close(),
+		common.Close(h.usersByEmail))
 }
 
 // Network implements proxy.Inbound.Network().
@@ -290,9 +291,10 @@ func (h *Handler) Process(ctx context.Context, network net.Network, connection i
 	}
 
 	responseDone := func() error {
+		defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
+
 		writer := buf.NewBufferedWriter(buf.NewWriter(connection))
 		defer writer.Flush()
-		defer timer.SetTimeout(sessionPolicy.Timeouts.UplinkOnly)
 
 		response := &protocol.ResponseHeader{
 			Command: h.generateCommand(ctx, request),
