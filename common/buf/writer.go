@@ -29,17 +29,19 @@ func (w *BufferToBytesWriter) WriteMultiBuffer(mb MultiBuffer) error {
 		return WriteAllBytes(w.Writer, mb[0].Bytes())
 	}
 
+	if cap(w.cache) < len(mb) {
+		w.cache = make([][]byte, 0, len(mb))
+	}
+
 	bs := w.cache
 	for _, b := range mb {
 		bs = append(bs, b.Bytes())
 	}
-	w.cache = bs
 
 	defer func() {
-		for idx := range w.cache {
-			w.cache[idx] = nil
+		for idx := range bs {
+			bs[idx] = nil
 		}
-		w.cache = w.cache[:0]
 	}()
 
 	nb := net.Buffers(bs)
