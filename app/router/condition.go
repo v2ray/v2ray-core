@@ -111,9 +111,18 @@ func targetFromContent(ctx context.Context) net.Destination {
 	return outbound.Target
 }
 
+func resolvedIPFromContext(ctx context.Context) []net.IP {
+	outbound := session.OutboundFromContext(ctx)
+	if outbound == nil {
+		return nil
+	}
+	return outbound.ResolvedIPs
+}
+
 type MultiGeoIPMatcher struct {
-	matchers []*GeoIPMatcher
-	destFunc func(context.Context) net.Destination
+	matchers       []*GeoIPMatcher
+	destFunc       func(context.Context) net.Destination
+	resolvedIPFunc func(context.Context) []net.IP
 }
 
 func NewMultiGeoIPMatcher(geoips []*GeoIP, onSource bool) (*MultiGeoIPMatcher, error) {
@@ -126,17 +135,18 @@ func NewMultiGeoIPMatcher(geoips []*GeoIP, onSource bool) (*MultiGeoIPMatcher, e
 		matchers = append(matchers, matcher)
 	}
 
-	var destFunc func(context.Context) net.Destination
-	if onSource {
-		destFunc = sourceFromContext
-	} else {
-		destFunc = targetFromContent
+	matcher := &MultiGeoIPMatcher{
+		matchers: matchers,
 	}
 
-	return &MultiGeoIPMatcher{
-		matchers: matchers,
-		destFunc: destFunc,
-	}, nil
+	if onSource {
+		matcher.destFunc = sourceFromContext
+	} else {
+		matcher.destFunc = targetFromContent
+		matcher.resolvedIPFunc = resolvedIPFromContext
+	}
+
+	return matcher, nil
 }
 
 func (m *MultiGeoIPMatcher) Apply(ctx context.Context) bool {
@@ -146,10 +156,12 @@ func (m *MultiGeoIPMatcher) Apply(ctx context.Context) bool {
 
 	if dest.IsValid() && dest.Address.Family().IsIP() {
 		ips = append(ips, dest.Address.IP())
-	} else if resolver, ok := ResolvedIPsFromContext(ctx); ok {
-		resolvedIPs := resolver.Resolve()
-		for _, rip := range resolvedIPs {
-			ips = append(ips, rip.IP())
+	}
+
+	if m.resolvedIPFunc != nil {
+		rips := m.resolvedIPFunc(ctx)
+		if len(rips) > 0 {
+			ips = append(ips, rips...)
 		}
 	}
 
