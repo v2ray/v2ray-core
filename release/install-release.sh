@@ -387,7 +387,7 @@ checkUpdate(){
         colorEcho ${YELLOW} "No V2Ray installed."
         colorEcho ${BLUE} "The newest version for V2Ray is ${NEW_VER}."
     fi
-    return 0
+    return $RETVAL
 }
 
 main(){
