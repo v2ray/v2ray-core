@@ -8,7 +8,6 @@ import (
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -19,6 +18,7 @@ import (
 	"v2ray.com/core/proxy/dokodemo"
 	"v2ray.com/core/proxy/vmess"
 	"v2ray.com/core/proxy/vmess/outbound"
+	"v2ray.com/core/testing/servers/tcp"
 )
 
 func TestV2RayDependency(t *testing.T) {
@@ -36,7 +36,8 @@ func TestV2RayDependency(t *testing.T) {
 }
 
 func TestV2RayClose(t *testing.T) {
-	port := net.Port(dice.RollUint16())
+	port := tcp.PickPort()
+
 	userId := uuid.New()
 	config := &Config{
 		App: []*serial.TypedMessage{
