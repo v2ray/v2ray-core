@@ -186,7 +186,7 @@ extract(){
 }
 
 
-# 1: new V2Ray. 0: no. 2: not installed. 3: check failed. 4: don't check.
+# 0: no new version. 1: new V2Ray. 2: not installed. 3: check failed. 4: don't check.
 getVersion(){
     if [[ -n "$VERSION" ]]; then
         NEW_VER="$VERSION"
@@ -197,7 +197,7 @@ getVersion(){
     else
         VER=`/usr/bin/v2ray/v2ray -version 2>/dev/null`
         RETVAL="$?"
-        CUR_VER=`echo $VER | head -n 1 | cut -d " " -f2 | cut -d. -f-2`
+        CUR_VER=`echo $VER | head -n 1 | cut -d " " -f2`
         if [[ ${CUR_VER} != v* ]]; then
             CUR_VER=v${CUR_VER}
         fi
