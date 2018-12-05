@@ -1,16 +1,12 @@
 package localdns
 
 import (
-	"context"
-
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/features/dns"
 )
 
 // Client is an implementation of dns.Client, which queries localhost for DNS.
-type Client struct {
-	resolver net.Resolver
-}
+type Client struct{}
 
 // Type implements common.HasType.
 func (*Client) Type() interface{} {
@@ -24,16 +20,8 @@ func (*Client) Start() error { return nil }
 func (*Client) Close() error { return nil }
 
 // LookupIP implements Client.
-func (c *Client) LookupIP(host string) ([]net.IP, error) {
-	ipAddr, err := c.resolver.LookupIPAddr(context.Background(), host)
-	if err != nil {
-		return nil, err
-	}
-	ips := make([]net.IP, 0, len(ipAddr))
-	for _, addr := range ipAddr {
-		ips = append(ips, addr.IP)
-	}
-	return ips, nil
+func (*Client) LookupIP(host string) ([]net.IP, error) {
+	return net.LookupIP(host)
 }
 
 // LookupIPv4 implements IPv4Lookup.
@@ -70,9 +58,5 @@ func (c *Client) LookupIPv6(host string) ([]net.IP, error) {
 
 // New create a new dns.Client that queries localhost for DNS.
 func New() *Client {
-	return &Client{
-		resolver: net.Resolver{
-			PreferGo: true,
-		},
-	}
+	return &Client{}
 }
