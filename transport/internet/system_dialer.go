@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	effectiveSystemDialer SystemDialer = DefaultSystemDialer{}
+	effectiveSystemDialer SystemDialer = &DefaultSystemDialer{}
 )
 
 type SystemDialer interface {
@@ -18,23 +18,32 @@ type SystemDialer interface {
 }
 
 type DefaultSystemDialer struct {
+	controllers []controller
 }
 
-func (DefaultSystemDialer) Dial(ctx context.Context, src net.Address, dest net.Destination, sockopt *SocketConfig) (net.Conn, error) {
+func (d *DefaultSystemDialer) Dial(ctx context.Context, src net.Address, dest net.Destination, sockopt *SocketConfig) (net.Conn, error) {
 	dialer := &net.Dialer{
 		Timeout:   time.Second * 60,
 		DualStack: true,
 	}
 
-	if sockopt != nil {
+	if sockopt != nil || len(d.controllers) > 0 {
 		dialer.Control = func(network, address string, c syscall.RawConn) error {
 			return c.Control(func(fd uintptr) {
-				if err := applyOutboundSocketOptions(network, address, fd, sockopt); err != nil {
-					newError("failed to apply socket options").Base(err).WriteToLog(session.ExportIDToError(ctx))
+				if sockopt != nil {
+					if err := applyOutboundSocketOptions(network, address, fd, sockopt); err != nil {
+						newError("failed to apply socket options").Base(err).WriteToLog(session.ExportIDToError(ctx))
+					}
+					if dest.Network == net.Network_UDP && len(sockopt.BindAddress) > 0 && sockopt.BindPort > 0 {
+						if err := bindAddr(fd, sockopt.BindAddress, sockopt.BindPort); err != nil {
+							newError("failed to bind source address to ", sockopt.BindAddress).Base(err).WriteToLog(session.ExportIDToError(ctx))
+						}
+					}
 				}
-				if dest.Network == net.Network_UDP && len(sockopt.BindAddress) > 0 && sockopt.BindPort > 0 {
-					if err := bindAddr(fd, sockopt.BindAddress, sockopt.BindPort); err != nil {
-						newError("failed to bind source address to ", sockopt.BindAddress).Base(err).WriteToLog(session.ExportIDToError(ctx))
+
+				for _, ctl := range d.controllers {
+					if err := ctl(network, address, fd); err != nil {
+						newError("failed to apply external controller").Base(err).WriteToLog(session.ExportIDToError(ctx))
 					}
 				}
 			})
@@ -83,7 +92,26 @@ func (v *SimpleSystemDialer) Dial(ctx context.Context, src net.Address, dest net
 // v2ray:api:stable
 func UseAlternativeSystemDialer(dialer SystemDialer) {
 	if dialer == nil {
-		effectiveSystemDialer = DefaultSystemDialer{}
+		effectiveSystemDialer = &DefaultSystemDialer{}
 	}
 	effectiveSystemDialer = dialer
+}
+
+// RegisterDialerController adds a controller to the effective system dialer.
+// The controller can be used to operate on file descriptors before they are put into use.
+// It only works when effective dialer is the default dialer.
+//
+// v2ray:api:beta
+func RegisterDialerController(ctl func(network, address string, fd uintptr) error) error {
+	if ctl == nil {
+		return newError("nil listener controller")
+	}
+
+	dialer, ok := effectiveSystemDialer.(*DefaultSystemDialer)
+	if !ok {
+		return newError("RegisterListenerController not supported in custom dialer")
+	}
+
+	dialer.controllers = append(dialer.controllers, ctl)
+	return nil
 }
