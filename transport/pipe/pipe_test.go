@@ -1,6 +1,7 @@
 package pipe_test
 
 import (
+	"context"
 	"io"
 	"sync"
 	"testing"
@@ -73,7 +74,7 @@ func TestPipeLimitZero(t *testing.T) {
 	bb.Write([]byte{'a', 'b'})
 	assert(pWriter.WriteMultiBuffer(buf.MultiBuffer{bb}), IsNil)
 
-	err := task.Run(task.Parallel(func() error {
+	err := task.Run(context.Background(), func() error {
 		b := buf.New()
 		b.Write([]byte{'c', 'd'})
 		return pWriter.WriteMultiBuffer(buf.MultiBuffer{b})
@@ -91,7 +92,7 @@ func TestPipeLimitZero(t *testing.T) {
 		time.Sleep(time.Second * 2)
 		pWriter.Close()
 		return nil
-	}))()
+	})
 
 	assert(err, IsNil)
 }
