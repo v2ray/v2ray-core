@@ -119,6 +119,22 @@ func CreateStdoutLogWriter() WriterCreator {
 	}
 }
 
+type defaultLogWriter struct{}
+
+func (defaultLogWriter) Write(b []byte) (int, error) {
+	log.Print(string(b))
+	return len(b), nil
+}
+
+// CreateDefaultLogWriter returns a LogWriterCreator that creates LogWriter to write to default Golang logger.
+func CreateDefaultLogWriter() WriterCreator {
+	return func() Writer {
+		return &consoleLogWriter{
+			logger: log.New(defaultLogWriter{}, "", log.Ldate|log.Ltime),
+		}
+	}
+}
+
 // CreateFileLogWriter returns a LogWriterCreator that creates LogWriter for the given file.
 func CreateFileLogWriter(path string) (WriterCreator, error) {
 	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
