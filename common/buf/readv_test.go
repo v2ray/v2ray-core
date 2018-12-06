@@ -7,6 +7,7 @@ import (
 	"net"
 	"testing"
 
+	"golang.org/x/sync/errgroup"
 	"v2ray.com/core/common"
 	. "v2ray.com/core/common/buf"
 	"v2ray.com/core/common/compare"
@@ -31,12 +32,17 @@ func TestReadvReader(t *testing.T) {
 	data := make([]byte, 8192)
 	common.Must2(rand.Read(data))
 
-	go func() {
+	var errg errgroup.Group
+	errg.Go(func() error {
 		writer := NewWriter(conn)
 		mb := MergeBytes(nil, data)
 
-		if err := writer.WriteMultiBuffer(mb); err != nil {
-			t.Fatal("failed to write data: ", err)
+		return writer.WriteMultiBuffer(mb)
+	})
+
+	defer func() {
+		if err := errg.Wait(); err != nil {
+			t.Error(err)
 		}
 	}()
 
