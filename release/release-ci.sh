@@ -89,6 +89,8 @@ function uploadfile() {
   FILE=$1
   CTYPE=$(file -b --mime-type $FILE)
   curl -H "Authorization: token ${GITHUB_TOKEN}" -H "Content-Type: ${CTYPE}" --data-binary @$FILE "https://uploads.github.com/repos/v2ray/v2ray-core/releases/${RELEASE_ID}/assets?name=$(basename $FILE)"
+
+  sleep 1
 }
 
 function upload() {
