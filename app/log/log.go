@@ -4,7 +4,6 @@ package log
 
 import (
 	"context"
-	"runtime"
 	"sync"
 
 	"v2ray.com/core/common"
@@ -31,18 +30,6 @@ func New(ctx context.Context, config *Config) (*Instance, error) {
 	return g, nil
 }
 
-func isMobile() bool {
-	return runtime.GOOS == "android" || (runtime.GOOS == "darwin" && (runtime.GOARCH == "arm" || runtime.GOARCH == "arm64"))
-}
-
-func createStdLogWriter() log.WriterCreator {
-	if isMobile() {
-		return log.CreateDefaultLogWriter()
-	}
-
-	return log.CreateStdoutLogWriter()
-}
-
 func (g *Instance) initAccessLogger() error {
 	switch g.config.AccessLogType {
 	case LogType_File:
@@ -52,7 +39,7 @@ func (g *Instance) initAccessLogger() error {
 		}
 		g.accessLogger = log.NewLogger(creator)
 	case LogType_Console:
-		g.accessLogger = log.NewLogger(createStdLogWriter())
+		g.accessLogger = log.NewLogger(log.CreateStdoutLogWriter())
 	default:
 	}
 	return nil
@@ -67,7 +54,7 @@ func (g *Instance) initErrorLogger() error {
 		}
 		g.errorLogger = log.NewLogger(creator)
 	case LogType_Console:
-		g.errorLogger = log.NewLogger(createStdLogWriter())
+		g.errorLogger = log.NewLogger(log.CreateStdoutLogWriter())
 	default:
 	}
 	return nil
