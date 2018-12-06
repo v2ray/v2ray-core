@@ -26,7 +26,7 @@ func (*Client) LookupIP(host string) ([]net.IP, error) {
 		return nil, err
 	}
 	parsedIPs := make([]net.IP, 0, len(ips))
-	for _, ip := range parsedIPs {
+	for _, ip := range ips {
 		parsed := net.IPAddress(ip)
 		if parsed != nil {
 			parsedIPs = append(parsedIPs, parsed.IP())
