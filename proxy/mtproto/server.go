@@ -141,8 +141,8 @@ func (s *Server) Process(ctx context.Context, network net.Network, conn internet
 		return buf.Copy(link.Reader, writer, buf.UpdateActivity(timer))
 	}
 
-	var responseDoneAndCloseWriter = task.Single(response, task.OnSuccess(task.Close(link.Writer)))
-	if err := task.Run(task.WithContext(ctx), task.Parallel(request, responseDoneAndCloseWriter))(); err != nil {
+	var responseDoneAndCloseWriter = task.OnSuccess(response, task.Close(link.Writer))
+	if err := task.Run(ctx, request, responseDoneAndCloseWriter); err != nil {
 		pipe.CloseError(link.Reader)
 		pipe.CloseError(link.Writer)
 		return newError("connection ends").Base(err)

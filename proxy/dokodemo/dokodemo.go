@@ -147,10 +147,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		return nil
 	}
 
-	if err := task.Run(task.WithContext(ctx),
-		task.Parallel(
-			task.Single(requestDone, task.OnSuccess(task.Close(link.Writer))),
-			responseDone))(); err != nil {
+	if err := task.Run(ctx, task.OnSuccess(requestDone, task.Close(link.Writer)), responseDone); err != nil {
 		pipe.CloseError(link.Reader)
 		pipe.CloseError(link.Writer)
 		return newError("connection ends").Base(err)
