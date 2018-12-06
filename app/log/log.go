@@ -31,32 +31,24 @@ func New(ctx context.Context, config *Config) (*Instance, error) {
 }
 
 func (g *Instance) initAccessLogger() error {
-	switch g.config.AccessLogType {
-	case LogType_File:
-		creator, err := log.CreateFileLogWriter(g.config.AccessLogPath)
-		if err != nil {
-			return err
-		}
-		g.accessLogger = log.NewLogger(creator)
-	case LogType_Console:
-		g.accessLogger = log.NewLogger(log.CreateStdoutLogWriter())
-	default:
+	handler, err := createHandler(g.config.AccessLogType, HandlerCreatorOptions{
+		Path: g.config.AccessLogPath,
+	})
+	if err != nil {
+		return err
 	}
+	g.accessLogger = handler
 	return nil
 }
 
 func (g *Instance) initErrorLogger() error {
-	switch g.config.ErrorLogType {
-	case LogType_File:
-		creator, err := log.CreateFileLogWriter(g.config.ErrorLogPath)
-		if err != nil {
-			return err
-		}
-		g.errorLogger = log.NewLogger(creator)
-	case LogType_Console:
-		g.errorLogger = log.NewLogger(log.CreateStdoutLogWriter())
-	default:
+	handler, err := createHandler(g.config.ErrorLogType, HandlerCreatorOptions{
+		Path: g.config.ErrorLogPath,
+	})
+	if err != nil {
+		return err
 	}
+	g.errorLogger = handler
 	return nil
 }
 
