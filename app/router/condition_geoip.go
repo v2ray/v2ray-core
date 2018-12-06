@@ -145,15 +145,14 @@ func (m *GeoIPMatcher) match6(ip ipv6) bool {
 
 // Match returns true if the given ip is included by the GeoIP.
 func (m *GeoIPMatcher) Match(ip net.IP) bool {
-	switch len(ip) {
-	case 4:
-		return m.match4(binary.BigEndian.Uint32(ip))
-	case 16:
+	if ip4 := ip.To4(); len(ip4) == net.IPv4len {
+		return m.match4(binary.BigEndian.Uint32(ip4))
+	} else if len(ip) == net.IPv6len {
 		return m.match6(ipv6{
 			a: binary.BigEndian.Uint64(ip[0:8]),
 			b: binary.BigEndian.Uint64(ip[8:16]),
 		})
-	default:
+	} else {
 		return false
 	}
 }
