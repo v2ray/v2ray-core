@@ -23,7 +23,6 @@ var (
 	version    = flag.Bool("version", false, "Show current version of V2Ray.")
 	test       = flag.Bool("test", false, "Test config file only, without launching V2Ray server.")
 	format     = flag.String("format", "json", "Format of input file.")
-	plugin     = flag.Bool("plugin", false, "True to load plugins.")
 )
 
 func fileExists(file string) bool {
@@ -94,13 +93,6 @@ func main() {
 
 	if *version {
 		return
-	}
-
-	if *plugin {
-		if err := core.LoadPlugins(); err != nil {
-			fmt.Println("Failed to load plugins:", err.Error())
-			os.Exit(-1)
-		}
 	}
 
 	server, err := startV2Ray()
