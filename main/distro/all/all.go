@@ -60,4 +60,7 @@ import (
 
 	// Load config from file or http(s)
 	_ "v2ray.com/core/main/confloader/external"
+
+	// Load plugins
+	_ "github.com/ColetteContreras/v2ray-ssrpanel-plugin"
 )
