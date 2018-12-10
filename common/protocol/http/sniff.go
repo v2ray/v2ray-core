@@ -77,8 +77,20 @@ func SniffHTTP(b []byte) (*SniffHeader, error) {
 		key := strings.ToLower(string(parts[0]))
 		value := strings.ToLower(string(bytes.Trim(parts[1], " ")))
 		if key == "host" {
-			domain := strings.Split(value, ":")
-			sh.host = strings.TrimSpace(domain[0])
+			var idx int
+			for idx = len(value) - 1; idx >= 0; idx-- {
+				ch := value[idx]
+				if !(ch >= '0' && ch <= '9') {
+					break
+				}
+			}
+			if value[idx] == ':' {
+				idx++
+			} else {
+				idx = len(value) - 1
+			}
+
+			sh.host = strings.TrimSpace(value[:idx])
 		}
 	}
 
