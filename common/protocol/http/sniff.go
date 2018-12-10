@@ -3,7 +3,6 @@ package http
 import (
 	"bytes"
 	"errors"
-	"net"
 	"strings"
 
 	"v2ray.com/core/common"
