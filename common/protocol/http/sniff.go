@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"errors"
+	"net"
 	"strings"
 
 	"v2ray.com/core/common"
@@ -77,8 +78,12 @@ func SniffHTTP(b []byte) (*SniffHeader, error) {
 		key := strings.ToLower(string(parts[0]))
 		value := strings.ToLower(string(bytes.Trim(parts[1], " ")))
 		if key == "host" {
-			domain := strings.Split(value, ":")
-			sh.host = strings.TrimSpace(domain[0])
+			host, _, err := net.SplitHostPort(value)
+			if err != nil {
+				sh.host = value
+			} else {
+				sh.host = host
+			}
 		}
 	}
 
