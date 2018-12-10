@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/net"
 )
 
 type version byte
@@ -76,14 +77,13 @@ func SniffHTTP(b []byte) (*SniffHeader, error) {
 			continue
 		}
 		key := strings.ToLower(string(parts[0]))
-		value := strings.ToLower(string(bytes.Trim(parts[1], " ")))
 		if key == "host" {
-			host, _, err := net.SplitHostPort(value)
+			rawHost := strings.ToLower(string(bytes.TrimSpace(parts[1])))
+			dest, err := ParseHost(rawHost, net.Port(80))
 			if err != nil {
-				sh.host = value
-			} else {
-				sh.host = host
+				return nil, err
 			}
+			sh.host = dest.Address.String()
 		}
 	}
 
