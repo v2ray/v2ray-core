@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -54,26 +53,6 @@ func (s *Server) policy() policy.Session {
 
 func (*Server) Network() []net.Network {
 	return []net.Network{net.Network_TCP}
-}
-
-func parseHost(rawHost string, defaultPort net.Port) (net.Destination, error) {
-	port := defaultPort
-	host, rawPort, err := net.SplitHostPort(rawHost)
-	if err != nil {
-		if addrError, ok := err.(*net.AddrError); ok && strings.Contains(addrError.Err, "missing port") {
-			host = rawHost
-		} else {
-			return net.Destination{}, err
-		}
-	} else if len(rawPort) > 0 {
-		intPort, err := strconv.Atoi(rawPort)
-		if err != nil {
-			return net.Destination{}, err
-		}
-		port = net.Port(intPort)
-	}
-
-	return net.TCPDestination(net.ParseAddress(host), port), nil
 }
 
 func isTimeout(err error) bool {
@@ -139,7 +118,7 @@ Start:
 	if len(host) == 0 {
 		host = request.URL.Host
 	}
-	dest, err := parseHost(host, defaultPort)
+	dest, err := http_proto.ParseHost(host, defaultPort)
 	if err != nil {
 		return newError("malformed proxy host: ", host).AtWarning().Base(err)
 	}
