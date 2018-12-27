@@ -18,10 +18,9 @@ var (
 
 // connection is a wrapper for net.Conn over WebSocket connection.
 type connection struct {
-	conn          *websocket.Conn
-	reader        io.Reader
-	mergingWriter *buf.BufferedWriter
-	remoteAddr    net.Addr
+	conn       *websocket.Conn
+	reader     io.Reader
+	remoteAddr net.Addr
 }
 
 func newConnection(conn *websocket.Conn, remoteAddr net.Addr) *connection {
@@ -70,13 +69,22 @@ func (c *connection) Write(b []byte) (int, error) {
 }
 
 func (c *connection) WriteMultiBuffer(mb buf.MultiBuffer) error {
-	if c.mergingWriter == nil {
-		c.mergingWriter = buf.NewBufferedWriter(&buf.BufferToBytesWriter{Writer: c})
+	mb = buf.Compact(mb)
+
+	for {
+		mb2, b := buf.SplitFirst(mb)
+		mb = mb2
+		if b == nil {
+			break
+		}
+
+		if err := buf.WriteAllBytes(c, b.Bytes()); err != nil {
+			buf.ReleaseMulti(mb)
+			return err
+		}
 	}
-	if err := c.mergingWriter.WriteMultiBuffer(mb); err != nil {
-		return err
-	}
-	return c.mergingWriter.Flush()
+
+	return nil
 }
 
 func (c *connection) Close() error {

@@ -3,6 +3,7 @@ package buf
 import (
 	"io"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/serial"
 )
@@ -119,6 +120,30 @@ func SplitBytes(mb MultiBuffer, b []byte) (MultiBuffer, int) {
 	}
 
 	return mb, totalBytes
+}
+
+// Compact returns another MultiBuffer by merging all content of the given one together.
+func Compact(mb MultiBuffer) MultiBuffer {
+	if len(mb) == 0 {
+		return mb
+	}
+
+	mb2 := make(MultiBuffer, 0, len(mb))
+	last := mb[0]
+
+	for i := 1; i < len(mb); i++ {
+		curr := mb[i]
+		if last.Len()+curr.Len() > Size {
+			mb2 = append(mb2, last)
+			last = curr
+		} else {
+			common.Must2(last.ReadFrom(curr))
+			curr.Release()
+		}
+	}
+
+	mb2 = append(mb2, last)
+	return mb2
 }
 
 // SplitFirst splits the first Buffer from the beginning of the MultiBuffer.
