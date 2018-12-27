@@ -35,10 +35,12 @@ func (m *LogHandler) EXPECT() *LogHandlerMockRecorder {
 
 // Handle mocks base method
 func (m *LogHandler) Handle(arg0 log.Message) {
+	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Handle", arg0)
 }
 
 // Handle indicates an expected call of Handle
 func (mr *LogHandlerMockRecorder) Handle(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Handle", reflect.TypeOf((*LogHandler)(nil).Handle), arg0)
 }
