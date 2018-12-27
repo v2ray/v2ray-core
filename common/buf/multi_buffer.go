@@ -204,7 +204,7 @@ func WriteMultiBuffer(writer io.Writer, mb MultiBuffer) (MultiBuffer, error) {
 		_, err := writer.Write(b.Bytes())
 		b.Release()
 		if err != nil {
-			return mb, nil
+			return mb, err
 		}
 	}
 
