@@ -219,19 +219,9 @@ type SequentialWriter struct {
 
 // WriteMultiBuffer implements Writer.
 func (w *SequentialWriter) WriteMultiBuffer(mb MultiBuffer) error {
-	defer ReleaseMulti(mb)
-
-	for _, b := range mb {
-		if b.IsEmpty() {
-			continue
-		}
-
-		if err := WriteAllBytes(w.Writer, b.Bytes()); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	mb, err := WriteMultiBuffer(w.Writer, mb)
+	ReleaseMulti(mb)
+	return err
 }
 
 type noOpWriter byte

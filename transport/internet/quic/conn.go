@@ -172,21 +172,9 @@ func (c *interConn) ReadMultiBuffer() (buf.MultiBuffer, error) {
 
 func (c *interConn) WriteMultiBuffer(mb buf.MultiBuffer) error {
 	mb = buf.Compact(mb)
-
-	for {
-		mb2, b := buf.SplitFirst(mb)
-		mb = mb2
-		if b == nil {
-			break
-		}
-
-		if err := buf.WriteAllBytes(c, b.Bytes()); err != nil {
-			buf.ReleaseMulti(mb)
-			return err
-		}
-	}
-
-	return nil
+	mb, err := buf.WriteMultiBuffer(c, mb)
+	buf.ReleaseMulti(mb)
+	return err
 }
 
 func (c *interConn) Write(b []byte) (int, error) {

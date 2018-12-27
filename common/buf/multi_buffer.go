@@ -192,6 +192,25 @@ func SplitSize(mb MultiBuffer, size int32) (MultiBuffer, MultiBuffer) {
 	return mb, r
 }
 
+// WriteMultiBuffer writes all buffers from the MultiBuffer to the Writer one by one, and return error if any, with leftover MultiBuffer.
+func WriteMultiBuffer(writer io.Writer, mb MultiBuffer) (MultiBuffer, error) {
+	for {
+		mb2, b := SplitFirst(mb)
+		mb = mb2
+		if b == nil {
+			break
+		}
+
+		_, err := writer.Write(b.Bytes())
+		b.Release()
+		if err != nil {
+			return mb, nil
+		}
+	}
+
+	return nil, nil
+}
+
 // Len returns the total number of bytes in the MultiBuffer.
 func (mb MultiBuffer) Len() int32 {
 	if mb == nil {
