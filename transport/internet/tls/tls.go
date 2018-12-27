@@ -15,18 +15,13 @@ var (
 
 type conn struct {
 	*tls.Conn
-
-	mergingWriter *buf.BufferedWriter
 }
 
 func (c *conn) WriteMultiBuffer(mb buf.MultiBuffer) error {
-	if c.mergingWriter == nil {
-		c.mergingWriter = buf.NewBufferedWriter(buf.NewWriter(c.Conn))
-	}
-	if err := c.mergingWriter.WriteMultiBuffer(mb); err != nil {
-		return err
-	}
-	return c.mergingWriter.Flush()
+	mb = buf.Compact(mb)
+	mb, err := buf.WriteMultiBuffer(c, mb)
+	buf.ReleaseMulti(mb)
+	return err
 }
 
 func (c *conn) HandshakeAddress() net.Address {
