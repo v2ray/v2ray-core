@@ -20,7 +20,7 @@ import (
 )
 
 type IPRecord struct {
-	IP     net.IP
+	IP     net.Address
 	Expire time.Time
 }
 
@@ -149,7 +149,7 @@ func (s *ClassicNameServer) HandleResponse(ctx context.Context, payload *buf.Buf
 				break
 			}
 			ips = append(ips, IPRecord{
-				IP:     net.IP(ans.A[:]),
+				IP:     net.IPAddress(ans.A[:]),
 				Expire: now.Add(time.Duration(ttl) * time.Second),
 			})
 		case dnsmessage.TypeAAAA:
@@ -159,7 +159,7 @@ func (s *ClassicNameServer) HandleResponse(ctx context.Context, payload *buf.Buf
 				break
 			}
 			ips = append(ips, IPRecord{
-				IP:     net.IP(ans.AAAA[:]),
+				IP:     net.IPAddress(ans.AAAA[:]),
 				Expire: now.Add(time.Duration(ttl) * time.Second),
 			})
 		default:
@@ -323,7 +323,7 @@ func (s *ClassicNameServer) findIPsForDomain(domain string, option IPOption) []n
 	s.RUnlock()
 
 	if found && len(records) > 0 {
-		var ips []net.IP
+		var ips []net.Address
 		now := time.Now()
 		for _, rec := range records {
 			if rec.Expire.After(now) {

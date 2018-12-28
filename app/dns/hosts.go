@@ -9,7 +9,7 @@ import (
 
 // StaticHosts represents static domain-ip mapping in DNS server.
 type StaticHosts struct {
-	ips      [][]net.IP
+	ips      [][]net.Address
 	matchers *strmatcher.MatcherGroup
 }
 
@@ -36,7 +36,7 @@ func toStrMatcher(t DomainMatchingType, domain string) (strmatcher.Matcher, erro
 func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDomain) (*StaticHosts, error) {
 	g := new(strmatcher.MatcherGroup)
 	sh := &StaticHosts{
-		ips:      make([][]net.IP, len(hosts)+len(legacy)+16),
+		ips:      make([][]net.Address, len(hosts)+len(legacy)+16),
 		matchers: g,
 	}
 
@@ -50,10 +50,10 @@ func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDoma
 
 			address := ip.AsAddress()
 			if address.Family().IsDomain() {
-				return nil, newError("ignoring domain address in static hosts: ", address.Domain()).AtWarning()
+				return nil, newError("invalid domain address in static hosts: ", address.Domain()).AtWarning()
 			}
 
-			sh.ips[id] = []net.IP{address.IP()}
+			sh.ips[id] = []net.Address{address}
 		}
 	}
 
@@ -63,9 +63,13 @@ func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDoma
 			return nil, newError("failed to create domain matcher").Base(err)
 		}
 		id := g.Add(matcher)
-		ips := make([]net.IP, len(mapping.Ip))
-		for idx, ip := range mapping.Ip {
-			ips[idx] = net.IP(ip)
+		ips := make([]net.Address, 0, len(mapping.Ip))
+		for _, ip := range mapping.Ip {
+			addr := net.IPAddress(ip)
+			if addr == nil {
+				return nil, newError("invalid IP address in static hosts: ", ip).AtWarning()
+			}
+			ips = append(ips, addr)
 		}
 		sh.ips[id] = ips
 	}
@@ -73,12 +77,11 @@ func NewStaticHosts(hosts []*Config_HostMapping, legacy map[string]*net.IPOrDoma
 	return sh, nil
 }
 
-func filterIP(ips []net.IP, option IPOption) []net.IP {
+func filterIP(ips []net.Address, option IPOption) []net.IP {
 	filtered := make([]net.IP, 0, len(ips))
 	for _, ip := range ips {
-		parsed := net.IPAddress(ip)
-		if (parsed.Family().IsIPv4() && option.IPv4Enable) || (parsed.Family().IsIPv6() && option.IPv6Enable) {
-			filtered = append(filtered, parsed.IP())
+		if (ip.Family().IsIPv4() && option.IPv4Enable) || (ip.Family().IsIPv6() && option.IPv6Enable) {
+			filtered = append(filtered, ip.IP())
 		}
 	}
 	if len(filtered) == 0 {
