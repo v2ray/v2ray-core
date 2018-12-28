@@ -7,12 +7,13 @@ import (
 	"v2ray.com/core/features/dns/localdns"
 )
 
+// IPOption is an object for IP query options.
 type IPOption struct {
 	IPv4Enable bool
 	IPv6Enable bool
 }
 
-type NameServerInterface interface {
+type Client interface {
 	Name() string
 	QueryIP(ctx context.Context, domain string, option IPOption) ([]net.IP, error)
 }
