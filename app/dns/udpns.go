@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"golang.org/x/net/dns/dnsmessage"
-
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol/dns"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal/pubsub"
 	"v2ray.com/core/common/task"
@@ -293,25 +293,13 @@ func (s *ClassicNameServer) buildMsgs(domain string, option IPOption) []*dnsmess
 	return msgs
 }
 
-func msgToBuffer2(msg *dnsmessage.Message) (*buf.Buffer, error) {
-	buffer := buf.New()
-	rawBytes := buffer.Extend(buf.Size)
-	packed, err := msg.AppendPack(rawBytes[:0])
-	if err != nil {
-		buffer.Release()
-		return nil, err
-	}
-	buffer.Resize(0, int32(len(packed)))
-	return buffer, nil
-}
-
 func (s *ClassicNameServer) sendQuery(ctx context.Context, domain string, option IPOption) {
 	newError("querying DNS for: ", domain).AtDebug().WriteToLog(session.ExportIDToError(ctx))
 
 	msgs := s.buildMsgs(domain, option)
 
 	for _, msg := range msgs {
-		b, err := msgToBuffer2(msg)
+		b, err := dns.PackMessage(msg)
 		common.Must(err)
 		s.udpServer.Dispatch(context.Background(), s.address, b)
 	}
