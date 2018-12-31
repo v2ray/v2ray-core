@@ -263,5 +263,13 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *transport.
 			newError("default route for ", destination).WriteToLog(session.ExportIDToError(ctx))
 		}
 	}
+
+	if dispatcher == nil {
+		newError("default outbound handler not exist").WriteToLog(session.ExportIDToError(ctx))
+		common.Close(link.Writer)
+		pipe.CloseError(link.Reader)
+		return
+	}
+
 	dispatcher.Dispatch(ctx, link)
 }
