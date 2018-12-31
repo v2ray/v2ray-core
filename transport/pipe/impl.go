@@ -182,7 +182,8 @@ func (p *pipe) Close() error {
 	return nil
 }
 
-func (p *pipe) CloseError() {
+// Interrupt implements common.Interruptible.
+func (p *pipe) Interrupt() {
 	p.Lock()
 	defer p.Unlock()
 

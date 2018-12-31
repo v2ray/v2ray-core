@@ -6,12 +6,26 @@ type Closable interface {
 	Close() error
 }
 
+// Interruptible is an interface for objects that can be stopped before its completion.
+type Interruptible interface {
+	Interrupt()
+}
+
 // Close closes the obj if it is a Closable.
 func Close(obj interface{}) error {
 	if c, ok := obj.(Closable); ok {
 		return c.Close()
 	}
 	return nil
+}
+
+// Interrupt calls Interrupt() if object implements Interruptible interface, or Close() if the object implements Closable interface.
+func Interrupt(obj interface{}) error {
+	if c, ok := obj.(Interruptible); ok {
+		c.Interrupt()
+		return nil
+	}
+	return Close(obj)
 }
 
 // Runnable is the interface for objects that can start to work and stop on demand.

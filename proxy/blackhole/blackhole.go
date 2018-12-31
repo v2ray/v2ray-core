@@ -10,7 +10,6 @@ import (
 	"v2ray.com/core/common"
 	"v2ray.com/core/transport"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/pipe"
 )
 
 // Handler is an outbound connection that silently swallow the entire payload.
@@ -36,7 +35,7 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, dialer inte
 		// Sleep a little here to make sure the response is sent to client.
 		time.Sleep(time.Second)
 	}
-	pipe.CloseError(link.Writer)
+	common.Interrupt(link.Writer)
 	return nil
 }
 

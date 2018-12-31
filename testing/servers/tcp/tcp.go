@@ -81,7 +81,7 @@ func (server *Server) handleConnection(conn net.Conn) {
 			}
 		}
 	}, func() error {
-		defer pReader.CloseError()
+		defer pReader.Interrupt()
 
 		w := buf.NewWriter(conn)
 		for {

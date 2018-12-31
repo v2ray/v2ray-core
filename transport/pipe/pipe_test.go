@@ -32,7 +32,7 @@ func TestPipeReadWrite(t *testing.T) {
 	assert(rb.String(), Equals, "abcdefg")
 }
 
-func TestPipeCloseError(t *testing.T) {
+func TestPipeInterrupt(t *testing.T) {
 	assert := With(t)
 
 	pReader, pWriter := New(WithSizeLimit(1024))
@@ -40,7 +40,7 @@ func TestPipeCloseError(t *testing.T) {
 	b := buf.New()
 	b.Write(payload)
 	assert(pWriter.WriteMultiBuffer(buf.MultiBuffer{b}), IsNil)
-	pWriter.CloseError()
+	pWriter.Interrupt()
 
 	rb, err := pReader.ReadMultiBuffer()
 	assert(err, Equals, io.ErrClosedPipe)

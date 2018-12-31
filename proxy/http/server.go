@@ -22,7 +22,6 @@ import (
 	"v2ray.com/core/features/policy"
 	"v2ray.com/core/features/routing"
 	"v2ray.com/core/transport/internet"
-	"v2ray.com/core/transport/pipe"
 )
 
 // Server is an HTTP proxy server.
@@ -51,6 +50,7 @@ func (s *Server) policy() policy.Session {
 	return p
 }
 
+// Network implements proxy.Inbound.
 func (*Server) Network() []net.Network {
 	return []net.Network{net.Network_TCP}
 }
@@ -191,8 +191,8 @@ func (s *Server) handleConnect(ctx context.Context, request *http.Request, reade
 
 	var closeWriter = task.OnSuccess(requestDone, task.Close(link.Writer))
 	if err := task.Run(ctx, closeWriter, responseDone); err != nil {
-		pipe.CloseError(link.Reader)
-		pipe.CloseError(link.Writer)
+		common.Interrupt(link.Reader)
+		common.Interrupt(link.Writer)
 		return newError("connection ends").Base(err)
 	}
 
@@ -287,8 +287,8 @@ func (s *Server) handlePlainHTTP(ctx context.Context, request *http.Request, wri
 	}
 
 	if err := task.Run(ctx, requestDone, responseDone); err != nil {
-		pipe.CloseError(link.Reader)
-		pipe.CloseError(link.Writer)
+		common.Interrupt(link.Reader)
+		common.Interrupt(link.Writer)
 		return newError("connection ends").Base(err)
 	}
 
