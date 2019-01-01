@@ -80,7 +80,7 @@ func (l *Listener) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 	conn := net.NewConnection(
 		net.ConnectionOutput(request.Body),
 		net.ConnectionInput(flushWriter{w: writer, d: done}),
-		net.ConnectionOnClose(common.NewChainedClosable(done, request.Body)),
+		net.ConnectionOnClose(common.ChainedClosable{done, request.Body}),
 		net.ConnectionLocalAddr(l.Addr()),
 		net.ConnectionRemoteAddr(remoteAddr),
 	)

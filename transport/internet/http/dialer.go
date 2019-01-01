@@ -110,7 +110,7 @@ func Dial(ctx context.Context, dest net.Destination, streamSettings *internet.Me
 	return net.NewConnection(
 		net.ConnectionOutput(response.Body),
 		net.ConnectionInput(bwriter),
-		net.ConnectionOnClose(common.NewChainedClosable(breader, bwriter, response.Body)),
+		net.ConnectionOnClose(common.ChainedClosable{breader, bwriter, response.Body}),
 	), nil
 }
 
