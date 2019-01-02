@@ -36,7 +36,8 @@ func (b *packetBuffer) Release() {
 	}
 	// only put the packetBuffer back if it's not used any more
 	if b.refCount == 0 {
-		bufferPool.Put(b.Slice)
+		buffer := b.Slice[0:cap(b.Slice)]
+		bufferPool.Put(buffer)
 	}
 }
 
