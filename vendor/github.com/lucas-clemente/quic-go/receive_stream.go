@@ -8,6 +8,7 @@ import (
 
 	"github.com/lucas-clemente/quic-go/internal/flowcontrol"
 	"github.com/lucas-clemente/quic-go/internal/protocol"
+	"github.com/lucas-clemente/quic-go/internal/utils"
 	"github.com/lucas-clemente/quic-go/internal/wire"
 )
 
@@ -43,9 +44,8 @@ type receiveStream struct {
 	canceledRead      bool // set when CancelRead() is called
 	resetRemotely     bool // set when HandleResetStreamFrame() is called
 
-	readChan      chan struct{}
-	deadline      time.Time
-	deadlineTimer *time.Timer // initialized by SetReadDeadline()
+	readChan chan struct{}
+	deadline time.Time
 
 	flowController flowcontrol.StreamFlowController
 	version        protocol.VersionNumber
@@ -116,6 +116,7 @@ func (s *receiveStream) readImpl(p []byte) (bool /*stream completed */, int, err
 			return false, bytesRead, s.closeForShutdownErr
 		}
 
+		var deadlineTimer *utils.Timer
 		for {
 			// Stop waiting on errors
 			if s.closedForShutdown {
@@ -128,8 +129,15 @@ func (s *receiveStream) readImpl(p []byte) (bool /*stream completed */, int, err
 				return false, bytesRead, s.resetRemotelyErr
 			}
 
-			if !s.deadline.IsZero() && !time.Now().Before(s.deadline) {
-				return false, bytesRead, errDeadline
+			deadline := s.deadline
+			if !deadline.IsZero() {
+				if !time.Now().Before(deadline) {
+					return false, bytesRead, errDeadline
+				}
+				if deadlineTimer == nil {
+					deadlineTimer = utils.NewTimer()
+				}
+				deadlineTimer.Reset(deadline)
 			}
 
 			if s.currentFrame != nil || s.currentFrameIsLast {
@@ -137,12 +145,13 @@ func (s *receiveStream) readImpl(p []byte) (bool /*stream completed */, int, err
 			}
 
 			s.mutex.Unlock()
-			if s.deadline.IsZero() {
+			if deadline.IsZero() {
 				<-s.readChan
 			} else {
 				select {
 				case <-s.readChan:
-				case <-s.deadlineTimer.C:
+				case <-deadlineTimer.Chan():
+					deadlineTimer.SetRead()
 				}
 			}
 			s.mutex.Lock()
@@ -259,22 +268,9 @@ func (s *receiveStream) CloseRemote(offset protocol.ByteCount) {
 
 func (s *receiveStream) SetReadDeadline(t time.Time) error {
 	s.mutex.Lock()
-	defer s.mutex.Unlock()
 	s.deadline = t
-	if s.deadline.IsZero() { // skip if there's no deadline to set
-		s.signalRead()
-		return nil
-	}
-	// Lazily initialize the deadline timer.
-	if s.deadlineTimer == nil {
-		s.deadlineTimer = time.NewTimer(time.Until(t))
-		return nil
-	}
-	// reset the timer to the new deadline
-	if !s.deadlineTimer.Stop() {
-		<-s.deadlineTimer.C
-	}
-	s.deadlineTimer.Reset(time.Until(t))
+	s.mutex.Unlock()
+	s.signalRead()
 	return nil
 }
 

@@ -59,6 +59,19 @@ func (mr *MockCryptoSetupMockRecorder) ConnectionState() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConnectionState", reflect.TypeOf((*MockCryptoSetup)(nil).ConnectionState))
 }
 
+// GetOpener mocks base method
+func (m *MockCryptoSetup) GetOpener(arg0 protocol.EncryptionLevel) (handshake.Opener, error) {
+	ret := m.ctrl.Call(m, "GetOpener", arg0)
+	ret0, _ := ret[0].(handshake.Opener)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOpener indicates an expected call of GetOpener
+func (mr *MockCryptoSetupMockRecorder) GetOpener(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOpener", reflect.TypeOf((*MockCryptoSetup)(nil).GetOpener), arg0)
+}
+
 // GetSealer mocks base method
 func (m *MockCryptoSetup) GetSealer() (protocol.EncryptionLevel, handshake.Sealer) {
 	ret := m.ctrl.Call(m, "GetSealer")
@@ -95,45 +108,6 @@ func (m *MockCryptoSetup) HandleMessage(arg0 []byte, arg1 protocol.EncryptionLev
 // HandleMessage indicates an expected call of HandleMessage
 func (mr *MockCryptoSetupMockRecorder) HandleMessage(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleMessage", reflect.TypeOf((*MockCryptoSetup)(nil).HandleMessage), arg0, arg1)
-}
-
-// Open1RTT mocks base method
-func (m *MockCryptoSetup) Open1RTT(arg0, arg1 []byte, arg2 protocol.PacketNumber, arg3 []byte) ([]byte, error) {
-	ret := m.ctrl.Call(m, "Open1RTT", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].([]byte)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Open1RTT indicates an expected call of Open1RTT
-func (mr *MockCryptoSetupMockRecorder) Open1RTT(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Open1RTT", reflect.TypeOf((*MockCryptoSetup)(nil).Open1RTT), arg0, arg1, arg2, arg3)
-}
-
-// OpenHandshake mocks base method
-func (m *MockCryptoSetup) OpenHandshake(arg0, arg1 []byte, arg2 protocol.PacketNumber, arg3 []byte) ([]byte, error) {
-	ret := m.ctrl.Call(m, "OpenHandshake", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].([]byte)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// OpenHandshake indicates an expected call of OpenHandshake
-func (mr *MockCryptoSetupMockRecorder) OpenHandshake(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OpenHandshake", reflect.TypeOf((*MockCryptoSetup)(nil).OpenHandshake), arg0, arg1, arg2, arg3)
-}
-
-// OpenInitial mocks base method
-func (m *MockCryptoSetup) OpenInitial(arg0, arg1 []byte, arg2 protocol.PacketNumber, arg3 []byte) ([]byte, error) {
-	ret := m.ctrl.Call(m, "OpenInitial", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].([]byte)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// OpenInitial indicates an expected call of OpenInitial
-func (mr *MockCryptoSetupMockRecorder) OpenInitial(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OpenInitial", reflect.TypeOf((*MockCryptoSetup)(nil).OpenInitial), arg0, arg1, arg2, arg3)
 }
 
 // RunHandshake mocks base method

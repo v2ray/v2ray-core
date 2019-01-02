@@ -1,7 +1,6 @@
 package quic
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -22,7 +21,7 @@ import (
 )
 
 type unpacker interface {
-	Unpack(headerBinary []byte, hdr *wire.ExtendedHeader, data []byte) (*unpackedPacket, error)
+	Unpack(hdr *wire.Header, data []byte) (*unpackedPacket, error)
 }
 
 type streamGetter interface {
@@ -54,8 +53,10 @@ type cryptoStreamHandler interface {
 type receivedPacket struct {
 	remoteAddr net.Addr
 	hdr        *wire.Header
-	data       []byte
 	rcvTime    time.Time
+	data       []byte
+
+	buffer *packetBuffer
 }
 
 type closeError struct {
@@ -63,6 +64,8 @@ type closeError struct {
 	remote    bool
 	sendClose bool
 }
+
+var errCloseForRecreating = errors.New("closing session in order to recreate it")
 
 // A Session is a QUIC session
 type session struct {
@@ -112,9 +115,8 @@ type session struct {
 	handshakeCompleteChan chan struct{} // is closed when the handshake completes
 	handshakeComplete     bool
 
-	receivedFirstPacket              bool // since packet numbers start at 0, we can't use largestRcvdPacketNumber != 0 for this
+	receivedFirstPacket              bool
 	receivedFirstForwardSecurePacket bool
-	largestRcvdPacketNumber          protocol.PacketNumber // used to calculate the next packet number
 
 	sessionCreationTime     time.Time
 	lastNetworkActivityTime time.Time
@@ -158,6 +160,7 @@ var newSession = func(
 		version:               v,
 	}
 	s.preSetup()
+	s.sentPacketHandler = ackhandler.NewSentPacketHandler(0, s.rttStats, s.logger)
 	initialStream := newCryptoStream()
 	handshakeStream := newCryptoStream()
 	s.streamsMap = newStreamsMap(
@@ -185,7 +188,6 @@ var newSession = func(
 		return nil, err
 	}
 	s.cryptoStreamHandler = cs
-	s.framer = newFramer(s.streamsMap, s.version)
 	s.packer = newPacketPacker(
 		s.destConnID,
 		s.srcConnID,
@@ -219,6 +221,7 @@ var newClientSession = func(
 	srcConnID protocol.ConnectionID,
 	conf *Config,
 	tlsConf *tls.Config,
+	initialPacketNumber protocol.PacketNumber,
 	params *handshake.TransportParameters,
 	initialVersion protocol.VersionNumber,
 	logger utils.Logger,
@@ -236,6 +239,7 @@ var newClientSession = func(
 		version:               v,
 	}
 	s.preSetup()
+	s.sentPacketHandler = ackhandler.NewSentPacketHandler(initialPacketNumber, s.rttStats, s.logger)
 	initialStream := newCryptoStream()
 	handshakeStream := newCryptoStream()
 	cs, clientHelloWritten, err := handshake.NewCryptoSetupClient(
@@ -287,7 +291,6 @@ var newClientSession = func(
 
 func (s *session) preSetup() {
 	s.rttStats = &congestion.RTTStats{}
-	s.sentPacketHandler = ackhandler.NewSentPacketHandler(s.rttStats, s.logger)
 	s.receivedPacketHandler = ackhandler.NewReceivedPacketHandler(s.rttStats, s.logger, s.version)
 	s.connFlowController = flowcontrol.NewConnectionFlowController(
 		protocol.InitialMaxData,
@@ -361,18 +364,12 @@ runLoop:
 			// We do all the interesting stuff after the switch statement, so
 			// nothing to see here.
 		case p := <-s.receivedPackets:
-			err := s.handlePacketImpl(p)
-			if err != nil {
-				if qErr, ok := err.(*qerr.QuicError); ok && qErr.ErrorCode == qerr.DecryptionFailure {
-					s.tryQueueingUndecryptablePacket(p)
-					continue
-				}
-				s.closeLocal(err)
+			// Only reset the timers if this packet was actually processed.
+			// This avoids modifying any state when handling undecryptable packets,
+			// which could be injected by an attacker.
+			if wasProcessed := s.handlePacketImpl(p); !wasProcessed {
 				continue
 			}
-			// This is a bit unclean, but works properly, since the packet always
-			// begins with the public header and we never copy it.
-			// TODO: putPacketBuffer(&p.extHdr.Raw)
 		case <-s.handshakeCompleteChan:
 			s.handleHandshakeComplete()
 		}
@@ -476,64 +473,61 @@ func (s *session) handleHandshakeComplete() {
 	}
 }
 
-func (s *session) handlePacketImpl(p *receivedPacket) error {
+func (s *session) handlePacketImpl(p *receivedPacket) bool /* was the packet successfully processed */ {
+	var wasQueued bool
+
+	defer func() {
+		// Put back the packet buffer if the packet wasn't queued for later decryption.
+		if !wasQueued {
+			p.buffer.Release()
+		}
+	}()
+
 	// The server can change the source connection ID with the first Handshake packet.
 	// After this, all packets with a different source connection have to be ignored.
 	if s.receivedFirstPacket && p.hdr.IsLongHeader && !p.hdr.SrcConnectionID.Equal(s.destConnID) {
 		s.logger.Debugf("Dropping packet with unexpected source connection ID: %s (expected %s)", p.hdr.SrcConnectionID, s.destConnID)
-		return nil
+		return false
+	}
+	// drop 0-RTT packets
+	if p.hdr.Type == protocol.PacketType0RTT {
+		return false
 	}
 
-	data := p.data
-	r := bytes.NewReader(data)
-	hdr, err := p.hdr.ParseExtended(r, s.version)
-	if err != nil {
-		return fmt.Errorf("error parsing extended header: %s", err)
-	}
-	hdr.Raw = data[:len(data)-r.Len()]
-	data = data[len(data)-r.Len():]
-
-	if hdr.IsLongHeader {
-		if hdr.Length < protocol.ByteCount(hdr.PacketNumberLen) {
-			return fmt.Errorf("packet length (%d bytes) shorter than packet number (%d bytes)", hdr.Length, hdr.PacketNumberLen)
-		}
-		if protocol.ByteCount(len(data))+protocol.ByteCount(hdr.PacketNumberLen) < hdr.Length {
-			return fmt.Errorf("packet length (%d bytes) is smaller than the expected length (%d bytes)", len(data)+int(hdr.PacketNumberLen), hdr.Length)
-		}
-		data = data[:int(hdr.Length)-int(hdr.PacketNumberLen)]
-		// TODO(#1312): implement parsing of compound packets
-	}
-
-	// Calculate packet number
-	hdr.PacketNumber = protocol.InferPacketNumber(
-		hdr.PacketNumberLen,
-		s.largestRcvdPacketNumber,
-		hdr.PacketNumber,
-	)
-
-	packet, err := s.unpacker.Unpack(hdr.Raw, hdr, data)
-	if s.logger.Debug() {
-		if err != nil {
-			s.logger.Debugf("<- Reading packet 0x%x (%d bytes) for connection %s", hdr.PacketNumber, len(p.data)+len(hdr.Raw), hdr.DestConnectionID)
-		} else {
-			s.logger.Debugf("<- Reading packet 0x%x (%d bytes) for connection %s, %s", hdr.PacketNumber, len(p.data)+len(hdr.Raw), hdr.DestConnectionID, packet.encryptionLevel)
-		}
-		hdr.Log(s.logger)
-	}
+	packet, err := s.unpacker.Unpack(p.hdr, p.data)
 	// if the decryption failed, this might be a packet sent by an attacker
 	if err != nil {
-		return err
+		if err == handshake.ErrOpenerNotYetAvailable {
+			wasQueued = true
+			s.tryQueueingUndecryptablePacket(p)
+			return false
+		}
+		s.closeLocal(err)
+		return false
 	}
 
+	if s.logger.Debug() {
+		s.logger.Debugf("<- Reading packet %#x (%d bytes) for connection %s, %s", packet.packetNumber, len(p.data), p.hdr.DestConnectionID, packet.encryptionLevel)
+		packet.hdr.Log(s.logger)
+	}
+
+	if err := s.handleUnpackedPacket(packet, p.rcvTime); err != nil {
+		s.closeLocal(err)
+		return false
+	}
+	return true
+}
+
+func (s *session) handleUnpackedPacket(packet *unpackedPacket, rcvTime time.Time) error {
 	// The server can change the source connection ID with the first Handshake packet.
-	if s.perspective == protocol.PerspectiveClient && !s.receivedFirstPacket && hdr.IsLongHeader && !hdr.SrcConnectionID.Equal(s.destConnID) {
-		s.logger.Debugf("Received first packet. Switching destination connection ID to: %s", hdr.SrcConnectionID)
-		s.destConnID = hdr.SrcConnectionID
+	if s.perspective == protocol.PerspectiveClient && !s.receivedFirstPacket && packet.hdr.IsLongHeader && !packet.hdr.SrcConnectionID.Equal(s.destConnID) {
+		s.logger.Debugf("Received first packet. Switching destination connection ID to: %s", packet.hdr.SrcConnectionID)
+		s.destConnID = packet.hdr.SrcConnectionID
 		s.packer.ChangeDestConnectionID(s.destConnID)
 	}
 
 	s.receivedFirstPacket = true
-	s.lastNetworkActivityTime = p.rcvTime
+	s.lastNetworkActivityTime = rcvTime
 	s.keepAlivePingSent = false
 
 	// The client completes the handshake first (after sending the CFIN).
@@ -545,19 +539,16 @@ func (s *session) handlePacketImpl(p *receivedPacket) error {
 		}
 	}
 
-	// Only do this after decrypting, so we are sure the packet is not attacker-controlled
-	s.largestRcvdPacketNumber = utils.MaxPacketNumber(s.largestRcvdPacketNumber, hdr.PacketNumber)
-
 	// If this is a Retry packet, there's no need to send an ACK.
 	// The session will be closed and recreated as soon as the crypto setup processed the HRR.
-	if hdr.Type != protocol.PacketTypeRetry {
+	if packet.hdr.Type != protocol.PacketTypeRetry {
 		isRetransmittable := ackhandler.HasRetransmittableFrames(packet.frames)
-		if err := s.receivedPacketHandler.ReceivedPacket(hdr.PacketNumber, p.rcvTime, isRetransmittable); err != nil {
+		if err := s.receivedPacketHandler.ReceivedPacket(packet.packetNumber, rcvTime, isRetransmittable); err != nil {
 			return err
 		}
 	}
 
-	return s.handleFrames(packet.frames, hdr.PacketNumber, packet.encryptionLevel)
+	return s.handleFrames(packet.frames, packet.packetNumber, packet.encryptionLevel)
 }
 
 func (s *session) handleFrames(fs []wire.Frame, pn protocol.PacketNumber, encLevel protocol.EncryptionLevel) error {
@@ -738,6 +729,14 @@ func (s *session) destroy(e error) {
 		s.sessionRunner.removeConnectionID(s.srcConnID)
 		s.closeChan <- closeError{err: e, sendClose: false, remote: false}
 	})
+}
+
+// closeForRecreating closes the session in order to recreate it immediately afterwards
+// It returns the first packet number that should be used in the new session.
+func (s *session) closeForRecreating() protocol.PacketNumber {
+	s.destroy(errCloseForRecreating)
+	nextPN, _ := s.sentPacketHandler.PeekPacketNumber()
+	return nextPN
 }
 
 func (s *session) closeRemote(e error) {
@@ -963,7 +962,7 @@ func (s *session) sendPacket() (bool, error) {
 }
 
 func (s *session) sendPackedPacket(packet *packedPacket) error {
-	defer putPacketBuffer(&packet.raw)
+	defer packet.buffer.Release()
 	s.logPacket(packet)
 	return s.conn.Write(packet.raw)
 }
@@ -986,7 +985,7 @@ func (s *session) logPacket(packet *packedPacket) {
 		// We don't need to allocate the slices for calling the format functions
 		return
 	}
-	s.logger.Debugf("-> Sending packet 0x%x (%d bytes) for connection %s, %s", packet.header.PacketNumber, len(packet.raw), s.srcConnID, packet.encryptionLevel)
+	s.logger.Debugf("-> Sending packet 0x%x (%d bytes) for connection %s, %s", packet.header.PacketNumber, len(packet.raw), s.srcConnID, packet.EncryptionLevel())
 	packet.header.Log(s.logger)
 	for _, frame := range packet.frames {
 		wire.LogFrame(s.logger, frame, true)

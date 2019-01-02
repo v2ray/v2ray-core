@@ -1,12 +1,12 @@
 package handshake
 
 import (
+	"crypto/aes"
 	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
 
-	"github.com/lucas-clemente/quic-go/internal/crypto"
 	"github.com/lucas-clemente/quic-go/internal/protocol"
 	"github.com/lucas-clemente/quic-go/internal/utils"
 	"github.com/marten-seemann/qtls"
@@ -46,6 +46,11 @@ func (m messageType) String() string {
 	}
 }
 
+// ErrOpenerNotYetAvailable is returned when an opener is requested for an encryption level,
+// but the corresponding opener has not yet been initialized
+// This can happen when packets arrive out of order.
+var ErrOpenerNotYetAvailable = errors.New("CryptoSetup: opener at this encryption level not yet available")
+
 type cryptoSetup struct {
 	tlsConf *qtls.Config
 
@@ -74,7 +79,8 @@ type cryptoSetup struct {
 	clientHelloWrittenChan chan struct{}
 
 	initialStream io.Writer
-	initialAEAD   crypto.AEAD
+	initialOpener Opener
+	initialSealer Sealer
 
 	handshakeStream io.Writer
 	handshakeOpener Opener
@@ -175,13 +181,14 @@ func newCryptoSetup(
 	logger utils.Logger,
 	perspective protocol.Perspective,
 ) (CryptoSetup, <-chan struct{} /* ClientHello written */, error) {
-	initialAEAD, err := crypto.NewNullAEAD(connID, perspective)
+	initialSealer, initialOpener, err := newInitialAEAD(connID, perspective)
 	if err != nil {
 		return nil, nil, err
 	}
 	cs := &cryptoSetup{
 		initialStream:           initialStream,
-		initialAEAD:             initialAEAD,
+		initialSealer:           initialSealer,
+		initialOpener:           initialOpener,
 		handshakeStream:         handshakeStream,
 		readEncLevel:            protocol.EncryptionInitial,
 		writeEncLevel:           protocol.EncryptionInitial,
@@ -403,9 +410,19 @@ func (h *cryptoSetup) ReadHandshakeMessage() ([]byte, error) {
 }
 
 func (h *cryptoSetup) SetReadKey(suite *qtls.CipherSuite, trafficSecret []byte) {
-	key := crypto.HkdfExpandLabel(suite.Hash(), trafficSecret, "key", suite.KeyLen())
-	iv := crypto.HkdfExpandLabel(suite.Hash(), trafficSecret, "iv", suite.IVLen())
-	opener := newOpener(suite.AEAD(key, iv), iv)
+	key := qtls.HkdfExpandLabel(suite.Hash(), trafficSecret, []byte{}, "key", suite.KeyLen())
+	iv := qtls.HkdfExpandLabel(suite.Hash(), trafficSecret, []byte{}, "iv", suite.IVLen())
+	pnKey := qtls.HkdfExpandLabel(suite.Hash(), trafficSecret, []byte{}, "pn", suite.KeyLen())
+	pnDecrypter, err := aes.NewCipher(pnKey)
+	if err != nil {
+		panic(fmt.Sprintf("error creating new AES cipher: %s", err))
+	}
+	opener := newOpener(
+		suite.AEAD(key, iv),
+		iv,
+		pnDecrypter,
+		h.readEncLevel == protocol.Encryption1RTT,
+	)
 
 	switch h.readEncLevel {
 	case protocol.EncryptionInitial:
@@ -423,9 +440,19 @@ func (h *cryptoSetup) SetReadKey(suite *qtls.CipherSuite, trafficSecret []byte) 
 }
 
 func (h *cryptoSetup) SetWriteKey(suite *qtls.CipherSuite, trafficSecret []byte) {
-	key := crypto.HkdfExpandLabel(suite.Hash(), trafficSecret, "key", suite.KeyLen())
-	iv := crypto.HkdfExpandLabel(suite.Hash(), trafficSecret, "iv", suite.IVLen())
-	sealer := newSealer(suite.AEAD(key, iv), iv)
+	key := qtls.HkdfExpandLabel(suite.Hash(), trafficSecret, []byte{}, "key", suite.KeyLen())
+	iv := qtls.HkdfExpandLabel(suite.Hash(), trafficSecret, []byte{}, "iv", suite.IVLen())
+	pnKey := qtls.HkdfExpandLabel(suite.Hash(), trafficSecret, []byte{}, "pn", suite.KeyLen())
+	pnEncrypter, err := aes.NewCipher(pnKey)
+	if err != nil {
+		panic(fmt.Sprintf("error creating new AES cipher: %s", err))
+	}
+	sealer := newSealer(
+		suite.AEAD(key, iv),
+		iv,
+		pnEncrypter,
+		h.writeEncLevel == protocol.Encryption1RTT,
+	)
 
 	switch h.writeEncLevel {
 	case protocol.EncryptionInitial:
@@ -467,7 +494,7 @@ func (h *cryptoSetup) GetSealer() (protocol.EncryptionLevel, Sealer) {
 	if h.handshakeSealer != nil {
 		return protocol.EncryptionHandshake, h.handshakeSealer
 	}
-	return protocol.EncryptionInitial, h.initialAEAD
+	return protocol.EncryptionInitial, h.initialSealer
 }
 
 func (h *cryptoSetup) GetSealerWithEncryptionLevel(level protocol.EncryptionLevel) (Sealer, error) {
@@ -475,7 +502,7 @@ func (h *cryptoSetup) GetSealerWithEncryptionLevel(level protocol.EncryptionLeve
 
 	switch level {
 	case protocol.EncryptionInitial:
-		return h.initialAEAD, nil
+		return h.initialSealer, nil
 	case protocol.EncryptionHandshake:
 		if h.handshakeSealer == nil {
 			return nil, errNoSealer
@@ -491,22 +518,23 @@ func (h *cryptoSetup) GetSealerWithEncryptionLevel(level protocol.EncryptionLeve
 	}
 }
 
-func (h *cryptoSetup) OpenInitial(dst, src []byte, pn protocol.PacketNumber, ad []byte) ([]byte, error) {
-	return h.initialAEAD.Open(dst, src, pn, ad)
-}
-
-func (h *cryptoSetup) OpenHandshake(dst, src []byte, pn protocol.PacketNumber, ad []byte) ([]byte, error) {
-	if h.handshakeOpener == nil {
-		return nil, errors.New("no handshake opener")
+func (h *cryptoSetup) GetOpener(level protocol.EncryptionLevel) (Opener, error) {
+	switch level {
+	case protocol.EncryptionInitial:
+		return h.initialOpener, nil
+	case protocol.EncryptionHandshake:
+		if h.handshakeOpener == nil {
+			return nil, ErrOpenerNotYetAvailable
+		}
+		return h.handshakeOpener, nil
+	case protocol.Encryption1RTT:
+		if h.opener == nil {
+			return nil, ErrOpenerNotYetAvailable
+		}
+		return h.opener, nil
+	default:
+		return nil, fmt.Errorf("CryptoSetup: no opener with encryption level %s", level)
 	}
-	return h.handshakeOpener.Open(dst, src, pn, ad)
-}
-
-func (h *cryptoSetup) Open1RTT(dst, src []byte, pn protocol.PacketNumber, ad []byte) ([]byte, error) {
-	if h.opener == nil {
-		return nil, errors.New("no 1-RTT opener")
-	}
-	return h.opener.Open(dst, src, pn, ad)
 }
 
 func (h *cryptoSetup) ConnectionState() ConnectionState {

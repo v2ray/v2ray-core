@@ -11,11 +11,13 @@ import (
 // Opener opens a packet
 type Opener interface {
 	Open(dst, src []byte, packetNumber protocol.PacketNumber, associatedData []byte) ([]byte, error)
+	DecryptHeader(sample []byte, firstByte *byte, pnBytes []byte)
 }
 
 // Sealer seals a packet
 type Sealer interface {
 	Seal(dst, src []byte, packetNumber protocol.PacketNumber, associatedData []byte) []byte
+	EncryptHeader(sample []byte, firstByte *byte, pnBytes []byte)
 	Overhead() int
 }
 
@@ -35,10 +37,7 @@ type CryptoSetup interface {
 
 	GetSealer() (protocol.EncryptionLevel, Sealer)
 	GetSealerWithEncryptionLevel(protocol.EncryptionLevel) (Sealer, error)
-
-	OpenInitial(dst, src []byte, pn protocol.PacketNumber, ad []byte) ([]byte, error)
-	OpenHandshake(dst, src []byte, pn protocol.PacketNumber, ad []byte) ([]byte, error)
-	Open1RTT(dst, src []byte, pn protocol.PacketNumber, ad []byte) ([]byte, error)
+	GetOpener(protocol.EncryptionLevel) (Opener, error)
 }
 
 // ConnectionState records basic details about the QUIC connection.

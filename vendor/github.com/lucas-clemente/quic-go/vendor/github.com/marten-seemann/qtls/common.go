@@ -124,6 +124,9 @@ const (
 	CurveP384 = tls.CurveP384
 	CurveP521 = tls.CurveP521
 	X25519    = tls.X25519
+
+	// Experimental KEX
+	HybridSIDHp503Curve25519 CurveID = 0xFE30
 )
 
 // TLS 1.3 Key Share
@@ -168,9 +171,10 @@ const (
 	// Rest of these are reserved by the TLS spec
 )
 
-// Signature algorithms for TLS 1.2 (See RFC 5246, section A.4.1)
+// Signature algorithms (for internal signaling use). Starting at 16 to avoid overlap with
+// TLS 1.2 codepoints (RFC 5246, section A.4.1), with which these have nothing to do.
 const (
-	signaturePKCS1v15 uint8 = iota + 1
+	signaturePKCS1v15 uint8 = iota + 16
 	signatureECDSA
 	signatureRSAPSS
 )
@@ -517,7 +521,8 @@ type Config struct {
 	PreferServerCipherSuites bool
 
 	// SessionTicketsDisabled may be set to true to disable session ticket
-	// (resumption) support.
+	// (resumption) support. Note that on clients, session ticket support is
+	// also disabled if ClientSessionCache is nil.
 	SessionTicketsDisabled bool
 
 	// SessionTicketKey is used by TLS servers to provide session
@@ -531,7 +536,7 @@ type Config struct {
 	SessionTicketKey [32]byte
 
 	// ClientSessionCache is a cache of ClientSessionState entries for TLS
-	// session resumption.
+	// session resumption. It is only used by clients.
 	ClientSessionCache ClientSessionCache
 
 	// MinVersion contains the minimum SSL/TLS version that is acceptable.
@@ -1106,9 +1111,19 @@ func defaultTLS13CipherSuites() []uint16 {
 
 func initDefaultCipherSuites() {
 	var topCipherSuites, topTLS13CipherSuites []uint16
+
 	// TODO: check for hardware support
-	// This used to be: if cipherhw.AESGCMSupport() {
-	// However, cipherhw is an internal package
+	// Check the cpu flags for each platform that has optimized GCM implementations.
+	// Worst case, these variables will just all be false
+	// hasGCMAsmAMD64 := cpu.X86.HasAES && cpu.X86.HasPCLMULQDQ
+
+	// hasGCMAsmARM64 := cpu.ARM64.HasAES && cpu.ARM64.HasPMULL
+
+	// // Keep in sync with crypto/aes/cipher_s390x.go.
+	// hasGCMAsmS390X := cpu.S390X.HasAES && cpu.S390X.HasAESCBC && cpu.S390X.HasAESCTR && (cpu.S390X.HasGHASH || cpu.S390X.HasAESGCM)
+
+	// hasGCMAsm := hasGCMAsmAMD64 || hasGCMAsmARM64 || hasGCMAsmS390X
+
 	if true {
 		// If AES-GCM hardware is provided then prioritise AES-GCM
 		// cipher suites.

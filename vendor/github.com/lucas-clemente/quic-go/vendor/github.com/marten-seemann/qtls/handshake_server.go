@@ -588,15 +588,6 @@ func (hs *serverHandshakeState) doFullHandshake() error {
 		}
 		hs.finishedHash.Write(certMsg.marshal())
 
-		if len(certMsg.certificates) == 0 {
-			// The client didn't actually send a certificate
-			switch c.config.ClientAuth {
-			case RequireAnyClientCert, RequireAndVerifyClientCert:
-				c.sendAlert(alertBadCertificate)
-				return errors.New("tls: client didn't provide a certificate")
-			}
-		}
-
 		pub, err = hs.processCertsFromClient(certMsg.certificates)
 		if err != nil {
 			return err
@@ -796,6 +787,15 @@ func (hs *serverHandshakeState) sendFinished(out []byte) error {
 // the public key of the leaf certificate.
 func (hs *serverHandshakeState) processCertsFromClient(certificates [][]byte) (crypto.PublicKey, error) {
 	c := hs.c
+
+	if len(certificates) == 0 {
+		// The client didn't actually send a certificate
+		switch c.config.ClientAuth {
+		case RequireAnyClientCert, RequireAndVerifyClientCert:
+			c.sendAlert(alertBadCertificate)
+			return nil, errors.New("tls: client didn't provide a certificate")
+		}
+	}
 
 	hs.certsFromClient = certificates
 	certs := make([]*x509.Certificate, len(certificates))

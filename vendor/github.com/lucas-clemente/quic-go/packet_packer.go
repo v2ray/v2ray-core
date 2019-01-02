@@ -25,10 +25,25 @@ type packer interface {
 }
 
 type packedPacket struct {
-	header          *wire.ExtendedHeader
-	raw             []byte
-	frames          []wire.Frame
-	encryptionLevel protocol.EncryptionLevel
+	header *wire.ExtendedHeader
+	raw    []byte
+	frames []wire.Frame
+
+	buffer *packetBuffer
+}
+
+func (p *packedPacket) EncryptionLevel() protocol.EncryptionLevel {
+	if !p.header.IsLongHeader {
+		return protocol.Encryption1RTT
+	}
+	switch p.header.Type {
+	case protocol.PacketTypeInitial:
+		return protocol.EncryptionInitial
+	case protocol.PacketTypeHandshake:
+		return protocol.EncryptionHandshake
+	default:
+		return protocol.EncryptionUnspecified
+	}
 }
 
 func (p *packedPacket) ToAckHandlerPacket() *ackhandler.Packet {
@@ -37,7 +52,7 @@ func (p *packedPacket) ToAckHandlerPacket() *ackhandler.Packet {
 		PacketType:      p.header.Type,
 		Frames:          p.frames,
 		Length:          protocol.ByteCount(len(p.raw)),
-		EncryptionLevel: p.encryptionLevel,
+		EncryptionLevel: p.EncryptionLevel(),
 		SendTime:        time.Now(),
 	}
 }
@@ -136,13 +151,7 @@ func (p *packetPacker) PackConnectionClose(ccf *wire.ConnectionCloseFrame) (*pac
 	frames := []wire.Frame{ccf}
 	encLevel, sealer := p.cryptoSetup.GetSealer()
 	header := p.getHeader(encLevel)
-	raw, err := p.writeAndSealPacket(header, frames, sealer)
-	return &packedPacket{
-		header:          header,
-		raw:             raw,
-		frames:          frames,
-		encryptionLevel: encLevel,
-	}, err
+	return p.writeAndSealPacket(header, frames, sealer)
 }
 
 func (p *packetPacker) MaybePackAckPacket() (*packedPacket, error) {
@@ -154,13 +163,7 @@ func (p *packetPacker) MaybePackAckPacket() (*packedPacket, error) {
 	encLevel, sealer := p.cryptoSetup.GetSealer()
 	header := p.getHeader(encLevel)
 	frames := []wire.Frame{ack}
-	raw, err := p.writeAndSealPacket(header, frames, sealer)
-	return &packedPacket{
-		header:          header,
-		raw:             raw,
-		frames:          frames,
-		encryptionLevel: encLevel,
-	}, err
+	return p.writeAndSealPacket(header, frames, sealer)
 }
 
 // PackRetransmission packs a retransmission
@@ -227,16 +230,11 @@ func (p *packetPacker) PackRetransmission(packet *ackhandler.Packet) ([]*packedP
 		if sf, ok := frames[len(frames)-1].(*wire.StreamFrame); ok {
 			sf.DataLenPresent = false
 		}
-		raw, err := p.writeAndSealPacket(header, frames, sealer)
+		p, err := p.writeAndSealPacket(header, frames, sealer)
 		if err != nil {
 			return nil, err
 		}
-		packets = append(packets, &packedPacket{
-			header:          header,
-			raw:             raw,
-			frames:          frames,
-			encryptionLevel: encLevel,
-		})
+		packets = append(packets, p)
 	}
 	return packets, nil
 }
@@ -281,16 +279,7 @@ func (p *packetPacker) PackPacket() (*packedPacket, error) {
 		p.numNonRetransmittableAcks = 0
 	}
 
-	raw, err := p.writeAndSealPacket(header, frames, sealer)
-	if err != nil {
-		return nil, err
-	}
-	return &packedPacket{
-		header:          header,
-		raw:             raw,
-		frames:          frames,
-		encryptionLevel: encLevel,
-	}, nil
+	return p.writeAndSealPacket(header, frames, sealer)
 }
 
 func (p *packetPacker) maybePackCryptoPacket() (*packedPacket, error) {
@@ -320,16 +309,7 @@ func (p *packetPacker) maybePackCryptoPacket() (*packedPacket, error) {
 	}
 	cf := s.PopCryptoFrame(p.maxPacketSize - hdrLen - protocol.ByteCount(sealer.Overhead()) - length)
 	frames = append(frames, cf)
-	raw, err := p.writeAndSealPacket(hdr, frames, sealer)
-	if err != nil {
-		return nil, err
-	}
-	return &packedPacket{
-		header:          hdr,
-		raw:             raw,
-		frames:          frames,
-		encryptionLevel: encLevel,
-	}, nil
+	return p.writeAndSealPacket(hdr, frames, sealer)
 }
 
 func (p *packetPacker) composeNextPacket(maxFrameSize protocol.ByteCount) ([]wire.Frame, error) {
@@ -395,9 +375,9 @@ func (p *packetPacker) writeAndSealPacket(
 	header *wire.ExtendedHeader,
 	frames []wire.Frame,
 	sealer handshake.Sealer,
-) ([]byte, error) {
-	raw := *getPacketBuffer()
-	buffer := bytes.NewBuffer(raw[:0])
+) (*packedPacket, error) {
+	packetBuffer := getPacketBuffer()
+	buffer := bytes.NewBuffer(packetBuffer.Slice[:0])
 
 	addPaddingForInitial := p.perspective == protocol.PerspectiveClient && header.Type == protocol.PacketTypeInitial
 
@@ -421,7 +401,7 @@ func (p *packetPacker) writeAndSealPacket(
 	if err := header.Write(buffer, p.version); err != nil {
 		return nil, err
 	}
-	payloadStartIndex := buffer.Len()
+	payloadOffset := buffer.Len()
 
 	// write all frames but the last one
 	for _, frame := range frames[:len(frames)-1] {
@@ -436,7 +416,7 @@ func (p *packetPacker) writeAndSealPacket(
 			sf.DataLenPresent = true
 		}
 	} else {
-		payloadLen := buffer.Len() - payloadStartIndex + int(lastFrame.Length(p.version))
+		payloadLen := buffer.Len() - payloadOffset + int(lastFrame.Length(p.version))
 		if paddingLen := 4 - int(header.PacketNumberLen) - payloadLen; paddingLen > 0 {
 			// Pad the packet such that packet number length + payload length is 4 bytes.
 			// This is needed to enable the peer to get a 16 byte sample for header protection.
@@ -458,15 +438,27 @@ func (p *packetPacker) writeAndSealPacket(
 		return nil, fmt.Errorf("PacketPacker BUG: packet too large (%d bytes, allowed %d bytes)", size, p.maxPacketSize)
 	}
 
-	raw = raw[0:buffer.Len()]
-	_ = sealer.Seal(raw[payloadStartIndex:payloadStartIndex], raw[payloadStartIndex:], header.PacketNumber, raw[:payloadStartIndex])
+	raw := buffer.Bytes()
+	_ = sealer.Seal(raw[payloadOffset:payloadOffset], raw[payloadOffset:], header.PacketNumber, raw[:payloadOffset])
 	raw = raw[0 : buffer.Len()+sealer.Overhead()]
+
+	pnOffset := payloadOffset - int(header.PacketNumberLen)
+	sealer.EncryptHeader(
+		raw[pnOffset+4:pnOffset+4+16],
+		&raw[0],
+		raw[pnOffset:payloadOffset],
+	)
 
 	num := p.pnManager.PopPacketNumber()
 	if num != header.PacketNumber {
 		return nil, errors.New("packetPacker BUG: Peeked and Popped packet numbers do not match")
 	}
-	return raw, nil
+	return &packedPacket{
+		header: header,
+		raw:    raw,
+		frames: frames,
+		buffer: packetBuffer,
+	}, nil
 }
 
 func (p *packetPacker) ChangeDestConnectionID(connID protocol.ConnectionID) {

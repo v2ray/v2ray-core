@@ -241,8 +241,8 @@ func (hc *halfConn) setKey(version uint16, suite *cipherSuite, trafficSecret []b
 	}
 	hc.version = version
 	hash := hashForSuite(suite)
-	key := hkdfExpandLabel(hash, trafficSecret, nil, "key", suite.keyLen)
-	iv := hkdfExpandLabel(hash, trafficSecret, nil, "iv", suite.ivLen)
+	key := HkdfExpandLabel(hash, trafficSecret, nil, "key", suite.keyLen)
+	iv := HkdfExpandLabel(hash, trafficSecret, nil, "iv", suite.ivLen)
 	hc.cipher = suite.aead(key, iv)
 	for i := range hc.seq {
 		hc.seq[i] = 0

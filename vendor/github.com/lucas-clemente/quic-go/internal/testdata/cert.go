@@ -2,6 +2,9 @@ package testdata
 
 import (
 	"crypto/tls"
+	"crypto/x509"
+	"encoding/pem"
+	"io/ioutil"
 	"path"
 	"runtime"
 )
@@ -14,13 +17,12 @@ func init() {
 		panic("Failed to get current frame")
 	}
 
-	certPath = path.Join(path.Dir(path.Dir(path.Dir(filename))), "example")
+	certPath = path.Dir(filename)
 }
 
-// GetCertificatePaths returns the paths to 'fullchain.pem' and 'privkey.pem' for the
-// quic.clemente.io cert.
+// GetCertificatePaths returns the paths to certificate and key
 func GetCertificatePaths() (string, string) {
-	return path.Join(certPath, "fullchain.pem"), path.Join(certPath, "privkey.pem")
+	return path.Join(certPath, "cert.pem"), path.Join(certPath, "priv.key")
 }
 
 // GetTLSConfig returns a tls config for quic.clemente.io
@@ -34,11 +36,22 @@ func GetTLSConfig() *tls.Config {
 	}
 }
 
-// GetCertificate returns a certificate for quic.clemente.io
-func GetCertificate() tls.Certificate {
-	cert, err := tls.LoadX509KeyPair(GetCertificatePaths())
+// GetRootCA returns an x509.CertPool containing the CA certificate
+func GetRootCA() *x509.CertPool {
+	caCertPath := path.Join(certPath, "ca.pem")
+	caCertRaw, err := ioutil.ReadFile(caCertPath)
 	if err != nil {
 		panic(err)
 	}
-	return cert
+	p, _ := pem.Decode(caCertRaw)
+	if p.Type != "CERTIFICATE" {
+		panic("expected a certificate")
+	}
+	caCert, err := x509.ParseCertificate(p.Bytes)
+	if err != nil {
+		panic(err)
+	}
+	certPool := x509.NewCertPool()
+	certPool.AddCert(caCert)
+	return certPool
 }

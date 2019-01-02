@@ -34,6 +34,16 @@ func (m *MockSealer) EXPECT() *MockSealerMockRecorder {
 	return m.recorder
 }
 
+// EncryptHeader mocks base method
+func (m *MockSealer) EncryptHeader(arg0 []byte, arg1 *byte, arg2 []byte) {
+	m.ctrl.Call(m, "EncryptHeader", arg0, arg1, arg2)
+}
+
+// EncryptHeader indicates an expected call of EncryptHeader
+func (mr *MockSealerMockRecorder) EncryptHeader(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EncryptHeader", reflect.TypeOf((*MockSealer)(nil).EncryptHeader), arg0, arg1, arg2)
+}
+
 // Overhead mocks base method
 func (m *MockSealer) Overhead() int {
 	ret := m.ctrl.Call(m, "Overhead")

@@ -24,8 +24,8 @@ type Header struct {
 	SupportedVersions    []protocol.VersionNumber // sent in a Version Negotiation Packet
 	OrigDestConnectionID protocol.ConnectionID    // sent in the Retry packet
 
-	typeByte byte
-	len      int // how many bytes were read while parsing this header
+	typeByte  byte
+	parsedLen protocol.ByteCount // how many bytes were read while parsing this header
 }
 
 // ParseHeader parses the header.
@@ -39,7 +39,7 @@ func ParseHeader(b *bytes.Reader, shortHeaderConnIDLen int) (*Header, error) {
 	if err != nil {
 		return nil, err
 	}
-	h.len = startLen - b.Len()
+	h.parsedLen = protocol.ByteCount(startLen - b.Len())
 	return h, nil
 }
 
@@ -169,6 +169,11 @@ func (h *Header) parseVersionNegotiationPacket(b *bytes.Reader) error {
 // IsVersionNegotiation says if this a version negotiation packet
 func (h *Header) IsVersionNegotiation() bool {
 	return h.IsLongHeader && h.Version == 0
+}
+
+// ParsedLen returns the number of bytes that were consumed when parsing the header
+func (h *Header) ParsedLen() protocol.ByteCount {
+	return h.parsedLen
 }
 
 // ParseExtended parses the version dependent part of the header.

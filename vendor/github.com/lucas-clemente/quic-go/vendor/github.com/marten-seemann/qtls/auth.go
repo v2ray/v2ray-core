@@ -14,9 +14,11 @@ import (
 )
 
 // pickSignatureAlgorithm selects a signature algorithm that is compatible with
-// the given public key and the list of algorithms from the peer and this side.
+// the given public key and the list of algorithms from both sides of connection.
+// The lists of signature algorithms (peerSigAlgs and ourSigAlgs) are ignored
+// for tlsVersion < VersionTLS12.
 //
-// The returned SignatureScheme codepoint is only meaningful for TLS 1.2,
+// The returned SignatureScheme codepoint is only meaningful for TLS 1.2 and newer
 // previous TLS versions have a fixed hash function.
 func pickSignatureAlgorithm(pubkey crypto.PublicKey, peerSigAlgs, ourSigAlgs []SignatureScheme, tlsVersion uint16) (SignatureScheme, uint8, crypto.Hash, error) {
 	if tlsVersion < VersionTLS12 || len(peerSigAlgs) == 0 {

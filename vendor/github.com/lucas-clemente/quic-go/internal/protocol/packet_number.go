@@ -16,8 +16,8 @@ const (
 	PacketNumberLen4 PacketNumberLen = 4
 )
 
-// InferPacketNumber calculates the packet number based on the received packet number, its length and the last seen packet number
-func InferPacketNumber(
+// DecodePacketNumber calculates the packet number based on the received packet number, its length and the last seen packet number
+func DecodePacketNumber(
 	packetNumberLength PacketNumberLen,
 	lastPacketNumber PacketNumber,
 	wirePacketNumber PacketNumber,

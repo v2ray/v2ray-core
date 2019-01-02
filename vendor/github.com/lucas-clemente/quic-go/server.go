@@ -43,6 +43,7 @@ type quicSession interface {
 	GetVersion() protocol.VersionNumber
 	run() error
 	destroy(error)
+	closeForRecreating() protocol.PacketNumber
 	closeRemote(error)
 }
 
@@ -317,21 +318,27 @@ func (s *server) handlePacket(p *receivedPacket) {
 	}
 	if hdr.Type == protocol.PacketTypeInitial {
 		go s.handleInitial(p)
+		return
 	}
+
 	// TODO(#943): send Stateless Reset
+	p.buffer.Release()
 }
 
 func (s *server) handleInitial(p *receivedPacket) {
-	// TODO: add a check that DestConnID == SrcConnID
 	s.logger.Debugf("<- Received Initial packet.")
 	sess, connID, err := s.handleInitialImpl(p)
 	if err != nil {
+		p.buffer.Release()
 		s.logger.Errorf("Error occurred handling initial packet: %s", err)
 		return
 	}
 	if sess == nil { // a retry was done
+		p.buffer.Release()
 		return
 	}
+	// Don't put the packet buffer back if a new session was created.
+	// The session will handle the packet and take of that.
 	serverSession := newServerSession(sess, s.config, s.logger)
 	s.sessionHandler.Add(connID, serverSession)
 }
@@ -454,6 +461,7 @@ func (s *server) sendRetry(remoteAddr net.Addr, hdr *wire.Header) error {
 }
 
 func (s *server) sendVersionNegotiationPacket(p *receivedPacket) {
+	defer p.buffer.Release()
 	hdr := p.hdr
 	s.logger.Debugf("Client offered version %s, sending Version Negotiation", hdr.Version)
 	data, err := wire.ComposeVersionNegotiation(hdr.SrcConnectionID, hdr.DestConnectionID, s.config.Versions)

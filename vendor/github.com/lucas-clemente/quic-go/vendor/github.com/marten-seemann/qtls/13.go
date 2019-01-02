@@ -22,6 +22,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/cloudflare/sidh/sidh"
 	"golang.org/x/crypto/curve25519"
 )
 
@@ -30,6 +31,17 @@ import (
 const numSessionTickets = 2
 
 type secretLabel int
+
+const (
+	x25519SharedSecretSz = 32
+
+	P503PubKeySz                  = 378
+	P503PrvKeySz                  = 32
+	P503SharedSecretSz            = 126
+	SIDHp503Curve25519PubKeySz    = x25519SharedSecretSz + P503PubKeySz
+	SIDHp503Curve25519PrvKeySz    = x25519SharedSecretSz + P503PrvKeySz
+	SIDHp503Curve25519SharedKeySz = x25519SharedSecretSz + P503SharedSecretSz
+)
 
 const (
 	secretResumptionPskBinder secretLabel = iota
@@ -48,6 +60,40 @@ type keySchedule13 struct {
 	handshakeCtx   []byte    // cached handshake context, invalidated on updates.
 	clientRandom   []byte    // Used for keylogging, nil if keylogging is disabled.
 	config         *Config   // Used for KeyLogWriter callback, nil if keylogging is disabled.
+}
+
+// Interface implemented by DH key exchange strategies
+type dhKex interface {
+	// c - context of current TLS handshake, groupId - ID of an algorithm
+	// (curve/field) being chosen for key agreement. Methods implmenting an
+	// interface always assume that provided groupId is correct.
+	//
+	// In case of success, function returns secret key and ephemeral key. Otherwise
+	// error is set.
+	generate(c *Conn, groupId CurveID) ([]byte, keyShare, error)
+	// c - context of current TLS handshake, ks - public key received
+	// from the other side of the connection, secretKey - is a private key
+	// used for DH key agreement. Function returns shared secret in case
+	// of success or empty slice otherwise.
+	derive(c *Conn, ks keyShare, secretKey []byte) []byte
+}
+
+// Key Exchange strategies per curve type
+type kexNist struct{}     // Used by NIST curves; P-256, P-384, P-512
+type kexX25519 struct{}   // Used by X25519
+type kexSIDHp503 struct{} // Used by SIDH/P503
+type kexHybridSIDHp503X25519 struct {
+	classicKEX kexX25519
+	pqKEX      kexSIDHp503
+} // Used by SIDH-ECDH hybrid scheme
+
+// Routing map for key exchange strategies
+var dhKexStrat = map[CurveID]dhKex{
+	CurveP256:                &kexNist{},
+	CurveP384:                &kexNist{},
+	CurveP521:                &kexNist{},
+	X25519:                   &kexX25519{},
+	HybridSIDHp503Curve25519: &kexHybridSIDHp503X25519{},
 }
 
 func newKeySchedule13(suite *cipherSuite, config *Config, clientRandom []byte) *keySchedule13 {
@@ -70,9 +116,18 @@ func (ks *keySchedule13) setSecret(secret []byte) {
 	salt := ks.secret
 	if salt != nil {
 		h0 := hash.New().Sum(nil)
-		salt = hkdfExpandLabel(hash, salt, h0, "derived", hash.Size())
+		salt = HkdfExpandLabel(hash, salt, h0, "derived", hash.Size())
 	}
-	ks.secret = hkdfExtract(hash, secret, salt)
+	ks.secret = HkdfExtract(hash, secret, salt)
+}
+
+// Depending on role returns pair of key variant to be used by
+// local and remote process.
+func getSidhKeyVariant(isClient bool) (sidh.KeyVariant, sidh.KeyVariant) {
+	if isClient {
+		return sidh.KeyVariant_SIDH_A, sidh.KeyVariant_SIDH_B
+	}
+	return sidh.KeyVariant_SIDH_B, sidh.KeyVariant_SIDH_A
 }
 
 // write appends the data to the transcript hash context.
@@ -113,7 +168,7 @@ func (ks *keySchedule13) deriveSecret(secretLabel secretLabel) []byte {
 		ks.handshakeCtx = ks.transcriptHash.Sum(nil)
 	}
 	hash := hashForSuite(ks.suite)
-	secret := hkdfExpandLabel(hash, ks.secret, ks.handshakeCtx, label, hash.Size())
+	secret := HkdfExpandLabel(hash, ks.secret, ks.handshakeCtx, label, hash.Size())
 	if keylogType != "" && ks.config != nil {
 		ks.config.writeKeyLog(keylogType, ks.clientRandom, secret)
 	}
@@ -122,8 +177,8 @@ func (ks *keySchedule13) deriveSecret(secretLabel secretLabel) []byte {
 
 func (ks *keySchedule13) prepareCipher(trafficSecret []byte) cipher.AEAD {
 	hash := hashForSuite(ks.suite)
-	key := hkdfExpandLabel(hash, trafficSecret, nil, "key", ks.suite.keyLen)
-	iv := hkdfExpandLabel(hash, trafficSecret, nil, "iv", ks.suite.ivLen)
+	key := HkdfExpandLabel(hash, trafficSecret, nil, "key", ks.suite.keyLen)
+	iv := HkdfExpandLabel(hash, trafficSecret, nil, "iv", ks.suite.ivLen)
 	return ks.suite.aead(key, iv)
 }
 
@@ -152,7 +207,7 @@ CurvePreferenceLoop:
 		return errors.New("tls: HelloRetryRequest not implemented") // TODO(filippo)
 	}
 
-	privateKey, serverKS, err := config.generateKeyShare(ks.group)
+	privateKey, serverKS, err := c.generateKeyShare(ks.group)
 	if err != nil {
 		c.sendAlert(alertInternalError)
 		return err
@@ -180,7 +235,7 @@ CurvePreferenceLoop:
 
 	earlyClientTrafficSecret := hs.keySchedule.deriveSecret(secretEarlyClient)
 
-	ecdheSecret := deriveECDHESecret(ks, privateKey)
+	ecdheSecret := c.deriveDHESecret(ks, privateKey)
 	if ecdheSecret == nil {
 		c.sendAlert(alertIllegalParameter)
 		return errors.New("tls: bad ECDHE client share")
@@ -201,8 +256,8 @@ CurvePreferenceLoop:
 	hsServerTrafficSecret := hs.keySchedule.deriveSecret(secretHandshakeServer)
 	c.out.setKey(c.vers, hs.keySchedule.suite, hsServerTrafficSecret)
 
-	serverFinishedKey := hkdfExpandLabel(hash, hsServerTrafficSecret, nil, "finished", hashSize)
-	hs.clientFinishedKey = hkdfExpandLabel(hash, hs.hsClientTrafficSecret, nil, "finished", hashSize)
+	serverFinishedKey := HkdfExpandLabel(hash, hsServerTrafficSecret, nil, "finished", hashSize)
+	hs.clientFinishedKey = HkdfExpandLabel(hash, hs.hsClientTrafficSecret, nil, "finished", hashSize)
 
 	// EncryptedExtensions
 	hs.keySchedule.write(hs.hello13Enc.marshal())
@@ -296,11 +351,11 @@ func (hs *serverHandshakeState) readClientFinished13(hasConfirmLock bool) error 
 	}
 
 	// client authentication
-	if certMsg, ok := msg.(*certificateMsg13); ok {
-
-		// (4.4.2) Client MUST send certificate msg if requested by server
-		if c.config.ClientAuth < RequestClientCert {
-			c.sendAlert(alertUnexpectedMessage)
+	// (4.4.2) Client MUST send certificate msg if requested by server
+	if c.config.ClientAuth >= RequestClientCert && !c.didResume {
+		certMsg, ok := msg.(*certificateMsg13)
+		if !ok {
+			c.sendAlert(alertCertificateRequired)
 			return unexpectedMessageError(certMsg, msg)
 		}
 
@@ -311,39 +366,37 @@ func (hs *serverHandshakeState) readClientFinished13(hasConfirmLock bool) error 
 			return err
 		}
 
-		// 4.4.3: CertificateVerify MUST appear immediately after Certificate msg
-		msg, err = c.readHandshake()
-		if err != nil {
-			return err
-		}
+		if len(certs) > 0 {
+			// 4.4.3: CertificateVerify MUST appear immediately after Certificate msg
+			msg, err = c.readHandshake()
+			if err != nil {
+				return err
+			}
 
-		certVerify, ok := msg.(*certificateVerifyMsg)
-		if !ok {
-			c.sendAlert(alertUnexpectedMessage)
-			return unexpectedMessageError(certVerify, msg)
-		}
+			certVerify, ok := msg.(*certificateVerifyMsg)
+			if !ok {
+				c.sendAlert(alertUnexpectedMessage)
+				return unexpectedMessageError(certVerify, msg)
+			}
 
-		err, alertCode := verifyPeerHandshakeSignature(
-			certVerify,
-			pubKey,
-			supportedSignatureAlgorithms13,
-			hs.keySchedule.transcriptHash.Sum(nil),
-			"TLS 1.3, client CertificateVerify")
-		if err != nil {
-			c.sendAlert(alertCode)
-			return err
+			err, alertCode := verifyPeerHandshakeSignature(
+				certVerify,
+				pubKey,
+				supportedSignatureAlgorithms13,
+				hs.keySchedule.transcriptHash.Sum(nil),
+				"TLS 1.3, client CertificateVerify")
+			if err != nil {
+				c.sendAlert(alertCode)
+				return err
+			}
+			hs.keySchedule.write(certVerify.marshal())
 		}
-		hs.keySchedule.write(certVerify.marshal())
 
 		// Read next chunk
 		msg, err = c.readHandshake()
 		if err != nil {
 			return err
 		}
-
-	} else if (c.config.ClientAuth >= RequestClientCert) && !c.didResume {
-		c.sendAlert(alertCertificateRequired)
-		return unexpectedMessageError(certMsg, msg)
 	}
 
 	clientFinished, ok := msg.(*finishedMsg)
@@ -545,64 +598,26 @@ func prepareDigitallySigned(hash crypto.Hash, context string, data []byte) []byt
 	return h.Sum(nil)
 }
 
-func (c *Config) generateKeyShare(curveID CurveID) ([]byte, keyShare, error) {
-	if curveID == X25519 {
-		var scalar, public [32]byte
-		if _, err := io.ReadFull(c.rand(), scalar[:]); err != nil {
-			return nil, keyShare{}, err
-		}
-
-		curve25519.ScalarBaseMult(&public, &scalar)
-		return scalar[:], keyShare{group: curveID, data: public[:]}, nil
+// generateKeyShare generates keypair. Private key is returned as first argument, public key
+// is returned in keyShare.data. keyshare.curveID stores ID of the scheme used.
+func (c *Conn) generateKeyShare(curveID CurveID) ([]byte, keyShare, error) {
+	if val, ok := dhKexStrat[curveID]; ok {
+		return val.generate(c, curveID)
 	}
-
-	curve, ok := curveForCurveID(curveID)
-	if !ok {
-		return nil, keyShare{}, errors.New("tls: preferredCurves includes unsupported curve")
-	}
-
-	privateKey, x, y, err := elliptic.GenerateKey(curve, c.rand())
-	if err != nil {
-		return nil, keyShare{}, err
-	}
-	ecdhePublic := elliptic.Marshal(curve, x, y)
-
-	return privateKey, keyShare{group: curveID, data: ecdhePublic}, nil
+	return nil, keyShare{}, errors.New("tls: preferredCurves includes unsupported curve")
 }
 
-func deriveECDHESecret(ks keyShare, secretKey []byte) []byte {
-	if ks.group == X25519 {
-		if len(ks.data) != 32 {
-			return nil
-		}
-
-		var theirPublic, sharedKey, scalar [32]byte
-		copy(theirPublic[:], ks.data)
-		copy(scalar[:], secretKey)
-		curve25519.ScalarMult(&sharedKey, &scalar, &theirPublic)
-		return sharedKey[:]
+// DH key agreement. ks stores public key, secretKey stores private key used for ephemeral
+// key agreement. Function returns shared secret in case of success or empty slice otherwise.
+func (c *Conn) deriveDHESecret(ks keyShare, secretKey []byte) []byte {
+	if val, ok := dhKexStrat[ks.group]; ok {
+		return val.derive(c, ks, secretKey)
 	}
-
-	curve, ok := curveForCurveID(ks.group)
-	if !ok {
-		return nil
-	}
-	x, y := elliptic.Unmarshal(curve, ks.data)
-	if x == nil {
-		return nil
-	}
-	x, _ = curve.ScalarMult(x, y, secretKey)
-	xBytes := x.Bytes()
-	curveSize := (curve.Params().BitSize + 8 - 1) >> 3
-	if len(xBytes) == curveSize {
-		return xBytes
-	}
-	buf := make([]byte, curveSize)
-	copy(buf[len(buf)-len(xBytes):], xBytes)
-	return buf
+	return nil
 }
 
-func hkdfExpandLabel(hash crypto.Hash, secret, hashValue []byte, label string, L int) []byte {
+// HkdfExpandLabel HKDF expands a label
+func HkdfExpandLabel(hash crypto.Hash, secret, hashValue []byte, label string, L int) []byte {
 	prefix := "tls13 "
 	hkdfLabel := make([]byte, 4+len(prefix)+len(label)+len(hashValue))
 	hkdfLabel[0] = byte(L >> 8)
@@ -695,7 +710,7 @@ func (hs *serverHandshakeState) checkPSK() (isResumed bool, alert alert) {
 
 		hs.keySchedule.setSecret(s.pskSecret)
 		binderKey := hs.keySchedule.deriveSecret(secretResumptionPskBinder)
-		binderFinishedKey := hkdfExpandLabel(hash, binderKey, nil, "finished", hashSize)
+		binderFinishedKey := HkdfExpandLabel(hash, binderKey, nil, "finished", hashSize)
 		chHash := hash.New()
 		chHash.Write(hs.clientHello.rawTruncated)
 		expectedBinder := hmacOfSum(hash, chHash, binderFinishedKey)
@@ -766,7 +781,7 @@ func (hs *serverHandshakeState) sendSessionTicket13() error {
 		// tickets might have the same PSK which could be a problem if
 		// one of them is compromised.
 		ticketNonce := []byte{byte(i)}
-		sessionState.pskSecret = hkdfExpandLabel(hash, resumptionMasterSecret, ticketNonce, "resumption", hash.Size())
+		sessionState.pskSecret = HkdfExpandLabel(hash, resumptionMasterSecret, ticketNonce, "resumption", hash.Size())
 		ticket := sessionState.marshal()
 		var err error
 		if c.config.SessionTicketSealer != nil {
@@ -978,7 +993,7 @@ func (hs *clientHandshakeState) doTLS13Handshake() error {
 
 	// 0-RTT is not supported yet, so use an empty PSK.
 	hs.keySchedule.setSecret(nil)
-	ecdheSecret := deriveECDHESecret(serverHello.keyShare, hs.privateKey)
+	ecdheSecret := c.deriveDHESecret(serverHello.keyShare, hs.privateKey)
 	if ecdheSecret == nil {
 		c.sendAlert(alertIllegalParameter)
 		return errors.New("tls: bad ECDHE server share")
@@ -996,8 +1011,8 @@ func (hs *clientHandshakeState) doTLS13Handshake() error {
 	c.in.setKey(c.vers, hs.keySchedule.suite, serverHandshakeSecret)
 
 	// Calculate MAC key for Finished messages.
-	serverFinishedKey := hkdfExpandLabel(hash, serverHandshakeSecret, nil, "finished", hashSize)
-	clientFinishedKey := hkdfExpandLabel(hash, clientHandshakeSecret, nil, "finished", hashSize)
+	serverFinishedKey := HkdfExpandLabel(hash, serverHandshakeSecret, nil, "finished", hashSize)
+	clientFinishedKey := HkdfExpandLabel(hash, clientHandshakeSecret, nil, "finished", hashSize)
 
 	msg, err := c.readHandshake()
 	if err != nil {
@@ -1159,4 +1174,139 @@ func supportedSigAlgorithmsCert(schemes []SignatureScheme) (ret []SignatureSchem
 		}
 	}
 	return
+}
+
+// Functions below implement dhKex interface for different DH shared secret agreements
+
+// KEX: P-256, P-384, P-512 KEX
+func (kexNist) generate(c *Conn, groupId CurveID) (private []byte, ks keyShare, err error) {
+	// never fails
+	curve, _ := curveForCurveID(groupId)
+	private, x, y, err := elliptic.GenerateKey(curve, c.config.rand())
+	if err != nil {
+		return nil, keyShare{}, err
+	}
+	ks.group = groupId
+	ks.data = elliptic.Marshal(curve, x, y)
+	return
+}
+func (kexNist) derive(c *Conn, ks keyShare, secretKey []byte) []byte {
+	// never fails
+	curve, _ := curveForCurveID(ks.group)
+	x, y := elliptic.Unmarshal(curve, ks.data)
+	if x == nil {
+		return nil
+	}
+	x, _ = curve.ScalarMult(x, y, secretKey)
+	xBytes := x.Bytes()
+	curveSize := (curve.Params().BitSize + 8 - 1) >> 3
+	if len(xBytes) == curveSize {
+		return xBytes
+	}
+	buf := make([]byte, curveSize)
+	copy(buf[len(buf)-len(xBytes):], xBytes)
+	return buf
+}
+
+// KEX: X25519
+func (kexX25519) generate(c *Conn, groupId CurveID) ([]byte, keyShare, error) {
+	var scalar, public [x25519SharedSecretSz]byte
+	if _, err := io.ReadFull(c.config.rand(), scalar[:]); err != nil {
+		return nil, keyShare{}, err
+	}
+	curve25519.ScalarBaseMult(&public, &scalar)
+	return scalar[:], keyShare{group: X25519, data: public[:]}, nil
+}
+
+func (kexX25519) derive(c *Conn, ks keyShare, secretKey []byte) []byte {
+	var theirPublic, sharedKey, scalar [x25519SharedSecretSz]byte
+	if len(ks.data) != x25519SharedSecretSz {
+		return nil
+	}
+	copy(theirPublic[:], ks.data)
+	copy(scalar[:], secretKey)
+	curve25519.ScalarMult(&sharedKey, &scalar, &theirPublic)
+	return sharedKey[:]
+}
+
+// KEX: SIDH/503
+func (kexSIDHp503) generate(c *Conn, groupId CurveID) ([]byte, keyShare, error) {
+	var variant, _ = getSidhKeyVariant(c.isClient)
+	var prvKey = sidh.NewPrivateKey(sidh.FP_503, variant)
+	if prvKey.Generate(c.config.rand()) != nil {
+		return nil, keyShare{}, errors.New("tls: private SIDH key generation failed")
+	}
+	pubKey := prvKey.GeneratePublicKey()
+	return prvKey.Export(), keyShare{group: 0 /*UNUSED*/, data: pubKey.Export()}, nil
+}
+
+func (kexSIDHp503) derive(c *Conn, ks keyShare, key []byte) []byte {
+	var prvVariant, pubVariant = getSidhKeyVariant(c.isClient)
+	var prvKeySize = P503PrvKeySz
+
+	if len(ks.data) != P503PubKeySz || len(key) != prvKeySize {
+		return nil
+	}
+
+	prvKey := sidh.NewPrivateKey(sidh.FP_503, prvVariant)
+	pubKey := sidh.NewPublicKey(sidh.FP_503, pubVariant)
+
+	if err := prvKey.Import(key); err != nil {
+		return nil
+	}
+	if err := pubKey.Import(ks.data); err != nil {
+		return nil
+	}
+
+	// Never fails
+	sharedKey, _ := sidh.DeriveSecret(prvKey, pubKey)
+	return sharedKey
+}
+
+// KEX Hybrid SIDH/503-X25519
+func (kex *kexHybridSIDHp503X25519) generate(c *Conn, groupId CurveID) (private []byte, ks keyShare, err error) {
+	var pubHybrid [SIDHp503Curve25519PubKeySz]byte
+	var prvHybrid [SIDHp503Curve25519PrvKeySz]byte
+
+	// Generate ephemeral key for classic x25519
+	private, ks, err = kex.classicKEX.generate(c, groupId)
+	if err != nil {
+		return
+	}
+	copy(prvHybrid[:], private)
+	copy(pubHybrid[:], ks.data)
+
+	// Generate PQ ephemeral key for SIDH
+	private, ks, err = kex.pqKEX.generate(c, groupId)
+	if err != nil {
+		return
+	}
+	copy(prvHybrid[x25519SharedSecretSz:], private)
+	copy(pubHybrid[x25519SharedSecretSz:], ks.data)
+	return prvHybrid[:], keyShare{group: HybridSIDHp503Curve25519, data: pubHybrid[:]}, nil
+}
+
+func (kex *kexHybridSIDHp503X25519) derive(c *Conn, ks keyShare, key []byte) []byte {
+	var sharedKey [SIDHp503Curve25519SharedKeySz]byte
+	var ret []byte
+	var tmpKs keyShare
+
+	// Key agreement for classic
+	tmpKs.group = X25519
+	tmpKs.data = ks.data[:x25519SharedSecretSz]
+	ret = kex.classicKEX.derive(c, tmpKs, key[:x25519SharedSecretSz])
+	if ret == nil {
+		return nil
+	}
+	copy(sharedKey[:], ret)
+
+	// Key agreement for PQ
+	tmpKs.group = 0 /*UNUSED*/
+	tmpKs.data = ks.data[x25519SharedSecretSz:]
+	ret = kex.pqKEX.derive(c, tmpKs, key[x25519SharedSecretSz:])
+	if ret == nil {
+		return nil
+	}
+	copy(sharedKey[x25519SharedSecretSz:], ret)
+	return sharedKey[:]
 }

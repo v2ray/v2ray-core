@@ -10,9 +10,6 @@ environment:
     - GOARCH: 386
     - GOARCH: amd64
 
-hosts:
-  quic.clemente.io: 127.0.0.1
-
 clone_folder: c:\gopath\src\github.com\lucas-clemente\quic-go
 
 install:

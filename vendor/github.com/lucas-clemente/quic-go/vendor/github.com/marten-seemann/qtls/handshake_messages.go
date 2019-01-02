@@ -684,7 +684,7 @@ func (m *clientHelloMsg) unmarshal(data []byte) alert {
 				return alertDecodeError
 			}
 		case extensionKeyShare:
-			// https://tools.ietf.org/html/draft-ietf-tls-tls13-18#section-4.2.5
+			// https://tools.ietf.org/html/rfc8446#section-4.2.8
 			if length < 2 {
 				return alertDecodeError
 			}

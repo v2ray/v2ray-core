@@ -34,7 +34,7 @@ type sentPacketHandler struct {
 	packetNumberGenerator *packetNumberGenerator
 
 	lastSentRetransmittablePacketTime time.Time
-	lastSentHandshakePacketTime       time.Time
+	lastSentCryptoPacketTime          time.Time
 
 	nextPacketSendTime time.Time
 
@@ -56,8 +56,8 @@ type sentPacketHandler struct {
 	rttStats   *congestion.RTTStats
 
 	handshakeComplete bool
-	// The number of times the handshake packets have been retransmitted without receiving an ack.
-	handshakeCount uint32
+	// The number of times the crypto packets have been retransmitted without receiving an ack.
+	cryptoCount uint32
 
 	// The number of times a TLP has been sent without receiving an ack.
 	tlpCount uint32
@@ -78,7 +78,11 @@ type sentPacketHandler struct {
 }
 
 // NewSentPacketHandler creates a new sentPacketHandler
-func NewSentPacketHandler(rttStats *congestion.RTTStats, logger utils.Logger) SentPacketHandler {
+func NewSentPacketHandler(
+	initialPacketNumber protocol.PacketNumber,
+	rttStats *congestion.RTTStats,
+	logger utils.Logger,
+) SentPacketHandler {
 	congestion := congestion.NewCubicSender(
 		congestion.DefaultClock{},
 		rttStats,
@@ -88,7 +92,7 @@ func NewSentPacketHandler(rttStats *congestion.RTTStats, logger utils.Logger) Se
 	)
 
 	return &sentPacketHandler{
-		packetNumberGenerator: newPacketNumberGenerator(1, protocol.SkipPacketAveragePeriodLength),
+		packetNumberGenerator: newPacketNumberGenerator(initialPacketNumber, protocol.SkipPacketAveragePeriodLength),
 		packetHistory:         newSentPacketHistory(),
 		rttStats:              rttStats,
 		congestion:            congestion,
@@ -104,21 +108,21 @@ func (h *sentPacketHandler) lowestUnacked() protocol.PacketNumber {
 }
 
 func (h *sentPacketHandler) SetHandshakeComplete() {
-	h.logger.Debugf("Handshake complete. Discarding all outstanding handshake packets.")
+	h.logger.Debugf("Handshake complete. Discarding all outstanding crypto packets.")
 	var queue []*Packet
 	for _, packet := range h.retransmissionQueue {
 		if packet.EncryptionLevel == protocol.Encryption1RTT {
 			queue = append(queue, packet)
 		}
 	}
-	var handshakePackets []*Packet
+	var cryptoPackets []*Packet
 	h.packetHistory.Iterate(func(p *Packet) (bool, error) {
 		if p.EncryptionLevel != protocol.Encryption1RTT {
-			handshakePackets = append(handshakePackets, p)
+			cryptoPackets = append(cryptoPackets, p)
 		}
 		return true, nil
 	})
-	for _, p := range handshakePackets {
+	for _, p := range cryptoPackets {
 		h.packetHistory.Remove(p.PacketNumber)
 	}
 	h.retransmissionQueue = queue
@@ -144,8 +148,10 @@ func (h *sentPacketHandler) SentPacketsAsRetransmission(packets []*Packet, retra
 }
 
 func (h *sentPacketHandler) sentPacketImpl(packet *Packet) bool /* isRetransmittable */ {
-	for p := h.lastSentPacketNumber + 1; p < packet.PacketNumber; p++ {
-		h.logger.Debugf("Skipping packet number %#x", p)
+	if h.logger.Debug() && h.lastSentPacketNumber != 0 {
+		for p := h.lastSentPacketNumber + 1; p < packet.PacketNumber; p++ {
+			h.logger.Debugf("Skipping packet number %#x", p)
+		}
 	}
 
 	h.lastSentPacketNumber = packet.PacketNumber
@@ -161,7 +167,7 @@ func (h *sentPacketHandler) sentPacketImpl(packet *Packet) bool /* isRetransmitt
 
 	if isRetransmittable {
 		if packet.EncryptionLevel != protocol.Encryption1RTT {
-			h.lastSentHandshakePacketTime = packet.SendTime
+			h.lastSentCryptoPacketTime = packet.SendTime
 		}
 		h.lastSentRetransmittablePacketTime = packet.SendTime
 		packet.includedInBytesInFlight = true
@@ -185,7 +191,7 @@ func (h *sentPacketHandler) ReceivedAck(ackFrame *wire.AckFrame, withPacketNumbe
 	}
 
 	// duplicate or out of order ACK
-	if withPacketNumber != 0 && withPacketNumber <= h.largestReceivedPacketWithAck {
+	if withPacketNumber != 0 && withPacketNumber < h.largestReceivedPacketWithAck {
 		h.logger.Debugf("Ignoring ACK frame (duplicate or out of order).")
 		return nil
 	}
@@ -299,8 +305,8 @@ func (h *sentPacketHandler) updateLossDetectionAlarm() {
 		return
 	}
 
-	if h.packetHistory.HasOutstandingHandshakePackets() {
-		h.alarm = h.lastSentHandshakePacketTime.Add(h.computeHandshakeTimeout())
+	if h.packetHistory.HasOutstandingCryptoPackets() {
+		h.alarm = h.lastSentCryptoPacketTime.Add(h.computeCryptoTimeout())
 	} else if !h.lossTime.IsZero() {
 		// Early retransmit timer or time loss detection.
 		h.alarm = h.lossTime
@@ -381,12 +387,12 @@ func (h *sentPacketHandler) OnAlarm() error {
 
 func (h *sentPacketHandler) onVerifiedAlarm() error {
 	var err error
-	if h.packetHistory.HasOutstandingHandshakePackets() {
+	if h.packetHistory.HasOutstandingCryptoPackets() {
 		if h.logger.Debug() {
-			h.logger.Debugf("Loss detection alarm fired in handshake mode. Handshake count: %d", h.handshakeCount)
+			h.logger.Debugf("Loss detection alarm fired in crypto mode. Crypto count: %d", h.cryptoCount)
 		}
-		h.handshakeCount++
-		err = h.queueHandshakePacketsForRetransmission()
+		h.cryptoCount++
+		err = h.queueCryptoPacketsForRetransmission()
 	} else if !h.lossTime.IsZero() {
 		if h.logger.Debug() {
 			h.logger.Debugf("Loss detection alarm fired in loss timer mode. Loss time: %s", h.lossTime)
@@ -456,7 +462,7 @@ func (h *sentPacketHandler) onPacketAcked(p *Packet, rcvTime time.Time) error {
 	}
 	h.rtoCount = 0
 	h.tlpCount = 0
-	h.handshakeCount = 0
+	h.cryptoCount = 0
 	return h.packetHistory.Remove(p.PacketNumber)
 }
 
@@ -575,16 +581,16 @@ func (h *sentPacketHandler) ShouldSendNumPackets() int {
 	return int(math.Ceil(float64(protocol.MinPacingDelay) / float64(delay)))
 }
 
-func (h *sentPacketHandler) queueHandshakePacketsForRetransmission() error {
-	var handshakePackets []*Packet
+func (h *sentPacketHandler) queueCryptoPacketsForRetransmission() error {
+	var cryptoPackets []*Packet
 	h.packetHistory.Iterate(func(p *Packet) (bool, error) {
 		if p.canBeRetransmitted && p.EncryptionLevel != protocol.Encryption1RTT {
-			handshakePackets = append(handshakePackets, p)
+			cryptoPackets = append(cryptoPackets, p)
 		}
 		return true, nil
 	})
-	for _, p := range handshakePackets {
-		h.logger.Debugf("Queueing packet %#x as a handshake retransmission", p.PacketNumber)
+	for _, p := range cryptoPackets {
+		h.logger.Debugf("Queueing packet %#x as a crypto retransmission", p.PacketNumber)
 		if err := h.queuePacketForRetransmission(p); err != nil {
 			return err
 		}
@@ -603,11 +609,11 @@ func (h *sentPacketHandler) queuePacketForRetransmission(p *Packet) error {
 	return nil
 }
 
-func (h *sentPacketHandler) computeHandshakeTimeout() time.Duration {
+func (h *sentPacketHandler) computeCryptoTimeout() time.Duration {
 	duration := utils.MaxDuration(2*h.rttStats.SmoothedOrInitialRTT(), minTPLTimeout)
 	// exponential backoff
-	// There's an implicit limit to this set by the handshake timeout.
-	return duration << h.handshakeCount
+	// There's an implicit limit to this set by the crypto timeout.
+	return duration << h.cryptoCount
 }
 
 func (h *sentPacketHandler) computeTLPTimeout() time.Duration {
