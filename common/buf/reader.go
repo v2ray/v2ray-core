@@ -148,12 +148,13 @@ func (r *BufferedReader) WriteTo(writer io.Writer) (int64, error) {
 	return nBytes, err
 }
 
+// Interrupt implements common.Interruptible.
+func (r *BufferedReader) Interrupt() {
+	common.Interrupt(r.Reader)
+}
+
 // Close implements io.Closer.
 func (r *BufferedReader) Close() error {
-	if !r.Buffer.IsEmpty() {
-		ReleaseMulti(r.Buffer)
-		r.Buffer = nil
-	}
 	return common.Close(r.Reader)
 }
 
