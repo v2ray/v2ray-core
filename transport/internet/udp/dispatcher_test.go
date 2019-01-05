@@ -8,6 +8,7 @@ import (
 
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/protocol/udp"
 	"v2ray.com/core/features/routing"
 	"v2ray.com/core/transport"
 	. "v2ray.com/core/transport/internet/udp"
@@ -66,7 +67,7 @@ func TestSameDestinationDispatching(t *testing.T) {
 	b.WriteString("abcd")
 
 	var msgCount uint32
-	dispatcher := NewDispatcher(td, func(ctx context.Context, payload *buf.Buffer) {
+	dispatcher := NewDispatcher(td, func(ctx context.Context, packet *udp.Packet) {
 		atomic.AddUint32(&msgCount, 1)
 	})
 

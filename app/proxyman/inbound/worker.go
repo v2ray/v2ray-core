@@ -313,7 +313,7 @@ func (w *udpWorker) removeConn(id connID) {
 func (w *udpWorker) handlePackets() {
 	receive := w.hub.Receive()
 	for payload := range receive {
-		w.callback(payload.Content, payload.Source, payload.OriginalDestination)
+		w.callback(payload.Payload, payload.Source, payload.Target)
 	}
 }
 

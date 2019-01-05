@@ -9,9 +9,9 @@ import (
 
 	"golang.org/x/net/dns/dnsmessage"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol/dns"
+	udp_proto "v2ray.com/core/common/protocol/udp"
 	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/signal/pubsub"
 	"v2ray.com/core/common/task"
@@ -101,7 +101,9 @@ func (s *ClassicNameServer) Cleanup() error {
 	return nil
 }
 
-func (s *ClassicNameServer) HandleResponse(ctx context.Context, payload *buf.Buffer) {
+func (s *ClassicNameServer) HandleResponse(ctx context.Context, packet *udp_proto.Packet) {
+	payload := packet.Payload
+
 	var parser dnsmessage.Parser
 	header, err := parser.Start(payload.Bytes())
 	if err != nil {
