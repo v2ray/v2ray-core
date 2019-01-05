@@ -76,7 +76,7 @@ func NewListener(ctx context.Context, address net.Address, port net.Port, stream
 func (l *Listener) handlePackets() {
 	receive := l.hub.Receive()
 	for payload := range receive {
-		l.OnReceive(payload.Content, payload.Source)
+		l.OnReceive(payload.Payload, payload.Source)
 	}
 }
 
