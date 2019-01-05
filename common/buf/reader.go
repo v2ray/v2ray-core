@@ -58,6 +58,8 @@ type BufferedReader struct {
 	Reader Reader
 	// Buffer is the internal buffer to be read from first
 	Buffer MultiBuffer
+	// Spliter is a function to read bytes from MultiBuffer
+	Spliter func(MultiBuffer, []byte) (MultiBuffer, int)
 }
 
 // BufferedBytes returns the number of bytes that is cached in this reader.
@@ -74,8 +76,13 @@ func (r *BufferedReader) ReadByte() (byte, error) {
 
 // Read implements io.Reader. It reads from internal buffer first (if available) and then reads from the underlying reader.
 func (r *BufferedReader) Read(b []byte) (int, error) {
+	spliter := r.Spliter
+	if spliter == nil {
+		spliter = SplitBytes
+	}
+
 	if !r.Buffer.IsEmpty() {
-		buffer, nBytes := SplitBytes(r.Buffer, b)
+		buffer, nBytes := spliter(r.Buffer, b)
 		r.Buffer = buffer
 		if r.Buffer.IsEmpty() {
 			r.Buffer = nil
@@ -88,7 +95,7 @@ func (r *BufferedReader) Read(b []byte) (int, error) {
 		return 0, err
 	}
 
-	mb, nBytes := SplitBytes(mb, b)
+	mb, nBytes := spliter(mb, b)
 	if !mb.IsEmpty() {
 		r.Buffer = mb
 	}

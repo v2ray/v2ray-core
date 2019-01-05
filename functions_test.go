@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/google/go-cmp/cmp"
@@ -83,6 +84,66 @@ func TestV2RayDial(t *testing.T) {
 
 	if r := cmp.Diff(xor(receive), payload); r != "" {
 		t.Error(r)
+	}
+}
+
+func TestV2RayDialUDPConn(t *testing.T) {
+	udpServer := udp.Server{
+		MsgProcessor: xor,
+	}
+	dest, err := udpServer.Start()
+	common.Must(err)
+	defer udpServer.Close()
+
+	config := &core.Config{
+		App: []*serial.TypedMessage{
+			serial.ToTypedMessage(&dispatcher.Config{}),
+			serial.ToTypedMessage(&proxyman.InboundConfig{}),
+			serial.ToTypedMessage(&proxyman.OutboundConfig{}),
+		},
+		Outbound: []*core.OutboundHandlerConfig{
+			{
+				ProxySettings: serial.ToTypedMessage(&freedom.Config{}),
+			},
+		},
+	}
+
+	cfgBytes, err := proto.Marshal(config)
+	common.Must(err)
+
+	server, err := core.StartInstance("protobuf", cfgBytes)
+	common.Must(err)
+	defer server.Close()
+
+	conn, err := core.Dial(context.Background(), server, dest)
+	common.Must(err)
+	defer conn.Close()
+
+	const size = 1024
+	payload := make([]byte, size)
+	common.Must2(rand.Read(payload))
+
+	for i := 0; i < 2; i++ {
+		if _, err := conn.Write(payload); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	time.Sleep(time.Millisecond * 500)
+
+	receive := make([]byte, size*2)
+	for i := 0; i < 2; i++ {
+		n, err := conn.Read(receive)
+		if err != nil {
+			t.Fatal("expect no error, but got ", err)
+		}
+		if n != size {
+			t.Fatal("expect read size ", size, " but got ", n)
+		}
+
+		if r := cmp.Diff(xor(receive[:n]), payload); r != "" {
+			t.Fatal(r)
+		}
 	}
 }
 

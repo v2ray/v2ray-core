@@ -122,6 +122,17 @@ func SplitBytes(mb MultiBuffer, b []byte) (MultiBuffer, int) {
 	return mb, totalBytes
 }
 
+// SplitFirstBytes splits the first buffer from MultiBuffer, and then copy its content into the given slice.
+func SplitFirstBytes(mb MultiBuffer, p []byte) (MultiBuffer, int) {
+	mb, b := SplitFirst(mb)
+	if b == nil {
+		return mb, 0
+	}
+	n := copy(p, b.Bytes())
+	b.Release()
+	return mb, n
+}
+
 // Compact returns another MultiBuffer by merging all content of the given one together.
 func Compact(mb MultiBuffer) MultiBuffer {
 	if len(mb) == 0 {

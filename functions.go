@@ -53,7 +53,13 @@ func Dial(ctx context.Context, v *Instance, dest net.Destination) (net.Conn, err
 	if err != nil {
 		return nil, err
 	}
-	return net.NewConnection(net.ConnectionInputMulti(r.Writer), net.ConnectionOutputMulti(r.Reader)), nil
+	var readerOpt net.ConnectionOption
+	if dest.Network == net.Network_TCP {
+		readerOpt = net.ConnectionOutputMulti(r.Reader)
+	} else {
+		readerOpt = net.ConnectionOutputMultiUDP(r.Reader)
+	}
+	return net.NewConnection(net.ConnectionInputMulti(r.Writer), readerOpt), nil
 }
 
 // DialUDP provides a way to exchange UDP packets through V2Ray instance to remote servers.
