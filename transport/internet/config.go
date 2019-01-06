@@ -30,15 +30,7 @@ func transportProtocolToString(protocol TransportProtocol) string {
 	}
 }
 
-func RegisterProtocolConfigCreator(protocol TransportProtocol, creator ConfigCreator) error {
-	name := transportProtocolToString(protocol)
-	if name == unknownProtocol {
-		return newError("protocol ", TransportProtocol_name[int32(protocol)], " is not supported").AtError()
-	}
-	return RegisterProtocolConfigCreatorByName(name, creator)
-}
-
-func RegisterProtocolConfigCreatorByName(name string, creator ConfigCreator) error {
+func RegisterProtocolConfigCreator(name string, creator ConfigCreator) error {
 	if _, found := globalTransportConfigCreatorCache[name]; found {
 		return newError("protocol ", name, " is already registered").AtError()
 	}
@@ -46,15 +38,7 @@ func RegisterProtocolConfigCreatorByName(name string, creator ConfigCreator) err
 	return nil
 }
 
-func CreateTransportConfig(protocol TransportProtocol) (interface{}, error) {
-	name := transportProtocolToString(protocol)
-	if name == unknownProtocol {
-		return nil, newError("protocol ", TransportProtocol_name[int32(protocol)], " is not supported").AtError()
-	}
-	return CreateTransportConfigByName(name)
-}
-
-func CreateTransportConfigByName(name string) (interface{}, error) {
+func CreateTransportConfig(name string) (interface{}, error) {
 	creator, ok := globalTransportConfigCreatorCache[name]
 	if !ok {
 		return nil, newError("unknown transport protocol: ", name)
@@ -106,7 +90,7 @@ func (c *StreamConfig) GetTransportSettingsFor(protocol string) (interface{}, er
 		}
 	}
 
-	return CreateTransportConfigByName(protocol)
+	return CreateTransportConfig(protocol)
 }
 
 func (c *StreamConfig) GetEffectiveSecuritySettings() (interface{}, error) {

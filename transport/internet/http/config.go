@@ -41,7 +41,7 @@ func (c *Config) getNormalizedPath() string {
 }
 
 func init() {
-	common.Must(internet.RegisterProtocolConfigCreatorByName(protocolName, func() interface{} {
+	common.Must(internet.RegisterProtocolConfigCreator(protocolName, func() interface{} {
 		return new(Config)
 	}))
 }
