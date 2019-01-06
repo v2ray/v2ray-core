@@ -7,10 +7,11 @@ import (
 	"net"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"golang.org/x/sync/errgroup"
 	"v2ray.com/core/common"
 	. "v2ray.com/core/common/buf"
-	"v2ray.com/core/common/compare"
 	"v2ray.com/core/testing/servers/tcp"
 )
 
@@ -65,7 +66,7 @@ func TestReadvReader(t *testing.T) {
 	rdata := make([]byte, size)
 	SplitBytes(rmb, rdata)
 
-	if err := compare.BytesEqualWithDetail(data, rdata); err != nil {
-		t.Fatal(err)
+	if r := cmp.Diff(data, rdata); r != "" {
+		t.Fatal(r)
 	}
 }

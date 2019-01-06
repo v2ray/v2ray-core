@@ -13,7 +13,6 @@ import (
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/compare"
 	"v2ray.com/core/common/errors"
 	clog "v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
@@ -395,8 +394,8 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 			}
 
 			response := readFrom(conn, time.Second*20, 10240*1024)
-			if err := compare.BytesEqualWithDetail(response, xor([]byte(payload))); err != nil {
-				t.Error(err)
+			if r := cmp.Diff(response, xor([]byte(payload))); r != "" {
+				t.Error(r)
 			}
 		}()
 	}
@@ -506,8 +505,8 @@ func TestShadowsocksChacha20Poly1305TCP(t *testing.T) {
 			}
 
 			response := readFrom(conn, time.Second*20, 10240*1024)
-			if err := compare.BytesEqualWithDetail(response, xor([]byte(payload))); err != nil {
-				t.Error(err)
+			if r := cmp.Diff(response, xor([]byte(payload))); r != "" {
+				t.Error(r)
 			}
 		}()
 	}

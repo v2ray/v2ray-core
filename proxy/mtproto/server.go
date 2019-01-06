@@ -1,13 +1,13 @@
 package mtproto
 
 import (
+	"bytes"
 	"context"
 	"time"
 
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
-	"v2ray.com/core/common/compare"
 	"v2ray.com/core/common/crypto"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -63,11 +63,14 @@ func (s *Server) Network() []net.Network {
 	return []net.Network{net.Network_TCP}
 }
 
+var ctype1 = []byte{0xef, 0xef, 0xef, 0xef}
+var ctype2 = []byte{0xee, 0xee, 0xee, 0xee}
+
 func isValidConnectionType(c [4]byte) bool {
-	if compare.BytesAll(c[:], 0xef) {
+	if bytes.Equal(c[:], ctype1) {
 		return true
 	}
-	if compare.BytesAll(c[:], 0xee) {
+	if bytes.Equal(c[:], ctype2) {
 		return true
 	}
 	return false

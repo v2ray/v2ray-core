@@ -1,10 +1,9 @@
 package net
 
 import (
+	"bytes"
 	"net"
 	"strings"
-
-	"v2ray.com/core/common/compare"
 )
 
 var (
@@ -90,6 +89,8 @@ func ParseAddress(addr string) Address {
 	return DomainAddress(addr)
 }
 
+var bytes0 = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
 // IPAddress creates an Address with given IP.
 func IPAddress(ip []byte) Address {
 	switch len(ip) {
@@ -97,7 +98,7 @@ func IPAddress(ip []byte) Address {
 		var addr ipv4Address = [4]byte{ip[0], ip[1], ip[2], ip[3]}
 		return addr
 	case net.IPv6len:
-		if compare.BytesAll(ip[0:10], 0) && compare.BytesAll(ip[10:12], 0xff) {
+		if bytes.Equal(ip[:10], bytes0) && ip[10] == 0xff && ip[11] == 0xff {
 			return IPAddress(ip[12:16])
 		}
 		var addr ipv6Address = [16]byte{

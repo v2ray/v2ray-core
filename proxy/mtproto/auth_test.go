@@ -5,8 +5,9 @@ import (
 	"crypto/rand"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/compare"
 	. "v2ray.com/core/proxy/mtproto"
 	. "v2ray.com/ext/assert"
 )
@@ -24,8 +25,8 @@ func TestInverse(t *testing.T) {
 	}
 
 	bii := Inverse(bi)
-	if err := compare.BytesEqualWithDetail(bii, b); err != nil {
-		t.Fatal(err)
+	if r := cmp.Diff(bii, b); r != "" {
+		t.Fatal(r)
 	}
 }
 

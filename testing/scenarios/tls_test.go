@@ -8,9 +8,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"golang.org/x/sync/errgroup"
+
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/protocol/tls/cert"
@@ -31,8 +35,6 @@ import (
 )
 
 func TestSimpleTLSConnection(t *testing.T) {
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
@@ -127,21 +129,35 @@ func TestSimpleTLSConnection(t *testing.T) {
 	common.Must(err)
 	defer CloseAllServers(servers)
 
-	{
+	var errg errgroup.Group
+	errg.Go(func() error {
 		conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 			IP:   []byte{127, 0, 0, 1},
 			Port: int(clientPort),
 		})
-		assert(err, IsNil)
+		if err != nil {
+			return err
+		}
+		defer conn.Close()
 
-		payload := "dokodemo request."
+		payload := make([]byte, 1024)
+		common.Must2(rand.Read(payload))
+
 		nBytes, err := conn.Write([]byte(payload))
-		assert(err, IsNil)
-		assert(nBytes, Equals, len(payload))
+		common.Must(err)
+		if nBytes != len(payload) {
+			return errors.New("expected ", len(payload), " written, but actually ", nBytes)
+		}
 
 		response := readFrom(conn, time.Second*2, len(payload))
-		assert(response, Equals, xor([]byte(payload)))
-		assert(conn.Close(), IsNil)
+		if r := cmp.Diff(response, xor(payload)); r != "" {
+			return errors.New(r)
+		}
+		return nil
+	})
+
+	if err := errg.Wait(); err != nil {
+		t.Fatal(err)
 	}
 }
 

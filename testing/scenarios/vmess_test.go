@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"v2ray.com/core"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/compare"
 	clog "v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -289,8 +289,8 @@ func TestVMessGCM(t *testing.T) {
 			assert(nBytes, Equals, len(payload))
 
 			response := readFrom(conn, time.Second*40, 10240*1024)
-			if err := compare.BytesEqualWithDetail(response, xor([]byte(payload))); err != nil {
-				t.Error(err)
+			if r := cmp.Diff(response, xor([]byte(payload))); r != "" {
+				t.Error(r)
 			}
 		}()
 	}
@@ -420,8 +420,8 @@ func TestVMessGCMReadv(t *testing.T) {
 			assert(nBytes, Equals, len(payload))
 
 			response := readFrom(conn, time.Second*40, 10240*1024)
-			if err := compare.BytesEqualWithDetail(response, xor([]byte(payload))); err != nil {
-				t.Error(err)
+			if r := cmp.Diff(response, xor([]byte(payload))); r != "" {
+				t.Error(r)
 			}
 		}()
 	}
@@ -934,8 +934,8 @@ func TestVMessKCP(t *testing.T) {
 			assert(nBytes, Equals, len(payload))
 
 			response := readFrom(conn, time.Minute*2, 10240*1024)
-			if err := compare.BytesEqualWithDetail(response, xor(payload)); err != nil {
-				t.Error(err)
+			if r := cmp.Diff(response, xor(payload)); r != "" {
+				t.Error(r)
 			}
 		}()
 	}
@@ -1105,8 +1105,8 @@ func TestVMessKCPLarge(t *testing.T) {
 			assert(nBytes, Equals, len(payload))
 
 			response := readFrom(conn, time.Minute*10, 10240*1024)
-			if err := compare.BytesEqualWithDetail(response, xor(payload)); err != nil {
-				t.Error(err)
+			if r := cmp.Diff(response, xor(payload)); r != "" {
+				t.Error(r)
 			}
 		}()
 	}

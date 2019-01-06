@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"v2ray.com/core"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/policy"
@@ -13,7 +14,6 @@ import (
 	"v2ray.com/core/app/reverse"
 	"v2ray.com/core/app/router"
 	"v2ray.com/core/common"
-	"v2ray.com/core/common/compare"
 	clog "v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -213,8 +213,8 @@ func TestReverseProxy(t *testing.T) {
 			}
 
 			response := readFrom(conn, time.Second*20, 10240*1024)
-			if err := compare.BytesEqualWithDetail(response, xor([]byte(payload))); err != nil {
-				t.Error(err)
+			if r := cmp.Diff(response, xor([]byte(payload))); r != "" {
+				t.Error(r)
 			}
 		}()
 	}
@@ -428,8 +428,8 @@ func TestReverseProxyLongRunning(t *testing.T) {
 		}
 
 		response := readFrom(conn, time.Second*5, 1024)
-		if err := compare.BytesEqualWithDetail(response, xor([]byte(payload))); err != nil {
-			t.Error(err)
+		if r := cmp.Diff(response, xor([]byte(payload))); r != "" {
+			t.Error(r)
 		}
 
 		conn.Close()

@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+
 	"google.golang.org/grpc"
 
 	"v2ray.com/core"
@@ -18,7 +20,6 @@ import (
 	"v2ray.com/core/app/router"
 	"v2ray.com/core/app/stats"
 	statscmd "v2ray.com/core/app/stats/command"
-	"v2ray.com/core/common/compare"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -120,8 +121,8 @@ func TestCommanderRemoveHandler(t *testing.T) {
 		response := make([]byte, 1024)
 		nBytes, err = conn.Read(response)
 		assert(err, IsNil)
-		if err := compare.BytesEqualWithDetail(response[:nBytes], xor([]byte(payload))); err != nil {
-			t.Fatal(err)
+		if r := cmp.Diff(response[:nBytes], xor([]byte(payload))); r != "" {
+			t.Fatal(r)
 		}
 	}
 
@@ -514,8 +515,8 @@ func TestCommanderStats(t *testing.T) {
 	assert(nBytes, Equals, len(payload))
 
 	response := readFrom(conn, time.Second*20, 10240*1024)
-	if err := compare.BytesEqualWithDetail(response, xor([]byte(payload))); err != nil {
-		t.Fatal("failed to read response: ", err)
+	if r := cmp.Diff(response, xor([]byte(payload))); r != "" {
+		t.Fatal("failed to read response: ", r)
 	}
 
 	cmdConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", cmdPort), grpc.WithInsecure(), grpc.WithBlock())
