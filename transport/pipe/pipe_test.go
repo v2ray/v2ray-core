@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/task"
@@ -15,36 +17,38 @@ import (
 )
 
 func TestPipeReadWrite(t *testing.T) {
-	assert := With(t)
-
 	pReader, pWriter := New(WithSizeLimit(1024))
 
 	b := buf.New()
 	b.WriteString("abcd")
-	assert(pWriter.WriteMultiBuffer(buf.MultiBuffer{b}), IsNil)
+	common.Must(pWriter.WriteMultiBuffer(buf.MultiBuffer{b}))
 
 	b2 := buf.New()
 	b2.WriteString("efg")
-	assert(pWriter.WriteMultiBuffer(buf.MultiBuffer{b2}), IsNil)
+	common.Must(pWriter.WriteMultiBuffer(buf.MultiBuffer{b2}))
 
 	rb, err := pReader.ReadMultiBuffer()
-	assert(err, IsNil)
-	assert(rb.String(), Equals, "abcdefg")
+	common.Must(err)
+	if r := cmp.Diff(rb.String(), "abcdefg"); r != "" {
+		t.Error(r)
+	}
 }
 
 func TestPipeInterrupt(t *testing.T) {
-	assert := With(t)
-
 	pReader, pWriter := New(WithSizeLimit(1024))
 	payload := []byte{'a', 'b', 'c', 'd'}
 	b := buf.New()
 	b.Write(payload)
-	assert(pWriter.WriteMultiBuffer(buf.MultiBuffer{b}), IsNil)
+	common.Must(pWriter.WriteMultiBuffer(buf.MultiBuffer{b}))
 	pWriter.Interrupt()
 
 	rb, err := pReader.ReadMultiBuffer()
-	assert(err, Equals, io.ErrClosedPipe)
-	assert(rb.IsEmpty(), IsTrue)
+	if err != io.ErrClosedPipe {
+		t.Fatal("expect io.ErrClosePipe, but got ", err)
+	}
+	if !rb.IsEmpty() {
+		t.Fatal("expect empty buffer, but got ", rb.Len())
+	}
 }
 
 func TestPipeClose(t *testing.T) {

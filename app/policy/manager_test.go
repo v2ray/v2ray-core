@@ -6,13 +6,11 @@ import (
 	"time"
 
 	. "v2ray.com/core/app/policy"
+	"v2ray.com/core/common"
 	"v2ray.com/core/features/policy"
-	. "v2ray.com/ext/assert"
 )
 
 func TestPolicy(t *testing.T) {
-	assert := With(t)
-
 	manager, err := New(context.Background(), &Config{
 		Level: map[uint32]*Policy{
 			0: {
@@ -24,14 +22,24 @@ func TestPolicy(t *testing.T) {
 			},
 		},
 	})
-	assert(err, IsNil)
+	common.Must(err)
 
 	pDefault := policy.SessionDefault()
 
-	p0 := manager.ForLevel(0)
-	assert(p0.Timeouts.Handshake, Equals, 2*time.Second)
-	assert(p0.Timeouts.ConnectionIdle, Equals, pDefault.Timeouts.ConnectionIdle)
+	{
+		p := manager.ForLevel(0)
+		if p.Timeouts.Handshake != 2*time.Second {
+			t.Error("expect 2 sec timeout, but got ", p.Timeouts.Handshake)
+		}
+		if p.Timeouts.ConnectionIdle != pDefault.Timeouts.ConnectionIdle {
+			t.Error("expect ", pDefault.Timeouts.ConnectionIdle, " sec timeout, but got ", p.Timeouts.ConnectionIdle)
+		}
+	}
 
-	p1 := manager.ForLevel(1)
-	assert(p1.Timeouts.Handshake, Equals, pDefault.Timeouts.Handshake)
+	{
+		p := manager.ForLevel(1)
+		if p.Timeouts.Handshake != pDefault.Timeouts.Handshake {
+			t.Error("expect ", pDefault.Timeouts.Handshake, " sec timeout, but got ", p.Timeouts.Handshake)
+		}
+	}
 }

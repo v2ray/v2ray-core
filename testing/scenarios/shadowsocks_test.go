@@ -6,12 +6,15 @@ import (
 	"testing"
 	"time"
 
-	"v2ray.com/core/common"
-	"v2ray.com/core/common/compare"
+	"github.com/google/go-cmp/cmp"
+	"golang.org/x/sync/errgroup"
 
 	"v2ray.com/core"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/common"
+	"v2ray.com/core/common/compare"
+	"v2ray.com/core/common/errors"
 	clog "v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -25,13 +28,11 @@ import (
 )
 
 func TestShadowsocksAES256TCP(t *testing.T) {
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	account := serial.ToTypedMessage(&shadowsocks.Account{
@@ -113,44 +114,50 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
+	defer CloseAllServers(servers)
 
-	var wg sync.WaitGroup
-	wg.Add(10)
+	var errg errgroup.Group
 	for i := 0; i < 10; i++ {
-		go func() {
+		errg.Go(func() error {
 			conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 				IP:   []byte{127, 0, 0, 1},
 				Port: int(clientPort),
 			})
-			assert(err, IsNil)
+			if err != nil {
+				return err
+			}
+			defer conn.Close()
 
 			payload := make([]byte, 10240*1024)
-			rand.Read(payload)
+			common.Must2(rand.Read(payload))
 
 			nBytes, err := conn.Write([]byte(payload))
-			assert(err, IsNil)
-			assert(nBytes, Equals, len(payload))
+			if err != nil {
+				return err
+			}
+			if nBytes != len(payload) {
+				return errors.New("expect ", len(payload), " written, but actually ", nBytes)
+			}
 
 			response := readFrom(conn, time.Second*20, 10240*1024)
-			assert(response, Equals, xor([]byte(payload)))
-			assert(conn.Close(), IsNil)
-			wg.Done()
-		}()
+			if r := cmp.Diff(response, xor([]byte(payload))); r != "" {
+				return errors.New(r)
+			}
+			return nil
+		})
 	}
-	wg.Wait()
-
-	CloseAllServers(servers)
+	if err := errg.Wait(); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestShadowsocksAES128UDP(t *testing.T) {
-	assert := With(t)
-
 	udpServer := udp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := udpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer udpServer.Close()
 
 	account := serial.ToTypedMessage(&shadowsocks.Account{
@@ -232,34 +239,43 @@ func TestShadowsocksAES128UDP(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
+	defer CloseAllServers(servers)
 
-	var wg sync.WaitGroup
-	wg.Add(10)
+	var errg errgroup.Group
 	for i := 0; i < 10; i++ {
-		go func() {
+		errg.Go(func() error {
 			conn, err := net.DialUDP("udp", nil, &net.UDPAddr{
 				IP:   []byte{127, 0, 0, 1},
 				Port: int(clientPort),
 			})
-			assert(err, IsNil)
+			if err != nil {
+				return err
+			}
+			defer conn.Close()
 
 			payload := make([]byte, 1024)
-			rand.Read(payload)
+			common.Must2(rand.Read(payload))
 
 			nBytes, err := conn.Write([]byte(payload))
-			assert(err, IsNil)
-			assert(nBytes, Equals, len(payload))
+			if err != nil {
+				return err
+			}
+			if nBytes != len(payload) {
+				return errors.New("expect ", len(payload), " written, but actually ", nBytes)
+			}
 
 			response := readFrom(conn, time.Second*5, 1024)
-			assert(response, Equals, xor([]byte(payload)))
-			assert(conn.Close(), IsNil)
-			wg.Done()
-		}()
+			if r := cmp.Diff(response, xor(payload)); r != "" {
+				return errors.New(r)
+			}
+			return nil
+		})
 	}
-	wg.Wait()
 
-	CloseAllServers(servers)
+	if err := errg.Wait(); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestShadowsocksChacha20TCP(t *testing.T) {
@@ -938,12 +954,9 @@ func TestShadowsocksNone(t *testing.T) {
 
 	defer CloseAllServers(servers)
 
-	var wg sync.WaitGroup
-	wg.Add(10)
+	var errg errgroup.Group
 	for i := 0; i < 10; i++ {
-		go func() {
-			defer wg.Done()
-
+		errg.Go(func() error {
 			conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 				IP:   []byte{127, 0, 0, 1},
 				Port: int(clientPort),
@@ -958,14 +971,18 @@ func TestShadowsocksNone(t *testing.T) {
 			common.Must(err)
 
 			if nBytes != len(payload) {
-				t.Error("only part of payload is written: ", nBytes)
+				return errors.New("only part of payload is written: ", nBytes)
 			}
 
 			response := readFrom(conn, time.Second*20, 10240*1024)
-			if err := compare.BytesEqualWithDetail(response, xor([]byte(payload))); err != nil {
-				t.Error(err)
+			if r := cmp.Diff(response, xor(payload)); r != "" {
+				return errors.New(r)
 			}
-		}()
+			return nil
+		})
 	}
-	wg.Wait()
+
+	if err := errg.Wait(); err != nil {
+		t.Fatal(err)
+	}
 }

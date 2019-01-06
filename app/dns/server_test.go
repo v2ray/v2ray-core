@@ -1,9 +1,10 @@
 package dns_test
 
 import (
-	"runtime"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
 
 	"v2ray.com/core"
 	"v2ray.com/core/app/dispatcher"
@@ -17,7 +18,6 @@ import (
 	feature_dns "v2ray.com/core/features/dns"
 	"v2ray.com/core/proxy/freedom"
 	"v2ray.com/core/testing/servers/udp"
-	. "v2ray.com/ext/assert"
 
 	"github.com/miekg/dns"
 )
@@ -67,11 +67,6 @@ func (*staticHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 }
 
 func TestUDPServerSubnet(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("doesn't work on Windows due to miekg/dns changes.")
-	}
-	assert := With(t)
-
 	port := udp.PickPort()
 
 	dnsServer := dns.Server{
@@ -112,22 +107,21 @@ func TestUDPServerSubnet(t *testing.T) {
 	}
 
 	v, err := core.New(config)
-	assert(err, IsNil)
+	common.Must(err)
 
 	client := v.GetFeature(feature_dns.ClientType()).(feature_dns.Client)
 
 	ips, err := client.LookupIP("google.com")
-	assert(err, IsNil)
-	assert(len(ips), Equals, 1)
-	assert([]byte(ips[0]), Equals, []byte{8, 8, 4, 4})
+	if err != nil {
+		t.Fatal("unexpected error: ", err)
+	}
+
+	if r := cmp.Diff(ips, []net.IP{{8, 8, 4, 4}}); r != "" {
+		t.Fatal(r)
+	}
 }
 
 func TestUDPServer(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("doesn't work on Windows due to miekg/dns changes.")
-	}
-	assert := With(t)
-
 	port := udp.PickPort()
 
 	dnsServer := dns.Server{
@@ -167,34 +161,47 @@ func TestUDPServer(t *testing.T) {
 	}
 
 	v, err := core.New(config)
-	assert(err, IsNil)
+	common.Must(err)
 
 	client := v.GetFeature(feature_dns.ClientType()).(feature_dns.Client)
 
-	ips, err := client.LookupIP("google.com")
-	assert(err, IsNil)
-	assert(len(ips), Equals, 1)
-	assert([]byte(ips[0]), Equals, []byte{8, 8, 8, 8})
+	{
+		ips, err := client.LookupIP("google.com")
+		if err != nil {
+			t.Fatal("unexpected error: ", err)
+		}
 
-	ips, err = client.LookupIP("facebook.com")
-	assert(err, IsNil)
-	assert(len(ips), Equals, 1)
-	assert([]byte(ips[0]), Equals, []byte{9, 9, 9, 9})
+		if r := cmp.Diff(ips, []net.IP{{8, 8, 8, 8}}); r != "" {
+			t.Fatal(r)
+		}
+	}
+
+	{
+		ips, err := client.LookupIP("facebook.com")
+		if err != nil {
+			t.Fatal("unexpected error: ", err)
+		}
+
+		if r := cmp.Diff(ips, []net.IP{{9, 9, 9, 9}}); r != "" {
+			t.Fatal(r)
+		}
+	}
 
 	dnsServer.Shutdown()
 
-	ips, err = client.LookupIP("google.com")
-	assert(err, IsNil)
-	assert(len(ips), Equals, 1)
-	assert([]byte(ips[0]), Equals, []byte{8, 8, 8, 8})
+	{
+		ips, err := client.LookupIP("google.com")
+		if err != nil {
+			t.Fatal("unexpected error: ", err)
+		}
+
+		if r := cmp.Diff(ips, []net.IP{{8, 8, 8, 8}}); r != "" {
+			t.Fatal(r)
+		}
+	}
 }
 
 func TestPrioritizedDomain(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("doesn't work on Windows due to miekg/dns changes.")
-	}
-	assert := With(t)
-
 	port := udp.PickPort()
 
 	dnsServer := dns.Server{
@@ -253,15 +260,22 @@ func TestPrioritizedDomain(t *testing.T) {
 	}
 
 	v, err := core.New(config)
-	assert(err, IsNil)
+	common.Must(err)
 
 	client := v.GetFeature(feature_dns.ClientType()).(feature_dns.Client)
 
 	startTime := time.Now()
-	ips, err := client.LookupIP("google.com")
-	assert(err, IsNil)
-	assert(len(ips), Equals, 1)
-	assert([]byte(ips[0]), Equals, []byte{8, 8, 8, 8})
+
+	{
+		ips, err := client.LookupIP("google.com")
+		if err != nil {
+			t.Fatal("unexpected error: ", err)
+		}
+
+		if r := cmp.Diff(ips, []net.IP{{8, 8, 8, 8}}); r != "" {
+			t.Fatal(r)
+		}
+	}
 
 	endTime := time.Now()
 	if startTime.After(endTime.Add(time.Second * 2)) {
@@ -270,11 +284,6 @@ func TestPrioritizedDomain(t *testing.T) {
 }
 
 func TestUDPServerIPv6(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("doesn't work on Windows due to miekg/dns changes.")
-	}
-	assert := With(t)
-
 	port := udp.PickPort()
 
 	dnsServer := dns.Server{
@@ -314,13 +323,19 @@ func TestUDPServerIPv6(t *testing.T) {
 	}
 
 	v, err := core.New(config)
-	assert(err, IsNil)
+	common.Must(err)
 
 	client := v.GetFeature(feature_dns.ClientType()).(feature_dns.Client)
 	client6 := client.(feature_dns.IPv6Lookup)
 
-	ips, err := client6.LookupIPv6("ipv6.google.com")
-	assert(err, IsNil)
-	assert(len(ips), Equals, 1)
-	assert([]byte(ips[0]), Equals, []byte{32, 1, 72, 96, 72, 96, 0, 0, 0, 0, 0, 0, 0, 0, 136, 136})
+	{
+		ips, err := client6.LookupIPv6("ipv6.google.com")
+		if err != nil {
+			t.Fatal("unexpected error: ", err)
+		}
+
+		if r := cmp.Diff(ips, []net.IP{{32, 1, 72, 96, 72, 96, 0, 0, 0, 0, 0, 0, 0, 0, 136, 136}}); r != "" {
+			t.Fatal(r)
+		}
+	}
 }
