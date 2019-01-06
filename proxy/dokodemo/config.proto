@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package v2ray.core.proxy.dokodemo;
+option csharp_namespace = "V2Ray.Core.Proxy.Dokodemo";
+option go_package = "dokodemo";
+option java_package = "com.v2ray.core.proxy.dokodemo";
+option java_multiple_files = true;
+
+import "v2ray.com/core/common/net/address.proto";
+import "v2ray.com/core/common/net/network.proto";
+
+message Config {
+  v2ray.core.common.net.IPOrDomain address = 1;
+  uint32 port = 2;
+
+  // List of networks that the Dokodemo accepts.
+  // Deprecated. Use networks.
+  v2ray.core.common.net.NetworkList network_list = 3 [deprecated = true];
+  // List of networks that the Dokodemo accepts.
+  repeated v2ray.core.common.net.Network networks = 7;
+
+  uint32 timeout = 4 [deprecated = true];
+  bool follow_redirect = 5;
+  uint32 user_level = 6;
+}

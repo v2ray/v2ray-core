@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package v2ray.core.proxy.http;
+option csharp_namespace = "V2Ray.Core.Proxy.Http";
+option go_package = "http";
+option java_package = "com.v2ray.core.proxy.http";
+option java_multiple_files = true;
+
+// Config for HTTP proxy server.
+message ServerConfig {
+  uint32 timeout = 1 [deprecated = true];
+  map<string, string> accounts = 2;
+  bool allow_transparent = 3;
+  uint32 user_level = 4;
+}
+
+// ClientConfig for HTTP proxy client.
+message ClientConfig {
+
+}

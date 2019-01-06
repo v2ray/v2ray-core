@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package v2ray.core.proxy.freedom;
+option csharp_namespace = "V2Ray.Core.Proxy.Freedom";
+option go_package = "freedom";
+option java_package = "com.v2ray.core.proxy.freedom";
+option java_multiple_files = true;
+
+import "v2ray.com/core/common/protocol/server_spec.proto";
+
+message DestinationOverride {
+  v2ray.core.common.protocol.ServerEndpoint server = 1;
+}
+
+message Config {
+  enum DomainStrategy {
+    AS_IS = 0;
+    USE_IP = 1;
+    USE_IP4 = 2;
+    USE_IP6 = 3;
+  }
+  DomainStrategy domain_strategy = 1;
+  uint32 timeout = 2 [deprecated = true];
+  DestinationOverride destination_override = 3;
+  uint32 user_level = 4;
+}

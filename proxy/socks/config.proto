@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package v2ray.core.proxy.socks;
+option csharp_namespace = "V2Ray.Core.Proxy.Socks";
+option go_package = "socks";
+option java_package = "com.v2ray.core.proxy.socks";
+option java_multiple_files = true;
+
+import "v2ray.com/core/common/net/address.proto";
+import "v2ray.com/core/common/protocol/server_spec.proto";
+
+// Account represents a Socks account.
+message Account {
+  string username = 1;
+  string password = 2;
+}
+
+// AuthType is the authentication type of Socks proxy.
+enum AuthType {
+  // NO_AUTH is for anounymous authentication.
+  NO_AUTH = 0;
+  // PASSWORD is for username/password authentication.
+  PASSWORD = 1;
+}
+
+// ServerConfig is the protobuf config for Socks server.
+message ServerConfig {
+  AuthType auth_type = 1;
+  map<string, string> accounts = 2;
+  v2ray.core.common.net.IPOrDomain address = 3;
+  bool udp_enabled = 4;
+  uint32 timeout = 5 [deprecated = true];
+  uint32 user_level = 6;
+}
+
+// ClientConfig is the protobuf config for Socks client.
+message ClientConfig {
+  // Sever is a list of Socks server addresses.
+  repeated v2ray.core.common.protocol.ServerEndpoint server = 1;
+}

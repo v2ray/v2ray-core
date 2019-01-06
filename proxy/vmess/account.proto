@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package v2ray.core.proxy.vmess;
+option csharp_namespace = "V2Ray.Core.Proxy.Vmess";
+option go_package = "vmess";
+option java_package = "com.v2ray.core.proxy.vmess";
+option java_multiple_files = true;
+
+import "v2ray.com/core/common/protocol/headers.proto";
+
+message Account {
+  // ID of the account, in the form of a UUID, e.g., "66ad4540-b58c-4ad2-9926-ea63445a9b57".
+  string id = 1;
+  // Number of alternative IDs. Client and server must share the same number.
+  uint32 alter_id = 2;
+  // Security settings. Only applies to client side.
+  v2ray.core.common.protocol.SecurityConfig security_settings = 3;
+}

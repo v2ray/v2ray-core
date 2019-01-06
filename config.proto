@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package v2ray.core;
+option csharp_namespace = "V2Ray.Core";
+option go_package = "core";
+option java_package = "com.v2ray.core";
+option java_multiple_files = true;
+
+import "v2ray.com/core/common/serial/typed_message.proto";
+import "v2ray.com/core/transport/config.proto";
+
+// Config is the master config of V2Ray. V2Ray takes this config as input and functions accordingly.
+message Config {
+  // Inbound handler configurations. Must have at least one item.
+  repeated InboundHandlerConfig inbound = 1;
+
+  // Outbound handler configurations. Must have at least one item. The first item is used as default for routing.
+  repeated OutboundHandlerConfig outbound = 2;
+
+  reserved 3;
+
+  // App is for configurations of all features in V2Ray. A feature must implement the Feature interface, and its config type must be registered through common.RegisterConfig.
+  repeated v2ray.core.common.serial.TypedMessage app = 4;
+
+  // Transport settings.
+  v2ray.core.transport.Config transport = 5;
+
+  // Configuration for extensions. The config may not work if corresponding extension is not loaded into V2Ray.
+  // V2Ray will ignore such config during initialization.
+  repeated v2ray.core.common.serial.TypedMessage extension = 6;
+}
+
+// InboundHandlerConfig is the configuration for inbound handler.
+message InboundHandlerConfig {
+  // Tag of the inbound handler. The tag must be unique among all inbound handlers
+  string tag = 1;
+  // Settings for how this inbound proxy is handled.
+  v2ray.core.common.serial.TypedMessage receiver_settings = 2;
+  // Settings for inbound proxy. Must be one of the inbound proxies.
+  v2ray.core.common.serial.TypedMessage proxy_settings = 3;
+}
+
+// OutboundHandlerConfig is the configuration for outbound handler.
+message OutboundHandlerConfig {
+  // Tag of this outbound handler.
+  string tag = 1;
+  // Settings for how to dial connection for this outbound handler.
+  v2ray.core.common.serial.TypedMessage sender_settings = 2;
+  // Settings for this outbound proxy. Must be one of the outbound proxies.
+  v2ray.core.common.serial.TypedMessage proxy_settings = 3;
+  // If not zero, this outbound will be expired in seconds. Not used for now.
+  int64 expire = 4;
+  // Comment of this outbound handler. Not used for now.
+  string comment = 5;
+}

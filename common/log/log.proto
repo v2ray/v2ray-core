@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package v2ray.core.common.log;
+option csharp_namespace = "V2Ray.Core.Common.Log";
+option go_package = "log";
+option java_package = "com.v2ray.core.common.log";
+option java_multiple_files = true;
+
+enum Severity {
+  Unknown = 0;
+  Error = 1;
+  Warning = 2;
+  Info = 3;
+  Debug = 4;
+}
+

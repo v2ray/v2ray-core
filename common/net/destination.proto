@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package v2ray.core.common.net;
+option csharp_namespace = "V2Ray.Core.Common.Net";
+option go_package = "net";
+option java_package = "com.v2ray.core.common.net";
+option java_multiple_files = true;
+
+import "v2ray.com/core/common/net/network.proto";
+import "v2ray.com/core/common/net/address.proto";
+
+// Endpoint of a network connection.
+message Endpoint {
+  Network network = 1;
+  IPOrDomain address = 2;
+  uint32 port = 3;
+}

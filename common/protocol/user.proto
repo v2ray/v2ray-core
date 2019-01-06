@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package v2ray.core.common.protocol;
+option csharp_namespace = "V2Ray.Core.Common.Protocol";
+option go_package = "protocol";
+option java_package = "com.v2ray.core.common.protocol";
+option java_multiple_files = true;
+
+import "v2ray.com/core/common/serial/typed_message.proto";
+
+// User is a generic user for all procotols.
+message User {
+  uint32 level = 1;
+  string email = 2;
+
+  // Protocol specific account information. Must be the account proto in one of the proxies.
+  v2ray.core.common.serial.TypedMessage account = 3;
+}

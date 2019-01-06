@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package v2ray.core.transport.internet.domainsocket;
+option csharp_namespace = "V2Ray.Core.Transport.Internet.DomainSocket";
+option go_package = "domainsocket";
+option java_package = "com.v2ray.core.transport.internet.domainsocket";
+option java_multiple_files = true;
+
+message Config {
+ // Path of the domain socket. This overrides the IP/Port parameter from upstream caller.
+ string path = 1;
+ // Abstract speicifies whether to use abstract namespace or not.
+ // Traditionally Unix domain socket is file system based. Abstract domain socket can be used without acquiring file lock. 
+ bool abstract = 2;
+}

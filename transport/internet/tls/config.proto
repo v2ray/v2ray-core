@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package v2ray.core.transport.internet.tls;
+option csharp_namespace = "V2Ray.Core.Transport.Internet.Tls";
+option go_package = "tls";
+option java_package = "com.v2ray.core.transport.internet.tls";
+option java_multiple_files = true;
+
+message Certificate {
+  // TLS certificate in x509 format.
+  bytes Certificate = 1;
+
+  // TLS key in x509 format.
+  bytes Key = 2;
+
+  enum Usage {
+    ENCIPHERMENT = 0;
+    AUTHORITY_VERIFY = 1;
+    AUTHORITY_ISSUE = 2;
+  }
+
+  Usage usage = 3;
+}
+
+message Config {
+  // Whether or not to allow self-signed certificates.
+  bool allow_insecure = 1;
+
+  // Whether or not to allow insecure cipher suites.
+  bool allow_insecure_ciphers = 5;
+
+  // List of certificates to be served on server.
+  repeated Certificate certificate = 2;
+
+  // Override server name.
+  string server_name = 3;
+
+  // Lists of string as ALPN values.
+  repeated string next_protocol = 4;
+
+  // Whether or not to disable session (ticket) resumption.
+  bool disable_session_resumption = 6;
+}

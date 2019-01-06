@@ -1,0 +1,135 @@
+syntax = "proto3";
+
+package v2ray.core.app.router;
+option csharp_namespace = "V2Ray.Core.App.Router";
+option go_package = "router";
+option java_package = "com.v2ray.core.app.router";
+option java_multiple_files = true;
+
+import "v2ray.com/core/common/net/port.proto";
+import "v2ray.com/core/common/net/network.proto";
+
+// Domain for routing decision. 
+message Domain {
+  // Type of domain value.
+  enum Type {
+    // The value is used as is.
+    Plain = 0;
+    // The value is used as a regular expression.
+    Regex = 1;
+    // The value is a root domain.
+    Domain = 2;
+    // The value is a domain.
+    Full = 3;
+  }
+
+  // Domain matching type.
+  Type type = 1;
+
+  // Domain value.
+  string value = 2;
+
+  message Attribute {
+    string key = 1;
+
+    oneof typed_value {
+      bool bool_value = 2;
+      int64 int_value = 3;
+    }
+  }
+
+  // Attributes of this domain. May be used for filtering.
+  repeated Attribute attribute = 3;
+}
+
+// IP for routing decision, in CIDR form.
+message CIDR {
+  // IP address, should be either 4 or 16 bytes.
+  bytes ip = 1;
+
+  // Number of leading ones in the network mask.
+  uint32 prefix = 2;
+}
+
+message GeoIP {
+  string country_code = 1;
+  repeated CIDR cidr = 2;
+}
+
+message GeoIPList {
+  repeated GeoIP entry = 1;
+}
+
+message GeoSite {
+  string country_code = 1;
+  repeated Domain domain = 2;
+}
+
+message GeoSiteList{
+  repeated GeoSite entry = 1;
+}
+
+message RoutingRule {
+  oneof target_tag {
+    // Tag of outbound that this rule is pointing to.
+    string tag = 1;
+
+    // Tag of routing balancer.
+    string balancing_tag = 12;
+  }
+  
+
+  // List of domains for target domain matching.
+  repeated Domain domain = 2;
+
+  // List of CIDRs for target IP address matching.
+  // The list must be sorted beforehand.
+  repeated CIDR cidr = 3 [deprecated = true];
+  
+  // List of GeoIPs for target IP address matching. If this entry exists, the cidr above will have no effect.
+  // GeoIP fields with the same country code are supposed to contain exactly same content. They will be merged during runtime.
+  // For customized GeoIPs, please leave country code empty.
+  repeated GeoIP geoip = 10;
+
+  v2ray.core.common.net.PortRange port_range = 4;
+
+  // List of networks. Deprecated. Use networks.
+  v2ray.core.common.net.NetworkList network_list = 5 [deprecated = true];
+
+  // List of networks for matching.
+  repeated v2ray.core.common.net.Network networks = 13;
+
+  // List of CIDRs for source IP address matching.
+  repeated CIDR source_cidr = 6 [deprecated = true];
+
+  // List of GeoIPs for source IP address matching. If this entry exists, the source_cidr above will have no effect.
+  repeated GeoIP source_geoip = 11;
+
+  repeated string user_email = 7;
+  repeated string inbound_tag = 8;
+  repeated string protocol = 9;
+}
+
+message BalancingRule {
+  string tag = 1;
+  repeated string outbound_selector = 2;
+}
+
+message Config {
+  enum DomainStrategy {
+    // Use domain as is.
+    AsIs = 0;
+
+    // Always resolve IP for domains.
+    UseIp = 1;
+
+    // Resolve to IP if the domain doesn't match any rules.
+    IpIfNonMatch = 2;
+
+    // Resolve to IP if any rule requires IP matching.
+    IpOnDemand = 3;
+  }
+  DomainStrategy domain_strategy = 1;
+  repeated RoutingRule rule = 2;
+  repeated BalancingRule balancing_rule = 3;
+}
