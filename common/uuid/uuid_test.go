@@ -32,7 +32,7 @@ func TestParseString(t *testing.T) {
 
 	uuid, err := ParseString(str)
 	common.Must(err)
-	if r := cmp.Diff(expectedBytes, uuid.Bytes); r != "" {
+	if r := cmp.Diff(expectedBytes, uuid.Bytes()); r != "" {
 		t.Fatal(r)
 	}
 

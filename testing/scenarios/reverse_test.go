@@ -2,9 +2,10 @@ package scenarios
 
 import (
 	"crypto/rand"
-	"sync"
 	"testing"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/google/go-cmp/cmp"
 	"v2ray.com/core"
@@ -14,6 +15,7 @@ import (
 	"v2ray.com/core/app/reverse"
 	"v2ray.com/core/app/router"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/errors"
 	clog "v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -189,36 +191,41 @@ func TestReverseProxy(t *testing.T) {
 
 	defer CloseAllServers(servers)
 
-	var wg sync.WaitGroup
-	wg.Add(32)
+	var errg errgroup.Group
 	for i := 0; i < 32; i++ {
-		go func() {
-			defer wg.Done()
-
+		errg.Go(func() error {
 			conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
 				IP:   []byte{127, 0, 0, 1},
 				Port: int(externalPort),
 			})
-			common.Must(err)
+			if err != nil {
+				return err
+			}
 			defer conn.Close()
 
 			payload := make([]byte, 10240*1024)
 			rand.Read(payload)
 
 			nBytes, err := conn.Write([]byte(payload))
-			common.Must(err)
+			if err != nil {
+				return err
+			}
 
 			if nBytes != len(payload) {
-				t.Error("only part of payload is written: ", nBytes)
+				return errors.New("only part of payload is written: ", nBytes)
 			}
 
 			response := readFrom(conn, time.Second*20, 10240*1024)
-			if r := cmp.Diff(response, xor([]byte(payload))); r != "" {
-				t.Error(r)
+			if r := cmp.Diff(response, xor(payload)); r != "" {
+				return errors.New(r)
 			}
-		}()
+			return nil
+		})
 	}
-	wg.Wait()
+
+	if err := errg.Wait(); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestReverseProxyLongRunning(t *testing.T) {
@@ -428,7 +435,7 @@ func TestReverseProxyLongRunning(t *testing.T) {
 		}
 
 		response := readFrom(conn, time.Second*5, 1024)
-		if r := cmp.Diff(response, xor([]byte(payload))); r != "" {
+		if r := cmp.Diff(response, xor(payload)); r != "" {
 			t.Error(r)
 		}
 
