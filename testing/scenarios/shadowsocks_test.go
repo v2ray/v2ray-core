@@ -118,33 +118,7 @@ func TestShadowsocksAES256TCP(t *testing.T) {
 
 	var errg errgroup.Group
 	for i := 0; i < 10; i++ {
-		errg.Go(func() error {
-			conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-				IP:   []byte{127, 0, 0, 1},
-				Port: int(clientPort),
-			})
-			if err != nil {
-				return err
-			}
-			defer conn.Close()
-
-			payload := make([]byte, 10240*1024)
-			common.Must2(rand.Read(payload))
-
-			nBytes, err := conn.Write([]byte(payload))
-			if err != nil {
-				return err
-			}
-			if nBytes != len(payload) {
-				return errors.New("expect ", len(payload), " written, but actually ", nBytes)
-			}
-
-			response := readFrom(conn, time.Second*20, 10240*1024)
-			if r := cmp.Diff(response, xor([]byte(payload))); r != "" {
-				return errors.New(r)
-			}
-			return nil
-		})
+		errg.Go(testTCPConn(clientPort, 10240*1024, time.Second*20))
 	}
 	if err := errg.Wait(); err != nil {
 		t.Fatal(err)
@@ -278,7 +252,6 @@ func TestShadowsocksAES128UDP(t *testing.T) {
 }
 
 func TestShadowsocksChacha20TCP(t *testing.T) {
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
@@ -367,39 +340,16 @@ func TestShadowsocksChacha20TCP(t *testing.T) {
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
 	common.Must(err)
-
 	defer CloseAllServers(servers)
 
-	var wg sync.WaitGroup
-	wg.Add(10)
+	var errg errgroup.Group
 	for i := 0; i < 10; i++ {
-		go func() {
-			defer wg.Done()
-
-			conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-				IP:   []byte{127, 0, 0, 1},
-				Port: int(clientPort),
-			})
-			common.Must(err)
-			defer conn.Close()
-
-			payload := make([]byte, 10240*1024)
-			rand.Read(payload)
-
-			nBytes, err := conn.Write([]byte(payload))
-			common.Must(err)
-
-			if nBytes != len(payload) {
-				t.Error("only part of payload is written: ", nBytes)
-			}
-
-			response := readFrom(conn, time.Second*20, 10240*1024)
-			if r := cmp.Diff(response, xor([]byte(payload))); r != "" {
-				t.Error(r)
-			}
-		}()
+		errg.Go(testTCPConn(clientPort, 10240*1024, time.Second*20))
 	}
-	wg.Wait()
+
+	if err := errg.Wait(); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestShadowsocksChacha20Poly1305TCP(t *testing.T) {
@@ -408,7 +358,6 @@ func TestShadowsocksChacha20Poly1305TCP(t *testing.T) {
 	}
 	dest, err := tcpServer.Start()
 	common.Must(err)
-
 	defer tcpServer.Close()
 
 	account := serial.ToTypedMessage(&shadowsocks.Account{
@@ -478,39 +427,15 @@ func TestShadowsocksChacha20Poly1305TCP(t *testing.T) {
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
 	common.Must(err)
-
 	defer CloseAllServers(servers)
 
-	var wg sync.WaitGroup
-	wg.Add(10)
+	var errg errgroup.Group
 	for i := 0; i < 10; i++ {
-		go func() {
-			defer wg.Done()
-
-			conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-				IP:   []byte{127, 0, 0, 1},
-				Port: int(clientPort),
-			})
-			common.Must(err)
-			defer conn.Close()
-
-			payload := make([]byte, 10240*1024)
-			rand.Read(payload)
-
-			nBytes, err := conn.Write([]byte(payload))
-			common.Must(err)
-
-			if nBytes != len(payload) {
-				t.Error("only part of payload is written: ", nBytes)
-			}
-
-			response := readFrom(conn, time.Second*20, 10240*1024)
-			if r := cmp.Diff(response, xor([]byte(payload))); r != "" {
-				t.Error(r)
-			}
-		}()
+		errg.Go(testTCPConn(clientPort, 10240*1024, time.Second*20))
 	}
-	wg.Wait()
+	if err := errg.Wait(); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestShadowsocksAES256GCMTCP(t *testing.T) {

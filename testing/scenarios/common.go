@@ -1,6 +1,7 @@
 package scenarios
 
 import (
+	"crypto/rand"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,10 +13,12 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/google/go-cmp/cmp"
 	"v2ray.com/core"
 	"v2ray.com/core/app/dispatcher"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/common"
+	"v2ray.com/core/common/errors"
 	"v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/retry"
@@ -133,4 +136,34 @@ func withDefaultApps(config *core.Config) *core.Config {
 	config.App = append(config.App, serial.ToTypedMessage(&proxyman.InboundConfig{}))
 	config.App = append(config.App, serial.ToTypedMessage(&proxyman.OutboundConfig{}))
 	return config
+}
+
+func testTCPConn(port net.Port, payloadSize int, timeout time.Duration) func() error {
+	return func() error {
+		conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
+			IP:   []byte{127, 0, 0, 1},
+			Port: int(port),
+		})
+		if err != nil {
+			return err
+		}
+		defer conn.Close()
+
+		payload := make([]byte, payloadSize)
+		common.Must2(rand.Read(payload))
+
+		nBytes, err := conn.Write(payload)
+		if err != nil {
+			return err
+		}
+		if nBytes != len(payload) {
+			return errors.New("expect ", len(payload), " written, but actually ", nBytes)
+		}
+
+		response := readFrom(conn, timeout, payloadSize)
+		if r := cmp.Diff(response, xor(payload)); r != "" {
+			return errors.New(r)
+		}
+		return nil
+	}
 }
