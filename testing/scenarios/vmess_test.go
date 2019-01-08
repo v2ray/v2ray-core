@@ -31,13 +31,11 @@ import (
 )
 
 func TestVMessDynamicPort(t *testing.T) {
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
@@ -141,38 +139,22 @@ func TestVMessDynamicPort(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
+	defer CloseAllServers(servers)
 
 	for i := 0; i < 10; i++ {
-		conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-			IP:   []byte{127, 0, 0, 1},
-			Port: int(clientPort),
-		})
-		assert(err, IsNil)
-
-		payload := "dokodemo request."
-		nBytes, err := conn.Write([]byte(payload))
-		assert(err, IsNil)
-		assert(nBytes, Equals, len(payload))
-
-		response := make([]byte, 1024)
-		nBytes, err = conn.Read(response)
-		assert(err, IsNil)
-		assert(response[:nBytes], Equals, xor([]byte(payload)))
-		assert(conn.Close(), IsNil)
+		if err := testTCPConn(clientPort, 1024, time.Second*2)(); err != nil {
+			t.Error(err)
+		}
 	}
-
-	CloseAllServers(servers)
 }
 
 func TestVMessGCM(t *testing.T) {
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
@@ -257,55 +239,28 @@ func TestVMessGCM(t *testing.T) {
 		},
 	}
 
-	/*
-		const envName = "V2RAY_VMESS_PADDING"
-		common.Must(os.Setenv(envName, "1"))
-		defer os.Unsetenv(envName)
-	*/
-
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
 	if err != nil {
 		t.Fatal("Failed to initialize all servers: ", err.Error())
 	}
 	defer CloseAllServers(servers)
 
-	var wg sync.WaitGroup
+	var errg errgroup.Group
 	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
-			conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-				IP:   []byte{127, 0, 0, 1},
-				Port: int(clientPort),
-			})
-			assert(err, IsNil)
-			defer conn.Close() // nolint: errcheck
-
-			payload := make([]byte, 10240*1024)
-			rand.Read(payload)
-
-			nBytes, err := conn.Write([]byte(payload))
-			assert(err, IsNil)
-			assert(nBytes, Equals, len(payload))
-
-			response := readFrom(conn, time.Second*40, 10240*1024)
-			if r := cmp.Diff(response, xor([]byte(payload))); r != "" {
-				t.Error(r)
-			}
-		}()
+		errg.Go(testTCPConn(clientPort, 10240*1024, time.Second*40))
 	}
-	wg.Wait()
+
+	if err := errg.Wait(); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestVMessGCMReadv(t *testing.T) {
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
@@ -400,33 +355,13 @@ func TestVMessGCMReadv(t *testing.T) {
 	}
 	defer CloseAllServers(servers)
 
-	var wg sync.WaitGroup
-	wg.Add(10)
+	var errg errgroup.Group
 	for i := 0; i < 10; i++ {
-		go func() {
-			defer wg.Done()
-
-			conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-				IP:   []byte{127, 0, 0, 1},
-				Port: int(clientPort),
-			})
-			assert(err, IsNil)
-			defer conn.Close() // nolint: errcheck
-
-			payload := make([]byte, 10240*1024)
-			rand.Read(payload)
-
-			nBytes, err := conn.Write([]byte(payload))
-			assert(err, IsNil)
-			assert(nBytes, Equals, len(payload))
-
-			response := readFrom(conn, time.Second*40, 10240*1024)
-			if r := cmp.Diff(response, xor([]byte(payload))); r != "" {
-				t.Error(r)
-			}
-		}()
+		errg.Go(testTCPConn(clientPort, 10240*1024, time.Second*40))
 	}
-	wg.Wait()
+	if err := errg.Wait(); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestVMessGCMUDP(t *testing.T) {
