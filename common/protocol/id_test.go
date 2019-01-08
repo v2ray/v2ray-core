@@ -15,7 +15,7 @@ func TestIdEquals(t *testing.T) {
 		t.Error("expected id1 to equal id2, but actually not")
 	}
 
-	if !id1.String() != id2.String() {
+	if id1.String() != id2.String() {
 		t.Error(id1.String(), " != ", id2.String())
 	}
 }
