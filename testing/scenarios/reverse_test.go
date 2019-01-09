@@ -190,7 +190,7 @@ func TestReverseProxy(t *testing.T) {
 
 	var errg errgroup.Group
 	for i := 0; i < 32; i++ {
-		errg.Go(testTCPConn(externalPort, 10240*1024, time.Second*20))
+		errg.Go(testTCPConn(externalPort, 10240*1024, time.Second*40))
 	}
 
 	if err := errg.Wait(); err != nil {
