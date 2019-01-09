@@ -388,7 +388,7 @@ func TestReverseProxyLongRunning(t *testing.T) {
 	defer CloseAllServers(servers)
 
 	for i := 0; i < 4096; i++ {
-		if err := testTCPConn(externalPort, 1024, time.Second*10)(); err != nil {
+		if err := testTCPConn(externalPort, 1024, time.Second*20)(); err != nil {
 			t.Error(err)
 		}
 	}
