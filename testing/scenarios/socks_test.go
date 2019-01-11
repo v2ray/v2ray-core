@@ -2,6 +2,7 @@ package scenarios
 
 import (
 	"testing"
+	"time"
 
 	xproxy "golang.org/x/net/proxy"
 	socks4 "h12.io/socks"
@@ -9,6 +10,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/app/proxyman"
 	"v2ray.com/core/app/router"
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/serial"
@@ -22,13 +24,11 @@ import (
 )
 
 func TestSocksBridgeTCP(t *testing.T) {
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	serverPort := tcp.PickPort()
@@ -96,26 +96,12 @@ func TestSocksBridgeTCP(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
+	defer CloseAllServers(servers)
 
-	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-		IP:   []byte{127, 0, 0, 1},
-		Port: int(clientPort),
-	})
-	assert(err, IsNil)
-
-	payload := "test payload"
-	nBytes, err := conn.Write([]byte(payload))
-	assert(err, IsNil)
-	assert(nBytes, Equals, len(payload))
-
-	response := make([]byte, 1024)
-	nBytes, err = conn.Read(response)
-	assert(err, IsNil)
-	assert(response[:nBytes], Equals, xor([]byte(payload)))
-	assert(conn.Close(), IsNil)
-
-	CloseAllServers(servers)
+	if err := testTCPConn(clientPort, 1024, time.Second*2)(); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestSocksBridageUDP(t *testing.T) {

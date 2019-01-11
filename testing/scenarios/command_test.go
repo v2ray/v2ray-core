@@ -2,14 +2,12 @@ package scenarios
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
 	"io"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-
 	"google.golang.org/grpc"
 
 	"v2ray.com/core"
@@ -500,23 +498,8 @@ func TestCommanderStats(t *testing.T) {
 	}
 	defer CloseAllServers(servers)
 
-	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-		IP:   []byte{127, 0, 0, 1},
-		Port: int(clientPort),
-	})
-	assert(err, IsNil)
-	defer conn.Close() // nolint: errcheck
-
-	payload := make([]byte, 10240*1024)
-	rand.Read(payload)
-
-	nBytes, err := conn.Write([]byte(payload))
-	assert(err, IsNil)
-	assert(nBytes, Equals, len(payload))
-
-	response := readFrom(conn, time.Second*20, 10240*1024)
-	if r := cmp.Diff(response, xor([]byte(payload))); r != "" {
-		t.Fatal("failed to read response: ", r)
+	if err := testTCPConn(clientPort, 10240*1024, time.Second*20)(); err != nil {
+		t.Fatal(err)
 	}
 
 	cmdConn, err := grpc.Dial(fmt.Sprintf("127.0.0.1:%d", cmdPort), grpc.WithInsecure(), grpc.WithBlock())

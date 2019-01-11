@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
 	"golang.org/x/sync/errgroup"
 	"v2ray.com/core"
 	"v2ray.com/core/app/log"
@@ -498,13 +497,11 @@ func TestVMessGCMUDP(t *testing.T) {
 }
 
 func TestVMessChacha20(t *testing.T) {
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
@@ -590,44 +587,25 @@ func TestVMessChacha20(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
+	defer CloseAllServers(servers)
 
-	var wg sync.WaitGroup
-	wg.Add(10)
+	var errg errgroup.Group
 	for i := 0; i < 10; i++ {
-		go func() {
-			conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-				IP:   []byte{127, 0, 0, 1},
-				Port: int(clientPort),
-			})
-			assert(err, IsNil)
-
-			payload := make([]byte, 10240*1024)
-			rand.Read(payload)
-
-			nBytes, err := conn.Write([]byte(payload))
-			assert(err, IsNil)
-			assert(nBytes, Equals, len(payload))
-
-			response := readFrom(conn, time.Second*20, 10240*1024)
-			assert(response, Equals, xor([]byte(payload)))
-			assert(conn.Close(), IsNil)
-			wg.Done()
-		}()
+		errg.Go(testTCPConn(clientPort, 10240*1024, time.Second*20))
 	}
-	wg.Wait()
 
-	CloseAllServers(servers)
+	if err := errg.Wait(); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestVMessNone(t *testing.T) {
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
@@ -713,46 +691,24 @@ func TestVMessNone(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
+	defer CloseAllServers(servers)
 
-	var wg sync.WaitGroup
-	wg.Add(10)
+	var errg errgroup.Group
 	for i := 0; i < 10; i++ {
-		go func() {
-			defer wg.Done()
-
-			conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-				IP:   []byte{127, 0, 0, 1},
-				Port: int(clientPort),
-			})
-			assert(err, IsNil)
-
-			payload := make([]byte, 1024*1024)
-			rand.Read(payload)
-
-			nBytes, err := conn.Write(payload)
-			assert(err, IsNil)
-			assert(nBytes, Equals, len(payload))
-
-			response := readFrom(conn, time.Second*30, 1024*1024)
-
-			assert(response, Equals, xor(payload))
-			assert(conn.Close(), IsNil)
-		}()
+		errg.Go(testTCPConn(clientPort, 1024*1024, time.Second*30))
 	}
-	wg.Wait()
-
-	CloseAllServers(servers)
+	if err := errg.Wait(); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestVMessKCP(t *testing.T) {
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
@@ -846,36 +802,16 @@ func TestVMessKCP(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
 	defer CloseAllServers(servers)
 
-	var wg sync.WaitGroup
+	var errg errgroup.Group
 	for i := 0; i < 10; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
-			conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-				IP:   []byte{127, 0, 0, 1},
-				Port: int(clientPort),
-			})
-			assert(err, IsNil)
-			defer conn.Close()
-
-			payload := make([]byte, 10240*1024)
-			rand.Read(payload)
-
-			nBytes, err := conn.Write(payload)
-			assert(err, IsNil)
-			assert(nBytes, Equals, len(payload))
-
-			response := readFrom(conn, time.Minute*2, 10240*1024)
-			if r := cmp.Diff(response, xor(payload)); r != "" {
-				t.Error(r)
-			}
-		}()
+		errg.Go(testTCPConn(clientPort, 10240*1024, time.Minute*2))
 	}
-	wg.Wait()
+	if err := errg.Wait(); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestVMessKCPLarge(t *testing.T) {
