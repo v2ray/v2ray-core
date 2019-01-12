@@ -40,7 +40,7 @@ func resolveSrcAddr(network net.Network, src net.Address) net.Addr {
 }
 
 func hasBindAddr(sockopt *SocketConfig) bool {
-	return len(sockopt.BindAddress) > 0 && sockopt.BindPort > 0
+	return sockopt != nil && len(sockopt.BindAddress) > 0 && sockopt.BindPort > 0
 }
 
 func (d *DefaultSystemDialer) Dial(ctx context.Context, src net.Address, dest net.Destination, sockopt *SocketConfig) (net.Conn, error) {
@@ -67,7 +67,7 @@ func (d *DefaultSystemDialer) Dial(ctx context.Context, src net.Address, dest ne
 	}
 
 	dialer := &net.Dialer{
-		Timeout:   time.Second * 60,
+		Timeout:   time.Second * 16,
 		DualStack: true,
 		LocalAddr: resolveSrcAddr(dest.Network, src),
 	}
