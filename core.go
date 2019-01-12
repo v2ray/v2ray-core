@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	version  = "4.12"
+	version  = "4.13"
 	build    = "Custom"
 	codename = "Po"
 	intro    = "A unified platform for anti-censorship."
