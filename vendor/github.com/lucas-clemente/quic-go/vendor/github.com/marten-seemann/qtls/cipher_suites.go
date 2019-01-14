@@ -250,6 +250,11 @@ func aeadAESGCM12(key, fixedNonce []byte) cipher.AEAD {
 	return ret
 }
 
+// AEADAESGCM13 creates a new AES-GCM AEAD for TLS 1.3
+func AEADAESGCM13(key, fixedNonce []byte) cipher.AEAD {
+	return aeadAESGCM13(key, fixedNonce)
+}
+
 func aeadAESGCM13(key, fixedNonce []byte) cipher.AEAD {
 	aes, err := aes.NewCipher(key)
 	if err != nil {

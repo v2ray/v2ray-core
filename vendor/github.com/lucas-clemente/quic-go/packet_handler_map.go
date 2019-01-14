@@ -186,10 +186,6 @@ func (h *packetHandlerMap) parsePacket(
 	var counter int
 	var lastConnID protocol.ConnectionID
 	for len(data) > 0 {
-		if counter > 0 && h.logger.Debug() {
-			h.logger.Debugf("Parsed a coalesced packet. Part %d: %d bytes", counter, len(packets[counter-1].data))
-		}
-
 		hdr, err := wire.ParseHeader(bytes.NewReader(data), h.connIDLen)
 		// drop the packet if we can't parse the header
 		if err != nil {
@@ -221,6 +217,12 @@ func (h *packetHandlerMap) parsePacket(
 			data:       data,
 			buffer:     buffer,
 		})
+
+		// only log if this actually a coalesced packet
+		if h.logger.Debug() && (counter > 1 || len(rest) > 0) {
+			h.logger.Debugf("Parsed a coalesced packet. Part %d: %d bytes. Remaining: %d bytes.", counter, len(packets[counter-1].data), len(rest))
+		}
+
 		data = rest
 	}
 	return packets, nil
@@ -252,11 +254,11 @@ func (h *packetHandlerMap) handleParsedPackets(packets []*receivedPacket) {
 			// TODO(#943): send a stateless reset
 			h.logger.Debugf("received a short header packet with an unexpected connection ID %s", p.hdr.DestConnectionID)
 			break // a short header packet is always the last in a coalesced packet
-
 		}
-		if h.server != nil { // no server set
-			h.server.handlePacket(p)
+		if h.server == nil { // no server set
+			h.logger.Debugf("received a packet with an unexpected connection ID %s", p.hdr.DestConnectionID)
+			continue
 		}
-		h.logger.Debugf("received a packet with an unexpected connection ID %s", p.hdr.DestConnectionID)
+		h.server.handlePacket(p)
 	}
 }

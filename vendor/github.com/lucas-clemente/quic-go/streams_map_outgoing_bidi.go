@@ -49,7 +49,11 @@ func (m *outgoingBidiStreamsMap) OpenStream() (streamI, error) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	return m.openStreamImpl()
+	str, err := m.openStreamImpl()
+	if err != nil {
+		return nil, streamOpenErr{err}
+	}
+	return str, nil
 }
 
 func (m *outgoingBidiStreamsMap) OpenStreamSync() (streamI, error) {
@@ -59,10 +63,10 @@ func (m *outgoingBidiStreamsMap) OpenStreamSync() (streamI, error) {
 	for {
 		str, err := m.openStreamImpl()
 		if err == nil {
-			return str, err
+			return str, nil
 		}
-		if err != nil && err != qerr.TooManyOpenStreams {
-			return nil, err
+		if err != nil && err != errTooManyOpenStreams {
+			return nil, streamOpenErr{err}
 		}
 		m.cond.Wait()
 	}
@@ -87,7 +91,7 @@ func (m *outgoingBidiStreamsMap) openStreamImpl() (streamI, error) {
 			}
 			m.blockedSent = true
 		}
-		return nil, qerr.TooManyOpenStreams
+		return nil, errTooManyOpenStreams
 	}
 	s := m.newStream(m.nextStream)
 	m.streams[m.nextStream] = s

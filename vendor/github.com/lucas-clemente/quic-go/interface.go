@@ -124,20 +124,22 @@ type Session interface {
 	// AcceptUniStream returns the next unidirectional stream opened by the peer, blocking until one is available.
 	AcceptUniStream() (ReceiveStream, error)
 	// OpenStream opens a new bidirectional QUIC stream.
-	// It returns a special error when the peer's concurrent stream limit is reached.
 	// There is no signaling to the peer about new streams:
 	// The peer can only accept the stream after data has been sent on the stream.
-	// TODO(#1152): Enable testing for the special error
+	// If the error is non-nil, it satisfies the net.Error interface.
+	// When reaching the peer's stream limit, err.Temporary() will be true.
 	OpenStream() (Stream, error)
 	// OpenStreamSync opens a new bidirectional QUIC stream.
-	// It blocks until the peer's concurrent stream limit allows a new stream to be opened.
+	// It blocks until a new stream can be opened.
+	// If the error is non-nil, it satisfies the net.Error interface.
 	OpenStreamSync() (Stream, error)
 	// OpenUniStream opens a new outgoing unidirectional QUIC stream.
-	// It returns a special error when the peer's concurrent stream limit is reached.
-	// TODO(#1152): Enable testing for the special error
+	// If the error is non-nil, it satisfies the net.Error interface.
+	// When reaching the peer's stream limit, Temporary() will be true.
 	OpenUniStream() (SendStream, error)
 	// OpenUniStreamSync opens a new outgoing unidirectional QUIC stream.
-	// It blocks until the peer's concurrent stream limit allows a new stream to be opened.
+	// It blocks until a new stream can be opened.
+	// If the error is non-nil, it satisfies the net.Error interface.
 	OpenUniStreamSync() (SendStream, error)
 	// LocalAddr returns the local address.
 	LocalAddr() net.Addr

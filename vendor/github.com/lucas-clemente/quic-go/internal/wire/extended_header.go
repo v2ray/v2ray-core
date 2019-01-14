@@ -15,7 +15,6 @@ type ExtendedHeader struct {
 	Header
 
 	typeByte byte
-	Raw      []byte
 
 	PacketNumberLen protocol.PacketNumberLen
 	PacketNumber    protocol.PacketNumber

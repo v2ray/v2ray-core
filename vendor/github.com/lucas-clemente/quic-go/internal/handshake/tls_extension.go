@@ -10,7 +10,7 @@ import (
 	"github.com/lucas-clemente/quic-go/internal/utils"
 )
 
-const quicTLSExtensionType = 0xff5
+const quicTLSExtensionType = 0xffa5
 
 type clientHelloTransportParameters struct {
 	InitialVersion protocol.VersionNumber

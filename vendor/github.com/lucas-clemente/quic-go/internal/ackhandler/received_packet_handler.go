@@ -74,7 +74,7 @@ func (h *receivedPacketHandler) ReceivedPacket(packetNumber protocol.PacketNumbe
 	}
 
 	isMissing := h.isMissing(packetNumber)
-	if packetNumber > h.largestObserved {
+	if packetNumber >= h.largestObserved {
 		h.largestObserved = packetNumber
 		h.largestObservedReceivedTime = rcvTime
 	}

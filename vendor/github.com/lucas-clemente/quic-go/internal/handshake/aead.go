@@ -8,13 +8,12 @@ import (
 )
 
 type sealer struct {
-	iv          []byte
 	aead        cipher.AEAD
-	pnEncrypter cipher.Block
+	hpEncrypter cipher.Block
 
 	// use a single slice to avoid allocations
 	nonceBuf []byte
-	pnMask   []byte
+	hpMask   []byte
 
 	// short headers protect 5 bits in the first byte, long headers only 4
 	is1RTT bool
@@ -22,41 +21,35 @@ type sealer struct {
 
 var _ Sealer = &sealer{}
 
-func newSealer(aead cipher.AEAD, iv []byte, pnEncrypter cipher.Block, is1RTT bool) Sealer {
+func newSealer(aead cipher.AEAD, hpEncrypter cipher.Block, is1RTT bool) Sealer {
 	return &sealer{
-		iv:          iv,
 		aead:        aead,
 		nonceBuf:    make([]byte, aead.NonceSize()),
 		is1RTT:      is1RTT,
-		pnEncrypter: pnEncrypter,
-		pnMask:      make([]byte, pnEncrypter.BlockSize()),
+		hpEncrypter: hpEncrypter,
+		hpMask:      make([]byte, hpEncrypter.BlockSize()),
 	}
 }
 
 func (s *sealer) Seal(dst, src []byte, pn protocol.PacketNumber, ad []byte) []byte {
 	binary.BigEndian.PutUint64(s.nonceBuf[len(s.nonceBuf)-8:], uint64(pn))
-	for i := 0; i < len(s.nonceBuf); i++ {
-		s.nonceBuf[i] ^= s.iv[i]
-	}
-	sealed := s.aead.Seal(dst, s.nonceBuf, src, ad)
-	for i := 0; i < len(s.nonceBuf); i++ {
-		s.nonceBuf[i] = 0
-	}
-	return sealed
+	// The AEAD we're using here will be the qtls.aeadAESGCM13.
+	// It uses the nonce provided here and XOR it with the IV.
+	return s.aead.Seal(dst, s.nonceBuf, src, ad)
 }
 
 func (s *sealer) EncryptHeader(sample []byte, firstByte *byte, pnBytes []byte) {
-	if len(sample) != s.pnEncrypter.BlockSize() {
+	if len(sample) != s.hpEncrypter.BlockSize() {
 		panic("invalid sample size")
 	}
-	s.pnEncrypter.Encrypt(s.pnMask, sample)
+	s.hpEncrypter.Encrypt(s.hpMask, sample)
 	if s.is1RTT {
-		*firstByte ^= s.pnMask[0] & 0x1f
+		*firstByte ^= s.hpMask[0] & 0x1f
 	} else {
-		*firstByte ^= s.pnMask[0] & 0xf
+		*firstByte ^= s.hpMask[0] & 0xf
 	}
 	for i := range pnBytes {
-		pnBytes[i] ^= s.pnMask[i+1]
+		pnBytes[i] ^= s.hpMask[i+1]
 	}
 }
 
@@ -65,13 +58,12 @@ func (s *sealer) Overhead() int {
 }
 
 type opener struct {
-	iv          []byte
 	aead        cipher.AEAD
 	pnDecrypter cipher.Block
 
 	// use a single slice to avoid allocations
 	nonceBuf []byte
-	pnMask   []byte
+	hpMask   []byte
 
 	// short headers protect 5 bits in the first byte, long headers only 4
 	is1RTT bool
@@ -79,40 +71,34 @@ type opener struct {
 
 var _ Opener = &opener{}
 
-func newOpener(aead cipher.AEAD, iv []byte, pnDecrypter cipher.Block, is1RTT bool) Opener {
+func newOpener(aead cipher.AEAD, pnDecrypter cipher.Block, is1RTT bool) Opener {
 	return &opener{
-		iv:          iv,
 		aead:        aead,
 		nonceBuf:    make([]byte, aead.NonceSize()),
 		is1RTT:      is1RTT,
 		pnDecrypter: pnDecrypter,
-		pnMask:      make([]byte, pnDecrypter.BlockSize()),
+		hpMask:      make([]byte, pnDecrypter.BlockSize()),
 	}
 }
 
 func (o *opener) Open(dst, src []byte, pn protocol.PacketNumber, ad []byte) ([]byte, error) {
 	binary.BigEndian.PutUint64(o.nonceBuf[len(o.nonceBuf)-8:], uint64(pn))
-	for i := 0; i < len(o.nonceBuf); i++ {
-		o.nonceBuf[i] ^= o.iv[i]
-	}
-	opened, err := o.aead.Open(dst, o.nonceBuf, src, ad)
-	for i := 0; i < len(o.nonceBuf); i++ {
-		o.nonceBuf[i] = 0
-	}
-	return opened, err
+	// The AEAD we're using here will be the qtls.aeadAESGCM13.
+	// It uses the nonce provided here and XOR it with the IV.
+	return o.aead.Open(dst, o.nonceBuf, src, ad)
 }
 
 func (o *opener) DecryptHeader(sample []byte, firstByte *byte, pnBytes []byte) {
 	if len(sample) != o.pnDecrypter.BlockSize() {
 		panic("invalid sample size")
 	}
-	o.pnDecrypter.Encrypt(o.pnMask, sample)
+	o.pnDecrypter.Encrypt(o.hpMask, sample)
 	if o.is1RTT {
-		*firstByte ^= o.pnMask[0] & 0x1f
+		*firstByte ^= o.hpMask[0] & 0x1f
 	} else {
-		*firstByte ^= o.pnMask[0] & 0xf
+		*firstByte ^= o.hpMask[0] & 0xf
 	}
 	for i := range pnBytes {
-		pnBytes[i] ^= o.pnMask[i+1]
+		pnBytes[i] ^= o.hpMask[i+1]
 	}
 }

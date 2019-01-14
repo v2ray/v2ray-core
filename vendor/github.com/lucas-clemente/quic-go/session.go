@@ -1,12 +1,14 @@
 package quic
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
 	"net"
+	"reflect"
 	"sync"
 	"time"
 
@@ -495,14 +497,17 @@ func (s *session) handlePacketImpl(p *receivedPacket) bool /* was the packet suc
 	}
 
 	packet, err := s.unpacker.Unpack(p.hdr, p.data)
-	// if the decryption failed, this might be a packet sent by an attacker
 	if err != nil {
 		if err == handshake.ErrOpenerNotYetAvailable {
+			// Sealer for this encryption level not yet available.
+			// Try again later.
 			wasQueued = true
 			s.tryQueueingUndecryptablePacket(p)
 			return false
 		}
-		s.closeLocal(err)
+		// This might be a packet injected by an attacker.
+		// Drop it.
+		s.logger.Debugf("Dropping packet that could not be unpacked. Unpack error: %s", err)
 		return false
 	}
 
@@ -519,6 +524,10 @@ func (s *session) handlePacketImpl(p *receivedPacket) bool /* was the packet suc
 }
 
 func (s *session) handleUnpackedPacket(packet *unpackedPacket, rcvTime time.Time) error {
+	if len(packet.data) == 0 {
+		return qerr.MissingPayload
+	}
+
 	// The server can change the source connection ID with the first Handshake packet.
 	if s.perspective == protocol.PerspectiveClient && !s.receivedFirstPacket && packet.hdr.IsLongHeader && !packet.hdr.SrcConnectionID.Equal(s.destConnID) {
 		s.logger.Debugf("Received first packet. Switching destination connection ID to: %s", packet.hdr.SrcConnectionID)
@@ -539,64 +548,70 @@ func (s *session) handleUnpackedPacket(packet *unpackedPacket, rcvTime time.Time
 		}
 	}
 
-	// If this is a Retry packet, there's no need to send an ACK.
-	// The session will be closed and recreated as soon as the crypto setup processed the HRR.
-	if packet.hdr.Type != protocol.PacketTypeRetry {
-		isRetransmittable := ackhandler.HasRetransmittableFrames(packet.frames)
-		if err := s.receivedPacketHandler.ReceivedPacket(packet.packetNumber, rcvTime, isRetransmittable); err != nil {
-			return err
-		}
-	}
-
-	return s.handleFrames(packet.frames, packet.packetNumber, packet.encryptionLevel)
-}
-
-func (s *session) handleFrames(fs []wire.Frame, pn protocol.PacketNumber, encLevel protocol.EncryptionLevel) error {
-	for _, ff := range fs {
-		var err error
-		wire.LogFrame(s.logger, ff, false)
-		switch frame := ff.(type) {
-		case *wire.CryptoFrame:
-			err = s.handleCryptoFrame(frame, encLevel)
-		case *wire.StreamFrame:
-			err = s.handleStreamFrame(frame, encLevel)
-		case *wire.AckFrame:
-			err = s.handleAckFrame(frame, pn, encLevel)
-		case *wire.ConnectionCloseFrame:
-			s.closeRemote(qerr.Error(frame.ErrorCode, frame.ReasonPhrase))
-		case *wire.ResetStreamFrame:
-			err = s.handleResetStreamFrame(frame)
-		case *wire.MaxDataFrame:
-			s.handleMaxDataFrame(frame)
-		case *wire.MaxStreamDataFrame:
-			err = s.handleMaxStreamDataFrame(frame)
-		case *wire.MaxStreamsFrame:
-			err = s.handleMaxStreamsFrame(frame)
-		case *wire.DataBlockedFrame:
-		case *wire.StreamDataBlockedFrame:
-		case *wire.StreamsBlockedFrame:
-		case *wire.StopSendingFrame:
-			err = s.handleStopSendingFrame(frame)
-		case *wire.PingFrame:
-		case *wire.PathChallengeFrame:
-			s.handlePathChallengeFrame(frame)
-		case *wire.PathResponseFrame:
-			// since we don't send PATH_CHALLENGEs, we don't expect PATH_RESPONSEs
-			err = errors.New("unexpected PATH_RESPONSE frame")
-		case *wire.NewTokenFrame:
-		case *wire.NewConnectionIDFrame:
-		case *wire.RetireConnectionIDFrame:
-			// since we don't send new connection IDs, we don't expect retirements
-			err = errors.New("unexpected RETIRE_CONNECTION_ID frame")
-		default:
-			return errors.New("Session BUG: unexpected frame type")
-		}
-
+	r := bytes.NewReader(packet.data)
+	var isRetransmittable bool
+	for {
+		frame, err := wire.ParseNextFrame(r, s.version)
 		if err != nil {
 			return err
 		}
+		if frame == nil {
+			break
+		}
+		if ackhandler.IsFrameRetransmittable(frame) {
+			isRetransmittable = true
+		}
+		if err := s.handleFrame(frame, packet.packetNumber, packet.encryptionLevel); err != nil {
+			return err
+		}
+	}
+
+	if err := s.receivedPacketHandler.ReceivedPacket(packet.packetNumber, rcvTime, isRetransmittable); err != nil {
+		return err
 	}
 	return nil
+}
+
+func (s *session) handleFrame(f wire.Frame, pn protocol.PacketNumber, encLevel protocol.EncryptionLevel) error {
+	var err error
+	wire.LogFrame(s.logger, f, false)
+	switch frame := f.(type) {
+	case *wire.CryptoFrame:
+		err = s.handleCryptoFrame(frame, encLevel)
+	case *wire.StreamFrame:
+		err = s.handleStreamFrame(frame, encLevel)
+	case *wire.AckFrame:
+		err = s.handleAckFrame(frame, pn, encLevel)
+	case *wire.ConnectionCloseFrame:
+		s.closeRemote(qerr.Error(frame.ErrorCode, frame.ReasonPhrase))
+	case *wire.ResetStreamFrame:
+		err = s.handleResetStreamFrame(frame)
+	case *wire.MaxDataFrame:
+		s.handleMaxDataFrame(frame)
+	case *wire.MaxStreamDataFrame:
+		err = s.handleMaxStreamDataFrame(frame)
+	case *wire.MaxStreamsFrame:
+		err = s.handleMaxStreamsFrame(frame)
+	case *wire.DataBlockedFrame:
+	case *wire.StreamDataBlockedFrame:
+	case *wire.StreamsBlockedFrame:
+	case *wire.StopSendingFrame:
+		err = s.handleStopSendingFrame(frame)
+	case *wire.PingFrame:
+	case *wire.PathChallengeFrame:
+		s.handlePathChallengeFrame(frame)
+	case *wire.PathResponseFrame:
+		// since we don't send PATH_CHALLENGEs, we don't expect PATH_RESPONSEs
+		err = errors.New("unexpected PATH_RESPONSE frame")
+	case *wire.NewTokenFrame:
+	case *wire.NewConnectionIDFrame:
+	case *wire.RetireConnectionIDFrame:
+		// since we don't send new connection IDs, we don't expect retirements
+		err = errors.New("unexpected RETIRE_CONNECTION_ID frame")
+	default:
+		err = fmt.Errorf("unexpected frame type: %s", reflect.ValueOf(&frame).Elem().Type().Name())
+	}
+	return err
 }
 
 // handlePacket is called by the server with a new packet
@@ -787,11 +802,7 @@ func (s *session) handleCloseError(closeErr closeError) error {
 	if closeErr.remote {
 		return nil
 	}
-
-	if quicErr.ErrorCode == qerr.DecryptionFailure {
-		// TODO(#943): send a stateless reset
-		return nil
-	}
+	// otherwise send a CONNECTION_CLOSE
 	return s.sendConnectionClose(quicErr)
 }
 
@@ -830,7 +841,7 @@ sendLoop:
 			// There will only be a new ACK after receiving new packets.
 			// SendAck is only returned when we're congestion limited, so we don't need to set the pacingt timer.
 			return s.maybeSendAckOnlyPacket()
-		case ackhandler.SendTLP, ackhandler.SendRTO:
+		case ackhandler.SendPTO:
 			if err := s.sendProbePacket(); err != nil {
 				return err
 			}

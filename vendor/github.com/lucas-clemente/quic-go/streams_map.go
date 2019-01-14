@@ -1,13 +1,25 @@
 package quic
 
 import (
+	"errors"
 	"fmt"
+	"net"
 
 	"github.com/lucas-clemente/quic-go/internal/flowcontrol"
 	"github.com/lucas-clemente/quic-go/internal/handshake"
 	"github.com/lucas-clemente/quic-go/internal/protocol"
 	"github.com/lucas-clemente/quic-go/internal/wire"
 )
+
+type streamOpenErr struct{ error }
+
+var _ net.Error = &streamOpenErr{}
+
+func (e streamOpenErr) Temporary() bool { return e.error == errTooManyOpenStreams }
+func (streamOpenErr) Timeout() bool     { return false }
+
+// errTooManyOpenStreams is used internally by the outgoing streams maps.
+var errTooManyOpenStreams = errors.New("too many open streams")
 
 type streamsMap struct {
 	perspective protocol.Perspective
