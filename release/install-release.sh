@@ -42,43 +42,45 @@ while [[ $# > 0 ]];do
     key="$1"
     case $key in
         -p|--proxy)
-        PROXY="-x ${2}"
-        shift # past argument
-        ;;
+            PROXY="-x ${2}"
+            shift # past argument
+            ;;
         -h|--help)
-        HELP="1"
-        ;;
+            HELP="1"
+            ;;
         -f|--force)
-        FORCE="1"
-        ;;
+            FORCE="1"
+            ;;
         -c|--check)
-        CHECK="1"
-        ;;
+            CHECK="1"
+            ;;
         --remove)
-        REMOVE="1"
-        ;;
+            REMOVE="1"
+            ;;
         --version)
-        VERSION="$2"
-        shift
-        ;;
+            VERSION="$2"
+            shift
+            ;;
         --extract)
-        VSRC_ROOT="$2"
-        shift
-        ;;
+            VSRC_ROOT="$2"
+            shift
+            ;;
         --extractonly)
-        EXTRACT_ONLY="1"
-        ;;
+            EXTRACT_ONLY="1"
+            ;;
         -l|--local)
-        LOCAL="$2"
-        LOCAL_INSTALL="1"
-        shift
-        ;;
+            LOCAL="$2"
+            LOCAL_INSTALL="1"
+            shift
+            ;;
         --errifuptodate)
-        ERROR_IF_UPTODATE="1"
-        ;;
-        *)
-                # unknown option
-        ;;
+            ERROR_IF_UPTODATE="1"
+            ;;
+        *)    # unknown option
+            UNKNOWN_OPTION="1"
+            #echo "Unknown option: $key"
+            #exit
+            ;;
     esac
     shift # past argument or value
 done
@@ -137,11 +139,11 @@ installSoftware(){
     getPMT
     if [[ $? -eq 1 ]]; then
         colorEcho ${RED} "The system package manager tool isn't APT or YUM, please install ${COMPONENT} manually."
-        return 1 
+        return 1
     fi
     if [[ $SOFTWARE_UPDATED -eq 0 ]]; then
         colorEcho ${BLUE} "Updating software repo"
-        $CMD_UPDATE      
+        $CMD_UPDATE
         SOFTWARE_UPDATED=1
     fi
 
@@ -180,7 +182,7 @@ extract(){
         return 2
     fi
     if [[ -d "/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}" ]]; then
-      VSRC_ROOT="/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}"
+        VSRC_ROOT="/tmp/v2ray/v2ray-${NEW_VER}-linux-${VDIS}"
     fi
     return 0
 }
@@ -191,30 +193,39 @@ getVersion(){
     if [[ -n "$VERSION" ]]; then
         NEW_VER="$VERSION"
         if [[ ${NEW_VER} != v* ]]; then
-          NEW_VER=v${NEW_VER}
+            NEW_VER=v${NEW_VER}
         fi
         return 4
     else
         VER=`/usr/bin/v2ray/v2ray -version 2>/dev/null`
         RETVAL="$?"
         CUR_VER=`echo $VER | head -n 1 | cut -d " " -f2`
+        CUR_VER_N=`echo $CUR_VER | sed "s/\.//" | sed "s/\.//"`
         if [[ ${CUR_VER} != v* ]]; then
             CUR_VER=v${CUR_VER}
         fi
+        if [[ ${CUR_VER_N} == v* ]]; then
+            CUR_VER_N=`echo $CUR_VER_N | sed "s/v//"`
+        fi
         TAG_URL="https://api.github.com/repos/v2ray/v2ray-core/releases/latest"
         NEW_VER=`curl ${PROXY} -s ${TAG_URL} --connect-timeout 10| grep 'tag_name' | cut -d\" -f4`
+        RETVAL1="$?"
+        NEW_VER_N=`echo $NEW_VER | sed "s/\.//" | sed "s/\.//"`
         if [[ ${NEW_VER} != v* ]]; then
-          NEW_VER=v${NEW_VER}
+            NEW_VER=v${NEW_VER}
         fi
-        if [[ $? -ne 0 ]] || [[ $NEW_VER == "" ]]; then
+        if [[ ${NEW_VER_N} == v* ]]; then
+            NEW_VER_N=`echo $NEW_VER_N | sed "s/v//"`
+        fi
+        if [[ $RETVAL1 -ne 0 ]] || [[ $NEW_VER == "" ]]; then
             colorEcho ${RED} "Failed to fetch release information. Please check your network or try again."
             return 3
         elif [[ $RETVAL -ne 0 ]];then
             return 2
-        elif [[ `echo $NEW_VER | cut -d. -f-2` != `echo $CUR_VER | cut -d. -f-2` ]];then
-            return 1
+        elif [[ $NEW_VER_N -gt $CUR_VER_N ]];then
+            return 1  # A new version found
         fi
-        return 0
+        return 0  # V2Ray is already up-to-date
     fi
 }
 
@@ -315,12 +326,17 @@ installInitScript(){
 }
 
 Help(){
-    echo "./install-release.sh [-h] [-c] [--remove] [-p proxy] [-f] [--version vx.y.z] [-l file]"
+    echo "Usage: ./install-release.sh [-h] [-c] [--remove] [-p proxy] [-f] [--version vx.y.z] [-l file]"
+    printf "\n"
+    echo "Options:"
     echo "  -h, --help            Show help"
-    echo "  -p, --proxy           To download through a proxy server, use -p socks5://127.0.0.1:1080 or -p http://127.0.0.1:3128 etc"
+    echo "  -p, --proxy           Specify a proxy that is used for downloading. Examples of argument: -p socks5://127.0.0.1:1080, -p http://127.0.0.1:3128"
     echo "  -f, --force           Force install"
-    echo "      --version         Install a particular version, use --version v3.15"
-    echo "  -l, --local           Install from a local file"
+    echo "      --version         Used to install a particular version of V2Ray. Example of argument: --version v4.12.0"
+    echo "      --extract         Specify the target directory of extraction action, usually used with the other options"
+    echo "      --extractonly     Extract-only mode"
+    echo "  -l, --local           Select a local installing source"
+    echo "      --errifuptodate   Return error if the current version is already up to date"
     echo "      --remove          Remove installed V2Ray"
     echo "  -c, --check           Check for update"
     return 0
@@ -367,11 +383,18 @@ remove(){
             colorEcho ${GREEN} "Removed V2Ray successfully."
             colorEcho ${BLUE} "If necessary, please remove configuration file and log file manually."
             return 0
-        fi       
+        fi
     else
         colorEcho ${YELLOW} "V2Ray not found."
         return 0
     fi
+}
+
+# Confirm the current version
+versionRecheck(){
+    VER_CON=`/usr/bin/v2ray/v2ray -version 2>/dev/null`
+    CUR_VER_CON=`echo $VER_CON | head -n 1 | cut -d " " -f2`
+    return 0
 }
 
 checkUpdate(){
@@ -382,20 +405,21 @@ checkUpdate(){
     if [[ $RETVAL -eq 1 ]]; then
         colorEcho ${BLUE} "Found new version ${NEW_VER} for V2Ray.(Current version:$CUR_VER)"
     elif [[ $RETVAL -eq 0 ]]; then
-        colorEcho ${BLUE} "No new version. Current version is ${NEW_VER}."
+        colorEcho ${BLUE} "No new version. The current version is ${CUR_VER}."
     elif [[ $RETVAL -eq 2 ]]; then
         colorEcho ${YELLOW} "No V2Ray installed."
-        colorEcho ${BLUE} "The newest version for V2Ray is ${NEW_VER}."
+        colorEcho ${BLUE} "The latest version of V2Ray is ${NEW_VER}."
     fi
     return 0
 }
 
 main(){
-    #helping information
+    # help information
     [[ "$HELP" == "1" ]] && Help && return
     [[ "$CHECK" == "1" ]] && checkUpdate && return
     [[ "$REMOVE" == "1" ]] && remove && return
-    
+    [[ "$UNKNOWN_OPTION" == "1" ]] && echo "Unknown option: $key" && Help && return 1
+
     sysArch
     # extract local file
     if [[ $LOCAL_INSTALL -eq 1 ]]; then
@@ -421,9 +445,9 @@ main(){
         getVersion
         RETVAL="$?"
         if [[ $RETVAL == 0 ]] && [[ "$FORCE" != "1" ]]; then
-            colorEcho ${BLUE} "Latest version ${NEW_VER} is already installed."
+            colorEcho ${BLUE} "Latest version ${NEW_VER} was already installed."
             if [[ "${ERROR_IF_UPTODATE}" == "1" ]]; then
-              return 10
+                return 10
             fi
             return
         elif [[ $RETVAL == 3 ]]; then
@@ -434,10 +458,10 @@ main(){
             installSoftware unzip || return $?
             extract ${ZIPFILE} || return $?
         fi
-    fi 
-    
+    fi
+
     if [[ "${EXTRACT_ONLY}" == "1" ]]; then
-        colorEcho ${GREEN} "V2Ray extracted to ${VSRC_ROOT}, and exiting..."
+        colorEcho ${GREEN} "V2Ray package has been decompressed to ${VSRC_ROOT}, exiting..."
         return 0
     fi
 
@@ -451,7 +475,8 @@ main(){
         colorEcho ${BLUE} "Restarting V2Ray service."
         startV2ray
     fi
-    colorEcho ${GREEN} "V2Ray ${NEW_VER} is installed."
+    versionRecheck
+    colorEcho ${GREEN} "V2Ray version ${CUR_VER_CON} has been installed."
     rm -rf /tmp/v2ray
     return 0
 }
