@@ -202,7 +202,7 @@ cp /v2/build/src_all.zip .
 
 git add .
 git commit -m "Version ${RELEASE_TAG}"
-git tag -s -a "${RELEASE_TAG}" -m "Version ${RELEASE_TAG}"
+git tag -a "${RELEASE_TAG}" -m "Version ${RELEASE_TAG}"
 git remote add origin "https://${GITHUB_TOKEN}@github.com/v2ray/dist"
 git push -u --force origin master
 
