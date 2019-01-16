@@ -49,4 +49,7 @@ message Config {
   }
 
   repeated HostMapping static_hosts = 4;
+
+  // Tag is the inbound tag of DNS client.
+  string tag = 6;
 }

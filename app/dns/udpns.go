@@ -303,7 +303,11 @@ func (s *ClassicNameServer) sendQuery(ctx context.Context, domain string, option
 	for _, msg := range msgs {
 		b, err := dns.PackMessage(msg)
 		common.Must(err)
-		s.udpServer.Dispatch(context.Background(), s.address, b)
+		udpCtx := context.Background()
+		if inbound := session.InboundFromContext(ctx); inbound != nil {
+			udpCtx = session.ContextWithInbound(udpCtx, inbound)
+		}
+		s.udpServer.Dispatch(udpCtx, s.address, b)
 	}
 }
 
