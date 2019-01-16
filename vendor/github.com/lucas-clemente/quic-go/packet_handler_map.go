@@ -139,7 +139,7 @@ func (h *packetHandlerMap) close(e error) error {
 	}
 	h.mutex.Unlock()
 	wg.Wait()
-	return nil
+	return getMultiplexer().RemoveConn(h.conn)
 }
 
 func (h *packetHandlerMap) listen() {

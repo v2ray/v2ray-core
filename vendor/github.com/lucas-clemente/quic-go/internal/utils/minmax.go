@@ -122,6 +122,18 @@ func MinTime(a, b time.Time) time.Time {
 	return a
 }
 
+// MinNonZeroTime returns the earlist time that is not time.Time{}
+// If both a and b are time.Time{}, it returns time.Time{}
+func MinNonZeroTime(a, b time.Time) time.Time {
+	if a.IsZero() {
+		return b
+	}
+	if b.IsZero() {
+		return a
+	}
+	return MinTime(a, b)
+}
+
 // MaxTime returns the later time
 func MaxTime(a, b time.Time) time.Time {
 	if a.After(b) {

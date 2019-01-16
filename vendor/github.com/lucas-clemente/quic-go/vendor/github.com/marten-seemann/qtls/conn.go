@@ -234,15 +234,20 @@ func (hc *halfConn) changeCipherSpec() error {
 	return nil
 }
 
-func (hc *halfConn) setKey(version uint16, suite *cipherSuite, trafficSecret []byte) {
+func (hc *halfConn) exportKey(suite *cipherSuite, trafficSecret []byte) {
 	if hc.setKeyCallback != nil {
 		hc.setKeyCallback(&CipherSuite{*suite}, trafficSecret)
+	}
+}
+
+func (hc *halfConn) setKey(version uint16, suite *cipherSuite, trafficSecret []byte) {
+	if hc.setKeyCallback != nil {
 		return
 	}
 	hc.version = version
 	hash := hashForSuite(suite)
-	key := HkdfExpandLabel(hash, trafficSecret, nil, "key", suite.keyLen)
-	iv := HkdfExpandLabel(hash, trafficSecret, nil, "iv", suite.ivLen)
+	key := hkdfExpandLabel(hash, trafficSecret, nil, "key", suite.keyLen)
+	iv := hkdfExpandLabel(hash, trafficSecret, nil, "iv", suite.ivLen)
 	hc.cipher = suite.aead(key, iv)
 	for i := range hc.seq {
 		hc.seq[i] = 0

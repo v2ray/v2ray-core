@@ -15,6 +15,7 @@ var (
 
 type multiplexer interface {
 	AddConn(net.PacketConn, int) (packetHandlerManager, error)
+	RemoveConn(net.PacketConn) error
 }
 
 type connManager struct {
@@ -60,4 +61,16 @@ func (m *connMultiplexer) AddConn(c net.PacketConn, connIDLen int) (packetHandle
 		return nil, fmt.Errorf("cannot use %d byte connection IDs on a connection that is already using %d byte connction IDs", connIDLen, p.connIDLen)
 	}
 	return p.manager, nil
+}
+
+func (m *connMultiplexer) RemoveConn(c net.PacketConn) error {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	if _, ok := m.conns[c]; !ok {
+		return fmt.Errorf("cannote remove connection, connection is unknown")
+	}
+
+	delete(m.conns, c)
+	return nil
 }

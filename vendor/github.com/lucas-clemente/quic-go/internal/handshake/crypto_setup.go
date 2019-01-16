@@ -359,6 +359,12 @@ func (h *cryptoSetup) handleMessageForClient(msgType messageType) bool {
 		case <-h.handshakeErrChan:
 			return false
 		}
+		// get the handshake write key
+		select {
+		case <-h.receivedWriteKey:
+		case <-h.handshakeErrChan:
+			return false
+		}
 		return true
 	case typeEncryptedExtensions:
 		select {
@@ -372,12 +378,6 @@ func (h *cryptoSetup) handleMessageForClient(msgType messageType) bool {
 		// nothing to do
 		return false
 	case typeFinished:
-		// get the handshake write key
-		select {
-		case <-h.receivedWriteKey:
-		case <-h.handshakeErrChan:
-			return false
-		}
 		// While the order of these two is not defined by the TLS spec,
 		// we have to do it on the same order as our TLS library does it.
 		// get the handshake write key

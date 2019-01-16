@@ -8,6 +8,7 @@ import (
 )
 
 // The receivedPacketHistory stores if a packet number has already been received.
+// It generates ACK ranges which can be used to assemble an ACK frame.
 // It does not store packet contents.
 type receivedPacketHistory struct {
 	ranges *utils.PacketIntervalList

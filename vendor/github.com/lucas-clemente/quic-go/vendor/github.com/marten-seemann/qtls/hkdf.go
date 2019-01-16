@@ -47,6 +47,10 @@ func hkdfExpand(hash crypto.Hash, prk, info []byte, l int) []byte {
 
 // HkdfExtract generates a pseudorandom key for use with Expand from an input secret and an optional independent salt.
 func HkdfExtract(hash crypto.Hash, secret, salt []byte) []byte {
+	return hkdfExtract(hash, secret, salt)
+}
+
+func hkdfExtract(hash crypto.Hash, secret, salt []byte) []byte {
 	if salt == nil {
 		salt = make([]byte, hash.Size())
 	}

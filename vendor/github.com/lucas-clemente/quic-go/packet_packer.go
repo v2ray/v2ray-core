@@ -90,7 +90,7 @@ type frameSource interface {
 }
 
 type ackFrameSource interface {
-	GetAckFrame() *wire.AckFrame
+	GetAckFrame(protocol.EncryptionLevel) *wire.AckFrame
 }
 
 type packetPacker struct {
@@ -155,7 +155,7 @@ func (p *packetPacker) PackConnectionClose(ccf *wire.ConnectionCloseFrame) (*pac
 }
 
 func (p *packetPacker) MaybePackAckPacket() (*packedPacket, error) {
-	ack := p.acks.GetAckFrame()
+	ack := p.acks.GetAckFrame(protocol.Encryption1RTT)
 	if ack == nil {
 		return nil, nil
 	}
@@ -285,30 +285,41 @@ func (p *packetPacker) PackPacket() (*packedPacket, error) {
 func (p *packetPacker) maybePackCryptoPacket() (*packedPacket, error) {
 	var s cryptoStream
 	var encLevel protocol.EncryptionLevel
-	if p.initialStream.HasData() {
+
+	hasData := p.initialStream.HasData()
+	ack := p.acks.GetAckFrame(protocol.EncryptionInitial)
+	if hasData || ack != nil {
 		s = p.initialStream
 		encLevel = protocol.EncryptionInitial
-	} else if p.handshakeStream.HasData() {
-		s = p.handshakeStream
-		encLevel = protocol.EncryptionHandshake
+	} else {
+		hasData = p.handshakeStream.HasData()
+		ack = p.acks.GetAckFrame(protocol.EncryptionHandshake)
+		if hasData || ack != nil {
+			s = p.handshakeStream
+			encLevel = protocol.EncryptionHandshake
+		}
 	}
 	if s == nil {
 		return nil, nil
 	}
-	hdr := p.getHeader(encLevel)
-	hdrLen := hdr.GetLength(p.version)
 	sealer, err := p.cryptoSetup.GetSealerWithEncryptionLevel(encLevel)
 	if err != nil {
+		// The sealer
 		return nil, err
 	}
+
+	hdr := p.getHeader(encLevel)
+	hdrLen := hdr.GetLength(p.version)
 	var length protocol.ByteCount
 	frames := make([]wire.Frame, 0, 2)
-	if ack := p.acks.GetAckFrame(); ack != nil {
+	if ack != nil {
 		frames = append(frames, ack)
 		length += ack.Length(p.version)
 	}
-	cf := s.PopCryptoFrame(p.maxPacketSize - hdrLen - protocol.ByteCount(sealer.Overhead()) - length)
-	frames = append(frames, cf)
+	if hasData {
+		cf := s.PopCryptoFrame(p.maxPacketSize - hdrLen - protocol.ByteCount(sealer.Overhead()) - length)
+		frames = append(frames, cf)
+	}
 	return p.writeAndSealPacket(hdr, frames, sealer)
 }
 
@@ -317,7 +328,7 @@ func (p *packetPacker) composeNextPacket(maxFrameSize protocol.ByteCount) ([]wir
 	var frames []wire.Frame
 
 	// ACKs need to go first, so that the sentPacketHandler will recognize them
-	if ack := p.acks.GetAckFrame(); ack != nil {
+	if ack := p.acks.GetAckFrame(protocol.Encryption1RTT); ack != nil {
 		frames = append(frames, ack)
 		length += ack.Length(p.version)
 	}
