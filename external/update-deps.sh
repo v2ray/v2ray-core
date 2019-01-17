@@ -17,9 +17,22 @@ rsync -rv "./github.com/lucas-clemente/quic-go/vendor/github.com/cloudflare/" ".
 rsync -rv "./github.com/lucas-clemente/quic-go/vendor/github.com/marten-seemann/" "./github.com/marten-seemann/"
 rm -rf "./github.com/lucas-clemente/quic-go/vendor/"
 
-rsync -rv "$GOPATH/src/github.com/gorilla/websocket/" "$GOPATH/src/v2ray.com/core/external/github.com/gorilla/websocket/"
+rsync -rv "$GOPATH/src/github.com/gorilla/websocket/" "./github.com/gorilla/websocket/"
+rm -rf ./github.com/gorilla/websocket/\.*
+rm -rf ./github.com/gorilla/websocket/examples
+rm "./github.com/gorilla/websocket/.gitignore"
+rm "./github.com/gorilla/websocket/client_clone_legacy.go"
+rm "./github.com/gorilla/websocket/compression.go"
+rm "./github.com/gorilla/websocket/conn_write_legacy.go"
+rm "./github.com/gorilla/websocket/json.go"
+rm "./github.com/gorilla/websocket/prepared.go"
+rm "./github.com/gorilla/websocket/proxy.go"
+rm "./github.com/gorilla/websocket/trace_17.go"
+rm "./github.com/gorilla/websocket/trace.go"
+rm "./github.com/gorilla/websocket/x_net_proxy.go"
 
 find . -name "*_test.go" -delete
-find . -type f -print0 | LC_ALL=C xargs -0 sed -i '' 's#github\.com#v2ray\.com/core/external/github\.com#g'
+find . -name "*.yml" -delete
+find . -name "*.go" -type f -print0 | LC_ALL=C xargs -0 sed -i '' 's#github\.com#v2ray\.com/core/external/github\.com#g'
 
 popd

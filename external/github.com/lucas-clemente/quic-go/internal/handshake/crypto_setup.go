@@ -53,6 +53,7 @@ var ErrOpenerNotYetAvailable = errors.New("CryptoSetup: opener at this encryptio
 
 type cryptoSetup struct {
 	tlsConf *qtls.Config
+	conn    *qtls.Conn
 
 	messageChan chan []byte
 
@@ -124,7 +125,7 @@ func NewCryptoSetupClient(
 		currentVersion,
 		logger,
 	)
-	return newCryptoSetup(
+	cs, clientHelloWritten, err := newCryptoSetup(
 		initialStream,
 		handshakeStream,
 		connID,
@@ -135,6 +136,11 @@ func NewCryptoSetupClient(
 		logger,
 		perspective,
 	)
+	if err != nil {
+		return nil, nil, err
+	}
+	cs.conn = qtls.Client(nil, cs.tlsConf)
+	return cs, clientHelloWritten, nil
 }
 
 // NewCryptoSetupServer creates a new crypto setup for the server
@@ -167,7 +173,11 @@ func NewCryptoSetupServer(
 		logger,
 		perspective,
 	)
-	return cs, err
+	if err != nil {
+		return nil, err
+	}
+	cs.conn = qtls.Server(nil, cs.tlsConf)
+	return cs, nil
 }
 
 func newCryptoSetup(
@@ -180,7 +190,7 @@ func newCryptoSetup(
 	tlsConf *tls.Config,
 	logger utils.Logger,
 	perspective protocol.Perspective,
-) (CryptoSetup, <-chan struct{} /* ClientHello written */, error) {
+) (*cryptoSetup, <-chan struct{} /* ClientHello written */, error) {
 	initialSealer, initialOpener, err := NewInitialAEAD(connID, perspective)
 	if err != nil {
 		return nil, nil, err
@@ -214,19 +224,12 @@ func newCryptoSetup(
 }
 
 func (h *cryptoSetup) RunHandshake() error {
-	var conn *qtls.Conn
-	switch h.perspective {
-	case protocol.PerspectiveClient:
-		conn = qtls.Client(nil, h.tlsConf)
-	case protocol.PerspectiveServer:
-		conn = qtls.Server(nil, h.tlsConf)
-	}
 	// Handle errors that might occur when HandleData() is called.
 	handshakeErrChan := make(chan error, 1)
 	handshakeComplete := make(chan struct{})
 	go func() {
 		defer close(h.handshakeDone)
-		if err := conn.Handshake(); err != nil {
+		if err := h.conn.Handshake(); err != nil {
 			handshakeErrChan <- err
 			return
 		}
@@ -327,7 +330,6 @@ func (h *cryptoSetup) handleMessageForServer(msgType messageType) bool {
 			return false
 		}
 		// get the handshake read key
-		// TODO: check that the initial stream doesn't have any more data
 		select {
 		case <-h.receivedReadKey:
 		case <-h.handshakeErrChan:
@@ -526,6 +528,10 @@ func (h *cryptoSetup) GetOpener(level protocol.EncryptionLevel) (Opener, error) 
 }
 
 func (h *cryptoSetup) ConnectionState() ConnectionState {
-	// TODO: return the connection state
-	return ConnectionState{}
+	connState := h.conn.ConnectionState()
+	return ConnectionState{
+		HandshakeComplete: connState.HandshakeComplete,
+		ServerName:        connState.ServerName,
+		PeerCertificates:  connState.PeerCertificates,
+	}
 }
