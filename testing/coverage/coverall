@@ -24,7 +24,7 @@ if [ -f ${TEST_FILES[0]} ]; then
   test_package ""
 fi
 
-for DIR in $(find * -type d ! -path "*.git*" ! -path "*vendor*"); do
+for DIR in $(find * -type d ! -path "*.git*" ! -path "*vendor*" ! -path "*external*"); do
   TEST_FILES=($DIR/*_test.go)
   if [ -f ${TEST_FILES[0]} ]; then
     test_package "/$DIR"

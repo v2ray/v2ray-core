@@ -6,10 +6,10 @@ import (
 	"errors"
 	"time"
 
-	quic "github.com/lucas-clemente/quic-go"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
+	quic "v2ray.com/core/external/github.com/lucas-clemente/quic-go"
 	"v2ray.com/core/transport/internet"
 )
 

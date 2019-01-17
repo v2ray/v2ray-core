@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	quic "github.com/lucas-clemente/quic-go"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol/tls/cert"
 	"v2ray.com/core/common/signal/done"
+	quic "v2ray.com/core/external/github.com/lucas-clemente/quic-go"
 	"v2ray.com/core/transport/internet"
 	"v2ray.com/core/transport/internet/tls"
 )
