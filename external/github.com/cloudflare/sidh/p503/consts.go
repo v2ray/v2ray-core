@@ -25,7 +25,7 @@ const (
 )
 
 // CPU Capabilities. Those flags are referred by assembly code. According to
-// https://v2ray.com/core/external/github.com/golang/go/issues/28230, variables referred from the
+// https://github.com/golang/go/issues/28230, variables referred from the
 // assembly must be in the same package.
 // We declare them variables not constants in order to facilitate testing.
 var (

@@ -29,7 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ========================================================================
 
 The x64 field arithmetic implementation was derived from the Microsoft Research
-SIDH implementation, <https://v2ray.com/core/external/github.com/Microsoft/PQCrypto-SIDH>, available
+SIDH implementation, <https://github.com/Microsoft/PQCrypto-SIDH>, available
 under the following license:
 
 ========================================================================

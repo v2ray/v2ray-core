@@ -33,6 +33,6 @@ rm "./github.com/gorilla/websocket/x_net_proxy.go"
 
 find . -name "*_test.go" -delete
 find . -name "*.yml" -delete
-find . -name "*.go" -type f -print0 | LC_ALL=C xargs -0 sed -i '' 's#github\.com#v2ray\.com/core/external/github\.com#g'
+find . -name "*.go" -type f -print0 | LC_ALL=C xargs -0 sed -i '' 's#\"github\.com#\"v2ray\.com/core/external/github\.com#g'
 
 popd

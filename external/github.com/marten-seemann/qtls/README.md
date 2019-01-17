@@ -60,7 +60,7 @@ Similar dependencies can be found on any UNIX based system/distribution.
 There are number of things that need to be setup before running tests. Most important step is to copy ``go env GOROOT`` directory to ``_dev`` and swap TLS implementation and recompile GO. Then for testing we use go implementation from ``_dev/GOROOT``.
 
 ```
-git clone https://v2ray.com/core/external/github.com/cloudflare/tls-tris.git
+git clone https://github.com/cloudflare/tls-tris.git
 cd tls-tris; cp _dev/utils/pre-commit .git/hooks/ 
 make -f _dev/Makefile build-all
 ```

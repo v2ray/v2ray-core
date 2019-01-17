@@ -10,7 +10,7 @@ import (
 // VersionNumber is a version number as int
 type VersionNumber uint32
 
-// gQUIC version range as defined in the wiki: https://v2ray.com/core/external/github.com/quicwg/base-drafts/wiki/QUIC-Versions
+// gQUIC version range as defined in the wiki: https://github.com/quicwg/base-drafts/wiki/QUIC-Versions
 const (
 	gquicVersion0   = 0x51303030
 	maxGquicVersion = 0x51303439
