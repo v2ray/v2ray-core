@@ -17,9 +17,15 @@ jobs:
       go version
       go get -v -t -d v2ray.com/core/...
       go get -v -t -d v2ray.com/ext/...
+      go get -u github.com/jstemmer/go-junit-report 2>&1 | go-junit-report > report.xml
     workingDirectory: '$(system.defaultWorkingDirectory)'
     displayName: 'Fetch sources'
   - script: |
       go test -p 1 -timeout 30m -v v2ray.com/core/...
     workingDirectory: '$(system.defaultWorkingDirectory)'
     displayName: 'Test'
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: 'JUnit' # Options: JUnit, NUnit, VSTest, xUnit
+      testResultsFiles: 'report.xml' 
+      searchFolder: '$(System.DefaultWorkingDirectory)' # Optional
