@@ -10,6 +10,7 @@ import (
 	"v2ray.com/core"
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
+	"v2ray.com/core/common/session"
 	"v2ray.com/core/common/strmatcher"
 	"v2ray.com/core/features"
 	"v2ray.com/core/features/dns"
@@ -24,12 +25,14 @@ type Server struct {
 	clientIP       net.IP
 	domainMatcher  strmatcher.IndexMatcher
 	domainIndexMap map[uint32]uint32
+	tag            string
 }
 
 // New creates a new DNS server with given configuration.
 func New(ctx context.Context, config *Config) (*Server, error) {
 	server := &Server{
 		clients: make([]Client, 0, len(config.NameServers)+len(config.NameServer)),
+		tag:     config.Tag,
 	}
 	if len(config.ClientIp) > 0 {
 		if len(config.ClientIp) != 4 && len(config.ClientIp) != 16 {
@@ -118,6 +121,11 @@ func (s *Server) Close() error {
 
 func (s *Server) queryIPTimeout(client Client, domain string, option IPOption) ([]net.IP, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*4)
+	if len(s.tag) > 0 {
+		ctx = session.ContextWithInbound(ctx, &session.Inbound{
+			Tag: s.tag,
+		})
+	}
 	ips, err := client.QueryIP(ctx, domain, option)
 	cancel()
 	return ips, err

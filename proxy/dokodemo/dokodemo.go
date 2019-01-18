@@ -78,13 +78,17 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		Address: d.address,
 		Port:    d.port,
 	}
+
+	destinationOverridden := false
 	if d.config.FollowRedirect {
 		if outbound := session.OutboundFromContext(ctx); outbound != nil && outbound.Target.IsValid() {
 			dest = outbound.Target
+			destinationOverridden = true
 		} else if handshake, ok := conn.(hasHandshakeAddress); ok {
 			addr := handshake.HandshakeAddress()
 			if addr != nil {
 				dest.Address = addr
+				destinationOverridden = true
 			}
 		}
 	}
@@ -121,7 +125,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 			writer = buf.NewWriter(conn)
 		} else {
 			//if we are in TPROXY mode, use linux's udp forging functionality
-			if !d.config.FollowRedirect {
+			if !destinationOverridden {
 				writer = &buf.SequentialWriter{Writer: conn}
 			} else {
 				sockopt := &internet.SocketConfig{
