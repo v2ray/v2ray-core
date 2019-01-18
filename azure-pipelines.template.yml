@@ -30,7 +30,7 @@ jobs:
       go test -p 1 -timeout 30m -v v2ray.com/core/...
     workingDirectory: '$(system.defaultWorkingDirectory)'
     displayName: 'Test'
-    condition: in(variables['Agent.OS'], 'Windows_NT')
+    condition: in(variables['Agent.OS'], 'Windows_NT', 'Darwin')
   - task: PublishTestResults@2
     condition: in(variables['Agent.OS'], 'Linux')
     inputs:
