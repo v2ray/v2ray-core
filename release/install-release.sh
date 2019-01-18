@@ -200,29 +200,36 @@ getVersion(){
         VER=`/usr/bin/v2ray/v2ray -version 2>/dev/null`
         RETVAL="$?"
         CUR_VER=`echo $VER | head -n 1 | cut -d " " -f2`
-        CUR_VER_N=`echo $CUR_VER | sed "s/\.//" | sed "s/\.//"`
+        CUR_VER_N1=`echo $CUR_VER | cut -d. -f1`
+        CUR_VER_N2=`echo $CUR_VER | cut -d. -f2`
+        CUR_VER_N3=`echo $CUR_VER | cut -d. -f3`
+
         if [[ ${CUR_VER} != v* ]]; then
             CUR_VER=v${CUR_VER}
         fi
-        if [[ ${CUR_VER_N} == v* ]]; then
-            CUR_VER_N=`echo $CUR_VER_N | sed "s/v//"`
+        if [[ ${CUR_VER_N1} == v* ]]; then
+            CUR_VER_N1=`echo $CUR_VER_N1 | sed "s/v//"`
         fi
         TAG_URL="https://api.github.com/repos/v2ray/v2ray-core/releases/latest"
-        NEW_VER=`curl ${PROXY} -s ${TAG_URL} --connect-timeout 10| grep 'tag_name' | cut -d\" -f4`
+        NEW_VER=`curl ${PROXY} -s ${TAG_URL} --connect-timeout 10 | grep 'tag_name' | cut -d\" -f4`
         RETVAL1="$?"
-        NEW_VER_N=`echo $NEW_VER | sed "s/\.//" | sed "s/\.//"`
+
+        NEW_VER_N1=`echo $NEW_VER | cut -d. -f1`
+        NEW_VER_N2=`echo $NEW_VER | cut -d. -f2`
+        NEW_VER_N3=`echo $NEW_VER | cut -d. -f3`
+
         if [[ ${NEW_VER} != v* ]]; then
             NEW_VER=v${NEW_VER}
         fi
-        if [[ ${NEW_VER_N} == v* ]]; then
-            NEW_VER_N=`echo $NEW_VER_N | sed "s/v//"`
+        if [[ ${NEW_VER_N1} == v* ]]; then
+            NEW_VER_N1=`echo $NEW_VER_N1 | sed "s/v//"`
         fi
         if [[ $RETVAL1 -ne 0 ]] || [[ $NEW_VER == "" ]]; then
             colorEcho ${RED} "Failed to fetch release information. Please check your network or try again."
             return 3
-        elif [[ $RETVAL -ne 0 ]];then
+        elif [[ $RETVAL -ne 0 ]]; then
             return 2
-        elif [[ $NEW_VER_N -gt $CUR_VER_N ]];then
+        elif [[ $NEW_VER_N1 -gt $CUR_VER_N1 ]] || [[ $NEW_VER_N1 -eq $CUR_VER_N1 &&  $NEW_VER_N2 -gt $CUR_VER_N2 ]]; then
             return 1  # A new version found
         fi
         return 0  # V2Ray is already up-to-date
@@ -330,9 +337,9 @@ Help(){
     printf "\n"
     echo "Options:"
     echo "  -h, --help            Show help"
-    echo "  -p, --proxy           Specify a proxy that is used for downloading. Examples of argument: -p socks5://127.0.0.1:1080, -p http://127.0.0.1:3128"
+    echo "  -p, --proxy           Specify a proxy that is used for downloading. Examples of arguments: -p socks5://127.0.0.1:1080, -p http://127.0.0.1:3128"
     echo "  -f, --force           Force install"
-    echo "      --version         Used to install a particular version of V2Ray. Example of argument: --version v4.12.0"
+    echo "      --version         Used to install a particular version of V2Ray. Example of arguments: --version v4.12.0"
     echo "      --extract         Specify the target directory of extraction action, usually used with the other options"
     echo "      --extractonly     Extract-only mode"
     echo "  -l, --local           Select a local installing source"
