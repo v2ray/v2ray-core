@@ -117,6 +117,8 @@ func TestPipeWriteMultiThread(t *testing.T) {
 			return pWriter.WriteMultiBuffer(buf.MultiBuffer{b})
 		})
 	}
+	time.Sleep(time.Millisecond * 100)
+	pWriter.Close()
 	errg.Wait()
 
 	b, err := pReader.ReadMultiBuffer()
