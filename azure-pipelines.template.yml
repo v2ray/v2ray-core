@@ -7,6 +7,7 @@ jobs:
 
   variables:
     GOPATH: '$(system.defaultWorkingDirectory)'
+    GOBIN:  '$(GOPATH)/bin'
 
   steps:
   - checkout: none
@@ -21,7 +22,7 @@ jobs:
     workingDirectory: '$(system.defaultWorkingDirectory)'
     displayName: 'Fetch sources'
   - script: |
-      go test -p 1 -timeout 30m -v v2ray.com/core/... 2>&1 | go-junit-report > report.xml
+      go test -p 1 -timeout 30m -v v2ray.com/core/... 2>&1 | $(GOBIN)/go-junit-report > report.xml
     workingDirectory: '$(system.defaultWorkingDirectory)'
     displayName: 'Test'
   - task: PublishTestResults@2
