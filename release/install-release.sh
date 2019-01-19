@@ -211,7 +211,7 @@ getVersion(){
             return 3
         elif [[ $RETVAL -ne 0 ]];then
             return 2
-        elif [[ `echo $NEW_VER | cut -d. -f-2` != `echo $CUR_VER | cut -d. -f-2` ]];then
+        elif [[ `echo $NEW_VER | cut -d. -f1,2` != `echo $CUR_VER | cut -d. -f1,2` ]];then
             return 1
         fi
         return 0
