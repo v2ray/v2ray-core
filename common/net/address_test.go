@@ -85,6 +85,14 @@ func TestAddressProperty(t *testing.T) {
 			},
 		},
 		{
+			Input: ParseAddress("::0"),
+			Output: addrProprty{
+				IP:     AnyIPv6.IP(),
+				Family: AddressFamilyIPv6,
+				String: "[::]",
+			},
+		},
+		{
 			Input: ParseAddress("[::ffff:123.151.71.143]"),
 			Output: addrProprty{
 				IP:     []byte{123, 151, 71, 143},

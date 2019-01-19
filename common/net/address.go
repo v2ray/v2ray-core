@@ -18,6 +18,9 @@ var (
 
 	// LocalHostIPv6 is a constant value for localhost IP in IPv6.
 	LocalHostIPv6 = IPAddress([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1})
+
+	// AnyIPv6 is a constant value for any IP in IPv6.
+	AnyIPv6 = IPAddress([]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
 )
 
 // AddressFamily is the type of address.

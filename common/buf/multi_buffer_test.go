@@ -9,33 +9,34 @@ import (
 
 	"v2ray.com/core/common"
 	. "v2ray.com/core/common/buf"
-	. "v2ray.com/ext/assert"
 )
 
 func TestMultiBufferRead(t *testing.T) {
-	assert := With(t)
-
 	b1 := New()
-	b1.WriteString("ab")
+	common.Must2(b1.WriteString("ab"))
 
 	b2 := New()
-	b2.WriteString("cd")
+	common.Must2(b2.WriteString("cd"))
 	mb := MultiBuffer{b1, b2}
 
 	bs := make([]byte, 32)
 	_, nBytes := SplitBytes(mb, bs)
-	assert(nBytes, Equals, 4)
-	assert(bs[:nBytes], Equals, []byte("abcd"))
+	if nBytes != 4 {
+		t.Error("expect 4 bytes split, but got ", nBytes)
+	}
+	if r := cmp.Diff(bs[:nBytes], []byte("abcd")); r != "" {
+		t.Error(r)
+	}
 }
 
 func TestMultiBufferAppend(t *testing.T) {
-	assert := With(t)
-
 	var mb MultiBuffer
 	b := New()
-	b.WriteString("ab")
+	common.Must2(b.WriteString("ab"))
 	mb = append(mb, b)
-	assert(mb.Len(), Equals, int32(2))
+	if mb.Len() != 2 {
+		t.Error("expected length 2, but got ", mb.Len())
+	}
 }
 
 func TestMultiBufferSliceBySizeLarge(t *testing.T) {

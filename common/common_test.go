@@ -5,25 +5,40 @@ import (
 	"testing"
 
 	. "v2ray.com/core/common"
-	. "v2ray.com/ext/assert"
 )
 
 func TestMust(t *testing.T) {
-	assert := With(t)
-
-	f := func() error {
-		return errors.New("test error")
+	hasPanic := func(f func()) (ret bool) {
+		defer func() {
+			if r := recover(); r != nil {
+				ret = true
+			}
+		}()
+		f()
+		return false
 	}
 
-	assert(func() { Must(f()) }, Panics)
-}
-
-func TestMust2(t *testing.T) {
-	assert := With(t)
-
-	f := func() (interface{}, error) {
-		return nil, errors.New("test error")
+	testCases := []struct {
+		Input func()
+		Panic bool
+	}{
+		{
+			Panic: true,
+			Input: func() { Must(func() error { return errors.New("test error") }()) },
+		},
+		{
+			Panic: true,
+			Input: func() { Must2(func() (int, error) { return 0, errors.New("test error") }()) },
+		},
+		{
+			Panic: false,
+			Input: func() { Must(func() error { return nil }()) },
+		},
 	}
 
-	assert(func() { Must2(f()) }, Panics)
+	for idx, test := range testCases {
+		if hasPanic(test.Input) != test.Panic {
+			t.Error("test case #", idx, " expect panic ", test.Panic, " but actually not")
+		}
+	}
 }
