@@ -117,6 +117,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		return nil
 	}
 
+	var tReader buf.Reader
 	responseDone := func() error {
 		defer timer.SetTimeout(plcy.Timeouts.UplinkOnly)
 
@@ -140,6 +141,13 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 					return err
 				}
 				writer = &buf.SequentialWriter{Writer: tConn}
+				tReader = buf.NewReader(tConn)
+				go func() {
+					defer tConn.Close()
+					if err := buf.Copy(tReader, link.Writer, buf.UpdateActivity(timer)); err != nil {
+						newError("failed to transport request (TPROXY conn)").Base(err).WriteToLog()
+					}
+				}()
 			}
 		}
 
@@ -153,6 +161,9 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 	if err := task.Run(ctx, task.OnSuccess(requestDone, task.Close(link.Writer)), responseDone); err != nil {
 		common.Interrupt(link.Reader)
 		common.Interrupt(link.Writer)
+		if tReader != nil {
+			common.Interrupt(tReader)
+		}
 		return newError("connection ends").Base(err)
 	}
 
