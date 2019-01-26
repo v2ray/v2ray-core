@@ -68,7 +68,8 @@
     // Static hosts, similar to hosts file.
     "hosts": {
       // Blacklist all Baidu domains, including all sub domains.
-      "domain:baidu.com": "127.0.0.1"
+      "domain:baidu.com": "127.0.0.1",
+      "domain:v2ray.com": "104.27.154.107"
     },
     "servers": [
       {
@@ -76,7 +77,7 @@
         "port": 53,
         // List of domains that use this DNS first.
         "domains": [
-          "domain:v2ray.com"
+          "geosite:cn"
         ]
       },
       "8.8.8.8",
