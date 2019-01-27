@@ -117,6 +117,7 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		return nil
 	}
 
+	var tConn net.Conn
 	responseDone := func() error {
 		defer timer.SetTimeout(plcy.Timeouts.UplinkOnly)
 
@@ -135,14 +136,28 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 					sockopt.BindAddress = dest.Address.IP()
 					sockopt.BindPort = uint32(dest.Port)
 				}
-				tConn, err := internet.DialSystem(ctx, net.DestinationFromAddr(conn.RemoteAddr()), sockopt)
+				var err error
+				tConn, err = internet.DialSystem(ctx, net.DestinationFromAddr(conn.RemoteAddr()), sockopt)
 				if err != nil {
 					return err
 				}
 				writer = &buf.SequentialWriter{Writer: tConn}
+				tReader := buf.NewReader(tConn)
+				go func() {
+					defer tConn.Close()
+					defer common.Close(link.Writer)
+					if err := buf.Copy(tReader, link.Writer, buf.UpdateActivity(timer)); err != nil {
+						newError("failed to transport request (TPROXY conn)").Base(err).WriteToLog()
+					}
+				}()
 			}
 		}
 
+		defer func() {
+			if tConn != nil {
+				tConn.Close()
+			}
+		}()
 		if err := buf.Copy(link.Reader, writer, buf.UpdateActivity(timer)); err != nil {
 			return newError("failed to transport response").Base(err)
 		}
@@ -153,6 +168,9 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 	if err := task.Run(ctx, task.OnSuccess(requestDone, task.Close(link.Writer)), responseDone); err != nil {
 		common.Interrupt(link.Reader)
 		common.Interrupt(link.Writer)
+		if tConn != nil {
+			tConn.Close()
+		}
 		return newError("connection ends").Base(err)
 	}
 

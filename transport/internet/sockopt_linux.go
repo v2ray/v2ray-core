@@ -70,6 +70,11 @@ func applyOutboundSocketOptions(network string, address string, fd uintptr, conf
 }
 
 func applyInboundSocketOptions(network string, fd uintptr, config *SocketConfig) error {
+	if config.Mark != 0 {
+		if err := syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_MARK, int(config.Mark)); err != nil {
+			return newError("failed to set SO_MARK").Base(err)
+		}
+	}
 	if isTCPSocket(network) {
 		switch config.Tfo {
 		case SocketConfig_Enable:
