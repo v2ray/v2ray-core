@@ -31,6 +31,13 @@
       "auth": "noauth",
       "udp": false,
       "ip": "127.0.0.1"
+    },
+
+    // Enable sniffing on TCP connection.
+    "sniffing": {
+      "enable": true,
+      // Target domain will be overriden to the one carried by the connection, if the connection is HTTP or HTTPS.
+      "destOverride": ["http", "tls"]
     }
   }],
   // List of outbound proxy configurations.
@@ -56,11 +63,20 @@
   // Routing controls how traffic from inbounds are sent to outbounds.
   "routing": {
     "domainStrategy": "IPOnDemand",
-    "rules":[{
-      "type": "field",
-      "ip": ["geoip:private"],
-      "outboundTag": "blocked"
-    }]
+    "rules":[
+      {
+        // Blocks access to private IPs. Remove this if you want to access your router.
+        "type": "field",
+        "ip": ["geoip:private"],
+        "outboundTag": "blocked"
+      },
+      {
+        // Blocks major ads.
+        "type": "field",
+        "domain": ["geosite:category-ads"],
+        "outboundTag": "blocked"
+      }
+    ]
   },
 
   // Dns settings for domain resolution.
@@ -68,7 +84,8 @@
     // Static hosts, similar to hosts file.
     "hosts": {
       // Blacklist all Baidu domains, including all sub domains.
-      "domain:baidu.com": "127.0.0.1"
+      "domain:baidu.com": "127.0.0.1",
+      "domain:v2ray.com": "104.27.154.107",
     },
     "servers": [
       {
@@ -76,7 +93,7 @@
         "port": 53,
         // List of domains that use this DNS first.
         "domains": [
-          "domain:v2ray.com"
+          "geosite:cn"
         ]
       },
       "8.8.8.8",

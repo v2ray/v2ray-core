@@ -4,18 +4,17 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	_ "v2ray.com/core/common/net/testing"
 	"v2ray.com/core/common/protocol"
 	. "v2ray.com/core/proxy/socks"
-	. "v2ray.com/ext/assert"
 )
 
 func TestUDPEncoding(t *testing.T) {
-	assert := With(t)
-
 	b := buf.New()
 
 	request := &protocol.RequestHeader{
@@ -27,13 +26,15 @@ func TestUDPEncoding(t *testing.T) {
 	content := []byte{'a'}
 	payload := buf.New()
 	payload.Write(content)
-	assert(writer.WriteMultiBuffer(buf.MultiBuffer{payload}), IsNil)
+	common.Must(writer.WriteMultiBuffer(buf.MultiBuffer{payload}))
 
 	reader := NewUDPReader(b)
 
 	decodedPayload, err := reader.ReadMultiBuffer()
-	assert(err, IsNil)
-	assert(decodedPayload[0].Bytes(), Equals, content)
+	common.Must(err)
+	if r := cmp.Diff(decodedPayload[0].Bytes(), content); r != "" {
+		t.Error(r)
+	}
 }
 
 func TestReadUsernamePassword(t *testing.T) {

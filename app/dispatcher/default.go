@@ -250,12 +250,12 @@ func sniffer(ctx context.Context, cReader *cachedReader) (SniffResult, error) {
 }
 
 func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *transport.Link, destination net.Destination) {
-	dispatcher := d.ohm.GetDefaultHandler()
+	var handler outbound.Handler
 	if d.router != nil {
 		if tag, err := d.router.PickRoute(ctx); err == nil {
-			if handler := d.ohm.GetHandler(tag); handler != nil {
+			if h := d.ohm.GetHandler(tag); h != nil {
 				newError("taking detour [", tag, "] for [", destination, "]").WriteToLog(session.ExportIDToError(ctx))
-				dispatcher = handler
+				handler = h
 			} else {
 				newError("non existing tag: ", tag).AtWarning().WriteToLog(session.ExportIDToError(ctx))
 			}
@@ -264,12 +264,16 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *transport.
 		}
 	}
 
-	if dispatcher == nil {
+	if handler == nil {
+		handler = d.ohm.GetDefaultHandler()
+	}
+
+	if handler == nil {
 		newError("default outbound handler not exist").WriteToLog(session.ExportIDToError(ctx))
 		common.Close(link.Writer)
 		common.Interrupt(link.Reader)
 		return
 	}
 
-	dispatcher.Dispatch(ctx, link)
+	handler.Dispatch(ctx, link)
 }

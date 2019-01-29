@@ -439,13 +439,11 @@ func TestShadowsocksChacha20Poly1305TCP(t *testing.T) {
 }
 
 func TestShadowsocksAES256GCMTCP(t *testing.T) {
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	account := serial.ToTypedMessage(&shadowsocks.Account{
@@ -526,34 +524,17 @@ func TestShadowsocksAES256GCMTCP(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
+	defer CloseAllServers(servers)
 
-	var wg sync.WaitGroup
-	wg.Add(10)
+	var errg errgroup.Group
 	for i := 0; i < 10; i++ {
-		go func() {
-			conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-				IP:   []byte{127, 0, 0, 1},
-				Port: int(clientPort),
-			})
-			assert(err, IsNil)
-
-			payload := make([]byte, 10240*1024)
-			rand.Read(payload)
-
-			nBytes, err := conn.Write([]byte(payload))
-			assert(err, IsNil)
-			assert(nBytes, Equals, len(payload))
-
-			response := readFrom(conn, time.Second*20, 10240*1024)
-			assert(response, Equals, xor([]byte(payload)))
-			assert(conn.Close(), IsNil)
-			wg.Done()
-		}()
+		errg.Go(testTCPConn(clientPort, 10240*1024, time.Second*20))
 	}
-	wg.Wait()
 
-	CloseAllServers(servers)
+	if err := errg.Wait(); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestShadowsocksAES128GCMUDP(t *testing.T) {
@@ -880,30 +861,7 @@ func TestShadowsocksNone(t *testing.T) {
 
 	var errg errgroup.Group
 	for i := 0; i < 10; i++ {
-		errg.Go(func() error {
-			conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-				IP:   []byte{127, 0, 0, 1},
-				Port: int(clientPort),
-			})
-			common.Must(err)
-			defer conn.Close()
-
-			payload := make([]byte, 10240*1024)
-			rand.Read(payload)
-
-			nBytes, err := conn.Write([]byte(payload))
-			common.Must(err)
-
-			if nBytes != len(payload) {
-				return errors.New("only part of payload is written: ", nBytes)
-			}
-
-			response := readFrom(conn, time.Second*20, 10240*1024)
-			if r := cmp.Diff(response, xor(payload)); r != "" {
-				return errors.New(r)
-			}
-			return nil
-		})
+		errg.Go(testTCPConn(clientPort, 10240*1024, time.Second*20))
 	}
 
 	if err := errg.Wait(); err != nil {

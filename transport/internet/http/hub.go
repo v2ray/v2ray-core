@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
@@ -105,9 +106,10 @@ func Listen(ctx context.Context, address net.Address, port net.Port, streamSetti
 	}
 
 	server := &http.Server{
-		Addr:      serial.Concat(address, ":", port),
-		TLSConfig: config.GetTLSConfig(tls.WithNextProto("h2")),
-		Handler:   listener,
+		Addr:              serial.Concat(address, ":", port),
+		TLSConfig:         config.GetTLSConfig(tls.WithNextProto("h2")),
+		Handler:           listener,
+		ReadHeaderTimeout: time.Second * 4,
 	}
 
 	listener.server = server

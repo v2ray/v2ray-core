@@ -44,6 +44,17 @@ func readFrom(conn net.Conn, timeout time.Duration, length int) []byte {
 	return b[:n]
 }
 
+func readFrom2(conn net.Conn, timeout time.Duration, length int) ([]byte, error) {
+	b := make([]byte, length)
+	deadline := time.Now().Add(timeout)
+	conn.SetReadDeadline(deadline)
+	n, err := io.ReadFull(conn, b[:length])
+	if err != nil {
+		return nil, err
+	}
+	return b[:n], nil
+}
+
 func InitializeServerConfigs(configs ...*core.Config) ([]*exec.Cmd, error) {
 	servers := make([]*exec.Cmd, 0, 10)
 
@@ -160,7 +171,10 @@ func testTCPConn(port net.Port, payloadSize int, timeout time.Duration) func() e
 			return errors.New("expect ", len(payload), " written, but actually ", nBytes)
 		}
 
-		response := readFrom(conn, timeout, payloadSize)
+		response, err := readFrom2(conn, timeout, payloadSize)
+		if err != nil {
+			return err
+		}
 		if r := cmp.Diff(response, xor(payload)); r != "" {
 			return errors.New(r)
 		}

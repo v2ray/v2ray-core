@@ -73,12 +73,6 @@ popd
 # Take a snapshot of all required source code
 pushd $GOPATH/src
 
-# Flatten vendor directories
-cp -r v2ray.com/core/vendor/github.com/ .
-rm -rf v2ray.com/core/vendor/
-cp -r github.com/lucas-clemente/quic-go/vendor/github.com/ .
-rm -rf github.com/lucas-clemente/quic-go/vendor/
-
 # Create zip file for all sources
 zip -9 -r /v2/build/src_all.zip * -x '*.git*'
 popd
@@ -168,6 +162,43 @@ git config user.email "admin@v2ray.com"
 
 git commit -am "update to version $VERN"
 git push  --quiet "https://${GITHUB_TOKEN}@github.com/v2ray/homebrew-v2ray" master:master
+
+echo "Updating dist"
+
+cd $GOPATH/src/v2ray.com/
+mkdir dist
+cd dist
+
+git init
+git config user.name "Darien Raymond"
+git config user.email "admin@v2ray.com"
+
+cp ${ART_ROOT}/v2ray-macos.zip .
+cp ${ART_ROOT}/v2ray-windows-64.zip .
+cp ${ART_ROOT}/v2ray-windows-32.zip .
+cp ${ART_ROOT}/v2ray-linux-64.zip .
+cp ${ART_ROOT}/v2ray-linux-32.zip .
+cp ${ART_ROOT}/v2ray-linux-arm.zip .
+cp ${ART_ROOT}/v2ray-linux-arm64.zip .
+cp ${ART_ROOT}/v2ray-linux-mips64.zip .
+cp ${ART_ROOT}/v2ray-linux-mips64le.zip .
+cp ${ART_ROOT}/v2ray-linux-mips.zip .
+cp ${ART_ROOT}/v2ray-linux-mipsle.zip .
+cp ${ART_ROOT}/v2ray-linux-ppc64.zip .
+cp ${ART_ROOT}/v2ray-linux-ppc64le.zip .
+cp ${ART_ROOT}/v2ray-linux-s390x.zip .
+cp ${ART_ROOT}/v2ray-freebsd-64.zip .
+cp ${ART_ROOT}/v2ray-freebsd-32.zip .
+cp ${ART_ROOT}/v2ray-openbsd-64.zip .
+cp ${ART_ROOT}/v2ray-openbsd-32.zip .
+cp ${ART_ROOT}/v2ray-dragonfly-64.zip .
+cp /v2/build/src_all.zip .
+
+git add .
+git commit -m "Version ${RELEASE_TAG}"
+git tag -a "${RELEASE_TAG}" -m "Version ${RELEASE_TAG}"
+git remote add origin "https://${GITHUB_TOKEN}@github.com/v2ray/dist"
+git push -u --force --follow-tags origin master
 
 fi
 

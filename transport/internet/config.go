@@ -1,6 +1,9 @@
 package internet
 
-import "v2ray.com/core/common/serial"
+import (
+	"v2ray.com/core/common/serial"
+	"v2ray.com/core/features"
+)
 
 type ConfigCreator func() interface{}
 
@@ -107,6 +110,7 @@ func (c *StreamConfig) HasSecuritySettings() bool {
 }
 
 func ApplyGlobalTransportSettings(settings []*TransportConfig) error {
+	features.PrintDeprecatedFeatureWarning("global transport settings")
 	globalTransportSettings = settings
 	return nil
 }

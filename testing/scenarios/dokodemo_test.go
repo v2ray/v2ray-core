@@ -2,10 +2,12 @@ package scenarios
 
 import (
 	"testing"
+	"time"
 
 	"v2ray.com/core"
 	"v2ray.com/core/app/log"
 	"v2ray.com/core/app/proxyman"
+	"v2ray.com/core/common"
 	clog "v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -22,13 +24,11 @@ import (
 )
 
 func TestDokodemoTCP(t *testing.T) {
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	userID := protocol.NewID(uuid.New())
@@ -110,28 +110,14 @@ func TestDokodemoTCP(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
+	defer CloseAllServers(servers)
 
 	for port := clientPort; port <= clientPort+clientPortRange; port++ {
-		conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-			IP:   []byte{127, 0, 0, 1},
-			Port: int(port),
-		})
-		assert(err, IsNil)
-
-		payload := "dokodemo request."
-		nBytes, err := conn.Write([]byte(payload))
-		assert(err, IsNil)
-		assert(nBytes, Equals, len(payload))
-
-		response := make([]byte, 1024)
-		nBytes, err = conn.Read(response)
-		assert(err, IsNil)
-		assert(response[:nBytes], Equals, xor([]byte(payload)))
-		assert(conn.Close(), IsNil)
+		if err := testTCPConn(net.Port(port), 1024, time.Second*2)(); err != nil {
+			t.Error(err)
+		}
 	}
-
-	CloseAllServers(servers)
 }
 
 func TestDokodemoUDP(t *testing.T) {
