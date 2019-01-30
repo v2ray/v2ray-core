@@ -4,6 +4,7 @@ package dokodemo
 
 import (
 	"context"
+	"sync/atomic"
 	"time"
 
 	"v2ray.com/core"
@@ -106,8 +107,13 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 		return newError("failed to dispatch request").Base(err)
 	}
 
+	requestCount := int32(1)
 	requestDone := func() error {
-		defer timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
+		defer func() {
+			if atomic.AddInt32(&requestCount, -1) == 0 {
+				timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
+			}
+		}()
 
 		reader := buf.NewReader(conn)
 		if err := buf.Copy(reader, link.Writer, buf.UpdateActivity(timer)); err != nil {
@@ -144,7 +150,13 @@ func (d *DokodemoDoor) Process(ctx context.Context, network net.Network, conn in
 
 			writer = &buf.SequentialWriter{Writer: tConn}
 			tReader := buf.NewReader(tConn)
+			requestCount++
 			tproxyRequest = func() error {
+				defer func() {
+					if atomic.AddInt32(&requestCount, -1) == 0 {
+						timer.SetTimeout(plcy.Timeouts.DownlinkOnly)
+					}
+				}()
 				if err := buf.Copy(tReader, link.Writer, buf.UpdateActivity(timer)); err != nil {
 					return newError("failed to transport request (TPROXY conn)").Base(err)
 				}
