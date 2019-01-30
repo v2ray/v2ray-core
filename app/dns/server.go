@@ -155,9 +155,40 @@ func (s *Server) LookupIPv6(domain string) ([]net.IP, error) {
 	})
 }
 
+func (s *Server) lookupStatic(domain string, option IPOption, depth int32) []net.Address {
+	ips := s.hosts.LookupIP(domain, option)
+	if ips == nil {
+		return nil
+	}
+	if ips[0].Family().IsDomain() && depth < 5 {
+		if newIPs := s.lookupStatic(ips[0].Domain(), option, depth+1); newIPs != nil {
+			return newIPs
+		}
+	}
+	return ips
+}
+
+func toNetIP(ips []net.Address) []net.IP {
+	if len(ips) == 0 {
+		return nil
+	}
+	netips := make([]net.IP, 0, len(ips))
+	for _, ip := range ips {
+		netips = append(netips, ip.IP())
+	}
+	return netips
+}
+
 func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, error) {
-	if ip := s.hosts.LookupIP(domain, option); len(ip) > 0 {
-		return ip, nil
+	ips := s.lookupStatic(domain, option, 0)
+	if ips != nil && ips[0].Family().IsIP() {
+		return toNetIP(ips), nil
+	}
+
+	if ips != nil && ips[0].Family().IsDomain() {
+		newdomain := ips[0].Domain()
+		newError("domain replaced: ", domain, " -> ", newdomain).WriteToLog()
+		domain = newdomain
 	}
 
 	var lastErr error

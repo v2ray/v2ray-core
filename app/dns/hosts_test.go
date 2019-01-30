@@ -38,7 +38,7 @@ func TestStaticHosts(t *testing.T) {
 		if len(ips) != 1 {
 			t.Error("expect 1 IP, but got ", len(ips))
 		}
-		if diff := cmp.Diff([]byte(ips[0]), []byte{1, 1, 1, 1}); diff != "" {
+		if diff := cmp.Diff([]byte(ips[0].IP()), []byte{1, 1, 1, 1}); diff != "" {
 			t.Error(diff)
 		}
 	}
@@ -51,7 +51,7 @@ func TestStaticHosts(t *testing.T) {
 		if len(ips) != 1 {
 			t.Error("expect 1 IP, but got ", len(ips))
 		}
-		if diff := cmp.Diff([]byte(ips[0]), []byte{2, 2, 2, 2}); diff != "" {
+		if diff := cmp.Diff([]byte(ips[0].IP()), []byte{2, 2, 2, 2}); diff != "" {
 			t.Error(diff)
 		}
 	}

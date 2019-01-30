@@ -45,7 +45,12 @@ message Config {
   message HostMapping {
     DomainMatchingType type = 1;
     string domain = 2;
+
     repeated bytes ip = 3;
+
+    // ProxiedDomain indicates the mapped domain has the same IP address on this domain. V2Ray will use this domain for IP queries.
+    // This field is only effective if ip is empty.
+    string proxied_domain = 4;
   }
 
   repeated HostMapping static_hosts = 4;
