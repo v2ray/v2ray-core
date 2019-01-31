@@ -18,7 +18,6 @@ import (
 	"v2ray.com/core/common/protocol"
 	"v2ray.com/core/common/protocol/http"
 	"v2ray.com/core/common/session"
-	. "v2ray.com/ext/assert"
 	"v2ray.com/ext/sysio"
 )
 
@@ -266,23 +265,46 @@ func loadGeoSite(country string) ([]*Domain, error) {
 }
 
 func TestChinaSites(t *testing.T) {
-	assert := With(t)
-
 	common.Must(sysio.CopyFile(platform.GetAssetLocation("geosite.dat"), filepath.Join(os.Getenv("GOPATH"), "src", "v2ray.com", "core", "release", "config", "geosite.dat")))
 
 	domains, err := loadGeoSite("CN")
-	assert(err, IsNil)
+	common.Must(err)
 
 	matcher, err := NewDomainMatcher(domains)
 	common.Must(err)
 
-	assert(matcher.ApplyDomain("163.com"), IsTrue)
-	assert(matcher.ApplyDomain("163.com"), IsTrue)
-	assert(matcher.ApplyDomain("164.com"), IsFalse)
-	assert(matcher.ApplyDomain("164.com"), IsFalse)
+	type TestCase struct {
+		Domain string
+		Output bool
+	}
+	testCases := []TestCase{
+		{
+			Domain: "163.com",
+			Output: true,
+		},
+		{
+			Domain: "163.com",
+			Output: true,
+		},
+		{
+			Domain: "164.com",
+			Output: false,
+		},
+		{
+			Domain: "164.com",
+			Output: false,
+		},
+	}
 
 	for i := 0; i < 1024; i++ {
-		assert(matcher.ApplyDomain(strconv.Itoa(i)+".not-exists.com"), IsFalse)
+		testCases = append(testCases, TestCase{Domain: strconv.Itoa(i) + ".not-exists.com", Output: false})
+	}
+
+	for _, testCase := range testCases {
+		r := matcher.ApplyDomain(testCase.Domain)
+		if r != testCase.Output {
+			t.Error("expected output ", testCase.Output, " for domain ", testCase.Domain, " but got ", r)
+		}
 	}
 }
 
