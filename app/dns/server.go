@@ -220,9 +220,3 @@ func (s *Server) lookupIPInternal(domain string, option IPOption) ([]net.IP, err
 
 	return nil, newError("returning nil for domain ", domain).Base(lastErr)
 }
-
-func init() {
-	common.Must(common.RegisterConfig((*Config)(nil), func(ctx context.Context, config interface{}) (interface{}, error) {
-		return New(ctx, config.(*Config))
-	}))
-}

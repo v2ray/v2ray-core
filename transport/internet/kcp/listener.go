@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"sync"
 
-	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/transport/internet"
@@ -189,8 +188,4 @@ func (w *Writer) Close() error {
 
 func ListenKCP(ctx context.Context, address net.Address, port net.Port, streamSettings *internet.MemoryStreamConfig, addConn internet.ConnHandler) (internet.Listener, error) {
 	return NewListener(ctx, address, port, streamSettings, addConn)
-}
-
-func init() {
-	common.Must(internet.RegisterTransportListener(protocolName, ListenKCP))
 }
