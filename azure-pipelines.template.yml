@@ -13,7 +13,7 @@ jobs:
   - checkout: none
   - task: GoTool@0
     inputs:
-      version: '1.11.2'
+      version: '1.11.5'
   - script: |
       go version
       go get -v -t -d v2ray.com/core/...
