@@ -16,6 +16,7 @@ import (
 	_ "v2ray.com/core/app/proxyman/inbound"
 	_ "v2ray.com/core/app/proxyman/outbound"
 	"v2ray.com/core/app/router"
+	"v2ray.com/core/common"
 	clog "v2ray.com/core/common/log"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol"
@@ -107,13 +108,11 @@ func TestPassiveConnection(t *testing.T) {
 }
 
 func TestProxy(t *testing.T) {
-	assert := With(t)
-
 	tcpServer := tcp.Server{
 		MsgProcessor: xor,
 	}
 	dest, err := tcpServer.Start()
-	assert(err, IsNil)
+	common.Must(err)
 	defer tcpServer.Close()
 
 	serverUserID := protocol.NewID(uuid.New())
@@ -232,26 +231,12 @@ func TestProxy(t *testing.T) {
 	}
 
 	servers, err := InitializeServerConfigs(serverConfig, proxyConfig, clientConfig)
-	assert(err, IsNil)
+	common.Must(err)
+	defer CloseAllServers(servers)
 
-	conn, err := net.DialTCP("tcp", nil, &net.TCPAddr{
-		IP:   []byte{127, 0, 0, 1},
-		Port: int(clientPort),
-	})
-	assert(err, IsNil)
-
-	payload := "dokodemo request."
-	nBytes, err := conn.Write([]byte(payload))
-	assert(err, IsNil)
-	assert(nBytes, Equals, len(payload))
-
-	response := make([]byte, 1024)
-	nBytes, err = conn.Read(response)
-	assert(err, IsNil)
-	assert(response[:nBytes], Equals, xor([]byte(payload)))
-	assert(conn.Close(), IsNil)
-
-	CloseAllServers(servers)
+	if err := testTCPConn(clientPort, 1024, time.Second*5)(); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestProxyOverKCP(t *testing.T) {
