@@ -1,3 +1,5 @@
+// +build !confonly
+
 package dns
 
 //go:generate errorgen

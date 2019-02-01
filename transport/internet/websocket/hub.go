@@ -1,3 +1,5 @@
+// +build !confonly
+
 package websocket
 
 import (

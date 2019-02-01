@@ -1,3 +1,5 @@
+// +build !confonly
+
 package reverse
 
 //go:generate errorgen

@@ -1,3 +1,5 @@
+// +build !confonly
+
 package router
 
 import (

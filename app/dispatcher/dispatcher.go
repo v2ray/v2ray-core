@@ -1,3 +1,5 @@
+// +build !confonly
+
 package dispatcher
 
 import "context"
