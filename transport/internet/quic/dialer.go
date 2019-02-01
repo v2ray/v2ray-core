@@ -210,3 +210,7 @@ func Dial(ctx context.Context, dest net.Destination, streamSettings *internet.Me
 
 	return client.openConnection(destAddr, config, tlsConfig, streamSettings.SocketSettings)
 }
+
+func init() {
+	common.Must(internet.RegisterTransportDialer(protocolName, Dial))
+}

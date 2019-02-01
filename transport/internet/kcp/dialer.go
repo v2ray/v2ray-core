@@ -6,6 +6,7 @@ import (
 	"io"
 	"sync/atomic"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/buf"
 	"v2ray.com/core/common/dice"
 	"v2ray.com/core/common/net"
@@ -90,4 +91,8 @@ func DialKCP(ctx context.Context, dest net.Destination, streamSettings *internet
 	}
 
 	return iConn, nil
+}
+
+func init() {
+	common.Must(internet.RegisterTransportDialer(protocolName, DialKCP))
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/common/net"
 	"v2ray.com/core/common/protocol/tls/cert"
 	"v2ray.com/core/common/signal/done"
@@ -129,4 +130,8 @@ func Listen(ctx context.Context, address net.Address, port net.Port, streamSetti
 	go listener.keepAccepting()
 
 	return listener, nil
+}
+
+func init() {
+	common.Must(internet.RegisterTransportListener(protocolName, Listen))
 }

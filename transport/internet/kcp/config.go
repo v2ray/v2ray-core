@@ -3,6 +3,7 @@ package kcp
 import (
 	"crypto/cipher"
 
+	"v2ray.com/core/common"
 	"v2ray.com/core/transport/internet"
 )
 
@@ -95,4 +96,10 @@ func (c *Config) GetReceivingInFlightSize() uint32 {
 
 func (c *Config) GetReceivingBufferSize() uint32 {
 	return c.GetReadBufferSize() / c.GetMTUValue()
+}
+
+func init() {
+	common.Must(internet.RegisterProtocolConfigCreator(protocolName, func() interface{} {
+		return new(Config)
+	}))
 }
